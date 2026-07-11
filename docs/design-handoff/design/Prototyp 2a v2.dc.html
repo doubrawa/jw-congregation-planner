@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E7E3DA;font-family:'IBM Plex Sans',system-ui,sans-serif}
+a{color:var(--acc);text-decoration:none}
+a:hover{color:var(--accD);text-decoration:underline}
+input{font-family:inherit}
+input:focus{outline:2px solid var(--focus);outline-offset:1px}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+</style>
+</helmet>
+
+<div style="display:flex;justify-content:center;align-items:stretch;min-height:100vh;">
+
+  <!-- ===== SIDEBAR (Desktop) ===== -->
+  <sc-if value="{{ showSidebar }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Seitenleiste" style="width:232px;flex:none;position:sticky;top:0;height:100vh;box-sizing:border-box;background:var(--bg);border-right:1px solid var(--line);padding:26px 16px 22px;display:flex;flex-direction:column;">
+      <div style="padding:0 10px;">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.22em;color:var(--acc);">JW</div>
+        <div style="font-family:'Newsreader',serif;font-size:21px;font-weight:500;line-height:1.15;margin-top:6px;">Congregation<br>Planner</div>
+        <div style="font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:var(--mut);margin-top:5px;">Versammlung Musterstadt</div>
+      </div>
+      <div style="margin-top:26px;">
+        <sc-for list="{{ navItems }}" as="nv" hint-placeholder-count="5">
+          <div onClick="{{ nv.go }}" style="cursor:pointer;padding:10px 12px;border-radius:10px;background:{{ nv.bgSide }};color:{{ nv.colorSide }};font-size:13px;font-weight:600;margin-top:4px;" style-hover="background:var(--tNeu);">{{ nv.label }}</div>
+        </sc-for>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 10px 0;border-top:1px solid var(--line);margin-top:12px;padding-top:14px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--onAcc);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;">SK</div>
+        <div>
+          <div style="font-size:12.5px;font-weight:600;">Simon Krüger</div>
+          <div style="font-size:10.5px;color:var(--mut);">{{ myRole }}</div>
+        </div>
+      </div>
+      <div onClick="{{ doLogout }}" style="cursor:pointer;font-size:11.5px;font-weight:600;color:var(--wein);padding:10px 10px 0;">Abmelden</div>
+    </div>
+  </sc-if>
+
+  <!-- ===== MAIN ===== -->
+  <div style="width:100%;max-width:{{ mainMax }};background:var(--bg);box-shadow:0 0 60px rgba(30,25,15,0.18);display:flex;flex-direction:column;position:relative;min-height:100vh;color:var(--ink);box-sizing:border-box;">
+
+    <!-- ========== LOGIN ========== -->
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+      <div data-screen-label="Login" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:48px 32px 72px;box-sizing:border-box;">
+        <div style="text-align:center;">
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.22em;color:var(--acc);">JW</div>
+          <div style="font-family:'Newsreader',serif;font-size:34px;font-weight:500;line-height:1.15;margin-top:10px;">Congregation<br>Planner</div>
+          <div style="font-family:'Newsreader',serif;font-style:italic;font-size:15px;color:var(--mut);margin-top:10px;">Versammlung Musterstadt</div>
+        </div>
+        <div style="margin-top:40px;max-width:366px;width:100%;margin-left:auto;margin-right:auto;">
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;color:var(--mut);">E-MAIL</div>
+          <input type="email" placeholder="name@beispiel.de" style="width:100%;box-sizing:border-box;margin-top:6px;padding:12px 14px;border-radius:10px;border:1px solid var(--bord);background:var(--card);font-size:14px;color:var(--ink);">
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;color:var(--mut);margin-top:16px;">PASSWORT</div>
+          <input type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;margin-top:6px;padding:12px 14px;border-radius:10px;border:1px solid var(--bord);background:var(--card);font-size:14px;color:var(--ink);">
+          <div onClick="{{ doLogin }}" style="margin-top:24px;background:var(--acc);color:var(--onAcc);border-radius:999px;padding:13px 0;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:0.08em;cursor:pointer;" style-hover="background:var(--accD);">ANMELDEN</div>
+          <div style="text-align:center;font-size:12px;color:var(--acc);margin-top:16px;cursor:pointer;">Passwort vergessen?</div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--mut2);margin-top:44px;">Demo-Prototyp · Zugangsdaten beliebig</div>
+      </div>
+    </sc-if>
+
+    <!-- ========== APP ========== -->
+    <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+
+      <sc-if value="{{ isMobileApp }}" hint-placeholder-val="{{ false }}">
+        <div style="position:sticky;top:0;z-index:20;background:var(--bgT);border-bottom:1px solid var(--line);padding:13px 20px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:var(--acc);">JW CONGREGATION PLANNER</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div onClick="{{ openNotifs }}" style="cursor:pointer;background:{{ chipBg }};color:{{ chipColor }};border:1px solid {{ chipBorder }};border-radius:999px;padding:5px 12px;font-size:11.5px;font-weight:600;">{{ chipLabel }}</div>
+            <div onClick="{{ goAufgaben }}" style="cursor:pointer;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--onAcc);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isDesktopApp }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;justify-content:flex-end;padding:16px 36px 0;">
+          <div onClick="{{ openNotifs }}" style="cursor:pointer;background:{{ chipBg }};color:{{ chipColor }};border:1px solid {{ chipBorder }};border-radius:999px;padding:5px 12px;font-size:11.5px;font-weight:600;">{{ chipLabel }}</div>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;padding-bottom:{{ contentPadB }};">
+
+        <!-- ===== PROGRAMM ===== -->
+        <sc-if value="{{ screenProgramm }}" hint-placeholder-val="{{ true }}">
+          <div data-screen-label="Programm" style="padding:{{ padVal }};">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div onClick="{{ prevWeek }}" style="width:36px;height:36px;flex:none;border-radius:50%;background:var(--tGld);border:1px solid var(--acc);display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:19px;font-weight:600;box-shadow:0 1px 3px rgba(30,25,15,0.12);cursor:pointer;opacity:{{ prevOp }};" style-hover="background:var(--acc);color:var(--onAcc);">‹</div>
+              <div style="text-align:center;">
+                <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;">{{ weekRange }}</div>
+                <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:var(--mut);margin-top:3px;">{{ weekBook }}</div>
+              </div>
+              <div onClick="{{ nextWeek }}" style="width:36px;height:36px;flex:none;border-radius:50%;background:var(--tGld);border:1px solid var(--acc);display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:19px;font-weight:600;box-shadow:0 1px 3px rgba(30,25,15,0.12);cursor:pointer;opacity:{{ nextOp }};" style-hover="background:var(--acc);color:var(--onAcc);">›</div>
+            </div>
+            <sc-if value="{{ isCurrentWeek }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;justify-content:center;margin-top:10px;">
+                <div style="background:var(--tGld);color:var(--acc);border-radius:999px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:0.1em;">AKTUELLE WOCHE</div>
+              </div>
+            </sc-if>
+            <div style="display:flex;gap:22px;margin-top:14px;border-bottom:1px solid var(--line);">
+              <div onClick="{{ setTabMid }}" style="cursor:pointer;padding:8px 2px;border-bottom:2px solid {{ tabMidBorder }};font-size:12.5px;font-weight:600;color:{{ tabMidColor }};">Unter der Woche</div>
+              <div onClick="{{ setTabWe }}" style="cursor:pointer;padding:8px 2px;border-bottom:2px solid {{ tabWeBorder }};font-size:12.5px;font-weight:600;color:{{ tabWeColor }};">Wochenende</div>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:var(--mut);">{{ meetDate }}</div>
+
+            <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="4">
+              <div style="background:{{ sec.tint }};border-radius:16px;padding:6px 14px;margin-top:12px;">
+                <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:{{ sec.color }};">{{ sec.label }}</div>
+                <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="2">
+                  <sc-if value="{{ it.song }}" hint-placeholder-val="{{ false }}">
+                    <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:var(--mut);padding:8px 0 2px;">{{ it.title }}</div>
+                  </sc-if>
+                  <sc-if value="{{ it.notSong }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:grid;grid-template-columns:{{ it.cols }};gap:10px;padding:12px 0;border-bottom:1px solid {{ it.hair }};align-items:baseline;">
+                      <sc-if value="{{ it.hasNum }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:{{ sec.color }};">{{ it.num }}.</div>
+                      </sc-if>
+                      <div>
+                        <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">{{ it.title }}</div>
+                        <sc-if value="{{ it.hasMeta }}" hint-placeholder-val="{{ true }}">
+                          <div style="font-size:11.5px;color:var(--mut);margin-top:3px;">{{ it.meta }}</div>
+                        </sc-if>
+                      </div>
+                      <div style="text-align:right;">
+                        <sc-for list="{{ it.names }}" as="p" hint-placeholder-count="1">
+                          <div style="margin-top:{{ p.mt }};">
+                            <div style="font-size:12.5px;font-weight:600;display:flex;justify-content:flex-end;align-items:center;gap:5px;">
+                              <sc-if value="{{ p.mine }}" hint-placeholder-val="{{ false }}">
+                                <span style="background:var(--acc);color:var(--onAcc);border-radius:999px;padding:1px 7px;font-size:9px;font-weight:600;letter-spacing:0.08em;">DU</span>
+                              </sc-if>
+                              <span>{{ p.n }}</span>
+                            </div>
+                            <sc-if value="{{ p.hasRole }}" hint-placeholder-val="{{ true }}">
+                              <div style="font-size:11px;color:var(--mut);">{{ p.role }}</div>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <div style="background:var(--tNeu2);border-radius:16px;padding:6px 14px 16px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">HILFSDIENSTE</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:8px;">
+                <sc-for list="{{ helpers }}" as="h" hint-placeholder-count="4">
+                  <div>
+                    <div style="font-size:9.5px;letter-spacing:0.14em;color:var(--mut);">{{ h.l }}</div>
+                    <div style="font-size:12.5px;font-weight:600;margin-top:3px;">{{ h.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="margin-top:16px;display:flex;justify-content:space-between;font-size:11px;color:var(--mut);">
+              <span>{{ meetEnd }}</span>
+              <span>Stand: 4. September</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== PLANEN ===== -->
+        <sc-if value="{{ screenPlanen }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Planen" style="padding:{{ padVal }};">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;">
+              <div style="font-family:'Newsreader',serif;font-size:26px;font-weight:500;">Planen</div>
+              <div style="font-size:11.5px;color:var(--mut);">{{ openSlotCount }} offene Zuteilungen</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
+              <div onClick="{{ prevWeek }}" style="width:36px;height:36px;flex:none;border-radius:50%;background:var(--tGld);border:1px solid var(--acc);display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:19px;font-weight:600;box-shadow:0 1px 3px rgba(30,25,15,0.12);cursor:pointer;opacity:{{ prevOp }};" style-hover="background:var(--acc);color:var(--onAcc);">‹</div>
+              <div style="text-align:center;">
+                <div style="font-family:'Newsreader',serif;font-size:19px;font-weight:500;">{{ weekRange }}</div>
+              </div>
+              <div onClick="{{ nextWeek }}" style="width:36px;height:36px;flex:none;border-radius:50%;background:var(--tGld);border:1px solid var(--acc);display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:19px;font-weight:600;box-shadow:0 1px 3px rgba(30,25,15,0.12);cursor:pointer;opacity:{{ nextOp }};" style-hover="background:var(--acc);color:var(--onAcc);">›</div>
+            </div>
+            <div style="display:flex;gap:22px;margin-top:8px;border-bottom:1px solid var(--line);">
+              <div onClick="{{ setTabMid }}" style="cursor:pointer;padding:8px 2px;border-bottom:2px solid {{ tabMidBorder }};font-size:12.5px;font-weight:600;color:{{ tabMidColor }};">Unter der Woche</div>
+              <div onClick="{{ setTabWe }}" style="cursor:pointer;padding:8px 2px;border-bottom:2px solid {{ tabWeBorder }};font-size:12.5px;font-weight:600;color:{{ tabWeColor }};">Wochenende</div>
+            </div>
+            <div style="margin-top:12px;font-size:11.5px;color:var(--mut);">Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.</div>
+            <div onClick="{{ autoAssign }}" style="margin-top:12px;background:var(--acc);color:var(--onAcc);border-radius:999px;padding:11px 0;text-align:center;font-size:12px;font-weight:600;letter-spacing:0.06em;cursor:pointer;" style-hover="background:var(--accD);">AUTOMATISCH ZUTEILEN</div>
+
+            <sc-for list="{{ planSections }}" as="ps" hint-placeholder-count="4">
+              <div style="background:{{ ps.tint }};border-radius:16px;padding:6px 14px;margin-top:12px;">
+                <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:{{ ps.color }};">{{ ps.label }}</div>
+                <sc-for list="{{ ps.items }}" as="it" hint-placeholder-count="2">
+                  <sc-if value="{{ it.song }}" hint-placeholder-val="{{ false }}">
+                    <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:var(--mut);padding:8px 0 2px;">{{ it.title }}</div>
+                  </sc-if>
+                  <sc-if value="{{ it.notSong }}" hint-placeholder-val="{{ true }}">
+                    <div style="padding:12px 0;border-bottom:1px solid {{ it.hair }};">
+                      <div style="font-family:'Newsreader',serif;font-size:14.5px;font-weight:500;line-height:1.3;">{{ it.title }}</div>
+                      <sc-if value="{{ it.hasMeta }}" hint-placeholder-val="{{ true }}">
+                        <div style="font-size:11px;color:var(--mut);margin-top:2px;">{{ it.meta }}</div>
+                      </sc-if>
+                      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;">
+                        <sc-for list="{{ it.slots }}" as="sl" hint-placeholder-count="1">
+                          <div onClick="{{ sl.open }}" style="cursor:pointer;border:1px {{ sl.borderStyle }} {{ sl.borderColor }};background:{{ sl.bg }};color:{{ sl.color }};border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:600;" style-hover="border-color:var(--acc);">{{ sl.text }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <div style="background:var(--tNeu2);border-radius:16px;padding:6px 14px 14px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">HILFSDIENSTE</div>
+              <sc-for list="{{ planHelpers }}" as="ph" hint-placeholder-count="4">
+                <div style="padding:10px 0;border-bottom:1px solid {{ ph.hair }};">
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:var(--mut);">{{ ph.l }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;">
+                    <sc-for list="{{ ph.slots }}" as="sl" hint-placeholder-count="2">
+                      <div onClick="{{ sl.open }}" style="cursor:pointer;border:1px {{ sl.borderStyle }} {{ sl.borderColor }};background:{{ sl.bg }};color:{{ sl.color }};border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:600;" style-hover="border-color:var(--acc);">{{ sl.text }}</div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== MEINE AUFGABEN ===== -->
+        <sc-if value="{{ screenAufgaben }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Meine Aufgaben" style="padding:{{ padVal }};">
+            <div style="font-family:'Newsreader',serif;font-size:26px;font-weight:500;">Meine Aufgaben</div>
+            <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:var(--mut);margin-top:3px;">Simon Krüger · Versammlung Musterstadt</div>
+
+            <div style="background:var(--tGld);border-radius:16px;padding:6px 14px;margin-top:18px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--gld);">NÄCHSTE AUFGABEN</div>
+              <sc-for list="{{ myAssignments }}" as="a" hint-placeholder-count="3">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0;border-bottom:1px solid {{ a.hair }};">
+                  <div>
+                    <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">{{ a.t }}</div>
+                    <div style="font-size:11.5px;color:var(--mut);margin-top:3px;">{{ a.d }}</div>
+                  </div>
+                  <sc-if value="{{ a.hasChip }}" hint-placeholder-val="{{ true }}">
+                    <div style="background:var(--acc);color:var(--onAcc);border-radius:999px;padding:3px 9px;font-size:10px;font-weight:600;white-space:nowrap;">{{ a.chip }}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="background:var(--tNeu);border-radius:16px;padding:6px 14px 16px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">ABWESENHEITEN</div>
+              <div style="display:flex;gap:10px;margin-top:10px;">
+                <div style="flex:1;">
+                  <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:var(--mut);">VON</div>
+                  <input type="date" value="{{ absFrom }}" onChange="{{ onAbsFrom }}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid var(--bord2);background:var(--card);font-size:12.5px;color:var(--ink);">
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:var(--mut);">BIS</div>
+                  <input type="date" value="{{ absTo }}" onChange="{{ onAbsTo }}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid var(--bord2);background:var(--card);font-size:12.5px;color:var(--ink);">
+                </div>
+              </div>
+              <div style="margin-top:10px;">
+                <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:var(--mut);">GRUND (OPTIONAL)</div>
+                <input type="text" value="{{ absReason }}" onChange="{{ onAbsReason }}" placeholder="z. B. Urlaub" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid var(--bord2);background:var(--card);font-size:12.5px;color:var(--ink);">
+              </div>
+              <div onClick="{{ addAbsence }}" style="margin-top:14px;border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:10px 0;text-align:center;font-size:12px;font-weight:600;letter-spacing:0.06em;cursor:pointer;" style-hover="background:var(--tGld);">ABWESENHEIT EINTRAGEN</div>
+              <div style="padding:18px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">DEINE EINTRÄGE</div>
+              <sc-for list="{{ absences }}" as="ab" hint-placeholder-count="1">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--lineNeu);">
+                  <div>
+                    <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">{{ ab.range }}</div>
+                    <div style="font-size:11.5px;color:var(--mut);margin-top:3px;">{{ ab.reason }}</div>
+                  </div>
+                  <div onClick="{{ ab.remove }}" style="cursor:pointer;width:26px;height:26px;border-radius:50%;border:1px solid var(--bord3);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:12px;">✕</div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noAbsences }}" hint-placeholder-val="{{ false }}">
+                <div style="font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:var(--mut);padding:10px 0 2px;">Keine Abwesenheiten eingetragen.</div>
+              </sc-if>
+            </div>
+
+            <div style="background:var(--tNeu);border-radius:16px;padding:6px 14px 14px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">PROFIL</div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--lineNeu);font-size:12.5px;">
+                <span style="color:var(--mut);">Name</span><span style="font-weight:600;">Simon Krüger</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--lineNeu);font-size:12.5px;">
+                <span style="color:var(--mut);">Versammlung</span><span style="font-weight:600;">Musterstadt</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--lineNeu);font-size:12.5px;">
+                <span style="color:var(--mut);">Rolle</span><span style="font-weight:600;">{{ myRole }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:12.5px;">
+                <span style="color:var(--mut);">Darstellung</span>
+                <div style="display:flex;gap:6px;">
+                  <sc-for list="{{ themeChips }}" as="tc" hint-placeholder-count="2">
+                    <div onClick="{{ tc.set }}" style="cursor:pointer;border:1px solid {{ tc.border }};background:{{ tc.bg }};color:{{ tc.color }};border-radius:999px;padding:4px 11px;font-size:11px;font-weight:600;">{{ tc.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+              <div onClick="{{ doLogout }}" style="margin-top:8px;text-align:center;font-size:12px;font-weight:600;color:var(--wein);cursor:pointer;padding:6px 0;">Abmelden</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== PERSONEN LISTE ===== -->
+        <sc-if value="{{ screenPersonenList }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Personen" style="padding:{{ padVal }};">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;">
+              <div style="font-family:'Newsreader',serif;font-size:26px;font-weight:500;">Personen</div>
+              <div style="font-size:11.5px;color:var(--mut);">{{ personCount }} Personen</div>
+            </div>
+            <input type="text" value="{{ search }}" onChange="{{ onSearch }}" placeholder="Suchen …" style="width:100%;box-sizing:border-box;margin-top:14px;padding:11px 14px;border-radius:999px;border:1px solid var(--bord);background:var(--card);font-size:13px;color:var(--ink);">
+            <div onClick="{{ addPerson }}" style="margin-top:12px;border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:10px 0;text-align:center;font-size:12px;font-weight:600;letter-spacing:0.06em;cursor:pointer;" style-hover="background:var(--tGld);">+ NEUE PERSON ANLEGEN</div>
+            <div style="margin-top:8px;">
+              <sc-for list="{{ personsFiltered }}" as="pe" hint-placeholder-count="6">
+                <div onClick="{{ pe.open }}" style="cursor:pointer;display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line2);" style-hover="background:var(--hov);">
+                  <div style="width:40px;height:40px;border-radius:50%;background:var(--tNeu);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;">{{ pe.i }}</div>
+                  <div>
+                    <div style="font-size:14px;font-weight:600;">{{ pe.name }}</div>
+                    <div style="font-size:11.5px;color:var(--mut);margin-top:2px;">{{ pe.sub }}</div>
+                  </div>
+                  <div style="color:var(--mut2);font-size:16px;">›</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== PERSON DETAIL ===== -->
+        <sc-if value="{{ screenPersonDetail }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Person Detail" style="padding:{{ padVal }};">
+            <div onClick="{{ backToList }}" style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--acc);">‹ Alle Personen</div>
+            <div style="display:flex;align-items:center;gap:14px;margin-top:18px;">
+              <div style="width:54px;height:54px;border-radius:50%;background:var(--tNeu);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;">{{ detailInitials }}</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.15;">{{ detailName }}</div>
+                <div style="font-size:11.5px;color:var(--mut);margin-top:2px;">{{ detailSub }}</div>
+              </div>
+            </div>
+
+            <div style="background:var(--tNeu);border-radius:16px;padding:6px 14px 16px;margin-top:18px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">STAMMDATEN</div>
+              <sc-for list="{{ detailFields }}" as="f" hint-placeholder-count="4">
+                <div style="margin-top:10px;">
+                  <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:var(--mut);">{{ f.label }}</div>
+                  <input type="text" value="{{ f.value }}" onChange="{{ f.onChange }}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid var(--bord2);background:var(--card);font-size:12.5px;color:var(--ink);">
+                </div>
+              </sc-for>
+              <div style="margin-top:14px;">
+                <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:var(--mut);">ROLLE</div>
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                  <sc-for list="{{ roleChips }}" as="rc" hint-placeholder-count="3">
+                    <div onClick="{{ rc.set }}" style="cursor:pointer;border:1px solid {{ rc.border }};background:{{ rc.bg }};color:{{ rc.color }};border-radius:999px;padding:6px 13px;font-size:11.5px;font-weight:600;">{{ rc.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--tPet);border-radius:16px;padding:6px 14px 10px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--pet);">AUFGABENBEREICHE</div>
+              <sc-for list="{{ privs }}" as="pv" hint-placeholder-count="6">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--linePet);">
+                  <div style="font-size:13px;font-weight:500;">{{ pv.label }}</div>
+                  <div onClick="{{ pv.toggle }}" style="cursor:pointer;width:40px;height:22px;border-radius:999px;background:{{ pv.bg }};position:relative;transition:background 0.15s;">
+                    <div style="position:absolute;top:2px;left:{{ pv.knob }};width:18px;height:18px;border-radius:50%;background:var(--knob);box-shadow:0 1px 2px rgba(0,0,0,0.25);transition:left 0.15s;"></div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div onClick="{{ saveDetail }}" style="margin-top:16px;background:var(--acc);color:var(--onAcc);border-radius:999px;padding:13px 0;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:0.08em;cursor:pointer;" style-hover="background:var(--accD);">SPEICHERN</div>
+          </div>
+        </sc-if>
+
+        <!-- ===== EINSTELLUNGEN ===== -->
+        <sc-if value="{{ screenEinstellungen }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Einstellungen" style="padding:{{ padVal }};">
+            <div style="font-family:'Newsreader',serif;font-size:26px;font-weight:500;">Einstellungen</div>
+            <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:var(--mut);margin-top:3px;">Versammlung Musterstadt</div>
+
+            <div style="background:var(--tNeu);border-radius:16px;padding:6px 14px 14px;margin-top:18px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">VERSAMMLUNG</div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--lineNeu);font-size:12.5px;">
+                <span style="color:var(--mut);">Name</span><span style="font-weight:600;">Musterstadt</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--lineNeu);font-size:12.5px;">
+                <span style="color:var(--mut);">Königreichssaal</span><span style="font-weight:600;">Hauptstraße 12</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12.5px;">
+                <span style="color:var(--mut);">Zusammenkünfte</span><span style="font-weight:600;">Di 19:00 · So 10:00</span>
+              </div>
+            </div>
+
+            <div style="background:var(--tPet);border-radius:16px;padding:6px 14px 16px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--pet);">HILFSDIENSTE</div>
+              <div style="font-size:11.5px;color:var(--mut);margin-top:4px;">Anzahl benötigter Personen je Dienst — wirkt sofort auf Programm und Planung.</div>
+              <sc-for list="{{ services }}" as="sv" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--linePet);">
+                  <div>
+                    <div style="font-size:12.5px;font-weight:600;">{{ sv.name }}</div>
+                    <div style="font-size:10.5px;color:var(--mut);margin-top:1px;">{{ sv.sub }}</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div onClick="{{ sv.dec }}" style="cursor:pointer;width:26px;height:26px;border-radius:50%;border:1px solid var(--bord4);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;">–</div>
+                    <div style="width:16px;text-align:center;font-size:13px;font-weight:600;">{{ sv.count }}</div>
+                    <div onClick="{{ sv.inc }}" style="cursor:pointer;width:26px;height:26px;border-radius:50%;border:1px solid var(--bord4);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;">+</div>
+                    <div onClick="{{ sv.remove }}" style="cursor:pointer;width:26px;height:26px;border-radius:50%;border:1px solid var(--weinB);display:flex;align-items:center;justify-content:center;color:var(--wein);font-size:11px;margin-left:4px;">✕</div>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="display:flex;gap:8px;margin-top:14px;">
+                <input type="text" value="{{ serviceName }}" onChange="{{ onServiceName }}" placeholder="Neuer Dienst, z. B. Parkplatz" style="flex:1;box-sizing:border-box;padding:9px 12px;border-radius:999px;border:1px solid var(--bord2);background:var(--card);font-size:12.5px;color:var(--ink);min-width:0;">
+                <div onClick="{{ addService }}" style="cursor:pointer;border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:9px 14px;font-size:11.5px;font-weight:600;white-space:nowrap;" style-hover="background:var(--tGld);">+ HINZUFÜGEN</div>
+              </div>
+            </div>
+
+            <div style="background:var(--tNeu);border-radius:16px;padding:6px 14px 16px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:var(--mut);">PROGRAMM-IMPORT</div>
+              <div style="font-size:11.5px;color:var(--mut);margin-top:4px;">Die Wochenprogramme stammen aus dem Arbeitsheft auf jw.org und werden ohne Zuteilungen importiert.</div>
+              <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--lineNeu);font-size:12.5px;">
+                <span style="color:var(--mut);">Arbeitsheft Sep/Okt 2026</span><span style="font-weight:600;color:var(--pet);">{{ importedCount }} Wochen geladen</span>
+              </div>
+              <div onClick="{{ importWorkbook }}" style="margin-top:14px;border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:10px 0;text-align:center;font-size:12px;font-weight:600;letter-spacing:0.06em;cursor:pointer;" style-hover="background:var(--tGld);">{{ importLabel }}</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- ===== BOTTOM NAV (Mobil) ===== -->
+      <sc-if value="{{ isMobileApp }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:20;display:flex;border-top:1px solid var(--line);background:var(--bgT);">
+          <sc-for list="{{ navItems }}" as="nv" hint-placeholder-count="5">
+            <div onClick="{{ nv.go }}" style="flex:1;text-align:center;padding:11px 0 15px;cursor:pointer;min-width:0;">
+              <div style="width:4px;height:4px;border-radius:50%;background:{{ nv.dot }};margin:0 auto 4px;"></div>
+              <div style="font-size:10.5px;font-weight:{{ nv.weight }};color:{{ nv.color }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ nv.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- ===== MITTEILUNGEN OVERLAY ===== -->
+      <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeNotifs }}" style="position:fixed;inset:0;background:rgba(30,25,15,0.28);z-index:30;"></div>
+        <div style="position:fixed;top:60px;left:50%;transform:translateX(-50%);width:min(390px,calc(100vw - 28px));background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 48px rgba(30,25,15,0.25);z-index:31;padding:16px 18px;box-sizing:border-box;max-height:70vh;overflow:auto;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <div style="font-family:'Newsreader',serif;font-size:19px;font-weight:500;">Mitteilungen</div>
+            <div onClick="{{ markAllRead }}" style="cursor:pointer;font-size:11.5px;font-weight:600;color:var(--acc);">Alle gelesen</div>
+          </div>
+          <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:10px 1fr;gap:8px;padding:12px 0;border-bottom:1px solid var(--line2);">
+              <div style="width:7px;height:7px;border-radius:50%;background:{{ n.dot }};margin-top:5px;"></div>
+              <div>
+                <div style="font-size:13px;font-weight:600;">{{ n.t }}</div>
+                <div style="font-size:12px;color:var(--mut);margin-top:2px;">{{ n.s }}</div>
+                <div style="font-size:10.5px;color:var(--mut2);margin-top:3px;">{{ n.time }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- ===== ZUTEILUNGS-SHEET ===== -->
+      <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeSheet }}" style="position:fixed;inset:0;background:rgba(30,25,15,0.32);z-index:34;"></div>
+        <div style="position:fixed;left:50%;top:{{ sheetTop }};bottom:{{ sheetBottom }};transform:{{ sheetTf }};width:{{ sheetW }};background:var(--card);border:1px solid var(--line);border-radius:{{ sheetRadius }};box-shadow:0 -12px 48px rgba(30,25,15,0.3);z-index:35;padding:18px 20px;box-sizing:border-box;max-height:74vh;overflow:auto;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div>
+              <div style="font-family:'Newsreader',serif;font-size:18px;font-weight:500;line-height:1.25;">{{ sheetTitle }}</div>
+              <div style="font-size:11.5px;color:var(--mut);margin-top:3px;">{{ sheetSub }}</div>
+            </div>
+            <div onClick="{{ closeSheet }}" style="cursor:pointer;width:28px;height:28px;border-radius:50%;border:1px solid var(--bord);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:12px;flex:none;">✕</div>
+          </div>
+          <sc-if value="{{ sheetHasCurrent }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;background:var(--tNeu);border-radius:12px;padding:9px 12px;">
+              <div style="font-size:12px;">Aktuell: <span style="font-weight:600;">{{ sheetCurrent }}</span></div>
+              <div onClick="{{ removeAssign }}" style="cursor:pointer;font-size:11.5px;font-weight:600;color:var(--wein);">Entfernen</div>
+            </div>
+          </sc-if>
+          <div style="margin-top:6px;">
+            <sc-for list="{{ sheetCandidates }}" as="c" hint-placeholder-count="6">
+              <div onClick="{{ c.pick }}" style="display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line2);cursor:pointer;opacity:{{ c.op }};" style-hover="background:var(--hov);">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--tNeu);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;">{{ c.i }}</div>
+                <div>
+                  <div style="font-size:13px;font-weight:600;">{{ c.name }}</div>
+                  <div style="font-size:11px;color:var(--mut);margin-top:1px;">{{ c.sub }}</div>
+                </div>
+                <sc-if value="{{ c.hasChip }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:{{ c.chipBg }};color:{{ c.chipColor }};border-radius:999px;padding:3px 9px;font-size:10px;font-weight:600;">{{ c.chip }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== TOAST ===== -->
+      <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--onAcc);border-radius:999px;padding:10px 18px;font-size:12.5px;font-weight:600;z-index:40;animation:toastIn 0.2s;white-space:nowrap;">{{ toastText }}</div>
+      </sc-if>
+
+    </sc-if>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;skipLogin&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Demo&quot;}, &quot;demoRolle&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Koordinator&quot;, &quot;Verkündiger&quot;], &quot;default&quot;: &quot;Koordinator&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Demo&quot;}, &quot;darstellung&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Hell&quot;, &quot;Dunkel&quot;], &quot;default&quot;: &quot;Hell&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Demo&quot;}}">
+class Component extends DCLogic {
+  state = {
+    vw: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    screen: null,
+    week: 0,
+    tab: 'mid',
+    notifOpen: false,
+    selectedPersonId: null,
+    search: '',
+    absFrom: '',
+    absTo: '',
+    absReason: '',
+    toast: '',
+    weeks: null,
+    slotSel: null,
+    serviceName: '',
+    importing: false,
+    imported: false,
+    theme: null,
+    services: [
+      { key: 'ton', name: 'Ton / Video', count: 1, priv: 'ton', groups: false },
+      { key: 'mik', name: 'Mikrofone', count: 2, priv: 'mikrofon', groups: false },
+      { key: 'ord', name: 'Ordner / Eingang', count: 2, priv: 'ordner', groups: false },
+      { key: 'rein', name: 'Reinigung', count: 1, priv: null, groups: true }
+    ],
+    absences: [
+      { id: 1, from: '2026-10-12', to: '2026-10-18', reason: 'Urlaub' }
+    ],
+    notifs: [
+      { id: 1, t: 'Neue Zuteilung', s: 'Mikrofone · Sonntag, 20. September', time: 'vor 2 Std.', unread: true },
+      { id: 2, t: 'Erinnerung', s: 'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35', time: 'heute, 08:00', unread: true },
+      { id: 3, t: 'Plan veröffentlicht', s: 'Programm für September ist online', time: 'Montag', unread: false }
+    ],
+    persons: [
+      { id: 1, fn: 'Manfred', ln: 'Albrecht', role: 'Ältester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', absent: [], priv: { vorsitz: true, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 2, fn: 'Thomas', ln: 'Lindner', role: 'Ältester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', absent: [], priv: { vorsitz: true, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 3, fn: 'Friedrich', ln: 'Neumann', role: 'Ältester', tel: '+49 152 887 90 04', mail: 'f.neumann@mail.de', absent: [], priv: { vorsitz: true, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 4, fn: 'Helmut', ln: 'Vogel', role: 'Ältester', tel: '+49 170 445 12 60', mail: 'h.vogel@mail.de', absent: [], priv: { vorsitz: false, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 5, fn: 'Konrad', ln: 'Sommer', role: 'Ältester', tel: '+49 173 511 78 30', mail: 'k.sommer@mail.de', absent: [], priv: { vorsitz: false, vortrag: true, gebet: true, lesen: false, schulung: false, studium: false, mikrofon: false, ton: false, ordner: false } },
+      { id: 6, fn: 'Jonas', ln: 'Berger', role: 'Dienstamtgehilfe', tel: '+49 157 665 43 30', mail: 'j.berger@mail.de', absent: [], priv: { vorsitz: false, vortrag: true, gebet: true, lesen: true, schulung: true, studium: false, mikrofon: true, ton: false, ordner: false } },
+      { id: 7, fn: 'Paul', ln: 'Schröder', role: 'Dienstamtgehilfe', tel: '+49 176 220 89 41', mail: 'p.schroeder@mail.de', absent: [], priv: { vorsitz: false, vortrag: true, gebet: true, lesen: true, schulung: true, studium: false, mikrofon: true, ton: false, ordner: true } },
+      { id: 8, fn: 'Claus', ln: 'Maier', role: 'Dienstamtgehilfe', tel: '+49 171 908 33 17', mail: 'c.maier@mail.de', absent: [], priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: false, studium: false, mikrofon: true, ton: true, ordner: true } },
+      { id: 9, fn: 'Simon', ln: 'Krüger', role: 'Verkündiger', tel: '+49 159 774 21 08', mail: 's.krueger@mail.de', absent: [], priv: { vorsitz: false, vortrag: false, gebet: false, lesen: true, schulung: true, studium: false, mikrofon: true, ton: true, ordner: false } },
+      { id: 10, fn: 'Niklas', ln: 'Feld', role: 'Verkündiger', tel: '+49 162 118 44 92', mail: 'n.feld@mail.de', absent: [1], priv: { vorsitz: false, vortrag: false, gebet: false, lesen: true, schulung: true, studium: false, mikrofon: true, ton: false, ordner: false } },
+      { id: 11, fn: 'Jörg', ln: 'Roth', role: 'Verkündiger', tel: '+49 155 902 41 77', mail: 'j.roth@mail.de', absent: [3], priv: { vorsitz: false, vortrag: false, gebet: false, lesen: true, schulung: false, studium: false, mikrofon: true, ton: false, ordner: false } },
+      { id: 12, fn: 'Bernd', ln: 'Klein', role: 'Verkündiger', tel: '+49 176 348 12 09', mail: 'b.klein@mail.de', absent: [], priv: { vorsitz: false, vortrag: false, gebet: true, lesen: false, schulung: false, studium: false, mikrofon: true, ton: false, ordner: false } },
+      { id: 13, fn: 'Georg', ln: 'Peters', role: 'Verkündiger', tel: '+49 151 668 90 12', mail: 'g.peters@mail.de', absent: [], priv: { vorsitz: false, vortrag: false, gebet: true, lesen: false, schulung: false, studium: false, mikrofon: false, ton: false, ordner: true } },
+      { id: 14, fn: 'Ulrich', ln: 'Lang', role: 'Verkündiger', tel: '+49 175 490 55 03', mail: 'u.lang@mail.de', absent: [0], priv: { vorsitz: false, vortrag: false, gebet: true, lesen: false, schulung: false, studium: false, mikrofon: false, ton: false, ordner: true } },
+      { id: 15, fn: 'Lena', ln: 'Hoffmann', role: 'Verkündigerin', tel: '+49 151 340 76 55', mail: 'l.hoffmann@mail.de', absent: [], priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: true, studium: false, mikrofon: false, ton: false, ordner: false } },
+      { id: 16, fn: 'Elke', ln: 'Brandt', role: 'Verkündigerin', tel: '+49 173 662 09 18', mail: 'e.brandt@mail.de', absent: [2], priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: true, studium: false, mikrofon: false, ton: false, ordner: false } }
+    ]
+  };
+
+  PRIV_DEFS = [
+    ['vorsitz', 'Vorsitz'],
+    ['vortrag', 'Vorträge'],
+    ['gebet', 'Gebete'],
+    ['lesen', 'Bibellesung / Leser'],
+    ['schulung', 'Schulungsaufgaben'],
+    ['studium', 'Studium leiten'],
+    ['mikrofon', 'Mikrofone'],
+    ['ton', 'Ton / Video'],
+    ['ordner', 'Ordner / Eingang']
+  ];
+
+  PRIV_LABEL = { vorsitz: 'Vorsitz', vortrag: 'Vorträge', gebet: 'Gebete', lesen: 'Bibellesung / Leser', schulung: 'Schulungsaufgaben', studium: 'Studium leiten', mikrofon: 'Mikrofone', ton: 'Ton / Video', ordner: 'Ordner / Eingang' };
+
+  C = {
+    neu: { c: 'var(--mut)', t: 'var(--tNeu)', h: 'var(--lineNeu)' },
+    pet: { c: 'var(--pet)', t: 'var(--tPet)', h: 'var(--linePet)' },
+    gld: { c: 'var(--gld)', t: 'var(--tGld)', h: 'var(--lineGld)' },
+    wein: { c: 'var(--wein)', t: 'var(--tWein)', h: 'var(--lineWein)' }
+  };
+
+  sec(label, col, items) { return { label, color: col.c, tint: col.t, hair: col.h, items }; }
+  it(num, title, meta, names) { return { num, title, meta, names }; }
+  song(title) { return { song: true, title }; }
+
+  buildWeeks() {
+    const { neu, pet, gld, wein } = this.C;
+    const s = this.sec.bind(this), it = this.it.bind(this), sg = this.song.bind(this);
+    return [
+      {
+        range: '7.–13. September', book: 'Jeremia 32–33', current: true,
+        mid: {
+          date: 'Dienstag, 8. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['K. Sommer', 'Gebet', 'gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben', '10 Min.', [['T. Lindner', '', 'vortrag']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['J. Berger', '', 'vortrag']]),
+              it(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['N. Feld', '', 'lesen']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['L. Hoffmann', 'mit A. Hoffmann', 'schulung']]),
+              it(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['S. Krüger', 'mit M. Ernst', 'schulung']]),
+              it(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['E. Brandt', 'mit R. Brandt', 'schulung']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 128'),
+              it(7, 'Geh während der besonderen Aktion zielorientiert vor', 'Besprechung · 15 Min.', [['D. Winkler', '', 'vortrag']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['H. Vogel', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['C. Maier'], mik: ['J. Roth', 'B. Klein'], ord: ['U. Lang', 'G. Peters'], rein: ['Gruppe 2'] }
+        },
+        we: {
+          date: 'Sonntag, 13. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 138 · Gebet', null, [['A. Brenner', 'Vorsitz', 'vorsitz'], ['J. Winter', 'Gebet', 'gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Woran erkennt man echten Glauben?“', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 20'),
+              it(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['G. Peters', 'M. Otto'], rein: ['Gruppe 3'] }
+        }
+      },
+      {
+        range: '14.–20. September', book: 'Jeremia 34–36', current: false,
+        mid: {
+          date: 'Dienstag, 15. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['F. Neumann', 'Vorsitz', 'vorsitz'], ['T. Lindner', 'Gebet', 'gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Was wir von den Rechabitern lernen', '10 Min.', [['H. Vogel', '', 'vortrag']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['M. Albrecht', '', 'vortrag']]),
+              it(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['P. Schröder', '', 'lesen']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', 'mit L. Hoffmann', 'schulung']]),
+              it(5, 'Interesse fördern', 'Informell · 4 Min.', [['R. Brandt', 'mit E. Brandt', 'schulung']]),
+              it(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['N. Feld', '', 'schulung']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 89'),
+              it(7, 'Aktuelles', '15 Min.', [['M. Albrecht', '', 'vortrag']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 8', [['T. Lindner', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['K. Sommer', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['R. Simon'], mik: ['B. Klein', 'J. Roth'], ord: ['M. Otto', 'U. Lang'], rein: ['Gruppe 1'] }
+        },
+        we: {
+          date: 'Sonntag, 20. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 12 · Gebet', null, [['H. Vogel', 'Vorsitz', 'vorsitz'], ['U. Lang', 'Gebet', 'gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Ein Name, der zählt“', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 49'),
+              it(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['M. Albrecht', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 106 · Gebet', null, [['G. Peters', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['C. Maier'], mik: ['S. Krüger', 'N. Feld'], ord: ['U. Lang', 'M. Otto'], rein: ['Gruppe 1'] }
+        }
+      },
+      {
+        range: '21.–27. September', book: 'Jeremia 37–39', current: false,
+        mid: {
+          date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['F. Neumann', 'Gebet', 'gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Jehova belohnt Mut — das Beispiel Ebed-Melechs', '10 Min.', [['F. Neumann', '', 'vortrag']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['T. Lindner', '', 'vortrag']]),
+              it(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['S. Krüger', '', 'lesen']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['E. Brandt', 'mit R. Brandt', 'schulung']]),
+              it(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['L. Hoffmann', 'mit A. Hoffmann', 'schulung']]),
+              it(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['J. Berger', '', 'schulung']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 44'),
+              it(7, 'Baut einander auf', 'Besprechung · 15 Min.', [['H. Vogel', '', 'vortrag']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 9', [['M. Albrecht', 'Leiter', 'studium'], ['N. Feld', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['D. Winkler', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['C. Maier'], mik: ['B. Klein', 'P. Schröder'], ord: ['G. Peters', 'U. Lang'], rein: ['Gruppe 3'] }
+        },
+        we: {
+          date: 'Sonntag, 27. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 25 · Gebet', null, [['F. Neumann', 'Vorsitz', 'vorsitz'], ['B. Klein', 'Gebet', 'gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Frieden in einer unruhigen Welt“', '30 Min.', [['K. Steiner', 'Gastredner · Vers. Westtal', 'vortrag']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 61'),
+              it(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 60 Min.', [['H. Vogel', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'G. Peters'], rein: ['Gruppe 2'] }
+        }
+      },
+      {
+        range: '28. Sep – 4. Okt', book: 'Jeremia 40–42', current: false,
+        mid: {
+          date: 'Dienstag, 29. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['T. Lindner', 'Vorsitz', 'vorsitz'], ['M. Albrecht', 'Gebet', 'gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Auf Jehova hören — auch wenn es schwerfällt', '10 Min.', [['M. Albrecht', '', 'vortrag']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['H. Vogel', '', 'vortrag']]),
+              it(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['J. Roth', '', 'lesen']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', 'mit E. Brandt', 'schulung']]),
+              it(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['K. Sommer', 'mit L. Hoffmann', 'schulung']]),
+              it(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['P. Schröder', '', 'schulung']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 65'),
+              it(7, 'Jehova sorgt für sein Volk', '15 Min.', [['F. Neumann', '', 'vortrag']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['H. Vogel', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['C. Maier', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['R. Simon'], mik: ['N. Feld', 'J. Roth'], ord: ['M. Otto', 'U. Lang'], rein: ['Gruppe 2'] }
+        },
+        we: {
+          date: 'Sonntag, 4. Oktober · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 91 · Gebet', null, [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Worauf gründet echte Hoffnung?“', '30 Min.', [['B. Hollmann', 'Gastredner · Vers. Osterfeld', 'vortrag']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 142'),
+              it(null, '„Bleibt wachsam“', 'Studienartikel 31 · 60 Min.', [['F. Neumann', 'Leiter', 'studium'], ['N. Feld', 'Leser', 'lesen']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 76 · Gebet', null, [['H. Vogel', 'Gebet', 'gebet']])])
+          ],
+          helpers: { ton: ['C. Maier'], mik: ['S. Krüger', 'B. Klein'], ord: ['G. Peters', 'U. Lang'], rein: ['Gruppe 1'] }
+        }
+      }
+    ];
+  }
+
+  getWeeks() {
+    if (this.state.weeks) return this.state.weeks;
+    this._weeks = this._weeks || this.buildWeeks();
+    return this._weeks;
+  }
+
+  THEMES = {
+    light: {
+      desk: '#E7E3DA',
+      vars: {
+        '--bg': '#F7F4ED', '--bgT': 'rgba(247,244,237,0.96)', '--card': '#FDFBF5',
+        '--tNeu': '#EDE8DD', '--tNeu2': '#ECE7DC', '--tPet': '#E4EDEA', '--tGld': '#F1E8D3', '--tWein': '#F2E2DE',
+        '--ink': '#211C14', '--mut': '#756D5C', '--mut2': '#9A9284',
+        '--acc': '#8A6A34', '--accD': '#6E5326', '--pet': '#446F6B', '--gld': '#96742C', '--wein': '#8E4A44',
+        '--line': '#E6DFCE', '--line2': '#EFE9DA', '--bord': '#E0D9C8', '--bord2': '#DDD6C6', '--bord3': '#D8D1C0', '--bord4': '#C9C2B0',
+        '--dash': '#B9AE96', '--weinB': '#E4CCC7', '--knob': '#FFFDF6', '--onAcc': '#F7F4ED',
+        '--hov': 'rgba(237,232,221,0.5)', '--lineNeu': 'rgba(110,100,80,0.16)', '--linePet': 'rgba(62,102,99,0.14)',
+        '--lineGld': 'rgba(138,106,52,0.16)', '--lineWein': 'rgba(142,74,68,0.14)', '--focus': 'rgba(138,106,52,0.35)'
+      }
+    },
+    dark: {
+      desk: '#0F0E0B',
+      vars: {
+        '--bg': '#1A1813', '--bgT': 'rgba(26,24,19,0.96)', '--card': '#221F18',
+        '--tNeu': '#242118', '--tNeu2': '#221F17', '--tPet': '#1E2724', '--tGld': '#2A2418', '--tWein': '#2A1E1C',
+        '--ink': '#EDE9DE', '--mut': '#A79E8C', '--mut2': '#7A7466',
+        '--acc': '#C9A86A', '--accD': '#B08F52', '--pet': '#7FA89F', '--gld': '#C2A05C', '--wein': '#C08078',
+        '--line': '#2E2A20', '--line2': '#282419', '--bord': '#3A3427', '--bord2': '#3A3427', '--bord3': '#403A2C', '--bord4': '#4A4335',
+        '--dash': '#5A5240', '--weinB': '#4A322E', '--knob': '#FFFDF6', '--onAcc': '#1A1813',
+        '--hov': 'rgba(42,38,28,0.5)', '--lineNeu': 'rgba(200,190,160,0.12)', '--linePet': 'rgba(127,168,159,0.16)',
+        '--lineGld': 'rgba(201,168,106,0.16)', '--lineWein': 'rgba(192,128,120,0.16)', '--focus': 'rgba(201,168,106,0.4)'
+      }
+    }
+  };
+
+  effTheme() {
+    if (this.state.theme) return this.state.theme;
+    return (this.props.darstellung ?? 'Hell') === 'Dunkel' ? 'dark' : 'light';
+  }
+
+  applyTheme() {
+    const P = this.THEMES[this.effTheme()] || this.THEMES.light;
+    const b = document.body;
+    Object.entries(P.vars).forEach(([k, v]) => b.style.setProperty(k, v));
+    b.style.background = P.desk;
+  }
+
+  componentDidMount() {
+    this._onR = () => this.setState({ vw: window.innerWidth });
+    window.addEventListener('resize', this._onR);
+    this.applyTheme();
+  }
+
+  componentDidUpdate() {
+    this.applyTheme();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onR);
+    clearTimeout(this._tt);
+  }
+
+  showToast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+
+  updatePerson(id, patch) {
+    this.setState(st => ({ persons: st.persons.map(p => p.id === id ? { ...p, ...patch } : p) }));
+  }
+
+  fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
+  }
+
+  displayName(p) { return ((p.fn[0] || '') + '. ' + p.ln).trim(); }
+
+  workloadOf(name) {
+    if (!name) return 0;
+    return JSON.stringify(this.getWeeks()).split(name).length - 1;
+  }
+
+  slotValue(sel) {
+    const weeks = this.getWeeks();
+    if (!sel) return '';
+    const m = weeks[sel.wi][sel.tab];
+    if (sel.kind === 'part') return m.sections[sel.si].items[sel.ii].names[sel.ni][0] || '';
+    return (m.helpers[sel.svc] || [])[sel.pos] || '';
+  }
+
+  assignTo(sel, name) {
+    const weeks = JSON.parse(JSON.stringify(this.getWeeks()));
+    const m = weeks[sel.wi][sel.tab];
+    if (sel.kind === 'part') {
+      m.sections[sel.si].items[sel.ii].names[sel.ni][0] = name;
+    } else {
+      if (!m.helpers[sel.svc]) m.helpers[sel.svc] = [];
+      m.helpers[sel.svc][sel.pos] = name;
+    }
+    const notif = name
+      ? { id: Date.now(), t: 'Zuteilung gesendet', s: name + ' — ' + sel.label + ' · ' + weeks[sel.wi].range, time: 'gerade eben', unread: true }
+      : null;
+    this.setState(st => ({
+      weeks,
+      slotSel: null,
+      notifs: notif ? [notif, ...st.notifs] : st.notifs
+    }));
+    this.showToast(name ? 'Zugeteilt · Mitteilung gesendet' : 'Zuteilung entfernt');
+  }
+
+  autoAssign() {
+    const st = this.state;
+    const weeks = JSON.parse(JSON.stringify(this.getWeeks()));
+    const m = weeks[st.week][st.tab];
+    const used = new Set();
+    m.sections.forEach(s => s.items.forEach(it => (it.names || []).forEach(t => t[0] && used.add(t[0]))));
+    Object.values(m.helpers || {}).forEach(a => (a || []).forEach(n => n && used.add(n)));
+    let count = 0;
+    const pickFor = (priv) => {
+      const cands = st.persons
+        .filter(p => (!priv || p.priv[priv]) && !(p.absent || []).includes(st.week))
+        .map(p => this.displayName(p))
+        .filter(n => !used.has(n));
+      if (!cands.length) return null;
+      cands.sort((a, b) => this.workloadOf(a) - this.workloadOf(b));
+      return cands[0];
+    };
+    m.sections.forEach(s => s.items.forEach(it => (it.names || []).forEach(t => {
+      if (!t[0] && !(t[1] || '').includes('Gastredner')) {
+        const n = pickFor(t[2]);
+        if (n) { t[0] = n; used.add(n); count++; }
+      }
+    })));
+    if (!m.helpers) m.helpers = {};
+    st.services.forEach(svc => {
+      if (!m.helpers[svc.key]) m.helpers[svc.key] = [];
+      for (let pos = 0; pos < svc.count; pos++) {
+        if (!m.helpers[svc.key][pos]) {
+          if (svc.groups) {
+            m.helpers[svc.key][pos] = 'Gruppe ' + (1 + (st.week % 3));
+            count++;
+          } else {
+            const n = pickFor(svc.priv);
+            if (n) { m.helpers[svc.key][pos] = n; used.add(n); count++; }
+          }
+        }
+      }
+    });
+    if (!count) { this.showToast('Keine offenen Zuteilungen in dieser Ansicht'); return; }
+    const notif = { id: Date.now(), t: 'Zuteilungen gesendet', s: count + ' Zuteilungen · ' + weeks[st.week].range, time: 'gerade eben', unread: true };
+    this.setState(s2 => ({ weeks, notifs: [notif, ...s2.notifs] }));
+    this.showToast(count + ' Zuteilungen automatisch vergeben');
+  }
+
+  buildImportWeek() {
+    const { neu, pet, gld, wein } = this.C;
+    const s = this.sec.bind(this), it = this.it.bind(this), sg = this.song.bind(this);
+    return {
+      range: '5.–11. Oktober', book: 'Jeremia 43–45', current: false,
+      mid: {
+        date: 'Dienstag, 6. Oktober · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+        sections: [
+          s('ERÖFFNUNG', neu, [it(null, 'Lied 19 · Gebet · Einleitende Worte', '1 Min.', [['', 'Vorsitz', 'vorsitz'], ['', 'Gebet', 'gebet']])]),
+          s('SCHÄTZE AUS GOTTES WORT', pet, [
+            it(1, 'Jehovas Wort erfüllt sich immer', '10 Min.', [['', '', 'vortrag']]),
+            it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['', '', 'vortrag']]),
+            it(3, 'Bibellesung · Jer 44:24-30', '4 Min. · th Lektion 3', [['', '', 'lesen']])
+          ]),
+          s('UNS IM DIENST VERBESSERN', gld, [
+            it(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['', '', 'schulung']]),
+            it(5, 'Interesse fördern', 'Informell · 4 Min.', [['', '', 'schulung']]),
+            it(6, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 11', [['', '', 'schulung']])
+          ]),
+          s('UNSER LEBEN ALS CHRIST', wein, [
+            sg('Lied 76'),
+            it(7, 'Bleib loyal wie Baruch', '15 Min.', [['', '', 'vortrag']]),
+            it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 11', [['', 'Leiter', 'studium'], ['', 'Leser', 'lesen']])
+          ]),
+          s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 24 · Gebet', '3 Min.', [['', 'Gebet', 'gebet']])])
+        ],
+        helpers: {}
+      },
+      we: {
+        date: 'Sonntag, 11. Oktober · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+        sections: [
+          s('ERÖFFNUNG', neu, [it(null, 'Lied 15 · Gebet', null, [['', 'Vorsitz', 'vorsitz'], ['', 'Gebet', 'gebet']])]),
+          s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Wem kannst du wirklich vertrauen?“', '30 Min.', [['', 'Gastredner', 'vortrag']])]),
+          s('WACHTTURM-STUDIUM', wein, [
+            sg('Lied 123'),
+            it(null, '„Loyal in Prüfungen“', 'Studienartikel 32 · 60 Min.', [['', 'Leiter', 'studium'], ['', 'Leser', 'lesen']])
+          ]),
+          s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 2 · Gebet', null, [['', 'Gebet', 'gebet']])])
+        ],
+        helpers: {}
+      }
+    };
+  }
+
+  importWorkbook() {
+    if (this.state.imported) { this.showToast('Alle verfügbaren Wochen sind importiert'); return; }
+    if (this.state.importing) return;
+    this.setState({ importing: true });
+    setTimeout(() => {
+      const weeks = [...this.getWeeks(), this.buildImportWeek()];
+      const notif = { id: Date.now(), t: 'Programm importiert', s: '5.–11. Oktober · Jeremia 43–45 — ohne Zuteilungen', time: 'gerade eben', unread: true };
+      this.setState(s2 => ({ weeks, importing: false, imported: true, notifs: [notif, ...s2.notifs] }));
+      this.showToast('Arbeitsheft-Woche importiert');
+    }, 900);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const props = this.props;
+    const weeks = this.getWeeks();
+
+    const isDesktop = st.vw >= 920;
+    const skipLogin = props.skipLogin ?? false;
+    const isKoordinator = (props.demoRolle ?? 'Koordinator') === 'Koordinator';
+    let screen = st.screen || (skipLogin ? 'programm' : 'login');
+    if (!isKoordinator && (screen === 'personen' || screen === 'planen' || screen === 'einstellungen')) screen = 'programm';
+
+    const isLogin = screen === 'login';
+    const isApp = !isLogin;
+    const bronze = 'var(--acc)', muted = 'var(--mut2)', ink = 'var(--ink)';
+
+    // --- Woche / Programm ---
+    const week = weeks[st.week];
+    const meeting = st.tab === 'mid' ? week.mid : week.we;
+    const sections = meeting.sections.map(sec => ({
+      label: sec.label, color: sec.color, tint: sec.tint,
+      items: sec.items.map((raw, idx) => {
+        if (raw.song) return { song: true, notSong: false, title: raw.title };
+        const last = idx === sec.items.length - 1;
+        return {
+          song: false, notSong: true,
+          title: raw.title,
+          hasNum: raw.num != null, num: raw.num,
+          hasMeta: !!raw.meta, meta: raw.meta || '',
+          cols: raw.num != null ? '20px 1fr auto' : '1fr auto',
+          hair: last ? 'transparent' : sec.hair,
+          names: (raw.names || []).map(([n, role], i) => ({
+            n: n || '— offen —', role, hasRole: !!role,
+            mine: n === 'S. Krüger',
+            mt: i === 0 ? '0' : '5px'
+          }))
+        };
+      })
+    }));
+
+    const services = st.services;
+    const helpers = services.map(svc => {
+      const arr = (meeting.helpers[svc.key] || []).filter(Boolean);
+      const names = arr.slice(0, svc.count);
+      const missing = svc.count - names.length;
+      const parts = names.concat(Array.from({ length: Math.max(0, missing) }, () => 'offen'));
+      return { l: svc.name.toUpperCase(), v: parts.join(' · ') };
+    });
+
+    // --- Planen ---
+    const slotChip = (text, empty, open) => ({
+      text,
+      open,
+      borderStyle: empty ? 'dashed' : 'solid',
+      borderColor: empty ? 'var(--dash)' : 'var(--bord)',
+      bg: empty ? 'transparent' : 'var(--card)',
+      color: empty ? 'var(--mut)' : ink
+    });
+
+    let openSlotCount = 0;
+    const planSections = meeting.sections.map((sec, si) => ({
+      label: sec.label, color: sec.color, tint: sec.tint,
+      items: sec.items.map((raw, ii) => {
+        if (raw.song) return { song: true, notSong: false, title: raw.title };
+        const last = ii === sec.items.length - 1;
+        return {
+          song: false, notSong: true,
+          title: raw.title,
+          hasMeta: !!raw.meta, meta: raw.meta || '',
+          hair: last ? 'transparent' : sec.hair,
+          slots: (raw.names || []).map(([n, role, priv], ni) => {
+            const label = raw.title + (role && !role.startsWith('mit') ? ' · ' + role : '');
+            if (!n) openSlotCount++;
+            const text = n ? (role && !role.startsWith('mit') ? role + ': ' + n : n) : '— zuteilen';
+            return slotChip(text, !n, () => this.setState({
+              slotSel: { kind: 'part', wi: st.week, tab: st.tab, si, ii, ni, label, priv: priv || null, groups: false }
+            }));
+          })
+        };
+      })
+    }));
+
+    const planHelpers = services.map((svc, sIdx) => {
+      const arr = meeting.helpers[svc.key] || [];
+      const slots = Array.from({ length: svc.count }, (x, pos) => {
+        const n = arr[pos] || '';
+        if (!n) openSlotCount++;
+        return slotChip(n || '— zuteilen', !n, () => this.setState({
+          slotSel: { kind: 'helper', wi: st.week, tab: st.tab, svc: svc.key, pos, label: svc.name, priv: svc.priv, groups: svc.groups }
+        }));
+      });
+      return { l: svc.name.toUpperCase(), slots, hair: sIdx === services.length - 1 ? 'transparent' : 'var(--lineNeu)' };
+    });
+
+    // --- Zuteilungs-Sheet ---
+    const sel = st.slotSel;
+    const sheetOpen = !!sel;
+    let sheetCandidates = [], sheetTitle = '', sheetSub = '', sheetCurrent = '';
+    if (sel) {
+      sheetTitle = sel.label;
+      sheetSub = weeks[sel.wi].range + ' · ' + (sel.tab === 'mid' ? 'Unter der Woche' : 'Wochenende');
+      sheetCurrent = this.slotValue(sel);
+      if (sel.groups) {
+        sheetCandidates = ['Gruppe 1', 'Gruppe 2', 'Gruppe 3'].map(g => ({
+          i: g.replace('Gruppe ', 'G'), name: g, sub: 'Reinigungsgruppe', op: '1',
+          hasChip: false, chip: '', chipBg: '', chipColor: '',
+          pick: () => this.assignTo(sel, g)
+        }));
+      } else {
+        sheetCandidates = st.persons
+          .filter(p => !sel.priv || p.priv[sel.priv])
+          .map(p => {
+            const name = this.displayName(p);
+            const absent = (p.absent || []).includes(sel.wi);
+            const wl = this.workloadOf(name);
+            return {
+              i: ((p.fn[0] || '') + (p.ln[0] || '')).toUpperCase(),
+              name,
+              sub: p.role + ' · ' + wl + (wl === 1 ? ' Aufgabe' : ' Aufgaben') + ' in 4 Wochen',
+              op: absent ? '0.45' : '1',
+              hasChip: absent || wl === 0,
+              chip: absent ? 'Abwesend' : 'frei',
+              chipBg: absent ? 'var(--tWein)' : 'var(--tPet)',
+              chipColor: absent ? 'var(--wein)' : 'var(--pet)',
+              pick: absent
+                ? () => this.showToast(name + ' ist in dieser Woche abwesend')
+                : () => this.assignTo(sel, name)
+            };
+          })
+          .sort((a, b) => (a.op === '0.45' ? 1 : 0) - (b.op === '0.45' ? 1 : 0));
+      }
+    }
+
+    // --- Mitteilungen ---
+    const unread = st.notifs.filter(n => n.unread).length;
+
+    // --- Personen ---
+    const q = st.search.trim().toLowerCase();
+    const personsFiltered = st.persons
+      .filter(p => !q || (p.fn + ' ' + p.ln).toLowerCase().includes(q))
+      .map(p => ({
+        i: ((p.fn[0] || '') + (p.ln[0] || '')).toUpperCase() || '–',
+        name: (p.fn + ' ' + p.ln).trim() || 'Neue Person',
+        sub: p.role + ' · ' + Object.values(p.priv).filter(Boolean).length + ' Aufgabenbereiche',
+        open: () => this.setState({ selectedPersonId: p.id })
+      }));
+
+    const selP = st.persons.find(p => p.id === st.selectedPersonId);
+    let detailFields = [], privs = [], roleChips = [], detailName = '', detailInitials = '', detailSub = '';
+    if (selP) {
+      detailName = (selP.fn + ' ' + selP.ln).trim() || 'Neue Person';
+      detailInitials = ((selP.fn[0] || '') + (selP.ln[0] || '')).toUpperCase() || '–';
+      detailSub = selP.role + ' · Versammlung Musterstadt';
+      detailFields = [['fn', 'VORNAME'], ['ln', 'NACHNAME'], ['tel', 'TELEFON'], ['mail', 'E-MAIL']].map(([k, label]) => ({
+        label, value: selP[k] || '',
+        onChange: (e) => this.updatePerson(selP.id, { [k]: e.target.value })
+      }));
+      roleChips = ['Ältester', 'Dienstamtgehilfe', 'Verkündiger'].map(r => {
+        const active = selP.role === r || (r === 'Verkündiger' && selP.role === 'Verkündigerin');
+        return {
+          label: r,
+          bg: active ? bronze : 'transparent',
+          color: active ? 'var(--onAcc)' : 'var(--mut)',
+          border: active ? bronze : 'var(--bord3)',
+          set: () => this.updatePerson(selP.id, { role: r })
+        };
+      });
+      privs = this.PRIV_DEFS.map(([k, label]) => {
+        const on = !!selP.priv[k];
+        return {
+          label,
+          bg: on ? 'var(--pet)' : 'var(--bord3)',
+          knob: on ? '20px' : '2px',
+          toggle: () => this.updatePerson(selP.id, { priv: { ...selP.priv, [k]: !on } })
+        };
+      });
+    }
+
+    // --- Einstellungen ---
+    const servicesVals = services.map((svc, idx) => ({
+      name: svc.name,
+      count: svc.count,
+      sub: svc.groups ? 'Gruppen-Rotation' : (svc.priv ? 'Bereich: ' + this.PRIV_LABEL[svc.priv] : 'Alle Verkündiger'),
+      inc: () => this.setState(s2 => ({ services: s2.services.map((x, i) => i === idx ? { ...x, count: Math.min(6, x.count + 1) } : x) })),
+      dec: () => this.setState(s2 => ({ services: s2.services.map((x, i) => i === idx ? { ...x, count: Math.max(1, x.count - 1) } : x) })),
+      remove: () => {
+        this.setState(s2 => ({ services: s2.services.filter((x, i) => i !== idx) }));
+        this.showToast('Dienst entfernt');
+      }
+    }));
+
+    // --- Meine Aufgaben ---
+    const myAssignments = [
+      { t: 'Gespräche beginnen (informell)', d: 'Di, 8. September · ca. 19:35', chip: 'in 4 Tagen', hair: 'var(--lineGld)' },
+      { t: 'Mikrofone', d: 'So, 20. September · 10:00', chip: 'in 16 Tagen', hair: 'var(--lineGld)' },
+      { t: 'Bibellesung · Jer 38:1-13', d: 'Di, 22. September · 19:00', chip: '', hair: 'transparent' }
+    ].map(a => ({ ...a, hasChip: !!a.chip }));
+
+    const absences = st.absences.map(ab => ({
+      range: this.fmtDate(ab.from) + ' – ' + this.fmtDate(ab.to),
+      reason: ab.reason || 'Ohne Angabe',
+      remove: () => {
+        this.setState(s2 => ({ absences: s2.absences.filter(x => x.id !== ab.id) }));
+        this.showToast('Abwesenheit entfernt');
+      }
+    }));
+
+    // --- Darstellung ---
+    const darkNow = this.effTheme() === 'dark';
+    const themeChips = [
+      { label: 'Hell', active: !darkNow, set: () => this.setState({ theme: 'light' }) },
+      { label: 'Dunkel', active: darkNow, set: () => this.setState({ theme: 'dark' }) }
+    ].map(c => ({
+      label: c.label, set: c.set,
+      bg: c.active ? 'var(--acc)' : 'transparent',
+      color: c.active ? 'var(--onAcc)' : 'var(--mut)',
+      border: c.active ? 'var(--acc)' : 'var(--bord3)'
+    }));
+
+    // --- Navigation ---
+    const navDefs = isKoordinator
+      ? [['programm', 'Programm'], ['aufgaben', 'Aufgaben'], ['planen', 'Planen'], ['personen', 'Personen'], ['einstellungen', 'Einstellungen']]
+      : [['programm', 'Programm'], ['aufgaben', 'Meine Aufgaben']];
+    const navItems = navDefs.map(([key, label]) => {
+      const active = screen === key;
+      return {
+        label,
+        color: active ? ink : muted,
+        weight: active ? '600' : '500',
+        dot: active ? bronze : 'transparent',
+        bgSide: active ? 'var(--tGld)' : 'transparent',
+        colorSide: active ? 'var(--accD)' : 'var(--mut)',
+        go: () => this.setState({ screen: key, selectedPersonId: null, notifOpen: false, slotSel: null })
+      };
+    });
+
+    return {
+      isLogin, isApp,
+      isDesktop,
+      showSidebar: isApp && isDesktop,
+      isMobileApp: isApp && !isDesktop,
+      isDesktopApp: isApp && isDesktop,
+      mainMax: isLogin ? '430px' : (isDesktop ? '660px' : '430px'),
+      padVal: isDesktop ? '26px 36px' : '22px 20px',
+      contentPadB: isDesktop ? '40px' : '86px',
+      screenProgramm: screen === 'programm',
+      screenAufgaben: screen === 'aufgaben',
+      screenPlanen: screen === 'planen',
+      screenEinstellungen: screen === 'einstellungen',
+      screenPersonenList: screen === 'personen' && !st.selectedPersonId,
+      screenPersonDetail: screen === 'personen' && !!st.selectedPersonId,
+
+      doLogin: () => { this.setState({ screen: 'programm' }); this.showToast('Willkommen, Simon!'); },
+      doLogout: () => this.setState({ screen: 'login', notifOpen: false, selectedPersonId: null, slotSel: null }),
+
+      weekRange: week.range, weekBook: week.book,
+      isCurrentWeek: !!week.current,
+      meetDate: meeting.date, meetEnd: meeting.end,
+      prevWeek: () => st.week > 0 && this.setState({ week: st.week - 1 }),
+      nextWeek: () => st.week < weeks.length - 1 && this.setState({ week: st.week + 1 }),
+      prevOp: st.week === 0 ? '0.35' : '1',
+      nextOp: st.week === weeks.length - 1 ? '0.35' : '1',
+      setTabMid: () => this.setState({ tab: 'mid' }),
+      setTabWe: () => this.setState({ tab: 'we' }),
+      tabMidBorder: st.tab === 'mid' ? bronze : 'transparent',
+      tabMidColor: st.tab === 'mid' ? ink : muted,
+      tabWeBorder: st.tab === 'we' ? bronze : 'transparent',
+      tabWeColor: st.tab === 'we' ? ink : muted,
+      sections, helpers,
+
+      planSections, planHelpers, openSlotCount,
+      autoAssign: () => this.autoAssign(),
+      sheetOpen,
+      sheetTitle, sheetSub, sheetCandidates,
+      sheetHasCurrent: !!sheetCurrent,
+      sheetCurrent,
+      removeAssign: () => sel && this.assignTo(sel, ''),
+      closeSheet: () => this.setState({ slotSel: null }),
+      sheetTop: isDesktop ? '50%' : 'auto',
+      sheetBottom: isDesktop ? 'auto' : '0',
+      sheetTf: isDesktop ? 'translate(-50%,-50%)' : 'translateX(-50%)',
+      sheetRadius: isDesktop ? '18px' : '18px 18px 0 0',
+      sheetW: isDesktop ? 'min(480px,calc(100vw - 32px))' : 'min(430px,100vw)',
+
+      chipLabel: unread > 0 ? unread + ' neu' : 'Mitteilungen',
+      chipBg: unread > 0 ? 'var(--tGld)' : 'transparent',
+      chipColor: unread > 0 ? bronze : 'var(--mut)',
+      chipBorder: unread > 0 ? 'transparent' : 'var(--bord)',
+      openNotifs: () => this.setState({ notifOpen: true }),
+      closeNotifs: () => this.setState({ notifOpen: false }),
+      notifOpen: st.notifOpen,
+      notifs: st.notifs.map(n => ({ ...n, dot: n.unread ? bronze : 'transparent' })),
+      markAllRead: () => this.setState({ notifs: st.notifs.map(n => ({ ...n, unread: false })) }),
+
+      myAssignments, absences,
+      noAbsences: absences.length === 0,
+      themeChips,
+      myRole: isKoordinator ? 'Koordinator (Demo)' : 'Verkündiger (Demo)',
+      absFrom: st.absFrom, absTo: st.absTo, absReason: st.absReason,
+      onAbsFrom: (e) => this.setState({ absFrom: e.target.value }),
+      onAbsTo: (e) => this.setState({ absTo: e.target.value }),
+      onAbsReason: (e) => this.setState({ absReason: e.target.value }),
+      addAbsence: () => {
+        if (!st.absFrom || !st.absTo) { this.showToast('Bitte Von und Bis angeben'); return; }
+        this.setState(s2 => ({
+          absences: [...s2.absences, { id: Date.now(), from: s2.absFrom, to: s2.absTo, reason: s2.absReason }],
+          absFrom: '', absTo: '', absReason: ''
+        }));
+        this.showToast('Abwesenheit eingetragen');
+      },
+
+      goAufgaben: () => this.setState({ screen: 'aufgaben', notifOpen: false }),
+      personCount: st.persons.length,
+      search: st.search,
+      onSearch: (e) => this.setState({ search: e.target.value }),
+      personsFiltered,
+      addPerson: () => {
+        const id = Date.now();
+        this.setState(s2 => ({
+          persons: [...s2.persons, { id, fn: '', ln: '', role: 'Verkündiger', tel: '', mail: '', absent: [], priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: false, studium: false, mikrofon: false, ton: false, ordner: false } }],
+          selectedPersonId: id
+        }));
+        this.showToast('Neue Person angelegt');
+      },
+      backToList: () => this.setState({ selectedPersonId: null }),
+      detailName, detailInitials, detailSub, detailFields, roleChips, privs,
+      saveDetail: () => { this.setState({ selectedPersonId: null }); this.showToast('Gespeichert'); },
+
+      services: servicesVals,
+      serviceName: st.serviceName,
+      onServiceName: (e) => this.setState({ serviceName: e.target.value }),
+      addService: () => {
+        const name = st.serviceName.trim();
+        if (!name) { this.showToast('Bitte einen Namen eingeben'); return; }
+        this.setState(s2 => ({
+          services: [...s2.services, { key: 'c' + Date.now(), name, count: 1, priv: null, groups: false }],
+          serviceName: ''
+        }));
+        this.showToast('Dienst hinzugefügt');
+      },
+
+      importWorkbook: () => this.importWorkbook(),
+      importLabel: st.importing ? 'IMPORTIERE …' : (st.imported ? 'ALLE WOCHEN IMPORTIERT' : 'NÄCHSTE WOCHE IMPORTIEREN'),
+      importedCount: weeks.length,
+      navItems,
+      hasToast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

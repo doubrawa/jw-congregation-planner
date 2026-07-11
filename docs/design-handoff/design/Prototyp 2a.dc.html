@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E7E3DA;font-family:'IBM Plex Sans',system-ui,sans-serif}
+a{color:#8A6A34;text-decoration:none}
+a:hover{color:#6E5326;text-decoration:underline}
+input{font-family:inherit}
+input:focus{outline:2px solid rgba(138,106,52,0.35);outline-offset:1px}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+</style>
+</helmet>
+
+<div style="max-width:430px;margin:0 auto;min-height:100vh;background:#F7F4ED;box-shadow:0 0 60px rgba(30,25,15,0.18);display:flex;flex-direction:column;position:relative;color:#211C14;">
+
+  <!-- ========== LOGIN ========== -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Login" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:48px 32px 72px;box-sizing:border-box;">
+      <div style="text-align:center;">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.22em;color:#8A6A34;">JW</div>
+        <div style="font-family:'Newsreader',serif;font-size:34px;font-weight:500;line-height:1.15;margin-top:10px;">Congregation<br>Planner</div>
+        <div style="font-family:'Newsreader',serif;font-style:italic;font-size:15px;color:#756D5C;margin-top:10px;">Versammlung Musterstadt</div>
+      </div>
+      <div style="margin-top:40px;">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;color:#756D5C;">E-MAIL</div>
+        <input type="email" placeholder="name@beispiel.de" style="width:100%;box-sizing:border-box;margin-top:6px;padding:12px 14px;border-radius:10px;border:1px solid #E0D9C8;background:#FDFBF5;font-size:14px;color:#211C14;">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;color:#756D5C;margin-top:16px;">PASSWORT</div>
+        <input type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;margin-top:6px;padding:12px 14px;border-radius:10px;border:1px solid #E0D9C8;background:#FDFBF5;font-size:14px;color:#211C14;">
+        <div onClick="{{ doLogin }}" style="margin-top:24px;background:#8A6A34;color:#F7F4ED;border-radius:999px;padding:13px 0;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:0.08em;cursor:pointer;" style-hover="background:#6E5326;">ANMELDEN</div>
+        <div style="text-align:center;font-size:12px;color:#8A6A34;margin-top:16px;cursor:pointer;">Passwort vergessen?</div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#9A9284;margin-top:44px;">Demo-Prototyp · Zugangsdaten beliebig</div>
+    </div>
+  </sc-if>
+
+  <!-- ========== APP ========== -->
+  <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+
+    <div style="position:sticky;top:0;z-index:20;background:rgba(247,244,237,0.96);border-bottom:1px solid #E6DFCE;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:#8A6A34;">JW CONGREGATION PLANNER</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div onClick="{{ openNotifs }}" style="cursor:pointer;background:{{ chipBg }};color:{{ chipColor }};border:1px solid {{ chipBorder }};border-radius:999px;padding:5px 12px;font-size:11.5px;font-weight:600;">{{ chipLabel }}</div>
+        <div onClick="{{ goAufgaben }}" style="cursor:pointer;width:28px;height:28px;border-radius:50%;background:#211C14;color:#F7F4ED;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+      </div>
+    </div>
+
+    <div style="flex:1;padding-bottom:86px;">
+
+      <!-- ===== PROGRAMM ===== -->
+      <sc-if value="{{ screenProgramm }}" hint-placeholder-val="{{ true }}">
+        <div data-screen-label="Programm" style="padding:20px 20px 24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div onClick="{{ prevWeek }}" style="width:30px;height:30px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:15px;cursor:pointer;opacity:{{ prevOp }};">‹</div>
+            <div style="text-align:center;">
+              <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;">{{ weekRange }}</div>
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:#756D5C;margin-top:3px;">{{ weekBook }}</div>
+            </div>
+            <div onClick="{{ nextWeek }}" style="width:30px;height:30px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:15px;cursor:pointer;opacity:{{ nextOp }};">›</div>
+          </div>
+          <sc-if value="{{ isCurrentWeek }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;justify-content:center;margin-top:10px;">
+              <div style="background:#F1E8D3;color:#8A6A34;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:0.1em;">AKTUELLE WOCHE</div>
+            </div>
+          </sc-if>
+          <div style="display:flex;gap:22px;margin-top:14px;border-bottom:1px solid #E6DFCE;">
+            <div onClick="{{ setTabMid }}" style="cursor:pointer;padding:8px 2px;border-bottom:2px solid {{ tabMidBorder }};font-size:12.5px;font-weight:600;color:{{ tabMidColor }};">Unter der Woche</div>
+            <div onClick="{{ setTabWe }}" style="cursor:pointer;padding:8px 2px;border-bottom:2px solid {{ tabWeBorder }};font-size:12.5px;font-weight:600;color:{{ tabWeColor }};">Wochenende</div>
+          </div>
+          <div style="margin-top:14px;font-size:12px;color:#756D5C;">{{ meetDate }}</div>
+
+          <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="4">
+            <div style="background:{{ sec.tint }};border-radius:16px;padding:6px 14px;margin-top:12px;">
+              <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:{{ sec.color }};">{{ sec.label }}</div>
+              <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="2">
+                <sc-if value="{{ it.song }}" hint-placeholder-val="{{ false }}">
+                  <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:#756D5C;padding:8px 0 2px;">{{ it.title }}</div>
+                </sc-if>
+                <sc-if value="{{ it.notSong }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:grid;grid-template-columns:{{ it.cols }};gap:10px;padding:12px 0;border-bottom:1px solid {{ it.hair }};align-items:baseline;">
+                    <sc-if value="{{ it.hasNum }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:{{ sec.color }};">{{ it.num }}.</div>
+                    </sc-if>
+                    <div>
+                      <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">{{ it.title }}</div>
+                      <sc-if value="{{ it.hasMeta }}" hint-placeholder-val="{{ true }}">
+                        <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">{{ it.meta }}</div>
+                      </sc-if>
+                    </div>
+                    <div style="text-align:right;">
+                      <sc-for list="{{ it.names }}" as="p" hint-placeholder-count="1">
+                        <div style="margin-top:{{ p.mt }};">
+                          <div style="font-size:12.5px;font-weight:600;display:flex;justify-content:flex-end;align-items:center;gap:5px;">
+                            <sc-if value="{{ p.mine }}" hint-placeholder-val="{{ false }}">
+                              <span style="background:#8A6A34;color:#F7F4ED;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:600;letter-spacing:0.08em;">DU</span>
+                            </sc-if>
+                            <span>{{ p.n }}</span>
+                          </div>
+                          <sc-if value="{{ p.hasRole }}" hint-placeholder-val="{{ true }}">
+                            <div style="font-size:11px;color:#756D5C;">{{ p.role }}</div>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </sc-for>
+            </div>
+          </sc-for>
+
+          <div style="background:#ECE7DC;border-radius:16px;padding:6px 14px 16px;margin-top:12px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;">HILFSDIENSTE</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:8px;">
+              <sc-for list="{{ helpers }}" as="h" hint-placeholder-count="4">
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">{{ h.l }}</div>
+                  <div style="font-size:12.5px;font-weight:600;margin-top:3px;">{{ h.v }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;justify-content:space-between;font-size:11px;color:#756D5C;">
+            <span>{{ meetEnd }}</span>
+            <span>Stand: 4. September</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== MEINE AUFGABEN ===== -->
+      <sc-if value="{{ screenAufgaben }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Meine Aufgaben" style="padding:24px 20px;">
+          <div style="font-family:'Newsreader',serif;font-size:26px;font-weight:500;">Meine Aufgaben</div>
+          <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:#756D5C;margin-top:3px;">Simon Krüger · Versammlung Musterstadt</div>
+
+          <div style="background:#F1E8D3;border-radius:16px;padding:6px 14px;margin-top:18px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#96742C;">NÄCHSTE AUFGABEN</div>
+            <sc-for list="{{ myAssignments }}" as="a" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0;border-bottom:1px solid {{ a.hair }};">
+                <div>
+                  <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">{{ a.t }}</div>
+                  <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">{{ a.d }}</div>
+                </div>
+                <sc-if value="{{ a.hasChip }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#8A6A34;color:#F7F4ED;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:600;white-space:nowrap;">{{ a.chip }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#EDE8DD;border-radius:16px;padding:6px 14px 16px;margin-top:12px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;">ABWESENHEITEN</div>
+            <sc-for list="{{ absences }}" as="ab" hint-placeholder-count="1">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(110,100,80,0.16);">
+                <div>
+                  <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">{{ ab.range }}</div>
+                  <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">{{ ab.reason }}</div>
+                </div>
+                <div onClick="{{ ab.remove }}" style="cursor:pointer;width:26px;height:26px;border-radius:50%;border:1px solid #D8D1C0;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:12px;">✕</div>
+              </div>
+            </sc-for>
+            <div style="display:flex;gap:10px;margin-top:14px;">
+              <div style="flex:1;">
+                <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:#756D5C;">VON</div>
+                <input type="date" value="{{ absFrom }}" onChange="{{ onAbsFrom }}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid #DDD6C6;background:#FDFBF5;font-size:12.5px;color:#211C14;">
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:#756D5C;">BIS</div>
+                <input type="date" value="{{ absTo }}" onChange="{{ onAbsTo }}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid #DDD6C6;background:#FDFBF5;font-size:12.5px;color:#211C14;">
+              </div>
+            </div>
+            <div style="margin-top:10px;">
+              <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:#756D5C;">GRUND (OPTIONAL)</div>
+              <input type="text" value="{{ absReason }}" onChange="{{ onAbsReason }}" placeholder="z. B. Urlaub" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid #DDD6C6;background:#FDFBF5;font-size:12.5px;color:#211C14;">
+            </div>
+            <div onClick="{{ addAbsence }}" style="margin-top:14px;border:1px solid #8A6A34;color:#8A6A34;border-radius:999px;padding:10px 0;text-align:center;font-size:12px;font-weight:600;letter-spacing:0.06em;cursor:pointer;" style-hover="background:#F1E8D3;">ABWESENHEIT EINTRAGEN</div>
+          </div>
+
+          <div style="background:#EDE8DD;border-radius:16px;padding:6px 14px 14px;margin-top:12px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;">PROFIL</div>
+            <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(110,100,80,0.16);font-size:12.5px;">
+              <span style="color:#756D5C;">Name</span><span style="font-weight:600;">Simon Krüger</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(110,100,80,0.16);font-size:12.5px;">
+              <span style="color:#756D5C;">Versammlung</span><span style="font-weight:600;">Musterstadt</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:12.5px;">
+              <span style="color:#756D5C;">Rolle</span><span style="font-weight:600;">{{ myRole }}</span>
+            </div>
+            <div onClick="{{ doLogout }}" style="margin-top:8px;text-align:center;font-size:12px;font-weight:600;color:#8E4A44;cursor:pointer;padding:6px 0;">Abmelden</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== PERSONEN (ADMIN) ===== -->
+      <sc-if value="{{ screenPersonenList }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Personen" style="padding:24px 20px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;">
+            <div style="font-family:'Newsreader',serif;font-size:26px;font-weight:500;">Personen</div>
+            <div style="font-size:11.5px;color:#756D5C;">{{ personCount }} Personen</div>
+          </div>
+          <input type="text" value="{{ search }}" onChange="{{ onSearch }}" placeholder="Suchen …" style="width:100%;box-sizing:border-box;margin-top:14px;padding:11px 14px;border-radius:999px;border:1px solid #E0D9C8;background:#FDFBF5;font-size:13px;color:#211C14;">
+          <div onClick="{{ addPerson }}" style="margin-top:12px;border:1px solid #8A6A34;color:#8A6A34;border-radius:999px;padding:10px 0;text-align:center;font-size:12px;font-weight:600;letter-spacing:0.06em;cursor:pointer;" style-hover="background:#F1E8D3;">+ NEUE PERSON ANLEGEN</div>
+          <div style="margin-top:8px;">
+            <sc-for list="{{ personsFiltered }}" as="pe" hint-placeholder-count="6">
+              <div onClick="{{ pe.open }}" style="cursor:pointer;display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #EFE9DA;" style-hover="background:rgba(237,232,221,0.5);">
+                <div style="width:40px;height:40px;border-radius:50%;background:#EDE8DD;color:#8A6A34;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;">{{ pe.i }}</div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;">{{ pe.name }}</div>
+                  <div style="font-size:11.5px;color:#756D5C;margin-top:2px;">{{ pe.sub }}</div>
+                </div>
+                <div style="color:#9A9284;font-size:16px;">›</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ screenPersonDetail }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Person Detail" style="padding:20px 20px 24px;">
+          <div onClick="{{ backToList }}" style="cursor:pointer;font-size:12.5px;font-weight:600;color:#8A6A34;">‹ Alle Personen</div>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:18px;">
+            <div style="width:54px;height:54px;border-radius:50%;background:#EDE8DD;color:#8A6A34;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;">{{ detailInitials }}</div>
+            <div>
+              <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.15;">{{ detailName }}</div>
+              <div style="font-size:11.5px;color:#756D5C;margin-top:2px;">{{ detailSub }}</div>
+            </div>
+          </div>
+
+          <div style="background:#EDE8DD;border-radius:16px;padding:6px 14px 16px;margin-top:18px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;">STAMMDATEN</div>
+            <sc-for list="{{ detailFields }}" as="f" hint-placeholder-count="4">
+              <div style="margin-top:10px;">
+                <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:#756D5C;">{{ f.label }}</div>
+                <input type="text" value="{{ f.value }}" onChange="{{ f.onChange }}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1px solid #DDD6C6;background:#FDFBF5;font-size:12.5px;color:#211C14;">
+              </div>
+            </sc-for>
+            <div style="margin-top:14px;">
+              <div style="font-size:9.5px;font-weight:600;letter-spacing:0.14em;color:#756D5C;">ROLLE</div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <sc-for list="{{ roleChips }}" as="rc" hint-placeholder-count="3">
+                  <div onClick="{{ rc.set }}" style="cursor:pointer;border:1px solid {{ rc.border }};background:{{ rc.bg }};color:{{ rc.color }};border-radius:999px;padding:6px 13px;font-size:11.5px;font-weight:600;">{{ rc.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#E4EDEA;border-radius:16px;padding:6px 14px 10px;margin-top:12px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#446F6B;">AUFGABENBEREICHE</div>
+            <sc-for list="{{ privs }}" as="pv" hint-placeholder-count="6">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(62,102,99,0.14);">
+                <div style="font-size:13px;font-weight:500;">{{ pv.label }}</div>
+                <div onClick="{{ pv.toggle }}" style="cursor:pointer;width:40px;height:22px;border-radius:999px;background:{{ pv.bg }};position:relative;transition:background 0.15s;">
+                  <div style="position:absolute;top:2px;left:{{ pv.knob }};width:18px;height:18px;border-radius:50%;background:#FFFDF6;box-shadow:0 1px 2px rgba(0,0,0,0.25);transition:left 0.15s;"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div onClick="{{ saveDetail }}" style="margin-top:16px;background:#8A6A34;color:#F7F4ED;border-radius:999px;padding:13px 0;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:0.08em;cursor:pointer;" style-hover="background:#6E5326;">SPEICHERN</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <div style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:20;display:flex;border-top:1px solid #E6DFCE;background:rgba(247,244,237,0.97);">
+      <sc-for list="{{ navItems }}" as="nv" hint-placeholder-count="3">
+        <div onClick="{{ nv.go }}" style="flex:1;text-align:center;padding:12px 0 16px;cursor:pointer;">
+          <div style="width:4px;height:4px;border-radius:50%;background:{{ nv.dot }};margin:0 auto 4px;"></div>
+          <div style="font-size:12px;font-weight:{{ nv.weight }};color:{{ nv.color }};">{{ nv.label }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- ===== MITTEILUNGEN OVERLAY ===== -->
+    <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeNotifs }}" style="position:fixed;inset:0;background:rgba(30,25,15,0.28);z-index:30;"></div>
+      <div style="position:fixed;top:60px;left:50%;transform:translateX(-50%);width:min(390px,calc(100vw - 28px));background:#FDFBF5;border:1px solid #E6DFCE;border-radius:18px;box-shadow:0 24px 48px rgba(30,25,15,0.25);z-index:31;padding:16px 18px;box-sizing:border-box;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div style="font-family:'Newsreader',serif;font-size:19px;font-weight:500;">Mitteilungen</div>
+          <div onClick="{{ markAllRead }}" style="cursor:pointer;font-size:11.5px;font-weight:600;color:#8A6A34;">Alle gelesen</div>
+        </div>
+        <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:10px 1fr;gap:8px;padding:12px 0;border-bottom:1px solid #EFE9DA;">
+            <div style="width:7px;height:7px;border-radius:50%;background:{{ n.dot }};margin-top:5px;"></div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">{{ n.t }}</div>
+              <div style="font-size:12px;color:#756D5C;margin-top:2px;">{{ n.s }}</div>
+              <div style="font-size:10.5px;color:#9A9284;margin-top:3px;">{{ n.time }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ===== TOAST ===== -->
+    <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:#211C14;color:#F7F4ED;border-radius:999px;padding:10px 18px;font-size:12.5px;font-weight:600;z-index:40;animation:toastIn 0.2s;white-space:nowrap;">{{ toastText }}</div>
+    </sc-if>
+
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;skipLogin&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Demo&quot;}, &quot;demoRolle&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Koordinator&quot;, &quot;Verkündiger&quot;], &quot;default&quot;: &quot;Koordinator&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Demo&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: null,
+    week: 0,
+    tab: 'mid',
+    notifOpen: false,
+    selectedPersonId: null,
+    search: '',
+    absFrom: '',
+    absTo: '',
+    absReason: '',
+    toast: '',
+    absences: [
+      { id: 1, from: '2026-10-12', to: '2026-10-18', reason: 'Urlaub' }
+    ],
+    notifs: [
+      { id: 1, t: 'Neue Zuteilung', s: 'Mikrofone · Sonntag, 20. September', time: 'vor 2 Std.', unread: true },
+      { id: 2, t: 'Erinnerung', s: 'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35', time: 'heute, 08:00', unread: true },
+      { id: 3, t: 'Plan veröffentlicht', s: 'Programm für September ist online', time: 'Montag', unread: false }
+    ],
+    persons: [
+      { id: 1, fn: 'Manfred', ln: 'Albrecht', role: 'Ältester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', priv: { vorsitz: true, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 2, fn: 'Thomas', ln: 'Lindner', role: 'Ältester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', priv: { vorsitz: true, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 3, fn: 'Friedrich', ln: 'Neumann', role: 'Ältester', tel: '+49 152 887 90 04', mail: 'f.neumann@mail.de', priv: { vorsitz: true, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 4, fn: 'Helmut', ln: 'Vogel', role: 'Ältester', tel: '+49 170 445 12 60', mail: 'h.vogel@mail.de', priv: { vorsitz: false, vortrag: true, gebet: true, lesen: false, schulung: false, studium: true, mikrofon: false, ton: false, ordner: false } },
+      { id: 5, fn: 'Jonas', ln: 'Berger', role: 'Dienstamtgehilfe', tel: '+49 157 665 43 30', mail: 'j.berger@mail.de', priv: { vorsitz: false, vortrag: false, gebet: true, lesen: true, schulung: true, studium: false, mikrofon: true, ton: false, ordner: false } },
+      { id: 6, fn: 'Paul', ln: 'Schröder', role: 'Dienstamtgehilfe', tel: '+49 176 220 89 41', mail: 'p.schroeder@mail.de', priv: { vorsitz: false, vortrag: false, gebet: true, lesen: true, schulung: true, studium: false, mikrofon: true, ton: false, ordner: true } },
+      { id: 7, fn: 'Claus', ln: 'Maier', role: 'Dienstamtgehilfe', tel: '+49 171 908 33 17', mail: 'c.maier@mail.de', priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: false, studium: false, mikrofon: true, ton: true, ordner: true } },
+      { id: 8, fn: 'Simon', ln: 'Krüger', role: 'Verkündiger', tel: '+49 159 774 21 08', mail: 's.krueger@mail.de', priv: { vorsitz: false, vortrag: false, gebet: false, lesen: true, schulung: true, studium: false, mikrofon: true, ton: true, ordner: false } },
+      { id: 9, fn: 'Niklas', ln: 'Feld', role: 'Verkündiger', tel: '+49 162 118 44 92', mail: 'n.feld@mail.de', priv: { vorsitz: false, vortrag: false, gebet: false, lesen: true, schulung: true, studium: false, mikrofon: true, ton: false, ordner: false } },
+      { id: 10, fn: 'Lena', ln: 'Hoffmann', role: 'Verkündigerin', tel: '+49 151 340 76 55', mail: 'l.hoffmann@mail.de', priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: true, studium: false, mikrofon: false, ton: false, ordner: false } },
+      { id: 11, fn: 'Elke', ln: 'Brandt', role: 'Verkündigerin', tel: '+49 173 662 09 18', mail: 'e.brandt@mail.de', priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: true, studium: false, mikrofon: false, ton: false, ordner: false } },
+      { id: 12, fn: 'Ulrich', ln: 'Lang', role: 'Verkündiger', tel: '+49 175 490 55 03', mail: 'u.lang@mail.de', priv: { vorsitz: false, vortrag: false, gebet: true, lesen: false, schulung: false, studium: false, mikrofon: false, ton: false, ordner: true } }
+    ]
+  };
+
+  PRIV_DEFS = [
+    ['vorsitz', 'Vorsitz'],
+    ['vortrag', 'Vorträge'],
+    ['gebet', 'Gebete'],
+    ['lesen', 'Bibellesung / Leser'],
+    ['schulung', 'Schulungsaufgaben'],
+    ['studium', 'Studium leiten'],
+    ['mikrofon', 'Mikrofone'],
+    ['ton', 'Ton / Video'],
+    ['ordner', 'Ordner / Eingang']
+  ];
+
+  C = {
+    neu: { c: '#756D5C', t: '#EDE8DD', h: 'rgba(110,100,80,0.16)' },
+    pet: { c: '#446F6B', t: '#E4EDEA', h: 'rgba(62,102,99,0.14)' },
+    gld: { c: '#96742C', t: '#F1E8D3', h: 'rgba(138,106,52,0.16)' },
+    wein: { c: '#8E4A44', t: '#F2E2DE', h: 'rgba(142,74,68,0.14)' }
+  };
+
+  sec(label, col, items) { return { label, color: col.c, tint: col.t, hair: col.h, items }; }
+  it(num, title, meta, names) { return { num, title, meta, names }; }
+  song(title) { return { song: true, title }; }
+
+  buildWeeks() {
+    const { neu, pet, gld, wein } = this.C;
+    const s = this.sec.bind(this), it = this.it.bind(this), sg = this.song.bind(this);
+    return [
+      {
+        range: '7.–13. September', book: 'Jeremia 32–33', current: true,
+        mid: {
+          date: 'Dienstag, 8. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['M. Albrecht', 'Vorsitz'], ['K. Sommer', 'Gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben', '10 Min.', [['T. Lindner', '']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['J. Berger', '']]),
+              it(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['N. Feld', '']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['L. Hoffmann', 'mit A. Hoffmann']]),
+              it(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['S. Krüger', 'mit M. Ernst']]),
+              it(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['E. Brandt', 'mit R. Brandt']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 128'),
+              it(7, 'Geh während der besonderen Aktion zielorientiert vor', 'Besprechung · 15 Min.', [['D. Winkler', '']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['F. Neumann', 'Leiter'], ['P. Schröder', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['H. Vogel', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'C. Maier' }, { l: 'MIKROFONE', v: 'J. Roth · B. Klein' },
+            { l: 'ORDNER / EINGANG', v: 'U. Lang · G. Peters' }, { l: 'REINIGUNG', v: 'Gruppe 2' }
+          ]
+        },
+        we: {
+          date: 'Sonntag, 13. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 138 · Gebet', null, [['A. Brenner', 'Vorsitz'], ['J. Winter', 'Gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Woran erkennt man echten Glauben?“', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 20'),
+              it(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['F. Neumann', 'Leiter'], ['P. Schröder', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'R. Simon' }, { l: 'MIKROFONE', v: 'T. Falk · D. Kern' },
+            { l: 'ORDNER / EINGANG', v: 'G. Peters · M. Otto' }, { l: 'REINIGUNG', v: 'Gruppe 3' }
+          ]
+        }
+      },
+      {
+        range: '14.–20. September', book: 'Jeremia 34–36', current: false,
+        mid: {
+          date: 'Dienstag, 15. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['F. Neumann', 'Vorsitz'], ['T. Lindner', 'Gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Was wir von den Rechabitern lernen', '10 Min.', [['H. Vogel', '']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['M. Albrecht', '']]),
+              it(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['P. Schröder', '']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', 'mit L. Hoffmann']]),
+              it(5, 'Interesse fördern', 'Informell · 4 Min.', [['R. Brandt', 'mit E. Brandt']]),
+              it(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['N. Feld', '']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 89'),
+              it(7, 'Aktuelles', '15 Min.', [['M. Albrecht', '']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 8', [['T. Lindner', 'Leiter'], ['J. Berger', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['K. Sommer', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'R. Simon' }, { l: 'MIKROFONE', v: 'B. Klein · J. Roth' },
+            { l: 'ORDNER / EINGANG', v: 'M. Otto · U. Lang' }, { l: 'REINIGUNG', v: 'Gruppe 1' }
+          ]
+        },
+        we: {
+          date: 'Sonntag, 20. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 12 · Gebet', null, [['H. Vogel', 'Vorsitz'], ['U. Lang', 'Gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Ein Name, der zählt“', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 49'),
+              it(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['M. Albrecht', 'Leiter'], ['J. Berger', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 106 · Gebet', null, [['G. Peters', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'C. Maier' }, { l: 'MIKROFONE', v: 'S. Krüger · N. Feld' },
+            { l: 'ORDNER / EINGANG', v: 'U. Lang · M. Otto' }, { l: 'REINIGUNG', v: 'Gruppe 1' }
+          ]
+        }
+      },
+      {
+        range: '21.–27. September', book: 'Jeremia 37–39', current: false,
+        mid: {
+          date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['M. Albrecht', 'Vorsitz'], ['F. Neumann', 'Gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Jehova belohnt Mut — das Beispiel Ebed-Melechs', '10 Min.', [['F. Neumann', '']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['T. Lindner', '']]),
+              it(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['S. Krüger', '']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['E. Brandt', 'mit R. Brandt']]),
+              it(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['L. Hoffmann', 'mit A. Hoffmann']]),
+              it(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['J. Berger', '']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 44'),
+              it(7, 'Baut einander auf', 'Besprechung · 15 Min.', [['H. Vogel', '']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 9', [['M. Albrecht', 'Leiter'], ['N. Feld', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['D. Winkler', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'C. Maier' }, { l: 'MIKROFONE', v: 'B. Klein · P. Schröder' },
+            { l: 'ORDNER / EINGANG', v: 'G. Peters · U. Lang' }, { l: 'REINIGUNG', v: 'Gruppe 3' }
+          ]
+        },
+        we: {
+          date: 'Sonntag, 27. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 25 · Gebet', null, [['F. Neumann', 'Vorsitz'], ['B. Klein', 'Gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Frieden in einer unruhigen Welt“', '30 Min.', [['K. Steiner', 'Gastredner · Vers. Westtal']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 61'),
+              it(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 60 Min.', [['H. Vogel', 'Leiter'], ['J. Berger', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'R. Simon' }, { l: 'MIKROFONE', v: 'T. Falk · D. Kern' },
+            { l: 'ORDNER / EINGANG', v: 'M. Otto · G. Peters' }, { l: 'REINIGUNG', v: 'Gruppe 2' }
+          ]
+        }
+      },
+      {
+        range: '28. Sep – 4. Okt', book: 'Jeremia 40–42', current: false,
+        mid: {
+          date: 'Dienstag, 29. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['T. Lindner', 'Vorsitz'], ['M. Albrecht', 'Gebet']])]),
+            s('SCHÄTZE AUS GOTTES WORT', pet, [
+              it(1, 'Auf Jehova hören — auch wenn es schwerfällt', '10 Min.', [['M. Albrecht', '']]),
+              it(2, 'Nach geistigen Schätzen graben', '10 Min.', [['H. Vogel', '']]),
+              it(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['J. Roth', '']])
+            ]),
+            s('UNS IM DIENST VERBESSERN', gld, [
+              it(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', 'mit E. Brandt']]),
+              it(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['K. Sommer', 'mit L. Hoffmann']]),
+              it(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['P. Schröder', '']])
+            ]),
+            s('UNSER LEBEN ALS CHRIST', wein, [
+              sg('Lied 65'),
+              it(7, 'Jehova sorgt für sein Volk', '15 Min.', [['F. Neumann', '']]),
+              it(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['H. Vogel', 'Leiter'], ['P. Schröder', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['C. Maier', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'R. Simon' }, { l: 'MIKROFONE', v: 'N. Feld · J. Roth' },
+            { l: 'ORDNER / EINGANG', v: 'M. Otto · U. Lang' }, { l: 'REINIGUNG', v: 'Gruppe 2' }
+          ]
+        },
+        we: {
+          date: 'Sonntag, 4. Oktober · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+          sections: [
+            s('ERÖFFNUNG', neu, [it(null, 'Lied 91 · Gebet', null, [['M. Albrecht', 'Vorsitz'], ['D. Kern', 'Gebet']])]),
+            s('ÖFFENTLICHER VORTRAG', pet, [it(null, '„Worauf gründet echte Hoffnung?“', '30 Min.', [['B. Hollmann', 'Gastredner · Vers. Osterfeld']])]),
+            s('WACHTTURM-STUDIUM', wein, [
+              sg('Lied 142'),
+              it(null, '„Bleibt wachsam“', 'Studienartikel 31 · 60 Min.', [['F. Neumann', 'Leiter'], ['N. Feld', 'Leser']])
+            ]),
+            s('ABSCHLUSS', neu, [it(null, 'Schlussworte · Lied 76 · Gebet', null, [['H. Vogel', 'Gebet']])])
+          ],
+          helpers: [
+            { l: 'TON / VIDEO', v: 'C. Maier' }, { l: 'MIKROFONE', v: 'S. Krüger · B. Klein' },
+            { l: 'ORDNER / EINGANG', v: 'G. Peters · U. Lang' }, { l: 'REINIGUNG', v: 'Gruppe 1' }
+          ]
+        }
+      }
+    ];
+  }
+
+  showToast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 2200);
+  }
+
+  updatePerson(id, patch) {
+    this.setState(st => ({ persons: st.persons.map(p => p.id === id ? { ...p, ...patch } : p) }));
+  }
+
+  fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const props = this.props;
+    this._weeks = this._weeks || this.buildWeeks();
+    const weeks = this._weeks;
+
+    const skipLogin = props.skipLogin ?? false;
+    const isKoordinator = (props.demoRolle ?? 'Koordinator') === 'Koordinator';
+    let screen = st.screen || (skipLogin ? 'programm' : 'login');
+    if (screen === 'personen' && !isKoordinator) screen = 'programm';
+
+    const isLogin = screen === 'login';
+    const isApp = !isLogin;
+    const screenProgramm = screen === 'programm';
+    const screenAufgaben = screen === 'aufgaben';
+    const screenPersonenList = screen === 'personen' && !st.selectedPersonId;
+    const screenPersonDetail = screen === 'personen' && !!st.selectedPersonId;
+
+    // --- Programm ---
+    const week = weeks[st.week];
+    const meeting = st.tab === 'mid' ? week.mid : week.we;
+    const sections = meeting.sections.map(sec => ({
+      label: sec.label, color: sec.color, tint: sec.tint,
+      items: sec.items.map((raw, idx) => {
+        if (raw.song) return { song: true, notSong: false, title: raw.title };
+        const last = idx === sec.items.length - 1;
+        return {
+          song: false, notSong: true,
+          title: raw.title,
+          hasNum: raw.num != null, num: raw.num,
+          hasMeta: !!raw.meta, meta: raw.meta || '',
+          cols: raw.num != null ? '20px 1fr auto' : '1fr auto',
+          hair: last ? 'transparent' : sec.hair,
+          names: (raw.names || []).map(([n, role], i) => ({
+            n, role, hasRole: !!role,
+            mine: n === 'S. Krüger',
+            mt: i === 0 ? '0' : '5px'
+          }))
+        };
+      })
+    }));
+
+    const bronze = '#8A6A34', muted = '#9A9284', ink = '#211C14';
+    const unread = st.notifs.filter(n => n.unread).length;
+
+    // --- Personen ---
+    const q = st.search.trim().toLowerCase();
+    const personsFiltered = st.persons
+      .filter(p => !q || (p.fn + ' ' + p.ln).toLowerCase().includes(q))
+      .map(p => ({
+        i: ((p.fn[0] || '') + (p.ln[0] || '')).toUpperCase() || '–',
+        name: (p.fn + ' ' + p.ln).trim() || 'Neue Person',
+        sub: p.role + ' · ' + Object.values(p.priv).filter(Boolean).length + ' Aufgabenbereiche',
+        open: () => this.setState({ selectedPersonId: p.id })
+      }));
+
+    const sel = st.persons.find(p => p.id === st.selectedPersonId);
+    let detailFields = [], privs = [], roleChips = [], detailName = '', detailInitials = '', detailSub = '';
+    if (sel) {
+      detailName = (sel.fn + ' ' + sel.ln).trim() || 'Neue Person';
+      detailInitials = ((sel.fn[0] || '') + (sel.ln[0] || '')).toUpperCase() || '–';
+      detailSub = sel.role + ' · Versammlung Musterstadt';
+      detailFields = [['fn', 'VORNAME'], ['ln', 'NACHNAME'], ['tel', 'TELEFON'], ['mail', 'E-MAIL']].map(([k, label]) => ({
+        label, value: sel[k] || '',
+        onChange: (e) => this.updatePerson(sel.id, { [k]: e.target.value })
+      }));
+      roleChips = ['Ältester', 'Dienstamtgehilfe', 'Verkündiger'].map(r => {
+        const active = sel.role === r || (r === 'Verkündiger' && sel.role === 'Verkündigerin');
+        return {
+          label: r,
+          bg: active ? bronze : 'transparent',
+          color: active ? '#F7F4ED' : '#756D5C',
+          border: active ? bronze : '#D8D1C0',
+          set: () => this.updatePerson(sel.id, { role: r })
+        };
+      });
+      privs = this.PRIV_DEFS.map(([k, label]) => {
+        const on = !!sel.priv[k];
+        return {
+          label,
+          bg: on ? '#446F6B' : '#D8D1C0',
+          knob: on ? '20px' : '2px',
+          toggle: () => this.updatePerson(sel.id, { priv: { ...sel.priv, [k]: !on } })
+        };
+      });
+    }
+
+    // --- Meine Aufgaben ---
+    const myAssignments = [
+      { t: 'Gespräche beginnen (informell)', d: 'Di, 8. September · ca. 19:35', chip: 'in 4 Tagen', hair: 'rgba(138,106,52,0.16)' },
+      { t: 'Mikrofone', d: 'So, 20. September · 10:00', chip: 'in 16 Tagen', hair: 'rgba(138,106,52,0.16)' },
+      { t: 'Bibellesung · Jer 38:1-13', d: 'Di, 22. September · 19:00', chip: '', hair: 'transparent' }
+    ].map(a => ({ ...a, hasChip: !!a.chip }));
+
+    const absences = st.absences.map(ab => ({
+      range: this.fmtDate(ab.from) + ' – ' + this.fmtDate(ab.to),
+      reason: ab.reason || 'Ohne Angabe',
+      remove: () => {
+        this.setState(s2 => ({ absences: s2.absences.filter(x => x.id !== ab.id) }));
+        this.showToast('Abwesenheit entfernt');
+      }
+    }));
+
+    // --- Nav ---
+    const navDefs = [
+      ['programm', 'Programm'],
+      ['aufgaben', 'Meine Aufgaben']
+    ];
+    if (isKoordinator) navDefs.push(['personen', 'Personen']);
+    const navItems = navDefs.map(([key, label]) => {
+      const active = screen === key;
+      return {
+        label,
+        color: active ? ink : muted,
+        weight: active ? '600' : '500',
+        dot: active ? bronze : 'transparent',
+        go: () => this.setState({ screen: key, selectedPersonId: null, notifOpen: false })
+      };
+    });
+
+    return {
+      isLogin, isApp, screenProgramm, screenAufgaben, screenPersonenList, screenPersonDetail,
+      doLogin: () => { this.setState({ screen: 'programm' }); this.showToast('Willkommen, Simon!'); },
+      doLogout: () => this.setState({ screen: 'login', notifOpen: false, selectedPersonId: null }),
+
+      weekRange: week.range, weekBook: week.book,
+      isCurrentWeek: !!week.current,
+      meetDate: meeting.date, meetEnd: meeting.end,
+      prevWeek: () => st.week > 0 && this.setState({ week: st.week - 1 }),
+      nextWeek: () => st.week < weeks.length - 1 && this.setState({ week: st.week + 1 }),
+      prevOp: st.week === 0 ? '0.35' : '1',
+      nextOp: st.week === weeks.length - 1 ? '0.35' : '1',
+      setTabMid: () => this.setState({ tab: 'mid' }),
+      setTabWe: () => this.setState({ tab: 'we' }),
+      tabMidBorder: st.tab === 'mid' ? bronze : 'transparent',
+      tabMidColor: st.tab === 'mid' ? ink : muted,
+      tabWeBorder: st.tab === 'we' ? bronze : 'transparent',
+      tabWeColor: st.tab === 'we' ? ink : muted,
+      sections, helpers: meeting.helpers,
+
+      chipLabel: unread > 0 ? unread + ' neu' : 'Mitteilungen',
+      chipBg: unread > 0 ? '#F1E8D3' : 'transparent',
+      chipColor: unread > 0 ? bronze : '#756D5C',
+      chipBorder: unread > 0 ? 'transparent' : '#E0D9C8',
+      openNotifs: () => this.setState({ notifOpen: true }),
+      closeNotifs: () => this.setState({ notifOpen: false }),
+      notifOpen: st.notifOpen,
+      notifs: st.notifs.map(n => ({ ...n, dot: n.unread ? bronze : 'transparent' })),
+      markAllRead: () => this.setState({ notifs: st.notifs.map(n => ({ ...n, unread: false })) }),
+
+      myAssignments, absences,
+      myRole: isKoordinator ? 'Koordinator (Demo)' : 'Verkündiger (Demo)',
+      absFrom: st.absFrom, absTo: st.absTo, absReason: st.absReason,
+      onAbsFrom: (e) => this.setState({ absFrom: e.target.value }),
+      onAbsTo: (e) => this.setState({ absTo: e.target.value }),
+      onAbsReason: (e) => this.setState({ absReason: e.target.value }),
+      addAbsence: () => {
+        if (!st.absFrom || !st.absTo) { this.showToast('Bitte Von und Bis angeben'); return; }
+        this.setState(s2 => ({
+          absences: [...s2.absences, { id: Date.now(), from: s2.absFrom, to: s2.absTo, reason: s2.absReason }],
+          absFrom: '', absTo: '', absReason: ''
+        }));
+        this.showToast('Abwesenheit eingetragen');
+      },
+
+      goAufgaben: () => this.setState({ screen: 'aufgaben', notifOpen: false }),
+      personCount: st.persons.length,
+      search: st.search,
+      onSearch: (e) => this.setState({ search: e.target.value }),
+      personsFiltered,
+      addPerson: () => {
+        const id = Date.now();
+        this.setState(s2 => ({
+          persons: [...s2.persons, { id, fn: '', ln: '', role: 'Verkündiger', tel: '', mail: '', priv: { vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: false, studium: false, mikrofon: false, ton: false, ordner: false } }],
+          selectedPersonId: id
+        }));
+        this.showToast('Neue Person angelegt');
+      },
+      backToList: () => this.setState({ selectedPersonId: null }),
+      detailName, detailInitials, detailSub, detailFields, roleChips, privs,
+      saveDetail: () => { this.setState({ selectedPersonId: null }); this.showToast('Gespeichert'); },
+
+      navItems,
+      hasToast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=Instrument+Sans:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EFECE6;font-family:system-ui,sans-serif}
+a{color:#2F4C8F;text-decoration:none}
+a:hover{color:#233A6E;text-decoration:underline}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-tsub{font:400 12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.55);margin:0 0 24px;max-width:640px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-oid:hover{text-decoration:none;color:#1a1a1a}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.4 system-ui,sans-serif;color:rgba(0,0,0,.6);max-width:820px}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:26px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.dv-cap{font:500 11px/1.4 system-ui,sans-serif;color:rgba(0,0,0,.45);text-align:center;margin-top:10px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Riffs auf <a class="dv-oid" href="#1a">1a</a> — Bereiche farblich unterschieden</span></div>
+  <p class="dv-tsub">Gleiche Elfenbein-Basis wie <a class="dv-oid" href="#1a">1a</a>. Die Bereichsfarben folgen der vertrauten Arbeitsheft-Logik: Petrol für „Schätze“, Gold für „Dienst“, Weinrot für „Leben als Christ“, Neutral für Eröffnung/Abschluss und Hilfsdienste — in drei Dosierungen.</p>
+  <div class="dv-opts">
+
+    <!-- ================= OPTION 2A : GETÖNTE FLÄCHEN ================= -->
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a><span><strong>Getönte Flächen</strong> — jeder Bereich als zart getönte Fläche, Labels und Nummern in der Bereichsfarbe.</span></div>
+      <div>
+        <div data-screen-label="2a Unter der Woche" style="width:390px;box-sizing:border-box;background:#F7F4ED;border:1px solid rgba(60,50,30,0.10);border-radius:30px;box-shadow:0 24px 48px rgba(30,25,15,0.12),0 2px 8px rgba(30,25,15,0.06);padding:26px 24px 28px;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#211C14;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:#8A6A34;">JW CONGREGATION PLANNER</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#8A6A34;"></div>
+              <div style="width:26px;height:26px;border-radius:50%;background:#211C14;color:#F7F4ED;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;">
+            <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">‹</div>
+            <div style="text-align:center;">
+              <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;">7.–13. September</div>
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:#756D5C;margin-top:3px;">Jeremia 32–33</div>
+            </div>
+            <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">›</div>
+          </div>
+          <div style="display:flex;gap:22px;margin-top:20px;border-bottom:1px solid #E6DFCE;">
+            <div style="padding:8px 2px;border-bottom:2px solid #8A6A34;font-size:12.5px;font-weight:600;">Unter der Woche</div>
+            <div style="padding:8px 2px;border-bottom:2px solid transparent;font-size:12.5px;font-weight:500;color:#9A9284;">Wochenende</div>
+          </div>
+          <div style="margin-top:14px;font-size:12px;color:#756D5C;">Dienstag, 8. September · 19:00 · Königreichssaal</div>
+
+          <div style="background:#EDE8DD;border-radius:16px;padding:6px 14px 4px;margin-top:14px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;">ERÖFFNUNG</div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0 14px;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Lied 1 · Gebet · Einleitende Worte</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">1 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">M. Albrecht</div>
+                <div style="font-size:11px;color:#756D5C;">Vorsitz</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">K. Sommer</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#E4EDEA;border-radius:16px;padding:6px 14px 4px;margin-top:12px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#446F6B;">SCHÄTZE AUS GOTTES WORT</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid rgba(62,102,99,0.14);align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#446F6B;">1.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">T. Lindner</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid rgba(62,102,99,0.14);align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#446F6B;">2.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Nach geistigen Schätzen graben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">J. Berger</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0 14px;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#446F6B;">3.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Bibellesung · Jer 32:6-18</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">4 Min. · th Lektion 2</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">N. Feld</div>
+            </div>
+          </div>
+
+          <div style="background:#F1E8D3;border-radius:16px;padding:6px 14px 4px;margin-top:12px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#96742C;">UNS IM DIENST VERBESSERN</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid rgba(138,106,52,0.16);align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#96742C;">4.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 3 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">L. Hoffmann</div>
+                <div style="font-size:11px;color:#756D5C;">mit A. Hoffmann</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid rgba(138,106,52,0.16);align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#96742C;">5.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Informell · 4 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">S. Krüger</div>
+                <div style="font-size:11px;color:#756D5C;">mit M. Ernst</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0 14px;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#96742C;">6.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Interesse fördern</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 5 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">E. Brandt</div>
+                <div style="font-size:11px;color:#756D5C;">mit R. Brandt</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#F2E2DE;border-radius:16px;padding:6px 14px 4px;margin-top:12px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8E4A44;">UNSER LEBEN ALS CHRIST</div>
+            <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:#756D5C;padding:8px 0 0;">Lied 128</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid rgba(142,74,68,0.14);align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8E4A44;">7.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Geh während der besonderen Aktion zielorientiert vor</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Besprechung · 15 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">D. Winkler</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0 14px;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8E4A44;">8.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Versammlungsbibelstudium</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">30 Min. · wcg Kap. 7</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">F. Neumann</div>
+                <div style="font-size:11px;color:#756D5C;">Leiter</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">P. Schröder</div>
+                <div style="font-size:11px;color:#756D5C;">Leser</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 14px 12px;">
+            <div>
+              <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Schlussworte · Lied 143 · Gebet</div>
+              <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">3 Min.</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12.5px;font-weight:600;">H. Vogel</div>
+              <div style="font-size:11px;color:#756D5C;">Gebet</div>
+            </div>
+          </div>
+
+          <div style="background:#ECE7DC;border-radius:16px;padding:6px 14px 16px;margin-top:2px;">
+            <div style="padding:8px 0 2px;font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;">HILFSDIENSTE</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:8px;">
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">TON / VIDEO</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">C. Maier</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">MIKROFONE</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">J. Roth · B. Klein</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">ORDNER / EINGANG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">U. Lang · G. Peters</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">REINIGUNG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">Gruppe 2</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;justify-content:space-between;font-size:11px;color:#756D5C;">
+            <span>Ende ca. 20:45</span>
+            <span>Stand: 11. Juli</span>
+          </div>
+        </div>
+        <div class="dv-cap">Unter der Woche · Di 8. Sep</div>
+      </div>
+    </div>
+
+    <!-- ================= OPTION 2B : FARBIGE KANTE ================= -->
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a><span><strong>Farbige Kante</strong> — Elfenbein bleibt durchgehend; nur eine feine Kapitelkante, Labels und Nummern tragen die Bereichsfarbe. Am dezentesten.</span></div>
+      <div>
+        <div data-screen-label="2b Unter der Woche" style="width:390px;box-sizing:border-box;background:#F7F4ED;border:1px solid rgba(60,50,30,0.10);border-radius:30px;box-shadow:0 24px 48px rgba(30,25,15,0.12),0 2px 8px rgba(30,25,15,0.06);padding:26px 24px 28px;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#211C14;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:#8A6A34;">JW CONGREGATION PLANNER</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#8A6A34;"></div>
+              <div style="width:26px;height:26px;border-radius:50%;background:#211C14;color:#F7F4ED;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;">
+            <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">‹</div>
+            <div style="text-align:center;">
+              <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;">7.–13. September</div>
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:#756D5C;margin-top:3px;">Jeremia 32–33</div>
+            </div>
+            <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">›</div>
+          </div>
+          <div style="display:flex;gap:22px;margin-top:20px;border-bottom:1px solid #E6DFCE;">
+            <div style="padding:8px 2px;border-bottom:2px solid #8A6A34;font-size:12.5px;font-weight:600;">Unter der Woche</div>
+            <div style="padding:8px 2px;border-bottom:2px solid transparent;font-size:12.5px;font-weight:500;color:#9A9284;">Wochenende</div>
+          </div>
+          <div style="margin-top:14px;font-size:12px;color:#756D5C;">Dienstag, 8. September · 19:00 · Königreichssaal</div>
+
+          <div style="border-left:2px solid #B9AE96;padding-left:14px;margin-top:16px;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;padding-top:2px;">ERÖFFNUNG</div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0 14px;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Lied 1 · Gebet · Einleitende Worte</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">1 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">M. Albrecht</div>
+                <div style="font-size:11px;color:#756D5C;">Vorsitz</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">K. Sommer</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-left:2px solid #446F6B;padding-left:14px;margin-top:14px;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#446F6B;padding-top:2px;">SCHÄTZE AUS GOTTES WORT</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#446F6B;">1.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">T. Lindner</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#446F6B;">2.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Nach geistigen Schätzen graben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">J. Berger</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0 14px;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#446F6B;">3.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Bibellesung · Jer 32:6-18</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">4 Min. · th Lektion 2</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">N. Feld</div>
+            </div>
+          </div>
+
+          <div style="border-left:2px solid #96742C;padding-left:14px;margin-top:14px;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#96742C;padding-top:2px;">UNS IM DIENST VERBESSERN</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#96742C;">4.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 3 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">L. Hoffmann</div>
+                <div style="font-size:11px;color:#756D5C;">mit A. Hoffmann</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#96742C;">5.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Informell · 4 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">S. Krüger</div>
+                <div style="font-size:11px;color:#756D5C;">mit M. Ernst</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0 14px;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#96742C;">6.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Interesse fördern</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 5 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">E. Brandt</div>
+                <div style="font-size:11px;color:#756D5C;">mit R. Brandt</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-left:2px solid #8E4A44;padding-left:14px;margin-top:14px;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8E4A44;padding-top:2px;">UNSER LEBEN ALS CHRIST</div>
+            <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:#756D5C;padding:10px 0 0;">Lied 128</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8E4A44;">7.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Geh während der besonderen Aktion zielorientiert vor</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Besprechung · 15 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">D. Winkler</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8E4A44;">8.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Versammlungsbibelstudium</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">30 Min. · wcg Kap. 7</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">F. Neumann</div>
+                <div style="font-size:11px;color:#756D5C;">Leiter</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">P. Schröder</div>
+                <div style="font-size:11px;color:#756D5C;">Leser</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0 14px;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Schlussworte · Lied 143 · Gebet</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">3 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">H. Vogel</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-left:2px solid #B9AE96;padding-left:14px;margin-top:14px;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#756D5C;padding-top:2px;">HILFSDIENSTE</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:12px;padding-bottom:4px;">
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">TON / VIDEO</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">C. Maier</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">MIKROFONE</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">J. Roth · B. Klein</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">ORDNER / EINGANG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">U. Lang · G. Peters</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">REINIGUNG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">Gruppe 2</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:18px;padding-top:12px;border-top:1px solid #E6DFCE;display:flex;justify-content:space-between;font-size:11px;color:#756D5C;">
+            <span>Ende ca. 20:45</span>
+            <span>Stand: 11. Juli</span>
+          </div>
+        </div>
+        <div class="dv-cap">Unter der Woche · Di 8. Sep</div>
+      </div>
+    </div>
+
+    <!-- ================= OPTION 2C : KAPITELBÄNDER ================= -->
+    <div class="dv-opt" id="2c">
+      <div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a><span><strong>Kapitelbänder</strong> — kräftige Titelbänder wie im gedruckten Arbeitsheft; die Fläche dazwischen bleibt ruhiges Elfenbein.</span></div>
+      <div>
+        <div data-screen-label="2c Unter der Woche" style="width:390px;box-sizing:border-box;background:#F7F4ED;border:1px solid rgba(60,50,30,0.10);border-radius:30px;box-shadow:0 24px 48px rgba(30,25,15,0.12),0 2px 8px rgba(30,25,15,0.06);padding:26px 24px 28px;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#211C14;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:#8A6A34;">JW CONGREGATION PLANNER</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#8A6A34;"></div>
+              <div style="width:26px;height:26px;border-radius:50%;background:#211C14;color:#F7F4ED;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;">
+            <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">‹</div>
+            <div style="text-align:center;">
+              <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;">7.–13. September</div>
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:#756D5C;margin-top:3px;">Jeremia 32–33</div>
+            </div>
+            <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">›</div>
+          </div>
+          <div style="display:flex;gap:22px;margin-top:20px;border-bottom:1px solid #E6DFCE;">
+            <div style="padding:8px 2px;border-bottom:2px solid #8A6A34;font-size:12.5px;font-weight:600;">Unter der Woche</div>
+            <div style="padding:8px 2px;border-bottom:2px solid transparent;font-size:12.5px;font-weight:500;color:#9A9284;">Wochenende</div>
+          </div>
+          <div style="margin-top:14px;font-size:12px;color:#756D5C;">Dienstag, 8. September · 19:00 · Königreichssaal</div>
+
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 2px;">
+            <div>
+              <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Lied 1 · Gebet · Einleitende Worte</div>
+              <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">1 Min.</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12.5px;font-weight:600;">M. Albrecht</div>
+              <div style="font-size:11px;color:#756D5C;">Vorsitz</div>
+              <div style="font-size:12.5px;font-weight:600;margin-top:5px;">K. Sommer</div>
+              <div style="font-size:11px;color:#756D5C;">Gebet</div>
+            </div>
+          </div>
+
+          <div style="background:#3E6663;color:#F3EFE4;border-radius:9px;padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:0.16em;margin-top:6px;">SCHÄTZE AUS GOTTES WORT</div>
+          <div style="padding:0 2px;">
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#3E6663;">1.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">T. Lindner</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#3E6663;">2.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Nach geistigen Schätzen graben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">J. Berger</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#3E6663;">3.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Bibellesung · Jer 32:6-18</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">4 Min. · th Lektion 2</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">N. Feld</div>
+            </div>
+          </div>
+
+          <div style="background:#8A6A34;color:#F3EFE4;border-radius:9px;padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:0.16em;margin-top:6px;">UNS IM DIENST VERBESSERN</div>
+          <div style="padding:0 2px;">
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">4.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 3 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">L. Hoffmann</div>
+                <div style="font-size:11px;color:#756D5C;">mit A. Hoffmann</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">5.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Informell · 4 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">S. Krüger</div>
+                <div style="font-size:11px;color:#756D5C;">mit M. Ernst</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">6.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Interesse fördern</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 5 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">E. Brandt</div>
+                <div style="font-size:11px;color:#756D5C;">mit R. Brandt</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#84443E;color:#F3EFE4;border-radius:9px;padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:0.16em;margin-top:6px;">UNSER LEBEN ALS CHRIST</div>
+          <div style="padding:0 2px;">
+            <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:#756D5C;padding:10px 0 0;">Lied 128</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#84443E;">7.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Geh während der besonderen Aktion zielorientiert vor</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Besprechung · 15 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">D. Winkler</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#84443E;">8.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Versammlungsbibelstudium</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">30 Min. · wcg Kap. 7</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">F. Neumann</div>
+                <div style="font-size:11px;color:#756D5C;">Leiter</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">P. Schröder</div>
+                <div style="font-size:11px;color:#756D5C;">Leser</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0 14px;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Schlussworte · Lied 143 · Gebet</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">3 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">H. Vogel</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#6E6657;color:#F3EFE4;border-radius:9px;padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:0.16em;margin-top:6px;">HILFSDIENSTE</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:14px;padding:0 2px;">
+            <div>
+              <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">TON / VIDEO</div>
+              <div style="font-size:12.5px;font-weight:600;margin-top:3px;">C. Maier</div>
+            </div>
+            <div>
+              <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">MIKROFONE</div>
+              <div style="font-size:12.5px;font-weight:600;margin-top:3px;">J. Roth · B. Klein</div>
+            </div>
+            <div>
+              <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">ORDNER / EINGANG</div>
+              <div style="font-size:12.5px;font-weight:600;margin-top:3px;">U. Lang · G. Peters</div>
+            </div>
+            <div>
+              <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">REINIGUNG</div>
+              <div style="font-size:12.5px;font-weight:600;margin-top:3px;">Gruppe 2</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;padding-top:12px;border-top:1px solid #E6DFCE;display:flex;justify-content:space-between;font-size:11px;color:#756D5C;">
+            <span>Ende ca. 20:45</span>
+            <span>Stand: 11. Juli</span>
+          </div>
+        </div>
+        <div class="dv-cap">Unter der Woche · Di 8. Sep</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Als Nächstes z. B.: „<a class="dv-oid" href="#2a">2a</a> mit den Bändern aus <a class="dv-oid" href="#2c">2c</a>“ · „Farben kräftiger / noch dezenter“ · „gewählte Richtung als klickbaren Prototyp bauen“</p>
+</section>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Wochenplan (mobil) — drei edle Richtungen</span></div>
+  <p class="dv-tsub">Gleicher Inhalt (Programm 7.–13. September 2026, Jeremia 32–33), drei Stimmungen. Jede Richtung zeigt die Zusammenkunft unter der Woche und am Wochenende, inkl. Hilfsdienste.</p>
+  <div class="dv-opts">
+
+    <!-- ================= OPTION 1A : PROGRAMMHEFT ================= -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a><span><strong>Programmheft</strong> — warmes Elfenbein, Serifen, Bronze. Ruhig und wertig wie ein fein gesetztes gedrucktes Programm.</span></div>
+      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">
+
+        <!-- 1a Woche -->
+        <div>
+          <div data-screen-label="1a Unter der Woche" style="width:390px;box-sizing:border-box;background:#F7F4ED;border:1px solid rgba(60,50,30,0.10);border-radius:30px;box-shadow:0 24px 48px rgba(30,25,15,0.12),0 2px 8px rgba(30,25,15,0.06);padding:26px 24px 28px;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#211C14;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:#8A6A34;">JW CONGREGATION PLANNER</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:#8A6A34;"></div>
+                <div style="width:26px;height:26px;border-radius:50%;background:#211C14;color:#F7F4ED;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;">
+              <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">‹</div>
+              <div style="text-align:center;">
+                <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;">7.–13. September</div>
+                <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:#756D5C;margin-top:3px;">Jeremia 32–33</div>
+              </div>
+              <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">›</div>
+            </div>
+            <div style="display:flex;gap:22px;margin-top:20px;border-bottom:1px solid #E6DFCE;">
+              <div style="padding:8px 2px;border-bottom:2px solid #8A6A34;font-size:12.5px;font-weight:600;">Unter der Woche</div>
+              <div style="padding:8px 2px;border-bottom:2px solid transparent;font-size:12.5px;font-weight:500;color:#9A9284;">Wochenende</div>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:#756D5C;">Dienstag, 8. September · 19:00 · Königreichssaal</div>
+
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #EFE9DA;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Lied 1 · Gebet · Einleitende Worte</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">1 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">M. Albrecht</div>
+                <div style="font-size:11px;color:#756D5C;">Vorsitz</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">K. Sommer</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:18px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8A6A34;">SCHÄTZE AUS GOTTES WORT</div>
+              <div style="flex:1;height:1px;background:#E6DFCE;"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">1.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">T. Lindner</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">2.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Nach geistigen Schätzen graben</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">10 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">J. Berger</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">3.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Bibellesung · Jer 32:6-18</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">4 Min. · th Lektion 2</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">N. Feld</div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:18px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8A6A34;">UNS IM DIENST VERBESSERN</div>
+              <div style="flex:1;height:1px;background:#E6DFCE;"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">4.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 3 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">L. Hoffmann</div>
+                <div style="font-size:11px;color:#756D5C;">mit A. Hoffmann</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">5.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Informell · 4 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">S. Krüger</div>
+                <div style="font-size:11px;color:#756D5C;">mit M. Ernst</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">6.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Interesse fördern</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Von Haus zu Haus · 5 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">E. Brandt</div>
+                <div style="font-size:11px;color:#756D5C;">mit R. Brandt</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:18px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8A6A34;">UNSER LEBEN ALS CHRIST</div>
+              <div style="flex:1;height:1px;background:#E6DFCE;"></div>
+            </div>
+            <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:#756D5C;padding:10px 0 2px;">Lied 128</div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">7.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Geh während der besonderen Aktion zielorientiert vor</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Besprechung · 15 Min.</div>
+              </div>
+              <div style="text-align:right;font-size:12.5px;font-weight:600;">D. Winkler</div>
+            </div>
+            <div style="display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid #EFE9DA;align-items:baseline;">
+              <div style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:14px;color:#8A6A34;">8.</div>
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;line-height:1.35;">Versammlungsbibelstudium</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">30 Min. · wcg Kap. 7</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">F. Neumann</div>
+                <div style="font-size:11px;color:#756D5C;">Leiter</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">P. Schröder</div>
+                <div style="font-size:11px;color:#756D5C;">Leser</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 0;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Schlussworte · Lied 143 · Gebet</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">3 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">H. Vogel</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8A6A34;">HILFSDIENSTE</div>
+              <div style="flex:1;height:1px;background:#E6DFCE;"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:12px;">
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">TON / VIDEO</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">C. Maier</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">MIKROFONE</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">J. Roth · B. Klein</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">ORDNER / EINGANG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">U. Lang · G. Peters</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">REINIGUNG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">Gruppe 2</div>
+              </div>
+            </div>
+            <div style="margin-top:20px;padding-top:12px;border-top:1px solid #E6DFCE;display:flex;justify-content:space-between;font-size:11px;color:#756D5C;">
+              <span>Ende ca. 20:45</span>
+              <span>Stand: 11. Juli</span>
+            </div>
+          </div>
+          <div class="dv-cap">Unter der Woche · Di 8. Sep</div>
+        </div>
+
+        <!-- 1a Wochenende -->
+        <div>
+          <div data-screen-label="1a Wochenende" style="width:390px;box-sizing:border-box;background:#F7F4ED;border:1px solid rgba(60,50,30,0.10);border-radius:30px;box-shadow:0 24px 48px rgba(30,25,15,0.12),0 2px 8px rgba(30,25,15,0.06);padding:26px 24px 28px;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#211C14;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:#8A6A34;">JW CONGREGATION PLANNER</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:#8A6A34;"></div>
+                <div style="width:26px;height:26px;border-radius:50%;background:#211C14;color:#F7F4ED;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;">
+              <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">‹</div>
+              <div style="text-align:center;">
+                <div style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;">7.–13. September</div>
+                <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;color:#756D5C;margin-top:3px;">Jeremia 32–33</div>
+              </div>
+              <div style="width:28px;height:28px;border-radius:50%;border:1px solid #E0D9C8;display:flex;align-items:center;justify-content:center;color:#756D5C;font-size:14px;">›</div>
+            </div>
+            <div style="display:flex;gap:22px;margin-top:20px;border-bottom:1px solid #E6DFCE;">
+              <div style="padding:8px 2px;border-bottom:2px solid transparent;font-size:12.5px;font-weight:500;color:#9A9284;">Unter der Woche</div>
+              <div style="padding:8px 2px;border-bottom:2px solid #8A6A34;font-size:12.5px;font-weight:600;">Wochenende</div>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:#756D5C;">Sonntag, 13. September · 10:00 · Königreichssaal</div>
+
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #EFE9DA;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Lied 138 · Gebet</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:3px;">Eröffnung</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">A. Brenner</div>
+                <div style="font-size:11px;color:#756D5C;">Vorsitz</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">J. Winter</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:18px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8A6A34;">ÖFFENTLICHER VORTRAG</div>
+              <div style="flex:1;height:1px;background:#E6DFCE;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #EFE9DA;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:16px;font-weight:500;line-height:1.35;">„Woran erkennt man echten Glauben?“</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:4px;">30 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">M. Hartmann</div>
+                <div style="font-size:11px;color:#756D5C;">Gastredner</div>
+                <div style="font-size:11px;color:#756D5C;">Vers. Nordheim</div>
+              </div>
+            </div>
+            <div style="text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:13px;color:#756D5C;padding:12px 0 2px;">Lied 20</div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8A6A34;">WACHTTURM-STUDIUM</div>
+              <div style="flex:1;height:1px;background:#E6DFCE;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #EFE9DA;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:16px;font-weight:500;line-height:1.35;">„Dient Jehova mit Freude“</div>
+                <div style="font-size:11.5px;color:#756D5C;margin-top:4px;">Studienartikel 28 · 60 Min.</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">F. Neumann</div>
+                <div style="font-size:11px;color:#756D5C;">Leiter</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:5px;">P. Schröder</div>
+                <div style="font-size:11px;color:#756D5C;">Leser</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:14px 0;">
+              <div>
+                <div style="font-family:'Newsreader',serif;font-size:15px;font-weight:500;">Schlussworte · Lied 76 · Gebet</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12.5px;font-weight:600;">W. Adam</div>
+                <div style="font-size:11px;color:#756D5C;">Gebet</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;color:#8A6A34;">HILFSDIENSTE</div>
+              <div style="flex:1;height:1px;background:#E6DFCE;"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:12px;">
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">TON / VIDEO</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">R. Simon</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">MIKROFONE</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">T. Falk · D. Kern</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">ORDNER / EINGANG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">G. Peters · M. Otto</div>
+              </div>
+              <div>
+                <div style="font-size:9.5px;letter-spacing:0.14em;color:#756D5C;">REINIGUNG</div>
+                <div style="font-size:12.5px;font-weight:600;margin-top:3px;">Gruppe 3</div>
+              </div>
+            </div>
+            <div style="margin-top:20px;padding-top:12px;border-top:1px solid #E6DFCE;display:flex;justify-content:space-between;font-size:11px;color:#756D5C;">
+              <span>Ende ca. 11:45</span>
+              <span>Stand: 11. Juli</span>
+            </div>
+          </div>
+          <div class="dv-cap">Wochenende · So 13. Sep</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= OPTION 1B : MITTERNACHT ================= -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a><span><strong>Mitternacht</strong> — dunkles Blauschwarz mit Goldakzent, Ablauf als Zeitleiste mit echten Uhrzeiten. Gediegen, konzentriert.</span></div>
+      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">
+
+        <!-- 1b Woche -->
+        <div>
+          <div data-screen-label="1b Unter der Woche" style="width:390px;box-sizing:border-box;background:#14161D;border:1px solid rgba(255,255,255,0.06);border-radius:30px;box-shadow:0 28px 56px rgba(10,12,20,0.35),0 2px 8px rgba(10,12,20,0.3);padding:26px 24px 28px;font-family:'Instrument Sans',system-ui,sans-serif;color:#ECEDF1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:9.5px;font-weight:600;letter-spacing:0.22em;color:#C9A86A;">CONGREGATION PLANNER</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:#C9A86A;"></div>
+                <div style="width:26px;height:26px;border-radius:50%;border:1px solid #3A3F4C;color:#ECEDF1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+              </div>
+            </div>
+            <div style="margin-top:22px;">
+              <div style="font-family:'Source Serif 4',serif;font-size:25px;font-weight:400;line-height:1.1;">7.–13. September</div>
+              <div style="font-family:'Source Serif 4',serif;font-style:italic;font-size:14px;color:#9BA0AD;margin-top:4px;">Jeremia 32–33</div>
+            </div>
+            <div style="display:flex;background:#1D2029;border-radius:999px;padding:3px;margin-top:18px;">
+              <div style="flex:1;text-align:center;padding:7px 0;border-radius:999px;background:#2C3040;font-size:12px;font-weight:600;color:#F0F1F5;">Unter der Woche</div>
+              <div style="flex:1;text-align:center;padding:7px 0;border-radius:999px;font-size:12px;font-weight:500;color:#8B909E;">Wochenende</div>
+            </div>
+            <div style="margin-top:16px;margin-bottom:18px;font-size:11.5px;letter-spacing:0.06em;color:#8B909E;">DIENSTAG, 8. SEPTEMBER · KÖNIGREICHSSAAL</div>
+
+            <div style="display:grid;grid-template-columns:46px 1fr;">
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:00</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-4.5px;top:4px;width:8px;height:8px;border-radius:50%;background:#C9A86A;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Lied 1 · Gebet · Einleitende Worte</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">M. Albrecht</span> Vorsitz · <span style="color:#E4E6EB;font-weight:600;">K. Sommer</span> Gebet</div>
+              </div>
+
+              <div></div>
+              <div style="border-left:1px solid #2A2E3A;padding:0 0 14px 18px;">
+                <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;color:#C9A86A;">SCHÄTZE AUS GOTTES WORT</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:05</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">10 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">T. Lindner</span></div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:15</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Nach geistigen Schätzen graben</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">10 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">J. Berger</span></div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:25</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Bibellesung · Jer 32:6-18</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">4 Min. · th Lektion 2</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">N. Feld</span></div>
+              </div>
+
+              <div></div>
+              <div style="border-left:1px solid #2A2E3A;padding:0 0 14px 18px;">
+                <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;color:#C9A86A;">UNS IM DIENST VERBESSERN</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:30</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">Von Haus zu Haus · 3 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">L. Hoffmann</span> mit A. Hoffmann</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:34</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Gespräche beginnen</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">Informell · 4 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">S. Krüger</span> mit M. Ernst</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:39</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Interesse fördern</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">Von Haus zu Haus · 5 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">E. Brandt</span> mit R. Brandt</div>
+              </div>
+
+              <div></div>
+              <div style="border-left:1px solid #2A2E3A;padding:0 0 14px 18px;">
+                <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;color:#C9A86A;">UNSER LEBEN ALS CHRIST</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:45</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-style:italic;font-size:14px;color:#9BA0AD;">Lied 128</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">19:48</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Geh während der besonderen Aktion zielorientiert vor</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">Besprechung · 15 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">D. Winkler</span></div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">20:03</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Versammlungsbibelstudium</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">30 Min. · wcg Kap. 7</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">F. Neumann</span> Leiter · <span style="color:#E4E6EB;font-weight:600;">P. Schröder</span> Leser</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">20:33</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Schlussworte · Lied 143 · Gebet</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">H. Vogel</span> Gebet</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#C9A86A;font-variant-numeric:tabular-nums;padding-top:2px;">20:45</div>
+              <div style="position:relative;padding:0 0 4px 18px;">
+                <div style="position:absolute;left:-4px;top:4px;width:8px;height:8px;border-radius:50%;background:#14161D;border:1px solid #C9A86A;box-sizing:border-box;"></div>
+                <div style="font-size:12px;color:#8B909E;padding-top:1px;">Ende der Zusammenkunft</div>
+              </div>
+            </div>
+
+            <div style="margin-top:18px;padding-top:16px;border-top:1px solid #2A2E3A;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;color:#C9A86A;">HILFSDIENSTE</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:12px;">
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">TON / VIDEO</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">C. Maier</div>
+                </div>
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">MIKROFONE</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">J. Roth · B. Klein</div>
+                </div>
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">ORDNER / EINGANG</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">U. Lang · G. Peters</div>
+                </div>
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">REINIGUNG</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">Gruppe 2</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dv-cap">Unter der Woche · Di 8. Sep</div>
+        </div>
+
+        <!-- 1b Wochenende -->
+        <div>
+          <div data-screen-label="1b Wochenende" style="width:390px;box-sizing:border-box;background:#14161D;border:1px solid rgba(255,255,255,0.06);border-radius:30px;box-shadow:0 28px 56px rgba(10,12,20,0.35),0 2px 8px rgba(10,12,20,0.3);padding:26px 24px 28px;font-family:'Instrument Sans',system-ui,sans-serif;color:#ECEDF1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:9.5px;font-weight:600;letter-spacing:0.22em;color:#C9A86A;">CONGREGATION PLANNER</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:#C9A86A;"></div>
+                <div style="width:26px;height:26px;border-radius:50%;border:1px solid #3A3F4C;color:#ECEDF1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">SK</div>
+              </div>
+            </div>
+            <div style="margin-top:22px;">
+              <div style="font-family:'Source Serif 4',serif;font-size:25px;font-weight:400;line-height:1.1;">7.–13. September</div>
+              <div style="font-family:'Source Serif 4',serif;font-style:italic;font-size:14px;color:#9BA0AD;margin-top:4px;">Jeremia 32–33</div>
+            </div>
+            <div style="display:flex;background:#1D2029;border-radius:999px;padding:3px;margin-top:18px;">
+              <div style="flex:1;text-align:center;padding:7px 0;border-radius:999px;font-size:12px;font-weight:500;color:#8B909E;">Unter der Woche</div>
+              <div style="flex:1;text-align:center;padding:7px 0;border-radius:999px;background:#2C3040;font-size:12px;font-weight:600;color:#F0F1F5;">Wochenende</div>
+            </div>
+            <div style="margin-top:16px;margin-bottom:18px;font-size:11.5px;letter-spacing:0.06em;color:#8B909E;">SONNTAG, 13. SEPTEMBER · KÖNIGREICHSSAAL</div>
+
+            <div style="display:grid;grid-template-columns:46px 1fr;">
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">10:00</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-4.5px;top:4px;width:8px;height:8px;border-radius:50%;background:#C9A86A;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Lied 138 · Gebet</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">A. Brenner</span> Vorsitz · <span style="color:#E4E6EB;font-weight:600;">J. Winter</span> Gebet</div>
+              </div>
+
+              <div></div>
+              <div style="border-left:1px solid #2A2E3A;padding:0 0 14px 18px;">
+                <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;color:#C9A86A;">ÖFFENTLICHER VORTRAG</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">10:05</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:17px;line-height:1.3;">„Woran erkennt man echten Glauben?“</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">30 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">M. Hartmann</span> Gastredner · Vers. Nordheim</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">10:35</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-style:italic;font-size:14px;color:#9BA0AD;">Lied 20</div>
+              </div>
+
+              <div></div>
+              <div style="border-left:1px solid #2A2E3A;padding:0 0 14px 18px;">
+                <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;color:#C9A86A;">WACHTTURM-STUDIUM</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">10:38</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:17px;line-height:1.3;">„Dient Jehova mit Freude“</div>
+                <div style="font-size:11.5px;color:#8B909E;margin-top:3px;">Studienartikel 28 · 60 Min.</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">F. Neumann</span> Leiter · <span style="color:#E4E6EB;font-weight:600;">P. Schröder</span> Leser</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#9BA0AD;font-variant-numeric:tabular-nums;padding-top:2px;">11:38</div>
+              <div style="position:relative;border-left:1px solid #2A2E3A;padding:0 0 20px 18px;">
+                <div style="position:absolute;left:-3.5px;top:5px;width:6px;height:6px;border-radius:50%;background:#14161D;border:1px solid #4A4F5E;box-sizing:border-box;"></div>
+                <div style="font-family:'Source Serif 4',serif;font-size:16px;line-height:1.3;">Schlussworte · Lied 76 · Gebet</div>
+                <div style="font-size:12px;color:#9BA0AD;margin-top:5px;"><span style="color:#E4E6EB;font-weight:600;">W. Adam</span> Gebet</div>
+              </div>
+
+              <div style="font-size:11.5px;color:#C9A86A;font-variant-numeric:tabular-nums;padding-top:2px;">11:45</div>
+              <div style="position:relative;padding:0 0 4px 18px;">
+                <div style="position:absolute;left:-4px;top:4px;width:8px;height:8px;border-radius:50%;background:#14161D;border:1px solid #C9A86A;box-sizing:border-box;"></div>
+                <div style="font-size:12px;color:#8B909E;padding-top:1px;">Ende der Zusammenkunft</div>
+              </div>
+            </div>
+
+            <div style="margin-top:18px;padding-top:16px;border-top:1px solid #2A2E3A;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.2em;color:#C9A86A;">HILFSDIENSTE</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:12px;">
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">TON / VIDEO</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">R. Simon</div>
+                </div>
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">MIKROFONE</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">T. Falk · D. Kern</div>
+                </div>
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">ORDNER / EINGANG</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">G. Peters · M. Otto</div>
+                </div>
+                <div>
+                  <div style="font-size:9.5px;letter-spacing:0.14em;color:#8B909E;">REINIGUNG</div>
+                  <div style="font-size:12.5px;font-weight:600;color:#E4E6EB;margin-top:3px;">Gruppe 3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dv-cap">Wochenende · So 13. Sep</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= OPTION 1C : KLARTAG ================= -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a><span><strong>Klartag</strong> — hell, präzise, App-Charakter: Karten, Avatare, persönliche Aufgabenleiste und Navigation. Am nächsten an einem fertigen Produkt.</span></div>
+      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">
+
+        <!-- 1c Woche -->
+        <div>
+          <div data-screen-label="1c Unter der Woche" style="width:390px;box-sizing:border-box;background:#F1F3F7;border:1px solid rgba(30,40,60,0.08);border-radius:30px;box-shadow:0 24px 48px rgba(25,32,48,0.12),0 2px 8px rgba(25,32,48,0.05);overflow:hidden;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#171A20;">
+            <div style="padding:24px 20px 0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;letter-spacing:0.16em;color:#8B909A;">JW CONGREGATION</div>
+                  <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;">Planner</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="background:#E9EEF9;color:#2F4C8F;border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:700;">2 neu</div>
+                  <div style="width:30px;height:30px;border-radius:50%;background:#2F4C8F;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">SK</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:#FFFFFF;border:1px solid #E3E7EF;display:flex;align-items:center;justify-content:center;color:#5F6673;font-size:14px;">‹</div>
+                <div style="text-align:center;">
+                  <div style="font-size:15.5px;font-weight:800;">7.–13. September</div>
+                  <div style="font-size:11.5px;font-weight:500;color:#5F6673;margin-top:1px;">Jeremia 32–33</div>
+                </div>
+                <div style="width:30px;height:30px;border-radius:50%;background:#FFFFFF;border:1px solid #E3E7EF;display:flex;align-items:center;justify-content:center;color:#5F6673;font-size:14px;">›</div>
+              </div>
+              <div style="display:flex;background:#E6EAF2;border-radius:12px;padding:3px;margin-top:14px;">
+                <div style="flex:1;text-align:center;padding:8px 0;border-radius:10px;background:#FFFFFF;box-shadow:0 1px 3px rgba(25,32,48,0.10);font-size:12.5px;font-weight:700;">Di · 19:00</div>
+                <div style="flex:1;text-align:center;padding:8px 0;border-radius:10px;font-size:12.5px;font-weight:600;color:#8B909A;">So · 10:00</div>
+              </div>
+              <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;background:#E9EEF9;border-radius:14px;padding:11px 14px;margin-top:12px;">
+                <div style="width:34px;height:34px;border-radius:50%;background:#2F4C8F;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;">NF</div>
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;letter-spacing:0.14em;color:#2F4C8F;">DEINE AUFGABE</div>
+                  <div style="font-size:13.5px;font-weight:700;margin-top:1px;">Bibellesung · Di, ca. 19:25</div>
+                </div>
+                <div style="color:#8B909A;font-size:16px;">›</div>
+              </div>
+            </div>
+
+            <div style="padding:4px 20px 24px;">
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">ERÖFFNUNG · 19:00</div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">MA</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Vorsitz · Einleitende Worte</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">M. Albrecht</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">1 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">KS</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Lied 1 · Gebet</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">K. Sommer</div>
+                  </div>
+                  <div></div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">SCHÄTZE AUS GOTTES WORT</div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">TL</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;line-height:1.3;">Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">T. Lindner</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">10 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">JB</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Nach geistigen Schätzen graben</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">J. Berger</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">10 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;background:linear-gradient(0deg,rgba(233,238,249,0.55),rgba(233,238,249,0.55));border-radius:0 0 12px 12px;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#2F4C8F;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">NF</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Bibellesung · Jer 32:6-18</div>
+                    <div style="font-size:11.5px;color:#2F4C8F;font-weight:700;margin-top:2px;">N. Feld · Du</div>
+                  </div>
+                  <div style="background:#FFFFFF;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#2F4C8F;">4 Min.</div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">UNS IM DIENST VERBESSERN</div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">LH</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Gespräche beginnen</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">Von Haus zu Haus · L. Hoffmann + A. Hoffmann</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">3 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">SK</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Gespräche beginnen</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">Informell · S. Krüger + M. Ernst</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">4 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">EB</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Interesse fördern</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">Von Haus zu Haus · E. Brandt + R. Brandt</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">5 Min.</div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">UNSER LEBEN ALS CHRIST · LIED 128</div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">DW</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;line-height:1.3;">Geh während der besonderen Aktion zielorientiert vor</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">Besprechung · D. Winkler</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">15 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">FN</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Versammlungsbibelstudium</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">F. Neumann (Leiter) · P. Schröder (Leser)</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">30 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">HV</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Schlussworte · Lied 143 · Gebet</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">H. Vogel (Gebet)</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">3 Min.</div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">HILFSDIENSTE</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;padding:8px 2px 12px;border-top:1px solid #EEF1F6;">
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">TON / VIDEO</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">C. Maier</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">MIKROFONE</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">J. Roth · B. Klein</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">ORDNER / EINGANG</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">U. Lang · G. Peters</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">REINIGUNG</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">Gruppe 2</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;border-top:1px solid #E3E7EF;background:#FFFFFF;">
+              <div style="flex:1;text-align:center;padding:13px 0 15px;font-size:12px;font-weight:800;color:#2F4C8F;">Programm</div>
+              <div style="flex:1;text-align:center;padding:13px 0 15px;font-size:12px;font-weight:600;color:#8B909A;">Meine Aufgaben</div>
+              <div style="flex:1;text-align:center;padding:13px 0 15px;font-size:12px;font-weight:600;color:#8B909A;">Personen</div>
+            </div>
+          </div>
+          <div class="dv-cap">Unter der Woche · Di 8. Sep</div>
+        </div>
+
+        <!-- 1c Wochenende -->
+        <div>
+          <div data-screen-label="1c Wochenende" style="width:390px;box-sizing:border-box;background:#F1F3F7;border:1px solid rgba(30,40,60,0.08);border-radius:30px;box-shadow:0 24px 48px rgba(25,32,48,0.12),0 2px 8px rgba(25,32,48,0.05);overflow:hidden;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#171A20;">
+            <div style="padding:24px 20px 0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;letter-spacing:0.16em;color:#8B909A;">JW CONGREGATION</div>
+                  <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;">Planner</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="background:#E9EEF9;color:#2F4C8F;border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:700;">2 neu</div>
+                  <div style="width:30px;height:30px;border-radius:50%;background:#2F4C8F;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">SK</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:#FFFFFF;border:1px solid #E3E7EF;display:flex;align-items:center;justify-content:center;color:#5F6673;font-size:14px;">‹</div>
+                <div style="text-align:center;">
+                  <div style="font-size:15.5px;font-weight:800;">7.–13. September</div>
+                  <div style="font-size:11.5px;font-weight:500;color:#5F6673;margin-top:1px;">Jeremia 32–33</div>
+                </div>
+                <div style="width:30px;height:30px;border-radius:50%;background:#FFFFFF;border:1px solid #E3E7EF;display:flex;align-items:center;justify-content:center;color:#5F6673;font-size:14px;">›</div>
+              </div>
+              <div style="display:flex;background:#E6EAF2;border-radius:12px;padding:3px;margin-top:14px;">
+                <div style="flex:1;text-align:center;padding:8px 0;border-radius:10px;font-size:12.5px;font-weight:600;color:#8B909A;">Di · 19:00</div>
+                <div style="flex:1;text-align:center;padding:8px 0;border-radius:10px;background:#FFFFFF;box-shadow:0 1px 3px rgba(25,32,48,0.10);font-size:12.5px;font-weight:700;">So · 10:00</div>
+              </div>
+            </div>
+
+            <div style="padding:4px 20px 24px;">
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">ERÖFFNUNG · 10:00</div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">AB</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Vorsitz</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">A. Brenner</div>
+                  </div>
+                  <div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">JW</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Lied 138 · Gebet</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">J. Winter</div>
+                  </div>
+                  <div></div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">ÖFFENTLICHER VORTRAG</div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">MH</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;line-height:1.3;">„Woran erkennt man echten Glauben?“</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">M. Hartmann · <span style="color:#2F4C8F;font-weight:700;">Gastredner</span> · Vers. Nordheim</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">30 Min.</div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">WACHTTURM-STUDIUM · LIED 20</div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">FN</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;line-height:1.3;">„Dient Jehova mit Freude“ · Studienartikel 28</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">F. Neumann (Leiter) · P. Schröder (Leser)</div>
+                  </div>
+                  <div style="background:#F2F4F8;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;color:#5F6673;">60 Min.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid #EEF1F6;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#E9EEF9;color:#2F4C8F;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">WA</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:700;">Schlussworte · Lied 76 · Gebet</div>
+                    <div style="font-size:11.5px;color:#5F6673;margin-top:2px;">W. Adam (Gebet)</div>
+                  </div>
+                  <div></div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF;border:1px solid #E3E7EF;border-radius:16px;padding:4px 14px;margin-top:12px;">
+                <div style="padding:10px 2px 6px;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#5F6673;">HILFSDIENSTE</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;padding:8px 2px 12px;border-top:1px solid #EEF1F6;">
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">TON / VIDEO</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">R. Simon</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">MIKROFONE</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">T. Falk · D. Kern</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">ORDNER / EINGANG</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">G. Peters · M. Otto</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:#8B909A;">REINIGUNG</div>
+                    <div style="font-size:12.5px;font-weight:700;margin-top:2px;">Gruppe 3</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;border-top:1px solid #E3E7EF;background:#FFFFFF;">
+              <div style="flex:1;text-align:center;padding:13px 0 15px;font-size:12px;font-weight:800;color:#2F4C8F;">Programm</div>
+              <div style="flex:1;text-align:center;padding:13px 0 15px;font-size:12px;font-weight:600;color:#8B909A;">Meine Aufgaben</div>
+              <div style="flex:1;text-align:center;padding:13px 0 15px;font-size:12px;font-weight:600;color:#8B909A;">Personen</div>
+            </div>
+          </div>
+          <div class="dv-cap">Wochenende · So 13. Sep</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Als Nächstes z. B.: „mehr wie <a class="dv-oid" href="#1a">1a</a>, aber dunkel“ · „<a class="dv-oid" href="#1c">1c</a> mit den Serifen aus <a class="dv-oid" href="#1a">1a</a>“ · „aus einer Richtung einen klickbaren Prototyp mit Login, Admin und persönlichem Bereich bauen“</p>
+</section>
+
+</x-dc>
+</body>
+</html>

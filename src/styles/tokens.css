@@ -1,0 +1,125 @@
+/*
+ * Design-Tokens — JW Congregation Planner
+ * Quelle: docs/design-handoff/README.md (Abschnitt "Design-Tokens").
+ *
+ * Theming über [data-theme] auf <html>. Standard (kein Attribut oder
+ * data-theme="light") = Hell; data-theme="dark" = Dunkel.
+ * Das Attribut wird vor dem ersten Paint per Inline-Script in index.html
+ * gesetzt (Systempräferenz oder gespeicherte Wahl), damit es nicht flackert.
+ *
+ * Regel aus dem Handoff: Flächen/Farben referenzieren AUSSCHLIESSLICH Tokens.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Flächen */
+  --desk: #e7e3da; /* Hintergrund um die App ("Schreibtisch") */
+  --bg: #f7f4ed; /* App-/Sidebar-Fläche */
+  --bgT: rgba(247, 244, 237, 0.96); /* Sticky Header / Bottom-Nav */
+  --card: #fdfbf5; /* Inputs, Sheets, Chips */
+
+  /* Getönte Panels */
+  --tNeu: #ede8dd;
+  --tNeu2: #ece7dc;
+  --tPet: #e4edea; /* Schätze aus Gottes Wort */
+  --tGld: #f1e8d3; /* Uns im Dienst verbessern / Akzent-Tint */
+  --tWein: #f2e2de; /* Unser Leben als Christ */
+
+  /* Text */
+  --ink: #211c14;
+  --mut: #756d5c;
+  --mut2: #9a9284;
+
+  /* Akzent (Bronze/Gold) */
+  --acc: #8a6a34;
+  --accD: #6e5326; /* Hover */
+  --onAcc: #f7f4ed; /* Text auf Akzent/Ink */
+
+  /* Bereichsfarben */
+  --pet: #446f6b;
+  --gld: #96742c;
+  --wein: #8e4a44;
+
+  /* Linien & Ränder */
+  --line: #e6dfce;
+  --line2: #efe9da;
+  --bord: #e0d9c8;
+  --bord2: #ddd6c6;
+  --bord3: #d8d1c0;
+  --bord4: #c9c2b0;
+  --dash: #b9ae96; /* offene Slots (dashed) */
+  --weinB: #e4ccc7; /* Lösch-Buttons Rand */
+
+  /* Hairlines in Panels */
+  --lineNeu: rgba(110, 100, 80, 0.16);
+  --linePet: rgba(62, 102, 99, 0.14);
+  --lineGld: rgba(138, 106, 52, 0.16);
+  --lineWein: rgba(142, 74, 68, 0.14);
+
+  /* Diverses */
+  --knob: #fffdf6; /* Toggle-Knopf */
+  --hov: rgba(237, 232, 221, 0.5); /* Zeilen-Hover */
+  --focus: rgba(138, 106, 52, 0.35); /* Input-Focus-Ring */
+
+  /* Schriften (siehe index.html: Google Fonts) */
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+
+  /* Radien */
+  --r-panel: 16px;
+  --r-input: 10px;
+  --r-sheet: 18px;
+  --r-pill: 999px;
+
+  /* Schatten */
+  --sh-col: 0 0 60px rgba(30, 25, 15, 0.18); /* App-Spalte */
+  --sh-overlay: 0 24px 48px rgba(30, 25, 15, 0.25); /* Overlays */
+  --sh-btn: 0 1px 3px rgba(30, 25, 15, 0.12); /* Blätter-Buttons */
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --desk: #0f0e0b;
+  --bg: #1a1813;
+  --bgT: rgba(26, 24, 19, 0.96);
+  --card: #221f18;
+
+  --tNeu: #242118;
+  --tNeu2: #221f17;
+  --tPet: #1e2724;
+  --tGld: #2a2418;
+  --tWein: #2a1e1c;
+
+  --ink: #ede9de;
+  --mut: #a79e8c;
+  --mut2: #7a7466;
+
+  --acc: #c9a86a;
+  --accD: #b08f52;
+  --onAcc: #1a1813;
+
+  --pet: #7fa89f;
+  --gld: #c2a05c;
+  --wein: #c08078;
+
+  --line: #2e2a20;
+  --line2: #282419;
+  --bord: #3a3427;
+  --bord2: #3a3427;
+  --bord3: #403a2c;
+  --bord4: #4a4335;
+  --dash: #5a5240;
+  --weinB: #4a322e;
+
+  --lineNeu: rgba(200, 190, 160, 0.12);
+  --linePet: rgba(127, 168, 159, 0.16);
+  --lineGld: rgba(201, 168, 106, 0.16);
+  --lineWein: rgba(192, 128, 120, 0.16);
+
+  --knob: #fffdf6;
+  --hov: rgba(42, 38, 28, 0.5);
+  --focus: rgba(201, 168, 106, 0.4);
+}

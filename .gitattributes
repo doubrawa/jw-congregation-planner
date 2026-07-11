@@ -1,0 +1,6 @@
+# Zeilenenden im Repo normalisieren (LF); Windows checkt lokal ggf. CRLF aus.
+* text=auto eol=lf
+
+# Binärdateien nicht anfassen
+*.png binary
+*.svg binary

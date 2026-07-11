@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Zusammenkunfts-Planer für eine Versammlung — Wochenprogramme, Aufgaben zuteilen, Personenverwaltung." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f7f4ed" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1813" media="(prefers-color-scheme: dark)" />
+
+    <!-- Theme vor dem ersten Paint setzen (kein Flackern) -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme')
+          var dark =
+            stored === 'dark' ||
+            (stored !== 'light' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        } catch (e) {
+          /* localStorage nicht verfügbar — Standard bleibt Hell */
+        }
+      })()
+    </script>
+
+    <!-- Schriften: Newsreader (Serif) + IBM Plex Sans (UI), Lizenz OFL -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>JW Congregation Planner</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
