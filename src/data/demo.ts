@@ -1,14 +1,16 @@
 /**
  * Demo-Daten, 1:1 aus dem Prototyp portiert (docs/design-handoff/design/
- * Prototyp 2a v2.dc.html). Namen und Wochen sind Platzhalter — das Modell
+ * Prototyp 2a v3.dc.html). Namen und Wochen sind Platzhalter — das Modell
  * und die Regeln darunter sind verbindlich. Ersetzt später Persistenz/Backend.
  */
 
 import type {
   Absence,
+  MyTask,
   Notification,
   PartItem,
   Person,
+  Reminders,
   Section,
   SectionColor,
   Service,
@@ -35,12 +37,6 @@ export const CONGREGATION = {
 
 /** Fußzeile Programm ("Stand: …") — Demo-Wert aus dem Prototyp. */
 export const PROGRAM_AS_OF = '4. September'
-
-/**
- * "Heute" der Demo-Welt (Stand-Datum): Anker für Countdown-Chips
- * ("in 4 Tagen"). Mit echten Daten später durch `new Date()` ersetzen.
- */
-export const DEMO_TODAY = new Date(2026, 8, 4)
 
 export const WORKBOOK_LABEL = 'Arbeitsheft Sep/Okt 2026'
 
@@ -80,11 +76,16 @@ export const DEMO_PERSONS: Person[] = [
 ]
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
-
+// Drei Ordner-Dienste teilen sich die Qualifikation 'ordner'; der
+// Eingangsordner nutzt den Datenkey 'ord' (Rückwärtskompatibilität zur
+// helpers-Struktur der Wochen). Zoom-/Saalordner haben noch keine Namen
+// in den Demo-Wochen → erscheinen als "offen".
 export const DEMO_SERVICES: Service[] = [
   { key: 'ton', name: 'Ton / Video', count: 1, priv: 'ton', groups: false },
   { key: 'mik', name: 'Mikrofone', count: 2, priv: 'mikrofon', groups: false },
-  { key: 'ord', name: 'Ordner / Eingang', count: 2, priv: 'ordner', groups: false },
+  { key: 'zoom', name: 'Zoom-Ordner', count: 1, priv: 'ordner', groups: false },
+  { key: 'ord', name: 'Eingangsordner', count: 1, priv: 'ordner', groups: false },
+  { key: 'saal', name: 'Saalordner', count: 1, priv: 'ordner', groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, priv: null, groups: true },
 ]
 
@@ -95,10 +96,45 @@ export const DEMO_ABSENCES: Absence[] = [
 ]
 
 export const DEMO_NOTIFICATIONS: Notification[] = [
-  { id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: 'Mikrofone · Sonntag, 20. September', time: 'vor 2 Std.', read: false },
+  { id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: 'Mikrofone · Sonntag, 20. September', time: 'vor 2 Std.', read: false, taskId: 'a2' },
   { id: 'n2', type: 'erinnerung', title: 'Erinnerung', text: 'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35', time: 'heute, 08:00', read: false },
   { id: 'n3', type: 'gesendet', title: 'Plan veröffentlicht', text: 'Programm für September ist online', time: 'Montag', read: true },
 ]
+
+/* ---- Persönliche Aufgaben, Bestätigungs-Status & Erinnerungen ----------- */
+
+/**
+ * Dem Nutzer (Simon Krüger) zugeteilte Aufgaben mit Bestätigungs-Status.
+ * a1/a2 offen, a3 bereits bestätigt (wie im v3-Prototyp). Schulungsaufgaben
+ * und Bibellesung tragen eine S-89-Nutzlast zum Anzeigen des Formulars.
+ */
+export const DEMO_MY_TASKS: MyTask[] = [
+  {
+    id: 'a1',
+    title: 'Gespräche beginnen (informell)',
+    date: 'Di, 8. September · ca. 19:35',
+    chip: 'in 4 Tagen',
+    status: 'offen',
+    s89: { name: 'S. Krüger', partner: 'M. Ernst', date: 'Di, 8. September · 19:00', type: 'Gespräche beginnen · Informell', point: 'lmd Lektion 1' },
+  },
+  { id: 'a2', title: 'Mikrofone', date: 'So, 20. September · 10:00', chip: 'in 16 Tagen', status: 'offen', s89: null },
+  {
+    id: 'a3',
+    title: 'Bibellesung · Jer 38:1-13',
+    date: 'Di, 22. September · 19:00',
+    chip: '',
+    status: 'bestätigt',
+    s89: { name: 'S. Krüger', partner: '', date: 'Di, 22. September · 19:00', type: 'Bibellesung · Jer 38:1-13', point: 'th Lektion 10' },
+  },
+]
+
+/**
+ * Namen mit noch offener Bestätigung → im Planen als „…“ statt „✓“.
+ * Seed wie im Prototyp; jede neue Zuteilung setzt den Namen auf „pending“.
+ */
+export const DEMO_PENDING_NAMES: string[] = ['S. Krüger', 'J. Roth', 'E. Brandt']
+
+export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true }
 
 /* ---- Wochenprogramme ----------------------------------------------------
  * Kompakte Baus­teine wie im Prototyp: Namen als Tupel [Name, Rolle,
@@ -217,7 +253,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '21.–27. September', book: 'Jeremia 37–39', current: false,
+      range: '21.–27. September', book: 'Jeremia 37–39', current: false, co: true,
       mid: {
         date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -235,7 +271,7 @@ export function buildDemoWeeks(): Week[] {
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 44'),
             part(7, 'Baut einander auf', 'Besprechung · 15 Min.', [['H. Vogel', '', 'vortrag']]),
-            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 9', [['M. Albrecht', 'Leiter', 'studium'], ['N. Feld', 'Leser', 'lesen']]),
+            part(8, '„Lauft so, dass ihr den Preis gewinnt“', 'Dienstvortrag · 30 Min.', [['K. Wagner', 'Kreisaufseher', '']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['D. Winkler', 'Gebet', 'gebet']])]),
         ],
@@ -245,18 +281,19 @@ export function buildDemoWeeks(): Week[] {
         date: 'Sonntag, 27. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 25 · Gebet', null, [['F. Neumann', 'Vorsitz', 'vorsitz'], ['B. Klein', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Frieden in einer unruhigen Welt“', '30 Min.', [['K. Steiner', 'Gastredner · Vers. Westtal', 'vortrag']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Frieden in einer unruhigen Welt“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 61'),
-            part(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 60 Min.', [['H. Vogel', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']]),
+            part(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 30 Min.', [['H. Vogel', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']]),
           ]),
+          sec('DIENSTVORTRAG', 'gold', [part(null, '„Bleibt in Gottes Liebe“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet', 'gebet']])]),
         ],
         helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'G. Peters'], rein: ['Gruppe 2'] },
       },
     },
     {
-      range: '28. Sep – 4. Okt', book: 'Jeremia 40–42', current: false,
+      range: '28. Sep – 4. Okt', book: 'Jeremia 40–42', current: false, mem: true, memCancel: 'we',
       mid: {
         date: 'Dienstag, 29. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -280,18 +317,18 @@ export function buildDemoWeeks(): Week[] {
         ],
         helpers: { ton: ['R. Simon'], mik: ['N. Feld', 'J. Roth'], ord: ['M. Otto', 'U. Lang'], rein: ['Gruppe 2'] },
       },
+      // Gedächtnismahl statt Wochenend-Zusammenkunft (memCancel: 'we').
       we: {
-        date: 'Sonntag, 4. Oktober · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
+        date: 'Samstag, 3. Oktober · 19:30 · Königreichssaal — nach Sonnenuntergang', end: 'Ende ca. 20:30',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 91 · Gebet', null, [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Worauf gründet echte Hoffnung?“', '30 Min.', [['B. Hollmann', 'Gastredner · Vers. Osterfeld', 'vortrag']])]),
-          sec('WACHTTURM-STUDIUM', 'wein', [
-            song('Lied 142'),
-            part(null, '„Bleibt wachsam“', 'Studienartikel 31 · 60 Min.', [['F. Neumann', 'Leiter', 'studium'], ['N. Feld', 'Leser', 'lesen']]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 18 · Gebet', null, [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
+          sec('GEDÄCHTNISMAHL', 'wein', [
+            part(null, 'Gedächtnismahl-Ansprache — „Schätze Jehovas größtes Geschenk“', '30 Min.', [['F. Neumann', 'Redner', 'vortrag']]),
+            part(null, 'Symbole herumreichen', 'Brot · Wein', [['J. Berger', '', 'ordner'], ['P. Schröder', '', 'ordner'], ['G. Peters', '', 'ordner'], ['U. Lang', '', 'ordner']]),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['H. Vogel', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 149 · Gebet', null, [['H. Vogel', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['C. Maier'], mik: ['S. Krüger', 'B. Klein'], ord: ['G. Peters', 'U. Lang'], rein: ['Gruppe 1'] },
+        helpers: { ton: ['C. Maier'], mik: ['S. Krüger', 'B. Klein'], ord: ['M. Otto', 'G. Peters'], rein: ['Gruppe 1'] },
       },
     },
   ]

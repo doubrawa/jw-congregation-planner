@@ -6,9 +6,13 @@
 import { createContext, useContext, type Dispatch } from 'react'
 import type {
   Absence,
+  Lang,
   MeetingTab,
+  MyTask,
   Notification,
   Person,
+  Reminders,
+  S89Payload,
   Screen,
   Service,
   SlotSelection,
@@ -37,8 +41,22 @@ export interface AppState {
   selectedPersonId: string | null // offenes Personen-Detail
   importing: boolean // Programm-Import läuft (~0.9 s)
   imported: boolean // alle verfügbaren Wochen importiert
+  // Persönliche Aufgaben & Bestätigungs-Flow
+  myTasks: MyTask[]
+  pendingNames: string[] // Namen mit noch offener Bestätigung (Planen: „…“)
+  confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
+  s89: S89Payload | null // offenes S-89-Formular
+  reminders: Reminders
+  // Mehrsprachigkeit
+  lang: Lang // App-Sprache (UI)
+  congLang: string // Versammlungssprache (deutscher Name, z. B. "Deutsch")
+  langSheetOpen: boolean // Sprach-Sheet (Versammlungssprache) offen
+  langSearch: string
   toast: Toast | null
 }
+
+export type LacDir = -1 | 1
+export type ReminderKey = 'first' | 'last'
 
 export type AppAction =
   | { type: 'login' }
@@ -66,6 +84,25 @@ export type AppAction =
   | { type: 'finishImport' }
   | { type: 'assign'; name: string } // auf state.slotSel; "" = entfernen
   | { type: 'autoAssign' } // aktuelle Woche + Tab
+  // Bestätigungs-Flow
+  | { type: 'confirmTask'; id: string }
+  | { type: 'declineTask'; id: string }
+  | { type: 'openS89'; payload: S89Payload }
+  | { type: 'closeS89' }
+  // LAC-Bearbeitung (Planen, aktuelle Woche + Tab)
+  | { type: 'lacAdjust'; si: number; ii: number; delta: number }
+  | { type: 'lacRemove'; si: number; ii: number }
+  | { type: 'lacMove'; si: number; ii: number; dir: LacDir }
+  | { type: 'lacAdd'; si: number; title: string }
+  // Erinnerungen
+  | { type: 'changeReminder'; key: ReminderKey; delta: 1 | -1 }
+  | { type: 'toggleReminderRepeat' }
+  // Sprache
+  | { type: 'setLang'; lang: Lang }
+  | { type: 'openLangSheet' }
+  | { type: 'closeLangSheet' }
+  | { type: 'setLangSearch'; text: string }
+  | { type: 'setCongLang'; name: string }
   | { type: 'showToast'; text: string }
   | { type: 'hideToast' }
 

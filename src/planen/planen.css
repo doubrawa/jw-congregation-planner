@@ -38,6 +38,12 @@
   background: var(--accD);
 }
 
+.plan-legend {
+  margin-top: 10px;
+  font-size: 10.5px;
+  color: var(--mut);
+}
+
 /* ---- Programmpunkte mit Slot-Chips -------------------------------------- */
 
 .plan-item {
@@ -47,6 +53,13 @@
 
 .panel .plan-item:last-child {
   border-bottom-color: transparent;
+}
+
+.plan-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .plan-item-title {
@@ -89,6 +102,109 @@
 .slot-chip:hover,
 .slot-chip.is-open:hover {
   border-color: var(--acc);
+}
+
+.slot-status {
+  margin-left: 5px;
+  color: var(--pet);
+}
+
+.slot-status.is-pending {
+  color: var(--mut2);
+}
+
+/* ---- „Unser Leben als Christ“ bearbeiten -------------------------------- */
+
+.lac-move {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.lac-move-btn,
+.lac-step-btn {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--bord4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mut);
+  font-size: 10px;
+}
+
+.lac-step-btn {
+  font-size: 12px;
+}
+
+.lac-move-btn:disabled {
+  color: var(--bord3);
+  cursor: default;
+}
+
+.lac-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.lac-mins {
+  min-width: 48px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mut);
+}
+
+.lac-spacer {
+  flex: 1;
+}
+
+.lac-remove {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--weinB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wein);
+  font-size: 10px;
+}
+
+.lac-add-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 12px;
+}
+
+.lac-add-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.lac-add-btn {
+  border: 1px solid var(--acc);
+  color: var(--acc);
+  border-radius: var(--r-pill);
+  padding: 8px 13px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lac-add-btn:hover {
+  background: var(--tGld);
 }
 
 /* ---- Hilfsdienste ---------------------------------------------------------- */

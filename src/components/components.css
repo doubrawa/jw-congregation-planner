@@ -112,6 +112,55 @@
   text-align: center;
 }
 
+/* ---- Wochen-Chips (aktuelle Woche / Kreisaufseher / Gedächtnismahl) ------ */
+
+.week-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.week-chip {
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.week-chip--current {
+  background: var(--tGld);
+  color: var(--acc);
+}
+
+.week-chip--co {
+  background: var(--tPet);
+  color: var(--pet);
+}
+
+.week-chip--mem {
+  background: var(--tWein);
+  color: var(--wein);
+}
+
+/* Hinweis-Banner Gedächtnismahl (ausfallende Zusammenkunft) */
+.mem-banner {
+  margin-top: 12px;
+  background: var(--tWein);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  color: var(--wein);
+  line-height: 1.45;
+}
+
+.mem-banner-date {
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 /* ---- Meeting-Tabs -------------------------------------------------------- */
 
 .meeting-tabs {

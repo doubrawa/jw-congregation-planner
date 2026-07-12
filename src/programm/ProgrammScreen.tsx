@@ -1,10 +1,15 @@
 import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
+import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID, PROGRAM_AS_OF } from '../data/demo'
 import { displayName, isSong } from '../data/helpers'
+import { CONG_TO_CODE } from '../i18n/langs'
 import type { PartItem } from '../data/types'
 import './programm.css'
+
+const DEMO_LANG_HINT =
+  'Demo: Programminhalte sind nur auf Deutsch, Englisch, Spanisch und Französisch verfügbar — Anzeige auf Deutsch.'
 
 /**
  * Programm (Screen 2, Startscreen): Wochenprogramm beider Zusammenkünfte
@@ -16,6 +21,8 @@ export function ProgrammScreen() {
   const meeting = state.tab === 'mid' ? week.mid : week.we
   const me = state.persons.find((p) => p.id === CURRENT_PERSON_ID)
   const myName = me ? displayName(me) : null
+  // Demo-Programminhalte nur für de/en/es/fr — sonst Anzeige auf Deutsch
+  const progFallback = !CONG_TO_CODE[state.congLang]
 
   return (
     <section className="screen">
@@ -29,17 +36,17 @@ export function ProgrammScreen() {
         <div className="prog-week-book">{week.book}</div>
       </WeekNav>
 
-      {week.current && (
-        <div className="prog-week-chip-row">
-          <span className="prog-week-chip">AKTUELLE WOCHE</span>
-        </div>
-      )}
+      <WeekChips week={week} showCurrent />
 
       <MeetingTabs
         className="prog-tabs"
         tab={state.tab}
         onChange={(tab) => dispatch({ type: 'setTab', tab })}
       />
+
+      {progFallback && <div className="prog-lang-hint">{DEMO_LANG_HINT}</div>}
+
+      <MemorialBanner week={week} tab={state.tab} />
 
       <p className="prog-meta">{meeting.date}</p>
 

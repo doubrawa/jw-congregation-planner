@@ -45,6 +45,51 @@
   padding: 10px 0 2px;
 }
 
+/* Aktionszeile je Aufgabe: bestätigen / Status / S-89 */
+.auf-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.auf-confirm {
+  border: 1px solid var(--pet);
+  color: var(--pet);
+  border-radius: var(--r-pill);
+  padding: 3px 11px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.auf-confirm:hover {
+  background: var(--tPet);
+}
+
+.auf-badge {
+  border-radius: var(--r-pill);
+  padding: 3px 11px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.auf-badge--best {
+  background: var(--tPet);
+  color: var(--pet);
+}
+
+.auf-badge--verh {
+  background: var(--tWein);
+  color: var(--wein);
+}
+
+.auf-s89 {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--acc);
+}
+
 /* ---- Abwesenheiten --------------------------------------------------------- */
 
 .abs-form-row {
@@ -117,6 +162,11 @@
 .theme-chips {
   display: flex;
   gap: 6px;
+}
+
+.theme-chips--wrap {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .theme-chip {

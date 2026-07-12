@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_LABEL } from '../data/constants'
 import { CONGREGATION, WORKBOOK_LABEL } from '../data/demo'
+import { CONG_TO_CODE } from '../i18n/langs'
 import type { QualificationKey, Service } from '../data/types'
 import './einstellungen.css'
 
@@ -9,6 +10,12 @@ function serviceSub(service: Service): string {
   if (service.groups) return 'Gruppen-Rotation'
   if (service.priv) return `Bereich: ${QUALIFICATION_LABEL[service.priv as QualificationKey] ?? service.priv}`
   return 'Alle Verkündiger'
+}
+
+/** Untertitel für die Erinnerungs-Stepper: "N Tage vorher" / "Am Tag der Aufgabe". */
+function reminderSub(n: number): string {
+  if (n === 0) return 'Am Tag der Aufgabe'
+  return n === 1 ? '1 Tag vorher' : `${n} Tage vorher`
 }
 
 /**
@@ -50,6 +57,11 @@ export function EinstellungenScreen() {
     : state.imported
       ? 'ALLE WOCHEN IMPORTIERT'
       : 'NÄCHSTE WOCHE IMPORTIEREN'
+
+  // Demo-Programminhalte gibt es nur für de/en/es/fr — sonst Anzeige auf Deutsch
+  const progFallback = !CONG_TO_CODE[state.congLang]
+  const demoLangHint =
+    'Demo: Programminhalte sind nur auf Deutsch, Englisch, Spanisch und Französisch verfügbar — Anzeige auf Deutsch.'
 
   return (
     <section className="screen">
@@ -126,6 +138,78 @@ export function EinstellungenScreen() {
           </button>
         </div>
       </form>
+
+      <div className="panel panel--pb14" data-farbe="gold">
+        <div className="panel-label">SPRACHE</div>
+        <button
+          type="button"
+          className="lang-card-row"
+          onClick={() => dispatch({ type: 'openLangSheet' })}
+        >
+          <span className="lang-card-key">Versammlungssprache</span>
+          <span className="lang-card-val">
+            <span>{state.congLang}</span>
+            <span className="lang-card-chevron">›</span>
+          </span>
+        </button>
+        <p className="lang-card-desc">
+          Bestimmt die Sprache des Arbeitshefts beim Programm-Import.
+        </p>
+        {progFallback && <div className="lang-demo-hint">{demoLangHint}</div>}
+      </div>
+
+      <div className="panel panel--pb14" data-farbe="wein">
+        <div className="panel-label">ERINNERUNGEN</div>
+        <p className="panel-hint">
+          Automatische Mitteilungen zu Zuteilungen, bis sie bestätigt sind.
+        </p>
+        <div className="kv-row">
+          <span className="kv-key">Bei Zuteilung</span>
+          <span className="kv-val">Sofort</span>
+        </div>
+        {(['first', 'last'] as const).map((key) => (
+          <div key={key} className="svc-row">
+            <div>
+              <div className="svc-name">
+                {key === 'first' ? 'Erste Erinnerung' : 'Letzte Erinnerung'}
+              </div>
+              <div className="svc-sub">{reminderSub(state.reminders[key])}</div>
+            </div>
+            <div className="svc-controls">
+              <button
+                type="button"
+                className="stepper-btn"
+                aria-label={`${key === 'first' ? 'Erste' : 'Letzte'} Erinnerung: weniger`}
+                onClick={() => dispatch({ type: 'changeReminder', key, delta: -1 })}
+              >
+                –
+              </button>
+              <span className="svc-count">{state.reminders[key]}</span>
+              <button
+                type="button"
+                className="stepper-btn"
+                aria-label={`${key === 'first' ? 'Erste' : 'Letzte'} Erinnerung: mehr`}
+                onClick={() => dispatch({ type: 'changeReminder', key, delta: 1 })}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        ))}
+        <div className="rem-toggle-row">
+          <span className="rem-toggle-label">Täglich wiederholen, bis bestätigt</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={state.reminders.repeat}
+            aria-label="Täglich wiederholen, bis bestätigt"
+            className={state.reminders.repeat ? 'switch is-on' : 'switch'}
+            onClick={() => dispatch({ type: 'toggleReminderRepeat' })}
+          >
+            <span className="switch-knob" />
+          </button>
+        </div>
+      </div>
 
       <div className="panel panel--pb16" data-farbe="neutral">
         <div className="panel-label">PROGRAMM-IMPORT</div>

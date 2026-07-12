@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { useApp } from '../app/context'
 import { displayName, initials, isQualified, roleLabel, workloadOf } from '../data/helpers'
-import { slotValue } from '../data/planning'
+import { buildS89ForSlot, slotValue } from '../data/planning'
 import type { SlotSelection } from '../data/types'
+import '../components/overlays.css'
 import './planen.css'
 
 interface Candidate {
@@ -33,6 +34,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   }, [dispatch])
 
   const current = slotValue(state.weeks, sel)
+  const s89 = buildS89ForSlot(state.weeks, sel)
 
   const candidates: Candidate[] = sel.groups
     ? ['Gruppe 1', 'Gruppe 2', 'Gruppe 3'].map((group) => ({
@@ -89,13 +91,24 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             <span>
               Aktuell: <strong>{current}</strong>
             </span>
-            <button
-              type="button"
-              className="sheet-remove"
-              onClick={() => dispatch({ type: 'assign', name: '' })}
-            >
-              Entfernen
-            </button>
+            <div className="sheet-current-actions">
+              {s89 && (
+                <button
+                  type="button"
+                  className="sheet-s89-link"
+                  onClick={() => dispatch({ type: 'openS89', payload: s89 })}
+                >
+                  S-89 anzeigen
+                </button>
+              )}
+              <button
+                type="button"
+                className="sheet-remove"
+                onClick={() => dispatch({ type: 'assign', name: '' })}
+              >
+                Entfernen
+              </button>
+            </div>
           </div>
         )}
 

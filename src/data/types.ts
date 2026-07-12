@@ -10,6 +10,9 @@
 
 export type Theme = 'light' | 'dark'
 
+/** App-Sprache (UI). Programm-Inhalte nutzen separat die Versammlungssprache. */
+export type Lang = 'de' | 'en' | 'es' | 'fr'
+
 /** Sichtbare Bereiche. Die letzten drei nur für Planer/Koordinatoren. */
 export type Screen =
   | 'login'
@@ -102,6 +105,9 @@ export interface Week {
   range: string // z. B. "7.–13. September"
   book: string // Bibelbuch (kursiv)
   current: boolean // aktuelle Woche (Chip "AKTUELLE WOCHE")
+  co?: boolean // Besuch des Kreisaufsehers (Chip, Dienstvortrag statt VBS)
+  mem?: boolean // Gedächtnismahl-Woche (Chip + Banner)
+  memCancel?: MeetingTab // ausfallende Zusammenkunft (deren Tab zeigt das Gedächtnismahl)
   mid: Meeting // Unter der Woche
   we: Meeting // Wochenende
 }
@@ -121,6 +127,37 @@ export interface Absence {
   from: string // ISO-Datum
   to: string // ISO-Datum
   reason: string // optional
+}
+
+/* ---- Persönliche Aufgaben & Bestätigungs-Flow ---- */
+
+/** Status einer dem Nutzer zugeteilten Aufgabe. */
+export type TaskStatus = 'offen' | 'bestätigt' | 'verhindert'
+
+/** Ausgefülltes S-89-Formular („Aufgabe in der Leben-und-Dienst-Zusammenkunft“). */
+export interface S89Payload {
+  name: string
+  partner: string // Gesprächspartner/in (leer = kein Partner)
+  date: string // "Di, 8. September · 19:00"
+  type: string // Aufgabe inkl. Rahmen ("Gespräche beginnen · Informell")
+  point: string // Schulungspunkt ("lmd Lektion 1" / "th Lektion 10"), leer möglich
+}
+
+/** Eine dem eingeloggten Nutzer zugeteilte Aufgabe (persönlicher Bereich). */
+export interface MyTask {
+  id: string
+  title: string // "Gespräche beginnen (informell)"
+  date: string // "Di, 8. September · ca. 19:35"
+  chip: string // Countdown "in 4 Tagen" (leer = kein Chip)
+  status: TaskStatus
+  s89: S89Payload | null // Schulungsaufgabe → S-89 anzeigbar
+}
+
+/** Erinnerungs-Einstellungen (Einstellungen → ERINNERUNGEN). */
+export interface Reminders {
+  first: number // erste Erinnerung: N Tage vorher (1..21)
+  last: number // letzte Erinnerung: N Tage vorher (0..7, 0 = am Tag)
+  repeat: boolean // täglich wiederholen, bis bestätigt
 }
 
 /* ---- Zuteilungs-Sheet (Planen) ---- */
@@ -155,6 +192,7 @@ export type NotificationType =
   | 'erinnerung' // Erinnerung
   | 'gesendet' // Zuteilung(en) gesendet
   | 'import' // Programm importiert
+  | 'verhindert' // Verhinderung gemeldet (an Koordinator)
 
 export interface Notification {
   id: string
@@ -163,4 +201,5 @@ export interface Notification {
   text: string
   time: string
   read: boolean
+  taskId?: string // verknüpfte MyTask → Inline-„Bestätigen“ in der Mitteilung
 }

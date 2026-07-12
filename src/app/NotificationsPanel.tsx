@@ -27,16 +27,30 @@ export function NotificationsPanel() {
             Alle gelesen
           </button>
         </div>
-        {state.notifs.map((notif) => (
-          <div key={notif.id} className={notif.read ? 'notif-row' : 'notif-row is-unread'}>
-            <span className="notif-dot" />
-            <div>
-              <div className="notif-row-title">{notif.title}</div>
-              <div className="notif-row-text">{notif.text}</div>
-              <div className="notif-row-time">{notif.time}</div>
+        {state.notifs.map((notif) => {
+          const canConfirm =
+            !!notif.taskId &&
+            state.myTasks.some((t) => t.id === notif.taskId && t.status === 'offen')
+          return (
+            <div key={notif.id} className={notif.read ? 'notif-row' : 'notif-row is-unread'}>
+              <span className="notif-dot" />
+              <div>
+                <div className="notif-row-title">{notif.title}</div>
+                <div className="notif-row-text">{notif.text}</div>
+                <div className="notif-row-time">{notif.time}</div>
+                {canConfirm && (
+                  <button
+                    type="button"
+                    className="notif-confirm"
+                    onClick={() => notif.taskId && dispatch({ type: 'confirmTask', id: notif.taskId })}
+                  >
+                    ✓ Bestätigen
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </>
   )

@@ -9,7 +9,19 @@
  */
 
 import { displayName, isQualified, isSong, workloadOf } from './helpers'
-import type { Meeting, MeetingTab, Person, Service, SlotSelection, Week } from './types'
+import type {
+  Meeting,
+  MeetingTab,
+  PartItem,
+  Person,
+  S89Payload,
+  Service,
+  SlotSelection,
+  Week,
+} from './types'
+
+/** Rollen, die die Auto-Zuteilung nicht besetzt (kommen von außen). */
+const SKIP_ROLE = /Gastredner|Kreisaufseher/
 
 /** Aktueller Name auf einem Slot ("" = offen). */
 export function slotValue(weeks: Week[], sel: SlotSelection): string {
@@ -56,6 +68,7 @@ export function countOpenSlots(meeting: Meeting, services: Service[]): number {
 export interface AutoAssignResult {
   weeks: Week[]
   count: number // Anzahl vergebener Zuteilungen
+  newly: string[] // neu vergebene Personennamen (→ pendingNames)
 }
 
 /**
@@ -96,16 +109,19 @@ export function autoAssignMeeting(
   }
 
   let count = 0
+  const newly: string[] = []
 
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
       for (const slot of item.names) {
-        if (slot.name || (slot.rolle ?? '').includes('Gastredner')) continue
+        // Gastredner-/Kreisaufseher-Slots kommen von außen und bleiben offen
+        if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
         const name = pickFor(slot.bereichsKey)
         if (name) {
           slot.name = name
           used.add(name)
+          newly.push(name)
           count++
         }
       }
@@ -125,6 +141,7 @@ export function autoAssignMeeting(
         if (name) {
           arr[pos] = name
           used.add(name)
+          newly.push(name)
           count++
         }
       }
@@ -132,5 +149,160 @@ export function autoAssignMeeting(
     meeting.helpers[svc.key] = arr
   }
 
-  return { weeks: next, count }
+  return { weeks: next, count, newly }
+}
+
+/**
+ * Baut die S-89-Nutzlast für einen belegten Schulungs-Slot (Schulungsaufgabe
+ * oder Bibellesung). Liefert null, wenn der Slot leer ist oder keine
+ * Schulungsaufgabe (Leser/Leiter zählen nicht). Rahmen und Schulungspunkt
+ * werden aus der Meta-Zeile geparst.
+ */
+export function buildS89ForSlot(weeks: Week[], sel: SlotSelection): S89Payload | null {
+  if (sel.kind !== 'part') return null
+  const meeting = weeks[sel.wi][sel.tab]
+  const item = meeting.sections[sel.si].items[sel.ii]
+  if (isSong(item)) return null
+  const current = item.names[sel.ni]?.name ?? ''
+  if (!current) return null
+  const isStudent = sel.priv === 'schulung' || item.title.startsWith('Bibellesung')
+  if (!isStudent) return null
+  const role = item.names[sel.ni]?.rolle ?? ''
+  const metaFrags = (item.meta ?? '').split(' · ')
+  const setting =
+    metaFrags.find(
+      (f) => f === 'Von Haus zu Haus' || f === 'Informell' || f === 'In der Öffentlichkeit',
+    ) ?? ''
+  const point = metaFrags.find((f) => /^(th|lmd) /.test(f)) ?? ''
+  return {
+    name: current,
+    partner: role.startsWith('mit ') ? role.slice(4) : '',
+    date: meeting.date.split(' · ').slice(0, 2).join(' · '),
+    type: item.title + (setting ? ` · ${setting}` : ''),
+    point,
+  }
+}
+
+/* ---- „Unser Leben als Christ“ im Planen bearbeiten ---------------------- */
+
+const MIN_RE = /(\d+) Min\./
+
+/** Minuten aus einer Meta-Zeile lesen ("Besprechung · 15 Min." → 15). */
+export function itemMinutes(item: PartItem): number | null {
+  const match = MIN_RE.exec(item.meta ?? '')
+  return match ? Number(match[1]) : null
+}
+
+/** Verschiebt "Ende ca. 20:45" um `delta` Minuten (mod 24 h). */
+export function shiftEnd(endStr: string, delta: number): string {
+  const match = /(\d+):(\d+)/.exec(endStr)
+  if (!match) return endStr
+  let t = Number(match[1]) * 60 + Number(match[2]) + delta
+  t = ((t % 1440) + 1440) % 1440
+  const hh = Math.floor(t / 60)
+  const mm = String(t % 60).padStart(2, '0')
+  return endStr.replace(/\d+:\d+/, `${hh}:${mm}`)
+}
+
+/** Indizes der verschiebbaren (Nicht-Lied-)Items einer Sektion. */
+function movableIndices(items: Meeting['sections'][number]['items']): number[] {
+  return items.map((x, i) => (isSong(x) ? -1 : i)).filter((i) => i >= 0)
+}
+
+/** Minuten eines LAC-Punkts ändern (5..45) und Meeting-Ende nachziehen. */
+export function lacAdjust(
+  weeks: Week[],
+  wi: number,
+  tab: MeetingTab,
+  si: number,
+  ii: number,
+  delta: number,
+): Week[] {
+  const next = structuredClone(weeks)
+  const meeting = next[wi][tab]
+  const item = meeting.sections[si].items[ii]
+  if (isSong(item)) return weeks
+  const cur = itemMinutes(item)
+  if (cur == null) return weeks
+  const target = Math.max(5, Math.min(45, cur + delta))
+  if (target === cur) return weeks
+  item.meta = (item.meta ?? '').replace(MIN_RE, `${target} Min.`)
+  meeting.end = shiftEnd(meeting.end, target - cur)
+  return next
+}
+
+/** LAC-Punkt entfernen und Meeting-Ende um dessen Minuten kürzen. */
+export function lacRemove(
+  weeks: Week[],
+  wi: number,
+  tab: MeetingTab,
+  si: number,
+  ii: number,
+): Week[] {
+  const next = structuredClone(weeks)
+  const meeting = next[wi][tab]
+  const item = meeting.sections[si].items[ii]
+  const mins = isSong(item) ? null : itemMinutes(item)
+  meeting.sections[si].items.splice(ii, 1)
+  if (mins != null) meeting.end = shiftEnd(meeting.end, -mins)
+  return next
+}
+
+/**
+ * LAC-Punkt um eine Position verschieben (nur Nicht-Lied-Items tauschen).
+ * Die laufenden Nummern bleiben positionsfest.
+ */
+export function lacMove(
+  weeks: Week[],
+  wi: number,
+  tab: MeetingTab,
+  si: number,
+  ii: number,
+  dir: -1 | 1,
+): Week[] {
+  const next = structuredClone(weeks)
+  const items = next[wi][tab].sections[si].items
+  const movables = movableIndices(items)
+  const pos = movables.indexOf(ii)
+  const tpos = pos + dir
+  if (pos < 0 || tpos < 0 || tpos >= movables.length) return weeks
+  const a = movables[pos]
+  const b = movables[tpos]
+  const nums = movables.map((i) => {
+    const it = items[i]
+    return isSong(it) ? undefined : it.num
+  })
+  const tmp = items[a]
+  items[a] = items[b]
+  items[b] = tmp
+  movables.forEach((i, k) => {
+    const it = items[i]
+    if (!isSong(it)) it.num = nums[k]
+  })
+  return next
+}
+
+/**
+ * Neuen LAC-Punkt (10 Min.) vor dem Versammlungsbibelstudium einfügen und
+ * Meeting-Ende um 10 Min. verlängern. Leerer Titel → keine Änderung.
+ */
+export function lacAdd(
+  weeks: Week[],
+  wi: number,
+  tab: MeetingTab,
+  si: number,
+  title: string,
+): Week[] {
+  const trimmed = title.trim()
+  if (!trimmed) return weeks
+  const next = structuredClone(weeks)
+  const meeting = next[wi][tab]
+  const items = meeting.sections[si].items
+  const vbsIdx = items.findIndex(
+    (x) => !isSong(x) && x.title.startsWith('Versammlungsbibelstudium'),
+  )
+  const newItem: PartItem = { title: trimmed, meta: '10 Min.', names: [{ name: '', bereichsKey: 'vortrag' }] }
+  items.splice(vbsIdx >= 0 ? vbsIdx : items.length, 0, newItem)
+  meeting.end = shiftEnd(meeting.end, 10)
+  return next
 }

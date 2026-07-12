@@ -15,20 +15,13 @@
   margin-top: 3px;
 }
 
-.prog-week-chip-row {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.prog-week-chip {
-  background: var(--tGld);
-  color: var(--acc);
-  border-radius: var(--r-pill);
-  padding: 3px 10px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+.prog-lang-hint {
+  margin-top: 12px;
+  background: var(--tNeu);
+  border-radius: 10px;
+  padding: 8px 11px;
+  font-size: 11px;
+  color: var(--mut);
 }
 
 .prog-tabs {

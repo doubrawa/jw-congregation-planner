@@ -3,6 +3,9 @@ import { initials } from '../data/helpers'
 import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { LanguageSheet } from '../components/LanguageSheet'
+import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
 import { LoginScreen } from '../login/LoginScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
@@ -131,6 +134,9 @@ export function AppShell() {
 
         {state.notifOpen && <NotificationsPanel />}
         {state.slotSel && <AssignSheet sel={state.slotSel} />}
+        {state.langSheetOpen && <LanguageSheet />}
+        {state.s89 && <S89Sheet payload={state.s89} />}
+        {state.confirmOpen && state.myTasks.some((t) => t.status === 'offen') && <ConfirmDialog />}
         {state.toast && (
           <div key={state.toast.id} className="toast" role="status">
             {state.toast.text}
