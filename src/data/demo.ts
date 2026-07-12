@@ -25,10 +25,6 @@ export const CURRENT_PERSON_ID = 'p9'
 /** Demo-Rechte: Prototyp zeigt Simon als Koordinator (volle Navigation). */
 export const DEMO_PLANNER = true
 
-export function sessionRoleLabel(planner: boolean): string {
-  return planner ? 'Koordinator (Demo)' : 'Verkündiger (Demo)'
-}
-
 export const CONGREGATION = {
   name: 'Musterstadt',
   hall: 'Hauptstraße 12',
