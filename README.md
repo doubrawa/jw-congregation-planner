@@ -6,11 +6,13 @@ Qualifikations-, Abwesenheits- und Auslastungsprüfung inkl. Auto-Zuteilung),
 Personenverwaltung, persönlicher Bereich (eigene Aufgaben/Abwesenheiten),
 Mitteilungen und Einstellungen.
 
-> **Status: Projekt-Gerüst.** Vite + React + TypeScript ist aufgesetzt,
-> Design-Tokens (hell/dunkel), Schriften und das Datenmodell stehen. Die
-> eigentlichen Screens werden gemäß [Design-Handoff](docs/design-handoff/README.md)
-> gebaut. Der aktuelle `App.tsx` ist ein Platzhalter (Wortmarke + Theme-Umschalter),
-> der Schriften und Tokens verifiziert.
+> **Status: Alle Screens gebaut.** Shell (Navigation, Mitteilungen, Toast,
+> Theming), Login (simuliert), Programm, Planen (inkl. Zuteilungs-Sheet und
+> Auto-Zuteilung), Aufgaben (persönlicher Bereich mit Abwesenheiten), Personen
+> (Liste + Detail) und Einstellungen (Hilfsdienste, Programm-Import) sind gemäß
+> [Design-Handoff](docs/design-handoff/README.md) umgesetzt und laufen mit
+> In-Memory-Demo-Daten aus dem Prototyp. Offen sind die Produktionsthemen
+> Persistenz/Auth/echter Import (siehe unten).
 
 ## Stack
 
@@ -34,12 +36,23 @@ npm run lint     # oxlint
 
 ```
 src/
+  app/              Shell (Sidebar/Bottom-Nav, Mitteilungen, Toast) + Context/Reducer
+  components/       Geteilte UI-Muster (Wochen-Navigation, Tabs, Bereichs-Panels)
   data/
     types.ts        Datenmodell aus dem Handoff (Week, Person, Service, …)
     constants.ts    Labels (Rollen, Aufgabenbereiche) + Bereichsfarben-Zuordnung
+    demo.ts         Demo-Daten, 1:1 aus dem Prototyp portiert
+    helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
+    planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
+  aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung
+  einstellungen/    Einstellungen (Hilfsdienste, Programm-Import)
+  login/            Login (simuliert, wie im Prototyp)
+  personen/         Personenliste + Detail (Stammdaten, Rolle, Aufgabenbereiche)
+  programm/         Programm-Screen (Startscreen)
+  planen/           Planen-Screen + Zuteilungs-Sheet
   styles/
     tokens.css      Alle Design-Tokens, hell + dunkel ([data-theme])
-  App.tsx           Platzhalter-Startscreen (wird ersetzt)
+  App.tsx           Einstieg: AppProvider + AppShell
   index.css         Reset/Basis + Import der Tokens
   main.tsx          React-Einstieg
 docs/
@@ -48,8 +61,6 @@ docs/
   deploy.yml        Auto-Deployment auf GitHub Pages
 ```
 
-**Geplante Feature-Ordner** (beim Bau der Screens anzulegen), je einer pro Bereich
-der Navigation: `programm`, `aufgaben`, `planen`, `personen`, `einstellungen`.
 
 ## Design-Referenz
 

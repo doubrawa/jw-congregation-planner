@@ -1,0 +1,85 @@
+/* Login — zentrierte Wortmarke + Formular (Prototyp, Screen 1). */
+
+.login {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 32px 72px;
+}
+
+.login-head {
+  text-align: center;
+}
+
+.login-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--acc);
+}
+
+.login-wordmark {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.15;
+  margin-top: 10px;
+}
+
+.login-sub {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--mut);
+  margin-top: 10px;
+}
+
+.login-form {
+  margin-top: 40px;
+  max-width: 366px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.login-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--mut);
+}
+
+.login-label--gap {
+  margin-top: 16px;
+}
+
+.login-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px 14px;
+  border-radius: var(--r-input);
+  border: 1px solid var(--bord);
+  background: var(--card);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.login-submit {
+  margin-top: 24px;
+}
+
+.login-forgot {
+  display: block;
+  margin: 16px auto 0;
+  font-size: 12px;
+  color: var(--acc);
+}
+
+.login-note {
+  text-align: center;
+  font-size: 11px;
+  color: var(--mut2);
+  margin-top: 44px;
+}

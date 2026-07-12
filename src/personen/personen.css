@@ -1,0 +1,166 @@
+/* Personen (Screen 5, nur Planer) — Liste mit Suche + Detail. */
+
+/* ---- Liste ------------------------------------------------------------------ */
+
+.pers-search {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--bord);
+  background: var(--card);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.pers-add {
+  margin-top: 12px;
+}
+
+.pers-list {
+  margin-top: 8px;
+}
+
+.pers-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line2);
+}
+
+.pers-row:hover {
+  background: var(--hov);
+}
+
+.pers-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pers-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--mut);
+  margin-top: 2px;
+}
+
+.pers-chevron {
+  color: var(--mut2);
+  font-size: 16px;
+}
+
+/* ---- Detail ------------------------------------------------------------------ */
+
+.pers-back {
+  display: block;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--acc);
+}
+
+.pers-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.pers-detail-name {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.pers-detail-sub {
+  font-size: 11.5px;
+  color: var(--mut);
+  margin-top: 2px;
+}
+
+.pers-field {
+  margin-top: 10px;
+}
+
+.pers-role-block {
+  margin-top: 14px;
+}
+
+.role-chips {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.role-chip {
+  border: 1px solid var(--bord3);
+  background: transparent;
+  color: var(--mut);
+  border-radius: var(--r-pill);
+  padding: 6px 13px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.role-chip.is-active {
+  border-color: var(--acc);
+  background: var(--acc);
+  color: var(--onAcc);
+}
+
+/* ---- Aufgabenbereiche (9 Toggles) ---------------------------------------------- */
+
+.priv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--panel-hair);
+}
+
+.priv-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.switch {
+  width: 40px;
+  height: 22px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--bord3);
+  position: relative;
+  transition: background 0.15s;
+}
+
+.switch.is-on {
+  background: var(--pet);
+}
+
+.switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--knob);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: left 0.15s;
+}
+
+.switch.is-on .switch-knob {
+  left: 20px;
+}
+
+.pers-save {
+  margin-top: 16px;
+}

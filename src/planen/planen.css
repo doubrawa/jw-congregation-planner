@@ -1,0 +1,259 @@
+/* Planen (Screen 3, nur Planer) — Slot-Chips + Zuteilungs-Sheet. */
+
+.plan-week-nav {
+  margin-top: 14px;
+}
+
+.plan-week-range {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.plan-tabs {
+  margin-top: 8px;
+}
+
+.plan-hint {
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--mut);
+}
+
+.plan-auto-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  background: var(--acc);
+  color: var(--onAcc);
+  border-radius: var(--r-pill);
+  padding: 11px 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.plan-auto-btn:hover {
+  background: var(--accD);
+}
+
+/* ---- Programmpunkte mit Slot-Chips -------------------------------------- */
+
+.plan-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--panel-hair);
+}
+
+.panel .plan-item:last-child {
+  border-bottom-color: transparent;
+}
+
+.plan-item-title {
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.plan-item-meta {
+  font-size: 11px;
+  color: var(--mut);
+  margin-top: 2px;
+}
+
+.plan-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.slot-chip {
+  border: 1px solid var(--bord);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--r-pill);
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.slot-chip.is-open {
+  border-style: dashed;
+  border-color: var(--dash);
+  background: transparent;
+  color: var(--mut);
+}
+
+.slot-chip:hover,
+.slot-chip.is-open:hover {
+  border-color: var(--acc);
+}
+
+/* ---- Hilfsdienste ---------------------------------------------------------- */
+
+.plan-helper-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineNeu);
+}
+
+.panel .plan-helper-row:last-child {
+  border-bottom-color: transparent;
+}
+
+.plan-helper-label {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--mut);
+}
+
+.plan-helper-row .plan-slots {
+  margin-top: 7px;
+}
+
+/* ---- Zuteilungs-Sheet -------------------------------------------------------
+ * Mobil: Bottom-Sheet (Breite ≤ 430); Desktop (≥ 920): zentriertes Modal.
+ */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 25, 15, 0.32);
+  z-index: 34;
+}
+
+.sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(430px, 100vw);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  box-shadow: 0 -12px 48px rgba(30, 25, 15, 0.3);
+  z-index: 35;
+  padding: 18px 20px;
+  max-height: 74vh;
+  overflow: auto;
+}
+
+@media (min-width: 920px) {
+  .sheet {
+    bottom: auto;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(480px, calc(100vw - 32px));
+    border-radius: var(--r-sheet);
+  }
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sheet-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.sheet-sub {
+  font-size: 11.5px;
+  color: var(--mut);
+  margin-top: 3px;
+}
+
+.sheet-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--bord);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mut);
+  font-size: 12px;
+  flex: none;
+}
+
+.sheet-current {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  background: var(--tNeu);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+
+.sheet-current strong {
+  font-weight: 600;
+}
+
+.sheet-remove {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--wein);
+}
+
+/* ---- Kandidatenliste ---- */
+
+.sheet-list {
+  margin-top: 6px;
+}
+
+.cand-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line2);
+}
+
+.cand-row:hover {
+  background: var(--hov);
+}
+
+.cand-row.is-absent {
+  opacity: 0.45;
+}
+
+.cand-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cand-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--mut);
+  margin-top: 1px;
+}
+
+.cand-chip {
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.cand-chip--frei {
+  background: var(--tPet);
+  color: var(--pet);
+}
+
+.cand-chip--absent {
+  background: var(--tWein);
+  color: var(--wein);
+}

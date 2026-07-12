@@ -48,6 +48,7 @@ export interface Person {
   fn: string // Vorname
   ln: string // Nachname
   role: Role
+  female?: boolean // weibliche Rollenbezeichnung ("Verkündigerin")
   tel: string
   mail: string
   absent: number[] // Wochenindizes, an denen die Person abwesend ist
@@ -69,13 +70,20 @@ export interface SlotAssignment {
   bereichsKey?: QualificationKey | string // nötige Qualifikation für den Slot
 }
 
-export interface ProgramItem {
+/** Lied zwischen Programmpunkten (zentriert, kursiv) — eigene Zeile. */
+export interface SongItem {
+  song: string // z. B. "Lied 128"
+}
+
+/** Regulärer Programmpunkt. */
+export interface PartItem {
   num?: number // laufende Nummer (kursiv, Bereichsfarbe)
   title: string
   meta?: string // Dauer / Quelle / Rahmen, z. B. "Von Haus zu Haus · 3 Min."
-  song?: string // Lied zwischen Punkten (zentriert, kursiv) — statt regulärem Punkt
   names: SlotAssignment[]
 }
+
+export type ProgramItem = SongItem | PartItem
 
 export interface Section {
   label: string // Caps-Label, z. B. "SCHÄTZE AUS GOTTES WORT"
@@ -114,6 +122,33 @@ export interface Absence {
   to: string // ISO-Datum
   reason: string // optional
 }
+
+/* ---- Zuteilungs-Sheet (Planen) ---- */
+
+interface SlotSelectionBase {
+  wi: number // Wochenindex
+  tab: MeetingTab
+  label: string // Sheet-Titel, z. B. "Bibellesung · Jer 32:6-18 · Leser"
+  priv: QualificationKey | string | null // nötige Qualifikation (null = alle)
+  groups: boolean // Gruppen-Rotation (Reinigung): Kandidaten sind Gruppe 1–3
+}
+
+/** Slot eines Programmpunkts (Section/Item/Name-Index). */
+export interface PartSlotSelection extends SlotSelectionBase {
+  kind: 'part'
+  si: number
+  ii: number
+  ni: number
+}
+
+/** Slot eines Hilfsdienstes (Dienst-Key + Position). */
+export interface HelperSlotSelection extends SlotSelectionBase {
+  kind: 'helper'
+  svc: string
+  pos: number
+}
+
+export type SlotSelection = PartSlotSelection | HelperSlotSelection
 
 export type NotificationType =
   | 'zuteilung' // Neue Zuteilung

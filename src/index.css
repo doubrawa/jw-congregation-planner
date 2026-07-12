@@ -34,10 +34,14 @@ figure {
   margin: 0;
 }
 
+/* Buttons sind im Design durchgehend eigene Pillen/Chips — nackter Reset */
 button {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
 }
 
 input,
@@ -55,6 +59,14 @@ a {
 :focus-visible {
   outline: 2px solid var(--acc);
   outline-offset: 2px;
+}
+
+/* Eingabefelder: weicher Fokus-Ring laut Handoff (--focus) */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
 }
 
 img {

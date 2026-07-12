@@ -1,0 +1,147 @@
+/* Meine Aufgaben (Screen 4, persönlicher Bereich). */
+
+/* ---- Nächste Aufgaben ----------------------------------------------------- */
+
+.auf-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--panel-hair);
+}
+
+.panel .auf-row:last-child {
+  border-bottom-color: transparent;
+}
+
+.auf-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.auf-date {
+  font-size: 11.5px;
+  color: var(--mut);
+  margin-top: 3px;
+}
+
+.auf-chip {
+  background: var(--acc);
+  color: var(--onAcc);
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.auf-empty {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--mut);
+  padding: 10px 0 2px;
+}
+
+/* ---- Abwesenheiten --------------------------------------------------------- */
+
+.abs-form-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.abs-field {
+  flex: 1;
+}
+
+.abs-reason {
+  margin-top: 10px;
+}
+
+.abs-submit {
+  margin-top: 14px;
+}
+
+/* "DEINE EINTRÄGE" — wie panel-label, aber mit Abstand zum Formular */
+.auf-entries-label {
+  padding-top: 18px;
+}
+
+.abs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--lineNeu);
+}
+
+.abs-range {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.abs-reason-text {
+  font-size: 11.5px;
+  color: var(--mut);
+  margin-top: 3px;
+}
+
+.abs-remove {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--bord3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mut);
+  font-size: 12px;
+}
+
+.abs-empty {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--mut);
+  padding: 10px 0 2px;
+}
+
+/* ---- Profil ------------------------------------------------------------------ */
+
+.theme-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.theme-chip {
+  border: 1px solid var(--bord3);
+  background: transparent;
+  color: var(--mut);
+  border-radius: var(--r-pill);
+  padding: 4px 11px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.theme-chip.is-active {
+  border-color: var(--acc);
+  background: var(--acc);
+  color: var(--onAcc);
+}
+
+.prof-logout {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wein);
+  padding: 6px 0;
+}
