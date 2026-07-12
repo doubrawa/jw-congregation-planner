@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useApp } from '../app/context'
 import { displayName, initials, isQualified, roleLabel, workloadOf } from '../data/helpers'
 import { buildS89ForSlot, slotValue } from '../data/planning'
+import { fill, useT } from '../i18n/useT'
 import type { SlotSelection } from '../data/types'
 import '../components/overlays.css'
 import './planen.css'
@@ -12,17 +13,17 @@ interface Candidate {
   name: string
   sub: string
   absent: boolean
-  free: boolean // 0 Aufgaben → Chip "frei"
+  free: boolean
 }
 
 /**
  * Zuteilungs-Sheet: mobil Bottom-Sheet, Desktop zentriertes Modal.
  * Kandidaten = qualifizierte Personen (Abwesende ausgegraut ans Listenende,
  * Auswahl blockiert mit Toast); Reinigungs-Slots: Gruppe 1–3.
- * Auswahl teilt sofort zu und schließt das Sheet.
  */
 export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const { state, dispatch } = useApp()
+  const { t, tu, tp } = useT()
   const close = () => dispatch({ type: 'closeSlot' })
 
   useEffect(() => {
@@ -35,13 +36,15 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
 
   const current = slotValue(state.weeks, sel)
   const s89 = buildS89ForSlot(state.weeks, sel)
+  const title = sel.kind === 'helper' ? tu(sel.label) : tp(sel.label)
+  const sub = `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
 
   const candidates: Candidate[] = sel.groups
     ? ['Gruppe 1', 'Gruppe 2', 'Gruppe 3'].map((group) => ({
         key: group,
         initials: group.replace('Gruppe ', 'G'),
-        name: group,
-        sub: 'Reinigungsgruppe',
+        name: tu(group),
+        sub: t.reinigungsgruppe,
         absent: false,
         free: false,
       }))
@@ -50,21 +53,22 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
         .map((p) => {
           const name = displayName(p)
           const workload = workloadOf(state.weeks, name)
+          const workloadLabel =
+            workload === 1 ? t.aufgabeIn4 : fill(t.aufgabenIn4, { n: workload })
           return {
             key: p.id,
             initials: initials(p),
             name,
-            sub: `${roleLabel(p)} · ${workload} ${workload === 1 ? 'Aufgabe' : 'Aufgaben'} in ${state.weeks.length} Wochen`,
+            sub: `${tu(roleLabel(p))} · ${workloadLabel}`,
             absent: p.absent.includes(sel.wi),
             free: workload === 0,
           }
         })
-        // Abwesende ans Listenende (stabil)
         .sort((a, b) => Number(a.absent) - Number(b.absent))
 
   const pick = (cand: Candidate) => {
     if (cand.absent) {
-      dispatch({ type: 'showToast', text: `${cand.name} ist in dieser Woche abwesend` })
+      dispatch({ type: 'showToast', text: fill(t.toastAbsentP, { name: cand.name }) })
       return
     }
     dispatch({ type: 'assign', name: cand.name })
@@ -73,15 +77,13 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   return (
     <>
       <div className="sheet-backdrop" onClick={close} />
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={sel.label}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-head">
           <div>
-            <div className="sheet-title">{sel.label}</div>
-            <div className="sheet-sub">
-              {state.weeks[sel.wi].range} · {sel.tab === 'mid' ? 'Unter der Woche' : 'Wochenende'}
-            </div>
+            <div className="sheet-title">{title}</div>
+            <div className="sheet-sub">{sub}</div>
           </div>
-          <button type="button" className="sheet-close" aria-label="Schließen" onClick={close}>
+          <button type="button" className="sheet-close" aria-label="✕" onClick={close}>
             ✕
           </button>
         </div>
@@ -89,7 +91,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
         {current && (
           <div className="sheet-current">
             <span>
-              Aktuell: <strong>{current}</strong>
+              {t.aktuellLbl} <strong>{tu(current)}</strong>
             </span>
             <div className="sheet-current-actions">
               {s89 && (
@@ -98,7 +100,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                   className="sheet-s89-link"
                   onClick={() => dispatch({ type: 'openS89', payload: s89 })}
                 >
-                  S-89 anzeigen
+                  {t.s89Open}
                 </button>
               )}
               <button
@@ -106,7 +108,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                 className="sheet-remove"
                 onClick={() => dispatch({ type: 'assign', name: '' })}
               >
-                Entfernen
+                {t.entfernen}
               </button>
             </div>
           </div>
@@ -126,9 +128,9 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                 <span className="cand-sub">{cand.sub}</span>
               </span>
               {cand.absent ? (
-                <span className="cand-chip cand-chip--absent">Abwesend</span>
+                <span className="cand-chip cand-chip--absent">{t.abwesendChip}</span>
               ) : cand.free ? (
-                <span className="cand-chip cand-chip--frei">frei</span>
+                <span className="cand-chip cand-chip--frei">{t.freiChip}</span>
               ) : null}
             </button>
           ))}

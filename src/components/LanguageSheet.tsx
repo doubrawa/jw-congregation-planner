@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useApp } from '../app/context'
 import { CONG_LANGS } from '../i18n/langs'
+import { fill, useT } from '../i18n/useT'
 import './overlays.css'
 
 /**
@@ -9,6 +10,7 @@ import './overlays.css'
  */
 export function LanguageSheet() {
   const { state, dispatch } = useApp()
+  const { t } = useT()
   const close = () => dispatch({ type: 'closeLangSheet' })
 
   useEffect(() => {
@@ -28,18 +30,20 @@ export function LanguageSheet() {
       <div className="sheet sheet--lang" role="dialog" aria-modal="true" aria-label="Versammlungssprache">
         <div className="sheet-head">
           <div>
-            <div className="sheet-title">Versammlungssprache</div>
-            <div className="sheet-sub">{filtered.length} Sprachen · Sprachliste von jw.org</div>
+            <div className="sheet-title">{t.versSprache}</div>
+            <div className="sheet-sub">
+              {fill(t.langCount, { n: filtered.length })} · {t.langListNote}
+            </div>
           </div>
-          <button type="button" className="sheet-close" aria-label="Schließen" onClick={close}>
+          <button type="button" className="sheet-close" aria-label="✕" onClick={close}>
             ✕
           </button>
         </div>
         <input
           type="text"
           className="lang-search"
-          placeholder="Sprache suchen …"
-          aria-label="Sprache suchen"
+          placeholder={t.langSearchPh}
+          aria-label={t.langSearchPh}
           value={state.langSearch}
           onChange={(e) => dispatch({ type: 'setLangSearch', text: e.target.value })}
         />

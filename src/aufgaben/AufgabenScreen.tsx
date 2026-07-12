@@ -1,34 +1,35 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
-import { CONGREGATION, CURRENT_PERSON_ID, sessionRoleLabel } from '../data/demo'
-import { APP_LANGS } from '../i18n/langs'
+import { CONGREGATION, CURRENT_PERSON_ID } from '../data/demo'
+import { APP_LANGS, LOCALES } from '../i18n/langs'
+import { useT } from '../i18n/useT'
 import { performLogout } from '../lib/supabase'
 import './aufgaben.css'
 
-/** ISO-Datum → "12. Oktober" (wie Prototyp fmtDate). */
-function fmtDate(iso: string): string {
-  if (!iso) return ''
-  const date = new Date(`${iso}T12:00:00`)
-  return date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })
-}
-
 /**
- * Meine Aufgaben (Screen 4, persönlicher Bereich): nächste Aufgaben mit
- * Bestätigungs-Status (bestätigen / verhindert, S-89 anzeigen), eigene
- * Abwesenheiten, Profil mit Darstellung/Sprache und Abmelden.
+ * Meine Aufgaben (Screen 4): nächste Aufgaben mit Bestätigungs-Status
+ * (bestätigen / verhindert, S-89 anzeigen), eigene Abwesenheiten, Profil
+ * mit Darstellung/Sprache und Abmelden.
  */
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
+  const { t, tu, tp } = useT()
   const me = state.persons.find((p) => p.id === CURRENT_PERSON_ID)
 
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [reason, setReason] = useState('')
 
+  const fmtDate = (iso: string): string => {
+    if (!iso) return ''
+    const date = new Date(`${iso}T12:00:00`)
+    return date.toLocaleDateString(LOCALES[state.lang], { day: 'numeric', month: 'long' })
+  }
+
   const addAbsence = (event: FormEvent) => {
     event.preventDefault()
     if (!from || !to) {
-      dispatch({ type: 'showToast', text: 'Bitte Von und Bis angeben' })
+      dispatch({ type: 'showToast', text: t.toastVonBis })
       return
     }
     dispatch({ type: 'addAbsence', absence: { id: crypto.randomUUID(), from, to, reason } })
@@ -39,18 +40,18 @@ export function AufgabenScreen() {
 
   return (
     <section className="screen">
-      <h1 className="screen-title">Meine Aufgaben</h1>
+      <h1 className="screen-title">{t.navAufgabenLong}</h1>
       <p className="screen-subtitle">
-        {me ? `${me.fn} ${me.ln}` : ''} · Versammlung {CONGREGATION.name}
+        {me ? `${me.fn} ${me.ln}` : ''} · {t.congName}
       </p>
 
       <div className="panel panel--lead" data-farbe="gold">
-        <div className="panel-label">NÄCHSTE AUFGABEN</div>
+        <div className="panel-label">{t.naechsteAufgaben}</div>
         {state.myTasks.map((task) => (
           <div key={task.id} className="auf-row">
             <div>
-              <div className="auf-title">{task.title}</div>
-              <div className="auf-date">{task.date}</div>
+              <div className="auf-title">{tp(task.title)}</div>
+              <div className="auf-date">{tp(task.date)}</div>
               <div className="auf-actions">
                 {task.status === 'offen' && (
                   <button
@@ -58,14 +59,14 @@ export function AufgabenScreen() {
                     className="auf-confirm"
                     onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
                   >
-                    ✓ Bestätigen
+                    ✓ {t.bestaetigen}
                   </button>
                 )}
                 {task.status === 'bestätigt' && (
-                  <span className="auf-badge auf-badge--best">✓ Bestätigt</span>
+                  <span className="auf-badge auf-badge--best">✓ {t.bestaetigt}</span>
                 )}
                 {task.status === 'verhindert' && (
-                  <span className="auf-badge auf-badge--verh">Verhindert</span>
+                  <span className="auf-badge auf-badge--verh">{t.verhindertChip}</span>
                 )}
                 {task.s89 && (
                   <button
@@ -73,23 +74,22 @@ export function AufgabenScreen() {
                     className="auf-s89"
                     onClick={() => task.s89 && dispatch({ type: 'openS89', payload: task.s89 })}
                   >
-                    S-89 anzeigen ›
+                    {t.s89Open} ›
                   </button>
                 )}
               </div>
             </div>
-            {task.chip && <span className="auf-chip">{task.chip}</span>}
+            {task.chip && <span className="auf-chip">{tu(task.chip)}</span>}
           </div>
         ))}
-        {state.myTasks.length === 0 && <p className="auf-empty">Keine Aufgaben zugeteilt.</p>}
       </div>
 
       <form className="panel panel--pb16" data-farbe="neutral" onSubmit={addAbsence}>
-        <div className="panel-label">ABWESENHEITEN</div>
+        <div className="panel-label">{t.abwesenheiten}</div>
         <div className="abs-form-row">
           <div className="abs-field">
             <label className="field-label" htmlFor="abs-from">
-              VON
+              {t.von}
             </label>
             <input
               id="abs-from"
@@ -101,7 +101,7 @@ export function AufgabenScreen() {
           </div>
           <div className="abs-field">
             <label className="field-label" htmlFor="abs-to">
-              BIS
+              {t.bis}
             </label>
             <input
               id="abs-to"
@@ -114,61 +114,61 @@ export function AufgabenScreen() {
         </div>
         <div className="abs-reason">
           <label className="field-label" htmlFor="abs-reason">
-            GRUND (OPTIONAL)
+            {t.grundOpt}
           </label>
           <input
             id="abs-reason"
             className="field-input"
             type="text"
-            placeholder="z. B. Urlaub"
+            placeholder={t.grundPh}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
         </div>
         <button type="submit" className="btn-outline abs-submit">
-          ABWESENHEIT EINTRAGEN
+          {t.abwEintragen}
         </button>
 
-        <div className="panel-label auf-entries-label">DEINE EINTRÄGE</div>
+        <div className="panel-label auf-entries-label">{t.deineEintraege}</div>
         {state.absences.map((absence) => (
           <div key={absence.id} className="abs-row">
             <div>
               <div className="abs-range">
                 {fmtDate(absence.from)} – {fmtDate(absence.to)}
               </div>
-              <div className="abs-reason-text">{absence.reason || 'Ohne Angabe'}</div>
+              <div className="abs-reason-text">{absence.reason || t.ohneAngabe}</div>
             </div>
             <button
               type="button"
               className="abs-remove"
-              aria-label="Abwesenheit löschen"
+              aria-label="✕"
               onClick={() => dispatch({ type: 'removeAbsence', id: absence.id })}
             >
               ✕
             </button>
           </div>
         ))}
-        {state.absences.length === 0 && (
-          <p className="abs-empty">Keine Abwesenheiten eingetragen.</p>
-        )}
+        {state.absences.length === 0 && <p className="abs-empty">{t.keineAbw}</p>}
       </form>
 
       <div className="panel panel--pb14" data-farbe="neutral">
-        <div className="panel-label">PROFIL</div>
+        <div className="panel-label">{t.profil}</div>
         <div className="kv-row">
-          <span className="kv-key">Name</span>
+          <span className="kv-key">{t.nameLbl}</span>
           <span className="kv-val">{me ? `${me.fn} ${me.ln}` : ''}</span>
         </div>
         <div className="kv-row">
-          <span className="kv-key">Versammlung</span>
+          <span className="kv-key">{t.versammlungLbl}</span>
           <span className="kv-val">{CONGREGATION.name}</span>
         </div>
         <div className="kv-row">
-          <span className="kv-key">Rolle</span>
-          <span className="kv-val">{sessionRoleLabel(state.planner)}</span>
+          <span className="kv-key">{t.rolleLbl}</span>
+          <span className="kv-val">
+            {state.planner ? t.rolleKoordinator : t.rolleVerkuendiger}
+          </span>
         </div>
         <div className="kv-row">
-          <span className="kv-key">Darstellung</span>
+          <span className="kv-key">{t.darstellung}</span>
           <div className="theme-chips">
             <button
               type="button"
@@ -176,7 +176,7 @@ export function AufgabenScreen() {
               aria-pressed={state.theme === 'light'}
               onClick={() => dispatch({ type: 'setTheme', theme: 'light' })}
             >
-              Hell
+              {t.hell}
             </button>
             <button
               type="button"
@@ -184,12 +184,12 @@ export function AufgabenScreen() {
               aria-pressed={state.theme === 'dark'}
               onClick={() => dispatch({ type: 'setTheme', theme: 'dark' })}
             >
-              Dunkel
+              {t.dunkel}
             </button>
           </div>
         </div>
         <div className="kv-row kv-row--plain">
-          <span className="kv-key">Sprache</span>
+          <span className="kv-key">{t.spracheLbl}</span>
           <div className="theme-chips theme-chips--wrap">
             {APP_LANGS.map(({ code, label }) => (
               <button
@@ -205,7 +205,7 @@ export function AufgabenScreen() {
           </div>
         </div>
         <button type="button" className="prof-logout" onClick={() => performLogout(dispatch)}>
-          Abmelden
+          {t.abmelden}
         </button>
       </div>
     </section>

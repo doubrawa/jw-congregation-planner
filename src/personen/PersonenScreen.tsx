@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
-import { QUALIFICATION_LABEL, QUALIFICATION_ORDER, ROLE_LABEL } from '../data/constants'
-import { CONGREGATION } from '../data/demo'
+import { QUALIFICATION_ORDER } from '../data/constants'
 import { initials, roleLabel } from '../data/helpers'
+import { fill, useT } from '../i18n/useT'
+import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
 import type { Person, Role } from '../data/types'
 import './personen.css'
 
@@ -22,9 +23,7 @@ const EMPTY_PRIV: Person['priv'] = {
 
 /**
  * Personen (Screen 5, nur Planer): Liste mit Live-Suche und Detail mit
- * Stammdaten, Rollen-Chips und den 9 Aufgabenbereich-Toggles. Änderungen
- * wirken direkt auf den State (wie im Prototyp); SPEICHERN führt zur Liste
- * zurück und bestätigt per Toast.
+ * Stammdaten, Rollen-Chips und den 9 Aufgabenbereich-Toggles.
  */
 export function PersonenScreen() {
   const { state } = useApp()
@@ -34,6 +33,7 @@ export function PersonenScreen() {
 
 function PersonList() {
   const { state, dispatch } = useApp()
+  const { t, tu } = useT()
   const [search, setSearch] = useState('')
 
   const query = search.trim().toLowerCase()
@@ -60,21 +60,21 @@ function PersonList() {
   return (
     <section className="screen">
       <div className="screen-head">
-        <h1 className="screen-title">Personen</h1>
-        <span className="screen-head-note">{state.persons.length} Personen</span>
+        <h1 className="screen-title">{t.personen}</h1>
+        <span className="screen-head-note">{fill(t.personenCount, { n: state.persons.length })}</span>
       </div>
 
       <input
         type="text"
         className="pers-search"
-        placeholder="Suchen …"
-        aria-label="Personen durchsuchen"
+        placeholder={t.suchen}
+        aria-label={t.suchen}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
       <button type="button" className="btn-outline pers-add" onClick={addPerson}>
-        + NEUE PERSON ANLEGEN
+        {t.neuePerson}
       </button>
 
       <div className="pers-list">
@@ -87,10 +87,10 @@ function PersonList() {
           >
             <span className="avatar avatar--tint avatar--40">{initials(person)}</span>
             <span>
-              <span className="pers-name">{`${person.fn} ${person.ln}`.trim() || 'Neue Person'}</span>
+              <span className="pers-name">{`${person.fn} ${person.ln}`.trim() || '—'}</span>
               <span className="pers-sub">
-                {roleLabel(person)} ·{' '}
-                {Object.values(person.priv).filter(Boolean).length} Aufgabenbereiche
+                {tu(roleLabel(person))} ·{' '}
+                {fill(t.aufgabenbereicheN, { n: Object.values(person.priv).filter(Boolean).length })}
               </span>
             </span>
             <span className="pers-chevron">›</span>
@@ -103,14 +103,15 @@ function PersonList() {
 
 function PersonDetail({ person }: { person: Person }) {
   const { dispatch } = useApp()
+  const { t, tu } = useT()
   const update = (patch: Partial<Person>) =>
     dispatch({ type: 'updatePerson', id: person.id, patch })
 
   const fields: Array<[keyof Person & ('fn' | 'ln' | 'tel' | 'mail'), string]> = [
-    ['fn', 'VORNAME'],
-    ['ln', 'NACHNAME'],
-    ['tel', 'TELEFON'],
-    ['mail', 'E-MAIL'],
+    ['fn', t.vorname],
+    ['ln', t.nachname],
+    ['tel', t.telefon],
+    ['mail', t.emailLbl],
   ]
 
   return (
@@ -120,21 +121,21 @@ function PersonDetail({ person }: { person: Person }) {
         className="pers-back"
         onClick={() => dispatch({ type: 'selectPerson', id: null })}
       >
-        ‹ Alle Personen
+        {t.allePersonen}
       </button>
 
       <div className="pers-detail-head">
         <span className="avatar avatar--tint avatar--54">{initials(person)}</span>
         <div>
-          <h1 className="pers-detail-name">{`${person.fn} ${person.ln}`.trim() || 'Neue Person'}</h1>
+          <h1 className="pers-detail-name">{`${person.fn} ${person.ln}`.trim() || '—'}</h1>
           <div className="pers-detail-sub">
-            {roleLabel(person)} · Versammlung {CONGREGATION.name}
+            {tu(roleLabel(person))} · {t.congName}
           </div>
         </div>
       </div>
 
       <div className="panel panel--lead panel--pb16" data-farbe="neutral">
-        <div className="panel-label">STAMMDATEN</div>
+        <div className="panel-label">{t.stammdaten}</div>
         {fields.map(([key, label]) => (
           <div key={key} className="pers-field">
             <label className="field-label" htmlFor={`pers-${key}`}>
@@ -150,7 +151,7 @@ function PersonDetail({ person }: { person: Person }) {
           </div>
         ))}
         <div className="pers-role-block">
-          <div className="field-label">ROLLE</div>
+          <div className="field-label">{t.rolle}</div>
           <div className="role-chips">
             {ROLE_ORDER.map((role) => (
               <button
@@ -160,7 +161,7 @@ function PersonDetail({ person }: { person: Person }) {
                 aria-pressed={person.role === role}
                 onClick={() => update({ role })}
               >
-                {ROLE_LABEL[role]}
+                {t[ROLE_KEY[role]]}
               </button>
             ))}
           </div>
@@ -168,17 +169,17 @@ function PersonDetail({ person }: { person: Person }) {
       </div>
 
       <div className="panel panel--pb10" data-farbe="petrol">
-        <div className="panel-label">AUFGABENBEREICHE</div>
+        <div className="panel-label">{t.aufgabenbereiche}</div>
         {QUALIFICATION_ORDER.map((key) => {
           const on = person.priv[key]
           return (
             <div key={key} className="priv-row">
-              <span className="priv-label">{QUALIFICATION_LABEL[key]}</span>
+              <span className="priv-label">{t[PRIV_KEY[key]]}</span>
               <button
                 type="button"
                 role="switch"
                 aria-checked={on}
-                aria-label={QUALIFICATION_LABEL[key]}
+                aria-label={t[PRIV_KEY[key]]}
                 className={on ? 'switch is-on' : 'switch'}
                 onClick={() => update({ priv: { ...person.priv, [key]: !on } })}
               >
@@ -194,7 +195,7 @@ function PersonDetail({ person }: { person: Person }) {
         className="btn-primary pers-save"
         onClick={() => dispatch({ type: 'savePerson' })}
       >
-        SPEICHERN
+        {t.speichern}
       </button>
     </section>
   )

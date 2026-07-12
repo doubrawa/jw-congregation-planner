@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { useT } from '../i18n/useT'
 import './overlays.css'
 
 /**
@@ -9,43 +10,39 @@ import './overlays.css'
  */
 export function ConfirmDialog() {
   const { state, dispatch } = useApp()
-  const openTasks = state.myTasks.filter((t) => t.status === 'offen')
+  const { t, tp } = useT()
+  const openTasks = state.myTasks.filter((task) => task.status === 'offen')
 
   return (
     <>
       <div className="confirm-backdrop" />
-      <div className="confirm-modal" role="dialog" aria-modal="true" aria-label="Zuteilungen bestätigen">
-        <div className="confirm-eyebrow">ERINNERUNG</div>
-        <h2 className="confirm-title">Bitte bestätige deine Zuteilungen</h2>
-        <p className="confirm-intro">
-          Du hast Zuteilungen, die noch nicht bestätigt sind. Bitte bestätige sie, damit sich der
-          Koordinator darauf verlassen kann.
-        </p>
+      <div className="confirm-modal" role="dialog" aria-modal="true" aria-label={t.confirmTitle}>
+        <div className="confirm-eyebrow">{t.erinnerungCap}</div>
+        <h2 className="confirm-title">{t.confirmTitle}</h2>
+        <p className="confirm-intro">{t.confirmIntro}</p>
         {openTasks.map((task) => (
           <div key={task.id} className="confirm-task">
-            <div className="confirm-task-title">{task.title}</div>
-            <div className="confirm-task-date">{task.date}</div>
+            <div className="confirm-task-title">{tp(task.title)}</div>
+            <div className="confirm-task-date">{tp(task.date)}</div>
             <div className="confirm-actions">
               <button
                 type="button"
                 className="confirm-yes"
                 onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
               >
-                ✓ Bestätigen
+                ✓ {t.bestaetigen}
               </button>
               <button
                 type="button"
                 className="confirm-no"
                 onClick={() => dispatch({ type: 'declineTask', id: task.id })}
               >
-                Ich bin verhindert
+                {t.verhindert}
               </button>
             </div>
           </div>
         ))}
-        <p className="confirm-foot">
-          Ohne Bestätigung wirst du beim nächsten Öffnen erneut erinnert.
-        </p>
+        <p className="confirm-foot">{t.confirmRequired}</p>
       </div>
     </>
   )

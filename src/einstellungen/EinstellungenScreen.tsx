@@ -1,38 +1,37 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
-import { QUALIFICATION_LABEL } from '../data/constants'
-import { CONGREGATION, WORKBOOK_LABEL } from '../data/demo'
+import { CONGREGATION } from '../data/demo'
 import { CONG_TO_CODE } from '../i18n/langs'
+import { PRIV_KEY, type Dict } from '../i18n/ui'
+import { fill, useT } from '../i18n/useT'
 import type { QualificationKey, Service } from '../data/types'
 import './einstellungen.css'
 
-function serviceSub(service: Service): string {
-  if (service.groups) return 'Gruppen-Rotation'
-  if (service.priv) return `Bereich: ${QUALIFICATION_LABEL[service.priv as QualificationKey] ?? service.priv}`
-  return 'Alle Verkündiger'
-}
-
-/** Untertitel für die Erinnerungs-Stepper: "N Tage vorher" / "Am Tag der Aufgabe". */
-function reminderSub(n: number): string {
-  if (n === 0) return 'Am Tag der Aufgabe'
-  return n === 1 ? '1 Tag vorher' : `${n} Tage vorher`
-}
-
 /**
- * Einstellungen (Screen 6, nur Planer): Versammlungs-Stammdaten (Anzeige),
- * Hilfsdienste konfigurieren (Anzahl 1–6, entfernen, eigene hinzufügen —
- * wirkt sofort auf Programm und Planung) und simulierter Arbeitsheft-Import
- * (~0.9 s, hängt die nächste Woche ohne Zuteilungen an).
+ * Einstellungen (Screen 6, nur Planer): Versammlung, Hilfsdienste,
+ * Sprache (Versammlungssprache-Sheet), Erinnerungen und Programm-Import.
  */
 export function EinstellungenScreen() {
   const { state, dispatch } = useApp()
+  const { t, tu } = useT()
   const [serviceName, setServiceName] = useState('')
+
+  const serviceSub = (service: Service): string => {
+    if (service.groups) return t.gruppenRotation
+    if (service.priv) return t.bereich + t[PRIV_KEY[service.priv as QualificationKey]]
+    return t.alleVerk
+  }
+
+  const reminderSub = (n: number): string => {
+    if (n === 0) return t.remAmTag
+    return n === 1 ? t.remTagVorher : fill(t.remTageVorher, { n })
+  }
 
   const addService = (event: FormEvent) => {
     event.preventDefault()
     const name = serviceName.trim()
     if (!name) {
-      dispatch({ type: 'showToast', text: 'Bitte einen Namen eingeben' })
+      dispatch({ type: 'showToast', text: t.toastNameEingeben })
       return
     }
     dispatch({
@@ -44,7 +43,7 @@ export function EinstellungenScreen() {
 
   const importWorkbook = () => {
     if (state.imported) {
-      dispatch({ type: 'showToast', text: 'Alle verfügbaren Wochen sind importiert' })
+      dispatch({ type: 'showToast', text: t.toastAlleWochen })
       return
     }
     if (state.importing) return
@@ -53,53 +52,53 @@ export function EinstellungenScreen() {
   }
 
   const importLabel = state.importing
-    ? 'IMPORTIERE …'
+    ? t.importiere
     : state.imported
-      ? 'ALLE WOCHEN IMPORTIERT'
-      : 'NÄCHSTE WOCHE IMPORTIEREN'
+      ? t.alleImportiert
+      : t.importBtn
 
-  // Demo-Programminhalte gibt es nur für de/en/es/fr — sonst Anzeige auf Deutsch
   const progFallback = !CONG_TO_CODE[state.congLang]
-  const demoLangHint =
-    'Demo: Programminhalte sind nur auf Deutsch, Englisch, Spanisch und Französisch verfügbar — Anzeige auf Deutsch.'
+
+  const reminderRows: Array<{ key: 'first' | 'last'; name: keyof Dict }> = [
+    { key: 'first', name: 'remErste' },
+    { key: 'last', name: 'remLetzte' },
+  ]
 
   return (
     <section className="screen">
-      <h1 className="screen-title">Einstellungen</h1>
-      <p className="screen-subtitle">Versammlung {CONGREGATION.name}</p>
+      <h1 className="screen-title">{t.einstellungen}</h1>
+      <p className="screen-subtitle">{t.congName}</p>
 
       <div className="panel panel--lead panel--pb14" data-farbe="neutral">
-        <div className="panel-label">VERSAMMLUNG</div>
+        <div className="panel-label">{t.versammlungCard}</div>
         <div className="kv-row">
-          <span className="kv-key">Name</span>
+          <span className="kv-key">{t.nameLbl}</span>
           <span className="kv-val">{CONGREGATION.name}</span>
         </div>
         <div className="kv-row">
-          <span className="kv-key">Königreichssaal</span>
+          <span className="kv-key">{t.saal}</span>
           <span className="kv-val">{CONGREGATION.hall}</span>
         </div>
         <div className="kv-row kv-row--plain">
-          <span className="kv-key">Zusammenkünfte</span>
-          <span className="kv-val">{CONGREGATION.meetings}</span>
+          <span className="kv-key">{t.zusammenkuenfte}</span>
+          <span className="kv-val">{tu(CONGREGATION.meetings)}</span>
         </div>
       </div>
 
       <form className="panel panel--pb16" data-farbe="petrol" onSubmit={addService}>
-        <div className="panel-label">HILFSDIENSTE</div>
-        <p className="panel-hint">
-          Anzahl benötigter Personen je Dienst — wirkt sofort auf Programm und Planung.
-        </p>
+        <div className="panel-label">{t.hilfsdienste}</div>
+        <p className="panel-hint">{t.hdDesc}</p>
         {state.services.map((service) => (
           <div key={service.key} className="svc-row">
             <div>
-              <div className="svc-name">{service.name}</div>
+              <div className="svc-name">{tu(service.name)}</div>
               <div className="svc-sub">{serviceSub(service)}</div>
             </div>
             <div className="svc-controls">
               <button
                 type="button"
                 className="stepper-btn"
-                aria-label={`${service.name}: weniger`}
+                aria-label="–"
                 onClick={() => dispatch({ type: 'changeServiceCount', key: service.key, delta: -1 })}
               >
                 –
@@ -108,7 +107,7 @@ export function EinstellungenScreen() {
               <button
                 type="button"
                 className="stepper-btn"
-                aria-label={`${service.name}: mehr`}
+                aria-label="+"
                 onClick={() => dispatch({ type: 'changeServiceCount', key: service.key, delta: 1 })}
               >
                 +
@@ -116,7 +115,7 @@ export function EinstellungenScreen() {
               <button
                 type="button"
                 className="svc-remove"
-                aria-label={`${service.name} entfernen`}
+                aria-label="✕"
                 onClick={() => dispatch({ type: 'removeService', key: service.key })}
               >
                 ✕
@@ -128,58 +127,52 @@ export function EinstellungenScreen() {
           <input
             type="text"
             className="svc-add-input"
-            placeholder="Neuer Dienst, z. B. Parkplatz"
-            aria-label="Name des neuen Dienstes"
+            placeholder={t.neuerDienstPh}
+            aria-label={t.neuerDienstPh}
             value={serviceName}
             onChange={(e) => setServiceName(e.target.value)}
           />
           <button type="submit" className="svc-add-btn">
-            + HINZUFÜGEN
+            {t.hinzufuegen}
           </button>
         </div>
       </form>
 
       <div className="panel panel--pb14" data-farbe="gold">
-        <div className="panel-label">SPRACHE</div>
+        <div className="panel-label">{t.spracheCard}</div>
         <button
           type="button"
           className="lang-card-row"
           onClick={() => dispatch({ type: 'openLangSheet' })}
         >
-          <span className="lang-card-key">Versammlungssprache</span>
+          <span className="lang-card-key">{t.versSprache}</span>
           <span className="lang-card-val">
             <span>{state.congLang}</span>
             <span className="lang-card-chevron">›</span>
           </span>
         </button>
-        <p className="lang-card-desc">
-          Bestimmt die Sprache des Arbeitshefts beim Programm-Import.
-        </p>
-        {progFallback && <div className="lang-demo-hint">{demoLangHint}</div>}
+        <p className="lang-card-desc">{t.versSpracheDesc}</p>
+        {progFallback && <div className="lang-demo-hint">{t.demoLangHint}</div>}
       </div>
 
       <div className="panel panel--pb14" data-farbe="wein">
-        <div className="panel-label">ERINNERUNGEN</div>
-        <p className="panel-hint">
-          Automatische Mitteilungen zu Zuteilungen, bis sie bestätigt sind.
-        </p>
+        <div className="panel-label">{t.erinnerungenCard}</div>
+        <p className="panel-hint">{t.remDesc}</p>
         <div className="kv-row">
-          <span className="kv-key">Bei Zuteilung</span>
-          <span className="kv-val">Sofort</span>
+          <span className="kv-key">{t.remBeiZut}</span>
+          <span className="kv-val">{t.remSofort}</span>
         </div>
-        {(['first', 'last'] as const).map((key) => (
+        {reminderRows.map(({ key, name }) => (
           <div key={key} className="svc-row">
             <div>
-              <div className="svc-name">
-                {key === 'first' ? 'Erste Erinnerung' : 'Letzte Erinnerung'}
-              </div>
+              <div className="svc-name">{t[name]}</div>
               <div className="svc-sub">{reminderSub(state.reminders[key])}</div>
             </div>
             <div className="svc-controls">
               <button
                 type="button"
                 className="stepper-btn"
-                aria-label={`${key === 'first' ? 'Erste' : 'Letzte'} Erinnerung: weniger`}
+                aria-label="–"
                 onClick={() => dispatch({ type: 'changeReminder', key, delta: -1 })}
               >
                 –
@@ -188,7 +181,7 @@ export function EinstellungenScreen() {
               <button
                 type="button"
                 className="stepper-btn"
-                aria-label={`${key === 'first' ? 'Erste' : 'Letzte'} Erinnerung: mehr`}
+                aria-label="+"
                 onClick={() => dispatch({ type: 'changeReminder', key, delta: 1 })}
               >
                 +
@@ -197,12 +190,12 @@ export function EinstellungenScreen() {
           </div>
         ))}
         <div className="rem-toggle-row">
-          <span className="rem-toggle-label">Täglich wiederholen, bis bestätigt</span>
+          <span className="rem-toggle-label">{t.remRepeat}</span>
           <button
             type="button"
             role="switch"
             aria-checked={state.reminders.repeat}
-            aria-label="Täglich wiederholen, bis bestätigt"
+            aria-label={t.remRepeat}
             className={state.reminders.repeat ? 'switch is-on' : 'switch'}
             onClick={() => dispatch({ type: 'toggleReminderRepeat' })}
           >
@@ -212,14 +205,11 @@ export function EinstellungenScreen() {
       </div>
 
       <div className="panel panel--pb16" data-farbe="neutral">
-        <div className="panel-label">PROGRAMM-IMPORT</div>
-        <p className="panel-hint">
-          Die Wochenprogramme stammen aus dem Arbeitsheft auf jw.org und werden ohne Zuteilungen
-          importiert.
-        </p>
+        <div className="panel-label">{t.importCard}</div>
+        <p className="panel-hint">{t.importDesc}</p>
         <div className="imp-status">
-          <span className="kv-key">{WORKBOOK_LABEL}</span>
-          <span className="imp-count">{state.weeks.length} Wochen geladen</span>
+          <span className="kv-key">{t.arbeitsheftLbl}</span>
+          <span className="imp-count">{fill(t.wochenGeladen, { n: state.weeks.length })}</span>
         </div>
         <button type="button" className="btn-outline imp-btn" onClick={importWorkbook}>
           {importLabel}

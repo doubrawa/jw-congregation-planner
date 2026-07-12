@@ -6,15 +6,16 @@ Qualifikations-, Abwesenheits- und Auslastungsprüfung inkl. Auto-Zuteilung),
 Personenverwaltung, persönlicher Bereich (eigene Aufgaben/Abwesenheiten),
 Mitteilungen und Einstellungen.
 
-> **Status: Alle Screens gebaut.** Shell (Navigation, Mitteilungen, Toast,
-> Theming), Login, Programm, Planen (inkl. Zuteilungs-Sheet und
-> Auto-Zuteilung), Aufgaben (persönlicher Bereich mit Abwesenheiten), Personen
-> (Liste + Detail) und Einstellungen (Hilfsdienste, Programm-Import) sind gemäß
-> [Design-Handoff](docs/design-handoff/README.md) umgesetzt und laufen mit
-> In-Memory-Demo-Daten aus dem Prototyp. Das **Supabase-Fundament** (echtes
-> Login + DB-Schema mit RLS) liegt bei — ohne Konfiguration läuft die App im
-> Demo-Modus (siehe „Supabase einrichten"). Offen: Daten-Persistenz,
-> echter Import (siehe unten).
+> **Status: Alle Screens + v3-Funktionen gebaut.** Shell, Login, Programm,
+> Planen (Zuteilungs-Sheet, Auto-Zuteilung, LAC-Bearbeitung), Aufgaben,
+> Personen und Einstellungen sind gemäß [Design-Handoff](docs/design-handoff/README.md)
+> umgesetzt. Dazu die **v3-Funktionen**: Kreisaufseher- und Gedächtnismahl-Woche,
+> Bestätigungs-Flow (Zuteilungen bestätigen/verhindern), S-89-Formular,
+> konfigurierbare Erinnerungen und **Mehrsprachigkeit** (Oberfläche
+> DE/EN/ES/FR, separate Versammlungssprache für die Programm-Inhalte). Läuft
+> mit In-Memory-Demo-Daten. Das **Supabase-Fundament** (echtes Login + DB-Schema
+> mit RLS) liegt bei — ohne Konfiguration läuft die App im Demo-Modus (siehe
+> „Supabase einrichten"). Offen: Daten-Persistenz, echter Import (siehe unten).
 
 ## Stack
 
@@ -46,6 +47,11 @@ src/
     demo.ts         Demo-Daten, 1:1 aus dem Prototyp portiert
     helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
     planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
+  i18n/
+    ui.ts           UI-Wörterbücher DE/EN/ES/FR + Schlüssel-Maps
+    translate.ts    Programm-Inhalts-Übersetzer (makeTr): S-38-Begriffe, Daten, Referenzen
+    langs.ts        jw.org-Sprachliste (Versammlungssprache) + App-Sprachen
+    useT.ts         Hook: t (UI), tu (App-Sprache), tp (Versammlungssprache)
   lib/
     supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset, Demo-Fallback)
   aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung

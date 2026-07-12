@@ -1,5 +1,6 @@
-import { CONGREGATION, CURRENT_PERSON_ID, sessionRoleLabel } from '../data/demo'
+import { CURRENT_PERSON_ID } from '../data/demo'
 import { initials } from '../data/helpers'
+import { useT } from '../i18n/useT'
 import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -23,25 +24,41 @@ import './shell.css'
  * Mitteilungen-Overlay und Toast. Login rendert ohne App-Chrome.
  */
 
-const PLANNER_NAV: ReadonlyArray<[Screen, string]> = [
-  ['programm', 'Programm'],
-  ['aufgaben', 'Aufgaben'],
-  ['planen', 'Planen'],
-  ['personen', 'Personen'],
-  ['einstellungen', 'Einstellungen'],
+const PLANNER_SCREENS: readonly Screen[] = [
+  'programm',
+  'aufgaben',
+  'planen',
+  'personen',
+  'einstellungen',
 ]
-
-const PUBLISHER_NAV: ReadonlyArray<[Screen, string]> = [
-  ['programm', 'Programm'],
-  ['aufgaben', 'Meine Aufgaben'],
-]
+const PUBLISHER_SCREENS: readonly Screen[] = ['programm', 'aufgaben']
 
 export function AppShell() {
   const { state, dispatch } = useApp()
+  const { t } = useT()
   const isLogin = state.screen === 'login'
-  const navItems = state.planner ? PLANNER_NAV : PUBLISHER_NAV
   const me = state.persons.find((p) => p.id === CURRENT_PERSON_ID)
   const navigate = (screen: Screen) => dispatch({ type: 'navigate', screen })
+
+  const navScreens = state.planner ? PLANNER_SCREENS : PUBLISHER_SCREENS
+  const navLabel = (screen: Screen): string => {
+    switch (screen) {
+      case 'programm':
+        return t.navProgramm
+      case 'aufgaben':
+        return state.planner ? t.navAufgaben : t.navAufgabenLong
+      case 'planen':
+        return t.navPlanen
+      case 'personen':
+        return t.navPersonen
+      case 'einstellungen':
+        return t.navEinstellungen
+      default:
+        return ''
+    }
+  }
+  const navItems = navScreens.map((screen) => [screen, navLabel(screen)] as const)
+  const roleLabel = state.planner ? t.rolleKoordinator : t.rolleVerkuendiger
 
   return (
     <div className="desk">
@@ -54,7 +71,7 @@ export function AppShell() {
               <br />
               Planner
             </div>
-            <div className="sidebar-sub">Versammlung {CONGREGATION.name}</div>
+            <div className="sidebar-sub">{t.congName}</div>
           </div>
           <nav className="sidebar-nav" aria-label="Hauptnavigation">
             {navItems.map(([screen, label]) => (
@@ -76,11 +93,11 @@ export function AppShell() {
             <div className="avatar avatar--ink avatar--32">{me ? initials(me) : '–'}</div>
             <div>
               <div className="sidebar-profile-name">{me ? `${me.fn} ${me.ln}` : ''}</div>
-              <div className="sidebar-profile-role">{sessionRoleLabel(state.planner)}</div>
+              <div className="sidebar-profile-role">{roleLabel}</div>
             </div>
           </div>
           <button type="button" className="sidebar-logout" onClick={() => performLogout(dispatch)}>
-            Abmelden
+            {t.abmelden}
           </button>
         </aside>
       )}
@@ -150,6 +167,7 @@ export function AppShell() {
 /** Kopf-Chip Mitteilungen: „N neu“ (getönt) bzw. „Mitteilungen“ (Outline). */
 function NotifChip() {
   const { state, dispatch } = useApp()
+  const { t } = useT()
   const unread = state.notifs.filter((n) => !n.read).length
   return (
     <button
@@ -157,7 +175,7 @@ function NotifChip() {
       className={unread > 0 ? 'notif-chip has-unread' : 'notif-chip'}
       onClick={() => dispatch({ type: 'openNotifs' })}
     >
-      {unread > 0 ? `${unread} neu` : 'Mitteilungen'}
+      {unread > 0 ? `${unread} ${t.neuSuffix}` : t.mitteilungen}
     </button>
   )
 }

@@ -20,6 +20,8 @@ import {
 } from '../data/demo'
 import { displayName } from '../data/helpers'
 import { assignSlot, autoAssignMeeting, lacAdd, lacAdjust, lacMove, lacRemove } from '../data/planning'
+import { dict, type Dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { supabase } from '../lib/supabase'
 import type { Lang, Notification, NotificationType, Screen, Theme } from '../data/types'
 import { AppContext, type AppAction, type AppState } from './context'
@@ -27,6 +29,15 @@ import { AppContext, type AppAction, type AppState } from './context'
 /** Nächster Toast (id erzwingt Timer-/Animations-Neustart bei gleichem Text). */
 function nextToast(state: AppState, text: string): AppState['toast'] {
   return { id: (state.toast?.id ?? 0) + 1, text }
+}
+
+/** Toast aus einem übersetzten UI-Schlüssel (Reducer kennt state.lang). */
+function toastKey(
+  state: AppState,
+  key: keyof Dict,
+  params?: Record<string, string | number>,
+): AppState['toast'] {
+  return nextToast(state, fill(dict(state.lang)[key], params ?? {}))
 }
 
 function makeNotif(
@@ -109,13 +120,13 @@ function reducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         absences: [...state.absences, action.absence],
-        toast: nextToast(state, 'Abwesenheit eingetragen'),
+        toast: toastKey(state, 'toastAbwAdd'),
       }
     case 'removeAbsence':
       return {
         ...state,
         absences: state.absences.filter((a) => a.id !== action.id),
-        toast: nextToast(state, 'Abwesenheit entfernt'),
+        toast: toastKey(state, 'toastAbwDel'),
       }
     case 'selectPerson':
       return { ...state, selectedPersonId: action.id }
@@ -124,7 +135,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         ...state,
         persons: [...state.persons, action.person],
         selectedPersonId: action.person.id,
-        toast: nextToast(state, 'Neue Person angelegt'),
+        toast: toastKey(state, 'toastPersonNeu'),
       }
     case 'updatePerson':
       return {
@@ -132,7 +143,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
       }
     case 'savePerson':
-      return { ...state, selectedPersonId: null, toast: nextToast(state, 'Gespeichert') }
+      return { ...state, selectedPersonId: null, toast: toastKey(state, 'toastGespeichert') }
     case 'changeServiceCount':
       return {
         ...state,
@@ -146,13 +157,13 @@ function reducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         services: state.services.filter((s) => s.key !== action.key),
-        toast: nextToast(state, 'Dienst entfernt'),
+        toast: toastKey(state, 'toastDienstDel'),
       }
     case 'addService':
       return {
         ...state,
         services: [...state.services, action.service],
-        toast: nextToast(state, 'Dienst hinzugefügt'),
+        toast: toastKey(state, 'toastDienstAdd'),
       }
     case 'startImport':
       return state.importing || state.imported ? state : { ...state, importing: true }
@@ -170,7 +181,7 @@ function reducer(state: AppState, action: AppAction): AppState {
           'Programm importiert',
           `${week.range} · ${week.book} — ohne Zuteilungen`,
         ),
-        toast: nextToast(state, 'Arbeitsheft-Woche importiert'),
+        toast: toastKey(state, 'toastImportiert'),
       }
     }
     case 'assign': {
@@ -196,7 +207,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         notifs,
         pendingNames,
         slotSel: null,
-        toast: nextToast(state, action.name ? 'Zugeteilt · Mitteilung gesendet' : 'Zuteilung entfernt'),
+        toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
       }
     }
     case 'autoAssign': {
@@ -208,7 +219,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         state.services,
       )
       if (count === 0) {
-        return { ...state, toast: nextToast(state, 'Keine offenen Zuteilungen in dieser Ansicht') }
+        return { ...state, toast: toastKey(state, 'toastKeineOffen') }
       }
       const pending = new Set(state.pendingNames)
       for (const n of newly) pending.add(n)
@@ -223,7 +234,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         weeks,
         notifs,
         pendingNames: [...pending],
-        toast: nextToast(state, `${count} Zuteilungen automatisch vergeben`),
+        toast: toastKey(state, 'toastAutoN', { n: count }),
       }
     }
     case 'confirmTask': {
@@ -240,7 +251,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         myTasks,
         pendingNames,
         confirmOpen: state.confirmOpen && stillOpen,
-        toast: nextToast(state, 'Bestätigt · der Koordinator sieht den Status'),
+        toast: toastKey(state, 'toastBestaetigt'),
       }
     }
     case 'declineTask': {
@@ -259,7 +270,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         myTasks,
         confirmOpen: state.confirmOpen && stillOpen,
         notifs: [notif, ...state.notifs],
-        toast: nextToast(state, 'Gemeldet · der Koordinator wird informiert'),
+        toast: toastKey(state, 'toastVerhindert'),
       }
     }
     case 'openS89':
@@ -275,7 +286,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         weeks: lacRemove(state.weeks, state.week, state.tab, action.si, action.ii),
-        toast: nextToast(state, 'Programmpunkt entfernt · Zeiten angepasst'),
+        toast: toastKey(state, 'toastLacDel'),
       }
     case 'lacMove':
       return {
@@ -286,7 +297,7 @@ function reducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         weeks: lacAdd(state.weeks, state.week, state.tab, action.si, action.title),
-        toast: nextToast(state, 'Programmpunkt eingefügt · Zeiten angepasst'),
+        toast: toastKey(state, 'toastLacAdd'),
       }
     case 'changeReminder': {
       const bounds = action.key === 'first' ? { min: 1, max: 21 } : { min: 0, max: 7 }
@@ -347,8 +358,8 @@ function initialState(): AppState {
     s89: null,
     reminders: DEMO_REMINDERS,
     lang: getInitialLang(),
-    congLang: 'Deutsch',
     langSheetOpen: false,
+    congLang: 'Deutsch',
     langSearch: '',
     toast: null,
   }

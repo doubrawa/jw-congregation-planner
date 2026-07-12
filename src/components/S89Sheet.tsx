@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useApp } from '../app/context'
+import { useT } from '../i18n/useT'
 import type { S89Payload } from '../data/types'
 import './overlays.css'
 
@@ -10,6 +11,7 @@ import './overlays.css'
  */
 export function S89Sheet({ payload }: { payload: S89Payload }) {
   const { dispatch } = useApp()
+  const { t, tp } = useT()
   const close = () => dispatch({ type: 'closeS89' })
 
   useEffect(() => {
@@ -21,29 +23,24 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
   }, [dispatch])
 
   const rows: Array<[string, string]> = [
-    ['Name', payload.name],
-    ...(payload.partner ? ([['Gesprächspartner/in', payload.partner]] as [string, string][]) : []),
-    ['Datum', payload.date],
-    ['Aufgabe', payload.type],
-    ...(payload.point ? ([['Schulungspunkt', payload.point]] as [string, string][]) : []),
-    ['Durchzuführen im', 'Hauptsaal'],
+    [t.s89Name, payload.name],
+    ...(payload.partner ? ([[t.s89Partner, payload.partner]] as [string, string][]) : []),
+    [t.s89Datum, tp(payload.date)],
+    [t.s89Aufgabe, tp(payload.type)],
+    ...(payload.point ? ([[t.s89Punkt, tp(payload.point)]] as [string, string][]) : []),
+    [t.s89Ort, t.s89Hauptsaal],
   ]
 
   return (
     <>
       <div className="sheet-backdrop sheet-backdrop--s89" onClick={close} />
-      <div
-        className="sheet sheet--s89"
-        role="dialog"
-        aria-modal="true"
-        aria-label="S-89 Formular"
-      >
+      <div className="sheet sheet--s89" role="dialog" aria-modal="true" aria-label={t.s89Title}>
         <div className="sheet-head">
           <div>
             <div className="s89-eyebrow">S-89</div>
-            <div className="sheet-title">Aufgabe in der Leben-und-Dienst-Zusammenkunft</div>
+            <div className="sheet-title">{t.s89Title}</div>
           </div>
-          <button type="button" className="sheet-close" aria-label="Schließen" onClick={close}>
+          <button type="button" className="sheet-close" aria-label="✕" onClick={close}>
             ✕
           </button>
         </div>
@@ -55,9 +52,7 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
             </div>
           ))}
         </div>
-        <p className="s89-note">
-          Hinweis: Quelle und Schulungspunkt für deine Aufgabe findest du im Arbeitsheft.
-        </p>
+        <p className="s89-note">{t.s89Note}</p>
       </div>
     </>
   )

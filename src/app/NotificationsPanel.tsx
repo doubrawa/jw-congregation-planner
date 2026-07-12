@@ -1,9 +1,12 @@
 import { useEffect } from 'react'
+import { NOTIF_TITLE_KEY } from '../i18n/ui'
+import { useT } from '../i18n/useT'
 import { useApp } from './context'
 
 /** Mitteilungen-Overlay (Kopf-Chip öffnet); Backdrop-Klick oder Escape schließt. */
 export function NotificationsPanel() {
   const { state, dispatch } = useApp()
+  const { t, tu } = useT()
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -18,33 +21,34 @@ export function NotificationsPanel() {
       <div className="notif-backdrop" onClick={() => dispatch({ type: 'closeNotifs' })} />
       <div className="notif-panel" role="dialog" aria-modal="true" aria-label="Mitteilungen">
         <div className="notif-head">
-          <h2 className="notif-title">Mitteilungen</h2>
+          <h2 className="notif-title">{t.mitteilungen}</h2>
           <button
             type="button"
             className="notif-mark-read"
             onClick={() => dispatch({ type: 'markAllRead' })}
           >
-            Alle gelesen
+            {t.alleGelesen}
           </button>
         </div>
         {state.notifs.map((notif) => {
           const canConfirm =
             !!notif.taskId &&
-            state.myTasks.some((t) => t.id === notif.taskId && t.status === 'offen')
+            state.myTasks.some((task) => task.id === notif.taskId && task.status === 'offen')
+          const titleKey = NOTIF_TITLE_KEY[notif.title]
           return (
             <div key={notif.id} className={notif.read ? 'notif-row' : 'notif-row is-unread'}>
               <span className="notif-dot" />
               <div>
-                <div className="notif-row-title">{notif.title}</div>
-                <div className="notif-row-text">{notif.text}</div>
-                <div className="notif-row-time">{notif.time}</div>
+                <div className="notif-row-title">{titleKey ? t[titleKey] : notif.title}</div>
+                <div className="notif-row-text">{tu(notif.text)}</div>
+                <div className="notif-row-time">{tu(notif.time)}</div>
                 {canConfirm && (
                   <button
                     type="button"
                     className="notif-confirm"
                     onClick={() => notif.taskId && dispatch({ type: 'confirmTask', id: notif.taskId })}
                   >
-                    ✓ Bestätigen
+                    ✓ {t.bestaetigen}
                   </button>
                 )}
               </div>
