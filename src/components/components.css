@@ -50,6 +50,11 @@
   background: var(--accD);
 }
 
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ---- Outline-Button (Akzentrand, Pille) ---------------------------------- */
 
 .btn-outline {

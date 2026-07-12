@@ -15,6 +15,7 @@ import {
 } from '../data/demo'
 import { buildImportWeek } from '../data/demo'
 import { assignSlot, autoAssignMeeting } from '../data/planning'
+import { supabase } from '../lib/supabase'
 import type { Notification, NotificationType, Screen, Theme } from '../data/types'
 import { AppContext, type AppAction, type AppState } from './context'
 
@@ -217,6 +218,20 @@ function initialState(): AppState {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState)
+
+  // Supabase-Session spiegeln (nur wenn konfiguriert): bestehende Session
+  // überspringt den Login-Screen; SIGNED_OUT (z. B. in anderem Tab) wirft
+  // zurück zum Login. Anmelden selbst dispatcht der Login-Screen.
+  useEffect(() => {
+    if (!supabase) return
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) dispatch({ type: 'login' })
+    })
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') dispatch({ type: 'logout' })
+    })
+    return () => data.subscription.unsubscribe()
+  }, [dispatch])
 
   // Theme auf <html> spiegeln + Wahl merken (Muster aus index.html)
   useEffect(() => {

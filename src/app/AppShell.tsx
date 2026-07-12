@@ -1,5 +1,6 @@
 import { CONGREGATION, CURRENT_PERSON_ID, sessionRoleLabel } from '../data/demo'
 import { initials } from '../data/helpers'
+import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
@@ -75,7 +76,7 @@ export function AppShell() {
               <div className="sidebar-profile-role">{sessionRoleLabel(state.planner)}</div>
             </div>
           </div>
-          <button type="button" className="sidebar-logout" onClick={() => dispatch({ type: 'logout' })}>
+          <button type="button" className="sidebar-logout" onClick={() => performLogout(dispatch)}>
             Abmelden
           </button>
         </aside>

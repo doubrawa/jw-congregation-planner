@@ -7,12 +7,14 @@ Personenverwaltung, persönlicher Bereich (eigene Aufgaben/Abwesenheiten),
 Mitteilungen und Einstellungen.
 
 > **Status: Alle Screens gebaut.** Shell (Navigation, Mitteilungen, Toast,
-> Theming), Login (simuliert), Programm, Planen (inkl. Zuteilungs-Sheet und
+> Theming), Login, Programm, Planen (inkl. Zuteilungs-Sheet und
 > Auto-Zuteilung), Aufgaben (persönlicher Bereich mit Abwesenheiten), Personen
 > (Liste + Detail) und Einstellungen (Hilfsdienste, Programm-Import) sind gemäß
 > [Design-Handoff](docs/design-handoff/README.md) umgesetzt und laufen mit
-> In-Memory-Demo-Daten aus dem Prototyp. Offen sind die Produktionsthemen
-> Persistenz/Auth/echter Import (siehe unten).
+> In-Memory-Demo-Daten aus dem Prototyp. Das **Supabase-Fundament** (echtes
+> Login + DB-Schema mit RLS) liegt bei — ohne Konfiguration läuft die App im
+> Demo-Modus (siehe „Supabase einrichten"). Offen: Daten-Persistenz,
+> echter Import (siehe unten).
 
 ## Stack
 
@@ -44,6 +46,8 @@ src/
     demo.ts         Demo-Daten, 1:1 aus dem Prototyp portiert
     helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
     planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
+  lib/
+    supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset, Demo-Fallback)
   aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung
   einstellungen/    Einstellungen (Hilfsdienste, Programm-Import)
   login/            Login (simuliert, wie im Prototyp)
@@ -57,8 +61,10 @@ src/
   main.tsx          React-Einstieg
 docs/
   design-handoff/   Maßgebliche Design-Referenz (README, HTML-Prototypen, Screenshots)
+supabase/
+  schema.sql        DB-Schema (Tabellen + Row-Level-Security), im SQL-Editor ausführen
 .github/workflows/
-  deploy.yml        Auto-Deployment auf GitHub Pages
+  deploy.yml        Auto-Deployment auf GitHub Pages (reicht Supabase-Secrets durch)
 ```
 
 
@@ -122,9 +128,39 @@ Varianten dauerhaft in der kostenlosen Stufe. **Datenschutz** beachten: Es geht
 um personenbezogene Daten von Versammlungsmitgliedern — Zugriff strikt
 authentifiziert und versammlungsintern begrenzen.
 
+## Supabase einrichten (echtes Login)
+
+Ohne Konfiguration läuft die App im **Demo-Modus** (Login simuliert, Daten
+in-memory). Für echtes Login mit geschützten Daten:
+
+1. Kostenloses Projekt auf [supabase.com](https://supabase.com) anlegen
+   (Region z. B. Frankfurt — personenbezogene Daten in der EU).
+2. Im **SQL-Editor** den Inhalt von [`supabase/schema.sql`](supabase/schema.sql)
+   ausführen (Tabellen + Row-Level-Security).
+3. **Authentication → Users**: Benutzer mit E-Mail + Passwort anlegen; dann
+   Versammlung anlegen und den Benutzer als Mitglied verknüpfen (fertige
+   `INSERT`-Beispiele stehen am Ende der `schema.sql`).
+4. **Project Settings → API**: `Project URL` und `anon public`-Key kopieren.
+5. Lokal: Datei `.env.local` nach Vorlage von [`.env.example`](.env.example)
+   anlegen — `npm run dev` nutzt dann echtes Login.
+6. Deployment: dieselben Werte im GitHub-Repo als **Actions-Secrets**
+   `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` hinterlegen
+   (Settings → Secrets and variables → Actions); `deploy.yml` reicht sie an
+   den Build durch.
+
+Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
+Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
+Versammlung, schreiben dürfen im Wesentlichen nur Planer).
+
+**Stand:** Anmelden/Abmelden/Reset-Mail sind verdrahtet; eine bestehende
+Session überspringt den Login. **Noch offen:** Laden/Speichern der App-Daten
+aus der DB (aktuell weiterhin Demo-Daten), Passwort-Reset-Seite
+(`PASSWORD_RECOVERY`), Rolle/Versammlung aus `members` statt Demo-Konstanten.
+
 ## Offene Punkte (aus dem Handoff)
 
 1. Echter Arbeitsheft-Import von jw.org (Format/Parsing, Nutzungsrechte klären)
-2. Auth + Mandantenfähigkeit (mehrere Versammlungen), Rollen/Rechte
-3. Persistenz, Mitteilungs-Versand (Push/E-Mail), S-89-konforme Benachrichtigung
+2. Auth + Mandantenfähigkeit: **Grundlage gelegt** (Supabase Auth + Schema/RLS,
+   siehe oben) — offen: Daten-Persistenz, Rollen aus `members`, Einladungen
+3. Mitteilungs-Versand (Push/E-Mail), S-89-konforme Benachrichtigung
 4. Konfliktprüfungen über Wochen hinweg (z. B. gleiche Person zu oft hintereinander)

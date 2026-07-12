@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { CONGREGATION, CURRENT_PERSON_ID, sessionRoleLabel } from '../data/demo'
 import { displayName } from '../data/helpers'
+import { performLogout } from '../lib/supabase'
 import { deriveMyAssignments } from './assignments'
 import './aufgaben.css'
 
@@ -164,7 +165,7 @@ export function AufgabenScreen() {
             </button>
           </div>
         </div>
-        <button type="button" className="prof-logout" onClick={() => dispatch({ type: 'logout' })}>
+        <button type="button" className="prof-logout" onClick={() => performLogout(dispatch)}>
           Abmelden
         </button>
       </div>
