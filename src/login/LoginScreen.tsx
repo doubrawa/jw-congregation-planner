@@ -108,7 +108,7 @@ export function LoginScreen() {
         ))}
       </div>
 
-      <p className="login-note">{t.demoHinweis}</p>
+      <p className="login-note">{isSupabaseConfigured ? t.nurMitglieder : t.demoHinweis}</p>
     </div>
   )
 }
