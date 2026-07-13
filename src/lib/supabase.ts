@@ -19,6 +19,15 @@ export const supabase: SupabaseClient | null =
 
 export const isSupabaseConfigured = supabase !== null
 
+/**
+ * Adresse, auf die Auth-Mail-Links (Bestätigung, Passwort-Reset) zurückführen:
+ * die App selbst (ohne Hash/Query). Muss in Supabase unter Authentication →
+ * URL Configuration als Redirect-URL erlaubt sein, sonst greift die Site-URL.
+ */
+function appRedirectUrl(): string {
+  return window.location.origin + window.location.pathname
+}
+
 /** Häufige Auth-Fehler auf Deutsch; Rest unverändert durchreichen. */
 function authErrorText(message: string): string {
   if (message.includes('Invalid login credentials')) return 'E-Mail oder Passwort falsch'
@@ -46,7 +55,13 @@ export type SignUpResult = { ok: true; needsConfirm: boolean } | { ok: false; er
  */
 export async function signUp(email: string, password: string): Promise<SignUpResult> {
   if (!supabase) return { ok: true, needsConfirm: false }
-  const { data, error } = await supabase.auth.signUp({ email, password })
+  // emailRedirectTo: Bestätigungslink führt zurück in die App (nicht auf die
+  // Supabase-Standard-Site-URL http://localhost:3000).
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: appRedirectUrl() },
+  })
   if (error) return { ok: false, error: authErrorText(error.message) }
   return { ok: true, needsConfirm: !data.session }
 }
@@ -57,7 +72,7 @@ export async function requestPasswordReset(email: string): Promise<string | null
   // Der Mail-Link führt zurück in die App; das PASSWORD_RECOVERY-Event
   // öffnet dort die "Neues Passwort setzen"-Ansicht (RecoveryScreen).
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + window.location.pathname,
+    redirectTo: appRedirectUrl(),
   })
   return error ? authErrorText(error.message) : null
 }

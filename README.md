@@ -157,6 +157,12 @@ in-memory). Für echtes Login mit geschützten Daten:
    `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` hinterlegen
    (Settings → Secrets and variables → Actions); `deploy.yml` reicht sie an
    den Build durch.
+7. **Authentication → URL Configuration** (wichtig für Mail-Links): **Site URL**
+   auf die App-Adresse setzen (z. B. `https://<user>.github.io/<repo>/`) statt
+   des Standardwerts `http://localhost:3000`, und unter **Redirect URLs** die
+   App-Adressen erlauben (`https://<user>.github.io/<repo>/**` sowie für lokale
+   Entwicklung `http://localhost:5173/**`). Sonst führen Bestätigungs- und
+   Passwort-Reset-Links ins Leere (localhost:3000).
 
 Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
 Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
