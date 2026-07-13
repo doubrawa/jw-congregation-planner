@@ -25,12 +25,47 @@ export interface Toast {
   text: string
 }
 
+export interface Congregation {
+  name: string // "Musterstadt"
+  hall: string // "Hauptstraße 12"
+  meetings: string // "Di 19:00 · So 10:00"
+}
+
+/**
+ * Datenquelle: `demo` = In-Memory (kein Supabase); `loading` = lädt aus der
+ * DB; `ready` = geladen; `no-membership` = Konto keiner Versammlung zugeordnet;
+ * `error` = Ladefehler.
+ */
+export type DataStatus = 'demo' | 'loading' | 'ready' | 'no-membership' | 'error'
+
+/** Nutzdaten der Hydration (aus Supabase geladen). */
+export interface HydratePayload {
+  congregationId: string
+  userId: string
+  empty: boolean // Versammlung hat noch keine Personen/Wochen
+  congregation: Congregation
+  planner: boolean
+  personId: string | null
+  persons: Person[]
+  services: Service[]
+  weeks: Week[]
+  absences: Absence[]
+  notifications: Notification[]
+}
+
 export interface AppState {
   screen: Screen
   week: number // Index in weeks
   tab: MeetingTab
   theme: Theme
-  planner: boolean // Demo-Rechte: Planen/Personen/Einstellungen sichtbar
+  planner: boolean // Rechte: Planen/Personen/Einstellungen sichtbar
+  congregation: Congregation
+  // Persistenz (Supabase); im Demo-Modus null bzw. 'demo'
+  congregationId: string | null
+  userId: string | null
+  personId: string | null // eigene Person (aus members.person_id); Demo: null
+  dataStatus: DataStatus
+  dataEmpty: boolean // geladen, aber Versammlung noch leer → Erstbefüllung anbieten
   weeks: Week[]
   persons: Person[]
   services: Service[]
@@ -103,6 +138,9 @@ export type AppAction =
   | { type: 'closeLangSheet' }
   | { type: 'setLangSearch'; text: string }
   | { type: 'setCongLang'; name: string }
+  // Persistenz / Hydration
+  | { type: 'hydrate'; payload: HydratePayload }
+  | { type: 'setDataStatus'; status: DataStatus }
   | { type: 'showToast'; text: string }
   | { type: 'hideToast' }
 

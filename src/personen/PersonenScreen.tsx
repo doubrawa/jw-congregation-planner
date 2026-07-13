@@ -102,7 +102,7 @@ function PersonList() {
 }
 
 function PersonDetail({ person }: { person: Person }) {
-  const { dispatch } = useApp()
+  const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const update = (patch: Partial<Person>) =>
     dispatch({ type: 'updatePerson', id: person.id, patch })
@@ -129,7 +129,7 @@ function PersonDetail({ person }: { person: Person }) {
         <div>
           <h1 className="pers-detail-name">{`${person.fn} ${person.ln}`.trim() || '—'}</h1>
           <div className="pers-detail-sub">
-            {tu(roleLabel(person))} · {t.congName}
+            {tu(roleLabel(person))} · {fill(t.congLabel, { name: state.congregation.name })}
           </div>
         </div>
       </div>

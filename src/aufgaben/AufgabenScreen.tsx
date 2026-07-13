@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
-import { CONGREGATION, CURRENT_PERSON_ID } from '../data/demo'
+import { CURRENT_PERSON_ID } from '../data/demo'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
-import { useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 import { performLogout } from '../lib/supabase'
 import './aufgaben.css'
 
@@ -14,7 +14,7 @@ import './aufgaben.css'
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
   const { t, tu, tp } = useT()
-  const me = state.persons.find((p) => p.id === CURRENT_PERSON_ID)
+  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
 
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -42,7 +42,7 @@ export function AufgabenScreen() {
     <section className="screen">
       <h1 className="screen-title">{t.navAufgabenLong}</h1>
       <p className="screen-subtitle">
-        {me ? `${me.fn} ${me.ln}` : ''} · {t.congName}
+        {me ? `${me.fn} ${me.ln}` : ''} · {fill(t.congLabel, { name: state.congregation.name })}
       </p>
 
       <div className="panel panel--lead" data-farbe="gold">
@@ -159,7 +159,7 @@ export function AufgabenScreen() {
         </div>
         <div className="kv-row">
           <span className="kv-key">{t.versammlungLbl}</span>
-          <span className="kv-val">{CONGREGATION.name}</span>
+          <span className="kv-val">{state.congregation.name}</span>
         </div>
         <div className="kv-row">
           <span className="kv-key">{t.rolleLbl}</span>

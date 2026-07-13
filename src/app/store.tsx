@@ -4,10 +4,11 @@
  * Demo-Daten; Persistenz/Auth kommen später (siehe README "Hosting").
  */
 
-import { useEffect, useMemo, useReducer, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import {
   buildDemoWeeks,
   buildImportWeek,
+  CONGREGATION,
   CURRENT_PERSON_ID,
   DEMO_ABSENCES,
   DEMO_MY_TASKS,
@@ -22,9 +23,20 @@ import { displayName } from '../data/helpers'
 import { assignSlot, autoAssignMeeting, lacAdd, lacAdjust, lacMove, lacRemove } from '../data/planning'
 import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import { supabase } from '../lib/supabase'
+import {
+  deleteAbsenceRow,
+  deleteServiceRow,
+  insertNotification,
+  markNotificationsRead,
+  saveAbsence,
+  savePerson,
+  saveService,
+  saveWeek,
+} from '../lib/data'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Lang, Notification, NotificationType, Screen, Theme } from '../data/types'
 import { AppContext, type AppAction, type AppState } from './context'
+import { loadAndHydrate } from './hydrate'
 
 /** Nächster Toast (id erzwingt Timer-/Animations-Neustart bei gleichem Text). */
 function nextToast(state: AppState, text: string): AppState['toast'] {
@@ -59,9 +71,10 @@ function pushNotif(
   return [makeNotif(type, title, text), ...notifs]
 }
 
-/** Anzeigename des eingeloggten Demo-Nutzers (für pendingNames-Pflege). */
+/** Anzeigename des eingeloggten Nutzers (für pendingNames-Pflege). */
 function currentUserName(state: AppState): string {
-  const me = state.persons.find((p) => p.id === CURRENT_PERSON_ID)
+  const id = state.personId ?? CURRENT_PERSON_ID
+  const me = state.persons.find((p) => p.id === id)
   return me ? displayName(me) : ''
 }
 
@@ -316,6 +329,27 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, langSearch: action.text }
     case 'setCongLang':
       return { ...state, congLang: action.name, langSheetOpen: false, langSearch: '' }
+    case 'hydrate': {
+      const p = action.payload
+      return {
+        ...state,
+        congregation: p.congregation,
+        congregationId: p.congregationId,
+        userId: p.userId,
+        personId: p.personId,
+        planner: p.planner,
+        dataStatus: 'ready',
+        dataEmpty: p.empty,
+        persons: p.persons,
+        services: p.services,
+        weeks: p.weeks,
+        absences: p.absences,
+        notifs: p.notifications,
+        week: 0,
+      }
+    }
+    case 'setDataStatus':
+      return { ...state, dataStatus: action.status }
     case 'showToast':
       return { ...state, toast: nextToast(state, action.text) }
     case 'hideToast':
@@ -336,24 +370,33 @@ function getInitialLang(): Lang {
 }
 
 function initialState(): AppState {
+  // Konfiguriert (Supabase): leerer Start, Daten kommen per Hydration nach dem
+  // Login. Demo-Modus: In-Memory-Demo-Daten wie bisher.
+  const demo = !isSupabaseConfigured
   return {
     screen: 'login',
     week: 0,
     tab: 'mid',
     theme: getInitialTheme(),
-    planner: DEMO_PLANNER,
-    weeks: buildDemoWeeks(),
-    persons: DEMO_PERSONS,
-    services: DEMO_SERVICES,
-    absences: DEMO_ABSENCES,
-    notifs: DEMO_NOTIFICATIONS,
+    planner: demo ? DEMO_PLANNER : false,
+    congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', meetings: '' },
+    congregationId: null,
+    userId: null,
+    personId: null,
+    dataStatus: demo ? 'demo' : 'ready',
+    dataEmpty: false,
+    weeks: demo ? buildDemoWeeks() : [],
+    persons: demo ? DEMO_PERSONS : [],
+    services: demo ? DEMO_SERVICES : [],
+    absences: demo ? DEMO_ABSENCES : [],
+    notifs: demo ? DEMO_NOTIFICATIONS : [],
     notifOpen: false,
     slotSel: null,
     selectedPersonId: null,
     importing: false,
     imported: false,
-    myTasks: DEMO_MY_TASKS,
-    pendingNames: DEMO_PENDING_NAMES,
+    myTasks: demo ? DEMO_MY_TASKS : [],
+    pendingNames: demo ? DEMO_PENDING_NAMES : [],
     confirmOpen: false,
     s89: null,
     reminders: DEMO_REMINDERS,
@@ -365,19 +408,102 @@ function initialState(): AppState {
   }
 }
 
+/**
+ * Nebeneffekt-Schicht: schreibt die zu einer Aktion gehörende Änderung nach
+ * Supabase. Läuft nur im konfigurierten, hydrierten Zustand. Der Reducer
+ * bleibt rein; hier werden `prev`/`next` (vor/nach der Aktion) ausgewertet.
+ */
+function persist(prev: AppState, next: AppState, action: AppAction): void {
+  const congId = next.congregationId
+  const userId = next.userId
+  if (!supabase || !congId || !userId) return
+
+  switch (action.type) {
+    case 'assign': {
+      const wi = prev.slotSel?.wi
+      if (wi != null) saveWeek(congId, wi, next.weeks[wi])
+      break
+    }
+    case 'autoAssign':
+    case 'lacAdjust':
+    case 'lacRemove':
+    case 'lacMove':
+    case 'lacAdd':
+      saveWeek(congId, prev.week, next.weeks[prev.week])
+      break
+    case 'finishImport': {
+      const pos = next.weeks.length - 1
+      if (pos >= 0) saveWeek(congId, pos, next.weeks[pos])
+      break
+    }
+    case 'addPerson':
+      savePerson(congId, action.person)
+      break
+    case 'savePerson': {
+      const edited = prev.persons.find((p) => p.id === prev.selectedPersonId)
+      if (edited) savePerson(congId, edited)
+      break
+    }
+    case 'addAbsence':
+      saveAbsence(congId, userId, next.personId, action.absence)
+      break
+    case 'removeAbsence':
+      deleteAbsenceRow(action.id)
+      break
+    case 'addService': {
+      const pos = next.services.length - 1
+      if (pos >= 0) saveService(congId, action.service, pos)
+      break
+    }
+    case 'changeServiceCount': {
+      const idx = next.services.findIndex((s) => s.key === action.key)
+      if (idx >= 0) saveService(congId, next.services[idx], idx)
+      break
+    }
+    case 'removeService':
+      deleteServiceRow(congId, action.key)
+      break
+    case 'markAllRead':
+      markNotificationsRead(congId)
+      break
+  }
+
+  // Jede Aktion, die eine Mitteilung vorne anfügt, in die DB spiegeln.
+  if (next.notifs.length > prev.notifs.length && next.notifs[0]) {
+    const n = next.notifs[0]
+    insertNotification(congId, userId, n.type, n.title, n.text)
+  }
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, initialState)
+  const [state, rawDispatch] = useReducer(reducer, undefined, initialState)
+
+  // Persistenz-Wrapper: berechnet den Folgezustand (Reducer ist rein),
+  // schreibt die Änderung nach Supabase und aktualisiert dann React.
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const dispatch = useCallback((action: AppAction) => {
+    const prev = stateRef.current
+    const next = reducer(prev, action)
+    stateRef.current = next
+    persist(prev, next, action)
+    rawDispatch(action)
+  }, [])
 
   // Supabase-Session spiegeln (nur wenn konfiguriert): bestehende Session
-  // überspringt den Login-Screen; SIGNED_OUT (z. B. in anderem Tab) wirft
-  // zurück zum Login. Anmelden selbst dispatcht der Login-Screen.
+  // überspringt den Login-Screen und lädt die Daten; SIGNED_IN (nach Login)
+  // lädt ebenfalls; SIGNED_OUT wirft zurück zum Login.
   useEffect(() => {
     if (!supabase) return
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) dispatch({ type: 'login' })
+      if (data.session) {
+        dispatch({ type: 'login' })
+        void loadAndHydrate(dispatch, data.session.user.id)
+      }
     })
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') dispatch({ type: 'logout' })
+      else if (event === 'SIGNED_IN' && session) void loadAndHydrate(dispatch, session.user.id)
     })
     return () => data.subscription.unsubscribe()
   }, [dispatch])
@@ -399,8 +525,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!state.toast) return
     const timer = setTimeout(() => dispatch({ type: 'hideToast' }), 2400)
     return () => clearTimeout(timer)
-  }, [state.toast])
+  }, [state.toast, dispatch])
 
-  const value = useMemo(() => ({ state, dispatch }), [state])
+  const value = useMemo(() => ({ state, dispatch }), [state, dispatch])
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

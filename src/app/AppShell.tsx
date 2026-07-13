@@ -1,6 +1,7 @@
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { initials } from '../data/helpers'
-import { useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
+import { seedCongregation } from '../lib/data'
 import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -14,6 +15,7 @@ import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
+import { loadAndHydrate } from './hydrate'
 import { NotificationsPanel } from './NotificationsPanel'
 import '../components/components.css'
 import './shell.css'
@@ -37,7 +39,7 @@ export function AppShell() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const isLogin = state.screen === 'login'
-  const me = state.persons.find((p) => p.id === CURRENT_PERSON_ID)
+  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const navigate = (screen: Screen) => dispatch({ type: 'navigate', screen })
 
   const navScreens = state.planner ? PLANNER_SCREENS : PUBLISHER_SCREENS
@@ -71,7 +73,7 @@ export function AppShell() {
               <br />
               Planner
             </div>
-            <div className="sidebar-sub">{t.congName}</div>
+            <div className="sidebar-sub">{fill(t.congLabel, { name: state.congregation.name })}</div>
           </div>
           <nav className="sidebar-nav" aria-label="Hauptnavigation">
             {navItems.map(([screen, label]) => (
@@ -127,7 +129,7 @@ export function AppShell() {
             </div>
 
             <div className="app-content">
-              <ActiveScreen screen={state.screen} />
+              <Content />
             </div>
 
             <nav className="bottom-nav" aria-label="Hauptnavigation">
@@ -177,6 +179,89 @@ function NotifChip() {
     >
       {unread > 0 ? `${unread} ${t.neuSuffix}` : t.mitteilungen}
     </button>
+  )
+}
+
+/**
+ * Inhalt der App-Spalte: bei aktivem Supabase erst der Ladezustand / Sonder-
+ * fälle (kein Mitglied, leere Versammlung, Fehler), sonst der aktive Screen.
+ */
+function Content() {
+  const { state } = useApp()
+
+  if (state.dataStatus === 'loading') return <StatusView kind="loading" />
+  if (state.dataStatus === 'no-membership') return <StatusView kind="no-membership" />
+  if (state.dataStatus === 'error') return <StatusView kind="error" />
+  if (state.dataEmpty) return <StatusView kind="empty" />
+
+  return <ActiveScreen screen={state.screen} />
+}
+
+/** Ladezustand und Sonderfälle der Datenanbindung. */
+function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'empty' }) {
+  const { state, dispatch } = useApp()
+
+  const seed = async () => {
+    if (!state.congregationId || !state.userId) return
+    dispatch({ type: 'setDataStatus', status: 'loading' })
+    const err = await seedCongregation(state.congregationId)
+    if (err) {
+      dispatch({ type: 'showToast', text: err })
+      dispatch({ type: 'setDataStatus', status: 'ready' })
+      return
+    }
+    await loadAndHydrate(dispatch, state.userId)
+  }
+
+  const retry = () => {
+    if (state.userId) void loadAndHydrate(dispatch, state.userId)
+  }
+
+  return (
+    <section className="screen status-view">
+      {kind === 'loading' && <p className="status-loading">Lädt …</p>}
+
+      {kind === 'no-membership' && (
+        <>
+          <h1 className="status-title">Noch keiner Versammlung zugeordnet</h1>
+          <p className="status-text">
+            Dein Konto ist angemeldet, aber noch keiner Versammlung zugewiesen. Ein Koordinator muss
+            dich in Supabase mit einer Versammlung verknüpfen (Tabelle <code>members</code>).
+          </p>
+        </>
+      )}
+
+      {kind === 'error' && (
+        <>
+          <h1 className="status-title">Daten konnten nicht geladen werden</h1>
+          <p className="status-text">Es gab ein Problem beim Laden aus der Datenbank.</p>
+          <button type="button" className="btn-primary status-btn" onClick={retry}>
+            ERNEUT VERSUCHEN
+          </button>
+        </>
+      )}
+
+      {kind === 'empty' && (
+        <>
+          <h1 className="status-title">Versammlung ist noch leer</h1>
+          {state.planner ? (
+            <>
+              <p className="status-text">
+                Es sind noch keine Personen und Wochen hinterlegt. Du kannst den Demo-Datensatz als
+                Startpunkt laden und danach anpassen.
+              </p>
+              <button type="button" className="btn-primary status-btn" onClick={seed}>
+                DEMO-DATEN LADEN
+              </button>
+            </>
+          ) : (
+            <p className="status-text">
+              Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Koordinator.
+            </p>
+          )}
+        </>
+      )}
+    </section>
   )
 }
 

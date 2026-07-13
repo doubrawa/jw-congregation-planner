@@ -9,7 +9,7 @@
 import type { Lang, QualificationKey, Role } from '../data/types'
 
 export const DE = {
-    congName: 'Versammlung Musterstadt',
+    congName: 'Versammlung Musterstadt', congLabel: 'Versammlung {name}',
     navProgramm: 'Programm', navAufgaben: 'Aufgaben', navAufgabenLong: 'Meine Aufgaben',
     navPlanen: 'Planen', navPersonen: 'Personen', navEinstellungen: 'Einstellungen',
     abmelden: 'Abmelden', rolleKoordinator: 'Koordinator (Demo)', rolleVerkuendiger: 'Verkündiger (Demo)',
@@ -92,7 +92,7 @@ export type Dict = typeof DE
 /** EN/ES/FR überschreiben nur abweichende Schlüssel (Rest = DE). */
 const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
   en: {
-    congName: 'Musterstadt Congregation',
+    congName: 'Musterstadt Congregation', congLabel: '{name} Congregation',
     navProgramm: 'Program', navAufgaben: 'Assignments', navAufgabenLong: 'My Assignments',
     navPlanen: 'Plan', navPersonen: 'People', navEinstellungen: 'Settings',
     abmelden: 'Log out', rolleKoordinator: 'Coordinator (demo)', rolleVerkuendiger: 'Publisher (demo)',
@@ -169,7 +169,7 @@ const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
     toastLacAdd: 'Item inserted · times adjusted', toastLacDel: 'Item removed · times adjusted'
   },
   es: {
-    congName: 'Congregación Musterstadt',
+    congName: 'Congregación Musterstadt', congLabel: 'Congregación {name}',
     navProgramm: 'Programa', navAufgaben: 'Asignaciones', navAufgabenLong: 'Mis asignaciones',
     navPlanen: 'Planificar', navPersonen: 'Personas', navEinstellungen: 'Configuración',
     abmelden: 'Cerrar sesión', rolleKoordinator: 'Coordinador (demo)', rolleVerkuendiger: 'Publicador (demo)',
@@ -246,7 +246,7 @@ const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
     toastLacAdd: 'Punto insertado · horarios ajustados', toastLacDel: 'Punto eliminado · horarios ajustados'
   },
   fr: {
-    congName: 'Assemblée de Musterstadt',
+    congName: 'Assemblée de Musterstadt', congLabel: 'Assemblée de {name}',
     navProgramm: 'Programme', navAufgaben: 'Attributions', navAufgabenLong: 'Mes attributions',
     navPlanen: 'Planifier', navPersonen: 'Personnes', navEinstellungen: 'Paramètres',
     abmelden: 'Se déconnecter', rolleKoordinator: 'Coordinateur (démo)', rolleVerkuendiger: 'Proclamateur (démo)',

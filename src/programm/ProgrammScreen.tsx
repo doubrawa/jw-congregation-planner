@@ -18,7 +18,7 @@ export function ProgrammScreen() {
   const { t, tu, tp, progFallback } = i18n
   const week = state.weeks[state.week]
   const meeting = state.tab === 'mid' ? week.mid : week.we
-  const me = state.persons.find((p) => p.id === CURRENT_PERSON_ID)
+  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const myName = me ? displayName(me) : null
 
   return (

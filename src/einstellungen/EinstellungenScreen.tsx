@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
-import { CONGREGATION } from '../data/demo'
 import { CONG_TO_CODE } from '../i18n/langs'
 import { PRIV_KEY, type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -67,21 +66,21 @@ export function EinstellungenScreen() {
   return (
     <section className="screen">
       <h1 className="screen-title">{t.einstellungen}</h1>
-      <p className="screen-subtitle">{t.congName}</p>
+      <p className="screen-subtitle">{fill(t.congLabel, { name: state.congregation.name })}</p>
 
       <div className="panel panel--lead panel--pb14" data-farbe="neutral">
         <div className="panel-label">{t.versammlungCard}</div>
         <div className="kv-row">
           <span className="kv-key">{t.nameLbl}</span>
-          <span className="kv-val">{CONGREGATION.name}</span>
+          <span className="kv-val">{state.congregation.name}</span>
         </div>
         <div className="kv-row">
           <span className="kv-key">{t.saal}</span>
-          <span className="kv-val">{CONGREGATION.hall}</span>
+          <span className="kv-val">{state.congregation.hall}</span>
         </div>
         <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.zusammenkuenfte}</span>
-          <span className="kv-val">{tu(CONGREGATION.meetings)}</span>
+          <span className="kv-val">{tu(state.congregation.meetings)}</span>
         </div>
       </div>
 

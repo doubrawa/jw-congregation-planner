@@ -419,6 +419,47 @@
   background: var(--tPet);
 }
 
+/* ---- Datenanbindung: Lade-/Sonderzustände -------------------------------- */
+
+.status-view {
+  text-align: center;
+}
+
+.status-loading {
+  margin-top: 40px;
+  font-size: 13px;
+  color: var(--mut);
+}
+
+.status-title {
+  margin-top: 32px;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.status-text {
+  margin: 12px auto 0;
+  max-width: 340px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mut);
+}
+
+.status-text code {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--acc);
+  background: var(--tGld);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.status-btn {
+  max-width: 280px;
+  margin: 20px auto 0;
+}
+
 /* ---- Toast ---------------------------------------------------------------- */
 
 @keyframes toast-in {
