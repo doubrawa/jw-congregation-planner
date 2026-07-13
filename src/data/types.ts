@@ -29,8 +29,12 @@ export type MeetingTab = 'mid' | 'we'
 export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger'
 
 /**
- * Aufgabenbereiche einer Person (9 Toggles im Personen-Detail).
- * true = qualifiziert für diese Art Slot.
+ * Aufgabenbereiche einer Person (Toggles im Personen-Detail).
+ * true = qualifiziert für diese Art Slot. Die ersten neun entsprechen den
+ * Bereichs-Keys der Programm-Slots; `wtLeiter`/`wtVertreter` sind keine
+ * Slot-Keys, sondern kennzeichnen den fixen Wachtturm-Studium-Leiter bzw.
+ * seinen Vertreter (Auto-Zuteilung, siehe planning.ts). Optional, damit
+ * Alt-Datensätze ohne diese Felder gültig bleiben.
  */
 export interface Qualifications {
   vorsitz: boolean
@@ -42,6 +46,8 @@ export interface Qualifications {
   mikrofon: boolean // Mikrofone
   ton: boolean // Ton / Video
   ordner: boolean // Ordner / Eingang
+  wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
+  wtVertreter?: boolean // Vertreter, wenn der Leiter abwesend ist
 }
 
 export type QualificationKey = keyof Qualifications

@@ -14,7 +14,7 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen. */
 export const PLANNER_ROLES: readonly Role[] = ['aeltester', 'dienstamtgehilfe']
 
-/** Die 9 Aufgabenbereiche (Reihenfolge = Toggle-Reihenfolge im Detail). */
+/** Aufgabenbereiche (Reihenfolge = Toggle-Reihenfolge im Detail). */
 export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   vorsitz: 'Vorsitz',
   vortrag: 'Vorträge',
@@ -25,8 +25,11 @@ export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   mikrofon: 'Mikrofone',
   ton: 'Ton / Video',
   ordner: 'Ordner / Eingang',
+  wtLeiter: 'Wachtturm-Studium-Leiter',
+  wtVertreter: 'Wachtturm-Studium-Vertreter',
 }
 
+/** Die 9 slot-relevanten Aufgabenbereiche. */
 export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'vorsitz',
   'vortrag',
@@ -38,6 +41,9 @@ export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'ton',
   'ordner',
 ]
+
+/** Feste Rollen (fixer Leiter/Vertreter) — eigener Block im Personen-Detail. */
+export const WT_ROLE_ORDER: readonly QualificationKey[] = ['wtLeiter', 'wtVertreter']
 
 /**
  * Bereichsfarbe → CSS-Token-Suffixe (Panel-Fläche, Label-/Akzentfarbe,

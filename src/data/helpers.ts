@@ -28,7 +28,7 @@ export function roleLabel(p: Person): string {
 
 /** Qualifikationsprüfung; unbekannte Bereichs-Keys gelten als nicht erfüllt. */
 export function isQualified(p: Person, priv: string): boolean {
-  return priv in p.priv && p.priv[priv as QualificationKey]
+  return priv in p.priv && Boolean(p.priv[priv as QualificationKey])
 }
 
 /**

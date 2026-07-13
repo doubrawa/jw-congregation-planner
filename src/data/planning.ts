@@ -25,6 +25,16 @@ import type {
 /** Rollen, die die Auto-Zuteilung nicht besetzt (kommen von außen). */
 const SKIP_ROLE = /Gastredner|Kreisaufseher/
 
+const EROEFFNUNG = 'ERÖFFNUNG'
+const WT_STUDIUM = 'WACHTTURM-STUDIUM'
+
+/** Kleiner, stabiler String-Hash für faire, deterministische Tie-Breaks. */
+function tieHash(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0
+  return h >>> 0
+}
+
 /** Aktueller Name auf einem Slot ("" = offen). */
 export function slotValue(weeks: Week[], sel: SlotSelection): string {
   const meeting = weeks[sel.wi][sel.tab]
@@ -74,10 +84,18 @@ export interface AutoAssignResult {
 }
 
 /**
- * Auto-Zuteilung für eine Woche+Meeting: füllt alle offenen Slots.
- * Kandidaten = qualifiziert + anwesend + noch nicht in diesem Meeting
- * eingeteilt; gewählt wird die geringste Auslastung (über alle Wochen,
- * Stand vor der Auto-Zuteilung — wie im Prototyp).
+ * Auto-Zuteilung für eine Woche+Meeting. Regeln (siehe README/Design):
+ *  - Kandidaten: qualifiziert, in dieser Woche anwesend, noch nicht in diesem
+ *    Meeting eingeteilt. Niemand bekommt Hilfsdienst UND Programmpunkt am
+ *    selben Tag (gemeinsame `used`-Menge; Ausnahme unten).
+ *  - Ausgeglichene Verteilung über eine mitlaufende „Strichliste“: historische
+ *    Auslastung als Startwert, während der Zuteilung hochgezählt; bei
+ *    Gleichstand fairer, deterministischer Tie-Break.
+ *  - Vorsitz betet zu Beginn: Anfangsgebet wird als Standard an die
+ *    Vorsitz-Person gekoppelt (die einzige erlaubte Doppel-Aufgabe).
+ *  - Fester Wachtturm-Studium-Leiter (bzw. Vertreter bei Abwesenheit) wird
+ *    zuerst reserviert, damit ihn kein anderer Slot „wegnimmt“.
+ *  - Nicht besetzbare Slots bleiben offen (kein Kandidat verfügbar).
  */
 export function autoAssignMeeting(
   weeks: Week[],
@@ -100,36 +118,97 @@ export function autoAssignMeeting(
     for (const name of arr) if (name) used.add(name)
   }
 
+  // Live-Strichliste: historische Auslastung als Startwert, während der
+  // Zuteilung hochgezählt, damit die Verteilung ausgeglichen bleibt.
+  const workload = new Map<string, number>()
+  const wl = (name: string): number => workload.get(name) ?? workloadOf(weeks, name)
+
+  let count = 0
+  const newly: string[] = []
+
+  const claim = (name: string): void => {
+    used.add(name)
+    workload.set(name, wl(name) + 1)
+    newly.push(name)
+    count++
+  }
+
   const pickFor = (priv: string | null | undefined): string | null => {
     const candidates = persons
       .filter((p) => (!priv || isQualified(p, priv)) && !p.absent.includes(weekIndex))
       .map((p) => displayName(p))
       .filter((name) => !used.has(name))
     if (candidates.length === 0) return null
-    candidates.sort((a, b) => workloadOf(weeks, a) - workloadOf(weeks, b))
+    candidates.sort(
+      (a, b) =>
+        wl(a) - wl(b) ||
+        tieHash(`${a}|${weekIndex}|${tab}`) - tieHash(`${b}|${weekIndex}|${tab}`),
+    )
     return candidates[0]
   }
 
-  let count = 0
-  const newly: string[] = []
+  // Fester Wachtturm-Studium-Leiter, sonst Vertreter (beide anwesend + frei),
+  // sonst normale Auswahl unter allen „studium“-Qualifizierten.
+  const pickConductor = (): string | null => {
+    const designated = (flag: 'wtLeiter' | 'wtVertreter'): string | undefined => {
+      const person = persons.find(
+        (p) => p.priv[flag] && !p.absent.includes(weekIndex) && !used.has(displayName(p)),
+      )
+      return person ? displayName(person) : undefined
+    }
+    return designated('wtLeiter') ?? designated('wtVertreter') ?? pickFor('studium')
+  }
 
+  // 1) WT-Studium-Leiter zuerst reservieren (nur Wochenende hat diese Sektion).
   for (const section of meeting.sections) {
+    if (section.label !== WT_STUDIUM) continue
     for (const item of section.items) {
       if (isSong(item)) continue
       for (const slot of item.names) {
-        // Gastredner-/Kreisaufseher-Slots kommen von außen und bleiben offen
-        if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-        const name = pickFor(slot.bereichsKey)
-        if (name) {
-          slot.name = name
-          used.add(name)
-          newly.push(name)
-          count++
+        if (slot.rolle === 'Leiter' && !slot.name) {
+          const name = pickConductor()
+          if (name) {
+            slot.name = name
+            claim(name)
+          }
         }
       }
     }
   }
 
+  // 2) Übrige Slots füllen. Das Anfangsgebet (Eröffnung) wird übersprungen und
+  //    unten an den Vorsitz gekoppelt.
+  for (const section of meeting.sections) {
+    for (const item of section.items) {
+      if (isSong(item)) continue
+      for (const slot of item.names) {
+        if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
+        if (section.label === EROEFFNUNG && slot.rolle === 'Gebet') continue
+        const name = pickFor(slot.bereichsKey)
+        if (name) {
+          slot.name = name
+          claim(name)
+        }
+      }
+    }
+  }
+
+  // 3) Vorsitz betet zu Beginn (Standard, manuell änderbar): Anfangsgebet =
+  //    Vorsitz-Person, sofern das Gebet noch offen ist.
+  const opening = meeting.sections.find((s) => s.label === EROEFFNUNG)
+  if (opening) {
+    const openingSlots = opening.items.flatMap((i) => (isSong(i) ? [] : i.names))
+    const vorsitz = openingSlots.find((s) => s.rolle === 'Vorsitz')?.name
+    const gebet = openingSlots.find((s) => s.rolle === 'Gebet')
+    if (vorsitz && gebet && !gebet.name) {
+      gebet.name = vorsitz
+      workload.set(vorsitz, wl(vorsitz) + 1)
+      count++
+    }
+  }
+
+  // 4) Hilfsdienste (nach den Programmpunkten → Helfer und Aufgaben schließen
+  //    sich über `used` gegenseitig aus).
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
@@ -142,9 +221,7 @@ export function autoAssignMeeting(
         const name = pickFor(svc.priv)
         if (name) {
           arr[pos] = name
-          used.add(name)
-          newly.push(name)
-          count++
+          claim(name)
         }
       }
     }

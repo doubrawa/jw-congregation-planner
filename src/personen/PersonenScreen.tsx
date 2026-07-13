@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
-import { QUALIFICATION_ORDER } from '../data/constants'
+import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { initials, roleLabel } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
-import type { Person, Role } from '../data/types'
+import type { Person, QualificationKey, Role } from '../data/types'
 import './personen.css'
 
 const ROLE_ORDER: readonly Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
@@ -170,24 +170,17 @@ function PersonDetail({ person }: { person: Person }) {
 
       <div className="panel panel--pb10" data-farbe="petrol">
         <div className="panel-label">{t.aufgabenbereiche}</div>
-        {QUALIFICATION_ORDER.map((key) => {
-          const on = person.priv[key]
-          return (
-            <div key={key} className="priv-row">
-              <span className="priv-label">{t[PRIV_KEY[key]]}</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={on}
-                aria-label={t[PRIV_KEY[key]]}
-                className={on ? 'switch is-on' : 'switch'}
-                onClick={() => update({ priv: { ...person.priv, [key]: !on } })}
-              >
-                <span className="switch-knob" />
-              </button>
-            </div>
-          )
-        })}
+        {QUALIFICATION_ORDER.map((key) => (
+          <PrivToggle key={key} qkey={key} person={person} update={update} />
+        ))}
+      </div>
+
+      <div className="panel panel--pb10" data-farbe="gold">
+        <div className="panel-label">{t.wtRollenLabel}</div>
+        <p className="panel-hint">{t.wtRollenHint}</p>
+        {WT_ROLE_ORDER.map((key) => (
+          <PrivToggle key={key} qkey={key} person={person} update={update} />
+        ))}
       </div>
 
       <button
@@ -198,5 +191,34 @@ function PersonDetail({ person }: { person: Person }) {
         {t.speichern}
       </button>
     </section>
+  )
+}
+
+/** Einzelner Aufgabenbereich-/Rollen-Schalter im Personen-Detail. */
+function PrivToggle({
+  qkey,
+  person,
+  update,
+}: {
+  qkey: QualificationKey
+  person: Person
+  update: (patch: Partial<Person>) => void
+}) {
+  const { t } = useT()
+  const on = Boolean(person.priv[qkey])
+  return (
+    <div className="priv-row">
+      <span className="priv-label">{t[PRIV_KEY[qkey]]}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={t[PRIV_KEY[qkey]]}
+        className={on ? 'switch is-on' : 'switch'}
+        onClick={() => update({ priv: { ...person.priv, [qkey]: !on } })}
+      >
+        <span className="switch-knob" />
+      </button>
+    </div>
   )
 }

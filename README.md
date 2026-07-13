@@ -183,10 +183,23 @@ Versammlung + Koordinator-Mitgliedschaft entsteht per SQL (siehe Ende der
 `schema.sql`). Bereits eingerichtete Datenbanken einmalig mit den
 `supabase/migration-00*.sql`-Dateien nachziehen (in Nummern-Reihenfolge).
 
+### Auto-Zuteilung (Regeln)
+
+„Automatisch zuteilen" im Planen füllt offene Slots nach festen Regeln: der
+**Vorsitz betet zu Beginn** (Anfangsgebet wird an die Vorsitz-Person gekoppelt,
+manuell änderbar); niemand bekommt **Hilfsdienst und Programmpunkt am selben
+Tag**; die Verteilung bleibt über eine mitlaufende **Strichliste** ausgeglichen;
+der **Wachtturm-Studium-Leiter** ist fest (Aufgabenbereich der Person), sein
+**Vertreter** springt bei Abwesenheit ein; nicht besetzbare Slots (z. B. alle
+Qualifizierten abwesend) bleiben **offen**. Die Regeln sind in
+[`autoassign.sim.test.ts`](src/data/autoassign.sim.test.ts) über eine
+100-Personen-Simulation abgesichert.
+
 ## Offene Punkte (aus dem Handoff)
 
 1. Echter Arbeitsheft-Import von jw.org (Format/Parsing, Nutzungsrechte klären)
 2. Auth + Mandantenfähigkeit: **umgesetzt** (Supabase Auth + Schema/RLS +
    Daten-Persistenz + Mitglieder-Verwaltung mit Einladungscodes, siehe oben)
 3. Mitteilungs-Versand (Push/E-Mail), S-89-konforme Benachrichtigung
-4. Konfliktprüfungen über Wochen hinweg (z. B. gleiche Person zu oft hintereinander)
+4. Konfliktprüfungen über Wochen hinweg: **umgesetzt** — Warn-Banner im Planen
+   (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft, Wochen-Serie)

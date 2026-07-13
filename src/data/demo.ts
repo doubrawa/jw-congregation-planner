@@ -11,6 +11,7 @@ import type {
   PartItem,
   Person,
   Reminders,
+  Role,
   Section,
   SectionColor,
   Service,
@@ -52,9 +53,61 @@ const q = (
   ordner: on.includes('ordner'),
 })
 
+/* ---- Größere Demo-Versammlung (~100 Personen) ---------------------------
+ * Zusätzliche Personen mit eindeutigen Anzeigenamen — die Nachnamen kollidieren
+ * weder mit den 16 Stammpersonen noch mit externen Namen in den Wochen. So lässt
+ * sich die Auto-Zuteilung realistisch mit vielen Kandidaten testen/vorführen.
+ */
+
+const XFN_M = ['Andreas', 'Bernd', 'Christian', 'Daniel', 'Erik', 'Frank', 'Gerd', 'Hans', 'Ingo', 'Jens', 'Karl', 'Lars', 'Martin', 'Norbert', 'Oliver', 'Peter', 'Rainer', 'Stefan', 'Uwe', 'Volker', 'Werner', 'Dieter', 'Ralf', 'Sven']
+const XFN_F = ['Anna', 'Birgit', 'Claudia', 'Doris', 'Eva', 'Gisela', 'Heike', 'Inge', 'Julia', 'Karin', 'Laura', 'Maria', 'Nina', 'Petra', 'Rita', 'Sabine', 'Ursula', 'Vera', 'Anja', 'Beate', 'Carmen', 'Diana', 'Elke', 'Franziska']
+const XLN = ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Becker', 'Schulz', 'Koch', 'Bauer', 'Richter', 'Wolf', 'Schäfer', 'Zimmermann', 'Braun', 'Krause', 'Hofmann', 'Werner', 'Schmitt', 'Lange', 'Schmitz', 'Meier', 'Walter', 'Weiß', 'Jung', 'Hahn', 'Vogt', 'Keller', 'Frank', 'Böhm', 'Schuster', 'Fuchs', 'Kaiser', 'Lehmann', 'Herrmann', 'König', 'Kraft', 'Beck', 'Lorenz', 'Baumann', 'Franke', 'Ludwig', 'Bergmann', 'Pohl', 'Horn', 'Busch', 'Sauer', 'Arnold', 'Thomas', 'Reuter', 'Sander', 'Voigt', 'Kühn', 'Pfeiffer', 'Engel', 'Berg', 'Riedel', 'Ziegler', 'Dietrich', 'Kolb', 'Huber', 'Kramer', 'Nagel', 'Graf', 'Seidel', 'Ackermann', 'Böttcher', 'Renner', 'Kuhn', 'Bock', 'Hein', 'Schwarz', 'Krebs', 'Franz', 'Beyer', 'Wolff', 'Jäger', 'Schreiber', 'Hansen', 'Marx', 'Ulrich', 'Vetter', 'Adler', 'Wenzel']
+
+/** Qualifikationsprofil je Rotationsrest (gute Abdeckung aller Bereiche). */
+function extraProfile(r: number): { role: Role; priv: Person['priv'] } {
+  switch (r) {
+    case 0:
+      return { role: 'aeltester', priv: q(['vorsitz', 'vortrag', 'gebet', 'studium', 'lesen', 'schulung']) }
+    case 1:
+      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner']) }
+    case 2:
+      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'mikrofon', 'ton', 'ordner']) }
+    case 3:
+      return { role: 'verkuendiger', priv: q(['mikrofon', 'ton', 'ordner']) }
+    case 4:
+      return { role: 'verkuendiger', priv: q(['mikrofon', 'ordner', 'lesen', 'schulung']) }
+    default:
+      return { role: 'verkuendiger', priv: q(['schulung']) } // Schwestern (Schulungsaufgaben)
+  }
+}
+
+function buildExtraPersons(): Person[] {
+  const out: Person[] = []
+  for (let i = 0; i < XLN.length; i++) {
+    const r = i % 7
+    const female = r >= 5
+    const fn = female ? XFN_F[i % XFN_F.length] : XFN_M[i % XFN_M.length]
+    const ln = XLN[i]
+    const { role, priv } = extraProfile(r)
+    const person: Person = {
+      id: `p${17 + i}`,
+      fn,
+      ln,
+      role,
+      tel: '',
+      mail: `${fn}.${ln}@mail.de`.toLowerCase(),
+      absent: [],
+      priv,
+    }
+    if (female) person.female = true
+    out.push(person)
+  }
+  return out
+}
+
 export const DEMO_PERSONS: Person[] = [
-  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', absent: [], priv: q(['vorsitz', 'vortrag', 'gebet', 'studium']) },
-  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', absent: [], priv: q(['vorsitz', 'vortrag', 'gebet', 'studium']) },
+  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', absent: [], priv: { ...q(['vorsitz', 'vortrag', 'gebet', 'studium']), wtLeiter: true } },
+  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', absent: [], priv: { ...q(['vorsitz', 'vortrag', 'gebet', 'studium']), wtVertreter: true } },
   { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: '+49 152 887 90 04', mail: 'f.neumann@mail.de', absent: [], priv: q(['vorsitz', 'vortrag', 'gebet', 'studium']) },
   { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: '+49 170 445 12 60', mail: 'h.vogel@mail.de', absent: [], priv: q(['vortrag', 'gebet', 'studium']) },
   { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: '+49 173 511 78 30', mail: 'k.sommer@mail.de', absent: [], priv: q(['vortrag', 'gebet']) },
@@ -69,6 +122,7 @@ export const DEMO_PERSONS: Person[] = [
   { id: 'p14', fn: 'Ulrich', ln: 'Lang', role: 'verkuendiger', tel: '+49 175 490 55 03', mail: 'u.lang@mail.de', absent: [0], priv: q(['gebet', 'ordner']) },
   { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, tel: '+49 151 340 76 55', mail: 'l.hoffmann@mail.de', absent: [], priv: q(['schulung']) },
   { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, tel: '+49 173 662 09 18', mail: 'e.brandt@mail.de', absent: [2], priv: q(['schulung']) },
+  ...buildExtraPersons(),
 ]
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
