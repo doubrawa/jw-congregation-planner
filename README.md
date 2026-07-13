@@ -256,6 +256,39 @@ umgekehrt. Die Regeln sind in
    siehe oben) — nur die Zusammenkunft unter der Woche; Wochenende als Vorlage
 2. Auth + Mandantenfähigkeit: **umgesetzt** (Supabase Auth + Schema/RLS +
    Daten-Persistenz + Mitglieder-Verwaltung mit Einladungscodes, siehe oben)
-3. Mitteilungs-Versand (Push/E-Mail), S-89-konforme Benachrichtigung
+3. Mitteilungs-Versand (Push/E-Mail): **Gerüst vorhanden** — Edge Function
+   `send-reminders` + Cron-Template (siehe unten), noch zu konfigurieren/testen
 4. Konfliktprüfungen über Wochen hinweg: **umgesetzt** — Warn-Banner im Planen
-   (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft, Wochen-Serie)
+   (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft, Wochen-Serie,
+   sowie **Hilfsdienst + Programmpunkt am selben Tag**)
+
+## App-Sprachen (~30)
+
+Die App-Oberfläche gibt es in ~30 Sprachen (Europa + Weltsprachen). Umschaltbar
+im Login und im Profil. DE ist die Basis; fehlt eine Übersetzung, greift
+Englisch als Fallback. Datums-/Wochentagsnamen der Zusatz-Sprachen kommen über
+`Intl` (keine handgepflegten Listen). Getrennt davon ist die
+**Versammlungssprache** (Programm-Inhalte) frei aus der vollen jw.org-Liste
+wählbar. Neue App-Sprache hinzufügen: Code in `Lang` ([types.ts](src/data/types.ts))
++ `APP_LANGS`/`LOCALES` ([langs.ts](src/i18n/langs.ts)) + Overlay in
+[ui.ts](src/i18n/ui.ts) und optional `FRAG`/`EXTRA` in
+[translate.ts](src/i18n/translate.ts) (Rollen/Dienste/Phrasen).
+
+## Erinnerungs-Versand (Gerüst)
+
+[`supabase/functions/send-reminders/`](supabase/functions/send-reminders/)
+erinnert Mitglieder per E-Mail an noch **nicht bestätigte** Zuteilungen in einer
+kommenden Woche. Läuft serverseitig mit Service-Role (sieht alle Versammlungen)
+und wird per Cron ausgelöst ([`supabase/cron-reminders.sql`](supabase/cron-reminders.sql)).
+
+**Wichtig — vor Nutzung konfigurieren und testen:**
+- **Dry-Run ist Standard**: ohne Secret `SEND_EMAILS=true` wird nichts versendet,
+  sondern nur protokolliert (Vorschau). So kann nichts versehentlich rausgehen.
+- Secrets setzen: `CRON_SECRET`, `RESEND_API_KEY`, `REMINDER_FROM`
+  (`supabase secrets set …`); `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` sind
+  automatisch da.
+- Deploy: `supabase functions deploy send-reminders --no-verify-jwt`, dann
+  `cron-reminders.sql` mit deinem Projekt-Ref + Secret ausführen.
+- **Noch nicht E2E getestet** (Versandpfad/Resend): erst im Dry-Run prüfen, dann
+  `SEND_EMAILS=true` setzen. Das Zeitfenster nutzt `week.start` (ISO), das nur
+  bei importierten Wochen gesetzt ist.
