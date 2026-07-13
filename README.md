@@ -12,10 +12,12 @@ Mitteilungen und Einstellungen.
 > umgesetzt. Dazu die **v3-Funktionen**: Kreisaufseher- und Gedächtnismahl-Woche,
 > Bestätigungs-Flow (Zuteilungen bestätigen/verhindern), S-89-Formular,
 > konfigurierbare Erinnerungen und **Mehrsprachigkeit** (Oberfläche
-> DE/EN/ES/FR, separate Versammlungssprache für die Programm-Inhalte). Läuft
-> mit In-Memory-Demo-Daten. Das **Supabase-Fundament** (echtes Login + DB-Schema
-> mit RLS) liegt bei — ohne Konfiguration läuft die App im Demo-Modus (siehe
-> „Supabase einrichten"). Offen: Daten-Persistenz, echter Import (siehe unten).
+> DE/EN/ES/FR, separate Versammlungssprache für die Programm-Inhalte). Mit
+> konfiguriertem **Supabase** (echtes Login + Postgres mit RLS) werden alle
+> Versammlungsdaten geladen und zurückgeschrieben — inkl. abgeleiteter
+> „Meine Aufgaben" und persistenter Bestätigungen; ohne Konfiguration läuft
+> die App im Demo-Modus mit In-Memory-Daten (siehe „Supabase einrichten").
+> Offen: echter Arbeitsheft-Import (siehe unten).
 
 ## Stack
 
@@ -54,6 +56,7 @@ src/
     useT.ts         Hook: t (UI), tu (App-Sprache), tp (Versammlungssprache)
   lib/
     supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset, Demo-Fallback)
+    data.ts         Daten-Zugriff: Versammlungsdaten laden, Änderungen zurückschreiben
   aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung
   einstellungen/    Einstellungen (Hilfsdienste, Programm-Import)
   login/            Login (simuliert, wie im Prototyp)
@@ -69,6 +72,7 @@ docs/
   design-handoff/   Maßgebliche Design-Referenz (README, HTML-Prototypen, Screenshots)
 supabase/
   schema.sql        DB-Schema (Tabellen + Row-Level-Security), im SQL-Editor ausführen
+  migration-001-…   Nachzügler-Migration für Datenbanken, die vor ihr eingerichtet wurden
 .github/workflows/
   deploy.yml        Auto-Deployment auf GitHub Pages (reicht Supabase-Secrets durch)
 ```
@@ -159,14 +163,21 @@ Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
 Versammlung, schreiben dürfen im Wesentlichen nur Planer).
 
 **Stand:** Anmelden/Abmelden/Reset-Mail sind verdrahtet; eine bestehende
-Session überspringt den Login. **Noch offen:** Laden/Speichern der App-Daten
-aus der DB (aktuell weiterhin Demo-Daten), Passwort-Reset-Seite
-(`PASSWORD_RECOVERY`), Rolle/Versammlung aus `members` statt Demo-Konstanten.
+Session überspringt den Login. Nach dem Login werden alle Versammlungsdaten
+geladen (Rolle/Versammlung aus `members`), Änderungen sofort zurückgeschrieben;
+eine leere Versammlung bietet Planern eine Erstbefüllung mit dem Demo-Datensatz
+an. „Meine Aufgaben" entstehen aus den Zuteilungen der über `members.person_id`
+verknüpften Person; Bestätigungen landen in `confirmations`, Erinnerungen und
+Versammlungssprache in `congregations.settings`. Bereits eingerichtete
+Datenbanken einmalig mit
+[`supabase/migration-001-aufgaben.sql`](supabase/migration-001-aufgaben.sql)
+nachziehen. **Noch offen:** Passwort-Reset-Seite (`PASSWORD_RECOVERY`),
+Mitglieder-Verwaltung in der App (members-Zeilen entstehen per SQL).
 
 ## Offene Punkte (aus dem Handoff)
 
 1. Echter Arbeitsheft-Import von jw.org (Format/Parsing, Nutzungsrechte klären)
-2. Auth + Mandantenfähigkeit: **Grundlage gelegt** (Supabase Auth + Schema/RLS,
-   siehe oben) — offen: Daten-Persistenz, Rollen aus `members`, Einladungen
+2. Auth + Mandantenfähigkeit: **umgesetzt** (Supabase Auth + Schema/RLS +
+   Daten-Persistenz, siehe oben) — offen: Einladungen/Mitglieder-Verwaltung in der App
 3. Mitteilungs-Versand (Push/E-Mail), S-89-konforme Benachrichtigung
 4. Konfliktprüfungen über Wochen hinweg (z. B. gleiche Person zu oft hintereinander)
