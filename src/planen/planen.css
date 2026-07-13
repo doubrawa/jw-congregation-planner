@@ -44,6 +44,36 @@
   color: var(--mut);
 }
 
+/* ---- Konflikt-Warnungen ------------------------------------------------- */
+
+.plan-conflicts {
+  margin-top: 14px;
+  background: var(--tWein);
+  border: 1px solid var(--weinB);
+  border-radius: 12px;
+  padding: 11px 13px;
+}
+
+.plan-conflicts-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--wein);
+  margin-bottom: 6px;
+}
+
+.plan-conflict-row {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--wein);
+}
+
+.plan-conflict-row + .plan-conflict-row {
+  border-top: 1px solid var(--weinB);
+  padding-top: 5px;
+  margin-top: 5px;
+}
+
 /* ---- Programmpunkte mit Slot-Chips -------------------------------------- */
 
 .plan-item {

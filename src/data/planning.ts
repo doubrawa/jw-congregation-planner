@@ -299,6 +299,115 @@ export function derivePendingNames(
   return [...pending]
 }
 
+/* ---- Konfliktprüfungen (Planen) ------------------------------------------
+ * Warnungen für den Planer, aus den Wochen abgeleitet: jemand ist trotz
+ * Abwesenheit eingeteilt, mehrfach in derselben Zusammenkunft, oder über
+ * mehrere Wochen am Stück eingeteilt. Reine Ableitung, keine Persistenz.
+ */
+
+/** Ab wie vielen Wochen in Folge ein „streak“-Konflikt entsteht. */
+const STREAK_THRESHOLD = 3
+
+export type ConflictKind = 'absent' | 'double' | 'streak'
+
+export interface Conflict {
+  kind: ConflictKind
+  name: string // Anzeigename der Person
+  tab?: MeetingTab // betroffene Zusammenkunft (absent/double)
+  count?: number // double: Slots in der Zusammenkunft; streak: Wochen in Folge
+}
+
+/**
+ * Belegte Personen-Namen einer Zusammenkunft (mit Duplikaten). Ohne Lieder,
+ * ohne externe Slots (Gastredner/Kreisaufseher) und ohne Gruppen-Rotation —
+ * die sind keine zuteilbaren Personen.
+ */
+function meetingAssignedNames(meeting: Meeting, services: Service[]): string[] {
+  const names: string[] = []
+  for (const section of meeting.sections) {
+    for (const item of section.items) {
+      if (isSong(item)) continue
+      for (const slot of item.names) {
+        if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
+        names.push(slot.name)
+      }
+    }
+  }
+  for (const svc of services) {
+    if (svc.groups) continue
+    const arr = meeting.helpers[svc.key] ?? []
+    for (let pos = 0; pos < svc.count; pos++) {
+      if (arr[pos]) names.push(arr[pos])
+    }
+  }
+  return names
+}
+
+/** Alle belegten Namen einer Woche (beide Zusammenkünfte), als Menge. */
+function weekAssignedNames(week: Week, services: Service[]): Set<string> {
+  return new Set([
+    ...meetingAssignedNames(week.mid, services),
+    ...meetingAssignedNames(week.we, services),
+  ])
+}
+
+/**
+ * Konflikte der Woche `wi`: Abwesende trotz Zuteilung, Mehrfach-Zuteilung in
+ * einer Zusammenkunft und Serien von `STREAK_THRESHOLD`+ Wochen in Folge
+ * (die `wi` enthalten). Reihenfolge: absent, double, streak.
+ */
+export function weekConflicts(
+  weeks: Week[],
+  wi: number,
+  persons: Person[],
+  services: Service[],
+): Conflict[] {
+  const week = weeks[wi]
+  if (!week) return []
+  const conflicts: Conflict[] = []
+  const byDisplay = new Map(persons.map((p) => [displayName(p), p]))
+  const tabs: MeetingTab[] = ['mid', 'we']
+
+  // absent: in dieser Woche abwesend, aber eingeteilt
+  for (const tab of tabs) {
+    for (const name of new Set(meetingAssignedNames(week[tab], services))) {
+      const person = byDisplay.get(name)
+      if (person && person.absent.includes(wi)) {
+        conflicts.push({ kind: 'absent', name, tab })
+      }
+    }
+  }
+
+  // double: gleiche Person mehrfach in einer Zusammenkunft
+  for (const tab of tabs) {
+    const counts = new Map<string, number>()
+    for (const name of meetingAssignedNames(week[tab], services)) {
+      counts.set(name, (counts.get(name) ?? 0) + 1)
+    }
+    for (const [name, count] of counts) {
+      if (count >= 2) conflicts.push({ kind: 'double', name, tab, count })
+    }
+  }
+
+  // streak: Häufung von STREAK_THRESHOLD+ Wochen am Stück. Bewusst nur, wenn
+  // der Lauf kürzer als der geladene Zeitraum ist — wer schlicht in *jeder*
+  // Woche eingeteilt ist, ist durchgehend aktiv (Auslastungsthema), keine
+  // auffällige Serie, und würde sonst nur Rauschen erzeugen.
+  const nameSets = weeks.map((w) => weekAssignedNames(w, services))
+  for (const name of nameSets[wi]) {
+    let start = wi
+    let end = wi
+    while (start - 1 >= 0 && nameSets[start - 1].has(name)) start--
+    while (end + 1 < weeks.length && nameSets[end + 1].has(name)) end++
+    const run = end - start + 1
+    if (run >= STREAK_THRESHOLD && run < weeks.length) {
+      conflicts.push({ kind: 'streak', name, count: run })
+    }
+  }
+
+  return conflicts
+}
+
 /* ---- „Unser Leben als Christ“ im Planen bearbeiten ---------------------- */
 
 const MIN_RE = /(\d+) Min\./

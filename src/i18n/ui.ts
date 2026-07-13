@@ -110,7 +110,12 @@ export const DE = {
     einladungenDesc: 'Neue Mitglieder registrieren sich in der App und lösen einen Code ein.',
     codeErstellen: '+ CODE ERSTELLEN', ohnePerson: 'ohne Person-Verknüpfung',
     toastMitgliedEntfernt: 'Mitglied entfernt', toastEinladungErstellt: 'Einladungscode erstellt',
-    toastEinladungGeloescht: 'Einladung gelöscht'
+    toastEinladungGeloescht: 'Einladung gelöscht',
+    // Konfliktprüfungen (Planen)
+    konflikteTitle: 'MÖGLICHE KONFLIKTE',
+    konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
+    konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
+    konfliktStreak: '{name} ist {n} Wochen in Folge eingeteilt'
 }
 
 export type Dict = typeof DE
@@ -217,7 +222,11 @@ const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
     einladungenDesc: 'New members sign up in the app and redeem a code.',
     codeErstellen: '+ CREATE CODE', ohnePerson: 'no person linked',
     toastMitgliedEntfernt: 'Member removed', toastEinladungErstellt: 'Invitation code created',
-    toastEinladungGeloescht: 'Invitation deleted'
+    toastEinladungGeloescht: 'Invitation deleted',
+    konflikteTitle: 'POSSIBLE CONFLICTS',
+    konfliktAbsent: '{name} is absent but assigned · {tab}',
+    konfliktDouble: '{name} is assigned {n}× in one meeting · {tab}',
+    konfliktStreak: '{name} is assigned {n} weeks in a row',
   },
   es: {
     congName: 'Congregación Musterstadt', congLabel: 'Congregación {name}',
@@ -319,7 +328,11 @@ const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
     einladungenDesc: 'Los nuevos miembros se registran en la app y canjean un código.',
     codeErstellen: '+ CREAR CÓDIGO', ohnePerson: 'sin persona vinculada',
     toastMitgliedEntfernt: 'Miembro eliminado', toastEinladungErstellt: 'Código de invitación creado',
-    toastEinladungGeloescht: 'Invitación eliminada'
+    toastEinladungGeloescht: 'Invitación eliminada',
+    konflikteTitle: 'POSIBLES CONFLICTOS',
+    konfliktAbsent: '{name} está ausente pero asignado · {tab}',
+    konfliktDouble: '{name} está asignado {n}× en una reunión · {tab}',
+    konfliktStreak: '{name} está asignado {n} semanas seguidas',
   },
   fr: {
     congName: 'Assemblée de Musterstadt', congLabel: 'Assemblée de {name}',
@@ -421,7 +434,11 @@ const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
     einladungenDesc: 'Les nouveaux membres s’inscrivent dans l’app et utilisent un code.',
     codeErstellen: '+ CRÉER UN CODE', ohnePerson: 'aucune personne liée',
     toastMitgliedEntfernt: 'Membre supprimé', toastEinladungErstellt: 'Code d’invitation créé',
-    toastEinladungGeloescht: 'Invitation supprimée'
+    toastEinladungGeloescht: 'Invitation supprimée',
+    konflikteTitle: 'CONFLITS POSSIBLES',
+    konfliktAbsent: '{name} est absent mais assigné · {tab}',
+    konfliktDouble: '{name} est assigné {n}× dans une réunion · {tab}',
+    konfliktStreak: '{name} est assigné {n} semaines de suite',
   }
 }
 

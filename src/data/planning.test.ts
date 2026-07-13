@@ -13,6 +13,7 @@ import {
   lacMove,
   lacRemove,
   shiftEnd,
+  weekConflicts,
 } from './planning'
 import type { PartItem, Section } from './types'
 
@@ -246,5 +247,39 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', {})
     const conf = Object.fromEntries(tasks.map((t) => [t.id, 'bestätigt' as const]))
     expect(derivePendingNames(weeks, DEMO_SERVICES, conf)).not.toContain('S. Krüger')
+  })
+})
+
+describe('Konfliktprüfungen (Planen)', () => {
+  it('erkennt Abwesende, die trotzdem eingeteilt sind', () => {
+    // U. Lang ist in Woche 0 abwesend, aber Eingangsordner (mid)
+    const weeks = buildDemoWeeks()
+    const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
+    expect(conflicts).toContainEqual({ kind: 'absent', name: 'U. Lang', tab: 'mid' })
+  })
+
+  it('erkennt Mehrfach-Zuteilung in einer Zusammenkunft', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.ton = ['M. Albrecht'] // ist schon Vorsitz in derselben ZK
+    const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
+    expect(conflicts).toContainEqual({ kind: 'double', name: 'M. Albrecht', tab: 'mid', count: 2 })
+  })
+
+  it('erkennt Serien von 3 Wochen in Folge (und nur dort)', () => {
+    const weeks = buildDemoWeeks()
+    for (const wi of [0, 1, 2]) weeks[wi].mid.helpers.ton = ['R. Serie']
+    const streak = weekConflicts(weeks, 1, [], DEMO_SERVICES).filter((c) => c.kind === 'streak')
+    expect(streak).toContainEqual({ kind: 'streak', name: 'R. Serie', count: 3 })
+    // Woche 3 gehört nicht zur Serie
+    const w3 = weekConflicts(weeks, 3, [], DEMO_SERVICES)
+    expect(w3.some((c) => c.kind === 'streak' && c.name === 'R. Serie')).toBe(false)
+  })
+
+  it('meldet externe Redner und Gruppen-Rotation nicht', () => {
+    // Woche 2: Kreisaufseher K. Wagner mehrfach, Reinigung als Gruppe
+    const weeks = buildDemoWeeks()
+    const conflicts = weekConflicts(weeks, 2, DEMO_PERSONS, DEMO_SERVICES)
+    expect(conflicts.some((c) => c.name === 'K. Wagner')).toBe(false)
+    expect(conflicts.some((c) => c.name.startsWith('Gruppe'))).toBe(false)
   })
 })

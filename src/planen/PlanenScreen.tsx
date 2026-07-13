@@ -4,7 +4,7 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { isSong } from '../data/helpers'
-import { countOpenSlots, itemMinutes } from '../data/planning'
+import { countOpenSlots, itemMinutes, weekConflicts, type Conflict } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
 import type { PartItem, Section, Service, SlotAssignment } from '../data/types'
 import './planen.css'
@@ -24,6 +24,16 @@ export function PlanenScreen() {
   const meeting = state.tab === 'mid' ? week.mid : week.we
   const openCount = countOpenSlots(meeting, state.services)
   const isPending = (name: string) => state.pendingNames.includes(name)
+  // Warnungen der ganzen Woche (beide Zusammenkünfte), unabhängig vom Tab
+  const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services)
+
+  const tabName = (tab: Conflict['tab']): string => (tab === 'we' ? t.tabWe : t.tabMid)
+  const conflictText = (c: Conflict): string => {
+    if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName(c.tab) })
+    if (c.kind === 'double')
+      return fill(t.konfliktDouble, { name: c.name, n: c.count ?? 2, tab: tabName(c.tab) })
+    return fill(t.konfliktStreak, { name: c.name, n: c.count ?? 3 })
+  }
 
   const openPartSlot = (
     si: number,
@@ -112,6 +122,19 @@ export function PlanenScreen() {
         {t.autoZuteilen}
       </button>
       <p className="plan-legend">{t.planLegend}</p>
+
+      {conflicts.length > 0 && (
+        <div className="plan-conflicts">
+          <div className="plan-conflicts-title">
+            {t.konflikteTitle} · {conflicts.length}
+          </div>
+          {conflicts.map((c, i) => (
+            <div key={i} className="plan-conflict-row">
+              {conflictText(c)}
+            </div>
+          ))}
+        </div>
+      )}
 
       {meeting.sections.map((section, si) => {
         const isLac = section.label === LAC_LABEL
