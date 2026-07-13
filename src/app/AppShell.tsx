@@ -60,7 +60,9 @@ export function AppShell() {
     }
   }
   const navItems = navScreens.map((screen) => [screen, navLabel(screen)] as const)
-  const roleLabel = state.planner ? t.rolleKoordinator : t.rolleVerkuendiger
+  const roleLabel =
+    (state.planner ? t.rolleKoordinator : t.rolleVerkuendiger) +
+    (state.dataStatus === 'demo' ? t.demoSuffix : '')
 
   return (
     <div className="desk">

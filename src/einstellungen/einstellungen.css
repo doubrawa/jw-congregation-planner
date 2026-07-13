@@ -1,5 +1,16 @@
 /* Einstellungen (Screen 6, nur Planer) — Hilfsdienste + Programm-Import. */
 
+/* ---- Versammlung (Stammdaten) -------------------------------------------------- */
+
+.cong-field {
+  margin-bottom: 10px;
+}
+
+.cong-save {
+  width: 100%;
+  margin-top: 6px;
+}
+
 /* ---- Hilfsdienste ------------------------------------------------------------ */
 
 .svc-row {

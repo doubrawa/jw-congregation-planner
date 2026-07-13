@@ -153,6 +153,13 @@ export interface MyTask {
   s89: S89Payload | null // Schulungsaufgabe → S-89 anzeigbar
 }
 
+/**
+ * Bestätigungs-Status je Aufgabe (Produktionsmodus). Schlüssel = stabiler
+ * Slot-Pfad (siehe taskKey in planning.ts); nur bestätigt/verhindert werden
+ * gespeichert — fehlender Eintrag bedeutet „offen“.
+ */
+export type ConfirmationMap = Record<string, TaskStatus>
+
 /** Erinnerungs-Einstellungen (Einstellungen → ERINNERUNGEN). */
 export interface Reminders {
   first: number // erste Erinnerung: N Tage vorher (1..21)

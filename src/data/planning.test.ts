@@ -5,6 +5,8 @@ import {
   autoAssignMeeting,
   buildS89ForSlot,
   countOpenSlots,
+  deriveMyTasks,
+  derivePendingNames,
   itemMinutes,
   lacAdd,
   lacAdjust,
@@ -196,5 +198,53 @@ describe('Auslastung', () => {
     const lena = DEMO_PERSONS.find((p) => p.ln === 'Hoffmann')!
     // L. Hoffmann: 2 Slots + 2× "mit L. Hoffmann"
     expect(workloadOf(weeks, displayName(lena))).toBe(4)
+  })
+})
+
+describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
+  const weeks = buildDemoWeeks()
+
+  it('leitet die Aufgaben einer Person in Programmreihenfolge ab', () => {
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', {})
+    // Woche 0: Schulungsaufgabe · Woche 1: Mikrofone (We) ·
+    // Woche 2: Bibellesung · Woche 3: Mikrofone (Gedächtnismahl)
+    expect(tasks.map((t) => t.title)).toEqual([
+      'Gespräche beginnen',
+      'Mikrofone',
+      'Bibellesung · Jer 38:1-13',
+      'Mikrofone',
+    ])
+    expect(tasks[0].date).toBe('Dienstag, 8. September · 19:00')
+    expect(tasks[0].s89?.partner).toBe('M. Ernst')
+    expect(tasks[1].s89).toBeNull()
+    expect(tasks[2].s89?.point).toBe('th Lektion 10')
+    expect(tasks.every((t) => t.status === 'offen')).toBe(true)
+    expect(deriveMyTasks(weeks, DEMO_SERVICES, '', {})).toEqual([])
+  })
+
+  it('hängt Rollenlabels (außer Begleiter) an den Titel an', () => {
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'M. Albrecht', {})
+    expect(tasks[0].title).toBe('Lied 1 · Gebet · Einleitende Worte · Vorsitz')
+  })
+
+  it('übernimmt den Status aus der ConfirmationMap', () => {
+    const open = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', {})
+    const conf = { [open[0].id]: 'bestätigt', [open[1].id]: 'verhindert' } as const
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', conf)
+    expect(tasks.map((t) => t.status)).toEqual(['bestätigt', 'verhindert', 'offen', 'offen'])
+  })
+
+  it('pendingNames: ohne Bestätigung pending, Externe und Gruppen nie', () => {
+    const pending = derivePendingNames(weeks, DEMO_SERVICES, {})
+    expect(pending).toContain('S. Krüger')
+    expect(pending).not.toContain('K. Wagner') // Kreisaufseher (extern)
+    expect(pending).not.toContain('M. Hartmann') // Gastredner (extern)
+    expect(pending.some((n) => n.startsWith('Gruppe'))).toBe(false)
+  })
+
+  it('pendingNames: voll bestätigte Namen verschwinden', () => {
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', {})
+    const conf = Object.fromEntries(tasks.map((t) => [t.id, 'bestätigt' as const]))
+    expect(derivePendingNames(weeks, DEMO_SERVICES, conf)).not.toContain('S. Krüger')
   })
 })

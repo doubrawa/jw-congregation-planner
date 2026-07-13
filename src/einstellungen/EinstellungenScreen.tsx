@@ -63,25 +63,40 @@ export function EinstellungenScreen() {
     { key: 'last', name: 'remLetzte' },
   ]
 
+  const congFields: Array<['name' | 'hall' | 'meetings', string]> = [
+    ['name', t.nameLbl],
+    ['hall', t.saal],
+    ['meetings', t.zusammenkuenfte],
+  ]
+
   return (
     <section className="screen">
       <h1 className="screen-title">{t.einstellungen}</h1>
       <p className="screen-subtitle">{fill(t.congLabel, { name: state.congregation.name })}</p>
 
-      <div className="panel panel--lead panel--pb14" data-farbe="neutral">
+      <div className="panel panel--lead panel--pb16" data-farbe="neutral">
         <div className="panel-label">{t.versammlungCard}</div>
-        <div className="kv-row">
-          <span className="kv-key">{t.nameLbl}</span>
-          <span className="kv-val">{state.congregation.name}</span>
-        </div>
-        <div className="kv-row">
-          <span className="kv-key">{t.saal}</span>
-          <span className="kv-val">{state.congregation.hall}</span>
-        </div>
-        <div className="kv-row kv-row--plain">
-          <span className="kv-key">{t.zusammenkuenfte}</span>
-          <span className="kv-val">{tu(state.congregation.meetings)}</span>
-        </div>
+        {congFields.map(([key, label]) => (
+          <div key={key} className="cong-field">
+            <label className="field-label" htmlFor={`cong-${key}`}>
+              {label}
+            </label>
+            <input
+              id={`cong-${key}`}
+              className="field-input"
+              type="text"
+              value={state.congregation[key]}
+              onChange={(e) => dispatch({ type: 'updateCongregation', patch: { [key]: e.target.value } })}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn-primary cong-save"
+          onClick={() => dispatch({ type: 'saveCongregation' })}
+        >
+          {t.speichern}
+        </button>
       </div>
 
       <form className="panel panel--pb16" data-farbe="petrol" onSubmit={addService}>

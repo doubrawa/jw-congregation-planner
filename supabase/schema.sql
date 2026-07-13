@@ -26,6 +26,7 @@ create table if not exists public.congregations (
   name          text not null,                      -- "Musterstadt"
   hall          text not null default '',           -- "Hauptstraße 12"
   meeting_times text not null default '',           -- "Di 19:00 · So 10:00"
+  settings      jsonb not null default '{}'::jsonb, -- { reminders, congLang }
   created_at    timestamptz not null default now()
 );
 
@@ -88,11 +89,24 @@ create table if not exists public.notifications (
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   user_id         uuid references auth.users (id) on delete cascade, -- null = an alle
   type            text not null default 'zuteilung'
-                  check (type in ('zuteilung', 'erinnerung', 'gesendet', 'import')),
+                  check (type in ('zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert')),
   title           text not null,
   body            text not null default '',
   read            boolean not null default false,
   created_at      timestamptz not null default now()
+);
+
+-- Aufgaben-Bestätigungen: task_key = stabiler Slot-Pfad einer Zuteilung
+-- (siehe partTaskKey/helperTaskKey in src/data/planning.ts). Jedes Mitglied
+-- schreibt seinen eigenen Status; „offen“ = keine Zeile vorhanden.
+create table if not exists public.confirmations (
+  id              uuid primary key default gen_random_uuid(),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  task_key        text not null,                    -- "0|mid|part|2|1|0" / "1|we|helper|mik|0"
+  status          text not null check (status in ('bestätigt', 'verhindert')),
+  created_at      timestamptz not null default now(),
+  unique (congregation_id, task_key, user_id)
 );
 
 -- ---------------------------------------------------------------------------
@@ -129,6 +143,7 @@ alter table public.services      enable row level security;
 alter table public.weeks         enable row level security;
 alter table public.absences      enable row level security;
 alter table public.notifications enable row level security;
+alter table public.confirmations enable row level security;
 
 -- Versammlung: Mitglieder lesen ihre eigene; ändern nur Planer.
 drop policy if exists congregations_select on public.congregations;
@@ -195,7 +210,8 @@ create policy absences_write on public.absences
     and (user_id = auth.uid() or public.is_planner())
   );
 
--- Mitteilungen: Empfänger (oder alle bei user_id null) lesen; Planer erzeugen;
+-- Mitteilungen: Empfänger (oder alle bei user_id null) lesen; Planer erzeugen
+-- (Verhinderungs-Meldungen dürfen alle Mitglieder erzeugen);
 -- Gelesen-Status darf jeder Empfänger selbst setzen.
 drop policy if exists notifications_select on public.notifications;
 create policy notifications_select on public.notifications
@@ -207,7 +223,8 @@ create policy notifications_select on public.notifications
 drop policy if exists notifications_insert on public.notifications;
 create policy notifications_insert on public.notifications
   for insert with check (
-    congregation_id = public.my_congregation_id() and public.is_planner()
+    congregation_id = public.my_congregation_id()
+    and (public.is_planner() or type = 'verhindert')
   );
 
 drop policy if exists notifications_update on public.notifications;
@@ -216,6 +233,18 @@ create policy notifications_update on public.notifications
     congregation_id = public.my_congregation_id()
     and (user_id is null or user_id = auth.uid())
   );
+
+-- Bestätigungen: Versammlung liest (Planer braucht den Überblick);
+-- jedes Mitglied schreibt nur seine eigenen Zeilen.
+drop policy if exists confirmations_select on public.confirmations;
+create policy confirmations_select on public.confirmations
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists confirmations_write on public.confirmations;
+create policy confirmations_write on public.confirmations
+  for all
+  using (congregation_id = public.my_congregation_id() and user_id = auth.uid())
+  with check (congregation_id = public.my_congregation_id() and user_id = auth.uid());
 
 -- ---------------------------------------------------------------------------
 -- Erste Einrichtung (Beispiel — Werte anpassen und einmalig ausführen)

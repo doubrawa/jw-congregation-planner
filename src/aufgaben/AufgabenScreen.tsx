@@ -164,7 +164,8 @@ export function AufgabenScreen() {
         <div className="kv-row">
           <span className="kv-key">{t.rolleLbl}</span>
           <span className="kv-val">
-            {state.planner ? t.rolleKoordinator : t.rolleVerkuendiger}
+            {(state.planner ? t.rolleKoordinator : t.rolleVerkuendiger) +
+              (state.dataStatus === 'demo' ? t.demoSuffix : '')}
           </span>
         </div>
         <div className="kv-row">

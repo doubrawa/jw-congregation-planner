@@ -20,7 +20,16 @@ import {
   DEMO_SERVICES,
 } from '../data/demo'
 import { displayName } from '../data/helpers'
-import { assignSlot, autoAssignMeeting, lacAdd, lacAdjust, lacMove, lacRemove } from '../data/planning'
+import {
+  assignSlot,
+  autoAssignMeeting,
+  deriveMyTasks,
+  derivePendingNames,
+  lacAdd,
+  lacAdjust,
+  lacMove,
+  lacRemove,
+} from '../data/planning'
 import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import {
@@ -29,8 +38,11 @@ import {
   insertNotification,
   markNotificationsRead,
   saveAbsence,
+  saveConfirmation,
+  saveCongregationInfo,
   savePerson,
   saveService,
+  saveSettings,
   saveWeek,
 } from '../lib/data'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -78,7 +90,51 @@ function currentUserName(state: AppState): string {
   return me ? displayName(me) : ''
 }
 
+/**
+ * Produktionsmodus: myTasks/pendingNames aus Wochen + Bestätigungen ableiten
+ * (im Demo-Modus bleiben die Demo-Daten unangetastet). `openConfirm` öffnet
+ * nach der Hydration das Bestätigungs-Modal, falls offene Aufgaben existieren.
+ */
+function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
+  if (state.dataStatus === 'demo') return state
+  const me = state.persons.find((p) => p.id === state.personId)
+  const myTasks = me
+    ? deriveMyTasks(state.weeks, state.services, displayName(me), state.confirmations)
+    : []
+  return {
+    ...state,
+    myTasks,
+    pendingNames: derivePendingNames(state.weeks, state.services, state.confirmations),
+    confirmOpen: (openConfirm || state.confirmOpen) && myTasks.some((t) => t.status === 'offen'),
+  }
+}
+
+/** Aktionen, nach denen die Aufgaben-Ableitung neu berechnet werden muss. */
+const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']>([
+  'hydrate',
+  'assign',
+  'autoAssign',
+  'finishImport',
+  'savePerson',
+  'lacAdjust',
+  'lacRemove',
+  'lacMove',
+  'lacAdd',
+  'addService',
+  'removeService',
+  'changeServiceCount',
+  'confirmTask',
+  'declineTask',
+])
+
 function reducer(state: AppState, action: AppAction): AppState {
+  const next = baseReducer(state, action)
+  return DERIVE_ACTIONS.has(action.type)
+    ? withDerivedTasks(next, action.type === 'hydrate')
+    : next
+}
+
+function baseReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'login':
       return {
@@ -178,6 +234,10 @@ function reducer(state: AppState, action: AppAction): AppState {
         services: [...state.services, action.service],
         toast: toastKey(state, 'toastDienstAdd'),
       }
+    case 'updateCongregation':
+      return { ...state, congregation: { ...state.congregation, ...action.patch } }
+    case 'saveCongregation':
+      return { ...state, toast: toastKey(state, 'toastGespeichert') }
     case 'startImport':
       return state.importing || state.imported ? state : { ...state, importing: true }
     case 'finishImport': {
@@ -251,6 +311,15 @@ function reducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'confirmTask': {
+      // Produktionsmodus: Status in die ConfirmationMap — myTasks/pending-
+      // Names/confirmOpen folgen aus der Ableitung (withDerivedTasks).
+      if (state.dataStatus !== 'demo') {
+        return {
+          ...state,
+          confirmations: { ...state.confirmations, [action.id]: 'bestätigt' },
+          toast: toastKey(state, 'toastBestaetigt'),
+        }
+      }
       const myTasks = state.myTasks.map((t) =>
         t.id === action.id ? { ...t, status: 'bestätigt' as const } : t,
       )
@@ -269,15 +338,23 @@ function reducer(state: AppState, action: AppAction): AppState {
     }
     case 'declineTask': {
       const task = state.myTasks.find((t) => t.id === action.id)
-      const myTasks = state.myTasks.map((t) =>
-        t.id === action.id ? { ...t, status: 'verhindert' as const } : t,
-      )
-      const stillOpen = myTasks.some((t) => t.status === 'offen')
       const notif = makeNotif(
         'verhindert',
         'Verhinderung gemeldet',
         `${task?.title ?? ''} — ${currentUserName(state)}`,
       )
+      if (state.dataStatus !== 'demo') {
+        return {
+          ...state,
+          confirmations: { ...state.confirmations, [action.id]: 'verhindert' },
+          notifs: [notif, ...state.notifs],
+          toast: toastKey(state, 'toastVerhindert'),
+        }
+      }
+      const myTasks = state.myTasks.map((t) =>
+        t.id === action.id ? { ...t, status: 'verhindert' as const } : t,
+      )
+      const stillOpen = myTasks.some((t) => t.status === 'offen')
       return {
         ...state,
         myTasks,
@@ -345,6 +422,9 @@ function reducer(state: AppState, action: AppAction): AppState {
         weeks: p.weeks,
         absences: p.absences,
         notifs: p.notifications,
+        confirmations: p.confirmations,
+        reminders: p.reminders,
+        congLang: p.congLang,
         week: 0,
       }
     }
@@ -397,6 +477,7 @@ function initialState(): AppState {
     imported: false,
     myTasks: demo ? DEMO_MY_TASKS : [],
     pendingNames: demo ? DEMO_PENDING_NAMES : [],
+    confirmations: {},
     confirmOpen: false,
     s89: null,
     reminders: DEMO_REMINDERS,
@@ -466,12 +547,27 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     case 'markAllRead':
       markNotificationsRead(congId)
       break
+    case 'confirmTask':
+      saveConfirmation(congId, userId, action.id, 'bestätigt')
+      break
+    case 'declineTask':
+      saveConfirmation(congId, userId, action.id, 'verhindert')
+      break
+    case 'changeReminder':
+    case 'toggleReminderRepeat':
+    case 'setCongLang':
+      saveSettings(congId, { reminders: next.reminders, congLang: next.congLang })
+      break
+    case 'saveCongregation':
+      saveCongregationInfo(congId, next.congregation)
+      break
   }
 
-  // Jede Aktion, die eine Mitteilung vorne anfügt, in die DB spiegeln.
+  // Jede Aktion, die eine Mitteilung vorne anfügt, in die DB spiegeln
+  // (user_id null = an alle Mitglieder der Versammlung).
   if (next.notifs.length > prev.notifs.length && next.notifs[0]) {
     const n = next.notifs[0]
-    insertNotification(congId, userId, n.type, n.title, n.text)
+    insertNotification(congId, null, n.type, n.title, n.text)
   }
 }
 

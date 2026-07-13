@@ -6,6 +6,7 @@
 import { createContext, useContext, type Dispatch } from 'react'
 import type {
   Absence,
+  ConfirmationMap,
   Lang,
   MeetingTab,
   MyTask,
@@ -51,6 +52,9 @@ export interface HydratePayload {
   weeks: Week[]
   absences: Absence[]
   notifications: Notification[]
+  confirmations: ConfirmationMap
+  reminders: Reminders
+  congLang: string
 }
 
 export interface AppState {
@@ -76,9 +80,11 @@ export interface AppState {
   selectedPersonId: string | null // offenes Personen-Detail
   importing: boolean // Programm-Import läuft (~0.9 s)
   imported: boolean // alle verfügbaren Wochen importiert
-  // Persönliche Aufgaben & Bestätigungs-Flow
+  // Persönliche Aufgaben & Bestätigungs-Flow. Im Produktionsmodus werden
+  // myTasks/pendingNames aus weeks + confirmations abgeleitet (store.tsx).
   myTasks: MyTask[]
   pendingNames: string[] // Namen mit noch offener Bestätigung (Planen: „…“)
+  confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
   s89: S89Payload | null // offenes S-89-Formular
   reminders: Reminders
@@ -115,6 +121,8 @@ export type AppAction =
   | { type: 'changeServiceCount'; key: string; delta: 1 | -1 }
   | { type: 'removeService'; key: string }
   | { type: 'addService'; service: Service }
+  | { type: 'updateCongregation'; patch: Partial<Congregation> }
+  | { type: 'saveCongregation' } // Toast + Persistenz der Stammdaten
   | { type: 'startImport' }
   | { type: 'finishImport' }
   | { type: 'assign'; name: string } // auf state.slotSel; "" = entfernen

@@ -10,8 +10,10 @@
 
 import { displayName, isQualified, isSong, workloadOf } from './helpers'
 import type {
+  ConfirmationMap,
   Meeting,
   MeetingTab,
+  MyTask,
   PartItem,
   Person,
   S89Payload,
@@ -181,6 +183,120 @@ export function buildS89ForSlot(weeks: Week[], sel: SlotSelection): S89Payload |
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,
   }
+}
+
+/* ---- Aufgaben-Ableitung (Produktionsmodus) -------------------------------
+ * Im Demo-Modus sind "Meine Aufgaben" feste Demo-Daten; mit Persistenz werden
+ * sie aus den Wochen-Zuteilungen berechnet. Der Bestätigungs-Status hängt am
+ * stabilen Slot-Pfad (taskKey) — verschieben Planer Programmpunkte, wandert
+ * der Status bewusst nicht mit (v1-Kompromiss, Status gilt dann als offen).
+ */
+
+const TABS: MeetingTab[] = ['mid', 'we']
+
+/** Stabiler Schlüssel eines Programmpunkt-Slots (auch confirmations.task_key). */
+export function partTaskKey(wi: number, tab: MeetingTab, si: number, ii: number, ni: number): string {
+  return `${wi}|${tab}|part|${si}|${ii}|${ni}`
+}
+
+/** Stabiler Schlüssel eines Hilfsdienst-Slots. */
+export function helperTaskKey(wi: number, tab: MeetingTab, svc: string, pos: number): string {
+  return `${wi}|${tab}|helper|${svc}|${pos}`
+}
+
+/** "Dienstag, 8. September · 19:00 · Königreichssaal" → Datum + Uhrzeit. */
+function taskDate(meeting: Meeting): string {
+  return meeting.date.split(' · ').slice(0, 2).join(' · ')
+}
+
+/** Besucht alle belegten Slots (Programmpunkte + Hilfsdienste) aller Wochen. */
+function eachAssignedSlot(
+  weeks: Week[],
+  services: Service[],
+  visit: (name: string, key: string, task: () => MyTask) => void,
+): void {
+  weeks.forEach((week, wi) => {
+    for (const tab of TABS) {
+      const meeting = week[tab]
+      meeting.sections.forEach((section, si) => {
+        section.items.forEach((item, ii) => {
+          if (isSong(item)) return
+          item.names.forEach((slot, ni) => {
+            // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
+            if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) return
+            const key = partTaskKey(wi, tab, si, ii, ni)
+            visit(slot.name, key, () => {
+              const rolle = slot.rolle ?? ''
+              const sel: SlotSelection = {
+                kind: 'part', wi, tab, si, ii, ni,
+                label: '', priv: slot.bereichsKey ?? null, groups: false,
+              }
+              return {
+                id: key,
+                title: rolle && !rolle.startsWith('mit ') ? `${item.title} · ${rolle}` : item.title,
+                date: taskDate(meeting),
+                chip: '',
+                status: 'offen',
+                s89: buildS89ForSlot(weeks, sel),
+              }
+            })
+          })
+        })
+      })
+      for (const svc of services) {
+        if (svc.groups) continue // Gruppen-Rotation hat keine persönliche Aufgabe
+        const arr = meeting.helpers[svc.key] ?? []
+        for (let pos = 0; pos < svc.count; pos++) {
+          const name = arr[pos]
+          if (!name) continue
+          const key = helperTaskKey(wi, tab, svc.key, pos)
+          visit(name, key, () => ({
+            id: key,
+            title: svc.name,
+            date: taskDate(meeting),
+            chip: '',
+            status: 'offen',
+            s89: null,
+          }))
+        }
+      }
+    }
+  })
+}
+
+/**
+ * Aufgaben einer Person (Anzeigename) aus den Wochen-Zuteilungen, in
+ * Programmreihenfolge; Status aus der ConfirmationMap (fehlt = offen).
+ */
+export function deriveMyTasks(
+  weeks: Week[],
+  services: Service[],
+  personName: string,
+  confirmations: ConfirmationMap,
+): MyTask[] {
+  const tasks: MyTask[] = []
+  if (!personName) return tasks
+  eachAssignedSlot(weeks, services, (name, key, task) => {
+    if (name !== personName) return
+    tasks.push({ ...task(), status: confirmations[key] ?? 'offen' })
+  })
+  return tasks
+}
+
+/**
+ * Namen mit mindestens einer noch nicht bestätigten Zuteilung → im Planen
+ * als „…“ markiert (verhindert zählt wie offen, bis der Planer neu zuteilt).
+ */
+export function derivePendingNames(
+  weeks: Week[],
+  services: Service[],
+  confirmations: ConfirmationMap,
+): string[] {
+  const pending = new Set<string>()
+  eachAssignedSlot(weeks, services, (name, key) => {
+    if (confirmations[key] !== 'bestätigt') pending.add(name)
+  })
+  return [...pending]
 }
 
 /* ---- „Unser Leben als Christ“ im Planen bearbeiten ---------------------- */

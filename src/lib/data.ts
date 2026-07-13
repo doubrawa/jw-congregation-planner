@@ -4,25 +4,29 @@
  * setzen einen konfigurierten Client voraus (siehe supabase.ts) — im Demo-Modus
  * werden sie nicht aufgerufen.
  *
- * Persistiert: Versammlung, Mitgliedschaft (Rolle), Personen, Dienste,
- * Wochen (als JSONB), eigene Abwesenheiten und Mitteilungen. Nicht persistiert
- * (bewusst, clientseitig): Bestätigungs-Status (myTasks/pendingNames),
- * Erinnerungen, App-/Versammlungssprache, Darstellung.
+ * Persistiert: Versammlung (Stammdaten + Einstellungen), Mitgliedschaft
+ * (Rolle), Personen, Dienste, Wochen (als JSONB), eigene Abwesenheiten,
+ * Mitteilungen und Aufgaben-Bestätigungen. Nicht persistiert (bewusst,
+ * geräteweise in localStorage): App-Sprache und Darstellung.
  */
 
 import {
   buildDemoWeeks,
   DEMO_PERSONS,
+  DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
 import type {
   Absence,
+  ConfirmationMap,
   Notification,
   NotificationType,
   Person,
   Qualifications,
+  Reminders,
   Role,
   Service,
+  TaskStatus,
   Week,
 } from '../data/types'
 import { supabase } from './supabase'
@@ -69,6 +73,17 @@ interface NotificationRow {
   body: string
   read: boolean
   created_at: string
+}
+
+interface ConfirmationRow {
+  task_key: string
+  status: string
+}
+
+/** congregations.settings (JSONB) — versammlungsweite Einstellungen. */
+interface CongregationSettings {
+  reminders?: Partial<Reminders>
+  congLang?: string
 }
 
 const ROLES: Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
@@ -169,6 +184,9 @@ export interface CongregationData {
   weeks: Week[]
   absences: Absence[]
   notifications: Notification[]
+  confirmations: ConfirmationMap
+  reminders: Reminders
+  congLang: string
 }
 
 export type LoadResult =
@@ -193,20 +211,35 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  const [cong, persons, services, weeks, absences, notifs] = await Promise.all([
-    supabase.from('congregations').select('name, hall, meeting_times').eq('id', congregationId).maybeSingle(),
+  const [cong, persons, services, weeks, absences, notifs, confs] = await Promise.all([
+    supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('weeks').select('position, data').eq('congregation_id', congregationId).order('position'),
     supabase.from('absences').select('*').eq('congregation_id', congregationId).eq('user_id', userId).order('from_date'),
     supabase.from('notifications').select('*').eq('congregation_id', congregationId).order('created_at', { ascending: false }),
+    supabase.from('confirmations').select('task_key, status').eq('congregation_id', congregationId),
   ])
 
-  const firstErr = [cong, persons, services, weeks, absences, notifs].find((r) => r.error)?.error
+  const firstErr = [cong, persons, services, weeks, absences, notifs, confs].find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
 
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
   const weekList = (weeks.data ?? []).map((r) => (r as WeekRow).data)
+
+  const confirmations: ConfirmationMap = {}
+  for (const row of (confs.data ?? []) as ConfirmationRow[]) {
+    if (row.status === 'bestätigt' || row.status === 'verhindert') {
+      confirmations[row.task_key] = row.status
+    }
+  }
+
+  const settings = ((cong.data?.settings as CongregationSettings | null) ?? {})
+  const reminders: Reminders = {
+    first: settings.reminders?.first ?? DEMO_REMINDERS.first,
+    last: settings.reminders?.last ?? DEMO_REMINDERS.last,
+    repeat: settings.reminders?.repeat ?? DEMO_REMINDERS.repeat,
+  }
 
   const data: CongregationData = {
     congregation: {
@@ -221,6 +254,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     weeks: weekList,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: (notifs.data ?? []).map((r) => notificationFromRow(r as NotificationRow)),
+    confirmations,
+    reminders,
+    congLang: settings.congLang ?? 'Deutsch',
   }
 
   const empty = personList.length === 0 && weekList.length === 0
@@ -350,5 +386,30 @@ export function saveCongregationInfo(
       .from('congregations')
       .update({ name: info.name, hall: info.hall, meeting_times: info.meetings })
       .eq('id', congregationId),
+  )
+}
+
+/** Versammlungsweite Einstellungen (Erinnerungen, Versammlungssprache). */
+export function saveSettings(
+  congregationId: string,
+  settings: { reminders: Reminders; congLang: string },
+): void {
+  if (!supabase) return
+  void run(supabase.from('congregations').update({ settings }).eq('id', congregationId))
+}
+
+/** Bestätigung/Verhinderung einer Aufgabe (eigene Zeile je Nutzer+Slot). */
+export function saveConfirmation(
+  congregationId: string,
+  userId: string,
+  taskKey: string,
+  status: Exclude<TaskStatus, 'offen'>,
+): void {
+  if (!supabase) return
+  void run(
+    supabase.from('confirmations').upsert(
+      { congregation_id: congregationId, user_id: userId, task_key: taskKey, status },
+      { onConflict: 'congregation_id,task_key,user_id' },
+    ),
   )
 }
