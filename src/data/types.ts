@@ -10,8 +10,16 @@
 
 export type Theme = 'light' | 'dark'
 
-/** App-Sprache (UI). Programm-Inhalte nutzen separat die Versammlungssprache. */
-export type Lang = 'de' | 'en' | 'es' | 'fr'
+/**
+ * App-Sprache (UI). Programm-Inhalte nutzen separat die Versammlungssprache.
+ * ~30 weltweit/in Europa relevante Sprachen; DE ist die Basis, alle anderen
+ * überschreiben (fehlt eine Übersetzung, fällt die App auf Englisch zurück).
+ * RTL-Sprachen (Arabisch etc.) folgen separat (brauchen dir="rtl"-Layout).
+ */
+export type Lang =
+  | 'de' | 'en' | 'es' | 'fr' | 'it' | 'pt' | 'nl' | 'pl' | 'ru' | 'uk'
+  | 'ro' | 'el' | 'cs' | 'sk' | 'hu' | 'hr' | 'sr' | 'bg' | 'sv' | 'da'
+  | 'fi' | 'no' | 'tr' | 'zh' | 'ja' | 'ko' | 'id' | 'tl' | 'vi' | 'sw'
 
 /** Sichtbare Bereiche. Die letzten drei nur für Planer/Koordinatoren. */
 export type Screen =

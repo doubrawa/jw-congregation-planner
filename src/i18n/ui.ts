@@ -122,8 +122,12 @@ export const DE = {
 
 export type Dict = typeof DE
 
-/** EN/ES/FR überschreiben nur abweichende Schlüssel (Rest = DE). */
-const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
+/**
+ * Sprach-Overlays: überschreiben nur abweichende Schlüssel. DE ist die Basis;
+ * fehlt für eine Sprache eine Übersetzung, greift Englisch als Fallback
+ * (siehe `dict`). Nicht jede App-Sprache braucht ein vollständiges Overlay.
+ */
+const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
   en: {
     congName: 'Musterstadt Congregation', congLabel: '{name} Congregation',
     navProgramm: 'Program', navAufgaben: 'Assignments', navAufgabenLong: 'My Assignments',
@@ -450,9 +454,14 @@ const OVERLAY: Record<Exclude<Lang, 'de'>, Partial<Dict>> = {
   }
 }
 
-/** Vollständiges Wörterbuch für eine App-Sprache. */
+/**
+ * Vollständiges Wörterbuch für eine App-Sprache. Reihenfolge der Zusammen-
+ * führung: DE (Basis) ← EN (Fallback für noch nicht übersetzte Sprachen) ←
+ * sprachspezifisches Overlay. So sieht der Nutzer nie leere/fehlende Strings.
+ */
 export function dict(lang: Lang): Dict {
-  return lang === 'de' ? DE : { ...DE, ...OVERLAY[lang] }
+  if (lang === 'de') return DE
+  return { ...DE, ...(OVERLAY.en ?? {}), ...(OVERLAY[lang] ?? {}) }
 }
 
 /** Aufgabenbereich → Wörterbuch-Schlüssel (Personen-Detail, Dienste). */

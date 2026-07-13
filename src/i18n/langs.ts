@@ -22,6 +22,32 @@ export const APP_LANGS: ReadonlyArray<{ code: Lang; label: string }> = [
   { code: 'en', label: 'English' },
   { code: 'es', label: 'Español' },
   { code: 'fr', label: 'Français' },
+  { code: 'it', label: 'Italiano' },
+  { code: 'pt', label: 'Português' },
+  { code: 'nl', label: 'Nederlands' },
+  { code: 'pl', label: 'Polski' },
+  { code: 'ru', label: 'Русский' },
+  { code: 'uk', label: 'Українська' },
+  { code: 'ro', label: 'Română' },
+  { code: 'el', label: 'Ελληνικά' },
+  { code: 'cs', label: 'Čeština' },
+  { code: 'sk', label: 'Slovenčina' },
+  { code: 'hu', label: 'Magyar' },
+  { code: 'hr', label: 'Hrvatski' },
+  { code: 'sr', label: 'Srpski' },
+  { code: 'bg', label: 'Български' },
+  { code: 'sv', label: 'Svenska' },
+  { code: 'da', label: 'Dansk' },
+  { code: 'fi', label: 'Suomi' },
+  { code: 'no', label: 'Norsk' },
+  { code: 'tr', label: 'Türkçe' },
+  { code: 'zh', label: '中文' },
+  { code: 'ja', label: '日本語' },
+  { code: 'ko', label: '한국어' },
+  { code: 'id', label: 'Bahasa Indonesia' },
+  { code: 'tl', label: 'Tagalog' },
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'sw', label: 'Kiswahili' },
 ]
 
 /** Versammlungssprache (deutscher Name) -> Programmuebersetzungs-Code (nur Demo). */
@@ -32,11 +58,14 @@ export const CONG_TO_CODE: Record<string, Lang | undefined> = {
   Französisch: 'fr',
 }
 
+/** App-Sprachcode → BCP-47-Locale (Intl-Datums-/Zahlenformatierung). */
 export const LOCALES: Record<Lang, string> = {
-  de: 'de-DE',
-  en: 'en-US',
-  es: 'es-ES',
-  fr: 'fr-FR',
+  de: 'de-DE', en: 'en-US', es: 'es-ES', fr: 'fr-FR', it: 'it-IT',
+  pt: 'pt-PT', nl: 'nl-NL', pl: 'pl-PL', ru: 'ru-RU', uk: 'uk-UA',
+  ro: 'ro-RO', el: 'el-GR', cs: 'cs-CZ', sk: 'sk-SK', hu: 'hu-HU',
+  hr: 'hr-HR', sr: 'sr-Latn-RS', bg: 'bg-BG', sv: 'sv-SE', da: 'da-DK',
+  fi: 'fi-FI', no: 'nb-NO', tr: 'tr-TR', zh: 'zh-CN', ja: 'ja-JP',
+  ko: 'ko-KR', id: 'id-ID', tl: 'fil-PH', vi: 'vi-VN', sw: 'sw-KE',
 }
 
 /**

@@ -9,8 +9,7 @@
 
 /* eslint-disable */
 import type { Lang } from '../data/types'
-
-type TrLang = Exclude<Lang, 'de'>
+import { LOCALES } from './langs'
 
 interface DateDict {
   wd: string[]
@@ -37,7 +36,7 @@ interface DateDict {
   zut: (n: string) => string
 }
 
-const FRAG: Record<TrLang, Record<string, string>> = {
+const FRAG: Record<string, Record<string, string>> = {
   en: {
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'TREASURES FROM GOD\u2019S WORD',
@@ -190,7 +189,7 @@ const WDA: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, 
 const MON: Record<string, number> = { Januar: 0, Februar: 1, 'März': 2, April: 3, Mai: 4, Juni: 5, Juli: 6, August: 7, September: 8, Oktober: 9, November: 10, Dezember: 11 };
 const MONA: Record<string, number> = { Jan: 0, Feb: 1, 'Mär': 2, Apr: 3, Mai: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Okt: 9, Nov: 10, Dez: 11 };
 
-const D: Record<TrLang, DateDict> = {
+const D: Record<string, DateDict> = {
   en: {
     wd: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],
     wda: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
@@ -232,9 +231,88 @@ const D: Record<TrLang, DateDict> = {
   }
 };
 
+/* ---- Intl-Pfad für zusätzliche App-Sprachen -----------------------------
+ * Für Sprachen ohne handgepflegtes Datums-Wörterbuch (D) übernimmt Intl die
+ * Wochentags-/Monatsnamen und die lokale Reihenfolge automatisch. FRAG (Rollen/
+ * Dienste/Sektionen) und EXTRA (kurze Phrasen) liefern den Rest; fehlt eine
+ * Sprache dort, greift Englisch als Fallback. */
+
+interface Extra {
+  song: (n: string) => string
+  min: (n: string) => string
+  ca: (r: string) => string
+  ende: (r: string) => string
+  mit: (x: string) => string
+  tage: (n: string) => string
+  zut: (n: string) => string
+}
+
+const EXTRA_EN: Extra = {
+  song: n => 'Song ' + n, min: n => n + ' min.', ca: r => 'approx. ' + r, ende: r => 'Ends approx. ' + r,
+  mit: x => 'with ' + x, tage: n => 'in ' + n + ' days', zut: n => n + ' assignments',
+}
+
+// Kurze Phrasen je Zusatz-Sprache (Datum/Namen kommen aus Intl). Wird batch-
+// weise gefüllt; fehlende Sprachen nutzen EXTRA_EN.
+const EXTRA: Record<string, Extra> = {}
+
+/** Datum mit passendem Jahr finden, damit Intl den richtigen Wochentag zeigt. */
+function findDateForWeekday(monthIdx: number, day: number, weekdayIdx: number): Date {
+  for (let y = 2024; y < 2041; y++) {
+    const d = new Date(Date.UTC(y, monthIdx, day))
+    if (((d.getUTCDay() + 6) % 7) === weekdayIdx) return d
+  }
+  return new Date(Date.UTC(2025, monthIdx, day))
+}
+function intlWeekdayDate(locale: string, weekdayIdx: number, day: number, monthIdx: number, style: 'long' | 'short'): string {
+  const d = findDateForWeekday(monthIdx, day, weekdayIdx)
+  return new Intl.DateTimeFormat(locale, { weekday: style, day: 'numeric', month: 'long', timeZone: 'UTC' }).format(d)
+}
+function intlWeekdayShort(locale: string, weekdayIdx: number): string {
+  const d = findDateForWeekday(0, 1, weekdayIdx)
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(d)
+}
+function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: number): string {
+  const a = new Date(Date.UTC(2025, mo1, d1))
+  const b = new Date(Date.UTC(2025, mo2, d2))
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)
+}
+
+function makeTrIntl(code: Lang): (s: string) => string {
+  const locale = LOCALES[code] ?? code
+  const M: Record<string, string> = FRAG[code] ?? FRAG.en
+  const ex: Extra = EXTRA[code] ?? EXTRA_EN
+  const rules: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
+    [/^Lied (\d+)$/, m => ex.song(m[1])],
+    [/^(\d+) Min\.$/, m => ex.min(m[1])],
+    [/^Ende ca\. (.+)$/, m => ex.ende(m[1])],
+    [/^ca\. (.+)$/, m => ex.ca(m[1])],
+    [/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WD[m[1]], +m[2], MON[m[3]], 'long')],
+    [/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WDA[m[1]], +m[2], MON[m[3]], 'short')],
+    [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => intlWeekdayShort(locale, WDA[m[1]]) + ' ' + m[2]],
+    [/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, m => intlRange(locale, +m[1], MON[m[3]], +m[2], MON[m[3]])],
+    [/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, m => intlRange(locale, +m[1], MONA[m[2]], +m[3], MONA[m[4]])],
+    [/^mit (.+)$/, m => ex.mit(m[1])],
+    [/^in (\d+) Tagen$/, m => ex.tage(m[1])],
+    [/^(\d+) Zuteilungen$/, m => ex.zut(m[1])],
+  ]
+  const one = (f: string): string => {
+    if (M[f] != null) return M[f]
+    for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
+    if (f.includes(' — ')) return f.split(' — ').map(one).join(' — ')
+    return f
+  }
+  return (s: string): string => {
+    if (s == null || s === '') return s
+    if (M[s] != null) return M[s]
+    return s.split(' · ').map(one).join(' · ')
+  }
+}
+
 export function makeTr(code: Lang): (s: string) => string {
-  if (!code || code === 'de' || !FRAG[code]) return s => s;
-  const M: Record<string, string> = FRAG[code], L: DateDict = D[code];
+  if (!code || code === 'de') return s => s
+  if (!D[code]) return makeTrIntl(code) // Zusatz-Sprachen: Intl-Datum + FRAG/EXTRA
+  const M: Record<string, string> = FRAG[code] ?? {}, L: DateDict = D[code];
   const rules: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
     [/^Lied (\d+)$/, m => L.song(m[1])],
     [/^(\d+) Min\.$/, m => L.min(m[1])],

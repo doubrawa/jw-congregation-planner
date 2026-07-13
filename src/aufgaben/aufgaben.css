@@ -164,6 +164,12 @@
   gap: 6px;
 }
 
+.lang-select {
+  width: auto;
+  max-width: 200px;
+  margin-top: 0;
+}
+
 .theme-chips--wrap {
   flex-wrap: wrap;
   justify-content: flex-end;

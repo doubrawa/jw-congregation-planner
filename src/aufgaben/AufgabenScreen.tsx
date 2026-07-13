@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { CURRENT_PERSON_ID } from '../data/demo'
+import type { Lang } from '../data/types'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { performLogout } from '../lib/supabase'
@@ -191,19 +192,18 @@ export function AufgabenScreen() {
         </div>
         <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.spracheLbl}</span>
-          <div className="theme-chips theme-chips--wrap">
+          <select
+            className="mem-select lang-select"
+            aria-label={t.spracheLbl}
+            value={state.lang}
+            onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
+          >
             {APP_LANGS.map(({ code, label }) => (
-              <button
-                key={code}
-                type="button"
-                className={state.lang === code ? 'theme-chip is-active' : 'theme-chip'}
-                aria-pressed={state.lang === code}
-                onClick={() => dispatch({ type: 'setLang', lang: code })}
-              >
+              <option key={code} value={code}>
                 {label}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
         <button type="button" className="prof-logout" onClick={() => performLogout(dispatch)}>
           {t.abmelden}

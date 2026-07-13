@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
+import type { Lang } from '../data/types'
 import { APP_LANGS } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
@@ -119,18 +120,19 @@ export function LoginScreen() {
         )}
       </form>
 
-      <div className="login-langs" role="group" aria-label="Sprache">
-        {APP_LANGS.map(({ code, label }) => (
-          <button
-            key={code}
-            type="button"
-            className={state.lang === code ? 'login-lang is-active' : 'login-lang'}
-            aria-pressed={state.lang === code}
-            onClick={() => dispatch({ type: 'setLang', lang: code })}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="login-langs">
+        <select
+          className="mem-select login-lang-select"
+          aria-label="Sprache"
+          value={state.lang}
+          onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
+        >
+          {APP_LANGS.map(({ code, label }) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <p className="login-note">{isSupabaseConfigured ? t.nurMitglieder : t.demoHinweis}</p>
