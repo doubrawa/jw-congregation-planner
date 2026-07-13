@@ -106,6 +106,71 @@ function localizedUrl(germanHtml: string, lang: string): string | null {
   return path.startsWith('http') ? path : BASE + path
 }
 
+const MONTH_SLUG = [
+  'januar', 'februar', 'maerz', 'april', 'mai', 'juni',
+  'juli', 'august', 'september', 'oktober', 'november', 'dezember',
+]
+
+function cleanText(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&nbsp;|&shy;|­/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Studienausgabe-Slugs, die die Studienwoche enthalten könnten (Monat −2/−3). */
+function studyIssueSlugs(start: Date): string[] {
+  const slugs: string[] = []
+  for (const off of [2, 3]) {
+    const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() - off, 1))
+    slugs.push(`wachtturm-studienausgabe-${MONTH_SLUG[d.getUTCMonth()]}-${d.getUTCFullYear()}`)
+  }
+  return slugs
+}
+
+/** Studienartikel einer Ausgabe: Woche (contextTitle) + Titel (h2>a), in Reihenfolge. */
+function studySynopses(html: string): { day: number; mon: number; title: string }[] {
+  const out: { day: number; mon: number; title: string }[] = []
+  const re = /<p class="contextTitle">([\s\S]*?)<\/p>[\s\S]*?<h2>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html))) {
+    const week = cleanText(m[1])
+    const dayMatch = week.match(/(\d{1,2})/)
+    if (!dayMatch) continue
+    let mon = 0
+    for (const w of week.toLowerCase().match(/[a-zäöü]+/g) ?? []) {
+      if (MONTHS[w]) { mon = MONTHS[w]; break }
+    }
+    if (!mon) continue
+    out.push({ day: Number(dayMatch[1]), mon, title: cleanText(m[2]) })
+  }
+  return out
+}
+
+/**
+ * Titel des Wachtturm-Studienartikels für die Wochenend-Studienwoche (nur DE).
+ * Die Studienausgabe erscheint ~2 Monate vor der Behandlung; wir probieren die
+ * beiden infrage kommenden Ausgaben und matchen die Woche über Tag + Monat des
+ * (sprachunabhängigen) ISO-Startdatums. Nicht gefunden → Vorlage bleibt.
+ */
+async function studyArticleTitle(start: Date): Promise<string | null> {
+  const day = start.getUTCDate()
+  const mon = start.getUTCMonth() + 1
+  for (const slug of studyIssueSlugs(start)) {
+    try {
+      const html = await fetchText(`${BASE}/de/bibliothek/zeitschriften/${slug}/`)
+      const hit = studySynopses(html).find((s) => s.day === day && s.mon === mon)
+      if (hit) return hit.title
+    } catch {
+      // Ausgabe evtl. noch nicht online — nächsten Kandidaten versuchen
+    }
+  }
+  return null
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -148,6 +213,20 @@ Deno.serve(async (req: Request) => {
     const week: ImportedWeek & { start?: string; lang?: string } = parseWorkbookWeek(html)
     if (start) week.start = start.toISOString().slice(0, 10)
     week.lang = lang
+
+    // Wochenend-Wachtturm-Studienartikel automatisch eintragen (nur DE; sonst
+    // bleibt die editierbare Vorlage). Der öffentliche Vortrag wird lokal
+    // vergeben und steht nicht auf jw.org — bleibt Platzhalter.
+    if (lang === 'de' && start) {
+      const title = await studyArticleTitle(start)
+      if (title) {
+        const wt = week.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')
+        for (const it of wt?.items ?? []) {
+          if ('names' in it) { it.title = title; break }
+        }
+      }
+    }
+
     return json({ week })
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : String(err) }, 500)
