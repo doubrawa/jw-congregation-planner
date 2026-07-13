@@ -180,6 +180,106 @@ const FRAG: Record<string, Record<string, string>> = {
     'Bleib loyal wie Baruch': 'Reste fidèle comme Baruch',
     '„Wem kannst du wirklich vertrauen?“': '« À qui peux-tu vraiment te fier ? »',
     '„Loyal in Prüfungen“': '« Fidèles dans les épreuves »'
+  },
+  it: {
+    'ERÖFFNUNG': 'INTRODUZIONE', 'ABSCHLUSS': 'CONCLUSIONE',
+    'SCHÄTZE AUS GOTTES WORT': 'TESORI DELLA PAROLA DI DIO',
+    'UNS IM DIENST VERBESSERN': 'EFFICACI NEL MINISTERO', 'UNSER LEBEN ALS CHRIST': 'VITA CRISTIANA',
+    'ÖFFENTLICHER VORTRAG': 'DISCORSO PUBBLICO', 'WACHTTURM-STUDIUM': 'STUDIO TORRE DI GUARDIA',
+    'DIENSTVORTRAG': 'DISCORSO DI SERVIZIO', 'GEDÄCHTNISMAHL': 'COMMEMORAZIONE',
+    'Einleitende Worte': 'Parole di introduzione', 'Schlussworte': 'Parole di conclusione',
+    'Nach geistigen Schätzen graben': 'Gemme spirituali', 'Bibellesung': 'Lettura biblica',
+    'Gespräche beginnen': 'Iniziare conversazioni', 'Interesse fördern': 'Coltivare l’interesse',
+    'Menschen zu Jüngern machen': 'Fare discepoli', 'Unsere Glaubensansichten erklären': 'Spiegare le proprie convinzioni',
+    'Vortrag': 'Discorso', 'Versammlungsbibelstudium': 'Studio biblico di congregazione',
+    'Aktuelles': 'Esigenze locali', 'Besprechung': 'Trattazione con l’uditorio',
+    'Gebet': 'Preghiera', 'Vorsitz': 'Presidente', 'Leiter': 'Conduttore', 'Leser': 'Lettore',
+    'Gastredner': 'Oratore ospite', 'Redner': 'Oratore', 'Kreisaufseher': 'Sorvegliante di circoscrizione',
+    'Von Haus zu Haus': 'Di casa in casa', 'Informell': 'Testimonianza informale', 'In der Öffentlichkeit': 'Testimonianza pubblica',
+    'Königreichssaal': 'Sala del Regno',
+    'Mikrofone': 'Microfoni', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Uscieri', 'Reinigung': 'Pulizie',
+    'Zoom-Ordner': 'Usciere Zoom', 'Eingangsordner': 'Usciere all’ingresso', 'Saalordner': 'Usciere di sala', 'Dienstvortrag': 'Discorso di servizio',
+    'Ältester': 'Anziano', 'Dienstamtgehilfe': 'Servitore di ministero', 'Verkündiger': 'Proclamatore', 'Verkündigerin': 'Proclamatrice'
+  },
+  pt: {
+    'ERÖFFNUNG': 'INTRODUÇÃO', 'ABSCHLUSS': 'CONCLUSÃO',
+    'SCHÄTZE AUS GOTTES WORT': 'TESOUROS DA PALAVRA DE DEUS',
+    'UNS IM DIENST VERBESSERN': 'FAÇA O SEU MELHOR NO MINISTÉRIO', 'UNSER LEBEN ALS CHRIST': 'VIVER COMO CRISTÃOS',
+    'ÖFFENTLICHER VORTRAG': 'DISCURSO PÚBLICO', 'WACHTTURM-STUDIUM': 'ESTUDO DE A SENTINELA',
+    'DIENSTVORTRAG': 'DISCURSO DE SERVIÇO', 'GEDÄCHTNISMAHL': 'CELEBRAÇÃO',
+    'Einleitende Worte': 'Palavras de introdução', 'Schlussworte': 'Palavras de conclusão',
+    'Nach geistigen Schätzen graben': 'Joias espirituais', 'Bibellesung': 'Leitura da Bíblia',
+    'Gespräche beginnen': 'Iniciar conversas', 'Interesse fördern': 'Cultivar o interesse',
+    'Menschen zu Jüngern machen': 'Fazer discípulos', 'Unsere Glaubensansichten erklären': 'Explicar as suas crenças',
+    'Vortrag': 'Discurso', 'Versammlungsbibelstudium': 'Estudo bíblico de congregação',
+    'Aktuelles': 'Necessidades locais', 'Besprechung': 'Consideração com o auditório',
+    'Gebet': 'Oração', 'Vorsitz': 'Presidente', 'Leiter': 'Dirigente', 'Leser': 'Leitor',
+    'Gastredner': 'Orador visitante', 'Redner': 'Orador', 'Kreisaufseher': 'Superintendente de circuito',
+    'Von Haus zu Haus': 'De casa em casa', 'Informell': 'Testemunho informal', 'In der Öffentlichkeit': 'Testemunho público',
+    'Königreichssaal': 'Salão do Reino',
+    'Mikrofone': 'Microfones', 'Ton / Video': 'Áudio/vídeo', 'Ordner / Eingang': 'Indicadores', 'Reinigung': 'Limpeza',
+    'Zoom-Ordner': 'Indicador do Zoom', 'Eingangsordner': 'Indicador de entrada', 'Saalordner': 'Indicador de sala', 'Dienstvortrag': 'Discurso de serviço',
+    'Ältester': 'Ancião', 'Dienstamtgehilfe': 'Servo ministerial', 'Verkündiger': 'Publicador', 'Verkündigerin': 'Publicadora'
+  },
+  nl: {
+    'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'AFSLUITING',
+    'SCHÄTZE AUS GOTTES WORT': 'SCHATTEN UIT GODS WOORD',
+    'UNS IM DIENST VERBESSERN': 'BEKWAAM IN DE BEDIENING', 'UNSER LEBEN ALS CHRIST': 'ONS LEVEN ALS CHRISTEN',
+    'ÖFFENTLICHER VORTRAG': 'OPENBARE LEZING', 'WACHTTURM-STUDIUM': 'WACHTTORENSTUDIE',
+    'DIENSTVORTRAG': 'DIENSTLEZING', 'GEDÄCHTNISMAHL': 'GEDACHTENISVIERING',
+    'Einleitende Worte': 'Inleidende woorden', 'Schlussworte': 'Slotwoorden',
+    'Nach geistigen Schätzen graben': 'Geestelijke parels', 'Bibellesung': 'Bijbellezing',
+    'Gespräche beginnen': 'Een gesprek beginnen', 'Interesse fördern': 'Belangstelling opwekken',
+    'Menschen zu Jüngern machen': 'Discipelen maken', 'Unsere Glaubensansichten erklären': 'Je geloof uitleggen',
+    'Vortrag': 'Lezing', 'Versammlungsbibelstudium': 'Gemeentebijbelstudie',
+    'Aktuelles': 'Plaatselijke behoeften', 'Besprechung': 'Bespreking',
+    'Gebet': 'Gebed', 'Vorsitz': 'Voorzitter', 'Leiter': 'Leider', 'Leser': 'Lezer',
+    'Gastredner': 'Gastspreker', 'Redner': 'Spreker', 'Kreisaufseher': 'Kringopziener',
+    'Von Haus zu Haus': 'Van huis tot huis', 'Informell': 'Informeel getuigenis', 'In der Öffentlichkeit': 'Openbaar getuigenis',
+    'Königreichssaal': 'Koninkrijkszaal',
+    'Mikrofone': 'Microfoons', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Zaaldienst', 'Reinigung': 'Schoonmaak',
+    'Zoom-Ordner': 'Zoom-zaaldienst', 'Eingangsordner': 'Zaaldienst ingang', 'Saalordner': 'Zaaldienst zaal', 'Dienstvortrag': 'Dienstlezing',
+    'Ältester': 'Ouderling', 'Dienstamtgehilfe': 'Dienaar in de bediening', 'Verkündiger': 'Verkondiger', 'Verkündigerin': 'Verkondigster'
+  },
+  pl: {
+    'ERÖFFNUNG': 'ROZPOCZĘCIE', 'ABSCHLUSS': 'ZAKOŃCZENIE',
+    'SCHÄTZE AUS GOTTES WORT': 'SKARBY ZE SŁOWA BOŻEGO',
+    'UNS IM DIENST VERBESSERN': 'UDOSKONALAJMY SŁUŻBĘ', 'UNSER LEBEN ALS CHRIST': 'CHRZEŚCIJAŃSKI TRYB ŻYCIA',
+    'ÖFFENTLICHER VORTRAG': 'WYKŁAD PUBLICZNY', 'WACHTTURM-STUDIUM': 'STUDIUM STRAŻNICY',
+    'DIENSTVORTRAG': 'WYKŁAD SŁUŻBOWY', 'GEDÄCHTNISMAHL': 'PAMIĄTKA',
+    'Einleitende Worte': 'Słowa wstępne', 'Schlussworte': 'Słowa końcowe',
+    'Nach geistigen Schätzen graben': 'Perły duchowe', 'Bibellesung': 'Czytanie Biblii',
+    'Gespräche beginnen': 'Rozpoczynanie rozmów', 'Interesse fördern': 'Podtrzymywanie zainteresowania',
+    'Menschen zu Jüngern machen': 'Pozyskiwanie uczniów', 'Unsere Glaubensansichten erklären': 'Wyjaśnianie swoich wierzeń',
+    'Vortrag': 'Przemówienie', 'Versammlungsbibelstudium': 'Zborowe studium Biblii',
+    'Aktuelles': 'Potrzeby zboru', 'Besprechung': 'Omówienie z udziałem obecnych',
+    'Gebet': 'Modlitwa', 'Vorsitz': 'Przewodniczący', 'Leiter': 'Prowadzący', 'Leser': 'Lektor',
+    'Gastredner': 'Mówca gościnny', 'Redner': 'Mówca', 'Kreisaufseher': 'Nadzorca obwodu',
+    'Von Haus zu Haus': 'Od domu do domu', 'Informell': 'Świadczenie nieformalne', 'In der Öffentlichkeit': 'Świadczenie publiczne',
+    'Königreichssaal': 'Sala Królestwa',
+    'Mikrofone': 'Mikrofony', 'Ton / Video': 'Dźwięk/wideo', 'Ordner / Eingang': 'Porządkowi', 'Reinigung': 'Sprzątanie',
+    'Zoom-Ordner': 'Porządkowy Zoom', 'Eingangsordner': 'Porządkowy przy wejściu', 'Saalordner': 'Porządkowy w sali', 'Dienstvortrag': 'Wykład służbowy',
+    'Ältester': 'Starszy', 'Dienstamtgehilfe': 'Sługa pomocniczy', 'Verkündiger': 'Głosiciel', 'Verkündigerin': 'Głosicielka'
+  },
+  ru: {
+    'ERÖFFNUNG': 'ВСТУПЛЕНИЕ', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
+    'SCHÄTZE AUS GOTTES WORT': 'СОКРОВИЩА ИЗ СЛОВА БОГА',
+    'UNS IM DIENST VERBESSERN': 'ОТТАЧИВАЕМ НАВЫКИ СЛУЖЕНИЯ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИАНСКАЯ ЖИЗНЬ',
+    'ÖFFENTLICHER VORTRAG': 'ПУБЛИЧНАЯ РЕЧЬ', 'WACHTTURM-STUDIUM': 'ИЗУЧЕНИЕ «СТОРОЖЕВОЙ БАШНИ»',
+    'DIENSTVORTRAG': 'РЕЧЬ О СЛУЖЕНИИ', 'GEDÄCHTNISMAHL': 'ВЕЧЕРЯ ВОСПОМИНАНИЯ',
+    'Einleitende Worte': 'Вступительные слова', 'Schlussworte': 'Заключительные слова',
+    'Nach geistigen Schätzen graben': 'Духовные жемчужины', 'Bibellesung': 'Чтение Библии',
+    'Gespräche beginnen': 'Как начинать разговоры', 'Interesse fördern': 'Как поддерживать интерес',
+    'Menschen zu Jüngern machen': 'Как подготавливать учеников', 'Unsere Glaubensansichten erklären': 'Как объяснять свои взгляды',
+    'Vortrag': 'Речь', 'Versammlungsbibelstudium': 'Изучение Библии в собрании',
+    'Aktuelles': 'Местные объявления', 'Besprechung': 'Обсуждение со слушателями',
+    'Gebet': 'Молитва', 'Vorsitz': 'Председатель', 'Leiter': 'Ведущий', 'Leser': 'Чтец',
+    'Gastredner': 'Приглашённый докладчик', 'Redner': 'Докладчик', 'Kreisaufseher': 'Районный надзиратель',
+    'Von Haus zu Haus': 'По домам', 'Informell': 'Неформальное свидетельствование', 'In der Öffentlichkeit': 'Публичное свидетельствование',
+    'Königreichssaal': 'Зал Царства',
+    'Mikrofone': 'Микрофоны', 'Ton / Video': 'Звук/видео', 'Ordner / Eingang': 'Распорядители', 'Reinigung': 'Уборка',
+    'Zoom-Ordner': 'Распорядитель Zoom', 'Eingangsordner': 'Распорядитель у входа', 'Saalordner': 'Распорядитель в зале', 'Dienstvortrag': 'Речь о служении',
+    'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Служебный помощник', 'Verkündiger': 'Возвещатель', 'Verkündigerin': 'Возвещательница'
   }
 };
 
@@ -254,7 +354,13 @@ const EXTRA_EN: Extra = {
 
 // Kurze Phrasen je Zusatz-Sprache (Datum/Namen kommen aus Intl). Wird batch-
 // weise gefüllt; fehlende Sprachen nutzen EXTRA_EN.
-const EXTRA: Record<string, Extra> = {}
+const EXTRA: Record<string, Extra> = {
+  it: { song: n => 'Cantico ' + n, min: n => n + ' min', ca: r => 'circa ' + r, ende: r => 'Fine circa ' + r, mit: x => 'con ' + x, tage: n => 'tra ' + n + ' giorni', zut: n => n + ' incarichi' },
+  pt: { song: n => 'Cântico ' + n, min: n => n + ' min', ca: r => 'aprox. ' + r, ende: r => 'Fim aprox. ' + r, mit: x => 'com ' + x, tage: n => 'em ' + n + ' dias', zut: n => n + ' designações' },
+  nl: { song: n => 'Lied ' + n, min: n => n + ' min.', ca: r => 'ca. ' + r, ende: r => 'Einde ca. ' + r, mit: x => 'met ' + x, tage: n => 'over ' + n + ' dagen', zut: n => n + ' toewijzingen' },
+  pl: { song: n => 'Pieśń ' + n, min: n => n + ' min', ca: r => 'ok. ' + r, ende: r => 'Koniec ok. ' + r, mit: x => 'z ' + x, tage: n => 'za ' + n + ' dni', zut: n => n + ' zadań' },
+  ru: { song: n => 'Песня ' + n, min: n => n + ' мин.', ca: r => 'ок. ' + r, ende: r => 'Конец ок. ' + r, mit: x => 'с ' + x, tage: n => 'через ' + n + ' дн.', zut: n => n + ' назначений' },
+}
 
 /** Datum mit passendem Jahr finden, damit Intl den richtigen Wochentag zeigt. */
 function findDateForWeekday(monthIdx: number, day: number, weekdayIdx: number): Date {
