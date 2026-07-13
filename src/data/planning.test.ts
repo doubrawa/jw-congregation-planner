@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoWeeks, DEMO_PERSONS, DEMO_SERVICES } from './demo'
-import { displayName, isSong, workloadOf } from './helpers'
+import { displayName, helperWorkload, isSong, partWorkload, workloadOf } from './helpers'
 import {
   autoAssignMeeting,
   buildS89ForSlot,
@@ -199,6 +199,20 @@ describe('Auslastung', () => {
     const lena = DEMO_PERSONS.find((p) => p.ln === 'Hoffmann')!
     // L. Hoffmann: 2 Slots + 2× "mit L. Hoffmann"
     expect(workloadOf(weeks, displayName(lena))).toBe(4)
+  })
+
+  it('trennt Aufgaben- von Hilfsdienst-Last', () => {
+    const weeks = buildDemoWeeks()
+    // L. Hoffmann: nur Programmpunkte
+    expect(partWorkload(weeks, 'L. Hoffmann')).toBe(4)
+    expect(helperWorkload(weeks, 'L. Hoffmann')).toBe(0)
+    // C. Maier: überwiegend Ton — Hilfsdienste zählen nicht zur Aufgaben-Last
+    expect(helperWorkload(weeks, 'C. Maier')).toBeGreaterThanOrEqual(4)
+    expect(partWorkload(weeks, 'C. Maier')).toBeLessThan(helperWorkload(weeks, 'C. Maier'))
+    // Invariante: Gesamt = Aufgaben + Hilfsdienste
+    expect(workloadOf(weeks, 'C. Maier')).toBe(
+      partWorkload(weeks, 'C. Maier') + helperWorkload(weeks, 'C. Maier'),
+    )
   })
 })
 

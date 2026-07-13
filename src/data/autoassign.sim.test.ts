@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildImportWeek, DEMO_SERVICES } from './demo'
-import { displayName, isSong } from './helpers'
+import { displayName, isSong, partWorkload, workloadOf } from './helpers'
 import { autoAssignMeeting } from './planning'
-import type { Meeting, Person, Qualifications, QualificationKey, Service, Week } from './types'
+import type { Meeting, PartItem, Person, Qualifications, QualificationKey, Service, Week } from './types'
 
 /**
  * Simulation der Auto-Zuteilung mit einer großen Versammlung (~100 Personen)
@@ -176,5 +176,73 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
     const zoomOnly: Service[] = [{ key: 'zoom', name: 'Zoom-Ordner', count: 1, priv: 'ordner', groups: false }]
     const w = simulate([solo], zoomOnly, 1)
     expect(w[0].mid.helpers.zoom?.[0] ?? '').toBe('') // bleibt offen
+  })
+})
+
+/* ---- Hilfsbauten für Fenster-/Asymmetrie-Tests -------------------------- */
+
+function named(fn: string, ln: string, quals: QualificationKey[]): Person {
+  return { id: `n-${ln}`, fn, ln, role: 'verkuendiger', tel: '', mail: '', absent: [], priv: priv(quals) }
+}
+function emptyMeeting(): Meeting {
+  return { date: '', end: '', sections: [], helpers: {} }
+}
+/** Meeting mit `n` Programmpunkten, die alle `name` zugeteilt sind (Historie). */
+function partHistoryMeeting(name: string, n: number): Meeting {
+  const names = Array.from({ length: n }, () => ({ name, bereichsKey: 'vortrag' }))
+  return { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ title: 'T', names }] }], helpers: {} }
+}
+function wk(mid: Meeting, we: Meeting): Week {
+  return { range: '', book: '', current: false, mid, we }
+}
+const MIK1: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, priv: 'mikrofon', groups: false }]
+
+describe('Gleitendes Fenster (±3 Wochen)', () => {
+  it('zählt nur Einteilungen innerhalb des Fensters', () => {
+    const a = named('Anton', 'Anton', ['mikrofon']) // "A. Anton"
+    const b = named('Bruno', 'Bruno', ['mikrofon']) // "B. Bruno"
+    const weeks: Week[] = Array.from({ length: 6 }, () => wk(emptyMeeting(), emptyMeeting()))
+    weeks[0].mid.helpers.mik = ['A. Anton'] // weit weg → außerhalb des Fensters von Woche 5
+    weeks[4].mid.helpers.mik = ['B. Bruno'] // nah dran → innerhalb des Fensters
+    // Fenster für Woche 5 = [2..5]: A zählt als 0, B als 1 → A wird gewählt
+    const res = autoAssignMeeting(weeks, 5, 'mid', [a, b], MIK1)
+    expect(res.weeks[5].mid.helpers.mik?.[0]).toBe('A. Anton')
+  })
+})
+
+describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
+  it('wer viele Aufgaben hat, bekommt weniger Hilfsdienste', () => {
+    // P hat in der Historie 3 Programmpunkte; drei reine Mikrofon-Leute sind frei.
+    const p = named('Paul', 'Part', ['vortrag', 'mikrofon']) // "P. Part"
+    const mikOnly = [named('Max', 'Mik1', ['mikrofon']), named('Mia', 'Mik2', ['mikrofon']), named('Mio', 'Mik3', ['mikrofon'])]
+    const weeks: Week[] = [
+      wk(partHistoryMeeting('P. Part', 3), emptyMeeting()),
+      wk(emptyMeeting(), emptyMeeting()),
+    ]
+    const mik2: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, priv: 'mikrofon', groups: false }]
+    const res = autoAssignMeeting(weeks, 1, 'mid', [p, ...mikOnly], mik2)
+    const mik = res.weeks[1].mid.helpers.mik ?? []
+    expect(mik).not.toContain('P. Part') // hohe Gesamtlast → kein Hilfsdienst
+    expect(mik.some((n) => n.startsWith('M.'))).toBe(true) // freie Leute übernehmen
+  })
+
+  it('Hilfsdienst-Last verringert die Aufgaben-Zuteilung NICHT', () => {
+    // Q hat viele Hilfsdienste, aber 0 Aufgaben-Last → volle Chance auf Aufgaben.
+    const q = named('Quirin', 'Quell', ['vortrag', 'mikrofon']) // "Q. Quell"
+    const history = emptyMeeting()
+    history.helpers.mik = ['Q. Quell']
+    const weeks: Week[] = [wk(history, emptyMeeting()), wk(history, emptyMeeting()), wk(history, emptyMeeting())]
+    // Aufgaben-Last (partWorkload) bleibt 0 trotz vieler Hilfsdienste
+    expect(partWorkload(weeks, 'Q. Quell')).toBe(0)
+    expect(workloadOf(weeks, 'Q. Quell')).toBeGreaterThan(0)
+    // In einer Aufgaben-Auswahl ist Q gleichauf mit einem frischen vortrag-Leut:
+    const fresh = named('Rolf', 'Rein', ['vortrag']) // "R. Rein"
+    const plan: Week[] = [...weeks, wk(partHistoryMeeting('', 0), emptyMeeting())]
+    plan[3].mid = { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ title: 'T', names: [{ name: '', bereichsKey: 'vortrag' }] }] }], helpers: {} }
+    const res = autoAssignMeeting(plan, 3, 'mid', [q, fresh], [])
+    // Fenster für Woche 3 = [0..3]; Q hat partLoad 0 wie R → einer von beiden
+    // bekommt die Aufgabe (nicht durch Hilfsdienste ausgeschlossen).
+    const assigned = (res.weeks[3].mid.sections[0].items[0] as PartItem).names[0].name
+    expect(['Q. Quell', 'R. Rein']).toContain(assigned)
   })
 })

@@ -32,12 +32,11 @@ export function isQualified(p: Person, priv: string): boolean {
 }
 
 /**
- * Auslastung = Vorkommen des Anzeigenamens über alle geladenen Wochen
- * (Programmpunkte beider Zusammenkünfte + Hilfsdienste). Zählt wie der
- * Prototyp auch Begleiter-Erwähnungen im Rollenlabel ("mit A. Hoffmann") —
- * wer begleitet, hat ebenfalls eine Aufgabe.
+ * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
+ * Zählt wie der Prototyp auch Begleiter-Erwähnungen im Rollenlabel
+ * ("mit A. Hoffmann") — wer begleitet, hat ebenfalls eine Aufgabe.
  */
-export function workloadOf(weeks: Week[], name: string): number {
+export function partWorkload(weeks: Week[], name: string): number {
   if (!name) return 0
   let count = 0
   for (const week of weeks) {
@@ -51,10 +50,26 @@ export function workloadOf(weeks: Week[], name: string): number {
           }
         }
       }
+    }
+  }
+  return count
+}
+
+/** Auslastung nur aus **Hilfsdiensten** über die gegebenen Wochen. */
+export function helperWorkload(weeks: Week[], name: string): number {
+  if (!name) return 0
+  let count = 0
+  for (const week of weeks) {
+    for (const meeting of [week.mid, week.we]) {
       for (const assigned of Object.values(meeting.helpers)) {
         for (const n of assigned) if (n === name) count++
       }
     }
   }
   return count
+}
+
+/** Gesamt-Auslastung (Programmpunkte + Hilfsdienste) über die gegebenen Wochen. */
+export function workloadOf(weeks: Week[], name: string): number {
+  return partWorkload(weeks, name) + helperWorkload(weeks, name)
 }

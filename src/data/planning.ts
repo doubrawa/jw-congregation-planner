@@ -8,7 +8,7 @@
  * den Reducer und später direkt testbar.
  */
 
-import { displayName, isQualified, isSong, workloadOf } from './helpers'
+import { displayName, isQualified, isSong, partWorkload, workloadOf } from './helpers'
 import type {
   ConfirmationMap,
   Meeting,
@@ -27,6 +27,9 @@ const SKIP_ROLE = /Gastredner|Kreisaufseher/
 
 const EROEFFNUNG = 'ERÖFFNUNG'
 const WT_STUDIUM = 'WACHTTURM-STUDIUM'
+
+/** Gleitendes Fenster für die Strichliste: N Wochen davor + N danach. */
+const WINDOW = 3
 
 /** Kleiner, stabiler String-Hash für faire, deterministische Tie-Breaks. */
 function tieHash(s: string): number {
@@ -87,10 +90,14 @@ export interface AutoAssignResult {
  * Auto-Zuteilung für eine Woche+Meeting. Regeln (siehe README/Design):
  *  - Kandidaten: qualifiziert, in dieser Woche anwesend, noch nicht in diesem
  *    Meeting eingeteilt. Niemand bekommt Hilfsdienst UND Programmpunkt am
- *    selben Tag (gemeinsame `used`-Menge; Ausnahme unten).
- *  - Ausgeglichene Verteilung über eine mitlaufende „Strichliste“: historische
- *    Auslastung als Startwert, während der Zuteilung hochgezählt; bei
- *    Gleichstand fairer, deterministischer Tie-Break.
+ *    selben Tag (gemeinsame `used`-Menge; Ausnahme Vorsitz+Gebet).
+ *  - Ausgeglichene Verteilung über zwei mitlaufende „Strichlisten“ innerhalb
+ *    eines gleitenden Fensters (±WINDOW Wochen um die geplante Woche):
+ *      • Aufgaben (Programmpunkte) werden nach der reinen **Aufgaben**-Last
+ *        verteilt — unabhängig von Hilfsdiensten, damit sie regelmäßig bleiben.
+ *      • Hilfsdienste nach der **Gesamt**-Last — wer viele Aufgaben hat, bekommt
+ *        weniger Hilfsdienste (aber nicht umgekehrt).
+ *    Bei Gleichstand fairer, deterministischer Tie-Break.
  *  - Vorsitz betet zu Beginn: Anfangsgebet wird als Standard an die
  *    Vorsitz-Person gekoppelt (die einzige erlaubte Doppel-Aufgabe).
  *  - Fester Wachtturm-Studium-Leiter (bzw. Vertreter bei Abwesenheit) wird
@@ -118,22 +125,32 @@ export function autoAssignMeeting(
     for (const name of arr) if (name) used.add(name)
   }
 
-  // Live-Strichliste: historische Auslastung als Startwert, während der
-  // Zuteilung hochgezählt, damit die Verteilung ausgeglichen bleibt.
-  const workload = new Map<string, number>()
-  const wl = (name: string): number => workload.get(name) ?? workloadOf(weeks, name)
+  // Gleitendes Fenster: nur ±WINDOW Wochen um die geplante Woche zählen, damit
+  // uralte Einteilungen die aktuelle Verteilung nicht verzerren.
+  const lo = Math.max(0, weekIndex - WINDOW)
+  const hi = Math.min(weeks.length - 1, weekIndex + WINDOW)
+  const windowWeeks = weeks.slice(lo, hi + 1)
+
+  // Zwei Live-Strichlisten (Startwert aus dem Fenster, während des Laufs
+  // hochgezählt): partLoad = nur Aufgaben, totalLoad = Aufgaben + Hilfsdienste.
+  const partLoad = new Map<string, number>()
+  const totalLoad = new Map<string, number>()
+  const pl = (name: string): number => partLoad.get(name) ?? partWorkload(windowWeeks, name)
+  const tl = (name: string): number => totalLoad.get(name) ?? workloadOf(windowWeeks, name)
 
   let count = 0
   const newly: string[] = []
 
-  const claim = (name: string): void => {
+  const claim = (kind: 'part' | 'helper', name: string): void => {
     used.add(name)
-    workload.set(name, wl(name) + 1)
+    totalLoad.set(name, tl(name) + 1)
+    if (kind === 'part') partLoad.set(name, pl(name) + 1)
     newly.push(name)
     count++
   }
 
-  const pickFor = (priv: string | null | undefined): string | null => {
+  const pick = (kind: 'part' | 'helper', priv: string | null | undefined): string | null => {
+    const load = kind === 'part' ? pl : tl // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast
     const candidates = persons
       .filter((p) => (!priv || isQualified(p, priv)) && !p.absent.includes(weekIndex))
       .map((p) => displayName(p))
@@ -141,7 +158,7 @@ export function autoAssignMeeting(
     if (candidates.length === 0) return null
     candidates.sort(
       (a, b) =>
-        wl(a) - wl(b) ||
+        load(a) - load(b) ||
         tieHash(`${a}|${weekIndex}|${tab}`) - tieHash(`${b}|${weekIndex}|${tab}`),
     )
     return candidates[0]
@@ -156,7 +173,7 @@ export function autoAssignMeeting(
       )
       return person ? displayName(person) : undefined
     }
-    return designated('wtLeiter') ?? designated('wtVertreter') ?? pickFor('studium')
+    return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
   }
 
   // 1) WT-Studium-Leiter zuerst reservieren (nur Wochenende hat diese Sektion).
@@ -169,25 +186,25 @@ export function autoAssignMeeting(
           const name = pickConductor()
           if (name) {
             slot.name = name
-            claim(name)
+            claim('part', name)
           }
         }
       }
     }
   }
 
-  // 2) Übrige Slots füllen. Das Anfangsgebet (Eröffnung) wird übersprungen und
-  //    unten an den Vorsitz gekoppelt.
+  // 2) Übrige Programmpunkte. Das Anfangsgebet (Eröffnung) wird übersprungen
+  //    und unten an den Vorsitz gekoppelt.
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
       for (const slot of item.names) {
         if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
         if (section.label === EROEFFNUNG && slot.rolle === 'Gebet') continue
-        const name = pickFor(slot.bereichsKey)
+        const name = pick('part', slot.bereichsKey)
         if (name) {
           slot.name = name
-          claim(name)
+          claim('part', name)
         }
       }
     }
@@ -202,13 +219,14 @@ export function autoAssignMeeting(
     const gebet = openingSlots.find((s) => s.rolle === 'Gebet')
     if (vorsitz && gebet && !gebet.name) {
       gebet.name = vorsitz
-      workload.set(vorsitz, wl(vorsitz) + 1)
+      totalLoad.set(vorsitz, tl(vorsitz) + 1)
+      partLoad.set(vorsitz, pl(vorsitz) + 1)
       count++
     }
   }
 
   // 4) Hilfsdienste (nach den Programmpunkten → Helfer und Aufgaben schließen
-  //    sich über `used` gegenseitig aus).
+  //    sich über `used` gegenseitig aus; Auswahl nach Gesamtlast).
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
@@ -218,10 +236,10 @@ export function autoAssignMeeting(
         arr[pos] = `Gruppe ${1 + (weekIndex % 3)}`
         count++
       } else {
-        const name = pickFor(svc.priv)
+        const name = pick('helper', svc.priv)
         if (name) {
           arr[pos] = name
-          claim(name)
+          claim('helper', name)
         }
       }
     }

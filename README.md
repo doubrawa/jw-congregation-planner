@@ -191,7 +191,12 @@ manuell änderbar); niemand bekommt **Hilfsdienst und Programmpunkt am selben
 Tag**; die Verteilung bleibt über eine mitlaufende **Strichliste** ausgeglichen;
 der **Wachtturm-Studium-Leiter** ist fest (Aufgabenbereich der Person), sein
 **Vertreter** springt bei Abwesenheit ein; nicht besetzbare Slots (z. B. alle
-Qualifizierten abwesend) bleiben **offen**. Die Regeln sind in
+Qualifizierten abwesend) bleiben **offen**. Die Strichliste zählt nur ein
+**gleitendes Fenster** (3 Wochen davor + 3 danach), damit uralte Einteilungen
+nicht ewig nachwirken. **Aufgaben** werden dabei unabhängig von den
+Hilfsdiensten verteilt (bleiben regelmäßig), **Hilfsdienste** dagegen nach der
+Gesamtlast — wer viele Aufgaben hat, bekommt weniger Hilfsdienste, aber nicht
+umgekehrt. Die Regeln sind in
 [`autoassign.sim.test.ts`](src/data/autoassign.sim.test.ts) über eine
 100-Personen-Simulation abgesichert.
 
