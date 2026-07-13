@@ -138,7 +138,9 @@ export type AppAction =
   // Passwort-Reset (PASSWORD_RECOVERY)
   | { type: 'setRecovery'; on: boolean }
   | { type: 'startImport' }
-  | { type: 'finishImport' }
+  | { type: 'finishImport' } // Demo: simulierter Import (buildImportWeek)
+  | { type: 'addImportedWeek'; week: Week } // Produktion: echte jw.org-Woche
+  | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string } // auf state.slotSel; "" = entfernen
   | { type: 'autoAssign' } // aktuelle Woche + Tab
   // Bestätigungs-Flow

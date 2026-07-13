@@ -168,6 +168,36 @@ Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
 Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
 Versammlung, schreiben dürfen im Wesentlichen nur Planer).
 
+## Arbeitsheft-Import (Edge Function)
+
+Der Import „NÄCHSTE WOCHE IMPORTIEREN" (Einstellungen → Programm-Import) holt
+das Programm der Leben-und-Dienst-Zusammenkunft aus dem Arbeitsheft auf jw.org.
+Da der Browser jw.org **nicht** direkt abrufen kann (CORS), läuft der Abruf +
+das Parsen serverseitig in einer **Supabase Edge Function**
+([`supabase/functions/import-week/`](supabase/functions/import-week/)). Sie
+ermittelt automatisch die nächste kommende Woche (Übersicht → Zeitraum → Woche),
+lädt die Seite (ein Abruf je Seite, kurzer Cache, klarer User-Agent) und gibt
+die Woche als `Week`-JSON zurück. Nur die Zusammenkunft **unter der Woche**
+steht im Arbeitsheft; das **Wochenende** (Öffentlicher Vortrag +
+Wachtturm-Studium) kommt als editierbare Vorlage.
+
+Deploy (einmalig, [Supabase CLI](https://supabase.com/docs/guides/cli) nötig):
+
+```bash
+supabase login
+supabase link --project-ref <dein-project-ref>   # aus der Supabase-URL
+supabase functions deploy import-week
+```
+
+Danach funktioniert der Import-Button direkt (die App ruft die Function per
+`functions.invoke` mit der Nutzer-Session auf — nur eingeloggte Mitglieder).
+Der Parser keyt auf die Farb-/Struktur-Klassen der jw.org-Seite; ändert jw.org
+das Layout grundlegend, muss der Parser
+([`parse.ts`](supabase/functions/import-week/parse.ts), per Fixture-Test
+abgesichert) angepasst werden. **Rechtehinweis:** Der Abruf dient der internen
+Zusammenkunfts-Planung deiner Versammlung; es werden keine Inhalte öffentlich
+weiterverbreitet. Beachte die Nutzungsbedingungen von jw.org.
+
 **Stand:** Anmelden/Registrieren/Abmelden und Passwort-Reset (Mail-Link →
 „Neues Passwort setzen") sind verdrahtet; eine bestehende Session überspringt
 den Login. Nach dem Login werden alle Versammlungsdaten geladen (Rolle/
@@ -202,7 +232,8 @@ umgekehrt. Die Regeln sind in
 
 ## Offene Punkte (aus dem Handoff)
 
-1. Echter Arbeitsheft-Import von jw.org (Format/Parsing, Nutzungsrechte klären)
+1. Arbeitsheft-Import von jw.org: **umgesetzt** (Edge Function `import-week`,
+   siehe oben) — nur die Zusammenkunft unter der Woche; Wochenende als Vorlage
 2. Auth + Mandantenfähigkeit: **umgesetzt** (Supabase Auth + Schema/RLS +
    Daten-Persistenz + Mitglieder-Verwaltung mit Einladungscodes, siehe oben)
 3. Mitteilungs-Versand (Push/E-Mail), S-89-konforme Benachrichtigung

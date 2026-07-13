@@ -119,6 +119,7 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'assign',
   'autoAssign',
   'finishImport',
+  'addImportedWeek',
   'savePerson',
   'lacAdjust',
   'lacRemove',
@@ -289,6 +290,23 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastImportiert'),
       }
     }
+    case 'addImportedWeek': {
+      const week = action.week
+      return {
+        ...state,
+        weeks: [...state.weeks, week],
+        importing: false,
+        notifs: pushNotif(
+          state.notifs,
+          'import',
+          'Programm importiert',
+          `${week.range} · ${week.book} — ohne Zuteilungen`,
+        ),
+        toast: toastKey(state, 'toastImportiert'),
+      }
+    }
+    case 'stopImport':
+      return { ...state, importing: false }
     case 'assign': {
       // Zuteilen bzw. Entfernen ("") + Mitteilung (Prototyp: assignTo)
       const sel = state.slotSel
@@ -549,7 +567,8 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     case 'lacAdd':
       saveWeek(congId, prev.week, next.weeks[prev.week])
       break
-    case 'finishImport': {
+    case 'finishImport':
+    case 'addImportedWeek': {
       const pos = next.weeks.length - 1
       if (pos >= 0) saveWeek(congId, pos, next.weeks[pos])
       break

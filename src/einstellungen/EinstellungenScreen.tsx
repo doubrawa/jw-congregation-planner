@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { generateInviteCode } from '../lib/data'
+import { importNextWeek, latestImportedStart } from '../lib/import'
 import { CONG_TO_CODE } from '../i18n/langs'
 import { PRIV_KEY, type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -44,14 +45,27 @@ export function EinstellungenScreen() {
     setServiceName('')
   }
 
-  const importWorkbook = () => {
-    if (state.imported) {
-      dispatch({ type: 'showToast', text: t.toastAlleWochen })
+  const importWorkbook = async () => {
+    if (state.importing) return
+    // Demo-Modus: simulierter Abruf (eine Beispielwoche) wie bisher
+    if (state.dataStatus === 'demo') {
+      if (state.imported) {
+        dispatch({ type: 'showToast', text: t.toastAlleWochen })
+        return
+      }
+      dispatch({ type: 'startImport' })
+      setTimeout(() => dispatch({ type: 'finishImport' }), 900)
       return
     }
-    if (state.importing) return
+    // Produktion: echter Abruf der nächsten Woche von jw.org (Edge Function)
     dispatch({ type: 'startImport' })
-    setTimeout(() => dispatch({ type: 'finishImport' }), 900) // simulierter Abruf
+    const res = await importNextWeek(latestImportedStart(state.weeks))
+    if (!res.ok) {
+      dispatch({ type: 'stopImport' })
+      dispatch({ type: 'showToast', text: res.error === 'demo' ? t.demoHinweis : res.error })
+      return
+    }
+    dispatch({ type: 'addImportedWeek', week: res.week })
   }
 
   const importLabel = state.importing
