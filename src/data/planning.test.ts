@@ -272,11 +272,19 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(conflicts).toContainEqual({ kind: 'absent', name: 'U. Lang', tab: 'mid' })
   })
 
-  it('erkennt Mehrfach-Zuteilung in einer Zusammenkunft', () => {
+  it('erkennt Helfer + Aufgabe am selben Tag (helperTask)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = ['M. Albrecht'] // ist schon Vorsitz in derselben ZK
+    weeks[0].mid.helpers.ton = ['M. Albrecht'] // ist schon Vorsitz (Programmpunkt) in derselben ZK
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
-    expect(conflicts).toContainEqual({ kind: 'double', name: 'M. Albrecht', tab: 'mid', count: 2 })
+    expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'M. Albrecht', tab: 'mid' })
+  })
+
+  it('erkennt sonstige Mehrfach-Zuteilung (double) — zwei Hilfsdienste', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.ton = ['X. Testhelfer'] // nur Hilfsdienste, kein Programmpunkt
+    weeks[0].mid.helpers.mik = ['X. Testhelfer', '']
+    const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
+    expect(conflicts).toContainEqual({ kind: 'double', name: 'X. Testhelfer', tab: 'mid', count: 2 })
   })
 
   it('erkennt Serien von 3 Wochen in Folge (und nur dort)', () => {

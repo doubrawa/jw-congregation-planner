@@ -403,12 +403,12 @@ export function derivePendingNames(
 /** Ab wie vielen Wochen in Folge ein „streak“-Konflikt entsteht. */
 const STREAK_THRESHOLD = 3
 
-export type ConflictKind = 'absent' | 'double' | 'streak'
+export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'streak'
 
 export interface Conflict {
   kind: ConflictKind
   name: string // Anzeigename der Person
-  tab?: MeetingTab // betroffene Zusammenkunft (absent/double)
+  tab?: MeetingTab // betroffene Zusammenkunft (absent/double/helperTask)
   count?: number // double: Slots in der Zusammenkunft; streak: Wochen in Folge
 }
 
@@ -417,7 +417,8 @@ export interface Conflict {
  * ohne externe Slots (Gastredner/Kreisaufseher) und ohne Gruppen-Rotation —
  * die sind keine zuteilbaren Personen.
  */
-function meetingAssignedNames(meeting: Meeting, services: Service[]): string[] {
+/** Belegte Namen der Programmpunkte (ohne Lieder, ohne externe Slots). */
+function meetingPartNames(meeting: Meeting): string[] {
   const names: string[] = []
   for (const section of meeting.sections) {
     for (const item of section.items) {
@@ -428,6 +429,12 @@ function meetingAssignedNames(meeting: Meeting, services: Service[]): string[] {
       }
     }
   }
+  return names
+}
+
+/** Belegte Namen der Hilfsdienste (ohne Gruppen-Rotation). */
+function meetingHelperNames(meeting: Meeting, services: Service[]): string[] {
+  const names: string[] = []
   for (const svc of services) {
     if (svc.groups) continue
     const arr = meeting.helpers[svc.key] ?? []
@@ -436,6 +443,10 @@ function meetingAssignedNames(meeting: Meeting, services: Service[]): string[] {
     }
   }
   return names
+}
+
+function meetingAssignedNames(meeting: Meeting, services: Service[]): string[] {
+  return [...meetingPartNames(meeting), ...meetingHelperNames(meeting, services)]
 }
 
 /** Alle belegten Namen einer Woche (beide Zusammenkünfte), als Menge. */
@@ -473,14 +484,24 @@ export function weekConflicts(
     }
   }
 
-  // double: gleiche Person mehrfach in einer Zusammenkunft
+  // helperTask / double: gleiche Person mehrfach in einer Zusammenkunft.
+  // helperTask = Hilfsdienst UND Programmpunkt am selben Tag (die vom Nutzer
+  // vorgegebene Regel — bei manueller Zuteilung nicht automatisch verhindert);
+  // double = sonstige Mehrfach-Zuteilung (2× Programm oder 2× Hilfsdienst).
   for (const tab of tabs) {
-    const counts = new Map<string, number>()
-    for (const name of meetingAssignedNames(week[tab], services)) {
-      counts.set(name, (counts.get(name) ?? 0) + 1)
+    const partCounts = new Map<string, number>()
+    for (const name of meetingPartNames(week[tab])) {
+      partCounts.set(name, (partCounts.get(name) ?? 0) + 1)
     }
-    for (const [name, count] of counts) {
-      if (count >= 2) conflicts.push({ kind: 'double', name, tab, count })
+    const helperCounts = new Map<string, number>()
+    for (const name of meetingHelperNames(week[tab], services)) {
+      helperCounts.set(name, (helperCounts.get(name) ?? 0) + 1)
+    }
+    for (const name of new Set([...partCounts.keys(), ...helperCounts.keys()])) {
+      const pc = partCounts.get(name) ?? 0
+      const hc = helperCounts.get(name) ?? 0
+      if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, tab })
+      else if (pc + hc >= 2) conflicts.push({ kind: 'double', name, tab, count: pc + hc })
     }
   }
 

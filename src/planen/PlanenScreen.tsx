@@ -32,6 +32,8 @@ export function PlanenScreen() {
     if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName(c.tab) })
     if (c.kind === 'double')
       return fill(t.konfliktDouble, { name: c.name, n: c.count ?? 2, tab: tabName(c.tab) })
+    if (c.kind === 'helperTask')
+      return fill(t.konfliktHelperTask, { name: c.name, tab: tabName(c.tab) })
     return fill(t.konfliktStreak, { name: c.name, n: c.count ?? 3 })
   }
 

@@ -117,6 +117,7 @@ export const DE = {
     konflikteTitle: 'MÖGLICHE KONFLIKTE',
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
+    konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',
     konfliktStreak: '{name} ist {n} Wochen in Folge eingeteilt'
 }
 
@@ -234,6 +235,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konflikteTitle: 'POSSIBLE CONFLICTS',
     konfliktAbsent: '{name} is absent but assigned · {tab}',
     konfliktDouble: '{name} is assigned {n}× in one meeting · {tab}',
+    konfliktHelperTask: '{name} has a support duty and an assignment on the same day · {tab}',
     konfliktStreak: '{name} is assigned {n} weeks in a row',
   },
   es: {
