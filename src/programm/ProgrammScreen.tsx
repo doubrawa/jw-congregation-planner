@@ -100,7 +100,7 @@ function ProgramRow({
   myName: string | null
   i18n: I18n
 }) {
-  const { t, tp } = i18n
+  const { t, tp, tu } = i18n
   return (
     <div className={item.num != null ? 'prog-row prog-row--num' : 'prog-row'}>
       {item.num != null && <div className="prog-num">{item.num}.</div>}
@@ -115,7 +115,7 @@ function ProgramRow({
               {myName !== null && slot.name === myName && <span className="chip-du">DU</span>}
               <span>{slot.name || t.offenDash}</span>
             </div>
-            {slot.rolle && <div className="prog-role">{tp(slot.rolle)}</div>}
+            {slot.rolle && <div className="prog-role">{tu(slot.rolle)}</div>}
           </div>
         ))}
       </div>

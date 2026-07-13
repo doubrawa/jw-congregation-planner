@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { generateInviteCode } from '../lib/data'
 import { importNextWeek, latestImportedStart } from '../lib/import'
-import { CONG_TO_CODE } from '../i18n/langs'
+import { CONG_TO_CODE, CONG_TO_JW } from '../i18n/langs'
 import { PRIV_KEY, type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import type { QualificationKey, Service } from '../data/types'
@@ -57,9 +57,11 @@ export function EinstellungenScreen() {
       setTimeout(() => dispatch({ type: 'finishImport' }), 900)
       return
     }
-    // Produktion: echter Abruf der nächsten Woche von jw.org (Edge Function)
+    // Produktion: echter Abruf der nächsten Woche von jw.org (Edge Function),
+    // direkt in der Versammlungssprache (jw.org-Code, sonst Deutsch).
     dispatch({ type: 'startImport' })
-    const res = await importNextWeek(latestImportedStart(state.weeks))
+    const langCode = CONG_TO_JW[state.congLang] ?? 'de'
+    const res = await importNextWeek(latestImportedStart(state.weeks), langCode)
     if (!res.ok) {
       dispatch({ type: 'stopImport' })
       dispatch({ type: 'showToast', text: res.error === 'demo' ? t.demoHinweis : res.error })

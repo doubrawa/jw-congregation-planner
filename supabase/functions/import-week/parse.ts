@@ -6,9 +6,18 @@
 // Wochenseite in unsere Week-Struktur (nur die Zusammenkunft unter der Woche;
 // das Wochenende steht nicht im Arbeitsheft → editierbare Vorlage).
 //
-// Die Erkennung keyt bewusst auf die **Farbklassen** der Überschriften
-// (teal/gold/maroon) und das Noten-Icon — nicht auf den Text —, damit sie
-// sprachunabhängig und gegen Textänderungen robust ist.
+// SPRACHUNABHÄNGIG: Die Seite gibt es in ~480 Sprachen mit identischer Struktur.
+// Erkennung keyt daher ausschließlich auf **Struktur** — Farbklassen der
+// Überschriften (teal/gold/maroon), das Noten-Icon, die 1./2./3.-Nummerierung
+// (überall westliche Ziffern), die „(<Zahl> …)“-Zeitklammer und die **Position**
+// (letzter Schätze-Punkt = Bibellesung, letzter Unser-Leben-Punkt = VBS) — NICHT
+// auf deutschen/englischen Text. Der sichtbare Text (Sektions-Überschriften,
+// Titel, Lieder, Schriftstellen, Rahmen) wird **wörtlich aus der Zielsprache
+// übernommen**. Nur unsere eigenen Struktur-Labels (ERÖFFNUNG/ABSCHLUSS) und die
+// Rollen-Schlüssel (Vorsitz/Gebet/Leiter/Leser) bleiben kanonisch deutsch — sie
+// sind Logik-Schlüssel der Auto-Zuteilung bzw. werden in der App-Sprache
+// angezeigt. Publikations-Kürzel (th, lmd, lff …) sind MEPS-Symbole und in jeder
+// Sprache gleich.
 // =============================================================================
 
 export interface ImportedSlot {
@@ -111,74 +120,67 @@ function tokenize(html: string): Token[] {
   return tokens
 }
 
-/* ---- Feld-Parser --------------------------------------------------------- */
+/* ---- Feld-Parser (sprachunabhängig) -------------------------------------- */
 
-const MIN_RE = /\((\d+)\s*Min\.?\)/
-const SONG_RE = /(?:Lied|Song)\s+(\d+)/i
+/** Beginnt die Zeile mit einer Zeitklammer „(<Ziffer> …)“? (nicht Aufzählung) */
+const TIME_START = /^\s*\(\s*\d/
+/** Publikations-Kürzel (MEPS, in jeder Sprache gleich). */
+const PUB_SYM = /\b(th|lmd|lff|lfb|wcg|bt|jr|it|bhs|cf|lvs|rr|od|kr|jy|cl|be|sjj|snnw|w\d{2}|g\d{2})\b/i
 
-/** Minuten aus einer Zeit-Zeile lesen. */
-function minutesOf(text: string): number | null {
-  const m = MIN_RE.exec(text)
-  return m ? Number(m[1]) : null
+/** Inhalt der ersten Klammer (die Zeit, lokalisiert: „10 min.“ / „10 λεπτά“). */
+function firstParen(text: string): string {
+  return ((text.match(/\(([^)]*)\)/) || [])[1] || '').trim()
 }
 
-/** Quellenangabe (letzte Klammer mit Publikations-Kürzel) extrahieren. */
+/** Text ohne jegliche Klammern (Schriftstelle bzw. klammerlose Quelle). */
+function stripParens(text: string): string {
+  return text.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+/** Quellenangabe: bevorzugt die letzte Klammer mit Publikations-Kürzel. */
 function sourceOf(text: string): string {
-  const groups = text.match(/\(([^()]*)\)/g) || []
-  for (let i = groups.length - 1; i >= 0; i--) {
-    const inner = groups[i].slice(1, -1).trim()
-    if (/\b(th|lmd|lff|lfb|wcg|bt|jr|it|w\d{2}|g\d{2}|bhs|cf)\b/i.test(inner)) {
-      return inner.replace(/\s+/g, ' ').trim()
-    }
-  }
-  return ''
+  const parens = [...text.matchAll(/\(([^)]*)\)/g)].map((m) => m[1].trim())
+  if (parens.length < 2) return ''
+  const rest = parens.slice(1) // erste Klammer ist die Zeit
+  for (let i = rest.length - 1; i >= 0; i--) if (PUB_SYM.test(rest[i])) return rest[i]
+  return rest[rest.length - 1]
 }
 
-/** Rahmen der Zeit-Zeile auf die kanonische Bezeichnung abbilden. */
+/**
+ * Rahmen der Zeit-Zeile (z. B. „VON HAUS ZU HAUS“, „HOUSE TO HOUSE“). Der Rahmen
+ * ist der kurze Satz direkt nach der Zeitklammer bis zum ersten Punkt — ohne
+ * Ziffern (schließt Quellen/Lektionen aus), sprachunabhängig übernommen.
+ */
 function settingOf(text: string): string {
-  if (/haus zu haus/i.test(text)) return 'Von Haus zu Haus'
-  if (/informell/i.test(text)) return 'Informell'
-  if (/öffentlichkeit/i.test(text)) return 'In der Öffentlichkeit'
-  if (/besprechung/i.test(text)) return 'Besprechung'
-  return ''
+  const after = text.replace(/^\s*\([^)]*\)/, '').trim()
+  const seg = after.split(/[.。．]/)[0].trim()
+  return seg && seg.length <= 32 && !/\d/.test(seg) ? seg : ''
 }
 
-/** Bibelstelle in der Bibellesungs-Zeit-Zeile (zwischen Zeit und Quelle). */
-function scriptureOf(text: string): string {
-  const after = text.replace(MIN_RE, '').replace(/\([^()]*\)/g, '').trim()
-  return after.replace(/\s+/g, ' ').trim()
-}
-
-function metaFrom(setting: string, minutes: number | null, source: string): string {
-  const mins = minutes != null ? `${minutes} Min.` : ''
-  const parts = setting ? [setting, mins] : [mins]
-  if (source) parts.push(source)
+/** Meta-Zeile „[Rahmen ·] Zeit [· Quelle]“ zusammensetzen. */
+function joinMeta(...parts: string[]): string {
   return parts.filter(Boolean).join(' · ')
 }
 
 /* ---- Section-/Slot-Zuordnung -------------------------------------------- */
 
-const SECTION: Record<'teal' | 'gold' | 'maroon', { label: string; farbe: string }> = {
-  teal: { label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol' },
-  gold: { label: 'UNS IM DIENST VERBESSERN', farbe: 'gold' },
-  maroon: { label: 'UNSER LEBEN ALS CHRIST', farbe: 'wein' },
-}
-
-function isVbs(title: string): boolean {
-  return /Versammlungsbibelstudium/i.test(title)
-}
-function isBibellesung(title: string): boolean {
-  return /Bibellesung|Bible Reading/i.test(title)
-}
-
-/** Nötige Qualifikation je Programmpunkt (für die Auto-Zuteilung). */
-function bereichFor(color: 'teal' | 'gold' | 'maroon', title: string): string {
-  if (color === 'gold') return 'schulung'
-  if (isBibellesung(title)) return 'lesen'
-  return 'vortrag' // teal-Vorträge und maroon-Besprechungen
+type SecColor = 'teal' | 'gold' | 'maroon'
+const FARBE: Record<SecColor, string> = { teal: 'petrol', gold: 'gold', maroon: 'wein' }
+/** Rückfall-Labels, falls die lokalisierte Überschrift nicht gefunden wurde. */
+const FALLBACK_LABEL: Record<SecColor, string> = {
+  teal: 'SCHÄTZE AUS GOTTES WORT',
+  gold: 'UNS IM DIENST VERBESSERN',
+  maroon: 'UNSER LEBEN ALS CHRIST',
 }
 
 /* ---- Hauptfunktion ------------------------------------------------------- */
+
+interface PartRec {
+  part: ImportedPart
+  color: SecColor
+  raw: string // Roh-Titel inkl. „N.“
+  time: string // Roh-Zeitzeile
+}
 
 export function parseWorkbookWeek(html: string): ImportedWeek {
   const tokens = tokenize(html)
@@ -188,37 +190,24 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   let book = ''
   let opening: ImportedPart | null = null
   let closing: ImportedPart | null = null
-  const sections: Record<'teal' | 'gold' | 'maroon', ImportedSection> = {
-    teal: { label: SECTION.teal.label, farbe: SECTION.teal.farbe, items: [] },
-    gold: { label: SECTION.gold.label, farbe: SECTION.gold.farbe, items: [] },
-    maroon: { label: SECTION.maroon.label, farbe: SECTION.maroon.farbe, items: [] },
+
+  const sections: Record<SecColor, ImportedSection> = {
+    teal: { label: FALLBACK_LABEL.teal, farbe: FARBE.teal, items: [] },
+    gold: { label: FALLBACK_LABEL.gold, farbe: FARBE.gold, items: [] },
+    maroon: { label: FALLBACK_LABEL.maroon, farbe: FARBE.maroon, items: [] },
   }
+  const recs: PartRec[] = []
+  let curColor: SecColor | null = null
+  let curRec: PartRec | null = null
 
-  let curColor: 'teal' | 'gold' | 'maroon' | null = null
-  let curPart: ImportedPart | null = null
-
-  const finishTime = (timeText: string): void => {
-    if (!curPart || !curColor) return
-    const minutes = minutesOf(timeText)
-    const source = sourceOf(timeText)
-    if (isBibellesung(curPart.title)) {
-      const scripture = scriptureOf(timeText)
-      if (scripture) curPart.title = `Bibellesung · ${scripture}`
-      curPart.meta = metaFrom('', minutes, source)
-    } else if (isVbs(curPart.title)) {
-      curPart.title = 'Versammlungsbibelstudium'
-      curPart.meta = metaFrom('', minutes, source || scriptureOf(timeText)) // Quelle oft ohne Klammern
-      curPart.names = [
-        { name: '', rolle: 'Leiter', bereichsKey: 'studium' },
-        { name: '', rolle: 'Leser', bereichsKey: 'lesen' },
-      ]
-    } else {
-      curPart.meta = metaFrom(settingOf(timeText), minutes, source)
-    }
+  /** Eröffnungs-/Abschluss-Zeile (Noten-Icon + „|“) in Titel + Zeit zerlegen. */
+  const pipe = (text: string): [string, string] => {
+    const i = text.indexOf('|')
+    return i >= 0 ? [text.slice(0, i).trim(), text.slice(i + 1).trim()] : [text.trim(), '']
   }
 
   for (const tok of tokens) {
-    // Datum (h1) und Bibellese (erstes farbloses h2)
+    // Datum (erstes h1) und Bibellese-Kapitel (erstes farbloses h2)
     if (tok.tag === 'h1') {
       range = tok.text.replace(/\s*[·|].*$/, '').replace(/-/g, '–').trim()
       continue
@@ -227,76 +216,119 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       if (!book) book = tok.text
       continue
     }
-    // Sektions-Überschriften (farbig)
+    // Sektions-Überschrift (farbig) → lokalisierte Beschriftung übernehmen
     if (tok.tag === 'h2' && (tok.color === 'teal' || tok.color === 'gold' || tok.color === 'maroon')) {
       curColor = tok.color
-      curPart = null
+      sections[tok.color].label = tok.text
+      curRec = null
       continue
     }
-    // Lieder / Eröffnung / Abschluss (Noten-Icon)
+    // Lied / Eröffnung / Abschluss (Noten-Icon)
     if (tok.tag === 'h3' && tok.music) {
-      const song = (SONG_RE.exec(tok.text) || [])[1]
-      const songLabel = song ? `Lied ${song}` : tok.text
-      if (/Einleitende Worte|Opening Comments/i.test(tok.text)) {
+      const hasPipe = tok.text.includes('|')
+      const hasTime = /\(\s*\d/.test(tok.text)
+      const [a, b] = pipe(tok.text)
+      if (curColor === null) {
+        // vor der ersten Sektion → Eröffnung (Vorsitz + Anfangsgebet)
+        const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
         opening = {
-          title: `${songLabel} · Gebet · Einleitende Worte`,
-          meta: metaFrom('', minutesOf(tok.text), ''),
+          title,
+          meta: joinMeta(firstParen(tok.text)),
           names: [
             { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitz' },
             { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
           ],
         }
-      } else if (/Schlussworte|Concluding/i.test(tok.text)) {
-        closing = {
-          title: `Schlussworte · ${songLabel} · Gebet`,
-          meta: metaFrom('', minutesOf(tok.text), ''),
-          names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }],
-        }
-      } else if (curColor === 'maroon') {
-        sections.maroon.items.push({ song: songLabel })
+      } else if (hasPipe || hasTime) {
+        // nach den Sektionen mit „|“/Zeit → Abschluss (Schlussgebet)
+        const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
+        closing = { title, meta: joinMeta(firstParen(tok.text)), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
+      } else {
+        // schlichtes Lied innerhalb einer Sektion
+        sections[curColor].items.push({ song: tok.text })
       }
-      curPart = null
+      curRec = null
       continue
     }
-    // Nummerierter Programmpunkt (farbige h3)
+    // Nummerierter Programmpunkt (farbige h3) → Roh sichern, später finalisieren
     if (tok.tag === 'h3' && curColor && (tok.color === 'teal' || tok.color === 'gold' || tok.color === 'maroon')) {
-      const numMatch = tok.text.match(/^(\d+)\.\s*/)
-      const title = tok.text.replace(/^\d+\.\s*/, '').trim()
-      curPart = {
-        title,
-        names: [{ name: '', bereichsKey: bereichFor(curColor, title) }],
-      }
-      if (numMatch) curPart.num = Number(numMatch[1])
-      sections[curColor].items.push(curPart)
+      const part: ImportedPart = { title: '', names: [] }
+      const numMatch = tok.text.match(/^\s*(\d+)\.\s*/)
+      if (numMatch) part.num = Number(numMatch[1])
+      curRec = { part, color: curColor, raw: tok.text, time: '' }
+      recs.push(curRec)
+      sections[curColor].items.push(part)
       continue
     }
     // Zeit-/Quelle-Zeile direkt nach einem Programmpunkt
-    if (tok.tag === 'p' && curPart && curPart.meta == null && MIN_RE.test(tok.text)) {
-      finishTime(tok.text)
+    if (tok.tag === 'p' && curRec && !curRec.time && TIME_START.test(tok.text)) {
+      curRec.time = tok.text
     }
   }
 
-  const midSections: ImportedSection[] = []
-  midSections.push({
-    label: 'ERÖFFNUNG',
-    farbe: 'neutral',
-    items: [opening ?? { title: 'Lied · Gebet · Einleitende Worte', meta: '1 Min.', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitz' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
-  })
-  midSections.push(sections.teal, sections.gold, sections.maroon)
-  midSections.push({
-    label: 'ABSCHLUSS',
-    farbe: 'neutral',
-    items: [closing ?? { title: 'Schlussworte · Gebet', meta: '3 Min.', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
-  })
+  finalizeParts(recs)
 
-  const mid: ImportedMeeting = {
-    date: range,
-    end: 'Ende ca. 20:45',
-    sections: midSections,
-    helpers: {},
-  }
+  const midSections: ImportedSection[] = [
+    {
+      label: 'ERÖFFNUNG',
+      farbe: 'neutral',
+      items: [opening ?? fallbackOpening()],
+    },
+    sections.teal,
+    sections.gold,
+    sections.maroon,
+    {
+      label: 'ABSCHLUSS',
+      farbe: 'neutral',
+      items: [closing ?? { title: 'Schlussworte · Gebet', meta: '3 Min.', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
+    },
+  ]
 
+  const mid: ImportedMeeting = { date: range, end: 'Ende ca. 20:45', sections: midSections, helpers: {} }
   return { range, book, current: false, mid, we: weekendTemplate(range) }
+}
+
+/** Titel/Meta/Slots je Punkt festlegen — kennt jetzt die Position in der Sektion. */
+function finalizeParts(recs: PartRec[]): void {
+  const lastOf: Partial<Record<SecColor, PartRec>> = {}
+  for (const rec of recs) lastOf[rec.color] = rec // letzter je Farbe
+
+  for (const rec of recs) {
+    const { part, color, raw, time } = rec
+    const title = raw.replace(/^\s*\d+\.\s*/, '').trim()
+    const min = firstParen(time)
+
+    if (color === 'teal' && rec === lastOf.teal) {
+      // letzter Schätze-Punkt = Bibellesung (Leser). Schriftstelle anhängen.
+      const scripture = stripParens(time)
+      part.title = scripture ? `${title} · ${scripture}` : title
+      part.meta = joinMeta(min, sourceOf(time))
+      part.names = [{ name: '', bereichsKey: 'lesen' }]
+    } else if (color === 'maroon' && rec === lastOf.maroon) {
+      // letzter Unser-Leben-Punkt = Versammlungsbibelstudium (Leiter + Leser)
+      part.title = title
+      part.meta = joinMeta(min, sourceOf(time) || stripParens(time)) // Quelle oft klammerlos
+      part.names = [
+        { name: '', rolle: 'Leiter', bereichsKey: 'studium' },
+        { name: '', rolle: 'Leser', bereichsKey: 'lesen' },
+      ]
+    } else {
+      part.title = title
+      part.meta = joinMeta(settingOf(time), min, sourceOf(time))
+      part.names = [{ name: '', bereichsKey: color === 'gold' ? 'schulung' : 'vortrag' }]
+    }
+  }
+}
+
+function fallbackOpening(): ImportedPart {
+  return {
+    title: 'Lied · Gebet · Einleitende Worte',
+    meta: '1 Min.',
+    names: [
+      { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitz' },
+      { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
+    ],
+  }
 }
 
 /** Wochenend-Vorlage (nicht im Arbeitsheft): vom Koordinator zu füllen. */

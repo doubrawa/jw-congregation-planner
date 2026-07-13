@@ -181,6 +181,18 @@ die Woche als `Week`-JSON zurück. Nur die Zusammenkunft **unter der Woche**
 steht im Arbeitsheft; das **Wochenende** (Öffentlicher Vortrag +
 Wachtturm-Studium) kommt als editierbare Vorlage.
 
+**Mehrsprachig (~480 Sprachen):** Die Woche wird in der eingestellten
+**Versammlungssprache** geholt. Die Function ermittelt die Woche immer zuerst
+auf Deutsch (verlässlicher Anker) und löst dann über den „Lesen in"-Umschalter
+der jw.org-Seite (`otherAvailLangsChooser`, je Sprache ein `data-url`) die
+lokalisierte URL auf. Der Client schickt den jw.org-Sprachcode aus
+[`langs.ts`](src/i18n/langs.ts) (`CONG_TO_JW`, Name → Code); die
+Versammlungssprache lässt sich frei aus der vollen jw.org-Liste wählen (die
+App-Oberfläche bleibt bei DE/EN/ES/FR). Programm-Inhalte (Titel, Lieder,
+Schriftstellen, Sektions-Überschriften, Rahmen) stehen dadurch **direkt in der
+Zielsprache**; unsere eigenen Labels (ERÖFFNUNG/ABSCHLUSS, Rollen wie
+Vorsitz/Gebet) bleiben app-sprachig.
+
 Deploy (einmalig, [Supabase CLI](https://supabase.com/docs/guides/cli) nötig):
 
 ```bash
@@ -191,10 +203,14 @@ supabase functions deploy import-week
 
 Danach funktioniert der Import-Button direkt (die App ruft die Function per
 `functions.invoke` mit der Nutzer-Session auf — nur eingeloggte Mitglieder).
-Der Parser keyt auf die Farb-/Struktur-Klassen der jw.org-Seite; ändert jw.org
-das Layout grundlegend, muss der Parser
-([`parse.ts`](supabase/functions/import-week/parse.ts), per Fixture-Test
-abgesichert) angepasst werden. **Rechtehinweis:** Der Abruf dient der internen
+Der Parser ([`parse.ts`](supabase/functions/import-week/parse.ts)) ist
+**sprachunabhängig**: Er keyt ausschließlich auf **Struktur** — Farbklassen
+(teal/gold/maroon), Noten-Icon, 1./2./3.-Nummerierung, die „(Zahl …)"-Zeitklammer
+und die **Position** (letzter Schätze-Punkt = Bibellesung, letzter
+Unser-Leben-Punkt = VBS) — nicht auf deutschen/englischen Text; der sichtbare
+Text wird wörtlich aus der Zielsprache übernommen. Fixture-Tests decken die
+deutsche **und** eine erfundene Sprache ab. Ändert jw.org das Layout
+grundlegend, muss der Parser angepasst werden. **Rechtehinweis:** Der Abruf dient der internen
 Zusammenkunfts-Planung deiner Versammlung; es werden keine Inhalte öffentlich
 weiterverbreitet. Beachte die Nutzungsbedingungen von jw.org.
 

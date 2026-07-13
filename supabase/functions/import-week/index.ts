@@ -5,9 +5,15 @@
 // CORS) und liefert es als Week-JSON zurück. Ohne konkrete `url` wird die
 // nächste kommende Woche automatisch ermittelt (Übersicht → Zeitraum → Woche).
 //
-// Fairer Umgang: ein Abruf je Seite, kurzer In-Memory-Cache, klarer
-// User-Agent. Nur die Zusammenkunft unter der Woche steht im Arbeitsheft;
-// das Wochenende liefert der Parser als editierbare Vorlage.
+// MEHRSPRACHIG: Die Woche wird immer zuerst auf **Deutsch** ermittelt (der
+// deutsche Index ist die verlässliche Anker-Sprache; andere Sprachen haben
+// abweichende URL-Pfade). Ist `lang` ≠ "de", wird auf der deutschen Wochenseite
+// die passende lokalisierte URL aus dem „Lesen in“-Umschalter
+// (`otherAvailLangsChooser`, je Sprache ein `data-url`) aufgelöst und **diese**
+// Seite geparst. Damit steht das Programm direkt in der Versammlungssprache
+// (~480 Sprachen); der Parser ist ohnehin sprachunabhängig.
+//
+// Fairer Umgang: ein Abruf je Seite, kurzer In-Memory-Cache, klarer User-Agent.
 //
 // Deploy:  supabase functions deploy import-week
 // =============================================================================
@@ -43,7 +49,7 @@ async function fetchText(url: string): Promise<string> {
   return text
 }
 
-/** Startdatum aus einem Wochen-Slug (…Zusammenkunft-6-12-Juli-2026 → 6.7.2026). */
+/** Startdatum aus einem deutschen Wochen-Slug (…Zusammenkunft-6-12-Juli-2026). */
 function weekStart(url: string): Date | null {
   const tail = decodeURIComponent((url.split('Zusammenkunft-')[1] || '').replace(/\/$/, ''))
   const cross = tail.match(/^(\d+)-([A-Za-zäöü]+)-\d+-([A-Za-zäöü]+)-(\d{4})/)
@@ -59,9 +65,9 @@ function weekStart(url: string): Date | null {
   return null
 }
 
-/** Kommende Wochen (aktuelle + zukünftige Zeiträume), nach Startdatum sortiert. */
-async function discoverWeeks(lang: string): Promise<{ start: Date; url: string }[]> {
-  const index = await fetchText(`${BASE}/${lang}/bibliothek/jw-arbeitsheft/`)
+/** Kommende Wochen (immer aus dem deutschen Arbeitsheft), nach Startdatum. */
+async function discoverWeeks(): Promise<{ start: Date; url: string }[]> {
+  const index = await fetchText(`${BASE}/de/bibliothek/jw-arbeitsheft/`)
   const now = new Date()
   const periods = [...new Set([...index.matchAll(/jw-arbeitsheft\/([a-zä]+-[a-zä]+-\d{4}-mwb)\//g)].map((m) => m[1]))]
     .map((slug) => {
@@ -75,8 +81,8 @@ async function discoverWeeks(lang: string): Promise<{ start: Date; url: string }
 
   const weeks: { start: Date; url: string }[] = []
   for (const p of periods) {
-    const page = await fetchText(`${BASE}/${lang}/bibliothek/jw-arbeitsheft/${p.slug}/`)
-    const re = new RegExp(`/${lang}/bibliothek/jw-arbeitsheft/${p.slug}/[^"'>]*Zusammenkunft-[^"'>]*`, 'g')
+    const page = await fetchText(`${BASE}/de/bibliothek/jw-arbeitsheft/${p.slug}/`)
+    const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${p.slug}/[^"'>]*Zusammenkunft-[^"'>]*`, 'g')
     for (const href of new Set([...page.matchAll(re)].map((m) => m[0]))) {
       const start = weekStart(href)
       if (start) weeks.push({ start, url: `${BASE}${href}` })
@@ -84,6 +90,20 @@ async function discoverWeeks(lang: string): Promise<{ start: Date; url: string }
   }
   weeks.sort((a, b) => a.start.getTime() - b.start.getTime())
   return weeks
+}
+
+/**
+ * Lokalisierte URL derselben Woche: auf der deutschen Seite trägt jede Option des
+ * „Lesen in“-Umschalters `value="<code>"` und `data-url="/<code>/…"`. Liefert die
+ * absolute URL für `lang` oder null, wenn die Woche in der Sprache fehlt.
+ */
+function localizedUrl(germanHtml: string, lang: string): string | null {
+  const code = lang.replace(/[^a-z0-9-]/gi, '')
+  const re = new RegExp(`<option\\b[^>]*\\bvalue="${code}"[^>]*\\bdata-url="([^"]*)"`, 'i')
+  const m = germanHtml.match(re)
+  if (!m) return null
+  const path = m[1].replace(/&amp;/g, '&')
+  return path.startsWith('http') ? path : BASE + path
 }
 
 function json(body: unknown, status = 200): Response {
@@ -106,7 +126,7 @@ Deno.serve(async (req: Request) => {
     let start = url ? weekStart(url) : null
 
     if (!weekUrl) {
-      const weeks = await discoverWeeks(lang)
+      const weeks = await discoverWeeks()
       const now = new Date()
       const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
       // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück).
@@ -117,9 +137,17 @@ Deno.serve(async (req: Request) => {
       start = next.start
     }
 
-    const html = await fetchText(weekUrl)
-    const week: ImportedWeek & { start?: string } = parseWorkbookWeek(html)
+    const germanHtml = await fetchText(weekUrl)
+    let html = germanHtml
+    if (lang && lang !== 'de') {
+      const loc = localizedUrl(germanHtml, lang)
+      if (!loc) return json({ error: `Diese Woche ist in der gewählten Sprache (${lang}) noch nicht verfügbar.` }, 404)
+      html = await fetchText(loc)
+    }
+
+    const week: ImportedWeek & { start?: string; lang?: string } = parseWorkbookWeek(html)
     if (start) week.start = start.toISOString().slice(0, 10)
+    week.lang = lang
     return json({ week })
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : String(err) }, 500)

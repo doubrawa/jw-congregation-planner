@@ -111,6 +111,7 @@ export interface Week {
   range: string // z. B. "7.–13. September"
   book: string // Bibelbuch (kursiv)
   start?: string // ISO-Startdatum (nur bei jw.org-Import; für die Reihenfolge)
+  lang?: string // jw.org-Sprachcode, in dem der Import geholt wurde (Herkunft)
   current: boolean // aktuelle Woche (Chip "AKTUELLE WOCHE")
   co?: boolean // Besuch des Kreisaufsehers (Chip, Dienstvortrag statt VBS)
   mem?: boolean // Gedächtnismahl-Woche (Chip + Banner)
