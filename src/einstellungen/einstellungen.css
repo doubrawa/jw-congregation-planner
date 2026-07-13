@@ -11,6 +11,91 @@
   margin-top: 6px;
 }
 
+/* ---- Mitglieder & Einladungen (nur Produktionsmodus) --------------------------- */
+
+.mem-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--panel-hair);
+}
+
+.mem-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mem-mail {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mem-du {
+  color: var(--mut);
+  font-weight: 400;
+}
+
+.mem-select {
+  width: 100%;
+  margin-top: 5px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.mem-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.mem-planner-lbl {
+  font-size: 10.5px;
+  color: var(--mut);
+}
+
+.mem-controls .switch:disabled {
+  opacity: 0.45;
+}
+
+.mem-inv-label {
+  margin-top: 16px;
+}
+
+.mem-code {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.mem-inv-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.mem-inv-form .mem-select {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-top: 0;
+}
+
+.mem-inv-form .svc-add-btn,
+.mem-inv-form .role-chip {
+  flex: none;
+}
+
 /* ---- Hilfsdienste ------------------------------------------------------------ */
 
 .svc-row {

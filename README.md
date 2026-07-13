@@ -71,8 +71,8 @@ src/
 docs/
   design-handoff/   Maßgebliche Design-Referenz (README, HTML-Prototypen, Screenshots)
 supabase/
-  schema.sql        DB-Schema (Tabellen + Row-Level-Security), im SQL-Editor ausführen
-  migration-001-…   Nachzügler-Migration für Datenbanken, die vor ihr eingerichtet wurden
+  schema.sql        DB-Schema (Tabellen + RLS + Funktionen), im SQL-Editor ausführen
+  migration-00*.sql Nachzügler-Migrationen für früher eingerichtete Datenbanken
 .github/workflows/
   deploy.yml        Auto-Deployment auf GitHub Pages (reicht Supabase-Secrets durch)
 ```
@@ -162,22 +162,25 @@ Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
 Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
 Versammlung, schreiben dürfen im Wesentlichen nur Planer).
 
-**Stand:** Anmelden/Abmelden/Reset-Mail sind verdrahtet; eine bestehende
-Session überspringt den Login. Nach dem Login werden alle Versammlungsdaten
-geladen (Rolle/Versammlung aus `members`), Änderungen sofort zurückgeschrieben;
-eine leere Versammlung bietet Planern eine Erstbefüllung mit dem Demo-Datensatz
-an. „Meine Aufgaben" entstehen aus den Zuteilungen der über `members.person_id`
+**Stand:** Anmelden/Registrieren/Abmelden und Passwort-Reset (Mail-Link →
+„Neues Passwort setzen") sind verdrahtet; eine bestehende Session überspringt
+den Login. Nach dem Login werden alle Versammlungsdaten geladen (Rolle/
+Versammlung aus `members`), Änderungen sofort zurückgeschrieben; eine leere
+Versammlung bietet Planern eine Erstbefüllung mit dem Demo-Datensatz an.
+„Meine Aufgaben" entstehen aus den Zuteilungen der über `members.person_id`
 verknüpften Person; Bestätigungen landen in `confirmations`, Erinnerungen und
-Versammlungssprache in `congregations.settings`. Bereits eingerichtete
-Datenbanken einmalig mit
-[`supabase/migration-001-aufgaben.sql`](supabase/migration-001-aufgaben.sql)
-nachziehen. **Noch offen:** Passwort-Reset-Seite (`PASSWORD_RECOVERY`),
-Mitglieder-Verwaltung in der App (members-Zeilen entstehen per SQL).
+Versammlungssprache in `congregations.settings`. **Mitglieder-Verwaltung ohne
+SQL:** Planer verwalten Konten unter Einstellungen → Mitglieder (Person
+verknüpfen, Planer-Rechte, Einladungscodes); neue Mitglieder registrieren sich
+in der App und lösen einen Code ein (`redeem_invite`). Nur die allererste
+Versammlung + Koordinator-Mitgliedschaft entsteht per SQL (siehe Ende der
+`schema.sql`). Bereits eingerichtete Datenbanken einmalig mit den
+`supabase/migration-00*.sql`-Dateien nachziehen (in Nummern-Reihenfolge).
 
 ## Offene Punkte (aus dem Handoff)
 
 1. Echter Arbeitsheft-Import von jw.org (Format/Parsing, Nutzungsrechte klären)
 2. Auth + Mandantenfähigkeit: **umgesetzt** (Supabase Auth + Schema/RLS +
-   Daten-Persistenz, siehe oben) — offen: Einladungen/Mitglieder-Verwaltung in der App
+   Daten-Persistenz + Mitglieder-Verwaltung mit Einladungscodes, siehe oben)
 3. Mitteilungs-Versand (Push/E-Mail), S-89-konforme Benachrichtigung
 4. Konfliktprüfungen über Wochen hinweg (z. B. gleiche Person zu oft hintereinander)

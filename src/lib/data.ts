@@ -19,6 +19,8 @@ import {
 import type {
   Absence,
   ConfirmationMap,
+  Invite,
+  Member,
   Notification,
   NotificationType,
   Person,
@@ -78,6 +80,20 @@ interface NotificationRow {
 interface ConfirmationRow {
   task_key: string
   status: string
+}
+
+interface MemberRow {
+  user_id: string
+  person_id: string | null
+  planner: boolean
+  email: string
+}
+
+interface InviteRow {
+  id: string
+  code: string
+  person_id: string | null
+  planner: boolean
 }
 
 /** congregations.settings (JSONB) — versammlungsweite Einstellungen. */
@@ -187,6 +203,8 @@ export interface CongregationData {
   confirmations: ConfirmationMap
   reminders: Reminders
   congLang: string
+  members: Member[]
+  invites: Invite[]
 }
 
 export type LoadResult =
@@ -211,7 +229,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  const [cong, persons, services, weeks, absences, notifs, confs] = await Promise.all([
+  const [cong, persons, services, weeks, absences, notifs, confs, members, invites] = await Promise.all([
     supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -219,9 +237,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('absences').select('*').eq('congregation_id', congregationId).eq('user_id', userId).order('from_date'),
     supabase.from('notifications').select('*').eq('congregation_id', congregationId).order('created_at', { ascending: false }),
     supabase.from('confirmations').select('task_key, status').eq('congregation_id', congregationId),
+    // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
+    supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
+    supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
   ])
 
-  const firstErr = [cong, persons, services, weeks, absences, notifs, confs].find((r) => r.error)?.error
+  const firstErr = [cong, persons, services, weeks, absences, notifs, confs, members, invites].find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
 
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
@@ -257,6 +278,18 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     confirmations,
     reminders,
     congLang: settings.congLang ?? 'Deutsch',
+    members: ((members.data ?? []) as MemberRow[]).map((r) => ({
+      userId: r.user_id,
+      email: r.email,
+      personId: r.person_id,
+      planner: r.planner,
+    })),
+    invites: ((invites.data ?? []) as InviteRow[]).map((r) => ({
+      id: r.id,
+      code: r.code,
+      personId: r.person_id,
+      planner: r.planner,
+    })),
   }
 
   const empty = personList.length === 0 && weekList.length === 0
@@ -412,4 +445,58 @@ export function saveConfirmation(
       { onConflict: 'congregation_id,task_key,user_id' },
     ),
   )
+}
+
+/* ---- Mitglieder & Einladungen (nur Planer, RLS-geschützt) ---------------- */
+
+export function saveMemberRow(member: Member): void {
+  if (!supabase) return
+  void run(
+    supabase
+      .from('members')
+      .update({ person_id: member.personId, planner: member.planner })
+      .eq('user_id', member.userId),
+  )
+}
+
+export function deleteMemberRow(userId: string): void {
+  if (!supabase) return
+  void run(supabase.from('members').delete().eq('user_id', userId))
+}
+
+export function saveInvite(congregationId: string, invite: Invite): void {
+  if (!supabase) return
+  void run(
+    supabase.from('invites').insert({
+      id: invite.id,
+      congregation_id: congregationId,
+      code: invite.code,
+      person_id: invite.personId,
+      planner: invite.planner,
+    }),
+  )
+}
+
+export function deleteInviteRow(id: string): void {
+  if (!supabase) return
+  void run(supabase.from('invites').delete().eq('id', id))
+}
+
+/**
+ * Einladungscode einlösen (redeem_invite, security definer). Liefert null bei
+ * Erfolg, sonst den Fehlercode 'already-member' | 'invalid-code' | Meldung.
+ */
+export async function redeemInvite(code: string): Promise<string | null> {
+  if (!supabase) return 'invalid-code'
+  const { data, error } = await supabase.rpc('redeem_invite', { invite_code: code })
+  if (error) return error.message
+  return (data as string | null) ?? null
+}
+
+/** Gut lesbarer Einladungscode (6 Zeichen, ohne 0/O/1/I). */
+export function generateInviteCode(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  return [...bytes].map((b) => alphabet[b % alphabet.length]).join('')
 }

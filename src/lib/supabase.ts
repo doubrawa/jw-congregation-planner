@@ -23,6 +23,9 @@ export const isSupabaseConfigured = supabase !== null
 function authErrorText(message: string): string {
   if (message.includes('Invalid login credentials')) return 'E-Mail oder Passwort falsch'
   if (message.includes('Email not confirmed')) return 'E-Mail-Adresse noch nicht bestätigt'
+  if (message.includes('already registered')) return 'E-Mail ist bereits registriert'
+  if (message.includes('Password should be at least'))
+    return 'Passwort zu kurz (mindestens 6 Zeichen)'
   if (message.includes('rate limit')) return 'Zu viele Versuche — bitte kurz warten'
   return message
 }
@@ -34,14 +37,35 @@ export async function signIn(email: string, password: string): Promise<string | 
   return error ? authErrorText(error.message) : null
 }
 
+export type SignUpResult = { ok: true; needsConfirm: boolean } | { ok: false; error: string }
+
+/**
+ * Konto erstellen. Bei aktivierter E-Mail-Bestätigung (`needsConfirm`) muss
+ * der Nutzer erst den Mail-Link öffnen und sich dann anmelden; sonst ist er
+ * direkt eingeloggt (SIGNED_IN-Event übernimmt).
+ */
+export async function signUp(email: string, password: string): Promise<SignUpResult> {
+  if (!supabase) return { ok: true, needsConfirm: false }
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  if (error) return { ok: false, error: authErrorText(error.message) }
+  return { ok: true, needsConfirm: !data.session }
+}
+
 /** Passwort-Reset-Mail anstoßen; liefert null bei Erfolg, sonst Fehlertext. */
 export async function requestPasswordReset(email: string): Promise<string | null> {
   if (!supabase) return null
-  // TODO: eigene Recovery-Seite (PASSWORD_RECOVERY-Event + updateUser),
-  // sobald Persistenz steht; bis dahin führt der Mail-Link zurück in die App.
+  // Der Mail-Link führt zurück in die App; das PASSWORD_RECOVERY-Event
+  // öffnet dort die "Neues Passwort setzen"-Ansicht (RecoveryScreen).
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + window.location.pathname,
   })
+  return error ? authErrorText(error.message) : null
+}
+
+/** Neues Passwort setzen (Recovery-Session); null bei Erfolg, sonst Fehlertext. */
+export async function updatePassword(password: string): Promise<string | null> {
+  if (!supabase) return null
+  const { error } = await supabase.auth.updateUser({ password })
   return error ? authErrorText(error.message) : null
 }
 

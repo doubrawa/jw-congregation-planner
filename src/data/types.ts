@@ -129,6 +129,24 @@ export interface Absence {
   reason: string // optional
 }
 
+/* ---- Mitglieder & Einladungen (Produktionsmodus) ---- */
+
+/** Mitglied der Versammlung (Konto ↔ Person); Planer sehen alle. */
+export interface Member {
+  userId: string
+  email: string
+  personId: string | null
+  planner: boolean
+}
+
+/** Offener Einladungscode (nur Planer sichtbar). */
+export interface Invite {
+  id: string
+  code: string
+  personId: string | null
+  planner: boolean
+}
+
 /* ---- Persönliche Aufgaben & Bestätigungs-Flow ---- */
 
 /** Status einer dem Nutzer zugeteilten Aufgabe. */

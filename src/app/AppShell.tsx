@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { initials } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
-import { seedCongregation } from '../lib/data'
+import { redeemInvite, seedCongregation } from '../lib/data'
 import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -10,6 +11,7 @@ import { LanguageSheet } from '../components/LanguageSheet'
 import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
 import { LoginScreen } from '../login/LoginScreen'
+import { RecoveryScreen } from '../login/RecoveryScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
 import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
@@ -38,7 +40,8 @@ const PUBLISHER_SCREENS: readonly Screen[] = ['programm', 'aufgaben']
 export function AppShell() {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const isLogin = state.screen === 'login'
+  // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
+  const isLogin = state.screen === 'login' || state.recovery
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const navigate = (screen: Screen) => dispatch({ type: 'navigate', screen })
 
@@ -108,7 +111,11 @@ export function AppShell() {
 
       <main className={isLogin ? 'app-main is-login' : 'app-main'}>
         {isLogin ? (
-          <LoginScreen />
+          state.recovery ? (
+            <RecoveryScreen />
+          ) : (
+            <LoginScreen />
+          )
         ) : (
           <>
             <header className="mobile-header">
@@ -202,6 +209,9 @@ function Content() {
 /** Ladezustand und Sonderfälle der Datenanbindung. */
 function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'empty' }) {
   const { state, dispatch } = useApp()
+  const { t } = useT()
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
 
   const seed = async () => {
     if (!state.congregationId || !state.userId) return
@@ -219,47 +229,66 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
     if (state.userId) void loadAndHydrate(dispatch, state.userId)
   }
 
+  const redeem = async () => {
+    const uid = state.userId
+    if (!code.trim() || !uid || busy) return
+    setBusy(true)
+    const err = await redeemInvite(code)
+    if (err) {
+      setBusy(false)
+      const text =
+        err === 'invalid-code' ? t.invCodeInvalid : err === 'already-member' ? t.invAlreadyMember : err
+      dispatch({ type: 'showToast', text })
+      return
+    }
+    await loadAndHydrate(dispatch, uid) // ersetzt diese Ansicht durch die App
+  }
+
   return (
     <section className="screen status-view">
-      {kind === 'loading' && <p className="status-loading">Lädt …</p>}
+      {kind === 'loading' && <p className="status-loading">{t.laedt}</p>}
 
       {kind === 'no-membership' && (
         <>
-          <h1 className="status-title">Noch keiner Versammlung zugeordnet</h1>
-          <p className="status-text">
-            Dein Konto ist angemeldet, aber noch keiner Versammlung zugewiesen. Ein Koordinator muss
-            dich in Supabase mit einer Versammlung verknüpfen (Tabelle <code>members</code>).
-          </p>
+          <h1 className="status-title">{t.stKeineVers}</h1>
+          <p className="status-text">{t.stKeineVersText}</p>
+          <input
+            type="text"
+            className="field-input status-input"
+            placeholder={t.codePh}
+            aria-label={t.codePh}
+            autoCapitalize="characters"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+          />
+          <button type="button" className="btn-primary status-btn" onClick={redeem} disabled={busy}>
+            {busy ? `${t.codeEinloesen} …` : t.codeEinloesen}
+          </button>
         </>
       )}
 
       {kind === 'error' && (
         <>
-          <h1 className="status-title">Daten konnten nicht geladen werden</h1>
-          <p className="status-text">Es gab ein Problem beim Laden aus der Datenbank.</p>
+          <h1 className="status-title">{t.stFehler}</h1>
+          <p className="status-text">{t.stFehlerText}</p>
           <button type="button" className="btn-primary status-btn" onClick={retry}>
-            ERNEUT VERSUCHEN
+            {t.stErneut}
           </button>
         </>
       )}
 
       {kind === 'empty' && (
         <>
-          <h1 className="status-title">Versammlung ist noch leer</h1>
+          <h1 className="status-title">{t.stLeer}</h1>
           {state.planner ? (
             <>
-              <p className="status-text">
-                Es sind noch keine Personen und Wochen hinterlegt. Du kannst den Demo-Datensatz als
-                Startpunkt laden und danach anpassen.
-              </p>
+              <p className="status-text">{t.stLeerTextPlaner}</p>
               <button type="button" className="btn-primary status-btn" onClick={seed}>
-                DEMO-DATEN LADEN
+                {t.stDemoLaden}
               </button>
             </>
           ) : (
-            <p className="status-text">
-              Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Koordinator.
-            </p>
+            <p className="status-text">{t.stLeerText}</p>
           )}
         </>
       )}

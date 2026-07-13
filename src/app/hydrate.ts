@@ -17,6 +17,11 @@ export async function loadAndHydrate(dispatch: Dispatch<AppAction>, userId: stri
       payload: { ...res.data, congregationId: res.congregationId, userId: res.userId, empty: res.empty },
     })
   } else {
-    dispatch({ type: 'setDataStatus', status: res.reason === 'no-membership' ? 'no-membership' : 'error' })
+    // userId mitgeben: Retry und Code-Einlösen brauchen es ohne Hydration
+    dispatch({
+      type: 'setDataStatus',
+      status: res.reason === 'no-membership' ? 'no-membership' : 'error',
+      userId,
+    })
   }
 }

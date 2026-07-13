@@ -455,6 +455,15 @@
   border-radius: 5px;
 }
 
+.status-input {
+  display: block;
+  max-width: 280px;
+  margin: 20px auto 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
 .status-btn {
   max-width: 280px;
   margin: 20px auto 0;

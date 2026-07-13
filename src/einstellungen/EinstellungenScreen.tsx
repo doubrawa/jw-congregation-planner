@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
+import { generateInviteCode } from '../lib/data'
 import { CONG_TO_CODE } from '../i18n/langs'
 import { PRIV_KEY, type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -7,13 +8,16 @@ import type { QualificationKey, Service } from '../data/types'
 import './einstellungen.css'
 
 /**
- * Einstellungen (Screen 6, nur Planer): Versammlung, Hilfsdienste,
- * Sprache (Versammlungssprache-Sheet), Erinnerungen und Programm-Import.
+ * Einstellungen (Screen 6, nur Planer): Versammlung, Mitglieder & Einladungen
+ * (nur Produktionsmodus), Hilfsdienste, Sprache (Versammlungssprache-Sheet),
+ * Erinnerungen und Programm-Import.
  */
 export function EinstellungenScreen() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const [serviceName, setServiceName] = useState('')
+  const [invitePerson, setInvitePerson] = useState('')
+  const [invitePlanner, setInvitePlanner] = useState(false)
 
   const serviceSub = (service: Service): string => {
     if (service.groups) return t.gruppenRotation
@@ -55,6 +59,36 @@ export function EinstellungenScreen() {
     : state.imported
       ? t.alleImportiert
       : t.importBtn
+
+  const createInvite = () => {
+    dispatch({
+      type: 'addInvite',
+      invite: {
+        id: crypto.randomUUID(),
+        code: generateInviteCode(),
+        personId: invitePerson || null,
+        planner: invitePlanner,
+      },
+    })
+    setInvitePerson('')
+    setInvitePlanner(false)
+  }
+
+  const personName = (id: string | null): string => {
+    const person = state.persons.find((p) => p.id === id)
+    return person ? `${person.fn} ${person.ln}`.trim() : ''
+  }
+
+  const personOptions = (
+    <>
+      <option value="">{t.keinePersonOpt}</option>
+      {state.persons.map((p) => (
+        <option key={p.id} value={p.id}>
+          {`${p.fn} ${p.ln}`.trim() || '—'}
+        </option>
+      ))}
+    </>
+  )
 
   const progFallback = !CONG_TO_CODE[state.congLang]
 
@@ -98,6 +132,113 @@ export function EinstellungenScreen() {
           {t.speichern}
         </button>
       </div>
+
+      {state.dataStatus !== 'demo' && (
+        <div className="panel panel--pb16" data-farbe="neutral2">
+          <div className="panel-label">{t.mitgliederCard}</div>
+          <p className="panel-hint">{t.mitgliederDesc}</p>
+          {state.members.map((member) => {
+            const self = member.userId === state.userId
+            return (
+              <div key={member.userId} className="mem-row">
+                <div className="mem-main">
+                  <div className="mem-mail">
+                    {member.email || member.userId.slice(0, 8)}
+                    {self && <span className="mem-du">{t.duMarker}</span>}
+                  </div>
+                  <select
+                    className="mem-select"
+                    aria-label={t.nameLbl}
+                    value={member.personId ?? ''}
+                    onChange={(e) =>
+                      dispatch({
+                        type: 'updateMember',
+                        userId: member.userId,
+                        patch: { personId: e.target.value || null },
+                      })
+                    }
+                  >
+                    {personOptions}
+                  </select>
+                </div>
+                <div className="mem-controls">
+                  <span className="mem-planner-lbl">{t.planerLbl}</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={member.planner}
+                    aria-label={t.planerLbl}
+                    className={member.planner ? 'switch is-on' : 'switch'}
+                    disabled={self}
+                    onClick={() =>
+                      dispatch({
+                        type: 'updateMember',
+                        userId: member.userId,
+                        patch: { planner: !member.planner },
+                      })
+                    }
+                  >
+                    <span className="switch-knob" />
+                  </button>
+                  {!self && (
+                    <button
+                      type="button"
+                      className="svc-remove"
+                      aria-label="✕"
+                      onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          <div className="panel-label mem-inv-label">{t.einladungenLbl}</div>
+          <p className="panel-hint">{t.einladungenDesc}</p>
+          {state.invites.map((invite) => (
+            <div key={invite.id} className="svc-row">
+              <div>
+                <div className="mem-code">{invite.code}</div>
+                <div className="svc-sub">
+                  {personName(invite.personId) || t.ohnePerson}
+                  {invite.planner ? ` · ${t.planerLbl}` : ''}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="svc-remove"
+                aria-label="✕"
+                onClick={() => dispatch({ type: 'removeInvite', id: invite.id })}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <div className="mem-inv-form">
+            <select
+              className="mem-select"
+              aria-label={t.nameLbl}
+              value={invitePerson}
+              onChange={(e) => setInvitePerson(e.target.value)}
+            >
+              {personOptions}
+            </select>
+            <button
+              type="button"
+              className={invitePlanner ? 'role-chip is-active' : 'role-chip'}
+              aria-pressed={invitePlanner}
+              onClick={() => setInvitePlanner(!invitePlanner)}
+            >
+              {t.planerLbl}
+            </button>
+            <button type="button" className="svc-add-btn" onClick={createInvite}>
+              {t.codeErstellen}
+            </button>
+          </div>
+        </div>
+      )}
 
       <form className="panel panel--pb16" data-farbe="petrol" onSubmit={addService}>
         <div className="panel-label">{t.hilfsdienste}</div>

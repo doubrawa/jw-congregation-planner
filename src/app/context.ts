@@ -7,8 +7,10 @@ import { createContext, useContext, type Dispatch } from 'react'
 import type {
   Absence,
   ConfirmationMap,
+  Invite,
   Lang,
   MeetingTab,
+  Member,
   MyTask,
   Notification,
   Person,
@@ -55,6 +57,8 @@ export interface HydratePayload {
   confirmations: ConfirmationMap
   reminders: Reminders
   congLang: string
+  members: Member[]
+  invites: Invite[]
 }
 
 export interface AppState {
@@ -70,6 +74,9 @@ export interface AppState {
   personId: string | null // eigene Person (aus members.person_id); Demo: null
   dataStatus: DataStatus
   dataEmpty: boolean // geladen, aber Versammlung noch leer → Erstbefüllung anbieten
+  members: Member[] // Mitglieder-Verwaltung (Planer; Nicht-Planer: nur eigene Zeile)
+  invites: Invite[] // offene Einladungscodes (nur Planer)
+  recovery: boolean // Passwort-Reset-Ansicht aktiv (PASSWORD_RECOVERY)
   weeks: Week[]
   persons: Person[]
   services: Service[]
@@ -123,6 +130,13 @@ export type AppAction =
   | { type: 'addService'; service: Service }
   | { type: 'updateCongregation'; patch: Partial<Congregation> }
   | { type: 'saveCongregation' } // Toast + Persistenz der Stammdaten
+  // Mitglieder & Einladungen (nur Planer)
+  | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner'>> }
+  | { type: 'removeMember'; userId: string }
+  | { type: 'addInvite'; invite: Invite }
+  | { type: 'removeInvite'; id: string }
+  // Passwort-Reset (PASSWORD_RECOVERY)
+  | { type: 'setRecovery'; on: boolean }
   | { type: 'startImport' }
   | { type: 'finishImport' }
   | { type: 'assign'; name: string } // auf state.slotSel; "" = entfernen
@@ -148,7 +162,7 @@ export type AppAction =
   | { type: 'setCongLang'; name: string }
   // Persistenz / Hydration
   | { type: 'hydrate'; payload: HydratePayload }
-  | { type: 'setDataStatus'; status: DataStatus }
+  | { type: 'setDataStatus'; status: DataStatus; userId?: string } // userId: für Retry/Code-Einlösen ohne Hydration
   | { type: 'showToast'; text: string }
   | { type: 'hideToast' }
 

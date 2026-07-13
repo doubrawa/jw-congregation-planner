@@ -34,12 +34,16 @@ import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import {
   deleteAbsenceRow,
+  deleteInviteRow,
+  deleteMemberRow,
   deleteServiceRow,
   insertNotification,
   markNotificationsRead,
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
+  saveInvite,
+  saveMemberRow,
   savePerson,
   saveService,
   saveSettings,
@@ -152,6 +156,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         langSheetOpen: false,
         s89: null,
         confirmOpen: false,
+        recovery: false,
       }
     case 'navigate': {
       // Rechteprüfung wie im Prototyp: Nicht-Planer landen im Programm
@@ -238,6 +243,33 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, congregation: { ...state.congregation, ...action.patch } }
     case 'saveCongregation':
       return { ...state, toast: toastKey(state, 'toastGespeichert') }
+    case 'updateMember':
+      return {
+        ...state,
+        members: state.members.map((m) =>
+          m.userId === action.userId ? { ...m, ...action.patch } : m,
+        ),
+      }
+    case 'removeMember':
+      return {
+        ...state,
+        members: state.members.filter((m) => m.userId !== action.userId),
+        toast: toastKey(state, 'toastMitgliedEntfernt'),
+      }
+    case 'addInvite':
+      return {
+        ...state,
+        invites: [...state.invites, action.invite],
+        toast: toastKey(state, 'toastEinladungErstellt'),
+      }
+    case 'removeInvite':
+      return {
+        ...state,
+        invites: state.invites.filter((i) => i.id !== action.id),
+        toast: toastKey(state, 'toastEinladungGeloescht'),
+      }
+    case 'setRecovery':
+      return { ...state, recovery: action.on }
     case 'startImport':
       return state.importing || state.imported ? state : { ...state, importing: true }
     case 'finishImport': {
@@ -425,11 +457,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: p.confirmations,
         reminders: p.reminders,
         congLang: p.congLang,
+        members: p.members,
+        invites: p.invites,
         week: 0,
       }
     }
     case 'setDataStatus':
-      return { ...state, dataStatus: action.status }
+      return { ...state, dataStatus: action.status, userId: action.userId ?? state.userId }
     case 'showToast':
       return { ...state, toast: nextToast(state, action.text) }
     case 'hideToast':
@@ -465,6 +499,9 @@ function initialState(): AppState {
     personId: null,
     dataStatus: demo ? 'demo' : 'ready',
     dataEmpty: false,
+    members: [],
+    invites: [],
+    recovery: false,
     weeks: demo ? buildDemoWeeks() : [],
     persons: demo ? DEMO_PERSONS : [],
     services: demo ? DEMO_SERVICES : [],
@@ -561,6 +598,20 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     case 'saveCongregation':
       saveCongregationInfo(congId, next.congregation)
       break
+    case 'updateMember': {
+      const member = next.members.find((m) => m.userId === action.userId)
+      if (member) saveMemberRow(member)
+      break
+    }
+    case 'removeMember':
+      deleteMemberRow(action.userId)
+      break
+    case 'addInvite':
+      saveInvite(congId, action.invite)
+      break
+    case 'removeInvite':
+      deleteInviteRow(action.id)
+      break
   }
 
   // Jede Aktion, die eine Mitteilung vorne anfügt, in die DB spiegeln
@@ -599,6 +650,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') dispatch({ type: 'logout' })
+      else if (event === 'PASSWORD_RECOVERY') dispatch({ type: 'setRecovery', on: true })
       else if (event === 'SIGNED_IN' && session) void loadAndHydrate(dispatch, session.user.id)
     })
     return () => data.subscription.unsubscribe()

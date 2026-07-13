@@ -35,6 +35,7 @@ create table if not exists public.members (
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   person_id       uuid,                             -- optionale Verknüpfung zu persons
   planner         boolean not null default false,   -- sieht Planen/Personen/Einstellungen
+  email           text not null default '',         -- Anzeige im Mitglieder-Panel
   created_at      timestamptz not null default now()
 );
 
@@ -109,6 +110,19 @@ create table if not exists public.confirmations (
   unique (congregation_id, task_key, user_id)
 );
 
+-- Einladungscodes: Planer erstellen sie, registrierte Nutzer treten damit der
+-- Versammlung bei (redeem_invite unten) — kein SQL für neue Mitglieder nötig.
+create table if not exists public.invites (
+  id              uuid primary key default gen_random_uuid(),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  code            text not null unique,             -- z. B. "K7TQ4M" (Großbuchstaben)
+  person_id       uuid references public.persons (id) on delete set null,
+  planner         boolean not null default false,
+  created_at      timestamptz not null default now(),
+  redeemed_by     uuid references auth.users (id) on delete set null,
+  redeemed_at     timestamptz
+);
+
 -- ---------------------------------------------------------------------------
 -- RLS-Hilfsfunktionen (security definer, um Rekursion über members zu vermeiden)
 -- ---------------------------------------------------------------------------
@@ -144,6 +158,7 @@ alter table public.weeks         enable row level security;
 alter table public.absences      enable row level security;
 alter table public.notifications enable row level security;
 alter table public.confirmations enable row level security;
+alter table public.invites       enable row level security;
 
 -- Versammlung: Mitglieder lesen ihre eigene; ändern nur Planer.
 drop policy if exists congregations_select on public.congregations;
@@ -154,12 +169,27 @@ drop policy if exists congregations_update on public.congregations;
 create policy congregations_update on public.congregations
   for update using (id = public.my_congregation_id() and public.is_planner());
 
--- Mitglieder: eigene Zeile lesen; Planer sehen alle ihrer Versammlung.
+-- Mitglieder: eigene Zeile lesen; Planer sehen und verwalten alle ihrer
+-- Versammlung (sich selbst entfernen ist gesperrt).
 drop policy if exists members_select on public.members;
 create policy members_select on public.members
   for select using (
     user_id = auth.uid()
     or (congregation_id = public.my_congregation_id() and public.is_planner())
+  );
+
+drop policy if exists members_update on public.members;
+create policy members_update on public.members
+  for update
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+drop policy if exists members_delete on public.members;
+create policy members_delete on public.members
+  for delete using (
+    congregation_id = public.my_congregation_id()
+    and public.is_planner()
+    and user_id <> auth.uid()
   );
 
 -- Personen / Dienste / Wochen: Versammlung liest, Planer schreibt.
@@ -246,6 +276,54 @@ create policy confirmations_write on public.confirmations
   using (congregation_id = public.my_congregation_id() and user_id = auth.uid())
   with check (congregation_id = public.my_congregation_id() and user_id = auth.uid());
 
+-- Einladungen: nur Planer der Versammlung (Einlösen läuft über redeem_invite).
+drop policy if exists invites_all on public.invites;
+create policy invites_all on public.invites
+  for all
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+-- ---------------------------------------------------------------------------
+-- Beitritt per Einladungscode (security definer: der Beitretende hat noch
+-- keine Mitgliedschaft und könnte invites/members selbst nicht schreiben).
+-- Rückgabe: null = Erfolg, sonst Fehlercode ('already-member' | 'invalid-code').
+-- ---------------------------------------------------------------------------
+
+create or replace function public.redeem_invite(invite_code text)
+returns text
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  inv public.invites%rowtype;
+  uid uuid := auth.uid();
+begin
+  if uid is null then
+    return 'invalid-code';
+  end if;
+  if exists (select 1 from public.members where user_id = uid) then
+    return 'already-member';
+  end if;
+  select * into inv
+  from public.invites
+  where code = upper(trim(invite_code)) and redeemed_by is null;
+  if not found then
+    return 'invalid-code';
+  end if;
+  insert into public.members (user_id, congregation_id, person_id, planner, email)
+  values (uid, inv.congregation_id, inv.person_id, inv.planner,
+          coalesce(auth.jwt() ->> 'email', ''));
+  update public.invites
+  set redeemed_by = uid, redeemed_at = now()
+  where id = inv.id;
+  return null;
+end;
+$$;
+
+revoke all on function public.redeem_invite(text) from public;
+revoke all on function public.redeem_invite(text) from anon;
+grant execute on function public.redeem_invite(text) to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Erste Einrichtung (Beispiel — Werte anpassen und einmalig ausführen)
 -- ---------------------------------------------------------------------------
@@ -253,8 +331,11 @@ create policy confirmations_write on public.confirmations
 --    insert into public.congregations (name, hall, meeting_times)
 --    values ('Musterstadt', 'Hauptstraße 12', 'Di 19:00 · So 10:00');
 --
--- 2. Benutzer in Supabase anlegen (Dashboard → Authentication → Add user),
---    dann mit der Versammlung verknüpfen (Planer-Rechte für Koordinator):
---    insert into public.members (user_id, congregation_id, planner)
---    values ('<auth-user-uuid>', '<congregation-uuid>', true);
+-- 2. Ersten Benutzer (Koordinator) in Supabase anlegen (Dashboard →
+--    Authentication → Add user), dann mit der Versammlung verknüpfen:
+--    insert into public.members (user_id, congregation_id, planner, email)
+--    values ('<auth-user-uuid>', '<congregation-uuid>', true, '<email>');
+--
+-- Alle weiteren Mitglieder brauchen kein SQL: In der App registrieren und
+-- einen Einladungscode einlösen (Einstellungen → Mitglieder → Einladungen).
 -- =============================================================================
