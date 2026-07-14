@@ -15,12 +15,14 @@ import { RecoveryScreen } from '../login/RecoveryScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
 import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
+import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
 import { loadAndHydrate } from './hydrate'
 import { NotificationsPanel } from './NotificationsPanel'
 import '../components/components.css'
 import './shell.css'
+import './rtl.css'
 
 /**
  * App-Gerüst: Schreibtisch-Hintergrund, App-Spalte (mobil ≤ 430 px zentriert,
@@ -34,8 +36,9 @@ const PLANNER_SCREENS: readonly Screen[] = [
   'planen',
   'personen',
   'einstellungen',
+  'profil',
 ]
-const PUBLISHER_SCREENS: readonly Screen[] = ['programm', 'aufgaben']
+const PUBLISHER_SCREENS: readonly Screen[] = ['programm', 'aufgaben', 'profil']
 
 export function AppShell() {
   const { state, dispatch } = useApp()
@@ -58,6 +61,8 @@ export function AppShell() {
         return t.navPersonen
       case 'einstellungen':
         return t.navEinstellungen
+      case 'profil':
+        return t.navProfil
       default:
         return ''
     }
@@ -125,8 +130,8 @@ export function AppShell() {
                 <button
                   type="button"
                   className="avatar avatar--ink avatar--28"
-                  aria-label="Meine Aufgaben"
-                  onClick={() => navigate('aufgaben')}
+                  aria-label={t.navProfil}
+                  onClick={() => navigate('profil')}
                 >
                   {me ? initials(me) : '–'}
                 </button>
@@ -308,6 +313,8 @@ function ActiveScreen({ screen }: { screen: Screen }) {
       return <PersonenScreen />
     case 'einstellungen':
       return <EinstellungenScreen />
+    case 'profil':
+      return <ProfilScreen />
     case 'login':
       return null // Login rendert außerhalb von ActiveScreen
   }

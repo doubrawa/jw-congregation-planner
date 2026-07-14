@@ -20,6 +20,7 @@ export type Lang =
   | 'de' | 'en' | 'es' | 'fr' | 'it' | 'pt' | 'nl' | 'pl' | 'ru' | 'uk'
   | 'ro' | 'el' | 'cs' | 'sk' | 'hu' | 'hr' | 'sr' | 'bg' | 'sv' | 'da'
   | 'fi' | 'no' | 'tr' | 'zh' | 'ja' | 'ko' | 'id' | 'tl' | 'vi' | 'sw'
+  | 'ar' | 'he' | 'fa' | 'ur' // RTL-Sprachen (Rechts-nach-links)
 
 /** Sichtbare Bereiche. Die letzten drei nur für Planer/Koordinatoren. */
 export type Screen =
@@ -29,6 +30,7 @@ export type Screen =
   | 'planen'
   | 'personen'
   | 'einstellungen'
+  | 'profil'
 
 /** Meeting-Tab: Zusammenkunft unter der Woche | Wochenende. */
 export type MeetingTab = 'mid' | 'we'

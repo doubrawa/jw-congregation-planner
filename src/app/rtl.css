@@ -1,0 +1,48 @@
+/* =============================================================================
+ * RTL / Bidi — Rechts-nach-links-Unterstützung
+ * =============================================================================
+ * Das Layout spiegelt sich automatisch über `dir="rtl"` (auf <html> gesetzt in
+ * store.tsx, sobald die App-Sprache RTL ist) + Flexbox/Grid. Hier nur, was sich
+ * nicht von selbst ergibt:
+ *
+ * 1) Bidi: Programm-Inhalt (Titel, Lieder, Daten, Rahmen, Namen) folgt seiner
+ *    EIGENEN Schriftrichtung — CSS-Äquivalent zu dir="auto". So bleibt z. B.
+ *    deutscher Inhalt in einer arabischen (RTL-)Oberfläche korrekt LTR (Zahlen/
+ *    Daten werden nicht verdreht) und arabischer Inhalt in einer LTR-Oberfläche
+ *    korrekt RTL. Gilt für Content-Textknoten, NICHT für reine UI-Labels.
+ * 2) Richtungsabhängige Icons (Wochen-Pfeile ‹ ›) werden in RTL gespiegelt. */
+
+.panel-label,
+.panel-song,
+.prog-week-range,
+.prog-week-book,
+.prog-meta,
+.prog-title,
+.prog-item-meta,
+.prog-helper-names,
+.prog-name,
+.prog-role,
+.prog-footer > span,
+.plan-week-range,
+.plan-item-title,
+.plan-item-meta,
+.plan-conflict-row,
+.auf-title,
+.auf-date,
+.abs-range,
+.cand-name,
+.cand-sub,
+.sheet-current,
+.sheet-sub,
+.sheet-title {
+  unicode-bidi: plaintext;
+}
+
+/* Wochen-Blätter-Pfeile in RTL spiegeln: Button-Positionen tauschen (zurück
+   rechts, weiter links) UND Glyphen kippen, damit beide nach außen zeigen. */
+[dir='rtl'] .week-nav {
+  flex-direction: row-reverse;
+}
+[dir='rtl'] .week-arrow {
+  transform: scaleX(-1);
+}

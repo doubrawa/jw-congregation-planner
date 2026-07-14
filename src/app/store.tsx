@@ -49,6 +49,7 @@ import {
   saveSettings,
   saveWeek,
 } from '../lib/data'
+import { APP_LANGS, isRTL } from '../i18n/langs'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Lang, Notification, NotificationType, Screen, Theme } from '../data/types'
 import { AppContext, type AppAction, type AppState } from './context'
@@ -498,15 +499,37 @@ function getInitialTheme(): Theme {
 
 function getInitialLang(): Lang {
   const stored = localStorage.getItem('lang')
-  return stored === 'en' || stored === 'es' || stored === 'fr' ? stored : 'de'
+  return APP_LANGS.some((l) => l.code === stored) ? (stored as Lang) : 'de'
+}
+
+/**
+ * Nur im Dev-Build: erlaubt das direkte Anspringen eines Screens/einer Sprache
+ * über den URL-Hash `#s=<screen>&l=<lang>&c=<congLang>` — für Headless-
+ * Screenshots (überspringt den Login im Demo-Modus). Im Production-Build wird
+ * dieser Zweig via `import.meta.env.DEV` entfernt.
+ */
+function parseDebugHash(): { screen?: Screen; lang?: Lang; congLang?: string } | null {
+  const raw = location.hash.replace(/^#/, '')
+  if (!raw) return null
+  const p = new URLSearchParams(raw)
+  const out: { screen?: Screen; lang?: Lang; congLang?: string } = {}
+  const s = p.get('s')
+  if (s) out.screen = s as Screen
+  const l = p.get('l')
+  if (l) out.lang = l as Lang
+  const c = p.get('c')
+  if (c) out.congLang = c
+  return Object.keys(out).length ? out : null
 }
 
 function initialState(): AppState {
   // Konfiguriert (Supabase): leerer Start, Daten kommen per Hydration nach dem
-  // Login. Demo-Modus: In-Memory-Demo-Daten wie bisher.
-  const demo = !isSupabaseConfigured
+  // Login. Demo-Modus: In-Memory-Demo-Daten wie bisher. Ein Debug-Hash erzwingt
+  // im Dev-Build zusätzlich den Demo-Modus (Daten sofort da, ohne Login/Netz).
+  const debug = import.meta.env.DEV ? parseDebugHash() : null
+  const demo = !isSupabaseConfigured || debug != null
   return {
-    screen: 'login',
+    screen: debug?.screen ?? 'login',
     week: 0,
     tab: 'mid',
     theme: getInitialTheme(),
@@ -536,9 +559,9 @@ function initialState(): AppState {
     confirmOpen: false,
     s89: null,
     reminders: DEMO_REMINDERS,
-    lang: getInitialLang(),
+    lang: debug?.lang ?? getInitialLang(),
     langSheetOpen: false,
-    congLang: 'Deutsch',
+    congLang: debug?.congLang ?? 'Deutsch',
     langSearch: '',
     toast: null,
   }
@@ -681,10 +704,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('theme', state.theme)
   }, [state.theme])
 
-  // App-Sprache merken
+  // App-Sprache merken + Schreibrichtung (RTL für Arabisch/Hebräisch/…)
   useEffect(() => {
     localStorage.setItem('lang', state.lang)
     document.documentElement.lang = state.lang
+    document.documentElement.dir = isRTL(state.lang) ? 'rtl' : 'ltr'
   }, [state.lang])
 
   // Toast automatisch ausblenden (2.4 s wie im Prototyp)

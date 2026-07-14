@@ -48,7 +48,19 @@ export const APP_LANGS: ReadonlyArray<{ code: Lang; label: string }> = [
   { code: 'tl', label: 'Tagalog' },
   { code: 'vi', label: 'Tiếng Việt' },
   { code: 'sw', label: 'Kiswahili' },
+  { code: 'ar', label: 'العربية' },
+  { code: 'he', label: 'עברית' },
+  { code: 'fa', label: 'فارسی' },
+  { code: 'ur', label: 'اردو' },
 ]
+
+/** RTL-Sprachen (Rechts-nach-links); steuern dir="rtl" + gespiegeltes Layout. */
+export const RTL_LANGS: ReadonlySet<Lang> = new Set<Lang>(['ar', 'he', 'fa', 'ur'])
+
+/** true, wenn die App-Sprache von rechts nach links läuft. */
+export function isRTL(lang: Lang): boolean {
+  return RTL_LANGS.has(lang)
+}
 
 /** Versammlungssprache (deutscher Name) -> Programmuebersetzungs-Code (nur Demo). */
 export const CONG_TO_CODE: Record<string, Lang | undefined> = {
@@ -66,6 +78,7 @@ export const LOCALES: Record<Lang, string> = {
   hr: 'hr-HR', sr: 'sr-Latn-RS', bg: 'bg-BG', sv: 'sv-SE', da: 'da-DK',
   fi: 'fi-FI', no: 'nb-NO', tr: 'tr-TR', zh: 'zh-CN', ja: 'ja-JP',
   ko: 'ko-KR', id: 'id-ID', tl: 'fil-PH', vi: 'vi-VN', sw: 'sw-KE',
+  ar: 'ar', he: 'he-IL', fa: 'fa-IR', ur: 'ur-PK',
 }
 
 /**
