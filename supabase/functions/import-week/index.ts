@@ -19,6 +19,7 @@
 // =============================================================================
 
 import { parseWorkbookWeek, type ImportedWeek } from './parse.ts'
+import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
 
 declare const Deno: { serve: (handler: (req: Request) => Promise<Response> | Response) => void }
 
@@ -29,11 +30,6 @@ const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-const MONTHS: Record<string, number> = {
-  januar: 1, februar: 2, maerz: 3, 'märz': 3, april: 4, mai: 5, juni: 6,
-  juli: 7, august: 8, september: 9, oktober: 10, november: 11, dezember: 12,
 }
 
 const TTL = 10 * 60 * 1000
@@ -106,66 +102,52 @@ function localizedUrl(germanHtml: string, lang: string): string | null {
   return path.startsWith('http') ? path : BASE + path
 }
 
-const MONTH_SLUG = [
-  'januar', 'februar', 'maerz', 'april', 'mai', 'juni',
-  'juli', 'august', 'september', 'oktober', 'november', 'dezember',
-]
-
-function cleanText(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
-    .replace(/&nbsp;|&shy;|­/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/** Studienausgabe-Slugs, die die Studienwoche enthalten könnten (Monat −2/−3). */
-function studyIssueSlugs(start: Date): string[] {
-  const slugs: string[] = []
-  for (const off of [2, 3]) {
-    const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() - off, 1))
-    slugs.push(`wachtturm-studienausgabe-${MONTH_SLUG[d.getUTCMonth()]}-${d.getUTCFullYear()}`)
-  }
-  return slugs
-}
-
-/** Studienartikel einer Ausgabe: Woche (contextTitle) + Titel (h2>a), in Reihenfolge. */
-function studySynopses(html: string): { day: number; mon: number; title: string }[] {
-  const out: { day: number; mon: number; title: string }[] = []
-  const re = /<p class="contextTitle">([\s\S]*?)<\/p>[\s\S]*?<h2>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/g
-  let m: RegExpExecArray | null
-  while ((m = re.exec(html))) {
-    const week = cleanText(m[1])
-    const dayMatch = week.match(/(\d{1,2})/)
-    if (!dayMatch) continue
-    let mon = 0
-    for (const w of week.toLowerCase().match(/[a-zäöü]+/g) ?? []) {
-      if (MONTHS[w]) { mon = MONTHS[w]; break }
-    }
-    if (!mon) continue
-    out.push({ day: Number(dayMatch[1]), mon, title: cleanText(m[2]) })
-  }
-  return out
+interface StudyArticle {
+  title: string | null
+  songOpen: string | null
+  songClose: string | null
 }
 
 /**
- * Titel des Wachtturm-Studienartikels für die Wochenend-Studienwoche (nur DE).
- * Die Studienausgabe erscheint ~2 Monate vor der Behandlung; wir probieren die
- * beiden infrage kommenden Ausgaben und matchen die Woche über Tag + Monat des
- * (sprachunabhängigen) ISO-Startdatums. Nicht gefunden → Vorlage bleibt.
+ * Wachtturm-Studienartikel für die Wochenend-Studienwoche — Titel + beide Lieder
+ * (vor dem Studium / Schluss), in der Versammlungssprache. Die Studienausgabe
+ * erscheint ~2 Monate vor der Behandlung; wir probieren die beiden infrage
+ * kommenden Ausgaben, ankern die Artikelliste immer auf Deutsch, matchen die
+ * Woche über Tag + Monat des (sprachunabhängigen) ISO-Startdatums und holen die
+ * Artikelseite über den „Lesen in“-Umschalter in die Zielsprache. Fehlt die
+ * Sprache oder der (noch nicht veröffentlichte) Inhalt, bleiben die Felder null
+ * und die editierbare Vorlage steht.
  */
-async function studyArticleTitle(start: Date): Promise<string | null> {
+async function studyArticle(start: Date, lang: string): Promise<StudyArticle | null> {
   const day = start.getUTCDate()
   const mon = start.getUTCMonth() + 1
+  const empty: StudyArticle = { title: null, songOpen: null, songClose: null }
   for (const slug of studyIssueSlugs(start)) {
+    let overview: string
     try {
-      const html = await fetchText(`${BASE}/de/bibliothek/zeitschriften/${slug}/`)
-      const hit = studySynopses(html).find((s) => s.day === day && s.mon === mon)
-      if (hit) return hit.title
+      overview = await fetchText(`${BASE}/de/bibliothek/zeitschriften/${slug}/`)
     } catch {
-      // Ausgabe evtl. noch nicht online — nächsten Kandidaten versuchen
+      continue // Ausgabe evtl. noch nicht online — nächsten Kandidaten versuchen
+    }
+    const hit = studySynopses(overview).find((s) => s.day === day && s.mon === mon)
+    if (!hit) continue
+
+    const germanHtml = await fetchText(BASE + hit.href)
+    let html = germanHtml
+    if (lang && lang !== 'de') {
+      const loc = localizedUrl(germanHtml, lang)
+      if (!loc) return empty // Sprache für diesen Artikel (noch) nicht verfügbar
+      try {
+        html = await fetchText(loc)
+      } catch {
+        return empty
+      }
+    }
+    const found = songs(html)
+    return {
+      title: articleTitle(html),
+      songOpen: found[0] ?? null,
+      songClose: found.length > 1 ? found[found.length - 1] : null,
     }
   }
   return null
@@ -214,15 +196,21 @@ Deno.serve(async (req: Request) => {
     if (start) week.start = start.toISOString().slice(0, 10)
     week.lang = lang
 
-    // Wochenend-Wachtturm-Studienartikel automatisch eintragen (nur DE; sonst
-    // bleibt die editierbare Vorlage). Der öffentliche Vortrag wird lokal
-    // vergeben und steht nicht auf jw.org — bleibt Platzhalter.
-    if (lang === 'de' && start) {
-      const title = await studyArticleTitle(start)
-      if (title) {
+    // Wochenend-Wachtturm-Studienartikel automatisch eintragen: Titel + Lied vor
+    // dem Studium (WACHTTURM-STUDIUM) und Schlusslied (ABSCHLUSS), in der
+    // Versammlungssprache. Der öffentliche Vortrag wird lokal vergeben und steht
+    // nicht auf jw.org — bleibt Platzhalter.
+    if (start) {
+      const study = await studyArticle(start, lang)
+      if (study) {
         const wt = week.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')
         for (const it of wt?.items ?? []) {
-          if ('names' in it) { it.title = title; break }
+          if ('song' in it && study.songOpen) it.song = study.songOpen
+          else if ('names' in it && study.title) it.title = study.title
+        }
+        if (study.songClose) {
+          const abschluss = week.we.sections.find((s) => s.label === 'ABSCHLUSS')
+          abschluss?.items.unshift({ song: study.songClose })
         }
       }
     }

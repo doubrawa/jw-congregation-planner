@@ -179,11 +179,16 @@ ermittelt automatisch die nächste kommende Woche (Übersicht → Zeitraum → W
 lädt die Seite (ein Abruf je Seite, kurzer Cache, klarer User-Agent) und gibt
 die Woche als `Week`-JSON zurück. Nur die Zusammenkunft **unter der Woche**
 steht im Arbeitsheft; das **Wochenende** (Öffentlicher Vortrag +
-Wachtturm-Studium) kommt als editierbare Vorlage. Beim **deutschen** Import wird
-der Titel des **Wachtturm-Studienartikels** automatisch aus der Studienausgabe
-auf jw.org ergänzt (Zuordnung über das Startdatum der Woche); der öffentliche
-Vortrag wird lokal vergeben und bleibt Platzhalter. Für andere Sprachen bleibt
-der Studienartikel-Titel vorerst Platzhalter.
+Wachtturm-Studium) kommt als editierbare Vorlage. Der **Wachtturm-Studienartikel**
+wird automatisch aus der Studienausgabe auf jw.org ergänzt — **in der
+Versammlungssprache** (alle ~480 Sprachen): **Titel**, das **Lied vor dem
+Studium** und das **Schlusslied**. Die Zuordnung läuft immer über den deutschen
+Studienausgabe-Anker und das Startdatum der Woche; die lokalisierte Artikelseite
+wird über den „Lesen in“-Umschalter geholt. Erkennung sprachunabhängig über
+Struktur (Synopsis-Karten, `pub-sjj`-Liederbuchsymbol, `h1[data-pid]`). Fehlt die
+Sprache oder ist der Volltext (bei erst in ~2 Monaten behandelten Artikeln in
+kleineren Sprachen) noch nicht online, bleibt das jeweilige Feld editierbarer
+Platzhalter. Der öffentliche Vortrag wird lokal vergeben und bleibt Platzhalter.
 
 **Mehrsprachig (~480 Sprachen):** Die Woche wird in der eingestellten
 **Versammlungssprache** geholt. Die Function ermittelt die Woche immer zuerst
