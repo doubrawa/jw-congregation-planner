@@ -299,18 +299,18 @@ function finalizeParts(recs: PartRec[]): void {
     const min = firstParen(time)
 
     if (color === 'teal' && rec === lastOf.teal) {
-      // letzter Schätze-Punkt = Bibellesung (Leser). Schriftstelle anhängen.
+      // letzter Schätze-Punkt = Bibellesung. Schriftstelle anhängen.
       const scripture = stripParens(time)
       part.title = scripture ? `${title} · ${scripture}` : title
       part.meta = joinMeta(min, sourceOf(time))
-      part.names = [{ name: '', bereichsKey: 'lesen' }]
+      part.names = [{ name: '', bereichsKey: 'bibellesung' }]
     } else if (color === 'maroon' && rec === lastOf.maroon) {
       // letzter Unser-Leben-Punkt = Versammlungsbibelstudium (Leiter + Leser)
       part.title = title
       part.meta = joinMeta(min, sourceOf(time) || stripParens(time)) // Quelle oft klammerlos
       part.names = [
         { name: '', rolle: 'Leiter', bereichsKey: 'studium' },
-        { name: '', rolle: 'Leser', bereichsKey: 'lesen' },
+        { name: '', rolle: 'Leser', bereichsKey: 'leser' },
       ]
     } else {
       part.title = title
@@ -339,7 +339,7 @@ function weekendTemplate(range: string): ImportedMeeting {
     sections: [
       { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitz' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
       { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
-      { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'lesen' }] }] },
+      { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
       { label: 'ABSCHLUSS', farbe: 'neutral', items: [{ title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
     ],
     helpers: {},

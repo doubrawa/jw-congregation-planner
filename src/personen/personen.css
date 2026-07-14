@@ -133,6 +133,11 @@
   border-bottom: 1px solid var(--panel-hair);
 }
 
+/* Für Schwestern gesperrte Bereiche (nur Brüder). */
+.priv-row--locked {
+  opacity: 0.4;
+}
+
 .priv-label {
   font-size: 13px;
   font-weight: 500;

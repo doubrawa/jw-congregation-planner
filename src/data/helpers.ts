@@ -3,7 +3,7 @@
  * Regeln stammen aus der Prototyp-Logik (docs/design-handoff).
  */
 
-import { ROLE_LABEL } from './constants'
+import { BROTHERS_ONLY, ROLE_LABEL } from './constants'
 import type { Person, ProgramItem, QualificationKey, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
@@ -26,9 +26,15 @@ export function roleLabel(p: Person): string {
   return p.female && p.role === 'verkuendiger' ? `${label}in` : label
 }
 
-/** Qualifikationsprüfung; unbekannte Bereichs-Keys gelten als nicht erfüllt. */
+/**
+ * Qualifikationsprüfung; unbekannte Bereichs-Keys gelten als nicht erfüllt.
+ * Schwestern sind für brüder-only-Bereiche (alle außer Schulungsaufgaben) nicht
+ * qualifiziert — greift bei Auto- und manueller Zuteilung.
+ */
 export function isQualified(p: Person, priv: string): boolean {
-  return priv in p.priv && Boolean(p.priv[priv as QualificationKey])
+  if (!(priv in p.priv) || !p.priv[priv as QualificationKey]) return false
+  if (p.female && BROTHERS_ONLY.has(priv as QualificationKey)) return false
+  return true
 }
 
 /**

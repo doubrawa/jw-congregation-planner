@@ -13,12 +13,14 @@ const EMPTY_PRIV: Person['priv'] = {
   vorsitz: false,
   vortrag: false,
   gebet: false,
-  lesen: false,
+  bibellesung: false,
+  leser: false,
   schulung: false,
   studium: false,
   mikrofon: false,
   ton: false,
   ordner: false,
+  zoomordner: false,
 }
 
 /**
@@ -154,6 +156,27 @@ function PersonDetail({ person }: { person: Person }) {
           </div>
         ))}
         <div className="pers-role-block">
+          <div className="field-label">{t.geschlecht}</div>
+          <div className="role-chips">
+            <button
+              type="button"
+              className={!person.female ? 'role-chip is-active' : 'role-chip'}
+              aria-pressed={!person.female}
+              onClick={() => update({ female: false })}
+            >
+              {t.bruder}
+            </button>
+            <button
+              type="button"
+              className={person.female ? 'role-chip is-active' : 'role-chip'}
+              aria-pressed={Boolean(person.female)}
+              onClick={() => update({ female: true })}
+            >
+              {t.schwester}
+            </button>
+          </div>
+        </div>
+        <div className="pers-role-block">
           <div className="field-label">{t.rolle}</div>
           <div className="role-chips">
             {ROLE_ORDER.map((role) => (
@@ -208,15 +231,18 @@ function PrivToggle({
   update: (patch: Partial<Person>) => void
 }) {
   const { t } = useT()
-  const on = Boolean(person.priv[qkey])
+  // Schwestern können nur Schulungsaufgaben — alle anderen Bereiche gesperrt.
+  const locked = Boolean(person.female) && qkey !== 'schulung'
+  const on = !locked && Boolean(person.priv[qkey])
   return (
-    <div className="priv-row">
+    <div className={locked ? 'priv-row priv-row--locked' : 'priv-row'}>
       <span className="priv-label">{t[PRIV_KEY[qkey]]}</span>
       <button
         type="button"
         role="switch"
         aria-checked={on}
         aria-label={t[PRIV_KEY[qkey]]}
+        disabled={locked}
         className={on ? 'switch is-on' : 'switch'}
         onClick={() => update({ priv: { ...person.priv, [qkey]: !on } })}
       >

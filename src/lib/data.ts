@@ -111,6 +111,33 @@ const asNotifType = (t: string): NotificationType =>
 
 /* ---- Mapper Row ↔ App ---------------------------------------------------- */
 
+/**
+ * Migriert gespeicherte Qualifikationen auf das aktuelle Schema: das frühere
+ * kombinierte `lesen` wird auf `bibellesung`+`leser` gespiegelt; fehlende (neue)
+ * Bereiche wie `zoomordner` sind false. Beim nächsten Speichern wird das
+ * migrierte Schema persistiert.
+ */
+function normalizePriv(raw: Qualifications): Qualifications {
+  const r = raw as unknown as Record<string, unknown>
+  const lesen = Boolean(r.lesen)
+  const priv: Qualifications = {
+    vorsitz: Boolean(r.vorsitz),
+    vortrag: Boolean(r.vortrag),
+    gebet: Boolean(r.gebet),
+    bibellesung: Boolean(r.bibellesung ?? lesen),
+    leser: Boolean(r.leser ?? lesen),
+    schulung: Boolean(r.schulung),
+    studium: Boolean(r.studium),
+    mikrofon: Boolean(r.mikrofon),
+    ton: Boolean(r.ton),
+    ordner: Boolean(r.ordner),
+    zoomordner: Boolean(r.zoomordner),
+  }
+  if (r.wtLeiter) priv.wtLeiter = true
+  if (r.wtVertreter) priv.wtVertreter = true
+  return priv
+}
+
 function personFromRow(r: PersonRow): Person {
   return {
     id: r.id,
@@ -121,7 +148,7 @@ function personFromRow(r: PersonRow): Person {
     tel: r.tel,
     mail: r.mail,
     absent: r.absent ?? [],
-    priv: r.priv,
+    priv: normalizePriv(r.priv),
   }
 }
 

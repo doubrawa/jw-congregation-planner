@@ -19,28 +19,50 @@ export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   vorsitz: 'Vorsitz',
   vortrag: 'Vorträge',
   gebet: 'Gebete',
-  lesen: 'Bibellesung / Leser',
+  bibellesung: 'Bibellesung',
+  leser: 'Leser',
   schulung: 'Schulungsaufgaben',
   studium: 'Studium leiten',
   mikrofon: 'Mikrofone',
   ton: 'Ton / Video',
   ordner: 'Ordner / Eingang',
+  zoomordner: 'Zoom-Ordner',
   wtLeiter: 'Wachtturm-Studium-Leiter',
   wtVertreter: 'Wachtturm-Studium-Vertreter',
 }
 
-/** Die 9 slot-relevanten Aufgabenbereiche. */
+/** Die slot-relevanten Aufgabenbereiche (Toggle-Reihenfolge im Detail). */
 export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'vorsitz',
   'vortrag',
   'gebet',
-  'lesen',
+  'bibellesung',
+  'leser',
   'schulung',
   'studium',
   'mikrofon',
   'ton',
   'ordner',
+  'zoomordner',
 ]
+
+/**
+ * Aufgabenbereiche, die laut den Anweisungen für die Zusammenkunft nur getaufte
+ * Brüder ausführen — also alle außer den Schulungsaufgaben (die auch Schwestern
+ * übernehmen). Steuert die Geschlechts-Prüfung bei der Zuteilung (isQualified).
+ */
+export const BROTHERS_ONLY: ReadonlySet<QualificationKey> = new Set<QualificationKey>([
+  'vorsitz',
+  'vortrag',
+  'gebet',
+  'bibellesung',
+  'leser',
+  'studium',
+  'mikrofon',
+  'ton',
+  'ordner',
+  'zoomordner',
+])
 
 /** Feste Rollen (fixer Leiter/Vertreter) — eigener Block im Personen-Detail. */
 export const WT_ROLE_ORDER: readonly QualificationKey[] = ['wtLeiter', 'wtVertreter']

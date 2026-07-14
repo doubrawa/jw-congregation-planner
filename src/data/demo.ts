@@ -10,6 +10,7 @@ import type {
   Notification,
   PartItem,
   Person,
+  QualificationKey,
   Reminders,
   Role,
   Section,
@@ -39,18 +40,18 @@ export const WORKBOOK_LABEL = 'Arbeitsheft Sep/Okt 2026'
 
 /* ---- Personen ---------------------------------------------------------- */
 
-const q = (
-  on: ReadonlyArray<keyof Person['priv']>,
-): Person['priv'] => ({
+const q = (on: ReadonlyArray<QualificationKey | 'lesen'>): Person['priv'] => ({
   vorsitz: on.includes('vorsitz'),
   vortrag: on.includes('vortrag'),
   gebet: on.includes('gebet'),
-  lesen: on.includes('lesen'),
+  bibellesung: on.includes('bibellesung') || on.includes('lesen'),
+  leser: on.includes('leser') || on.includes('lesen'),
   schulung: on.includes('schulung'),
   studium: on.includes('studium'),
   mikrofon: on.includes('mikrofon'),
   ton: on.includes('ton'),
   ordner: on.includes('ordner'),
+  zoomordner: on.includes('zoomordner'),
 })
 
 /* ---- Größere Demo-Versammlung (~100 Personen) ---------------------------
@@ -69,13 +70,13 @@ function extraProfile(r: number): { role: Role; priv: Person['priv'] } {
     case 0:
       return { role: 'aeltester', priv: q(['vorsitz', 'vortrag', 'gebet', 'studium', 'lesen', 'schulung']) }
     case 1:
-      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner']) }
+      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner', 'zoomordner']) }
     case 2:
-      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'mikrofon', 'ton', 'ordner']) }
+      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'mikrofon', 'ton', 'ordner', 'zoomordner']) }
     case 3:
-      return { role: 'verkuendiger', priv: q(['mikrofon', 'ton', 'ordner']) }
+      return { role: 'verkuendiger', priv: q(['mikrofon', 'ton', 'ordner', 'zoomordner']) }
     case 4:
-      return { role: 'verkuendiger', priv: q(['mikrofon', 'ordner', 'lesen', 'schulung']) }
+      return { role: 'verkuendiger', priv: q(['mikrofon', 'ordner', 'lesen', 'schulung', 'zoomordner']) }
     default:
       return { role: 'verkuendiger', priv: q(['schulung']) } // Schwestern (Schulungsaufgaben)
   }
@@ -133,7 +134,7 @@ export const DEMO_PERSONS: Person[] = [
 export const DEMO_SERVICES: Service[] = [
   { key: 'ton', name: 'Ton / Video', count: 1, priv: 'ton', groups: false },
   { key: 'mik', name: 'Mikrofone', count: 2, priv: 'mikrofon', groups: false },
-  { key: 'zoom', name: 'Zoom-Ordner', count: 1, priv: 'ordner', groups: false },
+  { key: 'zoom', name: 'Zoom-Ordner', count: 1, priv: 'zoomordner', groups: false },
   { key: 'ord', name: 'Eingangsordner', count: 1, priv: 'ordner', groups: false },
   { key: 'saal', name: 'Saalordner', count: 1, priv: 'ordner', groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, priv: null, groups: true },
@@ -233,7 +234,7 @@ export function buildDemoWeeks(): Week[] {
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben', '10 Min.', [['T. Lindner', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['J. Berger', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['N. Feld', '', 'lesen']]),
+            part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['N. Feld', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
             part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['L. Hoffmann', 'mit A. Hoffmann', 'schulung']]),
@@ -243,7 +244,7 @@ export function buildDemoWeeks(): Week[] {
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 128'),
             part(7, 'Geh während der besonderen Aktion zielorientiert vor', 'Besprechung · 15 Min.', [['D. Winkler', '', 'vortrag']]),
-            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'lesen']]),
+            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['H. Vogel', 'Gebet', 'gebet']])]),
         ],
@@ -256,7 +257,7 @@ export function buildDemoWeeks(): Week[] {
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Woran erkennt man echten Glauben?“', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 20'),
-            part(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'lesen']]),
+            part(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet', 'gebet']])]),
         ],
@@ -272,7 +273,7 @@ export function buildDemoWeeks(): Week[] {
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Was wir von den Rechabitern lernen', '10 Min.', [['H. Vogel', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['M. Albrecht', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['P. Schröder', '', 'lesen']]),
+            part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['P. Schröder', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
             part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', 'mit L. Hoffmann', 'schulung']]),
@@ -282,7 +283,7 @@ export function buildDemoWeeks(): Week[] {
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 89'),
             part(7, 'Aktuelles', '15 Min.', [['M. Albrecht', '', 'vortrag']]),
-            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 8', [['T. Lindner', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']]),
+            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 8', [['T. Lindner', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['K. Sommer', 'Gebet', 'gebet']])]),
         ],
@@ -295,7 +296,7 @@ export function buildDemoWeeks(): Week[] {
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Ein Name, der zählt“', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 49'),
-            part(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['M. Albrecht', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']]),
+            part(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['M. Albrecht', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 106 · Gebet', null, [['G. Peters', 'Gebet', 'gebet']])]),
         ],
@@ -311,7 +312,7 @@ export function buildDemoWeeks(): Week[] {
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Jehova belohnt Mut — das Beispiel Ebed-Melechs', '10 Min.', [['F. Neumann', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['T. Lindner', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['S. Krüger', '', 'lesen']]),
+            part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['S. Krüger', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
             part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['E. Brandt', 'mit R. Brandt', 'schulung']]),
@@ -334,7 +335,7 @@ export function buildDemoWeeks(): Week[] {
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Frieden in einer unruhigen Welt“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 61'),
-            part(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 30 Min.', [['H. Vogel', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'lesen']]),
+            part(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 30 Min.', [['H. Vogel', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'leser']]),
           ]),
           sec('DIENSTVORTRAG', 'gold', [part(null, '„Bleibt in Gottes Liebe“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet', 'gebet']])]),
@@ -351,7 +352,7 @@ export function buildDemoWeeks(): Week[] {
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Auf Jehova hören — auch wenn es schwerfällt', '10 Min.', [['M. Albrecht', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['H. Vogel', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['J. Roth', '', 'lesen']]),
+            part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['J. Roth', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
             part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', 'mit E. Brandt', 'schulung']]),
@@ -361,7 +362,7 @@ export function buildDemoWeeks(): Week[] {
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 65'),
             part(7, 'Jehova sorgt für sein Volk', '15 Min.', [['F. Neumann', '', 'vortrag']]),
-            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['H. Vogel', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'lesen']]),
+            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['H. Vogel', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['C. Maier', 'Gebet', 'gebet']])]),
         ],
@@ -395,7 +396,7 @@ export function buildImportWeek(): Week {
         sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
           part(1, 'Jehovas Wort erfüllt sich immer', '10 Min.', [['', '', 'vortrag']]),
           part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['', '', 'vortrag']]),
-          part(3, 'Bibellesung · Jer 44:24-30', '4 Min. · th Lektion 3', [['', '', 'lesen']]),
+          part(3, 'Bibellesung · Jer 44:24-30', '4 Min. · th Lektion 3', [['', '', 'bibellesung']]),
         ]),
         sec('UNS IM DIENST VERBESSERN', 'gold', [
           part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['', '', 'schulung']]),
@@ -405,7 +406,7 @@ export function buildImportWeek(): Week {
         sec('UNSER LEBEN ALS CHRIST', 'wein', [
           song('Lied 76'),
           part(7, 'Bleib loyal wie Baruch', '15 Min.', [['', '', 'vortrag']]),
-          part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 11', [['', 'Leiter', 'studium'], ['', 'Leser', 'lesen']]),
+          part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 11', [['', 'Leiter', 'studium'], ['', 'Leser', 'leser']]),
         ]),
         sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 24 · Gebet', '3 Min.', [['', 'Gebet', 'gebet']])]),
       ],
@@ -418,7 +419,7 @@ export function buildImportWeek(): Week {
         sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Wem kannst du wirklich vertrauen?“', '30 Min.', [['', 'Gastredner', 'vortrag']])]),
         sec('WACHTTURM-STUDIUM', 'wein', [
           song('Lied 123'),
-          part(null, '„Loyal in Prüfungen“', 'Studienartikel 32 · 60 Min.', [['', 'Leiter', 'studium'], ['', 'Leser', 'lesen']]),
+          part(null, '„Loyal in Prüfungen“', 'Studienartikel 32 · 60 Min.', [['', 'Leiter', 'studium'], ['', 'Leser', 'leser']]),
         ]),
         sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 2 · Gebet', null, [['', 'Gebet', 'gebet']])]),
       ],

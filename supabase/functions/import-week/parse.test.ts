@@ -61,7 +61,7 @@ describe('parseWorkbookWeek (Struktur, deutsche Seite)', () => {
     const bl = parts('SCHÄTZE AUS GOTTES WORT').at(-1)!
     expect(bl.title).toBe('Bibellesung · Mus 13:1-14')
     expect(bl.meta).toBe('4 Min. · th Lektion 2')
-    expect(bl.names[0].bereichsKey).toBe('lesen')
+    expect(bl.names[0].bereichsKey).toBe('bibellesung')
   })
 
   it('Dienst-Rahmen wird wörtlich übernommen (verbatim, sprachunabhängig)', () => {
@@ -82,7 +82,7 @@ describe('parseWorkbookWeek (Struktur, deutsche Seite)', () => {
     const vbs = parts('UNSER LEBEN ALS CHRIST').at(-1)!
     expect(vbs.title).toBe('Versammlungsbibelstudium')
     expect(vbs.meta).toBe('30 Min. · lfb Geschichte 100-101')
-    expect(vbs.names.map((n) => `${n.rolle}:${n.bereichsKey}`)).toEqual(['Leiter:studium', 'Leser:lesen'])
+    expect(vbs.names.map((n) => `${n.rolle}:${n.bereichsKey}`)).toEqual(['Leiter:studium', 'Leser:leser'])
   })
 
   it('Abschluss mit Schlussgebet', () => {
@@ -162,7 +162,7 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
     const bl = parts('XORBI SATO').at(-1)!
     expect(bl.title).toBe('Librolekt · Qor 13:1-14')
     expect(bl.meta).toBe('4 vim · th plek 2')
-    expect(bl.names[0].bereichsKey).toBe('lesen')
+    expect(bl.names[0].bereichsKey).toBe('bibellesung')
   })
 
   it('Rahmen + Minuten wörtlich (verbatim), Quelle über MEPS-Kürzel', () => {
@@ -179,7 +179,7 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
     const vbs = parts('VIVO KRISTO').at(-1)!
     expect(vbs.title).toBe('Kongreso Librostudo')
     expect(vbs.meta).toBe('30 vim · lfb geso 100-101')
-    expect(vbs.names.map((n) => `${n.rolle}:${n.bereichsKey}`)).toEqual(['Leiter:studium', 'Leser:lesen'])
+    expect(vbs.names.map((n) => `${n.rolle}:${n.bereichsKey}`)).toEqual(['Leiter:studium', 'Leser:leser'])
   })
 
   it('Abschluss strukturell erkannt (Schlussgebet)', () => {

@@ -14,8 +14,8 @@ import type { Meeting, PartItem, Person, Qualifications, QualificationKey, Servi
 let counter = 0
 function priv(on: QualificationKey[]): Qualifications {
   const base: Qualifications = {
-    vorsitz: false, vortrag: false, gebet: false, lesen: false, schulung: false,
-    studium: false, mikrofon: false, ton: false, ordner: false,
+    vorsitz: false, vortrag: false, gebet: false, bibellesung: false, leser: false,
+    schulung: false, studium: false, mikrofon: false, ton: false, ordner: false, zoomordner: false,
   }
   for (const key of on) base[key] = true
   return base
@@ -88,15 +88,15 @@ function simulate(persons: Person[], services: Service[], nWeeks: number): Week[
 
 describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
   // Konduktor Woche 3 abwesend → Vertreter muss übernehmen.
-  const conductor = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'lesen', 'schulung'], { wtLeiter: true, absent: [3] })
-  const deputy = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'lesen', 'schulung'], { wtVertreter: true })
-  const elders = many(10, ['vorsitz', 'vortrag', 'gebet', 'studium', 'lesen', 'schulung'])
-  const servants = many(20, ['vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner'])
+  const conductor = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtLeiter: true, absent: [3] })
+  const deputy = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtVertreter: true })
+  const elders = many(10, ['vorsitz', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung'])
+  const servants = many(20, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'mikrofon', 'ordner'])
   const tonPool = many(4, ['ton']) // nur Ton → für den Balance-Test
   const mikPool = many(12, ['mikrofon'])
   const ordPool = many(16, ['ordner'])
   const sisters = Array.from({ length: 24 }, () => mk(['schulung'], { female: true }))
-  const readers = many(10, ['lesen'])
+  const readers = many(10, ['bibellesung', 'leser'])
   const speakers = many(6, ['vortrag', 'gebet'])
 
   const persons: Person[] = [

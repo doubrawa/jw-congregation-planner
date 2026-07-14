@@ -50,12 +50,14 @@ export interface Qualifications {
   vorsitz: boolean
   vortrag: boolean
   gebet: boolean
-  lesen: boolean // Bibellesung / Leser
-  schulung: boolean // Schulungsaufgaben
+  bibellesung: boolean // Bibellesung (Schätze aus Gottes Wort)
+  leser: boolean // Leser (Versammlungsbibelstudium / Wachtturm-Studium)
+  schulung: boolean // Schulungsaufgaben (auch Schwestern)
   studium: boolean // Studium leiten
   mikrofon: boolean // Mikrofone
   ton: boolean // Ton / Video
   ordner: boolean // Ordner / Eingang
+  zoomordner: boolean // Zoom-Ordner
   wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
   wtVertreter?: boolean // Vertreter, wenn der Leiter abwesend ist
 }
