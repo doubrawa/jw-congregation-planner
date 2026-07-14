@@ -924,24 +924,15 @@ function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: num
   return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)
 }
 
-function makeTrIntl(code: Lang): (s: string) => string {
-  const locale = LOCALES[code] ?? code
-  const M: Record<string, string> = FRAG[code] ?? FRAG.en
-  const ex: Extra = EXTRA[code] ?? EXTRA_EN
-  const rules: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
-    [/^Lied (\d+)$/, m => ex.song(m[1])],
-    [/^(\d+) Min\.$/, m => ex.min(m[1])],
-    [/^Ende ca\. (.+)$/, m => ex.ende(m[1])],
-    [/^ca\. (.+)$/, m => ex.ca(m[1])],
-    [/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WD[m[1]], +m[2], MON[m[3]], 'long')],
-    [/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WDA[m[1]], +m[2], MON[m[3]], 'short')],
-    [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => intlWeekdayShort(locale, WDA[m[1]]) + ' ' + m[2]],
-    [/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, m => intlRange(locale, +m[1], MON[m[3]], +m[2], MON[m[3]])],
-    [/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, m => intlRange(locale, +m[1], MONA[m[2]], +m[3], MONA[m[4]])],
-    [/^mit (.+)$/, m => ex.mit(m[1])],
-    [/^in (\d+) Tagen$/, m => ex.tage(m[1])],
-    [/^(\d+) Zuteilungen$/, m => ex.zut(m[1])],
-  ]
+type Rule = [RegExp, (m: RegExpMatchArray) => string]
+
+/**
+ * Baut aus einem Wörterbuch (exakte Treffer) + Regex-Regeln eine Übersetzer-
+ * Funktion. Ganze Strings mit exaktem Treffer werden direkt ersetzt; sonst wird
+ * an „ · “ (und rekursiv an „ — “) in Segmente geteilt und je Segment ein
+ * exakter Treffer bzw. die erste passende Regel angewandt, Unbekanntes bleibt.
+ */
+function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) => string {
   const one = (f: string): string => {
     if (M[f] != null) return M[f]
     for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
@@ -955,11 +946,32 @@ function makeTrIntl(code: Lang): (s: string) => string {
   }
 }
 
+function makeTrIntl(code: Lang): (s: string) => string {
+  const locale = LOCALES[code] ?? code
+  const M: Record<string, string> = FRAG[code] ?? FRAG.en
+  const ex: Extra = EXTRA[code] ?? EXTRA_EN
+  const rules: Rule[] = [
+    [/^Lied (\d+)$/, m => ex.song(m[1])],
+    [/^(\d+) Min\.$/, m => ex.min(m[1])],
+    [/^Ende ca\. (.+)$/, m => ex.ende(m[1])],
+    [/^ca\. (.+)$/, m => ex.ca(m[1])],
+    [/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WD[m[1]], +m[2], MON[m[3]], 'long')],
+    [/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WDA[m[1]], +m[2], MON[m[3]], 'short')],
+    [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => intlWeekdayShort(locale, WDA[m[1]]) + ' ' + m[2]],
+    [/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, m => intlRange(locale, +m[1], MON[m[3]], +m[2], MON[m[3]])],
+    [/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, m => intlRange(locale, +m[1], MONA[m[2]], +m[3], MONA[m[4]])],
+    [/^mit (.+)$/, m => ex.mit(m[1])],
+    [/^in (\d+) Tagen$/, m => ex.tage(m[1])],
+    [/^(\d+) Zuteilungen$/, m => ex.zut(m[1])],
+  ]
+  return buildTranslator(M, rules)
+}
+
 export function makeTr(code: Lang): (s: string) => string {
   if (!code || code === 'de') return s => s
   if (!D[code]) return makeTrIntl(code) // Zusatz-Sprachen: Intl-Datum + FRAG/EXTRA
   const M: Record<string, string> = FRAG[code] ?? {}, L: DateDict = D[code];
-  const rules: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
+  const rules: Rule[] = [
     [/^Lied (\d+)$/, m => L.song(m[1])],
     [/^(\d+) Min\.$/, m => L.min(m[1])],
     [/^Ende ca\. (.+)$/, m => L.ende(m[1])],
@@ -982,15 +994,5 @@ export function makeTr(code: Lang): (s: string) => string {
     [/^in (\d+) Tagen$/, m => L.tage(m[1])],
     [/^(\d+) Zuteilungen$/, m => L.zut(m[1])]
   ];
-  const one = (f: string): string => {
-    if (M[f] != null) return M[f];
-    for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m); }
-    if (f.includes(' — ')) return f.split(' — ').map(one).join(' — ');
-    return f;
-  };
-  return (s: string): string => {
-    if (s == null || s === '') return s;
-    if (M[s] != null) return M[s];
-    return s.split(' · ').map(one).join(' · ');
-  };
+  return buildTranslator(M, rules);
 }
