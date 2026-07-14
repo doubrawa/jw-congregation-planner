@@ -335,7 +335,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'autoAssign': {
-      const { weeks, count, newly } = autoAssignMeeting(
+      const { weeks, count, newly, unfilled } = autoAssignMeeting(
         state.weeks,
         state.week,
         state.tab,
@@ -343,7 +343,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.services,
       )
       if (count === 0) {
-        return { ...state, toast: toastKey(state, 'toastKeineOffen') }
+        // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie
+        // Person) klar von „nichts offen“ unterscheiden.
+        const key = unfilled > 0 ? 'toastKeinePassende' : 'toastKeineOffen'
+        return { ...state, toast: toastKey(state, key) }
       }
       const pending = new Set(state.pendingNames)
       for (const n of newly) pending.add(n)

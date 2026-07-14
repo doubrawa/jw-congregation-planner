@@ -84,6 +84,7 @@ export interface AutoAssignResult {
   weeks: Week[]
   count: number // Anzahl vergebener Zuteilungen
   newly: string[] // neu vergebene Personennamen (→ pendingNames)
+  unfilled: number // offen gebliebene Slots ohne passenden/freien Kandidaten
 }
 
 /**
@@ -139,6 +140,7 @@ export function autoAssignMeeting(
   const tl = (name: string): number => totalLoad.get(name) ?? workloadOf(windowWeeks, name)
 
   let count = 0
+  let unfilled = 0
   const newly: string[] = []
 
   const claim = (kind: 'part' | 'helper', name: string): void => {
@@ -187,6 +189,8 @@ export function autoAssignMeeting(
           if (name) {
             slot.name = name
             claim('part', name)
+          } else {
+            unfilled++
           }
         }
       }
@@ -205,6 +209,8 @@ export function autoAssignMeeting(
         if (name) {
           slot.name = name
           claim('part', name)
+        } else {
+          unfilled++
         }
       }
     }
@@ -240,13 +246,15 @@ export function autoAssignMeeting(
         if (name) {
           arr[pos] = name
           claim('helper', name)
+        } else {
+          unfilled++
         }
       }
     }
     meeting.helpers[svc.key] = arr
   }
 
-  return { weeks: next, count, newly }
+  return { weeks: next, count, newly, unfilled }
 }
 
 /**

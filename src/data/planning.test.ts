@@ -95,6 +95,16 @@ describe('Auto-Zuteilung', () => {
     const { weeks: next } = autoAssignMeeting(weeks, 4 % 3, 'mid', DEMO_PERSONS, DEMO_SERVICES)
     expect(next[1].mid.helpers.rein[0]).toBe('Gruppe 2')
   })
+
+  it('zählt offen gebliebene, nicht besetzbare Slots als unfilled (≠ „keine offen“)', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.zoom = [''] // Zoom-Ordner offen
+    // Ohne verfügbare Person kann nichts besetzt werden: count 0, aber unfilled > 0
+    // (damit die UI „keine passende Person“ statt „keine offenen Zuteilungen“ zeigt).
+    const { count, unfilled } = autoAssignMeeting(weeks, 0, 'mid', [], DEMO_SERVICES)
+    expect(count).toBe(0)
+    expect(unfilled).toBeGreaterThan(0)
+  })
 })
 
 describe('offene Slots zählen', () => {
