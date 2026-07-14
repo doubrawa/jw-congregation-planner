@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
+import { DatePicker } from '../components/DatePicker'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
@@ -29,6 +30,10 @@ export function AufgabenScreen() {
     event.preventDefault()
     if (!from || !to) {
       dispatch({ type: 'showToast', text: t.toastVonBis })
+      return
+    }
+    if (from > to) {
+      dispatch({ type: 'showToast', text: t.toastVonNachBis })
       return
     }
     dispatch({ type: 'addAbsence', absence: { id: crypto.randomUUID(), from, to, reason } })
@@ -87,27 +92,25 @@ export function AufgabenScreen() {
         <div className="panel-label">{t.abwesenheiten}</div>
         <div className="abs-form-row">
           <div className="abs-field">
-            <label className="field-label" htmlFor="abs-from">
-              {t.von}
-            </label>
-            <input
-              id="abs-from"
-              className="field-input"
-              type="date"
+            <span className="field-label">{t.von}</span>
+            <DatePicker
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={setFrom}
+              locale={LOCALES[state.lang]}
+              max={to || undefined}
+              placeholder={t.datumPh}
+              ariaLabel={t.von}
             />
           </div>
           <div className="abs-field">
-            <label className="field-label" htmlFor="abs-to">
-              {t.bis}
-            </label>
-            <input
-              id="abs-to"
-              className="field-input"
-              type="date"
+            <span className="field-label">{t.bis}</span>
+            <DatePicker
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={setTo}
+              locale={LOCALES[state.lang]}
+              min={from || undefined}
+              placeholder={t.datumPh}
+              ariaLabel={t.bis}
             />
           </div>
         </div>
