@@ -12,11 +12,9 @@
   text-align: center;
 }
 
-.login-eyebrow {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  color: var(--acc);
+.login-logo {
+  width: 72px;
+  height: 72px;
 }
 
 .login-wordmark {

@@ -40,6 +40,9 @@ const PLANNER_SCREENS: readonly Screen[] = [
 ]
 const PUBLISHER_SCREENS: readonly Screen[] = ['programm', 'aufgaben', 'profil']
 
+// Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
+const LOGO = `${import.meta.env.BASE_URL}logo.png`
+
 export function AppShell() {
   const { state, dispatch } = useApp()
   const { t } = useT()
@@ -77,7 +80,7 @@ export function AppShell() {
       {!isLogin && (
         <aside className="sidebar">
           <div className="sidebar-brand">
-            <div className="sidebar-eyebrow">JW</div>
+            <img className="sidebar-logo" src={LOGO} alt="" width={40} height={40} />
             <div className="sidebar-wordmark">
               Congregation
               <br />
@@ -124,7 +127,10 @@ export function AppShell() {
         ) : (
           <>
             <header className="mobile-header">
-              <div className="mobile-header-brand">JW CONGREGATION PLANNER</div>
+              <div className="mobile-header-brand">
+                <img className="mobile-header-logo" src={LOGO} alt="" width={22} height={22} />
+                CONGREGATION PLANNER
+              </div>
               <div className="mobile-header-right">
                 <NotifChip />
                 <button

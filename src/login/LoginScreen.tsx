@@ -6,6 +6,8 @@ import { useT } from '../i18n/useT'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
 import './login.css'
 
+const LOGO = `${import.meta.env.BASE_URL}logo.png`
+
 /**
  * Login (Screen 1). Mit konfiguriertem Supabase echtes E-Mail+Passwort-Login
  * (inkl. Registrieren und Reset-Mail), sonst Demo-Modus wie im Prototyp:
@@ -71,7 +73,7 @@ export function LoginScreen() {
   return (
     <div className="login">
       <header className="login-head">
-        <p className="login-eyebrow">JW</p>
+        <img className="login-logo" src={LOGO} alt="" width={72} height={72} />
         <h1 className="login-wordmark">
           Congregation
           <br />

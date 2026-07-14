@@ -127,11 +127,10 @@
   padding: 0 10px;
 }
 
-.sidebar-eyebrow {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  color: var(--acc);
+.sidebar-logo {
+  display: block;
+  width: 40px;
+  height: 40px;
 }
 
 .sidebar-wordmark {
@@ -222,10 +221,18 @@
 }
 
 .mobile-header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.18em;
   color: var(--acc);
+}
+
+.mobile-header-logo {
+  width: 22px;
+  height: 22px;
 }
 
 .mobile-header-right {
