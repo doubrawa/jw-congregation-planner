@@ -11,7 +11,7 @@
 
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { CONG_TO_CODE } from './langs'
+import { congAppCode } from './langs'
 import { makeTr } from './translate'
 import { dict, type Dict } from './ui'
 
@@ -33,7 +33,7 @@ const identity = (s: string) => s
 export function useT(): I18n {
   const { state } = useApp()
   return useMemo(() => {
-    const congCode = CONG_TO_CODE[state.congLang]
+    const congCode = congAppCode(state.congLang)
     return {
       t: dict(state.lang),
       tu: state.lang === 'de' ? identity : makeTr(state.lang),

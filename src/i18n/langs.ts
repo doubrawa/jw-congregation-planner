@@ -90,3 +90,29 @@ export const CONG_LANGS: readonly string[] = JW_LANGS.map((l) => l.name)
 export const CONG_TO_JW: Readonly<Record<string, string>> = Object.fromEntries(
   JW_LANGS.map((l) => [l.name, l.code]),
 )
+
+/**
+ * jw.org-Sprachcode -> App-Uebersetzungscode (Lang), fuer die 30 Sprachen mit
+ * Programmuebersetzung (FRAG/EXTRA in translate.ts). Damit werden auch bei
+ * importierten Wochen unsere eigenen Vorlage-Strings (Wochenend-Sektionslabels,
+ * ERÖFFNUNG/ABSCHLUSS, Platzhalter) via `tp` in die Versammlungssprache
+ * uebersetzt. Skript-Varianten ohne passende Uebersetzung (cmn-hant, sr-cyrl …)
+ * bleiben bewusst ohne Mapping -> Rueckfall auf Deutsch.
+ */
+export const JW_TO_APP: Readonly<Record<string, Lang>> = {
+  de: 'de', en: 'en', es: 'es', fr: 'fr', it: 'it',
+  pt: 'pt', 'pt-pt': 'pt', 'pt-ao': 'pt',
+  nl: 'nl', pl: 'pl', ru: 'ru', uk: 'uk', ro: 'ro', el: 'el',
+  cs: 'cs', sk: 'sk', hu: 'hu', hr: 'hr', 'sr-latn': 'sr', bg: 'bg',
+  sv: 'sv', da: 'da', fi: 'fi', no: 'no', tr: 'tr',
+  'cmn-hans': 'zh', ja: 'ja', ko: 'ko', id: 'id', tl: 'tl', vi: 'vi', sw: 'sw',
+}
+
+/**
+ * Versammlungssprache (deutscher Anzeigename) -> App-Uebersetzungscode, falls
+ * unterstuetzt (sonst undefined = keine Programmuebersetzung / Rueckfall DE).
+ */
+export function congAppCode(congLang: string): Lang | undefined {
+  const jw = CONG_TO_JW[congLang]
+  return jw ? JW_TO_APP[jw] : undefined
+}

@@ -703,6 +703,51 @@ const FRAG: Record<string, Record<string, string>> = {
   }
 };
 
+// --- Wochenend-Vorlage-Atome (unsere eigenen Strings, nicht von jw.org) -------
+// Werden je Sprache in FRAG eingespeist, damit makeTr sie beim Anzeigen der
+// (kanonisch deutschen) Wochenend-Vorlage in die Versammlungssprache übersetzt.
+// „Lied“ (ohne Nummer) fehlte als Atom für zusammengesetzte Titel wie
+// „Schlussworte · Lied · Gebet“. Die beiden Platzhalter erscheinen als
+// editierbarer Titel, solange nichts eingetragen ist.
+const SONG_WORD: Record<string, string> = {
+  en: 'Song', es: 'Canción', fr: 'Cantique', it: 'Cantico', pt: 'Cântico',
+  nl: 'Lied', pl: 'Pieśń', ru: 'Песня', uk: 'Пісня', ro: 'Cântarea',
+  cs: 'Píseň', sk: 'Pieseň', hr: 'Pjesma', sr: 'Pesma', bg: 'Песен',
+  hu: 'Ének', el: 'Ύμνος', tr: 'İlahi', sv: 'Sång', da: 'Sang', fi: 'Laulu',
+  no: 'Sang', id: 'Lagu', tl: 'Awit', vi: 'Bài hát', sw: 'Wimbo',
+  zh: '歌', ja: '歌', ko: '노래',
+}
+const TALK_PLACEHOLDER: Record<string, string> = {
+  en: '(enter talk title)', es: '(indique el tema del discurso)', fr: '(indiquer le thème du discours)',
+  it: '(inserire il tema del discorso)', pt: '(inserir o tema do discurso)', nl: '(lezingthema invullen)',
+  pl: '(wpisz temat wykładu)', ru: '(укажите тему речи)', uk: '(вкажіть тему промови)',
+  ro: '(introduceți tema cuvântării)', cs: '(zadejte téma proslovu)', sk: '(zadajte tému prejavu)',
+  hr: '(upišite temu predavanja)', sr: '(unesite temu predavanja)', bg: '(въведете темата на речта)',
+  hu: '(add meg az előadás témáját)', el: '(καταχωρίστε το θέμα της ομιλίας)', tr: '(konuşma konusunu girin)',
+  sv: '(ange talets tema)', da: '(angiv foredragets emne)', fi: '(kirjoita puheen aihe)',
+  no: '(angi talens tema)', id: '(masukkan tema khotbah)', tl: '(ilagay ang tema ng pahayag)',
+  vi: '(nhập chủ đề bài giảng)', sw: '(weka mada ya hotuba)',
+  zh: '(输入演讲主题)', ja: '(講演の題を入力)', ko: '(공개 강연 제목 입력)',
+}
+const STUDY_PLACEHOLDER: Record<string, string> = {
+  en: '(enter study article)', es: '(indique el artículo de estudio)', fr: '(indiquer l’article d’étude)',
+  it: '(inserire l’articolo di studio)', pt: '(inserir o artigo de estudo)', nl: '(studieartikel invullen)',
+  pl: '(wpisz artykuł do studium)', ru: '(укажите статью для изучения)', uk: '(вкажіть статтю для вивчення)',
+  ro: '(introduceți articolul de studiu)', cs: '(zadejte studijní článek)', sk: '(zadajte študijný článok)',
+  hr: '(upišite članak za razmatranje)', sr: '(unesite članak za razmatranje)', bg: '(въведете статията за изучаване)',
+  hu: '(add meg a tanulmányozási cikket)', el: '(καταχωρίστε το άρθρο μελέτης)', tr: '(tetkik makalesini girin)',
+  sv: '(ange studieartikeln)', da: '(angiv studieartiklen)', fi: '(kirjoita tutkittava artikkeli)',
+  no: '(angi studieartikkelen)', id: '(masukkan artikel pelajaran)', tl: '(ilagay ang artikulo sa pag-aaral)',
+  vi: '(nhập bài học)', sw: '(weka makala ya funzo)',
+  zh: '(输入研究文章)', ja: '(研究記事を入力)', ko: '(연구 기사 입력)',
+}
+for (const code of Object.keys(FRAG)) {
+  const f = FRAG[code]
+  if (SONG_WORD[code]) f['Lied'] = SONG_WORD[code]
+  if (TALK_PLACEHOLDER[code]) f['(Vortragsthema eintragen)'] = TALK_PLACEHOLDER[code]
+  if (STUDY_PLACEHOLDER[code]) f['(Studienartikel eintragen)'] = STUDY_PLACEHOLDER[code]
+}
+
 // Datums-/Musterdaten
 const WD: Record<string, number> = { Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3, Freitag: 4, Samstag: 5, Sonntag: 6 };
 const WDA: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 };
