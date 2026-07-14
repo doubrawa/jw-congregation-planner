@@ -58,11 +58,18 @@
 /* ---- Detail ------------------------------------------------------------------ */
 
 .pers-back {
-  display: block;
-  text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-align: start;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--acc);
+}
+
+.pers-back-chev {
+  font-size: 19px;
+  line-height: 1;
 }
 
 .pers-detail-head {

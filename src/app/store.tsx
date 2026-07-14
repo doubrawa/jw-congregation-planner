@@ -508,11 +508,13 @@ function getInitialLang(): Lang {
  * Screenshots (überspringt den Login im Demo-Modus). Im Production-Build wird
  * dieser Zweig via `import.meta.env.DEV` entfernt.
  */
-function parseDebugHash(): { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme } | null {
+function parseDebugHash():
+  | { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme; personId?: string }
+  | null {
   const raw = location.hash.replace(/^#/, '')
   if (!raw) return null
   const p = new URLSearchParams(raw)
-  const out: { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme } = {}
+  const out: { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme; personId?: string } = {}
   const s = p.get('s')
   if (s) out.screen = s as Screen
   const l = p.get('l')
@@ -521,6 +523,8 @@ function parseDebugHash(): { screen?: Screen; lang?: Lang; congLang?: string; th
   if (c) out.congLang = c
   const th = p.get('t')
   if (th === 'light' || th === 'dark') out.theme = th
+  const person = p.get('p')
+  if (person) out.personId = person
   return Object.keys(out).length ? out : null
 }
 
@@ -552,7 +556,7 @@ function initialState(): AppState {
     notifs: demo ? DEMO_NOTIFICATIONS : [],
     notifOpen: false,
     slotSel: null,
-    selectedPersonId: null,
+    selectedPersonId: debug?.personId ?? null,
     importing: false,
     imported: false,
     myTasks: demo ? DEMO_MY_TASKS : [],

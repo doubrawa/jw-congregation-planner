@@ -46,3 +46,8 @@
 [dir='rtl'] .week-arrow {
   transform: scaleX(-1);
 }
+
+/* „Zurück"-Chevron (‹ Alle Personen) in RTL nach rechts zeigen lassen. */
+[dir='rtl'] .pers-back-chev {
+  transform: scaleX(-1);
+}

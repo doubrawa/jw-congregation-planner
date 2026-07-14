@@ -15,7 +15,7 @@ import './programm.css'
 export function ProgrammScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
-  const { t, tu, tp, progFallback } = i18n
+  const { t, tu, tp } = i18n
   const week = state.weeks[state.week]
   const meeting = state.tab === 'mid' ? week.mid : week.we
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
@@ -40,8 +40,6 @@ export function ProgrammScreen() {
         tab={state.tab}
         onChange={(tab) => dispatch({ type: 'setTab', tab })}
       />
-
-      {progFallback && <div className="prog-lang-hint">{t.demoLangHint}</div>}
 
       <MemorialBanner week={week} tab={state.tab} />
 

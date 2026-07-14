@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { generateInviteCode } from '../lib/data'
 import { importNextWeek, latestImportedStart } from '../lib/import'
-import { congAppCode, CONG_TO_JW } from '../i18n/langs'
+import { CONG_TO_JW } from '../i18n/langs'
 import { PRIV_KEY, type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import type { QualificationKey, Service } from '../data/types'
@@ -105,8 +105,6 @@ export function EinstellungenScreen() {
       ))}
     </>
   )
-
-  const progFallback = !congAppCode(state.congLang)
 
   const reminderRows: Array<{ key: 'first' | 'last'; name: keyof Dict }> = [
     { key: 'first', name: 'remErste' },
@@ -326,7 +324,6 @@ export function EinstellungenScreen() {
           </span>
         </button>
         <p className="lang-card-desc">{t.versSpracheDesc}</p>
-        {progFallback && <div className="lang-demo-hint">{t.demoLangHint}</div>}
       </div>
 
       <div className="panel panel--pb14" data-farbe="wein">

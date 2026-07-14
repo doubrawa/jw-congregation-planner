@@ -121,7 +121,10 @@ function PersonDetail({ person }: { person: Person }) {
         className="pers-back"
         onClick={() => dispatch({ type: 'selectPerson', id: null })}
       >
-        {t.allePersonen}
+        <span className="pers-back-chev" aria-hidden="true">
+          ‹
+        </span>
+        {t.allePersonen.replace(/^[‹›]\s*/, '')}
       </button>
 
       <div className="pers-detail-head">
