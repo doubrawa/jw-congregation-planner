@@ -15,16 +15,11 @@
 
 .mem-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   padding: 11px 0;
   border-bottom: 1px solid var(--panel-hair);
-}
-
-.mem-main {
-  flex: 1;
-  min-width: 0;
 }
 
 .mem-mail {
@@ -40,31 +35,48 @@
   font-weight: 400;
 }
 
+/* Zeile 2: alle Controls (Dropdown · Planer · Switch · ✕) auf einer Mittellinie. */
+.mem-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .mem-select {
   width: 100%;
   margin-top: 5px;
   padding: 7px 10px;
+  padding-inline-end: 40px;
   border-radius: 10px;
   border: 1px solid var(--bord2);
-  background: var(--card);
+  /* background-color statt background-Shorthand, damit das Chevron-Bild der
+     globalen select-Regel (image/no-repeat/position) nicht zurückgesetzt wird. */
+  background-color: var(--card);
   font-size: 12px;
   color: var(--ink);
 }
 
-.mem-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: none;
+.mem-line .mem-select {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-top: 0;
 }
 
 .mem-planner-lbl {
   font-size: 10.5px;
   color: var(--mut);
+  flex: none;
 }
 
-.mem-controls .switch:disabled {
+.mem-line .switch:disabled {
   opacity: 0.45;
+}
+
+/* Eigenes Konto: unsichtbarer ✕-Platzhalter, damit die Switches aller Zeilen
+   vertikal fluchten (statt das ✕ wegzulassen). */
+.mem-remove--ph {
+  visibility: hidden;
 }
 
 .mem-inv-label {
@@ -80,7 +92,7 @@
 .mem-inv-form {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin-top: 14px;
 }
 

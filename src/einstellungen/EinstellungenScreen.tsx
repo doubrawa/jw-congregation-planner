@@ -157,11 +157,11 @@ export function EinstellungenScreen() {
             const self = member.userId === state.userId
             return (
               <div key={member.userId} className="mem-row">
-                <div className="mem-main">
-                  <div className="mem-mail">
-                    {member.email || member.userId.slice(0, 8)}
-                    {self && <span className="mem-du">{t.duMarker}</span>}
-                  </div>
+                <div className="mem-mail" dir="auto">
+                  {member.email || member.userId.slice(0, 8)}
+                  {self && <span className="mem-du">{t.duMarker}</span>}
+                </div>
+                <div className="mem-line">
                   <select
                     className="mem-select"
                     aria-label={t.nameLbl}
@@ -176,8 +176,6 @@ export function EinstellungenScreen() {
                   >
                     {personOptions}
                   </select>
-                </div>
-                <div className="mem-controls">
                   <span className="mem-planner-lbl">{t.planerLbl}</span>
                   <button
                     type="button"
@@ -196,16 +194,20 @@ export function EinstellungenScreen() {
                   >
                     <span className="switch-knob" />
                   </button>
-                  {!self && (
-                    <button
-                      type="button"
-                      className="svc-remove"
-                      aria-label="✕"
-                      onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
-                    >
-                      ✕
-                    </button>
-                  )}
+                  {/* Eigenes Konto: unsichtbarer ✕-Platzhalter, damit die Switches fluchten */}
+                  <button
+                    type="button"
+                    className={self ? 'svc-remove mem-remove--ph' : 'svc-remove'}
+                    aria-label="✕"
+                    aria-hidden={self || undefined}
+                    tabIndex={self ? -1 : undefined}
+                    disabled={self}
+                    onClick={
+                      self ? undefined : () => dispatch({ type: 'removeMember', userId: member.userId })
+                    }
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
             )

@@ -508,17 +508,19 @@ function getInitialLang(): Lang {
  * Screenshots (überspringt den Login im Demo-Modus). Im Production-Build wird
  * dieser Zweig via `import.meta.env.DEV` entfernt.
  */
-function parseDebugHash(): { screen?: Screen; lang?: Lang; congLang?: string } | null {
+function parseDebugHash(): { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme } | null {
   const raw = location.hash.replace(/^#/, '')
   if (!raw) return null
   const p = new URLSearchParams(raw)
-  const out: { screen?: Screen; lang?: Lang; congLang?: string } = {}
+  const out: { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme } = {}
   const s = p.get('s')
   if (s) out.screen = s as Screen
   const l = p.get('l')
   if (l) out.lang = l as Lang
   const c = p.get('c')
   if (c) out.congLang = c
+  const th = p.get('t')
+  if (th === 'light' || th === 'dark') out.theme = th
   return Object.keys(out).length ? out : null
 }
 
@@ -532,7 +534,7 @@ function initialState(): AppState {
     screen: debug?.screen ?? 'login',
     week: 0,
     tab: 'mid',
-    theme: getInitialTheme(),
+    theme: debug?.theme ?? getInitialTheme(),
     planner: demo ? DEMO_PLANNER : false,
     congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', meetings: '' },
     congregationId: null,
