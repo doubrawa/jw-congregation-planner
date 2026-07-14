@@ -234,6 +234,7 @@ export function EinstellungenScreen() {
               </button>
             </div>
           ))}
+          {state.invites.length === 0 && <p className="abs-empty">{t.keineEinladungen}</p>}
           <div className="mem-inv-form">
             <select
               className="mem-select"

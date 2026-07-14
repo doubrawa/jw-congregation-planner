@@ -37,6 +37,59 @@ interface DateDict {
 }
 
 const FRAG: Record<string, Record<string, string>> = {
+  ar: {
+    "ERÖFFNUNG": "الافتتاح",
+    "ABSCHLUSS": "الختام",
+    "SCHÄTZE AUS GOTTES WORT": "كنوز من كلمة الله",
+    "UNS IM DIENST VERBESSERN": "لنكن بارعين في الخدمة",
+    "UNSER LEBEN ALS CHRIST": "حياتنا كمسيحيين",
+    "ÖFFENTLICHER VORTRAG": "الخطاب العام",
+    "WACHTTURM-STUDIUM": "درس برج المراقبة",
+    "Einleitende Worte": "كلمات افتتاحية",
+    "Schlussworte": "كلمات ختامية",
+    "Nach geistigen Schätzen graben": "جواهر روحية",
+    "Bibellesung": "قراءة الكتاب المقدس",
+    "Gespräche beginnen": "بدء المحادثات",
+    "Interesse fördern": "متابعة الاهتمام",
+    "Menschen zu Jüngern machen": "تلمذة الناس",
+    "Unsere Glaubensansichten erklären": "شرح معتقداتنا",
+    "Vortrag": "خطاب",
+    "Versammlungsbibelstudium": "درس الجماعة للكتاب المقدس",
+    "Aktuelles": "احتياجات محلية",
+    "Besprechung": "مناقشة",
+    "Gebet": "صلاة",
+    "Vorsitz": "الرئيس",
+    "Leiter": "المدير",
+    "Leser": "القارئ",
+    "Gastredner": "خطيب زائر",
+    "Redner": "الخطيب",
+    "Von Haus zu Haus": "من بيت إلى بيت",
+    "Informell": "شهادة غير رسمية",
+    "In der Öffentlichkeit": "شهادة علنية",
+    "Königreichssaal": "قاعة الملكوت",
+    "Gespräche beginnen (informell)": "بدء المحادثات (غير رسمي)",
+    "Ton / Video": "الصوت / الفيديو",
+    "Mikrofone": "الميكروفونات",
+    "Ordner / Eingang": "المرشدون / المدخل",
+    "Reinigung": "التنظيف",
+    "Zoom-Ordner": "مرشد زوم",
+    "Eingangsordner": "مرشد المدخل",
+    "Saalordner": "مرشد القاعة",
+    "Ältester": "شيخ",
+    "Dienstamtgehilfe": "خادم مساعد",
+    "Verkündiger": "ناشر",
+    "Verkündigerin": "ناشرة",
+    "ohne Zuteilungen": "بدون تعيينات",
+    "Programm für September ist online": "برنامج سبتمبر متاح الآن",
+    "vor 2 Std.": "قبل ساعتين",
+    "heute, 08:00": "اليوم، 08:00",
+    "Montag": "الاثنين",
+    "gerade eben": "الآن",
+    "Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben": "التأمل في صفات يهوه يقوّي إيماننا",
+    "Geh während der besonderen Aktion zielorientiert vor": "اعمل نحو هدف خلال الحملة الخاصة",
+    "„Woran erkennt man echten Glauben?“": "«كيف نميّز الإيمان الحقيقي؟»",
+    "„Dient Jehova mit Freude“": "«اخدموا يهوه بفرح»",
+  },
   en: {
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'TREASURES FROM GOD\u2019S WORD',
@@ -715,7 +768,7 @@ const SONG_WORD: Record<string, string> = {
   cs: 'Píseň', sk: 'Pieseň', hr: 'Pjesma', sr: 'Pesma', bg: 'Песен',
   hu: 'Ének', el: 'Ύμνος', tr: 'İlahi', sv: 'Sång', da: 'Sang', fi: 'Laulu',
   no: 'Sang', id: 'Lagu', tl: 'Awit', vi: 'Bài hát', sw: 'Wimbo',
-  zh: '歌', ja: '歌', ko: '노래',
+  zh: '歌', ja: '歌', ko: '노래', ar: 'الترنيمة',
 }
 const TALK_PLACEHOLDER: Record<string, string> = {
   en: '(enter talk title)', es: '(indique el tema del discurso)', fr: '(indiquer le thème du discours)',
@@ -727,7 +780,7 @@ const TALK_PLACEHOLDER: Record<string, string> = {
   sv: '(ange talets tema)', da: '(angiv foredragets emne)', fi: '(kirjoita puheen aihe)',
   no: '(angi talens tema)', id: '(masukkan tema khotbah)', tl: '(ilagay ang tema ng pahayag)',
   vi: '(nhập chủ đề bài giảng)', sw: '(weka mada ya hotuba)',
-  zh: '(输入演讲主题)', ja: '(講演の題を入力)', ko: '(공개 강연 제목 입력)',
+  zh: '(输入演讲主题)', ja: '(講演の題を入力)', ko: '(공개 강연 제목 입력)', ar: '(أدخل موضوع الخطاب)',
 }
 const STUDY_PLACEHOLDER: Record<string, string> = {
   en: '(enter study article)', es: '(indique el artículo de estudio)', fr: '(indiquer l’article d’étude)',
@@ -739,7 +792,7 @@ const STUDY_PLACEHOLDER: Record<string, string> = {
   sv: '(ange studieartikeln)', da: '(angiv studieartiklen)', fi: '(kirjoita tutkittava artikkeli)',
   no: '(angi studieartikkelen)', id: '(masukkan artikel pelajaran)', tl: '(ilagay ang artikulo sa pag-aaral)',
   vi: '(nhập bài học)', sw: '(weka makala ya funzo)',
-  zh: '(输入研究文章)', ja: '(研究記事を入力)', ko: '(연구 기사 입력)',
+  zh: '(输入研究文章)', ja: '(研究記事を入力)', ko: '(연구 기사 입력)', ar: '(أدخل مقالة الدرس)',
 }
 for (const code of Object.keys(FRAG)) {
   const f = FRAG[code]
@@ -820,6 +873,7 @@ const EXTRA_EN: Extra = {
 // Kurze Phrasen je Zusatz-Sprache (Datum/Namen kommen aus Intl). Wird batch-
 // weise gefüllt; fehlende Sprachen nutzen EXTRA_EN.
 const EXTRA: Record<string, Extra> = {
+  ar: { song: n => 'الترنيمة ' + n, min: n => n + ' دقيقة', ca: r => 'حوالي ' + r, ende: r => 'ينتهي حوالي ' + r, mit: x => 'مع ' + x, tage: n => 'خلال ' + n + ' أيام', zut: n => n + ' تعيينات' },
   it: { song: n => 'Cantico ' + n, min: n => n + ' min', ca: r => 'circa ' + r, ende: r => 'Fine circa ' + r, mit: x => 'con ' + x, tage: n => 'tra ' + n + ' giorni', zut: n => n + ' incarichi' },
   pt: { song: n => 'Cântico ' + n, min: n => n + ' min', ca: r => 'aprox. ' + r, ende: r => 'Fim aprox. ' + r, mit: x => 'com ' + x, tage: n => 'em ' + n + ' dias', zut: n => n + ' designações' },
   nl: { song: n => 'Lied ' + n, min: n => n + ' min.', ca: r => 'ca. ' + r, ende: r => 'Einde ca. ' + r, mit: x => 'met ' + x, tage: n => 'over ' + n + ' dagen', zut: n => n + ' toewijzingen' },
