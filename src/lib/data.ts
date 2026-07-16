@@ -16,6 +16,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
+import { serviceQualKey } from '../data/helpers'
 import type {
   Absence,
   ConfirmationMap,
@@ -112,30 +113,48 @@ const asNotifType = (t: string): NotificationType =>
 /* ---- Mapper Row ↔ App ---------------------------------------------------- */
 
 /**
- * Migriert gespeicherte Qualifikationen auf das aktuelle Schema: das frühere
- * kombinierte `lesen` wird auf `bibellesung`+`leser` gespiegelt; fehlende (neue)
- * Bereiche wie `zoomordner` sind false. Beim nächsten Speichern wird das
- * migrierte Schema persistiert.
+ * Migriert gespeicherte Qualifikationen auf das aktuelle Schema: die festen
+ * Programm-Bereiche sind immer gesetzt, das frühere kombinierte `lesen` wird auf
+ * `bibellesung`+`leser` gespiegelt. Alle übrigen gespeicherten Keys bleiben
+ * erhalten — das sind die Hilfsdienst-Bereiche (`svc:<key>`) und die alten
+ * festen Dienst-Bereiche, die `migrateServicePrivs` noch braucht.
  */
-function normalizePriv(raw: Qualifications): Qualifications {
-  const r = raw as unknown as Record<string, unknown>
-  const lesen = Boolean(r.lesen)
+function normalizePriv(raw: Qualifications | null | undefined): Qualifications {
+  const r = (raw ?? {}) as unknown as Record<string, unknown>
   const priv: Qualifications = {
-    vorsitz: Boolean(r.vorsitz),
-    vortrag: Boolean(r.vortrag),
-    gebet: Boolean(r.gebet),
-    bibellesung: Boolean(r.bibellesung ?? lesen),
-    leser: Boolean(r.leser ?? lesen),
-    schulung: Boolean(r.schulung),
-    studium: Boolean(r.studium),
-    mikrofon: Boolean(r.mikrofon),
-    ton: Boolean(r.ton),
-    ordner: Boolean(r.ordner),
-    zoomordner: Boolean(r.zoomordner),
+    vorsitz: false,
+    vortrag: false,
+    gebet: false,
+    bibellesung: false,
+    leser: false,
+    schulung: false,
+    studium: false,
   }
-  if (r.wtLeiter) priv.wtLeiter = true
-  if (r.wtVertreter) priv.wtVertreter = true
+  for (const [key, value] of Object.entries(r)) priv[key] = Boolean(value)
+  if (r.lesen) {
+    priv.bibellesung = true
+    priv.leser = true
+  }
   return priv
+}
+
+/**
+ * Hebt Alt-Datensätze auf die dienst-eigenen Bereiche: früher teilten sich
+ * mehrere Hilfsdienste einen festen Bereich (Eingangs- und Saalordner beide
+ * `ordner`), heute hat jeder Dienst seinen eigenen (`svc:<key>`). Fehlt der
+ * neue Bereich bei einer Person, wird er aus dem alten Bereich des Dienstes
+ * übernommen. Idempotent: bereits migrierte Bereiche bleiben unangetastet.
+ */
+function migrateServicePrivs(persons: Person[], services: Service[]): Person[] {
+  const legacy = services.flatMap((s) => (s.legacyPriv ? [[serviceQualKey(s.key), s.legacyPriv] as const] : []))
+  if (legacy.length === 0) return persons
+  return persons.map((p) => {
+    const priv = { ...p.priv }
+    for (const [key, old] of legacy) {
+      if (priv[key] === undefined) priv[key] = Boolean(priv[old])
+    }
+    return { ...p, priv }
+  })
 }
 
 function personFromRow(r: PersonRow): Person {
@@ -172,18 +191,21 @@ function serviceFromRow(r: ServiceRow): Service {
     key: r.key,
     name: r.name,
     count: r.count,
-    priv: (r.priv as Service['priv']) ?? null,
     groups: r.groups,
+    legacyPriv: r.priv,
   }
 }
 
+// Die Spalte `priv` ist Altbestand: neue Dienste leiten ihren Bereich aus dem
+// Key ab. Der gespeicherte Wert wird unverändert durchgereicht, damit
+// `migrateServicePrivs` bei jedem Laden dieselbe Zuordnung findet.
 function serviceToRow(s: Service, congregationId: string, position: number) {
   return {
     congregation_id: congregationId,
     key: s.key,
     name: s.name,
     count: s.count,
-    priv: s.priv,
+    priv: s.legacyPriv ?? null,
     groups: Boolean(s.groups),
     position,
   }
@@ -272,7 +294,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const firstErr = [cong, persons, services, weeks, absences, notifs, confs, members, invites].find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
 
-  const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
+  const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
+  const personList = migrateServicePrivs(
+    (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
+    serviceList,
+  )
   const weekList = (weeks.data ?? []).map((r) => (r as WeekRow).data)
 
   const confirmations: ConfirmationMap = {}
@@ -298,7 +324,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     planner: Boolean(member.planner),
     personId: (member.person_id as string | null) ?? null,
     persons: personList,
-    services: (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow)),
+    services: serviceList,
     weeks: weekList,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: (notifs.data ?? []).map((r) => notificationFromRow(r as NotificationRow)),

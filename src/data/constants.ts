@@ -14,7 +14,7 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen. */
 export const PLANNER_ROLES: readonly Role[] = ['aeltester', 'dienstamtgehilfe']
 
-/** Aufgabenbereiche (Reihenfolge = Toggle-Reihenfolge im Detail). */
+/** Feste Aufgabenbereiche (Reihenfolge = Toggle-Reihenfolge im Detail). */
 export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   vorsitz: 'Vorsitz',
   vortrag: 'Vorträge',
@@ -23,15 +23,14 @@ export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   leser: 'Leser',
   schulung: 'Schulungsaufgaben',
   studium: 'Studium leiten',
-  mikrofon: 'Mikrofone',
-  ton: 'Ton / Video',
-  ordner: 'Ordner / Eingang',
-  zoomordner: 'Zoom-Ordner',
   wtLeiter: 'Wachtturm-Studium-Leiter',
   wtVertreter: 'Wachtturm-Studium-Vertreter',
 }
 
-/** Die slot-relevanten Aufgabenbereiche (Toggle-Reihenfolge im Detail). */
+/**
+ * Die festen, slot-relevanten Aufgabenbereiche (Toggle-Reihenfolge im Detail).
+ * Die Hilfsdienst-Bereiche folgen dahinter und kommen aus `state.services`.
+ */
 export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'vorsitz',
   'vortrag',
@@ -40,29 +39,7 @@ export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'leser',
   'schulung',
   'studium',
-  'mikrofon',
-  'ton',
-  'ordner',
-  'zoomordner',
 ]
-
-/**
- * Aufgabenbereiche, die laut den Anweisungen für die Zusammenkunft nur getaufte
- * Brüder ausführen — also alle außer den Schulungsaufgaben (die auch Schwestern
- * übernehmen). Steuert die Geschlechts-Prüfung bei der Zuteilung (isQualified).
- */
-export const BROTHERS_ONLY: ReadonlySet<QualificationKey> = new Set<QualificationKey>([
-  'vorsitz',
-  'vortrag',
-  'gebet',
-  'bibellesung',
-  'leser',
-  'studium',
-  'mikrofon',
-  'ton',
-  'ordner',
-  'zoomordner',
-])
 
 /** Feste Rollen (fixer Leiter/Vertreter) — eigener Block im Personen-Detail. */
 export const WT_ROLE_ORDER: readonly QualificationKey[] = ['wtLeiter', 'wtVertreter']

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildImportWeek, DEMO_SERVICES } from './demo'
-import { displayName, isSong, partWorkload, workloadOf } from './helpers'
+import { displayName, isSong, partWorkload, serviceQualKey, workloadOf } from './helpers'
 import { autoAssignMeeting } from './planning'
-import type { Meeting, PartItem, Person, Qualifications, QualificationKey, Service, Week } from './types'
+import type { Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
 
 /**
  * Simulation der Auto-Zuteilung mit einer großen Versammlung (~100 Personen)
@@ -11,17 +11,24 @@ import type { Meeting, PartItem, Person, Qualifications, QualificationKey, Servi
  * die Ausgewogenheit der Verteilung.
  */
 
+/** Bereiche der Demo-Hilfsdienste (je Dienst einer). */
+const TON = serviceQualKey('ton')
+const MIK = serviceQualKey('mik')
+const ZOOM = serviceQualKey('zoom')
+/** Die drei Ordner-Dienste sind eigene Bereiche — „Ordner“ heißt hier: alle drei. */
+const ORDNER = [serviceQualKey('ord'), serviceQualKey('saal'), serviceQualKey('rund')]
+
 let counter = 0
-function priv(on: QualificationKey[]): Qualifications {
+function priv(on: string[]): Qualifications {
   const base: Qualifications = {
     vorsitz: false, vortrag: false, gebet: false, bibellesung: false, leser: false,
-    schulung: false, studium: false, mikrofon: false, ton: false, ordner: false, zoomordner: false,
+    schulung: false, studium: false,
   }
   for (const key of on) base[key] = true
   return base
 }
 function mk(
-  quals: QualificationKey[],
+  quals: string[],
   opts: { absent?: number[]; wtLeiter?: boolean; wtVertreter?: boolean; female?: boolean } = {},
 ): Person {
   counter += 1
@@ -40,7 +47,7 @@ function mk(
     ...(opts.female ? { female: true } : {}),
   }
 }
-function many(n: number, quals: QualificationKey[]): Person[] {
+function many(n: number, quals: string[]): Person[] {
   return Array.from({ length: n }, () => mk(quals))
 }
 
@@ -91,10 +98,10 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
   const conductor = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtLeiter: true, absent: [3] })
   const deputy = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtVertreter: true })
   const elders = many(10, ['vorsitz', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung'])
-  const servants = many(20, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'mikrofon', 'ordner'])
-  const tonPool = many(4, ['ton']) // nur Ton → für den Balance-Test
-  const mikPool = many(12, ['mikrofon'])
-  const ordPool = many(16, ['ordner'])
+  const servants = many(20, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', MIK, ...ORDNER])
+  const tonPool = many(4, [TON]) // nur Ton → für den Balance-Test
+  const mikPool = many(12, [MIK])
+  const ordPool = many(16, ORDNER)
   const sisters = Array.from({ length: 24 }, () => mk(['schulung'], { female: true }))
   const readers = many(10, ['bibellesung', 'leser'])
   const speakers = many(6, ['vortrag', 'gebet'])
@@ -172,8 +179,8 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
 
   it('lässt nicht besetzbare Slots offen (statt zu erzwingen)', () => {
     // Nur ein einziger Zoom-Ordner-fähiger Mensch, der obendrein abwesend ist
-    const solo = mk(['ordner'], { absent: [0] })
-    const zoomOnly: Service[] = [{ key: 'zoom', name: 'Zoom-Ordner', count: 1, priv: 'ordner', groups: false }]
+    const solo = mk([ZOOM], { absent: [0] })
+    const zoomOnly: Service[] = [{ key: 'zoom', name: 'Zoom-Ordner', count: 1, groups: false }]
     const w = simulate([solo], zoomOnly, 1)
     expect(w[0].mid.helpers.zoom?.[0] ?? '').toBe('') // bleibt offen
   })
@@ -181,7 +188,7 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
 
 /* ---- Hilfsbauten für Fenster-/Asymmetrie-Tests -------------------------- */
 
-function named(fn: string, ln: string, quals: QualificationKey[]): Person {
+function named(fn: string, ln: string, quals: string[]): Person {
   return { id: `n-${ln}`, fn, ln, role: 'verkuendiger', tel: '', mail: '', absent: [], priv: priv(quals) }
 }
 function emptyMeeting(): Meeting {
@@ -195,12 +202,12 @@ function partHistoryMeeting(name: string, n: number): Meeting {
 function wk(mid: Meeting, we: Meeting): Week {
   return { range: '', book: '', current: false, mid, we }
 }
-const MIK1: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, priv: 'mikrofon', groups: false }]
+const MIK1: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
 
 describe('Gleitendes Fenster (±3 Wochen)', () => {
   it('zählt nur Einteilungen innerhalb des Fensters', () => {
-    const a = named('Anton', 'Anton', ['mikrofon']) // "A. Anton"
-    const b = named('Bruno', 'Bruno', ['mikrofon']) // "B. Bruno"
+    const a = named('Anton', 'Anton', [MIK]) // "A. Anton"
+    const b = named('Bruno', 'Bruno', [MIK]) // "B. Bruno"
     const weeks: Week[] = Array.from({ length: 6 }, () => wk(emptyMeeting(), emptyMeeting()))
     weeks[0].mid.helpers.mik = ['A. Anton'] // weit weg → außerhalb des Fensters von Woche 5
     weeks[4].mid.helpers.mik = ['B. Bruno'] // nah dran → innerhalb des Fensters
@@ -213,13 +220,13 @@ describe('Gleitendes Fenster (±3 Wochen)', () => {
 describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
   it('wer viele Aufgaben hat, bekommt weniger Hilfsdienste', () => {
     // P hat in der Historie 3 Programmpunkte; drei reine Mikrofon-Leute sind frei.
-    const p = named('Paul', 'Part', ['vortrag', 'mikrofon']) // "P. Part"
-    const mikOnly = [named('Max', 'Mik1', ['mikrofon']), named('Mia', 'Mik2', ['mikrofon']), named('Mio', 'Mik3', ['mikrofon'])]
+    const p = named('Paul', 'Part', ['vortrag', MIK]) // "P. Part"
+    const mikOnly = [named('Max', 'Mik1', [MIK]), named('Mia', 'Mik2', [MIK]), named('Mio', 'Mik3', [MIK])]
     const weeks: Week[] = [
       wk(partHistoryMeeting('P. Part', 3), emptyMeeting()),
       wk(emptyMeeting(), emptyMeeting()),
     ]
-    const mik2: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, priv: 'mikrofon', groups: false }]
+    const mik2: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
     const res = autoAssignMeeting(weeks, 1, 'mid', [p, ...mikOnly], mik2)
     const mik = res.weeks[1].mid.helpers.mik ?? []
     expect(mik).not.toContain('P. Part') // hohe Gesamtlast → kein Hilfsdienst
@@ -228,7 +235,7 @@ describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
 
   it('Hilfsdienst-Last verringert die Aufgaben-Zuteilung NICHT', () => {
     // Q hat viele Hilfsdienste, aber 0 Aufgaben-Last → volle Chance auf Aufgaben.
-    const q = named('Quirin', 'Quell', ['vortrag', 'mikrofon']) // "Q. Quell"
+    const q = named('Quirin', 'Quell', ['vortrag', MIK]) // "Q. Quell"
     const history = emptyMeeting()
     history.helpers.mik = ['Q. Quell']
     const weeks: Week[] = [wk(history, emptyMeeting()), wk(history, emptyMeeting()), wk(history, emptyMeeting())]
@@ -244,5 +251,39 @@ describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
     // bekommt die Aufgabe (nicht durch Hilfsdienste ausgeschlossen).
     const assigned = (res.weeks[3].mid.sections[0].items[0] as PartItem).names[0].name
     expect(['Q. Quell', 'R. Rein']).toContain(assigned)
+  })
+})
+
+describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
+  const oneWeek = (): Week[] => [wk(emptyMeeting(), emptyMeeting())]
+
+  it('trennt Dienste, die früher einen Bereich teilten (Eingangs- vs. Saalordner)', () => {
+    const entranceOnly = named('Erik', 'Eingang', [serviceQualKey('ord')])
+    const services: Service[] = [
+      { key: 'ord', name: 'Eingangsordner', count: 1, groups: false },
+      { key: 'saal', name: 'Saalordner', count: 1, groups: false },
+    ]
+    const res = autoAssignMeeting(oneWeek(), 0, 'mid', [entranceOnly], services)
+    expect(res.weeks[0].mid.helpers.ord?.[0]).toBe('E. Eingang')
+    expect(res.weeks[0].mid.helpers.saal?.[0] ?? '').toBe('') // eigener Bereich → offen
+    expect(res.unfilled).toBe(1)
+  })
+
+  it('ein neu angelegter Dienst bringt seinen eigenen Bereich mit', () => {
+    const parking: Service[] = [{ key: 'svc-parkplatz', name: 'Parkplatz', count: 1, groups: false }]
+    const nobody = named('Otto', 'Ohne', [MIK]) // qualifiziert, aber nicht für Parkplatz
+    const willing = named('Werner', 'Wagen', [serviceQualKey('svc-parkplatz')])
+
+    const without = autoAssignMeeting(oneWeek(), 0, 'mid', [nobody], parking)
+    expect(without.weeks[0].mid.helpers['svc-parkplatz']?.[0] ?? '').toBe('')
+
+    const with_ = autoAssignMeeting(oneWeek(), 0, 'mid', [nobody, willing], parking)
+    expect(with_.weeks[0].mid.helpers['svc-parkplatz']?.[0]).toBe('W. Wagen')
+  })
+
+  it('Hilfsdienste sind Brüder-Aufgaben — Schwestern bleiben außen vor', () => {
+    const sister = mk([MIK], { female: true })
+    const res = autoAssignMeeting(oneWeek(), 0, 'mid', [sister], MIK1)
+    expect(res.weeks[0].mid.helpers.mik?.[0] ?? '').toBe('')
   })
 })

@@ -3,9 +3,9 @@ import { useApp } from '../app/context'
 import { generateInviteCode } from '../lib/data'
 import { importNextWeek, latestImportedStart } from '../lib/import'
 import { CONG_TO_JW } from '../i18n/langs'
-import { PRIV_KEY, type Dict } from '../i18n/ui'
+import { type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import type { QualificationKey, Service } from '../data/types'
+import type { Service } from '../data/types'
 import './einstellungen.css'
 
 /**
@@ -20,11 +20,10 @@ export function EinstellungenScreen() {
   const [invitePerson, setInvitePerson] = useState('')
   const [invitePlanner, setInvitePlanner] = useState(false)
 
-  const serviceSub = (service: Service): string => {
-    if (service.groups) return t.gruppenRotation
-    if (service.priv) return t.bereich + t[PRIV_KEY[service.priv as QualificationKey]]
-    return t.alleVerk
-  }
+  // Jeder Dienst ist sein eigener Aufgabenbereich (Schalter im Personen-Detail);
+  // nur Gruppen-Dienste rotieren stattdessen Gruppen.
+  const serviceSub = (service: Service): string =>
+    service.groups ? t.gruppenRotation : t.eigenerBereich
 
   const reminderSub = (n: number): string => {
     if (n === 0) return t.remAmTag
@@ -40,7 +39,7 @@ export function EinstellungenScreen() {
     }
     dispatch({
       type: 'addService',
-      service: { key: `svc-${crypto.randomUUID()}`, name, count: 1, priv: null, groups: false },
+      service: { key: `svc-${crypto.randomUUID()}`, name, count: 1, groups: false },
     })
     setServiceName('')
   }

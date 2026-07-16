@@ -4,6 +4,7 @@
  * und die Regeln darunter sind verbindlich. Ersetzt später Persistenz/Backend.
  */
 
+import { serviceQualKey } from './helpers'
 import type {
   Absence,
   MyTask,
@@ -20,6 +21,9 @@ import type {
   SongItem,
   Week,
 } from './types'
+
+/** Bereich der Ordner, die beim Gedächtnismahl die Symbole herumreichen. */
+const ORD = serviceQualKey('ord')
 
 /** Angemeldete Demo-Person (Simon Krüger) — steuert den "DU"-Chip. */
 export const CURRENT_PERSON_ID = 'p9'
@@ -40,19 +44,31 @@ export const WORKBOOK_LABEL = 'Arbeitsheft Sep/Okt 2026'
 
 /* ---- Personen ---------------------------------------------------------- */
 
-const q = (on: ReadonlyArray<QualificationKey | 'lesen'>): Person['priv'] => ({
-  vorsitz: on.includes('vorsitz'),
-  vortrag: on.includes('vortrag'),
-  gebet: on.includes('gebet'),
-  bibellesung: on.includes('bibellesung') || on.includes('lesen'),
-  leser: on.includes('leser') || on.includes('lesen'),
-  schulung: on.includes('schulung'),
-  studium: on.includes('studium'),
-  mikrofon: on.includes('mikrofon'),
-  ton: on.includes('ton'),
-  ordner: on.includes('ordner'),
-  zoomordner: on.includes('zoomordner'),
-})
+/**
+ * Kurzschreibweise für ein Bereichsprofil. Nimmt die sprechenden Alt-Namen
+ * (`lesen`, `mikrofon`, `ordner` …) und bildet sie auf das aktuelle Schema ab:
+ * feste Programm-Bereiche direkt, Hilfsdienste auf ihren Dienst-Bereich
+ * (`ordner` deckt alle drei Ordner-Dienste ab).
+ */
+const q = (on: ReadonlyArray<QualificationKey | 'lesen' | 'mikrofon' | 'ton' | 'ordner' | 'zoomordner'>): Person['priv'] => {
+  const has = (key: string) => on.includes(key as QualificationKey)
+  const ordner = has('ordner')
+  return {
+    vorsitz: has('vorsitz'),
+    vortrag: has('vortrag'),
+    gebet: has('gebet'),
+    bibellesung: has('bibellesung') || has('lesen'),
+    leser: has('leser') || has('lesen'),
+    schulung: has('schulung'),
+    studium: has('studium'),
+    [serviceQualKey('ton')]: has('ton'),
+    [serviceQualKey('mik')]: has('mikrofon'),
+    [serviceQualKey('zoom')]: has('zoomordner'),
+    [serviceQualKey('ord')]: ordner,
+    [serviceQualKey('saal')]: ordner,
+    [serviceQualKey('rund')]: ordner,
+  }
+}
 
 /* ---- Größere Demo-Versammlung (~100 Personen) ---------------------------
  * Zusätzliche Personen mit eindeutigen Anzeigenamen — die Nachnamen kollidieren
@@ -127,17 +143,19 @@ export const DEMO_PERSONS: Person[] = [
 ]
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
-// Drei Ordner-Dienste teilen sich die Qualifikation 'ordner'; der
-// Eingangsordner nutzt den Datenkey 'ord' (Rückwärtskompatibilität zur
-// helpers-Struktur der Wochen). Zoom-/Saalordner haben noch keine Namen
-// in den Demo-Wochen → erscheinen als "offen".
+// Jeder Dienst hat seinen eigenen Aufgabenbereich (`svc:<key>`) — die drei
+// Ordner-Dienste sind also getrennt einstellbar. Der Eingangsordner nutzt den
+// Datenkey 'ord' (Rückwärtskompatibilität zur helpers-Struktur der Wochen).
+// Zoom-/Saal-/Rundgangsordner haben noch keine Namen in den Demo-Wochen →
+// erscheinen als "offen".
 export const DEMO_SERVICES: Service[] = [
-  { key: 'ton', name: 'Ton / Video', count: 1, priv: 'ton', groups: false },
-  { key: 'mik', name: 'Mikrofone', count: 2, priv: 'mikrofon', groups: false },
-  { key: 'zoom', name: 'Zoom-Ordner', count: 1, priv: 'zoomordner', groups: false },
-  { key: 'ord', name: 'Eingangsordner', count: 1, priv: 'ordner', groups: false },
-  { key: 'saal', name: 'Saalordner', count: 1, priv: 'ordner', groups: false },
-  { key: 'rein', name: 'Reinigung', count: 1, priv: null, groups: true },
+  { key: 'ton', name: 'Ton / Video', count: 1, groups: false },
+  { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
+  { key: 'zoom', name: 'Zoom-Ordner', count: 1, groups: false },
+  { key: 'ord', name: 'Eingangsordner', count: 1, groups: false },
+  { key: 'saal', name: 'Saalordner', count: 1, groups: false },
+  { key: 'rund', name: 'Rundgangsordner', count: 1, groups: false },
+  { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
 
 /* ---- Abwesenheiten (eigene) & Mitteilungen ------------------------------ */
@@ -375,7 +393,7 @@ export function buildDemoWeeks(): Week[] {
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 18 · Gebet', null, [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
           sec('GEDÄCHTNISMAHL', 'wein', [
             part(null, 'Gedächtnismahl-Ansprache — „Schätze Jehovas größtes Geschenk“', '30 Min.', [['F. Neumann', 'Redner', 'vortrag']]),
-            part(null, 'Symbole herumreichen', 'Brot · Wein', [['J. Berger', '', 'ordner'], ['P. Schröder', '', 'ordner'], ['G. Peters', '', 'ordner'], ['U. Lang', '', 'ordner']]),
+            part(null, 'Symbole herumreichen', 'Brot · Wein', [['J. Berger', '', ORD], ['P. Schröder', '', ORD], ['G. Peters', '', ORD], ['U. Lang', '', ORD]]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 149 · Gebet', null, [['H. Vogel', 'Gebet', 'gebet']])]),
         ],

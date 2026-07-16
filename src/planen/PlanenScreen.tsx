@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
-import { isSong } from '../data/helpers'
+import { isSong, serviceQualKey } from '../data/helpers'
 import { countOpenSlots, itemMinutes, weekConflicts, type Conflict } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
 import type { PartItem, Section, Service, SlotAssignment } from '../data/types'
@@ -71,7 +71,7 @@ export function PlanenScreen() {
         svc: service.key,
         pos,
         label: service.name,
-        priv: service.priv,
+        priv: service.groups ? null : serviceQualKey(service.key),
         groups: Boolean(service.groups),
       },
     })

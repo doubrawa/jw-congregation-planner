@@ -40,11 +40,18 @@ export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger'
 
 /**
  * Aufgabenbereiche einer Person (Toggles im Personen-Detail).
- * true = qualifiziert für diese Art Slot. Die ersten neun entsprechen den
- * Bereichs-Keys der Programm-Slots; `wtLeiter`/`wtVertreter` sind keine
- * Slot-Keys, sondern kennzeichnen den fixen Wachtturm-Studium-Leiter bzw.
- * seinen Vertreter (Auto-Zuteilung, siehe planning.ts). Optional, damit
- * Alt-Datensätze ohne diese Felder gültig bleiben.
+ * true = qualifiziert für diese Art Slot.
+ *
+ * Zwei Sorten von Bereichen:
+ *  - **fest**: die Bereichs-Keys der Programm-Slots (`vorsitz` … `studium`).
+ *    `wtLeiter`/`wtVertreter` sind keine Slot-Keys, sondern kennzeichnen den
+ *    fixen Wachtturm-Studium-Leiter bzw. seinen Vertreter (siehe planning.ts).
+ *  - **dynamisch**: je konfiguriertem Hilfsdienst genau ein Bereich mit dem Key
+ *    `svc:<dienstKey>` (siehe `serviceQualKey`). Ein neuer Hilfsdienst bringt so
+ *    automatisch einen eigenen Schalter im Personen-Detail mit.
+ *
+ * Alle Felder sind optional lesbar (`boolean | undefined`), damit Alt-Datensätze
+ * ohne die neueren Bereiche gültig bleiben.
  */
 export interface Qualifications {
   vorsitz: boolean
@@ -54,15 +61,25 @@ export interface Qualifications {
   leser: boolean // Leser (Versammlungsbibelstudium / Wachtturm-Studium)
   schulung: boolean // Schulungsaufgaben (auch Schwestern)
   studium: boolean // Studium leiten
-  mikrofon: boolean // Mikrofone
-  ton: boolean // Ton / Video
-  ordner: boolean // Ordner / Eingang
-  zoomordner: boolean // Zoom-Ordner
   wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
   wtVertreter?: boolean // Vertreter, wenn der Leiter abwesend ist
+  [serviceKey: string]: boolean | undefined // `svc:<dienstKey>` je Hilfsdienst
 }
 
-export type QualificationKey = keyof Qualifications
+/**
+ * Die **festen** Bereichs-Keys. Hilfsdienst-Bereiche sind dynamisch und daher
+ * nicht Teil dieser Union — sie werden als freie Strings (`svc:<key>`) geführt.
+ */
+export type QualificationKey =
+  | 'vorsitz'
+  | 'vortrag'
+  | 'gebet'
+  | 'bibellesung'
+  | 'leser'
+  | 'schulung'
+  | 'studium'
+  | 'wtLeiter'
+  | 'wtVertreter'
 
 export interface Person {
   id: string
@@ -132,13 +149,24 @@ export interface Week {
   we: Meeting // Wochenende
 }
 
-/** Hilfsdienst (Einstellungen). Konfiguriert Anzahl der Slots. */
+/**
+ * Hilfsdienst (Einstellungen). Konfiguriert Anzahl der Slots.
+ *
+ * Jeder Dienst besitzt genau einen Aufgabenbereich — abgeleitet aus `key`
+ * (`serviceQualKey`), nicht gespeichert. Ausnahme: Dienste mit `groups`
+ * rotieren Gruppen statt Personen und brauchen daher keinen Bereich.
+ */
 export interface Service {
   key: string
   name: string
   count: number // 1..6
-  priv: QualificationKey | null // nötige Qualifikation, oder null (z. B. Reinigung)
   groups?: boolean // Gruppen-Rotation (Reinigung: "Gruppe 1–3")
+  /**
+   * Nur Alt-Datensätze: der früher fest zugeordnete Bereichs-Key (z. B. teilten
+   * sich Eingangs- und Saalordner den Bereich `ordner`). Dient ausschließlich der
+   * Migration auf `svc:<key>` beim Laden — neue Dienste setzen das Feld nie.
+   */
+  legacyPriv?: string | null
 }
 
 /** Eigene Abwesenheit (persönlicher Bereich). */

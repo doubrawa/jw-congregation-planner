@@ -3,8 +3,8 @@
  * Regeln stammen aus der Prototyp-Logik (docs/design-handoff).
  */
 
-import { BROTHERS_ONLY, ROLE_LABEL } from './constants'
-import type { Person, ProgramItem, QualificationKey, SongItem, Week } from './types'
+import { ROLE_LABEL } from './constants'
+import type { Person, ProgramItem, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
@@ -27,13 +27,32 @@ export function roleLabel(p: Person): string {
 }
 
 /**
+ * Bereichs-Key eines Hilfsdienstes. Jeder Dienst hat genau einen Bereich, der
+ * aus seinem Key abgeleitet wird — so entsteht mit jedem neuen Dienst
+ * automatisch ein Schalter im Personen-Detail. Der Präfix hält die dynamischen
+ * Dienst-Bereiche von den festen Programm-Bereichen getrennt.
+ */
+export function serviceQualKey(serviceKey: string): string {
+  return `svc:${serviceKey}`
+}
+
+/**
+ * Bereiche, die laut den Anweisungen für die Zusammenkunft nur getaufte Brüder
+ * ausführen — das sind alle außer den Schulungsaufgaben (die auch Schwestern
+ * übernehmen), inklusive sämtlicher Hilfsdienste.
+ */
+export function isBrothersOnly(priv: string): boolean {
+  return priv !== 'schulung'
+}
+
+/**
  * Qualifikationsprüfung; unbekannte Bereichs-Keys gelten als nicht erfüllt.
- * Schwestern sind für brüder-only-Bereiche (alle außer Schulungsaufgaben) nicht
- * qualifiziert — greift bei Auto- und manueller Zuteilung.
+ * Schwestern sind für brüder-only-Bereiche nicht qualifiziert — greift bei Auto-
+ * und manueller Zuteilung.
  */
 export function isQualified(p: Person, priv: string): boolean {
-  if (!(priv in p.priv) || !p.priv[priv as QualificationKey]) return false
-  if (p.female && BROTHERS_ONLY.has(priv as QualificationKey)) return false
+  if (!p.priv[priv]) return false
+  if (p.female && isBrothersOnly(priv)) return false
   return true
 }
 

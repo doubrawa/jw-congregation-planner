@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { initials, roleLabel } from '../data/helpers'
+import { initials, isBrothersOnly, roleLabel, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
-import type { Person, QualificationKey, Role } from '../data/types'
+import type { Person, Role } from '../data/types'
 import './personen.css'
 
 const ROLE_ORDER: readonly Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
@@ -17,15 +17,12 @@ const EMPTY_PRIV: Person['priv'] = {
   leser: false,
   schulung: false,
   studium: false,
-  mikrofon: false,
-  ton: false,
-  ordner: false,
-  zoomordner: false,
 }
 
 /**
  * Personen (Screen 5, nur Planer): Liste mit Live-Suche und Detail mit
- * Stammdaten, Rollen-Chips und den 9 Aufgabenbereich-Toggles.
+ * Stammdaten, Rollen-Chips und den Aufgabenbereich-Toggles (feste Bereiche +
+ * je konfiguriertem Hilfsdienst einer).
  */
 export function PersonenScreen() {
   const { state } = useApp()
@@ -197,15 +194,28 @@ function PersonDetail({ person }: { person: Person }) {
       <div className="panel panel--pb10" data-farbe="petrol">
         <div className="panel-label">{t.aufgabenbereiche}</div>
         {QUALIFICATION_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={t[PRIV_KEY[key]]} person={person} update={update} />
         ))}
+        {/* Je Hilfsdienst ein Bereich; Gruppen-Dienste (Reinigung) rotieren
+            Gruppen statt Personen und haben deshalb keinen. */}
+        {state.services
+          .filter((service) => !service.groups)
+          .map((service) => (
+            <PrivToggle
+              key={service.key}
+              qkey={serviceQualKey(service.key)}
+              label={tu(service.name)}
+              person={person}
+              update={update}
+            />
+          ))}
       </div>
 
       <div className="panel panel--pb10" data-farbe="gold">
         <div className="panel-label">{t.wtRollenLabel}</div>
         <p className="panel-hint">{t.wtRollenHint}</p>
         {WT_ROLE_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={t[PRIV_KEY[key]]} person={person} update={update} />
         ))}
       </div>
 
@@ -223,25 +233,26 @@ function PersonDetail({ person }: { person: Person }) {
 /** Einzelner Aufgabenbereich-/Rollen-Schalter im Personen-Detail. */
 function PrivToggle({
   qkey,
+  label,
   person,
   update,
 }: {
-  qkey: QualificationKey
+  qkey: string
+  label: string
   person: Person
   update: (patch: Partial<Person>) => void
 }) {
-  const { t } = useT()
   // Schwestern können nur Schulungsaufgaben — alle anderen Bereiche gesperrt.
-  const locked = Boolean(person.female) && qkey !== 'schulung'
+  const locked = Boolean(person.female) && isBrothersOnly(qkey)
   const on = !locked && Boolean(person.priv[qkey])
   return (
     <div className={locked ? 'priv-row priv-row--locked' : 'priv-row'}>
-      <span className="priv-label">{t[PRIV_KEY[qkey]]}</span>
+      <span className="priv-label">{label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={on}
-        aria-label={t[PRIV_KEY[qkey]]}
+        aria-label={label}
         disabled={locked}
         className={on ? 'switch is-on' : 'switch'}
         onClick={() => update({ priv: { ...person.priv, [qkey]: !on } })}

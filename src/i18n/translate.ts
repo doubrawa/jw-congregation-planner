@@ -74,7 +74,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "Reinigung": "التنظيف",
     "Zoom-Ordner": "مرشد زوم",
     "Eingangsordner": "مرشد المدخل",
-    "Saalordner": "مرشد القاعة",
+    "Saalordner": "مرشد القاعة", "Rundgangsordner": "مرشد الجولة",
     "Ältester": "شيخ",
     "Dienstamtgehilfe": "خادم مساعد",
     "Verkündiger": "ناشر",
@@ -107,7 +107,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Königreichssaal': 'Kingdom Hall',
     'Gespräche beginnen (informell)': 'Starting a Conversation (informal)',
     'Ton / Video': 'Audio / video', 'Mikrofone': 'Microphones', 'Ordner / Eingang': 'Attendants', 'Reinigung': 'Cleaning',
-    'Zoom-Ordner': 'Zoom attendant', 'Eingangsordner': 'Entrance attendant', 'Saalordner': 'Hall attendant',
+    'Zoom-Ordner': 'Zoom attendant', 'Eingangsordner': 'Entrance attendant', 'Saalordner': 'Hall attendant', 'Rundgangsordner': 'Roving attendant',
     'Dienstvortrag': 'Service talk', 'Kreisaufseher': 'Circuit overseer', 'DIENSTVORTRAG': 'SERVICE TALK',
     'GEDÄCHTNISMAHL': 'MEMORIAL', 'Gedächtnismahl-Ansprache': 'Memorial talk',
     '„Schätze Jehovas größtes Geschenk“': '“Treasure Jehovah’s Greatest Gift”',
@@ -155,7 +155,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Königreichssaal': 'Salón del Reino',
     'Gespräche beginnen (informell)': 'Empiece conversaciones (informal)',
     'Ton / Video': 'Audio y video', 'Mikrofone': 'Micrófonos', 'Ordner / Eingang': 'Acomodadores', 'Reinigung': 'Limpieza',
-    'Zoom-Ordner': 'Acomodador de Zoom', 'Eingangsordner': 'Acomodador de entrada', 'Saalordner': 'Acomodador de sala',
+    'Zoom-Ordner': 'Acomodador de Zoom', 'Eingangsordner': 'Acomodador de entrada', 'Saalordner': 'Acomodador de sala', 'Rundgangsordner': 'Acomodador itinerante',
     'Dienstvortrag': 'Discurso de servicio', 'Kreisaufseher': 'Superintendente de circuito', 'DIENSTVORTRAG': 'DISCURSO DE SERVICIO',
     'GEDÄCHTNISMAHL': 'CONMEMORACIÓN', 'Gedächtnismahl-Ansprache': 'Discurso de la Conmemoración',
     '„Schätze Jehovas größtes Geschenk“': '“Valoremos el mayor regalo de Jehová”',
@@ -203,7 +203,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Königreichssaal': 'Salle du Royaume',
     'Gespräche beginnen (informell)': 'Engage la conversation (informel)',
     'Ton / Video': 'Sonorisation / vidéo', 'Mikrofone': 'Micros', 'Ordner / Eingang': 'Placeurs', 'Reinigung': 'Ménage',
-    'Zoom-Ordner': 'Placeur Zoom', 'Eingangsordner': 'Placeur à l\u2019entrée', 'Saalordner': 'Placeur de salle',
+    'Zoom-Ordner': 'Placeur Zoom', 'Eingangsordner': 'Placeur à l\u2019entrée', 'Saalordner': 'Placeur de salle', 'Rundgangsordner': 'Placeur volant',
     'Dienstvortrag': 'Discours de service', 'Kreisaufseher': 'Responsable de circonscription', 'DIENSTVORTRAG': 'DISCOURS DE SERVICE',
     'GEDÄCHTNISMAHL': 'MÉMORIAL', 'Gedächtnismahl-Ansprache': 'Discours du Mémorial',
     '„Schätze Jehovas größtes Geschenk“': '« Chérissons le plus beau cadeau de Jéhovah »',
@@ -251,7 +251,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Di casa in casa', 'Informell': 'Testimonianza informale', 'In der Öffentlichkeit': 'Testimonianza pubblica',
     'Königreichssaal': 'Sala del Regno',
     'Mikrofone': 'Microfoni', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Uscieri', 'Reinigung': 'Pulizie',
-    'Zoom-Ordner': 'Usciere Zoom', 'Eingangsordner': 'Usciere all’ingresso', 'Saalordner': 'Usciere di sala', 'Dienstvortrag': 'Discorso di servizio',
+    'Zoom-Ordner': 'Usciere Zoom', 'Eingangsordner': 'Usciere all’ingresso', 'Saalordner': 'Usciere di sala', 'Rundgangsordner': 'Usciere itinerante', 'Dienstvortrag': 'Discorso di servizio',
     'Ältester': 'Anziano', 'Dienstamtgehilfe': 'Servitore di ministero', 'Verkündiger': 'Proclamatore', 'Verkündigerin': 'Proclamatrice'
   },
   pt: {
@@ -271,7 +271,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'De casa em casa', 'Informell': 'Testemunho informal', 'In der Öffentlichkeit': 'Testemunho público',
     'Königreichssaal': 'Salão do Reino',
     'Mikrofone': 'Microfones', 'Ton / Video': 'Áudio/vídeo', 'Ordner / Eingang': 'Indicadores', 'Reinigung': 'Limpeza',
-    'Zoom-Ordner': 'Indicador do Zoom', 'Eingangsordner': 'Indicador de entrada', 'Saalordner': 'Indicador de sala', 'Dienstvortrag': 'Discurso de serviço',
+    'Zoom-Ordner': 'Indicador do Zoom', 'Eingangsordner': 'Indicador de entrada', 'Saalordner': 'Indicador de sala', 'Rundgangsordner': 'Indicador volante', 'Dienstvortrag': 'Discurso de serviço',
     'Ältester': 'Ancião', 'Dienstamtgehilfe': 'Servo ministerial', 'Verkündiger': 'Publicador', 'Verkündigerin': 'Publicadora'
   },
   nl: {
@@ -291,7 +291,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Van huis tot huis', 'Informell': 'Informeel getuigenis', 'In der Öffentlichkeit': 'Openbaar getuigenis',
     'Königreichssaal': 'Koninkrijkszaal',
     'Mikrofone': 'Microfoons', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Zaaldienst', 'Reinigung': 'Schoonmaak',
-    'Zoom-Ordner': 'Zoom-zaaldienst', 'Eingangsordner': 'Zaaldienst ingang', 'Saalordner': 'Zaaldienst zaal', 'Dienstvortrag': 'Dienstlezing',
+    'Zoom-Ordner': 'Zoom-zaaldienst', 'Eingangsordner': 'Zaaldienst ingang', 'Saalordner': 'Zaaldienst zaal', 'Rundgangsordner': 'Zaaldienst ronde', 'Dienstvortrag': 'Dienstlezing',
     'Ältester': 'Ouderling', 'Dienstamtgehilfe': 'Dienaar in de bediening', 'Verkündiger': 'Verkondiger', 'Verkündigerin': 'Verkondigster'
   },
   pl: {
@@ -311,7 +311,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Od domu do domu', 'Informell': 'Świadczenie nieformalne', 'In der Öffentlichkeit': 'Świadczenie publiczne',
     'Königreichssaal': 'Sala Królestwa',
     'Mikrofone': 'Mikrofony', 'Ton / Video': 'Dźwięk/wideo', 'Ordner / Eingang': 'Porządkowi', 'Reinigung': 'Sprzątanie',
-    'Zoom-Ordner': 'Porządkowy Zoom', 'Eingangsordner': 'Porządkowy przy wejściu', 'Saalordner': 'Porządkowy w sali', 'Dienstvortrag': 'Wykład służbowy',
+    'Zoom-Ordner': 'Porządkowy Zoom', 'Eingangsordner': 'Porządkowy przy wejściu', 'Saalordner': 'Porządkowy w sali', 'Rundgangsordner': 'Porządkowy obchodu', 'Dienstvortrag': 'Wykład służbowy',
     'Ältester': 'Starszy', 'Dienstamtgehilfe': 'Sługa pomocniczy', 'Verkündiger': 'Głosiciel', 'Verkündigerin': 'Głosicielka'
   },
   ru: {
@@ -331,7 +331,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'По домам', 'Informell': 'Неформальное свидетельствование', 'In der Öffentlichkeit': 'Публичное свидетельствование',
     'Königreichssaal': 'Зал Царства',
     'Mikrofone': 'Микрофоны', 'Ton / Video': 'Звук/видео', 'Ordner / Eingang': 'Распорядители', 'Reinigung': 'Уборка',
-    'Zoom-Ordner': 'Распорядитель Zoom', 'Eingangsordner': 'Распорядитель у входа', 'Saalordner': 'Распорядитель в зале', 'Dienstvortrag': 'Речь о служении',
+    'Zoom-Ordner': 'Распорядитель Zoom', 'Eingangsordner': 'Распорядитель у входа', 'Saalordner': 'Распорядитель в зале', 'Rundgangsordner': 'Распорядитель обхода', 'Dienstvortrag': 'Речь о служении',
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Служебный помощник', 'Verkündiger': 'Возвещатель', 'Verkündigerin': 'Возвещательница'
   },
   uk: {
@@ -351,7 +351,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Від дому до дому', 'Informell': 'Неформальне свідчення', 'In der Öffentlichkeit': 'Свідчення в громадських місцях',
     'Königreichssaal': 'Зал Царства',
     'Mikrofone': 'Мікрофони', 'Ton / Video': 'Звук/відео', 'Ordner / Eingang': 'Розпорядники', 'Reinigung': 'Прибирання',
-    'Zoom-Ordner': 'Розпорядник Zoom', 'Eingangsordner': 'Розпорядник біля входу', 'Saalordner': 'Розпорядник у залі', 'Dienstvortrag': 'Промова про служіння',
+    'Zoom-Ordner': 'Розпорядник Zoom', 'Eingangsordner': 'Розпорядник біля входу', 'Saalordner': 'Розпорядник у залі', 'Rundgangsordner': 'Розпорядник обходу', 'Dienstvortrag': 'Промова про служіння',
     'Ältester': 'Старійшина', 'Dienstamtgehilfe': 'Службовий помічник', 'Verkündiger': 'Вісник', 'Verkündigerin': 'Вісниця'
   },
   ro: {
@@ -371,7 +371,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Din casă în casă', 'Informell': 'Mărturie informală', 'In der Öffentlichkeit': 'Mărturie publică',
     'Königreichssaal': 'Sala Regatului',
     'Mikrofone': 'Microfoane', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Uşieri', 'Reinigung': 'Curățenie',
-    'Zoom-Ordner': 'Uşier Zoom', 'Eingangsordner': 'Uşier la intrare', 'Saalordner': 'Uşier de sală', 'Dienstvortrag': 'Cuvântare de serviciu',
+    'Zoom-Ordner': 'Uşier Zoom', 'Eingangsordner': 'Uşier la intrare', 'Saalordner': 'Uşier de sală', 'Rundgangsordner': 'Uşier de rond', 'Dienstvortrag': 'Cuvântare de serviciu',
     'Ältester': 'Bătrân', 'Dienstamtgehilfe': 'Slujitor auxiliar', 'Verkündiger': 'Vestitor', 'Verkündigerin': 'Vestitoare'
   },
   cs: {
@@ -391,7 +391,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Dům od domu', 'Informell': 'Neformální svědectví', 'In der Öffentlichkeit': 'Veřejné svědectví',
     'Königreichssaal': 'Sál Království',
     'Mikrofone': 'Mikrofony', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Pořadatelé', 'Reinigung': 'Úklid',
-    'Zoom-Ordner': 'Pořadatel Zoom', 'Eingangsordner': 'Pořadatel u vchodu', 'Saalordner': 'Pořadatel v sále', 'Dienstvortrag': 'Projev ke službě',
+    'Zoom-Ordner': 'Pořadatel Zoom', 'Eingangsordner': 'Pořadatel u vchodu', 'Saalordner': 'Pořadatel v sále', 'Rundgangsordner': 'Pořadatel obchůzky', 'Dienstvortrag': 'Projev ke službě',
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služební pomocník', 'Verkündiger': 'Zvěstovatel', 'Verkündigerin': 'Zvěstovatelka'
   },
   sk: {
@@ -411,7 +411,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Z domu do domu', 'Informell': 'Neformálne svedectvo', 'In der Öffentlichkeit': 'Verejné svedectvo',
     'Königreichssaal': 'Sála Kráľovstva',
     'Mikrofone': 'Mikrofóny', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Usporiadatelia', 'Reinigung': 'Upratovanie',
-    'Zoom-Ordner': 'Usporiadateľ Zoom', 'Eingangsordner': 'Usporiadateľ pri vchode', 'Saalordner': 'Usporiadateľ v sále', 'Dienstvortrag': 'Prejav o službe',
+    'Zoom-Ordner': 'Usporiadateľ Zoom', 'Eingangsordner': 'Usporiadateľ pri vchode', 'Saalordner': 'Usporiadateľ v sále', 'Rundgangsordner': 'Usporiadateľ obchôdzky', 'Dienstvortrag': 'Prejav o službe',
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služobný pomocník', 'Verkündiger': 'Zvestovateľ', 'Verkündigerin': 'Zvestovateľka'
   },
   hr: {
@@ -431,7 +431,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Od kuće do kuće', 'Informell': 'Neformalno svjedočenje', 'In der Öffentlichkeit': 'Javno svjedočenje',
     'Königreichssaal': 'Dvorana Kraljevstva',
     'Mikrofone': 'Mikrofoni', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Redari', 'Reinigung': 'Čišćenje',
-    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Dienstvortrag': 'Predavanje o službi',
+    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi',
     'Ältester': 'Starješina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavitelj', 'Verkündigerin': 'Objaviteljica'
   },
   sr: {
@@ -451,7 +451,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Od kuće do kuće', 'Informell': 'Neformalno svedočenje', 'In der Öffentlichkeit': 'Javno svedočenje',
     'Königreichssaal': 'Dvorana Kraljevstva',
     'Mikrofone': 'Mikrofoni', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Redari', 'Reinigung': 'Čišćenje',
-    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Dienstvortrag': 'Predavanje o službi',
+    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi',
     'Ältester': 'Starešina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavljivač', 'Verkündigerin': 'Objavljivačica'
   },
   bg: {
@@ -471,7 +471,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'От къща на къща', 'Informell': 'Неформално свидетелстване', 'In der Öffentlichkeit': 'Публично свидетелстване',
     'Königreichssaal': 'Зала на Царството',
     'Mikrofone': 'Микрофони', 'Ton / Video': 'Звук/видео', 'Ordner / Eingang': 'Разпоредители', 'Reinigung': 'Почистване',
-    'Zoom-Ordner': 'Разпоредител в Zoom', 'Eingangsordner': 'Разпоредител на входа', 'Saalordner': 'Разпоредител в залата', 'Dienstvortrag': 'Реч за службата',
+    'Zoom-Ordner': 'Разпоредител в Zoom', 'Eingangsordner': 'Разпоредител на входа', 'Saalordner': 'Разпоредител в залата', 'Rundgangsordner': 'Разпоредител на обхода', 'Dienstvortrag': 'Реч за службата',
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Помощник-служител', 'Verkündiger': 'Вестител', 'Verkündigerin': 'Вестителка'
   },
   hu: {
@@ -491,7 +491,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Házról házra', 'Informell': 'Kötetlen tanúskodás', 'In der Öffentlichkeit': 'Nyilvános tanúskodás',
     'Königreichssaal': 'Királyság-terem',
     'Mikrofone': 'Mikrofonok', 'Ton / Video': 'Hang/videó', 'Ordner / Eingang': 'Rendezők', 'Reinigung': 'Takarítás',
-    'Zoom-Ordner': 'Zoom-rendező', 'Eingangsordner': 'Bejárati rendező', 'Saalordner': 'Termi rendező', 'Dienstvortrag': 'Szolgálati előadás',
+    'Zoom-Ordner': 'Zoom-rendező', 'Eingangsordner': 'Bejárati rendező', 'Saalordner': 'Termi rendező', 'Rundgangsordner': 'Körjáró rendező', 'Dienstvortrag': 'Szolgálati előadás',
     'Ältester': 'Vén', 'Dienstamtgehilfe': 'Kisegítőszolga', 'Verkündiger': 'Hírnök', 'Verkündigerin': 'Hírnöknő'
   },
   el: {
@@ -511,7 +511,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Από Σπίτι σε Σπίτι', 'Informell': 'Ανεπίσημη Μαρτυρία', 'In der Öffentlichkeit': 'Δημόσια Μαρτυρία',
     'Königreichssaal': 'Αίθουσα Βασιλείας',
     'Mikrofone': 'Μικρόφωνα', 'Ton / Video': 'Ήχος/βίντεο', 'Ordner / Eingang': 'Ταξιθέτες', 'Reinigung': 'Καθαρισμός',
-    'Zoom-Ordner': 'Ταξιθέτης Zoom', 'Eingangsordner': 'Ταξιθέτης εισόδου', 'Saalordner': 'Ταξιθέτης αίθουσας', 'Dienstvortrag': 'Ομιλία διακονίας',
+    'Zoom-Ordner': 'Ταξιθέτης Zoom', 'Eingangsordner': 'Ταξιθέτης εισόδου', 'Saalordner': 'Ταξιθέτης αίθουσας', 'Rundgangsordner': 'Ταξιθέτης περιπολίας', 'Dienstvortrag': 'Ομιλία διακονίας',
     'Ältester': 'Πρεσβύτερος', 'Dienstamtgehilfe': 'Διακονικός υπηρέτης', 'Verkündiger': 'Ευαγγελιζόμενος', 'Verkündigerin': 'Ευαγγελιζόμενη'
   },
   tr: {
@@ -531,7 +531,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Evden eve', 'Informell': 'Resmi olmayan şahitlik', 'In der Öffentlichkeit': 'Umumi şahitlik',
     'Königreichssaal': 'İbadet Salonu',
     'Mikrofone': 'Mikrofonlar', 'Ton / Video': 'Ses/video', 'Ordner / Eingang': 'Görevliler', 'Reinigung': 'Temizlik',
-    'Zoom-Ordner': 'Zoom görevlisi', 'Eingangsordner': 'Giriş görevlisi', 'Saalordner': 'Salon görevlisi', 'Dienstvortrag': 'Hizmet konuşması',
+    'Zoom-Ordner': 'Zoom görevlisi', 'Eingangsordner': 'Giriş görevlisi', 'Saalordner': 'Salon görevlisi', 'Rundgangsordner': 'Devriye görevlisi', 'Dienstvortrag': 'Hizmet konuşması',
     'Ältester': 'İhtiyar', 'Dienstamtgehilfe': 'Yardımcı hizmetçi', 'Verkündiger': 'Müjdeci', 'Verkündigerin': 'Müjdeci'
   },
   sv: {
@@ -551,7 +551,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Hus till hus', 'Informell': 'Informellt vittnande', 'In der Öffentlichkeit': 'Offentligt vittnande',
     'Königreichssaal': 'Rikets sal',
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Ljud/video', 'Ordner / Eingang': 'Ordningsvakter', 'Reinigung': 'Städning',
-    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Entrévakt', 'Saalordner': 'Salsvakt', 'Dienstvortrag': 'Tjänsteföredrag',
+    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Entrévakt', 'Saalordner': 'Salsvakt', 'Rundgangsordner': 'Rondvakt', 'Dienstvortrag': 'Tjänsteföredrag',
     'Ältester': 'Äldste', 'Dienstamtgehilfe': 'Biträdande tjänare', 'Verkündiger': 'Förkunnare', 'Verkündigerin': 'Förkunnare'
   },
   da: {
@@ -571,7 +571,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Hus til hus', 'Informell': 'Uformel forkyndelse', 'In der Öffentlichkeit': 'Offentlig forkyndelse',
     'Königreichssaal': 'Rigssal',
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Lyd/video', 'Ordner / Eingang': 'Ordensvagter', 'Reinigung': 'Rengøring',
-    'Zoom-Ordner': 'Zoom-vagt', 'Eingangsordner': 'Indgangsvagt', 'Saalordner': 'Salvagt', 'Dienstvortrag': 'Tjenesteforedrag',
+    'Zoom-Ordner': 'Zoom-vagt', 'Eingangsordner': 'Indgangsvagt', 'Saalordner': 'Salvagt', 'Rundgangsordner': 'Rondevagt', 'Dienstvortrag': 'Tjenesteforedrag',
     'Ältester': 'Ældste', 'Dienstamtgehilfe': 'Menighedstjener', 'Verkündiger': 'Forkynder', 'Verkündigerin': 'Forkynder'
   },
   fi: {
@@ -591,7 +591,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Ovelta ovelle', 'Informell': 'Epävirallinen todistaminen', 'In der Öffentlichkeit': 'Julkinen todistaminen',
     'Königreichssaal': 'Valtakunnansali',
     'Mikrofone': 'Mikrofonit', 'Ton / Video': 'Ääni/video', 'Ordner / Eingang': 'Järjestyksenvalvojat', 'Reinigung': 'Siivous',
-    'Zoom-Ordner': 'Zoom-valvoja', 'Eingangsordner': 'Sisäänkäynnin valvoja', 'Saalordner': 'Salin valvoja', 'Dienstvortrag': 'Palveluspuhe',
+    'Zoom-Ordner': 'Zoom-valvoja', 'Eingangsordner': 'Sisäänkäynnin valvoja', 'Saalordner': 'Salin valvoja', 'Rundgangsordner': 'Kierroksen valvoja', 'Dienstvortrag': 'Palveluspuhe',
     'Ältester': 'Vanhin', 'Dienstamtgehilfe': 'Avustava palvelija', 'Verkündiger': 'Julistaja', 'Verkündigerin': 'Julistaja'
   },
   no: {
@@ -611,7 +611,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Hus til hus', 'Informell': 'Uformelt vitnearbeid', 'In der Öffentlichkeit': 'Offentlig vitnearbeid',
     'Königreichssaal': 'Rikets sal',
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Lyd/video', 'Ordner / Eingang': 'Ordensvakter', 'Reinigung': 'Rengjøring',
-    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Inngangsvakt', 'Saalordner': 'Salvakt', 'Dienstvortrag': 'Tjenesteforedrag',
+    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Inngangsvakt', 'Saalordner': 'Salvakt', 'Rundgangsordner': 'Rondevakt', 'Dienstvortrag': 'Tjenesteforedrag',
     'Ältester': 'Eldste', 'Dienstamtgehilfe': 'Menighetstjener', 'Verkündiger': 'Forkynner', 'Verkündigerin': 'Forkynner'
   },
   id: {
@@ -631,7 +631,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Dari rumah ke rumah', 'Informell': 'Kesaksian informal', 'In der Öffentlichkeit': 'Kesaksian umum',
     'Königreichssaal': 'Balai Kerajaan',
     'Mikrofone': 'Mikrofon', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Petugas', 'Reinigung': 'Kebersihan',
-    'Zoom-Ordner': 'Petugas Zoom', 'Eingangsordner': 'Petugas pintu', 'Saalordner': 'Petugas ruang', 'Dienstvortrag': 'Khotbah dinas',
+    'Zoom-Ordner': 'Petugas Zoom', 'Eingangsordner': 'Petugas pintu', 'Saalordner': 'Petugas ruang', 'Rundgangsordner': 'Petugas keliling', 'Dienstvortrag': 'Khotbah dinas',
     'Ältester': 'Penatua', 'Dienstamtgehilfe': 'Hamba pelayanan', 'Verkündiger': 'Penyiar', 'Verkündigerin': 'Penyiar'
   },
   tl: {
@@ -651,7 +651,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Bahay-bahay', 'Informell': 'Impormal na pagpapatotoo', 'In der Öffentlichkeit': 'Pampublikong pagpapatotoo',
     'Königreichssaal': 'Kingdom Hall',
     'Mikrofone': 'Mga Mikropono', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Mga Attendant', 'Reinigung': 'Paglilinis',
-    'Zoom-Ordner': 'Attendant sa Zoom', 'Eingangsordner': 'Attendant sa pinto', 'Saalordner': 'Attendant sa hall', 'Dienstvortrag': 'Pahayag sa paglilingkod',
+    'Zoom-Ordner': 'Attendant sa Zoom', 'Eingangsordner': 'Attendant sa pinto', 'Saalordner': 'Attendant sa hall', 'Rundgangsordner': 'Attendant sa paglilibot', 'Dienstvortrag': 'Pahayag sa paglilingkod',
     'Ältester': 'Elder', 'Dienstamtgehilfe': 'Ministeryal na lingkod', 'Verkündiger': 'Mamamahayag', 'Verkündigerin': 'Mamamahayag'
   },
   vi: {
@@ -671,7 +671,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Từng nhà', 'Informell': 'Làm chứng bán chính thức', 'In der Öffentlichkeit': 'Làm chứng nơi công cộng',
     'Königreichssaal': 'Phòng Nước Trời',
     'Mikrofone': 'Micro', 'Ton / Video': 'Âm thanh/video', 'Ordner / Eingang': 'Trật tự viên', 'Reinigung': 'Vệ sinh',
-    'Zoom-Ordner': 'Trật tự viên Zoom', 'Eingangsordner': 'Trật tự viên cửa', 'Saalordner': 'Trật tự viên phòng', 'Dienstvortrag': 'Bài giảng về thánh chức',
+    'Zoom-Ordner': 'Trật tự viên Zoom', 'Eingangsordner': 'Trật tự viên cửa', 'Saalordner': 'Trật tự viên phòng', 'Rundgangsordner': 'Trật tự viên tuần tra', 'Dienstvortrag': 'Bài giảng về thánh chức',
     'Ältester': 'Trưởng lão', 'Dienstamtgehilfe': 'Phụ tá hội thánh', 'Verkündiger': 'Người công bố', 'Verkündigerin': 'Người công bố'
   },
   sw: {
@@ -691,7 +691,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Nyumba kwa nyumba', 'Informell': 'Kutoa ushahidi isivyo rasmi', 'In der Öffentlichkeit': 'Kutoa ushahidi hadharani',
     'Königreichssaal': 'Jumba la Ufalme',
     'Mikrofone': 'Maikrofoni', 'Ton / Video': 'Sauti/video', 'Ordner / Eingang': 'Wasimamizi', 'Reinigung': 'Usafi',
-    'Zoom-Ordner': 'Msimamizi wa Zoom', 'Eingangsordner': 'Msimamizi wa mlango', 'Saalordner': 'Msimamizi wa jumba', 'Dienstvortrag': 'Hotuba ya huduma',
+    'Zoom-Ordner': 'Msimamizi wa Zoom', 'Eingangsordner': 'Msimamizi wa mlango', 'Saalordner': 'Msimamizi wa jumba', 'Rundgangsordner': 'Msimamizi wa duru', 'Dienstvortrag': 'Hotuba ya huduma',
     'Ältester': 'Mzee', 'Dienstamtgehilfe': 'Mtumishi wa huduma', 'Verkündiger': 'Mhubiri', 'Verkündigerin': 'Mhubiri'
   },
   zh: {
@@ -711,7 +711,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': '逐户传道', 'Informell': '非正式见证', 'In der Öffentlichkeit': '公众场所见证',
     'Königreichssaal': '王国聚会所',
     'Mikrofone': '话筒', 'Ton / Video': '音响/视频', 'Ordner / Eingang': '招待员', 'Reinigung': '清洁',
-    'Zoom-Ordner': 'Zoom招待员', 'Eingangsordner': '入口招待员', 'Saalordner': '会场招待员', 'Dienstvortrag': '服务演讲',
+    'Zoom-Ordner': 'Zoom招待员', 'Eingangsordner': '入口招待员', 'Saalordner': '会场招待员', 'Rundgangsordner': '巡视招待员', 'Dienstvortrag': '服务演讲',
     'Ältester': '长老', 'Dienstamtgehilfe': '助理仆人', 'Verkündiger': '传道员', 'Verkündigerin': '传道员'
   },
   ja: {
@@ -731,7 +731,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': '家から家', 'Informell': '非公式の証言', 'In der Öffentlichkeit': '公共の場所での証言',
     'Königreichssaal': '王国会館',
     'Mikrofone': 'マイク', 'Ton / Video': '音響/映像', 'Ordner / Eingang': '案内係', 'Reinigung': '清掃',
-    'Zoom-Ordner': 'Zoom案内係', 'Eingangsordner': '入り口案内係', 'Saalordner': '会場案内係', 'Dienstvortrag': '奉仕の話',
+    'Zoom-Ordner': 'Zoom案内係', 'Eingangsordner': '入り口案内係', 'Saalordner': '会場案内係', 'Rundgangsordner': '巡回案内係', 'Dienstvortrag': '奉仕の話',
     'Ältester': '長老', 'Dienstamtgehilfe': '奉仕の僕', 'Verkündiger': '伝道者', 'Verkündigerin': '伝道者'
   },
   ko: {
@@ -751,7 +751,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': '호별 전도', 'Informell': '비공식 증거', 'In der Öffentlichkeit': '공개적 증거',
     'Königreichssaal': '왕국회관',
     'Mikrofone': '마이크', 'Ton / Video': '음향/영상', 'Ordner / Eingang': '안내', 'Reinigung': '청소',
-    'Zoom-Ordner': 'Zoom 안내', 'Eingangsordner': '입구 안내', 'Saalordner': '회관 안내', 'Dienstvortrag': '봉사 연설',
+    'Zoom-Ordner': 'Zoom 안내', 'Eingangsordner': '입구 안내', 'Saalordner': '회관 안내', 'Rundgangsordner': '순회 안내', 'Dienstvortrag': '봉사 연설',
     'Ältester': '장로', 'Dienstamtgehilfe': '봉사의 종', 'Verkündiger': '전도인', 'Verkündigerin': '전도인'
   }
 };

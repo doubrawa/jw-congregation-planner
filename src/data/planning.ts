@@ -8,7 +8,14 @@
  * den Reducer und später direkt testbar.
  */
 
-import { displayName, isQualified, isSong, partWorkload, workloadOf } from './helpers'
+import {
+  displayName,
+  isQualified,
+  isSong,
+  partWorkload,
+  serviceQualKey,
+  workloadOf,
+} from './helpers'
 import type {
   ConfirmationMap,
   Meeting,
@@ -242,7 +249,7 @@ export function autoAssignMeeting(
         arr[pos] = `Gruppe ${1 + (weekIndex % 3)}`
         count++
       } else {
-        const name = pick('helper', svc.priv)
+        const name = pick('helper', serviceQualKey(svc.key))
         if (name) {
           arr[pos] = name
           claim('helper', name)
