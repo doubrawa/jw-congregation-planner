@@ -10,7 +10,8 @@ import './planen.css'
 interface Candidate {
   key: string
   initials: string
-  name: string
+  name: string // Anzeigename (Gruppen: übersetzt)
+  assignName: string // in die Woche geschriebener kanonischer Name (Gruppen: "Gruppe N")
   sub: string
   absent: boolean
   free: boolean
@@ -39,15 +40,26 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const title = sel.kind === 'helper' ? tu(sel.label) : tp(sel.label)
   const sub = `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
 
+  const groupSub = (id: string, ov: string | null): string => {
+    const overseer = state.persons.find((p) => p.id === ov)
+    const n = state.persons.filter((p) => p.grp === id).length
+    const memberLabel = n === 1 ? t.mitglied1 : fill(t.mitgliederN, { n })
+    return overseer ? `${displayName(overseer)} · ${memberLabel}` : memberLabel
+  }
+
   const candidates: Candidate[] = sel.groups
-    ? ['Gruppe 1', 'Gruppe 2', 'Gruppe 3'].map((group) => ({
-        key: group,
-        initials: group.replace('Gruppe ', 'G'),
-        name: tu(group),
-        sub: t.reinigungsgruppe,
-        absent: false,
-        free: false,
-      }))
+    ? state.groups.map((group) => {
+        const num = group.name.replace(/\D/g, '')
+        return {
+          key: group.id,
+          initials: num ? `G${num}` : 'G',
+          name: tu(group.name),
+          assignName: group.name,
+          sub: groupSub(group.id, group.ov),
+          absent: false,
+          free: false,
+        }
+      })
     : state.persons
         .filter((p) => !sel.priv || isQualified(p, sel.priv))
         .map((p) => {
@@ -59,6 +71,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             key: p.id,
             initials: initials(p),
             name,
+            assignName: name,
             sub: `${tu(roleLabel(p))} · ${workloadLabel}`,
             absent: p.absent.includes(sel.wi),
             free: workload === 0,
@@ -71,7 +84,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
       dispatch({ type: 'showToast', text: fill(t.toastAbsentP, { name: cand.name }) })
       return
     }
-    dispatch({ type: 'assign', name: cand.name })
+    dispatch({ type: 'assign', name: cand.assignName })
   }
 
   return (

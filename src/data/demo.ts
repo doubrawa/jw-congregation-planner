@@ -7,6 +7,7 @@
 import { serviceQualKey } from './helpers'
 import type {
   Absence,
+  Group,
   MyTask,
   Notification,
   PartItem,
@@ -117,12 +118,21 @@ function buildExtraPersons(): Person[] {
       priv,
     }
     if (female) person.female = true
+    person.grp = `g${1 + (i % 4)}` // reihum auf die vier Gruppen verteilen
     out.push(person)
   }
   return out
 }
 
-export const DEMO_PERSONS: Person[] = [
+/** Gruppen-Zuordnung der 16 Stammpersonen (Extras rotieren, s. buildExtraPersons). */
+const CORE_GRP: Record<string, string> = {
+  p1: 'g1', p6: 'g1', p9: 'g1', p15: 'g1',
+  p2: 'g2', p7: 'g2', p10: 'g2', p16: 'g2',
+  p3: 'g3', p8: 'g3', p11: 'g3', p12: 'g3',
+  p4: 'g4', p5: 'g4', p13: 'g4', p14: 'g4',
+}
+
+const CORE_PERSONS: Person[] = [
   { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', absent: [], priv: { ...q(['vorsitz', 'vortrag', 'gebet', 'studium']), wtLeiter: true } },
   { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', absent: [], priv: { ...q(['vorsitz', 'vortrag', 'gebet', 'studium']), wtVertreter: true } },
   { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: '+49 152 887 90 04', mail: 'f.neumann@mail.de', absent: [], priv: q(['vorsitz', 'vortrag', 'gebet', 'studium']) },
@@ -140,6 +150,20 @@ export const DEMO_PERSONS: Person[] = [
   { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, tel: '+49 151 340 76 55', mail: 'l.hoffmann@mail.de', absent: [], priv: q(['schulung']) },
   { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, tel: '+49 173 662 09 18', mail: 'e.brandt@mail.de', absent: [2], priv: q(['schulung']) },
   ...buildExtraPersons(),
+]
+
+// grp der Stammpersonen aus CORE_GRP setzen; Extras haben ihres schon.
+export const DEMO_PERSONS: Person[] = CORE_PERSONS.map((p) =>
+  p.grp === undefined ? { ...p, grp: CORE_GRP[p.id] ?? null } : p,
+)
+
+/* ---- Predigtdienstgruppen ---------------------------------------------- */
+// Aufseher (ov) = Älteste p1–p4; Gehilfen (as) = DAG/Verkündiger p6,p7,p8,p13.
+export const DEMO_GROUPS: Group[] = [
+  { id: 'g1', name: 'Gruppe 1', ov: 'p1', as: 'p6' },
+  { id: 'g2', name: 'Gruppe 2', ov: 'p2', as: 'p7' },
+  { id: 'g3', name: 'Gruppe 3', ov: 'p3', as: 'p8' },
+  { id: 'g4', name: 'Gruppe 4', ov: 'p4', as: 'p13' },
 ]
 
 /* ---- Hilfsdienste ------------------------------------------------------- */

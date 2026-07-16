@@ -12,6 +12,7 @@
 
 import {
   buildDemoWeeks,
+  DEMO_GROUPS,
   DEMO_PERSONS,
   DEMO_REMINDERS,
   DEMO_SERVICES,
@@ -20,6 +21,7 @@ import { serviceQualKey } from '../data/helpers'
 import type {
   Absence,
   ConfirmationMap,
+  Group,
   Invite,
   Member,
   Notification,
@@ -46,6 +48,7 @@ interface PersonRow {
   mail: string
   absent: number[]
   priv: Qualifications
+  grp: string | null
 }
 
 interface ServiceRow {
@@ -54,6 +57,14 @@ interface ServiceRow {
   count: number
   priv: string | null
   groups: boolean
+  position: number
+}
+
+interface GroupRow {
+  id: string
+  name: string
+  overseer_id: string | null
+  assistant_id: string | null
   position: number
 }
 
@@ -168,6 +179,7 @@ function personFromRow(r: PersonRow): Person {
     mail: r.mail,
     absent: r.absent ?? [],
     priv: normalizePriv(r.priv),
+    grp: r.grp ?? null,
   }
 }
 
@@ -183,6 +195,22 @@ function personToRow(p: Person, congregationId: string) {
     mail: p.mail,
     absent: p.absent,
     priv: p.priv,
+    grp: p.grp ?? null,
+  }
+}
+
+function groupFromRow(r: GroupRow): Group {
+  return { id: r.id, name: r.name, ov: r.overseer_id, as: r.assistant_id }
+}
+
+function groupToRow(g: Group, congregationId: string, position: number) {
+  return {
+    id: g.id,
+    congregation_id: congregationId,
+    name: g.name,
+    overseer_id: g.ov,
+    assistant_id: g.as,
+    position,
   }
 }
 
@@ -246,6 +274,7 @@ export interface CongregationData {
   personId: string | null
   persons: Person[]
   services: Service[]
+  groups: Group[]
   weeks: Week[]
   absences: Absence[]
   notifications: Notification[]
@@ -278,10 +307,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  const [cong, persons, services, weeks, absences, notifs, confs, members, invites] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites] = await Promise.all([
     supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
+    supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('weeks').select('position, data').eq('congregation_id', congregationId).order('position'),
     supabase.from('absences').select('*').eq('congregation_id', congregationId).eq('user_id', userId).order('from_date'),
     supabase.from('notifications').select('*').eq('congregation_id', congregationId).order('created_at', { ascending: false }),
@@ -291,7 +321,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
   ])
 
-  const firstErr = [cong, persons, services, weeks, absences, notifs, confs, members, invites].find((r) => r.error)?.error
+  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites].find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
@@ -325,6 +355,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     personId: (member.person_id as string | null) ?? null,
     persons: personList,
     services: serviceList,
+    groups: (groups.data ?? []).map((r) => groupFromRow(r as GroupRow)),
     weeks: weekList,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: (notifs.data ?? []).map((r) => notificationFromRow(r as NotificationRow)),
@@ -357,20 +388,31 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
  */
 export async function seedCongregation(congregationId: string): Promise<string | null> {
   if (!supabase) return 'kein Client'
-  const personRows = DEMO_PERSONS.map((p) => {
-    const row = personToRow({ ...p, id: crypto.randomUUID() }, congregationId)
-    return row
-  })
+  // Neue UUIDs vergeben und Referenzen (Person.grp, Group.ov/as) konsistent
+  // ummappen, damit die Demo-Verknüpfungen erhalten bleiben.
+  const personId = new Map(DEMO_PERSONS.map((p) => [p.id, crypto.randomUUID()]))
+  const groupId = new Map(DEMO_GROUPS.map((g) => [g.id, crypto.randomUUID()]))
+  const mapPerson = (id: string | null | undefined) => (id ? (personId.get(id) ?? null) : null)
+
+  const personRows = DEMO_PERSONS.map((p) =>
+    personToRow({ ...p, id: personId.get(p.id)!, grp: p.grp ? (groupId.get(p.grp) ?? null) : null }, congregationId),
+  )
   const serviceRows = DEMO_SERVICES.map((s, i) => serviceToRow(s, congregationId, i))
+  const groupRows = DEMO_GROUPS.map((g, i) =>
+    groupToRow({ ...g, id: groupId.get(g.id)!, ov: mapPerson(g.ov), as: mapPerson(g.as) }, congregationId, i),
+  )
   const weekRows = buildDemoWeeks().map((w, i) => ({
     congregation_id: congregationId,
     position: i,
     data: w,
   }))
 
+  // Personen zuerst (Gruppen referenzieren sie per FK), dann Gruppen.
+  const err1 = (await supabase.from('persons').insert(personRows)).error
+  if (err1) return err1.message
   const results = await Promise.all([
-    supabase.from('persons').insert(personRows),
     supabase.from('services').insert(serviceRows),
+    supabase.from('groups').insert(groupRows),
     supabase.from('weeks').insert(weekRows),
   ])
   const err = results.find((r) => r.error)?.error
@@ -415,6 +457,22 @@ export function saveService(congregationId: string, service: Service, position: 
 export function deleteServiceRow(congregationId: string, key: string): void {
   if (!supabase) return
   void run(supabase.from('services').delete().eq('congregation_id', congregationId).eq('key', key))
+}
+
+export function saveGroupRow(congregationId: string, group: Group): void {
+  if (!supabase) return
+  void run(supabase.from('groups').upsert(groupToRow(group, congregationId, 0)))
+}
+
+export function deleteGroupRow(id: string): void {
+  if (!supabase) return
+  void run(supabase.from('groups').delete().eq('id', id))
+}
+
+/** Schreibt nur die Gruppen-Zuordnung (grp) einer Person zurück. */
+export function savePersonGroup(person: Person): void {
+  if (!supabase) return
+  void run(supabase.from('persons').update({ grp: person.grp ?? null }).eq('id', person.id))
 }
 
 export function saveAbsence(

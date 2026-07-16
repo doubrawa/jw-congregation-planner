@@ -100,6 +100,19 @@
   margin-top: 14px;
 }
 
+/* Predigtdienstgruppe-Auswahl (Stammdaten) — tokentreu wie die Felder. */
+.pers-grp-select {
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 10px;
+  padding-inline-end: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--bord2);
+  background-color: var(--card);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
 .role-chips {
   display: flex;
   gap: 8px;

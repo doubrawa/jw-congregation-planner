@@ -91,6 +91,21 @@ export interface Person {
   mail: string
   absent: number[] // Wochenindizes, an denen die Person abwesend ist
   priv: Qualifications
+  grp?: string | null // Predigtdienstgruppe (Group.id) oder null = keine
+}
+
+/**
+ * Predigtdienstgruppe. Jeder Verkündiger gehört zu höchstens einer Gruppe mit
+ * einem Aufseher (`ov`) und einem Gehilfen (`as`) — beides Person-IDs oder null.
+ * Die Reinigung rotiert über die Gruppen (Wochenindex mod Anzahl); die Wochen
+ * speichern weiterhin den Namens-String ("Gruppe N"), damit alte Daten gültig
+ * bleiben.
+ */
+export interface Group {
+  id: string
+  name: string // z. B. "Gruppe 1"
+  ov: string | null // Aufseher (Person.id)
+  as: string | null // Gehilfe (Person.id)
 }
 
 /** Farb-/Bereichslogik der Panels (wie im Arbeitsheft). */

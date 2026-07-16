@@ -2,7 +2,8 @@
  * Zuteilungslogik — Kernregeln aus dem Design-Handoff ("Interaktionen &
  * Verhalten"): nur Qualifizierte, Abwesende blockiert, Auslastung über alle
  * geladenen Wochen, Auto-Zuteilung wählt geringste Auslastung, Reinigung
- * rotiert Gruppen (Wochenindex mod 3), Gastredner-Slots werden übersprungen.
+ * rotiert über die Predigtdienstgruppen (Wochenindex mod Gruppenzahl),
+ * Gastredner-Slots werden übersprungen.
  *
  * Alle Funktionen sind pur (Eingaben bleiben unverändert) — geeignet für
  * den Reducer und später direkt testbar.
@@ -18,6 +19,7 @@ import {
 } from './helpers'
 import type {
   ConfirmationMap,
+  Group,
   Meeting,
   MeetingTab,
   MyTask,
@@ -118,9 +120,22 @@ export function autoAssignMeeting(
   tab: MeetingTab,
   persons: Person[],
   services: Service[],
+  groups: Group[] = [],
 ): AutoAssignResult {
   const next = structuredClone(weeks)
   const meeting = next[weekIndex][tab]
+
+  // Reinigungs-Regel: Aufseher und Gehilfe der Gruppe, die in dieser Woche
+  // reinigt, sollen möglichst keinen weiteren Hilfsdienst bekommen (sie sind mit
+  // der Reinigung beschäftigt). Umgesetzt als weicher Malus bei der
+  // Hilfsdienst-Auswahl — greift nur, solange genug andere Kandidaten da sind.
+  const cleaningGroup = groups.length ? groups[weekIndex % groups.length] : null
+  const cleaningLeaders = new Set<string>()
+  for (const pid of [cleaningGroup?.ov, cleaningGroup?.as]) {
+    const person = pid ? persons.find((p) => p.id === pid) : undefined
+    if (person) cleaningLeaders.add(displayName(person))
+  }
+  const HELPER_MALUS = 1e6
 
   const used = new Set<string>()
   for (const section of meeting.sections) {
@@ -160,6 +175,10 @@ export function autoAssignMeeting(
 
   const pick = (kind: 'part' | 'helper', priv: string | null | undefined): string | null => {
     const load = kind === 'part' ? pl : tl // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast
+    // Bei Hilfsdiensten den Aufsehern/Gehilfen der Reinigungsgruppe einen Malus
+    // geben, damit sie nur als letzte Wahl einen weiteren Dienst bekommen.
+    const eff = (name: string): number =>
+      load(name) + (kind === 'helper' && cleaningLeaders.has(name) ? HELPER_MALUS : 0)
     const candidates = persons
       .filter((p) => (!priv || isQualified(p, priv)) && !p.absent.includes(weekIndex))
       .map((p) => displayName(p))
@@ -167,7 +186,7 @@ export function autoAssignMeeting(
     if (candidates.length === 0) return null
     candidates.sort(
       (a, b) =>
-        load(a) - load(b) ||
+        eff(a) - eff(b) ||
         tieHash(`${a}|${weekIndex}|${tab}`) - tieHash(`${b}|${weekIndex}|${tab}`),
     )
     return candidates[0]
@@ -246,7 +265,9 @@ export function autoAssignMeeting(
       if (arr[pos]) continue
       while (arr.length <= pos) arr.push('')
       if (svc.groups) {
-        arr[pos] = `Gruppe ${1 + (weekIndex % 3)}`
+        // Reinigung rotiert über die echten Predigtdienstgruppen; ohne
+        // konfigurierte Gruppen Fallback auf die alte Gruppe-1–3-Rotation.
+        arr[pos] = cleaningGroup ? cleaningGroup.name : `Gruppe ${1 + (weekIndex % 3)}`
         count++
       } else {
         const name = pick('helper', serviceQualKey(svc.key))

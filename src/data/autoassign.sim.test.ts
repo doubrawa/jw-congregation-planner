@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildImportWeek, DEMO_SERVICES } from './demo'
 import { displayName, isSong, partWorkload, serviceQualKey, workloadOf } from './helpers'
 import { autoAssignMeeting } from './planning'
-import type { Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
+import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
 
 /**
  * Simulation der Auto-Zuteilung mit einer großen Versammlung (~100 Personen)
@@ -285,5 +285,45 @@ describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
     const sister = mk([MIK], { female: true })
     const res = autoAssignMeeting(oneWeek(), 0, 'mid', [sister], MIK1)
     expect(res.weeks[0].mid.helpers.mik?.[0] ?? '').toBe('')
+  })
+})
+
+describe('Predigtdienstgruppen (Reinigung)', () => {
+  const emptyMeeting = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
+  const wk1 = (): Week => ({ range: '', book: '', current: false, mid: emptyMeeting(), we: emptyMeeting() })
+  const REIN: Service[] = [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }]
+
+  it('Reinigung rotiert über die konfigurierten Gruppen (mod Anzahl)', () => {
+    const groups: Group[] = [
+      { id: 'g1', name: 'Gruppe 1', ov: null, as: null },
+      { id: 'g2', name: 'Gruppe 2', ov: null, as: null },
+    ]
+    const weeks: Week[] = Array.from({ length: 3 }, wk1)
+    const w0 = autoAssignMeeting(weeks, 0, 'mid', [], REIN, groups).weeks
+    const w1 = autoAssignMeeting(weeks, 1, 'mid', [], REIN, groups).weeks
+    const w2 = autoAssignMeeting(weeks, 2, 'mid', [], REIN, groups).weeks
+    expect(w0[0].mid.helpers.rein?.[0]).toBe('Gruppe 1')
+    expect(w1[1].mid.helpers.rein?.[0]).toBe('Gruppe 2')
+    expect(w2[2].mid.helpers.rein?.[0]).toBe('Gruppe 1') // 2 % 2 = 0
+  })
+
+  it('Aufseher/Gehilfe der reinigenden Gruppe bekommen möglichst keinen weiteren Hilfsdienst', () => {
+    // Woche 0 → Gruppe 1 reinigt. Aufseher (Otto) und ein freier Bruder können
+    // beide Mikrofon; der Aufseher soll den Mikro-Dienst NICHT bekommen.
+    const overseer: Person = {
+      id: 'ov1', fn: 'Otto', ln: 'Overseer', role: 'aeltester', tel: '', mail: '', absent: [], priv: priv([MIK]),
+    }
+    const free = named('Frank', 'Frei', [MIK])
+    const groups: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: 'ov1', as: null }]
+    const services: Service[] = [
+      { key: 'mik', name: 'Mikrofone', count: 1, groups: false },
+      { key: 'rein', name: 'Reinigung', count: 1, groups: true },
+    ]
+    const res = autoAssignMeeting([wk1()], 0, 'mid', [overseer, free], services, groups)
+    expect(res.weeks[0].mid.helpers.mik?.[0]).toBe('F. Frei')
+
+    // Ohne Alternative bekommt der Aufseher den Dienst trotzdem (weiche Regel).
+    const solo = autoAssignMeeting([wk1()], 0, 'mid', [overseer], services, groups)
+    expect(solo.weeks[0].mid.helpers.mik?.[0]).toBe('O. Overseer')
   })
 })

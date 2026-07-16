@@ -66,6 +66,26 @@ create table if not exists public.services (
   unique (congregation_id, key)
 );
 
+-- Predigtdienstgruppen (Aufseher/Gehilfe je Gruppe). Nach persons definiert,
+-- da overseer_id/assistant_id darauf verweisen; persons.grp (unten) schließt
+-- den Kreis per nachträglichem alter.
+create table if not exists public.groups (
+  id              uuid primary key default gen_random_uuid(),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  name            text not null,                    -- z. B. "Gruppe 1"
+  overseer_id     uuid references public.persons (id) on delete set null,
+  assistant_id    uuid references public.persons (id) on delete set null,
+  position        integer not null default 0,       -- Anzeigereihenfolge
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists groups_congregation_idx
+  on public.groups (congregation_id);
+
+-- Gruppenzuordnung der Person (nachträglich, da groups erst hier existiert).
+alter table public.persons
+  add column if not exists grp uuid references public.groups (id) on delete set null;
+
 create table if not exists public.weeks (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
@@ -209,6 +229,16 @@ create policy services_select on public.services
 
 drop policy if exists services_write on public.services;
 create policy services_write on public.services
+  for all
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+drop policy if exists groups_select on public.groups;
+create policy groups_select on public.groups
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists groups_write on public.groups;
+create policy groups_write on public.groups
   for all
   using (congregation_id = public.my_congregation_id() and public.is_planner())
   with check (congregation_id = public.my_congregation_id() and public.is_planner());

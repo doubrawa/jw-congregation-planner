@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
 import { CURRENT_PERSON_ID } from '../data/demo'
+import { displayName } from '../data/helpers'
 import type { Lang } from '../data/types'
 import { APP_LANGS } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -13,8 +14,15 @@ import '../aufgaben/aufgaben.css'
  */
 export function ProfilScreen() {
   const { state, dispatch } = useApp()
-  const { t } = useT()
+  const { t, tu } = useT()
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+
+  // Predigtdienstgruppe des Nutzers: "Gruppe 1 · M. Albrecht" (mit Aufseher).
+  const myGroup = state.groups.find((g) => g.id === me?.grp)
+  const overseer = myGroup ? state.persons.find((p) => p.id === myGroup.ov) : undefined
+  const myGroupLabel = myGroup
+    ? tu(myGroup.name) + (overseer ? ` · ${displayName(overseer)}` : '')
+    : '—'
 
   return (
     <section className="screen">
@@ -36,6 +44,10 @@ export function ProfilScreen() {
             {(state.planner ? t.rolleKoordinator : t.rolleVerkuendiger) +
               (state.dataStatus === 'demo' ? t.demoSuffix : '')}
           </span>
+        </div>
+        <div className="kv-row">
+          <span className="kv-key">{t.gruppeLbl}</span>
+          <span className="kv-val">{myGroupLabel}</span>
         </div>
         <div className="kv-row">
           <span className="kv-key">{t.darstellung}</span>

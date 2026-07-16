@@ -14,6 +14,7 @@ import {
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
   DEMO_PENDING_NAMES,
+  DEMO_GROUPS,
   DEMO_PERSONS,
   DEMO_PLANNER,
   DEMO_REMINDERS,
@@ -34,6 +35,7 @@ import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import {
   deleteAbsenceRow,
+  deleteGroupRow,
   deleteInviteRow,
   deleteMemberRow,
   deleteServiceRow,
@@ -42,9 +44,11 @@ import {
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
+  saveGroupRow,
   saveInvite,
   saveMemberRow,
   savePerson,
+  savePersonGroup,
   saveService,
   saveSettings,
   saveWeek,
@@ -241,6 +245,25 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         services: [...state.services, action.service],
         toast: toastKey(state, 'toastDienstAdd'),
       }
+    case 'addGroup':
+      return {
+        ...state,
+        groups: [...state.groups, action.group],
+        toast: toastKey(state, 'toastGruppeNeu'),
+      }
+    case 'removeGroup':
+      return {
+        ...state,
+        groups: state.groups.filter((g) => g.id !== action.id),
+        // Mitglieder der gelöschten Gruppe verlieren ihre Zuordnung
+        persons: state.persons.map((p) => (p.grp === action.id ? { ...p, grp: null } : p)),
+        toast: toastKey(state, 'toastGruppeDel'),
+      }
+    case 'updateGroup':
+      return {
+        ...state,
+        groups: state.groups.map((g) => (g.id === action.id ? { ...g, ...action.patch } : g)),
+      }
     case 'updateCongregation':
       return { ...state, congregation: { ...state.congregation, ...action.patch } }
     case 'saveCongregation':
@@ -341,6 +364,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.tab,
         state.persons,
         state.services,
+        state.groups,
       )
       if (count === 0) {
         // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie
@@ -473,6 +497,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         dataEmpty: p.empty,
         persons: p.persons,
         services: p.services,
+        groups: p.groups,
         weeks: p.weeks,
         absences: p.absences,
         notifs: p.notifications,
@@ -555,6 +580,7 @@ function initialState(): AppState {
     weeks: demo ? buildDemoWeeks() : [],
     persons: demo ? DEMO_PERSONS : [],
     services: demo ? DEMO_SERVICES : [],
+    groups: demo ? DEMO_GROUPS : [],
     absences: demo ? DEMO_ABSENCES : [],
     notifs: demo ? DEMO_NOTIFICATIONS : [],
     notifOpen: false,
@@ -631,6 +657,21 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     }
     case 'removeService':
       deleteServiceRow(congId, action.key)
+      break
+    case 'addGroup':
+      saveGroupRow(congId, action.group)
+      break
+    case 'updateGroup': {
+      const group = next.groups.find((g) => g.id === action.id)
+      if (group) saveGroupRow(congId, group)
+      break
+    }
+    case 'removeGroup':
+      deleteGroupRow(action.id)
+      // Mitglieder der Gruppe haben grp=null bekommen → mitschreiben
+      for (const p of next.persons) {
+        if (prev.persons.find((q) => q.id === p.id)?.grp === action.id) savePersonGroup(p)
+      }
       break
     case 'markAllRead':
       markNotificationsRead(congId)

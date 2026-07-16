@@ -83,6 +83,55 @@
   margin-top: 16px;
 }
 
+/* ---- Predigtdienstgruppen ---------------------------------------------- */
+
+.grp-block {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--panel-hair);
+}
+
+.grp-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.grp-name {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.grp-count {
+  font-size: 11px;
+  color: var(--mut);
+  flex: none;
+}
+
+.grp-selects {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.grp-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.grp-field .field-label {
+  display: block;
+}
+
+.grp-field .mem-select {
+  width: 100%;
+}
+
+.grp-add {
+  margin-top: 14px;
+}
+
 .mem-code {
   font-size: 13px;
   font-weight: 700;

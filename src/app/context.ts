@@ -7,6 +7,7 @@ import { createContext, useContext, type Dispatch } from 'react'
 import type {
   Absence,
   ConfirmationMap,
+  Group,
   Invite,
   Lang,
   MeetingTab,
@@ -51,6 +52,7 @@ export interface HydratePayload {
   personId: string | null
   persons: Person[]
   services: Service[]
+  groups: Group[]
   weeks: Week[]
   absences: Absence[]
   notifications: Notification[]
@@ -80,6 +82,7 @@ export interface AppState {
   weeks: Week[]
   persons: Person[]
   services: Service[]
+  groups: Group[] // Predigtdienstgruppen (Planer; Reinigungs-Rotation)
   absences: Absence[]
   notifs: Notification[]
   notifOpen: boolean
@@ -128,6 +131,10 @@ export type AppAction =
   | { type: 'changeServiceCount'; key: string; delta: 1 | -1 }
   | { type: 'removeService'; key: string }
   | { type: 'addService'; service: Service }
+  // Predigtdienstgruppen (nur Planer)
+  | { type: 'addGroup'; group: Group }
+  | { type: 'removeGroup'; id: string }
+  | { type: 'updateGroup'; id: string; patch: Partial<Pick<Group, 'ov' | 'as'>> }
   | { type: 'updateCongregation'; patch: Partial<Congregation> }
   | { type: 'saveCongregation' } // Toast + Persistenz der Stammdaten
   // Mitglieder & Einladungen (nur Planer)

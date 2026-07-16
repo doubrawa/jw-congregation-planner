@@ -189,6 +189,24 @@ function PersonDetail({ person }: { person: Person }) {
             ))}
           </div>
         </div>
+        <div className="pers-role-block">
+          <label className="field-label" htmlFor="pers-grp">
+            {t.gruppeLbl}
+          </label>
+          <select
+            id="pers-grp"
+            className="mem-select pers-grp-select"
+            value={person.grp ?? ''}
+            onChange={(e) => update({ grp: e.target.value || null })}
+          >
+            <option value="">—</option>
+            {state.groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {tu(g.name)}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="panel panel--pb10" data-farbe="petrol">
