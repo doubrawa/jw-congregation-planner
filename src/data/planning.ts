@@ -57,6 +57,55 @@ export function slotValue(weeks: Week[], sel: SlotSelection): string {
   return meeting.helpers[sel.svc]?.[sel.pos] ?? ''
 }
 
+/**
+ * Eine bereits bestehende Zuteilung einer Person in einer Zusammenkunft — für
+ * den Doppelbelegungs-Hinweis im Zuteilungs-Sheet.
+ * `lang` steuert die Übersetzung bei der Anzeige: 'u' = App-Sprache
+ * (Rollen/Dienstnamen), 'p' = Versammlungssprache (Programmpunkt-Titel).
+ */
+export interface MeetingAssignment {
+  text: string
+  lang: 'u' | 'p'
+}
+
+/**
+ * Alle Zuteilungen, die `name` in dieser Zusammenkunft schon hat (Programmpunkte
+ * + Hilfsdienste), außer dem gerade bearbeiteten Slot `exclude`. Damit sieht der
+ * Planer beim Zuteilen, wen er am selben Tag nicht versehentlich doppelt verplant.
+ */
+export function assignmentsInMeeting(
+  meeting: Meeting,
+  name: string,
+  services: Service[],
+  exclude?: SlotSelection,
+): MeetingAssignment[] {
+  if (!name) return []
+  const out: MeetingAssignment[] = []
+  meeting.sections.forEach((section, si) => {
+    section.items.forEach((item, ii) => {
+      if (isSong(item)) return
+      item.names.forEach((slot, ni) => {
+        if (slot.name !== name) return
+        if (exclude?.kind === 'part' && exclude.si === si && exclude.ii === ii && exclude.ni === ni) return
+        const rolle = slot.rolle ?? ''
+        // Rolle bevorzugen (Vorsitz/Gebet/Leiter/Leser …); Begleiter-Label
+        // ("mit …") ignorieren und stattdessen den Programmpunkt-Titel zeigen.
+        if (rolle && !rolle.startsWith('mit')) out.push({ text: rolle, lang: 'u' })
+        else out.push({ text: item.title, lang: 'p' })
+      })
+    })
+  })
+  for (const svc of services) {
+    const arr = meeting.helpers[svc.key] ?? []
+    arr.forEach((n, pos) => {
+      if (n !== name) return
+      if (exclude?.kind === 'helper' && exclude.svc === svc.key && exclude.pos === pos) return
+      out.push({ text: svc.name, lang: 'u' })
+    })
+  }
+  return out
+}
+
 /** Setzt einen Slot auf `name` ("" = Zuteilung entfernen). */
 export function assignSlot(weeks: Week[], sel: SlotSelection, name: string): Week[] {
   const next = structuredClone(weeks)

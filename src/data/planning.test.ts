@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildDemoWeeks, DEMO_PERSONS, DEMO_SERVICES } from './demo'
 import { displayName, helperWorkload, isSong, partWorkload, workloadOf } from './helpers'
 import {
+  assignmentsInMeeting,
   autoAssignMeeting,
   buildS89ForSlot,
   countOpenSlots,
@@ -15,7 +16,7 @@ import {
   shiftEnd,
   weekConflicts,
 } from './planning'
-import type { PartItem, Section } from './types'
+import type { Meeting, PartItem, Section, Service } from './types'
 
 /** Namen aller belegten Slots eines Meetings (Programmpunkte + Hilfsdienste). */
 function assignedNames(week: ReturnType<typeof buildDemoWeeks>[number], tab: 'mid' | 'we'): string[] {
@@ -313,5 +314,55 @@ describe('Konfliktprüfungen (Planen)', () => {
     const conflicts = weekConflicts(weeks, 2, DEMO_PERSONS, DEMO_SERVICES)
     expect(conflicts.some((c) => c.name === 'K. Wagner')).toBe(false)
     expect(conflicts.some((c) => c.name.startsWith('Gruppe'))).toBe(false)
+  })
+})
+
+describe('assignmentsInMeeting (Doppelbelegungs-Hinweis)', () => {
+  const meeting: Meeting = {
+    date: '',
+    end: '',
+    sections: [
+      {
+        label: 'ERÖFFNUNG',
+        farbe: 'neutral',
+        items: [{ title: 'Einleitende Worte', names: [{ name: 'A. Muster', rolle: 'Vorsitz' }] }],
+      },
+      {
+        label: 'SCHÄTZE',
+        farbe: 'petrol',
+        items: [{ title: 'Nach geistigen Schätzen graben', names: [{ name: 'B. Test' }] }],
+      },
+    ],
+    helpers: { mik: ['A. Muster', ''], rein: ['Gruppe 1'] },
+  }
+  const services: Service[] = [
+    { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
+    { key: 'rein', name: 'Reinigung', count: 1, groups: true },
+  ]
+
+  it('listet Rolle und Hilfsdienst einer Person am selben Tag', () => {
+    const res = assignmentsInMeeting(meeting, 'A. Muster', services)
+    expect(res).toEqual([
+      { text: 'Vorsitz', lang: 'u' },
+      { text: 'Mikrofone', lang: 'u' },
+    ])
+  })
+
+  it('nutzt den Titel, wenn der Slot keine Rolle hat', () => {
+    expect(assignmentsInMeeting(meeting, 'B. Test', services)).toEqual([
+      { text: 'Nach geistigen Schätzen graben', lang: 'p' },
+    ])
+  })
+
+  it('blendet den gerade bearbeiteten Slot aus', () => {
+    // Bearbeitet wird der Mikrofon-Slot 0 → dieser darf nicht als „schon zugeteilt“ erscheinen
+    const exclude = { kind: 'helper', wi: 0, tab: 'mid', svc: 'mik', pos: 0, label: '', priv: null, groups: false } as const
+    expect(assignmentsInMeeting(meeting, 'A. Muster', services, exclude)).toEqual([
+      { text: 'Vorsitz', lang: 'u' },
+    ])
+  })
+
+  it('liefert nichts für einen unbeteiligten Namen', () => {
+    expect(assignmentsInMeeting(meeting, 'X. Fremd', services)).toEqual([])
   })
 })

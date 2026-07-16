@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { useApp } from '../app/context'
 import { displayName, initials, isQualified, roleLabel, workloadOf } from '../data/helpers'
-import { buildS89ForSlot, slotValue } from '../data/planning'
+import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
+import type { MeetingAssignment } from '../data/planning'
 import type { SlotSelection } from '../data/types'
 import '../components/overlays.css'
 import './planen.css'
@@ -13,6 +14,7 @@ interface Candidate {
   name: string // Anzeigename (Gruppen: übersetzt)
   assignName: string // in die Woche geschriebener kanonischer Name (Gruppen: "Gruppe N")
   sub: string
+  today: MeetingAssignment[] // schon an diesem Tag zugeteilt (Doppelbelegungs-Hinweis)
   absent: boolean
   free: boolean
 }
@@ -47,6 +49,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     return overseer ? `${displayName(overseer)} · ${memberLabel}` : memberLabel
   }
 
+  const meeting = state.weeks[sel.wi][sel.tab]
   const candidates: Candidate[] = sel.groups
     ? state.groups.map((group) => {
         const num = group.name.replace(/\D/g, '')
@@ -56,6 +59,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           name: tu(group.name),
           assignName: group.name,
           sub: groupSub(group.id, group.ov),
+          today: [],
           absent: false,
           free: false,
         }
@@ -73,6 +77,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             name,
             assignName: name,
             sub: `${tu(roleLabel(p))} · ${workloadLabel}`,
+            today: assignmentsInMeeting(meeting, name, state.services, sel),
             absent: p.absent.includes(sel.wi),
             free: workload === 0,
           }
@@ -139,6 +144,12 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               <span>
                 <span className="cand-name">{cand.name}</span>
                 <span className="cand-sub">{cand.sub}</span>
+                {cand.today.length > 0 && (
+                  <span className="cand-today">
+                    {t.sheetSchonHeute}:{' '}
+                    {cand.today.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
+                  </span>
+                )}
               </span>
               {cand.absent ? (
                 <span className="cand-chip cand-chip--absent">{t.abwesendChip}</span>
