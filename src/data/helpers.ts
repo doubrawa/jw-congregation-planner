@@ -12,7 +12,7 @@ export function isSong(item: ProgramItem): item is SongItem {
 
 /** Anzeigename wie im Prototyp: "S. Krüger". */
 export function displayName(p: Person): string {
-  return `${(p.fn[0] ?? '') + '.'} ${p.ln}`.trim()
+  return p.dn || `${(p.fn[0] ?? '') + '.'} ${p.ln}`.trim()
 }
 
 /** Initialen für Avatare: "SK"; leerer Datensatz → "–". */

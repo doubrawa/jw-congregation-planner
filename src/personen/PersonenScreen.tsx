@@ -106,9 +106,10 @@ function PersonDetail({ person }: { person: Person }) {
   const update = (patch: Partial<Person>) =>
     dispatch({ type: 'updatePerson', id: person.id, patch })
 
-  const fields: Array<[keyof Person & ('fn' | 'ln' | 'tel' | 'mail'), string]> = [
+  const fields: Array<[keyof Person & ('fn' | 'ln' | 'dn' | 'tel' | 'mail'), string]> = [
     ['fn', t.vorname],
     ['ln', t.nachname],
+    ['dn', t.anzeigename],
     ['tel', t.telefon],
     ['mail', t.emailLbl],
   ]
@@ -147,7 +148,7 @@ function PersonDetail({ person }: { person: Person }) {
               id={`pers-${key}`}
               className="field-input"
               type="text"
-              value={person[key]}
+              value={person[key] ?? ''}
               onChange={(e) => update({ [key]: e.target.value })}
             />
           </div>

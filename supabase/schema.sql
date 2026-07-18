@@ -44,6 +44,7 @@ create table if not exists public.persons (
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   fn              text not null default '',
   ln              text not null default '',
+  dn              text not null default '', -- optionaler Anzeigename (Kurzform); leer = "V. Nachname"
   role            text not null default 'verkuendiger'
                   check (role in ('aeltester', 'dienstamtgehilfe', 'verkuendiger')),
   female          boolean not null default false,   -- Anzeige "Verkündigerin"
