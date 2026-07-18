@@ -5,7 +5,7 @@ import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { isSong, serviceQualKey } from '../data/helpers'
 import { countOpenSlots, itemMinutes, weekConflicts, type Conflict } from '../data/planning'
-import { fill, useT } from '../i18n/useT'
+import { fill, useProgWeek, useT } from '../i18n/useT'
 import type { PartItem, Section, Service, SlotAssignment } from '../data/types'
 import './planen.css'
 
@@ -18,11 +18,15 @@ const LAC_LABEL = 'UNSER LEBEN ALS CHRIST'
  */
 export function PlanenScreen() {
   const { state, dispatch } = useApp()
-  const { t, tu, tp } = useT()
+  const { t, tu } = useT()
   const [lacTitle, setLacTitle] = useState('')
-  const week = state.weeks[state.week]
+  // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
+  // die Logik (LAC-Erkennung, Minuten, Slots) läuft auf der kanonischen Woche.
+  const rawWeek = state.weeks[state.week]
+  const { week, tpw } = useProgWeek(rawWeek)
   const meeting = state.tab === 'mid' ? week.mid : week.we
-  const openCount = countOpenSlots(meeting, state.services)
+  const rawMeeting = state.tab === 'mid' ? rawWeek.mid : rawWeek.we
+  const openCount = countOpenSlots(rawMeeting, state.services)
   const isPending = (name: string) => state.pendingNames.includes(name)
   // Warnungen der ganzen Woche (beide Zusammenkünfte), unabhängig vom Tab
   const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services)
@@ -88,7 +92,7 @@ export function PlanenScreen() {
 
   const partChipText = (slot: SlotAssignment): string => {
     if (!slot.name) return t.zuteilenChip
-    return slot.rolle && !slot.rolle.startsWith('mit') ? `${tp(slot.rolle)}: ${slot.name}` : slot.name
+    return slot.rolle && !slot.rolle.startsWith('mit') ? `${tpw(slot.rolle)}: ${slot.name}` : slot.name
   }
 
   return (
@@ -105,7 +109,7 @@ export function PlanenScreen() {
         onPrev={() => dispatch({ type: 'prevWeek' })}
         onNext={() => dispatch({ type: 'nextWeek' })}
       >
-        <div className="plan-week-range">{tp(week.range)}</div>
+        <div className="plan-week-range">{tpw(week.range)}</div>
       </WeekNav>
 
       <WeekChips week={week} showCurrent={false} />
@@ -139,25 +143,29 @@ export function PlanenScreen() {
       )}
 
       {meeting.sections.map((section, si) => {
-        const isLac = section.label === LAC_LABEL
-        const movables = movableIndices(section)
+        // Logik immer über die kanonische Sektion (Labels/Minuten sind dort deutsch)
+        const rawSection = rawMeeting.sections[si]
+        const isLac = rawSection.label === LAC_LABEL
+        const movables = movableIndices(rawSection)
         return (
-          <div key={section.label} className="panel" data-farbe={section.farbe}>
-            <div className="panel-label">{tp(section.label)}</div>
+          <div key={rawSection.label} className="panel" data-farbe={section.farbe}>
+            <div className="panel-label">{tpw(section.label)}</div>
             {section.items.map((item, ii) => {
               if (isSong(item)) {
                 return (
                   <div key={ii} className="panel-song">
-                    {tp(item.song)}
+                    {tpw(item.song)}
                   </div>
                 )
               }
-              const editable = isLac && itemMinutes(item) != null
+              const rawItem = rawSection.items[ii]
+              const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
+              const editable = isLac && rawMins != null
               const mPos = movables.indexOf(ii)
               return (
                 <div key={ii} className="plan-item">
                   <div className="plan-item-head">
-                    <div className="plan-item-title">{tp(item.title)}</div>
+                    <div className="plan-item-title">{tpw(item.title)}</div>
                     {editable && (
                       <div className="lac-move">
                         <button
@@ -181,7 +189,7 @@ export function PlanenScreen() {
                       </div>
                     )}
                   </div>
-                  {item.meta && <div className="plan-item-meta">{tp(item.meta)}</div>}
+                  {item.meta && <div className="plan-item-meta">{tpw(item.meta)}</div>}
                   <div className="plan-slots">
                     {item.names.map((slot, ni) => (
                       <SlotChip
@@ -204,7 +212,7 @@ export function PlanenScreen() {
                       >
                         –
                       </button>
-                      <span className="lac-mins">{tp(`${itemMinutes(item)} Min.`)}</span>
+                      <span className="lac-mins">{tpw(`${rawMins} Min.`)}</span>
                       <button
                         type="button"
                         className="lac-step-btn"

@@ -21,6 +21,7 @@ import {
   DEMO_SERVICES,
 } from '../data/demo'
 import { displayName } from '../data/helpers'
+import { localizedWeeks } from '../data/localize'
 import {
   assignSlot,
   autoAssignMeeting,
@@ -53,7 +54,7 @@ import {
   saveSettings,
   saveWeek,
 } from '../lib/data'
-import { APP_LANGS, isRTL } from '../i18n/langs'
+import { APP_LANGS, APP_TO_JW, congAppCode, isRTL } from '../i18n/langs'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { Lang, Notification, NotificationType, Screen, Theme } from '../data/types'
 import { AppContext, type AppAction, type AppState } from './context'
@@ -107,13 +108,17 @@ function currentUserName(state: AppState): string {
 function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   if (state.dataStatus === 'demo') return state
   const me = state.persons.find((p) => p.id === state.personId)
+  // Aufgaben-Titel in der Programmsprache des Nutzers ableiten (Sprachvariante
+  // der Wochen, falls vorhanden) — Slot-Pfade/Namen sind variantenunabhängig.
+  const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
+  const weeks = localizedWeeks(state.weeks, jwCode)
   const myTasks = me
-    ? deriveMyTasks(state.weeks, state.services, displayName(me), state.confirmations)
+    ? deriveMyTasks(weeks, state.services, displayName(me), state.confirmations)
     : []
   return {
     ...state,
     myTasks,
-    pendingNames: derivePendingNames(state.weeks, state.services, state.confirmations),
+    pendingNames: derivePendingNames(weeks, state.services, state.confirmations),
     confirmOpen: (openConfirm || state.confirmOpen) && myTasks.some((t) => t.status === 'offen'),
   }
 }
@@ -135,6 +140,9 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'changeServiceCount',
   'confirmTask',
   'declineTask',
+  // Sprachwechsel ändert die Programmsprache der abgeleiteten Aufgaben-Titel
+  'setLang',
+  'setCongLang',
 ])
 
 function reducer(state: AppState, action: AppAction): AppState {
@@ -477,13 +485,30 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setLang':
       return { ...state, lang: action.lang }
     case 'openLangSheet':
-      return { ...state, langSheetOpen: true, slotSel: null }
+      return { ...state, langSheetOpen: true, langSheetFor: action.mode ?? 'cong', slotSel: null }
     case 'closeLangSheet':
       return { ...state, langSheetOpen: false, langSearch: '' }
     case 'setLangSearch':
       return { ...state, langSearch: action.text }
     case 'setCongLang':
       return { ...state, congLang: action.name, langSheetOpen: false, langSearch: '' }
+    case 'addProgLang': {
+      // Versammlungssprache selbst und Duplikate ergeben keine Variante
+      const skip = action.name === state.congLang || state.progLangs.includes(action.name)
+      return {
+        ...state,
+        progLangs: skip ? state.progLangs : [...state.progLangs, action.name],
+        langSheetOpen: false,
+        langSearch: '',
+        toast: skip ? state.toast : toastKey(state, 'toastProgLangAdd'),
+      }
+    }
+    case 'removeProgLang':
+      return {
+        ...state,
+        progLangs: state.progLangs.filter((n) => n !== action.name),
+        toast: toastKey(state, 'toastProgLangDel'),
+      }
     case 'hydrate': {
       const p = action.payload
       return {
@@ -504,6 +529,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: p.confirmations,
         reminders: p.reminders,
         congLang: p.congLang,
+        progLangs: p.progLangs,
         members: p.members,
         invites: p.invites,
         week: 0,
@@ -596,7 +622,9 @@ function initialState(): AppState {
     reminders: DEMO_REMINDERS,
     lang: debug?.lang ?? getInitialLang(),
     langSheetOpen: false,
+    langSheetFor: 'cong',
     congLang: debug?.congLang ?? 'Deutsch',
+    progLangs: [],
     langSearch: '',
     toast: null,
   }
@@ -685,7 +713,13 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     case 'changeReminder':
     case 'toggleReminderRepeat':
     case 'setCongLang':
-      saveSettings(congId, { reminders: next.reminders, congLang: next.congLang })
+    case 'addProgLang':
+    case 'removeProgLang':
+      saveSettings(congId, {
+        reminders: next.reminders,
+        congLang: next.congLang,
+        progLangs: next.progLangs,
+      })
       break
     case 'saveCongregation':
       saveCongregationInfo(congId, next.congregation)

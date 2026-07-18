@@ -635,6 +635,18 @@ function movableIndices(items: Meeting['sections'][number]['items']): number[] {
   return items.map((x, i) => (isSong(x) ? -1 : i)).filter((i) => i >= 0)
 }
 
+/**
+ * Spiegelt LAC-Änderungen in die Sprachvarianten der Woche (Week.alt), damit
+ * die Strukturen aligned bleiben — sonst fiele die Anzeige der Variante nach
+ * einem Edit auf die kanonische Sprache zurück (localizedWeek prüft Struktur).
+ */
+function forEachAltMeeting(week: Week, tab: MeetingTab, fn: (meeting: Meeting) => void): void {
+  for (const variant of Object.values(week.alt ?? {})) {
+    const meeting = variant[tab]
+    if (meeting) fn(meeting)
+  }
+}
+
 /** Minuten eines LAC-Punkts ändern (5..45) und Meeting-Ende nachziehen. */
 export function lacAdjust(
   weeks: Week[],
@@ -654,6 +666,12 @@ export function lacAdjust(
   if (target === cur) return weeks
   item.meta = (item.meta ?? '').replace(MIN_RE, `${target} Min.`)
   meeting.end = shiftEnd(meeting.end, target - cur)
+  forEachAltMeeting(next[wi], tab, (m) => {
+    const vi = m.sections[si]?.items[ii]
+    // Lokalisierte Meta ("15 min.", "15 分" …): erste Zahl ersetzen
+    if (vi && !isSong(vi)) vi.meta = (vi.meta ?? '').replace(/\d+/, String(target))
+    m.end = shiftEnd(m.end, target - cur)
+  })
   return next
 }
 
@@ -671,6 +689,10 @@ export function lacRemove(
   const mins = isSong(item) ? null : itemMinutes(item)
   meeting.sections[si].items.splice(ii, 1)
   if (mins != null) meeting.end = shiftEnd(meeting.end, -mins)
+  forEachAltMeeting(next[wi], tab, (m) => {
+    m.sections[si]?.items.splice(ii, 1)
+    if (mins != null) m.end = shiftEnd(m.end, -mins)
+  })
   return next
 }
 
@@ -694,6 +716,18 @@ export function lacMove(
   if (pos < 0 || tpos < 0 || tpos >= movables.length) return weeks
   const a = movables[pos]
   const b = movables[tpos]
+  swapKeepNums(items, a, b)
+  forEachAltMeeting(next[wi], tab, (m) => {
+    const arr = m.sections[si]?.items
+    if (arr) swapKeepNums(arr, a, b)
+  })
+  return next
+}
+
+/** Zwei Items tauschen; die laufenden Nummern bleiben positionsfest. */
+function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b: number): void {
+  if (a >= items.length || b >= items.length) return
+  const movables = movableIndices(items)
   const nums = movables.map((i) => {
     const it = items[i]
     return isSong(it) ? undefined : it.num
@@ -705,7 +739,6 @@ export function lacMove(
     const it = items[i]
     if (!isSong(it)) it.num = nums[k]
   })
-  return next
 }
 
 /**
@@ -728,7 +761,14 @@ export function lacAdd(
     (x) => !isSong(x) && x.title.startsWith('Versammlungsbibelstudium'),
   )
   const newItem: PartItem = { title: trimmed, meta: '10 Min.', names: [{ name: '', bereichsKey: 'vortrag' }] }
-  items.splice(vbsIdx >= 0 ? vbsIdx : items.length, 0, newItem)
+  const at = vbsIdx >= 0 ? vbsIdx : items.length
+  items.splice(at, 0, newItem)
   meeting.end = shiftEnd(meeting.end, 10)
+  // Eigener Punkt ist lokaler Text — in allen Varianten identisch einfügen
+  forEachAltMeeting(next[wi], tab, (m) => {
+    const arr = m.sections[si]?.items
+    if (arr) arr.splice(Math.min(at, arr.length), 0, { title: trimmed, meta: '10 Min.', names: [] })
+    m.end = shiftEnd(m.end, 10)
+  })
   return next
 }

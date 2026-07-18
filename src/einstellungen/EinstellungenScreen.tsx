@@ -61,7 +61,15 @@ export function EinstellungenScreen() {
     // direkt in der Versammlungssprache (jw.org-Code, sonst Deutsch).
     dispatch({ type: 'startImport' })
     const langCode = CONG_TO_JW[state.congLang] ?? 'de'
-    const res = await importNextWeek(latestImportedStart(state.weeks), langCode)
+    // Weitere Programmsprachen als Varianten mitholen (ohne die Primärsprache)
+    const altCodes = [
+      ...new Set(
+        state.progLangs
+          .map((name) => CONG_TO_JW[name])
+          .filter((c): c is string => Boolean(c) && c !== langCode),
+      ),
+    ]
+    const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
     if (!res.ok) {
       dispatch({ type: 'stopImport' })
       dispatch({ type: 'showToast', text: res.error === 'demo' ? t.demoHinweis : res.error })
@@ -405,6 +413,31 @@ export function EinstellungenScreen() {
           </span>
         </button>
         <p className="lang-card-desc">{t.versSpracheDesc}</p>
+
+        <div className="lang-card-key proglang-label">{t.progLangsLbl}</div>
+        <div className="proglang-chips">
+          {state.progLangs.map((name) => (
+            <span key={name} className="proglang-chip">
+              {name}
+              <button
+                type="button"
+                className="proglang-chip-x"
+                aria-label="✕"
+                onClick={() => dispatch({ type: 'removeProgLang', name })}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            className="role-chip"
+            onClick={() => dispatch({ type: 'openLangSheet', mode: 'alt' })}
+          >
+            {t.hinzufuegen}
+          </button>
+        </div>
+        <p className="lang-card-desc">{t.progLangsDesc}</p>
       </div>
 
       <div className="panel panel--pb14" data-farbe="wein">

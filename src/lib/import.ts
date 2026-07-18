@@ -17,12 +17,17 @@ export function latestImportedStart(weeks: Week[]): string | undefined {
 
 /**
  * Holt die nächste kommende Woche nach `afterISO` (oder die aktuelle) in der
- * Versammlungssprache `langCode` (jw.org-Code, Standard "de").
+ * Versammlungssprache `langCode` (jw.org-Code, Standard "de"). `altLangs`
+ * (weitere jw.org-Codes) werden als Sprachvarianten mitgeholt (Week.alt).
  */
-export async function importNextWeek(afterISO?: string, langCode = 'de'): Promise<ImportResult> {
+export async function importNextWeek(
+  afterISO?: string,
+  langCode = 'de',
+  altLangs: string[] = [],
+): Promise<ImportResult> {
   if (!supabase) return { ok: false, error: 'demo' }
   const { data, error } = await supabase.functions.invoke('import-week', {
-    body: { after: afterISO, lang: langCode },
+    body: { after: afterISO, lang: langCode, altLangs },
   })
   if (error) return { ok: false, error: error.message }
   const payload = data as { week?: Week; error?: string } | null

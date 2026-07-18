@@ -129,3 +129,16 @@ export function congAppCode(congLang: string): Lang | undefined {
   const jw = CONG_TO_JW[congLang]
   return jw ? JW_TO_APP[jw] : undefined
 }
+
+/**
+ * App-Sprache -> jw.org-Sprachcode (Umkehrung von JW_TO_APP; bei mehreren
+ * jw-Codes je App-Sprache gewinnt der erste Eintrag, z. B. pt statt pt-pt).
+ * Dient dem Nachschlagen der passenden Programm-Sprachvariante (Week.alt).
+ */
+export const APP_TO_JW: Readonly<Partial<Record<Lang, string>>> = (() => {
+  const out: Partial<Record<Lang, string>> = {}
+  for (const [jw, app] of Object.entries(JW_TO_APP)) {
+    if (!(app in out)) out[app] = jw
+  }
+  return out
+})()

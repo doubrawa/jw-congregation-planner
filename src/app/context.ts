@@ -59,6 +59,7 @@ export interface HydratePayload {
   confirmations: ConfirmationMap
   reminders: Reminders
   congLang: string
+  progLangs: string[]
   members: Member[]
   invites: Invite[]
 }
@@ -101,7 +102,9 @@ export interface AppState {
   // Mehrsprachigkeit
   lang: Lang // App-Sprache (UI)
   congLang: string // Versammlungssprache (deutscher Name, z. B. "Deutsch")
-  langSheetOpen: boolean // Sprach-Sheet (Versammlungssprache) offen
+  progLangs: string[] // weitere Programmsprachen (deutsche Namen) — Import holt Varianten
+  langSheetOpen: boolean // Sprach-Sheet offen
+  langSheetFor: 'cong' | 'alt' // Auswahl-Ziel: Versammlungssprache | weitere Programmsprache
   langSearch: string
   toast: Toast | null
 }
@@ -165,10 +168,12 @@ export type AppAction =
   | { type: 'toggleReminderRepeat' }
   // Sprache
   | { type: 'setLang'; lang: Lang }
-  | { type: 'openLangSheet' }
+  | { type: 'openLangSheet'; mode?: 'cong' | 'alt' }
   | { type: 'closeLangSheet' }
   | { type: 'setLangSearch'; text: string }
   | { type: 'setCongLang'; name: string }
+  | { type: 'addProgLang'; name: string }
+  | { type: 'removeProgLang'; name: string }
   // Persistenz / Hydration
   | { type: 'hydrate'; payload: HydratePayload }
   | { type: 'setDataStatus'; status: DataStatus; userId?: string } // userId: für Retry/Code-Einlösen ohne Hydration

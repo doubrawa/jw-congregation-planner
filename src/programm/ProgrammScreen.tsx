@@ -4,19 +4,20 @@ import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { displayName, isSong } from '../data/helpers'
-import { useT, type I18n } from '../i18n/useT'
+import { useProgWeek, useT } from '../i18n/useT'
 import type { PartItem } from '../data/types'
 import './programm.css'
 
 /**
  * Programm (Screen 2, Startscreen): Wochenprogramm beider Zusammenkünfte
  * mit Bereichs-Panels in Arbeitsheft-Farblogik und Hilfsdienste-Übersicht.
+ * Angezeigt wird die Sprachvariante der App-Sprache, falls beim Import
+ * mitgeholt (useProgWeek) — sonst die Versammlungssprache.
  */
 export function ProgrammScreen() {
   const { state, dispatch } = useApp()
-  const i18n = useT()
-  const { t, tu, tp } = i18n
-  const week = state.weeks[state.week]
+  const { t, tu } = useT()
+  const { week, tpw } = useProgWeek(state.weeks[state.week])
   const meeting = state.tab === 'mid' ? week.mid : week.we
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const myName = me ? displayName(me) : null
@@ -29,8 +30,8 @@ export function ProgrammScreen() {
         onPrev={() => dispatch({ type: 'prevWeek' })}
         onNext={() => dispatch({ type: 'nextWeek' })}
       >
-        <div className="prog-week-range">{tp(week.range)}</div>
-        <div className="prog-week-book">{tp(week.book)}</div>
+        <div className="prog-week-range">{tpw(week.range)}</div>
+        <div className="prog-week-book">{tpw(week.book)}</div>
       </WeekNav>
 
       <WeekChips week={week} showCurrent />
@@ -43,18 +44,18 @@ export function ProgrammScreen() {
 
       <MemorialBanner week={week} tab={state.tab} />
 
-      <p className="prog-meta">{tp(meeting.date)}</p>
+      <p className="prog-meta">{tpw(meeting.date)}</p>
 
       {meeting.sections.map((section) => (
         <div key={section.label} className="panel" data-farbe={section.farbe}>
-          <div className="panel-label">{tp(section.label)}</div>
+          <div className="panel-label">{tpw(section.label)}</div>
           {section.items.map((item, index) =>
             isSong(item) ? (
               <div key={index} className="panel-song">
-                {tp(item.song)}
+                {tpw(item.song)}
               </div>
             ) : (
-              <ProgramRow key={index} item={item} myName={myName} i18n={i18n} />
+              <ProgramRow key={index} item={item} myName={myName} tpw={tpw} />
             ),
           )}
         </div>
@@ -82,7 +83,7 @@ export function ProgrammScreen() {
       </div>
 
       <div className="prog-footer">
-        <span>{tp(meeting.end)}</span>
+        <span>{tpw(meeting.end)}</span>
         <span>{t.stand}</span>
       </div>
     </section>
@@ -92,19 +93,19 @@ export function ProgrammScreen() {
 function ProgramRow({
   item,
   myName,
-  i18n,
+  tpw,
 }: {
   item: PartItem
   myName: string | null
-  i18n: I18n
+  tpw: (s: string) => string
 }) {
-  const { t, tp, tu } = i18n
+  const { t, tu } = useT()
   return (
     <div className={item.num != null ? 'prog-row prog-row--num' : 'prog-row'}>
       {item.num != null && <div className="prog-num">{item.num}.</div>}
       <div>
-        <div className="prog-title">{tp(item.title)}</div>
-        {item.meta && <div className="prog-item-meta">{tp(item.meta)}</div>}
+        <div className="prog-title">{tpw(item.title)}</div>
+        {item.meta && <div className="prog-item-meta">{tpw(item.meta)}</div>}
       </div>
       <div className="prog-names">
         {item.names.map((slot, index) => (

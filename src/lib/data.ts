@@ -112,6 +112,7 @@ interface InviteRow {
 interface CongregationSettings {
   reminders?: Partial<Reminders>
   congLang?: string
+  progLangs?: string[] // weitere Programmsprachen (deutsche Anzeigenamen)
 }
 
 const ROLES: Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
@@ -281,6 +282,7 @@ export interface CongregationData {
   confirmations: ConfirmationMap
   reminders: Reminders
   congLang: string
+  progLangs: string[] // weitere Programmsprachen (deutsche Anzeigenamen)
   members: Member[]
   invites: Invite[]
 }
@@ -362,6 +364,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     confirmations,
     reminders,
     congLang: settings.congLang ?? 'Deutsch',
+    progLangs: settings.progLangs ?? [],
     members: ((members.data ?? []) as MemberRow[]).map((r) => ({
       userId: r.user_id,
       email: r.email,
@@ -536,7 +539,7 @@ export function saveCongregationInfo(
 /** Versammlungsweite Einstellungen (Erinnerungen, Versammlungssprache). */
 export function saveSettings(
   congregationId: string,
-  settings: { reminders: Reminders; congLang: string },
+  settings: { reminders: Reminders; congLang: string; progLangs: string[] },
 ): void {
   if (!supabase) return
   void run(supabase.from('congregations').update({ settings }).eq('id', congregationId))

@@ -160,13 +160,55 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+/**
+ * Wachtturm-Studium in die Wochenend-Vorlage eintragen (Titel, Lied vor dem
+ * Studium, Schlusslied). `mirror` (Primärsprache) steuert bei Sprachvarianten
+ * die Struktur: das Schlusslied wird genau dann eingefügt, wenn es auch in der
+ * Primärwoche eingefügt wurde (fehlender lokalisierter Text fällt auf den
+ * Primärtext zurück) — sonst wären die Varianten nicht mehr strukturgleich.
+ */
+function applyStudy(
+  week: ImportedWeek,
+  study: StudyArticle | null,
+  mirror?: StudyArticle | null,
+): void {
+  const title = study?.title ?? mirror?.title ?? null
+  const songOpen = study?.songOpen ?? mirror?.songOpen ?? null
+  const songClose = study?.songClose ?? mirror?.songClose ?? null
+  const insertClose = mirror ? Boolean(mirror.songClose) : Boolean(study?.songClose)
+
+  const wt = week.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')
+  for (const it of wt?.items ?? []) {
+    if ('song' in it && songOpen) it.song = songOpen
+    else if ('names' in it && title) it.title = title
+  }
+  if (insertClose && songClose) {
+    const abschluss = week.we.sections.find((s) => s.label === 'ABSCHLUSS')
+    abschluss?.items.unshift({ song: songClose })
+  }
+}
+
+/** Zuteilungs-Slots/Hilfsdienste aus einer Sprachvariante entfernen (nur Texte zählen). */
+function stripVariant(week: ImportedWeek): ImportedWeek {
+  for (const meeting of [week.mid, week.we]) {
+    meeting.helpers = {}
+    for (const section of meeting.sections) {
+      for (const it of section.items) {
+        if ('names' in it) it.names = []
+      }
+    }
+  }
+  return week
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    const { url, after, lang = 'de' } = (await req.json().catch(() => ({}))) as {
+    const { url, after, lang = 'de', altLangs = [] } = (await req.json().catch(() => ({}))) as {
       url?: string
       after?: string
       lang?: string
+      altLangs?: string[]
     }
 
     let weekUrl = url
@@ -192,7 +234,8 @@ Deno.serve(async (req: Request) => {
       html = await fetchText(loc)
     }
 
-    const week: ImportedWeek & { start?: string; lang?: string } = parseWorkbookWeek(html)
+    const week: ImportedWeek & { start?: string; lang?: string; alt?: Record<string, ImportedWeek> } =
+      parseWorkbookWeek(html)
     if (start) week.start = start.toISOString().slice(0, 10)
     week.lang = lang
 
@@ -200,18 +243,25 @@ Deno.serve(async (req: Request) => {
     // dem Studium (WACHTTURM-STUDIUM) und Schlusslied (ABSCHLUSS), in der
     // Versammlungssprache. Der öffentliche Vortrag wird lokal vergeben und steht
     // nicht auf jw.org — bleibt Platzhalter.
-    if (start) {
-      const study = await studyArticle(start, lang)
-      if (study) {
-        const wt = week.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')
-        for (const it of wt?.items ?? []) {
-          if ('song' in it && study.songOpen) it.song = study.songOpen
-          else if ('names' in it && study.title) it.title = study.title
-        }
-        if (study.songClose) {
-          const abschluss = week.we.sections.find((s) => s.label === 'ABSCHLUSS')
-          abschluss?.items.unshift({ song: study.songClose })
-        }
+    const study = start ? await studyArticle(start, lang) : null
+    if (study) applyStudy(week, study)
+
+    // Sprachvarianten (Week.alt): dieselbe Woche in weiteren Sprachen —
+    // strukturgleich (jw.org-Fassungen sind 1:1), ohne Zuteilungs-Slots. Fehlt
+    // eine Sprache für diese Woche, wird sie still übersprungen. Maximal 4,
+    // damit die Abrufe gegenüber jw.org überschaubar bleiben.
+    const wanted = [...new Set(altLangs)].filter((c) => c && c !== lang).slice(0, 4)
+    for (const code of wanted) {
+      const loc = localizedUrl(germanHtml, code)
+      if (!loc) continue
+      try {
+        const altWeek = parseWorkbookWeek(await fetchText(loc))
+        const altStudy = start ? await studyArticle(start, code) : null
+        // mirror immer setzen: die Variante folgt strukturell der Primärwoche
+        applyStudy(altWeek, altStudy, study ?? { title: null, songOpen: null, songClose: null })
+        week.alt = { ...week.alt, [code]: stripVariant(altWeek) }
+      } catch {
+        // Variante nicht verfügbar/fehlerhaft → Woche bleibt ohne diese Sprache
       }
     }
 

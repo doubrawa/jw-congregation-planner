@@ -162,6 +162,13 @@ export interface Week {
   memCancel?: MeetingTab // ausfallende Zusammenkunft (deren Tab zeigt das Gedächtnismahl)
   mid: Meeting // Unter der Woche
   we: Meeting // Wochenende
+  /**
+   * Sprachvarianten derselben Woche (jw.org-Sprachcode → strukturgleiche Woche
+   * ohne Zuteilungen). Beim Import mitgeholt („Weitere Programmsprachen");
+   * die Anzeige übernimmt daraus nur die Texte — Zuteilungen, Flags und
+   * Struktur bleiben kanonisch (siehe localizedWeek in data/localize.ts).
+   */
+  alt?: Record<string, Week>
 }
 
 /**

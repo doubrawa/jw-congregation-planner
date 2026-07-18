@@ -5,13 +5,19 @@ import { fill, useT } from '../i18n/useT'
 import './overlays.css'
 
 /**
- * Sprach-Sheet zur Auswahl der Versammlungssprache (Sprache der Programm-
- * Inhalte beim Arbeitsheft-Import). Durchsuchbare vollständige jw.org-Liste.
+ * Sprach-Sheet: durchsuchbare vollständige jw.org-Liste. Zwei Modi
+ * (state.langSheetFor): Versammlungssprache wählen ('cong') oder eine weitere
+ * Programmsprache für den Import hinzufügen ('alt').
  */
 export function LanguageSheet() {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  const altMode = state.langSheetFor === 'alt'
   const close = () => dispatch({ type: 'closeLangSheet' })
+  const pick = (name: string) =>
+    dispatch(altMode ? { type: 'addProgLang', name } : { type: 'setCongLang', name })
+  const isActive = (name: string) =>
+    altMode ? state.progLangs.includes(name) : state.congLang === name
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -30,7 +36,7 @@ export function LanguageSheet() {
       <div className="sheet sheet--lang" role="dialog" aria-modal="true" aria-label="Versammlungssprache">
         <div className="sheet-head">
           <div>
-            <div className="sheet-title">{t.versSprache}</div>
+            <div className="sheet-title">{altMode ? t.progLangsLbl : t.versSprache}</div>
             <div className="sheet-sub">
               {fill(t.langCount, { n: filtered.length })} · {t.langListNote}
             </div>
@@ -49,13 +55,13 @@ export function LanguageSheet() {
         />
         <div className="lang-list">
           {filtered.map((name) => {
-            const active = state.congLang === name
+            const active = isActive(name)
             return (
               <button
                 key={name}
                 type="button"
                 className={active ? 'lang-row is-active' : 'lang-row'}
-                onClick={() => dispatch({ type: 'setCongLang', name })}
+                onClick={() => pick(name)}
               >
                 <span>{name}</span>
                 {active && <span className="lang-check">✓</span>}

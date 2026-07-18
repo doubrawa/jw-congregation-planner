@@ -11,7 +11,9 @@
 
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { congAppCode } from './langs'
+import { localizedWeek } from '../data/localize'
+import type { Week } from '../data/types'
+import { APP_TO_JW, congAppCode } from './langs'
 import { makeTr } from './translate'
 import { dict, type Dict } from './ui'
 
@@ -41,4 +43,28 @@ export function useT(): I18n {
       progFallback: !congCode,
     }
   }, [state.lang, state.congLang])
+}
+
+export interface ProgWeek {
+  week: Week
+  /** Programm-Übersetzer passend zur angezeigten Woche (statt `tp`). */
+  tpw: (s: string) => string
+}
+
+/**
+ * Woche in der Programm-Anzeigesprache des Nutzers: Hat die Woche eine beim
+ * Import mitgeholte Sprachvariante (Week.alt) für die App-Sprache, werden deren
+ * Texte angezeigt und die Vorlage-Strings in die App-Sprache übersetzt — sonst
+ * bleibt alles bei der Versammlungssprache (`tp`).
+ */
+export function useProgWeek(week: Week): ProgWeek {
+  const { state } = useApp()
+  const { tp } = useT()
+  return useMemo(() => {
+    const congCode = congAppCode(state.congLang)
+    const jwCode = state.lang !== congCode ? APP_TO_JW[state.lang] : undefined
+    const merged = localizedWeek(week, jwCode)
+    if (merged === week) return { week, tpw: tp }
+    return { week: merged, tpw: state.lang === 'de' ? identity : makeTr(state.lang) }
+  }, [week, state.lang, state.congLang, tp])
 }
