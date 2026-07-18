@@ -130,6 +130,7 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'autoAssign',
   'finishImport',
   'addImportedWeek',
+  'mergeWeekAlt',
   'savePerson',
   'lacAdjust',
   'lacRemove',
@@ -337,6 +338,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastImportiert'),
       }
     }
+    case 'mergeWeekAlt':
+      // Nachgeladene Sprachvarianten in die bestehende Woche mischen
+      return {
+        ...state,
+        weeks: state.weeks.map((w, i) =>
+          i === action.wi ? { ...w, alt: { ...w.alt, ...action.alt } } : w,
+        ),
+      }
     case 'stopImport':
       return { ...state, importing: false }
     case 'assign': {
@@ -659,6 +668,9 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
       if (pos >= 0) saveWeek(congId, pos, next.weeks[pos])
       break
     }
+    case 'mergeWeekAlt':
+      saveWeek(congId, action.wi, next.weeks[action.wi])
+      break
     case 'addPerson':
       savePerson(congId, action.person)
       break

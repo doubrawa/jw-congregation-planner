@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { localizedWeek, localizedWeeks } from './localize'
+import { localizedWeek, localizedWeeks, missingVariants } from './localize'
 import { lacAdd, lacAdjust, lacMove, lacRemove } from './planning'
 import type { Meeting, PartItem, Week } from './types'
 
@@ -109,6 +109,30 @@ describe('localizedWeek (Sprachvarianten)', () => {
     const localized = localizedWeeks(weeks, 'en')
     expect(localized).not.toBe(weeks)
     expect(localized[0].range).toBe('September 7–13')
+  })
+})
+
+describe('missingVariants (Nachimport-Kandidaten)', () => {
+  it('findet Wochen, denen konfigurierte Sprachvarianten fehlen', () => {
+    const w0 = makeWeek() // hat en-Variante, kein start → nicht nachladbar
+    const w1 = { ...makeWeek(), start: '2026-09-07', lang: 'de' }
+    const w2 = { ...makeWeek(), start: '2026-09-14', lang: 'de', alt: undefined }
+    const res = missingVariants([w0, w1, w2], ['en', 'uk'], 'de')
+    expect(res).toEqual([
+      { wi: 1, start: '2026-09-07', lang: 'de', codes: ['uk'] }, // en schon da
+      { wi: 2, start: '2026-09-14', lang: 'de', codes: ['en', 'uk'] },
+    ])
+  })
+
+  it('zählt die Primärsprache der Woche nie als fehlend', () => {
+    const w = { ...makeWeek(), start: '2026-09-07', lang: 'en', alt: undefined }
+    expect(missingVariants([w], ['en'], 'de')).toEqual([])
+  })
+
+  it('liefert nichts ohne konfigurierte Sprachen oder ohne importierte Wochen', () => {
+    expect(missingVariants([makeWeek()], ['en'], 'de')).toEqual([]) // kein start
+    const w = { ...makeWeek(), start: '2026-09-07', lang: 'de', alt: undefined }
+    expect(missingVariants([w], [], 'de')).toEqual([])
   })
 })
 

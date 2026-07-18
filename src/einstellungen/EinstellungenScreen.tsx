@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { generateInviteCode } from '../lib/data'
-import { importNextWeek, latestImportedStart } from '../lib/import'
+import { importNextWeek, importWeekVariants, latestImportedStart } from '../lib/import'
+import { missingVariants } from '../data/localize'
 import { CONG_TO_JW } from '../i18n/langs'
 import { displayName } from '../data/helpers'
 import { type Dict } from '../i18n/ui'
@@ -69,6 +70,15 @@ export function EinstellungenScreen() {
           .filter((c): c is string => Boolean(c) && c !== langCode),
       ),
     ]
+    // Erst fehlende Varianten bereits geladener Wochen nachholen (z. B. wenn
+    // eine Programmsprache nach deren Import hinzugefügt wurde). Fehler je
+    // Woche werden übersprungen — der nächste Import versucht es erneut.
+    for (const gap of missingVariants(state.weeks, altCodes, langCode)) {
+      const filled = await importWeekVariants(gap.start, gap.lang, gap.codes)
+      if (filled.ok && filled.week.alt) {
+        dispatch({ type: 'mergeWeekAlt', wi: gap.wi, alt: filled.week.alt })
+      }
+    }
     const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
     if (!res.ok) {
       dispatch({ type: 'stopImport' })

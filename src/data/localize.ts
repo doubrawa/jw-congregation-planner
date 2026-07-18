@@ -57,3 +57,32 @@ export function localizedWeeks(weeks: Week[], jwCode: string | null | undefined)
   if (!jwCode || !weeks.some((w) => w.alt?.[jwCode])) return weeks
   return weeks.map((w) => localizedWeek(w, jwCode))
 }
+
+/** Eine importierte Woche, der Sprachvarianten fehlen (Nachimport-Kandidat). */
+export interface MissingVariants {
+  wi: number // Wochenindex
+  start: string // ISO-Startdatum (identifiziert die Woche auf jw.org)
+  lang: string // Primärsprache der Woche (jw.org-Code)
+  codes: string[] // fehlende Varianten-Sprachcodes
+}
+
+/**
+ * Importierte Wochen (mit `start`), denen für die konfigurierten
+ * Programmsprachen `altCodes` noch Varianten fehlen — etwa weil eine Sprache
+ * erst nach dem Import hinzugefügt wurde. `fallbackLang` gilt für Alt-Wochen
+ * ohne gespeicherte Herkunftssprache.
+ */
+export function missingVariants(
+  weeks: Week[],
+  altCodes: string[],
+  fallbackLang: string,
+): MissingVariants[] {
+  const out: MissingVariants[] = []
+  weeks.forEach((week, wi) => {
+    if (!week.start) return // Demo-/Vorlagen-Wochen sind nicht nachladbar
+    const lang = week.lang ?? fallbackLang
+    const codes = altCodes.filter((c) => c !== lang && !week.alt?.[c])
+    if (codes.length > 0) out.push({ wi, start: week.start, lang, codes })
+  })
+  return out
+}

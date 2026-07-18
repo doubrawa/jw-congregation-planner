@@ -204,9 +204,12 @@ function stripVariant(week: ImportedWeek): ImportedWeek {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    const { url, after, lang = 'de', altLangs = [] } = (await req.json().catch(() => ({}))) as {
+    const { url, after, start: startParam, lang = 'de', altLangs = [] } = (await req
+      .json()
+      .catch(() => ({}))) as {
       url?: string
       after?: string
+      start?: string // ISO-Startdatum: genau DIESE Woche liefern (Varianten-Nachimport)
       lang?: string
       altLangs?: string[]
     }
@@ -216,14 +219,23 @@ Deno.serve(async (req: Request) => {
 
     if (!weekUrl) {
       const weeks = await discoverWeeks()
-      const now = new Date()
-      const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-      // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück).
-      const cutoff = after ? new Date(after) : new Date(todayUtc - 6 * 864e5)
-      const next = weeks.find((w) => w.start > cutoff) ?? weeks[weeks.length - 1]
-      if (!next) return json({ error: 'Keine kommende Woche gefunden.' }, 404)
-      weekUrl = next.url
-      start = next.start
+      if (startParam) {
+        // Nachimport: exakt die Woche mit diesem Startdatum (z. B. um später
+        // hinzugefügte Programmsprachen für bereits geladene Wochen zu holen).
+        const hit = weeks.find((w) => w.start.toISOString().slice(0, 10) === startParam)
+        if (!hit) return json({ error: `Woche ${startParam} nicht (mehr) im Arbeitsheft gefunden.` }, 404)
+        weekUrl = hit.url
+        start = hit.start
+      } else {
+        const now = new Date()
+        const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+        // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück).
+        const cutoff = after ? new Date(after) : new Date(todayUtc - 6 * 864e5)
+        const next = weeks.find((w) => w.start > cutoff) ?? weeks[weeks.length - 1]
+        if (!next) return json({ error: 'Keine kommende Woche gefunden.' }, 404)
+        weekUrl = next.url
+        start = next.start
+      }
     }
 
     const germanHtml = await fetchText(weekUrl)

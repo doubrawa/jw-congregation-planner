@@ -150,6 +150,7 @@ export type AppAction =
   | { type: 'startImport' }
   | { type: 'finishImport' } // Demo: simulierter Import (buildImportWeek)
   | { type: 'addImportedWeek'; week: Week } // Produktion: echte jw.org-Woche
+  | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, Week> } // nachgeladene Sprachvarianten
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string } // auf state.slotSel; "" = entfernen
   | { type: 'autoAssign' } // aktuelle Woche + Tab
