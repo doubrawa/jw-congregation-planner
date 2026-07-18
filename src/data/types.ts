@@ -85,6 +85,13 @@ export interface Person {
   id: string
   fn: string // Vorname
   ln: string // Nachname
+  /**
+   * Optionaler Anzeigename (Kurzform). Überschreibt das automatische
+   * "V. Nachname" — nötig, wenn zwei Personen sonst denselben Anzeigenamen
+   * hätten (z. B. "Jürgen Doubrawa" statt "J. Doubrawa" ×2), denn Zuteilungen
+   * hängen am Anzeigenamen.
+   */
+  dn?: string
   role: Role
   female?: boolean // weibliche Rollenbezeichnung ("Verkündigerin")
   tel: string
