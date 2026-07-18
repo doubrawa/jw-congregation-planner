@@ -129,8 +129,7 @@ export type AppAction =
   | { type: 'removeAbsence'; id: string }
   | { type: 'selectPerson'; id: string | null }
   | { type: 'addPerson'; person: Person } // öffnet direkt das Detail
-  | { type: 'updatePerson'; id: string; patch: Partial<Person> }
-  | { type: 'savePerson' } // zurück zur Liste + Toast (Daten sind live editiert)
+  | { type: 'updatePerson'; id: string; patch: Partial<Person> } // speichert automatisch (debounced)
   | { type: 'changeServiceCount'; key: string; delta: 1 | -1 }
   | { type: 'removeService'; key: string }
   | { type: 'addService'; service: Service }

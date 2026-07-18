@@ -237,14 +237,6 @@ function PersonDetail({ person }: { person: Person }) {
           <PrivToggle key={key} qkey={key} label={t[PRIV_KEY[key]]} person={person} update={update} />
         ))}
       </div>
-
-      <button
-        type="button"
-        className="btn-primary pers-save"
-        onClick={() => dispatch({ type: 'savePerson' })}
-      >
-        {t.speichern}
-      </button>
     </section>
   )
 }

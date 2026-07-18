@@ -56,7 +56,7 @@ import {
 } from '../lib/data'
 import { APP_LANGS, APP_TO_JW, congAppCode, isRTL } from '../i18n/langs'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import type { Lang, Notification, NotificationType, Screen, Theme } from '../data/types'
+import type { Lang, Notification, NotificationType, Person, Screen, Theme } from '../data/types'
 import { AppContext, type AppAction, type AppState } from './context'
 import { loadAndHydrate } from './hydrate'
 
@@ -131,7 +131,7 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'finishImport',
   'addImportedWeek',
   'mergeWeekAlt',
-  'savePerson',
+  'updatePerson',
   'lacAdjust',
   'lacRemove',
   'lacMove',
@@ -231,8 +231,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
       }
-    case 'savePerson':
-      return { ...state, selectedPersonId: null, toast: toastKey(state, 'toastGespeichert') }
     case 'changeServiceCount':
       return {
         ...state,
@@ -645,6 +643,36 @@ function initialState(): AppState {
  * Supabase. Läuft nur im konfigurierten, hydrierten Zustand. Der Reducer
  * bleibt rein; hier werden `prev`/`next` (vor/nach der Aktion) ausgewertet.
  */
+/**
+ * Debounce für Personen-Edits: jede Feldänderung dispatcht `updatePerson`;
+ * statt pro Tastenanschlag zu schreiben, wird der Save je Person gebündelt
+ * (Timer wird bei jeder weiteren Änderung neu gestartet) und beim Verlassen
+ * des Details sofort nachgeholt (flushPersonSaves).
+ */
+const PERSON_SAVE_DELAY = 600
+const pendingPersonSaves = new Map<string, ReturnType<typeof setTimeout>>()
+
+function schedulePersonSave(congId: string, person: Person): void {
+  const timer = pendingPersonSaves.get(person.id)
+  if (timer) clearTimeout(timer)
+  pendingPersonSaves.set(
+    person.id,
+    setTimeout(() => {
+      pendingPersonSaves.delete(person.id)
+      savePerson(congId, person)
+    }, PERSON_SAVE_DELAY),
+  )
+}
+
+function flushPersonSaves(congId: string, state: AppState): void {
+  for (const [id, timer] of pendingPersonSaves) {
+    clearTimeout(timer)
+    pendingPersonSaves.delete(id)
+    const person = state.persons.find((p) => p.id === id)
+    if (person) savePerson(congId, person)
+  }
+}
+
 function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -675,11 +703,18 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     case 'addPerson':
       savePerson(congId, action.person)
       break
-    case 'savePerson': {
-      const edited = prev.persons.find((p) => p.id === prev.selectedPersonId)
-      if (edited) savePerson(congId, edited)
+    case 'updatePerson': {
+      // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
+      const p = next.persons.find((x) => x.id === action.id)
+      if (p) schedulePersonSave(congId, p)
       break
     }
+    case 'selectPerson':
+    case 'navigate':
+    case 'logout':
+      // Detail verlassen → ausstehende Personen-Saves sofort schreiben
+      flushPersonSaves(congId, prev)
+      break
     case 'addAbsence':
       saveAbsence(congId, userId, next.personId, action.absence)
       break
