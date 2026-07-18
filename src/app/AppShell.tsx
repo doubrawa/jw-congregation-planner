@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { initials } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
@@ -49,7 +49,21 @@ export function AppShell() {
   // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
   const isLogin = state.screen === 'login' || state.recovery
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
-  const navigate = (screen: Screen) => dispatch({ type: 'navigate', screen })
+  // Mobiles Seitenmenü (Drawer) — Desktop hat die feste Sidebar
+  const [menuOpen, setMenuOpen] = useState(false)
+  const navigate = (screen: Screen) => {
+    setMenuOpen(false)
+    dispatch({ type: 'navigate', screen })
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [menuOpen])
 
   const navScreens = state.planner ? PLANNER_SCREENS : PUBLISHER_SCREENS
   const navLabel = (screen: Screen): string => {
@@ -127,9 +141,22 @@ export function AppShell() {
         ) : (
           <>
             <header className="mobile-header">
-              <div className="mobile-header-brand">
-                <img className="mobile-header-logo" src={LOGO} alt="" width={22} height={22} />
-                CONGREGATION PLANNER
+              <div className="mobile-header-left">
+                <button
+                  type="button"
+                  className="menu-btn"
+                  aria-label={t.menueLbl}
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen(true)}
+                >
+                  <span className="menu-btn-bar" />
+                  <span className="menu-btn-bar" />
+                  <span className="menu-btn-bar" />
+                </button>
+                <div className="mobile-header-brand">
+                  <img className="mobile-header-logo" src={LOGO} alt="" width={22} height={22} />
+                  CONGREGATION PLANNER
+                </div>
               </div>
               <div className="mobile-header-right">
                 <NotifChip />
@@ -152,22 +179,64 @@ export function AppShell() {
               <Content />
             </div>
 
-            <nav className="bottom-nav" aria-label="Hauptnavigation">
-              {navItems.map(([screen, label]) => (
-                <button
-                  key={screen}
-                  type="button"
-                  className={
-                    state.screen === screen ? 'bottom-nav-item is-active' : 'bottom-nav-item'
-                  }
-                  aria-current={state.screen === screen ? 'page' : undefined}
-                  onClick={() => navigate(screen)}
-                >
-                  <span className="bottom-nav-dot" />
-                  <span className="bottom-nav-label">{label}</span>
-                </button>
-              ))}
-            </nav>
+            {menuOpen && (
+              <>
+                <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />
+                <aside className="drawer" role="dialog" aria-modal="true" aria-label={t.menueLbl}>
+                  <div className="drawer-head">
+                    <div className="sidebar-brand">
+                      <img className="sidebar-logo" src={LOGO} alt="" width={40} height={40} />
+                      <div className="sidebar-wordmark">
+                        Congregation
+                        <br />
+                        Planner
+                      </div>
+                      <div className="sidebar-sub">
+                        {fill(t.congLabel, { name: state.congregation.name })}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="drawer-close"
+                      aria-label="✕"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <nav className="sidebar-nav" aria-label="Hauptnavigation">
+                    {navItems.map(([screen, label]) => (
+                      <button
+                        key={screen}
+                        type="button"
+                        className={
+                          state.screen === screen ? 'sidebar-nav-item is-active' : 'sidebar-nav-item'
+                        }
+                        aria-current={state.screen === screen ? 'page' : undefined}
+                        onClick={() => navigate(screen)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </nav>
+                  <div className="sidebar-spacer" />
+                  <div className="sidebar-profile">
+                    <div className="avatar avatar--ink avatar--32">{me ? initials(me) : '–'}</div>
+                    <div>
+                      <div className="sidebar-profile-name">{me ? `${me.fn} ${me.ln}` : ''}</div>
+                      <div className="sidebar-profile-role">{roleLabel}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="sidebar-logout"
+                    onClick={() => performLogout(dispatch)}
+                  >
+                    {t.abmelden}
+                  </button>
+                </aside>
+              </>
+            )}
           </>
         )}
 

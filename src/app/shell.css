@@ -33,7 +33,7 @@
 
 .app-content {
   flex: 1;
-  padding-bottom: 86px; /* Platz für die Bottom-Nav */
+  padding-bottom: 40px;
 }
 
 /* Screen-Grundfläche (je Bereich ein <section class="screen">) */
@@ -42,10 +42,6 @@
 }
 
 @media (min-width: 920px) {
-  .app-content {
-    padding-bottom: 40px;
-  }
-
   .screen {
     padding: 26px 36px;
   }
@@ -220,6 +216,38 @@
   justify-content: space-between;
 }
 
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Hamburger-Button — öffnet das seitliche Menü (nur mobil sichtbar). */
+.menu-btn {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border-radius: 8px;
+  flex: none;
+}
+
+.menu-btn:hover {
+  background: var(--hov);
+}
+
+.menu-btn-bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--acc);
+}
+
 .mobile-header-brand {
   display: inline-flex;
   align-items: center;
@@ -228,6 +256,9 @@
   font-weight: 600;
   letter-spacing: 0.18em;
   color: var(--acc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mobile-header-logo {
@@ -274,60 +305,76 @@
   }
 }
 
-/* ---- Bottom-Nav (nur mobil) --------------------------------------------- */
+/* ---- Seitliches Menü / Drawer (nur mobil) --------------------------------
+   Öffnet über den Hamburger im Kopf; nutzt die sidebar-*-Bausteine der
+   Desktop-Sidebar (Marke, Nav-Items, Profil, Abmelden). */
 
-.bottom-nav {
+.drawer-backdrop {
   position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 430px;
-  z-index: 20;
-  display: flex;
-  border-top: 1px solid var(--line);
-  background: var(--bgT);
+  inset: 0;
+  background: rgba(30, 25, 15, 0.28);
+  z-index: 34;
 }
 
-@media (min-width: 920px) {
-  .bottom-nav {
-    display: none;
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: none;
   }
 }
 
-.bottom-nav-item {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  padding: 11px 0 15px;
+@keyframes drawer-in-rtl {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: none;
+  }
 }
 
-.bottom-nav-dot {
-  display: block;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: transparent;
-  margin: 0 auto 4px;
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: min(280px, 82vw);
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-inline-end: 1px solid var(--line);
+  box-shadow: var(--sh-overlay);
+  padding: 26px 16px 22px;
+  overflow-y: auto;
+  animation: drawer-in 0.22s ease;
 }
 
-.bottom-nav-item.is-active .bottom-nav-dot {
-  background: var(--acc);
+[dir='rtl'] .drawer {
+  animation-name: drawer-in-rtl;
 }
 
-.bottom-nav-label {
-  display: block;
-  font-size: 10.5px;
-  font-weight: 500;
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.drawer-close {
   color: var(--mut2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 15px;
+  padding: 4px 8px;
+  flex: none;
 }
 
-.bottom-nav-item.is-active .bottom-nav-label {
-  font-weight: 600;
-  color: var(--ink);
+@media (min-width: 920px) {
+  .drawer-backdrop,
+  .drawer {
+    display: none;
+  }
 }
 
 /* ---- Mitteilungen-Overlay ------------------------------------------------ */
@@ -492,7 +539,7 @@
 
 .toast {
   position: fixed;
-  bottom: 92px;
+  bottom: 28px; /* ohne Bottom-Nav reicht ein kleiner Abstand */
   left: 50%;
   transform: translateX(-50%);
   background: var(--ink);
