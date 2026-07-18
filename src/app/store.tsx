@@ -375,6 +375,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'autoAssign': {
+      if (!state.weeks[state.week]) return state // keine Wochen geladen
       const { weeks, count, newly, unfilled } = autoAssignMeeting(
         state.weeks,
         state.week,
