@@ -24,6 +24,22 @@ export function PlanenScreen() {
   // die Logik (LAC-Erkennung, Minuten, Slots) läuft auf der kanonischen Woche.
   const rawWeek = state.weeks[state.week]
   const { week, tpw } = useProgWeek(rawWeek)
+
+  // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
+  if (!rawWeek || !week) {
+    return (
+      <section className="screen">
+        <div className="screen-head">
+          <h1 className="screen-title">{t.planen}</h1>
+        </div>
+        <div className="panel panel--lead" data-farbe="neutral">
+          <div className="panel-label">{t.keineWochenTitel}</div>
+          <p className="prog-meta">{t.keineWochenHinweis}</p>
+        </div>
+      </section>
+    )
+  }
+
   const meeting = state.tab === 'mid' ? week.mid : week.we
   const rawMeeting = state.tab === 'mid' ? rawWeek.mid : rawWeek.we
   const openCount = countOpenSlots(rawMeeting, state.services)

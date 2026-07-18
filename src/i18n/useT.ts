@@ -46,7 +46,8 @@ export function useT(): I18n {
 }
 
 export interface ProgWeek {
-  week: Week
+  /** undefined, wenn es (noch) keine Wochen gibt — Aufrufer zeigt Leerzustand. */
+  week: Week | undefined
   /** Programm-Übersetzer passend zur angezeigten Woche (statt `tp`). */
   tpw: (s: string) => string
 }
@@ -57,10 +58,11 @@ export interface ProgWeek {
  * Texte angezeigt und die Vorlage-Strings in die App-Sprache übersetzt — sonst
  * bleibt alles bei der Versammlungssprache (`tp`).
  */
-export function useProgWeek(week: Week): ProgWeek {
+export function useProgWeek(week: Week | undefined): ProgWeek {
   const { state } = useApp()
   const { tp } = useT()
   return useMemo(() => {
+    if (!week) return { week, tpw: tp }
     const congCode = congAppCode(state.congLang)
     const jwCode = state.lang !== congCode ? APP_TO_JW[state.lang] : undefined
     const merged = localizedWeek(week, jwCode)

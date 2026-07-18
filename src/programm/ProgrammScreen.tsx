@@ -18,6 +18,19 @@ export function ProgrammScreen() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const { week, tpw } = useProgWeek(state.weeks[state.week])
+
+  // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
+  if (!week) {
+    return (
+      <section className="screen">
+        <div className="panel panel--lead" data-farbe="neutral">
+          <div className="panel-label">{t.keineWochenTitel}</div>
+          <p className="prog-meta">{t.keineWochenHinweis}</p>
+        </div>
+      </section>
+    )
+  }
+
   const meeting = state.tab === 'mid' ? week.mid : week.we
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const myName = me ? displayName(me) : null
