@@ -4,6 +4,11 @@ import { CONG_LANGS } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import './overlays.css'
 
+/** Vollständige jw.org-Liste, alphabetisch nach deutschem Sprachnamen. */
+const SORTED_CONG_LANGS: readonly string[] = [...CONG_LANGS].sort((a, b) =>
+  a.localeCompare(b, 'de'),
+)
+
 /**
  * Sprach-Sheet: durchsuchbare vollständige jw.org-Liste. Zwei Modi
  * (state.langSheetFor): Versammlungssprache wählen ('cong') oder eine weitere
@@ -28,7 +33,7 @@ export function LanguageSheet() {
   }, [dispatch])
 
   const query = state.langSearch.trim().toLowerCase()
-  const filtered = CONG_LANGS.filter((n) => !query || n.toLowerCase().includes(query))
+  const filtered = SORTED_CONG_LANGS.filter((n) => !query || n.toLowerCase().includes(query))
 
   return (
     <>

@@ -20,6 +20,14 @@ export function initials(p: Person): string {
   return ((p.fn[0] ?? '') + (p.ln[0] ?? '')).toUpperCase() || '–'
 }
 
+/** Alphabetische Personen-Sortierung: Nachname, dann Vorname (deutsch). */
+export function personCompare(a: Person, b: Person): number {
+  return (
+    a.ln.localeCompare(b.ln, 'de', { sensitivity: 'base' }) ||
+    a.fn.localeCompare(b.fn, 'de', { sensitivity: 'base' })
+  )
+}
+
 /** Rollenlabel, für Frauen in weiblicher Form ("Verkündigerin"). */
 export function roleLabel(p: Person): string {
   const label = ROLE_LABEL[p.role]

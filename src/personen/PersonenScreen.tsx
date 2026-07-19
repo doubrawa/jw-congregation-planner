@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { initials, isBrothersOnly, roleLabel, serviceQualKey } from '../data/helpers'
+import { initials, isBrothersOnly, personCompare, roleLabel, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
 import type { Person, Role } from '../data/types'
@@ -36,9 +36,9 @@ function PersonList() {
   const [search, setSearch] = useState('')
 
   const query = search.trim().toLowerCase()
-  const filtered = state.persons.filter(
-    (p) => !query || `${p.fn} ${p.ln}`.toLowerCase().includes(query),
-  )
+  const filtered = [...state.persons]
+    .sort(personCompare)
+    .filter((p) => !query || `${p.fn} ${p.ln}`.toLowerCase().includes(query))
 
   const addPerson = () => {
     dispatch({

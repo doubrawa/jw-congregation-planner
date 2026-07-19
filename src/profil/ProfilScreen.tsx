@@ -3,7 +3,7 @@ import { THEME_LIST } from '../data/constants'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { displayName } from '../data/helpers'
 import type { Lang, Theme } from '../data/types'
-import { APP_LANGS } from '../i18n/langs'
+import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { performLogout } from '../lib/supabase'
 import '../aufgaben/aufgaben.css'
@@ -73,7 +73,7 @@ export function ProfilScreen() {
             value={state.lang}
             onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
           >
-            {APP_LANGS.map(({ code, label }) => (
+            {APP_LANGS_SORTED.map(({ code, label }) => (
               <option key={code} value={code}>
                 {label}
               </option>

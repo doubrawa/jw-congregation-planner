@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import type { Lang } from '../data/types'
-import { APP_LANGS } from '../i18n/langs'
+import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
 import './login.css'
@@ -129,7 +129,7 @@ export function LoginScreen() {
           value={state.lang}
           onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
         >
-          {APP_LANGS.map(({ code, label }) => (
+          {APP_LANGS_SORTED.map(({ code, label }) => (
             <option key={code} value={code}>
               {label}
             </option>

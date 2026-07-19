@@ -54,6 +54,11 @@ export const APP_LANGS: ReadonlyArray<{ code: Lang; label: string }> = [
   { code: 'ur', label: 'اردو' },
 ]
 
+/** App-Sprachen alphabetisch nach nativem Namen — für die Sprach-Dropdowns. */
+export const APP_LANGS_SORTED: ReadonlyArray<{ code: Lang; label: string }> = [...APP_LANGS].sort(
+  (a, b) => a.label.localeCompare(b.label, 'de'),
+)
+
 /** RTL-Sprachen (Rechts-nach-links); steuern dir="rtl" + gespiegeltes Layout. */
 export const RTL_LANGS: ReadonlySet<Lang> = new Set<Lang>(['ar', 'he', 'fa', 'ur'])
 
