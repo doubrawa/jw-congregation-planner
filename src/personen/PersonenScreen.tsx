@@ -369,6 +369,19 @@ function PersonDetail({ person }: { person: Person }) {
       </div>
 
       {state.dataStatus !== 'demo' && <KontoCard person={person} />}
+
+      <button
+        type="button"
+        className="pers-delete"
+        onClick={() => {
+          const name = `${person.fn} ${person.ln}`.trim() || '—'
+          if (window.confirm(fill(t.confirmPersonDel, { name }))) {
+            dispatch({ type: 'removePerson', id: person.id })
+          }
+        }}
+      >
+        {t.persLoeschen}
+      </button>
     </section>
   )
 }

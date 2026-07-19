@@ -231,3 +231,23 @@
 .pers-orphans {
   margin-top: 18px;
 }
+
+/* Person löschen (unten im Detail) */
+.pers-delete {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--weinB);
+  background: transparent;
+  color: var(--wein);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.pers-delete:hover {
+  background: var(--tWein);
+}
