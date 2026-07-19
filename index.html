@@ -6,21 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Zusammenkunfts-Planer für eine Versammlung — Wochenprogramme, Aufgaben zuteilen, Personenverwaltung." />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f7f4ed" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1a1813" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191a17" media="(prefers-color-scheme: dark)" />
 
-    <!-- Theme vor dem ersten Paint setzen (kein Flackern) -->
+    <!-- Farbschema vor dem ersten Paint setzen (kein Flackern). Schemata wie
+         THEME_LIST in src/data/constants.ts; alte Werte light/dark gemappt. -->
     <script>
       (function () {
         try {
+          var THEMES = {
+            weiss: 0, indigo: 0, blatt: 0, papaya: 0,
+            graphit: 1, bernstein: 1, aubergine: 1, koralle: 1,
+          }
           var stored = localStorage.getItem('theme')
-          var dark =
-            stored === 'dark' ||
-            (stored !== 'light' &&
-              window.matchMedia('(prefers-color-scheme: dark)').matches)
-          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+          if (stored === 'light') stored = 'weiss'
+          if (stored === 'dark') stored = 'graphit'
+          if (!(stored in THEMES)) {
+            stored = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'graphit'
+              : 'weiss'
+          }
+          document.documentElement.dataset.theme = stored
+          if (THEMES[stored]) document.documentElement.dataset.dark = '1'
         } catch (e) {
-          /* localStorage nicht verfügbar — Standard bleibt Hell */
+          /* localStorage nicht verfügbar — Standard bleibt Reinweiß */
         }
       })()
     </script>

@@ -3,7 +3,7 @@
  * Reine Referenzwerte — keine Demo-Daten (die kommen aus dem Prototyp).
  */
 
-import type { QualificationKey, Role, SectionColor } from './types'
+import type { QualificationKey, Role, SectionColor, Theme } from './types'
 
 export const ROLE_LABEL: Record<Role, string> = {
   aeltester: 'Ältester',
@@ -57,6 +57,26 @@ export const SECTION_TOKENS: Record<
   petrol: { panel: 'tPet', accent: 'pet', hairline: 'linePet' },
   gold: { panel: 'tGld', accent: 'gld', hairline: 'lineGld' },
   wein: { panel: 'tWein', accent: 'wein', hairline: 'lineWein' },
+}
+
+/**
+ * Farbschemata (Profil → Darstellung), Reihenfolge = Combobox. Die Labels
+ * sind Eigennamen der Paletten und bleiben in allen App-Sprachen deutsch.
+ */
+export const THEME_LIST: ReadonlyArray<{ key: Theme; label: string; dark: boolean }> = [
+  { key: 'weiss', label: 'Reinweiß', dark: false },
+  { key: 'indigo', label: 'Indigo', dark: false },
+  { key: 'blatt', label: 'Blattgrün', dark: false },
+  { key: 'papaya', label: 'Papaya', dark: false },
+  { key: 'graphit', label: 'Graphit', dark: true },
+  { key: 'bernstein', label: 'Bernstein', dark: true },
+  { key: 'aubergine', label: 'Aubergine', dark: true },
+  { key: 'koralle', label: 'Koralle', dark: true },
+]
+
+/** true für die dunklen Paletten (steuert data-dark / color-scheme). */
+export function isDarkTheme(theme: Theme): boolean {
+  return THEME_LIST.some((t) => t.key === theme && t.dark)
 }
 
 /** Desktop-Breakpoint aus dem Handoff. */

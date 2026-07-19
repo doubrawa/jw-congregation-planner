@@ -71,7 +71,7 @@
 }
 
 .btn-outline:hover {
-  background: var(--tGld);
+  background: var(--tAcc);
 }
 
 /* ---- Wochen-Navigation (Programm + Planen) ------------------------------ */
@@ -87,7 +87,7 @@
   height: 36px;
   flex: none;
   border-radius: 50%;
-  background: var(--tGld);
+  background: var(--tAcc);
   border: 1px solid var(--acc);
   display: flex;
   align-items: center;
@@ -131,7 +131,7 @@
 }
 
 .week-chip--current {
-  background: var(--tGld);
+  background: var(--tAcc);
   color: var(--acc);
 }
 
@@ -216,6 +216,14 @@
   --panel-hair: var(--lineGld);
 
   background: var(--tGld);
+}
+
+/* Akzent-Tonfläche (Karten wie NÄCHSTE AUFGABEN, SPRACHE, FESTE ROLLEN) */
+.panel[data-farbe='acc'] {
+  --panel-accent: var(--acc);
+  --panel-hair: var(--lineNeu);
+
+  background: var(--tAcc);
 }
 
 .panel[data-farbe='wein'] {
@@ -325,7 +333,7 @@ select {
   background-position: right 14px center;
   padding-inline-end: 40px;
 }
-:root[data-theme='dark'] select {
+:root[data-dark] select {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a79e8c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 [dir='rtl'] select {

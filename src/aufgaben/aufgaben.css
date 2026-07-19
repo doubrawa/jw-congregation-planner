@@ -159,36 +159,10 @@
 
 /* ---- Profil ------------------------------------------------------------------ */
 
-.theme-chips {
-  display: flex;
-  gap: 6px;
-}
-
 .lang-select {
   width: auto;
   max-width: 200px;
   margin-top: 0;
-}
-
-.theme-chips--wrap {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.theme-chip {
-  border: 1px solid var(--bord3);
-  background: transparent;
-  color: var(--mut);
-  border-radius: var(--r-pill);
-  padding: 4px 11px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.theme-chip.is-active {
-  border-color: var(--acc);
-  background: var(--acc);
-  color: var(--onAcc);
 }
 
 .prof-logout {
