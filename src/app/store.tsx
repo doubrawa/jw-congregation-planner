@@ -274,8 +274,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     case 'updateCongregation':
       return { ...state, congregation: { ...state.congregation, ...action.patch } }
-    case 'saveCongregation':
-      return { ...state, toast: toastKey(state, 'toastGespeichert') }
     case 'updateMember':
       return {
         ...state,
@@ -683,6 +681,24 @@ function flushPersonSaves(congId: string, state: AppState): void {
   }
 }
 
+/** Gleiche Debounce-Mechanik für die Versammlungs-Stammdaten. */
+let congSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleCongregationSave(congId: string, info: AppState['congregation']): void {
+  if (congSaveTimer) clearTimeout(congSaveTimer)
+  congSaveTimer = setTimeout(() => {
+    congSaveTimer = null
+    saveCongregationInfo(congId, info)
+  }, PERSON_SAVE_DELAY)
+}
+
+function flushCongregationSave(congId: string, state: AppState): void {
+  if (!congSaveTimer) return
+  clearTimeout(congSaveTimer)
+  congSaveTimer = null
+  saveCongregationInfo(congId, state.congregation)
+}
+
 function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -722,8 +738,9 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     case 'selectPerson':
     case 'navigate':
     case 'logout':
-      // Detail verlassen → ausstehende Personen-Saves sofort schreiben
+      // Ansicht verlassen → ausstehende Debounce-Saves sofort schreiben
       flushPersonSaves(congId, prev)
+      flushCongregationSave(congId, prev)
       break
     case 'addAbsence':
       saveAbsence(congId, userId, next.personId, action.absence)
@@ -779,8 +796,8 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
         progLangs: next.progLangs,
       })
       break
-    case 'saveCongregation':
-      saveCongregationInfo(congId, next.congregation)
+    case 'updateCongregation':
+      scheduleCongregationSave(congId, next.congregation)
       break
     case 'updateMember': {
       const member = next.members.find((m) => m.userId === action.userId)
