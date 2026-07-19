@@ -95,9 +95,13 @@ export function AufgabenScreen() {
             <span className="field-label">{t.von}</span>
             <DatePicker
               value={from}
-              onChange={setFrom}
+              onChange={(iso) => {
+                setFrom(iso)
+                // "Bis" mit demselben Tag vorbelegen → Ein-Tages-Abwesenheit
+                // ist ein einziger Klick; korrigiert auch ein Bis vor dem Von.
+                if (iso && (!to || to < iso)) setTo(iso)
+              }}
               locale={LOCALES[state.lang]}
-              max={to || undefined}
               placeholder={t.datumPh}
               ariaLabel={t.von}
             />
