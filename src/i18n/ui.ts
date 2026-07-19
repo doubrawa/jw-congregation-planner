@@ -9,7 +9,7 @@
 import type { Lang, QualificationKey, Role } from '../data/types'
 
 export const DE = {
-    congName: 'Versammlung Musterstadt', congLabel: 'Versammlung {name}',
+    congLabel: 'Versammlung {name}',
     navProgramm: 'Programm', navAufgaben: 'Aufgaben', navAufgabenLong: 'Meine Aufgaben',
     navPlanen: 'Planen', navPersonen: 'Personen', navEinstellungen: 'Einstellungen',
     navProfil: 'Profil', menueLbl: 'Menü',
@@ -150,9 +150,7 @@ export type Dict = typeof DE
  * (siehe `dict`). Nicht jede App-Sprache braucht ein vollständiges Overlay.
  */
 const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
-  ar: {
-    congName: "جماعة موسترشتات",
-    navProgramm: "البرنامج",
+  ar: {    navProgramm: "البرنامج",
     navAufgaben: "التعيينات",
     navAufgabenLong: "تعييناتي",
     navPlanen: "التخطيط",
@@ -349,7 +347,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     duMarker: " (أنت)",
   },
   en: {
-    congName: 'Musterstadt Congregation', congLabel: '{name} Congregation',
+    congLabel: '{name} Congregation',
     navProgramm: 'Program', navAufgaben: 'Assignments', navAufgabenLong: 'My Assignments',
     navPlanen: 'Plan', navPersonen: 'People', navEinstellungen: 'Settings',
     navProfil: 'Profile', menueLbl: 'Menu',
@@ -479,7 +477,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} is assigned {n} weeks in a row',
   },
   es: {
-    congName: 'Congregación Musterstadt', congLabel: 'Congregación {name}',
+    congLabel: 'Congregación {name}',
     navProgramm: 'Programa', navAufgaben: 'Asignaciones', navAufgabenLong: 'Mis asignaciones',
     navPlanen: 'Planificar', navPersonen: 'Personas', navEinstellungen: 'Configuración',
     abmelden: 'Cerrar sesión', rolleKoordinator: 'Coordinador', rolleVerkuendiger: 'Publicador', demoSuffix: ' (demo)',
@@ -584,7 +582,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} está asignado {n} semanas seguidas',
   },
   fr: {
-    congName: 'Assemblée de Musterstadt', congLabel: 'Assemblée de {name}',
+    congLabel: 'Assemblée de {name}',
     navProgramm: 'Programme', navAufgaben: 'Attributions', navAufgabenLong: 'Mes attributions',
     navPlanen: 'Planifier', navPersonen: 'Personnes', navEinstellungen: 'Paramètres',
     abmelden: 'Se déconnecter', rolleKoordinator: 'Coordinateur', rolleVerkuendiger: 'Proclamateur', demoSuffix: ' (démo)',
@@ -689,7 +687,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} est assigné {n} semaines de suite',
   },
   it: {
-    congName: 'Congregazione di Musterstadt', congLabel: 'Congregazione di {name}',
+    congLabel: 'Congregazione di {name}',
     navProgramm: 'Programma', navAufgaben: 'Incarichi', navAufgabenLong: 'I miei incarichi',
     navPlanen: 'Pianifica', navPersonen: 'Persone', navEinstellungen: 'Impostazioni',
     abmelden: 'Esci', rolleKoordinator: 'Coordinatore', rolleVerkuendiger: 'Proclamatore', demoSuffix: ' (demo)',
@@ -794,7 +792,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} è assegnato {n} settimane di fila',
   },
   pt: {
-    congName: 'Congregação de Musterstadt', congLabel: 'Congregação de {name}',
+    congLabel: 'Congregação de {name}',
     navProgramm: 'Programa', navAufgaben: 'Designações', navAufgabenLong: 'As minhas designações',
     navPlanen: 'Planear', navPersonen: 'Pessoas', navEinstellungen: 'Definições',
     abmelden: 'Terminar sessão', rolleKoordinator: 'Coordenador', rolleVerkuendiger: 'Publicador', demoSuffix: ' (demo)',
@@ -899,7 +897,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} está designado {n} semanas seguidas',
   },
   nl: {
-    congName: 'Gemeente Musterstadt', congLabel: 'Gemeente {name}',
+    congLabel: 'Gemeente {name}',
     navProgramm: 'Programma', navAufgaben: 'Toewijzingen', navAufgabenLong: 'Mijn toewijzingen',
     navPlanen: 'Plannen', navPersonen: 'Personen', navEinstellungen: 'Instellingen',
     abmelden: 'Afmelden', rolleKoordinator: 'Coördinator', rolleVerkuendiger: 'Verkondiger', demoSuffix: ' (demo)',
@@ -1004,7 +1002,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} is {n} weken achter elkaar toegewezen',
   },
   pl: {
-    congName: 'Zbór Musterstadt', congLabel: 'Zbór {name}',
+    congLabel: 'Zbór {name}',
     navProgramm: 'Program', navAufgaben: 'Zadania', navAufgabenLong: 'Moje zadania',
     navPlanen: 'Planowanie', navPersonen: 'Osoby', navEinstellungen: 'Ustawienia',
     abmelden: 'Wyloguj', rolleKoordinator: 'Koordynator', rolleVerkuendiger: 'Głosiciel', demoSuffix: ' (demo)',
@@ -1109,7 +1107,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} jest przydzielony {n} tygodni z rzędu',
   },
   ru: {
-    congName: 'Собрание Мустерштадт', congLabel: 'Собрание {name}',
+    congLabel: 'Собрание {name}',
     navProgramm: 'Программа', navAufgaben: 'Задания', navAufgabenLong: 'Мои задания',
     navPlanen: 'Планирование', navPersonen: 'Люди', navEinstellungen: 'Настройки',
     abmelden: 'Выйти', rolleKoordinator: 'Координатор', rolleVerkuendiger: 'Возвещатель', demoSuffix: ' (демо)',
@@ -1214,7 +1212,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} назначается {n} недель подряд',
   },
   uk: {
-    congName: 'Збір Мустерштадт', congLabel: 'Збір {name}',
+    congLabel: 'Збір {name}',
     navProgramm: 'Програма', navAufgaben: 'Завдання', navAufgabenLong: 'Мої завдання',
     navPlanen: 'Планування', navPersonen: 'Люди', navEinstellungen: 'Налаштування',
     abmelden: 'Вийти', rolleKoordinator: 'Координатор', rolleVerkuendiger: 'Вісник', demoSuffix: ' (демо)',
@@ -1319,7 +1317,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} призначається {n} тижнів поспіль',
   },
   ro: {
-    congName: 'Congregația Musterstadt', congLabel: 'Congregația {name}',
+    congLabel: 'Congregația {name}',
     navProgramm: 'Program', navAufgaben: 'Însărcinări', navAufgabenLong: 'Însărcinările mele',
     navPlanen: 'Planificare', navPersonen: 'Persoane', navEinstellungen: 'Setări',
     abmelden: 'Deconectare', rolleKoordinator: 'Coordonator', rolleVerkuendiger: 'Vestitor', demoSuffix: ' (demo)',
@@ -1424,7 +1422,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} are însărcinări {n} săptămâni la rând',
   },
   cs: {
-    congName: 'Sbor Musterstadt', congLabel: 'Sbor {name}',
+    congLabel: 'Sbor {name}',
     navProgramm: 'Program', navAufgaben: 'Úkoly', navAufgabenLong: 'Moje úkoly',
     navPlanen: 'Plánování', navPersonen: 'Osoby', navEinstellungen: 'Nastavení',
     abmelden: 'Odhlásit se', rolleKoordinator: 'Koordinátor', rolleVerkuendiger: 'Zvěstovatel', demoSuffix: ' (demo)',
@@ -1529,7 +1527,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} je přidělen {n} týdnů v řadě',
   },
   sk: {
-    congName: 'Zbor Musterstadt', congLabel: 'Zbor {name}',
+    congLabel: 'Zbor {name}',
     navProgramm: 'Program', navAufgaben: 'Úlohy', navAufgabenLong: 'Moje úlohy',
     navPlanen: 'Plánovanie', navPersonen: 'Osoby', navEinstellungen: 'Nastavenia',
     abmelden: 'Odhlásiť sa', rolleKoordinator: 'Koordinátor', rolleVerkuendiger: 'Zvestovateľ', demoSuffix: ' (demo)',
@@ -1634,7 +1632,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} je pridelený {n} týždňov po sebe',
   },
   hr: {
-    congName: 'Skupština Musterstadt', congLabel: 'Skupština {name}',
+    congLabel: 'Skupština {name}',
     navProgramm: 'Program', navAufgaben: 'Zadaci', navAufgabenLong: 'Moji zadaci',
     navPlanen: 'Planiranje', navPersonen: 'Osobe', navEinstellungen: 'Postavke',
     abmelden: 'Odjava', rolleKoordinator: 'Koordinator', rolleVerkuendiger: 'Objavitelj', demoSuffix: ' (demo)',
@@ -1739,7 +1737,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} je dodijeljen {n} tjedana zaredom',
   },
   sr: {
-    congName: 'Skupština Musterštat', congLabel: 'Skupština {name}',
+    congLabel: 'Skupština {name}',
     navProgramm: 'Program', navAufgaben: 'Zaduženja', navAufgabenLong: 'Moja zaduženja',
     navPlanen: 'Planiranje', navPersonen: 'Osobe', navEinstellungen: 'Podešavanja',
     abmelden: 'Odjava', rolleKoordinator: 'Koordinator', rolleVerkuendiger: 'Objavljivač', demoSuffix: ' (demo)',
@@ -1844,7 +1842,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} je dodeljen {n} nedelja zaredom',
   },
   bg: {
-    congName: 'Сборът Мустерщат', congLabel: 'Сбор {name}',
+    congLabel: 'Сбор {name}',
     navProgramm: 'Програма', navAufgaben: 'Назначения', navAufgabenLong: 'Моите назначения',
     navPlanen: 'Планиране', navPersonen: 'Хора', navEinstellungen: 'Настройки',
     abmelden: 'Изход', rolleKoordinator: 'Координатор', rolleVerkuendiger: 'Вестител', demoSuffix: ' (демо)',
@@ -1949,7 +1947,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} е назначаван {n} седмици подред',
   },
   hu: {
-    congName: 'Musterstadt Gyülekezet', congLabel: '{name} gyülekezet',
+    congLabel: '{name} gyülekezet',
     navProgramm: 'Program', navAufgaben: 'Feladatok', navAufgabenLong: 'Feladataim',
     navPlanen: 'Tervezés', navPersonen: 'Személyek', navEinstellungen: 'Beállítások',
     abmelden: 'Kijelentkezés', rolleKoordinator: 'Koordinátor', rolleVerkuendiger: 'Hírnök', demoSuffix: ' (demó)',
@@ -2054,7 +2052,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} {n} egymást követő héten be van osztva',
   },
   el: {
-    congName: 'Εκκλησία Μούστερσταντ', congLabel: 'Εκκλησία {name}',
+    congLabel: 'Εκκλησία {name}',
     navProgramm: 'Πρόγραμμα', navAufgaben: 'Αναθέσεις', navAufgabenLong: 'Οι αναθέσεις μου',
     navPlanen: 'Προγραμματισμός', navPersonen: 'Άτομα', navEinstellungen: 'Ρυθμίσεις',
     abmelden: 'Αποσύνδεση', rolleKoordinator: 'Συντονιστής', rolleVerkuendiger: 'Ευαγγελιζόμενος', demoSuffix: ' (demo)',
@@ -2159,7 +2157,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: 'Ο/Η {name} έχει ανάθεση {n} συνεχόμενες εβδομάδες',
   },
   tr: {
-    congName: 'Musterstadt Cemaati', congLabel: '{name} Cemaati',
+    congLabel: '{name} Cemaati',
     navProgramm: 'Program', navAufgaben: 'Görevler', navAufgabenLong: 'Görevlerim',
     navPlanen: 'Planlama', navPersonen: 'Kişiler', navEinstellungen: 'Ayarlar',
     abmelden: 'Çıkış', rolleKoordinator: 'Koordinatör', rolleVerkuendiger: 'Müjdeci', demoSuffix: ' (demo)',
@@ -2264,7 +2262,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} {n} hafta üst üste görevli',
   },
   sv: {
-    congName: 'Musterstad församling', congLabel: 'Församlingen {name}',
+    congLabel: 'Församlingen {name}',
     navProgramm: 'Program', navAufgaben: 'Uppgifter', navAufgabenLong: 'Mina uppgifter',
     navPlanen: 'Planera', navPersonen: 'Personer', navEinstellungen: 'Inställningar',
     abmelden: 'Logga ut', rolleKoordinator: 'Samordnare', rolleVerkuendiger: 'Förkunnare', demoSuffix: ' (demo)',
@@ -2369,7 +2367,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} är tilldelad {n} veckor i rad',
   },
   da: {
-    congName: 'Musterstad menighed', congLabel: 'Menigheden {name}',
+    congLabel: 'Menigheden {name}',
     navProgramm: 'Program', navAufgaben: 'Opgaver', navAufgabenLong: 'Mine opgaver',
     navPlanen: 'Planlæg', navPersonen: 'Personer', navEinstellungen: 'Indstillinger',
     abmelden: 'Log ud', rolleKoordinator: 'Koordinator', rolleVerkuendiger: 'Forkynder', demoSuffix: ' (demo)',
@@ -2474,7 +2472,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} er tildelt {n} uger i træk',
   },
   fi: {
-    congName: 'Musterstadin seurakunta', congLabel: '{name} seurakunta',
+    congLabel: '{name} seurakunta',
     navProgramm: 'Ohjelma', navAufgaben: 'Tehtävät', navAufgabenLong: 'Omat tehtäväni',
     navPlanen: 'Suunnittelu', navPersonen: 'Henkilöt', navEinstellungen: 'Asetukset',
     abmelden: 'Kirjaudu ulos', rolleKoordinator: 'Koordinaattori', rolleVerkuendiger: 'Julistaja', demoSuffix: ' (demo)',
@@ -2579,7 +2577,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} on tehtävässä {n} viikkoa peräkkäin',
   },
   no: {
-    congName: 'Musterstad menighet', congLabel: 'Menigheten {name}',
+    congLabel: 'Menigheten {name}',
     navProgramm: 'Program', navAufgaben: 'Oppgaver', navAufgabenLong: 'Mine oppgaver',
     navPlanen: 'Planlegg', navPersonen: 'Personer', navEinstellungen: 'Innstillinger',
     abmelden: 'Logg ut', rolleKoordinator: 'Koordinator', rolleVerkuendiger: 'Forkynner', demoSuffix: ' (demo)',
@@ -2684,7 +2682,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} er tildelt {n} uker på rad',
   },
   id: {
-    congName: 'Sidang Musterstadt', congLabel: 'Sidang {name}',
+    congLabel: 'Sidang {name}',
     navProgramm: 'Program', navAufgaben: 'Tugas', navAufgabenLong: 'Tugas Saya',
     navPlanen: 'Perencanaan', navPersonen: 'Orang', navEinstellungen: 'Pengaturan',
     abmelden: 'Keluar', rolleKoordinator: 'Koordinator', rolleVerkuendiger: 'Penyiar', demoSuffix: ' (demo)',
@@ -2789,7 +2787,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} ditetapkan {n} pekan berturut-turut',
   },
   tl: {
-    congName: 'Kongregasyon ng Musterstadt', congLabel: 'Kongregasyon ng {name}',
+    congLabel: 'Kongregasyon ng {name}',
     navProgramm: 'Programa', navAufgaben: 'Mga Atas', navAufgabenLong: 'Mga Atas Ko',
     navPlanen: 'Pagpaplano', navPersonen: 'Mga Tao', navEinstellungen: 'Mga Setting',
     abmelden: 'Mag-log out', rolleKoordinator: 'Tagapag-ugnay', rolleVerkuendiger: 'Mamamahayag', demoSuffix: ' (demo)',
@@ -2894,7 +2892,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: 'Si {name} ay naitalaga nang {n} magkakasunod na linggo',
   },
   vi: {
-    congName: 'Hội thánh Musterstadt', congLabel: 'Hội thánh {name}',
+    congLabel: 'Hội thánh {name}',
     navProgramm: 'Chương trình', navAufgaben: 'Nhiệm vụ', navAufgabenLong: 'Nhiệm vụ của tôi',
     navPlanen: 'Lập kế hoạch', navPersonen: 'Người', navEinstellungen: 'Cài đặt',
     abmelden: 'Đăng xuất', rolleKoordinator: 'Điều phối viên', rolleVerkuendiger: 'Người công bố', demoSuffix: ' (demo)',
@@ -2999,7 +2997,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} được phân công {n} tuần liên tiếp',
   },
   sw: {
-    congName: 'Kutaniko la Musterstadt', congLabel: 'Kutaniko la {name}',
+    congLabel: 'Kutaniko la {name}',
     navProgramm: 'Programu', navAufgaben: 'Migawo', navAufgabenLong: 'Migawo Yangu',
     navPlanen: 'Kupanga', navPersonen: 'Watu', navEinstellungen: 'Mipangilio',
     abmelden: 'Toka', rolleKoordinator: 'Mratibu', rolleVerkuendiger: 'Mhubiri', demoSuffix: ' (demo)',
@@ -3104,7 +3102,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} amegawiwa wiki {n} mfululizo',
   },
   zh: {
-    congName: 'Musterstadt 会众', congLabel: '{name} 会众',
+    congLabel: '{name} 会众',
     navProgramm: '节目', navAufgaben: '任务', navAufgabenLong: '我的任务',
     navPlanen: '安排', navPersonen: '人员', navEinstellungen: '设置',
     abmelden: '退出', rolleKoordinator: '协调者', rolleVerkuendiger: '传道员', demoSuffix: '（演示）',
@@ -3209,7 +3207,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} 连续 {n} 周被分配',
   },
   ja: {
-    congName: 'Musterstadt 会衆', congLabel: '{name} 会衆',
+    congLabel: '{name} 会衆',
     navProgramm: 'プログラム', navAufgaben: '割り当て', navAufgabenLong: '自分の割り当て',
     navPlanen: '計画', navPersonen: '人', navEinstellungen: '設定',
     abmelden: 'ログアウト', rolleKoordinator: '調整者', rolleVerkuendiger: '伝道者', demoSuffix: '（デモ）',
@@ -3314,7 +3312,7 @@ const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = {
     konfliktStreak: '{name} は {n} 週連続で割り当てられています',
   },
   ko: {
-    congName: 'Musterstadt 회중', congLabel: '{name} 회중',
+    congLabel: '{name} 회중',
     navProgramm: '프로그램', navAufgaben: '임명', navAufgabenLong: '내 임명',
     navPlanen: '계획', navPersonen: '사람', navEinstellungen: '설정',
     abmelden: '로그아웃', rolleKoordinator: '조정자', rolleVerkuendiger: '전도인', demoSuffix: ' (데모)',

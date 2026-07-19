@@ -79,7 +79,6 @@ export function LoginScreen() {
           <br />
           Planner
         </h1>
-        <p className="login-sub">{t.congName}</p>
       </header>
 
       <form className="login-form" onSubmit={submit}>
