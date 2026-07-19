@@ -367,7 +367,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('weeks').select('position, data').eq('congregation_id', congregationId).order('position'),
     supabase.from('absences').select('*').eq('congregation_id', congregationId).eq('user_id', userId).order('from_date'),
-    supabase.from('notifications').select('*').eq('congregation_id', congregationId).order('created_at', { ascending: false }),
+    // Nur die neuesten 50 — Altbestand räumt send-reminders serverseitig ab
+    supabase.from('notifications').select('*').eq('congregation_id', congregationId).order('created_at', { ascending: false }).limit(50),
     supabase.from('confirmations').select('task_key, status').eq('congregation_id', congregationId),
     // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
     supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),

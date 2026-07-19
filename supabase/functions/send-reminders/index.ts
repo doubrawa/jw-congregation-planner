@@ -19,6 +19,8 @@
 //  - Empfangen kann nur, wer in der App (Profil) Push aktiviert hat
 //    (Tabelle push_subscriptions, migration-005). Abgelaufene Abos (404/410)
 //    werden automatisch gelöscht.
+//  - Wartung: Glocken-Mitteilungen älter als 30 Tage werden im selben Lauf
+//    gelöscht (nur im Scharfbetrieb — der Dry-Run schreibt/löscht nichts).
 //
 // SICHERHEIT / STATUS:
 //  - **Dry-Run standardmäßig**: ohne Secret `SEND_PUSH=true` wird nichts
@@ -85,6 +87,25 @@ async function restDeleteSubscription(id: string): Promise<void> {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
   })
   if (!res.ok) console.error(`REST DELETE push_subscriptions ${res.status}`)
+}
+
+/** Aufbewahrungsfrist der Glocken-Mitteilungen (Tage). */
+const NOTIFICATION_RETENTION_DAYS = 30
+
+/**
+ * Mitteilungen älter als die Frist löschen — läuft im täglichen Cron mit,
+ * damit die Tabelle (und die Glocken-Liste) nicht unbegrenzt wächst.
+ */
+async function pruneNotifications(): Promise<void> {
+  const cutoff = new Date(Date.now() - NOTIFICATION_RETENTION_DAYS * 864e5).toISOString()
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/notifications?created_at=lt.${encodeURIComponent(cutoff)}`,
+    {
+      method: 'DELETE',
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    },
+  )
+  if (!res.ok) console.error(`REST DELETE notifications ${res.status}: ${await res.text()}`)
 }
 
 /* ---- Datenmodell (Teilmengen der Client-Typen aus src/data/types.ts) ---- */
@@ -374,6 +395,8 @@ Deno.serve(async (req: Request) => {
         }
       }
       await restInsert('notifications', notifRows)
+      // Wartung im selben Lauf: alte Mitteilungen nach Aufbewahrungsfrist löschen
+      await pruneNotifications()
     }
 
     return new Response(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseMeetingTimes, timeOptions } from './EinstellungenScreen'
+import { parseMeetingTimes, timeOptions } from './meeting-times'
 
 describe('parseMeetingTimes (kanonischer String "Di 19:00 · So 10:00")', () => {
   it('liest Wochentag und Uhrzeit beider Zusammenkünfte', () => {
