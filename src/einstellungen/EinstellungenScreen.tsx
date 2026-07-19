@@ -1,9 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { generateInviteCode } from '../lib/data'
 import { importNextWeek, importWeekVariants, latestImportedStart } from '../lib/import'
 import { missingVariants } from '../data/localize'
-import { CONG_TO_JW } from '../i18n/langs'
+import { CONG_TO_JW, LOCALES } from '../i18n/langs'
 import { displayName } from '../data/helpers'
 import { type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -15,6 +15,22 @@ import './einstellungen.css'
  * (nur Produktionsmodus), Hilfsdienste, Sprache (Versammlungssprache-Sheet),
  * Erinnerungen und Programm-Import.
  */
+
+/* Zusammenkunftszeiten: strukturierte Eingabe (Wochentag-Select + Uhrzeit je
+ * Zusammenkunft), gespeichert als kanonischer String "Di 19:00 · So 10:00" —
+ * die Erinnerungs-Function (send-reminders) liest die Wochentage daraus, das
+ * Format muss also stimmen. Kanonisch deutsche Kürzel; Anzeige lokalisiert. */
+
+const DAY_KEYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const
+type MeetingTime = { day: string; time: string }
+
+function parseMeetingTimes(text: string): [MeetingTime, MeetingTime] {
+  const found = [...text.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b\s*(\d{1,2}:\d{2})/g)].map((m) => ({
+    day: m[1],
+    time: m[2].padStart(5, '0'),
+  }))
+  return [found[0] ?? { day: 'Di', time: '19:00' }, found[1] ?? { day: 'So', time: '10:00' }]
+}
 export function EinstellungenScreen() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
@@ -160,11 +176,25 @@ export function EinstellungenScreen() {
     { key: 'last', name: 'remLetzte' },
   ]
 
-  const congFields: Array<['name' | 'hall' | 'meetings', string]> = [
+  const congFields: Array<['name' | 'hall', string]> = [
     ['name', t.nameLbl],
     ['hall', t.saal],
-    ['meetings', t.zusammenkuenfte],
   ]
+
+  const [midTime, weTime] = parseMeetingTimes(state.congregation.meetings)
+  // Lokalisierte Wochentagsnamen (Mo..So) — 1.1.2024 war ein Montag
+  const dayNames = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(LOCALES[state.lang], { weekday: 'long' })
+    return DAY_KEYS.map((_, i) => fmt.format(new Date(Date.UTC(2024, 0, 1 + i))))
+  }, [state.lang])
+  const setMeetingTime = (which: 0 | 1, patch: Partial<MeetingTime>) => {
+    const next: [MeetingTime, MeetingTime] = [midTime, weTime]
+    next[which] = { ...next[which], ...patch }
+    dispatch({
+      type: 'updateCongregation',
+      patch: { meetings: `${next[0].day} ${next[0].time} · ${next[1].day} ${next[1].time}` },
+    })
+  }
 
   return (
     <section className="screen">
@@ -185,6 +215,35 @@ export function EinstellungenScreen() {
               value={state.congregation[key]}
               onChange={(e) => dispatch({ type: 'updateCongregation', patch: { [key]: e.target.value } })}
             />
+          </div>
+        ))}
+        {([
+          [0, t.tabMid, midTime],
+          [1, t.tabWe, weTime],
+        ] as const).map(([which, label, mt]) => (
+          <div key={which} className="cong-field">
+            <span className="field-label">{label}</span>
+            <div className="cong-time-row">
+              <select
+                className="mem-select cong-day"
+                aria-label={label}
+                value={mt.day}
+                onChange={(e) => setMeetingTime(which, { day: e.target.value })}
+              >
+                {DAY_KEYS.map((key, i) => (
+                  <option key={key} value={key}>
+                    {dayNames[i]}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="field-input cong-time"
+                type="time"
+                aria-label={label}
+                value={mt.time}
+                onChange={(e) => e.target.value && setMeetingTime(which, { time: e.target.value })}
+              />
+            </div>
           </div>
         ))}
         <button
