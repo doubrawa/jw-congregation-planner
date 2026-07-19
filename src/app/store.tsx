@@ -48,6 +48,7 @@ import {
   saveCongregationInfo,
   saveGroupRow,
   saveInvite,
+  saveInvitePlanner,
   saveMemberRow,
   savePerson,
   savePersonGroup,
@@ -227,11 +228,25 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         selectedPersonId: action.person.id,
         toast: toastKey(state, 'toastPersonNeu'),
       }
-    case 'updatePerson':
-      return {
+    case 'updatePerson': {
+      const next = {
         ...state,
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
       }
+      // Planer-Recht in verknüpfte Konten und offene Einladungscodes spiegeln
+      // (members.planner = Quelle der Rechteprüfung); das eigene Konto ist per
+      // UI-Sperre ausgenommen.
+      if ('planner' in action.patch) {
+        const on = Boolean(action.patch.planner)
+        next.members = state.members.map((m) =>
+          m.personId === action.id && m.userId !== state.userId ? { ...m, planner: on } : m,
+        )
+        next.invites = state.invites.map((i) =>
+          i.personId === action.id ? { ...i, planner: on } : i,
+        )
+      }
+      return next
+    }
     case 'changeServiceCount':
       return {
         ...state,
@@ -733,6 +748,15 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
       // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
       const p = next.persons.find((x) => x.id === action.id)
       if (p) schedulePersonSave(congId, p)
+      // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
+      if ('planner' in action.patch) {
+        for (const m of next.members) {
+          if (m.personId === action.id && m.userId !== next.userId) saveMemberRow(m)
+        }
+        for (const i of next.invites) {
+          if (i.personId === action.id) saveInvitePlanner(i.id, i.planner)
+        }
+      }
       break
     }
     case 'selectPerson':

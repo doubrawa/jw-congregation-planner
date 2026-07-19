@@ -1,11 +1,50 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
+import type { AppState } from '../app/context'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { initials, isBrothersOnly, personCompare, roleLabel, serviceQualKey } from '../data/helpers'
+import { generateInviteCode } from '../lib/data'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
-import type { Person, Role } from '../data/types'
+import type { Invite, Member, Person, Role } from '../data/types'
 import './personen.css'
+
+/* ---- Einladungs-Helfer ----------------------------------------------------
+ * Einladungen sind personenzentriert: Code am Personen-Detail erzeugen und per
+ * eigenem Mail-Programm (mailto:) oder Teilen/Kopieren weitergeben — die App
+ * verschickt selbst nichts.
+ */
+
+function linkedMember(state: AppState, personId: string): Member | undefined {
+  return state.members.find((m) => m.personId === personId)
+}
+
+function openInvite(state: AppState, personId: string): Invite | undefined {
+  return state.invites.find((i) => i.personId === personId)
+}
+
+function appUrl(): string {
+  return new URL(import.meta.env.BASE_URL, window.location.origin).href
+}
+
+function makeInvite(person: Person): Invite {
+  return {
+    id: crypto.randomUUID(),
+    code: generateInviteCode(),
+    personId: person.id,
+    planner: Boolean(person.planner),
+  }
+}
+
+function inviteMailHref(
+  person: Person,
+  code: string,
+  subject: string,
+  bodyTemplate: string,
+): string {
+  const body = fill(bodyTemplate, { name: person.fn, code, url: appUrl() })
+  return `mailto:${person.mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
 
 const ROLE_ORDER: readonly Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
 
@@ -36,9 +75,33 @@ function PersonList() {
   const [search, setSearch] = useState('')
 
   const query = search.trim().toLowerCase()
-  const filtered = [...state.persons]
-    .sort(personCompare)
-    .filter((p) => !query || `${p.fn} ${p.ln}`.toLowerCase().includes(query))
+  const sorted = [...state.persons].sort(personCompare)
+  const filtered = sorted.filter((p) => !query || `${p.fn} ${p.ln}`.toLowerCase().includes(query))
+  const production = state.dataStatus !== 'demo'
+  const orphanAccounts = state.members.filter((m) => !m.personId)
+
+  // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen und als
+  // Liste "Name: Code" in die Zwischenablage legen (Weitergabe je Person).
+  const inviteAll = async () => {
+    const candidates = sorted.filter((p) => !linkedMember(state, p.id) && !openInvite(state, p.id))
+    if (candidates.length === 0) {
+      dispatch({ type: 'showToast', text: t.toastAlleHabenKonto })
+      return
+    }
+    const lines: string[] = []
+    for (const person of candidates) {
+      const invite = makeInvite(person)
+      dispatch({ type: 'addInvite', invite })
+      lines.push(`${`${person.fn} ${person.ln}`.trim()}: ${invite.code}`)
+    }
+    const text = `${fill(t.inviteListeTitel, { url: appUrl() })}\n\n${lines.join('\n')}`
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      /* Zwischenablage nicht verfügbar — Codes stehen an den Personen */
+    }
+    dispatch({ type: 'showToast', text: fill(t.toastEinladungenN, { n: candidates.length }) })
+  }
 
   const addPerson = () => {
     dispatch({
@@ -76,6 +139,12 @@ function PersonList() {
         {t.neuePerson}
       </button>
 
+      {production && (
+        <button type="button" className="btn-outline pers-add" onClick={() => void inviteAll()}>
+          {t.alleEinladen}
+        </button>
+      )}
+
       <div className="pers-list">
         {filtered.map((person) => (
           <button
@@ -96,6 +165,53 @@ function PersonList() {
           </button>
         ))}
       </div>
+
+      {production && orphanAccounts.length > 0 && (
+        <div className="panel panel--pb14 pers-orphans" data-farbe="neutral2">
+          <div className="panel-label">{t.kontenOhnePerson}</div>
+          <p className="panel-hint">{t.kontenOhnePersonHint}</p>
+          {orphanAccounts.map((member) => (
+            <div key={member.userId} className="mem-row">
+              <div className="mem-mail" dir="auto">
+                {member.email || member.userId.slice(0, 8)}
+                {member.userId === state.userId && <span className="mem-du">{t.duMarker}</span>}
+              </div>
+              <div className="mem-line">
+                <select
+                  className="mem-select"
+                  aria-label={t.nameLbl}
+                  value=""
+                  onChange={(e) =>
+                    e.target.value &&
+                    dispatch({
+                      type: 'updateMember',
+                      userId: member.userId,
+                      patch: { personId: e.target.value },
+                    })
+                  }
+                >
+                  <option value="">{t.keinePersonOpt}</option>
+                  {sorted.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {`${p.fn} ${p.ln}`.trim() || '—'}
+                    </option>
+                  ))}
+                </select>
+                {member.userId !== state.userId && (
+                  <button
+                    type="button"
+                    className="svc-remove"
+                    aria-label="✕"
+                    onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
@@ -236,8 +352,152 @@ function PersonDetail({ person }: { person: Person }) {
         {WT_ROLE_ORDER.map((key) => (
           <PrivToggle key={key} qkey={key} label={t[PRIV_KEY[key]]} person={person} update={update} />
         ))}
+        <PlannerToggle person={person} update={update} />
       </div>
+
+      {state.dataStatus !== 'demo' && <KontoCard person={person} />}
     </section>
+  )
+}
+
+/**
+ * Planer-Recht (Feste Rollen): sieht Planen/Personen/Einstellungen. Wird in
+ * verknüpfte Konten gespiegelt; das eigene Recht ist gesperrt (sonst könnte
+ * sich der letzte Planer selbst aussperren).
+ */
+function PlannerToggle({
+  person,
+  update,
+}: {
+  person: Person
+  update: (patch: Partial<Person>) => void
+}) {
+  const { state } = useApp()
+  const { t } = useT()
+  const self = state.members.some((m) => m.personId === person.id && m.userId === state.userId)
+  const on = Boolean(person.planner)
+  return (
+    <div className={self ? 'priv-row priv-row--locked' : 'priv-row'}>
+      <span className="priv-label">{t.planerLbl}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={t.planerLbl}
+        disabled={self}
+        className={on ? 'switch is-on' : 'switch'}
+        onClick={() => update({ planner: !on })}
+      >
+        <span className="switch-knob" />
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Konto-Karte (nur Produktionsmodus): Status des App-Zugangs der Person —
+ * verknüpftes Konto, offener Einladungscode oder Einladen-Aktion. Mit
+ * E-Mail-Adresse öffnet Einladen das eigene Mail-Programm (mailto:), ohne
+ * werden Code + Teilen/Kopieren angeboten. Die App verschickt selbst nichts.
+ */
+function KontoCard({ person }: { person: Person }) {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const member = linkedMember(state, person.id)
+  const invite = openInvite(state, person.id)
+  const self = member?.userId === state.userId
+
+  const shareText = (code: string) => fill(t.inviteShareText, { code, url: appUrl() })
+
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(shareText(code))
+      dispatch({ type: 'showToast', text: t.toastCodeKopiert })
+    } catch {
+      dispatch({ type: 'showToast', text: code })
+    }
+  }
+
+  const share = async (code: string) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: shareText(code) })
+      } catch {
+        /* Teilen abgebrochen */
+      }
+      return
+    }
+    await copyCode(code)
+  }
+
+  const invitePerson = () => {
+    const created = makeInvite(person)
+    dispatch({ type: 'addInvite', invite: created })
+    if (person.mail) {
+      window.location.href = inviteMailHref(person, created.code, t.inviteMailSubject, t.inviteMailBody)
+    }
+  }
+
+  return (
+    <div className="panel panel--pb14" data-farbe="neutral2">
+      <div className="panel-label">{t.kontoCard}</div>
+      {member ? (
+        <div className="konto-row">
+          <span className="konto-mail" dir="auto">
+            ✓ {member.email || t.kontoVerknuepft}
+            {self && <span className="mem-du">{t.duMarker}</span>}
+          </span>
+          {!self && (
+            <button
+              type="button"
+              className="svc-remove"
+              aria-label="✕"
+              onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      ) : invite ? (
+        <>
+          <p className="panel-hint">{t.codeOffenHint}</p>
+          <div className="konto-row">
+            <span className="mem-code">{invite.code}</span>
+            <div className="konto-actions">
+              {person.mail && (
+                <a
+                  className="konto-link"
+                  href={inviteMailHref(person, invite.code, t.inviteMailSubject, t.inviteMailBody)}
+                >
+                  {t.mailBtn}
+                </a>
+              )}
+              <button type="button" className="konto-link" onClick={() => void share(invite.code)}>
+                {t.teilenBtn}
+              </button>
+              <button type="button" className="konto-link" onClick={() => void copyCode(invite.code)}>
+                {t.kopierenBtn}
+              </button>
+              <button
+                type="button"
+                className="svc-remove"
+                aria-label="✕"
+                onClick={() => dispatch({ type: 'removeInvite', id: invite.id })}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="panel-hint">{person.mail ? t.einladenHintMail : t.einladenHintOhneMail}</p>
+          <button type="button" className="btn-outline konto-invite" onClick={invitePerson}>
+            {t.einladenBtn}
+          </button>
+        </>
+      )}
+    </div>
   )
 }
 

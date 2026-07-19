@@ -43,6 +43,7 @@ interface PersonRow {
   fn: string
   ln: string
   dn: string
+  planner: boolean
   role: string
   female: boolean
   tel: string
@@ -221,6 +222,7 @@ function personFromRow(r: PersonRow): Person {
     fn: r.fn,
     ln: r.ln,
     dn: r.dn || undefined,
+    planner: r.planner || undefined,
     role: asRole(r.role),
     female: r.female || undefined,
     tel: r.tel,
@@ -238,6 +240,7 @@ function personToRow(p: Person, congregationId: string) {
     fn: p.fn,
     ln: p.ln,
     dn: p.dn ?? '',
+    planner: Boolean(p.planner),
     role: p.role,
     female: Boolean(p.female),
     tel: p.tel,
@@ -653,6 +656,12 @@ export function saveMemberRow(member: Member): void {
 export function deleteMemberRow(userId: string): void {
   if (!supabase) return
   void run(supabase.from('members').delete().eq('user_id', userId))
+}
+
+/** Planer-Flag eines offenen Codes nachziehen (Person-Recht geändert). */
+export function saveInvitePlanner(id: string, planner: boolean): void {
+  if (!supabase) return
+  void run(supabase.from('invites').update({ planner }).eq('id', id))
 }
 
 export function saveInvite(congregationId: string, invite: Invite): void {

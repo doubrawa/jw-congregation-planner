@@ -113,6 +113,12 @@ export interface Person {
   absent: number[] // Wochenindizes, an denen die Person abwesend ist
   priv: Qualifications
   grp?: string | null // Predigtdienstgruppe (Group.id) oder null = keine
+  /**
+   * Planer-Recht (Feste Rollen im Personen-Detail): sieht Planen/Personen/
+   * Einstellungen. Wird beim Einladen in den Code übernommen und bei
+   * verknüpften Konten in members.planner gespiegelt (store.tsx).
+   */
+  planner?: boolean
 }
 
 /**
