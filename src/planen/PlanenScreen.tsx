@@ -4,7 +4,7 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { isSong, serviceQualKey } from '../data/helpers'
-import { countOpenSlots, itemMinutes, weekConflicts, type Conflict } from '../data/planning'
+import { countOpenSlots, itemMinutes, openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import type { PartItem, Section, Service, SlotAssignment } from '../data/types'
 import './planen.css'
@@ -46,6 +46,11 @@ export function PlanenScreen() {
   const isPending = (name: string) => state.pendingNames.includes(name)
   // Warnungen der ganzen Woche (beide Zusammenkünfte), unabhängig vom Tab
   const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services)
+  // Unbesetzte Aufgaben/Hilfsdienste der ganzen Woche (wie die Konflikte)
+  const openSlots = (['mid', 'we'] as const).flatMap((tab) =>
+    openSlotLabels(rawWeek[tab], state.services).map((slot) => ({ ...slot, tab })),
+  )
+  const openTotal = openSlots.reduce((sum, slot) => sum + slot.n, 0)
 
   const tabName = (tab: Conflict['tab']): string => (tab === 'we' ? t.tabWe : t.tabMid)
   const conflictText = (c: Conflict): string => {
@@ -153,6 +158,20 @@ export function PlanenScreen() {
           {conflicts.map((c, i) => (
             <div key={i} className="plan-conflict-row">
               {conflictText(c)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {openTotal > 0 && (
+        <div className="plan-open">
+          <div className="plan-open-title">
+            {t.offeneTitle} · {openTotal}
+          </div>
+          {openSlots.map((slot, i) => (
+            <div key={i} className="plan-open-row">
+              {tabName(slot.tab)}: {slot.lang === 'u' ? tu(slot.text) : tpw(slot.text)}
+              {slot.n > 1 ? ` ×${slot.n}` : ''}
             </div>
           ))}
         </div>

@@ -138,6 +138,43 @@ export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   return count
 }
 
+/** Offener Slot fürs Planen-Banner (lang wie MeetingAssignment: 'u'|'p'). */
+export interface OpenSlot {
+  text: string
+  lang: 'u' | 'p'
+  n: number // Anzahl offener Plätze (Hilfsdienste können mehrere haben)
+}
+
+/**
+ * Offene Slots einer Zusammenkunft mit Beschriftung — gleiche Konvention wie
+ * assignmentsInMeeting: Rolle bevorzugt (App-Sprache), sonst Titel
+ * (Programmsprache); Hilfsdienste je Dienst gebündelt mit Anzahl.
+ */
+export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[] {
+  const out: OpenSlot[] = []
+  for (const section of meeting.sections) {
+    for (const item of section.items) {
+      if (isSong(item)) continue
+      for (const slot of item.names) {
+        if (slot.name) continue
+        const rolle = slot.rolle ?? ''
+        out.push(
+          rolle && !rolle.startsWith('mit')
+            ? { text: `${item.title} · ${rolle}`, lang: 'p', n: 1 }
+            : { text: item.title, lang: 'p', n: 1 },
+        )
+      }
+    }
+  }
+  for (const svc of services) {
+    const arr = meeting.helpers[svc.key] ?? []
+    let n = 0
+    for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]) n++
+    if (n > 0) out.push({ text: svc.name, lang: 'u', n })
+  }
+  return out
+}
+
 export interface AutoAssignResult {
   weeks: Week[]
   count: number // Anzahl vergebener Zuteilungen
