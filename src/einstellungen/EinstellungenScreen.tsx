@@ -409,7 +409,7 @@ export function EinstellungenScreen() {
         </div>
       </form>
 
-      <div className="panel panel--pb14" data-farbe="gold">
+      <div className="panel panel--pb14" data-farbe="acc">
         <div className="panel-label">{t.spracheCard}</div>
         <button
           type="button"

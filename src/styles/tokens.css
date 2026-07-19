@@ -1,66 +1,64 @@
 /*
  * Design-Tokens — JW Congregation Planner
- * Quelle: docs/design-handoff/README.md (Abschnitt "Design-Tokens").
+ * Quelle: Design-Export "Farboptionen Programm" (8 Farbschemata, Jul 2026).
  *
- * Theming über [data-theme] auf <html>. Standard (kein Attribut oder
- * data-theme="light") = Hell; data-theme="dark" = Dunkel.
- * Das Attribut wird vor dem ersten Paint per Inline-Script in index.html
- * gesetzt (Systempräferenz oder gespeicherte Wahl), damit es nicht flackert.
+ * Theming über [data-theme] auf <html>: weiss (Standard) | indigo | blatt |
+ * papaya (hell) und graphit | bernstein | aubergine | koralle (dunkel).
+ * Dunkle Schemata setzen zusätzlich [data-dark] (für dark-spezifische Regeln
+ * wie das Select-Chevron). Beides wird vor dem ersten Paint per Inline-Script
+ * in index.html gesetzt (Systempräferenz oder gespeicherte Wahl).
  *
  * Regel aus dem Handoff: Flächen/Farben referenzieren AUSSCHLIESSLICH Tokens.
+ * --tAcc ist die Akzent-Tonfläche (Wochen-Pfeile, "Aktuelle Woche"-Chip,
+ * Nächste-Aufgaben-/Sprache-Karte, Bestätigungs-Karten, Sidebar-aktiv,
+ * Mitteilungs-Chip) — getrennt von --tGld (nur noch Sektionsfarbe Dienst).
  */
 
 :root {
+  /* ---- Reinweiß · Tinte (hell, Standard) -------------------------------- */
   color-scheme: light;
 
-  /* Flächen */
-  --desk: #e7e3da; /* Hintergrund um die App ("Schreibtisch") */
-  --bg: #f7f4ed; /* App-/Sidebar-Fläche */
-  --bgT: rgba(247, 244, 237, 0.96); /* Sticky Header / Bottom-Nav */
-  --card: #fdfbf5; /* Inputs, Sheets, Chips */
+  --desk: #e9e8e3;
+  --bg: #ffffff;
+  --bgT: rgba(255, 255, 255, 0.96);
+  --card: #fdfdfb;
 
-  /* Getönte Panels */
-  --tNeu: #ede8dd;
-  --tNeu2: #ece7dc;
-  --tPet: #e4edea; /* Schätze aus Gottes Wort */
-  --tGld: #f1e8d3; /* Uns im Dienst verbessern / Akzent-Tint */
-  --tWein: #f2e2de; /* Unser Leben als Christ */
+  --tNeu: #f1f0eb;
+  --tNeu2: #f0efe9;
+  --tPet: #e8f0ee;
+  --tGld: #f5edda;
+  --tWein: #f7e7e3;
+  --tAcc: #f5edda;
 
-  /* Text */
-  --ink: #211c14;
-  --mut: #756d5c;
-  --mut2: #9a9284;
+  --ink: #17140e;
+  --mut: #6b665b;
+  --mut2: #928d80;
 
-  /* Akzent (Bronze/Gold) */
-  --acc: #8a6a34;
-  --accD: #6e5326; /* Hover */
-  --onAcc: #f7f4ed; /* Text auf Akzent/Ink */
+  --acc: #7c5f23;
+  --accD: #63491b;
+  --onAcc: #ffffff;
 
-  /* Bereichsfarben */
-  --pet: #446f6b;
-  --gld: #96742c;
-  --wein: #8e4a44;
+  --pet: #2e605c;
+  --gld: #7e621f;
+  --wein: #7e3b34;
 
-  /* Linien & Ränder */
-  --line: #e6dfce;
-  --line2: #efe9da;
-  --bord: #e0d9c8;
-  --bord2: #ddd6c6;
-  --bord3: #d8d1c0;
-  --bord4: #c9c2b0;
-  --dash: #b9ae96; /* offene Slots (dashed) */
-  --weinB: #e4ccc7; /* Lösch-Buttons Rand */
+  --line: #eae8e2;
+  --line2: #f1efea;
+  --bord: #e2dfd8;
+  --bord2: #dedbd3;
+  --bord3: #d8d5cc;
+  --bord4: #c8c5bb;
+  --dash: #b4af9f;
+  --weinB: #ebd2cc;
 
-  /* Hairlines in Panels */
-  --lineNeu: rgba(110, 100, 80, 0.16);
-  --linePet: rgba(62, 102, 99, 0.14);
-  --lineGld: rgba(138, 106, 52, 0.16);
-  --lineWein: rgba(142, 74, 68, 0.14);
+  --lineNeu: rgba(107, 102, 91, 0.16);
+  --linePet: rgba(46, 96, 92, 0.14);
+  --lineGld: rgba(126, 98, 31, 0.16);
+  --lineWein: rgba(126, 59, 52, 0.14);
 
-  /* Diverses */
-  --knob: #fffdf6; /* Toggle-Knopf */
-  --hov: rgba(237, 232, 221, 0.5); /* Zeilen-Hover */
-  --focus: rgba(138, 106, 52, 0.35); /* Input-Focus-Ring */
+  --knob: #ffffff;
+  --hov: rgba(241, 240, 235, 0.6);
+  --focus: rgba(124, 95, 35, 0.35);
 
   /* Schriften (siehe index.html: Google Fonts) */
   --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
@@ -74,52 +72,330 @@
   --r-pill: 999px;
 
   /* Schatten */
-  --sh-col: 0 0 60px rgba(30, 25, 15, 0.18); /* App-Spalte */
-  --sh-overlay: 0 24px 48px rgba(30, 25, 15, 0.25); /* Overlays */
-  --sh-btn: 0 1px 3px rgba(30, 25, 15, 0.12); /* Blätter-Buttons */
+  --sh-col: 0 0 60px rgba(30, 25, 15, 0.18);
+  --sh-overlay: 0 24px 48px rgba(30, 25, 15, 0.25);
+  --sh-btn: 0 1px 3px rgba(30, 25, 15, 0.12);
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='indigo'] {
+  /* ---- Indigo · Himmel (hell) ------------------------------------------- */
+  --desk: #dce2f0;
+  --bg: #f7f9fd;
+  --bgT: rgba(247, 249, 253, 0.96);
+  --card: #ffffff;
+
+  --tNeu: #eceff5;
+  --tNeu2: #eaedf4;
+  --tPet: #e2eaf8;
+  --tGld: #f6ebdb;
+  --tWein: #f0e5f7;
+  --tAcc: #e4e9fa;
+
+  --ink: #161b2c;
+  --mut: #5f6880;
+  --mut2: #8a92a8;
+
+  --acc: #3b4fc8;
+  --accD: #2f3fa6;
+  --onAcc: #ffffff;
+
+  --pet: #2e5fbf;
+  --gld: #bf5a14;
+  --wein: #7d3aa6;
+
+  --line: #e4e8f1;
+  --line2: #edf0f7;
+  --bord: #dce1ec;
+  --bord2: #d8dde9;
+  --bord3: #d2d7e4;
+  --bord4: #c2c8d8;
+  --dash: #a9b1c7;
+  --weinB: #e5d2f0;
+
+  --lineNeu: rgba(95, 104, 128, 0.16);
+  --linePet: rgba(46, 95, 191, 0.14);
+  --lineGld: rgba(191, 90, 20, 0.15);
+  --lineWein: rgba(125, 58, 166, 0.14);
+
+  --knob: #ffffff;
+  --hov: rgba(236, 239, 245, 0.6);
+  --focus: rgba(59, 79, 200, 0.35);
+}
+
+:root[data-theme='blatt'] {
+  /* ---- Botanik · Blattgrün (hell) --------------------------------------- */
+  --desk: #d8e3cf;
+  --bg: #f5f8f0;
+  --bgT: rgba(245, 248, 240, 0.96);
+  --card: #fdfefa;
+
+  --tNeu: #eaeee2;
+  --tNeu2: #e8ece0;
+  --tPet: #dfeee4;
+  --tGld: #f2ecd2;
+  --tWein: #f5e5da;
+  --tAcc: #e4eed4;
+
+  --ink: #17210e;
+  --mut: #63704f;
+  --mut2: #8c987a;
+
+  --acc: #4c7a1c;
+  --accD: #3c6314;
+  --onAcc: #ffffff;
+
+  --pet: #1d6b4d;
+  --gld: #a16a08;
+  --wein: #b04a26;
+
+  --line: #e3e8d9;
+  --line2: #ecf0e3;
+  --bord: #dae0ce;
+  --bord2: #d6dcc9;
+  --bord3: #d0d7c2;
+  --bord4: #c0c8b0;
+  --dash: #a7b192;
+  --weinB: #eed4c8;
+
+  --lineNeu: rgba(99, 112, 79, 0.16);
+  --linePet: rgba(29, 107, 77, 0.14);
+  --lineGld: rgba(161, 106, 8, 0.16);
+  --lineWein: rgba(176, 74, 38, 0.14);
+
+  --knob: #ffffff;
+  --hov: rgba(234, 238, 226, 0.6);
+  --focus: rgba(76, 122, 28, 0.35);
+}
+
+:root[data-theme='papaya'] {
+  /* ---- Papaya · Beere (hell) -------------------------------------------- */
+  --desk: #f2dcce;
+  --bg: #fff7f0;
+  --bgT: rgba(255, 247, 240, 0.96);
+  --card: #fffcf8;
+
+  --tNeu: #f4eae0;
+  --tNeu2: #f2e8de;
+  --tPet: #f8e0ee;
+  --tGld: #fbe9ce;
+  --tWein: #ede2f5;
+  --tAcc: #fbe5d0;
+
+  --ink: #2e150a;
+  --mut: #86685a;
+  --mut2: #ac9184;
+
+  --acc: #d2521e;
+  --accD: #b04216;
+  --onAcc: #ffffff;
+
+  --pet: #a8347c;
+  --gld: #c56a10;
+  --wein: #7a4a9e;
+
+  --line: #f0e3d8;
+  --line2: #f6ece3;
+  --bord: #e8d9cc;
+  --bord2: #e4d4c6;
+  --bord3: #decdbe;
+  --bord4: #d0bcab;
+  --dash: #bca490;
+  --weinB: #e2d0ee;
+
+  --lineNeu: rgba(134, 104, 90, 0.16);
+  --linePet: rgba(168, 52, 124, 0.14);
+  --lineGld: rgba(197, 106, 16, 0.16);
+  --lineWein: rgba(122, 74, 158, 0.14);
+
+  --knob: #ffffff;
+  --hov: rgba(244, 234, 224, 0.6);
+  --focus: rgba(210, 82, 30, 0.35);
+}
+
+:root[data-theme='graphit'] {
+  /* ---- Graphit · Salbei (dunkel) ---------------------------------------- */
   color-scheme: dark;
 
-  --desk: #0f0e0b;
-  --bg: #1a1813;
-  --bgT: rgba(26, 24, 19, 0.96);
-  --card: #221f18;
+  --desk: #0d0e0c;
+  --bg: #191a17;
+  --bgT: rgba(25, 26, 23, 0.96);
+  --card: #21221e;
 
-  --tNeu: #242118;
-  --tNeu2: #221f17;
-  --tPet: #1e2724;
-  --tGld: #2a2418;
-  --tWein: #2a1e1c;
+  --tNeu: #222320;
+  --tNeu2: #21221e;
+  --tPet: #1d2723;
+  --tGld: #282519;
+  --tWein: #291f1d;
+  --tAcc: #282519;
 
-  --ink: #ede9de;
-  --mut: #a79e8c;
-  --mut2: #7a7466;
+  --ink: #e8e8e2;
+  --mut: #9da096;
+  --mut2: #757869;
 
-  --acc: #c9a86a;
-  --accD: #b08f52;
-  --onAcc: #1a1813;
+  --acc: #9db18d;
+  --accD: #8aa078;
+  --onAcc: #191a17;
 
-  --pet: #7fa89f;
-  --gld: #c2a05c;
-  --wein: #c08078;
+  --pet: #83a99c;
+  --gld: #b9a263;
+  --wein: #bb8478;
 
-  --line: #2e2a20;
-  --line2: #282419;
-  --bord: #3a3427;
-  --bord2: #3a3427;
-  --bord3: #403a2c;
-  --bord4: #4a4335;
-  --dash: #5a5240;
-  --weinB: #4a322e;
+  --line: #2a2b27;
+  --line2: #252621;
+  --bord: #383a33;
+  --bord2: #383a33;
+  --bord3: #3f413a;
+  --bord4: #4a4c44;
+  --dash: #575a4f;
+  --weinB: #4a3430;
 
-  --lineNeu: rgba(200, 190, 160, 0.12);
-  --linePet: rgba(127, 168, 159, 0.16);
-  --lineGld: rgba(201, 168, 106, 0.16);
-  --lineWein: rgba(192, 128, 120, 0.16);
+  --lineNeu: rgba(190, 193, 182, 0.12);
+  --linePet: rgba(131, 169, 156, 0.16);
+  --lineGld: rgba(185, 162, 99, 0.16);
+  --lineWein: rgba(187, 132, 120, 0.16);
 
   --knob: #fffdf6;
-  --hov: rgba(42, 38, 28, 0.5);
-  --focus: rgba(201, 168, 106, 0.4);
+  --hov: rgba(40, 41, 37, 0.5);
+  --focus: rgba(157, 177, 141, 0.4);
+}
+
+:root[data-theme='bernstein'] {
+  /* ---- Königsblau · Bernstein (dunkel) ---------------------------------- */
+  color-scheme: dark;
+
+  --desk: #070c1a;
+  --bg: #101830;
+  --bgT: rgba(16, 24, 48, 0.96);
+  --card: #16203c;
+
+  --tNeu: #172038;
+  --tNeu2: #161f36;
+  --tPet: #152442;
+  --tGld: #29251a;
+  --tWein: #2c1d2b;
+  --tAcc: #1e2848;
+
+  --ink: #e7ebf7;
+  --mut: #8d97b8;
+  --mut2: #6a7392;
+
+  --acc: #e8a93c;
+  --accD: #d0952f;
+  --onAcc: #101830;
+
+  --pet: #6fa8e8;
+  --gld: #dfb055;
+  --wein: #e080a0;
+
+  --line: #1e2745;
+  --line2: #1a2340;
+  --bord: #2a3456;
+  --bord2: #2a3456;
+  --bord3: #303a5e;
+  --bord4: #3a4568;
+  --dash: #4a5578;
+  --weinB: #4e2a40;
+
+  --lineNeu: rgba(180, 190, 220, 0.12);
+  --linePet: rgba(111, 168, 232, 0.16);
+  --lineGld: rgba(223, 176, 85, 0.16);
+  --lineWein: rgba(224, 128, 160, 0.16);
+
+  --knob: #fffdf6;
+  --hov: rgba(23, 32, 56, 0.5);
+  --focus: rgba(232, 169, 60, 0.4);
+}
+
+:root[data-theme='aubergine'] {
+  /* ---- Aubergine · Rosé (dunkel) ---------------------------------------- */
+  color-scheme: dark;
+
+  --desk: #100813;
+  --bg: #201427;
+  --bgT: rgba(32, 20, 39, 0.96);
+  --card: #281b30;
+
+  --tNeu: #291d30;
+  --tNeu2: #271c2e;
+  --tPet: #272144;
+  --tGld: #322718;
+  --tWein: #33201c;
+  --tAcc: #332035;
+
+  --ink: #f0e8f2;
+  --mut: #a692ae;
+  --mut2: #7e6c86;
+
+  --acc: #e290b4;
+  --accD: #cc7b9f;
+  --onAcc: #201427;
+
+  --pet: #a08ee8;
+  --gld: #dca85c;
+  --wein: #e87a64;
+
+  --line: #2e2138;
+  --line2: #291d32;
+  --bord: #3e2f4a;
+  --bord2: #3e2f4a;
+  --bord3: #443552;
+  --bord4: #50405e;
+  --dash: #60506e;
+  --weinB: #4e2c26;
+
+  --lineNeu: rgba(200, 180, 210, 0.12);
+  --linePet: rgba(160, 142, 232, 0.16);
+  --lineGld: rgba(220, 168, 92, 0.16);
+  --lineWein: rgba(232, 122, 100, 0.16);
+
+  --knob: #fffdf6;
+  --hov: rgba(41, 29, 48, 0.5);
+  --focus: rgba(226, 144, 180, 0.4);
+}
+
+:root[data-theme='koralle'] {
+  /* ---- Schiefer · Koralle (dunkel) -------------------------------------- */
+  color-scheme: dark;
+
+  --desk: #0c0e13;
+  --bg: #1a1d25;
+  --bgT: rgba(26, 29, 37, 0.96);
+  --card: #21242e;
+
+  --tNeu: #22252e;
+  --tNeu2: #21242c;
+  --tPet: #1c2733;
+  --tGld: #2a2619;
+  --tWein: #2e1f28;
+  --tAcc: #32241f;
+
+  --ink: #eaecf2;
+  --mut: #9199a9;
+  --mut2: #6c7484;
+
+  --acc: #f07856;
+  --accD: #da6746;
+  --onAcc: #1a1d25;
+
+  --pet: #64a8dc;
+  --gld: #d0a84e;
+  --wein: #d883a8;
+
+  --line: #272b35;
+  --line2: #232730;
+  --bord: #353a46;
+  --bord2: #353a46;
+  --bord3: #3b404d;
+  --bord4: #464c5a;
+  --dash: #565d6c;
+  --weinB: #4c2e3a;
+
+  --lineNeu: rgba(190, 196, 210, 0.12);
+  --linePet: rgba(100, 168, 220, 0.16);
+  --lineGld: rgba(208, 168, 78, 0.16);
+  --lineWein: rgba(216, 131, 168, 0.16);
+
+  --knob: #fffdf6;
+  --hov: rgba(34, 37, 46, 0.5);
+  --focus: rgba(240, 120, 86, 0.4);
 }

@@ -75,7 +75,7 @@
 }
 
 .dp-nav:hover {
-  background: var(--tGld);
+  background: var(--tAcc);
 }
 
 .dp-weekdays,
@@ -108,7 +108,7 @@
 }
 
 .dp-day:hover:not(:disabled) {
-  background: var(--tGld);
+  background: var(--tAcc);
 }
 
 .dp-day--muted {

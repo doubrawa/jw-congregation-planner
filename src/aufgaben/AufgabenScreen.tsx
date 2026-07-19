@@ -49,7 +49,7 @@ export function AufgabenScreen() {
         {me ? `${me.fn} ${me.ln}` : ''} · {fill(t.congLabel, { name: state.congregation.name })}
       </p>
 
-      <div className="panel panel--lead" data-farbe="gold">
+      <div className="panel panel--lead" data-farbe="acc">
         <div className="panel-label">{t.naechsteAufgaben}</div>
         {state.myTasks.map((task) => (
           <div key={task.id} className="auf-row">

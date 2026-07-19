@@ -1,7 +1,8 @@
 import { useApp } from '../app/context'
+import { THEME_LIST } from '../data/constants'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { displayName } from '../data/helpers'
-import type { Lang } from '../data/types'
+import type { Lang, Theme } from '../data/types'
 import { APP_LANGS } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { performLogout } from '../lib/supabase'
@@ -9,7 +10,7 @@ import '../aufgaben/aufgaben.css'
 
 /**
  * Profil (eigener Navigationspunkt): Stammdaten (Name/Versammlung/Rolle),
- * Darstellung (Hell/Dunkel), App-Sprache und Abmelden. Zuvor Teil des
+ * Darstellung (8 Farbschemata als Combobox), App-Sprache und Abmelden. Zuvor Teil des
  * Aufgaben-Screens, jetzt eigener Bereich in der Navigation.
  */
 export function ProfilScreen() {
@@ -49,26 +50,20 @@ export function ProfilScreen() {
           <span className="kv-key">{t.gruppeLbl}</span>
           <span className="kv-val">{myGroupLabel}</span>
         </div>
-        <div className="kv-row">
+        <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.darstellung}</span>
-          <div className="theme-chips">
-            <button
-              type="button"
-              className={state.theme === 'light' ? 'theme-chip is-active' : 'theme-chip'}
-              aria-pressed={state.theme === 'light'}
-              onClick={() => dispatch({ type: 'setTheme', theme: 'light' })}
-            >
-              {t.hell}
-            </button>
-            <button
-              type="button"
-              className={state.theme === 'dark' ? 'theme-chip is-active' : 'theme-chip'}
-              aria-pressed={state.theme === 'dark'}
-              onClick={() => dispatch({ type: 'setTheme', theme: 'dark' })}
-            >
-              {t.dunkel}
-            </button>
-          </div>
+          <select
+            className="mem-select lang-select"
+            aria-label={t.darstellung}
+            value={state.theme}
+            onChange={(e) => dispatch({ type: 'setTheme', theme: e.target.value as Theme })}
+          >
+            {THEME_LIST.map(({ key, label }) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.spracheLbl}</span>

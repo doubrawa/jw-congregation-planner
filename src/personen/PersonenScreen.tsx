@@ -230,7 +230,7 @@ function PersonDetail({ person }: { person: Person }) {
           ))}
       </div>
 
-      <div className="panel panel--pb10" data-farbe="gold">
+      <div className="panel panel--pb10" data-farbe="acc">
         <div className="panel-label">{t.wtRollenLabel}</div>
         <p className="panel-hint">{t.wtRollenHint}</p>
         {WT_ROLE_ORDER.map((key) => (

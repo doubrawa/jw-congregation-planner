@@ -8,7 +8,21 @@
  * beim Portieren der Demo-Daten entsprechend umformen.
  */
 
-export type Theme = 'light' | 'dark'
+/**
+ * Farbschema (Einstellungen → Profil → Darstellung). 4 helle + 4 dunkle
+ * Paletten aus dem Design-Export „Farboptionen Programm"; Labels/Reihenfolge
+ * in THEME_LIST (constants.ts), Paletten in styles/tokens.css. Alte Werte
+ * 'light'/'dark' werden beim Laden auf weiss/graphit gemappt.
+ */
+export type Theme =
+  | 'weiss'
+  | 'indigo'
+  | 'blatt'
+  | 'papaya'
+  | 'graphit'
+  | 'bernstein'
+  | 'aubergine'
+  | 'koralle'
 
 /**
  * App-Sprache (UI). Programm-Inhalte nutzen separat die Versammlungssprache.

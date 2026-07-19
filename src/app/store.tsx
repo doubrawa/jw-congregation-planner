@@ -20,6 +20,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
+import { isDarkTheme, THEME_LIST } from '../data/constants'
 import { displayName } from '../data/helpers'
 import { localizedWeeks } from '../data/localize'
 import {
@@ -552,11 +553,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
+/** Alte gespeicherte Werte (vor den 8 Farbschemata) auf Paletten mappen. */
+const LEGACY_THEME: Record<string, Theme> = { light: 'weiss', dark: 'graphit' }
+
+function asTheme(value: string | null): Theme | null {
+  if (!value) return null
+  if (LEGACY_THEME[value]) return LEGACY_THEME[value]
+  return THEME_LIST.some((t) => t.key === value) ? (value as Theme) : null
+}
+
 function getInitialTheme(): Theme {
-  const stored = localStorage.getItem('theme')
-  if (stored === 'light' || stored === 'dark') return stored
+  const stored = asTheme(localStorage.getItem('theme'))
+  if (stored) return stored
   // index.html hat das Attribut vor dem ersten Paint gesetzt (Systempräferenz)
-  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
+  return document.documentElement.dataset.theme === 'graphit' ? 'graphit' : 'weiss'
 }
 
 function getInitialLang(): Lang {
@@ -583,8 +593,8 @@ function parseDebugHash():
   if (l) out.lang = l as Lang
   const c = p.get('c')
   if (c) out.congLang = c
-  const th = p.get('t')
-  if (th === 'light' || th === 'dark') out.theme = th
+  const th = asTheme(p.get('t'))
+  if (th) out.theme = th
   const person = p.get('p')
   if (person) out.personId = person
   return Object.keys(out).length ? out : null
@@ -830,9 +840,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe()
   }, [dispatch])
 
-  // Theme auf <html> spiegeln + Wahl merken (Muster aus index.html)
+  // Theme auf <html> spiegeln + Wahl merken (Muster aus index.html);
+  // data-dark markiert die dunklen Paletten für dark-spezifische CSS-Regeln.
   useEffect(() => {
     document.documentElement.dataset.theme = state.theme
+    if (isDarkTheme(state.theme)) {
+      document.documentElement.dataset.dark = '1'
+    } else {
+      delete document.documentElement.dataset.dark
+    }
     localStorage.setItem('theme', state.theme)
   }, [state.theme])
 
