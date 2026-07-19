@@ -138,6 +138,40 @@ export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   return count
 }
 
+/**
+ * task_keys aller Slots, deren Besetzung sich zwischen zwei Ständen derselben
+ * Zusammenkunft geändert hat (Zuteilen, Entfernen, Auto-Zuteilung). Für diese
+ * Slots wird der Bestätigungs-Status abgeräumt — sonst erbt die neu
+ * eingeteilte Person ein fremdes „bestätigt“/„verhindert“.
+ */
+export function changedSlotKeys(
+  prev: Meeting,
+  next: Meeting,
+  services: Service[],
+  wi: number,
+  tab: MeetingTab,
+): string[] {
+  const keys: string[] = []
+  next.sections.forEach((section, si) => {
+    section.items.forEach((item, ii) => {
+      if (isSong(item)) return
+      const prevItem = prev.sections[si]?.items[ii]
+      const prevNames = prevItem && !isSong(prevItem) ? prevItem.names : []
+      item.names.forEach((slot, ni) => {
+        if ((prevNames[ni]?.name ?? '') !== slot.name) keys.push(partTaskKey(wi, tab, si, ii, ni))
+      })
+    })
+  })
+  for (const svc of services) {
+    const prevArr = prev.helpers[svc.key] ?? []
+    const nextArr = next.helpers[svc.key] ?? []
+    for (let pos = 0; pos < svc.count; pos++) {
+      if ((prevArr[pos] ?? '') !== (nextArr[pos] ?? '')) keys.push(helperTaskKey(wi, tab, svc.key, pos))
+    }
+  }
+  return keys
+}
+
 /** Offener Slot fürs Planen-Banner (lang wie MeetingAssignment: 'u'|'p'). */
 export interface OpenSlot {
   text: string

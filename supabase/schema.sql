@@ -324,6 +324,11 @@ create policy confirmations_write on public.confirmations
   using (congregation_id = public.my_congregation_id() and user_id = auth.uid())
   with check (congregation_id = public.my_congregation_id() and user_id = auth.uid());
 
+-- Admins räumen beim Neu-Zuteilen den Status eines Slots ab (alle Nutzer-Zeilen)
+drop policy if exists confirmations_delete_planner on public.confirmations;
+create policy confirmations_delete_planner on public.confirmations
+  for delete using (congregation_id = public.my_congregation_id() and public.is_planner());
+
 -- Einladungen: nur Planer der Versammlung (Einlösen läuft über redeem_invite).
 drop policy if exists invites_all on public.invites;
 create policy invites_all on public.invites

@@ -26,6 +26,7 @@ import { localizedWeeks } from '../data/localize'
 import {
   assignSlot,
   autoAssignMeeting,
+  changedSlotKeys,
   deriveMyTasks,
   derivePendingNames,
   lacAdd,
@@ -37,6 +38,7 @@ import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import {
   deleteAbsenceRow,
+  deleteConfirmationRows,
   deleteGroupRow,
   deletePersonRow,
   deleteInviteRow,
@@ -59,7 +61,15 @@ import {
 } from '../lib/data'
 import { APP_LANGS, APP_TO_JW, congAppCode, isRTL } from '../i18n/langs'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import type { Lang, Notification, NotificationType, Person, Screen, Theme } from '../data/types'
+import type {
+  ConfirmationMap,
+  Lang,
+  Notification,
+  NotificationType,
+  Person,
+  Screen,
+  Theme,
+} from '../data/types'
 import { AppContext, type AppAction, type AppState } from './context'
 import { loadAndHydrate } from './hydrate'
 
@@ -111,6 +121,14 @@ function dropNamelessSelected(state: AppState): AppState {
   const person = state.persons.find((p) => p.id === sel)
   if (!person || !isNameless(person)) return state
   return { ...state, persons: state.persons.filter((p) => p.id !== sel) }
+}
+
+/** Bestätigungs-Status der angegebenen Slots aus der Map entfernen. */
+function dropConfirmations(map: ConfirmationMap, keys: string[]): ConfirmationMap {
+  if (keys.length === 0 || keys.every((k) => !(k in map))) return map
+  const next = { ...map }
+  for (const k of keys) delete next[k]
+  return next
 }
 
 /** Anzeigename des eingeloggten Nutzers (für pendingNames-Pflege). */
@@ -421,6 +439,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks,
         notifs,
         pendingNames,
+        // Geänderte Slots: alten Bestätigungs-Status abräumen (sonst erbt die
+        // neue Person ein fremdes „bestätigt“/„verhindert“)
+        confirmations: dropConfirmations(
+          state.confirmations,
+          changedSlotKeys(state.weeks[sel.wi][sel.tab], weeks[sel.wi][sel.tab], state.services, sel.wi, sel.tab),
+        ),
         slotSel: null,
         toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
       }
@@ -454,6 +478,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks,
         notifs,
         pendingNames: [...pending],
+        confirmations: dropConfirmations(
+          state.confirmations,
+          changedSlotKeys(
+            state.weeks[state.week][state.tab],
+            weeks[state.week][state.tab],
+            state.services,
+            state.week,
+            state.tab,
+          ),
+        ),
         toast: toastKey(state, 'toastAutoN', { n: count }),
       }
     }
@@ -769,11 +803,36 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
 
   switch (action.type) {
     case 'assign': {
-      const wi = prev.slotSel?.wi
-      if (wi != null) saveWeek(congId, wi, next.weeks[wi])
+      const sel = prev.slotSel
+      if (sel) {
+        saveWeek(congId, sel.wi, next.weeks[sel.wi])
+        // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
+        deleteConfirmationRows(
+          congId,
+          changedSlotKeys(
+            prev.weeks[sel.wi][sel.tab],
+            next.weeks[sel.wi][sel.tab],
+            prev.services,
+            sel.wi,
+            sel.tab,
+          ),
+        )
+      }
       break
     }
-    case 'autoAssign':
+    case 'autoAssign': {
+      const before = prev.weeks[prev.week]?.[prev.tab]
+      const after = next.weeks[prev.week]?.[prev.tab]
+      if (before && after) {
+        // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
+        deleteConfirmationRows(
+          congId,
+          changedSlotKeys(before, after, prev.services, prev.week, prev.tab),
+        )
+        saveWeek(congId, prev.week, next.weeks[prev.week])
+      }
+      break
+    }
     case 'lacAdjust':
     case 'lacRemove':
     case 'lacMove':

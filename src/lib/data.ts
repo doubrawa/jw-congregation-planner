@@ -641,6 +641,22 @@ export function saveConfirmation(
   )
 }
 
+/**
+ * Bestätigungs-Einträge (alle Nutzer) der angegebenen Slots löschen — beim
+ * Neu-Zuteilen, damit kein fremder Status am Slot kleben bleibt
+ * (RLS-Policy confirmations_delete_planner, migration-007).
+ */
+export function deleteConfirmationRows(congregationId: string, taskKeys: string[]): void {
+  if (!supabase || taskKeys.length === 0) return
+  void run(
+    supabase
+      .from('confirmations')
+      .delete()
+      .eq('congregation_id', congregationId)
+      .in('task_key', taskKeys),
+  )
+}
+
 /* ---- Mitglieder & Einladungen (nur Planer, RLS-geschützt) ---------------- */
 
 export function saveMemberRow(member: Member): void {
