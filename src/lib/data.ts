@@ -17,7 +17,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
-import { serviceQualKey } from '../data/helpers'
+import { displayName, serviceQualKey, shortDisplayName } from '../data/helpers'
 import type {
   Absence,
   ConfirmationMap,
@@ -168,6 +168,51 @@ function migrateServicePrivs(persons: Person[], services: Service[]): Person[] {
     }
     return { ...p, priv }
   })
+}
+
+/**
+ * Migriert in den Wochen gespeicherte Zuteilungs-Namen von der früheren
+ * Kurzform "V. Nachname" auf den heutigen Anzeigenamen (voller Name bzw.
+ * `dn`). Nur eindeutige Treffer werden ersetzt; "Gruppe N" und externe Namen
+ * (Gastredner) bleiben unangetastet. Idempotent — aktuelle Namen matchen die
+ * Kurzform nicht mehr. Rein im Speicher; persistiert wird beim nächsten
+ * Speichern der jeweiligen Woche.
+ */
+function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[] {
+  const map = new Map<string, string>()
+  const dupes = new Set<string>()
+  for (const p of persons) {
+    const short = shortDisplayName(p)
+    const full = displayName(p)
+    if (short === full) continue
+    if (map.has(short)) dupes.add(short)
+    map.set(short, full)
+  }
+  for (const d of dupes) map.delete(d) // mehrdeutig → nicht anfassen
+  if (map.size === 0) return weeks
+  const fix = (name: string): string => map.get(name) ?? name
+  return weeks.map((week) => ({
+    ...week,
+    mid: migrateMeetingNames(week.mid, fix),
+    we: migrateMeetingNames(week.we, fix),
+  }))
+}
+
+function migrateMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
+  return {
+    ...meeting,
+    sections: meeting.sections.map((section) => ({
+      ...section,
+      items: section.items.map((item) =>
+        'song' in item
+          ? item
+          : { ...item, names: item.names.map((slot) => ({ ...slot, name: fix(slot.name) })) },
+      ),
+    })),
+    helpers: Object.fromEntries(
+      Object.entries(meeting.helpers).map(([key, arr]) => [key, arr.map(fix)]),
+    ),
+  }
 }
 
 function personFromRow(r: PersonRow): Person {
@@ -334,7 +379,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
     serviceList,
   )
-  const weekList = (weeks.data ?? []).map((r) => (r as WeekRow).data)
+  const weekList = migrateAssignmentNames(
+    (weeks.data ?? []).map((r) => (r as WeekRow).data),
+    personList,
+  )
 
   const confirmations: ConfirmationMap = {}
   for (const row of (confs.data ?? []) as ConfirmationRow[]) {
