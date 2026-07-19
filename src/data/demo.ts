@@ -208,7 +208,7 @@ export const DEMO_MY_TASKS: MyTask[] = [
     date: 'Di, 8. September · ca. 19:35',
     chip: 'in 4 Tagen',
     status: 'offen',
-    s89: { name: 'S. Krüger', partner: 'M. Ernst', date: 'Di, 8. September · 19:00', type: 'Gespräche beginnen · Informell', point: 'lmd Lektion 1' },
+    s89: { name: 'Simon Krüger', partner: 'M. Ernst', date: 'Di, 8. September · 19:00', type: 'Gespräche beginnen · Informell', point: 'lmd Lektion 1' },
   },
   { id: 'a2', title: 'Mikrofone', date: 'So, 20. September · 10:00', chip: 'in 16 Tagen', status: 'offen', s89: null },
   {
@@ -217,7 +217,7 @@ export const DEMO_MY_TASKS: MyTask[] = [
     date: 'Di, 22. September · 19:00',
     chip: '',
     status: 'bestätigt',
-    s89: { name: 'S. Krüger', partner: '', date: 'Di, 22. September · 19:00', type: 'Bibellesung · Jer 38:1-13', point: 'th Lektion 10' },
+    s89: { name: 'Simon Krüger', partner: '', date: 'Di, 22. September · 19:00', type: 'Bibellesung · Jer 38:1-13', point: 'th Lektion 10' },
   },
 ]
 
@@ -225,7 +225,7 @@ export const DEMO_MY_TASKS: MyTask[] = [
  * Namen mit noch offener Bestätigung → im Planen als „…“ statt „✓“.
  * Seed wie im Prototyp; jede neue Zuteilung setzt den Namen auf „pending“.
  */
-export const DEMO_PENDING_NAMES: string[] = ['S. Krüger', 'J. Roth', 'E. Brandt']
+export const DEMO_PENDING_NAMES: string[] = ['Simon Krüger', 'Jörg Roth', 'Elke Brandt']
 
 export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true }
 
@@ -272,25 +272,25 @@ export function buildDemoWeeks(): Week[] {
       mid: {
         date: 'Dienstag, 8. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['K. Sommer', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['Konrad Sommer', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben', '10 Min.', [['T. Lindner', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['J. Berger', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['N. Feld', '', 'bibellesung']]),
+            part(1, 'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Jonas Berger', '', 'vortrag']]),
+            part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['Niklas Feld', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['L. Hoffmann', 'mit A. Hoffmann', 'schulung']]),
-            part(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['S. Krüger', 'mit M. Ernst', 'schulung']]),
-            part(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['E. Brandt', 'mit R. Brandt', 'schulung']]),
+            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Lena Hoffmann', 'mit A. Hoffmann', 'schulung']]),
+            part(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['Simon Krüger', 'mit M. Ernst', 'schulung']]),
+            part(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['Elke Brandt', 'mit R. Brandt', 'schulung']]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 128'),
             part(7, 'Geh während der besonderen Aktion zielorientiert vor', 'Besprechung · 15 Min.', [['D. Winkler', '', 'vortrag']]),
-            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'leser']]),
+            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['H. Vogel', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['Helmut Vogel', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['C. Maier'], mik: ['J. Roth', 'B. Klein'], ord: ['U. Lang', 'G. Peters'], rein: ['Gruppe 2'] },
+        helpers: { ton: ['Claus Maier'], mik: ['Jörg Roth', 'Bernd Klein'], ord: ['Ulrich Lang', 'Georg Peters'], rein: ['Gruppe 2'] },
       },
       we: {
         date: 'Sonntag, 13. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
@@ -299,11 +299,11 @@ export function buildDemoWeeks(): Week[] {
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Woran erkennt man echten Glauben?“', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 20'),
-            part(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['F. Neumann', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'leser']]),
+            part(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['G. Peters', 'M. Otto'], rein: ['Gruppe 3'] },
+        helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['Georg Peters', 'M. Otto'], rein: ['Gruppe 3'] },
       },
     },
     {
@@ -311,38 +311,38 @@ export function buildDemoWeeks(): Week[] {
       mid: {
         date: 'Dienstag, 15. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['F. Neumann', 'Vorsitz', 'vorsitz'], ['T. Lindner', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['Friedrich Neumann', 'Vorsitz', 'vorsitz'], ['Thomas Lindner', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Was wir von den Rechabitern lernen', '10 Min.', [['H. Vogel', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['M. Albrecht', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['P. Schröder', '', 'bibellesung']]),
+            part(1, 'Was wir von den Rechabitern lernen', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
+            part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['Paul Schröder', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', 'mit L. Hoffmann', 'schulung']]),
-            part(5, 'Interesse fördern', 'Informell · 4 Min.', [['R. Brandt', 'mit E. Brandt', 'schulung']]),
-            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['N. Feld', '', 'schulung']]),
+            part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', 'mit Lena Hoffmann', 'schulung']]),
+            part(5, 'Interesse fördern', 'Informell · 4 Min.', [['R. Brandt', 'mit Elke Brandt', 'schulung']]),
+            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['Niklas Feld', '', 'schulung']]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 89'),
-            part(7, 'Aktuelles', '15 Min.', [['M. Albrecht', '', 'vortrag']]),
-            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 8', [['T. Lindner', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'leser']]),
+            part(7, 'Aktuelles', '15 Min.', [['Manfred Albrecht', '', 'vortrag']]),
+            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 8', [['Thomas Lindner', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['K. Sommer', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['Konrad Sommer', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['B. Klein', 'J. Roth'], ord: ['M. Otto', 'U. Lang'], rein: ['Gruppe 1'] },
+        helpers: { ton: ['R. Simon'], mik: ['Bernd Klein', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 1'] },
       },
       we: {
         date: 'Sonntag, 20. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 12 · Gebet', null, [['H. Vogel', 'Vorsitz', 'vorsitz'], ['U. Lang', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 12 · Gebet', null, [['Helmut Vogel', 'Vorsitz', 'vorsitz'], ['Ulrich Lang', 'Gebet', 'gebet']])]),
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Ein Name, der zählt“', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 49'),
-            part(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['M. Albrecht', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'leser']]),
+            part(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['Manfred Albrecht', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 106 · Gebet', null, [['G. Peters', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 106 · Gebet', null, [['Georg Peters', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['C. Maier'], mik: ['S. Krüger', 'N. Feld'], ord: ['U. Lang', 'M. Otto'], rein: ['Gruppe 1'] },
+        helpers: { ton: ['Claus Maier'], mik: ['Simon Krüger', 'Niklas Feld'], ord: ['Ulrich Lang', 'M. Otto'], rein: ['Gruppe 1'] },
       },
     },
     {
@@ -350,39 +350,39 @@ export function buildDemoWeeks(): Week[] {
       mid: {
         date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['F. Neumann', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['Friedrich Neumann', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Jehova belohnt Mut — das Beispiel Ebed-Melechs', '10 Min.', [['F. Neumann', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['T. Lindner', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['S. Krüger', '', 'bibellesung']]),
+            part(1, 'Jehova belohnt Mut — das Beispiel Ebed-Melechs', '10 Min.', [['Friedrich Neumann', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
+            part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['Simon Krüger', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['E. Brandt', 'mit R. Brandt', 'schulung']]),
-            part(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['L. Hoffmann', 'mit A. Hoffmann', 'schulung']]),
-            part(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['J. Berger', '', 'schulung']]),
+            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Elke Brandt', 'mit R. Brandt', 'schulung']]),
+            part(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['Lena Hoffmann', 'mit A. Hoffmann', 'schulung']]),
+            part(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['Jonas Berger', '', 'schulung']]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 44'),
-            part(7, 'Baut einander auf', 'Besprechung · 15 Min.', [['H. Vogel', '', 'vortrag']]),
+            part(7, 'Baut einander auf', 'Besprechung · 15 Min.', [['Helmut Vogel', '', 'vortrag']]),
             part(8, '„Lauft so, dass ihr den Preis gewinnt“', 'Dienstvortrag · 30 Min.', [['K. Wagner', 'Kreisaufseher', '']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['D. Winkler', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['C. Maier'], mik: ['B. Klein', 'P. Schröder'], ord: ['G. Peters', 'U. Lang'], rein: ['Gruppe 3'] },
+        helpers: { ton: ['Claus Maier'], mik: ['Bernd Klein', 'Paul Schröder'], ord: ['Georg Peters', 'Ulrich Lang'], rein: ['Gruppe 3'] },
       },
       we: {
         date: 'Sonntag, 27. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 25 · Gebet', null, [['F. Neumann', 'Vorsitz', 'vorsitz'], ['B. Klein', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 25 · Gebet', null, [['Friedrich Neumann', 'Vorsitz', 'vorsitz'], ['Bernd Klein', 'Gebet', 'gebet']])]),
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Frieden in einer unruhigen Welt“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 61'),
-            part(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 30 Min.', [['H. Vogel', 'Leiter', 'studium'], ['J. Berger', 'Leser', 'leser']]),
+            part(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 30 Min.', [['Helmut Vogel', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
           ]),
           sec('DIENSTVORTRAG', 'gold', [part(null, '„Bleibt in Gottes Liebe“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'G. Peters'], rein: ['Gruppe 2'] },
+        helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 2'] },
       },
     },
     {
@@ -390,38 +390,38 @@ export function buildDemoWeeks(): Week[] {
       mid: {
         date: 'Dienstag, 29. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['T. Lindner', 'Vorsitz', 'vorsitz'], ['M. Albrecht', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['Thomas Lindner', 'Vorsitz', 'vorsitz'], ['Manfred Albrecht', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Auf Jehova hören — auch wenn es schwerfällt', '10 Min.', [['M. Albrecht', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['H. Vogel', '', 'vortrag']]),
-            part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['J. Roth', '', 'bibellesung']]),
+            part(1, 'Auf Jehova hören — auch wenn es schwerfällt', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
+            part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['Jörg Roth', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', 'mit E. Brandt', 'schulung']]),
-            part(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['K. Sommer', 'mit L. Hoffmann', 'schulung']]),
-            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['P. Schröder', '', 'schulung']]),
+            part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', 'mit Elke Brandt', 'schulung']]),
+            part(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['Konrad Sommer', 'mit Lena Hoffmann', 'schulung']]),
+            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['Paul Schröder', '', 'schulung']]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 65'),
-            part(7, 'Jehova sorgt für sein Volk', '15 Min.', [['F. Neumann', '', 'vortrag']]),
-            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['H. Vogel', 'Leiter', 'studium'], ['P. Schröder', 'Leser', 'leser']]),
+            part(7, 'Jehova sorgt für sein Volk', '15 Min.', [['Friedrich Neumann', '', 'vortrag']]),
+            part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['Helmut Vogel', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['C. Maier', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['Claus Maier', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['N. Feld', 'J. Roth'], ord: ['M. Otto', 'U. Lang'], rein: ['Gruppe 2'] },
+        helpers: { ton: ['R. Simon'], mik: ['Niklas Feld', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 2'] },
       },
       // Gedächtnismahl statt Wochenend-Zusammenkunft (memCancel: 'we').
       we: {
         date: 'Samstag, 3. Oktober · 19:30 · Königreichssaal — nach Sonnenuntergang', end: 'Ende ca. 20:30',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 18 · Gebet', null, [['M. Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 18 · Gebet', null, [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
           sec('GEDÄCHTNISMAHL', 'wein', [
-            part(null, 'Gedächtnismahl-Ansprache — „Schätze Jehovas größtes Geschenk“', '30 Min.', [['F. Neumann', 'Redner', 'vortrag']]),
-            part(null, 'Symbole herumreichen', 'Brot · Wein', [['J. Berger', '', ORD], ['P. Schröder', '', ORD], ['G. Peters', '', ORD], ['U. Lang', '', ORD]]),
+            part(null, 'Gedächtnismahl-Ansprache — „Schätze Jehovas größtes Geschenk“', '30 Min.', [['Friedrich Neumann', 'Redner', 'vortrag']]),
+            part(null, 'Symbole herumreichen', 'Brot · Wein', [['Jonas Berger', '', ORD], ['Paul Schröder', '', ORD], ['Georg Peters', '', ORD], ['Ulrich Lang', '', ORD]]),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 149 · Gebet', null, [['H. Vogel', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 149 · Gebet', null, [['Helmut Vogel', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['C. Maier'], mik: ['S. Krüger', 'B. Klein'], ord: ['M. Otto', 'G. Peters'], rein: ['Gruppe 1'] },
+        helpers: { ton: ['Claus Maier'], mik: ['Simon Krüger', 'Bernd Klein'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 1'] },
       },
     },
   ]

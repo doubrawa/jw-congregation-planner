@@ -10,9 +10,20 @@ export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
 }
 
-/** Anzeigename wie im Prototyp: "S. Krüger". */
+/**
+ * Anzeigename: voller Name ("Simon Krüger"); `dn` überschreibt ihn nur noch
+ * bei echten Duplikaten (z. B. "Josef Mayer 1"). Zuteilungen in den Wochen
+ * hängen an diesem String — Altbestände mit der früheren Kurzform
+ * "V. Nachname" werden beim Laden migriert (migrateAssignmentNames in
+ * lib/data.ts).
+ */
 export function displayName(p: Person): string {
-  return p.dn || `${(p.fn[0] ?? '') + '.'} ${p.ln}`.trim()
+  return p.dn || `${p.fn} ${p.ln}`.trim()
+}
+
+/** Frühere automatische Kurzform — nur noch für die Lade-Migration. */
+export function shortDisplayName(p: Person): string {
+  return `${(p.fn[0] ?? '') + '.'} ${p.ln}`.trim()
 }
 
 /** Initialen für Avatare: "SK"; leerer Datensatz → "–". */

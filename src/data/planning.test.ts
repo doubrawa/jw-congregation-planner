@@ -84,8 +84,8 @@ describe('Auto-Zuteilung', () => {
     const { weeks: next, newly } = autoAssignMeeting(weeks, 0, 'mid', DEMO_PERSONS, DEMO_SERVICES)
     const names = assignedNames(next[0], 'mid').filter((n) => !n.startsWith('Gruppe'))
     expect(new Set(names).size).toBe(names.length) // keine Doppelbelegung
-    // U. Lang ist in Woche 0 abwesend → nie neu vergeben
-    expect(newly).not.toContain('U. Lang')
+    // Ulrich Lang ist in Woche 0 abwesend → nie neu vergeben
+    expect(newly).not.toContain('Ulrich Lang')
     // Originale Wochen unverändert (reine Funktion)
     expect(weeks).toEqual(before)
   })
@@ -208,21 +208,21 @@ describe('Auslastung', () => {
   it('zählt Slots und Begleiter-Erwähnungen über alle Wochen', () => {
     const weeks = buildDemoWeeks()
     const lena = DEMO_PERSONS.find((p) => p.ln === 'Hoffmann')!
-    // L. Hoffmann: 2 Slots + 2× "mit L. Hoffmann"
+    // Lena Hoffmann: 2 Slots + 2× "mit Lena Hoffmann"
     expect(workloadOf(weeks, displayName(lena))).toBe(4)
   })
 
   it('trennt Aufgaben- von Hilfsdienst-Last', () => {
     const weeks = buildDemoWeeks()
-    // L. Hoffmann: nur Programmpunkte
-    expect(partWorkload(weeks, 'L. Hoffmann')).toBe(4)
-    expect(helperWorkload(weeks, 'L. Hoffmann')).toBe(0)
-    // C. Maier: überwiegend Ton — Hilfsdienste zählen nicht zur Aufgaben-Last
-    expect(helperWorkload(weeks, 'C. Maier')).toBeGreaterThanOrEqual(4)
-    expect(partWorkload(weeks, 'C. Maier')).toBeLessThan(helperWorkload(weeks, 'C. Maier'))
+    // Lena Hoffmann: nur Programmpunkte
+    expect(partWorkload(weeks, 'Lena Hoffmann')).toBe(4)
+    expect(helperWorkload(weeks, 'Lena Hoffmann')).toBe(0)
+    // Claus Maier: überwiegend Ton — Hilfsdienste zählen nicht zur Aufgaben-Last
+    expect(helperWorkload(weeks, 'Claus Maier')).toBeGreaterThanOrEqual(4)
+    expect(partWorkload(weeks, 'Claus Maier')).toBeLessThan(helperWorkload(weeks, 'Claus Maier'))
     // Invariante: Gesamt = Aufgaben + Hilfsdienste
-    expect(workloadOf(weeks, 'C. Maier')).toBe(
-      partWorkload(weeks, 'C. Maier') + helperWorkload(weeks, 'C. Maier'),
+    expect(workloadOf(weeks, 'Claus Maier')).toBe(
+      partWorkload(weeks, 'Claus Maier') + helperWorkload(weeks, 'Claus Maier'),
     )
   })
 })
@@ -231,7 +231,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
   const weeks = buildDemoWeeks()
 
   it('leitet die Aufgaben einer Person in Programmreihenfolge ab', () => {
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', {})
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
     // Woche 0: Schulungsaufgabe · Woche 1: Mikrofone (We) ·
     // Woche 2: Bibellesung · Woche 3: Mikrofone (Gedächtnismahl)
     expect(tasks.map((t) => t.title)).toEqual([
@@ -249,53 +249,53 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
   })
 
   it('hängt Rollenlabels (außer Begleiter) an den Titel an', () => {
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'M. Albrecht', {})
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Manfred Albrecht', {})
     expect(tasks[0].title).toBe('Lied 1 · Gebet · Einleitende Worte · Vorsitz')
   })
 
   it('übernimmt den Status aus der ConfirmationMap', () => {
-    const open = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', {})
+    const open = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
     const conf = { [open[0].id]: 'bestätigt', [open[1].id]: 'verhindert' } as const
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', conf)
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', conf)
     expect(tasks.map((t) => t.status)).toEqual(['bestätigt', 'verhindert', 'offen', 'offen'])
   })
 
   it('pendingNames: ohne Bestätigung pending, Externe und Gruppen nie', () => {
     const pending = derivePendingNames(weeks, DEMO_SERVICES, {})
-    expect(pending).toContain('S. Krüger')
+    expect(pending).toContain('Simon Krüger')
     expect(pending).not.toContain('K. Wagner') // Kreisaufseher (extern)
     expect(pending).not.toContain('M. Hartmann') // Gastredner (extern)
     expect(pending.some((n) => n.startsWith('Gruppe'))).toBe(false)
   })
 
   it('pendingNames: voll bestätigte Namen verschwinden', () => {
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'S. Krüger', {})
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
     const conf = Object.fromEntries(tasks.map((t) => [t.id, 'bestätigt' as const]))
-    expect(derivePendingNames(weeks, DEMO_SERVICES, conf)).not.toContain('S. Krüger')
+    expect(derivePendingNames(weeks, DEMO_SERVICES, conf)).not.toContain('Simon Krüger')
   })
 })
 
 describe('Konfliktprüfungen (Planen)', () => {
   it('erkennt Abwesende, die trotzdem eingeteilt sind', () => {
-    // U. Lang ist in Woche 0 abwesend, aber Eingangsordner (mid)
+    // Ulrich Lang ist in Woche 0 abwesend, aber Eingangsordner (mid)
     const weeks = buildDemoWeeks()
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
-    expect(conflicts).toContainEqual({ kind: 'absent', name: 'U. Lang', tab: 'mid' })
+    expect(conflicts).toContainEqual({ kind: 'absent', name: 'Ulrich Lang', tab: 'mid' })
   })
 
   it('erkennt Helfer + Aufgabe am selben Tag (helperTask)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = ['M. Albrecht'] // ist schon Vorsitz (Programmpunkt) in derselben ZK
+    weeks[0].mid.helpers.ton = ['Manfred Albrecht'] // ist schon Vorsitz (Programmpunkt) in derselben ZK
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
-    expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'M. Albrecht', tab: 'mid' })
+    expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'Manfred Albrecht', tab: 'mid' })
   })
 
   it('erkennt sonstige Mehrfach-Zuteilung (double) — zwei Hilfsdienste', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = ['X. Testhelfer'] // nur Hilfsdienste, kein Programmpunkt
-    weeks[0].mid.helpers.mik = ['X. Testhelfer', '']
+    weeks[0].mid.helpers.ton = ['Xaver Testhelfer'] // nur Hilfsdienste, kein Programmpunkt
+    weeks[0].mid.helpers.mik = ['Xaver Testhelfer', '']
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
-    expect(conflicts).toContainEqual({ kind: 'double', name: 'X. Testhelfer', tab: 'mid', count: 2 })
+    expect(conflicts).toContainEqual({ kind: 'double', name: 'Xaver Testhelfer', tab: 'mid', count: 2 })
   })
 
   it('erkennt Serien von 3 Wochen in Folge (und nur dort)', () => {
