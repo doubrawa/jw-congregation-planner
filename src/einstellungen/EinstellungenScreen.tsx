@@ -4,7 +4,7 @@ import { generateInviteCode } from '../lib/data'
 import { importNextWeek, importWeekVariants, latestImportedStart } from '../lib/import'
 import { missingVariants } from '../data/localize'
 import { CONG_TO_JW, LOCALES } from '../i18n/langs'
-import { displayName } from '../data/helpers'
+import { displayName, personCompare } from '../data/helpers'
 import { type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import type { Service } from '../data/types'
@@ -129,10 +129,12 @@ export function EinstellungenScreen() {
     return person ? `${person.fn} ${person.ln}`.trim() : ''
   }
 
+  const sortedPersons = [...state.persons].sort(personCompare)
+
   const personOptions = (
     <>
       <option value="">{t.keinePersonOpt}</option>
-      {state.persons.map((p) => (
+      {sortedPersons.map((p) => (
         <option key={p.id} value={p.id}>
           {`${p.fn} ${p.ln}`.trim() || '—'}
         </option>
@@ -145,7 +147,7 @@ export function EinstellungenScreen() {
   const groupPersonOptions = (allowed: (p: (typeof state.persons)[number]) => boolean) => (
     <>
       <option value="">—</option>
-      {state.persons.filter(allowed).map((p) => (
+      {sortedPersons.filter(allowed).map((p) => (
         <option key={p.id} value={p.id}>
           {displayName(p)}
         </option>
