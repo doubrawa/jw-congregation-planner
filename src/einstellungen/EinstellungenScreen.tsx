@@ -25,7 +25,7 @@ import './einstellungen.css'
 const DAY_KEYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const
 type MeetingTime = { day: string; time: string }
 
-function parseMeetingTimes(text: string): [MeetingTime, MeetingTime] {
+export function parseMeetingTimes(text: string): [MeetingTime, MeetingTime] {
   const found = [...text.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b\s*(\d{1,2}:\d{2})/g)].map((m) => ({
     day: m[1],
     time: m[2].padStart(5, '0'),
@@ -34,7 +34,7 @@ function parseMeetingTimes(text: string): [MeetingTime, MeetingTime] {
 }
 
 /** Uhrzeiten im 15-Minuten-Raster; eine krumme Bestandszeit bleibt wählbar. */
-function timeOptions(current: string): string[] {
+export function timeOptions(current: string): string[] {
   const opts: string[] = []
   for (let h = 0; h < 24; h++) {
     for (const m of ['00', '15', '30', '45']) opts.push(`${String(h).padStart(2, '0')}:${m}`)
