@@ -38,6 +38,7 @@ import { fill } from '../i18n/useT'
 import {
   deleteAbsenceRow,
   deleteGroupRow,
+  deletePersonRow,
   deleteInviteRow,
   deleteMemberRow,
   deleteServiceRow,
@@ -93,6 +94,23 @@ function pushNotif(
   text: string,
 ): Notification[] {
   return [makeNotif(type, title, text), ...notifs]
+}
+
+/**
+ * Beim Anlegen abgebrochene Personen (komplett ohne Namen) werden beim
+ * Verlassen des Details automatisch wieder entfernt — sonst blieben durch das
+ * Auto-Speichern leere Einträge in der Liste stehen.
+ */
+function isNameless(p: Person): boolean {
+  return !`${p.fn}${p.ln}${p.dn ?? ''}`.trim()
+}
+
+function dropNamelessSelected(state: AppState): AppState {
+  const sel = state.selectedPersonId
+  if (!sel) return state
+  const person = state.persons.find((p) => p.id === sel)
+  if (!person || !isNameless(person)) return state
+  return { ...state, persons: state.persons.filter((p) => p.id !== sel) }
 }
 
 /** Anzeigename des eingeloggten Nutzers (für pendingNames-Pflege). */
@@ -181,7 +199,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const screen =
         !state.planner && plannerOnly.includes(action.screen) ? 'programm' : action.screen
       return {
-        ...state,
+        ...dropNamelessSelected(state),
         screen,
         notifOpen: false,
         slotSel: null,
@@ -220,7 +238,28 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastAbwDel'),
       }
     case 'selectPerson':
-      return { ...state, selectedPersonId: action.id }
+      return { ...dropNamelessSelected(state), selectedPersonId: action.id }
+    case 'removePerson': {
+      // Person löschen: Referenzen lösen (Gruppenleitung, Konto, offene
+      // Codes); Namen in bereits geplanten Wochen bleiben als Text stehen.
+      return {
+        ...state,
+        persons: state.persons.filter((p) => p.id !== action.id),
+        groups: state.groups.map((g) => ({
+          ...g,
+          ov: g.ov === action.id ? null : g.ov,
+          as: g.as === action.id ? null : g.as,
+        })),
+        members: state.members.map((m) =>
+          m.personId === action.id ? { ...m, personId: null } : m,
+        ),
+        invites: state.invites.map((i) =>
+          i.personId === action.id ? { ...i, personId: null } : i,
+        ),
+        selectedPersonId: null,
+        toast: toastKey(state, 'toastPersonDel'),
+      }
+    }
     case 'addPerson':
       return {
         ...state,
@@ -675,6 +714,15 @@ function initialState(): AppState {
 const PERSON_SAVE_DELAY = 600
 const pendingPersonSaves = new Map<string, ReturnType<typeof setTimeout>>()
 
+/** Ausstehenden Save einer Person verwerfen (vor dem Löschen). */
+function cancelPersonSave(id: string): void {
+  const timer = pendingPersonSaves.get(id)
+  if (timer) {
+    clearTimeout(timer)
+    pendingPersonSaves.delete(id)
+  }
+}
+
 function schedulePersonSave(congId: string, person: Person): void {
   const timer = pendingPersonSaves.get(person.id)
   if (timer) clearTimeout(timer)
@@ -761,11 +809,27 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     }
     case 'selectPerson':
     case 'navigate':
-    case 'logout':
+    case 'logout': {
+      // Namenlose (abgebrochene) Person wurde im Reducer entfernt → auch in
+      // der DB löschen, ohne dass ein ausstehender Save sie wiederbelebt.
+      const sel = prev.selectedPersonId
+      if (sel && prev.persons.some((p) => p.id === sel) && !next.persons.some((p) => p.id === sel)) {
+        cancelPersonSave(sel)
+        deletePersonRow(sel)
+      }
       // Ansicht verlassen → ausstehende Debounce-Saves sofort schreiben
-      flushPersonSaves(congId, prev)
+      flushPersonSaves(congId, next)
       flushCongregationSave(congId, prev)
       break
+    }
+    case 'removePerson': {
+      cancelPersonSave(action.id)
+      deletePersonRow(action.id) // groups/invites-FKs räumt die DB (set null)
+      for (const m of prev.members) {
+        if (m.personId === action.id) saveMemberRow({ ...m, personId: null })
+      }
+      break
+    }
     case 'addAbsence':
       saveAbsence(congId, userId, next.personId, action.absence)
       break
