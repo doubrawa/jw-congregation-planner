@@ -230,13 +230,17 @@ Versammlung aus `members`), Änderungen sofort zurückgeschrieben; eine leere
 Versammlung bietet Planern eine Erstbefüllung mit dem Demo-Datensatz an.
 „Meine Aufgaben" entstehen aus den Zuteilungen der über `members.person_id`
 verknüpften Person; Bestätigungen landen in `confirmations`, Erinnerungen und
-Versammlungssprache in `congregations.settings`. **Mitglieder-Verwaltung ohne
-SQL:** Planer verwalten Konten unter Einstellungen → Mitglieder (Person
-verknüpfen, Planer-Rechte, Einladungscodes); neue Mitglieder registrieren sich
-in der App und lösen einen Code ein (`redeem_invite`). Nur die allererste
-Versammlung + Koordinator-Mitgliedschaft entsteht per SQL (siehe Ende der
-`schema.sql`). Bereits eingerichtete Datenbanken einmalig mit den
-`supabase/migration-00*.sql`-Dateien nachziehen (in Nummern-Reihenfolge).
+Versammlungssprache in `congregations.settings`. **Konten & Einladungen laufen
+personenzentriert im Personen-Screen:** Admin-Recht als feste Rolle im
+Personen-Detail (gespiegelt in `members.planner`, migration-006), KONTO-Karte
+mit Einladen-Aktion (E-Mail über die Edge Function `send-invite`/Resend, sobald
+Secret `INVITE_FROM` mit verifizierter eigener Domain gesetzt ist — sonst
+Fallback aufs eigene Mail-Programm per `mailto:`; ohne E-Mail-Adresse
+Teilen/Kopieren) und „Alle ohne Konto einladen" in der Liste. Neue Mitglieder
+registrieren sich in der App und lösen ihren Code ein (`redeem_invite`). Nur
+die allererste Versammlung + Koordinator-Mitgliedschaft entsteht per SQL
+(siehe Ende der `schema.sql`). Bereits eingerichtete Datenbanken einmalig mit
+den `supabase/migration-00*.sql`-Dateien nachziehen (in Nummern-Reihenfolge).
 
 ### Auto-Zuteilung (Regeln)
 
