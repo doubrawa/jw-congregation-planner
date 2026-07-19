@@ -1,40 +1,44 @@
 // =============================================================================
-// Supabase Edge Function: send-reminders
+// Supabase Edge Function: send-reminders (Web-Push)
 // =============================================================================
-// Schickt Erinnerungs-E-Mails an Mitglieder mit noch nicht bestätigten
-// Zuteilungen und legt In-App-Mitteilungen (Glocke) an. Läuft serverseitig
-// mit Service-Role, damit sie alle Versammlungen sieht; ausgelöst täglich per
-// Cron (supabase/cron-reminders.sql).
+// Erinnert Mitglieder mit unbestätigten Zuteilungen per Web-Push (Browser-
+// Benachrichtigung, Ende-zu-Ende verschlüsselt — kein E-Mail-Versand) und legt
+// In-App-Mitteilungen (Glocke) an. Läuft serverseitig mit Service-Role,
+// ausgelöst täglich per Cron (supabase/cron-reminders.sql).
 //
 // Logik (Einstellungen → ERINNERUNGEN, congregations.settings.reminders):
-//  - `first` Tage vor der Zusammenkunft: erste Erinnerung (E-Mail + Glocke)
-//  - `last` Tage vorher: letzte Erinnerung (E-Mail + Glocke; 0 = am Tag selbst)
-//  - `repeat`: an allen Tagen dazwischen zusätzlich täglich per E-Mail
+//  - `first` Tage vor der Zusammenkunft: erste Erinnerung (Push + Glocke)
+//  - `last` Tage vorher: letzte Erinnerung (Push + Glocke; 0 = am Tag selbst)
+//  - `repeat`: an allen Tagen dazwischen zusätzlich täglich per Push
 //  - bestätigte und verhinderte Zuteilungen lösen nichts aus; ebenso externe
 //    Slots (Gastredner/Kreisaufseher) und Gruppen-Rotationen (Reinigung).
 //  - Der Zusammenkunftstag wird aus congregations.meeting_times abgeleitet
-//    ("Di 19:00 · So 10:00" → Di bzw. So der Programmwoche); ohne erkennbare
-//    Wochentage gilt Di (mid) / So (we).
-//  - Personen mit fälliger letzter Erinnerung, aber ohne App-Konto (keine
-//    members-Verknüpfung) landen in einer Sammel-Mail an alle Planer.
+//    ("Di 19:00 · So 10:00"); ohne erkennbare Wochentage gilt Di (mid)/So (we).
+//  - Personen mit fälliger letzter Erinnerung, aber ohne App-Konto, werden den
+//    Planern als Sammel-Push gemeldet.
+//  - Empfangen kann nur, wer in der App (Profil) Push aktiviert hat
+//    (Tabelle push_subscriptions, migration-005). Abgelaufene Abos (404/410)
+//    werden automatisch gelöscht.
 //
 // SICHERHEIT / STATUS:
-//  - **Dry-Run standardmäßig**: ohne Secret `SEND_EMAILS=true` wird nichts
-//    versendet und nichts in die DB geschrieben — die Antwort listet als
-//    Vorschau auf, welche Mails rausgegangen wären.
+//  - **Dry-Run standardmäßig**: ohne Secret `SEND_PUSH=true` wird nichts
+//    versendet und nichts geschrieben — die Antwort listet die Vorschau.
 //  - Zugriff nur mit korrektem `CRON_SECRET` (Authorization: Bearer <secret>).
 //
 // Benötigte Secrets (npx supabase secrets set NAME=wert --project-ref …):
-//  - CRON_SECRET      eigenes Geheimnis; Cron schickt es im Authorization-Header
-//  - RESEND_API_KEY   API-Key des Mail-Anbieters Resend
-//  - REMINDER_FROM    optional; Standard "onboarding@resend.dev" (Resend-Testmodus:
-//                     nur an die eigene Resend-Konto-Adresse zustellbar — für alle
-//                     Mitglieder eigene Domain bei Resend verifizieren)
-//  - SEND_EMAILS      "true" schaltet echten Versand + Glocken-Mitteilungen frei
+//  - CRON_SECRET        eigenes Geheimnis; Cron schickt es im Authorization-Header
+//  - VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY   Web-Push-Schlüsselpaar (public =
+//                       Konstante in src/lib/push.ts)
+//  - VAPID_SUBJECT      Kontakt-URI, z. B. "mailto:…"
+//  - SEND_PUSH          "true" schaltet echten Versand + Glocken-Mitteilungen frei
+//  - APP_URL            optional; Link, den die Benachrichtigung öffnet
 // SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY stellt Supabase automatisch bereit.
 //
 // Deploy:  npx supabase functions deploy send-reminders --no-verify-jwt
 // =============================================================================
+
+// @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
+import webpush from 'npm:web-push@3.6.7'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -43,11 +47,11 @@ declare const Deno: {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-const REMINDER_FROM =
-  Deno.env.get('REMINDER_FROM') ?? 'JW Congregation Planner <onboarding@resend.dev>'
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
+const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
-const SEND_EMAILS = Deno.env.get('SEND_EMAILS') === 'true'
+const SEND_PUSH = Deno.env.get('SEND_PUSH') === 'true'
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
 /** REST-Abfrage gegen PostgREST mit Service-Role (umgeht RLS). */
@@ -59,7 +63,6 @@ async function rest<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/** REST-Insert (In-App-Mitteilungen); Fehler nur loggen, Mails gehen vor. */
 async function restInsert(path: string, rows: unknown[]): Promise<void> {
   if (rows.length === 0) return
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -73,6 +76,15 @@ async function restInsert(path: string, rows: unknown[]): Promise<void> {
     body: JSON.stringify(rows),
   })
   if (!res.ok) console.error(`REST POST ${path} ${res.status}: ${await res.text()}`)
+}
+
+/** Abgelaufenes Push-Abo entfernen (Push-Service meldete 404/410). */
+async function restDeleteSubscription(id: string): Promise<void> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  })
+  if (!res.ok) console.error(`REST DELETE push_subscriptions ${res.status}`)
 }
 
 /* ---- Datenmodell (Teilmengen der Client-Typen aus src/data/types.ts) ---- */
@@ -110,13 +122,20 @@ interface Reminders {
   last: number
   repeat: boolean
 }
+interface SubscriptionRow {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+}
 
 /** Rollen, die von außen kommen — kein Bestätigungs-Flow (wie planning.ts). */
 const SKIP_ROLE = /Gastredner|Kreisaufseher/
 
-/** Anzeigename wie im Client (helpers.ts): "M. Mustermann". */
-function displayName(fn: string, ln: string): string {
-  return `${(fn[0] ?? '') + '.'} ${ln}`.trim()
+/** Anzeigename wie im Client (helpers.ts): dn oder voller Name. */
+function personDisplayName(fn: string, ln: string, dn: string): string {
+  return dn || `${fn} ${ln}`.trim()
 }
 
 /** "Dienstag, 8. September · 19:00 · Saal" → "Dienstag, 8. September · 19:00". */
@@ -126,13 +145,8 @@ function taskDate(meeting: Meeting): string {
 
 /* ---- Terminberechnung ---------------------------------------------------- */
 
-/** Wochentag-Offsets ab Wochenstart (Montag). */
 const DAY_OFFSET: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 }
 
-/**
- * Zusammenkunftstage aus congregations.meeting_times ("Di 19:00 · So 10:00"):
- * erster erkannter Wochentag = unter der Woche, zweiter = Wochenende.
- */
 function meetingDayOffsets(meetingTimes: string): { mid: number; we: number } {
   const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map(
     (m) => DAY_OFFSET[m[1]],
@@ -158,15 +172,11 @@ function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
 /* ---- Offene Zuteilungen -------------------------------------------------- */
 
 interface Pending {
-  name: string // Anzeigename der Person
-  label: string // Aufgabe, z. B. "Nach Schätzen graben · Leser" oder "Ton"
+  name: string
+  label: string
 }
 
-/**
- * Unbestätigte Zuteilungen einer Zusammenkunft. task_key-Schema identisch zu
- * partTaskKey/helperTaskKey (src/data/planning.ts); wi = Wochenindex in der
- * nach position sortierten Wochenliste (wie der Client lädt).
- */
+/** Unbestätigte Zuteilungen; task_key-Schema wie partTaskKey/helperTaskKey. */
 function pendingOfMeeting(
   wi: number,
   tab: 'mid' | 'we',
@@ -190,13 +200,13 @@ function pendingOfMeeting(
         const title = item.title ?? 'Zuteilung'
         out.push({
           name: slot.name,
-          label: rolle && !rolle.startsWith('mit ') ? `${title} · ${rolle}` : title,
+          label: rolle && !rolle.startsWith('mit') ? `${title} · ${rolle}` : title,
         })
       }
     }
   }
   for (const svc of services) {
-    if (svc.groups) continue // Gruppen-Rotation hat keine persönliche Aufgabe
+    if (svc.groups) continue
     const arr = meeting.helpers?.[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
       if (!arr[pos]) continue
@@ -209,55 +219,19 @@ function pendingOfMeeting(
 
 /* ---- Versand ------------------------------------------------------------- */
 
-interface Mail {
-  to: string
-  subject: string
+interface Push {
+  userId: string
+  title: string
   body: string
 }
-
-async function sendEmail(mail: Mail): Promise<boolean> {
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: REMINDER_FROM, to: mail.to, subject: mail.subject, text: mail.body }),
-  })
-  if (!res.ok) console.error(`Resend ${res.status}: ${await res.text()}`)
-  return res.ok
-}
-
-function memberMail(to: string, entries: string[]): Mail {
-  return {
-    to,
-    subject: 'Erinnerung: Bitte Zuteilung bestätigen',
-    body:
-      'Hallo,\n\ndu hast noch unbestätigte Zuteilungen:\n\n' +
-      entries.map((e) => `• ${e}`).join('\n') +
-      `\n\nBitte bestätige sie in der App:\n${APP_URL}\n\n` +
-      'Diese Erinnerung wurde automatisch vom JW Congregation Planner verschickt.',
-  }
-}
-
-function plannerMail(to: string, entries: string[]): Mail {
-  return {
-    to,
-    subject: 'Unbestätigte Zuteilungen ohne App-Konto',
-    body:
-      'Hallo,\n\nfolgende Zuteilungen stehen kurz bevor, sind unbestätigt und die\n' +
-      'Person ist per App nicht erreichbar (kein verknüpftes Konto):\n\n' +
-      entries.map((e) => `• ${e}`).join('\n') +
-      '\n\nBitte persönlich nachfragen oder in der App neu zuteilen.\n' +
-      `${APP_URL}\n\n` +
-      'Diese Nachricht wurde automatisch vom JW Congregation Planner verschickt.',
-  }
-}
-
-/* ---- Hauptlauf ------------------------------------------------------------ */
 
 Deno.serve(async (req: Request) => {
   if (CRON_SECRET && req.headers.get('Authorization') !== `Bearer ${CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
   }
   try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+
     const now = new Date()
     const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
 
@@ -269,8 +243,11 @@ Deno.serve(async (req: Request) => {
       }[]
     >('congregations?select=id,meeting_times,settings')
 
-    const mails: Mail[] = []
+    let sent = 0
+    let expired = 0
+    const preview: Push[] = []
     const notifRows: unknown[] = []
+    const sendQueue: Array<{ push: Push; subs: SubscriptionRow[] }> = []
 
     for (const cong of congs) {
       const rem: Reminders = {
@@ -280,40 +257,46 @@ Deno.serve(async (req: Request) => {
       }
       const offsets = meetingDayOffsets(cong.meeting_times)
 
-      const [weeks, confs, members, persons, services] = await Promise.all([
+      const [weeks, confs, members, persons, services, subs] = await Promise.all([
         rest<{ data: Week }[]>(
           `weeks?select=position,data&congregation_id=eq.${cong.id}&order=position.asc`,
         ),
         rest<{ task_key: string; status: string }[]>(
           `confirmations?select=task_key,status&congregation_id=eq.${cong.id}`,
         ),
-        rest<{ user_id: string; person_id: string | null; planner: boolean; email: string }[]>(
-          `members?select=user_id,person_id,planner,email&congregation_id=eq.${cong.id}`,
+        rest<{ user_id: string; person_id: string | null; planner: boolean }[]>(
+          `members?select=user_id,person_id,planner&congregation_id=eq.${cong.id}`,
         ),
-        rest<{ id: string; fn: string; ln: string }[]>(
-          `persons?select=id,fn,ln&congregation_id=eq.${cong.id}`,
+        rest<{ id: string; fn: string; ln: string; dn: string }[]>(
+          `persons?select=id,fn,ln,dn&congregation_id=eq.${cong.id}`,
         ),
         rest<ServiceRow[]>(
           `services?select=key,name,count,groups&congregation_id=eq.${cong.id}&order=position.asc`,
         ),
+        rest<SubscriptionRow[]>(
+          `push_subscriptions?select=id,user_id,endpoint,p256dh,auth&congregation_id=eq.${cong.id}`,
+        ),
       ])
 
-      // bestätigt wie verhindert beendet Erinnerungen (Planer sieht verhindert in der App)
       const conf = new Map(confs.map((c) => [c.task_key, c.status]))
       const personById = new Map(persons.map((p) => [p.id, p]))
-      const memberByName = new Map<string, { userId: string; email: string }>()
+      const userByName = new Map<string, string>()
       for (const m of members) {
         const p = m.person_id ? personById.get(m.person_id) : undefined
-        if (p && m.email) memberByName.set(displayName(p.fn, p.ln), { userId: m.user_id, email: m.email })
+        if (p) userByName.set(personDisplayName(p.fn, p.ln, p.dn), m.user_id)
+      }
+      const subsByUser = new Map<string, SubscriptionRow[]>()
+      for (const s of subs) {
+        subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
       }
 
-      const entriesByEmail = new Map<string, string[]>()
+      const entriesByUser = new Map<string, string[]>()
       const mainByUser = new Map<string, string[]>() // Glocke nur an first/last-Tagen
       const unreachable: string[] = []
 
       weeks.forEach((row, wi) => {
         const week = row.data
-        if (!week?.start) return // ohne ISO-Startdatum kein Termin bestimmbar
+        if (!week?.start) return
         for (const tab of ['mid', 'we'] as const) {
           const meeting = week[tab]
           if (!meeting) continue
@@ -323,11 +306,11 @@ Deno.serve(async (req: Request) => {
           if (!kind) continue
           for (const pend of pendingOfMeeting(wi, tab, meeting, services, conf)) {
             const entry = `${taskDate(meeting)}: ${pend.label}`
-            const member = memberByName.get(pend.name)
-            if (member) {
-              entriesByEmail.set(member.email, [...(entriesByEmail.get(member.email) ?? []), entry])
+            const userId = userByName.get(pend.name)
+            if (userId) {
+              entriesByUser.set(userId, [...(entriesByUser.get(userId) ?? []), entry])
               if (kind === 'main') {
-                mainByUser.set(member.userId, [...(mainByUser.get(member.userId) ?? []), entry])
+                mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
               }
             } else if (days === rem.last) {
               unreachable.push(`${pend.name} — ${entry}`)
@@ -336,7 +319,15 @@ Deno.serve(async (req: Request) => {
         }
       })
 
-      for (const [email, entries] of entriesByEmail) mails.push(memberMail(email, entries))
+      for (const [userId, entries] of entriesByUser) {
+        const push: Push = {
+          userId,
+          title: 'Erinnerung: Zuteilung bestätigen',
+          body: entries.join(' · '),
+        }
+        preview.push(push)
+        sendQueue.push({ push, subs: subsByUser.get(userId) ?? [] })
+      }
       for (const [userId, entries] of mainByUser) {
         notifRows.push({
           congregation_id: cong.id,
@@ -347,28 +338,53 @@ Deno.serve(async (req: Request) => {
         })
       }
       if (unreachable.length > 0) {
+        const push = {
+          title: 'Unbestätigte Zuteilungen (nicht erreichbar)',
+          body: unreachable.join(' · '),
+        }
         for (const m of members) {
-          if (m.planner && m.email) mails.push(plannerMail(m.email, unreachable))
+          if (!m.planner) continue
+          const p: Push = { userId: m.user_id, ...push }
+          preview.push(p)
+          sendQueue.push({ push: p, subs: subsByUser.get(m.user_id) ?? [] })
         }
       }
     }
 
-    let sent = 0
-    if (SEND_EMAILS) {
-      for (const mail of mails) if (await sendEmail(mail)) sent++
+    if (SEND_PUSH) {
+      for (const { push, subs } of sendQueue) {
+        const payload = JSON.stringify({ title: push.title, body: push.body, url: APP_URL })
+        for (const sub of subs) {
+          try {
+            await webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+              payload,
+              { TTL: 24 * 3600 },
+            )
+            sent++
+          } catch (err) {
+            const status = (err as { statusCode?: number }).statusCode
+            if (status === 404 || status === 410) {
+              await restDeleteSubscription(sub.id)
+              expired++
+            } else {
+              console.error(`web-push ${status}: ${(err as Error).message}`)
+            }
+          }
+        }
+      }
       await restInsert('notifications', notifRows)
-    } else {
-      for (const mail of mails) console.log(`[DRY-RUN] E-Mail an ${mail.to}: ${mail.subject}`)
     }
 
     return new Response(
       JSON.stringify({
         ok: true,
-        dryRun: !SEND_EMAILS,
-        emails: SEND_EMAILS ? sent : mails.length,
+        dryRun: !SEND_PUSH,
+        pushes: SEND_PUSH ? sent : preview.length,
+        expired,
         notifications: notifRows.length,
         // Vorschau nur im Dry-Run — zum gefahrlosen Testen per curl
-        preview: SEND_EMAILS ? undefined : mails,
+        preview: SEND_PUSH ? undefined : preview,
       }),
       { headers: { 'Content-Type': 'application/json' } },
     )

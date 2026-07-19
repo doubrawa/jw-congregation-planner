@@ -529,6 +529,32 @@ export function savePersonGroup(person: Person): void {
   void run(supabase.from('persons').update({ grp: person.grp ?? null }).eq('id', person.id))
 }
 
+/** Push-Abo dieses Geräts speichern (Endpoint ist eindeutig → Upsert). */
+export function savePushSubscription(
+  congregationId: string,
+  userId: string,
+  sub: { endpoint: string; p256dh: string; auth: string },
+): void {
+  if (!supabase) return
+  void run(
+    supabase.from('push_subscriptions').upsert(
+      {
+        congregation_id: congregationId,
+        user_id: userId,
+        endpoint: sub.endpoint,
+        p256dh: sub.p256dh,
+        auth: sub.auth,
+      },
+      { onConflict: 'endpoint' },
+    ),
+  )
+}
+
+export function deletePushSubscription(endpoint: string): void {
+  if (!supabase) return
+  void run(supabase.from('push_subscriptions').delete().eq('endpoint', endpoint))
+}
+
 export function saveAbsence(
   congregationId: string,
   userId: string,

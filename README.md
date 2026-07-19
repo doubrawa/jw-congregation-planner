@@ -261,9 +261,9 @@ umgekehrt. Die Regeln sind in
    siehe oben) — nur die Zusammenkunft unter der Woche; Wochenende als Vorlage
 2. Auth + Mandantenfähigkeit: **umgesetzt** (Supabase Auth + Schema/RLS +
    Daten-Persistenz + Mitglieder-Verwaltung mit Einladungscodes, siehe oben)
-3. Mitteilungs-Versand (Push/E-Mail): **umgesetzt** — Edge Function
-   `send-reminders` (E-Mail via Resend + Glocken-Mitteilungen) + Cron-Template
-   (siehe unten); Konfiguration/Aktivierung pro Projekt nötig
+3. Mitteilungs-Versand: **umgesetzt als Web-Push** — Edge Function
+   `send-reminders` (Browser-Benachrichtigungen + Glocken-Mitteilungen) +
+   Cron-Template (siehe unten); Konfiguration/Aktivierung pro Projekt nötig
 4. Konfliktprüfungen über Wochen hinweg: **umgesetzt** — Warn-Banner im Planen
    (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft, Wochen-Serie,
    sowie **Hilfsdienst + Programmpunkt am selben Tag**)
@@ -280,35 +280,41 @@ wählbar. Neue App-Sprache hinzufügen: Code in `Lang` ([types.ts](src/data/type
 [ui.ts](src/i18n/ui.ts) und optional `FRAG`/`EXTRA` in
 [translate.ts](src/i18n/translate.ts) (Rollen/Dienste/Phrasen).
 
-## Erinnerungs-Versand
+## Erinnerungs-Versand (Web-Push)
 
 [`supabase/functions/send-reminders/`](supabase/functions/send-reminders/)
-erinnert Mitglieder an noch **nicht bestätigte** Zuteilungen: per E-Mail (Resend)
-und als Glocken-Mitteilung in der App. Läuft serverseitig mit Service-Role
-(sieht alle Versammlungen) und wird täglich per Cron ausgelöst
+erinnert Mitglieder an noch **nicht bestätigte** Zuteilungen: per
+**Web-Push-Benachrichtigung** (Ende-zu-Ende verschlüsselt, keine E-Mails, keine
+Telefonnummern) und als Glocken-Mitteilung in der App. Läuft serverseitig mit
+Service-Role und wird täglich per Cron ausgelöst
 ([`supabase/cron-reminders.sql`](supabase/cron-reminders.sql)).
 
+Empfangen kann, wer im **Profil → Push-Mitteilungen** aktiviert hat (Abo je
+Gerät in `push_subscriptions`, [migration-005](supabase/migration-005-push.sql)).
+Die App ist dafür eine PWA (`public/manifest.webmanifest` + `public/sw.js`);
+auf dem iPhone gibt es Push erst, nachdem die App über Teilen → „Zum
+Home-Bildschirm“ installiert wurde (iOS 16.4+).
+
 Ablauf laut Einstellungen → ERINNERUNGEN (`settings.reminders`): erste
-Erinnerung `first` Tage vorher, letzte `last` Tage vorher (jeweils E-Mail +
-Glocke), mit `repeat` zusätzlich täglich per E-Mail bis zur Bestätigung.
+Erinnerung `first` Tage vorher, letzte `last` Tage vorher (jeweils Push +
+Glocke), mit `repeat` zusätzlich täglich per Push bis zur Bestätigung.
 Bestätigt/verhindert beendet die Erinnerungen; Gastredner/Kreisaufseher und
 Gruppen-Rotationen sind ausgenommen. Der Zusammenkunftstag wird aus
 `meeting_times` gelesen („Di 19:00 · So 10:00“ → Di/So der Programmwoche).
 Personen ohne verknüpftes App-Konto können nicht erinnert werden — steht ihre
-letzte Erinnerung an, bekommen stattdessen alle Planer eine Sammel-Mail.
+letzte Erinnerung an, bekommen die Planer einen Sammel-Push.
 
 **Konfiguration (einmalig pro Projekt):**
-- **Dry-Run ist Standard**: ohne Secret `SEND_EMAILS=true` wird nichts versendet
-  und nichts geschrieben — die Antwort enthält eine Vorschau der Mails.
-- Secrets setzen (`npx supabase secrets set NAME=wert --project-ref …`):
-  `CRON_SECRET` (eigenes Geheimnis), `RESEND_API_KEY`, optional `REMINDER_FROM`
-  und `APP_URL`; `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` sind automatisch da.
+- **Dry-Run ist Standard**: ohne Secret `SEND_PUSH=true` wird nichts versendet
+  und nichts geschrieben — die Antwort enthält eine Vorschau.
+- Secrets (`npx supabase secrets set NAME=wert --project-ref …`): `CRON_SECRET`,
+  `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` (Schlüsselpaar; der öffentliche steht
+  zusätzlich als Konstante in [src/lib/push.ts](src/lib/push.ts)),
+  `VAPID_SUBJECT` (mailto-URI), optional `APP_URL`.
+- `migration-005-push.sql` im SQL-Editor ausführen (Tabelle + RLS).
 - Deploy: `npx supabase functions deploy send-reminders --no-verify-jwt`, dann
   `cron-reminders.sql` mit Projekt-Ref + `CRON_SECRET` im SQL-Editor ausführen.
 - Test: `curl -H "Authorization: Bearer <CRON_SECRET>" https://<ref>.supabase.co/functions/v1/send-reminders`
-  im Dry-Run prüfen, dann `SEND_EMAILS=true` setzen.
-- **Resend-Testmodus**: ohne verifizierte eigene Domain stellt Resend nur an die
-  eigene Konto-Adresse zu — für Mails an alle Mitglieder Domain bei Resend
-  verifizieren und `REMINDER_FROM` darauf umstellen.
+  im Dry-Run prüfen, dann `SEND_PUSH=true` setzen.
 - Das Zeitfenster nutzt `week.start` (ISO), das nur bei importierten Wochen
-  gesetzt ist.
+  gesetzt ist. Abgelaufene Push-Abos (404/410) räumt der Versand automatisch ab.
