@@ -4,6 +4,7 @@ import type { AppState } from '../app/context'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { initials, isBrothersOnly, personCompare, roleLabel, serviceQualKey } from '../data/helpers'
 import { generateInviteCode } from '../lib/data'
+import { sendInviteMails } from '../lib/invite'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
 import type { Invite, Member, Person, Role } from '../data/types'
@@ -80,8 +81,10 @@ function PersonList() {
   const production = state.dataStatus !== 'demo'
   const orphanAccounts = state.members.filter((m) => !m.personId)
 
-  // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen und als
-  // Liste "Name: Code" in die Zwischenablage legen (Weitergabe je Person).
+  // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen. Mit
+  // konfigurierter Domain gehen die Mails direkt raus (send-invite); die
+  // Liste "Name: Code" landet zusätzlich in der Zwischenablage (für Personen
+  // ohne E-Mail bzw. als Fallback ohne Domain).
   const inviteAll = async () => {
     const candidates = sorted.filter((p) => !linkedMember(state, p.id) && !openInvite(state, p.id))
     if (candidates.length === 0) {
@@ -89,10 +92,12 @@ function PersonList() {
       return
     }
     const lines: string[] = []
+    const mailable: Array<{ personId: string; code: string }> = []
     for (const person of candidates) {
       const invite = makeInvite(person)
       dispatch({ type: 'addInvite', invite })
       lines.push(`${`${person.fn} ${person.ln}`.trim()}: ${invite.code}`)
+      if (person.mail) mailable.push({ personId: person.id, code: invite.code })
     }
     const text = `${fill(t.inviteListeTitel, { url: appUrl() })}\n\n${lines.join('\n')}`
     try {
@@ -100,7 +105,15 @@ function PersonList() {
     } catch {
       /* Zwischenablage nicht verfügbar — Codes stehen an den Personen */
     }
-    dispatch({ type: 'showToast', text: fill(t.toastEinladungenN, { n: candidates.length }) })
+    const res = mailable.length > 0 ? await sendInviteMails(mailable) : null
+    if (res?.ok && res.sent > 0) {
+      dispatch({
+        type: 'showToast',
+        text: fill(t.toastEinladungenMailN, { n: candidates.length, m: res.sent }),
+      })
+    } else {
+      dispatch({ type: 'showToast', text: fill(t.toastEinladungenN, { n: candidates.length }) })
+    }
   }
 
   const addPerson = () => {
@@ -430,12 +443,27 @@ function KontoCard({ person }: { person: Person }) {
     await copyCode(code)
   }
 
-  const invitePerson = () => {
+  // Einladen: Code anlegen; mit E-Mail zuerst Server-Versand (eigene Domain
+  // via send-invite) versuchen, sonst/als Fallback das Mail-Programm öffnen.
+  const invitePerson = async () => {
     const created = makeInvite(person)
     dispatch({ type: 'addInvite', invite: created })
-    if (person.mail) {
-      window.location.href = inviteMailHref(person, created.code, t.inviteMailSubject, t.inviteMailBody)
+    if (!person.mail) return
+    const res = await sendInviteMails([{ personId: person.id, code: created.code }])
+    if (res.ok && res.sent > 0) {
+      dispatch({ type: 'showToast', text: t.toastInviteMail })
+      return
     }
+    window.location.href = inviteMailHref(person, created.code, t.inviteMailSubject, t.inviteMailBody)
+  }
+
+  const mailInvite = async (code: string) => {
+    const res = await sendInviteMails([{ personId: person.id, code }])
+    if (res.ok && res.sent > 0) {
+      dispatch({ type: 'showToast', text: t.toastInviteMail })
+      return
+    }
+    window.location.href = inviteMailHref(person, code, t.inviteMailSubject, t.inviteMailBody)
   }
 
   return (
@@ -465,12 +493,13 @@ function KontoCard({ person }: { person: Person }) {
             <span className="mem-code">{invite.code}</span>
             <div className="konto-actions">
               {person.mail && (
-                <a
+                <button
+                  type="button"
                   className="konto-link"
-                  href={inviteMailHref(person, invite.code, t.inviteMailSubject, t.inviteMailBody)}
+                  onClick={() => void mailInvite(invite.code)}
                 >
                   {t.mailBtn}
-                </a>
+                </button>
               )}
               <button type="button" className="konto-link" onClick={() => void share(invite.code)}>
                 {t.teilenBtn}
@@ -492,7 +521,7 @@ function KontoCard({ person }: { person: Person }) {
       ) : (
         <>
           <p className="panel-hint">{person.mail ? t.einladenHintMail : t.einladenHintOhneMail}</p>
-          <button type="button" className="btn-outline konto-invite" onClick={invitePerson}>
+          <button type="button" className="btn-outline konto-invite" onClick={() => void invitePerson()}>
             {t.einladenBtn}
           </button>
         </>
