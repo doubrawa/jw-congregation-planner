@@ -441,6 +441,16 @@
   background: var(--acc);
 }
 
+/* Ungelesene heben sich zusätzlich per Akzent-Tonfläche ab; negative
+   Außenabstände halten den Text mit den gelesenen Zeilen fluchtend. */
+.notif-row.is-unread {
+  background: var(--tAcc);
+  border-radius: 10px;
+  padding-inline: 10px;
+  margin-inline: -10px;
+  border-bottom-color: transparent;
+}
+
 .notif-row-title {
   font-size: 13px;
   font-weight: 600;
