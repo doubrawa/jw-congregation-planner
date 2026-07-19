@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { migrateAssignmentNames, migrateServicePrivs, normalizePriv } from './data'
-import type { Meeting, Person, Service, Week } from '../data/types'
+import type { Meeting, Person, Qualifications, Service, Week } from '../data/types'
+
+function priv(overrides: Record<string, boolean> = {}): Qualifications {
+  return {
+    vorsitz: false,
+    vortrag: false,
+    gebet: false,
+    bibellesung: false,
+    leser: false,
+    schulung: false,
+    studium: false,
+    ...overrides,
+  }
+}
 
 function person(patch: Partial<Person>): Person {
   return {
@@ -11,7 +24,7 @@ function person(patch: Partial<Person>): Person {
     tel: '',
     mail: '',
     absent: [],
-    priv: {},
+    priv: priv(),
     ...patch,
   }
 }
@@ -44,13 +57,13 @@ describe('migrateServicePrivs (alte gemeinsame Dienst-Bereiche)', () => {
   ]
 
   it('übernimmt den alten Bereich, wenn der dienst-eigene fehlt', () => {
-    const [p] = migrateServicePrivs([person({ priv: { ordner: true } })], services)
+    const [p] = migrateServicePrivs([person({ priv: priv({ ordner: true }) })], services)
     expect(p.priv['svc:saal']).toBe(true)
   })
 
   it('idempotent: bereits gesetzter dienst-eigener Bereich bleibt', () => {
     const [p] = migrateServicePrivs(
-      [person({ priv: { ordner: true, 'svc:saal': false } })],
+      [person({ priv: priv({ ordner: true, 'svc:saal': false }) })],
       services,
     )
     expect(p.priv['svc:saal']).toBe(false)

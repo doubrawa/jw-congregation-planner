@@ -8,7 +8,20 @@ import {
   serviceQualKey,
   shortDisplayName,
 } from './helpers'
-import type { Person } from './types'
+import type { Person, Qualifications } from './types'
+
+function priv(overrides: Record<string, boolean> = {}): Qualifications {
+  return {
+    vorsitz: false,
+    vortrag: false,
+    gebet: false,
+    bibellesung: false,
+    leser: false,
+    schulung: false,
+    studium: false,
+    ...overrides,
+  }
+}
 
 function person(patch: Partial<Person>): Person {
   return {
@@ -19,7 +32,7 @@ function person(patch: Partial<Person>): Person {
     tel: '',
     mail: '',
     absent: [],
-    priv: {},
+    priv: priv(),
     ...patch,
   }
 }
@@ -68,7 +81,7 @@ describe('Rollen & Qualifikation', () => {
   })
 
   it('isQualified prüft nur den Schalter — keine Geschlechts-Sperre', () => {
-    const sister = person({ female: true, priv: { 'svc:mik': true } })
+    const sister = person({ female: true, priv: priv({ 'svc:mik': true }) })
     expect(isQualified(sister, 'svc:mik')).toBe(true)
     expect(isQualified(sister, 'svc:ton')).toBe(false) // Schalter aus
     expect(isQualified(sister, 'unbekannt')).toBe(false) // unbekannter Bereich
