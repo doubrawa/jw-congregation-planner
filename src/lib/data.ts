@@ -133,7 +133,7 @@ const asNotifType = (t: string): NotificationType =>
  * erhalten — das sind die Hilfsdienst-Bereiche (`svc:<key>`) und die alten
  * festen Dienst-Bereiche, die `migrateServicePrivs` noch braucht.
  */
-function normalizePriv(raw: Qualifications | null | undefined): Qualifications {
+export function normalizePriv(raw: Qualifications | null | undefined): Qualifications {
   const r = (raw ?? {}) as unknown as Record<string, unknown>
   const priv: Qualifications = {
     vorsitz: false,
@@ -159,7 +159,7 @@ function normalizePriv(raw: Qualifications | null | undefined): Qualifications {
  * neue Bereich bei einer Person, wird er aus dem alten Bereich des Dienstes
  * übernommen. Idempotent: bereits migrierte Bereiche bleiben unangetastet.
  */
-function migrateServicePrivs(persons: Person[], services: Service[]): Person[] {
+export function migrateServicePrivs(persons: Person[], services: Service[]): Person[] {
   const legacy = services.flatMap((s) => (s.legacyPriv ? [[serviceQualKey(s.key), s.legacyPriv] as const] : []))
   if (legacy.length === 0) return persons
   return persons.map((p) => {
@@ -179,7 +179,7 @@ function migrateServicePrivs(persons: Person[], services: Service[]): Person[] {
  * Kurzform nicht mehr. Rein im Speicher; persistiert wird beim nächsten
  * Speichern der jeweiligen Woche.
  */
-function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[] {
+export function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[] {
   const map = new Map<string, string>()
   const dupes = new Set<string>()
   for (const p of persons) {

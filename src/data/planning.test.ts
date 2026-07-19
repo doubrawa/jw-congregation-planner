@@ -6,6 +6,7 @@ import {
   autoAssignMeeting,
   buildS89ForSlot,
   changedSlotKeys,
+  openSlotLabels,
   countOpenSlots,
   deriveMyTasks,
   derivePendingNames,
@@ -34,6 +35,59 @@ function assignedNames(week: ReturnType<typeof buildDemoWeeks>[number], tab: 'mi
 
 const lacSectionIndex = (sections: Section[]) =>
   sections.findIndex((s) => s.label === 'UNSER LEBEN ALS CHRIST')
+
+describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
+  const services: Service[] = [
+    { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
+    { key: 'rein', name: 'Reinigung', count: 1, groups: true },
+  ]
+  const meeting: Meeting = {
+    date: '',
+    end: '',
+    sections: [
+      {
+        label: 'X',
+        farbe: 'petrol',
+        items: [
+          { song: 'Lied 1' },
+          {
+            num: 7,
+            title: 'Versammlungsbibelstudium',
+            meta: '',
+            names: [{ name: 'Wer Da', rolle: 'Leiter' }, { name: '', rolle: 'Leser' }],
+          },
+          { num: 4, title: 'Gespräche beginnen', meta: '', names: [{ name: '', rolle: 'mit Partner' }] },
+        ],
+      },
+    ],
+    helpers: { mik: [], rein: [] },
+  }
+
+  it('listet offene Programmpunkte (Rolle im Titel) und Hilfsdienste gebündelt', () => {
+    const open = openSlotLabels(meeting, services)
+    expect(open).toEqual([
+      { text: 'Versammlungsbibelstudium · Leser', lang: 'p', n: 1 },
+      { text: 'Gespräche beginnen', lang: 'p', n: 1 }, // "mit …"-Rolle → nur Titel
+      { text: 'Mikrofone', lang: 'u', n: 2 },
+      { text: 'Reinigung', lang: 'u', n: 1 },
+    ])
+  })
+
+  it('voll besetzt → leer', () => {
+    const filled: Meeting = {
+      ...meeting,
+      sections: [
+        {
+          label: 'X',
+          farbe: 'petrol',
+          items: [{ num: 1, title: 'T', meta: '', names: [{ name: 'Wer Da' }] }],
+        },
+      ],
+      helpers: { mik: ['A', 'B'], rein: ['Gruppe 1'] },
+    }
+    expect(openSlotLabels(filled, services)).toHaveLength(0)
+  })
+})
 
 describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
   it('liefert genau die task_keys geänderter Programmpunkt- und Hilfsdienst-Slots', () => {
