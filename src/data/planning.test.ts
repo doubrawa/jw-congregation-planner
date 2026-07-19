@@ -5,6 +5,7 @@ import {
   assignmentsInMeeting,
   autoAssignMeeting,
   buildS89ForSlot,
+  changedSlotKeys,
   countOpenSlots,
   deriveMyTasks,
   derivePendingNames,
@@ -33,6 +34,28 @@ function assignedNames(week: ReturnType<typeof buildDemoWeeks>[number], tab: 'mi
 
 const lacSectionIndex = (sections: Section[]) =>
   sections.findIndex((s) => s.label === 'UNSER LEBEN ALS CHRIST')
+
+describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
+  it('liefert genau die task_keys geänderter Programmpunkt- und Hilfsdienst-Slots', () => {
+    const weeks = buildDemoWeeks()
+    const before = weeks[0].mid
+    const after = structuredClone(before)
+    // erster Nicht-Lied-Slot: Person tauschen
+    const item = after.sections[0].items.find((i) => !isSong(i)) as PartItem
+    item.names[0].name = 'Neue Person'
+    // ein Hilfsdienst-Platz leeren
+    after.helpers.mik = ['', ...(after.helpers.mik ?? []).slice(1)]
+    const keys = changedSlotKeys(before, after, DEMO_SERVICES, 0, 'mid')
+    expect(keys).toContain('0|mid|part|0|0|0')
+    expect(keys).toContain('0|mid|helper|mik|0')
+    expect(keys).toHaveLength(2)
+  })
+
+  it('ohne Änderung keine Keys', () => {
+    const weeks = buildDemoWeeks()
+    expect(changedSlotKeys(weeks[0].mid, weeks[0].mid, DEMO_SERVICES, 0, 'mid')).toHaveLength(0)
+  })
+})
 
 describe('Sonderwochen (v3)', () => {
   const weeks = buildDemoWeeks()
