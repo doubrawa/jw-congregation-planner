@@ -31,6 +31,16 @@ function parseMeetingTimes(text: string): [MeetingTime, MeetingTime] {
   }))
   return [found[0] ?? { day: 'Di', time: '19:00' }, found[1] ?? { day: 'So', time: '10:00' }]
 }
+
+/** Uhrzeiten im 15-Minuten-Raster; eine krumme Bestandszeit bleibt wählbar. */
+function timeOptions(current: string): string[] {
+  const opts: string[] = []
+  for (let h = 0; h < 24; h++) {
+    for (const m of ['00', '15', '30', '45']) opts.push(`${String(h).padStart(2, '0')}:${m}`)
+  }
+  if (!opts.includes(current)) opts.push(current)
+  return opts.sort()
+}
 export function EinstellungenScreen() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
@@ -238,13 +248,18 @@ export function EinstellungenScreen() {
                   </option>
                 ))}
               </select>
-              <input
-                className="field-input cong-time"
-                type="time"
+              <select
+                className="mem-select cong-time"
                 aria-label={label}
                 value={mt.time}
-                onChange={(e) => e.target.value && setMeetingTime(which, { time: e.target.value })}
-              />
+                onChange={(e) => setMeetingTime(which, { time: e.target.value })}
+              >
+                {timeOptions(mt.time).map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         ))}

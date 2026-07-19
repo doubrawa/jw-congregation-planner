@@ -374,6 +374,18 @@
   opacity: 0.45;
 }
 
+/* Schon an diesem Tag zugeteilt → weinrot getönte Zeile (Doppelbelegung).
+   Negative Außenabstände halten den Text mit den übrigen Zeilen fluchtend. */
+.cand-row.is-busy,
+.cand-row.is-busy:hover {
+  background: var(--tWein);
+  border-radius: 10px;
+  padding-inline: 8px;
+  margin-inline: -8px;
+  width: calc(100% + 16px);
+  border-bottom-color: transparent;
+}
+
 .cand-name {
   display: block;
   font-size: 13px;

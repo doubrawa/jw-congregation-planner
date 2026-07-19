@@ -261,35 +261,14 @@
   font-size: 12.5px;
 }
 
-/* Uhrzeit-Feld an die Selects angleichen (Höhe, Rundung, Schrift) + eigenes
-   Uhr-Icon in Muted-Farbe statt des Browser-Standard-Icons (Chromium). */
+/* Uhrzeit-Select (15-Minuten-Raster) — schmaler als das Wochentag-Select. */
 .cong-time-row .cong-time {
-  width: 130px;
+  width: 120px;
   flex: none;
+  min-width: 0;
   margin-top: 0;
-  padding: 7px 12px;
-  border-radius: 10px;
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-
-.cong-time-row .cong-time:hover {
-  border-color: var(--bord4);
-}
-
-.cong-time::-webkit-calendar-picker-indicator {
-  width: 15px;
-  height: 15px;
-  margin-inline-start: 6px;
-  cursor: pointer;
-  opacity: 1;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='6' fill='none' stroke='%23756d5c' stroke-width='1.6'/><path d='M7.5 4.4v3.3l2.3 1.5' fill='none' stroke='%23756d5c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")
-    center / 15px 15px no-repeat;
-}
-
-:root[data-dark] .cong-time::-webkit-calendar-picker-indicator {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='6' fill='none' stroke='%23a79e8c' stroke-width='1.6'/><path d='M7.5 4.4v3.3l2.3 1.5' fill='none' stroke='%23a79e8c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 
 /* ---- Sprache ----------------------------------------------------------------- */

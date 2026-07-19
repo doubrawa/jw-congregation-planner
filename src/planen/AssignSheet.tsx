@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useApp } from '../app/context'
-import { displayName, initials, isQualified, roleLabel, workloadOf } from '../data/helpers'
+import { displayName, initials, isQualified, personCompare, roleLabel, workloadOf } from '../data/helpers'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
 import type { MeetingAssignment } from '../data/planning'
@@ -64,7 +64,8 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           free: false,
         }
       })
-    : state.persons
+    : [...state.persons]
+        .sort(personCompare) // alphabetisch; Abwesende wandern stabil ans Ende
         .filter((p) => !sel.priv || isQualified(p, sel.priv))
         .map((p) => {
           const name = displayName(p)
@@ -137,7 +138,13 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             <button
               key={cand.key}
               type="button"
-              className={cand.absent ? 'cand-row is-absent' : 'cand-row'}
+              className={[
+                'cand-row',
+                cand.absent ? 'is-absent' : '',
+                cand.today.length > 0 ? 'is-busy' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               onClick={() => pick(cand)}
             >
               <span className="avatar avatar--tint avatar--36">{cand.initials}</span>
