@@ -6,7 +6,7 @@
 --
 -- Der Aufruf schickt CRON_SECRET im Authorization-Header; die Function lehnt
 -- alles ohne gültiges Secret ab. Standardmäßig läuft die Function im Dry-Run
--- (kein echter Versand), bis das Secret SEND_EMAILS=true gesetzt ist.
+-- (kein echter Versand), bis das Secret SEND_PUSH=true gesetzt ist.
 -- Zeit ist UTC; hier täglich um 08:00 UTC.
 
 create extension if not exists pg_cron;
