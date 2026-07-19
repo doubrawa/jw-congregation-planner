@@ -281,10 +281,10 @@ describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
     expect(with_.weeks[0].mid.helpers['svc-parkplatz']?.[0]).toBe('Werner Wagen')
   })
 
-  it('Hilfsdienste sind Brüder-Aufgaben — Schwestern bleiben außen vor', () => {
+  it('keine Geschlechts-Sperre: Schwestern mit aktiviertem Bereich werden zugeteilt', () => {
     const sister = mk([MIK], { female: true })
     const res = autoAssignMeeting(oneWeek(), 0, 'mid', [sister], MIK1)
-    expect(res.weeks[0].mid.helpers.mik?.[0] ?? '').toBe('')
+    expect(res.weeks[0].mid.helpers.mik?.[0] ?? '').not.toBe('')
   })
 })
 

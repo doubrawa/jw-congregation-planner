@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import type { AppState } from '../app/context'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { initials, isBrothersOnly, personCompare, roleLabel, serviceQualKey } from '../data/helpers'
+import { initials, personCompare, roleLabel, serviceQualKey } from '../data/helpers'
 import { generateInviteCode } from '../lib/data'
 import { sendInviteMails } from '../lib/invite'
 import { fill, useT } from '../i18n/useT'
@@ -555,18 +555,17 @@ function PrivToggle({
   person: Person
   update: (patch: Partial<Person>) => void
 }) {
-  // Schwestern können nur Schulungsaufgaben — alle anderen Bereiche gesperrt.
-  const locked = Boolean(person.female) && isBrothersOnly(qkey)
-  const on = !locked && Boolean(person.priv[qkey])
+  // Keine Geschlechts-Sperre: übernehmen Schwestern Bereiche (z. B. weil
+  // Brüder fehlen), steuern das allein diese Schalter.
+  const on = Boolean(person.priv[qkey])
   return (
-    <div className={locked ? 'priv-row priv-row--locked' : 'priv-row'}>
+    <div className="priv-row">
       <span className="priv-label">{label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={on}
         aria-label={label}
-        disabled={locked}
         className={on ? 'switch is-on' : 'switch'}
         onClick={() => update({ priv: { ...person.priv, [qkey]: !on } })}
       >

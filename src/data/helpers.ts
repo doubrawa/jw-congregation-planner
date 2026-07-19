@@ -56,23 +56,13 @@ export function serviceQualKey(serviceKey: string): string {
 }
 
 /**
- * Bereiche, die laut den Anweisungen für die Zusammenkunft nur getaufte Brüder
- * ausführen — das sind alle außer den Schulungsaufgaben (die auch Schwestern
- * übernehmen), inklusive sämtlicher Hilfsdienste.
- */
-export function isBrothersOnly(priv: string): boolean {
-  return priv !== 'schulung'
-}
-
-/**
  * Qualifikationsprüfung; unbekannte Bereichs-Keys gelten als nicht erfüllt.
- * Schwestern sind für brüder-only-Bereiche nicht qualifiziert — greift bei Auto-
- * und manueller Zuteilung.
+ * Bewusst KEINE Geschlechts-Sperre: welche Bereiche eine Schwester übernimmt
+ * (z. B. wenn Brüder fehlen), entscheiden allein die Schalter im
+ * Personen-Detail.
  */
 export function isQualified(p: Person, priv: string): boolean {
-  if (!p.priv[priv]) return false
-  if (p.female && isBrothersOnly(priv)) return false
-  return true
+  return Boolean(p.priv[priv])
 }
 
 /**
