@@ -190,6 +190,7 @@ alter table public.congregations enable row level security;
 alter table public.members       enable row level security;
 alter table public.persons       enable row level security;
 alter table public.services      enable row level security;
+alter table public.groups        enable row level security;
 alter table public.weeks         enable row level security;
 alter table public.absences      enable row level security;
 alter table public.notifications enable row level security;
