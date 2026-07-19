@@ -137,8 +137,7 @@ export type AppAction =
   | { type: 'addGroup'; group: Group }
   | { type: 'removeGroup'; id: string }
   | { type: 'updateGroup'; id: string; patch: Partial<Pick<Group, 'ov' | 'as'>> }
-  | { type: 'updateCongregation'; patch: Partial<Congregation> }
-  | { type: 'saveCongregation' } // Toast + Persistenz der Stammdaten
+  | { type: 'updateCongregation'; patch: Partial<Congregation> } // speichert automatisch (debounced)
   // Mitglieder & Einladungen (nur Planer)
   | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner'>> }
   | { type: 'removeMember'; userId: string }

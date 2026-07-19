@@ -246,13 +246,6 @@ export function EinstellungenScreen() {
             </div>
           </div>
         ))}
-        <button
-          type="button"
-          className="btn-primary cong-save"
-          onClick={() => dispatch({ type: 'saveCongregation' })}
-        >
-          {t.speichern}
-        </button>
       </div>
 
       {state.dataStatus !== 'demo' && (
