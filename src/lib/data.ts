@@ -687,7 +687,7 @@ export async function redeemInvite(code: string): Promise<string | null> {
 /** Gut lesbarer Einladungscode (6 Zeichen, ohne 0/O/1/I). */
 export function generateInviteCode(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const bytes = new Uint8Array(6)
+  const bytes = new Uint8Array(8)
   crypto.getRandomValues(bytes)
   return [...bytes].map((b) => alphabet[b % alphabet.length]).join('')
 }
