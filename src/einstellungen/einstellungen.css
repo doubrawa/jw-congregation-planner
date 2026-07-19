@@ -250,6 +250,28 @@
   background: var(--tAcc);
 }
 
+/* ---- Zusammenkunftszeiten (Wochentag + Uhrzeit) ------------------------------- */
+
+.cong-time-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cong-time-row .cong-day {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-top: 0;
+  font-size: 12.5px;
+}
+
+.cong-time-row .cong-time {
+  width: 130px;
+  flex: none;
+  margin-top: 0;
+}
+
 /* ---- Sprache ----------------------------------------------------------------- */
 
 .lang-card-row {
