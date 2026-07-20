@@ -199,6 +199,54 @@ export function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[]
   }))
 }
 
+/**
+ * Zieht eine Personen-Umbenennung durch bereits geplante Wochen: ersetzt exakt
+ * den alten Anzeigenamen durch den neuen in allen Zuteilungen (Programmpunkte +
+ * Hilfsdienste) der kanonischen Wochen. Unveränderte Wochen behalten ihre
+ * Referenz (der Aufrufer erkennt daran, welche Wochen neu gespeichert werden
+ * müssen). Sprachvarianten (Week.alt) tragen keine Namen — nur die kanonische
+ * Woche wird angefasst.
+ */
+export function renameInWeeks(weeks: Week[], oldName: string, newName: string): Week[] {
+  if (!oldName || oldName === newName) return weeks
+  const fix = (n: string): string => (n === oldName ? newName : n)
+  let anyChanged = false
+  const next = weeks.map((week) => {
+    const mid = renameInMeeting(week.mid, oldName, fix)
+    const we = renameInMeeting(week.we, oldName, fix)
+    if (mid === week.mid && we === week.we) return week
+    anyChanged = true
+    return { ...week, mid, we }
+  })
+  return anyChanged ? next : weeks
+}
+
+/** Wie migrateMeetingNames, aber nur bei Treffer neue Referenzen (sonst Original). */
+function renameInMeeting(meeting: Week['mid'], oldName: string, fix: (n: string) => string): Week['mid'] {
+  const has = (arr: string[]): boolean => arr.includes(oldName)
+  const touchesSections = meeting.sections.some((s) =>
+    s.items.some((it) => !('song' in it) && it.names.some((slot) => slot.name === oldName)),
+  )
+  const touchesHelpers = Object.values(meeting.helpers).some(has)
+  if (!touchesSections && !touchesHelpers) return meeting
+  return {
+    ...meeting,
+    sections: touchesSections
+      ? meeting.sections.map((section) => ({
+          ...section,
+          items: section.items.map((item) =>
+            'song' in item
+              ? item
+              : { ...item, names: item.names.map((slot) => ({ ...slot, name: fix(slot.name) })) },
+          ),
+        }))
+      : meeting.sections,
+    helpers: touchesHelpers
+      ? Object.fromEntries(Object.entries(meeting.helpers).map(([key, arr]) => [key, arr.map(fix)]))
+      : meeting.helpers,
+  }
+}
+
 function migrateMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
   return {
     ...meeting,
@@ -584,29 +632,44 @@ export function deleteAbsenceRow(id: string): void {
   void run(supabase.from('absences').delete().eq('id', id))
 }
 
-export function insertNotification(
+/**
+ * Mitteilung an bestimmte Empfänger (je user_id eine eigene Zeile → eigener
+ * Gelesen-/Lösch-Status). Leere Empfängerliste = kein Schreiben. Erinnerungen
+ * erzeugt die Edge Function selbst; Client-Mitteilungen (Zuteilung, Import,
+ * Verhinderung) richten sich an die Planer der Versammlung.
+ */
+export function insertNotifications(
   congregationId: string,
-  userId: string | null,
+  userIds: string[],
   type: NotificationType,
   title: string,
   body: string,
 ): void {
+  if (!supabase || userIds.length === 0) return
+  const rows = userIds.map((user_id) => ({ congregation_id: congregationId, user_id, type, title, body }))
+  void run(supabase.from('notifications').insert(rows))
+}
+
+export function markNotificationsRead(congregationId: string, userId: string): void {
   if (!supabase) return
   void run(
     supabase
       .from('notifications')
-      .insert({ congregation_id: congregationId, user_id: userId, type, title, body }),
+      .update({ read: true })
+      .eq('congregation_id', congregationId)
+      .eq('user_id', userId),
   )
 }
 
-export function markNotificationsRead(congregationId: string): void {
+export function deleteNotifications(congregationId: string, userId: string): void {
   if (!supabase) return
-  void run(supabase.from('notifications').update({ read: true }).eq('congregation_id', congregationId))
-}
-
-export function deleteNotifications(congregationId: string): void {
-  if (!supabase) return
-  void run(supabase.from('notifications').delete().eq('congregation_id', congregationId))
+  void run(
+    supabase
+      .from('notifications')
+      .delete()
+      .eq('congregation_id', congregationId)
+      .eq('user_id', userId),
+  )
 }
 
 export function saveCongregationInfo(
@@ -661,6 +724,33 @@ export function deleteConfirmationRows(congregationId: string, taskKeys: string[
       .eq('congregation_id', congregationId)
       .in('task_key', taskKeys),
   )
+}
+
+/**
+ * Vertauscht die task_keys von Bestätigungen paarweise — für das Verschieben
+ * eines LAC-Punkts, damit die Bestätigung beim Programmpunkt bleibt statt an
+ * der Position zu haften. Über einen Zwischenschlüssel, um die Eindeutigkeit
+ * (congregation_id, task_key, user_id) beim Tausch nicht zu verletzen.
+ */
+export async function swapConfirmationKeys(
+  congregationId: string,
+  pairs: Array<[string, string]>,
+): Promise<void> {
+  if (!supabase) return
+  const move = (from: string, to: string) =>
+    run(
+      supabase!
+        .from('confirmations')
+        .update({ task_key: to })
+        .eq('congregation_id', congregationId)
+        .eq('task_key', from),
+    )
+  for (const [a, b] of pairs) {
+    const tmp = `${a}~swap`
+    await move(a, tmp)
+    await move(b, a)
+    await move(tmp, b)
+  }
 }
 
 /* ---- Mitglieder & Einladungen (nur Planer, RLS-geschützt) ---------------- */

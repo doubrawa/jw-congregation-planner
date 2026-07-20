@@ -463,6 +463,51 @@ export function helperTaskKey(wi: number, tab: MeetingTab, svc: string, pos: num
   return `${wi}|${tab}|helper|${svc}|${pos}`
 }
 
+/**
+ * task_key-Paare zweier getauschter Programmpunkt-Positionen (LAC verschieben).
+ * Für ni = 0..count-1 wird `part|si|a|ni` mit `part|si|b|ni` vertauscht — so
+ * folgt die Bestätigung dem Programmpunkt statt der Position.
+ */
+export function partSwapKeyPairs(
+  wi: number,
+  tab: MeetingTab,
+  si: number,
+  a: number,
+  b: number,
+  count: number,
+): Array<[string, string]> {
+  const pairs: Array<[string, string]> = []
+  for (let ni = 0; ni < count; ni++) {
+    pairs.push([partTaskKey(wi, tab, si, a, ni), partTaskKey(wi, tab, si, b, ni)])
+  }
+  return pairs
+}
+
+/** Bestätigungs-Status zweier getauschter Positionen in der Map vertauschen. */
+export function swapPartConfirmations(
+  map: ConfirmationMap,
+  wi: number,
+  tab: MeetingTab,
+  si: number,
+  a: number,
+  b: number,
+  count: number,
+): ConfirmationMap {
+  const next = { ...map }
+  let changed = false
+  for (const [ka, kb] of partSwapKeyPairs(wi, tab, si, a, b, count)) {
+    const va = map[ka]
+    const vb = map[kb]
+    if (va === vb) continue
+    if (vb === undefined) delete next[ka]
+    else next[ka] = vb
+    if (va === undefined) delete next[kb]
+    else next[kb] = va
+    changed = true
+  }
+  return changed ? next : map
+}
+
 /** "Dienstag, 8. September · 19:00 · Königreichssaal" → Datum + Uhrzeit. */
 function taskDate(meeting: Meeting): string {
   return meeting.date.split(' · ').slice(0, 2).join(' · ')

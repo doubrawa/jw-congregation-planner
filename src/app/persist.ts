@@ -5,17 +5,19 @@
  * (Zustand vor/nach der Aktion) ausgewertet.
  */
 
-import { changedSlotKeys } from '../data/planning'
+import { changedSlotKeys, partSwapKeyPairs } from '../data/planning'
+import { itemNameCount, lacMoveTarget } from '../data/meeting-edit'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
+  swapConfirmationKeys,
   deleteGroupRow,
   deletePersonRow,
   deleteInviteRow,
   deleteMemberRow,
   deleteNotifications,
   deleteServiceRow,
-  insertNotification,
+  insertNotifications,
   markNotificationsRead,
   saveAbsence,
   saveConfirmation,
@@ -31,7 +33,7 @@ import {
   saveWeek,
 } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import type { Person } from '../data/types'
+import type { Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
 
 /**
@@ -71,6 +73,30 @@ function flushPersonSaves(congId: string, state: AppState): void {
     const person = state.persons.find((p) => p.id === id)
     if (person) savePerson(congId, person)
   }
+}
+
+/**
+ * Debounce für Wochen-Schreibvorgänge aus einer Personen-Umbenennung: der
+ * Rename läuft je Tastenanschlag (updatePerson) — statt jede betroffene Woche
+ * pro Anschlag zu schreiben, werden sie gebündelt (neueste Fassung je Index)
+ * und nach kurzer Ruhe bzw. beim Verlassen des Details geschrieben.
+ */
+const pendingWeekSaves = new Map<number, Week>()
+let weekSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleWeekSaves(congId: string, indices: number[], weeks: Week[]): void {
+  for (const i of indices) pendingWeekSaves.set(i, weeks[i])
+  if (weekSaveTimer) clearTimeout(weekSaveTimer)
+  weekSaveTimer = setTimeout(() => flushWeekSaves(congId), PERSON_SAVE_DELAY)
+}
+
+function flushWeekSaves(congId: string): void {
+  if (weekSaveTimer) {
+    clearTimeout(weekSaveTimer)
+    weekSaveTimer = null
+  }
+  for (const [i, week] of pendingWeekSaves) saveWeek(congId, i, week)
+  pendingWeekSaves.clear()
 }
 
 /** Gleiche Debounce-Mechanik für die Versammlungs-Stammdaten. */
@@ -128,9 +154,23 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     }
+    case 'lacMove': {
+      if (next.weeks === prev.weeks) break // Rand: kein Tausch
+      saveWeek(congId, prev.week, next.weeks[prev.week])
+      // Bestätigungen der getauschten Positionen in der DB mittauschen
+      const items = prev.weeks[prev.week][prev.tab].sections[action.si].items
+      const b = lacMoveTarget(items, action.ii, action.dir)
+      if (b != null) {
+        const count = Math.max(itemNameCount(items[action.ii]), itemNameCount(items[b]))
+        void swapConfirmationKeys(
+          congId,
+          partSwapKeyPairs(prev.week, prev.tab, action.si, action.ii, b, count),
+        )
+      }
+      break
+    }
     case 'lacAdjust':
     case 'lacRemove':
-    case 'lacMove':
     case 'lacAdd':
     case 'talkEdit':
     case 'openingSong':
@@ -152,6 +192,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
       const p = next.persons.find((x) => x.id === action.id)
       if (p) schedulePersonSave(congId, p)
+      // Namensänderung hat Wochen umgeschrieben (renameInWeeks) → betroffene
+      // Wochen ebenfalls (gebündelt) speichern; unveränderte behalten ihre Ref.
+      const dirty: number[] = []
+      for (let i = 0; i < next.weeks.length; i++) {
+        if (next.weeks[i] !== prev.weeks[i]) dirty.push(i)
+      }
+      if (dirty.length > 0) scheduleWeekSaves(congId, dirty, next.weeks)
       // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
       if ('planner' in action.patch) {
         for (const m of next.members) {
@@ -175,6 +222,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       // Ansicht verlassen → ausstehende Debounce-Saves sofort schreiben
       flushPersonSaves(congId, next)
+      flushWeekSaves(congId)
       flushCongregationSave(congId, prev)
       break
     }
@@ -221,10 +269,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     case 'markAllRead':
-      markNotificationsRead(congId)
+      markNotificationsRead(congId, userId)
       break
     case 'clearNotifs':
-      deleteNotifications(congId)
+      deleteNotifications(congId, userId)
       break
     case 'confirmTask':
       saveConfirmation(congId, userId, action.id, 'bestätigt')
@@ -262,10 +310,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
   }
 
-  // Jede Aktion, die eine Mitteilung vorne anfügt, in die DB spiegeln
-  // (user_id null = an alle Mitglieder der Versammlung).
+  // Jede Aktion, die eine Mitteilung vorne anfügt (Zuteilung, Import,
+  // Verhinderung), an die Planer der Versammlung schicken — je Empfänger eine
+  // eigene Zeile mit eigenem Gelesen-/Lösch-Status. Erinnerungen erzeugt die
+  // Edge Function selbst (adressiert an die betroffene Person).
   if (next.notifs.length > prev.notifs.length && next.notifs[0]) {
     const n = next.notifs[0]
-    insertNotification(congId, null, n.type, n.title, n.text)
+    const planners = next.members.filter((m) => m.planner).map((m) => m.userId)
+    insertNotifications(congId, planners, n.type, n.title, n.text)
   }
 }

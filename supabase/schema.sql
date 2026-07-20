@@ -110,7 +110,7 @@ create table if not exists public.absences (
 create table if not exists public.notifications (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  user_id         uuid references auth.users (id) on delete cascade, -- null = an alle
+  user_id         uuid not null references auth.users (id) on delete cascade, -- Empfänger
   type            text not null default 'zuteilung'
                   check (type in ('zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert')),
   title           text not null,
@@ -288,14 +288,15 @@ create policy absences_write on public.absences
     and (user_id = auth.uid() or public.is_planner())
   );
 
--- Mitteilungen: Empfänger (oder alle bei user_id null) lesen; Planer erzeugen
--- (Verhinderungs-Meldungen dürfen alle Mitglieder erzeugen);
--- Gelesen-Status und Löschen ("Alle löschen") darf jeder Empfänger selbst.
+-- Mitteilungen sind personalisiert (je Empfänger eine Zeile): jeder sieht/ändert/
+-- löscht nur die eigenen. Planer erzeugen Zeilen für beliebige Empfänger der
+-- Versammlung (Zuteilung/Import); Verhinderungs-Meldungen dürfen alle Mitglieder
+-- erzeugen (Empfänger sind dann die Planer).
 drop policy if exists notifications_select on public.notifications;
 create policy notifications_select on public.notifications
   for select using (
     congregation_id = public.my_congregation_id()
-    and (user_id is null or user_id = auth.uid())
+    and user_id = auth.uid()
   );
 
 drop policy if exists notifications_insert on public.notifications;
@@ -309,14 +310,14 @@ drop policy if exists notifications_update on public.notifications;
 create policy notifications_update on public.notifications
   for update using (
     congregation_id = public.my_congregation_id()
-    and (user_id is null or user_id = auth.uid())
+    and user_id = auth.uid()
   );
 
 drop policy if exists notifications_delete on public.notifications;
 create policy notifications_delete on public.notifications
   for delete using (
     congregation_id = public.my_congregation_id()
-    and (user_id is null or user_id = auth.uid())
+    and user_id = auth.uid()
   );
 
 -- Bestätigungen: Versammlung liest (Planer braucht den Überblick);
