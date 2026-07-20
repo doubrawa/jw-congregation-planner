@@ -261,7 +261,7 @@ export default {
   "toastGruppeDel": "Η ομάδα αφαιρέθηκε",
   "toastProgLangAdd": "Προστέθηκε γλώσσα προγράμματος — ισχύει για νέες εισαγωγές",
   "toastProgLangDel": "Η γλώσσα προγράμματος αφαιρέθηκε",
-  "privBibellesung": "Ανάγνωση της Γραφής",
+  "privBibellesung": "Ανάγνωση της Αγίας Γραφής",
   "privLeser": "Αναγνώστης",
   "geschlecht": "Φύλο",
   "bruder": "Αδελφός",

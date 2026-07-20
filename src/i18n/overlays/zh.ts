@@ -262,7 +262,7 @@ export default {
   "toastProgLangAdd": "已添加节目语言——适用于新的导入",
   "toastProgLangDel": "已移除节目语言",
   "privBibellesung": "读经",
-  "privLeser": "读经员",
+  "privLeser": "朗读者",
   "geschlecht": "性别",
   "bruder": "弟兄",
   "schwester": "姊妹",
