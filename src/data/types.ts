@@ -298,6 +298,7 @@ export interface PartSlotSelection extends SlotSelectionBase {
   si: number
   ii: number
   ni: number
+  guest?: boolean // externer Redner (Gastredner/Kreisaufseher): Freitext statt Personenliste
 }
 
 /** Slot eines Hilfsdienstes (Dienst-Key + Position). */

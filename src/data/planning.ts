@@ -34,6 +34,11 @@ import type {
 /** Rollen, die die Auto-Zuteilung nicht besetzt (kommen von außen). */
 const SKIP_ROLE = /Gastredner|Kreisaufseher/
 
+/** Externer Redner-Slot (Gastredner/Kreisaufseher) — Freitext statt Personenliste. */
+export function isGuestRole(rolle: string | undefined): boolean {
+  return Boolean(rolle && SKIP_ROLE.test(rolle))
+}
+
 const EROEFFNUNG = 'ERÖFFNUNG'
 const WT_STUDIUM = 'WACHTTURM-STUDIUM'
 
@@ -107,12 +112,17 @@ export function assignmentsInMeeting(
 }
 
 /** Setzt einen Slot auf `name` ("" = Zuteilung entfernen). */
-export function assignSlot(weeks: Week[], sel: SlotSelection, name: string): Week[] {
+export function assignSlot(weeks: Week[], sel: SlotSelection, name: string, rolle?: string): Week[] {
   const next = structuredClone(weeks)
   const meeting = next[sel.wi][sel.tab]
   if (sel.kind === 'part') {
     const item = meeting.sections[sel.si].items[sel.ii]
-    if (!isSong(item)) item.names[sel.ni].name = name
+    if (!isSong(item)) {
+      item.names[sel.ni].name = name
+      // Gastredner-Slots: Rolle trägt die Herkunfts-Versammlung mit
+      // ("Gastredner · Vers. Nordheim")
+      if (rolle !== undefined) item.names[sel.ni].rolle = rolle
+    }
   } else {
     const arr = meeting.helpers[sel.svc] ?? []
     while (arr.length <= sel.pos) arr.push('')
@@ -842,4 +852,71 @@ export function lacAdd(
     m.end = shiftEnd(m.end, 10)
   })
   return next
+}
+
+/* ---- Öffentlicher Vortrag (Wochenende) im Planen bearbeiten -------------- */
+
+/** Platzhalter-Titel der Wochenend-Vorlage, solange kein Thema eingetragen ist. */
+export const TALK_PLACEHOLDER = '(Vortragsthema eintragen)'
+
+/**
+ * Vortragsthema frei bearbeiten (nur Wochenende). Leerer Text stellt den
+ * Platzhalter wieder her (der wird bei der Anzeige übersetzt). Lokaler
+ * Freitext → identisch in alle Sprachvarianten spiegeln (wie lacAdd).
+ */
+export function editTalkTheme(weeks: Week[], wi: number, si: number, ii: number, title: string): Week[] {
+  const next = structuredClone(weeks)
+  const item = next[wi].we.sections[si]?.items[ii]
+  if (!item || isSong(item)) return weeks
+  const value = title.trim() || TALK_PLACEHOLDER
+  if (item.title === value) return weeks
+  item.title = value
+  forEachAltMeeting(next[wi], 'we', (m) => {
+    const vi = m.sections[si]?.items[ii]
+    if (vi && !isSong(vi)) vi.title = value
+  })
+  return next
+}
+
+/** "Lied" bzw. "Lied 78" am Titelanfang der Wochenend-Eröffnung. */
+const OPENING_SONG_RE = /^Lied( \d+)?/
+
+/**
+ * Anfangslied der Wochenend-Zusammenkunft setzen: "Lied · Gebet" →
+ * "Lied 78 · Gebet" (leere Nummer entfernt sie wieder). Kanonisch deutsch —
+ * die Anzeige übersetzt "Lied 78" atomweise in die Versammlungssprache.
+ * Varianten tragen denselben deutschen Vorlagen-Titel → gleiche Ersetzung.
+ */
+export function setOpeningSong(weeks: Week[], wi: number, song: string): Week[] {
+  const nr = song.trim()
+  const next = structuredClone(weeks)
+  const meeting = next[wi].we
+  const si = meeting.sections.findIndex((s) => s.label === EROEFFNUNG)
+  if (si < 0) return weeks
+  const ii = meeting.sections[si].items.findIndex((x) => !isSong(x) && OPENING_SONG_RE.test(x.title))
+  if (ii < 0) return weeks
+  const item = meeting.sections[si].items[ii] as PartItem
+  const value = nr ? `Lied ${nr}` : 'Lied'
+  const title = item.title.replace(OPENING_SONG_RE, value)
+  if (title === item.title) return weeks
+  item.title = title
+  forEachAltMeeting(next[wi], 'we', (m) => {
+    const vi = m.sections[si]?.items[ii]
+    if (vi && !isSong(vi)) vi.title = vi.title.replace(OPENING_SONG_RE, value)
+  })
+  return next
+}
+
+/** Aktuelle Anfangslied-Nummer der Wochenend-Eröffnung ("" = keine). */
+export function openingSongNr(meeting: Meeting): string {
+  for (const section of meeting.sections) {
+    if (section.label !== EROEFFNUNG) continue
+    for (const item of section.items) {
+      if (isSong(item)) continue
+      const match = /^Lied (\d+)/.exec(item.title)
+      if (match) return match[1]
+      if (OPENING_SONG_RE.test(item.title)) return ''
+    }
+  }
+  return ''
 }

@@ -29,10 +29,12 @@ import {
   changedSlotKeys,
   deriveMyTasks,
   derivePendingNames,
+  editTalkTheme,
   lacAdd,
   lacAdjust,
   lacMove,
   lacRemove,
+  setOpeningSong,
 } from '../data/planning'
 import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
@@ -175,6 +177,8 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'lacRemove',
   'lacMove',
   'lacAdd',
+  'talkEdit',
+  'openingSong',
   'addService',
   'removeService',
   'changeServiceCount',
@@ -424,7 +428,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Zuteilen bzw. Entfernen ("") + Mitteilung (Prototyp: assignTo)
       const sel = state.slotSel
       if (!sel) return state
-      const weeks = assignSlot(state.weeks, sel, action.name)
+      const weeks = assignSlot(state.weeks, sel, action.name, action.rolle)
       const notifs = action.name
         ? pushNotif(
             state.notifs,
@@ -433,8 +437,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
             `${action.name} — ${sel.label} · ${state.weeks[sel.wi].range}`,
           )
         : state.notifs
+      // Externe Redner (Gastredner/Kreisaufseher) haben keinen Bestätigungs-Flow
+      const isGuest = sel.kind === 'part' && sel.guest
       const pendingNames =
-        action.name && !state.pendingNames.includes(action.name)
+        action.name && !isGuest && !state.pendingNames.includes(action.name)
           ? [...state.pendingNames, action.name]
           : state.pendingNames
       return {
@@ -572,6 +578,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         weeks: lacAdd(state.weeks, state.week, state.tab, action.si, action.title),
         toast: toastKey(state, 'toastLacAdd'),
+      }
+    case 'talkEdit':
+      return {
+        ...state,
+        weeks: editTalkTheme(state.weeks, state.week, action.si, action.ii, action.title),
+      }
+    case 'openingSong':
+      return {
+        ...state,
+        weeks: setOpeningSong(state.weeks, state.week, action.song),
       }
     case 'changeReminder': {
       const bounds = action.key === 'first' ? { min: 1, max: 21 } : { min: 0, max: 7 }
@@ -840,6 +856,8 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
     case 'lacRemove':
     case 'lacMove':
     case 'lacAdd':
+    case 'talkEdit':
+    case 'openingSong':
       saveWeek(congId, prev.week, next.weeks[prev.week])
       break
     case 'finishImport':

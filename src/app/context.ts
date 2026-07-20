@@ -152,7 +152,7 @@ export type AppAction =
   | { type: 'addImportedWeek'; week: Week } // Produktion: echte jw.org-Woche
   | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, Week> } // nachgeladene Sprachvarianten
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
-  | { type: 'assign'; name: string } // auf state.slotSel; "" = entfernen
+  | { type: 'assign'; name: string; rolle?: string } // auf state.slotSel; "" = entfernen; rolle nur Gastredner-Slots (trägt Herkunfts-Versammlung)
   | { type: 'autoAssign' } // aktuelle Woche + Tab
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
@@ -164,6 +164,9 @@ export type AppAction =
   | { type: 'lacRemove'; si: number; ii: number }
   | { type: 'lacMove'; si: number; ii: number; dir: LacDir }
   | { type: 'lacAdd'; si: number; title: string }
+  // Öffentlicher Vortrag / Wochenende (Planen, aktuelle Woche)
+  | { type: 'talkEdit'; si: number; ii: number; title: string } // Vortragsthema (Freitext)
+  | { type: 'openingSong'; song: string } // Anfangslied-Nummer ("" = entfernen)
   // Erinnerungen
   | { type: 'changeReminder'; key: ReminderKey; delta: 1 | -1 }
   | { type: 'toggleReminderRepeat' }
