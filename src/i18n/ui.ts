@@ -159,6 +159,7 @@ export const DE = {
     toastEinladungGeloescht: 'Einladung gelöscht',
     // Konfliktprüfungen (Planen)
     konflikteTitle: 'MÖGLICHE KONFLIKTE',
+    konfMehr: '+{n} weitere mögliche Konflikte',
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
     konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',

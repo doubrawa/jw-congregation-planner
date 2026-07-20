@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Code d’invitation créé",
   "toastEinladungGeloescht": "Invitation supprimée",
   "konflikteTitle": "CONFLITS POSSIBLES",
+  "konfMehr": "+{n} autres conflits possibles",
   "konfliktAbsent": "{name} est absent mais assigné · {tab}",
   "konfliktDouble": "{name} est assigné {n}× dans une réunion · {tab}",
   "konfliktStreak": "{name} est assigné {n} semaines de suite"

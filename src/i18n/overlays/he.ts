@@ -268,6 +268,7 @@ export default {
   "toastEinladungErstellt": "קוד הזמנה נוצר",
   "toastEinladungGeloescht": "ההזמנה נמחקה",
   "konflikteTitle": "התנגשויות אפשריות",
+  "konfMehr": "+{n} התנגשויות אפשריות נוספות",
   "konfliktAbsent": "{name} נעדר אך משובץ · {tab}",
   "konfliktDouble": "{name} משובץ {n}× באותה אסיפה · {tab}",
   "konfliktHelperTask": "{name} מבצע תפקיד עזר ומטלה באותו יום · {tab}",

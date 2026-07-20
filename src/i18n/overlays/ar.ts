@@ -228,6 +228,7 @@ export default {
   "toastEinladungErstellt": "تم إنشاء رمز الدعوة",
   "toastEinladungGeloescht": "تم سحب الدعوة",
   "konflikteTitle": "تعارضات محتملة",
+  "konfMehr": "+{n} تعارضات أخرى",
   "konfliktAbsent": "{name} غائب لكنه معيّن · {tab}",
   "konfliktDouble": "{name} معيّن {n}× في اجتماع واحد · {tab}",
   "konfliktHelperTask": "{name} لديه خدمة مساندة وتعيين في اليوم نفسه · {tab}",
