@@ -86,6 +86,15 @@ describe('setOpeningSong (Anfangslied Wochenende)', () => {
     expect(altOpeningTitle(cleared[0])).toBe('Lied · Gebet')
   })
 
+  it('räumt Altlasten aus früheren Freitext-Eingaben ab ("Lied 44 fff")', () => {
+    const weeks = [makeWeek()]
+    ;(weeks[0].we.sections[0].items[0] as PartItem).title = 'Lied 44 fff · Gebet'
+    const fixed = setOpeningSong(weeks, 0, '44')
+    expect(openingTitle(fixed[0])).toBe('Lied 44 · Gebet')
+    const cleared = setOpeningSong(weeks, 0, '')
+    expect(openingTitle(cleared[0])).toBe('Lied · Gebet')
+  })
+
   it('filtert alles Nicht-Numerische aus der Eingabe', () => {
     const next = setOpeningSong([makeWeek()], 0, ' Lied 78! ')
     expect(openingTitle(next[0])).toBe('Lied 78 · Gebet')
