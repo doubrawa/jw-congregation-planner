@@ -20,6 +20,7 @@ import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
 import { loadAndHydrate } from './hydrate'
 import { NotificationsPanel } from './NotificationsPanel'
+import { SidebarBrand, SidebarFooter, SidebarNav, type NavItem } from './Sidebar'
 import '../components/components.css'
 import './shell.css'
 import './rtl.css'
@@ -66,68 +67,29 @@ export function AppShell() {
   }, [menuOpen])
 
   const navScreens = state.planner ? PLANNER_SCREENS : PUBLISHER_SCREENS
-  const navLabel = (screen: Screen): string => {
-    switch (screen) {
-      case 'programm':
-        return t.navProgramm
-      case 'aufgaben':
-        return state.planner ? t.navAufgaben : t.navAufgabenLong
-      case 'planen':
-        return t.navPlanen
-      case 'personen':
-        return t.navPersonen
-      case 'einstellungen':
-        return t.navEinstellungen
-      case 'profil':
-        return t.navProfil
-      default:
-        return ''
-    }
+  const navLabels: Record<Screen, string> = {
+    login: '',
+    programm: t.navProgramm,
+    aufgaben: state.planner ? t.navAufgaben : t.navAufgabenLong,
+    planen: t.navPlanen,
+    personen: t.navPersonen,
+    einstellungen: t.navEinstellungen,
+    profil: t.navProfil,
   }
-  const navItems = navScreens.map((screen) => [screen, navLabel(screen)] as const)
+  const navItems: NavItem[] = navScreens.map((screen) => [screen, navLabels[screen]])
+  const congSub = fill(t.congLabel, { name: state.congregation.name })
   const roleLabel =
     (state.planner ? t.rolleKoordinator : t.rolleVerkuendiger) +
     (state.dataStatus === 'demo' ? t.demoSuffix : '')
+  const logout = () => performLogout(dispatch)
 
   return (
     <div className="desk">
       {!isLogin && (
         <aside className="sidebar">
-          <div className="sidebar-brand">
-            <img className="sidebar-logo" src={LOGO} alt="" width={40} height={40} />
-            <div className="sidebar-wordmark">
-              Congregation
-              <br />
-              Planner
-            </div>
-            <div className="sidebar-sub">{fill(t.congLabel, { name: state.congregation.name })}</div>
-          </div>
-          <nav className="sidebar-nav" aria-label="Hauptnavigation">
-            {navItems.map(([screen, label]) => (
-              <button
-                key={screen}
-                type="button"
-                className={
-                  state.screen === screen ? 'sidebar-nav-item is-active' : 'sidebar-nav-item'
-                }
-                aria-current={state.screen === screen ? 'page' : undefined}
-                onClick={() => navigate(screen)}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-          <div className="sidebar-spacer" />
-          <div className="sidebar-profile">
-            <div className="avatar avatar--ink avatar--32">{me ? initials(me) : '–'}</div>
-            <div>
-              <div className="sidebar-profile-name">{me ? `${me.fn} ${me.ln}` : ''}</div>
-              <div className="sidebar-profile-role">{roleLabel}</div>
-            </div>
-          </div>
-          <button type="button" className="sidebar-logout" onClick={() => performLogout(dispatch)}>
-            {t.abmelden}
-          </button>
+          <SidebarBrand congSub={congSub} />
+          <SidebarNav items={navItems} active={state.screen} onNavigate={navigate} />
+          <SidebarFooter me={me} roleLabel={roleLabel} logoutLabel={t.abmelden} onLogout={logout} />
         </aside>
       )}
 
@@ -184,17 +146,7 @@ export function AppShell() {
                 <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />
                 <aside className="drawer" role="dialog" aria-modal="true" aria-label={t.menueLbl}>
                   <div className="drawer-head">
-                    <div className="sidebar-brand">
-                      <img className="sidebar-logo" src={LOGO} alt="" width={40} height={40} />
-                      <div className="sidebar-wordmark">
-                        Congregation
-                        <br />
-                        Planner
-                      </div>
-                      <div className="sidebar-sub">
-                        {fill(t.congLabel, { name: state.congregation.name })}
-                      </div>
-                    </div>
+                    <SidebarBrand congSub={congSub} />
                     <button
                       type="button"
                       className="drawer-close"
@@ -204,36 +156,8 @@ export function AppShell() {
                       ✕
                     </button>
                   </div>
-                  <nav className="sidebar-nav" aria-label="Hauptnavigation">
-                    {navItems.map(([screen, label]) => (
-                      <button
-                        key={screen}
-                        type="button"
-                        className={
-                          state.screen === screen ? 'sidebar-nav-item is-active' : 'sidebar-nav-item'
-                        }
-                        aria-current={state.screen === screen ? 'page' : undefined}
-                        onClick={() => navigate(screen)}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </nav>
-                  <div className="sidebar-spacer" />
-                  <div className="sidebar-profile">
-                    <div className="avatar avatar--ink avatar--32">{me ? initials(me) : '–'}</div>
-                    <div>
-                      <div className="sidebar-profile-name">{me ? `${me.fn} ${me.ln}` : ''}</div>
-                      <div className="sidebar-profile-role">{roleLabel}</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="sidebar-logout"
-                    onClick={() => performLogout(dispatch)}
-                  >
-                    {t.abmelden}
-                  </button>
+                  <SidebarNav items={navItems} active={state.screen} onNavigate={navigate} />
+                  <SidebarFooter me={me} roleLabel={roleLabel} logoutLabel={t.abmelden} onLogout={logout} />
                 </aside>
               </>
             )}

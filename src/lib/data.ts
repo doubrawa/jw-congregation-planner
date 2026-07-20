@@ -17,7 +17,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
-import { displayName, serviceQualKey, shortDisplayName } from '../data/helpers'
+import { displayName, emptyQualifications, serviceQualKey, shortDisplayName } from '../data/helpers'
 import type {
   Absence,
   ConfirmationMap,
@@ -135,15 +135,7 @@ const asNotifType = (t: string): NotificationType =>
  */
 export function normalizePriv(raw: Qualifications | null | undefined): Qualifications {
   const r = (raw ?? {}) as unknown as Record<string, unknown>
-  const priv: Qualifications = {
-    vorsitz: false,
-    vortrag: false,
-    gebet: false,
-    bibellesung: false,
-    leser: false,
-    schulung: false,
-    studium: false,
-  }
+  const priv = emptyQualifications()
   for (const [key, value] of Object.entries(r)) priv[key] = Boolean(value)
   if (r.lesen) {
     priv.bibellesung = true
@@ -194,8 +186,8 @@ export function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[]
   const fix = (name: string): string => map.get(name) ?? name
   return weeks.map((week) => ({
     ...week,
-    mid: migrateMeetingNames(week.mid, fix),
-    we: migrateMeetingNames(week.we, fix),
+    mid: mapMeetingNames(week.mid, fix),
+    we: mapMeetingNames(week.we, fix),
   }))
 }
 
@@ -221,33 +213,13 @@ export function renameInWeeks(weeks: Week[], oldName: string, newName: string): 
   return anyChanged ? next : weeks
 }
 
-/** Wie migrateMeetingNames, aber nur bei Treffer neue Referenzen (sonst Original). */
-function renameInMeeting(meeting: Week['mid'], oldName: string, fix: (n: string) => string): Week['mid'] {
-  const has = (arr: string[]): boolean => arr.includes(oldName)
-  const touchesSections = meeting.sections.some((s) =>
-    s.items.some((it) => !('song' in it) && it.names.some((slot) => slot.name === oldName)),
-  )
-  const touchesHelpers = Object.values(meeting.helpers).some(has)
-  if (!touchesSections && !touchesHelpers) return meeting
-  return {
-    ...meeting,
-    sections: touchesSections
-      ? meeting.sections.map((section) => ({
-          ...section,
-          items: section.items.map((item) =>
-            'song' in item
-              ? item
-              : { ...item, names: item.names.map((slot) => ({ ...slot, name: fix(slot.name) })) },
-          ),
-        }))
-      : meeting.sections,
-    helpers: touchesHelpers
-      ? Object.fromEntries(Object.entries(meeting.helpers).map(([key, arr]) => [key, arr.map(fix)]))
-      : meeting.helpers,
-  }
-}
-
-function migrateMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
+/**
+ * Bildet alle zugeteilten Namen (Programmpunkte + Hilfsdienste) einer
+ * Zusammenkunft über `fix` ab und liefert eine neue Zusammenkunft. Lieder
+ * tragen keine Namen und bleiben unangetastet. Gemeinsame Basis von Lade-
+ * Migration (migrateAssignmentNames) und Umbenennung (renameInMeeting).
+ */
+function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
   return {
     ...meeting,
     sections: meeting.sections.map((section) => ({
@@ -262,6 +234,19 @@ function migrateMeetingNames(meeting: Week['mid'], fix: (n: string) => string): 
       Object.entries(meeting.helpers).map(([key, arr]) => [key, arr.map(fix)]),
     ),
   }
+}
+
+/**
+ * Wie mapMeetingNames, aber referenz-erhaltend: enthält die Zusammenkunft
+ * `oldName` nicht, wird die identische Referenz zurückgegeben — so erkennt der
+ * Aufrufer (renameInWeeks), welche Wochen tatsächlich neu gespeichert werden.
+ */
+function renameInMeeting(meeting: Week['mid'], oldName: string, fix: (n: string) => string): Week['mid'] {
+  const referencesOldName =
+    meeting.sections.some((s) =>
+      s.items.some((it) => !('song' in it) && it.names.some((slot) => slot.name === oldName)),
+    ) || Object.values(meeting.helpers).some((arr) => arr.includes(oldName))
+  return referencesOldName ? mapMeetingNames(meeting, fix) : meeting
 }
 
 function personFromRow(r: PersonRow): Person {

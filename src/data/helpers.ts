@@ -3,11 +3,32 @@
  * Regeln stammen aus der Prototyp-Logik (docs/design-handoff).
  */
 
-import { ROLE_LABEL } from './constants'
-import type { Person, ProgramItem, SongItem, Week } from './types'
+import { QUALIFICATION_ORDER, ROLE_LABEL } from './constants'
+import type { Person, ProgramItem, Qualifications, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
+}
+
+/** Voller Name „Vorname Nachname" (getrimmt); leer, wenn beide Felder leer sind. */
+export function fullName(p: Person): string {
+  return `${p.fn} ${p.ln}`.trim()
+}
+
+/** Listen-/Kopf-Label: voller Name, sonst Em-Dash-Platzhalter für Namenlose. */
+export function personLabel(p: Person): string {
+  return fullName(p) || '—'
+}
+
+/**
+ * Frische Qualifikations-Map mit allen festen Programm-Bereichen auf `false` —
+ * einzige Quelle der Standard-Bereiche (neue Person, normalizePriv). Dynamische
+ * Hilfsdienst-Bereiche (`svc:<key>`) kommen erst durch Zuweisung hinzu.
+ */
+export function emptyQualifications(): Qualifications {
+  const priv = {} as Qualifications
+  for (const key of QUALIFICATION_ORDER) priv[key] = false
+  return priv
 }
 
 /**

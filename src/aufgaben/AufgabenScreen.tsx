@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { DatePicker } from '../components/DatePicker'
 import { CURRENT_PERSON_ID } from '../data/demo'
+import { fullName } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import './aufgaben.css'
@@ -46,7 +47,7 @@ export function AufgabenScreen() {
     <section className="screen">
       <h1 className="screen-title">{t.navAufgabenLong}</h1>
       <p className="screen-subtitle">
-        {me ? `${me.fn} ${me.ln}` : ''} · {fill(t.congLabel, { name: state.congregation.name })}
+        {me ? fullName(me) : ''} · {fill(t.congLabel, { name: state.congregation.name })}
       </p>
 
       <div className="panel panel--lead" data-farbe="acc">
