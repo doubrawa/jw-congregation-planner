@@ -1,51 +1,13 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
-import type { AppState } from '../app/context'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { initials, personCompare, roleLabel, serviceQualKey } from '../data/helpers'
-import { generateInviteCode } from '../lib/data'
 import { sendInviteMails } from '../lib/invite'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
-import type { Invite, Member, Person, Role } from '../data/types'
+import { appUrl, inviteMailHref, linkedMember, makeInvite, openInvite } from './invite-helpers'
+import type { Person, Role } from '../data/types'
 import './personen.css'
-
-/* ---- Einladungs-Helfer ----------------------------------------------------
- * Einladungen sind personenzentriert: Code am Personen-Detail erzeugen und per
- * eigenem Mail-Programm (mailto:) oder Teilen/Kopieren weitergeben — die App
- * verschickt selbst nichts.
- */
-
-function linkedMember(state: AppState, personId: string): Member | undefined {
-  return state.members.find((m) => m.personId === personId)
-}
-
-function openInvite(state: AppState, personId: string): Invite | undefined {
-  return state.invites.find((i) => i.personId === personId)
-}
-
-function appUrl(): string {
-  return new URL(import.meta.env.BASE_URL, window.location.origin).href
-}
-
-function makeInvite(person: Person): Invite {
-  return {
-    id: crypto.randomUUID(),
-    code: generateInviteCode(),
-    personId: person.id,
-    planner: Boolean(person.planner),
-  }
-}
-
-function inviteMailHref(
-  person: Person,
-  code: string,
-  subject: string,
-  bodyTemplate: string,
-): string {
-  const body = fill(bodyTemplate, { name: person.fn, code, url: appUrl() })
-  return `mailto:${person.mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-}
 
 const ROLE_ORDER: readonly Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
 

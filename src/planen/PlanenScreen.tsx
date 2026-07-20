@@ -4,23 +4,13 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { isSong, serviceQualKey } from '../data/helpers'
-import {
-  countOpenSlots,
-  isGuestRole,
-  itemMinutes,
-  openingSongNr,
-  openSlotLabels,
-  TALK_PLACEHOLDER,
-  weekConflicts,
-  type Conflict,
-} from '../data/planning'
+import { LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
+import { itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
+import { countOpenSlots, isGuestRole, openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import type { PartItem, Section, Service, SlotAssignment } from '../data/types'
 import './planen.css'
 
-const LAC_LABEL = 'UNSER LEBEN ALS CHRIST'
-const TALK_LABEL = 'ÖFFENTLICHER VORTRAG'
-const OPENING_LABEL = 'ERÖFFNUNG'
 
 /**
  * Planen (Screen 3, nur Planer): alle Slots einer Woche als Chips —
@@ -192,10 +182,10 @@ export function PlanenScreen() {
       {meeting.sections.map((section, si) => {
         // Logik immer über die kanonische Sektion (Labels/Minuten sind dort deutsch)
         const rawSection = rawMeeting.sections[si]
-        const isLac = rawSection.label === LAC_LABEL
+        const isLac = rawSection.label === LABEL_LAC
         // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
-        const isTalk = state.tab === 'we' && rawSection.label === TALK_LABEL
-        const isOpening = state.tab === 'we' && rawSection.label === OPENING_LABEL
+        const isTalk = state.tab === 'we' && rawSection.label === LABEL_VORTRAG
+        const isOpening = state.tab === 'we' && rawSection.label === LABEL_EROEFFNUNG
         const movables = movableIndices(rawSection)
         return (
           <div key={rawSection.label} className="panel" data-farbe={section.farbe}>

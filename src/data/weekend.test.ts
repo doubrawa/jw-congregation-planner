@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  assignSlot,
   editTalkTheme,
-  isGuestRole,
   openingSongNr,
   setOpeningSong,
   TALK_PLACEHOLDER,
-} from './planning'
+} from './meeting-edit'
+import { assignSlot, isGuestRole } from './planning'
 import type { Meeting, PartItem, PartSlotSelection, Week } from './types'
 
 /** Wochenend-Vorlage wie aus parse.ts (kanonisch + strukturgleiche en-Variante). */
