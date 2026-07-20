@@ -49,10 +49,19 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
     }
   })
 
-  it('Sprachen ohne eigene Übersetzung eines Keys fallen auf Englisch zurück', () => {
-    // keineWochenTitel existiert nur in DE/EN/AR — Kroatisch nutzt das EN-Wort
-    expect(dict('hr').keineWochenTitel).toBe(dict('en').keineWochenTitel)
+  it('dict schichtet DE ← EN ← Sprache (eigene Übersetzung gewinnt vor EN)', () => {
+    // Alle App-Sprachen sind inzwischen vollständig übersetzt; die eigene
+    // Übersetzung hat Vorrang vor der EN-Fallback-Schicht.
+    expect(dict('hr').keineWochenTitel).not.toBe(dict('en').keineWochenTitel)
+    expect(dict('es').konfMehr).not.toBe(dict('en').konfMehr)
+    // DE ist die Basis, EN eine getrennte Schicht darüber.
     expect(dict('de').keineWochenTitel).not.toBe(dict('en').keineWochenTitel)
-    expect(dict('ar').keineWochenTitel).not.toBe(dict('en').keineWochenTitel)
+  })
+
+  it('EN bleibt Fallback-Basis für nicht (nach)geladene Sprach-Overlays', () => {
+    // dict() legt EN unter die Sprache; ist ein Overlay (noch) nicht geladen,
+    // greift EN. Hier verifiziert an DE↔EN-Trennung + vorhandenem EN-Wert.
+    expect(typeof dict('en').keineWochenTitel).toBe('string')
+    expect(dict('en').keineWochenTitel).not.toBe(DE.keineWochenTitel)
   })
 })
