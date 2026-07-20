@@ -10,4 +10,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/jw-congregation-planner/' : '/',
   plugins: [react()],
+  build: {
+    rolldownOptions: {
+      output: {
+        // Vendor-Code in eigene, gut cachebare Chunks (ändert sich seltener
+        // als der App-Code); die Sprach-Overlays splittet import.meta.glob.
+        advancedChunks: {
+          groups: [
+            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+            { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
 }))

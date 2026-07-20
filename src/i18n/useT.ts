@@ -15,7 +15,7 @@ import { localizedWeek } from '../data/localize'
 import type { Week } from '../data/types'
 import { APP_TO_JW, congAppCode } from './langs'
 import { makeTr } from './translate'
-import { dict, type Dict } from './ui'
+import { dict, overlayGeneration, type Dict } from './ui'
 
 export interface I18n {
   t: Dict
@@ -34,6 +34,9 @@ const identity = (s: string) => s
 
 export function useT(): I18n {
   const { state } = useApp()
+  // overlayGen invalidiert das Memo, wenn ein Sprach-Overlay nachgeladen
+  // wurde (lazy, siehe ui.ts) — lang/congLang ändern sich dabei nicht.
+  const overlayGen = overlayGeneration()
   return useMemo(() => {
     const congCode = congAppCode(state.congLang)
     return {
@@ -42,7 +45,8 @@ export function useT(): I18n {
       tp: congCode && congCode !== 'de' ? makeTr(congCode) : identity,
       progFallback: !congCode,
     }
-  }, [state.lang, state.congLang])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.lang, state.congLang, overlayGen])
 }
 
 export interface ProgWeek {

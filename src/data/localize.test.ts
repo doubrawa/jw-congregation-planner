@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { localizedWeek, localizedWeeks, missingVariants } from './localize'
-import { lacAdd, lacAdjust, lacMove, lacRemove } from './planning'
+import { lacAdd, lacAdjust, lacMove, lacRemove } from './meeting-edit'
 import type { Meeting, PartItem, Week } from './types'
 
 /** Kanonische (deutsche) Beispielwoche mit englischer Sprachvariante. */

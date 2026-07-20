@@ -1,9 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { APP_LANGS } from './langs'
-import { DE, dict } from './ui'
+import { DE, dict, loadOverlay } from './ui'
 
 describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
   const deKeys = Object.keys(DE).sort()
+
+  // Overlays sind lazy (Code-Splitting) — für die Vollständigkeitsprüfung
+  // alle Sprachen vorab nachladen.
+  beforeAll(async () => {
+    await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
+  })
 
   it('jede App-Sprache liefert alle Keys mit nicht-leeren Strings', () => {
     for (const { code } of APP_LANGS) {

@@ -81,3 +81,12 @@ export function isDarkTheme(theme: Theme): boolean {
 
 /** Desktop-Breakpoint aus dem Handoff. */
 export const DESKTOP_BREAKPOINT = 920
+
+/**
+ * Kanonische Sektions-Labels — Logik-Keys der Planungs-/Zuteilungslogik.
+ * Bleiben in den Wochendaten immer deutsch; übersetzt wird nur die Anzeige.
+ */
+export const LABEL_EROEFFNUNG = 'ERÖFFNUNG'
+export const LABEL_WT_STUDIUM = 'WACHTTURM-STUDIUM'
+export const LABEL_LAC = 'UNSER LEBEN ALS CHRIST'
+export const LABEL_VORTRAG = 'ÖFFENTLICHER VORTRAG'

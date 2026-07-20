@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoWeeks, DEMO_PERSONS, DEMO_SERVICES } from './demo'
 import { displayName, helperWorkload, isSong, partWorkload, workloadOf } from './helpers'
+import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
   assignmentsInMeeting,
   autoAssignMeeting,
@@ -10,12 +11,6 @@ import {
   countOpenSlots,
   deriveMyTasks,
   derivePendingNames,
-  itemMinutes,
-  lacAdd,
-  lacAdjust,
-  lacMove,
-  lacRemove,
-  shiftEnd,
   weekConflicts,
 } from './planning'
 import type { Meeting, PartItem, Section, Service } from './types'
