@@ -200,6 +200,9 @@
   background: var(--tNeu);
 }
 
+/* Zweite neutrale Tonfläche — bewusst klar von tNeu abgesetzt, damit direkt
+   aufeinanderfolgende neutrale Panels (z. B. Abschluss ↔ Hilfsdienste) sich
+   im Hintergrund unterscheiden. */
 .panel[data-farbe='neutral2'] {
   background: var(--tNeu2);
 }
