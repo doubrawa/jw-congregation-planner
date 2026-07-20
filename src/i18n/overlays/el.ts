@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Ο κωδικός πρόσκλησης δημιουργήθηκε",
   "toastEinladungGeloescht": "Η πρόσκληση διαγράφηκε",
   "konflikteTitle": "ΠΙΘΑΝΕΣ ΣΥΓΚΡΟΥΣΕΙΣ",
+  "konfMehr": "+{n} ακόμη πιθανές συγκρούσεις",
   "konfliktAbsent": "Ο/Η {name} απουσιάζει αλλά έχει ανάθεση · {tab}",
   "konfliktDouble": "Ο/Η {name} έχει {n} αναθέσεις σε μία συνάθροιση · {tab}",
   "konfliktStreak": "Ο/Η {name} έχει ανάθεση {n} συνεχόμενες εβδομάδες"

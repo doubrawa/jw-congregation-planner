@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Zvací kód vytvořen",
   "toastEinladungGeloescht": "Pozvánka smazána",
   "konflikteTitle": "MOŽNÉ KONFLIKTY",
+  "konfMehr": "+{n} dalších možných konfliktů",
   "konfliktAbsent": "{name} je nepřítomen, ale přidělen · {tab}",
   "konfliktDouble": "{name} je přidělen {n}× na jednom shromáždění · {tab}",
   "konfliktStreak": "{name} je přidělen {n} týdnů v řadě"

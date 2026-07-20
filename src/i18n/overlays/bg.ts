@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Кодът за покана създаден",
   "toastEinladungGeloescht": "Поканата изтрита",
   "konflikteTitle": "ВЪЗМОЖНИ КОНФЛИКТИ",
+  "konfMehr": "+{n} други възможни конфликта",
   "konfliktAbsent": "{name} отсъства, но е назначен · {tab}",
   "konfliktDouble": "{name} е назначен {n}× на едно събрание · {tab}",
   "konfliktStreak": "{name} е назначаван {n} седмици подред"

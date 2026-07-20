@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Kutsukoodi luotu",
   "toastEinladungGeloescht": "Kutsu poistettu",
   "konflikteTitle": "MAHDOLLISET RISTIRIIDAT",
+  "konfMehr": "+{n} muuta mahdollista ristiriitaa",
   "konfliktAbsent": "{name} on poissa mutta tehtävässä · {tab}",
   "konfliktDouble": "{name} on {n}× samassa kokouksessa · {tab}",
   "konfliktStreak": "{name} on tehtävässä {n} viikkoa peräkkäin"

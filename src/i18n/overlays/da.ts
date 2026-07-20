@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Invitationskode oprettet",
   "toastEinladungGeloescht": "Invitation slettet",
   "konflikteTitle": "MULIGE KONFLIKTER",
+  "konfMehr": "+{n} andre mulige konflikter",
   "konfliktAbsent": "{name} er fraværende men tildelt · {tab}",
   "konfliktDouble": "{name} er tildelt {n}× på ét møde · {tab}",
   "konfliktStreak": "{name} er tildelt {n} uger i træk"

@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Nagawa ang invitation code",
   "toastEinladungGeloescht": "Inalis ang imbitasyon",
   "konflikteTitle": "POSIBLENG SALUNGATAN",
+  "konfMehr": "+{n} pang posibleng banggaan",
   "konfliktAbsent": "Wala si {name} pero naitalaga · {tab}",
   "konfliktDouble": "Si {name} ay naitalaga nang {n}× sa isang pulong · {tab}",
   "konfliktStreak": "Si {name} ay naitalaga nang {n} magkakasunod na linggo"

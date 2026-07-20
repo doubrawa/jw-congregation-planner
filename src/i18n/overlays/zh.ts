@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "已创建邀请码",
   "toastEinladungGeloescht": "已删除邀请",
   "konflikteTitle": "可能的冲突",
+  "konfMehr": "+{n}个可能的冲突",
   "konfliktAbsent": "{name} 缺席但被分配 · {tab}",
   "konfliktDouble": "{name} 在一次聚会中被分配 {n} 次 · {tab}",
   "konfliktStreak": "{name} 连续 {n} 周被分配"

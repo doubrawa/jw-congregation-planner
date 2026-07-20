@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Код приглашения создан",
   "toastEinladungGeloescht": "Приглашение удалено",
   "konflikteTitle": "ВОЗМОЖНЫЕ КОНФЛИКТЫ",
+  "konfMehr": "+{n} других возможных конфликтов",
   "konfliktAbsent": "{name} отсутствует, но назначен · {tab}",
   "konfliktDouble": "{name} назначен {n}× на одной встрече · {tab}",
   "konfliktStreak": "{name} назначается {n} недель подряд"

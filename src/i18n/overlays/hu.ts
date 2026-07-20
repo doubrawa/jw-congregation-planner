@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Meghívókód létrehozva",
   "toastEinladungGeloescht": "Meghívó törölve",
   "konflikteTitle": "LEHETSÉGES ÜTKÖZÉSEK",
+  "konfMehr": "+{n} további lehetséges ütközés",
   "konfliktAbsent": "{name} távol van, de be van osztva · {tab}",
   "konfliktDouble": "{name} {n}× van beosztva egy összejövetelen · {tab}",
   "konfliktStreak": "{name} {n} egymást követő héten be van osztva"

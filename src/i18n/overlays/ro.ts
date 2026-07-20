@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Cod de invitație creat",
   "toastEinladungGeloescht": "Invitație ștearsă",
   "konflikteTitle": "POSIBILE CONFLICTE",
+  "konfMehr": "+{n} alte posibile conflicte",
   "konfliktAbsent": "{name} este absent, dar are însărcinare · {tab}",
   "konfliktDouble": "{name} are {n} însărcinări la o întrunire · {tab}",
   "konfliktStreak": "{name} are însărcinări {n} săptămâni la rând"
