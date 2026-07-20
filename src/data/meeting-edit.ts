@@ -97,6 +97,29 @@ export function lacRemove(
 }
 
 /**
+ * Item-Index, mit dem der LAC-Punkt `ii` beim Verschieben in Richtung `dir`
+ * tauscht — oder null, wenn kein Tausch möglich ist (Rand). Der Reducer nutzt
+ * das, um die Bestätigungen der beiden Positionen mitzutauschen (task_keys sind
+ * positionsbasiert), damit der Status beim Programmpunkt bleibt.
+ */
+export function lacMoveTarget(
+  items: Meeting['sections'][number]['items'],
+  ii: number,
+  dir: -1 | 1,
+): number | null {
+  const movables = movableIndices(items)
+  const pos = movables.indexOf(ii)
+  const tpos = pos + dir
+  if (pos < 0 || tpos < 0 || tpos >= movables.length) return null
+  return movables[tpos]
+}
+
+/** Zahl der Namens-Slots eines Items (0 für Lieder). */
+export function itemNameCount(item: Meeting['sections'][number]['items'][number]): number {
+  return isSong(item) ? 0 : item.names.length
+}
+
+/**
  * LAC-Punkt um eine Position verschieben (nur Nicht-Lied-Items tauschen).
  * Die laufenden Nummern bleiben positionsfest.
  */

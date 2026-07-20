@@ -6,6 +6,7 @@
 
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { displayName } from '../data/helpers'
+import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
   assignSlot,
@@ -13,12 +14,15 @@ import {
   changedSlotKeys,
   deriveMyTasks,
   derivePendingNames,
+  swapPartConfirmations,
 } from '../data/planning'
 import {
   editTalkTheme,
+  itemNameCount,
   lacAdd,
   lacAdjust,
   lacMove,
+  lacMoveTarget,
   lacRemove,
   setOpeningSong,
 } from '../data/meeting-edit'
@@ -251,9 +255,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastPersonNeu'),
       }
     case 'updatePerson': {
+      const oldPerson = state.persons.find((p) => p.id === action.id)
       const next = {
         ...state,
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
+      }
+      // Namensänderung in bereits geplanten Wochen (und pendingNames)
+      // nachziehen — der Anzeigename ist der in den Wochen gespeicherte Text.
+      if (oldPerson && ('fn' in action.patch || 'ln' in action.patch || 'dn' in action.patch)) {
+        const oldName = displayName(oldPerson)
+        const newName = displayName({ ...oldPerson, ...action.patch })
+        if (oldName !== newName) {
+          next.weeks = renameInWeeks(state.weeks, oldName, newName)
+          next.pendingNames = state.pendingNames.map((n) => (n === oldName ? newName : n))
+        }
       }
       // Planer-Recht in verknüpfte Konten und offene Einladungscodes spiegeln
       // (members.planner = Quelle der Rechteprüfung); das eigene Konto ist per
@@ -526,11 +541,27 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks: lacRemove(state.weeks, state.week, state.tab, action.si, action.ii),
         toast: toastKey(state, 'toastLacDel'),
       }
-    case 'lacMove':
-      return {
-        ...state,
-        weeks: lacMove(state.weeks, state.week, state.tab, action.si, action.ii, action.dir),
-      }
+    case 'lacMove': {
+      const weeks = lacMove(state.weeks, state.week, state.tab, action.si, action.ii, action.dir)
+      if (weeks === state.weeks) return state // Rand: kein Tausch
+      // Bestätigungen der beiden getauschten Positionen mitnehmen (task_keys
+      // sind positionsbasiert) — sonst erbt der Nachbar den fremden Status.
+      const items = state.weeks[state.week][state.tab].sections[action.si].items
+      const b = lacMoveTarget(items, action.ii, action.dir)
+      const confirmations =
+        b == null
+          ? state.confirmations
+          : swapPartConfirmations(
+              state.confirmations,
+              state.week,
+              state.tab,
+              action.si,
+              action.ii,
+              b,
+              Math.max(itemNameCount(items[action.ii]), itemNameCount(items[b])),
+            )
+      return { ...state, weeks, confirmations }
+    }
     case 'lacAdd':
       return {
         ...state,

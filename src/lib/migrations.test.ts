@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { migrateAssignmentNames, migrateServicePrivs, normalizePriv } from './data'
+import { migrateAssignmentNames, migrateServicePrivs, normalizePriv, renameInWeeks } from './data'
 import type { Meeting, Person, Qualifications, Service, Week } from '../data/types'
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
@@ -119,3 +119,49 @@ describe('migrateAssignmentNames (Kurzform → voller Anzeigename)', () => {
     expect(migrateAssignmentNames(weeks, [])).toBe(weeks)
   })
 })
+
+describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
+  const meeting = (): Meeting => ({
+    date: '',
+    end: '',
+    sections: [
+      {
+        label: 'X',
+        farbe: 'petrol',
+        items: [
+          { num: 1, title: 'Punkt', meta: '', names: [{ name: 'Simon Krüger' }, { name: 'Bernhard Mauz' }] },
+          { song: 'Lied 1' },
+        ],
+      },
+    ],
+    helpers: { mik: ['Simon Krüger', 'Gruppe 1'] },
+  })
+  const week = (): Week => ({ range: '', book: '', current: false, mid: meeting(), we: meeting() })
+
+  it('ersetzt exakt den alten Anzeigenamen in Programmpunkten und Hilfsdiensten', () => {
+    const [w] = renameInWeeks([week()], 'Simon Krüger', 'Simon Müller')
+    const item = w.mid.sections[0].items[0]
+    expect('names' in item && item.names[0].name).toBe('Simon Müller')
+    expect('names' in item && item.names[1].name).toBe('Bernhard Mauz') // andere unberührt
+    expect(w.mid.helpers.mik).toEqual(['Simon Müller', 'Gruppe 1'])
+    expect(w.we.helpers.mik[0]).toBe('Simon Müller') // beide Zusammenkünfte
+  })
+
+  it('lässt Wochen ohne Treffer als identische Referenz', () => {
+    const weeks = [week()]
+    expect(renameInWeeks(weeks, 'Niemand Da', 'Neu')).toBe(weeks)
+    expect(renameInWeeks(weeks, 'Simon Krüger', 'Simon Krüger')).toBe(weeks) // kein Wechsel
+  })
+
+  it('rührt nur die betroffene Woche an (unbetroffene behalten ihre Referenz)', () => {
+    const w0 = week() // enthält Simon Krüger
+    const w1: Week = { range: 'leer', book: '', current: false, mid: emptyMeeting(), we: emptyMeeting() }
+    const next = renameInWeeks([w0, w1], 'Simon Krüger', 'Simon Müller')
+    expect(next[0]).not.toBe(w0)
+    expect(next[1]).toBe(w1) // unverändert → gleiche Referenz (kein DB-Write)
+  })
+})
+
+function emptyMeeting(): Meeting {
+  return { date: '', end: '', sections: [], helpers: {} }
+}
