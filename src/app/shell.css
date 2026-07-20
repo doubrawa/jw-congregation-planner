@@ -414,10 +414,24 @@
   font-weight: 500;
 }
 
+.notif-actions {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex: none;
+}
+
 .notif-mark-read {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--acc);
+}
+
+/* "Alle löschen" — leert den Feed der ganzen Versammlung, daher Warnfarbe. */
+.notif-clear {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--wein);
 }
 
 .notif-row {

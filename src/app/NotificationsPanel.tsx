@@ -22,13 +22,24 @@ export function NotificationsPanel() {
       <div className="notif-panel" role="dialog" aria-modal="true" aria-label="Mitteilungen">
         <div className="notif-head">
           <h2 className="notif-title">{t.mitteilungen}</h2>
-          <button
-            type="button"
-            className="notif-mark-read"
-            onClick={() => dispatch({ type: 'markAllRead' })}
-          >
-            {t.alleGelesen}
-          </button>
+          <div className="notif-actions">
+            <button
+              type="button"
+              className="notif-mark-read"
+              onClick={() => dispatch({ type: 'markAllRead' })}
+            >
+              {t.alleGelesen}
+            </button>
+            {state.notifs.length > 0 && (
+              <button
+                type="button"
+                className="notif-clear"
+                onClick={() => dispatch({ type: 'clearNotifs' })}
+              >
+                {t.alleLoeschen}
+              </button>
+            )}
+          </div>
         </div>
         {state.notifs.map((notif) => {
           const canConfirm =

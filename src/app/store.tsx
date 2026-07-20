@@ -45,6 +45,7 @@ import {
   deleteMemberRow,
   deleteServiceRow,
   insertNotification,
+  deleteNotifications,
   markNotificationsRead,
   saveAbsence,
   saveConfirmation,
@@ -239,6 +240,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, notifOpen: false }
     case 'markAllRead':
       return { ...state, notifs: state.notifs.map((n) => ({ ...n, read: true })) }
+    case 'clearNotifs':
+      return { ...state, notifs: [] }
     case 'openSlot':
       return { ...state, slotSel: action.sel }
     case 'closeSlot':
@@ -925,6 +928,9 @@ function persist(prev: AppState, next: AppState, action: AppAction): void {
       break
     case 'markAllRead':
       markNotificationsRead(congId)
+      break
+    case 'clearNotifs':
+      deleteNotifications(congId)
       break
     case 'confirmTask':
       saveConfirmation(congId, userId, action.id, 'bestätigt')
