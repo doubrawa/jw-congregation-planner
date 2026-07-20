@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "초대 코드 생성됨",
   "toastEinladungGeloescht": "초대 삭제됨",
   "konflikteTitle": "가능한 충돌",
+  "konfMehr": "+{n}건의 가능한 충돌",
   "konfliktAbsent": "{name} 님은 결석이지만 배정됨 · {tab}",
   "konfliktDouble": "{name} 님이 한 집회에서 {n}회 배정됨 · {tab}",
   "konfliktStreak": "{name} 님이 {n}주 연속 배정됨"

@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "招待コードを作成",
   "toastEinladungGeloescht": "招待を削除",
   "konflikteTitle": "考えられる競合",
+  "konfMehr": "+{n}件の可能な競合",
   "konfliktAbsent": "{name} は欠席ですが割り当てられています · {tab}",
   "konfliktDouble": "{name} は1回の集会で {n} 回割り当てられています · {tab}",
   "konfliktStreak": "{name} は {n} 週連続で割り当てられています"

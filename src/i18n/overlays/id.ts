@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Kode undangan dibuat",
   "toastEinladungGeloescht": "Undangan dihapus",
   "konflikteTitle": "KEMUNGKINAN KONFLIK",
+  "konfMehr": "+{n} kemungkinan konflik lainnya",
   "konfliktAbsent": "{name} absen tetapi ditetapkan · {tab}",
   "konfliktDouble": "{name} ditetapkan {n}× dalam satu perhimpunan · {tab}",
   "konfliktStreak": "{name} ditetapkan {n} pekan berturut-turut"

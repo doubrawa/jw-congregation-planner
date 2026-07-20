@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Davet kodu oluşturuldu",
   "toastEinladungGeloescht": "Davet silindi",
   "konflikteTitle": "OLASI ÇAKIŞMALAR",
+  "konfMehr": "+{n} olası çakışma daha",
   "konfliktAbsent": "{name} yok ama görevli · {tab}",
   "konfliktDouble": "{name} bir ibadette {n}× görevli · {tab}",
   "konfliktStreak": "{name} {n} hafta üst üste görevli"

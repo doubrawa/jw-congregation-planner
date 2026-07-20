@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Msimbo wa mwaliko umetengenezwa",
   "toastEinladungGeloescht": "Mwaliko umefutwa",
   "konflikteTitle": "MIGONGANO INAYOWEZEKANA",
+  "konfMehr": "+{n} mizozo mingine inayowezekana",
   "konfliktAbsent": "{name} hayupo lakini amegawiwa · {tab}",
   "konfliktDouble": "{name} amegawiwa mara {n} katika mkutano mmoja · {tab}",
   "konfliktStreak": "{name} amegawiwa wiki {n} mfululizo"

@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Pozivni kod kreiran",
   "toastEinladungGeloescht": "Pozivnica izbrisana",
   "konflikteTitle": "MOGUĆI SUKOBI",
+  "konfMehr": "+{n} drugih mogućih sukoba",
   "konfliktAbsent": "{name} je odsutan, ali dodeljen · {tab}",
   "konfliktDouble": "{name} je dodeljen {n}× na jednom sastanku · {tab}",
   "konfliktStreak": "{name} je dodeljen {n} nedelja zaredom"

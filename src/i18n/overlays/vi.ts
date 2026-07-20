@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Đã tạo mã mời",
   "toastEinladungGeloescht": "Đã xóa lời mời",
   "konflikteTitle": "XUNG ĐỘT CÓ THỂ",
+  "konfMehr": "+{n} xung đột khả dĩ khác",
   "konfliktAbsent": "{name} vắng mặt nhưng được phân công · {tab}",
   "konfliktDouble": "{name} được phân công {n}× trong một buổi nhóm · {tab}",
   "konfliktStreak": "{name} được phân công {n} tuần liên tiếp"

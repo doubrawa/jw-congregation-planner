@@ -204,6 +204,7 @@ export default {
   "toastEinladungErstellt": "Uitnodigingscode aangemaakt",
   "toastEinladungGeloescht": "Uitnodiging verwijderd",
   "konflikteTitle": "MOGELIJKE CONFLICTEN",
+  "konfMehr": "+{n} andere mogelijke conflicten",
   "konfliktAbsent": "{name} is afwezig maar toegewezen · {tab}",
   "konfliktDouble": "{name} is {n}× in één vergadering toegewezen · {tab}",
   "konfliktStreak": "{name} is {n} weken achter elkaar toegewezen"
