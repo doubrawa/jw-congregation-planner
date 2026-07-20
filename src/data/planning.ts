@@ -888,7 +888,7 @@ const OPENING_SONG_RE = /^Lied( \d+)?/
  * Varianten tragen denselben deutschen Vorlagen-Titel → gleiche Ersetzung.
  */
 export function setOpeningSong(weeks: Week[], wi: number, song: string): Week[] {
-  const nr = song.trim()
+  const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
   const next = structuredClone(weeks)
   const meeting = next[wi].we
   const si = meeting.sections.findIndex((s) => s.label === EROEFFNUNG)

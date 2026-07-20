@@ -323,10 +323,17 @@ export function PlanenScreen() {
                   key={`song-${state.week}`}
                   type="text"
                   inputMode="numeric"
+                  maxLength={4}
                   className="lac-add-input talk-song-input"
                   placeholder={t.liedNrPh}
                   aria-label={t.anfangsliedLbl}
                   defaultValue={openingSongNr(rawWeek.we)}
+                  onInput={(e) => {
+                    // Nur Ziffern zulassen (Liederbuch-Nummer)
+                    const el = e.currentTarget
+                    const digits = el.value.replace(/\D/g, '')
+                    if (el.value !== digits) el.value = digits
+                  }}
                   onBlur={(e) => dispatch({ type: 'openingSong', song: e.target.value })}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') e.currentTarget.blur()

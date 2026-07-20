@@ -86,6 +86,14 @@ describe('setOpeningSong (Anfangslied Wochenende)', () => {
     expect(altOpeningTitle(cleared[0])).toBe('Lied · Gebet')
   })
 
+  it('filtert alles Nicht-Numerische aus der Eingabe', () => {
+    const next = setOpeningSong([makeWeek()], 0, ' Lied 78! ')
+    expect(openingTitle(next[0])).toBe('Lied 78 · Gebet')
+    // reiner Text ohne Ziffern = keine Nummer → Vorlage bleibt
+    const weeks = [makeWeek()]
+    expect(setOpeningSong(weeks, 0, 'abc')).toBe(weeks)
+  })
+
   it('openingSongNr liest die aktuelle Nummer zurück', () => {
     const weeks = [makeWeek()]
     expect(openingSongNr(weeks[0].we)).toBe('')
