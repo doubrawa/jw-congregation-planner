@@ -210,7 +210,7 @@ export function EinstellungenScreen() {
         ))}
       </div>
 
-      <div className="panel panel--pb16" data-farbe="neutral">
+      <div className="panel panel--pb16" data-farbe="neutral2">
         <div className="panel-label">{t.gruppenCard}</div>
         <p className="panel-hint">{t.gruppenDesc}</p>
         {state.groups.map((group) => (
