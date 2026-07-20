@@ -290,7 +290,7 @@ create policy absences_write on public.absences
 
 -- Mitteilungen: Empfänger (oder alle bei user_id null) lesen; Planer erzeugen
 -- (Verhinderungs-Meldungen dürfen alle Mitglieder erzeugen);
--- Gelesen-Status darf jeder Empfänger selbst setzen.
+-- Gelesen-Status und Löschen ("Alle löschen") darf jeder Empfänger selbst.
 drop policy if exists notifications_select on public.notifications;
 create policy notifications_select on public.notifications
   for select using (
@@ -308,6 +308,13 @@ create policy notifications_insert on public.notifications
 drop policy if exists notifications_update on public.notifications;
 create policy notifications_update on public.notifications
   for update using (
+    congregation_id = public.my_congregation_id()
+    and (user_id is null or user_id = auth.uid())
+  );
+
+drop policy if exists notifications_delete on public.notifications;
+create policy notifications_delete on public.notifications
+  for delete using (
     congregation_id = public.my_congregation_id()
     and (user_id is null or user_id = auth.uid())
   );

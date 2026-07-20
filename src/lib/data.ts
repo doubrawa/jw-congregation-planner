@@ -604,6 +604,11 @@ export function markNotificationsRead(congregationId: string): void {
   void run(supabase.from('notifications').update({ read: true }).eq('congregation_id', congregationId))
 }
 
+export function deleteNotifications(congregationId: string): void {
+  if (!supabase) return
+  void run(supabase.from('notifications').delete().eq('congregation_id', congregationId))
+}
+
 export function saveCongregationInfo(
   congregationId: string,
   info: { name: string; hall: string; meetings: string },

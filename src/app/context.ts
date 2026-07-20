@@ -123,6 +123,7 @@ export type AppAction =
   | { type: 'openNotifs' }
   | { type: 'closeNotifs' }
   | { type: 'markAllRead' }
+  | { type: 'clearNotifs' } // löscht den gesamten Mitteilungs-Feed der Versammlung
   | { type: 'openSlot'; sel: SlotSelection }
   | { type: 'closeSlot' }
   | { type: 'addAbsence'; absence: Absence }
