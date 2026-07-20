@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { THEME_LIST } from '../data/constants'
 import { CURRENT_PERSON_ID } from '../data/demo'
+import { fullName } from '../data/helpers'
 
 import type { Lang, Theme } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
@@ -60,7 +61,7 @@ export function ProfilScreen() {
         <div className="panel-label">{t.profil}</div>
         <div className="kv-row">
           <span className="kv-key">{t.nameLbl}</span>
-          <span className="kv-val">{me ? `${me.fn} ${me.ln}` : ''}</span>
+          <span className="kv-val">{me ? fullName(me) : ''}</span>
         </div>
         <div className="kv-row">
           <span className="kv-key">{t.versammlungLbl}</span>

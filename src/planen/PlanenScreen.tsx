@@ -1,26 +1,23 @@
-import { useState } from 'react'
 import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
-import { isSong, serviceQualKey } from '../data/helpers'
-import { LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
-import { itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
-import { countOpenSlots, isGuestRole, openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
+import { countOpenSlots } from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
-import type { PartItem, Section, Service, SlotAssignment } from '../data/types'
+import { ConflictsBanner, OpenSlotsBanner } from './PlanBanners'
+import { HelpersPanel } from './HelpersPanel'
+import { MeetingSection } from './MeetingSection'
 import './planen.css'
-
 
 /**
  * Planen (Screen 3, nur Planer): alle Slots einer Woche als Chips —
  * Tippen öffnet das Zuteilungs-Sheet. Belegte Slots zeigen ✓ (bestätigt)
- * oder … (wartet). „Unser Leben als Christ“ ist editierbar.
+ * oder … (wartet). „Unser Leben als Christ" ist editierbar. Der Screen
+ * orchestriert nur; Banner, Abschnitte und Hilfsdienste sind eigene Bausteine.
  */
 export function PlanenScreen() {
   const { state, dispatch } = useApp()
-  const { t, tu } = useT()
-  const [lacTitle, setLacTitle] = useState('')
+  const { t } = useT()
   // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
   // die Logik (LAC-Erkennung, Minuten, Slots) läuft auf der kanonischen Woche.
   const rawWeek = state.weeks[state.week]
@@ -44,89 +41,6 @@ export function PlanenScreen() {
   const meeting = state.tab === 'mid' ? week.mid : week.we
   const rawMeeting = state.tab === 'mid' ? rawWeek.mid : rawWeek.we
   const openCount = countOpenSlots(rawMeeting, state.services)
-  const isPending = (name: string) => state.pendingNames.includes(name)
-  // Warnungen der ganzen Woche (beide Zusammenkünfte), unabhängig vom Tab.
-  // Serien-Konflikte (streak) auf 2 begrenzt anzeigen; der Rest wandert in die
-  // „+N weitere"-Zeile. Der Zähler im Banner zeigt die Gesamtzahl.
-  const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services)
-  const STREAK_SHOWN = 2
-  const shownConflicts = [
-    ...conflicts.filter((c) => c.kind === 'absent'),
-    ...conflicts.filter((c) => c.kind === 'double'),
-    ...conflicts.filter((c) => c.kind === 'streak').slice(0, STREAK_SHOWN),
-    ...conflicts.filter((c) => c.kind === 'helperTask'),
-  ]
-  const hiddenConflicts = conflicts.length - shownConflicts.length
-  // Unbesetzte Aufgaben/Hilfsdienste der ganzen Woche (wie die Konflikte)
-  const openSlots = (['mid', 'we'] as const).flatMap((tab) =>
-    openSlotLabels(rawWeek[tab], state.services).map((slot) => ({ ...slot, tab })),
-  )
-  const openTotal = openSlots.reduce((sum, slot) => sum + slot.n, 0)
-
-  const tabName = (tab: Conflict['tab']): string => (tab === 'we' ? t.tabWe : t.tabMid)
-  const conflictText = (c: Conflict): string => {
-    if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName(c.tab) })
-    if (c.kind === 'double')
-      return fill(t.konfliktDouble, { name: c.name, n: c.count ?? 2, tab: tabName(c.tab) })
-    if (c.kind === 'helperTask')
-      return fill(t.konfliktHelperTask, { name: c.name, tab: tabName(c.tab) })
-    return fill(t.konfliktStreak, { name: c.name, n: c.count ?? 3 })
-  }
-
-  const openPartSlot = (
-    si: number,
-    ii: number,
-    ni: number,
-    item: PartItem,
-    slot: SlotAssignment,
-  ) => {
-    const suffix = slot.rolle && !slot.rolle.startsWith('mit') ? ` · ${slot.rolle}` : ''
-    dispatch({
-      type: 'openSlot',
-      sel: {
-        kind: 'part',
-        wi: state.week,
-        tab: state.tab,
-        si,
-        ii,
-        ni,
-        label: item.title + suffix,
-        priv: slot.bereichsKey ?? null,
-        groups: false,
-        guest: isGuestRole(slot.rolle),
-      },
-    })
-  }
-
-  const openHelperSlot = (service: Service, pos: number) => {
-    dispatch({
-      type: 'openSlot',
-      sel: {
-        kind: 'helper',
-        wi: state.week,
-        tab: state.tab,
-        svc: service.key,
-        pos,
-        label: service.name,
-        priv: service.groups ? null : serviceQualKey(service.key),
-        groups: Boolean(service.groups),
-      },
-    })
-  }
-
-  const addLac = (si: number) => {
-    if (!lacTitle.trim()) {
-      dispatch({ type: 'showToast', text: t.toastNameEingeben })
-      return
-    }
-    dispatch({ type: 'lacAdd', si, title: lacTitle })
-    setLacTitle('')
-  }
-
-  const partChipText = (slot: SlotAssignment): string => {
-    if (!slot.name) return t.zuteilenChip
-    return slot.rolle && !slot.rolle.startsWith('mit') ? `${tpw(slot.rolle)}: ${slot.name}` : slot.name
-  }
 
   return (
     <section className="screen">
@@ -162,258 +76,20 @@ export function PlanenScreen() {
       </button>
       <p className="plan-legend">{t.planLegend}</p>
 
-      {conflicts.length > 0 && (
-        <div className="plan-conflicts">
-          <div className="plan-banner-head">
-            <span className="plan-banner-badge">!</span>
-            <span className="plan-banner-title">{t.konflikteTitle}</span>
-            <span className="plan-banner-count">{conflicts.length}</span>
-          </div>
-          {shownConflicts.map((c, i) => (
-            <div key={i} className="plan-conflict-row">
-              <span className="plan-conflict-dot" data-kind={c.kind} />
-              <span className="plan-conflict-text">{conflictText(c)}</span>
-            </div>
-          ))}
-          {hiddenConflicts > 0 && (
-            <div className="plan-conflict-more">{fill(t.konfMehr, { n: hiddenConflicts })}</div>
-          )}
-        </div>
-      )}
+      <ConflictsBanner />
+      <OpenSlotsBanner tpw={tpw} />
 
-      {openTotal > 0 && (
-        <div className="plan-open">
-          <div className="plan-banner-head">
-            <span className="plan-banner-badge">?</span>
-            <span className="plan-banner-title">{t.offeneTitle}</span>
-            <span className="plan-banner-count">{openTotal}</span>
-          </div>
-          {openSlots.map((slot, i) => (
-            <div key={i} className="plan-open-row">
-              <span className="plan-open-prefix">{tabName(slot.tab)}:</span>
-              <span className="plan-open-label" dir="auto">
-                {slot.lang === 'u' ? tu(slot.text) : tpw(slot.text)}
-                {slot.n > 1 ? ` ×${slot.n}` : ''}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {meeting.sections.map((section, si) => (
+        <MeetingSection
+          key={rawMeeting.sections[si].label}
+          si={si}
+          section={section}
+          rawSection={rawMeeting.sections[si]}
+          tpw={tpw}
+        />
+      ))}
 
-      {meeting.sections.map((section, si) => {
-        // Logik immer über die kanonische Sektion (Labels/Minuten sind dort deutsch)
-        const rawSection = rawMeeting.sections[si]
-        const isLac = rawSection.label === LABEL_LAC
-        // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
-        const isTalk = state.tab === 'we' && rawSection.label === LABEL_VORTRAG
-        const isOpening = state.tab === 'we' && rawSection.label === LABEL_EROEFFNUNG
-        const movables = movableIndices(rawSection)
-        return (
-          <div key={rawSection.label} className="panel" data-farbe={section.farbe}>
-            <div className="panel-label">{tpw(section.label)}</div>
-            {section.items.map((item, ii) => {
-              if (isSong(item)) {
-                return (
-                  <div key={ii} className="panel-song">
-                    {tpw(item.song)}
-                  </div>
-                )
-              }
-              const rawItem = rawSection.items[ii]
-              const rawTitle = isSong(rawItem) ? '' : rawItem.title
-              const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
-              const editable = isLac && rawMins != null
-              const mPos = movables.indexOf(ii)
-              return (
-                <div key={ii} className="plan-item">
-                  <div className="plan-item-head">
-                    {isTalk ? (
-                      <input
-                        key={`talk-${state.week}-${ii}`}
-                        type="text"
-                        className="talk-title-input"
-                        placeholder={t.vortragThemaPh}
-                        aria-label={t.vortragThemaPh}
-                        defaultValue={rawTitle === TALK_PLACEHOLDER ? '' : rawTitle}
-                        onBlur={(e) => dispatch({ type: 'talkEdit', si, ii, title: e.target.value })}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') e.currentTarget.blur()
-                        }}
-                      />
-                    ) : (
-                      <div className="plan-item-title">{tpw(item.title)}</div>
-                    )}
-                    {editable && (
-                      <div className="lac-move">
-                        <button
-                          type="button"
-                          className="lac-move-btn"
-                          aria-label="▲"
-                          disabled={mPos <= 0}
-                          onClick={() => dispatch({ type: 'lacMove', si, ii, dir: -1 })}
-                        >
-                          ▲
-                        </button>
-                        <button
-                          type="button"
-                          className="lac-move-btn"
-                          aria-label="▼"
-                          disabled={mPos >= movables.length - 1}
-                          onClick={() => dispatch({ type: 'lacMove', si, ii, dir: 1 })}
-                        >
-                          ▼
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {item.meta && <div className="plan-item-meta">{tpw(item.meta)}</div>}
-                  <div className="plan-slots">
-                    {item.names.map((slot, ni) => (
-                      <SlotChip
-                        key={ni}
-                        text={partChipText(slot)}
-                        open={!slot.name}
-                        showStatus={Boolean(slot.name)}
-                        pending={isPending(slot.name)}
-                        onClick={() => openPartSlot(si, ii, ni, item, slot)}
-                      />
-                    ))}
-                  </div>
-                  {editable && (
-                    <div className="lac-edit">
-                      <button
-                        type="button"
-                        className="lac-step-btn"
-                        aria-label="–"
-                        onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: -5 })}
-                      >
-                        –
-                      </button>
-                      <span className="lac-mins">{tpw(`${rawMins} Min.`)}</span>
-                      <button
-                        type="button"
-                        className="lac-step-btn"
-                        aria-label="+"
-                        onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: 5 })}
-                      >
-                        +
-                      </button>
-                      <span className="lac-spacer" />
-                      <button
-                        type="button"
-                        className="lac-remove"
-                        aria-label="✕"
-                        onClick={() => dispatch({ type: 'lacRemove', si, ii })}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-            {isLac && (
-              <div className="lac-add-row">
-                <input
-                  type="text"
-                  className="lac-add-input"
-                  placeholder={t.lacPh}
-                  aria-label={t.lacPh}
-                  value={lacTitle}
-                  onChange={(e) => setLacTitle(e.target.value)}
-                />
-                <button type="button" className="lac-add-btn" onClick={() => addLac(si)}>
-                  {t.lacAdd}
-                </button>
-              </div>
-            )}
-            {isOpening && (
-              <div className="talk-song-row">
-                <span className="plan-helper-label">{t.anfangsliedLbl}</span>
-                <input
-                  key={`song-${state.week}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={4}
-                  className="lac-add-input talk-song-input"
-                  placeholder={t.liedNrPh}
-                  aria-label={t.anfangsliedLbl}
-                  defaultValue={openingSongNr(rawWeek.we)}
-                  onInput={(e) => {
-                    // Nur Ziffern zulassen (Liederbuch-Nummer)
-                    const el = e.currentTarget
-                    const digits = el.value.replace(/\D/g, '')
-                    if (el.value !== digits) el.value = digits
-                  }}
-                  onBlur={(e) => dispatch({ type: 'openingSong', song: e.target.value })}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') e.currentTarget.blur()
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        )
-      })}
-
-      <div className="panel panel--pb14" data-farbe="neutral2">
-        <div className="panel-label">{t.hilfsdienste}</div>
-        {state.services.map((service) => {
-          const assigned = meeting.helpers[service.key] ?? []
-          return (
-            <div key={service.key} className="plan-helper-row">
-              <div className="plan-helper-label">{tu(service.name).toUpperCase()}</div>
-              <div className="plan-slots">
-                {Array.from({ length: service.count }, (_, pos) => {
-                  const name = assigned[pos] ?? ''
-                  const isGroup = name.startsWith('Gruppe')
-                  return (
-                    <SlotChip
-                      key={pos}
-                      text={name ? tu(name) : t.zuteilenChip}
-                      open={!name}
-                      showStatus={Boolean(name) && !isGroup}
-                      pending={isPending(name)}
-                      onClick={() => openHelperSlot(service, pos)}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <HelpersPanel meeting={meeting} />
     </section>
-  )
-}
-
-/** Indizes der verschiebbaren (Nicht-Lied-)Items einer Sektion. */
-function movableIndices(section: Section): number[] {
-  return section.items.map((x, i) => (isSong(x) ? -1 : i)).filter((i) => i >= 0)
-}
-
-/** Slot-Chip: belegt = solide Pille + Bestätigungs-Zeichen ✓/…; offen = gestrichelt. */
-function SlotChip({
-  text,
-  open,
-  showStatus,
-  pending,
-  onClick,
-}: {
-  text: string
-  open: boolean
-  showStatus: boolean
-  pending: boolean
-  onClick: () => void
-}) {
-  return (
-    <button type="button" className={open ? 'slot-chip is-open' : 'slot-chip'} onClick={onClick}>
-      {text}
-      {showStatus && (
-        <span className={pending ? 'slot-status is-pending' : 'slot-status'}>
-          {pending ? '…' : '✓'}
-        </span>
-      )}
-    </button>
   )
 }
