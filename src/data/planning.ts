@@ -878,8 +878,18 @@ export function editTalkTheme(weeks: Week[], wi: number, si: number, ii: number,
   return next
 }
 
-/** "Lied" bzw. "Lied 78" am Titelanfang der Wochenend-Eröffnung. */
-const OPENING_SONG_RE = /^Lied( \d+)?/
+/** Erstes Titel-Atom ist das Anfangslied ("Lied" bzw. "Lied 78 …"). */
+function isOpeningSongTitle(title: string): boolean {
+  const first = title.split(' · ')[0]
+  return first === 'Lied' || first.startsWith('Lied ')
+}
+
+/** Erstes Titel-Atom komplett ersetzen — räumt auch Altlasten ("Lied 44 fff") ab. */
+function replaceSongAtom(title: string, value: string): string {
+  const atoms = title.split(' · ')
+  atoms[0] = value
+  return atoms.join(' · ')
+}
 
 /**
  * Anfangslied der Wochenend-Zusammenkunft setzen: "Lied · Gebet" →
@@ -893,16 +903,16 @@ export function setOpeningSong(weeks: Week[], wi: number, song: string): Week[] 
   const meeting = next[wi].we
   const si = meeting.sections.findIndex((s) => s.label === EROEFFNUNG)
   if (si < 0) return weeks
-  const ii = meeting.sections[si].items.findIndex((x) => !isSong(x) && OPENING_SONG_RE.test(x.title))
+  const ii = meeting.sections[si].items.findIndex((x) => !isSong(x) && isOpeningSongTitle(x.title))
   if (ii < 0) return weeks
   const item = meeting.sections[si].items[ii] as PartItem
   const value = nr ? `Lied ${nr}` : 'Lied'
-  const title = item.title.replace(OPENING_SONG_RE, value)
+  const title = replaceSongAtom(item.title, value)
   if (title === item.title) return weeks
   item.title = title
   forEachAltMeeting(next[wi], 'we', (m) => {
     const vi = m.sections[si]?.items[ii]
-    if (vi && !isSong(vi)) vi.title = vi.title.replace(OPENING_SONG_RE, value)
+    if (vi && !isSong(vi) && isOpeningSongTitle(vi.title)) vi.title = replaceSongAtom(vi.title, value)
   })
   return next
 }
@@ -915,7 +925,7 @@ export function openingSongNr(meeting: Meeting): string {
       if (isSong(item)) continue
       const match = /^Lied (\d+)/.exec(item.title)
       if (match) return match[1]
-      if (OPENING_SONG_RE.test(item.title)) return ''
+      if (isOpeningSongTitle(item.title)) return ''
     }
   }
   return ''
