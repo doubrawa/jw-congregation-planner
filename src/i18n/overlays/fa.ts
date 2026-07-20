@@ -268,6 +268,7 @@ export default {
   "toastEinladungErstellt": "کد دعوت ساخته شد",
   "toastEinladungGeloescht": "دعوت حذف شد",
   "konflikteTitle": "تعارض‌های احتمالی",
+  "konfMehr": "+{n} تعارض احتمالی دیگر",
   "konfliktAbsent": "{name} غایب است اما تعیین شده · {tab}",
   "konfliktDouble": "{name} در یک جلسه {n}× تعیین شده · {tab}",
   "konfliktHelperTask": "{name} در یک روز هم وظیفهٔ کمکی و هم وظیفه دارد · {tab}",

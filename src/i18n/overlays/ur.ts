@@ -268,6 +268,7 @@ export default {
   "toastEinladungErstellt": "دعوتی کوڈ بن گیا",
   "toastEinladungGeloescht": "دعوت حذف ہو گئی",
   "konflikteTitle": "ممکنہ تصادم",
+  "konfMehr": "+{n} مزید ممکنہ تصادم",
   "konfliktAbsent": "{name} غیر حاضر ہے مگر تفویض شدہ · {tab}",
   "konfliktDouble": "{name} ایک میٹنگ میں {n}× تفویض ہے · {tab}",
   "konfliktHelperTask": "{name} کے پاس ایک ہی دن معاون ذمہ داری اور ذمہ داری دونوں ہیں · {tab}",

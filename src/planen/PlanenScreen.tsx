@@ -45,8 +45,18 @@ export function PlanenScreen() {
   const rawMeeting = state.tab === 'mid' ? rawWeek.mid : rawWeek.we
   const openCount = countOpenSlots(rawMeeting, state.services)
   const isPending = (name: string) => state.pendingNames.includes(name)
-  // Warnungen der ganzen Woche (beide Zusammenkünfte), unabhängig vom Tab
+  // Warnungen der ganzen Woche (beide Zusammenkünfte), unabhängig vom Tab.
+  // Serien-Konflikte (streak) auf 2 begrenzt anzeigen; der Rest wandert in die
+  // „+N weitere"-Zeile. Der Zähler im Banner zeigt die Gesamtzahl.
   const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services)
+  const STREAK_SHOWN = 2
+  const shownConflicts = [
+    ...conflicts.filter((c) => c.kind === 'absent'),
+    ...conflicts.filter((c) => c.kind === 'double'),
+    ...conflicts.filter((c) => c.kind === 'streak').slice(0, STREAK_SHOWN),
+    ...conflicts.filter((c) => c.kind === 'helperTask'),
+  ]
+  const hiddenConflicts = conflicts.length - shownConflicts.length
   // Unbesetzte Aufgaben/Hilfsdienste der ganzen Woche (wie die Konflikte)
   const openSlots = (['mid', 'we'] as const).flatMap((tab) =>
     openSlotLabels(rawWeek[tab], state.services).map((slot) => ({ ...slot, tab })),
@@ -154,24 +164,29 @@ export function PlanenScreen() {
 
       {conflicts.length > 0 && (
         <div className="plan-conflicts">
-          <div className="plan-conflicts-title">
-            {t.konflikteTitle} · {conflicts.length}
+          <div className="plan-banner-head">
+            <span className="plan-banner-badge">!</span>
+            <span className="plan-banner-title">{t.konflikteTitle}</span>
+            <span className="plan-banner-count">{conflicts.length}</span>
           </div>
-          {conflicts.map((c, i) => (
+          {shownConflicts.map((c, i) => (
             <div key={i} className="plan-conflict-row">
-              <span className="plan-conflict-dot" data-kind={c.kind}>
-                !
-              </span>
+              <span className="plan-conflict-dot" data-kind={c.kind} />
               <span className="plan-conflict-text">{conflictText(c)}</span>
             </div>
           ))}
+          {hiddenConflicts > 0 && (
+            <div className="plan-conflict-more">{fill(t.konfMehr, { n: hiddenConflicts })}</div>
+          )}
         </div>
       )}
 
       {openTotal > 0 && (
         <div className="plan-open">
-          <div className="plan-open-title">
-            {t.offeneTitle} · {openTotal}
+          <div className="plan-banner-head">
+            <span className="plan-banner-badge">?</span>
+            <span className="plan-banner-title">{t.offeneTitle}</span>
+            <span className="plan-banner-count">{openTotal}</span>
           </div>
           {openSlots.map((slot, i) => (
             <div key={i} className="plan-open-row">

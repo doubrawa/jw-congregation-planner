@@ -269,6 +269,7 @@ export default {
   "toastEinladungErstellt": "Invitation code created",
   "toastEinladungGeloescht": "Invitation deleted",
   "konflikteTitle": "POSSIBLE CONFLICTS",
+  "konfMehr": "+{n} more possible conflicts",
   "konfliktAbsent": "{name} is absent but assigned · {tab}",
   "konfliktDouble": "{name} is assigned {n}× in one meeting · {tab}",
   "konfliktHelperTask": "{name} has a support duty and an assignment on the same day · {tab}",
