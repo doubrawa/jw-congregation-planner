@@ -50,58 +50,94 @@
   margin-top: 14px;
   background: var(--tWein);
   border: 1px solid var(--weinB);
-  border-radius: 12px;
-  padding: 11px 13px;
+  border-radius: 14px;
+  padding: 10px 14px 12px;
 }
 
 .plan-conflicts-title {
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   color: var(--wein);
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
+/* Zeile mit farbigem „!"-Warnpunkt (Farbe je Konfliktart) + dunklem Text —
+   deutlich sichtbarer als getönter Text auf getöntem Grund. */
 .plan-conflict-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 9px;
   font-size: 11.5px;
-  line-height: 1.5;
-  color: var(--wein);
+  line-height: 1.4;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
-.plan-conflict-row + .plan-conflict-row {
-  border-top: 1px solid var(--weinB);
-  padding-top: 5px;
-  margin-top: 5px;
+.plan-conflict-dot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--wein);
+  color: var(--onAcc);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.plan-conflict-dot[data-kind='double'] {
+  background: var(--gld);
+}
+
+.plan-conflict-dot[data-kind='streak'] {
+  background: var(--pet);
+}
+
+.plan-conflict-dot[data-kind='helperTask'] {
+  background: var(--acc);
 }
 
 /* ---- Offene Zuteilungen (unbesetzte Aufgaben/Hilfsdienste) --------------- */
 
 .plan-open {
-  margin-top: 10px;
+  margin-top: 12px;
   background: var(--tAcc);
   border: 1px solid var(--bord2);
-  border-radius: 12px;
-  padding: 11px 13px;
+  border-radius: 14px;
+  padding: 10px 14px 12px;
 }
 
 .plan-open-title {
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   color: var(--acc);
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
+/* Präfix (Zusammenkunft) abgesetzt, Aufgabe in dunklem Text — gut lesbar. */
 .plan-open-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
   font-size: 11.5px;
-  line-height: 1.5;
-  color: var(--accD);
+  line-height: 1.4;
 }
 
-.plan-open-row + .plan-open-row {
-  border-top: 1px solid var(--lineNeu);
-  padding-top: 5px;
-  margin-top: 5px;
+.plan-open-prefix {
+  flex: none;
+  color: var(--mut);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.plan-open-label {
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 /* ---- Programmpunkte mit Slot-Chips -------------------------------------- */

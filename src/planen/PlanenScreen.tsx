@@ -159,7 +159,10 @@ export function PlanenScreen() {
           </div>
           {conflicts.map((c, i) => (
             <div key={i} className="plan-conflict-row">
-              {conflictText(c)}
+              <span className="plan-conflict-dot" data-kind={c.kind}>
+                !
+              </span>
+              <span className="plan-conflict-text">{conflictText(c)}</span>
             </div>
           ))}
         </div>
@@ -172,8 +175,11 @@ export function PlanenScreen() {
           </div>
           {openSlots.map((slot, i) => (
             <div key={i} className="plan-open-row">
-              {tabName(slot.tab)}: {slot.lang === 'u' ? tu(slot.text) : tpw(slot.text)}
-              {slot.n > 1 ? ` ×${slot.n}` : ''}
+              <span className="plan-open-prefix">{tabName(slot.tab)}:</span>
+              <span className="plan-open-label" dir="auto">
+                {slot.lang === 'u' ? tu(slot.text) : tpw(slot.text)}
+                {slot.n > 1 ? ` ×${slot.n}` : ''}
+              </span>
             </div>
           ))}
         </div>
