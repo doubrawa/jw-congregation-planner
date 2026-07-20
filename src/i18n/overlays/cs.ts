@@ -262,7 +262,7 @@ export default {
   "toastProgLangAdd": "Jazyk programu přidán — platí pro nové importy",
   "toastProgLangDel": "Jazyk programu odebrán",
   "privBibellesung": "Čtení Bible",
-  "privLeser": "Předčitatel",
+  "privLeser": "Čtenář",
   "geschlecht": "Pohlaví",
   "bruder": "Bratr",
   "schwester": "Sestra",

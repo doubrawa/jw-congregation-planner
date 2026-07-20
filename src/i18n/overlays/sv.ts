@@ -262,7 +262,7 @@ export default {
   "toastProgLangAdd": "Programspråk tillagt — gäller nya importer",
   "toastProgLangDel": "Programspråk borttaget",
   "privBibellesung": "Bibelläsning",
-  "privLeser": "Uppläsare",
+  "privLeser": "Läsare",
   "geschlecht": "Kön",
   "bruder": "Broder",
   "schwester": "Syster",

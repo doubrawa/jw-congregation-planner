@@ -261,7 +261,7 @@ export default {
   "toastGruppeDel": "Kikundi kimeondolewa",
   "toastProgLangAdd": "Lugha ya programu imeongezwa — inatumika kwa uingizaji mpya",
   "toastProgLangDel": "Lugha ya programu imeondolewa",
-  "privBibellesung": "Kusoma Biblia",
+  "privBibellesung": "Usomaji wa Biblia",
   "privLeser": "Msomaji",
   "geschlecht": "Jinsia",
   "bruder": "Ndugu",
