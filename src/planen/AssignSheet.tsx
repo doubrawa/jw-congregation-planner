@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
-import { displayName, initials, isQualified, personCompare, roleLabel, workloadOf } from '../data/helpers'
+import { displayName, initials, isQualified, isSong, personCompare, roleLabel, workloadOf } from '../data/helpers'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
 import type { MeetingAssignment } from '../data/planning'
@@ -41,6 +41,30 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const s89 = buildS89ForSlot(state.weeks, sel)
   const title = sel.kind === 'helper' ? tu(sel.label) : tp(sel.label)
   const sub = `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
+
+  // Externer Redner (Gastredner/Kreisaufseher): Freitext für Name +
+  // Herkunfts-Versammlung; die Versammlung steckt in der Rolle
+  // ("Gastredner · Vers. Nordheim"), erstes Atom = Basis-Rolle.
+  const guest = sel.kind === 'part' && Boolean(sel.guest)
+  const slotRolle = (): string => {
+    if (sel.kind !== 'part') return ''
+    const item = state.weeks[sel.wi][sel.tab].sections[sel.si]?.items[sel.ii]
+    return !item || isSong(item) ? '' : (item.names[sel.ni]?.rolle ?? '')
+  }
+  const rolleAtoms = slotRolle().split(' · ')
+  const guestBase = rolleAtoms[0] || 'Gastredner'
+  const [guestName, setGuestName] = useState(guest ? current : '')
+  const [guestCong, setGuestCong] = useState(guest ? rolleAtoms.slice(1).join(' · ') : '')
+
+  const applyGuest = () => {
+    const name = guestName.trim()
+    if (!name) {
+      dispatch({ type: 'showToast', text: t.toastNameEingeben })
+      return
+    }
+    const cong = guestCong.trim()
+    dispatch({ type: 'assign', name, rolle: cong ? `${guestBase} · ${cong}` : guestBase })
+  }
 
   const groupSub = (id: string, ov: string | null): string => {
     const overseer = state.persons.find((p) => p.id === ov)
@@ -90,7 +114,9 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
       dispatch({ type: 'showToast', text: fill(t.toastAbsentP, { name: cand.name }) })
       return
     }
-    dispatch({ type: 'assign', name: cand.assignName })
+    // Gastredner-Slot: Wahl aus der eigenen Versammlung räumt die fremde
+    // Herkunfts-Versammlung aus der Rolle
+    dispatch(guest ? { type: 'assign', name: cand.assignName, rolle: guestBase } : { type: 'assign', name: cand.assignName })
   }
 
   return (
@@ -125,11 +151,38 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               <button
                 type="button"
                 className="sheet-remove"
-                onClick={() => dispatch({ type: 'assign', name: '' })}
+                onClick={() =>
+                  dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' })
+                }
               >
                 {t.entfernen}
               </button>
             </div>
+          </div>
+        )}
+
+        {guest && (
+          <div className="sheet-guest">
+            <input
+              type="text"
+              className="lac-add-input"
+              placeholder={t.rednerNamePh}
+              aria-label={t.rednerNamePh}
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+            />
+            <input
+              type="text"
+              className="lac-add-input"
+              placeholder={t.rednerVersPh}
+              aria-label={t.rednerVersPh}
+              value={guestCong}
+              onChange={(e) => setGuestCong(e.target.value)}
+            />
+            <button type="button" className="lac-add-btn" onClick={applyGuest}>
+              {t.uebernehmenBtn}
+            </button>
+            <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
           </div>
         )}
 

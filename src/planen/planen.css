@@ -267,6 +267,53 @@
   background: var(--tAcc);
 }
 
+/* ---- Öffentlicher Vortrag (Wochenende): Thema, Anfangslied, Gastredner ---- */
+
+/* Vortragsthema als Freitext an Stelle des Titels */
+.talk-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Anfangslied-Zeile in der ERÖFFNUNG (nur Wochenende) */
+.talk-song-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 12px;
+}
+
+.talk-song-row .talk-song-input {
+  flex: none;
+  width: 86px;
+  text-align: center;
+}
+
+/* Gastredner-Freitext im Zuteilungs-Sheet */
+.sheet-guest {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0 4px;
+  border-bottom: 1px solid var(--line2);
+}
+
+.sheet-guest .lac-add-btn {
+  justify-self: end;
+}
+
+.sheet-guest-hint {
+  font-size: 11px;
+  color: var(--mut);
+  padding-bottom: 6px;
+}
+
 /* ---- Hilfsdienste ---------------------------------------------------------- */
 
 .plan-helper-row {

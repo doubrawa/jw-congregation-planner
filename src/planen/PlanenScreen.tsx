@@ -4,12 +4,23 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { isSong, serviceQualKey } from '../data/helpers'
-import { countOpenSlots, itemMinutes, openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
+import {
+  countOpenSlots,
+  isGuestRole,
+  itemMinutes,
+  openingSongNr,
+  openSlotLabels,
+  TALK_PLACEHOLDER,
+  weekConflicts,
+  type Conflict,
+} from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import type { PartItem, Section, Service, SlotAssignment } from '../data/types'
 import './planen.css'
 
 const LAC_LABEL = 'UNSER LEBEN ALS CHRIST'
+const TALK_LABEL = 'ÖFFENTLICHER VORTRAG'
+const OPENING_LABEL = 'ERÖFFNUNG'
 
 /**
  * Planen (Screen 3, nur Planer): alle Slots einer Woche als Chips —
@@ -82,6 +93,7 @@ export function PlanenScreen() {
         label: item.title + suffix,
         priv: slot.bereichsKey ?? null,
         groups: false,
+        guest: isGuestRole(slot.rolle),
       },
     })
   }
@@ -181,6 +193,9 @@ export function PlanenScreen() {
         // Logik immer über die kanonische Sektion (Labels/Minuten sind dort deutsch)
         const rawSection = rawMeeting.sections[si]
         const isLac = rawSection.label === LAC_LABEL
+        // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
+        const isTalk = state.tab === 'we' && rawSection.label === TALK_LABEL
+        const isOpening = state.tab === 'we' && rawSection.label === OPENING_LABEL
         const movables = movableIndices(rawSection)
         return (
           <div key={rawSection.label} className="panel" data-farbe={section.farbe}>
@@ -194,13 +209,29 @@ export function PlanenScreen() {
                 )
               }
               const rawItem = rawSection.items[ii]
+              const rawTitle = isSong(rawItem) ? '' : rawItem.title
               const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
               const editable = isLac && rawMins != null
               const mPos = movables.indexOf(ii)
               return (
                 <div key={ii} className="plan-item">
                   <div className="plan-item-head">
-                    <div className="plan-item-title">{tpw(item.title)}</div>
+                    {isTalk ? (
+                      <input
+                        key={`talk-${state.week}-${ii}`}
+                        type="text"
+                        className="talk-title-input"
+                        placeholder={t.vortragThemaPh}
+                        aria-label={t.vortragThemaPh}
+                        defaultValue={rawTitle === TALK_PLACEHOLDER ? '' : rawTitle}
+                        onBlur={(e) => dispatch({ type: 'talkEdit', si, ii, title: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur()
+                        }}
+                      />
+                    ) : (
+                      <div className="plan-item-title">{tpw(item.title)}</div>
+                    )}
                     {editable && (
                       <div className="lac-move">
                         <button
@@ -283,6 +314,24 @@ export function PlanenScreen() {
                 <button type="button" className="lac-add-btn" onClick={() => addLac(si)}>
                   {t.lacAdd}
                 </button>
+              </div>
+            )}
+            {isOpening && (
+              <div className="talk-song-row">
+                <span className="plan-helper-label">{t.anfangsliedLbl}</span>
+                <input
+                  key={`song-${state.week}`}
+                  type="text"
+                  inputMode="numeric"
+                  className="lac-add-input talk-song-input"
+                  placeholder={t.liedNrPh}
+                  aria-label={t.anfangsliedLbl}
+                  defaultValue={openingSongNr(rawWeek.we)}
+                  onBlur={(e) => dispatch({ type: 'openingSong', song: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                  }}
+                />
               </div>
             )}
           </div>
