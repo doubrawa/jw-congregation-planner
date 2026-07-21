@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "適用",
   "oderPersonWaehlen": "または自分の会衆から選択：",
   "konfliktHelperTask": "{name} は同じ日に補助奉仕と務めがあります · {tab}",
+  "leeren": "クリア",
+  "leerenSicher": "本当にクリア？",
+  "toastGeleertN": "{n}件の割り当てをクリア",
 } satisfies Partial<Dict>

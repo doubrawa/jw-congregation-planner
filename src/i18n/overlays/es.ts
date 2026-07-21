@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "APLICAR",
   "oderPersonWaehlen": "O elige de tu propia congregación:",
   "konfliktHelperTask": "{name} tiene servicio de apoyo y una asignación el mismo día · {tab}",
+  "leeren": "Vaciar",
+  "leerenSicher": "¿Vaciar de verdad?",
+  "toastGeleertN": "{n} asignaciones vaciadas",
 } satisfies Partial<Dict>

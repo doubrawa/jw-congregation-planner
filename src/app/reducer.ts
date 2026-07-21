@@ -11,6 +11,7 @@ import { localizedWeeks } from '../data/localize'
 import {
   assignSlot,
   autoAssignMeeting,
+  clearAssignments,
   changedSlotKeys,
   deriveMyTasks,
   derivePendingNames,
@@ -131,6 +132,7 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'hydrate',
   'assign',
   'autoAssign',
+  'clearAssignments',
   'finishImport',
   'addImportedWeek',
   'mergeWeekAlt',
@@ -472,6 +474,26 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           ),
         ),
         toast: toastKey(state, 'toastAutoN', { n: count }),
+      }
+    }
+    case 'clearAssignments': {
+      if (!state.weeks[state.week]) return state // keine Wochen geladen
+      const { weeks, count } = clearAssignments(state.weeks, state.week, state.tab, action.scope)
+      if (count === 0) return { ...state, toast: toastKey(state, 'toastGeleertN', { n: 0 }) }
+      return {
+        ...state,
+        weeks,
+        confirmations: dropConfirmations(
+          state.confirmations,
+          changedSlotKeys(
+            state.weeks[state.week][state.tab],
+            weeks[state.week][state.tab],
+            state.services,
+            state.week,
+            state.tab,
+          ),
+        ),
+        toast: toastKey(state, 'toastGeleertN', { n: count }),
       }
     }
     case 'confirmTask': {

@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "ÁP DỤNG",
   "oderPersonWaehlen": "Hoặc chọn từ hội thánh của bạn:",
   "konfliktHelperTask": "{name} có nhiệm vụ hỗ trợ và một nhiệm vụ trong cùng một ngày · {tab}",
+  "leeren": "Xóa",
+  "leerenSicher": "Thực sự xóa?",
+  "toastGeleertN": "Đã xóa {n} phân công",
 } satisfies Partial<Dict>

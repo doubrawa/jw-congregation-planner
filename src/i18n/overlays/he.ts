@@ -272,5 +272,8 @@ export default {
   "konfliktAbsent": "{name} נעדר אך משובץ · {tab}",
   "konfliktDouble": "{name} משובץ {n}× באותה אסיפה · {tab}",
   "konfliktHelperTask": "{name} מבצע תפקיד עזר ומטלה באותו יום · {tab}",
-  "konfliktStreak": "{name} משובץ {n} שבועות ברציפות"
+  "konfliktStreak": "{name} משובץ {n} שבועות ברציפות",
+  "leeren": "נקה",
+  "leerenSicher": "לנקות באמת?",
+  "toastGeleertN": "{n} שיבוצים נוקו",
 } satisfies Partial<Dict>

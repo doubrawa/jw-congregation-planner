@@ -130,6 +130,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     }
+    case 'clearAssignments': {
+      const before = prev.weeks[prev.week]?.[prev.tab]
+      const after = next.weeks[prev.week]?.[prev.tab]
+      if (before && after && next.weeks !== prev.weeks) {
+        deleteConfirmationRows(
+          congId,
+          changedSlotKeys(before, after, prev.services, prev.week, prev.tab),
+        )
+        saveWeek(congId, prev.week, next.weeks[prev.week])
+      }
+      break
+    }
     case 'lacMove': {
       if (next.weeks === prev.weeks) break // Rand: kein Tausch
       saveWeek(congId, prev.week, next.weeks[prev.week])

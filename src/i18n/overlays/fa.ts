@@ -272,5 +272,8 @@ export default {
   "konfliktAbsent": "{name} غایب است اما تعیین شده · {tab}",
   "konfliktDouble": "{name} در یک جلسه {n}× تعیین شده · {tab}",
   "konfliktHelperTask": "{name} در یک روز هم وظیفهٔ کمکی و هم وظیفه دارد · {tab}",
-  "konfliktStreak": "{name} {n} هفتهٔ پیاپی تعیین شده است"
+  "konfliktStreak": "{name} {n} هفتهٔ پیاپی تعیین شده است",
+  "leeren": "پاک کردن",
+  "leerenSicher": "واقعاً پاک شود؟",
+  "toastGeleertN": "{n} تخصیص پاک شد",
 } satisfies Partial<Dict>

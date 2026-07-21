@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "ILAPAT",
   "oderPersonWaehlen": "O pumili mula sa sarili mong kongregasyon:",
   "konfliktHelperTask": "Si {name} ay may support duty at atas sa parehong araw · {tab}",
+  "leeren": "Alisin",
+  "leerenSicher": "Sigurado bang alisin?",
+  "toastGeleertN": "{n} atas na inalis",
 } satisfies Partial<Dict>

@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "TOEPASSEN",
   "oderPersonWaehlen": "Of kies uit je eigen gemeente:",
   "konfliktHelperTask": "{name} heeft ondersteuning en een toewijzing op dezelfde dag · {tab}",
+  "leeren": "Wissen",
+  "leerenSicher": "Echt wissen?",
+  "toastGeleertN": "{n} toewijzingen gewist",
 } satisfies Partial<Dict>

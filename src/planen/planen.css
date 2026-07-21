@@ -20,12 +20,31 @@
   color: var(--mut);
 }
 
-.plan-auto-btn {
-  display: block;
-  width: 100%;
+/* Auto-Zuteilen / Leeren — je eine Zeile für Aufgaben und Hilfsdienste:
+   Bereichs-Label, darunter der gefüllte „Automatisch"-Button (primär) und der
+   dezente „Leeren"-Button (Umriss, Zwei-Tipp-Bestätigung) auf einer Linie. */
+.plan-auto {
   margin-top: 12px;
-  background: var(--acc);
-  color: var(--onAcc);
+}
+
+.plan-auto-row + .plan-auto-row {
+  margin-top: 12px;
+}
+
+.plan-auto-label {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mut);
+  margin-bottom: 6px;
+}
+
+.plan-auto-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.plan-auto-btn {
   border-radius: var(--r-pill);
   padding: 11px 0;
   text-align: center;
@@ -34,13 +53,41 @@
   letter-spacing: 0.06em;
 }
 
-.plan-auto-btn:hover {
+/* Primär: füllt die Zuteilungen automatisch — nimmt die restliche Breite. */
+.plan-auto-btn--primary {
+  flex: 1;
+  min-width: 0;
+  background: var(--acc);
+  color: var(--onAcc);
+}
+
+.plan-auto-btn--primary:hover {
   background: var(--accD);
 }
 
-/* Zwei gestapelte Auto-Zuteilen-Buttons (Aufgaben / Hilfsdienste) enger zusammen. */
-.plan-auto-btn + .plan-auto-btn {
-  margin-top: 8px;
+/* Sekundär/destruktiv: leert die Zuteilungen. Schmaler Umriss-Button. */
+.plan-auto-btn--clear {
+  flex: none;
+  min-width: 92px;
+  padding-inline: 14px;
+  background: transparent;
+  color: var(--mut);
+  border: 1px solid var(--bord);
+  text-transform: uppercase;
+}
+
+.plan-auto-btn--clear:hover {
+  border-color: var(--wein);
+  color: var(--wein);
+}
+
+/* Bewaffnet (erster Tipp): weinrot getönt, „Wirklich leeren?" braucht Platz. */
+.plan-auto-btn--clear.is-armed {
+  min-width: 132px;
+  background: var(--tWein);
+  border-color: var(--wein);
+  color: var(--wein);
+  text-transform: none;
 }
 
 .plan-legend {

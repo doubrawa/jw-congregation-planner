@@ -272,5 +272,8 @@ export default {
   "konfliktAbsent": "{name} غیر حاضر ہے مگر تفویض شدہ · {tab}",
   "konfliktDouble": "{name} ایک میٹنگ میں {n}× تفویض ہے · {tab}",
   "konfliktHelperTask": "{name} کے پاس ایک ہی دن معاون ذمہ داری اور ذمہ داری دونوں ہیں · {tab}",
-  "konfliktStreak": "{name} لگاتار {n} ہفتوں سے تفویض ہے"
+  "konfliktStreak": "{name} لگاتار {n} ہفتوں سے تفویض ہے",
+  "leeren": "صاف کریں",
+  "leerenSicher": "واقعی صاف کریں؟",
+  "toastGeleertN": "{n} تفویضات صاف کر دیے گئے",
 } satisfies Partial<Dict>

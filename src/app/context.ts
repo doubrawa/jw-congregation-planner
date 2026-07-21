@@ -154,6 +154,7 @@ export type AppAction =
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string; rolle?: string } // auf state.slotSel; "" = entfernen; rolle nur Gastredner-Slots (trägt Herkunfts-Versammlung)
   | { type: 'autoAssign'; scope?: 'parts' | 'helpers' | 'all' } // aktuelle Woche + Tab; Bereich (Default: alles)
+  | { type: 'clearAssignments'; scope: 'parts' | 'helpers' } // aktuelle Woche + Tab: Zuteilungen des Bereichs leeren
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
   | { type: 'declineTask'; id: string }
