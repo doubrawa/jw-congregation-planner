@@ -523,7 +523,13 @@
   /* Einziger Scrollbereich des Sheets */
   flex: 1 1 auto;
   min-height: 0;
+  /* 8px Luft links/rechts: nimmt den Blutrand der belegten Zeilen auf, damit
+     er nicht überläuft. overflow-x explizit aus, sonst stuft es die zweite
+     Achse wegen overflow-y auf auto hoch → überflüssige Querscrollbar. */
+  margin-inline: -8px;
+  padding-inline: 8px;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
 }
 
