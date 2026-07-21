@@ -440,6 +440,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.persons,
         state.services,
         state.groups,
+        action.scope,
       )
       if (count === 0) {
         // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie

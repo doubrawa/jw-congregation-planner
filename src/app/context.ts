@@ -153,7 +153,7 @@ export type AppAction =
   | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, Week> } // nachgeladene Sprachvarianten
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string; rolle?: string } // auf state.slotSel; "" = entfernen; rolle nur Gastredner-Slots (trägt Herkunfts-Versammlung)
-  | { type: 'autoAssign' } // aktuelle Woche + Tab
+  | { type: 'autoAssign'; scope?: 'parts' | 'helpers' | 'all' } // aktuelle Woche + Tab; Bereich (Default: alles)
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
   | { type: 'declineTask'; id: string }
