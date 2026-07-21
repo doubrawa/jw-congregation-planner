@@ -3,7 +3,7 @@ import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { initials, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
-import type { Person, Role } from '../data/types'
+import type { Person, QualificationKey, Role } from '../data/types'
 import { KontoCard } from './KontoCard'
 import { PlannerToggle, PrivToggle } from './PrivToggle'
 
@@ -19,6 +19,15 @@ export function PersonDetail({ person }: { person: Person }) {
   const { t, tu } = useT()
   const update = (patch: Partial<Person>) =>
     dispatch({ type: 'updatePerson', id: person.id, patch })
+
+  // Vorsitz ist nach Zusammenkunft getrennt: Basis-Label „Vorsitz" + Zusatz
+  // aus den bereits übersetzten Tab-Namen (unter der Woche / Wochenende).
+  const privLabel = (key: QualificationKey): string =>
+    key === 'vorsitzMid'
+      ? `${t.privVorsitz} · ${t.tabMid}`
+      : key === 'vorsitzWe'
+        ? `${t.privVorsitz} · ${t.tabWe}`
+        : t[PRIV_KEY[key]]
 
   const fields: Array<[keyof Person & ('fn' | 'ln' | 'dn' | 'tel' | 'mail'), string]> = [
     ['fn', t.vorname],
@@ -127,7 +136,7 @@ export function PersonDetail({ person }: { person: Person }) {
       <div className="panel panel--pb10" data-farbe="petrol">
         <div className="panel-label">{t.aufgabenbereiche}</div>
         {QUALIFICATION_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={t[PRIV_KEY[key]]} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={privLabel(key)} person={person} update={update} />
         ))}
         {/* Je Hilfsdienst ein Bereich; Gruppen-Dienste (Reinigung) rotieren
             Gruppen statt Personen und haben deshalb keinen. */}
@@ -148,7 +157,7 @@ export function PersonDetail({ person }: { person: Person }) {
         <div className="panel-label">{t.wtRollenLabel}</div>
         <p className="panel-hint">{t.wtRollenHint}</p>
         {WT_ROLE_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={t[PRIV_KEY[key]]} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={privLabel(key)} person={person} update={update} />
         ))}
         <PlannerToggle person={person} update={update} />
       </div>

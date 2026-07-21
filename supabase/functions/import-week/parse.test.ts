@@ -46,7 +46,7 @@ describe('parseWorkbookWeek (Struktur, deutsche Seite)', () => {
     expect(open.title).toContain('Lied 123')
     expect(open.meta).toBe('1 Min.')
     expect(open.names.map((n) => n.rolle)).toEqual(['Vorsitz', 'Gebet'])
-    expect(open.names.map((n) => n.bereichsKey)).toEqual(['vorsitz', 'gebet'])
+    expect(open.names.map((n) => n.bereichsKey)).toEqual(['vorsitzMid', 'gebet'])
   })
 
   it('mappt Farbklassen auf Sektionen und Qualifikationen', () => {
@@ -155,7 +155,7 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
     const open = byLabel('ERÖFFNUNG').items[0] as ImportedPart
     expect(open.title).toBe('Xylo 123 qi Preku · Vorqi Blen')
     expect(open.meta).toBe('1 vim')
-    expect(open.names.map((n) => `${n.rolle}:${n.bereichsKey}`)).toEqual(['Vorsitz:vorsitz', 'Gebet:gebet'])
+    expect(open.names.map((n) => `${n.rolle}:${n.bereichsKey}`)).toEqual(['Vorsitz:vorsitzMid', 'Gebet:gebet'])
   })
 
   it('Bibellesung = letzter Schätze-Punkt (Position, nicht Text)', () => {

@@ -16,7 +16,8 @@ export const PLANNER_ROLES: readonly Role[] = ['aeltester', 'dienstamtgehilfe']
 
 /** Feste Aufgabenbereiche (Reihenfolge = Toggle-Reihenfolge im Detail). */
 export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
-  vorsitz: 'Vorsitz',
+  vorsitzMid: 'Vorsitz (unter der Woche)',
+  vorsitzWe: 'Vorsitz (Wochenende)',
   vortrag: 'Vorträge',
   gebet: 'Gebete',
   bibellesung: 'Bibellesung',
@@ -32,7 +33,8 @@ export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
  * Die Hilfsdienst-Bereiche folgen dahinter und kommen aus `state.services`.
  */
 export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
-  'vorsitz',
+  'vorsitzMid',
+  'vorsitzWe',
   'vortrag',
   'gebet',
   'bibellesung',

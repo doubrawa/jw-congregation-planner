@@ -78,7 +78,10 @@ export function dict(lang: Lang): Dict {
  * Dienstname und wird über `tu` übersetzt.
  */
 export const PRIV_KEY: Record<QualificationKey, keyof Dict> = {
-  vorsitz: 'privVorsitz',
+  // vorsitzMid/vorsitzWe teilen sich das Basis-Label „Vorsitz"; den Zusatz
+  // „unter der Woche"/„Wochenende" hängt PersonDetail aus tabMid/tabWe an.
+  vorsitzMid: 'privVorsitz',
+  vorsitzWe: 'privVorsitz',
   vortrag: 'privVortrag',
   gebet: 'privGebet',
   bibellesung: 'privBibellesung',

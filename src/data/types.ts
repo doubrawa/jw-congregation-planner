@@ -68,7 +68,8 @@ export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger'
  * ohne die neueren Bereiche gültig bleiben.
  */
 export interface Qualifications {
-  vorsitz: boolean
+  vorsitzMid: boolean // Vorsitz unter der Woche
+  vorsitzWe: boolean // Vorsitz am Wochenende
   vortrag: boolean
   gebet: boolean
   bibellesung: boolean // Bibellesung (Schätze aus Gottes Wort)
@@ -85,7 +86,8 @@ export interface Qualifications {
  * nicht Teil dieser Union — sie werden als freie Strings (`svc:<key>`) geführt.
  */
 export type QualificationKey =
-  | 'vorsitz'
+  | 'vorsitzMid'
+  | 'vorsitzWe'
   | 'vortrag'
   | 'gebet'
   | 'bibellesung'

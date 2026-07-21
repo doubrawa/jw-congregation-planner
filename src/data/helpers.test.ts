@@ -12,7 +12,8 @@ import type { Person, Qualifications } from './types'
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {
-    vorsitz: false,
+    vorsitzMid: false,
+    vorsitzWe: false,
     vortrag: false,
     gebet: false,
     bibellesung: false,

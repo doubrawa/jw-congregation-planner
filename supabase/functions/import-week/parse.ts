@@ -235,7 +235,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
           title,
           meta: joinMeta(firstParen(tok.text)),
           names: [
-            { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitz' },
+            { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
             { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
           ],
         }
@@ -325,7 +325,7 @@ function fallbackOpening(): ImportedPart {
     title: 'Lied · Gebet · Einleitende Worte',
     meta: '1 Min.',
     names: [
-      { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitz' },
+      { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
       { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
     ],
   }
@@ -337,7 +337,7 @@ function weekendTemplate(range: string): ImportedMeeting {
     date: range,
     end: 'Ende ca. 11:45',
     sections: [
-      { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitz' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
+      { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
       { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
       { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
       { label: 'ABSCHLUSS', farbe: 'neutral', items: [{ title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
