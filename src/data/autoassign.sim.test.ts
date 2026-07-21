@@ -93,6 +93,27 @@ function simulate(persons: Person[], services: Service[], nWeeks: number): Week[
   return weeks
 }
 
+describe('Auto-Zuteilung — getrennter Umfang (Aufgaben / Hilfsdienste)', () => {
+  const people: Person[] = [
+    mk(['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung']),
+    ...many(6, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung']),
+    ...many(6, [TON, MIK, ...ORDNER]),
+  ]
+  const week = () => [buildImportWeek()]
+
+  it("scope 'parts' besetzt Programmpunkte, lässt Hilfsdienste offen", () => {
+    const m = autoAssignMeeting(week(), 0, 'mid', people, DEMO_SERVICES, [], 'parts').weeks[0].mid
+    expect(partNames(m).length).toBeGreaterThan(0)
+    expect(helperNames(m, DEMO_SERVICES)).toEqual([])
+  })
+
+  it("scope 'helpers' besetzt Hilfsdienste, lässt Programmpunkte offen", () => {
+    const m = autoAssignMeeting(week(), 0, 'mid', people, DEMO_SERVICES, [], 'helpers').weeks[0].mid
+    expect(helperNames(m, DEMO_SERVICES).length).toBeGreaterThan(0)
+    expect(partNames(m)).toEqual([])
+  })
+})
+
 describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
   // Konduktor Woche 3 abwesend → Vertreter muss übernehmen.
   const conductor = mk(['studium', 'vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtLeiter: true, absent: [3] })

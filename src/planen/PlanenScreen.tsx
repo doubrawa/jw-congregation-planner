@@ -71,8 +71,19 @@ export function PlanenScreen() {
 
       <p className="plan-hint">{t.planHint}</p>
 
-      <button type="button" className="plan-auto-btn" onClick={() => dispatch({ type: 'autoAssign' })}>
-        {t.autoZuteilen}
+      <button
+        type="button"
+        className="plan-auto-btn"
+        onClick={() => dispatch({ type: 'autoAssign', scope: 'parts' })}
+      >
+        {t.navAufgaben.toUpperCase()} · {t.autoZuteilen}
+      </button>
+      <button
+        type="button"
+        className="plan-auto-btn"
+        onClick={() => dispatch({ type: 'autoAssign', scope: 'helpers' })}
+      >
+        {t.hilfsdienste} · {t.autoZuteilen}
       </button>
       <p className="plan-legend">{t.planLegend}</p>
 

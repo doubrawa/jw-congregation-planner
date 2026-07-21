@@ -38,6 +38,11 @@
   background: var(--accD);
 }
 
+/* Zwei gestapelte Auto-Zuteilen-Buttons (Aufgaben / Hilfsdienste) enger zusammen. */
+.plan-auto-btn + .plan-auto-btn {
+  margin-top: 8px;
+}
+
 .plan-legend {
   margin-top: 10px;
   font-size: 10.5px;

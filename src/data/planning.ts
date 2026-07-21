@@ -224,6 +224,9 @@ export interface AutoAssignResult {
   unfilled: number // offen gebliebene Slots ohne passenden/freien Kandidaten
 }
 
+/** Umfang der Auto-Zuteilung: nur Programmpunkte, nur Hilfsdienste, oder beides. */
+export type AssignScope = 'all' | 'parts' | 'helpers'
+
 /**
  * Auto-Zuteilung für eine Woche+Meeting. Regeln (siehe README/Design):
  *  - Kandidaten: qualifiziert, in dieser Woche anwesend, noch nicht in diesem
@@ -249,6 +252,7 @@ export function autoAssignMeeting(
   persons: Person[],
   services: Service[],
   groups: Group[] = [],
+  scope: AssignScope = 'all',
 ): AutoAssignResult {
   const next = structuredClone(weeks)
   const meeting = next[weekIndex][tab]
@@ -293,6 +297,10 @@ export function autoAssignMeeting(
   let unfilled = 0
   const newly: string[] = []
 
+  // Umfang: Programmpunkte (Aufgaben) und/oder Hilfsdienste getrennt zuteilbar.
+  const doParts = scope !== 'helpers'
+  const doHelpers = scope !== 'parts'
+
   const claim = (kind: 'part' | 'helper', name: string): void => {
     used.add(name)
     totalLoad.set(name, tl(name) + 1)
@@ -332,6 +340,7 @@ export function autoAssignMeeting(
     return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
   }
 
+  if (doParts) {
   // 1) WT-Studium-Leiter zuerst reservieren (nur Wochenende hat diese Sektion).
   for (const section of meeting.sections) {
     if (section.label !== LABEL_WT_STUDIUM) continue
@@ -385,6 +394,9 @@ export function autoAssignMeeting(
     }
   }
 
+  } // Ende Programmpunkte (doParts)
+
+  if (doHelpers) {
   // 4) Hilfsdienste (nach den Programmpunkten → Helfer und Aufgaben schließen
   //    sich über `used` gegenseitig aus; Auswahl nach Gesamtlast).
   for (const svc of services) {
@@ -409,6 +421,7 @@ export function autoAssignMeeting(
     }
     meeting.helpers[svc.key] = arr
   }
+  } // Ende Hilfsdienste (doHelpers)
 
   return { weeks: next, count, newly, unfilled }
 }
