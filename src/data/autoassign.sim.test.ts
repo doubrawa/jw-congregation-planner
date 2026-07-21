@@ -21,7 +21,7 @@ const ORDNER = [serviceQualKey('ord'), serviceQualKey('saal'), serviceQualKey('r
 let counter = 0
 function priv(on: string[]): Qualifications {
   const base: Qualifications = {
-    vorsitz: false, vortrag: false, gebet: false, bibellesung: false, leser: false,
+    vorsitzMid: false, vorsitzWe: false, vortrag: false, gebet: false, bibellesung: false, leser: false,
     schulung: false, studium: false,
   }
   for (const key of on) base[key] = true
@@ -95,9 +95,9 @@ function simulate(persons: Person[], services: Service[], nWeeks: number): Week[
 
 describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
   // Konduktor Woche 3 abwesend → Vertreter muss übernehmen.
-  const conductor = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtLeiter: true, absent: [3] })
-  const deputy = mk(['studium', 'vorsitz', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtVertreter: true })
-  const elders = many(10, ['vorsitz', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung'])
+  const conductor = mk(['studium', 'vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtLeiter: true, absent: [3] })
+  const deputy = mk(['studium', 'vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtVertreter: true })
+  const elders = many(10, ['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung'])
   const servants = many(20, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', MIK, ...ORDNER])
   const tonPool = many(4, [TON]) // nur Ton → für den Balance-Test
   const mikPool = many(12, [MIK])

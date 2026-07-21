@@ -270,7 +270,7 @@ describe('S-89-Nutzlast', () => {
 
   it('liefert null für Nicht-Schulungsslots', () => {
     const s89 = buildS89ForSlot(weeks, {
-      kind: 'part', wi: 0, tab: 'mid', si: 0, ii: 0, ni: 0, priv: 'vorsitz', groups: false, label: '',
+      kind: 'part', wi: 0, tab: 'mid', si: 0, ii: 0, ni: 0, priv: 'vorsitzMid', groups: false, label: '',
     })
     expect(s89).toBeNull()
   })

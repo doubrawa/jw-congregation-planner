@@ -4,10 +4,56 @@
  */
 
 import { QUALIFICATION_ORDER, ROLE_LABEL } from './constants'
-import type { Person, ProgramItem, Qualifications, SongItem, Week } from './types'
+import type { Meeting, Person, ProgramItem, Qualifications, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
+}
+
+/** Die Vorsitz-Bereiche (fest + Alt-Schlüssel), die je Zusammenkunft umzuschlüsseln sind. */
+const CHAIR_KEYS = new Set(['vorsitz', 'vorsitzMid', 'vorsitzWe'])
+
+/**
+ * Setzt den Bereichs-Schlüssel des Vorsitz-Slots je nach Zusammenkunft:
+ * unter der Woche → `vorsitzMid`, Wochenende → `vorsitzWe`. So verlangt jeder
+ * Slot genau die passende Qualifikation. Idempotent und referenz-erhaltend
+ * (unveränderte Wochen behalten ihre Referenz). Deckt Alt-Daten mit dem
+ * früheren gemeinsamen `vorsitz` beim Laden ab und normalisiert Demo/Vorlagen.
+ */
+export function normalizeChairKeys(weeks: Week[]): Week[] {
+  let anyChanged = false
+  const next = weeks.map((week) => {
+    const mid = chairMeeting(week.mid, 'vorsitzMid')
+    const we = chairMeeting(week.we, 'vorsitzWe')
+    if (mid === week.mid && we === week.we) return week
+    anyChanged = true
+    return { ...week, mid, we }
+  })
+  return anyChanged ? next : weeks
+}
+
+function chairMeeting(meeting: Meeting, key: 'vorsitzMid' | 'vorsitzWe'): Meeting {
+  let changed = false
+  const sections = meeting.sections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => {
+      if (isSong(item)) return item
+      let itemChanged = false
+      const names = item.names.map((slot) => {
+        const isChair =
+          slot.rolle === 'Vorsitz' || (slot.bereichsKey != null && CHAIR_KEYS.has(slot.bereichsKey))
+        if (isChair && slot.bereichsKey !== key) {
+          itemChanged = true
+          return { ...slot, bereichsKey: key }
+        }
+        return slot
+      })
+      if (!itemChanged) return item
+      changed = true
+      return { ...item, names }
+    }),
+  }))
+  return changed ? { ...meeting, sections } : meeting
 }
 
 /** Voller Name „Vorname Nachname" (getrimmt); leer, wenn beide Felder leer sind. */

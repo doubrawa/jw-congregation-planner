@@ -4,7 +4,7 @@
  * und die Regeln darunter sind verbindlich. Ersetzt später Persistenz/Backend.
  */
 
-import { serviceQualKey } from './helpers'
+import { normalizeChairKeys, serviceQualKey } from './helpers'
 import type {
   Absence,
   Group,
@@ -51,11 +51,15 @@ export const WORKBOOK_LABEL = 'Arbeitsheft Sep/Okt 2026'
  * feste Programm-Bereiche direkt, Hilfsdienste auf ihren Dienst-Bereich
  * (`ordner` deckt alle drei Ordner-Dienste ab).
  */
-const q = (on: ReadonlyArray<QualificationKey | 'lesen' | 'mikrofon' | 'ton' | 'ordner' | 'zoomordner'>): Person['priv'] => {
-  const has = (key: string) => on.includes(key as QualificationKey)
+const q = (
+  on: ReadonlyArray<QualificationKey | 'vorsitz' | 'lesen' | 'mikrofon' | 'ton' | 'ordner' | 'zoomordner'>,
+): Person['priv'] => {
+  const has = (key: string) => (on as readonly string[]).includes(key)
   const ordner = has('ordner')
+  const vorsitz = has('vorsitz')
   return {
-    vorsitz: has('vorsitz'),
+    vorsitzMid: vorsitz,
+    vorsitzWe: vorsitz,
     vortrag: has('vortrag'),
     gebet: has('gebet'),
     bibellesung: has('bibellesung') || has('lesen'),
@@ -266,7 +270,7 @@ const sec = (
 
 /** Baut die 4 Demo-Wochen — je Aufruf frische Objekte (State wird mutiert kopiert). */
 export function buildDemoWeeks(): Week[] {
-  return [
+  return normalizeChairKeys([
     {
       range: '7.–13. September', book: 'Jeremia 32–33', current: true,
       mid: {
@@ -424,12 +428,12 @@ export function buildDemoWeeks(): Week[] {
         helpers: { ton: ['Claus Maier'], mik: ['Simon Krüger', 'Bernd Klein'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 1'] },
       },
     },
-  ]
+  ])
 }
 
 /** Die eine importierbare Arbeitsheft-Woche (Einstellungen → Programm-Import), ohne Zuteilungen. */
 export function buildImportWeek(): Week {
-  return {
+  return normalizeChairKeys([{
     range: '5.–11. Oktober', book: 'Jeremia 43–45', current: false,
     mid: {
       date: 'Dienstag, 6. Oktober · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
@@ -467,5 +471,5 @@ export function buildImportWeek(): Week {
       ],
       helpers: {},
     },
-  }
+  }])[0]
 }

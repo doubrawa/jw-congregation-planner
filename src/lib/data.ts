@@ -17,7 +17,13 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
-import { displayName, emptyQualifications, serviceQualKey, shortDisplayName } from '../data/helpers'
+import {
+  displayName,
+  emptyQualifications,
+  normalizeChairKeys,
+  serviceQualKey,
+  shortDisplayName,
+} from '../data/helpers'
 import type {
   Absence,
   ConfirmationMap,
@@ -141,6 +147,14 @@ export function normalizePriv(raw: Qualifications | null | undefined): Qualifica
     priv.bibellesung = true
     priv.leser = true
   }
+  // Früher gab es einen gemeinsamen `vorsitz`; heute getrennt nach
+  // Zusammenkunft. Bis der echte Split (NWS) gesetzt ist, beide gewähren —
+  // so verliert niemand das Vorsitz-Recht.
+  if (r.vorsitz) {
+    priv.vorsitzMid = true
+    priv.vorsitzWe = true
+  }
+  delete priv['vorsitz']
   return priv
 }
 
@@ -416,9 +430,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
     serviceList,
   )
-  const weekList = migrateAssignmentNames(
-    (weeks.data ?? []).map((r) => (r as WeekRow).data),
-    personList,
+  const weekList = normalizeChairKeys(
+    migrateAssignmentNames(
+      (weeks.data ?? []).map((r) => (r as WeekRow).data),
+      personList,
+    ),
   )
 
   const confirmations: ConfirmationMap = {}

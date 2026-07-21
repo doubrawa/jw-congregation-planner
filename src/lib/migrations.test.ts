@@ -4,7 +4,8 @@ import type { Meeting, Person, Qualifications, Service, Week } from '../data/typ
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {
-    vorsitz: false,
+    vorsitzMid: false,
+    vorsitzWe: false,
     vortrag: false,
     gebet: false,
     bibellesung: false,
@@ -32,7 +33,7 @@ function person(patch: Partial<Person>): Person {
 describe('normalizePriv (Lade-Migration der Qualifikationen)', () => {
   it('leerer/fehlender Bestand → alle festen Bereiche false', () => {
     const priv = normalizePriv(null)
-    for (const key of ['vorsitz', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'studium']) {
+    for (const key of ['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'studium']) {
       expect(priv[key], key).toBe(false)
     }
   })
@@ -41,6 +42,13 @@ describe('normalizePriv (Lade-Migration der Qualifikationen)', () => {
     const priv = normalizePriv({ lesen: true } as never)
     expect(priv.bibellesung).toBe(true)
     expect(priv.leser).toBe(true)
+  })
+
+  it('altes kombiniertes `vorsitz` wird auf vorsitzMid+vorsitzWe gespiegelt', () => {
+    const priv = normalizePriv({ vorsitz: true } as never)
+    expect(priv.vorsitzMid).toBe(true)
+    expect(priv.vorsitzWe).toBe(true)
+    expect(priv['vorsitz']).toBeUndefined() // Alt-Schlüssel wird entfernt
   })
 
   it('Dienst-Bereiche (svc:*) und Wahrheitswerte bleiben erhalten', () => {
