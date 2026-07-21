@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "UYGULA",
   "oderPersonWaehlen": "Ya da kendi cemaatinden seç:",
   "konfliktHelperTask": "{name} aynı gün hem destek hizmeti hem de bir görev üstlenmiş · {tab}",
+  "leeren": "Temizle",
+  "leerenSicher": "Gerçekten temizle?",
+  "toastGeleertN": "{n} atama temizlendi",
 } satisfies Partial<Dict>

@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "ALKALMAZ",
   "oderPersonWaehlen": "Vagy válassz a saját gyülekezetedből:",
   "konfliktHelperTask": "{name} kisegítő szolgálatot és feladatot is kapott ugyanazon a napon · {tab}",
+  "leeren": "Ürítés",
+  "leerenSicher": "Biztosan üríted?",
+  "toastGeleertN": "{n} kiosztás ürítve",
 } satisfies Partial<Dict>

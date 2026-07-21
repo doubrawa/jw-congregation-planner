@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "ZASTOSUJ",
   "oderPersonWaehlen": "Albo wybierz ze swojego zboru:",
   "konfliktHelperTask": "{name} ma służbę pomocniczą i zadanie tego samego dnia · {tab}",
+  "leeren": "Wyczyść",
+  "leerenSicher": "Na pewno wyczyścić?",
+  "toastGeleertN": "Wyczyszczono przydziały: {n}",
 } satisfies Partial<Dict>

@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "APLICĂ",
   "oderPersonWaehlen": "Sau alege din propria congregație:",
   "konfliktHelperTask": "{name} are serviciu de asistență și o însărcinare în aceeași zi · {tab}",
+  "leeren": "Golește",
+  "leerenSicher": "Chiar golești?",
+  "toastGeleertN": "{n} atribuiri golite",
 } satisfies Partial<Dict>

@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "ПРИЛОЖИ",
   "oderPersonWaehlen": "Или избери от собствения си сбор:",
   "konfliktHelperTask": "{name} има помощна служба и задача в същия ден · {tab}",
+  "leeren": "Изчисти",
+  "leerenSicher": "Наистина ли да се изчисти?",
+  "toastGeleertN": "Изчистени назначения: {n}",
 } satisfies Partial<Dict>

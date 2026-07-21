@@ -233,5 +233,8 @@ export default {
   "konfliktDouble": "{name} معيّن {n}× في اجتماع واحد · {tab}",
   "konfliktHelperTask": "{name} لديه خدمة مساندة وتعيين في اليوم نفسه · {tab}",
   "konfliktStreak": "{name} معيّن {n} أسابيع متتالية",
-  "duMarker": " (أنت)"
+  "duMarker": " (أنت)",
+  "leeren": "مسح",
+  "leerenSicher": "مسح فعلاً؟",
+  "toastGeleertN": "تم مسح {n} تعيينات",
 } satisfies Partial<Dict>

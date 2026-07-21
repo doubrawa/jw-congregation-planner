@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildImportWeek, DEMO_SERVICES } from './demo'
 import { displayName, isSong, partWorkload, serviceQualKey, workloadOf } from './helpers'
-import { autoAssignMeeting } from './planning'
+import { autoAssignMeeting, clearAssignments } from './planning'
 import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
 
 /**
@@ -111,6 +111,62 @@ describe('Auto-Zuteilung — getrennter Umfang (Aufgaben / Hilfsdienste)', () =>
     const m = autoAssignMeeting(week(), 0, 'mid', people, DEMO_SERVICES, [], 'helpers').weeks[0].mid
     expect(helperNames(m, DEMO_SERVICES).length).toBeGreaterThan(0)
     expect(partNames(m)).toEqual([])
+  })
+})
+
+describe('Zuteilungen leeren (clearAssignments)', () => {
+  const people: Person[] = [
+    mk(['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung']),
+    ...many(6, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung']),
+    ...many(6, [TON, MIK, ...ORDNER]),
+  ]
+  const planned = (tab: 'mid' | 'we') =>
+    autoAssignMeeting([buildImportWeek()], 0, tab, people, DEMO_SERVICES).weeks
+
+  it("scope 'parts' leert Programmpunkte, lässt Hilfsdienste stehen", () => {
+    const w = planned('mid')
+    const before = w[0].mid
+    expect(partNames(before).length).toBeGreaterThan(0)
+    expect(helperNames(before, DEMO_SERVICES).length).toBeGreaterThan(0)
+    const { weeks, count } = clearAssignments(w, 0, 'mid', 'parts')
+    expect(count).toBeGreaterThan(0)
+    expect(partNames(weeks[0].mid)).toEqual([])
+    expect(helperNames(weeks[0].mid, DEMO_SERVICES)).toEqual(helperNames(before, DEMO_SERVICES))
+  })
+
+  it("scope 'helpers' leert Hilfsdienste, lässt Programmpunkte stehen", () => {
+    const w = planned('mid')
+    const before = w[0].mid
+    const { weeks, count } = clearAssignments(w, 0, 'mid', 'helpers')
+    expect(count).toBeGreaterThan(0)
+    expect(helperNames(weeks[0].mid, DEMO_SERVICES)).toEqual([])
+    expect(partNames(weeks[0].mid)).toEqual(partNames(before))
+  })
+
+  it("scope 'parts' lässt externe Redner (Gastredner) unangetastet", () => {
+    const w = [buildImportWeek()]
+    const talk = w[0].we.sections.find((s) => s.label === 'ÖFFENTLICHER VORTRAG')
+    const slot = talk && !isSong(talk.items[0]) ? (talk.items[0] as PartItem).names[0] : undefined
+    if (slot) slot.name = 'M. Extern'
+    const { weeks } = clearAssignments(w, 0, 'we', 'parts')
+    const after = weeks[0].we.sections.find((s) => s.label === 'ÖFFENTLICHER VORTRAG')
+    const nameAfter = after && !isSong(after.items[0]) ? (after.items[0] as PartItem).names[0].name : ''
+    expect(nameAfter).toBe('M. Extern')
+  })
+
+  it('leert nur die gewählte Zusammenkunft (Tab), nicht die andere', () => {
+    let w = planned('mid')
+    w = autoAssignMeeting(w, 0, 'we', people, DEMO_SERVICES).weeks
+    const { weeks } = clearAssignments(w, 0, 'mid', 'parts')
+    expect(partNames(weeks[0].mid)).toEqual([])
+    expect(partNames(weeks[0].we).length).toBeGreaterThan(0)
+  })
+
+  it('lässt die Eingabe unverändert (pur)', () => {
+    const w = planned('mid')
+    const snapshot = JSON.stringify(w)
+    clearAssignments(w, 0, 'mid', 'parts')
+    expect(JSON.stringify(w)).toBe(snapshot)
   })
 })
 

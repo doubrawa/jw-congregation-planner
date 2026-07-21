@@ -427,6 +427,53 @@ export function autoAssignMeeting(
 }
 
 /**
+ * Leert die Zuteilungen einer Woche+Meeting — das Gegenstück zur Auto-Zuteilung.
+ * `scope`:
+ *  - 'parts'   entfernt die Namen der Programmpunkte. Externe Redner
+ *    (Gastredner/Kreisaufseher) bleiben stehen, genau wie die Auto-Zuteilung sie
+ *    nicht besetzt — sie kommen von außen und werden manuell eingetragen.
+ *  - 'helpers' entfernt die Namen aller Hilfsdienste (inkl. Reinigungsgruppe).
+ * Programmstruktur, Rollen, Vortragsthemen und Lieder bleiben unverändert.
+ * Pur — die Eingabe bleibt unangetastet. `count` = Anzahl geleerter Slots.
+ */
+export function clearAssignments(
+  weeks: Week[],
+  weekIndex: number,
+  tab: MeetingTab,
+  scope: Exclude<AssignScope, 'all'>,
+): { weeks: Week[]; count: number } {
+  const next = structuredClone(weeks)
+  const meeting = next[weekIndex][tab]
+  let count = 0
+  if (scope === 'parts') {
+    for (const section of meeting.sections) {
+      for (const item of section.items) {
+        if (isSong(item)) continue
+        for (const slot of item.names) {
+          if (SKIP_ROLE.test(slot.rolle ?? '')) continue // externer Redner bleibt
+          if (slot.name) {
+            slot.name = ''
+            count++
+          }
+        }
+      }
+    }
+  } else {
+    for (const key of Object.keys(meeting.helpers)) {
+      const arr = meeting.helpers[key] ?? []
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i]) {
+          arr[i] = ''
+          count++
+        }
+      }
+      meeting.helpers[key] = arr
+    }
+  }
+  return { weeks: next, count }
+}
+
+/**
  * Baut die S-89-Nutzlast für einen belegten Schulungs-Slot (Schulungsaufgabe
  * oder Bibellesung). Liefert null, wenn der Slot leer ist oder keine
  * Schulungsaufgabe (Leser/Leiter zählen nicht). Rahmen und Schulungspunkt

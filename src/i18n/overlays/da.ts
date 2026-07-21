@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "ANVEND",
   "oderPersonWaehlen": "Eller vælg fra din egen menighed:",
   "konfliktHelperTask": "{name} har en støttetjeneste og en opgave samme dag · {tab}",
+  "leeren": "Ryd",
+  "leerenSicher": "Ryd virkelig?",
+  "toastGeleertN": "{n} tildelinger ryddet",
 } satisfies Partial<Dict>

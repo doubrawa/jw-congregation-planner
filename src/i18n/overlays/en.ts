@@ -273,5 +273,8 @@ export default {
   "konfliktAbsent": "{name} is absent but assigned · {tab}",
   "konfliktDouble": "{name} is assigned {n}× in one meeting · {tab}",
   "konfliktHelperTask": "{name} has a support duty and an assignment on the same day · {tab}",
-  "konfliktStreak": "{name} is assigned {n} weeks in a row"
+  "konfliktStreak": "{name} is assigned {n} weeks in a row",
+  "leeren": "Clear",
+  "leerenSicher": "Really clear?",
+  "toastGeleertN": "{n} assignments cleared",
 } satisfies Partial<Dict>

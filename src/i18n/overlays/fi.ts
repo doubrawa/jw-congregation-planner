@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "KÄYTÄ",
   "oderPersonWaehlen": "Tai valitse omasta seurakunnastasi:",
   "konfliktHelperTask": "{name} on samana päivänä tukitehtävässä ja tehtävässä · {tab}",
+  "leeren": "Tyhjennä",
+  "leerenSicher": "Tyhjennetäänkö?",
+  "toastGeleertN": "{n} tehtävää tyhjennetty",
 } satisfies Partial<Dict>

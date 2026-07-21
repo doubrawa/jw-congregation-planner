@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "적용",
   "oderPersonWaehlen": "또는 자기 회중에서 선택:",
   "konfliktHelperTask": "{name} 님은 같은 날 보조 봉사와 임무가 있습니다 · {tab}",
+  "leeren": "지우기",
+  "leerenSicher": "정말 지울까요?",
+  "toastGeleertN": "배정 {n}건 지움",
 } satisfies Partial<Dict>

@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "PRIMIJENI",
   "oderPersonWaehlen": "Ili odaberi iz vlastite skupštine:",
   "konfliktHelperTask": "{name} ima pomoćnu službu i zadatak istoga dana · {tab}",
+  "leeren": "Očisti",
+  "leerenSicher": "Zaista očistiti?",
+  "toastGeleertN": "Očišćeno dodjela: {n}",
 } satisfies Partial<Dict>

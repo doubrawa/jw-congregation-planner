@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "APPLICA",
   "oderPersonWaehlen": "Oppure scegli dalla tua congregazione:",
   "konfliktHelperTask": "{name} ha un servizio di supporto e un incarico lo stesso giorno · {tab}",
+  "leeren": "Svuota",
+  "leerenSicher": "Svuotare davvero?",
+  "toastGeleertN": "{n} assegnazioni svuotate",
 } satisfies Partial<Dict>

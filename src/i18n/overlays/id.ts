@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "TERAPKAN",
   "oderPersonWaehlen": "Atau pilih dari sidang Anda sendiri:",
   "konfliktHelperTask": "{name} punya dinas pendukung dan tugas pada hari yang sama · {tab}",
+  "leeren": "Kosongkan",
+  "leerenSicher": "Yakin kosongkan?",
+  "toastGeleertN": "{n} penugasan dikosongkan",
 } satisfies Partial<Dict>

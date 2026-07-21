@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "ΕΦΑΡΜΟΓΗ",
   "oderPersonWaehlen": "Ή επιλέξτε από τη δική σας εκκλησία:",
   "konfliktHelperTask": "Ο/Η {name} έχει υπηρεσία υποστήριξης και διορισμό την ίδια ημέρα · {tab}",
+  "leeren": "Εκκαθάριση",
+  "leerenSicher": "Σίγουρα εκκαθάριση;",
+  "toastGeleertN": "{n} αναθέσεις εκκαθαρίστηκαν",
 } satisfies Partial<Dict>

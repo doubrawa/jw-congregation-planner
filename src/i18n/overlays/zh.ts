@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "应用",
   "oderPersonWaehlen": "或从你自己的会众中选择：",
   "konfliktHelperTask": "{name} 同一天既有辅助服务又有任务 · {tab}",
+  "leeren": "清空",
+  "leerenSicher": "确定清空？",
+  "toastGeleertN": "已清空 {n} 项分配",
 } satisfies Partial<Dict>

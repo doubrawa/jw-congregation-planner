@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "TUMIA",
   "oderPersonWaehlen": "Au chagua kutoka kutaniko lako mwenyewe:",
   "konfliktHelperTask": "{name} ana utumishi wa kusaidia na mgawo siku moja · {tab}",
+  "leeren": "Futa",
+  "leerenSicher": "Futa kweli?",
+  "toastGeleertN": "Migawo {n} imefutwa",
 } satisfies Partial<Dict>

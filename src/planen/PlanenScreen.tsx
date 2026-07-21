@@ -5,6 +5,7 @@ import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { countOpenSlots } from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, OpenSlotsBanner } from './PlanBanners'
+import { AutoAssignPanel } from './AutoAssignPanel'
 import { HelpersPanel } from './HelpersPanel'
 import { MeetingSection } from './MeetingSection'
 import './planen.css'
@@ -71,20 +72,7 @@ export function PlanenScreen() {
 
       <p className="plan-hint">{t.planHint}</p>
 
-      <button
-        type="button"
-        className="plan-auto-btn"
-        onClick={() => dispatch({ type: 'autoAssign', scope: 'parts' })}
-      >
-        {t.navAufgaben.toUpperCase()} · {t.autoZuteilen}
-      </button>
-      <button
-        type="button"
-        className="plan-auto-btn"
-        onClick={() => dispatch({ type: 'autoAssign', scope: 'helpers' })}
-      >
-        {t.hilfsdienste} · {t.autoZuteilen}
-      </button>
+      <AutoAssignPanel />
       <p className="plan-legend">{t.planLegend}</p>
 
       <ConflictsBanner />

@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "POUŽIŤ",
   "oderPersonWaehlen": "Alebo vyberte zo svojho zboru:",
   "konfliktHelperTask": "{name} má pomocnú službu a úlohu v ten istý deň · {tab}",
+  "leeren": "Vymazať",
+  "leerenSicher": "Naozaj vymazať?",
+  "toastGeleertN": "Vymazané priradenia: {n}",
 } satisfies Partial<Dict>

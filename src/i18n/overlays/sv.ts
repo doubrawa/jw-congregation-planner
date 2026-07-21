@@ -274,4 +274,7 @@ export default {
   "uebernehmenBtn": "TILLÄMPA",
   "oderPersonWaehlen": "Eller välj från din egen församling:",
   "konfliktHelperTask": "{name} har en stödtjänst och en uppgift samma dag · {tab}",
+  "leeren": "Rensa",
+  "leerenSicher": "Rensa verkligen?",
+  "toastGeleertN": "{n} tilldelningar rensade",
 } satisfies Partial<Dict>
