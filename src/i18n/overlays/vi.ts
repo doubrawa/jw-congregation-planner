@@ -277,4 +277,5 @@ export default {
   "leeren": "Xóa",
   "leerenSicher": "Thực sự xóa?",
   "toastGeleertN": "Đã xóa {n} phân công",
+  "drucken": "In",
 } satisfies Partial<Dict>

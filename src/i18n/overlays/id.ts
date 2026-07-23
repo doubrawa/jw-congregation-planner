@@ -277,4 +277,5 @@ export default {
   "leeren": "Kosongkan",
   "leerenSicher": "Yakin kosongkan?",
   "toastGeleertN": "{n} penugasan dikosongkan",
+  "drucken": "Cetak",
 } satisfies Partial<Dict>

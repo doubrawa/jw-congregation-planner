@@ -277,4 +277,5 @@ export default {
   "leeren": "Vymazat",
   "leerenSicher": "Opravdu vymazat?",
   "toastGeleertN": "Vymazáno přiřazení: {n}",
+  "drucken": "Tisk",
 } satisfies Partial<Dict>

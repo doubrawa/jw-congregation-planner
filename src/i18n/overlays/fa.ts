@@ -276,4 +276,5 @@ export default {
   "leeren": "پاک کردن",
   "leerenSicher": "واقعاً پاک شود؟",
   "toastGeleertN": "{n} تخصیص پاک شد",
+  "drucken": "چاپ",
 } satisfies Partial<Dict>

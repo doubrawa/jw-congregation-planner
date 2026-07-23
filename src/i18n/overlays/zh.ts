@@ -277,4 +277,5 @@ export default {
   "leeren": "清空",
   "leerenSicher": "确定清空？",
   "toastGeleertN": "已清空 {n} 项分配",
+  "drucken": "打印",
 } satisfies Partial<Dict>

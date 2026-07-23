@@ -277,4 +277,5 @@ export default {
   "leeren": "Golește",
   "leerenSicher": "Chiar golești?",
   "toastGeleertN": "{n} atribuiri golite",
+  "drucken": "Tipărește",
 } satisfies Partial<Dict>

@@ -277,4 +277,5 @@ export default {
   "leeren": "지우기",
   "leerenSicher": "정말 지울까요?",
   "toastGeleertN": "배정 {n}건 지움",
+  "drucken": "인쇄",
 } satisfies Partial<Dict>

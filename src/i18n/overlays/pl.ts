@@ -277,4 +277,5 @@ export default {
   "leeren": "Wyczyść",
   "leerenSicher": "Na pewno wyczyścić?",
   "toastGeleertN": "Wyczyszczono przydziały: {n}",
+  "drucken": "Drukuj",
 } satisfies Partial<Dict>

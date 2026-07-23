@@ -237,4 +237,5 @@ export default {
   "leeren": "مسح",
   "leerenSicher": "مسح فعلاً؟",
   "toastGeleertN": "تم مسح {n} تعيينات",
+  "drucken": "طباعة",
 } satisfies Partial<Dict>

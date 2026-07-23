@@ -277,4 +277,5 @@ export default {
   "leeren": "Rensa",
   "leerenSicher": "Rensa verkligen?",
   "toastGeleertN": "{n} tilldelningar rensade",
+  "drucken": "Skriv ut",
 } satisfies Partial<Dict>

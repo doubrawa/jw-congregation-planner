@@ -277,4 +277,5 @@ export default {
   "leeren": "Εκκαθάριση",
   "leerenSicher": "Σίγουρα εκκαθάριση;",
   "toastGeleertN": "{n} αναθέσεις εκκαθαρίστηκαν",
+  "drucken": "Εκτύπωση",
 } satisfies Partial<Dict>

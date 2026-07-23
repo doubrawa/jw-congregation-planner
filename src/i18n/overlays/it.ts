@@ -277,4 +277,5 @@ export default {
   "leeren": "Svuota",
   "leerenSicher": "Svuotare davvero?",
   "toastGeleertN": "{n} assegnazioni svuotate",
+  "drucken": "Stampa",
 } satisfies Partial<Dict>

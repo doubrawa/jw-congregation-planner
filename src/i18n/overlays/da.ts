@@ -277,4 +277,5 @@ export default {
   "leeren": "Ryd",
   "leerenSicher": "Ryd virkelig?",
   "toastGeleertN": "{n} tildelinger ryddet",
+  "drucken": "Udskriv",
 } satisfies Partial<Dict>

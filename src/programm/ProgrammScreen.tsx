@@ -7,6 +7,7 @@ import { displayName, isSong } from '../data/helpers'
 import { useProgWeek, useT } from '../i18n/useT'
 import type { PartItem } from '../data/types'
 import './programm.css'
+import './print.css'
 
 /**
  * Programm (Screen 2, Startscreen): Wochenprogramm beider Zusammenkünfte
@@ -36,7 +37,13 @@ export function ProgrammScreen() {
   const myName = me ? displayName(me) : null
 
   return (
-    <section className="screen">
+    <section className="screen prog-screen">
+      {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
+      <div className="prog-print-head">
+        <span>{state.congregation.name}</span>
+        <span>{state.tab === 'mid' ? t.tabMid : t.tabWe}</span>
+      </div>
+
       <WeekNav
         canPrev={state.week > 0}
         canNext={state.week < state.weeks.length - 1}
@@ -57,7 +64,12 @@ export function ProgrammScreen() {
 
       <MemorialBanner week={week} tab={state.tab} />
 
-      <p className="prog-meta">{tpw(meeting.date)}</p>
+      <div className="prog-meta-row">
+        <p className="prog-meta">{tpw(meeting.date)}</p>
+        <button type="button" className="prog-print-btn" onClick={() => window.print()}>
+          {t.drucken}
+        </button>
+      </div>
 
       {meeting.sections.map((section) => (
         <div key={section.label} className="panel" data-farbe={section.farbe}>
@@ -74,7 +86,7 @@ export function ProgrammScreen() {
         </div>
       ))}
 
-      <div className="panel panel--pb16" data-farbe="neutral2">
+      <div className="panel panel--pb16 prog-helpers" data-farbe="neutral2">
         <div className="panel-label">{t.hilfsdienste}</div>
         <div className="prog-helpers-grid">
           {state.services.map((service) => {

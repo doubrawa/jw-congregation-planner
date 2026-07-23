@@ -34,6 +34,32 @@
   color: var(--mut);
 }
 
+/* Datum links, Drucken-Button rechts auf einer Linie. */
+.prog-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prog-print-btn {
+  flex: none;
+  margin-top: 14px;
+  border: 1px solid var(--bord);
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
+.prog-print-btn:hover {
+  border-color: var(--acc);
+  color: var(--acc);
+}
+
 /* ---- Programmpunkt-Zeilen ------------------------------------------------ */
 
 .prog-row {
