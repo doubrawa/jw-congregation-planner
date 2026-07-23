@@ -1,4 +1,4 @@
-/* Druckansicht des Programms (A4, eine Seite).
+/* Druckansicht des Programms (füllt das gewählte Papier, i. d. R. eine Seite).
  *
  * Gedruckt wird die gerade sichtbare Woche und Zusammenkunft — ohne App-Chrome
  * (Navigation, Kopfzeilen, Overlays), ohne Hilfsdienste und ohne Bedienelemente.
@@ -15,7 +15,9 @@
 
 @media print {
   @page {
-    size: A4 portrait;
+    /* Nur Hochformat vorgeben — die Größe kommt aus dem Druckdialog (A4,
+       Letter …), der Inhalt füllt sie dank der Breiten-Resets unten aus. */
+    size: portrait;
     margin: 12mm 14mm;
   }
 
