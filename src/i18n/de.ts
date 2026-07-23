@@ -6,7 +6,7 @@
 
 export const DE = {
     congLabel: 'Versammlung {name}',
-    navProgramm: 'Programm', navAufgaben: 'Aufgaben', navAufgabenLong: 'Meine Aufgaben',
+    navStart: 'Start', navProgramm: 'Programm', navAufgaben: 'Aufgaben', navAufgabenLong: 'Meine Aufgaben',
     navPlanen: 'Planen', navPersonen: 'Personen', navEinstellungen: 'Einstellungen',
     navProfil: 'Profil', menueLbl: 'Menü',
     abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger', demoSuffix: ' (Demo)',
@@ -20,6 +20,11 @@ export const DE = {
     planHint: 'Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.',
     autoZuteilen: 'AUTOMATISCH ZUTEILEN', leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
     zuteilenChip: '— zuteilen', offenWort: 'offen', offenDash: '— offen —',
+    // Start / Dashboard
+    grussMorgen: 'Guten Morgen', grussTag: 'Guten Tag', grussAbend: 'Guten Abend',
+    dashNextTask: 'Deine nächste Aufgabe', dashKeineAufgabe: 'Keine anstehende Aufgabe',
+    dashDeineAufgabe: 'Deine Aufgabe', dashZuBest: 'Zu bestätigen', dashPlanung: 'Planung',
+    dashKonflikteN: '{n} Konflikte', dashAllesZugeteilt: 'Alles zugeteilt',
     naechsteAufgaben: 'NÄCHSTE AUFGABEN', abwesenheiten: 'ABWESENHEITEN',
     von: 'VON', bis: 'BIS', grundOpt: 'GRUND (OPTIONAL)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',

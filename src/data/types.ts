@@ -39,6 +39,7 @@ export type Lang =
 /** Sichtbare Bereiche. Die letzten drei nur für Planer/Koordinatoren. */
 export type Screen =
   | 'login'
+  | 'start'
   | 'programm'
   | 'aufgaben'
   | 'planen'
