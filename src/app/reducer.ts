@@ -165,7 +165,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'login':
       return {
         ...state,
-        screen: 'programm',
+        screen: 'start',
         confirmOpen: state.myTasks.some((t) => t.status === 'offen'),
       }
     case 'logout':

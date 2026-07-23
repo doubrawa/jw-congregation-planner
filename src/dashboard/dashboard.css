@@ -1,0 +1,258 @@
+/* Start / Dashboard (Vorschlag 1a — „Agenda-Fokus"). Ruhig, redaktionell:
+   Gruß, Hero-Karte für die nächste Aufgabe, Wochenüberblick, Kacheln. */
+
+.dash-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--acc);
+}
+
+.dash-greeting {
+  font-family: var(--font-serif);
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.1;
+  margin: 6px 0 0;
+}
+
+/* ---- Hero: nächste Aufgabe --------------------------------------------- */
+
+.dash-hero {
+  background: var(--tAcc);
+  border-radius: 18px;
+  padding: 16px 16px 15px;
+  margin-top: 20px;
+}
+
+.dash-hero-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-hero-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--acc);
+}
+
+.dash-hero-chip {
+  flex: none;
+  background: var(--gld);
+  color: var(--onAcc);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dash-hero-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-top: 10px;
+}
+
+.dash-hero-date {
+  font-size: 12.5px;
+  color: var(--mut);
+  margin-top: 5px;
+}
+
+.dash-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.dash-confirm {
+  border: 1px solid var(--pet);
+  color: var(--pet);
+  border-radius: var(--r-pill);
+  padding: 7px 15px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.dash-confirm:hover {
+  background: var(--tPet);
+}
+
+.dash-s89 {
+  color: var(--acc);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.dash-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.dash-badge--best {
+  color: var(--pet);
+}
+
+.dash-badge--verh {
+  color: var(--wein);
+}
+
+.dash-hero--empty {
+  padding-bottom: 18px;
+}
+
+.dash-hero-empty-text {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--mut);
+  margin-top: 10px;
+}
+
+/* ---- Diese Woche -------------------------------------------------------- */
+
+.dash-week {
+  background: var(--tNeu);
+  border-radius: 16px;
+  padding: 6px 14px 10px;
+  margin-top: 12px;
+}
+
+.dash-week-label {
+  padding: 10px 0 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--mut);
+}
+
+.dash-week-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineNeu);
+}
+
+.dash-week-row:last-child {
+  border-bottom-color: transparent;
+}
+
+.dash-week-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dash-week-date {
+  font-size: 11px;
+  color: var(--mut);
+  margin-top: 2px;
+}
+
+.dash-week-chip {
+  flex: none;
+  background: var(--tPet);
+  color: var(--pet);
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dash-week-frei {
+  flex: none;
+  font-size: 11px;
+  color: var(--mut2);
+}
+
+/* ---- Kacheln: Mitteilungen · Zu bestätigen ------------------------------ */
+
+.dash-tiles {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.dash-tile {
+  flex: 1;
+  min-width: 0;
+  border-radius: 16px;
+  padding: 13px 14px;
+  text-align: left;
+}
+
+.dash-tile--acc {
+  background: var(--tAcc);
+}
+
+.dash-tile--acc .dash-tile-label {
+  color: var(--acc);
+}
+
+.dash-tile--wein {
+  background: var(--tWein);
+}
+
+.dash-tile--wein .dash-tile-label,
+.dash-tile--wein .dash-tile-value {
+  color: var(--wein);
+}
+
+.dash-tile-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.dash-tile-value {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 500;
+  margin-top: 5px;
+}
+
+/* ---- Planer: offene Zuteilungen + Konflikte ---------------------------- */
+
+.dash-plan {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--tPet);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 12px;
+}
+
+.dash-plan-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pet);
+}
+
+.dash-plan-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 4px;
+}
+
+.dash-plan-arrow {
+  flex: none;
+  color: var(--pet);
+  font-size: 20px;
+  font-weight: 600;
+}

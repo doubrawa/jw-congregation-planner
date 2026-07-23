@@ -12,6 +12,7 @@ import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
 import { LoginScreen } from '../login/LoginScreen'
 import { RecoveryScreen } from '../login/RecoveryScreen'
+import { DashboardScreen } from '../dashboard/DashboardScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
 import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
@@ -32,6 +33,7 @@ import './rtl.css'
  */
 
 const PLANNER_SCREENS: readonly Screen[] = [
+  'start',
   'programm',
   'aufgaben',
   'planen',
@@ -39,7 +41,7 @@ const PLANNER_SCREENS: readonly Screen[] = [
   'einstellungen',
   'profil',
 ]
-const PUBLISHER_SCREENS: readonly Screen[] = ['programm', 'aufgaben', 'profil']
+const PUBLISHER_SCREENS: readonly Screen[] = ['start', 'programm', 'aufgaben', 'profil']
 
 // Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
 const LOGO = `${import.meta.env.BASE_URL}logo.png`
@@ -69,6 +71,7 @@ export function AppShell() {
   const navScreens = state.planner ? PLANNER_SCREENS : PUBLISHER_SCREENS
   const navLabels: Record<Screen, string> = {
     login: '',
+    start: t.navStart,
     programm: t.navProgramm,
     aufgaben: state.planner ? t.navAufgaben : t.navAufgabenLong,
     planen: t.navPlanen,
@@ -302,6 +305,8 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
 
 function ActiveScreen({ screen }: { screen: Screen }) {
   switch (screen) {
+    case 'start':
+      return <DashboardScreen />
     case 'programm':
       return <ProgrammScreen />
     case 'aufgaben':
