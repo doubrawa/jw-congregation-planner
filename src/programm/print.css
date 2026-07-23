@@ -73,20 +73,23 @@
     display: none !important;
   }
 
-  /* Spalten-Layout auflösen — der Inhalt bekommt die volle Blattbreite. */
+  /* Spalten-Layout auflösen — der Inhalt bekommt die volle Blattbreite.
+     !important, weil die App-Spalte (.app-main max-width:430px, von .desk
+     zentriert) sonst als schmale Bildschirm-Spalte mit Rand ausgedruckt würde;
+     print.css wird zudem vor shell.css gebündelt und verlöre sonst im Rang. */
   .desk,
   .app-main,
   .app-content,
   .screen {
-    display: block;
-    width: auto;
-    max-width: none;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
-    background: none;
-    box-shadow: none;
-    overflow: visible;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 
   .prog-print-head {
