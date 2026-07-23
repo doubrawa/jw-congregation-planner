@@ -277,4 +277,5 @@ export default {
   "leeren": "Vider",
   "leerenSicher": "Vraiment vider ?",
   "toastGeleertN": "{n} affectations vidées",
+  "drucken": "Imprimer",
 } satisfies Partial<Dict>

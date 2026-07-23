@@ -277,4 +277,5 @@ export default {
   "leeren": "Vaciar",
   "leerenSicher": "¿Vaciar de verdad?",
   "toastGeleertN": "{n} asignaciones vaciadas",
+  "drucken": "Imprimir",
 } satisfies Partial<Dict>

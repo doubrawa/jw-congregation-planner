@@ -277,4 +277,5 @@ export default {
   "leeren": "クリア",
   "leerenSicher": "本当にクリア？",
   "toastGeleertN": "{n}件の割り当てをクリア",
+  "drucken": "印刷",
 } satisfies Partial<Dict>

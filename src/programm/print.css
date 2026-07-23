@@ -1,0 +1,204 @@
+/* Druckansicht des Programms (A4, eine Seite).
+ *
+ * Gedruckt wird die gerade sichtbare Woche und Zusammenkunft — ohne App-Chrome
+ * (Navigation, Kopfzeilen, Overlays), ohne Hilfsdienste und ohne Bedienelemente.
+ *
+ * Bewusst ohne Tonflächen: Browser drucken Hintergründe standardmäßig nicht.
+ * Die Struktur trägt deshalb über Bereichsüberschriften und Haarlinien und
+ * sieht mit wie ohne „Hintergrundgrafiken drucken“ gleich aus (und spart Toner).
+ */
+
+/* Kopfzeile des Ausdrucks — am Bildschirm unsichtbar. */
+.prog-print-head {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
+
+  /* Helle Palette erzwingen: sonst druckt ein dunkles Farbschema hellen Text
+     auf weißes Papier. Gleiche Spezifität wie :root[data-theme='…'], gewinnt
+     über die spätere Position in der Kaskade. */
+  :root,
+  :root[data-theme] {
+    --desk: #fff;
+    --bg: #fff;
+    --card: #fff;
+    --ink: #000;
+    --mut: #444;
+    --mut2: #555;
+    --acc: #5c4517;
+    --pet: #1f4a46;
+    --gld: #5f4a12;
+    --wein: #6a2f29;
+    --panel-hair: #d5d5d5;
+    --lineNeu: #d5d5d5;
+    --linePet: #d5d5d5;
+    --lineGld: #d5d5d5;
+    --lineWein: #d5d5d5;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    font-size: 10pt;
+    line-height: 1.3;
+    color: #000;
+  }
+
+  /* App-Chrome, Overlays und Bedienelemente */
+  .sidebar,
+  .mobile-header,
+  .desktop-topbar,
+  .drawer,
+  .drawer-backdrop,
+  .notif-panel,
+  .notif-backdrop,
+  .sheet,
+  .sheet-backdrop,
+  .confirm-modal,
+  .confirm-backdrop,
+  .toast,
+  .week-arrow,
+  .meeting-tabs,
+  .week-chips,
+  .prog-lang-hint,
+  .prog-helpers,
+  .prog-print-btn {
+    display: none !important;
+  }
+
+  /* Spalten-Layout auflösen — der Inhalt bekommt die volle Blattbreite. */
+  .desk,
+  .app-main,
+  .app-content,
+  .screen {
+    display: block;
+    width: auto;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .prog-print-head {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 2.5mm;
+    margin-bottom: 3mm;
+    border-bottom: 1px solid #999;
+    font-size: 8.5pt;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mut);
+  }
+
+  /* Wochenkopf (Pfeile sind ausgeblendet → Titel linksbündig über die Breite) */
+  .week-nav {
+    display: block;
+    margin: 0;
+  }
+
+  .week-center {
+    text-align: left;
+  }
+
+  .prog-week-range {
+    font-size: 18pt;
+    line-height: 1.15;
+  }
+
+  .prog-week-book {
+    margin-top: 0.5mm;
+    font-size: 11pt;
+  }
+
+  .prog-meta-row {
+    display: block;
+  }
+
+  .prog-meta {
+    margin: 1mm 0 3.5mm;
+    font-size: 9.5pt;
+  }
+
+  .mem-banner {
+    background: none !important;
+    border: 1px solid #999;
+    padding: 2mm 2.5mm;
+    margin-bottom: 3mm;
+    font-size: 8.5pt;
+  }
+
+  /* Bereichs-Panels flach: Überschrift + Linie statt Tonfläche.
+     Ein Bereich soll nie über den Seitenumbruch zerrissen werden. */
+  .panel {
+    background: none !important;
+    border-radius: 0;
+    padding: 0;
+    margin: 0 0 3mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .panel-label {
+    padding: 0 0 1mm;
+    margin-bottom: 0.5mm;
+    border-bottom: 1px solid #999;
+    font-size: 8.5pt;
+  }
+
+  .panel-song {
+    padding: 1.2mm 0;
+    font-size: 9.5pt;
+  }
+
+  /* Programmzeilen kompakt, Namen bleiben rechtsbündig. */
+  .prog-row {
+    gap: 5mm;
+    padding: 1.6mm 0;
+  }
+
+  .prog-num {
+    font-size: 9.5pt;
+  }
+
+  .prog-title {
+    font-size: 10pt;
+    line-height: 1.25;
+  }
+
+  .prog-item-meta {
+    margin-top: 0.3mm;
+    font-size: 8.5pt;
+  }
+
+  .prog-name {
+    font-size: 9.5pt;
+  }
+
+  .prog-role {
+    font-size: 8.5pt;
+  }
+
+  /* „DU“ ist eine Bildschirm-Markierung für den angemeldeten Nutzer. */
+  .chip-du {
+    display: none;
+  }
+
+  .prog-footer {
+    margin-top: 3mm;
+    padding-top: 2mm;
+    border-top: 1px solid #999;
+    font-size: 8.5pt;
+  }
+}

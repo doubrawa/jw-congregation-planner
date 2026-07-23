@@ -277,4 +277,5 @@ export default {
   "leeren": "Tyhjennä",
   "leerenSicher": "Tyhjennetäänkö?",
   "toastGeleertN": "{n} tehtävää tyhjennetty",
+  "drucken": "Tulosta",
 } satisfies Partial<Dict>

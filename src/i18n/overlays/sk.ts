@@ -277,4 +277,5 @@ export default {
   "leeren": "Vymazať",
   "leerenSicher": "Naozaj vymazať?",
   "toastGeleertN": "Vymazané priradenia: {n}",
+  "drucken": "Tlač",
 } satisfies Partial<Dict>

@@ -277,4 +277,5 @@ export default {
   "leeren": "Alisin",
   "leerenSicher": "Sigurado bang alisin?",
   "toastGeleertN": "{n} atas na inalis",
+  "drucken": "I-print",
 } satisfies Partial<Dict>

@@ -276,4 +276,5 @@ export default {
   "leeren": "صاف کریں",
   "leerenSicher": "واقعی صاف کریں؟",
   "toastGeleertN": "{n} تفویضات صاف کر دیے گئے",
+  "drucken": "پرنٹ کریں",
 } satisfies Partial<Dict>

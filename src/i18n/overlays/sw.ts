@@ -277,4 +277,5 @@ export default {
   "leeren": "Futa",
   "leerenSicher": "Futa kweli?",
   "toastGeleertN": "Migawo {n} imefutwa",
+  "drucken": "Chapisha",
 } satisfies Partial<Dict>

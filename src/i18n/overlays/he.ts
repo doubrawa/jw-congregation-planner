@@ -276,4 +276,5 @@ export default {
   "leeren": "נקה",
   "leerenSicher": "לנקות באמת?",
   "toastGeleertN": "{n} שיבוצים נוקו",
+  "drucken": "הדפסה",
 } satisfies Partial<Dict>

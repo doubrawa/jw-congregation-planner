@@ -277,4 +277,5 @@ export default {
   "leeren": "Очистити",
   "leerenSicher": "Точно очистити?",
   "toastGeleertN": "Очищено призначень: {n}",
+  "drucken": "Друк",
 } satisfies Partial<Dict>

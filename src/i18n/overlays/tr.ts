@@ -277,4 +277,5 @@ export default {
   "leeren": "Temizle",
   "leerenSicher": "Gerçekten temizle?",
   "toastGeleertN": "{n} atama temizlendi",
+  "drucken": "Yazdır",
 } satisfies Partial<Dict>

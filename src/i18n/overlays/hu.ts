@@ -277,4 +277,5 @@ export default {
   "leeren": "Ürítés",
   "leerenSicher": "Biztosan üríted?",
   "toastGeleertN": "{n} kiosztás ürítve",
+  "drucken": "Nyomtatás",
 } satisfies Partial<Dict>

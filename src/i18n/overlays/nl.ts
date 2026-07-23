@@ -277,4 +277,5 @@ export default {
   "leeren": "Wissen",
   "leerenSicher": "Echt wissen?",
   "toastGeleertN": "{n} toewijzingen gewist",
+  "drucken": "Afdrukken",
 } satisfies Partial<Dict>
