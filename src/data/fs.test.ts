@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFsWeeks, fsDate, genFsWeek } from './fs'
+import { buildFsWeeks, fsBaseFromWeeks, fsDate, genFsWeek, regenFsWeeks } from './fs'
 import type { FsRule } from './types'
 
 /** Montag der Woche 0 = 7. September 2026 (wie im Demo). */
@@ -56,6 +56,52 @@ describe('genFsWeek', () => {
     const w0 = genFsWeek(BASE, 0, RULES)
     const wds = w0.map((i) => (i.wd + 6) % 7)
     expect([...wds]).toEqual([...wds].sort((a, b) => a - b))
+  })
+})
+
+describe('fsBaseFromWeeks (Ausrichtung an der aktuellen Woche)', () => {
+  const friday = new Date(2026, 6, 24, 15) // Fr 24. Juli 2026 (Woche Mo 20. – So 26.)
+
+  it('current-Woche bei Index 0 → Montag dieser Woche', () => {
+    const base = fsBaseFromWeeks([{ current: true }, { current: false }], friday)
+    expect(base.getMonth()).toBe(6)
+    expect(base.getDate()).toBe(20) // Mo 20. Juli
+  })
+
+  it('current-Woche bei Index 2 → zwei Wochen davor', () => {
+    const base = fsBaseFromWeeks(
+      [{ current: false }, { current: false }, { current: true }, { current: false }],
+      friday,
+    )
+    expect(base.getMonth()).toBe(6)
+    expect(base.getDate()).toBe(6) // Mo 6. Juli (20. − 14 Tage)
+  })
+
+  it('Datum der current-Woche stimmt mit der realen Woche überein', () => {
+    // current bei Index 1 → fsDate(base, 1, Sa) muss der Samstag dieser Woche sein.
+    const base = fsBaseFromWeeks([{ current: false }, { current: true }], friday)
+    expect(fsDate(base, 1, 6).getDate()).toBe(25) // Sa 25. Juli
+  })
+})
+
+describe('regenFsWeeks (Neu-Ausrichtung)', () => {
+  const RULE: FsRule[] = [
+    { id: 'r1', grp: '', wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  ]
+  it('preserveEdits behält wochenspezifische Zeit/Ort + Leiter', () => {
+    const built = buildFsWeeks(BASE, 1, RULE, { '0|r1': 'A. Leiter' })
+    const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo', time: '15:30' })))
+    const keep = regenFsWeeks(BASE, edited, RULE, true)
+    expect(keep[0][0].place).toBe('Anderswo')
+    expect(keep[0][0].time).toBe('15:30')
+    expect(keep[0][0].leader).toBe('A. Leiter')
+  })
+  it('ohne preserveEdits: Zeit/Ort auf Regelwerte zurück, Leiter bleibt', () => {
+    const built = buildFsWeeks(BASE, 1, RULE, { '0|r1': 'A. Leiter' })
+    const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
+    const reset = regenFsWeeks(BASE, edited, RULE, false)
+    expect(reset[0][0].place).toBe('Königreichssaal')
+    expect(reset[0][0].leader).toBe('A. Leiter')
   })
 })
 

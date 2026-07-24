@@ -21,6 +21,19 @@ export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 })
 
+/**
+ * Montag der Woche 0 — verankert an der als `current` markierten Programmwoche:
+ * deren Montag ist der Montag der realen aktuellen Woche (`today`), Woche 0 liegt
+ * `curIdx` Wochen davor. Sprachunabhängig (nutzt keine Datums-Strings).
+ */
+export function fsBaseFromWeeks(weeks: ReadonlyArray<{ current: boolean }>, today: Date): Date {
+  const curIdx = Math.max(0, weeks.findIndex((w) => w.current))
+  const d = new Date(today)
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - curIdx * 7) // Montag dieser Woche, dann curIdx Wochen zurück
+  return d
+}
+
 /** Datum des Wochentags `wd` (0=So..6=Sa) in Woche `wi`, ausgehend vom Montag der Woche 0. */
 export function fsDate(base: Date, wi: number, wd: number): Date {
   const d = new Date(base.getTime())
@@ -73,13 +86,24 @@ export function buildFsWeeks(
 /**
  * Erzeugt den Grundplan neu über alle Wochen, erhält aber bereits gesetzte Leiter
  * (per Instanz-Id) und für die jeweilige Woche manuell hinzugefügte Treffpunkte.
- * Nach einer Grundplan-Änderung anzuwenden.
+ *
+ * `preserveEdits`: false (Grundplan-Änderung) übernimmt nur den Leiter und setzt
+ * Zeit/Ort auf die Regelwerte zurück; true (Neu-Ausrichtung beim Laden) behält
+ * auch Zeit/Ort, damit wochenspezifische Anpassungen nicht verloren gehen.
  */
-export function regenFsWeeks(base: Date, fsWeeks: FsInstance[][], rules: FsRule[]): FsInstance[][] {
+export function regenFsWeeks(
+  base: Date,
+  fsWeeks: FsInstance[][],
+  rules: FsRule[],
+  preserveEdits = false,
+): FsInstance[][] {
   return fsWeeks.map((week, wi) => {
     const gen = genFsWeek(base, wi, rules).map((inst) => {
       const old = week.find((o) => o.id === inst.id)
-      return old ? { ...inst, leader: old.leader } : inst
+      if (!old) return inst
+      return preserveEdits
+        ? { ...inst, time: old.time, place: old.place, leader: old.leader }
+        : { ...inst, leader: old.leader }
     })
     const all = gen.concat(week.filter((o) => o.manual))
     all.sort(fsSort)
