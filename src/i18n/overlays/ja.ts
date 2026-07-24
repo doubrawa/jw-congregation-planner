@@ -293,4 +293,11 @@ export default {
   "fsShort": "野外奉仕",
   "fsVers": "会衆の集まり",
   "fsKeine": "今週は野外奉仕のための集まりはありません。",
+  "privTreffpunkt": "奉仕の集まりの司会",
+  "fsNurWoche": "ここでの変更はこの週のみに適用されます。",
+  "fsAddWeekLbl": "今週の集まりを追加",
+  "fsAdd": "+ 集まりを追加",
+  "fsOrtPh": "場所（例：王国会館）",
+  "toastFsAdd": "集まりを追加しました",
+  "toastFsDel": "集まりを削除しました",
 } satisfies Partial<Dict>

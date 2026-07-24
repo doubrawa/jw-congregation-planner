@@ -293,4 +293,11 @@ export default {
   "fsShort": "Prédication",
   "fsVers": "Réunion de la congrégation",
   "fsKeine": "Aucune réunion pour la prédication cette semaine.",
+  "privTreffpunkt": "Diriger les réunions pour la prédication",
+  "fsNurWoche": "Les modifications ne s'appliquent qu'à cette semaine.",
+  "fsAddWeekLbl": "AJOUTER UNE RÉUNION POUR CETTE SEMAINE",
+  "fsAdd": "+ AJOUTER UNE RÉUNION",
+  "fsOrtPh": "Lieu (p. ex. Salle du Royaume)",
+  "toastFsAdd": "Réunion ajoutée",
+  "toastFsDel": "Réunion supprimée",
 } satisfies Partial<Dict>

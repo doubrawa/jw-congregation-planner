@@ -104,7 +104,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   switch (action.type) {
     case 'assign': {
       const sel = prev.slotSel
-      if (sel) {
+      // Treffpunkt-Leiter (fs) haben noch keine DB-Persistenz (Phase 5).
+      if (sel && sel.kind !== 'fs') {
         saveWeek(congId, sel.wi, next.weeks[sel.wi])
         // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
         deleteConfirmationRows(

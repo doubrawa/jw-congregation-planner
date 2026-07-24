@@ -293,4 +293,11 @@ export default {
   "fsShort": "Paglilingkod",
   "fsVers": "Pulong ng kongregasyon",
   "fsKeine": "Walang pulong para sa paglilingkod ngayong linggo.",
+  "privTreffpunkt": "Mangunguna sa mga pulong sa paglilingkod",
+  "fsNurWoche": "Ang mga pagbabago dito ay para lang sa linggong ito.",
+  "fsAddWeekLbl": "MAGDAGDAG NG PULONG PARA SA LINGGONG ITO",
+  "fsAdd": "+ MAGDAGDAG NG PULONG",
+  "fsOrtPh": "Lugar (hal. Kingdom Hall)",
+  "toastFsAdd": "Naidagdag ang pulong",
+  "toastFsDel": "Inalis ang pulong",
 } satisfies Partial<Dict>

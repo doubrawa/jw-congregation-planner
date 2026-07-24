@@ -293,4 +293,11 @@ export default {
   "fsShort": "Szolgálat",
   "fsVers": "Gyülekezeti összejövetel",
   "fsKeine": "Ezen a héten nincs összejövetel a szolgálathoz.",
+  "privTreffpunkt": "Szolgálati összejövetelek vezetése",
+  "fsNurWoche": "A módosítások csak erre a hétre vonatkoznak.",
+  "fsAddWeekLbl": "ÖSSZEJÖVETEL HOZZÁADÁSA ERRE A HÉTRE",
+  "fsAdd": "+ ÖSSZEJÖVETEL HOZZÁADÁSA",
+  "fsOrtPh": "Hely (pl. Királyság-terem)",
+  "toastFsAdd": "Összejövetel hozzáadva",
+  "toastFsDel": "Összejövetel eltávolítva",
 } satisfies Partial<Dict>

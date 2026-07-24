@@ -293,4 +293,11 @@ export default {
   "fsShort": "야외 봉사",
   "fsVers": "회중 모임",
   "fsKeine": "이번 주에는 야외 봉사를 위한 모임이 없습니다.",
+  "privTreffpunkt": "봉사 모임 사회",
+  "fsNurWoche": "여기서의 변경은 이번 주에만 적용됩니다.",
+  "fsAddWeekLbl": "이번 주 모임 추가",
+  "fsAdd": "+ 모임 추가",
+  "fsOrtPh": "장소 (예: 왕국회관)",
+  "toastFsAdd": "모임이 추가됨",
+  "toastFsDel": "모임이 삭제됨",
 } satisfies Partial<Dict>

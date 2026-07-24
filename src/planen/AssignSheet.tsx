@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { displayName, initials, isQualified, isSong, personCompare, roleLabel, workloadOf } from '../data/helpers'
+import { fsLeaderValue } from '../data/fs'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
 import type { MeetingAssignment } from '../data/planning'
@@ -37,10 +38,17 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [dispatch])
 
-  const current = slotValue(state.weeks, sel)
-  const s89 = buildS89ForSlot(state.weeks, sel)
-  const title = sel.kind === 'helper' ? tu(sel.label) : tp(sel.label)
-  const sub = `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
+  // Treffpunkt-Leiter (fs) hat eine eigene Datenquelle und keine Meeting-Slots.
+  const fsInst = sel.kind === 'fs' ? state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId) : undefined
+  const current = sel.kind === 'fs' ? fsLeaderValue(state.fsWeeks, sel.wi, sel.instId) : slotValue(state.weeks, sel)
+  const s89 = sel.kind === 'fs' ? null : buildS89ForSlot(state.weeks, sel)
+  const title = sel.kind === 'part' ? tp(sel.label) : tu(sel.label)
+  const sub =
+    sel.kind === 'fs'
+      ? fsInst
+        ? `${fsInst.time} · ${fsInst.place}`
+        : ''
+      : `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
 
   // Externer Redner (Gastredner/Kreisaufseher): Freitext für Name +
   // Herkunfts-Versammlung; die Versammlung steckt in der Rolle
@@ -73,8 +81,39 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     return overseer ? `${displayName(overseer)} · ${memberLabel}` : memberLabel
   }
 
-  const meeting = state.weeks[sel.wi][sel.tab]
-  const candidates: Candidate[] = sel.groups
+  // Treffpunkt-Leiter: Kandidaten sind treffpunkt-qualifiziert; „schon heute" =
+  // ein anderer Treffpunkt am selben Wochentag, den die Person schon leitet.
+  const fsTodayFor = (name: string): MeetingAssignment[] => {
+    if (sel.kind !== 'fs' || !fsInst) return []
+    const out: MeetingAssignment[] = []
+    for (const o of state.fsWeeks[sel.wi] ?? []) {
+      if (o.id === sel.instId || o.wd !== fsInst.wd || o.leader !== name) continue
+      const ttl = o.grp === '' ? t.fsVers : (state.groups.find((g) => g.id === o.grp)?.name ?? o.grp)
+      out.push({ text: `${o.time} · ${tu(ttl)}`, lang: 'u' })
+    }
+    return out
+  }
+
+  const candidates: Candidate[] =
+    sel.kind === 'fs'
+      ? [...state.persons]
+          .sort(personCompare)
+          .filter((p) => isQualified(p, 'treffpunkt'))
+          .map((p) => {
+            const name = displayName(p)
+            return {
+              key: p.id,
+              initials: initials(p),
+              name,
+              assignName: name,
+              sub: tu(roleLabel(p)),
+              today: fsTodayFor(name),
+              absent: p.absent.includes(sel.wi),
+              free: workloadOf(state.weeks, name) === 0,
+            }
+          })
+          .sort((a, b) => Number(a.absent) - Number(b.absent))
+      : sel.groups
     ? state.groups.map((group) => {
         const num = group.name.replace(/\D/g, '')
         return {
@@ -102,7 +141,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             name,
             assignName: name,
             sub: `${tu(roleLabel(p))} · ${workloadLabel}`,
-            today: assignmentsInMeeting(meeting, name, state.services, sel),
+            today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], name, state.services, sel),
             absent: p.absent.includes(sel.wi),
             free: workload === 0,
           }

@@ -5,6 +5,7 @@
  */
 
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
+import { fsAddInst, fsRemoveInst, fsSetLeader, fsUpdateInst } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -194,9 +195,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const plannerOnly: Screen[] = ['planen', 'personen', 'einstellungen']
       const screen =
         !state.planner && plannerOnly.includes(action.screen) ? 'programm' : action.screen
-      // Der fs-Tab („Treffpunkte") existiert vorerst nur im Programm — beim
-      // Wechsel in andere Ansichten auf die Zusammenkunft unter der Woche zurück.
-      const tab: MeetingTab = state.tab === 'fs' && screen !== 'programm' ? 'mid' : state.tab
+      // Der fs-Tab („Treffpunkte") gibt es nur in Programm/Planen — beim Wechsel
+      // in andere Ansichten auf die Zusammenkunft unter der Woche zurücksetzen.
+      const fsOk = screen === 'programm' || screen === 'planen'
+      const tab: MeetingTab = state.tab === 'fs' && !fsOk ? 'mid' : state.tab
       return {
         ...dropNamelessSelected(state),
         screen,
@@ -416,6 +418,30 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Zuteilen bzw. Entfernen ("") + Mitteilung (Prototyp: assignTo)
       const sel = state.slotSel
       if (!sel) return state
+      // Treffpunkt-Leiter: eigene Datenquelle (fsWeeks), kein Bestätigungs-Slot.
+      if (sel.kind === 'fs') {
+        const fsWeeks = fsSetLeader(state.fsWeeks, sel.wi, sel.instId, action.name)
+        const notifs = action.name
+          ? pushNotif(
+              state.notifs,
+              'gesendet',
+              'Zuteilung gesendet',
+              `${action.name} — ${dict(state.lang).fsShort} · ${state.weeks[sel.wi].range}`,
+            )
+          : state.notifs
+        const pendingNames =
+          action.name && !state.pendingNames.includes(action.name)
+            ? [...state.pendingNames, action.name]
+            : state.pendingNames
+        return {
+          ...state,
+          fsWeeks,
+          notifs,
+          pendingNames,
+          slotSel: null,
+          toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
+        }
+      }
       const weeks = assignSlot(state.weeks, sel, action.name, action.rolle)
       const notifs = action.name
         ? pushNotif(
@@ -509,6 +535,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastGeleertN', { n: count }),
       }
     }
+    case 'fsInstUpdate':
+      return { ...state, fsWeeks: fsUpdateInst(state.fsWeeks, action.wi, action.id, action.patch) }
+    case 'fsInstRemove':
+      return {
+        ...state,
+        fsWeeks: fsRemoveInst(state.fsWeeks, action.wi, action.id),
+        toast: toastKey(state, 'toastFsDel'),
+      }
+    case 'fsInstAdd':
+      return {
+        ...state,
+        fsWeeks: fsAddInst(state.fsWeeks, state.week, action.inst),
+        toast: toastKey(state, 'toastFsAdd'),
+      }
     case 'confirmTask': {
       // Produktionsmodus: Status in die ConfirmationMap — myTasks/pending-
       // Names/confirmOpen folgen aus der Ableitung (withDerivedTasks).

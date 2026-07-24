@@ -293,4 +293,11 @@ export default {
   "fsShort": "Velddienst",
   "fsVers": "Gemeentelijke velddienst",
   "fsKeine": "Deze week geen vergaderingen voor de velddienst.",
+  "privTreffpunkt": "Velddienstvergaderingen leiden",
+  "fsNurWoche": "Wijzigingen hier gelden alleen voor deze week.",
+  "fsAddWeekLbl": "VERGADERING VOOR DEZE WEEK TOEVOEGEN",
+  "fsAdd": "+ VERGADERING TOEVOEGEN",
+  "fsOrtPh": "Plaats (bijv. Koninkrijkszaal)",
+  "toastFsAdd": "Vergadering toegevoegd",
+  "toastFsDel": "Vergadering verwijderd",
 } satisfies Partial<Dict>

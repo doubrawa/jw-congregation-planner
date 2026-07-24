@@ -79,3 +79,44 @@ export function regenFsWeeks(base: Date, fsWeeks: FsInstance[][], rules: FsRule[
     return all
   })
 }
+
+/* ---- Wochen-Bearbeitung (Planen) ---- */
+
+/** Nur die Woche `wi` ersetzen (die übrigen behalten ihre Referenz). */
+function patchWeek(fsWeeks: FsInstance[][], wi: number, fn: (week: FsInstance[]) => FsInstance[]): FsInstance[][] {
+  return fsWeeks.map((week, i) => (i === wi ? fn(week) : week))
+}
+
+/** Aktueller Leiter eines Treffpunkts ("" = offen / nicht gefunden). */
+export function fsLeaderValue(fsWeeks: FsInstance[][], wi: number, instId: string): string {
+  return fsWeeks[wi]?.find((i) => i.id === instId)?.leader ?? ''
+}
+
+/** Leiter eines Treffpunkts setzen ("" = entfernen). */
+export function fsSetLeader(fsWeeks: FsInstance[][], wi: number, instId: string, name: string): FsInstance[][] {
+  return patchWeek(fsWeeks, wi, (week) =>
+    week.map((inst) => (inst.id === instId ? { ...inst, leader: name } : inst)),
+  )
+}
+
+/** Zeit/Ort eines Treffpunkts für diese Woche ändern (neu sortiert). */
+export function fsUpdateInst(
+  fsWeeks: FsInstance[][],
+  wi: number,
+  instId: string,
+  patch: Partial<Pick<FsInstance, 'time' | 'place'>>,
+): FsInstance[][] {
+  return patchWeek(fsWeeks, wi, (week) =>
+    week.map((inst) => (inst.id === instId ? { ...inst, ...patch } : inst)).sort(fsSort),
+  )
+}
+
+/** Treffpunkt aus dieser Woche entfernen. */
+export function fsRemoveInst(fsWeeks: FsInstance[][], wi: number, instId: string): FsInstance[][] {
+  return patchWeek(fsWeeks, wi, (week) => week.filter((inst) => inst.id !== instId))
+}
+
+/** Manuellen Treffpunkt zu dieser Woche hinzufügen (neu sortiert). */
+export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance): FsInstance[][] {
+  return patchWeek(fsWeeks, wi, (week) => [...week, inst].sort(fsSort))
+}

@@ -293,4 +293,11 @@ export default {
   "fsShort": "Služba",
   "fsVers": "Sborové shromáždění",
   "fsKeine": "Tento týden žádná shromáždění ke službě.",
+  "privTreffpunkt": "Vést shromáždění ke službě",
+  "fsNurWoche": "Změny platí jen pro tento týden.",
+  "fsAddWeekLbl": "PŘIDAT SHROMÁŽDĚNÍ NA TENTO TÝDEN",
+  "fsAdd": "+ PŘIDAT SHROMÁŽDĚNÍ",
+  "fsOrtPh": "Místo (např. sál Království)",
+  "toastFsAdd": "Shromáždění přidáno",
+  "toastFsDel": "Shromáždění odebráno",
 } satisfies Partial<Dict>

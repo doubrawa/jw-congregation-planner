@@ -111,6 +111,7 @@ export interface Qualifications {
   leser: boolean // Leser (Versammlungsbibelstudium / Wachtturm-Studium)
   schulung: boolean // Schulungsaufgaben (auch Schwestern)
   studium: boolean // Studium leiten
+  treffpunkt: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
   wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
   wtVertreter?: boolean // Vertreter, wenn der Leiter abwesend ist
   [serviceKey: string]: boolean | undefined // `svc:<dienstKey>` je Hilfsdienst
@@ -129,6 +130,7 @@ export type QualificationKey =
   | 'leser'
   | 'schulung'
   | 'studium'
+  | 'treffpunkt'
   | 'wtLeiter'
   | 'wtVertreter'
 
@@ -345,7 +347,20 @@ export interface HelperSlotSelection extends SlotSelectionBase {
   pos: number
 }
 
-export type SlotSelection = PartSlotSelection | HelperSlotSelection
+/** Leiter-Slot eines Treffpunkts (Zusammenkunft für den Predigtdienst). */
+export interface FsSlotSelection {
+  kind: 'fs'
+  wi: number // Wochenindex
+  instId: string // FsInstance.id
+  label: string
+  priv: QualificationKey | string | null
+  groups: boolean
+}
+
+export type SlotSelection = PartSlotSelection | HelperSlotSelection | FsSlotSelection
+
+/** Slot einer echten Zusammenkunft (Programmpunkt oder Hilfsdienst, mit `tab`). */
+export type MeetingSlotSelection = PartSlotSelection | HelperSlotSelection
 
 export type NotificationType =
   | 'zuteilung' // Neue Zuteilung

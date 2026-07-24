@@ -253,4 +253,11 @@ export default {
   "fsShort": "خدمة الحقل",
   "fsVers": "اجتماع الجماعة",
   "fsKeine": "لا اجتماعات لأجل خدمة الحقل هذا الأسبوع.",
+  "privTreffpunkt": "إدارة اجتماعات الخدمة",
+  "fsNurWoche": "التغييرات هنا تخص هذا الأسبوع فقط.",
+  "fsAddWeekLbl": "إضافة اجتماع لهذا الأسبوع",
+  "fsAdd": "+ إضافة اجتماع",
+  "fsOrtPh": "المكان (مثل قاعة الملكوت)",
+  "toastFsAdd": "تمت إضافة الاجتماع",
+  "toastFsDel": "تمت إزالة الاجتماع",
 } satisfies Partial<Dict>

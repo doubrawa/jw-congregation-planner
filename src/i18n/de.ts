@@ -18,6 +18,11 @@ export const DE = {
     // Treffpunkte (Zusammenkünfte für den Predigtdienst)
     tabFs: 'Zusammenkünfte für den Predigtdienst', fsShort: 'Treffpunkte',
     fsVers: 'Versammlungstreffpunkt', fsKeine: 'Keine Treffpunkte in dieser Woche.',
+    privTreffpunkt: 'Treffpunkte leiten',
+    fsNurWoche: 'Änderungen hier gelten nur für diese Woche.',
+    fsAddWeekLbl: 'TREFFPUNKT FÜR DIESE WOCHE HINZUFÜGEN', fsAdd: '+ TREFFPUNKT HINZUFÜGEN',
+    fsOrtPh: 'Ort (z. B. Königreichssaal)',
+    toastFsAdd: 'Treffpunkt hinzugefügt', toastFsDel: 'Treffpunkt entfernt',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: 4. September', drucken: 'Drucken',
     planen: 'Planen', offeneZut: '{n} offene Zuteilungen',
     planHint: 'Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.',
