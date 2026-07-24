@@ -6,7 +6,7 @@
 
 import { buildImportWeek, CURRENT_PERSON_ID, FS_BASE } from '../data/demo'
 import { fsAddInst, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
-import { displayName } from '../data/helpers'
+import { displayName, overseerGroup } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
@@ -192,10 +192,17 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         recovery: false,
       }
     case 'navigate': {
-      // Rechteprüfung wie im Prototyp: Nicht-Planer landen im Programm
+      // Rechteprüfung: Nicht-Planer landen im Programm. Gruppenaufseher dürfen
+      // zusätzlich Planen + Einstellungen (dort nur ihre Treffpunkte), aber nicht
+      // Personen.
       const plannerOnly: Screen[] = ['planen', 'personen', 'einstellungen']
-      const screen =
-        !state.planner && plannerOnly.includes(action.screen) ? 'programm' : action.screen
+      const fsOverseer =
+        !state.planner && overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID) !== null
+      const blocked =
+        !state.planner &&
+        plannerOnly.includes(action.screen) &&
+        !(fsOverseer && action.screen !== 'personen')
+      const screen = blocked ? 'programm' : action.screen
       // Der fs-Tab („Treffpunkte") gibt es nur in Programm/Planen — beim Wechsel
       // in andere Ansichten auf die Zusammenkunft unter der Woche zurücksetzen.
       const fsOk = screen === 'programm' || screen === 'planen'

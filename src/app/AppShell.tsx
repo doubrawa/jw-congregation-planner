@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CURRENT_PERSON_ID } from '../data/demo'
-import { initials } from '../data/helpers'
+import { initials, overseerGroup } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite, seedCongregation } from '../lib/data'
 import { performLogout } from '../lib/supabase'
@@ -42,6 +42,16 @@ const PLANNER_SCREENS: readonly Screen[] = [
   'profil',
 ]
 const PUBLISHER_SCREENS: readonly Screen[] = ['start', 'programm', 'aufgaben', 'profil']
+// Gruppenaufseher (Aufseher/Gehilfe einer Gruppe, ohne volle Planer-Rechte):
+// planen + einstellungen, dort aber nur die Treffpunkte der eigenen Gruppe.
+const GROUP_OV_SCREENS: readonly Screen[] = [
+  'start',
+  'programm',
+  'aufgaben',
+  'planen',
+  'einstellungen',
+  'profil',
+]
 
 // Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
 const LOGO = `${import.meta.env.BASE_URL}logo.png`
@@ -68,7 +78,13 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [menuOpen])
 
-  const navScreens = state.planner ? PLANNER_SCREENS : PUBLISHER_SCREENS
+  const fsOverseer =
+    !state.planner && overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID) !== null
+  const navScreens = state.planner
+    ? PLANNER_SCREENS
+    : fsOverseer
+      ? GROUP_OV_SCREENS
+      : PUBLISHER_SCREENS
   const navLabels: Record<Screen, string> = {
     login: '',
     start: t.navStart,
