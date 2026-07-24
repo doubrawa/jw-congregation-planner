@@ -59,67 +59,81 @@ describe('genFsWeek', () => {
   })
 })
 
-describe('fsBaseFromWeeks (echtes Startdatum bevorzugt)', () => {
+describe('fsBaseFromWeeks', () => {
   const friday = new Date(2026, 6, 24, 15) // Fr 24. Juli 2026 (Woche Mo 20. – So 26.)
 
-  it('leitet die Basis aus week.start ab, unabhängig vom current-Flag', () => {
-    // Wochen 20.7. / 27.7. / 3.8.; `current` steht (veraltet) auf Woche 0,
-    // obwohl heute (24.7.) in Woche 0 liegt — die Basis muss trotzdem der
-    // Montag der Woche 0 sein, nicht davon verschoben.
-    const base = fsBaseFromWeeks(
-      [
-        { current: true, start: '2026-07-20' },
-        { current: false, start: '2026-07-27' },
-        { current: false, start: '2026-08-03' },
-      ],
-      friday,
-    )
-    expect(base.getFullYear()).toBe(2026)
-    expect(base.getMonth()).toBe(6) // Juli
-    expect(base.getDate()).toBe(20) // Mo 20. Juli
+  // Regelfall: die Wochen tragen ihr echtes ISO-Startdatum (jw.org-Import). Die
+  // Basis MUSS allein daraus kommen — unabhängig von `today` UND vom
+  // gespeicherten `current`-Flag. Genau hier lag der Wochenversatz-Bug: die alte
+  // Logik verankerte an `current`+`today` und driftete bei veraltetem Flag.
+  // Diese Fälle sind bewusst so gewählt, dass die alte Logik ein ANDERES
+  // (falsches) Ergebnis liefern würde — sonst würden sie den Bug nicht abfangen.
+  describe('aus dem echten week.start', () => {
+    it('ignoriert `today` vollständig (Basis rein aus start)', () => {
+      // today absichtlich weit weg + inkonsistent: hinge die Basis daran, käme
+      // der Versatz zurück. Die alte Logik hätte hier ein 2029/2030-Datum ergeben.
+      const base = fsBaseFromWeeks(
+        [{ current: false, start: '2026-07-20' }, { current: false, start: '2026-07-27' }],
+        new Date(2030, 0, 1, 12),
+      )
+      expect(base.getFullYear()).toBe(2026)
+      expect(base.getMonth()).toBe(6) // Juli
+      expect(base.getDate()).toBe(20) // Mo 20. Juli
+    })
+
+    it('ignoriert ein veraltetes current-Flag (der eigentliche Bug)', () => {
+      // Produktionsfall: today (Fr 24.7.) liegt in der Woche 20.–26.7., aber das
+      // gespeicherte current-Flag steht noch auf der Vorwoche (13.–19.7.). Die
+      // alte Logik nahm die current-Woche als „heute" → Basis 20.7. statt 13.7.,
+      // alles eine Woche zu spät.
+      const base = fsBaseFromWeeks(
+        [
+          { current: true, start: '2026-07-13' }, // veraltet – NICHT die Woche von today
+          { current: false, start: '2026-07-20' }, // enthält today
+          { current: false, start: '2026-07-27' },
+        ],
+        friday,
+      )
+      expect(base.getMonth()).toBe(6)
+      expect(base.getDate()).toBe(13) // Montag der Woche 0 = start[0], nicht 20.
+      // Die Woche, die today enthält (Index 1), zeigt korrekt IHREN Samstag:
+      expect(fsDate(base, 1, 6).getDate()).toBe(25) // Sa 25.7., nicht 1.8.
+    })
+
+    it('rechnet vom ersten vorhandenen start auf Woche 0 zurück', () => {
+      // Führende Wochen ohne start (Index 0/1), erst Index 2 hat eins (3.8.).
+      const base = fsBaseFromWeeks(
+        [{ current: false }, { current: true }, { current: false, start: '2026-08-03' }],
+        new Date(2030, 0, 1, 12), // today irrelevant, sobald ein start existiert
+      )
+      expect(base.getMonth()).toBe(6) // Juli
+      expect(base.getDate()).toBe(20) // 3.8. − 14 Tage = Mo 20.7.
+    })
   })
 
-  it('rechnet vom ersten Startdatum auf Woche 0 zurück (Vorwochen ohne start)', () => {
-    // Erst ab Index 2 gibt es ein Startdatum (3.8.) → Woche 0 = 2 Wochen davor.
-    const base = fsBaseFromWeeks(
-      [{ current: false }, { current: false }, { current: false, start: '2026-08-03' }],
-      friday,
-    )
-    expect(base.getMonth()).toBe(6) // Juli
-    expect(base.getDate()).toBe(20) // Mo 20. Juli (3.8. − 14 Tage)
-  })
+  // Fallback nur für Wochen OHNE Startdatum (Demo/Vorlagen): dann bleibt als
+  // einziger Anhalt das current-Flag relativ zu `today`.
+  describe('Fallback ohne week.start (Demo/Vorlagen)', () => {
+    it('current-Woche bei Index 0 → Montag dieser Woche', () => {
+      const base = fsBaseFromWeeks([{ current: true }, { current: false }], friday)
+      expect(base.getMonth()).toBe(6)
+      expect(base.getDate()).toBe(20) // Mo 20. Juli
+    })
 
-  it('die fs-Daten der angezeigten Woche stimmen mit deren Header-Datum überein', () => {
-    // Regressionsschutz für den Wochenversatz: der Samstag der Woche „20.–26.7."
-    // muss der 25.7. sein (nicht der 1.8. der Folgewoche).
-    const base = fsBaseFromWeeks(
-      [{ current: true, start: '2026-07-20' }, { current: false, start: '2026-07-27' }],
-      friday,
-    )
-    expect(fsDate(base, 0, 1).getDate()).toBe(20) // Mo 20. Juli
-    expect(fsDate(base, 0, 6).getDate()).toBe(25) // Sa 25. Juli
-    expect(fsDate(base, 1, 6).getDate()).toBe(1) // Sa der Folgewoche = 1. August
-  })
+    it('current-Woche bei Index 2 → zwei Wochen davor', () => {
+      const base = fsBaseFromWeeks(
+        [{ current: false }, { current: false }, { current: true }, { current: false }],
+        friday,
+      )
+      expect(base.getMonth()).toBe(6)
+      expect(base.getDate()).toBe(6) // Mo 6. Juli (20. − 14 Tage)
+    })
 
-  it('current-Woche bei Index 0 → Montag dieser Woche', () => {
-    const base = fsBaseFromWeeks([{ current: true }, { current: false }], friday)
-    expect(base.getMonth()).toBe(6)
-    expect(base.getDate()).toBe(20) // Mo 20. Juli
-  })
-
-  it('current-Woche bei Index 2 → zwei Wochen davor', () => {
-    const base = fsBaseFromWeeks(
-      [{ current: false }, { current: false }, { current: true }, { current: false }],
-      friday,
-    )
-    expect(base.getMonth()).toBe(6)
-    expect(base.getDate()).toBe(6) // Mo 6. Juli (20. − 14 Tage)
-  })
-
-  it('Datum der current-Woche stimmt mit der realen Woche überein', () => {
-    // current bei Index 1 → fsDate(base, 1, Sa) muss der Samstag dieser Woche sein.
-    const base = fsBaseFromWeeks([{ current: false }, { current: true }], friday)
-    expect(fsDate(base, 1, 6).getDate()).toBe(25) // Sa 25. Juli
+    it('Datum der current-Woche stimmt mit der realen Woche überein', () => {
+      // current bei Index 1 → fsDate(base, 1, Sa) muss der Samstag dieser Woche sein.
+      const base = fsBaseFromWeeks([{ current: false }, { current: true }], friday)
+      expect(fsDate(base, 1, 6).getDate()).toBe(25) // Sa 25. Juli
+    })
   })
 })
 
