@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Tervezés",
   "dashKonflikteN": "{n} ütközés",
   "dashAllesZugeteilt": "Minden kiosztva",
+  "tabFs": "Összejövetelek a szántóföldi szolgálathoz",
+  "fsShort": "Szolgálat",
+  "fsVers": "Gyülekezeti összejövetel",
+  "fsKeine": "Ezen a héten nincs összejövetel a szolgálathoz.",
 } satisfies Partial<Dict>

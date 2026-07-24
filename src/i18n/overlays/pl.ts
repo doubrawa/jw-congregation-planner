@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Planowanie",
   "dashKonflikteN": "Konflikty: {n}",
   "dashAllesZugeteilt": "Wszystko przydzielone",
+  "tabFs": "Zbiórki do służby kaznodziejskiej",
+  "fsShort": "Służba",
+  "fsVers": "Zbiórka zborowa",
+  "fsKeine": "W tym tygodniu brak zbiórek do służby.",
 } satisfies Partial<Dict>

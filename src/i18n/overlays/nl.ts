@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Planning",
   "dashKonflikteN": "{n} conflicten",
   "dashAllesZugeteilt": "Alles toegewezen",
+  "tabFs": "Vergaderingen voor de velddienst",
+  "fsShort": "Velddienst",
+  "fsVers": "Gemeentelijke velddienst",
+  "fsKeine": "Deze week geen vergaderingen voor de velddienst.",
 } satisfies Partial<Dict>

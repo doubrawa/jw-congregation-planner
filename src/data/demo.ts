@@ -4,9 +4,12 @@
  * und die Regeln darunter sind verbindlich. Ersetzt später Persistenz/Backend.
  */
 
+import { buildFsWeeks } from './fs'
 import { normalizeChairKeys, serviceQualKey } from './helpers'
 import type {
   Absence,
+  FsInstance,
+  FsRule,
   Group,
   MyTask,
   Notification,
@@ -169,6 +172,43 @@ export const DEMO_GROUPS: Group[] = [
   { id: 'g3', name: 'Gruppe 3', ov: 'p3', as: 'p8' },
   { id: 'g4', name: 'Gruppe 4', ov: 'p4', as: 'p13' },
 ]
+
+/* ---- Zusammenkünfte für den Predigtdienst ("Treffpunkte") --------------- */
+
+/** Montag der Woche 0 (7. September 2026) — Basis der Treffpunkt-Datumsberechnung. */
+export const FS_BASE = new Date(2026, 8, 7, 12)
+
+/** Anzahl der Demo-Wochen (buildDemoWeeks) — für die Treffpunkt-Materialisierung. */
+const DEMO_WEEK_COUNT = 4
+
+/**
+ * Grundplan der Treffpunkte: Versammlungstreffpunkte (grp '') Mo 14:00 + Mi 9:30
+ * wöchentlich + jeden 1. Samstag im Monat 9:30; je Gruppe ein Samstagstreffpunkt
+ * (skipCong: entfällt, wenn am selben Tag ein Versammlungstreffpunkt liegt).
+ */
+export const DEMO_FS_RULES: FsRule[] = [
+  { id: 'r1', grp: '', wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  { id: 'r2', grp: '', wd: 3, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  { id: 'r3', grp: '', wd: 6, time: '09:30', place: 'Königreichssaal', monthly: 1, skipCong: false },
+  { id: 'r4', grp: 'g1', wd: 6, time: '09:30', place: 'Bei Familie Albrecht', monthly: 0, skipCong: true },
+  { id: 'r5', grp: 'g2', wd: 6, time: '09:15', place: 'Königreichssaal, Nebenraum', monthly: 0, skipCong: true },
+  { id: 'r6', grp: 'g3', wd: 6, time: '10:00', place: 'Per Videokonferenz', monthly: 0, skipCong: true },
+  { id: 'r7', grp: 'g4', wd: 6, time: '09:30', place: 'Bei Familie Vogel', monthly: 0, skipCong: true },
+]
+
+/** Vorbelegte Leiter (Instanz-Id → Anzeigename) über die vier Demo-Wochen. */
+const DEMO_FS_SEED: Record<string, string> = {
+  '0|r1': 'Thomas Lindner', '0|r2': 'Jonas Berger', '0|r4': 'Manfred Albrecht',
+  '0|r5': 'Paul Schröder', '0|r6': 'Friedrich Neumann', '0|r7': 'Helmut Vogel',
+  '1|r1': 'Manfred Albrecht', '1|r4': 'Jonas Berger', '1|r5': 'Paul Schröder', '1|r7': 'Georg Peters',
+  '2|r2': 'Thomas Lindner', '2|r4': 'Manfred Albrecht', '2|r6': 'Claus Maier', '2|r7': 'Helmut Vogel',
+  '3|r1': 'Jonas Berger', '3|r3': 'Simon Krüger',
+}
+
+/** Baut die Treffpunkte der Demo-Wochen aus Grundplan + Seed-Leitern. */
+export function buildDemoFsWeeks(): FsInstance[][] {
+  return buildFsWeeks(FS_BASE, DEMO_WEEK_COUNT, DEMO_FS_RULES, DEMO_FS_SEED)
+}
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
 // Jeder Dienst hat seinen eigenen Aufgabenbereich (`svc:<key>`) — die drei

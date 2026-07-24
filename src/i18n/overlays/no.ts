@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Planlegging",
   "dashKonflikteN": "{n} konflikter",
   "dashAllesZugeteilt": "Alt tildelt",
+  "tabFs": "Møter for tjenesten",
+  "fsShort": "Tjenesten",
+  "fsVers": "Menighetens møte",
+  "fsKeine": "Ingen møter for tjenesten denne uken.",
 } satisfies Partial<Dict>

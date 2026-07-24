@@ -11,7 +11,7 @@
 
 import { LABEL_EROEFFNUNG } from './constants'
 import { isSong } from './helpers'
-import type { Meeting, MeetingTab, PartItem, Week } from './types'
+import type { Meeting, MeetingKey, PartItem, Week } from './types'
 
 const MIN_RE = /(\d+) Min\./
 
@@ -38,7 +38,7 @@ function movableIndices(items: Meeting['sections'][number]['items']): number[] {
 }
 
 /** Spiegelt Änderungen in die Sprachvarianten der Woche (Week.alt). */
-function forEachAltMeeting(week: Week, tab: MeetingTab, fn: (meeting: Meeting) => void): void {
+function forEachAltMeeting(week: Week, tab: MeetingKey, fn: (meeting: Meeting) => void): void {
   for (const variant of Object.values(week.alt ?? {})) {
     const meeting = variant[tab]
     if (meeting) fn(meeting)
@@ -51,7 +51,7 @@ function forEachAltMeeting(week: Week, tab: MeetingTab, fn: (meeting: Meeting) =
 export function lacAdjust(
   weeks: Week[],
   wi: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   si: number,
   ii: number,
   delta: number,
@@ -79,7 +79,7 @@ export function lacAdjust(
 export function lacRemove(
   weeks: Week[],
   wi: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   si: number,
   ii: number,
 ): Week[] {
@@ -126,7 +126,7 @@ export function itemNameCount(item: Meeting['sections'][number]['items'][number]
 export function lacMove(
   weeks: Week[],
   wi: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   si: number,
   ii: number,
   dir: -1 | 1,
@@ -171,7 +171,7 @@ function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b:
 export function lacAdd(
   weeks: Week[],
   wi: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   si: number,
   title: string,
 ): Week[] {

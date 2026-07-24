@@ -5,7 +5,8 @@ import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { displayName, isSong } from '../data/helpers'
 import { useProgWeek, useT } from '../i18n/useT'
-import type { PartItem } from '../data/types'
+import type { Meeting, MeetingTab, PartItem, Week } from '../data/types'
+import { FsProgram } from './FsProgram'
 import './programm.css'
 import './print.css'
 
@@ -17,7 +18,7 @@ import './print.css'
  */
 export function ProgrammScreen() {
   const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { t } = useT()
   const { week, tpw } = useProgWeek(state.weeks[state.week])
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
@@ -32,16 +33,18 @@ export function ProgrammScreen() {
     )
   }
 
-  const meeting = state.tab === 'mid' ? week.mid : week.we
+  const isFs = state.tab === 'fs'
+  const meeting = state.tab === 'we' ? week.we : week.mid // fs nutzt Meeting-Inhalt nicht
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const myName = me ? displayName(me) : null
+  const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
 
   return (
     <section className="screen prog-screen">
       {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
       <div className="prog-print-head">
         <span>{state.congregation.name}</span>
-        <span>{state.tab === 'mid' ? t.tabMid : t.tabWe}</span>
+        <span>{tabName}</span>
       </div>
 
       <WeekNav
@@ -59,10 +62,38 @@ export function ProgrammScreen() {
       <MeetingTabs
         className="prog-tabs"
         tab={state.tab}
+        showFs
         onChange={(tab) => dispatch({ type: 'setTab', tab })}
       />
 
-      <MemorialBanner week={week} tab={state.tab} />
+      {isFs ? (
+        <FsProgram />
+      ) : (
+        <ProgramMeeting meeting={meeting} week={week} tab={state.tab} myName={myName} tpw={tpw} />
+      )}
+    </section>
+  )
+}
+
+/** Programm einer Zusammenkunft (Datum, Bereichs-Panels, Hilfsdienste, Fußzeile). */
+function ProgramMeeting({
+  meeting,
+  week,
+  tab,
+  myName,
+  tpw,
+}: {
+  meeting: Meeting
+  week: Week
+  tab: MeetingTab
+  myName: string | null
+  tpw: (s: string) => string
+}) {
+  const { state } = useApp()
+  const { t, tu } = useT()
+  return (
+    <>
+      <MemorialBanner week={week} tab={tab} />
 
       <div className="prog-meta-row">
         <p className="prog-meta">{tpw(meeting.date)}</p>
@@ -111,7 +142,7 @@ export function ProgrammScreen() {
         <span>{tpw(meeting.end)}</span>
         <span>{t.stand}</span>
       </div>
-    </section>
+    </>
   )
 }
 

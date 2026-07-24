@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Planejamento",
   "dashKonflikteN": "{n} conflitos",
   "dashAllesZugeteilt": "Tudo designado",
+  "tabFs": "Reuniões para o serviço de campo",
+  "fsShort": "Serviço de campo",
+  "fsVers": "Reunião da congregação",
+  "fsKeine": "Nenhuma reunião para o serviço esta semana.",
 } satisfies Partial<Dict>

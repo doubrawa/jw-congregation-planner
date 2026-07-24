@@ -32,6 +32,8 @@ import { fill } from '../i18n/useT'
 import { APP_TO_JW, congAppCode } from '../i18n/langs'
 import type {
   ConfirmationMap,
+  MeetingKey,
+  MeetingTab,
   Notification,
   NotificationType,
   Person,
@@ -43,6 +45,13 @@ import type { AppAction, AppState } from './context'
 function nextToast(state: AppState, text: string): AppState['toast'] {
   return { id: (state.toast?.id ?? 0) + 1, text }
 }
+
+/**
+ * View-Tab auf eine echte Zusammenkunft eingrenzen. Der fs-Tab („Treffpunkte")
+ * hat keine Meeting-Daten; die Meeting-Aktionen werden dort nie ausgelöst
+ * (Navigation setzt den Tab beim Verlassen des Programms zurück).
+ */
+const mtab = (tab: MeetingTab): MeetingKey => (tab === 'fs' ? 'mid' : tab)
 
 /** Toast aus einem übersetzten UI-Schlüssel (Reducer kennt state.lang). */
 function toastKey(
@@ -185,9 +194,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const plannerOnly: Screen[] = ['planen', 'personen', 'einstellungen']
       const screen =
         !state.planner && plannerOnly.includes(action.screen) ? 'programm' : action.screen
+      // Der fs-Tab („Treffpunkte") existiert vorerst nur im Programm — beim
+      // Wechsel in andere Ansichten auf die Zusammenkunft unter der Woche zurück.
+      const tab: MeetingTab = state.tab === 'fs' && screen !== 'programm' ? 'mid' : state.tab
       return {
         ...dropNamelessSelected(state),
         screen,
+        tab,
         notifOpen: false,
         slotSel: null,
         selectedPersonId: null,
@@ -438,7 +451,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const { weeks, count, newly, unfilled } = autoAssignMeeting(
         state.weeks,
         state.week,
-        state.tab,
+        mtab(state.tab),
         state.persons,
         state.services,
         state.groups,
@@ -466,11 +479,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: dropConfirmations(
           state.confirmations,
           changedSlotKeys(
-            state.weeks[state.week][state.tab],
-            weeks[state.week][state.tab],
+            state.weeks[state.week][mtab(state.tab)],
+            weeks[state.week][mtab(state.tab)],
             state.services,
             state.week,
-            state.tab,
+            mtab(state.tab),
           ),
         ),
         toast: toastKey(state, 'toastAutoN', { n: count }),
@@ -478,7 +491,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'clearAssignments': {
       if (!state.weeks[state.week]) return state // keine Wochen geladen
-      const { weeks, count } = clearAssignments(state.weeks, state.week, state.tab, action.scope)
+      const { weeks, count } = clearAssignments(state.weeks, state.week, mtab(state.tab), action.scope)
       if (count === 0) return { ...state, toast: toastKey(state, 'toastGeleertN', { n: 0 }) }
       return {
         ...state,
@@ -486,11 +499,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: dropConfirmations(
           state.confirmations,
           changedSlotKeys(
-            state.weeks[state.week][state.tab],
-            weeks[state.week][state.tab],
+            state.weeks[state.week][mtab(state.tab)],
+            weeks[state.week][mtab(state.tab)],
             state.services,
             state.week,
-            state.tab,
+            mtab(state.tab),
           ),
         ),
         toast: toastKey(state, 'toastGeleertN', { n: count }),
@@ -556,20 +569,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'lacAdjust':
       return {
         ...state,
-        weeks: lacAdjust(state.weeks, state.week, state.tab, action.si, action.ii, action.delta),
+        weeks: lacAdjust(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.delta),
       }
     case 'lacRemove':
       return {
         ...state,
-        weeks: lacRemove(state.weeks, state.week, state.tab, action.si, action.ii),
+        weeks: lacRemove(state.weeks, state.week, mtab(state.tab), action.si, action.ii),
         toast: toastKey(state, 'toastLacDel'),
       }
     case 'lacMove': {
-      const weeks = lacMove(state.weeks, state.week, state.tab, action.si, action.ii, action.dir)
+      const weeks = lacMove(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.dir)
       if (weeks === state.weeks) return state // Rand: kein Tausch
       // Bestätigungen der beiden getauschten Positionen mitnehmen (task_keys
       // sind positionsbasiert) — sonst erbt der Nachbar den fremden Status.
-      const items = state.weeks[state.week][state.tab].sections[action.si].items
+      const items = state.weeks[state.week][mtab(state.tab)].sections[action.si].items
       const b = lacMoveTarget(items, action.ii, action.dir)
       const confirmations =
         b == null
@@ -577,7 +590,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           : swapPartConfirmations(
               state.confirmations,
               state.week,
-              state.tab,
+              mtab(state.tab),
               action.si,
               action.ii,
               b,
@@ -588,7 +601,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'lacAdd':
       return {
         ...state,
-        weeks: lacAdd(state.weeks, state.week, state.tab, action.si, action.title),
+        weeks: lacAdd(state.weeks, state.week, mtab(state.tab), action.si, action.title),
         toast: toastKey(state, 'toastLacAdd'),
       }
     case 'talkEdit':

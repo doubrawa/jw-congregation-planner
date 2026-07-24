@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Lập kế hoạch",
   "dashKonflikteN": "{n} xung đột",
   "dashAllesZugeteilt": "Đã phân công tất cả",
+  "tabFs": "Buổi họp rao giảng",
+  "fsShort": "Rao giảng",
+  "fsVers": "Buổi họp hội thánh",
+  "fsKeine": "Tuần này không có buổi họp rao giảng.",
 } satisfies Partial<Dict>

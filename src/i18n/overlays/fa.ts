@@ -288,4 +288,8 @@ export default {
   "dashPlanung": "برنامه‌ریزی",
   "dashKonflikteN": "{n} تداخل",
   "dashAllesZugeteilt": "همه‌چیز تخصیص یافت",
+  "tabFs": "جلسات برای خدمت موعظه",
+  "fsShort": "خدمت موعظه",
+  "fsVers": "جلسه جماعت",
+  "fsKeine": "این هفته جلسه‌ای برای خدمت موعظه نیست.",
 } satisfies Partial<Dict>

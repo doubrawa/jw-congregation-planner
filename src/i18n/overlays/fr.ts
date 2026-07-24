@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Planification",
   "dashKonflikteN": "{n} conflits",
   "dashAllesZugeteilt": "Tout est attribué",
+  "tabFs": "Réunions pour la prédication",
+  "fsShort": "Prédication",
+  "fsVers": "Réunion de la congrégation",
+  "fsKeine": "Aucune réunion pour la prédication cette semaine.",
 } satisfies Partial<Dict>

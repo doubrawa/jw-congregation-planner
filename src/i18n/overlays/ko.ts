@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "계획",
   "dashKonflikteN": "충돌 {n}건",
   "dashAllesZugeteilt": "모두 배정됨",
+  "tabFs": "야외 봉사를 위한 모임",
+  "fsShort": "야외 봉사",
+  "fsVers": "회중 모임",
+  "fsKeine": "이번 주에는 야외 봉사를 위한 모임이 없습니다.",
 } satisfies Partial<Dict>

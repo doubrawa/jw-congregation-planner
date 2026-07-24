@@ -288,4 +288,8 @@ export default {
   "dashPlanung": "תכנון",
   "dashKonflikteN": "{n} התנגשויות",
   "dashAllesZugeteilt": "הכול שובץ",
+  "tabFs": "אסיפות לשירות השדה",
+  "fsShort": "שירות השדה",
+  "fsVers": "אסיפת הקהילה",
+  "fsKeine": "אין אסיפות לשירות השדה השבוע.",
 } satisfies Partial<Dict>

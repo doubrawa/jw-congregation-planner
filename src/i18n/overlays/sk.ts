@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Plánovanie",
   "dashKonflikteN": "Konflikty: {n}",
   "dashAllesZugeteilt": "Všetko priradené",
+  "tabFs": "Zhromaždenia na kazateľskú službu",
+  "fsShort": "Služba",
+  "fsVers": "Zborové zhromaždenie",
+  "fsKeine": "Tento týždeň žiadne zhromaždenia na službu.",
 } satisfies Partial<Dict>

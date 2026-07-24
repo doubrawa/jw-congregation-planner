@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Perencanaan",
   "dashKonflikteN": "{n} konflik",
   "dashAllesZugeteilt": "Semua telah ditugaskan",
+  "tabFs": "Perhimpunan untuk dinas pengabaran",
+  "fsShort": "Dinas",
+  "fsVers": "Perhimpunan sidang",
+  "fsKeine": "Tidak ada perhimpunan untuk dinas minggu ini.",
 } satisfies Partial<Dict>

@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Pagpaplano",
   "dashKonflikteN": "{n} sigalot",
   "dashAllesZugeteilt": "Lahat ay naitalaga",
+  "tabFs": "Mga Pulong para sa Paglilingkod sa Larangan",
+  "fsShort": "Paglilingkod",
+  "fsVers": "Pulong ng kongregasyon",
+  "fsKeine": "Walang pulong para sa paglilingkod ngayong linggo.",
 } satisfies Partial<Dict>

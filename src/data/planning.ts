@@ -22,7 +22,7 @@ import type {
   ConfirmationMap,
   Group,
   Meeting,
-  MeetingTab,
+  MeetingKey,
   MyTask,
   Person,
   S89Payload,
@@ -157,7 +157,7 @@ export function changedSlotKeys(
   next: Meeting,
   services: Service[],
   wi: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
 ): string[] {
   const keys: string[] = []
   next.sections.forEach((section, si) => {
@@ -248,7 +248,7 @@ export type AssignScope = 'all' | 'parts' | 'helpers'
 export function autoAssignMeeting(
   weeks: Week[],
   weekIndex: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   persons: Person[],
   services: Service[],
   groups: Group[] = [],
@@ -439,7 +439,7 @@ export function autoAssignMeeting(
 export function clearAssignments(
   weeks: Week[],
   weekIndex: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   scope: Exclude<AssignScope, 'all'>,
 ): { weeks: Week[]; count: number } {
   const next = structuredClone(weeks)
@@ -511,15 +511,15 @@ export function buildS89ForSlot(weeks: Week[], sel: SlotSelection): S89Payload |
  * der Status bewusst nicht mit (v1-Kompromiss, Status gilt dann als offen).
  */
 
-const TABS: MeetingTab[] = ['mid', 'we']
+const TABS: MeetingKey[] = ['mid', 'we']
 
 /** Stabiler Schlüssel eines Programmpunkt-Slots (auch confirmations.task_key). */
-export function partTaskKey(wi: number, tab: MeetingTab, si: number, ii: number, ni: number): string {
+export function partTaskKey(wi: number, tab: MeetingKey, si: number, ii: number, ni: number): string {
   return `${wi}|${tab}|part|${si}|${ii}|${ni}`
 }
 
 /** Stabiler Schlüssel eines Hilfsdienst-Slots. */
-export function helperTaskKey(wi: number, tab: MeetingTab, svc: string, pos: number): string {
+export function helperTaskKey(wi: number, tab: MeetingKey, svc: string, pos: number): string {
   return `${wi}|${tab}|helper|${svc}|${pos}`
 }
 
@@ -530,7 +530,7 @@ export function helperTaskKey(wi: number, tab: MeetingTab, svc: string, pos: num
  */
 export function partSwapKeyPairs(
   wi: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   si: number,
   a: number,
   b: number,
@@ -547,7 +547,7 @@ export function partSwapKeyPairs(
 export function swapPartConfirmations(
   map: ConfirmationMap,
   wi: number,
-  tab: MeetingTab,
+  tab: MeetingKey,
   si: number,
   a: number,
   b: number,
@@ -677,7 +677,7 @@ export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'streak'
 export interface Conflict {
   kind: ConflictKind
   name: string // Anzeigename der Person
-  tab?: MeetingTab // betroffene Zusammenkunft (absent/double/helperTask)
+  tab?: MeetingKey // betroffene Zusammenkunft (absent/double/helperTask)
   count?: number // double: Slots in der Zusammenkunft; streak: Wochen in Folge
 }
 
@@ -741,7 +741,7 @@ export function weekConflicts(
   if (!week) return []
   const conflicts: Conflict[] = []
   const byDisplay = new Map(persons.map((p) => [displayName(p), p]))
-  const tabs: MeetingTab[] = ['mid', 'we']
+  const tabs: MeetingKey[] = ['mid', 'we']
 
   // absent: in dieser Woche abwesend, aber eingeteilt
   for (const tab of tabs) {
