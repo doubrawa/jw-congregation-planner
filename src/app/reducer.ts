@@ -744,7 +744,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks: p.weeks,
         fsRules: p.fsRules,
         fsWeeks: p.fsWeeks,
-        fsBase: p.fsBase ? new Date(p.fsBase) : state.fsBase,
+        // ISO-Datum als 12:00 Ortszeit lesen (nicht UTC-Mitternacht) — sonst
+        // rutscht die Basis in westlichen Zeitzonen auf den Vortag.
+        fsBase: p.fsBase ? new Date(`${p.fsBase}T12:00:00`) : state.fsBase,
         absences: p.absences,
         notifs: p.notifications,
         confirmations: p.confirmations,
