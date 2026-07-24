@@ -6,6 +6,7 @@ import { countOpenSlots } from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { AutoAssignPanel } from './AutoAssignPanel'
+import { FsPlan } from './FsPlan'
 import { HelpersPanel } from './HelpersPanel'
 import { MeetingSection } from './MeetingSection'
 import './planen.css'
@@ -39,15 +40,16 @@ export function PlanenScreen() {
     )
   }
 
-  const meeting = state.tab === 'mid' ? week.mid : week.we
-  const rawMeeting = state.tab === 'mid' ? rawWeek.mid : rawWeek.we
+  const isFs = state.tab === 'fs'
+  const meeting = state.tab === 'we' ? week.we : week.mid
+  const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
   const openCount = countOpenSlots(rawMeeting, state.services)
 
   return (
     <section className="screen">
       <div className="screen-head">
         <h1 className="screen-title">{t.planen}</h1>
-        <span className="screen-head-note">{fill(t.offeneZut, { n: openCount })}</span>
+        {!isFs && <span className="screen-head-note">{fill(t.offeneZut, { n: openCount })}</span>}
       </div>
 
       <WeekNav
@@ -65,30 +67,37 @@ export function PlanenScreen() {
       <MeetingTabs
         className="plan-tabs"
         tab={state.tab}
+        showFs
         onChange={(tab) => dispatch({ type: 'setTab', tab })}
       />
 
-      <MemorialBanner week={week} tab={state.tab} />
+      {isFs ? (
+        <FsPlan />
+      ) : (
+        <>
+          <MemorialBanner week={week} tab={state.tab} />
 
-      <p className="plan-hint">{t.planHint}</p>
+          <p className="plan-hint">{t.planHint}</p>
 
-      <AutoAssignPanel />
-      <p className="plan-legend">{t.planLegend}</p>
+          <AutoAssignPanel />
+          <p className="plan-legend">{t.planLegend}</p>
 
-      <ConflictsBanner />
-      <OpenSlotsBanner tpw={tpw} />
+          <ConflictsBanner />
+          <OpenSlotsBanner tpw={tpw} />
 
-      {meeting.sections.map((section, si) => (
-        <MeetingSection
-          key={rawMeeting.sections[si].label}
-          si={si}
-          section={section}
-          rawSection={rawMeeting.sections[si]}
-          tpw={tpw}
-        />
-      ))}
+          {meeting.sections.map((section, si) => (
+            <MeetingSection
+              key={rawMeeting.sections[si].label}
+              si={si}
+              section={section}
+              rawSection={rawMeeting.sections[si]}
+              tpw={tpw}
+            />
+          ))}
 
-      <HelpersPanel meeting={meeting} />
+          <HelpersPanel meeting={meeting} />
+        </>
+      )}
     </section>
   )
 }

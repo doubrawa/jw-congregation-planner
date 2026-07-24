@@ -293,4 +293,11 @@ export default {
   "fsShort": "Rao giảng",
   "fsVers": "Buổi họp hội thánh",
   "fsKeine": "Tuần này không có buổi họp rao giảng.",
+  "privTreffpunkt": "Điều khiển buổi họp rao giảng",
+  "fsNurWoche": "Thay đổi ở đây chỉ áp dụng cho tuần này.",
+  "fsAddWeekLbl": "THÊM BUỔI HỌP CHO TUẦN NÀY",
+  "fsAdd": "+ THÊM BUỔI HỌP",
+  "fsOrtPh": "Địa điểm (vd. Phòng Nước Trời)",
+  "toastFsAdd": "Đã thêm buổi họp",
+  "toastFsDel": "Đã xóa buổi họp",
 } satisfies Partial<Dict>

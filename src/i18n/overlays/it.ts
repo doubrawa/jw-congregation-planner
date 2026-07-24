@@ -293,4 +293,11 @@ export default {
   "fsShort": "Servizio di campo",
   "fsVers": "Adunanza di congregazione",
   "fsKeine": "Nessuna adunanza per il servizio questa settimana.",
+  "privTreffpunkt": "Dirigere adunanze di servizio",
+  "fsNurWoche": "Le modifiche valgono solo per questa settimana.",
+  "fsAddWeekLbl": "AGGIUNGI UN'ADUNANZA PER QUESTA SETTIMANA",
+  "fsAdd": "+ AGGIUNGI ADUNANZA",
+  "fsOrtPh": "Luogo (es. Sala del Regno)",
+  "toastFsAdd": "Adunanza aggiunta",
+  "toastFsDel": "Adunanza rimossa",
 } satisfies Partial<Dict>

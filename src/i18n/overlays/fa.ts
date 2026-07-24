@@ -292,4 +292,11 @@ export default {
   "fsShort": "خدمت موعظه",
   "fsVers": "جلسه جماعت",
   "fsKeine": "این هفته جلسه‌ای برای خدمت موعظه نیست.",
+  "privTreffpunkt": "هدایت جلسات خدمت",
+  "fsNurWoche": "تغییرات فقط برای همین هفته اعمال می‌شود.",
+  "fsAddWeekLbl": "افزودن جلسه برای این هفته",
+  "fsAdd": "+ افزودن جلسه",
+  "fsOrtPh": "مکان (مثلاً سالن ملکوت)",
+  "toastFsAdd": "جلسه اضافه شد",
+  "toastFsDel": "جلسه حذف شد",
 } satisfies Partial<Dict>

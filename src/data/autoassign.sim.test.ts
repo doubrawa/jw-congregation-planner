@@ -22,7 +22,7 @@ let counter = 0
 function priv(on: string[]): Qualifications {
   const base: Qualifications = {
     vorsitzMid: false, vorsitzWe: false, vortrag: false, gebet: false, bibellesung: false, leser: false,
-    schulung: false, studium: false,
+    schulung: false, studium: false, treffpunkt: false,
   }
   for (const key of on) base[key] = true
   return base

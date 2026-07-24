@@ -293,4 +293,11 @@ export default {
   "fsShort": "Służba",
   "fsVers": "Zbiórka zborowa",
   "fsKeine": "W tym tygodniu brak zbiórek do służby.",
+  "privTreffpunkt": "Prowadzenie zbiórek do służby",
+  "fsNurWoche": "Zmiany dotyczą tylko tego tygodnia.",
+  "fsAddWeekLbl": "DODAJ ZBIÓRKĘ NA TEN TYDZIEŃ",
+  "fsAdd": "+ DODAJ ZBIÓRKĘ",
+  "fsOrtPh": "Miejsce (np. Sala Królestwa)",
+  "toastFsAdd": "Dodano zbiórkę",
+  "toastFsDel": "Usunięto zbiórkę",
 } satisfies Partial<Dict>

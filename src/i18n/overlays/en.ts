@@ -293,4 +293,11 @@ export default {
   "fsShort": "Field Service",
   "fsVers": "Congregation meeting",
   "fsKeine": "No meetings for field service this week.",
+  "privTreffpunkt": "Lead field service meetings",
+  "fsNurWoche": "Changes here apply only to this week.",
+  "fsAddWeekLbl": "ADD A MEETING FOR THIS WEEK",
+  "fsAdd": "+ ADD MEETING",
+  "fsOrtPh": "Place (e.g., Kingdom Hall)",
+  "toastFsAdd": "Meeting added",
+  "toastFsDel": "Meeting removed",
 } satisfies Partial<Dict>

@@ -293,4 +293,11 @@ export default {
   "fsShort": "Palvelus",
   "fsVers": "Seurakunnan kokous",
   "fsKeine": "Ei kokouksia kenttäpalvelusta varten tällä viikolla.",
+  "privTreffpunkt": "Johtaa palveluskokouksia",
+  "fsNurWoche": "Muutokset koskevat vain tätä viikkoa.",
+  "fsAddWeekLbl": "LISÄÄ KOKOUS TÄLLE VIIKOLLE",
+  "fsAdd": "+ LISÄÄ KOKOUS",
+  "fsOrtPh": "Paikka (esim. valtakunnansali)",
+  "toastFsAdd": "Kokous lisätty",
+  "toastFsDel": "Kokous poistettu",
 } satisfies Partial<Dict>

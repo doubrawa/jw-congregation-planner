@@ -23,6 +23,7 @@ import type {
   Group,
   Meeting,
   MeetingKey,
+  MeetingSlotSelection,
   MyTask,
   Person,
   S89Payload,
@@ -51,7 +52,7 @@ function tieHash(s: string): number {
 }
 
 /** Aktueller Name auf einem Slot ("" = offen). */
-export function slotValue(weeks: Week[], sel: SlotSelection): string {
+export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
   const meeting = weeks[sel.wi][sel.tab]
   if (sel.kind === 'part') {
     const item = meeting.sections[sel.si].items[sel.ii]
@@ -110,7 +111,7 @@ export function assignmentsInMeeting(
 }
 
 /** Setzt einen Slot auf `name` ("" = Zuteilung entfernen). */
-export function assignSlot(weeks: Week[], sel: SlotSelection, name: string, rolle?: string): Week[] {
+export function assignSlot(weeks: Week[], sel: MeetingSlotSelection, name: string, rolle?: string): Week[] {
   const next = structuredClone(weeks)
   const meeting = next[sel.wi][sel.tab]
   if (sel.kind === 'part') {
@@ -479,7 +480,7 @@ export function clearAssignments(
  * Schulungsaufgabe (Leser/Leiter zählen nicht). Rahmen und Schulungspunkt
  * werden aus der Meta-Zeile geparst.
  */
-export function buildS89ForSlot(weeks: Week[], sel: SlotSelection): S89Payload | null {
+export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Payload | null {
   if (sel.kind !== 'part') return null
   const meeting = weeks[sel.wi][sel.tab]
   const item = meeting.sections[sel.si].items[sel.ii]

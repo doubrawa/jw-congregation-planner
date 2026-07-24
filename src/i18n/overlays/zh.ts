@@ -293,4 +293,11 @@ export default {
   "fsShort": "传道",
   "fsVers": "会众聚集",
   "fsKeine": "本周没有传道服务聚集。",
+  "privTreffpunkt": "主持传道聚集",
+  "fsNurWoche": "这里的更改仅适用于本周。",
+  "fsAddWeekLbl": "为本周添加聚集",
+  "fsAdd": "+ 添加聚集",
+  "fsOrtPh": "地点（例如：王国聚会所）",
+  "toastFsAdd": "已添加聚集",
+  "toastFsDel": "已移除聚集",
 } satisfies Partial<Dict>

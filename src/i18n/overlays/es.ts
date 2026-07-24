@@ -293,4 +293,11 @@ export default {
   "fsShort": "Servicio del campo",
   "fsVers": "Reunión de la congregación",
   "fsKeine": "No hay reuniones para el servicio esta semana.",
+  "privTreffpunkt": "Dirigir reuniones de servicio",
+  "fsNurWoche": "Los cambios aquí solo se aplican a esta semana.",
+  "fsAddWeekLbl": "AÑADIR REUNIÓN PARA ESTA SEMANA",
+  "fsAdd": "+ AÑADIR REUNIÓN",
+  "fsOrtPh": "Lugar (p. ej., Salón del Reino)",
+  "toastFsAdd": "Reunión añadida",
+  "toastFsDel": "Reunión eliminada",
 } satisfies Partial<Dict>

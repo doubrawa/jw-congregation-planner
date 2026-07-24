@@ -293,4 +293,11 @@ export default {
   "fsShort": "Tjenesten",
   "fsVers": "Menighetens møte",
   "fsKeine": "Ingen møter for tjenesten denne uken.",
+  "privTreffpunkt": "Lede tjenestemøter",
+  "fsNurWoche": "Endringer her gjelder bare denne uken.",
+  "fsAddWeekLbl": "LEGG TIL MØTE FOR DENNE UKEN",
+  "fsAdd": "+ LEGG TIL MØTE",
+  "fsOrtPh": "Sted (f.eks. Rikets sal)",
+  "toastFsAdd": "Møte lagt til",
+  "toastFsDel": "Møte fjernet",
 } satisfies Partial<Dict>

@@ -293,4 +293,11 @@ export default {
   "fsShort": "Dinas",
   "fsVers": "Perhimpunan sidang",
   "fsKeine": "Tidak ada perhimpunan untuk dinas minggu ini.",
+  "privTreffpunkt": "Memimpin perhimpunan dinas",
+  "fsNurWoche": "Perubahan di sini hanya berlaku untuk minggu ini.",
+  "fsAddWeekLbl": "TAMBAHKAN PERHIMPUNAN UNTUK MINGGU INI",
+  "fsAdd": "+ TAMBAH PERHIMPUNAN",
+  "fsOrtPh": "Tempat (mis. Balai Kerajaan)",
+  "toastFsAdd": "Perhimpunan ditambahkan",
+  "toastFsDel": "Perhimpunan dihapus",
 } satisfies Partial<Dict>

@@ -293,4 +293,11 @@ export default {
   "fsShort": "Utumishi",
   "fsVers": "Mkutano wa kutaniko",
   "fsKeine": "Hakuna mikutano ya utumishi wiki hii.",
+  "privTreffpunkt": "Kuongoza mikutano ya utumishi",
+  "fsNurWoche": "Mabadiliko haya ni kwa wiki hii tu.",
+  "fsAddWeekLbl": "ONGEZA MKUTANO WA WIKI HII",
+  "fsAdd": "+ ONGEZA MKUTANO",
+  "fsOrtPh": "Mahali (mf. Jumba la Ufalme)",
+  "toastFsAdd": "Mkutano umeongezwa",
+  "toastFsDel": "Mkutano umeondolewa",
 } satisfies Partial<Dict>

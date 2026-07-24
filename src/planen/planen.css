@@ -446,6 +446,106 @@
   padding-bottom: 6px;
 }
 
+/* ---- Treffpunkte planen ---------------------------------------------------- */
+
+.fs-edit-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--lineGld);
+}
+
+.panel .fs-edit-row:last-child {
+  border-bottom-color: transparent;
+}
+
+.fs-edit-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fs-edit-title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.fs-select {
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fs-select--time {
+  flex: none;
+  width: 78px;
+}
+
+.fs-remove {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--weinB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wein);
+  font-size: 10px;
+}
+
+.fs-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.fs-edit-slot {
+  margin-top: 9px;
+}
+
+/* Karte „Treffpunkt für diese Woche hinzufügen" */
+.fs-add-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.fs-add-grid .fs-input {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+.fs-add-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid var(--acc);
+  color: var(--acc);
+  border-radius: var(--r-pill);
+  padding: 9px 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.fs-add-btn:hover {
+  background: var(--tAcc);
+}
+
 /* ---- Hilfsdienste ---------------------------------------------------------- */
 
 .plan-helper-row {

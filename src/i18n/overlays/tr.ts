@@ -293,4 +293,11 @@ export default {
   "fsShort": "Tarla hizmeti",
   "fsVers": "Cemaat ibadeti",
   "fsKeine": "Bu hafta tarla hizmeti için ibadet yok.",
+  "privTreffpunkt": "Tarla hizmeti ibadetlerini yönetmek",
+  "fsNurWoche": "Buradaki değişiklikler yalnızca bu hafta için geçerlidir.",
+  "fsAddWeekLbl": "BU HAFTAYA İBADET EKLE",
+  "fsAdd": "+ İBADET EKLE",
+  "fsOrtPh": "Yer (örn. İbadet Salonu)",
+  "toastFsAdd": "İbadet eklendi",
+  "toastFsDel": "İbadet kaldırıldı",
 } satisfies Partial<Dict>

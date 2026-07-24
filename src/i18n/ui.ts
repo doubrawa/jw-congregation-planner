@@ -88,6 +88,7 @@ export const PRIV_KEY: Record<QualificationKey, keyof Dict> = {
   leser: 'privLeser',
   schulung: 'privSchulung',
   studium: 'privStudium',
+  treffpunkt: 'privTreffpunkt',
   wtLeiter: 'privWtLeiter',
   wtVertreter: 'privWtVertreter',
 }

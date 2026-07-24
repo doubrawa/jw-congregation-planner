@@ -292,4 +292,11 @@ export default {
   "fsShort": "שירות השדה",
   "fsVers": "אסיפת הקהילה",
   "fsKeine": "אין אסיפות לשירות השדה השבוע.",
+  "privTreffpunkt": "להוביל אסיפות שירות",
+  "fsNurWoche": "השינויים כאן חלים רק על שבוע זה.",
+  "fsAddWeekLbl": "הוספת אסיפה לשבוע זה",
+  "fsAdd": "+ הוספת אסיפה",
+  "fsOrtPh": "מקום (למשל אולם המלכות)",
+  "toastFsAdd": "האסיפה נוספה",
+  "toastFsDel": "האסיפה הוסרה",
 } satisfies Partial<Dict>

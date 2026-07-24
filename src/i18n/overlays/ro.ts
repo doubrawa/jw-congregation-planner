@@ -293,4 +293,11 @@ export default {
   "fsShort": "Serviciu",
   "fsVers": "Întrunire de congregație",
   "fsKeine": "Nicio întrunire pentru serviciu în această săptămână.",
+  "privTreffpunkt": "Conducerea întrunirilor pentru serviciu",
+  "fsNurWoche": "Modificările se aplică doar acestei săptămâni.",
+  "fsAddWeekLbl": "ADAUGĂ O ÎNTRUNIRE PENTRU ACEASTĂ SĂPTĂMÂNĂ",
+  "fsAdd": "+ ADAUGĂ ÎNTRUNIRE",
+  "fsOrtPh": "Loc (de ex. Sala Regatului)",
+  "toastFsAdd": "Întrunire adăugată",
+  "toastFsDel": "Întrunire eliminată",
 } satisfies Partial<Dict>

@@ -293,4 +293,11 @@ export default {
   "fsShort": "Služba",
   "fsVers": "Skupštinski sastanak",
   "fsKeine": "Ovaj tjedan nema sastanaka za službu.",
+  "privTreffpunkt": "Voditi sastanke za službu",
+  "fsNurWoche": "Promjene vrijede samo za ovaj tjedan.",
+  "fsAddWeekLbl": "DODAJ SASTANAK ZA OVAJ TJEDAN",
+  "fsAdd": "+ DODAJ SASTANAK",
+  "fsOrtPh": "Mjesto (npr. Dvorana Kraljevstva)",
+  "toastFsAdd": "Sastanak dodan",
+  "toastFsDel": "Sastanak uklonjen",
 } satisfies Partial<Dict>
