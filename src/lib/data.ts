@@ -27,6 +27,8 @@ import {
 import type {
   Absence,
   ConfirmationMap,
+  FsInstance,
+  FsRule,
   Group,
   Invite,
   Member,
@@ -375,6 +377,9 @@ export interface CongregationData {
   services: Service[]
   groups: Group[]
   weeks: Week[]
+  fsRules: FsRule[]
+  fsWeeks: FsInstance[][]
+  fsBase: string | null // ISO-Datum (Montag der Woche 0) oder null
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -407,7 +412,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows] = await Promise.all([
     supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -420,6 +425,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
     supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
+    supabase.from('fs_rules').select('base, rules').eq('congregation_id', congregationId).maybeSingle(),
+    supabase.from('fs_weeks').select('position, data').eq('congregation_id', congregationId).order('position'),
   ])
 
   const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites].find((r) => r.error)?.error
@@ -451,6 +458,15 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     repeat: settings.reminders?.repeat ?? DEMO_REMINDERS.repeat,
   }
 
+  // Treffpunkte: Grundplan-Blob + je Woche materialisierte Instanzen (Position → Daten).
+  const fsRules = (fsRulesRow.data?.rules as FsRule[] | undefined) ?? []
+  const fsBase = (fsRulesRow.data?.base as string | null | undefined) ?? null
+  const fsByPos = new Map<number, FsInstance[]>()
+  for (const row of (fsWeeksRows.data ?? []) as { position: number; data: FsInstance[] }[]) {
+    fsByPos.set(row.position, row.data)
+  }
+  const fsWeeks: FsInstance[][] = Array.from({ length: weekList.length }, (_u, i) => fsByPos.get(i) ?? [])
+
   const data: CongregationData = {
     congregation: {
       name: cong.data?.name ?? '',
@@ -463,6 +479,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     services: serviceList,
     groups: (groups.data ?? []).map((r) => groupFromRow(r as GroupRow)),
     weeks: weekList,
+    fsRules,
+    fsWeeks,
+    fsBase,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: (notifs.data ?? []).map((r) => notificationFromRow(r as NotificationRow)),
     confirmations,
@@ -545,6 +564,29 @@ export function saveWeek(congregationId: string, position: number, week: Week): 
 export function savePerson(congregationId: string, person: Person): void {
   if (!supabase) return
   void run(supabase.from('persons').upsert(personToRow(person, congregationId)))
+}
+
+/** Grundplan der Treffpunkte (ein Blob je Versammlung) + Basis-Datum. */
+export function saveFsRules(congregationId: string, base: string, rules: FsRule[]): void {
+  if (!supabase) return
+  void run(
+    supabase
+      .from('fs_rules')
+      .upsert({ congregation_id: congregationId, base, rules }, { onConflict: 'congregation_id' }),
+  )
+}
+
+/** Materialisierte Treffpunkte einer Woche (Position → FsInstance[]). */
+export function saveFsWeek(congregationId: string, position: number, insts: FsInstance[]): void {
+  if (!supabase) return
+  void run(
+    supabase
+      .from('fs_weeks')
+      .upsert(
+        { congregation_id: congregationId, position, data: insts },
+        { onConflict: 'congregation_id,position' },
+      ),
+  )
 }
 
 export function deletePersonRow(id: string): void {

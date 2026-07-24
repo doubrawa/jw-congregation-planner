@@ -1,5 +1,4 @@
 import { useApp } from '../app/context'
-import { FS_BASE } from '../data/demo'
 import { FS_TIME_OPTIONS, fsDate } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -16,7 +15,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
 
   const wdOptions = [1, 2, 3, 4, 5, 6, 0]
   const wdName = (d: number): string =>
-    fsDate(FS_BASE, 0, d).toLocaleDateString(LOCALES[state.lang], { weekday: 'long' })
+    fsDate(state.fsBase, 0, d).toLocaleDateString(LOCALES[state.lang], { weekday: 'long' })
   const freqOptions: ReadonlyArray<[number, string]> = [
     [0, t.fsFreqW],
     [1, t.fsFreqM1],

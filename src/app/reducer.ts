@@ -4,7 +4,7 @@
  * den Startzustand liefert init.ts, den Provider stellt store.tsx.
  */
 
-import { buildImportWeek, CURRENT_PERSON_ID, FS_BASE } from '../data/demo'
+import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { fsAddInst, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, overseerGroup } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
@@ -571,20 +571,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(FS_BASE, state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(state.fsBase, state.fsWeeks, fsRules),
         toast: toastKey(state, 'toastFsRuleAdd'),
       }
     }
     case 'fsRuleUpdate': {
       const fsRules = state.fsRules.map((r) => (r.id === action.id ? { ...r, ...action.patch } : r))
-      return { ...state, fsRules, fsWeeks: regenFsWeeks(FS_BASE, state.fsWeeks, fsRules) }
+      return { ...state, fsRules, fsWeeks: regenFsWeeks(state.fsBase, state.fsWeeks, fsRules) }
     }
     case 'fsRuleRemove': {
       const fsRules = state.fsRules.filter((r) => r.id !== action.id)
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(FS_BASE, state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(state.fsBase, state.fsWeeks, fsRules),
         toast: toastKey(state, 'toastFsRuleDel'),
       }
     }
@@ -742,6 +742,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         services: p.services,
         groups: p.groups,
         weeks: p.weeks,
+        fsRules: p.fsRules,
+        fsWeeks: p.fsWeeks,
+        fsBase: p.fsBase ? new Date(p.fsBase) : state.fsBase,
         absences: p.absences,
         notifs: p.notifications,
         confirmations: p.confirmations,
