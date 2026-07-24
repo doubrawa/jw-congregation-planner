@@ -387,3 +387,65 @@
 .imp-btn {
   margin-top: 14px;
 }
+
+/* ---- Grundplan Treffpunkte ------------------------------------------------ */
+
+.fsr-section {
+  margin-top: 14px;
+}
+
+.fsr-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--mut);
+  margin-bottom: 4px;
+}
+
+.fsr-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineNeu);
+}
+
+.fsr-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fsr-line + .fsr-line {
+  margin-top: 8px;
+}
+
+.fsr-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.fsr-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.fsr-skip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.fsr-skip-label {
+  font-size: 11.5px;
+  color: var(--mut);
+}
+
+.fsr-add {
+  margin-top: 10px;
+}

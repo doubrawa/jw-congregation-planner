@@ -4,8 +4,8 @@
  * den Startzustand liefert init.ts, den Provider stellt store.tsx.
  */
 
-import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
-import { fsAddInst, fsRemoveInst, fsSetLeader, fsUpdateInst } from '../data/fs'
+import { buildImportWeek, CURRENT_PERSON_ID, FS_BASE } from '../data/demo'
+import { fsAddInst, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -33,6 +33,7 @@ import { fill } from '../i18n/useT'
 import { APP_TO_JW, congAppCode } from '../i18n/langs'
 import type {
   ConfirmationMap,
+  FsRule,
   MeetingKey,
   MeetingTab,
   Notification,
@@ -549,6 +550,37 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         fsWeeks: fsAddInst(state.fsWeeks, state.week, action.inst),
         toast: toastKey(state, 'toastFsAdd'),
       }
+    case 'fsRuleAdd': {
+      const rule: FsRule = {
+        id: `r${Date.now()}`,
+        grp: action.grp,
+        wd: 6,
+        time: '09:30',
+        place: '',
+        monthly: 0,
+        skipCong: action.grp !== '',
+      }
+      const fsRules = [...state.fsRules, rule]
+      return {
+        ...state,
+        fsRules,
+        fsWeeks: regenFsWeeks(FS_BASE, state.fsWeeks, fsRules),
+        toast: toastKey(state, 'toastFsRuleAdd'),
+      }
+    }
+    case 'fsRuleUpdate': {
+      const fsRules = state.fsRules.map((r) => (r.id === action.id ? { ...r, ...action.patch } : r))
+      return { ...state, fsRules, fsWeeks: regenFsWeeks(FS_BASE, state.fsWeeks, fsRules) }
+    }
+    case 'fsRuleRemove': {
+      const fsRules = state.fsRules.filter((r) => r.id !== action.id)
+      return {
+        ...state,
+        fsRules,
+        fsWeeks: regenFsWeeks(FS_BASE, state.fsWeeks, fsRules),
+        toast: toastKey(state, 'toastFsRuleDel'),
+      }
+    }
     case 'confirmTask': {
       // Produktionsmodus: Status in die ConfirmationMap — myTasks/pending-
       // Names/confirmOpen folgen aus der Ableitung (withDerivedTasks).

@@ -14,6 +14,13 @@
 
 import type { FsInstance, FsRule } from './types'
 
+/** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
+export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }, (_unused, i) => {
+  const h = 6 + Math.floor(i / 4)
+  const m = (i % 4) * 15
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+})
+
 /** Datum des Wochentags `wd` (0=So..6=Sa) in Woche `wi`, ausgehend vom Montag der Woche 0. */
 export function fsDate(base: Date, wi: number, wd: number): Date {
   const d = new Date(base.getTime())
