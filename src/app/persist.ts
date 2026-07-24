@@ -22,6 +22,8 @@ import {
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
+  saveFsRules,
+  saveFsWeek,
   saveGroupRow,
   saveInvite,
   saveInvitePlanner,
@@ -104,8 +106,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   switch (action.type) {
     case 'assign': {
       const sel = prev.slotSel
-      // Treffpunkt-Leiter (fs) haben noch keine DB-Persistenz (Phase 5).
-      if (sel && sel.kind !== 'fs') {
+      // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle.
+      if (sel && sel.kind === 'fs') {
+        saveFsWeek(congId, sel.wi, next.fsWeeks[sel.wi])
+        break
+      }
+      if (sel) {
         saveWeek(congId, sel.wi, next.weeks[sel.wi])
         // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
         deleteConfirmationRows(
@@ -144,6 +150,21 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         )
         saveWeek(congId, prev.week, next.weeks[prev.week])
       }
+      break
+    }
+    case 'fsInstUpdate':
+    case 'fsInstRemove':
+      saveFsWeek(congId, action.wi, next.fsWeeks[action.wi])
+      break
+    case 'fsInstAdd':
+      saveFsWeek(congId, prev.week, next.fsWeeks[prev.week])
+      break
+    case 'fsRuleAdd':
+    case 'fsRuleUpdate':
+    case 'fsRuleRemove': {
+      // Grundplan-Blob + alle (neu materialisierten) Wochen speichern.
+      saveFsRules(congId, next.fsBase.toISOString().slice(0, 10), next.fsRules)
+      for (let i = 0; i < next.fsWeeks.length; i++) saveFsWeek(congId, i, next.fsWeeks[i])
       break
     }
     case 'lacMove': {

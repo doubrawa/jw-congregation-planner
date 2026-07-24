@@ -11,6 +11,7 @@ import {
   CONGREGATION,
   DEMO_ABSENCES,
   DEMO_FS_RULES,
+  FS_BASE,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
   DEMO_PENDING_NAMES,
@@ -73,6 +74,14 @@ function parseDebugHash():
   return Object.keys(out).length ? out : null
 }
 
+/** Montag der aktuellen Woche (Standard-Basis für Treffpunkte ohne DB-Wert). */
+function mondayOfThisWeek(): Date {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return d
+}
+
 export function initialState(): AppState {
   // Konfiguriert (Supabase): leerer Start, Daten kommen per Hydration nach dem
   // Login. Demo-Modus: In-Memory-Demo-Daten wie bisher. Ein Debug-Hash erzwingt
@@ -100,6 +109,7 @@ export function initialState(): AppState {
     groups: demo ? DEMO_GROUPS : [],
     fsRules: demo ? DEMO_FS_RULES : [],
     fsWeeks: demo ? buildDemoFsWeeks() : [],
+    fsBase: demo ? FS_BASE : mondayOfThisWeek(),
     absences: demo ? DEMO_ABSENCES : [],
     notifs: demo ? DEMO_NOTIFICATIONS : [],
     notifOpen: false,

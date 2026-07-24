@@ -1,5 +1,5 @@
 import { useApp } from '../app/context'
-import { CURRENT_PERSON_ID, FS_BASE } from '../data/demo'
+import { CURRENT_PERSON_ID } from '../data/demo'
 import { fsDate } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
@@ -31,7 +31,7 @@ export function FsProgram() {
   for (const inst of insts) {
     let day = days.find((d) => d.wd === inst.wd)
     if (!day) {
-      const label = fsDate(FS_BASE, state.week, inst.wd).toLocaleDateString(LOCALES[state.lang], {
+      const label = fsDate(state.fsBase, state.week, inst.wd).toLocaleDateString(LOCALES[state.lang], {
         weekday: 'long',
         day: 'numeric',
         month: 'long',

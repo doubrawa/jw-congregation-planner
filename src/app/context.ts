@@ -56,6 +56,9 @@ export interface HydratePayload {
   services: Service[]
   groups: Group[]
   weeks: Week[]
+  fsRules: FsRule[]
+  fsWeeks: FsInstance[][]
+  fsBase: string | null // ISO-Datum (Montag der Woche 0)
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -90,6 +93,7 @@ export interface AppState {
   // pro Woche daraus materialisierten Instanzen (parallel zu weeks indiziert).
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
+  fsBase: Date // Montag der Woche 0 (Bezug für Treffpunkt-Datumsberechnung)
   absences: Absence[]
   notifs: Notification[]
   notifOpen: boolean
