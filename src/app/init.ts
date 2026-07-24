@@ -24,7 +24,7 @@ import {
 import { THEME_LIST } from '../data/constants'
 import { APP_LANGS } from '../i18n/langs'
 import { isSupabaseConfigured } from '../lib/supabase'
-import type { Lang, Screen, Theme } from '../data/types'
+import type { Lang, MeetingTab, Screen, Theme } from '../data/types'
 import type { AppState } from './context'
 
 /** Alte gespeicherte Werte (vor den 8 Farbschemata) auf Paletten mappen. */
@@ -54,13 +54,21 @@ function getInitialLang(): Lang {
  * Screenshots (überspringt den Login im Demo-Modus). Im Production-Build wird
  * dieser Zweig via `import.meta.env.DEV` entfernt.
  */
-function parseDebugHash():
-  | { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme; personId?: string }
-  | null {
+interface DebugHash {
+  screen?: Screen
+  lang?: Lang
+  congLang?: string
+  theme?: Theme
+  personId?: string
+  tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
+  planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
+}
+
+function parseDebugHash(): DebugHash | null {
   const raw = location.hash.replace(/^#/, '')
   if (!raw) return null
   const p = new URLSearchParams(raw)
-  const out: { screen?: Screen; lang?: Lang; congLang?: string; theme?: Theme; personId?: string } = {}
+  const out: DebugHash = {}
   const s = p.get('s')
   if (s) out.screen = s as Screen
   const l = p.get('l')
@@ -71,6 +79,10 @@ function parseDebugHash():
   if (th) out.theme = th
   const person = p.get('p')
   if (person) out.personId = person
+  const tab = p.get('tab')
+  if (tab === 'mid' || tab === 'we' || tab === 'fs') out.tab = tab
+  const pl = p.get('pl')
+  if (pl === '0' || pl === '1') out.planner = pl === '1'
   return Object.keys(out).length ? out : null
 }
 
@@ -91,9 +103,9 @@ export function initialState(): AppState {
   return {
     screen: debug?.screen ?? 'login',
     week: 0,
-    tab: 'mid',
+    tab: debug?.tab ?? 'mid',
     theme: debug?.theme ?? getInitialTheme(),
-    planner: demo ? DEMO_PLANNER : false,
+    planner: debug?.planner ?? (demo ? DEMO_PLANNER : false),
     congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', meetings: '' },
     congregationId: null,
     userId: null,
