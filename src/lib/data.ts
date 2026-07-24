@@ -460,11 +460,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   }
 
   // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Position → Daten).
-  // Die Basis wird an die als `current` markierte Woche verankert (sprach-
-  // unabhängig, korrigiert eine verschobene gespeicherte Basis); anschließend
-  // werden die Wochen neu ausgerichtet — Leiter und wochenspezifische Zeit/Ort
-  // bleiben erhalten, nur die Regel→Woche-Zuordnung (z. B. „1. Samstag im Monat")
-  // wird anhand der korrekten Datumsbasis neu bestimmt.
+  // Die Basis wird aus dem echten ISO-Startdatum der Wochen (`week.start`,
+  // jw.org-Import) abgeleitet — unabhängig von der gespeicherten Basis und vom
+  // `current`-Flag, die beide veralten können; anschließend werden die Wochen neu
+  // ausgerichtet — Leiter und wochenspezifische Zeit/Ort bleiben erhalten, nur die
+  // Regel→Woche-Zuordnung (z. B. „1. Samstag im Monat") wird anhand der korrekten
+  // Datumsbasis neu bestimmt.
   const fsRules = (fsRulesRow.data?.rules as FsRule[] | undefined) ?? []
   const fsBaseDate = fsBaseFromWeeks(weekList, new Date())
   const fsBase = fsBaseDate.toISOString().slice(0, 10)

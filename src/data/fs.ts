@@ -22,11 +22,28 @@ export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }
 })
 
 /**
- * Montag der Woche 0 — verankert an der als `current` markierten Programmwoche:
- * deren Montag ist der Montag der realen aktuellen Woche (`today`), Woche 0 liegt
- * `curIdx` Wochen davor. Sprachunabhängig (nutzt keine Datums-Strings).
+ * Montag der Woche 0. Bevorzugt das echte ISO-Startdatum der Wochen: beim
+ * jw.org-Import trägt jede Woche `start` = Montag der jeweiligen Woche. Von der
+ * ersten Woche mit Startdatum aus liegt Woche 0 `i` Wochen davor. Das ist
+ * unabhängig von `today` und vom gespeicherten `current`-Flag — beide veralten
+ * (das `current`-Flag wird nicht gegen das echte Datum nachgeführt), was den
+ * Treffpunkt-Wochenversatz verursacht hat.
+ *
+ * Nur wenn keine Woche ein Startdatum hat (Demo/Vorlagen), wird ersatzweise an
+ * der als `current` markierten Woche relativ zu `today` verankert.
  */
-export function fsBaseFromWeeks(weeks: ReadonlyArray<{ current: boolean }>, today: Date): Date {
+export function fsBaseFromWeeks(
+  weeks: ReadonlyArray<{ current: boolean; start?: string }>,
+  today: Date,
+): Date {
+  const i = weeks.findIndex((w) => w.start)
+  const iso = weeks[i]?.start // findIndex -1 → weeks[-1] undefined → iso undefined
+  if (iso) {
+    const [y, m, d] = iso.split('-').map(Number)
+    const base = new Date(y, m - 1, d, 12, 0, 0, 0) // lokaler Mittag: kein UTC-Tagesversatz
+    base.setDate(base.getDate() - i * 7) // Montag der Woche 0 (i Wochen vor der ersten mit start)
+    return base
+  }
   const curIdx = Math.max(0, weeks.findIndex((w) => w.current))
   const d = new Date(today)
   d.setHours(12, 0, 0, 0)
