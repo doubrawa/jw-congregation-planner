@@ -84,6 +84,17 @@ describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
     expect(s.selectedPersonId).toBe('p9')
   })
 
+  it('tab und pl (Rechte) steuern Reiter und Rolle für Doku-Screenshots', () => {
+    vi.stubEnv('DEV', true)
+    cfg.configured = true
+    location.hash = '#s=planen&tab=fs&pl=0'
+    const s = initialState()
+    expect(s.tab).toBe('fs')
+    expect(s.planner).toBe(false) // pl=0 → Verkündiger-Ansicht
+    location.hash = '#s=planen&pl=1'
+    expect(initialState().planner).toBe(true)
+  })
+
   it('ohne Hash bleibt es (bei DEV) beim konfigurierten Leerstart', () => {
     vi.stubEnv('DEV', true)
     cfg.configured = true
