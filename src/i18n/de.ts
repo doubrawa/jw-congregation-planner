@@ -14,7 +14,7 @@ export const DE = {
     pwVergessen: 'Passwort vergessen?', demoHinweis: 'Demo-Prototyp · Zugangsdaten beliebig',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     mitteilungen: 'Mitteilungen', neuSuffix: 'neu', alleGelesen: 'Alle gelesen', alleLoeschen: 'Alle löschen',
-    aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Unter der Woche', tabWe: 'Wochenende',
+    aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: 4. September', drucken: 'Drucken',
     planen: 'Planen', offeneZut: '{n} offene Zuteilungen',
     planHint: 'Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.',
