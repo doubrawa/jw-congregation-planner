@@ -1,4 +1,6 @@
 import { useApp } from '../app/context'
+import { CURRENT_PERSON_ID } from '../data/demo'
+import { overseerGroup } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { CongregationPanel } from './CongregationPanel'
 import { FsRulesPanel } from './FsRulesPanel'
@@ -20,17 +22,28 @@ export function EinstellungenScreen() {
   const { state } = useApp()
   const { t } = useT()
 
+  // Gruppenaufseher (ohne volle Planer-Rechte) sehen hier nur den Grundplan
+  // ihrer eigenen Gruppe.
+  const myFsGroup = overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID)
+  const fsOverseer = !state.planner && myFsGroup !== null
+
   return (
     <section className="screen">
       <h1 className="screen-title">{t.einstellungen}</h1>
       <p className="screen-subtitle">{fill(t.congLabel, { name: state.congregation.name })}</p>
-      <CongregationPanel />
-      <GroupsPanel />
-      <FsRulesPanel />
-      <ServicesPanel />
-      <LanguagePanel />
-      <RemindersPanel />
-      <ImportPanel />
+      {fsOverseer ? (
+        <FsRulesPanel onlyGroup={myFsGroup} />
+      ) : (
+        <>
+          <CongregationPanel />
+          <GroupsPanel />
+          <FsRulesPanel />
+          <ServicesPanel />
+          <LanguagePanel />
+          <RemindersPanel />
+          <ImportPanel />
+        </>
+      )}
     </section>
   )
 }

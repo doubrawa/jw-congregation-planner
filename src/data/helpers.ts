@@ -4,10 +4,19 @@
  */
 
 import { QUALIFICATION_ORDER, ROLE_LABEL } from './constants'
-import type { Meeting, Person, ProgramItem, Qualifications, SongItem, Week } from './types'
+import type { Group, Meeting, Person, ProgramItem, Qualifications, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
+}
+
+/**
+ * Gruppen-Id, deren Aufseher (ov) oder Gehilfe (as) die Person ist — sonst null.
+ * Grundlage der Treffpunkt-Planungsrechte für Gruppenaufseher.
+ */
+export function overseerGroup(groups: Group[], personId: string | null): string | null {
+  if (!personId) return null
+  return groups.find((g) => g.ov === personId || g.as === personId)?.id ?? null
 }
 
 /** Die Vorsitz-Bereiche (fest + Alt-Schlüssel), die je Zusammenkunft umzuschlüsseln sind. */

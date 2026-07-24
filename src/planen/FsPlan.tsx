@@ -15,11 +15,12 @@ const TIME_OPTIONS = FS_TIME_OPTIONS
  * Treffpunkts nur für diese Woche (z. B. Pioniertage). Grundplan-Änderungen
  * laufen über die Einstellungen.
  */
-export function FsPlan() {
+export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const wi = state.week
-  const insts = state.fsWeeks[wi] ?? []
+  // Gruppenaufseher sehen/planen nur die Treffpunkte ihrer eigenen Gruppe.
+  const insts = (state.fsWeeks[wi] ?? []).filter((i) => !onlyGroup || i.grp === onlyGroup)
 
   const groupName = (grp: string): string => {
     const g = state.groups.find((x) => x.id === grp)
@@ -50,8 +51,8 @@ export function FsPlan() {
     day.items.push(inst)
   }
 
-  // „Für diese Woche hinzufügen"-Formular.
-  const [grp, setGrp] = useState('')
+  // „Für diese Woche hinzufügen"-Formular (Gruppenaufseher: Ziel = eigene Gruppe).
+  const [grp, setGrp] = useState(onlyGroup ?? '')
   const [wd, setWd] = useState(6)
   const [time, setTime] = useState('09:30')
   const [place, setPlace] = useState('')
@@ -131,14 +132,16 @@ export function FsPlan() {
       <div className="panel panel--pb16 fs-add" data-farbe="neutral2">
         <div className="panel-label">{t.fsAddWeekLbl}</div>
         <div className="fs-add-grid">
-          <select className="fs-select" value={grp} aria-label={t.fsVers} onChange={(e) => setGrp(e.target.value)}>
-            <option value="">{t.fsVers}</option>
-            {state.groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {tu(g.name)}
-              </option>
-            ))}
-          </select>
+          {!onlyGroup && (
+            <select className="fs-select" value={grp} aria-label={t.fsVers} onChange={(e) => setGrp(e.target.value)}>
+              <option value="">{t.fsVers}</option>
+              {state.groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {tu(g.name)}
+                </option>
+              ))}
+            </select>
+          )}
           <select className="fs-select" value={wd} aria-label="Wochentag" onChange={(e) => setWd(Number(e.target.value))}>
             {wdOptions.map((d) => (
               <option key={d} value={d}>

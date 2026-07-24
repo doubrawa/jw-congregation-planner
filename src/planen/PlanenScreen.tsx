@@ -2,6 +2,8 @@ import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
+import { CURRENT_PERSON_ID } from '../data/demo'
+import { overseerGroup } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, OpenSlotsBanner } from './PlanBanners'
@@ -40,7 +42,10 @@ export function PlanenScreen() {
     )
   }
 
-  const isFs = state.tab === 'fs'
+  // Gruppenaufseher (ohne volle Planer-Rechte): nur Treffpunkte der eigenen Gruppe.
+  const myFsGroup = overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID)
+  const fsOverseer = !state.planner && myFsGroup !== null
+  const isFs = state.tab === 'fs' || fsOverseer
   const meeting = state.tab === 'we' ? week.we : week.mid
   const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
   const openCount = countOpenSlots(rawMeeting, state.services)
@@ -64,15 +69,17 @@ export function PlanenScreen() {
 
       <WeekChips week={week} showCurrent={false} />
 
-      <MeetingTabs
-        className="plan-tabs"
-        tab={state.tab}
-        showFs
-        onChange={(tab) => dispatch({ type: 'setTab', tab })}
-      />
+      {!fsOverseer && (
+        <MeetingTabs
+          className="plan-tabs"
+          tab={state.tab}
+          showFs
+          onChange={(tab) => dispatch({ type: 'setTab', tab })}
+        />
+      )}
 
       {isFs ? (
-        <FsPlan />
+        <FsPlan onlyGroup={fsOverseer ? myFsGroup : null} />
       ) : (
         <>
           <MemorialBanner week={week} tab={state.tab} />

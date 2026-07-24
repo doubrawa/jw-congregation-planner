@@ -10,7 +10,7 @@ import type { FsRule } from '../data/types'
  * Versammlung und Gruppe. Regeln anlegen/ändern/löschen; jede Änderung setzt
  * die Wochenpläne neu auf (einzelne Wochen bleiben im Planen-Tab anpassbar).
  */
-export function FsRulesPanel() {
+export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
 
@@ -25,10 +25,10 @@ export function FsRulesPanel() {
     [4, t.fsFreqM4],
   ]
 
-  const sections: ReadonlyArray<{ grp: string; title: string }> = [
-    { grp: '', title: t.fsVersSection },
-    ...state.groups.map((g) => ({ grp: g.id, title: tu(g.name) })),
-  ]
+  // Gruppenaufseher: nur der Abschnitt der eigenen Gruppe.
+  const sections: ReadonlyArray<{ grp: string; title: string }> = onlyGroup
+    ? state.groups.filter((g) => g.id === onlyGroup).map((g) => ({ grp: g.id, title: tu(g.name) }))
+    : [{ grp: '', title: t.fsVersSection }, ...state.groups.map((g) => ({ grp: g.id, title: tu(g.name) }))]
 
   const upd = (id: string, patch: Partial<Pick<FsRule, 'wd' | 'monthly' | 'time' | 'place' | 'skipCong'>>) =>
     dispatch({ type: 'fsRuleUpdate', id, patch })
