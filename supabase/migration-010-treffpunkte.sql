@@ -19,7 +19,7 @@ as $$
     join public.members m on m.congregation_id = g.congregation_id
     where m.user_id = auth.uid()
       and m.person_id is not null
-      and (g.ov = m.person_id or g."as" = m.person_id)
+      and (g.overseer_id = m.person_id or g.assistant_id = m.person_id)
   )
 $$;
 
