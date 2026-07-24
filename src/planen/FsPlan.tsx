@@ -1,18 +1,13 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { FS_BASE } from '../data/demo'
-import { fsDate } from '../data/fs'
+import { FS_TIME_OPTIONS, fsDate } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
 import { SlotChip } from './SlotChip'
 
-/** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für die Zeit-Auswahl. */
-const TIME_OPTIONS = Array.from({ length: (22 - 6) * 4 + 1 }, (_u, i) => {
-  const h = 6 + Math.floor(i / 4)
-  const m = (i % 4) * 15
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-})
+const TIME_OPTIONS = FS_TIME_OPTIONS
 
 /**
  * Treffpunkte planen (Planen-Tab): je Tag eine Karte mit editierbaren Zeilen

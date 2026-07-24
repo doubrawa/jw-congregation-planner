@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { fill, useT } from '../i18n/useT'
 import { CongregationPanel } from './CongregationPanel'
+import { FsRulesPanel } from './FsRulesPanel'
 import { GroupsPanel } from './GroupsPanel'
 import { ImportPanel } from './ImportPanel'
 import { LanguagePanel } from './LanguagePanel'
@@ -25,6 +26,7 @@ export function EinstellungenScreen() {
       <p className="screen-subtitle">{fill(t.congLabel, { name: state.congregation.name })}</p>
       <CongregationPanel />
       <GroupsPanel />
+      <FsRulesPanel />
       <ServicesPanel />
       <LanguagePanel />
       <RemindersPanel />

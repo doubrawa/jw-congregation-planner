@@ -165,6 +165,10 @@ export type AppAction =
   | { type: 'fsInstUpdate'; wi: number; id: string; patch: Partial<Pick<FsInstance, 'time' | 'place'>> }
   | { type: 'fsInstRemove'; wi: number; id: string }
   | { type: 'fsInstAdd'; inst: FsInstance }
+  // Treffpunkte-Grundplan (Einstellungen)
+  | { type: 'fsRuleAdd'; grp: string }
+  | { type: 'fsRuleUpdate'; id: string; patch: Partial<Pick<FsRule, 'wd' | 'monthly' | 'time' | 'place' | 'skipCong'>> }
+  | { type: 'fsRuleRemove'; id: string }
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
   | { type: 'declineTask'; id: string }
