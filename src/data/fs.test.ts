@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { buildFsWeeks, fsBaseFromWeeks, fsDate, genFsWeek, regenFsWeeks } from './fs'
-import type { FsRule } from './types'
+import {
+  buildFsWeeks,
+  fsAddInst,
+  fsBaseFromWeeks,
+  fsDate,
+  fsLeaderValue,
+  fsRemoveInst,
+  fsSetLeader,
+  fsSort,
+  fsUpdateInst,
+  genFsWeek,
+  regenFsWeeks,
+} from './fs'
+import type { FsInstance, FsRule } from './types'
 
 /** Montag der Woche 0 = 7. September 2026 (wie im Demo). */
 const BASE = new Date(2026, 8, 7, 12)
@@ -167,5 +179,69 @@ describe('buildFsWeeks', () => {
     expect(weeks[3].find((i) => i.id === '3|r3')?.leader).toBe('Simon Krüger')
     // Nicht geseedete Instanzen bleiben offen.
     expect(weeks[0].find((i) => i.id === '0|r2')?.leader).toBe('')
+  })
+})
+
+describe('fsSort', () => {
+  const inst = (wd: number, time: string, grp = ''): FsInstance => ({
+    id: `${wd}${time}`, ruleId: null, grp, wd, time, place: '', leader: '',
+  })
+  it('ordnet Mo→So, dann Uhrzeit, dann Gruppe', () => {
+    // Sonntag (0) muss ans Ende, Montag (1) an den Anfang.
+    expect([...[inst(0, '09:00'), inst(1, '09:00')]].sort(fsSort).map((i) => i.wd)).toEqual([1, 0])
+    // gleicher Tag → nach Uhrzeit
+    expect([inst(6, '10:00'), inst(6, '09:00')].sort(fsSort).map((i) => i.time)).toEqual(['09:00', '10:00'])
+    // gleicher Tag + Zeit → nach Gruppe
+    expect([inst(6, '09:00', 'g2'), inst(6, '09:00', 'g1')].sort(fsSort).map((i) => i.grp)).toEqual(['g1', 'g2'])
+  })
+})
+
+describe('fs-Wochenbearbeitung (Planen)', () => {
+  const RULE: FsRule[] = [
+    { id: 'r1', grp: '', wd: 1, time: '14:00', place: 'Saal', monthly: 0, skipCong: false },
+    { id: 'r2', grp: '', wd: 3, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
+  ]
+  const build = () => buildFsWeeks(BASE, 2, RULE)
+
+  it('fsLeaderValue liest den Leiter ("" wenn offen/unbekannt)', () => {
+    const w = build()
+    expect(fsLeaderValue(w, 0, '0|r1')).toBe('')
+    expect(fsLeaderValue(w, 0, 'gibtsnicht')).toBe('')
+    expect(fsLeaderValue(w, 99, '0|r1')).toBe('') // Woche außerhalb
+  })
+
+  it('fsSetLeader setzt und entfernt den Leiter, nur in der Zielwoche', () => {
+    const w = build()
+    const set = fsSetLeader(w, 0, '0|r1', 'A. Leiter')
+    expect(fsLeaderValue(set, 0, '0|r1')).toBe('A. Leiter')
+    expect(set[1]).toBe(w[1]) // andere Wochen behalten ihre Referenz
+    expect(w[0][0].leader).toBe('') // Original unverändert (rein)
+    expect(fsLeaderValue(fsSetLeader(set, 0, '0|r1', ''), 0, '0|r1')).toBe('')
+  })
+
+  it('fsUpdateInst ändert Zeit/Ort und sortiert neu', () => {
+    const w = build()
+    // r2 (Mi 09:30) auf Mo-Zeit vorziehen → bleibt aber Mi; nur Zeit/Ort ändern
+    const upd = fsUpdateInst(w, 0, '0|r2', { time: '08:00', place: 'Neu' })
+    const r2 = upd[0].find((i) => i.id === '0|r2')!
+    expect(r2.time).toBe('08:00')
+    expect(r2.place).toBe('Neu')
+  })
+
+  it('fsRemoveInst entfernt genau eine Instanz der Woche', () => {
+    const w = build()
+    const rm = fsRemoveInst(w, 0, '0|r1')
+    expect(rm[0].some((i) => i.id === '0|r1')).toBe(false)
+    expect(rm[0].some((i) => i.id === '0|r2')).toBe(true)
+  })
+
+  it('fsAddInst fügt eine manuelle Instanz ein und sortiert', () => {
+    const w = build()
+    const manual: FsInstance = { id: 'xM', ruleId: null, grp: '', wd: 2, time: '07:00', place: 'X', leader: '', manual: true }
+    const add = fsAddInst(w, 0, manual)
+    expect(add[0].some((i) => i.id === 'xM')).toBe(true)
+    // wd 2 (Di) liegt zwischen Mo(1) und Mi(3) → einsortiert
+    const wds = add[0].map((i) => (i.wd + 6) % 7)
+    expect([...wds]).toEqual([...wds].sort((a, b) => a - b))
   })
 })
