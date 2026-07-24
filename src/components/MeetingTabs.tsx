@@ -6,14 +6,19 @@ interface MeetingTabsProps {
   tab: MeetingTab
   onChange: (tab: MeetingTab) => void
   className?: string
+  showFs?: boolean // dritter Tab „Zusammenkünfte für den Predigtdienst“
 }
 
-/** Textreiter „Unter der Woche“ / „Wochenende“ — Programm und Planen. */
-export function MeetingTabs({ tab, onChange, className }: MeetingTabsProps) {
+/**
+ * Textreiter „Zusammenkunft unter der Woche / am Wochenende“ (Programm und
+ * Planen), optional zusätzlich „Zusammenkünfte für den Predigtdienst“.
+ */
+export function MeetingTabs({ tab, onChange, className, showFs = false }: MeetingTabsProps) {
   const { t } = useT()
   const tabs: ReadonlyArray<[MeetingTab, string]> = [
     ['mid', t.tabMid],
     ['we', t.tabWe],
+    ...(showFs ? ([['fs', t.tabFs]] as ReadonlyArray<[MeetingTab, string]>) : []),
   ]
   return (
     <div className={className ? `meeting-tabs ${className}` : 'meeting-tabs'}>

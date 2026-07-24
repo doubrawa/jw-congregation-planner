@@ -47,8 +47,42 @@ export type Screen =
   | 'einstellungen'
   | 'profil'
 
-/** Meeting-Tab: Zusammenkunft unter der Woche | Wochenende. */
-export type MeetingTab = 'mid' | 'we'
+/** Tatsächliche Zusammenkunft (Meeting-Daten): unter der Woche | am Wochenende. */
+export type MeetingKey = 'mid' | 'we'
+
+/**
+ * Ansicht-Tab in Programm/Planen: eine Zusammenkunft (MeetingKey) oder die
+ * „Zusammenkünfte für den Predigtdienst" ('fs', eigene Datenquelle fsWeeks).
+ */
+export type MeetingTab = MeetingKey | 'fs'
+
+/* ---- Zusammenkünfte für den Predigtdienst ("Treffpunkte") ---- */
+
+/**
+ * Grundplan-Regel eines Treffpunkts (regelmäßige Zeit/Ort). Aus den Regeln
+ * werden pro Woche die konkreten Instanzen (FsInstance) erzeugt.
+ */
+export interface FsRule {
+  id: string
+  grp: string // '' = Versammlungstreffpunkt (alle); sonst Group.id (Gruppentreffpunkt)
+  wd: number // JS-Wochentag 0=So … 6=Sa
+  time: string // "09:30"
+  place: string
+  monthly: number // 0 = jede Woche; 1..4 = N-ter Wochentag im Monat
+  skipCong: boolean // Gruppen-Regel entfällt, wenn am selben Tag ein Versammlungstreffpunkt ist
+}
+
+/** Konkreter Treffpunkt einer Woche (aus einer Regel materialisiert oder manuell). */
+export interface FsInstance {
+  id: string // "wi|ruleId" (aus Regel) oder "x<zeit>" (manuell für diese Woche)
+  ruleId: string | null
+  grp: string // '' = Versammlung; sonst Group.id
+  wd: number
+  time: string
+  place: string
+  leader: string // zugeteilter Leiter ("" = offen)
+  manual?: boolean // nur für diese Woche hinzugefügt (kein Grundplan)
+}
 
 /** Rolle einer Person (steuert Sichtbarkeit/Rechte). */
 export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger'
@@ -289,7 +323,7 @@ export interface Reminders {
 
 interface SlotSelectionBase {
   wi: number // Wochenindex
-  tab: MeetingTab
+  tab: MeetingKey
   label: string // Sheet-Titel, z. B. "Bibellesung · Jer 32:6-18 · Leser"
   priv: QualificationKey | string | null // nötige Qualifikation (null = alle)
   groups: boolean // Gruppen-Rotation (Reinigung): Kandidaten sind Gruppe 1–3

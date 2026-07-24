@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Планування",
   "dashKonflikteN": "Конфліктів: {n}",
   "dashAllesZugeteilt": "Усе призначено",
+  "tabFs": "Зустрічі для проповідницького служіння",
+  "fsShort": "Служіння",
+  "fsVers": "Зустріч збору",
+  "fsKeine": "Цього тижня немає зустрічей для служіння.",
 } satisfies Partial<Dict>

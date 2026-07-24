@@ -17,7 +17,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
       sel: {
         kind: 'helper',
         wi: state.week,
-        tab: state.tab,
+        tab: state.tab === 'fs' ? 'mid' : state.tab,
         svc: service.key,
         pos,
         label: service.name,

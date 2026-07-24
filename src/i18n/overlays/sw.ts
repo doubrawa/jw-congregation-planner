@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Upangaji",
   "dashKonflikteN": "Migogoro {n}",
   "dashAllesZugeteilt": "Yote yamegawiwa",
+  "tabFs": "Mikutano ya utumishi wa shambani",
+  "fsShort": "Utumishi",
+  "fsVers": "Mkutano wa kutaniko",
+  "fsKeine": "Hakuna mikutano ya utumishi wiki hii.",
 } satisfies Partial<Dict>

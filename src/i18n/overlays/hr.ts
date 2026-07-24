@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Planiranje",
   "dashKonflikteN": "Sukobi: {n}",
   "dashAllesZugeteilt": "Sve dodijeljeno",
+  "tabFs": "Sastanci za službu propovijedanja",
+  "fsShort": "Služba",
+  "fsVers": "Skupštinski sastanak",
+  "fsKeine": "Ovaj tjedan nema sastanaka za službu.",
 } satisfies Partial<Dict>

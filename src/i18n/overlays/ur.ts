@@ -288,4 +288,8 @@ export default {
   "dashPlanung": "منصوبہ بندی",
   "dashKonflikteN": "{n} تنازعات",
   "dashAllesZugeteilt": "سب کچھ تفویض ہو گیا",
+  "tabFs": "میدانی خدمت کے لیے اجتماعات",
+  "fsShort": "میدانی خدمت",
+  "fsVers": "کلیسیا کا اجتماع",
+  "fsKeine": "اس ہفتے میدانی خدمت کے لیے کوئی اجتماع نہیں۔",
 } satisfies Partial<Dict>

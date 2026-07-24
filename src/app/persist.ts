@@ -33,8 +33,11 @@ import {
   saveWeek,
 } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import type { Person, Week } from '../data/types'
+import type { MeetingKey, MeetingTab, Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
+
+/** View-Tab auf eine echte Zusammenkunft eingrenzen (fs hat keine Meeting-Daten). */
+const mtab = (tab: MeetingTab): MeetingKey => (tab === 'fs' ? 'mid' : tab)
 
 /**
  * Auto-Speichern mit Debounce: Tipp-Änderungen (Personen-Felder, Umbenennung
@@ -118,25 +121,25 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     }
     case 'autoAssign': {
-      const before = prev.weeks[prev.week]?.[prev.tab]
-      const after = next.weeks[prev.week]?.[prev.tab]
+      const before = prev.weeks[prev.week]?.[mtab(prev.tab)]
+      const after = next.weeks[prev.week]?.[mtab(prev.tab)]
       if (before && after) {
         // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
         deleteConfirmationRows(
           congId,
-          changedSlotKeys(before, after, prev.services, prev.week, prev.tab),
+          changedSlotKeys(before, after, prev.services, prev.week, mtab(prev.tab)),
         )
         saveWeek(congId, prev.week, next.weeks[prev.week])
       }
       break
     }
     case 'clearAssignments': {
-      const before = prev.weeks[prev.week]?.[prev.tab]
-      const after = next.weeks[prev.week]?.[prev.tab]
+      const before = prev.weeks[prev.week]?.[mtab(prev.tab)]
+      const after = next.weeks[prev.week]?.[mtab(prev.tab)]
       if (before && after && next.weeks !== prev.weeks) {
         deleteConfirmationRows(
           congId,
-          changedSlotKeys(before, after, prev.services, prev.week, prev.tab),
+          changedSlotKeys(before, after, prev.services, prev.week, mtab(prev.tab)),
         )
         saveWeek(congId, prev.week, next.weeks[prev.week])
       }
@@ -146,13 +149,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (next.weeks === prev.weeks) break // Rand: kein Tausch
       saveWeek(congId, prev.week, next.weeks[prev.week])
       // Bestätigungen der getauschten Positionen in der DB mittauschen
-      const items = prev.weeks[prev.week][prev.tab].sections[action.si].items
+      const items = prev.weeks[prev.week][mtab(prev.tab)].sections[action.si].items
       const b = lacMoveTarget(items, action.ii, action.dir)
       if (b != null) {
         const count = Math.max(itemNameCount(items[action.ii]), itemNameCount(items[b]))
         void swapConfirmationKeys(
           congId,
-          partSwapKeyPairs(prev.week, prev.tab, action.si, action.ii, b, count),
+          partSwapKeyPairs(prev.week, mtab(prev.tab), action.si, action.ii, b, count),
         )
       }
       break

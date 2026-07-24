@@ -56,7 +56,7 @@ export function MeetingSection({
       sel: {
         kind: 'part',
         wi: state.week,
-        tab: state.tab,
+        tab: state.tab === 'fs' ? 'mid' : state.tab,
         si,
         ii,
         ni,

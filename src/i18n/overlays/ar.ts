@@ -249,4 +249,8 @@ export default {
   "dashPlanung": "التخطيط",
   "dashKonflikteN": "{n} تعارضات",
   "dashAllesZugeteilt": "تم تعيين كل شيء",
+  "tabFs": "اجتماعات لأجل خدمة الحقل",
+  "fsShort": "خدمة الحقل",
+  "fsVers": "اجتماع الجماعة",
+  "fsKeine": "لا اجتماعات لأجل خدمة الحقل هذا الأسبوع.",
 } satisfies Partial<Dict>

@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "排程",
   "dashKonflikteN": "{n} 处冲突",
   "dashAllesZugeteilt": "全部已分配",
+  "tabFs": "传道服务聚集",
+  "fsShort": "传道",
+  "fsVers": "会众聚集",
+  "fsKeine": "本周没有传道服务聚集。",
 } satisfies Partial<Dict>

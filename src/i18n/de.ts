@@ -15,6 +15,9 @@ export const DE = {
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     mitteilungen: 'Mitteilungen', neuSuffix: 'neu', alleGelesen: 'Alle gelesen', alleLoeschen: 'Alle löschen',
     aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
+    // Treffpunkte (Zusammenkünfte für den Predigtdienst)
+    tabFs: 'Zusammenkünfte für den Predigtdienst', fsShort: 'Treffpunkte',
+    fsVers: 'Versammlungstreffpunkt', fsKeine: 'Keine Treffpunkte in dieser Woche.',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: 4. September', drucken: 'Drucken',
     planen: 'Planen', offeneZut: '{n} offene Zuteilungen',
     planHint: 'Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.',

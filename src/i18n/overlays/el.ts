@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Προγραμματισμός",
   "dashKonflikteN": "{n} συγκρούσεις",
   "dashAllesZugeteilt": "Όλα ανατέθηκαν",
+  "tabFs": "Συναθροίσεις για υπηρεσία αγρού",
+  "fsShort": "Υπηρεσία",
+  "fsVers": "Συνάθροιση εκκλησίας",
+  "fsKeine": "Καμία συνάθροιση για υπηρεσία αυτή την εβδομάδα.",
 } satisfies Partial<Dict>

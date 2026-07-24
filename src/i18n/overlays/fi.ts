@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Suunnittelu",
   "dashKonflikteN": "{n} ristiriitaa",
   "dashAllesZugeteilt": "Kaikki jaettu",
+  "tabFs": "Kokoukset kenttäpalvelusta varten",
+  "fsShort": "Palvelus",
+  "fsVers": "Seurakunnan kokous",
+  "fsKeine": "Ei kokouksia kenttäpalvelusta varten tällä viikolla.",
 } satisfies Partial<Dict>

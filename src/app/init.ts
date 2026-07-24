@@ -6,9 +6,11 @@
  */
 
 import {
+  buildDemoFsWeeks,
   buildDemoWeeks,
   CONGREGATION,
   DEMO_ABSENCES,
+  DEMO_FS_RULES,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
   DEMO_PENDING_NAMES,
@@ -96,6 +98,8 @@ export function initialState(): AppState {
     persons: demo ? DEMO_PERSONS : [],
     services: demo ? DEMO_SERVICES : [],
     groups: demo ? DEMO_GROUPS : [],
+    fsRules: demo ? DEMO_FS_RULES : [],
+    fsWeeks: demo ? buildDemoFsWeeks() : [],
     absences: demo ? DEMO_ABSENCES : [],
     notifs: demo ? DEMO_NOTIFICATIONS : [],
     notifOpen: false,

@@ -289,4 +289,8 @@ export default {
   "dashPlanung": "Planificare",
   "dashKonflikteN": "{n} conflicte",
   "dashAllesZugeteilt": "Totul atribuit",
+  "tabFs": "Întruniri pentru serviciul de teren",
+  "fsShort": "Serviciu",
+  "fsVers": "Întrunire de congregație",
+  "fsKeine": "Nicio întrunire pentru serviciu în această săptămână.",
 } satisfies Partial<Dict>

@@ -7,6 +7,8 @@ import { createContext, useContext, type Dispatch } from 'react'
 import type {
   Absence,
   ConfirmationMap,
+  FsInstance,
+  FsRule,
   Group,
   Invite,
   Lang,
@@ -84,6 +86,10 @@ export interface AppState {
   persons: Person[]
   services: Service[]
   groups: Group[] // Predigtdienstgruppen (Planer; Reinigungs-Rotation)
+  // Treffpunkte (Zusammenkünfte für den Predigtdienst): Grundplan-Regeln und die
+  // pro Woche daraus materialisierten Instanzen (parallel zu weeks indiziert).
+  fsRules: FsRule[]
+  fsWeeks: FsInstance[][]
   absences: Absence[]
   notifs: Notification[]
   notifOpen: boolean
