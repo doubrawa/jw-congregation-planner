@@ -17,6 +17,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
+import { fsBaseFromWeeks, regenFsWeeks } from '../data/fs'
 import {
   displayName,
   emptyQualifications,
@@ -458,14 +459,21 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     repeat: settings.reminders?.repeat ?? DEMO_REMINDERS.repeat,
   }
 
-  // Treffpunkte: Grundplan-Blob + je Woche materialisierte Instanzen (Position → Daten).
+  // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Position → Daten).
+  // Die Basis wird an die als `current` markierte Woche verankert (sprach-
+  // unabhängig, korrigiert eine verschobene gespeicherte Basis); anschließend
+  // werden die Wochen neu ausgerichtet — Leiter und wochenspezifische Zeit/Ort
+  // bleiben erhalten, nur die Regel→Woche-Zuordnung (z. B. „1. Samstag im Monat")
+  // wird anhand der korrekten Datumsbasis neu bestimmt.
   const fsRules = (fsRulesRow.data?.rules as FsRule[] | undefined) ?? []
-  const fsBase = (fsRulesRow.data?.base as string | null | undefined) ?? null
+  const fsBaseDate = fsBaseFromWeeks(weekList, new Date())
+  const fsBase = fsBaseDate.toISOString().slice(0, 10)
   const fsByPos = new Map<number, FsInstance[]>()
   for (const row of (fsWeeksRows.data ?? []) as { position: number; data: FsInstance[] }[]) {
     fsByPos.set(row.position, row.data)
   }
-  const fsWeeks: FsInstance[][] = Array.from({ length: weekList.length }, (_u, i) => fsByPos.get(i) ?? [])
+  const storedFsWeeks: FsInstance[][] = Array.from({ length: weekList.length }, (_u, i) => fsByPos.get(i) ?? [])
+  const fsWeeks = fsRules.length ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true) : storedFsWeeks
 
   const data: CongregationData = {
     congregation: {
