@@ -59,8 +59,47 @@ describe('genFsWeek', () => {
   })
 })
 
-describe('fsBaseFromWeeks (Ausrichtung an der aktuellen Woche)', () => {
+describe('fsBaseFromWeeks (echtes Startdatum bevorzugt)', () => {
   const friday = new Date(2026, 6, 24, 15) // Fr 24. Juli 2026 (Woche Mo 20. – So 26.)
+
+  it('leitet die Basis aus week.start ab, unabhängig vom current-Flag', () => {
+    // Wochen 20.7. / 27.7. / 3.8.; `current` steht (veraltet) auf Woche 0,
+    // obwohl heute (24.7.) in Woche 0 liegt — die Basis muss trotzdem der
+    // Montag der Woche 0 sein, nicht davon verschoben.
+    const base = fsBaseFromWeeks(
+      [
+        { current: true, start: '2026-07-20' },
+        { current: false, start: '2026-07-27' },
+        { current: false, start: '2026-08-03' },
+      ],
+      friday,
+    )
+    expect(base.getFullYear()).toBe(2026)
+    expect(base.getMonth()).toBe(6) // Juli
+    expect(base.getDate()).toBe(20) // Mo 20. Juli
+  })
+
+  it('rechnet vom ersten Startdatum auf Woche 0 zurück (Vorwochen ohne start)', () => {
+    // Erst ab Index 2 gibt es ein Startdatum (3.8.) → Woche 0 = 2 Wochen davor.
+    const base = fsBaseFromWeeks(
+      [{ current: false }, { current: false }, { current: false, start: '2026-08-03' }],
+      friday,
+    )
+    expect(base.getMonth()).toBe(6) // Juli
+    expect(base.getDate()).toBe(20) // Mo 20. Juli (3.8. − 14 Tage)
+  })
+
+  it('die fs-Daten der angezeigten Woche stimmen mit deren Header-Datum überein', () => {
+    // Regressionsschutz für den Wochenversatz: der Samstag der Woche „20.–26.7."
+    // muss der 25.7. sein (nicht der 1.8. der Folgewoche).
+    const base = fsBaseFromWeeks(
+      [{ current: true, start: '2026-07-20' }, { current: false, start: '2026-07-27' }],
+      friday,
+    )
+    expect(fsDate(base, 0, 1).getDate()).toBe(20) // Mo 20. Juli
+    expect(fsDate(base, 0, 6).getDate()).toBe(25) // Sa 25. Juli
+    expect(fsDate(base, 1, 6).getDate()).toBe(1) // Sa der Folgewoche = 1. August
+  })
 
   it('current-Woche bei Index 0 → Montag dieser Woche', () => {
     const base = fsBaseFromWeeks([{ current: true }, { current: false }], friday)
