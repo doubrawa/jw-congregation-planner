@@ -85,3 +85,54 @@ describe('congAppCode — Versammlungssprache → App-Übersetzungscode', () => 
     expect(congAppCode('Irgendwas')).toBeUndefined()
   })
 })
+
+describe('makeTr(en) — jede Wörterbuch-Regel', () => {
+  const en = makeTr('en')
+  it('deckt alle Regel-Zweige des Hand-Datums-Pfads ab', () => {
+    expect(en('Lied 5')).toBe('Song 5')
+    expect(en('4 Min.')).toBe('4 min.')
+    expect(en('Ende ca. 20:45')).toBe('Ends approx. 20:45')
+    expect(en('ca. 19:35')).toBe('approx. 19:35')
+    expect(en('Mo, 8. September')).toBe('Mon, September 8')
+    expect(en('Mo 19:00')).toBe('Mon 19:00')
+    expect(en('28. Sep – 4. Okt')).toBe('Sep 28 – Oct 4')
+    expect(en('Jeremia 32–33')).toBe('Jeremiah 32–33')
+    expect(en('Jer 3:1')).toBe('Jer 3:1')
+    expect(en('wcg Kap. 5')).toBe('wcg chap. 5')
+    expect(en('lmd Lektion 3')).toBe('lmd lesson 3')
+    expect(en('lmd Anhang A Punkt 2')).toBe('lmd appendix A point 2')
+    expect(en('Studienartikel 7')).toBe('Study article 7')
+    expect(en('mit Anna')).toBe('with Anna')
+    expect(en('Vers. Krumbach')).toBe('Cong. Krumbach')
+    expect(en('Gruppe 1')).toBe('Group 1')
+    expect(en('2 Zuteilungen')).toBe('2 assignments')
+  })
+
+  it('rekursiert an " — " innerhalb eines Segments', () => {
+    expect(en('Unbekannt — Gruppe 1')).toBe('Unbekannt — Group 1')
+  })
+
+  it('leere Eingabe bleibt leer', () => {
+    expect(en('')).toBe('')
+  })
+})
+
+describe('makeTr(el) — Intl-Pfad (kein Hand-Datums-Dict)', () => {
+  const el = makeTr('el')
+  const changed = (s: string) => expect(el(s)).not.toBe(s)
+  it('feuert jede Intl-Regel (Datum/Zeit/Bereich/Extras)', () => {
+    changed('Lied 5')
+    changed('4 Min.')
+    changed('Ende ca. 20:45')
+    changed('ca. 19:35')
+    changed('Dienstag, 8. September')
+    changed('Mo, 8. September')
+    expect(el('Mo 19:00')).toMatch(/19:00$/)
+    changed('7.–13. September')
+    changed('28. Sep – 4. Okt')
+    changed('mit Anna')
+    changed('in 4 Tagen')
+    changed('2 Zuteilungen')
+    expect(el('Völlig unbekannt xyz')).toBe('Völlig unbekannt xyz') // Rückfall
+  })
+})
