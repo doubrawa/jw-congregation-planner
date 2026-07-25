@@ -54,7 +54,7 @@ const GROUP_OV_SCREENS: readonly Screen[] = [
 ]
 
 // Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
-const LOGO = `${import.meta.env.BASE_URL}logo.png`
+const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
 export function AppShell() {
   const { state, dispatch } = useApp()

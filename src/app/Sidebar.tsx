@@ -8,7 +8,7 @@ import { fullName, initials } from '../data/helpers'
 import type { Person, Screen } from '../data/types'
 
 // Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
-const LOGO = `${import.meta.env.BASE_URL}logo.png`
+const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
 export type NavItem = readonly [screen: Screen, label: string]
 

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "icons": "node scripts/make-icons.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.all --coverage.include=src/**/*.ts --coverage.exclude=src/**/*.test.ts",
     "preview": "vite preview"

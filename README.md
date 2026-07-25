@@ -35,7 +35,28 @@ npm run dev      # Dev-Server (http://localhost:5173)
 npm run build    # Production-Build nach dist/
 npm run preview  # Build lokal ansehen
 npm run lint     # oxlint
+npm run icons    # App-Icons aus public/logo.svg neu erzeugen
 ```
+
+## Logo & App-Icons
+
+Einzige Quelle ist **[`public/logo.svg`](public/logo.svg)** (Vektor, `viewBox` eng um
+das Motiv). Alles andere wird daraus erzeugt — die PNGs nie von Hand bearbeiten:
+
+```bash
+npm run icons    # scripts/make-icons.mjs, rendert mit Chrome (headless)
+```
+
+| Datei | Größe | Zweck |
+| --- | --- | --- |
+| `logo.svg` | Vektor | Sidebar, mobiler Header, Login, SVG-Favicon |
+| `icon-192.png` | 192² | Manifest `any`, PNG-Favicon-Fallback, Push-Notification |
+| `icon-512.png` | 512² | Manifest `any` |
+| `icon-512-maskable.png` | 512² | Manifest `maskable` (Motiv in der Safe-Zone) |
+| `apple-touch-icon.png` | 180² | iOS-Home-Bildschirm (kein SVG, keine Transparenz) |
+
+Die Polsterung je Ziel steht als `share` in `scripts/make-icons.mjs`. Gerendert
+wird mit Chrome, weil das Logo Gradienten und einen `feDropShadow` nutzt.
 
 ## Projektstruktur
 
@@ -68,8 +89,11 @@ src/
   App.tsx           Einstieg: AppProvider + AppShell
   index.css         Reset/Basis + Import der Tokens
   main.tsx          React-Einstieg
+scripts/
+  make-icons.mjs    Erzeugt die App-Icons aus public/logo.svg (npm run icons)
 docs/
   design-handoff/   Maßgebliche Design-Referenz (README, HTML-Prototypen, Screenshots)
+  user-guide/       Benutzerhandbücher (Planer/Verkündiger) + Auto-Screenshots
 supabase/
   schema.sql        DB-Schema (Tabellen + RLS + Funktionen), im SQL-Editor ausführen
   migration-00*.sql Nachzügler-Migrationen für früher eingerichtete Datenbanken

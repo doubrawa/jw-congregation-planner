@@ -59,6 +59,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       delete document.documentElement.dataset.dark
     }
     localStorage.setItem('theme', state.theme)
+    // Statusleiste der installierten App an das Theme anpassen. --bg wird aus
+    // dem CSS gelesen, damit es keine zweite Farbliste zu pflegen gibt.
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
+    if (meta && bg) meta.content = bg
   }, [state.theme])
 
   // App-Sprache merken + Schreibrichtung (RTL für Arabisch/Hebräisch/…)

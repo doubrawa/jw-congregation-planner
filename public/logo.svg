@@ -1,0 +1,43 @@
+<!-- Logo-Original (Vektor). Der viewBox umschließt die Kachel eng — die
+     Polsterung für App-Icons (Safe-Zone) fügt scripts/make-icons.mjs hinzu. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="93 88 324 324" width="324" height="324" role="img" aria-label="Kalender mit Häkchen">
+  <defs>
+    <linearGradient id="tileFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#527379"></stop>
+      <stop offset="1" stop-color="#44656D"></stop>
+    </linearGradient>
+    <linearGradient id="tileRim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#405F69"></stop>
+      <stop offset="1" stop-color="#2F4C52"></stop>
+    </linearGradient>
+    <filter id="dropSoft" x="-30%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="5" dy="9" stdDeviation="7" flood-color="#16272C" flood-opacity="0.42"></feDropShadow>
+    </filter>
+  </defs>
+
+  <rect x="93" y="88" width="324" height="324" rx="78" fill="url(#tileFill)"></rect>
+  <rect x="99.5" y="94.5" width="311" height="311" rx="71.5" fill="none" stroke="url(#tileRim)" stroke-width="13"></rect>
+
+  <g filter="url(#dropSoft)">
+    <g fill="#779690">
+      <rect x="203" y="146" width="10" height="30" rx="5"></rect>
+      <rect x="247" y="146" width="10" height="30" rx="5"></rect>
+      <rect x="291" y="146" width="10" height="30" rx="5"></rect>
+      <rect x="162" y="165" width="180" height="178" rx="20"></rect>
+    </g>
+    <rect x="172" y="190" width="161" height="143" rx="10" fill="#ACD5C0"></rect>
+    <g fill="#77978C">
+      <rect x="203" y="208" width="10" height="10" rx="5"></rect>
+      <rect x="247" y="208" width="10" height="10" rx="5"></rect>
+      <rect x="291" y="208" width="10" height="10" rx="5"></rect>
+      <rect x="203" y="235" width="10" height="83" rx="5"></rect>
+      <rect x="247" y="235" width="10" height="83" rx="5"></rect>
+    </g>
+    <circle cx="230.5" cy="274.5" r="5.5" fill="#BC7A58"></circle>
+  </g>
+
+  <g filter="url(#dropSoft)">
+    <circle cx="317" cy="301" r="41" fill="#DD9D7A" stroke="#B36C4C" stroke-width="8"></circle>
+    <path d="M295 291 L311 317 L359 258" fill="none" stroke="#B36C4C" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path>
+  </g>
+</svg>
