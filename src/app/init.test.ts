@@ -18,6 +18,7 @@ beforeEach(() => {
   localStorage.clear()
   location.hash = ''
   document.documentElement.removeAttribute('data-theme')
+  document.documentElement.removeAttribute('data-shot')
 })
 afterEach(() => vi.unstubAllEnvs())
 
@@ -93,6 +94,14 @@ describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
     expect(s.planner).toBe(false) // pl=0 → Verkündiger-Ansicht
     location.hash = '#s=planen&pl=1'
     expect(initialState().planner).toBe(true)
+  })
+
+  it('shot=1 aktiviert den Screenshot-Modus (data-shot am <html>)', () => {
+    vi.stubEnv('DEV', true)
+    cfg.configured = true
+    location.hash = '#s=start&shot=1'
+    initialState()
+    expect(document.documentElement.dataset.shot).toBe('1')
   })
 
   it('ohne Hash bleibt es (bei DEV) beim konfigurierten Leerstart', () => {

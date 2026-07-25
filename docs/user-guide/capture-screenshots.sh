@@ -31,7 +31,7 @@ fi
 
 # name|hash[|BxH]  (hash ohne führendes #; optionale Größe überschreibt W×H)
 SHOTS=(
-  "login|s=login|460x820"
+  "login|s=login|920x780"
   "programm-woche|s=programm&tab=mid"
   "programm-wochenende|s=programm&tab=we"
   "programm-treffpunkte|s=programm&tab=fs"
@@ -51,7 +51,7 @@ for entry in "${SHOTS[@]}"; do
   IFS='|' read -r name hash size <<< "$entry"
   w="$W"; h="$H"
   if [ -n "${size:-}" ]; then w="${size%x*}"; h="${size#*x}"; fi
-  hash="$hash&t=weiss" # helles Theme für einheitliche, druckfreundliche Doku
+  hash="$hash&t=weiss&shot=1" # helles Theme + Screenshot-Modus (Spaltenschatten aus)
   out="$OUT_DIR/$name.png"
   # Windows-Pfad für Chrome (Vorwärts-Slashes funktionieren)
   "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
@@ -60,5 +60,9 @@ for entry in "${SHOTS[@]}"; do
     --screenshot="$out" "$BASE/#$hash" >/dev/null 2>&1 || true
   if [ -f "$out" ]; then echo "  ✓ $name.png"; else echo "  ✗ $name.png (nicht erzeugt)" >&2; fi
 done
+
+# Auf den Inhalt zuschneiden (entfernt die einfarbige Zentrier-Lücke rundherum).
+echo "Zuschneiden ..."
+node "$(dirname "$0")/trim.mjs" "$OUT_DIR"/*.png
 
 echo "Fertig — $(ls -1 "$OUT_DIR"/*.png 2>/dev/null | wc -l) Screenshots in $OUT_DIR"

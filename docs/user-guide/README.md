@@ -38,6 +38,11 @@ dadurch bleiben Bilder und App immer konsistent.
 | `p`   | Person‑Id (setzt „DU"; auf der Personen‑Seite öffnet es das Detail) |
 | `t`   | Theme (z. B. `weiss` für die druckfreundliche Doku) |
 | `l` / `c` | App‑Sprache / Versammlungssprache |
+| `shot` | `1` = Screenshot‑Modus: schaltet den Spaltenschatten ab, damit die Zentrier‑Lücke flach ist und randlos zugeschnitten werden kann |
+
+Nach der Aufnahme schneidet **`trim.mjs`** (pngjs) jedes Bild seitlich auf den Inhalt
+zu – es entfernt die einfarbige Zentrier‑Lücke links/rechts. Das Skript ruft es am
+Ende automatisch auf; du musst nichts extra tun.
 
 ## Screenshot‑Manifest
 
@@ -58,10 +63,11 @@ dadurch bleiben Bilder und App immer konsistent.
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |
 
-Alle Screenshots werden im hellen Theme (`t=weiss`) erzeugt. Die Breite entspricht
-dem Desktop-Breakpoint **920px** (Sidebar 232 + Inhalt 660 → nahezu randlos); der
-Login (ohne Sidebar) wird mit einer schmaleren Größe aufgenommen (`460×820`, drittes
-Feld im `SHOTS`-Eintrag).
+Alle Screenshots werden im hellen Theme (`t=weiss`) und im Screenshot‑Modus
+(`shot=1`) am Desktop‑Breakpoint **920px** aufgenommen und anschließend seitlich auf
+den Inhalt zugeschnitten: App‑Screens → **892px** (Sidebar 232 + Inhalt 660), der
+Login → **430px** (nur die App‑Spalte). Über das dritte Feld im `SHOTS`‑Eintrag
+(`BxH`) lässt sich die Aufnahmegröße je Shot überschreiben (Login: `920×780`).
 
 ---
 

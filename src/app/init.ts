@@ -62,6 +62,7 @@ interface DebugHash {
   personId?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
+  shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
 }
 
 function parseDebugHash(): DebugHash | null {
@@ -83,6 +84,7 @@ function parseDebugHash(): DebugHash | null {
   if (tab === 'mid' || tab === 'we' || tab === 'fs') out.tab = tab
   const pl = p.get('pl')
   if (pl === '0' || pl === '1') out.planner = pl === '1'
+  if (p.get('shot') === '1') out.shot = true
   return Object.keys(out).length ? out : null
 }
 
@@ -100,6 +102,9 @@ export function initialState(): AppState {
   // im Dev-Build zusätzlich den Demo-Modus (Daten sofort da, ohne Login/Netz).
   const debug = import.meta.env.DEV ? parseDebugHash() : null
   const demo = !isSupabaseConfigured || debug != null
+  // Screenshot-Modus (nur DEV): Spaltenschatten per Attribut abschalten, damit
+  // die Doku-Screenshots randlos zugeschnitten werden können (siehe shell.css).
+  if (debug?.shot) document.documentElement.dataset.shot = '1'
   return {
     screen: debug?.screen ?? 'login',
     week: 0,
