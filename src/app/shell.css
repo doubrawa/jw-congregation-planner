@@ -31,6 +31,12 @@
   }
 }
 
+/* Nur für Doku-Screenshots (DEV, #…&shot=1): Spaltenschatten aus, damit die
+   Zentrier-Lücke flach ist und randlos zugeschnitten werden kann. */
+:root[data-shot] .app-main {
+  box-shadow: none;
+}
+
 .app-content {
   flex: 1;
   padding-bottom: 40px;
