@@ -6,7 +6,7 @@ import { useT } from '../i18n/useT'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
 import './login.css'
 
-const LOGO = `${import.meta.env.BASE_URL}logo.png`
+const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
 /**
  * Login (Screen 1). Mit konfiguriertem Supabase echtes E-Mail+Passwort-Login
