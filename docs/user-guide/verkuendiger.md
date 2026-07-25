@@ -126,6 +126,8 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
   Design). Die Einstellung gilt nur für dein Gerät.
 - **Sprache** – die Anzeigesprache der App. Ist das Programm in einer weiteren
   Sprache verfügbar, werden Programmpunkte automatisch mit übersetzt.
+- **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
+  ausschalten (siehe [Abschnitt 7](#7-app-installieren--erinnerungen)).
 - **Abmelden** – meldet dich auf diesem Gerät ab.
 
 ---
@@ -133,16 +135,53 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
 ## 7. App installieren & Erinnerungen
 
 Der Congregation Planner ist eine **Web‑App (PWA)** – du brauchst nichts aus einem
-Store zu laden.
+Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
 
-- **Auf dem Handy installieren:** Öffne die App im Browser und wähle im Menü
-  „Zum Startbildschirm hinzufügen" (Android) bzw. das Teilen‑Symbol →
-  „Zum Home‑Bildschirm" (iPhone). Danach startet sie wie eine normale App.
-- **Erinnerungen (Push‑Benachrichtigungen):** Wo dein Gerät es unterstützt,
-  kannst du Erinnerungen an anstehende Aufgaben als Push‑Nachricht erhalten. Auf
-  dem iPhone funktioniert das nur, wenn die App zuvor zum Home‑Bildschirm
-  hinzugefügt wurde. **Erinnerungen kommen ausschließlich als Push‑Nachricht –
-  nie per E‑Mail.**
+### Android (Chrome)
+
+1. Die App‑Adresse in **Chrome** öffnen.
+2. Im **⋮**‑Menü **App installieren** antippen. Je nach Chrome‑Version heißt der
+   Eintrag *Installieren* oder – weiter unten – *Zum Startbildschirm hinzufügen*.
+3. Bestätigen. Die App liegt danach wie jede andere im App‑Menü und startet ohne
+   Browserleiste.
+
+> Chrome zeigt **von selbst kein Hinweisbanner** mehr an. Wenn beim Öffnen nichts
+> erscheint, ist nichts kaputt – der Eintrag steckt nur im ⋮‑Menü.
+
+### iPhone / iPad (Safari)
+
+1. Die App‑Adresse in **Safari** öffnen. In Chrome auf dem iPhone fehlt der
+   nötige Eintrag meist – Safari ist hier der zuverlässige Weg.
+2. Das **Teilen**‑Symbol antippen (Quadrat mit Pfeil nach oben) und nach unten
+   scrollen.
+3. **Zum Home‑Bildschirm** → **Hinzufügen**.
+
+### Wenn kein Installieren angeboten wird
+
+- Hast du den Link **aus WhatsApp, Telegram oder einer E‑Mail** geöffnet? Diese
+  Apps zeigen die Seite in einem eingebauten Browser, der nicht installieren kann
+  – erkennbar an der fehlenden Adresszeile. Über das Menü der App
+  **In Chrome öffnen** bzw. **In Safari öffnen** wählen und es dort erneut
+  versuchen.
+- Möglicherweise ist die App **schon installiert** – dann verschwindet der
+  Eintrag aus dem Menü.
+
+### Danach einmal mit Internet anmelden
+
+Melde dich nach dem Installieren einmal **mit Internetverbindung** an und sieh dir
+Programm und Aufgaben an. Erst dadurch legt die App den Stand ab, den sie dir
+später [ohne Internet](#8-ohne-internet-offline) zeigen kann. Direkt nach dem
+Installieren ist offline noch nichts vorhanden.
+
+### Erinnerungen (Push‑Benachrichtigungen)
+
+Wo dein Gerät es unterstützt, kannst du Erinnerungen an anstehende Aufgaben als
+Push‑Nachricht erhalten – über den Schalter **Push‑Mitteilungen** unter
+**Profil**. Er erscheint nur, wenn dein Browser Push unterstützt. Auf dem iPhone
+funktioniert das
+**nur aus der installierten App** – im normalen Safari‑Tab kommen keine
+Benachrichtigungen an. **Erinnerungen kommen ausschließlich als Push‑Nachricht –
+nie per E‑Mail.**
 
 ---
 

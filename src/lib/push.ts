@@ -23,9 +23,11 @@ export function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return
   const url = `${import.meta.env.BASE_URL}sw.js${import.meta.env.DEV ? '?dev=1' : ''}`
   navigator.serviceWorker.register(url).catch((err: unknown) => {
-    // Ohne Service Worker läuft die App normal weiter (nur ohne Push und
-    // Offline-Shell) — im Dev aber melden, sonst sucht man lange.
-    if (import.meta.env.DEV) console.warn('Service Worker nicht registriert:', err)
+    // Ohne Service Worker läuft die App normal weiter — aber ohne Push, ohne
+    // Offline-Shell und ohne Installieren-Angebot. Bewusst AUCH in Produktion
+    // melden: sonst ist ein Gerät, auf dem das scheitert, nicht von einem zu
+    // unterscheiden, auf dem alles läuft ("bei mir geht offline nicht").
+    console.warn('Service Worker nicht registriert:', err)
   })
 }
 
