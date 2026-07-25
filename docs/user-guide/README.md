@@ -58,7 +58,10 @@ dadurch bleiben Bilder und App immer konsistent.
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |
 
-Alle Screenshots werden im hellen Theme (`t=weiss`) und in 1280×940 erzeugt.
+Alle Screenshots werden im hellen Theme (`t=weiss`) erzeugt. Die Breite entspricht
+dem Desktop-Breakpoint **920px** (Sidebar 232 + Inhalt 660 → nahezu randlos); der
+Login (ohne Sidebar) wird mit einer schmaleren Größe aufgenommen (`460×820`, drittes
+Feld im `SHOTS`-Eintrag).
 
 ---
 
