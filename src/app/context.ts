@@ -82,6 +82,9 @@ export interface AppState {
   personId: string | null // eigene Person (aus members.person_id); Demo: null
   dataStatus: DataStatus
   dataEmpty: boolean // geladen, aber Versammlung noch leer → Erstbefüllung anbieten
+  // Daten kommen aus der Offline-Momentaufnahme (lib/snapshot.ts): Zeitpunkt der
+  // Aufnahme in ms, sonst null. Solange gesetzt, ist die App nur lesend.
+  staleAt: number | null
   members: Member[] // Mitglieder-Verwaltung (Planer; Nicht-Planer: nur eigene Zeile)
   invites: Invite[] // offene Einladungscodes (nur Planer)
   recovery: boolean // Passwort-Reset-Ansicht aktiv (PASSWORD_RECOVERY)
@@ -198,7 +201,8 @@ export type AppAction =
   | { type: 'addProgLang'; name: string }
   | { type: 'removeProgLang'; name: string }
   // Persistenz / Hydration
-  | { type: 'hydrate'; payload: HydratePayload }
+  // staleAt: gesetzt, wenn die Payload aus der Offline-Momentaufnahme kommt
+  | { type: 'hydrate'; payload: HydratePayload; staleAt?: number }
   | { type: 'setDataStatus'; status: DataStatus; userId?: string } // userId: für Retry/Code-Einlösen ohne Hydration
   | { type: 'showToast'; text: string }
   | { type: 'hideToast' }

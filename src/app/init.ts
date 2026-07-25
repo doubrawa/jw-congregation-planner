@@ -63,6 +63,7 @@ interface DebugHash {
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
+  staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
 }
 
 function parseDebugHash(): DebugHash | null {
@@ -85,6 +86,9 @@ function parseDebugHash(): DebugHash | null {
   const pl = p.get('pl')
   if (pl === '0' || pl === '1') out.planner = pl === '1'
   if (p.get('shot') === '1') out.shot = true
+  // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
+  const stale = Number(p.get('stale'))
+  if (Number.isFinite(stale) && stale > 0) out.staleAt = Date.now() - stale * 3600_000
   return Object.keys(out).length ? out : null
 }
 
@@ -117,6 +121,7 @@ export function initialState(): AppState {
     personId: null,
     dataStatus: demo ? 'demo' : 'ready',
     dataEmpty: false,
+    staleAt: debug?.staleAt ?? null,
     members: [],
     invites: [],
     recovery: false,

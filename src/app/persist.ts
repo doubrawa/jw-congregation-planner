@@ -102,6 +102,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   const congId = next.congregationId
   const userId = next.userId
   if (!supabase || !congId || !userId) return
+  // Offline-Momentaufnahme: nichts schreiben. Der Provider weist Schreib-
+  // Aktionen bereits ab (readonly.ts) — hier als zweite Absicherung, damit ein
+  // übersehener Pfad nicht in einen Schreibversuch auf veraltetem Stand läuft.
+  if (next.staleAt) return
 
   switch (action.type) {
     case 'assign': {

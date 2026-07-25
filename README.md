@@ -33,10 +33,48 @@ Mitteilungen und Einstellungen.
 npm install     # einmalig (bereits ausgeführt)
 npm run dev      # Dev-Server (http://localhost:5173)
 npm run build    # Production-Build nach dist/
-npm run preview  # Build lokal ansehen
+npm run preview  # Build lokal ansehen (mit --base, sonst 404 auf alle Assets)
 npm run lint     # oxlint
 npm run icons    # App-Icons aus public/logo.svg neu erzeugen
 ```
+
+## Offline-Verhalten (PWA)
+
+Zwei Schichten, damit die installierte App im Saal ohne Netz benutzbar bleibt:
+
+**1. App-Shell** — [`public/sw.js`](public/sw.js) cacht HTML, JS/CSS und Icons:
+
+| Anfrage | Strategie |
+| --- | --- |
+| Seitenaufruf (`navigate`) | Netz zuerst, sonst gecachte `index.html` |
+| `/assets/*` (Inhalts-Hash im Namen) | Cache zuerst (unveränderlich) |
+| übrige eigene Dateien | Netz zuerst, Cache als Rückfall |
+| Google Fonts | Cache zuerst |
+| **Supabase** | **nicht abgefangen** — keine Datenantworten im Cache |
+
+Im Dev-Server ist das Caching aus (Registrierung mit `?dev=1`), sonst würde es
+Vites HMR abfangen; Push funktioniert trotzdem. `npm run preview` cacht wie
+Produktion — nur damit ist Offline lokal testbar.
+
+**2. Datenstand** — [`src/lib/snapshot.ts`](src/lib/snapshot.ts) legt nach jedem
+erfolgreichen Laden die `HydratePayload` unverändert im localStorage ab (an die
+Benutzer-Id gebunden, beim Abmelden und bei verlorener Mitgliedschaft gelöscht).
+Scheitert das Laden, spielt [`hydrate.ts`](src/app/hydrate.ts) sie über dieselbe
+`hydrate`-Aktion zurück und setzt `staleAt`.
+
+Solange `staleAt` gesetzt ist, ist die App **nur lesend**:
+
+- [`readonly.ts`](src/app/readonly.ts) führt eine Positivliste der reinen
+  Ansichts-Aktionen; alles andere weist der Provider ab und zeigt einen Hinweis.
+  Neue Aktionen gelten damit automatisch als Schreibzugriff (fail-safe).
+- [`persist.ts`](src/app/persist.ts) bricht zusätzlich ab (zweite Absicherung).
+- Ein Banner nennt den Zeitpunkt des Stands und bietet „Neu laden".
+
+Bewusst **kein** Offline-Schreiben mit späterem Abgleich: zwei Planer, die offline
+unabhängig planen, würden sich beim Verbinden gegenseitig überschreiben.
+
+Zum Nachstellen ohne Netzabbruch: Debug-Hash `#stale=<Stunden>` (nur DEV, siehe
+[docs/user-guide/README.md](docs/user-guide/README.md)).
 
 ## Logo & App-Icons
 

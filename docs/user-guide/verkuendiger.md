@@ -18,6 +18,7 @@ die App auf deinem Gerät einrichtest.
 5. [Abwesenheiten eintragen](#5-abwesenheiten-eintragen)
 6. [Profil: Darstellung & Sprache](#6-profil-darstellung--sprache)
 7. [App installieren & Erinnerungen](#7-app-installieren--erinnerungen)
+8. [Ohne Internet (offline)](#8-ohne-internet-offline)
 
 ---
 
@@ -142,6 +143,30 @@ Store zu laden.
   dem iPhone funktioniert das nur, wenn die App zuvor zum Home‑Bildschirm
   hinzugefügt wurde. **Erinnerungen kommen ausschließlich als Push‑Nachricht –
   nie per E‑Mail.**
+
+---
+
+## 8. Ohne Internet (offline)
+
+Im Saal ist der Empfang manchmal schlecht. Die App startet deshalb auch ohne
+Internet und zeigt dir den **letzten Stand**, den sie beim letzten Mal geladen
+hat. Oben erscheint dann ein Hinweisstreifen mit dem Zeitpunkt:
+
+![Offline-Stand](screenshots/offline-stand.png)
+
+- **Lesen geht:** Programm, Treffpunkte, deine Aufgaben und Abwesenheiten sind
+  wie zuletzt geladen sichtbar.
+- **Ändern geht nicht:** Bestätigen, Abwesenheiten eintragen oder Ähnliches ist
+  gesperrt – sonst würde deine Eingabe verloren gehen, weil sie niemand
+  empfangen kann. Beim Antippen erscheint ein kurzer Hinweis.
+- **„Neu laden"** holt den aktuellen Stand, sobald du wieder Netz hast.
+
+Zwei Dinge, die du wissen solltest:
+
+- Der angezeigte Stand kann **veraltet** sein. Steht im Streifen z. B. „Stand von
+  gestern", kann sich eine Zuteilung inzwischen geändert haben.
+- Warst du **lange** nicht mehr online, kann es passieren, dass die App dich
+  wieder nach dem Passwort fragt. Das Anmelden selbst braucht Internet.
 
 ---
 

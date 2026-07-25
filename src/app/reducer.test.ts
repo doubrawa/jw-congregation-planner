@@ -35,6 +35,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     personId: null,
     dataStatus: 'demo',
     dataEmpty: false,
+    staleAt: null,
     members: [],
     invites: [],
     recovery: false,
@@ -617,6 +618,9 @@ describe('login / logout / setRecovery', () => {
     const next = reducer(s, { type: 'logout' })
     expect(next).toMatchObject({ screen: 'login', notifOpen: false, langSheetOpen: false, selectedPersonId: null, confirmOpen: false, recovery: false })
   })
+  it('logout verwirft den Offline-Stand', () => {
+    expect(reducer(makeState({ staleAt: 123 }), { type: 'logout' }).staleAt).toBeNull()
+  })
   it('setRecovery schaltet die Reset-Ansicht', () => {
     expect(reducer(makeState(), { type: 'setRecovery', on: true }).recovery).toBe(true)
   })
@@ -668,6 +672,13 @@ describe('hydrate / setDataStatus', () => {
     expect(next.fsBase.getFullYear()).toBe(2026)
     expect(next.fsBase.getMonth()).toBe(8) // September
     expect(next.fsBase.getDate()).toBe(7)
+  })
+
+  it('ohne staleAt ist der Stand aktuell, mit staleAt der Offline-Stand', () => {
+    // Frisch geladen: staleAt null — auch wenn vorher ein Offline-Stand lief.
+    expect(reducer(makeState({ staleAt: 123 }), { type: 'hydrate', payload }).staleAt).toBeNull()
+    // Aus der Momentaufnahme: Zeitpunkt übernehmen (schaltet auf „nur lesen").
+    expect(reducer(makeState(), { type: 'hydrate', payload, staleAt: 456 }).staleAt).toBe(456)
   })
 
   it('fsBase null behält die bisherige Basis', () => {

@@ -14,12 +14,19 @@ export function pushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
-/** Beim App-Start aufrufen (main.tsx) — registriert den Service Worker. */
+/**
+ * Beim App-Start aufrufen (main.tsx) — registriert den Service Worker.
+ * `?dev=1` schaltet im Dev-Server sein Shell-Caching ab (es würde Vites HMR
+ * abfangen); Push bleibt aktiv. Der Preview-Build cacht wie in Produktion.
+ */
 export function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return
-  navigator.serviceWorker
-    .register(`${import.meta.env.BASE_URL}sw.js`)
-    .catch(() => {})
+  const url = `${import.meta.env.BASE_URL}sw.js${import.meta.env.DEV ? '?dev=1' : ''}`
+  navigator.serviceWorker.register(url).catch((err: unknown) => {
+    // Ohne Service Worker läuft die App normal weiter (nur ohne Push und
+    // Offline-Shell) — im Dev aber melden, sonst sucht man lange.
+    if (import.meta.env.DEV) console.warn('Service Worker nicht registriert:', err)
+  })
 }
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {

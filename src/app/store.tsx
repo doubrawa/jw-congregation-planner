@@ -7,12 +7,14 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import { isDarkTheme } from '../data/constants'
 import { isRTL } from '../i18n/langs'
-import { loadOverlay } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
+import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
 import { AppContext, type AppAction } from './context'
 import { loadAndHydrate } from './hydrate'
 import { initialState } from './init'
 import { persist } from './persist'
+import { isViewAction } from './readonly'
 import { reducer } from './reducer'
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -24,10 +26,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   stateRef.current = state
   const dispatch = useCallback((action: AppAction) => {
     const prev = stateRef.current
-    const next = reducer(prev, action)
+    // Offline-Stand (staleAt): nur lesen. Schreib-Aktionen abweisen und
+    // erklären, statt sie sichtbar anzuwenden und beim nächsten Laden zu
+    // verlieren — speichern kann persist() ohne Netz nicht.
+    const effective: AppAction =
+      prev.staleAt && !isViewAction(action.type)
+        ? { type: 'showToast', text: dict(prev.lang).offlineReadOnly }
+        : action
+    if (effective.type === 'logout') clearSnapshot()
+    const next = reducer(prev, effective)
     stateRef.current = next
-    persist(prev, next, action)
-    rawDispatch(action)
+    persist(prev, next, effective)
+    rawDispatch(effective)
   }, [])
 
   // Supabase-Session spiegeln (nur wenn konfiguriert): bestehende Session

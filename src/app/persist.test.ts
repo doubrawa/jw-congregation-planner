@@ -81,6 +81,16 @@ describe('Guard', () => {
     persist(st({ userId: null }), st({ userId: null }), { type: 'markAllRead' })
     expect(data.markNotificationsRead).not.toHaveBeenCalled()
   })
+
+  it('im Offline-Stand (staleAt) wird nichts geschrieben', () => {
+    // Zweite Absicherung hinter readonly.ts: auf veraltetem Stand darf keine
+    // Schreibfunktion laufen, egal über welchen Pfad die Aktion kam.
+    persist(st({ staleAt: 1_700_000_000_000 }), st({ staleAt: 1_700_000_000_000 }), { type: 'markAllRead' })
+    const prev = st({ staleAt: 1, slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } })
+    persist(prev, st({ staleAt: 1 }), { type: 'assign', name: 'A' })
+    expect(data.markNotificationsRead).not.toHaveBeenCalled()
+    expect(data.saveWeek).not.toHaveBeenCalled()
+  })
 })
 
 describe('Zuteilen', () => {

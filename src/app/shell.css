@@ -42,6 +42,46 @@
   padding-bottom: 40px;
 }
 
+/* Offline-Stand (staleAt): getönter Hinweisstreifen über dem Inhalt. */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 20px 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--lineGld);
+  border-radius: var(--r-input);
+  background: var(--tGld);
+  color: var(--gld);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.offline-banner-hint {
+  color: var(--mut);
+  font-size: 11.5px;
+}
+
+.offline-banner-btn {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid var(--lineGld);
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--gld);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (min-width: 920px) {
+  .offline-banner {
+    margin: 12px 36px 0;
+  }
+}
+
 /* Screen-Grundfläche (je Bereich ein <section class="screen">) */
 .screen {
   padding: 22px 20px;
