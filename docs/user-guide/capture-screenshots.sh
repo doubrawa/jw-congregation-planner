@@ -16,7 +16,10 @@ CHROME="/c/Program Files/Google/Chrome/Application/chrome.exe"
 BASE="http://localhost:5173"
 OUT_DIR="$(cd "$(dirname "$0")" && pwd)/screenshots"
 PROFILE="${TEMP:-/tmp}/jw-doc-chrome"
-W=1280
+# Standardbreite = Desktop-Breakpoint (920): Sidebar 232 + Inhalt max. 660 = 892,
+# füllt das Bild fast randlos. Einzelne Shots (Login ohne Sidebar) überschreiben
+# die Größe über ein drittes Feld `BxH`.
+W=920
 H=940
 
 mkdir -p "$OUT_DIR"
@@ -26,9 +29,9 @@ if ! curl -s -o /dev/null "$BASE/"; then
   exit 1
 fi
 
-# name|hash  (hash ohne führendes #)
+# name|hash[|BxH]  (hash ohne führendes #; optionale Größe überschreibt W×H)
 SHOTS=(
-  "login|s=login"
+  "login|s=login|460x820"
   "programm-woche|s=programm&tab=mid"
   "programm-wochenende|s=programm&tab=we"
   "programm-treffpunkte|s=programm&tab=fs"
@@ -45,12 +48,14 @@ SHOTS=(
 )
 
 for entry in "${SHOTS[@]}"; do
-  name="${entry%%|*}"
-  hash="${entry#*|}&t=weiss" # helles Theme für einheitliche, druckfreundliche Doku
+  IFS='|' read -r name hash size <<< "$entry"
+  w="$W"; h="$H"
+  if [ -n "${size:-}" ]; then w="${size%x*}"; h="${size#*x}"; fi
+  hash="$hash&t=weiss" # helles Theme für einheitliche, druckfreundliche Doku
   out="$OUT_DIR/$name.png"
   # Windows-Pfad für Chrome (Vorwärts-Slashes funktionieren)
   "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
-    --user-data-dir="$PROFILE" --window-size="$W,$H" --force-device-scale-factor=1 \
+    --user-data-dir="$PROFILE" --window-size="$w,$h" --force-device-scale-factor=1 \
     --hide-scrollbars --virtual-time-budget=8000 \
     --screenshot="$out" "$BASE/#$hash" >/dev/null 2>&1 || true
   if [ -f "$out" ]; then echo "  ✓ $name.png"; else echo "  ✗ $name.png (nicht erzeugt)" >&2; fi
