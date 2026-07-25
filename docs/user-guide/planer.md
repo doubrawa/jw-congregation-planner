@@ -22,6 +22,7 @@ Versammlungseinstellungen pflegen.
 7. [Einstellungen](#7-einstellungen)
 8. [Programm importieren](#8-programm-importieren)
 9. [Programm drucken](#9-programm-drucken)
+10. [Ohne Internet (offline)](#10-ohne-internet-offline)
 
 ---
 
@@ -180,6 +181,33 @@ aktuell gewählte Woche und Zusammenkunft sauber auf eine Seite – **ohne die
 Hilfsdienste** und ohne die Bedienelemente der App. Der Ausdruck füllt die Seite
 in der Breite und passt sich dem im Druckdialog eingestellten Papierformat an
 (z. B. A4).
+
+---
+
+## 10. Ohne Internet (offline)
+
+Die App startet auch ohne Internet und zeigt den **letzten geladenen Stand**.
+Ein Hinweisstreifen nennt den Zeitpunkt der Aufnahme:
+
+![Offline-Stand](screenshots/offline-stand.png)
+
+**Planen ist offline gesperrt.** Zuteilen, automatisch zuteilen, Personen
+bearbeiten, Einstellungen ändern und Importieren funktionieren nur online. Beim
+Versuch erscheint ein kurzer Hinweis; die Schaltflächen bleiben sichtbar, damit
+du siehst, was verfügbar wäre.
+
+Das ist Absicht: Zwei Planer, die offline unabhängig voneinander planen, würden
+sich beim nächsten Verbinden gegenseitig überschreiben. Deshalb gibt es
+**keine** Offline-Änderungen mit späterem Abgleich.
+
+Wichtig zu wissen:
+
+- Der Stand kann **veraltet** sein – vor dem Planen im Saal also erst
+  **„Neu laden"** drücken, sobald Netz da ist.
+- Zum Nachschauen im Saal ist der Offline-Stand gedacht; zum Planen brauchst du
+  eine Verbindung.
+- Nach längerer Zeit ohne Verbindung kann eine erneute Anmeldung nötig werden
+  (das Anmelden selbst braucht Internet).
 
 ---
 

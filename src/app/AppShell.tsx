@@ -156,6 +156,8 @@ export function AppShell() {
               <NotifChip />
             </div>
 
+            <OfflineBanner />
+
             <div className="app-content">
               <Content />
             </div>
@@ -211,6 +213,43 @@ function NotifChip() {
     >
       {unread > 0 ? `${unread} ${t.neuSuffix}` : t.mitteilungen}
     </button>
+  )
+}
+
+/**
+ * Hinweis auf den Offline-Stand: die Daten stammen aus der Momentaufnahme
+ * (lib/snapshot.ts), sind also möglicherweise veraltet und nicht änderbar.
+ * „Neu laden" holt sie, sobald wieder Netz da ist.
+ */
+function OfflineBanner() {
+  const { state } = useApp()
+  const { t } = useT()
+  if (state.staleAt === null) return null
+
+  const when = new Date(state.staleAt)
+  const opts: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }
+  let stamp: string
+  try {
+    stamp = when.toLocaleString(state.lang, opts)
+  } catch {
+    stamp = when.toLocaleString(undefined, opts) // unbekanntes Sprach-Tag
+  }
+
+  return (
+    <div className="offline-banner" role="status">
+      <div>
+        <strong>{fill(t.offlineBanner, { m: stamp })}</strong>
+        <div className="offline-banner-hint">{t.offlineBannerHint}</div>
+      </div>
+      <button type="button" className="offline-banner-btn" onClick={() => location.reload()}>
+        {t.offlineRetry}
+      </button>
+    </div>
   )
 }
 

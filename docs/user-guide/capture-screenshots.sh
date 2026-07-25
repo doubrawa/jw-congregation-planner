@@ -45,6 +45,7 @@ SHOTS=(
   "planer-personen|s=personen"
   "planer-person-detail|s=personen&p=p1"
   "planer-einstellungen|s=einstellungen"
+  "offline-stand|s=programm&tab=mid&stale=5"
 )
 
 for entry in "${SHOTS[@]}"; do

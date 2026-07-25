@@ -190,6 +190,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         s89: null,
         confirmOpen: false,
         recovery: false,
+        staleAt: null, // Offline-Stand gilt nur für die abgemeldete Sitzung
       }
     case 'navigate': {
       // Rechteprüfung: Nicht-Planer landen im Programm. Gruppenaufseher dürfen
@@ -738,6 +739,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         planner: p.planner,
         dataStatus: 'ready',
         dataEmpty: p.empty,
+        staleAt: action.staleAt ?? null,
         persons: p.persons,
         services: p.services,
         groups: p.groups,

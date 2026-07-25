@@ -104,6 +104,23 @@ describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
     expect(document.documentElement.dataset.shot).toBe('1')
   })
 
+  it('stale=<Stunden> täuscht den Offline-Stand vor (staleAt entsprechend alt)', () => {
+    vi.stubEnv('DEV', true)
+    location.hash = '#s=programm&stale=5'
+    const before = Date.now()
+    const s = initialState()
+    expect(s.staleAt).not.toBeNull()
+    const ageHours = (before - (s.staleAt as number)) / 3600_000
+    expect(ageHours).toBeGreaterThanOrEqual(5)
+    expect(ageHours).toBeLessThan(5.01)
+  })
+
+  it('ohne stale bleibt der Stand aktuell', () => {
+    vi.stubEnv('DEV', true)
+    location.hash = '#s=programm'
+    expect(initialState().staleAt).toBeNull()
+  })
+
   it('ohne Hash bleibt es (bei DEV) beim konfigurierten Leerstart', () => {
     vi.stubEnv('DEV', true)
     cfg.configured = true

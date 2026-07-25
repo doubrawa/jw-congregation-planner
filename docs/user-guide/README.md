@@ -39,6 +39,7 @@ dadurch bleiben Bilder und App immer konsistent.
 | `t`   | Theme (z. B. `weiss` für die druckfreundliche Doku) |
 | `l` / `c` | App‑Sprache / Versammlungssprache |
 | `shot` | `1` = Screenshot‑Modus: schaltet den Spaltenschatten ab, damit die Zentrier‑Lücke flach ist und randlos zugeschnitten werden kann |
+| `stale` | Offline‑Stand vortäuschen: Zahl = Alter in Stunden (`stale=5`). Zeigt das Offline‑Banner und schaltet auf „nur lesen" — ohne echten Netzabbruch |
 
 Nach der Aufnahme schneidet **`trim.mjs`** (pngjs) jedes Bild seitlich auf den Inhalt
 zu – es entfernt die einfarbige Zentrier‑Lücke links/rechts. Das Skript ruft es am
@@ -62,6 +63,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `planer-personen.png` | `s=personen` | planer |
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |
+| `offline-stand.png` | `s=programm&tab=mid&stale=5` | beide |
 
 Alle Screenshots werden im hellen Theme (`t=weiss`) und im Screenshot‑Modus
 (`shot=1`) am Desktop‑Breakpoint **920px** aufgenommen und anschließend seitlich auf

@@ -10,6 +10,10 @@ export const DE = {
     navPlanen: 'Planen', navPersonen: 'Personen', navEinstellungen: 'Einstellungen',
     navProfil: 'Profil', menueLbl: 'Menü',
     abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger', demoSuffix: ' (Demo)',
+    // Offline-Stand (lib/snapshot.ts): {m} = Zeitpunkt der Momentaufnahme
+    offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich',
+    offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',
+    offlineRetry: 'Neu laden',
     email: 'E-MAIL', emailPh: 'name@beispiel.de', passwort: 'PASSWORT', anmelden: 'ANMELDEN',
     pwVergessen: 'Passwort vergessen?', demoHinweis: 'Demo-Prototyp · Zugangsdaten beliebig',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
