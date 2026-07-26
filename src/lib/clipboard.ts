@@ -1,20 +1,29 @@
 /*
- * In die Zwischenablage kopieren — robust. navigator.clipboard scheitert je
- * nach Browser still (fehlender Fokus, Berechtigung, kein sicherer Kontext);
- * dann greift der klassische execCommand('copy')-Weg über ein unsichtbares
- * Textfeld. Liefert true bei Erfolg.
+ * In die Zwischenablage kopieren — robust über verschiedene Kontexte.
+ *
+ * Reihenfolge bewusst: der klassische execCommand('copy')-Weg ZUERST. Er läuft
+ * synchron innerhalb der Nutzergeste und funktioniert auch dort, wo die moderne
+ * navigator.clipboard-API mit „NotAllowedError: Document is not focused"
+ * abbricht (In-App-Browser aus WhatsApp/Mail, installierte PWA, fehlender
+ * Fensterfokus). Die async API kommt nur als Fallback — würde man sie zuerst
+ * `await`en und sie schlägt fehl, liefe der execCommand-Weg außerhalb der Geste
+ * und würde ebenfalls scheitern (genau der frühere Bug). Liefert true bei Erfolg.
  */
 export async function copyText(text: string): Promise<boolean> {
-  // 1. Moderne API (nur im sicheren Kontext verfügbar).
-  if (navigator.clipboard?.writeText) {
-    try {
+  if (legacyCopy(text)) return true
+  try {
+    if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text)
       return true
-    } catch {
-      // weiter zum Fallback
     }
+  } catch {
+    // beide Wege gescheitert
   }
-  // 2. Fallback: verstecktes Textfeld markieren und kopieren.
+  return false
+}
+
+/** Verstecktes Textfeld markieren und per execCommand kopieren (synchron). */
+function legacyCopy(text: string): boolean {
   try {
     const ta = document.createElement('textarea')
     ta.value = text
@@ -23,6 +32,7 @@ export async function copyText(text: string): Promise<boolean> {
     ta.style.top = '-1000px'
     ta.style.opacity = '0'
     document.body.appendChild(ta)
+    ta.focus()
     ta.select()
     const ok = document.execCommand('copy')
     document.body.removeChild(ta)
