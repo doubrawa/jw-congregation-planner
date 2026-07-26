@@ -28,7 +28,13 @@ export function PrivToggle({
         aria-checked={on}
         aria-label={label}
         className={on ? 'switch is-on' : 'switch'}
-        onClick={() => update({ priv: { ...person.priv, [qkey]: !on } })}
+        onClick={() => {
+          const priv = { ...person.priv, [qkey]: !on }
+          // Wer Schulungsaufgaben übernimmt, ist standardmäßig auch
+          // Gesprächspartner (lässt sich danach manuell wieder abschalten).
+          if (qkey === 'schulung' && !on) priv.schulungPartner = true
+          update({ priv })
+        }}
       >
         <span className="switch-knob" />
       </button>
