@@ -184,10 +184,28 @@ describe('RPC / Sonstiges', () => {
     // 3 Updates je Paar (a→tmp, b→a, tmp→b)
     expect(chain.update).toHaveBeenCalledTimes(3)
   })
-  it('redeemInvite ruft die RPC redeem_invite', async () => {
+  it('redeemInvite ruft die RPC redeem_invite (Erfolg → null)', async () => {
     const res = await redeemInvite('CODE')
     expect(chain.rpc).toHaveBeenCalledWith('redeem_invite', { invite_code: 'CODE' })
     expect(res).toBeNull() // Stub liefert data:null
+  })
+
+  it('redeemInvite reicht den Fehlercode der RPC durch', async () => {
+    for (const code of ['invalid-code', 'already-member'] as const) {
+      chain.rpc.mockReturnValueOnce(Promise.resolve({ data: code, error: null }))
+      expect(await redeemInvite('X')).toBe(code)
+    }
+  })
+
+  it('redeemInvite gibt bei RPC-Fehler die Meldung zurück', async () => {
+    chain.rpc.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
+    expect(await redeemInvite('X')).toBe('boom')
+  })
+
+  it('redeemInvite: leerer/Leerzeichen-Code → invalid-code ohne Netzaufruf', async () => {
+    expect(await redeemInvite('   ')).toBe('invalid-code')
+    expect(await redeemInvite('')).toBe('invalid-code')
+    expect(chain.rpc).not.toHaveBeenCalled()
   })
   it('generateInviteCode: 8 Zeichen ohne 0/O/1/I, praktisch eindeutig', () => {
     const codes = new Set(Array.from({ length: 50 }, () => generateInviteCode()))

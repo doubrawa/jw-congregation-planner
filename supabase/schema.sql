@@ -374,9 +374,13 @@ begin
   if exists (select 1 from public.members where user_id = uid) then
     return 'already-member';
   end if;
+  -- FOR UPDATE sperrt die Einladungszeile: lösen zwei Konten denselben Code
+  -- gleichzeitig ein, wartet das zweite und sieht danach redeemed_by gesetzt
+  -- (→ 'invalid-code'), statt dass beide ein Mitglied für dieselbe Person anlegen.
   select * into inv
   from public.invites
-  where code = upper(trim(invite_code)) and redeemed_by is null;
+  where code = upper(trim(invite_code)) and redeemed_by is null
+  for update;
   if not found then
     return 'invalid-code';
   end if;
