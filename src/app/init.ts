@@ -37,10 +37,9 @@ function asTheme(value: string | null): Theme | null {
 }
 
 function getInitialTheme(): Theme {
-  const stored = asTheme(localStorage.getItem('theme'))
-  if (stored) return stored
-  // index.html hat das Attribut vor dem ersten Paint gesetzt (Systempräferenz)
-  return document.documentElement.dataset.theme === 'graphit' ? 'graphit' : 'weiss'
+  // Standard ist Reinweiß, unabhängig von der System-Einstellung (dunkler
+  // Modus). Ein anderes Design wählt man im Profil; die Wahl wird gespeichert.
+  return asTheme(localStorage.getItem('theme')) ?? 'weiss'
 }
 
 function getInitialFontScale(): FontScale {

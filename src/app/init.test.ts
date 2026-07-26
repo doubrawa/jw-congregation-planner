@@ -57,10 +57,13 @@ describe('Theme / Sprache aus localStorage', () => {
     expect(initialState().theme).toBe('weiss')
   })
 
-  it('ungültiges Theme → Systempräferenz aus dem data-theme-Attribut', () => {
+  it('ungültiges/fehlendes Theme → Reinweiß (Standard, unabhängig vom System)', () => {
     localStorage.setItem('theme', 'quatsch')
+    // Selbst wenn das System dunkel ist (data-theme=graphit vorbelegt): Standard weiss.
     document.documentElement.dataset.theme = 'graphit'
-    expect(initialState().theme).toBe('graphit')
+    expect(initialState().theme).toBe('weiss')
+    localStorage.removeItem('theme')
+    expect(initialState().theme).toBe('weiss')
   })
 
   it('übernimmt eine gültige App-Sprache, sonst de', () => {
