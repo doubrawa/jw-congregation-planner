@@ -852,12 +852,17 @@ export function deleteInviteRow(id: string): void {
  */
 export async function redeemInvite(code: string): Promise<string | null> {
   if (!supabase) return 'invalid-code'
+  // Leerer/nur-Leerzeichen-Code gar nicht erst an den Server schicken.
+  if (!code.trim()) return 'invalid-code'
   const { data, error } = await supabase.rpc('redeem_invite', { invite_code: code })
   if (error) return error.message
   return (data as string | null) ?? null
 }
 
-/** Gut lesbarer Einladungscode (6 Zeichen, ohne 0/O/1/I). */
+/**
+ * Gut lesbarer Einladungscode: 8 Zeichen ohne 0/O/1/I (32er-Alphabet). Da 32
+ * die 256 möglichen Byte-Werte glatt teilt, ist die Verteilung ohne Modulo-Bias.
+ */
 export function generateInviteCode(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   const bytes = new Uint8Array(8)
