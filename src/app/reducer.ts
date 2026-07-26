@@ -226,6 +226,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, tab: action.tab }
     case 'setTheme':
       return { ...state, theme: action.theme }
+    case 'setFontScale':
+      return { ...state, fontScale: action.scale }
     case 'openNotifs':
       return { ...state, notifOpen: true }
     case 'closeNotifs':

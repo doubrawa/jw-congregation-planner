@@ -10,7 +10,7 @@
   border-radius: var(--r-pill);
   border: 1px solid var(--bord);
   background: var(--card);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   color: var(--ink);
 }
 
@@ -39,20 +39,20 @@
 
 .pers-name {
   display: block;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs));
   font-weight: 600;
 }
 
 .pers-sub {
   display: block;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   color: var(--mut);
   margin-top: 2px;
 }
 
 .pers-chevron {
   color: var(--mut2);
-  font-size: 16px;
+  font-size: calc(16px * var(--fs));
 }
 
 /* ---- Detail ------------------------------------------------------------------ */
@@ -62,13 +62,13 @@
   align-items: center;
   gap: 6px;
   text-align: start;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs));
   font-weight: 600;
   color: var(--acc);
 }
 
 .pers-back-chev {
-  font-size: 19px;
+  font-size: calc(19px * var(--fs));
   line-height: 1;
 }
 
@@ -81,13 +81,13 @@
 
 .pers-detail-name {
   font-family: var(--font-serif);
-  font-size: 24px;
+  font-size: calc(24px * var(--fs));
   font-weight: 500;
   line-height: 1.15;
 }
 
 .pers-detail-sub {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   color: var(--mut);
   margin-top: 2px;
 }
@@ -109,7 +109,7 @@
   border-radius: 10px;
   border: 1px solid var(--bord2);
   background-color: var(--card);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs));
   color: var(--ink);
 }
 
@@ -126,7 +126,7 @@
   color: var(--mut);
   border-radius: var(--r-pill);
   padding: 6px 13px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
 }
 
@@ -152,7 +152,7 @@
 }
 
 .priv-label {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   font-weight: 500;
 }
 
@@ -196,7 +196,7 @@
 }
 
 .konto-mail {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -212,7 +212,7 @@
   border: 0;
   background: none;
   padding: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   font-weight: 600;
   color: var(--acc);
   cursor: pointer;
@@ -242,7 +242,7 @@
   border: 1px solid var(--weinB);
   background: transparent;
   color: var(--wein);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   font-weight: 700;
   letter-spacing: 0.06em;
   cursor: pointer;

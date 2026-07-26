@@ -83,6 +83,21 @@ export function isDarkTheme(theme: Theme): boolean {
   return THEME_LIST.some((t) => t.key === theme && t.dark)
 }
 
+/**
+ * Schriftgrößen-Stufen (Profil → Schriftgröße). Der Faktor landet als --fs auf
+ * <html>; jede font-size im CSS ist calc(<px> * var(--fs)). 1 = unveränderter
+ * Auslieferungszustand, eine Stufe darunter, drei darüber (Lesbarkeit).
+ */
+export const FONT_SCALES = [0.9, 1, 1.15, 1.3, 1.45] as const
+export type FontScale = (typeof FONT_SCALES)[number]
+export const DEFAULT_FONT_SCALE: FontScale = 1
+
+/** Gespeicherten/übergebenen Wert auf eine bekannte Stufe eingrenzen. */
+export function asFontScale(value: unknown): FontScale | null {
+  const n = typeof value === 'string' ? Number(value) : value
+  return FONT_SCALES.find((s) => s === n) ?? null
+}
+
 /** Desktop-Breakpoint aus dem Handoff. */
 export const DESKTOP_BREAKPOINT = 920
 

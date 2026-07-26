@@ -15,7 +15,7 @@
 }
 
 .s89-eyebrow {
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.18em;
   color: var(--acc);
@@ -43,7 +43,7 @@
 }
 
 .s89-label {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -53,14 +53,14 @@
 
 .s89-value {
   font-family: var(--font-serif);
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--fs));
   font-weight: 500;
   text-align: right;
 }
 
 .s89-note {
   margin-top: 12px;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   line-height: 1.5;
   color: var(--mut);
 }
@@ -73,7 +73,7 @@
 }
 
 .sheet-s89-link {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--acc);
 }
@@ -104,7 +104,7 @@
 }
 
 .confirm-eyebrow {
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.18em;
   color: var(--acc);
@@ -112,14 +112,14 @@
 
 .confirm-title {
   font-family: var(--font-serif);
-  font-size: 20px;
+  font-size: calc(20px * var(--fs));
   font-weight: 500;
   line-height: 1.25;
   margin-top: 6px;
 }
 
 .confirm-intro {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   color: var(--mut);
   margin-top: 6px;
   line-height: 1.5;
@@ -134,12 +134,12 @@
 
 .confirm-task-title {
   font-family: var(--font-serif);
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--fs));
   font-weight: 500;
 }
 
 .confirm-task-date {
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   color: var(--mut);
   margin-top: 2px;
 }
@@ -157,7 +157,7 @@
   border-radius: var(--r-pill);
   padding: 8px 0;
   text-align: center;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
 }
 
@@ -166,7 +166,7 @@
   color: var(--wein);
   border-radius: var(--r-pill);
   padding: 8px 12px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
 }
 
@@ -176,7 +176,7 @@
 
 .confirm-foot {
   text-align: center;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--fs));
   color: var(--mut2);
   margin-top: 14px;
 }
@@ -196,7 +196,7 @@
   border-radius: var(--r-pill);
   border: 1px solid var(--bord);
   background: var(--bg);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   color: var(--ink);
   flex: none;
 }
@@ -216,7 +216,7 @@
   text-align: left;
   padding: 10px 4px;
   border-bottom: 1px solid var(--line2);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   color: var(--ink);
 }
 

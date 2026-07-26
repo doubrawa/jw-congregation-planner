@@ -54,13 +54,13 @@
   border-radius: var(--r-input);
   background: var(--tGld);
   color: var(--gld);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs));
   line-height: 1.35;
 }
 
 .offline-banner-hint {
   color: var(--mut);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
 }
 
 .offline-banner-btn {
@@ -71,7 +71,7 @@
   background: var(--bg);
   color: var(--gld);
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   cursor: pointer;
 }
@@ -117,31 +117,31 @@
 .avatar--28 {
   width: 28px;
   height: 28px;
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
 }
 
 .avatar--32 {
   width: 32px;
   height: 32px;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
 }
 
 .avatar--36 {
   width: 36px;
   height: 36px;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
 }
 
 .avatar--40 {
   width: 40px;
   height: 40px;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
 }
 
 .avatar--54 {
   width: 54px;
   height: 54px;
-  font-size: 16px;
+  font-size: calc(16px * var(--fs));
 }
 
 /* ---- Sidebar (nur Desktop) --------------------------------------------- */
@@ -177,7 +177,7 @@
 
 .sidebar-wordmark {
   font-family: var(--font-serif);
-  font-size: 21px;
+  font-size: calc(21px * var(--fs));
   font-weight: 500;
   line-height: 1.15;
   margin-top: 6px;
@@ -186,7 +186,7 @@
 .sidebar-sub {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   color: var(--mut);
   margin-top: 5px;
 }
@@ -203,7 +203,7 @@
   border-radius: 10px;
   background: transparent;
   color: var(--mut);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   font-weight: 600;
   margin-top: 4px;
 }
@@ -231,18 +231,18 @@
 }
 
 .sidebar-profile-name {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs));
   font-weight: 600;
 }
 
 .sidebar-profile-role {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--fs));
   color: var(--mut);
 }
 
 .sidebar-logout {
   text-align: left;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--wein);
   padding: 10px 10px 0;
@@ -298,7 +298,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.18em;
   color: var(--acc);
@@ -324,8 +324,11 @@
   color: var(--mut);
   border-radius: var(--r-pill);
   padding: 5px 12px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
+  /* Eine Pille bleibt einzeilig: bei grosser Schrift (--fs) bräche „2 neu“
+     sonst um, der Chip würde doppelt hoch und schöbe sich über den Inhalt. */
+  white-space: nowrap;
 }
 
 .notif-chip.has-unread {
@@ -411,7 +414,7 @@
 
 .drawer-close {
   color: var(--mut2);
-  font-size: 15px;
+  font-size: calc(15px * var(--fs));
   padding: 4px 8px;
   flex: none;
 }
@@ -456,7 +459,7 @@
 
 .notif-title {
   font-family: var(--font-serif);
-  font-size: 19px;
+  font-size: calc(19px * var(--fs));
   font-weight: 500;
 }
 
@@ -468,14 +471,14 @@
 }
 
 .notif-mark-read {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--acc);
 }
 
 /* "Alle löschen" — leert den Feed der ganzen Versammlung, daher Warnfarbe. */
 .notif-clear {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--wein);
 }
@@ -512,18 +515,18 @@
 }
 
 .notif-row-title {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   font-weight: 600;
 }
 
 .notif-row-text {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   color: var(--mut);
   margin-top: 2px;
 }
 
 .notif-row-time {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--fs));
   color: var(--mut2);
   margin-top: 3px;
 }
@@ -535,7 +538,7 @@
   color: var(--pet);
   border-radius: var(--r-pill);
   padding: 3px 11px;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--fs));
   font-weight: 600;
 }
 
@@ -551,28 +554,28 @@
 
 .status-loading {
   margin-top: 40px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   color: var(--mut);
 }
 
 .status-title {
   margin-top: 32px;
   font-family: var(--font-serif);
-  font-size: 22px;
+  font-size: calc(22px * var(--fs));
   font-weight: 500;
 }
 
 .status-text {
   margin: 12px auto 0;
   max-width: 340px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   line-height: 1.5;
   color: var(--mut);
 }
 
 .status-text code {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   color: var(--acc);
   background: var(--tAcc);
   padding: 1px 5px;
@@ -616,7 +619,7 @@
   color: var(--onAcc);
   border-radius: var(--r-pill);
   padding: 10px 18px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs));
   font-weight: 600;
   z-index: 40;
   animation: toast-in 0.2s;

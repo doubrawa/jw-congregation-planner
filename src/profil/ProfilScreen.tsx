@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
-import { THEME_LIST } from '../data/constants'
+import { FONT_SCALES, THEME_LIST } from '../data/constants'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { fullName } from '../data/helpers'
 
@@ -12,14 +12,25 @@ import { currentSubscription, pushSupported, subscribePush, subscriptionFields }
 import { performLogout } from '../lib/supabase'
 import '../aufgaben/aufgaben.css'
 
+/** Stufenname je FONT_SCALES-Position (gleiche Reihenfolge). */
+const FS_LABELS = [
+  'schriftKlein',
+  'schriftStandard',
+  'schriftGross',
+  'schriftGroesser',
+  'schriftSehrGross',
+] as const
+
 /**
  * Profil (eigener Navigationspunkt): Name/Versammlung, Push-Mitteilungen,
- * Darstellung (8 Farbschemata), App-Sprache und Abmelden. Rolle und
- * Predigtdienstgruppe werden im Personen-Screen gepflegt.
+ * Darstellung (8 Farbschemata), Schriftgröße, App-Sprache und Abmelden. Rolle
+ * und Predigtdienstgruppe werden im Personen-Screen gepflegt.
  */
 export function ProfilScreen() {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  // Position im Regler; unbekannter Wert (z. B. alter localStorage) → Standard.
+  const scaleIndex = Math.max(0, FONT_SCALES.indexOf(state.fontScale))
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
 
   // Web-Push: Schalter nur im Produktionsmodus und wenn der Browser es kann
@@ -96,6 +107,31 @@ export function ProfilScreen() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="kv-row kv-row--plain">
+          <span className="kv-key">{t.schriftgroesse}</span>
+          <span className="kv-val">{t[FS_LABELS[scaleIndex]]}</span>
+        </div>
+        <div className="fs-slider">
+          <span className="fs-slider-a fs-slider-a--min" aria-hidden="true">
+            A
+          </span>
+          <input
+            type="range"
+            className="fs-slider-input"
+            min={0}
+            max={FONT_SCALES.length - 1}
+            step={1}
+            value={scaleIndex}
+            aria-label={t.schriftgroesse}
+            aria-valuetext={t[FS_LABELS[scaleIndex]]}
+            onChange={(e) =>
+              dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] })
+            }
+          />
+          <span className="fs-slider-a fs-slider-a--max" aria-hidden="true">
+            A
+          </span>
         </div>
         <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.spracheLbl}</span>

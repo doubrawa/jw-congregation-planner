@@ -37,6 +37,7 @@ dadurch bleiben Bilder und App immer konsistent.
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Planer |
 | `p`   | Person‑Id (setzt „DU"; auf der Personen‑Seite öffnet es das Detail) |
 | `t`   | Theme (z. B. `weiss` für die druckfreundliche Doku) |
+| `fs`  | Schriftgröße‑Faktor (`0.9`, `1`, `1.15`, `1.3`, `1.45`) — für Layout‑Tests bei großer Schrift |
 | `l` / `c` | App‑Sprache / Versammlungssprache |
 | `shot` | `1` = Screenshot‑Modus: schaltet den Spaltenschatten ab, damit die Zentrier‑Lücke flach ist und randlos zugeschnitten werden kann |
 | `stale` | Offline‑Stand vortäuschen: Zahl = Alter in Stunden (`stale=5`). Zeigt das Offline‑Banner und schaltet auf „nur lesen" — ohne echten Netzabbruch |

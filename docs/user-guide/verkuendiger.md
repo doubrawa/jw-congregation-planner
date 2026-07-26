@@ -16,7 +16,7 @@ die App auf deinem Gerät einrichtest.
 3. [Das Programm ansehen](#3-das-programm-ansehen)
 4. [Meine Aufgaben](#4-meine-aufgaben)
 5. [Abwesenheiten eintragen](#5-abwesenheiten-eintragen)
-6. [Profil: Darstellung & Sprache](#6-profil-darstellung--sprache)
+6. [Profil: Darstellung, Schriftgröße & Sprache](#6-profil-darstellung-schriftgröße--sprache)
 7. [App installieren & Erinnerungen](#7-app-installieren--erinnerungen)
 8. [Ohne Internet (offline)](#8-ohne-internet-offline)
 
@@ -116,7 +116,7 @@ lassen sich mit dem ✕ wieder entfernen.
 
 ---
 
-## 6. Profil: Darstellung & Sprache
+## 6. Profil: Darstellung, Schriftgröße & Sprache
 
 Unter **Profil** stellst du persönliche Vorlieben ein.
 
@@ -124,6 +124,9 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
 
 - **Darstellung** – das Farbschema der App (z. B. Reinweiß oder ein dunkles
   Design). Die Einstellung gilt nur für dein Gerät.
+- **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Standard ist die
+  bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
+  Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.
 - **Sprache** – die Anzeigesprache der App. Ist das Programm in einer weiteren
   Sprache verfügbar, werden Programmpunkte automatisch mit übersetzt.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder

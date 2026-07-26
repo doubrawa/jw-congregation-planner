@@ -6,7 +6,7 @@
 
 .plan-week-range {
   font-family: var(--font-serif);
-  font-size: 19px;
+  font-size: calc(19px * var(--fs));
   font-weight: 500;
 }
 
@@ -16,7 +16,7 @@
 
 .plan-hint {
   margin-top: 12px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   color: var(--mut);
 }
 
@@ -32,7 +32,7 @@
 }
 
 .plan-auto-label {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--fs));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--mut);
@@ -48,7 +48,7 @@
   border-radius: var(--r-pill);
   padding: 11px 0;
   text-align: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.06em;
 }
@@ -92,7 +92,7 @@
 
 .plan-legend {
   margin-top: 10px;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--fs));
   color: var(--mut);
 }
 
@@ -129,15 +129,15 @@
   height: 21px;
   border-radius: 50%;
   color: var(--onAcc);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   font-weight: 700;
-  line-height: 21px;
+  line-height: calc(21px * var(--fs));
   text-align: center;
 }
 
 .plan-banner-title {
   flex: 1;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -150,9 +150,9 @@
   box-sizing: border-box;
   border-radius: var(--r-pill);
   color: var(--onAcc);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   font-weight: 700;
-  line-height: 22px;
+  line-height: calc(22px * var(--fs));
   text-align: center;
 }
 
@@ -180,7 +180,7 @@
   align-items: flex-start;
   gap: 9px;
   margin-top: 10px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   line-height: 1.4;
   color: var(--ink);
   overflow-wrap: anywhere;
@@ -209,7 +209,7 @@
 
 .plan-conflict-more {
   margin-top: 9px;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
   color: var(--wein);
 }
@@ -219,7 +219,7 @@
   display: flex;
   gap: 8px;
   margin-top: 9px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   line-height: 1.4;
 }
 
@@ -255,13 +255,13 @@
 
 .plan-item-title {
   font-family: var(--font-serif);
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--fs));
   font-weight: 500;
   line-height: 1.3;
 }
 
 .plan-item-meta {
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   color: var(--mut);
   margin-top: 2px;
 }
@@ -279,7 +279,7 @@
   color: var(--ink);
   border-radius: var(--r-pill);
   padding: 5px 11px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
 }
 
@@ -323,11 +323,11 @@
   align-items: center;
   justify-content: center;
   color: var(--mut);
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
 }
 
 .lac-step-btn {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
 }
 
 .lac-move-btn:disabled {
@@ -345,7 +345,7 @@
 .lac-mins {
   min-width: 48px;
   text-align: center;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
   color: var(--mut);
 }
@@ -364,7 +364,7 @@
   align-items: center;
   justify-content: center;
   color: var(--wein);
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
 }
 
 .lac-add-row {
@@ -380,7 +380,7 @@
   border-radius: var(--r-pill);
   border: 1px solid var(--bord2);
   background: var(--card);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   color: var(--ink);
 }
 
@@ -389,7 +389,7 @@
   color: var(--acc);
   border-radius: var(--r-pill);
   padding: 8px 13px;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -408,7 +408,7 @@
   border-radius: 10px;
   border: 1px solid var(--bord2);
   background: var(--card);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   font-weight: 600;
   color: var(--ink);
 }
@@ -441,7 +441,7 @@
 }
 
 .sheet-guest-hint {
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   color: var(--mut);
   padding-bottom: 6px;
 }
@@ -467,7 +467,7 @@
   flex: 1;
   min-width: 0;
   font-family: var(--font-serif);
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--fs));
   font-weight: 500;
 }
 
@@ -477,7 +477,7 @@
   color: var(--ink);
   border-radius: 10px;
   padding: 7px 10px;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   font-weight: 600;
 }
 
@@ -496,7 +496,7 @@
   align-items: center;
   justify-content: center;
   color: var(--wein);
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
 }
 
 .fs-input {
@@ -507,7 +507,7 @@
   border-radius: 10px;
   border: 1px solid var(--bord2);
   background: var(--card);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs));
   color: var(--ink);
 }
 
@@ -518,7 +518,10 @@
 /* Karte „Treffpunkt für diese Woche hinzufügen" */
 .fs-add-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): sonst kann die Spalte nicht unter ihren Inhalt schrumpfen
+     und die volle-Breite-Eingabe (grid-column: 1 / -1) drückt das Raster bei
+     grosser Schrift über die Karte hinaus. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
   margin-top: 8px;
 }
@@ -537,7 +540,7 @@
   border-radius: var(--r-pill);
   padding: 9px 0;
   text-align: center;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.06em;
 }
@@ -558,7 +561,7 @@
 }
 
 .plan-helper-label {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--fs));
   letter-spacing: 0.14em;
   color: var(--mut);
 }
@@ -617,13 +620,13 @@
 
 .sheet-title {
   font-family: var(--font-serif);
-  font-size: 18px;
+  font-size: calc(18px * var(--fs));
   font-weight: 500;
   line-height: 1.25;
 }
 
 .sheet-sub {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   color: var(--mut);
   margin-top: 3px;
 }
@@ -637,7 +640,7 @@
   align-items: center;
   justify-content: center;
   color: var(--mut);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   flex: none;
 }
 
@@ -649,7 +652,7 @@
   background: var(--tNeu);
   border-radius: 12px;
   padding: 9px 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   flex: none; /* bleibt oben fixiert */
 }
 
@@ -658,7 +661,7 @@
 }
 
 .sheet-remove {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--wein);
 }
@@ -713,13 +716,13 @@
 
 .cand-name {
   display: block;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   font-weight: 600;
 }
 
 .cand-sub {
   display: block;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   color: var(--mut);
   margin-top: 1px;
 }
@@ -727,7 +730,7 @@
 /* Bereits an diesem Tag zugeteilt — Warnhinweis gegen Doppelbelegung. */
 .cand-today {
   display: block;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
   color: var(--wein);
   margin-top: 2px;
@@ -736,7 +739,7 @@
 .cand-chip {
   border-radius: var(--r-pill);
   padding: 3px 9px;
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
   font-weight: 600;
 }
 

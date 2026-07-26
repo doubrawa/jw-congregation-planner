@@ -21,7 +21,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../data/demo'
-import { THEME_LIST } from '../data/constants'
+import { asFontScale, DEFAULT_FONT_SCALE, THEME_LIST, type FontScale } from '../data/constants'
 import { APP_LANGS } from '../i18n/langs'
 import { isSupabaseConfigured } from '../lib/supabase'
 import type { Lang, MeetingTab, Screen, Theme } from '../data/types'
@@ -43,6 +43,10 @@ function getInitialTheme(): Theme {
   return document.documentElement.dataset.theme === 'graphit' ? 'graphit' : 'weiss'
 }
 
+function getInitialFontScale(): FontScale {
+  return asFontScale(localStorage.getItem('fontScale')) ?? DEFAULT_FONT_SCALE
+}
+
 function getInitialLang(): Lang {
   const stored = localStorage.getItem('lang')
   return APP_LANGS.some((l) => l.code === stored) ? (stored as Lang) : 'de'
@@ -59,6 +63,7 @@ interface DebugHash {
   lang?: Lang
   congLang?: string
   theme?: Theme
+  fontScale?: FontScale // fs=<Faktor> — Schriftgrößen-Stufe für Doku-Screenshots
   personId?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
@@ -79,6 +84,8 @@ function parseDebugHash(): DebugHash | null {
   if (c) out.congLang = c
   const th = asTheme(p.get('t'))
   if (th) out.theme = th
+  const fs = asFontScale(p.get('fs'))
+  if (fs) out.fontScale = fs
   const person = p.get('p')
   if (person) out.personId = person
   const tab = p.get('tab')
@@ -114,6 +121,7 @@ export function initialState(): AppState {
     week: 0,
     tab: debug?.tab ?? 'mid',
     theme: debug?.theme ?? getInitialTheme(),
+    fontScale: debug?.fontScale ?? getInitialFontScale(),
     planner: debug?.planner ?? (demo ? DEMO_PLANNER : false),
     congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', meetings: '' },
     congregationId: null,

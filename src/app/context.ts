@@ -4,6 +4,7 @@
  */
 
 import { createContext, useContext, type Dispatch } from 'react'
+import type { FontScale } from '../data/constants'
 import type {
   Absence,
   ConfirmationMap,
@@ -74,6 +75,7 @@ export interface AppState {
   week: number // Index in weeks
   tab: MeetingTab
   theme: Theme
+  fontScale: FontScale // Schriftgrößen-Faktor (--fs), gerätebezogen wie theme
   planner: boolean // Rechte: Planen/Personen/Einstellungen sichtbar
   congregation: Congregation
   // Persistenz (Supabase); im Demo-Modus null bzw. 'demo'
@@ -133,6 +135,7 @@ export type AppAction =
   | { type: 'nextWeek' }
   | { type: 'setTab'; tab: MeetingTab }
   | { type: 'setTheme'; theme: Theme }
+  | { type: 'setFontScale'; scale: FontScale }
   | { type: 'openNotifs' }
   | { type: 'closeNotifs' }
   | { type: 'markAllRead' }

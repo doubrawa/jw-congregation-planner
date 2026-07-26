@@ -60,6 +60,15 @@
   --hov: rgba(241, 240, 235, 0.6);
   --focus: rgba(124, 95, 35, 0.35);
 
+  /*
+   * Schriftgrößen-Faktor (Profil → Schriftgröße). Jede font-size im Projekt
+   * steht als calc(<px> * var(--fs)) — siehe scripts/scale-font-sizes.mjs.
+   * 1 = Auslieferungszustand; store.tsx setzt den gewählten Wert auf <html>,
+   * index.html schon vor dem ersten Paint. Bewusst NUR die Schrift: Abstände
+   * mitzuskalieren (zoom) würde an 100svh/100vh scheitern.
+   */
+  --fs: 1;
+
   /* Schriften (siehe index.html: Google Fonts) */
   --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto,
