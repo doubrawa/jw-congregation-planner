@@ -316,6 +316,25 @@ export function ministryNames(title: string, meta: string): ImportedSlot[] {
   return [{ name: '', bereichsKey: 'schulung' }]
 }
 
+/**
+ * Aufgabenart der Schülerteile von einer Referenzwoche (immer die deutsche — das
+ * Arbeitsheft-Programm ist weltweit strukturgleich) auf eine lokalisierte Woche
+ * übertragen: die Slot-Vorlagen der gold-Sektion (Führer/Partner/männlich)
+ * werden positionsgenau übernommen. So bekommen auch nicht-deutsche Importe die
+ * richtige Personenzahl, obwohl die Titel-Heuristik nur Deutsch versteht.
+ */
+export function applyGoldSlots(target: ImportedWeek, source: ImportedWeek): void {
+  const tGold = target.mid.sections.find((s) => s.farbe === 'gold')
+  const sGold = source.mid.sections.find((s) => s.farbe === 'gold')
+  if (!tGold || !sGold) return
+  for (let i = 0; i < tGold.items.length; i++) {
+    const t = tGold.items[i]
+    const s = sGold.items[i]
+    if (!s || !('names' in t) || !('names' in s)) continue
+    t.names = s.names.map((n) => ({ ...n }))
+  }
+}
+
 /** Titel/Meta/Slots je Punkt festlegen — kennt jetzt die Position in der Sektion. */
 function finalizeParts(recs: PartRec[]): void {
   const lastOf: Partial<Record<SecColor, PartRec>> = {}

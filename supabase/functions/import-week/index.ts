@@ -18,7 +18,7 @@
 // Deploy:  supabase functions deploy import-week
 // =============================================================================
 
-import { parseWorkbookWeek, type ImportedWeek } from './parse.ts'
+import { applyGoldSlots, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
 import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
 
 declare const Deno: { serve: (handler: (req: Request) => Promise<Response> | Response) => void }
@@ -251,6 +251,13 @@ Deno.serve(async (req: Request) => {
     if (start) week.start = start.toISOString().slice(0, 10)
     week.lang = lang
 
+    // Aufgabenart der Schülerteile (1 oder 2 Personen, männlich) immer aus der
+    // deutschen Fassung ableiten — das Arbeitsheft ist weltweit strukturgleich,
+    // aber die Titel-Heuristik versteht nur Deutsch. Bei deutscher Zielsprache
+    // ist die geparste Woche bereits die deutsche.
+    const germanWeek = lang === 'de' ? week : parseWorkbookWeek(germanHtml)
+    if (germanWeek !== week) applyGoldSlots(week, germanWeek)
+
     // Wochenend-Wachtturm-Studienartikel automatisch eintragen: Titel + Lied vor
     // dem Studium (WACHTTURM-STUDIUM) und Schlusslied (ABSCHLUSS), in der
     // Versammlungssprache. Der öffentliche Vortrag wird lokal vergeben und steht
@@ -268,6 +275,7 @@ Deno.serve(async (req: Request) => {
       if (!loc) continue
       try {
         const altWeek = parseWorkbookWeek(await fetchText(loc))
+        applyGoldSlots(altWeek, germanWeek) // Schülerteil-Art aus der deutschen Fassung
         const altStudy = start ? await studyArticle(start, code) : null
         // mirror immer setzen: die Variante folgt strukturell der Primärwoche
         applyStudy(altWeek, altStudy, study ?? { title: null, songOpen: null, songClose: null })
