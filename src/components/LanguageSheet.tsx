@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
 import { CONG_LANGS } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
+import { useDialogFocus } from './useDialogFocus'
 import './overlays.css'
 
 /** Vollständige jw.org-Liste, alphabetisch nach deutschem Sprachnamen. */
@@ -19,6 +20,8 @@ export function LanguageSheet() {
   const { t } = useT()
   const altMode = state.langSheetFor === 'alt'
   const close = () => dispatch({ type: 'closeLangSheet' })
+  const dlg = useRef<HTMLDivElement>(null)
+  useDialogFocus(dlg)
   const pick = (name: string) =>
     dispatch(altMode ? { type: 'addProgLang', name } : { type: 'setCongLang', name })
   const isActive = (name: string) =>
@@ -38,7 +41,7 @@ export function LanguageSheet() {
   return (
     <>
       <div className="sheet-backdrop" onClick={close} />
-      <div className="sheet sheet--lang" role="dialog" aria-modal="true" aria-label={t.a11yCongLang}>
+      <div className="sheet sheet--lang" role="dialog" aria-modal="true" aria-label={t.a11yCongLang} ref={dlg}>
         <div className="sheet-head">
           <div>
             <div className="sheet-title">{altMode ? t.progLangsLbl : t.versSprache}</div>

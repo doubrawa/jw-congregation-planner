@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { useDialogFocus } from '../components/useDialogFocus'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { useApp } from './context'
@@ -7,6 +8,8 @@ import { useApp } from './context'
 export function NotificationsPanel() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
+  const dlg = useRef<HTMLDivElement>(null)
+  useDialogFocus(dlg)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -19,7 +22,7 @@ export function NotificationsPanel() {
   return (
     <>
       <div className="notif-backdrop" onClick={() => dispatch({ type: 'closeNotifs' })} />
-      <div className="notif-panel" role="dialog" aria-modal="true" aria-label={t.mitteilungen}>
+      <div className="notif-panel" role="dialog" aria-modal="true" aria-label={t.mitteilungen} ref={dlg}>
         <div className="notif-head">
           <h2 className="notif-title">{t.mitteilungen}</h2>
           <div className="notif-actions">

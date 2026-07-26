@@ -25,6 +25,7 @@ export function ProgrammScreen() {
   if (!week) {
     return (
       <section className="screen">
+        <h1 className="sr-only">{t.navProgramm}</h1>
         <div className="panel panel--lead" data-farbe="neutral">
           <div className="panel-label">{t.keineWochenTitel}</div>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
@@ -41,6 +42,7 @@ export function ProgrammScreen() {
 
   return (
     <section className="screen prog-screen">
+      <h1 className="sr-only">{t.navProgramm}</h1>
       {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
       <div className="prog-print-head">
         <span>{state.congregation.name}</span>

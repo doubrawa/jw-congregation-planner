@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
+import { useDialogFocus } from '../components/useDialogFocus'
 import { displayName, initials, isQualified, isSong, partnerGenderOk, personCompare, roleLabel, workloadOf } from '../data/helpers'
 import { fsLeaderValue } from '../data/fs'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
@@ -29,6 +30,8 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const { state, dispatch } = useApp()
   const { t, tu, tp } = useT()
   const close = () => dispatch({ type: 'closeSlot' })
+  const dlg = useRef<HTMLDivElement>(null)
+  useDialogFocus(dlg)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -185,7 +188,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   return (
     <>
       <div className="sheet-backdrop" onClick={close} />
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={dlg}>
         <div className="sheet-head">
           <div>
             <div className="sheet-title">{title}</div>
