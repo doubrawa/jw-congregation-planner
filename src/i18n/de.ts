@@ -19,8 +19,10 @@ export const DE = {
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     mitteilungen: 'Mitteilungen', neuSuffix: 'neu', alleGelesen: 'Alle gelesen', alleLoeschen: 'Alle löschen',
     aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
+    // Kurzlabel der Programm-/Planen-Reiter: „Versammlung <Wochentag>"
+    versammlungTag: 'Versammlung {tag}',
     // Treffpunkte (Zusammenkünfte für den Predigtdienst)
-    tabFs: 'Zusammenkünfte für den Predigtdienst', fsShort: 'Treffpunkte',
+    tabFs: 'Predigtdienst', fsShort: 'Treffpunkte',
     fsVers: 'Versammlungstreffpunkt', fsKeine: 'Keine Treffpunkte in dieser Woche.',
     privTreffpunkt: 'Treffpunkte leiten',
     fsNurWoche: 'Änderungen hier gelten nur für diese Woche.',

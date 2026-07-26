@@ -165,22 +165,39 @@
 
 .meeting-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 18px;
-  border-bottom: 1px solid var(--line);
+  gap: 8px;
+  /* Passt nicht alles in eine Zeile (schmale Geräte): waagerecht scrollen statt
+     umbrechen — der aktive Reiter bleibt sichtbar. Scrollleiste ausgeblendet. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.meeting-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .meeting-tab {
-  padding: 8px 2px;
-  border-bottom: 2px solid transparent;
+  flex: 0 0 auto;
+  padding: 8px 15px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--bord2);
   font-size: calc(12px * var(--fs));
   font-weight: 600;
-  color: var(--mut2);
+  color: var(--mut);
   white-space: nowrap;
 }
 
+.meeting-tab:hover:not(.is-active) {
+  background: var(--hov);
+}
+
 .meeting-tab.is-active {
-  border-bottom-color: var(--acc);
+  background: var(--tAcc);
+  border-color: transparent;
+  /* --ink (nicht --acc): sicherer Kontrast auf --tAcc in ALLEN Themes
+     (--acc auf --tAcc scheitert z. B. in Papaya). Der gefüllte Pill hebt den
+     aktiven Reiter deutlich hervor. */
   color: var(--ink);
 }
 
