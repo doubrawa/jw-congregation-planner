@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CURRENT_PERSON_ID } from '../data/demo'
+import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, overseerGroup } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite, seedCongregation } from '../lib/data'
@@ -64,6 +65,8 @@ export function AppShell() {
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   // Mobiles Seitenmenü (Drawer) — Desktop hat die feste Sidebar
   const [menuOpen, setMenuOpen] = useState(false)
+  const drawerRef = useRef<HTMLElement>(null)
+  useDialogFocus(drawerRef, menuOpen)
   const navigate = (screen: Screen) => {
     setMenuOpen(false)
     dispatch({ type: 'navigate', screen })
@@ -165,7 +168,7 @@ export function AppShell() {
             {menuOpen && (
               <>
                 <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />
-                <aside className="drawer" role="dialog" aria-modal="true" aria-label={t.menueLbl}>
+                <aside className="drawer" role="dialog" aria-modal="true" aria-label={t.menueLbl} ref={drawerRef}>
                   <div className="drawer-head">
                     <SidebarBrand congSub={congSub} />
                     <button

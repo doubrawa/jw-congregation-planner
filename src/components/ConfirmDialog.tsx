@@ -1,5 +1,7 @@
+import { useRef } from 'react'
 import { useApp } from '../app/context'
 import { useT } from '../i18n/useT'
+import { useDialogFocus } from './useDialogFocus'
 import './overlays.css'
 
 /**
@@ -12,11 +14,13 @@ export function ConfirmDialog() {
   const { state, dispatch } = useApp()
   const { t, tp } = useT()
   const openTasks = state.myTasks.filter((task) => task.status === 'offen')
+  const dlg = useRef<HTMLDivElement>(null)
+  useDialogFocus(dlg)
 
   return (
     <>
       <div className="confirm-backdrop" />
-      <div className="confirm-modal" role="dialog" aria-modal="true" aria-label={t.confirmTitle}>
+      <div className="confirm-modal" role="dialog" aria-modal="true" aria-label={t.confirmTitle} ref={dlg}>
         <div className="confirm-eyebrow">{t.erinnerungCap}</div>
         <h2 className="confirm-title">{t.confirmTitle}</h2>
         <p className="confirm-intro">{t.confirmIntro}</p>
