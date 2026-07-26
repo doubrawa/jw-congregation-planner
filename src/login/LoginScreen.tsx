@@ -124,7 +124,7 @@ export function LoginScreen() {
       <div className="login-langs">
         <select
           className="mem-select login-lang-select"
-          aria-label="Sprache"
+          aria-label={t.spracheLbl}
           value={state.lang}
           onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
         >

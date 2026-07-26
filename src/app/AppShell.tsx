@@ -171,7 +171,7 @@ export function AppShell() {
                     <button
                       type="button"
                       className="drawer-close"
-                      aria-label="✕"
+                      aria-label={t.a11yClose}
                       onClick={() => setMenuOpen(false)}
                     >
                       ✕

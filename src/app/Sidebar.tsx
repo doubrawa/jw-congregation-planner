@@ -5,6 +5,7 @@
  */
 
 import { fullName, initials } from '../data/helpers'
+import { useT } from '../i18n/useT'
 import type { Person, Screen } from '../data/types'
 
 // Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
@@ -37,8 +38,9 @@ export function SidebarNav({
   active: Screen
   onNavigate: (screen: Screen) => void
 }) {
+  const { t } = useT()
   return (
-    <nav className="sidebar-nav" aria-label="Hauptnavigation">
+    <nav className="sidebar-nav" aria-label={t.a11yMainNav}>
       {items.map(([screen, label]) => (
         <button
           key={screen}

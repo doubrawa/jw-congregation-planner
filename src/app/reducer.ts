@@ -128,7 +128,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
   const weeks = localizedWeeks(state.weeks, jwCode)
   const myTasks = me
-    ? deriveMyTasks(weeks, state.services, displayName(me), state.confirmations)
+    ? deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings)
     : []
   return {
     ...state,

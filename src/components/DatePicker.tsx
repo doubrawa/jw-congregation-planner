@@ -15,6 +15,8 @@ interface DatePickerProps {
   max?: string
   placeholder: string
   ariaLabel: string
+  prevLabel: string // Vorlesbare Beschriftung „‹" (Screenreader)
+  nextLabel: string // Vorlesbare Beschriftung „›"
 }
 
 const DAY = 864e5
@@ -38,7 +40,7 @@ function weekdayLabels(locale: string): string[] {
   return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(monday + i * DAY)))
 }
 
-export function DatePicker({ value, onChange, locale, min, max, placeholder, ariaLabel }: DatePickerProps) {
+export function DatePicker({ value, onChange, locale, min, max, placeholder, ariaLabel, prevLabel, nextLabel }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const [view, setView] = useState(() => monthStart(value))
   const ref = useRef<HTMLDivElement>(null)
@@ -99,11 +101,11 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
       {open && (
         <div className="dp-pop" role="dialog" aria-label={ariaLabel}>
           <div className="dp-head">
-            <button type="button" className="dp-nav" aria-label="‹" onClick={() => shift(-1)}>
+            <button type="button" className="dp-nav" aria-label={prevLabel} onClick={() => shift(-1)}>
               ‹
             </button>
             <div className="dp-title">{title}</div>
-            <button type="button" className="dp-nav" aria-label="›" onClick={() => shift(1)}>
+            <button type="button" className="dp-nav" aria-label={nextLabel} onClick={() => shift(1)}>
               ›
             </button>
           </div>

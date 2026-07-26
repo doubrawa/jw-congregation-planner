@@ -30,7 +30,7 @@ export function LanguagePanel() {
             <button
               type="button"
               className="proglang-chip-x"
-              aria-label="✕"
+              aria-label={t.a11yRemove}
               onClick={() => dispatch({ type: 'removeProgLang', name })}
             >
               ✕

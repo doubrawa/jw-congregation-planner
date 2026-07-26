@@ -42,7 +42,7 @@ export function ServicesPanel() {
             <button
               type="button"
               className="stepper-btn"
-              aria-label="–"
+              aria-label={t.a11yDecrease}
               onClick={() => dispatch({ type: 'changeServiceCount', key: service.key, delta: -1 })}
             >
               –
@@ -51,7 +51,7 @@ export function ServicesPanel() {
             <button
               type="button"
               className="stepper-btn"
-              aria-label="+"
+              aria-label={t.a11yIncrease}
               onClick={() => dispatch({ type: 'changeServiceCount', key: service.key, delta: 1 })}
             >
               +
@@ -59,7 +59,7 @@ export function ServicesPanel() {
             <button
               type="button"
               className="svc-remove"
-              aria-label="✕"
+              aria-label={t.a11yRemove}
               onClick={() => dispatch({ type: 'removeService', key: service.key })}
             >
               ✕

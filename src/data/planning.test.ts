@@ -320,6 +320,20 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     expect(deriveMyTasks(weeks, DEMO_SERVICES, '', {})).toEqual([])
   })
 
+  it('setzt at aus Wochenstart + Zusammenkunftstag (Countdown); ohne start null', () => {
+    // Ohne week.start (Demo-Wochen) → kein Countdown.
+    const ohne = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {}, 'Di 19:00 · So 10:00')
+    expect(ohne[0].at).toBeNull()
+
+    // Mit ISO-Startdatum: Woche 0 Schulung liegt unter der Woche (Di = Mo + 1).
+    const dated = weeks.map((w) => ({ ...w, start: '2026-09-07' })) // Montag
+    const mit = deriveMyTasks(dated, DEMO_SERVICES, 'Simon Krüger', {}, 'Di 19:00 · So 10:00')
+    expect(mit[0].at).toBe(Date.parse('2026-09-08')) // Dienstag (mid = Mo + 1)
+    // Aufgabe 1 ist Mikrofone am Wochenende → So = Mo + 6 (alle Wochen teilen
+    // hier denselben Start, geprüft wird der Wochenend-Versatz).
+    expect(mit[1].at).toBe(Date.parse('2026-09-13'))
+  })
+
   it('hängt Rollenlabels (außer Begleiter) an den Titel an', () => {
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Manfred Albrecht', {})
     expect(tasks[0].title).toBe('Lied 1 · Gebet · Einleitende Worte · Vorsitz')

@@ -38,7 +38,7 @@ export function LanguageSheet() {
   return (
     <>
       <div className="sheet-backdrop" onClick={close} />
-      <div className="sheet sheet--lang" role="dialog" aria-modal="true" aria-label="Versammlungssprache">
+      <div className="sheet sheet--lang" role="dialog" aria-modal="true" aria-label={t.a11yCongLang}>
         <div className="sheet-head">
           <div>
             <div className="sheet-title">{altMode ? t.progLangsLbl : t.versSprache}</div>
@@ -46,7 +46,7 @@ export function LanguageSheet() {
               {fill(t.langCount, { n: filtered.length })} · {t.langListNote}
             </div>
           </div>
-          <button type="button" className="sheet-close" aria-label="✕" onClick={close}>
+          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={close}>
             ✕
           </button>
         </div>

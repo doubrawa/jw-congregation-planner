@@ -167,7 +167,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             <div className="sheet-title">{title}</div>
             <div className="sheet-sub">{sub}</div>
           </div>
-          <button type="button" className="sheet-close" aria-label="✕" onClick={close}>
+          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={close}>
             ✕
           </button>
         </div>

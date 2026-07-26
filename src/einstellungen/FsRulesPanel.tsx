@@ -49,7 +49,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                   <select
                     className="fs-select fsr-grow"
                     value={rule.wd}
-                    aria-label="Wochentag"
+                    aria-label={t.a11yWeekday}
                     onChange={(e) => upd(rule.id, { wd: Number(e.target.value) })}
                   >
                     {wdOptions.map((d) => (
@@ -73,7 +73,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                   <button
                     type="button"
                     className="fs-remove"
-                    aria-label="✕"
+                    aria-label={t.a11yRemove}
                     onClick={() => dispatch({ type: 'fsRuleRemove', id: rule.id })}
                   >
                     ✕
@@ -84,7 +84,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                   <select
                     className="fs-select fs-select--time"
                     value={rule.time}
-                    aria-label="Zeit"
+                    aria-label={t.a11yTime}
                     onChange={(e) => upd(rule.id, { time: e.target.value })}
                   >
                     {FS_TIME_OPTIONS.map((tm) => (

@@ -302,7 +302,8 @@ export interface MyTask {
   id: string
   title: string // "Gespräche beginnen (informell)"
   date: string // "Di, 8. September · ca. 19:35"
-  chip: string // Countdown "in 4 Tagen" (leer = kein Chip)
+  chip: string // Countdown-Text NUR im Demo-Modus (z. B. "in 4 Tagen")
+  at?: number | null // UTC-ms des Zusammenkunftstags → Live-Countdown (Intl); null = keiner
   status: TaskStatus
   s89: S89Payload | null // Schulungsaufgabe → S-89 anzeigbar
 }

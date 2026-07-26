@@ -117,7 +117,7 @@ export function MeetingSection({
                   <button
                     type="button"
                     className="lac-move-btn"
-                    aria-label="▲"
+                    aria-label={t.a11yMoveUp}
                     disabled={mPos <= 0}
                     onClick={() => dispatch({ type: 'lacMove', si, ii, dir: -1 })}
                   >
@@ -126,7 +126,7 @@ export function MeetingSection({
                   <button
                     type="button"
                     className="lac-move-btn"
-                    aria-label="▼"
+                    aria-label={t.a11yMoveDown}
                     disabled={mPos >= movables.length - 1}
                     onClick={() => dispatch({ type: 'lacMove', si, ii, dir: 1 })}
                   >
@@ -153,7 +153,7 @@ export function MeetingSection({
                 <button
                   type="button"
                   className="lac-step-btn"
-                  aria-label="–"
+                  aria-label={t.a11yDecrease}
                   onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: -5 })}
                 >
                   –
@@ -162,7 +162,7 @@ export function MeetingSection({
                 <button
                   type="button"
                   className="lac-step-btn"
-                  aria-label="+"
+                  aria-label={t.a11yIncrease}
                   onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: 5 })}
                 >
                   +
@@ -171,7 +171,7 @@ export function MeetingSection({
                 <button
                   type="button"
                   className="lac-remove"
-                  aria-label="✕"
+                  aria-label={t.a11yRemove}
                   onClick={() => dispatch({ type: 'lacRemove', si, ii })}
                 >
                   ✕

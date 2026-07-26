@@ -40,7 +40,7 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
             <div className="s89-eyebrow">S-89</div>
             <div className="sheet-title">{t.s89Title}</div>
           </div>
-          <button type="button" className="sheet-close" aria-label="✕" onClick={close}>
+          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={close}>
             ✕
           </button>
         </div>
