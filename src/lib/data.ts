@@ -60,6 +60,7 @@ interface PersonRow {
   absent: number[]
   priv: Qualifications
   grp: string | null
+  fam: string | null
 }
 
 interface ServiceRow {
@@ -280,6 +281,7 @@ function personFromRow(r: PersonRow): Person {
     absent: r.absent ?? [],
     priv: normalizePriv(r.priv),
     grp: r.grp ?? null,
+    fam: r.fam ?? null,
   }
 }
 
@@ -298,6 +300,7 @@ function personToRow(p: Person, congregationId: string) {
     absent: p.absent,
     priv: p.priv,
     grp: p.grp ?? null,
+    fam: p.fam ?? null,
   }
 }
 

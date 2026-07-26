@@ -137,6 +137,7 @@ export type AppAction =
   | { type: 'setTheme'; theme: Theme }
   | { type: 'setFontScale'; scale: FontScale }
   | { type: 'togglePartner'; si: number; ii: number } // Gesprächspartner-Slot an/aus
+  | { type: 'setFamily'; id: string; memberId: string; add: boolean } // Familienangehörige
   | { type: 'openNotifs' }
   | { type: 'closeNotifs' }
   | { type: 'markAllRead' }

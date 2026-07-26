@@ -113,6 +113,35 @@
   color: var(--ink);
 }
 
+.fam-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.fam-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  font-size: calc(12px * var(--fs));
+}
+
+.fam-remove {
+  color: var(--mut);
+  font-size: calc(12px * var(--fs));
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.fam-remove:hover {
+  color: var(--wein);
+}
+
 .role-chips {
   display: flex;
   gap: 8px;

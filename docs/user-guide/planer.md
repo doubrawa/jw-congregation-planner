@@ -65,7 +65,9 @@ Menschen zu Jüngern machen) haben einen **Hauptteilnehmer** und einen
 haben nur einen (männlichen) Teilnehmer. Die App legt die passende Zahl beim
 Import automatisch an; mit **„+ / – Gesprächspartner"** unter dem Teil kannst du
 den Partner bei Bedarf hinzufügen oder entfernen. Für den Gesprächspartner
-werden nur Personen mit demselben Geschlecht vorgeschlagen; wer nur als Partner
+werden nur Personen mit demselben Geschlecht vorgeschlagen – **oder
+Familienangehörige** (siehe „Familie" im Personen‑Detail), die auch
+geschlechtsübergreifend zusammen eingeteilt werden dürfen. Wer nur als Partner
 (nicht als Gesprächsführer) eingeteilt werden soll, bekommt in den Personendaten
 den Bereich **„Schulungsaufgaben Partner"**. Die automatische Zuteilung setzt
 Gesprächsteile bevorzugt mit Verkündigern und Schwestern (nicht mit Ältesten/
@@ -143,6 +145,9 @@ Im Detail legst du fest:
 - **Stammdaten** – Name, Anzeigename, Telefon, E‑Mail, Geschlecht.
 - **Rolle** – Ältester, Dienstamtgehilfe oder Verkündiger.
 - **Predigtdienstgruppe** – Zuordnung zur Gruppe.
+- **Familie** – wer zum selben Haushalt gehört. Familienangehörige dürfen bei
+  Schülerteilen auch geschlechtsübergreifend Gesprächspartner sein (z. B.
+  Ehepaar, Vater/Tochter).
 - **Aufgabenbereiche** – welche Aufgaben die Person übernehmen darf (Vorsitz,
   Vorträge, Gebet, Bibellesung, Schulung, Hilfsdienste …). Diese Bereiche steuern,
   wen die Automatik und die Kandidatenlisten vorschlagen.

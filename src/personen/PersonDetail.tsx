@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { initials, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
+import { familyMembers, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
 import type { Person, QualificationKey, Role } from '../data/types'
@@ -28,6 +28,10 @@ export function PersonDetail({ person }: { person: Person }) {
       : key === 'vorsitzWe'
         ? `${t.privVorsitz} · ${t.tabWe}`
         : t[PRIV_KEY[key]]
+
+  const family = familyMembers(state.persons, person)
+  const famIds = new Set([person.id, ...family.map((m) => m.id)])
+  const addableFamily = state.persons.filter((p) => !famIds.has(p.id)).sort(personCompare)
 
   const fields: Array<[keyof Person & ('fn' | 'ln' | 'dn' | 'tel' | 'mail'), string]> = [
     ['fn', t.vorname],
@@ -130,6 +134,45 @@ export function PersonDetail({ person }: { person: Person }) {
               </option>
             ))}
           </select>
+        </div>
+        <div className="pers-role-block">
+          <div className="field-label">{t.familieLabel}</div>
+          {family.length > 0 && (
+            <div className="fam-list">
+              {family.map((m) => (
+                <span key={m.id} className="fam-chip">
+                  {personLabel(m)}
+                  <button
+                    type="button"
+                    className="fam-remove"
+                    aria-label={t.a11yRemove}
+                    onClick={() =>
+                      dispatch({ type: 'setFamily', id: person.id, memberId: m.id, add: false })
+                    }
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <select
+            className="mem-select pers-grp-select"
+            aria-label={t.familieHinzu}
+            value=""
+            onChange={(e) => {
+              if (e.target.value)
+                dispatch({ type: 'setFamily', id: person.id, memberId: e.target.value, add: true })
+            }}
+          >
+            <option value="">{t.familieHinzu}</option>
+            {addableFamily.map((p) => (
+              <option key={p.id} value={p.id}>
+                {personLabel(p)}
+              </option>
+            ))}
+          </select>
+          <p className="panel-hint">{t.familieHint}</p>
         </div>
       </div>
 

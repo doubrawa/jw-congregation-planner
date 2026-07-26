@@ -250,6 +250,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     }
+    case 'setFamily':
+      // Familien-Id wurde bei beiden (bzw. mehreren) Beteiligten geändert.
+      for (const p of next.persons) {
+        if (prev.persons.find((q) => q.id === p.id)?.fam !== p.fam) savePerson(congId, p)
+      }
+      break
     case 'addAbsence':
       saveAbsence(congId, userId, next.personId, action.absence)
       break

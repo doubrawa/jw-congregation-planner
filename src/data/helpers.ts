@@ -153,8 +153,40 @@ export function isQualified(p: Person, priv: string): boolean {
  */
 export function partnerGenderOk(lead: Person | undefined, cand: Person): boolean {
   if (!lead) return true
-  return Boolean(lead.female) === Boolean(cand.female)
-  // TODO Familienbezüge: || istFamilie(lead, cand)
+  if (Boolean(lead.female) === Boolean(cand.female)) return true
+  // Familienangehörige (gleicher Haushalt) dürfen auch geschlechtsübergreifend
+  // Partner sein (z. B. Ehepaar, Vater/Tochter) — jw.org-Anweisung.
+  return Boolean(lead.fam) && lead.fam === cand.fam
+}
+
+/** Andere Personen im selben Haushalt (Familienangehörige). */
+export function familyMembers(persons: Person[], person: Person): Person[] {
+  if (!person.fam) return []
+  return persons.filter((p) => p.id !== person.id && p.fam === person.fam)
+}
+
+/**
+ * `memberId` in den Haushalt von `id` aufnehmen: beide teilen sich danach
+ * dieselbe Familien-Id (bestehende bevorzugt, sonst neu). Symmetrisch — die
+ * Familienzugehörigkeit ist damit von beiden Seiten sichtbar.
+ */
+export function linkFamily(persons: Person[], id: string, memberId: string): Person[] {
+  if (id === memberId) return persons
+  const a = persons.find((p) => p.id === id)
+  const b = persons.find((p) => p.id === memberId)
+  if (!a || !b) return persons
+  const hid = a.fam || b.fam || crypto.randomUUID()
+  return persons.map((p) => (p.id === id || p.id === memberId ? { ...p, fam: hid } : p))
+}
+
+/** `memberId` aus dem Haushalt lösen; bleibt nur eine Person übrig, wird auch die gelöst. */
+export function unlinkFamily(persons: Person[], memberId: string): Person[] {
+  const m = persons.find((p) => p.id === memberId)
+  if (!m?.fam) return persons
+  const hid = m.fam
+  const next = persons.map((p) => (p.id === memberId ? { ...p, fam: null } : p))
+  const rest = next.filter((p) => p.fam === hid)
+  return rest.length <= 1 ? next.map((p) => (p.fam === hid ? { ...p, fam: null } : p)) : next
 }
 
 /** Nur-Verkündiger (kein Ältester/Dienstamtgehilfe) — Pool für Gesprächsteile. */

@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   displayName,
+  familyMembers,
   initials,
   isPlainPublisher,
   isQualified,
+  linkFamily,
   partnerGenderOk,
   personCompare,
   roleLabel,
   serviceQualKey,
   shortDisplayName,
+  unlinkFamily,
 } from './helpers'
 import type { Person, Qualifications } from './types'
 
@@ -60,6 +63,48 @@ describe('Schülerteil-Qualifikation & Partner-Geschlecht', () => {
     expect(partnerGenderOk(bruder, person({ female: true }))).toBe(false)
     expect(partnerGenderOk(schwester, person({ female: true }))).toBe(true)
     expect(partnerGenderOk(undefined, person({ female: true }))).toBe(true)
+  })
+
+  it('partnerGenderOk: Familienangehörige dürfen geschlechtsübergreifend', () => {
+    const mann = person({ id: 'm', female: false, fam: 'h1' })
+    const frau = person({ id: 'f', female: true, fam: 'h1' })
+    const fremde = person({ id: 'x', female: true, fam: 'h2' })
+    expect(partnerGenderOk(mann, frau)).toBe(true) // gleicher Haushalt
+    expect(partnerGenderOk(mann, fremde)).toBe(false) // anderer Haushalt
+    expect(partnerGenderOk(person({ female: false }), person({ female: true }))).toBe(false) // ohne fam
+  })
+})
+
+describe('Familien-/Haushaltszugehörigkeit', () => {
+  const ps = () => [
+    person({ id: 'a', fn: 'Anna' }),
+    person({ id: 'b', fn: 'Ben' }),
+    person({ id: 'c', fn: 'Cara' }),
+  ]
+
+  it('linkFamily gibt beiden dieselbe (neue) Familien-Id; symmetrisch sichtbar', () => {
+    const next = linkFamily(ps(), 'a', 'b')
+    const a = next.find((p) => p.id === 'a')!
+    const b = next.find((p) => p.id === 'b')!
+    expect(a.fam).toBeTruthy()
+    expect(a.fam).toBe(b.fam)
+    expect(familyMembers(next, a).map((p) => p.id)).toEqual(['b'])
+    expect(familyMembers(next, b).map((p) => p.id)).toEqual(['a'])
+  })
+
+  it('linkFamily nimmt einen Dritten in den bestehenden Haushalt auf', () => {
+    let next = linkFamily(ps(), 'a', 'b')
+    next = linkFamily(next, 'a', 'c')
+    const ids = next.filter((p) => p.fam === next.find((q) => q.id === 'a')!.fam).map((p) => p.id)
+    expect(ids.sort()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('unlinkFamily löst eine Person; ein verbleibender Rest wird auch gelöst', () => {
+    const two = linkFamily(ps(), 'a', 'b')
+    const next = unlinkFamily(two, 'b')
+    expect(next.find((p) => p.id === 'b')!.fam).toBeNull()
+    // Nur noch a im Haushalt → auch a wird gelöst (Haushalt mit 1 ist sinnlos)
+    expect(next.find((p) => p.id === 'a')!.fam).toBeNull()
   })
 
   it('isPlainPublisher: nur Verkündiger, nicht Ältester/DAG', () => {
