@@ -21,6 +21,9 @@
 //    werden automatisch gelöscht.
 //  - Wartung: Glocken-Mitteilungen älter als 30 Tage werden im selben Lauf
 //    gelöscht (nur im Scharfbetrieb — der Dry-Run schreibt/löscht nichts).
+//  - Doppel-Versand-Sperre: pro Empfänger, Art und Tag höchstens eine Sendung
+//    (Tabelle reminder_log, migration-011). Ein zweiter Cron-Lauf am selben Tag
+//    schickt nichts erneut; ein Neulauf nach Teilfehler holt nur Ausstehende.
 //
 // SICHERHEIT / STATUS:
 //  - **Dry-Run standardmäßig**: ohne Secret `SEND_PUSH=true` wird nichts
@@ -78,6 +81,20 @@ async function restInsert(path: string, rows: unknown[]): Promise<void> {
     body: JSON.stringify(rows),
   })
   if (!res.ok) console.error(`REST POST ${path} ${res.status}: ${await res.text()}`)
+}
+
+/** Heutige Versand-Einträge als Menge "userId|kind" (Doppel-Versand-Sperre). */
+async function loadSentToday(todayISO: string): Promise<Set<string>> {
+  try {
+    const rows = await rest<{ user_id: string; kind: string }[]>(
+      `reminder_log?select=user_id,kind&sent_on=eq.${todayISO}`,
+    )
+    return new Set(rows.map((r) => `${r.user_id}|${r.kind}`))
+  } catch (err) {
+    // Fehlt die Tabelle (Migration nicht eingespielt), lieber senden als crashen.
+    console.error(`reminder_log nicht lesbar: ${(err as Error).message}`)
+    return new Set()
+  }
 }
 
 /** Abgelaufenes Push-Abo entfernen (Push-Service meldete 404/410). */
@@ -255,6 +272,9 @@ Deno.serve(async (req: Request) => {
 
     const now = new Date()
     const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    const todayISO = new Date(todayUTC).toISOString().slice(0, 10)
+    // Wer heute schon benachrichtigt wurde ("userId|kind") → nicht erneut senden.
+    const sentToday = await loadSentToday(todayISO)
 
     const congs = await rest<
       {
@@ -266,9 +286,12 @@ Deno.serve(async (req: Request) => {
 
     let sent = 0
     let expired = 0
+    let skipped = 0 // heute bereits benachrichtigt (Doppel-Versand-Sperre)
     const preview: Push[] = []
     const notifRows: unknown[] = []
     const sendQueue: Array<{ push: Push; subs: SubscriptionRow[] }> = []
+    // Was in diesem Lauf gesendet wird → nach echtem Versand ins reminder_log.
+    const logRows: { congregation_id: string; user_id: string; kind: string }[] = []
 
     for (const cong of congs) {
       const rem: Reminders = {
@@ -341,6 +364,12 @@ Deno.serve(async (req: Request) => {
       })
 
       for (const [userId, entries] of entriesByUser) {
+        // Doppel-Versand-Sperre: heute schon persönlich erinnert → überspringen
+        // (gilt auch für die Glocke, die untrennbar zur selben Erinnerung gehört).
+        if (sentToday.has(`${userId}|self`)) {
+          skipped++
+          continue
+        }
         const push: Push = {
           userId,
           title: 'Erinnerung: Zuteilung bestätigen',
@@ -348,15 +377,18 @@ Deno.serve(async (req: Request) => {
         }
         preview.push(push)
         sendQueue.push({ push, subs: subsByUser.get(userId) ?? [] })
-      }
-      for (const [userId, entries] of mainByUser) {
-        notifRows.push({
-          congregation_id: cong.id,
-          user_id: userId,
-          type: 'erinnerung',
-          title: 'Erinnerung: Zuteilung bestätigen',
-          body: entries.join(' · '),
-        })
+        // Glocke nur an first/last-Tagen (mainByUser ⊆ entriesByUser).
+        const mainEntries = mainByUser.get(userId)
+        if (mainEntries) {
+          notifRows.push({
+            congregation_id: cong.id,
+            user_id: userId,
+            type: 'erinnerung',
+            title: 'Erinnerung: Zuteilung bestätigen',
+            body: mainEntries.join(' · '),
+          })
+        }
+        logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'self' })
       }
       if (unreachable.length > 0) {
         const push = {
@@ -365,9 +397,14 @@ Deno.serve(async (req: Request) => {
         }
         for (const m of members) {
           if (!m.planner) continue
+          if (sentToday.has(`${m.user_id}|planner`)) {
+            skipped++
+            continue
+          }
           const p: Push = { userId: m.user_id, ...push }
           preview.push(p)
           sendQueue.push({ push: p, subs: subsByUser.get(m.user_id) ?? [] })
+          logRows.push({ congregation_id: cong.id, user_id: m.user_id, kind: 'planner' })
         }
       }
     }
@@ -395,6 +432,10 @@ Deno.serve(async (req: Request) => {
         }
       }
       await restInsert('notifications', notifRows)
+      // Versand-Tagebuch schreiben, damit ein zweiter Lauf heute nicht doppelt
+      // sendet. Nach dem eigentlichen Versand — scheitert das Schreiben, wurde
+      // immerhin gesendet (schlimmstenfalls eine Wiederholung, nie Verlust).
+      await restInsert('reminder_log', logRows)
       // Wartung im selben Lauf: alte Mitteilungen nach Aufbewahrungsfrist löschen
       await pruneNotifications()
     }
@@ -404,6 +445,7 @@ Deno.serve(async (req: Request) => {
         ok: true,
         dryRun: !SEND_PUSH,
         pushes: SEND_PUSH ? sent : preview.length,
+        skipped, // heute bereits benachrichtigt (Doppel-Versand-Sperre)
         expired,
         notifications: notifRows.length,
         // Vorschau nur im Dry-Run — zum gefahrlosen Testen per curl
