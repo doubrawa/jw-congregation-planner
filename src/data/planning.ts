@@ -12,8 +12,10 @@
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
+  isPlainPublisher,
   isQualified,
   isSong,
+  partnerGenderOk,
   partWorkload,
   serviceQualKey,
   workloadOf,
@@ -26,9 +28,11 @@ import type {
   MeetingKey,
   MeetingSlotSelection,
   MyTask,
+  PartItem,
   Person,
   S89Payload,
   Service,
+  SlotAssignment,
   SlotSelection,
   Week,
 } from './types'
@@ -311,23 +315,61 @@ export function autoAssignMeeting(
     count++
   }
 
-  const pick = (kind: 'part' | 'helper', priv: string | null | undefined): string | null => {
-    const load = kind === 'part' ? pl : tl // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast
-    // Bei Hilfsdiensten den Aufsehern/Gehilfen der Reinigungsgruppe einen Malus
-    // geben, damit sie nur als letzte Wahl einen weiteren Dienst bekommen.
-    const eff = (name: string): number =>
-      load(name) + (kind === 'helper' && cleaningLeaders.has(name) ? HELPER_MALUS : 0)
-    const candidates = persons
-      .filter((p) => (!priv || isQualified(p, priv)) && !p.absent.includes(weekIndex))
-      .map((p) => displayName(p))
-      .filter((name) => !used.has(name))
+  const pick = (
+    kind: 'part' | 'helper',
+    priv: string | null | undefined,
+    opts: { extra?: (p: Person) => boolean; byTotal?: boolean; malus?: (p: Person) => boolean } = {},
+  ): string | null => {
+    // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast. byTotal erzwingt
+    // die Gesamtlast auch für Aufgaben — für Schülerteile, damit Schwestern (die
+    // sonst wenig Last tragen) automatisch häufiger drankommen, Brüder aber nicht.
+    const load = opts.byTotal || kind === 'helper' ? tl : pl
+    // Malus (letzte Wahl): Reinigungs-Aufseher bei Hilfsdiensten; zusätzlich der
+    // per opts.malus markierte Kreis (z. B. Älteste/DAG bei Gesprächsteilen).
+    const eff = (p: Person): number => {
+      const name = displayName(p)
+      let e = load(name)
+      if (kind === 'helper' && cleaningLeaders.has(name)) e += HELPER_MALUS
+      if (opts.malus?.(p)) e += HELPER_MALUS
+      return e
+    }
+    const candidates = persons.filter(
+      (p) =>
+        (!priv || isQualified(p, priv)) &&
+        !p.absent.includes(weekIndex) &&
+        (!opts.extra || opts.extra(p)) &&
+        !used.has(displayName(p)),
+    )
     if (candidates.length === 0) return null
     candidates.sort(
       (a, b) =>
         eff(a) - eff(b) ||
-        tieHash(`${a}|${weekIndex}|${tab}`) - tieHash(`${b}|${weekIndex}|${tab}`),
+        tieHash(`${displayName(a)}|${weekIndex}|${tab}`) -
+          tieHash(`${displayName(b)}|${weekIndex}|${tab}`),
     )
-    return candidates[0]
+    return displayName(candidates[0])
+  }
+
+  /**
+   * Auswahl-Optionen für einen Schülerteil-Slot (gold): Vortrag → männlich;
+   * Gesprächsführer/-partner → Gesamtlast (Schwestern zuerst), Älteste/DAG nur
+   * als letzte Wahl (Malus); Partner zusätzlich gleiches Geschlecht wie der Führer.
+   */
+  const ministryOpts = (item: PartItem, slot: SlotAssignment) => {
+    if (slot.male) return { extra: (p: Person) => !p.female }
+    if (slot.bereichsKey === 'schulung') {
+      return { byTotal: true, malus: (p: Person) => !isPlainPublisher(p) }
+    }
+    if (slot.bereichsKey === 'schulungPartner') {
+      const leadName = item.names.find((n) => n.bereichsKey === 'schulung')?.name ?? ''
+      const lead = leadName ? persons.find((p) => displayName(p) === leadName) : undefined
+      return {
+        byTotal: true,
+        malus: (p: Person) => !isPlainPublisher(p),
+        extra: (p: Person) => partnerGenderOk(lead, p),
+      }
+    }
+    return {}
   }
 
   // Fester Wachtturm-Studium-Leiter, sonst Vertreter (beide anwesend + frei),
@@ -370,7 +412,8 @@ export function autoAssignMeeting(
       for (const slot of item.names) {
         if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
         if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
-        const name = pick('part', slot.bereichsKey)
+        // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
+        const name = pick('part', slot.bereichsKey, ministryOpts(item, slot))
         if (name) {
           slot.name = name
           claim('part', name)
@@ -486,11 +529,19 @@ export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Pa
   const meeting = weeks[sel.wi][sel.tab]
   const item = meeting.sections[sel.si].items[sel.ii]
   if (isSong(item)) return null
-  const current = item.names[sel.ni]?.name ?? ''
+  const slot = item.names[sel.ni]
+  const current = slot?.name ?? ''
   if (!current) return null
-  const isStudent = sel.priv === 'schulung' || item.title.startsWith('Bibellesung')
+  const isStudent =
+    sel.priv === 'schulung' || sel.priv === 'schulungPartner' || item.title.startsWith('Bibellesung')
   if (!isStudent) return null
-  const role = item.names[sel.ni]?.rolle ?? ''
+  // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
+  // getrennte Slots im selben Punkt. Alt-Daten trugen den Partner als "mit X" im
+  // Rollentext — als Rückfall weiter unterstützt.
+  const leadName = item.names.find((n) => n.bereichsKey === 'schulung')?.name ?? ''
+  const partnerName = item.names.find((n) => n.bereichsKey === 'schulungPartner')?.name ?? ''
+  const role = slot?.rolle ?? ''
+  const legacyPartner = role.startsWith('mit ') ? role.slice(4) : ''
   const metaFrags = (item.meta ?? '').split(' · ')
   const setting =
     metaFrags.find(
@@ -498,8 +549,8 @@ export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Pa
     ) ?? ''
   const point = metaFrags.find((f) => /^(th|lmd) /.test(f)) ?? ''
   return {
-    name: current,
-    partner: role.startsWith('mit ') ? role.slice(4) : '',
+    name: leadName || current, // Bibellesung hat keinen schulung-Slot → aktueller Name
+    partner: partnerName || legacyPartner,
     date: meeting.date.split(' · ').slice(0, 2).join(' · '),
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,

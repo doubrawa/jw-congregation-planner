@@ -23,6 +23,7 @@ export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   bibellesung: 'Bibellesung',
   leser: 'Leser',
   schulung: 'Schulungsaufgaben',
+  schulungPartner: 'Schulungsaufgaben Partner',
   studium: 'Studium leiten',
   treffpunkt: 'Treffpunkte leiten',
   wtLeiter: 'Wachtturm-Studium-Leiter',
@@ -41,6 +42,7 @@ export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'bibellesung',
   'leser',
   'schulung',
+  'schulungPartner',
   'studium',
   'treffpunkt',
 ]

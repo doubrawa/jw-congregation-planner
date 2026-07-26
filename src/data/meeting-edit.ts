@@ -196,6 +196,21 @@ export function lacAdd(
   return next
 }
 
+/**
+ * Gesprächspartner-Slot eines Schülerteils an-/abschalten. Ist bereits ein
+ * schulungPartner-Slot vorhanden, wird er entfernt, sonst hinzugefügt. Nur am
+ * Primär-Meeting — die Sprachvarianten tragen keine Zuteilungen.
+ */
+export function togglePartner(weeks: Week[], wi: number, tab: MeetingKey, si: number, ii: number): Week[] {
+  const next = structuredClone(weeks)
+  const item = next[wi][tab].sections[si]?.items[ii]
+  if (!item || isSong(item)) return weeks
+  const idx = item.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
+  if (idx >= 0) item.names.splice(idx, 1)
+  else item.names.push({ name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' })
+  return next
+}
+
 /* ---- Öffentlicher Vortrag (Wochenende) ----------------------------------- */
 
 /** Platzhalter-Titel der Wochenend-Vorlage, solange kein Thema eingetragen ist. */

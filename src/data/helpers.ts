@@ -138,7 +138,28 @@ export function serviceQualKey(serviceKey: string): string {
  * Personen-Detail.
  */
 export function isQualified(p: Person, priv: string): boolean {
+  // Ein Gesprächsführer (schulung) darf auch als Partner einspringen — daher
+  // deckt der Partner-Slot beide Bereiche ab.
+  if (priv === 'schulungPartner') return Boolean(p.priv.schulungPartner || p.priv.schulung)
   return Boolean(p.priv[priv])
+}
+
+/**
+ * Darf `cand` als Gesprächspartner zu `lead` eingeteilt werden? Die Anweisungen
+ * verlangen dasselbe Geschlecht (oder Familienangehörige — Familienbezüge kennt
+ * die App noch nicht, daher vorerst strikt gleiches Geschlecht). Die Regel ist
+ * hier gekapselt, damit die Familien-Ausnahme später an EINER Stelle ergänzt
+ * werden kann. Ohne zugeteilten Führer (leer) keine Einschränkung.
+ */
+export function partnerGenderOk(lead: Person | undefined, cand: Person): boolean {
+  if (!lead) return true
+  return Boolean(lead.female) === Boolean(cand.female)
+  // TODO Familienbezüge: || istFamilie(lead, cand)
+}
+
+/** Nur-Verkündiger (kein Ältester/Dienstamtgehilfe) — Pool für Gesprächsteile. */
+export function isPlainPublisher(p: Person): boolean {
+  return p.role === 'verkuendiger'
 }
 
 /**

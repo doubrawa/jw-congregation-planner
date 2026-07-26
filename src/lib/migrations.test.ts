@@ -11,6 +11,7 @@ function priv(overrides: Record<string, boolean> = {}): Qualifications {
     bibellesung: false,
     leser: false,
     schulung: false,
+    schulungPartner: false,
     studium: false,
     treffpunkt: false,
     ...overrides,

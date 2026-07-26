@@ -136,6 +136,7 @@ export type AppAction =
   | { type: 'setTab'; tab: MeetingTab }
   | { type: 'setTheme'; theme: Theme }
   | { type: 'setFontScale'; scale: FontScale }
+  | { type: 'togglePartner'; si: number; ii: number } // Gesprächspartner-Slot an/aus
   | { type: 'openNotifs' }
   | { type: 'closeNotifs' }
   | { type: 'markAllRead' }

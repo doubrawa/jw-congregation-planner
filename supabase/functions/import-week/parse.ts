@@ -24,6 +24,7 @@ export interface ImportedSlot {
   name: string
   rolle?: string
   bereichsKey?: string
+  male?: boolean // nur männlich (Schülerteil-Vortrag)
 }
 export interface ImportedPart {
   num?: number
@@ -288,6 +289,33 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   return { range, book, current: false, mid, we: weekendTemplate(range) }
 }
 
+// Schülerteil-Typen (deutscher Titel/Meta — die deutsche Wochenseite wird beim
+// Import ohnehin geladen; für andere Sprachen erkennt die Heuristik nicht und es
+// bleibt bei 1 Slot, den Partner fügt der Planer dann von Hand hinzu).
+const CONVO_RE = /Gespräche beginnen|Interesse fördern|Menschen zu Jüngern machen|Jünger machen/i
+const TALK_RE = /Ansprache|\bVortrag\b/i
+const BELIEF_RE = /Glaubensansichten erklären/i
+const SETTING_RE = /Von Haus zu Haus|Informell|In der Öffentlichkeit/i
+
+/**
+ * Personen-Slots eines Schülerteils (gold-Sektion): Gesprächsteile bekommen
+ * Führer + Gesprächspartner (2), Vorträge/Ansprachen genau einen männlichen
+ * Teilnehmer. „Unsere Glaubensansichten erklären" ist je nach Format Ansprache
+ * (1, männlich) oder gespielte Szene (2) — erkannt an einem Predigtdienst-Rahmen
+ * im Meta. Unbekannt → 1 Slot (Partner ggf. manuell).
+ */
+export function ministryNames(title: string, meta: string): ImportedSlot[] {
+  const talk = { name: '', bereichsKey: 'schulung', male: true }
+  const convo: ImportedSlot[] = [
+    { name: '', bereichsKey: 'schulung' },
+    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+  ]
+  if (CONVO_RE.test(title)) return convo
+  if (TALK_RE.test(title)) return [talk]
+  if (BELIEF_RE.test(title)) return SETTING_RE.test(meta) ? convo : [talk]
+  return [{ name: '', bereichsKey: 'schulung' }]
+}
+
 /** Titel/Meta/Slots je Punkt festlegen — kennt jetzt die Position in der Sektion. */
 function finalizeParts(recs: PartRec[]): void {
   const lastOf: Partial<Record<SecColor, PartRec>> = {}
@@ -315,7 +343,10 @@ function finalizeParts(recs: PartRec[]): void {
     } else {
       part.title = title
       part.meta = joinMeta(settingOf(time), min, sourceOf(time))
-      part.names = [{ name: '', bereichsKey: color === 'gold' ? 'schulung' : 'vortrag' }]
+      part.names =
+        color === 'gold'
+          ? ministryNames(title, part.meta)
+          : [{ name: '', bereichsKey: 'vortrag' }]
     }
   }
 }

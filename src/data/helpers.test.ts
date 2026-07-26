@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   displayName,
   initials,
+  isPlainPublisher,
   isQualified,
+  partnerGenderOk,
   personCompare,
   roleLabel,
   serviceQualKey,
@@ -19,6 +21,7 @@ function priv(overrides: Record<string, boolean> = {}): Qualifications {
     bibellesung: false,
     leser: false,
     schulung: false,
+    schulungPartner: false,
     studium: false,
     treffpunkt: false,
     ...overrides,
@@ -38,6 +41,33 @@ function person(patch: Partial<Person>): Person {
     ...patch,
   }
 }
+
+describe('Schülerteil-Qualifikation & Partner-Geschlecht', () => {
+  it('isQualified: schulungPartner deckt schulung UND schulungPartner ab', () => {
+    const fuehrer = person({ priv: priv({ schulung: true }) })
+    const nurPartner = person({ priv: priv({ schulungPartner: true }) })
+    const keiner = person({ priv: priv() })
+    expect(isQualified(fuehrer, 'schulungPartner')).toBe(true) // Führer darf auch Partner
+    expect(isQualified(nurPartner, 'schulungPartner')).toBe(true)
+    expect(isQualified(keiner, 'schulungPartner')).toBe(false)
+    expect(isQualified(nurPartner, 'schulung')).toBe(false) // aber nicht Führer
+  })
+
+  it('partnerGenderOk: gleiches Geschlecht; ohne Führer keine Einschränkung', () => {
+    const bruder = person({ female: false })
+    const schwester = person({ female: true })
+    expect(partnerGenderOk(bruder, person({ female: false }))).toBe(true)
+    expect(partnerGenderOk(bruder, person({ female: true }))).toBe(false)
+    expect(partnerGenderOk(schwester, person({ female: true }))).toBe(true)
+    expect(partnerGenderOk(undefined, person({ female: true }))).toBe(true)
+  })
+
+  it('isPlainPublisher: nur Verkündiger, nicht Ältester/DAG', () => {
+    expect(isPlainPublisher(person({ role: 'verkuendiger' }))).toBe(true)
+    expect(isPlainPublisher(person({ role: 'aeltester' }))).toBe(false)
+    expect(isPlainPublisher(person({ role: 'dienstamtgehilfe' }))).toBe(false)
+  })
+})
 
 describe('Anzeigenamen', () => {
   it('displayName ist der volle Name', () => {

@@ -26,6 +26,7 @@ import {
   lacMove,
   lacMoveTarget,
   lacRemove,
+  togglePartner,
   setOpeningSong,
 } from '../data/meeting-edit'
 import { dict, type Dict } from '../i18n/ui'
@@ -658,6 +659,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         weeks: lacRemove(state.weeks, state.week, mtab(state.tab), action.si, action.ii),
         toast: toastKey(state, 'toastLacDel'),
+      }
+    case 'togglePartner':
+      return {
+        ...state,
+        weeks: togglePartner(state.weeks, state.week, mtab(state.tab), action.si, action.ii),
       }
     case 'lacMove': {
       const weeks = lacMove(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.dir)

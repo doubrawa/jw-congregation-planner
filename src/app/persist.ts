@@ -189,6 +189,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'lacAdjust':
     case 'lacRemove':
     case 'lacAdd':
+    case 'togglePartner':
     case 'talkEdit':
     case 'openingSong':
       saveWeek(congId, prev.week, next.weeks[prev.week])

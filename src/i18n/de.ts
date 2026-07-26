@@ -82,6 +82,8 @@ export const DE = {
     kontenOhnePerson: 'KONTEN OHNE PERSON',
     kontenOhnePersonHint: 'Diese Konten sind noch keiner Person zugeordnet.',
     pushLbl: 'Push-Mitteilungen',
+    partnerHinzu: '+ Gesprächspartner',
+    partnerEntfernen: '– Gesprächspartner',
     schriftgroesse: 'Schriftgröße',
     // Vorlesbare Beschriftungen für Icon-Schaltflächen (Screenreader)
     a11yClose: 'Schließen',
@@ -148,7 +150,7 @@ export const DE = {
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
     rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleVerkIn: 'Verkündigerin',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete', privLesen: 'Bibellesung / Leser',
-    privSchulung: 'Schulungsaufgaben', privStudium: 'Studium leiten',
+    privSchulung: 'Schulungsaufgaben', privSchulungPartner: 'Schulungsaufgaben Partner', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',
     privWtLeiter: 'Wachtturm-Studium-Leiter', privWtVertreter: 'Vertreter (Wachtturm-Studium)',
