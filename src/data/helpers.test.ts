@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   displayName,
+  duplicateDisplayNames,
   familyMembers,
   initials,
   isPlainPublisher,
@@ -136,6 +137,44 @@ describe('Anzeigenamen', () => {
   it('initials aus Vor- und Nachname; leer → Platzhalter', () => {
     expect(initials(person({}))).toBe('SK')
     expect(initials(person({ fn: '', ln: '' }))).toBe('–')
+  })
+})
+
+describe('duplicateDisplayNames', () => {
+  it('meldet einen von zwei Personen geteilten Anzeigenamen mit Anzahl', () => {
+    const list = [
+      person({ id: 'a', fn: 'Josef', ln: 'Mayer' }),
+      person({ id: 'b', fn: 'Josef', ln: 'Mayer' }),
+      person({ id: 'c', fn: 'Simon', ln: 'Krüger' }),
+    ]
+    expect(duplicateDisplayNames(list)).toEqual([{ name: 'Josef Mayer', count: 2 }])
+  })
+
+  it('zählt drei Gleichnamige und sortiert Namen alphabetisch', () => {
+    const list = [
+      person({ id: 'a', fn: 'Josef', ln: 'Mayer' }),
+      person({ id: 'b', fn: 'Josef', ln: 'Mayer' }),
+      person({ id: 'c', fn: 'Josef', ln: 'Mayer' }),
+      person({ id: 'd', fn: 'Anna', ln: 'Berg' }),
+      person({ id: 'e', fn: 'Anna', ln: 'Berg' }),
+    ]
+    expect(duplicateDisplayNames(list)).toEqual([
+      { name: 'Anna Berg', count: 2 },
+      { name: 'Josef Mayer', count: 3 },
+    ])
+  })
+
+  it('ein per dn eindeutig gemachter Name ist keine Dublette mehr', () => {
+    const list = [
+      person({ id: 'a', fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer 1' }),
+      person({ id: 'b', fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer 2' }),
+    ]
+    expect(duplicateDisplayNames(list)).toEqual([])
+  })
+
+  it('leere Namen zählen nicht als Dublette', () => {
+    const list = [person({ id: 'a', fn: '', ln: '' }), person({ id: 'b', fn: '', ln: '' })]
+    expect(duplicateDisplayNames(list)).toEqual([])
   })
 })
 
