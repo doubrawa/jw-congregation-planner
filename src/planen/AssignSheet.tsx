@@ -174,7 +174,12 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     }
     // Gastredner-Slot: Wahl aus der eigenen Versammlung räumt die fremde
     // Herkunfts-Versammlung aus der Rolle
-    dispatch(guest ? { type: 'assign', name: cand.assignName, rolle: guestBase } : { type: 'assign', name: cand.assignName })
+    // pid nur für echte Personen (nicht Gastredner/Gruppen) — stabile Identität.
+    dispatch(
+      guest
+        ? { type: 'assign', name: cand.assignName, rolle: guestBase }
+        : { type: 'assign', name: cand.assignName, pid: sel.groups ? undefined : cand.key },
+    )
   }
 
   return (

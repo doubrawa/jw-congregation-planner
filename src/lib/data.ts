@@ -217,16 +217,49 @@ export function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[]
  * müssen). Sprachvarianten (Week.alt) tragen keine Namen — nur die kanonische
  * Woche wird angefasst.
  */
-export function renameInWeeks(weeks: Week[], oldName: string, newName: string): Week[] {
+export function renameInWeeks(weeks: Week[], id: string, oldName: string, newName: string): Week[] {
+  // Leerer alter Name: nichts tun (sonst würden offene Slots mit leerem Namen
+  // versehentlich mit-umbenannt). Ein zugeteilter Slot trägt immer einen Namen.
   if (!oldName || oldName === newName) return weeks
-  const fix = (n: string): string => (n === oldName ? newName : n)
+  // Ein Slot gehört zur Person, wenn seine pid passt (stabil) — oder, ohne pid
+  // (Hilfsdienste/Altdaten), sein Name dem alten Anzeigenamen entspricht.
   let anyChanged = false
-  const next = weeks.map((week) => {
-    const mid = renameInMeeting(week.mid, oldName, fix)
-    const we = renameInMeeting(week.we, oldName, fix)
-    if (mid === week.mid && we === week.we) return week
+  const renameMeeting = (m: Week['mid']): Week['mid'] => {
+    let changed = false
+    const sections = m.sections.map((section) => ({
+      ...section,
+      items: section.items.map((item) => {
+        if ('song' in item) return item
+        let itemChanged = false
+        const names = item.names.map((slot) => {
+          const mine = slot.pid ? slot.pid === id : slot.name === oldName
+          if (mine && slot.name !== newName) {
+            itemChanged = true
+            return { ...slot, name: newName }
+          }
+          return slot
+        })
+        if (!itemChanged) return item
+        changed = true
+        return { ...item, names }
+      }),
+    }))
+    // Hilfsdienste (Strings, keine pid) — nur über den Namen.
+    let helpersChanged = false
+    const helpers = Object.fromEntries(
+      Object.entries(m.helpers).map(([key, arr]) => [
+        key,
+        arr.map((n) => (n === oldName ? ((helpersChanged = true), newName) : n)),
+      ]),
+    )
+    if (!changed && !helpersChanged) return m
     anyChanged = true
-    return { ...week, mid, we }
+    return { ...m, sections, helpers }
+  }
+  const next = weeks.map((week) => {
+    const mid = renameMeeting(week.mid)
+    const we = renameMeeting(week.we)
+    return mid === week.mid && we === week.we ? week : { ...week, mid, we }
   })
   return anyChanged ? next : weeks
 }
@@ -234,8 +267,8 @@ export function renameInWeeks(weeks: Week[], oldName: string, newName: string): 
 /**
  * Bildet alle zugeteilten Namen (Programmpunkte + Hilfsdienste) einer
  * Zusammenkunft über `fix` ab und liefert eine neue Zusammenkunft. Lieder
- * tragen keine Namen und bleiben unangetastet. Gemeinsame Basis von Lade-
- * Migration (migrateAssignmentNames) und Umbenennung (renameInMeeting).
+ * tragen keine Namen und bleiben unangetastet. Basis der Lade-Migration
+ * (migrateAssignmentNames).
  */
 function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
   return {
@@ -255,16 +288,52 @@ function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week
 }
 
 /**
- * Wie mapMeetingNames, aber referenz-erhaltend: enthält die Zusammenkunft
- * `oldName` nicht, wird die identische Referenz zurückgegeben — so erkennt der
- * Aufrufer (renameInWeeks), welche Wochen tatsächlich neu gespeichert werden.
+ * Backfill der Person-Id (pid) an Programmpunkt-Slots aus dem gespeicherten
+ * Anzeigenamen — für Bestandsdaten, die noch keine pid tragen. Nur eindeutige
+ * Namen werden zugeordnet; mehrdeutige (Dubletten), externe Redner und
+ * Hilfsdienste (ohne pid) bleiben unangetastet. Idempotent (bereits gesetzte
+ * pid bleiben). Rein im Speicher; persistiert beim nächsten Speichern der Woche.
  */
-function renameInMeeting(meeting: Week['mid'], oldName: string, fix: (n: string) => string): Week['mid'] {
-  const referencesOldName =
-    meeting.sections.some((s) =>
-      s.items.some((it) => !('song' in it) && it.names.some((slot) => slot.name === oldName)),
-    ) || Object.values(meeting.helpers).some((arr) => arr.includes(oldName))
-  return referencesOldName ? mapMeetingNames(meeting, fix) : meeting
+export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] {
+  const byName = new Map<string, string>()
+  const dupes = new Set<string>()
+  for (const p of persons) {
+    const n = displayName(p)
+    if (byName.has(n)) dupes.add(n)
+    byName.set(n, p.id)
+  }
+  for (const d of dupes) byName.delete(d) // mehrdeutig → nicht zuordnen
+  if (byName.size === 0) return weeks
+  let anyChanged = false
+  const fixMeeting = (m: Week['mid']): Week['mid'] => {
+    let changed = false
+    const sections = m.sections.map((section) => ({
+      ...section,
+      items: section.items.map((item) => {
+        if ('song' in item) return item
+        let itemChanged = false
+        const names = item.names.map((slot) => {
+          if (slot.pid || !slot.name) return slot
+          const id = byName.get(slot.name)
+          if (!id) return slot
+          itemChanged = true
+          return { ...slot, pid: id }
+        })
+        if (!itemChanged) return item
+        changed = true
+        return { ...item, names }
+      }),
+    }))
+    if (!changed) return m
+    anyChanged = true
+    return { ...m, sections }
+  }
+  const next = weeks.map((week) => {
+    const mid = fixMeeting(week.mid)
+    const we = fixMeeting(week.we)
+    return mid === week.mid && we === week.we ? week : { ...week, mid, we }
+  })
+  return anyChanged ? next : weeks
 }
 
 function personFromRow(r: PersonRow): Person {
@@ -442,8 +511,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     serviceList,
   )
   const weekList = normalizeChairKeys(
-    migrateAssignmentNames(
-      (weeks.data ?? []).map((r) => (r as WeekRow).data),
+    migrateAssignmentPids(
+      migrateAssignmentNames(
+        (weeks.data ?? []).map((r) => (r as WeekRow).data),
+        personList,
+      ),
       personList,
     ),
   )

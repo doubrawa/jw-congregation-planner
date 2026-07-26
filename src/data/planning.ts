@@ -116,16 +116,27 @@ export function assignmentsInMeeting(
 }
 
 /** Setzt einen Slot auf `name` ("" = Zuteilung entfernen). */
-export function assignSlot(weeks: Week[], sel: MeetingSlotSelection, name: string, rolle?: string): Week[] {
+export function assignSlot(
+  weeks: Week[],
+  sel: MeetingSlotSelection,
+  name: string,
+  rolle?: string,
+  pid?: string,
+): Week[] {
   const next = structuredClone(weeks)
   const meeting = next[sel.wi][sel.tab]
   if (sel.kind === 'part') {
     const item = meeting.sections[sel.si].items[sel.ii]
     if (!isSong(item)) {
-      item.names[sel.ni].name = name
+      const slot = item.names[sel.ni]
+      slot.name = name
+      // Person-Id als stabile Identität mitführen; beim Entfernen bzw. bei
+      // externen Rednern (kein pid) das Feld sauber löschen.
+      if (name && pid) slot.pid = pid
+      else delete slot.pid
       // Gastredner-Slots: Rolle trägt die Herkunfts-Versammlung mit
       // ("Gastredner · Vers. Nordheim")
-      if (rolle !== undefined) item.names[sel.ni].rolle = rolle
+      if (rolle !== undefined) slot.rolle = rolle
     }
   } else {
     const arr = meeting.helpers[sel.svc] ?? []
@@ -319,7 +330,7 @@ export function autoAssignMeeting(
     kind: 'part' | 'helper',
     priv: string | null | undefined,
     opts: { extra?: (p: Person) => boolean; byTotal?: boolean; malus?: (p: Person) => boolean } = {},
-  ): string | null => {
+  ): Person | null => {
     // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast. byTotal erzwingt
     // die Gesamtlast auch für Aufgaben — für Schülerteile, damit Schwestern (die
     // sonst wenig Last tragen) automatisch häufiger drankommen, Brüder aber nicht.
@@ -347,7 +358,7 @@ export function autoAssignMeeting(
         tieHash(`${displayName(a)}|${weekIndex}|${tab}`) -
           tieHash(`${displayName(b)}|${weekIndex}|${tab}`),
     )
-    return displayName(candidates[0])
+    return candidates[0]
   }
 
   /**
@@ -374,13 +385,11 @@ export function autoAssignMeeting(
 
   // Fester Wachtturm-Studium-Leiter, sonst Vertreter (beide anwesend + frei),
   // sonst normale Auswahl unter allen „studium“-Qualifizierten.
-  const pickConductor = (): string | null => {
-    const designated = (flag: 'wtLeiter' | 'wtVertreter'): string | undefined => {
-      const person = persons.find(
+  const pickConductor = (): Person | null => {
+    const designated = (flag: 'wtLeiter' | 'wtVertreter'): Person | undefined =>
+      persons.find(
         (p) => p.priv[flag] && !p.absent.includes(weekIndex) && !used.has(displayName(p)),
       )
-      return person ? displayName(person) : undefined
-    }
     return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
   }
 
@@ -392,10 +401,11 @@ export function autoAssignMeeting(
       if (isSong(item)) continue
       for (const slot of item.names) {
         if (slot.rolle === 'Leiter' && !slot.name) {
-          const name = pickConductor()
-          if (name) {
-            slot.name = name
-            claim('part', name)
+          const person = pickConductor()
+          if (person) {
+            slot.name = displayName(person)
+            slot.pid = person.id
+            claim('part', slot.name)
           } else {
             unfilled++
           }
@@ -413,10 +423,11 @@ export function autoAssignMeeting(
         if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
         if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
         // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
-        const name = pick('part', slot.bereichsKey, ministryOpts(item, slot))
-        if (name) {
-          slot.name = name
-          claim('part', name)
+        const person = pick('part', slot.bereichsKey, ministryOpts(item, slot))
+        if (person) {
+          slot.name = displayName(person)
+          slot.pid = person.id
+          claim('part', slot.name)
         } else {
           unfilled++
         }
@@ -429,10 +440,12 @@ export function autoAssignMeeting(
   const opening = meeting.sections.find((s) => s.label === LABEL_EROEFFNUNG)
   if (opening) {
     const openingSlots = opening.items.flatMap((i) => (isSong(i) ? [] : i.names))
-    const vorsitz = openingSlots.find((s) => s.rolle === 'Vorsitz')?.name
+    const vorsitzSlot = openingSlots.find((s) => s.rolle === 'Vorsitz')
+    const vorsitz = vorsitzSlot?.name
     const gebet = openingSlots.find((s) => s.rolle === 'Gebet')
     if (vorsitz && gebet && !gebet.name) {
       gebet.name = vorsitz
+      if (vorsitzSlot?.pid) gebet.pid = vorsitzSlot.pid // dieselbe Person betet
       totalLoad.set(vorsitz, tl(vorsitz) + 1)
       partLoad.set(vorsitz, pl(vorsitz) + 1)
       count++
@@ -455,10 +468,12 @@ export function autoAssignMeeting(
         arr[pos] = cleaningGroup ? cleaningGroup.name : `Gruppe ${1 + (weekIndex % 3)}`
         count++
       } else {
-        const name = pick('helper', serviceQualKey(svc.key))
-        if (name) {
-          arr[pos] = name
-          claim('helper', name)
+        // Hilfsdienste bleiben namensbasiert (helpers speichert Strings) —
+        // pid-Umstellung der Hilfsdienste ist ein separater Schritt.
+        const person = pick('helper', serviceQualKey(svc.key))
+        if (person) {
+          arr[pos] = displayName(person)
+          claim('helper', arr[pos])
         } else {
           unfilled++
         }
@@ -631,7 +646,7 @@ function eachAssignedSlot(
   weeks: Week[],
   services: Service[],
   meetings: string,
-  visit: (name: string, key: string, task: () => MyTask) => void,
+  visit: (name: string, key: string, task: () => MyTask, pid?: string) => void,
 ): void {
   const offsets = meetingDayOffsets(meetings)
   weeks.forEach((week, wi) => {
@@ -661,7 +676,7 @@ function eachAssignedSlot(
                 status: 'offen',
                 s89: buildS89ForSlot(weeks, sel),
               }
-            })
+            }, slot.pid)
           })
         })
       })
@@ -697,11 +712,17 @@ export function deriveMyTasks(
   personName: string,
   confirmations: ConfirmationMap,
   meetings = '',
+  personId?: string,
 ): MyTask[] {
   const tasks: MyTask[] = []
-  if (!personName) return tasks
-  eachAssignedSlot(weeks, services, meetings, (name, key, task) => {
-    if (name !== personName) return
+  if (!personName && !personId) return tasks
+  eachAssignedSlot(weeks, services, meetings, (name, key, task, pid) => {
+    // Stabile Zuordnung über die Person-Id, wenn der Slot eine trägt (und wir
+    // die Id kennen). Sonst Rückfall auf den Anzeigenamen (Hilfsdienste,
+    // externe Redner, Altdaten) — verhindert, dass Namensgleiche fremde
+    // Aufgaben sehen.
+    const mine = pid && personId ? pid === personId : name === personName
+    if (!mine) return
     tasks.push({ ...task(), status: confirmations[key] ?? 'offen' })
   })
   return tasks

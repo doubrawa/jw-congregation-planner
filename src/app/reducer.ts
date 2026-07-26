@@ -129,7 +129,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
   const weeks = localizedWeeks(state.weeks, jwCode)
   const myTasks = me
-    ? deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings)
+    ? deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings, me.id)
     : []
   return {
     ...state,
@@ -295,7 +295,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         const oldName = displayName(oldPerson)
         const newName = displayName({ ...oldPerson, ...action.patch })
         if (oldName !== newName) {
-          next.weeks = renameInWeeks(state.weeks, oldName, newName)
+          next.weeks = renameInWeeks(state.weeks, action.id, oldName, newName)
           next.pendingNames = state.pendingNames.map((n) => (n === oldName ? newName : n))
         }
       }
@@ -454,7 +454,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
         }
       }
-      const weeks = assignSlot(state.weeks, sel, action.name, action.rolle)
+      const weeks = assignSlot(state.weeks, sel, action.name, action.rolle, action.pid)
       const notifs = action.name
         ? pushNotif(
             state.notifs,

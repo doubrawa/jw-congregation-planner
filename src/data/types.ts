@@ -187,7 +187,9 @@ export type SectionColor =
 
 /** Ein zugeteilter Name auf einem Programmpunkt. Leerer Name = offener Slot. */
 export interface SlotAssignment {
-  name: string
+  name: string // Anzeigename (Cache); bei pid aus der Person abgeleitet/gepflegt
+  pid?: string // Person-Id der Zuteilung — stabile Identität (statt Name-Match).
+  //            Fehlt bei externen Rednern (Gastredner/Kreisaufseher) und Altdaten.
   rolle?: string // Rollenlabel: Vorsitz, Gebet, Leiter, Leser, Gesprächspartner …
   bereichsKey?: QualificationKey | string // nötige Qualifikation für den Slot
   male?: boolean // Slot nur männlich besetzbar (z. B. Schülerteil-Vortrag)
