@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { migrateAssignmentNames, migrateServicePrivs, normalizePriv, renameInWeeks } from './data'
-import type { Meeting, Person, Qualifications, Service, Week } from '../data/types'
+import {
+  migrateAssignmentNames,
+  migrateAssignmentPids,
+  migrateServicePrivs,
+  normalizePriv,
+  renameInWeeks,
+} from './data'
+import type { Meeting, PartItem, Person, Qualifications, Service, Week } from '../data/types'
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {
@@ -149,7 +155,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
   const week = (): Week => ({ range: '', book: '', current: false, mid: meeting(), we: meeting() })
 
   it('ersetzt exakt den alten Anzeigenamen in Programmpunkten und Hilfsdiensten', () => {
-    const [w] = renameInWeeks([week()], 'Simon Krüger', 'Simon Müller')
+    const [w] = renameInWeeks([week()], 'p1', 'Simon Krüger', 'Simon Müller')
     const item = w.mid.sections[0].items[0]
     expect('names' in item && item.names[0].name).toBe('Simon Müller')
     expect('names' in item && item.names[1].name).toBe('Bernhard Mauz') // andere unberührt
@@ -159,16 +165,51 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
 
   it('lässt Wochen ohne Treffer als identische Referenz', () => {
     const weeks = [week()]
-    expect(renameInWeeks(weeks, 'Niemand Da', 'Neu')).toBe(weeks)
-    expect(renameInWeeks(weeks, 'Simon Krüger', 'Simon Krüger')).toBe(weeks) // kein Wechsel
+    expect(renameInWeeks(weeks, 'p1', 'Niemand Da', 'Neu')).toBe(weeks)
+    expect(renameInWeeks(weeks, 'p1', 'Simon Krüger', 'Simon Krüger')).toBe(weeks) // kein Wechsel
   })
 
   it('rührt nur die betroffene Woche an (unbetroffene behalten ihre Referenz)', () => {
     const w0 = week() // enthält Simon Krüger
     const w1: Week = { range: 'leer', book: '', current: false, mid: emptyMeeting(), we: emptyMeeting() }
-    const next = renameInWeeks([w0, w1], 'Simon Krüger', 'Simon Müller')
+    const next = renameInWeeks([w0, w1], 'p1', 'Simon Krüger', 'Simon Müller')
     expect(next[0]).not.toBe(w0)
     expect(next[1]).toBe(w1) // unverändert → gleiche Referenz (kein DB-Write)
+  })
+})
+
+describe('Personen-Id-Bindung (pid)', () => {
+  const emptyMid = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
+  const wk = (slots: Array<{ name: string; pid?: string }>): Week => ({
+    range: '', book: '', current: false,
+    mid: {
+      date: '', end: '',
+      sections: [{ label: 'X', farbe: 'petrol', items: [{ num: 1, title: 'P', meta: '', names: slots }] }],
+      helpers: {},
+    },
+    we: emptyMid(),
+  })
+  const p = (id: string, fn: string): Person => ({
+    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', absent: [], priv: priv(),
+  })
+  const partNames = (w: Week): PartItem['names'] => (w.mid.sections[0].items[0] as PartItem).names
+
+  it('migrateAssignmentPids: eindeutige Namen bekommen pid, mehrdeutige nicht', () => {
+    const persons = [p('pA', 'Anna'), p('pM1', 'Max'), p('pM2', 'Max')] // "Max" mehrdeutig
+    const [w] = migrateAssignmentPids([wk([{ name: 'Anna' }, { name: 'Max' }])], persons)
+    expect(partNames(w)[0].pid).toBe('pA') // eindeutig zugeordnet
+    expect(partNames(w)[1].pid).toBeUndefined() // Dublette → keine Zuordnung
+  })
+
+  it('migrateAssignmentPids lässt gesetzte pid unberührt (idempotent, Referenz stabil)', () => {
+    const weeks = [wk([{ name: 'Anna', pid: 'schon' }])]
+    expect(migrateAssignmentPids(weeks, [p('pA', 'Anna')])).toBe(weeks)
+  })
+
+  it('renameInWeeks über pid: nur der Slot der richtigen Person; Namensgleiche bleiben', () => {
+    const [w] = renameInWeeks([wk([{ name: 'Max', pid: 'pM1' }, { name: 'Max', pid: 'pM2' }])], 'pM1', 'Max', 'Max Eins')
+    expect(partNames(w)[0].name).toBe('Max Eins') // pid pM1 → umbenannt
+    expect(partNames(w)[1].name).toBe('Max') // pid pM2 → unberührt trotz gleichem Namen
   })
 })
 

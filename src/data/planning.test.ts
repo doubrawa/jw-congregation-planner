@@ -339,6 +339,16 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     expect(tasks[0].title).toBe('Lied 1 · Gebet · Einleitende Worte · Vorsitz')
   })
 
+  it('ordnet Aufgaben über pid zu — Namensgleiche sehen keine fremden Aufgaben', () => {
+    const w = buildDemoWeeks()
+    const part = w[0].mid.sections.flatMap((s) => s.items).find((it) => !isSong(it)) as PartItem
+    part.names[0].name = 'Max Muster'
+    part.names[0].pid = 'pMax'
+    // Person mit passender pid sieht die Aufgabe; gleichnamige mit anderer pid nicht.
+    expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, '', 'pMax').length).toBeGreaterThan(0)
+    expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, '', 'pAndere')).toEqual([])
+  })
+
   it('übernimmt den Status aus der ConfirmationMap', () => {
     const open = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
     const conf = { [open[0].id]: 'bestätigt', [open[1].id]: 'verhindert' } as const
