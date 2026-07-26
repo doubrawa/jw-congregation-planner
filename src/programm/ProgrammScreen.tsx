@@ -122,6 +122,7 @@ function ProgramMeeting({
         <div className="prog-helpers-grid">
           {state.services.map((service) => {
             const assigned = (meeting.helpers[service.key] ?? [])
+              .map((slot) => slot.name)
               .filter(Boolean)
               .slice(0, service.count)
               .map((n) => tu(n))

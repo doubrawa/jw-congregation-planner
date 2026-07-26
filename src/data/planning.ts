@@ -63,7 +63,7 @@ export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
     const item = meeting.sections[sel.si].items[sel.ii]
     return isSong(item) ? '' : (item.names[sel.ni]?.name ?? '')
   }
-  return meeting.helpers[sel.svc]?.[sel.pos] ?? ''
+  return meeting.helpers[sel.svc]?.[sel.pos]?.name ?? ''
 }
 
 /**
@@ -106,8 +106,8 @@ export function assignmentsInMeeting(
   })
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
-    arr.forEach((n, pos) => {
-      if (n !== name) return
+    arr.forEach((slot, pos) => {
+      if (slot.name !== name) return
       if (exclude?.kind === 'helper' && exclude.svc === svc.key && exclude.pos === pos) return
       out.push({ text: svc.name, lang: 'u' })
     })
@@ -140,8 +140,8 @@ export function assignSlot(
     }
   } else {
     const arr = meeting.helpers[sel.svc] ?? []
-    while (arr.length <= sel.pos) arr.push('')
-    arr[sel.pos] = name
+    while (arr.length <= sel.pos) arr.push({ name: '' })
+    arr[sel.pos] = name && pid ? { name, pid } : { name }
     meeting.helpers[sel.svc] = arr
   }
   return next
@@ -158,7 +158,7 @@ export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   }
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
-    for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]) count++
+    for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]?.name) count++
   }
   return count
 }
@@ -191,7 +191,8 @@ export function changedSlotKeys(
     const prevArr = prev.helpers[svc.key] ?? []
     const nextArr = next.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if ((prevArr[pos] ?? '') !== (nextArr[pos] ?? '')) keys.push(helperTaskKey(wi, tab, svc.key, pos))
+      if ((prevArr[pos]?.name ?? '') !== (nextArr[pos]?.name ?? ''))
+        keys.push(helperTaskKey(wi, tab, svc.key, pos))
     }
   }
   return keys
@@ -228,7 +229,7 @@ export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     let n = 0
-    for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]) n++
+    for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]?.name) n++
     if (n > 0) out.push({ text: svc.name, lang: 'u', n })
   }
   return out
@@ -294,7 +295,7 @@ export function autoAssignMeeting(
     }
   }
   for (const arr of Object.values(meeting.helpers)) {
-    for (const name of arr) if (name) used.add(name)
+    for (const slot of arr) if (slot.name) used.add(slot.name)
   }
 
   // Gleitendes Fenster: nur ±WINDOW Wochen um die geplante Woche zählen, damit
@@ -460,20 +461,18 @@ export function autoAssignMeeting(
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if (arr[pos]) continue
-      while (arr.length <= pos) arr.push('')
+      if (arr[pos]?.name) continue
+      while (arr.length <= pos) arr.push({ name: '' })
       if (svc.groups) {
-        // Reinigung rotiert über die echten Predigtdienstgruppen; ohne
-        // konfigurierte Gruppen Fallback auf die alte Gruppe-1–3-Rotation.
-        arr[pos] = cleaningGroup ? cleaningGroup.name : `Gruppe ${1 + (weekIndex % 3)}`
+        // Reinigung rotiert über die echten Predigtdienstgruppen (keine Person,
+        // daher keine pid); ohne konfigurierte Gruppen Fallback auf 1–3.
+        arr[pos] = { name: cleaningGroup ? cleaningGroup.name : `Gruppe ${1 + (weekIndex % 3)}` }
         count++
       } else {
-        // Hilfsdienste bleiben namensbasiert (helpers speichert Strings) —
-        // pid-Umstellung der Hilfsdienste ist ein separater Schritt.
         const person = pick('helper', serviceQualKey(svc.key))
         if (person) {
-          arr[pos] = displayName(person)
-          claim('helper', arr[pos])
+          arr[pos] = { name: displayName(person), pid: person.id }
+          claim('helper', arr[pos].name)
         } else {
           unfilled++
         }
@@ -522,8 +521,8 @@ export function clearAssignments(
     for (const key of Object.keys(meeting.helpers)) {
       const arr = meeting.helpers[key] ?? []
       for (let i = 0; i < arr.length; i++) {
-        if (arr[i]) {
-          arr[i] = ''
+        if (arr[i].name) {
+          arr[i] = { name: '' }
           count++
         }
       }
@@ -684,10 +683,10 @@ function eachAssignedSlot(
         if (svc.groups) continue // Gruppen-Rotation hat keine persönliche Aufgabe
         const arr = meeting.helpers[svc.key] ?? []
         for (let pos = 0; pos < svc.count; pos++) {
-          const name = arr[pos]
-          if (!name) continue
+          const slot = arr[pos]
+          if (!slot?.name) continue
           const key = helperTaskKey(wi, tab, svc.key, pos)
-          visit(name, key, () => ({
+          visit(slot.name, key, () => ({
             id: key,
             title: svc.name,
             date: taskDate(meeting),
@@ -695,7 +694,7 @@ function eachAssignedSlot(
             at,
             status: 'offen',
             s89: null,
-          }))
+          }), slot.pid)
         }
       }
     }
@@ -790,7 +789,7 @@ function meetingHelperNames(meeting: Meeting, services: Service[]): string[] {
     if (svc.groups) continue
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if (arr[pos]) names.push(arr[pos])
+      if (arr[pos]?.name) names.push(arr[pos].name)
     }
   }
   return names

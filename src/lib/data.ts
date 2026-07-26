@@ -31,6 +31,7 @@ import type {
   FsInstance,
   FsRule,
   Group,
+  HelperSlot,
   Invite,
   Member,
   Notification,
@@ -244,12 +245,20 @@ export function renameInWeeks(weeks: Week[], id: string, oldName: string, newNam
         return { ...item, names }
       }),
     }))
-    // Hilfsdienste (Strings, keine pid) — nur über den Namen.
+    // Hilfsdienste: wie Programmpunkte über pid (Rückfall Name); die
+    // Reinigungs-Rotation („Gruppe N") trägt keine pid und keinen Personennamen.
     let helpersChanged = false
     const helpers = Object.fromEntries(
       Object.entries(m.helpers).map(([key, arr]) => [
         key,
-        arr.map((n) => (n === oldName ? ((helpersChanged = true), newName) : n)),
+        arr.map((slot) => {
+          const mine = slot.pid ? slot.pid === id : slot.name === oldName
+          if (mine && slot.name !== newName) {
+            helpersChanged = true
+            return { ...slot, name: newName }
+          }
+          return slot
+        }),
       ]),
     )
     if (!changed && !helpersChanged) return m
@@ -282,17 +291,20 @@ function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week
       ),
     })),
     helpers: Object.fromEntries(
-      Object.entries(meeting.helpers).map(([key, arr]) => [key, arr.map(fix)]),
+      Object.entries(meeting.helpers).map(([key, arr]) => [
+        key,
+        arr.map((slot) => ({ ...slot, name: fix(slot.name) })),
+      ]),
     ),
   }
 }
 
 /**
- * Backfill der Person-Id (pid) an Programmpunkt-Slots aus dem gespeicherten
- * Anzeigenamen — für Bestandsdaten, die noch keine pid tragen. Nur eindeutige
- * Namen werden zugeordnet; mehrdeutige (Dubletten), externe Redner und
- * Hilfsdienste (ohne pid) bleiben unangetastet. Idempotent (bereits gesetzte
- * pid bleiben). Rein im Speicher; persistiert beim nächsten Speichern der Woche.
+ * Backfill der Person-Id (pid) an Programmpunkt- UND Hilfsdienst-Slots aus dem
+ * gespeicherten Anzeigenamen — für Bestandsdaten ohne pid. Nur eindeutige Namen
+ * werden zugeordnet; mehrdeutige (Dubletten), externe Redner und die
+ * Reinigungs-Rotation („Gruppe N") bleiben unangetastet. Idempotent. Rein im
+ * Speicher; persistiert beim nächsten Speichern der Woche.
  */
 export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] {
   const byName = new Map<string, string>()
@@ -324,14 +336,60 @@ export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] 
         return { ...item, names }
       }),
     }))
+    // Hilfsdienste ebenso (Gruppen-Namen matchen keine Person → bleiben ohne pid).
+    const helpers = Object.fromEntries(
+      Object.entries(m.helpers).map(([key, arr]) => [
+        key,
+        arr.map((slot) => {
+          if (slot.pid || !slot.name) return slot
+          const id = byName.get(slot.name)
+          if (!id) return slot
+          changed = true
+          return { ...slot, pid: id }
+        }),
+      ]),
+    )
     if (!changed) return m
     anyChanged = true
-    return { ...m, sections }
+    return { ...m, sections, helpers }
   }
   const next = weeks.map((week) => {
     const mid = fixMeeting(week.mid)
     const we = fixMeeting(week.we)
     return mid === week.mid && we === week.we ? week : { ...week, mid, we }
+  })
+  return anyChanged ? next : weeks
+}
+
+/**
+ * Alt-Format der Hilfsdienste (reine Namens-Strings) auf das Slot-Objekt
+ * { name, pid? } heben. Bestandsdaten in der DB haben helpers als string[];
+ * muss vor allen weiteren Wochen-Transformationen laufen. Idempotent.
+ */
+export function normalizeWeekHelpers(weeks: Week[]): Week[] {
+  const fix = (m: Week['mid']): Week['mid'] => {
+    let changed = false
+    const helpers = Object.fromEntries(
+      Object.entries(m.helpers).map(([key, arr]) => [
+        key,
+        (arr as unknown[]).map((e) => {
+          if (typeof e === 'string') {
+            changed = true
+            return { name: e }
+          }
+          return e as HelperSlot
+        }),
+      ]),
+    )
+    return changed ? { ...m, helpers } : m
+  }
+  let anyChanged = false
+  const next = weeks.map((week) => {
+    const mid = fix(week.mid)
+    const we = fix(week.we)
+    if (mid === week.mid && we === week.we) return week
+    anyChanged = true
+    return { ...week, mid, we }
   })
   return anyChanged ? next : weeks
 }
@@ -513,7 +571,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const weekList = normalizeChairKeys(
     migrateAssignmentPids(
       migrateAssignmentNames(
-        (weeks.data ?? []).map((r) => (r as WeekRow).data),
+        normalizeWeekHelpers((weeks.data ?? []).map((r) => (r as WeekRow).data)),
         personList,
       ),
       personList,

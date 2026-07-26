@@ -37,7 +37,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
             <div className="plan-helper-label">{tu(service.name).toUpperCase()}</div>
             <div className="plan-slots">
               {Array.from({ length: service.count }, (_, pos) => {
-                const name = assigned[pos] ?? ''
+                const name = assigned[pos]?.name ?? ''
                 const isGroup = name.startsWith('Gruppe')
                 return (
                   <SlotChip

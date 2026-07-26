@@ -93,7 +93,7 @@ function weeksContainName(weeks: Week[], name: string): boolean {
           if (!isSong(it) && (it as PartItem).names.some((n) => n.name === name)) return true
         }
       }
-      for (const arr of Object.values(w[tab].helpers)) if (arr.includes(name)) return true
+      for (const arr of Object.values(w[tab].helpers)) if (arr.some((s) => s.name === name)) return true
     }
   }
   return false
