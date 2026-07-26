@@ -21,7 +21,7 @@
 
 .login-wordmark {
   font-family: var(--font-serif);
-  font-size: 34px;
+  font-size: calc(34px * var(--fs));
   font-weight: 500;
   line-height: 1.15;
   margin-top: 10px;
@@ -30,7 +30,7 @@
 .login-sub {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs));
   color: var(--mut);
   margin-top: 10px;
 }
@@ -45,7 +45,7 @@
 
 .login-label {
   display: block;
-  font-size: 10px;
+  font-size: calc(10px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.14em;
   color: var(--mut);
@@ -62,7 +62,7 @@
   border-radius: var(--r-input);
   border: 1px solid var(--bord);
   background: var(--card);
-  font-size: 14px;
+  font-size: calc(14px * var(--fs));
   color: var(--ink);
 }
 
@@ -73,7 +73,7 @@
 .login-forgot {
   display: block;
   margin: 16px auto 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs));
   color: var(--acc);
 }
 
@@ -93,7 +93,7 @@
 
 .login-note {
   text-align: center;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs));
   color: var(--mut2);
   margin-top: 20px;
 }

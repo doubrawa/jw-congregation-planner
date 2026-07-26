@@ -17,6 +17,7 @@ describe('isViewAction', () => {
     'selectPerson',
     'openNotifs',
     'setTheme',
+    'setFontScale',
     'setLang',
     'showToast',
     'hideToast',

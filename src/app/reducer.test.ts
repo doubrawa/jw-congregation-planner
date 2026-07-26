@@ -28,6 +28,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     week: 0,
     tab: 'mid',
     theme: 'weiss',
+    fontScale: 1,
     planner: DEMO_PLANNER,
     congregation: { ...CONGREGATION },
     congregationId: null,
@@ -164,6 +165,7 @@ describe('einfache UI-Setter', () => {
   it('setTab / setTheme / Slot / Notif-Panel', () => {
     expect(reducer(makeState(), { type: 'setTab', tab: 'we' }).tab).toBe('we')
     expect(reducer(makeState(), { type: 'setTheme', theme: 'graphit' }).theme).toBe('graphit')
+    expect(reducer(makeState(), { type: 'setFontScale', scale: 1.3 }).fontScale).toBe(1.3)
     expect(reducer(makeState(), { type: 'openNotifs' }).notifOpen).toBe(true)
     expect(reducer(makeState({ notifOpen: true }), { type: 'closeNotifs' }).notifOpen).toBe(false)
     const sel = { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } as const

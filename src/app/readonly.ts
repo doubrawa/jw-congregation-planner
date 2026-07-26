@@ -40,6 +40,7 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   'stopImport',
   // Rein lokale Vorlieben (localStorage, keine Versammlungsdaten)
   'setTheme',
+  'setFontScale',
   'setLang',
   // Rückmeldungen
   'showToast',

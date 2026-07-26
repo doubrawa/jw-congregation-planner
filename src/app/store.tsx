@@ -76,6 +76,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (meta && bg) meta.content = bg
   }, [state.theme])
 
+  // Schriftgröße auf <html> spiegeln + Wahl merken. Rein gerätebezogen (wie
+  // Theme), landet also nicht in der Datenbank — jeder stellt sein eigenes
+  // Gerät ein. index.html setzt denselben Wert vor dem ersten Paint.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--fs', String(state.fontScale))
+    localStorage.setItem('fontScale', String(state.fontScale))
+  }, [state.fontScale])
+
   // App-Sprache merken + Schreibrichtung (RTL für Arabisch/Hebräisch/…)
   useEffect(() => {
     localStorage.setItem('lang', state.lang)

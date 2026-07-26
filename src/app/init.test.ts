@@ -69,6 +69,15 @@ describe('Theme / Sprache aus localStorage', () => {
     localStorage.setItem('lang', 'klingonisch')
     expect(initialState().lang).toBe('de')
   })
+
+  it('übernimmt eine gültige Schriftgröße, sonst Standard 1', () => {
+    localStorage.setItem('fontScale', '1.3')
+    expect(initialState().fontScale).toBe(1.3)
+    localStorage.setItem('fontScale', '1.1') // nicht auf der Skala
+    expect(initialState().fontScale).toBe(1)
+    localStorage.removeItem('fontScale')
+    expect(initialState().fontScale).toBe(1)
+  })
 })
 
 describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
@@ -94,6 +103,14 @@ describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
     expect(s.planner).toBe(false) // pl=0 → Verkündiger-Ansicht
     location.hash = '#s=planen&pl=1'
     expect(initialState().planner).toBe(true)
+  })
+
+  it('fs=<Faktor> setzt die Schriftgröße (Doku-Screenshots)', () => {
+    vi.stubEnv('DEV', true)
+    location.hash = '#s=profil&fs=1.45'
+    expect(initialState().fontScale).toBe(1.45)
+    location.hash = '#s=profil&fs=1.1' // nicht auf der Skala → ignoriert (Standard)
+    expect(initialState().fontScale).toBe(1)
   })
 
   it('shot=1 aktiviert den Screenshot-Modus (data-shot am <html>)', () => {

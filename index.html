@@ -40,6 +40,12 @@
           // Statusleiste sofort passend; store.tsx verfeinert auf --bg.
           var meta = document.querySelector('meta[name="theme-color"]')
           if (meta) meta.content = THEMES[stored] ? '#191a17' : '#ffffff'
+          // Schriftgröße ebenfalls vor dem Paint (sonst springt die ganze
+          // Seite). Stufen wie FONT_SCALES in src/data/constants.ts.
+          var fs = localStorage.getItem('fontScale')
+          if (['0.9', '1', '1.15', '1.3', '1.45'].indexOf(fs) >= 0) {
+            document.documentElement.style.setProperty('--fs', fs)
+          }
         } catch (e) {
           /* localStorage nicht verfügbar — Standard bleibt Reinweiß */
         }
