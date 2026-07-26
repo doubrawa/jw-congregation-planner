@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useT } from '../i18n/useT'
 import './components.css'
 
 interface WeekNavProps {
@@ -13,6 +14,7 @@ interface WeekNavProps {
 
 /** Runde Blätter-Buttons ‹ › mit Mittelteil — Programm und Planen. */
 export function WeekNav({ canPrev, canNext, onPrev, onNext, children, className }: WeekNavProps) {
+  const { t } = useT()
   return (
     <div className={className ? `week-nav ${className}` : 'week-nav'}>
       <button
@@ -20,7 +22,7 @@ export function WeekNav({ canPrev, canNext, onPrev, onNext, children, className 
         className="week-arrow"
         onClick={onPrev}
         disabled={!canPrev}
-        aria-label="Vorherige Woche"
+        aria-label={t.a11yPrevWeek}
       >
         ‹
       </button>
@@ -30,7 +32,7 @@ export function WeekNav({ canPrev, canNext, onPrev, onNext, children, className 
         className="week-arrow"
         onClick={onNext}
         disabled={!canNext}
-        aria-label="Nächste Woche"
+        aria-label={t.a11yNextWeek}
       >
         ›
       </button>

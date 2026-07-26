@@ -3,6 +3,7 @@ import { CURRENT_PERSON_ID } from '../data/demo'
 import { displayName } from '../data/helpers'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
 import { LOCALES } from '../i18n/langs'
+import { relativeDayLabel } from '../i18n/relative-time'
 import { fill, useT } from '../i18n/useT'
 import type { MeetingTab } from '../data/types'
 import './dashboard.css'
@@ -28,6 +29,12 @@ export function DashboardScreen() {
     .toUpperCase()
 
   const nextTask = state.myTasks[0] ?? null
+  // Live-Countdown aus dem echten Datum (Intl); im Demo-Modus der feste Chip-Text.
+  const nextChip = nextTask
+    ? nextTask.at != null
+      ? relativeDayLabel(nextTask.at, state.lang)
+      : tu(nextTask.chip)
+    : ''
   const unread = state.notifs.filter((n) => !n.read).length
   const toConfirm = state.myTasks.filter((task) => task.status === 'offen').length
 
@@ -56,7 +63,7 @@ export function DashboardScreen() {
         <div className="dash-hero">
           <div className="dash-hero-head">
             <span className="dash-hero-label">{t.dashNextTask}</span>
-            {nextTask.chip && <span className="dash-hero-chip">{tu(nextTask.chip)}</span>}
+            {nextChip && <span className="dash-hero-chip">{nextChip}</span>}
           </div>
           <div className="dash-hero-title">{tp(nextTask.title)}</div>
           <div className="dash-hero-date">{tp(nextTask.date)}</div>

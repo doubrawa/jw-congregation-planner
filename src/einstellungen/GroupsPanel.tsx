@@ -53,7 +53,7 @@ export function GroupsPanel() {
             <button
               type="button"
               className="svc-remove"
-              aria-label="✕"
+              aria-label={t.a11yRemove}
               onClick={() => dispatch({ type: 'removeGroup', id: group.id })}
             >
               ✕

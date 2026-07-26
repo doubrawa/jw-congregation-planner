@@ -76,7 +76,7 @@ export function KontoCard({ person }: { person: Person }) {
             <button
               type="button"
               className="svc-remove"
-              aria-label="✕"
+              aria-label={t.a11yRemove}
               onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
             >
               ✕
@@ -107,7 +107,7 @@ export function KontoCard({ person }: { person: Person }) {
               <button
                 type="button"
                 className="svc-remove"
-                aria-label="✕"
+                aria-label={t.a11yRemove}
                 onClick={() => dispatch({ type: 'removeInvite', id: invite.id })}
               >
                 ✕

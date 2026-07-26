@@ -100,7 +100,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                 <button
                   type="button"
                   className="fs-remove"
-                  aria-label="✕"
+                  aria-label={t.a11yRemove}
                   onClick={() => dispatch({ type: 'fsInstRemove', wi, id: inst.id })}
                 >
                   ✕
@@ -141,14 +141,14 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
               ))}
             </select>
           )}
-          <select className="fs-select" value={wd} aria-label="Wochentag" onChange={(e) => setWd(Number(e.target.value))}>
+          <select className="fs-select" value={wd} aria-label={t.a11yWeekday} onChange={(e) => setWd(Number(e.target.value))}>
             {wdOptions.map((d) => (
               <option key={d} value={d}>
                 {wdName(d)}
               </option>
             ))}
           </select>
-          <select className="fs-select" value={time} aria-label="Zeit" onChange={(e) => setTime(e.target.value)}>
+          <select className="fs-select" value={time} aria-label={t.a11yTime} onChange={(e) => setTime(e.target.value)}>
             {TIME_OPTIONS.map((tm) => (
               <option key={tm} value={tm}>
                 {tm}

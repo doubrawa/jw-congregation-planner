@@ -35,7 +35,7 @@ export function RemindersPanel() {
             <button
               type="button"
               className="stepper-btn"
-              aria-label="–"
+              aria-label={t.a11yDecrease}
               onClick={() => dispatch({ type: 'changeReminder', key, delta: -1 })}
             >
               –
@@ -44,7 +44,7 @@ export function RemindersPanel() {
             <button
               type="button"
               className="stepper-btn"
-              aria-label="+"
+              aria-label={t.a11yIncrease}
               onClick={() => dispatch({ type: 'changeReminder', key, delta: 1 })}
             >
               +

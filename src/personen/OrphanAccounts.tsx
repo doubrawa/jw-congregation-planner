@@ -48,7 +48,7 @@ export function OrphanAccounts() {
               <button
                 type="button"
                 className="svc-remove"
-                aria-label="✕"
+                aria-label={t.a11yRemove}
                 onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
               >
                 ✕

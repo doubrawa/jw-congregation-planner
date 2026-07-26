@@ -19,7 +19,7 @@ export function NotificationsPanel() {
   return (
     <>
       <div className="notif-backdrop" onClick={() => dispatch({ type: 'closeNotifs' })} />
-      <div className="notif-panel" role="dialog" aria-modal="true" aria-label="Mitteilungen">
+      <div className="notif-panel" role="dialog" aria-modal="true" aria-label={t.mitteilungen}>
         <div className="notif-head">
           <h2 className="notif-title">{t.mitteilungen}</h2>
           <div className="notif-actions">

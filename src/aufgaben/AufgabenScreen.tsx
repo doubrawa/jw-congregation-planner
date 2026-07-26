@@ -4,6 +4,7 @@ import { DatePicker } from '../components/DatePicker'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { fullName } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
+import { relativeDayLabel } from '../i18n/relative-time'
 import { fill, useT } from '../i18n/useT'
 import './aufgaben.css'
 
@@ -84,7 +85,11 @@ export function AufgabenScreen() {
                 )}
               </div>
             </div>
-            {task.chip && <span className="auf-chip">{tu(task.chip)}</span>}
+            {(() => {
+              // Live-Countdown aus dem echten Datum (Intl); im Demo der Chip-Text.
+              const label = task.at != null ? relativeDayLabel(task.at, state.lang) : tu(task.chip)
+              return label && <span className="auf-chip">{label}</span>
+            })()}
           </div>
         ))}
       </div>
@@ -105,6 +110,8 @@ export function AufgabenScreen() {
               locale={LOCALES[state.lang]}
               placeholder={t.datumPh}
               ariaLabel={t.von}
+              prevLabel={t.a11yPrevMonth}
+              nextLabel={t.a11yNextMonth}
             />
           </div>
           <div className="abs-field">
@@ -116,6 +123,8 @@ export function AufgabenScreen() {
               min={from || undefined}
               placeholder={t.datumPh}
               ariaLabel={t.bis}
+              prevLabel={t.a11yPrevMonth}
+              nextLabel={t.a11yNextMonth}
             />
           </div>
         </div>
@@ -148,7 +157,7 @@ export function AufgabenScreen() {
             <button
               type="button"
               className="abs-remove"
-              aria-label="✕"
+              aria-label={t.a11yRemove}
               onClick={() => dispatch({ type: 'removeAbsence', id: absence.id })}
             >
               ✕

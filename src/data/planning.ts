@@ -18,6 +18,7 @@ import {
   serviceQualKey,
   workloadOf,
 } from './helpers'
+import { meetingDateMs, meetingDayOffsets } from './meeting-dates'
 import type {
   ConfirmationMap,
   Group,
@@ -578,11 +579,15 @@ function taskDate(meeting: Meeting): string {
 function eachAssignedSlot(
   weeks: Week[],
   services: Service[],
+  meetings: string,
   visit: (name: string, key: string, task: () => MyTask) => void,
 ): void {
+  const offsets = meetingDayOffsets(meetings)
   weeks.forEach((week, wi) => {
     for (const tab of TABS) {
       const meeting = week[tab]
+      // Echtes Datum der Zusammenkunft (nur bei importierten Wochen) → Countdown.
+      const at = meetingDateMs(week.start, offsets[tab])
       meeting.sections.forEach((section, si) => {
         section.items.forEach((item, ii) => {
           if (isSong(item)) return
@@ -601,6 +606,7 @@ function eachAssignedSlot(
                 title: rolle && !rolle.startsWith('mit ') ? `${item.title} · ${rolle}` : item.title,
                 date: taskDate(meeting),
                 chip: '',
+                at,
                 status: 'offen',
                 s89: buildS89ForSlot(weeks, sel),
               }
@@ -620,6 +626,7 @@ function eachAssignedSlot(
             title: svc.name,
             date: taskDate(meeting),
             chip: '',
+            at,
             status: 'offen',
             s89: null,
           }))
@@ -638,10 +645,11 @@ export function deriveMyTasks(
   services: Service[],
   personName: string,
   confirmations: ConfirmationMap,
+  meetings = '',
 ): MyTask[] {
   const tasks: MyTask[] = []
   if (!personName) return tasks
-  eachAssignedSlot(weeks, services, (name, key, task) => {
+  eachAssignedSlot(weeks, services, meetings, (name, key, task) => {
     if (name !== personName) return
     tasks.push({ ...task(), status: confirmations[key] ?? 'offen' })
   })
@@ -658,7 +666,8 @@ export function derivePendingNames(
   confirmations: ConfirmationMap,
 ): string[] {
   const pending = new Set<string>()
-  eachAssignedSlot(weeks, services, (name, key) => {
+  // meetings ist für die reine Namensmenge irrelevant (kein Countdown nötig).
+  eachAssignedSlot(weeks, services, '', (name, key) => {
     if (confirmations[key] !== 'bestätigt') pending.add(name)
   })
   return [...pending]
