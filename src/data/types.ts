@@ -109,7 +109,8 @@ export interface Qualifications {
   gebet: boolean
   bibellesung: boolean // Bibellesung (Schätze aus Gottes Wort)
   leser: boolean // Leser (Versammlungsbibelstudium / Wachtturm-Studium)
-  schulung: boolean // Schulungsaufgaben (auch Schwestern)
+  schulung: boolean // Schulungsaufgaben (Gesprächsführer/Vortrag; auch Schwestern)
+  schulungPartner: boolean // nur als Gesprächspartner im Schülerteil (nicht Führer)
   studium: boolean // Studium leiten
   treffpunkt: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
   wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
@@ -129,6 +130,7 @@ export type QualificationKey =
   | 'bibellesung'
   | 'leser'
   | 'schulung'
+  | 'schulungPartner'
   | 'studium'
   | 'treffpunkt'
   | 'wtLeiter'
@@ -185,8 +187,9 @@ export type SectionColor =
 /** Ein zugeteilter Name auf einem Programmpunkt. Leerer Name = offener Slot. */
 export interface SlotAssignment {
   name: string
-  rolle?: string // Rollenlabel: Vorsitz, Gebet, Leiter, Leser, "mit A. Hoffmann" …
+  rolle?: string // Rollenlabel: Vorsitz, Gebet, Leiter, Leser, Gesprächspartner …
   bereichsKey?: QualificationKey | string // nötige Qualifikation für den Slot
+  male?: boolean // Slot nur männlich besetzbar (z. B. Schülerteil-Vortrag)
 }
 
 /** Lied zwischen Programmpunkten (zentriert, kursiv) — eigene Zeile. */

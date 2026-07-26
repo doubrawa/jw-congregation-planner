@@ -93,6 +93,11 @@ export function MeetingSection({
         const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
         const editable = isLac && rawMins != null
         const mPos = movables.indexOf(ii)
+        // Schülerteil (Gesprächsführer-Slot vorhanden) → Partner an-/abschaltbar.
+        // Sprachunabhängig über die Qualifikation erkannt, nicht über den Label-Text.
+        const canPartner = !isSong(rawItem) && rawItem.names.some((n) => n.bereichsKey === 'schulung')
+        const hasPartner =
+          !isSong(rawItem) && rawItem.names.some((n) => n.bereichsKey === 'schulungPartner')
         return (
           <div key={ii} className="plan-item">
             <div className="plan-item-head">
@@ -148,6 +153,15 @@ export function MeetingSection({
                 />
               ))}
             </div>
+            {canPartner && (
+              <button
+                type="button"
+                className="partner-toggle"
+                onClick={() => dispatch({ type: 'togglePartner', si, ii })}
+              >
+                {hasPartner ? t.partnerEntfernen : t.partnerHinzu}
+              </button>
+            )}
             {editable && (
               <div className="lac-edit">
                 <button

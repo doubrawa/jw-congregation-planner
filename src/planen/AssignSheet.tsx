@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
-import { displayName, initials, isQualified, isSong, personCompare, roleLabel, workloadOf } from '../data/helpers'
+import { displayName, initials, isQualified, isSong, partnerGenderOk, personCompare, roleLabel, workloadOf } from '../data/helpers'
 import { fsLeaderValue } from '../data/fs'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
@@ -94,6 +94,25 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     return out
   }
 
+  // Geschlechtsregeln der Schülerteile: der aktuelle Slot kann männlich-only
+  // sein (Vortrag), und ein Gesprächspartner muss zum Führer passen (vorerst
+  // gleiches Geschlecht — Familien-Ausnahme später, gekapselt in partnerGenderOk).
+  const partSel = sel.kind === 'part' ? sel : null
+  const partItem = partSel
+    ? state.weeks[partSel.wi][partSel.tab].sections[partSel.si].items[partSel.ii]
+    : null
+  const curSlot = partItem && partSel && !isSong(partItem) ? partItem.names[partSel.ni] : undefined
+  const leadName =
+    partItem && partSel && !isSong(partItem) && partSel.priv === 'schulungPartner'
+      ? (partItem.names.find((n, i) => i !== partSel.ni && n.bereichsKey === 'schulung')?.name ?? '')
+      : ''
+  const lead = leadName ? state.persons.find((p) => displayName(p) === leadName) : undefined
+  const genderOk = (p: (typeof state.persons)[number]): boolean => {
+    if (curSlot?.male && p.female) return false
+    if (partSel?.priv === 'schulungPartner' && !partnerGenderOk(lead, p)) return false
+    return true
+  }
+
   const candidates: Candidate[] =
     sel.kind === 'fs'
       ? [...state.persons]
@@ -129,7 +148,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
       })
     : [...state.persons]
         .sort(personCompare) // alphabetisch; Abwesende wandern stabil ans Ende
-        .filter((p) => !sel.priv || isQualified(p, sel.priv))
+        .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && genderOk(p))
         .map((p) => {
           const name = displayName(p)
           const workload = workloadOf(state.weeks, name)

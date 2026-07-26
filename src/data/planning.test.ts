@@ -13,7 +13,7 @@ import {
   derivePendingNames,
   weekConflicts,
 } from './planning'
-import type { Meeting, PartItem, Section, Service } from './types'
+import type { Meeting, PartItem, Person, Section, Service } from './types'
 
 /** Namen aller belegten Slots eines Meetings (Programmpunkte + Hilfsdienste). */
 function assignedNames(week: ReturnType<typeof buildDemoWeeks>[number], tab: 'mid' | 'we'): string[] {
@@ -358,6 +358,64 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
     const conf = Object.fromEntries(tasks.map((t) => [t.id, 'bestätigt' as const]))
     expect(derivePendingNames(weeks, DEMO_SERVICES, conf)).not.toContain('Simon Krüger')
+  })
+})
+
+describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
+  const qp = (o: Partial<Record<string, boolean>>): Person['priv'] =>
+    ({
+      vorsitzMid: false, vorsitzWe: false, vortrag: false, gebet: false, bibellesung: false,
+      leser: false, schulung: false, schulungPartner: false, studium: false, treffpunkt: false,
+      ...o,
+    }) as Person['priv']
+  const p = (id: string, fn: string, female: boolean, role: Person['role'], priv: Person['priv']): Person => ({
+    id, fn, ln: 'T', role, female, tel: '', mail: '', absent: [], priv, grp: null,
+  })
+
+  function scenario() {
+    const base = buildDemoWeeks()[0]
+    const week = {
+      ...base,
+      mid: {
+        ...base.mid,
+        helpers: { ton: ['Bruno T'] }, // Bruder ist schon belegt → nicht mehr frei
+        sections: [
+          {
+            label: 'UNS IM DIENST VERBESSERN',
+            farbe: 'gold' as const,
+            items: [
+              { num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.', names: [
+                { name: '', bereichsKey: 'schulung' },
+                { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+              ] },
+              { num: 6, title: 'Vortrag', meta: '5 Min.', names: [{ name: '', bereichsKey: 'schulung', male: true }] },
+            ],
+          },
+        ],
+      },
+    }
+    const persons: Person[] = [
+      p('s1', 'Sara', true, 'verkuendiger', qp({ schulung: true })),
+      p('s2', 'Sonja', true, 'verkuendiger', qp({ schulung: true })),
+      p('b1', 'Bruno', false, 'verkuendiger', qp({ schulung: true, [serviceQualKeyTon()]: true })),
+      p('e1', 'Emil', false, 'aeltester', qp({ schulung: true })),
+    ]
+    return { weeks: [week], persons }
+  }
+  // ton-Qualikey wie in der App
+  function serviceQualKeyTon() { return 'svc:ton' }
+
+  it('Gesprächsteil: Führer + Partner gleiches Geschlecht; Vortrag männlich; Ältester zuletzt', () => {
+    const { weeks, persons } = scenario()
+    const res = autoAssignMeeting(weeks, 0, 'mid', persons, DEMO_SERVICES, [], 'parts')
+    const gold = res.weeks[0].mid.sections[0].items as PartItem[]
+    const lead = gold[0].names[0].name
+    const partner = gold[0].names[1].name
+    const talk = gold[1].names[0].name
+    // Führer und Partner sind die beiden Schwestern (Bruno belegt, Emil = Malus)
+    expect([lead, partner].sort()).toEqual(['Sara T', 'Sonja T'])
+    // Vortrag geht an den einzigen freien Bruder (Emil), nie an eine Schwester
+    expect(talk).toBe('Emil T')
   })
 })
 

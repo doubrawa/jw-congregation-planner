@@ -1,5 +1,33 @@
 import { describe, expect, it } from 'vitest'
-import { parseWorkbookWeek, type ImportedPart, type ImportedSong } from './parse'
+import { ministryNames, parseWorkbookWeek, type ImportedPart, type ImportedSong } from './parse'
+
+describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => {
+  it('Gesprächsteile → Führer (schulung) + Gesprächspartner (schulungPartner)', () => {
+    for (const title of ['Gespräche beginnen', 'Interesse fördern', 'Menschen zu Jüngern machen']) {
+      const n = ministryNames(title, 'Von Haus zu Haus · 3 Min.')
+      expect(n.map((s) => s.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
+      expect(n[1].rolle).toBe('Gesprächspartner')
+    }
+  })
+
+  it('Vortrag/Ansprache → genau ein männlicher Slot', () => {
+    const n = ministryNames('Vortrag', '5 Min.')
+    expect(n).toHaveLength(1)
+    expect(n[0]).toMatchObject({ bereichsKey: 'schulung', male: true })
+  })
+
+  it('Unsere Glaubensansichten: mit Predigtdienst-Rahmen → 2 (Szene), sonst 1 (Ansprache, männlich)', () => {
+    expect(ministryNames('Unsere Glaubensansichten erklären', 'Informell · 4 Min.')).toHaveLength(2)
+    const talk = ministryNames('Unsere Glaubensansichten erklären', '5 Min.')
+    expect(talk).toHaveLength(1)
+    expect(talk[0].male).toBe(true)
+  })
+
+  it('unbekannter Titel → 1 Slot schulung (Partner ggf. manuell)', () => {
+    const n = ministryNames('Etwas ganz Neues', '5 Min.')
+    expect(n).toEqual([{ name: '', bereichsKey: 'schulung' }])
+  })
+})
 
 // Synthetische Fixtures: bilden nur die *Struktur* der jw.org-Wochenseite nach
 // (Tags, data-pid, Farbklassen, Noten-Icon, 1./2./3.-Nummer, „(Zahl …)“-Zeit) —
