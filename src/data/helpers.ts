@@ -115,6 +115,27 @@ export function personCompare(a: Person, b: Person): number {
   )
 }
 
+/**
+ * Anzeigenamen, die sich zwei oder mehr Personen teilen. Solche Dubletten sind
+ * ein Datenproblem für den Planer: wo ein Slot keine Person-Id trägt
+ * (Hilfsdienste, externe Beteiligte, Altdaten) ordnen deriveMyTasks/
+ * derivePendingNames/Konfliktprüfung über den Anzeigenamen zu — Namensgleiche
+ * teilen sich dann fälschlich Aufgaben. Abhilfe: je Person einen eindeutigen
+ * Anzeigenamen (dn) vergeben. Liefert je betroffenem Namen die Personenzahl,
+ * alphabetisch sortiert.
+ */
+export function duplicateDisplayNames(persons: Person[]): Array<{ name: string; count: number }> {
+  const counts = new Map<string, number>()
+  for (const p of persons) {
+    const name = displayName(p)
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .filter(([, n]) => n >= 2)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+}
+
 /** Rollenlabel, für Frauen in weiblicher Form ("Verkündigerin"). */
 export function roleLabel(p: Person): string {
   const label = ROLE_LABEL[p.role]

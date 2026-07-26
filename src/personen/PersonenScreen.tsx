@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
-import { emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel } from '../data/helpers'
+import { duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { fill, useT } from '../i18n/useT'
@@ -29,6 +29,7 @@ function PersonList() {
   const sorted = [...state.persons].sort(personCompare)
   const filtered = sorted.filter((p) => !query || fullName(p).toLowerCase().includes(query))
   const production = state.dataStatus !== 'demo'
+  const dupes = duplicateDisplayNames(state.persons)
 
   // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen. Mit
   // konfigurierter Domain gehen die Mails direkt raus (send-invite); die
@@ -85,6 +86,22 @@ function PersonList() {
         <h1 className="screen-title">{t.personen}</h1>
         <span className="screen-head-note">{fill(t.personenCount, { n: state.persons.length })}</span>
       </div>
+
+      {dupes.length > 0 && (
+        <div className="pers-dupes">
+          <div className="pers-dupes-head">
+            <span className="pers-dupes-badge">!</span>
+            <span className="pers-dupes-title">{t.dublettenTitle}</span>
+            <span className="pers-dupes-count">{dupes.length}</span>
+          </div>
+          <div className="pers-dupes-hint">{t.dublettenHint}</div>
+          {dupes.map((d) => (
+            <div key={d.name} className="pers-dupes-row">
+              <span dir="auto">{fill(t.dublettenRow, { name: d.name, n: d.count })}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <input
         type="text"

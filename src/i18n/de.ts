@@ -210,5 +210,9 @@ export const DE = {
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
     konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',
-    konfliktStreak: '{name} ist {n} Wochen in Folge eingeteilt'
+    konfliktStreak: '{name} ist {n} Wochen in Folge eingeteilt',
+    // Warnung doppelte Anzeigenamen (Personen)
+    dublettenTitle: 'DOPPELTE ANZEIGENAMEN',
+    dublettenHint: 'Gleiche Anzeigenamen führen zu falscher Aufgabenzuordnung. Vergib je Person einen eindeutigen Anzeigenamen.',
+    dublettenRow: '„{name}" · {n} Personen'
 }

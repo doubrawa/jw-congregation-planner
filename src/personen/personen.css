@@ -280,3 +280,88 @@
 .pers-delete:hover {
   background: var(--tWein);
 }
+
+/* ---- Warnung: doppelte Anzeigenamen --------------------------------------
+ * Teilen sich zwei Personen denselben Anzeigenamen, ordnet die App Aufgaben
+ * dort, wo kein Slot eine Person-Id trägt (Hilfsdienste/externe/Altdaten),
+ * falsch zu. Der Planer soll einen eindeutigen Anzeigenamen vergeben. Wein-
+ * Warnoptik wie die Konflikt-Banner im Planen (Badge/Zähler AA-geprüft). */
+.pers-dupes {
+  margin-top: 14px;
+  background: var(--tWein);
+  border: 1.5px solid var(--wein);
+  border-radius: 14px;
+  padding: 12px 14px 13px;
+  box-shadow: 0 3px 12px -6px var(--wein);
+}
+
+.pers-dupes-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pers-dupes-badge {
+  flex: none;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--wein);
+  color: var(--onAcc);
+  font-size: calc(13px * var(--fs));
+  font-weight: 700;
+  line-height: calc(21px * var(--fs));
+  text-align: center;
+}
+
+.pers-dupes-title {
+  flex: 1;
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--wein);
+}
+
+.pers-dupes-count {
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border-radius: var(--r-pill);
+  background: var(--wein);
+  color: var(--onAcc);
+  font-size: calc(12px * var(--fs));
+  font-weight: 700;
+  line-height: calc(22px * var(--fs));
+  text-align: center;
+}
+
+.pers-dupes-hint {
+  margin-top: 8px;
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.pers-dupes-row {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-top: 8px;
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.4;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.pers-dupes-row::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  align-self: flex-start;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--wein);
+}
