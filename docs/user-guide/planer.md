@@ -58,6 +58,19 @@ wechselst du zwischen **Zusammenkunft unter der Woche**, **am Wochenende** und d
 - Die Legende „✓ bestätigt · … wartet auf Bestätigung" zeigt dir den
   Bestätigungsstatus jeder Person direkt an der Zuteilung.
 
+**Schülerteile im Abschnitt „Uns im Dienst verbessern"** brauchen je nach Art
+ein oder zwei Personen. Gesprächsteile (Gespräche beginnen, Interesse fördern,
+Menschen zu Jüngern machen) haben einen **Hauptteilnehmer** und einen
+**Gesprächspartner** – beide werden getrennt zugeteilt. Vorträge/Ansprachen
+haben nur einen (männlichen) Teilnehmer. Die App legt die passende Zahl beim
+Import automatisch an; mit **„+ / – Gesprächspartner"** unter dem Teil kannst du
+den Partner bei Bedarf hinzufügen oder entfernen. Für den Gesprächspartner
+werden nur Personen mit demselben Geschlecht vorgeschlagen; wer nur als Partner
+(nicht als Gesprächsführer) eingeteilt werden soll, bekommt in den Personendaten
+den Bereich **„Schulungsaufgaben Partner"**. Die automatische Zuteilung setzt
+Gesprächsteile bevorzugt mit Verkündigern und Schwestern (nicht mit Ältesten/
+Dienstamtgehilfen) und achtet auf gleiches Geschlecht der beiden Partner.
+
 Das Programm selbst lässt sich hier ebenfalls anpassen: Im Abschnitt **Unser Leben
 als Christ** kannst du Punkte hinzufügen, in der Länge (Minuten) anpassen,
 verschieben oder entfernen; beim Wochenende trägst du das **Vortragsthema** und
