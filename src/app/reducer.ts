@@ -6,7 +6,7 @@
 
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { fsAddInst, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
-import { displayName, overseerGroup } from '../data/helpers'
+import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
@@ -664,6 +664,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         weeks: togglePartner(state.weeks, state.week, mtab(state.tab), action.si, action.ii),
+      }
+    case 'setFamily':
+      return {
+        ...state,
+        persons: action.add
+          ? linkFamily(state.persons, action.id, action.memberId)
+          : unlinkFamily(state.persons, action.memberId),
       }
     case 'lacMove': {
       const weeks = lacMove(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.dir)
