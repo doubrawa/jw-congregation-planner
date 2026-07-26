@@ -26,7 +26,7 @@ function makeWeek(): Week {
         ],
       },
     ],
-    helpers: { mik: ['S. Krüger'] },
+    helpers: { mik: [{ name: 'S. Krüger' }] },
   }
   const altMid: Meeting = {
     date: 'Tuesday, September 8 · 19:00',
@@ -82,7 +82,7 @@ describe('localizedWeek (Sprachvarianten)', () => {
     expect(item.meta).toBe('10 min.')
     // Zuteilungen bleiben kanonisch
     expect(item.names[0].name).toBe('T. Lindner')
-    expect(en.mid.helpers.mik).toEqual(['S. Krüger'])
+    expect(en.mid.helpers.mik).toEqual([{ name: 'S. Krüger' }])
     // Lied aus der Variante
     expect(en.mid.sections[0].items[1]).toEqual({ song: 'Song 5' })
   })

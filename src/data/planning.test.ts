@@ -24,7 +24,7 @@ function assignedNames(week: ReturnType<typeof buildDemoWeeks>[number], tab: 'mi
       for (const slot of item.names) if (slot.name) names.push(slot.name)
     }
   }
-  for (const arr of Object.values(week[tab].helpers)) for (const n of arr) if (n) names.push(n)
+  for (const arr of Object.values(week[tab].helpers)) for (const s of arr) if (s.name) names.push(s.name)
   return names
 }
 
@@ -78,7 +78,7 @@ describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
           items: [{ num: 1, title: 'T', meta: '', names: [{ name: 'Wer Da' }] }],
         },
       ],
-      helpers: { mik: ['A', 'B'], rein: ['Gruppe 1'] },
+      helpers: { mik: [{ name: 'A' }, { name: 'B' }], rein: [{ name: 'Gruppe 1' }] },
     }
     expect(openSlotLabels(filled, services)).toHaveLength(0)
   })
@@ -93,7 +93,7 @@ describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
     const item = after.sections[0].items.find((i) => !isSong(i)) as PartItem
     item.names[0].name = 'Neue Person'
     // ein Hilfsdienst-Platz leeren
-    after.helpers.mik = ['', ...(after.helpers.mik ?? []).slice(1)]
+    after.helpers.mik = [{ name: '' }, ...(after.helpers.mik ?? []).slice(1)]
     const keys = changedSlotKeys(before, after, DEMO_SERVICES, 0, 'mid')
     expect(keys).toContain('0|mid|part|0|0|0')
     expect(keys).toContain('0|mid|helper|mik|0')
@@ -166,12 +166,12 @@ describe('Auto-Zuteilung', () => {
     const weeks = buildDemoWeeks()
     for (const w of weeks) w.mid.helpers.rein = []
     const { weeks: next } = autoAssignMeeting(weeks, 4 % 3, 'mid', DEMO_PERSONS, DEMO_SERVICES)
-    expect(next[1].mid.helpers.rein[0]).toBe('Gruppe 2')
+    expect(next[1].mid.helpers.rein[0].name).toBe('Gruppe 2')
   })
 
   it('zählt offen gebliebene, nicht besetzbare Slots als unfilled (≠ „keine offen“)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.zoom = [''] // Zoom-Ordner offen
+    weeks[0].mid.helpers.zoom = [{ name: '' }] // Zoom-Ordner offen
     // Ohne verfügbare Person kann nichts besetzt werden: count 0, aber unfilled > 0
     // (damit die UI „keine passende Person“ statt „keine offenen Zuteilungen“ zeigt).
     const { count, unfilled } = autoAssignMeeting(weeks, 0, 'mid', [], DEMO_SERVICES)
@@ -388,7 +388,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
       ...base,
       mid: {
         ...base.mid,
-        helpers: { ton: ['Bruno T'] }, // Bruder ist schon belegt → nicht mehr frei
+        helpers: { ton: [{ name: 'Bruno T' }] }, // Bruder ist schon belegt → nicht mehr frei
         sections: [
           {
             label: 'UNS IM DIENST VERBESSERN',
@@ -439,22 +439,22 @@ describe('Konfliktprüfungen (Planen)', () => {
 
   it('erkennt Helfer + Aufgabe am selben Tag (helperTask)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = ['Manfred Albrecht'] // ist schon Vorsitz (Programmpunkt) in derselben ZK
+    weeks[0].mid.helpers.ton = [{ name: 'Manfred Albrecht' }] // ist schon Vorsitz (Programmpunkt) in derselben ZK
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
     expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'Manfred Albrecht', tab: 'mid' })
   })
 
   it('erkennt sonstige Mehrfach-Zuteilung (double) — zwei Hilfsdienste', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = ['Xaver Testhelfer'] // nur Hilfsdienste, kein Programmpunkt
-    weeks[0].mid.helpers.mik = ['Xaver Testhelfer', '']
+    weeks[0].mid.helpers.ton = [{ name: 'Xaver Testhelfer' }] // nur Hilfsdienste, kein Programmpunkt
+    weeks[0].mid.helpers.mik = [{ name: 'Xaver Testhelfer' }, { name: '' }]
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
     expect(conflicts).toContainEqual({ kind: 'double', name: 'Xaver Testhelfer', tab: 'mid', count: 2 })
   })
 
   it('erkennt Serien von 3 Wochen in Folge (und nur dort)', () => {
     const weeks = buildDemoWeeks()
-    for (const wi of [0, 1, 2]) weeks[wi].mid.helpers.ton = ['R. Serie']
+    for (const wi of [0, 1, 2]) weeks[wi].mid.helpers.ton = [{ name: 'R. Serie' }]
     const streak = weekConflicts(weeks, 1, [], DEMO_SERVICES).filter((c) => c.kind === 'streak')
     expect(streak).toContainEqual({ kind: 'streak', name: 'R. Serie', count: 3 })
     // Woche 3 gehört nicht zur Serie
@@ -487,7 +487,7 @@ describe('assignmentsInMeeting (Doppelbelegungs-Hinweis)', () => {
         items: [{ title: 'Nach geistigen Schätzen graben', names: [{ name: 'B. Test' }] }],
       },
     ],
-    helpers: { mik: ['A. Muster', ''], rein: ['Gruppe 1'] },
+    helpers: { mik: [{ name: 'A. Muster' }, { name: '' }], rein: [{ name: 'Gruppe 1' }] },
   }
   const services: Service[] = [
     { key: 'mik', name: 'Mikrofone', count: 2, groups: false },

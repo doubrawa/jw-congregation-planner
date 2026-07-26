@@ -4,6 +4,7 @@ import {
   migrateAssignmentPids,
   migrateServicePrivs,
   normalizePriv,
+  normalizeWeekHelpers,
   renameInWeeks,
 } from './data'
 import type { Meeting, PartItem, Person, Qualifications, Service, Week } from '../data/types'
@@ -100,7 +101,9 @@ describe('migrateAssignmentNames (Kurzform → voller Anzeigename)', () => {
         ],
       },
     ],
-    helpers: { mik: ['B. Mauz', 'Gruppe 1', 'S. Krüger', 'Unbekannte Person'] },
+    helpers: {
+      mik: [{ name: 'B. Mauz' }, { name: 'Gruppe 1' }, { name: 'S. Krüger' }, { name: 'Unbekannte Person' }],
+    },
   })
   const week = (): Week => ({ range: '', book: '', current: false, mid: meeting(), we: meeting() })
 
@@ -117,10 +120,10 @@ describe('migrateAssignmentNames (Kurzform → voller Anzeigename)', () => {
     expect('names' in item && item.names[0].name).toBe('Bernhard Mauz')
     expect('names' in item && item.names[1].name).toBe('Josef Mayer 1') // dn gewinnt
     expect(w.mid.helpers.mik).toEqual([
-      'Bernhard Mauz',
-      'Gruppe 1', // Gruppen-Rotation unangetastet
-      'S. Krüger', // mehrdeutig → nicht anfassen
-      'Unbekannte Person', // gehört keiner Person → unangetastet
+      { name: 'Bernhard Mauz' },
+      { name: 'Gruppe 1' }, // Gruppen-Rotation unangetastet
+      { name: 'S. Krüger' }, // mehrdeutig → nicht anfassen
+      { name: 'Unbekannte Person' }, // gehört keiner Person → unangetastet
     ])
   })
 
@@ -150,7 +153,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
         ],
       },
     ],
-    helpers: { mik: ['Simon Krüger', 'Gruppe 1'] },
+    helpers: { mik: [{ name: 'Simon Krüger' }, { name: 'Gruppe 1' }] },
   })
   const week = (): Week => ({ range: '', book: '', current: false, mid: meeting(), we: meeting() })
 
@@ -159,8 +162,8 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
     const item = w.mid.sections[0].items[0]
     expect('names' in item && item.names[0].name).toBe('Simon Müller')
     expect('names' in item && item.names[1].name).toBe('Bernhard Mauz') // andere unberührt
-    expect(w.mid.helpers.mik).toEqual(['Simon Müller', 'Gruppe 1'])
-    expect(w.we.helpers.mik[0]).toBe('Simon Müller') // beide Zusammenkünfte
+    expect(w.mid.helpers.mik).toEqual([{ name: 'Simon Müller' }, { name: 'Gruppe 1' }])
+    expect(w.we.helpers.mik[0].name).toBe('Simon Müller') // beide Zusammenkünfte
   })
 
   it('lässt Wochen ohne Treffer als identische Referenz', () => {
@@ -210,6 +213,35 @@ describe('Personen-Id-Bindung (pid)', () => {
     const [w] = renameInWeeks([wk([{ name: 'Max', pid: 'pM1' }, { name: 'Max', pid: 'pM2' }])], 'pM1', 'Max', 'Max Eins')
     expect(partNames(w)[0].name).toBe('Max Eins') // pid pM1 → umbenannt
     expect(partNames(w)[1].name).toBe('Max') // pid pM2 → unberührt trotz gleichem Namen
+  })
+})
+
+describe('Hilfsdienst-Id-Bindung (helpers)', () => {
+  const emptyMid = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
+  const wkH = (mik: Array<string | { name: string; pid?: string }>): Week => ({
+    range: '', book: '', current: false,
+    // absichtlich als any, um das Alt-Format (Strings) zu simulieren
+    mid: { date: '', end: '', sections: [], helpers: { mik } } as unknown as Meeting,
+    we: emptyMid(),
+  })
+  const p = (id: string, fn: string): Person => ({
+    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', absent: [], priv: priv(),
+  })
+
+  it('normalizeWeekHelpers hebt Alt-Strings auf { name }', () => {
+    const [w] = normalizeWeekHelpers([wkH(['Anna', 'Gruppe 1'])])
+    expect(w.mid.helpers.mik).toEqual([{ name: 'Anna' }, { name: 'Gruppe 1' }])
+  })
+
+  it('migrateAssignmentPids trägt pid an Hilfsdiensten nach (Gruppe bleibt ohne)', () => {
+    const [w] = migrateAssignmentPids([wkH([{ name: 'Anna' }, { name: 'Gruppe 1' }])], [p('pA', 'Anna')])
+    expect(w.mid.helpers.mik[0]).toEqual({ name: 'Anna', pid: 'pA' })
+    expect(w.mid.helpers.mik[1]).toEqual({ name: 'Gruppe 1' }) // Rotation → keine pid
+  })
+
+  it('renameInWeeks trifft den Hilfsdienst über die pid', () => {
+    const [w] = renameInWeeks([wkH([{ name: 'Anna', pid: 'pA' }])], 'pA', 'Anna', 'Anna Neu')
+    expect(w.mid.helpers.mik[0].name).toBe('Anna Neu')
   })
 })
 

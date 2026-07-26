@@ -225,7 +225,7 @@ export function helperWorkload(weeks: Week[], name: string): number {
   for (const week of weeks) {
     for (const meeting of [week.mid, week.we]) {
       for (const assigned of Object.values(meeting.helpers)) {
-        for (const n of assigned) if (n === name) count++
+        for (const slot of assigned) if (slot.name === name) count++
       }
     }
   }

@@ -69,7 +69,7 @@ function helperNames(meeting: Meeting, services: Service[]): string[] {
   const names: string[] = []
   for (const svc of services) {
     if (svc.groups) continue
-    for (const name of meeting.helpers[svc.key] ?? []) if (name) names.push(name)
+    for (const slot of meeting.helpers[svc.key] ?? []) if (slot.name) names.push(slot.name)
   }
   return names
 }
@@ -245,7 +245,7 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
     for (const name of tonNames) counts.set(name, 0)
     for (const week of weeks) {
       for (const meeting of [week.mid, week.we]) {
-        const t = meeting.helpers.ton?.[0]
+        const t = meeting.helpers.ton?.[0]?.name
         if (t && counts.has(t)) counts.set(t, (counts.get(t) ?? 0) + 1)
       }
     }
@@ -259,7 +259,7 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
     const solo = mk([ZOOM], { absent: [0] })
     const zoomOnly: Service[] = [{ key: 'zoom', name: 'Zoom-Ordner', count: 1, groups: false }]
     const w = simulate([solo], zoomOnly, 1)
-    expect(w[0].mid.helpers.zoom?.[0] ?? '').toBe('') // bleibt offen
+    expect(w[0].mid.helpers.zoom?.[0]?.name ?? '').toBe('') // bleibt offen
   })
 })
 
@@ -286,11 +286,11 @@ describe('Gleitendes Fenster (±3 Wochen)', () => {
     const a = named('Anton', 'Anton', [MIK]) // "A. Anton"
     const b = named('Bruno', 'Bruno', [MIK]) // "B. Bruno"
     const weeks: Week[] = Array.from({ length: 6 }, () => wk(emptyMeeting(), emptyMeeting()))
-    weeks[0].mid.helpers.mik = ['Anton Anton'] // weit weg → außerhalb des Fensters von Woche 5
-    weeks[4].mid.helpers.mik = ['Bruno Bruno'] // nah dran → innerhalb des Fensters
+    weeks[0].mid.helpers.mik = [{ name: 'Anton Anton' }] // weit weg → außerhalb des Fensters von Woche 5
+    weeks[4].mid.helpers.mik = [{ name: 'Bruno Bruno' }] // nah dran → innerhalb des Fensters
     // Fenster für Woche 5 = [2..5]: A zählt als 0, B als 1 → A wird gewählt
     const res = autoAssignMeeting(weeks, 5, 'mid', [a, b], MIK1)
-    expect(res.weeks[5].mid.helpers.mik?.[0]).toBe('Anton Anton')
+    expect(res.weeks[5].mid.helpers.mik?.[0]?.name).toBe('Anton Anton')
   })
 })
 
@@ -305,7 +305,7 @@ describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
     ]
     const mik2: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
     const res = autoAssignMeeting(weeks, 1, 'mid', [p, ...mikOnly], mik2)
-    const mik = res.weeks[1].mid.helpers.mik ?? []
+    const mik = (res.weeks[1].mid.helpers.mik ?? []).map((s) => s.name)
     expect(mik).not.toContain('Paul Part') // hohe Gesamtlast → kein Hilfsdienst
     expect(mik.some((n) => n.endsWith('Mik1') || n.endsWith('Mik2') || n.endsWith('Mik3'))).toBe(true) // freie Leute übernehmen
   })
@@ -314,7 +314,7 @@ describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
     // Q hat viele Hilfsdienste, aber 0 Aufgaben-Last → volle Chance auf Aufgaben.
     const q = named('Quirin', 'Quell', ['vortrag', MIK]) // "Q. Quell"
     const history = emptyMeeting()
-    history.helpers.mik = ['Quirin Quell']
+    history.helpers.mik = [{ name: 'Quirin Quell' }]
     const weeks: Week[] = [wk(history, emptyMeeting()), wk(history, emptyMeeting()), wk(history, emptyMeeting())]
     // Aufgaben-Last (partWorkload) bleibt 0 trotz vieler Hilfsdienste
     expect(partWorkload(weeks, 'Quirin Quell')).toBe(0)
@@ -341,8 +341,8 @@ describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
       { key: 'saal', name: 'Saalordner', count: 1, groups: false },
     ]
     const res = autoAssignMeeting(oneWeek(), 0, 'mid', [entranceOnly], services)
-    expect(res.weeks[0].mid.helpers.ord?.[0]).toBe('Erik Eingang')
-    expect(res.weeks[0].mid.helpers.saal?.[0] ?? '').toBe('') // eigener Bereich → offen
+    expect(res.weeks[0].mid.helpers.ord?.[0]?.name).toBe('Erik Eingang')
+    expect(res.weeks[0].mid.helpers.saal?.[0]?.name ?? '').toBe('') // eigener Bereich → offen
     expect(res.unfilled).toBe(1)
   })
 
@@ -352,16 +352,16 @@ describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
     const willing = named('Werner', 'Wagen', [serviceQualKey('svc-parkplatz')])
 
     const without = autoAssignMeeting(oneWeek(), 0, 'mid', [nobody], parking)
-    expect(without.weeks[0].mid.helpers['svc-parkplatz']?.[0] ?? '').toBe('')
+    expect(without.weeks[0].mid.helpers['svc-parkplatz']?.[0]?.name ?? '').toBe('')
 
     const with_ = autoAssignMeeting(oneWeek(), 0, 'mid', [nobody, willing], parking)
-    expect(with_.weeks[0].mid.helpers['svc-parkplatz']?.[0]).toBe('Werner Wagen')
+    expect(with_.weeks[0].mid.helpers['svc-parkplatz']?.[0]?.name).toBe('Werner Wagen')
   })
 
   it('keine Geschlechts-Sperre: Schwestern mit aktiviertem Bereich werden zugeteilt', () => {
     const sister = mk([MIK], { female: true })
     const res = autoAssignMeeting(oneWeek(), 0, 'mid', [sister], MIK1)
-    expect(res.weeks[0].mid.helpers.mik?.[0] ?? '').not.toBe('')
+    expect(res.weeks[0].mid.helpers.mik?.[0]?.name ?? '').not.toBe('')
   })
 })
 
@@ -379,9 +379,9 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
     const w0 = autoAssignMeeting(weeks, 0, 'mid', [], REIN, groups).weeks
     const w1 = autoAssignMeeting(weeks, 1, 'mid', [], REIN, groups).weeks
     const w2 = autoAssignMeeting(weeks, 2, 'mid', [], REIN, groups).weeks
-    expect(w0[0].mid.helpers.rein?.[0]).toBe('Gruppe 1')
-    expect(w1[1].mid.helpers.rein?.[0]).toBe('Gruppe 2')
-    expect(w2[2].mid.helpers.rein?.[0]).toBe('Gruppe 1') // 2 % 2 = 0
+    expect(w0[0].mid.helpers.rein?.[0]?.name).toBe('Gruppe 1')
+    expect(w1[1].mid.helpers.rein?.[0]?.name).toBe('Gruppe 2')
+    expect(w2[2].mid.helpers.rein?.[0]?.name).toBe('Gruppe 1') // 2 % 2 = 0
   })
 
   it('Aufseher/Gehilfe der reinigenden Gruppe bekommen möglichst keinen weiteren Hilfsdienst', () => {
@@ -397,10 +397,10 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
       { key: 'rein', name: 'Reinigung', count: 1, groups: true },
     ]
     const res = autoAssignMeeting([wk1()], 0, 'mid', [overseer, free], services, groups)
-    expect(res.weeks[0].mid.helpers.mik?.[0]).toBe('Frank Frei')
+    expect(res.weeks[0].mid.helpers.mik?.[0]?.name).toBe('Frank Frei')
 
     // Ohne Alternative bekommt der Aufseher den Dienst trotzdem (weiche Regel).
     const solo = autoAssignMeeting([wk1()], 0, 'mid', [overseer], services, groups)
-    expect(solo.weeks[0].mid.helpers.mik?.[0]).toBe('Otto Overseer')
+    expect(solo.weeks[0].mid.helpers.mik?.[0]?.name).toBe('Otto Overseer')
   })
 })

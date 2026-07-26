@@ -210,6 +210,16 @@ export interface PartItem {
 
 export type ProgramItem = SongItem | PartItem
 
+/**
+ * Ein Hilfsdienst-Platz (Mikrofon, Ton, Ordner …). Wie beim Programm-Slot ist
+ * `pid` die stabile Identität; sie fehlt bei der Reinigungs-Rotation (dort steht
+ * im Namen „Gruppe N") und bei Altdaten. `{ name: '' }` = offener Platz.
+ */
+export interface HelperSlot {
+  name: string
+  pid?: string
+}
+
 export interface Section {
   label: string // Caps-Label, z. B. "SCHÄTZE AUS GOTTES WORT"
   farbe: SectionColor
@@ -220,7 +230,7 @@ export interface Meeting {
   date: string // z. B. "Dienstag, 8. September · 19:00 · Königreichssaal"
   end: string // "Ende ca. 20:45"
   sections: Section[]
-  helpers: Record<string, string[]> // dienstKey -> zugeteilte Namen ("" = offen)
+  helpers: Record<string, HelperSlot[]> // dienstKey -> Plätze ({ name: '' } = offen)
 }
 
 export interface Week {

@@ -11,6 +11,7 @@ import type {
   FsInstance,
   FsRule,
   Group,
+  HelperSlot,
   MyTask,
   Notification,
   PartItem,
@@ -306,6 +307,10 @@ const part = (
 
 const song = (title: string): SongItem => ({ song: title })
 
+/** Hilfsdienst-Namen → Slots (Demo trägt keine pid; Live-Migration ergänzt sie). */
+const H = (m: Record<string, string[]>): Record<string, HelperSlot[]> =>
+  Object.fromEntries(Object.entries(m).map(([k, arr]) => [k, arr.map((name) => ({ name }))]))
+
 const sec = (
   label: string,
   farbe: SectionColor,
@@ -338,7 +343,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['Helmut Vogel', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['Claus Maier'], mik: ['Jörg Roth', 'Bernd Klein'], ord: ['Ulrich Lang', 'Georg Peters'], rein: ['Gruppe 2'] },
+        helpers: H({ ton: ['Claus Maier'], mik: ['Jörg Roth', 'Bernd Klein'], ord: ['Ulrich Lang', 'Georg Peters'], rein: ['Gruppe 2'] }),
       },
       we: {
         date: 'Sonntag, 13. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
@@ -351,7 +356,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['Georg Peters', 'M. Otto'], rein: ['Gruppe 3'] },
+        helpers: H({ ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['Georg Peters', 'M. Otto'], rein: ['Gruppe 3'] }),
       },
     },
     {
@@ -377,7 +382,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['Konrad Sommer', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['Bernd Klein', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 1'] },
+        helpers: H({ ton: ['R. Simon'], mik: ['Bernd Klein', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 1'] }),
       },
       we: {
         date: 'Sonntag, 20. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
@@ -390,7 +395,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 106 · Gebet', null, [['Georg Peters', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['Claus Maier'], mik: ['Simon Krüger', 'Niklas Feld'], ord: ['Ulrich Lang', 'M. Otto'], rein: ['Gruppe 1'] },
+        helpers: H({ ton: ['Claus Maier'], mik: ['Simon Krüger', 'Niklas Feld'], ord: ['Ulrich Lang', 'M. Otto'], rein: ['Gruppe 1'] }),
       },
     },
     {
@@ -416,7 +421,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['D. Winkler', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['Claus Maier'], mik: ['Bernd Klein', 'Paul Schröder'], ord: ['Georg Peters', 'Ulrich Lang'], rein: ['Gruppe 3'] },
+        helpers: H({ ton: ['Claus Maier'], mik: ['Bernd Klein', 'Paul Schröder'], ord: ['Georg Peters', 'Ulrich Lang'], rein: ['Gruppe 3'] }),
       },
       we: {
         date: 'Sonntag, 27. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
@@ -430,7 +435,7 @@ export function buildDemoWeeks(): Week[] {
           sec('DIENSTVORTRAG', 'gold', [part(null, '„Bleibt in Gottes Liebe“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 2'] },
+        helpers: H({ ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 2'] }),
       },
     },
     {
@@ -456,7 +461,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['Claus Maier', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['R. Simon'], mik: ['Niklas Feld', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 2'] },
+        helpers: H({ ton: ['R. Simon'], mik: ['Niklas Feld', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 2'] }),
       },
       // Gedächtnismahl statt Wochenend-Zusammenkunft (memCancel: 'we').
       we: {
@@ -469,7 +474,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 149 · Gebet', null, [['Helmut Vogel', 'Gebet', 'gebet']])]),
         ],
-        helpers: { ton: ['Claus Maier'], mik: ['Simon Krüger', 'Bernd Klein'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 1'] },
+        helpers: H({ ton: ['Claus Maier'], mik: ['Simon Krüger', 'Bernd Klein'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 1'] }),
       },
     },
   ])

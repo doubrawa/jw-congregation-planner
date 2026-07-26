@@ -22,7 +22,7 @@ function meeting(name: string): Meeting {
         items: [{ song: 'Lied 1' }, { title: 'Bibellesung', names: [{ name }] }],
       },
     ],
-    helpers: { ordner: [name] },
+    helpers: { ordner: [{ name }] },
   }
 }
 
@@ -36,8 +36,8 @@ describe('renameInWeeks', () => {
     const next = renameInWeeks(weeks, 'p1', 'Simon Krüger', 'S. Krüger')
     const item = next[0].mid.sections[0].items[1]
     expect('names' in item && item.names[0].name).toBe('S. Krüger')
-    expect(next[0].mid.helpers.ordner[0]).toBe('S. Krüger')
-    expect(next[0].we.helpers.ordner[0]).toBe('S. Krüger')
+    expect(next[0].mid.helpers.ordner[0].name).toBe('S. Krüger')
+    expect(next[0].we.helpers.ordner[0].name).toBe('S. Krüger')
   })
 
   it('behält die Referenz unveränderter Wochen (Aufrufer erkennt Dirty-Wochen)', () => {
