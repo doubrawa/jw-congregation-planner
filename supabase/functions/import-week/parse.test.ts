@@ -1,5 +1,37 @@
 import { describe, expect, it } from 'vitest'
-import { ministryNames, parseWorkbookWeek, type ImportedPart, type ImportedSong } from './parse'
+import {
+  applyGoldSlots,
+  ministryNames,
+  parseWorkbookWeek,
+  type ImportedPart,
+  type ImportedSong,
+  type ImportedWeek,
+} from './parse'
+
+describe('applyGoldSlots – Schülerteil-Art aus der deutschen Fassung übertragen', () => {
+  const emptyMeeting = () => ({ date: '', end: '', sections: [], helpers: {} })
+  const withGold = (items: unknown[]): ImportedWeek =>
+    ({
+      range: '', book: '', current: false, we: emptyMeeting(),
+      mid: { date: '', end: '', helpers: {}, sections: [{ label: '', farbe: 'gold', items }] },
+    }) as ImportedWeek
+
+  it('übernimmt Führer+Partner bzw. männlichen Vortrag positionsgenau', () => {
+    const german = withGold([
+      { title: 'Gespräche beginnen', names: ministryNames('Gespräche beginnen', '3 Min.') },
+      { title: 'Vortrag', names: ministryNames('Vortrag', '5 Min.') },
+    ])
+    // lokalisierte Woche: die Heuristik griff nicht → je 1 Slot
+    const localized = withGold([
+      { title: 'Starting a Conversation', names: [{ name: '', bereichsKey: 'schulung' }] },
+      { title: 'Talk', names: [{ name: '', bereichsKey: 'schulung' }] },
+    ])
+    applyGoldSlots(localized, german)
+    const gold = localized.mid.sections[0].items as ImportedPart[]
+    expect(gold[0].names.map((n) => n.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
+    expect(gold[1].names[0]).toMatchObject({ bereichsKey: 'schulung', male: true })
+  })
+})
 
 describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => {
   it('Gesprächsteile → Führer (schulung) + Gesprächspartner (schulungPartner)', () => {
