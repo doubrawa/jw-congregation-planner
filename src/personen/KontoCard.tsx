@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { fill, useT } from '../i18n/useT'
 import { appUrl, inviteMailHref, linkedMember, makeInvite, openInvite } from './invite-helpers'
@@ -20,12 +21,9 @@ export function KontoCard({ person }: { person: Person }) {
   const shareText = (code: string) => fill(t.inviteShareText, { code, url: appUrl() })
 
   const copyCode = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(shareText(code))
-      dispatch({ type: 'showToast', text: t.toastCodeKopiert })
-    } catch {
-      dispatch({ type: 'showToast', text: code })
-    }
+    const ok = await copyText(shareText(code))
+    // Klappt das Kopieren nicht, den Code wenigstens sichtbar zeigen.
+    dispatch({ type: 'showToast', text: ok ? t.toastCodeKopiert : code })
   }
 
   const share = async (code: string) => {

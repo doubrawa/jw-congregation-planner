@@ -30,11 +30,9 @@
           var stored = localStorage.getItem('theme')
           if (stored === 'light') stored = 'weiss'
           if (stored === 'dark') stored = 'graphit'
-          if (!(stored in THEMES)) {
-            stored = window.matchMedia('(prefers-color-scheme: dark)').matches
-              ? 'graphit'
-              : 'weiss'
-          }
+          // Standard ist Reinweiß, unabhängig von der System-Einstellung. Ein
+          // dunkles Design wählt man bewusst im Profil (bleibt dann gespeichert).
+          if (!(stored in THEMES)) stored = 'weiss'
           document.documentElement.dataset.theme = stored
           if (THEMES[stored]) document.documentElement.dataset.dark = '1'
           // Statusleiste sofort passend; store.tsx verfeinert auf --bg.

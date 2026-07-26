@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel } from '../data/helpers'
+import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { fill, useT } from '../i18n/useT'
 import { appUrl, linkedMember, makeInvite, openInvite } from './invite-helpers'
@@ -48,11 +49,9 @@ function PersonList() {
       if (person.mail) mailable.push({ personId: person.id, code: invite.code })
     }
     const text = `${fill(t.inviteListeTitel, { url: appUrl() })}\n\n${lines.join('\n')}`
-    try {
-      await navigator.clipboard.writeText(text)
-    } catch {
-      /* Zwischenablage nicht verfügbar — Codes stehen an den Personen */
-    }
+    // Zwischenablage best effort — misslingt sie, stehen die Codes weiterhin an
+    // den Personen (Konto-Karte).
+    await copyText(text)
     const res = mailable.length > 0 ? await sendInviteMails(mailable) : null
     if (res?.ok && res.sent > 0) {
       dispatch({
