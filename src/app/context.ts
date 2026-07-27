@@ -174,6 +174,8 @@ export type AppAction =
   | { type: 'autoAssign'; scope?: 'parts' | 'helpers' | 'all' } // aktuelle Woche + Tab; Bereich (Default: alles)
   | { type: 'clearAssignments'; scope: 'parts' | 'helpers' } // aktuelle Woche + Tab: Zuteilungen des Bereichs leeren
   // Treffpunkte (Wochen-Bearbeitung im Planen-Tab)
+  | { type: 'fsAutoAssign'; onlyGroup: string | null } // Treffpunkt-Leiter der aktuellen Woche automatisch besetzen
+  | { type: 'fsClear'; onlyGroup: string | null } // Treffpunkt-Leiter der aktuellen Woche leeren
   | { type: 'fsInstUpdate'; wi: number; id: string; patch: Partial<Pick<FsInstance, 'time' | 'place'>> }
   | { type: 'fsInstRemove'; wi: number; id: string }
   | { type: 'fsInstAdd'; inst: FsInstance }

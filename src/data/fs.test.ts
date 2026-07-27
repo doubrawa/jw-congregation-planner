@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   buildFsWeeks,
   fsAddInst,
+  fsAutoAssign,
   fsBaseFromWeeks,
+  fsClear,
   fsDate,
   fsLeaderValue,
   fsRemoveInst,
@@ -12,7 +14,23 @@ import {
   genFsWeek,
   regenFsWeeks,
 } from './fs'
-import type { FsInstance, FsRule } from './types'
+import { emptyQualifications } from './helpers'
+import type { FsInstance, FsRule, Person } from './types'
+
+/** Treffpunkt-qualifizierte Person (priv.treffpunkt gesetzt). */
+function tpLeader(patch: Partial<Person>): Person {
+  return {
+    id: 'x', fn: 'Max', ln: 'Muster', role: 'verkuendiger', female: false,
+    tel: '', mail: '', absent: [],
+    priv: { ...emptyQualifications(), treffpunkt: true },
+    ...patch,
+  }
+}
+
+/** Minimaler Treffpunkt für die Auto-Zuteilungs-Tests. */
+function inst(patch: Partial<FsInstance>): FsInstance {
+  return { id: 'i', ruleId: null, grp: '', wd: 1, time: '09:30', place: 'KH', leader: '', ...patch }
+}
 
 /** Montag der Woche 0 = 7. September 2026 (wie im Demo). */
 const BASE = new Date(2026, 8, 7, 12)
@@ -243,5 +261,65 @@ describe('fs-Wochenbearbeitung (Planen)', () => {
     // wd 2 (Di) liegt zwischen Mo(1) und Mi(3) → einsortiert
     const wds = add[0].map((i) => (i.wd + 6) % 7)
     expect([...wds]).toEqual([...wds].sort((a, b) => a - b))
+  })
+})
+
+describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
+  it('besetzt offene Leiter ausgewogen mit qualifizierten Personen', () => {
+    const week = [inst({ id: 'a', wd: 1 }), inst({ id: 'b', wd: 3 })]
+    const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]
+    const { fsWeeks, count } = fsAutoAssign([week], 0, persons)
+    expect(count).toBe(2)
+    const leaders = fsWeeks[0].map((i) => i.leader)
+    expect(leaders.every(Boolean)).toBe(true)
+    expect(new Set(leaders).size).toBe(2) // Lastausgleich → zwei verschiedene
+  })
+
+  it('überspringt in der Woche abwesende Personen', () => {
+    const week = [inst({ id: 'a', wd: 1 })]
+    const persons = [tpLeader({ id: 'p1', fn: 'Anton', absent: [0] }), tpLeader({ id: 'p2', fn: 'Bernd' })]
+    const { fsWeeks } = fsAutoAssign([week], 0, persons)
+    expect(fsWeeks[0][0].leader).toBe('Bernd Muster')
+  })
+
+  it('setzt nicht dieselbe Person zweimal am selben Wochentag', () => {
+    const week = [inst({ id: 'a', grp: '', wd: 6 }), inst({ id: 'b', grp: 'g1', wd: 6 })]
+    const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]
+    const { fsWeeks } = fsAutoAssign([week], 0, persons)
+    expect(new Set(fsWeeks[0].map((i) => i.leader)).size).toBe(2)
+  })
+
+  it('lässt bereits gesetzte Leiter unangetastet; ohne Kandidaten bleibt offen', () => {
+    const week = [inst({ id: 'a', wd: 1, leader: 'Fix Belegt' }), inst({ id: 'b', wd: 3 })]
+    const { fsWeeks, count } = fsAutoAssign([week], 0, []) // keine qualifizierten Kandidaten
+    expect(count).toBe(0)
+    expect(fsWeeks[0][0].leader).toBe('Fix Belegt')
+    expect(fsWeeks[0][1].leader).toBe('')
+  })
+
+  it('onlyGroup besetzt nur Treffpunkte der Gruppe', () => {
+    const week = [inst({ id: 'a', grp: '', wd: 1 }), inst({ id: 'b', grp: 'g1', wd: 3 })]
+    const persons = [tpLeader({ id: 'p1', fn: 'Anton' })]
+    const { fsWeeks, count } = fsAutoAssign([week], 0, persons, 'g1')
+    expect(count).toBe(1)
+    expect(fsWeeks[0].find((i) => i.grp === '')?.leader).toBe('')
+    expect(fsWeeks[0].find((i) => i.grp === 'g1')?.leader).toBe('Anton Muster')
+  })
+})
+
+describe('fsClear (Treffpunkt-Leiter leeren)', () => {
+  it('leert alle Leiter der Woche', () => {
+    const week = [inst({ id: 'a', leader: 'X' }), inst({ id: 'b', leader: 'Y' })]
+    const { fsWeeks, count } = fsClear([week], 0)
+    expect(count).toBe(2)
+    expect(fsWeeks[0].every((i) => !i.leader)).toBe(true)
+  })
+
+  it('onlyGroup leert nur die Gruppe', () => {
+    const week = [inst({ id: 'a', grp: '', leader: 'X' }), inst({ id: 'b', grp: 'g1', leader: 'Y' })]
+    const { fsWeeks, count } = fsClear([week], 0, 'g1')
+    expect(count).toBe(1)
+    expect(fsWeeks[0].find((i) => i.grp === '')?.leader).toBe('X')
+    expect(fsWeeks[0].find((i) => i.grp === 'g1')?.leader).toBe('')
   })
 })

@@ -12,7 +12,8 @@
  * ersten Woche) bestimmt; spätere Wochen sind wi × 7 Tage später.
  */
 
-import type { FsInstance, FsRule } from './types'
+import { displayName, isQualified } from './helpers'
+import type { FsInstance, FsRule, Person } from './types'
 
 /** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
 export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }, (_unused, i) => {
@@ -167,4 +168,77 @@ export function fsRemoveInst(fsWeeks: FsInstance[][], wi: number, instId: string
 /** Manuellen Treffpunkt zu dieser Woche hinzufügen (neu sortiert). */
 export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance): FsInstance[][] {
   return patchWeek(fsWeeks, wi, (week) => [...week, inst].sort(fsSort))
+}
+
+/* ---- Auto-Zuteilung / Leeren der Treffpunkt-Leiter ---- */
+
+/** Kleiner, stabiler String-Hash für deterministische Tie-Breaks. */
+function fsTieHash(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0
+  return h >>> 0
+}
+
+/**
+ * Besetzt offene Treffpunkt-Leiter der Woche `wi` automatisch: Kandidaten sind
+ * treffpunkt-qualifiziert (wie im Zuteilungs-Sheet, ohne Gruppenbindung) und in
+ * der Woche nicht abwesend. Ausgewogen nach bisheriger Leitungs-Last (über alle
+ * Wochen) mit deterministischem Tie-Break; niemand leitet zwei Treffpunkte am
+ * selben Wochentag. `onlyGroup` grenzt auf eine Gruppe ein (Gruppenaufseher).
+ * Bereits gesetzte Leiter bleiben unangetastet.
+ */
+export function fsAutoAssign(
+  fsWeeks: FsInstance[][],
+  wi: number,
+  persons: Person[],
+  onlyGroup: string | null = null,
+): { fsWeeks: FsInstance[][]; count: number; newly: string[] } {
+  const pool = persons
+    .filter((p) => isQualified(p, 'treffpunkt') && !p.absent.includes(wi))
+    .map(displayName)
+  // Grundlast: bisherige Leitungen je Person über alle Wochen.
+  const load = new Map<string, number>()
+  for (const week of fsWeeks) for (const inst of week) {
+    if (inst.leader) load.set(inst.leader, (load.get(inst.leader) ?? 0) + 1)
+  }
+  // Schon je Wochentag dieser Woche belegte Leiter (Doppelung am selben Tag meiden).
+  const dayUsed = new Map<number, Set<string>>()
+  const markDay = (wd: number, name: string) => {
+    const set = dayUsed.get(wd) ?? new Set<string>()
+    set.add(name)
+    dayUsed.set(wd, set)
+  }
+  for (const inst of fsWeeks[wi] ?? []) if (inst.leader) markDay(inst.wd, inst.leader)
+  const newly: string[] = []
+  const week = (fsWeeks[wi] ?? []).map((inst) => {
+    if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
+    const used = dayUsed.get(inst.wd) ?? new Set<string>()
+    const cand = pool
+      .filter((n) => !used.has(n))
+      .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0) || fsTieHash(a + wi) - fsTieHash(b + wi))
+    const pick = cand[0]
+    if (!pick) return inst
+    load.set(pick, (load.get(pick) ?? 0) + 1)
+    markDay(inst.wd, pick)
+    newly.push(pick)
+    return { ...inst, leader: pick }
+  })
+  if (newly.length === 0) return { fsWeeks, count: 0, newly: [] }
+  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, newly }
+}
+
+/** Leiter der Woche `wi` leeren (`onlyGroup` grenzt auf eine Gruppe ein). */
+export function fsClear(
+  fsWeeks: FsInstance[][],
+  wi: number,
+  onlyGroup: string | null = null,
+): { fsWeeks: FsInstance[][]; count: number } {
+  let count = 0
+  const week = (fsWeeks[wi] ?? []).map((inst) => {
+    if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
+    count++
+    return { ...inst, leader: '' }
+  })
+  if (count === 0) return { fsWeeks, count: 0 }
+  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count }
 }

@@ -26,6 +26,7 @@ export const DE = {
     fsVers: 'Versammlungstreffpunkt', fsKeine: 'Keine Treffpunkte in dieser Woche.',
     privTreffpunkt: 'Treffpunkte leiten',
     fsNurWoche: 'Änderungen hier gelten nur für diese Woche.',
+    fsLeiterLbl: 'Treffpunkt-Leiter',
     fsAddWeekLbl: 'TREFFPUNKT FÜR DIESE WOCHE HINZUFÜGEN', fsAdd: '+ TREFFPUNKT HINZUFÜGEN',
     fsOrtPh: 'Ort (z. B. Königreichssaal)',
     toastFsAdd: 'Treffpunkt hinzugefügt', toastFsDel: 'Treffpunkt entfernt',
