@@ -23,6 +23,7 @@ import type {
   Screen,
   Service,
   SlotSelection,
+  SubstituteReq,
   Theme,
   Week,
 } from '../data/types'
@@ -112,6 +113,8 @@ export interface AppState {
   pendingNames: string[] // Namen mit noch offener Bestätigung (Planen: „…“)
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
+  myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)
+  substituteReqs: SubstituteReq[] // offene Ersatzgesuche für mich (Einspringen)
   s89: S89Payload | null // offenes S-89-Formular
   reminders: Reminders
   // Mehrsprachigkeit
@@ -186,6 +189,9 @@ export type AppAction =
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
   | { type: 'declineTask'; id: string }
+  | { type: 'openMyTask'; id: string } // eigenes Aufgaben-Aktions-Sheet öffnen
+  | { type: 'closeMyTask' }
+  | { type: 'takeSubstitute'; key: string } // Hilfsdienst-Ersatz übernehmen
   | { type: 'openS89'; payload: S89Payload }
   | { type: 'closeS89' }
   // LAC-Bearbeitung (Planen, aktuelle Woche + Tab)

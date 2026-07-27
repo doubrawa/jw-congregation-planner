@@ -181,6 +181,40 @@
   margin-top: 14px;
 }
 
+/* ---- Eigenes Aufgaben-Aktions-Sheet (MyTaskSheet) ------------------------- */
+
+.mytask-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--mut);
+  font-size: calc(15px * var(--fs));
+  line-height: 1;
+  padding: 4px;
+}
+
+.mytask-close:hover {
+  color: var(--ink);
+}
+
+.mytask-status {
+  margin-top: 8px;
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 600;
+  color: var(--pet);
+}
+
+.mytask-status--verh {
+  color: var(--wein);
+}
+
+.mytask-hint {
+  margin-top: 12px;
+  font-size: calc(11px * var(--fs));
+  line-height: 1.45;
+  color: var(--mut);
+}
+
 /* ---- Sprach-Sheet (Versammlungssprache) --------------------------------- */
 
 .sheet--lang {

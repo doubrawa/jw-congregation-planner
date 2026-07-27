@@ -11,8 +11,11 @@ import {
   countOpenSlots,
   deriveMyTasks,
   derivePendingNames,
+  deriveSubstituteReqs,
+  helperTaskKey,
   weekConflicts,
 } from './planning'
+import { emptyQualifications } from './helpers'
 import type { Meeting, PartItem, Person, Section, Service } from './types'
 
 /** Namen aller belegten Slots eines Meetings (Programmpunkte + Hilfsdienste). */
@@ -296,6 +299,43 @@ describe('Auslastung', () => {
     expect(workloadOf(weeks, 'Claus Maier')).toBe(
       partWorkload(weeks, 'Claus Maier') + helperWorkload(weeks, 'Claus Maier'),
     )
+  })
+})
+
+describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
+  const qualified = (svc: string): Person => ({
+    id: 'meX', fn: 'Ersatz', ln: 'Person', role: 'dienstamtgehilfe', female: false,
+    tel: '', mail: '', absent: [], priv: { ...emptyQualifications(), [`svc:${svc}`]: true },
+  })
+
+  it('listet einen verhinderten Hilfsdienst, für den ich qualifiziert bin', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
+    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'verhindert' as const }
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))
+    expect(reqs).toHaveLength(1)
+    expect(reqs[0]).toMatchObject({ svc: 'ton', declinedBy: 'A. Absager', key: helperTaskKey(0, 'mid', 'ton', 0) })
+  })
+
+  it('nicht qualifiziert → kein Gesuch', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
+    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'verhindert' as const }
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'))).toHaveLength(0)
+  })
+
+  it('nur „verhindert" zählt (bestätigt/offen nicht)', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
+    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'bestätigt' as const }
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))).toHaveLength(0)
+  })
+
+  it('eigener verhinderter Slot erscheint nicht als Einspringen-Gesuch', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
+    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'verhindert' as const }
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))).toHaveLength(0)
   })
 })
 

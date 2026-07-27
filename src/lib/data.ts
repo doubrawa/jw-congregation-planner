@@ -835,6 +835,27 @@ export function insertNotifications(
   void run(supabase.from('notifications').insert(rows))
 }
 
+/**
+ * Ersatzgesuch: qualifizierte Personen (gleicher Hilfsdienst) benachrichtigen
+ * (Sofort-Push + In-App). Läuft serverseitig (Edge Function `substitute`), weil
+ * Push nur mit dem privaten VAPID-Schlüssel geht. Fire-and-forget.
+ */
+export function substituteSeek(congregationId: string, taskKey: string): void {
+  if (!supabase) return
+  void supabase.functions.invoke('substitute', { body: { action: 'seek', congregationId, taskKey } })
+}
+
+/**
+ * Hilfsdienst-Ersatz übernehmen: trägt den Aufrufer serverseitig in den Slot ein,
+ * setzt die Bestätigung und informiert Ursprungsperson + Planer. Nötig, weil
+ * Wochen/Bestätigungen nur der Planer schreiben darf (RLS). Fire-and-forget —
+ * der Client aktualisiert seinen Stand optimistisch.
+ */
+export function substituteTake(congregationId: string, taskKey: string): void {
+  if (!supabase) return
+  void supabase.functions.invoke('substitute', { body: { action: 'take', congregationId, taskKey } })
+}
+
 export function markNotificationsRead(congregationId: string, userId: string): void {
   if (!supabase) return
   void run(

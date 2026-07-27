@@ -15,6 +15,18 @@
   border-bottom-color: transparent;
 }
 
+/* Titel+Datum sind anklickbar → Aktions-Sheet (bestätigen/absagen). */
+.auf-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.auf-open:hover .auf-title {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .auf-title {
   font-family: var(--font-serif);
   font-size: calc(15px * var(--fs));
@@ -113,6 +125,45 @@
 /* "DEINE EINTRÄGE" — wie panel-label, aber mit Abstand zum Formular */
 .auf-entries-label {
   padding-top: 18px;
+}
+
+/* Einspringen: offene Ersatzgesuche (Hilfsdienste) zum Übernehmen. */
+.auf-sub-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--panel-hair);
+}
+
+.auf-sub-row:last-child {
+  border-bottom: 0;
+}
+
+.auf-sub-title {
+  font-size: calc(13px * var(--fs));
+  font-weight: 600;
+}
+
+.auf-sub-meta {
+  font-size: calc(11px * var(--fs));
+  color: var(--mut);
+  margin-top: 1px;
+}
+
+.auf-sub-btn {
+  flex: none;
+  background: var(--acc);
+  color: var(--onAcc);
+  border-radius: var(--r-pill);
+  padding: 8px 14px;
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 600;
+}
+
+.auf-sub-btn:hover {
+  background: var(--accD);
 }
 
 .abs-row {

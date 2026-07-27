@@ -10,12 +10,15 @@ import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/he
 import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
+  assignmentsInMeeting,
   assignSlot,
   autoAssignMeeting,
   clearAssignments,
   changedSlotKeys,
   deriveMyTasks,
   derivePendingNames,
+  deriveSubstituteReqs,
+  helperKeyParts,
   swapPartConfirmations,
 } from '../data/planning'
 import {
@@ -135,6 +138,9 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
     ...state,
     myTasks,
     pendingNames: derivePendingNames(weeks, state.services, state.confirmations),
+    substituteReqs: me
+      ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.meetings)
+      : [],
     confirmOpen: (openConfirm || state.confirmOpen) && myTasks.some((t) => t.status === 'offen'),
   }
 }
@@ -160,6 +166,7 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'changeServiceCount',
   'confirmTask',
   'declineTask',
+  'takeSubstitute',
   // Sprachwechsel ändert die Programmsprache der abgeleiteten Aufgaben-Titel
   'setLang',
   'setCongLang',
@@ -614,6 +621,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastFsRuleDel'),
       }
     }
+    case 'openMyTask':
+      return { ...state, myTaskId: action.id }
+    case 'closeMyTask':
+      return { ...state, myTaskId: null }
     case 'confirmTask': {
       // Produktionsmodus: Status in die ConfirmationMap — myTasks/pending-
       // Names/confirmOpen folgen aus der Ableitung (withDerivedTasks).
@@ -621,6 +632,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         return {
           ...state,
           confirmations: { ...state.confirmations, [action.id]: 'bestätigt' },
+          myTaskId: null,
           toast: toastKey(state, 'toastBestaetigt'),
         }
       }
@@ -636,6 +648,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         myTasks,
         pendingNames,
+        myTaskId: null,
         confirmOpen: state.confirmOpen && stillOpen,
         toast: toastKey(state, 'toastBestaetigt'),
       }
@@ -647,12 +660,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         'Verhinderung gemeldet',
         `${task?.title ?? ''} — ${currentUserName(state)}`,
       )
+      // Bei Hilfsdiensten wird automatisch ein Ersatz gesucht (Ersatzgesuch) →
+      // eigener Toast; sonst nur die Verhinderungs-Meldung an den Planer.
+      const declineToast = helperKeyParts(action.id) ? 'toastErsatzGesucht' : 'toastVerhindert'
       if (state.dataStatus !== 'demo') {
         return {
           ...state,
           confirmations: { ...state.confirmations, [action.id]: 'verhindert' },
           notifs: [notif, ...state.notifs],
-          toast: toastKey(state, 'toastVerhindert'),
+          myTaskId: null,
+          toast: toastKey(state, declineToast),
         }
       }
       const myTasks = state.myTasks.map((t) =>
@@ -664,7 +681,28 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         myTasks,
         confirmOpen: state.confirmOpen && stillOpen,
         notifs: [notif, ...state.notifs],
-        toast: toastKey(state, 'toastVerhindert'),
+        myTaskId: null,
+        toast: toastKey(state, declineToast),
+      }
+    }
+    case 'takeSubstitute': {
+      const parts = helperKeyParts(action.key)
+      const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+      if (!parts || !me) return state
+      const name = displayName(me)
+      const sel = {
+        kind: 'helper' as const, wi: parts.wi, tab: parts.tab, svc: parts.svc, pos: parts.pos,
+        label: '', priv: null, groups: false,
+      }
+      const weeks = assignSlot(state.weeks, sel, name, undefined, me.id)
+      // „Warnen statt blocken": schon am selben Tag eingeteilt? → Hinweis-Toast.
+      const clash = assignmentsInMeeting(weeks[parts.wi][parts.tab], name, state.services, sel).length > 0
+      return {
+        ...state,
+        weeks,
+        confirmations: { ...state.confirmations, [action.key]: 'bestätigt' },
+        myTaskId: null,
+        toast: toastKey(state, clash ? 'toastUebernommenKonflikt' : 'toastUebernommen'),
       }
     }
     case 'openS89':

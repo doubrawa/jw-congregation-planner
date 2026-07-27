@@ -65,8 +65,14 @@ export function DashboardScreen() {
             <span className="dash-hero-label">{t.dashNextTask}</span>
             {nextChip && <span className="dash-hero-chip">{nextChip}</span>}
           </div>
-          <div className="dash-hero-title">{tp(nextTask.title)}</div>
-          <div className="dash-hero-date">{tp(nextTask.date)}</div>
+          <button
+            type="button"
+            className="dash-hero-open"
+            onClick={() => dispatch({ type: 'openMyTask', id: nextTask.id })}
+          >
+            <div className="dash-hero-title">{tp(nextTask.title)}</div>
+            <div className="dash-hero-date">{tp(nextTask.date)}</div>
+          </button>
           <div className="dash-hero-actions">
             {nextTask.status === 'offen' && (
               <button

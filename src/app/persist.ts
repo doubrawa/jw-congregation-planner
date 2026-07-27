@@ -33,7 +33,10 @@ import {
   saveService,
   saveSettings,
   saveWeek,
+  substituteSeek,
+  substituteTake,
 } from '../lib/data'
+import { helperKeyParts } from '../data/planning'
 import { supabase } from '../lib/supabase'
 import type { MeetingKey, MeetingTab, Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
@@ -303,6 +306,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'declineTask':
       saveConfirmation(congId, userId, action.id, 'verhindert')
+      // Hilfsdienst: automatisch Ersatz suchen (qualifizierte Personen anpingen).
+      if (helperKeyParts(action.id)) substituteSeek(congId, action.id)
+      break
+    case 'takeSubstitute':
+      // Nicht clientseitig speichern (Wochen/Bestätigungen sind planer-only) —
+      // die Edge Function trägt ein und benachrichtigt Ursprungsperson + Planer.
+      substituteTake(congId, action.key)
       break
     case 'changeReminder':
     case 'toggleReminderRepeat':
