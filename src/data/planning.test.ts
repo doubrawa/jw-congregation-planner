@@ -462,6 +462,26 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(conflicts.some((c) => c.name === 'Doppel Aufgabe')).toBe(false)
   })
 
+  it('mit tab=mid erscheinen keine Wochenend-Konflikte (und umgekehrt)', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].we.helpers.ton = [{ name: 'Nur Wochenende' }]
+    weeks[0].we.helpers.mik = [{ name: 'Nur Wochenende' }, { name: '' }] // 2 Hilfsdienste am WE
+    const mid = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, 'mid')
+    expect(mid.some((c) => c.name === 'Nur Wochenende')).toBe(false)
+    const we = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, 'we')
+    expect(we).toContainEqual({ kind: 'double', name: 'Nur Wochenende', tab: 'we', count: 2 })
+  })
+
+  it('tab-bezogene Serie: zählt nur die jeweilige Zusammenkunftsart', () => {
+    const weeks = buildDemoWeeks()
+    // Person nur in der Wochenend-ZK dreier Wochen in Folge.
+    for (const wi of [0, 1, 2]) weeks[wi].we.helpers.ton = [{ name: 'WE Serie' }]
+    const midStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'mid').filter((c) => c.kind === 'streak')
+    expect(midStreak.some((c) => c.name === 'WE Serie')).toBe(false)
+    const weStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'we').filter((c) => c.kind === 'streak')
+    expect(weStreak).toContainEqual({ kind: 'streak', name: 'WE Serie', count: 3 })
+  })
+
   it('erkennt Serien von 3 Wochen in Folge (und nur dort)', () => {
     const weeks = buildDemoWeeks()
     for (const wi of [0, 1, 2]) weeks[wi].mid.helpers.ton = [{ name: 'R. Serie' }]

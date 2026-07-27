@@ -811,25 +811,30 @@ function weekAssignedNames(week: Week, services: Service[]): Set<string> {
  * Konflikte der Woche `wi`: Abwesende trotz Zuteilung, Mehrfach-Zuteilung in
  * einer Zusammenkunft und Serien von `STREAK_THRESHOLD`+ Wochen in Folge
  * (die `wi` enthalten). Reihenfolge: absent, double, streak.
+ *
+ * `tab` grenzt die Prüfung auf eine Zusammenkunft ein (das Planen zeigt Konflikte
+ * je Reiter) — inkl. tab-bezogener Serie (Häufung nur in dieser Zusammenkunftsart).
+ * Ohne `tab` werden beide Zusammenkünfte geprüft (Wochen-Gesamtzahl fürs Dashboard).
  */
 export function weekConflicts(
   weeks: Week[],
   wi: number,
   persons: Person[],
   services: Service[],
+  tab?: MeetingKey,
 ): Conflict[] {
   const week = weeks[wi]
   if (!week) return []
   const conflicts: Conflict[] = []
   const byDisplay = new Map(persons.map((p) => [displayName(p), p]))
-  const tabs: MeetingKey[] = ['mid', 'we']
+  const tabs: MeetingKey[] = tab ? [tab] : ['mid', 'we']
 
   // absent: in dieser Woche abwesend, aber eingeteilt
-  for (const tab of tabs) {
-    for (const name of new Set(meetingAssignedNames(week[tab], services))) {
+  for (const tb of tabs) {
+    for (const name of new Set(meetingAssignedNames(week[tb], services))) {
       const person = byDisplay.get(name)
       if (person && person.absent.includes(wi)) {
-        conflicts.push({ kind: 'absent', name, tab })
+        conflicts.push({ kind: 'absent', name, tab: tb })
       }
     }
   }
@@ -839,28 +844,31 @@ export function weekConflicts(
   // vorgegebene Regel — bei manueller Zuteilung nicht automatisch verhindert);
   // double = mehrere Hilfsdienste am selben Tag. Zwei Programmpunkte (z. B.
   // Vorsitz + Anfangsgebet) sind bewusst KEIN Konflikt.
-  for (const tab of tabs) {
+  for (const tb of tabs) {
     const partCounts = new Map<string, number>()
-    for (const name of meetingPartNames(week[tab])) {
+    for (const name of meetingPartNames(week[tb])) {
       partCounts.set(name, (partCounts.get(name) ?? 0) + 1)
     }
     const helperCounts = new Map<string, number>()
-    for (const name of meetingHelperNames(week[tab], services)) {
+    for (const name of meetingHelperNames(week[tb], services)) {
       helperCounts.set(name, (helperCounts.get(name) ?? 0) + 1)
     }
     for (const name of new Set([...partCounts.keys(), ...helperCounts.keys()])) {
       const pc = partCounts.get(name) ?? 0
       const hc = helperCounts.get(name) ?? 0
-      if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, tab })
-      else if (hc >= 2) conflicts.push({ kind: 'double', name, tab, count: hc })
+      if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, tab: tb })
+      else if (hc >= 2) conflicts.push({ kind: 'double', name, tab: tb, count: hc })
     }
   }
 
   // streak: Häufung von STREAK_THRESHOLD+ Wochen am Stück. Bewusst nur, wenn
   // der Lauf kürzer als der geladene Zeitraum ist — wer schlicht in *jeder*
   // Woche eingeteilt ist, ist durchgehend aktiv (Auslastungsthema), keine
-  // auffällige Serie, und würde sonst nur Rauschen erzeugen.
-  const nameSets = weeks.map((w) => weekAssignedNames(w, services))
+  // auffällige Serie, und würde sonst nur Rauschen erzeugen. Mit `tab` zählt nur
+  // die jeweilige Zusammenkunftsart, sonst beide.
+  const nameSets = weeks.map((w) =>
+    tab ? new Set(meetingAssignedNames(w[tab], services)) : weekAssignedNames(w, services),
+  )
   for (const name of nameSets[wi]) {
     let start = wi
     let end = wi

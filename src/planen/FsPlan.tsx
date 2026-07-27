@@ -74,9 +74,30 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const wdName = (d: number): string =>
     fsDate(state.fsBase, 0, d).toLocaleDateString(LOCALES[state.lang], { weekday: 'long' })
 
+  // Treffpunkte dieser Woche ohne zugeteilten Leiter → Warn-Banner (analog zu
+  // den offenen Zuteilungen der Zusammenkünfte). Konflikte gibt es hier nicht.
+  const openLeaders = insts.filter((inst) => !inst.leader)
+
   return (
     <>
       <p className="plan-hint">{t.fsNurWoche}</p>
+
+      {openLeaders.length > 0 && (
+        <div className="plan-open">
+          <div className="plan-banner-head">
+            <span className="plan-banner-badge">?</span>
+            <span className="plan-banner-title">{t.offeneTitle}</span>
+            <span className="plan-banner-count">{openLeaders.length}</span>
+          </div>
+          {openLeaders.map((inst) => (
+            <div key={inst.id} className="plan-open-row">
+              <span className="plan-open-label" dir="auto">
+                {dayLabel(inst.wd)} · {title(inst)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {days.map((day) => (
         <div key={day.wd} className="panel" data-farbe="gold">
