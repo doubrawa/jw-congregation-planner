@@ -103,6 +103,10 @@ function PersonList() {
         </div>
       )}
 
+      {/* Konten ohne Person ganz oben — sonst leicht zu übersehen (nur wenn
+          es welche gibt; rendert sonst nichts). */}
+      <OrphanAccounts />
+
       <input
         type="text"
         className="pers-search"
@@ -142,8 +146,6 @@ function PersonList() {
           </button>
         ))}
       </div>
-
-      <OrphanAccounts />
     </section>
   )
 }
