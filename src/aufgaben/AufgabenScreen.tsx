@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { DatePicker } from '../components/DatePicker'
+import { PushPrompt } from '../components/PushPrompt'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { fullName } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
@@ -50,6 +51,8 @@ export function AufgabenScreen() {
       <p className="screen-subtitle">
         {me ? fullName(me) : ''} · {fill(t.congLabel, { name: state.congregation.name })}
       </p>
+
+      <PushPrompt />
 
       <div className="panel panel--lead" data-farbe="acc">
         <div className="panel-label">{t.naechsteAufgaben}</div>

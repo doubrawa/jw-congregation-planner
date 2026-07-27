@@ -175,3 +175,22 @@
   color: var(--wein);
   padding: 6px 0;
 }
+
+/* iOS: statt Schalter der Installations-Hinweis (Push erst als App). */
+.prof-push-ios {
+  align-items: flex-start;
+}
+
+.prof-push-hint {
+  flex: 1;
+  text-align: right;
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.4;
+  color: var(--mut);
+  padding-inline-start: 16px;
+}
+
+/* „App installieren"-Angebot (Chromium) */
+.prof-install {
+  margin-top: 12px;
+}

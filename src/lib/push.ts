@@ -14,6 +14,29 @@ export function pushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
+/** iOS/iPadOS-Gerät (iPadOS meldet sich als „Macintosh" mit Touch). */
+export function isIOS(): boolean {
+  const ua = navigator.userAgent
+  return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && 'ontouchend' in document)
+}
+
+/** Läuft als installierte PWA (vom Home-Bildschirm, Standalone-Modus)? */
+export function isStandalone(): boolean {
+  return (
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    (navigator as { standalone?: boolean }).standalone === true
+  )
+}
+
+/**
+ * Push ist auf diesem Gerät erst nach Installation möglich: iOS-Safari im
+ * Browser-Tab kennt PushManager nicht — erst als Home-Bildschirm-App (iOS 16.4+).
+ * Dann zeigen wir statt eines (nicht funktionierenden) Schalters die Anleitung.
+ */
+export function pushNeedsInstall(): boolean {
+  return !pushSupported() && isIOS() && !isStandalone()
+}
+
 /**
  * Beim App-Start aufrufen (main.tsx) — registriert den Service Worker.
  * `?dev=1` schaltet im Dev-Server sein Shell-Caching ab (es würde Vites HMR
