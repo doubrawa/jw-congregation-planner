@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Umgebungs-/Secret-Dateien — NIE einchecken (nur .env.example wird getrackt)
+.env
+.env.*
+!.env.example
+
 # Test-Coverage-Reports (vitest --coverage)
 coverage
 
