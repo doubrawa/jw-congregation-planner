@@ -61,6 +61,7 @@ export default {
   "profil": "PROFILE",
   "nameLbl": "Name",
   "versammlungLbl": "Congregation",
+  "emailKv": "Email",
   "darstellung": "Appearance",
   "spracheLbl": "Language",
   "personen": "People",
