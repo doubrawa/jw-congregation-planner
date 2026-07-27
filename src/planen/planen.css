@@ -744,6 +744,42 @@
   margin-top: 1px;
 }
 
+/* 5 Mini-Quadrate neben der Auslastung (aktuelle Woche ±2): zeigen je Woche die
+   Belegung — grün = frei, sonst nach Art (Aufgabe/Hilfsdienst) eingefärbt. Feste
+   Farben (nicht themenabhängig), damit die drei Zustände immer unterscheidbar
+   bleiben; das mittlere Quadrat (aktuelle Woche) ist dezent hervorgehoben. */
+.cand-load {
+  display: inline-flex;
+  gap: 2px;
+  margin-inline-start: 6px;
+  vertical-align: middle;
+}
+
+.cand-load-cell {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: #5aa06a; /* none/frei = grün */
+}
+
+.cand-load-cell:nth-child(3) {
+  outline: 1px solid var(--mut);
+  outline-offset: 1px;
+}
+
+.cand-load-cell[data-load='task'] {
+  background: #3f7bab; /* Aufgabe = blau */
+}
+
+.cand-load-cell[data-load='helper'] {
+  background: #d09a33; /* Hilfsdienst = gelb/ocker */
+}
+
+.cand-load-cell[data-load='void'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--bord2); /* keine solche Woche */
+}
+
 /* Bereits an diesem Tag zugeteilt — Warnhinweis gegen Doppelbelegung. */
 .cand-today {
   display: block;
