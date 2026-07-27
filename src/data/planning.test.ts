@@ -474,22 +474,30 @@ describe('Konfliktprüfungen (Planen)', () => {
 
   it('tab-bezogene Serie: zählt nur die jeweilige Zusammenkunftsart', () => {
     const weeks = buildDemoWeeks()
-    // Person nur in der Wochenend-ZK dreier Wochen in Folge.
-    for (const wi of [0, 1, 2]) weeks[wi].we.helpers.ton = [{ name: 'WE Serie' }]
+    // Person nur in der Wochenend-ZK dreier Wochen in Folge (Programmpunkt Vorsitz).
+    for (const wi of [0, 1, 2]) (weeks[wi].we.sections[0].items[0] as PartItem).names[0].name = 'WE Serie'
     const midStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'mid').filter((c) => c.kind === 'streak')
     expect(midStreak.some((c) => c.name === 'WE Serie')).toBe(false)
     const weStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'we').filter((c) => c.kind === 'streak')
     expect(weStreak).toContainEqual({ kind: 'streak', name: 'WE Serie', count: 3 })
   })
 
-  it('erkennt Serien von 3 Wochen in Folge (und nur dort)', () => {
+  it('erkennt Serien von 3 Wochen in Folge (nur Aufgaben, nicht dort)', () => {
     const weeks = buildDemoWeeks()
-    for (const wi of [0, 1, 2]) weeks[wi].mid.helpers.ton = [{ name: 'R. Serie' }]
+    // Programmpunkt (Vorsitz) drei Wochen in Folge → Serie.
+    for (const wi of [0, 1, 2]) (weeks[wi].mid.sections[0].items[0] as PartItem).names[0].name = 'R. Serie'
     const streak = weekConflicts(weeks, 1, [], DEMO_SERVICES).filter((c) => c.kind === 'streak')
     expect(streak).toContainEqual({ kind: 'streak', name: 'R. Serie', count: 3 })
     // Woche 3 gehört nicht zur Serie
     const w3 = weekConflicts(weeks, 3, [], DEMO_SERVICES)
     expect(w3.some((c) => c.kind === 'streak' && c.name === 'R. Serie')).toBe(false)
+  })
+
+  it('Hilfsdienst mehrmals in Folge ist KEINE Serie', () => {
+    const weeks = buildDemoWeeks()
+    for (const wi of [0, 1, 2]) weeks[wi].mid.helpers.ton = [{ name: 'H. Dauerhelfer' }]
+    const streak = weekConflicts(weeks, 1, [], DEMO_SERVICES).filter((c) => c.kind === 'streak')
+    expect(streak.some((c) => c.name === 'H. Dauerhelfer')).toBe(false)
   })
 
   it('meldet externe Redner und Gruppen-Rotation nicht', () => {
