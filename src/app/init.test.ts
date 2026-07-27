@@ -127,12 +127,17 @@ describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
   it('stale=<Stunden> täuscht den Offline-Stand vor (staleAt entsprechend alt)', () => {
     vi.stubEnv('DEV', true)
     location.hash = '#s=programm&stale=5'
+    // staleAt = Date.now()(innerhalb) - 5h. Der reale Aufruf-Zeitpunkt liegt
+    // zwischen before und after, deshalb das Alter einklammern statt gegen einen
+    // einzelnen Zeitpunkt zu prüfen (sonst Sub-ms-Race → ageHours knapp < 5).
     const before = Date.now()
     const s = initialState()
+    const after = Date.now()
     expect(s.staleAt).not.toBeNull()
-    const ageHours = (before - (s.staleAt as number)) / 3600_000
-    expect(ageHours).toBeGreaterThanOrEqual(5)
-    expect(ageHours).toBeLessThan(5.01)
+    const staleAt = s.staleAt as number
+    expect((after - staleAt) / 3600_000).toBeGreaterThanOrEqual(5)
+    expect((before - staleAt) / 3600_000).toBeLessThanOrEqual(5)
+    expect((after - staleAt) / 3600_000).toBeLessThan(5.01)
   })
 
   it('ohne stale bleibt der Stand aktuell', () => {
