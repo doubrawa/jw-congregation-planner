@@ -14,8 +14,14 @@ import { loadCongregationData } from '../lib/data'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction, HydratePayload } from './context'
 
-export async function loadAndHydrate(dispatch: Dispatch<AppAction>, userId: string): Promise<void> {
-  dispatch({ type: 'setDataStatus', status: 'loading' })
+export async function loadAndHydrate(
+  dispatch: Dispatch<AppAction>,
+  userId: string,
+  opts?: { silent?: boolean },
+): Promise<void> {
+  // Stiller Refresh (z. B. nach einem Push-Klick): kein „lädt…"-Zwischenschritt,
+  // die aktuelle Ansicht bleibt stehen, bis die frischen Daten da sind.
+  if (!opts?.silent) dispatch({ type: 'setDataStatus', status: 'loading' })
   const res = await loadCongregationData(userId)
   if (res.ok) {
     const payload: HydratePayload = {
