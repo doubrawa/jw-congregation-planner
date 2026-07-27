@@ -14,8 +14,9 @@
 //    Slots (Gastredner/Kreisaufseher) und Gruppen-Rotationen (Reinigung).
 //  - Der Zusammenkunftstag wird aus congregations.meeting_times abgeleitet
 //    ("Di 19:00 · So 10:00"); ohne erkennbare Wochentage gilt Di (mid)/So (we).
-//  - Personen mit fälliger letzter Erinnerung, aber ohne App-Konto, werden den
-//    Planern als Sammel-Push gemeldet.
+//  - Personen mit fälliger letzter Erinnerung, die nicht per Push erreichbar
+//    sind (kein App-Konto ODER kein aktiviertes Push-Abo), werden den Planern
+//    als Sammel-Push gemeldet, damit sie persönlich erinnern können.
 //  - Empfangen kann nur, wer in der App (Profil) Push aktiviert hat
 //    (Tabelle push_subscriptions, migration-005). Abgelaufene Abos (404/410)
 //    werden automatisch gelöscht.
@@ -351,12 +352,20 @@ Deno.serve(async (req: Request) => {
           for (const pend of pendingOfMeeting(wi, tab, meeting, services, conf)) {
             const entry = `${taskDate(meeting)}: ${pend.label}`
             const userId = userByName.get(pend.name)
+            // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
+            // Push-Abo. Wer ein Konto hat, bekommt trotzdem die persönliche
+            // Erinnerung (Push an evtl. Abos + Glocke); ohne Abo bleibt das aber
+            // faktisch ungesehen — daher zusätzlich die Planer-Meldung unten.
+            const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
             if (userId) {
               entriesByUser.set(userId, [...(entriesByUser.get(userId) ?? []), entry])
               if (kind === 'main') {
                 mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
               }
-            } else if (days === rem.last) {
+            }
+            // Nicht per Push erreichbar (kein Konto ODER kein Abo) → am letzten
+            // Erinnerungstag den Planern melden, damit sie persönlich erinnern.
+            if (!reachable && days === rem.last) {
               unreachable.push(`${pend.name} — ${entry}`)
             }
           }
