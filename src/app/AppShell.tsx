@@ -111,6 +111,10 @@ export function AppShell() {
       }
     }
     sw.addEventListener('message', onMsg)
+    // Der Nachrichtenfluss von navigator.serviceWorker ist deaktiviert, solange
+    // weder onmessage gesetzt noch startMessages() aufgerufen wurde. Ohne das
+    // erreicht uns die postMessage aus sw.js (Push-Klick) nie.
+    sw.startMessages?.()
     return () => sw.removeEventListener('message', onMsg)
   }, [])
 
