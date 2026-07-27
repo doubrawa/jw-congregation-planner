@@ -19,6 +19,10 @@ const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.svg', 'icon-192
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com']
 
 self.addEventListener('install', (event) => {
+  // Neue SW-Fassung sofort aktiv werden lassen (statt bis zum Schließen aller
+  // Fenster zu warten) — sonst laufen SW-Änderungen wie der Deep-Link-Klick
+  // erst nach einem kompletten Neustart der App.
+  self.skipWaiting()
   if (DEV) return
   // Fehlt eine Datei, soll die Installation nicht komplett scheitern.
   event.waitUntil(
@@ -30,7 +34,13 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))),
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      // Offene Fenster sofort unter die Kontrolle dieser Fassung nehmen, damit
+      // client.navigate() / postMessage aus notificationclick funktionieren.
+      await self.clients.claim()
+    })(),
   )
 })
 
@@ -120,9 +130,18 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {
         if ('focus' in client) {
-          // Bereits offenes Fenster: Ziel (#go=…) mitschicken, damit die App
-          // dorthin navigiert, statt nur den aktuellen Screen zu fokussieren.
+          // Bereits offenes Fenster: Ziel (#go=…) auf zwei Wegen zustellen, weil
+          // je nach Browser/Installationsart mal der eine, mal der andere greift:
+          //  (a) postMessage — die App wertet es im message-Listener aus,
+          //  (b) client.navigate — setzt den #go=-Hash, die App reagiert per
+          //      hashchange. Danach den Fokus holen.
           client.postMessage({ type: 'navigate', url })
+          if ('navigate' in client) {
+            return client.navigate(url).then(
+              (c) => (c || client).focus(),
+              () => client.focus(),
+            )
+          }
           return client.focus()
         }
       }

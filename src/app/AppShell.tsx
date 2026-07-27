@@ -100,22 +100,36 @@ export function AppShell() {
     if (parseGoTarget(location.hash)) history.replaceState(null, '', location.pathname + location.search)
   }, [])
 
-  // Push-Klick auf ein bereits offenes Fenster → sw.js schickt das Ziel her.
+  // Push-Klick auf ein bereits offenes Fenster → sw.js stellt das Ziel auf zwei
+  // Wegen zu (siehe notificationclick): (a) per postMessage, (b) per
+  // client.navigate, das nur den #go=-Hash setzt und hier als hashchange ankommt.
   useEffect(() => {
-    const sw = navigator.serviceWorker
-    if (!sw) return
-    const onMsg = (e: MessageEvent) => {
-      if ((e.data as { type?: string })?.type === 'navigate') {
-        const target = parseGoTarget(String((e.data as { url?: string }).url ?? ''))
-        if (target) setPendingNav(target)
+    const applyFrom = (input: string) => {
+      const target = parseGoTarget(input)
+      if (target) {
+        setPendingNav(target)
+        // #go= wieder aus der URL nehmen, damit ein Reload nicht erneut springt.
+        history.replaceState(null, '', location.pathname + location.search)
       }
     }
-    sw.addEventListener('message', onMsg)
+    const onHash = () => applyFrom(location.hash)
+    window.addEventListener('hashchange', onHash)
+
+    const sw = navigator.serviceWorker
+    const onMsg = (e: MessageEvent) => {
+      if ((e.data as { type?: string })?.type === 'navigate') {
+        applyFrom(String((e.data as { url?: string }).url ?? ''))
+      }
+    }
+    sw?.addEventListener('message', onMsg)
     // Der Nachrichtenfluss von navigator.serviceWorker ist deaktiviert, solange
     // weder onmessage gesetzt noch startMessages() aufgerufen wurde. Ohne das
     // erreicht uns die postMessage aus sw.js (Push-Klick) nie.
-    sw.startMessages?.()
-    return () => sw.removeEventListener('message', onMsg)
+    sw?.startMessages?.()
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      sw?.removeEventListener('message', onMsg)
+    }
   }, [])
 
   // Ziel anwenden, sobald eingeloggt (vorher zeigt die App den Login-Screen).
