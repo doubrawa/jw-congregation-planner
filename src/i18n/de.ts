@@ -52,7 +52,7 @@ export const DE = {
     datumPh: 'Datum wählen',
     abwEintragen: 'ABWESENHEIT EINTRAGEN', deineEintraege: 'DEINE EINTRÄGE', ohneAngabe: 'Ohne Angabe',
     keineAbw: 'Keine Abwesenheiten eingetragen.', profil: 'PROFIL',
-    nameLbl: 'Name', versammlungLbl: 'Versammlung',
+    nameLbl: 'Name', versammlungLbl: 'Versammlung', emailKv: 'E-Mail',
     darstellung: 'Darstellung', spracheLbl: 'Sprache',
     personen: 'Personen', personenCount: '{n} Personen', suchen: 'Suchen …',
     neuePerson: '+ NEUE PERSON ANLEGEN', aufgabenbereicheN: '{n} Aufgabenbereiche',

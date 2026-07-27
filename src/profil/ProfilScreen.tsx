@@ -32,6 +32,9 @@ export function ProfilScreen() {
   // Position im Regler; unbekannter Wert (z. B. alter localStorage) → Standard.
   const scaleIndex = Math.max(0, FONT_SCALES.indexOf(state.fontScale))
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+  // Konto-E-Mail des eingeloggten Nutzers (nur Produktion; die eigene
+  // Mitglieder-Zeile ist auch für Nicht-Planer sichtbar).
+  const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''
 
   // Web-Push: Schalter nur im Produktionsmodus und wenn der Browser es kann
   // (iOS erst als "Zum Home-Bildschirm"-App). Zustand = Abo dieses Geräts.
@@ -74,6 +77,14 @@ export function ProfilScreen() {
           <span className="kv-key">{t.nameLbl}</span>
           <span className="kv-val">{me ? fullName(me) : ''}</span>
         </div>
+        {myEmail && (
+          <div className="kv-row">
+            <span className="kv-key">{t.emailKv}</span>
+            <span className="kv-val" dir="ltr">
+              {myEmail}
+            </span>
+          </div>
+        )}
         <div className="kv-row">
           <span className="kv-key">{t.versammlungLbl}</span>
           <span className="kv-val">{state.congregation.name}</span>
