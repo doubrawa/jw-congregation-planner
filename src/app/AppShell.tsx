@@ -8,6 +8,7 @@ import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { MyTaskSheet } from '../components/MyTaskSheet'
 import { LanguageSheet } from '../components/LanguageSheet'
 import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
@@ -192,6 +193,7 @@ export function AppShell() {
         {state.slotSel && <AssignSheet sel={state.slotSel} />}
         {state.langSheetOpen && <LanguageSheet />}
         {state.s89 && <S89Sheet payload={state.s89} />}
+        {state.myTaskId && <MyTaskSheet />}
         {state.confirmOpen && state.myTasks.some((t) => t.status === 'offen') && <ConfirmDialog />}
         {state.toast && (
           <div key={state.toast.id} className="toast" role="status">

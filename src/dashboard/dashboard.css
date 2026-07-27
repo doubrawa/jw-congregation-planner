@@ -50,6 +50,18 @@
   white-space: nowrap;
 }
 
+/* Titel+Datum der nächsten Aufgabe sind anklickbar → Aktions-Sheet. */
+.dash-hero-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.dash-hero-open:hover .dash-hero-title {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .dash-hero-title {
   font-family: var(--font-serif);
   font-size: calc(22px * var(--fs));

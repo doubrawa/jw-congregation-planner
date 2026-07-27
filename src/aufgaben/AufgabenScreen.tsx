@@ -59,8 +59,14 @@ export function AufgabenScreen() {
         {state.myTasks.map((task) => (
           <div key={task.id} className="auf-row">
             <div>
-              <div className="auf-title">{tp(task.title)}</div>
-              <div className="auf-date">{tp(task.date)}</div>
+              <button
+                type="button"
+                className="auf-open"
+                onClick={() => dispatch({ type: 'openMyTask', id: task.id })}
+              >
+                <div className="auf-title">{tp(task.title)}</div>
+                <div className="auf-date">{tp(task.date)}</div>
+              </button>
               <div className="auf-actions">
                 {task.status === 'offen' && (
                   <button
@@ -96,6 +102,30 @@ export function AufgabenScreen() {
           </div>
         ))}
       </div>
+
+      {state.substituteReqs.length > 0 && (
+        <div className="panel panel--pb14 auf-sub" data-farbe="gold">
+          <div className="panel-label">{t.einspringenTitle}</div>
+          <p className="panel-hint">{t.einspringenHint}</p>
+          {state.substituteReqs.map((req) => (
+            <div key={req.key} className="auf-sub-row">
+              <div>
+                <div className="auf-sub-title">{tu(req.title)}</div>
+                <div className="auf-sub-meta">
+                  {tp(req.date)} · {tu(req.declinedBy)}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="auf-sub-btn"
+                onClick={() => dispatch({ type: 'takeSubstitute', key: req.key })}
+              >
+                {t.uebernehmen}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <form className="panel panel--pb16" data-farbe="neutral" onSubmit={addAbsence}>
         <div className="panel-label">{t.abwesenheiten}</div>

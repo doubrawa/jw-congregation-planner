@@ -34,6 +34,7 @@ import type {
   Service,
   SlotAssignment,
   SlotSelection,
+  SubstituteReq,
   Week,
 } from './types'
 
@@ -588,6 +589,54 @@ export function partTaskKey(wi: number, tab: MeetingKey, si: number, ii: number,
 /** Stabiler Schlüssel eines Hilfsdienst-Slots. */
 export function helperTaskKey(wi: number, tab: MeetingKey, svc: string, pos: number): string {
   return `${wi}|${tab}|helper|${svc}|${pos}`
+}
+
+/** Zerlegt einen Hilfsdienst-task_key; null, wenn es kein Hilfsdienst-Key ist. */
+export function helperKeyParts(
+  key: string,
+): { wi: number; tab: MeetingKey; svc: string; pos: number } | null {
+  const p = key.split('|')
+  if (p.length !== 5 || p[2] !== 'helper') return null
+  return { wi: Number(p[0]), tab: p[1] as MeetingKey, svc: p[3], pos: Number(p[4]) }
+}
+
+/**
+ * Offene Ersatzgesuche für `me`: Hilfsdienst-Slots, deren Bearbeiter „verhindert"
+ * gemeldet hat und für die `me` qualifiziert (gleicher Dienst), nicht selbst der
+ * Absager und in der Woche nicht abwesend ist. Nächste zuerst.
+ */
+export function deriveSubstituteReqs(
+  weeks: Week[],
+  services: Service[],
+  confirmations: ConfirmationMap,
+  me: Person,
+  meetings = '',
+): SubstituteReq[] {
+  const out: SubstituteReq[] = []
+  const myName = displayName(me)
+  const offsets = meetingDayOffsets(meetings)
+  const svcByKey = new Map(services.map((s) => [s.key, s]))
+  for (const [key, status] of Object.entries(confirmations)) {
+    if (status !== 'verhindert') continue
+    const parts = helperKeyParts(key)
+    if (!parts) continue
+    const svc = svcByKey.get(parts.svc)
+    if (!svc || svc.groups) continue
+    if (!isQualified(me, serviceQualKey(parts.svc)) || me.absent.includes(parts.wi)) continue
+    const week = weeks[parts.wi]
+    const meeting = week?.[parts.tab]
+    const slot = meeting?.helpers[parts.svc]?.[parts.pos]
+    if (!meeting || !slot?.name || slot.name === myName) continue // eigener/leerer Slot
+    out.push({
+      key,
+      svc: parts.svc,
+      title: svc.name,
+      date: taskDate(meeting),
+      at: meetingDateMs(week.start, offsets[parts.tab]),
+      declinedBy: slot.name,
+    })
+  }
+  return out.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
 }
 
 /**

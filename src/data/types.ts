@@ -325,6 +325,20 @@ export interface MyTask {
 }
 
 /**
+ * Offenes Ersatzgesuch für einen Hilfsdienst: Der Bearbeiter hat „verhindert"
+ * gemeldet; qualifizierte Personen (gleicher Dienst) können einspringen. Rein
+ * abgeleitet (planning.ts deriveSubstituteReqs), nicht gespeichert.
+ */
+export interface SubstituteReq {
+  key: string // Hilfsdienst-task_key
+  svc: string // Dienst-Key
+  title: string // Dienstname (Anzeige über tu)
+  date: string
+  at?: number | null // UTC-ms des Zusammenkunftstags → Countdown
+  declinedBy: string // Anzeigename der Person, die nicht kann
+}
+
+/**
  * Bestätigungs-Status je Aufgabe (Produktionsmodus). Schlüssel = stabiler
  * Slot-Pfad (siehe taskKey in planning.ts); nur bestätigt/verhindert werden
  * gespeichert — fehlender Eintrag bedeutet „offen“.

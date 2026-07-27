@@ -58,6 +58,8 @@ function makeState(over: Partial<AppState> = {}): AppState {
     pendingNames: [...DEMO_PENDING_NAMES],
     confirmations: {},
     confirmOpen: false,
+    myTaskId: null,
+    substituteReqs: [],
     s89: null,
     reminders: { ...DEMO_REMINDERS },
     lang: 'de',

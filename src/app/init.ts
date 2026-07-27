@@ -150,6 +150,8 @@ export function initialState(): AppState {
     pendingNames: demo ? DEMO_PENDING_NAMES : [],
     confirmations: {},
     confirmOpen: false,
+    myTaskId: null,
+    substituteReqs: [],
     s89: null,
     reminders: DEMO_REMINDERS,
     lang: debug?.lang ?? getInitialLang(),
