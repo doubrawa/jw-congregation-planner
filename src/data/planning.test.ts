@@ -444,12 +444,22 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'Manfred Albrecht', tab: 'mid' })
   })
 
-  it('erkennt sonstige Mehrfach-Zuteilung (double) — zwei Hilfsdienste', () => {
+  it('erkennt zwei Hilfsdienste am selben Tag (double)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Xaver Testhelfer' }] // nur Hilfsdienste, kein Programmpunkt
     weeks[0].mid.helpers.mik = [{ name: 'Xaver Testhelfer' }, { name: '' }]
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
     expect(conflicts).toContainEqual({ kind: 'double', name: 'Xaver Testhelfer', tab: 'mid', count: 2 })
+  })
+
+  it('meldet zwei Programmpunkte (z. B. Vorsitz + Anfangsgebet) NICHT als Konflikt', () => {
+    const weeks = buildDemoWeeks()
+    // ERÖFFNUNG-Programmpunkt: beide Slots (Vorsitz + Gebet) auf dieselbe Person.
+    const opening = weeks[0].mid.sections[0].items[0] as PartItem
+    opening.names[0].name = 'Doppel Aufgabe'
+    opening.names[1].name = 'Doppel Aufgabe'
+    const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
+    expect(conflicts.some((c) => c.name === 'Doppel Aufgabe')).toBe(false)
   })
 
   it('erkennt Serien von 3 Wochen in Folge (und nur dort)', () => {
