@@ -6,17 +6,22 @@ import { fsLeaderValue } from '../data/fs'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
+import { relativeWeekLabel } from '../i18n/relative-time'
 import type { MeetingAssignment } from '../data/planning'
-import type { SlotSelection } from '../data/types'
+import type { Lang, SlotSelection } from '../data/types'
 import '../components/overlays.css'
 import './planen.css'
 
-/** Tooltip der Mini-Quadrate: erklärt die Farbe (frei / Aufgabe / Hilfsdienst). */
-function loadTitle(t: Dict, l: WeekLoad): string {
-  if (l === 'task') return t.loadAufgabe
-  if (l === 'helper') return t.loadHilfsdienst
-  if (l === 'none') return t.loadFrei
-  return ''
+/**
+ * Tooltip der Mini-Quadrate: Farbe (frei / Aufgabe / Hilfsdienst) plus die Woche
+ * relativ zur geplanten — z. B. „Aufgabe nächste Woche", „Hilfsdienst vor 2
+ * Wochen", „frei diese Woche". `offset` ist der Wochenversatz (−2 … +2).
+ */
+function loadTitle(t: Dict, l: WeekLoad, offset: number, lang: Lang): string {
+  const kind = l === 'task' ? t.loadAufgabe : l === 'helper' ? t.loadHilfsdienst : l === 'none' ? t.loadFrei : ''
+  if (!kind) return ''
+  const when = relativeWeekLabel(offset, lang)
+  return when ? `${kind} ${when}` : kind
 }
 
 interface Candidate {
@@ -288,7 +293,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                   {cand.load && (
                     <span className="cand-load">
                       {cand.load.map((l, i) => (
-                        <span key={i} className="cand-load-cell" data-load={l} title={loadTitle(t, l)} />
+                        <span key={i} className="cand-load-cell" data-load={l} title={loadTitle(t, l, i - 2, state.lang)} />
                       ))}
                     </span>
                   )}

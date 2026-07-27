@@ -35,3 +35,19 @@ export function relativeDayLabel(
     return ''
   }
 }
+
+/**
+ * Lokalisiertes Relativ-Wochen-Label für einen ganzzahligen Wochenversatz:
+ * 0 → "diese Woche", 1 → "nächste Woche", -1 → "letzte Woche",
+ * 2 → "in 2 Wochen", -2 → "vor 2 Wochen". Ebenfalls über Intl, damit jede
+ * App-Sprache die grammatisch korrekte Form bekommt. '' wenn Intl die Locale
+ * nicht kennt (dann bleibt es beim reinen Typ-Label ohne Wochenangabe).
+ */
+export function relativeWeekLabel(offset: number, lang: Lang): string {
+  const locale = LOCALES[lang] ?? lang
+  try {
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(offset, 'week')
+  } catch {
+    return ''
+  }
+}
