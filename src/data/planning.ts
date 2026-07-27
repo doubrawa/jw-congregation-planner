@@ -759,7 +759,7 @@ export interface Conflict {
   kind: ConflictKind
   name: string // Anzeigename der Person
   tab?: MeetingKey // betroffene Zusammenkunft (absent/double/helperTask)
-  count?: number // double: Slots in der Zusammenkunft; streak: Wochen in Folge
+  count?: number // double: Hilfsdienste in der Zusammenkunft; streak: Wochen in Folge
 }
 
 /**
@@ -837,7 +837,8 @@ export function weekConflicts(
   // helperTask / double: gleiche Person mehrfach in einer Zusammenkunft.
   // helperTask = Hilfsdienst UND Programmpunkt am selben Tag (die vom Nutzer
   // vorgegebene Regel — bei manueller Zuteilung nicht automatisch verhindert);
-  // double = sonstige Mehrfach-Zuteilung (2× Programm oder 2× Hilfsdienst).
+  // double = mehrere Hilfsdienste am selben Tag. Zwei Programmpunkte (z. B.
+  // Vorsitz + Anfangsgebet) sind bewusst KEIN Konflikt.
   for (const tab of tabs) {
     const partCounts = new Map<string, number>()
     for (const name of meetingPartNames(week[tab])) {
@@ -851,7 +852,7 @@ export function weekConflicts(
       const pc = partCounts.get(name) ?? 0
       const hc = helperCounts.get(name) ?? 0
       if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, tab })
-      else if (pc + hc >= 2) conflicts.push({ kind: 'double', name, tab, count: pc + hc })
+      else if (hc >= 2) conflicts.push({ kind: 'double', name, tab, count: hc })
     }
   }
 
