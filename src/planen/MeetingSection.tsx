@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
-import { LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
-import { isSong } from '../data/helpers'
+import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
+import { isSong, splitOpeningSong } from '../data/helpers'
 import { itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
 import { isGuestRole } from '../data/planning'
 import { useT } from '../i18n/useT'
@@ -40,6 +40,11 @@ export function MeetingSection({
   // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
   const isTalk = state.tab === 'we' && rawSection.label === LABEL_VORTRAG
   const isOpening = state.tab === 'we' && rawSection.label === LABEL_EROEFFNUNG
+  // Lied aus dem ERÖFFNUNG/ABSCHLUSS-Sammeltitel mittig+kursiv herausziehen —
+  // außer bei der Wochenend-Eröffnung, wo es als editierbares ANFANGSLIED-Feld
+  // bleibt (isOpening, „beim Planen am Sonntag").
+  const splitSong =
+    (rawSection.label === LABEL_EROEFFNUNG && !isOpening) || rawSection.label === LABEL_ABSCHLUSS
   const movables = movableIndices(rawSection)
 
   const isPending = (name: string) => state.pendingNames.includes(name)
@@ -98,8 +103,13 @@ export function MeetingSection({
         const canPartner = !isSong(rawItem) && rawItem.names.some((n) => n.bereichsKey === 'schulung')
         const hasPartner =
           !isSong(rawItem) && rawItem.names.some((n) => n.bereichsKey === 'schulungPartner')
+        const { song, rest } = splitSong
+          ? splitOpeningSong(tpw(item.title))
+          : { song: null, rest: '' }
         return (
-          <div key={ii} className="plan-item">
+          <Fragment key={ii}>
+            {song && <div className="panel-song">{song}</div>}
+            <div className="plan-item">
             <div className="plan-item-head">
               {isTalk ? (
                 <input
@@ -115,7 +125,7 @@ export function MeetingSection({
                   }}
                 />
               ) : (
-                <div className="plan-item-title">{tpw(item.title)}</div>
+                <div className="plan-item-title">{song ? rest : tpw(item.title)}</div>
               )}
               {editable && (
                 <div className="lac-move">
@@ -192,7 +202,8 @@ export function MeetingSection({
                 </button>
               </div>
             )}
-          </div>
+            </div>
+          </Fragment>
         )
       })}
       {isLac && (

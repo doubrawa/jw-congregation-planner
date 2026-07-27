@@ -3,6 +3,7 @@ import {
   displayName,
   duplicateDisplayNames,
   familyMembers,
+  splitOpeningSong,
   initials,
   isPlainPublisher,
   isQualified,
@@ -137,6 +138,33 @@ describe('Anzeigenamen', () => {
   it('initials aus Vor- und Nachname; leer → Platzhalter', () => {
     expect(initials(person({}))).toBe('SK')
     expect(initials(person({ fn: '', ln: '' }))).toBe('–')
+  })
+})
+
+describe('splitOpeningSong', () => {
+  it('zieht das Lied aus dem Eröffnungs-Sammeltitel (Lied zuerst)', () => {
+    expect(splitOpeningSong('Lied 1 · Gebet · Einleitende Worte')).toEqual({
+      song: 'Lied 1',
+      rest: 'Gebet · Einleitende Worte',
+    })
+  })
+
+  it('zieht das Lied aus dem Abschluss-Sammeltitel (Lied in der Mitte)', () => {
+    expect(splitOpeningSong('Schlussworte · Lied 76 · Gebet')).toEqual({
+      song: 'Lied 76',
+      rest: 'Schlussworte · Gebet',
+    })
+  })
+
+  it('funktioniert sprachunabhängig (übersetzter Titel mit Nummer)', () => {
+    expect(splitOpeningSong('Song 138 · Prayer')).toEqual({ song: 'Song 138', rest: 'Prayer' })
+  })
+
+  it('ohne Nummern-Atom bleibt der Titel unverändert', () => {
+    expect(splitOpeningSong('Schlussworte · Gebet')).toEqual({
+      song: null,
+      rest: 'Schlussworte · Gebet',
+    })
   })
 })
 
