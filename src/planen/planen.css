@@ -385,10 +385,16 @@
 }
 
 .lac-add-btn {
+  /* Inhalt mittig — sonst sitzt der Großbuchstaben-Text durch das geerbte
+     line-height optisch zu weit oben (leerer Unterlängen-Raum darunter). */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   border: 1px solid var(--acc);
   color: var(--acc);
   border-radius: var(--r-pill);
-  padding: 8px 13px;
+  padding: 9px 13px;
   font-size: calc(11px * var(--fs));
   font-weight: 600;
   white-space: nowrap;
