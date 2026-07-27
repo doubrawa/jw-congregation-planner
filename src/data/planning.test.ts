@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoWeeks, DEMO_PERSONS, DEMO_SERVICES } from './demo'
-import { displayName, helperWorkload, isSong, partWorkload, workloadOf } from './helpers'
+import { displayName, helperWorkload, isSong, loadWindow, partWorkload, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
   assignmentsInMeeting,
@@ -296,6 +296,25 @@ describe('Auslastung', () => {
     expect(workloadOf(weeks, 'Claus Maier')).toBe(
       partWorkload(weeks, 'Claus Maier') + helperWorkload(weeks, 'Claus Maier'),
     )
+  })
+})
+
+describe('loadWindow (5-Wochen-Belegung für die Mini-Quadrate)', () => {
+  it('liefert je Woche none/task/helper; Aufgabe hat Vorrang', () => {
+    const weeks = buildDemoWeeks()
+    ;(weeks[1].mid.sections[0].items[0] as PartItem).names[0].name = 'Quadrat Test' // Aufgabe in Woche 1
+    weeks[3].mid.helpers.ton = [{ name: 'Quadrat Test' }] // Hilfsdienst in Woche 3
+    // Demo hat 4 Wochen (0–3); Fenster um Woche 2 (±2) → 0,1,2,3,4 → Index 4 = void
+    expect(loadWindow(weeks, 'Quadrat Test', 2, 2)).toEqual(['none', 'task', 'none', 'helper', 'void'])
+  })
+
+  it('markiert nicht geladene Wochen als void', () => {
+    const weeks = buildDemoWeeks()
+    // Fenster um Woche 0 (±2) → Indizes -2,-1,0,1,2 → erste zwei existieren nicht
+    const w = loadWindow(weeks, 'Niemand', 0, 2)
+    expect(w[0]).toBe('void')
+    expect(w[1]).toBe('void')
+    expect(w.slice(2)).toEqual(['none', 'none', 'none'])
   })
 })
 

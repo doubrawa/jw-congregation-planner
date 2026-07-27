@@ -273,3 +273,24 @@ export function helperWorkload(weeks: Week[], name: string): number {
 export function workloadOf(weeks: Week[], name: string): number {
   return partWorkload(weeks, name) + helperWorkload(weeks, name)
 }
+
+/** Belegungsart einer Person in EINER Woche (für die Mini-Quadrate). */
+export type WeekLoad = 'void' | 'none' | 'task' | 'helper'
+
+/**
+ * Belegung je Woche im ±`radius`-Fenster um `wi` (Standard 2 → 5 Wochen: aktuelle
+ * + 2 davor + 2 danach). `void` = keine solche Woche geladen, `none` = frei,
+ * `task` = Programmpunkt (Aufgabe), `helper` = nur Hilfsdienst (Aufgabe hat
+ * Vorrang, falls beides in derselben Woche).
+ */
+export function loadWindow(weeks: Week[], name: string, wi: number, radius = 2): WeekLoad[] {
+  const out: WeekLoad[] = []
+  for (let i = wi - radius; i <= wi + radius; i++) {
+    const week = weeks[i]
+    if (!week) out.push('void')
+    else if (partWorkload([week], name) > 0) out.push('task')
+    else if (helperWorkload([week], name) > 0) out.push('helper')
+    else out.push('none')
+  }
+  return out
+}

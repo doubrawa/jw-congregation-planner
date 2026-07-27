@@ -1,14 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { useDialogFocus } from '../components/useDialogFocus'
-import { displayName, initials, isQualified, isSong, partnerGenderOk, personCompare, roleLabel, workloadOf } from '../data/helpers'
+import { displayName, initials, isQualified, isSong, loadWindow, partnerGenderOk, personCompare, roleLabel, workloadOf, type WeekLoad } from '../data/helpers'
 import { fsLeaderValue } from '../data/fs'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
+import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import type { MeetingAssignment } from '../data/planning'
 import type { SlotSelection } from '../data/types'
 import '../components/overlays.css'
 import './planen.css'
+
+/** Tooltip der Mini-Quadrate: erklärt die Farbe (frei / Aufgabe / Hilfsdienst). */
+function loadTitle(t: Dict, l: WeekLoad): string {
+  if (l === 'task') return t.loadAufgabe
+  if (l === 'helper') return t.loadHilfsdienst
+  if (l === 'none') return t.loadFrei
+  return ''
+}
 
 interface Candidate {
   key: string
@@ -19,6 +28,7 @@ interface Candidate {
   today: MeetingAssignment[] // schon an diesem Tag zugeteilt (Doppelbelegungs-Hinweis)
   absent: boolean
   free: boolean
+  load?: WeekLoad[] // Belegung der 5 Wochen (aktuelle ±2) für die Mini-Quadrate
 }
 
 /**
@@ -154,7 +164,10 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
         .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && genderOk(p))
         .map((p) => {
           const name = displayName(p)
-          const workload = workloadOf(state.weeks, name)
+          // Auslastung über das 5-Wochen-Fenster (aktuelle ±2), passend zu den
+          // Mini-Quadraten daneben.
+          const winWeeks = state.weeks.slice(Math.max(0, sel.wi - 2), sel.wi + 3)
+          const workload = workloadOf(winWeeks, name)
           const workloadLabel =
             workload === 1 ? t.aufgabeIn4 : fill(t.aufgabenIn4, { n: workload })
           return {
@@ -166,6 +179,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], name, state.services, sel),
             absent: p.absent.includes(sel.wi),
             free: workload === 0,
+            load: loadWindow(state.weeks, name, sel.wi, 2),
           }
         })
         .sort((a, b) => Number(a.absent) - Number(b.absent))
@@ -269,7 +283,16 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               <span className="avatar avatar--tint avatar--36">{cand.initials}</span>
               <span>
                 <span className="cand-name">{cand.name}</span>
-                <span className="cand-sub">{cand.sub}</span>
+                <span className="cand-sub">
+                  {cand.sub}
+                  {cand.load && (
+                    <span className="cand-load">
+                      {cand.load.map((l, i) => (
+                        <span key={i} className="cand-load-cell" data-load={l} title={loadTitle(t, l)} />
+                      ))}
+                    </span>
+                  )}
+                </span>
                 {cand.today.length > 0 && (
                   <span className="cand-today">
                     {t.sheetSchonHeute}:{' '}
