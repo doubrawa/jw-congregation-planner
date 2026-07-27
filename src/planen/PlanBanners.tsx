@@ -6,7 +6,7 @@
 
 import { useApp } from '../app/context'
 import { openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
-import type { MeetingTab } from '../data/types'
+import type { MeetingKey, MeetingTab } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 
@@ -18,11 +18,11 @@ function tabName(t: Dict, tab: MeetingTab | undefined): string {
 /** Serien-Konflikte (streak) auf so viele Zeilen begrenzen; Rest → „+N weitere". */
 const STREAK_SHOWN = 2
 
-/** Konflikt-Banner der ganzen Woche (Abwesende, Doppelbelegung, Serien). */
-export function ConflictsBanner() {
+/** Konflikt-Banner der aktuellen Zusammenkunft (Abwesende, Doppelbelegung, Serien). */
+export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
   const { state } = useApp()
   const { t } = useT()
-  const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services)
+  const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services, tab)
   if (conflicts.length === 0) return null
 
   const shownConflicts = [
@@ -63,18 +63,16 @@ export function ConflictsBanner() {
 }
 
 /**
- * Banner der offenen (unbesetzten) Aufgaben/Hilfsdienste beider Zusammenkünfte.
- * `tpw` übersetzt Programmpunkt-Titel in die Anzeigesprache der Woche.
+ * Banner der offenen (unbesetzten) Aufgaben/Hilfsdienste der aktuellen
+ * Zusammenkunft. `tpw` übersetzt Programmpunkt-Titel in die Anzeigesprache.
  */
-export function OpenSlotsBanner({ tpw }: { tpw: (s: string) => string }) {
+export function OpenSlotsBanner({ tab, tpw }: { tab: MeetingKey; tpw: (s: string) => string }) {
   const { state } = useApp()
   const { t, tu } = useT()
   const rawWeek = state.weeks[state.week]
   if (!rawWeek) return null
 
-  const openSlots = (['mid', 'we'] as const).flatMap((tab) =>
-    openSlotLabels(rawWeek[tab], state.services).map((slot) => ({ ...slot, tab })),
-  )
+  const openSlots = openSlotLabels(rawWeek[tab], state.services)
   const openTotal = openSlots.reduce((sum, slot) => sum + slot.n, 0)
   if (openTotal === 0) return null
 
@@ -87,7 +85,6 @@ export function OpenSlotsBanner({ tpw }: { tpw: (s: string) => string }) {
       </div>
       {openSlots.map((slot, i) => (
         <div key={i} className="plan-open-row">
-          <span className="plan-open-prefix">{tabName(t, slot.tab)}:</span>
           <span className="plan-open-label" dir="auto">
             {slot.lang === 'u' ? tu(slot.text) : tpw(slot.text)}
             {slot.n > 1 ? ` ×${slot.n}` : ''}

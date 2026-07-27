@@ -5,6 +5,7 @@ import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { overseerGroup } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
+import type { MeetingKey } from '../data/types'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { AutoAssignPanel } from './AutoAssignPanel'
@@ -46,8 +47,9 @@ export function PlanenScreen() {
   const myFsGroup = overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID)
   const fsOverseer = !state.planner && myFsGroup !== null
   const isFs = state.tab === 'fs' || fsOverseer
-  const meeting = state.tab === 'we' ? week.we : week.mid
-  const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
+  const mtab: MeetingKey = state.tab === 'we' ? 'we' : 'mid'
+  const meeting = week[mtab]
+  const rawMeeting = rawWeek[mtab]
   const openCount = countOpenSlots(rawMeeting, state.services)
 
   return (
@@ -89,8 +91,8 @@ export function PlanenScreen() {
           <AutoAssignPanel />
           <p className="plan-legend">{t.planLegend}</p>
 
-          <ConflictsBanner />
-          <OpenSlotsBanner tpw={tpw} />
+          <ConflictsBanner tab={mtab} />
+          <OpenSlotsBanner tab={mtab} tpw={tpw} />
 
           {meeting.sections.map((section, si) => (
             <MeetingSection
