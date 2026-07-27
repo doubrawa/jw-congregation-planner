@@ -9,6 +9,51 @@ import { SlotChip } from './SlotChip'
 const TIME_OPTIONS = FS_TIME_OPTIONS
 
 /**
+ * Automatisch zuteilen / Leeren der Treffpunkt-Leiter (wie beim Meeting-Panel,
+ * aber eine Zeile). „Leeren" ist mit Zwei-Tipp-Bestätigung abgesichert.
+ * `onlyGroup` grenzt bei Gruppenaufsehern auf die eigene Gruppe ein.
+ */
+function FsAutoAssign({ onlyGroup }: { onlyGroup: string | null }) {
+  const { dispatch } = useApp()
+  const { t } = useT()
+  const [armed, setArmed] = useState(false)
+  return (
+    <div className="plan-auto">
+      <div className="plan-auto-row">
+        <div className="plan-auto-label">{t.fsLeiterLbl}</div>
+        <div className="plan-auto-actions">
+          <button
+            type="button"
+            className="plan-auto-btn plan-auto-btn--primary"
+            onClick={() => {
+              setArmed(false)
+              dispatch({ type: 'fsAutoAssign', onlyGroup })
+            }}
+          >
+            {t.autoZuteilen}
+          </button>
+          <button
+            type="button"
+            className={`plan-auto-btn plan-auto-btn--clear${armed ? ' is-armed' : ''}`}
+            onClick={() => {
+              if (armed) {
+                setArmed(false)
+                dispatch({ type: 'fsClear', onlyGroup })
+              } else {
+                setArmed(true)
+              }
+            }}
+            onBlur={() => setArmed(false)}
+          >
+            {armed ? t.leerenSicher : t.leeren}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Treffpunkte planen (Planen-Tab): je Tag eine Karte mit editierbaren Zeilen
  * (Zeit, Ort, Leiter zuteilen, entfernen) und einer Karte zum Hinzufügen eines
  * Treffpunkts nur für diese Woche (z. B. Pioniertage). Grundplan-Änderungen
@@ -81,6 +126,8 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   return (
     <>
       <p className="plan-hint">{t.fsNurWoche}</p>
+
+      <FsAutoAssign onlyGroup={onlyGroup} />
 
       {openLeaders.length > 0 && (
         <div className="plan-open">

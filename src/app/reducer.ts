@@ -5,7 +5,7 @@
  */
 
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
-import { fsAddInst, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
+import { fsAddInst, fsAutoAssign, fsClear, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -546,6 +546,28 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ),
         toast: toastKey(state, 'toastGeleertN', { n: count }),
       }
+    }
+    case 'fsAutoAssign': {
+      const { fsWeeks, count, newly } = fsAutoAssign(
+        state.fsWeeks,
+        state.week,
+        state.persons,
+        action.onlyGroup,
+      )
+      if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
+      const pending = new Set(state.pendingNames)
+      for (const n of newly) pending.add(n)
+      const notifs = pushNotif(
+        state.notifs,
+        'gesendet',
+        'Zuteilungen gesendet',
+        `${count} · ${dict(state.lang).fsShort} · ${state.weeks[state.week]?.range ?? ''}`,
+      )
+      return { ...state, fsWeeks, notifs, pendingNames: [...pending], toast: toastKey(state, 'toastAutoN', { n: count }) }
+    }
+    case 'fsClear': {
+      const { fsWeeks, count } = fsClear(state.fsWeeks, state.week, action.onlyGroup)
+      return { ...state, fsWeeks, toast: toastKey(state, 'toastGeleertN', { n: count }) }
     }
     case 'fsInstUpdate':
       return { ...state, fsWeeks: fsUpdateInst(state.fsWeeks, action.wi, action.id, action.patch) }

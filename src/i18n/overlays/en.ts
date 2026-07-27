@@ -329,6 +329,7 @@ export default {
   "fsKeine": "No meetings for field service this week.",
   "privTreffpunkt": "Lead field service meetings",
   "fsNurWoche": "Changes here apply only to this week.",
+  "fsLeiterLbl": "Meeting-point leaders",
   "fsAddWeekLbl": "ADD A MEETING FOR THIS WEEK",
   "fsAdd": "+ ADD MEETING",
   "fsOrtPh": "Place (e.g., Kingdom Hall)",

@@ -161,6 +161,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       saveFsWeek(congId, action.wi, next.fsWeeks[action.wi])
       break
     case 'fsInstAdd':
+    case 'fsAutoAssign':
+    case 'fsClear':
       saveFsWeek(congId, prev.week, next.fsWeeks[prev.week])
       break
     case 'fsRuleAdd':
