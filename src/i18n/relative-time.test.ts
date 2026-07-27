@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { relativeDayLabel } from './relative-time'
+import { relativeDayLabel, relativeWeekLabel } from './relative-time'
 
 // Fester „Jetzt"-Zeitpunkt, damit die Tage-Differenz deterministisch ist.
 const NOW = Date.parse('2026-09-07') // Montag, 00:00 UTC
@@ -31,5 +31,20 @@ describe('relativeDayLabel', () => {
   it('kein Zeitpunkt → leerer Chip', () => {
     expect(relativeDayLabel(null, 'de', NOW)).toBe('')
     expect(relativeDayLabel(undefined, 'de', NOW)).toBe('')
+  })
+})
+
+describe('relativeWeekLabel', () => {
+  it('formatiert den Wochenversatz in der App-Sprache', () => {
+    expect(relativeWeekLabel(0, 'de')).toBe('diese Woche')
+    expect(relativeWeekLabel(1, 'de')).toBe('nächste Woche')
+    expect(relativeWeekLabel(-1, 'de')).toBe('letzte Woche')
+    expect(relativeWeekLabel(2, 'de')).toBe('in 2 Wochen')
+    expect(relativeWeekLabel(-2, 'de')).toBe('vor 2 Wochen')
+  })
+
+  it('nutzt die jeweilige Locale', () => {
+    expect(relativeWeekLabel(1, 'en')).toBe('next week')
+    expect(relativeWeekLabel(-2, 'en')).toBe('2 weeks ago')
   })
 })
