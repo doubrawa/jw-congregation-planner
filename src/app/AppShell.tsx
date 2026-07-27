@@ -116,12 +116,16 @@ export function AppShell() {
 
   // Ziel anwenden, sobald eingeloggt (vorher zeigt die App den Login-Screen).
   // Nicht erreichbare Ziele (z. B. „planen" für Nicht-Planer) → „aufgaben".
+  // Ein Deep-Link kommt aus einem Push-Klick → serverseitig hat sich etwas
+  // geändert (Absage/Ersatz), also die Daten still nachladen, damit z. B. der
+  // „Einspringen"-Bereich die neue Anfrage sofort zeigt.
   useEffect(() => {
     if (isLogin || !pendingNav) return
     const target = navScreens.includes(pendingNav) ? pendingNav : 'aufgaben'
     dispatch({ type: 'navigate', screen: target })
     setPendingNav(null)
-  }, [isLogin, pendingNav, navScreens, dispatch])
+    if (state.userId) void loadAndHydrate(dispatch, state.userId, { silent: true })
+  }, [isLogin, pendingNav, navScreens, dispatch, state.userId])
   const navLabels: Record<Screen, string> = {
     login: '',
     start: t.navStart,
