@@ -799,14 +799,6 @@ function meetingAssignedNames(meeting: Meeting, services: Service[]): string[] {
   return [...meetingPartNames(meeting), ...meetingHelperNames(meeting, services)]
 }
 
-/** Alle belegten Namen einer Woche (beide Zusammenkünfte), als Menge. */
-function weekAssignedNames(week: Week, services: Service[]): Set<string> {
-  return new Set([
-    ...meetingAssignedNames(week.mid, services),
-    ...meetingAssignedNames(week.we, services),
-  ])
-}
-
 /**
  * Konflikte der Woche `wi`: Abwesende trotz Zuteilung, Mehrfach-Zuteilung in
  * einer Zusammenkunft und Serien von `STREAK_THRESHOLD`+ Wochen in Folge
@@ -864,10 +856,13 @@ export function weekConflicts(
   // streak: Häufung von STREAK_THRESHOLD+ Wochen am Stück. Bewusst nur, wenn
   // der Lauf kürzer als der geladene Zeitraum ist — wer schlicht in *jeder*
   // Woche eingeteilt ist, ist durchgehend aktiv (Auslastungsthema), keine
-  // auffällige Serie, und würde sonst nur Rauschen erzeugen. Mit `tab` zählt nur
-  // die jeweilige Zusammenkunftsart, sonst beide.
+  // auffällige Serie, und würde sonst nur Rauschen erzeugen. Zählt NUR Aufgaben
+  // (Programmpunkte), keine Hilfsdienste — mehrmals in Folge Hilfsdienst ist ok.
+  // Mit `tab` zählt nur die jeweilige Zusammenkunftsart, sonst beide.
   const nameSets = weeks.map((w) =>
-    tab ? new Set(meetingAssignedNames(w[tab], services)) : weekAssignedNames(w, services),
+    tab
+      ? new Set(meetingPartNames(w[tab]))
+      : new Set([...meetingPartNames(w.mid), ...meetingPartNames(w.we)]),
   )
   for (const name of nameSets[wi]) {
     let start = wi
