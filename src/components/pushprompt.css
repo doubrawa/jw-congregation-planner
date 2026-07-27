@@ -1,0 +1,68 @@
+/* Opt-in-Hinweis für Benachrichtigungen (Meine Aufgaben). Akzent-getönte Karte
+   wie die Info-Panels; unaufdringlich, aber sichtbar. */
+.push-prompt {
+  margin-top: 14px;
+  background: var(--tAcc);
+  border: 1px solid var(--acc);
+  border-radius: var(--r-panel);
+  padding: 12px 14px 13px;
+}
+
+.push-prompt-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.push-prompt-icon {
+  font-size: calc(15px * var(--fs));
+  line-height: 1;
+}
+
+.push-prompt-title {
+  flex: 1;
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 700;
+  color: var(--acc);
+}
+
+.push-prompt-x {
+  flex: none;
+  color: var(--mut);
+  font-size: calc(14px * var(--fs));
+  line-height: 1;
+  padding: 2px;
+}
+
+.push-prompt-x:hover {
+  color: var(--ink);
+}
+
+.push-prompt-text {
+  margin-top: 6px;
+  font-size: calc(12px * var(--fs));
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.push-prompt-actions {
+  margin-top: 10px;
+}
+
+.push-prompt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  background: var(--acc);
+  color: var(--onAcc);
+  border-radius: var(--r-pill);
+  padding: 9px 16px;
+  font-size: calc(12px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.push-prompt-btn:hover {
+  background: var(--accD);
+}

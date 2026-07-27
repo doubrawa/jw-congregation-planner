@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
+import { useInstallAvailable, usePush } from '../components/usePush'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { fullName } from '../data/helpers'
@@ -7,8 +7,7 @@ import { fullName } from '../data/helpers'
 import type { Lang, Theme } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import { deletePushSubscription, savePushSubscription } from '../lib/data'
-import { currentSubscription, pushSupported, subscribePush, subscriptionFields } from '../lib/push'
+import { promptInstall } from '../lib/install'
 import { performLogout } from '../lib/supabase'
 import '../aufgaben/aufgaben.css'
 
@@ -36,36 +35,11 @@ export function ProfilScreen() {
   // Mitglieder-Zeile ist auch für Nicht-Planer sichtbar).
   const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''
 
-  // Web-Push: Schalter nur im Produktionsmodus und wenn der Browser es kann
-  // (iOS erst als "Zum Home-Bildschirm"-App). Zustand = Abo dieses Geräts.
-  const [pushOn, setPushOn] = useState(false)
-  const showPush = state.dataStatus !== 'demo' && pushSupported()
-  useEffect(() => {
-    if (!showPush) return
-    void currentSubscription().then((sub) => setPushOn(Boolean(sub)))
-  }, [showPush])
-
-  const togglePush = async () => {
-    if (pushOn) {
-      const sub = await currentSubscription()
-      if (sub) {
-        deletePushSubscription(sub.endpoint)
-        await sub.unsubscribe()
-      }
-      setPushOn(false)
-      dispatch({ type: 'showToast', text: t.toastPushAus })
-      return
-    }
-    const sub = await subscribePush().catch(() => null)
-    const fields = sub && subscriptionFields(sub)
-    if (!fields || !state.congregationId || !state.userId) {
-      dispatch({ type: 'showToast', text: t.toastPushVerweigert })
-      return
-    }
-    savePushSubscription(state.congregationId, state.userId, fields)
-    setPushOn(true)
-    dispatch({ type: 'showToast', text: t.toastPushAn })
-  }
+  // Web-Push (nur Produktion): Schalter, wenn der Browser es kann; auf iOS im
+  // Browser stattdessen Installations-Hinweis (dort erst als App möglich).
+  const { production, supported, needsInstall, subscribed, enable, disable } = usePush()
+  const installAvail = useInstallAvailable()
+  const togglePush = () => void (subscribed ? disable() : enable())
 
   return (
     <section className="screen">
@@ -89,20 +63,31 @@ export function ProfilScreen() {
           <span className="kv-key">{t.versammlungLbl}</span>
           <span className="kv-val">{state.congregation.name}</span>
         </div>
-        {showPush && (
+        {production && supported && (
           <div className="kv-row">
             <span className="kv-key">{t.pushLbl}</span>
             <button
               type="button"
-              className={pushOn ? 'switch is-on' : 'switch'}
+              className={subscribed ? 'switch is-on' : 'switch'}
               role="switch"
-              aria-checked={pushOn}
+              aria-checked={subscribed}
               aria-label={t.pushLbl}
-              onClick={() => void togglePush()}
+              onClick={togglePush}
             >
               <span className="switch-knob" />
             </button>
           </div>
+        )}
+        {production && needsInstall && (
+          <div className="kv-row kv-row--plain prof-push-ios">
+            <span className="kv-key">{t.pushLbl}</span>
+            <span className="prof-push-hint">{t.pushIosHint}</span>
+          </div>
+        )}
+        {production && installAvail && (
+          <button type="button" className="btn-outline prof-install" onClick={() => void promptInstall()}>
+            {t.appInstallieren}
+          </button>
         )}
         <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.darstellung}</span>
