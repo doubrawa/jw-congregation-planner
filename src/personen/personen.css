@@ -51,8 +51,9 @@
 }
 
 .pers-chevron {
-  color: var(--mut2);
-  font-size: calc(16px * var(--fs));
+  color: var(--mut);
+  font-size: calc(24px * var(--fs));
+  line-height: 1;
 }
 
 /* ---- Detail ------------------------------------------------------------------ */
