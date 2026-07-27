@@ -1,9 +1,11 @@
+import { Fragment } from 'react'
 import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID } from '../data/demo'
-import { displayName, isSong } from '../data/helpers'
+import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
+import { displayName, isSong, splitOpeningSong } from '../data/helpers'
 import { useProgWeek, useT } from '../i18n/useT'
 import type { Meeting, MeetingTab, PartItem, Week } from '../data/types'
 import { FsProgram } from './FsProgram'
@@ -36,6 +38,10 @@ export function ProgrammScreen() {
 
   const isFs = state.tab === 'fs'
   const meeting = state.tab === 'we' ? week.we : week.mid // fs nutzt Meeting-Inhalt nicht
+  // Kanonische Fassung (deutsche Sektions-Labels) zum Erkennen von ERÖFFNUNG/
+  // ABSCHLUSS — dort wird das Lied aus dem Sammeltitel mittig+kursiv gezogen.
+  const rawWeek = state.weeks[state.week]
+  const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const myName = me ? displayName(me) : null
   const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
@@ -71,7 +77,14 @@ export function ProgrammScreen() {
       {isFs ? (
         <FsProgram />
       ) : (
-        <ProgramMeeting meeting={meeting} week={week} tab={state.tab} myName={myName} tpw={tpw} />
+        <ProgramMeeting
+          meeting={meeting}
+          rawMeeting={rawMeeting}
+          week={week}
+          tab={state.tab}
+          myName={myName}
+          tpw={tpw}
+        />
       )}
     </section>
   )
@@ -80,12 +93,14 @@ export function ProgrammScreen() {
 /** Programm einer Zusammenkunft (Datum, Bereichs-Panels, Hilfsdienste, Fußzeile). */
 function ProgramMeeting({
   meeting,
+  rawMeeting,
   week,
   tab,
   myName,
   tpw,
 }: {
   meeting: Meeting
+  rawMeeting: Meeting
   week: Week
   tab: MeetingTab
   myName: string | null
@@ -104,20 +119,35 @@ function ProgramMeeting({
         </button>
       </div>
 
-      {meeting.sections.map((section) => (
-        <div key={section.label} className="panel" data-farbe={section.farbe}>
-          <div className="panel-label">{tpw(section.label)}</div>
-          {section.items.map((item, index) =>
-            isSong(item) ? (
-              <div key={index} className="panel-song">
-                {tpw(item.song)}
-              </div>
-            ) : (
-              <ProgramRow key={index} item={item} myName={myName} tpw={tpw} />
-            ),
-          )}
-        </div>
-      ))}
+      {meeting.sections.map((section, si) => {
+        // ERÖFFNUNG/ABSCHLUSS tragen das Lied im Sammeltitel — herausgezogen
+        // als eigene mittig+kursive Zeile (einheitlich mit den übrigen Liedern).
+        const canonical = rawMeeting.sections[si]?.label
+        const splitHere = canonical === LABEL_EROEFFNUNG || canonical === LABEL_ABSCHLUSS
+        return (
+          <div key={section.label} className="panel" data-farbe={section.farbe}>
+            <div className="panel-label">{tpw(section.label)}</div>
+            {section.items.map((item, index) => {
+              if (isSong(item)) {
+                return (
+                  <div key={index} className="panel-song">
+                    {tpw(item.song)}
+                  </div>
+                )
+              }
+              const { song, rest } = splitHere
+                ? splitOpeningSong(tpw(item.title))
+                : { song: null, rest: '' }
+              return (
+                <Fragment key={index}>
+                  {song && <div className="panel-song">{song}</div>}
+                  <ProgramRow item={item} title={song ? rest : undefined} myName={myName} tpw={tpw} />
+                </Fragment>
+              )
+            })}
+          </div>
+        )
+      })}
 
       <div className="panel panel--pb16 prog-helpers" data-farbe="neutral2">
         <div className="panel-label">{t.hilfsdienste}</div>
@@ -151,10 +181,12 @@ function ProgramMeeting({
 
 function ProgramRow({
   item,
+  title,
   myName,
   tpw,
 }: {
   item: PartItem
+  title?: string // überschriebener Titel (Lied bereits herausgezogen)
   myName: string | null
   tpw: (s: string) => string
 }) {
@@ -163,7 +195,7 @@ function ProgramRow({
     <div className={item.num != null ? 'prog-row prog-row--num' : 'prog-row'}>
       {item.num != null && <div className="prog-num">{item.num}.</div>}
       <div>
-        <div className="prog-title">{tpw(item.title)}</div>
+        <div className="prog-title">{title ?? tpw(item.title)}</div>
         {item.meta && <div className="prog-item-meta">{tpw(item.meta)}</div>}
       </div>
       <div className="prog-names">

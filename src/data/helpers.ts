@@ -11,6 +11,22 @@ export function isSong(item: ProgramItem): item is SongItem {
 }
 
 /**
+ * Zerlegt einen zusammengesetzten ERÖFFNUNG/ABSCHLUSS-Titel (` · `-getrennt, z. B.
+ * „Lied 138 · Gebet" oder „Schlussworte · Lied 76 · Gebet") in den Lied-Teil und
+ * den Rest. Das Lied ist das einzige Atom mit einer Nummer — Gebet/Einleitende
+ * Worte/Schlussworte tragen keine (sprachunabhängig, funktioniert auch für
+ * übersetzte Titel). Ohne Nummern-Atom: `song` null, `rest` = Titel unverändert.
+ * Nur auf ERÖFFNUNG/ABSCHLUSS anwenden (dort ist das Nummern-Atom eindeutig das
+ * Lied; bei anderen Punkten könnten Schriftstellen Ziffern enthalten).
+ */
+export function splitOpeningSong(title: string): { song: string | null; rest: string } {
+  const atoms = title.split(' · ')
+  const idx = atoms.findIndex((a) => /\d/.test(a))
+  if (idx < 0) return { song: null, rest: title }
+  return { song: atoms[idx].trim(), rest: atoms.filter((_, i) => i !== idx).join(' · ') }
+}
+
+/**
  * Gruppen-Id, deren Aufseher (ov) oder Gehilfe (as) die Person ist — sonst null.
  * Grundlage der Treffpunkt-Planungsrechte für Gruppenaufseher.
  */
