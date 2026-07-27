@@ -756,10 +756,10 @@
 }
 
 .cand-load-cell {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
-  background: #5aa06a; /* none/frei = grün */
+  background: #5fd07a; /* none/frei = hellgrün */
 }
 
 .cand-load-cell:nth-child(3) {
@@ -767,12 +767,15 @@
   outline-offset: 1px;
 }
 
+/* Aufgabe = rötlich (wichtiger für die Auslastung), Hilfsdienst = violett.
+   Drei weit auseinanderliegende, helle Farbtöne (grün/rot/violett), damit die
+   winzigen Quadrate klar unterscheidbar bleiben. */
 .cand-load-cell[data-load='task'] {
-  background: #3f7bab; /* Aufgabe = blau */
+  background: #f47160; /* Aufgabe = rot */
 }
 
 .cand-load-cell[data-load='helper'] {
-  background: #d09a33; /* Hilfsdienst = gelb/ocker */
+  background: #a99cf7; /* Hilfsdienst = violett */
 }
 
 .cand-load-cell[data-load='void'] {
