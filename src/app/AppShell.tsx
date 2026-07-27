@@ -21,6 +21,7 @@ import { PlanenScreen } from '../planen/PlanenScreen'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
+import { parseGoTarget } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { NotificationsPanel } from './NotificationsPanel'
 import { SidebarBrand, SidebarFooter, SidebarNav, type NavItem } from './Sidebar'
@@ -66,6 +67,9 @@ export function AppShell() {
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   // Mobiles Seitenmenü (Drawer) — Desktop hat die feste Sidebar
   const [menuOpen, setMenuOpen] = useState(false)
+  // Deep-Link aus einem Push-Klick (#go=<screen>): beim Start aus dem Hash, bei
+  // schon offenem Fenster per Service-Worker-Nachricht. Angewandt erst nach Login.
+  const [pendingNav, setPendingNav] = useState<Screen | null>(() => parseGoTarget(location.hash))
   const drawerRef = useRef<HTMLElement>(null)
   useDialogFocus(drawerRef, menuOpen)
   const navigate = (screen: Screen) => {
@@ -89,6 +93,35 @@ export function AppShell() {
     : fsOverseer
       ? GROUP_OV_SCREENS
       : PUBLISHER_SCREENS
+
+  // Deep-Link-Hash beim Start entfernen (nur wenn es einer ist), damit ein
+  // Reload nicht erneut springt — Debug-Hashes (#s=…) bleiben unberührt.
+  useEffect(() => {
+    if (parseGoTarget(location.hash)) history.replaceState(null, '', location.pathname + location.search)
+  }, [])
+
+  // Push-Klick auf ein bereits offenes Fenster → sw.js schickt das Ziel her.
+  useEffect(() => {
+    const sw = navigator.serviceWorker
+    if (!sw) return
+    const onMsg = (e: MessageEvent) => {
+      if ((e.data as { type?: string })?.type === 'navigate') {
+        const target = parseGoTarget(String((e.data as { url?: string }).url ?? ''))
+        if (target) setPendingNav(target)
+      }
+    }
+    sw.addEventListener('message', onMsg)
+    return () => sw.removeEventListener('message', onMsg)
+  }, [])
+
+  // Ziel anwenden, sobald eingeloggt (vorher zeigt die App den Login-Screen).
+  // Nicht erreichbare Ziele (z. B. „planen" für Nicht-Planer) → „aufgaben".
+  useEffect(() => {
+    if (isLogin || !pendingNav) return
+    const target = navScreens.includes(pendingNav) ? pendingNav : 'aufgaben'
+    dispatch({ type: 'navigate', screen: target })
+    setPendingNav(null)
+  }, [isLogin, pendingNav, navScreens, dispatch])
   const navLabels: Record<Screen, string> = {
     login: '',
     start: t.navStart,

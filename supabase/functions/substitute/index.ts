@@ -128,10 +128,10 @@ function meetingDate(meeting: Meeting | undefined): string {
   return (meeting?.date ?? '').split(' · ').slice(0, 2).join(' · ')
 }
 
-async function pushTo(subs: Sub[], title: string, body: string): Promise<void> {
+async function pushTo(subs: Sub[], title: string, body: string, url: string): Promise<void> {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
-  const payload = JSON.stringify({ title, body, url: APP_URL })
+  const payload = JSON.stringify({ title, body, url })
   for (const s of subs) {
     try {
       await webpush.sendNotification(
@@ -150,13 +150,14 @@ async function pushTo(subs: Sub[], title: string, body: string): Promise<void> {
   }
 }
 
-/** In-App-Mitteilung + Push an eine Menge von Nutzern. */
+/** In-App-Mitteilung + Push (mit Deep-Link-Ziel) an eine Menge von Nutzern. */
 async function notifyUsers(
   cong: string,
   userIds: string[],
   subsByUser: Map<string, Sub[]>,
   title: string,
   body: string,
+  url: string,
 ): Promise<void> {
   const ids = [...new Set(userIds)]
   if (ids.length === 0) return
@@ -165,7 +166,7 @@ async function notifyUsers(
     'notifications',
     ids.map((user_id) => ({ congregation_id: cong, user_id, type: 'zuteilung', title, body })),
   )
-  await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), title, body)
+  await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), title, body, url)
 }
 
 Deno.serve(async (req: Request) => {
@@ -229,6 +230,7 @@ Deno.serve(async (req: Request) => {
         subsByUser,
         `Ersatz gesucht: ${svcName}`,
         `${date} — ${declinedBy} kann nicht. Wer springt ein?`,
+        `${APP_URL}#go=aufgaben`,
       )
       return json({ ok: true, notified: [...new Set(peers)].length })
     }
@@ -263,6 +265,7 @@ Deno.serve(async (req: Request) => {
       subsByUser,
       `Ersatz gefunden: ${svcName}`,
       `${date}: ${callerName} übernimmt${originalName ? ` für ${originalName}` : ''}.`,
+      `${APP_URL}#go=aufgaben`,
     )
     return json({ ok: true, taken: true })
   } catch (err) {

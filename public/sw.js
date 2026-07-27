@@ -119,8 +119,14 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {
-        if ('focus' in client) return client.focus()
+        if ('focus' in client) {
+          // Bereits offenes Fenster: Ziel (#go=…) mitschicken, damit die App
+          // dorthin navigiert, statt nur den aktuellen Screen zu fokussieren.
+          client.postMessage({ type: 'navigate', url })
+          return client.focus()
+        }
       }
+      // Kein Fenster offen: neu öffnen; die App liest #go= aus der URL.
       return clients.openWindow(url)
     }),
   )

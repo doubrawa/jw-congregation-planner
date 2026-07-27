@@ -262,6 +262,7 @@ interface Push {
   userId: string
   title: string
   body: string
+  url?: string // Deep-Link-Ziel (#go=…); Klick öffnet den passenden Screen
 }
 
 Deno.serve(async (req: Request) => {
@@ -383,6 +384,7 @@ Deno.serve(async (req: Request) => {
           userId,
           title: 'Erinnerung: Zuteilung bestätigen',
           body: entries.join(' · '),
+          url: `${APP_URL}#go=aufgaben`,
         }
         preview.push(push)
         sendQueue.push({ push, subs: subsByUser.get(userId) ?? [] })
@@ -403,6 +405,7 @@ Deno.serve(async (req: Request) => {
         const push = {
           title: 'Unbestätigte Zuteilungen (nicht erreichbar)',
           body: unreachable.join(' · '),
+          url: `${APP_URL}#go=planen`,
         }
         for (const m of members) {
           if (!m.planner) continue
@@ -420,7 +423,7 @@ Deno.serve(async (req: Request) => {
 
     if (SEND_PUSH) {
       for (const { push, subs } of sendQueue) {
-        const payload = JSON.stringify({ title: push.title, body: push.body, url: APP_URL })
+        const payload = JSON.stringify({ title: push.title, body: push.body, url: push.url ?? APP_URL })
         for (const sub of subs) {
           try {
             await webpush.sendNotification(
