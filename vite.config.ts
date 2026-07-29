@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
@@ -10,6 +11,17 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/jw-congregation-planner/' : '/',
   plugins: [react()],
+  test: {
+    alias: [
+      // Die Edge-Functions holen web-push über den Deno-npm-Specifier, den Node
+      // nicht auflösen kann. Im Test tritt ein Stub an seine Stelle, damit die
+      // Functions unverändert (also so wie deployt) geprüft werden können.
+      {
+        find: /^npm:web-push@.*$/,
+        replacement: fileURLToPath(new URL('./supabase/functions/_test/web-push.stub.ts', import.meta.url)),
+      },
+    ],
+  },
   build: {
     rolldownOptions: {
       output: {
