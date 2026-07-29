@@ -13,7 +13,15 @@ export interface SentPush {
   payload: string
 }
 
-export const sent: SentPush[] = []
+// Am globalThis verankert: send-reminders wird je Szenario mit anderer Umgebung
+// neu importiert (vi.resetModules), wodurch auch dieser Stub neu ausgewertet
+// wird. Ohne gemeinsame Ablage hielte der Test ein anderes Array als die
+// Function und sähe die Sendungen nie.
+const STORE = '__testSentPush'
+const g = globalThis as Record<string, unknown>
+g[STORE] ??= [] as SentPush[]
+
+export const sent = g[STORE] as SentPush[]
 
 export function reset(): void {
   sent.length = 0

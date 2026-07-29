@@ -140,10 +140,18 @@ interface Item {
 interface Section {
   items?: Item[]
 }
+/**
+ * Hilfsdienst-Platz. Aktuell ein Objekt { name, pid? }; Bestandsdaten in der DB
+ * können noch reine Namens-Strings sein (siehe normalizeWeekHelpers in
+ * src/lib/data.ts — der Client hebt sie beim Laden an, die DB behält das
+ * Alt-Format aber, bis die Woche neu gespeichert wird). Beides muss hier
+ * gelesen werden können.
+ */
+type HelperEntry = string | { name?: string } | null
 interface Meeting {
   date?: string
   sections?: Section[]
-  helpers?: Record<string, string[]>
+  helpers?: Record<string, HelperEntry[]>
 }
 interface Week {
   start?: string
@@ -175,6 +183,12 @@ const SKIP_ROLE = /Gastredner|Kreisaufseher/
 /** Anzeigename wie im Client (helpers.ts): dn oder voller Name. */
 function personDisplayName(fn: string, ln: string, dn: string): string {
   return dn || `${fn} ${ln}`.trim()
+}
+
+/** Name eines Hilfsdienst-Platzes; '' = unbesetzt (beide Datenformate). */
+function helperName(entry: HelperEntry | undefined): string {
+  if (!entry) return ''
+  return typeof entry === 'string' ? entry : (entry.name ?? '')
 }
 
 /** "Dienstag, 8. September · 19:00 · Saal" → "Dienstag, 8. September · 19:00". */
@@ -248,9 +262,10 @@ function pendingOfMeeting(
     if (svc.groups) continue
     const arr = meeting.helpers?.[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if (!arr[pos]) continue
+      const name = helperName(arr[pos])
+      if (!name) continue // unbesetzter Platz
       if (conf.has(`${wi}|${tab}|helper|${svc.key}|${pos}`)) continue
-      out.push({ name: arr[pos], label: svc.name })
+      out.push({ name, label: svc.name })
     }
   }
   return out
