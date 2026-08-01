@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
 import { useT } from '../i18n/useT'
+import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
+import { useSwipeDown } from './useSwipeDown'
 import type { S89Payload } from '../data/types'
 import './overlays.css'
 
@@ -16,6 +18,8 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
   const close = () => dispatch({ type: 'closeS89' })
   const dlg = useRef<HTMLDivElement>(null)
   useDialogFocus(dlg)
+  useBackDismiss(true, close)
+  useSwipeDown(dlg, close)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -38,6 +42,7 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
     <>
       <div className="sheet-backdrop sheet-backdrop--s89" onClick={close} />
       <div className="sheet sheet--s89" role="dialog" aria-modal="true" aria-label={t.s89Title} ref={dlg}>
+        <span className="sheet-grip" aria-hidden="true" />
         <div className="sheet-head">
           <div>
             <div className="s89-eyebrow">S-89</div>

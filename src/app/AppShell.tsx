@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CURRENT_PERSON_ID } from '../data/demo'
+import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, overseerGroup } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
@@ -72,6 +73,7 @@ export function AppShell() {
   const [pendingNav, setPendingNav] = useState<Screen | null>(() => parseGoTarget(location.hash))
   const drawerRef = useRef<HTMLElement>(null)
   useDialogFocus(drawerRef, menuOpen)
+  useBackDismiss(menuOpen, () => setMenuOpen(false))
   const navigate = (screen: Screen) => {
     setMenuOpen(false)
     dispatch({ type: 'navigate', screen })
