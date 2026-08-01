@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Chevron } from './Chevron'
 import './datepicker.css'
 
 /**
@@ -102,11 +103,11 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
         <div className="dp-pop" role="dialog" aria-label={ariaLabel}>
           <div className="dp-head">
             <button type="button" className="dp-nav" aria-label={prevLabel} onClick={() => shift(-1)}>
-              ‹
+              <Chevron dir="prev" />
             </button>
             <div className="dp-title">{title}</div>
             <button type="button" className="dp-nav" aria-label={nextLabel} onClick={() => shift(1)}>
-              ›
+              <Chevron dir="next" />
             </button>
           </div>
           <div className="dp-weekdays">
