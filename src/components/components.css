@@ -166,15 +166,10 @@
 .meeting-tabs {
   display: flex;
   gap: 8px;
-  /* Passt nicht alles in eine Zeile (schmale Geräte): waagerecht scrollen statt
-     umbrechen — der aktive Reiter bleibt sichtbar. Scrollleiste ausgeblendet. */
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-}
-
-.meeting-tabs::-webkit-scrollbar {
-  display: none;
+  /* Passt nicht alles in eine Zeile (lange Wochentage, großer Schriftgrad):
+     umbrechen statt waagerecht scrollen. Ein weggescrollter Reiter ist faktisch
+     unsichtbar — man findet ihn nur, wenn man ahnt, dass es ihn gibt. */
+  flex-wrap: wrap;
 }
 
 .meeting-tab {
