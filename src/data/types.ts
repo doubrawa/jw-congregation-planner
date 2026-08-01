@@ -10,15 +10,17 @@
 
 /**
  * Farbschema (Einstellungen → Profil → Darstellung). 4 helle + 4 dunkle
- * Paletten aus dem Design-Export „Farboptionen Programm"; Labels/Reihenfolge
- * in THEME_LIST (constants.ts), Paletten in styles/tokens.css. Alte Werte
- * 'light'/'dark' werden beim Laden auf weiss/graphit gemappt.
+ * Paletten aus dem Design-Export „Farboptionen Programm", dazu „kontrast" für
+ * hohen Kontrast (Barrierefreiheit). Labels/Reihenfolge in THEME_LIST
+ * (constants.ts), Paletten in styles/tokens.css. Alte Werte 'light'/'dark'
+ * werden beim Laden auf weiss/graphit gemappt.
  */
 export type Theme =
   | 'weiss'
   | 'indigo'
   | 'blatt'
   | 'papaya'
+  | 'kontrast'
   | 'graphit'
   | 'bernstein'
   | 'aubergine'

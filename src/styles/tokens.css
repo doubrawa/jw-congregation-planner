@@ -61,6 +61,15 @@
   --focus: rgba(124, 95, 35, 0.35);
 
   /*
+   * Auslastungs-Quadrate im Zuteilungs-Sheet (frei / Aufgabe / Hilfsdienst).
+   * Bewusst in allen Paletten gleich, damit die drei Zustände überall gleich
+   * aussehen; nur „Hoher Kontrast" überschreibt sie kräftiger.
+   */
+  --load-free: #5fd07a;
+  --load-task: #f47160;
+  --load-helper: #a99cf7;
+
+  /*
    * Schriftgrößen-Faktor (Profil → Schriftgröße). Jede font-size im Projekt
    * steht als calc(<px> * var(--fs)) — siehe scripts/scale-font-sizes.mjs.
    * 1 = Auslieferungszustand; store.tsx setzt den gewählten Wert auf <html>,
@@ -219,6 +228,64 @@
   --knob: #ffffff;
   --hov: rgba(244, 234, 224, 0.6);
   --focus: rgba(210, 82, 30, 0.35);
+}
+
+:root[data-theme='kontrast'] {
+  /*
+   * ---- Hoher Kontrast (hell) --------------------------------------------
+   * Für Barrierefreiheit: reines Schwarz auf Weiß, kräftige statt pastellige
+   * Tonflächen und klar sichtbare Rahmen. Alle Paarungen sind gegen WCAG 2.1
+   * geprüft (scripts/check-contrast.mjs): Text ≥ 7:1 (AAA), Sekundärtext und
+   * farbige Beschriftungen ≥ 4.5:1 (AA), Rahmen/Bedienelemente ≥ 3:1.
+   * Die vier Sektionsfarben unterscheiden sich zusätzlich in der Helligkeit,
+   * damit sie auch bei Farbfehlsichtigkeit auseinanderzuhalten sind.
+   */
+  --desk: #3f3f3f;
+  --bg: #ffffff;
+  --bgT: rgba(255, 255, 255, 0.98);
+  --card: #ffffff;
+
+  --tNeu: #e6e6e6;
+  --tNeu2: #dbe4f5;
+  --tPet: #c3e6df;
+  --tGld: #ffe3a3;
+  --tWein: #ffd6d1;
+  --tAcc: #d2e1ff;
+
+  --ink: #000000;
+  --mut: #3d3d3d;
+  --mut2: #3d3d3d;
+
+  --acc: #0040c1;
+  --accD: #002f92;
+  --onAcc: #ffffff;
+
+  --pet: #00564d;
+  --gld: #6b4300;
+  --wein: #a1101f;
+
+  --line: #8a8a8a;
+  --line2: #a3a3a3;
+  --bord: #5c5c5c;
+  --bord2: #5c5c5c;
+  --bord3: #474747;
+  --bord4: #2e2e2e;
+  --dash: #5c5c5c;
+  --weinB: #b34a41;
+
+  --lineNeu: rgba(0, 0, 0, 0.4);
+  --linePet: rgba(0, 86, 77, 0.45);
+  --lineGld: rgba(107, 67, 0, 0.45);
+  --lineWein: rgba(161, 16, 31, 0.45);
+
+  --knob: #ffffff;
+  --hov: rgba(0, 0, 0, 0.1);
+  --focus: rgba(0, 0, 0, 0.7);
+
+  /* Auslastungs-Quadrate: kräftiger und zusätzlich per Helligkeit getrennt. */
+  --load-free: #00701f;
+  --load-task: #c11414;
+  --load-helper: #4b28c4;
 }
 
 :root[data-theme='graphit'] {
