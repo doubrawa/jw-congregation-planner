@@ -21,29 +21,38 @@ function weekdayName(offset: number, locale: string): string {
 }
 
 /**
- * Reiter „Versammlung <Wochentag>“ (unter der Woche / Wochenende, Wochentag aus
- * den Zusammenkunftszeiten der Versammlung) und optional „Predigtdienst“. Als
- * gefüllte Pillen gestaltet; passt nicht alles in eine Zeile, wird gescrollt.
+ * Reiter für die beiden Zusammenkünfte (Wochentag aus den Zusammenkunftszeiten
+ * der Versammlung) und optional „Predigtdienst“. Als gefüllte Pillen gestaltet.
+ *
+ * Sichtbar steht nur der Wochentag: „Versammlung“ stünde auf beiden Reitern und
+ * unterscheidet sie nicht, macht die Zeile aber so breit, dass auf dem Handy der
+ * dritte Reiter aus dem Bild rutscht. Der volle Text bleibt als aria-label für
+ * Screenreader erhalten. Reicht die Breite trotzdem nicht (lange Wochentage in
+ * anderen Sprachen, großer Schriftgrad), bricht die Leiste um — alle Reiter
+ * müssen sichtbar sein, seitliches Scrollen findet man nicht.
  */
 export function MeetingTabs({ tab, onChange, className, showFs = false }: MeetingTabsProps) {
   const { state } = useApp()
   const { t } = useT()
   const offsets = meetingDayOffsets(state.congregation.meetings)
   const locale = LOCALES[state.lang]
-  const day = (offset: number) => fill(t.versammlungTag, { tag: weekdayName(offset, locale) })
-  const tabs: ReadonlyArray<[MeetingTab, string]> = [
-    ['mid', day(offsets.mid)],
-    ['we', day(offsets.we)],
-    ...(showFs ? ([['fs', t.tabFs]] as ReadonlyArray<[MeetingTab, string]>) : []),
+  // [Schlüssel, sichtbare Beschriftung, vorgelesene Beschriftung]
+  const tabs: ReadonlyArray<[MeetingTab, string, string]> = [
+    ...(['mid', 'we'] as const).map((key): [MeetingTab, string, string] => {
+      const day = weekdayName(offsets[key], locale)
+      return [key, day, fill(t.versammlungTag, { tag: day })]
+    }),
+    ...(showFs ? ([['fs', t.tabFs, t.tabFs]] as ReadonlyArray<[MeetingTab, string, string]>) : []),
   ]
   return (
     <div className={className ? `meeting-tabs ${className}` : 'meeting-tabs'}>
-      {tabs.map(([key, label]) => (
+      {tabs.map(([key, label, full]) => (
         <button
           key={key}
           type="button"
           className={tab === key ? 'meeting-tab is-active' : 'meeting-tab'}
           aria-pressed={tab === key}
+          aria-label={label === full ? undefined : full}
           onClick={() => onChange(key)}
         >
           {label}

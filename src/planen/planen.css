@@ -700,10 +700,14 @@
   overscroll-behavior: contain;
 }
 
+/* Avatar · Name+Auslastung · Meta (Chip + 5-Wochen-Quadrate). Die Meta-Spalte
+   sitzt am rechten Zeilenrand, die Quadrate stehen darin ganz rechts — ihre
+   rechte Kante ist damit in jeder Zeile dieselbe, unabhängig davon, ob ein
+   Chip davor steht und wie breit er ist. */
 .cand-row {
   display: grid;
   grid-template-columns: 36px 1fr auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   width: 100%;
   text-align: left;
@@ -748,11 +752,15 @@
    Belegung — grün = frei, sonst nach Art (Aufgabe/Hilfsdienst) eingefärbt. Feste
    Farben (nicht themenabhängig), damit die drei Zustände immer unterscheidbar
    bleiben; das mittlere Quadrat (aktuelle Woche) ist dezent hervorgehoben. */
+.cand-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .cand-load {
-  display: inline-flex;
+  display: flex;
   gap: 2px;
-  margin-inline-start: 6px;
-  vertical-align: middle;
 }
 
 .cand-load-cell {

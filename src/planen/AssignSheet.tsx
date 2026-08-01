@@ -288,16 +288,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               <span className="avatar avatar--tint avatar--36">{cand.initials}</span>
               <span>
                 <span className="cand-name">{cand.name}</span>
-                <span className="cand-sub">
-                  {cand.sub}
-                  {cand.load && (
-                    <span className="cand-load">
-                      {cand.load.map((l, i) => (
-                        <span key={i} className="cand-load-cell" data-load={l} title={loadTitle(t, l, i - 2, state.lang)} />
-                      ))}
-                    </span>
-                  )}
-                </span>
+                <span className="cand-sub">{cand.sub}</span>
                 {cand.today.length > 0 && (
                   <span className="cand-today">
                     {t.sheetSchonHeute}:{' '}
@@ -305,11 +296,26 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                   </span>
                 )}
               </span>
-              {cand.absent ? (
-                <span className="cand-chip cand-chip--absent">{t.abwesendChip}</span>
-              ) : cand.free ? (
-                <span className="cand-chip cand-chip--frei">{t.freiChip}</span>
-              ) : null}
+              {/* Status-Chip und Quadrate in einer Zelle: die Quadrate stehen
+                  darin ganz rechts und fluchten so über alle Zeilen — egal ob
+                  ein Chip davor steht und wie breit er ist. */}
+              <span className="cand-meta">
+                {cand.absent ? (
+                  <span className="cand-chip cand-chip--absent">{t.abwesendChip}</span>
+                ) : cand.free ? (
+                  <span className="cand-chip cand-chip--frei">{t.freiChip}</span>
+                ) : null}
+                <span className="cand-load">
+                  {(cand.load ?? []).map((l, i) => (
+                    <span
+                      key={i}
+                      className="cand-load-cell"
+                      data-load={l}
+                      title={loadTitle(t, l, i - 2, state.lang)}
+                    />
+                  ))}
+                </span>
+              </span>
             </button>
           ))}
         </div>
