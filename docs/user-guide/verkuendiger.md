@@ -123,10 +123,14 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
 ![Profil](screenshots/verkuendiger-profil.png)
 
 - **Darstellung** – das Farbschema der App (z. B. Reinweiß oder ein dunkles
-  Design). Die Einstellung gilt nur für dein Gerät. Wenn du kräftigere Farben
-  brauchst, wähle **Hoher Kontrast**: schwarze Schrift auf Weiß, deutlich
-  abgesetzte Farbflächen und gut sichtbare Rahmen. Zusammen mit einer größeren
-  Schriftgröße ist die App damit auch bei eingeschränktem Sehvermögen gut lesbar.
+  Design). Die Einstellung gilt nur für dein Gerät.
+  - **Hoher Kontrast** – schwarze Schrift auf Weiß, deutlich abgesetzte
+    Farbflächen und gut sichtbare Rahmen. Zusammen mit einer größeren
+    Schriftgröße ist die App damit auch bei eingeschränktem Sehvermögen gut
+    lesbar.
+  - **Pastell** – die besonders zurückhaltende Variante mit sehr weichen
+    Farben. Die übrigen Schemata sind bewusst etwas kräftiger, damit sich die
+    Programmabschnitte klarer voneinander abheben.
 - **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Standard ist die
   bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
   Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.
