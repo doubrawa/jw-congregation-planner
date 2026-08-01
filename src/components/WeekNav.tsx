@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useT } from '../i18n/useT'
+import { Chevron } from './Chevron'
 import './components.css'
 
 interface WeekNavProps {
@@ -24,7 +25,7 @@ export function WeekNav({ canPrev, canNext, onPrev, onNext, children, className 
         disabled={!canPrev}
         aria-label={t.a11yPrevWeek}
       >
-        ‹
+        <Chevron dir="prev" />
       </button>
       <div className="week-center">{children}</div>
       <button
@@ -34,7 +35,7 @@ export function WeekNav({ canPrev, canNext, onPrev, onNext, children, className 
         disabled={!canNext}
         aria-label={t.a11yNextWeek}
       >
-        ›
+        <Chevron dir="next" />
       </button>
     </div>
   )
