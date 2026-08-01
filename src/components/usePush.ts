@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { deletePushSubscription, savePushSubscription } from '../lib/data'
-import { installAvailable, onInstallChange } from '../lib/install'
+import { appInstalled, installAvailable, onInstallChange } from '../lib/install'
 import {
   currentSubscription,
   pushNeedsInstall,
@@ -65,9 +65,23 @@ export function usePush(): PushState {
   return { production, supported, needsInstall, subscribed, enable, disable }
 }
 
-/** Reaktiv: ist die App gerade per Klick installierbar (Chromium)? */
+/**
+ * Reaktiv: soll „App installieren“ angeboten werden? Nur wenn der Browser die
+ * Installation anbietet (beforeinstallprompt) UND die App hier nicht schon
+ * installiert ist — sonst stünde das Angebot in der installierten App selbst.
+ */
 export function useInstallAvailable(): boolean {
   const [avail, setAvail] = useState(installAvailable())
+  const [installed, setInstalled] = useState(false)
   useEffect(() => onInstallChange(() => setAvail(installAvailable())), [])
-  return avail
+  useEffect(() => {
+    let alive = true
+    void appInstalled().then((yes) => {
+      if (alive) setInstalled(yes)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  return avail && !installed
 }

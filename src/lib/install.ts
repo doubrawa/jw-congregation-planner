@@ -7,6 +7,8 @@
  * (main.tsx), damit das Event auch dann ankommt, wenn es vor dem Mounten feuert.
  */
 
+import { isStandalone } from './push'
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -32,6 +34,29 @@ if (typeof window !== 'undefined') {
 /** Kann die App gerade per Klick installiert werden (Chromium)? */
 export function installAvailable(): boolean {
   return deferred !== null
+}
+
+/**
+ * Ist die App auf diesem Gerät bereits installiert? Zwei Fälle:
+ *
+ *  1. Wir laufen selbst als installierte App (Standalone) — sofort erkennbar.
+ *  2. Wir laufen im Browser-Tab, die App ist aber installiert. Das weiß nur der
+ *     Browser; `getInstalledRelatedApps()` (Chromium) verrät es, wenn sich das
+ *     Manifest unter `related_applications` selbst aufführt.
+ *
+ * Wichtig: Installation gilt pro Gerät UND Browserprofil. Auf dem Handy
+ * installiert heißt nicht auf dem Desktop installiert — dort ist das Angebot
+ * dann zu Recht sichtbar.
+ */
+export async function appInstalled(): Promise<boolean> {
+  if (isStandalone()) return true
+  const nav = navigator as { getInstalledRelatedApps?: () => Promise<unknown[]> }
+  if (typeof nav.getInstalledRelatedApps !== 'function') return false
+  try {
+    return (await nav.getInstalledRelatedApps()).length > 0
+  } catch {
+    return false // ältere/abweichende Browser: lieber anbieten als fälschlich verstecken
+  }
 }
 
 /** Auf Änderungen der Installierbarkeit reagieren (Abmelde-Funktion zurück). */
