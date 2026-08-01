@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useApp } from '../app/context'
 import { useT } from '../i18n/useT'
+import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
 import './overlays.css'
 
@@ -15,10 +16,12 @@ export function MyTaskSheet() {
   const { t, tp } = useT()
   const dlg = useRef<HTMLDivElement>(null)
   useDialogFocus(dlg)
+  const close = () => dispatch({ type: 'closeMyTask' })
+  // Vor dem vorzeitigen return: Hooks müssen bei jedem Render laufen.
+  useBackDismiss(true, close)
 
   const task = state.myTasks.find((x) => x.id === state.myTaskId)
   if (!task) return null
-  const close = () => dispatch({ type: 'closeMyTask' })
   const isHelper = task.id.split('|')[2] === 'helper'
   const decline = () => dispatch({ type: 'declineTask', id: task.id })
   const confirm = () => dispatch({ type: 'confirmTask', id: task.id })

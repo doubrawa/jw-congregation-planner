@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
@@ -10,6 +11,7 @@ export function NotificationsPanel() {
   const { t, tu } = useT()
   const dlg = useRef<HTMLDivElement>(null)
   useDialogFocus(dlg)
+  useBackDismiss(true, () => dispatch({ type: 'closeNotifs' }))
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -602,7 +602,12 @@
   position: fixed;
   left: 50%;
   bottom: 0;
-  transform: translateX(-50%);
+  /* --sheet-drag setzt useSwipeDown beim Ziehen; muss Teil DIESER Transformation
+     sein, sonst überschriebe sie die Zentrierung. */
+  transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
+  /* Senkrecht darf gescrollt werden (Kandidatenliste), waagerecht nicht —
+     pinch-zoom bleibt erlaubt, damit Vergrößern möglich bleibt. */
+  touch-action: pan-y pinch-zoom;
   width: min(430px, 100vw);
   background: var(--card);
   border: 1px solid var(--line);
@@ -621,9 +626,28 @@
   .sheet {
     bottom: auto;
     top: 50%;
+    /* Mittiges Fenster — hier ist die Wisch-Geste aus (siehe useSwipeDown). */
     transform: translate(-50%, -50%);
     width: min(480px, calc(100vw - 32px));
     border-radius: var(--r-sheet);
+  }
+}
+
+/* Griff über dem Kopf: macht sichtbar, dass sich das Sheet nach unten wischen
+   lässt. Nur auf dem Handy — am Desktop ist es ein mittiges Fenster. */
+.sheet-grip {
+  flex: none;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--bord3);
+  margin: -8px 0 10px;
+}
+
+@media (min-width: 920px) {
+  .sheet-grip {
+    display: none;
   }
 }
 

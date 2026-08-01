@@ -1,6 +1,7 @@
-import { Fragment } from 'react'
+import { Fragment, useRef } from 'react'
 import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
+import { useSwipeWeek } from '../components/useSwipeWeek'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID } from '../data/demo'
@@ -22,6 +23,16 @@ export function ProgrammScreen() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const { week, tpw } = useProgWeek(state.weeks[state.week])
+
+  // Waagerecht wischen blaettert die Woche (vor dem vorzeitigen return: Hooks
+  // muessen bei jedem Render laufen).
+  const swipeRef = useRef<HTMLElement>(null)
+  useSwipeWeek(swipeRef, {
+    onPrev: () => dispatch({ type: 'prevWeek' }),
+    onNext: () => dispatch({ type: 'nextWeek' }),
+    canPrev: state.week > 0,
+    canNext: state.week < state.weeks.length - 1,
+  })
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
   if (!week) {
@@ -47,7 +58,7 @@ export function ProgrammScreen() {
   const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
 
   return (
-    <section className="screen prog-screen">
+    <section className="screen prog-screen screen--swipe" ref={swipeRef}>
       <h1 className="sr-only">{t.navProgramm}</h1>
       {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
       <div className="prog-print-head">

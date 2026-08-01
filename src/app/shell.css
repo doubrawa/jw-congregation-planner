@@ -87,6 +87,17 @@
   padding: 22px 20px;
 }
 
+/*
+ * Screens, auf denen waagerechtes Wischen die Woche blättert (useSwipeWeek).
+ * `pan-y pinch-zoom` überlässt dem Browser das senkrechte Scrollen und das
+ * Vergrößern — nur die waagerechte Richtung werten wir selbst aus. Zoom
+ * ausdrücklich erlaubt: er darf nie durch eine Geste verloren gehen.
+ */
+.screen--swipe {
+  touch-action: pan-y pinch-zoom;
+  transform: translateX(var(--week-shift, 0px));
+}
+
 @media (min-width: 920px) {
   .screen {
     padding: 26px 36px;
