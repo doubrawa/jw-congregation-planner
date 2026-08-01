@@ -288,59 +288,67 @@
 :root[data-theme='kontrast'] {
   /*
    * ---- Hoher Kontrast (hell) --------------------------------------------
-   * Für Barrierefreiheit: reines Schwarz auf Weiß, kräftige statt pastellige
-   * Tonflächen und klar sichtbare Rahmen. Alle Paarungen sind gegen WCAG 2.1
-   * geprüft (scripts/check-contrast.mjs): Text ≥ 7:1 (AAA), Sekundärtext und
-   * farbige Beschriftungen ≥ 4.5:1 (AA), Rahmen/Bedienelemente ≥ 3:1.
-   * Die vier Sektionsfarben unterscheiden sich zusätzlich in der Helligkeit,
-   * damit sie auch bei Farbfehlsichtigkeit auseinanderzuhalten sind.
+   * Reines Schwarz auf Weiß, satte Volltöne statt Tonflächen, harte Rahmen.
+   * Bewusst deutlich lauter als die gestalterischen Paletten — der Name soll
+   * halten, was er verspricht.
+   *
+   * Der Spielraum ist gerechnet: Schwarz erreicht auf einer Fläche 7:1 (AAA),
+   * solange deren Luminanz ≥ 0,30 bleibt. Genau bis dorthin sind die
+   * Sektionsflächen ausgereizt — kräftige Mitteltöne, keine hellen Pastelle.
+   * Die Beschriftungen darauf sind entsprechend tief gewählt.
+   *
+   * Alle Paarungen sind gegen WCAG 2.1 geprüft (`npm run contrast`): Text
+   * ≥ 7:1 (AAA), Sekundärtext und farbige Beschriftungen ≥ 4.5:1 (AA),
+   * Rahmen/Bedienelemente ≥ 3:1. Die vier Sektionsfarben unterscheiden sich
+   * zusätzlich in der Helligkeit, damit sie auch bei Farbfehlsichtigkeit
+   * auseinanderzuhalten sind.
    */
-  --desk: #3f3f3f;
+  --desk: #1a1a1a;
   --bg: #ffffff;
   --bgT: rgba(255, 255, 255, 0.98);
   --card: #ffffff;
 
-  --tNeu: #e6e6e6;
-  --tNeu2: #dbe4f5;
-  --tPet: #c3e6df;
-  --tGld: #ffe3a3;
-  --tWein: #ffd6d1;
-  --tAcc: #d2e1ff;
+  --tNeu: #c2c2c2;
+  --tNeu2: #9dbae8;
+  --tPet: #2ecfae;
+  --tGld: #ffbe00;
+  --tWein: #ff8072;
+  --tAcc: #86aaff;
 
   --ink: #000000;
-  --mut: #3d3d3d;
-  --mut2: #3d3d3d;
+  --mut: #2e2e2e;
+  --mut2: #2e2e2e;
 
-  --acc: #0040c1;
-  --accD: #002f92;
+  --acc: #002a8f;
+  --accD: #001c66;
   --onAcc: #ffffff;
 
-  --pet: #00564d;
-  --gld: #6b4300;
-  --wein: #a1101f;
+  --pet: #00382f;
+  --gld: #4a2f00;
+  --wein: #6e000d;
 
-  --line: #8a8a8a;
-  --line2: #a3a3a3;
-  --bord: #5c5c5c;
-  --bord2: #5c5c5c;
-  --bord3: #474747;
-  --bord4: #2e2e2e;
-  --dash: #5c5c5c;
-  --weinB: #b34a41;
+  --line: #666666;
+  --line2: #8a8a8a;
+  --bord: #3d3d3d;
+  --bord2: #3d3d3d;
+  --bord3: #2b2b2b;
+  --bord4: #141414;
+  --dash: #3d3d3d;
+  --weinB: #8a0011;
 
-  --lineNeu: rgba(0, 0, 0, 0.4);
-  --linePet: rgba(0, 86, 77, 0.45);
-  --lineGld: rgba(107, 67, 0, 0.45);
-  --lineWein: rgba(161, 16, 31, 0.45);
+  --lineNeu: rgba(0, 0, 0, 0.55);
+  --linePet: rgba(0, 68, 60, 0.6);
+  --lineGld: rgba(90, 58, 0, 0.6);
+  --lineWein: rgba(138, 0, 17, 0.6);
 
   --knob: #ffffff;
-  --hov: rgba(0, 0, 0, 0.1);
-  --focus: rgba(0, 0, 0, 0.7);
+  --hov: rgba(0, 0, 0, 0.14);
+  --focus: rgba(0, 0, 0, 0.85);
 
-  /* Auslastungs-Quadrate: kräftiger und zusätzlich per Helligkeit getrennt. */
-  --load-free: #00701f;
-  --load-task: #c11414;
-  --load-helper: #4b28c4;
+  /* Auslastungs-Quadrate: Volltöne, zusätzlich per Helligkeit getrennt. */
+  --load-free: #00661b;
+  --load-task: #cc0000;
+  --load-helper: #3d00b8;
 }
 
 :root[data-theme='graphit'] {
