@@ -767,7 +767,7 @@
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  background: #5fd07a; /* none/frei = hellgrün */
+  background: var(--load-free); /* none/frei = grün */
 }
 
 .cand-load-cell:nth-child(3) {
@@ -779,11 +779,11 @@
    Drei weit auseinanderliegende, helle Farbtöne (grün/rot/violett), damit die
    winzigen Quadrate klar unterscheidbar bleiben. */
 .cand-load-cell[data-load='task'] {
-  background: #f47160; /* Aufgabe = rot */
+  background: var(--load-task); /* Aufgabe = rot */
 }
 
 .cand-load-cell[data-load='helper'] {
-  background: #a99cf7; /* Hilfsdienst = violett */
+  background: var(--load-helper); /* Hilfsdienst = violett */
 }
 
 .cand-load-cell[data-load='void'] {

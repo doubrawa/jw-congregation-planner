@@ -74,6 +74,7 @@ export const THEME_LIST: ReadonlyArray<{ key: Theme; label: string; dark: boolea
   { key: 'indigo', label: 'Indigo', dark: false },
   { key: 'blatt', label: 'Blattgrün', dark: false },
   { key: 'papaya', label: 'Papaya', dark: false },
+  { key: 'kontrast', label: 'Hoher Kontrast', dark: false },
   { key: 'graphit', label: 'Graphit', dark: true },
   { key: 'bernstein', label: 'Bernstein', dark: true },
   { key: 'aubergine', label: 'Aubergine', dark: true },
