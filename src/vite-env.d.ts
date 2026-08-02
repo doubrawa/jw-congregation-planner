@@ -10,3 +10,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/**
+ * Stand des Builds (Zeit · Git-Kurzkennung), von vite.config.ts eingesetzt.
+ * Im Profil sichtbar, damit am Gerät feststellbar ist, welche Fassung dort
+ * wirklich läuft.
+ */
+declare const __BUILD_ID__: string

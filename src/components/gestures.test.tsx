@@ -367,6 +367,17 @@ describe('useSwipeWeek', () => {
     expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
   })
 
+  it('versetzt um die Bildschirm-, nicht die Fensterbreite', () => {
+    // Die App-Spalte ist schmaler als das Fenster (430 px mobil, 660 px am
+    // Desktop, mittig). Mit der Fensterbreite klaffte auf breiteren Geräten —
+    // oder im Querformat — genau die Differenz zwischen den beiden Wochen.
+    const { el } = setup()
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 300, height: 500 }) as DOMRect
+    swipeTouch(el, [200, 300], [100, 300]) // 100 px nach links, Fenster 400
+    // 300 (Bildschirmbreite), nicht 400 (Fensterbreite): -100 + 300 = 200
+    expect(el.style.getPropertyValue('--week-shift')).toBe('200px')
+  })
+
   it('folgt dem Finger 1:1', () => {
     // Gedämpftes Mitgehen sähe aus wie „geht nicht weiter" — der Inhalt wird
     // aber wirklich weggeschoben.
