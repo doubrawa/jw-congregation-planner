@@ -157,6 +157,7 @@ export function initialState(): AppState {
     lang: debug?.lang ?? getInitialLang(),
     langSheetOpen: false,
     langSheetFor: 'cong',
+    auxClass: false,
     congLang: debug?.congLang ?? 'Deutsch',
     progLangs: [],
     langSearch: '',

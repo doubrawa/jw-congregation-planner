@@ -4,6 +4,7 @@
  * den Startzustand liefert init.ts, den Provider stellt store.tsx.
  */
 
+import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { fsAddInst, fsAutoAssign, fsClear, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
@@ -183,6 +184,8 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   // Sprachwechsel ändert die Programmsprache der abgeleiteten Aufgaben-Titel
   'setLang',
   'setCongLang',
+  // Ein-/Ausschalten der Zusaetzlichen Klasse aendert die Plaetze der Wochen
+  'setAuxClass',
 ])
 
 export function reducer(state: AppState, action: AppAction): AppState {
@@ -801,6 +804,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, langSheetOpen: false, langSearch: '' }
     case 'setLangSearch':
       return { ...state, langSearch: action.text }
+    case 'setAuxClass':
+      // Beim Einschalten bekommen alle Schuelerteile ihre zweite Platzreihe.
+      // Beim Ausschalten bleibt sie stehen (nur unsichtbar) — sonst waere die
+      // Planung mehrerer Wochen mit einem Fehlgriff weg.
+      return {
+        ...state,
+        auxClass: action.on,
+        weeks: syncAuxSlots(state.weeks, action.on),
+        toast: toastKey(state, action.on ? 'toastAuxAn' : 'toastAuxAus'),
+      }
     case 'setCongLang':
       return { ...state, congLang: action.name, langSheetOpen: false, langSearch: '' }
     case 'addProgLang': {
@@ -835,7 +848,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         persons: p.persons,
         services: p.services,
         groups: p.groups,
-        weeks: p.weeks,
+        weeks: syncAuxSlots(p.weeks, p.auxClass),
         fsRules: p.fsRules,
         fsWeeks: p.fsWeeks,
         // ISO-Datum als 12:00 Ortszeit lesen (nicht UTC-Mitternacht) — sonst
@@ -845,6 +858,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         notifs: p.notifications,
         confirmations: p.confirmations,
         reminders: p.reminders,
+        auxClass: p.auxClass,
         congLang: p.congLang,
         progLangs: p.progLangs,
         members: p.members,

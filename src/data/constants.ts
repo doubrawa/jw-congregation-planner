@@ -26,6 +26,7 @@ export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   schulungPartner: 'Schulungsaufgaben Partner',
   studium: 'Studium leiten',
   treffpunkt: 'Treffpunkte leiten',
+  ratgeber: 'Ratgeber (Zusätzliche Klasse)',
   wtLeiter: 'Wachtturm-Studium-Leiter',
   wtVertreter: 'Wachtturm-Studium-Vertreter',
 }
@@ -45,6 +46,7 @@ export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'schulungPartner',
   'studium',
   'treffpunkt',
+  'ratgeber',
 ]
 
 /** Feste Rollen (fixer Leiter/Vertreter) — eigener Block im Personen-Detail. */

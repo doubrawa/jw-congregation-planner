@@ -140,7 +140,7 @@ describe('Update-Schreiber', () => {
     expect(chain.from).toHaveBeenCalledWith('congregations')
     expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ name: 'N', meeting_times: 'M' }))
     vi.clearAllMocks()
-    saveSettings('c1', { reminders: { first: 7, last: 1, repeat: false }, congLang: 'Deutsch', progLangs: [] })
+    saveSettings('c1', { reminders: { first: 7, last: 1, repeat: false }, congLang: 'Deutsch', progLangs: [], auxClass: false })
     expect(chain.update).toHaveBeenCalledWith({ settings: expect.objectContaining({ congLang: 'Deutsch' }) })
   })
   it('saveMemberRow / saveInvitePlanner', () => {

@@ -23,6 +23,7 @@ const payload = (over: Partial<HydratePayload> = {}): HydratePayload => ({
   reminders: { first: 7, last: 1, repeat: false },
   congLang: 'Deutsch',
   progLangs: [],
+  auxClass: false,
   members: [],
   invites: [],
   ...over,

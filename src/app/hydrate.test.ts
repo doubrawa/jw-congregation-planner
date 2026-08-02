@@ -34,6 +34,7 @@ const emptyData: CongregationData = {
   progLangs: [],
   members: [],
   invites: [],
+  auxClass: false,
 }
 
 /** Sammelt die dispatchten Aktionen. */
