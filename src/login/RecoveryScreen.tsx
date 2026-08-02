@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { useT } from '../i18n/useT'
 import { updatePassword } from '../lib/supabase'
+import { authFehlerText } from './auth-text'
 import './login.css'
 
 /**
@@ -26,7 +27,7 @@ export function RecoveryScreen() {
     const error = await updatePassword(password)
     setBusy(false)
     if (error) {
-      dispatch({ type: 'showToast', text: error })
+      dispatch({ type: 'showToast', text: authFehlerText(error, t) })
       return
     }
     dispatch({ type: 'setRecovery', on: false })

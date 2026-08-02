@@ -278,12 +278,30 @@ export function workloadOf(weeks: Week[], name: string): number {
 export type WeekLoad = 'void' | 'none' | 'task' | 'helper'
 
 /**
- * Belegung je Woche im ±`radius`-Fenster um `wi` (Standard 2 → 5 Wochen: aktuelle
- * + 2 davor + 2 danach). `void` = keine solche Woche geladen, `none` = frei,
- * `task` = Programmpunkt (Aufgabe), `helper` = nur Hilfsdienst (Aufgabe hat
- * Vorrang, falls beides in derselben Woche).
+ * Radius des Auslastungs-Fensters im Zuteilungs-Sheet: so viele Wochen vor und
+ * nach der geplanten werden gezeigt.
+ *
+ * Einzige Quelle dieser Zahl. Sie stand früher dreifach da — als Literal beim
+ * Ausschneiden der Wochen, als Literal beim Aufruf hier und ausgeschrieben in
+ * 34 Übersetzungen („… in 5 Wochen"). Beim letzten Wechsel von 4 auf 5 blieben
+ * drei Sprachen bei der alten Zahl stehen; deshalb wird sie jetzt in den Text
+ * eingesetzt statt hineingeschrieben.
+ *
+ * NICHT dasselbe wie WINDOW in planning.ts: dort geht es um die Fairness der
+ * automatischen Verteilung (±3), hier nur um das, was der Planer sieht.
  */
-export function loadWindow(weeks: Week[], name: string, wi: number, radius = 2): WeekLoad[] {
+export const LOAD_RADIUS = 2
+
+/** Wie viele Wochen das Auslastungs-Fenster umfasst (aktuelle + beide Seiten). */
+export const LOAD_WEEKS = LOAD_RADIUS * 2 + 1
+
+/**
+ * Belegung je Woche im ±`radius`-Fenster um `wi` (Standard LOAD_RADIUS).
+ * `void` = keine solche Woche geladen, `none` = frei, `task` = Programmpunkt
+ * (Aufgabe), `helper` = nur Hilfsdienst (Aufgabe hat Vorrang, falls beides in
+ * derselben Woche).
+ */
+export function loadWindow(weeks: Week[], name: string, wi: number, radius = LOAD_RADIUS): WeekLoad[] {
   const out: WeekLoad[] = []
   for (let i = wi - radius; i <= wi + radius; i++) {
     const week = weeks[i]

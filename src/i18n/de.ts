@@ -144,7 +144,10 @@ export const DE = {
     importBtn: 'NÄCHSTE WOCHE IMPORTIEREN', importiere: 'IMPORTIERE …', alleImportiert: 'ALLE WOCHEN IMPORTIERT',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend', freiChip: 'frei',
     sheetSchonHeute: 'An diesem Tag schon',
-    aufgabenIn4: '{n} Aufgaben in 5 Wochen', aufgabeIn4: '1 Aufgabe in 5 Wochen',
+    // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/helpers.ts).
+    // Nicht ausschreiben: beim letzten Wechsel von 4 auf 5 blieben ar/fa/ur
+    // bei der alten Zahl stehen, ohne dass es jemandem auffiel.
+    aufgabenInW: '{n} Aufgaben in {w} Wochen', aufgabeInW: '1 Aufgabe in {w} Wochen',
     loadFrei: 'frei', loadAufgabe: 'Aufgabe', loadHilfsdienst: 'Hilfsdienst',
     reinigungsgruppe: 'Reinigungsgruppe',
     toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · Mitteilung gesendet',
@@ -160,6 +163,7 @@ export const DE = {
     toastProgLangAdd: 'Programmsprache hinzugefügt — gilt für neue Importe',
     toastProgLangDel: 'Programmsprache entfernt',
     toastAlleWochen: 'Alle verfügbaren Wochen sind importiert', toastImportiert: 'Arbeitsheft-Woche importiert',
+    importOhneDb: 'Import nicht möglich — keine Datenbank angebunden',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
     rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleVerkIn: 'Verkündigerin',
@@ -205,6 +209,13 @@ export const DE = {
     kontoErstellen: 'Konto erstellen', registrieren: 'REGISTRIEREN', zurAnmeldung: '‹ Zurück zur Anmeldung',
     regMailHinweis: 'Bestätigungs-Mail gesendet — danach hier anmelden',
     resetMailHinweis: 'Reset-Mail gesendet — bitte Posteingang prüfen',
+    // Anmeldefehler — die Anbindung ordnet nur ein (lib/supabase.ts), die
+    // Worte stehen hier, damit sie der Sprachwahl folgen.
+    authFalsch: 'E-Mail oder Passwort falsch',
+    authUnbestaetigt: 'E-Mail-Adresse noch nicht bestätigt',
+    authSchonRegistriert: 'E-Mail ist bereits registriert',
+    authPwKurz: 'Passwort zu kurz (mindestens 6 Zeichen)',
+    authZuVieleVersuche: 'Zu viele Versuche — bitte kurz warten',
     recoveryTitle: 'Neues Passwort setzen', neuesPasswort: 'NEUES PASSWORT', pwWiederholen: 'PASSWORT WIEDERHOLEN',
     pwSpeichern: 'PASSWORT SPEICHERN', toastPwGeaendert: 'Passwort geändert',
     toastPwMismatch: 'Passwörter stimmen nicht überein',

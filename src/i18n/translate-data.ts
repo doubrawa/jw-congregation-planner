@@ -27,14 +27,13 @@ interface DateDict {
   mit: (x: string) => string
   vers: (x: string) => string
   gruppe: (n: string) => string
-  buch: (r: string) => string
-  ref: (r: string) => string
   tage: (n: string) => string
   zut: (n: string) => string
 }
 
 const FRAG: Record<string, Record<string, string>> = {
   ar: {
+    "Treffpunkte": "خدمة الحقل",
     "ERÖFFNUNG": "الافتتاح",
     "ABSCHLUSS": "الختام",
     "SCHÄTZE AUS GOTTES WORT": "كنوز من كلمة الله",
@@ -88,6 +87,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "«اخدموا يهوه بفرح»",
   },
   he: {
+    "Treffpunkte": "שירות השדה",
     "ERÖFFNUNG": "פתיחה",
     "ABSCHLUSS": "סיום",
     "SCHÄTZE AUS GOTTES WORT": "אוצרות מדבר אלוהים",
@@ -142,6 +142,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "„עבדו את יהוה בשמחה“",
   },
   fa: {
+    "Treffpunkte": "خدمت موعظه",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "پایان",
     "SCHÄTZE AUS GOTTES WORT": "گنجینه‌هایی از کلام خدا",
@@ -196,6 +197,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "«یَهُوَه را با شادی خدمت کنید»",
   },
   ur: {
+    "Treffpunkte": "میدانی خدمت",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "اختتام",
     "SCHÄTZE AUS GOTTES WORT": "خدا کے کلام کے خزانے",
@@ -250,6 +252,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "”یہوواہ کی خدمت خوشی سے کریں“",
   },
   en: {
+    "Treffpunkte": "Field Service",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'TREASURES FROM GOD\u2019S WORD',
     'UNS IM DIENST VERBESSERN': 'APPLY YOURSELF TO THE FIELD MINISTRY',
@@ -298,6 +301,7 @@ const FRAG: Record<string, Record<string, string>> = {
     '„Loyal in Prüfungen“': '\u201CLoyal Under Trial\u201D'
   },
   es: {
+    "Treffpunkte": "Servicio del campo",
     'ERÖFFNUNG': 'APERTURA', 'ABSCHLUSS': 'CONCLUSIÓN',
     'SCHÄTZE AUS GOTTES WORT': 'TESOROS DE LA BIBLIA',
     'UNS IM DIENST VERBESSERN': 'SEAMOS MEJORES MAESTROS',
@@ -346,6 +350,7 @@ const FRAG: Record<string, Record<string, string>> = {
     '„Loyal in Prüfungen“': '\u201CLeales en las pruebas\u201D'
   },
   fr: {
+    "Treffpunkte": "Prédication",
     'ERÖFFNUNG': 'OUVERTURE', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'JOYAUX DE LA PAROLE DE DIEU',
     'UNS IM DIENST VERBESSERN': 'APPLIQUE-TOI AU MINISTÈRE',
@@ -394,6 +399,7 @@ const FRAG: Record<string, Record<string, string>> = {
     '„Loyal in Prüfungen“': '« Fidèles dans les épreuves »'
   },
   it: {
+    "Treffpunkte": "Servizio di campo",
     'ERÖFFNUNG': 'INTRODUZIONE', 'ABSCHLUSS': 'CONCLUSIONE',
     'SCHÄTZE AUS GOTTES WORT': 'TESORI DELLA PAROLA DI DIO',
     'UNS IM DIENST VERBESSERN': 'EFFICACI NEL MINISTERO', 'UNSER LEBEN ALS CHRIST': 'VITA CRISTIANA',
@@ -414,6 +420,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Anziano', 'Dienstamtgehilfe': 'Servitore di ministero', 'Verkündiger': 'Proclamatore', 'Verkündigerin': 'Proclamatrice'
   },
   pt: {
+    "Treffpunkte": "Serviço de campo",
     'ERÖFFNUNG': 'INTRODUÇÃO', 'ABSCHLUSS': 'CONCLUSÃO',
     'SCHÄTZE AUS GOTTES WORT': 'TESOUROS DA PALAVRA DE DEUS',
     'UNS IM DIENST VERBESSERN': 'FAÇA O SEU MELHOR NO MINISTÉRIO', 'UNSER LEBEN ALS CHRIST': 'VIVER COMO CRISTÃOS',
@@ -434,6 +441,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Ancião', 'Dienstamtgehilfe': 'Servo ministerial', 'Verkündiger': 'Publicador', 'Verkündigerin': 'Publicadora'
   },
   nl: {
+    "Treffpunkte": "Velddienst",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'AFSLUITING',
     'SCHÄTZE AUS GOTTES WORT': 'SCHATTEN UIT GODS WOORD',
     'UNS IM DIENST VERBESSERN': 'BEKWAAM IN DE BEDIENING', 'UNSER LEBEN ALS CHRIST': 'ONS LEVEN ALS CHRISTEN',
@@ -454,6 +462,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Ouderling', 'Dienstamtgehilfe': 'Dienaar in de bediening', 'Verkündiger': 'Verkondiger', 'Verkündigerin': 'Verkondigster'
   },
   pl: {
+    "Treffpunkte": "Służba",
     'ERÖFFNUNG': 'ROZPOCZĘCIE', 'ABSCHLUSS': 'ZAKOŃCZENIE',
     'SCHÄTZE AUS GOTTES WORT': 'SKARBY ZE SŁOWA BOŻEGO',
     'UNS IM DIENST VERBESSERN': 'UDOSKONALAJMY SŁUŻBĘ', 'UNSER LEBEN ALS CHRIST': 'CHRZEŚCIJAŃSKI TRYB ŻYCIA',
@@ -474,6 +483,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starszy', 'Dienstamtgehilfe': 'Sługa pomocniczy', 'Verkündiger': 'Głosiciel', 'Verkündigerin': 'Głosicielka'
   },
   ru: {
+    "Treffpunkte": "Служение",
     'ERÖFFNUNG': 'ВСТУПЛЕНИЕ', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СОКРОВИЩА ИЗ СЛОВА БОГА',
     'UNS IM DIENST VERBESSERN': 'ОТТАЧИВАЕМ НАВЫКИ СЛУЖЕНИЯ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИАНСКАЯ ЖИЗНЬ',
@@ -494,6 +504,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Служебный помощник', 'Verkündiger': 'Возвещатель', 'Verkündigerin': 'Возвещательница'
   },
   uk: {
+    "Treffpunkte": "Служіння",
     'ERÖFFNUNG': 'ВСТУП', 'ABSCHLUSS': 'ЗАКЛЮЧНА ЧАСТИНА',
     'SCHÄTZE AUS GOTTES WORT': 'СКАРБИ БОЖОГО СЛОВА',
     'UNS IM DIENST VERBESSERN': 'УДОСКОНАЛЮЙМОСЯ В СЛУЖІННІ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИЯНСЬКЕ ЖИТТЯ',
@@ -514,6 +525,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Старійшина', 'Dienstamtgehilfe': 'Службовий помічник', 'Verkündiger': 'Вісник', 'Verkündigerin': 'Вісниця'
   },
   ro: {
+    "Treffpunkte": "Serviciu",
     'ERÖFFNUNG': 'INTRODUCERE', 'ABSCHLUSS': 'ÎNCHEIERE',
     'SCHÄTZE AUS GOTTES WORT': 'COMORI DIN CUVÂNTUL LUI DUMNEZEU',
     'UNS IM DIENST VERBESSERN': 'SĂ FIM MAI EFICIENȚI ÎN PREDICARE', 'UNSER LEBEN ALS CHRIST': 'VIAȚA DE CREȘTIN',
@@ -534,6 +546,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Bătrân', 'Dienstamtgehilfe': 'Slujitor auxiliar', 'Verkündiger': 'Vestitor', 'Verkündigerin': 'Vestitoare'
   },
   cs: {
+    "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'ÚVOD', 'ABSCHLUSS': 'ZÁVĚR',
     'SCHÄTZE AUS GOTTES WORT': 'POKLADY Z BOŽÍHO SLOVA',
     'UNS IM DIENST VERBESSERN': 'ZLEPŠUJME SE VE SLUŽBĚ', 'UNSER LEBEN ALS CHRIST': 'KŘESŤANSKÝ ŽIVOT',
@@ -554,6 +567,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služební pomocník', 'Verkündiger': 'Zvěstovatel', 'Verkündigerin': 'Zvěstovatelka'
   },
   sk: {
+    "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'ÚVOD', 'ABSCHLUSS': 'ZÁVER',
     'SCHÄTZE AUS GOTTES WORT': 'POKLADY Z BOŽIEHO SLOVA',
     'UNS IM DIENST VERBESSERN': 'ZLEPŠUJME SA V SLUŽBE', 'UNSER LEBEN ALS CHRIST': 'KRESŤANSKÝ ŽIVOT',
@@ -574,6 +588,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služobný pomocník', 'Verkündiger': 'Zvestovateľ', 'Verkündigerin': 'Zvestovateľka'
   },
   hr: {
+    "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'UVOD', 'ABSCHLUSS': 'ZAKLJUČAK',
     'SCHÄTZE AUS GOTTES WORT': 'BLAGO IZ BOŽJE RIJEČI',
     'UNS IM DIENST VERBESSERN': 'NAPREDUJMO U SLUŽBI', 'UNSER LEBEN ALS CHRIST': 'KRŠĆANSKI ŽIVOT',
@@ -594,6 +609,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starješina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavitelj', 'Verkündigerin': 'Objaviteljica'
   },
   sr: {
+    "Treffpunkte": "Служба",
     'ERÖFFNUNG': 'UVOD', 'ABSCHLUSS': 'ZAKLJUČAK',
     'SCHÄTZE AUS GOTTES WORT': 'BLAGO IZ BOŽJE REČI',
     'UNS IM DIENST VERBESSERN': 'NAPREDUJMO U SLUŽBI', 'UNSER LEBEN ALS CHRIST': 'HRIŠĆANSKI ŽIVOT',
@@ -614,6 +630,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starešina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavljivač', 'Verkündigerin': 'Objavljivačica'
   },
   bg: {
+    "Treffpunkte": "Служба",
     'ERÖFFNUNG': 'УВОД', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СЪКРОВИЩА ОТ БОЖИЕТО СЛОВО',
     'UNS IM DIENST VERBESSERN': 'ДА СЛУЖИМ ПО-ДОБРЕ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИЯНСКИ ЖИВОТ',
@@ -634,6 +651,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Помощник-служител', 'Verkündiger': 'Вестител', 'Verkündigerin': 'Вестителка'
   },
   hu: {
+    "Treffpunkte": "Szolgálat",
     'ERÖFFNUNG': 'BEVEZETŐ', 'ABSCHLUSS': 'BEFEJEZÉS',
     'SCHÄTZE AUS GOTTES WORT': 'KINCSEK ISTEN SZAVÁBÓL',
     'UNS IM DIENST VERBESSERN': 'LEGYÜNK ÜGYESEBBEK A SZOLGÁLATBAN', 'UNSER LEBEN ALS CHRIST': 'KERESZTÉNY ÉLETÜNK',
@@ -654,6 +672,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Vén', 'Dienstamtgehilfe': 'Kisegítőszolga', 'Verkündiger': 'Hírnök', 'Verkündigerin': 'Hírnöknő'
   },
   el: {
+    "Treffpunkte": "Υπηρεσία",
     'ERÖFFNUNG': 'ΕΙΣΑΓΩΓΗ', 'ABSCHLUSS': 'ΣΥΜΠΕΡΑΣΜΑ',
     'SCHÄTZE AUS GOTTES WORT': 'ΘΗΣΑΥΡΟΙ ΑΠΟ ΤΟΝ ΛΟΓΟ ΤΟΥ ΘΕΟΥ',
     'UNS IM DIENST VERBESSERN': 'ΑΠΟΤΕΛΕΣΜΑΤΙΚΟΤΗΤΑ ΣΤΗ ΔΙΑΚΟΝΙΑ ΑΓΡΟΥ', 'UNSER LEBEN ALS CHRIST': 'ΠΩΣ ΝΑ ΖΟΥΜΕ ΩΣ ΧΡΙΣΤΙΑΝΟΙ',
@@ -674,6 +693,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Πρεσβύτερος', 'Dienstamtgehilfe': 'Διακονικός υπηρέτης', 'Verkündiger': 'Ευαγγελιζόμενος', 'Verkündigerin': 'Ευαγγελιζόμενη'
   },
   tr: {
+    "Treffpunkte": "Tarla hizmeti",
     'ERÖFFNUNG': 'GİRİŞ', 'ABSCHLUSS': 'SONUÇ',
     'SCHÄTZE AUS GOTTES WORT': 'TANRI’NIN SÖZÜNDEKİ DEĞERLER',
     'UNS IM DIENST VERBESSERN': 'HİZMETTE DAHA YETENEKLİ OLALIM', 'UNSER LEBEN ALS CHRIST': 'İSA’NIN TAKİPÇİLERİ OLARAK HAYATIMIZ',
@@ -694,6 +714,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'İhtiyar', 'Dienstamtgehilfe': 'Yardımcı hizmetçi', 'Verkündiger': 'Müjdeci', 'Verkündigerin': 'Müjdeci'
   },
   sv: {
+    "Treffpunkte": "Tjänsten",
     'ERÖFFNUNG': 'INLEDNING', 'ABSCHLUSS': 'AVSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTER FRÅN GUDS ORD',
     'UNS IM DIENST VERBESSERN': 'BLI SKICKLIGARE I TJÄNSTEN', 'UNSER LEBEN ALS CHRIST': 'VÅRT KRISTNA LIV',
@@ -714,6 +735,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Äldste', 'Dienstamtgehilfe': 'Biträdande tjänare', 'Verkündiger': 'Förkunnare', 'Verkündigerin': 'Förkunnare'
   },
   da: {
+    "Treffpunkte": "Tjenesten",
     'ERÖFFNUNG': 'INDLEDNING', 'ABSCHLUSS': 'AFSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTE FRA GUDS ORD',
     'UNS IM DIENST VERBESSERN': 'BLIV BEDRE TIL AT FORKYNDE', 'UNSER LEBEN ALS CHRIST': 'VORES KRISTNE LIV',
@@ -734,6 +756,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Ældste', 'Dienstamtgehilfe': 'Menighedstjener', 'Verkündiger': 'Forkynder', 'Verkündigerin': 'Forkynder'
   },
   fi: {
+    "Treffpunkte": "Palvelus",
     'ERÖFFNUNG': 'JOHDANTO', 'ABSCHLUSS': 'LOPETUS',
     'SCHÄTZE AUS GOTTES WORT': 'AARTEITA JUMALAN SANASTA',
     'UNS IM DIENST VERBESSERN': 'PARANNA TAITOJASI KENTTÄPALVELUKSESSA', 'UNSER LEBEN ALS CHRIST': 'KRISTITTYNÄ ELÄMINEN',
@@ -754,6 +777,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Vanhin', 'Dienstamtgehilfe': 'Avustava palvelija', 'Verkündiger': 'Julistaja', 'Verkündigerin': 'Julistaja'
   },
   no: {
+    "Treffpunkte": "Tjenesten",
     'ERÖFFNUNG': 'INNLEDNING', 'ABSCHLUSS': 'AVSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTER FRA GUDS ORD',
     'UNS IM DIENST VERBESSERN': 'BLI FLINKERE I TJENESTEN', 'UNSER LEBEN ALS CHRIST': 'VÅRT KRISTNE LIV',
@@ -774,6 +798,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Eldste', 'Dienstamtgehilfe': 'Menighetstjener', 'Verkündiger': 'Forkynner', 'Verkündigerin': 'Forkynner'
   },
   id: {
+    "Treffpunkte": "Dinas",
     'ERÖFFNUNG': 'PEMBUKA', 'ABSCHLUSS': 'PENUTUP',
     'SCHÄTZE AUS GOTTES WORT': 'HARTA DARI FIRMAN ALLAH',
     'UNS IM DIENST VERBESSERN': 'TINGKATKAN KEMAMPUAN DINAS', 'UNSER LEBEN ALS CHRIST': 'KEHIDUPAN KRISTEN',
@@ -794,6 +819,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Penatua', 'Dienstamtgehilfe': 'Hamba pelayanan', 'Verkündiger': 'Penyiar', 'Verkündigerin': 'Penyiar'
   },
   tl: {
+    "Treffpunkte": "Paglilingkod",
     'ERÖFFNUNG': 'PAMBUNGAD', 'ABSCHLUSS': 'PANGWAKAS',
     'SCHÄTZE AUS GOTTES WORT': 'KAYAMANAN MULA SA SALITA NG DIYOS',
     'UNS IM DIENST VERBESSERN': 'MAGPAKAHUSAY SA MINISTERYO', 'UNSER LEBEN ALS CHRIST': 'PAMUMUHAY BILANG KRISTIYANO',
@@ -814,6 +840,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Elder', 'Dienstamtgehilfe': 'Ministeryal na lingkod', 'Verkündiger': 'Mamamahayag', 'Verkündigerin': 'Mamamahayag'
   },
   vi: {
+    "Treffpunkte": "Rao giảng",
     'ERÖFFNUNG': 'MỞ ĐẦU', 'ABSCHLUSS': 'KẾT THÚC',
     'SCHÄTZE AUS GOTTES WORT': 'KHO BÁU TỪ LỜI ĐỨC CHÚA TRỜI',
     'UNS IM DIENST VERBESSERN': 'CẢI THIỆN THÁNH CHỨC', 'UNSER LEBEN ALS CHRIST': 'ĐỜI SỐNG TÍN ĐỒ',
@@ -834,6 +861,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Trưởng lão', 'Dienstamtgehilfe': 'Phụ tá hội thánh', 'Verkündiger': 'Người công bố', 'Verkündigerin': 'Người công bố'
   },
   sw: {
+    "Treffpunkte": "Utumishi",
     'ERÖFFNUNG': 'UTANGULIZI', 'ABSCHLUSS': 'HITIMISHO',
     'SCHÄTZE AUS GOTTES WORT': 'HAZINA ZA NENO LA MUNGU',
     'UNS IM DIENST VERBESSERN': 'KUWA STADI KATIKA HUDUMA', 'UNSER LEBEN ALS CHRIST': 'MAISHA YETU YA KIKRISTO',
@@ -854,6 +882,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Mzee', 'Dienstamtgehilfe': 'Mtumishi wa huduma', 'Verkündiger': 'Mhubiri', 'Verkündigerin': 'Mhubiri'
   },
   zh: {
+    "Treffpunkte": "传道",
     'ERÖFFNUNG': '开场', 'ABSCHLUSS': '结束',
     'SCHÄTZE AUS GOTTES WORT': '上帝话语的宝藏',
     'UNS IM DIENST VERBESSERN': '在传道上精益求精', 'UNSER LEBEN ALS CHRIST': '基督徒的生活',
@@ -874,6 +903,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': '长老', 'Dienstamtgehilfe': '助理仆人', 'Verkündiger': '传道员', 'Verkündigerin': '传道员'
   },
   ja: {
+    "Treffpunkte": "野外奉仕",
     'ERÖFFNUNG': '開会', 'ABSCHLUSS': '結び',
     'SCHÄTZE AUS GOTTES WORT': '神の言葉の宝',
     'UNS IM DIENST VERBESSERN': '宣教に工夫を', 'UNSER LEBEN ALS CHRIST': 'クリスチャンとして生きる',
@@ -894,6 +924,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': '長老', 'Dienstamtgehilfe': '奉仕の僕', 'Verkündiger': '伝道者', 'Verkündigerin': '伝道者'
   },
   ko: {
+    "Treffpunkte": "야외 봉사",
     'ERÖFFNUNG': '시작', 'ABSCHLUSS': '마침',
     'SCHÄTZE AUS GOTTES WORT': '하느님의 말씀에 담긴 보물',
     'UNS IM DIENST VERBESSERN': '전도 방법을 개선하기', 'UNSER LEBEN ALS CHRIST': '그리스도인의 생활',
@@ -978,7 +1009,7 @@ const D: Record<string, DateDict> = {
     song: n => 'Song ' + n, min: n => n + ' min.', ca: r => 'approx. ' + r, ende: r => 'Ends approx. ' + r,
     lektion: n => 'lesson ' + n, kap: n => 'chap. ' + n, anhang: n => 'appendix A point ' + n,
     artikel: n => 'Study article ' + n, mit: x => 'with ' + x, vers: x => 'Cong. ' + x, gruppe: n => 'Group ' + n,
-    buch: r => 'Jeremiah ' + r, ref: r => 'Jer ' + r, tage: n => 'in ' + n + ' days', zut: n => n + ' assignments'
+    tage: n => 'in ' + n + ' days', zut: n => n + ' assignments'
   },
   es: {
     wd: ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'],
@@ -991,7 +1022,7 @@ const D: Record<string, DateDict> = {
     song: n => 'Canción ' + n, min: n => n + ' min.', ca: r => 'aprox. ' + r, ende: r => 'Termina aprox. ' + r,
     lektion: n => 'lección ' + n, kap: n => 'cap. ' + n, anhang: n => 'apéndice A punto ' + n,
     artikel: n => 'Artículo de estudio ' + n, mit: x => 'con ' + x, vers: x => 'Congr. ' + x, gruppe: n => 'Grupo ' + n,
-    buch: r => 'Jeremías ' + r, ref: r => 'Jer ' + r, tage: n => 'en ' + n + ' días', zut: n => n + ' asignaciones'
+    tage: n => 'en ' + n + ' días', zut: n => n + ' asignaciones'
   },
   fr: {
     wd: ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'],
@@ -1004,7 +1035,7 @@ const D: Record<string, DateDict> = {
     song: n => 'Cantique ' + n, min: n => n + ' min', ca: r => 'vers ' + r, ende: r => 'Fin vers ' + r,
     lektion: n => 'leçon ' + n, kap: n => 'chap. ' + n, anhang: n => 'appendice A idée ' + n,
     artikel: n => 'Article d\u2019étude ' + n, mit: x => 'avec ' + x, vers: x => 'Ass. ' + x, gruppe: n => 'Groupe ' + n,
-    buch: r => 'Jérémie ' + r, ref: r => 'Jér ' + r, tage: n => 'dans ' + n + ' jours', zut: n => n + ' attributions'
+    tage: n => 'dans ' + n + ' jours', zut: n => n + ' attributions'
   }
 };
 

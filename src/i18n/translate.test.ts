@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { congAppCode } from './langs'
-import { makeTr } from './translate'
+import { bibelbuecherLaden, makeTr } from './translate'
+
+// Die Bibelbuch-Tabellen liegen in einem nachgeladenen Modul und müssen da
+// sein, BEVOR ein Übersetzer gebaut wird — makeTr stellt seine Regeln einmal
+// beim Erzeugen zusammen. Deshalb hier oben statt in beforeAll.
+await bibelbuecherLaden()
 
 describe('makeTr — Programm-Inhalts-Übersetzer', () => {
   const en = makeTr('en')

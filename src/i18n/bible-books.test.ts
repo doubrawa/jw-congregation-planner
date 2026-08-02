@@ -1,0 +1,108 @@
+import { describe, expect, it } from 'vitest'
+import { buchTabelle } from './bible-books'
+import { APP_LANGS } from './langs'
+import { bibelbuecherLaden, makeTr } from './translate'
+
+// Die Tabellen liegen in einem nachgeladenen Modul; makeTr stellt seine Regeln
+// beim Erzeugen zusammen, das Laden muss also vorher passiert sein.
+await bibelbuecherLaden()
+
+/**
+ * Bis 2026-08 kannte der Übersetzer genau ein Bibelbuch: „Jeremia" — das Buch
+ * der Demo-Woche. Die übrigen 65 blieben in jeder Sprache deutsch stehen.
+ * Diese Tests halten die volle Abdeckung fest.
+ */
+describe('Bibelbücher', () => {
+  it('jede App-Sprache außer Deutsch hat eine Tabelle', () => {
+    for (const { code: lang } of APP_LANGS) {
+      if (lang === 'de') continue
+      expect(buchTabelle(lang).voll.size, lang).toBeGreaterThan(0)
+    }
+  })
+
+  it('deckt alle 66 Bücher ab (Urdu 57 — dort ist die Übersetzung Teilausgabe)', () => {
+    for (const { code: lang } of APP_LANGS) {
+      if (lang === 'de') continue
+      const erwartet = lang === 'ur' ? 57 : 66
+      expect(buchTabelle(lang).voll.size, lang).toBe(erwartet)
+      expect(buchTabelle(lang).kurz.size, lang).toBe(erwartet)
+    }
+  })
+
+  it('übersetzt Buch samt Kapitelangabe', () => {
+    const en = makeTr('en')
+    expect(en('Jeremia 32–33')).toBe('Jeremiah 32–33')
+    expect(en('Matthäus 5–6')).toBe('Matthew 5–6')
+    expect(en('1. Mose 1–3')).toBe('Genesis 1–3')
+    expect(en('Offenbarung 1–3')).toBe('Revelation 1–3')
+  })
+
+  it('übersetzt auch die Kürzel in Bibelstellen', () => {
+    // „Bibellesung · Jer 32:6-18" — Kapitel und Verse bleiben unangetastet.
+    expect(makeTr('en')('Jer 32:6-18')).toBe('Jer 32:6-18')
+    expect(makeTr('fr')('Jer 32:6-18')).toBe('Jr 32:6-18')
+    expect(makeTr('ru')('Jer 32:6-18')).toBe('Иер 32:6-18')
+  })
+
+  it('greift auch in den Intl-Sprachen (die hatten vorher gar keine Regel)', () => {
+    expect(makeTr('pl')('Jeremia 32–33')).toBe('Jeremiasza 32–33')
+    expect(makeTr('ja')('Matthäus 5–6')).toBe('マタイ 5–6')
+    expect(makeTr('sw')('1. Mose 1–3')).toBe('Mwanzo 1–3')
+  })
+
+  it('lässt fremde Zahlen-Segmente in Ruhe', () => {
+    // Der Ausdruck darf kein Fänger sein: „Lied 5" und „Studienartikel 3"
+    // haben eigene Regeln, die vorher greifen müssen.
+    const en = makeTr('en')
+    expect(en('Lied 5')).toBe('Song 5')
+    expect(en('Studienartikel 3')).toBe('Study article 3')
+    expect(en('10 Min.')).toBe('10 min.')
+  })
+
+  it('zerlegt zusammengesetzte Titel weiterhin an ihren Trennern', () => {
+    // Ein zu gieriger Ausdruck würde das ganze Segment schlucken und die
+    // Aufteilung an „ · " / „ — " in buildTranslator umgehen.
+    expect(makeTr('en')('Bibellesung · Jer 32:6-18')).toBe('Bible Reading · Jer 32:6-18')
+  })
+})
+
+/**
+ * Der Wochentag eines Programmdatums wird über ein echtes Kalenderdatum
+ * ermittelt, dessen Jahr gesucht wird. Beim 29. Februar reichte der abgesuchte
+ * Bereich nicht für alle sieben Wochentage.
+ */
+describe('Wochentag im Programmdatum', () => {
+  // Nur die Intl-Sprachen gehen durch diese Suche; en/es/fr haben eigene
+  // Wochentagslisten und waren nie betroffen.
+  const nl = makeTr('nl')
+
+  it('trifft auch den 29. Februar an jedem Wochentag', () => {
+    // Vorher wurde daraus „zaterdag 1 maart" — falscher Tag UND falsches
+    // Datum, weil der Rückfall auf ein Datum zeigte, das es nicht gibt.
+    expect(nl('Montag, 29. Februar')).toBe('maandag 29 februari')
+    expect(nl('Samstag, 29. Februar')).toBe('zaterdag 29 februari')
+  })
+
+  it('bleibt bei gewöhnlichen Daten korrekt', () => {
+    expect(nl('Dienstag, 8. September')).toBe('dinsdag 8 september')
+  })
+})
+
+/**
+ * Mitteilungen werden geteilt: sie entstehen bei einem Planer und erscheinen
+ * bei allen. Deshalb steht ihr Text kanonisch deutsch in der Datenbank und
+ * wird erst beim Anzeigen übersetzt.
+ */
+describe('Mitteilungstext „Treffpunkte"', () => {
+  it('wird in jeder App-Sprache übersetzt', () => {
+    for (const { code } of APP_LANGS) {
+      if (code === 'de') continue
+      expect(makeTr(code)('Treffpunkte'), code).not.toBe('Treffpunkte')
+    }
+  })
+
+  it('auch als Teil eines zusammengesetzten Textes', () => {
+    // So sieht die Zeile aus: „Name — Treffpunkte · 7.–13. September"
+    expect(makeTr('en')('Simon Krüger — Treffpunkte · Jer 32:6-18')).toBe('Simon Krüger — Field Service · Jer 32:6-18')
+  })
+})
