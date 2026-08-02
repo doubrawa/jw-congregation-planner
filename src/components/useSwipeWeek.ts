@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react'
+import { flushSync } from 'react-dom'
 
 /**
  * Waagerecht wischen, um eine Woche zu blättern (Programm und Planen).
@@ -31,8 +32,18 @@ import { useEffect, useRef, type RefObject } from 'react'
  * ## Was die Bewegung aussagt
  *
  * Der Inhalt folgt dem Finger 1:1 — er wird ja weggeschoben. Beim Loslassen
- * schiebt er sich vollständig hinaus, und die neue Woche kommt von der anderen
- * Seite herein.
+ * wandern alte und neue Woche gemeinsam weiter, wie zwei Bilder eines
+ * Filmstreifens: die alte hinaus, die neue direkt dahinter herein.
+ *
+ * Dass sie aneinanderkleben, ist der Punkt. Ohne das sprang der Inhalt quer
+ * über den Bildschirm — einen Wimpernschlag lang war gar nichts zu sehen —
+ * und das las sich, als wäre die Bewegung zurückgelaufen.
+ *
+ * Beide Bildschirme lesen die Woche direkt aus dem Zustand; zwei Wochen
+ * gleichzeitig zu rendern hieße, sie dafür umzubauen. Stattdessen bleibt ein
+ * Standbild (`cloneNode`) der alten Woche liegen und wandert mit hinaus. Es ist
+ * reine Optik: keine Ereignisse, für Screenreader unsichtbar, und nach der
+ * Bewegung wieder weg.
  *
  * Zurückfedern heißt ausdrücklich das Gegenteil: „hier geht es nicht weiter".
  * Deshalb federt es nur, wenn wirklich nichts kommt (erste/letzte Woche) oder
@@ -96,33 +107,59 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       if (animate) timer = window.setTimeout(() => setTransition(null), SPRING_MS + 20)
     }
 
+    /** Standbild der aktuellen Woche, das mit hinauswandert. */
+    let buehne: HTMLElement | null = null
+    const buehneWeg = () => {
+      buehne?.remove()
+      buehne = null
+    }
+
     /**
-     * Echtes Durchschieben: erst ganz hinaus, dann die neue Woche einsetzen,
-     * während der Bildschirm außer Sicht ist, und von der Gegenseite herein.
+     * Filmstreifen: alte und neue Woche wandern um dieselbe Strecke weiter.
      *
-     * Der Wechsel passiert bewusst NICHT vor dem Hinausschieben — sonst sähe
-     * man die neue Woche schon wegwandern.
+     * `richtung` -1 = nach links hinaus (nächste Woche), +1 = nach rechts.
+     * Die neue Woche startet unmittelbar neben der alten — deshalb genau eine
+     * Bildschirmbreite versetzt — und beide legen dieselbe Strecke zurück.
      */
-    const slide = (richtung: -1 | 1, blaettern: () => void) => {
+    const slide = (richtung: -1 | 1, ab: number, blaettern: () => void) => {
       const weg = window.innerWidth
       laeuft = true
-      setTransition(SLIDE_MS)
-      setShift(richtung * weg)
-      timer = window.setTimeout(() => {
-        // Außer Sicht: ohne Übergang auf die Gegenseite setzen und wechseln.
-        setTransition(null)
-        setShift(-richtung * weg)
-        blaettern()
-        // Ein Frame später ist der neue Inhalt gerendert — dann hereinschieben.
-        raf = requestAnimationFrame(() => {
-          setTransition(SLIDE_MS)
-          setShift(0)
-          timer = window.setTimeout(() => {
-            setTransition(null)
-            laeuft = false
-          }, SLIDE_MS + 20)
-        })
-      }, SLIDE_MS)
+
+      // Standbild dort einfrieren, wo der Finger losgelassen hat.
+      const r = el.getBoundingClientRect()
+      buehne = document.createElement('div')
+      buehne.dataset.weekGhost = '' // Standbild — nur Optik, kein Inhalt der App
+      buehne.setAttribute('aria-hidden', 'true')
+      buehne.style.cssText =
+        'position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:5'
+      const klon = el.cloneNode(true) as HTMLElement
+      klon.style.position = 'absolute'
+      klon.style.left = `${r.left}px`
+      klon.style.top = `${r.top}px`
+      klon.style.width = `${r.width}px`
+      klon.style.margin = '0'
+      klon.style.setProperty('--week-shift', `${ab}px`)
+      buehne.appendChild(klon)
+      document.body.appendChild(buehne)
+
+      // Die neue Woche ohne Übergang direkt neben das Standbild setzen und
+      // sofort einwechseln. `flushSync`, damit sie wirklich schon da steht,
+      // bevor die Bewegung beginnt — sonst liefe kurz die alte Woche mit.
+      setTransition(null)
+      setShift(ab - richtung * weg)
+      flushSync(blaettern)
+
+      raf = requestAnimationFrame(() => {
+        setTransition(SLIDE_MS)
+        setShift(0)
+        klon.style.transition = `transform ${SLIDE_MS}ms ease-out`
+        klon.style.setProperty('--week-shift', `${richtung * weg}px`)
+        timer = window.setTimeout(() => {
+          setTransition(null)
+          buehneWeg()
+          laeuft = false
+        }, SLIDE_MS + 20)
+      })
     }
 
     const onStart = (e: TouchEvent) => {
@@ -185,10 +222,10 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       aktiv = false
       phase = 'offen'
       if (warWaagerecht && Math.abs(moved) >= COMMIT_PX) {
-        // Nach rechts gezogen (moved > 0) heißt: die vorige Woche kommt von
-        // links — der Bildschirm muss also nach rechts hinaus.
-        if (moved > 0 && o.current.canPrev) return slide(1, o.current.onPrev)
-        if (moved < 0 && o.current.canNext) return slide(-1, o.current.onNext)
+        // Nach rechts gezogen (moved > 0) heißt: die vorige Woche liegt links
+        // — die alte wandert also nach rechts hinaus.
+        if (moved > 0 && o.current.canPrev) return slide(1, moved, o.current.onPrev)
+        if (moved < 0 && o.current.canNext) return slide(-1, moved, o.current.onNext)
       }
       release(true)
     }
@@ -213,9 +250,11 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       el.removeEventListener('touchend', onEnd)
       el.removeEventListener('touchcancel', onCancel)
       // Laufende Animation abbrechen — sonst greifen die Zeitgeber auf ein
-      // Element zu, das längst aus dem Baum ist.
+      // Element zu, das längst aus dem Baum ist, und das Standbild bliebe über
+      // dem nächsten Bildschirm liegen.
       if (timer !== undefined) window.clearTimeout(timer)
       if (raf !== undefined) cancelAnimationFrame(raf)
+      buehneWeg()
       el.style.removeProperty('--week-shift')
       el.style.transition = ''
     }
