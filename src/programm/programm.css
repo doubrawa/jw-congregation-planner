@@ -94,11 +94,33 @@
   color: var(--panel-accent);
 }
 
+/*
+ * Titel und Zusatz als eigene Spalte. `min-width: 0` ist der entscheidende
+ * Teil: ohne das darf ein Gitter-Element nicht unter seine kleinste
+ * Inhaltsbreite schrumpfen — und die ist bei einem langen deutschen Wort wie
+ * „Versammlungsbibelstudium" das ganze Wort. Der Titel lief dann in die
+ * Namensspalte und legte sich über die Namen.
+ */
+.prog-row-text {
+  min-width: 0;
+}
+
 .prog-title {
   font-family: var(--font-serif);
   font-size: calc(15px * var(--fs));
   font-weight: 500;
   line-height: 1.35;
+  /*
+   * Echte Silbentrennung statt hartem Abschneiden: Die Sprache steht am
+   * <html>-Element und wird bei jedem Sprachwechsel mitgeführt (store.tsx),
+   * der Browser trennt also nach den Regeln der jeweiligen Sprache.
+   * `break-word` bleibt als Notbremse für Wörter, die er nicht trennen kann
+   * (fremde Sprache, Eigennamen) — lieber ein unschöner Umbruch als
+   * übereinanderliegender Text.
+   */
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .prog-item-meta {
