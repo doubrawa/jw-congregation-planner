@@ -45,6 +45,7 @@
 
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
+import { pushTexte } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -175,6 +176,26 @@ interface SubscriptionRow {
   endpoint: string
   p256dh: string
   auth: string
+  /** App-Sprache des Geraets; null bei Abos von vor migration-014 → Deutsch. */
+  lang: string | null
+}
+
+/**
+ * Abos eines Nutzers nach Sprache gruppieren — je Gruppe geht ein eigener
+ * Versand hinaus, weil der Text beim Verschicken feststeht.
+ *
+ * Ohne Abos bleibt eine leere deutsche Gruppe übrig: dann wird nichts
+ * verschickt (keine Empfänger), die Vorschau des Probelaufs zeigt den Eintrag
+ * aber weiterhin an.
+ */
+function nachSprache(subs: SubscriptionRow[]): Array<[string, SubscriptionRow[]]> {
+  if (subs.length === 0) return [['de', []]]
+  const nach = new Map<string, SubscriptionRow[]>()
+  for (const s of subs) {
+    const lang = s.lang ?? 'de'
+    nach.set(lang, [...(nach.get(lang) ?? []), s])
+  }
+  return [...nach]
 }
 
 /** Rollen, die von außen kommen — kein Bestätigungs-Flow (wie planning.ts). */
@@ -335,7 +356,7 @@ Deno.serve(async (req: Request) => {
           `services?select=key,name,count,groups&congregation_id=eq.${cong.id}&order=position.asc`,
         ),
         rest<SubscriptionRow[]>(
-          `push_subscriptions?select=id,user_id,endpoint,p256dh,auth&congregation_id=eq.${cong.id}`,
+          `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${cong.id}`,
         ),
       ])
 
@@ -395,15 +416,23 @@ Deno.serve(async (req: Request) => {
           skipped++
           continue
         }
-        const push: Push = {
-          userId,
-          title: 'Erinnerung: Zuteilung bestätigen',
-          body: entries.join(' · '),
-          url: `${APP_URL}#go=aufgaben`,
+        // Je Sprache ein eigener Versand: der Text steht fest, sobald die
+        // Nachricht das Gerät erreicht. Wer Geräte in zwei Sprachen hat,
+        // bekommt auf jedem die passende.
+        for (const [lang, subs] of nachSprache(subsByUser.get(userId) ?? [])) {
+          const push: Push = {
+            userId,
+            title: pushTexte(lang).erinnerung,
+            body: entries.join(' · '),
+            url: `${APP_URL}#go=aufgaben`,
+          }
+          preview.push(push)
+          sendQueue.push({ push, subs })
         }
-        preview.push(push)
-        sendQueue.push({ push, subs: subsByUser.get(userId) ?? [] })
-        // Glocke nur an first/last-Tagen (mainByUser ⊆ entriesByUser).
+        // Glocke nur an first/last-Tagen (mainByUser ⊆ entriesByUser). Sie wird
+        // bewusst NICHT hier übersetzt: Mitteilungen stehen kanonisch deutsch
+        // in der Datenbank und werden beim Anzeigen in die Sprache des Lesers
+        // gebracht (NOTIF_TITLE_KEY in i18n/ui.ts).
         const mainEntries = mainByUser.get(userId)
         if (mainEntries) {
           notifRows.push({
@@ -417,20 +446,23 @@ Deno.serve(async (req: Request) => {
         logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'self' })
       }
       if (unreachable.length > 0) {
-        const push = {
-          title: 'Unbestätigte Zuteilungen (nicht erreichbar)',
-          body: unreachable.join(' · '),
-          url: `${APP_URL}#go=planen`,
-        }
+        const body = unreachable.join(' · ')
         for (const m of members) {
           if (!m.planner) continue
           if (sentToday.has(`${m.user_id}|planner`)) {
             skipped++
             continue
           }
-          const p: Push = { userId: m.user_id, ...push }
-          preview.push(p)
-          sendQueue.push({ push: p, subs: subsByUser.get(m.user_id) ?? [] })
+          for (const [lang, subs] of nachSprache(subsByUser.get(m.user_id) ?? [])) {
+            const p: Push = {
+              userId: m.user_id,
+              title: pushTexte(lang).unerreichbar,
+              body,
+              url: `${APP_URL}#go=planen`,
+            }
+            preview.push(p)
+            sendQueue.push({ push: p, subs })
+          }
           logRows.push({ congregation_id: cong.id, user_id: m.user_id, kind: 'planner' })
         }
       }

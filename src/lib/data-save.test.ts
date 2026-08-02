@@ -89,9 +89,13 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ task_key: 'k1', status: 'bestätigt' }), { onConflict: 'congregation_id,task_key,user_id' })
   })
   it('savePushSubscription → push_subscriptions upsert (endpoint)', () => {
-    savePushSubscription('c1', 'u1', { endpoint: 'e', p256dh: 'p', auth: 'a' })
+    savePushSubscription('c1', 'u1', { endpoint: 'e', p256dh: 'p', auth: 'a' }, 'fr')
     expect(chain.from).toHaveBeenCalledWith('push_subscriptions')
-    expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ endpoint: 'e' }), { onConflict: 'endpoint' })
+    // Die Sprache muss mit: Push-Text entsteht beim Versand und ist danach fest.
+    expect(chain.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ endpoint: 'e', lang: 'fr' }),
+      { onConflict: 'endpoint' },
+    )
   })
 })
 

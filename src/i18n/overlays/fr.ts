@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Importation impossible — aucune base de données connectée",
   "notifZuteilung": "Nouvelle attribution",
   "notifErinnerung": "Rappel",
+  "notifErinnerungBest": "Rappel : confirmez votre attribution",
   "notifPlan": "Programme publié",
   "notifZutGesendet": "Attribution envoyée",
   "notifZutsGesendet": "Attributions envoyées",

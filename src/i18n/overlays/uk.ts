@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Імпорт неможливий — база даних не підключена",
   "notifZuteilung": "Нове призначення",
   "notifErinnerung": "Нагадування",
+  "notifErinnerungBest": "Нагадування: підтвердьте завдання",
   "notifPlan": "Програму опубліковано",
   "notifZutGesendet": "Призначення надіслано",
   "notifZutsGesendet": "Призначення надіслано",

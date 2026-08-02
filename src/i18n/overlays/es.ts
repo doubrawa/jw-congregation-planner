@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Importación no disponible: no hay base de datos conectada",
   "notifZuteilung": "Nueva asignación",
   "notifErinnerung": "Recordatorio",
+  "notifErinnerungBest": "Recordatorio: confirma tu asignación",
   "notifPlan": "Programa publicado",
   "notifZutGesendet": "Asignación enviada",
   "notifZutsGesendet": "Asignaciones enviadas",

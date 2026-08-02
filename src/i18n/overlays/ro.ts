@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Import imposibil — nicio bază de date conectată",
   "notifZuteilung": "Însărcinare nouă",
   "notifErinnerung": "Memento",
+  "notifErinnerungBest": "Memento: confirmă-ți însărcinarea",
   "notifPlan": "Program publicat",
   "notifZutGesendet": "Însărcinare trimisă",
   "notifZutsGesendet": "Însărcinări trimise",

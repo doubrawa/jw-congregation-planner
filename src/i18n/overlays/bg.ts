@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Импортирането не е възможно — няма свързана база данни",
   "notifZuteilung": "Ново назначение",
   "notifErinnerung": "Напомняне",
+  "notifErinnerungBest": "Напомняне: потвърди назначението си",
   "notifPlan": "Програмата публикувана",
   "notifZutGesendet": "Назначението изпратено",
   "notifZutsGesendet": "Назначенията изпратени",

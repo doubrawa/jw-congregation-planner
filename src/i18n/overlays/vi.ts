@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Không thể nhập — chưa kết nối cơ sở dữ liệu",
   "notifZuteilung": "Phân công mới",
   "notifErinnerung": "Nhắc nhở",
+  "notifErinnerungBest": "Nhắc nhở: hãy xác nhận nhiệm vụ",
   "notifPlan": "Đã đăng chương trình",
   "notifZutGesendet": "Đã gửi phân công",
   "notifZutsGesendet": "Đã gửi các phân công",

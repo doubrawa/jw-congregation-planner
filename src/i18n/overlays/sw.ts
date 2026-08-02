@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Haiwezekani kuingiza — hakuna hifadhidata iliyounganishwa",
   "notifZuteilung": "Mgawo mpya",
   "notifErinnerung": "Ukumbusho",
+  "notifErinnerungBest": "Ukumbusho: thibitisha mgawo wako",
   "notifPlan": "Programu imechapishwa",
   "notifZutGesendet": "Mgawo umetumwa",
   "notifZutsGesendet": "Migawo imetumwa",

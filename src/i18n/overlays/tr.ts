@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "İçe aktarma mümkün değil — bağlı veritabanı yok",
   "notifZuteilung": "Yeni görev",
   "notifErinnerung": "Hatırlatma",
+  "notifErinnerungBest": "Hatırlatma: görevini onayla",
   "notifPlan": "Program yayımlandı",
   "notifZutGesendet": "Görev gönderildi",
   "notifZutsGesendet": "Görevler gönderildi",

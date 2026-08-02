@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Η εισαγωγή δεν είναι δυνατή — δεν έχει συνδεθεί βάση δεδομένων",
   "notifZuteilung": "Νέα ανάθεση",
   "notifErinnerung": "Υπενθύμιση",
+  "notifErinnerungBest": "Υπενθύμιση: επιβεβαιώστε την ανάθεσή σας",
   "notifPlan": "Το πρόγραμμα δημοσιεύτηκε",
   "notifZutGesendet": "Η ανάθεση στάλθηκε",
   "notifZutsGesendet": "Οι αναθέσεις στάλθηκαν",

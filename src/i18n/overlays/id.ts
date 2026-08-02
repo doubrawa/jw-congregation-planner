@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Impor tidak dapat dilakukan — tidak ada basis data terhubung",
   "notifZuteilung": "Penetapan baru",
   "notifErinnerung": "Pengingat",
+  "notifErinnerungBest": "Pengingat: konfirmasi tugasmu",
   "notifPlan": "Program diterbitkan",
   "notifZutGesendet": "Penetapan terkirim",
   "notifZutsGesendet": "Penetapan terkirim",

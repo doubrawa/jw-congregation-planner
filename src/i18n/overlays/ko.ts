@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "가져올 수 없음 — 연결된 데이터베이스가 없습니다",
   "notifZuteilung": "새 임명",
   "notifErinnerung": "알림",
+  "notifErinnerungBest": "알림: 임명을 확인해 주세요",
   "notifPlan": "프로그램 게시됨",
   "notifZutGesendet": "임명 전송됨",
   "notifZutsGesendet": "임명 전송됨",

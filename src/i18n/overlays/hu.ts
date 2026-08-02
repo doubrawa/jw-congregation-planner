@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Az importálás nem lehetséges — nincs csatlakoztatott adatbázis",
   "notifZuteilung": "Új kiosztás",
   "notifErinnerung": "Emlékeztető",
+  "notifErinnerungBest": "Emlékeztető: erősítsd meg a feladatod",
   "notifPlan": "Program közzétéve",
   "notifZutGesendet": "Kiosztás elküldve",
   "notifZutsGesendet": "Kiosztások elküldve",

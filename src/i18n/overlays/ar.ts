@@ -172,6 +172,7 @@ export default {
   "importOhneDb": "التنزيل غير ممكن — لا توجد قاعدة بيانات متصلة",
   "notifZuteilung": "تعيين جديد",
   "notifErinnerung": "تذكير",
+  "notifErinnerungBest": "تذكير: أكِّد تعيينك",
   "notifPlan": "تم نشر البرنامج",
   "notifZutGesendet": "أُرسل التعيين",
   "notifZutsGesendet": "أُرسلت التعيينات",

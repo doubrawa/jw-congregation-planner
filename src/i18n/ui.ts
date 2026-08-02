@@ -105,6 +105,9 @@ export const ROLE_KEY: Record<Role, keyof Dict> = {
 export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   'Neue Zuteilung': 'notifZuteilung',
   Erinnerung: 'notifErinnerung',
+  // Titel der Erinnerungen aus send-reminders — steht kanonisch deutsch in der
+  // Datenbank und wird hier in die Sprache des Lesers gebracht.
+  'Erinnerung: Zuteilung bestätigen': 'notifErinnerungBest',
   'Plan veröffentlicht': 'notifPlan',
   'Zuteilung gesendet': 'notifZutGesendet',
   'Zuteilungen gesendet': 'notifZutsGesendet',

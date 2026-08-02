@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Import ikke mulig — ingen database tilsluttet",
   "notifZuteilung": "Ny tildeling",
   "notifErinnerung": "Påmindelse",
+  "notifErinnerungBest": "Påmindelse: bekræft din opgave",
   "notifPlan": "Program offentliggjort",
   "notifZutGesendet": "Tildeling sendt",
   "notifZutsGesendet": "Tildelinger sendt",

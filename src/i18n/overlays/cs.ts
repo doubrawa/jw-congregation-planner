@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Import není možný — není připojena databáze",
   "notifZuteilung": "Nové přidělení",
   "notifErinnerung": "Připomínka",
+  "notifErinnerungBest": "Připomínka: potvrď svůj úkol",
   "notifPlan": "Program zveřejněn",
   "notifZutGesendet": "Přidělení odesláno",
   "notifZutsGesendet": "Přidělení odeslána",
