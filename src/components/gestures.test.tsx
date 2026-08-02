@@ -224,14 +224,38 @@ describe('useSwipeWeek', () => {
     expect(onPrev).toHaveBeenCalledTimes(1)
   })
 
-  it('bricht das System die Berührung ab, wird NICHT geblättert', () => {
-    // touchcancel heißt: Anruf, System-Geste o. Ä. Dann darf die
-    // zurückgelegte Strecke nicht mehr zählen.
+  it('bricht der Browser die Berührung ab, wird trotzdem geblättert', () => {
+    // Der Android-Fall: die Bewegung war laengst als waagerecht erkannt und
+    // weit genug gezogen, dann zieht der Browser sie fürs Scrollen an sich und
+    // schickt touchcancel. Wer daraufhin nur zurückfedert, blättert auf dem
+    // Gerät NIE — obwohl der Wunsch eindeutig war.
     const { el, onNext } = setup()
     touch(el, 'touchstart', [[300, 300]])
     touch(el, 'touchmove', [[200, 302]])
     touch(el, 'touchmove', [[120, 305]])
     touch(el, 'touchcancel', [[120, 305]])
+    fertig()
+    expect(onNext).toHaveBeenCalledTimes(1)
+  })
+
+  it('ein Abbruch VOR der Richtungsentscheidung blättert nicht', () => {
+    // Hier ist der Abbruch richtig: die Bewegung war noch nicht zugeordnet,
+    // der Finger gehört dem Scrollen.
+    const { el, onNext, onPrev } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[296, 340]]) // senkrecht dominant
+    touch(el, 'touchcancel', [[296, 340]])
+    fertig()
+    expect(onNext).not.toHaveBeenCalled()
+    expect(onPrev).not.toHaveBeenCalled()
+  })
+
+  it('ein Abbruch nach zu kurzem Weg blättert nicht', () => {
+    const { el, onNext } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[260, 302]]) // 40 px < Schwelle
+    touch(el, 'touchcancel', [[260, 302]])
+    fertig()
     expect(onNext).not.toHaveBeenCalled()
   })
 
@@ -325,31 +349,20 @@ describe('useSwipeWeek', () => {
     expect(last.onNext).not.toHaveBeenCalled()
   })
 
-  it('alte und neue Woche wandern gemeinsam weiter (kein Sprung)', () => {
-    // Der Kern der Sache: früher sprang der Inhalt quer über den Bildschirm
-    // und war einen Wimpernschlag lang ganz weg — das las sich, als liefe die
-    // Bewegung zurück. Jetzt kleben beide Wochen aneinander.
+  it('schiebt den Streifen um genau eine Wochenbreite weiter', () => {
+    // Die Nachbarwochen sind bereits gezeichnet — es wird nur verschoben.
+    // Der Wochenwechsel passiert erst am Ende der Bewegung: dann steht die
+    // Nachbarwoche dort, wo die mittlere hingehört, und der Versatz geht im
+    // selben Zug auf null zurück.
     const { el, onNext } = setup()
     swipeTouch(el, [200, 300], [100, 300]) // 100 px nach links
 
-    // Die neue Woche ist sofort da und steht unmittelbar rechts daneben:
-    // Standbild bei -100, neue Woche eine Fensterbreite (400) weiter.
-    expect(onNext).toHaveBeenCalledTimes(1)
-    const standbild = document.querySelector<HTMLElement>('[data-week-ghost] > *')
-    expect(standbild).not.toBeNull()
-    expect(standbild!.style.getPropertyValue('--week-shift')).toBe('-100px')
-    expect(el.style.getPropertyValue('--week-shift')).toBe('300px')
-    // Die gezogene Strecke steckt schon im gemessenen Rechteck und muss aus
-    // der Position herausgerechnet werden — sonst wirkt sie doppelt und
-    // zwischen den beiden Wochen klafft eine Lücke.
-    expect(standbild!.style.left).toBe('100px') // 0 (jsdom) − (−100)
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-400px')
+    expect(onNext).not.toHaveBeenCalled()
 
     fertig()
-    // Beide um dieselbe Strecke weiter: Standbild raus, neue Woche sitzt.
-    expect(standbild!.style.getPropertyValue('--week-shift')).toBe('-400px')
+    expect(onNext).toHaveBeenCalledTimes(1)
     expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
-    // Und das Standbild ist wieder weg — sonst läge es über allem.
-    expect(document.querySelector('[data-week-ghost]')).toBeNull()
   })
 
   it('nach rechts gewischt schiebt das Fenster nach rechts hinaus', () => {
@@ -357,13 +370,10 @@ describe('useSwipeWeek', () => {
     // auf, weil die vorige Woche von links kommen muss.
     const { el, onPrev } = setup()
     swipeTouch(el, [100, 300], [220, 300]) // 120 px nach rechts
-    expect(onPrev).toHaveBeenCalledTimes(1)
-    const standbild = document.querySelector<HTMLElement>('[data-week-ghost] > *')
-    expect(standbild!.style.getPropertyValue('--week-shift')).toBe('120px')
-    // Die vorige Woche liegt LINKS daneben.
-    expect(el.style.getPropertyValue('--week-shift')).toBe('-280px')
+    // Nach rechts: der Streifen wandert nach rechts, die vorige Woche liegt links.
+    expect(el.style.getPropertyValue('--week-shift')).toBe('400px')
     fertig()
-    expect(standbild!.style.getPropertyValue('--week-shift')).toBe('400px')
+    expect(onPrev).toHaveBeenCalledTimes(1)
     expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
   })
 
@@ -373,9 +383,9 @@ describe('useSwipeWeek', () => {
     // oder im Querformat — genau die Differenz zwischen den beiden Wochen.
     const { el } = setup()
     el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 300, height: 500 }) as DOMRect
-    swipeTouch(el, [200, 300], [100, 300]) // 100 px nach links, Fenster 400
-    // 300 (Bildschirmbreite), nicht 400 (Fensterbreite): -100 + 300 = 200
-    expect(el.style.getPropertyValue('--week-shift')).toBe('200px')
+    swipeTouch(el, [200, 300], [100, 300]) // nach links, Fenster 400
+    // Verschoben wird um 300 (Bildschirmbreite), nicht um 400 (Fensterbreite).
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-300px')
   })
 
   it('folgt dem Finger 1:1', () => {

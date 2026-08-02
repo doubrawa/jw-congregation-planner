@@ -1,7 +1,6 @@
-import { useRef } from 'react'
 import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
-import { useSwipeWeek } from '../components/useSwipeWeek'
+import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID } from '../data/demo'
@@ -23,22 +22,23 @@ import './planen.css'
  * orchestriert nur; Banner, Abschnitte und Hilfsdienste sind eigene Bausteine.
  */
 export function PlanenScreen() {
+  // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
+  // nächste Woche — und übernimmt das Wischen.
+  return (
+    <WeekStrip>
+      <PlanenBody />
+    </WeekStrip>
+  )
+}
+
+/** Planung EINER Woche; welche, sagt der Zustand (im Streifen überschrieben). */
+function PlanenBody() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
   // die Logik (LAC-Erkennung, Minuten, Slots) läuft auf der kanonischen Woche.
   const rawWeek = state.weeks[state.week]
   const { week, tpw } = useProgWeek(rawWeek)
-
-  // Waagerecht wischen blättert die Woche (vor dem vorzeitigen return: Hooks
-  // müssen bei jedem Render laufen).
-  const swipeRef = useRef<HTMLElement>(null)
-  useSwipeWeek(swipeRef, {
-    onPrev: () => dispatch({ type: 'prevWeek' }),
-    onNext: () => dispatch({ type: 'nextWeek' }),
-    canPrev: state.week > 0,
-    canNext: state.week < state.weeks.length - 1,
-  })
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
   if (!rawWeek || !week) {
@@ -65,7 +65,7 @@ export function PlanenScreen() {
   const openCount = countOpenSlots(rawMeeting, state.services)
 
   return (
-    <section className="screen screen--swipe" ref={swipeRef}>
+    <section className="screen">
       <div className="screen-head">
         <h1 className="screen-title">{t.planen}</h1>
         {!isFs && <span className="screen-head-note">{fill(t.offeneZut, { n: openCount })}</span>}

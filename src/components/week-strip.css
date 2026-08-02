@@ -1,0 +1,38 @@
+/*
+ * Wochen-Streifen: vorige | aktuelle | nächste, nebeneinander.
+ * Beim Wischen wandert der ganze Streifen (siehe WeekStrip.tsx).
+ */
+
+.week-viewport {
+  position: relative;
+  /*
+   * `clip` schneidet die Nachbarwochen ab, ohne einen Scroll-Container zu
+   * erzeugen (das täte `hidden` und würde `position: sticky` im Inhalt
+   * aushebeln). Beide Achsen: eine längere Nachbarwoche ragte sonst unten
+   * heraus, denn die Höhe richtet sich allein nach der mittleren.
+   */
+  overflow: clip;
+}
+
+.week-strip {
+  position: relative;
+  transform: translateX(var(--week-shift, 0px));
+}
+
+/*
+ * Absolut positioniert, damit die Nachbarn keine Höhe beisteuern — sonst
+ * richtete sich die Seitenlänge nach der längsten der drei Wochen.
+ */
+.week-page {
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.week-page--vor {
+  right: 100%;
+}
+
+.week-page--nach {
+  left: 100%;
+}
