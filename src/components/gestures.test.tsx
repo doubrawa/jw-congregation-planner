@@ -339,6 +339,10 @@ describe('useSwipeWeek', () => {
     expect(standbild).not.toBeNull()
     expect(standbild!.style.getPropertyValue('--week-shift')).toBe('-100px')
     expect(el.style.getPropertyValue('--week-shift')).toBe('300px')
+    // Die gezogene Strecke steckt schon im gemessenen Rechteck und muss aus
+    // der Position herausgerechnet werden — sonst wirkt sie doppelt und
+    // zwischen den beiden Wochen klafft eine Lücke.
+    expect(standbild!.style.left).toBe('100px') // 0 (jsdom) − (−100)
 
     fertig()
     // Beide um dieselbe Strecke weiter: Standbild raus, neue Woche sitzt.

@@ -321,7 +321,31 @@ describe('Mitteilungs-Fanout', () => {
       notifs: [{ id: 'n1', type: 'gesendet', title: 'T', text: 'B', time: '', read: false }],
       members: [{ userId: 'm1', email: '', personId: null, planner: true }, { userId: 'm2', email: '', personId: null, planner: false }],
     })
-    persist(prev, next, { type: 'showToast', text: 'x' }) // Aktion ohne eigenen Save-Zweig
+    persist(prev, next, { type: 'declineTask', id: 'x' })
     expect(data.insertNotifications).toHaveBeenCalledWith('c1', ['m1'], 'gesendet', 'T', 'B')
+  })
+
+  it('Laden aus der Datenbank verteilt NICHTS', () => {
+    // Der Fehler: `hydrate` bringt die gespeicherten Mitteilungen mit und macht
+    // die Liste damit länger. Aus jedem Laden wurde so eine neue Mitteilung,
+    // die beim nächsten Laden wieder mitkam — der Zähler wuchs bei jeder
+    // Aktualisierung um eins.
+    const prev = st({ notifs: [] })
+    const next = st({
+      notifs: [{ id: 'n1', type: 'gesendet', title: 'T', text: 'B', time: '', read: false }],
+      members: [{ userId: 'm1', email: '', personId: null, planner: true }],
+    })
+    persist(prev, next, { type: 'hydrate', payload: {} as never })
+    expect(data.insertNotifications).not.toHaveBeenCalled()
+  })
+
+  it('auch sonst verteilt nur, wer wirklich eine Mitteilung erzeugt', () => {
+    const prev = st({ notifs: [] })
+    const next = st({
+      notifs: [{ id: 'n1', type: 'gesendet', title: 'T', text: 'B', time: '', read: false }],
+      members: [{ userId: 'm1', email: '', personId: null, planner: true }],
+    })
+    persist(prev, next, { type: 'showToast', text: 'x' })
+    expect(data.insertNotifications).not.toHaveBeenCalled()
   })
 })

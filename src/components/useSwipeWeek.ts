@@ -134,7 +134,11 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
         'position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:5'
       const klon = el.cloneNode(true) as HTMLElement
       klon.style.position = 'absolute'
-      klon.style.left = `${r.left}px`
+      // `r.left` enthält die aktuelle Verschiebung bereits — sie steckt ja im
+      // transform. Sie muss herausgerechnet werden, sonst wirkt sie doppelt
+      // (einmal über die Position, einmal über --week-shift) und zwischen
+      // alter und neuer Woche klafft genau die gezogene Strecke.
+      klon.style.left = `${r.left - ab}px`
       klon.style.top = `${r.top}px`
       klon.style.width = `${r.width}px`
       klon.style.margin = '0'
