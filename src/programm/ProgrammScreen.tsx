@@ -7,11 +7,21 @@ import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { displayName, isSong, splitOpeningSong } from '../data/helpers'
-import { useProgWeek, useT } from '../i18n/useT'
-import type { Meeting, MeetingTab, PartItem, Week } from '../data/types'
+import { LOCALES } from '../i18n/langs'
+import { fill, useProgWeek, useT } from '../i18n/useT'
+import type { Lang, Meeting, MeetingTab, PartItem, Week } from '../data/types'
 import { FsProgram } from './FsProgram'
 import './programm.css'
 import './print.css'
+
+/** Heutiges Datum (Tag + Monat) in der Sprache des Nutzers. */
+function heute(lang: Lang): string {
+  try {
+    return new Intl.DateTimeFormat(LOCALES[lang] ?? lang, { day: 'numeric', month: 'long' }).format(new Date())
+  } catch {
+    return ''
+  }
+}
 
 /**
  * Programm (Screen 2, Startscreen): Wochenprogramm beider Zusammenkünfte
@@ -184,7 +194,10 @@ function ProgramMeeting({
 
       <div className="prog-footer">
         <span>{tpw(meeting.end)}</span>
-        <span>{t.stand}</span>
+        {/* „Stand" stand als festes Datum aus dem Prototyp hier (4. September)
+            und war damit auf jedem Ausdruck falsch. Gemeint ist der Tag, an
+            dem das Blatt entsteht — also heute, in der Sprache des Nutzers. */}
+        <span>{fill(t.stand, { datum: heute(state.lang) })}</span>
       </div>
     </>
   )

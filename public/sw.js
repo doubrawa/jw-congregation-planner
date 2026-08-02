@@ -114,7 +114,7 @@ self.addEventListener('push', (event) => {
     /* kein JSON-Payload → Standardtexte */
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || 'JW Congregation Planner', {
+    self.registration.showNotification(data.title || 'Congregation Planner', {
       body: data.body || '',
       icon: 'icon-192.png',
       badge: 'icon-192.png',

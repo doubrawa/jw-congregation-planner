@@ -153,7 +153,9 @@ export function ProfilScreen() {
           aus der Ferne sonst nicht klären lässt — läuft auf diesem Gerät
           wirklich die neueste Fassung?
         */}
-        <p className="prof-build">{__BUILD_ID__}</p>
+        {/* „Build" bewusst unübersetzt: das Wort ist international geläufig,
+            und die Zeile ist ohnehin technische Kennung, kein Fließtext. */}
+        <p className="prof-build">Build {__BUILD_ID__}</p>
       </div>
     </section>
   )

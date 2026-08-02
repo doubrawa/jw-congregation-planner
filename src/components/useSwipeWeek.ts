@@ -150,6 +150,11 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       klon.style.top = `${r.top}px`
       klon.style.width = `${r.width}px`
       klon.style.margin = '0'
+      // Den Untergrund der App-Spalte mitnehmen. Das Standbild hängt am
+      // <body> und säße sonst auf dessen Schreibtisch-Ton — die hinauswandernde
+      // Woche sähe aus wie Text ohne Hintergrund. Auf dem Tablet, wo die Spalte
+      // schmaler als das Fenster ist, fällt das sofort auf.
+      klon.style.background = 'var(--bg)'
       klon.style.setProperty('--week-shift', `${ab}px`)
       buehne.appendChild(klon)
       document.body.appendChild(buehne)

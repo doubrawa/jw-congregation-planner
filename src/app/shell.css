@@ -172,7 +172,13 @@
   display: none;
 }
 
-@media (min-width: 920px) {
+/*
+ * Ab Tablet-Breite steht das Menü fest an der Seite: der Platz ist da, und
+ * ein Menü, das man erst aufklappen muss, verschenkt ihn. Die App-Spalte
+ * bleibt hier noch schmal (430 px) — 232 px Menü + 660 px Spalte passen erst
+ * ab 920 px nebeneinander, deshalb bleibt jener Umbruch bestehen.
+ */
+@media (min-width: 768px) {
   .sidebar {
     display: flex;
     flex-direction: column;
@@ -390,7 +396,7 @@
   display: none;
 }
 
-@media (min-width: 920px) {
+@media (min-width: 768px) {
   .mobile-header {
     display: none;
   }
@@ -467,7 +473,8 @@
   flex: none;
 }
 
-@media (min-width: 920px) {
+/* Mit fest stehendem Menü gibt es nichts mehr aufzuklappen. */
+@media (min-width: 768px) {
   .drawer-backdrop,
   .drawer {
     display: none;
