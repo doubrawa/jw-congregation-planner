@@ -1,8 +1,8 @@
 import { useApp } from '../app/context'
 import { missingVariants } from '../data/localize'
-import { CONG_TO_JW } from '../i18n/langs'
+import { CONG_TO_JW, LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { importNextWeek, importWeekVariants, latestImportedStart } from '../lib/import'
+import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from '../lib/import'
 
 /**
  * Programm-Import: holt die nächste Woche von jw.org (Produktion) bzw.
@@ -11,7 +11,30 @@ import { importNextWeek, importWeekVariants, latestImportedStart } from '../lib/
  */
 export function ImportPanel() {
   const { state, dispatch } = useApp()
-  const { t } = useT()
+  const { t, tp } = useT()
+
+  /**
+   * Bis wann Programme vorliegen. Vorher stand hier eine feste Beschriftung
+   * („Arbeitsheft Sep/Okt 2026"), die nichts über den tatsächlichen Stand
+   * aussagte und mit der Zeit schlicht falsch wurde.
+   *
+   * Zwei Quellen, weil nur importierte Wochen ein ISO-Datum tragen: mit Datum
+   * das echte Wochenende, ohne Datum (Demo- und Vorlagenwochen) der
+   * Wochenbereich der letzten Woche im Klartext.
+   */
+  const bisMs = loadedUntilMs(state.weeks)
+  const letzte = state.weeks[state.weeks.length - 1]
+  const bis =
+    bisMs !== null
+      ? new Intl.DateTimeFormat(LOCALES[state.lang], {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          timeZone: 'UTC', // week.start ist ein reines Kalenderdatum
+        }).format(bisMs)
+      : letzte
+        ? tp(letzte.range)
+        : null
 
   const importWorkbook = async () => {
     if (state.importing) return
@@ -66,8 +89,8 @@ export function ImportPanel() {
       <div className="panel-label">{t.importCard}</div>
       <p className="panel-hint">{t.importDesc}</p>
       <div className="imp-status">
-        <span className="kv-key">{t.arbeitsheftLbl}</span>
-        <span className="imp-count">{fill(t.wochenGeladen, { n: state.weeks.length })}</span>
+        <span className="kv-key">{bis ? fill(t.geladenBis, { datum: bis }) : t.geladenNichts}</span>
+        {bis && <span className="imp-count">{fill(t.wochenGeladen, { n: state.weeks.length })}</span>}
       </div>
       <button type="button" className="btn-outline imp-btn" onClick={importWorkbook}>
         {importLabel}

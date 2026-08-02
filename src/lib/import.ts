@@ -4,6 +4,7 @@
  * CORS). Im Demo-Modus nicht verfügbar.
  */
 
+import { meetingDateMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { supabase } from './supabase'
 
@@ -13,6 +14,19 @@ export type ImportResult = { ok: true; week: Week } | { ok: false; error: string
 export function latestImportedStart(weeks: Week[]): string | undefined {
   const starts = weeks.map((w) => w.start).filter((s): s is string => Boolean(s)).sort()
   return starts[starts.length - 1]
+}
+
+/**
+ * Tag, bis zu dem Programme vorliegen (UTC-ms) — der Sonntag der spätesten
+ * geladenen Woche, also ihr letzter Tag.
+ *
+ * Der Versatz 6 ist bewusst fest und NICHT aus den Zusammenkunftszeiten
+ * abgeleitet: gefragt ist das Ende der Kalenderwoche, nicht der Tag der
+ * letzten Zusammenkunft. Ohne ISO-Startdatum (Demo- und Vorlagenwochen)
+ * null — der Aufrufer zeigt dann den Wochenbereich im Klartext.
+ */
+export function loadedUntilMs(weeks: Week[]): number | null {
+  return meetingDateMs(latestImportedStart(weeks), 6)
 }
 
 /**
