@@ -42,11 +42,6 @@ export const CONGREGATION = {
   meetings: 'Di 19:00 · So 10:00',
 } as const
 
-/** Fußzeile Programm ("Stand: …") — Demo-Wert aus dem Prototyp. */
-export const PROGRAM_AS_OF = '4. September'
-
-export const WORKBOOK_LABEL = 'Arbeitsheft Sep/Okt 2026'
-
 /* ---- Personen ---------------------------------------------------------- */
 
 /**

@@ -45,7 +45,8 @@ für die aktuelle Woche.
 
 Unter **Planen** teilst du die Aufgaben und Hilfsdienste einer Woche zu. Oben
 wechselst du zwischen **Zusammenkunft unter der Woche**, **am Wochenende** und den
-**Zusammenkünften für den Predigtdienst**; mit ‹ › wählst du die Woche.
+**Zusammenkünften für den Predigtdienst**; mit ‹ › wählst du die Woche – auf
+Handy und Tablet geht auch seitwärts wischen.
 
 ![Planen‑Ansicht](screenshots/planer-planen-woche.png)
 
