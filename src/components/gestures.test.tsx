@@ -11,37 +11,84 @@ import { useBackDismiss } from './useBackDismiss'
 import { useSwipeDown } from './useSwipeDown'
 import { useSwipeWeek } from './useSwipeWeek'
 
-/* ---- Zeiger-Ereignisse (jsdom kennt PointerEvent nicht vollständig) ------ */
+/* ---- Touch-Ereignisse (useSwipeWeek) ------------------------------------- */
 
-function pointer(el: Element, type: string, x: number, y: number, time = 0): void {
-  const e = new Event(type, { bubbles: true, cancelable: true }) as Event & Record<string, unknown>
-  e.pointerId = 1
-  e.isPrimary = true
-  e.clientX = x
-  e.clientY = y
+/**
+ * jsdom kennt TouchEvent nicht; `touches` wird selbst angehängt.
+ * `cancelable: false` bildet den Fall nach, dass der Browser die Geste bereits
+ * übernommen hat — dann greift preventDefault() nicht mehr.
+ */
+function touch(
+  el: Element,
+  type: string,
+  points: Array<[number, number]>,
+  cancelable = true,
+  time = 0,
+): Event {
+  const e = new Event(type, { bubbles: true, cancelable }) as Event & Record<string, unknown>
+  const list = points.map(([x, y]) => ({ clientX: x, clientY: y }))
+  e.touches = type === 'touchend' || type === 'touchcancel' ? [] : list
+  e.changedTouches = list
   Object.defineProperty(e, 'timeStamp', { value: time })
   el.dispatchEvent(e)
+  return e
 }
 
-/** Eine vollständige Wischbewegung: drücken, ziehen, loslassen. */
-function swipe(
-  el: Element,
-  from: [number, number],
-  to: [number, number],
-  { steps = 4, ms = 200 } = {},
-): void {
-  pointer(el, 'pointerdown', from[0], from[1], 0)
+/** Senkrechte Wischbewegung als Touch (für useSwipeDown). */
+function swipeDown(el: Element, from: [number, number], to: [number, number], ms = 200): void {
+  const steps = 4
+  touch(el, 'touchstart', [from], true, 0)
   for (let i = 1; i <= steps; i++) {
     const f = i / steps
-    pointer(el, 'pointermove', from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f, (ms * i) / steps)
+    touch(
+      el,
+      'touchmove',
+      [[from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f]],
+      true,
+      (ms * i) / steps,
+    )
   }
-  pointer(el, 'pointerup', to[0], to[1], ms)
+  touch(el, 'touchend', [to], true, ms)
 }
 
+/** Wischbewegung als Touch: aufsetzen, ziehen, abheben. */
+function swipeTouch(el: Element, from: [number, number], to: [number, number], steps = 4): void {
+  touch(el, 'touchstart', [from])
+  for (let i = 1; i <= steps; i++) {
+    const f = i / steps
+    touch(el, 'touchmove', [[from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f]])
+  }
+  touch(el, 'touchend', [to])
+}
+
+/**
+ * Wischbewegung entlang vorgegebener Punkte — für Bahnen, die keine gerade
+ * Linie sind. Ein Daumen wischt nie exakt waagerecht: er ist am Gelenk
+ * angeschlagen und beschreibt einen Bogen, der oft senkrecht beginnt.
+ */
+function swipePath(el: Element, points: Array<[number, number]>): void {
+  touch(el, 'touchstart', [points[0]])
+  points.slice(1).forEach((p) => touch(el, 'touchmove', [p]))
+  touch(el, 'touchend', [points[points.length - 1]])
+}
+
+/**
+ * Echte Daumenbewegung nach links, mit Bogen: die ersten Millimeter gehen
+ * fast nur nach unten, erst danach setzt die waagerechte Bewegung ein.
+ */
+const DAUMEN_NACH_LINKS: Array<[number, number]> = [
+  [300, 500],
+  [297, 512],
+  [290, 520],
+  [270, 524],
+  [240, 522],
+  [200, 515],
+  [160, 505],
+  [140, 500],
+]
+
 beforeEach(() => {
-  // jsdom: Zeiger-Capture existiert nicht, wird von useSwipeDown aber genutzt.
-  Element.prototype.setPointerCapture = vi.fn()
-  Element.prototype.hasPointerCapture = vi.fn(() => false)
+  // Randzonen-Prüfung von useSwipeWeek rechnet gegen die Fensterbreite.
   window.innerWidth = 400
 })
 
@@ -142,54 +189,133 @@ describe('useSwipeWeek', () => {
 
   it('nach links wischen blättert vorwärts, nach rechts zurück', () => {
     const a = setup()
-    swipe(a.el, [200, 300], [100, 300])
+    swipeTouch(a.el, [200, 300], [100, 300])
     expect(a.onNext).toHaveBeenCalledTimes(1)
     expect(a.onPrev).not.toHaveBeenCalled()
 
     const b = setup()
-    swipe(b.el, [200, 300], [300, 300])
+    swipeTouch(b.el, [200, 300], [300, 300])
     expect(b.onPrev).toHaveBeenCalledTimes(1)
+  })
+
+  it('ein Daumenwisch im Bogen blättert (auch wenn er senkrecht anfängt)', () => {
+    // Der Fall vom echten Gerät: die ersten Millimeter gehen fast nur nach
+    // unten. Wird daraufhin die ganze Geste verworfen, blättert die App nie —
+    // im Labor mit exakt waagerechten Bewegungen fällt das nicht auf.
+    const { el, onNext } = setup()
+    swipePath(el, DAUMEN_NACH_LINKS)
+    expect(onNext).toHaveBeenCalledTimes(1)
+  })
+
+  it('der Bogen geht auch nach rechts (zurückblättern)', () => {
+    const { el, onPrev } = setup()
+    swipePath(el, DAUMEN_NACH_LINKS.map(([x, y]) => [600 - x, y] as [number, number]))
+    expect(onPrev).toHaveBeenCalledTimes(1)
+  })
+
+  it('bricht das System die Berührung ab, wird NICHT geblättert', () => {
+    // touchcancel heißt: Anruf, System-Geste o. Ä. Dann darf die
+    // zurückgelegte Strecke nicht mehr zählen.
+    const { el, onNext } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[200, 302]])
+    touch(el, 'touchmove', [[120, 305]])
+    touch(el, 'touchcancel', [[120, 305]])
+    expect(onNext).not.toHaveBeenCalled()
+  })
+
+  it('blättert auch, wenn der Browser das Scrollen bereits übernommen hat', () => {
+    // Genau der Fall vom echten Gerät: der Browser hat die Geste an sich
+    // gezogen, preventDefault() greift nicht mehr (cancelable = false). Die
+    // Touch-Ereignisse laufen aber weiter — daran hängt die Erkennung.
+    const { el, onNext } = setup()
+    touch(el, 'touchstart', [DAUMEN_NACH_LINKS[0]])
+    for (const p of DAUMEN_NACH_LINKS.slice(1)) touch(el, 'touchmove', [p], false)
+    touch(el, 'touchend', [DAUMEN_NACH_LINKS[DAUMEN_NACH_LINKS.length - 1]])
+    expect(onNext).toHaveBeenCalledTimes(1)
+  })
+
+  it('stoppt das Scrollen erst, wenn die Richtung feststeht', () => {
+    // Zu früh abgefangen hieße: der Inhalt lässt sich nicht mehr scrollen.
+    const { el } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    expect(touch(el, 'touchmove', [[297, 312]]).defaultPrevented).toBe(false)
+    expect(touch(el, 'touchmove', [[200, 315]]).defaultPrevented).toBe(true)
+  })
+
+  it('senkrechtes Scrollen wird nie abgefangen', () => {
+    const { el } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    expect(touch(el, 'touchmove', [[302, 360]]).defaultPrevented).toBe(false)
+    expect(touch(el, 'touchmove', [[290, 420]]).defaultPrevented).toBe(false)
+  })
+
+  it('zwei Finger (Zoom) blättern nicht', () => {
+    const { el, onNext } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[200, 300], [260, 400]])
+    touch(el, 'touchend', [[200, 300]])
+    expect(onNext).not.toHaveBeenCalled()
   })
 
   it('senkrechtes Scrollen blättert NICHT, auch wenn es dabei seitlich verrutscht', () => {
     // dx = -80 liegt über der Blätter-Schwelle; entscheidend ist, dass dy weit
     // größer ist. Ohne die Winkel-Regel würde diese Scrollbewegung blättern.
     const { el, onPrev, onNext } = setup()
-    swipe(el, [200, 400], [120, 120])
+    swipeTouch(el, [200, 400], [120, 120])
     expect(onPrev).not.toHaveBeenCalled()
+    expect(onNext).not.toHaveBeenCalled()
+  })
+
+  it('nach dem Scrollen greift die Geste nicht nachträglich doch noch', () => {
+    // Erst weit nach unten (klar Scrollen), dann kräftig zur Seite. Ohne das
+    // endgültige Verwerfen würde die App am Ende der Scrollbewegung blättern.
+    const { el, onNext } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[300, 500]])
+    touch(el, 'touchmove', [[0, 500]])
+    touch(el, 'touchend', [[0, 500]])
+    expect(onNext).not.toHaveBeenCalled()
+  })
+
+  it('eine schräge Bewegung blättert NICHT', () => {
+    // Weder klar waagerecht noch klar senkrecht: im Zweifel gehört die
+    // Bewegung dem Inhalt, nicht dem Blättern.
+    const { el, onNext } = setup()
+    swipeTouch(el, [200, 300], [100, 390])
     expect(onNext).not.toHaveBeenCalled()
   })
 
   it('zu kurze Bewegung blättert NICHT', () => {
     const { el, onNext } = setup()
-    swipe(el, [200, 300], [160, 300]) // 40 px < Schwelle
+    swipeTouch(el, [200, 300], [160, 300]) // 40 px < Schwelle
     expect(onNext).not.toHaveBeenCalled()
   })
 
   it('Start am Bildschirmrand bleibt dem Browser überlassen', () => {
     // Dort löst der Wisch die Zurück-/Vorwärts-Navigation des Browsers aus.
     const left = setup()
-    swipe(left.el, [10, 300], [200, 300])
+    swipeTouch(left.el, [10, 300], [200, 300])
     expect(left.onPrev).not.toHaveBeenCalled()
 
     const right = setup()
-    swipe(right.el, [395, 300], [200, 300])
+    swipeTouch(right.el, [395, 300], [200, 300])
     expect(right.onNext).not.toHaveBeenCalled()
   })
 
   it('an der ersten/letzten Woche passiert nichts', () => {
     const first = setup({ canPrev: false })
-    swipe(first.el, [200, 300], [320, 300])
+    swipeTouch(first.el, [200, 300], [320, 300])
     expect(first.onPrev).not.toHaveBeenCalled()
 
     const last = setup({ canNext: false })
-    swipe(last.el, [200, 300], [80, 300])
+    swipeTouch(last.el, [200, 300], [80, 300])
     expect(last.onNext).not.toHaveBeenCalled()
   })
 
   it('setzt den Versatz nach der Geste zurück', () => {
     const { el } = setup()
-    swipe(el, [200, 300], [100, 300])
+    swipeTouch(el, [200, 300], [100, 300])
     expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
   })
 })
@@ -220,14 +346,14 @@ describe('useSwipeDown', () => {
   it('weit genug nach unten gezogen schließt das Sheet', () => {
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipe(r.getByTestId('sheet'), [200, 200], [200, 320])
+    swipeDown(r.getByTestId('sheet'), [200, 200], [200, 320])
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('kurzes Ziehen federt zurück statt zu schließen', () => {
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipe(r.getByTestId('sheet'), [200, 200], [200, 240], { ms: 600 })
+    swipeDown(r.getByTestId('sheet'), [200, 200], [200, 240], 600)
     expect(onClose).not.toHaveBeenCalled()
     expect(r.getByTestId('sheet').style.getPropertyValue('--sheet-drag')).toBe('0px')
   })
@@ -235,7 +361,7 @@ describe('useSwipeDown', () => {
   it('nach oben ziehen schließt nicht', () => {
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipe(r.getByTestId('sheet'), [200, 300], [200, 100])
+    swipeDown(r.getByTestId('sheet'), [200, 300], [200, 100])
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -243,7 +369,7 @@ describe('useSwipeDown', () => {
     // Sonst würde das Sheet beim Zurückscrollen der Kandidatenliste zuklappen.
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} scrollTop={120} />)
-    swipe(r.getByTestId('list'), [200, 200], [200, 320])
+    swipeDown(r.getByTestId('list'), [200, 200], [200, 320])
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -251,7 +377,29 @@ describe('useSwipeDown', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipe(r.getByTestId('sheet'), [200, 200], [200, 320])
+    swipeDown(r.getByTestId('sheet'), [200, 200], [200, 320])
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('schließt auch, wenn der Browser das Scrollen bereits übernommen hat', () => {
+    // Nach unten ist genau die Richtung, die der Browser für sich beansprucht —
+    // der Fall vom echten Gerät, wo das Sheet einfach offen blieb.
+    const onClose = vi.fn()
+    const r = render(<SheetHarness onClose={onClose} />)
+    const sheet = r.getByTestId('sheet')
+    touch(sheet, 'touchstart', [[200, 200]], true, 0)
+    for (const y of [220, 260, 300, 320]) touch(sheet, 'touchmove', [[200, y]], false, y)
+    touch(sheet, 'touchend', [[200, 320]], true, 400)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('bricht das System die Berührung ab, bleibt das Sheet offen', () => {
+    const onClose = vi.fn()
+    const r = render(<SheetHarness onClose={onClose} />)
+    const sheet = r.getByTestId('sheet')
+    touch(sheet, 'touchstart', [[200, 200]], true, 0)
+    touch(sheet, 'touchmove', [[200, 320]], true, 100)
+    touch(sheet, 'touchcancel', [[200, 320]], true, 110)
     expect(onClose).not.toHaveBeenCalled()
   })
 })
