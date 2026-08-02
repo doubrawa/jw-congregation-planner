@@ -191,6 +191,10 @@ Schulungspunkten und der Struktur der Zusammenkünfte. Sind weitere Programmspra
 konfiguriert, werden deren Varianten gleich mitgeladen. Zuteilungen bleiben dabei
 leer und werden anschließend unter **Planen** vergeben.
 
+Über dem Knopf steht, wie weit du schon bist: **„Geladen bis …"** nennt den
+letzten Tag, für den ein Programm vorliegt, daneben die Anzahl der geladenen
+Wochen. Jeder Druck auf den Knopf holt genau eine weitere Woche.
+
 ---
 
 ## 9. Programm drucken

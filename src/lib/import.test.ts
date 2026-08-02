@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const invoke = vi.hoisted(() => vi.fn())
 vi.mock('./supabase', () => ({ supabase: { functions: { invoke } } }))
 
-import { importNextWeek, importWeekVariants, latestImportedStart } from './import'
+import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from './import'
 import type { Week } from '../data/types'
 
 /** Minimal-Woche nur mit dem für die Sortierung relevanten `start`. */
@@ -25,6 +25,27 @@ describe('latestImportedStart', () => {
 
   it('sortiert lexikografisch korrekt (ISO ist sortierbar)', () => {
     expect(latestImportedStart([wk('2026-12-28'), wk('2027-01-04')])).toBe('2027-01-04')
+  })
+})
+
+describe('loadedUntilMs', () => {
+  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10)
+
+  it('liefert den Sonntag der spätesten Woche, nicht deren Montag', () => {
+    // "Geladen bis" meint das Ende der Woche — sonst wirkte die Anzeige um
+    // sechs Tage zu knapp und man importierte unnötig nach.
+    const ms = loadedUntilMs([wk('2026-09-07'), wk('2026-08-31')])
+    expect(ms).not.toBeNull()
+    expect(iso(ms as number)).toBe('2026-09-13')
+  })
+
+  it('rechnet über den Monatswechsel hinweg', () => {
+    expect(iso(loadedUntilMs([wk('2026-09-28')]) as number)).toBe('2026-10-04')
+  })
+
+  it('ohne ISO-Datum null (Demo- und Vorlagenwochen)', () => {
+    expect(loadedUntilMs([wk(), wk()])).toBeNull()
+    expect(loadedUntilMs([])).toBeNull()
   })
 })
 
