@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
+import { gestenLog } from '../lib/gesture-log'
 
 /**
  * Waagerecht wischen, um eine Woche zu blättern (Programm und Planen).
@@ -90,6 +91,7 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     // 'offen' = Richtung noch nicht entschieden
     let phase: 'offen' | 'waagerecht' | 'verworfen' = 'offen'
     let dx = 0
+    let bewegungen = 0 // nur fuers Protokoll
 
     let timer: number | undefined
     let raf: number | undefined
@@ -123,6 +125,7 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
      */
     const slide = (richtung: -1 | 1, ab: number, blaettern: () => void) => {
       laeuft = true
+      gestenLog('BLÄTTERN', { richtung, ab: Math.round(ab) })
 
       // Standbild dort einfrieren, wo der Finger losgelassen hat.
       const r = el.getBoundingClientRect()
@@ -188,7 +191,12 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       }
       const t = e.touches[0]
       // Randzone dem System überlassen (Zurück-Geste).
-      if (t.clientX < EDGE_PX || t.clientX > window.innerWidth - EDGE_PX) return
+      if (t.clientX < EDGE_PX || t.clientX > window.innerWidth - EDGE_PX) {
+        gestenLog('start', { verworfen: 'Randzone', x: Math.round(t.clientX) })
+        return
+      }
+      gestenLog('start', { x: Math.round(t.clientX), y: Math.round(t.clientY) })
+      bewegungen = 0
       aktiv = true
       startX = t.clientX
       startY = t.clientY
@@ -205,6 +213,7 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
         release(true)
         return
       }
+      bewegungen++
       const t = e.touches[0]
       dx = t.clientX - startX
       const dy = t.clientY - startY
@@ -215,11 +224,13 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
         // Ausschlag nach unten gehört zum normalen Bogen.
         if (ady > VERT_PX && ady > adx * VERT_RATIO) {
           phase = 'verworfen'
+          gestenLog('senkrecht → verworfen', { dx: Math.round(dx), dy: Math.round(dy) })
           return
         }
         // Deutlich waagerecht → übernehmen. Sonst weiter abwarten.
         if (adx < START_PX || adx < ady * ANGLE) return
         phase = 'waagerecht'
+        gestenLog('waagerecht erkannt', { dx: Math.round(dx), dy: Math.round(dy), abbrechbar: e.cancelable })
       }
       // Scrollen unterbinden, solange der Browser es noch zulässt. Hat er die
       // Geste schon übernommen, ist das Ereignis nicht mehr abbrechbar — dann
@@ -235,9 +246,18 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     const onEnd = () => {
       if (!aktiv) return
       const warWaagerecht = phase === 'waagerecht'
+      const stand = phase // vor dem Zurücksetzen, fürs Protokoll
       const moved = dx
       aktiv = false
       phase = 'offen'
+      gestenLog('touchend', {
+        phase: stand,
+        dx: Math.round(moved),
+        schwelle: COMMIT_PX,
+        bewegungen,
+        canPrev: o.current.canPrev,
+        canNext: o.current.canNext,
+      })
       if (warWaagerecht && Math.abs(moved) >= COMMIT_PX) {
         // Nach rechts gezogen (moved > 0) heißt: die vorige Woche liegt links
         // — die alte wandert also nach rechts hinaus.
@@ -249,6 +269,7 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
 
     /* Vom System abgebrochen (Anruf, System-Geste): nicht blättern. */
     const onCancel = () => {
+      gestenLog('touchcancel (Browser übernimmt)', { aktiv, phase, dx: Math.round(dx), bewegungen })
       if (!aktiv) return
       aktiv = false
       phase = 'offen'
