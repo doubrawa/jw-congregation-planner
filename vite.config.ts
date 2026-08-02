@@ -28,7 +28,9 @@ function buildId(): string {
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/jw-congregation-planner/' : '/',
   plugins: [react()],
-  define: { __BUILD_ID__: JSON.stringify(buildId()) },
+  // Nur beim Build ermitteln: sonst liefe bei jedem Dev-Start und jedem
+  // Testlauf ein git-Prozess mit, obwohl die Kennung dort nichts aussagt.
+  define: { __BUILD_ID__: JSON.stringify(command === 'build' ? buildId() : 'dev') },
   test: {
     alias: [
       // Die Edge-Functions holen web-push über den Deno-npm-Specifier, den Node

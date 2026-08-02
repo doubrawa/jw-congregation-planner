@@ -412,4 +412,10 @@ export interface Notification {
   time: string
   read: boolean
   taskId?: string // verknüpfte MyTask → Inline-„Bestätigen“ in der Mitteilung
+  /**
+   * In dieser App gerade entstanden und noch nicht verteilt. Aus der Datenbank
+   * geladene Mitteilungen tragen das Kennzeichen nie — daran erkennt persist.ts,
+   * was an die Planer zu schicken ist, ohne eine Liste von Aktionen zu pflegen.
+   */
+  local?: true
 }

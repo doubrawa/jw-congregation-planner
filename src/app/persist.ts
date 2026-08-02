@@ -101,25 +101,6 @@ const congSaves = createDebouncedWriter<'info', { congId: string; info: AppState
   (_key, { congId, info }) => saveCongregationInfo(congId, info),
 )
 
-/**
- * Aktionen, die tatsächlich eine Mitteilung erzeugen.
- *
- * Bewusst eine Aufzählung statt „die Liste ist länger geworden": `hydrate`
- * lädt die Mitteilungen aus der Datenbank und macht die Liste damit ebenfalls
- * länger. Daraus wurde bei jedem Laden eine neue Mitteilung geschrieben, die
- * beim nächsten Laden wieder mitkam — der Zähler wuchs mit jeder
- * Aktualisierung um eins. Wer hier eine Aktion ergänzt, die `pushNotif`
- * benutzt, muss sie auch hier eintragen.
- */
-const NOTIF_AKTIONEN = new Set<AppAction['type']>([
-  'assign',
-  'autoAssign',
-  'fsAutoAssign',
-  'finishImport',
-  'addImportedWeek',
-  'declineTask',
-])
-
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -363,13 +344,22 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
   }
 
-  // Jede Aktion, die eine Mitteilung vorne anfügt (Zuteilung, Import,
-  // Verhinderung), an die Planer der Versammlung schicken — je Empfänger eine
-  // eigene Zeile mit eigenem Gelesen-/Lösch-Status. Erinnerungen erzeugt die
-  // Edge Function selbst (adressiert an die betroffene Person).
-  if (NOTIF_AKTIONEN.has(action.type) && next.notifs.length > prev.notifs.length && next.notifs[0]) {
-    const n = next.notifs[0]
+  /*
+   * Eine hier entstandene Mitteilung (Zuteilung, Import, Verhinderung) an die
+   * Planer der Versammlung schicken — je Empfänger eine eigene Zeile mit
+   * eigenem Gelesen-/Lösch-Status. Erinnerungen erzeugt die Edge Function
+   * selbst (adressiert an die betroffene Person).
+   *
+   * Erkannt am `local`-Kennzeichen, das der Reducer beim Erzeugen setzt — nicht
+   * daran, dass die Liste länger geworden ist. Auf `hydrate` träfe das nämlich
+   * ebenfalls zu: es lädt die gespeicherten Mitteilungen, und aus jedem Laden
+   * wurde so eine neue, die beim nächsten Laden wieder mitkam. Eine Aufzählung
+   * der auslösenden Aktionen wäre die zweite Buchführung gewesen — wer eine
+   * vergisst, merkt es nie, weil nichts fehlschlägt.
+   */
+  const neu = next.notifs[0]
+  if (neu?.local && neu !== prev.notifs[0]) {
     const planners = next.members.filter((m) => m.planner).map((m) => m.userId)
-    insertNotifications(congId, planners, n.type, n.title, n.text)
+    insertNotifications(congId, planners, neu.type, neu.title, neu.text)
   }
 }

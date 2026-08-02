@@ -13,6 +13,8 @@
  * wenn man es im Profil ausdrücklich aufruft.
  */
 
+import { isStandalone } from './push'
+
 export interface Eintrag {
   /** Millisekunden seit Beginn der laufenden Geste. */
   t: number
@@ -24,12 +26,24 @@ const MAX = 40
 const puffer: Eintrag[] = []
 let beginn = 0
 
-/** Einen Punkt im Ablauf festhalten. `start` setzt die Zeitrechnung neu. */
+const jetzt = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
+
+/**
+ * Beginn einer Geste — setzt die Zeitrechnung zurück, damit die Millisekunden
+ * im Protokoll den Ablauf DIESER Bewegung zeigen und nicht die Zeit seit dem
+ * Seitenaufruf. Eigene Funktion statt einer Sonderbehandlung von `was === 'start'`:
+ * sonst hinge die Zeitrechnung an einer Zeichenkette, die der Aufrufer exakt
+ * treffen müsste.
+ */
+export function gestenStart(was: string, daten?: Record<string, unknown>): void {
+  beginn = jetzt()
+  gestenLog(was, daten)
+}
+
+/** Einen Punkt im Ablauf festhalten. */
 export function gestenLog(was: string, daten?: Record<string, unknown>): void {
-  const jetzt = typeof performance !== 'undefined' ? performance.now() : Date.now()
-  if (was === 'start') beginn = jetzt
-  puffer.push({ t: Math.round(jetzt - beginn), was, daten })
-  while (puffer.length > MAX) puffer.shift()
+  puffer.push({ t: Math.round(jetzt() - beginn), was, daten })
+  if (puffer.length > MAX) puffer.shift()
 }
 
 export function gestenEintraege(): readonly Eintrag[] {
@@ -50,9 +64,7 @@ function umgebung(): string[] {
   if (typeof window === 'undefined') return []
   let standalone = false
   try {
-    standalone =
-      window.matchMedia?.('(display-mode: standalone)').matches === true ||
-      (navigator as { standalone?: boolean }).standalone === true
+    standalone = isStandalone()
   } catch {
     /* egal — dann eben unbekannt */
   }

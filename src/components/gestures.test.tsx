@@ -34,42 +34,36 @@ function touch(
   return e
 }
 
-/** Senkrechte Wischbewegung als Touch (für useSwipeDown). */
-function swipeDown(el: Element, from: [number, number], to: [number, number], ms = 200): void {
-  const steps = 4
-  touch(el, 'touchstart', [from], true, 0)
-  for (let i = 1; i <= steps; i++) {
-    const f = i / steps
-    touch(
-      el,
-      'touchmove',
-      [[from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f]],
-      true,
-      (ms * i) / steps,
-    )
-  }
-  touch(el, 'touchend', [to], true, ms)
-}
-
-/** Wischbewegung als Touch: aufsetzen, ziehen, abheben. */
-function swipeTouch(el: Element, from: [number, number], to: [number, number], steps = 4): void {
-  touch(el, 'touchstart', [from])
-  for (let i = 1; i <= steps; i++) {
-    const f = i / steps
-    touch(el, 'touchmove', [[from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f]])
-  }
-  touch(el, 'touchend', [to])
-}
-
 /**
- * Wischbewegung entlang vorgegebener Punkte — für Bahnen, die keine gerade
- * Linie sind. Ein Daumen wischt nie exakt waagerecht: er ist am Gelenk
+ * Wischbewegung entlang vorgegebener Punkte — auch für Bahnen, die keine
+ * gerade Linie sind. Ein Daumen wischt nie exakt waagerecht: er ist am Gelenk
  * angeschlagen und beschreibt einen Bogen, der oft senkrecht beginnt.
+ *
+ * `ms` verteilt Zeitstempel über die Bewegung; useSwipeDown braucht sie für
+ * die Geschwindigkeit (kurz, aber schnell geworfen = schließen).
  */
-function swipePath(el: Element, points: Array<[number, number]>): void {
-  touch(el, 'touchstart', [points[0]])
-  points.slice(1).forEach((p) => touch(el, 'touchmove', [p]))
-  touch(el, 'touchend', [points[points.length - 1]])
+function swipePath(el: Element, points: Array<[number, number]>, ms = 0): void {
+  touch(el, 'touchstart', [points[0]], true, 0)
+  points.slice(1).forEach((p, i) => touch(el, 'touchmove', [p], true, (ms * (i + 1)) / (points.length - 1)))
+  touch(el, 'touchend', [points[points.length - 1]], true, ms)
+}
+
+/** Gerade Wischbewegung in `steps` Zwischenschritten. */
+function swipe(
+  el: Element,
+  from: [number, number],
+  to: [number, number],
+  // ms = 200 wie eine gemuetliche Bewegung: useSwipeDown wertet die
+  // Geschwindigkeit aus (kurz, aber schnell geworfen = schliessen), sonst
+  // liefe jeder Test ueber die Wurf-Erkennung statt ueber die Distanz.
+  { steps = 4, ms = 200 } = {},
+): void {
+  const bahn: Array<[number, number]> = [from]
+  for (let i = 1; i <= steps; i++) {
+    const f = i / steps
+    bahn.push([from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f])
+  }
+  swipePath(el, bahn, ms)
 }
 
 /**
@@ -196,13 +190,13 @@ describe('useSwipeWeek', () => {
 
   it('nach links wischen blättert vorwärts, nach rechts zurück', () => {
     const a = setup()
-    swipeTouch(a.el, [200, 300], [100, 300])
+    swipe(a.el, [200, 300], [100, 300])
     fertig()
     expect(a.onNext).toHaveBeenCalledTimes(1)
     expect(a.onPrev).not.toHaveBeenCalled()
 
     const b = setup()
-    swipeTouch(b.el, [200, 300], [300, 300])
+    swipe(b.el, [200, 300], [300, 300])
     fertig()
     expect(b.onPrev).toHaveBeenCalledTimes(1)
   })
@@ -298,7 +292,7 @@ describe('useSwipeWeek', () => {
     // dx = -80 liegt über der Blätter-Schwelle; entscheidend ist, dass dy weit
     // größer ist. Ohne die Winkel-Regel würde diese Scrollbewegung blättern.
     const { el, onPrev, onNext } = setup()
-    swipeTouch(el, [200, 400], [120, 120])
+    swipe(el, [200, 400], [120, 120])
     expect(onPrev).not.toHaveBeenCalled()
     expect(onNext).not.toHaveBeenCalled()
   })
@@ -318,34 +312,34 @@ describe('useSwipeWeek', () => {
     // Weder klar waagerecht noch klar senkrecht: im Zweifel gehört die
     // Bewegung dem Inhalt, nicht dem Blättern.
     const { el, onNext } = setup()
-    swipeTouch(el, [200, 300], [100, 390])
+    swipe(el, [200, 300], [100, 390])
     expect(onNext).not.toHaveBeenCalled()
   })
 
   it('zu kurze Bewegung blättert NICHT', () => {
     const { el, onNext } = setup()
-    swipeTouch(el, [200, 300], [160, 300]) // 40 px < Schwelle
+    swipe(el, [200, 300], [160, 300]) // 40 px < Schwelle
     expect(onNext).not.toHaveBeenCalled()
   })
 
   it('Start am Bildschirmrand bleibt dem Browser überlassen', () => {
     // Dort löst der Wisch die Zurück-/Vorwärts-Navigation des Browsers aus.
     const left = setup()
-    swipeTouch(left.el, [10, 300], [200, 300])
+    swipe(left.el, [10, 300], [200, 300])
     expect(left.onPrev).not.toHaveBeenCalled()
 
     const right = setup()
-    swipeTouch(right.el, [395, 300], [200, 300])
+    swipe(right.el, [395, 300], [200, 300])
     expect(right.onNext).not.toHaveBeenCalled()
   })
 
   it('an der ersten/letzten Woche passiert nichts', () => {
     const first = setup({ canPrev: false })
-    swipeTouch(first.el, [200, 300], [320, 300])
+    swipe(first.el, [200, 300], [320, 300])
     expect(first.onPrev).not.toHaveBeenCalled()
 
     const last = setup({ canNext: false })
-    swipeTouch(last.el, [200, 300], [80, 300])
+    swipe(last.el, [200, 300], [80, 300])
     expect(last.onNext).not.toHaveBeenCalled()
   })
 
@@ -355,7 +349,7 @@ describe('useSwipeWeek', () => {
     // Nachbarwoche dort, wo die mittlere hingehört, und der Versatz geht im
     // selben Zug auf null zurück.
     const { el, onNext } = setup()
-    swipeTouch(el, [200, 300], [100, 300]) // 100 px nach links
+    swipe(el, [200, 300], [100, 300]) // 100 px nach links
 
     expect(el.style.getPropertyValue('--week-shift')).toBe('-400px')
     expect(onNext).not.toHaveBeenCalled()
@@ -369,7 +363,7 @@ describe('useSwipeWeek', () => {
     // Die Gegenrichtung eigens geprüft: ein Vorzeichenfehler fiele sonst nicht
     // auf, weil die vorige Woche von links kommen muss.
     const { el, onPrev } = setup()
-    swipeTouch(el, [100, 300], [220, 300]) // 120 px nach rechts
+    swipe(el, [100, 300], [220, 300]) // 120 px nach rechts
     // Nach rechts: der Streifen wandert nach rechts, die vorige Woche liegt links.
     expect(el.style.getPropertyValue('--week-shift')).toBe('400px')
     fertig()
@@ -383,7 +377,7 @@ describe('useSwipeWeek', () => {
     // oder im Querformat — genau die Differenz zwischen den beiden Wochen.
     const { el } = setup()
     el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 300, height: 500 }) as DOMRect
-    swipeTouch(el, [200, 300], [100, 300]) // nach links, Fenster 400
+    swipe(el, [200, 300], [100, 300]) // nach links, Fenster 400
     // Verschoben wird um 300 (Bildschirmbreite), nicht um 400 (Fensterbreite).
     expect(el.style.getPropertyValue('--week-shift')).toBe('-300px')
   })
@@ -408,7 +402,7 @@ describe('useSwipeWeek', () => {
   it('federt zurück, wenn NICHT geblättert wird', () => {
     // Zurückfedern darf nur eines heißen: hier geht es nicht weiter.
     const { el, onNext } = setup()
-    swipeTouch(el, [200, 300], [160, 300]) // zu kurz
+    swipe(el, [200, 300], [160, 300]) // zu kurz
     expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
     fertig()
     expect(onNext).not.toHaveBeenCalled()
@@ -416,7 +410,7 @@ describe('useSwipeWeek', () => {
 
   it('an der letzten Woche federt es zurück statt hinauszuschieben', () => {
     const { el, onNext } = setup({ canNext: false })
-    swipeTouch(el, [200, 300], [80, 300])
+    swipe(el, [200, 300], [80, 300])
     expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
     fertig()
     expect(onNext).not.toHaveBeenCalled()
@@ -449,14 +443,23 @@ describe('useSwipeDown', () => {
   it('weit genug nach unten gezogen schließt das Sheet', () => {
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipeDown(r.getByTestId('sheet'), [200, 200], [200, 320])
+    swipe(r.getByTestId('sheet'), [200, 200], [200, 320])
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('kurz, aber schnell geworfen schließt ebenfalls', () => {
+    // Der zweite Weg neben der Distanz: 50 px in 60 ms sind unter der
+    // Schließ-Schwelle (90 px), aber deutlich über der Wurfgeschwindigkeit.
+    const onClose = vi.fn()
+    const r = render(<SheetHarness onClose={onClose} />)
+    swipe(r.getByTestId('sheet'), [200, 200], [200, 250], { ms: 60 })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('kurzes Ziehen federt zurück statt zu schließen', () => {
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipeDown(r.getByTestId('sheet'), [200, 200], [200, 240], 600)
+    swipe(r.getByTestId('sheet'), [200, 200], [200, 240], { ms: 600 })
     expect(onClose).not.toHaveBeenCalled()
     expect(r.getByTestId('sheet').style.getPropertyValue('--sheet-drag')).toBe('0px')
   })
@@ -464,7 +467,7 @@ describe('useSwipeDown', () => {
   it('nach oben ziehen schließt nicht', () => {
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipeDown(r.getByTestId('sheet'), [200, 300], [200, 100])
+    swipe(r.getByTestId('sheet'), [200, 300], [200, 100])
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -472,7 +475,7 @@ describe('useSwipeDown', () => {
     // Sonst würde das Sheet beim Zurückscrollen der Kandidatenliste zuklappen.
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} scrollTop={120} />)
-    swipeDown(r.getByTestId('list'), [200, 200], [200, 320])
+    swipe(r.getByTestId('list'), [200, 200], [200, 320])
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -480,7 +483,7 @@ describe('useSwipeDown', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
     const onClose = vi.fn()
     const r = render(<SheetHarness onClose={onClose} />)
-    swipeDown(r.getByTestId('sheet'), [200, 200], [200, 320])
+    swipe(r.getByTestId('sheet'), [200, 200], [200, 320])
     expect(onClose).not.toHaveBeenCalled()
   })
 

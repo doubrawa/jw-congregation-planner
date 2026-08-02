@@ -6,6 +6,12 @@
 .week-viewport {
   position: relative;
   /*
+   * `pan-y pinch-zoom` überlässt dem Browser das senkrechte Scrollen und das
+   * Vergrößern — nur die waagerechte Richtung werten wir selbst aus. Zoom
+   * ausdrücklich erlaubt: er darf nie durch eine Geste verloren gehen.
+   */
+  touch-action: pan-y pinch-zoom;
+  /*
    * `clip` schneidet die Nachbarwochen ab, ohne einen Scroll-Container zu
    * erzeugen (das täte `hidden` und würde `position: sticky` im Inhalt
    * aushebeln). Beide Achsen: eine längere Nachbarwoche ragte sonst unten

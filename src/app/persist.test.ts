@@ -315,37 +315,43 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
 })
 
 describe('Mitteilungs-Fanout', () => {
-  it('eine neue Mitteilung wird an die Planer verteilt', () => {
-    const prev = st({ notifs: [] })
-    const next = st({
-      notifs: [{ id: 'n1', type: 'gesendet', title: 'T', text: 'B', time: '', read: false }],
-      members: [{ userId: 'm1', email: '', personId: null, planner: true }, { userId: 'm2', email: '', personId: null, planner: false }],
-    })
-    persist(prev, next, { type: 'declineTask', id: 'x' })
+  /** Wie der Reducer sie erzeugt: mit `local`-Kennzeichen. */
+  const hier = { id: 'n1', type: 'gesendet' as const, title: 'T', text: 'B', time: '', read: false, local: true as const }
+  /** Wie sie aus der Datenbank kommt: ohne Kennzeichen. */
+  const geladen = { id: 'n2', type: 'gesendet' as const, title: 'T', text: 'B', time: '', read: false }
+  const planer = [{ userId: 'm1', email: '', personId: null, planner: true }]
+
+  it('eine hier entstandene Mitteilung geht an die Planer', () => {
+    persist(st({ notifs: [] }), st({ notifs: [hier], members: planer }), { type: 'declineTask', id: 'x' })
     expect(data.insertNotifications).toHaveBeenCalledWith('c1', ['m1'], 'gesendet', 'T', 'B')
   })
 
   it('Laden aus der Datenbank verteilt NICHTS', () => {
-    // Der Fehler: `hydrate` bringt die gespeicherten Mitteilungen mit und macht
-    // die Liste damit länger. Aus jedem Laden wurde so eine neue Mitteilung,
-    // die beim nächsten Laden wieder mitkam — der Zähler wuchs bei jeder
+    // Der Fehler: frueher haengte das Verteilen daran, dass die Liste laenger
+    // geworden ist. Auf `hydrate` trifft das ebenfalls zu — es bringt die
+    // gespeicherten Mitteilungen mit. Aus jedem Laden wurde so eine neue, die
+    // beim naechsten Laden wieder mitkam; der Zaehler wuchs bei jeder
     // Aktualisierung um eins.
-    const prev = st({ notifs: [] })
-    const next = st({
-      notifs: [{ id: 'n1', type: 'gesendet', title: 'T', text: 'B', time: '', read: false }],
-      members: [{ userId: 'm1', email: '', personId: null, planner: true }],
+    persist(st({ notifs: [] }), st({ notifs: [geladen], members: planer }), {
+      type: 'hydrate',
+      payload: {} as never,
     })
-    persist(prev, next, { type: 'hydrate', payload: {} as never })
     expect(data.insertNotifications).not.toHaveBeenCalled()
   })
 
-  it('auch sonst verteilt nur, wer wirklich eine Mitteilung erzeugt', () => {
-    const prev = st({ notifs: [] })
-    const next = st({
-      notifs: [{ id: 'n1', type: 'gesendet', title: 'T', text: 'B', time: '', read: false }],
-      members: [{ userId: 'm1', email: '', personId: null, planner: true }],
+  it('dieselbe Mitteilung wird nicht zweimal verteilt', () => {
+    // Jede Aktion laeuft durch persist; nur das ERSTE Auftreten zaehlt.
+    persist(st({ notifs: [hier], members: planer }), st({ notifs: [hier], members: planer }), {
+      type: 'showToast',
+      text: 'x',
     })
-    persist(prev, next, { type: 'showToast', text: 'x' })
     expect(data.insertNotifications).not.toHaveBeenCalled()
+  })
+
+  it('unabhaengig von der Aktion — das Kennzeichen entscheidet', () => {
+    // Genau das ist der Gewinn: wer kuenftig eine Aktion mit Mitteilung
+    // ergaenzt, muss an keiner zweiten Stelle etwas eintragen.
+    persist(st({ notifs: [] }), st({ notifs: [hier], members: planer }), { type: 'autoAssign' })
+    expect(data.insertNotifications).toHaveBeenCalledTimes(1)
   })
 })

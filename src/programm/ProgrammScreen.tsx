@@ -16,11 +16,7 @@ import './print.css'
 
 /** Heutiges Datum (Tag + Monat) in der Sprache des Nutzers. */
 function heute(lang: Lang): string {
-  try {
-    return new Intl.DateTimeFormat(LOCALES[lang] ?? lang, { day: 'numeric', month: 'long' }).format(new Date())
-  } catch {
-    return ''
-  }
+  return new Intl.DateTimeFormat(LOCALES[lang], { day: 'numeric', month: 'long' }).format(new Date())
 }
 
 /**
