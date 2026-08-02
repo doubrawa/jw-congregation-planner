@@ -22,25 +22,27 @@ import {
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('signIn (Fehlertexte auf Deutsch)', () => {
+describe('signIn (Fehler-Einordnung)', () => {
   it('Erfolg → null', async () => {
     auth.signInWithPassword.mockResolvedValue({ error: null })
     expect(await signIn('a@b', 'pw')).toBeNull()
   })
-  it('übersetzt bekannte Auth-Fehler', async () => {
+  it('ordnet bekannte Auth-Fehler einem UI-Schlüssel zu', async () => {
+    // Kein fertiger Text: diese Schicht läuft vor der Anmeldung und kennt die
+    // App-Sprache nicht. Die Worte macht authFehlerText (login/auth-text.ts).
     const cases: [string, string][] = [
-      ['Invalid login credentials', 'E-Mail oder Passwort falsch'],
-      ['Email not confirmed', 'E-Mail-Adresse noch nicht bestätigt'],
-      ['rate limit reached', 'Zu viele Versuche — bitte kurz warten'],
+      ['Invalid login credentials', 'authFalsch'],
+      ['Email not confirmed', 'authUnbestaetigt'],
+      ['rate limit reached', 'authZuVieleVersuche'],
     ]
-    for (const [msg, expected] of cases) {
+    for (const [msg, key] of cases) {
       auth.signInWithPassword.mockResolvedValue({ error: { message: msg } })
-      expect(await signIn('a', 'b')).toBe(expected)
+      expect(await signIn('a', 'b')).toEqual({ key })
     }
   })
   it('unbekannter Fehler wird unverändert durchgereicht', async () => {
     auth.signInWithPassword.mockResolvedValue({ error: { message: 'Server explodiert' } })
-    expect(await signIn('a', 'b')).toBe('Server explodiert')
+    expect(await signIn('a', 'b')).toEqual({ text: 'Server explodiert' })
   })
 })
 
@@ -53,24 +55,24 @@ describe('signUp', () => {
     auth.signUp.mockResolvedValue({ data: { session: null }, error: null })
     expect(await signUp('a', 'b')).toEqual({ ok: true, needsConfirm: true })
   })
-  it('Fehler → ok:false mit übersetztem Text', async () => {
+  it('Fehler → ok:false mit eingeordnetem Fehler', async () => {
     auth.signUp.mockResolvedValue({ data: {}, error: { message: 'User already registered' } })
-    expect(await signUp('a', 'b')).toEqual({ ok: false, error: 'E-Mail ist bereits registriert' })
+    expect(await signUp('a', 'b')).toEqual({ ok: false, error: { key: 'authSchonRegistriert' } })
   })
 })
 
 describe('Passwort-Flows', () => {
-  it('requestPasswordReset: Erfolg → null, Fehler → Text', async () => {
+  it('requestPasswordReset: Erfolg → null, sonst eingeordneter Fehler', async () => {
     auth.resetPasswordForEmail.mockResolvedValue({ error: null })
     expect(await requestPasswordReset('a@b')).toBeNull()
     auth.resetPasswordForEmail.mockResolvedValue({ error: { message: 'rate limit' } })
-    expect(await requestPasswordReset('a@b')).toBe('Zu viele Versuche — bitte kurz warten')
+    expect(await requestPasswordReset('a@b')).toEqual({ key: 'authZuVieleVersuche' })
   })
-  it('updatePassword: Erfolg → null, zu kurz → Text', async () => {
+  it('updatePassword: Erfolg → null, zu kurz → eingeordneter Fehler', async () => {
     auth.updateUser.mockResolvedValue({ error: null })
     expect(await updatePassword('lang genug')).toBeNull()
     auth.updateUser.mockResolvedValue({ error: { message: 'Password should be at least 6 characters' } })
-    expect(await updatePassword('x')).toBe('Passwort zu kurz (mindestens 6 Zeichen)')
+    expect(await updatePassword('x')).toEqual({ key: 'authPwKurz' })
   })
 })
 

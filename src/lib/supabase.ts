@@ -28,25 +28,37 @@ function appRedirectUrl(): string {
   return window.location.origin + window.location.pathname
 }
 
-/** Häufige Auth-Fehler auf Deutsch; Rest unverändert durchreichen. */
-function authErrorText(message: string): string {
-  if (message.includes('Invalid login credentials')) return 'E-Mail oder Passwort falsch'
-  if (message.includes('Email not confirmed')) return 'E-Mail-Adresse noch nicht bestätigt'
-  if (message.includes('already registered')) return 'E-Mail ist bereits registriert'
-  if (message.includes('Password should be at least'))
-    return 'Passwort zu kurz (mindestens 6 Zeichen)'
-  if (message.includes('rate limit')) return 'Zu viele Versuche — bitte kurz warten'
-  return message
+/**
+ * Anzeigbarer Anmeldefehler: entweder ein UI-Schlüssel (dann übersetzt die
+ * Oberfläche) oder ein unveränderter Text von Supabase.
+ *
+ * Diese Schicht kennt die App-Sprache nicht — sie läuft, bevor überhaupt
+ * jemand angemeldet ist. Deshalb hier nur die Einordnung; die Worte kommen aus
+ * `authFehlerText` (login/auth-text.ts). Vorher standen die Meldungen fest auf
+ * Deutsch, unabhängig von der gewählten Sprache.
+ */
+export type AuthFehler =
+  | { key: 'authFalsch' | 'authUnbestaetigt' | 'authSchonRegistriert' | 'authPwKurz' | 'authZuVieleVersuche' }
+  | { text: string }
+
+/** Supabase-Meldung einordnen; Unbekanntes bleibt unverändert. */
+function authFehler(message: string): AuthFehler {
+  if (message.includes('Invalid login credentials')) return { key: 'authFalsch' }
+  if (message.includes('Email not confirmed')) return { key: 'authUnbestaetigt' }
+  if (message.includes('already registered')) return { key: 'authSchonRegistriert' }
+  if (message.includes('Password should be at least')) return { key: 'authPwKurz' }
+  if (message.includes('rate limit')) return { key: 'authZuVieleVersuche' }
+  return { text: message }
 }
 
 /** Anmelden; liefert null bei Erfolg, sonst eine anzeigbare Fehlermeldung. */
-export async function signIn(email: string, password: string): Promise<string | null> {
+export async function signIn(email: string, password: string): Promise<AuthFehler | null> {
   if (!supabase) return null // Demo-Modus: immer "erfolgreich"
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-  return error ? authErrorText(error.message) : null
+  return error ? authFehler(error.message) : null
 }
 
-export type SignUpResult = { ok: true; needsConfirm: boolean } | { ok: false; error: string }
+export type SignUpResult = { ok: true; needsConfirm: boolean } | { ok: false; error: AuthFehler }
 
 /**
  * Konto erstellen. Bei aktivierter E-Mail-Bestätigung (`needsConfirm`) muss
@@ -62,26 +74,26 @@ export async function signUp(email: string, password: string): Promise<SignUpRes
     password,
     options: { emailRedirectTo: appRedirectUrl() },
   })
-  if (error) return { ok: false, error: authErrorText(error.message) }
+  if (error) return { ok: false, error: authFehler(error.message) }
   return { ok: true, needsConfirm: !data.session }
 }
 
 /** Passwort-Reset-Mail anstoßen; liefert null bei Erfolg, sonst Fehlertext. */
-export async function requestPasswordReset(email: string): Promise<string | null> {
+export async function requestPasswordReset(email: string): Promise<AuthFehler | null> {
   if (!supabase) return null
   // Der Mail-Link führt zurück in die App; das PASSWORD_RECOVERY-Event
   // öffnet dort die "Neues Passwort setzen"-Ansicht (RecoveryScreen).
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: appRedirectUrl(),
   })
-  return error ? authErrorText(error.message) : null
+  return error ? authFehler(error.message) : null
 }
 
 /** Neues Passwort setzen (Recovery-Session); null bei Erfolg, sonst Fehlertext. */
-export async function updatePassword(password: string): Promise<string | null> {
+export async function updatePassword(password: string): Promise<AuthFehler | null> {
   if (!supabase) return null
   const { error } = await supabase.auth.updateUser({ password })
-  return error ? authErrorText(error.message) : null
+  return error ? authFehler(error.message) : null
 }
 
 /** Abmelden: State sofort zurücksetzen, Supabase-Session beenden (falls aktiv). */

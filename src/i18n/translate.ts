@@ -12,10 +12,49 @@ import type { Lang } from '../data/types'
 import { LOCALES } from './langs'
 import { D, EXTRA, EXTRA_EN, FRAG, MON, MONA, WD, WDA, type DateDict, type Extra } from './translate-data'
 
-/** Datum mit passendem Jahr finden, damit Intl den richtigen Wochentag zeigt. */
+/* ---- Bibelbücher (nachgeladen) ------------------------------------------- */
+
+type BuchTabelle = (lang: string) => { voll: Map<string, string>; kurz: Map<string, string> }
+
+/**
+ * Die Buchtabellen liegen in einem eigenen Modul und werden erst geholt, wenn
+ * überhaupt übersetzt wird — sie wiegen rund 16 kB gepackt, und wer die App
+ * auf Deutsch mit deutscher Versammlungssprache nutzt, braucht sie nie.
+ * Bis dahin bleiben Buchnamen deutsch (wie vor der Einführung der Tabellen).
+ */
+let buchTabelle: BuchTabelle | null = null
+
+/**
+ * Tabellen nachladen. Liefert true, wenn dabei tatsächlich geladen wurde — der
+ * Aufrufer stößt dann ein Re-Render an, genau wie bei den Sprach-Overlays.
+ */
+export async function bibelbuecherLaden(): Promise<boolean> {
+  if (buchTabelle) return false
+  const m = await import('./bible-books')
+  buchTabelle = m.buchTabelle
+  return true
+}
+
+/**
+ * Datum mit passendem Jahr finden, damit Intl den richtigen Wochentag zeigt.
+ * Gesucht wird nur das Jahr — Tag und Monat stehen fest.
+ *
+ * 28 Jahre, nicht weniger: Für gewöhnliche Daten genügen sieben, für den
+ * 29. Februar aber nicht. Den gibt es nur in Schaltjahren, und in 2024–2040
+ * fielen die auf lediglich fünf verschiedene Wochentage — Montag und Samstag
+ * fehlten. „Montag, 29. Februar" landete dadurch im Rückfall auf ein Datum,
+ * das es gar nicht gibt (29.2.2025), was der Kalender still zum 1. März macht:
+ * angezeigt wurde dann ein falscher Tag. Über einen vollen 28-Jahre-Zyklus
+ * kommen alle sieben Wochentage vor.
+ */
 function findDateForWeekday(monthIdx: number, day: number, weekdayIdx: number): Date {
-  for (let y = 2024; y < 2041; y++) {
+  for (let y = 2024; y < 2024 + 28; y++) {
     const d = new Date(Date.UTC(y, monthIdx, day))
+    // Ein Tag, den es in diesem Jahr nicht gibt, rutscht in den Folgemonat:
+    // der 29. Februar in jedem Nicht-Schaltjahr, „31. Februar" in jedem.
+    // Überspringen, nicht abbrechen — sonst endet die Suche beim 29. Februar
+    // schon nach dem ersten Jahr.
+    if (d.getUTCMonth() !== monthIdx) continue
     if (((d.getUTCDay() + 6) % 7) === weekdayIdx) return d
   }
   return new Date(Date.UTC(2025, monthIdx, day))
@@ -35,6 +74,31 @@ function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: num
 }
 
 type Rule = [RegExp, (m: RegExpMatchArray) => string]
+
+/**
+ * Regeln für Bibelbücher und -stellen: „Jeremia 32–33" → „Jeremiah 32–33",
+ * „Jer 32:6-18" → „Jer 32:6-18" in der Zielsprache. Kapitel und Verse bleiben
+ * unangetastet, übersetzt wird nur der Buchname bzw. sein Kürzel.
+ *
+ * Der Ausdruck wird aus den tatsächlichen Buchnamen gebaut statt als
+ * `^(.+) (\d.*)$`: ein solcher Fänger würde auch „Lied 5" oder „Studienartikel
+ * 3" schlucken und — schlimmer — Segmente mit „ — " am rekursiven Aufteilen in
+ * buildTranslator vorbeiführen. Längste zuerst, damit „1. Johannes" nicht an
+ * einem kürzeren Namen hängen bleibt.
+ */
+function buchRegeln(code: string): Rule[] {
+  if (!buchTabelle) return [] // noch nicht nachgeladen
+  const { voll, kurz } = buchTabelle(code)
+  if (voll.size === 0) return [] // Sprache nicht auf jw.org geführt → deutsch lassen
+  const namen = [...voll.keys(), ...kurz.keys()].sort((a, b) => b.length - a.length)
+  const muster = namen.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  return [
+    [
+      new RegExp(`^(${muster}) (.+)$`),
+      (m) => `${voll.get(m[1]) ?? kurz.get(m[1]) ?? m[1]} ${m[2]}`,
+    ],
+  ]
+}
 
 /**
  * Baut aus einem Wörterbuch (exakte Treffer) + Regex-Regeln eine Übersetzer-
@@ -73,6 +137,7 @@ function makeTrIntl(code: Lang): (s: string) => string {
     [/^mit (.+)$/, m => ex.mit(m[1])],
     [/^in (\d+) Tagen$/, m => ex.tage(m[1])],
     [/^(\d+) Zuteilungen$/, m => ex.zut(m[1])],
+    ...buchRegeln(code),
   ]
   return buildTranslator(M, rules)
 }
@@ -91,8 +156,7 @@ export function makeTr(code: Lang): (s: string) => string {
     [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => L.wda[WDA[m[1]]] + ' ' + m[2]],
     [/^(\d+)\.\u2013(\d+)\. ([A-Za-zäöü]+)$/, m => L.range1(m[1], m[2], L.mon[MON[m[3]]])],
     [/^(\d+)\. ([A-Za-zäöü]{3}) \u2013 (\d+)\. ([A-Za-zäöü]{3})$/, m => L.range2(m[1], L.mona[MONA[m[2]]], m[3], L.mona[MONA[m[4]]])],
-    [/^Jeremia (.+)$/, m => L.buch(m[1])],
-    [/^Jer (.+)$/, m => L.ref(m[1])],
+    ...buchRegeln(code),
     [/^th Lektion (\d+)$/, m => 'th ' + L.lektion(m[1])],
     [/^(wcg|lff) Kap\. (\d+)$/, m => m[1] + ' ' + L.kap(m[2])],
     [/^lmd Lektion (\d+)$/, m => 'lmd ' + L.lektion(m[1])],

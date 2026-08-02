@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import { isDarkTheme } from '../data/constants'
 import { isRTL } from '../i18n/langs'
+import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
@@ -101,6 +102,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     })
   }, [state.lang, dispatch])
+
+  // Bibelbuch-Tabellen ebenso nachladen — aber nur, wenn überhaupt etwas zu
+  // übersetzen ist. Deutsche App mit deutscher Versammlungssprache holt die
+  // rund 16 kB nie.
+  useEffect(() => {
+    if (state.lang === 'de' && state.congLang === 'Deutsch') return
+    void bibelbuecherLaden().then((geladen) => {
+      if (geladen) dispatch({ type: 'setLang', lang: stateRef.current.lang })
+    })
+  }, [state.lang, state.congLang, dispatch])
 
   // Toast automatisch ausblenden (2.4 s wie im Prototyp)
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { useSwipeDown } from '../components/useSwipeDown'
-import { displayName, initials, isQualified, isSong, loadWindow, partnerGenderOk, personCompare, roleLabel, workloadOf, type WeekLoad } from '../data/helpers'
+import { displayName, initials, isQualified, isSong, LOAD_RADIUS, LOAD_WEEKS, loadWindow, partnerGenderOk, personCompare, roleLabel, workloadOf, type WeekLoad } from '../data/helpers'
 import { fsLeaderValue } from '../data/fs'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import type { Dict } from '../i18n/ui'
@@ -173,12 +173,13 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
         .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && genderOk(p))
         .map((p) => {
           const name = displayName(p)
-          // Auslastung über das 5-Wochen-Fenster (aktuelle ±2), passend zu den
-          // Mini-Quadraten daneben.
-          const winWeeks = state.weeks.slice(Math.max(0, sel.wi - 2), sel.wi + 3)
+          // Auslastung über dasselbe Fenster wie die Mini-Quadrate daneben.
+          const winWeeks = state.weeks.slice(Math.max(0, sel.wi - LOAD_RADIUS), sel.wi + LOAD_RADIUS + 1)
           const workload = workloadOf(winWeeks, name)
           const workloadLabel =
-            workload === 1 ? t.aufgabeIn4 : fill(t.aufgabenIn4, { n: workload })
+            workload === 1
+              ? fill(t.aufgabeInW, { w: LOAD_WEEKS })
+              : fill(t.aufgabenInW, { n: workload, w: LOAD_WEEKS })
           return {
             key: p.id,
             initials: initials(p),
@@ -188,7 +189,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], name, state.services, sel),
             absent: p.absent.includes(sel.wi),
             free: workload === 0,
-            load: loadWindow(state.weeks, name, sel.wi, 2),
+            load: loadWindow(state.weeks, name, sel.wi),
           }
         })
         .sort((a, b) => Number(a.absent) - Number(b.absent))

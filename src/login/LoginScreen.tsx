@@ -4,6 +4,7 @@ import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
+import { authFehlerText } from './auth-text'
 import './login.css'
 
 const LOGO = `${import.meta.env.BASE_URL}logo.svg`
@@ -36,7 +37,7 @@ export function LoginScreen() {
       const result = await signUp(email.trim(), password)
       setBusy(false)
       if (!result.ok) {
-        dispatch({ type: 'showToast', text: result.error })
+        dispatch({ type: 'showToast', text: authFehlerText(result.error, t) })
         return
       }
       if (result.needsConfirm) {
@@ -49,7 +50,7 @@ export function LoginScreen() {
     const error = await signIn(email, password)
     setBusy(false)
     if (error) {
-      dispatch({ type: 'showToast', text: error })
+      dispatch({ type: 'showToast', text: authFehlerText(error, t) })
       return
     }
     dispatch({ type: 'login', welcome: true })
@@ -65,7 +66,7 @@ export function LoginScreen() {
       return
     }
     const error = await requestPasswordReset(email.trim())
-    dispatch({ type: 'showToast', text: error ?? t.resetMailHinweis })
+    dispatch({ type: 'showToast', text: error ? authFehlerText(error, t) : t.resetMailHinweis })
   }
 
   const submitLabel = register ? t.registrieren : t.anmelden

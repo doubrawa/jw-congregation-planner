@@ -72,7 +72,10 @@ export function ImportPanel() {
     const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
     if (!res.ok) {
       dispatch({ type: 'stopImport' })
-      dispatch({ type: 'showToast', text: res.error === 'demo' ? t.demoHinweis : res.error })
+      // 'demo' heißt: keine Datenbank angebunden, der Abruf ist gar nicht
+      // möglich. Hier stand früher t.demoHinweis — der redet vom Anmelden
+      // („Zugangsdaten beliebig") und passte an dieser Stelle nicht.
+      dispatch({ type: 'showToast', text: res.error === 'demo' ? t.importOhneDb : res.error })
       return
     }
     dispatch({ type: 'addImportedWeek', week: res.week })

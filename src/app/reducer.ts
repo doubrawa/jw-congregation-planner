@@ -59,6 +59,18 @@ function nextToast(state: AppState, text: string): AppState['toast'] {
  */
 const mtab = (tab: MeetingTab): MeetingKey => (tab === 'fs' ? 'mid' : tab)
 
+/**
+ * „Treffpunkte" in Mitteilungstexten — bewusst kanonisch deutsch.
+ *
+ * Mitteilungen werden an alle Planer verteilt und erst beim Anzeigen übersetzt
+ * (`tu` in NotificationsPanel). Hier stand vorher `dict(state.lang).fsShort`,
+ * also die Sprache dessen, der zugeteilt hat: ein französischer Planer
+ * hinterließ „Réunion pour la prédication" in der deutschen Ansicht. Der
+ * Begriff steht als Programm-Fragment in allen Sprachen (FRAG in
+ * i18n/translate-data.ts), wird beim Anzeigen also richtig ersetzt.
+ */
+const FS_KANONISCH = 'Treffpunkte'
+
 /** Toast aus einem übersetzten UI-Schlüssel (Reducer kennt state.lang). */
 function toastKey(
   state: AppState,
@@ -450,7 +462,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
               state.notifs,
               'gesendet',
               'Zuteilung gesendet',
-              `${action.name} — ${dict(state.lang).fsShort} · ${state.weeks[sel.wi].range}`,
+              `${action.name} — ${FS_KANONISCH} · ${state.weeks[sel.wi].range}`,
             )
           : state.notifs
         const pendingNames =
@@ -573,7 +585,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.notifs,
         'gesendet',
         'Zuteilungen gesendet',
-        `${count} · ${dict(state.lang).fsShort} · ${state.weeks[state.week]?.range ?? ''}`,
+        `${count} · ${FS_KANONISCH} · ${state.weeks[state.week]?.range ?? ''}`,
       )
       return { ...state, fsWeeks, notifs, pendingNames: [...pending], toast: toastKey(state, 'toastAutoN', { n: count }) }
     }
