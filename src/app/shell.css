@@ -179,6 +179,7 @@
   display: block;
   width: 40px;
   height: 40px;
+  filter: var(--logo-filter);
 }
 
 .sidebar-wordmark {
@@ -341,6 +342,7 @@
 .mobile-header-logo {
   width: 22px;
   height: 22px;
+  filter: var(--logo-filter);
 }
 
 .mobile-header-right {
@@ -393,7 +395,7 @@
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(30, 25, 15, 0.28);
+  background: rgba(var(--shade), 0.28);
   z-index: 34;
 }
 
@@ -464,7 +466,7 @@
 .notif-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(30, 25, 15, 0.28);
+  background: rgba(var(--shade), 0.28);
   z-index: 30;
 }
 

@@ -4,7 +4,7 @@
  * seither kräftiger abgestimmt (siehe unten).
  *
  * Theming über [data-theme] auf <html>: weiss (Standard) | indigo | blatt |
- * papaya | pastell | kontrast (hell) und graphit | bernstein | aubergine |
+ * papaya | pastell | grau | kontrast (hell) und graphit | bernstein | aubergine |
  * koralle (dunkel). Dunkle Schemata setzen zusätzlich [data-dark] (für
  * dark-spezifische Regeln wie das Select-Chevron). Beides wird vor dem ersten
  * Paint per Inline-Script in index.html gesetzt (gespeicherte Wahl).
@@ -14,8 +14,9 @@
  * erreichen (WCAG 1.4.11) — vorher lagen sie bei 1,2–2,5:1. Die NEUTRALEN
  * Flächen (--tNeu/--tNeu2) blieben bewusst ungesättigt, sonst sähe die
  * neutrale Sektion z. B. bei Indigo aus wie die Petrol-Sektion.
- * "pastell" bewahrt die ursprünglichen, weichen Töne; "kontrast" ist die
- * Fassung für Barrierefreiheit. Geprüft mit `npm run contrast`.
+ * "pastell" bewahrt die ursprünglichen, weichen Töne; "grau" kommt ganz ohne
+ * Farbton aus (R = G = B in jedem Wert); "kontrast" ist die Fassung für
+ * Barrierefreiheit. Geprüft mit `npm run contrast`.
  *
  * Regel aus dem Handoff: Flächen/Farben referenzieren AUSSCHLIESSLICH Tokens.
  * --tAcc ist die Akzent-Tonfläche (Wochen-Pfeile, "Aktuelle Woche"-Chip,
@@ -98,10 +99,27 @@
   --r-sheet: 18px;
   --r-pill: 999px;
 
+  /*
+   * Grundton alles Abdunkelnden (Schatten und die Schleier hinter Sheets,
+   * Dialogen und Schubladen) — als RGB-Tripel, weil jede Stelle ihre eigene
+   * Deckkraft braucht: rgba(var(--shade), 0.3).
+   *
+   * Ein warmes Schwarz, kein reines: es passt zu den Papiertönen der Paletten.
+   * Genau deshalb muss „Grau" es überschreiben — dort wäre es ein Farbstich.
+   */
+  --shade: 30, 25, 15;
+
+  /*
+   * Das Logo ist eine Bilddatei und folgt den Tokens nicht — in „Grau" bliebe
+   * es sonst der einzige Farbfleck. Deshalb hier ein Filter statt einer
+   * zweiten Logodatei: der Ton bleibt eine Sache der Palette.
+   */
+  --logo-filter: none;
+
   /* Schatten */
-  --sh-col: 0 0 60px rgba(30, 25, 15, 0.18);
-  --sh-overlay: 0 24px 48px rgba(30, 25, 15, 0.25);
-  --sh-btn: 0 1px 3px rgba(30, 25, 15, 0.12);
+  --sh-col: 0 0 60px rgba(var(--shade), 0.18);
+  --sh-overlay: 0 24px 48px rgba(var(--shade), 0.25);
+  --sh-btn: 0 1px 3px rgba(var(--shade), 0.12);
 }
 
 :root[data-theme='indigo'] {
@@ -283,6 +301,85 @@
   --knob: #ffffff;
   --hov: rgba(241, 240, 235, 0.6);
   --focus: rgba(124, 95, 35, 0.35);
+}
+
+:root[data-theme='grau'] {
+  /*
+   * ---- Grau (hell) --------------------------------------------------------
+   * Ohne jeden Farbton: JEDER Wert hier ist ein echtes Grau (R = G = B).
+   * Damit fällt die Unterscheidung der vier Programm-Sektionen allein auf die
+   * Helligkeit — die Tonflächen sind deshalb in klaren Stufen gesetzt
+   * (neutral → Petrol → Gold → Wein wird Schritt für Schritt dunkler) und die
+   * Trennlinien werden in derselben Reihenfolge kräftiger. Ohne diese zweite
+   * Staffelung sähen benachbarte Sektionen fast gleich aus.
+   *
+   * Die dunkelste Tonfläche ist nicht frei gewählt: Schwarz erreicht 7:1 (AAA)
+   * nur auf Flächen mit Luminanz ≥ 0,30 — das entspricht etwa #a3a3a3. Bis
+   * dorthin ist die Wein-Fläche ausgereizt, tiefer geht die Staffelung nicht,
+   * ohne die Lesbarkeit aufzugeben. Geprüft mit `npm run contrast -- grau`.
+   *
+   * Auch Schatten und Abdunkelung sind hier neutral (--shade): die übrigen
+   * Paletten nutzen ein warmes Schwarz, das im Grau als Farbstich auffiele.
+   */
+  --shade: 0, 0, 0;
+  --logo-filter: grayscale(1);
+
+  --desk: #d5d5d5;
+  --bg: #fbfbfb;
+  --bgT: rgba(251, 251, 251, 0.96);
+  --card: #ffffff;
+
+  /* Tonflächen: gleichmäßige Helligkeitsstufen, das einzige Unterscheidungs-
+     merkmal der Sektionen. */
+  --tNeu: #ececec;
+  --tNeu2: #dedede;
+  --tPet: #cdcdcd;
+  --tGld: #bcbcbc;
+  --tWein: #ababab;
+  --tAcc: #d4d4d4;
+
+  --ink: #101010;
+  --mut: #565656;
+  --mut2: #5b5b5b;
+
+  --acc: #3f3f3f;
+  --accD: #2b2b2b;
+  --onAcc: #ffffff;
+
+  /* Sektionslabels: dunkler, je dunkler ihre Fläche — sonst bliebe der
+     Abstand zum Untergrund nicht gleich. */
+  --pet: #4e4e4e;
+  --gld: #444444;
+  --wein: #3a3a3a;
+
+  --line: #dcdcdc;
+  --line2: #e2e2e2;
+  --bord: #8a8a8a;
+  --bord2: #8a8a8a;
+  --bord3: #808080;
+  --bord4: #757575;
+  --dash: #858585;
+  --weinB: #7a7a7a;
+
+  /* Zweite Staffelung: dieselbe Reihenfolge wie die Tonflächen. */
+  --lineNeu: rgba(0, 0, 0, 0.22);
+  --linePet: rgba(0, 0, 0, 0.26);
+  --lineGld: rgba(0, 0, 0, 0.3);
+  --lineWein: rgba(0, 0, 0, 0.34);
+
+  --knob: #ffffff;
+  --hov: rgba(0, 0, 0, 0.05);
+  --focus: rgba(0, 0, 0, 0.55);
+
+  /*
+   * Auslastungs-Quadrate: hier zwangsläufig grau statt grün/rot/violett. Die
+   * Helligkeit trägt die Bedeutung — je dunkler, desto belegter: frei hell,
+   * Hilfsdienst mittel, Aufgabe dunkel. Alle drei erreichen 3:1 gegen die
+   * Karte, sonst verschwänden die hellen im Weiß.
+   */
+  --load-free: #949494;
+  --load-helper: #5e5e5e;
+  --load-task: #2b2b2b;
 }
 
 :root[data-theme='kontrast'] {

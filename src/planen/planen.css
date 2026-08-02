@@ -594,7 +594,7 @@
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(30, 25, 15, 0.32);
+  background: rgba(var(--shade), 0.32);
   z-index: 34;
 }
 
@@ -612,7 +612,7 @@
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  box-shadow: 0 -12px 48px rgba(30, 25, 15, 0.3);
+  box-shadow: 0 -12px 48px rgba(var(--shade), 0.3);
   z-index: 35;
   padding: 18px 20px;
   max-height: 74vh;
@@ -791,7 +791,7 @@
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  background: var(--load-free); /* none/frei = grün */
+  background: var(--load-free); /* none/frei */
 }
 
 .cand-load-cell:nth-child(3) {
@@ -799,15 +799,15 @@
   outline-offset: 1px;
 }
 
-/* Aufgabe = rötlich (wichtiger für die Auslastung), Hilfsdienst = violett.
-   Drei weit auseinanderliegende, helle Farbtöne (grün/rot/violett), damit die
-   winzigen Quadrate klar unterscheidbar bleiben. */
+/* Drei weit auseinanderliegende Töne (grün/rot/violett), damit die winzigen
+   Quadrate klar unterscheidbar bleiben — welche genau, entscheidet die Palette:
+   „Grau" hat keine Farbtöne und staffelt sie stattdessen nach Helligkeit. */
 .cand-load-cell[data-load='task'] {
-  background: var(--load-task); /* Aufgabe = rot */
+  background: var(--load-task); /* Aufgabe */
 }
 
 .cand-load-cell[data-load='helper'] {
-  background: var(--load-helper); /* Hilfsdienst = violett */
+  background: var(--load-helper); /* Hilfsdienst */
 }
 
 .cand-load-cell[data-load='void'] {
