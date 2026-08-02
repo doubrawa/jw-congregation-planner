@@ -147,6 +147,13 @@ export function ProfilScreen() {
         <button type="button" className="prof-logout" onClick={() => performLogout(dispatch)}>
           {t.abmelden}
         </button>
+        {/*
+          Stand der App. Bewusst unübersetzt und unauffällig: er richtet sich
+          nicht an alle Nutzer, sondern beantwortet die eine Frage, die sich
+          aus der Ferne sonst nicht klären lässt — läuft auf diesem Gerät
+          wirklich die neueste Fassung?
+        */}
+        <p className="prof-build">{__BUILD_ID__}</p>
       </div>
     </section>
   )

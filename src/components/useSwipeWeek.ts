@@ -122,11 +122,19 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
      * Bildschirmbreite versetzt — und beide legen dieselbe Strecke zurück.
      */
     const slide = (richtung: -1 | 1, ab: number, blaettern: () => void) => {
-      const weg = window.innerWidth
       laeuft = true
 
       // Standbild dort einfrieren, wo der Finger losgelassen hat.
       const r = el.getBoundingClientRect()
+      /*
+       * Versetzt wird um die Breite des BILDSCHIRMS, nicht des Fensters. Die
+       * App-Spalte ist auf 430 px (mobil) bzw. 660 px begrenzt und sitzt
+       * mittig. Auf allem, was breiter ist — großes Handy, Querformat, Tablet,
+       * Browser-Tab — klaffte sonst genau die Differenz zwischen alter und
+       * neuer Woche, und die alte flöge weit über den Rand hinaus.
+       * Rückfall auf die Fensterbreite nur, wenn keine Breite messbar ist.
+       */
+      const weg = r.width || window.innerWidth
       buehne = document.createElement('div')
       buehne.dataset.weekGhost = '' // Standbild — nur Optik, kein Inhalt der App
       buehne.setAttribute('aria-hidden', 'true')

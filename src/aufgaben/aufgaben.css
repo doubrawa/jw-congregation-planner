@@ -227,6 +227,17 @@
   padding: 6px 0;
 }
 
+/* Stand der App (Zeit · Git-Kurzkennung) — beantwortet aus der Ferne, welche
+   Fassung auf einem Gerät wirklich läuft. Bewusst zurückhaltend. */
+.prof-build {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: calc(10px * var(--fs));
+  color: var(--mut);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
 /* iOS: statt Schalter der Installations-Hinweis (Push erst als App). */
 .prof-push-ios {
   align-items: flex-start;
