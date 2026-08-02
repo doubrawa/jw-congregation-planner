@@ -1,0 +1,40 @@
+# Supabase-CLI-Projektdatei.
+#
+# Zweck hier ist NICHT der lokale Entwicklungsstapel (der wird nicht benutzt),
+# sondern zweierlei:
+#
+#  1. Sie markiert dieses Verzeichnis als Projektwurzel. Ohne sie legt die CLI,
+#     wenn ein Befehl versehentlich aus `supabase/` heraus statt aus der
+#     Repo-Wurzel läuft, wortlos ein verschachteltes `supabase/supabase/` an und
+#     findet dann keine einzige Funktion mehr.
+#
+#  2. Sie hält die JWT-Prüfung je Funktion fest (siehe unten). Bisher hing die
+#     nur am Flag `--no-verify-jwt` beim Deploy — wer das einmal vergisst,
+#     verstellt die Sicherheitsgrenze einer Funktion, ohne es zu merken.
+#
+# Alles Übrige (api, db, auth …) bleibt bei den Standardwerten der CLI.
+project_id = "jw-congregation-planner"
+
+# --- Edge Functions -----------------------------------------------------------
+# verify_jwt = true  → die Plattform verlangt ein gültiges Nutzer-Login, bevor
+#                      die Funktion überhaupt startet.
+# verify_jwt = false → die Funktion ist offen erreichbar und MUSS sich selbst
+#                      schützen. Nur dort, wo genau das der Fall ist.
+
+# Wird aus der App mit dem Login des Planers aufgerufen.
+[functions.import-week]
+verify_jwt = true
+
+# Prüft zusätzlich selbst über /auth/v1/user, wer da ruft.
+[functions.send-invite]
+verify_jwt = true
+
+# Ebenso — die Berechtigung hängt an der aufrufenden Person.
+[functions.substitute]
+verify_jwt = true
+
+# Ruft der Cron-Job auf, der kein Nutzer-Login hat. Die Funktion schützt sich
+# stattdessen selbst mit dem CRON_SECRET im Authorization-Header; ohne das
+# Geheimnis antwortet sie 401. Deshalb hier - und nur hier - false.
+[functions.send-reminders]
+verify_jwt = false
