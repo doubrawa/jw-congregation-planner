@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} asignaciones en 5 semanas",
   "aufgabeIn4": "1 asignación en 5 semanas",
   "reinigungsgruppe": "Grupo de limpieza",
-  "toastWillkommen": "¡Bienvenido, Simon!",
+  "toastWillkommen": "¡Bienvenido, {name}!",
   "toastZugeteilt": "Asignado · notificación enviada",
   "toastEntfernt": "Asignación eliminada",
   "toastKeineOffen": "No hay asignaciones abiertas en esta vista",

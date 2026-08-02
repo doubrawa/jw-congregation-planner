@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "5週間で {n} 件の割り当て",
   "aufgabeIn4": "5週間で1件の割り当て",
   "reinigungsgruppe": "清掃グループ",
-  "toastWillkommen": "ようこそ、Simon さん！",
+  "toastWillkommen": "ようこそ、{name} さん！",
   "toastZugeteilt": "割り当て済み · 通知を送信",
   "toastEntfernt": "割り当てを削除",
   "toastKeineOffen": "このビューに未割り当てはありません",

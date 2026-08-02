@@ -144,7 +144,7 @@ export default {
   "aufgabenIn4": "{n} وظیفه در ۴ هفته",
   "aufgabeIn4": "۱ وظیفه در ۴ هفته",
   "reinigungsgruppe": "گروه نظافت",
-  "toastWillkommen": "خوش آمدید، سیمون!",
+  "toastWillkommen": "خوش آمدید، {name}!",
   "toastZugeteilt": "تعیین شد · اعلان ارسال شد",
   "toastEntfernt": "وظیفه حذف شد",
   "toastKeineOffen": "در این نما وظیفهٔ بازی نیست",

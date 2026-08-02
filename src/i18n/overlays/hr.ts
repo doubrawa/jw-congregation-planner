@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "Zadataka za 5 tjedna: {n}",
   "aufgabeIn4": "1 zadatak za 5 tjedna",
   "reinigungsgruppe": "Grupa za čišćenje",
-  "toastWillkommen": "Dobro došao, Simon!",
+  "toastWillkommen": "Dobro došao, {name}!",
   "toastZugeteilt": "Dodijeljeno · obavijest poslana",
   "toastEntfernt": "Dodjela uklonjena",
   "toastKeineOffen": "Nema slobodnih dodjela u ovom prikazu",

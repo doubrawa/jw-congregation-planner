@@ -125,13 +125,24 @@ export interface AppState {
   langSheetFor: 'cong' | 'alt' // Auswahl-Ziel: Versammlungssprache | weitere Programmsprache
   langSearch: string
   toast: Toast | null
+  /**
+   * Es wurde sich gerade angemeldet und die Begrüßung steht noch aus.
+   *
+   * Der Name steht beim Anmelden noch nicht fest — er kommt erst mit den
+   * Personendaten. Deshalb wird hier nur vorgemerkt und erst begrüßt, wenn
+   * feststeht, wen man vor sich hat (siehe AppShell).
+   */
+  welcomePending: boolean
 }
 
 export type LacDir = -1 | 1
 export type ReminderKey = 'first' | 'last'
 
 export type AppAction =
-  | { type: 'login' }
+  // `welcome`: nur beim tatsächlichen Anmelden. Eine wiederhergestellte
+  // Sitzung beim App-Start meldet ebenfalls „login", soll aber nicht begrüßen.
+  | { type: 'login'; welcome?: boolean }
+  | { type: 'welcomeShown' }
   | { type: 'logout' }
   | { type: 'navigate'; screen: Screen }
   | { type: 'prevWeek' }

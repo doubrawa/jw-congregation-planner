@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} nhiệm vụ trong 5 tuần",
   "aufgabeIn4": "1 nhiệm vụ trong 5 tuần",
   "reinigungsgruppe": "Nhóm dọn dẹp",
-  "toastWillkommen": "Chào mừng, Simon!",
+  "toastWillkommen": "Chào mừng, {name}!",
   "toastZugeteilt": "Đã phân công · đã gửi thông báo",
   "toastEntfernt": "Đã xóa phân công",
   "toastKeineOffen": "Không có nhiệm vụ trống trong chế độ xem này",

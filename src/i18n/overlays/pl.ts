@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} zadań w 5 tygodnie",
   "aufgabeIn4": "1 zadanie w 5 tygodnie",
   "reinigungsgruppe": "Grupa sprzątająca",
-  "toastWillkommen": "Witaj, Simon!",
+  "toastWillkommen": "Witaj, {name}!",
   "toastZugeteilt": "Przydzielono · wysłano powiadomienie",
   "toastEntfernt": "Usunięto przydział",
   "toastKeineOffen": "Brak wolnych przydziałów w tym widoku",

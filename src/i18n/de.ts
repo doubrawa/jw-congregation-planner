@@ -146,7 +146,7 @@ export const DE = {
     aufgabenIn4: '{n} Aufgaben in 5 Wochen', aufgabeIn4: '1 Aufgabe in 5 Wochen',
     loadFrei: 'frei', loadAufgabe: 'Aufgabe', loadHilfsdienst: 'Hilfsdienst',
     reinigungsgruppe: 'Reinigungsgruppe',
-    toastWillkommen: 'Willkommen, Simon!', toastZugeteilt: 'Zugeteilt · Mitteilung gesendet',
+    toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · Mitteilung gesendet',
     toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Zuteilungen in dieser Ansicht',
     toastKeinePassende: 'Keine passende Person für die offenen Slots frei',
     toastAutoN: '{n} Zuteilungen automatisch vergeben', toastGeleertN: '{n} Zuteilungen geleert',

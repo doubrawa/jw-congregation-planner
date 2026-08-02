@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "Migawo {n} katika wiki 5",
   "aufgabeIn4": "Mgawo 1 katika wiki 5",
   "reinigungsgruppe": "Kikundi cha usafi",
-  "toastWillkommen": "Karibu, Simon!",
+  "toastWillkommen": "Karibu, {name}!",
   "toastZugeteilt": "Umegawiwa · arifa imetumwa",
   "toastEntfernt": "Mgawo umeondolewa",
   "toastKeineOffen": "Hakuna migawo wazi katika mwonekano huu",

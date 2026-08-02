@@ -161,5 +161,6 @@ export function initialState(): AppState {
     progLangs: [],
     langSearch: '',
     toast: null,
+    welcomePending: false,
   }
 }

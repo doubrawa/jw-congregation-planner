@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "5주간 임명 {n}건",
   "aufgabeIn4": "5주간 임명 1건",
   "reinigungsgruppe": "청소 그룹",
-  "toastWillkommen": "환영합니다, Simon 님!",
+  "toastWillkommen": "환영합니다, {name} 님!",
   "toastZugeteilt": "배정됨 · 알림 전송",
   "toastEntfernt": "임명 제거됨",
   "toastKeineOffen": "이 보기에 미배정 임명이 없습니다",

@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "Завдань за 5 тижні: {n}",
   "aufgabeIn4": "1 завдання за 5 тижні",
   "reinigungsgruppe": "Група прибирання",
-  "toastWillkommen": "Ласкаво просимо, Simon!",
+  "toastWillkommen": "Ласкаво просимо, {name}!",
   "toastZugeteilt": "Призначено · сповіщення надіслано",
   "toastEntfernt": "Призначення видалено",
   "toastKeineOffen": "Немає вільних призначень у цьому вигляді",

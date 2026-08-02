@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} opgaver på 5 uger",
   "aufgabeIn4": "1 opgave på 5 uger",
   "reinigungsgruppe": "Rengøringsgruppe",
-  "toastWillkommen": "Velkommen, Simon!",
+  "toastWillkommen": "Velkommen, {name}!",
   "toastZugeteilt": "Tildelt · notifikation sendt",
   "toastEntfernt": "Tildeling fjernet",
   "toastKeineOffen": "Ingen ledige tildelinger i denne visning",

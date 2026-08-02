@@ -184,7 +184,7 @@ export default {
   "loadAufgabe": "Assignment",
   "loadHilfsdienst": "Support duty",
   "reinigungsgruppe": "Cleaning group",
-  "toastWillkommen": "Welcome, Simon!",
+  "toastWillkommen": "Welcome, {name}!",
   "toastZugeteilt": "Assigned · notification sent",
   "toastEntfernt": "Assignment removed",
   "toastKeineOffen": "No open assignments in this view",

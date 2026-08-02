@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} αναθέσεις σε 5 εβδομάδες",
   "aufgabeIn4": "1 ανάθεση σε 5 εβδομάδες",
   "reinigungsgruppe": "Ομάδα καθαρισμού",
-  "toastWillkommen": "Καλώς ήρθες, Simon!",
+  "toastWillkommen": "Καλώς ήρθες, {name}!",
   "toastZugeteilt": "Ανατέθηκε · ειδοποίηση στάλθηκε",
   "toastEntfernt": "Η ανάθεση αφαιρέθηκε",
   "toastKeineOffen": "Δεν υπάρχουν ελεύθερες αναθέσεις σε αυτήν την προβολή",

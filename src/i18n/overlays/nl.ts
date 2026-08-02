@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} toewijzingen in 5 weken",
   "aufgabeIn4": "1 toewijzing in 5 weken",
   "reinigungsgruppe": "Schoonmaakgroep",
-  "toastWillkommen": "Welkom, Simon!",
+  "toastWillkommen": "Welkom, {name}!",
   "toastZugeteilt": "Toegewezen · melding verzonden",
   "toastEntfernt": "Toewijzing verwijderd",
   "toastKeineOffen": "Geen openstaande toewijzingen in deze weergave",

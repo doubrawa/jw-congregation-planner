@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} atas sa 5 na linggo",
   "aufgabeIn4": "1 atas sa 5 na linggo",
   "reinigungsgruppe": "Grupo sa paglilinis",
-  "toastWillkommen": "Maligayang pagdating, Simon!",
+  "toastWillkommen": "Maligayang pagdating, {name}!",
   "toastZugeteilt": "Naitalaga · naipadala ang abiso",
   "toastEntfernt": "Inalis ang atas",
   "toastKeineOffen": "Walang bakanteng atas sa view na ito",

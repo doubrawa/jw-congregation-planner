@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} însărcinări în 5 săptămâni",
   "aufgabeIn4": "1 însărcinare în 5 săptămâni",
   "reinigungsgruppe": "Grupa de curățenie",
-  "toastWillkommen": "Bun venit, Simon!",
+  "toastWillkommen": "Bun venit, {name}!",
   "toastZugeteilt": "Atribuit · notificare trimisă",
   "toastEntfernt": "Însărcinare eliminată",
   "toastKeineOffen": "Nicio însărcinare liberă în această vizualizare",
