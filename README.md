@@ -1,4 +1,4 @@
-# JW Congregation Planner
+# Congregation Planner
 
 Web-App (Deutsch, Mobile-first + Desktop) zur Organisation der Zusammenkünfte
 einer Versammlung: Wochenprogramme anzeigen, Aufgaben/Rollen zuteilen (mit

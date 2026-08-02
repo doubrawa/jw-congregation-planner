@@ -102,9 +102,6 @@ export function asFontScale(value: unknown): FontScale | null {
   return FONT_SCALES.find((s) => s === n) ?? null
 }
 
-/** Desktop-Breakpoint aus dem Handoff. */
-export const DESKTOP_BREAKPOINT = 920
-
 /**
  * Kanonische Sektions-Labels — Logik-Keys der Planungs-/Zuteilungslogik.
  * Bleiben in den Wochendaten immer deutsch; übersetzt wird nur die Anzeige.

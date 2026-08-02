@@ -16,9 +16,10 @@ die App auf deinem Gerät einrichtest.
 3. [Das Programm ansehen](#3-das-programm-ansehen)
 4. [Meine Aufgaben](#4-meine-aufgaben)
 5. [Abwesenheiten eintragen](#5-abwesenheiten-eintragen)
-6. [Profil: Darstellung, Schriftgröße & Sprache](#6-profil-darstellung-schriftgröße--sprache)
-7. [App installieren & Erinnerungen](#7-app-installieren--erinnerungen)
-8. [Ohne Internet (offline)](#8-ohne-internet-offline)
+6. [Bedienung auf Handy und Tablet](#6-bedienung-auf-handy-und-tablet)
+7. [Profil: Darstellung, Schriftgröße & Sprache](#7-profil-darstellung-schriftgröße--sprache)
+8. [App installieren & Erinnerungen](#8-app-installieren--erinnerungen)
+9. [Ohne Internet (offline)](#9-ohne-internet-offline)
 
 ---
 
@@ -61,7 +62,9 @@ Wichtigste zusammen.
 
 Unter **Programm** siehst du das vollständige Zusammenkunfts‑Programm der Woche.
 Mit den Pfeilen ‹ › blätterst du zwischen den Wochen; die aktuelle Woche ist mit
-einem Chip markiert.
+einem Chip markiert. Auf dem Handy oder Tablet kannst du stattdessen auch
+**seitwärts wischen** – nach links zur nächsten, nach rechts zur vorigen Woche.
+Federt die Ansicht zurück, gibt es in der Richtung keine Woche mehr.
 
 Oben wählst du zwischen drei Ansichten:
 
@@ -116,7 +119,23 @@ lassen sich mit dem ✕ wieder entfernen.
 
 ---
 
-## 6. Profil: Darstellung, Schriftgröße & Sprache
+## 6. Bedienung auf Handy und Tablet
+
+Neben dem Antippen gibt es ein paar Gesten. Sie sind immer nur eine Abkürzung –
+alles geht auch weiterhin über Knöpfe und Pfeile.
+
+- **Seitwärts wischen** – blättert im **Programm** und beim **Planen** eine
+  Woche vor oder zurück.
+- **Zurück** (Zurück‑Taste oder Zurück‑Geste) – schließt ein geöffnetes Fenster,
+  das Menü oder die Mitteilungen, statt die App zu verlassen. Ist nichts
+  geöffnet, verlässt Zurück die App wie gewohnt.
+- **Nach unten wischen** – schließt ein von unten eingeblendetes Fenster. Der
+  kurze Strich am oberen Rand zeigt, dass es sich ziehen lässt.
+
+Auf einem Tablet im Querformat – und auf allen Bildschirmen ab etwa Tablet‑Breite –
+steht das Menü dauerhaft links, statt sich hinter dem Menüknopf zu verbergen.
+
+## 7. Profil: Darstellung, Schriftgröße & Sprache
 
 Unter **Profil** stellst du persönliche Vorlieben ein.
 
@@ -142,7 +161,7 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
 
 ---
 
-## 7. App installieren & Erinnerungen
+## 8. App installieren & Erinnerungen
 
 Der Congregation Planner ist eine **Web‑App (PWA)** – du brauchst nichts aus einem
 Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
@@ -195,7 +214,7 @@ nie per E‑Mail.**
 
 ---
 
-## 8. Ohne Internet (offline)
+## 9. Ohne Internet (offline)
 
 Im Saal ist der Empfang manchmal schlecht. Die App startet deshalb auch ohne
 Internet und zeigt dir den **letzten Stand**, den sie beim letzten Mal geladen

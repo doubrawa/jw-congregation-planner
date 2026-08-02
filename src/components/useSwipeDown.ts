@@ -21,6 +21,9 @@ import { bindTouch } from './bindTouch'
  * nichts nach oben zu scrollen ist (scrollTop === 0) — sonst gehört die
  * Bewegung der Liste.
  */
+// Muss zum Umbruch in planen.css passen, ab dem das Sheet ein mittiges
+// Fenster ist. Die Zahl steht bewusst hier statt in einer Konstante: CSS kann
+// sie ohnehin nicht lesen, eine geteilte Konstante taeuschte nur Kopplung vor.
 const DESKTOP = '(min-width: 920px)'
 const START_PX = 8 // ab hier gilt es als Ziehen (darunter: Wackeln)
 const CLOSE_PX = 90 // so weit gezogen: schließen
