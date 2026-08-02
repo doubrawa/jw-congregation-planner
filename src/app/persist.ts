@@ -316,6 +316,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'changeReminder':
     case 'toggleReminderRepeat':
+    case 'setAuxClass':
     case 'setCongLang':
     case 'addProgLang':
     case 'removeProgLang':
@@ -323,6 +324,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         reminders: next.reminders,
         congLang: next.congLang,
         progLangs: next.progLangs,
+        auxClass: next.auxClass,
       })
       break
     case 'updateCongregation':

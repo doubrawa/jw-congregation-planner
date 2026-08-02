@@ -38,6 +38,7 @@ const payload: HydratePayload = {
   progLangs: [],
   members: [],
   invites: [],
+  auxClass: false,
 }
 
 function setup() {

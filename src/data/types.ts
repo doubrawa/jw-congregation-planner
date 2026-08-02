@@ -118,6 +118,7 @@ export interface Qualifications {
   schulungPartner: boolean // nur als Gesprächspartner im Schülerteil (nicht Führer)
   studium: boolean // Studium leiten
   treffpunkt: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
+  ratgeber?: boolean // Ratgeber der Zusätzlichen Klasse (nur Brüder)
   wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
   wtVertreter?: boolean // Vertreter, wenn der Leiter abwesend ist
   [serviceKey: string]: boolean | undefined // `svc:<dienstKey>` je Hilfsdienst
@@ -138,6 +139,7 @@ export type QualificationKey =
   | 'schulungPartner'
   | 'studium'
   | 'treffpunkt'
+  | 'ratgeber' // Ratgeber der Zusätzlichen Klasse (Anweisungen S-38, Absatz 26)
   | 'wtLeiter'
   | 'wtVertreter'
 
@@ -210,7 +212,18 @@ export interface PartItem {
   num?: number // laufende Nummer (kursiv, Bereichsfarbe)
   title: string
   meta?: string // Dauer / Quelle / Rahmen, z. B. "Von Haus zu Haus · 3 Min."
-  names: SlotAssignment[]
+  names: SlotAssignment[] // Zuteilungen im Hauptsaal
+  /**
+   * Dieselben Plätze noch einmal für die Zusätzliche Klasse — nur bei
+   * Schülerteilen und nur, wenn die Versammlung eine eingerichtet hat
+   * (`state.auxClass`). Struktur identisch zu `names`.
+   *
+   * Bewusst ein zweites Feld statt weiterer Einträge in `names`: die
+   * Bestätigungs-Schlüssel, das S-89-Formular und die Partner-Regeln greifen
+   * über den Index in `names` zu. Angehängte Plätze würden all das verschieben.
+   * Fehlt das Feld, gab es nie eine Zusätzliche Klasse — Altdaten bleiben gültig.
+   */
+  aux?: SlotAssignment[]
 }
 
 export type ProgramItem = SongItem | PartItem
@@ -236,6 +249,12 @@ export interface Meeting {
   end: string // "Ende ca. 20:45"
   sections: Section[]
   helpers: Record<string, HelperSlot[]> // dienstKey -> Plätze ({ name: '' } = offen)
+  /**
+   * Ratgeber der Zusätzlichen Klasse (nur Zusammenkunft unter der Woche).
+   * Einer je Zusammenkunft, nicht je Programmpunkt: er begleitet die ganze
+   * Klasse. Fehlt, solange keine Zusätzliche Klasse eingerichtet ist.
+   */
+  auxRatgeber?: SlotAssignment
 }
 
 export interface Week {
@@ -374,6 +393,13 @@ export interface PartSlotSelection extends SlotSelectionBase {
   ii: number
   ni: number
   guest?: boolean // externer Redner (Gastredner/Kreisaufseher): Freitext statt Personenliste
+  /**
+   * Platz in der Zusätzlichen Klasse statt im Hauptsaal (PartItem.aux).
+   * Bewusst ein Zusatz zur bestehenden Auswahl statt einer eigenen Art: das
+   * Zuteilungs-Sheet, die Konfliktprüfung und das S-89-Formular arbeiten
+   * dadurch unverändert weiter.
+   */
+  aux?: boolean
 }
 
 /** Slot eines Hilfsdienstes (Dienst-Key + Position). */

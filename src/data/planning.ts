@@ -9,6 +9,7 @@
  * den Reducer und später direkt testbar.
  */
 
+import { RATGEBER_ROLLE, slotsOf } from './aux-class'
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
@@ -62,7 +63,7 @@ export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
   const meeting = weeks[sel.wi][sel.tab]
   if (sel.kind === 'part') {
     const item = meeting.sections[sel.si].items[sel.ii]
-    return isSong(item) ? '' : (item.names[sel.ni]?.name ?? '')
+    return isSong(item) ? '' : (slotsOf(item, sel.aux === true)[sel.ni]?.name ?? '')
   }
   return meeting.helpers[sel.svc]?.[sel.pos]?.name ?? ''
 }
@@ -129,7 +130,7 @@ export function assignSlot(
   if (sel.kind === 'part') {
     const item = meeting.sections[sel.si].items[sel.ii]
     if (!isSong(item)) {
-      const slot = item.names[sel.ni]
+      const slot = slotsOf(item, sel.aux === true)[sel.ni]
       slot.name = name
       // Person-Id als stabile Identität mitführen; beim Entfernen bzw. bei
       // externen Rednern (kein pid) das Feld sauber löschen.
@@ -148,15 +149,22 @@ export function assignSlot(
   return next
 }
 
-/** Offene Zuteilungen in einer Ansicht (Programmpunkte + Hilfsdienst-Plätze). */
+/**
+ * Offene Zuteilungen in einer Ansicht (Programmpunkte + Hilfsdienst-Plätze).
+ * Die Plätze der Zusätzlichen Klasse zählen mit — sie sind ebenso zu besetzen;
+ * ohne sie meldete der Planen-Kopf „alles zugeteilt", während die halbe Klasse
+ * noch offen wäre. Ist keine eingerichtet, gibt es sie schlicht nicht.
+ */
 export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   let count = 0
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
       for (const slot of item.names) if (!slot.name) count++
+      for (const slot of item.aux ?? []) if (!slot.name) count++
     }
   }
+  if (meeting.auxRatgeber && !meeting.auxRatgeber.name) count++
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]?.name) count++
@@ -182,10 +190,12 @@ export function changedSlotKeys(
     section.items.forEach((item, ii) => {
       if (isSong(item)) return
       const prevItem = prev.sections[si]?.items[ii]
-      const prevNames = prevItem && !isSong(prevItem) ? prevItem.names : []
-      item.names.forEach((slot, ni) => {
-        if ((prevNames[ni]?.name ?? '') !== slot.name) keys.push(partTaskKey(wi, tab, si, ii, ni))
-      })
+      for (const aux of [false, true]) {
+        const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
+        slotsOf(item, aux).forEach((slot, ni) => {
+          if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(partTaskKey(wi, tab, si, ii, ni, aux))
+        })
+      }
     })
   })
   for (const svc of services) {
@@ -195,6 +205,9 @@ export function changedSlotKeys(
       if ((prevArr[pos]?.name ?? '') !== (nextArr[pos]?.name ?? ''))
         keys.push(helperTaskKey(wi, tab, svc.key, pos))
     }
+  }
+  if ((prev.auxRatgeber?.name ?? '') !== (next.auxRatgeber?.name ?? '')) {
+    keys.push(ratgeberTaskKey(wi, tab))
   }
   return keys
 }
@@ -581,9 +594,28 @@ export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Pa
 
 const TABS: MeetingKey[] = ['mid', 'we']
 
-/** Stabiler Schlüssel eines Programmpunkt-Slots (auch confirmations.task_key). */
-export function partTaskKey(wi: number, tab: MeetingKey, si: number, ii: number, ni: number): string {
-  return `${wi}|${tab}|part|${si}|${ii}|${ni}`
+/**
+ * Stabiler Schlüssel eines Programmpunkt-Slots (auch confirmations.task_key).
+ *
+ * Der Abschnitt „part" wird für die Zusätzliche Klasse zu „aux" — bewusst an
+ * derselben Stelle statt als Anhang: der Schlüssel eines Hauptsaal-Platzes
+ * bleibt dadurch Zeichen für Zeichen derselbe wie bisher, alle bestehenden
+ * Bestätigungen behalten ihre Gültigkeit.
+ */
+export function partTaskKey(
+  wi: number,
+  tab: MeetingKey,
+  si: number,
+  ii: number,
+  ni: number,
+  aux = false,
+): string {
+  return `${wi}|${tab}|${aux ? 'aux' : 'part'}|${si}|${ii}|${ni}`
+}
+
+/** Stabiler Schlüssel des Ratgebers einer Zusammenkunft. */
+export function ratgeberTaskKey(wi: number, tab: MeetingKey): string {
+  return `${wi}|${tab}|ratgeber`
 }
 
 /** Stabiler Schlüssel eines Hilfsdienst-Slots. */
@@ -705,29 +737,48 @@ function eachAssignedSlot(
       meeting.sections.forEach((section, si) => {
         section.items.forEach((item, ii) => {
           if (isSong(item)) return
-          item.names.forEach((slot, ni) => {
-            // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
-            if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) return
-            const key = partTaskKey(wi, tab, si, ii, ni)
-            visit(slot.name, key, () => {
-              const rolle = slot.rolle ?? ''
-              const sel: SlotSelection = {
-                kind: 'part', wi, tab, si, ii, ni,
-                label: '', priv: slot.bereichsKey ?? null, groups: false,
-              }
-              return {
-                id: key,
-                title: rolle && !rolle.startsWith('mit ') ? `${item.title} · ${rolle}` : item.title,
-                date: taskDate(meeting),
-                chip: '',
-                at,
-                status: 'offen',
-                s89: buildS89ForSlot(weeks, sel),
-              }
-            }, slot.pid)
-          })
+          // Hauptsaal und Zusätzliche Klasse laufen durch dieselbe Schleife —
+          // die Plätze der Klasse sind gleichwertige Aufgaben (bestätigen,
+          // erinnern, S-89), nur mit eigenem Schlüssel und eigenem Ort.
+          for (const aux of [false, true]) {
+            slotsOf(item, aux).forEach((slot, ni) => {
+              // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
+              if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) return
+              const key = partTaskKey(wi, tab, si, ii, ni, aux)
+              visit(slot.name, key, () => {
+                const rolle = slot.rolle ?? ''
+                const sel: SlotSelection = {
+                  kind: 'part', wi, tab, si, ii, ni, aux: aux || undefined,
+                  label: '', priv: slot.bereichsKey ?? null, groups: false,
+                }
+                return {
+                  id: key,
+                  title: rolle && !rolle.startsWith('mit ') ? `${item.title} · ${rolle}` : item.title,
+                  date: taskDate(meeting),
+                  chip: '',
+                  at,
+                  status: 'offen',
+                  s89: buildS89ForSlot(weeks, sel),
+                }
+              }, slot.pid)
+            })
+          }
         })
       })
+      // Ratgeber der Zusätzlichen Klasse: eine Aufgabe je Zusammenkunft.
+      const ratgeber = meeting.auxRatgeber
+      if (ratgeber?.name) {
+        const key = ratgeberTaskKey(wi, tab)
+        visit(ratgeber.name, key, () => ({
+          id: key,
+          title: RATGEBER_ROLLE,
+          date: taskDate(meeting),
+          chip: '',
+          at,
+          status: 'offen',
+          s89: null,
+        }), ratgeber.pid)
+      }
       for (const svc of services) {
         if (svc.groups) continue // Gruppen-Rotation hat keine persönliche Aufgabe
         const arr = meeting.helpers[svc.key] ?? []

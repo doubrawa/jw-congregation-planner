@@ -126,6 +126,7 @@ interface CongregationSettings {
   reminders?: Partial<Reminders>
   congLang?: string
   progLangs?: string[] // weitere Programmsprachen (deutsche Anzeigenamen)
+  auxClass?: boolean // Zusaetzliche Klasse eingerichtet (jw.org S-38, Absatz 26)
 }
 
 const ROLES: Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
@@ -517,6 +518,7 @@ export interface CongregationData {
   reminders: Reminders
   congLang: string
   progLangs: string[] // weitere Programmsprachen (deutsche Anzeigenamen)
+  auxClass: boolean // Zusaetzliche Klasse eingerichtet
   members: Member[]
   invites: Invite[]
 }
@@ -628,6 +630,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     notifications: (notifs.data ?? []).map((r) => notificationFromRow(r as NotificationRow)),
     confirmations,
     reminders,
+    auxClass: settings.auxClass ?? false,
     congLang: settings.congLang ?? 'Deutsch',
     progLangs: settings.progLangs ?? [],
     members: ((members.data ?? []) as MemberRow[]).map((r) => ({
@@ -910,7 +913,7 @@ export function saveCongregationInfo(
 /** Versammlungsweite Einstellungen (Erinnerungen, Versammlungssprache). */
 export function saveSettings(
   congregationId: string,
-  settings: { reminders: Reminders; congLang: string; progLangs: string[] },
+  settings: { reminders: Reminders; congLang: string; progLangs: string[]; auxClass: boolean },
 ): void {
   if (!supabase) return
   void run(supabase.from('congregations').update({ settings }).eq('id', congregationId))

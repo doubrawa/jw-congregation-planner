@@ -67,6 +67,7 @@ export interface HydratePayload {
   reminders: Reminders
   congLang: string
   progLangs: string[]
+  auxClass: boolean
   members: Member[]
   invites: Invite[]
 }
@@ -119,6 +120,12 @@ export interface AppState {
   reminders: Reminders
   // Mehrsprachigkeit
   lang: Lang // App-Sprache (UI)
+  /**
+   * Versammlung hat eine Zusätzliche Klasse eingerichtet (jw.org S-38,
+   * Absatz 26). Steuert die zweite Platzreihe der Schülerteile und den
+   * Ratgeber — versammlungsweit, deshalb in congregations.settings.
+   */
+  auxClass: boolean
   congLang: string // Versammlungssprache (deutscher Name, z. B. "Deutsch")
   progLangs: string[] // weitere Programmsprachen (deutsche Namen) — Import holt Varianten
   langSheetOpen: boolean // Sprach-Sheet offen
@@ -221,6 +228,7 @@ export type AppAction =
   | { type: 'openLangSheet'; mode?: 'cong' | 'alt' }
   | { type: 'closeLangSheet' }
   | { type: 'setLangSearch'; text: string }
+  | { type: 'setAuxClass'; on: boolean }
   | { type: 'setCongLang'; name: string }
   | { type: 'addProgLang'; name: string }
   | { type: 'removeProgLang'; name: string }

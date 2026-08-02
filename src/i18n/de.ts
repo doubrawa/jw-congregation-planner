@@ -162,12 +162,22 @@ export const DE = {
     toastGruppeNeu: 'Gruppe hinzugefügt', toastGruppeDel: 'Gruppe entfernt',
     toastProgLangAdd: 'Programmsprache hinzugefügt — gilt für neue Importe',
     toastProgLangDel: 'Programmsprache entfernt',
+    toastAuxAn: 'Zusätzliche Klasse eingerichtet', toastAuxAus: 'Zusätzliche Klasse aufgehoben',
     toastAlleWochen: 'Alle verfügbaren Wochen sind importiert', toastImportiert: 'Arbeitsheft-Woche importiert',
     importOhneDb: 'Import nicht möglich — keine Datenbank angebunden',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
     rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleVerkIn: 'Verkündigerin',
+    // Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Begriffe stammen aus
+    // dem Artikel „Anweisungen für die Leben-und-Dienst-Zusammenkunft" in der
+    // jeweiligen Sprache — auxKlassen ist dort die Abschnittsüberschrift.
+    auxKlassen: 'Zusätzliche Klassen',
+    auxKlasse: 'Zusätzliche Klasse',
+    auxHauptsaal: 'Hauptsaal',
+    auxRatgeber: 'Ratgeber',
+    auxDesc: 'Bei vielen Verkündigern können die Schulungsaufgaben parallel in einem zweiten Raum durchgeführt werden — so kommt jeder öfter dran. Betroffen sind die Bibellesung und „Uns im Dienst verbessern".',
+    privRatgeber: 'Ratgeber (Zusätzliche Klasse)',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete', privLesen: 'Bibellesung / Leser',
     privSchulung: 'Schulungsaufgaben', privSchulungPartner: 'Schulungsaufgaben Partner', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',
