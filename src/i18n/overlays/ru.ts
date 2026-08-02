@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "Заданий за 5 недели: {n}",
   "aufgabeIn4": "1 задание за 5 недели",
   "reinigungsgruppe": "Группа уборки",
-  "toastWillkommen": "Добро пожаловать, Simon!",
+  "toastWillkommen": "Добро пожаловать, {name}!",
   "toastZugeteilt": "Назначено · уведомление отправлено",
   "toastEntfernt": "Назначение удалено",
   "toastKeineOffen": "Нет свободных назначений в этом виде",

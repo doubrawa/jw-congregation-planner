@@ -25,8 +25,9 @@ export function LoginScreen() {
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (!isSupabaseConfigured) {
-      dispatch({ type: 'login' })
-      dispatch({ type: 'showToast', text: t.toastWillkommen })
+      // Begrüßt wird erst, wenn der Name feststeht (AppShell) — hier ist nur
+      // bekannt, DASS jemand sich angemeldet hat, nicht wer.
+      dispatch({ type: 'login', welcome: true })
       return
     }
     if (busy) return
@@ -51,8 +52,7 @@ export function LoginScreen() {
       dispatch({ type: 'showToast', text: error })
       return
     }
-    dispatch({ type: 'login' })
-    dispatch({ type: 'showToast', text: t.toastWillkommen })
+    dispatch({ type: 'login', welcome: true })
   }
 
   const forgotPassword = async () => {

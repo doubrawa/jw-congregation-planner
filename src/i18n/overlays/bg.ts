@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "Назначения за 5 седмици: {n}",
   "aufgabeIn4": "1 назначение за 5 седмици",
   "reinigungsgruppe": "Група за почистване",
-  "toastWillkommen": "Добре дошъл, Simon!",
+  "toastWillkommen": "Добре дошъл, {name}!",
   "toastZugeteilt": "Назначено · известието изпратено",
   "toastEntfernt": "Назначението премахнато",
   "toastKeineOffen": "Няма свободни назначения в този изглед",

@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} incarichi in 5 settimane",
   "aufgabeIn4": "1 incarico in 5 settimane",
   "reinigungsgruppe": "Gruppo di pulizia",
-  "toastWillkommen": "Benvenuto, Simon!",
+  "toastWillkommen": "Benvenuto, {name}!",
   "toastZugeteilt": "Assegnato · notifica inviata",
   "toastEntfernt": "Incarico rimosso",
   "toastKeineOffen": "Nessun incarico aperto in questa vista",

@@ -144,7 +144,7 @@ export default {
   "aufgabenIn4": "{n} מטלות ב־5 שבועות",
   "aufgabeIn4": "מטלה אחת ב־5 שבועות",
   "reinigungsgruppe": "קבוצת ניקיון",
-  "toastWillkommen": "ברוך הבא, סיימון!",
+  "toastWillkommen": "ברוך הבא, {name}!",
   "toastZugeteilt": "שובץ · נשלחה התראה",
   "toastEntfernt": "השיבוץ הוסר",
   "toastKeineOffen": "אין מטלות פתוחות בתצוגה זו",

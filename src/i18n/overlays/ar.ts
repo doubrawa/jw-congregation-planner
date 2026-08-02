@@ -142,7 +142,7 @@ export default {
   "aufgabenIn4": "{n} تعيينات خلال ٤ أسابيع",
   "aufgabeIn4": "تعيين واحد خلال ٤ أسابيع",
   "reinigungsgruppe": "مجموعة التنظيف",
-  "toastWillkommen": "أهلاً، زيمون!",
+  "toastWillkommen": "أهلاً، {name}!",
   "toastZugeteilt": "تم التعيين · أُرسل الإشعار",
   "toastEntfernt": "أُزيل التعيين",
   "toastKeineOffen": "لا توجد تعيينات مفتوحة في هذا العرض",

@@ -144,7 +144,7 @@ export default {
   "aufgabenIn4": "۴ ہفتوں میں {n} ذمہ داریاں",
   "aufgabeIn4": "۴ ہفتوں میں ۱ ذمہ داری",
   "reinigungsgruppe": "صفائی گروپ",
-  "toastWillkommen": "خوش آمدید، سائمن!",
+  "toastWillkommen": "خوش آمدید، {name}!",
   "toastZugeteilt": "تفویض ہو گیا · اطلاع بھیجی گئی",
   "toastEntfernt": "ذمہ داری ہٹا دی گئی",
   "toastKeineOffen": "اس منظر میں کوئی کھلی ذمہ داری نہیں",

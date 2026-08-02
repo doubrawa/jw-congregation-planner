@@ -186,7 +186,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         screen: 'start',
         confirmOpen: state.myTasks.some((t) => t.status === 'offen'),
+        welcomePending: action.welcome === true,
       }
+    case 'welcomeShown':
+      return { ...state, welcomePending: false }
     case 'logout':
       return {
         ...state,
@@ -199,6 +202,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmOpen: false,
         recovery: false,
         staleAt: null, // Offline-Stand gilt nur für die abgemeldete Sitzung
+        welcomePending: false, // eine offene Begrüßung gilt nicht für die nächste Anmeldung
       }
     case 'navigate': {
       // Rechteprüfung: Nicht-Planer landen im Programm. Gruppenaufseher dürfen

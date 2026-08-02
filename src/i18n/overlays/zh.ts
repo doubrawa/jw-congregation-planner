@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "5周内 {n} 项任务",
   "aufgabeIn4": "5周内1项任务",
   "reinigungsgruppe": "清洁小组",
-  "toastWillkommen": "欢迎，Simon！",
+  "toastWillkommen": "欢迎，{name}！",
   "toastZugeteilt": "已分配 · 已发送通知",
   "toastEntfernt": "已移除分配",
   "toastKeineOffen": "此视图中没有未分配任务",

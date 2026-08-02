@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} uppgifter på 5 veckor",
   "aufgabeIn4": "1 uppgift på 5 veckor",
   "reinigungsgruppe": "Städgrupp",
-  "toastWillkommen": "Välkommen, Simon!",
+  "toastWillkommen": "Välkommen, {name}!",
   "toastZugeteilt": "Tilldelad · avisering skickad",
   "toastEntfernt": "Tilldelning borttagen",
   "toastKeineOffen": "Inga lediga tilldelningar i denna vy",

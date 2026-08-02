@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} tehtävää 5 viikossa",
   "aufgabeIn4": "1 tehtävä 5 viikossa",
   "reinigungsgruppe": "Siivousryhmä",
-  "toastWillkommen": "Tervetuloa, Simon!",
+  "toastWillkommen": "Tervetuloa, {name}!",
   "toastZugeteilt": "Jaettu · ilmoitus lähetetty",
   "toastEntfernt": "Tehtäväjako poistettu",
   "toastKeineOffen": "Ei vapaita tehtäviä tässä näkymässä",

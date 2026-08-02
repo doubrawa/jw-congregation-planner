@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "5 haftada {n} görev",
   "aufgabeIn4": "5 haftada 1 görev",
   "reinigungsgruppe": "Temizlik grubu",
-  "toastWillkommen": "Hoş geldin, Simon!",
+  "toastWillkommen": "Hoş geldin, {name}!",
   "toastZugeteilt": "Atandı · bildirim gönderildi",
   "toastEntfernt": "Görev kaldırıldı",
   "toastKeineOffen": "Bu görünümde boş görev yok",

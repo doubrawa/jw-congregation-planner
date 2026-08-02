@@ -26,6 +26,7 @@ import { parseGoTarget } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { NotificationsPanel } from './NotificationsPanel'
 import { SidebarBrand, SidebarFooter, SidebarNav, type NavItem } from './Sidebar'
+import { welcomeDecision } from './welcome'
 import '../components/components.css'
 import './shell.css'
 import './rtl.css'
@@ -146,6 +147,15 @@ export function AppShell() {
     setPendingNav(null)
     if (state.userId) void loadAndHydrate(dispatch, state.userId, { silent: true })
   }, [isLogin, pendingNav, navScreens, dispatch, state.userId])
+
+  // Begrüßung nach dem Anmelden — erst, wenn feststeht, wen man vor sich hat
+  // (Regel und Begründung: welcome.ts).
+  useEffect(() => {
+    const d = welcomeDecision(state.welcomePending, state.dataStatus, me?.fn)
+    if (d === 'warten') return
+    dispatch({ type: 'welcomeShown' })
+    if (d !== 'verwerfen') dispatch({ type: 'showToast', text: fill(t.toastWillkommen, d) })
+  }, [state.welcomePending, state.dataStatus, me, t, dispatch])
   const navLabels: Record<Screen, string> = {
     login: '',
     start: t.navStart,

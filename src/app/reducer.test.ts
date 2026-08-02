@@ -69,6 +69,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     progLangs: [],
     langSearch: '',
     toast: null,
+    welcomePending: false,
     ...over,
   }
 }
@@ -616,6 +617,20 @@ describe('Sprache', () => {
 describe('login / logout / setRecovery', () => {
   it('login → Startseite', () => {
     expect(reducer(makeState({ screen: 'login' }), { type: 'login' }).screen).toBe('start')
+  })
+  it('nur ein echtes Anmelden merkt die Begrüßung vor', () => {
+    // Eine wiederhergestellte Sitzung beim App-Start meldet ebenfalls „login" —
+    // dabei darf nicht jedes Mal aufs Neue begrüßt werden.
+    expect(reducer(makeState({ screen: 'login' }), { type: 'login', welcome: true }).welcomePending).toBe(true)
+    expect(reducer(makeState({ screen: 'login' }), { type: 'login' }).welcomePending).toBe(false)
+  })
+  it('welcomeShown räumt die Vormerkung ab', () => {
+    const s = makeState({ welcomePending: true })
+    expect(reducer(s, { type: 'welcomeShown' }).welcomePending).toBe(false)
+  })
+  it('abmelden verwirft eine offene Begrüßung', () => {
+    // Sonst würde die nächste Anmeldung mit fremdem Vormerker starten.
+    expect(reducer(makeState({ welcomePending: true }), { type: 'logout' }).welcomePending).toBe(false)
   })
   it('logout schließt alle Overlays', () => {
     const s = makeState({ notifOpen: true, langSheetOpen: true, selectedPersonId: 'p1', confirmOpen: true })

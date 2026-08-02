@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} tugas dalam 5 pekan",
   "aufgabeIn4": "1 tugas dalam 5 pekan",
   "reinigungsgruppe": "Kelompok kebersihan",
-  "toastWillkommen": "Selamat datang, Simon!",
+  "toastWillkommen": "Selamat datang, {name}!",
   "toastZugeteilt": "Ditetapkan · notifikasi terkirim",
   "toastEntfernt": "Penetapan dihapus",
   "toastKeineOffen": "Tidak ada tugas kosong di tampilan ini",

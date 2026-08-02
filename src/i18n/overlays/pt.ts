@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} designações em 5 semanas",
   "aufgabeIn4": "1 designação em 5 semanas",
   "reinigungsgruppe": "Grupo de limpeza",
-  "toastWillkommen": "Bem-vindo, Simon!",
+  "toastWillkommen": "Bem-vindo, {name}!",
   "toastZugeteilt": "Atribuído · notificação enviada",
   "toastEntfernt": "Designação removida",
   "toastKeineOffen": "Nenhuma designação em aberto nesta vista",

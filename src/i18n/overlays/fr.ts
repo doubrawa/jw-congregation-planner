@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} attributions sur 5 semaines",
   "aufgabeIn4": "1 attribution sur 5 semaines",
   "reinigungsgruppe": "Groupe de ménage",
-  "toastWillkommen": "Bienvenue, Simon !",
+  "toastWillkommen": "Bienvenue, {name} !",
   "toastZugeteilt": "Attribué · notification envoyée",
   "toastEntfernt": "Attribution retirée",
   "toastKeineOffen": "Aucune attribution ouverte dans cette vue",

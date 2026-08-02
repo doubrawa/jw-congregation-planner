@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "Úloh za 5 týždne: {n}",
   "aufgabeIn4": "1 úloha za 5 týždne",
   "reinigungsgruppe": "Upratovacia skupina",
-  "toastWillkommen": "Vitaj, Simon!",
+  "toastWillkommen": "Vitaj, {name}!",
   "toastZugeteilt": "Pridelené · oznámenie odoslané",
   "toastEntfernt": "Pridelenie odstránené",
   "toastKeineOffen": "V tomto zobrazení nie sú voľné pridelenia",

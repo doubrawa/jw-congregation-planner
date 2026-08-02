@@ -98,7 +98,7 @@ export default {
   "aufgabenIn4": "{n} feladat 5 hét alatt",
   "aufgabeIn4": "1 feladat 5 hét alatt",
   "reinigungsgruppe": "Takarítócsoport",
-  "toastWillkommen": "Üdv, Simon!",
+  "toastWillkommen": "Üdv, {name}!",
   "toastZugeteilt": "Kiosztva · értesítés elküldve",
   "toastEntfernt": "Kiosztás eltávolítva",
   "toastKeineOffen": "Nincs szabad kiosztás ebben a nézetben",
