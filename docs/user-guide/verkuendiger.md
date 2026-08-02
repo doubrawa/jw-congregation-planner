@@ -150,6 +150,9 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
   - **Pastell** – die besonders zurückhaltende Variante mit sehr weichen
     Farben. Die übrigen Schemata sind bewusst etwas kräftiger, damit sich die
     Programmabschnitte klarer voneinander abheben.
+  - **Grau** – ganz ohne Farbe, nur Grautöne. Die Programmabschnitte
+    unterscheiden sich hier allein durch ihre Helligkeit: von oben nach unten
+    wird jeder Abschnitt eine Stufe dunkler.
 - **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Standard ist die
   bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
   Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.

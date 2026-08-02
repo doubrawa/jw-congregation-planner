@@ -1,5 +1,6 @@
 /**
- * Prüft die Farbpaarungen der Paletten (src/styles/tokens.css) gegen WCAG 2.1.
+ * Prüft die Paletten in src/styles/tokens.css: Farbabstände gegen WCAG 2.1,
+ * dazu zwei Zusagen, die sich sonst still brechen lassen (siehe unten).
  *
  *   npm run contrast            alle Paletten, Übersicht
  *   npm run contrast -- kontrast   nur eine Palette
@@ -19,9 +20,13 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const CSS = readFileSync(join(ROOT, 'src/styles/tokens.css'), 'utf8')
+const CONSTANTS = readFileSync(join(ROOT, 'src/data/constants.ts'), 'utf8')
 
 /** Palette, die strikt bestehen muss. */
 const STRICT = 'kontrast'
+
+/** Palette ganz ohne Farbton — jeder Wert muss R = G = B sein. */
+const GREYSCALE = 'grau'
 
 /* ---- Farbwerte ----------------------------------------------------------- */
 
@@ -171,8 +176,35 @@ for (const [name, vars] of Object.entries(themes)) {
   else if (worst < Infinity && !strict) console.log(`  (nur berichtet, keine Vorgabe)`)
 }
 
-if (strictFailed > 0) {
-  console.error(`\nFEHLGESCHLAGEN: ${strictFailed} Paarung(en) in „${STRICT}" unter der Vorgabe.`)
+/* ---- Vollständigkeit und Farblosigkeit ----------------------------------- */
+
+const fehler = []
+
+// (1) Jedes im Profil angebotene Schema braucht auch eine Palette. Fehlt sie,
+// steht der Eintrag zur Wahl und ändert nichts — im Betrieb schwer zu deuten.
+for (const m of CONSTANTS.matchAll(/\{\s*key:\s*'([\w-]+)',\s*label:/g)) {
+  if (!(m[1] in themes)) fehler.push(`Farbschema „${m[1]}" hat keine Palette in tokens.css.`)
+}
+
+// (2) „Grau" verspricht ausschließlich Grautöne. Ein einzelner farbiger Wert
+// (etwa aus einer anderen Palette übernommen) fällt kaum auf, hebt die Zusage
+// aber auf — und nur hier gibt es keinen Farbton, der ihn überdecken würde.
+for (const [key, value] of Object.entries(block(`:root[data-theme='${GREYSCALE}']`) ?? {})) {
+  const c = parseColor(value)
+  if (c && !(c.r === c.g && c.g === c.b)) {
+    fehler.push(`„${GREYSCALE}" ist nicht farblos: --${key}: ${value}`)
+  }
+}
+
+if (fehler.length > 0) {
+  console.error('')
+  for (const f of fehler) console.error(`  ✗ ${f}`)
+}
+
+if (strictFailed > 0 || fehler.length > 0) {
+  if (strictFailed > 0) {
+    console.error(`\nFEHLGESCHLAGEN: ${strictFailed} Paarung(en) in „${STRICT}" unter der Vorgabe.`)
+  }
   process.exit(1)
 }
-console.log(`\nPalette „${STRICT}" erfüllt alle Vorgaben.`)
+console.log(`\nPalette „${STRICT}" erfüllt alle Vorgaben, „${GREYSCALE}" ist farblos.`)

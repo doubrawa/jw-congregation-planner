@@ -11,10 +11,10 @@
 /**
  * Farbschema (Einstellungen → Profil → Darstellung). 4 helle + 4 dunkle
  * Paletten aus dem Design-Export „Farboptionen Programm" (inzwischen kräftiger
- * abgestimmt), dazu „pastell" (die ursprünglichen, weichen Töne) und
- * „kontrast" (Barrierefreiheit). Labels/Reihenfolge in THEME_LIST
- * (constants.ts), Paletten in styles/tokens.css. Alte Werte 'light'/'dark'
- * werden beim Laden auf weiss/graphit gemappt.
+ * abgestimmt), dazu „pastell" (die ursprünglichen, weichen Töne), „grau"
+ * (ganz ohne Farbton) und „kontrast" (Barrierefreiheit). Labels/Reihenfolge
+ * in THEME_LIST (constants.ts), Paletten in styles/tokens.css. Alte Werte
+ * 'light'/'dark' werden beim Laden auf weiss/graphit gemappt.
  */
 export type Theme =
   | 'weiss'
@@ -22,6 +22,7 @@ export type Theme =
   | 'blatt'
   | 'papaya'
   | 'pastell'
+  | 'grau'
   | 'kontrast'
   | 'graphit'
   | 'bernstein'
