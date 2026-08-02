@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useApp } from '../app/context'
 import { useInstallAvailable, usePush } from '../components/usePush'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
@@ -9,6 +10,8 @@ import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
 import { performLogout } from '../lib/supabase'
+import { copyText } from '../lib/clipboard'
+import { gestenLoeschen, gestenProtokollText } from '../lib/gesture-log'
 import '../aufgaben/aufgaben.css'
 
 /** Stufenname je FONT_SCALES-Position (gleiche Reihenfolge). */
@@ -28,6 +31,8 @@ const FS_LABELS = [
 export function ProfilScreen() {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  // Antippen der Build-Zeile — ab fünf öffnet sich die Gesten-Diagnose.
+  const [tipps, setTipps] = useState(0)
   // Position im Regler; unbekannter Wert (z. B. alter localStorage) → Standard.
   const scaleIndex = Math.max(0, FONT_SCALES.indexOf(state.fontScale))
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
@@ -154,9 +159,61 @@ export function ProfilScreen() {
           wirklich die neueste Fassung?
         */}
         {/* „Build" bewusst unübersetzt: das Wort ist international geläufig,
-            und die Zeile ist ohnehin technische Kennung, kein Fließtext. */}
-        <p className="prof-build">Build {__BUILD_ID__}</p>
+            und die Zeile ist ohnehin technische Kennung, kein Fließtext.
+            Fünfmal antippen öffnet die Gesten-Diagnose — versteckt, weil sie
+            niemanden außer der Fehlersuche etwas angeht, und ohne Tastatur-
+            Fokus, damit sie beim Durchtabben nicht im Weg steht. */}
+        <p className="prof-build" onClick={() => setTipps((n) => n + 1)}>
+          Build {__BUILD_ID__}
+        </p>
+        {tipps >= 5 && <GestenDiagnose />}
       </div>
     </section>
+  )
+}
+
+/**
+ * Gesten-Diagnose: zeigt, was bei der letzten Wischbewegung auf DIESEM Gerät
+ * tatsächlich passiert ist.
+ *
+ * Grund für die Existenz: Gesten lassen sich am Rechner nur nachbilden. Ein
+ * Wisch, der in Chrome mit Handy-Emulation sauber durchläuft, kann auf einem
+ * Android-Handy abbrechen, weil der Browser die Bewegung fürs Scrollen
+ * übernimmt. Ohne dieses Protokoll bleibt nur Raten.
+ *
+ * Bewusst unübersetzt: der Text richtet sich nicht an Nutzer, sondern wird
+ * kopiert und weitergegeben.
+ */
+function GestenDiagnose() {
+  const [text, setText] = useState(gestenProtokollText)
+  const [kopiert, setKopiert] = useState(false)
+  return (
+    <div className="prof-diag">
+      <pre className="prof-diag-text">{text}</pre>
+      <div className="prof-diag-btns">
+        <button type="button" className="btn-outline" onClick={() => setText(gestenProtokollText())}>
+          Aktualisieren
+        </button>
+        <button
+          type="button"
+          className="btn-outline"
+          onClick={() => {
+            void copyText(text).then(setKopiert)
+          }}
+        >
+          {kopiert ? 'Kopiert' : 'Kopieren'}
+        </button>
+        <button
+          type="button"
+          className="btn-outline"
+          onClick={() => {
+            gestenLoeschen()
+            setText(gestenProtokollText())
+          }}
+        >
+          Leeren
+        </button>
+      </div>
+    </div>
   )
 }

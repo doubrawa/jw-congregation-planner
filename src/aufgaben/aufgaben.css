@@ -238,6 +238,42 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Versteckte Gesten-Diagnose (Build-Zeile 5× antippen). Rein technisch —
+   Aussehen darf schlicht sein, nur lesbar und kopierbar muss es sein. */
+.prof-diag {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.prof-diag-text {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: calc(10px * var(--fs));
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--tNeu);
+  border-radius: var(--r-input);
+  padding: 8px 10px;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.prof-diag-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.prof-diag-btns .btn-outline {
+  flex: 1;
+  font-size: calc(11px * var(--fs));
+  padding: 6px 8px;
+}
+
 /* iOS: statt Schalter der Installations-Hinweis (Push erst als App). */
 .prof-push-ios {
   align-items: flex-start;
