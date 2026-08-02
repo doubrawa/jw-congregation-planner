@@ -215,7 +215,7 @@ function ProgramRow({
   return (
     <div className={item.num != null ? 'prog-row prog-row--num' : 'prog-row'}>
       {item.num != null && <div className="prog-num">{item.num}.</div>}
-      <div>
+      <div className="prog-row-text">
         <div className="prog-title">{title ?? tpw(item.title)}</div>
         {item.meta && <div className="prog-item-meta">{tpw(item.meta)}</div>}
       </div>
