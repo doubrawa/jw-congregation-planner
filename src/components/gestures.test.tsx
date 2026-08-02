@@ -177,6 +177,13 @@ function WeekHarness({ onPrev = () => {}, onNext = () => {}, canPrev = true, can
 }
 
 describe('useSwipeWeek', () => {
+  // Blättern läuft als Animation: hinaus, Woche wechseln, herein. Das Ergebnis
+  // steht erst danach fest — deshalb hier simulierte Zeit.
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+  /** Animation zu Ende laufen lassen. */
+  const fertig = () => vi.advanceTimersByTime(600)
+
   // Manche Tests prüfen beide Richtungen und rendern deshalb zweimal — vorher
   // abräumen, sonst liegen zwei Screens gleichzeitig im Dokument.
   const setup = (p: WeekProps = {}) => {
@@ -190,11 +197,13 @@ describe('useSwipeWeek', () => {
   it('nach links wischen blättert vorwärts, nach rechts zurück', () => {
     const a = setup()
     swipeTouch(a.el, [200, 300], [100, 300])
+    fertig()
     expect(a.onNext).toHaveBeenCalledTimes(1)
     expect(a.onPrev).not.toHaveBeenCalled()
 
     const b = setup()
     swipeTouch(b.el, [200, 300], [300, 300])
+    fertig()
     expect(b.onPrev).toHaveBeenCalledTimes(1)
   })
 
@@ -204,12 +213,14 @@ describe('useSwipeWeek', () => {
     // im Labor mit exakt waagerechten Bewegungen fällt das nicht auf.
     const { el, onNext } = setup()
     swipePath(el, DAUMEN_NACH_LINKS)
+    fertig()
     expect(onNext).toHaveBeenCalledTimes(1)
   })
 
   it('der Bogen geht auch nach rechts (zurückblättern)', () => {
     const { el, onPrev } = setup()
     swipePath(el, DAUMEN_NACH_LINKS.map(([x, y]) => [600 - x, y] as [number, number]))
+    fertig()
     expect(onPrev).toHaveBeenCalledTimes(1)
   })
 
@@ -232,6 +243,7 @@ describe('useSwipeWeek', () => {
     touch(el, 'touchstart', [DAUMEN_NACH_LINKS[0]])
     for (const p of DAUMEN_NACH_LINKS.slice(1)) touch(el, 'touchmove', [p], false)
     touch(el, 'touchend', [DAUMEN_NACH_LINKS[DAUMEN_NACH_LINKS.length - 1]])
+    fertig()
     expect(onNext).toHaveBeenCalledTimes(1)
   })
 
@@ -313,10 +325,69 @@ describe('useSwipeWeek', () => {
     expect(last.onNext).not.toHaveBeenCalled()
   })
 
-  it('setzt den Versatz nach der Geste zurück', () => {
-    const { el } = setup()
+  it('schiebt das Fenster ganz hinaus und die neue Woche wieder herein', () => {
+    // Der Kern der Sache: früher federte es zurück UND blätterte — die
+    // Bewegung sagte "hier ist Schluss", der Inhalt sagte "gewechselt".
+    const { el, onNext } = setup()
     swipeTouch(el, [200, 300], [100, 300])
+    // Nach links gewischt → Fenster nach links hinaus (Fensterbreite 400).
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-400px')
+    expect(onNext).not.toHaveBeenCalled() // erst draußen wird gewechselt
+
+    vi.advanceTimersByTime(200)
+    expect(onNext).toHaveBeenCalledTimes(1)
+    // … und steht dabei auf der Gegenseite bereit.
+    expect(el.style.getPropertyValue('--week-shift')).toBe('400px')
+
+    fertig()
     expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
+  })
+
+  it('nach rechts gewischt schiebt das Fenster nach rechts hinaus', () => {
+    // Die Gegenrichtung eigens geprüft: ein Vorzeichenfehler fiele sonst nicht
+    // auf, weil die vorige Woche von links kommen muss.
+    const { el, onPrev } = setup()
+    swipeTouch(el, [100, 300], [220, 300])
+    expect(el.style.getPropertyValue('--week-shift')).toBe('400px')
+    vi.advanceTimersByTime(200)
+    expect(onPrev).toHaveBeenCalledTimes(1)
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-400px')
+    fertig()
+    expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
+  })
+
+  it('folgt dem Finger 1:1', () => {
+    // Gedämpftes Mitgehen sähe aus wie „geht nicht weiter" — der Inhalt wird
+    // aber wirklich weggeschoben.
+    const { el } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[200, 300]])
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-100px')
+  })
+
+  it('an der letzten Woche gibt es nur zäh nach', () => {
+    // Hier ist das gedämpfte Nachgeben richtig: es sagt „hier ist Schluss".
+    const { el } = setup({ canNext: false })
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[200, 300]])
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-25px')
+  })
+
+  it('federt zurück, wenn NICHT geblättert wird', () => {
+    // Zurückfedern darf nur eines heißen: hier geht es nicht weiter.
+    const { el, onNext } = setup()
+    swipeTouch(el, [200, 300], [160, 300]) // zu kurz
+    expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
+    fertig()
+    expect(onNext).not.toHaveBeenCalled()
+  })
+
+  it('an der letzten Woche federt es zurück statt hinauszuschieben', () => {
+    const { el, onNext } = setup({ canNext: false })
+    swipeTouch(el, [200, 300], [80, 300])
+    expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
+    fertig()
+    expect(onNext).not.toHaveBeenCalled()
   })
 })
 

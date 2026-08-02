@@ -98,6 +98,17 @@
   transform: translateX(var(--week-shift, 0px));
 }
 
+/*
+ * Beim Blättern schiebt sich der Bildschirm ganz aus dem Sichtfeld. Ohne das
+ * Abschneiden hier entstünde währenddessen waagerechter Überlauf: die Seite
+ * ließe sich zur Seite scrollen und die Bildlaufleiste flackerte auf.
+ * `clip` statt `hidden`, weil `hidden` einen Scroll-Container erzeugt und damit
+ * `position: sticky` im Inhalt aushebeln würde.
+ */
+.app-content {
+  overflow-x: clip;
+}
+
 @media (min-width: 920px) {
   .screen {
     padding: 26px 36px;
