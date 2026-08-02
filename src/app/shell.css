@@ -87,28 +87,6 @@
   padding: 22px 20px;
 }
 
-/*
- * Screens, auf denen waagerechtes Wischen die Woche blättert (useSwipeWeek).
- * `pan-y pinch-zoom` überlässt dem Browser das senkrechte Scrollen und das
- * Vergrößern — nur die waagerechte Richtung werten wir selbst aus. Zoom
- * ausdrücklich erlaubt: er darf nie durch eine Geste verloren gehen.
- */
-.screen--swipe {
-  touch-action: pan-y pinch-zoom;
-  transform: translateX(var(--week-shift, 0px));
-}
-
-/*
- * Beim Blättern schiebt sich der Bildschirm ganz aus dem Sichtfeld. Ohne das
- * Abschneiden hier entstünde währenddessen waagerechter Überlauf: die Seite
- * ließe sich zur Seite scrollen und die Bildlaufleiste flackerte auf.
- * `clip` statt `hidden`, weil `hidden` einen Scroll-Container erzeugt und damit
- * `position: sticky` im Inhalt aushebeln würde.
- */
-.app-content {
-  overflow-x: clip;
-}
-
 @media (min-width: 920px) {
   .screen {
     padding: 26px 36px;

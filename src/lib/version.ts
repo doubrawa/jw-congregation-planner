@@ -76,16 +76,16 @@ export function watchForUpdates(reload: () => void = () => location.reload()): (
     if (now - lastCheck < CHECK_EVERY_MS) return
     lastCheck = now
 
-    // Auch den Service Worker nachsehen lassen — er selbst ändert sich selten,
-    // aber wenn, dann soll die neue Fassung nicht bis zum Neustart warten.
-    void navigator.serviceWorker?.getRegistration().then(
-      (reg) => reg?.update(),
-      () => {},
-    )
-
     void updateAvailable().then((neu) => {
       if (!neu) return
       if (document.querySelector(OVERLAY)) return // nicht mitten in einer Eingabe
+      // Den Service Worker gleich mitnehmen — aber nur hier: ohne neue Fassung
+      // gibt es nichts nachzusehen, und jede Prüfung wäre eine Netzanfrage bei
+      // jedem Zurückkehren zur App.
+      void navigator.serviceWorker?.getRegistration().then(
+        (reg) => reg?.update(),
+        () => {},
+      )
       // Ohne diesen Merker könnte ein Fehlschlag beim Ausliefern in einer
       // Neulade-Schleife enden.
       if (sessionStorage.getItem(MARKER) === neu) return

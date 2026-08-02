@@ -1,4 +1,4 @@
-import { useMemo, useRef, type Dispatch, type ReactNode } from 'react'
+import { useRef, type Dispatch, type ReactNode } from 'react'
 import { AppContext, useApp, type AppAction } from '../app/context'
 import { useSwipeWeek } from './useSwipeWeek'
 import './week-strip.css'
@@ -39,19 +39,11 @@ export function WeekStrip({ children }: { children: ReactNode }) {
   })
 
   return (
-    <div className="week-viewport screen--swipe" ref={ref}>
+    <div className="week-viewport" ref={ref}>
       <div className="week-strip">
-        {canPrev && (
-          <Vorschau offset={-1} seite="vor">
-            {children}
-          </Vorschau>
-        )}
+        {canPrev && <Vorschau offset={-1}>{children}</Vorschau>}
         {children}
-        {canNext && (
-          <Vorschau offset={1} seite="nach">
-            {children}
-          </Vorschau>
-        )}
+        {canNext && <Vorschau offset={1}>{children}</Vorschau>}
       </div>
     </div>
   )
@@ -61,22 +53,15 @@ export function WeekStrip({ children }: { children: ReactNode }) {
 const keinDispatch: Dispatch<AppAction> = () => {}
 
 /** Dieselben Inhalte, nur für eine benachbarte Woche und ohne Bedienbarkeit. */
-function Vorschau({
-  offset,
-  seite,
-  children,
-}: {
-  offset: -1 | 1
-  seite: 'vor' | 'nach'
-  children: ReactNode
-}) {
+function Vorschau({ offset, children }: { offset: -1 | 1; children: ReactNode }) {
   const { state } = useApp()
-  const wert = useMemo(
-    () => ({ state: { ...state, week: state.week + offset }, dispatch: keinDispatch }),
-    [state, offset],
-  )
+  // Kein useMemo: `state` ist nach jeder Aktion ein neues Objekt, der Vergleich
+  // ginge also ohnehin daneben — und `children` ist bei jedem Render neu, der
+  // Teilbaum liefe so oder so durch. Der Spread ist billiger als der Anschein
+  // von Abschirmung.
+  const wert = { state: { ...state, week: state.week + offset }, dispatch: keinDispatch }
   return (
-    <div className={`week-page week-page--${seite}`} aria-hidden="true" inert>
+    <div className={`week-page week-page--${offset < 0 ? 'vor' : 'nach'}`} aria-hidden="true" inert>
       <AppContext.Provider value={wert}>{children}</AppContext.Provider>
     </div>
   )

@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { gestenEintraege, gestenLoeschen, gestenLog, gestenProtokollText } from './gesture-log'
+import { gestenEintraege, gestenLoeschen, gestenLog, gestenProtokollText, gestenStart } from './gesture-log'
 
 afterEach(() => {
   gestenLoeschen()
@@ -9,7 +9,7 @@ afterEach(() => {
 
 describe('gestenLog', () => {
   it('hält den Ablauf in der Reihenfolge fest', () => {
-    gestenLog('start', { x: 300 })
+    gestenStart('start', { x: 300 })
     gestenLog('touchend', { dx: -150 })
     expect(gestenEintraege().map((e) => e.was)).toEqual(['start', 'touchend'])
     expect(gestenEintraege()[0].daten).toEqual({ x: 300 })
@@ -27,14 +27,14 @@ describe('gestenLog', () => {
     // Sonst stünden dort Millisekunden seit dem Seitenaufruf — unbrauchbar.
     let jetzt = 1000
     vi.stubGlobal('performance', { now: () => jetzt })
-    gestenLog('start')
+    gestenStart('start')
     jetzt = 1120
     gestenLog('touchend')
     expect(gestenEintraege().map((e) => e.t)).toEqual([0, 120])
   })
 
   it('Text enthält Build, Umgebung und die Einträge', () => {
-    gestenLog('start', { x: 1 })
+    gestenStart('start', { x: 1 })
     const text = gestenProtokollText()
     expect(text).toContain('Build')
     expect(text).toContain('Fenster')

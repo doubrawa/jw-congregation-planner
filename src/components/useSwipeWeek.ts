@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
-import { gestenLog } from '../lib/gesture-log'
+import { bindTouch } from './bindTouch'
+import { gestenLog, gestenStart } from '../lib/gesture-log'
 
 /**
  * Waagerecht wischen, um eine Woche zu blättern (Programm und Planen).
@@ -101,9 +102,10 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     /**
      * Blättern: den Streifen um genau eine Wochenbreite weiterschieben.
      *
-     * `richtung` -1 = nach links (nächste Woche), +1 = nach rechts. Die
-     * Nachbarwochen sind bereits gezeichnet (WeekStrip), es gibt also nichts
-     * einzublenden — nur zu verschieben.
+     * `richtung` -1 = nach links (nächste Woche), +1 = nach rechts; daraus
+     * ergibt sich auch, welcher Rückruf blättert. Die Nachbarwochen sind
+     * bereits gezeichnet (WeekStrip), es gibt also nichts einzublenden — nur
+     * zu verschieben.
      *
      * Am Ende der Bewegung steht die Nachbarwoche dort, wo die mittlere hin
      * gehört. Der Wochenwechsel macht sie zur mittleren, und der Versatz geht
@@ -111,7 +113,7 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
      * dazwischen nichts gezeichnet wird. `flushSync`, weil ein späteres
      * Rendern genau dieses eine Bild kosten würde.
      */
-    const slide = (richtung: -1 | 1, ab: number, blaettern: () => void) => {
+    const slide = (richtung: -1 | 1) => {
       laeuft = true
       /*
        * Verschoben wird um die Breite des BILDSCHIRMS, nicht des Fensters. Die
@@ -120,13 +122,13 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
        * Rückfall auf die Fensterbreite nur, wenn keine Breite messbar ist.
        */
       const weg = el.getBoundingClientRect().width || window.innerWidth
-      gestenLog('BLÄTTERN', { richtung, ab: Math.round(ab), weg: Math.round(weg) })
+      gestenLog('BLÄTTERN', { richtung, weg: Math.round(weg) })
 
       setTransition(SLIDE_MS)
       setShift(richtung * weg)
       timer = window.setTimeout(() => {
         setTransition(null)
-        flushSync(blaettern)
+        flushSync(richtung === 1 ? o.current.onPrev : o.current.onNext)
         setShift(0)
         laeuft = false
       }, SLIDE_MS)
@@ -142,17 +144,17 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       const t = e.touches[0]
       // Randzone dem System überlassen (Zurück-Geste).
       if (t.clientX < EDGE_PX || t.clientX > window.innerWidth - EDGE_PX) {
-        gestenLog('start', { verworfen: 'Randzone', x: Math.round(t.clientX) })
+        gestenStart('start', { verworfen: 'Randzone', x: Math.round(t.clientX) })
         return
       }
-      gestenLog('start', { x: Math.round(t.clientX), y: Math.round(t.clientY) })
+      gestenStart('start', { x: Math.round(t.clientX), y: Math.round(t.clientY) })
       bewegungen = 0
       aktiv = true
       startX = t.clientX
       startY = t.clientY
       phase = 'offen'
       dx = 0
-      el.style.transition = ''
+      setTransition(null)
     }
 
     const onMove = (e: TouchEvent) => {
@@ -225,10 +227,12 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       if (warWaagerecht && Math.abs(moved) >= COMMIT_PX) {
         // Nach rechts gezogen (moved > 0) heißt: die vorige Woche liegt links
         // — die alte wandert also nach rechts hinaus.
-        if (moved > 0 && o.current.canPrev) return slide(1, moved, o.current.onPrev)
-        if (moved < 0 && o.current.canNext) return slide(-1, moved, o.current.onNext)
+        if (moved > 0 && o.current.canPrev) return slide(1)
+        if (moved < 0 && o.current.canNext) return slide(-1)
       }
-      release(true)
+      // Nur zurückfedern, wenn überhaupt etwas verschoben war — ein bloßes
+      // Antippen soll keine Animation und keinen Zeitgeber auslösen.
+      if (moved !== 0) release(true)
     }
 
     const onEnd = () => beenden('touchend')
@@ -237,17 +241,9 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       beenden('touchcancel')
     }
 
-    // `passive: false` bei touchmove — ohne das darf preventDefault() nicht
-    // greifen und der Inhalt scrollt beim Blättern mit.
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd)
-    el.addEventListener('touchcancel', onCancel)
+    const abmelden = bindTouch(el, { start: onStart, move: onMove, end: onEnd, cancel: onCancel })
     return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-      el.removeEventListener('touchcancel', onCancel)
+      abmelden()
       // Laufende Animation abbrechen — sonst greifen die Zeitgeber auf ein
       // Element zu, das längst aus dem Baum ist, und das Standbild bliebe über
       // dem nächsten Bildschirm liegen.

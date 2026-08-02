@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react'
+import { bindTouch } from './bindTouch'
 
 /**
  * Bottom-Sheet nach unten wischen zum Schließen.
@@ -111,17 +112,9 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, onClose: () => 
       reset(true)
     }
 
-    // `passive: false` bei touchmove — ohne das darf preventDefault() nicht
-    // greifen und die Seite scrollt beim Ziehen mit.
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd)
-    el.addEventListener('touchcancel', onCancel)
+    const abmelden = bindTouch(el, { start: onStart, move: onMove, end: onEnd, cancel: onCancel })
     return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-      el.removeEventListener('touchcancel', onCancel)
+      abmelden()
       el.style.removeProperty('--sheet-drag')
       el.style.transition = ''
     }
