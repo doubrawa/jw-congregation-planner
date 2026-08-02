@@ -28,6 +28,17 @@ import { useEffect, useRef, type RefObject } from 'react'
  * Mausbedienung braucht das nicht: dort gibt es die Pfeile (die es ohnehin
  * überall gibt — WCAG 2.5.1: eine Geste ist nie der einzige Weg).
  *
+ * ## Was die Bewegung aussagt
+ *
+ * Der Inhalt folgt dem Finger 1:1 — er wird ja weggeschoben. Beim Loslassen
+ * schiebt er sich vollständig hinaus, und die neue Woche kommt von der anderen
+ * Seite herein.
+ *
+ * Zurückfedern heißt ausdrücklich das Gegenteil: „hier geht es nicht weiter".
+ * Deshalb federt es nur, wenn wirklich nichts kommt (erste/letzte Woche) oder
+ * zu kurz gezogen wurde. Vorher tat die Animation beides gleichzeitig — sie
+ * federte zurück UND blätterte — und war dadurch nicht zu deuten.
+ *
  * ## Weitere Fallstricke
  *
  * Im Browser-Tab löst ein Wisch vom Bildschirmrand die Zurück-/Vorwärts-
@@ -43,7 +54,9 @@ const COMMIT_PX = 60 // so weit gezogen: blättern
 const ANGLE = 1.4 // |dx| muss so viel größer sein als |dy|
 const VERT_PX = 24 // erst ab hier gilt eine Bewegung als senkrecht …
 const VERT_RATIO = 2 // … und nur, wenn sie so deutlich überwiegt
-const DAMP = 0.35 // der Inhalt folgt gedämpft, nicht 1:1
+const RUBBER = 0.25 // am Anfang/Ende: zäh mitgeben statt mitschieben
+const SLIDE_MS = 200 // Dauer für Hinaus- und Hereinschieben je
+const SPRING_MS = 180 // Zurückfedern, wenn nicht geblättert wird
 
 interface Options {
   onPrev: () => void
@@ -67,16 +80,54 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     let phase: 'offen' | 'waagerecht' | 'verworfen' = 'offen'
     let dx = 0
 
+    let timer: number | undefined
+    let raf: number | undefined
+    let laeuft = false // Blätter-Animation läuft; neue Gesten warten
+
     const setShift = (px: number) => el.style.setProperty('--week-shift', `${px}px`)
+    const setTransition = (ms: number | null) => {
+      el.style.transition = ms === null ? '' : `transform ${ms}ms ease-out`
+    }
+
+    /** Zurück auf null — „hier geht es nicht weiter" oder zu kurz gezogen. */
     const release = (animate: boolean) => {
-      el.style.transition = animate ? 'transform 200ms ease-out' : ''
+      setTransition(animate ? SPRING_MS : null)
       setShift(0)
-      if (animate) window.setTimeout(() => (el.style.transition = ''), 220)
+      if (animate) timer = window.setTimeout(() => setTransition(null), SPRING_MS + 20)
+    }
+
+    /**
+     * Echtes Durchschieben: erst ganz hinaus, dann die neue Woche einsetzen,
+     * während der Bildschirm außer Sicht ist, und von der Gegenseite herein.
+     *
+     * Der Wechsel passiert bewusst NICHT vor dem Hinausschieben — sonst sähe
+     * man die neue Woche schon wegwandern.
+     */
+    const slide = (richtung: -1 | 1, blaettern: () => void) => {
+      const weg = window.innerWidth
+      laeuft = true
+      setTransition(SLIDE_MS)
+      setShift(richtung * weg)
+      timer = window.setTimeout(() => {
+        // Außer Sicht: ohne Übergang auf die Gegenseite setzen und wechseln.
+        setTransition(null)
+        setShift(-richtung * weg)
+        blaettern()
+        // Ein Frame später ist der neue Inhalt gerendert — dann hereinschieben.
+        raf = requestAnimationFrame(() => {
+          setTransition(SLIDE_MS)
+          setShift(0)
+          timer = window.setTimeout(() => {
+            setTransition(null)
+            laeuft = false
+          }, SLIDE_MS + 20)
+        })
+      }, SLIDE_MS)
     }
 
     const onStart = (e: TouchEvent) => {
-      // Mehrfinger (Zoom) gehört nicht uns.
-      if (aktiv || e.touches.length !== 1) {
+      // Mehrfinger (Zoom) gehört nicht uns; während des Blätterns ist Pause.
+      if (aktiv || laeuft || e.touches.length !== 1) {
         aktiv = false
         phase = 'verworfen'
         return
@@ -120,9 +171,11 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       // Geste schon übernommen, ist das Ereignis nicht mehr abbrechbar — dann
       // scrollt es eben ein Stück mit.
       if (e.cancelable) e.preventDefault()
-      // Am Anfang/Ende der Wochen zäher ziehen — signalisiert „hier ist Schluss".
+      // 1:1 mitschieben — der Inhalt wandert ja wirklich hinaus. Nur am
+      // Anfang/Ende zäh mitgeben: dort federt es gleich wieder zurück, und
+      // genau das soll „hier ist Schluss" heißen.
       const blocked = (dx > 0 && !o.current.canPrev) || (dx < 0 && !o.current.canNext)
-      setShift(dx * (blocked ? DAMP * 0.3 : DAMP))
+      setShift(blocked ? dx * RUBBER : dx)
     }
 
     const onEnd = () => {
@@ -131,10 +184,13 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       const moved = dx
       aktiv = false
       phase = 'offen'
+      if (warWaagerecht && Math.abs(moved) >= COMMIT_PX) {
+        // Nach rechts gezogen (moved > 0) heißt: die vorige Woche kommt von
+        // links — der Bildschirm muss also nach rechts hinaus.
+        if (moved > 0 && o.current.canPrev) return slide(1, o.current.onPrev)
+        if (moved < 0 && o.current.canNext) return slide(-1, o.current.onNext)
+      }
       release(true)
-      if (!warWaagerecht || Math.abs(moved) < COMMIT_PX) return
-      if (moved > 0 && o.current.canPrev) o.current.onPrev()
-      else if (moved < 0 && o.current.canNext) o.current.onNext()
     }
 
     /* Vom System abgebrochen (Anruf, System-Geste): nicht blättern. */
@@ -156,6 +212,10 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       el.removeEventListener('touchmove', onMove)
       el.removeEventListener('touchend', onEnd)
       el.removeEventListener('touchcancel', onCancel)
+      // Laufende Animation abbrechen — sonst greifen die Zeitgeber auf ein
+      // Element zu, das längst aus dem Baum ist.
+      if (timer !== undefined) window.clearTimeout(timer)
+      if (raf !== undefined) cancelAnimationFrame(raf)
       el.style.removeProperty('--week-shift')
       el.style.transition = ''
     }
