@@ -209,6 +209,7 @@ export default {
   "importOhneDb": "Import unavailable — no database connected",
   "notifZuteilung": "New assignment",
   "notifErinnerung": "Reminder",
+  "notifErinnerungBest": "Reminder: confirm your assignment",
   "notifPlan": "Schedule published",
   "notifZutGesendet": "Assignment sent",
   "notifZutsGesendet": "Assignments sent",

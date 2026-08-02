@@ -169,6 +169,7 @@ export default {
   "importOhneDb": "درون‌ریزی ممکن نیست — پایگاه دادهای متصل نیست",
   "notifZuteilung": "وظیفهٔ جدید",
   "notifErinnerung": "یادآوری",
+  "notifErinnerungBest": "یادآوری: وظیفهٔ خود را تأیید کنید",
   "notifPlan": "برنامه منتشر شد",
   "notifZutGesendet": "وظیفه ارسال شد",
   "notifZutsGesendet": "وظایف ارسال شد",

@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Importação indisponível — nenhuma base de dados ligada",
   "notifZuteilung": "Nova designação",
   "notifErinnerung": "Lembrete",
+  "notifErinnerungBest": "Lembrete: confirma a tua designação",
   "notifPlan": "Programa publicado",
   "notifZutGesendet": "Designação enviada",
   "notifZutsGesendet": "Designações enviadas",

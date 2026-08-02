@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
-import { deletePushSubscription, savePushSubscription } from '../lib/data'
+import { deletePushSubscription, savePushLanguage, savePushSubscription } from '../lib/data'
 import { appInstalled, installAvailable, onInstallChange } from '../lib/install'
 import {
   currentSubscription,
@@ -39,6 +39,15 @@ export function usePush(): PushState {
     void currentSubscription().then((sub) => setSubscribed(Boolean(sub)))
   }, [production, supported])
 
+  // Sprachwechsel ans bestehende Abo weiterreichen: Push-Text entsteht beim
+  // Versand, wer die Sprache später umstellt, bekäme sonst dauerhaft die alte.
+  useEffect(() => {
+    if (!production || !supported || !subscribed) return
+    void currentSubscription().then((sub) => {
+      if (sub) savePushLanguage(sub.endpoint, state.lang)
+    })
+  }, [production, supported, subscribed, state.lang])
+
   const enable = async (): Promise<boolean> => {
     const sub = await subscribePush().catch(() => null)
     const fields = sub && subscriptionFields(sub)
@@ -46,7 +55,7 @@ export function usePush(): PushState {
       dispatch({ type: 'showToast', text: t.toastPushVerweigert })
       return false
     }
-    savePushSubscription(state.congregationId, state.userId, fields)
+    savePushSubscription(state.congregationId, state.userId, fields, state.lang)
     setSubscribed(true)
     dispatch({ type: 'showToast', text: t.toastPushAn })
     return true

@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "无法导入 — 未连接数据库",
   "notifZuteilung": "新分配",
   "notifErinnerung": "提醒",
+  "notifErinnerungBest": "提醒：请确认你的任务",
   "notifPlan": "节目已发布",
   "notifZutGesendet": "分配已发送",
   "notifZutsGesendet": "分配已发送",

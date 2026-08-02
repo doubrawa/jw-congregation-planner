@@ -766,11 +766,17 @@ export function savePersonGroup(person: Person): void {
   void run(supabase.from('persons').update({ grp: person.grp ?? null }).eq('id', person.id))
 }
 
-/** Push-Abo dieses Geräts speichern (Endpoint ist eindeutig → Upsert). */
+/**
+ * Push-Abo dieses Geräts speichern (Endpoint ist eindeutig → Upsert).
+ *
+ * `lang` ist die App-Sprache dieses Geräts: der Text einer Push-Nachricht
+ * entsteht beim Versand und lässt sich danach nicht mehr übersetzen.
+ */
 export function savePushSubscription(
   congregationId: string,
   userId: string,
   sub: { endpoint: string; p256dh: string; auth: string },
+  lang: string,
 ): void {
   if (!supabase) return
   void run(
@@ -781,10 +787,20 @@ export function savePushSubscription(
         endpoint: sub.endpoint,
         p256dh: sub.p256dh,
         auth: sub.auth,
+        lang,
       },
       { onConflict: 'endpoint' },
     ),
   )
+}
+
+/**
+ * Sprache eines bestehenden Abos nachziehen. Ohne das bekäme jemand, der die
+ * Sprache nach dem Aktivieren wechselt, weiter Erinnerungen in der alten.
+ */
+export function savePushLanguage(endpoint: string, lang: string): void {
+  if (!supabase) return
+  void run(supabase.from('push_subscriptions').update({ lang }).eq('endpoint', endpoint))
 }
 
 export function deletePushSubscription(endpoint: string): void {

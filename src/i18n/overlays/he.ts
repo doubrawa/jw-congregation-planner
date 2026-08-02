@@ -169,6 +169,7 @@ export default {
   "importOhneDb": "ייבוא לא אפשרי — לא מחוברת מסד נתונים",
   "notifZuteilung": "מטלה חדשה",
   "notifErinnerung": "תזכורת",
+  "notifErinnerungBest": "תזכורת: אשר את המטלה שלך",
   "notifPlan": "הלוח פורסם",
   "notifZutGesendet": "השיבוץ נשלח",
   "notifZutsGesendet": "השיבוצים נשלחו",

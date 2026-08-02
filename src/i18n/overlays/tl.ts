@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Hindi maaaring mag-import — walang nakakonektang database",
   "notifZuteilung": "Bagong atas",
   "notifErinnerung": "Paalala",
+  "notifErinnerungBest": "Paalala: kumpirmahin ang iyong atas",
   "notifPlan": "Nai-publish ang programa",
   "notifZutGesendet": "Naipadala ang atas",
   "notifZutsGesendet": "Naipadala ang mga atas",

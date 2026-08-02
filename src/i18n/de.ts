@@ -165,6 +165,7 @@ export const DE = {
     toastAlleWochen: 'Alle verfügbaren Wochen sind importiert', toastImportiert: 'Arbeitsheft-Woche importiert',
     importOhneDb: 'Import nicht möglich — keine Datenbank angebunden',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
+    notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
     rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleVerkIn: 'Verkündigerin',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete', privLesen: 'Bibellesung / Leser',

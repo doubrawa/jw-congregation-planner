@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Importeren niet mogelijk — geen database verbonden",
   "notifZuteilung": "Nieuwe toewijzing",
   "notifErinnerung": "Herinnering",
+  "notifErinnerungBest": "Herinnering: bevestig je toewijzing",
   "notifPlan": "Programma gepubliceerd",
   "notifZutGesendet": "Toewijzing verzonden",
   "notifZutsGesendet": "Toewijzingen verzonden",

@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "インポートできません — データベースが接続されていません",
   "notifZuteilung": "新しい割り当て",
   "notifErinnerung": "リマインダー",
+  "notifErinnerungBest": "リマインダー：割り当てを確認してください",
   "notifPlan": "プログラムを公開",
   "notifZutGesendet": "割り当てを送信",
   "notifZutsGesendet": "割り当てを送信",

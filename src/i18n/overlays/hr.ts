@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Uvoz nije moguć — nema povezane baze podataka",
   "notifZuteilung": "Nova dodjela",
   "notifErinnerung": "Podsjetnik",
+  "notifErinnerungBest": "Podsjetnik: potvrdi svoj zadatak",
   "notifPlan": "Program objavljen",
   "notifZutGesendet": "Dodjela poslana",
   "notifZutsGesendet": "Dodjele poslane",

@@ -169,6 +169,7 @@ export default {
   "importOhneDb": "درآمد ممکن نہیں — کوئی ڈیٹابیس منسلک نہیں",
   "notifZuteilung": "نئی ذمہ داری",
   "notifErinnerung": "یاد دہانی",
+  "notifErinnerungBest": "یاد دہانی: اپنی ذمہ داری کی تصدیق کریں",
   "notifPlan": "شیڈول شائع ہوا",
   "notifZutGesendet": "ذمہ داری بھیجی گئی",
   "notifZutsGesendet": "ذمہ داریاں بھیجی گئیں",

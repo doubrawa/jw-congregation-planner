@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Import niemożliwy — brak połączonej bazy danych",
   "notifZuteilung": "Nowy przydział",
   "notifErinnerung": "Przypomnienie",
+  "notifErinnerungBest": "Przypomnienie: potwierdź swoje zadanie",
   "notifPlan": "Opublikowano program",
   "notifZutGesendet": "Wysłano przydział",
   "notifZutsGesendet": "Wysłano przydziały",

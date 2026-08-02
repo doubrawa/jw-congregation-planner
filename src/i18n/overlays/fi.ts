@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Tuonti ei onnistu — tietokantaa ei ole yhdistetty",
   "notifZuteilung": "Uusi tehtävä",
   "notifErinnerung": "Muistutus",
+  "notifErinnerungBest": "Muistutus: vahvista tehtäväsi",
   "notifPlan": "Ohjelma julkaistu",
   "notifZutGesendet": "Tehtävä lähetetty",
   "notifZutsGesendet": "Tehtävät lähetetty",

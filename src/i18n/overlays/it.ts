@@ -117,6 +117,7 @@ export default {
   "importOhneDb": "Importazione non possibile — nessun database collegato",
   "notifZuteilung": "Nuovo incarico",
   "notifErinnerung": "Promemoria",
+  "notifErinnerungBest": "Promemoria: conferma il tuo incarico",
   "notifPlan": "Programma pubblicato",
   "notifZutGesendet": "Incarico inviato",
   "notifZutsGesendet": "Incarichi inviati",

@@ -141,6 +141,9 @@ create table if not exists public.push_subscriptions (
   endpoint        text not null unique,
   p256dh          text not null,
   auth            text not null,
+  -- App-Sprache dieses Geräts: Push-Text entsteht beim Versand und kann später
+  -- nicht mehr übersetzt werden. null = Deutsch (Abos von vor migration-014).
+  lang            text,
   created_at      timestamptz not null default now()
 );
 
