@@ -32,19 +32,9 @@ import { gestenLog } from '../lib/gesture-log'
  *
  * ## Was die Bewegung aussagt
  *
- * Der Inhalt folgt dem Finger 1:1 — er wird ja weggeschoben. Beim Loslassen
- * wandern alte und neue Woche gemeinsam weiter, wie zwei Bilder eines
- * Filmstreifens: die alte hinaus, die neue direkt dahinter herein.
- *
- * Dass sie aneinanderkleben, ist der Punkt. Ohne das sprang der Inhalt quer
- * über den Bildschirm — einen Wimpernschlag lang war gar nichts zu sehen —
- * und das las sich, als wäre die Bewegung zurückgelaufen.
- *
- * Beide Bildschirme lesen die Woche direkt aus dem Zustand; zwei Wochen
- * gleichzeitig zu rendern hieße, sie dafür umzubauen. Stattdessen bleibt ein
- * Standbild (`cloneNode`) der alten Woche liegen und wandert mit hinaus. Es ist
- * reine Optik: keine Ereignisse, für Screenreader unsichtbar, und nach der
- * Bewegung wieder weg.
+ * Der Inhalt folgt dem Finger 1:1 — der ganze Streifen wird ja verschoben.
+ * Die Nachbarwochen sind bereits gezeichnet (WeekStrip), stehen also schon
+ * angedockt daneben und kommen beim Ziehen von selbst ins Bild.
  *
  * Zurückfedern heißt ausdrücklich das Gegenteil: „hier geht es nicht weiter".
  * Deshalb federt es nur, wenn wirklich nichts kommt (erste/letzte Woche) oder
@@ -94,7 +84,6 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     let bewegungen = 0 // nur fuers Protokoll
 
     let timer: number | undefined
-    let raf: number | undefined
     let laeuft = false // Blätter-Animation läuft; neue Gesten warten
 
     const setShift = (px: number) => el.style.setProperty('--week-shift', `${px}px`)
@@ -109,77 +98,38 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       if (animate) timer = window.setTimeout(() => setTransition(null), SPRING_MS + 20)
     }
 
-    /** Standbild der aktuellen Woche, das mit hinauswandert. */
-    let buehne: HTMLElement | null = null
-    const buehneWeg = () => {
-      buehne?.remove()
-      buehne = null
-    }
-
     /**
-     * Filmstreifen: alte und neue Woche wandern um dieselbe Strecke weiter.
+     * Blättern: den Streifen um genau eine Wochenbreite weiterschieben.
      *
-     * `richtung` -1 = nach links hinaus (nächste Woche), +1 = nach rechts.
-     * Die neue Woche startet unmittelbar neben der alten — deshalb genau eine
-     * Bildschirmbreite versetzt — und beide legen dieselbe Strecke zurück.
+     * `richtung` -1 = nach links (nächste Woche), +1 = nach rechts. Die
+     * Nachbarwochen sind bereits gezeichnet (WeekStrip), es gibt also nichts
+     * einzublenden — nur zu verschieben.
+     *
+     * Am Ende der Bewegung steht die Nachbarwoche dort, wo die mittlere hin
+     * gehört. Der Wochenwechsel macht sie zur mittleren, und der Versatz geht
+     * im selben Zug auf null zurück: beides in einem Arbeitsschritt, damit
+     * dazwischen nichts gezeichnet wird. `flushSync`, weil ein späteres
+     * Rendern genau dieses eine Bild kosten würde.
      */
     const slide = (richtung: -1 | 1, ab: number, blaettern: () => void) => {
       laeuft = true
-      gestenLog('BLÄTTERN', { richtung, ab: Math.round(ab) })
-
-      // Standbild dort einfrieren, wo der Finger losgelassen hat.
-      const r = el.getBoundingClientRect()
       /*
-       * Versetzt wird um die Breite des BILDSCHIRMS, nicht des Fensters. Die
+       * Verschoben wird um die Breite des BILDSCHIRMS, nicht des Fensters. Die
        * App-Spalte ist auf 430 px (mobil) bzw. 660 px begrenzt und sitzt
-       * mittig. Auf allem, was breiter ist — großes Handy, Querformat, Tablet,
-       * Browser-Tab — klaffte sonst genau die Differenz zwischen alter und
-       * neuer Woche, und die alte flöge weit über den Rand hinaus.
+       * mittig; auf allem Breiteren liefe der Streifen sonst zu weit.
        * Rückfall auf die Fensterbreite nur, wenn keine Breite messbar ist.
        */
-      const weg = r.width || window.innerWidth
-      buehne = document.createElement('div')
-      buehne.dataset.weekGhost = '' // Standbild — nur Optik, kein Inhalt der App
-      buehne.setAttribute('aria-hidden', 'true')
-      buehne.style.cssText =
-        'position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:5'
-      const klon = el.cloneNode(true) as HTMLElement
-      klon.style.position = 'absolute'
-      // `r.left` enthält die aktuelle Verschiebung bereits — sie steckt ja im
-      // transform. Sie muss herausgerechnet werden, sonst wirkt sie doppelt
-      // (einmal über die Position, einmal über --week-shift) und zwischen
-      // alter und neuer Woche klafft genau die gezogene Strecke.
-      klon.style.left = `${r.left - ab}px`
-      klon.style.top = `${r.top}px`
-      klon.style.width = `${r.width}px`
-      klon.style.margin = '0'
-      // Den Untergrund der App-Spalte mitnehmen. Das Standbild hängt am
-      // <body> und säße sonst auf dessen Schreibtisch-Ton — die hinauswandernde
-      // Woche sähe aus wie Text ohne Hintergrund. Auf dem Tablet, wo die Spalte
-      // schmaler als das Fenster ist, fällt das sofort auf.
-      klon.style.background = 'var(--bg)'
-      klon.style.setProperty('--week-shift', `${ab}px`)
-      buehne.appendChild(klon)
-      document.body.appendChild(buehne)
+      const weg = el.getBoundingClientRect().width || window.innerWidth
+      gestenLog('BLÄTTERN', { richtung, ab: Math.round(ab), weg: Math.round(weg) })
 
-      // Die neue Woche ohne Übergang direkt neben das Standbild setzen und
-      // sofort einwechseln. `flushSync`, damit sie wirklich schon da steht,
-      // bevor die Bewegung beginnt — sonst liefe kurz die alte Woche mit.
-      setTransition(null)
-      setShift(ab - richtung * weg)
-      flushSync(blaettern)
-
-      raf = requestAnimationFrame(() => {
-        setTransition(SLIDE_MS)
+      setTransition(SLIDE_MS)
+      setShift(richtung * weg)
+      timer = window.setTimeout(() => {
+        setTransition(null)
+        flushSync(blaettern)
         setShift(0)
-        klon.style.transition = `transform ${SLIDE_MS}ms ease-out`
-        klon.style.setProperty('--week-shift', `${richtung * weg}px`)
-        timer = window.setTimeout(() => {
-          setTransition(null)
-          buehneWeg()
-          laeuft = false
-        }, SLIDE_MS + 20)
-      })
+        laeuft = false
+      }, SLIDE_MS)
     }
 
     const onStart = (e: TouchEvent) => {
@@ -243,14 +193,28 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       setShift(blocked ? dx * RUBBER : dx)
     }
 
-    const onEnd = () => {
+    /**
+     * Geste beenden — sowohl bei touchend als auch bei touchcancel.
+     *
+     * Entscheidend ist, dass ein Abbruch NICHT anders behandelt wird, sobald
+     * die Bewegung schon als waagerecht erkannt und weit genug gezogen war.
+     * Android zieht die Geste an sich, wenn der anfangs senkrechte Bogen wie
+     * Scrollen aussieht, und schickt dann touchcancel. Wer daraufhin nur
+     * zurückfedert, blättert auf dem Gerät nie — genau das war zu beobachten,
+     * während iPad und Rechner sauber durchliefen.
+     *
+     * Der Wunsch des Nutzers steht zu dem Zeitpunkt längst fest: über 60 px
+     * eindeutig zur Seite gezogen. Ihn wegen einer Browser-Entscheidung zu
+     * verwerfen, wäre die schlechtere Auslegung.
+     */
+    const beenden = (grund: 'touchend' | 'touchcancel') => {
       if (!aktiv) return
       const warWaagerecht = phase === 'waagerecht'
       const stand = phase // vor dem Zurücksetzen, fürs Protokoll
       const moved = dx
       aktiv = false
       phase = 'offen'
-      gestenLog('touchend', {
+      gestenLog(grund, {
         phase: stand,
         dx: Math.round(moved),
         schwelle: COMMIT_PX,
@@ -267,13 +231,10 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       release(true)
     }
 
-    /* Vom System abgebrochen (Anruf, System-Geste): nicht blättern. */
+    const onEnd = () => beenden('touchend')
     const onCancel = () => {
-      gestenLog('touchcancel (Browser übernimmt)', { aktiv, phase, dx: Math.round(dx), bewegungen })
-      if (!aktiv) return
-      aktiv = false
-      phase = 'offen'
-      release(true)
+      if (!aktiv) gestenLog('touchcancel (ohne laufende Geste)', { phase })
+      beenden('touchcancel')
     }
 
     // `passive: false` bei touchmove — ohne das darf preventDefault() nicht
@@ -291,8 +252,6 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       // Element zu, das längst aus dem Baum ist, und das Standbild bliebe über
       // dem nächsten Bildschirm liegen.
       if (timer !== undefined) window.clearTimeout(timer)
-      if (raf !== undefined) cancelAnimationFrame(raf)
-      buehneWeg()
       el.style.removeProperty('--week-shift')
       el.style.transition = ''
     }
