@@ -167,6 +167,19 @@ function ProgramMeeting({
         )
       })}
 
+      {/* Ratgeber der Zusätzlichen Klasse — gehört zur ganzen Klasse, nicht
+          zu einem Punkt, deshalb eine eigene Zeile hinter dem Programm. */}
+      {rawMeeting.auxRatgeber && (
+        <div className="panel panel--pb16" data-farbe="neutral2">
+          <div className="panel-label">{t.auxKlassen}</div>
+          <ProgramRow
+            item={{ title: t.auxRatgeber, names: [rawMeeting.auxRatgeber] }}
+            myName={myName}
+            tpw={tpw}
+          />
+        </div>
+      )}
+
       <div className="panel panel--pb16 prog-helpers" data-farbe="neutral2">
         <div className="panel-label">{t.hilfsdienste}</div>
         <div className="prog-helpers-grid">
@@ -220,14 +233,24 @@ function ProgramRow({
         {item.meta && <div className="prog-item-meta">{tpw(item.meta)}</div>}
       </div>
       <div className="prog-names">
-        {item.names.map((slot, index) => (
-          <div key={index} className="prog-name-block">
-            <div className="prog-name">
-              {myName !== null && slot.name === myName && <span className="chip-du">DU</span>}
-              <span>{slot.name || t.offenDash}</span>
-            </div>
-            {slot.rolle && <div className="prog-role">{tu(slot.rolle)}</div>}
-          </div>
+        {/*
+          Bei einer Zusätzlichen Klasse stehen beide Räume untereinander, jeder
+          mit seiner Überschrift. Ohne Klasse (item.aux fehlt) bleibt es die
+          schlichte Namensliste von vorher.
+        */}
+        {(item.aux ? [false, true] : [false]).map((aux) => (
+          <Fragment key={aux ? 'aux' : 'haupt'}>
+            {item.aux && <div className="prog-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>}
+            {(aux ? item.aux ?? [] : item.names).map((slot, index) => (
+              <div key={index} className="prog-name-block">
+                <div className="prog-name">
+                  {myName !== null && slot.name === myName && <span className="chip-du">DU</span>}
+                  <span>{slot.name || t.offenDash}</span>
+                </div>
+                {slot.rolle && <div className="prog-role">{tu(slot.rolle)}</div>}
+              </div>
+            ))}
+          </Fragment>
         ))}
       </div>
     </div>

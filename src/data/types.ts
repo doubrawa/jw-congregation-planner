@@ -335,6 +335,8 @@ export interface S89Payload {
   date: string // "Di, 8. September · 19:00"
   type: string // Aufgabe inkl. Rahmen ("Gespräche beginnen · Informell")
   point: string // Schulungspunkt ("lmd Lektion 1" / "th Lektion 10"), leer möglich
+  /** Durchzuführen in der Zusätzlichen Klasse statt im Hauptsaal. */
+  aux?: boolean
 }
 
 /** Eine dem eingeloggten Nutzer zugeteilte Aufgabe (persönlicher Bereich). */
@@ -419,10 +421,27 @@ export interface FsSlotSelection {
   groups: boolean
 }
 
-export type SlotSelection = PartSlotSelection | HelperSlotSelection | FsSlotSelection
+/**
+ * Ratgeber-Platz der Zusätzlichen Klasse. Eigene Art, weil er an der
+ * Zusammenkunft hängt und nicht an einem Programmpunkt — er hat also weder
+ * Sektions- noch Punkt-Index.
+ */
+export interface RatgeberSlotSelection extends SlotSelectionBase {
+  kind: 'ratgeber'
+  tab: MeetingKey
+}
 
-/** Slot einer echten Zusammenkunft (Programmpunkt oder Hilfsdienst, mit `tab`). */
-export type MeetingSlotSelection = PartSlotSelection | HelperSlotSelection
+export type SlotSelection =
+  | PartSlotSelection
+  | HelperSlotSelection
+  | FsSlotSelection
+  | RatgeberSlotSelection
+
+/** Slot einer echten Zusammenkunft (Programmpunkt, Hilfsdienst oder Ratgeber). */
+export type MeetingSlotSelection =
+  | PartSlotSelection
+  | HelperSlotSelection
+  | RatgeberSlotSelection
 
 export type NotificationType =
   | 'zuteilung' // Neue Zuteilung

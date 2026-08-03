@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { buchTabelle } from './bible-books'
 import { APP_LANGS } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
+import { dict, loadOverlay } from './ui'
+
+// Alle Overlays laden — dict() faellt sonst auf Englisch zurueck.
+for (const { code } of APP_LANGS) await loadOverlay(code)
 
 // Die Tabellen liegen in einem nachgeladenen Modul; makeTr stellt seine Regeln
 // beim Erzeugen zusammen, das Laden muss also vorher passiert sein.
@@ -104,5 +108,33 @@ describe('Mitteilungstext „Treffpunkte"', () => {
   it('auch als Teil eines zusammengesetzten Textes', () => {
     // So sieht die Zeile aus: „Name — Treffpunkte · 7.–13. September"
     expect(makeTr('en')('Simon Krüger — Treffpunkte · Jer 32:6-18')).toBe('Simon Krüger — Field Service · Jer 32:6-18')
+  })
+})
+
+/**
+ * Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Abschnittsüberschrift kommt
+ * aus dem Artikel selbst, „Hauptsaal" aus dem schon vorhandenen Schlüssel des
+ * S-89-Formulars — beides also nicht neu übersetzt, sondern übernommen.
+ */
+describe('Begriffe der Zusätzlichen Klasse', () => {
+  const KEYS = ['auxKlassen', 'auxKlasse', 'auxHauptsaal', 'auxRatgeber', 'auxDesc',
+    'auxRatgeberHint', 'toastAuxAn', 'toastAuxAus'] as const
+
+  it('sind in jeder App-Sprache gesetzt und nicht deutsch stehengeblieben', () => {
+    const de = dict('de')
+    for (const { code } of APP_LANGS) {
+      if (code === 'de') continue
+      for (const key of KEYS) {
+        expect(dict(code)[key], `${code}/${key}`).toBeTruthy()
+        expect(dict(code)[key], `${code}/${key}`).not.toBe(de[key])
+      }
+    }
+  })
+
+  it('„Hauptsaal" ist derselbe Begriff wie im S-89-Formular', () => {
+    // Zwei Wörter für denselben Raum wären in derselben App verwirrend.
+    for (const { code } of APP_LANGS) {
+      expect(dict(code).auxHauptsaal, code).toBe(dict(code).s89Hauptsaal)
+    }
   })
 })

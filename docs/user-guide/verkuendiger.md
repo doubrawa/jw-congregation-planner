@@ -80,6 +80,18 @@ Bei den Treffpunkten siehst du **Versammlungstreffpunkte** (für alle) und die
 **Gruppentreffpunkte** deiner Predigtdienstgruppe – jeweils mit Uhrzeit, Ort und
 Leiter.
 
+### Zusätzliche Klasse
+
+Führt eure Versammlung eine **zusätzliche Klasse** durch, stehen bei den
+Schülerteilen zwei Blöcke untereinander: **Hauptsaal** und **Zusätzliche
+Klasse**. Betroffen sind die Bibellesung und die Teile unter „Uns im Dienst
+verbessern"; die Teilnehmer gehen dafür nach dem Programmpunkt „Nach geistigen
+Schätzen graben" in den zweiten Raum und kommen nach der letzten
+Schulungsaufgabe zurück.
+
+Bist **du** eingeteilt, siehst du am Block, in welchem Raum – und auf deinem
+**S‑89‑Zettel** steht es ebenfalls.
+
 ---
 
 ## 4. Meine Aufgaben

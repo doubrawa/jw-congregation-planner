@@ -263,3 +263,21 @@
   font-size: calc(11px * var(--fs));
   color: var(--mut);
 }
+
+/*
+ * Raum-Überschrift über einer Namensspalte (Hauptsaal / Zusätzliche Klasse).
+ * Nur vorhanden, wenn der Punkt tatsächlich in beiden Räumen läuft.
+ */
+.prog-raum {
+  margin-top: 6px;
+  font-size: calc(10.5px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
+/* Die erste Überschrift sitzt schon am oberen Rand der Spalte. */
+.prog-names > .prog-raum:first-child {
+  margin-top: 0;
+}

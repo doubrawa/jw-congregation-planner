@@ -195,6 +195,13 @@
     font-size: 8.5pt;
   }
 
+  /* Raum-Überschrift (Hauptsaal / Zusätzliche Klasse) — auf Papier genauso
+     nötig wie am Bildschirm, sonst stünden zwei Namen ohne Zuordnung da. */
+  .prog-raum {
+    margin-top: 1mm;
+    font-size: 7.5pt;
+  }
+
   /* „DU“ ist eine Bildschirm-Markierung für den angemeldeten Nutzer. */
   .chip-du {
     display: none;

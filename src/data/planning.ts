@@ -9,7 +9,7 @@
  * den Reducer und später direkt testbar.
  */
 
-import { RATGEBER_ROLLE, slotsOf } from './aux-class'
+import { RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
@@ -61,6 +61,7 @@ function tieHash(s: string): number {
 /** Aktueller Name auf einem Slot ("" = offen). */
 export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
   const meeting = weeks[sel.wi][sel.tab]
+  if (sel.kind === 'ratgeber') return meeting.auxRatgeber?.name ?? ''
   if (sel.kind === 'part') {
     const item = meeting.sections[sel.si].items[sel.ii]
     return isSong(item) ? '' : (slotsOf(item, sel.aux === true)[sel.ni]?.name ?? '')
@@ -127,7 +128,11 @@ export function assignSlot(
 ): Week[] {
   const next = structuredClone(weeks)
   const meeting = next[sel.wi][sel.tab]
-  if (sel.kind === 'part') {
+  if (sel.kind === 'ratgeber') {
+    meeting.auxRatgeber = { ...ratgeberSlot(meeting), name }
+    if (name && pid) meeting.auxRatgeber.pid = pid
+    else delete meeting.auxRatgeber.pid
+  } else if (sel.kind === 'part') {
     const item = meeting.sections[sel.si].items[sel.ii]
     if (!isSong(item)) {
       const slot = slotsOf(item, sel.aux === true)[sel.ni]
@@ -381,13 +386,15 @@ export function autoAssignMeeting(
    * Gesprächsführer/-partner → Gesamtlast (Schwestern zuerst), Älteste/DAG nur
    * als letzte Wahl (Malus); Partner zusätzlich gleiches Geschlecht wie der Führer.
    */
-  const ministryOpts = (item: PartItem, slot: SlotAssignment) => {
+  const ministryOpts = (item: PartItem, slot: SlotAssignment, aux = false) => {
     if (slot.male) return { extra: (p: Person) => !p.female }
     if (slot.bereichsKey === 'schulung') {
       return { byTotal: true, malus: (p: Person) => !isPlainPublisher(p) }
     }
     if (slot.bereichsKey === 'schulungPartner') {
-      const leadName = item.names.find((n) => n.bereichsKey === 'schulung')?.name ?? ''
+      // Der Gesprächspartner muss zum Führer DESSELBEN Raums passen — sonst
+      // richtete sich die Zusätzliche Klasse nach dem Hauptsaal.
+      const leadName = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')?.name ?? ''
       const lead = leadName ? persons.find((p) => displayName(p) === leadName) : undefined
       return {
         byTotal: true,
@@ -431,22 +438,41 @@ export function autoAssignMeeting(
 
   // 2) Übrige Programmpunkte. Das Anfangsgebet (Eröffnung) wird übersprungen
   //    und unten an den Vorsitz gekoppelt.
+  //
+  //    Die Zusätzliche Klasse läuft in derselben Schleife mit: ihre Plätze
+  //    sind gleichwertige Aufgaben und teilen sich die `used`-Menge mit dem
+  //    Hauptsaal — niemand kann zur selben Zeit in beiden Räumen sein.
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
-      for (const slot of item.names) {
-        if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-        if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
-        // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
-        const person = pick('part', slot.bereichsKey, ministryOpts(item, slot))
-        if (person) {
-          slot.name = displayName(person)
-          slot.pid = person.id
-          claim('part', slot.name)
-        } else {
-          unfilled++
+      for (const aux of [false, true]) {
+        for (const slot of slotsOf(item, aux)) {
+          if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
+          if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
+          // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
+          const person = pick('part', slot.bereichsKey, ministryOpts(item, slot, aux))
+          if (person) {
+            slot.name = displayName(person)
+            slot.pid = person.id
+            claim('part', slot.name)
+          } else {
+            unfilled++
+          }
         }
       }
+    }
+  }
+
+  // 2b) Ratgeber der Zusätzlichen Klasse — eigener Bereich, eine Person je
+  //     Zusammenkunft. Nur besetzen, wenn die Woche überhaupt eine Klasse hat.
+  if (meeting.auxRatgeber && !meeting.auxRatgeber.name) {
+    const person = pick('part', 'ratgeber')
+    if (person) {
+      meeting.auxRatgeber.name = displayName(person)
+      meeting.auxRatgeber.pid = person.id
+      claim('part', meeting.auxRatgeber.name)
+    } else {
+      unfilled++
     }
   }
 
@@ -522,14 +548,24 @@ export function clearAssignments(
     for (const section of meeting.sections) {
       for (const item of section.items) {
         if (isSong(item)) continue
-        for (const slot of item.names) {
-          if (SKIP_ROLE.test(slot.rolle ?? '')) continue // externer Redner bleibt
-          if (slot.name) {
-            slot.name = ''
-            count++
+        // Beide Räume leeren: „Leeren" meint die Aufgaben dieser Ansicht,
+        // und die Zusätzliche Klasse gehört dazu.
+        for (const aux of [false, true]) {
+          for (const slot of slotsOf(item, aux)) {
+            if (SKIP_ROLE.test(slot.rolle ?? '')) continue // externer Redner bleibt
+            if (slot.name) {
+              slot.name = ''
+              delete slot.pid
+              count++
+            }
           }
         }
       }
+    }
+    if (meeting.auxRatgeber?.name) {
+      meeting.auxRatgeber = { ...meeting.auxRatgeber, name: '' }
+      delete meeting.auxRatgeber.pid
+      count++
     }
   } else {
     for (const key of Object.keys(meeting.helpers)) {
@@ -557,7 +593,8 @@ export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Pa
   const meeting = weeks[sel.wi][sel.tab]
   const item = meeting.sections[sel.si].items[sel.ii]
   if (isSong(item)) return null
-  const slot = item.names[sel.ni]
+  const raum = sel.aux === true
+  const slot = slotsOf(item, raum)[sel.ni]
   const current = slot?.name ?? ''
   if (!current) return null
   const isStudent =
@@ -566,8 +603,8 @@ export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Pa
   // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
   // getrennte Slots im selben Punkt. Alt-Daten trugen den Partner als "mit X" im
   // Rollentext — als Rückfall weiter unterstützt.
-  const leadName = item.names.find((n) => n.bereichsKey === 'schulung')?.name ?? ''
-  const partnerName = item.names.find((n) => n.bereichsKey === 'schulungPartner')?.name ?? ''
+  const leadName = slotsOf(item, raum).find((n) => n.bereichsKey === 'schulung')?.name ?? ''
+  const partnerName = slotsOf(item, raum).find((n) => n.bereichsKey === 'schulungPartner')?.name ?? ''
   const role = slot?.rolle ?? ''
   const legacyPartner = role.startsWith('mit ') ? role.slice(4) : ''
   const metaFrags = (item.meta ?? '').split(' · ')
@@ -582,6 +619,9 @@ export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Pa
     date: meeting.date.split(' · ').slice(0, 2).join(' · '),
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,
+    // Der Ort stand hier frueher gar nicht im Modell — das Formular zeigte
+    // immer 'Hauptsaal'. Jetzt kommt er aus der tatsaechlichen Zuteilung.
+    aux: raum,
   }
 }
 
@@ -873,12 +913,17 @@ function meetingPartNames(meeting: Meeting): string[] {
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
-      for (const slot of item.names) {
-        if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-        names.push(slot.name)
+      // Beide Räume: wer im Hauptsaal UND in der Zusätzlichen Klasse steht,
+      // ist zur selben Zeit an zwei Orten — genau das soll die Prüfung finden.
+      for (const aux of [false, true]) {
+        for (const slot of slotsOf(item, aux)) {
+          if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
+          names.push(slot.name)
+        }
       }
     }
   }
+  if (meeting.auxRatgeber?.name) names.push(meeting.auxRatgeber.name)
   return names
 }
 

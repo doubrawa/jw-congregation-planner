@@ -27,7 +27,11 @@ export function PersonDetail({ person }: { person: Person }) {
       ? `${t.privVorsitz} · ${t.tabMid}`
       : key === 'vorsitzWe'
         ? `${t.privVorsitz} · ${t.tabWe}`
-        : t[PRIV_KEY[key]]
+        : key === 'ratgeber'
+          // Wie beim Vorsitz aus Bausteinen zusammengesetzt: spart einen
+          // eigenen Schlüssel in 34 Sprachen und bleibt automatisch stimmig.
+          ? `${t.auxRatgeber} · ${t.auxKlasse}`
+          : t[PRIV_KEY[key]]
 
   const family = familyMembers(state.persons, person)
   const famIds = new Set([person.id, ...family.map((m) => m.id)])

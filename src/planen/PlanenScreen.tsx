@@ -11,6 +11,7 @@ import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { FsPlan } from './FsPlan'
+import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { HelpersPanel } from './HelpersPanel'
 import { MeetingSection } from './MeetingSection'
 import './planen.css'
@@ -115,6 +116,8 @@ function PlanenBody() {
               tpw={tpw}
             />
           ))}
+
+          <AuxCounselorPanel meeting={rawMeeting} />
 
           <HelpersPanel meeting={meeting} />
         </>

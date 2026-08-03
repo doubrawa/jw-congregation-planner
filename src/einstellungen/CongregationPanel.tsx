@@ -80,6 +80,25 @@ export function CongregationPanel() {
           </div>
         </div>
       ))}
+      {/*
+        Zusätzliche Klasse (jw.org S-38, Absatz 26). Gehört zur Versammlung,
+        nicht zum Gerät: bei vielen Verkündigern laufen die Schulungsaufgaben
+        parallel in einem zweiten Raum, damit jeder öfter drankommt.
+      */}
+      <div className="rem-toggle-row">
+        <span className="rem-toggle-label">{t.auxKlasse}</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={state.auxClass}
+          aria-label={t.auxKlasse}
+          className={state.auxClass ? 'switch is-on' : 'switch'}
+          onClick={() => dispatch({ type: 'setAuxClass', on: !state.auxClass })}
+        >
+          <span className="switch-knob" />
+        </button>
+      </div>
+      <p className="panel-hint">{t.auxDesc}</p>
     </div>
   )
 }
