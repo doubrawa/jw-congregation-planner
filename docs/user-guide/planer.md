@@ -20,6 +20,7 @@ Versammlungseinstellungen pflegen.
 5. [Treffpunkte planen](#5-treffpunkte-planen)
 6. [Personen verwalten](#6-personen-verwalten)
 7. [Einstellungen](#7-einstellungen)
+   – [Zusätzliche Klasse](#7a-zusätzliche-klasse)
 8. [Programm importieren](#8-programm-importieren)
 9. [Programm drucken](#9-programm-drucken)
 10. [Ohne Internet (offline)](#10-ohne-internet-offline)
@@ -180,6 +181,35 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
 - **Programm‑Import** – neue Wochen von jw.org laden (siehe unten).
 - **Treffpunkte‑Grundplan** – die regelmäßigen Versammlungs‑ und
   Gruppentreffpunkte (Wochentag, Uhrzeit, Ort, „N‑ter im Monat").
+
+---
+
+## 7a. Zusätzliche Klasse
+
+Hat eure Versammlung viele Verkündiger, könnt ihr die **Schulungsaufgaben
+parallel in einem zweiten Raum** durchführen – so kommt jeder öfter dran. Den
+Schalter dafür findest du in den Einstellungen unter **Versammlung**.
+
+Ist er eingeschaltet, ändert sich Folgendes:
+
+- Beim **Planen** haben die Schülerteile zwei Reihen: **Hauptsaal** und
+  **Zusätzliche Klasse**. Betroffen sind die **Bibellesung** und alles unter
+  **Uns im Dienst verbessern** – genau die Teile, die nach dem Programmpunkt
+  „Nach geistigen Schätzen graben" im zweiten Raum stattfinden.
+- Es kommt eine Karte für den **Ratgeber** dazu. Für jede zusätzliche Klasse
+  muss ein befähigter Ratgeber da sein, vorzugsweise ein Ältester. Damit du
+  jemanden auswählen kannst, setze bei der Person unter **Aufgabenbereiche**
+  den Schalter **Ratgeber**.
+- **Automatisch zuteilen** besetzt beide Räume und achtet darauf, dass niemand
+  gleichzeitig im Hauptsaal und in der Klasse eingeteilt ist.
+- Im **Programm** und im **Ausdruck** stehen beide Räume untereinander, jeder
+  mit seiner Überschrift.
+- Auf dem **S‑89‑Formular** steht jetzt der richtige Raum. Vorher stand dort
+  immer „Hauptsaal".
+
+**Ausschalten löscht nichts.** Die Zuteilungen der Klasse bleiben gespeichert
+und sind wieder da, sobald du den Schalter erneut einschaltest – in der
+Zwischenzeit werden sie nur nicht angezeigt.
 
 ---
 

@@ -92,9 +92,15 @@ export function syncAuxSlots(weeks: Week[], an: boolean): Week[] {
       midGeaendert = true
       return { ...section, items }
     })
-    if (!midGeaendert) return week
+    // Der Ratgeber-Platz muss ebenfalls in den Daten stehen, nicht nur beim
+    // Anzeigen entstehen: sonst zählt ihn niemand als offen, die automatische
+    // Zuteilung übergeht ihn und es geht keine Erinnerung hinaus.
+    const brauchtRatgeber = !mid.auxRatgeber
+    if (!midGeaendert && !brauchtRatgeber) return week
     geaendert = true
-    return { ...week, mid: { ...mid, sections } }
+    const neuesMid = { ...mid, sections }
+    if (brauchtRatgeber) neuesMid.auxRatgeber = ratgeberSlot(mid)
+    return { ...week, mid: neuesMid }
   })
   return geaendert ? naechste : weeks
 }

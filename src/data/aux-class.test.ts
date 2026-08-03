@@ -117,3 +117,28 @@ describe('slotsOf', () => {
     expect(slotsOf(t, true)).toEqual([])
   })
 })
+
+describe('Ratgeber-Platz entsteht in den Daten', () => {
+  it('beim Einschalten, nicht erst beim Anzeigen', () => {
+    // Sonst zählt ihn countOpenSlots nicht, die Auto-Zuteilung übergeht ihn
+    // und send-reminders erinnert niemanden — genau so war es zuerst.
+    const w = syncAuxSlots([woche([teil('schulung')])], true)
+    expect(w[0].mid.auxRatgeber).toEqual({
+      name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true,
+    })
+  })
+
+  it('auch bei Wochen ganz ohne Schülerteil', () => {
+    // Eine Woche kann durch LAC-Bearbeitung ohne Schülerteile dastehen; der
+    // Ratgeber gehört trotzdem zur Zusammenkunft.
+    const w = syncAuxSlots([woche([teil('gebet')])], true)
+    expect(w[0].mid.auxRatgeber?.bereichsKey).toBe('ratgeber')
+  })
+
+  it('bereits besetzter Ratgeber bleibt unangetastet', () => {
+    const einmal = syncAuxSlots([woche([teil('schulung')])], true)
+    einmal[0].mid.auxRatgeber = { name: 'Manfred Albrecht', bereichsKey: 'ratgeber' }
+    const nochmal = syncAuxSlots(einmal, true)
+    expect(nochmal[0].mid.auxRatgeber?.name).toBe('Manfred Albrecht')
+  })
+})

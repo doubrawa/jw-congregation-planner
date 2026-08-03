@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
+import { istSchuelerteil } from '../data/aux-class'
 import { isSong, splitOpeningSong } from '../data/helpers'
 import { itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
 import { isGuestRole } from '../data/planning'
@@ -49,13 +50,34 @@ export function MeetingSection({
 
   const isPending = (name: string) => state.pendingNames.includes(name)
 
+  /**
+   * Die Platzreihen eines Programmpunkts: nur Hauptsaal — oder Hauptsaal und
+   * Zusätzliche Klasse, wenn eine eingerichtet ist und der Punkt ein
+   * Schülerteil ist (Bibellesung, „Uns im Dienst verbessern").
+   */
+  const mitAux = state.auxClass && state.tab === 'mid'
+  const auxRows = (item: PartItem): Array<{ aux: boolean; slots: SlotAssignment[] }> => {
+    const rows = [{ aux: false, slots: item.names }]
+    if (mitAux && istSchuelerteil(item)) rows.push({ aux: true, slots: item.aux ?? [] })
+    return rows
+  }
+
   const partChipText = (slot: SlotAssignment): string => {
     if (!slot.name) return t.zuteilenChip
     return slot.rolle && !slot.rolle.startsWith('mit') ? `${tpw(slot.rolle)}: ${slot.name}` : slot.name
   }
 
-  const openPartSlot = (ii: number, ni: number, item: PartItem, slot: SlotAssignment) => {
+  const openPartSlot = (
+    ii: number,
+    ni: number,
+    item: PartItem,
+    slot: SlotAssignment,
+    aux = false,
+  ) => {
     const suffix = slot.rolle && !slot.rolle.startsWith('mit') ? ` · ${slot.rolle}` : ''
+    // Im Sheet-Titel den Raum nennen: sonst sieht man beim Zuteilen nicht,
+    // ob man gerade den Hauptsaal oder die Zusätzliche Klasse besetzt.
+    const raum = aux ? ` · ${t.auxKlasse}` : ''
     dispatch({
       type: 'openSlot',
       sel: {
@@ -65,7 +87,8 @@ export function MeetingSection({
         si,
         ii,
         ni,
-        label: item.title + suffix,
+        aux: aux || undefined,
+        label: item.title + suffix + raum,
         priv: slot.bereichsKey ?? null,
         groups: false,
         guest: isGuestRole(slot.rolle),
@@ -151,18 +174,32 @@ export function MeetingSection({
               )}
             </div>
             {item.meta && <div className="plan-item-meta">{tpw(item.meta)}</div>}
-            <div className="plan-slots">
-              {item.names.map((slot, ni) => (
-                <SlotChip
-                  key={ni}
-                  text={partChipText(slot)}
-                  open={!slot.name}
-                  showStatus={Boolean(slot.name)}
-                  pending={isPending(slot.name)}
-                  onClick={() => openPartSlot(ii, ni, item, slot)}
-                />
-              ))}
-            </div>
+            {/*
+              Zwei Reihen, sobald eine Zusätzliche Klasse eingerichtet ist:
+              derselbe Programmpunkt wird dort parallel durchgeführt. Ohne
+              Klasse bleibt es die schlichte, unbeschriftete Reihe von vorher.
+            */}
+            {auxRows(item).map(({ aux, slots }, _, reihen) => (
+              <Fragment key={aux ? 'aux' : 'haupt'}>
+                {/* Raum nur benennen, wo es tatsächlich zwei Reihen gibt —
+                    sonst stünde „Hauptsaal" auch über Gebet und Vorsitz. */}
+                {reihen.length > 1 && (
+                  <div className="plan-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>
+                )}
+                <div className="plan-slots">
+                  {slots.map((slot, ni) => (
+                    <SlotChip
+                      key={ni}
+                      text={partChipText(slot)}
+                      open={!slot.name}
+                      showStatus={Boolean(slot.name)}
+                      pending={isPending(slot.name)}
+                      onClick={() => openPartSlot(ii, ni, item, slot, aux)}
+                    />
+                  ))}
+                </div>
+              </Fragment>
+            ))}
             {canPartner && (
               <button
                 type="button"

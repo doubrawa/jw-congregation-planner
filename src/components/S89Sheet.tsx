@@ -35,7 +35,9 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
     [t.s89Datum, tp(payload.date)],
     [t.s89Aufgabe, tp(payload.type)],
     ...(payload.point ? ([[t.s89Punkt, tp(payload.point)]] as [string, string][]) : []),
-    [t.s89Ort, t.s89Hauptsaal],
+    // Der Ort stand hier bis 2026-08 als Konstante „Hauptsaal" — auf jedem
+    // Zettel, auch wenn der Teil in der Zusätzlichen Klasse stattfand.
+    [t.s89Ort, payload.aux ? t.auxKlasse : t.auxHauptsaal],
   ]
 
   return (

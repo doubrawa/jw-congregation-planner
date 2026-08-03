@@ -177,7 +177,7 @@ export const DE = {
     auxHauptsaal: 'Hauptsaal',
     auxRatgeber: 'Ratgeber',
     auxDesc: 'Bei vielen Verkündigern können die Schulungsaufgaben parallel in einem zweiten Raum durchgeführt werden — so kommt jeder öfter dran. Betroffen sind die Bibellesung und „Uns im Dienst verbessern".',
-    privRatgeber: 'Ratgeber (Zusätzliche Klasse)',
+    auxRatgeberHint: 'Für jede zusätzliche Klasse muss ein befähigter Ratgeber da sein, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete', privLesen: 'Bibellesung / Leser',
     privSchulung: 'Schulungsaufgaben', privSchulungPartner: 'Schulungsaufgaben Partner', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',

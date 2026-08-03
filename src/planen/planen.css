@@ -273,6 +273,25 @@
   margin-top: 9px;
 }
 
+/*
+ * Raum-Beschriftung über einer Platzreihe (Hauptsaal / Zusätzliche Klasse).
+ * Erscheint nur, wenn es wirklich zwei Reihen gibt — ohne Zusätzliche Klasse
+ * bleibt der Programmpunkt so schlicht wie vorher.
+ */
+.plan-raum {
+  margin-top: 9px;
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
+/* Direkt darunter folgt die Reihe — der eigene Abstand wäre doppelt. */
+.plan-raum + .plan-slots {
+  margin-top: 4px;
+}
+
 .slot-chip {
   border: 1px solid var(--bord);
   background: var(--card);

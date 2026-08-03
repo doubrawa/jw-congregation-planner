@@ -137,6 +137,8 @@ interface Item {
   song?: string
   title?: string
   names?: Slot[]
+  /** Zweite Platzreihe der Zusaetzlichen Klasse (jw.org S-38, Absatz 26). */
+  aux?: Slot[]
 }
 interface Section {
   items?: Item[]
@@ -153,6 +155,8 @@ interface Meeting {
   date?: string
   sections?: Section[]
   helpers?: Record<string, HelperEntry[]>
+  /** Ratgeber der Zusaetzlichen Klasse (eine Zuteilung je Zusammenkunft). */
+  auxRatgeber?: Slot
 }
 interface Week {
   start?: string
@@ -265,19 +269,31 @@ function pendingOfMeeting(
     for (let ii = 0; ii < items.length; ii++) {
       const item = items[ii]
       if ('song' in item) continue
-      const names = item.names ?? []
-      for (let ni = 0; ni < names.length; ni++) {
-        const slot = names[ni]
-        if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-        if (conf.has(`${wi}|${tab}|part|${si}|${ii}|${ni}`)) continue
-        const rolle = slot.rolle ?? ''
-        const title = item.title ?? 'Zuteilung'
-        out.push({
-          name: slot.name,
-          label: rolle && !rolle.startsWith('mit') ? `${title} · ${rolle}` : title,
-        })
+      // Hauptsaal ("part") und Zusätzliche Klasse ("aux") — gleichwertige
+      // Zuteilungen mit eigenen Schlüsseln; ohne die zweite Runde bliebe die
+      // halbe Klasse ohne Erinnerung.
+      for (const [abschnitt, names] of [
+        ['part', item.names ?? []],
+        ['aux', item.aux ?? []],
+      ] as const) {
+        for (let ni = 0; ni < names.length; ni++) {
+          const slot = names[ni]
+          if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
+          if (conf.has(`${wi}|${tab}|${abschnitt}|${si}|${ii}|${ni}`)) continue
+          const rolle = slot.rolle ?? ''
+          const title = item.title ?? 'Zuteilung'
+          out.push({
+            name: slot.name,
+            label: rolle && !rolle.startsWith('mit') ? `${title} · ${rolle}` : title,
+          })
+        }
       }
     }
+  }
+  // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
+  const ratgeber = meeting.auxRatgeber
+  if (ratgeber?.name && !conf.has(`${wi}|${tab}|ratgeber`)) {
+    out.push({ name: ratgeber.name, label: ratgeber.rolle ?? 'Ratgeber' })
   }
   for (const svc of services) {
     if (svc.groups) continue

@@ -26,7 +26,7 @@ export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
   schulungPartner: 'Schulungsaufgaben Partner',
   studium: 'Studium leiten',
   treffpunkt: 'Treffpunkte leiten',
-  ratgeber: 'Ratgeber (Zusätzliche Klasse)',
+  ratgeber: 'Ratgeber · Zusätzliche Klasse',
   wtLeiter: 'Wachtturm-Studium-Leiter',
   wtVertreter: 'Wachtturm-Studium-Vertreter',
 }
