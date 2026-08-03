@@ -75,7 +75,9 @@ export function ImportPanel() {
       // 'demo' heißt: keine Datenbank angebunden, der Abruf ist gar nicht
       // möglich. Hier stand früher t.demoHinweis — der redet vom Anmelden
       // („Zugangsdaten beliebig") und passte an dieser Stelle nicht.
-      dispatch({ type: 'showToast', text: res.error === 'demo' ? t.importOhneDb : res.error })
+      const text =
+        res.error === 'demo' ? t.importOhneDb : res.error === 'unbekannt' ? t.importFehler : res.error
+      dispatch({ type: 'showToast', text })
       return
     }
     dispatch({ type: 'addImportedWeek', week: res.week })

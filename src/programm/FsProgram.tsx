@@ -58,7 +58,10 @@ export function FsProgram() {
                 <span className="fs-time">{inst.time}</span>
                 <div>
                   <div className="fs-title">{inst.grp === '' ? t.fsVers : groupName(inst.grp)}</div>
-                  <div className="fs-place">{inst.place}</div>
+                  {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")
+                      steht im Wörterbuch — ohne tu bliebe er als einziges Feld
+                      dieser Karte deutsch. */}
+                  <div className="fs-place">{tu(inst.place)}</div>
                 </div>
               </div>
               <div className="fs-leader">

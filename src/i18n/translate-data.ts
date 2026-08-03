@@ -20,19 +20,18 @@ interface DateDict {
   min: (n: string) => string
   ca: (r: string) => string
   ende: (r: string) => string
-  lektion: (n: string) => string
-  kap: (n: string) => string
+  // Verweise auf Lektionen, Kapitel, Gruppen und Versammlungen stehen in REF —
+  // dort für ALLE Sprachen und gemessen statt übersetzt.
   anhang: (n: string) => string
   artikel: (n: string) => string
   mit: (x: string) => string
-  vers: (x: string) => string
-  gruppe: (n: string) => string
   tage: (n: string) => string
   zut: (n: string) => string
 }
 
 const FRAG: Record<string, Record<string, string>> = {
   ar: {
+    "Gesprächspartner": "المساعِد", "Ratgeber": "المشير", "Kreisaufseher": "ناظر الدائرة",
     "Treffpunkte": "خدمة الحقل",
     "ERÖFFNUNG": "الافتتاح",
     "ABSCHLUSS": "الختام",
@@ -87,6 +86,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "«اخدموا يهوه بفرح»",
   },
   he: {
+    "Gesprächspartner": "עוזר", "Ratgeber": "מדריך", "Kreisaufseher": "משגיח נפה",
     "Treffpunkte": "שירות השדה",
     "ERÖFFNUNG": "פתיחה",
     "ABSCHLUSS": "סיום",
@@ -142,6 +142,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "„עבדו את יהוה בשמחה“",
   },
   fa: {
+    "Gesprächspartner": "دستیار", "Ratgeber": "مشاور", "Kreisaufseher": "سرپرست حوزه",
     "Treffpunkte": "خدمت موعظه",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "پایان",
@@ -197,6 +198,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "«یَهُوَه را با شادی خدمت کنید»",
   },
   ur: {
+    "Gesprächspartner": "معاون", "Ratgeber": "مشیر", "Kreisaufseher": "حلقے کا نگہبان",
     "Treffpunkte": "میدانی خدمت",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "اختتام",
@@ -252,6 +254,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Dient Jehova mit Freude“": "”یہوواہ کی خدمت خوشی سے کریں“",
   },
   en: {
+    "Gesprächspartner": "Assistant", "Ratgeber": "Counselor",
     "Treffpunkte": "Field Service",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'TREASURES FROM GOD\u2019S WORD',
@@ -301,6 +304,7 @@ const FRAG: Record<string, Record<string, string>> = {
     '„Loyal in Prüfungen“': '\u201CLoyal Under Trial\u201D'
   },
   es: {
+    "Gesprächspartner": "Ayudante", "Ratgeber": "Consejero",
     "Treffpunkte": "Servicio del campo",
     'ERÖFFNUNG': 'APERTURA', 'ABSCHLUSS': 'CONCLUSIÓN',
     'SCHÄTZE AUS GOTTES WORT': 'TESOROS DE LA BIBLIA',
@@ -350,6 +354,7 @@ const FRAG: Record<string, Record<string, string>> = {
     '„Loyal in Prüfungen“': '\u201CLeales en las pruebas\u201D'
   },
   fr: {
+    "Gesprächspartner": "Interlocuteur", "Ratgeber": "Conseiller",
     "Treffpunkte": "Prédication",
     'ERÖFFNUNG': 'OUVERTURE', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'JOYAUX DE LA PAROLE DE DIEU',
@@ -399,6 +404,7 @@ const FRAG: Record<string, Record<string, string>> = {
     '„Loyal in Prüfungen“': '« Fidèles dans les épreuves »'
   },
   it: {
+    "Gesprächspartner": "Collaboratore", "Ratgeber": "Consigliere",
     "Treffpunkte": "Servizio di campo",
     'ERÖFFNUNG': 'INTRODUZIONE', 'ABSCHLUSS': 'CONCLUSIONE',
     'SCHÄTZE AUS GOTTES WORT': 'TESORI DELLA PAROLA DI DIO',
@@ -420,6 +426,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Anziano', 'Dienstamtgehilfe': 'Servitore di ministero', 'Verkündiger': 'Proclamatore', 'Verkündigerin': 'Proclamatrice'
   },
   pt: {
+    "Gesprächspartner": "Ajudante", "Ratgeber": "Conselheiro",
     "Treffpunkte": "Serviço de campo",
     'ERÖFFNUNG': 'INTRODUÇÃO', 'ABSCHLUSS': 'CONCLUSÃO',
     'SCHÄTZE AUS GOTTES WORT': 'TESOUROS DA PALAVRA DE DEUS',
@@ -441,6 +448,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Ancião', 'Dienstamtgehilfe': 'Servo ministerial', 'Verkündiger': 'Publicador', 'Verkündigerin': 'Publicadora'
   },
   nl: {
+    "Gesprächspartner": "Assistent", "Ratgeber": "Raadgever",
     "Treffpunkte": "Velddienst",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'AFSLUITING',
     'SCHÄTZE AUS GOTTES WORT': 'SCHATTEN UIT GODS WOORD',
@@ -462,6 +470,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Ouderling', 'Dienstamtgehilfe': 'Dienaar in de bediening', 'Verkündiger': 'Verkondiger', 'Verkündigerin': 'Verkondigster'
   },
   pl: {
+    "Gesprächspartner": "Pomocnik", "Ratgeber": "Prowadzący",
     "Treffpunkte": "Służba",
     'ERÖFFNUNG': 'ROZPOCZĘCIE', 'ABSCHLUSS': 'ZAKOŃCZENIE',
     'SCHÄTZE AUS GOTTES WORT': 'SKARBY ZE SŁOWA BOŻEGO',
@@ -483,6 +492,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starszy', 'Dienstamtgehilfe': 'Sługa pomocniczy', 'Verkündiger': 'Głosiciel', 'Verkündigerin': 'Głosicielka'
   },
   ru: {
+    "Gesprächspartner": "Собеседник", "Ratgeber": "Советник",
     "Treffpunkte": "Служение",
     'ERÖFFNUNG': 'ВСТУПЛЕНИЕ', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СОКРОВИЩА ИЗ СЛОВА БОГА',
@@ -504,6 +514,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Служебный помощник', 'Verkündiger': 'Возвещатель', 'Verkündigerin': 'Возвещательница'
   },
   uk: {
+    "Gesprächspartner": "Співрозмовник", "Ratgeber": "Порадник",
     "Treffpunkte": "Служіння",
     'ERÖFFNUNG': 'ВСТУП', 'ABSCHLUSS': 'ЗАКЛЮЧНА ЧАСТИНА',
     'SCHÄTZE AUS GOTTES WORT': 'СКАРБИ БОЖОГО СЛОВА',
@@ -525,6 +536,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Старійшина', 'Dienstamtgehilfe': 'Службовий помічник', 'Verkündiger': 'Вісник', 'Verkündigerin': 'Вісниця'
   },
   ro: {
+    "Gesprächspartner": "Interlocutor", "Ratgeber": "Consilier",
     "Treffpunkte": "Serviciu",
     'ERÖFFNUNG': 'INTRODUCERE', 'ABSCHLUSS': 'ÎNCHEIERE',
     'SCHÄTZE AUS GOTTES WORT': 'COMORI DIN CUVÂNTUL LUI DUMNEZEU',
@@ -546,6 +558,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Bătrân', 'Dienstamtgehilfe': 'Slujitor auxiliar', 'Verkündiger': 'Vestitor', 'Verkündigerin': 'Vestitoare'
   },
   cs: {
+    "Gesprächspartner": "Pomocník", "Ratgeber": "Rádce",
     "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'ÚVOD', 'ABSCHLUSS': 'ZÁVĚR',
     'SCHÄTZE AUS GOTTES WORT': 'POKLADY Z BOŽÍHO SLOVA',
@@ -567,6 +580,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služební pomocník', 'Verkündiger': 'Zvěstovatel', 'Verkündigerin': 'Zvěstovatelka'
   },
   sk: {
+    "Gesprächspartner": "Pomocník", "Ratgeber": "Radca",
     "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'ÚVOD', 'ABSCHLUSS': 'ZÁVER',
     'SCHÄTZE AUS GOTTES WORT': 'POKLADY Z BOŽIEHO SLOVA',
@@ -588,6 +602,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služobný pomocník', 'Verkündiger': 'Zvestovateľ', 'Verkündigerin': 'Zvestovateľka'
   },
   hr: {
+    "Gesprächspartner": "Suradnik", "Ratgeber": "Savjetnik",
     "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'UVOD', 'ABSCHLUSS': 'ZAKLJUČAK',
     'SCHÄTZE AUS GOTTES WORT': 'BLAGO IZ BOŽJE RIJEČI',
@@ -609,6 +624,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starješina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavitelj', 'Verkündigerin': 'Objaviteljica'
   },
   sr: {
+    "Gesprächspartner": "Saradnik", "Ratgeber": "Savetnik",
     "Treffpunkte": "Служба",
     'ERÖFFNUNG': 'UVOD', 'ABSCHLUSS': 'ZAKLJUČAK',
     'SCHÄTZE AUS GOTTES WORT': 'BLAGO IZ BOŽJE REČI',
@@ -630,6 +646,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Starešina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavljivač', 'Verkündigerin': 'Objavljivačica'
   },
   bg: {
+    "Gesprächspartner": "Помощник", "Ratgeber": "Съветник",
     "Treffpunkte": "Служба",
     'ERÖFFNUNG': 'УВОД', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СЪКРОВИЩА ОТ БОЖИЕТО СЛОВО',
@@ -651,6 +668,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Помощник-служител', 'Verkündiger': 'Вестител', 'Verkündigerin': 'Вестителка'
   },
   hu: {
+    "Gesprächspartner": "Segítő", "Ratgeber": "Tanácsadó",
     "Treffpunkte": "Szolgálat",
     'ERÖFFNUNG': 'BEVEZETŐ', 'ABSCHLUSS': 'BEFEJEZÉS',
     'SCHÄTZE AUS GOTTES WORT': 'KINCSEK ISTEN SZAVÁBÓL',
@@ -672,6 +690,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Vén', 'Dienstamtgehilfe': 'Kisegítőszolga', 'Verkündiger': 'Hírnök', 'Verkündigerin': 'Hírnöknő'
   },
   el: {
+    "Gesprächspartner": "Συνεργάτης", "Ratgeber": "Σύμβουλος",
     "Treffpunkte": "Υπηρεσία",
     'ERÖFFNUNG': 'ΕΙΣΑΓΩΓΗ', 'ABSCHLUSS': 'ΣΥΜΠΕΡΑΣΜΑ',
     'SCHÄTZE AUS GOTTES WORT': 'ΘΗΣΑΥΡΟΙ ΑΠΟ ΤΟΝ ΛΟΓΟ ΤΟΥ ΘΕΟΥ',
@@ -693,6 +712,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Πρεσβύτερος', 'Dienstamtgehilfe': 'Διακονικός υπηρέτης', 'Verkündiger': 'Ευαγγελιζόμενος', 'Verkündigerin': 'Ευαγγελιζόμενη'
   },
   tr: {
+    "Gesprächspartner": "Yardımcı", "Ratgeber": "Danışman",
     "Treffpunkte": "Tarla hizmeti",
     'ERÖFFNUNG': 'GİRİŞ', 'ABSCHLUSS': 'SONUÇ',
     'SCHÄTZE AUS GOTTES WORT': 'TANRI’NIN SÖZÜNDEKİ DEĞERLER',
@@ -714,6 +734,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'İhtiyar', 'Dienstamtgehilfe': 'Yardımcı hizmetçi', 'Verkündiger': 'Müjdeci', 'Verkündigerin': 'Müjdeci'
   },
   sv: {
+    "Gesprächspartner": "Medhjälpare", "Ratgeber": "Rådgivare",
     "Treffpunkte": "Tjänsten",
     'ERÖFFNUNG': 'INLEDNING', 'ABSCHLUSS': 'AVSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTER FRÅN GUDS ORD',
@@ -735,6 +756,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Äldste', 'Dienstamtgehilfe': 'Biträdande tjänare', 'Verkündiger': 'Förkunnare', 'Verkündigerin': 'Förkunnare'
   },
   da: {
+    "Gesprächspartner": "Medhjælper", "Ratgeber": "Vejleder",
     "Treffpunkte": "Tjenesten",
     'ERÖFFNUNG': 'INDLEDNING', 'ABSCHLUSS': 'AFSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTE FRA GUDS ORD',
@@ -756,6 +778,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Ældste', 'Dienstamtgehilfe': 'Menighedstjener', 'Verkündiger': 'Forkynder', 'Verkündigerin': 'Forkynder'
   },
   fi: {
+    "Gesprächspartner": "Avustaja", "Ratgeber": "Neuvoja",
     "Treffpunkte": "Palvelus",
     'ERÖFFNUNG': 'JOHDANTO', 'ABSCHLUSS': 'LOPETUS',
     'SCHÄTZE AUS GOTTES WORT': 'AARTEITA JUMALAN SANASTA',
@@ -777,6 +800,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Vanhin', 'Dienstamtgehilfe': 'Avustava palvelija', 'Verkündiger': 'Julistaja', 'Verkündigerin': 'Julistaja'
   },
   no: {
+    "Gesprächspartner": "Medhjelper", "Ratgeber": "Veileder",
     "Treffpunkte": "Tjenesten",
     'ERÖFFNUNG': 'INNLEDNING', 'ABSCHLUSS': 'AVSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTER FRA GUDS ORD',
@@ -798,6 +822,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Eldste', 'Dienstamtgehilfe': 'Menighetstjener', 'Verkündiger': 'Forkynner', 'Verkündigerin': 'Forkynner'
   },
   id: {
+    "Gesprächspartner": "Mitra", "Ratgeber": "Penasihat",
     "Treffpunkte": "Dinas",
     'ERÖFFNUNG': 'PEMBUKA', 'ABSCHLUSS': 'PENUTUP',
     'SCHÄTZE AUS GOTTES WORT': 'HARTA DARI FIRMAN ALLAH',
@@ -819,6 +844,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Penatua', 'Dienstamtgehilfe': 'Hamba pelayanan', 'Verkündiger': 'Penyiar', 'Verkündigerin': 'Penyiar'
   },
   tl: {
+    "Gesprächspartner": "Katulong", "Ratgeber": "Tagapayo",
     "Treffpunkte": "Paglilingkod",
     'ERÖFFNUNG': 'PAMBUNGAD', 'ABSCHLUSS': 'PANGWAKAS',
     'SCHÄTZE AUS GOTTES WORT': 'KAYAMANAN MULA SA SALITA NG DIYOS',
@@ -840,6 +866,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Elder', 'Dienstamtgehilfe': 'Ministeryal na lingkod', 'Verkündiger': 'Mamamahayag', 'Verkündigerin': 'Mamamahayag'
   },
   vi: {
+    "Gesprächspartner": "Người phụ", "Ratgeber": "Người cố vấn",
     "Treffpunkte": "Rao giảng",
     'ERÖFFNUNG': 'MỞ ĐẦU', 'ABSCHLUSS': 'KẾT THÚC',
     'SCHÄTZE AUS GOTTES WORT': 'KHO BÁU TỪ LỜI ĐỨC CHÚA TRỜI',
@@ -861,6 +888,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Trưởng lão', 'Dienstamtgehilfe': 'Phụ tá hội thánh', 'Verkündiger': 'Người công bố', 'Verkündigerin': 'Người công bố'
   },
   sw: {
+    "Gesprächspartner": "Msaidizi", "Ratgeber": "Mshauri",
     "Treffpunkte": "Utumishi",
     'ERÖFFNUNG': 'UTANGULIZI', 'ABSCHLUSS': 'HITIMISHO',
     'SCHÄTZE AUS GOTTES WORT': 'HAZINA ZA NENO LA MUNGU',
@@ -882,6 +910,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': 'Mzee', 'Dienstamtgehilfe': 'Mtumishi wa huduma', 'Verkündiger': 'Mhubiri', 'Verkündigerin': 'Mhubiri'
   },
   zh: {
+    "Gesprächspartner": "助手", "Ratgeber": "辅导员",
     "Treffpunkte": "传道",
     'ERÖFFNUNG': '开场', 'ABSCHLUSS': '结束',
     'SCHÄTZE AUS GOTTES WORT': '上帝话语的宝藏',
@@ -903,6 +932,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': '长老', 'Dienstamtgehilfe': '助理仆人', 'Verkündiger': '传道员', 'Verkündigerin': '传道员'
   },
   ja: {
+    "Gesprächspartner": "補助", "Ratgeber": "助言者",
     "Treffpunkte": "野外奉仕",
     'ERÖFFNUNG': '開会', 'ABSCHLUSS': '結び',
     'SCHÄTZE AUS GOTTES WORT': '神の言葉の宝',
@@ -924,6 +954,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Ältester': '長老', 'Dienstamtgehilfe': '奉仕の僕', 'Verkündiger': '伝道者', 'Verkündigerin': '伝道者'
   },
   ko: {
+    "Gesprächspartner": "보조자", "Ratgeber": "조언자",
     "Treffpunkte": "야외 봉사",
     'ERÖFFNUNG': '시작', 'ABSCHLUSS': '마침',
     'SCHÄTZE AUS GOTTES WORT': '하느님의 말씀에 담긴 보물',
@@ -991,6 +1022,69 @@ for (const code of Object.keys(FRAG)) {
   if (STUDY_PLACEHOLDER[code]) f['(Studienartikel eintragen)'] = STUDY_PLACEHOLDER[code]
 }
 
+/* ---- Verweise auf Studienstoff, Gruppen, Versammlungen ------------------
+ * EINE Tabelle für alle Sprachen. Vorher gab es zwei Quellen: Funktionen im
+ * DateDict (nur en/es/fr) und für alle anderen gar nichts — deshalb blieb
+ * „Gruppe 2" in 30 Sprachen deutsch stehen.
+ *
+ * Die Vorlagen sind GEMESSEN, nicht übersetzt: dieselbe Arbeitsheft-Woche in
+ * Deutsch und in der Zielsprache von jw.org geholt und die Verweise paarweise
+ * ausgerichtet. Deshalb schreibt Englisch bei „th" study, bei lmd/lff aber
+ * lesson, und Tschechisch stellt die Zahl voran („11. lekce") — genau so steht
+ * es im Arbeitsheft. Geraten wäre beides falsch.
+ *
+ * Sprachen ohne th/lekP/kap (zh, ja, ko, ar, he, fa, ur): deren Arbeitshefte
+ * drucken die Publikationskürzel überhaupt nicht — dort gibt es nichts zu
+ * übersetzen, der deutsche Verweis bleibt stehen.
+ *
+ * „Gruppe" ist Alltagssprache und daher hier direkt übersetzt; „Vers." nutzt
+ * das Wort für Versammlung aus der Oberflächen-Übersetzung derselben Sprache.
+ */
+interface RefDict {
+  th?: (n: string) => string              // „th Lektion 5"
+  lekP?: (n: string, p: string) => string // „lmd Lektion 1 Punkt 5"
+  lek?: (n: string) => string             // „lmd Lektion 3" (ältere Arbeitshefte)
+  kap?: (n: string) => string             // „wcg Kap. 15"
+  gruppe?: (n: string) => string          // „Gruppe 2"
+  vers?: (x: string) => string            // „Vers. Nordheim"
+}
+
+const REF: Record<string, RefDict> = {
+  en: { th: n => 'study ' + n, lekP: (n, p) => 'lesson ' + n + ' point ' + p, lek: n => 'lesson ' + n, kap: n => 'chap. ' + n, gruppe: n => 'Group ' + n, vers: x => 'Cong. ' + x },
+  es: { th: n => 'lección ' + n, lekP: (n, p) => 'lección ' + n + ' punto ' + p, lek: n => 'lección ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Grupo ' + n, vers: x => 'Congr. ' + x },
+  fr: { th: n => 'leçon ' + n, lekP: (n, p) => 'leçon ' + n + ' idée ' + p, lek: n => 'leçon ' + n, kap: n => 'chap. ' + n, gruppe: n => 'Groupe ' + n, vers: x => 'Ass. ' + x },
+  it: { th: n => 'lezione ' + n, lekP: (n, p) => 'lezione ' + n + ' punto ' + p, lek: n => 'lezione ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Gruppo ' + n, vers: x => 'Congregazione ' + x },
+  pt: { th: n => 'lição ' + n, lekP: (n, p) => 'lição ' + n + ' ponto ' + p, lek: n => 'lição ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Grupo ' + n, vers: x => 'Congregação ' + x },
+  nl: { th: n => 'les ' + n, lekP: (n, p) => 'les ' + n + ' punt ' + p, lek: n => 'les ' + n, kap: n => 'hfst. ' + n, gruppe: n => 'Groep ' + n, vers: x => 'Gemeente ' + x },
+  pl: { th: n => 'lekcja ' + n, lekP: (n, p) => 'lekcja ' + n + ', punkt ' + p, lek: n => 'lekcja ' + n, kap: n => 'rozdz. ' + n, gruppe: n => 'Grupa ' + n, vers: x => 'Zbór ' + x },
+  ru: { th: n => 'урок ' + n, lekP: (n, p) => 'урок ' + n + ', пункт ' + p, lek: n => 'урок ' + n, kap: n => 'гл. ' + n, gruppe: n => 'Группа ' + n, vers: x => 'Собрание ' + x },
+  uk: { th: n => 'урок ' + n, lekP: (n, p) => 'урок ' + n + ', пункт ' + p, lek: n => 'урок ' + n, kap: n => 'розд. ' + n, gruppe: n => 'Група ' + n, vers: x => 'Збір ' + x },
+  ro: { th: n => 'lecția ' + n, lekP: (n, p) => 'lecția ' + n + ', punctul ' + p, lek: n => 'lecția ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Grupa ' + n, vers: x => 'Congregație ' + x },
+  el: { th: n => 'μελέτη ' + n, lekP: (n, p) => 'μάθημα ' + n + ' σημείο ' + p, lek: n => 'μάθημα ' + n, kap: n => 'κεφ. ' + n, gruppe: n => 'Όμιλος ' + n, vers: x => 'Εκκλησία ' + x },
+  cs: { th: n => n + '. lekce', lekP: (n, p) => n + '. lekce ' + p + '. bod', lek: n => n + '. lekce', kap: n => 'kap. ' + n, gruppe: n => 'Skupina ' + n, vers: x => 'Sbor ' + x },
+  sk: { th: n => n + '. lekcia', lekP: (n, p) => n + '. lekcia, ' + p + '. bod', lek: n => n + '. lekcia', kap: n => n + '. kap.', gruppe: n => 'Skupina ' + n, vers: x => 'Zbor ' + x },
+  hu: { th: n => n + '. szempont', lekP: (n, p) => n + '. fej., ' + p + '. pont', lek: n => n + '. fej.', kap: n => n + '. fej.', gruppe: n => n + '. csoport', vers: x => 'Gyülekezet ' + x },
+  hr: { th: n => 'lekcija ' + n, lekP: (n, p) => 'lekcija ' + n + ' točka ' + p, lek: n => 'lekcija ' + n, kap: n => n + '. pogl.', gruppe: n => 'Grupa ' + n, vers: x => 'Skupština ' + x },
+  sr: { th: n => n + '. lekcija', lekP: (n, p) => 'lekcija ' + n + ', tačka ' + p, lek: n => 'lekcija ' + n, kap: n => n + '. pogl.', gruppe: n => 'Grupa ' + n, vers: x => 'Skupština ' + x },
+  bg: { th: n => 'ур. ' + n, lekP: (n, p) => 'ур. ' + n + ', т. ' + p, lek: n => 'ур. ' + n, gruppe: n => 'Група ' + n, vers: x => 'Сбор ' + x },
+  sv: { th: n => 'lektion ' + n, lekP: (n, p) => 'lektion ' + n + ', punkt ' + p, lek: n => 'lektion ' + n, kap: n => 'kap. ' + n, gruppe: n => 'Grupp ' + n, vers: x => 'Församling ' + x },
+  da: { th: n => 'arbejdspunkt ' + n, lekP: (n, p) => 'lektion ' + n + ' punkt ' + p, lek: n => 'lektion ' + n, kap: n => 'kap. ' + n, gruppe: n => 'Gruppe ' + n, vers: x => 'Menighed ' + x },
+  fi: { th: n => 'osio ' + n, lekP: (n, p) => 'oppijakso ' + n + ' kohta ' + p, lek: n => 'oppijakso ' + n, kap: n => 'luku ' + n, gruppe: n => 'Ryhmä ' + n, vers: x => 'Seurakunta ' + x },
+  no: { th: n => 'leksjon ' + n, lekP: (n, p) => 'leksjon ' + n + ' punkt ' + p, lek: n => 'leksjon ' + n, kap: n => 'kap. ' + n, gruppe: n => 'Gruppe ' + n, vers: x => 'Menighet ' + x },
+  tr: { th: n => 'çalışma konusu ' + n, lekP: (n, p) => n + '. bölüm ' + p + '. nokta', lek: n => n + '. bölüm', kap: n => n + '. bölüm', gruppe: n => 'Grup ' + n, vers: x => 'Cemaat ' + x },
+  zh: { gruppe: n => '组 ' + n, vers: x => '会众 ' + x },
+  ja: { gruppe: n => 'グループ ' + n, vers: x => '会衆 ' + x },
+  ko: { gruppe: n => '조 ' + n, vers: x => '회중 ' + x },
+  id: { th: n => 'pelajaran ' + n, lekP: (n, p) => 'pelajaran ' + n + ' nomor ' + p, lek: n => 'pelajaran ' + n, kap: n => 'bab ' + n, gruppe: n => 'Kelompok ' + n, vers: x => 'Sidang ' + x },
+  tl: { th: n => 'aralin ' + n, lekP: (n, p) => 'aralin ' + n + ': #' + p, lek: n => 'aralin ' + n, kap: n => 'kab. ' + n, gruppe: n => 'Grupo ' + n, vers: x => 'Kongregasyon ' + x },
+  vi: { th: n => 'bài học số ' + n, lekP: (n, p) => 'bài ' + n + ' điểm ' + p, lek: n => 'bài ' + n, kap: n => 'chg ' + n, gruppe: n => 'Nhóm ' + n, vers: x => 'Hội thánh ' + x },
+  sw: { th: n => 'somo la ' + n, lekP: (n, p) => 'somo la ' + n + ' jambo kuu la ' + p, lek: n => 'somo la ' + n, kap: n => 'sura ya ' + n, gruppe: n => 'Kikundi ' + n, vers: x => 'Kutaniko ' + x },
+  ar: { gruppe: n => 'مجموعة ' + n, vers: x => 'الجماعة ' + x },
+  he: { gruppe: n => 'קבוצה ' + n, vers: x => 'קהילה ' + x },
+  fa: { gruppe: n => 'گروه ' + n, vers: x => 'جماعت ' + x },
+  ur: { gruppe: n => 'گروپ ' + n, vers: x => 'کلیسیا ' + x },
+}
+
 // Datums-/Musterdaten
 const WD: Record<string, number> = { Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3, Freitag: 4, Samstag: 5, Sonntag: 6 };
 const WDA: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 };
@@ -1007,8 +1101,7 @@ const D: Record<string, DateDict> = {
     range1: (a, b, m) => m + ' ' + a + '\u2013' + b,
     range2: (a, ma, b, mb) => ma + ' ' + a + ' \u2013 ' + mb + ' ' + b,
     song: n => 'Song ' + n, min: n => n + ' min.', ca: r => 'approx. ' + r, ende: r => 'Ends approx. ' + r,
-    lektion: n => 'lesson ' + n, kap: n => 'chap. ' + n, anhang: n => 'appendix A point ' + n,
-    artikel: n => 'Study article ' + n, mit: x => 'with ' + x, vers: x => 'Cong. ' + x, gruppe: n => 'Group ' + n,
+    anhang: n => 'appendix A point ' + n, artikel: n => 'Study article ' + n, mit: x => 'with ' + x,
     tage: n => 'in ' + n + ' days', zut: n => n + ' assignments'
   },
   es: {
@@ -1020,8 +1113,7 @@ const D: Record<string, DateDict> = {
     range1: (a, b, m) => a + ' al ' + b + ' de ' + m,
     range2: (a, ma, b, mb) => a + ' de ' + ma + ' al ' + b + ' de ' + mb,
     song: n => 'Canción ' + n, min: n => n + ' min.', ca: r => 'aprox. ' + r, ende: r => 'Termina aprox. ' + r,
-    lektion: n => 'lección ' + n, kap: n => 'cap. ' + n, anhang: n => 'apéndice A punto ' + n,
-    artikel: n => 'Artículo de estudio ' + n, mit: x => 'con ' + x, vers: x => 'Congr. ' + x, gruppe: n => 'Grupo ' + n,
+    anhang: n => 'apéndice A punto ' + n, artikel: n => 'Artículo de estudio ' + n, mit: x => 'con ' + x,
     tage: n => 'en ' + n + ' días', zut: n => n + ' asignaciones'
   },
   fr: {
@@ -1033,8 +1125,8 @@ const D: Record<string, DateDict> = {
     range1: (a, b, m) => a + '-' + b + ' ' + m,
     range2: (a, ma, b, mb) => a + ' ' + ma + ' \u2013 ' + b + ' ' + mb,
     song: n => 'Cantique ' + n, min: n => n + ' min', ca: r => 'vers ' + r, ende: r => 'Fin vers ' + r,
-    lektion: n => 'leçon ' + n, kap: n => 'chap. ' + n, anhang: n => 'appendice A idée ' + n,
-    artikel: n => 'Article d\u2019étude ' + n, mit: x => 'avec ' + x, vers: x => 'Ass. ' + x, gruppe: n => 'Groupe ' + n,
+    anhang: n => 'appendice A idée ' + n,
+    artikel: n => 'Article d\u2019étude ' + n, mit: x => 'avec ' + x,
     tage: n => 'dans ' + n + ' jours', zut: n => n + ' attributions'
   }
 };
@@ -1095,5 +1187,5 @@ const EXTRA: Record<string, Extra> = {
   ko: { song: n => n + '번 노래', min: n => n + '분', ca: r => '약 ' + r, ende: r => '약 ' + r + ' 종료', mit: x => x + '와 함께', tage: n => n + '일 후', zut: n => n + '건' },
 }
 
-export { FRAG, D, WD, WDA, MON, MONA, EXTRA, EXTRA_EN }
-export type { DateDict, Extra }
+export { FRAG, D, REF, WD, WDA, MON, MONA, EXTRA, EXTRA_EN }
+export type { DateDict, Extra, RefDict }

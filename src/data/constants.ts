@@ -14,23 +14,6 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen. */
 export const PLANNER_ROLES: readonly Role[] = ['aeltester', 'dienstamtgehilfe']
 
-/** Feste Aufgabenbereiche (Reihenfolge = Toggle-Reihenfolge im Detail). */
-export const QUALIFICATION_LABEL: Record<QualificationKey, string> = {
-  vorsitzMid: 'Vorsitz (unter der Woche)',
-  vorsitzWe: 'Vorsitz (Wochenende)',
-  vortrag: 'Vorträge',
-  gebet: 'Gebete',
-  bibellesung: 'Bibellesung',
-  leser: 'Leser',
-  schulung: 'Schulungsaufgaben',
-  schulungPartner: 'Schulungsaufgaben Partner',
-  studium: 'Studium leiten',
-  treffpunkt: 'Treffpunkte leiten',
-  ratgeber: 'Ratgeber · Zusätzliche Klasse',
-  wtLeiter: 'Wachtturm-Studium-Leiter',
-  wtVertreter: 'Wachtturm-Studium-Vertreter',
-}
-
 /**
  * Die festen, slot-relevanten Aufgabenbereiche (Toggle-Reihenfolge im Detail).
  * Die Hilfsdienst-Bereiche folgen dahinter und kommen aus `state.services`.
@@ -68,21 +51,37 @@ export const SECTION_TOKENS: Record<
 }
 
 /**
- * Farbschemata (Profil → Darstellung), Reihenfolge = Combobox. Die Labels
- * sind Eigennamen der Paletten und bleiben in allen App-Sprachen deutsch.
+ * Farbschemata (Profil → Darstellung), Reihenfolge = Combobox.
+ *
+ * Die Namen sind Eigennamen und stehen in jeder App-Sprache gleich da —
+ * deshalb eine Familie aus Pflanzen und Lebensmitteln, deren Wörter in nahezu
+ * allen 34 Sprachen als Lehnwort existieren (Indigo, Olive, Papaya, Matcha,
+ * Mango …). Vorher waren es deutsche Wörter („Reinweiß", „Blattgrün"), die
+ * außerhalb des deutschen Sprachraums niemand einordnen konnte.
+ *
+ * Die technischen Schlüssel bleiben unverändert: sie stehen so im Profil jedes
+ * Nutzers und in `data-theme` — ein Umbenennen würde jede gespeicherte Wahl
+ * ungültig machen. `labelKey` gibt es nur für „Hoher Kontrast": das ist kein
+ * Name, sondern eine Funktionsbeschreibung, und ausgerechnet die
+ * Barrierefreiheits-Option muss man verstehen können.
  */
-export const THEME_LIST: ReadonlyArray<{ key: Theme; label: string; dark: boolean }> = [
-  { key: 'weiss', label: 'Reinweiß', dark: false },
+export const THEME_LIST: ReadonlyArray<{
+  key: Theme
+  label: string
+  labelKey?: 'themeKontrast'
+  dark: boolean
+}> = [
+  { key: 'weiss', label: 'Jasmin', dark: false },
   { key: 'indigo', label: 'Indigo', dark: false },
-  { key: 'blatt', label: 'Blattgrün', dark: false },
+  { key: 'blatt', label: 'Olive', dark: false },
   { key: 'papaya', label: 'Papaya', dark: false },
-  { key: 'pastell', label: 'Pastell', dark: false },
-  { key: 'grau', label: 'Grau', dark: false },
-  { key: 'kontrast', label: 'Hoher Kontrast', dark: false },
-  { key: 'graphit', label: 'Graphit', dark: true },
-  { key: 'bernstein', label: 'Bernstein', dark: true },
+  { key: 'pastell', label: 'Vanille', dark: false },
+  { key: 'grau', label: 'Sesam', dark: false },
+  { key: 'kontrast', label: 'Hoher Kontrast', labelKey: 'themeKontrast', dark: false },
+  { key: 'graphit', label: 'Matcha', dark: true },
+  { key: 'bernstein', label: 'Safran', dark: true },
   { key: 'aubergine', label: 'Aubergine', dark: true },
-  { key: 'koralle', label: 'Koralle', dark: true },
+  { key: 'koralle', label: 'Mango', dark: true },
 ]
 
 /** true für die dunklen Paletten (steuert data-dark / color-scheme). */

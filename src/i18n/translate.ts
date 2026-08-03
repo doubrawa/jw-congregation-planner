@@ -10,7 +10,7 @@
 /* eslint-disable */
 import type { Lang } from '../data/types'
 import { LOCALES } from './langs'
-import { D, EXTRA, EXTRA_EN, FRAG, MON, MONA, WD, WDA, type DateDict, type Extra } from './translate-data'
+import { D, EXTRA, EXTRA_EN, FRAG, MON, MONA, REF, WD, WDA, type DateDict, type Extra, type RefDict } from './translate-data'
 
 /* ---- Bibelbücher (nachgeladen) ------------------------------------------- */
 
@@ -76,6 +76,34 @@ function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: num
 type Rule = [RegExp, (m: RegExpMatchArray) => string]
 
 /**
+ * Verweise auf Studienstoff, Gruppen und Versammlungen — für beide Pfade
+ * (Datums-Wörterbuch und Intl) dieselben Regeln aus derselben Tabelle.
+ *
+ * Fehlt eine Vorlage, entfällt die Regel und der deutsche Verweis bleibt
+ * stehen: In den Arbeitsheften von zh/ja/ko/ar/he/fa/ur stehen die
+ * Publikationskürzel gar nicht, dort gibt es nichts zu übersetzen.
+ */
+function verweisRegeln(code: string): Rule[] {
+  const ref: RefDict | undefined = REF[code]
+  if (!ref) return []
+  const regeln: Rule[] = []
+  // „th Lektion 5" — das Kürzel selbst ist sprachunabhängig und bleibt vorn.
+  if (ref.th) regeln.push([/^th Lektion (\d+)$/, (m) => 'th ' + ref.th!(m[1])])
+  if (ref.lekP) {
+    regeln.push([
+      /^(lmd|lff) Lektion (\d+) Punkt (\d+)$/,
+      (m) => `${m[1]} ` + ref.lekP!(m[2], m[3]),
+    ])
+  }
+  // Ältere Arbeitshefte nennen die Lektion ohne Punktnummer.
+  if (ref.lek) regeln.push([/^(lmd|lff) Lektion (\d+)$/, (m) => `${m[1]} ` + ref.lek!(m[2])])
+  if (ref.kap) regeln.push([/^(wcg|lff|lmd|bt|cf|ia) Kap\. (\d+)$/, (m) => `${m[1]} ` + ref.kap!(m[2])])
+  if (ref.gruppe) regeln.push([/^Gruppe (\d+)$/, (m) => ref.gruppe!(m[1])])
+  if (ref.vers) regeln.push([/^Vers\. (.+)$/, (m) => ref.vers!(m[1])])
+  return regeln
+}
+
+/**
  * Regeln für Bibelbücher und -stellen: „Jeremia 32–33" → „Jeremiah 32–33",
  * „Jer 32:6-18" → „Jer 32:6-18" in der Zielsprache. Kapitel und Verse bleiben
  * unangetastet, übersetzt wird nur der Buchname bzw. sein Kürzel.
@@ -137,6 +165,7 @@ function makeTrIntl(code: Lang): (s: string) => string {
     [/^mit (.+)$/, m => ex.mit(m[1])],
     [/^in (\d+) Tagen$/, m => ex.tage(m[1])],
     [/^(\d+) Zuteilungen$/, m => ex.zut(m[1])],
+    ...verweisRegeln(code),
     ...buchRegeln(code),
   ]
   return buildTranslator(M, rules)
@@ -156,15 +185,11 @@ export function makeTr(code: Lang): (s: string) => string {
     [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => L.wda[WDA[m[1]]] + ' ' + m[2]],
     [/^(\d+)\.\u2013(\d+)\. ([A-Za-zäöü]+)$/, m => L.range1(m[1], m[2], L.mon[MON[m[3]]])],
     [/^(\d+)\. ([A-Za-zäöü]{3}) \u2013 (\d+)\. ([A-Za-zäöü]{3})$/, m => L.range2(m[1], L.mona[MONA[m[2]]], m[3], L.mona[MONA[m[4]]])],
+    ...verweisRegeln(code),
     ...buchRegeln(code),
-    [/^th Lektion (\d+)$/, m => 'th ' + L.lektion(m[1])],
-    [/^(wcg|lff) Kap\. (\d+)$/, m => m[1] + ' ' + L.kap(m[2])],
-    [/^lmd Lektion (\d+)$/, m => 'lmd ' + L.lektion(m[1])],
     [/^lmd Anhang A Punkt (\d+)$/, m => 'lmd ' + L.anhang(m[1])],
     [/^Studienartikel (\d+)$/, m => L.artikel(m[1])],
     [/^mit (.+)$/, m => L.mit(m[1])],
-    [/^Vers\. (.+)$/, m => L.vers(m[1])],
-    [/^Gruppe (\d+)$/, m => L.gruppe(m[1])],
     [/^in (\d+) Tagen$/, m => L.tage(m[1])],
     [/^(\d+) Zuteilungen$/, m => L.zut(m[1])]
   ];

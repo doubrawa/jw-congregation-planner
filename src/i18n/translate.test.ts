@@ -29,7 +29,9 @@ describe('makeTr — Programm-Inhalts-Übersetzer', () => {
   })
 
   it('übersetzt zusammengesetzte Meta-Zeilen (getrennt durch ·)', () => {
-    expect(en('4 Min. · th Lektion 2')).toBe('4 min. · th lesson 2')
+    // „study", nicht „lesson": das englische Arbeitsheft schreibt bei th
+    // „study 2", bei lmd/lff dagegen „lesson". Am Text von jw.org gemessen.
+    expect(en('4 Min. · th Lektion 2')).toBe('4 min. · th study 2')
     expect(en('Von Haus zu Haus · 3 Min.')).toBe('House to house · 3 min.')
   })
 
@@ -119,6 +121,44 @@ describe('makeTr(en) — jede Wörterbuch-Regel', () => {
 
   it('leere Eingabe bleibt leer', () => {
     expect(en('')).toBe('')
+  })
+})
+
+describe('Rollen und Verweise — auch in den Zusatz-Sprachen', () => {
+  // Diese Begriffe blieben früher deutsch stehen: die Rollen fehlten im
+  // Wörterbuch, die Verweis-/Gruppen-Regeln gab es nur für en/es/fr.
+  it('Gesprächspartner und Ratgeber sind überall übersetzt', () => {
+    expect(makeTr('ja')('Gesprächspartner')).toBe('補助')
+    expect(makeTr('pl')('Gesprächspartner')).toBe('Pomocnik')
+    expect(makeTr('ru')('Ratgeber')).toBe('Советник')
+    expect(makeTr('ar')('Ratgeber')).toBe('المشير')
+  })
+
+  it('Kreisaufseher auch in den zuletzt ergänzten Sprachen', () => {
+    expect(makeTr('ar')('Kreisaufseher')).toBe('ناظر الدائرة')
+    expect(makeTr('ur')('Kreisaufseher')).toBe('حلقے کا نگہبان')
+  })
+
+  it('Gruppen und Versammlungen in den Zusatz-Sprachen', () => {
+    expect(makeTr('ru')('Gruppe 2')).toBe('Группа 2')
+    expect(makeTr('hu')('Gruppe 2')).toBe('2. csoport') // Zahl voran
+    expect(makeTr('tr')('Vers. Nordheim')).toBe('Cemaat Nordheim')
+  })
+
+  it('Studienstoff-Verweise stehen so im Arbeitsheft der Sprache', () => {
+    // Gemessen, nicht übersetzt: Tschechisch stellt die Zahl voran, und „th"
+    // heißt im Englischen study, lmd/lff dagegen lesson.
+    expect(makeTr('cs')('lmd Lektion 1 Punkt 5')).toBe('lmd 1. lekce 5. bod')
+    expect(makeTr('cs')('th Lektion 11')).toBe('th 11. lekce')
+    expect(makeTr('en')('lff Lektion 20 Punkt 4')).toBe('lff lesson 20 point 4')
+    expect(makeTr('sk')('wcg Kap. 15')).toBe('wcg 15. kap.')
+  })
+
+  it('bleibt deutsch, wo das Arbeitsheft die Kürzel gar nicht druckt', () => {
+    // Die Arbeitshefte in ja/zh/ko/ar/he/fa/ur führen „th", „lmd" usw. nicht —
+    // dort gibt es nichts zu übersetzen, und Erfundenes wäre schlimmer.
+    expect(makeTr('ja')('th Lektion 5')).toBe('th Lektion 5')
+    expect(makeTr('ar')('wcg Kap. 15')).toBe('wcg Kap. 15')
   })
 })
 

@@ -54,6 +54,9 @@ export const DE = {
     keineAbw: 'Keine Abwesenheiten eingetragen.', profil: 'PROFIL',
     nameLbl: 'Name', versammlungLbl: 'Versammlung', emailKv: 'E-Mail',
     darstellung: 'Darstellung', spracheLbl: 'Sprache',
+    // Farbschemata heißen überall gleich (Eigennamen) — außer diesem einen:
+    // „Hoher Kontrast" beschreibt eine Funktion und muss verständlich sein.
+    themeKontrast: 'Hoher Kontrast',
     personen: 'Personen', personenCount: '{n} Personen', suchen: 'Suchen …',
     neuePerson: '+ NEUE PERSON ANLEGEN', aufgabenbereicheN: '{n} Aufgabenbereiche',
     allePersonen: '‹ Alle Personen', stammdaten: 'STAMMDATEN',
@@ -165,6 +168,7 @@ export const DE = {
     toastAuxAn: 'Zusätzliche Klasse eingerichtet', toastAuxAus: 'Zusätzliche Klasse aufgehoben',
     toastAlleWochen: 'Alle verfügbaren Wochen sind importiert', toastImportiert: 'Arbeitsheft-Woche importiert',
     importOhneDb: 'Import nicht möglich — keine Datenbank angebunden',
+    importFehler: 'Import fehlgeschlagen',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',

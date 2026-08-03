@@ -8,7 +8,15 @@ import { meetingDateMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { supabase } from './supabase'
 
-export type ImportResult = { ok: true; week: Week } | { ok: false; error: string }
+/**
+ * Fehlerfall des Imports. `'demo'` und `'unbekannt'` sind Schlüssel, die der
+ * Aufrufer in der Sprache des Nutzers ausgibt — hier stand früher ein fester
+ * deutscher Satz, den auch ein englischer Planer zu sehen bekam. Alles andere
+ * ist die Meldung des Servers und wird unverändert durchgereicht.
+ */
+export type ImportFehler = 'demo' | 'unbekannt' | (string & {})
+
+export type ImportResult = { ok: true; week: Week } | { ok: false; error: ImportFehler }
 
 /** ISO-Startdatum der zuletzt importierten Woche (für die nächste Woche). */
 export function latestImportedStart(weeks: Week[]): string | undefined {
@@ -45,7 +53,7 @@ export async function importNextWeek(
   })
   if (error) return { ok: false, error: error.message }
   const payload = data as { week?: Week; error?: string } | null
-  if (!payload?.week) return { ok: false, error: payload?.error ?? 'Unbekannter Fehler beim Import' }
+  if (!payload?.week) return { ok: false, error: payload?.error ?? 'unbekannt' }
   return { ok: true, week: payload.week }
 }
 
@@ -66,6 +74,6 @@ export async function importWeekVariants(
   })
   if (error) return { ok: false, error: error.message }
   const payload = data as { week?: Week; error?: string } | null
-  if (!payload?.week) return { ok: false, error: payload?.error ?? 'Unbekannter Fehler beim Import' }
+  if (!payload?.week) return { ok: false, error: payload?.error ?? 'unbekannt' }
   return { ok: true, week: payload.week }
 }
