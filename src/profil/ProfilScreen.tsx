@@ -98,9 +98,9 @@ export function ProfilScreen() {
             value={state.theme}
             onChange={(e) => dispatch({ type: 'setTheme', theme: e.target.value as Theme })}
           >
-            {THEME_LIST.map(({ key, label }) => (
+            {THEME_LIST.map(({ key, label, labelKey }) => (
               <option key={key} value={key}>
-                {label}
+                {labelKey ? t[labelKey] : label}
               </option>
             ))}
           </select>

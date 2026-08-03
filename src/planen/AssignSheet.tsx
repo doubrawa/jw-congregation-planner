@@ -68,7 +68,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const sub =
     sel.kind === 'fs'
       ? fsInst
-        ? `${fsInst.time} · ${fsInst.place}`
+        ? `${fsInst.time} · ${tu(fsInst.place)}`
         : ''
       : `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
 
