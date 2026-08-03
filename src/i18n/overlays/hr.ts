@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Dodatni razred",
   "auxHauptsaal": "Glavna dvorana",
   "auxRatgeber": "Savjetnik",
-  "auxDesc": "Ako ima puno objavitelja, učenički zadaci mogu se održavati usporedno u drugoj prostoriji, kako bi svatko češće došao na red. Odnosi se na čitanje Biblije i dio „Budimo bolji propovjednici“.",
+  "auxDesc": "Ovisno o broju učenika, u skupštini se može organizirati i dodatni razred u kojem će se održavati učenički zadaci.",
   "auxRatgeberHint": "Program u svakom dodatnom razredu treba voditi brat koji je kvalitetan savjetnik, po mogućnosti starješina.",
   "toastAuxAn": "Dodatni razred uključen",
   "toastAuxAus": "Dodatni razred isključen",

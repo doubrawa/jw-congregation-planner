@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Lớp phụ",
   "auxHauptsaal": "Phòng chính",
   "auxRatgeber": "Người cố vấn",
-  "auxDesc": "Nếu hội thánh có nhiều người công bố, các bài của học viên có thể diễn ra song song ở phòng thứ hai, để mỗi người được nhận bài thường xuyên hơn. Áp dụng cho phần đọc Kinh Thánh và “Cải thiện kỹ năng rao giảng”.",
+  "auxDesc": "Tùy theo số lượng học viên, hội thánh có thể tổ chức thêm một lớp phụ cho các bài của học viên.",
   "auxRatgeberHint": "Mỗi lớp phụ nên có một người cố vấn hội đủ điều kiện, tốt nhất là trưởng lão.",
   "toastAuxAn": "Đã bật lớp phụ",
   "toastAuxAus": "Đã tắt lớp phụ",

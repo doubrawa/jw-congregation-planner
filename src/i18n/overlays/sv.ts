@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Extraklass",
   "auxHauptsaal": "Huvudsal",
   "auxRatgeber": "Rådgivare",
-  "auxDesc": "Med många förkunnare kan elevuppgifterna hållas parallellt i en andra sal, så att var och en får uppgifter oftare. Det gäller bibelläsningen och ”Bli bättre i tjänsten”.",
+  "auxDesc": "Beroende på antalet elever kan församlingen hålla en extraklass för elevuppgifterna.",
   "auxRatgeberHint": "Varje extraklass ska ha en kvalificerad rådgivare, helst en äldste.",
   "toastAuxAn": "Extraklass aktiverad",
   "toastAuxAus": "Extraklass avaktiverad",

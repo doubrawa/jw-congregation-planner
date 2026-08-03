@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Ekstra gruppe",
   "auxHauptsaal": "Hovedsal",
   "auxRatgeber": "Veileder",
-  "auxDesc": "Med mange forkynnere kan elevoppdragene holdes parallelt i et annet rom, slik at hver enkelt kommer oftere til. Det gjelder bibellesningen og «Bli flinkere i tjenesten».",
+  "auxDesc": "Alt etter hvor mange elever det er i menigheten, kan elevoppdragene holdes i en ekstra gruppe.",
   "auxRatgeberHint": "Hver ekstra gruppe bør ha en kvalifisert veileder, helst en eldste.",
   "toastAuxAn": "Ekstra gruppe aktivert",
   "toastAuxAus": "Ekstra gruppe deaktivert",

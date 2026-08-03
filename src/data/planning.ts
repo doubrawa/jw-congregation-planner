@@ -9,7 +9,7 @@
  * den Reducer und später direkt testbar.
  */
 
-import { RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
+import { raeume, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
@@ -165,8 +165,9 @@ export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
-      for (const slot of item.names) if (!slot.name) count++
-      for (const slot of item.aux ?? []) if (!slot.name) count++
+      for (const aux of raeume(meeting)) {
+        for (const slot of slotsOf(item, aux)) if (!slot.name) count++
+      }
     }
   }
   if (meeting.auxRatgeber && !meeting.auxRatgeber.name) count++
@@ -195,7 +196,7 @@ export function changedSlotKeys(
     section.items.forEach((item, ii) => {
       if (isSong(item)) return
       const prevItem = prev.sections[si]?.items[ii]
-      for (const aux of [false, true]) {
+      for (const aux of raeume(next)) {
         const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
         slotsOf(item, aux).forEach((slot, ni) => {
           if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(partTaskKey(wi, tab, si, ii, ni, aux))
@@ -445,7 +446,7 @@ export function autoAssignMeeting(
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
-      for (const aux of [false, true]) {
+      for (const aux of raeume(meeting)) {
         for (const slot of slotsOf(item, aux)) {
           if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
           if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
@@ -550,7 +551,7 @@ export function clearAssignments(
         if (isSong(item)) continue
         // Beide Räume leeren: „Leeren" meint die Aufgaben dieser Ansicht,
         // und die Zusätzliche Klasse gehört dazu.
-        for (const aux of [false, true]) {
+        for (const aux of raeume(meeting)) {
           for (const slot of slotsOf(item, aux)) {
             if (SKIP_ROLE.test(slot.rolle ?? '')) continue // externer Redner bleibt
             if (slot.name) {
@@ -780,7 +781,7 @@ function eachAssignedSlot(
           // Hauptsaal und Zusätzliche Klasse laufen durch dieselbe Schleife —
           // die Plätze der Klasse sind gleichwertige Aufgaben (bestätigen,
           // erinnern, S-89), nur mit eigenem Schlüssel und eigenem Ort.
-          for (const aux of [false, true]) {
+          for (const aux of raeume(meeting)) {
             slotsOf(item, aux).forEach((slot, ni) => {
               // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
               if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) return
@@ -915,7 +916,7 @@ function meetingPartNames(meeting: Meeting): string[] {
       if (isSong(item)) continue
       // Beide Räume: wer im Hauptsaal UND in der Zusätzlichen Klasse steht,
       // ist zur selben Zeit an zwei Orten — genau das soll die Prüfung finden.
-      for (const aux of [false, true]) {
+      for (const aux of raeume(meeting)) {
         for (const slot of slotsOf(item, aux)) {
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
           names.push(slot.name)

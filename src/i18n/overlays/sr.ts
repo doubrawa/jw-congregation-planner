@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Pomoćni razred",
   "auxHauptsaal": "Glavna dvorana",
   "auxRatgeber": "Savetnik",
-  "auxDesc": "Ako ima mnogo objavitelja, učenički zadaci mogu se održavati uporedo u drugoj prostoriji, da bi svako češće došao na red. Odnosi se na čitanje Biblije i deo „Budimo bolji propovednici“.",
+  "auxDesc": "U zavisnosti od broja učenika, skupština može organizovati pomoćni razred za učeničke zadatke.",
   "auxRatgeberHint": "Svakom pomoćnom razredu treba da bude dodeljen sposoban savetnik, po mogućnosti starešina.",
   "toastAuxAn": "Pomoćni razred uključen",
   "toastAuxAus": "Pomoćni razred isključen",

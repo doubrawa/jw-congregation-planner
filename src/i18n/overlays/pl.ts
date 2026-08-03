@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Dodatkowa grupa",
   "auxHauptsaal": "Sala główna",
   "auxRatgeber": "Prowadzący",
-  "auxDesc": "Przy dużej liczbie głosicieli zadania uczniowskie mogą odbywać się równolegle w drugiej sali, żeby każdy występował częściej. Dotyczy czytania Biblii i części „Ulepszajmy swoją służbę”.",
+  "auxDesc": "W zależności od liczby uczestników można utworzyć dodatkową grupę, w której będą przedstawiane zadania.",
   "auxRatgeberHint": "W każdej dodatkowej grupie rad powinien udzielać wykwalifikowany starszy zboru.",
   "toastAuxAn": "Dodatkowa grupa włączona",
   "toastAuxAus": "Dodatkowa grupa wyłączona",

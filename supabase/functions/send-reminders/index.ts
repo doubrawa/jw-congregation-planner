@@ -271,11 +271,12 @@ function pendingOfMeeting(
       if ('song' in item) continue
       // Hauptsaal ("part") und Zusätzliche Klasse ("aux") — gleichwertige
       // Zuteilungen mit eigenen Schlüsseln; ohne die zweite Runde bliebe die
-      // halbe Klasse ohne Erinnerung.
-      for (const [abschnitt, names] of [
-        ['part', item.names ?? []],
-        ['aux', item.aux ?? []],
-      ] as const) {
+      // halbe Klasse ohne Erinnerung. Ob es eine Klasse gibt, sagt der
+      // Ratgeber-Platz (wie hatAuxKlasse im Client): die Namen der Klasse
+      // bleiben beim Ausschalten stehen, erinnert wird dann aber nicht mehr.
+      const raeume: Array<['part' | 'aux', Slot[]]> = [['part', item.names ?? []]]
+      if (meeting.auxRatgeber) raeume.push(['aux', item.aux ?? []])
+      for (const [abschnitt, names] of raeume) {
         for (let ni = 0; ni < names.length; ni++) {
           const slot = names[ni]
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue

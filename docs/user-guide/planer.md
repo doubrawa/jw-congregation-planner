@@ -207,9 +207,12 @@ Ist er eingeschaltet, ändert sich Folgendes:
 - Auf dem **S‑89‑Formular** steht jetzt der richtige Raum. Vorher stand dort
   immer „Hauptsaal".
 
-**Ausschalten löscht nichts.** Die Zuteilungen der Klasse bleiben gespeichert
-und sind wieder da, sobald du den Schalter erneut einschaltest – in der
-Zwischenzeit werden sie nur nicht angezeigt.
+**Ausschalten behält deine Planung.** Die Zuteilungen der Klasse bleiben
+gespeichert und sind wieder da, sobald du den Schalter erneut einschaltest.
+Solange er aus ist, gibt es die Klasse aber wirklich nicht: Sie steht weder im
+Programm noch im Ausdruck, zählt nicht zu den offenen Zuteilungen und es geht
+keine Erinnerung dafür hinaus. Neu einzuteilen ist nach dem Wiedereinschalten
+nur der **Ratgeber**.
 
 ---
 

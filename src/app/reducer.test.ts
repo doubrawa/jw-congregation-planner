@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isNameless, reducer } from './reducer'
+import { hatAuxKlasse } from '../data/aux-class'
 import type { AppState } from './context'
 import type { HydratePayload } from './context'
 import {
@@ -344,6 +345,15 @@ describe('Import (Demo)', () => {
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(next.weeks.at(-1)!.range).toBe('Testwoche')
     expect(next.notifs[0].type).toBe('import')
+  })
+
+  it('eine importierte Woche bekommt die Zusätzliche Klasse mit', () => {
+    // Ohne dieses Angleichen stünde die neue Woche ohne zweite Platzreihe und
+    // ohne Ratgeber da — die Klasse verschwände ab dem nächsten Import.
+    const s = makeState({ auxClass: true })
+    const week = { ...s.weeks[0], range: 'Testwoche' }
+    const next = reducer(s, { type: 'addImportedWeek', week })
+    expect(hatAuxKlasse(next.weeks.at(-1)!.mid)).toBe(true)
   })
 
   it('mergeWeekAlt mischt Sprachvarianten; stopImport beendet', () => {

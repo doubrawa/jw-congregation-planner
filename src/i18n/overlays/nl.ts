@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Extra klas",
   "auxHauptsaal": "Hoofdzaal",
   "auxRatgeber": "Raadgever",
-  "auxDesc": "Bij veel verkondigers kunnen de leerlingtoewijzingen tegelijk in een tweede zaal worden gehouden, zodat iedereen vaker aan de beurt komt. Het gaat om de Bijbellezing en “Beter worden in de dienst”.",
+  "auxDesc": "Afhankelijk van het aantal leerlingen kan de gemeente een extra klas voor de leerlingtoewijzingen houden.",
   "auxRatgeberHint": "Elke extra klas moet door een bekwame raadgever worden geleid, bij voorkeur een ouderling.",
   "toastAuxAn": "Extra klas ingesteld",
   "toastAuxAus": "Extra klas uitgezet",

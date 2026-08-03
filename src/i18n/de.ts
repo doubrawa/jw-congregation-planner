@@ -172,11 +172,13 @@ export const DE = {
     // Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Begriffe stammen aus
     // dem Artikel „Anweisungen für die Leben-und-Dienst-Zusammenkunft" in der
     // jeweiligen Sprache — auxKlassen ist dort die Abschnittsüberschrift.
+    // auxDesc ist der erste Satz von Absatz 26, in den Singular gesetzt: die
+    // Anweisungen sprechen von „zusätzlichen Klassen", die App kennt eine.
     auxKlassen: 'Zusätzliche Klassen',
     auxKlasse: 'Zusätzliche Klasse',
     auxHauptsaal: 'Hauptsaal',
     auxRatgeber: 'Ratgeber',
-    auxDesc: 'Bei vielen Verkündigern können die Schulungsaufgaben parallel in einem zweiten Raum durchgeführt werden — so kommt jeder öfter dran. Betroffen sind die Bibellesung und „Uns im Dienst verbessern".',
+    auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
     auxRatgeberHint: 'Für jede zusätzliche Klasse muss ein befähigter Ratgeber da sein, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete', privLesen: 'Bibellesung / Leser',
     privSchulung: 'Schulungsaufgaben', privSchulungPartner: 'Schulungsaufgaben Partner', privStudium: 'Studium leiten',

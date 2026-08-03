@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Kelas Tambahan",
   "auxHauptsaal": "Ruang utama",
   "auxRatgeber": "Penasihat",
-  "auxDesc": "Jika penyiarnya banyak, tugas siswa bisa diadakan bersamaan di ruang kedua, agar setiap orang lebih sering mendapat giliran. Ini mencakup pembacaan Alkitab dan “Berupayalah Sebaik-baiknya dalam Pelayanan”.",
+  "auxDesc": "Bergantung jumlah siswa, sidang dapat mengadakan kelas tambahan untuk tugas siswa.",
   "auxRatgeberHint": "Setiap kelas tambahan harus punya penasihat yang cakap, sebaiknya seorang penatua.",
   "toastAuxAn": "Kelas tambahan diaktifkan",
   "toastAuxAus": "Kelas tambahan dinonaktifkan",

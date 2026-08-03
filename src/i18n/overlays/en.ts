@@ -356,7 +356,7 @@ export default {
   "auxKlasse": "Auxiliary Class",
   "auxHauptsaal": "Main hall",
   "auxRatgeber": "Counselor",
-  "auxDesc": "With many publishers the student assignments can be held in parallel in a second room, so everyone gets a turn more often. This affects the Bible reading and “Apply Yourself to the Field Ministry”.",
+  "auxDesc": "Depending on the number of students, a congregation may hold an auxiliary class for the student assignments.",
   "auxRatgeberHint": "Each auxiliary class should have a qualified counselor, preferably an elder.",
   "toastAuxAn": "Auxiliary class set up",
   "toastAuxAus": "Auxiliary class turned off",

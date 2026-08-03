@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Classe complémentaire",
   "auxHauptsaal": "Salle principale",
   "auxRatgeber": "Conseiller",
-  "auxDesc": "Avec beaucoup de proclamateurs, les devoirs d’élèves peuvent se dérouler en parallèle dans une seconde salle, pour que chacun passe plus souvent. Cela concerne la lecture de la Bible et « Applique-toi au ministère ».",
+  "auxDesc": "En fonction du nombre d’élèves, une assemblée peut organiser une classe complémentaire pour les devoirs d’élèves.",
   "auxRatgeberHint": "Chaque classe complémentaire sera confiée à un conseiller qui a les aptitudes requises, de préférence un ancien.",
   "toastAuxAn": "Classe complémentaire activée",
   "toastAuxAus": "Classe complémentaire désactivée",

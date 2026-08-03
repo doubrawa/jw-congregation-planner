@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Sala adicional",
   "auxHauptsaal": "Salão principal",
   "auxRatgeber": "Conselheiro",
-  "auxDesc": "Com muitos publicadores, as designações de estudante podem decorrer em paralelo numa segunda sala, para que cada um seja designado mais vezes. Abrange a leitura da Bíblia e “Faça Seu Melhor no Ministério”.",
+  "auxDesc": "Dependendo do número de estudantes, a congregação pode ter uma sala adicional para as designações de estudante.",
   "auxRatgeberHint": "Cada sala adicional deve ter um conselheiro qualificado, de preferência um ancião.",
   "toastAuxAn": "Sala adicional ativada",
   "toastAuxAus": "Sala adicional desativada",

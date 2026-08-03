@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { angleichen, istSchuelerteil, ratgeberSlot, slotsOf, syncAuxSlots } from './aux-class'
-import { partTaskKey, ratgeberTaskKey } from './planning'
+import {
+  angleichen,
+  hatAuxKlasse,
+  istSchuelerteil,
+  ratgeberSlot,
+  slotsOf,
+  syncAuxSlots,
+} from './aux-class'
+import { countOpenSlots, partTaskKey, ratgeberTaskKey } from './planning'
 import type { PartItem, Section, Week } from './types'
 
 const teil = (bereichsKey: string, plaetze = 1): PartItem => ({
@@ -77,17 +84,51 @@ describe('syncAuxSlots', () => {
     expect(items[1].aux).toBeUndefined() // kein Schülerteil
   })
 
-  it('löscht beim Ausschalten nichts', () => {
+  it('behält beim Ausschalten die eingeteilten Namen', () => {
     // Wer versehentlich abschaltet, verlöre sonst die Planung mehrerer Wochen.
     const mitAux = syncAuxSlots([woche([teil('schulung')])], true)
+    ;(mitAux[0].mid.sections[0].items[0] as PartItem).aux![0].name = 'Elke Brandt'
     const aus = syncAuxSlots(mitAux, false)
-    expect((aus[0].mid.sections[0].items[0] as PartItem).aux).toHaveLength(1)
+    expect((aus[0].mid.sections[0].items[0] as PartItem).aux?.[0].name).toBe('Elke Brandt')
   })
 
   it('gibt dieselbe Referenz zurück, wenn sich nichts ändert', () => {
     // Sonst schriebe jeder Ladevorgang alle Wochen neu.
     const einmal = syncAuxSlots([woche([teil('schulung')])], true)
     expect(syncAuxSlots(einmal, true)).toBe(einmal)
+    const aus = syncAuxSlots(einmal, false)
+    expect(syncAuxSlots(aus, false)).toBe(aus)
+  })
+})
+
+describe('Ausschalten beendet die Klasse überall', () => {
+  const geplant = (): Week[] => {
+    const w = syncAuxSlots([woche([teil('schulung', 2)])], true)
+    ;(w[0].mid.sections[0].items[0] as PartItem).aux![0].name = 'Elke Brandt'
+    w[0].mid.auxRatgeber = { name: 'Manfred Albrecht', bereichsKey: 'ratgeber' }
+    return w
+  }
+
+  it('die Marke fällt weg — daran hängt jeder Leser', () => {
+    // Genau hier lag der Fehler: das Programm entschied am Vorhandensein von
+    // item.aux, das beim Ausschalten stehen bleibt, und zeigte weiter beide
+    // Räume. Es gibt nur eine Antwort, und die ist hatAuxKlasse.
+    expect(hatAuxKlasse(geplant()[0].mid)).toBe(true)
+    expect(hatAuxKlasse(syncAuxSlots(geplant(), false)[0].mid)).toBe(false)
+  })
+
+  it('nur noch der Hauptsaal ist zu besetzen', () => {
+    const offenMit = countOpenSlots(geplant()[0].mid, [])
+    const offenOhne = countOpenSlots(syncAuxSlots(geplant(), false)[0].mid, [])
+    // Mit Klasse: der leere Partnerplatz der Klasse zählt mit.
+    expect(offenMit).toBe(offenOhne + 1)
+  })
+
+  it('und beim Wiedereinschalten ist die Planung wieder da', () => {
+    const wieder = syncAuxSlots(syncAuxSlots(geplant(), false), true)
+    expect((wieder[0].mid.sections[0].items[0] as PartItem).aux?.[0].name).toBe('Elke Brandt')
+    // Nur der Ratgeber ist neu einzuteilen — er ist die Marke selbst.
+    expect(wieder[0].mid.auxRatgeber?.name).toBe('')
   })
 })
 

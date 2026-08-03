@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "További osztály",
   "auxHauptsaal": "Főterem",
   "auxRatgeber": "Tanácsadó",
-  "auxDesc": "Ha sok hírnök van, a tanulói feladatok párhuzamosan is tarthatók egy másik teremben, hogy mindenki gyakrabban kapjon feladatot. A bibliaolvasásra és a „Legyünk ügyesebbek a szolgálatban” részre vonatkozik.",
+  "auxDesc": "A tanulók számától függően egy gyülekezetben lehet egy további osztály.",
   "auxRatgeberHint": "Minden további osztálynak legyen saját, a feladatra alkalmas tanácsadója, lehetőleg egy vén.",
   "toastAuxAn": "További osztály bekapcsolva",
   "toastAuxAus": "További osztály kikapcsolva",

@@ -3,6 +3,7 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
+import { hatAuxKlasse } from '../data/aux-class'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { overseerGroup } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
@@ -113,6 +114,7 @@ function PlanenBody() {
               si={si}
               section={section}
               rawSection={rawMeeting.sections[si]}
+              mitAux={hatAuxKlasse(rawMeeting)}
               tpw={tpw}
             />
           ))}

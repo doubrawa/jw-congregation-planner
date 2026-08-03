@@ -416,7 +416,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const week = buildImportWeek()
       return {
         ...state,
-        weeks: [...state.weeks, week],
+        // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
+        // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
+        // ohne Ratgeber — die Klasse würde ab dem nächsten Import verschwinden.
+        weeks: syncAuxSlots([...state.weeks, week], state.auxClass),
         importing: false,
         imported: true,
         notifs: pushNotif(
@@ -432,7 +435,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const week = action.week
       return {
         ...state,
-        weeks: [...state.weeks, week],
+        // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
+        // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
+        // ohne Ratgeber — die Klasse würde ab dem nächsten Import verschwinden.
+        weeks: syncAuxSlots([...state.weeks, week], state.auxClass),
         importing: false,
         notifs: pushNotif(
           state.notifs,

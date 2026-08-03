@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Sala secondaria",
   "auxHauptsaal": "Sala principale",
   "auxRatgeber": "Consigliere",
-  "auxDesc": "Con molti proclamatori gli incarichi degli studenti possono svolgersi in parallelo in una seconda sala, così ognuno viene incaricato più spesso. Riguarda la lettura della Bibbia e “Miglioriamo nel ministero”.",
+  "auxDesc": "A seconda del numero degli studenti, la congregazione potrà tenere le parti a loro riservate anche in una sala secondaria.",
   "auxRatgeberHint": "In ogni sala secondaria ci sarà un consigliere idoneo, preferibilmente un anziano.",
   "toastAuxAn": "Sala secondaria attivata",
   "toastAuxAus": "Sala secondaria disattivata",
