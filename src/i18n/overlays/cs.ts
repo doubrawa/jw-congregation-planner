@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Vedlejší třída",
   "auxHauptsaal": "Hlavní sál",
   "auxRatgeber": "Rádce",
-  "auxDesc": "Když je ve sboru hodně zvěstovatelů, můžou úkoly studentů probíhat souběžně ve druhé místnosti, aby se každý dostal na řadu častěji. Týká se to čtení Bible a části „Zlepšujme se ve službě“.",
+  "auxDesc": "Ve sboru, kde je hodně studentů, můžou úkoly probíhat i ve vedlejší třídě.",
   "auxRatgeberHint": "V každé vedlejší třídě by měl být způsobilý bratr, který bude hodnotit úkoly studentů, nejlépe starší.",
   "toastAuxAn": "Vedlejší třída zapnuta",
   "toastAuxAus": "Vedlejší třída vypnuta",

@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Vedľajšia trieda",
   "auxHauptsaal": "Hlavná sála",
   "auxRatgeber": "Radca",
-  "auxDesc": "Ak je v zbore veľa zvestovateľov, cvičné úlohy môžu prebiehať súbežne v druhej miestnosti, aby sa každý dostal na rad častejšie. Týka sa to čítania Biblie a časti „Zlepšujme sa v službe“.",
+  "auxDesc": "Ak je v zbore veľa študentov, cvičné úlohy môžu prebiehať aj vo vedľajšej triede.",
   "auxRatgeberHint": "V každej vedľajšej triede by mal byť spôsobilý brat, ktorý bude dávať rady k úlohám, najlepšie starší.",
   "toastAuxAn": "Vedľajšia trieda zapnutá",
   "toastAuxAus": "Vedľajšia trieda vypnutá",

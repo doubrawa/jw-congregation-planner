@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Ekstra klasse",
   "auxHauptsaal": "Hovedsal",
   "auxRatgeber": "Vejleder",
-  "auxDesc": "Med mange forkyndere kan elevopgaverne holdes parallelt i et andet lokale, så alle kommer til oftere. Det gælder bibellæsningen og “Bliv bedre til at forkynde”.",
+  "auxDesc": "Afhængigt af antallet af elever kan menigheden afholde en ekstra klasse.",
   "auxRatgeberHint": "Hver ekstra klasse skal have en kvalificeret vejleder, helst en ældste.",
   "toastAuxAn": "Ekstra klasse aktiveret",
   "toastAuxAus": "Ekstra klasse slået fra",

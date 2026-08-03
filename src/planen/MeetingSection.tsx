@@ -26,11 +26,13 @@ export function MeetingSection({
   si,
   section,
   rawSection,
+  mitAux,
   tpw,
 }: {
   si: number
   section: Section
   rawSection: Section
+  mitAux: boolean // Zusammenkunft mit Zusätzlicher Klasse
   tpw: (s: string) => string
 }) {
   const { state, dispatch } = useApp()
@@ -55,7 +57,6 @@ export function MeetingSection({
    * Zusätzliche Klasse, wenn eine eingerichtet ist und der Punkt ein
    * Schülerteil ist (Bibellesung, „Uns im Dienst verbessern").
    */
-  const mitAux = state.auxClass && state.tab === 'mid'
   const auxRows = (item: PartItem): Array<{ aux: boolean; slots: SlotAssignment[] }> => {
     const rows = [{ aux: false, slots: item.names }]
     if (mitAux && istSchuelerteil(item)) rows.push({ aux: true, slots: item.aux ?? [] })

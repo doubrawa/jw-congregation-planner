@@ -215,13 +215,15 @@ export interface PartItem {
   names: SlotAssignment[] // Zuteilungen im Hauptsaal
   /**
    * Dieselben Plätze noch einmal für die Zusätzliche Klasse — nur bei
-   * Schülerteilen und nur, wenn die Versammlung eine eingerichtet hat
-   * (`state.auxClass`). Struktur identisch zu `names`.
+   * Schülerteilen. Struktur identisch zu `names`.
    *
    * Bewusst ein zweites Feld statt weiterer Einträge in `names`: die
    * Bestätigungs-Schlüssel, das S-89-Formular und die Partner-Regeln greifen
    * über den Index in `names` zu. Angehängte Plätze würden all das verschieben.
-   * Fehlt das Feld, gab es nie eine Zusätzliche Klasse — Altdaten bleiben gültig.
+   *
+   * Ob die Klasse gerade besteht, sagt NICHT dieses Feld — es bleibt beim
+   * Ausschalten stehen, damit die Planung erhalten bleibt. Die Antwort gibt
+   * `hatAuxKlasse(meeting)`.
    */
   aux?: SlotAssignment[]
 }
@@ -252,7 +254,10 @@ export interface Meeting {
   /**
    * Ratgeber der Zusätzlichen Klasse (nur Zusammenkunft unter der Woche).
    * Einer je Zusammenkunft, nicht je Programmpunkt: er begleitet die ganze
-   * Klasse. Fehlt, solange keine Zusätzliche Klasse eingerichtet ist.
+   * Klasse.
+   *
+   * Dieses Feld ist zugleich die Marke „hier gibt es eine Zusätzliche Klasse"
+   * — ohne Ratgeber keine Klasse (S-38, Absatz 26). Siehe `hatAuxKlasse`.
    */
   auxRatgeber?: SlotAssignment
 }

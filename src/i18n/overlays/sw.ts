@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Shule ya Ziada",
   "auxHauptsaal": "Jumba kuu",
   "auxRatgeber": "Mshauri",
-  "auxDesc": "Ikiwa kuna wahubiri wengi, hotuba za wanafunzi zinaweza kufanywa kwa wakati mmoja katika chumba cha pili, ili kila mmoja apate zamu mara nyingi zaidi. Inahusu usomaji wa Biblia na “Kuwa Stadi Katika Huduma”.",
+  "auxDesc": "Ikitegemea idadi ya wanafunzi, kutaniko linaweza kuwa na shule ya ziada kwa ajili ya hotuba za wanafunzi.",
   "auxRatgeberHint": "Kila shule ya ziada inapaswa kuwa na mshauri anayestahili, ikiwezekana mzee.",
   "toastAuxAn": "Shule ya ziada imewashwa",
   "toastAuxAus": "Shule ya ziada imezimwa",

@@ -1,5 +1,5 @@
 import { useApp } from '../app/context'
-import { ratgeberSlot } from '../data/aux-class'
+import { hatAuxKlasse, ratgeberSlot } from '../data/aux-class'
 import { useT } from '../i18n/useT'
 import type { Meeting } from '../data/types'
 import { SlotChip } from './SlotChip'
@@ -16,7 +16,7 @@ import { SlotChip } from './SlotChip'
 export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  if (!state.auxClass || state.tab !== 'mid') return null
+  if (!hatAuxKlasse(meeting)) return null
 
   const slot = ratgeberSlot(meeting)
   const open = () =>

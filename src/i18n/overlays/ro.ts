@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Clasă suplimentară",
   "auxHauptsaal": "Sala principală",
   "auxRatgeber": "Consilier",
-  "auxDesc": "Dacă sunt mulți vestitori, temele pentru cursanți pot avea loc în paralel într-o a doua sală, ca fiecare să fie desemnat mai des. Se referă la citirea Bibliei și la „Să fim mai eficienți în minister”.",
+  "auxDesc": "În funcție de numărul de cursanți, congregația poate avea o clasă suplimentară.",
   "auxRatgeberHint": "Fiecare clasă suplimentară trebuie să aibă un consilier calificat, de preferat un bătrân.",
   "toastAuxAn": "Clasă suplimentară activată",
   "toastAuxAus": "Clasă suplimentară dezactivată",

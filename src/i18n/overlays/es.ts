@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Clase auxiliar",
   "auxHauptsaal": "Sala principal",
   "auxRatgeber": "Consejero",
-  "auxDesc": "Si hay muchos publicadores, las asignaciones de estudiante pueden hacerse a la vez en otra sala, para que a cada uno le toque más seguido. Afecta a la lectura de la Biblia y a “Seamos mejores maestros”.",
+  "auxDesc": "Dependiendo de la cantidad de estudiantes, la congregación podrá organizar una clase auxiliar.",
   "auxRatgeberHint": "Cada clase auxiliar contará con un consejero capacitado, preferiblemente un anciano.",
   "toastAuxAn": "Clase auxiliar activada",
   "toastAuxAus": "Clase auxiliar desactivada",

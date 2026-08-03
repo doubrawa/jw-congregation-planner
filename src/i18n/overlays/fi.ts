@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Rinnakkaisluokka",
   "auxHauptsaal": "Pääsali",
   "auxRatgeber": "Neuvoja",
-  "auxDesc": "Jos julistajia on paljon, oppilastehtävät voidaan pitää rinnakkain toisessa huoneessa, jotta jokainen pääsee useammin vuoroon. Koskee raamatunlukua ja osaa ”Kehity palveluksessa”.",
+  "auxDesc": "Oppilaiden määrästä riippuen voidaan perustaa myös rinnakkaisluokka, jotta oppilaat pääsisivät esittämään tehtäviä useammin.",
   "auxRatgeberHint": "Jokaista rinnakkaisluokkaa johtaa pätevä veli, mieluiten vanhin.",
   "toastAuxAn": "Rinnakkaisluokka käytössä",
   "toastAuxAus": "Rinnakkaisluokka poistettu käytöstä",

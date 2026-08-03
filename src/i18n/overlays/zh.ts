@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "分班",
   "auxHauptsaal": "主厅",
   "auxRatgeber": "辅导员",
-  "auxDesc": "会众人数多时，学生课程可以在第二个房间同时进行，让每个人有更多机会。涉及圣经朗读和“在传道方面精益求精”。",
+  "auxDesc": "会众会根据学生人数决定是否要分班。",
   "auxRatgeberHint": "每个分班都应该有一位合资格的辅导员，最好是长老。",
   "toastAuxAn": "已启用分班",
   "toastAuxAus": "已关闭分班",

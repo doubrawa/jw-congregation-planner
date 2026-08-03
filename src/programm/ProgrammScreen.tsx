@@ -4,6 +4,7 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
+import { hatAuxKlasse } from '../data/aux-class'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { displayName, isSong, splitOpeningSong } from '../data/helpers'
@@ -126,6 +127,11 @@ function ProgramMeeting({
 }) {
   const { state } = useApp()
   const { t, tu } = useT()
+  // Ob es eine Zusätzliche Klasse gibt, steht in den Wochendaten — nicht am
+  // Schalter und erst recht nicht am bloßen Vorhandensein von `item.aux`:
+  // dessen Namen bleiben beim Ausschalten stehen, und das Programm zeigte
+  // danach weiter beide Räume.
+  const mitAux = hatAuxKlasse(rawMeeting)
   return (
     <>
       <MemorialBanner week={week} tab={tab} />
@@ -159,7 +165,13 @@ function ProgramMeeting({
               return (
                 <Fragment key={index}>
                   {song && <div className="panel-song">{song}</div>}
-                  <ProgramRow item={item} title={song ? rest : undefined} myName={myName} tpw={tpw} />
+                  <ProgramRow
+                    item={item}
+                    title={song ? rest : undefined}
+                    mitAux={mitAux}
+                    myName={myName}
+                    tpw={tpw}
+                  />
                 </Fragment>
               )
             })}
@@ -169,11 +181,12 @@ function ProgramMeeting({
 
       {/* Ratgeber der Zusätzlichen Klasse — gehört zur ganzen Klasse, nicht
           zu einem Punkt, deshalb eine eigene Zeile hinter dem Programm. */}
-      {rawMeeting.auxRatgeber && (
+      {mitAux && rawMeeting.auxRatgeber && (
         <div className="panel panel--pb16" data-farbe="neutral2">
           <div className="panel-label">{t.auxKlassen}</div>
           <ProgramRow
             item={{ title: t.auxRatgeber, names: [rawMeeting.auxRatgeber] }}
+            mitAux={false}
             myName={myName}
             tpw={tpw}
           />
@@ -216,15 +229,18 @@ function ProgramMeeting({
 function ProgramRow({
   item,
   title,
+  mitAux,
   myName,
   tpw,
 }: {
   item: PartItem
   title?: string // überschriebener Titel (Lied bereits herausgezogen)
+  mitAux: boolean // Zusammenkunft mit Zusätzlicher Klasse
   myName: string | null
   tpw: (s: string) => string
 }) {
   const { t, tu } = useT()
+  const zweiRaeume = mitAux && item.aux != null
   return (
     <div className={item.num != null ? 'prog-row prog-row--num' : 'prog-row'}>
       {item.num != null && <div className="prog-num">{item.num}.</div>}
@@ -235,12 +251,12 @@ function ProgramRow({
       <div className="prog-names">
         {/*
           Bei einer Zusätzlichen Klasse stehen beide Räume untereinander, jeder
-          mit seiner Überschrift. Ohne Klasse (item.aux fehlt) bleibt es die
-          schlichte Namensliste von vorher.
+          mit seiner Überschrift. Ohne Klasse bleibt es die schlichte
+          Namensliste von vorher.
         */}
-        {(item.aux ? [false, true] : [false]).map((aux) => (
+        {(zweiRaeume ? [false, true] : [false]).map((aux) => (
           <Fragment key={aux ? 'aux' : 'haupt'}>
-            {item.aux && <div className="prog-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>}
+            {zweiRaeume && <div className="prog-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>}
             {(aux ? item.aux ?? [] : item.names).map((slot, index) => (
               <div key={index} className="prog-name-block">
                 <div className="prog-name">

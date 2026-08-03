@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "İkinci Oda",
   "auxHauptsaal": "Ana salon",
   "auxRatgeber": "Danışman",
-  "auxDesc": "Müjdeci sayısı fazlaysa öğrenci görevleri ikinci bir odada aynı anda yapılabilir, böylece herkese daha sık sıra gelir. Kutsal Kitap okumasını ve “Hizmette Daha Yetkin Olalım” kısmını kapsar.",
+  "auxDesc": "Öğrenci sayısına bağlı olarak cemaatlerde ikinci bir odada öğrenci görevleri düzenlenebilir.",
   "auxRatgeberHint": "Her ikinci odada yeterli niteliklere sahip bir danışman bulunmalı, tercihen bir ihtiyar.",
   "toastAuxAn": "İkinci oda açıldı",
   "toastAuxAus": "İkinci oda kapatıldı",

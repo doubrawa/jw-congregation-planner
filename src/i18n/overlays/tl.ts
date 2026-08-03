@@ -303,7 +303,7 @@ export default {
   "auxKlasse": "Karagdagang Klase",
   "auxHauptsaal": "Pangunahing hall",
   "auxRatgeber": "Tagapayo",
-  "auxDesc": "Kung marami ang mamamahayag, puwedeng gawin nang sabay ang mga atas ng estudyante sa ikalawang silid, para mas madalas na matawag ang bawat isa. Kasama rito ang pagbabasa ng Bibliya at ang “Pagsulong sa Ministeryo”.",
+  "auxDesc": "Depende sa dami ng estudyante, puwedeng magkaroon ng karagdagang klase para sa mga bahagi ng estudyante.",
   "auxRatgeberHint": "Dapat na may kuwalipikadong tagapayo sa bawat karagdagang klase, hangga’t maaari ay elder.",
   "toastAuxAn": "Naka-set up ang karagdagang klase",
   "toastAuxAus": "Na-off ang karagdagang klase",

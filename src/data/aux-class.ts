@@ -29,6 +29,33 @@ export function istSchuelerteil(item: ProgramItem): boolean {
   return item.names.some((s) => s.bereichsKey != null && SCHUELER_BEREICHE.has(s.bereichsKey))
 }
 
+/**
+ * Hat diese Zusammenkunft eine Zusätzliche Klasse?
+ *
+ * Erkennungsmerkmal ist der Ratgeber-Platz: „Für jede zusätzliche Klasse muss
+ * ein befähigter Ratgeber zur Verfügung stehen" (S-38, Absatz 26) — ohne
+ * Ratgeber keine Klasse. Damit steht die Antwort in den Wochendaten selbst,
+ * und jeder Leser (Planen, Programm, Ausdruck, Zählung, Auto-Zuteilung,
+ * Erinnerungen) kommt zum selben Ergebnis.
+ *
+ * Der Versammlungsschalter `state.auxClass` ist die Eingabe, nicht die
+ * Wahrheit: er schreibt diese Marke über `syncAuxSlots` in die Wochen. Wer ihn
+ * daneben selbst auswertet, bekommt eine zweite Antwort — genau daran hing der
+ * Fehler, dass das Programm nach dem Ausschalten weiter beide Räume zeigte.
+ */
+export function hatAuxKlasse(meeting: Meeting): boolean {
+  return meeting.auxRatgeber != null
+}
+
+/**
+ * Die Räume, in denen diese Zusammenkunft stattfindet: nur der Hauptsaal
+ * (`false`) — oder Hauptsaal und Zusätzliche Klasse (`true`). Gedacht für
+ * `for (const aux of raeume(meeting))` über beide Platzreihen.
+ */
+export function raeume(meeting: Meeting): boolean[] {
+  return hatAuxKlasse(meeting) ? [false, true] : [false]
+}
+
 /** Plätze eines Punkts — Hauptsaal oder Zusätzliche Klasse. */
 export function slotsOf(item: PartItem, aux: boolean): SlotAssignment[] {
   return aux ? (item.aux ?? []) : item.names
@@ -64,16 +91,32 @@ export function angleichen(item: PartItem): SlotAssignment[] {
 }
 
 /**
- * Wochen so herrichten, dass die Zusätzliche Klasse benutzbar ist: jeder
- * Schülerteil der Zusammenkunft unter der Woche bekommt seine zweite
- * Platzreihe.
+ * Wochen an den Versammlungsschalter angleichen: eingeschaltet bekommt jeder
+ * Schülerteil der Zusammenkunft unter der Woche seine zweite Platzreihe und
+ * jede Zusammenkunft ihren Ratgeber-Platz; ausgeschaltet fällt die Marke
+ * wieder weg (siehe `hatAuxKlasse`).
  *
- * Beim Ausschalten wird NICHTS gelöscht. Wer die Klasse versehentlich
- * abschaltet, verliert sonst die Planung mehrerer Wochen; die Anzeige blendet
- * sie ohnehin aus, und beim Wiedereinschalten ist alles wieder da.
+ * Die eingeteilten Namen der Klasse (`item.aux`) bleiben beim Ausschalten
+ * stehen und sind beim Wiedereinschalten wieder da — wer versehentlich
+ * abschaltet, verliert sonst die Planung mehrerer Wochen. Neu einzuteilen ist
+ * dann nur der Ratgeber.
  */
 export function syncAuxSlots(weeks: Week[], an: boolean): Week[] {
-  if (!an) return weeks
+  return an ? einschalten(weeks) : ausschalten(weeks)
+}
+
+/** Marke entfernen — ohne die Besetzung der Klasse anzutasten. */
+function ausschalten(weeks: Week[]): Week[] {
+  if (!weeks.some((w) => hatAuxKlasse(w.mid))) return weeks
+  return weeks.map((week) => {
+    if (!hatAuxKlasse(week.mid)) return week
+    const mid = { ...week.mid }
+    delete mid.auxRatgeber
+    return { ...week, mid }
+  })
+}
+
+function einschalten(weeks: Week[]): Week[] {
   let geaendert = false
   const naechste = weeks.map((week) => {
     const mid = week.mid
