@@ -87,18 +87,22 @@ function verweisRegeln(code: string): Rule[] {
   const ref: RefDict | undefined = REF[code]
   if (!ref) return []
   const regeln: Rule[] = []
-  // „th Lektion 5" — das Kürzel selbst ist sprachunabhängig und bleibt vorn.
-  if (ref.th) regeln.push([/^th Lektion (\d+)$/, (m) => 'th ' + ref.th!(m[1])])
-  if (ref.lekP) {
-    regeln.push([
-      /^(lmd|lff) Lektion (\d+) Punkt (\d+)$/,
-      (m) => `${m[1]} ` + ref.lekP!(m[2], m[3]),
-    ])
+  // Je Publikation eine eigene Regel: das Kürzel gehört zur Vorlage, weil
+  // Ostasien und die RTL-Sprachen es mitübersetzen („th" → 教励, „wcg" → 勇).
+  const eins = (re: RegExp, fn: ((n: string) => string) | undefined) => {
+    if (fn) regeln.push([re, (m) => fn(m[1])])
   }
-  // Ältere Arbeitshefte nennen die Lektion ohne Punktnummer.
-  if (ref.lek) regeln.push([/^(lmd|lff) Lektion (\d+)$/, (m) => `${m[1]} ` + ref.lek!(m[2])])
-  if (ref.kap) regeln.push([/^(wcg|lff|lmd|bt|cf|ia) Kap\. (\d+)$/, (m) => `${m[1]} ` + ref.kap!(m[2])])
-  if (ref.gruppe) regeln.push([/^Gruppe (\d+)$/, (m) => ref.gruppe!(m[1])])
+  const zwei = (re: RegExp, fn: ((n: string, p: string) => string) | undefined) => {
+    if (fn) regeln.push([re, (m) => fn(m[1], m[2])])
+  }
+  eins(/^th Lektion (\d+)$/, ref.thLek)
+  zwei(/^lmd Lektion (\d+) Punkt (\d+)$/, ref.lmdLekP)
+  zwei(/^lff Lektion (\d+) Punkt (\d+)$/, ref.lffLekP)
+  eins(/^lmd Lektion (\d+)$/, ref.lmdLek) // ältere Arbeitshefte: ohne Punktnummer
+  eins(/^lff Lektion (\d+)$/, ref.lffLek)
+  eins(/^wcg Kap\. (\d+)$/, ref.wcgKap)
+  eins(/^lmd Anhang A Punkt (\d+)$/, ref.lmdAnh)
+  eins(/^Gruppe (\d+)$/, ref.gruppe)
   if (ref.vers) regeln.push([/^Vers\. (.+)$/, (m) => ref.vers!(m[1])])
   return regeln
 }
@@ -187,7 +191,6 @@ export function makeTr(code: Lang): (s: string) => string {
     [/^(\d+)\. ([A-Za-zäöü]{3}) \u2013 (\d+)\. ([A-Za-zäöü]{3})$/, m => L.range2(m[1], L.mona[MONA[m[2]]], m[3], L.mona[MONA[m[4]]])],
     ...verweisRegeln(code),
     ...buchRegeln(code),
-    [/^lmd Anhang A Punkt (\d+)$/, m => 'lmd ' + L.anhang(m[1])],
     [/^Studienartikel (\d+)$/, m => L.artikel(m[1])],
     [/^mit (.+)$/, m => L.mit(m[1])],
     [/^in (\d+) Tagen$/, m => L.tage(m[1])],

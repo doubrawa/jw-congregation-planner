@@ -22,7 +22,6 @@ interface DateDict {
   ende: (r: string) => string
   // Verweise auf Lektionen, Kapitel, Gruppen und Versammlungen stehen in REF —
   // dort für ALLE Sprachen und gemessen statt übersetzt.
-  anhang: (n: string) => string
   artikel: (n: string) => string
   mit: (x: string) => string
   tage: (n: string) => string
@@ -1028,61 +1027,382 @@ for (const code of Object.keys(FRAG)) {
  * „Gruppe 2" in 30 Sprachen deutsch stehen.
  *
  * Die Vorlagen sind GEMESSEN, nicht übersetzt: dieselbe Arbeitsheft-Woche in
- * Deutsch und in der Zielsprache von jw.org geholt und die Verweise paarweise
- * ausgerichtet. Deshalb schreibt Englisch bei „th" study, bei lmd/lff aber
- * lesson, und Tschechisch stellt die Zahl voran („11. lekce") — genau so steht
- * es im Arbeitsheft. Geraten wäre beides falsch.
+ * Deutsch und in der Zielsprache von jw.org geholt und die Verweise über ihre
+ * Zahlenfolge einander zugeordnet. Nur so fällt auf, dass Englisch bei „th"
+ * study schreibt, bei lmd/lff aber lesson, dass Tschechisch die Zahl voranstellt
+ * („11. lekce") — und dass Ostasien und die RTL-Sprachen das Kürzel MIT
+ * übersetzen: „th Lektion 11" heißt auf Japanisch „教励 第11課".
  *
- * Sprachen ohne th/lekP/kap (zh, ja, ko, ar, he, fa, ur): deren Arbeitshefte
- * drucken die Publikationskürzel überhaupt nicht — dort gibt es nichts zu
- * übersetzen, der deutsche Verweis bleibt stehen.
+ * Genau deshalb steht hier je Publikation eine eigene Vorlage und nicht eine
+ * gemeinsame für alle Buch-Kürzel: „th" und „wcg" sind auf Koreanisch
+ * verschiedene Wörter (「읽가」 bzw. 「용하」). Eine gemeinsame Regel setzte dort
+ * das falsche Kürzel ein.
+ *
+ * Fehlt eine Vorlage, bleibt der deutsche Verweis stehen (bg kennt „wcg" nicht;
+ * sr/tr/fa/ur hatten in den gemessenen Wochen keinen Anhang-Verweis).
  *
  * „Gruppe" ist Alltagssprache und daher hier direkt übersetzt; „Vers." nutzt
  * das Wort für Versammlung aus der Oberflächen-Übersetzung derselben Sprache.
  */
 interface RefDict {
-  th?: (n: string) => string              // „th Lektion 5"
-  lekP?: (n: string, p: string) => string // „lmd Lektion 1 Punkt 5"
-  lek?: (n: string) => string             // „lmd Lektion 3" (ältere Arbeitshefte)
-  kap?: (n: string) => string             // „wcg Kap. 15"
-  gruppe?: (n: string) => string          // „Gruppe 2"
-  vers?: (x: string) => string            // „Vers. Nordheim"
+  thLek?: (n: string) => string              // „th Lektion 5"
+  lmdLekP?: (n: string, p: string) => string // „lmd Lektion 1 Punkt 5"
+  lmdLek?: (n: string) => string             // „lmd Lektion 3"
+  lffLekP?: (n: string, p: string) => string // „lff Lektion 20 Punkt 4"
+  lffLek?: (n: string) => string             // „lff Lektion 20"
+  wcgKap?: (n: string) => string             // „wcg Kap. 15"
+  lmdAnh?: (n: string) => string             // „lmd Anhang A Punkt 21"
+  gruppe?: (n: string) => string             // „Gruppe 2"
+  vers?: (x: string) => string               // „Vers. Nordheim"
 }
 
 const REF: Record<string, RefDict> = {
-  en: { th: n => 'study ' + n, lekP: (n, p) => 'lesson ' + n + ' point ' + p, lek: n => 'lesson ' + n, kap: n => 'chap. ' + n, gruppe: n => 'Group ' + n, vers: x => 'Cong. ' + x },
-  es: { th: n => 'lección ' + n, lekP: (n, p) => 'lección ' + n + ' punto ' + p, lek: n => 'lección ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Grupo ' + n, vers: x => 'Congr. ' + x },
-  fr: { th: n => 'leçon ' + n, lekP: (n, p) => 'leçon ' + n + ' idée ' + p, lek: n => 'leçon ' + n, kap: n => 'chap. ' + n, gruppe: n => 'Groupe ' + n, vers: x => 'Ass. ' + x },
-  it: { th: n => 'lezione ' + n, lekP: (n, p) => 'lezione ' + n + ' punto ' + p, lek: n => 'lezione ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Gruppo ' + n, vers: x => 'Congregazione ' + x },
-  pt: { th: n => 'lição ' + n, lekP: (n, p) => 'lição ' + n + ' ponto ' + p, lek: n => 'lição ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Grupo ' + n, vers: x => 'Congregação ' + x },
-  nl: { th: n => 'les ' + n, lekP: (n, p) => 'les ' + n + ' punt ' + p, lek: n => 'les ' + n, kap: n => 'hfst. ' + n, gruppe: n => 'Groep ' + n, vers: x => 'Gemeente ' + x },
-  pl: { th: n => 'lekcja ' + n, lekP: (n, p) => 'lekcja ' + n + ', punkt ' + p, lek: n => 'lekcja ' + n, kap: n => 'rozdz. ' + n, gruppe: n => 'Grupa ' + n, vers: x => 'Zbór ' + x },
-  ru: { th: n => 'урок ' + n, lekP: (n, p) => 'урок ' + n + ', пункт ' + p, lek: n => 'урок ' + n, kap: n => 'гл. ' + n, gruppe: n => 'Группа ' + n, vers: x => 'Собрание ' + x },
-  uk: { th: n => 'урок ' + n, lekP: (n, p) => 'урок ' + n + ', пункт ' + p, lek: n => 'урок ' + n, kap: n => 'розд. ' + n, gruppe: n => 'Група ' + n, vers: x => 'Збір ' + x },
-  ro: { th: n => 'lecția ' + n, lekP: (n, p) => 'lecția ' + n + ', punctul ' + p, lek: n => 'lecția ' + n, kap: n => 'cap. ' + n, gruppe: n => 'Grupa ' + n, vers: x => 'Congregație ' + x },
-  el: { th: n => 'μελέτη ' + n, lekP: (n, p) => 'μάθημα ' + n + ' σημείο ' + p, lek: n => 'μάθημα ' + n, kap: n => 'κεφ. ' + n, gruppe: n => 'Όμιλος ' + n, vers: x => 'Εκκλησία ' + x },
-  cs: { th: n => n + '. lekce', lekP: (n, p) => n + '. lekce ' + p + '. bod', lek: n => n + '. lekce', kap: n => 'kap. ' + n, gruppe: n => 'Skupina ' + n, vers: x => 'Sbor ' + x },
-  sk: { th: n => n + '. lekcia', lekP: (n, p) => n + '. lekcia, ' + p + '. bod', lek: n => n + '. lekcia', kap: n => n + '. kap.', gruppe: n => 'Skupina ' + n, vers: x => 'Zbor ' + x },
-  hu: { th: n => n + '. szempont', lekP: (n, p) => n + '. fej., ' + p + '. pont', lek: n => n + '. fej.', kap: n => n + '. fej.', gruppe: n => n + '. csoport', vers: x => 'Gyülekezet ' + x },
-  hr: { th: n => 'lekcija ' + n, lekP: (n, p) => 'lekcija ' + n + ' točka ' + p, lek: n => 'lekcija ' + n, kap: n => n + '. pogl.', gruppe: n => 'Grupa ' + n, vers: x => 'Skupština ' + x },
-  sr: { th: n => n + '. lekcija', lekP: (n, p) => 'lekcija ' + n + ', tačka ' + p, lek: n => 'lekcija ' + n, kap: n => n + '. pogl.', gruppe: n => 'Grupa ' + n, vers: x => 'Skupština ' + x },
-  bg: { th: n => 'ур. ' + n, lekP: (n, p) => 'ур. ' + n + ', т. ' + p, lek: n => 'ур. ' + n, gruppe: n => 'Група ' + n, vers: x => 'Сбор ' + x },
-  sv: { th: n => 'lektion ' + n, lekP: (n, p) => 'lektion ' + n + ', punkt ' + p, lek: n => 'lektion ' + n, kap: n => 'kap. ' + n, gruppe: n => 'Grupp ' + n, vers: x => 'Församling ' + x },
-  da: { th: n => 'arbejdspunkt ' + n, lekP: (n, p) => 'lektion ' + n + ' punkt ' + p, lek: n => 'lektion ' + n, kap: n => 'kap. ' + n, gruppe: n => 'Gruppe ' + n, vers: x => 'Menighed ' + x },
-  fi: { th: n => 'osio ' + n, lekP: (n, p) => 'oppijakso ' + n + ' kohta ' + p, lek: n => 'oppijakso ' + n, kap: n => 'luku ' + n, gruppe: n => 'Ryhmä ' + n, vers: x => 'Seurakunta ' + x },
-  no: { th: n => 'leksjon ' + n, lekP: (n, p) => 'leksjon ' + n + ' punkt ' + p, lek: n => 'leksjon ' + n, kap: n => 'kap. ' + n, gruppe: n => 'Gruppe ' + n, vers: x => 'Menighet ' + x },
-  tr: { th: n => 'çalışma konusu ' + n, lekP: (n, p) => n + '. bölüm ' + p + '. nokta', lek: n => n + '. bölüm', kap: n => n + '. bölüm', gruppe: n => 'Grup ' + n, vers: x => 'Cemaat ' + x },
-  zh: { gruppe: n => '组 ' + n, vers: x => '会众 ' + x },
-  ja: { gruppe: n => 'グループ ' + n, vers: x => '会衆 ' + x },
-  ko: { gruppe: n => '조 ' + n, vers: x => '회중 ' + x },
-  id: { th: n => 'pelajaran ' + n, lekP: (n, p) => 'pelajaran ' + n + ' nomor ' + p, lek: n => 'pelajaran ' + n, kap: n => 'bab ' + n, gruppe: n => 'Kelompok ' + n, vers: x => 'Sidang ' + x },
-  tl: { th: n => 'aralin ' + n, lekP: (n, p) => 'aralin ' + n + ': #' + p, lek: n => 'aralin ' + n, kap: n => 'kab. ' + n, gruppe: n => 'Grupo ' + n, vers: x => 'Kongregasyon ' + x },
-  vi: { th: n => 'bài học số ' + n, lekP: (n, p) => 'bài ' + n + ' điểm ' + p, lek: n => 'bài ' + n, kap: n => 'chg ' + n, gruppe: n => 'Nhóm ' + n, vers: x => 'Hội thánh ' + x },
-  sw: { th: n => 'somo la ' + n, lekP: (n, p) => 'somo la ' + n + ' jambo kuu la ' + p, lek: n => 'somo la ' + n, kap: n => 'sura ya ' + n, gruppe: n => 'Kikundi ' + n, vers: x => 'Kutaniko ' + x },
-  ar: { gruppe: n => 'مجموعة ' + n, vers: x => 'الجماعة ' + x },
-  he: { gruppe: n => 'קבוצה ' + n, vers: x => 'קהילה ' + x },
-  fa: { gruppe: n => 'گروه ' + n, vers: x => 'جماعت ' + x },
-  ur: { gruppe: n => 'گروپ ' + n, vers: x => 'کلیسیا ' + x },
+  en: {
+    thLek: n => 'th study ' + n,
+    lmdLekP: (n, p) => 'lmd lesson ' + n + ' point ' + p,
+    lmdLek: n => 'lmd lesson ' + n,
+    lffLekP: (n, p) => 'lff lesson ' + n + ' point ' + p,
+    lffLek: n => 'lff lesson ' + n,
+    wcgKap: n => 'wcg chap. ' + n,
+    lmdAnh: n => 'lmd appendix A point ' + n,
+    gruppe: n => 'Group ' + n,
+    vers: x => 'Cong. ' + x,
+  },
+  es: {
+    thLek: n => 'th lección ' + n,
+    lmdLekP: (n, p) => 'lmd lección ' + n + ' punto ' + p,
+    lmdLek: n => 'lmd lección ' + n,
+    lffLekP: (n, p) => 'lff lección ' + n + ' punto ' + p,
+    lffLek: n => 'lff lección ' + n,
+    wcgKap: n => 'wcg cap. ' + n,
+    lmdAnh: n => 'lmd apéndice A punto ' + n,
+    gruppe: n => 'Grupo ' + n,
+    vers: x => 'Congr. ' + x,
+  },
+  fr: {
+    thLek: n => 'th leçon ' + n,
+    lmdLekP: (n, p) => 'lmd leçon ' + n + ' idée ' + p,
+    lmdLek: n => 'lmd leçon ' + n,
+    lffLekP: (n, p) => 'lff leçon ' + n + ' idée principale ' + p,
+    lffLek: n => 'lff leçon ' + n,
+    wcgKap: n => 'wcg chap. ' + n,
+    lmdAnh: n => 'lmd appendice A idée ' + n,
+    gruppe: n => 'Groupe ' + n,
+    vers: x => 'Ass. ' + x,
+  },
+  it: {
+    thLek: n => 'th lezione ' + n,
+    lmdLekP: (n, p) => 'lmd lezione ' + n + ' punto ' + p,
+    lmdLek: n => 'lmd lezione ' + n,
+    lffLekP: (n, p) => 'lff lezione ' + n + ' punto ' + p,
+    lffLek: n => 'lff lezione ' + n,
+    wcgKap: n => 'wcg cap. ' + n,
+    lmdAnh: n => 'lmd appendice A punto ' + n,
+    gruppe: n => 'Gruppo ' + n,
+    vers: x => 'Congregazione ' + x,
+  },
+  pt: {
+    thLek: n => 'th lição ' + n,
+    lmdLekP: (n, p) => 'lmd lição ' + n + ' ponto ' + p,
+    lmdLek: n => 'lmd lição ' + n,
+    lffLekP: (n, p) => 'lff lição ' + n + ' ponto ' + p,
+    lffLek: n => 'lff lição ' + n,
+    wcgKap: n => 'wcg cap. ' + n,
+    lmdAnh: n => 'lmd apêndice A ponto ' + n,
+    gruppe: n => 'Grupo ' + n,
+    vers: x => 'Congregação ' + x,
+  },
+  nl: {
+    thLek: n => 'th les ' + n,
+    lmdLekP: (n, p) => 'lmd les ' + n + ' punt ' + p,
+    lmdLek: n => 'lmd les ' + n,
+    lffLekP: (n, p) => 'lff les ' + n + ' punt ' + p,
+    lffLek: n => 'lff les ' + n,
+    wcgKap: n => 'wcg hfst. ' + n,
+    lmdAnh: n => 'lmd appendix A punt ' + n,
+    gruppe: n => 'Groep ' + n,
+    vers: x => 'Gemeente ' + x,
+  },
+  pl: {
+    thLek: n => 'th lekcja ' + n,
+    lmdLekP: (n, p) => 'lmd lekcja ' + n + ', punkt ' + p,
+    lmdLek: n => 'lmd lekcja ' + n,
+    lffLekP: (n, p) => 'lff lekcja ' + n + ', punkt ' + p,
+    lffLek: n => 'lff lekcja ' + n,
+    wcgKap: n => 'wcg rozdz. ' + n,
+    lmdAnh: n => 'lmd dodatek A, punkt ' + n,
+    gruppe: n => 'Grupa ' + n,
+    vers: x => 'Zbór ' + x,
+  },
+  ru: {
+    thLek: n => 'th урок ' + n,
+    lmdLekP: (n, p) => 'lmd урок ' + n + ', пункт ' + p,
+    lmdLek: n => 'lmd урок ' + n,
+    lffLekP: (n, p) => 'lff урок ' + n + ', пункт ' + p,
+    lffLek: n => 'lff урок ' + n,
+    wcgKap: n => 'wcg гл. ' + n,
+    lmdAnh: n => 'lmd Приложение A, пункт ' + n,
+    gruppe: n => 'Группа ' + n,
+    vers: x => 'Собрание ' + x,
+  },
+  uk: {
+    thLek: n => 'th урок ' + n,
+    lmdLekP: (n, p) => 'lmd урок ' + n + ', пункт ' + p,
+    lmdLek: n => 'lmd урок ' + n,
+    lffLekP: (n, p) => 'lff урок ' + n + ', пункт ' + p,
+    lffLek: n => 'lff урок ' + n,
+    wcgKap: n => 'wcg розд. ' + n,
+    lmdAnh: n => 'lmd додаток А, пункт ' + n,
+    gruppe: n => 'Група ' + n,
+    vers: x => 'Збір ' + x,
+  },
+  ro: {
+    thLek: n => 'th lecția ' + n,
+    lmdLekP: (n, p) => 'lmd lecția ' + n + ', punctul ' + p,
+    lmdLek: n => 'lmd lecția ' + n,
+    lffLekP: (n, p) => 'lff lecția ' + n + ', punctul ' + p,
+    lffLek: n => 'lff lecția ' + n,
+    wcgKap: n => 'wcg cap. ' + n,
+    lmdAnh: n => 'lmd apendice A, punctul ' + n,
+    gruppe: n => 'Grupa ' + n,
+    vers: x => 'Congregație ' + x,
+  },
+  el: {
+    thLek: n => 'th μελέτη ' + n,
+    lmdLekP: (n, p) => 'lmd μάθημα ' + n + ' σημείο ' + p,
+    lmdLek: n => 'lmd μάθημα ' + n,
+    lffLekP: (n, p) => 'lff μάθημα ' + n + ' σημείο ' + p,
+    lffLek: n => 'lff μάθημα ' + n,
+    wcgKap: n => 'wcg κεφ. ' + n,
+    lmdAnh: n => 'lmd παράρτημα A σημείο ' + n,
+    gruppe: n => 'Όμιλος ' + n,
+    vers: x => 'Εκκλησία ' + x,
+  },
+  cs: {
+    thLek: n => 'th ' + n + '. lekce',
+    lmdLekP: (n, p) => 'lmd ' + n + '. lekce ' + p + '. bod',
+    lffLekP: (n, p) => 'lff ' + n + '. lekce ' + p + '. bod',
+    wcgKap: n => 'wcg kap. ' + n,
+    lmdAnh: n => 'lmd příloha A ' + n + '. bod',
+    gruppe: n => 'Skupina ' + n,
+    vers: x => 'Sbor ' + x,
+  },
+  sk: {
+    thLek: n => 'th ' + n + '. lekcia',
+    lmdLekP: (n, p) => 'lmd ' + n + '. lekcia, ' + p + '. bod',
+    lffLekP: (n, p) => 'lff ' + n + '. lekcia, ' + p + '. bod',
+    wcgKap: n => 'wcg ' + n + '. kap.',
+    lmdAnh: n => 'lmd Dodatok A, ' + n + '. bod',
+    gruppe: n => 'Skupina ' + n,
+    vers: x => 'Zbor ' + x,
+  },
+  hu: {
+    thLek: n => 'th ' + n + '. szempont',
+    lmdLekP: (n, p) => 'lmd ' + n + '. fej., ' + p + '. pont',
+    lffLekP: (n, p) => 'lff ' + n + '. fej., ' + p + '. pont',
+    wcgKap: n => 'wcg ' + n + '. fej.',
+    lmdAnh: n => 'lmd „A” függelék, ' + n + '. pont.',
+    gruppe: n => n + '. csoport',
+    vers: x => 'Gyülekezet ' + x,
+  },
+  hr: {
+    thLek: n => 'th lekcija ' + n,
+    lmdLekP: (n, p) => 'lmd lekcija ' + n + ' točka ' + p,
+    lmdLek: n => 'lmd lekcija ' + n,
+    lffLekP: (n, p) => 'lff lekcija ' + n + ' točka ' + p,
+    lffLek: n => 'lff lekcija ' + n,
+    wcgKap: n => 'wcg ' + n + '. pogl.',
+    lmdAnh: n => 'lmd dodatak A točka ' + n,
+    gruppe: n => 'Grupa ' + n,
+    vers: x => 'Skupština ' + x,
+  },
+  sr: {
+    thLek: n => 'th ' + n + '. lekcija',
+    lmdLekP: (n, p) => 'lmd lekcija ' + n + ', tačka ' + p,
+    lmdLek: n => 'lmd lekcija ' + n,
+    lffLekP: (n, p) => 'lff lekcija ' + n + ', tačka ' + p,
+    lffLek: n => 'lff lekcija ' + n,
+    wcgKap: n => 'wcg ' + n + '. pogl.',
+    gruppe: n => 'Grupa ' + n,
+    vers: x => 'Skupština ' + x,
+  },
+  bg: {
+    thLek: n => 'th ур. ' + n,
+    lmdLekP: (n, p) => 'lmd ур. ' + n + ', т. ' + p,
+    lmdLek: n => 'lmd ур. ' + n,
+    lffLekP: (n, p) => 'lff ур. ' + n + ', т. ' + p,
+    lffLek: n => 'lff ур. ' + n,
+    lmdAnh: n => 'lmd приложение А, т. ' + n,
+    gruppe: n => 'Група ' + n,
+    vers: x => 'Сбор ' + x,
+  },
+  sv: {
+    thLek: n => 'th lektion ' + n,
+    lmdLekP: (n, p) => 'lmd lektion ' + n + ', punkt ' + p,
+    lmdLek: n => 'lmd lektion ' + n,
+    lffLekP: (n, p) => 'lff lektion ' + n + ', punkt ' + p,
+    lffLek: n => 'lff lektion ' + n,
+    wcgKap: n => 'wcg kap. ' + n,
+    lmdAnh: n => 'lmd Tillägg A, punkt ' + n,
+    gruppe: n => 'Grupp ' + n,
+    vers: x => 'Församling ' + x,
+  },
+  da: {
+    thLek: n => 'th arbejdspunkt ' + n,
+    lmdLekP: (n, p) => 'lmd lektion ' + n + ' punkt ' + p,
+    lmdLek: n => 'lmd lektion ' + n,
+    lffLekP: (n, p) => 'lff lektion ' + n + ' punkt ' + p,
+    lffLek: n => 'lff lektion ' + n,
+    wcgKap: n => 'wcg kap. ' + n,
+    lmdAnh: n => 'lmd tillæg A punkt ' + n,
+    gruppe: n => 'Gruppe ' + n,
+    vers: x => 'Menighed ' + x,
+  },
+  fi: {
+    thLek: n => 'th osio ' + n,
+    lmdLekP: (n, p) => 'lmd oppijakso ' + n + ' kohta ' + p,
+    lmdLek: n => 'lmd oppijakso ' + n,
+    lffLekP: (n, p) => 'lff oppijakso ' + n + ' kohta ' + p,
+    lffLek: n => 'lff oppijakso ' + n,
+    wcgKap: n => 'wcg luku ' + n,
+    lmdAnh: n => 'lmd liite A kohta ' + n,
+    gruppe: n => 'Ryhmä ' + n,
+    vers: x => 'Seurakunta ' + x,
+  },
+  no: {
+    thLek: n => 'th leksjon ' + n,
+    lmdLekP: (n, p) => 'lmd leksjon ' + n + ' punkt ' + p,
+    lmdLek: n => 'lmd leksjon ' + n,
+    lffLekP: (n, p) => 'lff leksjon ' + n + ' punkt ' + p,
+    lffLek: n => 'lff leksjon ' + n,
+    wcgKap: n => 'wcg kap. ' + n,
+    lmdAnh: n => 'lmd Tillegg A punkt ' + n,
+    gruppe: n => 'Gruppe ' + n,
+    vers: x => 'Menighet ' + x,
+  },
+  tr: {
+    thLek: n => 'th çalışma konusu ' + n,
+    lmdLekP: (n, p) => 'lmd ' + n + '. bölüm ' + p + '. nokta',
+    lffLekP: (n, p) => 'lff ' + n + '. bölüm ' + p + '. nokta',
+    wcgKap: n => 'wcg ' + n + '. bölüm',
+    gruppe: n => 'Grup ' + n,
+    vers: x => 'Cemaat ' + x,
+  },
+  zh: {
+    thLek: n => '《教导》第' + n + '课',
+    lmdLekP: (n, p) => '《爱心》第' + n + '课第' + p + '点',
+    lffLekP: (n, p) => '《美好生命》第' + n + '课第' + p + '点',
+    wcgKap: n => '《勇气》第' + n + '章',
+    lmdAnh: n => '《爱心》附录A第' + n + '点',
+    gruppe: n => '组 ' + n,
+    vers: x => '会众 ' + x,
+  },
+  ja: {
+    thLek: n => '教励 第' + n + '課',
+    lmdLekP: (n, p) => '愛込 レッスン' + n + ' ポイント' + p,
+    lmdLek: n => '愛込 レッスン' + n,
+    lffLekP: (n, p) => '暮 レッスン' + n + ' ポイント' + p,
+    lffLek: n => '暮 レッスン' + n,
+    wcgKap: n => '勇 ' + n + '章',
+    lmdAnh: n => '愛込 付録A ポイント' + n,
+    gruppe: n => 'グループ ' + n,
+    vers: x => '会衆 ' + x,
+  },
+  ko: {
+    thLek: n => '「읽가」 ' + n + '과',
+    lmdLekP: (n, p) => '「랑제」 ' + n + '과 요점 ' + p,
+    lffLekP: (n, p) => '「행누」 ' + n + '과 요점 ' + p,
+    wcgKap: n => '「용하」 ' + n + '장',
+    lmdAnh: n => '「랑제」 부록 가 요점 ' + n,
+    gruppe: n => '조 ' + n,
+    vers: x => '회중 ' + x,
+  },
+  id: {
+    thLek: n => 'th pelajaran ' + n,
+    lmdLekP: (n, p) => 'lmd pelajaran ' + n + ' nomor ' + p,
+    lmdLek: n => 'lmd pelajaran ' + n,
+    lffLekP: (n, p) => 'lff pelajaran ' + n + ' nomor ' + p,
+    lffLek: n => 'lff pelajaran ' + n,
+    wcgKap: n => 'wcg bab ' + n,
+    lmdAnh: n => 'lmd lampiran A nomor ' + n,
+    gruppe: n => 'Kelompok ' + n,
+    vers: x => 'Sidang ' + x,
+  },
+  tl: {
+    thLek: n => 'th aralin ' + n,
+    lmdLekP: (n, p) => 'lmd aralin ' + n + ': #' + p,
+    lmdLek: n => 'lmd aralin ' + n,
+    lffLekP: (n, p) => 'lff aralin ' + n + ': #' + p,
+    lffLek: n => 'lff aralin ' + n,
+    wcgKap: n => 'wcg kab. ' + n,
+    lmdAnh: n => 'lmd apendise A: #' + n,
+    gruppe: n => 'Grupo ' + n,
+    vers: x => 'Kongregasyon ' + x,
+  },
+  vi: {
+    thLek: n => 'th bài học số ' + n,
+    lmdLekP: (n, p) => 'lmd bài ' + n + ' điểm ' + p,
+    lmdLek: n => 'lmd bài ' + n,
+    lffLekP: (n, p) => 'lff bài ' + n + ' điểm ' + p,
+    lffLek: n => 'lff bài ' + n,
+    wcgKap: n => 'wcg chg ' + n,
+    lmdAnh: n => 'lmd phụ lục A điểm ' + n,
+    gruppe: n => 'Nhóm ' + n,
+    vers: x => 'Hội thánh ' + x,
+  },
+  sw: {
+    thLek: n => 'th somo la ' + n,
+    lmdLekP: (n, p) => 'lmd somo la ' + n + ' jambo kuu la ' + p,
+    lmdLek: n => 'lmd somo la ' + n,
+    lffLekP: (n, p) => 'lff somo la ' + n + ' jambo kuu la ' + p,
+    lffLek: n => 'lff somo la ' + n,
+    wcgKap: n => 'wcg sura ya ' + n,
+    lmdAnh: n => 'lmd nyongeza A jambo kuu la ' + n,
+    gruppe: n => 'Kikundi ' + n,
+    vers: x => 'Kutaniko ' + x,
+  },
+  ar: {
+    thLek: n => 'ق‌ت الدرس ' + n,
+    lmdLekP: (n, p) => 'أن الدرس ' + n + ' النقطة ' + p,
+    lmdLek: n => 'أن الدرس ' + n,
+    lffLekP: (n, p) => 'ع‌ف الدرس ' + n + ': النقطة ' + p,
+    lffLek: n => 'ع‌ف الدرس ' + n,
+    wcgKap: n => 'س‌ش‌ا الدرس ' + n,
+    lmdAnh: n => 'أن الملحق أ النقطة ' + n,
+    gruppe: n => 'مجموعة ' + n,
+    vers: x => 'الجماعة ' + x,
+  },
+  he: {
+    thLek: n => 'הר שיעור ' + n,
+    lmdLekP: (n, p) => 'למא שיעור ' + n + ' נקודה ' + p,
+    lmdLek: n => 'למא שיעור ' + n,
+    lffLekP: (n, p) => 'לעד שיעור ' + n + ' נקודה ' + p,
+    lffLek: n => 'לעד שיעור ' + n,
+    wcgKap: n => 'התא פרק ' + n,
+    lmdAnh: n => 'למא נספח א׳ נקודה ' + n,
+    gruppe: n => 'קבוצה ' + n,
+    vers: x => 'קהילה ' + x,
+  },
+  fa: {
+    thLek: n => 'ب-تعلیم درس ' + n,
+    lmdLekP: (n, p) => 'ب-محبت درس ' + n + ' نکتهٔ ' + p,
+    lmdLek: n => 'ب-محبت درس ' + n,
+    lffLekP: (n, p) => 'ک-زندگی درس ' + n + ' نکتهٔ ' + p,
+    lffLek: n => 'ک-زندگی درس ' + n,
+    wcgKap: n => 'ک-شجاع فصل ' + n,
+    gruppe: n => 'گروه ' + n,
+    vers: x => 'جماعت ' + x,
+  },
+  ur: {
+    thLek: n => 'تعلیم اور تلاوت، نکتہ نمبر ' + n,
+    lmdLekP: (n, p) => 'محبت دِکھائیں، سبق نمبر ' + n + ' نکتہ نمبر ' + p,
+    lmdLek: n => 'محبت دِکھائیں، سبق نمبر ' + n,
+    lffLekP: (n, p) => 'کتاب ”خوشیوں بھری زندگی!“ سبق نمبر ' + n + ' نکتہ نمبر ' + p,
+    lffLek: n => 'کتاب ”خوشیوں بھری زندگی!“ سبق نمبر ' + n,
+    wcgKap: n => 'دلیری، سبق نمبر ' + n,
+    gruppe: n => 'گروپ ' + n,
+    vers: x => 'کلیسیا ' + x,
+  },
 }
 
 // Datums-/Musterdaten
@@ -1101,7 +1421,7 @@ const D: Record<string, DateDict> = {
     range1: (a, b, m) => m + ' ' + a + '\u2013' + b,
     range2: (a, ma, b, mb) => ma + ' ' + a + ' \u2013 ' + mb + ' ' + b,
     song: n => 'Song ' + n, min: n => n + ' min.', ca: r => 'approx. ' + r, ende: r => 'Ends approx. ' + r,
-    anhang: n => 'appendix A point ' + n, artikel: n => 'Study article ' + n, mit: x => 'with ' + x,
+    artikel: n => 'Study article ' + n, mit: x => 'with ' + x,
     tage: n => 'in ' + n + ' days', zut: n => n + ' assignments'
   },
   es: {
@@ -1113,7 +1433,7 @@ const D: Record<string, DateDict> = {
     range1: (a, b, m) => a + ' al ' + b + ' de ' + m,
     range2: (a, ma, b, mb) => a + ' de ' + ma + ' al ' + b + ' de ' + mb,
     song: n => 'Canción ' + n, min: n => n + ' min.', ca: r => 'aprox. ' + r, ende: r => 'Termina aprox. ' + r,
-    anhang: n => 'apéndice A punto ' + n, artikel: n => 'Artículo de estudio ' + n, mit: x => 'con ' + x,
+    artikel: n => 'Artículo de estudio ' + n, mit: x => 'con ' + x,
     tage: n => 'en ' + n + ' días', zut: n => n + ' asignaciones'
   },
   fr: {
@@ -1125,7 +1445,6 @@ const D: Record<string, DateDict> = {
     range1: (a, b, m) => a + '-' + b + ' ' + m,
     range2: (a, ma, b, mb) => a + ' ' + ma + ' \u2013 ' + b + ' ' + mb,
     song: n => 'Cantique ' + n, min: n => n + ' min', ca: r => 'vers ' + r, ende: r => 'Fin vers ' + r,
-    anhang: n => 'appendice A idée ' + n,
     artikel: n => 'Article d\u2019étude ' + n, mit: x => 'avec ' + x,
     tage: n => 'dans ' + n + ' jours', zut: n => n + ' attributions'
   }

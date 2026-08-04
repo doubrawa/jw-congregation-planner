@@ -6,6 +6,7 @@ import {
   CONG_LANGS,
   CONG_TO_JW,
   congAppCode,
+  JW_TO_APP,
 } from './langs'
 
 describe('App-Sprachlisten', () => {
@@ -33,6 +34,15 @@ describe('Sprachcode-Zuordnungen (jw.org ↔ App)', () => {
   it('congAppCode: deutscher Versammlungssprach-Name → App-Code', () => {
     expect(congAppCode('Deutsch')).toBe('de')
     expect(congAppCode('gibt-es-nicht')).toBeUndefined()
+  })
+
+  it('jede App-Sprache taugt auch als Versammlungssprache', () => {
+    // Fehlt hier eine, bleibt für eine Versammlung dieser Sprache das GANZE
+    // Programm deutsch stehen — genau so war es für ar/he/fa/ur.
+    const ohneZuordnung = APP_LANGS.map((l) => l.code).filter(
+      (code) => !Object.values(JW_TO_APP).includes(code),
+    )
+    expect(ohneZuordnung).toEqual([])
   })
 
   it('Versammlungssprachen: vollständige jw.org-Liste mit Codes', () => {
