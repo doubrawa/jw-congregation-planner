@@ -124,6 +124,11 @@ export const JW_TO_APP: Readonly<Record<string, Lang>> = {
   cs: 'cs', sk: 'sk', hu: 'hu', hr: 'hr', 'sr-latn': 'sr', bg: 'bg',
   sv: 'sv', da: 'da', fi: 'fi', no: 'no', tr: 'tr',
   'cmn-hans': 'zh', ja: 'ja', ko: 'ko', id: 'id', tl: 'tl', vi: 'vi', sw: 'sw',
+  // Diese vier kamen später dazu und fehlten hier: ihre Wörterbücher gibt es
+  // längst, aber ohne Eintrag blieb für eine arabisch-, hebräisch-, persisch-
+  // oder urdusprachige Versammlung das ganze Programm deutsch stehen.
+  ar: 'ar', he: 'he', fa: 'fa', ur: 'ur',
+
 }
 
 /**

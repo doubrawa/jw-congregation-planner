@@ -152,13 +152,26 @@ describe('Rollen und Verweise — auch in den Zusatz-Sprachen', () => {
     expect(makeTr('cs')('th Lektion 11')).toBe('th 11. lekce')
     expect(makeTr('en')('lff Lektion 20 Punkt 4')).toBe('lff lesson 20 point 4')
     expect(makeTr('sk')('wcg Kap. 15')).toBe('wcg 15. kap.')
+    expect(makeTr('en')('lmd Anhang A Punkt 21')).toBe('lmd appendix A point 21')
+    expect(makeTr('pl')('lmd Anhang A Punkt 21')).toBe('lmd dodatek A, punkt 21')
   })
 
-  it('bleibt deutsch, wo das Arbeitsheft die Kürzel gar nicht druckt', () => {
-    // Die Arbeitshefte in ja/zh/ko/ar/he/fa/ur führen „th", „lmd" usw. nicht —
-    // dort gibt es nichts zu übersetzen, und Erfundenes wäre schlimmer.
-    expect(makeTr('ja')('th Lektion 5')).toBe('th Lektion 5')
-    expect(makeTr('ar')('wcg Kap. 15')).toBe('wcg Kap. 15')
+  it('übersetzt auch das Publikationskürzel, wo die Sprache das tut', () => {
+    // Ostasien und die RTL-Sprachen schreiben nicht „th", sondern ein eigenes
+    // Kürzel — und je Publikation ein anderes. Eine gemeinsame Regel für alle
+    // Buch-Kürzel setzte hier das falsche ein.
+    expect(makeTr('ja')('th Lektion 11')).toBe('教励 第11課')
+    expect(makeTr('zh')('lmd Lektion 1 Punkt 5')).toBe('《爱心》第1课第5点')
+    expect(makeTr('ko')('wcg Kap. 16')).toBe('「용하」 16장')
+    expect(makeTr('he')('th Lektion 11')).toBe('הר שיעור 11')
+    // th und wcg sind verschiedene Publikationen → verschiedene Kürzel
+    expect(makeTr('ko')('th Lektion 16')).toBe('「읽가」 16과')
+  })
+
+  it('bleibt deutsch, wo keine Vorlage gemessen werden konnte', () => {
+    // Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation;
+    // Erfundenes wäre schlimmer als ein erkennbar unübersetzter Verweis.
+    expect(makeTr('bg')('wcg Kap. 15')).toBe('wcg Kap. 15')
   })
 })
 
