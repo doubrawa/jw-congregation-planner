@@ -15,15 +15,15 @@ export function PersonTimeline({ person }: { person: Person }) {
   const entries = personTimeline(person, state)
   if (entries.length === 0) return null
 
-  // Treffpunkte tragen ein echtes Datum statt eines Programm-Textes; Format
-  // wie in der Treffpunkte-Ansicht („Dienstag, 8. September · 19:00").
-  const fsDatum = (e: Extract<TimelineEntry, { kind: 'fs' }>): string => {
+  // Einheitlich für beide Arten: Wochentag, Datum und — sofern hinterlegt —
+  // die Uhrzeit („Dienstag, 8. September · 19:00").
+  const wann = (e: TimelineEntry): string => {
     const tag = e.datum.toLocaleDateString(LOCALES[state.lang], {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
     })
-    return `${tag} · ${e.zeit}`
+    return e.zeit ? `${tag} · ${e.zeit}` : tag
   }
 
   return (
@@ -33,9 +33,7 @@ export function PersonTimeline({ person }: { person: Person }) {
         {entries.map((e) => (
           <li key={e.key} className={e.vergangen ? 'pers-zeit-row is-past' : 'pers-zeit-row'}>
             <span className="pers-zeit-dot" aria-hidden="true" />
-            <div className="pers-zeit-datum">
-              {e.kind === 'meeting' ? tp(e.datum) : fsDatum(e)}
-            </div>
+            <div className="pers-zeit-datum">{wann(e)}</div>
             <div className="pers-zeit-art">
               {e.kind === 'meeting' ? tp(e.titel) : `${t.privTreffpunkt} · ${tu(e.ort)}`}
             </div>

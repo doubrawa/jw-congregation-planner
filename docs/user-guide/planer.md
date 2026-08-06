@@ -151,9 +151,15 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
 ![Person bearbeiten](screenshots/planer-person-detail.png)
 
 Unter den Stammdaten steht die **Zeitleiste der Zuteilungen**: alle Aufgaben
-dieser Person aus den geladenen Wochen, chronologisch, mit Datum und Art der
-Aufgabe – Programmpunkte, Hilfsdienste und geleitete Treffpunkte. Vergangenes
-wird blasser dargestellt. Hat jemand keine Zuteilung, entfällt der Abschnitt.
+dieser Person aus den geladenen Wochen, chronologisch, jeweils mit Wochentag,
+Datum und Uhrzeit – Programmpunkte, Hilfsdienste und geleitete Treffpunkte.
+Vergangenes wird blasser dargestellt. Hat jemand keine Zuteilung, entfällt der
+Abschnitt.
+
+Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
+Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)
+(„Di 19:00 · So 10:00"). Weicht eine Woche davon ab – z. B. das Gedächtnismahl –,
+gilt der Termin dieser Woche.
 
 Im Detail legst du fest:
 
