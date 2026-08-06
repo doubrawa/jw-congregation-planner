@@ -21,6 +21,45 @@ export function meetingDayOffsets(meetingTimes: string): Record<MeetingKey, numb
   return { mid: found[0] ?? 1, we: found[1] ?? 6 }
 }
 
+/** Erste Uhrzeit in einem Text, auf "HH:MM" normiert. */
+function ersteZeit(text: string): string | undefined {
+  const m = /\b(\d{1,2})[:.](\d{2})\b/.exec(text)
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : undefined
+}
+
+/**
+ * "Di 19:00 · So 10:00" → { mid: "19:00", we: "10:00" }. Ohne erkennbare
+ * Uhrzeit bleibt der jeweilige Wert leer — der Aufrufer lässt sie dann weg.
+ * Die Zusammenkunfts-Zeiten stehen nur hier (in den Einstellungen); die
+ * importierten Wochen tragen im `date`-Feld die Wochenspanne, keinen Termin.
+ */
+export function meetingTimesOf(meetingTimes: string): Record<MeetingKey, string> {
+  const found = [...meetingTimes.matchAll(/\b(\d{1,2})[:.](\d{2})\b/g)].map(
+    (m) => `${m[1].padStart(2, '0')}:${m[2]}`,
+  )
+  return { mid: found[0] ?? '', we: found[1] ?? '' }
+}
+
+/** Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach Montag. */
+const WEEKDAY_OFFSET: Record<string, number> = {
+  Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
+  Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
+}
+
+/**
+ * Termin aus dem `date`-Feld einer Zusammenkunft, soweit es einen trägt:
+ * "Samstag, 3. Oktober · 19:30 · Königreichssaal" → { offset: 5, zeit: "19:30" }.
+ *
+ * Wichtig für Wochen, die vom Rhythmus abweichen (Gedächtnismahl, Kongress) —
+ * dort steht der echte Termin nur hier. Importierte Wochen tragen dagegen die
+ * Wochenspanne ("7.–13. September"): kein Wochentag, keine Zeit → beides
+ * `undefined`, und der Aufrufer nimmt die Zeiten aus den Einstellungen.
+ */
+export function meetingDateParts(date: string): { offset?: number; zeit?: string } {
+  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(date)
+  return { offset: tag ? WEEKDAY_OFFSET[tag[1]] : undefined, zeit: ersteZeit(date) }
+}
+
 /**
  * UTC-Zeitstempel (ms) des Zusammenkunftstags oder null, wenn die Woche kein
  * ISO-Startdatum hat oder es unlesbar ist. Auf Mitternacht UTC normalisiert —

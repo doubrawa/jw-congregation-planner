@@ -32,8 +32,48 @@ describe('Zeitleiste einer Person', () => {
     const meeting = eintraege.find((e) => e.kind === 'meeting')
     expect(meeting).toBeDefined()
     if (meeting?.kind !== 'meeting') throw new Error('kein Zusammenkunfts-Eintrag')
-    expect(meeting.datum).not.toBe('')
     expect(meeting.titel).not.toBe('')
+    // Demo: Woche 0 beginnt Mo, 7.9.; Einstellungen sagen „Di 19:00 · So 10:00"
+    expect(meeting.datum.getDay()).toBe(2) // Dienstag
+    expect(meeting.datum.getDate()).toBe(8)
+    expect(meeting.zeit).toBe('19:00')
+  })
+
+  /** Wochen wie nach dem jw.org-Import: im Datumsfeld steht nur die Spanne. */
+  const importierteWochen = () =>
+    buildDemoWeeks().map((w) => ({
+      ...w,
+      mid: { ...w.mid, date: w.range },
+      we: { ...w.we, date: w.range },
+    }))
+
+  it('nennt auch bei importierten Wochen Tag und Zeit statt der Wochenspanne', () => {
+    // Der Import schreibt „7.–13. September" ins Datumsfeld — der Termin steht
+    // dann nur in den Einstellungen (hier „Di 19:00 · So 10:00").
+    const eintraege = personTimeline(person, daten({ weeks: importierteWochen() }))
+    const meetings = eintraege.filter((e) => e.kind === 'meeting')
+    expect(meetings.length).toBeGreaterThan(0)
+    for (const e of meetings) {
+      expect([2, 0]).toContain(e.datum.getDay()) // Dienstag oder Sonntag
+      expect(e.zeit).toBe(e.datum.getDay() === 2 ? '19:00' : '10:00')
+    }
+  })
+
+  it('ein eigener Termin der Woche hat Vorrang (Gedächtnismahl)', () => {
+    // Demo-Woche 3: Gedächtnismahl am Samstag 19:30 statt Sonntag 10:00.
+    const sonder = personTimeline(person, daten()).find((e) => e.zeit === '19:30')
+    expect(sonder).toBeDefined()
+    expect(sonder?.datum.getDay()).toBe(6) // Samstag
+    // Ohne eigenen Termin fiele derselbe Punkt auf den Sonntag zurück.
+    const ohne = personTimeline(person, daten({ weeks: importierteWochen() }))
+    expect(ohne.some((e) => e.zeit === '19:30')).toBe(false)
+  })
+
+  it('ohne hinterlegte Uhrzeit bleibt das Feld leer, statt etwas zu erfinden', () => {
+    const congregation = { ...CONGREGATION, meetings: 'Di · So' }
+    const eintraege = personTimeline(person, daten({ weeks: importierteWochen(), congregation }))
+    const meeting = eintraege.find((e) => e.kind === 'meeting')
+    expect(meeting?.zeit).toBe('')
   })
 
   it('nimmt geleitete Treffpunkte mit auf', () => {

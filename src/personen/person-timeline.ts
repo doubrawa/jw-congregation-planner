@@ -1,14 +1,13 @@
 import type { AppState } from '../app/context'
-import { fsDate } from '../data/fs'
 import { displayName } from '../data/helpers'
-import { meetingDayOffsets } from '../data/meeting-dates'
+import { meetingDateParts, meetingDayOffsets, meetingTimesOf } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek } from '../data/planning'
 import type { Person } from '../data/types'
 
 /**
- * Ein Eintrag der Zeitleiste im Personen-Detail. Die Texte bleiben kanonisch
- * deutsch — übersetzt wird erst bei der Anzeige (Zusammenkünfte über die
- * Programmsprache, der Treffpunkt-Ort über die App-Sprache).
+ * Ein Eintrag der Zeitleiste im Personen-Detail — für beide Arten gleich
+ * aufgebaut: echtes Datum plus Uhrzeit. Die Beschriftung bleibt kanonisch
+ * deutsch und wird erst bei der Anzeige übersetzt.
  */
 export type TimelineEntry = {
   key: string
@@ -17,12 +16,13 @@ export type TimelineEntry = {
    * ineinander — auch bei Demo-/Vorlagenwochen, die kein echtes Datum tragen.
    */
   tag: number
-  /** Liegt vor der aktuellen Woche. */
+  /** Kalendertag der Aufgabe. */
+  datum: Date
+  /** "19:00"; leer, wenn die Versammlung keine Zeit hinterlegt hat. */
+  zeit: string
+  /** Liegt vor dem heutigen Tag. */
   vergangen: boolean
-} & (
-  | { kind: 'meeting'; titel: string; datum: string }
-  | { kind: 'fs'; datum: Date; zeit: string; ort: string }
-)
+} & ({ kind: 'meeting'; titel: string } | { kind: 'fs'; ort: string })
 
 /** Was die Zeitleiste aus dem Zustand braucht (erleichtert das Testen). */
 export type TimelineDaten = Pick<
@@ -34,6 +34,11 @@ export type TimelineDaten = Pick<
  * Alle Zuteilungen einer Person in zeitlicher Reihenfolge: Programmpunkte,
  * Ratgeber und Hilfsdienste der Zusammenkünfte (deriveMyTasks — dieselbe
  * Quelle wie „Meine Aufgaben") plus die geleiteten Treffpunkte.
+ *
+ * Datum und Uhrzeit werden gerechnet: importierte Wochen tragen im `date`-Feld
+ * nur die Wochenspanne („7.–13. September"). Der Tag ergibt sich aus dem Montag
+ * der Woche plus dem in den Einstellungen festgelegten Wochentag, die Uhrzeit
+ * ebenso — außer die Woche nennt einen eigenen Termin (Gedächtnismahl).
  */
 export function personTimeline(
   person: Person,
@@ -42,14 +47,16 @@ export function personTimeline(
 ): TimelineEntry[] {
   const name = displayName(person)
   const offsets = meetingDayOffsets(state.congregation.meetings)
+  const zeiten = meetingTimesOf(state.congregation.meetings)
   // Vergangen wird am echten Kalendertag entschieden, nicht am `current`-Flag
   // der Woche — das wird nicht nachgeführt und veraltet (siehe fsBaseFromWeeks).
   const grenze = new Date(heute)
   grenze.setHours(0, 0, 0, 0)
-  const istVergangen = (tag: number) => {
+  /** Kalendertag zu „Tage nach dem Montag der Woche 0". */
+  const datumVon = (tag: number) => {
     const d = new Date(state.fsBase)
     d.setDate(d.getDate() + tag)
-    return d < grenze
+    return d
   }
   const entries: TimelineEntry[] = []
 
@@ -64,14 +71,19 @@ export function personTimeline(
   for (const task of tasks) {
     const pos = taskKeyWeek(task.id)
     if (!pos) continue
-    const tag = pos.wi * 7 + offsets[pos.tab]
+    // Trägt die Woche einen eigenen Termin (Gedächtnismahl, Kongress), gilt
+    // dieser; sonst der Rhythmus aus den Einstellungen.
+    const eigener = meetingDateParts(state.weeks[pos.wi]?.[pos.tab].date ?? '')
+    const tag = pos.wi * 7 + (eigener.offset ?? offsets[pos.tab])
+    const datum = datumVon(tag)
     entries.push({
       kind: 'meeting',
       key: task.id,
       tag,
-      vergangen: istVergangen(tag),
+      datum,
+      zeit: eigener.zeit ?? zeiten[pos.tab],
+      vergangen: datum < grenze,
       titel: task.title,
-      datum: task.date,
     })
   }
 
@@ -80,13 +92,14 @@ export function personTimeline(
     for (const inst of week) {
       if (!inst.leader || inst.leader !== name) continue
       const tag = wi * 7 + ((inst.wd + 6) % 7) // wd: 0=So … 6=Sa → Tage nach Montag
+      const datum = datumVon(tag)
       entries.push({
         kind: 'fs',
         key: `fs|${wi}|${inst.id}`,
         tag,
-        vergangen: istVergangen(tag),
-        datum: fsDate(state.fsBase, wi, inst.wd),
+        datum,
         zeit: inst.time,
+        vergangen: datum < grenze,
         ort: inst.place,
       })
     }
