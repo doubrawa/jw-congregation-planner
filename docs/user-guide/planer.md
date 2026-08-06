@@ -142,13 +142,18 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   Telefonnummer und E‑Mail‑Adresse**. Bei Telefonnummern ist die Schreibweise
   egal: „01701234567" findet auch „0170 123 4567".
 - Darunter kannst du die Liste nach **Geschlecht**, **Rolle**,
-  **Predigtdienstgruppe** und **Aufgabenbereich** einschränken. Die Felder
-  wirken zusammen (z. B. alle Brüder aus Gruppe 2 mit dem Bereich Mikrofone);
-  „—" bedeutet „nicht eingeschränkt". Die Zahl neben der Überschrift zeigt, wie
-  viele Personen gerade übrig bleiben.
+  **Predigtdienstgruppe** und **Aufgabenbereich** einschränken (jeweils
+  alphabetisch sortiert). Die Felder wirken zusammen (z. B. alle Brüder aus
+  Gruppe 2 mit dem Bereich Mikrofone); „—" bedeutet „nicht eingeschränkt". Die
+  Zahl neben der Überschrift zeigt, wie viele Personen gerade übrig bleiben.
 - Ein Tippen auf eine Person öffnet ihr Detail:
 
 ![Person bearbeiten](screenshots/planer-person-detail.png)
+
+Unter den Stammdaten steht die **Zeitleiste der Zuteilungen**: alle Aufgaben
+dieser Person aus den geladenen Wochen, chronologisch, mit Datum und Art der
+Aufgabe – Programmpunkte, Hilfsdienste und geleitete Treffpunkte. Vergangenes
+wird blasser dargestellt. Hat jemand keine Zuteilung, entfällt der Abschnitt.
 
 Im Detail legst du fest:
 

@@ -5,6 +5,7 @@ import { fill, useT } from '../i18n/useT'
 import { ROLE_KEY } from '../i18n/ui'
 import type { Person } from '../data/types'
 import { KontoCard } from './KontoCard'
+import { PersonTimeline } from './PersonTimeline'
 import { privLabel } from './priv-label'
 import { PlannerToggle, PrivToggle } from './PrivToggle'
 
@@ -165,6 +166,8 @@ export function PersonDetail({ person }: { person: Person }) {
           <p className="panel-hint">{t.familieHint}</p>
         </div>
       </div>
+
+      <PersonTimeline person={person} />
 
       <div className="panel panel--pb10" data-farbe="petrol">
         <div className="panel-label">{t.aufgabenbereiche}</div>
