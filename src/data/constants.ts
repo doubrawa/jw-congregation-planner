@@ -14,6 +14,9 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen. */
 export const PLANNER_ROLES: readonly Role[] = ['aeltester', 'dienstamtgehilfe']
 
+/** Rollen-Reihenfolge in der Oberfläche (Chips im Detail, Filter der Liste). */
+export const ROLE_ORDER: readonly Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
+
 /**
  * Die festen, slot-relevanten Aufgabenbereiche (Toggle-Reihenfolge im Detail).
  * Die Hilfsdienst-Bereiche folgen dahinter und kommen aus `state.services`.

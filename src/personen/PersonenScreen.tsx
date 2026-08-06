@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useApp } from '../app/context'
-import { duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel } from '../data/helpers'
+import { QUALIFICATION_ORDER, ROLE_ORDER } from '../data/constants'
+import { duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { fill, useT } from '../i18n/useT'
+import { ROLE_KEY } from '../i18n/ui'
 import { appUrl, linkedMember, makeInvite, openInvite } from './invite-helpers'
 import { OrphanAccounts } from './OrphanAccounts'
 import { PersonDetail } from './PersonDetail'
+import { KEIN_FILTER, passtZumFilter, type PersonFilter } from './person-filter'
+import { privLabel } from './priv-label'
 import './personen.css'
 
 /**
@@ -23,11 +27,11 @@ export function PersonenScreen() {
 function PersonList() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<PersonFilter>(KEIN_FILTER)
+  const setz = (patch: Partial<PersonFilter>) => setFilter((f) => ({ ...f, ...patch }))
 
-  const query = search.trim().toLowerCase()
   const sorted = [...state.persons].sort(personCompare)
-  const filtered = sorted.filter((p) => !query || fullName(p).toLowerCase().includes(query))
+  const filtered = sorted.filter((p) => passtZumFilter(p, filter))
   const production = state.dataStatus !== 'demo'
   const dupes = duplicateDisplayNames(state.persons)
 
@@ -84,7 +88,9 @@ function PersonList() {
     <section className="screen">
       <div className="screen-head">
         <h1 className="screen-title">{t.personen}</h1>
-        <span className="screen-head-note">{fill(t.personenCount, { n: state.persons.length })}</span>
+        {/* Zählt die sichtbaren Personen — so zeigt der Kopf zugleich, wie
+            stark Suche und Filter gerade einschränken. */}
+        <span className="screen-head-note">{fill(t.personenCount, { n: filtered.length })}</span>
       </div>
 
       {dupes.length > 0 && (
@@ -107,15 +113,6 @@ function PersonList() {
           es welche gibt; rendert sonst nichts). */}
       <OrphanAccounts />
 
-      <input
-        type="text"
-        className="pers-search"
-        placeholder={t.suchen}
-        aria-label={t.suchen}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
       <button type="button" className="btn-outline pers-add" onClick={addPerson}>
         {t.neuePerson}
       </button>
@@ -125,6 +122,55 @@ function PersonList() {
           {t.alleEinladen}
         </button>
       )}
+
+      <input
+        type="search"
+        className="pers-search"
+        placeholder={t.suchen}
+        aria-label={t.suchen}
+        value={filter.q}
+        onChange={(e) => setz({ q: e.target.value })}
+      />
+
+      <div className="pers-filters">
+        <FilterSelect
+          label={t.geschlecht}
+          value={filter.sex}
+          onChange={(v) => setz({ sex: v as PersonFilter['sex'] })}
+          options={[
+            ['m', t.bruder],
+            ['w', t.schwester],
+          ]}
+        />
+        <FilterSelect
+          label={t.rolle}
+          value={filter.role}
+          onChange={(v) => setz({ role: v as PersonFilter['role'] })}
+          options={ROLE_ORDER.map((role) => [role, t[ROLE_KEY[role]]])}
+        />
+        {/* Ohne angelegte Gruppen hätte die Auswahl nur den Platzhalter. */}
+        {state.groups.length > 0 && (
+          <FilterSelect
+            label={t.gruppeLbl}
+            value={filter.grp}
+            onChange={(v) => setz({ grp: v })}
+            options={state.groups.map((g) => [g.id, tu(g.name)])}
+          />
+        )}
+        <FilterSelect
+          label={t.aufgabenbereiche}
+          value={filter.priv}
+          onChange={(v) => setz({ priv: v })}
+          options={[
+            ...QUALIFICATION_ORDER.map((key) => [key, privLabel(t, key)] as [string, string]),
+            // Wie im Detail: Gruppen-Dienste (Reinigung) rotieren Gruppen
+            // statt Personen und haben deshalb keinen Bereich.
+            ...state.services
+              .filter((service) => !service.groups)
+              .map((service) => [serviceQualKey(service.key), tu(service.name)] as [string, string]),
+          ]}
+        />
+      </div>
 
       <div className="pers-list">
         {filtered.map((person) => (
@@ -147,5 +193,43 @@ function PersonList() {
         ))}
       </div>
     </section>
+  )
+}
+
+/**
+ * Ein Filterfeld der Personenliste. Der Platzhalter „—" steht wie überall im
+ * Screen für „nicht eingeschränkt"; ist etwas gewählt, hebt sich das Feld ab.
+ */
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: ReadonlyArray<readonly [string, string]>
+}) {
+  const id = useId()
+  return (
+    <div className="pers-filter">
+      <label className="field-label" htmlFor={id}>
+        {label}
+      </label>
+      <select
+        id={id}
+        className={value ? 'mem-select pers-grp-select is-active' : 'mem-select pers-grp-select'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">—</option>
+        {options.map(([key, text]) => (
+          <option key={key} value={key}>
+            {text}
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }

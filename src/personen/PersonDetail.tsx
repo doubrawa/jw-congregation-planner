@@ -1,13 +1,12 @@
 import { useApp } from '../app/context'
-import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
+import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { familyMembers, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
-import { PRIV_KEY, ROLE_KEY } from '../i18n/ui'
-import type { Person, QualificationKey, Role } from '../data/types'
+import { ROLE_KEY } from '../i18n/ui'
+import type { Person } from '../data/types'
 import { KontoCard } from './KontoCard'
+import { privLabel } from './priv-label'
 import { PlannerToggle, PrivToggle } from './PrivToggle'
-
-const ROLE_ORDER: readonly Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
 
 /**
  * Personen-Detail: Stammdaten, Geschlecht/Rolle/Gruppe, die Aufgabenbereich-
@@ -19,19 +18,6 @@ export function PersonDetail({ person }: { person: Person }) {
   const { t, tu } = useT()
   const update = (patch: Partial<Person>) =>
     dispatch({ type: 'updatePerson', id: person.id, patch })
-
-  // Vorsitz ist nach Zusammenkunft getrennt: Basis-Label „Vorsitz" + Zusatz
-  // aus den bereits übersetzten Tab-Namen (unter der Woche / Wochenende).
-  const privLabel = (key: QualificationKey): string =>
-    key === 'vorsitzMid'
-      ? `${t.privVorsitz} · ${t.tabMid}`
-      : key === 'vorsitzWe'
-        ? `${t.privVorsitz} · ${t.tabWe}`
-        : key === 'ratgeber'
-          // Wie beim Vorsitz aus Bausteinen zusammengesetzt: spart einen
-          // eigenen Schlüssel in 34 Sprachen und bleibt automatisch stimmig.
-          ? `${t.auxRatgeber} · ${t.auxKlasse}`
-          : t[PRIV_KEY[key]]
 
   const family = familyMembers(state.persons, person)
   const famIds = new Set([person.id, ...family.map((m) => m.id)])
@@ -183,7 +169,7 @@ export function PersonDetail({ person }: { person: Person }) {
       <div className="panel panel--pb10" data-farbe="petrol">
         <div className="panel-label">{t.aufgabenbereiche}</div>
         {QUALIFICATION_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={privLabel(key)} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} />
         ))}
         {/* Je Hilfsdienst ein Bereich; Gruppen-Dienste (Reinigung) rotieren
             Gruppen statt Personen und haben deshalb keinen. */}
@@ -204,7 +190,7 @@ export function PersonDetail({ person }: { person: Person }) {
         <div className="panel-label">{t.wtRollenLabel}</div>
         <p className="panel-hint">{t.wtRollenHint}</p>
         {WT_ROLE_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={privLabel(key)} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} />
         ))}
         <PlannerToggle person={person} update={update} />
       </div>
