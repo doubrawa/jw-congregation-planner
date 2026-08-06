@@ -95,7 +95,9 @@ export const DE = {
     appInstallieren: 'App installieren',
     pushIosHint: 'Für Benachrichtigungen die App installieren: Teilen → „Zum Home-Bildschirm".',
     familieLabel: 'Familie',
-    familieHint: 'Familienangehörige (gleicher Haushalt) dürfen bei Schülerteilen auch geschlechtsübergreifend Gesprächspartner sein.',
+    // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
+    // Sprache der dortige Satz, statt einer eigenen Umschreibung.
+    familieHint: 'Der Gesprächspartner sollte dasselbe Geschlecht haben oder ein Familienangehöriger sein.',
     familieHinzu: '+ Familienmitglied hinzufügen',
     partnerHinzu: '+ Gesprächspartner',
     partnerEntfernen: '– Gesprächspartner',
