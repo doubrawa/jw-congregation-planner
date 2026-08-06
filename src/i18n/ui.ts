@@ -87,7 +87,8 @@ export const PRIV_KEY: Record<QualificationKey, keyof Dict> = {
   bibellesung: 'privBibellesung',
   leser: 'privLeser',
   schulung: 'privSchulung',
-  schulungPartner: 'privSchulungPartner',
+  // wie beim Vorsitz aus Bausteinen gebaut („Schulungsaufgaben · Gesprächspartner“)
+  schulungPartner: 'privSchulung',
   studium: 'privStudium',
   treffpunkt: 'privTreffpunkt',
   // ratgeber wird im Personen-Detail aus auxRatgeber + auxKlasse gebaut
