@@ -187,7 +187,7 @@ export const DE = {
     auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
     auxRatgeberHint: 'Für jede zusätzliche Klasse muss ein befähigter Ratgeber da sein, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete', privLesen: 'Bibellesung / Leser',
-    privSchulung: 'Schulungsaufgaben', privSchulungPartner: 'Schulungsaufgaben Partner', privStudium: 'Studium leiten',
+    privSchulung: 'Schulungsaufgaben', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',
     privWtLeiter: 'Wachtturm-Studium-Leiter', privWtVertreter: 'Vertreter (Wachtturm-Studium)',

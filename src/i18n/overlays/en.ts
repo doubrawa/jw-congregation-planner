@@ -225,7 +225,6 @@ export default {
   "privGebet": "Prayers",
   "privLesen": "Bible reading / reader",
   "privSchulung": "Student assignments",
-  "privSchulungPartner": "Student assignments partner",
   "privStudium": "Conducting studies",
   "privBibellesung": "Bible reading",
   "privLeser": "Reader",

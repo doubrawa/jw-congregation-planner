@@ -2,37 +2,6 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { APP_LANGS } from './langs'
 import { DE, dict, loadOverlay } from './ui'
 
-/**
- * Schlüssel, die (noch) nicht in jedem Overlay stehen und deshalb in vielen
- * Sprachen englisch erscheinen — Altbestand aus Funktionen, die nachträglich
- * dazukamen (Anmeldung/Registrierung, Push, Schriftgröße, Offline-Banner,
- * Einspringen, Dubletten, a11y-Beschriftungen).
- *
- * Die Liste darf nur KÜRZER werden: ein neu eingeführter Schlüssel ohne
- * Übersetzung lässt den Test unten scheitern.
- */
-const LUECKEN = new Set([
-  'a11yClose', 'a11yCongLang', 'a11yDecrease', 'a11yIncrease', 'a11yMainNav',
-  'a11yMoveDown', 'a11yMoveUp', 'a11yNextMonth', 'a11yNextWeek', 'a11yPrevMonth',
-  'a11yPrevWeek', 'a11yRemove', 'a11yTime', 'a11yWeekday', 'absagen', 'anfangsliedLbl',
-  'appInstallieren', 'codeEinloesen', 'codePh', 'congLabel', 'demoSuffix',
-  'dochBestaetigen', 'dublettenHint', 'dublettenRow', 'dublettenTitle', 'einspringenHint',
-  'einspringenTitle', 'emailKv', 'ersatzHint', 'fsLeiterLbl', 'invAlreadyMember',
-  'invCodeInvalid', 'kannNicht', 'keinePersonOpt', 'kontoErstellen', 'laedt', 'liedNrPh',
-  'loadAufgabe', 'loadFrei', 'loadHilfsdienst', 'neuesPasswort', 'nurMitglieder',
-  'oderPersonWaehlen', 'offlineBanner', 'offlineBannerHint', 'offlineReadOnly',
-  'offlineRetry', 'partnerEntfernen', 'partnerHinzu', 'privSchulungPartner',
-  'privWtLeiter', 'privWtVertreter', 'pushAktivieren', 'pushIosHint', 'pushPromptIos',
-  'pushPromptText', 'pushPromptTitle', 'pwSpeichern', 'pwWiederholen', 'recoveryTitle',
-  'rednerNamePh', 'rednerVersPh', 'regMailHinweis', 'registrieren', 'resetMailHinweis',
-  'schriftGroesser', 'schriftGross', 'schriftKlein', 'schriftSehrGross', 'schriftStandard',
-  'schriftgroesse', 'stDemoLaden', 'stErneut', 'stFehler', 'stFehlerText', 'stKeineVers',
-  'stKeineVersText', 'stLeer', 'stLeerText', 'stLeerTextPlaner', 'toastErsatzGesucht',
-  'toastPwGeaendert', 'toastPwMismatch', 'toastUebernommen', 'toastUebernommenKonflikt',
-  'uebernehmen', 'uebernehmenBtn', 'versammlungTag', 'vortragThemaPh', 'wtRollenHint',
-  'wtRollenLabel', 'zurAnmeldung',
-])
-
 describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
   const deKeys = Object.keys(DE).sort()
 
@@ -63,17 +32,10 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
       const code = pfad.slice('./overlays/'.length, -'.ts'.length)
       const overlay = (await laden()).default
       for (const key of deKeys) {
-        if (!LUECKEN.has(key) && !(key in overlay)) fehlend.push(`${code}.${key}`)
+        if (!(key in overlay)) fehlend.push(`${code}.${key}`)
       }
     }
     expect(fehlend).toEqual([])
-  })
-
-  it('die Lücken-Liste enthält nichts, was längst übersetzt ist', () => {
-    // Hält die Liste ehrlich: wird eine Lücke geschlossen, muss ihr Eintrag
-    // hier verschwinden — sonst schützt die Liste bald nichts mehr.
-    const deKeySet = new Set(deKeys)
-    expect([...LUECKEN].filter((k) => !deKeySet.has(k))).toEqual([])
   })
 
   it('Platzhalter ({n}, {name}, …) stimmen in jeder Sprache mit DE überein', () => {
