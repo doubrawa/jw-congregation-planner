@@ -110,7 +110,7 @@ export default {
   "appInstallieren": "Install app",
   "pushIosHint": "To get notifications, install the app: Share → \"Add to Home Screen\".",
   "familieLabel": "Family",
-  "familieHint": "Family members (same household) may also be conversation partners across genders in student assignments.",
+  "familieHint": "The assistant should be of the same gender or should be a family member.",
   "familieHinzu": "+ Add family member",
   "partnerHinzu": "+ Conversation partner",
   "partnerEntfernen": "– Conversation partner",

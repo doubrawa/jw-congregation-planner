@@ -160,7 +160,7 @@ Im Detail legst du fest:
 - **Stammdaten** – Name, Anzeigename, Telefon, E‑Mail, Geschlecht.
 - **Rolle** – Ältester, Dienstamtgehilfe oder Verkündiger.
 - **Predigtdienstgruppe** – Zuordnung zur Gruppe.
-- **Familie** – wer zum selben Haushalt gehört. Familienangehörige dürfen bei
+- **Familie** – wer zur selben Familie gehört. Familienangehörige dürfen bei
   Schülerteilen auch geschlechtsübergreifend Gesprächspartner sein (z. B.
   Ehepaar, Vater/Tochter).
 - **Aufgabenbereiche** – welche Aufgaben die Person übernehmen darf (Vorsitz,
