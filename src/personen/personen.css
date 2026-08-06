@@ -18,6 +18,37 @@
   margin-top: 12px;
 }
 
+/* Filterleiste unter der Suche. Zwei Spalten, sobald es der Platz zulässt —
+   vier gestapelte Felder schöben die Liste sonst weit nach unten. */
+.pers-filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px 12px;
+  margin-top: 12px;
+}
+
+/* Ab üblicher Telefonbreite passen zwei Felder nebeneinander. */
+@media (min-width: 380px) {
+  .pers-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Die Wörterbuch-Beschriftungen sind teils groß, teils gemischt geschrieben
+   („ROLLE", „Geschlecht") — nebeneinander fiele das auf, also hier einheitlich. */
+.pers-filter .field-label {
+  display: block;
+  text-transform: uppercase;
+}
+
+/* Gesetzter Filter hebt sich vom Rest ab — sonst übersieht man leicht,
+   warum die Liste kurz ist. */
+.pers-filter .is-active {
+  border-color: var(--acc);
+  color: var(--acc);
+  font-weight: 600;
+}
+
 .pers-list {
   margin-top: 8px;
 }
