@@ -145,6 +145,66 @@
   color: var(--ink);
 }
 
+/* ---- Zeitleiste der Zuteilungen (zwischen Stammdaten und Bereichen) ------ */
+
+/* Die Beschriftung kommt aus dem Navigationspunkt („Aufgaben") und ist als
+   einzige Panel-Beschriftung hier nicht schon groß geschrieben. */
+.pers-zeit-label {
+  text-transform: uppercase;
+}
+
+.pers-zeit {
+  position: relative;
+  margin: 2px 0 4px;
+  padding-inline-start: 20px;
+  list-style: none; /* die Markierung ist der Punkt der Zeitleiste */
+}
+
+/* Senkrechte Linie von der ersten bis zur letzten Markierung. Sie trägt die
+   Gliederung — deshalb keine zusätzlichen Trennlinien zwischen den Zeilen. */
+.pers-zeit::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 16px;
+  bottom: 16px;
+  width: 2px;
+  background: var(--panel-accent);
+  opacity: 0.4;
+}
+
+.pers-zeit-row {
+  position: relative;
+  padding: 7px 0;
+}
+
+/* Vergangenes bleibt lesbar, tritt aber hinter das Kommende zurück. */
+.pers-zeit-row.is-past {
+  opacity: 0.55;
+}
+
+.pers-zeit-dot {
+  position: absolute;
+  inset-inline-start: -20px;
+  top: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--panel-accent);
+}
+
+.pers-zeit-datum {
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+  color: var(--panel-accent);
+}
+
+.pers-zeit-art {
+  margin-top: 1px;
+  font-size: calc(12.5px * var(--fs));
+  color: var(--ink);
+}
+
 .fam-list {
   display: flex;
   flex-wrap: wrap;

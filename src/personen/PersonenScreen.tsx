@@ -4,6 +4,7 @@ import { QUALIFICATION_ORDER, ROLE_ORDER } from '../data/constants'
 import { duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
+import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { ROLE_KEY } from '../i18n/ui'
 import { appUrl, linkedMember, makeInvite, openInvite } from './invite-helpers'
@@ -29,6 +30,7 @@ function PersonList() {
   const { t, tu } = useT()
   const [filter, setFilter] = useState<PersonFilter>(KEIN_FILTER)
   const setz = (patch: Partial<PersonFilter>) => setFilter((f) => ({ ...f, ...patch }))
+  const locale = LOCALES[state.lang]
 
   const sorted = [...state.persons].sort(personCompare)
   const filtered = sorted.filter((p) => passtZumFilter(p, filter))
@@ -134,6 +136,7 @@ function PersonList() {
 
       <div className="pers-filters">
         <FilterSelect
+          locale={locale}
           label={t.geschlecht}
           value={filter.sex}
           onChange={(v) => setz({ sex: v as PersonFilter['sex'] })}
@@ -143,6 +146,7 @@ function PersonList() {
           ]}
         />
         <FilterSelect
+          locale={locale}
           label={t.rolle}
           value={filter.role}
           onChange={(v) => setz({ role: v as PersonFilter['role'] })}
@@ -151,6 +155,7 @@ function PersonList() {
         {/* Ohne angelegte Gruppen hätte die Auswahl nur den Platzhalter. */}
         {state.groups.length > 0 && (
           <FilterSelect
+          locale={locale}
             label={t.gruppeLbl}
             value={filter.grp}
             onChange={(v) => setz({ grp: v })}
@@ -158,6 +163,7 @@ function PersonList() {
           />
         )}
         <FilterSelect
+          locale={locale}
           label={t.aufgabenbereiche}
           value={filter.priv}
           onChange={(v) => setz({ priv: v })}
@@ -205,13 +211,19 @@ function FilterSelect({
   value,
   onChange,
   options,
+  locale,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   options: ReadonlyArray<readonly [string, string]>
+  locale: string
 }) {
   const id = useId()
+  // Alphabetisch nach der übersetzten Beschriftung — in einer langen Auswahl
+  // sucht man nach dem Wort, nicht nach der Programmreihenfolge. `numeric`
+  // hält „Gruppe 2" vor „Gruppe 10".
+  const sortiert = [...options].sort((a, b) => a[1].localeCompare(b[1], locale, { numeric: true }))
   return (
     <div className="pers-filter">
       <label className="field-label" htmlFor={id}>
@@ -224,7 +236,7 @@ function FilterSelect({
         onChange={(e) => onChange(e.target.value)}
       >
         <option value="">—</option>
-        {options.map(([key, text]) => (
+        {sortiert.map(([key, text]) => (
           <option key={key} value={key}>
             {text}
           </option>

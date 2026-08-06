@@ -664,6 +664,17 @@ export function helperTaskKey(wi: number, tab: MeetingKey, svc: string, pos: num
   return `${wi}|${tab}|helper|${svc}|${pos}`
 }
 
+/**
+ * Woche und Zusammenkunft eines task_key — jeder beginnt mit `<wi>|<tab>|…`,
+ * gleich ob Programmpunkt, Ratgeber oder Hilfsdienst. null bei Fremdformaten.
+ */
+export function taskKeyWeek(key: string): { wi: number; tab: MeetingKey } | null {
+  const [wi, tab] = key.split('|')
+  const n = Number(wi)
+  if (!Number.isInteger(n) || n < 0) return null
+  return tab === 'mid' || tab === 'we' ? { wi: n, tab } : null
+}
+
 /** Zerlegt einen Hilfsdienst-task_key; null, wenn es kein Hilfsdienst-Key ist. */
 export function helperKeyParts(
   key: string,

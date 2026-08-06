@@ -43,7 +43,8 @@ SHOTS=(
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"
   "planer-personen|s=personen"
-  "planer-person-detail|s=personen&p=p1"
+  # höher als der Rest: unter den Stammdaten folgt die Zeitleiste der Zuteilungen
+  "planer-person-detail|s=personen&p=p1|920x1250"
   "planer-einstellungen|s=einstellungen"
   "offline-stand|s=programm&tab=mid&stale=5"
 )
