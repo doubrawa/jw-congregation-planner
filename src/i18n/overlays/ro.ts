@@ -386,4 +386,6 @@ export default {
   "errTitel": "Eroare de afișare",
   "errText": "Această secțiune nu a putut fi afișată. Restul aplicației funcționează în continuare.",
   "toastSpeicherFehler": "Modificarea nu a putut fi salvată — reîncarcă pagina",
+  "notifErsatzGesucht": "Se caută înlocuitor",
+  "notifErsatzGefunden": "Înlocuitor găsit",
 } satisfies Partial<Dict>

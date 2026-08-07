@@ -116,4 +116,9 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   'Zuteilungen gesendet': 'notifZutsGesendet',
   'Programm importiert': 'notifProgImportiert',
   'Verhinderung gemeldet': 'notifVerhindert',
+  // Ersatzsuche (Edge Function `substitute`) — die Titel sind fest, alles
+  // Veränderliche (Dienst, Termin, Name) steht als ` · `-Atome im Rumpf und
+  // wird dort vom Fragment-Übersetzer erledigt.
+  'Ersatz gesucht': 'notifErsatzGesucht',
+  'Ersatz gefunden': 'notifErsatzGefunden',
 }

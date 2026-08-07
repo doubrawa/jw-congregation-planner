@@ -386,4 +386,6 @@ export default {
   "errTitel": "Megjelenítési hiba",
   "errText": "Ezt a részt nem sikerült megjeleníteni. Az alkalmazás többi része tovább működik.",
   "toastSpeicherFehler": "A módosítást nem sikerült menteni — tölts újra",
+  "notifErsatzGesucht": "Helyettes keresése",
+  "notifErsatzGefunden": "Helyettes megvan",
 } satisfies Partial<Dict>

@@ -386,4 +386,6 @@ export default {
   "errTitel": "Greška prikaza",
   "errText": "Ovaj deo nije mogao da se prikaže. Ostatak aplikacije i dalje radi.",
   "toastSpeicherFehler": "Promena nije sačuvana — ponovo učitaj",
+  "notifErsatzGesucht": "Traži se zamena",
+  "notifErsatzGefunden": "Zamena pronađena",
 } satisfies Partial<Dict>

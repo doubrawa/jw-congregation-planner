@@ -386,4 +386,6 @@ export default {
   "errTitel": "خطأ في العرض",
   "errText": "تعذّر عرض هذا القسم. بقية التطبيق تعمل كالمعتاد.",
   "toastSpeicherFehler": "تعذّر حفظ التغيير — أعد التحميل",
+  "notifErsatzGesucht": "مطلوب بديل",
+  "notifErsatzGefunden": "تم إيجاد بديل",
 } satisfies Partial<Dict>

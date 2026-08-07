@@ -385,4 +385,6 @@ export default {
   "errTitel": "خطای نمایش",
   "errText": "این بخش نمایش داده نشد. بقیهٔ برنامه کار می‌کند.",
   "toastSpeicherFehler": "تغییر ذخیره نشد — دوباره بارگذاری کنید",
+  "notifErsatzGesucht": "به جایگزین نیاز است",
+  "notifErsatzGefunden": "جایگزین پیدا شد",
 } satisfies Partial<Dict>

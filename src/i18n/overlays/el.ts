@@ -386,4 +386,6 @@ export default {
   "errTitel": "Σφάλμα εμφάνισης",
   "errText": "Δεν ήταν δυνατή η εμφάνιση αυτής της ενότητας. Η υπόλοιπη εφαρμογή λειτουργεί κανονικά.",
   "toastSpeicherFehler": "Η αλλαγή δεν αποθηκεύτηκε — φόρτωσε ξανά",
+  "notifErsatzGesucht": "Ζητείται αντικαταστάτης",
+  "notifErsatzGefunden": "Βρέθηκε αντικαταστάτης",
 } satisfies Partial<Dict>

@@ -386,4 +386,6 @@ export default {
   "errTitel": "Lỗi hiển thị",
   "errText": "Không thể hiển thị phần này. Các phần còn lại của ứng dụng vẫn hoạt động.",
   "toastSpeicherFehler": "Không lưu được thay đổi — hãy tải lại",
+  "notifErsatzGesucht": "Cần người thay thế",
+  "notifErsatzGefunden": "Đã có người thay thế",
 } satisfies Partial<Dict>

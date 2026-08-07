@@ -386,4 +386,6 @@ export default {
   "errTitel": "Hitilafu ya kuonyesha",
   "errText": "Sehemu hii haikuweza kuonyeshwa. Sehemu nyingine za programu zinaendelea kufanya kazi.",
   "toastSpeicherFehler": "Mabadiliko hayakuhifadhiwa — pakia upya",
+  "notifErsatzGesucht": "Anahitajika mbadala",
+  "notifErsatzGefunden": "Mbadala amepatikana",
 } satisfies Partial<Dict>

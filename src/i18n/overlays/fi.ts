@@ -386,4 +386,6 @@ export default {
   "errTitel": "Näyttövirhe",
   "errText": "Tätä osaa ei voitu näyttää. Sovelluksen muut osat toimivat edelleen.",
   "toastSpeicherFehler": "Muutosta ei voitu tallentaa — lataa uudelleen",
+  "notifErsatzGesucht": "Sijaista etsitään",
+  "notifErsatzGefunden": "Sijainen löytyi",
 } satisfies Partial<Dict>

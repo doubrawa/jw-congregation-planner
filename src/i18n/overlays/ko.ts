@@ -386,4 +386,6 @@ export default {
   "errTitel": "표시 오류",
   "errText": "이 부분을 표시할 수 없습니다. 나머지 기능은 계속 사용할 수 있습니다.",
   "toastSpeicherFehler": "변경 사항을 저장하지 못했습니다 — 새로고침하세요",
+  "notifErsatzGesucht": "대신할 사람을 찾습니다",
+  "notifErsatzGefunden": "대신할 사람을 찾았습니다",
 } satisfies Partial<Dict>

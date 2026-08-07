@@ -44,6 +44,16 @@
           if (['0.9', '1', '1.15', '1.3', '1.45'].indexOf(fs) >= 0) {
             document.documentElement.style.setProperty('--fs', fs)
           }
+          // Sprache und Schreibrichtung ebenso vor dem Paint. store.tsx setzt
+          // beides erst nach dem Mount — Arabisch, Hebräisch, Farsi und Urdu
+          // rendern dadurch zuerst von links nach rechts und klappen dann um.
+          // Liste wie RTL_LANGS in src/i18n/langs.ts.
+          var lang = localStorage.getItem('lang')
+          if (lang && /^[a-z]{2}$/.test(lang)) {
+            document.documentElement.lang = lang
+            document.documentElement.dir =
+              ['ar', 'he', 'fa', 'ur'].indexOf(lang) >= 0 ? 'rtl' : 'ltr'
+          }
         } catch (e) {
           /* localStorage nicht verfügbar — Standard bleibt Reinweiß */
         }

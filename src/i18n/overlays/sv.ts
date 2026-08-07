@@ -386,4 +386,6 @@ export default {
   "errTitel": "Visningsfel",
   "errText": "Det här avsnittet kunde inte visas. Resten av appen fungerar som vanligt.",
   "toastSpeicherFehler": "Ändringen kunde inte sparas — ladda om",
+  "notifErsatzGesucht": "Ersättare sökes",
+  "notifErsatzGefunden": "Ersättare hittad",
 } satisfies Partial<Dict>

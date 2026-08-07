@@ -386,4 +386,6 @@ export default {
   "errTitel": "Chyba zobrazenia",
   "errText": "Túto časť sa nepodarilo zobraziť. Zvyšok aplikácie funguje ďalej.",
   "toastSpeicherFehler": "Zmenu sa nepodarilo uložiť — načítaj stránku znova",
+  "notifErsatzGesucht": "Hľadá sa náhrada",
+  "notifErsatzGefunden": "Náhrada nájdená",
 } satisfies Partial<Dict>

@@ -386,4 +386,6 @@ export default {
   "errTitel": "Ошибка отображения",
   "errText": "Не удалось показать этот раздел. Остальная часть приложения работает.",
   "toastSpeicherFehler": "Не удалось сохранить изменение — обновите страницу",
+  "notifErsatzGesucht": "Нужна замена",
+  "notifErsatzGefunden": "Замена найдена",
 } satisfies Partial<Dict>

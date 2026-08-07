@@ -386,4 +386,6 @@ export default {
   "errTitel": "Erro de exibição",
   "errText": "Não foi possível mostrar esta secção. O resto da aplicação continua a funcionar.",
   "toastSpeicherFehler": "Não foi possível guardar a alteração — recarrega a página",
+  "notifErsatzGesucht": "Procura-se substituto",
+  "notifErsatzGefunden": "Substituto encontrado",
 } satisfies Partial<Dict>

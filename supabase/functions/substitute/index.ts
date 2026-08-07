@@ -29,6 +29,7 @@
 
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
+import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -189,6 +190,8 @@ interface Sub {
   endpoint: string
   p256dh: string
   auth: string
+  /** App-Sprache dieses Geraets (migration-014); null = Deutsch. */
+  lang: string | null
 }
 
 function displayName(p: Person): string {
@@ -205,11 +208,17 @@ function meetingDate(meeting: Meeting | undefined): string {
   return (meeting?.date ?? '').split(' · ').slice(0, 2).join(' · ')
 }
 
-async function pushTo(subs: Sub[], title: string, body: string, url: string): Promise<void> {
+async function pushTo(
+  subs: Sub[],
+  titel: (lang: string | null) => string,
+  body: string,
+  url: string,
+): Promise<void> {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
-  const payload = JSON.stringify({ title, body, url })
   for (const s of subs) {
+    // Titel je Geraet: die Sprache haengt am Abo, nicht am Nutzer.
+    const payload = JSON.stringify({ title: titel(s.lang), body, url })
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
@@ -232,18 +241,24 @@ async function notifyUsers(
   cong: string,
   userIds: string[],
   subsByUser: Map<string, Sub[]>,
-  title: string,
+  /** Kanonisch deutscher Titel — Schluessel, unter dem die Glocke uebersetzt. */
+  titel: string,
+  /** Titel je Geraetesprache fuer den Push. */
+  pushTitel: (lang: string | null) => string,
   body: string,
   url: string,
 ): Promise<void> {
   const ids = [...new Set(userIds)]
   if (ids.length === 0) return
+  // In der Glocke steht der kanonisch deutsche Titel; NOTIF_TITLE_KEY bringt
+  // ihn beim Anzeigen in die Sprache des Lesers. Der Rumpf besteht aus
+  // ' · '-Atomen (Dienst, Termin, Name), die der Fragment-Uebersetzer erledigt.
   await restSend(
     'POST',
     'notifications',
-    ids.map((user_id) => ({ congregation_id: cong, user_id, type: 'zuteilung', title, body })),
+    ids.map((user_id) => ({ congregation_id: cong, user_id, type: 'zuteilung', title: titel, body })),
   )
-  await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), title, body, url)
+  await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), pushTitel, body, url)
 }
 
 Deno.serve(async (req: Request) => {
@@ -276,7 +291,7 @@ Deno.serve(async (req: Request) => {
       restGet<{ key: string; name: string }[]>(`services?select=key,name&congregation_id=eq.${cong}`),
       restGet<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${cong}`),
       restGet<Sub[]>(
-        `push_subscriptions?select=user_id,endpoint,p256dh,auth&congregation_id=eq.${cong}`,
+        `push_subscriptions?select=user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${cong}`,
       ),
       restGet<{ meeting_times: string }[]>(`congregations?select=meeting_times&id=eq.${cong}`),
       restGet<Absence[]>(
@@ -335,8 +350,13 @@ Deno.serve(async (req: Request) => {
         cong,
         peers,
         subsByUser,
-        `Ersatz gesucht: ${svcName}`,
-        `${date} — ${declinedBy} kann nicht. Wer springt ein?`,
+        TITEL_GESUCHT,
+        (lang) => substituteTexte(lang).gesucht,
+        // Nur Atome: Dienst, Termin, Name. Der feste Satz („… kann nicht. Wer
+        // springt ein?") steckte früher im Rumpf und stand deshalb in allen
+        // 33 Sprachen deutsch da — dynamischer Text kommt durch keinen
+        // Wörterbuch-Schlüssel.
+        [svcName, date, declinedBy].filter(Boolean).join(' · '),
         `${APP_URL}#go=aufgaben`,
       )
       return json({ ok: true, notified: [...new Set(peers)].length })
@@ -381,8 +401,9 @@ Deno.serve(async (req: Request) => {
       cong,
       recipients,
       subsByUser,
-      `Ersatz gefunden: ${svcName}`,
-      `${date}: ${callerName} übernimmt${originalName ? ` für ${originalName}` : ''}.`,
+      TITEL_GEFUNDEN,
+      (lang) => substituteTexte(lang).gefunden,
+      [svcName, date, callerName].filter(Boolean).join(' · '),
       `${APP_URL}#go=aufgaben`,
     )
     return json({ ok: true, taken: true })
