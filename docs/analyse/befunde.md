@@ -583,7 +583,7 @@ Produktiv relevant (nicht nur Demo-Daten):
 
 Der Rest sind Demo-Inhalte (WT-Studienartikel-Titel, „vor 2 Std.", „heute, 08:00").
 
-### D2 — `REF` fehlt für vier Sprachen ohne Begründung ✅
+### D2 — `REF` fehlt für vier Sprachen ohne Begründung ⛔ geprüft, kein Mangel
 
 `REF` (Verweis-Vorlagen: „th Lektion 5", „Gruppe 2", „Vers. X") existiert für 22
 Sprachen. Der Kommentar in `translate.ts:82-85` erklärt das Fehlen für
@@ -592,6 +592,14 @@ zh/ja/ko/ar/he/fa/ur („dort stehen die Publikationskürzel gar nicht").
 **Nicht erklärt** ist das Fehlen für **id, tl, vi, sw** — dort führt jw.org die
 Kürzel sehr wohl. Konsequenz: „th Lektion 5" bleibt in diesen vier Sprachen
 deutsch, ebenso „Gruppe 2" → „Gruppe 2" statt „Kelompok 2".
+
+> **Nachtrag 7.8.2026 (T28) — geprüft, kein Mangel.** `REF` enthält id, tl, vi
+> und sw vollständig: je neun Vorlagen in `translate-data.ts` (`th pelajaran N`,
+> `th aralin N`, `th bài học số N`, `th somo la N` …). Der in T26 ergänzte
+> Vollständigkeitstest (`src/i18n/translate-data.test.ts`) prüft das jetzt bei
+> jedem Lauf; er meldete beim ersten Durchlauf **nur `bg`**, und dort fehlt
+> allein `wcgKap` — begründet und bereits vorher durch einen Test festgehalten
+> (Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation).
 
 ### D3 — Kein Test schützt `FRAG` / `EXTRA` / `REF` ✅
 

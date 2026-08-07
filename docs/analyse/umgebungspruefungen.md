@@ -86,7 +86,7 @@ fehlendem Secret jeden durch, und die Function ist mit `--no-verify-jwt`
 deployt), ist aber kein akutes Leck. Der Fix bleibt sinnvoll: ohne Secret mit 500
 abbrechen, statt still zu öffnen.
 
-### Nebenbefund: `substitute` ist anders deployt als dokumentiert ✅
+### Nebenbefund: `substitute` ist anders deployt als dokumentiert ⛔ geprüft, kein Code-Mangel
 
 `send-invite` und `import-week` werden von der **Plattform** abgefangen (JWT-Prüfung
 aktiv). `substitute` dagegen erreicht der Request, und erst der Function-Code
@@ -99,6 +99,13 @@ Der Schutz greift trotzdem, weil die Function selbst prüft (Zeile 202-203). Abe
 er hängt an **einer** Codestelle statt an zwei unabhängigen Schichten — und
 zusammen mit S7 (`seek` prüft den Aufrufer nicht) ist das die Function, bei der
 das am wenigsten wünschenswert ist.
+
+> **Nachtrag 7.8.2026 (T11) — im Repo ist nichts zu ändern.** `config.toml:33`
+> setzt für `substitute` längst `verify_jwt = true`; nur die **laufende**
+> Instanz ist älter als diese Datei. Ein erneutes `npx supabase functions
+> deploy substitute` aus der Repo-Wurzel stellt die zweite Schicht her. S7
+> (`seek` ohne Aufrufer-Prüfung) ist mit T9 im Code behoben und geht mit
+> demselben Deploy live. **Offen, bis der Betreiber deployt hat.**
 
 ---
 

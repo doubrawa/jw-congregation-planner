@@ -53,6 +53,18 @@ wirft `RangeError`.
 Auslösender Text im Demo-Datensatz (`demo.ts:245`):
 `'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35'`
 
+> **Nachtrag 7.8.2026 (T1) — Befund bestätigt, Fix anders.** Der Absturz ist
+> genau so reproduzierbar; der vorgeschlagene Tausch `MON` → `MONA` wäre aber
+> falsch gewesen. Die Regel fängt den Monat als `[A-Za-zäöü]+` und bekommt
+> **beide** Formen: „8. September" aus dem Programmkopf, „8. Sep" aus den
+> Erinnerungstexten. Der Tausch hätte den Absturz nur von der Kurz- auf die
+> Langform verschoben und den bestehenden Test `en('Mo, 8. September')`
+> gebrochen. Umgesetzt ist stattdessen `datumsRegel(...)` in `translate.ts`:
+> schlägt in beiden Tabellen nach und lässt die Regel bei unbekanntem Monat
+> ausfallen (Datum bleibt deutsch, statt als `Invalid Date` bei `Intl.format()`
+> zu landen). Gilt für alle acht Monats-Nachschläge in `makeTrIntl` **und**
+> `makeTr` — Letzteres behebt zugleich das „Tue, undefined 8" für en/es/fr.
+
 ### Zwei Ausprägungen desselben Fehlers ✅ beide reproduziert
 
 | Sprachen | Pfad | Verhalten |
