@@ -132,6 +132,23 @@ Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin:
 
 So siehst du auf einen Blick, was vor der Zusammenkunft noch zu erledigen ist.
 
+### Wenn jemand absagt
+
+Verkündiger können eine Zuteilung in ihren Aufgaben absagen. Du bekommst dann
+eine Mitteilung („Verhinderung gemeldet") und die Zuteilung gilt wieder als
+offen.
+
+Bei **Hilfsdiensten** übernimmt die App den ersten Schritt selbst: Sie
+benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
+abwesend sind, dass ein Ersatz gesucht wird. Springt jemand ein, trägt sich die
+Person selbst ein, die Bestätigung ist gleich gesetzt, und du bekommst die
+Mitteilung „Ersatz gefunden". Du musst dich nur kümmern, wenn sich niemand
+meldet.
+
+Bei **Programmpunkten** gibt es keine automatische Suche — dort teilst du neu
+zu. Der Name des Absagenden bleibt im Slot stehen, damit du siehst, worum es
+geht.
+
 ---
 
 ## 5. Treffpunkte planen
@@ -200,6 +217,25 @@ Im Detail legst du fest:
 
 Wird eine Person umbenannt, zieht die App den neuen Namen automatisch durch alle
 bereits geplanten Wochen.
+
+### Warnung: doppelte Anzeigenamen
+
+Heißen zwei Personen gleich, erscheint über der Liste ein Warnbanner mit den
+betroffenen Namen. Das ist wichtiger, als es aussieht: Wo eine Zuteilung nur
+den Namen trägt und keine Person-Id (Hilfsdienste, externe Redner, Altdaten),
+ordnet die App über den Namen zu — Namensgleiche teilen sich dann Aufgaben,
+Bestätigungen und Erinnerungen.
+
+Abhilfe: Gib einer der beiden im Feld **Anzeigename** etwas Eindeutiges
+(z. B. „Josef Mayer (1)"). Der Anzeigename ersetzt überall den vollen Namen.
+
+### Konten ohne Person
+
+Ganz unten in der Personenliste steht der Abschnitt **KONTEN OHNE PERSON**:
+angemeldete Konten, die noch keinem Eintrag zugeordnet sind. Solange die
+Zuordnung fehlt, sieht dieses Konto **keine eigenen Aufgaben** — die App weiß
+ja nicht, wer dahintersteht. Über das Auswahlfeld ordnest du das Konto der
+richtigen Person zu; mit ✕ entfernst du es aus der Versammlung.
 
 ---
 
@@ -284,6 +320,18 @@ aktuell gewählte Woche und Zusammenkunft sauber auf eine Seite – **ohne die
 Hilfsdienste** und ohne die Bedienelemente der App. Der Ausdruck füllt die Seite
 in der Breite und passt sich dem im Druckdialog eingestellten Papierformat an
 (z. B. A4).
+
+### S‑89: die Aufgabenzuteilung
+
+Für Schulungsaufgaben gibt es zusätzlich das **S‑89‑Formular** – die
+Aufgabenzuteilung, die sonst auf Papier ausgeteilt wird. Du erreichst es beim
+Zuteilen (im Sheet unter dem Titel) und der Verkündiger unter **Meine
+Aufgaben**.
+
+Es enthält Name und Gesprächspartner, Datum, Aufgabe, Schulungspunkt und den
+Raum (**Hauptsaal** oder **Zusätzliche Klasse**). Alle Angaben kommen aus der
+Zuteilung und dem importierten Programm – auszufüllen ist nichts. Da jeder
+Beteiligte es in der App sieht, muss es nicht ausgedruckt und verteilt werden.
 
 ---
 
