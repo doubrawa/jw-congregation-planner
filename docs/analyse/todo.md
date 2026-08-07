@@ -373,11 +373,16 @@ bestätigen und bekommt keine Erinnerung. `FsInstance.leader` hat zudem keine
 `pid`. Widersprüchlich: `reducer.ts:486` setzt trotzdem `pendingNames`.
 → [befunde.md F3](befunde.md)
 
-### T32 · LAC-Minuten sprachunabhängig machen 🔧
+### T32 · LAC-Minuten sprachunabhängig machen 🔧 — durch T59 belegt
 `itemMinutes` (`meeting-edit.ts:16`) sucht `/(\d+) Min\./`; der Import übernimmt
-die Zeit wörtlich aus der Zielsprache (an der Live-Seite bestätigt: „(10 Min.)" auf
-Deutsch, lokalisiert in anderen Sprachen). Bei nicht-deutscher Versammlungssprache
+die Zeit wörtlich aus der Zielsprache. Bei nicht-deutscher Versammlungssprache
 bewirkt „+/−" **nichts** — ohne jede Rückmeldung.
+
+> **Jetzt gemessen statt vermutet (T59).** In 19 geprüften Sprachen steht dort
+> „Dak. 3" · „3 分钟" · „٣ دق" · „3 λεπτά" · „3 મિ." — der Ausdruck greift in
+> **keiner** außer Deutsch. Der Parser kennt die Zahl inzwischen (er zerlegt die
+> Zeitklammer ohnehin und rechnet Ziffern jeder Schrift um): der saubere Weg ist,
+> sie als eigenes Feld mitzuführen, statt sie aus dem Anzeigetext zurückzulesen.
 
 Minuten als eigenes Feld führen statt aus dem Anzeigetext zu parsen. Bis dahin
 mindestens einen Toast zeigen, wenn nichts passiert.
@@ -647,46 +652,48 @@ behandelt eine andere Publikation).
 **Folge:** nichts zu messen, nichts zu übersetzen. Der Test unterscheidet jetzt
 zwischen aktuellen Vorlagen (Pflicht) und Altbestand (Buchführung).
 
-### T59 · Import in anderen Sprachen gegenprüfen 🔧
-**Vorgabe des Betreibers.** Der Programm-Import holt die Woche aus dem
-deutschen Arbeitsheft und dann dieselbe Woche in der Versammlungssprache
-(`localizedUrl`). Geprüft ist bisher nur der deutsche Weg plus ein
-Kunstsprachen-Test (`parse.test.ts`, „DOMO XI DOMO").
+### T59 · Import in anderen Sprachen gegenprüfen 🔧 ✅ erledigt
+**Vorgabe des Betreibers.** Gemessen an der echten Wochenseite
+6.–12. Juli 2026 in **19 Sprachen** (ar cmn-hans de el en es fa fi he hi hu ja
+ko pt ru sw th tl ur vi), Feld für Feld gegen die deutsche Fassung.
 
-**Zu prüfen — je Sprache eine echte Woche importieren und vergleichen:**
-- **Zeitangaben**: `itemMinutes` sucht `/(d+) Min./`; andere Sprachen
-  schreiben „(10 min.)", „(10 λεπτά)". Bei nicht-deutscher Versammlungssprache
-  bewirkt „+/−" dann nichts (das ist T32, hier fällt es praktisch auf).
-- **Quellenangaben**: der Parser übernimmt die Klammer wörtlich. Steht dort
-  „lmd lesson 4 point 3" statt „lmd Lektion 4 Punkt 3", greift keine
-  `verweisRegeln`-Regel — die Verweise blieben in der Fremdsprache stehen.
-- **Rahmen** (`settingOf`): nimmt den Satz bis zum ersten Punkt, höchstens 32
-  Zeichen, ohne Ziffern. In Sprachen ohne Satzpunkt (zh/ja) oder mit längeren
-  Wendungen kann das leer bleiben oder zu viel fassen.
-- **Wochentag/Datum**: die Wochenüberschrift wird kanonisch deutsch gespeichert
-  — kommt sie aus der lokalisierten Seite anders zurück, greifen die
-  Datumsregeln nicht.
+**Befund: in sieben Sprachen war die Meta-Zeile jedes Programmpunkts leer** —
+keine Minuten, kein Rahmen, keine Quelle (ar, fa, he, ur, sw, ja, cmn-hans).
+Dazu Lesehilfe (Furigana/Pinyin) mitten in jedem japanischen und chinesischen
+Titel und die deutsche Rückfall-Zeile „Schlussworte · Gebet" mitten im
+chinesischen Programm.
 
-Sprachen mit eigenem Schriftsystem zuerst (el, ru, zh, he, ar).
+Bemerkenswert: **Swahili** schreibt lateinisch mit westlichen Ziffern und fiel
+trotzdem komplett aus („(Dak. 10)" — das Wort steht vor der Zahl). Es hängt
+nicht an fremden Schriften, sondern an jeder Annahme, die nur im Deutschen
+geprüft wurde.
 
-### T60 · Vollständigkeitsprobe auf Hebräisch 🔧
-**Vorgabe des Betreibers.** Einmal komplett auf Hebräisch stellen und
-durchsehen, ob wirklich alles hebräisch ist.
+Behoben in `import-week/`: gemeinsame Textaufbereitung (`text.ts`, neu),
+Klammern westlich und vollbreit, Ziffern über `\p{Nd}`, Zweirichtungs-Marken
+übersprungen, Danda und die anderen Satzenden ergänzt, Lied-Zeilen zusätzlich
+am Liederbuch-Link erkannt. Thai bleibt bewusst ohne Rahmen (kein Satztrenner).
+18 neue Tests, alle fallen ohne den Fix um.
 
-**Stand der Stichprobe (Demo-Modus, `#s=programm&l=he`):**
-- `dir="rtl"` und `lang="he"` werden korrekt gesetzt
-- die **Oberfläche** ist vollständig hebräisch (alle 8 Navigationseinträge)
-- der **Programminhalt** bleibt deutsch — das ist im Demo richtig, denn die
-  Versammlungssprache steht dort auf Deutsch und das Programm folgt ihr, nicht
-  der Bediensprache
+→ [nachtrag-sprachen.md](nachtrag-sprachen.md)
 
-**Deshalb ist die eigentliche Probe noch offen:** Versammlungssprache *und*
-Bediensprache auf Hebräisch stellen und dann prüfen, was übrig bleibt. Kandidaten
-sind die Stellen, die kanonisch deutsch gespeichert und erst bei der Anzeige
-übersetzt werden — Abschnittsüberschriften, „N Min.", Rollenlabel,
-Datumszeilen, Verweise. Der Debug-Hash kennt bisher nur `l=` (Bediensprache);
-für die Probe braucht es entweder einen zweiten Parameter oder einen echten
-Durchlauf mit hebräischer Versammlung.
+### T60 · Vollständigkeitsprobe auf Hebräisch 🔧 ✅ erledigt
+**Vorgabe des Betreibers.** Echter Durchlauf mit **beiden** Sprachen auf
+Hebräisch (`#s=programm&l=he&c=Hebräisch` — der Debug-Hash kann `c=` längst,
+meine frühere Notiz war falsch), alle sieben Screens plus Overlays, jeder
+Textknoten mit lateinischen Buchstaben eingesammelt.
+
+**Ein echter Fund:** die Liste der Versammlungssprachen zeigte **alle 482 Namen
+auf Deutsch**, in jeder Bediensprache — eine hebräischsprachige Versammlung las
+ihre eigene Sprache als „Hebräisch". Behoben mit gemessenen Namen aus demselben
+jw.org-Umschalter, aus dem die deutsche Liste stammt (ein Abruf je Sprache
+liefert alle 482); nachgeladen, 4–8 KB gzip, gespeichert bleibt der deutsche
+Name als Schlüssel.
+
+Alles Übrige war Daten (Personennamen, Freitext-Abwesenheitsgründe) oder
+begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
+(„Jasmin", „Matcha") stehen in nicht-lateinischen Oberflächen lateinisch da.
+
+→ [nachtrag-sprachen.md](nachtrag-sprachen.md)
 
 ---
 
@@ -709,11 +716,11 @@ Stand 7. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
-Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑
+Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑
 
-**40 umgesetzt, 2 als „kein Mangel" begründet zurückgewiesen, 14 offen.**
-Die 40 stecken in 15 Commits (`c547ecb`…`fe0185a`); der Testbestand ist dabei
-von 727 auf 967 gewachsen, jede Korrektur hat einen Test, der ohne sie rot wird.
+**44 umgesetzt, 2 als „kein Mangel" begründet zurückgewiesen, 12 offen.**
+Der Testbestand ist von 727 auf 1139 gewachsen; jede Korrektur hat einen Test,
+der ohne sie rot wird.
 
 ### Was offen ist und warum
 

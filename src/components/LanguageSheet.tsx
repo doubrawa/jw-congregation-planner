@@ -1,25 +1,27 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useApp } from '../app/context'
-import { CONG_LANGS } from '../i18n/langs'
+import { langChoices, useLangNames } from '../i18n/langnames'
 import { fill, useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
 import { useSwipeDown } from './useSwipeDown'
 import './overlays.css'
 
-/** Vollständige jw.org-Liste, alphabetisch nach deutschem Sprachnamen. */
-const SORTED_CONG_LANGS: readonly string[] = [...CONG_LANGS].sort((a, b) =>
-  a.localeCompare(b, 'de'),
-)
-
 /**
  * Sprach-Sheet: durchsuchbare vollständige jw.org-Liste. Zwei Modi
  * (state.langSheetFor): Versammlungssprache wählen ('cong') oder eine weitere
  * Programmsprache für den Import hinzufügen ('alt').
+ *
+ * Die Namen stehen in der Bediensprache (`langChoices`), gespeichert wird
+ * weiterhin der deutsche Name — er ist der Schlüssel in der Datenbank. Bis die
+ * nachgeladene Liste da ist, sind Anzeige und Schlüssel schlicht dasselbe.
  */
 export function LanguageSheet() {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  const gen = useLangNames(state.lang)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const alle = useMemo(() => langChoices(state.lang), [state.lang, gen])
   const altMode = state.langSheetFor === 'alt'
   const close = () => dispatch({ type: 'closeLangSheet' })
   const dlg = useRef<HTMLDivElement>(null)
@@ -39,8 +41,13 @@ export function LanguageSheet() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [dispatch])
 
+  // Gesucht wird über beide Namen: wer „Hebräisch" tippt, findet עברית, und wer
+  // עברית tippt, findet es auch. Nach einem Sprachwechsel weiß man oft nur noch
+  // den einen von beiden.
   const query = state.langSearch.trim().toLowerCase()
-  const filtered = SORTED_CONG_LANGS.filter((n) => !query || n.toLowerCase().includes(query))
+  const filtered = alle.filter(
+    (l) => !query || l.label.toLowerCase().includes(query) || l.key.toLowerCase().includes(query),
+  )
 
   return (
     <>
@@ -67,16 +74,16 @@ export function LanguageSheet() {
           onChange={(e) => dispatch({ type: 'setLangSearch', text: e.target.value })}
         />
         <div className="lang-list">
-          {filtered.map((name) => {
-            const active = isActive(name)
+          {filtered.map((l) => {
+            const active = isActive(l.key)
             return (
               <button
-                key={name}
+                key={l.key}
                 type="button"
                 className={active ? 'lang-row is-active' : 'lang-row'}
-                onClick={() => pick(name)}
+                onClick={() => pick(l.key)}
               >
-                <span>{name}</span>
+                <span>{l.label}</span>
                 {active && <span className="lang-check">✓</span>}
               </button>
             )
