@@ -323,7 +323,11 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                       key={i}
                       className="cand-load-cell"
                       data-load={l}
-                      title={loadTitle(t, l, i - 2, state.lang)}
+                      // Die geplante Woche selbst wird umrandet. Als Attribut,
+                      // nicht per :nth-child — sonst zeigt die Umrandung auf das
+                      // falsche Quadrat, sobald sich LOAD_RADIUS ändert.
+                      data-jetzt={i === LOAD_RADIUS ? '' : undefined}
+                      title={loadTitle(t, l, i - LOAD_RADIUS, state.lang)}
                     />
                   ))}
                 </span>

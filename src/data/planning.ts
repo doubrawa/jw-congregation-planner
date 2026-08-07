@@ -17,6 +17,7 @@ import {
   isPlainPublisher,
   isQualified,
   isSong,
+  LOAD_RADIUS,
   partnerGenderOk,
   partWorkload,
   serviceQualKey,
@@ -49,8 +50,6 @@ export function isGuestRole(rolle: string | undefined): boolean {
 }
 
 
-/** Gleitendes Fenster für die Strichliste: N Wochen davor + N danach. */
-const WINDOW = 3
 
 /**
  * Kleiner, stabiler String-Hash für faire, deterministische Tie-Breaks.
@@ -82,7 +81,7 @@ function tieHash(s: string): number {
  * Aufgaben und Hilfsdienste (`any`). Wer nirgends vorkommt, fehlt in der Karte
  * und gilt als unendlich weit weg, kommt also zuerst.
  *
- * Warum zusätzlich zum Fenster: die Strichliste zählt nur ±WINDOW Wochen. Bei
+ * Warum zusätzlich zum Fenster: die Strichliste zählt nur ±LOAD_RADIUS Wochen. Bei
  * Schulungsaufgaben stehen dort fast alle Schwestern bei null, weil es mehr
  * Schwestern als Plätze gibt — die Zahl unterscheidet dann nichts mehr, und
  * ohne weiteres Kriterium entschiede der Tie-Break-Hash, der zwar streut, aber
@@ -359,7 +358,7 @@ export type AssignScope = 'all' | 'parts' | 'helpers'
  *    Meeting eingeteilt. Niemand bekommt Hilfsdienst UND Programmpunkt am
  *    selben Tag (gemeinsame `used`-Menge; Ausnahme Vorsitz+Gebet).
  *  - Ausgeglichene Verteilung über zwei mitlaufende „Strichlisten“ innerhalb
- *    eines gleitenden Fensters (±WINDOW Wochen um die geplante Woche):
+ *    eines gleitenden Fensters (±LOAD_RADIUS Wochen um die geplante Woche):
  *      • Aufgaben (Programmpunkte) werden nach der reinen **Aufgaben**-Last
  *        verteilt — unabhängig von Hilfsdiensten, damit sie regelmäßig bleiben.
  *      • Hilfsdienste nach der **Gesamt**-Last — wer viele Aufgaben hat, bekommt
@@ -407,10 +406,13 @@ export function autoAssignMeeting(
     for (const slot of arr) if (slot.name) used.add(slot.name)
   }
 
-  // Gleitendes Fenster: nur ±WINDOW Wochen um die geplante Woche zählen, damit
-  // uralte Einteilungen die aktuelle Verteilung nicht verzerren.
-  const lo = Math.max(0, weekIndex - WINDOW)
-  const hi = Math.min(weeks.length - 1, weekIndex + WINDOW)
+  // Gleitendes Fenster: nur ±LOAD_RADIUS Wochen um die geplante Woche zählen,
+  // damit uralte Einteilungen die aktuelle Verteilung nicht verzerren. Dasselbe
+  // Fenster, das im Zuteilungs-Sheet unter dem Namen steht („2 Aufgaben in 5
+  // Wochen") — sonst sortiert die Automatik nach einer anderen Zahl, als der
+  // Planer liest.
+  const lo = Math.max(0, weekIndex - LOAD_RADIUS)
+  const hi = Math.min(weeks.length - 1, weekIndex + LOAD_RADIUS)
   const windowWeeks = weeks.slice(lo, hi + 1)
 
   // Zwei Live-Strichlisten (Startwert aus dem Fenster, während des Laufs

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { syncAuxSlots } from './aux-class'
 import { buildImportWeek, DEMO_SERVICES } from './demo'
-import { displayName, isSong, partWorkload, serviceQualKey } from './helpers'
+import { displayName, isSong, LOAD_RADIUS, LOAD_WEEKS, loadWindow, partWorkload, serviceQualKey } from './helpers'
 import { autoAssignMeeting, weekConflicts } from './planning'
 import type { Meeting, Person, Qualifications, Service, SlotAssignment, Week } from './types'
 
 /**
  * Langzeit-Fairness der Auto-Zuteilung.
  *
- * Die Strichliste zählt nur ein gleitendes Fenster von ±3 Wochen. Bei
+ * Die Strichliste zählt nur ein gleitendes Fenster von ±LOAD_RADIUS Wochen. Bei
  * Schulungsaufgaben gibt es aber mehr Schwestern als Plätze — dort stehen fast
  * alle im Fenster bei null, die Zahl unterscheidet also nichts mehr und die
  * Auswahl hängt ganz an den Kriterien danach. Diese Tests messen deshalb, was
@@ -169,7 +169,7 @@ describe('Tie-Break bei gleicher Auslastung', () => {
   })
 
   /**
-   * Das Kernproblem des kurzen Fensters: außerhalb von ±3 Wochen ist alles
+   * Das Kernproblem des kurzen Fensters: außerhalb davon ist alles
    * gleich „null". Wer seit Monaten wartet, muss trotzdem vor dem stehen, der
    * vor fünf Wochen dran war — sonst entscheidet der Zufall.
    */
@@ -181,9 +181,9 @@ describe('Tie-Break bei gleicher Auslastung', () => {
       weeks[0].mid = belegt(displayName(langHer)) // 10 Wochen her
       weeks[6].mid = belegt(displayName(kuerzlich)) // 4 Wochen her
       weeks[10].mid = einPlatz('vortrag')
-      // Fenster um Woche 10 = [7..12] → beide zählen dort null.
-      expect(partWorkload(weeks.slice(7), displayName(langHer))).toBe(0)
-      expect(partWorkload(weeks.slice(7), displayName(kuerzlich))).toBe(0)
+      // Fenster um Woche 10 = [8..12] → beide zählen dort null.
+      expect(partWorkload(weeks.slice(8), displayName(langHer))).toBe(0)
+      expect(partWorkload(weeks.slice(8), displayName(kuerzlich))).toBe(0)
       return gewaehlt(weeks, 10, [a, b])
     }
     // Beide Richtungen, damit nicht der Hash das Ergebnis zufällig trifft.
@@ -192,16 +192,20 @@ describe('Tie-Break bei gleicher Auslastung', () => {
   })
 
   it('die Auslastung im Fenster wiegt schwerer als die Wartezeit', () => {
-    // Wartezeit ist nur der Tie-Break: wer im Fenster schon eine Aufgabe hat,
-    // steht hinten, auch wenn der andere gerade erst dran war.
+    // Der einzige Fall, in dem sich die beiden Kriterien widersprechen: A hat im
+    // Fenster ZWEI Aufgaben, aber beide weiter weg; B nur eine, dafür näher.
+    // Nach Wartezeit gewönne A (Abstand 2 gegen 1), nach Auslastung B (1 gegen
+    // 2). Die Auslastung steht vorn, also gewinnt B.
     const a = mk(['vortrag'], { ln: 'Ausgelastet' })
     const b = mk(['vortrag'], { ln: 'Frei' })
-    const weeks: Week[] = Array.from({ length: 12 }, () => wk(emptyMeeting()))
-    weeks[9].mid = belegt(displayName(a)) // im Fenster → Last 1
-    weeks[8].mid = belegt(displayName(b)) // ebenfalls kürzlich, aber …
-    weeks[8].we = belegt('', 'vortrag')
+    const weeks: Week[] = Array.from({ length: 14 }, () => wk(emptyMeeting()))
+    weeks[8].mid = belegt(displayName(a))
+    weeks[12].mid = belegt(displayName(a))
+    weeks[9].mid = belegt(displayName(b))
     weeks[10].mid = einPlatz('vortrag')
-    // A hat im Fenster eine Aufgabe, B keine → B gewinnt trotz kürzerer Wartezeit.
+    // Fenster um Woche 10 = [8..12]
+    expect(partWorkload(weeks.slice(8, 13), displayName(a))).toBe(2)
+    expect(partWorkload(weeks.slice(8, 13), displayName(b))).toBe(1)
     expect(gewaehlt(weeks, 10, [a, b])).toBe(displayName(b))
   })
 })
@@ -340,6 +344,39 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
       serien += weekConflicts(weeks, wi, persons, DEMO_SERVICES).filter((c) => c.kind === 'streak').length
     }
     expect(serien).toBe(0)
+  })
+})
+
+describe('Anzeige und Entscheidung nutzen dasselbe Fenster', () => {
+  /**
+   * Der Planer liest im Zuteilungs-Sheet „2 Aufgaben in 5 Wochen" und daneben
+   * fünf Mini-Quadrate. Sortiert wurde lange nach einem anderen, breiteren
+   * Fenster — die Zahl unter dem Namen erklärte die Reihenfolge also nicht.
+   * Beides hängt jetzt an LOAD_RADIUS; dieser Test hält das zusammen.
+   */
+  it('die Auto-Zuteilung zählt genau die Wochen, die das Sheet zeigt', () => {
+    // Bewusst so gebaut, dass ein BREITERES Entscheidungsfenster das Ergebnis
+    // umdrehen würde: A liegt gerade noch im gezeigten Fenster (eine Aufgabe),
+    // B knapp außerhalb — dort aber gleich zweimal. Zählt die Zuteilung nur die
+    // gezeigten Wochen, ist B frei und bekommt den Platz; zählte sie eine Woche
+    // mehr in jede Richtung, wäre B der Ausgelastete und A käme dran.
+    const a = mk(['vortrag'], { ln: 'Innen' })
+    const b = mk(['vortrag'], { ln: 'Aussen' })
+    const weeks: Week[] = Array.from({ length: 20 }, () => wk(emptyMeeting()))
+    weeks[10 - LOAD_RADIUS].mid = belegt(displayName(a))
+    weeks[10 - LOAD_RADIUS - 1].mid = belegt(displayName(b))
+    weeks[10 + LOAD_RADIUS + 1].mid = belegt(displayName(b))
+    weeks[10].mid = einPlatz('vortrag')
+
+    // Das zeigen auch die Mini-Quadrate: A hat im Fenster eine Aufgabe, B nicht.
+    expect(loadWindow(weeks, displayName(a), 10)).toContain('task')
+    expect(loadWindow(weeks, displayName(b), 10)).not.toContain('task')
+    expect(gewaehlt(weeks, 10, [a, b])).toBe(displayName(b))
+  })
+
+  it('das Sheet zeigt so viele Wochen, wie das Fenster breit ist', () => {
+    expect(LOAD_WEEKS).toBe(LOAD_RADIUS * 2 + 1)
+    expect(loadWindow([], 'X', 0)).toHaveLength(LOAD_WEEKS)
   })
 })
 

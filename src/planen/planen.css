@@ -813,7 +813,9 @@
   background: var(--load-free); /* none/frei */
 }
 
-.cand-load-cell:nth-child(3) {
+/* Die geplante Woche — markiert per Attribut, damit die Umrandung nicht an
+   einer festen Position klebt (siehe LOAD_RADIUS). */
+.cand-load-cell[data-jetzt] {
   outline: 1px solid var(--mut);
   outline-offset: 1px;
 }
