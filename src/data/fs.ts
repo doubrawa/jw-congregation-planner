@@ -215,20 +215,35 @@ export function fsTaskKey(wi: number, instId: string): string {
 }
 
 /**
- * Wie weit die Treffpunkt-Last zurückreicht — ein Jahr.
+ * Wie weit die Treffpunkt-Strichliste zurückreicht.
  *
  * Vorher zählten **alle** geladenen Wochen mit, ohne Grenze. Wer vor zwei
- * Jahren viel geleitet hat, blieb damit dauerhaft hinten: die Strichliste
- * vergaß nichts, und ein einmal entstandener Rückstand ließ sich nie mehr
- * aufholen. Ein Jahr ist der Zeitraum, über den sich eine Rotation ohnehin
- * schließt.
+ * Jahren viel geleitet hat, blieb damit dauerhaft hinten: die Liste vergaß
+ * nichts, und ein einmal entstandener Rückstand ließ sich nie aufholen.
  *
- * Rückwärts gezählt, nicht symmetrisch wie `LOAD_RADIUS` bei den Aufgaben:
- * dort geht es um ein enges Fenster von fünf Wochen um die geplante herum,
- * hier um die Frage „wer war zuletzt dran". Künftige Wochen sind meist noch
- * gar nicht besetzt und würden die Rechnung nur verdünnen.
+ * Die Breite ist gemessen, nicht geschätzt. Aufbau: acht Stammleiter, zwei
+ * Treffpunkte je Woche, in Woche 40 kommt ein Neuling dazu. Gezählt wurde,
+ * was er in den folgenden 20 Wochen bekommt — gegen den Schnitt des Stamms:
+ *
+ * | Fenster | Neuling (20 W) | Stamm-Schnitt | Verteilung W40–60 |
+ * | --- | --- | --- | --- |
+ * | 52 Wochen | **12** | 3,5 | 4 4 3 4 3 3 4 3 **12** |
+ * | 26 Wochen | 6 | 4,3 | 4 5 4 4 4 4 5 4 **6** |
+ * | **12 Wochen** | **5** | 4,4 | 4 5 5 4 4 4 5 4 **5** |
+ *
+ * Je länger das Fenster, desto größer der Rückstand, den ein Neuling
+ * aufzuholen scheint — bei einem Jahr bekam er das Dreifache der anderen.
+ * Bei zwölf Wochen reiht er sich ein. Die Fairness über lange Zeiträume trägt
+ * ohnehin nicht dieses Fenster, sondern die **Wartezeit**, die über alle
+ * geladenen Wochen misst — dieselbe Arbeitsteilung wie bei den Aufgaben, wo
+ * `LOAD_RADIUS` nur fünf Wochen umfasst.
+ *
+ * Rückwärts gezählt, nicht symmetrisch wie `LOAD_RADIUS`: dort geht es um ein
+ * enges Fenster um die geplante Woche herum, hier um „wer war zuletzt dran".
+ * Künftige Wochen sind meist noch gar nicht besetzt und verdünnten die
+ * Rechnung nur.
  */
-export const FS_LOAD_WEEKS = 52
+export const FS_LOAD_WEEKS = 12
 
 /**
  * Besetzt offene Treffpunkt-Leiter der Woche `wi` automatisch: Kandidaten sind
@@ -303,6 +318,10 @@ export function fsAutoAssign(
     dayUsed.set(wd, set)
   }
   for (const inst of fsWeeks[wi] ?? []) if (inst.leader) markDay(inst.wd, inst.leader)
+  // Wer in DIESER Woche schon leitet — für den Wochen-Deckel unten.
+  const inDerWoche = new Set<string>()
+  for (const inst of fsWeeks[wi] ?? []) if (inst.leader) inDerWoche.add(inst.leader)
+
   const newly: string[] = []
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
@@ -312,15 +331,29 @@ export function fsAutoAssign(
     // Rangliste nach Namen — wer darin hinten stand, leitete nie (siehe
     // tieHash in helpers.ts). Der Schlüssel wird getrennt gefügt: „Ann"+„a12"
     // und „Anna"+„12" wären sonst derselbe.
-    const cand = poolFor(inst.wd)
+    const alle = poolFor(inst.wd)
       .map((p) => ({ p, name: displayName(p) }))
       .filter((k) => !used.has(k.name))
-      .sort(
-        (a, b) =>
-          (load.get(a.name) ?? 0) - (load.get(b.name) ?? 0) ||
-          wartezeit(b.name) - wartezeit(a.name) ||
-          tieHash(`${a.name}|${wi}|${inst.wd}`) - tieHash(`${b.name}|${wi}|${inst.wd}`),
-      )
+    // Höchstens eine Leitung je Person und Woche — aber nur, solange dafür
+    // genug Kandidaten da sind; sonst bliebe ein Platz offen, obwohl jemand da
+    // ist.
+    //
+    // Gemessen an vier Stammleitern, drei Treffpunkten je Woche und einem
+    // Neuling ab Woche 25: ohne den Deckel gab es vier Wochen, in denen
+    // dieselbe Person zwei- oder dreimal leitete, und der Neuling bekam in
+    // seiner zweiten und dritten Woche je drei Leitungen (1 3 3 0 1). Mit dem
+    // Deckel: keine einzige Doppelung, und der Neuling reiht sich mit
+    // 1 1 1 1 1 ein.
+    //
+    // Das ist die Bremse gegen das Häufen — nicht der Lastvergleich. Der sagt
+    // nur, WER als Nächstes dran ist, nicht wie oft hintereinander.
+    const frei = alle.filter((k) => !inDerWoche.has(k.name))
+    const cand = (frei.length > 0 ? frei : alle).sort(
+      (a, b) =>
+        (load.get(a.name) ?? 0) - (load.get(b.name) ?? 0) ||
+        wartezeit(b.name) - wartezeit(a.name) ||
+        tieHash(`${a.name}|${wi}|${inst.wd}`) - tieHash(`${b.name}|${wi}|${inst.wd}`),
+    )
     const pick = cand[0]
     if (!pick) return inst
     load.set(pick.name, (load.get(pick.name) ?? 0) + 1)
@@ -329,6 +362,7 @@ export function fsAutoAssign(
     // Woche noch einmal.
     abstand.set(pick.name, 0)
     markDay(inst.wd, pick.name)
+    inDerWoche.add(pick.name)
     newly.push(pick.name)
     return { ...inst, leader: pick.name, lpid: pick.p.id }
   })
