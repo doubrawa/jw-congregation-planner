@@ -28,7 +28,7 @@ import './week-strip.css'
 export function WeekStrip({ children }: { children: ReactNode }) {
   const { state, dispatch } = useApp()
   const ref = useRef<HTMLDivElement>(null)
-  const canPrev = state.week > 0
+  const canPrev = state.week > state.weekFrom
   const canNext = state.week < state.weeks.length - 1
 
   useSwipeWeek(ref, {

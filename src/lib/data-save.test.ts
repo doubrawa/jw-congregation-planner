@@ -62,6 +62,13 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.from).toHaveBeenCalledWith('weeks')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ congregation_id: 'c1', position: 3 }), { onConflict: 'congregation_id,position' })
   })
+  it('saveWeek schreibt KEINE Platzhalter-Woche', () => {
+    // An dieser Position steht in der Datenbank die echte, nur nicht geladene
+    // Woche — ein Upsert mit dem leeren Platzhalter würde sie löschen.
+    saveWeek('c1', 3, { range: '', stub: true } as Week)
+    expect(chain.upsert).not.toHaveBeenCalled()
+  })
+
   it('savePerson → persons upsert (Row-Mapping)', () => {
     savePerson('c1', person)
     expect(chain.from).toHaveBeenCalledWith('persons')

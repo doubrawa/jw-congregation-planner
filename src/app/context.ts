@@ -58,6 +58,7 @@ export interface HydratePayload {
   services: Service[]
   groups: Group[]
   weeks: Week[]
+  weekFrom: number // erste geladene Woche; davor Platzhalter (Week.stub)
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
   fsBase: string | null // ISO-Datum (Montag der Woche 0)
@@ -93,6 +94,12 @@ export interface AppState {
   invites: Invite[] // offene Einladungscodes (nur Planer)
   recovery: boolean // Passwort-Reset-Ansicht aktiv (PASSWORD_RECOVERY)
   weeks: Week[]
+  /**
+   * Index der ersten geladenen Woche. Davor stehen Platzhalter (Week.stub),
+   * damit der Index weiterhin der DB-Position entspricht — die Navigation darf
+   * dort nicht hin, und gespeichert werden sie nie.
+   */
+  weekFrom: number
   persons: Person[]
   services: Service[]
   groups: Group[] // Predigtdienstgruppen (Planer; Reinigungs-Rotation)

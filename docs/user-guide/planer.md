@@ -267,6 +267,11 @@ leer und werden anschließend unter **Planen** vergeben.
 letzten Tag, für den ein Programm vorliegt, daneben die Anzahl der geladenen
 Wochen. Jeder Druck auf den Knopf holt genau eine weitere Woche.
 
+**Die App arbeitet mit den letzten 52 Wochen.** Ältere Wochen bleiben gespeichert
+und gehen nicht verloren, werden beim Start aber nicht mehr mitgeladen – ein Jahr
+reicht für alles, was die App mit Wochen tut, und der Start bleibt schnell. Beim
+Blättern kommst du deshalb nur bis zur ältesten geladenen Woche zurück.
+
 ---
 
 ## 9. Programm drucken

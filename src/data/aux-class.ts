@@ -107,9 +107,9 @@ export function syncAuxSlots(weeks: Week[], an: boolean): Week[] {
 
 /** Marke entfernen — ohne die Besetzung der Klasse anzutasten. */
 function ausschalten(weeks: Week[]): Week[] {
-  if (!weeks.some((w) => hatAuxKlasse(w.mid))) return weeks
+  if (!weeks.some((w) => !w.stub && hatAuxKlasse(w.mid))) return weeks
   return weeks.map((week) => {
-    if (!hatAuxKlasse(week.mid)) return week
+    if (week.stub || !hatAuxKlasse(week.mid)) return week
     const mid = { ...week.mid }
     delete mid.auxRatgeber
     return { ...week, mid }
@@ -119,6 +119,8 @@ function ausschalten(weeks: Week[]): Week[] {
 function einschalten(weeks: Week[]): Week[] {
   let geaendert = false
   const naechste = weeks.map((week) => {
+    // Platzhalter nicht geladener Wochen bleiben unangetastet (Week.stub).
+    if (week.stub) return week
     const mid = week.mid
     let midGeaendert = false
     const sections = mid.sections.map((section) => {

@@ -279,6 +279,19 @@ export interface Week {
    * Struktur bleiben kanonisch (siehe localizedWeek in data/localize.ts).
    */
   alt?: Record<string, Week>
+  /**
+   * Platzhalter für eine Woche, die nicht geladen wurde (älter als das
+   * Ladefenster, siehe WEEK_LIMIT in lib/data.ts).
+   *
+   * Der Platz im Array MUSS erhalten bleiben, weil der Index zugleich die
+   * `position` in der Datenbank ist und in jedem gespeicherten `task_key`
+   * steckt („60|mid|part|2|1|0"). Würde man nur die geladenen Wochen
+   * durchnummerieren, zeigten alle bestehenden Bestätigungen auf die falsche
+   * Woche. Der Platzhalter ist leer, trägt also nirgends etwas bei — und wird
+   * **nie gespeichert** (siehe saveWeek), damit er die echte Zeile in der
+   * Datenbank nicht überschreibt.
+   */
+  stub?: true
 }
 
 /**
