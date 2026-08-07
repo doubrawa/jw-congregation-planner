@@ -366,12 +366,25 @@ Banner und der Dienstvortrag-statt-VBS existieren im Produktionsbetrieb nicht.
 Ebenso fehlt ein Konzept für Kongresswochen (Zusammenkunft entfällt).
 → [befunde.md F2](befunde.md)
 
-### T31 · Treffpunkte in den Bestätigungs-Flow aufnehmen 🏗
+### T31 · Treffpunkte in den Bestätigungs-Flow aufnehmen 🏗 ✅ erledigt
 `eachAssignedSlot` läuft nur über `weeks`, nie über `fsWeeks`. Ein zugeteilter
-Treffpunkt-Leiter sieht die Aufgabe nicht in „Meine Aufgaben", kann sie nicht
-bestätigen und bekommt keine Erinnerung. `FsInstance.leader` hat zudem keine
-`pid`. Widersprüchlich: `reducer.ts:486` setzt trotzdem `pendingNames`.
+Treffpunkt-Leiter sah die Aufgabe nicht in „Meine Aufgaben", konnte sie nicht
+bestätigen und bekam keine Erinnerung. `FsInstance.leader` hatte zudem keine
+`pid`. Widersprüchlich: `reducer.ts:486` setzte trotzdem `pendingNames`.
 → [befunde.md F3](befunde.md)
+
+> **Zuschnitt vom Betreiber geändert (August 2026).** Treffpunkte werden
+> **nicht** in Aufgaben oder Hilfsdienste integriert — sie bleiben ein eigener
+> Strang. Ihre *Zuteilungsregeln* sollen sich aber eng an denen der Aufgaben
+> orientieren, und in „Meine Aufgaben" müssen sie erscheinen.
+>
+> Umgesetzt: `FsInstance.lpid` (eigener `task_key` `fs|wi|instId`),
+> `deriveMyFsTasks` in „Meine Aufgaben" samt Bestätigung, `fsWeekConflicts`
+> (Abwesenheit, Doppelbelegung, Serien), Erinnerungen in `send-reminders`, und
+> `fsAutoAssign` nach demselben Muster wie die Aufgaben: gleitendes Fenster
+> statt aller Wochen (`FS_LOAD_WEEKS = 12`, gemessen), Wartezeit, Tagessperre,
+> Wochen-Deckel. **Die Erinnerungen werden erst nach einem Deploy von
+> `send-reminders` scharf** (derselbe Schritt wie T11).
 
 ### T32 · LAC-Minuten sprachunabhängig machen 🔧 — durch T59 belegt
 `itemMinutes` (`meeting-edit.ts:16`) sucht `/(\d+) Min\./`; der Import übernimmt
@@ -626,7 +639,7 @@ mitzählen.
 einteilen — die andere darf weder Aufgabe noch Erinnerung noch Konflikt
 bekommen, und die Auslastung muss bei der richtigen steigen.
 
-### T58 · Auto-Zuteilung: Fairness über lange Zeiträume absichern 🏗
+### T58 · Auto-Zuteilung: Fairness über lange Zeiträume absichern 🏗 ✅ erledigt
 **Vorgabe des Betreibers.** Die automatische Zuteilung von Aufgaben,
 Hilfsdiensten und Treffpunkten muss über lange Zeiträume gleichmäßig verteilen,
 auch in Sonderfällen. Genannt: wer **neu** ist und keine Vergangenheit hat, und
@@ -636,6 +649,19 @@ werden, nur weil seine Strichliste leer ist.
 Nötig sind Tests über viele Wochen mit vielen Szenarien und Grenzfällen, nicht
 nur Einzelfälle.
 → Stand und Messungen: [nachtrag-fairness.md](nachtrag-fairness.md)
+
+> **Der Neuling wurde tatsächlich überschüttet** — gemessen, nicht vermutet: bei
+> Treffpunkten führte er 10 von 10 Terminen, weil die Last über **alle**
+> gespeicherten Wochen zählte und eine leere Vergangenheit ihn dauerhaft an die
+> Spitze setzte. Ursache war die Fensterbreite, nicht der Sortierschlüssel:
+> `FS_LOAD_WEEKS = 12` (52/26/12 gegeneinander gemessen, Tabelle im
+> Doc-Kommentar). Ein zweiter Anlauf über einen Startwert für Neulinge wurde
+> **verworfen**, weil die Messung ihn als wirkungslos auswies — lieber nichts
+> als eine Vorrichtung, die etwas zu tun vorgibt.
+>
+> 22 Grenzfall-Tests in `autoassign.grenzfaelle.test.ts` (Neuling ohne
+> Vergangenheit, Rückkehr aus dem Urlaub, Verteilung über lange Zeiträume,
+> entartete Fälle, Wochen-Deckel).
 
 ### T28-Vorfrage · geklärt: die Kurzformen sind Altbestand ✅
 An der Quelle geprüft (jw.org, Ausgaben September/Oktober und
@@ -715,10 +741,10 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 Stand 7. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
-Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☑☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
+Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑
 
-**44 umgesetzt, 2 als „kein Mangel" begründet zurückgewiesen, 12 offen.**
+**45 umgesetzt, 2 als „kein Mangel" begründet zurückgewiesen, 13 offen.**
 Der Testbestand ist von 727 auf 1139 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird.
 
@@ -726,9 +752,10 @@ der ohne sie rot wird.
 
 | | Aufgaben | Warum offen |
 | --- | --- | --- |
-| **T11** | Deploy von `substitute` | im Repo nichts zu tun (`config.toml` stimmt) — braucht `npx supabase functions deploy substitute` beim Betreiber; derselbe Deploy bringt T9/T10/T24 live. `send-reminders` ebenso für T8/T12/T14. |
-| **Phase 6** | T29–T34 | betrifft Versammlungsabläufe, nicht Code. Vorschlag liegt dem Koordinator vor; offene Rückfragen: eigener Redner beim öffentlichen Vortrag? Umgang mit Kongresswochen? Von T34 ist **F6 bereits miterledigt** (`lacAdd` legt Bereich `studium` statt `vortrag` an). |
+| **Deploy** | T11 (+ T31) | im Repo nichts zu tun (`config.toml` stimmt) — braucht `npx supabase functions deploy substitute` beim Betreiber; derselbe Deploy bringt T9/T10/T24 live. `send-reminders` ebenso für T8/T12/T14 **und die Treffpunkt-Erinnerungen aus T31**. |
+| **Phase 6** | T29, T30, T32, T33, T34 | betrifft Versammlungsabläufe, nicht Code (Ausnahme: **T32** braucht keine Absprache, nur Arbeit — die Minuten gehören als eigenes Feld geführt, siehe T59). Offene Rückfragen: eigener Redner beim öffentlichen Vortrag? Umgang mit Kongresswochen? Von T34 ist **F6 bereits miterledigt** (`lacAdd` legt Bereich `studium` statt `vortrag` an). **T31 ist erledigt** (Zuschnitt vom Betreiber geändert). |
 | **Phase 7** | T35–T42 | größere Umbauten, erst abzustimmen. Empfohlene Reihenfolge: **T35 + T40 + T36** zuerst (klein, risikoarm), danach **T39 + T37** als eigener Block mit Migration; T38/T41/T42 später oder gar nicht. |
+| **Zur Entscheidung** | Farbschema-Namen | „Jasmin", „Matcha" stehen in nicht-lateinischen Oberflächen lateinisch da (T60). Empfehlung: so lassen. |
 
 ### Was zurückgewiesen wurde
 
