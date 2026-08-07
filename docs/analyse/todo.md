@@ -164,8 +164,15 @@ an einer einzigen Codestelle.
 > **Erledigt am 7. August 2026** — der Betreiber hat `substitute` und
 > `send-reminders` neu deployt. Damit sind auch T9/T10/T24 (aus `substitute`)
 > und T8/T12/T14 samt der Treffpunkt-Erinnerungen aus T31 (aus
-> `send-reminders`) tatsächlich in Betrieb, nicht nur im Repo. Der Nachweis
-> für den JWT-Schutz steht oben unter **Prüfen** und ist noch nicht gefahren.
+> `send-reminders`) tatsächlich in Betrieb, nicht nur im Repo.
+>
+> **Nachweis gefahren, grün:** der Aufruf ohne Header liefert jetzt
+> `{"code":"UNAUTHORIZED_NO_AUTH_HEADER","message":"Missing authorization
+> header"}`. Das stammt von der Plattform, nicht aus `index.ts` — der Schutz
+> hängt nicht mehr an einer einzigen Codestelle.
+>
+> Unter Windows ist `curl` in PowerShell ein Alias auf `Invoke-WebRequest`
+> und versteht `-s -X -d` nicht; der Aufruf muss `curl.exe` heißen.
 
 ---
 
