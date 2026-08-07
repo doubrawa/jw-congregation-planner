@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { congAppCode } from './langs'
+import { APP_LANGS, congAppCode } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
 
 // Die Bibelbuch-Tabellen liegen in einem nachgeladenen Modul und müssen da
@@ -115,6 +115,22 @@ describe('makeTr(en) — jede Wörterbuch-Regel', () => {
     expect(en('2 Zuteilungen')).toBe('2 assignments')
   })
 
+  it('nimmt den Monat ausgeschrieben UND als Kurzform', () => {
+    // Beide Datumsregeln fangen `[A-Za-zäöü]+` — welche Form ankommt, hängt
+    // von der Quelle ab: der Programmkopf schreibt „8. September", die
+    // Erinnerungstexte „8. Sep". Wer nur eine Tabelle befragt, liefert für die
+    // andere Form „undefined" statt eines Monats.
+    expect(en('Mo, 8. September')).toBe('Mon, September 8')
+    expect(en('Mo, 8. Sep')).toBe('Mon, September 8')
+    expect(en('Dienstag, 8. Sep')).toBe('Tuesday, September 8')
+    expect(en('7.–13. Sep')).toBe('September 7–13')
+  })
+
+  it('lässt ein Datum mit unbekanntem Monat deutsch stehen', () => {
+    // Lieber ein sichtbar unübersetztes Datum als ein „Invalid Date".
+    expect(en('Mo, 8. Xyz')).toBe('Mo, 8. Xyz')
+  })
+
   it('rekursiert an " — " innerhalb eines Segments', () => {
     expect(en('Unbekannt — Gruppe 1')).toBe('Unbekannt — Group 1')
   })
@@ -192,5 +208,37 @@ describe('makeTr(el) — Intl-Pfad (kein Hand-Datums-Dict)', () => {
     changed('in 4 Tagen')
     changed('2 Zuteilungen')
     expect(el('Völlig unbekannt xyz')).toBe('Völlig unbekannt xyz') // Rückfall
+  })
+
+  it('verarbeitet auch den Kurzmonat, statt zu werfen', () => {
+    // Der Intl-Pfad gab einen unbekannten Monat als `undefined` an
+    // `Intl.format()` weiter — das wirft `RangeError` und riss ohne Error
+    // Boundary die ganze App mit. Betraf alle 30 Sprachen ohne eigenes
+    // Datums-Wörterbuch.
+    changed('Di, 8. Sep')
+    changed('7.–13. Sep')
+  })
+})
+
+describe('Datumsregeln in allen Sprachen — nichts wirft', () => {
+  // Der Absturz lag im Demo-Datensatz und wurde erst beim Öffnen der
+  // Mitteilungen sichtbar. Deshalb hier jede Sprache × jede Datumsform.
+  const formen = [
+    'Dienstag, 8. September',
+    'Dienstag, 8. Sep',
+    'Di, 8. September',
+    'Di, 8. Sep',
+    'Di 19:00',
+    '7.–13. September',
+    '7.–13. Sep',
+    '28. Sep – 4. Okt',
+    'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35', // demo.ts:245
+  ]
+  it.each(APP_LANGS.map((l) => l.code))('%s', (code) => {
+    const tr = makeTr(code)
+    for (const s of formen) {
+      expect(() => tr(s)).not.toThrow()
+      expect(tr(s)).not.toMatch(/undefined|Invalid Date|NaN/)
+    }
   })
 })
