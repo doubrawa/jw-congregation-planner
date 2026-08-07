@@ -55,7 +55,7 @@ Einen um `<Content />` in `AppShell.tsx` und einen um den Overlay-Block
 **Prüfen:** T1 rückgängig denken — ein Fehler im Overlay darf den Rest der App
 stehen lassen.
 
-### T3 · `"strict": true` einschalten ⚡
+### T3 · `"strict": true` einschalten ⚡ ✅ erledigt
 **`tsconfig.app.json`** — kostet **nachweislich 0 Codeänderungen**: `tsc --strict`
 über den ganzen Quellbaum meldet 0 Fehler. Der Code ist längst konform, nur
 ungesichert.
@@ -551,6 +551,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☐☐ · Phase 1 ☐☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☑☐ · Phase 1 ☐☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐
