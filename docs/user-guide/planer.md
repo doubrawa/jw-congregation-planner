@@ -104,6 +104,13 @@ Zusätzlichen Klasse zählen dabei genau wie die im Hauptsaal, der Ratgeber
 ebenfalls. So kommt über die Monate jeder ähnlich oft an die Reihe, statt dass
 einzelne Namen dauerhaft vorn oder hinten stehen.
 
+Zuletzt wird noch **der Aufgabenbereich selbst** ausgeglichen: wer zuletzt das
+Gespräch geführt hat, tritt beim nächsten Gesprächsteil hinter jemanden zurück,
+der zuletzt Gesprächspartner war. Sonst kann es passieren, dass eine Schwester
+zwar gleich viele Aufgaben hat wie alle anderen, davon aber fast immer die
+Partnerrolle. Dasselbe gilt für Brüder, die sowohl die Bibellesung als auch den
+Leser übernehmen können.
+
 ---
 
 ## 4. Konflikte und offene Zuteilungen
