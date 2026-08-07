@@ -23,7 +23,7 @@ const FS_LABELS = [
 
 /**
  * Profil (eigener Navigationspunkt): Name/Versammlung, Push-Mitteilungen,
- * Darstellung (8 Farbschemata), Schriftgröße, App-Sprache und Abmelden. Rolle
+ * Darstellung (Farbschemata, siehe THEME_LIST), Schriftgröße, App-Sprache und Abmelden. Rolle
  * und Predigtdienstgruppe werden im Personen-Screen gepflegt.
  */
 export function ProfilScreen() {

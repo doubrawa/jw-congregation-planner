@@ -17,8 +17,8 @@ Mitteilungen und Einstellungen.
 > Personen und Einstellungen sind gemäß [Design-Handoff](docs/design-handoff/README.md)
 > umgesetzt. Dazu die **v3-Funktionen**: Kreisaufseher- und Gedächtnismahl-Woche,
 > Bestätigungs-Flow (Zuteilungen bestätigen/verhindern), S-89-Formular,
-> konfigurierbare Erinnerungen und **Mehrsprachigkeit** (Oberfläche
-> DE/EN/ES/FR, separate Versammlungssprache für die Programm-Inhalte). Mit
+> konfigurierbare Erinnerungen und **Mehrsprachigkeit** (Oberfläche in
+> 34 Sprachen, separate Versammlungssprache für die Programm-Inhalte). Mit
 > konfiguriertem **Supabase** (echtes Login + Postgres mit RLS) werden alle
 > Versammlungsdaten geladen und zurückgeschrieben — inkl. abgeleiteter
 > „Meine Aufgaben" und persistenter Bestätigungen; ohne Konfiguration läuft
@@ -115,7 +115,7 @@ src/
     helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
     planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
   i18n/
-    ui.ts           UI-Wörterbücher DE/EN/ES/FR + Schlüssel-Maps
+    ui.ts           UI-Wörterbücher (34 Sprachen) + Schlüssel-Maps
     translate.ts    Programm-Inhalts-Übersetzer (makeTr): S-38-Begriffe, Daten, Referenzen
     langs.ts        jw.org-Sprachliste (Versammlungssprache) + App-Sprachen
     useT.ts         Hook: t (UI), tu (App-Sprache), tp (Versammlungssprache)
@@ -149,7 +149,7 @@ supabase/
 ## Design-Referenz
 
 Maßgeblich ist der HTML-Prototyp
-[`docs/design-handoff/design/Prototyp 2a v2.dc.html`](docs/design-handoff/design/).
+[`docs/design-handoff/design/Prototyp 2a v3.dc.html`](docs/design-handoff/design/).
 Er ist **kein Produktionscode**, sondern eine High-Fidelity-Referenz für Aussehen
 und Verhalten — pixelgenau nachbauen. Farben, Typografie, Abstände, Radien und
 Interaktionen sind final gemeint. Alle exakten Werte stehen zusätzlich in
@@ -265,7 +265,7 @@ der jw.org-Seite (`otherAvailLangsChooser`, je Sprache ein `data-url`) die
 lokalisierte URL auf. Der Client schickt den jw.org-Sprachcode aus
 [`langs.ts`](src/i18n/langs.ts) (`CONG_TO_JW`, Name → Code); die
 Versammlungssprache lässt sich frei aus der vollen jw.org-Liste wählen (die
-App-Oberfläche bleibt bei DE/EN/ES/FR). Programm-Inhalte (Titel, Lieder,
+App-Oberfläche deckt davon 34 Sprachen ab). Programm-Inhalte (Titel, Lieder,
 Schriftstellen, Sektions-Überschriften, Rahmen) stehen dadurch **direkt in der
 Zielsprache**; unsere eigenen Labels (ERÖFFNUNG/ABSCHLUSS, Rollen wie
 Vorsitz/Gebet) bleiben app-sprachig.

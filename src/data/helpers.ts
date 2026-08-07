@@ -183,10 +183,10 @@ export function isQualified(p: Person, priv: string): boolean {
 
 /**
  * Darf `cand` als Gesprächspartner zu `lead` eingeteilt werden? Die Anweisungen
- * verlangen dasselbe Geschlecht (oder Familienangehörige — Familienbezüge kennt
- * die App noch nicht, daher vorerst strikt gleiches Geschlecht). Die Regel ist
- * hier gekapselt, damit die Familien-Ausnahme später an EINER Stelle ergänzt
- * werden kann. Ohne zugeteilten Führer (leer) keine Einschränkung.
+ * verlangen dasselbe Geschlecht **oder** Familienangehörige — beides prüft
+ * diese Funktion (die Haushalte stehen in `Person.fam`). Die Regel ist hier
+ * gekapselt, damit sie nur an EINER Stelle steht. Ohne zugeteilten Führer
+ * (leer) keine Einschränkung.
  */
 export function partnerGenderOk(lead: Person | undefined, cand: Person): boolean {
   if (!lead) return true

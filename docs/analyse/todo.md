@@ -472,14 +472,14 @@ Jeder Screen hat genau **ein** `<h1>` und **keine** `<h2>`/`<h3>`; Panel-Labels
 sind `div`s. Einstellungen umfasst 13 000 Zeichen ohne jede Gliederung zum
 Anspringen.
 
-### T45 · RTL: doppelte Umkehrung der Wochen-Pfeile ⚡
+### T45 · RTL: doppelte Umkehrung der Wochen-Pfeile ⚡ ✅ erledigt
 **`src/app/rtl.css:44`** — `flex-direction: row-reverse` kehrt in einem
 `dir="rtl"`-Container **ein zweites Mal** um; heraus kommt die LTR-Anordnung
 (gemessen: „vorherige" links bei x=20). Da die Glyphen zusätzlich gespiegelt
 werden, zeigen beide Pfeile nach innen. `row-reverse` entfernen.
 → [lesepruefungen.md B21](lesepruefungen.md)
 
-### T46 · Safe-Area für iPhone ⚡
+### T46 · Safe-Area für iPhone ⚡ ✅ erledigt
 `index.html:12` setzt `viewport-fit=cover`, aber `env(safe-area-inset-*)` kommt in
 5308 Zeilen CSS **kein einziges Mal** vor. Genau diese Kombination lässt Inhalt
 unter Notch und Home-Indikator laufen — die Navigation sitzt unten.
@@ -490,21 +490,21 @@ Gemessen auf 375 px: `plan-item`/`plan-item-head` 317 > 307 px (Planen),
 `mem-select` 159 > 146 px und `fs-select` 158 > 132 px (Einstellungen). Kein
 Seitenscroll — nur diese vier laufen über.
 
-### T48 · `prefers-reduced-motion` berücksichtigen ⚡
+### T48 · `prefers-reduced-motion` berücksichtigen ⚡ ✅ erledigt
 3 `@keyframes` und 2 Transitions, keine einzige Regel dafür.
 
-### T49 · Dunkle Paletten vervollständigen ⚡
+### T49 · Dunkle Paletten vervollständigen ⚡ ✅ erledigt
 graphit, bernstein, aubergine und koralle erben `--load-free/task/helper`
 (Auslastungs-Quadrate) und `--shade`/`--sh-*` (Schatten) von der **hellen** Basis.
 „grau" und „kontrast" setzen sie ausdrücklich neu — die dunklen nicht.
 → [lesepruefungen.md B24](lesepruefungen.md)
 
-### T50 · Toten Code entfernen ⚡
+### T50 · Toten Code entfernen ⚡ ✅ erledigt
 11 CSS-Klassen (u. a. `week-page--vor/--nach`, `lang-demo-hint`), 2 Tokens
 (`--primary`, `--clear`), 5 Wörterbuch-Schlüssel (`appSprache`, `demoLangHint`,
 `reinigungsgruppe`, `rolleVerkIn`, `privLesen` — Letzterer × 34 Sprachen).
 
-### T51 · z-index-Ebenen benennen ⚡
+### T51 · z-index-Ebenen benennen ⚡ ✅ erledigt
 11 Werte zwischen 20 und 50 ohne System. Vier Tokens (`--z-nav`, `--z-sheet`,
 `--z-overlay`, `--z-toast`) genügen.
 
@@ -522,7 +522,7 @@ Weder in `planer.md` noch `verkuendiger.md` beschrieben: **Einspringen /
 Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und das
 **S-89-Formular**. Fehlen ebenfalls: Dubletten-Warnung, Konten ohne Person.
 
-### T54 · Widersprüchliche Doku richtigstellen ⚡
+### T54 · Widersprüchliche Doku richtigstellen ⚡ ✅ erledigt
 - Maßgeblicher Prototyp: README und `design-handoff/README.md` sagen v2,
   `design-notes-v3.md` sagt v3 („AKTUELL") — v3 ist neuer und fehlt in der
   Dateiliste
@@ -535,7 +535,7 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 - `schema.sql:53`: „9 Booleans" — 11 feste + dynamische
 - `README.md:21`: „Oberfläche DE/EN/ES/FR" — 34 Sprachen
 
-### T55 · Abhängigkeiten und Build ⚡
+### T55 · Abhängigkeiten und Build ⚡ ✅ erledigt
 - `npm audit fix` (postcss, 1× high, nur Build betroffen)
 - `vite.config.ts:47`: `advancedChunks` → `codeSplitting` (Deprecation-Warnung)
 - `import.meta.glob` in `ui.ts` schließt `en.ts` aus (Build-Warnung
@@ -544,7 +544,7 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
   Bundle-Hash, auch ohne Codeänderung (321 kB Neuladen für alle)
 - TypeScript 6 → 7 steht an
 
-### T56 · Coverage ehrlich messen ⚡
+### T56 · Coverage ehrlich messen ⚡ ✅ erledigt
 `package.json` misst nur `src/**/*.ts` — die `.tsx`-Dateien sind ausgenommen. Die
 74,9 % beschreiben die Logikschicht, nicht die Anwendung.
 
@@ -567,4 +567,4 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
-Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐
+Phase 8 ☐☐☑☑☐☑☑☑☑☐ · Phase 9 ☐☑☑☑

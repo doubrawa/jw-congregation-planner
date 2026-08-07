@@ -9,13 +9,22 @@ import react from '@vitejs/plugin-react'
  * Ohne sie lässt sich am Gerät nicht feststellen, welche Fassung dort läuft.
  * Genau daran ist mehrfach Zeit verloren gegangen: ein gemeldeter Fehler war
  * längst behoben, die App auf dem Handy aber noch auf altem Stand.
+ *
+ * Datum des **Commits**, nicht des Builds: eine Uhrzeit ändert sich bei jedem
+ * Lauf, und weil die Kennung im Bundle steht, bekäme jeder Build einen neuen
+ * Dateinamen — auch ohne eine einzige Codeänderung. Alle Geräte hätten dann
+ * 330 kB neu zu laden, nur weil jemand gebaut hat. Der Commit identifiziert
+ * den Stand ohnehin eindeutig; das Datum sagt bloß, wie alt er ist.
  */
 function buildId(): string {
-  const zeit = new Date().toISOString().slice(0, 16).replace('T', ' ')
   try {
-    return `${zeit} · ${execSync('git rev-parse --short HEAD').toString().trim()}`
+    const commit = execSync('git rev-parse --short HEAD').toString().trim()
+    const datum = execSync('git show -s --format=%cs HEAD').toString().trim()
+    return `${datum} · ${commit}`
   } catch {
-    return zeit // kein Git zur Hand (z. B. aus einem Archiv gebaut)
+    // Kein Git zur Hand (z. B. aus einem Archiv gebaut). Bewusst ohne
+    // Zeitstempel — der brächte die Hash-Instabilität zurück.
+    return 'unbekannt'
   }
 }
 
@@ -47,7 +56,7 @@ export default defineConfig(({ command }) => ({
       output: {
         // Vendor-Code in eigene, gut cachebare Chunks (ändert sich seltener
         // als der App-Code); die Sprach-Overlays splittet import.meta.glob.
-        advancedChunks: {
+        codeSplitting: {
           groups: [
             { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
             { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },

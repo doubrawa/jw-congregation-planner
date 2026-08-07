@@ -135,12 +135,11 @@ export const DE = {
     aufseherLbl: 'AUFSEHER', gehilfeLbl: 'GEHILFE', gruppeLbl: 'Predigtdienstgruppe',
     mitgliederN: '{n} Mitglieder', mitglied1: '1 Mitglied', gruppeHinzu: '+ GRUPPE HINZUFÜGEN',
     neuerDienstPh: 'Neuer Dienst, z. B. Parkplatz', hinzufuegen: '+ HINZUFÜGEN',
-    spracheCard: 'SPRACHE', appSprache: 'App-Sprache',
+    spracheCard: 'SPRACHE',
     versSprache: 'Versammlungssprache',
     versSpracheDesc: 'Bestimmt die Sprache des Arbeitshefts beim Programm-Import.',
     progLangsLbl: 'Weitere Programmsprachen',
     progLangsDesc: 'Neue Importe holen das Programm zusätzlich in diesen Sprachen — jeder sieht es dann automatisch in seiner App-Sprache.',
-    demoLangHint: 'Demo: Programminhalte sind nur auf Deutsch, Englisch, Spanisch und Französisch verfügbar — Anzeige auf Deutsch.',
     langSearchPh: 'Sprache suchen …', langCount: '{n} Sprachen', langListNote: 'Sprachliste von jw.org',
     importCard: 'PROGRAMM-IMPORT',
     importDesc: 'Die Wochenprogramme stammen aus dem Arbeitsheft auf jw.org und werden ohne Zuteilungen importiert.',
@@ -154,7 +153,6 @@ export const DE = {
     // bei der alten Zahl stehen, ohne dass es jemandem auffiel.
     aufgabenInW: '{n} Aufgaben in {w} Wochen', aufgabeInW: '1 Aufgabe in {w} Wochen',
     loadFrei: 'frei', loadAufgabe: 'Aufgabe', loadHilfsdienst: 'Hilfsdienst',
-    reinigungsgruppe: 'Reinigungsgruppe',
     toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · Mitteilung gesendet',
     toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Zuteilungen in dieser Ansicht',
     toastKeinePassende: 'Keine passende Person für die offenen Slots frei',
@@ -175,7 +173,7 @@ export const DE = {
     notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
     notifErsatzGesucht: 'Ersatz gesucht', notifErsatzGefunden: 'Ersatz gefunden',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
-    rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleVerkIn: 'Verkündigerin',
+    rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger',
     // Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Begriffe stammen aus
     // dem Artikel „Anweisungen für die Leben-und-Dienst-Zusammenkunft" in der
     // jeweiligen Sprache — auxKlassen ist dort die Abschnittsüberschrift.
@@ -187,7 +185,7 @@ export const DE = {
     auxRatgeber: 'Ratgeber',
     auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
     auxRatgeberHint: 'Für jede zusätzliche Klasse muss ein befähigter Ratgeber da sein, vorzugsweise ein Ältester.',
-    privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete', privLesen: 'Bibellesung / Leser',
+    privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete',
     privSchulung: 'Schulungsaufgaben', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',
