@@ -166,4 +166,20 @@ describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
     expect(liste.map((c) => c.assignName)).toEqual(['Gruppe 1'])
     expect(liste[0].initials).toBe('G1')
   })
+
+  it('ohne angelegte Gruppen bleibt die Liste leer — das Sheet zeigt dafür einen Hinweis', () => {
+    // Die Auto-Zuteilung trägt in diesem Fall trotzdem „Gruppe 1…3" ein
+    // (feste Dreizahl in planning.ts). Dass hier nichts zur Auswahl steht, ist
+    // der Anlass für den Hinweis im Zuteilungs-Sheet: sonst sieht der Planer
+    // eine Zuteilung, die er nicht ändern kann, und keinen Grund dafür.
+    const state: KandidatenDaten = {
+      ...daten([wocheMitKlasse('Anton Alt', 'Clara Cohn')]),
+      groups: [],
+    }
+    const sel: SlotSelection = {
+      kind: 'helper', wi: 0, tab: 'mid', svc: 'rein', pos: 0,
+      priv: null, groups: true, label: 'Reinigung',
+    }
+    expect(kandidaten(state, sel, KEINE_ABWESENHEIT, DE, (x) => x)).toEqual([])
+  })
 })

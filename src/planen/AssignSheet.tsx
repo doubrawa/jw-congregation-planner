@@ -173,6 +173,34 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
         )}
 
         <div className="sheet-list">
+          {/*
+            Gruppen-Slot ohne angelegte Gruppen: die Liste blieb wortlos leer,
+            während die Auto-Zuteilung trotzdem „Gruppe 1…3" einträgt (feste
+            Dreizahl in planning.ts). Der Planer sah eine Zuteilung, die er
+            nicht ändern konnte, und nirgends einen Grund dafür.
+
+            Der Hinweis kommt ohne neuen Wörterbuch-Schlüssel aus: er benennt
+            mit `gruppenCard`, was fehlt, und führt mit `navEinstellungen`
+            dorthin, wo es angelegt wird — beide Texte gibt es in allen 34
+            Sprachen. Ein eigener Satz hieße 34 Übersetzungen, und eine
+            erfundene ist schlimmer als eine zusammengesetzte aus geprüften
+            Bausteinen.
+          */}
+          {sel.groups && candidates.length === 0 && (
+            <div className="sheet-empty">
+              <div className="sheet-empty-label">{t.gruppenCard}</div>
+              <button
+                type="button"
+                className="sheet-empty-action"
+                onClick={() => {
+                  close()
+                  dispatch({ type: 'navigate', screen: 'einstellungen' })
+                }}
+              >
+                {t.navEinstellungen} ›
+              </button>
+            </div>
+          )}
           {candidates.map((cand) => (
             <button
               key={cand.key}

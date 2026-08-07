@@ -1,0 +1,48 @@
+/*
+ * Schriften — selbst ausgeliefert statt von Google.
+ *
+ * Bis August 2026 holte `index.html` IBM Plex Sans und Newsreader über
+ * `fonts.googleapis.com`. Das meldete bei jedem Aufruf die IP der Nutzer an
+ * einen Dritten, und ohne Netz zu diesem Host fiel die Typografie aus — für
+ * eine App, die als PWA offline laufen soll, der falsche Weg.
+ *
+ * Jetzt aus dem Paket (`@fontsource`, dieselben OFL-Schriften): Vite bündelt
+ * die woff2-Dateien mit, der Service Worker cacht sie wie jedes andere Asset.
+ *
+ * **Subsets bewusst gewählt, nicht alles.** Jede `@font-face`-Regel trägt eine
+ * `unicode-range`; der Browser lädt nur, was der Text wirklich braucht. Die
+ * Auswahl richtet sich nach den Sprachen der Oberfläche:
+ *
+ *  - `latin` + `latin-ext` — die westlichen und mittelosteuropäischen Sprachen
+ *  - `cyrillic` + `cyrillic-ext` — ru, uk, bg, sr
+ *  - `greek` — el
+ *  - `vietnamese` — vi
+ *
+ * Nicht dabei: Arabisch, Hebräisch, Persisch, Urdu, Chinesisch, Japanisch,
+ * Koreanisch. Diese Schriften decken die Zeichen gar nicht ab — dort greift
+ * wie bisher die Systemschrift aus dem Stapel in `tokens.css`. Das ist keine
+ * Verschlechterung: Google lieferte für diese Schriftsysteme ebenfalls nichts.
+ *
+ * Newsreader kommt als **variable** Schrift (ein Gewichtsbereich 200–800 in
+ * einer Datei statt sechs Schnitten) — deshalb heißt die Familie
+ * „Newsreader Variable"; der Name steht so in `--font-serif`. Kursiv liegt in
+ * einer eigenen Datei, weil eine variable Achse keine Kursive ersetzt.
+ */
+
+/*
+ * IBM Plex Sans — Oberfläche, drei Schnitte wie zuvor angefordert.
+ *
+ * Der Einstieg je **Gewicht** (nicht je Subset): diese Dateien bündeln alle
+ * sechs Subsets und geben jedem seine `unicode-range` mit. Die Einstiege je
+ * Subset (`latin-400.css` …) tun das nicht — mehrere davon nebeneinander
+ * ergäben konkurrierende `@font-face`-Regeln für dieselbe Familie und dasselbe
+ * Gewicht, von denen nur die letzte gilt. Der Browser lüde alles und benutzte
+ * eine; Kyrillisch oder Latein fiele je nach Reihenfolge aus.
+ */
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+
+/* Newsreader — Überschriften und Programm. Variabel, aufrecht und kursiv. */
+@import '@fontsource-variable/newsreader/wght.css';
+@import '@fontsource-variable/newsreader/wght-italic.css';

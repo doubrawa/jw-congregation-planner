@@ -121,76 +121,75 @@ describe('EXTRA — kurze Phrasen mit Platzhalter', () => {
 })
 
 describe('REF — Verweis-Vorlagen', () => {
-  /** Alle neun Vorlagen, die `verweisRegeln` in translate.ts nachschlägt. */
-  const ALLE: Array<keyof RefDict> = [
-    'thLek',
-    'lmdLekP',
-    'lmdLek',
-    'lffLekP',
-    'lffLek',
-    'wcgKap',
-    'lmdAnh',
-    'gruppe',
-    'vers',
-  ]
+  /**
+   * Vorlagen, die das **heutige** Arbeitsheft erzeugt. Sie müssen überall da
+   * sein, wo die Sprache überhaupt ein REF hat.
+   *
+   * Belegt an der Quelle (jw.org, Ausgaben September/Oktober und
+   * November/Dezember 2026): der Programm-Parser übernimmt die Quellenangabe
+   * wörtlich aus der Klammer, und dort steht durchgängig
+   *   „th Lektion 11"  ·  „lmd Lektion 4 Punkt 3"  ·  „lff Lektion 20 Punkt 4"
+   * — `th` ohne Punktnummer, `lmd`/`lff` immer mit.
+   */
+  const AKTUELL: Array<keyof RefDict> = ['thLek', 'lmdLekP', 'lffLekP', 'wcgKap', 'gruppe', 'vers']
 
   /**
-   * Was heute wirklich fehlt — Sprache für Sprache, Vorlage für Vorlage.
+   * Vorlagen für Formen, die **nur in älteren Arbeitsheften** vorkommen:
+   * `lmd Lektion 3` und `lff Lektion 20` ohne Punktnummer sowie
+   * `lmd Anhang A Punkt 21`. An denselben zwei Ausgaben geprüft — keine davon
+   * kommt heute noch vor; die Anhang-A-Stelle wird inzwischen als
+   * „lmd Lektion 1 Punkt 5" zitiert.
    *
-   * Diese Liste ersetzt eine frühere Fassung, die ganze Sprachen ausnahm mit
-   * der Begründung, in deren Arbeitsheften stünden „th"/„lmd"/„lff"/„wcg" gar
-   * nicht. Das trifft nicht zu: alle sieben angeblich betroffenen Sprachen
-   * haben REF-Einträge, und `verweisRegeln` begründet ausdrücklich das
-   * Gegenteil („Ostasien und die RTL-Sprachen übersetzen das Kürzel mit").
-   * Die Pauschal-Ausnahme verdeckte deshalb echte Lücken, statt sie zu
-   * beschreiben.
-   *
-   * Gefüllt wird eine Lücke nur mit einer an jw.org **gemessenen** Vorlage;
-   * eine ausgedachte wäre schlimmer als ein erkennbar deutsch gebliebener
-   * Verweis. Wer eine misst, trägt sie in REF ein und streicht sie hier.
-   *
-   * Fachlich offen (siehe docs/analyse): ob `lmdLek`/`lffLek` — die Form
-   * ohne Punktnummer aus älteren Arbeitsheften — überhaupt noch vorkommt.
-   * Falls nicht, gehören die beiden aus `ALLE` heraus statt hier hinein.
+   * Sie bleiben im Wörterbuch, weil die App bis zu 52 Wochen zurück lädt und
+   * Altbestände sie noch enthalten (auch der Demo-Datensatz). Fehlt eine, wird
+   * der Verweis erkennbar deutsch angezeigt — `verweisRegeln` lässt die Regel
+   * dann einfach aus. Deshalb hier keine Pflicht, sondern nur die Buchführung
+   * darüber, wo sie fehlt.
    */
-  const OHNE_VORLAGE: Record<string, Array<keyof RefDict>> = {
-    bg: ['wcgKap'],
-    cs: ['lmdLek', 'lffLek'],
-    fa: ['lmdAnh'],
-    hu: ['lmdLek', 'lffLek'],
-    ko: ['lmdLek', 'lffLek'],
-    sk: ['lmdLek', 'lffLek'],
-    sr: ['lmdAnh'],
-    tr: ['lmdLek', 'lffLek', 'lmdAnh'],
-    ur: ['lmdAnh'],
-    zh: ['lmdLek', 'lffLek'],
-  }
+  const ALTBESTAND: Array<keyof RefDict> = ['lmdLek', 'lffLek', 'lmdAnh']
 
-  it.each(CODES)('%s hat jede Vorlage, die nicht ausdrücklich fehlt', (code) => {
+  /**
+   * Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation —
+   * für `wcg` gibt es dort keine gemessene Vorlage, und Erfundenes wäre
+   * schlimmer als ein erkennbar unübersetzter Verweis.
+   */
+  const OHNE_WCG = new Set(['bg'])
+
+  it.each(CODES)('%s hat alle heute erzeugten Vorlagen', (code) => {
     const ref = REF[code]
     expect(ref, `${code}: REF fehlt ganz`).toBeDefined()
-    const bekannt = new Set(OHNE_VORLAGE[code] ?? [])
-    const fehlend = ALLE.filter((f) => !bekannt.has(f) && typeof ref?.[f] !== 'function')
-    expect(fehlend, `${code}: nicht angemeldete Lücke`).toEqual([])
+    const noetig = AKTUELL.filter((f) => !(f === 'wcgKap' && OHNE_WCG.has(code)))
+    const fehlend = noetig.filter((f) => typeof ref?.[f] !== 'function')
+    expect(fehlend, `${code}: Vorlage für eine aktuelle Verweisform fehlt`).toEqual([])
   })
 
-  it('die angemeldeten Lücken sind auch wirklich welche', () => {
-    // Gegenrichtung: wer eine Vorlage nachträgt und den Eintrag hier stehen
-    // lässt, bekommt sonst eine Ausnahme, die nichts mehr ausnimmt — und die
-    // nächste echte Lücke verschwindet unter ihr.
-    const ueberfluessig: string[] = []
-    for (const [code, felder] of Object.entries(OHNE_VORLAGE)) {
-      for (const f of felder) {
-        if (typeof REF[code]?.[f] === 'function') ueberfluessig.push(`${code}.${f}`)
+  it('die wcg-Ausnahme ist ausdrücklich benannt und wächst nicht heimlich', () => {
+    expect([...OHNE_WCG]).toEqual(['bg'])
+  })
+
+  it('die Altbestand-Lücken sind vollständig verzeichnet', () => {
+    // Buchführung, keine Forderung: wer eine dieser Vorlagen nachträgt oder
+    // eine neue Sprache aufnimmt, ändert damit auch diese Liste — und muss
+    // hinsehen, statt sie stillschweigend wachsen zu lassen.
+    const luecken: string[] = []
+    for (const code of CODES) {
+      for (const f of ALTBESTAND) {
+        if (typeof REF[code]?.[f] !== 'function') luecken.push(`${code}.${f}`)
       }
     }
-    expect(ueberfluessig).toEqual([])
-  })
-
-  it('die Lückenliste wächst nicht heimlich', () => {
-    const anzahl = Object.values(OHNE_VORLAGE).reduce((n, f) => n + f.length, 0)
-    expect(Object.keys(OHNE_VORLAGE).length).toBe(10) // betroffene Sprachen
-    expect(anzahl).toBe(17) // fehlende Vorlagen insgesamt
+    expect(luecken.sort()).toEqual(
+      [
+        'cs.lffLek', 'cs.lmdLek',
+        'fa.lmdAnh',
+        'hu.lffLek', 'hu.lmdLek',
+        'ko.lffLek', 'ko.lmdLek',
+        'sk.lffLek', 'sk.lmdLek',
+        'sr.lmdAnh',
+        'tr.lffLek', 'tr.lmdAnh', 'tr.lmdLek',
+        'ur.lmdAnh',
+        'zh.lffLek', 'zh.lmdLek',
+      ].sort(),
+    )
   })
 })
 

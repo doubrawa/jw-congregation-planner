@@ -632,6 +632,62 @@ Nötig sind Tests über viele Wochen mit vielen Szenarien und Grenzfällen, nich
 nur Einzelfälle.
 → Stand und Messungen: [nachtrag-fairness.md](nachtrag-fairness.md)
 
+### T28-Vorfrage · geklärt: die Kurzformen sind Altbestand ✅
+An der Quelle geprüft (jw.org, Ausgaben September/Oktober und
+November/Dezember 2026): das heutige Arbeitsheft zitiert durchgängig
+`th Lektion 11`, `lmd Lektion 4 Punkt 3`, `lff Lektion 20 Punkt 4` — die
+Formen **ohne** Punktnummer (`lmd Lektion 3`, `lff Lektion 20`) und
+`lmd Anhang A Punkt 21` kommen nicht mehr vor; die Anhang-A-Stelle wird
+inzwischen als „lmd Lektion 1 Punkt 5" zitiert.
+
+Damit sind von den 17 gemeldeten Lücken **16 Altbestand** und nur eine betrifft
+eine aktuelle Form: `wcgKap` in bg — und die ist mit Grund offen (Bulgarisch
+behandelt eine andere Publikation).
+
+**Folge:** nichts zu messen, nichts zu übersetzen. Der Test unterscheidet jetzt
+zwischen aktuellen Vorlagen (Pflicht) und Altbestand (Buchführung).
+
+### T59 · Import in anderen Sprachen gegenprüfen 🔧
+**Vorgabe des Betreibers.** Der Programm-Import holt die Woche aus dem
+deutschen Arbeitsheft und dann dieselbe Woche in der Versammlungssprache
+(`localizedUrl`). Geprüft ist bisher nur der deutsche Weg plus ein
+Kunstsprachen-Test (`parse.test.ts`, „DOMO XI DOMO").
+
+**Zu prüfen — je Sprache eine echte Woche importieren und vergleichen:**
+- **Zeitangaben**: `itemMinutes` sucht `/(d+) Min./`; andere Sprachen
+  schreiben „(10 min.)", „(10 λεπτά)". Bei nicht-deutscher Versammlungssprache
+  bewirkt „+/−" dann nichts (das ist T32, hier fällt es praktisch auf).
+- **Quellenangaben**: der Parser übernimmt die Klammer wörtlich. Steht dort
+  „lmd lesson 4 point 3" statt „lmd Lektion 4 Punkt 3", greift keine
+  `verweisRegeln`-Regel — die Verweise blieben in der Fremdsprache stehen.
+- **Rahmen** (`settingOf`): nimmt den Satz bis zum ersten Punkt, höchstens 32
+  Zeichen, ohne Ziffern. In Sprachen ohne Satzpunkt (zh/ja) oder mit längeren
+  Wendungen kann das leer bleiben oder zu viel fassen.
+- **Wochentag/Datum**: die Wochenüberschrift wird kanonisch deutsch gespeichert
+  — kommt sie aus der lokalisierten Seite anders zurück, greifen die
+  Datumsregeln nicht.
+
+Sprachen mit eigenem Schriftsystem zuerst (el, ru, zh, he, ar).
+
+### T60 · Vollständigkeitsprobe auf Hebräisch 🔧
+**Vorgabe des Betreibers.** Einmal komplett auf Hebräisch stellen und
+durchsehen, ob wirklich alles hebräisch ist.
+
+**Stand der Stichprobe (Demo-Modus, `#s=programm&l=he`):**
+- `dir="rtl"` und `lang="he"` werden korrekt gesetzt
+- die **Oberfläche** ist vollständig hebräisch (alle 8 Navigationseinträge)
+- der **Programminhalt** bleibt deutsch — das ist im Demo richtig, denn die
+  Versammlungssprache steht dort auf Deutsch und das Programm folgt ihr, nicht
+  der Bediensprache
+
+**Deshalb ist die eigentliche Probe noch offen:** Versammlungssprache *und*
+Bediensprache auf Hebräisch stellen und dann prüfen, was übrig bleibt. Kandidaten
+sind die Stellen, die kanonisch deutsch gespeichert und erst bei der Anzeige
+übersetzt werden — Abschnittsüberschriften, „N Min.", Rollenlabel,
+Datumszeilen, Verweise. Der Debug-Hash kennt bisher nur `l=` (Bediensprache);
+für die Probe braucht es entweder einen zweiten Parameter oder einen echten
+Durchlauf mit hebräischer Versammlung.
+
 ---
 
 ## Was bewusst offen bleibt
