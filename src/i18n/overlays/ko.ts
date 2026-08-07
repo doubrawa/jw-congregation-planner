@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "맡았습니다 · 주의: 그날 이미 임명이 있습니다",
   "dublettenTitle": "중복된 표시 이름",
   "dublettenHint": "표시 이름이 같으면 임명이 엉뚱한 사람에게 연결됩니다. 각 사람에게 고유한 표시 이름을 지정하십시오.",
+  "errTitel": "표시 오류",
+  "errText": "이 부분을 표시할 수 없습니다. 나머지 기능은 계속 사용할 수 있습니다.",
 } satisfies Partial<Dict>

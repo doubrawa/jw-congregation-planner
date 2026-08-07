@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "引き受けました · 注意：その日はすでに割り当てがあります",
   "dublettenTitle": "同じ表示名",
   "dublettenHint": "表示名が同じだと割り当てが別の人に付いてしまいます。一人一人に固有の表示名を付けてください。",
+  "errTitel": "表示エラー",
+  "errText": "この部分を表示できませんでした。ほかの部分は引き続き使えます。",
 } satisfies Partial<Dict>

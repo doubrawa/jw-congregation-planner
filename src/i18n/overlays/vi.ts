@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Đã nhận · lưu ý: ngày đó bạn đã có nhiệm vụ",
   "dublettenTitle": "TÊN HIỂN THỊ TRÙNG NHAU",
   "dublettenHint": "Tên hiển thị giống nhau khiến nhiệm vụ được gán nhầm người. Hãy đặt cho mỗi người một tên hiển thị riêng.",
+  "errTitel": "Lỗi hiển thị",
+  "errText": "Không thể hiển thị phần này. Các phần còn lại của ứng dụng vẫn hoạt động.",
 } satisfies Partial<Dict>

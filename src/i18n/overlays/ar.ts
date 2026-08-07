@@ -383,4 +383,6 @@ export default {
   "stLeerText": "لا توجد بيانات بعد. يرجى التواصل مع أحد المنسّقين.",
   "stDemoLaden": "تحميل البيانات التجريبية",
   "keinePersonOpt": "— بلا شخص —",
+  "errTitel": "خطأ في العرض",
+  "errText": "تعذّر عرض هذا القسم. بقية التطبيق تعمل كالمعتاد.",
 } satisfies Partial<Dict>

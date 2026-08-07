@@ -9,6 +9,7 @@ import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { MyTaskSheet } from '../components/MyTaskSheet'
 import { LanguageSheet } from '../components/LanguageSheet'
 import { S89Sheet } from '../components/S89Sheet'
@@ -172,6 +173,16 @@ export function AppShell() {
     (state.planner ? t.rolleKoordinator : t.rolleVerkuendiger) +
     (state.dataStatus === 'demo' ? t.demoSuffix : '')
   const logout = () => performLogout(dispatch)
+  // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
+  const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
+  const offenesOverlay =
+    (state.notifOpen && 'notif') ||
+    (state.slotSel && 'slot') ||
+    (state.langSheetOpen && 'lang') ||
+    (state.s89 && 's89') ||
+    (state.myTaskId && 'myTask') ||
+    (state.confirmOpen && 'confirm') ||
+    'keins'
 
   return (
     <div className="desk">
@@ -235,8 +246,13 @@ export function AppShell() {
 
             <OfflineBanner />
 
+            {/* `key` am Screen: nach einem Fehler hängt der nächste
+                Screenwechsel eine frische Boundary ein — sonst bliebe der
+                Auffangbereich bis zum Neuladen stehen. */}
             <div className="app-content">
-              <Content />
+              <ErrorBoundary key={state.screen} {...fehlerTexte}>
+                <Content />
+              </ErrorBoundary>
             </div>
 
             {menuOpen && (
@@ -262,12 +278,17 @@ export function AppShell() {
           </>
         )}
 
-        {state.notifOpen && <NotificationsPanel />}
-        {state.slotSel && <AssignSheet sel={state.slotSel} />}
-        {state.langSheetOpen && <LanguageSheet />}
-        {state.s89 && <S89Sheet payload={state.s89} />}
-        {state.myTaskId && <MyTaskSheet />}
-        {state.confirmOpen && state.myTasks.some((t) => t.status === 'offen') && <ConfirmDialog />}
+        {/* Zweite Boundary um die Overlays: ein Fehler im Sheet darf die App
+            darunter stehen lassen. `key` = das gerade offene Overlay, damit
+            das nächste wieder frisch startet. */}
+        <ErrorBoundary key={offenesOverlay} {...fehlerTexte}>
+          {state.notifOpen && <NotificationsPanel />}
+          {state.slotSel && <AssignSheet sel={state.slotSel} />}
+          {state.langSheetOpen && <LanguageSheet />}
+          {state.s89 && <S89Sheet payload={state.s89} />}
+          {state.myTaskId && <MyTaskSheet />}
+          {state.confirmOpen && state.myTasks.some((t) => t.status === 'offen') && <ConfirmDialog />}
+        </ErrorBoundary>
         {state.toast && (
           <div key={state.toast.id} className="toast" role="status">
             {state.toast.text}

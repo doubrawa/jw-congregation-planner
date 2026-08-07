@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Otettu · huomio: sinulla on jo tehtävä sinä päivänä",
   "dublettenTitle": "SAMAT NÄYTTÖNIMET",
   "dublettenHint": "Samat näyttönimet vievät tehtävät väärälle henkilölle. Anna jokaiselle yksilöllinen näyttönimi.",
+  "errTitel": "Näyttövirhe",
+  "errText": "Tätä osaa ei voitu näyttää. Sovelluksen muut osat toimivat edelleen.",
 } satisfies Partial<Dict>

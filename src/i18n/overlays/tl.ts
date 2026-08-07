@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Tinanggap · paalala: may atas ka na sa araw na iyon",
   "dublettenTitle": "MAGKAPAREHONG DISPLAY NAME",
   "dublettenHint": "Ang magkaparehong display name ay nagiging dahilan para maling tao ang mabigyan ng atas. Bigyan ang bawat isa ng natatanging display name.",
+  "errTitel": "May problema sa pagpapakita",
+  "errText": "Hindi maipakita ang bahaging ito. Patuloy na gumagana ang iba pang bahagi ng app.",
 } satisfies Partial<Dict>

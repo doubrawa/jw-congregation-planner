@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Podjęte · uwaga: tego dnia masz już zadanie",
   "dublettenTitle": "POWTARZAJĄCE SIĘ NAZWY WYŚWIETLANE",
   "dublettenHint": "Takie same nazwy wyświetlane powodują błędne przypisanie zadań. Nadaj każdej osobie niepowtarzalną nazwę wyświetlaną.",
+  "errTitel": "Błąd wyświetlania",
+  "errText": "Nie udało się wyświetlić tej sekcji. Reszta aplikacji działa dalej.",
 } satisfies Partial<Dict>

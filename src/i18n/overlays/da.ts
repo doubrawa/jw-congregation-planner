@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Overtaget · bemærk: du er allerede sat på den dag",
   "dublettenTitle": "ENS VISNINGSNAVNE",
   "dublettenHint": "Ens visningsnavne gør at opgaver havner hos den forkerte. Giv hver person et entydigt visningsnavn.",
+  "errTitel": "Visningsfejl",
+  "errText": "Dette afsnit kunne ikke vises. Resten af appen fungerer fortsat.",
 } satisfies Partial<Dict>

@@ -382,4 +382,6 @@ export default {
   "toastUebernommenKonflikt": "נלקח · שים לב: באותו יום כבר יש לך מטלה",
   "dublettenTitle": "שמות תצוגה כפולים",
   "dublettenHint": "שמות תצוגה זהים גורמים לשיוך שגוי של מטלות. תן לכל אדם שם תצוגה ייחודי.",
+  "errTitel": "שגיאת תצוגה",
+  "errText": "לא ניתן היה להציג את החלק הזה. שאר האפליקציה ממשיכה לפעול.",
 } satisfies Partial<Dict>

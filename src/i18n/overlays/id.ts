@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Diambil alih · perhatian: hari itu kamu sudah punya tugas",
   "dublettenTitle": "NAMA TAMPILAN GANDA",
   "dublettenHint": "Nama tampilan yang sama membuat tugas tercatat pada orang yang salah. Beri setiap orang nama tampilan yang unik.",
+  "errTitel": "Gangguan tampilan",
+  "errText": "Bagian ini tidak dapat ditampilkan. Bagian aplikasi lainnya tetap berfungsi.",
 } satisfies Partial<Dict>

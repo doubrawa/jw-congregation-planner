@@ -245,6 +245,8 @@ export const DE = {
     invCodeInvalid: 'Code ungültig oder bereits verwendet',
     invAlreadyMember: 'Dieses Konto ist bereits Mitglied einer Versammlung',
     stFehler: 'Daten konnten nicht geladen werden', stFehlerText: 'Es gab ein Problem beim Laden aus der Datenbank.',
+    // Error Boundary — Anzeigefehler, nicht Ladefehler
+    errTitel: 'Anzeige gestört', errText: 'Dieser Bereich konnte nicht angezeigt werden. Der Rest der App funktioniert weiter.',
     stErneut: 'ERNEUT VERSUCHEN', stLeer: 'Versammlung ist noch leer',
     stLeerTextPlaner: 'Es sind noch keine Personen und Wochen hinterlegt. Du kannst den Demo-Datensatz als Startpunkt laden und danach anpassen.',
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Koordinator.',

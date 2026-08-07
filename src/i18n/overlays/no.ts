@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Overtatt · merk: du er allerede satt opp den dagen",
   "dublettenTitle": "LIKE VISNINGSNAVN",
   "dublettenHint": "Like visningsnavn gjør at oppgaver havner hos feil person. Gi hver person et unikt visningsnavn.",
+  "errTitel": "Visningsfeil",
+  "errText": "Denne delen kunne ikke vises. Resten av appen fungerer videre.",
 } satisfies Partial<Dict>

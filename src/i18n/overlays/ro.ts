@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Preluată · atenție: în ziua aceea ai deja o însărcinare",
   "dublettenTitle": "NUME AFIȘATE IDENTICE",
   "dublettenHint": "Numele afișate identice duc la atribuirea greșită a însărcinărilor. Dă fiecărei persoane un nume afișat unic.",
+  "errTitel": "Eroare de afișare",
+  "errText": "Această secțiune nu a putut fi afișată. Restul aplicației funcționează în continuare.",
 } satisfies Partial<Dict>
