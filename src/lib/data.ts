@@ -601,7 +601,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('fs_weeks').select('position, data').eq('congregation_id', congregationId).gte('position', weekFrom).order('position'),
   ])
 
-  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites].find((r) => r.error)?.error
+  // Alle zwölf Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
+  // Liste, blieb ein Ladefehler dort stumm und die Treffpunkte kamen einfach
+  // leer an — genau der Fall bei einer Instanz ohne Migration 010.
+  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows]
+    .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))

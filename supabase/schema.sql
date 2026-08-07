@@ -50,8 +50,14 @@ create table if not exists public.persons (
   female          boolean not null default false,   -- Anzeige "Verkündigerin"
   tel             text not null default '',
   mail            text not null default '',
-  priv            jsonb not null default '{}'::jsonb, -- Qualifications (9 Booleans)
+  -- Qualifications: feste Programm-Bereiche (vorsitzMid/vorsitzWe/vortrag/gebet/
+  -- bibellesung/leser/schulung/schulungPartner/studium/treffpunkt + wtLeiter/
+  -- wtVertreter) plus je Hilfsdienst ein dynamischer Schlüssel `svc:<key>`.
+  priv            jsonb not null default '{}'::jsonb,
   planner         boolean not null default false,   -- Planer-Recht (in members.planner gespiegelt)
+  -- Haushalt: Personen mit derselben Id sind Familie (Gesprächspartner-Regel).
+  -- Frei vergebene UUID, kein Fremdschlüssel — daher text.
+  fam             text,
   created_at      timestamptz not null default now()
 );
 
@@ -149,6 +155,44 @@ create table if not exists public.push_subscriptions (
 create index if not exists push_subscriptions_congregation_idx
   on public.push_subscriptions (congregation_id);
 
+-- Treffpunkte für den Predigtdienst: Grundplan je Versammlung (fs_rules) und
+-- die pro Woche materialisierten Treffpunkte samt Leitern (fs_weeks).
+-- base = Montag der Woche 0 (Bezug für Wochentag/Datum der Treffpunkte).
+create table if not exists public.fs_rules (
+  congregation_id uuid primary key references public.congregations (id) on delete cascade,
+  base            date,
+  rules           jsonb not null default '[]'::jsonb  -- FsRule[]
+);
+
+create table if not exists public.fs_weeks (
+  id              uuid primary key default gen_random_uuid(),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  position        integer not null,                 -- wie weeks.position
+  data            jsonb not null,                   -- FsInstance[]
+  unique (congregation_id, position)
+);
+
+create index if not exists fs_weeks_congregation_idx
+  on public.fs_weeks (congregation_id);
+
+-- Versand-Tagebuch der Erinnerungen: send-reminders trägt ein, wem es an
+-- welchem Tag welche Art geschickt hat, und überspringt beim zweiten Lauf am
+-- selben Tag die schon Erledigten — sonst käme dieselbe Push doppelt an.
+--   kind: 'self'    persönliche Erinnerung an die eingeteilte Person
+--         'planner' Sammelmeldung „nicht erreichbar" an die Planer
+create table if not exists public.reminder_log (
+  id              uuid primary key default gen_random_uuid(),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  kind            text not null,
+  sent_on         date not null default current_date,
+  created_at      timestamptz not null default now(),
+  unique (user_id, kind, sent_on)
+);
+
+create index if not exists reminder_log_sent_on_idx
+  on public.reminder_log (sent_on);
+
 -- Einladungscodes: Planer erstellen sie, registrierte Nutzer treten damit der
 -- Versammlung bei (redeem_invite unten) — kein SQL für neue Mitglieder nötig.
 create table if not exists public.invites (
@@ -182,6 +226,24 @@ as $$
   select coalesce(
     (select planner from public.members where user_id = auth.uid()),
     false
+  )
+$$;
+
+-- Ist der aktuelle Nutzer Aufseher oder Gehilfe irgendeiner Predigtdienstgruppe?
+-- Sie dürfen die Treffpunkte pflegen, ohne volle Planer-Rechte zu haben; die
+-- Einschränkung auf die eigene Gruppe macht die App.
+create or replace function public.is_group_overseer()
+returns boolean
+language sql stable security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.groups g
+    join public.members m on m.congregation_id = g.congregation_id
+    where m.user_id = auth.uid()
+      and m.person_id is not null
+      and (g.overseer_id = m.person_id or g.assistant_id = m.person_id)
   )
 $$;
 
@@ -354,6 +416,34 @@ create policy push_subscriptions_own on public.push_subscriptions
   for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid() and congregation_id = public.my_congregation_id());
+
+-- Treffpunkte: Versammlung liest; Planer UND Gruppenaufseher schreiben.
+alter table public.fs_rules enable row level security;
+alter table public.fs_weeks enable row level security;
+
+drop policy if exists fs_rules_select on public.fs_rules;
+create policy fs_rules_select on public.fs_rules
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists fs_rules_write on public.fs_rules;
+create policy fs_rules_write on public.fs_rules
+  for all
+  using (congregation_id = public.my_congregation_id() and (public.is_planner() or public.is_group_overseer()))
+  with check (congregation_id = public.my_congregation_id() and (public.is_planner() or public.is_group_overseer()));
+
+drop policy if exists fs_weeks_select on public.fs_weeks;
+create policy fs_weeks_select on public.fs_weeks
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists fs_weeks_write on public.fs_weeks;
+create policy fs_weeks_write on public.fs_weeks
+  for all
+  using (congregation_id = public.my_congregation_id() and (public.is_planner() or public.is_group_overseer()))
+  with check (congregation_id = public.my_congregation_id() and (public.is_planner() or public.is_group_overseer()));
+
+-- Versand-Tagebuch: bewusst ohne Policy. RLS ohne Policy sperrt alles; die
+-- Edge Function arbeitet mit der Service-Role und umgeht RLS.
+alter table public.reminder_log enable row level security;
 
 -- ---------------------------------------------------------------------------
 -- Beitritt per Einladungscode (security definer: der Beitretende hat noch

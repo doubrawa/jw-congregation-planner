@@ -90,7 +90,7 @@ Timeout: Der Nutzer sieht Erfolg, die Datenbank hat nichts.
 Fehlermeldung statt „Zugeteilt".
 → [code-review.md § 3.1](code-review.md)
 
-### T6 · `schema.sql` vervollständigen 🔧
+### T6 · `schema.sql` vervollständigen 🔧 ✅ erledigt
 Es fehlen **`fs_rules`, `fs_weeks`, `is_group_overseer()`** (aus migration-010),
 **`reminder_log`** (011) und **`persons.fam`** (013) — obwohl jede Migration
 behauptet „schema.sql enthält alles" und `README.md:216` genau diesen Weg anweist.
@@ -551,6 +551,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☑☑ · Phase 1 ☑☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☑☑ · Phase 1 ☑☑☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐
