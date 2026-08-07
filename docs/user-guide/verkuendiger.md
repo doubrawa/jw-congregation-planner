@@ -105,14 +105,53 @@ Für jede Aufgabe gilt:
 
 - **✓ Bestätigen** – teile deinem Koordinator mit, dass du die Aufgabe
   übernimmst. Danach steht bei der Aufgabe „Bestätigt".
-- **S‑89 anzeigen** – bei Schulungsaufgaben öffnet sich die
-  Aufgabenzuteilung (Rahmen, Gesprächspartner, Schulungspunkt), die du dem
-  Gehilfen zeigen kannst.
-- Kannst du **nicht**, melde das bitte deinem Koordinator – so kann er rechtzeitig
-  neu einteilen.
+- **S‑89 anzeigen** – siehe unten.
+- **Antippen** öffnet die Aufgabe. Dort kannst du sie auch **absagen** – und
+  eine Absage später wieder zurücknehmen.
 
 > **Tipp:** Bestätige zeitnah. Dein Koordinator sieht offene Bestätigungen und
 > weiß dann, dass alles steht.
+
+### Wenn du nicht kannst
+
+Tippe die Aufgabe an und wähle **„Ich kann nicht"**. Dein Koordinator bekommt
+eine Mitteilung und kann rechtzeitig neu einteilen. Hast du dich vertan, öffne
+die Aufgabe erneut und wähle **„Doch bestätigen"**.
+
+Bei einem **Hilfsdienst** (Mikrofone, Ton, Ordner …) passiert zusätzlich etwas:
+Die App sucht sofort selbst einen Ersatz und benachrichtigt alle, die für
+diesen Dienst eingetragen und an dem Tag nicht abwesend sind. Du musst also
+niemanden persönlich anrufen.
+
+Bei **Programmpunkten** gibt es keine automatische Suche – dort teilt der
+Koordinator neu zu.
+
+### Einspringen für jemand anderen
+
+Sagt jemand einen Hilfsdienst ab, für den **du** eingetragen bist, bekommst du
+eine Mitteilung („Ersatz gesucht") und – falls aktiviert – eine Push-Nachricht.
+
+Unter **Meine Aufgaben** erscheint dann der Bereich **EINSPRINGEN** mit dem
+gesuchten Dienst, dem Termin und dem Namen dessen, der abgesagt hat. Ein Tipp
+auf **Übernehmen** trägt dich ein und bestätigt die Aufgabe gleich mit.
+
+Es gilt: **wer zuerst tippt.** War jemand schneller, verschwindet der Eintrag –
+dann ist der Dienst schon besetzt.
+
+### Das S‑89-Formular
+
+Bei Schulungsaufgaben (Bibellesung, Gespräche beginnen, Interesse fördern …)
+steht bei der Aufgabe **S‑89 anzeigen**. Das öffnet die Aufgabenzuteilung, wie
+sie sonst auf Papier ausgeteilt wird:
+
+- **Name** und ggf. **Gesprächspartner/in**
+- **Datum** der Zusammenkunft
+- **Aufgabe** und **Schulungspunkt**
+- **Durchzuführen im** – Hauptsaal oder Zusätzliche Klasse
+
+Quelle und Schulungspunkt stehen im Arbeitsheft; das Formular nennt sie, soweit
+sie beim Import mitgekommen sind. Du kannst es ansehen und deinem Gehilfen
+zeigen – ausdrucken musst du es nicht.
 
 ---
 
