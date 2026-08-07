@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { itemNameCount, lacMove, lacMoveTarget } from './meeting-edit'
-import { partSwapKeyPairs, partTaskKey, swapPartConfirmations } from './planning'
+import { itemNameCount, lacMove, lacMoveTarget, lacRemove } from './meeting-edit'
+import { partSwapKeyPairs, partTaskKey, shiftPartConfirmations, swapPartConfirmations } from './planning'
 import type { ConfirmationMap, Meeting, PartItem, Week } from './types'
 
 /** LAC-Sektion mit drei verschiebbaren Punkten (A/B/C) je einem Namens-Slot. */
@@ -92,5 +92,72 @@ describe('swapPartConfirmations (Bestätigungen folgen dem verschobenen Punkt)',
     expect(itemAtPos1.names[0].name).toBe('Alice')
     expect(swapped[partTaskKey(0, 'mid', 0, 1, 0)]).toBe('bestätigt')
     expect(swapped[partTaskKey(0, 'mid', 0, 0, 0)]).toBeUndefined()
+  })
+})
+
+describe('shiftPartConfirmations — Löschen und Einfügen (T16)', () => {
+  /** Alle drei Punkte bestätigt: A=Pos 0, B=Pos 1, C=Pos 2. */
+  const dreiBestaetigt = (): ConfirmationMap => ({
+    [partTaskKey(0, 'mid', 0, 0, 0)]: 'bestätigt',
+    [partTaskKey(0, 'mid', 0, 1, 0)]: 'verhindert',
+    [partTaskKey(0, 'mid', 0, 2, 0)]: 'bestätigt',
+  })
+
+  it('Löschen: der gelöschte Status fällt weg, die dahinter rücken nach', () => {
+    // Vorher erbte der nachfolgende Punkt die fremde Bestätigung, und der
+    // eigentliche galt wieder als offen — und wurde erneut erinnert.
+    const { map, removed, renames } = shiftPartConfirmations(dreiBestaetigt(), 0, 'mid', 0, 0, -1)
+    expect(removed).toEqual([partTaskKey(0, 'mid', 0, 0, 0)])
+    expect(map[partTaskKey(0, 'mid', 0, 0, 0)]).toBe('verhindert') // war B
+    expect(map[partTaskKey(0, 'mid', 0, 1, 0)]).toBe('bestätigt') // war C
+    expect(map[partTaskKey(0, 'mid', 0, 2, 0)]).toBeUndefined()
+    // Von vorn nach hinten umbenennen, sonst kollidiert es mit belegten Keys.
+    expect(renames.map(([von]) => von)).toEqual([
+      partTaskKey(0, 'mid', 0, 1, 0),
+      partTaskKey(0, 'mid', 0, 2, 0),
+    ])
+  })
+
+  it('Einfügen: ab der Stelle rutscht alles eine Position weiter', () => {
+    const { map, removed, renames } = shiftPartConfirmations(dreiBestaetigt(), 0, 'mid', 0, 1, 1)
+    expect(removed).toEqual([])
+    expect(map[partTaskKey(0, 'mid', 0, 0, 0)]).toBe('bestätigt') // A bleibt
+    expect(map[partTaskKey(0, 'mid', 0, 1, 0)]).toBeUndefined() // neuer Punkt: offen
+    expect(map[partTaskKey(0, 'mid', 0, 2, 0)]).toBe('verhindert') // war B
+    expect(map[partTaskKey(0, 'mid', 0, 3, 0)]).toBe('bestätigt') // war C
+    // Von hinten nach vorn, sonst überschreibt 1→2 den Status von C.
+    expect(renames.map(([von]) => von)).toEqual([
+      partTaskKey(0, 'mid', 0, 2, 0),
+      partTaskKey(0, 'mid', 0, 1, 0),
+    ])
+  })
+
+  it('lässt andere Wochen, Zusammenkünfte und Sektionen unangetastet', () => {
+    const map: ConfirmationMap = {
+      [partTaskKey(1, 'mid', 0, 2, 0)]: 'bestätigt', // andere Woche
+      [partTaskKey(0, 'we', 0, 2, 0)]: 'bestätigt', // andere Zusammenkunft
+      [partTaskKey(0, 'mid', 1, 2, 0)]: 'bestätigt', // andere Sektion
+      '0|mid|helper|mik|2': 'bestätigt', // Hilfsdienst
+    }
+    expect(shiftPartConfirmations(map, 0, 'mid', 0, 0, -1).map).toEqual(map)
+  })
+
+  it('nimmt die Plätze der Zusätzlichen Klasse mit', () => {
+    const auxKey = (ii: number) => partTaskKey(0, 'mid', 0, ii, 0, true)
+    const map: ConfirmationMap = { [auxKey(2)]: 'bestätigt' }
+    expect(shiftPartConfirmations(map, 0, 'mid', 0, 0, -1).map[auxKey(1)]).toBe('bestätigt')
+  })
+
+  it('E2E: nach lacRemove hängt keine Bestätigung am falschen Punkt', () => {
+    const weeks = [week()]
+    const map = dreiBestaetigt()
+    const gekuerzt = lacRemove(weeks, 0, 'mid', 0, 0)
+    const { map: neu } = shiftPartConfirmations(map, 0, 'mid', 0, 0, -1)
+
+    const items = gekuerzt[0].mid.sections[0].items
+    expect((items[0] as PartItem).title).toBe('Punkt B')
+    expect(neu[partTaskKey(0, 'mid', 0, 0, 0)]).toBe('verhindert') // Bobs Status
+    expect((items[1] as PartItem).title).toBe('Punkt C')
+    expect(neu[partTaskKey(0, 'mid', 0, 1, 0)]).toBe('bestätigt') // Carols Status
   })
 })

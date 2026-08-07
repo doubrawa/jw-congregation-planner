@@ -14,7 +14,7 @@
  */
 
 import type { Meeting, PartItem, ProgramItem, SlotAssignment, Week } from './types'
-import { isSong } from './helpers'
+import { hatAuxKlasse, isSong } from './helpers'
 
 /**
  * Bereiche, die einen Programmpunkt zum Schülerteil machen. Bewusst über die
@@ -29,23 +29,11 @@ export function istSchuelerteil(item: ProgramItem): boolean {
   return item.names.some((s) => s.bereichsKey != null && SCHUELER_BEREICHE.has(s.bereichsKey))
 }
 
-/**
- * Hat diese Zusammenkunft eine Zusätzliche Klasse?
- *
- * Erkennungsmerkmal ist der Ratgeber-Platz: „Für jede zusätzliche Klasse muss
- * ein befähigter Ratgeber zur Verfügung stehen" (S-38, Absatz 26) — ohne
- * Ratgeber keine Klasse. Damit steht die Antwort in den Wochendaten selbst,
- * und jeder Leser (Planen, Programm, Ausdruck, Zählung, Auto-Zuteilung,
- * Erinnerungen) kommt zum selben Ergebnis.
- *
- * Der Versammlungsschalter `state.auxClass` ist die Eingabe, nicht die
- * Wahrheit: er schreibt diese Marke über `syncAuxSlots` in die Wochen. Wer ihn
- * daneben selbst auswertet, bekommt eine zweite Antwort — genau daran hing der
- * Fehler, dass das Programm nach dem Ausschalten weiter beide Räume zeigte.
- */
-export function hatAuxKlasse(meeting: Meeting): boolean {
-  return meeting.auxRatgeber != null
-}
+// hatAuxKlasse steht in helpers.ts — `partWorkload` braucht sie dort, und
+// helpers.ts darf dieses Modul nicht importieren (Zyklus). Hier weiter
+// exportiert, weil die Marke fachlich zur Zusätzlichen Klasse gehört und alle
+// Aufrufer sie von hier holen.
+export { hatAuxKlasse }
 
 /**
  * Die Räume, in denen diese Zusammenkunft stattfindet: nur der Hauptsaal

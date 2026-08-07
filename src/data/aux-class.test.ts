@@ -7,7 +7,9 @@ import {
   slotsOf,
   syncAuxSlots,
 } from './aux-class'
-import { countOpenSlots, partTaskKey, ratgeberTaskKey } from './planning'
+import { assignmentsInMeeting, countOpenSlots, openSlotLabels, partTaskKey, ratgeberTaskKey } from './planning'
+import { partWorkload } from './helpers'
+import { togglePartner } from './meeting-edit'
 import type { PartItem, Section, Week } from './types'
 
 const teil = (bereichsKey: string, plaetze = 1): PartItem => ({
@@ -181,5 +183,81 @@ describe('Ratgeber-Platz entsteht in den Daten', () => {
     einmal[0].mid.auxRatgeber = { name: 'Manfred Albrecht', bereichsKey: 'ratgeber' }
     const nochmal = syncAuxSlots(einmal, true)
     expect(nochmal[0].mid.auxRatgeber?.name).toBe('Manfred Albrecht')
+  })
+})
+
+describe('Zusätzliche Klasse zählt überall gleich mit', () => {
+  /** Woche mit eingeschalteter Klasse und je einem besetzten Platz. */
+  function mitKlasse(): Week {
+    const w = syncAuxSlots([woche([teil('schulung', 2)])], true)[0]
+    const item = w.mid.sections[0].items[0] as PartItem
+    item.names[0].name = 'Haupt Saal'
+    item.aux![0].name = 'Zweite Klasse'
+    w.mid.auxRatgeber = { name: 'Rolf Ratgeber', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
+    return w
+  }
+
+  it('assignmentsInMeeting sieht die Klasse und den Ratgeber (T17)', () => {
+    // Ohne diese Zeilen blieb der Hinweis „heute schon zugeteilt" aus, und das
+    // Dashboard zeigte „frei" für jemanden, der in der Klasse eingeteilt war.
+    const m = mitKlasse().mid
+    expect(assignmentsInMeeting(m, 'Zweite Klasse', []).length).toBe(1)
+    expect(assignmentsInMeeting(m, 'Rolf Ratgeber', []).length).toBe(1)
+    expect(assignmentsInMeeting(m, 'Haupt Saal', []).length).toBe(1)
+  })
+
+  it('openSlotLabels und countOpenSlots kommen auf dieselbe Zahl (T19)', () => {
+    // Der Planen-Kopf nannte eine höhere Zahl, als das Banner darunter
+    // auflistete: die Zählung kannte Klasse und Ratgeber, die Liste nicht.
+    for (const ratgeberBesetzt of [true, false]) {
+      const w = mitKlasse()
+      if (!ratgeberBesetzt) w.mid.auxRatgeber!.name = ''
+      const gezaehlt = countOpenSlots(w.mid, [])
+      const gelistet = openSlotLabels(w.mid, []).reduce((s, o) => s + o.n, 0)
+      expect(gelistet, `Ratgeber besetzt: ${ratgeberBesetzt}`).toBe(gezaehlt)
+      expect(gezaehlt).toBeGreaterThan(0) // sonst wäre die Gleichheit wertlos
+    }
+  })
+
+  it('partWorkload zählt die Klasse nur, solange es sie gibt (T20)', () => {
+    const an = mitKlasse()
+    expect(partWorkload([an], 'Zweite Klasse')).toBe(1)
+    expect(partWorkload([an], 'Rolf Ratgeber')).toBe(1)
+    // Abschalten lässt die Namen absichtlich stehen — zählen dürfen sie nicht.
+    const aus = syncAuxSlots([an], false)[0]
+    expect((aus.mid.sections[0].items[0] as PartItem).aux?.[0].name).toBe('Zweite Klasse')
+    expect(partWorkload([aus], 'Zweite Klasse')).toBe(0)
+    expect(partWorkload([aus], 'Rolf Ratgeber')).toBe(0)
+  })
+})
+
+describe('togglePartner zieht die Klasse mit (T22)', () => {
+  it('nach dem Hinzufügen haben beide Räume gleich viele Plätze', () => {
+    const w = syncAuxSlots([woche([teil('schulung', 1)])], true)
+    const vorher = w[0].mid.sections[0].items[0] as PartItem
+    expect(vorher.names).toHaveLength(1)
+    expect(vorher.aux).toHaveLength(1)
+
+    const nachher = togglePartner(w, 0, 'mid', 0, 0)[0].mid.sections[0].items[0] as PartItem
+    expect(nachher.names).toHaveLength(2)
+    expect(nachher.aux).toHaveLength(2) // war vorher 1 → Klasse hinkte hinterher
+    expect(nachher.aux![1].bereichsKey).toBe('schulungPartner')
+  })
+
+  it('und nach dem Entfernen ebenso, ohne vergebene Namen zu verlieren', () => {
+    const w = syncAuxSlots([woche([teil('schulung', 2)])], true)
+    const item = w[0].mid.sections[0].items[0] as PartItem
+    item.aux![0].name = 'Bleibt Stehen'
+    const nachher = togglePartner(w, 0, 'mid', 0, 0)[0].mid.sections[0].items[0] as PartItem
+    expect(nachher.names).toHaveLength(1)
+    expect(nachher.aux).toHaveLength(1)
+    expect(nachher.aux![0].name).toBe('Bleibt Stehen')
+  })
+
+  it('ohne Klasse bleibt aux unangetastet', () => {
+    const nachher = togglePartner([woche([teil('schulung', 1)])], 0, 'mid', 0, 0)[0]
+      .mid.sections[0].items[0] as PartItem
+    expect(nachher.names).toHaveLength(2)
+    expect(nachher.aux).toBeUndefined()
   })
 })

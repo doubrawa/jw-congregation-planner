@@ -220,7 +220,7 @@ Ende aus Startzeit + Summe der Programmminuten erzeugen.
 
 ## Phase 4 — Datenintegrität (🏗 ein bis zwei Tage)
 
-### T16 · Bestätigungen beim LAC-Bearbeiten mitverschieben 🔧
+### T16 · Bestätigungen beim LAC-Bearbeiten mitverschieben 🔧 ✅ erledigt
 `task_key` ist positionsbasiert. `lacMove` tauscht die Bestätigungen korrekt mit
 (`swapPartConfirmations`), **`lacRemove` und `lacAdd` tun es nicht**
 (`reducer.ts:755/794`, `persist.ts:196-203`).
@@ -232,7 +232,7 @@ Bestätigung; der eigentliche gilt wieder als offen und wird erneut erinnert.
 Test analog zu `confirmations.test.ts:78` schreiben.
 → [befunde.md B3](befunde.md)
 
-### T17 · Zusätzliche Klasse in der Doppelbelegungs-Prüfung 🔧
+### T17 · Zusätzliche Klasse in der Doppelbelegungs-Prüfung 🔧 ✅ erledigt
 **`planning.ts:183-196`** — `assignmentsInMeeting` iteriert nur `item.names`,
 nicht `slotsOf(item, aux)`, und kennt `auxRatgeber` nicht. Direkt daneben machen es
 `countOpenSlots`, `changedSlotKeys` und `clearAssignments` über `raeume()` richtig.
@@ -245,39 +245,39 @@ Konflikt.
 muss erscheinen.
 → [befunde.md B5](befunde.md)
 
-### T18 · Partner-Geschlecht am richtigen Raum prüfen ⚡
+### T18 · Partner-Geschlecht am richtigen Raum prüfen ⚡ ✅ erledigt
 **`AssignSheet.tsx:129-133`** — der Gesprächsführer wird in `partItem.names`
 gesucht, unabhängig davon, ob der Platz zur Zusätzlichen Klasse gehört
 (`partSel.aux`). Die **Auto**-Zuteilung macht es richtig und begründet es
 ausdrücklich (`planning.ts:501-511`).
 → [befunde.md B6](befunde.md)
 
-### T19 · Offene Slots einheitlich zählen ⚡
+### T19 · Offene Slots einheitlich zählen ⚡ ✅ erledigt
 **`planning.ts:320`** — `openSlotLabels` ignoriert Klasse und Ratgeber,
 `countOpenSlots` (Z. 250) zählt beide. Der Planen-Kopf nennt deshalb eine höhere
 Zahl, als das Banner darunter auflistet.
 → [befunde.md U2](befunde.md)
 
-### T20 · Auslastung: Klasse nur zählen, wenn sie besteht ⚡
+### T20 · Auslastung: Klasse nur zählen, wenn sie besteht ⚡ ✅ erledigt
 **`helpers.ts:262`** — `partWorkload` zählt `item.aux` bedingungslos, auch nachdem
 die Klasse abgeschaltet wurde (die Namen bleiben bewusst stehen). Dadurch
 bevorzugt die Auto-Zuteilung dauerhaft die Falschen. `hatAuxKlasse` prüfen, wie
 alle anderen Leser.
 → [befunde.md B9](befunde.md)
 
-### T21 · Hilfsdienst-Last nur bis `svc.count` ⚡
+### T21 · Hilfsdienst-Last nur bis `svc.count` ⚡ ✅ erledigt
 **`helpers.ts:277`** zählt alle Einträge, `deriveMyTasks` nur `pos < svc.count`.
 Wird die Platzzahl reduziert, verschwindet die Aufgabe aus „Meine Aufgaben",
 zählt aber weiter als Last.
 → [befunde.md B12](befunde.md)
 
-### T22 · `togglePartner` gleicht die Klasse an ⚡
+### T22 · `togglePartner` gleicht die Klasse an ⚡ ✅ erledigt
 **`meeting-edit.ts:204-212`** fügt den Partner-Slot nur in `item.names` ein.
 Danach hat der Hauptsaal zwei Plätze, die Klasse einen — bis irgendwann
 `setAuxClass` erneut läuft. `angleichen()` mit aufrufen.
 → [befunde.md B14](befunde.md)
 
-### T23 · Kandidatenlogik aus `AssignSheet` herausziehen 🔧
+### T23 · Kandidatenlogik aus `AssignSheet` herausziehen 🔧 ✅ erledigt
 341 Zeilen mit UI **und** der gesamten Auswahllogik (Filter, Geschlechtsregeln,
 Auslastung, Sortierung) — der wichtigste ungetestete Code der App. T18 wäre mit
 einem Test aufgefallen.
@@ -558,5 +558,5 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 ## Fortschritt
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

@@ -22,12 +22,14 @@ import {
   derivePendingNames,
   deriveSubstituteReqs,
   helperKeyParts,
+  shiftPartConfirmations,
   swapPartConfirmations,
 } from '../data/planning'
 import {
   editTalkTheme,
   itemNameCount,
   lacAdd,
+  lacAddIndex,
   lacAdjust,
   lacMove,
   lacMoveTarget,
@@ -763,12 +765,25 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         weeks: lacAdjust(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.delta),
       }
-    case 'lacRemove':
+    case 'lacRemove': {
+      // Die folgenden Punkte rutschen eine Position nach vorn; task_keys sind
+      // positionsbasiert, also müssen die Bestätigungen mit. Sonst erbt der
+      // nachfolgende Punkt die fremde Bestätigung.
+      const verschoben = shiftPartConfirmations(
+        state.confirmations,
+        state.week,
+        mtab(state.tab),
+        action.si,
+        action.ii,
+        -1,
+      )
       return {
         ...state,
         weeks: lacRemove(state.weeks, state.week, mtab(state.tab), action.si, action.ii),
+        confirmations: verschoben.map,
         toast: toastKey(state, 'toastLacDel'),
       }
+    }
     case 'togglePartner':
       return {
         ...state,
@@ -802,12 +817,27 @@ function baseReducer(state: AppState, action: AppAction): AppState {
             )
       return { ...state, weeks, confirmations }
     }
-    case 'lacAdd':
+    case 'lacAdd': {
+      const weeks = lacAdd(state.weeks, state.week, mtab(state.tab), action.si, action.title)
+      if (weeks === state.weeks) return state // leerer Titel
+      // Ab der Einfügestelle rutschen alle Punkte eine Position weiter — die
+      // Bestätigungen müssen mit, sonst hängen sie am falschen Punkt.
+      const at = lacAddIndex(state.weeks[state.week][mtab(state.tab)].sections[action.si].items)
+      const verschoben = shiftPartConfirmations(
+        state.confirmations,
+        state.week,
+        mtab(state.tab),
+        action.si,
+        at,
+        1,
+      )
       return {
         ...state,
-        weeks: lacAdd(state.weeks, state.week, mtab(state.tab), action.si, action.title),
+        weeks,
+        confirmations: verschoben.map,
         toast: toastKey(state, 'toastLacAdd'),
       }
+    }
     case 'talkEdit':
       return {
         ...state,

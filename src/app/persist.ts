@@ -5,11 +5,12 @@
  * (Zustand vor/nach der Aktion) ausgewertet.
  */
 
-import { changedSlotKeys, partSwapKeyPairs } from '../data/planning'
-import { itemNameCount, lacMoveTarget } from '../data/meeting-edit'
+import { changedSlotKeys, partSwapKeyPairs, shiftPartConfirmations } from '../data/planning'
+import { itemNameCount, lacAddIndex, lacMoveTarget } from '../data/meeting-edit'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
+  renameConfirmationKeys,
   swapConfirmationKeys,
   deleteGroupRow,
   deletePersonRow,
@@ -193,9 +194,29 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     }
-    case 'lacAdjust':
     case 'lacRemove':
-    case 'lacAdd':
+    case 'lacAdd': {
+      saveWeek(congId, prev.week, next.weeks[prev.week])
+      // Die folgenden Punkte rutschen um eine Position; task_keys sind
+      // positionsbasiert, die Bestätigungen müssen also mit umbenannt werden.
+      // Dieselbe Rechnung wie im Reducer, damit beide Seiten übereinstimmen.
+      const tab = mtab(prev.tab)
+      const items = prev.weeks[prev.week][tab].sections[action.si].items
+      const ab = action.type === 'lacRemove' ? action.ii : lacAddIndex(items)
+      const delta = action.type === 'lacRemove' ? -1 : 1
+      const { renames, removed } = shiftPartConfirmations(
+        prev.confirmations,
+        prev.week,
+        tab,
+        action.si,
+        ab,
+        delta,
+      )
+      deleteConfirmationRows(congId, removed)
+      void renameConfirmationKeys(congId, renames)
+      break
+    }
+    case 'lacAdjust':
     case 'togglePartner':
     case 'talkEdit':
     case 'openingSong':

@@ -17,7 +17,7 @@ import {
   weekConflicts,
 } from './planning'
 import { emptyQualifications } from './helpers'
-import type { Meeting, PartItem, Person, Section, Service } from './types'
+import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
 
 /** Namen aller belegten Slots eines Meetings (Programmpunkte + Hilfsdienste). */
 function assignedNames(week: ReturnType<typeof buildDemoWeeks>[number], tab: 'mid' | 'we'): string[] {
@@ -630,5 +630,37 @@ describe('assignmentsInMeeting (Doppelbelegungs-Hinweis)', () => {
 
   it('liefert nichts für einen unbeteiligten Namen', () => {
     expect(assignmentsInMeeting(meeting, 'X. Fremd', services)).toEqual([])
+  })
+})
+
+describe('helperWorkload zählt nur bis zur eingestellten Platzzahl (T21)', () => {
+  // Reduziert der Planer die Plätze, bleiben die Namen dahinter in den
+  // Wochendaten stehen. Die Aufgabe verschwand dann aus „Meine Aufgaben",
+  // zählte aber weiter als Last — die Auto-Zuteilung mied die Person weiterhin.
+  const woche = (): Week => ({
+    range: '',
+    book: '',
+    current: false,
+    mid: { date: '', end: '', sections: [], helpers: { mik: [{ name: 'Anna' }, { name: 'Bert' }] } },
+    we: { date: '', end: '', sections: [], helpers: {} },
+  })
+  const dienst = (count: number): Service => ({ key: 'mik', name: 'Mikrofone', count, groups: false })
+
+  it('ohne services wie bisher alle Einträge', () => {
+    expect(helperWorkload([woche()], 'Bert')).toBe(1)
+  })
+
+  it('mit zwei Plätzen zählen beide', () => {
+    expect(helperWorkload([woche()], 'Anna', [dienst(2)])).toBe(1)
+    expect(helperWorkload([woche()], 'Bert', [dienst(2)])).toBe(1)
+  })
+
+  it('nach dem Kürzen auf einen Platz zählt der zweite nicht mehr', () => {
+    expect(helperWorkload([woche()], 'Anna', [dienst(1)])).toBe(1)
+    expect(helperWorkload([woche()], 'Bert', [dienst(1)])).toBe(0)
+  })
+
+  it('ein gelöschter Dienst zählt gar nicht mehr', () => {
+    expect(helperWorkload([woche()], 'Anna', [])).toBe(0)
   })
 })

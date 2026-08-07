@@ -12,6 +12,7 @@ vi.mock('../lib/supabase', () => ({ supabase: {} }))
 vi.mock('../lib/data', () => ({
   deleteAbsenceRow: vi.fn(),
   deleteConfirmationRows: vi.fn(),
+  renameConfirmationKeys: vi.fn(),
   swapConfirmationKeys: vi.fn(),
   deleteGroupRow: vi.fn(),
   deletePersonRow: vi.fn(),
