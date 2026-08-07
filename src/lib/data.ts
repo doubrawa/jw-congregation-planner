@@ -33,6 +33,7 @@ import type {
   Group,
   HelperSlot,
   Invite,
+  Meeting,
   Member,
   Notification,
   NotificationType,
@@ -507,6 +508,20 @@ function notificationFromRow(r: NotificationRow): Notification {
 
 /* ---- Laden --------------------------------------------------------------- */
 
+/**
+ * Wie viele Wochen höchstens geladen werden. Ein Jahr reicht für alles, was die
+ * App mit Wochen tut: die Auslastung schaut ±3 Wochen weit, die Wartezeit-
+ * Reihenfolge braucht nur „länger her als die anderen", und weiter zurück
+ * schaut niemand. Ältere Wochen bleiben in der Datenbank stehen.
+ */
+export const WEEK_LIMIT = 52
+
+/** Leerer Platzhalter für eine nicht geladene Woche (siehe Week.stub). */
+function stubWeek(): Week {
+  const leer = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
+  return { range: '', book: '', current: false, mid: leer(), we: leer(), stub: true }
+}
+
 export interface CongregationData {
   congregation: { name: string; hall: string; meetings: string }
   planner: boolean
@@ -515,6 +530,8 @@ export interface CongregationData {
   services: Service[]
   groups: Group[]
   weeks: Week[]
+  /** Index der ersten wirklich geladenen Woche; davor stehen Platzhalter. */
+  weekFrom: number
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
   fsBase: string | null // ISO-Datum (Montag der Woche 0) oder null
@@ -551,12 +568,25 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
+  // Ladefenster bestimmen: nur die jüngsten WEEK_LIMIT Wochen holen. Die
+  // Positionen bleiben dabei absolut (siehe weekFrom/Week.stub) — sie stecken
+  // in jedem gespeicherten task_key.
+  const { data: letzte } = await supabase
+    .from('weeks')
+    .select('position')
+    .eq('congregation_id', congregationId)
+    .order('position', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const hoechste = (letzte?.position as number | undefined) ?? -1
+  const weekFrom = Math.max(0, hoechste - WEEK_LIMIT + 1)
+
   const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows] = await Promise.all([
     supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
-    supabase.from('weeks').select('position, data').eq('congregation_id', congregationId).order('position'),
+    supabase.from('weeks').select('position, data').eq('congregation_id', congregationId).gte('position', weekFrom).order('position'),
     // Versammlungsweit, nicht nur die eigenen: die Planung muss wissen, wer
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
@@ -568,7 +598,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
     supabase.from('fs_rules').select('base, rules').eq('congregation_id', congregationId).maybeSingle(),
-    supabase.from('fs_weeks').select('position, data').eq('congregation_id', congregationId).order('position'),
+    supabase.from('fs_weeks').select('position, data').eq('congregation_id', congregationId).gte('position', weekFrom).order('position'),
   ])
 
   const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites].find((r) => r.error)?.error
@@ -579,15 +609,20 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
     serviceList,
   )
-  const weekList = normalizeChairKeys(
-    migrateAssignmentPids(
-      migrateAssignmentNames(
-        normalizeWeekHelpers((weeks.data ?? []).map((r) => (r as WeekRow).data)),
+  // Platzhalter für die nicht geladenen älteren Wochen davorsetzen, damit der
+  // Array-Index weiterhin die DB-Position ist (siehe Week.stub).
+  const weekList = [
+    ...Array.from({ length: weekFrom }, stubWeek),
+    ...normalizeChairKeys(
+      migrateAssignmentPids(
+        migrateAssignmentNames(
+          normalizeWeekHelpers((weeks.data ?? []).map((r) => (r as WeekRow).data)),
+          personList,
+        ),
         personList,
       ),
-      personList,
     ),
-  )
+  ]
 
   const confirmations: ConfirmationMap = {}
   for (const row of (confs.data ?? []) as ConfirmationRow[]) {
@@ -618,7 +653,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsByPos.set(row.position, row.data)
   }
   const storedFsWeeks: FsInstance[][] = Array.from({ length: weekList.length }, (_u, i) => fsByPos.get(i) ?? [])
-  const fsWeeks = fsRules.length ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true) : storedFsWeeks
+  const fsWeeks = fsRules.length
+    ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true, weekFrom)
+    : storedFsWeeks
 
   const data: CongregationData = {
     congregation: {
@@ -632,6 +669,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     services: serviceList,
     groups: (groups.data ?? []).map((r) => groupFromRow(r as GroupRow)),
     weeks: weekList,
+    weekFrom,
     fsRules,
     fsWeeks,
     fsBase,
@@ -708,6 +746,9 @@ async function run(promise: PromiseLike<{ error: { message: string } | null }>):
 
 export function saveWeek(congregationId: string, position: number, week: Week): void {
   if (!supabase) return
+  // Platzhalter nie schreiben: an dieser Position steht in der Datenbank die
+  // echte, nur nicht geladene Woche — ein Upsert würde sie leeren.
+  if (week.stub) return
   void run(
     supabase
       .from('weeks')

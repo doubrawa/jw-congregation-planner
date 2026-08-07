@@ -133,6 +133,7 @@ export function initialState(): AppState {
     invites: [],
     recovery: false,
     weeks: demo ? buildDemoWeeks() : [],
+    weekFrom: 0,
     persons: demo ? DEMO_PERSONS : [],
     services: demo ? DEMO_SERVICES : [],
     groups: demo ? DEMO_GROUPS : [],

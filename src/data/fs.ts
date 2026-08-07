@@ -115,8 +115,12 @@ export function regenFsWeeks(
   fsWeeks: FsInstance[][],
   rules: FsRule[],
   preserveEdits = false,
+  from = 0,
 ): FsInstance[][] {
   return fsWeeks.map((week, wi) => {
+    // Nicht geladene Wochen (Platzhalter) bleiben leer: sie würden sonst neu
+    // erzeugt, als geändert gelten und die echten Zeilen überschreiben.
+    if (wi < from) return week
     const gen = genFsWeek(base, wi, rules).map((inst) => {
       const old = week.find((o) => o.id === inst.id)
       if (!old) return inst

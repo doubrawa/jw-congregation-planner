@@ -45,6 +45,7 @@ function st(over: Partial<AppState> = {}): AppState {
     userId: 'u1',
     personId: 'p9',
     week: 0,
+    weekFrom: 0,
     tab: 'mid',
     weeks: buildDemoWeeks(),
     fsWeeks: buildDemoFsWeeks(),
@@ -148,6 +149,16 @@ describe('Treffpunkte', () => {
     persist(st(), next, { type: 'fsRuleAdd', grp: '' })
     expect(data.saveFsRules).toHaveBeenCalledWith('c1', FS_BASE.toISOString().slice(0, 10), next.fsRules)
     expect((data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.length).toBe(next.fsWeeks.length)
+  })
+
+  it('fsRuleAdd lässt nicht geladene Wochen aus (weekFrom)', () => {
+    // Positionen unterhalb von weekFrom sind Platzhalter; ihre Zeilen in der
+    // Datenbank enthalten echte Treffpunkte, die nicht geleert werden dürfen.
+    const next = st({ weekFrom: 2 })
+    persist(st({ weekFrom: 2 }), next, { type: 'fsRuleAdd', grp: '' })
+    const positionen = (data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1])
+    expect(Math.min(...positionen)).toBe(2)
+    expect(positionen).toHaveLength(next.fsWeeks.length - 2)
   })
 })
 

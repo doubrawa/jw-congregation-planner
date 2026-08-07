@@ -255,7 +255,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'prevWeek':
-      return { ...state, week: Math.max(0, state.week - 1) }
+      // Nicht hinter die erste geladene Woche: davor stehen nur Platzhalter.
+      return { ...state, week: Math.max(state.weekFrom, state.week - 1) }
     case 'nextWeek':
       return { ...state, week: Math.min(state.weeks.length - 1, state.week + 1) }
     case 'setTab':
@@ -880,7 +881,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         progLangs: p.progLangs,
         members: p.members,
         invites: p.invites,
-        week: 0,
+        weekFrom: p.weekFrom,
+        week: p.weekFrom, // erste wirklich geladene Woche, nicht Position 0
       }
     }
     case 'setDataStatus':

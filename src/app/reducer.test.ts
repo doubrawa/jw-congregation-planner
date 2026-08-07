@@ -27,6 +27,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
   return {
     screen: 'start',
     week: 0,
+    weekFrom: 0,
     tab: 'mid',
     theme: 'weiss',
     fontScale: 1,
@@ -163,6 +164,14 @@ describe('Wochennavigation', () => {
   it('bewegt sich innerhalb der Grenzen', () => {
     expect(reducer(makeState({ week: 1 }), { type: 'prevWeek' }).week).toBe(0)
     expect(reducer(makeState({ week: 0 }), { type: 'nextWeek' }).week).toBe(1)
+  })
+
+  it('geht nicht hinter die erste geladene Woche zurück (weekFrom)', () => {
+    // Vor weekFrom stehen nur Platzhalter nicht geladener Wochen — dort gibt es
+    // kein Programm zu zeigen.
+    const s = makeState({ week: 2, weekFrom: 2 })
+    expect(reducer(s, { type: 'prevWeek' }).week).toBe(2)
+    expect(reducer(makeState({ week: 3, weekFrom: 2 }), { type: 'prevWeek' }).week).toBe(2)
   })
 })
 
@@ -677,6 +686,7 @@ describe('hydrate / setDataStatus', () => {
     services: DEMO_SERVICES,
     groups: DEMO_GROUPS,
     weeks: buildDemoWeeks(),
+    weekFrom: 0,
     fsRules: DEMO_FS_RULES,
     fsWeeks: buildDemoFsWeeks(),
     fsBase: '2026-09-07',

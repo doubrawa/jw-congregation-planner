@@ -14,6 +14,7 @@ const payload = (over: Partial<HydratePayload> = {}): HydratePayload => ({
   services: [],
   groups: [],
   weeks: [],
+  weekFrom: 0,
   fsRules: [],
   fsWeeks: [],
   fsBase: '2026-07-20',

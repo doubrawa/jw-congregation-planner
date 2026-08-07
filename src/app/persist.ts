@@ -173,7 +173,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'fsRuleRemove': {
       // Grundplan-Blob + alle (neu materialisierten) Wochen speichern.
       saveFsRules(congId, next.fsBase.toISOString().slice(0, 10), next.fsRules)
-      for (let i = 0; i < next.fsWeeks.length; i++) saveFsWeek(congId, i, next.fsWeeks[i])
+      // Ab der ersten geladenen Woche: davor stehen Platzhalter, deren Zeilen in
+      // der Datenbank echte Daten enthalten (siehe Week.stub).
+      for (let i = next.weekFrom; i < next.fsWeeks.length; i++) saveFsWeek(congId, i, next.fsWeeks[i])
       break
     }
     case 'lacMove': {

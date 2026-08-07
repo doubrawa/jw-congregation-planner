@@ -13,13 +13,13 @@ vi.mock('./supabase', () => ({
   supabase: { from: fromMock },
 }))
 
-import { loadCongregationData, seedCongregation } from './data'
+import { loadCongregationData, seedCongregation, WEEK_LIMIT } from './data'
 import { buildDemoWeeks } from '../data/demo'
 
 function chainFor(table: string) {
   const resp = (store.responses[table] ?? []).shift() ?? { data: null, error: null }
   const chain: Record<string, unknown> = {}
-  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'eq', 'in', 'is', 'order', 'limit', 'maybeSingle']) {
+  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'eq', 'gte', 'in', 'is', 'order', 'limit', 'maybeSingle']) {
     chain[m] = () => chain
   }
   chain.then = (resolve: (v: unknown) => void) => resolve(resp)
@@ -41,7 +41,11 @@ function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error
     persons: [{ data: [personRow], error: null }],
     services: [{ data: [serviceRow], error: null }],
     groups: [{ data: [groupRow], error: null }],
-    weeks: [{ data: [{ position: 0, data: buildDemoWeeks()[0] }], error: null }],
+    // Zwei Antworten: erst die hoechste Position (Ladefenster), dann die Daten.
+    weeks: [
+      { data: { position: 0 }, error: null },
+      { data: [{ position: 0, data: buildDemoWeeks()[0] }], error: null },
+    ],
     absences: [{ data: [], error: null }],
     notifications: [{ data: [], error: null }],
     confirmations: [{ data: [{ task_key: 'k1', status: 'bestätigt' }], error: null }],
@@ -74,6 +78,55 @@ describe('loadCongregationData', () => {
     expect(res.data.progLangs).toEqual(['Englisch'])
     expect(res.data.confirmations['k1']).toBe('bestätigt')
     expect(res.empty).toBe(false)
+  })
+
+  /**
+   * Ladefenster: nur die jüngsten WEEK_LIMIT Wochen kommen aus der Datenbank.
+   * Die Positionen bleiben absolut, weil sie in jedem gespeicherten `task_key`
+   * stecken („60|mid|part|2|1|0") — würde man die geladenen Wochen bei 0 neu
+   * durchnummerieren, zeigten alle bestehenden Bestätigungen auf die falsche
+   * Woche. Deshalb stehen davor Platzhalter.
+   */
+  describe('Ladefenster', () => {
+    /** Antworten für eine Versammlung mit `hoechste`+1 Wochen in der Datenbank. */
+    const mitWochen = (hoechste: number, geladen: number[]) =>
+      seedResponses({
+        weeks: [
+          { data: { position: hoechste }, error: null },
+          { data: geladen.map((position) => ({ position, data: buildDemoWeeks()[0] })), error: null },
+        ],
+      })
+
+    it('lädt höchstens WEEK_LIMIT Wochen und füllt davor mit Platzhaltern', async () => {
+      // 60 Wochen in der DB (Positionen 0..59) → geladen ab 8, davor 8 Platzhalter.
+      const ab = 60 - WEEK_LIMIT
+      mitWochen(59, Array.from({ length: WEEK_LIMIT }, (_u, i) => ab + i))
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.weekFrom).toBe(ab)
+      expect(res.data.weeks).toHaveLength(60) // Index = DB-Position, lückenlos
+      expect(res.data.weeks.slice(0, ab).every((w) => w.stub)).toBe(true)
+      expect(res.data.weeks.slice(ab).some((w) => w.stub)).toBe(false)
+    })
+
+    it('bei wenigen Wochen bleibt alles geladen (weekFrom 0)', async () => {
+      mitWochen(3, [0, 1, 2, 3])
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.weekFrom).toBe(0)
+      expect(res.data.weeks.some((w) => w.stub)).toBe(false)
+    })
+
+    it('leere Versammlung: keine Wochen, keine Platzhalter', async () => {
+      seedResponses({ weeks: [{ data: null, error: null }, { data: [], error: null }] })
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.weekFrom).toBe(0)
+      expect(res.data.weeks).toEqual([])
+    })
   })
 
   it('ohne Mitgliedschaft → no-membership', async () => {

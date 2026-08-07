@@ -75,7 +75,7 @@ function ProgrammBody() {
       </div>
 
       <WeekNav
-        canPrev={state.week > 0}
+        canPrev={state.week > state.weekFrom}
         canNext={state.week < state.weeks.length - 1}
         onPrev={() => dispatch({ type: 'prevWeek' })}
         onNext={() => dispatch({ type: 'nextWeek' })}
