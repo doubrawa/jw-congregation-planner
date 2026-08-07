@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { useAbwesend } from '../app/useAbwesend'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { displayName } from '../data/helpers'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
@@ -17,6 +18,7 @@ import './dashboard.css'
  */
 export function DashboardScreen() {
   const { state, dispatch } = useApp()
+  const abwesend = useAbwesend()
   const { t, tu, tp } = useT()
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const myName = me ? displayName(me) : null
@@ -49,7 +51,7 @@ export function DashboardScreen() {
     ? countOpenSlots(week.mid, state.services) + countOpenSlots(week.we, state.services)
     : 0
   const conflicts =
-    curIdx >= 0 ? weekConflicts(state.weeks, curIdx, state.persons, state.services).length : 0
+    curIdx >= 0 ? weekConflicts(state.weeks, curIdx, state.persons, state.services, undefined, abwesend).length : 0
 
   return (
     <section className="screen dash">

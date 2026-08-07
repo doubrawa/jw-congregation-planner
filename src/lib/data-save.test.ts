@@ -50,7 +50,7 @@ import {
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
 
-const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '', absent: [], priv: {} as Person['priv'], grp: null } as Person
+const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null } as Person
 const group: Group = { id: 'g1', name: 'G', ov: null, as: null }
 const service: Service = { key: 'mik', name: 'Mikrofone', count: 2, groups: false }
 
@@ -101,7 +101,7 @@ describe('Upsert-Schreiber (onConflict)', () => {
 
 describe('Insert-Schreiber', () => {
   it('saveAbsence → absences insert', () => {
-    saveAbsence('c1', 'u1', 'p1', { id: 'a1', from: '2026-01-01', to: '2026-01-02', reason: 'r' })
+    saveAbsence('c1', 'u1', 'p1', { id: 'a1', personId: 'p1', userId: 'u1', from: '2026-01-01', to: '2026-01-02', reason: 'r' })
     expect(chain.from).toHaveBeenCalledWith('absences')
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'a1', from_date: '2026-01-01', to_date: '2026-01-02' }))
   })

@@ -7,7 +7,7 @@ import type { Invite, Member, Person } from '../data/types'
 const member = (userId: string, personId: string | null): Member => ({ userId, email: `${userId}@x`, personId, planner: false })
 const invite = (id: string, personId: string | null): Invite => ({ id, code: 'ABC', personId, planner: false })
 const person = (id: string, planner = false): Person =>
-  ({ id, fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: 'a@b', absent: [], priv: {} as Person['priv'], grp: null, planner } as Person)
+  ({ id, fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: 'a@b', priv: {} as Person['priv'], grp: null, planner } as Person)
 
 const state = (over: Partial<AppState>): AppState => ({ members: [], invites: [], ...over } as AppState)
 

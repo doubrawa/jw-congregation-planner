@@ -6,6 +6,7 @@
 
 import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
+import { buildAbsences } from '../data/absence'
 import { fsAddInst, fsAutoAssign, fsClear, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
@@ -153,7 +154,14 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
     myTasks,
     pendingNames: derivePendingNames(weeks, state.services, state.confirmations),
     substituteReqs: me
-      ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.meetings)
+      ? deriveSubstituteReqs(
+          weeks,
+          state.services,
+          state.confirmations,
+          me,
+          state.congregation.meetings,
+          buildAbsences(state.absences, weeks, state.fsBase, state.congregation.meetings),
+        )
       : [],
     confirmOpen: (openConfirm || state.confirmOpen) && myTasks.some((t) => t.status === 'offen'),
   }
@@ -527,6 +535,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.services,
         state.groups,
         action.scope,
+        buildAbsences(state.absences, state.weeks, state.fsBase, state.congregation.meetings),
       )
       if (count === 0) {
         // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie
@@ -586,6 +595,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.week,
         state.persons,
         action.onlyGroup,
+        state.absences,
+        state.fsBase,
       )
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
       const pending = new Set(state.pendingNames)

@@ -158,7 +158,6 @@ export interface Person {
   female?: boolean // weibliche Rollenbezeichnung ("Verkündigerin")
   tel: string
   mail: string
-  absent: number[] // Wochenindizes, an denen die Person abwesend ist
   priv: Qualifications
   grp?: string | null // Predigtdienstgruppe (Group.id) oder null = keine
   fam?: string | null // Haushalts-/Familien-Id — gleiche Id = Familienangehörige
@@ -302,9 +301,18 @@ export interface Service {
   legacyPriv?: string | null
 }
 
-/** Eigene Abwesenheit (persönlicher Bereich). */
+/**
+ * Abwesenheit einer Person (Von–Bis als Datum).
+ *
+ * Wird versammlungsweit geladen, nicht nur die eigene: die Planung muss wissen,
+ * wer fehlt. `userId` bleibt daneben stehen, damit „Deine Einträge" im
+ * persönlichen Bereich auch dann die eigenen zeigt, wenn das Konto noch keiner
+ * Person zugeordnet ist (`personId` null).
+ */
 export interface Absence {
   id: string
+  personId: string | null // verknüpfte Person — nur damit zählt sie für die Planung
+  userId: string // Ersteller
   from: string // ISO-Datum
   to: string // ISO-Datum
   reason: string // optional

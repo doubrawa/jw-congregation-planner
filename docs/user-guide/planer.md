@@ -55,6 +55,11 @@ Handy und Tablet geht auch seitwärts wischen.
   passender Personen. Dabei werden **Abwesenheiten** und **Aufgabenbereiche**
   (Qualifikationen) berücksichtigt, und Doppelbelegungen am selben Tag werden
   angezeigt.
+- Die Abwesenheiten kommen aus den Einträgen, die die Verkündiger selbst in
+  ihrem persönlichen Bereich erfassen (**Von–Bis** als Datum). Geprüft wird der
+  **Tag der jeweiligen Zusammenkunft**, nicht die Woche: wer nur übers Wochenende
+  weg ist, steht unter der Woche weiterhin zur Verfügung. Bei den Treffpunkten
+  zählt der Wochentag des jeweiligen Treffpunkts.
 - Programmpunkte (Vorsitz, Gebet, Bibellesung, Schulungsaufgaben …) und
   **Hilfsdienste** (Mikrofone, Ton, Ordner, Reinigung …) werden getrennt geführt.
 - Die Legende „✓ bestätigt · … wartet auf Bestätigung" zeigt dir den

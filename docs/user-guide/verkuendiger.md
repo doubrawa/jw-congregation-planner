@@ -129,6 +129,12 @@ nicht eingeteilt.
 Deine eingetragenen Zeiträume erscheinen darunter unter „Deine Einträge" und
 lassen sich mit dem ✕ wieder entfernen.
 
+**Es zählt der Tag, nicht die Woche.** Bist du nur übers Wochenende weg, bleibst
+du für die Zusammenkunft unter der Woche eingeplant – und umgekehrt. Auch bei den
+Treffpunkten wird der jeweilige Wochentag geprüft. Der Planer sieht deinen
+Eintrag beim Zuteilen als Hinweis „abwesend", und die automatische Zuteilung
+übergeht dich in diesem Zeitraum.
+
 ---
 
 ## 6. Bedienung auf Handy und Tablet

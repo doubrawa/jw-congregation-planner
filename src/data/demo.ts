@@ -120,7 +120,6 @@ function buildExtraPersons(): Person[] {
       role,
       tel: '',
       mail: `${fn}.${ln}@mail.de`.toLowerCase(),
-      absent: [],
       priv,
     }
     if (female) person.female = true
@@ -139,22 +138,22 @@ const CORE_GRP: Record<string, string> = {
 }
 
 const CORE_PERSONS: Person[] = [
-  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', absent: [], priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtLeiter: true } },
-  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', absent: [], priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtVertreter: true } },
-  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: '+49 152 887 90 04', mail: 'f.neumann@mail.de', absent: [], priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']) },
-  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: '+49 170 445 12 60', mail: 'h.vogel@mail.de', absent: [], priv: q(['treffpunkt', 'vortrag', 'gebet', 'studium']) },
-  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: '+49 173 511 78 30', mail: 'k.sommer@mail.de', absent: [], priv: q(['treffpunkt', 'vortrag', 'gebet']) },
-  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', tel: '+49 157 665 43 30', mail: 'j.berger@mail.de', absent: [], priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon']) },
-  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', tel: '+49 176 220 89 41', mail: 'p.schroeder@mail.de', absent: [], priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner']) },
-  { id: 'p8', fn: 'Claus', ln: 'Maier', role: 'dienstamtgehilfe', tel: '+49 171 908 33 17', mail: 'c.maier@mail.de', absent: [], priv: q(['treffpunkt', 'mikrofon', 'ton', 'ordner']) },
-  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: '+49 159 774 21 08', mail: 's.krueger@mail.de', absent: [], priv: q(['treffpunkt', 'lesen', 'schulung', 'mikrofon', 'ton']) },
-  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', tel: '+49 162 118 44 92', mail: 'n.feld@mail.de', absent: [1], priv: q(['lesen', 'schulung', 'mikrofon']) },
-  { id: 'p11', fn: 'Jörg', ln: 'Roth', role: 'verkuendiger', tel: '+49 155 902 41 77', mail: 'j.roth@mail.de', absent: [3], priv: q(['lesen', 'mikrofon']) },
-  { id: 'p12', fn: 'Bernd', ln: 'Klein', role: 'verkuendiger', tel: '+49 176 348 12 09', mail: 'b.klein@mail.de', absent: [], priv: q(['gebet', 'mikrofon']) },
-  { id: 'p13', fn: 'Georg', ln: 'Peters', role: 'verkuendiger', tel: '+49 151 668 90 12', mail: 'g.peters@mail.de', absent: [], priv: q(['treffpunkt', 'gebet', 'ordner']) },
-  { id: 'p14', fn: 'Ulrich', ln: 'Lang', role: 'verkuendiger', tel: '+49 175 490 55 03', mail: 'u.lang@mail.de', absent: [0], priv: q(['gebet', 'ordner']) },
-  { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, tel: '+49 151 340 76 55', mail: 'l.hoffmann@mail.de', absent: [], priv: q(['schulung']) },
-  { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, tel: '+49 173 662 09 18', mail: 'e.brandt@mail.de', absent: [2], priv: q(['schulung']) },
+  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtLeiter: true } },
+  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtVertreter: true } },
+  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: '+49 152 887 90 04', mail: 'f.neumann@mail.de', priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']) },
+  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: '+49 170 445 12 60', mail: 'h.vogel@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet', 'studium']) },
+  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: '+49 173 511 78 30', mail: 'k.sommer@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet']) },
+  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', tel: '+49 157 665 43 30', mail: 'j.berger@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon']) },
+  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', tel: '+49 176 220 89 41', mail: 'p.schroeder@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner']) },
+  { id: 'p8', fn: 'Claus', ln: 'Maier', role: 'dienstamtgehilfe', tel: '+49 171 908 33 17', mail: 'c.maier@mail.de', priv: q(['treffpunkt', 'mikrofon', 'ton', 'ordner']) },
+  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: '+49 159 774 21 08', mail: 's.krueger@mail.de', priv: q(['treffpunkt', 'lesen', 'schulung', 'mikrofon', 'ton']) },
+  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', tel: '+49 162 118 44 92', mail: 'n.feld@mail.de', priv: q(['lesen', 'schulung', 'mikrofon']) },
+  { id: 'p11', fn: 'Jörg', ln: 'Roth', role: 'verkuendiger', tel: '+49 155 902 41 77', mail: 'j.roth@mail.de', priv: q(['lesen', 'mikrofon']) },
+  { id: 'p12', fn: 'Bernd', ln: 'Klein', role: 'verkuendiger', tel: '+49 176 348 12 09', mail: 'b.klein@mail.de', priv: q(['gebet', 'mikrofon']) },
+  { id: 'p13', fn: 'Georg', ln: 'Peters', role: 'verkuendiger', tel: '+49 151 668 90 12', mail: 'g.peters@mail.de', priv: q(['treffpunkt', 'gebet', 'ordner']) },
+  { id: 'p14', fn: 'Ulrich', ln: 'Lang', role: 'verkuendiger', tel: '+49 175 490 55 03', mail: 'u.lang@mail.de', priv: q(['gebet', 'ordner']) },
+  { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, tel: '+49 151 340 76 55', mail: 'l.hoffmann@mail.de', priv: q(['schulung']) },
+  { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, tel: '+49 173 662 09 18', mail: 'e.brandt@mail.de', priv: q(['schulung']) },
   ...buildExtraPersons(),
 ]
 
@@ -227,8 +226,18 @@ export const DEMO_SERVICES: Service[] = [
 
 /* ---- Abwesenheiten (eigene) & Mitteilungen ------------------------------ */
 
+/**
+ * Abwesenheiten der Demo. `a1` ist die eigene (ohne Person, wie im Demo-Modus
+ * ohne Konto); die übrigen ersetzen die früheren Wochenindizes an den Personen
+ * und decken je eine Demo-Woche ab — Woche 0 beginnt am Montag, 7.9.2026
+ * (FS_BASE), Zusammenkünfte Di und So.
+ */
 export const DEMO_ABSENCES: Absence[] = [
-  { id: 'a1', from: '2026-10-12', to: '2026-10-18', reason: 'Urlaub' },
+  { id: 'a1', personId: null, userId: '', from: '2026-10-12', to: '2026-10-18', reason: 'Urlaub' },
+  { id: 'a2', personId: 'p14', userId: '', from: '2026-09-07', to: '2026-09-13', reason: 'Dienstreise' },
+  { id: 'a3', personId: 'p10', userId: '', from: '2026-09-14', to: '2026-09-20', reason: 'Urlaub' },
+  { id: 'a4', personId: 'p16', userId: '', from: '2026-09-21', to: '2026-09-27', reason: '' },
+  { id: 'a5', personId: 'p11', userId: '', from: '2026-09-28', to: '2026-10-04', reason: 'Kongress' },
 ]
 
 export const DEMO_NOTIFICATIONS: Notification[] = [

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildDemoWeeks, DEMO_PERSONS, DEMO_SERVICES } from './demo'
+import { buildAbsences } from './absence'
+import { buildDemoWeeks, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './demo'
 import { displayName, helperWorkload, isSong, loadWindow, partWorkload, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
@@ -156,7 +157,10 @@ describe('Auto-Zuteilung', () => {
     const closeSi = weeks[0].mid.sections.length - 1
     ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
     const before = weeks.map((w) => structuredClone(w))
-    const { weeks: next, newly } = autoAssignMeeting(weeks, 0, 'mid', DEMO_PERSONS, DEMO_SERVICES)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.meetings)
+    const { weeks: next, newly } = autoAssignMeeting(
+      weeks, 0, 'mid', DEMO_PERSONS, DEMO_SERVICES, [], 'all', abwesend,
+    )
     const names = assignedNames(next[0], 'mid').filter((n) => !n.startsWith('Gruppe'))
     expect(new Set(names).size).toBe(names.length) // keine Doppelbelegung
     // Ulrich Lang ist in Woche 0 abwesend → nie neu vergeben
@@ -305,7 +309,7 @@ describe('Auslastung', () => {
 describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
   const qualified = (svc: string): Person => ({
     id: 'meX', fn: 'Ersatz', ln: 'Person', role: 'dienstamtgehilfe', female: false,
-    tel: '', mail: '', absent: [], priv: { ...emptyQualifications(), [`svc:${svc}`]: true },
+    tel: '', mail: '', priv: { ...emptyQualifications(), [`svc:${svc}`]: true },
   })
 
   it('listet einen verhinderten Hilfsdienst, für den ich qualifiziert bin', () => {
@@ -438,7 +442,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
       ...o,
     }) as Person['priv']
   const p = (id: string, fn: string, female: boolean, role: Person['role'], priv: Person['priv']): Person => ({
-    id, fn, ln: 'T', role, female, tel: '', mail: '', absent: [], priv, grp: null,
+    id, fn, ln: 'T', role, female, tel: '', mail: '', priv, grp: null,
   })
 
   function scenario() {
@@ -490,10 +494,21 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
 
 describe('Konfliktprüfungen (Planen)', () => {
   it('erkennt Abwesende, die trotzdem eingeteilt sind', () => {
-    // Ulrich Lang ist in Woche 0 abwesend, aber Eingangsordner (mid)
+    // Ulrich Lang ist vom 7. bis 13.9. weg (DEMO_ABSENCES) — das ist Woche 0,
+    // und dort ist er Eingangsordner (mid). Prüft zugleich, dass aus dem
+    // gespeicherten Datum wieder die richtige Woche wird.
     const weeks = buildDemoWeeks()
-    const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.meetings)
+    const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
     expect(conflicts).toContainEqual({ kind: 'absent', name: 'Ulrich Lang', tab: 'mid' })
+  })
+
+  it('meldet niemanden abwesend, dessen Zeitraum die Woche nicht trifft', () => {
+    const weeks = buildDemoWeeks()
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.meetings)
+    // Woche 1 gehört Niklas Feld; Ulrich Lang darf dort nicht auftauchen.
+    const conflicts = weekConflicts(weeks, 1, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
+    expect(conflicts.some((c) => c.kind === 'absent' && c.name === 'Ulrich Lang')).toBe(false)
   })
 
   it('erkennt Helfer + Aufgabe am selben Tag (helperTask)', () => {

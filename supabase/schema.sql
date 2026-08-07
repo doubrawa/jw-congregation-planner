@@ -50,7 +50,6 @@ create table if not exists public.persons (
   female          boolean not null default false,   -- Anzeige "Verkündigerin"
   tel             text not null default '',
   mail            text not null default '',
-  absent          integer[] not null default '{}',  -- Wochenindizes (wie App-Modell v1)
   priv            jsonb not null default '{}'::jsonb, -- Qualifications (9 Booleans)
   planner         boolean not null default false,   -- Planer-Recht (in members.planner gespiegelt)
   created_at      timestamptz not null default now()

@@ -144,7 +144,7 @@ describe('navigate (Rechteprüfung)', () => {
   })
 
   it('entfernt eine namenlose selektierte Person beim Navigieren', () => {
-    const empty: Person = { id: 'pX', fn: '', ln: '', role: 'verkuendiger', tel: '', mail: '', absent: [], priv: {} as Person['priv'], grp: null }
+    const empty: Person = { id: 'pX', fn: '', ln: '', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null }
     const s = makeState({ persons: [...DEMO_PERSONS, empty], selectedPersonId: 'pX' })
     const next = reducer(s, { type: 'navigate', screen: 'programm' })
     expect(next.persons.some((p) => p.id === 'pX')).toBe(false)
@@ -194,7 +194,7 @@ describe('einfache UI-Setter', () => {
 })
 
 describe('Abwesenheiten', () => {
-  const abs = { id: 'a99', from: '2026-09-01', to: '2026-09-05', reason: 'Urlaub' }
+  const abs = { id: 'a99', personId: 'p1', userId: 'u1', from: '2026-09-01', to: '2026-09-05', reason: 'Urlaub' }
   it('addAbsence hängt an und meldet Toast', () => {
     const next = reducer(makeState({ absences: [] }), { type: 'addAbsence', absence: abs })
     expect(next.absences).toEqual([abs])
@@ -207,7 +207,7 @@ describe('Abwesenheiten', () => {
 })
 
 describe('Personen', () => {
-  const fresh: Person = { id: 'pNeu', fn: 'Neu', ln: 'Person', role: 'verkuendiger', tel: '', mail: '', absent: [], priv: {} as Person['priv'], grp: null }
+  const fresh: Person = { id: 'pNeu', fn: 'Neu', ln: 'Person', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null }
 
   it('addPerson hängt an, öffnet das Detail', () => {
     const next = reducer(makeState(), { type: 'addPerson', person: fresh })

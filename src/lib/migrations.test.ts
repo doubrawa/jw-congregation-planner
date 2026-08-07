@@ -33,7 +33,6 @@ function person(patch: Partial<Person>): Person {
     role: 'verkuendiger',
     tel: '',
     mail: '',
-    absent: [],
     priv: priv(),
     ...patch,
   }
@@ -193,7 +192,7 @@ describe('Personen-Id-Bindung (pid)', () => {
     we: emptyMid(),
   })
   const p = (id: string, fn: string): Person => ({
-    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', absent: [], priv: priv(),
+    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: priv(),
   })
   const partNames = (w: Week): PartItem['names'] => (w.mid.sections[0].items[0] as PartItem).names
 
@@ -225,7 +224,7 @@ describe('Hilfsdienst-Id-Bindung (helpers)', () => {
     we: emptyMid(),
   })
   const p = (id: string, fn: string): Person => ({
-    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', absent: [], priv: priv(),
+    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: priv(),
   })
 
   it('normalizeWeekHelpers hebt Alt-Strings auf { name }', () => {

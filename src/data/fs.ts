@@ -12,8 +12,9 @@
  * ersten Woche) bestimmt; spätere Wochen sind wi × 7 Tage später.
  */
 
+import { istAbwesendAm } from './absence'
 import { displayName, isQualified } from './helpers'
-import type { FsInstance, FsRule, Person } from './types'
+import type { Absence, FsInstance, FsRule, Person } from './types'
 
 /** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
 export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }, (_unused, i) => {
@@ -192,10 +193,27 @@ export function fsAutoAssign(
   wi: number,
   persons: Person[],
   onlyGroup: string | null = null,
+  absences: readonly Absence[] = [],
+  base?: Date,
 ): { fsWeeks: FsInstance[][]; count: number; newly: string[] } {
-  const pool = persons
-    .filter((p) => isQualified(p, 'treffpunkt') && !p.absent.includes(wi))
-    .map(displayName)
+  const qualifiziert = persons.filter((p) => isQualified(p, 'treffpunkt'))
+  /**
+   * Kandidaten für einen Wochentag. Die Abwesenheit wird am echten Tag des
+   * Treffpunkts geprüft, nicht an der Woche: ein Treffpunkt hat seinen eigenen
+   * Wochentag, wer nur übers Wochenende weg ist, kann montags leiten. Ohne
+   * Datumsbasis (Tests, Vorlagen) bleibt die Prüfung aus.
+   */
+  const poolAm = new Map<number, string[]>()
+  const poolFor = (wd: number): string[] => {
+    const fertig = poolAm.get(wd)
+    if (fertig) return fertig
+    const tag = base ? fsDate(base, wi, wd) : null
+    const pool = qualifiziert
+      .filter((p) => !tag || !istAbwesendAm(absences, p.id, tag))
+      .map(displayName)
+    poolAm.set(wd, pool)
+    return pool
+  }
   // Grundlast: bisherige Leitungen je Person über alle Wochen.
   const load = new Map<string, number>()
   for (const week of fsWeeks) for (const inst of week) {
@@ -213,7 +231,7 @@ export function fsAutoAssign(
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
     const used = dayUsed.get(inst.wd) ?? new Set<string>()
-    const cand = pool
+    const cand = poolFor(inst.wd)
       .filter((n) => !used.has(n))
       .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0) || fsTieHash(a + wi) - fsTieHash(b + wi))
     const pick = cand[0]

@@ -15,13 +15,13 @@ import {
   regenFsWeeks,
 } from './fs'
 import { emptyQualifications } from './helpers'
-import type { FsInstance, FsRule, Person } from './types'
+import type { Absence, FsInstance, FsRule, Person } from './types'
 
 /** Treffpunkt-qualifizierte Person (priv.treffpunkt gesetzt). */
 function tpLeader(patch: Partial<Person>): Person {
   return {
     id: 'x', fn: 'Max', ln: 'Muster', role: 'verkuendiger', female: false,
-    tel: '', mail: '', absent: [],
+    tel: '', mail: '',
     priv: { ...emptyQualifications(), treffpunkt: true },
     ...patch,
   }
@@ -275,11 +275,28 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
     expect(new Set(leaders).size).toBe(2) // Lastausgleich → zwei verschiedene
   })
 
-  it('überspringt in der Woche abwesende Personen', () => {
+  it('überspringt am Tag des Treffpunkts abwesende Personen', () => {
+    // Basis-Montag 7.9.2026; wd 1 = Montag der Woche 0, also der 7.9.
+    const base = new Date(2026, 8, 7, 12)
     const week = [inst({ id: 'a', wd: 1 })]
-    const persons = [tpLeader({ id: 'p1', fn: 'Anton', absent: [0] }), tpLeader({ id: 'p2', fn: 'Bernd' })]
-    const { fsWeeks } = fsAutoAssign([week], 0, persons)
+    const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]
+    const abw: Absence[] = [
+      { id: 'x', personId: 'p1', userId: '', from: '2026-09-05', to: '2026-09-09', reason: '' },
+    ]
+    const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, base)
     expect(fsWeeks[0][0].leader).toBe('Bernd Muster')
+  })
+
+  it('sperrt nur den Tag, nicht die ganze Woche', () => {
+    // Anton ist am Wochenende weg — den Treffpunkt am Montag kann er leiten.
+    const base = new Date(2026, 8, 7, 12)
+    const week = [inst({ id: 'a', wd: 1 })] // Montag, 7.9.
+    const persons = [tpLeader({ id: 'p1', fn: 'Anton' })]
+    const abw: Absence[] = [
+      { id: 'x', personId: 'p1', userId: '', from: '2026-09-12', to: '2026-09-13', reason: '' },
+    ]
+    const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, base)
+    expect(fsWeeks[0][0].leader).toBe('Anton Muster')
   })
 
   it('setzt nicht dieselbe Person zweimal am selben Wochentag', () => {

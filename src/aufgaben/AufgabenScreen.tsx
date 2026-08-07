@@ -29,6 +29,18 @@ export function AufgabenScreen() {
     return date.toLocaleDateString(LOCALES[state.lang], { day: 'numeric', month: 'long' })
   }
 
+  /**
+   * „Deine Einträge": seit die Abwesenheiten versammlungsweit geladen werden
+   * (die Planung braucht sie), muss hier wieder auf die eigenen eingegrenzt
+   * werden — selbst erfasst oder zur eigenen Person. Ohne Konto (Demo) gibt es
+   * nichts einzugrenzen.
+   */
+  const eigeneAbwesenheiten = state.userId
+    ? state.absences.filter(
+        (a) => a.userId === state.userId || (state.personId != null && a.personId === state.personId),
+      )
+    : state.absences
+
   const addAbsence = (event: FormEvent) => {
     event.preventDefault()
     if (!from || !to) {
@@ -39,7 +51,19 @@ export function AufgabenScreen() {
       dispatch({ type: 'showToast', text: t.toastVonNachBis })
       return
     }
-    dispatch({ type: 'addAbsence', absence: { id: crypto.randomUUID(), from, to, reason } })
+    dispatch({
+      type: 'addAbsence',
+      // personId verknüpft die Abwesenheit mit dem Programm — ohne sie weiß die
+      // Planung nicht, wer fehlt. userId bleibt der Ersteller (siehe Absence).
+      absence: {
+        id: crypto.randomUUID(),
+        personId: state.personId,
+        userId: state.userId ?? '',
+        from,
+        to,
+        reason,
+      },
+    })
     setFrom('')
     setTo('')
     setReason('')
@@ -179,7 +203,7 @@ export function AufgabenScreen() {
         </button>
 
         <div className="panel-label auf-entries-label">{t.deineEintraege}</div>
-        {state.absences.map((absence) => (
+        {eigeneAbwesenheiten.map((absence) => (
           <div key={absence.id} className="abs-row">
             <div>
               <div className="abs-range">
@@ -197,7 +221,7 @@ export function AufgabenScreen() {
             </button>
           </div>
         ))}
-        {state.absences.length === 0 && <p className="abs-empty">{t.keineAbw}</p>}
+        {eigeneAbwesenheiten.length === 0 && <p className="abs-empty">{t.keineAbw}</p>}
       </form>
     </section>
   )
