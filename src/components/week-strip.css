@@ -35,3 +35,21 @@
   width: 100%;
 }
 
+/*
+ * Der waagerechte Versatz der beiden Nachbarn. Ohne ihn liegen sie bei `left:
+ * auto` genau über der mittleren Woche, und Programm wie Planen zeigen zwei
+ * Wochen übereinander — Überschriften, Tagesreiter und Programmpunkte doppelt.
+ *
+ * Diese zwei Regeln wurden schon einmal als „tote CSS-Klassen" entfernt, weil
+ * die Klassennamen im TSX zusammengesetzt waren und eine Textsuche sie nicht
+ * fand. Sie stehen dort jetzt ausgeschrieben (WeekStrip.tsx, `SEITE`), und ein
+ * Test hält beide Seiten zusammen.
+ */
+.week-page--vor {
+  right: 100%;
+}
+
+.week-page--nach {
+  left: 100%;
+}
+

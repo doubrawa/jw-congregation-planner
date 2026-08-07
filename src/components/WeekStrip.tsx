@@ -52,6 +52,20 @@ export function WeekStrip({ children }: { children: ReactNode }) {
 /** Vorschau tut nichts — sonst löste ein Wisch nebenbei echte Änderungen aus. */
 const keinDispatch: Dispatch<AppAction> = () => {}
 
+/**
+ * Klassen der beiden Nachbarn — ausgeschrieben, nicht zusammengesetzt.
+ *
+ * `week-page--${…}` wäre kürzer, aber der Name stünde dann nirgends im
+ * Quelltext: eine Suche nach „week-page--vor" fand nichts, die zugehörigen
+ * CSS-Regeln galten als tot und wurden entfernt. Danach lagen beide Nachbarn
+ * ohne waagerechten Versatz über der aktuellen Woche — Programm und Planen
+ * zeigten zwei Wochen übereinander. Ausgeschrieben ist der Name auffindbar.
+ */
+const SEITE = {
+  '-1': 'week-page week-page--vor',
+  '1': 'week-page week-page--nach',
+} as const
+
 /** Dieselben Inhalte, nur für eine benachbarte Woche und ohne Bedienbarkeit. */
 function Vorschau({ offset, children }: { offset: -1 | 1; children: ReactNode }) {
   const { state } = useApp()
@@ -61,7 +75,7 @@ function Vorschau({ offset, children }: { offset: -1 | 1; children: ReactNode })
   // von Abschirmung.
   const wert = { state: { ...state, week: state.week + offset }, dispatch: keinDispatch }
   return (
-    <div className={`week-page week-page--${offset < 0 ? 'vor' : 'nach'}`} aria-hidden="true" inert>
+    <div className={SEITE[offset]} aria-hidden="true" inert>
       <AppContext.Provider value={wert}>{children}</AppContext.Provider>
     </div>
   )
