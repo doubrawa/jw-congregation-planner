@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Los nombres mostrados iguales hacen que las asignaciones se atribuyan mal. Dale a cada persona un nombre mostrado único.",
   "errTitel": "Error de visualización",
   "errText": "No se pudo mostrar esta sección. El resto de la aplicación sigue funcionando.",
+  "toastSpeicherFehler": "No se pudo guardar el cambio — vuelve a cargar",
 } satisfies Partial<Dict>

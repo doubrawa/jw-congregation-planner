@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Lika visningsnamn gör att uppgifter hamnar på fel person. Ge varje person ett unikt visningsnamn.",
   "errTitel": "Visningsfel",
   "errText": "Det här avsnittet kunde inte visas. Resten av appen fungerar som vanligt.",
+  "toastSpeicherFehler": "Ändringen kunde inte sparas — ladda om",
 } satisfies Partial<Dict>

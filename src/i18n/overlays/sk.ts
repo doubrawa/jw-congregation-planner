@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Rovnaké zobrazované mená vedú k nesprávnemu priradeniu úloh. Daj každému človeku jedinečné zobrazované meno.",
   "errTitel": "Chyba zobrazenia",
   "errText": "Túto časť sa nepodarilo zobraziť. Zvyšok aplikácie funguje ďalej.",
+  "toastSpeicherFehler": "Zmenu sa nepodarilo uložiť — načítaj stránku znova",
 } satisfies Partial<Dict>

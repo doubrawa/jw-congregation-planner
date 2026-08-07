@@ -385,4 +385,5 @@ export default {
   "keinePersonOpt": "— بلا شخص —",
   "errTitel": "خطأ في العرض",
   "errText": "تعذّر عرض هذا القسم. بقية التطبيق تعمل كالمعتاد.",
+  "toastSpeicherFehler": "تعذّر حفظ التغيير — أعد التحميل",
 } satisfies Partial<Dict>

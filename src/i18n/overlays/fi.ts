@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Samat näyttönimet vievät tehtävät väärälle henkilölle. Anna jokaiselle yksilöllinen näyttönimi.",
   "errTitel": "Näyttövirhe",
   "errText": "Tätä osaa ei voitu näyttää. Sovelluksen muut osat toimivat edelleen.",
+  "toastSpeicherFehler": "Muutosta ei voitu tallentaa — lataa uudelleen",
 } satisfies Partial<Dict>

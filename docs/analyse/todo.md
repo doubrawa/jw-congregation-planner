@@ -77,7 +77,7 @@ Pipeline.
 > T5 zuerst: Ohne sichtbare Schreibfehler lässt sich bei T6 nicht feststellen,
 > ob der Fix greift.
 
-### T5 · Fehlgeschlagene Schreibvorgänge melden 🔧
+### T5 · Fehlgeschlagene Schreibvorgänge melden 🔧 ✅ erledigt
 **`src/lib/data.ts:742-745`** — `run()` schluckt jeden Fehler in `console.error`.
 Alle 20 `save*`/`delete*`-Funktionen sind fire-and-forget, der Erfolgs-Toast
 entsteht im Reducer **bevor** geschrieben wird. RLS-Verstoß, abgelaufenes Token,
@@ -551,6 +551,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☑☑ · Phase 1 ☐☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☑☑ · Phase 1 ☑☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

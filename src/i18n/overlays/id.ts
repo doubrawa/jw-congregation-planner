@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Nama tampilan yang sama membuat tugas tercatat pada orang yang salah. Beri setiap orang nama tampilan yang unik.",
   "errTitel": "Gangguan tampilan",
   "errText": "Bagian ini tidak dapat ditampilkan. Bagian aplikasi lainnya tetap berfungsi.",
+  "toastSpeicherFehler": "Perubahan tidak dapat disimpan — muat ulang",
 } satisfies Partial<Dict>

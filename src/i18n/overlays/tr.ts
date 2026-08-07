@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Aynı görünen adlar görevlerin yanlış kişiye yazılmasına yol açar. Herkese benzersiz bir görünen ad ver.",
   "errTitel": "Görüntüleme hatası",
   "errText": "Bu bölüm görüntülenemedi. Uygulamanın geri kalanı çalışmaya devam ediyor.",
+  "toastSpeicherFehler": "Değişiklik kaydedilemedi — sayfayı yeniden yükle",
 } satisfies Partial<Dict>

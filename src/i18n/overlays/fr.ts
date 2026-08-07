@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Des noms affichés identiques faussent l’attribution des tâches. Donnez à chaque personne un nom affiché unique.",
   "errTitel": "Problème d’affichage",
   "errText": "Cette section n’a pas pu s’afficher. Le reste de l’application continue de fonctionner.",
+  "toastSpeicherFehler": "La modification n’a pas pu être enregistrée — veuillez recharger",
 } satisfies Partial<Dict>

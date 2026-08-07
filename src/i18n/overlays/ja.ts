@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "表示名が同じだと割り当てが別の人に付いてしまいます。一人一人に固有の表示名を付けてください。",
   "errTitel": "表示エラー",
   "errText": "この部分を表示できませんでした。ほかの部分は引き続き使えます。",
+  "toastSpeicherFehler": "変更を保存できませんでした — 再読み込みしてください",
 } satisfies Partial<Dict>

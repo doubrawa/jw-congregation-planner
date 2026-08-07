@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Ang magkaparehong display name ay nagiging dahilan para maling tao ang mabigyan ng atas. Bigyan ang bawat isa ng natatanging display name.",
   "errTitel": "May problema sa pagpapakita",
   "errText": "Hindi maipakita ang bahaging ito. Patuloy na gumagana ang iba pang bahagi ng app.",
+  "toastSpeicherFehler": "Hindi na-save ang pagbabago — i-reload",
 } satisfies Partial<Dict>

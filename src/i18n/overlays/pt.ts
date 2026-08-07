@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Nomes exibidos iguais fazem as designações irem para a pessoa errada. Dê a cada pessoa um nome exibido exclusivo.",
   "errTitel": "Erro de exibição",
   "errText": "Não foi possível mostrar esta secção. O resto da aplicação continua a funcionar.",
+  "toastSpeicherFehler": "Não foi possível guardar a alteração — recarrega a página",
 } satisfies Partial<Dict>

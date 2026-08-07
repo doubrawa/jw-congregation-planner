@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "相同的显示名称会让委派记到别人名下。请给每个人一个独一无二的显示名称。",
   "errTitel": "显示出错",
   "errText": "这个部分无法显示。应用的其他部分仍可正常使用。",
+  "toastSpeicherFehler": "更改未能保存 — 请重新加载",
 } satisfies Partial<Dict>
