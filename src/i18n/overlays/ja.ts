@@ -386,4 +386,6 @@ export default {
   "errTitel": "表示エラー",
   "errText": "この部分を表示できませんでした。ほかの部分は引き続き使えます。",
   "toastSpeicherFehler": "変更を保存できませんでした — 再読み込みしてください",
+  "notifErsatzGesucht": "代わりの人を探しています",
+  "notifErsatzGefunden": "代わりの人が決まりました",
 } satisfies Partial<Dict>

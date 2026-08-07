@@ -386,4 +386,6 @@ export default {
   "errTitel": "Görüntüleme hatası",
   "errText": "Bu bölüm görüntülenemedi. Uygulamanın geri kalanı çalışmaya devam ediyor.",
   "toastSpeicherFehler": "Değişiklik kaydedilemedi — sayfayı yeniden yükle",
+  "notifErsatzGesucht": "Yerine biri aranıyor",
+  "notifErsatzGefunden": "Yerine biri bulundu",
 } satisfies Partial<Dict>

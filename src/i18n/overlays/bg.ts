@@ -386,4 +386,6 @@ export default {
   "errTitel": "Грешка при показване",
   "errText": "Този раздел не можа да се покаже. Останалата част от приложението работи.",
   "toastSpeicherFehler": "Промяната не беше запазена — презареди",
+  "notifErsatzGesucht": "Търси се заместник",
+  "notifErsatzGefunden": "Намерен заместник",
 } satisfies Partial<Dict>

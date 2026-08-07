@@ -386,4 +386,6 @@ export default {
   "errTitel": "May problema sa pagpapakita",
   "errText": "Hindi maipakita ang bahaging ito. Patuloy na gumagana ang iba pang bahagi ng app.",
   "toastSpeicherFehler": "Hindi na-save ang pagbabago — i-reload",
+  "notifErsatzGesucht": "Naghahanap ng kapalit",
+  "notifErsatzGefunden": "May nakitang kapalit",
 } satisfies Partial<Dict>

@@ -289,7 +289,7 @@ Als reine Funktion `kandidaten(state, sel): Candidate[]` extrahieren und testen.
 
 ## Phase 5 — Übersetzung (🔧 ein halber Tag)
 
-### T24 · Ersatzsuche übersetzbar machen 🔧
+### T24 · Ersatzsuche übersetzbar machen 🔧 ✅ erledigt
 **`substitute/index.ts:265/266/300/301`** — „Ersatz gesucht: …", „… kann nicht.
 Wer springt ein?" sind fest deutsch und dynamisch, können also nicht über
 `NOTIF_TITLE_KEY` laufen. Glocke **und** Push erscheinen in allen 33 Sprachen
@@ -298,13 +298,13 @@ deutsch.
 `send-reminders` macht es richtig vor: `pushTexte(lang)` + fester Titel-Schlüssel.
 → [befunde.md D5](befunde.md)
 
-### T25 · Fehlende Programm-Fragmente ergänzen 🔧
+### T25 · Fehlende Programm-Fragmente ergänzen 🔧 ✅ erledigt (mit Rest)
 30 von 33 Sprachen fehlen 26–34 Einträge in `FRAG` (`i18n/translate-data.ts`).
 Produktiv sichtbar sind vor allem **`gerade eben`** (Zeitstempel jeder Mitteilung)
 und **`ohne Zuteilungen`** (nach jedem Import); dazu das Gedächtnismahl-Vokabular.
 → [befunde.md D1](befunde.md)
 
-### T26 · Vollständigkeitstest für `FRAG`/`EXTRA`/`REF` 🔧
+### T26 · Vollständigkeitstest für `FRAG`/`EXTRA`/`REF` 🔧 ✅ erledigt
 `ui.test.ts` sichert das UI-Wörterbuch vorbildlich ab (inkl. „kein stiller
 EN-Rückfall") — für die Programm-Fragmente gibt es **nichts** Vergleichbares.
 Genau deshalb blieben T25 und T1 unentdeckt: `translate-data.ts` hat 7,5 %
@@ -314,14 +314,22 @@ Zusätzlich einen Test, der `makeTrIntl` über **alle** Sprachen mit **allen**
 Datumsformaten durchlaufen lässt (Lang- und Kurzmonat, Kürzel und ausgeschrieben).
 → [befunde.md D3](befunde.md), [pruefergebnisse.md § 3](pruefergebnisse.md)
 
-### T27 · Sprache und Schreibrichtung vor dem ersten Paint ⚡
+### T27 · Sprache und Schreibrichtung vor dem ersten Paint ⚡ ✅ erledigt
 **`index.html:2`** ist fest `<html lang="de">`; `store.tsx:91-92` setzt `lang`/`dir`
 erst nach dem Mount. Arabisch, Hebräisch, Farsi und Urdu rendern zuerst LTR und
 klappen dann um. Das Inline-Script macht es für Theme und Schriftgröße bereits
 richtig — den gespeicherten `lang`-Wert dort mitlesen.
 → [befunde.md D6](befunde.md)
 
-### T28 · `REF` für id, tl, vi, sw ergänzen ⚡
+### T28 · `REF` für id, tl, vi, sw ergänzen ⚡ ⛔ geprüft, kein Mangel
+
+> **Widerspruch (Befund D2 ist überholt).** `REF` enthält alle vier Sprachen
+> vollständig — `translate-data.ts` hat für id, tl, vi und sw je neun
+> Vorlagen (`th pelajaran N`, `th aralin N`, `th bài học số N`, `th somo la N`
+> …). Der neue Vollständigkeitstest in `translate-data.test.ts` prüft das jetzt
+> laufend; er meldete beim ersten Lauf **nur `bg`**, und dort fehlt allein
+> `wcgKap` — begründet und schon vorher durch einen Test festgehalten
+> (Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation).
 Die Verweis-Vorlagen fehlen für vier Sprachen ohne dokumentierten Grund (für
 zh/ja/ko/ar/he/fa/ur ist das Fehlen begründet). „th Lektion 5" und „Gruppe 2"
 bleiben dort deutsch.
@@ -558,5 +566,5 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 ## Fortschritt
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

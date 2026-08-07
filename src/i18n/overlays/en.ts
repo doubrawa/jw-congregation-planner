@@ -386,4 +386,6 @@ export default {
   "errTitel": "Display problem",
   "errText": "This area could not be displayed. The rest of the app keeps working.",
   "toastSpeicherFehler": "Change could not be saved — please reload",
+  "notifErsatzGesucht": "Substitute needed",
+  "notifErsatzGefunden": "Substitute found",
 } satisfies Partial<Dict>

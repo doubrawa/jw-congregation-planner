@@ -386,4 +386,6 @@ export default {
   "errTitel": "Помилка відображення",
   "errText": "Не вдалося показати цей розділ. Решта застосунку працює далі.",
   "toastSpeicherFehler": "Не вдалося зберегти зміну — оновіть сторінку",
+  "notifErsatzGesucht": "Потрібна заміна",
+  "notifErsatzGefunden": "Заміну знайдено",
 } satisfies Partial<Dict>

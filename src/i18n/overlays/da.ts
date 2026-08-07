@@ -386,4 +386,6 @@ export default {
   "errTitel": "Visningsfejl",
   "errText": "Dette afsnit kunne ikke vises. Resten af appen fungerer fortsat.",
   "toastSpeicherFehler": "Ændringen kunne ikke gemmes — genindlæs",
+  "notifErsatzGesucht": "Afløser søges",
+  "notifErsatzGefunden": "Afløser fundet",
 } satisfies Partial<Dict>

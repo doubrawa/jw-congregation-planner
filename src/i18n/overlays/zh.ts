@@ -386,4 +386,6 @@ export default {
   "errTitel": "显示出错",
   "errText": "这个部分无法显示。应用的其他部分仍可正常使用。",
   "toastSpeicherFehler": "更改未能保存 — 请重新加载",
+  "notifErsatzGesucht": "需要有人替补",
+  "notifErsatzGefunden": "已找到替补",
 } satisfies Partial<Dict>

@@ -386,4 +386,6 @@ export default {
   "errTitel": "Problème d’affichage",
   "errText": "Cette section n’a pas pu s’afficher. Le reste de l’application continue de fonctionner.",
   "toastSpeicherFehler": "La modification n’a pas pu être enregistrée — veuillez recharger",
+  "notifErsatzGesucht": "Remplaçant recherché",
+  "notifErsatzGefunden": "Remplaçant trouvé",
 } satisfies Partial<Dict>

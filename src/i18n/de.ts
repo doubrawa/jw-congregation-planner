@@ -173,6 +173,7 @@ export const DE = {
     importFehler: 'Import fehlgeschlagen',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
+    notifErsatzGesucht: 'Ersatz gesucht', notifErsatzGefunden: 'Ersatz gefunden',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
     rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleVerkIn: 'Verkündigerin',
     // Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Begriffe stammen aus

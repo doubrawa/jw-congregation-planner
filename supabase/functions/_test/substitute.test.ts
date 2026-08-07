@@ -403,3 +403,23 @@ describe('substitute: Positivfall als Gegenprobe', () => {
     expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER]))
   })
 })
+
+describe('substitute: Meldungen sind übersetzbar (T24)', () => {
+  // Titel und Rumpf waren fest deutsch und dynamisch — sie konnten weder über
+  // NOTIF_TITLE_KEY noch über den Fragment-Übersetzer laufen. Glocke UND Push
+  // erschienen deshalb in allen 33 Sprachen deutsch.
+  it('Glocken-Titel ist der feste, kanonisch deutsche Schlüssel', async () => {
+    await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    const rows = writesTo('notifications')[0]?.body as { title: string; body: string }[]
+    expect(rows[0].title).toBe('Ersatz gesucht') // ohne Dienstnamen
+    // Rumpf nur aus ' · '-Atomen, die der Fragment-Übersetzer erledigt.
+    expect(rows[0].body).toBe('Mikrofone · Di, 8. Sep · 19:00 · Otto Riginal')
+  })
+
+  it('dasselbe beim Einspringen', async () => {
+    await call(take())
+    const rows = writesTo('notifications')[0]?.body as { title: string; body: string }[]
+    expect(rows[0].title).toBe('Ersatz gefunden')
+    expect(rows[0].body).toBe('Mikrofone · Di, 8. Sep · 19:00 · Ich Selbst')
+  })
+})

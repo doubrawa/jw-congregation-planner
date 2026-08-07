@@ -386,4 +386,6 @@ export default {
   "errTitel": "Visningsfeil",
   "errText": "Denne delen kunne ikke vises. Resten av appen fungerer videre.",
   "toastSpeicherFehler": "Endringen kunne ikke lagres — last inn på nytt",
+  "notifErsatzGesucht": "Vikar søkes",
+  "notifErsatzGefunden": "Vikar funnet",
 } satisfies Partial<Dict>

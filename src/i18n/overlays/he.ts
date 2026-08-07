@@ -385,4 +385,6 @@ export default {
   "errTitel": "שגיאת תצוגה",
   "errText": "לא ניתן היה להציג את החלק הזה. שאר האפליקציה ממשיכה לפעול.",
   "toastSpeicherFehler": "לא ניתן היה לשמור את השינוי — טען מחדש",
+  "notifErsatzGesucht": "דרוש מחליף",
+  "notifErsatzGefunden": "נמצא מחליף",
 } satisfies Partial<Dict>

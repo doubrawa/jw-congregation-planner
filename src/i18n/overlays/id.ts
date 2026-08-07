@@ -386,4 +386,6 @@ export default {
   "errTitel": "Gangguan tampilan",
   "errText": "Bagian ini tidak dapat ditampilkan. Bagian aplikasi lainnya tetap berfungsi.",
   "toastSpeicherFehler": "Perubahan tidak dapat disimpan — muat ulang",
+  "notifErsatzGesucht": "Dicari pengganti",
+  "notifErsatzGefunden": "Pengganti ditemukan",
 } satisfies Partial<Dict>

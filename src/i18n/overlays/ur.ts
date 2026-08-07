@@ -385,4 +385,6 @@ export default {
   "errTitel": "ڈسپلے میں مسئلہ",
   "errText": "یہ حصہ دکھایا نہیں جا سکا۔ ایپ کا باقی حصہ کام کرتا رہے گا۔",
   "toastSpeicherFehler": "تبدیلی محفوظ نہیں ہو سکی — دوبارہ لوڈ کریں",
+  "notifErsatzGesucht": "متبادل درکار ہے",
+  "notifErsatzGefunden": "متبادل مل گیا",
 } satisfies Partial<Dict>
