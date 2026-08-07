@@ -63,7 +63,7 @@ ungesichert.
 **Prüfen:** `npx tsc -b` bleibt grün.
 → [pruefergebnisse.md § 2](pruefergebnisse.md)
 
-### T4 · Tests und Lint in die CI ⚡
+### T4 · Tests und Lint in die CI ⚡ ✅ erledigt
 **`.github/workflows/deploy.yml`** — zwischen `npm ci` und `npm run build` je einen
 Schritt `npm test` und `npm run lint` einfügen. 727 Tests laufen heute in keiner
 Pipeline.
@@ -551,6 +551,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☑☐ · Phase 1 ☐☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☑☑ · Phase 1 ☐☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

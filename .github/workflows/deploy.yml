@@ -28,6 +28,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Vor dem Bauen prüfen, nicht danach: ein roter Test soll das Deployment
+      # verhindern, nicht bloß im Nachhinein melden. `npm run build` führt
+      # zusätzlich `tsc -b` aus, deckt die Typen also ab.
+      - run: npm run lint
+      - run: npm test
       # Supabase-Konfiguration (optional): ohne Secrets baut der Demo-Modus
       - run: npm run build
         env:
