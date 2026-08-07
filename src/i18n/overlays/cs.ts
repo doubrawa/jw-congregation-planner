@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Převzato · pozor: ten den už úkol máš",
   "dublettenTitle": "STEJNÁ ZOBRAZOVANÁ JMÉNA",
   "dublettenHint": "Stejná zobrazovaná jména vedou k nesprávnému přiřazení úkolů. Dej každému člověku jedinečné zobrazované jméno.",
+  "errTitel": "Chyba zobrazení",
+  "errText": "Tuto část se nepodařilo zobrazit. Zbytek aplikace funguje dál.",
 } satisfies Partial<Dict>

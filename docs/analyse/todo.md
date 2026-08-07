@@ -44,7 +44,7 @@ App verschwindet. Nachher: Mitteilungen erscheinen.
 > landen). Gilt für alle acht Monats-Nachschläge in beiden Pfaden.
 > Prüfung ausgeführt: 30 Sprachen × 9 Datumsformen, vorher 37 rote Tests.
 
-### T2 · Error Boundary einziehen ⚡
+### T2 · Error Boundary einziehen ⚡ ✅ erledigt
 Im Projekt gibt es **null** Error Boundaries (`grep` über `src`). Deshalb reißt
 jeder Komponentenfehler die ganze App mit.
 
@@ -551,6 +551,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☐☐☐ · Phase 1 ☐☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☐☐ · Phase 1 ☐☐☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

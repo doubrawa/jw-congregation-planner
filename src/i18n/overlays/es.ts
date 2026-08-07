@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Aceptado · atención: ya tienes una asignación ese día",
   "dublettenTitle": "NOMBRES MOSTRADOS DUPLICADOS",
   "dublettenHint": "Los nombres mostrados iguales hacen que las asignaciones se atribuyan mal. Dale a cada persona un nombre mostrado único.",
+  "errTitel": "Error de visualización",
+  "errText": "No se pudo mostrar esta sección. El resto de la aplicación sigue funcionando.",
 } satisfies Partial<Dict>

@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Üstlenildi · dikkat: o gün zaten bir görevin var",
   "dublettenTitle": "AYNI GÖRÜNEN ADLAR",
   "dublettenHint": "Aynı görünen adlar görevlerin yanlış kişiye yazılmasına yol açar. Herkese benzersiz bir görünen ad ver.",
+  "errTitel": "Görüntüleme hatası",
+  "errText": "Bu bölüm görüntülenemedi. Uygulamanın geri kalanı çalışmaya devam ediyor.",
 } satisfies Partial<Dict>

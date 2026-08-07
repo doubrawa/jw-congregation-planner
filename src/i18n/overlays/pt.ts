@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Aceito · atenção: você já tem uma designação nesse dia",
   "dublettenTitle": "NOMES EXIBIDOS DUPLICADOS",
   "dublettenHint": "Nomes exibidos iguais fazem as designações irem para a pessoa errada. Dê a cada pessoa um nome exibido exclusivo.",
+  "errTitel": "Erro de exibição",
+  "errText": "Não foi possível mostrar esta secção. O resto da aplicação continua a funcionar.",
 } satisfies Partial<Dict>

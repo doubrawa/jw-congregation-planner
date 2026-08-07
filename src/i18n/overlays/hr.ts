@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Preuzeto · pažnja: taj dan već imaš zadatak",
   "dublettenTitle": "ISTA PRIKAZANA IMENA",
   "dublettenHint": "Ista prikazana imena dovode do krivog dodjeljivanja zadataka. Svakoj osobi daj jedinstveno prikazano ime.",
+  "errTitel": "Pogreška prikaza",
+  "errText": "Ovaj se dio nije mogao prikazati. Ostatak aplikacije i dalje radi.",
 } satisfies Partial<Dict>

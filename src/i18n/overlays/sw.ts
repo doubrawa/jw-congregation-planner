@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Umechukua · angalia: siku hiyo tayari una mgawo",
   "dublettenTitle": "MAJINA YA KUONYESHA YANAYOFANANA",
   "dublettenHint": "Majina ya kuonyesha yanayofanana hufanya migawo iwekwe kwa mtu asiye sahihi. Mpe kila mtu jina la kuonyesha la kipekee.",
+  "errTitel": "Hitilafu ya kuonyesha",
+  "errText": "Sehemu hii haikuweza kuonyeshwa. Sehemu nyingine za programu zinaendelea kufanya kazi.",
 } satisfies Partial<Dict>

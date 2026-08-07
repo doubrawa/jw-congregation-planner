@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Overgenomen · let op: je bent die dag al ingedeeld",
   "dublettenTitle": "DUBBELE WEERGAVENAMEN",
   "dublettenHint": "Dezelfde weergavenamen leiden tot verkeerd toegewezen taken. Geef elke persoon een unieke weergavenaam.",
+  "errTitel": "Weergavefout",
+  "errText": "Dit onderdeel kon niet worden weergegeven. De rest van de app werkt gewoon door.",
 } satisfies Partial<Dict>

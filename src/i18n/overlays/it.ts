@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Preso · attenzione: quel giorno hai già un incarico",
   "dublettenTitle": "NOMI VISUALIZZATI DOPPI",
   "dublettenHint": "Nomi visualizzati uguali fanno attribuire gli incarichi alla persona sbagliata. Dai a ognuno un nome visualizzato univoco.",
+  "errTitel": "Errore di visualizzazione",
+  "errText": "Non è stato possibile mostrare questa sezione. Il resto dell’app continua a funzionare.",
 } satisfies Partial<Dict>

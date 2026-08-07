@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "已接下 · 注意：你那天已经有委派了",
   "dublettenTitle": "重复的显示名称",
   "dublettenHint": "相同的显示名称会让委派记到别人名下。请给每个人一个独一无二的显示名称。",
+  "errTitel": "显示出错",
+  "errText": "这个部分无法显示。应用的其他部分仍可正常使用。",
 } satisfies Partial<Dict>

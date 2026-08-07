@@ -383,4 +383,6 @@ export default {
   "fsSkipCong": "Except on congregation meetings",
   "toastFsRuleAdd": "Added to schedule",
   "toastFsRuleDel": "Removed from schedule",
+  "errTitel": "Display problem",
+  "errText": "This area could not be displayed. The rest of the app keeps working.",
 } satisfies Partial<Dict>

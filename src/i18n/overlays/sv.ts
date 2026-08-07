@@ -383,4 +383,6 @@ export default {
   "toastUebernommenKonflikt": "Övertagen · obs: du är redan inplanerad den dagen",
   "dublettenTitle": "DUBBLA VISNINGSNAMN",
   "dublettenHint": "Lika visningsnamn gör att uppgifter hamnar på fel person. Ge varje person ett unikt visningsnamn.",
+  "errTitel": "Visningsfel",
+  "errText": "Det här avsnittet kunde inte visas. Resten av appen fungerar som vanligt.",
 } satisfies Partial<Dict>
