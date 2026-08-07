@@ -517,7 +517,7 @@ Namen in bereits geplanten Wochen stehen bleiben.
 
 ## Phase 9 — Dokumentation und Wartung (⚡ nebenbei)
 
-### T53 · Handbücher ergänzen ⚡
+### T53 · Handbücher ergänzen ⚡ ✅ erledigt
 Weder in `planer.md` noch `verkuendiger.md` beschrieben: **Einspringen /
 Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und das
 **S-89-Formular**. Fehlen ebenfalls: Dubletten-Warnung, Konten ohne Person.
@@ -567,4 +567,4 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
-Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☐☑☑☑
+Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑
