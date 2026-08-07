@@ -3,6 +3,7 @@ import {
   displayName,
   duplicateDisplayNames,
   familyMembers,
+  gehoertZu,
   splitOpeningSong,
   initials,
   isPlainPublisher,
@@ -23,6 +24,17 @@ import {
 } from './helpers'
 import { buildDemoWeeks } from './demo'
 import type { PartItem, Person, Qualifications } from './types'
+
+/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
+import { emptyQualifications } from './helpers'
+
+function alsPerson(name: string): Person {
+  return {
+    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    tel: '', mail: '', priv: emptyQualifications(),
+  }
+}
+
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {
@@ -277,11 +289,11 @@ describe('partWorkload zählt Begleiter nur bei echter Nennung', () => {
     const item = weeks[0].mid.sections[0].items.find((x) => !isSong(x)) as PartItem
     // Alt-Daten tragen den Begleiter als „mit X" im Rollentext.
     item.names[0] = { ...item.names[0], name: 'Rolf Klein', rolle: 'mit Annalena Berg' }
-    expect(partWorkload(weeks, 'Rolf Klein')).toBe(1)
-    expect(partWorkload(weeks, 'Annalena Berg')).toBe(1)
+    expect(partWorkload(weeks, alsPerson('Rolf Klein'))).toBe(1)
+    expect(partWorkload(weeks, alsPerson('Annalena Berg'))).toBe(1)
     // „Anna" steckt in „Annalena" — mit `rolle.includes(name)` bekam sie hier
     // eine Aufgabe, die einer anderen gehört.
-    expect(partWorkload(weeks, 'Anna')).toBe(0)
+    expect(partWorkload(weeks, alsPerson('Anna'))).toBe(0)
   })
 })
 
@@ -299,20 +311,20 @@ describe('loadWindow hält sich an dieselbe Platzgrenze wie workloadOf', () => {
 
   it('zählt einen Platz hinter svc.count nicht als Belegung', () => {
     const weeks = wochenMitZweitemTon()
-    expect(workloadOf(weeks, 'Zweite Person', dienste)).toBe(0)
-    expect(loadWindow(weeks, 'Zweite Person', 1, dienste)).not.toContain('helper')
+    expect(workloadOf(weeks, alsPerson('Zweite Person'), dienste)).toBe(0)
+    expect(loadWindow(weeks, alsPerson('Zweite Person'), 1, dienste)).not.toContain('helper')
   })
 
   it('ohne services zählt weiter alles — beide Seiten gleich', () => {
     const weeks = wochenMitZweitemTon()
-    expect(workloadOf(weeks, 'Zweite Person')).toBe(1)
-    expect(loadWindow(weeks, 'Zweite Person', 1)).toContain('helper')
+    expect(workloadOf(weeks, alsPerson('Zweite Person'))).toBe(1)
+    expect(loadWindow(weeks, alsPerson('Zweite Person'), 1)).toContain('helper')
   })
 
   it('der belegte Platz innerhalb der Grenze zählt weiterhin', () => {
     const weeks = wochenMitZweitemTon()
-    expect(workloadOf(weeks, 'Erste Person', dienste)).toBe(1)
-    expect(loadWindow(weeks, 'Erste Person', 1, dienste)).toContain('helper')
+    expect(workloadOf(weeks, alsPerson('Erste Person'), dienste)).toBe(1)
+    expect(loadWindow(weeks, alsPerson('Erste Person'), 1, dienste)).toContain('helper')
   })
 })
 
@@ -327,5 +339,68 @@ describe('tieHash (gemeinsamer Tie-Break)', () => {
 
   it('ist stabil (gleicher Schlüssel, gleicher Wert)', () => {
     expect(tieHash('Anton Muster|3|1')).toBe(tieHash('Anton Muster|3|1'))
+  })
+})
+
+describe('gehoertZu — wem eine Zuteilung gehört', () => {
+  const anton = person({ id: 'p1', fn: 'Anton', ln: 'Muster' })
+  const zwilling = person({ id: 'p2', fn: 'Anton', ln: 'Muster' }) // gleicher Anzeigename
+
+  it('die Id entscheidet, sobald die Zuteilung eine trägt', () => {
+    const slot = { name: 'Anton Muster', pid: 'p1' }
+    expect(gehoertZu(slot, anton)).toBe(true)
+    expect(gehoertZu(slot, zwilling)).toBe(false)
+  })
+
+  it('fällt NICHT auf den Namen zurück, wenn eine fremde Id dasteht', () => {
+    // Sonst zählte eine Zuteilung, die ausdrücklich p1 meint, auch für p2 mit.
+    expect(gehoertZu({ name: 'Anton Muster', pid: 'p1' }, zwilling)).toBe(false)
+  })
+
+  it('ohne Id (Altdaten) zählt der Anzeigename — für beide Gleichnamigen', () => {
+    // Diese Zweideutigkeit kann keine Auflösung beheben; deshalb warnt die App
+    // vor doppelten Anzeigenamen (duplicateDisplayNames).
+    const alt = { name: 'Anton Muster' }
+    expect(gehoertZu(alt, anton)).toBe(true)
+    expect(gehoertZu(alt, zwilling)).toBe(true)
+  })
+
+  it('ein leerer Platz gehört niemandem', () => {
+    expect(gehoertZu({ name: '' }, anton)).toBe(false)
+    expect(gehoertZu(undefined, anton)).toBe(false)
+    expect(gehoertZu({ name: '', pid: 'p1' }, anton)).toBe(false)
+  })
+})
+
+describe('Auslastung zählt je Person, nicht je Name', () => {
+  const anton = person({ id: 'p1', fn: 'Anton', ln: 'Muster' })
+  const zwilling = person({ id: 'p2', fn: 'Anton', ln: 'Muster' })
+
+  function wocheMitBeiden(): ReturnType<typeof buildDemoWeeks> {
+    const weeks = buildDemoWeeks()
+    const item = weeks[0].mid.sections[0].items.find((x) => !isSong(x)) as PartItem
+    // Zwei Plätze, zwei verschiedene Personen — mit identischem Anzeigenamen.
+    item.names[0] = { ...item.names[0], name: 'Anton Muster', pid: 'p1' }
+    item.names[1] = { ...item.names[1], name: 'Anton Muster', pid: 'p2' }
+    return weeks
+  }
+
+  it('zwei Gleichnamige teilen sich keine Strichliste', () => {
+    // Über den Namen gezählt hätten beide je 2 — und die Auto-Zuteilung
+    // stellte beide doppelt so weit hinten an, wie es stimmt.
+    const weeks = wocheMitBeiden()
+    expect(partWorkload(weeks, anton)).toBe(1)
+    expect(partWorkload(weeks, zwilling)).toBe(1)
+  })
+
+  it('auch Hilfsdienste zählen je Person', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0].mid.helpers.ton = [
+      { name: 'Anton Muster', pid: 'p1' },
+      { name: 'Anton Muster', pid: 'p2' },
+    ]
+    const dienste = [{ key: 'ton', name: 'Ton', count: 2, qual: false }]
+    expect(workloadOf(weeks, anton, dienste)).toBe(1)
+    expect(workloadOf(weeks, zwilling, dienste)).toBe(1)
   })
 })

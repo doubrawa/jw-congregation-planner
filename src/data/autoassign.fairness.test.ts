@@ -5,6 +5,17 @@ import { displayName, isSong, LOAD_RADIUS, LOAD_WEEKS, loadWindow, partWorkload,
 import { autoAssignMeeting, weekConflicts } from './planning'
 import type { Meeting, Person, Qualifications, Service, SlotAssignment, Week } from './types'
 
+/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
+import { emptyQualifications } from './helpers'
+
+function alsPerson(name: string): Person {
+  return {
+    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    tel: '', mail: '', priv: emptyQualifications(),
+  }
+}
+
+
 /**
  * Langzeit-Fairness der Auto-Zuteilung.
  *
@@ -182,8 +193,8 @@ describe('Tie-Break bei gleicher Auslastung', () => {
       weeks[6].mid = belegt(displayName(kuerzlich)) // 4 Wochen her
       weeks[10].mid = einPlatz('vortrag')
       // Fenster um Woche 10 = [8..12] → beide zählen dort null.
-      expect(partWorkload(weeks.slice(8), displayName(langHer))).toBe(0)
-      expect(partWorkload(weeks.slice(8), displayName(kuerzlich))).toBe(0)
+      expect(partWorkload(weeks.slice(8), langHer)).toBe(0)
+      expect(partWorkload(weeks.slice(8), kuerzlich)).toBe(0)
       return gewaehlt(weeks, 10, [a, b])
     }
     // Beide Richtungen, damit nicht der Hash das Ergebnis zufällig trifft.
@@ -204,8 +215,8 @@ describe('Tie-Break bei gleicher Auslastung', () => {
     weeks[9].mid = belegt(displayName(b))
     weeks[10].mid = einPlatz('vortrag')
     // Fenster um Woche 10 = [8..12]
-    expect(partWorkload(weeks.slice(8, 13), displayName(a))).toBe(2)
-    expect(partWorkload(weeks.slice(8, 13), displayName(b))).toBe(1)
+    expect(partWorkload(weeks.slice(8, 13), a)).toBe(2)
+    expect(partWorkload(weeks.slice(8, 13), b)).toBe(1)
     expect(gewaehlt(weeks, 10, [a, b])).toBe(displayName(b))
   })
 })
@@ -218,9 +229,9 @@ describe('Zusätzliche Klasse zählt als Auslastung', () => {
     item.aux = [{ name: 'Zweite Klasse', bereichsKey: 'schulung' }]
     meeting.auxRatgeber = { name: 'Rolf Ratgeber', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
     const weeks = [wk(meeting)]
-    expect(partWorkload(weeks, 'Haupt Saal')).toBe(1)
-    expect(partWorkload(weeks, 'Zweite Klasse')).toBe(1) // zählte früher 0
-    expect(partWorkload(weeks, 'Rolf Ratgeber')).toBe(1) // zählte früher 0
+    expect(partWorkload(weeks, alsPerson('Haupt Saal'))).toBe(1)
+    expect(partWorkload(weeks, alsPerson('Zweite Klasse'))).toBe(1) // zählte früher 0
+    expect(partWorkload(weeks, alsPerson('Rolf Ratgeber'))).toBe(1) // zählte früher 0
   })
 
   it('zählt eine Begleitung nicht doppelt, wenn die Klasse die Rolle erbt', () => {
@@ -230,7 +241,7 @@ describe('Zusätzliche Klasse zählt als Auslastung', () => {
     const item = meeting.sections[0].items[0] as { names: SlotAssignment[]; aux?: SlotAssignment[] }
     item.names[0] = { name: 'Wer Auchimmer', rolle: 'mit Anna Beispiel', bereichsKey: 'schulung' }
     item.aux = [{ name: '', rolle: 'mit Anna Beispiel', bereichsKey: 'schulung' }]
-    expect(partWorkload([wk(meeting)], 'Anna Beispiel')).toBe(1)
+    expect(partWorkload([wk(meeting)], alsPerson('Anna Beispiel'))).toBe(1)
   })
 
   it('wer in der Klasse dran war, kommt nicht sofort wieder', () => {
@@ -369,14 +380,14 @@ describe('Anzeige und Entscheidung nutzen dasselbe Fenster', () => {
     weeks[10].mid = einPlatz('vortrag')
 
     // Das zeigen auch die Mini-Quadrate: A hat im Fenster eine Aufgabe, B nicht.
-    expect(loadWindow(weeks, displayName(a), 10)).toContain('task')
-    expect(loadWindow(weeks, displayName(b), 10)).not.toContain('task')
+    expect(loadWindow(weeks, a, 10)).toContain('task')
+    expect(loadWindow(weeks, b, 10)).not.toContain('task')
     expect(gewaehlt(weeks, 10, [a, b])).toBe(displayName(b))
   })
 
   it('das Sheet zeigt so viele Wochen, wie das Fenster breit ist', () => {
     expect(LOAD_WEEKS).toBe(LOAD_RADIUS * 2 + 1)
-    expect(loadWindow([], 'X', 0)).toHaveLength(LOAD_WEEKS)
+    expect(loadWindow([], alsPerson('X'), 0)).toHaveLength(LOAD_WEEKS)
   })
 })
 

@@ -5,6 +5,17 @@ import type { AbsenceSet } from './absence'
 import { autoAssignMeeting, clearAssignments } from './planning'
 import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
 
+/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
+import { emptyQualifications } from './helpers'
+
+function alsPerson(name: string): Person {
+  return {
+    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    tel: '', mail: '', priv: emptyQualifications(),
+  }
+}
+
+
 /**
  * Simulation der Auto-Zuteilung mit einer großen Versammlung (~100 Personen)
  * über mehrere Wochen. Prüft die Kernregeln (kein Helfer+Aufgabe am selben
@@ -331,8 +342,8 @@ describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
     history.helpers.mik = [{ name: 'Quirin Quell' }]
     const weeks: Week[] = [wk(history, emptyMeeting()), wk(history, emptyMeeting()), wk(history, emptyMeeting())]
     // Aufgaben-Last (partWorkload) bleibt 0 trotz vieler Hilfsdienste
-    expect(partWorkload(weeks, 'Quirin Quell')).toBe(0)
-    expect(workloadOf(weeks, 'Quirin Quell')).toBeGreaterThan(0)
+    expect(partWorkload(weeks, alsPerson('Quirin Quell'))).toBe(0)
+    expect(workloadOf(weeks, alsPerson('Quirin Quell'))).toBeGreaterThan(0)
     // In einer Aufgaben-Auswahl ist Q gleichauf mit einem frischen vortrag-Leut:
     const fresh = named('Rolf', 'Rein', ['vortrag']) // "R. Rein"
     const plan: Week[] = [...weeks, wk(partHistoryMeeting('', 0), emptyMeeting())]

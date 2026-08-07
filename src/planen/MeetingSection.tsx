@@ -4,7 +4,7 @@ import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../
 import { istSchuelerteil } from '../data/aux-class'
 import { isSong, splitOpeningSong } from '../data/helpers'
 import { itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
-import { isGuestRole } from '../data/planning'
+import { isGuestRole, kennungVon } from '../data/planning'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
 import { SlotChip } from './SlotChip'
@@ -50,7 +50,8 @@ export function MeetingSection({
     (rawSection.label === LABEL_EROEFFNUNG && !isOpening) || rawSection.label === LABEL_ABSCHLUSS
   const movables = movableIndices(rawSection)
 
-  const isPending = (name: string) => state.pendingNames.includes(name)
+  const isPending = (slot: SlotAssignment | undefined) =>
+    state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
 
   /**
    * Die Platzreihen eines Programmpunkts: nur Hauptsaal — oder Hauptsaal und
@@ -194,7 +195,7 @@ export function MeetingSection({
                       text={partChipText(slot)}
                       open={!slot.name}
                       showStatus={Boolean(slot.name)}
-                      pending={isPending(slot.name)}
+                      pending={isPending(slot)}
                       onClick={() => openPartSlot(ii, ni, item, slot, aux)}
                     />
                   ))}

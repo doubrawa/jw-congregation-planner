@@ -1,7 +1,8 @@
 import { useApp } from '../app/context'
+import { kennungVon } from '../data/planning'
 import { serviceQualKey } from '../data/helpers'
 import { useT } from '../i18n/useT'
-import type { Meeting, Service } from '../data/types'
+import type { Meeting, Service, SlotAssignment } from '../data/types'
 import { SlotChip } from './SlotChip'
 
 /** Hilfsdienste-Panel beim Planen: je konfiguriertem Dienst so viele Slot-Chips wie Plätze. */
@@ -9,7 +10,8 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
 
-  const isPending = (name: string) => state.pendingNames.includes(name)
+  const isPending = (slot: SlotAssignment | undefined) =>
+    state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
 
   const openHelperSlot = (service: Service, pos: number) => {
     dispatch({
@@ -45,7 +47,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
                     text={name ? tu(name) : t.zuteilenChip}
                     open={!name}
                     showStatus={Boolean(name) && !isGroup}
-                    pending={isPending(name)}
+                    pending={isPending(assigned[pos])}
                     onClick={() => openHelperSlot(service, pos)}
                   />
                 )

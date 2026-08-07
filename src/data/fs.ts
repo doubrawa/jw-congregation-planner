@@ -13,7 +13,7 @@
  */
 
 import { istAbwesendAm } from './absence'
-import { displayName, isQualified, tieHash } from './helpers'
+import { displayName, idAufloeser, isQualified, tieHash } from './helpers'
 import { deutschesDatum } from './meeting-dates'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
@@ -271,7 +271,7 @@ export function fsAutoAssign(
   onlyGroup: string | null = null,
   absences: readonly Absence[] = [],
   base?: Date,
-): { fsWeeks: FsInstance[][]; count: number; newly: string[] } {
+): { fsWeeks: FsInstance[][]; count: number; newly: string[]; newlyIds: string[] } {
   const qualifiziert = persons.filter((p) => isQualified(p, 'treffpunkt'))
   /**
    * Kandidaten für einen Wochentag. Die Abwesenheit wird am echten Tag des
@@ -288,12 +288,20 @@ export function fsAutoAssign(
     poolAm.set(wd, pool)
     return pool
   }
+  // Alle Listen unten sind nach Person-Id geführt, nicht nach Name: zwei
+  // Personen desselben Namens teilten sich sonst eine Strichliste, sperrten
+  // sich gegenseitig am selben Wochentag und erbten gegenseitig die Wartezeit.
+  const werIst = idAufloeser(persons)
+  const idVon = (inst: FsInstance): string | undefined =>
+    werIst({ name: inst.leader, pid: inst.lpid })
+
   // Grundlast: Leitungen je Person im Fenster der letzten FS_LOAD_WEEKS Wochen.
   const load = new Map<string, number>()
   const vonWoche = Math.max(0, wi - FS_LOAD_WEEKS + 1)
   for (let i = vonWoche; i <= wi; i++) {
     for (const inst of fsWeeks[i] ?? []) {
-      if (inst.leader) load.set(inst.leader, (load.get(inst.leader) ?? 0) + 1)
+      const id = idVon(inst)
+      if (id) load.set(id, (load.get(id) ?? 0) + 1)
     }
   }
   // Wartezeit: Abstand zur nächstgelegenen eigenen Leitung über ALLE geladenen
@@ -304,25 +312,30 @@ export function fsAutoAssign(
   fsWeeks.forEach((week, i) => {
     const d = Math.abs(i - wi)
     for (const inst of week) {
-      if (inst.leader && (abstand.get(inst.leader) ?? Infinity) > d) {
-        abstand.set(inst.leader, d)
-      }
+      const id = idVon(inst)
+      if (id && (abstand.get(id) ?? Infinity) > d) abstand.set(id, d)
     }
   })
-  const wartezeit = (name: string): number => abstand.get(name) ?? Infinity
+  const wartezeit = (id: string): number => abstand.get(id) ?? Infinity
   // Schon je Wochentag dieser Woche belegte Leiter (Doppelung am selben Tag meiden).
   const dayUsed = new Map<number, Set<string>>()
-  const markDay = (wd: number, name: string) => {
+  const markDay = (wd: number, id: string) => {
     const set = dayUsed.get(wd) ?? new Set<string>()
-    set.add(name)
+    set.add(id)
     dayUsed.set(wd, set)
   }
-  for (const inst of fsWeeks[wi] ?? []) if (inst.leader) markDay(inst.wd, inst.leader)
   // Wer in DIESER Woche schon leitet — für den Wochen-Deckel unten.
   const inDerWoche = new Set<string>()
-  for (const inst of fsWeeks[wi] ?? []) if (inst.leader) inDerWoche.add(inst.leader)
+  for (const inst of fsWeeks[wi] ?? []) {
+    const id = idVon(inst)
+    if (!id) continue
+    markDay(inst.wd, id)
+    inDerWoche.add(id)
+  }
 
   const newly: string[] = []
+  /** Dieselben Leitungen als Person-Id — für die „…"-Markierung (pendingIds). */
+  const newlyIds: string[] = []
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
     const used = dayUsed.get(inst.wd) ?? new Set<string>()
@@ -333,7 +346,7 @@ export function fsAutoAssign(
     // und „Anna"+„12" wären sonst derselbe.
     const alle = poolFor(inst.wd)
       .map((p) => ({ p, name: displayName(p) }))
-      .filter((k) => !used.has(k.name))
+      .filter((k) => !used.has(k.p.id))
     // Höchstens eine Leitung je Person und Woche — aber nur, solange dafür
     // genug Kandidaten da sind; sonst bliebe ein Platz offen, obwohl jemand da
     // ist.
@@ -347,27 +360,28 @@ export function fsAutoAssign(
     //
     // Das ist die Bremse gegen das Häufen — nicht der Lastvergleich. Der sagt
     // nur, WER als Nächstes dran ist, nicht wie oft hintereinander.
-    const frei = alle.filter((k) => !inDerWoche.has(k.name))
+    const frei = alle.filter((k) => !inDerWoche.has(k.p.id))
     const cand = (frei.length > 0 ? frei : alle).sort(
       (a, b) =>
-        (load.get(a.name) ?? 0) - (load.get(b.name) ?? 0) ||
-        wartezeit(b.name) - wartezeit(a.name) ||
+        (load.get(a.p.id) ?? 0) - (load.get(b.p.id) ?? 0) ||
+        wartezeit(b.p.id) - wartezeit(a.p.id) ||
         tieHash(`${a.name}|${wi}|${inst.wd}`) - tieHash(`${b.name}|${wi}|${inst.wd}`),
     )
     const pick = cand[0]
     if (!pick) return inst
-    load.set(pick.name, (load.get(pick.name) ?? 0) + 1)
+    load.set(pick.p.id, (load.get(pick.p.id) ?? 0) + 1)
     // Wer gerade drankommt, wartet ab jetzt null Wochen — sonst gewönne
     // dieselbe Person die Wartezeit auch beim nächsten Treffpunkt derselben
     // Woche noch einmal.
-    abstand.set(pick.name, 0)
-    markDay(inst.wd, pick.name)
-    inDerWoche.add(pick.name)
+    abstand.set(pick.p.id, 0)
+    markDay(inst.wd, pick.p.id)
+    inDerWoche.add(pick.p.id)
     newly.push(pick.name)
+    newlyIds.push(pick.p.id)
     return { ...inst, leader: pick.name, lpid: pick.p.id }
   })
-  if (newly.length === 0) return { fsWeeks, count: 0, newly: [] }
-  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, newly }
+  if (newly.length === 0) return { fsWeeks, count: 0, newly: [], newlyIds: [] }
+  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, newly, newlyIds }
 }
 
 /** Leiter der Woche `wi` leeren (`onlyGroup` grenzt auf eine Gruppe ein). */

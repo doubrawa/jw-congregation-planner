@@ -2,7 +2,6 @@ import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { fsWeekConflicts } from '../data/fs'
-import { displayName } from '../data/helpers'
 import { currentWeekIndex } from '../data/meeting-dates'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
 import { LOCALES } from '../i18n/langs'
@@ -23,7 +22,6 @@ export function DashboardScreen() {
   const abwesend = useAbwesend()
   const { t, tu, tp } = useT()
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
-  const myName = me ? displayName(me) : null
 
   // Tageszeit-Gruß + lokalisiertes Datum (Wochentag · Tag · Monat, Großbuchstaben).
   const hour = new Date().getHours()
@@ -125,9 +123,7 @@ export function DashboardScreen() {
           <div className="dash-week-label">{t.aktuelleWoche}</div>
           {(['mid', 'we'] as MeetingTab[]).map((tab) => {
             const meeting = tab === 'mid' ? week.mid : week.we
-            const has = myName
-              ? assignmentsInMeeting(meeting, myName, state.services).length > 0
-              : false
+            const has = me ? assignmentsInMeeting(meeting, me, state.services).length > 0 : false
             return (
               <div key={tab} className="dash-week-row">
                 <div>

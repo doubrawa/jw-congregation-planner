@@ -116,9 +116,10 @@ export interface AppState {
   importing: boolean // Programm-Import läuft (~0.9 s)
   imported: boolean // alle verfügbaren Wochen importiert
   // Persönliche Aufgaben & Bestätigungs-Flow. Im Produktionsmodus werden
-  // myTasks/pendingNames aus weeks + confirmations abgeleitet (store.tsx).
+  // myTasks/pendingIds aus weeks + confirmations abgeleitet (store.tsx).
   myTasks: MyTask[]
-  pendingNames: string[] // Namen mit noch offener Bestätigung (Planen: „…“)
+  /** Kennungen (Person-Id, sonst `name:…`) mit noch offener Bestätigung — Planen: „…“ */
+  pendingIds: string[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
   myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)

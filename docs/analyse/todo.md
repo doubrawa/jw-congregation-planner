@@ -575,7 +575,7 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Nachgetragen (August 2026)
 
-### T57 · Zuordnung durchgängig über die Person-Id, nicht über den Namen 🏗
+### T57 · Zuordnung durchgängig über die Person-Id, nicht über den Namen 🏗 ✅ erledigt
 **Vorgabe des Betreibers.** Wo eine Zuteilung einer Person gehört, muss die
 Person-Id entscheiden — der Anzeigename nur noch als Rückfall für Altdaten.
 Zwei Personen desselben Namens bekommen sonst gegenseitig fremde Aufgaben,
@@ -587,14 +587,27 @@ bei Programmpunkten, Ratgeber und Hilfsdiensten (`assignSlot`,
 Über die Id gehen bereits `deriveMyTasks`, `deriveMyFsTasks`,
 `person-timeline`, `fsWeekConflicts` und `send-reminders`.
 
-**Was noch über den Namen läuft:**
-- `helpers.ts` — `partWorkload` (:303/:308/:315), `helperWorkload` (:341):
-  die gesamte Auslastungsrechnung und damit die Fairness der Auto-Zuteilung
-- `planning.ts` — `assignmentDistance`, `meetingAssignedNames`,
-  `meetingPartNames`, `meetingHelperNames`, `weekConflicts`,
-  `derivePendingNames`, `assignmentsInMeeting`, `openSlotLabels`
-- `fs.ts` — die Strichliste in `fsAutoAssign` (`load`, `abstand`, `dayUsed`)
-- `state.pendingNames` ist eine Namensliste; im Planen markiert sie die „…"
+**Umgesetzt (August 2026).** Zwei Bausteine in `helpers.ts` tragen das Ganze:
+`gehoertZu(zuteilung, person)` als **einzige** Stelle, an der entschieden wird,
+wem eine Zuteilung gehört, und `idAufloeser(persons)`, der beide Formen — Id
+und Altdaten-Name — auf **eine** Id bringt, damit niemand unter zwei Schlüsseln
+zählt.
+
+Umgestellt: `partWorkload`, `helperWorkload`, `workloadOf`, `loadWindow`
+(nehmen jetzt `Person` statt `name`), die beiden Strichlisten und die
+`used`-Menge in `autoAssignMeeting`, `assignmentDistance` (je Bereich),
+`weekConflicts` inklusive Serien- und Doppelbelegungs-Zählung,
+`assignmentsInMeeting`, `fsAutoAssign` (Last, Wartezeit, Tagessperre,
+Wochen-Deckel) und `state.pendingNames` → `state.pendingIds`.
+
+**Was bewusst über den Namen bleibt:**
+- die **Begleiter-Erwähnung** im Rollentext („mit A. Hoffmann") — dort steht
+  ein Name, keine Id; Namensgleiche sind nicht unterscheidbar
+- der **Tie-Break-Schlüssel** der Auto-Zuteilung: er soll sich lesbar aus der
+  Person ergeben, nicht aus einer UUID, die bei jeder Neuanlage eine andere
+  Reihenfolge ergäbe
+- **Altdaten und Demo-Wochen** ohne `pid`: dort ist der Anzeigename der einzige
+  Anhalt, und die Kennung lautet `name:<Anzeigename>`
 
 **Warum das ein eigener Block ist:** die Zähl- und Vergleichsfunktionen nehmen
 durchweg `name: string` entgegen. Der Umstieg heißt, sie auf eine

@@ -276,10 +276,69 @@ export function rolleNennt(rolle: string | undefined, name: string): boolean {
   return false
 }
 
+/** Was eine Zuteilung über ihren Inhaber verrät — Slot, Ratgeber, Hilfsdienst. */
+export interface Zuteilung {
+  name?: string
+  pid?: string
+}
+
+/**
+ * Gehört diese Zuteilung dieser Person?
+ *
+ * **Die einzige Stelle, an der das entschieden wird.** Vorher verglich jede
+ * Zähl-, Konflikt- und Anzeigefunktion für sich selbst — die einen über die
+ * Person-Id, die anderen über den Anzeigenamen. Zwei Personen desselben Namens
+ * teilten sich dadurch eine Auslastung, sahen gegenseitig ihre Aufgaben und
+ * lösten füreinander Konflikte aus.
+ *
+ * Rangfolge: die **Id** entscheidet, sobald die Zuteilung eine trägt. Nur
+ * Altdaten (vor `pid` gespeichert), externe Redner und Gruppen-Rotationen haben
+ * keine — dort bleibt der Anzeigename der einzige Anhalt.
+ *
+ * Wichtig ist die Richtung: hat die Zuteilung eine Id, wird **nicht** auf den
+ * Namen zurückgefallen. Sonst zählte eine Zuteilung, die ausdrücklich Person A
+ * meint, auch für die gleichnamige Person B mit.
+ */
+export function gehoertZu(zuteilung: Zuteilung | undefined, person: Person): boolean {
+  if (!zuteilung?.name) return false
+  return zuteilung.pid ? zuteilung.pid === person.id : zuteilung.name === displayName(person)
+}
+
+/**
+ * Auflöser Zuteilung → Person-Id.
+ *
+ * Die Strichlisten der Auto-Zuteilung zählen je Person, nicht je Name. Damit
+ * eine Person nicht unter zwei Schlüsseln auftaucht — einmal als Id aus neuen
+ * Zuteilungen, einmal als Name aus Altdaten —, werden beide Formen hier auf
+ * **eine** Id gebracht.
+ *
+ * Wen keine Person trägt (externer Redner, Gruppen-Rotation, gelöschte
+ * Person), bekommt `undefined` und fällt aus der Rechnung — richtig so: eine
+ * Auslastung hat nur, wer zugeteilt werden kann.
+ *
+ * Bei doppelten Anzeigenamen und Altdaten ohne Id bleibt eine Zweideutigkeit,
+ * die keine Auflösung beheben kann; deshalb warnt die App vor Dubletten
+ * (`duplicateDisplayNames`).
+ */
+export function idAufloeser(persons: Person[]): (z: Zuteilung | undefined) => string | undefined {
+  const nachId = new Set(persons.map((p) => p.id))
+  const nachName = new Map(persons.map((p) => [displayName(p), p.id]))
+  return (z) => {
+    if (!z?.name) return undefined
+    if (z.pid) return nachId.has(z.pid) ? z.pid : undefined
+    return nachName.get(z.name)
+  }
+}
+
 /**
  * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
  * Zählt wie der Prototyp auch Begleiter-Erwähnungen im Rollenlabel
  * ("mit A. Hoffmann") — wer begleitet, hat ebenfalls eine Aufgabe.
+ *
+ * Die Begleiter-Erwähnung ist die eine Stelle, die zwangsläufig über den Namen
+ * geht: im Rollentext steht ein Name, keine Id. Namensgleiche sind dort nicht
+ * unterscheidbar — deshalb warnt die App vor doppelten Anzeigenamen
+ * (`duplicateDisplayNames`).
  *
  * Beide Räume zählen: ein Schülerteil in der Zusätzlichen Klasse (`item.aux`)
  * ist dieselbe Aufgabe wie im Hauptsaal, und der Ratgeber der Klasse ist
@@ -294,25 +353,25 @@ export function rolleNennt(rolle: string | undefined, name: string): boolean {
  * die Rollenbeschriftung in die Klasse ("Regeln folgen immer dem Hauptsaal"),
  * sie dort erneut zu zählen verdoppelte dieselbe Begleitung.
  */
-export function partWorkload(weeks: Week[], name: string): number {
-  if (!name) return 0
+export function partWorkload(weeks: Week[], person: Person): number {
+  const name = displayName(person)
   let count = 0
   for (const week of weeks) {
     for (const meeting of [week.mid, week.we]) {
       const mitKlasse = hatAuxKlasse(meeting)
-      if (mitKlasse && meeting.auxRatgeber?.name === name) count++
+      if (mitKlasse && gehoertZu(meeting.auxRatgeber, person)) count++
       for (const section of meeting.sections) {
         for (const item of section.items) {
           if (isSong(item)) continue
           for (const slot of item.names) {
-            if (slot.name === name) count++
+            if (gehoertZu(slot, person)) count++
             if (rolleNennt(slot.rolle, name)) count++
           }
           // Nur zählen, solange die Klasse besteht: beim Abschalten bleiben die
           // Namen bewusst stehen (damit ein Wiedereinschalten sie hat). Ohne
           // diese Prüfung schleppte die Auto-Zuteilung eine Last mit, die es
           // gar nicht mehr gibt, und bevorzugte dauerhaft die Falschen.
-          if (mitKlasse) for (const slot of item.aux ?? []) if (slot.name === name) count++
+          if (mitKlasse) for (const slot of item.aux ?? []) if (gehoertZu(slot, person)) count++
         }
       }
     }
@@ -329,8 +388,7 @@ export function partWorkload(weeks: Week[], name: string): number {
  * „Meine Aufgaben", zählten hier aber weiter als Last. Ohne `services` (nicht
  * jeder Aufrufer hat sie) zählt wie bisher alles.
  */
-export function helperWorkload(weeks: Week[], name: string, services?: Service[]): number {
-  if (!name) return 0
+export function helperWorkload(weeks: Week[], person: Person, services?: Service[]): number {
   const grenze = services ? new Map(services.map((s) => [s.key, s.count])) : null
   let count = 0
   for (const week of weeks) {
@@ -338,7 +396,7 @@ export function helperWorkload(weeks: Week[], name: string, services?: Service[]
       for (const [key, assigned] of Object.entries(meeting.helpers)) {
         const bis = grenze ? (grenze.get(key) ?? 0) : assigned.length
         for (let pos = 0; pos < Math.min(bis, assigned.length); pos++) {
-          if (assigned[pos]?.name === name) count++
+          if (gehoertZu(assigned[pos], person)) count++
         }
       }
     }
@@ -347,8 +405,8 @@ export function helperWorkload(weeks: Week[], name: string, services?: Service[]
 }
 
 /** Gesamt-Auslastung (Programmpunkte + Hilfsdienste) über die gegebenen Wochen. */
-export function workloadOf(weeks: Week[], name: string, services?: Service[]): number {
-  return partWorkload(weeks, name) + helperWorkload(weeks, name, services)
+export function workloadOf(weeks: Week[], person: Person, services?: Service[]): number {
+  return partWorkload(weeks, person) + helperWorkload(weeks, person, services)
 }
 
 /** Belegungsart einer Person in EINER Woche (für die Mini-Quadrate). */
@@ -391,7 +449,7 @@ export const LOAD_WEEKS = LOAD_RADIUS * 2 + 1
  */
 export function loadWindow(
   weeks: Week[],
-  name: string,
+  person: Person,
   wi: number,
   services?: Service[],
   radius = LOAD_RADIUS,
@@ -400,8 +458,8 @@ export function loadWindow(
   for (let i = wi - radius; i <= wi + radius; i++) {
     const week = weeks[i]
     if (!week) out.push('void')
-    else if (partWorkload([week], name) > 0) out.push('task')
-    else if (helperWorkload([week], name, services) > 0) out.push('helper')
+    else if (partWorkload([week], person) > 0) out.push('task')
+    else if (helperWorkload([week], person, services) > 0) out.push('helper')
     else out.push('none')
   }
   return out

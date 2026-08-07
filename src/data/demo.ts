@@ -277,7 +277,20 @@ export const DEMO_MY_TASKS: MyTask[] = [
  * Namen mit noch offener Bestätigung → im Planen als „…“ statt „✓“.
  * Seed wie im Prototyp; jede neue Zuteilung setzt den Namen auf „pending“.
  */
-export const DEMO_PENDING_NAMES: string[] = ['Simon Krüger', 'Jörg Roth', 'Elke Brandt']
+/**
+ * Wer im Demo-Modus noch nicht bestätigt hat — als **Kennung**, wie sie
+ * `derivePendingIds` liefert: Person-Id, wo der Slot eine trägt, sonst
+ * `name:<Anzeigename>`.
+ *
+ * Hier der Namensschlüssel, denn die Demo-Wochen tragen bewusst keine `pid`
+ * (siehe `helperSlots`) — mit Person-Ids stünde im Demo-Modus nirgends mehr
+ * ein „…". Sobald die Demo-Daten Ids bekommen, gehört diese Liste mit.
+ */
+export const DEMO_PENDING_IDS: string[] = [
+  'name:Simon Krüger',
+  'name:Jörg Roth',
+  'name:Elke Brandt',
+]
 
 export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true }
 
