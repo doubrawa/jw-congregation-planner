@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Nomi visualizzati uguali fanno attribuire gli incarichi alla persona sbagliata. Dai a ognuno un nome visualizzato univoco.",
   "errTitel": "Errore di visualizzazione",
   "errText": "Non è stato possibile mostrare questa sezione. Il resto dell’app continua a funzionare.",
+  "toastSpeicherFehler": "Modifica non salvata — ricarica la pagina",
 } satisfies Partial<Dict>

@@ -739,9 +739,30 @@ export async function seedCongregation(congregationId: string): Promise<string |
 
 /* ---- Schreiben ----------------------------------------------------------- */
 
+/**
+ * Alle `save*`/`delete*`-Funktionen sind fire-and-forget: der Reducer zeigt
+ * den Erfolg, **bevor** geschrieben wurde. Schlug das Schreiben fehl —
+ * RLS-Verstoß, abgelaufenes Token, kein Netz, Timeout —, stand das bislang nur
+ * in der Konsole. Der Nutzer sah „Zugeteilt", die Datenbank hatte nichts.
+ *
+ * Diese Schicht kennt weder Dispatch noch Sprache. Sie meldet deshalb nur,
+ * *dass* etwas schiefging; wer das anzeigt, meldet sich hier an (store.tsx).
+ * Die Fehlermeldung selbst bleibt in der Konsole: sie kommt aus der Datenbank
+ * und gehört nicht ungefiltert vor den Nutzer.
+ */
+type Fehlermelder = () => void
+
+let melder: Fehlermelder | null = null
+
+export function setSchreibfehlerMelder(fn: Fehlermelder | null): void {
+  melder = fn
+}
+
 async function run(promise: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
   const { error } = await promise
-  if (error) console.error('[persistenz]', error.message)
+  if (!error) return
+  console.error('[persistenz]', error.message)
+  melder?.()
 }
 
 export function saveWeek(congregationId: string, position: number, week: Week): void {
@@ -911,7 +932,7 @@ export function insertNotifications(
  */
 export function substituteSeek(congregationId: string, taskKey: string): void {
   if (!supabase) return
-  void supabase.functions.invoke('substitute', { body: { action: 'seek', congregationId, taskKey } })
+  void run(supabase.functions.invoke('substitute', { body: { action: 'seek', congregationId, taskKey } }))
 }
 
 /**
@@ -922,7 +943,9 @@ export function substituteSeek(congregationId: string, taskKey: string): void {
  */
 export function substituteTake(congregationId: string, taskKey: string): void {
   if (!supabase) return
-  void supabase.functions.invoke('substitute', { body: { action: 'take', congregationId, taskKey } })
+  // Über run(): scheitert die Übernahme, hat der Aufrufer sonst „Übernommen"
+  // gesehen, während der Slot serverseitig unverändert blieb.
+  void run(supabase.functions.invoke('substitute', { body: { action: 'take', congregationId, taskKey } }))
 }
 
 export function markNotificationsRead(congregationId: string, userId: string): void {

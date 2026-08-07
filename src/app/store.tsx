@@ -9,6 +9,7 @@ import { isDarkTheme } from '../data/constants'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
+import { setSchreibfehlerMelder } from '../lib/data'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
 import { AppContext, type AppAction } from './context'
@@ -40,6 +41,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persist(prev, next, effective)
     rawDispatch(effective)
   }, [])
+
+  // Fehlgeschlagene Schreibvorgänge sichtbar machen. Die Schreiber in data.ts
+  // sind fire-and-forget — der Erfolgs-Toast entsteht im Reducer, bevor die
+  // Datenbank überhaupt geantwortet hat. Ohne diese Meldung sieht der Nutzer
+  // „Zugeteilt", während nichts gespeichert wurde.
+  useEffect(() => {
+    let zuletzt = 0
+    setSchreibfehlerMelder(() => {
+      // Ein Fehlschlag reißt meist mehrere Writes mit (Token abgelaufen, Netz
+      // weg). Ein Hinweis genügt — sonst überschreiben sich die Toasts
+      // gegenseitig und der letzte verdeckt, wie viel schiefging.
+      const jetzt = Date.now()
+      if (jetzt - zuletzt < 5000) return
+      zuletzt = jetzt
+      dispatch({ type: 'showToast', text: dict(stateRef.current.lang).toastSpeicherFehler })
+    })
+    return () => setSchreibfehlerMelder(null)
+  }, [dispatch])
 
   // Supabase-Session spiegeln (nur wenn konfiguriert): bestehende Session
   // überspringt den Login-Screen und lädt die Daten; SIGNED_IN (nach Login)

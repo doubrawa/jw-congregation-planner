@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Az azonos megjelenített nevek miatt a feladatok rossz személyhez kerülnek. Adj mindenkinek egyedi megjelenített nevet.",
   "errTitel": "Megjelenítési hiba",
   "errText": "Ezt a részt nem sikerült megjeleníteni. Az alkalmazás többi része tovább működik.",
+  "toastSpeicherFehler": "A módosítást nem sikerült menteni — tölts újra",
 } satisfies Partial<Dict>

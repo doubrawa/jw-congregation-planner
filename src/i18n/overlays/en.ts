@@ -385,4 +385,5 @@ export default {
   "toastFsRuleDel": "Removed from schedule",
   "errTitel": "Display problem",
   "errText": "This area could not be displayed. The rest of the app keeps working.",
+  "toastSpeicherFehler": "Change could not be saved — please reload",
 } satisfies Partial<Dict>

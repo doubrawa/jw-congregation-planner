@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Majina ya kuonyesha yanayofanana hufanya migawo iwekwe kwa mtu asiye sahihi. Mpe kila mtu jina la kuonyesha la kipekee.",
   "errTitel": "Hitilafu ya kuonyesha",
   "errText": "Sehemu hii haikuweza kuonyeshwa. Sehemu nyingine za programu zinaendelea kufanya kazi.",
+  "toastSpeicherFehler": "Mabadiliko hayakuhifadhiwa — pakia upya",
 } satisfies Partial<Dict>

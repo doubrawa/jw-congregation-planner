@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Ista prikazana imena dovode do krivog dodjeljivanja zadataka. Svakoj osobi daj jedinstveno prikazano ime.",
   "errTitel": "Pogreška prikaza",
   "errText": "Ovaj se dio nije mogao prikazati. Ostatak aplikacije i dalje radi.",
+  "toastSpeicherFehler": "Promjena nije spremljena — ponovno učitaj",
 } satisfies Partial<Dict>

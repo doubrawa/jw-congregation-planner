@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Verkettbarer Supabase-Stub: jede Methode liefert dasselbe Objekt zurück und
@@ -7,11 +7,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * `.rpc()`. Geprüft wird, WELCHE Tabelle + Terminal-Operation aufgerufen wurde.
  */
 const chain = vi.hoisted(() => {
-  const c: Record<string, ReturnType<typeof vi.fn>> & { then: unknown } = {} as never
+  const c: Record<string, ReturnType<typeof vi.fn>> & {
+    then: unknown
+    functions: { invoke: ReturnType<typeof vi.fn> }
+  } = {} as never
   for (const m of ['from', 'select', 'insert', 'upsert', 'update', 'delete', 'eq', 'in', 'is', 'order', 'maybeSingle', 'rpc']) {
     c[m] = vi.fn(() => c)
   }
   c.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: null })
+  // Edge Functions laufen nicht über die Kette, sondern über einen eigenen Zweig.
+  c.functions = { invoke: vi.fn(() => Promise.resolve({ data: null, error: null })) }
   return c
 })
 
@@ -46,6 +51,8 @@ import {
   saveService,
   saveSettings,
   saveWeek,
+  setSchreibfehlerMelder,
+  substituteTake,
   swapConfirmationKeys,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
@@ -222,5 +229,50 @@ describe('RPC / Sonstiges', () => {
     const codes = new Set(Array.from({ length: 50 }, () => generateInviteCode()))
     for (const c of codes) expect(c).toMatch(/^[A-HJ-NP-Z2-9]{8}$/)
     expect(codes.size).toBeGreaterThan(45) // kaum Kollisionen
+  })
+})
+
+describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
+  // Die Schreiber sind fire-and-forget: der Erfolgs-Toast entsteht im Reducer,
+  // bevor die Datenbank geantwortet hat. Ohne Meldung sah der Nutzer
+  // „Zugeteilt", während RLS-Verstoß oder abgelaufenes Token nichts schrieben.
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    setSchreibfehlerMelder(null)
+    vi.restoreAllMocks()
+  })
+
+  /** Ein Durchlauf der Mikrotask-Warteschlange — run() ist async. */
+  const abwarten = () => new Promise((r) => setTimeout(r, 0))
+
+  it('meldet, wenn der Schreibvorgang einen Fehler liefert', async () => {
+    const melder = vi.fn()
+    setSchreibfehlerMelder(melder)
+    chain.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: { message: 'rls' } })
+    savePerson('c1', person)
+    await abwarten()
+    expect(melder).toHaveBeenCalledTimes(1)
+    chain.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: null })
+  })
+
+  it('schweigt, solange alles durchgeht', async () => {
+    const melder = vi.fn()
+    setSchreibfehlerMelder(melder)
+    savePerson('c1', person)
+    await abwarten()
+    expect(melder).not.toHaveBeenCalled()
+  })
+
+  it('meldet auch fehlgeschlagene Edge-Function-Aufrufe (Einspringen)', async () => {
+    // takeSubstitute ist der Fall, in dem ein stiller Fehlschlag am meisten
+    // wehtut: der Aufrufer hat „Übernommen" gesehen, der Slot blieb unverändert.
+    const melder = vi.fn()
+    setSchreibfehlerMelder(melder)
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
+    substituteTake('c1', 'k1')
+    await abwarten()
+    expect(melder).toHaveBeenCalledTimes(1)
   })
 })

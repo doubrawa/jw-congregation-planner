@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Like visningsnavn gjør at oppgaver havner hos feil person. Gi hver person et unikt visningsnavn.",
   "errTitel": "Visningsfeil",
   "errText": "Denne delen kunne ikke vises. Resten av appen fungerer videre.",
+  "toastSpeicherFehler": "Endringen kunne ikke lagres — last inn på nytt",
 } satisfies Partial<Dict>

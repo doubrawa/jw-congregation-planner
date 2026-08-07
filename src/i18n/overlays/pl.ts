@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Takie same nazwy wyświetlane powodują błędne przypisanie zadań. Nadaj każdej osobie niepowtarzalną nazwę wyświetlaną.",
   "errTitel": "Błąd wyświetlania",
   "errText": "Nie udało się wyświetlić tej sekcji. Reszta aplikacji działa dalej.",
+  "toastSpeicherFehler": "Nie udało się zapisać zmiany — odśwież stronę",
 } satisfies Partial<Dict>

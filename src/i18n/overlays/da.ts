@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Ens visningsnavne gør at opgaver havner hos den forkerte. Giv hver person et entydigt visningsnavn.",
   "errTitel": "Visningsfejl",
   "errText": "Dette afsnit kunne ikke vises. Resten af appen fungerer fortsat.",
+  "toastSpeicherFehler": "Ændringen kunne ikke gemmes — genindlæs",
 } satisfies Partial<Dict>

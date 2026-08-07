@@ -385,4 +385,5 @@ export default {
   "dublettenHint": "Dezelfde weergavenamen leiden tot verkeerd toegewezen taken. Geef elke persoon een unieke weergavenaam.",
   "errTitel": "Weergavefout",
   "errText": "Dit onderdeel kon niet worden weergegeven. De rest van de app werkt gewoon door.",
+  "toastSpeicherFehler": "Wijziging kon niet worden opgeslagen — laad opnieuw",
 } satisfies Partial<Dict>
