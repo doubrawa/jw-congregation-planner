@@ -290,17 +290,22 @@ export function workloadOf(weeks: Week[], name: string): number {
 export type WeekLoad = 'void' | 'none' | 'task' | 'helper'
 
 /**
- * Radius des Auslastungs-Fensters im Zuteilungs-Sheet: so viele Wochen vor und
- * nach der geplanten werden gezeigt.
+ * Radius des Auslastungs-Fensters: so viele Wochen vor und nach der geplanten
+ * zählen mit.
  *
- * Einzige Quelle dieser Zahl. Sie stand früher dreifach da — als Literal beim
- * Ausschneiden der Wochen, als Literal beim Aufruf hier und ausgeschrieben in
- * 34 Übersetzungen („… in 5 Wochen"). Beim letzten Wechsel von 4 auf 5 blieben
- * drei Sprachen bei der alten Zahl stehen; deshalb wird sie jetzt in den Text
- * eingesetzt statt hineingeschrieben.
+ * Einzige Quelle dieser Zahl — für die **Anzeige** (Mini-Quadrate und „… in 5
+ * Wochen" im Zuteilungs-Sheet) und für die **Entscheidung** der automatischen
+ * Zuteilung. Das waren lange zwei verschiedene Zahlen: gezeigt wurden 5 Wochen,
+ * sortiert wurde nach 7. Der Planer las also unter dem Namen eine Zahl, nach der
+ * gar nicht sortiert worden war. Gemessen macht die Weite keinen Unterschied
+ * mehr (30 Schwestern über ein Jahr: 10–11 Aufgaben bei ±2 wie bei ±3, ein
+ * 4er-Ton-Pool jeweils exakt 26/26/26/26), seit die Wartezeit die Fairness
+ * trägt — also gilt die Zahl, die man auch sieht.
  *
- * NICHT dasselbe wie WINDOW in planning.ts: dort geht es um die Fairness der
- * automatischen Verteilung (±3), hier nur um das, was der Planer sieht.
+ * Sie stand früher dreifach da: als Literal beim Ausschneiden der Wochen, als
+ * Literal beim Aufruf und ausgeschrieben in 34 Übersetzungen („… in 5 Wochen").
+ * Beim letzten Wechsel von 4 auf 5 blieben drei Sprachen bei der alten Zahl
+ * stehen; deshalb wird sie in den Text eingesetzt statt hineingeschrieben.
  */
 export const LOAD_RADIUS = 2
 
