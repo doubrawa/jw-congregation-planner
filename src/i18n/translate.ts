@@ -76,6 +76,39 @@ function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: num
 type Rule = [RegExp, (m: RegExpMatchArray) => string]
 
 /**
+ * Datumsregel mit deutschem Monatsnamen.
+ *
+ * Die Regeln fangen den Monat als `[A-Za-zäöü]+` — welche Form ankommt, hängt
+ * von der Quelle ab: der Programmkopf schreibt „8. September", die
+ * Erinnerungstexte „8. Sep". Deshalb wird in beiden Tabellen nachgeschlagen,
+ * der ausgeschriebenen (MON) und der Kurzform (MONA).
+ *
+ * Wer nur eine befragt, bekommt für die andere Form `undefined` zurück. Das
+ * blieb im Hand-Pfad als „Tue, undefined 8" stehen und wurde im Intl-Pfad zum
+ * `Invalid Date`, an dem `Intl.format()` einen `RangeError` wirft — ohne Error
+ * Boundary der Totalausfall der App. Ein unbekannter Monat lässt die Regel
+ * jetzt ganz aus: lieber ein sichtbar deutsch gebliebenes Datum.
+ */
+function datumsRegel(
+  re: RegExp,
+  monatsGruppen: number[],
+  fn: (m: RegExpMatchArray, monate: number[]) => string,
+): Rule {
+  return [
+    re,
+    (m) => {
+      const monate: number[] = []
+      for (const g of monatsGruppen) {
+        const idx = MON[m[g]] ?? MONA[m[g]]
+        if (idx === undefined) return m[0]
+        monate.push(idx)
+      }
+      return fn(m, monate)
+    },
+  ]
+}
+
+/**
  * Verweise auf Studienstoff, Gruppen und Versammlungen — für beide Pfade
  * (Datums-Wörterbuch und Intl) dieselben Regeln aus derselben Tabelle.
  *
@@ -161,11 +194,11 @@ function makeTrIntl(code: Lang): (s: string) => string {
     [/^(\d+) Min\.$/, m => ex.min(m[1])],
     [/^Ende ca\. (.+)$/, m => ex.ende(m[1])],
     [/^ca\. (.+)$/, m => ex.ca(m[1])],
-    [/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WD[m[1]], +m[2], MON[m[3]], 'long')],
-    [/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, m => intlWeekdayDate(locale, WDA[m[1]], +m[2], MON[m[3]], 'short')],
+    datumsRegel(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => intlWeekdayDate(locale, WD[m[1]], +m[2], mo[0], 'long')),
+    datumsRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => intlWeekdayDate(locale, WDA[m[1]], +m[2], mo[0], 'short')),
     [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => intlWeekdayShort(locale, WDA[m[1]]) + ' ' + m[2]],
-    [/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, m => intlRange(locale, +m[1], MON[m[3]], +m[2], MON[m[3]])],
-    [/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, m => intlRange(locale, +m[1], MONA[m[2]], +m[3], MONA[m[4]])],
+    datumsRegel(/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => intlRange(locale, +m[1], mo[0], +m[2], mo[0])),
+    datumsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mo) => intlRange(locale, +m[1], mo[0], +m[3], mo[1])),
     [/^mit (.+)$/, m => ex.mit(m[1])],
     [/^in (\d+) Tagen$/, m => ex.tage(m[1])],
     [/^(\d+) Zuteilungen$/, m => ex.zut(m[1])],
@@ -184,11 +217,11 @@ export function makeTr(code: Lang): (s: string) => string {
     [/^(\d+) Min\.$/, m => L.min(m[1])],
     [/^Ende ca\. (.+)$/, m => L.ende(m[1])],
     [/^ca\. (.+)$/, m => L.ca(m[1])],
-    [/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, m => L.date(L.wd[WD[m[1]]], m[2], L.mon[MON[m[3]]])],
-    [/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, m => L.date(L.wda[WDA[m[1]]], m[2], L.mon[MON[m[3]]])],
+    datumsRegel(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => L.date(L.wd[WD[m[1]]], m[2], L.mon[mo[0]])),
+    datumsRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => L.date(L.wda[WDA[m[1]]], m[2], L.mon[mo[0]])),
     [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => L.wda[WDA[m[1]]] + ' ' + m[2]],
-    [/^(\d+)\.\u2013(\d+)\. ([A-Za-zäöü]+)$/, m => L.range1(m[1], m[2], L.mon[MON[m[3]]])],
-    [/^(\d+)\. ([A-Za-zäöü]{3}) \u2013 (\d+)\. ([A-Za-zäöü]{3})$/, m => L.range2(m[1], L.mona[MONA[m[2]]], m[3], L.mona[MONA[m[4]]])],
+    datumsRegel(/^(\d+)\.\u2013(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => L.range1(m[1], m[2], L.mon[mo[0]])),
+    datumsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) \u2013 (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mo) => L.range2(m[1], L.mona[mo[0]], m[3], L.mona[mo[1]])),
     ...verweisRegeln(code),
     ...buchRegeln(code),
     [/^Studienartikel (\d+)$/, m => L.artikel(m[1])],
