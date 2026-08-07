@@ -203,6 +203,22 @@ describe('send-reminders: Zugang', () => {
     expect((await handler(request(null))).status).toBe(401)
     expect(sentPush).toEqual([])
   })
+
+  it('fehlendes CRON_SECRET → 500, nicht etwa freier Zugang', async () => {
+    // Die Function ist mit --no-verify-jwt deployt, die Plattform prüft also
+    // nichts. Eine `if (CRON_SECRET && …)`-Konstruktion liesse bei fehlender
+    // Konfiguration jeden durch — und der Dry-Run gibt die Vorschau ALLER
+    // Versammlungen zurück.
+    const stumm = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const handler = await loadFn({ SEND_PUSH: 'true', CRON_SECRET: '' })
+    for (const auth of [null, 'Bearer irgendwas', `Bearer ${SECRET}`]) {
+      const res = await handler(request(auth))
+      expect(res.status).toBe(500)
+    }
+    expect(writes).toEqual([])
+    expect(sentPush).toEqual([])
+    stumm.mockRestore()
+  })
 })
 
 describe('send-reminders: Dry-Run ist die sichere Voreinstellung', () => {
