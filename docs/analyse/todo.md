@@ -107,7 +107,7 @@ anlegen und speichern.
 → [lesepruefungen.md § B7](lesepruefungen.md) · Die laufende Instanz ist bereits
 vollständig migriert, betroffen sind nur neue.
 
-### T7 · Offline: Ansichts-Aktionen freigeben ⚡
+### T7 · Offline: Ansichts-Aktionen freigeben ⚡ ✅ erledigt
 **`src/app/readonly.ts:16-48`** — `openMyTask`, `closeMyTask` und `welcomeShown`
 fehlen in der Positivliste. Offline lässt sich die eigene Aufgabe nicht öffnen,
 und beim Start erscheint statt der Begrüßung ein „nur lesend"-Toast.
@@ -551,6 +551,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☑☑ · Phase 1 ☑☑☐ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

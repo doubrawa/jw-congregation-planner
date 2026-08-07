@@ -21,6 +21,12 @@ describe('isViewAction', () => {
     'setLang',
     'showToast',
     'hideToast',
+    // Offline nachschlagen, was ansteht, ist der Sinn des Offline-Stands:
+    // ohne diese drei ließ sich die eigene Aufgabe nicht öffnen, und der
+    // Start begrüßte mit einem „nur lesend"-Hinweis statt mit dem Namen.
+    'openMyTask',
+    'closeMyTask',
+    'welcomeShown',
   ]
   it.each(views)('erlaubt %s (nur Ansicht)', (type) => {
     expect(isViewAction(type)).toBe(true)
