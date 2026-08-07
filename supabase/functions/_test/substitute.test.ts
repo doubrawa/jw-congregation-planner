@@ -45,16 +45,24 @@ const MEMBERS = [
 ]
 
 const PERSONS = [
-  { id: 'p-me', fn: 'Ich', ln: 'Selbst', dn: 'Ich Selbst', priv: QUAL, absent: [] },
-  { id: 'p-orig', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: QUAL, absent: [] },
-  { id: 'p-unqual', fn: 'Uwe', ln: 'Nqual', dn: 'Uwe Nqual', priv: {}, absent: [] },
-  { id: 'p-absent', fn: 'Anna', ln: 'Bwesend', dn: 'Anna Bwesend', priv: QUAL, absent: [WI] },
-  { id: 'p-planner', fn: 'Paul', ln: 'Aner', dn: 'Paul Aner', priv: {}, absent: [] },
+  { id: 'p-me', fn: 'Ich', ln: 'Selbst', dn: 'Ich Selbst', priv: QUAL },
+  { id: 'p-orig', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: QUAL },
+  { id: 'p-unqual', fn: 'Uwe', ln: 'Nqual', dn: 'Uwe Nqual', priv: {} },
+  { id: 'p-absent', fn: 'Anna', ln: 'Bwesend', dn: 'Anna Bwesend', priv: QUAL },
+  { id: 'p-planner', fn: 'Paul', ln: 'Aner', dn: 'Paul Aner', priv: {} },
   // qualifiziert, hat aber gar kein Konto → kann nicht benachrichtigt werden
-  { id: 'p-noacct', fn: 'Karl', ln: 'Onto', dn: 'Karl Onto', priv: QUAL, absent: [] },
+  { id: 'p-noacct', fn: 'Karl', ln: 'Onto', dn: 'Karl Onto', priv: QUAL },
 ]
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone' }]
+
+const CONGREGATIONS = [{ meeting_times: 'Di 19:00 · So 10:00' }]
+
+/**
+ * Abwesenheit als Zeitraum (nicht mehr als Wochenindex): die Zusammenkunft der
+ * Woche liegt am Dienstag, 8.9.2026 — Anna ist vom 7. bis 9.9. weg.
+ */
+const ABSENCES = [{ person_id: 'p-absent', from_date: '2026-09-07', to_date: '2026-09-09' }]
 const SUBS = [{ user_id: U_ME, endpoint: 'https://push.test/me', p256dh: 'k', auth: 'a' }]
 
 function freshWeek(): unknown {
@@ -104,6 +112,8 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('services')) return jsonRes(SERVICES)
   if (path.startsWith('persons')) return jsonRes(PERSONS)
   if (path.startsWith('push_subscriptions')) return jsonRes(SUBS)
+  if (path.startsWith('congregations')) return jsonRes(CONGREGATIONS)
+  if (path.startsWith('absences')) return jsonRes(ABSENCES)
   if (path.startsWith('weeks')) {
     const pos = Number(/position=eq\.(\d+)/.exec(path)?.[1])
     return jsonRes(pos === WI ? [{ data: week }] : []) // andere Position → nicht geladen

@@ -6,7 +6,7 @@ import { emptyQualifications } from '../data/helpers'
 import type { Person } from '../data/types'
 
 const person = (patch: Partial<Person['priv']> = {}): Person => ({
-  id: 'p', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '', absent: [],
+  id: 'p', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '',
   priv: { ...emptyQualifications(), ...patch },
 })
 

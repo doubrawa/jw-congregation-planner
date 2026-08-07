@@ -58,7 +58,6 @@ interface PersonRow {
   female: boolean
   tel: string
   mail: string
-  absent: number[]
   priv: Qualifications
   grp: string | null
   fam: string | null
@@ -88,6 +87,8 @@ interface WeekRow {
 
 interface AbsenceRow {
   id: string
+  person_id: string | null
+  user_id: string
   from_date: string
   to_date: string
   reason: string
@@ -406,7 +407,6 @@ function personFromRow(r: PersonRow): Person {
     female: r.female || undefined,
     tel: r.tel,
     mail: r.mail,
-    absent: r.absent ?? [],
     priv: normalizePriv(r.priv),
     grp: r.grp ?? null,
     fam: r.fam ?? null,
@@ -425,7 +425,6 @@ function personToRow(p: Person, congregationId: string) {
     female: Boolean(p.female),
     tel: p.tel,
     mail: p.mail,
-    absent: p.absent,
     priv: p.priv,
     grp: p.grp ?? null,
     fam: p.fam ?? null,
@@ -473,7 +472,14 @@ function serviceToRow(s: Service, congregationId: string, position: number) {
 }
 
 function absenceFromRow(r: AbsenceRow): Absence {
-  return { id: r.id, from: r.from_date, to: r.to_date, reason: r.reason }
+  return {
+    id: r.id,
+    personId: r.person_id,
+    userId: r.user_id,
+    from: r.from_date,
+    to: r.to_date,
+    reason: r.reason,
+  }
 }
 
 /** DB-Zeitstempel → grobe relative Zeitangabe (deutsch, wie im Demo-Stil). */
@@ -551,7 +557,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('weeks').select('position, data').eq('congregation_id', congregationId).order('position'),
-    supabase.from('absences').select('*').eq('congregation_id', congregationId).eq('user_id', userId).order('from_date'),
+    // Versammlungsweit, nicht nur die eigenen: die Planung muss wissen, wer
+    // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
+    // im persönlichen Bereich filtert selbst auf die eigene user_id.
+    supabase.from('absences').select('*').eq('congregation_id', congregationId).order('from_date'),
     // Nur die neuesten 50 — Altbestand räumt send-reminders serverseitig ab
     supabase.from('notifications').select('*').eq('congregation_id', congregationId).order('created_at', { ascending: false }).limit(50),
     supabase.from('confirmations').select('task_key, status').eq('congregation_id', congregationId),

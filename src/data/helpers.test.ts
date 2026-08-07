@@ -41,7 +41,6 @@ function person(patch: Partial<Person>): Person {
     role: 'verkuendiger',
     tel: '',
     mail: '',
-    absent: [],
     priv: priv(),
     ...patch,
   }

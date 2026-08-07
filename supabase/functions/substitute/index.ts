@@ -100,7 +100,34 @@ interface Person {
   ln: string
   dn: string
   priv: Record<string, boolean>
-  absent: number[]
+}
+interface Absence {
+  person_id: string | null
+  from_date: string
+  to_date: string
+}
+
+/** Wochentags-Kürzel → Tage nach Montag (wie send-reminders und die App). */
+const DAY_OFFSET: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 }
+
+/** "Di 19:00 · So 10:00" → Tage nach Montag je Zusammenkunft. */
+function meetingDayOffsets(meetingTimes: string): Record<'mid' | 'we', number> {
+  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1]])
+  return { mid: found[0] ?? 1, we: found[1] ?? 6 }
+}
+
+/** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
+function meetingISO(startISO: string | undefined, offset: number): string | null {
+  if (!startISO) return null
+  const ms = Date.parse(startISO)
+  if (Number.isNaN(ms)) return null
+  return new Date(ms + offset * 864e5).toISOString().slice(0, 10)
+}
+
+/** Fehlt die Person an diesem Tag? Ohne Tag (Vorlagenwoche) nie. */
+function abwesendAm(absences: Absence[], personId: string, tagISO: string | null): boolean {
+  if (!tagISO) return false
+  return absences.some((a) => a.person_id === personId && a.from_date <= tagISO && tagISO <= a.to_date)
 }
 interface Member {
   user_id: string
@@ -192,14 +219,18 @@ Deno.serve(async (req: Request) => {
     const caller = members.find((m) => m.user_id === userId)
     if (!caller) return json({ error: 'forbidden' }, 403)
 
-    const [weekRows, services, persons, subsRows] = await Promise.all([
+    const [weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
       restGet<{ data: Week }[]>(
         `weeks?select=data&congregation_id=eq.${cong}&position=eq.${parts.wi}`,
       ),
       restGet<{ key: string; name: string }[]>(`services?select=key,name&congregation_id=eq.${cong}`),
-      restGet<Person[]>(`persons?select=id,fn,ln,dn,priv,absent&congregation_id=eq.${cong}`),
+      restGet<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${cong}`),
       restGet<Sub[]>(
         `push_subscriptions?select=user_id,endpoint,p256dh,auth&congregation_id=eq.${cong}`,
+      ),
+      restGet<{ meeting_times: string }[]>(`congregations?select=meeting_times&id=eq.${cong}`),
+      restGet<Absence[]>(
+        `absences?select=person_id,from_date,to_date&congregation_id=eq.${cong}`,
       ),
     ])
     const week = weekRows[0]?.data
@@ -209,6 +240,9 @@ Deno.serve(async (req: Request) => {
 
     const svcName = services.find((s) => s.key === parts.svc)?.name ?? parts.svc
     const date = meetingDate(meeting)
+    // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
+    // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
+    const tagISO = meetingISO(week.start, meetingDayOffsets(congRows[0]?.meeting_times ?? '')[parts.tab])
     const qualKey = `svc:${parts.svc}`
     const personById = new Map(persons.map((p) => [p.id, p]))
     const userByPerson = new Map<string, string>()
@@ -220,7 +254,7 @@ Deno.serve(async (req: Request) => {
       const declinedBy = slot.name ?? ''
       const peers = persons
         .filter(
-          (p) => p.priv?.[qualKey] && !p.absent?.includes(parts.wi) && displayName(p) !== declinedBy,
+          (p) => p.priv?.[qualKey] && !abwesendAm(absences, p.id, tagISO) && displayName(p) !== declinedBy,
         )
         .map((p) => userByPerson.get(p.id))
         .filter((u): u is string => Boolean(u) && u !== userId)

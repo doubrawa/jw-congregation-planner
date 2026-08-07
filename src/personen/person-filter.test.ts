@@ -11,7 +11,6 @@ function person(patch: Partial<Person> = {}): Person {
     role: 'verkuendiger',
     tel: '0170 123 4567',
     mail: 'simon.krueger@example.org',
-    absent: [],
     priv: emptyQualifications(),
     ...patch,
   }

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
+import { useAbwesend } from '../app/useAbwesend'
+import { istAbwesend, istAbwesendAm } from '../data/absence'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { useSwipeDown } from '../components/useSwipeDown'
 import { displayName, initials, isQualified, isSong, LOAD_RADIUS, LOAD_WEEKS, loadWindow, partnerGenderOk, personCompare, roleLabel, workloadOf, type WeekLoad } from '../data/helpers'
-import { fsLeaderValue } from '../data/fs'
+import { fsDate, fsLeaderValue } from '../data/fs'
 import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -45,6 +47,7 @@ interface Candidate {
  */
 export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const { state, dispatch } = useApp()
+  const abwesend = useAbwesend()
   const { t, tu, tp } = useT()
   const close = () => dispatch({ type: 'closeSlot' })
   const dlg = useRef<HTMLDivElement>(null)
@@ -149,7 +152,10 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               assignName: name,
               sub: tu(roleLabel(p)),
               today: fsTodayFor(name),
-              absent: p.absent.includes(sel.wi),
+              // Am Tag DIESES Treffpunkts, nicht in der ganzen Woche.
+              absent: fsInst
+                ? istAbwesendAm(state.absences, p.id, fsDate(state.fsBase, sel.wi, fsInst.wd))
+                : false,
               free: workloadOf(state.weeks, name) === 0,
             }
           })
@@ -187,7 +193,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             assignName: name,
             sub: `${tu(roleLabel(p))} · ${workloadLabel}`,
             today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], name, state.services, sel),
-            absent: p.absent.includes(sel.wi),
+            absent: istAbwesend(abwesend, p.id, sel.wi, sel.tab),
             free: workload === 0,
             load: loadWindow(state.weeks, name, sel.wi),
           }

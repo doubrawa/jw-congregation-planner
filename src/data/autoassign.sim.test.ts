@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildImportWeek, DEMO_SERVICES } from './demo'
 import { displayName, isSong, partWorkload, serviceQualKey, workloadOf } from './helpers'
+import type { AbsenceSet } from './absence'
 import { autoAssignMeeting, clearAssignments } from './planning'
 import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
 
@@ -29,7 +30,7 @@ function priv(on: string[]): Qualifications {
 }
 function mk(
   quals: string[],
-  opts: { absent?: number[]; wtLeiter?: boolean; wtVertreter?: boolean; female?: boolean } = {},
+  opts: { wtLeiter?: boolean; wtVertreter?: boolean; female?: boolean } = {},
 ): Person {
   counter += 1
   const pv = priv(quals)
@@ -42,7 +43,6 @@ function mk(
     role: 'verkuendiger',
     tel: '',
     mail: '',
-    absent: opts.absent ?? [],
     priv: pv,
     ...(opts.female ? { female: true } : {}),
   }
@@ -84,11 +84,25 @@ function wtLeiterName(meeting: Meeting): string {
   return slots.find((s) => s.rolle === 'Leiter')?.name ?? ''
 }
 
-function simulate(persons: Person[], services: Service[], nWeeks: number): Week[] {
+/**
+ * Abwesenheits-Menge von Hand: „Person fehlt in diesen Wochen" (beide
+ * Zusammenkünfte). Die Übersetzung von Datum zu Woche prüft absence.test.ts —
+ * hier geht es nur um das Verhalten der Zuteilung.
+ */
+function abwesendIn(pid: string, ...wochen: number[]): AbsenceSet {
+  return new Set(wochen.flatMap((wi) => [`${pid}|${wi}|mid`, `${pid}|${wi}|we`]))
+}
+
+function simulate(
+  persons: Person[],
+  services: Service[],
+  nWeeks: number,
+  abwesend: AbsenceSet = new Set(),
+): Week[] {
   let weeks: Week[] = Array.from({ length: nWeeks }, () => buildImportWeek())
   for (let wi = 0; wi < nWeeks; wi++) {
-    weeks = autoAssignMeeting(weeks, wi, 'mid', persons, services).weeks
-    weeks = autoAssignMeeting(weeks, wi, 'we', persons, services).weeks
+    weeks = autoAssignMeeting(weeks, wi, 'mid', persons, services, [], 'all', abwesend).weeks
+    weeks = autoAssignMeeting(weeks, wi, 'we', persons, services, [], 'all', abwesend).weeks
   }
   return weeks
 }
@@ -172,7 +186,7 @@ describe('Zuteilungen leeren (clearAssignments)', () => {
 
 describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
   // Konduktor Woche 3 abwesend → Vertreter muss übernehmen.
-  const conductor = mk(['studium', 'vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtLeiter: true, absent: [3] })
+  const conductor = mk(['studium', 'vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtLeiter: true })
   const deputy = mk(['studium', 'vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung'], { wtVertreter: true })
   const elders = many(10, ['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung'])
   const servants = many(20, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', MIK, ...ORDNER])
@@ -187,7 +201,7 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
     conductor, deputy, ...elders, ...servants, ...tonPool, ...mikPool,
     ...ordPool, ...sisters, ...readers, ...speakers,
   ]
-  const weeks = simulate(persons, DEMO_SERVICES, 12)
+  const weeks = simulate(persons, DEMO_SERVICES, 12, abwesendIn(conductor.id, 3))
 
   it('stellt ~100 Personen bereit', () => {
     expect(persons.length).toBeGreaterThanOrEqual(100)
@@ -256,9 +270,9 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
 
   it('lässt nicht besetzbare Slots offen (statt zu erzwingen)', () => {
     // Nur ein einziger Zoom-Ordner-fähiger Mensch, der obendrein abwesend ist
-    const solo = mk([ZOOM], { absent: [0] })
+    const solo = mk([ZOOM])
     const zoomOnly: Service[] = [{ key: 'zoom', name: 'Zoom-Ordner', count: 1, groups: false }]
-    const w = simulate([solo], zoomOnly, 1)
+    const w = simulate([solo], zoomOnly, 1, abwesendIn(solo.id, 0))
     expect(w[0].mid.helpers.zoom?.[0]?.name ?? '').toBe('') // bleibt offen
   })
 })
@@ -266,7 +280,7 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
 /* ---- Hilfsbauten für Fenster-/Asymmetrie-Tests -------------------------- */
 
 function named(fn: string, ln: string, quals: string[]): Person {
-  return { id: `n-${ln}`, fn, ln, role: 'verkuendiger', tel: '', mail: '', absent: [], priv: priv(quals) }
+  return { id: `n-${ln}`, fn, ln, role: 'verkuendiger', tel: '', mail: '', priv: priv(quals) }
 }
 function emptyMeeting(): Meeting {
   return { date: '', end: '', sections: [], helpers: {} }
@@ -388,7 +402,7 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
     // Woche 0 → Gruppe 1 reinigt. Aufseher (Otto) und ein freier Bruder können
     // beide Mikrofon; der Aufseher soll den Mikro-Dienst NICHT bekommen.
     const overseer: Person = {
-      id: 'ov1', fn: 'Otto', ln: 'Overseer', role: 'aeltester', tel: '', mail: '', absent: [], priv: priv([MIK]),
+      id: 'ov1', fn: 'Otto', ln: 'Overseer', role: 'aeltester', tel: '', mail: '', priv: priv([MIK]),
     }
     const free = named('Frank', 'Frei', [MIK])
     const groups: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: 'ov1', as: null }]

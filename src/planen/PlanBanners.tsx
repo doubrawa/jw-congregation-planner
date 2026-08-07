@@ -5,6 +5,7 @@
  */
 
 import { useApp } from '../app/context'
+import { useAbwesend } from '../app/useAbwesend'
 import { openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
 import type { MeetingKey, MeetingTab } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -21,8 +22,9 @@ const STREAK_SHOWN = 2
 /** Konflikt-Banner der aktuellen Zusammenkunft (Abwesende, Doppelbelegung, Serien). */
 export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
   const { state } = useApp()
+  const abwesend = useAbwesend()
   const { t } = useT()
-  const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services, tab)
+  const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services, tab, abwesend)
   if (conflicts.length === 0) return null
 
   const shownConflicts = [

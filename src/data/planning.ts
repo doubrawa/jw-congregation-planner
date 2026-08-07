@@ -9,6 +9,7 @@
  * den Reducer und später direkt testbar.
  */
 
+import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
 import { raeume, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
@@ -378,6 +379,7 @@ export function autoAssignMeeting(
   services: Service[],
   groups: Group[] = [],
   scope: AssignScope = 'all',
+  abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): AutoAssignResult {
   const next = structuredClone(weeks)
   const meeting = next[weekIndex][tab]
@@ -465,7 +467,7 @@ export function autoAssignMeeting(
     const candidates = persons.filter(
       (p) =>
         (!priv || isQualified(p, priv)) &&
-        !p.absent.includes(weekIndex) &&
+        !istAbwesend(abwesend, p.id, weekIndex, tab) &&
         (!opts.extra || opts.extra(p)) &&
         !used.has(displayName(p)),
     )
@@ -513,7 +515,10 @@ export function autoAssignMeeting(
   const pickConductor = (): Person | null => {
     const designated = (flag: 'wtLeiter' | 'wtVertreter'): Person | undefined =>
       persons.find(
-        (p) => p.priv[flag] && !p.absent.includes(weekIndex) && !used.has(displayName(p)),
+        (p) =>
+          p.priv[flag] &&
+          !istAbwesend(abwesend, p.id, weekIndex, tab) &&
+          !used.has(displayName(p)),
       )
     return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
   }
@@ -797,6 +802,7 @@ export function deriveSubstituteReqs(
   confirmations: ConfirmationMap,
   me: Person,
   meetings = '',
+  abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): SubstituteReq[] {
   const out: SubstituteReq[] = []
   const myName = displayName(me)
@@ -808,7 +814,8 @@ export function deriveSubstituteReqs(
     if (!parts) continue
     const svc = svcByKey.get(parts.svc)
     if (!svc || svc.groups) continue
-    if (!isQualified(me, serviceQualKey(parts.svc)) || me.absent.includes(parts.wi)) continue
+    if (!isQualified(me, serviceQualKey(parts.svc))) continue
+    if (istAbwesend(abwesend, me.id, parts.wi, parts.tab)) continue
     const week = weeks[parts.wi]
     const meeting = week?.[parts.tab]
     const slot = meeting?.helpers[parts.svc]?.[parts.pos]
@@ -1073,6 +1080,7 @@ export function weekConflicts(
   persons: Person[],
   services: Service[],
   tab?: MeetingKey,
+  abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): Conflict[] {
   const week = weeks[wi]
   if (!week) return []
@@ -1084,7 +1092,7 @@ export function weekConflicts(
   for (const tb of tabs) {
     for (const name of new Set(meetingAssignedNames(week[tb], services))) {
       const person = byDisplay.get(name)
-      if (person && person.absent.includes(wi)) {
+      if (person && istAbwesend(abwesend, person.id, wi, tb)) {
         conflicts.push({ kind: 'absent', name, tab: tb })
       }
     }

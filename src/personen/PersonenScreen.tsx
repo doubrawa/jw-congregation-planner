@@ -80,7 +80,6 @@ function PersonList() {
         role: 'verkuendiger',
         tel: '',
         mail: '',
-        absent: [],
         priv: emptyQualifications(),
       },
     })

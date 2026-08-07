@@ -42,7 +42,7 @@ function mk(
     fn: 'T',
     ln: opts.ln ?? `P${counter}`,
     role: opts.role ?? 'verkuendiger',
-    tel: '', mail: '', absent: [],
+    tel: '', mail: '',
     priv: priv(quals),
     ...(opts.female ? { female: true } : {}),
   }

@@ -230,7 +230,7 @@ describe('Personen (inkl. Debounce)', () => {
 
 describe('Abwesenheiten / Dienste / Gruppen', () => {
   it('addAbsence / removeAbsence', () => {
-    const abs = { id: 'a1', from: '', to: '', reason: '' }
+    const abs = { id: 'a1', personId: 'p9', userId: 'u1', from: '', to: '', reason: '' }
     persist(st(), st(), { type: 'addAbsence', absence: abs })
     expect(data.saveAbsence).toHaveBeenCalledWith('c1', 'u1', 'p9', abs)
     persist(st(), st(), { type: 'removeAbsence', id: 'a1' })
