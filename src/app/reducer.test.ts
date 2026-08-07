@@ -834,4 +834,37 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const next = reducer(s, { type: 'setLang', lang: 'en' })
     expect(next.myTasks).toEqual(s.myTasks)
   })
+
+  it('Treffpunkt-Leitungen stehen mit unter „Meine Aufgaben"', () => {
+    // Sie kommen aus fsWeeks, nicht aus weeks — ein zugeteilter Leiter sah
+    // seine Einteilung deshalb nirgends außer im Treffpunkt-Plan und konnte
+    // sie nicht bestätigen.
+    const me = person('Simon Krüger')
+    const fsWeeks = buildDemoFsWeeks()
+    fsWeeks[0] = [
+      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
+    ]
+    const s = makeState({ dataStatus: 'ready', personId: me.id, fsWeeks, myTasks: [] })
+    const next = reducer(s, { type: 'setLang', lang: 'de' })
+    const fsTask = next.myTasks.find((t) => t.id === 'fs|0|tp1')
+    expect(fsTask, 'Treffpunkt fehlt in myTasks').toBeDefined()
+    expect(fsTask!.status).toBe('offen')
+  })
+
+  it('eine bestätigte Treffpunkt-Leitung gilt auch als bestätigt', () => {
+    const me = person('Simon Krüger')
+    const fsWeeks = buildDemoFsWeeks()
+    fsWeeks[0] = [
+      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
+    ]
+    const s = makeState({
+      dataStatus: 'ready',
+      personId: me.id,
+      fsWeeks,
+      confirmations: { 'fs|0|tp1': 'bestätigt' },
+      myTasks: [],
+    })
+    const next = reducer(s, { type: 'setLang', lang: 'de' })
+    expect(next.myTasks.find((t) => t.id === 'fs|0|tp1')!.status).toBe('bestätigt')
+  })
 })

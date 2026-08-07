@@ -14,7 +14,8 @@
 
 import { istAbwesendAm } from './absence'
 import { displayName, isQualified, tieHash } from './helpers'
-import type { Absence, FsInstance, FsRule, Person } from './types'
+import { deutschesDatum } from './meeting-dates'
+import type { Absence, ConfirmationMap, FsInstance, FsRule, MyTask, Person } from './types'
 
 /** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
 export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }, (_unused, i) => {
@@ -147,9 +148,25 @@ export function fsLeaderValue(fsWeeks: FsInstance[][], wi: number, instId: strin
 }
 
 /** Leiter eines Treffpunkts setzen ("" = entfernen). */
-export function fsSetLeader(fsWeeks: FsInstance[][], wi: number, instId: string, name: string): FsInstance[][] {
+export function fsSetLeader(
+  fsWeeks: FsInstance[][],
+  wi: number,
+  instId: string,
+  name: string,
+  pid?: string,
+): FsInstance[][] {
   return patchWeek(fsWeeks, wi, (week) =>
-    week.map((inst) => (inst.id === instId ? { ...inst, leader: name } : inst)),
+    week.map((inst) => {
+      if (inst.id !== instId) return inst
+      // `lpid` nur setzen, wenn wirklich eine Person dahintersteht. Beim Leeren
+      // (name = '') muss die alte Id weg, sonst gehörte der freie Platz weiter
+      // jemandem — „Meine Aufgaben" zeigte ihn dann bei einer Person, die gar
+      // nicht mehr eingeteilt ist.
+      const next = { ...inst, leader: name }
+      if (name && pid) next.lpid = pid
+      else delete next.lpid
+      return next
+    }),
   )
 }
 
@@ -178,12 +195,54 @@ export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance)
 /* ---- Auto-Zuteilung / Leeren der Treffpunkt-Leiter ---- */
 
 /**
+ * task_key einer Treffpunkt-Leitung.
+ *
+ * Bewusst mit `fs` vorn statt hinten: jeder Zusammenkunfts-Schlüssel beginnt
+ * mit `<wi>|<tab>|…`, und `taskKeyWeek` liest genau daraus Woche und
+ * Zusammenkunft. Ein Treffpunkt hat kein mid/we, sondern einen eigenen
+ * Wochentag — stünde die Wochennummer vorn, liefe er dort als kaputter
+ * Zusammenkunfts-Schlüssel mit statt als eigene Art.
+ *
+ * Dieselbe Form benutzt die Personen-Zeitleiste seit je (`fs|wi|instId`).
+ */
+export function fsTaskKey(wi: number, instId: string): string {
+  return `fs|${wi}|${instId}`
+}
+
+/**
+ * Wie weit die Treffpunkt-Last zurückreicht — ein Jahr.
+ *
+ * Vorher zählten **alle** geladenen Wochen mit, ohne Grenze. Wer vor zwei
+ * Jahren viel geleitet hat, blieb damit dauerhaft hinten: die Strichliste
+ * vergaß nichts, und ein einmal entstandener Rückstand ließ sich nie mehr
+ * aufholen. Ein Jahr ist der Zeitraum, über den sich eine Rotation ohnehin
+ * schließt.
+ *
+ * Rückwärts gezählt, nicht symmetrisch wie `LOAD_RADIUS` bei den Aufgaben:
+ * dort geht es um ein enges Fenster von fünf Wochen um die geplante herum,
+ * hier um die Frage „wer war zuletzt dran". Künftige Wochen sind meist noch
+ * gar nicht besetzt und würden die Rechnung nur verdünnen.
+ */
+export const FS_LOAD_WEEKS = 52
+
+/**
  * Besetzt offene Treffpunkt-Leiter der Woche `wi` automatisch: Kandidaten sind
  * treffpunkt-qualifiziert (wie im Zuteilungs-Sheet, ohne Gruppenbindung) und in
- * der Woche nicht abwesend. Ausgewogen nach bisheriger Leitungs-Last (über alle
- * Wochen) mit deterministischem Tie-Break; niemand leitet zwei Treffpunkte am
- * selben Wochentag. `onlyGroup` grenzt auf eine Gruppe ein (Gruppenaufseher).
- * Bereits gesetzte Leiter bleiben unangetastet.
+ * der Woche nicht abwesend. Niemand leitet zwei Treffpunkte am selben
+ * Wochentag. `onlyGroup` grenzt auf eine Gruppe ein (Gruppenaufseher). Bereits
+ * gesetzte Leiter bleiben unangetastet.
+ *
+ * Die Rangfolge folgt derselben Staffelung wie die Programm-Zuteilung
+ * (`autoAssignMeeting`), nur mit den Treffpunkten als eigener Strichliste —
+ * sie bleiben eine getrennte Größe und wandern nicht in `workloadOf`:
+ *
+ *  1. **Last** im Fenster der letzten `FS_LOAD_WEEKS` Wochen,
+ *  2. **Wartezeit** — wer am längsten nicht geleitet hat, kommt zuerst;
+ *     gemessen über alle geladenen Wochen, wie `assignmentDistance` es für die
+ *     Aufgaben tut. Ohne diesen Schritt entschied bei Gleichstand allein der
+ *     Hash, und niemand fragte, wer am längsten wartet — bei mehr
+ *     Qualifizierten als Plätzen ist das der Normalfall, nicht die Ausnahme,
+ *  3. **Hash** als deterministischer letzter Ausweg.
  */
 export function fsAutoAssign(
   fsWeeks: FsInstance[][],
@@ -200,22 +259,37 @@ export function fsAutoAssign(
    * Wochentag, wer nur übers Wochenende weg ist, kann montags leiten. Ohne
    * Datumsbasis (Tests, Vorlagen) bleibt die Prüfung aus.
    */
-  const poolAm = new Map<number, string[]>()
-  const poolFor = (wd: number): string[] => {
+  const poolAm = new Map<number, Person[]>()
+  const poolFor = (wd: number): Person[] => {
     const fertig = poolAm.get(wd)
     if (fertig) return fertig
     const tag = base ? fsDate(base, wi, wd) : null
-    const pool = qualifiziert
-      .filter((p) => !tag || !istAbwesendAm(absences, p.id, tag))
-      .map(displayName)
+    const pool = qualifiziert.filter((p) => !tag || !istAbwesendAm(absences, p.id, tag))
     poolAm.set(wd, pool)
     return pool
   }
-  // Grundlast: bisherige Leitungen je Person über alle Wochen.
+  // Grundlast: Leitungen je Person im Fenster der letzten FS_LOAD_WEEKS Wochen.
   const load = new Map<string, number>()
-  for (const week of fsWeeks) for (const inst of week) {
-    if (inst.leader) load.set(inst.leader, (load.get(inst.leader) ?? 0) + 1)
+  const vonWoche = Math.max(0, wi - FS_LOAD_WEEKS + 1)
+  for (let i = vonWoche; i <= wi; i++) {
+    for (const inst of fsWeeks[i] ?? []) {
+      if (inst.leader) load.set(inst.leader, (load.get(inst.leader) ?? 0) + 1)
+    }
   }
+  // Wartezeit: Abstand zur nächstgelegenen eigenen Leitung über ALLE geladenen
+  // Wochen — auch außerhalb des Lastfensters, sonst wären alle dort auf null
+  // Stehenden ununterscheidbar. Genau wie `assignmentDistance` es für die
+  // Aufgaben macht.
+  const abstand = new Map<string, number>()
+  fsWeeks.forEach((week, i) => {
+    const d = Math.abs(i - wi)
+    for (const inst of week) {
+      if (inst.leader && (abstand.get(inst.leader) ?? Infinity) > d) {
+        abstand.set(inst.leader, d)
+      }
+    }
+  })
+  const wartezeit = (name: string): number => abstand.get(name) ?? Infinity
   // Schon je Wochentag dieser Woche belegte Leiter (Doppelung am selben Tag meiden).
   const dayUsed = new Map<number, Set<string>>()
   const markDay = (wd: number, name: string) => {
@@ -228,24 +302,30 @@ export function fsAutoAssign(
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
     const used = dayUsed.get(inst.wd) ?? new Set<string>()
-    // Tie-Break mit demselben gemischten Hash wie die Programm-Zuteilung. Die
+    // Der Hash ist derselbe gemischte wie bei der Programm-Zuteilung. Die
     // frühere eigene Fassung ohne Avalanche ergab in jeder Woche dieselbe feste
     // Rangliste nach Namen — wer darin hinten stand, leitete nie (siehe
     // tieHash in helpers.ts). Der Schlüssel wird getrennt gefügt: „Ann"+„a12"
     // und „Anna"+„12" wären sonst derselbe.
     const cand = poolFor(inst.wd)
-      .filter((n) => !used.has(n))
+      .map((p) => ({ p, name: displayName(p) }))
+      .filter((k) => !used.has(k.name))
       .sort(
         (a, b) =>
-          (load.get(a) ?? 0) - (load.get(b) ?? 0) ||
-          tieHash(`${a}|${wi}|${inst.wd}`) - tieHash(`${b}|${wi}|${inst.wd}`),
+          (load.get(a.name) ?? 0) - (load.get(b.name) ?? 0) ||
+          wartezeit(b.name) - wartezeit(a.name) ||
+          tieHash(`${a.name}|${wi}|${inst.wd}`) - tieHash(`${b.name}|${wi}|${inst.wd}`),
       )
     const pick = cand[0]
     if (!pick) return inst
-    load.set(pick, (load.get(pick) ?? 0) + 1)
-    markDay(inst.wd, pick)
-    newly.push(pick)
-    return { ...inst, leader: pick }
+    load.set(pick.name, (load.get(pick.name) ?? 0) + 1)
+    // Wer gerade drankommt, wartet ab jetzt null Wochen — sonst gewönne
+    // dieselbe Person die Wartezeit auch beim nächsten Treffpunkt derselben
+    // Woche noch einmal.
+    abstand.set(pick.name, 0)
+    markDay(inst.wd, pick.name)
+    newly.push(pick.name)
+    return { ...inst, leader: pick.name, lpid: pick.p.id }
   })
   if (newly.length === 0) return { fsWeeks, count: 0, newly: [] }
   return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, newly }
@@ -261,8 +341,64 @@ export function fsClear(
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
     count++
-    return { ...inst, leader: '' }
+    // Auch die Id muss weg: sonst gehörte der geleerte Platz weiter jemandem
+    // und stünde bei ihm in „Meine Aufgaben".
+    const { lpid: _weg, ...ohne } = inst
+    return { ...ohne, leader: '' }
   })
   if (count === 0) return { fsWeeks, count: 0 }
   return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count }
+}
+
+/**
+ * Treffpunkt-Leitungen dieser Person als Aufgaben — das Gegenstück zu
+ * `deriveMyTasks` für die zweite Datenquelle.
+ *
+ * Eigene Ableitung statt eines Zweigs in `deriveMyTasks`: Treffpunkte bleiben
+ * eine getrennte Größe (sie zählen nicht in `workloadOf` und haben ihre eigene
+ * Strichliste), sie hängen an `fsWeeks`/`fsBase` statt an `weeks`, und ihr
+ * Termin kommt aus Wochentag und eigener Uhrzeit statt aus den
+ * Zusammenkunftszeiten. Zusammengeführt wird erst in `state.myTasks`.
+ *
+ * Zugeordnet über die Person-Id, mit Rückfall auf den Namen für Altdaten —
+ * dieselbe Rangfolge wie bei den Zusammenkunfts-Aufgaben. Ohne das sahen
+ * Namensgleiche gegenseitig ihre Treffpunkte.
+ */
+export function deriveMyFsTasks(
+  fsWeeks: FsInstance[][],
+  fsBase: Date | null,
+  personName: string,
+  confirmations: ConfirmationMap,
+  personId: string | undefined,
+  titel: string,
+): MyTask[] {
+  const tasks: MyTask[] = []
+  if (!personName && !personId) return tasks
+  fsWeeks.forEach((week, wi) => {
+    for (const inst of week) {
+      if (!inst.leader) continue
+      const meins = inst.lpid && personId ? inst.lpid === personId : inst.leader === personName
+      if (!meins) continue
+      const key = fsTaskKey(wi, inst.id)
+      // Ohne Datumsbasis (Vorlagen, Tests) gibt es keinen echten Termin — dann
+      // bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
+      const tag = fsBase ? fsDate(fsBase, wi, inst.wd) : null
+      // Termin kanonisch deutsch wie bei den Zusammenkünften („Dienstag,
+      // 8. September · 19:00"): übersetzt wird erst bei der Anzeige. Der Ort
+      // hängt als eigenes Segment dran — der Übersetzer geht Segment für
+      // Segment vor und lässt einen unbekannten Ortsnamen stehen.
+      tasks.push({
+        id: key,
+        title: titel,
+        date: tag
+          ? `${deutschesDatum(tag)} · ${inst.time} · ${inst.place}`
+          : `${inst.time} · ${inst.place}`,
+        chip: '',
+        at: tag ? tag.getTime() : null,
+        status: confirmations[key] ?? 'offen',
+        s89: null,
+      })
+    }
+  })
+  return tasks
 }

@@ -11,8 +11,10 @@ import {
   fsSetLeader,
   fsSort,
   fsUpdateInst,
+  FS_LOAD_WEEKS,
   genFsWeek,
   regenFsWeeks,
+  deriveMyFsTasks,
 } from './fs'
 import { emptyQualifications } from './helpers'
 import type { Absence, FsInstance, FsRule, Person } from './types'
@@ -365,5 +367,130 @@ describe('fsClear (Treffpunkt-Leiter leeren)', () => {
     expect(count).toBe(1)
     expect(fsWeeks[0].find((i) => i.grp === '')?.leader).toBe('X')
     expect(fsWeeks[0].find((i) => i.grp === 'g1')?.leader).toBe('')
+  })
+})
+
+describe('Person-Id des Leiters (lpid)', () => {
+  it('fsSetLeader schreibt die Id mit', () => {
+    const weeks = [[inst({ id: 'a' })]]
+    const next = fsSetLeader(weeks, 0, 'a', 'Anton Muster', 'p1')
+    expect(next[0][0]).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
+  })
+
+  it('beim Leeren verschwindet die Id wieder', () => {
+    // Sonst gehörte der freie Platz weiter jemandem und stünde bei ihm in
+    // „Meine Aufgaben".
+    const weeks = [[inst({ id: 'a', leader: 'Anton Muster', lpid: 'p1' })]]
+    expect(fsSetLeader(weeks, 0, 'a', '')[0][0].lpid).toBeUndefined()
+    expect(fsClear(weeks, 0).fsWeeks[0][0].lpid).toBeUndefined()
+  })
+
+  it('ohne Id (Gast, Altdaten) bleibt nur der Name stehen', () => {
+    const next = fsSetLeader([[inst({ id: 'a' })]], 0, 'a', 'Ohne Konto')
+    expect(next[0][0].leader).toBe('Ohne Konto')
+    expect(next[0][0].lpid).toBeUndefined()
+  })
+
+  it('die Auto-Zuteilung setzt die Id ebenfalls', () => {
+    const persons = [tpLeader({ id: 'p7', fn: 'Anton' })]
+    const { fsWeeks } = fsAutoAssign([[inst({ id: 'a' })]], 0, persons)
+    expect(fsWeeks[0][0]).toMatchObject({ leader: 'Anton Muster', lpid: 'p7' })
+  })
+})
+
+describe('Zuteilungsregeln wie bei den Aufgaben', () => {
+  const fuenf = ['Anton', 'Bernd', 'Cäsar', 'Dieter', 'Emil'].map((fn, i) =>
+    tpLeader({ id: `p${i}`, fn }),
+  )
+
+  it('vergisst Leitungen jenseits von FS_LOAD_WEEKS', () => {
+    // Vorher zählten ALLE geladenen Wochen: wer vor zwei Jahren viel geleitet
+    // hat, blieb dauerhaft hinten, weil die Strichliste nichts vergaß.
+    const wi = FS_LOAD_WEEKS + 2
+    const wochen: FsInstance[][] = Array.from({ length: wi + 1 }, () => [])
+    // Anton: dreimal ganz früh, weit VOR dem Fenster (Woche 0–2).
+    for (const w of [0, 1, 2]) {
+      wochen[w] = [inst({ id: `alt${w}`, leader: 'Anton Muster', lpid: 'p0' })]
+    }
+    // Bernd: einmal in der Vorwoche, also mitten IM Fenster.
+    wochen[wi - 1] = [inst({ id: 'neu1', leader: 'Bernd Muster', lpid: 'p1' })]
+    wochen[wi] = [inst({ id: 'offen' })]
+    const { fsWeeks } = fsAutoAssign(wochen, wi, [fuenf[0], fuenf[1]])
+    // Im Fenster: Anton 0, Bernd 1 → Anton. Ohne Fenster wäre es umgekehrt
+    // (Anton 3, Bernd 1) und Bernd käme dran, obwohl er gerade erst geleitet hat.
+    expect(fsWeeks[wi][0].leader).toBe('Anton Muster')
+  })
+
+  it('bei gleicher Last kommt zuerst, wer am längsten nicht geleitet hat', () => {
+    // Alle fünf stehen im Lastfenster bei genau einer Leitung. Entscheiden muss
+    // dann die Wartezeit — vorher entschied allein der Hash, und niemand
+    // fragte, wer am längsten dran ist.
+    const wochen: FsInstance[][] = Array.from({ length: 8 }, () => [])
+    fuenf.forEach((p, i) => {
+      // Anton in Woche 6 (zuletzt dran), Emil in Woche 2 (am längsten her).
+      wochen[6 - i] = [inst({ id: `v${i}`, leader: `${p.fn} Muster`, lpid: p.id })]
+    })
+    wochen[7] = [inst({ id: 'offen' })]
+    const { fsWeeks } = fsAutoAssign(wochen, 7, fuenf)
+    expect(fsWeeks[7][0].leader).toBe('Emil Muster')
+  })
+
+  it('wer gerade drankam, gewinnt die Wartezeit nicht gleich noch einmal', () => {
+    // Zwei offene Treffpunkte an verschiedenen Tagen derselben Woche: ohne das
+    // Zurücksetzen der Wartezeit stünde dieselbe Person bei beiden vorn.
+    const wochen: FsInstance[][] = Array.from({ length: 4 }, () => [])
+    wochen[3] = [inst({ id: 'a', wd: 1 }), inst({ id: 'b', wd: 3 })]
+    const { fsWeeks } = fsAutoAssign(wochen, 3, fuenf)
+    expect(fsWeeks[3][0].leader).not.toBe(fsWeeks[3][1].leader)
+  })
+})
+
+describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
+  const wochen = (): FsInstance[][] => [
+    [inst({ id: 'a', wd: 1, time: '14:00', place: 'Königreichssaal', leader: 'Anton Muster', lpid: 'p1' })],
+    [inst({ id: 'b', wd: 3, leader: 'Bernd Muster', lpid: 'p2' })],
+  ]
+
+  it('liefert nur die eigenen Leitungen, zugeordnet über die Id', () => {
+    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'Treffpunkt-Leiter')
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].id).toBe('fs|0|a')
+    expect(tasks[0].title).toBe('Treffpunkt-Leiter')
+  })
+
+  it('die Id schlägt den Namen — Namensgleiche sehen nichts Fremdes', () => {
+    // Zwei Personen heißen gleich; nur die mit der passenden Id ist eingeteilt.
+    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p9', 'Leiter')
+    expect(tasks).toEqual([])
+  })
+
+  it('ohne Id (Altdaten) zählt weiter der Name', () => {
+    const alt = [[inst({ id: 'a', leader: 'Anton Muster' })]]
+    expect(deriveMyFsTasks(alt, BASE, 'Anton Muster', {}, 'p1', 'Leiter')).toHaveLength(1)
+  })
+
+  it('Termin kanonisch deutsch, mit echtem Zeitstempel für den Countdown', () => {
+    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'Leiter')
+    // Montag der Woche 0 ist der 7.9.2026; wd 1 = Montag.
+    expect(tasks[0].date).toBe('Montag, 7. September · 14:00 · Königreichssaal')
+    expect(tasks[0].at).toBe(fsDate(BASE, 0, 1).getTime())
+  })
+
+  it('ohne Datumsbasis kein erfundener Termin', () => {
+    const tasks = deriveMyFsTasks(wochen(), null, 'Anton Muster', {}, 'p1', 'Leiter')
+    expect(tasks[0].at).toBeNull()
+    expect(tasks[0].date).toBe('14:00 · Königreichssaal')
+  })
+
+  it('übernimmt den Bestätigungs-Status', () => {
+    const conf = { 'fs|0|a': 'bestätigt' as const }
+    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', conf, 'p1', 'Leiter')
+    expect(tasks[0].status).toBe('bestätigt')
+    expect(deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'L')[0].status).toBe('offen')
+  })
+
+  it('offene Treffpunkte gehören niemandem', () => {
+    const offen = [[inst({ id: 'a', leader: '' })]]
+    expect(deriveMyFsTasks(offen, BASE, 'Anton Muster', {}, 'p1', 'L')).toEqual([])
   })
 })

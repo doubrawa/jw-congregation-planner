@@ -86,6 +86,8 @@ export interface FsInstance {
   time: string
   place: string
   leader: string // zugeteilter Leiter ("" = offen)
+  lpid?: string // Person-Id des Leiters — stabile Identität statt Name-Match.
+  //             Wie `SlotAssignment.pid`; fehlt bei Altdaten.
   manual?: boolean // nur für diese Woche hinzugefügt (kein Grundplan)
 }
 
