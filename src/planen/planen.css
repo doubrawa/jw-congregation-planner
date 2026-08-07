@@ -614,7 +614,7 @@
   position: fixed;
   inset: 0;
   background: rgba(var(--shade), 0.32);
-  z-index: 34;
+  z-index: var(--z-sheet);
 }
 
 .sheet {
@@ -632,7 +632,7 @@
   border: 1px solid var(--line);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   box-shadow: 0 -12px 48px rgba(var(--shade), 0.3);
-  z-index: 35;
+  z-index: calc(var(--z-sheet) + 1);
   padding: 18px 20px;
   max-height: 74vh;
   /* Nur die Kandidatenliste scrollt — Kopf + aktuelle Person bleiben oben. */
@@ -860,4 +860,10 @@
 .cand-chip--absent {
   background: var(--tWein);
   color: var(--wein);
+}
+
+/* Bottom-Sheet auf Geräten mit Home-Indikator: der letzte Listeneintrag lag
+   sonst darunter (index.html nutzt viewport-fit=cover, siehe shell.css). */
+.sheet {
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
 }

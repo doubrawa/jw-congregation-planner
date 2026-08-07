@@ -344,15 +344,6 @@
   color: var(--wein);
 }
 
-.lang-demo-hint {
-  margin-top: 10px;
-  background: var(--card);
-  border: 1px solid var(--lineGld);
-  border-radius: 10px;
-  padding: 8px 11px;
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-}
 
 /* ---- Erinnerungen ------------------------------------------------------------- */
 

@@ -39,11 +39,12 @@
   unicode-bidi: plaintext;
 }
 
-/* Wochen-Blätter-Pfeile in RTL spiegeln: Button-Positionen tauschen (zurück
-   rechts, weiter links) UND Glyphen kippen, damit beide nach außen zeigen. */
-[dir='rtl'] .week-nav {
-  flex-direction: row-reverse;
-}
+/* Wochen-Blätter-Pfeile in RTL: NUR die Glyphen kippen, damit beide nach außen
+   zeigen. Die Buttons tauschen ihre Seiten schon von selbst — ein Flex-Container
+   in `dir="rtl"` ordnet seine Kinder bereits von rechts nach links an. Das
+   zusätzliche `flex-direction: row-reverse` kehrte ein zweites Mal um und stellte
+   damit die LTR-Anordnung wieder her (gemessen: „vorherige" links bei x=20),
+   während die gekippten Glyphen beide nach innen zeigten. */
 [dir='rtl'] .week-arrow {
   transform: scaleX(-1);
 }

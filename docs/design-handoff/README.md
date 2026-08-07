@@ -13,7 +13,7 @@ Web-App (Deutsch, Mobile-first + Desktop) zur Organisation der Zusammenkünfte e
 ## Zu den Design-Dateien
 Die Dateien in `design/` sind **Design-Referenzen, erstellt in HTML** — klickbare Prototypen, die Aussehen und Verhalten zeigen. Sie sind **kein Produktionscode**. Aufgabe: Diese Designs in der Zielumgebung des Projekts nachbauen (React, Vue, SwiftUI, …) mit deren etablierten Patterns und Bibliotheken. Existiert noch keine Codebase, das passendste Framework wählen (Empfehlung: Web-App mit React o. Ä., da Login/Server nötig) und die Designs dort umsetzen.
 
-Die `.dc.html`-Dateien direkt im Browser öffnen (mit `support.js` im selben Ordner). Maßgeblich ist **`Prototyp 2a v2.dc.html`**. Struktur der Dateien: HTML-Template (alle Styles inline) + eine JS-Logikklasse (State, Handler, Demo-Daten) am Dateiende — alle exakten Werte lassen sich dort nachschlagen.
+Die `.dc.html`-Dateien direkt im Browser öffnen (mit `support.js` im selben Ordner). Maßgeblich ist **`Prototyp 2a v3.dc.html`** (v2 ist der Vorgänger). Struktur der Dateien: HTML-Template (alle Styles inline) + eine JS-Logikklasse (State, Handler, Demo-Daten) am Dateiende — alle exakten Werte lassen sich dort nachschlagen.
 
 ## Fidelity
 **High-fidelity.** Farben, Typografie, Abstände, Radien und Interaktionen sind final gemeint und sollen pixelgenau übernommen werden. Demo-Daten (Namen, Wochen) sind Platzhalter; Datenmodell und Regeln darunter sind verbindlich.
@@ -119,7 +119,8 @@ Theming über CSS-Variablen (im Prototyp per JS auf `document.body`; in Produkti
 Keine Bilder/Icon-Fonts. Google Fonts: „Newsreader“ + „IBM Plex Sans“ (Lizenz OFL). Pfeile/✕ sind Textzeichen (‹ › ✕ –), Avatare = Initialen-Kreise, Logo = reine Wortmarke.
 
 ## Dateien in diesem Paket
-- `design/Prototyp 2a v2.dc.html` — **maßgeblicher Prototyp** (alle Screens, beide Themes, gesamte Logik)
+- `design/Prototyp 2a v3.dc.html` — **maßgeblicher Prototyp** (alle Screens, beide Themes, gesamte Logik)
+- `design/Prototyp 2a v2.dc.html` — Vorgängerstand
 - `design/Prototyp 2a.dc.html` — Vorversion (Referenz)
 - `design/Designvorschlaege.dc.html` — Design-Exploration (gewählt: Option „2a“)
 - `design/support.js` — Laufzeit für die Prototyp-Dateien (nur zum lokalen Öffnen nötig, nicht portieren)

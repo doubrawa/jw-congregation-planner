@@ -4,14 +4,14 @@
  * ergänzen Stapel-Reihenfolge sowie eigene Inhalte.
  */
 
-/* S-89 liegt über dem Zuteilungs-Sheet (z-index 34/35). */
+/* S-89 liegt über dem Zuteilungs-Sheet — siehe die Ebenen in tokens.css. */
 .sheet-backdrop--s89 {
-  z-index: 38;
+  z-index: var(--z-sheet-top);
   background: rgba(var(--shade), 0.36);
 }
 
 .sheet--s89 {
-  z-index: 39;
+  z-index: calc(var(--z-sheet-top) + 1);
 }
 
 .s89-eyebrow {
@@ -84,7 +84,7 @@
   position: fixed;
   inset: 0;
   background: rgba(var(--shade), 0.45);
-  z-index: 42;
+  z-index: var(--z-dialog);
 }
 
 .confirm-modal {
@@ -97,7 +97,7 @@
   border: 1px solid var(--line);
   border-radius: var(--r-sheet);
   box-shadow: 0 24px 64px rgba(var(--shade), 0.35);
-  z-index: 43;
+  z-index: calc(var(--z-dialog) + 1);
   padding: 20px 20px 16px;
   max-height: 82vh;
   overflow: auto;

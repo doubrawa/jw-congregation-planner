@@ -37,7 +37,7 @@
   position: absolute;
   top: calc(100% + 6px);
   inset-inline-start: 0;
-  z-index: 50;
+  z-index: var(--z-popover);
   width: 264px;
   max-width: min(264px, 84vw);
   padding: 12px;

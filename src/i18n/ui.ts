@@ -26,7 +26,13 @@ export type Dict = typeof DE
  */
 const OVERLAY: Partial<Record<Exclude<Lang, 'de'>, Partial<Dict>>> = { en: EN_OVERLAY }
 
-const OVERLAY_MODULES = import.meta.glob<{ default: Partial<Dict> }>('./overlays/*.ts')
+// EN ausgenommen: es ist oben statisch importiert und soll im Start-Bundle
+// bleiben. Im Glob erzeugte es nur die Build-Warnung INEFFECTIVE_DYNAMIC_IMPORT
+// — geladen wurde es hierueber ohnehin nie (loadOverlay steigt fuer en frueh aus).
+const OVERLAY_MODULES = import.meta.glob<{ default: Partial<Dict> }>([
+  './overlays/*.ts',
+  '!./overlays/en.ts',
+])
 const overlayLoading = new Map<Lang, Promise<boolean>>()
 
 /**

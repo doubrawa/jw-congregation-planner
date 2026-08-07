@@ -635,3 +635,40 @@
   --hov: rgba(34, 37, 46, 0.5);
   --focus: rgba(240, 120, 86, 0.6);
 }
+
+/* ---- Nachtrag für alle dunklen Paletten ------------------------------------
+   graphit, bernstein, aubergine und koralle erbten die Auslastungsfarben und
+   die Schatten-Grundfarbe von der HELLEN Basis: die Mini-Quadrate leuchteten
+   auf dunklem Grund, und jeder Schatten trug deren warmen Braunton statt
+   Schwarz. „grau" und „kontrast" setzen beides ausdrücklich selbst — sie sind
+   hell und tragen kein `data-dark`, bleiben hier also unberührt.
+
+   Steht am Dateiende, weil `:root[data-dark]` und `:root[data-theme='…']`
+   dieselbe Spezifität haben: es gewinnt die spätere Regel. Die dunklen
+   Paletten setzen keinen dieser Werte selbst, es geht also nichts verloren. */
+:root[data-dark] {
+  /* Gedämpfte Fassung der Ampel: dieselbe Bedeutung, ohne zu leuchten. */
+  --load-free: #4e8f61;
+  --load-task: #b8574b;
+  --load-helper: #7a6fc4;
+  /* Schatten auf dunklem Grund sind schwarz, nicht warm. */
+  --shade: 0, 0, 0;
+}
+
+/* ---- Ebenen (z-index) ------------------------------------------------------
+   Elf Werte zwischen 20 und 50 lagen über vier Dateien verstreut, ohne dass
+   irgendwo stand, was über was liegen soll. Die Reihenfolge ist nicht
+   beliebig: das S-89-Formular öffnet sich AUS dem Zuteilungs-Sheet heraus und
+   muss darüber liegen, und die Bestätigungs-Abfrage muss über dem Toast
+   stehen, der sie sonst verdeckt.
+
+   Je Ebene deckt der Wert den Schleier ab, `calc(… + 1)` den Inhalt darauf. */
+:root {
+  --z-nav: 20; /* Kopfzeile mobil */
+  --z-panel: 30; /* Mitteilungen */
+  --z-sheet: 34; /* Zuteilungs-Sheet, Seitenmenü */
+  --z-sheet-top: 38; /* S-89 — öffnet aus dem Sheet heraus */
+  --z-toast: 40;
+  --z-dialog: 42; /* Bestätigungs-Abfrage: über dem Toast */
+  --z-popover: 50; /* Datumsauswahl — immer obenauf */
+}
