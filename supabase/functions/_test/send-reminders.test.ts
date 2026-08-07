@@ -83,6 +83,7 @@ interface Write {
 
 let writes: Write[]
 let weeks: { position: number; data: unknown }[]
+let fsWeeks: { position: number; data: unknown }[]
 let confirmations: { task_key: string; status: string }[]
 let reminderLog: { user_id: string; kind: string }[]
 let subs: typeof SUBS
@@ -113,6 +114,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   }
   if (path.startsWith('reminder_log')) return jsonRes(reminderLog)
   if (path.startsWith('weeks')) return jsonRes(weeks)
+  if (path.startsWith('fs_weeks')) return jsonRes(fsWeeks)
   if (path.startsWith('confirmations')) return jsonRes(confirmations)
   if (path.startsWith('members')) return jsonRes(MEMBERS)
   if (path.startsWith('persons')) return jsonRes(PERSONS)
@@ -177,6 +179,7 @@ beforeEach(() => {
   vi.setSystemTime(new Date(TODAY))
   writes = []
   weeks = [{ position: 0, data: { start: WEEK_START, mid: midMeeting() } }]
+  fsWeeks = []
   confirmations = []
   reminderLog = []
   subs = [...SUBS]
@@ -432,5 +435,92 @@ describe('send-reminders: Scharfbetrieb als Gegenprobe', () => {
     const r = await live()
     expect(r.pushes).toBeGreaterThan(0)
     expect(r.notifications).toBe(0)
+  })
+})
+
+describe('send-reminders: Treffpunkte', () => {
+  // Treffpunkte stehen in fs_weeks, einer zweiten Tabelle mit derselben
+  // Positionsnummer wie weeks. Die Function las sie gar nicht: ein zugeteilter
+  // Leiter bekam nie eine Erinnerung und konnte nichts bestätigen.
+  const montag = (patch: Record<string, unknown> = {}) => ({
+    position: 0,
+    data: [
+      { id: 'i1', grp: '', wd: 1, time: '14:00', place: 'Königreichssaal', leader: 'Max Mustermann', lpid: 'p-max', ...patch },
+    ],
+  })
+
+  it('erinnert den Leiter am fälligen Tag', async () => {
+    // Woche beginnt Mo 07.09., wd 1 = Montag = heute → days 0 … also nicht
+    // fällig (last = 1). Mittwoch (wd 3) liegt 2 Tage weg → repeat.
+    fsWeeks = [montag({ wd: 3, place: 'Nebenraum' })]
+    const body = previewFor(await run(), U_MAX)?.body ?? ''
+    expect(body).toContain('Treffpunkt-Leiter · Nebenraum')
+    expect(body).toContain('Mittwoch, 9. September · 14:00')
+  })
+
+  it('rechnet mit dem Wochentag des Treffpunkts, nicht mit dem der Zusammenkunft', async () => {
+    // Samstag (wd 6) ist 5 Tage weg → repeat; die Zusammenkunft am Dienstag
+    // hätte einen ganz anderen Termin ergeben.
+    fsWeeks = [montag({ wd: 6 })]
+    expect(previewFor(await run(), U_MAX)?.body).toContain('Samstag, 12. September')
+  })
+
+  it('die Fälligkeit hängt am Tag des Treffpunkts, nicht am Zusammenkunftstag', async () => {
+    // Zweite Woche (ab Mo 14.09.). Der Treffpunkt liegt auf dem Montag, also
+    // genau 7 Tage weg = `first` → erste Erinnerung fällig. Rechnete die
+    // Function stattdessen mit dem Dienstag der Zusammenkunft, wären es 8 Tage
+    // und es käme gar nichts — der Leiter bekäme seine erste Erinnerung nie.
+    weeks = [
+      { position: 0, data: { start: WEEK_START, mid: midMeeting() } },
+      { position: 1, data: { start: '2026-09-14' } },
+    ]
+    fsWeeks = [{ position: 1, data: [{ id: 'i9', grp: '', wd: 1, time: '14:00', place: 'Saal', leader: 'Max Mustermann', lpid: 'p-max' }] }]
+    expect(previewFor(await run(), U_MAX)?.body).toContain('Montag, 14. September')
+  })
+
+  it('eine bestätigte Leitung löst nichts aus', async () => {
+    fsWeeks = [montag({ wd: 3 })]
+    confirmations = [{ task_key: 'fs|0|i1', status: 'bestätigt' }]
+    expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
+  })
+
+  it('ein offener Treffpunkt löst nichts aus', async () => {
+    fsWeeks = [montag({ wd: 3, leader: '', lpid: undefined })]
+    expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
+  })
+
+  it('ohne Startdatum der Woche kein Termin und keine Erinnerung', async () => {
+    weeks = [{ position: 0, data: { mid: midMeeting() } }] // kein start
+    fsWeeks = [montag({ wd: 3 })]
+    expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
+  })
+
+  it('fehlt die Tabelle ganz, laufen die Zusammenkünfte weiter', async () => {
+    // Migration nicht eingespielt → REST antwortet mit Fehler. Der Lauf darf
+    // deshalb nicht abbrechen, sonst bekäme die ganze Versammlung nichts.
+    const echtesFetch = globalThis.fetch
+    globalThis.fetch = (async (input: unknown, init?: { method?: string; body?: unknown }) => {
+      if (String(input).includes('fs_weeks')) return new Response('missing table', { status: 404 })
+      return (echtesFetch as unknown as typeof fakeFetch)(input, init)
+    }) as unknown as typeof globalThis.fetch
+    try {
+      const body = previewFor(await run(), U_MAX)?.body ?? ''
+      expect(body).toContain('Schatzgraben') // Zusammenkunft erinnert weiter
+    } finally {
+      globalThis.fetch = echtesFetch
+    }
+  })
+
+  it('ordnet über die Person-Id zu, nicht über den Namen', async () => {
+    // Der Leiter heißt wie jemand anderes; die Id zeigt auf Max.
+    fsWeeks = [montag({ wd: 3, leader: 'Nina Nolink', lpid: 'p-max' })]
+    const body = previewFor(await run(), U_MAX)?.body ?? ''
+    expect(body).toContain('Treffpunkt-Leiter')
+    expect(previewFor(await run(), U_NINA)?.body ?? '').not.toContain('Treffpunkt-Leiter')
+  })
+
+  it('ohne Id (Altdaten) zählt weiter der Name', async () => {
+    fsWeeks = [montag({ wd: 3, leader: 'Max Mustermann', lpid: undefined })]
+    expect(previewFor(await run(), U_MAX)?.body).toContain('Treffpunkt-Leiter')
   })
 })

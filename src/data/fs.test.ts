@@ -15,6 +15,7 @@ import {
   genFsWeek,
   regenFsWeeks,
   deriveMyFsTasks,
+  fsWeekConflicts,
 } from './fs'
 import { emptyQualifications } from './helpers'
 import type { Absence, FsInstance, FsRule, Person } from './types'
@@ -492,5 +493,79 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   it('offene Treffpunkte gehören niemandem', () => {
     const offen = [[inst({ id: 'a', leader: '' })]]
     expect(deriveMyFsTasks(offen, BASE, 'Anton Muster', {}, 'p1', 'L')).toEqual([])
+  })
+})
+
+describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
+  const anton = tpLeader({ id: 'p1', fn: 'Anton' })
+  // Basis-Montag 7.9.2026 → wd 1 = Mo 7.9., wd 3 = Mi 9.9.
+  const abw = (from: string, to: string, personId = 'p1'): Absence[] => [
+    { id: 'a', personId, userId: '', from, to, reason: '' },
+  ]
+
+  it('meldet, wer am Tag seines Treffpunkts abwesend ist', () => {
+    const weeks = [[inst({ id: 'a', wd: 1, place: 'Saal', leader: 'Anton Muster', lpid: 'p1' })]]
+    const c = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), BASE)
+    expect(c).toEqual([{ kind: 'fsAbsent', name: 'Anton Muster', wd: 1, ort: 'Saal' }])
+  })
+
+  it('sperrt nur den Tag, nicht die ganze Woche', () => {
+    // Anton ist am Wochenende weg — den Treffpunkt am Montag kann er leiten.
+    const weeks = [[inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })]]
+    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-12', '2026-09-13'), BASE)).toEqual([])
+  })
+
+  it('ordnet über die Person-Id zu, nicht über den Namen', () => {
+    // Zwei Personen heißen gleich. Eingeteilt ist p1, abwesend ist p2. Über den
+    // Namen gesucht landet man bei der falschen und meldet einen Konflikt, den
+    // es nicht gibt — genau dafür trägt der Treffpunkt jetzt eine Id.
+    const zwilling = tpLeader({ id: 'p2', fn: 'Anton' }) // ebenfalls „Anton Muster"
+    const weeks = [[inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })]]
+    const c = fsWeekConflicts(weeks, 0, [anton, zwilling], abw('2026-09-05', '2026-09-09', 'p2'), BASE)
+    expect(c).toEqual([])
+  })
+
+  it('ohne Datumsbasis entfällt die Abwesenheitsprüfung', () => {
+    const weeks = [[inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })]]
+    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), null)).toEqual([])
+  })
+
+  it('meldet dieselbe Person zweimal am selben Wochentag', () => {
+    // Die Auto-Zuteilung verhindert das; von Hand ist es weiter möglich.
+    const weeks = [
+      [
+        inst({ id: 'a', wd: 6, leader: 'Anton Muster', lpid: 'p1' }),
+        inst({ id: 'b', wd: 6, grp: 'g1', leader: 'Anton Muster', lpid: 'p1' }),
+      ],
+    ]
+    const c = fsWeekConflicts(weeks, 0, [anton])
+    expect(c).toEqual([{ kind: 'fsDouble', name: 'Anton Muster', wd: 6, count: 2 }])
+  })
+
+  it('zwei Treffpunkte an VERSCHIEDENEN Tagen sind kein Konflikt', () => {
+    const weeks = [
+      [
+        inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' }),
+        inst({ id: 'b', wd: 3, leader: 'Anton Muster', lpid: 'p1' }),
+      ],
+    ]
+    expect(fsWeekConflicts(weeks, 0, [anton])).toEqual([])
+  })
+
+  it('offene Treffpunkte und fremde Gruppen bleiben außen vor', () => {
+    const weeks = [
+      [
+        inst({ id: 'a', wd: 1, leader: '' }),
+        inst({ id: 'b', wd: 1, grp: 'g2', leader: 'Anton Muster', lpid: 'p1' }),
+      ],
+    ]
+    const alle = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), BASE)
+    expect(alle).toHaveLength(1) // ohne Gruppenfilter zählt g2 mit
+    // Gruppenaufseher sieht nur die eigene Gruppe.
+    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), BASE, 'g1')).toEqual([])
+  })
+
+  it('nicht geladene Woche → keine Konflikte', () => {
+    expect(fsWeekConflicts([], 5, [anton])).toEqual([])
   })
 })
