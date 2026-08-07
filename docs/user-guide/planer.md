@@ -96,6 +96,14 @@ Abwesende aus und vergibt niemanden doppelt am selben Tag. Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
+Die Auslastung zählt die Wochen rund um die geplante Woche. Stehen dort mehrere
+gleichauf — bei den Schulungsaufgaben der Normalfall, weil es mehr Schwestern als
+Plätze gibt —, kommt zuerst, **wer am längsten nicht dran war**; dafür schaut die
+Automatik über alle geladenen Wochen, nicht nur über das Fenster. Aufgaben in der
+Zusätzlichen Klasse zählen dabei genau wie die im Hauptsaal, der Ratgeber
+ebenfalls. So kommt über die Monate jeder ähnlich oft an die Reihe, statt dass
+einzelne Namen dauerhaft vorn oder hinten stehen.
+
 ---
 
 ## 4. Konflikte und offene Zuteilungen

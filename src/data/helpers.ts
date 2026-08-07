@@ -235,12 +235,23 @@ export function isPlainPublisher(p: Person): boolean {
  * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
  * Zählt wie der Prototyp auch Begleiter-Erwähnungen im Rollenlabel
  * ("mit A. Hoffmann") — wer begleitet, hat ebenfalls eine Aufgabe.
+ *
+ * Beide Räume zählen: ein Schülerteil in der Zusätzlichen Klasse (`item.aux`)
+ * ist dieselbe Aufgabe wie im Hauptsaal, und der Ratgeber der Klasse ist
+ * ebenfalls eingeteilt. Wurden sie nicht mitgezählt, galt genau die Hälfte
+ * aller Schulungsaufgaben als „frei" — wer in der Klasse dran war, stand in der
+ * Strichliste weiter bei null und wurde gleich wieder gewählt.
+ *
+ * Die Begleiter-Erwähnung wird nur im Hauptsaal gezählt: `angleichen` kopiert
+ * die Rollenbeschriftung in die Klasse ("Regeln folgen immer dem Hauptsaal"),
+ * sie dort erneut zu zählen verdoppelte dieselbe Begleitung.
  */
 export function partWorkload(weeks: Week[], name: string): number {
   if (!name) return 0
   let count = 0
   for (const week of weeks) {
     for (const meeting of [week.mid, week.we]) {
+      if (meeting.auxRatgeber?.name === name) count++
       for (const section of meeting.sections) {
         for (const item of section.items) {
           if (isSong(item)) continue
@@ -248,6 +259,7 @@ export function partWorkload(weeks: Week[], name: string): number {
             if (slot.name === name) count++
             if (slot.rolle?.includes(name)) count++
           }
+          for (const slot of item.aux ?? []) if (slot.name === name) count++
         }
       }
     }
