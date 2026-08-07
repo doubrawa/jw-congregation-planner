@@ -90,13 +90,29 @@ function tieHash(s: string): number {
  * Gemessen wird der Betrag, nicht „davor": Wochen lassen sich in beliebiger
  * Reihenfolge planen. Wer in der Nachbarwoche schon eingeteilt ist, soll auch
  * dann hinten anstehen, wenn diese Woche die frühere ist.
+ *
+ * `je` misst dasselbe noch einmal **je Bereich** (Bereichsschlüssel des Slots,
+ * bei Hilfsdiensten der Bereich des Dienstes). Denn gleich viele Aufgaben heißt
+ * noch nicht gleich behandelt: die Strichliste zählt Gesprächsführer und
+ * Gesprächspartner beide als eine Aufgabe, und wer im Ranking knapp vorn steht,
+ * bekommt jede Woche den Führer-Platz, wer knapp dahinter steht, immer den
+ * Partner-Platz. Über ein Jahr gemessen reichte das von „1× geführt / 9×
+ * Partnerin" bis „8× / 2×", bei identischer Gesamtzahl. Dasselbe bei Brüdern,
+ * die Bibellesung und Leser können.
  */
 function assignmentDistance(
   weeks: Week[],
   weekIndex: number,
-): { part: Map<string, number>; any: Map<string, number> } {
+): { part: Map<string, number>; any: Map<string, number>; je: Map<string, Map<string, number>> } {
   const part = new Map<string, number>()
   const any = new Map<string, number>()
+  const je = new Map<string, Map<string, number>>()
+  const merkenJe = (bereich: string | undefined, name: string | undefined, d: number): void => {
+    if (!bereich || !name) return
+    let map = je.get(bereich)
+    if (!map) { map = new Map(); je.set(bereich, map) }
+    if ((map.get(name) ?? Infinity) > d) map.set(name, d)
+  }
   weeks.forEach((week, wi) => {
     const d = Math.abs(wi - weekIndex)
     const merken = (map: Map<string, number>, name: string | undefined): void => {
@@ -105,6 +121,7 @@ function assignmentDistance(
     for (const meeting of [week.mid, week.we]) {
       merken(part, meeting.auxRatgeber?.name)
       merken(any, meeting.auxRatgeber?.name)
+      merkenJe('ratgeber', meeting.auxRatgeber?.name, d)
       for (const section of meeting.sections) {
         for (const item of section.items) {
           if (isSong(item)) continue
@@ -112,16 +129,20 @@ function assignmentDistance(
             for (const slot of slotsOf(item, aux)) {
               merken(part, slot.name)
               merken(any, slot.name)
+              merkenJe(slot.bereichsKey, slot.name, d)
             }
           }
         }
       }
-      for (const arr of Object.values(meeting.helpers)) {
-        for (const slot of arr) merken(any, slot.name)
+      for (const [key, arr] of Object.entries(meeting.helpers)) {
+        for (const slot of arr) {
+          merken(any, slot.name)
+          merkenJe(serviceQualKey(key), slot.name, d)
+        }
       }
     }
   })
-  return { part, any }
+  return { part, any, je }
 }
 
 /** Aktueller Name auf einem Slot ("" = offen). */
@@ -401,7 +422,7 @@ export function autoAssignMeeting(
   // Tie-Break, sobald im Fenster mehrere bei null stehen (der Normalfall bei
   // Schulungsaufgaben: mehr Schwestern als Plätze). Ohne ihn entschiede dort
   // der Zufallshash und niemand fragt, wer am längsten wartet.
-  const { part: partDist, any: anyDist } = assignmentDistance(weeks, weekIndex)
+  const { part: partDist, any: anyDist, je: bereichDist } = assignmentDistance(weeks, weekIndex)
 
   let count = 0
   let unfilled = 0
@@ -430,6 +451,8 @@ export function autoAssignMeeting(
     const byTotal = opts.byTotal || kind === 'helper'
     const load = byTotal ? tl : pl
     const dist = (name: string): number => (byTotal ? anyDist : partDist).get(name) ?? Infinity
+    const distB = (name: string): number =>
+      (priv ? bereichDist.get(priv)?.get(name) : undefined) ?? Infinity
     // Malus (letzte Wahl): Reinigungs-Aufseher bei Hilfsdiensten; zusätzlich der
     // per opts.malus markierte Kreis (z. B. Älteste/DAG bei Gesprächsteilen).
     const eff = (p: Person): number => {
@@ -452,6 +475,9 @@ export function autoAssignMeeting(
         eff(a) - eff(b) ||
         // Gleiche Last → wer am längsten nicht dran war, kommt zuerst.
         dist(displayName(b)) - dist(displayName(a)) ||
+        // Danach erst der Bereich — nie davor: sonst rotiert jeder Bereich für
+        // sich und dieselbe Person landet drei Wochen in Folge in dreien.
+        distB(displayName(b)) - distB(displayName(a)) ||
         tieHash(`${displayName(a)}|${weekIndex}|${tab}`) -
           tieHash(`${displayName(b)}|${weekIndex}|${tab}`),
     )
