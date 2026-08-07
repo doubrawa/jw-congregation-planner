@@ -373,11 +373,45 @@ ihn überall heraus. Ein Redner der **eigenen** Versammlung bekommt dadurch kein
 Auslastung. Umschaltbar machen: eigener Redner (Person) ↔ Gastredner (Freitext).
 → [befunde.md F1](befunde.md)
 
-### T30 · Kreisaufseher- und Gedächtnismahl-Woche setzbar machen 🏗
+> **Entschieden (7.8.2026): umschaltbar.** Pro Woche wählbar — entweder ein
+> Redner der eigenen Versammlung als echte Person (mit `pid`, Bestätigung,
+> Erinnerung und Anrechnung auf die Auslastung) oder ein Gastredner als
+> Freitext wie bisher. Beide Fälle müssen nebeneinander bestehen; ein
+> auswärtiger Redner soll **nicht** als Person angelegt werden müssen.
+> Damit ist T29 fachlich geklärt und nur noch Arbeit.
+
+### T30 · Sonderwochen setzbar machen 🏗 — Zuschnitt erweitert
 `week.co`, `week.mem`, `week.memCancel` werden **nur in `demo.ts`** gesetzt. Chips,
 Banner und der Dienstvortrag-statt-VBS existieren im Produktionsbetrieb nicht.
 Ebenso fehlt ein Konzept für Kongresswochen (Zusammenkunft entfällt).
 → [befunde.md F2](befunde.md)
+
+> **Vom Betreiber erweitert (7.8.2026) — das ist mehr als drei Schalter.**
+>
+> Mehrere Versammlungen teilen sich oft einen Königreichssaal. Hat eine davon
+> Dienstwoche (Kreisaufseher), muss eine **andere** ihren Zusammenkunftstag
+> verlegen, weil man sich untereinander abstimmen muss. Eine Sonderwoche kann
+> also **Tag und Uhrzeit verschieben**, nicht nur den Ablauf ändern. Und es
+> gibt weitere Gründe, die einen **Ausfall** rechtfertigen.
+>
+> Daraus folgt: nicht drei Sonderfälle einzeln bauen, sondern **eine Woche
+> kann von der Regel abweichen** — mit optionalem Tag, optionaler Uhrzeit,
+> optionalem Ausfall und einem Grund. Die bekannten Fälle sind dann
+> Ausprägungen davon:
+>
+> | Fall | Wirkung |
+> | --- | --- |
+> | Kreisaufseher-Woche | Dienstvortrag statt Versammlungsbibelstudium; kann bei **anderen** Versammlungen eine Verlegung auslösen |
+> | Gedächtnismahl-Woche | Zusammenkunft kann entfallen (`memCancel`) |
+> | Kongresswoche | Zusammenkunft entfällt |
+> | Verlegung | anderer Tag und/oder andere Uhrzeit, Grund als Freitext |
+> | Ausfall | Zusammenkunft entfällt, Grund als Freitext |
+>
+> **Offene Nebenwirkungen, die mitzudenken sind:** eine verschobene Woche
+> verschiebt auch Erinnerungen (`send-reminders` rechnet mit dem regulären
+> Tag), die Abwesenheitsprüfung und die Konfliktprüfung. Ein Ausfall darf
+> keine Zuteilungen verwaisen lassen. **Nicht nebenbei zu bauen** — dieser
+> Punkt gehört geplant, nicht unbeaufsichtigt erledigt.
 
 ### T31 · Treffpunkte in den Bestätigungs-Flow aufnehmen 🏗 ✅ erledigt
 `eachAssignedSlot` läuft nur über `weeks`, nie über `fsWeeks`. Ein zugeteilter
@@ -426,12 +460,17 @@ Eröffnung.
 - **F6:** ✅ erledigt — `lacAdd` gab neuen Punkten `bereichsKey: 'vortrag'`
   (= öffentlicher Vortrag), jetzt `'studium'` (`meeting-edit.ts:227`). War die
   einzige Zeile des Blocks, die keine fachliche Absprache brauchte.
-- **F12:** `leser` ist nicht nach Zusammenkunft getrennt (der Vorsitz schon:
-  `vorsitzMid`/`vorsitzWe`)
-- **F7:** kein Hinweis, wenn zwei Personen `wtLeiter` gesetzt haben
+- **F12:** ⛔ **kein Mangel** (Betreiber, 7.8.2026) — „Wenn man Leser ist, dann
+  darf man bei beiden Zusammenkünften lesen. Es braucht keine Unterscheidung."
+  Die Asymmetrie zum Vorsitz (`vorsitzMid`/`vorsitzWe`) ist damit gewollt: der
+  Vorsitz ist je Zusammenkunft verschieden, das Lesen nicht. Punkt geschlossen.
+- **F7:** kein Hinweis, wenn zwei Personen `wtLeiter` gesetzt haben —
+  ✔ freigegeben
 - **F4:** kein Warnhinweis, wenn ein Brüder-Bereich bei einer Schwester gesetzt
-  wird (nur `male: true` an Schülerteil-Vortrag und Ratgeber)
-- **F8:** `fsAutoAssign` bevorzugt bei Gruppentreffpunkten niemanden aus der Gruppe
+  wird (nur `male: true` an Schülerteil-Vortrag und Ratgeber) — ✔ freigegeben,
+  der gewichtigste der vier
+- **F8:** `fsAutoAssign` bevorzugt bei Gruppentreffpunkten niemanden aus der
+  Gruppe — ✔ freigegeben
 
 ---
 
@@ -772,9 +811,17 @@ der ohne sie rot wird.
 
 | | Aufgaben | Warum offen |
 | --- | --- | --- |
-| **Phase 6** | T29, T30, T32, T33, T34 | betrifft Versammlungsabläufe, nicht Code (Ausnahme: **T32** braucht keine Absprache, nur Arbeit — die Minuten gehören als eigenes Feld geführt, siehe T59). Offene Rückfragen: eigener Redner beim öffentlichen Vortrag? Umgang mit Kongresswochen? Von T34 ist **F6 bereits miterledigt** (`lacAdd` legt Bereich `studium` statt `vortrag` an). **T31 ist erledigt** (Zuschnitt vom Betreiber geändert). |
-| **Phase 7** | T35–T42 | größere Umbauten, erst abzustimmen. Empfohlene Reihenfolge: **T35 + T40 + T36** zuerst (klein, risikoarm), danach **T39 + T37** als eigener Block mit Migration; T38/T41/T42 später oder gar nicht. |
-| **Zur Entscheidung** | Farbschema-Namen | „Jasmin", „Matcha" stehen in nicht-lateinischen Oberflächen lateinisch da (T60). Empfehlung: so lassen. |
+| **Phase 6** | T29, T30, T32, T33, T34 | **Fachlich geklärt am 7.8.2026** (siehe die Kästen bei den Punkten): T29 wird umschaltbar (Person ↔ Freitext), von T34 sind F4/F7/F8 freigegeben und **F12 zurückgewiesen**, F6 war schon miterledigt. T32 und T33 brauchten ohnehin keine Absprache. **Nur T30 bleibt offen** — der Betreiber hat den Zuschnitt erweitert (Verlegung von Tag und Uhrzeit, nicht nur Ausfall), das gehört geplant. |
+| **Phase 7** | T35–T42 | Empfohlene Reihenfolge: **T35 + T40 + T36** zuerst (klein, risikoarm) — **freigegeben am 7.8.2026**; danach **T39 + T37** als eigener Block mit Migration, weiterhin abzustimmen; T38/T41/T42 später oder gar nicht. |
+
+> **Was heute Nacht unbeaufsichtigt laufen darf** (Task
+> `jw-planner-todo-weiter`, einmalig um 3:07): **T32, T33, T35, T40, T36** und
+> aus T34 **F4, F7, F8**. Gesperrt bleiben T29 (fachlich geklärt, aber ein
+> größerer Umbau), T30 (Planung nötig), T39/T37 (Migration) sowie T38/T41/T42.
+>
+> Die **Farbschema-Namen** („Jasmin", „Matcha") bleiben in nicht-lateinischen
+> Oberflächen lateinisch stehen — Eigennamen, wie Markennamen auch. Der Punkt
+> aus T60 ist damit entschieden und geschlossen.
 
 ### Was zurückgewiesen wurde
 
