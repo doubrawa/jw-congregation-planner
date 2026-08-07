@@ -145,7 +145,7 @@ ersten. Der erste steht danach nirgends, hat aber „übernommen" gesehen.
 Vorbedingung mitschicken (nur schreiben, wenn der Slot noch `originalName` trägt)
 oder wie `redeem_invite` (migration-012) mit `FOR UPDATE` arbeiten.
 
-### T11 · `substitute` ohne `--no-verify-jwt` deployen ⚡ ⛔ kein Code-Mangel · wartet auf Deploy
+### T11 · `substitute` ohne `--no-verify-jwt` deployen ⚡ ⛔ kein Code-Mangel · ✅ deployt
 Live-Test zeigt: Der Request erreicht die Function, die Plattform prüft **nicht**
 — entgegen dem Deploy-Hinweis in `substitute/index.ts:24`. Der Schutz hängt damit
 an einer einzigen Codestelle.
@@ -160,6 +160,12 @@ an einer einzigen Codestelle.
 > wurde nur vor dieser Datei (bzw. mit dem Flag) deployt. Behoben wird das
 > durch ein erneutes `npx supabase functions deploy substitute` aus der
 > Repo-Wurzel — die CLI liest die Einstellung dann mit.
+>
+> **Erledigt am 7. August 2026** — der Betreiber hat `substitute` und
+> `send-reminders` neu deployt. Damit sind auch T9/T10/T24 (aus `substitute`)
+> und T8/T12/T14 samt der Treffpunkt-Erinnerungen aus T31 (aus
+> `send-reminders`) tatsächlich in Betrieb, nicht nur im Repo. Der Nachweis
+> für den JWT-Schutz steht oben unter **Prüfen** und ist noch nicht gefahren.
 
 ---
 
@@ -383,8 +389,9 @@ bestätigen und bekam keine Erinnerung. `FsInstance.leader` hatte zudem keine
 > (Abwesenheit, Doppelbelegung, Serien), Erinnerungen in `send-reminders`, und
 > `fsAutoAssign` nach demselben Muster wie die Aufgaben: gleitendes Fenster
 > statt aller Wochen (`FS_LOAD_WEEKS = 12`, gemessen), Wartezeit, Tagessperre,
-> Wochen-Deckel. **Die Erinnerungen werden erst nach einem Deploy von
-> `send-reminders` scharf** (derselbe Schritt wie T11).
+> Wochen-Deckel. Die Erinnerungen brauchten dafür einen Deploy von
+> `send-reminders` (derselbe Schritt wie T11) — **am 7. August 2026 erfolgt,
+> sie laufen jetzt.**
 
 ### T32 · LAC-Minuten sprachunabhängig machen 🔧 — durch T59 belegt
 `itemMinutes` (`meeting-edit.ts:16`) sucht `/(\d+) Min\./`; der Import übernimmt
@@ -750,9 +757,14 @@ der ohne sie rot wird.
 
 ### Was offen ist und warum
 
+> **Der Deploy ist erledigt** (7. August 2026): `substitute` und
+> `send-reminders` laufen in der Fassung des Repos. Alles, was bis dahin nur
+> geschrieben, aber nicht in Betrieb war — T9/T10/T24, T8/T12/T14 und die
+> Treffpunkt-Erinnerungen aus T31 —, ist damit scharf. Offen sind nur noch
+> Code- und Fachfragen.
+
 | | Aufgaben | Warum offen |
 | --- | --- | --- |
-| **Deploy** | T11 (+ T31) | im Repo nichts zu tun (`config.toml` stimmt) — braucht `npx supabase functions deploy substitute` beim Betreiber; derselbe Deploy bringt T9/T10/T24 live. `send-reminders` ebenso für T8/T12/T14 **und die Treffpunkt-Erinnerungen aus T31**. |
 | **Phase 6** | T29, T30, T32, T33, T34 | betrifft Versammlungsabläufe, nicht Code (Ausnahme: **T32** braucht keine Absprache, nur Arbeit — die Minuten gehören als eigenes Feld geführt, siehe T59). Offene Rückfragen: eigener Redner beim öffentlichen Vortrag? Umgang mit Kongresswochen? Von T34 ist **F6 bereits miterledigt** (`lacAdd` legt Bereich `studium` statt `vortrag` an). **T31 ist erledigt** (Zuschnitt vom Betreiber geändert). |
 | **Phase 7** | T35–T42 | größere Umbauten, erst abzustimmen. Empfohlene Reihenfolge: **T35 + T40 + T36** zuerst (klein, risikoarm), danach **T39 + T37** als eigener Block mit Migration; T38/T41/T42 später oder gar nicht. |
 | **Zur Entscheidung** | Farbschema-Namen | „Jasmin", „Matcha" stehen in nicht-lateinischen Oberflächen lateinisch da (T60). Empfehlung: so lassen. |
@@ -762,7 +774,7 @@ der ohne sie rot wird.
 | Befund | Ergebnis |
 | --- | --- |
 | **T1** (`MON` → `MONA`) | Absturz bestätigt, **Fix anders**: der Tausch hätte ihn nur auf die Langform verschoben → `datumsRegel(...)` schlägt in beiden Tabellen nach |
-| **T11** (`config.toml`) | ⛔ kein Code-Mangel, nur die laufende Instanz ist älter |
+| **T11** (`config.toml`) | ⛔ kein Code-Mangel, nur die laufende Instanz war älter — am 7.8.2026 neu deployt |
 | **T28** (`REF` für id/tl/vi/sw) | ⛔ kein Mangel, alle vier sind vollständig |
 | **T50** (`--primary`/`--clear`) | ⛔ die Tokens gibt es nicht — es sind benutzte Klassennamen |
 | **T51** (vier z-index-Ebenen) | umgesetzt mit **sieben**; vier hätten die Reihenfolge geändert |
