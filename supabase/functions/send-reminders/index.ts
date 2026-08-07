@@ -132,7 +132,20 @@ async function pruneNotifications(): Promise<void> {
 
 interface Slot {
   name?: string
+  /** Person-Id der Zuteilung — stabile Identität statt Name-Match. */
+  pid?: string
   rolle?: string
+}
+/** Ein Treffpunkt einer Woche (FsInstance im Client). */
+interface FsInstance {
+  id: string
+  grp?: string
+  wd: number
+  time?: string
+  place?: string
+  leader?: string
+  /** Person-Id des Leiters. */
+  lpid?: string
 }
 interface Item {
   song?: string
@@ -151,7 +164,7 @@ interface Section {
  * Alt-Format aber, bis die Woche neu gespeichert wird). Beides muss hier
  * gelesen werden können.
  */
-type HelperEntry = string | { name?: string } | null
+type HelperEntry = string | { name?: string; pid?: string } | null
 interface Meeting {
   date?: string
   sections?: Section[]
@@ -215,6 +228,11 @@ function personDisplayName(fn: string, ln: string, dn: string): string {
 function helperName(entry: HelperEntry | undefined): string {
   if (!entry) return ''
   return typeof entry === 'string' ? entry : (entry.name ?? '')
+}
+
+/** Person-Id eines Hilfsdienst-Platzes; Alt-Format (reiner String) hat keine. */
+function helperPid(entry: HelperEntry | undefined): string | undefined {
+  return entry && typeof entry !== 'string' ? entry.pid : undefined
 }
 
 /** "Dienstag, 8. September · 19:00 · Saal" → "Dienstag, 8. September · 19:00". */
@@ -313,7 +331,45 @@ function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
 
 interface Pending {
   name: string
+  /**
+   * Person-Id, wo die Zuteilung eine trägt. Zugeordnet wird darüber und erst
+   * ersatzweise über den Anzeigenamen: zwei Personen desselben Namens bekamen
+   * sonst gegenseitig die Erinnerungen des anderen.
+   */
+  pid?: string
   label: string
+}
+
+/**
+ * Unbestätigte Treffpunkt-Leitungen einer Woche.
+ *
+ * Zweite Datenquelle (`fs_weeks`), die hier lange gar nicht gelesen wurde: ein
+ * zugeteilter Treffpunkt-Leiter bekam nie eine Erinnerung und konnte nichts
+ * bestätigen — er erfuhr von seiner Einteilung nur beim Nachschauen.
+ *
+ * Der Wochentag steht am Treffpunkt selbst (`wd`, 0=So … 6=Sa), nicht in den
+ * Zusammenkunftszeiten; als Versatz ab Montag gerechnet wie im Client
+ * (`fsDate`). task_key `fs|<wi>|<instId>` — dieselbe Form wie dort.
+ */
+function pendingOfFsWeek(
+  wi: number,
+  insts: FsInstance[],
+  conf: Map<string, string>,
+): Array<Pending & { offset: number; zeit: string }> {
+  const out: Array<Pending & { offset: number; zeit: string }> = []
+  for (const inst of insts) {
+    if (!inst?.leader) continue
+    if (conf.has(`fs|${wi}|${inst.id}`)) continue
+    const ort = inst.place ? ` · ${inst.place}` : ''
+    out.push({
+      name: inst.leader,
+      pid: inst.lpid,
+      label: `Treffpunkt-Leiter${ort}`,
+      offset: ((inst.wd ?? 1) + 6) % 7,
+      zeit: inst.time ?? '',
+    })
+  }
+  return out
 }
 
 /** Unbestätigte Zuteilungen; task_key-Schema wie partTaskKey/helperTaskKey. */
@@ -347,7 +403,8 @@ function pendingOfMeeting(
           const title = item.title ?? 'Zuteilung'
           out.push({
             name: slot.name,
-            label: rolle && !rolle.startsWith('mit') ? `${title} · ${rolle}` : title,
+            pid: slot.pid,
+            label: rolle && !rolle.startsWith('mit') ? ` · ` : title,
           })
         }
       }
@@ -356,7 +413,7 @@ function pendingOfMeeting(
   // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
   const ratgeber = meeting.auxRatgeber
   if (ratgeber?.name && !conf.has(`${wi}|${tab}|ratgeber`)) {
-    out.push({ name: ratgeber.name, label: ratgeber.rolle ?? 'Ratgeber' })
+    out.push({ name: ratgeber.name, pid: ratgeber.pid, label: ratgeber.rolle ?? 'Ratgeber' })
   }
   for (const svc of services) {
     if (svc.groups) continue
@@ -365,7 +422,7 @@ function pendingOfMeeting(
       const name = helperName(arr[pos])
       if (!name) continue // unbesetzter Platz
       if (conf.has(`${wi}|${tab}|helper|${svc.key}|${pos}`)) continue
-      out.push({ name, label: svc.name })
+      out.push({ name, pid: helperPid(arr[pos]), label: svc.name })
     }
   }
   return out
@@ -428,10 +485,19 @@ Deno.serve(async (req: Request) => {
       const offsets = meetingDayOffsets(cong.meeting_times)
       const zeiten = meetingTimesOf(cong.meeting_times)
 
-      const [weeks, confs, members, persons, services, subs] = await Promise.all([
+      const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
         rest<{ data: Week }[]>(
           `weeks?select=position,data&congregation_id=eq.${cong.id}&order=position.asc`,
         ),
+        // Treffpunkte: eigene Tabelle, gleiche Positionsnummer wie `weeks`.
+        rest<{ position: number; data: FsInstance[] }[]>(
+          `fs_weeks?select=position,data&congregation_id=eq.${cong.id}&order=position.asc`,
+        ).catch((err) => {
+          // Fehlt die Tabelle (Migration nicht eingespielt), lieber die
+          // Zusammenkünfte erinnern als den ganzen Lauf verlieren.
+          console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
+          return [] as { position: number; data: FsInstance[] }[]
+        }),
         rest<{ task_key: string; status: string }[]>(
           `confirmations?select=task_key,status&congregation_id=eq.${cong.id}`,
         ),
@@ -452,10 +518,18 @@ Deno.serve(async (req: Request) => {
       const conf = new Map(confs.map((c) => [c.task_key, c.status]))
       const personById = new Map(persons.map((p) => [p.id, p]))
       const userByName = new Map<string, string>()
+      // Zuordnung bevorzugt über die Person-Id: zwei Personen desselben Namens
+      // bekamen über `userByName` gegenseitig die Erinnerungen des anderen.
+      // Der Namensweg bleibt als Rückfall für Altdaten ohne Id.
+      const userByPerson = new Map<string, string>()
       for (const m of members) {
         const p = m.person_id ? personById.get(m.person_id) : undefined
-        if (p) userByName.set(personDisplayName(p.fn, p.ln, p.dn), m.user_id)
+        if (!p) continue
+        userByName.set(personDisplayName(p.fn, p.ln, p.dn), m.user_id)
+        userByPerson.set(p.id, m.user_id)
       }
+      const userOf = (pend: Pending): string | undefined =>
+        (pend.pid ? userByPerson.get(pend.pid) : undefined) ?? userByName.get(pend.name)
       const subsByUser = new Map<string, SubscriptionRow[]>()
       for (const s of subs) {
         subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
@@ -478,7 +552,7 @@ Deno.serve(async (req: Request) => {
           if (!kind) continue
           for (const pend of pendingOfMeeting(wi, tab, meeting, services, conf)) {
             const entry = `${reminderDate(week.start, offset, meeting, zeiten[tab])}: ${pend.label}`
-            const userId = userByName.get(pend.name)
+            const userId = userOf(pend)
             // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
             // Push-Abo. Wer ein Konto hat, bekommt trotzdem die persönliche
             // Erinnerung (Push an evtl. Abos + Glocke); ohne Abo bleibt das aber
@@ -498,6 +572,34 @@ Deno.serve(async (req: Request) => {
           }
         }
       })
+
+      // Treffpunkte: eigene Tabelle, eigener Wochentag je Eintrag. Das Datum
+      // kommt aus dem `start` DERSELBEN Wochenposition — beide Tabellen zählen
+      // die Wochen gleich (weeks.position / fs_weeks.position).
+      const startOf = new Map(weeks.map((row, wi) => [wi, row.data?.start]))
+      for (const row of fsWeeks) {
+        const start = startOf.get(row.position)
+        if (!start) continue
+        for (const pend of pendingOfFsWeek(row.position, row.data ?? [], conf)) {
+          const days = daysUntil(start, pend.offset, todayUTC)
+          if (days === null) continue
+          const kind = dueKind(rem, days)
+          if (!kind) continue
+          const tag = reminderDate(start, pend.offset, {}, pend.zeit)
+          const entry = `${tag}: ${pend.label}`
+          const userId = userOf(pend)
+          const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
+          if (userId) {
+            entriesByUser.set(userId, [...(entriesByUser.get(userId) ?? []), entry])
+            if (kind === 'main') {
+              mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
+            }
+          }
+          if (!reachable && days === rem.last) {
+            unreachable.push(`${pend.name} — ${entry}`)
+          }
+        }
+      }
 
       for (const [userId, entries] of entriesByUser) {
         // Doppel-Versand-Sperre: heute schon persönlich erinnert → überspringen

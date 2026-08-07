@@ -9,7 +9,7 @@ import { overseerGroup } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
 import type { MeetingKey } from '../data/types'
 import { fill, useProgWeek, useT } from '../i18n/useT'
-import { ConflictsBanner, OpenSlotsBanner } from './PlanBanners'
+import { ConflictsBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { FsPlan } from './FsPlan'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
@@ -95,7 +95,10 @@ function PlanenBody() {
       )}
 
       {isFs ? (
-        <FsPlan onlyGroup={fsOverseer ? myFsGroup : null} />
+        <>
+          <FsConflictsBanner onlyGroup={fsOverseer ? myFsGroup : null} />
+          <FsPlan onlyGroup={fsOverseer ? myFsGroup : null} />
+        </>
       ) : (
         <>
           <MemorialBanner week={week} tab={state.tab} />

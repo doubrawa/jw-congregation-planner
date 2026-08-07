@@ -6,8 +6,10 @@
 
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
+import { fsDate, fsWeekConflicts } from '../data/fs'
 import { openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
 import type { MeetingKey, MeetingTab } from '../data/types'
+import { LOCALES } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 
@@ -60,6 +62,60 @@ export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
       {hiddenConflicts > 0 && (
         <div className="plan-conflict-more">{fill(t.konfMehr, { n: hiddenConflicts })}</div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Konflikt-Banner der Treffpunkte — eigenes Banner, weil Treffpunkte eine
+ * eigene Datenquelle sind und im Predigtdienst-Reiter stehen, nicht bei den
+ * Zusammenkünften.
+ *
+ * Die Texte kommen ohne neue Wörterbuch-Schlüssel aus: `konfliktAbsent` passt
+ * wörtlich (nur die Ortsangabe tritt an die Stelle der Zusammenkunft), und die
+ * Doppelbelegung setzt sich aus `sheetSchonHeute` zusammen. Ein neuer Schlüssel
+ * hieße 34 Übersetzungen — und eine erfundene ist schlimmer als eine
+ * zusammengesetzte aus geprüften Bausteinen.
+ */
+export function FsConflictsBanner({ onlyGroup }: { onlyGroup: string | null }) {
+  const { state } = useApp()
+  const { t } = useT()
+  const conflicts = fsWeekConflicts(
+    state.fsWeeks,
+    state.week,
+    state.persons,
+    state.absences,
+    state.fsBase,
+    onlyGroup,
+  )
+  if (conflicts.length === 0) return null
+
+  const wochentag = (wd: number | undefined): string =>
+    wd === undefined || !state.fsBase
+      ? ''
+      : fsDate(state.fsBase, 0, wd).toLocaleDateString(LOCALES[state.lang], { weekday: 'long' })
+
+  const text = (c: Conflict): string => {
+    if (c.kind === 'fsAbsent') {
+      const wo = [wochentag(c.wd), c.ort].filter(Boolean).join(' · ')
+      return fill(t.konfliktAbsent, { name: c.name, tab: wo })
+    }
+    return [c.name, t.sheetSchonHeute, wochentag(c.wd)].filter(Boolean).join(' · ')
+  }
+
+  return (
+    <div className="plan-conflicts">
+      <div className="plan-banner-head">
+        <span className="plan-banner-badge">!</span>
+        <span className="plan-banner-title">{t.konflikteTitle}</span>
+        <span className="plan-banner-count">{conflicts.length}</span>
+      </div>
+      {conflicts.map((c, i) => (
+        <div key={i} className="plan-conflict-row">
+          <span className="plan-conflict-dot" data-kind={c.kind} />
+          <span className="plan-conflict-text">{text(c)}</span>
+        </div>
+      ))}
     </div>
   )
 }

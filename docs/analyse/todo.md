@@ -573,6 +573,54 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ---
 
+## Nachgetragen (August 2026)
+
+### T57 · Zuordnung durchgängig über die Person-Id, nicht über den Namen 🏗
+**Vorgabe des Betreibers.** Wo eine Zuteilung einer Person gehört, muss die
+Person-Id entscheiden — der Anzeigename nur noch als Rückfall für Altdaten.
+Zwei Personen desselben Namens bekommen sonst gegenseitig fremde Aufgaben,
+Erinnerungen und Konflikte.
+
+**Stand.** Die *Schreib*seite ist weitgehend fertig: `SlotAssignment.pid` steht
+bei Programmpunkten, Ratgeber und Hilfsdiensten (`assignSlot`,
+`autoAssignMeeting`, `AssignSheet`), und `FsInstance.lpid` kam im August dazu.
+Über die Id gehen bereits `deriveMyTasks`, `deriveMyFsTasks`,
+`person-timeline`, `fsWeekConflicts` und `send-reminders`.
+
+**Was noch über den Namen läuft:**
+- `helpers.ts` — `partWorkload` (:303/:308/:315), `helperWorkload` (:341):
+  die gesamte Auslastungsrechnung und damit die Fairness der Auto-Zuteilung
+- `planning.ts` — `assignmentDistance`, `meetingAssignedNames`,
+  `meetingPartNames`, `meetingHelperNames`, `weekConflicts`,
+  `derivePendingNames`, `assignmentsInMeeting`, `openSlotLabels`
+- `fs.ts` — die Strichliste in `fsAutoAssign` (`load`, `abstand`, `dayUsed`)
+- `state.pendingNames` ist eine Namensliste; im Planen markiert sie die „…"
+
+**Warum das ein eigener Block ist:** die Zähl- und Vergleichsfunktionen nehmen
+durchweg `name: string` entgegen. Der Umstieg heißt, sie auf eine
+Personen-Identität umzustellen (Id mit Namensrückfall) — und dabei zu klären,
+was mit Zuteilungen ohne Id geschieht: externe Redner, Gruppen-Rotationen
+(„Gruppe 1" ist keine Person) und Altdaten, die vor `pid` gespeichert wurden.
+Ohne diese Fallunterscheidung fallen genau die aus der Zählung, die heute
+mitzählen.
+
+**Prüfen:** zwei Personen mit identischem Anzeigenamen anlegen, eine davon
+einteilen — die andere darf weder Aufgabe noch Erinnerung noch Konflikt
+bekommen, und die Auslastung muss bei der richtigen steigen.
+
+### T58 · Auto-Zuteilung: Fairness über lange Zeiträume absichern 🏗
+**Vorgabe des Betreibers.** Die automatische Zuteilung von Aufgaben,
+Hilfsdiensten und Treffpunkten muss über lange Zeiträume gleichmäßig verteilen,
+auch in Sonderfällen. Genannt: wer **neu** ist und keine Vergangenheit hat, und
+wer aus dem **Urlaub** zurückkommt, darf nicht mit Zuteilungen überschüttet
+werden, nur weil seine Strichliste leer ist.
+
+Nötig sind Tests über viele Wochen mit vielen Szenarien und Grenzfällen, nicht
+nur Einzelfälle.
+→ Stand und Messungen: [nachtrag-fairness.md](nachtrag-fairness.md)
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |

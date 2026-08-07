@@ -15,6 +15,11 @@
 import { istAbwesendAm } from './absence'
 import { displayName, isQualified, tieHash } from './helpers'
 import { deutschesDatum } from './meeting-dates'
+// Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
+// Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
+// erscheinen im selben Banner und sollen sich für den Planer nicht
+// unterschiedlich anfühlen.
+import type { Conflict } from './planning'
 import type { Absence, ConfirmationMap, FsInstance, FsRule, MyTask, Person } from './types'
 
 /** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
@@ -401,4 +406,61 @@ export function deriveMyFsTasks(
     }
   })
   return tasks
+}
+
+/**
+ * Konflikte der Treffpunkte einer Woche — das Gegenstück zu `weekConflicts`
+ * für die zweite Datenquelle.
+ *
+ * Zwei Arten, beide bisher unbemerkt:
+ *
+ *  - **`fsAbsent`** — jemand ist am Tag seines Treffpunkts abwesend, steht aber
+ *    als Leiter da. Die Auto-Zuteilung prüft das (`istAbwesendAm`), die
+ *    manuelle Zuteilung warnt nur, und eine später eingetragene Abwesenheit
+ *    bemerkte gar niemand. Bei den Zusammenkünften fängt `weekConflicts` genau
+ *    diesen Fall ab; für Treffpunkte gab es nichts.
+ *  - **`fsDouble`** — dieselbe Person leitet zwei Treffpunkte am selben
+ *    Wochentag. Die Auto-Zuteilung verhindert das (`dayUsed`), von Hand ist es
+ *    weiter möglich.
+ *
+ * Geprüft wird am **echten Tag** des Treffpunkts, nicht an der Woche: wer nur
+ * übers Wochenende weg ist, kann montags leiten. Ohne Datumsbasis (Vorlagen,
+ * Tests) entfällt die Abwesenheitsprüfung — dieselbe Linie wie in
+ * `fsAutoAssign`.
+ */
+export function fsWeekConflicts(
+  fsWeeks: FsInstance[][],
+  wi: number,
+  persons: Person[],
+  absences: readonly Absence[] = [],
+  base: Date | null = null,
+  onlyGroup: string | null = null,
+): Conflict[] {
+  const week = fsWeeks[wi]
+  if (!week) return []
+  const conflicts: Conflict[] = []
+  const nachName = new Map(persons.map((p) => [displayName(p), p]))
+  const proTag = new Map<number, Map<string, number>>()
+
+  for (const inst of week) {
+    if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) continue
+    // Zählung je Wochentag für `fsDouble` — auch ohne Datumsbasis prüfbar.
+    const tag = proTag.get(inst.wd) ?? new Map<string, number>()
+    tag.set(inst.leader, (tag.get(inst.leader) ?? 0) + 1)
+    proTag.set(inst.wd, tag)
+
+    if (!base) continue
+    // Über die Id, mit Rückfall auf den Namen für Altdaten.
+    const person = inst.lpid ? persons.find((p) => p.id === inst.lpid) : nachName.get(inst.leader)
+    if (person && istAbwesendAm(absences, person.id, fsDate(base, wi, inst.wd))) {
+      conflicts.push({ kind: 'fsAbsent', name: inst.leader, wd: inst.wd, ort: inst.place })
+    }
+  }
+
+  for (const [wd, tag] of proTag) {
+    for (const [name, n] of tag) {
+      if (n >= 2) conflicts.push({ kind: 'fsDouble', name, wd, count: n })
+    }
+  }
+  return conflicts
 }

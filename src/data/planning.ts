@@ -1092,13 +1092,18 @@ export function derivePendingNames(
 /** Ab wie vielen Wochen in Folge ein „streak“-Konflikt entsteht. */
 const STREAK_THRESHOLD = 3
 
-export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'streak'
+export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'streak' | 'fsAbsent' | 'fsDouble'
 
 export interface Conflict {
   kind: ConflictKind
   name: string // Anzeigename der Person
   tab?: MeetingKey // betroffene Zusammenkunft (absent/double/helperTask)
   count?: number // double: Hilfsdienste in der Zusammenkunft; streak: Wochen in Folge
+  // Treffpunkte haben keine Zusammenkunft, sondern einen eigenen Wochentag und
+  // Ort — beides gehört in den Hinweis, sonst weiß der Planer nicht, welchen
+  // der Treffpunkte dieser Woche er ansehen soll.
+  wd?: number // fsAbsent/fsDouble: Wochentag (0=So … 6=Sa)
+  ort?: string // fsAbsent: Ort des Treffpunkts
 }
 
 /**

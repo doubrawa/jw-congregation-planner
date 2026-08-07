@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { CURRENT_PERSON_ID } from '../data/demo'
+import { fsWeekConflicts } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { currentWeekIndex } from '../data/meeting-dates'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
@@ -53,8 +54,15 @@ export function DashboardScreen() {
   const openSlots = week
     ? countOpenSlots(week.mid, state.services) + countOpenSlots(week.we, state.services)
     : 0
+  // Treffpunkte zählen mit: für den Planer ist „3 mögliche Konflikte" eine
+  // Zahl über die ganze Woche, und ein abwesender Treffpunkt-Leiter ist genauso
+  // einer wie ein abwesender Redner. Die Prüfung selbst bleibt getrennt —
+  // andere Datenquelle, eigener Wochentag.
   const conflicts =
-    curIdx >= 0 ? weekConflicts(state.weeks, curIdx, state.persons, state.services, undefined, abwesend).length : 0
+    curIdx >= 0
+      ? weekConflicts(state.weeks, curIdx, state.persons, state.services, undefined, abwesend).length +
+        fsWeekConflicts(state.fsWeeks, curIdx, state.persons, state.absences, state.fsBase).length
+      : 0
 
   return (
     <section className="screen dash">
