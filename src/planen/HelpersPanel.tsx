@@ -29,7 +29,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
 
   return (
     <div className="panel panel--pb14" data-farbe="neutral2">
-      <div className="panel-label">{t.hilfsdienste}</div>
+      <h2 className="panel-label">{t.hilfsdienste}</h2>
       {state.services.map((service) => {
         const assigned = meeting.helpers[service.key] ?? []
         return (

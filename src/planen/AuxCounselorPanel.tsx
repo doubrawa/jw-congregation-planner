@@ -34,7 +34,7 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
 
   return (
     <div className="panel panel--pb16" data-farbe="neutral2">
-      <div className="panel-label">{t.auxKlassen}</div>
+      <h2 className="panel-label">{t.auxKlassen}</h2>
       <div className="plan-item">
         <div className="plan-item-title">{t.auxRatgeber}</div>
         <div className="plan-slots">

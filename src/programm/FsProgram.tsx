@@ -51,7 +51,7 @@ export function FsProgram() {
     <>
       {days.map((day) => (
         <div key={day.wd} className="panel" data-farbe="gold">
-          <div className="panel-label">{day.label}</div>
+          <h2 className="panel-label">{day.label}</h2>
           {day.items.map((inst) => (
             <div key={inst.id} className="fs-row">
               <div className="fs-row-main">

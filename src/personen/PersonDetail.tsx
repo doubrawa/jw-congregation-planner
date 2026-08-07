@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { familyMembers, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
@@ -17,6 +18,8 @@ import { PlannerToggle, PrivToggle } from './PrivToggle'
 export function PersonDetail({ person }: { person: Person }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
+  // Zwei-Tipp-Bestaetigung des Loeschens (siehe unten).
+  const [loeschArmed, setLoeschArmed] = useState(false)
   const update = (patch: Partial<Person>) =>
     dispatch({ type: 'updatePerson', id: person.id, patch })
 
@@ -56,7 +59,7 @@ export function PersonDetail({ person }: { person: Person }) {
       </div>
 
       <div className="panel panel--lead panel--pb16" data-farbe="neutral">
-        <div className="panel-label">{t.stammdaten}</div>
+        <h2 className="panel-label">{t.stammdaten}</h2>
         {fields.map(([key, label]) => (
           <div key={key} className="pers-field">
             <label className="field-label" htmlFor={`pers-${key}`}>
@@ -170,7 +173,7 @@ export function PersonDetail({ person }: { person: Person }) {
       <PersonTimeline person={person} />
 
       <div className="panel panel--pb10" data-farbe="petrol">
-        <div className="panel-label">{t.aufgabenbereiche}</div>
+        <h2 className="panel-label">{t.aufgabenbereiche}</h2>
         {QUALIFICATION_ORDER.map((key) => (
           <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} />
         ))}
@@ -190,7 +193,7 @@ export function PersonDetail({ person }: { person: Person }) {
       </div>
 
       <div className="panel panel--pb10" data-farbe="acc">
-        <div className="panel-label">{t.wtRollenLabel}</div>
+        <h2 className="panel-label">{t.wtRollenLabel}</h2>
         <p className="panel-hint">{t.wtRollenHint}</p>
         {WT_ROLE_ORDER.map((key) => (
           <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} />
@@ -200,17 +203,25 @@ export function PersonDetail({ person }: { person: Person }) {
 
       {state.dataStatus !== 'demo' && <KontoCard person={person} />}
 
+      {/* Zwei-Tipp-Bestätigung wie beim Leeren der Zuteilungen (AutoAssignPanel):
+          der erste Tipp bewaffnet den Button und nennt die Folge, erst der
+          zweite löscht. Der native window.confirm war der einzige im Projekt —
+          er sieht auf jedem Gerät anders aus, ignoriert Theme und Schriftgröße
+          und lässt sich nicht übersetzen, wo der Browser es nicht tut. */}
       <button
         type="button"
-        className="pers-delete"
+        className={`pers-delete${loeschArmed ? ' is-armed' : ''}`}
         onClick={() => {
-          const name = personLabel(person)
-          if (window.confirm(fill(t.confirmPersonDel, { name }))) {
-            dispatch({ type: 'removePerson', id: person.id })
+          if (!loeschArmed) {
+            setLoeschArmed(true)
+            return
           }
+          setLoeschArmed(false)
+          dispatch({ type: 'removePerson', id: person.id })
         }}
+        onBlur={() => setLoeschArmed(false)}
       >
-        {t.persLoeschen}
+        {loeschArmed ? fill(t.confirmPersonDel, { name: personLabel(person) }) : t.persLoeschen}
       </button>
     </section>
   )

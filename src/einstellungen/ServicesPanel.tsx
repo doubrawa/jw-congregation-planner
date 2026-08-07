@@ -30,7 +30,7 @@ export function ServicesPanel() {
 
   return (
     <form className="panel panel--pb16" data-farbe="petrol" onSubmit={addService}>
-      <div className="panel-label">{t.hilfsdienste}</div>
+      <h2 className="panel-label">{t.hilfsdienste}</h2>
       <p className="panel-hint">{t.hdDesc}</p>
       {state.services.map((service) => (
         <div key={service.key} className="svc-row">

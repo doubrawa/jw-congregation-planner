@@ -447,3 +447,42 @@ select {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ---- Trefferflächen (WCAG 2.5.8) ------------------------------------------
+   Gemessen waren fünf Bedienelemente kleiner als die geforderten 24 px:
+   der Schalter (40×22), „✓ Bestätigen" (86×23), die beiden S-89-Verweise
+   (82×17 und 75×15) und „+ Gesprächspartner" (101×16). Die S-89-Zeilen waren
+   sogar reine Textzeilen ohne eigene Fläche.
+
+   Bei den Textknöpfen wächst die Fläche über die Mindesthöhe — das Schriftbild
+   bleibt, nur der Knopf wird höher. Der Schalter behält seine 22 px Optik und
+   bekommt die Fläche über ein unsichtbares Pseudo-Element: seine Höhe ist Teil
+   des Designs, die Trefferfläche muss es nicht sein. */
+.auf-confirm,
+.auf-s89,
+.dash-s89,
+.partner-toggle {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  min-width: 24px;
+  min-height: 24px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Lange Optionen: sauber abschneiden statt hinter dem Chevron zu verschwinden.
+   `min-width: 0` erlaubt dem Select, in Flex-Zeilen unter seine Inhaltsbreite
+   zu schrumpfen — sonst schob es bei großer Schrift die Zeile auf. */
+select {
+  min-width: 0;
+  text-overflow: ellipsis;
+}

@@ -47,7 +47,7 @@ export function ProfilScreen() {
       <h1 className="screen-title">{t.navProfil}</h1>
 
       <div className="panel panel--pb14" data-farbe="neutral">
-        <div className="panel-label">{t.profil}</div>
+        <h2 className="panel-label">{t.profil}</h2>
         <div className="kv-row">
           <span className="kv-key">{t.nameLbl}</span>
           <span className="kv-val">{me ? fullName(me) : ''}</span>

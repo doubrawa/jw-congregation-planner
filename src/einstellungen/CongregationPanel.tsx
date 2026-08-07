@@ -31,7 +31,7 @@ export function CongregationPanel() {
 
   return (
     <div className="panel panel--lead panel--pb16" data-farbe="neutral">
-      <div className="panel-label">{t.versammlungCard}</div>
+      <h2 className="panel-label">{t.versammlungCard}</h2>
       {congFields.map(([key, label]) => (
         <div key={key} className="cong-field">
           <label className="field-label" htmlFor={`cong-${key}`}>

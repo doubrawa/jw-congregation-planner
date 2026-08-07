@@ -15,7 +15,7 @@ export function OrphanAccounts() {
 
   return (
     <div className="panel panel--pb14 pers-orphans" data-farbe="neutral2">
-      <div className="panel-label">{t.kontenOhnePerson}</div>
+      <h2 className="panel-label">{t.kontenOhnePerson}</h2>
       <p className="panel-hint">{t.kontenOhnePersonHint}</p>
       {orphanAccounts.map((member) => (
         <div key={member.userId} className="mem-row">
