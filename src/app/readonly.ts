@@ -38,6 +38,14 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   'closeLangSheet',
   'setLangSearch',
   'stopImport',
+  // Die eigene Aufgabe ansehen. Erst Bestätigen/Absagen darin schreibt —
+  // ohne diese beiden ließ sich offline nicht einmal nachschlagen, was
+  // ansteht, also genau das, wofür der Offline-Stand da ist.
+  'openMyTask',
+  'closeMyTask',
+  // Vermerk, dass die Begrüßung gezeigt wurde. Rein lokal; fehlte sie hier,
+  // begrüßte der Offline-Start mit einem „nur lesend"-Hinweis.
+  'welcomeShown',
   // Rein lokale Vorlieben (localStorage, keine Versammlungsdaten)
   'setTheme',
   'setFontScale',
