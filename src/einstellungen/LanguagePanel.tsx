@@ -1,10 +1,14 @@
 import { useApp } from '../app/context'
+import { langLabel, useLangNames } from '../i18n/langnames'
 import { useT } from '../i18n/useT'
 
 /** Sprache: Versammlungssprache (öffnet Sheet) und weitere Programmsprachen als Chips. */
 export function LanguagePanel() {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  // Gespeichert ist der deutsche Name; angezeigt wird er in der Bediensprache.
+  useLangNames(state.lang)
+  const label = (name: string) => langLabel(name, state.lang)
 
   return (
     <div className="panel panel--pb14" data-farbe="acc">
@@ -16,7 +20,7 @@ export function LanguagePanel() {
       >
         <span className="lang-card-key">{t.versSprache}</span>
         <span className="lang-card-val">
-          <span>{state.congLang}</span>
+          <span>{label(state.congLang)}</span>
           <span className="lang-card-chevron">›</span>
         </span>
       </button>
@@ -26,7 +30,7 @@ export function LanguagePanel() {
       <div className="proglang-chips">
         {state.progLangs.map((name) => (
           <span key={name} className="proglang-chip">
-            {name}
+            {label(name)}
             <button
               type="button"
               className="proglang-chip-x"

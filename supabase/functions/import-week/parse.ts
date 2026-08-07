@@ -20,6 +20,8 @@
 // Sprache gleich.
 // =============================================================================
 
+import { cleanText } from './text.ts'
+
 export interface ImportedSlot {
   name: string
   rolle?: string
@@ -55,31 +57,63 @@ export interface ImportedWeek {
   we: ImportedMeeting
 }
 
-/* ---- Text-Helfer --------------------------------------------------------- */
+/* ---- Schrift-Helfer ------------------------------------------------------ */
+//
+// Die Feld-Parser unten greifen auf Zeichen zu, die je Schrift anders aussehen.
+// Wer hier nur die westliche Form kennt, verliert in genau den Sprachen alles,
+// die am wenigsten nachgeprüft werden. Gemessen an der Wochenseite
+// 6.–12. Juli 2026 in 19 Sprachen — vorher blieb die komplette Meta-Zeile
+// (Minuten, Rahmen, Quelle) leer in ar, fa, he, ur, sw, ja und cmn-hans.
 
-function decodeEntities(s: string): string {
-  return s
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&shy;/g, '') // Soft Hyphen als Entity
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&rsquo;/g, '’')
-    .replace(/&lsquo;/g, '‘')
-    .replace(/&ldquo;/g, '„')
-    .replace(/&rdquo;/g, '“')
+/**
+ * Steuerzeichen der Zweirichtungs-Darstellung: LRM, RLM, ALM und die vier
+ * Isolate. Sie stehen in den arabischen, hebräischen, persischen und
+ * Urdu-Ausgaben mitten im Text, damit Zahlen und Satzzeichen richtig herum
+ * erscheinen. Unsichtbar — und trotzdem jedem Mustervergleich im Weg: die
+ * hebräische Zeitzeile lautet wörtlich `‏(‏10 דק׳)‏`, mit einer Marke **vor**
+ * der Klammer und einer weiteren gleich **dahinter**.
+ *
+ * Sie werden nicht aus dem Text entfernt, sondern beim Vergleichen
+ * übersprungen: sie gehören zur richtigen Darstellung, und wer sie herauswirft,
+ * dreht am Ende Datumsspannen um („6–12“ → „12–6“).
+ *
+ * Bewusst NICHT dabei: ZWNJ (U+200C). Es ist im Persischen und Urdu
+ * Wortbestandteil („بات‌چیت“), kein Steuerzeichen.
+ */
+const BIDI = '\\u200e\\u200f\\u061c\\u2066-\\u2069'
+/** Klammer auf/zu — westlich und vollbreit („（1 分钟）“ in den CJK-Ausgaben). */
+const AUF = '\\(\\uff08'
+const ZU = '\\)\\uff09'
+/** Der unsichtbare Rand eines Feldes: Leerraum **oder** Zweirichtungs-Marke. */
+const RAND = `[\\s${BIDI}]`
+
+/** Führenden/abschließenden Leerraum samt Zweirichtungs-Marken abschneiden. */
+function randTrim(s: string): string {
+  return s.replace(new RegExp(`^${RAND}+|${RAND}+$`, 'g'), '')
 }
 
-/** Tags entfernen, Entities dekodieren, Soft-Hyphens/Weichzeichen bereinigen. */
-function clean(html: string): string {
-  return decodeEntities(html.replace(/<[^>]+>/g, ' '))
-    .replace(/­/g, '') // Soft Hyphen (z. B. "Versammlungs­bibelstudium")
-    .replace(/​/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+/**
+ * Wert einer Ziffernfolge, gleich in welcher Schrift („١٢“ → 12, „１２“ → 12).
+ * `Number()` kennt nur westliche Ziffern und liefert sonst `NaN`.
+ *
+ * Ohne Tabelle: die Dezimalziffern jeder Schrift liegen als Zehnerblock
+ * hintereinander im Unicode. Von einer Ziffer aus rückwärts zählen, bis das
+ * Zeichen davor keine Ziffer mehr ist, ergibt ihren Wert — das gilt für jede
+ * Schrift, auch für die, an die hier niemand gedacht hat.
+ */
+function ziffernWert(c: string): number {
+  let cp = c.codePointAt(0) ?? 0
+  let n = 0
+  while (n < 10 && ZIFFER.test(String.fromCodePoint(cp - 1))) {
+    cp--
+    n++
+  }
+  return n
+}
+function zahl(ziffern: string): number {
+  let wert = 0
+  for (const c of ziffern) wert = wert * 10 + ziffernWert(c)
+  return wert
 }
 
 /* ---- Tokenizer ----------------------------------------------------------- */
@@ -91,6 +125,21 @@ interface Token {
   music: boolean
   text: string
 }
+
+/**
+ * Woran eine Lied-Zeile zu erkennen ist (Eröffnung, Zwischenlied, Abschluss).
+ *
+ * Zwei Merkmale, weil eines nicht überall steht: das Noten-Symbol **oder** ein
+ * Link ins Liederbuch. `pub-sjj` ist das MEPS-Kürzel von „Singt Jehova voller
+ * Freude“ und damit in jeder Sprache dasselbe.
+ *
+ * Die chinesische Ausgabe setzt beim Schlusswort **kein** Noten-Symbol (die
+ * deutsche und die japanische schon). Allein danach zu suchen hieß: die
+ * Schlusszeile wurde nicht erkannt, und an ihre Stelle trat die deutsche
+ * Rückfall-Vorlage — mitten in einem chinesischen Programm stand „Schlussworte ·
+ * Gebet · 3 Min.“.
+ */
+const MUSIK = /dc-icon--music|pub-sjj/
 
 function colorOf(attrs: string): Color {
   const cls = (attrs.match(/class="([^"]*)"/) || [])[1] || ''
@@ -109,12 +158,12 @@ function tokenize(html: string): Token[] {
   let m: RegExpExecArray | null
   while ((m = re.exec(body))) {
     const [, tag, attrs, inner] = m
-    const text = clean(inner)
+    const text = cleanText(inner)
     if (!text) continue
     tokens.push({
       tag: tag === 'li' ? 'p' : tag,
       color: colorOf(attrs),
-      music: /dc-icon--music/.test(attrs) || /dc-icon--music/.test(inner),
+      music: MUSIK.test(attrs) || MUSIK.test(inner),
       text,
     })
   }
@@ -123,24 +172,55 @@ function tokenize(html: string): Token[] {
 
 /* ---- Feld-Parser (sprachunabhängig) -------------------------------------- */
 
-/** Beginnt die Zeile mit einer Zeitklammer „(<Ziffer> …)“? (nicht Aufzählung) */
-const TIME_START = /^\s*\(\s*\d/
+/** Dezimalziffer **irgendeiner** Schrift — westlich, arabisch-indisch, Thai … */
+const ZIFFER = /\p{Nd}/u
+
+/**
+ * Beginnt die Zeile mit einer Zeitklammer? Maßgeblich ist, dass **in** der
+ * ersten Klammer eine Zahl steht — nicht, dass sie damit anfängt: Swahili
+ * schreibt „(Dak. 10)“, das Wort vor der Zahl. Die frühere Fassung verlangte
+ * die Ziffer unmittelbar hinter der Klammer und übersah dadurch die ganze
+ * Zeitzeile — mitsamt Minuten, Rahmen und Quellenangabe.
+ *
+ * Eine Aufzählung „(a)“ bleibt weiterhin draußen: sie enthält keine Ziffer.
+ */
+const TIME_START = new RegExp(`^${RAND}*[${AUF}][^${ZU}]*\\p{Nd}`, 'u')
+/** Dieselbe Prüfung ohne Zeilenanfang — für Lied-/Abschlusszeilen. */
+const TIME_ANY = new RegExp(`[${AUF}][^${ZU}]*\\p{Nd}`, 'u')
+/** Eine Klammer samt Inhalt: einmalig, alle, und die führende. */
+const PAREN_ONE = new RegExp(`[${AUF}]([^${ZU}]*)[${ZU}]`, 'u')
+const PAREN_ALL = new RegExp(`[${AUF}]([^${ZU}]*)[${ZU}]`, 'gu')
+const PAREN_LEAD = new RegExp(`^${RAND}*[${AUF}][^${ZU}]*[${ZU}]`, 'u')
+/**
+ * Satzende — der Rahmen endet daran. Neben dem westlichen Punkt und den
+ * vollbreiten Formen auch Danda (Hindi/Bengali), das arabische Satzende (Urdu),
+ * Verjaket (Armenisch) und der äthiopische Punkt. Ohne sie lief der Rahmen bis
+ * in die Quellenangabe hinein und fiel dann durch die Ziffernprüfung — Hindi
+ * hatte deshalb bei jedem Schülerteil einen leeren Rahmen.
+ */
+const SATZENDE = /[.。．।۔։።]/
+/**
+ * Nummer eines Programmpunkts: „1.“, aber auch „1．“ (chinesisch, vollbreiter
+ * Punkt) und „١-‏“ (arabisch, Bindestrich statt Punkt). Ohne die Varianten blieb
+ * die Zahl im Titel stehen und `num` leer.
+ */
+const NUMMER = new RegExp(`^${RAND}*(\\p{Nd}+)${RAND}*[.．。\\-‐‑–]${RAND}*`, 'u')
 /** Publikations-Kürzel (MEPS, in jeder Sprache gleich). */
 const PUB_SYM = /\b(th|lmd|lff|lfb|wcg|bt|jr|it|bhs|cf|lvs|rr|od|kr|jy|cl|be|sjj|snnw|w\d{2}|g\d{2})\b/i
 
 /** Inhalt der ersten Klammer (die Zeit, lokalisiert: „10 min.“ / „10 λεπτά“). */
 function firstParen(text: string): string {
-  return ((text.match(/\(([^)]*)\)/) || [])[1] || '').trim()
+  return randTrim((PAREN_ONE.exec(text) || [])[1] || '')
 }
 
 /** Text ohne jegliche Klammern (Schriftstelle bzw. klammerlose Quelle). */
 function stripParens(text: string): string {
-  return text.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()
+  return randTrim(text.replace(PAREN_ALL, ' ').replace(/\s+/g, ' '))
 }
 
 /** Quellenangabe: bevorzugt die letzte Klammer mit Publikations-Kürzel. */
 function sourceOf(text: string): string {
-  const parens = [...text.matchAll(/\(([^)]*)\)/g)].map((m) => m[1].trim())
+  const parens = [...text.matchAll(PAREN_ALL)].map((m) => randTrim(m[1]))
   if (parens.length < 2) return ''
   const rest = parens.slice(1) // erste Klammer ist die Zeit
   for (let i = rest.length - 1; i >= 0; i--) if (PUB_SYM.test(rest[i])) return rest[i]
@@ -153,9 +233,9 @@ function sourceOf(text: string): string {
  * Ziffern (schließt Quellen/Lektionen aus), sprachunabhängig übernommen.
  */
 function settingOf(text: string): string {
-  const after = text.replace(/^\s*\([^)]*\)/, '').trim()
-  const seg = after.split(/[.。．]/)[0].trim()
-  return seg && seg.length <= 32 && !/\d/.test(seg) ? seg : ''
+  const after = randTrim(text.replace(PAREN_LEAD, ''))
+  const seg = randTrim(after.split(SATZENDE)[0])
+  return seg && seg.length <= 32 && !ZIFFER.test(seg) ? seg : ''
 }
 
 /** Meta-Zeile „[Rahmen ·] Zeit [· Quelle]“ zusammensetzen. */
@@ -227,7 +307,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
     // Lied / Eröffnung / Abschluss (Noten-Icon)
     if (tok.tag === 'h3' && tok.music) {
       const hasPipe = tok.text.includes('|')
-      const hasTime = /\(\s*\d/.test(tok.text)
+      const hasTime = TIME_ANY.test(tok.text)
       const [a, b] = pipe(tok.text)
       if (curColor === null) {
         // vor der ersten Sektion → Eröffnung (Vorsitz + Anfangsgebet)
@@ -254,8 +334,8 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
     // Nummerierter Programmpunkt (farbige h3) → Roh sichern, später finalisieren
     if (tok.tag === 'h3' && curColor && (tok.color === 'teal' || tok.color === 'gold' || tok.color === 'maroon')) {
       const part: ImportedPart = { title: '', names: [] }
-      const numMatch = tok.text.match(/^\s*(\d+)\.\s*/)
-      if (numMatch) part.num = Number(numMatch[1])
+      const numMatch = NUMMER.exec(tok.text)
+      if (numMatch) part.num = zahl(numMatch[1])
       curRec = { part, color: curColor, raw: tok.text, time: '' }
       recs.push(curRec)
       sections[curColor].items.push(part)
@@ -342,7 +422,7 @@ function finalizeParts(recs: PartRec[]): void {
 
   for (const rec of recs) {
     const { part, color, raw, time } = rec
-    const title = raw.replace(/^\s*\d+\.\s*/, '').trim()
+    const title = randTrim(raw.replace(NUMMER, ''))
     const min = firstParen(time)
 
     if (color === 'teal' && rec === lastOf.teal) {

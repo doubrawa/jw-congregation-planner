@@ -19,23 +19,10 @@ const MONTH_SLUG = [
   'juli', 'august', 'september', 'oktober', 'november', 'dezember',
 ]
 
-// Unechte Leerzeichen, die beim Entfernen von Tags in CJK-Läufen entstehen,
-// wieder zusammenziehen — nur Japanisch-Kana + CJK-Ideogramme (Chinesisch/
-// Japanisch), KEIN Hangul (Koreanisch nutzt Wort-Leerzeichen wie Latein).
-const CJK_SPACE =
-  /([぀-ヿ㐀-䶿一-鿿ｦ-ﾟ])\s+(?=[぀-ヿ㐀-䶿一-鿿ｦ-ﾟ\d])|(\d)\s+(?=[぀-ヿ㐀-䶿一-鿿ｦ-ﾟ])/g
-
-export function cleanText(html: string): string {
-  return html
-    .replace(/<rt\b[^>]*>[\s\S]*?<\/rt>/gi, '') // Ruby-Lesungen (Furigana/Pinyin) entfernen
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
-    .replace(/&nbsp;|&shy;|­/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .replace(CJK_SPACE, '$1$2')
-    .trim()
-}
+// Die Textaufbereitung teilen sich beide Parser (`text.ts`) — sie lesen
+// dieselbe Seitensorte und stolpern sonst getrennt über dieselben Dinge.
+export { cleanText } from './text.ts'
+import { cleanText } from './text.ts'
 
 /** Studienausgabe-Slugs, die die Studienwoche enthalten könnten (Monat −2/−3). */
 export function studyIssueSlugs(start: Date): string[] {
