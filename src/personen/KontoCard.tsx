@@ -63,7 +63,7 @@ export function KontoCard({ person }: { person: Person }) {
 
   return (
     <div className="panel panel--pb14" data-farbe="neutral2">
-      <div className="panel-label">{t.kontoCard}</div>
+      <h2 className="panel-label">{t.kontoCard}</h2>
       {member ? (
         <div className="konto-row">
           <span className="konto-mail" dir="auto">

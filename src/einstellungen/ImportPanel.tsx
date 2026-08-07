@@ -91,7 +91,7 @@ export function ImportPanel() {
 
   return (
     <div className="panel panel--pb16" data-farbe="neutral">
-      <div className="panel-label">{t.importCard}</div>
+      <h2 className="panel-label">{t.importCard}</h2>
       <p className="panel-hint">{t.importDesc}</p>
       <div className="imp-status">
         <span className="kv-key">{bis ? fill(t.geladenBis, { datum: bis }) : t.geladenNichts}</span>

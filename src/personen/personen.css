@@ -373,6 +373,18 @@
   background: var(--tWein);
 }
 
+/* Bewaffnet (erster Tipp): der Button traegt jetzt die volle Warnung, darf also
+   umbrechen und faellt farblich auf. Der zweite Tipp loescht. */
+.pers-delete.is-armed {
+  background: var(--tWein);
+  border-color: var(--wein);
+  letter-spacing: 0;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: start;
+  padding: 11px 14px;
+}
+
 /* ---- Warnung: doppelte Anzeigenamen --------------------------------------
  * Teilen sich zwei Personen denselben Anzeigenamen, ordnet die App Aufgaben
  * dort, wo kein Slot eine Person-Id trägt (Hilfsdienste/externe/Altdaten),

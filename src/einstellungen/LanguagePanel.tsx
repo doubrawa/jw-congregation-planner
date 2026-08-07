@@ -8,7 +8,7 @@ export function LanguagePanel() {
 
   return (
     <div className="panel panel--pb14" data-farbe="acc">
-      <div className="panel-label">{t.spracheCard}</div>
+      <h2 className="panel-label">{t.spracheCard}</h2>
       <button
         type="button"
         className="lang-card-row"

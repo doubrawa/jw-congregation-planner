@@ -49,7 +49,7 @@ function ProgrammBody() {
       <section className="screen">
         <h1 className="sr-only">{t.navProgramm}</h1>
         <div className="panel panel--lead" data-farbe="neutral">
-          <div className="panel-label">{t.keineWochenTitel}</div>
+          <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
         </div>
       </section>
@@ -166,7 +166,7 @@ function ProgramMeeting({
         const splitHere = canonical === LABEL_EROEFFNUNG || canonical === LABEL_ABSCHLUSS
         return (
           <div key={section.label} className="panel" data-farbe={section.farbe}>
-            <div className="panel-label">{tpw(section.label)}</div>
+            <h2 className="panel-label">{tpw(section.label)}</h2>
             {section.items.map((item, index) => {
               if (isSong(item)) {
                 return (
@@ -199,7 +199,7 @@ function ProgramMeeting({
           zu einem Punkt, deshalb eine eigene Zeile hinter dem Programm. */}
       {mitAux && rawMeeting.auxRatgeber && (
         <div className="panel panel--pb16" data-farbe="neutral2">
-          <div className="panel-label">{t.auxKlassen}</div>
+          <h2 className="panel-label">{t.auxKlassen}</h2>
           <ProgramRow
             item={{ title: t.auxRatgeber, names: [rawMeeting.auxRatgeber] }}
             mitAux={false}
@@ -210,7 +210,7 @@ function ProgramMeeting({
       )}
 
       <div className="panel panel--pb16 prog-helpers" data-farbe="neutral2">
-        <div className="panel-label">{t.hilfsdienste}</div>
+        <h2 className="panel-label">{t.hilfsdienste}</h2>
         <div className="prog-helpers-grid">
           {state.services.map((service) => {
             const assigned = (meeting.helpers[service.key] ?? [])

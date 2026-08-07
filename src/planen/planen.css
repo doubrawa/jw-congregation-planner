@@ -258,6 +258,12 @@
   font-size: calc(14.5px * var(--fs));
   font-weight: 500;
   line-height: 1.3;
+  /* Flex-Kinder schrumpfen von sich aus nicht unter ihre Mindest-Inhaltsbreite:
+     bei großer Schrift schob ein langes Wort die Verschiebe-Pfeile daneben aus
+     der Karte heraus (gemessen 317 statt 307 px). min-width erlaubt das
+     Schrumpfen, overflow-wrap den Umbruch im Wort, wo es nicht anders geht. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .plan-item-meta {

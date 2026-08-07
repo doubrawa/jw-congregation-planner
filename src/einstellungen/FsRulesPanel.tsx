@@ -34,7 +34,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
 
   return (
     <div className="panel panel--pb16" data-farbe="neutral">
-      <div className="panel-label">{t.fsGrundplan}</div>
+      <h2 className="panel-label">{t.fsGrundplan}</h2>
       <p className="panel-hint">{t.fsGrundDesc}</p>
 
       {sections.map((sec) => (

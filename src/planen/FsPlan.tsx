@@ -148,7 +148,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
 
       {days.map((day) => (
         <div key={day.wd} className="panel" data-farbe="gold">
-          <div className="panel-label">{dayLabel(day.wd)}</div>
+          <h2 className="panel-label">{dayLabel(day.wd)}</h2>
           {day.items.map((inst) => (
             <div key={inst.id} className="fs-edit-row">
               <div className="fs-edit-head">
@@ -197,7 +197,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
       ))}
 
       <div className="panel panel--pb16 fs-add" data-farbe="neutral2">
-        <div className="panel-label">{t.fsAddWeekLbl}</div>
+        <h2 className="panel-label">{t.fsAddWeekLbl}</h2>
         <div className="fs-add-grid">
           {!onlyGroup && (
             <select className="fs-select" value={grp} aria-label={t.fsVers} onChange={(e) => setGrp(e.target.value)}>

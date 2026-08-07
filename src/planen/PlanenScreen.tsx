@@ -50,7 +50,7 @@ function PlanenBody() {
           <h1 className="screen-title">{t.planen}</h1>
         </div>
         <div className="panel panel--lead" data-farbe="neutral">
-          <div className="panel-label">{t.keineWochenTitel}</div>
+          <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
         </div>
       </section>

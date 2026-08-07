@@ -461,13 +461,13 @@ und die T1 verhindert hätte.
 
 ## Phase 8 — Oberfläche und Politur (🔧 verteilt, jederzeit einschiebbar)
 
-### T43 · Touch-Ziele auf mindestens 24 px ⚡
+### T43 · Touch-Ziele auf mindestens 24 px ⚡ ✅ erledigt
 Gemessen unter WCAG 2.5.8: `switch` (Einstellungen) **40×22**, `auf-confirm`
 86×23, `dash-s89` 82×**17**, `auf-s89` 75×**15**, `partner-toggle` 101×**16**.
 Die S-89-Verweise sind reine Textzeilen ohne Trefferfläche.
 → [pruefergebnisse.md § 5](pruefergebnisse.md)
 
-### T44 · Überschriften-Struktur ⚡
+### T44 · Überschriften-Struktur ⚡ ✅ erledigt
 Jeder Screen hat genau **ein** `<h1>` und **keine** `<h2>`/`<h3>`; Panel-Labels
 sind `div`s. Einstellungen umfasst 13 000 Zeichen ohne jede Gliederung zum
 Anspringen.
@@ -485,7 +485,7 @@ werden, zeigen beide Pfeile nach innen. `row-reverse` entfernen.
 unter Notch und Home-Indikator laufen — die Navigation sitzt unten.
 → [lesepruefungen.md B22](lesepruefungen.md)
 
-### T47 · Überläufe bei Schriftgröße 1,45 ⚡
+### T47 · Überläufe bei Schriftgröße 1,45 ⚡ ✅ erledigt
 Gemessen auf 375 px: `plan-item`/`plan-item-head` 317 > 307 px (Planen),
 `mem-select` 159 > 146 px und `fs-select` 158 > 132 px (Einstellungen). Kein
 Seitenscroll — nur diese vier laufen über.
@@ -508,7 +508,7 @@ graphit, bernstein, aubergine und koralle erben `--load-free/task/helper`
 11 Werte zwischen 20 und 50 ohne System. Vier Tokens (`--z-nav`, `--z-sheet`,
 `--z-overlay`, `--z-toast`) genügen.
 
-### T52 · `window.confirm` ersetzen ⚡
+### T52 · `window.confirm` ersetzen ⚡ ✅ erledigt
 `PersonDetail.tsx:208` ist der einzige native Dialog; überall sonst gibt es eigene
 Dialoge bzw. die Zwei-Tipp-Bestätigung. Der Text warnt zudem nicht davor, dass die
 Namen in bereits geplanten Wochen stehen bleiben.
@@ -567,4 +567,4 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
-Phase 8 ☐☐☑☑☐☑☑☑☑☐ · Phase 9 ☐☑☑☑
+Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☐☑☑☑

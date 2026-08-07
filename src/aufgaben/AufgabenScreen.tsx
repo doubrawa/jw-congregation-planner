@@ -79,7 +79,7 @@ export function AufgabenScreen() {
       <PushPrompt />
 
       <div className="panel panel--lead" data-farbe="acc">
-        <div className="panel-label">{t.naechsteAufgaben}</div>
+        <h2 className="panel-label">{t.naechsteAufgaben}</h2>
         {state.myTasks.map((task) => (
           <div key={task.id} className="auf-row">
             <div>
@@ -129,7 +129,7 @@ export function AufgabenScreen() {
 
       {state.substituteReqs.length > 0 && (
         <div className="panel panel--pb14 auf-sub" data-farbe="gold">
-          <div className="panel-label">{t.einspringenTitle}</div>
+          <h2 className="panel-label">{t.einspringenTitle}</h2>
           <p className="panel-hint">{t.einspringenHint}</p>
           {state.substituteReqs.map((req) => (
             <div key={req.key} className="auf-sub-row">
@@ -152,7 +152,7 @@ export function AufgabenScreen() {
       )}
 
       <form className="panel panel--pb16" data-farbe="neutral" onSubmit={addAbsence}>
-        <div className="panel-label">{t.abwesenheiten}</div>
+        <h2 className="panel-label">{t.abwesenheiten}</h2>
         <div className="abs-form-row">
           <div className="abs-field">
             <span className="field-label">{t.von}</span>

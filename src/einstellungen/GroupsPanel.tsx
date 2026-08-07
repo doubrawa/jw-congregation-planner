@@ -43,7 +43,7 @@ export function GroupsPanel() {
 
   return (
     <div className="panel panel--pb16" data-farbe="neutral2">
-      <div className="panel-label">{t.gruppenCard}</div>
+      <h2 className="panel-label">{t.gruppenCard}</h2>
       <p className="panel-hint">{t.gruppenDesc}</p>
       {state.groups.map((group) => (
         <div key={group.id} className="grp-block">

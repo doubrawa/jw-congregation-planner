@@ -19,7 +19,7 @@ export function RemindersPanel() {
 
   return (
     <div className="panel panel--pb14" data-farbe="wein">
-      <div className="panel-label">{t.erinnerungenCard}</div>
+      <h2 className="panel-label">{t.erinnerungenCard}</h2>
       <p className="panel-hint">{t.remDesc}</p>
       <div className="kv-row">
         <span className="kv-key">{t.remBeiZut}</span>

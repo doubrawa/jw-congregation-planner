@@ -108,7 +108,7 @@ export function MeetingSection({
 
   return (
     <div className="panel" data-farbe={section.farbe}>
-      <div className="panel-label">{tpw(section.label)}</div>
+      <h2 className="panel-label">{tpw(section.label)}</h2>
       {section.items.map((item, ii) => {
         if (isSong(item)) {
           return (
