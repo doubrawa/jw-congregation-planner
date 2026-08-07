@@ -51,11 +51,77 @@ export function isGuestRole(rolle: string | undefined): boolean {
 /** Gleitendes Fenster für die Strichliste: N Wochen davor + N danach. */
 const WINDOW = 3
 
-/** Kleiner, stabiler String-Hash für faire, deterministische Tie-Breaks. */
+/**
+ * Kleiner, stabiler String-Hash für faire, deterministische Tie-Breaks.
+ *
+ * Die Nachmischung (Avalanche) ist entscheidend, nicht Zierrat: `h*31 + zeichen`
+ * allein schreibt die zuletzt angehängten Zeichen nur in die niedrigsten Stellen.
+ * Der Schlüssel „Name|Woche|Zusammenkunft“ ergab damit Werte, die sich von Woche
+ * zu Woche um 0,02 % des Wertebereichs unterschieden, während der Name die hohen
+ * Bits bestimmte — die Reihenfolge bei Gleichstand war also in JEDER Woche
+ * dieselbe feste Rangliste nach Namen. Wer darin hinten stand, kam nie dran,
+ * solange irgendjemand anders dieselbe (meist: null) Last hatte. Der Mixer sorgt
+ * dafür, dass jedes Eingabe-Bit alle Ausgabe-Bits erreicht, die Reihenfolge also
+ * pro Woche wirklich wechselt.
+ */
 function tieHash(s: string): number {
   let h = 0
   for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0
+  h ^= h >>> 16
+  h = Math.imul(h, 0x7feb352d)
+  h ^= h >>> 15
+  h = Math.imul(h, 0x846ca68b)
+  h ^= h >>> 16
   return h >>> 0
+}
+
+/**
+ * Abstand (in Wochen) zur nächstgelegenen Einteilung je Person, gemessen über
+ * **alle** geladenen Wochen — einmal nur für Aufgaben (`part`), einmal für
+ * Aufgaben und Hilfsdienste (`any`). Wer nirgends vorkommt, fehlt in der Karte
+ * und gilt als unendlich weit weg, kommt also zuerst.
+ *
+ * Warum zusätzlich zum Fenster: die Strichliste zählt nur ±WINDOW Wochen. Bei
+ * Schulungsaufgaben stehen dort fast alle Schwestern bei null, weil es mehr
+ * Schwestern als Plätze gibt — die Zahl unterscheidet dann nichts mehr, und
+ * ohne weiteres Kriterium entschiede der Tie-Break-Hash, der zwar streut, aber
+ * nicht fragt, wer seit einem halben Jahr wartet. Der Abstand tut genau das.
+ *
+ * Gemessen wird der Betrag, nicht „davor": Wochen lassen sich in beliebiger
+ * Reihenfolge planen. Wer in der Nachbarwoche schon eingeteilt ist, soll auch
+ * dann hinten anstehen, wenn diese Woche die frühere ist.
+ */
+function assignmentDistance(
+  weeks: Week[],
+  weekIndex: number,
+): { part: Map<string, number>; any: Map<string, number> } {
+  const part = new Map<string, number>()
+  const any = new Map<string, number>()
+  weeks.forEach((week, wi) => {
+    const d = Math.abs(wi - weekIndex)
+    const merken = (map: Map<string, number>, name: string | undefined): void => {
+      if (name && (map.get(name) ?? Infinity) > d) map.set(name, d)
+    }
+    for (const meeting of [week.mid, week.we]) {
+      merken(part, meeting.auxRatgeber?.name)
+      merken(any, meeting.auxRatgeber?.name)
+      for (const section of meeting.sections) {
+        for (const item of section.items) {
+          if (isSong(item)) continue
+          for (const aux of raeume(meeting)) {
+            for (const slot of slotsOf(item, aux)) {
+              merken(part, slot.name)
+              merken(any, slot.name)
+            }
+          }
+        }
+      }
+      for (const arr of Object.values(meeting.helpers)) {
+        for (const slot of arr) merken(any, slot.name)
+      }
+    }
+  })
+  return { part, any }
 }
 
 /** Aktueller Name auf einem Slot ("" = offen). */
@@ -331,6 +397,12 @@ export function autoAssignMeeting(
   const pl = (name: string): number => partLoad.get(name) ?? partWorkload(windowWeeks, name)
   const tl = (name: string): number => totalLoad.get(name) ?? workloadOf(windowWeeks, name)
 
+  // Abstand zur nächstgelegenen Einteilung über ALLE geladenen Wochen — der
+  // Tie-Break, sobald im Fenster mehrere bei null stehen (der Normalfall bei
+  // Schulungsaufgaben: mehr Schwestern als Plätze). Ohne ihn entschiede dort
+  // der Zufallshash und niemand fragt, wer am längsten wartet.
+  const { part: partDist, any: anyDist } = assignmentDistance(weeks, weekIndex)
+
   let count = 0
   let unfilled = 0
   const newly: string[] = []
@@ -355,7 +427,9 @@ export function autoAssignMeeting(
     // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast. byTotal erzwingt
     // die Gesamtlast auch für Aufgaben — für Schülerteile, damit Schwestern (die
     // sonst wenig Last tragen) automatisch häufiger drankommen, Brüder aber nicht.
-    const load = opts.byTotal || kind === 'helper' ? tl : pl
+    const byTotal = opts.byTotal || kind === 'helper'
+    const load = byTotal ? tl : pl
+    const dist = (name: string): number => (byTotal ? anyDist : partDist).get(name) ?? Infinity
     // Malus (letzte Wahl): Reinigungs-Aufseher bei Hilfsdiensten; zusätzlich der
     // per opts.malus markierte Kreis (z. B. Älteste/DAG bei Gesprächsteilen).
     const eff = (p: Person): number => {
@@ -376,6 +450,8 @@ export function autoAssignMeeting(
     candidates.sort(
       (a, b) =>
         eff(a) - eff(b) ||
+        // Gleiche Last → wer am längsten nicht dran war, kommt zuerst.
+        dist(displayName(b)) - dist(displayName(a)) ||
         tieHash(`${displayName(a)}|${weekIndex}|${tab}`) -
           tieHash(`${displayName(b)}|${weekIndex}|${tab}`),
     )
