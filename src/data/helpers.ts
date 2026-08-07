@@ -4,7 +4,7 @@
  */
 
 import { QUALIFICATION_ORDER, ROLE_LABEL } from './constants'
-import type { Group, Meeting, Person, ProgramItem, Qualifications, SongItem, Week } from './types'
+import type { Group, Meeting, Person, ProgramItem, Qualifications, Service, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
@@ -232,6 +232,28 @@ export function isPlainPublisher(p: Person): boolean {
 }
 
 /**
+ * Hat diese Zusammenkunft eine Zusätzliche Klasse?
+ *
+ * Erkennungsmerkmal ist der Ratgeber-Platz: „Für jede zusätzliche Klasse muss
+ * ein befähigter Ratgeber zur Verfügung stehen" (S-38, Absatz 26) — ohne
+ * Ratgeber keine Klasse. Damit steht die Antwort in den Wochendaten selbst,
+ * und jeder Leser (Planen, Programm, Ausdruck, Zählung, Auto-Zuteilung,
+ * Erinnerungen) kommt zum selben Ergebnis.
+ *
+ * Der Versammlungsschalter `state.auxClass` ist die Eingabe, nicht die
+ * Wahrheit: er schreibt diese Marke über `syncAuxSlots` in die Wochen. Wer ihn
+ * daneben selbst auswertet, bekommt eine zweite Antwort — genau daran hing der
+ * Fehler, dass das Programm nach dem Ausschalten weiter beide Räume zeigte.
+ *
+ * Steht hier und nicht in aux-class.ts, weil `partWorkload` sie braucht und
+ * helpers.ts jenes Modul nicht importieren darf (Zyklus); aux-class.ts
+ * exportiert sie weiter.
+ */
+export function hatAuxKlasse(meeting: Meeting): boolean {
+  return meeting.auxRatgeber != null
+}
+
+/**
  * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
  * Zählt wie der Prototyp auch Begleiter-Erwähnungen im Rollenlabel
  * ("mit A. Hoffmann") — wer begleitet, hat ebenfalls eine Aufgabe.
@@ -242,6 +264,9 @@ export function isPlainPublisher(p: Person): boolean {
  * aller Schulungsaufgaben als „frei" — wer in der Klasse dran war, stand in der
  * Strichliste weiter bei null und wurde gleich wieder gewählt.
  *
+ * Beides aber nur, **solange die Klasse besteht**: beim Abschalten bleiben die
+ * Namen absichtlich stehen, damit ein Wiedereinschalten sie wiederfindet.
+ *
  * Die Begleiter-Erwähnung wird nur im Hauptsaal gezählt: `angleichen` kopiert
  * die Rollenbeschriftung in die Klasse ("Regeln folgen immer dem Hauptsaal"),
  * sie dort erneut zu zählen verdoppelte dieselbe Begleitung.
@@ -251,7 +276,8 @@ export function partWorkload(weeks: Week[], name: string): number {
   let count = 0
   for (const week of weeks) {
     for (const meeting of [week.mid, week.we]) {
-      if (meeting.auxRatgeber?.name === name) count++
+      const mitKlasse = hatAuxKlasse(meeting)
+      if (mitKlasse && meeting.auxRatgeber?.name === name) count++
       for (const section of meeting.sections) {
         for (const item of section.items) {
           if (isSong(item)) continue
@@ -259,7 +285,11 @@ export function partWorkload(weeks: Week[], name: string): number {
             if (slot.name === name) count++
             if (slot.rolle?.includes(name)) count++
           }
-          for (const slot of item.aux ?? []) if (slot.name === name) count++
+          // Nur zählen, solange die Klasse besteht: beim Abschalten bleiben die
+          // Namen bewusst stehen (damit ein Wiedereinschalten sie hat). Ohne
+          // diese Prüfung schleppte die Auto-Zuteilung eine Last mit, die es
+          // gar nicht mehr gibt, und bevorzugte dauerhaft die Falschen.
+          if (mitKlasse) for (const slot of item.aux ?? []) if (slot.name === name) count++
         }
       }
     }
@@ -267,14 +297,26 @@ export function partWorkload(weeks: Week[], name: string): number {
   return count
 }
 
-/** Auslastung nur aus **Hilfsdiensten** über die gegebenen Wochen. */
-export function helperWorkload(weeks: Week[], name: string): number {
+/**
+ * Auslastung nur aus **Hilfsdiensten** über die gegebenen Wochen.
+ *
+ * Gezählt wird nur bis zur eingestellten Platzzahl (`svc.count`) — genau wie
+ * `deriveMyTasks` Aufgaben ableitet. Reduziert der Planer die Plätze, bleiben
+ * die Namen dahinter in den Wochendaten stehen; sie verschwanden dann aus
+ * „Meine Aufgaben", zählten hier aber weiter als Last. Ohne `services` (nicht
+ * jeder Aufrufer hat sie) zählt wie bisher alles.
+ */
+export function helperWorkload(weeks: Week[], name: string, services?: Service[]): number {
   if (!name) return 0
+  const grenze = services ? new Map(services.map((s) => [s.key, s.count])) : null
   let count = 0
   for (const week of weeks) {
     for (const meeting of [week.mid, week.we]) {
-      for (const assigned of Object.values(meeting.helpers)) {
-        for (const slot of assigned) if (slot.name === name) count++
+      for (const [key, assigned] of Object.entries(meeting.helpers)) {
+        const bis = grenze ? (grenze.get(key) ?? 0) : assigned.length
+        for (let pos = 0; pos < Math.min(bis, assigned.length); pos++) {
+          if (assigned[pos]?.name === name) count++
+        }
       }
     }
   }
@@ -282,8 +324,8 @@ export function helperWorkload(weeks: Week[], name: string): number {
 }
 
 /** Gesamt-Auslastung (Programmpunkte + Hilfsdienste) über die gegebenen Wochen. */
-export function workloadOf(weeks: Week[], name: string): number {
-  return partWorkload(weeks, name) + helperWorkload(weeks, name)
+export function workloadOf(weeks: Week[], name: string, services?: Service[]): number {
+  return partWorkload(weeks, name) + helperWorkload(weeks, name, services)
 }
 
 /** Belegungsart einer Person in EINER Woche (für die Mini-Quadrate). */

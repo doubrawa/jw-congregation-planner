@@ -1034,6 +1034,32 @@ export function deleteConfirmationRows(congregationId: string, taskKeys: string[
  * der Position zu haften. Über einen Zwischenschlüssel, um die Eindeutigkeit
  * (congregation_id, task_key, user_id) beim Tausch nicht zu verletzen.
  */
+/**
+ * Benennt task_keys der Reihe nach um — für das Einfügen/Löschen eines
+ * Programmpunkts, nach dem alle folgenden Positionen um eine rutschen.
+ *
+ * Die Reihenfolge der Paare kommt aus `shiftPartConfirmations` und ist
+ * bindend: falsch herum kollidiert eine Umbenennung mit einem noch belegten
+ * Schlüssel (unique auf congregation_id, task_key, user_id). Deshalb hier —
+ * anders als beim Tausch — kein Zwischenschlüssel: die Zielposition ist
+ * garantiert frei.
+ */
+export async function renameConfirmationKeys(
+  congregationId: string,
+  pairs: Array<[string, string]>,
+): Promise<void> {
+  if (!supabase) return
+  for (const [from, to] of pairs) {
+    await run(
+      supabase
+        .from('confirmations')
+        .update({ task_key: to })
+        .eq('congregation_id', congregationId)
+        .eq('task_key', from),
+    )
+  }
+}
+
 export async function swapConfirmationKeys(
   congregationId: string,
   pairs: Array<[string, string]>,

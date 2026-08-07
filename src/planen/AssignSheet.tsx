@@ -1,18 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
-import { istAbwesend, istAbwesendAm } from '../data/absence'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { useSwipeDown } from '../components/useSwipeDown'
-import { displayName, initials, isQualified, isSong, LOAD_RADIUS, LOAD_WEEKS, loadWindow, partnerGenderOk, personCompare, roleLabel, workloadOf, type WeekLoad } from '../data/helpers'
-import { fsDate, fsLeaderValue } from '../data/fs'
-import { assignmentsInMeeting, buildS89ForSlot, slotValue } from '../data/planning'
+import { isSong, LOAD_RADIUS, type WeekLoad } from '../data/helpers'
+import { fsLeaderValue } from '../data/fs'
+import { buildS89ForSlot, slotValue } from '../data/planning'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { relativeWeekLabel } from '../i18n/relative-time'
-import type { MeetingAssignment } from '../data/planning'
 import type { Lang, SlotSelection } from '../data/types'
+import { kandidaten, type Candidate } from './kandidaten'
 import '../components/overlays.css'
 import './planen.css'
 
@@ -28,17 +27,6 @@ function loadTitle(t: Dict, l: WeekLoad, offset: number, lang: Lang): string {
   return when ? `${kind} ${when}` : kind
 }
 
-interface Candidate {
-  key: string
-  initials: string
-  name: string // Anzeigename (Gruppen: übersetzt)
-  assignName: string // in die Woche geschriebener kanonischer Name (Gruppen: "Gruppe N")
-  sub: string
-  today: MeetingAssignment[] // schon an diesem Tag zugeteilt (Doppelbelegungs-Hinweis)
-  absent: boolean
-  free: boolean
-  load?: WeekLoad[] // Belegung der 5 Wochen (aktuelle ±2) für die Mini-Quadrate
-}
 
 /**
  * Zuteilungs-Sheet: mobil Bottom-Sheet, Desktop zentriertes Modal.
@@ -99,106 +87,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     dispatch({ type: 'assign', name, rolle: cong ? `${guestBase} · ${cong}` : guestBase })
   }
 
-  const groupSub = (id: string, ov: string | null): string => {
-    const overseer = state.persons.find((p) => p.id === ov)
-    const n = state.persons.filter((p) => p.grp === id).length
-    const memberLabel = n === 1 ? t.mitglied1 : fill(t.mitgliederN, { n })
-    return overseer ? `${displayName(overseer)} · ${memberLabel}` : memberLabel
-  }
-
-  // Treffpunkt-Leiter: Kandidaten sind treffpunkt-qualifiziert; „schon heute" =
-  // ein anderer Treffpunkt am selben Wochentag, den die Person schon leitet.
-  const fsTodayFor = (name: string): MeetingAssignment[] => {
-    if (sel.kind !== 'fs' || !fsInst) return []
-    const out: MeetingAssignment[] = []
-    for (const o of state.fsWeeks[sel.wi] ?? []) {
-      if (o.id === sel.instId || o.wd !== fsInst.wd || o.leader !== name) continue
-      const ttl = o.grp === '' ? t.fsVers : (state.groups.find((g) => g.id === o.grp)?.name ?? o.grp)
-      out.push({ text: `${o.time} · ${tu(ttl)}`, lang: 'u' })
-    }
-    return out
-  }
-
-  // Geschlechtsregeln der Schülerteile: der aktuelle Slot kann männlich-only
-  // sein (Vortrag), und ein Gesprächspartner muss zum Führer passen (vorerst
-  // gleiches Geschlecht — Familien-Ausnahme später, gekapselt in partnerGenderOk).
-  const partSel = sel.kind === 'part' ? sel : null
-  const partItem = partSel
-    ? state.weeks[partSel.wi][partSel.tab].sections[partSel.si].items[partSel.ii]
-    : null
-  const curSlot = partItem && partSel && !isSong(partItem) ? partItem.names[partSel.ni] : undefined
-  const leadName =
-    partItem && partSel && !isSong(partItem) && partSel.priv === 'schulungPartner'
-      ? (partItem.names.find((n, i) => i !== partSel.ni && n.bereichsKey === 'schulung')?.name ?? '')
-      : ''
-  const lead = leadName ? state.persons.find((p) => displayName(p) === leadName) : undefined
-  const genderOk = (p: (typeof state.persons)[number]): boolean => {
-    if (curSlot?.male && p.female) return false
-    if (partSel?.priv === 'schulungPartner' && !partnerGenderOk(lead, p)) return false
-    return true
-  }
-
-  const candidates: Candidate[] =
-    sel.kind === 'fs'
-      ? [...state.persons]
-          .sort(personCompare)
-          .filter((p) => isQualified(p, 'treffpunkt'))
-          .map((p) => {
-            const name = displayName(p)
-            return {
-              key: p.id,
-              initials: initials(p),
-              name,
-              assignName: name,
-              sub: tu(roleLabel(p)),
-              today: fsTodayFor(name),
-              // Am Tag DIESES Treffpunkts, nicht in der ganzen Woche.
-              absent: fsInst
-                ? istAbwesendAm(state.absences, p.id, fsDate(state.fsBase, sel.wi, fsInst.wd))
-                : false,
-              free: workloadOf(state.weeks, name) === 0,
-            }
-          })
-          .sort((a, b) => Number(a.absent) - Number(b.absent))
-      : sel.groups
-    ? state.groups.map((group) => {
-        const num = group.name.replace(/\D/g, '')
-        return {
-          key: group.id,
-          initials: num ? `G${num}` : 'G',
-          name: tu(group.name),
-          assignName: group.name,
-          sub: groupSub(group.id, group.ov),
-          today: [],
-          absent: false,
-          free: false,
-        }
-      })
-    : [...state.persons]
-        .sort(personCompare) // alphabetisch; Abwesende wandern stabil ans Ende
-        .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && genderOk(p))
-        .map((p) => {
-          const name = displayName(p)
-          // Auslastung über dasselbe Fenster wie die Mini-Quadrate daneben.
-          const winWeeks = state.weeks.slice(Math.max(0, sel.wi - LOAD_RADIUS), sel.wi + LOAD_RADIUS + 1)
-          const workload = workloadOf(winWeeks, name)
-          const workloadLabel =
-            workload === 1
-              ? fill(t.aufgabeInW, { w: LOAD_WEEKS })
-              : fill(t.aufgabenInW, { n: workload, w: LOAD_WEEKS })
-          return {
-            key: p.id,
-            initials: initials(p),
-            name,
-            assignName: name,
-            sub: `${tu(roleLabel(p))} · ${workloadLabel}`,
-            today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], name, state.services, sel),
-            absent: istAbwesend(abwesend, p.id, sel.wi, sel.tab),
-            free: workload === 0,
-            load: loadWindow(state.weeks, name, sel.wi),
-          }
-        })
-        .sort((a, b) => Number(a.absent) - Number(b.absent))
+  const candidates = kandidaten(state, sel, abwesend, t, tu)
 
   const pick = (cand: Candidate) => {
     if (cand.absent) {

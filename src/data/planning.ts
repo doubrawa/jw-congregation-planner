@@ -183,17 +183,34 @@ export function assignmentsInMeeting(
   meeting.sections.forEach((section, si) => {
     section.items.forEach((item, ii) => {
       if (isSong(item)) return
-      item.names.forEach((slot, ni) => {
-        if (slot.name !== name) return
-        if (exclude?.kind === 'part' && exclude.si === si && exclude.ii === ii && exclude.ni === ni) return
-        const rolle = slot.rolle ?? ''
-        // Rolle bevorzugen (Vorsitz/Gebet/Leiter/Leser …); Begleiter-Label
-        // ("mit …") ignorieren und stattdessen den Programmpunkt-Titel zeigen.
-        if (rolle && !rolle.startsWith('mit')) out.push({ text: rolle, lang: 'u' })
-        else out.push({ text: item.title, lang: 'p' })
-      })
+      // Über beide Räume, wie countOpenSlots und clearAssignments: die Plätze
+      // der Zusätzlichen Klasse sind gleichwertige Zuteilungen. Ohne sie blieb
+      // der Hinweis „heute schon zugeteilt" aus, das Dashboard zeigte „frei"
+      // für jemanden, der in der Klasse eingeteilt war, und takeSubstitute
+      // übersah den Konflikt.
+      for (const aux of raeume(meeting)) {
+        slotsOf(item, aux).forEach((slot, ni) => {
+          if (slot.name !== name) return
+          if (
+            exclude?.kind === 'part' &&
+            exclude.si === si &&
+            exclude.ii === ii &&
+            exclude.ni === ni &&
+            (exclude.aux === true) === aux
+          ) {
+            return
+          }
+          const rolle = slot.rolle ?? ''
+          // Rolle bevorzugen (Vorsitz/Gebet/Leiter/Leser …); Begleiter-Label
+          // ("mit …") ignorieren und stattdessen den Programmpunkt-Titel zeigen.
+          if (rolle && !rolle.startsWith('mit')) out.push({ text: rolle, lang: 'u' })
+          else out.push({ text: item.title, lang: 'p' })
+        })
+      }
     })
   })
+  // Ratgeber der Zusätzlichen Klasse — eine Zuteilung je Zusammenkunft.
+  if (meeting.auxRatgeber?.name === name) out.push({ text: RATGEBER_ROLLE, lang: 'u' })
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     arr.forEach((slot, pos) => {
@@ -322,16 +339,24 @@ export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
-      for (const slot of item.names) {
-        if (slot.name) continue
-        const rolle = slot.rolle ?? ''
-        out.push(
-          rolle && !rolle.startsWith('mit')
-            ? { text: `${item.title} · ${rolle}`, lang: 'p', n: 1 }
-            : { text: item.title, lang: 'p', n: 1 },
-        )
+      // Beide Räume und der Ratgeber, genau wie countOpenSlots zählt. Vorher
+      // nannte der Planen-Kopf eine höhere Zahl, als das Banner darunter
+      // auflistete.
+      for (const aux of raeume(meeting)) {
+        for (const slot of slotsOf(item, aux)) {
+          if (slot.name) continue
+          const rolle = slot.rolle ?? ''
+          out.push(
+            rolle && !rolle.startsWith('mit')
+              ? { text: `${item.title} · ${rolle}`, lang: 'p', n: 1 }
+              : { text: item.title, lang: 'p', n: 1 },
+          )
+        }
       }
     }
+  }
+  if (meeting.auxRatgeber && !meeting.auxRatgeber.name) {
+    out.push({ text: RATGEBER_ROLLE, lang: 'u', n: 1 })
   }
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
@@ -420,7 +445,7 @@ export function autoAssignMeeting(
   const partLoad = new Map<string, number>()
   const totalLoad = new Map<string, number>()
   const pl = (name: string): number => partLoad.get(name) ?? partWorkload(windowWeeks, name)
-  const tl = (name: string): number => totalLoad.get(name) ?? workloadOf(windowWeeks, name)
+  const tl = (name: string): number => totalLoad.get(name) ?? workloadOf(windowWeeks, name, services)
 
   // Abstand zur nächstgelegenen Einteilung über ALLE geladenen Wochen — der
   // Tie-Break, sobald im Fenster mehrere bei null stehen (der Normalfall bei
@@ -856,6 +881,68 @@ export function partSwapKeyPairs(
     pairs.push([partTaskKey(wi, tab, si, a, ni), partTaskKey(wi, tab, si, b, ni)])
   }
   return pairs
+}
+
+/**
+ * Bestätigungen an eine eingefügte oder gelöschte Programmpunkt-Position
+ * anpassen.
+ *
+ * `task_key` ist positionsbasiert (`wi|tab|part|si|ii|ni`). Beim Verschieben
+ * eines LAC-Punkts tauscht `swapPartConfirmations` die Status korrekt mit —
+ * beim **Löschen** und **Hinzufügen** rutschen aber alle folgenden Punkte um
+ * eine Position, und die Bestätigungen blieben an der alten Zahl kleben. Nach
+ * dem Löschen erbte der nachfolgende Punkt deshalb die fremde Bestätigung,
+ * während der eigentliche wieder als offen galt — und erneut erinnert wurde.
+ *
+ * `delta` = −1 beim Löschen von `ab`, +1 beim Einfügen an `ab`.
+ *
+ * Liefert neben der neuen Map die Umbenennungen für die Datenbank. Die
+ * Reihenfolge ist bindend: beim Löschen von vorn nach hinten, beim Einfügen
+ * von hinten nach vorn — sonst kollidiert eine Umbenennung mit einem noch
+ * belegten Schlüssel.
+ */
+export function shiftPartConfirmations(
+  map: ConfirmationMap,
+  wi: number,
+  tab: MeetingKey,
+  si: number,
+  ab: number,
+  delta: -1 | 1,
+): { map: ConfirmationMap; renames: Array<[string, string]>; removed: string[] } {
+  const praefix = `${wi}|${tab}|`
+  const betroffen: Array<{ key: string; art: string; ii: number; ni: string }> = []
+  for (const key of Object.keys(map ?? {})) {
+    if (!key.startsWith(praefix)) continue
+    const teile = key.split('|')
+    if (teile.length !== 6) continue
+    const [, , art, sStr, iStr, ni] = teile
+    if ((art !== 'part' && art !== 'aux') || Number(sStr) !== si) continue
+    const ii = Number(iStr)
+    if (ii < ab) continue
+    betroffen.push({ key, art, ii, ni })
+  }
+  if (betroffen.length === 0) return { map, renames: [], removed: [] }
+
+  // Löschen: von vorn nach hinten (die gelöschte Position ist frei).
+  // Einfügen: von hinten nach vorn (die höchste Position ist frei).
+  betroffen.sort((a, b) => (delta === -1 ? a.ii - b.ii : b.ii - a.ii))
+
+  const next = { ...map }
+  const renames: Array<[string, string]> = []
+  const removed: string[] = []
+  for (const eintrag of betroffen) {
+    if (delta === -1 && eintrag.ii === ab) {
+      delete next[eintrag.key]
+      removed.push(eintrag.key)
+      continue
+    }
+    const neu = `${praefix}${eintrag.art}|${si}|${eintrag.ii + delta}|${eintrag.ni}`
+    const status = map[eintrag.key]
+    delete next[eintrag.key]
+    if (status) next[neu] = status
+    renames.push([eintrag.key, neu])
+  }
+  return { map: next, renames, removed }
 }
 
 /** Bestätigungs-Status zweier getauschter Positionen in der Map vertauschen. */

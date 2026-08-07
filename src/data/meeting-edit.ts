@@ -9,6 +9,7 @@
  * (localizedWeek prüft die Struktur).
  */
 
+import { angleichen, hatAuxKlasse } from './aux-class'
 import { LABEL_EROEFFNUNG } from './constants'
 import { isSong } from './helpers'
 import type { Meeting, MeetingKey, PartItem, Week } from './types'
@@ -193,6 +194,19 @@ function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b:
 }
 
 /**
+ * Position, an der ein neuer LAC-Punkt landet: vor dem
+ * Versammlungsbibelstudium, sonst am Ende. Getrennt exportiert, weil der
+ * Reducer sie kennen muss — ab dort rutschen alle Bestätigungen eine Position
+ * weiter (task_keys sind positionsbasiert).
+ */
+export function lacAddIndex(items: Meeting['sections'][number]['items']): number {
+  const vbsIdx = items.findIndex(
+    (x) => !isSong(x) && x.title.startsWith('Versammlungsbibelstudium'),
+  )
+  return vbsIdx >= 0 ? vbsIdx : items.length
+}
+
+/**
  * Neuen LAC-Punkt (10 Min.) vor dem Versammlungsbibelstudium einfügen und
  * Meeting-Ende um 10 Min. verlängern. Leerer Titel → keine Änderung.
  */
@@ -208,11 +222,10 @@ export function lacAdd(
   const next = structuredClone(weeks)
   const meeting = next[wi][tab]
   const items = meeting.sections[si].items
-  const vbsIdx = items.findIndex(
-    (x) => !isSong(x) && x.title.startsWith('Versammlungsbibelstudium'),
-  )
-  const newItem: PartItem = { title: trimmed, meta: '10 Min.', names: [{ name: '', bereichsKey: 'vortrag' }] }
-  const at = vbsIdx >= 0 ? vbsIdx : items.length
+  // Ein eigener Punkt unter „Unser Leben als Christ" ist kein öffentlicher
+  // Vortrag — der Bereich blieb hier fälschlich auf 'vortrag' stehen (F6).
+  const newItem: PartItem = { title: trimmed, meta: '10 Min.', names: [{ name: '', bereichsKey: 'studium' }] }
+  const at = lacAddIndex(items)
   items.splice(at, 0, newItem)
   meeting.end = shiftEnd(meeting.end, 10)
   // Eigener Punkt ist lokaler Text — in allen Varianten identisch einfügen
@@ -231,11 +244,16 @@ export function lacAdd(
  */
 export function togglePartner(weeks: Week[], wi: number, tab: MeetingKey, si: number, ii: number): Week[] {
   const next = structuredClone(weeks)
-  const item = next[wi][tab].sections[si]?.items[ii]
+  const meeting = next[wi][tab]
+  const item = meeting.sections[si]?.items[ii]
   if (!item || isSong(item)) return weeks
   const idx = item.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
   if (idx >= 0) item.names.splice(idx, 1)
   else item.names.push({ name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' })
+  // Die Zusätzliche Klasse mitziehen: sonst hat der Hauptsaal zwei Plätze und
+  // die Klasse einen — bis irgendwann setAuxClass erneut läuft. Bereits
+  // vergebene Namen bleiben dabei stehen (angleichen ergänzt und kürzt nur).
+  if (hatAuxKlasse(meeting)) item.aux = angleichen(item)
   return next
 }
 
