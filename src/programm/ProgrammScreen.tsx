@@ -4,6 +4,7 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
+import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { hatAuxKlasse } from '../data/aux-class'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
@@ -84,7 +85,7 @@ function ProgrammBody() {
         <div className="prog-week-book">{tpw(week.book)}</div>
       </WeekNav>
 
-      <WeekChips week={week} showCurrent />
+      <WeekChips week={week} showCurrent istAktuell={currentWeekIndex(state.weeks) === state.week} />
 
       <MeetingTabs
         className="prog-tabs"
@@ -100,6 +101,7 @@ function ProgrammBody() {
           meeting={meeting}
           rawMeeting={rawMeeting}
           week={week}
+          rawWeek={rawWeek}
           tab={state.tab}
           myName={myName}
           tpw={tpw}
@@ -114,6 +116,7 @@ function ProgramMeeting({
   meeting,
   rawMeeting,
   week,
+  rawWeek,
   tab,
   myName,
   tpw,
@@ -121,6 +124,8 @@ function ProgramMeeting({
   meeting: Meeting
   rawMeeting: Meeting
   week: Week
+  /** Unübersetzte Woche — der Termin wird aus den kanonischen Daten gerechnet. */
+  rawWeek: Week
   tab: MeetingTab
   myName: string | null
   tpw: (s: string) => string
@@ -137,7 +142,18 @@ function ProgramMeeting({
       <MemorialBanner week={week} tab={tab} />
 
       <div className="prog-meta-row">
-        <p className="prog-meta">{tpw(meeting.date)}</p>
+        {/* Gerechneter Termin statt des rohen date-Felds: importierte Wochen
+            tragen dort nur die Wochenspanne („7.–13. September"). */}
+        <p className="prog-meta">
+          {tpw(
+            meetingDateText(
+              rawWeek,
+              state.week,
+              tab === 'fs' ? 'mid' : tab,
+              state.congregation.meetings,
+            ),
+          )}
+        </p>
         <button type="button" className="prog-print-btn" onClick={() => window.print()}>
           {t.drucken}
         </button>

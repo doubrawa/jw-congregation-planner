@@ -4,7 +4,7 @@
  * CORS). Im Demo-Modus nicht verfügbar.
  */
 
-import { meetingDateMs } from '../data/meeting-dates'
+import { weekEndMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { supabase } from './supabase'
 
@@ -34,7 +34,7 @@ export function latestImportedStart(weeks: Week[]): string | undefined {
  * null — der Aufrufer zeigt dann den Wochenbereich im Klartext.
  */
 export function loadedUntilMs(weeks: Week[]): number | null {
-  return meetingDateMs(latestImportedStart(weeks), 6)
+  return weekEndMs(latestImportedStart(weeks))
 }
 
 /**

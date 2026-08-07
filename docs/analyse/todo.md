@@ -155,6 +155,12 @@ an einer einzigen Codestelle.
 `{"error":"unauthorized"}`.
 → [umgebungspruefungen.md § D3](umgebungspruefungen.md)
 
+> **Nichts zu ändern — Schritt beim Betreiber.** `supabase/config.toml:33`
+> setzt für `substitute` bereits `verify_jwt = true`. Die laufende Instanz
+> wurde nur vor dieser Datei (bzw. mit dem Flag) deployt. Behoben wird das
+> durch ein erneutes `npx supabase functions deploy substitute` aus der
+> Repo-Wurzel — die CLI liest die Einstellung dann mit.
+
 ---
 
 ## Phase 3 — Themenblock „Datum" (🏗 ein Tag, zusammen erledigen)
@@ -162,7 +168,7 @@ an einer einzigen Codestelle.
 > Diese vier hängen an derselben Ursache. Einzeln gemacht, macht man dieselbe
 > Stelle viermal auf.
 
-### T12 · Eine einzige Datumsquelle schaffen 🔧
+### T12 · Eine einzige Datumsquelle schaffen 🔧 ✅ erledigt
 Heute gibt es **vier** Rechnungen für „welcher Kalendertag ist Woche *n*":
 `meetingDate` (`meeting-dates.ts:86`, berücksichtigt Sondertermine),
 `meetingDateMs` (Z. 106, tut es nicht), `personTimeline` (Z. 76-78, eigene
@@ -175,7 +181,7 @@ Variante) und `daysUntil` in `send-reminders` (Z. 236). Der Kommentar in
 Erinnerung und Abwesenheitsprüfung müssen denselben Tag nennen.
 → [befunde.md U1](befunde.md)
 
-### T13 · Aktuelle Woche aus dem Datum ableiten 🔧
+### T13 · Aktuelle Woche aus dem Datum ableiten 🔧 ✅ erledigt
 `week.current` wird **nur** in `demo.ts` gesetzt und nie nachgeführt. Folgen:
 - **`reducer.ts:885`** startet nach dem Login auf `weekFrom` = der **ältesten**
   geladenen Woche (bis zu ein Jahr zurück)
@@ -189,7 +195,7 @@ springen.
 Konfliktzahlen.
 → [befunde.md B1, B2](befunde.md)
 
-### T14 · Echtes Datum statt Wochenspanne anzeigen 🔧
+### T14 · Echtes Datum statt Wochenspanne anzeigen 🔧 ✅ erledigt
 Importierte Wochen tragen als `Meeting.date` die **Wochenspanne**
 (`parse.ts:288`: `date: range` → „7.–13. September"). An der Live-Seite bestätigt:
 Das `h1` liefert weder Jahr noch Wochentag noch Uhrzeit.
@@ -202,7 +208,7 @@ bereits richtig — dieselbe Logik (T12) überall verwenden.
 19:00", nicht „7.–13. September".
 → [befunde.md B4](befunde.md)
 
-### T15 · Import: Endzeit aus den Einstellungen rechnen 🔧
+### T15 · Import: Endzeit aus den Einstellungen rechnen 🔧 ✅ erledigt
 `parse.ts:288/388` setzt fest `Ende ca. 20:45` bzw. `11:45`, unabhängig von den
 gepflegten Zusammenkunftszeiten. Beginnt die Versammlung um 18:30, steht auf
 jedem Programmblatt eine falsche Endzeit.
@@ -551,6 +557,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

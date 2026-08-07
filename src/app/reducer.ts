@@ -7,6 +7,7 @@
 import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { buildAbsences } from '../data/absence'
+import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
 import { fsAddInst, fsAutoAssign, fsClear, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
@@ -31,6 +32,7 @@ import {
   lacMove,
   lacMoveTarget,
   lacRemove,
+  endeAusStartzeit,
   togglePartner,
   setOpeningSong,
 } from '../data/meeting-edit'
@@ -46,6 +48,7 @@ import type {
   NotificationType,
   Person,
   Screen,
+  Week,
 } from '../data/types'
 import type { AppAction, AppState } from './context'
 
@@ -441,7 +444,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'addImportedWeek': {
-      const week = action.week
+      // Endzeiten aus den Zusammenkunftszeiten rechnen. Der Import kennt sie
+      // nicht und trug feste Werte ein (20:45 / 11:45) — bei einem Beginn um
+      // 18:30 stand damit auf jedem Programmblatt eine falsche Endzeit.
+      const zeiten = meetingTimesOf(state.congregation.meetings)
+      const week: Week = {
+        ...action.week,
+        mid: { ...action.week.mid, end: endeAusStartzeit(zeiten.mid, action.week.mid.end) },
+        we: { ...action.week.we, end: endeAusStartzeit(zeiten.we, action.week.we.end) },
+      }
       return {
         ...state,
         // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
@@ -853,6 +864,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     case 'hydrate': {
       const p = action.payload
+      const weeks = syncAuxSlots(p.weeks, p.auxClass)
+      // Auf die laufende Woche springen. Bisher stand hier `p.weekFrom`, also
+      // die ÄLTESTE geladene Woche — nach dem Login zeigte die App damit ein
+      // bis zu ein Jahr altes Programm. Fällt heute in keine geladene Woche
+      // (frische Versammlung, Lücke im Import), bleibt es beim Anfang.
+      const aktuell = currentWeekIndex(weeks)
       return {
         ...state,
         congregation: p.congregation,
@@ -866,7 +883,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         persons: p.persons,
         services: p.services,
         groups: p.groups,
-        weeks: syncAuxSlots(p.weeks, p.auxClass),
+        weeks,
         fsRules: p.fsRules,
         fsWeeks: p.fsWeeks,
         // ISO-Datum als 12:00 Ortszeit lesen (nicht UTC-Mitternacht) — sonst
@@ -882,7 +899,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         members: p.members,
         invites: p.invites,
         weekFrom: p.weekFrom,
-        week: p.weekFrom, // erste wirklich geladene Woche, nicht Position 0
+        week: aktuell >= 0 ? aktuell : p.weekFrom,
       }
     }
     case 'setDataStatus':

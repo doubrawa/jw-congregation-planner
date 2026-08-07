@@ -222,6 +222,44 @@ function taskDate(meeting: Meeting): string {
   return (meeting.date ?? '').split(' · ').slice(0, 2).join(' · ')
 }
 
+/** Kanonisch deutsche Namen — das Format der Wochendaten (siehe Client). */
+const WOCHENTAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+const MONATE = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+]
+
+/**
+ * Termin im Erinnerungstext: „Dienstag, 8. September · 19:00".
+ *
+ * Importierte Wochen tragen im `date`-Feld nur die Wochenspanne — die
+ * Erinnerung nannte deshalb eine Woche statt eines Tages. Rangfolge wie im
+ * Client (`meetingDateText`): eigener Termin vor gerechnetem Datum.
+ */
+function reminderDate(
+  startISO: string,
+  offset: number,
+  meeting: Meeting,
+  zeit: string,
+): string {
+  if (/\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.test(meeting.date ?? '')) {
+    return taskDate(meeting)
+  }
+  const ms = Date.parse(startISO)
+  if (Number.isNaN(ms)) return taskDate(meeting)
+  const d = new Date(ms + offset * 864e5)
+  const text = `${WOCHENTAGE[(d.getUTCDay() + 6) % 7]}, ${d.getUTCDate()}. ${MONATE[d.getUTCMonth()]}`
+  return zeit ? `${text} · ${zeit}` : text
+}
+
+/** "Di 19:00 · So 10:00" → Uhrzeiten je Zusammenkunft. */
+function meetingTimesOf(meetingTimes: string): { mid: string; we: string } {
+  const found = [...meetingTimes.matchAll(/\b(\d{1,2})[:.](\d{2})\b/g)].map(
+    (m) => `${m[1].padStart(2, '0')}:${m[2]}`,
+  )
+  return { mid: found[0] ?? '', we: found[1] ?? '' }
+}
+
 /* ---- Terminberechnung ---------------------------------------------------- */
 
 const DAY_OFFSET: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 }
@@ -231,6 +269,29 @@ function meetingDayOffsets(meetingTimes: string): { mid: number; we: number } {
     (m) => DAY_OFFSET[m[1]],
   )
   return { mid: found[0] ?? 1, we: found[1] ?? 6 }
+}
+
+/** Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach Montag. */
+const WEEKDAY_OFFSET: Record<string, number> = {
+  Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
+  Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
+}
+
+/**
+ * Wochentag-Versatz dieser einen Zusammenkunft. Ein eigener Termin im
+ * `date`-Feld (Gedächtnismahl, Kongress) schlägt den Rhythmus aus den
+ * Einstellungen — dieselbe Rangfolge wie `meetingOffset` im Client
+ * (src/data/meeting-dates.ts). Ohne sie erinnerte der Versand am regulären
+ * Wochentag, während Anzeige und Abwesenheitsprüfung den echten Tag nannten.
+ *
+ * Importierte Wochen tragen dort die Wochenspanne („7.–13. September"): kein
+ * Wochentag, also greift die Regel dort gar nicht erst.
+ */
+function meetingOffset(meeting: Meeting, fallback: number): number {
+  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(
+    meeting.date ?? '',
+  )
+  return tag ? WEEKDAY_OFFSET[tag[1]] : fallback
 }
 
 /** Ganze Tage bis zur Zusammenkunft (UTC-Datumsarithmetik; negativ = vorbei). */
@@ -365,6 +426,7 @@ Deno.serve(async (req: Request) => {
         repeat: cong.settings?.reminders?.repeat ?? true,
       }
       const offsets = meetingDayOffsets(cong.meeting_times)
+      const zeiten = meetingTimesOf(cong.meeting_times)
 
       const [weeks, confs, members, persons, services, subs] = await Promise.all([
         rest<{ data: Week }[]>(
@@ -409,12 +471,13 @@ Deno.serve(async (req: Request) => {
         for (const tab of ['mid', 'we'] as const) {
           const meeting = week[tab]
           if (!meeting) continue
-          const days = daysUntil(week.start, offsets[tab], todayUTC)
+          const offset = meetingOffset(meeting, offsets[tab])
+          const days = daysUntil(week.start, offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
           for (const pend of pendingOfMeeting(wi, tab, meeting, services, conf)) {
-            const entry = `${taskDate(meeting)}: ${pend.label}`
+            const entry = `${reminderDate(week.start, offset, meeting, zeiten[tab])}: ${pend.label}`
             const userId = userByName.get(pend.name)
             // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
             // Push-Abo. Wer ein Konto hat, bekommt trotzdem die persönliche
