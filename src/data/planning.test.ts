@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
-import { buildDemoWeeks, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './demo'
+import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './demo'
 import { displayName, helperWorkload, isSong, loadWindow, partWorkload, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
@@ -11,13 +11,22 @@ import {
   openSlotLabels,
   countOpenSlots,
   deriveMyTasks,
-  derivePendingNames,
+  derivePendingIds,
   deriveSubstituteReqs,
   helperTaskKey,
   weekConflicts,
 } from './planning'
 import { emptyQualifications } from './helpers'
 import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
+
+/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
+function alsPerson(name: string): Person {
+  return {
+    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    tel: '', mail: '', priv: emptyQualifications(),
+  }
+}
+
 
 /** Namen aller belegten Slots eines Meetings (Programmpunkte + Hilfsdienste). */
 function assignedNames(week: ReturnType<typeof buildDemoWeeks>[number], tab: 'mid' | 'we'): string[] {
@@ -288,20 +297,20 @@ describe('Auslastung', () => {
     const weeks = buildDemoWeeks()
     const lena = DEMO_PERSONS.find((p) => p.ln === 'Hoffmann')!
     // Lena Hoffmann: 2 Slots + 2× "mit Lena Hoffmann"
-    expect(workloadOf(weeks, displayName(lena))).toBe(4)
+    expect(workloadOf(weeks, lena)).toBe(4)
   })
 
   it('trennt Aufgaben- von Hilfsdienst-Last', () => {
     const weeks = buildDemoWeeks()
     // Lena Hoffmann: nur Programmpunkte
-    expect(partWorkload(weeks, 'Lena Hoffmann')).toBe(4)
-    expect(helperWorkload(weeks, 'Lena Hoffmann')).toBe(0)
+    expect(partWorkload(weeks, alsPerson('Lena Hoffmann'))).toBe(4)
+    expect(helperWorkload(weeks, alsPerson('Lena Hoffmann'))).toBe(0)
     // Claus Maier: überwiegend Ton — Hilfsdienste zählen nicht zur Aufgaben-Last
-    expect(helperWorkload(weeks, 'Claus Maier')).toBeGreaterThanOrEqual(4)
-    expect(partWorkload(weeks, 'Claus Maier')).toBeLessThan(helperWorkload(weeks, 'Claus Maier'))
+    expect(helperWorkload(weeks, alsPerson('Claus Maier'))).toBeGreaterThanOrEqual(4)
+    expect(partWorkload(weeks, alsPerson('Claus Maier'))).toBeLessThan(helperWorkload(weeks, alsPerson('Claus Maier')))
     // Invariante: Gesamt = Aufgaben + Hilfsdienste
-    expect(workloadOf(weeks, 'Claus Maier')).toBe(
-      partWorkload(weeks, 'Claus Maier') + helperWorkload(weeks, 'Claus Maier'),
+    expect(workloadOf(weeks, alsPerson('Claus Maier'))).toBe(
+      partWorkload(weeks, alsPerson('Claus Maier')) + helperWorkload(weeks, alsPerson('Claus Maier')),
     )
   })
 })
@@ -349,7 +358,7 @@ describe('loadWindow (5-Wochen-Belegung für die Mini-Quadrate)', () => {
     ;(weeks[1].mid.sections[0].items[0] as PartItem).names[0].name = 'Quadrat Test' // Aufgabe in Woche 1
     weeks[3].mid.helpers.ton = [{ name: 'Quadrat Test' }] // Hilfsdienst in Woche 3
     // Demo hat 4 Wochen (0–3); Fenster um Woche 2 (±2) → 0,1,2,3,4 → Index 4 = void
-    expect(loadWindow(weeks, 'Quadrat Test', 2, undefined, 2)).toEqual([
+    expect(loadWindow(weeks, alsPerson('Quadrat Test'), 2, undefined, 2)).toEqual([
       'none',
       'task',
       'none',
@@ -361,7 +370,7 @@ describe('loadWindow (5-Wochen-Belegung für die Mini-Quadrate)', () => {
   it('markiert nicht geladene Wochen als void', () => {
     const weeks = buildDemoWeeks()
     // Fenster um Woche 0 (±2) → Indizes -2,-1,0,1,2 → erste zwei existieren nicht
-    const w = loadWindow(weeks, 'Niemand', 0, undefined, 2)
+    const w = loadWindow(weeks, alsPerson('Niemand'), 0, undefined, 2)
     expect(w[0]).toBe('void')
     expect(w[1]).toBe('void')
     expect(w.slice(2)).toEqual(['none', 'none', 'none'])
@@ -425,18 +434,26 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     expect(tasks.map((t) => t.status)).toEqual(['bestätigt', 'verhindert', 'offen', 'offen'])
   })
 
-  it('pendingNames: ohne Bestätigung pending, Externe und Gruppen nie', () => {
-    const pending = derivePendingNames(weeks, DEMO_SERVICES, {})
-    expect(pending).toContain('Simon Krüger')
-    expect(pending).not.toContain('K. Wagner') // Kreisaufseher (extern)
-    expect(pending).not.toContain('M. Hartmann') // Gastredner (extern)
-    expect(pending.some((n) => n.startsWith('Gruppe'))).toBe(false)
+  it('pendingIds: ohne Bestätigung pending, Externe und Gruppen nie', () => {
+    // Geführt wird über die Kennung: Person-Id, wo der Slot eine trägt, sonst
+    // `name:…`. Die Demo-Wochen haben beides, deshalb hier über einen Helfer.
+    const pending = derivePendingIds(weeks, DEMO_SERVICES, {})
+    const drin = (name: string): boolean =>
+      pending.includes(`name:${name}`) ||
+      pending.includes(DEMO_PERSONS.find((p) => displayName(p) === name)?.id ?? '—')
+    expect(drin('Simon Krüger')).toBe(true)
+    expect(drin('K. Wagner')).toBe(false) // Kreisaufseher (extern)
+    expect(drin('M. Hartmann')).toBe(false) // Gastredner (extern)
+    expect(pending.some((k) => k.startsWith('name:Gruppe'))).toBe(false)
   })
 
-  it('pendingNames: voll bestätigte Namen verschwinden', () => {
+  it('pendingIds: voll bestätigte Personen verschwinden', () => {
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
     const conf = Object.fromEntries(tasks.map((t) => [t.id, 'bestätigt' as const]))
-    expect(derivePendingNames(weeks, DEMO_SERVICES, conf)).not.toContain('Simon Krüger')
+    const pending = derivePendingIds(weeks, DEMO_SERVICES, conf)
+    const simon = DEMO_PERSONS.find((p) => displayName(p) === 'Simon Krüger')!
+    expect(pending).not.toContain(simon.id)
+    expect(pending).not.toContain('name:Simon Krüger')
   })
 })
 
@@ -613,7 +630,7 @@ describe('assignmentsInMeeting (Doppelbelegungs-Hinweis)', () => {
   ]
 
   it('listet Rolle und Hilfsdienst einer Person am selben Tag', () => {
-    const res = assignmentsInMeeting(meeting, 'A. Muster', services)
+    const res = assignmentsInMeeting(meeting, alsPerson('A. Muster'), services)
     expect(res).toEqual([
       { text: 'Vorsitz', lang: 'u' },
       { text: 'Mikrofone', lang: 'u' },
@@ -621,7 +638,7 @@ describe('assignmentsInMeeting (Doppelbelegungs-Hinweis)', () => {
   })
 
   it('nutzt den Titel, wenn der Slot keine Rolle hat', () => {
-    expect(assignmentsInMeeting(meeting, 'B. Test', services)).toEqual([
+    expect(assignmentsInMeeting(meeting, alsPerson('B. Test'), services)).toEqual([
       { text: 'Nach geistigen Schätzen graben', lang: 'p' },
     ])
   })
@@ -629,13 +646,13 @@ describe('assignmentsInMeeting (Doppelbelegungs-Hinweis)', () => {
   it('blendet den gerade bearbeiteten Slot aus', () => {
     // Bearbeitet wird der Mikrofon-Slot 0 → dieser darf nicht als „schon zugeteilt“ erscheinen
     const exclude = { kind: 'helper', wi: 0, tab: 'mid', svc: 'mik', pos: 0, label: '', priv: null, groups: false } as const
-    expect(assignmentsInMeeting(meeting, 'A. Muster', services, exclude)).toEqual([
+    expect(assignmentsInMeeting(meeting, alsPerson('A. Muster'), services, exclude)).toEqual([
       { text: 'Vorsitz', lang: 'u' },
     ])
   })
 
   it('liefert nichts für einen unbeteiligten Namen', () => {
-    expect(assignmentsInMeeting(meeting, 'X. Fremd', services)).toEqual([])
+    expect(assignmentsInMeeting(meeting, alsPerson('X. Fremd'), services)).toEqual([])
   })
 })
 
@@ -653,20 +670,126 @@ describe('helperWorkload zählt nur bis zur eingestellten Platzzahl (T21)', () =
   const dienst = (count: number): Service => ({ key: 'mik', name: 'Mikrofone', count, groups: false })
 
   it('ohne services wie bisher alle Einträge', () => {
-    expect(helperWorkload([woche()], 'Bert')).toBe(1)
+    expect(helperWorkload([woche()], alsPerson('Bert'))).toBe(1)
   })
 
   it('mit zwei Plätzen zählen beide', () => {
-    expect(helperWorkload([woche()], 'Anna', [dienst(2)])).toBe(1)
-    expect(helperWorkload([woche()], 'Bert', [dienst(2)])).toBe(1)
+    expect(helperWorkload([woche()], alsPerson('Anna'), [dienst(2)])).toBe(1)
+    expect(helperWorkload([woche()], alsPerson('Bert'), [dienst(2)])).toBe(1)
   })
 
   it('nach dem Kürzen auf einen Platz zählt der zweite nicht mehr', () => {
-    expect(helperWorkload([woche()], 'Anna', [dienst(1)])).toBe(1)
-    expect(helperWorkload([woche()], 'Bert', [dienst(1)])).toBe(0)
+    expect(helperWorkload([woche()], alsPerson('Anna'), [dienst(1)])).toBe(1)
+    expect(helperWorkload([woche()], alsPerson('Bert'), [dienst(1)])).toBe(0)
   })
 
   it('ein gelöschter Dienst zählt gar nicht mehr', () => {
-    expect(helperWorkload([woche()], 'Anna', [])).toBe(0)
+    expect(helperWorkload([woche()], alsPerson('Anna'), [])).toBe(0)
+  })
+})
+
+describe('Zuordnung über die Person-Id statt über den Namen', () => {
+  /** Zwei verschiedene Personen mit identischem Anzeigenamen. */
+  const a = alsPerson('Anton Muster')
+  const b = { ...alsPerson('Anton Muster'), id: 'zwilling' }
+
+  function wocheMitBeiden(): Week[] {
+    const weeks = buildDemoWeeks()
+    const item = weeks[0].mid.sections[0].items.find((x) => !isSong(x)) as PartItem
+    item.names[0] = { ...item.names[0], name: 'Anton Muster', pid: a.id }
+    item.names[1] = { ...item.names[1], name: 'Anton Muster', pid: b.id }
+    return weeks
+  }
+
+  it('assignmentsInMeeting zeigt jedem nur die eigene Zuteilung', () => {
+    // Über den Namen gesucht hätte jeder beide gesehen — und der Hinweis
+    // „heute schon zugeteilt" hätte fälschlich gewarnt.
+    const weeks = wocheMitBeiden()
+    expect(assignmentsInMeeting(weeks[0].mid, a, DEMO_SERVICES)).toHaveLength(1)
+    expect(assignmentsInMeeting(weeks[0].mid, b, DEMO_SERVICES)).toHaveLength(1)
+  })
+
+  it('weekConflicts meldet keine Doppelbelegung, wo zwei Personen stehen', () => {
+    const weeks = wocheMitBeiden()
+    // Beide sind Hilfsdienst-frei; über den Namen gezählt sähe es nach
+    // „zweimal derselbe" aus.
+    const doppelt = weekConflicts(weeks, 0, [a, b], DEMO_SERVICES, 'mid').filter(
+      (c) => c.kind === 'double' || c.kind === 'helperTask',
+    )
+    expect(doppelt).toEqual([])
+  })
+
+  it('weekConflicts meldet nur den wirklich abwesenden der beiden', () => {
+    const weeks = wocheMitBeiden()
+    const abwesend = new Set([`${b.id}|0|mid`])
+    const absent = weekConflicts(weeks, 0, [a, b], DEMO_SERVICES, 'mid', abwesend).filter(
+      (c) => c.kind === 'absent',
+    )
+    expect(absent).toHaveLength(1)
+  })
+
+  it('derivePendingIds führt beide getrennt', () => {
+    const weeks = wocheMitBeiden()
+    const pending = derivePendingIds(weeks, DEMO_SERVICES, {})
+    expect(pending).toContain(a.id)
+    expect(pending).toContain(b.id)
+  })
+})
+
+describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
+  it('besetzt zwei Plätze mit zwei Gleichnamigen — nicht nur einen', () => {
+    // `used` sperrt, wer in dieser Zusammenkunft schon dran ist. Über den
+    // Namen geführt galten zwei verschiedene Personen als eine: der zweite
+    // Platz blieb offen, obwohl jemand da war.
+    const schueler = (id: string): Person => ({
+      id, fn: 'Anton', ln: 'Muster', role: 'verkuendiger', female: false, tel: '', mail: '',
+      priv: { ...emptyQualifications(), schulung: true },
+    })
+    const zwillinge = [schueler('p-eins'), schueler('p-zwei')]
+    const weeks = [buildImportWeek()]
+    const { weeks: next } = autoAssignMeeting(weeks, 0, 'mid', zwillinge, [], [], 'parts')
+
+    const besetzt = next[0].mid.sections
+      .flatMap((s) => s.items.flatMap((it) => ('names' in it ? it.names : [])))
+      .filter((n) => n.name)
+    // Zwei Personen → zwei Plätze (Führer und Partner desselben Punktes).
+    // Über den Namen geführt galten beide als eine: `used` sperrte nach dem
+    // ersten Platz, und alles Weitere blieb offen.
+    expect(besetzt.length).toBe(2)
+    expect(new Set(besetzt.map((n) => n.pid))).toEqual(new Set(['p-eins', 'p-zwei']))
+  })
+
+  it('erkennt an einem schon belegten Platz die richtige der beiden Personen', () => {
+    // Hier entscheidet der Auflöser: `used` wird aus den VORHANDENEN Slots
+    // gefüllt. Löst er den belegten Platz über den Namen auf, landet die
+    // falsche der beiden Personen darin — die schon Eingeteilte gilt als frei
+    // und bekommt einen zweiten Platz, die andere bleibt außen vor.
+    const schueler = (id: string): Person => ({
+      id, fn: 'Anton', ln: 'Muster', role: 'verkuendiger', female: false, tel: '', mail: '',
+      priv: { ...emptyQualifications(), schulung: true },
+    })
+    const zwillinge = [schueler('p-eins'), schueler('p-zwei')]
+    const weeks = [buildImportWeek()]
+    // Ersten Schülerteil-Platz vorbelegen — ausdrücklich mit p-eins.
+    for (const sec of weeks[0].mid.sections) {
+      const treffer = sec.items.find(
+        (it) => 'names' in it && it.names.some((n) => n.bereichsKey === 'schulung'),
+      )
+      if (!treffer || !('names' in treffer)) continue
+      const slot = treffer.names.find((n) => n.bereichsKey === 'schulung')!
+      slot.name = 'Anton Muster'
+      slot.pid = 'p-eins'
+      break
+    }
+    const { weeks: next } = autoAssignMeeting(weeks, 0, 'mid', zwillinge, [], [], 'parts')
+    const besetzt = next[0].mid.sections
+      .flatMap((sec) => sec.items.flatMap((it) => ('names' in it ? it.names : [])))
+      .filter((n) => n.name)
+    const proPerson = besetzt.reduce<Record<string, number>>((acc, n) => {
+      acc[n.pid ?? '?'] = (acc[n.pid ?? '?'] ?? 0) + 1
+      return acc
+    }, {})
+    expect(proPerson['p-eins'], JSON.stringify(proPerson)).toBe(1)
+    expect(proPerson['p-zwei'], JSON.stringify(proPerson)).toBe(1)
   })
 })

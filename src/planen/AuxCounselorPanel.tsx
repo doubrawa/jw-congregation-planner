@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { kennungVon } from '../data/planning'
 import { hatAuxKlasse, ratgeberSlot } from '../data/aux-class'
 import { useT } from '../i18n/useT'
 import type { Meeting } from '../data/types'
@@ -42,7 +43,7 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
             text={slot.name || t.zuteilenChip}
             open={!slot.name}
             showStatus={Boolean(slot.name)}
-            pending={state.pendingNames.includes(slot.name)}
+            pending={state.pendingIds.includes(kennungVon(slot.name, slot.pid))}
             onClick={open}
           />
         </div>

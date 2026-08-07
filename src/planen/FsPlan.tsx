@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { kennungVon } from '../data/planning'
 import { useApp } from '../app/context'
 import { FS_TIME_OPTIONS, fsDate } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
@@ -187,7 +188,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                   text={inst.leader ? `${tu('Leiter')}: ${inst.leader}` : t.zuteilenChip}
                   open={!inst.leader}
                   showStatus={Boolean(inst.leader)}
-                  pending={state.pendingNames.includes(inst.leader)}
+                  pending={state.pendingIds.includes(kennungVon(inst.leader, inst.lpid))}
                   onClick={() => openLeader(inst)}
                 />
               </div>

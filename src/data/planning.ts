@@ -14,15 +14,18 @@ import { raeume, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
+  gehoertZu,
   isPlainPublisher,
   isQualified,
   isSong,
   LOAD_RADIUS,
   partnerGenderOk,
   partWorkload,
+  idAufloeser,
   serviceQualKey,
   tieHash,
   workloadOf,
+  type Zuteilung,
 } from './helpers'
 import { meetingDateMs, meetingDateText } from './meeting-dates'
 import type {
@@ -80,41 +83,45 @@ export function isGuestRole(rolle: string | undefined): boolean {
 function assignmentDistance(
   weeks: Week[],
   weekIndex: number,
+  wer: (z: Zuteilung | undefined) => string | undefined,
 ): { part: Map<string, number>; any: Map<string, number>; je: Map<string, Map<string, number>> } {
   const part = new Map<string, number>()
   const any = new Map<string, number>()
   const je = new Map<string, Map<string, number>>()
-  const merkenJe = (bereich: string | undefined, name: string | undefined, d: number): void => {
-    if (!bereich || !name) return
+  const merkenJe = (bereich: string | undefined, id: string | undefined, d: number): void => {
+    if (!bereich || !id) return
     let map = je.get(bereich)
     if (!map) { map = new Map(); je.set(bereich, map) }
-    if ((map.get(name) ?? Infinity) > d) map.set(name, d)
+    if ((map.get(id) ?? Infinity) > d) map.set(id, d)
   }
   weeks.forEach((week, wi) => {
     const d = Math.abs(wi - weekIndex)
-    const merken = (map: Map<string, number>, name: string | undefined): void => {
-      if (name && (map.get(name) ?? Infinity) > d) map.set(name, d)
+    const merken = (map: Map<string, number>, id: string | undefined): void => {
+      if (id && (map.get(id) ?? Infinity) > d) map.set(id, d)
     }
     for (const meeting of [week.mid, week.we]) {
-      merken(part, meeting.auxRatgeber?.name)
-      merken(any, meeting.auxRatgeber?.name)
-      merkenJe('ratgeber', meeting.auxRatgeber?.name, d)
+      const ratgeber = wer(meeting.auxRatgeber)
+      merken(part, ratgeber)
+      merken(any, ratgeber)
+      merkenJe('ratgeber', ratgeber, d)
       for (const section of meeting.sections) {
         for (const item of section.items) {
           if (isSong(item)) continue
           for (const aux of raeume(meeting)) {
             for (const slot of slotsOf(item, aux)) {
-              merken(part, slot.name)
-              merken(any, slot.name)
-              merkenJe(slot.bereichsKey, slot.name, d)
+              const id = wer(slot)
+              merken(part, id)
+              merken(any, id)
+              merkenJe(slot.bereichsKey, id, d)
             }
           }
         }
       }
       for (const [key, arr] of Object.entries(meeting.helpers)) {
         for (const slot of arr) {
-          merken(any, slot.name)
-          merkenJe(serviceQualKey(key), slot.name, d)
+          const id = wer(slot)
+          merken(any, id)
+          merkenJe(serviceQualKey(key), id, d)
         }
       }
     }
@@ -151,11 +158,10 @@ export interface MeetingAssignment {
  */
 export function assignmentsInMeeting(
   meeting: Meeting,
-  name: string,
+  person: Person,
   services: Service[],
   exclude?: SlotSelection,
 ): MeetingAssignment[] {
-  if (!name) return []
   const out: MeetingAssignment[] = []
   meeting.sections.forEach((section, si) => {
     section.items.forEach((item, ii) => {
@@ -167,7 +173,7 @@ export function assignmentsInMeeting(
       // übersah den Konflikt.
       for (const aux of raeume(meeting)) {
         slotsOf(item, aux).forEach((slot, ni) => {
-          if (slot.name !== name) return
+          if (!gehoertZu(slot, person)) return
           if (
             exclude?.kind === 'part' &&
             exclude.si === si &&
@@ -187,11 +193,11 @@ export function assignmentsInMeeting(
     })
   })
   // Ratgeber der Zusätzlichen Klasse — eine Zuteilung je Zusammenkunft.
-  if (meeting.auxRatgeber?.name === name) out.push({ text: RATGEBER_ROLLE, lang: 'u' })
+  if (gehoertZu(meeting.auxRatgeber, person)) out.push({ text: RATGEBER_ROLLE, lang: 'u' })
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     arr.forEach((slot, pos) => {
-      if (slot.name !== name) return
+      if (!gehoertZu(slot, person)) return
       if (exclude?.kind === 'helper' && exclude.svc === svc.key && exclude.pos === pos) return
       out.push({ text: svc.name, lang: 'u' })
     })
@@ -347,7 +353,8 @@ export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[
 export interface AutoAssignResult {
   weeks: Week[]
   count: number // Anzahl vergebener Zuteilungen
-  newly: string[] // neu vergebene Personennamen (→ pendingNames)
+  newly: string[] // neu vergebene Personennamen (Mitteilungstexte, Tests)
+  newlyIds: string[] // dieselben als Person-Id (→ pendingIds)
   unfilled: number // offen gebliebene Slots ohne passenden/freien Kandidaten
 }
 
@@ -392,20 +399,31 @@ export function autoAssignMeeting(
   const cleaningGroup = groups.length ? groups[weekIndex % groups.length] : null
   const cleaningLeaders = new Set<string>()
   for (const pid of [cleaningGroup?.ov, cleaningGroup?.as]) {
-    const person = pid ? persons.find((p) => p.id === pid) : undefined
-    if (person) cleaningLeaders.add(displayName(person))
+    if (pid && persons.some((p) => p.id === pid)) cleaningLeaders.add(pid)
   }
   const HELPER_MALUS = 1e6
 
+  // Auflöser Zuteilung → Person-Id; alle Mengen und Strichlisten unten sind
+  // nach Id geführt, nicht nach Name (siehe idAufloeser).
+  const werIst = idAufloeser(persons)
+
+  // Wer in dieser Zusammenkunft schon eingeteilt ist. Nach Id: zwei Personen
+  // desselben Namens sperrten sich sonst gegenseitig, obwohl nur eine dran ist.
   const used = new Set<string>()
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
-      for (const slot of item.names) if (slot.name) used.add(slot.name)
+      for (const slot of item.names) {
+        const id = werIst(slot)
+        if (id) used.add(id)
+      }
     }
   }
   for (const arr of Object.values(meeting.helpers)) {
-    for (const slot of arr) if (slot.name) used.add(slot.name)
+    for (const slot of arr) {
+      const id = werIst(slot)
+      if (id) used.add(id)
+    }
   }
 
   // Gleitendes Fenster: nur ±LOAD_RADIUS Wochen um die geplante Woche zählen,
@@ -421,28 +439,31 @@ export function autoAssignMeeting(
   // hochgezählt): partLoad = nur Aufgaben, totalLoad = Aufgaben + Hilfsdienste.
   const partLoad = new Map<string, number>()
   const totalLoad = new Map<string, number>()
-  const pl = (name: string): number => partLoad.get(name) ?? partWorkload(windowWeeks, name)
-  const tl = (name: string): number => totalLoad.get(name) ?? workloadOf(windowWeeks, name, services)
+  const pl = (p: Person): number => partLoad.get(p.id) ?? partWorkload(windowWeeks, p)
+  const tl = (p: Person): number => totalLoad.get(p.id) ?? workloadOf(windowWeeks, p, services)
 
   // Abstand zur nächstgelegenen Einteilung über ALLE geladenen Wochen — der
   // Tie-Break, sobald im Fenster mehrere bei null stehen (der Normalfall bei
   // Schulungsaufgaben: mehr Schwestern als Plätze). Ohne ihn entschiede dort
   // der Zufallshash und niemand fragt, wer am längsten wartet.
-  const { part: partDist, any: anyDist, je: bereichDist } = assignmentDistance(weeks, weekIndex)
+  const { part: partDist, any: anyDist, je: bereichDist } = assignmentDistance(weeks, weekIndex, werIst)
 
   let count = 0
   let unfilled = 0
   const newly: string[] = []
+  /** Dieselben Zuteilungen als Person-Id — für die „…"-Markierung (pendingIds). */
+  const newlyIds: string[] = []
 
   // Umfang: Programmpunkte (Aufgaben) und/oder Hilfsdienste getrennt zuteilbar.
   const doParts = scope !== 'helpers'
   const doHelpers = scope !== 'parts'
 
-  const claim = (kind: 'part' | 'helper', name: string): void => {
-    used.add(name)
-    totalLoad.set(name, tl(name) + 1)
-    if (kind === 'part') partLoad.set(name, pl(name) + 1)
-    newly.push(name)
+  const claim = (kind: 'part' | 'helper', person: Person): void => {
+    used.add(person.id)
+    totalLoad.set(person.id, tl(person) + 1)
+    if (kind === 'part') partLoad.set(person.id, pl(person) + 1)
+    newly.push(displayName(person))
+    newlyIds.push(person.id)
     count++
   }
 
@@ -456,15 +477,14 @@ export function autoAssignMeeting(
     // sonst wenig Last tragen) automatisch häufiger drankommen, Brüder aber nicht.
     const byTotal = opts.byTotal || kind === 'helper'
     const load = byTotal ? tl : pl
-    const dist = (name: string): number => (byTotal ? anyDist : partDist).get(name) ?? Infinity
-    const distB = (name: string): number =>
-      (priv ? bereichDist.get(priv)?.get(name) : undefined) ?? Infinity
+    const dist = (p: Person): number => (byTotal ? anyDist : partDist).get(p.id) ?? Infinity
+    const distB = (p: Person): number =>
+      (priv ? bereichDist.get(priv)?.get(p.id) : undefined) ?? Infinity
     // Malus (letzte Wahl): Reinigungs-Aufseher bei Hilfsdiensten; zusätzlich der
     // per opts.malus markierte Kreis (z. B. Älteste/DAG bei Gesprächsteilen).
     const eff = (p: Person): number => {
-      const name = displayName(p)
-      let e = load(name)
-      if (kind === 'helper' && cleaningLeaders.has(name)) e += HELPER_MALUS
+      let e = load(p)
+      if (kind === 'helper' && cleaningLeaders.has(p.id)) e += HELPER_MALUS
       if (opts.malus?.(p)) e += HELPER_MALUS
       return e
     }
@@ -473,17 +493,20 @@ export function autoAssignMeeting(
         (!priv || isQualified(p, priv)) &&
         !istAbwesend(abwesend, p.id, weekIndex, tab) &&
         (!opts.extra || opts.extra(p)) &&
-        !used.has(displayName(p)),
+        !used.has(p.id),
     )
     if (candidates.length === 0) return null
     candidates.sort(
       (a, b) =>
         eff(a) - eff(b) ||
         // Gleiche Last → wer am längsten nicht dran war, kommt zuerst.
-        dist(displayName(b)) - dist(displayName(a)) ||
+        dist(b) - dist(a) ||
         // Danach erst der Bereich — nie davor: sonst rotiert jeder Bereich für
         // sich und dieselbe Person landet drei Wochen in Folge in dreien.
-        distB(displayName(b)) - distB(displayName(a)) ||
+        distB(b) - distB(a) ||
+        // Der Tie-Break-Schlüssel bleibt der Name: er soll sich lesbar aus der
+        // Person ergeben und nicht aus einer zufälligen UUID, die bei jeder
+        // Neuanlage eine andere Reihenfolge ergäbe.
         tieHash(`${displayName(a)}|${weekIndex}|${tab}`) -
           tieHash(`${displayName(b)}|${weekIndex}|${tab}`),
     )
@@ -522,7 +545,7 @@ export function autoAssignMeeting(
         (p) =>
           p.priv[flag] &&
           !istAbwesend(abwesend, p.id, weekIndex, tab) &&
-          !used.has(displayName(p)),
+          !used.has(p.id),
       )
     return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
   }
@@ -539,7 +562,7 @@ export function autoAssignMeeting(
           if (person) {
             slot.name = displayName(person)
             slot.pid = person.id
-            claim('part', slot.name)
+            claim('part', person)
           } else {
             unfilled++
           }
@@ -566,7 +589,7 @@ export function autoAssignMeeting(
           if (person) {
             slot.name = displayName(person)
             slot.pid = person.id
-            claim('part', slot.name)
+            claim('part', person)
           } else {
             unfilled++
           }
@@ -582,7 +605,7 @@ export function autoAssignMeeting(
     if (person) {
       meeting.auxRatgeber.name = displayName(person)
       meeting.auxRatgeber.pid = person.id
-      claim('part', meeting.auxRatgeber.name)
+      claim('part', person)
     } else {
       unfilled++
     }
@@ -599,8 +622,14 @@ export function autoAssignMeeting(
     if (vorsitz && gebet && !gebet.name) {
       gebet.name = vorsitz
       if (vorsitzSlot?.pid) gebet.pid = vorsitzSlot.pid // dieselbe Person betet
-      totalLoad.set(vorsitz, tl(vorsitz) + 1)
-      partLoad.set(vorsitz, pl(vorsitz) + 1)
+      // Die Strichliste nur führen, wenn die Person auflösbar ist: bei einem
+      // externen Vorsitz (kein Eintrag in `persons`) gibt es keine Auslastung
+      // zu erhöhen — vorher landete dort der blanke Name als eigener Schlüssel.
+      const vorsitzPerson = persons.find((p) => p.id === werIst(vorsitzSlot))
+      if (vorsitzPerson) {
+        totalLoad.set(vorsitzPerson.id, tl(vorsitzPerson) + 1)
+        partLoad.set(vorsitzPerson.id, pl(vorsitzPerson) + 1)
+      }
       count++
     }
   }
@@ -624,7 +653,7 @@ export function autoAssignMeeting(
         const person = pick('helper', serviceQualKey(svc.key))
         if (person) {
           arr[pos] = { name: displayName(person), pid: person.id }
-          claim('helper', arr[pos].name)
+          claim('helper', person)
         } else {
           unfilled++
         }
@@ -634,7 +663,7 @@ export function autoAssignMeeting(
   }
   } // Ende Hilfsdienste (doHelpers)
 
-  return { weeks: next, count, newly, unfilled }
+  return { weeks: next, count, newly, newlyIds, unfilled }
 }
 
 /**
@@ -1070,17 +1099,31 @@ export function deriveMyTasks(
  * Namen mit mindestens einer noch nicht bestätigten Zuteilung → im Planen
  * als „…“ markiert (verhindert zählt wie offen, bis der Planer neu zuteilt).
  */
-export function derivePendingNames(
+export function derivePendingIds(
   weeks: Week[],
   services: Service[],
   confirmations: ConfirmationMap,
 ): string[] {
   const pending = new Set<string>()
-  // meetings ist für die reine Namensmenge irrelevant (kein Countdown nötig).
-  eachAssignedSlot(weeks, services, '', (name, key) => {
-    if (confirmations[key] !== 'bestätigt') pending.add(name)
+  // meetings ist für die reine Mengenbildung irrelevant (kein Countdown nötig).
+  eachAssignedSlot(weeks, services, '', (name, key, _task, pid) => {
+    if (confirmations[key] !== 'bestätigt') pending.add(kennungVon(name, pid))
   })
   return [...pending]
+}
+
+/**
+ * Kennung einer Zuteilung für die „…"-Markierung im Planen.
+ *
+ * Die Person-Id, wo vorhanden — sonst der Anzeigename mit Präfix, damit ein
+ * Name nie versehentlich wie eine Id aussieht. Vorher war das eine reine
+ * Namensliste: zwei Personen desselben Namens bekamen gemeinsam das „…", auch
+ * wenn nur eine von beiden noch nicht bestätigt hatte. Und weil Namen sich
+ * ändern, musste die Liste beim Umbenennen mitgepflegt werden — mit Ids
+ * entfällt das.
+ */
+export function kennungVon(name: string, pid?: string): string {
+  return pid ?? `name:${name}`
 }
 
 /* ---- Konfliktprüfungen (Planen) ------------------------------------------
@@ -1112,8 +1155,8 @@ export interface Conflict {
  * die sind keine zuteilbaren Personen.
  */
 /** Belegte Namen der Programmpunkte (ohne Lieder, ohne externe Slots). */
-function meetingPartNames(meeting: Meeting): string[] {
-  const names: string[] = []
+function meetingPartNames(meeting: Meeting, wer: IdVon): Belegung[] {
+  const names: Belegung[] = []
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
@@ -1122,30 +1165,50 @@ function meetingPartNames(meeting: Meeting): string[] {
       for (const aux of raeume(meeting)) {
         for (const slot of slotsOf(item, aux)) {
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-          names.push(slot.name)
+          names.push(belegung(slot, wer))
         }
       }
     }
   }
-  if (meeting.auxRatgeber?.name) names.push(meeting.auxRatgeber.name)
+  if (meeting.auxRatgeber?.name) names.push(belegung(meeting.auxRatgeber, wer))
   return names
 }
 
 /** Belegte Namen der Hilfsdienste (ohne Gruppen-Rotation). */
-function meetingHelperNames(meeting: Meeting, services: Service[]): string[] {
-  const names: string[] = []
+function meetingHelperNames(meeting: Meeting, services: Service[], wer: IdVon): Belegung[] {
+  const names: Belegung[] = []
   for (const svc of services) {
     if (svc.groups) continue
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if (arr[pos]?.name) names.push(arr[pos].name)
+      if (arr[pos]?.name) names.push(belegung(arr[pos], wer))
     }
   }
   return names
 }
 
-function meetingAssignedNames(meeting: Meeting, services: Service[]): string[] {
-  return [...meetingPartNames(meeting), ...meetingHelperNames(meeting, services)]
+function meetingAssignedNames(meeting: Meeting, services: Service[], wer: IdVon): Belegung[] {
+  return [...meetingPartNames(meeting, wer), ...meetingHelperNames(meeting, services, wer)]
+}
+
+/**
+ * Eine belegte Stelle mit ihrer **Kennung**: die Person-Id, wo auflösbar, sonst
+ * ein Namensschlüssel. Gezählt wird über die Kennung, angezeigt der Name.
+ *
+ * Ohne diese Trennung zählte die Konfliktprüfung über den Anzeigenamen: zwei
+ * Personen desselben Namens galten als eine und lösten füreinander „doppelt
+ * eingeteilt" aus. Der Namensschlüssel trägt ein Präfix, damit er nie
+ * versehentlich mit einer echten Id zusammenfällt.
+ */
+interface Belegung {
+  kennung: string
+  name: string
+}
+type IdVon = (z: Zuteilung | undefined) => string | undefined
+
+function belegung(z: Zuteilung, wer: IdVon): Belegung {
+  const name = z.name ?? ''
+  return { kennung: wer(z) ?? `name:${name}`, name }
 }
 
 /**
@@ -1168,15 +1231,19 @@ export function weekConflicts(
   const week = weeks[wi]
   if (!week) return []
   const conflicts: Conflict[] = []
-  const byDisplay = new Map(persons.map((p) => [displayName(p), p]))
+  const werIst = idAufloeser(persons)
+  const nachId = new Map(persons.map((p) => [p.id, p]))
   const tabs: MeetingKey[] = tab ? [tab] : ['mid', 'we']
 
   // absent: in dieser Woche abwesend, aber eingeteilt
   for (const tb of tabs) {
-    for (const name of new Set(meetingAssignedNames(week[tb], services))) {
-      const person = byDisplay.get(name)
+    const gesehen = new Set<string>()
+    for (const b of meetingAssignedNames(week[tb], services, werIst)) {
+      if (gesehen.has(b.kennung)) continue
+      gesehen.add(b.kennung)
+      const person = nachId.get(b.kennung)
       if (person && istAbwesend(abwesend, person.id, wi, tb)) {
-        conflicts.push({ kind: 'absent', name, tab: tb })
+        conflicts.push({ kind: 'absent', name: b.name, tab: tb })
       }
     }
   }
@@ -1187,17 +1254,23 @@ export function weekConflicts(
   // double = mehrere Hilfsdienste am selben Tag. Zwei Programmpunkte (z. B.
   // Vorsitz + Anfangsgebet) sind bewusst KEIN Konflikt.
   for (const tb of tabs) {
-    const partCounts = new Map<string, number>()
-    for (const name of meetingPartNames(week[tb])) {
-      partCounts.set(name, (partCounts.get(name) ?? 0) + 1)
+    // Gezählt wird über die Kennung, angezeigt der Name — zwei Personen
+    // desselben Namens sind zwei Einträge, nicht einer mit doppelter Zahl.
+    const namen = new Map<string, string>()
+    const zaehle = (aus: Belegung[]): Map<string, number> => {
+      const m = new Map<string, number>()
+      for (const b of aus) {
+        m.set(b.kennung, (m.get(b.kennung) ?? 0) + 1)
+        namen.set(b.kennung, b.name)
+      }
+      return m
     }
-    const helperCounts = new Map<string, number>()
-    for (const name of meetingHelperNames(week[tb], services)) {
-      helperCounts.set(name, (helperCounts.get(name) ?? 0) + 1)
-    }
-    for (const name of new Set([...partCounts.keys(), ...helperCounts.keys()])) {
-      const pc = partCounts.get(name) ?? 0
-      const hc = helperCounts.get(name) ?? 0
+    const partCounts = zaehle(meetingPartNames(week[tb], werIst))
+    const helperCounts = zaehle(meetingHelperNames(week[tb], services, werIst))
+    for (const kennung of new Set([...partCounts.keys(), ...helperCounts.keys()])) {
+      const pc = partCounts.get(kennung) ?? 0
+      const hc = helperCounts.get(kennung) ?? 0
+      const name = namen.get(kennung) ?? ''
       if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, tab: tb })
       else if (hc >= 2) conflicts.push({ kind: 'double', name, tab: tb, count: hc })
     }
@@ -1209,16 +1282,19 @@ export function weekConflicts(
   // auffällige Serie, und würde sonst nur Rauschen erzeugen. Zählt NUR Aufgaben
   // (Programmpunkte), keine Hilfsdienste — mehrmals in Folge Hilfsdienst ist ok.
   // Mit `tab` zählt nur die jeweilige Zusammenkunftsart, sonst beide.
-  const nameSets = weeks.map((w) =>
-    tab
-      ? new Set(meetingPartNames(w[tab]))
-      : new Set([...meetingPartNames(w.mid), ...meetingPartNames(w.we)]),
-  )
-  for (const name of nameSets[wi]) {
+  // Auch die Serie zählt über die Kennung: bei zwei Gleichnamigen entstand
+  // sonst eine Serie, die keine ist — abwechselnd war je eine von beiden dran.
+  const belegt = weeks.map((w) => {
+    const aus = tab
+      ? meetingPartNames(w[tab], werIst)
+      : [...meetingPartNames(w.mid, werIst), ...meetingPartNames(w.we, werIst)]
+    return new Map(aus.map((b) => [b.kennung, b.name]))
+  })
+  for (const [kennung, name] of belegt[wi]) {
     let start = wi
     let end = wi
-    while (start - 1 >= 0 && nameSets[start - 1].has(name)) start--
-    while (end + 1 < weeks.length && nameSets[end + 1].has(name)) end++
+    while (start - 1 >= 0 && belegt[start - 1].has(kennung)) start--
+    while (end + 1 < weeks.length && belegt[end + 1].has(kennung)) end++
     const run = end - start + 1
     if (run >= STREAK_THRESHOLD && run < weeks.length) {
       conflicts.push({ kind: 'streak', name, count: run })

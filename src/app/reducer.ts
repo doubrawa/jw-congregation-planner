@@ -19,7 +19,7 @@ import {
   clearAssignments,
   changedSlotKeys,
   deriveMyTasks,
-  derivePendingNames,
+  derivePendingIds,
   deriveSubstituteReqs,
   helperKeyParts,
   shiftPartConfirmations,
@@ -133,7 +133,7 @@ function dropConfirmations(map: ConfirmationMap, keys: string[]): ConfirmationMa
   return next
 }
 
-/** Anzeigename des eingeloggten Nutzers (für pendingNames-Pflege). */
+/** Anzeigename des eingeloggten Nutzers. */
 function currentUserName(state: AppState): string {
   const id = state.personId ?? CURRENT_PERSON_ID
   const me = state.persons.find((p) => p.id === id)
@@ -141,7 +141,7 @@ function currentUserName(state: AppState): string {
 }
 
 /**
- * Produktionsmodus: myTasks/pendingNames aus Wochen + Bestätigungen ableiten
+ * Produktionsmodus: myTasks/pendingIds aus Wochen + Bestätigungen ableiten
  * (im Demo-Modus bleiben die Demo-Daten unangetastet). `openConfirm` öffnet
  * nach der Hydration das Bestätigungs-Modal, falls offene Aufgaben existieren.
  */
@@ -173,7 +173,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   return {
     ...state,
     myTasks,
-    pendingNames: derivePendingNames(weeks, state.services, state.confirmations),
+    pendingIds: derivePendingIds(weeks, state.services, state.confirmations),
     substituteReqs: me
       ? deriveSubstituteReqs(
           weeks,
@@ -346,14 +346,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
       }
-      // Namensänderung in bereits geplanten Wochen (und pendingNames)
-      // nachziehen — der Anzeigename ist der in den Wochen gespeicherte Text.
+      // Namensänderung in bereits geplanten Wochen nachziehen — der
+      // Anzeigename ist der in den Wochen gespeicherte Text. Die
+      // „…"-Markierung braucht das nicht mehr: sie hängt an der Person-Id.
       if (oldPerson && ('fn' in action.patch || 'ln' in action.patch || 'dn' in action.patch)) {
         const oldName = displayName(oldPerson)
         const newName = displayName({ ...oldPerson, ...action.patch })
         if (oldName !== newName) {
           next.weeks = renameInWeeks(state.weeks, action.id, oldName, newName)
-          next.pendingNames = state.pendingNames.map((n) => (n === oldName ? newName : n))
         }
       }
       // Planer-Recht in verknüpfte Konten und offene Einladungscodes spiegeln
@@ -523,15 +523,17 @@ function baseReducer(state: AppState, action: AppAction): AppState {
               `${action.name} — ${FS_KANONISCH} · ${state.weeks[sel.wi].range}`,
             )
           : state.notifs
-        const pendingNames =
-          action.name && !state.pendingNames.includes(action.name)
-            ? [...state.pendingNames, action.name]
-            : state.pendingNames
+        // Neu zugeteilt heißt: noch nicht bestätigt. Über die Id geführt —
+        // ohne Id (Gast) gibt es nichts zu markieren.
+        const pendingIds =
+          action.pid && !state.pendingIds.includes(action.pid)
+            ? [...state.pendingIds, action.pid]
+            : state.pendingIds
         return {
           ...state,
           fsWeeks,
           notifs,
-          pendingNames,
+          pendingIds,
           slotSel: null,
           toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
         }
@@ -547,15 +549,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         : state.notifs
       // Externe Redner (Gastredner/Kreisaufseher) haben keinen Bestätigungs-Flow
       const isGuest = sel.kind === 'part' && sel.guest
-      const pendingNames =
-        action.name && !isGuest && !state.pendingNames.includes(action.name)
-          ? [...state.pendingNames, action.name]
-          : state.pendingNames
+      const pendingIds =
+        action.pid && !isGuest && !state.pendingIds.includes(action.pid)
+          ? [...state.pendingIds, action.pid]
+          : state.pendingIds
       return {
         ...state,
         weeks,
         notifs,
-        pendingNames,
+        pendingIds,
         // Geänderte Slots: alten Bestätigungs-Status abräumen (sonst erbt die
         // neue Person ein fremdes „bestätigt“/„verhindert“)
         confirmations: dropConfirmations(
@@ -568,7 +570,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'autoAssign': {
       if (!state.weeks[state.week]) return state // keine Wochen geladen
-      const { weeks, count, newly, unfilled } = autoAssignMeeting(
+      const { weeks, count, newlyIds, unfilled } = autoAssignMeeting(
         state.weeks,
         state.week,
         mtab(state.tab),
@@ -584,8 +586,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         const key = unfilled > 0 ? 'toastKeinePassende' : 'toastKeineOffen'
         return { ...state, toast: toastKey(state, key) }
       }
-      const pending = new Set(state.pendingNames)
-      for (const n of newly) pending.add(n)
+      const pending = new Set(state.pendingIds)
+      for (const id of newlyIds) pending.add(id)
       const notifs = pushNotif(
         state.notifs,
         'gesendet',
@@ -596,7 +598,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         weeks,
         notifs,
-        pendingNames: [...pending],
+        pendingIds: [...pending],
         confirmations: dropConfirmations(
           state.confirmations,
           changedSlotKeys(
@@ -631,7 +633,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'fsAutoAssign': {
-      const { fsWeeks, count, newly } = fsAutoAssign(
+      const { fsWeeks, count, newlyIds } = fsAutoAssign(
         state.fsWeeks,
         state.week,
         state.persons,
@@ -640,15 +642,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.fsBase,
       )
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
-      const pending = new Set(state.pendingNames)
-      for (const n of newly) pending.add(n)
+      const pending = new Set(state.pendingIds)
+      for (const id of newlyIds) pending.add(id)
       const notifs = pushNotif(
         state.notifs,
         'gesendet',
         'Zuteilungen gesendet',
         `${count} · ${FS_KANONISCH} · ${state.weeks[state.week]?.range ?? ''}`,
       )
-      return { ...state, fsWeeks, notifs, pendingNames: [...pending], toast: toastKey(state, 'toastAutoN', { n: count }) }
+      return { ...state, fsWeeks, notifs, pendingIds: [...pending], toast: toastKey(state, 'toastAutoN', { n: count }) }
     }
     case 'fsClear': {
       const { fsWeeks, count } = fsClear(state.fsWeeks, state.week, action.onlyGroup)
@@ -718,14 +720,17 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         t.id === action.id ? { ...t, status: 'bestätigt' as const } : t,
       )
       const stillOpen = myTasks.some((t) => t.status === 'offen')
-      const myName = currentUserName(state)
-      const pendingNames = stillOpen
-        ? state.pendingNames
-        : state.pendingNames.filter((n) => n !== myName)
+      // Ist nichts mehr offen, verschwindet das „…" der eigenen Person — über
+      // die Id, nicht über den Namen: bei Namensgleichheit verlor sonst auch
+      // die andere Person ihre Markierung.
+      const meineId = state.personId ?? CURRENT_PERSON_ID
+      const pendingIds = stillOpen
+        ? state.pendingIds
+        : state.pendingIds.filter((id) => id !== meineId)
       return {
         ...state,
         myTasks,
-        pendingNames,
+        pendingIds,
         myTaskId: null,
         confirmOpen: state.confirmOpen && stillOpen,
         toast: toastKey(state, 'toastBestaetigt'),
@@ -774,7 +779,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
       const weeks = assignSlot(state.weeks, sel, name, undefined, me.id)
       // „Warnen statt blocken": schon am selben Tag eingeteilt? → Hinweis-Toast.
-      const clash = assignmentsInMeeting(weeks[parts.wi][parts.tab], name, state.services, sel).length > 0
+      const clash = assignmentsInMeeting(weeks[parts.wi][parts.tab], me, state.services, sel).length > 0
       return {
         ...state,
         weeks,

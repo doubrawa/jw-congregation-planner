@@ -12,7 +12,7 @@ import {
   DEMO_GROUPS,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
-  DEMO_PENDING_NAMES,
+  DEMO_PENDING_IDS,
   DEMO_PERSONS,
   DEMO_PLANNER,
   DEMO_REMINDERS,
@@ -58,7 +58,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     importing: false,
     imported: false,
     myTasks: [...DEMO_MY_TASKS],
-    pendingNames: [...DEMO_PENDING_NAMES],
+    pendingIds: [...DEMO_PENDING_IDS],
     confirmations: {},
     confirmOpen: false,
     myTaskId: null,
@@ -233,13 +233,15 @@ describe('Personen', () => {
     expect(next.selectedPersonId).toBe('p1')
   })
 
-  it('updatePerson zieht eine Namensänderung durch Wochen und pendingNames', () => {
+  it('updatePerson zieht eine Namensänderung durch die Wochen', () => {
     const target = person('Manfred Albrecht')
-    const s = makeState({ pendingNames: ['Manfred Albrecht'] })
+    const s = makeState({ pendingIds: [target.id] })
     const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfredo' } })
     expect(weeksContainName(next.weeks, 'Manfredo Albrecht')).toBe(true)
     expect(weeksContainName(next.weeks, 'Manfred Albrecht')).toBe(false)
-    expect(next.pendingNames).toContain('Manfredo Albrecht')
+    // Die „…"-Markierung hängt an der Id und überlebt die Umbenennung von
+    // selbst — früher musste sie eigens mitgepflegt werden.
+    expect(next.pendingIds).toContain(target.id)
   })
 
   it('updatePerson spiegelt das Planer-Recht in Konten/Codes (eigenes Konto ausgenommen)', () => {
@@ -425,21 +427,21 @@ describe('assign (Zuteilen)', () => {
     expect(reducer(s, { type: 'assign', name: 'X' })).toBe(s)
   })
 
-  it('Programmpunkt: setzt Namen, ergänzt pendingNames + Mitteilung', () => {
+  it('Programmpunkt: setzt Namen, ergänzt pendingIds + Mitteilung', () => {
     const s = makeState()
     const sel = firstPartSlot(s.weeks[0], 'mid')
-    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person' })
+    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
     expect((next.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0].name).toBe('Neue Person')
-    expect(next.pendingNames).toContain('Neue Person')
+    expect(next.pendingIds).toContain('neu-1')
     expect(next.notifs[0].type).toBe('gesendet')
     expect(next.slotSel).toBeNull()
   })
 
-  it('Gastredner-Slot landet nicht in pendingNames', () => {
+  it('Gastredner-Slot landet nicht in pendingIds', () => {
     const s = makeState()
     const sel = { ...firstPartSlot(s.weeks[0], 'mid'), guest: true }
-    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Gast Redner' })
-    expect(next.pendingNames).not.toContain('Gast Redner')
+    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Gast Redner', pid: 'gast-1' })
+    expect(next.pendingIds).not.toContain('gast-1')
   })
 
   it('leerer Name entfernt (kein pending, kein Mitteilungs-Push)', () => {
@@ -455,9 +457,9 @@ describe('assign (Zuteilen)', () => {
     const s = makeState()
     const inst = s.fsWeeks[0][0]
     const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
-    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Fritz Leiter' })
+    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
     expect(next.fsWeeks[0].find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
-    expect(next.pendingNames).toContain('Fritz Leiter')
+    expect(next.pendingIds).toContain('fritz-1')
     expect(next.notifs[0].type).toBe('gesendet')
   })
 })
@@ -820,13 +822,15 @@ describe('hydrate / setDataStatus', () => {
 })
 
 describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
-  it('DERIVE_ACTIONS berechnen myTasks/pendingNames aus den Wochen neu', () => {
+  it('DERIVE_ACTIONS berechnen myTasks/pendingIds aus den Wochen neu', () => {
     const me = person('Simon Krüger')
-    const s = makeState({ dataStatus: 'ready', personId: me.id, myTasks: [], pendingNames: [] })
+    const s = makeState({ dataStatus: 'ready', personId: me.id, myTasks: [], pendingIds: [] })
     // setLang ist eine DERIVE_ACTION → withDerivedTasks greift (Produktion)
     const next = reducer(s, { type: 'setLang', lang: 'de' })
     expect(next.myTasks.length).toBeGreaterThan(0)
-    expect(next.pendingNames).toContain('Simon Krüger')
+    // Über die Kennung: die Demo-Wochen tragen teils noch keine pid, dann
+    // greift der Namensschlüssel.
+    expect(next.pendingIds.some((k) => k === me.id || k === `name:${displayName(me)}`)).toBe(true)
   })
 
   it('im Demo-Modus bleiben die Demo-Aufgaben unangetastet', () => {

@@ -86,8 +86,8 @@ function planeTreffpunkte(
 }
 
 /** Zuteilungen je Woche (Programmpunkte). */
-const aufgabenJeWoche = (weeks: Week[], name: string): number[] =>
-  weeks.map((w) => partWorkload([w], name))
+const aufgabenJeWoche = (weeks: Week[], person: Person): number[] =>
+  weeks.map((w) => partWorkload([w], person))
 
 /** Leitungen je Woche (Treffpunkte). */
 const leitungenJeWoche = (fsWeeks: FsInstance[][], name: string): number[] =>
@@ -206,9 +206,9 @@ describe('Neuling ohne Vergangenheit wird nicht überschüttet', () => {
     const EINTRITT = 20
     const weeks = planeWochen(40, (wi) => (wi < EINTRITT ? stamm : [...stamm, neu]))
 
-    const neuling = summe(aufgabenJeWoche(weeks, displayName(neu)), EINTRITT, EINTRITT + 5)
+    const neuling = summe(aufgabenJeWoche(weeks, neu), EINTRITT, EINTRITT + 5)
     const schnitt =
-      stamm.reduce((s, p) => s + summe(aufgabenJeWoche(weeks, displayName(p)), EINTRITT, EINTRITT + 5), 0) /
+      stamm.reduce((s, p) => s + summe(aufgabenJeWoche(weeks, p), EINTRITT, EINTRITT + 5), 0) /
       stamm.length
     // Das enge Fenster (LOAD_RADIUS) fängt das hier von selbst ab; der Test
     // hält fest, dass es so bleibt, falls das Fenster je verbreitert wird.
@@ -221,9 +221,9 @@ describe('Neuling ohne Vergangenheit wird nicht überschüttet', () => {
     const EINTRITT = 20
     const weeks = planeWochen(46, (wi) => (wi < EINTRITT ? stamm : [...stamm, neu]))
     const nach = EINTRITT + 6 // Einschwingen überspringen
-    const neuling = summe(aufgabenJeWoche(weeks, displayName(neu)), nach, 46)
+    const neuling = summe(aufgabenJeWoche(weeks, neu), nach, 46)
     const schnitt =
-      stamm.reduce((s, p) => s + summe(aufgabenJeWoche(weeks, displayName(p)), nach, 46), 0) / stamm.length
+      stamm.reduce((s, p) => s + summe(aufgabenJeWoche(weeks, p), nach, 46), 0) / stamm.length
     expect(neuling).toBeGreaterThan(schnitt * 0.6)
     expect(neuling).toBeLessThan(schnitt * 1.4)
   })
@@ -260,9 +260,9 @@ describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => 
     const BIS = 32
     const abwesend = abwesendIn(weg.id, ...Array.from({ length: BIS - VON }, (_u, i) => VON + i))
     const weeks = planeWochen(50, () => alle, abwesend)
-    const r = aufgabenJeWoche(weeks, displayName(weg))
+    const r = aufgabenJeWoche(weeks, weg)
     const andere =
-      alle.slice(1).reduce((s, p) => s + summe(aufgabenJeWoche(weeks, displayName(p)), BIS, BIS + 5), 0) /
+      alle.slice(1).reduce((s, p) => s + summe(aufgabenJeWoche(weeks, p), BIS, BIS + 5), 0) /
       (alle.length - 1)
 
     expect(summe(r, VON, BIS), 'während der Abwesenheit eingeteilt').toBe(0)
@@ -274,9 +274,9 @@ describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => 
     const weg = alle[0]
     const abwesend = abwesendIn(weg.id, 20, 21)
     const weeks = planeWochen(40, () => alle, abwesend)
-    const r = summe(aufgabenJeWoche(weeks, displayName(weg)), 0, 40)
+    const r = summe(aufgabenJeWoche(weeks, weg), 0, 40)
     const schnitt =
-      alle.slice(1).reduce((s, p) => s + summe(aufgabenJeWoche(weeks, displayName(p)), 0, 40), 0) /
+      alle.slice(1).reduce((s, p) => s + summe(aufgabenJeWoche(weeks, p), 0, 40), 0) /
       (alle.length - 1)
     expect(r).toBeGreaterThan(schnitt * 0.7)
     expect(r).toBeLessThan(schnitt * 1.3)
@@ -308,7 +308,7 @@ describe('Gleichmaß über lange Zeiträume', () => {
   it('Aufgaben: ein Jahr, niemand geht leer aus', () => {
     const alle = Array.from({ length: 16 }, () => mk(SCHUL))
     const weeks = planeWochen(52, () => alle)
-    const summen = alle.map((p) => summe(aufgabenJeWoche(weeks, displayName(p)), 0, 52))
+    const summen = alle.map((p) => summe(aufgabenJeWoche(weeks, p), 0, 52))
     expect(Math.min(...summen), `Verteilung ${summen.join(' ')}`).toBeGreaterThan(0)
   })
 

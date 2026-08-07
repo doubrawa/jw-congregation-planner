@@ -12,6 +12,18 @@ import { partWorkload } from './helpers'
 import { togglePartner } from './meeting-edit'
 import type { PartItem, Section, Week } from './types'
 
+/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
+import { emptyQualifications } from './helpers'
+import type { Person } from './types'
+
+function alsPerson(name: string): Person {
+  return {
+    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    tel: '', mail: '', priv: emptyQualifications(),
+  }
+}
+
+
 const teil = (bereichsKey: string, plaetze = 1): PartItem => ({
   title: 'Gespräche beginnen',
   names: Array.from({ length: plaetze }, (_, i) => ({
@@ -201,9 +213,9 @@ describe('Zusätzliche Klasse zählt überall gleich mit', () => {
     // Ohne diese Zeilen blieb der Hinweis „heute schon zugeteilt" aus, und das
     // Dashboard zeigte „frei" für jemanden, der in der Klasse eingeteilt war.
     const m = mitKlasse().mid
-    expect(assignmentsInMeeting(m, 'Zweite Klasse', []).length).toBe(1)
-    expect(assignmentsInMeeting(m, 'Rolf Ratgeber', []).length).toBe(1)
-    expect(assignmentsInMeeting(m, 'Haupt Saal', []).length).toBe(1)
+    expect(assignmentsInMeeting(m, alsPerson('Zweite Klasse'), []).length).toBe(1)
+    expect(assignmentsInMeeting(m, alsPerson('Rolf Ratgeber'), []).length).toBe(1)
+    expect(assignmentsInMeeting(m, alsPerson('Haupt Saal'), []).length).toBe(1)
   })
 
   it('openSlotLabels und countOpenSlots kommen auf dieselbe Zahl (T19)', () => {
@@ -221,13 +233,13 @@ describe('Zusätzliche Klasse zählt überall gleich mit', () => {
 
   it('partWorkload zählt die Klasse nur, solange es sie gibt (T20)', () => {
     const an = mitKlasse()
-    expect(partWorkload([an], 'Zweite Klasse')).toBe(1)
-    expect(partWorkload([an], 'Rolf Ratgeber')).toBe(1)
+    expect(partWorkload([an], alsPerson('Zweite Klasse'))).toBe(1)
+    expect(partWorkload([an], alsPerson('Rolf Ratgeber'))).toBe(1)
     // Abschalten lässt die Namen absichtlich stehen — zählen dürfen sie nicht.
     const aus = syncAuxSlots([an], false)[0]
     expect((aus.mid.sections[0].items[0] as PartItem).aux?.[0].name).toBe('Zweite Klasse')
-    expect(partWorkload([aus], 'Zweite Klasse')).toBe(0)
-    expect(partWorkload([aus], 'Rolf Ratgeber')).toBe(0)
+    expect(partWorkload([aus], alsPerson('Zweite Klasse'))).toBe(0)
+    expect(partWorkload([aus], alsPerson('Rolf Ratgeber'))).toBe(0)
   })
 })
 

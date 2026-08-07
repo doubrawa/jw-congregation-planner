@@ -106,7 +106,7 @@ function fsKandidaten(
         absent: inst
           ? istAbwesendAm(state.absences, p.id, fsDate(state.fsBase, sel.wi, inst.wd))
           : false,
-        free: workloadOf(state.weeks, name, state.services) === 0,
+        free: workloadOf(state.weeks, p, state.services) === 0,
       }
     })
     .sort((a, b) => Number(a.absent) - Number(b.absent))
@@ -154,7 +154,7 @@ function personenKandidaten(
     .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && geschlechtOk(p))
     .map((p) => {
       const name = displayName(p)
-      const last = workloadOf(fenster, name, state.services)
+      const last = workloadOf(fenster, p, state.services)
       const lastLabel =
         last === 1
           ? fill(t.aufgabeInW, { w: LOAD_WEEKS })
@@ -165,12 +165,12 @@ function personenKandidaten(
         name,
         assignName: name,
         sub: `${tu(roleLabel(p))} · ${lastLabel}`,
-        today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], name, state.services, sel),
+        today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], p, state.services, sel),
         absent: istAbwesend(abwesend, p.id, sel.wi, sel.tab),
         free: last === 0,
         // Dieselbe Platzgrenze wie `last` eine Zeile darüber — sonst zeigt
         // dieselbe Zeile „frei" und daneben ein belegtes Quadrat.
-        load: loadWindow(state.weeks, name, sel.wi, state.services),
+        load: loadWindow(state.weeks, p, sel.wi, state.services),
       }
     })
     .sort((a, b) => Number(a.absent) - Number(b.absent))
