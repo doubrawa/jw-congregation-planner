@@ -35,6 +35,7 @@ import {
   lacMoveTarget,
   lacRemove,
   endeAusStartzeit,
+  endenNachziehen,
   togglePartner,
   setOpeningSong,
 } from '../data/meeting-edit'
@@ -394,8 +395,19 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         groups: state.groups.map((g) => (g.id === action.id ? { ...g, ...action.patch } : g)),
       }
-    case 'updateCongregation':
-      return { ...state, congregation: { ...state.congregation, ...action.patch } }
+    case 'updateCongregation': {
+      const congregation = { ...state.congregation, ...action.patch }
+      // Ändert sich die Zusammenkunftszeit, wandern die Endzeiten der schon
+      // geladenen Wochen mit. Sie stehen in den Wochendaten; die Startzeit
+      // dagegen kommt bei jeder Anzeige frisch aus den Einstellungen. Ohne das
+      // hier stünde nach einer Umstellung auf jedem Programmblatt eine
+      // Zusammenkunft, die 45 Minuten länger dauert als geplant.
+      const weeks =
+        action.patch.meetings !== undefined && action.patch.meetings !== state.congregation.meetings
+          ? endenNachziehen(state.weeks, state.congregation.meetings, action.patch.meetings)
+          : state.weeks
+      return { ...state, congregation, weeks }
+    }
     case 'updateMember':
       return {
         ...state,

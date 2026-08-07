@@ -76,6 +76,15 @@ describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
     expect(unbekannt).toEqual([])
   })
 
+  it('die Ausnahmeliste wächst nicht heimlich', () => {
+    // Eine Ausnahmeliste ohne Deckel ist keine Ausnahme mehr, sondern eine
+    // Abkürzung: Wer künftig ein unübersetztes Fragment hier einträgt, statt
+    // die Vorlage zu messen, ändert damit auch diese Zahl — und muss es
+    // begründen. Die Prüfung darüber („beschreibt nur Vorhandenes") fängt nur
+    // Tippfehler, nicht das Wachsen.
+    expect(NUR_GEMESSEN_UEBERSETZBAR.size).toBe(28)
+  })
+
   it.each(CODES)('%s deckt alle Pflicht-Fragmente ab', (code) => {
     const eigene = FRAG[code] ?? {}
     const fehlend = pflicht.filter((k) => !(k in eigene))
@@ -112,31 +121,76 @@ describe('EXTRA — kurze Phrasen mit Platzhalter', () => {
 })
 
 describe('REF — Verweis-Vorlagen', () => {
-  /**
-   * Ohne Publikationskürzel gibt es nichts zu übersetzen: in den Arbeitsheften
-   * dieser Sprachen stehen „th"/„lmd"/„lff"/„wcg" gar nicht (siehe
-   * verweisRegeln in translate.ts). Alle übrigen brauchen einen Eintrag.
-   */
-  const OHNE_KUERZEL = new Set(['zh', 'ja', 'ko', 'ar', 'he', 'fa', 'ur'])
-  /**
-   * Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation —
-   * für `wcg` gibt es dort keine gemessene Vorlage, und Erfundenes wäre
-   * schlimmer als ein erkennbar unübersetzter Verweis (siehe translate.test.ts).
-   */
-  const OHNE_WCG = new Set(['bg'])
-  const PFLICHT: Array<keyof RefDict> = ['thLek', 'lmdLekP', 'lffLekP', 'gruppe', 'vers']
+  /** Alle neun Vorlagen, die `verweisRegeln` in translate.ts nachschlägt. */
+  const ALLE: Array<keyof RefDict> = [
+    'thLek',
+    'lmdLekP',
+    'lmdLek',
+    'lffLekP',
+    'lffLek',
+    'wcgKap',
+    'lmdAnh',
+    'gruppe',
+    'vers',
+  ]
 
-  it.each(CODES.filter((c) => !OHNE_KUERZEL.has(c)))('%s hat die Pflicht-Vorlagen', (code) => {
+  /**
+   * Was heute wirklich fehlt — Sprache für Sprache, Vorlage für Vorlage.
+   *
+   * Diese Liste ersetzt eine frühere Fassung, die ganze Sprachen ausnahm mit
+   * der Begründung, in deren Arbeitsheften stünden „th"/„lmd"/„lff"/„wcg" gar
+   * nicht. Das trifft nicht zu: alle sieben angeblich betroffenen Sprachen
+   * haben REF-Einträge, und `verweisRegeln` begründet ausdrücklich das
+   * Gegenteil („Ostasien und die RTL-Sprachen übersetzen das Kürzel mit").
+   * Die Pauschal-Ausnahme verdeckte deshalb echte Lücken, statt sie zu
+   * beschreiben.
+   *
+   * Gefüllt wird eine Lücke nur mit einer an jw.org **gemessenen** Vorlage;
+   * eine ausgedachte wäre schlimmer als ein erkennbar deutsch gebliebener
+   * Verweis. Wer eine misst, trägt sie in REF ein und streicht sie hier.
+   *
+   * Fachlich offen (siehe docs/analyse): ob `lmdLek`/`lffLek` — die Form
+   * ohne Punktnummer aus älteren Arbeitsheften — überhaupt noch vorkommt.
+   * Falls nicht, gehören die beiden aus `ALLE` heraus statt hier hinein.
+   */
+  const OHNE_VORLAGE: Record<string, Array<keyof RefDict>> = {
+    bg: ['wcgKap'],
+    cs: ['lmdLek', 'lffLek'],
+    fa: ['lmdAnh'],
+    hu: ['lmdLek', 'lffLek'],
+    ko: ['lmdLek', 'lffLek'],
+    sk: ['lmdLek', 'lffLek'],
+    sr: ['lmdAnh'],
+    tr: ['lmdLek', 'lffLek', 'lmdAnh'],
+    ur: ['lmdAnh'],
+    zh: ['lmdLek', 'lffLek'],
+  }
+
+  it.each(CODES)('%s hat jede Vorlage, die nicht ausdrücklich fehlt', (code) => {
     const ref = REF[code]
     expect(ref, `${code}: REF fehlt ganz`).toBeDefined()
-    const noetig = OHNE_WCG.has(code) ? PFLICHT : [...PFLICHT, 'wcgKap' as const]
-    const fehlend = noetig.filter((f) => typeof ref?.[f] !== 'function')
-    expect(fehlend, code).toEqual([])
+    const bekannt = new Set(OHNE_VORLAGE[code] ?? [])
+    const fehlend = ALLE.filter((f) => !bekannt.has(f) && typeof ref?.[f] !== 'function')
+    expect(fehlend, `${code}: nicht angemeldete Lücke`).toEqual([])
   })
 
-  it('die Ausnahmen sind ausdrücklich benannt und wachsen nicht heimlich', () => {
-    expect([...OHNE_KUERZEL].sort()).toEqual(['ar', 'fa', 'he', 'ja', 'ko', 'ur', 'zh'])
-    expect([...OHNE_WCG]).toEqual(['bg'])
+  it('die angemeldeten Lücken sind auch wirklich welche', () => {
+    // Gegenrichtung: wer eine Vorlage nachträgt und den Eintrag hier stehen
+    // lässt, bekommt sonst eine Ausnahme, die nichts mehr ausnimmt — und die
+    // nächste echte Lücke verschwindet unter ihr.
+    const ueberfluessig: string[] = []
+    for (const [code, felder] of Object.entries(OHNE_VORLAGE)) {
+      for (const f of felder) {
+        if (typeof REF[code]?.[f] === 'function') ueberfluessig.push(`${code}.${f}`)
+      }
+    }
+    expect(ueberfluessig).toEqual([])
+  })
+
+  it('die Lückenliste wächst nicht heimlich', () => {
+    const anzahl = Object.values(OHNE_VORLAGE).reduce((n, f) => n + f.length, 0)
+    expect(Object.keys(OHNE_VORLAGE).length).toBe(10) // betroffene Sprachen
+    expect(anzahl).toBe(17) // fehlende Vorlagen insgesamt
   })
 })
 

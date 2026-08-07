@@ -115,11 +115,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // dict() den EN-Fallback; das erneute setLang (No-op-Übergang, kein
   // DB-Write) rendert die App danach mit den nachgeladenen Texten.
   useEffect(() => {
-    void loadOverlay(state.lang).then((loaded) => {
-      if (loaded && stateRef.current.lang === state.lang) {
-        dispatch({ type: 'setLang', lang: state.lang })
-      }
-    })
+    void loadOverlay(state.lang)
+      .then((loaded) => {
+        if (loaded && stateRef.current.lang === state.lang) {
+          dispatch({ type: 'setLang', lang: state.lang })
+        }
+      })
+      // Nach einem Deployment sind die alten Lazy-Chunks weg; der Service
+      // Worker cacht `/assets/`, aber nur bereits Geholtes. Der dynamische
+      // Import scheitert dann. Ohne dieses catch war das eine unbehandelte
+      // Rejection — die Sprache blieb still auf Englisch, ohne jede Meldung.
+      // Eine Error Boundary greift hier nicht: die Ablehnung entsteht
+      // außerhalb des Renderns.
+      .catch((fehler: unknown) => console.error('[overlay]', state.lang, fehler))
   }, [state.lang, dispatch])
 
   // Bibelbuch-Tabellen ebenso nachladen — aber nur, wenn überhaupt etwas zu
@@ -127,9 +135,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // rund 16 kB nie.
   useEffect(() => {
     if (state.lang === 'de' && state.congLang === 'Deutsch') return
-    void bibelbuecherLaden().then((geladen) => {
-      if (geladen) dispatch({ type: 'setLang', lang: stateRef.current.lang })
-    })
+    void bibelbuecherLaden()
+      .then((geladen) => {
+        if (geladen) dispatch({ type: 'setLang', lang: stateRef.current.lang })
+      })
+      // Wie beim Overlay: fehlgeschlagener Nachlade-Import darf keine
+      // unbehandelte Rejection werden. Die Bibelbücher bleiben dann deutsch.
+      .catch((fehler: unknown) => console.error('[bibelbuecher]', fehler))
   }, [state.lang, state.congLang, dispatch])
 
   // Toast automatisch ausblenden (2.4 s wie im Prototyp)

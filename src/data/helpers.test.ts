@@ -7,15 +7,22 @@ import {
   initials,
   isPlainPublisher,
   isQualified,
+  isSong,
   linkFamily,
+  loadWindow,
   partnerGenderOk,
+  partWorkload,
   personCompare,
   roleLabel,
+  rolleNennt,
   serviceQualKey,
   shortDisplayName,
+  tieHash,
   unlinkFamily,
+  workloadOf,
 } from './helpers'
-import type { Person, Qualifications } from './types'
+import { buildDemoWeeks } from './demo'
+import type { PartItem, Person, Qualifications } from './types'
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {
@@ -232,5 +239,93 @@ describe('Rollen & Qualifikation', () => {
 
   it('serviceQualKey präfixt Dienst-Bereiche', () => {
     expect(serviceQualKey('ton')).toBe('svc:ton')
+  })
+})
+
+describe('rolleNennt (Begleiter im Rollentext)', () => {
+  it('erkennt den Begleiter an der Wortgrenze', () => {
+    expect(rolleNennt('mit Anna Berg', 'Anna Berg')).toBe(true)
+    expect(rolleNennt('mit Anna Berg', 'Anna')).toBe(true)
+    expect(rolleNennt('Gesprächspartner · mit Anna Berg', 'Anna Berg')).toBe(true)
+  })
+
+  it('zählt keinen Namen mit, der nur zufällig darin steckt', () => {
+    // Der eigentliche Befund: `rolle.includes(name)` gab Anna eine Aufgabe, die
+    // Annalena gehört. Bei der Auto-Zuteilung genügt eine solche Phantom-Last,
+    // um jemanden dauerhaft hinten anzustellen.
+    expect(rolleNennt('mit Annalena Berg', 'Anna')).toBe(false)
+    expect(rolleNennt('mit Hanna Berg', 'Anna')).toBe(false)
+    expect(rolleNennt('mit Bergmann', 'Berg')).toBe(false)
+  })
+
+  it('kommt mit Sonderzeichen in Namen zurecht (kein Regex)', () => {
+    expect(rolleNennt("mit O'Brien", "O'Brien")).toBe(true)
+    expect(rolleNennt('mit Müller-Lüdenscheidt', 'Müller-Lüdenscheidt')).toBe(true)
+    // Als Muster gelesen würde „A.“ auf „Ax“ passen.
+    expect(rolleNennt('mit Ax Berg', 'A.')).toBe(false)
+  })
+
+  it('leerer Name oder leere Rolle zählt nie', () => {
+    expect(rolleNennt('mit Anna Berg', '')).toBe(false)
+    expect(rolleNennt(undefined, 'Anna Berg')).toBe(false)
+  })
+})
+
+describe('partWorkload zählt Begleiter nur bei echter Nennung', () => {
+  it('gibt die Aufgabe der genannten Person, nicht der namensähnlichen', () => {
+    const weeks = buildDemoWeeks()
+    const item = weeks[0].mid.sections[0].items.find((x) => !isSong(x)) as PartItem
+    // Alt-Daten tragen den Begleiter als „mit X" im Rollentext.
+    item.names[0] = { ...item.names[0], name: 'Rolf Klein', rolle: 'mit Annalena Berg' }
+    expect(partWorkload(weeks, 'Rolf Klein')).toBe(1)
+    expect(partWorkload(weeks, 'Annalena Berg')).toBe(1)
+    // „Anna" steckt in „Annalena" — mit `rolle.includes(name)` bekam sie hier
+    // eine Aufgabe, die einer anderen gehört.
+    expect(partWorkload(weeks, 'Anna')).toBe(0)
+  })
+})
+
+describe('loadWindow hält sich an dieselbe Platzgrenze wie workloadOf', () => {
+  // Der Fix an `helperWorkload` erreichte die Mini-Quadrate nicht: dieselbe
+  // Zeile im Zuteilungs-Sheet zeigte „frei" und daneben ein belegtes Quadrat.
+  const dienste = [{ key: 'ton', name: 'Ton', count: 1, qual: false }]
+
+  function wochenMitZweitemTon(): ReturnType<typeof buildDemoWeeks> {
+    const weeks = buildDemoWeeks()
+    // Platz 0 gehört jemand anderem, Platz 1 liegt hinter `count: 1`.
+    weeks[1].mid.helpers.ton = [{ name: 'Erste Person' }, { name: 'Zweite Person' }]
+    return weeks
+  }
+
+  it('zählt einen Platz hinter svc.count nicht als Belegung', () => {
+    const weeks = wochenMitZweitemTon()
+    expect(workloadOf(weeks, 'Zweite Person', dienste)).toBe(0)
+    expect(loadWindow(weeks, 'Zweite Person', 1, dienste)).not.toContain('helper')
+  })
+
+  it('ohne services zählt weiter alles — beide Seiten gleich', () => {
+    const weeks = wochenMitZweitemTon()
+    expect(workloadOf(weeks, 'Zweite Person')).toBe(1)
+    expect(loadWindow(weeks, 'Zweite Person', 1)).toContain('helper')
+  })
+
+  it('der belegte Platz innerhalb der Grenze zählt weiterhin', () => {
+    const weeks = wochenMitZweitemTon()
+    expect(workloadOf(weeks, 'Erste Person', dienste)).toBe(1)
+    expect(loadWindow(weeks, 'Erste Person', 1, dienste)).toContain('helper')
+  })
+})
+
+describe('tieHash (gemeinsamer Tie-Break)', () => {
+  it('mischt nach: benachbarte Schlüssel liegen nicht benachbart', () => {
+    // Ohne Avalanche bestimmt der Namensteil die hohen Bits und die Woche nur
+    // die niedrigsten — dann ist die Rangfolge in JEDER Woche dieselbe.
+    const a = tieHash('Anton Muster|0|1')
+    const b = tieHash('Anton Muster|1|1')
+    expect(Math.abs(a - b)).toBeGreaterThan(0xffffff)
+  })
+
+  it('ist stabil (gleicher Schlüssel, gleicher Wert)', () => {
+    expect(tieHash('Anton Muster|3|1')).toBe(tieHash('Anton Muster|3|1'))
   })
 })

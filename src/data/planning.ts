@@ -21,6 +21,7 @@ import {
   partnerGenderOk,
   partWorkload,
   serviceQualKey,
+  tieHash,
   workloadOf,
 } from './helpers'
 import { meetingDateMs, meetingDateText } from './meeting-dates'
@@ -50,30 +51,6 @@ export function isGuestRole(rolle: string | undefined): boolean {
 }
 
 
-
-/**
- * Kleiner, stabiler String-Hash für faire, deterministische Tie-Breaks.
- *
- * Die Nachmischung (Avalanche) ist entscheidend, nicht Zierrat: `h*31 + zeichen`
- * allein schreibt die zuletzt angehängten Zeichen nur in die niedrigsten Stellen.
- * Der Schlüssel „Name|Woche|Zusammenkunft“ ergab damit Werte, die sich von Woche
- * zu Woche um 0,02 % des Wertebereichs unterschieden, während der Name die hohen
- * Bits bestimmte — die Reihenfolge bei Gleichstand war also in JEDER Woche
- * dieselbe feste Rangliste nach Namen. Wer darin hinten stand, kam nie dran,
- * solange irgendjemand anders dieselbe (meist: null) Last hatte. Der Mixer sorgt
- * dafür, dass jedes Eingabe-Bit alle Ausgabe-Bits erreicht, die Reihenfolge also
- * pro Woche wirklich wechselt.
- */
-function tieHash(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0
-  h ^= h >>> 16
-  h = Math.imul(h, 0x7feb352d)
-  h ^= h >>> 15
-  h = Math.imul(h, 0x846ca68b)
-  h ^= h >>> 16
-  return h >>> 0
-}
 
 /**
  * Abstand (in Wochen) zur nächstgelegenen Einteilung je Person, gemessen über
@@ -939,7 +916,13 @@ export function shiftPartConfirmations(
     const neu = `${praefix}${eintrag.art}|${si}|${eintrag.ii + delta}|${eintrag.ni}`
     const status = map[eintrag.key]
     delete next[eintrag.key]
-    if (status) next[neu] = status
+    // Ohne Bedingung übernommen, damit Client und Datenbank dieselbe Menge an
+    // Schlüsseln behalten: `renames` geht so oder so an die Datenbank. Würde
+    // hier ein Status wegen Falsy-Prüfung wegfallen, benannte die Datenbank um,
+    // was der Client vergessen hat — und die Bestätigung wäre nur noch in
+    // einer der beiden Hälften vorhanden. `TaskStatus` kennt heute keinen
+    // falsy Wert; die Kopplung soll aber auch dann halten, wenn einer dazukommt.
+    next[neu] = status
     renames.push([eintrag.key, neu])
   }
   return { map: next, renames, removed }

@@ -349,13 +349,19 @@ describe('loadWindow (5-Wochen-Belegung für die Mini-Quadrate)', () => {
     ;(weeks[1].mid.sections[0].items[0] as PartItem).names[0].name = 'Quadrat Test' // Aufgabe in Woche 1
     weeks[3].mid.helpers.ton = [{ name: 'Quadrat Test' }] // Hilfsdienst in Woche 3
     // Demo hat 4 Wochen (0–3); Fenster um Woche 2 (±2) → 0,1,2,3,4 → Index 4 = void
-    expect(loadWindow(weeks, 'Quadrat Test', 2, 2)).toEqual(['none', 'task', 'none', 'helper', 'void'])
+    expect(loadWindow(weeks, 'Quadrat Test', 2, undefined, 2)).toEqual([
+      'none',
+      'task',
+      'none',
+      'helper',
+      'void',
+    ])
   })
 
   it('markiert nicht geladene Wochen als void', () => {
     const weeks = buildDemoWeeks()
     // Fenster um Woche 0 (±2) → Indizes -2,-1,0,1,2 → erste zwei existieren nicht
-    const w = loadWindow(weeks, 'Niemand', 0, 2)
+    const w = loadWindow(weeks, 'Niemand', 0, undefined, 2)
     expect(w[0]).toBe('void')
     expect(w[1]).toBe('void')
     expect(w.slice(2)).toEqual(['none', 'none', 'none'])

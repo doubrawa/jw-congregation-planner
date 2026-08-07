@@ -80,3 +80,33 @@ describe('AppProvider – Schreibschutz im Offline-Stand', () => {
     expect(clearSnapshot).toHaveBeenCalled()
   })
 })
+
+describe('AppProvider – fehlgeschlagenes Nachladen', () => {
+  // Nach einem Deployment sind die alten Lazy-Chunks weg; der dynamische
+  // Import des Sprach-Overlays scheitert dann. Ohne `.catch()` war das eine
+  // unbehandelte Rejection — die Sprache blieb still auf Englisch, ohne jede
+  // Meldung. Eine Error Boundary greift hier nicht: die Ablehnung entsteht
+  // außerhalb des Renderns.
+  it('fängt einen abgelehnten Overlay-Import ab, statt ihn unbehandelt zu lassen', async () => {
+    const ui = await import('../i18n/ui')
+    const fehler = new Error('Failed to fetch dynamically imported module')
+    const overlay = vi.spyOn(ui, 'loadOverlay').mockRejectedValue(fehler)
+    const konsole = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const { result } = setup()
+      await act(async () => {
+        result.current.dispatch({ type: 'setLang', lang: 'it' })
+        // Zwei Mikrotask-Runden: eine für den Import, eine für das catch.
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      expect(overlay).toHaveBeenCalled()
+      // Erreicht diese Meldung die Konsole, ist die Ablehnung behandelt —
+      // ohne `.catch()` liefe sie am Effekt vorbei ins Leere.
+      expect(konsole).toHaveBeenCalledWith('[overlay]', 'it', fehler)
+    } finally {
+      overlay.mockRestore()
+      konsole.mockRestore()
+    }
+  })
+})

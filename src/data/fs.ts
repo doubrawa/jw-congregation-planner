@@ -13,7 +13,7 @@
  */
 
 import { istAbwesendAm } from './absence'
-import { displayName, isQualified } from './helpers'
+import { displayName, isQualified, tieHash } from './helpers'
 import type { Absence, FsInstance, FsRule, Person } from './types'
 
 /** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
@@ -177,13 +177,6 @@ export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance)
 
 /* ---- Auto-Zuteilung / Leeren der Treffpunkt-Leiter ---- */
 
-/** Kleiner, stabiler String-Hash für deterministische Tie-Breaks. */
-function fsTieHash(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0
-  return h >>> 0
-}
-
 /**
  * Besetzt offene Treffpunkt-Leiter der Woche `wi` automatisch: Kandidaten sind
  * treffpunkt-qualifiziert (wie im Zuteilungs-Sheet, ohne Gruppenbindung) und in
@@ -235,9 +228,18 @@ export function fsAutoAssign(
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
     const used = dayUsed.get(inst.wd) ?? new Set<string>()
+    // Tie-Break mit demselben gemischten Hash wie die Programm-Zuteilung. Die
+    // frühere eigene Fassung ohne Avalanche ergab in jeder Woche dieselbe feste
+    // Rangliste nach Namen — wer darin hinten stand, leitete nie (siehe
+    // tieHash in helpers.ts). Der Schlüssel wird getrennt gefügt: „Ann"+„a12"
+    // und „Anna"+„12" wären sonst derselbe.
     const cand = poolFor(inst.wd)
       .filter((n) => !used.has(n))
-      .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0) || fsTieHash(a + wi) - fsTieHash(b + wi))
+      .sort(
+        (a, b) =>
+          (load.get(a) ?? 0) - (load.get(b) ?? 0) ||
+          tieHash(`${a}|${wi}|${inst.wd}`) - tieHash(`${b}|${wi}|${inst.wd}`),
+      )
     const pick = cand[0]
     if (!pick) return inst
     load.set(pick, (load.get(pick) ?? 0) + 1)
