@@ -253,6 +253,29 @@ export function hatAuxKlasse(meeting: Meeting): boolean {
   return meeting.auxRatgeber != null
 }
 
+/** Zeichen, das noch zu einem Namen gehört (Buchstabe oder Ziffer, jede Schrift). */
+const WORTZEICHEN = /[\p{L}\p{N}]/u
+
+/**
+ * Steht `name` als eigenständiger Name im Rollentext („mit A. Hoffmann")?
+ *
+ * Bewusst kein blankes `rolle.includes(name)`: „Anna" steckt auch in „mit
+ * Annalena Berg", und dann zählte Anna eine Aufgabe mit, die einer anderen
+ * gehört — bei der Auto-Zuteilung genügt eine solche Phantom-Last, um jemanden
+ * dauerhaft hinten anzustellen. Geprüft wird deshalb auf Wortgrenzen; ein
+ * regulärer Ausdruck verbietet sich, weil Namen Sonderzeichen enthalten dürfen
+ * („O'Brien", „Müller-Lüdenscheidt") und dann als Muster verstanden würden.
+ */
+export function rolleNennt(rolle: string | undefined, name: string): boolean {
+  if (!rolle || !name) return false
+  for (let von = rolle.indexOf(name); von !== -1; von = rolle.indexOf(name, von + 1)) {
+    const davor = rolle[von - 1]
+    const danach = rolle[von + name.length]
+    if (!(davor && WORTZEICHEN.test(davor)) && !(danach && WORTZEICHEN.test(danach))) return true
+  }
+  return false
+}
+
 /**
  * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
  * Zählt wie der Prototyp auch Begleiter-Erwähnungen im Rollenlabel
@@ -283,7 +306,7 @@ export function partWorkload(weeks: Week[], name: string): number {
           if (isSong(item)) continue
           for (const slot of item.names) {
             if (slot.name === name) count++
-            if (slot.rolle?.includes(name)) count++
+            if (rolleNennt(slot.rolle, name)) count++
           }
           // Nur zählen, solange die Klasse besteht: beim Abschalten bleiben die
           // Namen bewusst stehen (damit ein Wiedereinschalten sie hat). Ohne
@@ -359,15 +382,55 @@ export const LOAD_WEEKS = LOAD_RADIUS * 2 + 1
  * `void` = keine solche Woche geladen, `none` = frei, `task` = Programmpunkt
  * (Aufgabe), `helper` = nur Hilfsdienst (Aufgabe hat Vorrang, falls beides in
  * derselben Woche).
+ *
+ * `services` gehört hierher, obwohl die Quadrate nur eine Farbe zeigen: die
+ * Zahl daneben („2 Aufgaben in 5 Wochen") kommt aus `workloadOf` und zählt
+ * Hilfsdienste nur bis `svc.count`. Ohne dieselbe Grenze zeigte dieselbe Zeile
+ * „frei" und daneben ein belegtes Quadrat — die Platzzahl war reduziert, der
+ * Name stand aber noch dahinter in den Wochendaten.
  */
-export function loadWindow(weeks: Week[], name: string, wi: number, radius = LOAD_RADIUS): WeekLoad[] {
+export function loadWindow(
+  weeks: Week[],
+  name: string,
+  wi: number,
+  services?: Service[],
+  radius = LOAD_RADIUS,
+): WeekLoad[] {
   const out: WeekLoad[] = []
   for (let i = wi - radius; i <= wi + radius; i++) {
     const week = weeks[i]
     if (!week) out.push('void')
     else if (partWorkload([week], name) > 0) out.push('task')
-    else if (helperWorkload([week], name) > 0) out.push('helper')
+    else if (helperWorkload([week], name, services) > 0) out.push('helper')
     else out.push('none')
   }
   return out
+}
+
+/**
+ * Kleiner, stabiler String-Hash für faire, deterministische Tie-Breaks.
+ *
+ * Die Nachmischung (Avalanche) ist entscheidend, nicht Zierrat: `h*31 + zeichen`
+ * allein schreibt die zuletzt angehängten Zeichen nur in die niedrigsten Stellen.
+ * Der Schlüssel „Name|Woche|Zusammenkunft" ergab damit Werte, die sich von Woche
+ * zu Woche um 0,02 % des Wertebereichs unterschieden, während der Name die hohen
+ * Bits bestimmte — die Reihenfolge bei Gleichstand war also in JEDER Woche
+ * dieselbe feste Rangliste nach Namen. Wer darin hinten stand, kam nie dran,
+ * solange irgendjemand anders dieselbe (meist: null) Last hatte. Der Mixer sorgt
+ * dafür, dass jedes Eingabe-Bit alle Ausgabe-Bits erreicht, die Reihenfolge also
+ * pro Woche wirklich wechselt.
+ *
+ * Steht hier und nicht in `planning.ts`, weil die Treffpunkt-Zuteilung
+ * (`fs.ts`) dieselbe Fairness braucht und lange eine eigene, ungemischte Kopie
+ * mitschleppte — also genau den Fehler, den dieser Kommentar beschreibt.
+ */
+export function tieHash(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0
+  h ^= h >>> 16
+  h = Math.imul(h, 0x7feb352d)
+  h ^= h >>> 15
+  h = Math.imul(h, 0x846ca68b)
+  h ^= h >>> 16
+  return h >>> 0
 }

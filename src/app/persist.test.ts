@@ -312,6 +312,31 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.saveCongregationInfo).toHaveBeenCalledWith('c1', { name: 'Neu', hall: '', meetings: '' })
   })
 
+  it('updateCongregation speichert die Wochen, deren Endzeit mitgewandert ist', () => {
+    // Die Endzeit steht in der Wochenzeile, nicht in den Einstellungen: ohne
+    // dieses saveWeek stünde nach dem nächsten Laden wieder die alte da.
+    const prev = st()
+    // Nur Position 1 bekommt ein neues Objekt — der Reducer gibt unveränderte
+    // Wochen identisch zurück, und genau daran erkennt die Persistenz sie.
+    const weeks = [...prev.weeks]
+    weeks[1] = { ...weeks[1], mid: { ...weeks[1].mid, end: 'Ende ca. 20:15' } }
+    persist(prev, st({ weeks, congregation: { name: 'K', hall: 'H', meetings: 'Di 18:30 · So 10:00' } }), {
+      type: 'updateCongregation',
+      patch: { meetings: 'Di 18:30 · So 10:00' },
+    })
+    expect(data.saveWeek).toHaveBeenCalledTimes(1) // nur die eine geänderte
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', 1, weeks[1])
+  })
+
+  it('updateCongregation ohne Zeitänderung schreibt keine Woche', () => {
+    const prev = st()
+    persist(prev, st({ weeks: prev.weeks, congregation: { name: 'Neu', hall: 'H', meetings: 'M' } }), {
+      type: 'updateCongregation',
+      patch: { name: 'Neu' },
+    })
+    expect(data.saveWeek).not.toHaveBeenCalled()
+  })
+
   it('updateMember / removeMember / addInvite / removeInvite', () => {
     const m = { userId: 'm1', email: '', personId: null, planner: true }
     persist(st({ members: [m] }), st({ members: [m] }), { type: 'updateMember', userId: 'm1', patch: { planner: true } })

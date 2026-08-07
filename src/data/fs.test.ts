@@ -299,6 +299,33 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
     expect(fsWeeks[0][0].leader).toBe('Anton Muster')
   })
 
+  it('wechselt die Reihenfolge bei Gleichstand von Woche zu Woche', () => {
+    // Der Tie-Break entscheidet, solange alle gleich ausgelastet sind. Die
+    // frühere eigene Hash-Fassung ohne Avalanche schrieb die Woche nur in die
+    // niedrigsten Bits, den Namen in die hohen — die Rangfolge war damit in
+    // JEDER Woche dieselbe, und wer hinten stand, leitete nie. Hier startet
+    // jede Woche mit leerer Grundlast, damit wirklich nur der Tie-Break zählt.
+    const persons = ['Anton', 'Bernd', 'Cäsar', 'Dieter', 'Emil'].map((fn, i) =>
+      tpLeader({ id: `p${i}`, fn }),
+    )
+    const ersteWahl = new Set<string>()
+    for (let wi = 0; wi < 20; wi++) {
+      // Davor lauter leere Wochen: die Grundlast bleibt für alle null, es
+      // entscheidet ausschließlich der Tie-Break für dieses `wi`.
+      const wochen = Array.from({ length: wi }, (): ReturnType<typeof inst>[] => [])
+      wochen.push([inst({ id: 'a', wd: 1 })])
+      const { fsWeeks } = fsAutoAssign(wochen, wi, persons)
+      const leiter = fsWeeks[wi][0].leader
+      expect(leiter).toBeTruthy()
+      ersteWahl.add(leiter)
+    }
+    // Gemessen über diese 20 Wochen: die alte Fassung erreichte 2 der 5
+    // Kandidaten (und bei gleicher Stringlänge, wi 0–9, genau EINEN — die
+    // zweite Rangliste entsteht erst, wenn die Wochennummer zweistellig wird
+    // und den Hash verlängert). Die gemischte erreicht alle 5.
+    expect(ersteWahl.size).toBeGreaterThanOrEqual(4)
+  })
+
   it('setzt nicht dieselbe Person zweimal am selben Wochentag', () => {
     const week = [inst({ id: 'a', grp: '', wd: 6 }), inst({ id: 'b', grp: 'g1', wd: 6 })]
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]

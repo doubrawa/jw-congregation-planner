@@ -12,6 +12,7 @@
 import { angleichen, hatAuxKlasse } from './aux-class'
 import { LABEL_EROEFFNUNG } from './constants'
 import { isSong } from './helpers'
+import { meetingDateParts, meetingTimesOf } from './meeting-dates'
 import type { Meeting, MeetingKey, PartItem, Week } from './types'
 
 const MIN_RE = /(\d+) Min\./
@@ -48,6 +49,69 @@ export function endeAusStartzeit(startZeit: string, fallback: string): string {
   const m = /^(\d{1,2}):(\d{2})$/.exec(startZeit)
   if (!m) return fallback
   return shiftEnd(`Ende ca. ${startZeit}`, MEETING_MINUTES)
+}
+
+/** Minuten seit Mitternacht aus „19:00" — `null`, wenn da keine Uhrzeit steht. */
+function minuten(zeit: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(zeit)
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null
+}
+
+/**
+ * Zieht die Endzeiten aller Wochen nach, wenn die Versammlung ihre
+ * Zusammenkunftszeit ändert.
+ *
+ * `end` steht in den Wochendaten und wurde bisher nur beim Import gerechnet.
+ * Die **Start**zeit dagegen holt `meetingTime()` bei jeder Anzeige frisch aus
+ * den Einstellungen. Stellte die Versammlung von 19:00 auf 18:30 um, zeigte der
+ * Programmkopf sofort 18:30 und die Fußzeile weiter „Ende ca. 20:45" — eine
+ * Zusammenkunft von 2:15 auf dem Blatt.
+ *
+ * Verschoben statt neu gerechnet: `lacAdjust` hat die Endzeit womöglich schon
+ * um geänderte Programmminuten versetzt (`shiftEnd`), und diese Anpassung des
+ * Planers darf eine Zeitumstellung nicht verwerfen.
+ *
+ * Übersprungen werden Wochen, die im `date`-Feld eine eigene Uhrzeit tragen —
+ * und zwar nach derselben Regel, nach der `meetingTime()` die **Start**zeit
+ * bestimmt: steht dort eine, gilt sie und die Einstellungen bleiben außen vor.
+ * Deren Anfang bewegt sich also nicht, folglich auch ihr Ende nicht. Das
+ * betrifft Sondertermine (Gedächtnismahl) ebenso wie Demo- und Altwochen, die
+ * ihren Termin ausgeschrieben mitbringen. Übrig bleiben die importierten
+ * Wochen: die tragen die Überschrift der jw.org-Seite („7.–13. September"),
+ * ihre Startzeit kommt aus den Einstellungen — und genau dort klaffte es.
+ */
+export function endenNachziehen(weeks: Week[], alt: string, neu: string): Week[] {
+  const alteZeit = meetingTimesOf(alt)
+  const neueZeit = meetingTimesOf(neu)
+  // `meetingTimesOf` liest die Uhrzeiten der Stellung nach: die erste gehört
+  // zur Wochenmitte, die zweite zum Wochenende. Fehlt in einem der beiden
+  // Texte eine, rutscht die Zuordnung — aus „Di abends · So 10:00" würde für
+  // die Wochenmitte 10:00, und die Verschiebung wäre um Stunden daneben.
+  // Dann lieber gar nichts anfassen.
+  const delta: Record<MeetingKey, number> = { mid: 0, we: 0 }
+  for (const tab of ['mid', 'we'] as const) {
+    const a = minuten(alteZeit[tab])
+    const n = minuten(neueZeit[tab])
+    if (a === null || n === null) return weeks
+    delta[tab] = n - a
+  }
+  if (delta.mid === 0 && delta.we === 0) return weeks
+
+  let geaendert = false
+  const next = weeks.map((week) => {
+    if (week.stub) return week
+    const kopie = { ...week }
+    for (const tab of ['mid', 'we'] as const) {
+      if (delta[tab] === 0) continue
+      if (meetingDateParts(week[tab].date).zeit !== undefined) continue
+      const ende = shiftEnd(week[tab].end, delta[tab])
+      if (ende === week[tab].end) continue
+      kopie[tab] = { ...week[tab], end: ende }
+      geaendert = true
+    }
+    return kopie
+  })
+  return geaendert ? next : weeks
 }
 
 /** Verschiebt "Ende ca. 20:45" um `delta` Minuten (mod 24 h). */

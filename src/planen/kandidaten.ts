@@ -168,7 +168,9 @@ function personenKandidaten(
         today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], name, state.services, sel),
         absent: istAbwesend(abwesend, p.id, sel.wi, sel.tab),
         free: last === 0,
-        load: loadWindow(state.weeks, name, sel.wi),
+        // Dieselbe Platzgrenze wie `last` eine Zeile darüber — sonst zeigt
+        // dieselbe Zeile „frei" und daneben ein belegtes Quadrat.
+        load: loadWindow(state.weeks, name, sel.wi, state.services),
       }
     })
     .sort((a, b) => Number(a.absent) - Number(b.absent))

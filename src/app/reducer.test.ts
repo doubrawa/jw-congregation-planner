@@ -315,6 +315,51 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
     expect(next.congregation.hall).toBe('Neu 1')
     expect(next.congregation.name).toBe(CONGREGATION.name)
   })
+
+  describe('geänderte Zusammenkunftszeit zieht die Endzeiten nach', () => {
+    /**
+     * Importierte Wochen: im `date`-Feld steht die Überschrift der
+     * jw.org-Seite, ohne Uhrzeit — ihre Startzeit kommt aus den Einstellungen,
+     * ihre Endzeit stand bis hierher unveränderlich in der Woche.
+     */
+    function importState(): AppState {
+      const weeks = buildDemoWeeks()
+      for (const week of weeks) {
+        week.mid.date = '7.–13. September'
+        week.mid.end = 'Ende ca. 20:45'
+      }
+      return makeState({
+        weeks,
+        congregation: { ...CONGREGATION, meetings: 'Di 19:00 · So 10:00' },
+      })
+    }
+
+    it('verschiebt das Ende mit der Startzeit', () => {
+      const next = reducer(importState(), {
+        type: 'updateCongregation',
+        patch: { meetings: 'Di 18:30 · So 10:00' },
+      })
+      expect(next.congregation.meetings).toBe('Di 18:30 · So 10:00')
+      expect(next.weeks[0].mid.end).toBe('Ende ca. 20:15')
+    })
+
+    it('lässt die Wochen in Ruhe, wenn ein anderes Feld gepflegt wird', () => {
+      // Identität: sonst schriebe die Persistenz bei jeder Namensänderung
+      // sämtliche geladenen Wochen in die Datenbank.
+      const s = importState()
+      const next = reducer(s, { type: 'updateCongregation', patch: { hall: 'Neu 1' } })
+      expect(next.weeks).toBe(s.weeks)
+    })
+
+    it('lässt die Wochen in Ruhe, wenn die Zeit gleich bleibt', () => {
+      const s = importState()
+      const next = reducer(s, {
+        type: 'updateCongregation',
+        patch: { meetings: 'Di 19:00 · So 10:00' },
+      })
+      expect(next.weeks).toBe(s.weeks)
+    })
+  })
   it('updateMember / removeMember', () => {
     const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, planner: false }] })
     expect(reducer(s, { type: 'updateMember', userId: 'u1', patch: { planner: true } }).members[0].planner).toBe(true)

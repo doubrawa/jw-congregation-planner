@@ -8,6 +8,7 @@ genannt) oder ⚠️ (plausibel, nicht nachgestellt) gekennzeichnet.
 | Datei | Inhalt |
 | --- | --- |
 | **[todo.md](todo.md)** | **Arbeitsliste in Abarbeitungsreihenfolge** — T1–T56 in 10 Phasen, nach Abhängigkeit sortiert. Hier anfangen. |
+| **[nachtrag-pruefung.md](nachtrag-pruefung.md)** | **Neuester Stand** — Gegenprüfung der Abarbeitung: welche Widersprüche tragen, was danach noch behoben wurde (N1–N8), was zu entscheiden bleibt |
 | [funktionsuebersicht.md](funktionsuebersicht.md) | Was die App kann — 134 Funktionen nach Bereich, Rollen/Rechte, Datenmodell, Backend |
 | [befunde.md](befunde.md) | Was nicht stimmt — Fehler (B), fachliche Lücken (F), Ungereimtheiten (U), Übersetzungslücken (D), Testlücken (E), Sicherheit (S), Verbesserungen (V) |
 | [code-review.md](code-review.md) | Warum es passiert — Wochen-Array als tragende Annahme, Robustheit, SOLID, Clean Code, Performance |

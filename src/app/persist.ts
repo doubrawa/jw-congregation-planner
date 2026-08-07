@@ -352,6 +352,17 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'updateCongregation':
       congSaves.schedule('info', { congId, info: next.congregation })
+      // Eine geänderte Zusammenkunftszeit verschiebt die Endzeiten aller
+      // geladenen Wochen (siehe `endenNachziehen`). Die stehen in den
+      // Wochenzeilen, nicht in den Einstellungen — also müssen sie mit
+      // gespeichert werden, sonst steht die alte Endzeit nach dem nächsten
+      // Laden wieder da. Gespeichert wird nur, was sich wirklich geändert hat:
+      // der Reducer gibt unveränderte Wochen identisch zurück.
+      if (next.weeks !== prev.weeks) {
+        for (let wi = 0; wi < next.weeks.length; wi++) {
+          if (next.weeks[wi] !== prev.weeks[wi]) saveWeek(congId, wi, next.weeks[wi])
+        }
+      }
       break
     case 'updateMember': {
       const member = next.members.find((m) => m.userId === action.userId)
