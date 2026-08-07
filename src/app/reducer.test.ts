@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { isNameless, reducer } from './reducer'
 import { hatAuxKlasse } from '../data/aux-class'
 import type { AppState } from './context'
@@ -706,6 +706,46 @@ describe('hydrate / setDataStatus', () => {
     expect(next.week).toBe(0)
     expect(next.congregation.name).toBe('Krumbach')
     expect(next.congregationId).toBe('c1')
+  })
+
+  it('springt auf die laufende Woche, nicht auf die älteste geladene', () => {
+    // Bisher stand hier weekFrom: nach dem Login zeigte die App die älteste
+    // geladene Woche — bei 52 geladenen Wochen ein Jahr altes Programm.
+    const wochen = buildDemoWeeks().slice(0, 3).map((w, i) => ({
+      ...w,
+      current: false,
+      start: ['2026-09-07', '2026-09-14', '2026-09-21'][i],
+    }))
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 16, 10)) // Mittwoch der zweiten Woche
+    try {
+      const next = reducer(makeState({ week: 0 }), {
+        type: 'hydrate',
+        payload: { ...payload, weeks: wochen, weekFrom: 0 },
+      })
+      expect(next.week).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('bleibt beim Anfang, wenn heute in keine geladene Woche fällt', () => {
+    const wochen = buildDemoWeeks().slice(0, 2).map((w, i) => ({
+      ...w,
+      current: false,
+      start: ['2026-09-07', '2026-09-14'][i],
+    }))
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2027, 0, 5))
+    try {
+      const next = reducer(makeState(), {
+        type: 'hydrate',
+        payload: { ...payload, weeks: wochen, weekFrom: 0 },
+      })
+      expect(next.week).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('liest fsBase als 12:00 Ortszeit (kein UTC-Tagesversatz)', () => {

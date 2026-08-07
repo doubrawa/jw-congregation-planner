@@ -23,7 +23,7 @@ import {
   serviceQualKey,
   workloadOf,
 } from './helpers'
-import { meetingDateMs, meetingDayOffsets } from './meeting-dates'
+import { meetingDateMs, meetingDateText } from './meeting-dates'
 import type {
   ConfirmationMap,
   Group,
@@ -698,9 +698,14 @@ export function clearAssignments(
  * Schulungsaufgabe (Leser/Leiter zählen nicht). Rahmen und Schulungspunkt
  * werden aus der Meta-Zeile geparst.
  */
-export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Payload | null {
+export function buildS89ForSlot(
+  weeks: Week[],
+  sel: MeetingSlotSelection,
+  meetings = '',
+): S89Payload | null {
   if (sel.kind !== 'part') return null
-  const meeting = weeks[sel.wi][sel.tab]
+  const week = weeks[sel.wi]
+  const meeting = week[sel.tab]
   const item = meeting.sections[sel.si].items[sel.ii]
   if (isSong(item)) return null
   const raum = sel.aux === true
@@ -726,7 +731,7 @@ export function buildS89ForSlot(weeks: Week[], sel: MeetingSlotSelection): S89Pa
   return {
     name: leadName || current, // Bibellesung hat keinen schulung-Slot → aktueller Name
     partner: partnerName || legacyPartner,
-    date: meeting.date.split(' · ').slice(0, 2).join(' · '),
+    date: meetingDateText(week, sel.wi, sel.tab, meetings),
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,
     // Der Ort stand hier frueher gar nicht im Modell — das Formular zeigte
@@ -808,7 +813,6 @@ export function deriveSubstituteReqs(
 ): SubstituteReq[] {
   const out: SubstituteReq[] = []
   const myName = displayName(me)
-  const offsets = meetingDayOffsets(meetings)
   const svcByKey = new Map(services.map((s) => [s.key, s]))
   for (const [key, status] of Object.entries(confirmations)) {
     if (status !== 'verhindert') continue
@@ -826,8 +830,8 @@ export function deriveSubstituteReqs(
       key,
       svc: parts.svc,
       title: svc.name,
-      date: taskDate(meeting),
-      at: meetingDateMs(week.start, offsets[parts.tab]),
+      date: taskDate(week, parts.wi, parts.tab, meetings),
+      at: meetingDateMs(week, parts.tab, meetings),
       declinedBy: slot.name,
     })
   }
@@ -879,9 +883,12 @@ export function swapPartConfirmations(
   return changed ? next : map
 }
 
-/** "Dienstag, 8. September · 19:00 · Königreichssaal" → Datum + Uhrzeit. */
-function taskDate(meeting: Meeting): string {
-  return meeting.date.split(' · ').slice(0, 2).join(' · ')
+/**
+ * Termin einer Aufgabe. Geht über meetingDateText, damit importierte Wochen
+ * nicht ihre Wochenspanne ("7.–13. September") als Termin ausgeben.
+ */
+function taskDate(week: Week, wi: number, tab: MeetingKey, meetings: string): string {
+  return meetingDateText(week, wi, tab, meetings)
 }
 
 /** Besucht alle belegten Slots (Programmpunkte + Hilfsdienste) aller Wochen. */
@@ -891,12 +898,11 @@ function eachAssignedSlot(
   meetings: string,
   visit: (name: string, key: string, task: () => MyTask, pid?: string) => void,
 ): void {
-  const offsets = meetingDayOffsets(meetings)
   weeks.forEach((week, wi) => {
     for (const tab of TABS) {
       const meeting = week[tab]
       // Echtes Datum der Zusammenkunft (nur bei importierten Wochen) → Countdown.
-      const at = meetingDateMs(week.start, offsets[tab])
+      const at = meetingDateMs(week, tab, meetings)
       meeting.sections.forEach((section, si) => {
         section.items.forEach((item, ii) => {
           if (isSong(item)) return
@@ -917,11 +923,11 @@ function eachAssignedSlot(
                 return {
                   id: key,
                   title: rolle && !rolle.startsWith('mit ') ? `${item.title} · ${rolle}` : item.title,
-                  date: taskDate(meeting),
+                  date: taskDate(week, wi, tab, meetings),
                   chip: '',
                   at,
                   status: 'offen',
-                  s89: buildS89ForSlot(weeks, sel),
+                  s89: buildS89ForSlot(weeks, sel, meetings),
                 }
               }, slot.pid)
             })
@@ -935,7 +941,7 @@ function eachAssignedSlot(
         visit(ratgeber.name, key, () => ({
           id: key,
           title: RATGEBER_ROLLE,
-          date: taskDate(meeting),
+          date: taskDate(week, wi, tab, meetings),
           chip: '',
           at,
           status: 'offen',
@@ -952,7 +958,7 @@ function eachAssignedSlot(
           visit(slot.name, key, () => ({
             id: key,
             title: svc.name,
-            date: taskDate(meeting),
+            date: taskDate(week, wi, tab, meetings),
             chip: '',
             at,
             status: 'offen',

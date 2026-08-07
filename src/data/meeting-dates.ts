@@ -74,14 +74,35 @@ export function fromIso(iso: string): Date {
 }
 
 /**
+ * Wochentag-Versatz dieser einen Zusammenkunft: ab Montag gezählt.
+ *
+ * Ein eigener Termin im `date`-Feld schlägt den Rhythmus aus den Einstellungen
+ * — nur so landen Gedächtnismahl und Kongresswoche auf dem richtigen Tag.
+ * Diese Regel gehört an EINE Stelle: der Countdown rechnete sie früher nicht
+ * mit, Zeitleiste und Abwesenheitsprüfung schon, und dann nannten Erinnerung
+ * und Anzeige verschiedene Tage.
+ */
+export function meetingOffset(week: Week, tab: MeetingKey, meetings: string): number {
+  return meetingDateParts(week[tab].date).offset ?? meetingDayOffsets(meetings)[tab]
+}
+
+/**
+ * Uhrzeit dieser einen Zusammenkunft — eigener Termin vor Einstellungen,
+ * gleiche Rangfolge wie beim Tag. Leer, wenn nirgends eine steht.
+ */
+export function meetingTime(week: Week, tab: MeetingKey, meetings: string): string {
+  return meetingDateParts(week[tab].date).zeit ?? meetingTimesOf(meetings)[tab]
+}
+
+/**
  * Kalendertag einer Zusammenkunft. Drei Quellen, in dieser Reihenfolge:
  *  1. ein eigener Termin im `date`-Feld der Woche (Gedächtnismahl, Kongress),
  *  2. das ISO-Startdatum der Woche (jw.org-Import) plus Wochentag-Versatz,
  *  3. der Montag der Woche 0 (`base`) plus `wi` Wochen plus Wochentag-Versatz —
  *     für Demo- und Vorlagenwochen, die kein Startdatum tragen.
  *
- * Einzige Stelle, an der aus „Woche + Zusammenkunft" ein Datum wird; Zeitleiste,
- * Abwesenheiten und Anzeige müssen sich sonst nie einig sein.
+ * Einzige Stelle, an der aus „Woche + Zusammenkunft" ein Datum wird —
+ * Zeitleiste, Abwesenheiten, Countdown und Anzeige leiten alle hierher ab.
  */
 export function meetingDate(
   week: Week,
@@ -90,22 +111,104 @@ export function meetingDate(
   base: Date,
   meetings: string,
 ): Date {
-  const eigener = meetingDateParts(week[tab].date)
-  const offset = eigener.offset ?? meetingDayOffsets(meetings)[tab]
   const montag = week.start ? fromIso(week.start) : new Date(base)
   const tag = new Date(montag)
-  tag.setDate(tag.getDate() + (week.start ? 0 : wi * 7) + offset)
+  tag.setDate(tag.getDate() + (week.start ? 0 : wi * 7) + meetingOffset(week, tab, meetings))
   return tag
 }
 
 /**
  * UTC-Zeitstempel (ms) des Zusammenkunftstags oder null, wenn die Woche kein
- * ISO-Startdatum hat oder es unlesbar ist. Auf Mitternacht UTC normalisiert —
- * der Countdown zählt ganze Kalendertage, keine Uhrzeiten.
+ * ISO-Startdatum hat. Auf Mitternacht UTC normalisiert — der Countdown zählt
+ * ganze Kalendertage, keine Uhrzeiten.
+ *
+ * Ohne Startdatum bewusst null statt einer Schätzung aus `base`: Demo- und
+ * Vorlagenwochen liegen nirgends im Kalender, ein Countdown darauf wäre erfunden.
  */
-export function meetingDateMs(weekStartISO: string | undefined, offset: number): number | null {
+export function meetingDateMs(week: Week, tab: MeetingKey, meetings: string): number | null {
+  if (!week.start) return null
+  const start = Date.parse(week.start)
+  if (Number.isNaN(start)) return null
+  return start + meetingOffset(week, tab, meetings) * 864e5
+}
+
+/**
+ * Kanonisch deutsche Namen — das Format, in dem Programmdaten gespeichert
+ * werden; übersetzt wird erst bei der Anzeige (i18n/translate.ts).
+ */
+const WOCHENTAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+const MONATE = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+]
+
+/** „Dienstag, 8. September" — die Schreibweise der Wochendaten. */
+export function deutschesDatum(d: Date): string {
+  return `${WOCHENTAGE[(d.getDay() + 6) % 7]}, ${d.getDate()}. ${MONATE[d.getMonth()]}`
+}
+
+/**
+ * Termin einer Zusammenkunft als Text, kanonisch deutsch:
+ * „Dienstag, 8. September · 19:00".
+ *
+ * Importierte Wochen tragen im `date`-Feld nur die **Wochenspanne**
+ * („7.–13. September") — die Überschrift der jw.org-Seite nennt weder Jahr
+ * noch Wochentag noch Uhrzeit. Genau das stand bis hierher in „Meine
+ * Aufgaben", im S-89-Formular und im Erinnerungstext: eine Woche statt eines
+ * Termins.
+ *
+ * Rangfolge wie überall: ein eigener Termin im `date`-Feld gilt unverändert
+ * (Gedächtnismahl); sonst wird aus Startdatum, Wochentag und Uhrzeit gerechnet.
+ * Ohne Startdatum (Demo, Vorlagen) bleibt stehen, was dasteht.
+ */
+export function meetingDateText(
+  week: Week,
+  wi: number,
+  tab: MeetingKey,
+  meetings: string,
+): string {
+  const roh = week[tab].date
+  const kurz = roh.split(' · ').slice(0, 2).join(' · ')
+  if (meetingDateParts(roh).offset !== undefined) return kurz
+  if (!week.start) return kurz
+  const zeit = meetingTime(week, tab, meetings)
+  const tagText = deutschesDatum(meetingDate(week, wi, tab, new Date(), meetings))
+  return zeit ? `${tagText} · ${zeit}` : tagText
+}
+
+/**
+ * UTC-Zeitstempel des letzten Tages (Sonntag) einer Woche. Bewusst kein
+ * Zusammenkunftstag: gefragt ist das Ende der Kalenderwoche.
+ */
+export function weekEndMs(weekStartISO: string | undefined): number | null {
   if (!weekStartISO) return null
   const start = Date.parse(weekStartISO)
-  if (Number.isNaN(start)) return null
-  return start + offset * 864e5
+  return Number.isNaN(start) ? null : start + 6 * 864e5
+}
+
+/** Ganze Tage von `a` bis `b` (negativ, wenn `b` früher liegt). */
+export function tageZwischen(a: Date, b: Date): number {
+  const tag = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+  return Math.round((tag(b) - tag(a)) / 864e5)
+}
+
+/**
+ * Index der Woche, in die `heute` fällt — oder −1.
+ *
+ * `week.current` kommt aus den Demo-Daten und wird nie nachgeführt: nach dem
+ * Login stand die Anwendung deshalb auf der ältesten geladenen Woche, das
+ * Dashboard meldete dauerhaft „0 Konflikte" und der Chip „AKTUELLE WOCHE"
+ * erschien nie. Maßgeblich ist das Startdatum; nur wo keine Woche eines hat
+ * (Demo, Vorlagen), zählt weiterhin das Flag.
+ */
+export function currentWeekIndex(weeks: readonly Week[], heute = new Date()): number {
+  const mitStart = weeks.findIndex((w) => w.start)
+  if (mitStart === -1) return weeks.findIndex((w) => w.current)
+  for (let i = 0; i < weeks.length; i++) {
+    const iso = weeks[i]?.start
+    if (!iso) continue
+    const abstand = tageZwischen(fromIso(iso), heute)
+    if (abstand >= 0 && abstand < 7) return i
+  }
+  return -1
 }

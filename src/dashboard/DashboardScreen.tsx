@@ -2,6 +2,7 @@ import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { displayName } from '../data/helpers'
+import { currentWeekIndex } from '../data/meeting-dates'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
@@ -40,9 +41,11 @@ export function DashboardScreen() {
   const unread = state.notifs.filter((n) => !n.read).length
   const toConfirm = state.myTasks.filter((task) => task.status === 'offen').length
 
-  // Aktuelle Woche (current) für „Diese Woche" + Planer-Kachel; Fallback auf die
-  // gerade gewählte Woche, falls keine als current markiert ist.
-  const curIdx = state.weeks.findIndex((w) => w.current)
+  // Aktuelle Woche für „Diese Woche" + Planer-Kachel; Fallback auf die gerade
+  // gewählte Woche, falls heute in keine geladene Woche fällt. Gerechnet, nicht
+  // aus `week.current` gelesen: das Flag setzt nur der Demo-Datensatz und wird
+  // nie nachgeführt — die Konfliktzahl stand deshalb dauerhaft auf 0.
+  const curIdx = currentWeekIndex(state.weeks)
   const week = curIdx >= 0 ? state.weeks[curIdx] : (state.weeks[state.week] ?? null)
 
   const shortDate = (s: string): string => tp(s).split(' · ').slice(0, 2).join(' · ')

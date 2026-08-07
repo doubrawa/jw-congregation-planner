@@ -7,10 +7,23 @@ import './components.css'
  * Kreisaufsehers, Gedächtnismahl. Im Programm wird auch „AKTUELLE WOCHE“
  * gezeigt, im Planen nur die Sonderwochen-Chips.
  */
-export function WeekChips({ week, showCurrent }: { week: Week; showCurrent: boolean }) {
+export function WeekChips({
+  week,
+  showCurrent,
+  istAktuell = false,
+}: {
+  week: Week
+  showCurrent: boolean
+  /**
+   * Ob dies die laufende Woche ist. Kommt von außen (currentWeekIndex), nicht
+   * aus `week.current`: das Flag setzt nur der Demo-Datensatz und wird nie
+   * nachgeführt — der Chip erschien in der Produktion deshalb nie.
+   */
+  istAktuell?: boolean
+}) {
   const { t } = useT()
   const chips: Array<{ key: string; label: string; cls: string }> = []
-  if (showCurrent && week.current)
+  if (showCurrent && istAktuell)
     chips.push({ key: 'cur', label: t.aktuelleWoche, cls: 'week-chip--current' })
   if (week.co) chips.push({ key: 'co', label: t.coWoche, cls: 'week-chip--co' })
   if (week.mem) chips.push({ key: 'mem', label: t.memWoche, cls: 'week-chip--mem' })

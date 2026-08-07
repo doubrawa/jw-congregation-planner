@@ -1,6 +1,6 @@
 import type { AppState } from '../app/context'
 import { displayName } from '../data/helpers'
-import { meetingDateParts, meetingDayOffsets, meetingTimesOf } from '../data/meeting-dates'
+import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek } from '../data/planning'
 import type { Person } from '../data/types'
 
@@ -46,8 +46,6 @@ export function personTimeline(
   heute = new Date(),
 ): TimelineEntry[] {
   const name = displayName(person)
-  const offsets = meetingDayOffsets(state.congregation.meetings)
-  const zeiten = meetingTimesOf(state.congregation.meetings)
   // Vergangen wird am echten Kalendertag entschieden, nicht am `current`-Flag
   // der Woche — das wird nicht nachgeführt und veraltet (siehe fsBaseFromWeeks).
   const grenze = new Date(heute)
@@ -70,18 +68,20 @@ export function personTimeline(
   )
   for (const task of tasks) {
     const pos = taskKeyWeek(task.id)
-    if (!pos) continue
-    // Trägt die Woche einen eigenen Termin (Gedächtnismahl, Kongress), gilt
-    // dieser; sonst der Rhythmus aus den Einstellungen.
-    const eigener = meetingDateParts(state.weeks[pos.wi]?.[pos.tab].date ?? '')
-    const tag = pos.wi * 7 + (eigener.offset ?? offsets[pos.tab])
-    const datum = datumVon(tag)
+    const week = pos ? state.weeks[pos.wi] : undefined
+    if (!pos || !week) continue
+    // Tag und Uhrzeit kommen aus meeting-dates.ts — derselben Quelle wie
+    // Countdown, Erinnerung und Abwesenheitsprüfung. Die Zeitleiste hatte
+    // dafür eine eigene Rechnung, was bei abweichenden Terminen auseinanderlief.
+    const datum = meetingDate(week, pos.wi, pos.tab, state.fsBase, state.congregation.meetings)
     entries.push({
       kind: 'meeting',
       key: task.id,
-      tag,
+      // Sortierschlüssel bleibt „Tage seit dem Montag der Woche 0", damit sich
+      // Zusammenkünfte und Treffpunkte ineinander einordnen.
+      tag: tageZwischen(state.fsBase, datum),
       datum,
-      zeit: eigener.zeit ?? zeiten[pos.tab],
+      zeit: meetingTime(week, pos.tab, state.congregation.meetings),
       vergangen: datum < grenze,
       titel: task.title,
     })

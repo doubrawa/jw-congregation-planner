@@ -21,6 +21,34 @@ export function itemMinutes(item: PartItem): number | null {
   return match ? Number(match[1]) : null
 }
 
+/**
+ * Regeldauer einer Zusammenkunft in Minuten (1 Stunde 45).
+ *
+ * Bewusst eine Konstante und keine Summe der `X Min.`-Angaben: das Arbeitsheft
+ * beziffert nur die Programmpunkte. Lieder, Gebete und Übergänge stehen dort
+ * ohne Minuten, ihre rund 17 Minuten fehlten also in jeder Summe. Beide
+ * Zusammenkünfte dauern regulär 1:45 — genau das kodierten auch die früher
+ * fest eingetragenen Endzeiten (19:00 → 20:45, 10:00 → 11:45).
+ *
+ * Weicht das Programm ab, verschiebt `shiftEnd` die Endzeit mit: der Planer
+ * ändert LAC-Minuten, das Ende folgt.
+ */
+export const MEETING_MINUTES = 105
+
+/**
+ * Endzeit-Zeile aus der Startzeit: „19:00" → „Ende ca. 20:45".
+ *
+ * Der Import trug hier feste Werte ein, unabhängig von den gepflegten
+ * Zusammenkunftszeiten — beginnt die Versammlung um 18:30, stand auf jedem
+ * Programmblatt eine falsche Endzeit. Ohne hinterlegte Startzeit gibt es
+ * nichts zu rechnen; dann bleibt, was der Import mitgebracht hat.
+ */
+export function endeAusStartzeit(startZeit: string, fallback: string): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(startZeit)
+  if (!m) return fallback
+  return shiftEnd(`Ende ca. ${startZeit}`, MEETING_MINUTES)
+}
+
 /** Verschiebt "Ende ca. 20:45" um `delta` Minuten (mod 24 h). */
 export function shiftEnd(endStr: string, delta: number): string {
   const match = /(\d+):(\d+)/.exec(endStr)

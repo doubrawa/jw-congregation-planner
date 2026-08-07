@@ -358,6 +358,56 @@ describe('send-reminders: Hilfsdienste erinnern (Slot-Objekte)', () => {
   })
 })
 
+describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
+  // Eine Gedächtnismahl-Woche trägt ihren echten Termin im date-Feld. Der
+  // Versand rechnete stattdessen mit dem Rhythmus aus den Einstellungen und
+  // erinnerte deshalb an einem anderen Tag als Anzeige und Zeitleiste.
+  const aufSamstag = () => {
+    const w = weeks[0].data as { mid: { date: string } }
+    w.mid.date = 'Samstag, 12. September · 19:30 · Königreichssaal'
+  }
+
+  // Unterschieden wird an der Glocke: die gibt es nur an den Haupttagen
+  // (first/last), dazwischen läuft nur die Wiederholung per Push. Damit lässt
+  // sich zeigen, WELCHEN Tag der Versand für die Zusammenkunft hält.
+  it('Haupttag ist der Tag vor dem eigenen Termin (Freitag)', async () => {
+    aufSamstag()
+    vi.setSystemTime(new Date('2026-09-11T09:00:00Z')) // last = 1 → Freitag
+    expect((await live()).notifications).toBeGreaterThan(0)
+  })
+
+  it('der Tag vor dem regulären Dienstag ist es nicht mehr', async () => {
+    aufSamstag()
+    vi.setSystemTime(new Date('2026-09-07T09:00:00Z')) // wäre „Dienstag minus 1"
+    expect((await live()).notifications).toBe(0) // nur Wiederholung
+  })
+
+  it('Gegenprobe ohne eigenen Termin: dann gilt wieder der Dienstag', async () => {
+    vi.setSystemTime(new Date('2026-09-07T09:00:00Z'))
+    expect((await live()).notifications).toBeGreaterThan(0)
+  })
+})
+
+describe('send-reminders: Termin statt Wochenspanne im Text', () => {
+  it('rechnet den Tag, wenn die Woche nur ihre Spanne trägt', async () => {
+    // Importierte Wochen tragen im date-Feld die Überschrift der jw.org-Seite:
+    // „7.–13. September" — weder Jahr noch Wochentag noch Uhrzeit. Genau das
+    // stand vorher in der Erinnerung.
+    const w = weeks[0].data as { mid: { date: string } }
+    w.mid.date = '7.–13. September'
+    const r = await run()
+    expect(previewFor(r, U_MAX)?.body).toContain('Dienstag, 8. September · 19:00')
+    expect(previewFor(r, U_MAX)?.body).not.toContain('7.–13.')
+  })
+
+  it('ein eigener Termin bleibt unangetastet', async () => {
+    const w = weeks[0].data as { mid: { date: string } }
+    w.mid.date = 'Samstag, 12. September · 19:30 · Königreichssaal'
+    vi.setSystemTime(new Date('2026-09-11T09:00:00Z'))
+    expect(previewFor(await run(), U_MAX)?.body).toContain('Samstag, 12. September · 19:30')
+  })
+})
+
 describe('send-reminders: Scharfbetrieb als Gegenprobe', () => {
   it('sendet, schreibt Glocke und Versand-Tagebuch, Deep-Links gesetzt', async () => {
     const r = await live()

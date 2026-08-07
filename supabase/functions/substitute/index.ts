@@ -146,6 +146,26 @@ function meetingDayOffsets(meetingTimes: string): Record<'mid' | 'we', number> {
   return { mid: found[0] ?? 1, we: found[1] ?? 6 }
 }
 
+/** Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach Montag. */
+const WEEKDAY_OFFSET: Record<string, number> = {
+  Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
+  Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
+}
+
+/**
+ * Wochentag-Versatz dieser einen Zusammenkunft: ein eigener Termin im
+ * `date`-Feld (Gedächtnismahl, Kongress) schlägt den Rhythmus aus den
+ * Einstellungen. Gleiche Rangfolge wie `meetingOffset` im Client
+ * (src/data/meeting-dates.ts) und in send-reminders — sonst prüft die
+ * Ersatzsuche die Abwesenheit am falschen Tag.
+ */
+function meetingOffset(meeting: Meeting | undefined, fallback: number): number {
+  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(
+    meeting?.date ?? '',
+  )
+  return tag ? WEEKDAY_OFFSET[tag[1]] : fallback
+}
+
 /** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
 function meetingISO(startISO: string | undefined, offset: number): string | null {
   if (!startISO) return null
@@ -272,7 +292,10 @@ Deno.serve(async (req: Request) => {
     const date = meetingDate(meeting)
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
-    const tagISO = meetingISO(week.start, meetingDayOffsets(congRows[0]?.meeting_times ?? '')[parts.tab])
+    const tagISO = meetingISO(
+      week.start,
+      meetingOffset(meeting, meetingDayOffsets(congRows[0]?.meeting_times ?? '')[parts.tab]),
+    )
     const qualKey = `svc:${parts.svc}`
     const personById = new Map(persons.map((p) => [p.id, p]))
     const userByPerson = new Map<string, string>()
