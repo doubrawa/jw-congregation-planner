@@ -7,12 +7,14 @@
 //     Nach „Ich kann nicht" bei einem Hilfsdienst: benachrichtigt alle
 //     qualifizierten Personen (gleicher Dienst, in der Woche nicht abwesend)
 //     per In-App-Mitteilung + Web-Push, dass ein Ersatz gesucht wird.
+//     Auslösen darf nur, wer in dem Slot steht oder für ihn abgesagt hat.
 //
 //   { action: 'take', congregationId, taskKey }
 //     Jemand springt ein: trägt den Aufrufer in den Hilfsdienst-Slot ein
 //     (Woche wird aktualisiert), setzt seine Bestätigung, entfernt die alte
 //     Bestätigung und informiert Ursprungsperson + Planer (In-App + Push).
 //     Läuft mit Service-Role, weil Wochen/Bestätigungen nur der Planer schreibt.
+//     Der Slot wird bedingt geschrieben (409, wenn jemand schneller war).
 //
 // Sicherheit: Aufrufer muss per JWT eingeloggtes Mitglied DIESER Versammlung
 // sein; für 'take' zusätzlich für den Dienst qualifiziert. Alle DB-Zugriffe sind
@@ -68,6 +70,34 @@ async function restSend(method: string, path: string, body?: unknown): Promise<v
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (!res.ok) console.error(`${method} ${path} ${res.status}: ${await res.text()}`)
+}
+
+/**
+ * Bedingtes PATCH: schreibt nur, wenn der Filter im Pfad noch zutrifft, und
+ * meldet zurück, ob dabei eine Zeile getroffen wurde.
+ *
+ * Das ist ein Vergleiche-und-Tausche in einer einzigen Anweisung — genau das
+ * fehlte beim Einspringen. Zwischen Lesen und Schreiben lag nichts: zwei
+ * gleichzeitige Übernahmen überschrieben sich, und der zweite Aufruf löschte
+ * anschließend per `DELETE confirmations?task_key=…` sogar die Bestätigung des
+ * ersten. Der stand danach nirgends mehr, hatte aber „Übernommen" gesehen.
+ *
+ * `return=representation` ist der Weg, die Trefferzahl zu erfahren: PostgREST
+ * liefert die tatsächlich geänderten Zeilen zurück, bei verfehltem Filter ein
+ * leeres Array.
+ */
+async function restPatchIf(path: string, body: unknown): Promise<boolean> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: 'PATCH',
+    headers: { ...AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    console.error(`PATCH ${path} ${res.status}: ${await res.text()}`)
+    return false
+  }
+  const rows = (await res.json().catch(() => [])) as unknown[]
+  return Array.isArray(rows) && rows.length > 0
 }
 
 /** Eingeloggten Nutzer aus dem JWT auflösen. */
@@ -250,7 +280,27 @@ Deno.serve(async (req: Request) => {
     const subsByUser = new Map<string, Sub[]>()
     for (const s of subsRows) subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
 
+    const callerPerson = caller.person_id ? personById.get(caller.person_id) : undefined
+    const taskKeyEnc = encodeURIComponent(payload.taskKey!)
+
     if (payload.action === 'seek') {
+      // Eine Ersatzsuche verschickt an alle Qualifizierten die Aussage
+      // „<Name> kann nicht". Bisher genügte dafür die blosse Mitgliedschaft —
+      // jedes Konto konnte das für jeden beliebigen Slot auslösen. Erlaubt ist
+      // es dem, der eingeteilt ist, oder wer für genau diesen Slot bereits
+      // abgesagt hat (der Slot behält den Namen, kann aber inzwischen neu
+      // besetzt sein).
+      const istEingeteilt =
+        callerPerson !== undefined &&
+        (slot.pid === callerPerson.id || slot.name === displayName(callerPerson))
+      if (!istEingeteilt) {
+        const eigeneAbsage = await restGet<{ user_id: string }[]>(
+          `confirmations?select=user_id&congregation_id=eq.${cong}` +
+            `&task_key=eq.${taskKeyEnc}&status=eq.verhindert&user_id=eq.${userId}`,
+        )
+        if (eigeneAbsage.length === 0) return json({ error: 'forbidden' }, 403)
+      }
+
       const declinedBy = slot.name ?? ''
       const peers = persons
         .filter(
@@ -270,19 +320,30 @@ Deno.serve(async (req: Request) => {
     }
 
     // action === 'take'
-    const callerPerson = caller.person_id ? personById.get(caller.person_id) : undefined
     if (!callerPerson || !callerPerson.priv?.[qualKey]) return json({ error: 'not-qualified' }, 403)
     const callerName = displayName(callerPerson)
     const originalName = slot.name ?? ''
     if (originalName === callerName) return json({ ok: true, already: true }) // idempotent
 
-    // Slot auf den Aufrufer umschreiben und die Woche speichern.
+    // Slot auf den Aufrufer umschreiben — aber nur, solange dort noch der
+    // Name steht, den wir gelesen haben. Sonst war jemand schneller; ohne
+    // diese Bedingung überschrieben sich zwei Übernahmen gegenseitig und der
+    // Zweite löschte danach die Bestätigung des Ersten.
     slot.name = callerName
     slot.pid = callerPerson.id
-    await restSend('PATCH', `weeks?congregation_id=eq.${cong}&position=eq.${parts.wi}`, { data: week })
+    const nameFilter = `data->${parts.tab}->helpers->${encodeURIComponent(parts.svc)}->${parts.pos}->>name`
+    const bedingung = originalName
+      ? `${nameFilter}=eq.${encodeURIComponent(`"${originalName}"`)}`
+      : `${nameFilter}=is.null`
+    const geschrieben = await restPatchIf(
+      `weeks?congregation_id=eq.${cong}&position=eq.${parts.wi}&${bedingung}`,
+      { data: week },
+    )
+    if (!geschrieben) return json({ error: 'slot-taken' }, 409)
 
     // Alte Bestätigung(en) dieses Slots weg, eigene „bestätigt" setzen.
-    await restSend('DELETE', `confirmations?congregation_id=eq.${cong}&task_key=eq.${encodeURIComponent(payload.taskKey!)}`)
+    // Ungefährlich, weil oben nur ein einziger Aufruf durchkommt.
+    await restSend('DELETE', `confirmations?congregation_id=eq.${cong}&task_key=eq.${taskKeyEnc}`)
     await restSend('POST', 'confirmations', [
       { congregation_id: cong, user_id: userId, task_key: payload.taskKey, status: 'bestätigt' },
     ])

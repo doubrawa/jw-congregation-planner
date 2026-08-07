@@ -85,12 +85,22 @@ let handler: (req: Request) => Promise<Response>
 let authUser: string | null
 let week: unknown
 let writes: Write[]
+/** Vorhandene `verhindert`-Zeilen (Tabelle confirmations). */
+let absagen: { user_id: string }[]
+/** Wird einmal ausgeführt, nachdem die Woche gelesen wurde (Wettlauf). */
+let konkurrent: (() => void) | null
 
 /** Alle schreibenden REST-Aufrufe (PATCH/POST/DELETE) dieses Testlaufs. */
 const writesTo = (table: string) => writes.filter((w) => w.path.startsWith(table))
 
 function jsonRes(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+}
+
+/** Name, der aktuell im simulierten Slot der Datenbank steht (null = keiner). */
+function gespeicherterName(): string | null {
+  const w = week as { mid?: { helpers?: Record<string, { name?: string }[]> } }
+  return w.mid?.helpers?.[SVC]?.[0]?.name ?? null
 }
 
 const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
@@ -104,7 +114,19 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
 
   const path = url.slice(url.indexOf('/rest/v1/') + '/rest/v1/'.length)
   if (method !== 'GET') {
-    writes.push({ method, path, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined
+    writes.push({ method, path, body })
+    // Bedingtes PATCH auf weeks nachbilden: der Filter `…->>name=eq."X"` darf
+    // nur greifen, solange im gespeicherten Slot noch X steht. Ohne diese
+    // Auswertung könnte der Vergleiche-und-Tausche im Test nie fehlschlagen.
+    const bedingt = /helpers->[^&]*->\d+->>name=(eq\.%22(.*?)%22|is\.null)/.exec(path)
+    if (method === 'PATCH' && path.startsWith('weeks') && bedingt) {
+      const erwartet = bedingt[2] === undefined ? null : decodeURIComponent(bedingt[2])
+      const aktuell = gespeicherterName()
+      if (erwartet !== aktuell) return jsonRes([]) // niemand getroffen → jemand war schneller
+      week = (body as { data: unknown }).data
+      return jsonRes([{ position: WI, data: week }])
+    }
     return new Response(null, { status: 204 })
   }
 
@@ -114,9 +136,18 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('push_subscriptions')) return jsonRes(SUBS)
   if (path.startsWith('congregations')) return jsonRes(CONGREGATIONS)
   if (path.startsWith('absences')) return jsonRes(ABSENCES)
+  if (path.startsWith('confirmations')) return jsonRes(absagen)
   if (path.startsWith('weeks')) {
     const pos = Number(/position=eq\.(\d+)/.exec(path)?.[1])
-    return jsonRes(pos === WI ? [{ data: week }] : []) // andere Position → nicht geladen
+    // Antwort steht mit dem Serialisieren fest; danach darf der Konkurrent den
+    // Slot ändern. Genau dieses Zeitfenster — zwischen Lesen und Schreiben —
+    // ist der Fall, den die Bedingung beim Schreiben abfangen muss.
+    const antwort = jsonRes(pos === WI ? [{ data: week }] : []) // andere Position → nicht geladen
+    if (pos === WI && konkurrent) {
+      konkurrent()
+      konkurrent = null
+    }
+    return antwort
   }
   return jsonRes([])
 }
@@ -143,6 +174,8 @@ beforeEach(() => {
   authUser = U_ME
   week = freshWeek()
   writes = []
+  absagen = []
+  konkurrent = null
   resetPush()
 })
 
@@ -290,6 +323,64 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
     // Gegenprobe: niemand aus den ausgeschlossenen Gruppen ist dabei.
     const got = new Set(rows.map((r) => r.user_id))
     for (const u of [U_ORIG, U_UNQUAL, U_ABSENT, U_PLANNER]) expect(got.has(u)).toBe(false)
+  })
+})
+
+describe('substitute: seek darf nur auslösen, wen es angeht', () => {
+  const seek = { action: 'seek', congregationId: CONG, taskKey: KEY }
+
+  it('Fremder ohne eigene Absage → 403, niemand wird angepingt', async () => {
+    // Sonst könnte jedes Mitglied für jeden beliebigen Slot behaupten lassen,
+    // die eingeteilte Person könne nicht — per Push an alle Qualifizierten.
+    const res = await call(seek, { auth: U_UNQUAL })
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({ error: 'forbidden' })
+    expect(writes).toEqual([])
+    expect(sentPush).toEqual([])
+  })
+
+  it('auch ein Planer nicht — Zuteilen ist etwas anderes als Absagen', async () => {
+    const res = await call(seek, { auth: U_PLANNER })
+    expect(res.status).toBe(403)
+    expect(writes).toEqual([])
+  })
+
+  it('die eingeteilte Person darf', async () => {
+    const res = await call(seek, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+  })
+
+  it('wer für genau diesen Slot abgesagt hat, darf ebenfalls', async () => {
+    // Der Slot kann inzwischen neu besetzt sein; die Absage bleibt der Beleg.
+    absagen = [{ user_id: U_UNQUAL }]
+    const res = await call(seek, { auth: U_UNQUAL })
+    expect(res.status).toBe(200)
+  })
+})
+
+describe('substitute: zwei Übernahmen gleichzeitig', () => {
+  it('der Zweite bekommt 409 und löscht nichts', async () => {
+    // Zwischen Lesen und Schreiben trägt sich jemand anderes ein. Ohne
+    // Bedingung beim Schreiben hätte der Zweite den Ersten überschrieben —
+    // und mit `DELETE confirmations?task_key=…` dessen Bestätigung gelöscht.
+    konkurrent = () => {
+      const w = week as { mid: { helpers: Record<string, { name?: string; pid?: string }[]> } }
+      w.mid.helpers[SVC][0] = { name: 'Karl Onto', pid: 'p-noacct' }
+    }
+    const res = await call(take())
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'slot-taken' })
+    // Der Slot gehört weiterhin dem Ersten …
+    expect(gespeicherterName()).toBe('Karl Onto')
+    // … und seine Bestätigung ist unangetastet.
+    expect(writesTo('confirmations')).toEqual([])
+    expect(writesTo('notifications')).toEqual([])
+  })
+
+  it('ohne Wettlauf schreibt die Übernahme wie bisher durch', async () => {
+    const res = await call(take())
+    expect(res.status).toBe(200)
+    expect(gespeicherterName()).toBe('Ich Selbst')
   })
 })
 

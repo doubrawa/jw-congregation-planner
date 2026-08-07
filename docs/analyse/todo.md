@@ -118,7 +118,7 @@ und beim Start erscheint statt der Begrüßung ein „nur lesend"-Toast.
 
 ## Phase 2 — Edge Functions absichern (🔧 ein halber Tag, eine Sitzung)
 
-### T8 · `CRON_SECRET` erzwingen ⚡
+### T8 · `CRON_SECRET` erzwingen ⚡ ✅ erledigt
 **`supabase/functions/send-reminders/index.ts:322`** —
 `if (CRON_SECRET && …)` lässt bei **fehlendem** Secret jeden durch; die Function
 ist mit `--no-verify-jwt` deployt und gibt im Dry-Run die Vorschau **aller**
@@ -127,7 +127,7 @@ geprüft), die Konstruktion bleibt trotzdem fail-open.
 
 Ohne Secret mit 500 abbrechen.
 
-### T9 · `substitute: seek` gegen den Aufrufer prüfen ⚡
+### T9 · `substitute: seek` gegen den Aufrufer prüfen ⚡ ✅ erledigt
 **`supabase/functions/substitute/index.ts:253`** — geprüft wird nur die
 Mitgliedschaft. Jedes Mitglied kann für **jeden beliebigen** Hilfsdienst-Slot eine
 Ersatzsuche auslösen: Push an alle Qualifizierten mit der Aussage „*Name* kann
@@ -136,7 +136,7 @@ nicht."
 Prüfen, dass der Aufrufer der eingetragene Bearbeiter ist **oder** eine
 `verhindert`-Bestätigung für diesen `task_key` existiert.
 
-### T10 · `substitute: take` gegen Doppelübernahme sichern 🔧
+### T10 · `substitute: take` gegen Doppelübernahme sichern 🔧 ✅ erledigt
 **`substitute/index.ts:222-288`** — zwischen Lesen und `PATCH` liegt kein Lock und
 keine Vorbedingung. Zwei gleichzeitige Übernahmen überschreiben sich; der zweite
 Aufruf löscht per `DELETE confirmations?task_key=eq.…` sogar die Bestätigung des
@@ -551,6 +551,6 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☐☐☐☐ · Phase 3 ☐☐☐☐ ·
+Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☐☐☐☐ ·
 Phase 4 ☐☐☐☐☐☐☐☐ · Phase 5 ☐☐☐☐☐ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☐☐☐☐☐☐☐☐☐☐ · Phase 9 ☐☐☐☐

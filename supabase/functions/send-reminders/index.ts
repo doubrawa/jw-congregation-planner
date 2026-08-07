@@ -30,6 +30,7 @@
 //  - **Dry-Run standardmäßig**: ohne Secret `SEND_PUSH=true` wird nichts
 //    versendet und nichts geschrieben — die Antwort listet die Vorschau.
 //  - Zugriff nur mit korrektem `CRON_SECRET` (Authorization: Bearer <secret>).
+//    Fehlt das Secret, antwortet die Function mit 500 statt jeden durchzulassen.
 //
 // Benötigte Secrets (npx supabase secrets set NAME=wert --project-ref …):
 //  - CRON_SECRET        eigenes Geheimnis; Cron schickt es im Authorization-Header
@@ -319,7 +320,16 @@ interface Push {
 }
 
 Deno.serve(async (req: Request) => {
-  if (CRON_SECRET && req.headers.get('Authorization') !== `Bearer ${CRON_SECRET}`) {
+  // Ohne Secret gar nicht erst arbeiten. Die Function ist mit --no-verify-jwt
+  // deployt, die Plattform prüft also nichts — `if (CRON_SECRET && …)` hätte
+  // bei fehlendem Secret jeden durchgelassen, und der Dry-Run gibt die
+  // Vorschau ALLER Versammlungen zurück. Fehlt die Konfiguration, ist das ein
+  // Fehler des Betreibers und keine Erlaubnis.
+  if (!CRON_SECRET) {
+    console.error('[send-reminders] CRON_SECRET ist nicht gesetzt — Abbruch')
+    return new Response('Server misconfigured', { status: 500 })
+  }
+  if (req.headers.get('Authorization') !== `Bearer ${CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
   }
   try {
