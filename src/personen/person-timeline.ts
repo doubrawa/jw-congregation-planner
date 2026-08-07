@@ -87,10 +87,13 @@ export function personTimeline(
     })
   }
 
-  // Treffpunkte kennen keine Person-Id — dort trägt der Slot nur den Namen.
+  // Über die Person-Id, mit Rückfall auf den Namen für Altdaten — dieselbe
+  // Rangfolge wie bei den Zusammenkunfts-Aufgaben. Vorher trug ein Treffpunkt
+  // nur den Namen; Namensgleiche sahen dadurch gegenseitig ihre Leitungen.
   state.fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
-      if (!inst.leader || inst.leader !== name) continue
+      if (!inst.leader) continue
+      if (!(inst.lpid ? inst.lpid === person.id : inst.leader === name)) continue
       const tag = wi * 7 + ((inst.wd + 6) % 7) // wd: 0=So … 6=Sa → Tage nach Montag
       const datum = datumVon(tag)
       entries.push({

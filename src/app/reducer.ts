@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
-import { fsAddInst, fsAutoAssign, fsClear, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
 import { renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -152,8 +152,23 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // der Wochen, falls vorhanden) — Slot-Pfade/Namen sind variantenunabhängig.
   const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
   const weeks = localizedWeeks(state.weeks, jwCode)
+  // Zusammenkunfts-Aufgaben und Treffpunkt-Leitungen kommen aus zwei getrennten
+  // Quellen (`weeks` und `fsWeeks`) und bleiben es auch — sie zählen nicht in
+  // dieselbe Auslastung. Für den Nutzer sind es aber beides Aufgaben: ein
+  // zugeteilter Treffpunkt-Leiter sah seine Einteilung bisher weder unter
+  // „Meine Aufgaben" noch konnte er sie bestätigen.
   const myTasks = me
-    ? deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings, me.id)
+    ? [
+        ...deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings, me.id),
+        ...deriveMyFsTasks(
+          state.fsWeeks,
+          state.fsBase,
+          displayName(me),
+          state.confirmations,
+          me.id,
+          dict(state.lang).fsLeiterLbl,
+        ),
+      ].sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
     : []
   return {
     ...state,
@@ -499,7 +514,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (!sel) return state
       // Treffpunkt-Leiter: eigene Datenquelle (fsWeeks), kein Bestätigungs-Slot.
       if (sel.kind === 'fs') {
-        const fsWeeks = fsSetLeader(state.fsWeeks, sel.wi, sel.instId, action.name)
+        const fsWeeks = fsSetLeader(state.fsWeeks, sel.wi, sel.instId, action.name, action.pid)
         const notifs = action.name
           ? pushNotif(
               state.notifs,
