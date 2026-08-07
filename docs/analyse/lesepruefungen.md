@@ -134,9 +134,9 @@ Sheet-Animation und Wischbewegung unverändert.
 
 | Punkt | Befund |
 | --- | --- |
-| **z-index** | 11 verschiedene Werte (20, 30, 31, 34, 35, 38, 39, 40, 42, 43, 50) ohne benannte Ebenen. Wer ein neues Overlay baut, muss raten, wo es einzuordnen ist. Vier Token-Ebenen (`--z-nav`, `--z-sheet`, …) würden das auflösen. |
+| **z-index** | 11 verschiedene Werte (20, 30, 31, 34, 35, 38, 39, 40, 42, 43, 50) ohne benannte Ebenen. Wer ein neues Overlay baut, muss raten, wo es einzuordnen ist. Vier Token-Ebenen (`--z-nav`, `--z-sheet`, …) würden das auflösen. **Nachtrag 7.8.2026 (T51): umgesetzt, aber mit sieben Ebenen** — vier hätten die Reihenfolge geändert (S-89 muss über dem Zuteilungs-Sheet liegen, die Bestätigung über dem Toast, das Popover über allem). Tokens siehe `tokens.css` am Dateiende. |
 | **Tote CSS-Klassen** | 11 von 477 werden nirgends im Code verwendet: `auf-empty`, `w3`, `week-page--vor`, `week-page--nach`, `mem-planner-lbl`, `mem-remove--ph`, `mem-inv-label`, `mem-inv-form`, `lang-demo-hint`, `plan-open-prefix`, `prog-lang-hint`. `week-page--vor/--nach` und `lang-demo-hint` sind Reste aus abgelösten Umsetzungen (Wochen-Streifen bzw. der tote Dict-Schlüssel `demoLangHint`). |
-| **Unbenutzte Tokens** | `--primary` und `--clear` werden definiert, aber nie referenziert. |
+| **Unbenutzte Tokens** | `--primary` und `--clear` werden definiert, aber nie referenziert. **Nachtrag 7.8.2026 (T50) — ⛔ geprüft, kein Mangel:** diese beiden Tokens gibt es nicht. Die Treffer sind die Klassennamen `.plan-auto-btn--primary` und `.plan-auto-btn--clear` (`planen.css:57/69`), beide in `AutoAssignPanel.tsx` und `FsPlan.tsx` benutzt. Die 11 toten Klassen und 5 toten Wörterbuch-Schlüssel wurden entfernt. |
 | **Variablen aus JavaScript** | `--week-shift` und `--sheet-drag` werden nur per JS gesetzt — beide mit sauberem Fallback (`var(--week-shift, 0px)`). Kein Mangel. |
 | **Physische Abstände** | Nur zwei RTL-relevante Reste: `einstellungen.css:214` und `planen.css:318` (`margin-left: 4px` bzw. `5px`). In RTL landen sie auf der falschen Seite — optisch minimal. |
 

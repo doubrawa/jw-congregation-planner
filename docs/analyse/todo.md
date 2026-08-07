@@ -145,7 +145,7 @@ ersten. Der erste steht danach nirgends, hat aber „übernommen" gesehen.
 Vorbedingung mitschicken (nur schreiben, wenn der Slot noch `originalName` trägt)
 oder wie `redeem_invite` (migration-012) mit `FOR UPDATE` arbeiten.
 
-### T11 · `substitute` ohne `--no-verify-jwt` deployen ⚡
+### T11 · `substitute` ohne `--no-verify-jwt` deployen ⚡ ⛔ kein Code-Mangel · wartet auf Deploy
 Live-Test zeigt: Der Request erreicht die Function, die Plattform prüft **nicht**
 — entgegen dem Deploy-Hinweis in `substitute/index.ts:24`. Der Schutz hängt damit
 an einer einzigen Codestelle.
@@ -304,6 +304,17 @@ Produktiv sichtbar sind vor allem **`gerade eben`** (Zeitstempel jeder Mitteilun
 und **`ohne Zuteilungen`** (nach jedem Import); dazu das Gedächtnismahl-Vokabular.
 → [befunde.md D1](befunde.md)
 
+> **Rest bewusst offen.** Ergänzt sind alle Fragmente, die die App selbst
+> erzeugt — darunter die beiden produktiv sichtbaren (`gerade eben`,
+> `ohne Zuteilungen`). Nicht ergänzt sind **22 veröffentlichte Titel**
+> (Studienartikel, Vortragsthemen) und zwei Gedächtnismahl-Fachbegriffe: die
+> stehen auf jw.org in jeder Sprache mit dem *dort* gewählten Wortlaut, eine
+> eigene Übersetzung wäre eine Erfindung (vgl. B4 „Übersetzungswortlaut").
+> Sie stehen als geschlossene Liste `NUR_GEMESSEN_UEBERSETZBAR` im neuen Test
+> (`translate-data.test.ts`) — wer sie nachträgt, streicht sie dort und misst
+> sie an jw.org. Neue Lücken kann die Liste nicht verstecken, sie ist
+> namentlich.
+
 ### T26 · Vollständigkeitstest für `FRAG`/`EXTRA`/`REF` 🔧 ✅ erledigt
 `ui.test.ts` sichert das UI-Wörterbuch vorbildlich ab (inkl. „kein stiller
 EN-Rückfall") — für die Programm-Fragmente gibt es **nichts** Vergleichbares.
@@ -380,8 +391,9 @@ Eröffnung.
 → [befunde.md F11](befunde.md)
 
 ### T34 · Weitere fachliche Punkte 🔧
-- **F6:** `lacAdd` gibt neuen Punkten `bereichsKey: 'vortrag'` (= öffentlicher
-  Vortrag) — fachlich falsch für einen LAC-Punkt
+- **F6:** ✅ erledigt — `lacAdd` gab neuen Punkten `bereichsKey: 'vortrag'`
+  (= öffentlicher Vortrag), jetzt `'studium'` (`meeting-edit.ts:227`). War die
+  einzige Zeile des Blocks, die keine fachliche Absprache brauchte.
 - **F12:** `leser` ist nicht nach Zusammenkunft getrennt (der Vorsitz schon:
   `vorsitzMid`/`vorsitzWe`)
 - **F7:** kein Hinweis, wenn zwei Personen `wtLeiter` gesetzt haben
@@ -499,14 +511,25 @@ graphit, bernstein, aubergine und koralle erben `--load-free/task/helper`
 „grau" und „kontrast" setzen sie ausdrücklich neu — die dunklen nicht.
 → [lesepruefungen.md B24](lesepruefungen.md)
 
-### T50 · Toten Code entfernen ⚡ ✅ erledigt
+### T50 · Toten Code entfernen ⚡ ✅ erledigt (2 Punkte ⛔ kein Mangel)
 11 CSS-Klassen (u. a. `week-page--vor/--nach`, `lang-demo-hint`), 2 Tokens
 (`--primary`, `--clear`), 5 Wörterbuch-Schlüssel (`appSprache`, `demoLangHint`,
 `reinigungsgruppe`, `rolleVerkIn`, `privLesen` — Letzterer × 34 Sprachen).
 
-### T51 · z-index-Ebenen benennen ⚡ ✅ erledigt
+> **Klassen und Schlüssel entfernt, die Tokens gibt es nicht.** `--primary` und
+> `--clear` sind keine Tokens; die Treffer stammen von den Klassennamen
+> `.plan-auto-btn--primary` / `.plan-auto-btn--clear` (`planen.css:57/69`),
+> beide in `AutoAssignPanel.tsx` und `FsPlan.tsx` in Gebrauch.
+
+### T51 · z-index-Ebenen benennen ⚡ ✅ erledigt (mit 7 statt 4 Ebenen)
 11 Werte zwischen 20 und 50 ohne System. Vier Tokens (`--z-nav`, `--z-sheet`,
 `--z-overlay`, `--z-toast`) genügen.
+
+> **Vier hätten die Darstellung geändert.** Die 11 Werte kodieren echte
+> Reihenfolgen: S-89 liegt über dem Zuteilungs-Sheet, die Bestätigung über dem
+> Toast, das Popover über allem. Umgesetzt sind deshalb sieben Ebenen
+> (`--z-nav`, `--z-panel`, `--z-sheet`, `--z-sheet-top`, `--z-toast`,
+> `--z-dialog`, `--z-popover`), die die bestehende Schichtung 1:1 abbilden.
 
 ### T52 · `window.confirm` ersetzen ⚡ ✅ erledigt
 `PersonDetail.tsx:208` ist der einzige native Dialog; überall sonst gibt es eigene
@@ -565,6 +588,32 @@ Ersatzsuche** (der Verkündiger bekommt einen Push und findet nichts dazu) und d
 
 ## Fortschritt
 
-Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑☐ · Phase 3 ☑☑☑☑ ·
+Stand 7. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ☐ offen
+
+Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☐☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑
+
+**40 umgesetzt, 2 als „kein Mangel" begründet zurückgewiesen, 14 offen.**
+Die 40 stecken in 15 Commits (`c547ecb`…`fe0185a`); der Testbestand ist dabei
+von 727 auf 967 gewachsen, jede Korrektur hat einen Test, der ohne sie rot wird.
+
+### Was offen ist und warum
+
+| | Aufgaben | Warum offen |
+| --- | --- | --- |
+| **T11** | Deploy von `substitute` | im Repo nichts zu tun (`config.toml` stimmt) — braucht `npx supabase functions deploy substitute` beim Betreiber; derselbe Deploy bringt T9/T10/T24 live. `send-reminders` ebenso für T8/T12/T14. |
+| **Phase 6** | T29–T34 | betrifft Versammlungsabläufe, nicht Code. Vorschlag liegt dem Koordinator vor; offene Rückfragen: eigener Redner beim öffentlichen Vortrag? Umgang mit Kongresswochen? Von T34 ist **F6 bereits miterledigt** (`lacAdd` legt Bereich `studium` statt `vortrag` an). |
+| **Phase 7** | T35–T42 | größere Umbauten, erst abzustimmen. Empfohlene Reihenfolge: **T35 + T40 + T36** zuerst (klein, risikoarm), danach **T39 + T37** als eigener Block mit Migration; T38/T41/T42 später oder gar nicht. |
+
+### Was zurückgewiesen wurde
+
+| Befund | Ergebnis |
+| --- | --- |
+| **T1** (`MON` → `MONA`) | Absturz bestätigt, **Fix anders**: der Tausch hätte ihn nur auf die Langform verschoben → `datumsRegel(...)` schlägt in beiden Tabellen nach |
+| **T11** (`config.toml`) | ⛔ kein Code-Mangel, nur die laufende Instanz ist älter |
+| **T28** (`REF` für id/tl/vi/sw) | ⛔ kein Mangel, alle vier sind vollständig |
+| **T50** (`--primary`/`--clear`) | ⛔ die Tokens gibt es nicht — es sind benutzte Klassennamen |
+| **T51** (vier z-index-Ebenen) | umgesetzt mit **sieben**; vier hätten die Reihenfolge geändert |
+| **T15** (Endzeit) | umgesetzt als feste 105 min statt Summe der Programmminuten — das Arbeitsheft führt Lieder und Gebete nicht auf |
+| **T25** (Fragmente) | teilweise; 22 veröffentlichte Titel bleiben unübersetzt, als geschlossene Liste im Test festgehalten |
