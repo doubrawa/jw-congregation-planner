@@ -4,7 +4,7 @@
  */
 
 import { BRUDER_BEREICHE, QUALIFICATION_ORDER, ROLE_LABEL, WT_ROLE_ORDER } from './constants'
-import type { Group, Meeting, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
+import type { Abweichung, Group, Meeting, MeetingKey, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
@@ -314,6 +314,63 @@ export function rolleNennt(rolle: string | undefined, name: string): boolean {
   return false
 }
 
+/* ---- Sonderwochen: wenn eine Zusammenkunft von der Regel abweicht (T30) ---- */
+
+/**
+ * Die beiden Zusammenkünfte einer Woche, in fester Reihenfolge.
+ *
+ * Bis hierher stand vielerorts `[week.mid, week.we]` — eine Liste von
+ * Zusammenkünften ohne ihre Kennung. Wer wissen will, ob eine davon entfällt,
+ * braucht aber die Kennung. Deshalb wird jetzt über die Kennungen gelaufen und
+ * die Zusammenkunft daraus geholt.
+ */
+export const MEETING_TABS: readonly MeetingKey[] = ['mid', 'we']
+
+/**
+ * Abweichung dieser einen Zusammenkunft, falls es eine gibt.
+ *
+ * **`mem`/`memCancel` gehören ausdrücklich NICHT hierher.** Sie sehen aus wie
+ * ein Ausfall, sind aber eine *Ersetzung*: der Tab der betroffenen
+ * Zusammenkunft zeigt dann das Gedächtnismahl, und das hat ein eigenes
+ * Programm mit eigenen Zuteilungen — Vortrag, Gebete, Symbole herumreichen.
+ * Wer sie als Ausfall behandelt, streicht genau diese Aufgaben aus der
+ * Auslastung, aus „Meine Aufgaben" und aus den Erinnerungen. Der Abend findet
+ * statt; nur der reguläre Ablauf tut es nicht.
+ *
+ * `cancelled` meint deshalb das Engere: **es kommt niemand zusammen**
+ * (Kongresswoche, abgesagte Zusammenkunft).
+ */
+export function abweichung(week: Week | undefined, tab: MeetingKey): Abweichung | undefined {
+  return week?.dev?.[tab]
+}
+
+/**
+ * Entfällt diese Zusammenkunft in dieser Woche — findet also gar nichts statt?
+ *
+ * Eine ausgefallene Zusammenkunft trägt **nirgends** etwas bei: keine offenen
+ * Plätze, keine Aufgaben, keine Erinnerungen, keine Auslastung, keine
+ * Konflikte. Die Zuteilungen bleiben trotzdem stehen — wird der Ausfall
+ * zurückgenommen, ist die Planung wieder da. Verwaist ist dabei nichts: sie
+ * zählt nur so lange nicht, wie die Zusammenkunft nicht stattfindet.
+ *
+ * Nicht zu verwechseln mit der Gedächtnismahl-Woche: dort wird der reguläre
+ * Ablauf **ersetzt**, nicht gestrichen (siehe `abweichung`).
+ */
+export function istAusgefallen(week: Week | undefined, tab: MeetingKey): boolean {
+  return abweichung(week, tab)?.cancelled === true
+}
+
+/** Grund der Abweichung, in den Worten des Planers ("" = keiner genannt). */
+export function abweichungsGrund(week: Week | undefined, tab: MeetingKey): string {
+  return abweichung(week, tab)?.reason ?? ''
+}
+
+/** Weicht diese Zusammenkunft überhaupt ab — Tag, Uhrzeit oder Ausfall? */
+export function weichtAb(week: Week | undefined, tab: MeetingKey): boolean {
+  const a = abweichung(week, tab)
+  return Boolean(a && (a.cancelled || a.day || a.time))
+}
+
 /* ---- Wer den öffentlichen Vortrag hält (Rollen-Vokabular) ---- */
 
 /**
@@ -455,7 +512,13 @@ export function partWorkload(weeks: Week[], person: Person): number {
   const name = displayName(person)
   let count = 0
   for (const week of weeks) {
-    for (const meeting of [week.mid, week.we]) {
+    for (const tab of MEETING_TABS) {
+      // Eine entfallene Zusammenkunft zählt nicht (T30). Die Zuteilungen
+      // bleiben stehen, damit die Planung beim Zurücknehmen wieder da ist —
+      // aber wer nicht drankommt, ist auch nicht ausgelastet. Sonst gälte er
+      // wochenlang als beschäftigt und die Auto-Zuteilung überginge ihn.
+      if (istAusgefallen(week, tab)) continue
+      const meeting = week[tab]
       const mitKlasse = hatAuxKlasse(meeting)
       if (mitKlasse && gehoertZu(meeting.auxRatgeber, person)) count++
       for (const section of meeting.sections) {
@@ -490,7 +553,9 @@ export function helperWorkload(weeks: Week[], person: Person, services?: Service
   const grenze = services ? new Map(services.map((s) => [s.key, s.count])) : null
   let count = 0
   for (const week of weeks) {
-    for (const meeting of [week.mid, week.we]) {
+    for (const tab of MEETING_TABS) {
+      if (istAusgefallen(week, tab)) continue // entfällt → kein Hilfsdienst (T30)
+      const meeting = week[tab]
       for (const [key, assigned] of Object.entries(meeting.helpers)) {
         const bis = grenze ? (grenze.get(key) ?? 0) : assigned.length
         for (let pos = 0; pos < Math.min(bis, assigned.length); pos++) {

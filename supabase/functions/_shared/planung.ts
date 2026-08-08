@@ -74,3 +74,77 @@ export const WEEKDAY_OFFSET: Record<string, number> = {
   Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
   Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
 }
+
+/* ---- Sonderwochen (T30) --------------------------------------------------- */
+
+/**
+ * Abweichung **einer** Zusammenkunft von der Regel — verlegter Tag, andere
+ * Uhrzeit, Ausfall, Grund. Spiegelbild von `Abweichung` in
+ * `src/data/types.ts`.
+ *
+ * Warum das hier stehen muss: eine verlegte Woche verschiebt **auch die
+ * Erinnerungen**. `send-reminders` rechnete mit dem regulären Wochentag aus den
+ * Einstellungen; die Erinnerung nannte dann einen Abend, an dem niemand kommt.
+ * Und eine ausgefallene Zusammenkunft darf gar nicht erst erinnern.
+ */
+export interface Abweichung {
+  day?: string
+  time?: string
+  cancelled?: boolean
+  reason?: string
+}
+
+/** Abweichungen einer Woche, je Zusammenkunft. */
+export type Abweichungen = Partial<Record<'mid' | 'we', Abweichung>>
+
+/** Abweichung dieser einen Zusammenkunft, falls es eine gibt. */
+export function abweichungFuer(
+  dev: Abweichungen | undefined,
+  tab: 'mid' | 'we',
+): Abweichung | undefined {
+  return dev?.[tab]
+}
+
+/**
+ * Findet diese Zusammenkunft gar nicht statt?
+ *
+ * Eng gemeint: **es kommt niemand zusammen** (Kongresswoche, abgesagte
+ * Zusammenkunft). Die Gedächtnismahl-Woche gehört ausdrücklich nicht dazu —
+ * dort wird der reguläre Ablauf *ersetzt*, und das Mahl hat eigene
+ * Zuteilungen, die sehr wohl erinnert werden wollen.
+ */
+export function istAusgefallenFuer(dev: Abweichungen | undefined, tab: 'mid' | 'we'): boolean {
+  return abweichungFuer(dev, tab)?.cancelled === true
+}
+
+/**
+ * Wochentag-Versatz mit Abweichung. Rangfolge wie im Client
+ * (`meetingOffset`, src/data/meeting-dates.ts):
+ * Abweichung → eigener Termin im `date`-Feld → Rhythmus aus den Einstellungen.
+ */
+export function versatzMitAbweichung(
+  dev: Abweichungen | undefined,
+  tab: 'mid' | 'we',
+  dateFeld: string | undefined,
+  fallback: number,
+): number {
+  const verlegt = abweichungFuer(dev, tab)?.day
+  if (verlegt && verlegt in WEEKDAY_OFFSET) return WEEKDAY_OFFSET[verlegt]
+  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(
+    dateFeld ?? '',
+  )
+  return tag ? WEEKDAY_OFFSET[tag[1]] : fallback
+}
+
+/** Uhrzeit mit Abweichung — gleiche Rangfolge wie beim Tag. */
+export function zeitMitAbweichung(
+  dev: Abweichungen | undefined,
+  tab: 'mid' | 'we',
+  dateFeld: string | undefined,
+  fallback: string,
+): string {
+  const verlegt = abweichungFuer(dev, tab)?.time
+  if (verlegt) return verlegt
+  const zeit = /\b(\d{1,2})[:.](\d{2})\b/.exec(dateFeld ?? '')
+  return zeit ? `${zeit[1].padStart(2, '0')}:${zeit[2]}` : fallback
+}

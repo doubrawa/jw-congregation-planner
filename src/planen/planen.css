@@ -908,3 +908,96 @@
 .sheet-empty-action:hover {
   background: var(--surface-2);
 }
+
+/* ---- Sonderwoche: Verlegung, Ausfall, Grund (T30) ------------------------- */
+
+.sonder {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--bord3);
+  border-radius: 10px;
+}
+
+/* Weicht die Woche ab, hebt sich das Feld ab — sonst sieht es aus wie ein
+   weiteres Bedienelement unter vielen und die Sonderlage bleibt unbemerkt. */
+.sonder.is-abweichend {
+  border-color: var(--wein);
+  background: var(--tWein);
+}
+
+.sonder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sonder-row--termin {
+  margin-top: 10px;
+  justify-content: flex-start;
+  /* Bei großem Schriftgrad und schmalem Gerät passen Tag und Uhrzeit nicht
+     nebeneinander — umbrechen statt die Zeile aufzuschieben. */
+  flex-wrap: wrap;
+}
+
+.sonder-name {
+  font-size: calc(13px * var(--fs));
+  font-weight: 500;
+}
+
+.sonder-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sonder-feld--grund {
+  margin-top: 10px;
+}
+
+.sonder-label {
+  font-size: calc(9.5px * var(--fs));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
+.sonder-select,
+.sonder-time,
+.sonder-grund {
+  border: 1px solid var(--bord3);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: calc(13px * var(--fs));
+  padding: 8px 10px;
+  /* WCAG 2.5.8: mindestens 24 px Zielgröße (T43). */
+  min-height: 24px;
+}
+
+.sonder-grund {
+  width: 100%;
+}
+
+/* ---- Banner: diese Zusammenkunft findet nicht statt ----------------------- */
+
+.ausfall-banner {
+  margin-top: 12px;
+  background: var(--tWein);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--wein);
+  line-height: 1.45;
+}
+
+.ausfall-name {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+.ausfall-grund {
+  font-size: calc(11.5px * var(--fs));
+  margin-top: 2px;
+}

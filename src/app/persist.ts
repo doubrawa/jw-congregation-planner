@@ -221,6 +221,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'talkEdit':
     case 'openingSong':
     case 'closingSong':
+    case 'setAbweichung': // Sonderwoche: Verlegung, Ausfall, Grund (T30)
       saveWeek(congId, prev.week, next.weeks[prev.week])
       break
     case 'finishImport':

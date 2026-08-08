@@ -47,11 +47,14 @@
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
 import {
+  type Abweichungen,
+  istAusgefallenFuer,
   meetingDayOffsets,
   personDisplayName,
   SKIP_ROLE,
   taskDateText,
-  WEEKDAY_OFFSET,
+  versatzMitAbweichung,
+  zeitMitAbweichung,
 } from '../_shared/planung.ts'
 import { pushTexte } from './texte.ts'
 
@@ -183,6 +186,8 @@ interface Week {
   start?: string
   mid?: Meeting
   we?: Meeting
+  /** Abweichungen dieser Woche — verlegter Tag, andere Uhrzeit, Ausfall (T30). */
+  dev?: Abweichungen
 }
 interface ServiceRow {
   key: string
@@ -260,8 +265,18 @@ function reminderDate(
   offset: number,
   meeting: Meeting,
   zeit: string,
+  dev?: Abweichungen,
+  tab?: 'mid' | 'we',
 ): string {
-  if (/\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.test(meeting.date ?? '')) {
+  // Eine Abweichung schlägt auch den eigenen Termin im `date`-Feld: der Planer
+  // hat den Tag ausdrücklich verlegt, das `date`-Feld nennt noch den alten
+  // (gleiche Regel wie `meetingDateText` im Client).
+  const abw = tab ? dev?.[tab] : undefined
+  const verlegt = Boolean(abw?.day || abw?.time)
+  if (
+    !verlegt &&
+    /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.test(meeting.date ?? '')
+  ) {
     return taskDate(meeting)
   }
   const ms = Date.parse(startISO)
@@ -281,22 +296,12 @@ function meetingTimesOf(meetingTimes: string): { mid: string; we: string } {
 
 /* ---- Terminberechnung ---------------------------------------------------- */
 
-/**
- * Wochentag-Versatz dieser einen Zusammenkunft. Ein eigener Termin im
- * `date`-Feld (Gedächtnismahl, Kongress) schlägt den Rhythmus aus den
- * Einstellungen — dieselbe Rangfolge wie `meetingOffset` im Client
- * (src/data/meeting-dates.ts). Ohne sie erinnerte der Versand am regulären
- * Wochentag, während Anzeige und Abwesenheitsprüfung den echten Tag nannten.
- *
- * Importierte Wochen tragen dort die Wochenspanne („7.–13. September"): kein
- * Wochentag, also greift die Regel dort gar nicht erst.
+/*
+ * Der Wochentag-Versatz stand hier als eigene Fassung. Er wohnt jetzt in
+ * `_shared/planung.ts` (`versatzMitAbweichung`) — dieselbe Rangfolge wie
+ * `meetingOffset` im Client, und seit T30 mit der Abweichung davor. Zwei
+ * Fassungen einer Terminregel waren schon einmal die Ursache von B8.
  */
-function meetingOffset(meeting: Meeting, fallback: number): number {
-  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(
-    meeting.date ?? '',
-  )
-  return tag ? WEEKDAY_OFFSET[tag[1]] : fallback
-}
 
 /** Ganze Tage bis zur Zusammenkunft (UTC-Datumsarithmetik; negativ = vorbei). */
 function daysUntil(startISO: string, dayOffset: number, todayUTC: number): number | null {
@@ -531,13 +536,22 @@ Deno.serve(async (req: Request) => {
         for (const tab of ['mid', 'we'] as const) {
           const meeting = week[tab]
           if (!meeting) continue
-          const offset = meetingOffset(meeting, offsets[tab])
+          // Entfällt die Zusammenkunft, gibt es nichts zu erinnern (T30). Ein
+          // Ausfall ohne diese Zeile schickte Erinnerungen an einen Abend, an
+          // dem niemand kommt — und die Planer-Meldung „nicht erreichbar"
+          // gleich hinterher.
+          if (istAusgefallenFuer(week.dev, tab)) continue
+          // Verlegter Tag/Uhrzeit schlagen den Rhythmus aus den Einstellungen:
+          // sonst erinnert der Versand am regulären Abend, während Anzeige und
+          // Abwesenheitsprüfung den echten nennen.
+          const offset = versatzMitAbweichung(week.dev, tab, meeting.date, offsets[tab])
+          const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
           const days = daysUntil(week.start, offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
           for (const pend of pendingOfMeeting(wi, tab, meeting, services, conf)) {
-            const entry = `${reminderDate(week.start, offset, meeting, zeiten[tab])}: ${pend.label}`
+            const entry = `${reminderDate(week.start, offset, meeting, zeit, week.dev, tab)}: ${pend.label}`
             const userId = userOf(pend)
             // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
             // Push-Abo. Wer ein Konto hat, bekommt trotzdem die persönliche

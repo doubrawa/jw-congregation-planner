@@ -13,7 +13,7 @@ import { angleichen, hatAuxKlasse } from './aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from './constants'
 import { isSong } from './helpers'
 import { meetingDateParts, meetingTimesOf } from './meeting-dates'
-import type { Meeting, MeetingKey, PartItem, Week } from './types'
+import type { Abweichung, Meeting, MeetingKey, PartItem, Week } from './types'
 import { ersteZahl, ersteZahlErsetzen } from './ziffern'
 
 /**
@@ -349,6 +349,50 @@ export function togglePartner(weeks: Week[], wi: number, tab: MeetingKey, si: nu
   // die Klasse einen — bis irgendwann setAuxClass erneut läuft. Bereits
   // vergebene Namen bleiben dabei stehen (angleichen ergänzt und kürzt nur).
   if (hatAuxKlasse(meeting)) item.aux = angleichen(item)
+  return next
+}
+
+/* ---- Sonderwoche: Verlegung, Ausfall, Grund (T30) ------------------------- */
+
+/** Trägt diese Abweichung überhaupt noch etwas? */
+function abweichungLeer(a: Abweichung): boolean {
+  return !a.day && !a.time && !a.cancelled && !a.reason
+}
+
+/**
+ * Abweichung einer Zusammenkunft setzen — verlegter Tag, andere Uhrzeit,
+ * Ausfall, Grund. `patch` überschreibt nur die genannten Felder; ein Feld auf
+ * `undefined` (bzw. `''`/`false`) nimmt es zurück.
+ *
+ * **Leere Abweichungen werden entfernt, nicht gespeichert.** Bliebe ein
+ * `{ day: undefined }` stehen, gälte die Woche als abweichend, obwohl sie der
+ * Regel folgt — Chips und Banner erschienen ohne Anlass, und `weichtAb` sagte
+ * die Unwahrheit. Aus demselben Grund verschwindet `dev` ganz, sobald keine
+ * der beiden Zusammenkünfte mehr abweicht: eine reguläre Woche soll auch in
+ * den Daten aussehen wie eine reguläre Woche.
+ */
+export function setAbweichung(
+  weeks: Week[],
+  wi: number,
+  tab: MeetingKey,
+  patch: Partial<Abweichung>,
+): Week[] {
+  const week = weeks[wi]
+  if (!week) return weeks
+  const zusammen: Abweichung = { ...week.dev?.[tab], ...patch }
+  // Leerwerte gar nicht erst behalten — sonst entstünde `{ day: '' }`.
+  const bereinigt: Abweichung = {}
+  if (zusammen.day) bereinigt.day = zusammen.day
+  if (zusammen.time) bereinigt.time = zusammen.time
+  if (zusammen.cancelled) bereinigt.cancelled = true
+  if (zusammen.reason?.trim()) bereinigt.reason = zusammen.reason.trim()
+
+  const dev = { ...week.dev }
+  if (abweichungLeer(bereinigt)) delete dev[tab]
+  else dev[tab] = bereinigt
+
+  const next = [...weeks]
+  next[wi] = { ...week, dev: Object.keys(dev).length ? dev : undefined }
   return next
 }
 

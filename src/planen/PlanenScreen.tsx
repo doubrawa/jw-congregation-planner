@@ -2,10 +2,10 @@ import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
-import { MemorialBanner, WeekChips } from '../components/WeekBadges'
+import { AusfallBanner, MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { hatAuxKlasse } from '../data/aux-class'
 import { CURRENT_PERSON_ID } from '../data/demo'
-import { overseerGroup } from '../data/helpers'
+import { istAusgefallen, overseerGroup } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
 import type { MeetingKey } from '../data/types'
 import { fill, useProgWeek, useT } from '../i18n/useT'
@@ -13,6 +13,7 @@ import { ConflictsBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanne
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { FsPlan } from './FsPlan'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
+import { SonderwochePanel } from './SonderwochePanel'
 import { HelpersPanel } from './HelpersPanel'
 import { MeetingSection } from './MeetingSection'
 import './planen.css'
@@ -64,7 +65,9 @@ function PlanenBody() {
   const mtab: MeetingKey = state.tab === 'we' ? 'we' : 'mid'
   const meeting = week[mtab]
   const rawMeeting = rawWeek[mtab]
-  const openCount = countOpenSlots(rawMeeting, state.services)
+  // Entfällt die Zusammenkunft, sind ihre Plätze nicht offen — sie werden nicht
+  // gebraucht (T30).
+  const openCount = istAusgefallen(rawWeek, mtab) ? 0 : countOpenSlots(rawMeeting, state.services)
 
   return (
     <section className="screen">
@@ -89,6 +92,7 @@ function PlanenBody() {
         <MeetingTabs
           className="plan-tabs"
           tab={state.tab}
+          week={rawWeek}
           showFs
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
@@ -102,8 +106,13 @@ function PlanenBody() {
       ) : (
         <>
           <MemorialBanner week={week} tab={state.tab} />
+          <AusfallBanner week={rawWeek} tab={mtab} />
 
           <p className="plan-hint">{t.planHint}</p>
+
+          {/* Sonderwoche: Verlegung, Ausfall, Grund — vor der Zuteilung, weil
+              sie entscheidet, ob überhaupt zugeteilt wird (T30). */}
+          <SonderwochePanel tab={mtab} />
 
           <AutoAssignPanel />
           <p className="plan-legend">{t.planLegend}</p>

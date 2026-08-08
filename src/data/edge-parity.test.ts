@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
+  istAusgefallenFuer as edgeAusgefallen,
   meetingDayOffsets as edgeOffsets,
   personDisplayName as edgeName,
   SKIP_ROLE as EDGE_SKIP,
   taskDateText as edgeDate,
+  versatzMitAbweichung as edgeVersatz,
   WEEKDAY_OFFSET as EDGE_WEEKDAY,
+  zeitMitAbweichung as edgeZeit,
 } from '../../supabase/functions/_shared/planung.ts'
-import { displayName } from './helpers'
-import { meetingDayOffsets } from './meeting-dates'
+import { displayName, istAusgefallen } from './helpers'
+import { meetingDayOffsets, meetingOffset, meetingTime } from './meeting-dates'
 import { isGuestRole } from './planning'
 import { emptyQualifications } from './helpers'
-import type { Person } from './types'
+import type { Abweichung, Person, Week } from './types'
 
 /**
  * Client und Edge Functions rechnen gleich — geprüft, nicht angenommen.
@@ -96,6 +99,65 @@ describe('Termin aus dem date-Feld', () => {
     // Importierte Wochen tragen hier nur die Wochenspanne — die bleibt stehen.
     expect(edgeDate('7.–13. September')).toBe('7.–13. September')
     expect(edgeDate(undefined)).toBe('')
+  })
+})
+
+describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
+  /*
+    Eine verlegte Woche verschiebt **auch die Erinnerungen**. `send-reminders`
+    rechnete mit dem regulären Wochentag aus den Einstellungen — die Erinnerung
+    nannte dann einen Abend, an dem niemand kommt. Und ein Ausfall darf gar
+    nicht erst erinnern.
+
+    Beide Seiten müssen dieselbe Rangfolge anwenden:
+    Abweichung → eigener Termin im `date`-Feld → Einstellungen.
+  */
+  const faelle: Array<[string, Abweichung | undefined, string, number, string]> = [
+    ['ohne Abweichung, Wochenspanne', undefined, '7.–13. September', 1, '19:00'],
+    ['ohne Abweichung, eigener Termin', undefined, 'Samstag, 3. Oktober · 19:30', 5, '19:30'],
+    ['nur Tag verlegt', { day: 'Donnerstag' }, '7.–13. September', 3, '19:00'],
+    ['nur Uhrzeit verlegt', { time: '18:30' }, '7.–13. September', 1, '18:30'],
+    ['Tag und Uhrzeit verlegt', { day: 'Freitag', time: '17:00' }, '7.–13. September', 4, '17:00'],
+    // Der wichtigste Fall: das `date`-Feld nennt noch den alten Termin.
+    ['Abweichung schlägt den eigenen Termin', { day: 'Montag', time: '20:00' }, 'Samstag, 3. Oktober · 19:30', 0, '20:00'],
+    ['Ausfall ohne Verlegung ändert den Tag nicht', { cancelled: true }, '7.–13. September', 1, '19:00'],
+    ['unbekannter Wochentag fällt zurück', { day: 'Nichttag' }, '7.–13. September', 1, '19:00'],
+  ]
+
+  const woche = (dev: Abweichung | undefined, date: string): Week => ({
+    range: '', book: '', current: false,
+    mid: { date, end: '', sections: [], helpers: {} },
+    we: { date: '', end: '', sections: [], helpers: {} },
+    dev: dev ? { mid: dev } : undefined,
+  })
+
+  it.each(faelle)('%s', (_name, dev, date, tag, zeit) => {
+    const w = woche(dev, date)
+    const zeiten = 'Di 19:00 · So 10:00'
+    // Client
+    expect(meetingOffset(w, 'mid', zeiten)).toBe(tag)
+    expect(meetingTime(w, 'mid', zeiten)).toBe(zeit)
+    // Edge — dieselben Eingaben, eigene Fassung
+    expect(edgeVersatz(w.dev, 'mid', date, 1)).toBe(tag)
+    expect(edgeZeit(w.dev, 'mid', date, '19:00')).toBe(zeit)
+  })
+
+  it('„entfällt" heißt auf beiden Seiten dasselbe', () => {
+    const aus = woche({ cancelled: true }, '7.–13. September')
+    expect(istAusgefallen(aus, 'mid')).toBe(true)
+    expect(edgeAusgefallen(aus.dev, 'mid')).toBe(true)
+    // Die andere Zusammenkunft ist davon unberührt.
+    expect(istAusgefallen(aus, 'we')).toBe(false)
+    expect(edgeAusgefallen(aus.dev, 'we')).toBe(false)
+  })
+
+  it('die Gedächtnismahl-Woche ist KEIN Ausfall — beidseitig', () => {
+    // `memCancel` sieht aus wie ein Ausfall, ist aber eine Ersetzung: der Tab
+    // zeigt dann das Mahl, und das hat eigene Zuteilungen. Als Ausfall gelesen,
+    // fielen genau diese aus Auslastung, Aufgaben und Erinnerungen heraus.
+    const mahl: Week = { ...woche(undefined, '7.–13. September'), mem: true, memCancel: 'we' }
+    expect(istAusgefallen(mahl, 'we')).toBe(false)
+    expect(edgeAusgefallen(mahl.dev, 'we')).toBe(false)
   })
 })
 

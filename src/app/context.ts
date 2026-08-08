@@ -6,6 +6,7 @@
 import { createContext, useContext, type Dispatch } from 'react'
 import type { FontScale } from '../data/constants'
 import type {
+  Abweichung,
   Absence,
   ConfirmationMap,
   FsInstance,
@@ -13,6 +14,7 @@ import type {
   Group,
   Invite,
   Lang,
+  MeetingKey,
   MeetingTab,
   Member,
   MyTask,
@@ -225,6 +227,10 @@ export type AppAction =
   | { type: 'lacRemove'; si: number; ii: number }
   | { type: 'lacMove'; si: number; ii: number; dir: LacDir }
   | { type: 'lacAdd'; si: number; title: string }
+  // Sonderwoche (T30): Verlegung, Ausfall, Grund — je Zusammenkunft der
+  // aktuellen Woche. `patch` überschreibt nur die genannten Felder; ein Feld
+  // auf `undefined` nimmt die Abweichung dort zurück.
+  | { type: 'setAbweichung'; tab: MeetingKey; patch: Partial<Abweichung> }
   // Öffentlicher Vortrag / Wochenende (Planen, aktuelle Woche)
   | { type: 'talkEdit'; si: number; ii: number; title: string } // Vortragsthema (Freitext)
   | { type: 'openingSong'; song: string } // Anfangslied-Nummer ("" = entfernen)

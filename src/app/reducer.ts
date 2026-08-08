@@ -39,6 +39,7 @@ import {
   endeAusStartzeit,
   endenNachziehen,
   togglePartner,
+  setAbweichung,
   setClosingSong,
   setOpeningSong,
 } from '../data/meeting-edit'
@@ -881,6 +882,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: verschoben.map,
         toast: toastKey(state, 'toastLacAdd'),
       }
+    }
+    case 'setAbweichung': {
+      if (!state.weeks[state.week]) return state
+      return { ...state, weeks: setAbweichung(state.weeks, state.week, action.tab, action.patch) }
     }
     case 'talkEdit':
       return {

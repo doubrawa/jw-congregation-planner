@@ -90,6 +90,7 @@ function ProgrammBody() {
       <MeetingTabs
         className="prog-tabs"
         tab={state.tab}
+        week={rawWeek}
         showFs
         onChange={(tab) => dispatch({ type: 'setTab', tab })}
       />

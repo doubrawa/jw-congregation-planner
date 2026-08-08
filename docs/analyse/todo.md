@@ -428,7 +428,7 @@ Auslastung. Umschaltbar machen: eigener Redner (Person) ↔ Gastredner (Freitext
 > erreichbar; Gastredner eingetragen → „Gastredner · Vers. Westtal: K. Steiner✓"
 > ohne Flow. Konsole sauber.
 
-### T30 · Sonderwochen setzbar machen 🏗 — Zuschnitt erweitert
+### T30 · Sonderwochen setzbar machen 🏗 ✅ erledigt — Zuschnitt erweitert
 `week.co`, `week.mem`, `week.memCancel` werden **nur in `demo.ts`** gesetzt. Chips,
 Banner und der Dienstvortrag-statt-VBS existieren im Produktionsbetrieb nicht.
 Ebenso fehlt ein Konzept für Kongresswochen (Zusammenkunft entfällt).
@@ -460,6 +460,79 @@ Ebenso fehlt ein Konzept für Kongresswochen (Zusammenkunft entfällt).
 > Tag), die Abwesenheitsprüfung und die Konfliktprüfung. Ein Ausfall darf
 > keine Zuteilungen verwaisen lassen. **Nicht nebenbei zu bauen** — dieser
 > Punkt gehört geplant, nicht unbeaufsichtigt erledigt.
+
+> **Umgesetzt am 8. August 2026 — als eine Aussage, nicht als Sammlung
+> Sonderfälle.** `Week.dev` hält je Zusammenkunft eine `Abweichung`
+> (`day`, `time`, `cancelled`, `reason`). Die bekannten Fälle sind
+> Ausprägungen davon; ein Kongress ist ein Ausfall mit Grund, eine Verlegung
+> ein anderer Tag mit Grund.
+>
+> **Ein eigenes Feld, nicht `Meeting.date`.** Dort steht Anzeigetext in der
+> Sprache der Wochenseite; aus Anzeigetext Werte zurückzulesen war schon
+> zweimal die Ursache (T32 die Minuten, T33 das Lied). `Meeting.date` bleibt
+> als Quelle bestehen — es trägt die Termine der Alt-Datensätze —, hat aber
+> den niedrigeren Rang. Rangfolge überall gleich:
+> **Abweichung → `date`-Feld → Einstellungen.**
+>
+> **Die Nebenwirkungen sind mitgebaut**, alle vier:
+>
+> | Wirkung | Wo |
+> | --- | --- |
+> | Erinnerungen folgen dem verlegten Tag, Ausfall erinnert gar nicht | `send-reminders` über `_shared/planung.ts` |
+> | Auslastung zählt eine ausgefallene Zusammenkunft nicht | `partWorkload`, `helperWorkload` |
+> | Keine Aufgabe, keine Bestätigung, kein Ersatzgesuch | `eachAssignedSlot` |
+> | Keine Konflikte, keine offenen Plätze, keine Auto-Zuteilung | `weekConflicts`, `countOpenSlots`, `autoAssignMeeting` |
+>
+> **Verwaist wird dabei nichts.** Die Zuteilungen bleiben in den Daten stehen;
+> sie zählen nur so lange nicht, wie die Zusammenkunft nicht stattfindet. Wird
+> der Ausfall zurückgenommen, ist die Planung wieder da.
+>
+> **Ein Denkfehler, den erst die Tests aufdeckten:** `memCancel` sieht aus wie
+> ein Ausfall, ist aber eine **Ersetzung** — der Tab zeigt dann das
+> Gedächtnismahl, und das hat eigene Zuteilungen (Vortrag, Gebete, Symbole
+> herumreichen). Als Ausfall gelesen, fielen genau diese aus Auslastung,
+> Aufgaben und Erinnerungen heraus. Die erste Fassung tat das; vier bestehende
+> Tests fielen und hatten recht. `cancelled` meint jetzt das Engere: **es kommt
+> niemand zusammen.**
+>
+> **Die Bedienung kommt ohne einen einzigen neuen Wörterbuch-Schlüssel aus**
+> (`src/planen/SonderwochePanel.tsx`) — ein neuer hieße 33 erfundene
+> Übersetzungen:
+>
+> | Element | Woher |
+> | --- | --- |
+> | Name der Zusammenkunft | `tabMid` / `tabWe` |
+> | Wochentage | `Intl` über `LOCALES` — wie im Treffpunkt-Konfliktbanner |
+> | „Wochentag" / „Uhrzeit" | `a11yWeekday` / `a11yTime` |
+> | „Grund (optional)" | `grundOpt` |
+>
+> Für „entfällt" gibt es **kein** gemessenes Wort. Geprüft und verworfen: den
+> ersten Teil aus `memAusfall` herauszuschneiden — Spanisch trennt mit `;`,
+> Japanisch und Koreanisch haben gar keine Trennstelle, Chinesisch nutzt `——`.
+> Ein Schnitt hätte in vier Sprachen Bruchstücke ergeben. Stattdessen ist der
+> Schalter **positiv** formuliert und trägt den Namen der Zusammenkunft:
+> ausgeschaltet neben „Zusammenkunft am Wochenende" ist unmissverständlich, und
+> Screenreader sagen es genauso an. Im Banner steht dann der Grund — die Worte
+> des Planers, in seiner Sprache, wie ein Name oder ein Vortragsthema.
+>
+> Mitgezogen: die **Reiter** zeigen den echten Tag der gezeigten Woche
+> (`MeetingTabs` bekommt sie jetzt), sonst stünde „Sonntag" über einer
+> Zusammenkunft, die auf Samstag verlegt wurde.
+>
+> 16 Tests in `src/data/t30.test.ts`, 10 weitere in `edge-parity.test.ts`
+> (beide Seiten an denselben Eingaben). Gegenprobe: mit `istAusgefallen` fest
+> auf `false` fallen 4 — Auslastung, Aufgaben, Konflikte, Auto-Zuteilung.
+>
+> Im Browser nachgestellt: Wochenende auf Samstag 17:00 verlegt → Reiter
+> „Samstag" (Nachbarwoche weiter „Sonntag"), Chip in der Wochen-Navigation;
+> abgeschaltet → Termin-Felder verschwinden, Banner mit durchgestrichenem Namen
+> und „Kongress in Nürnberg", „0 offene Zuteilungen".
+>
+> ⚠ **Offen geblieben:** Die Kreisaufseher-Woche setzt weiterhin nur den Chip
+> (`week.co`); **„Dienstvortrag statt Versammlungsbibelstudium" tauscht den
+> Programmpunkt nicht aus.** Das ist ein Eingriff in den importierten Ablauf,
+> kein Terminthema, und braucht die Vorlage des Dienstvortrags — dafür fehlt
+> die fachliche Vorgabe (Titel, Dauer, Slots). Als eigener Punkt notiert.
 
 ### T31 · Treffpunkte in den Bestätigungs-Flow aufnehmen 🏗 ✅ erledigt
 `eachAssignedSlot` läuft nur über `weeks`, nie über `fsWeeks`. Ein zugeteilter
