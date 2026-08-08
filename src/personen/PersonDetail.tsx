@@ -175,7 +175,7 @@ export function PersonDetail({ person }: { person: Person }) {
       <div className="panel panel--pb10" data-farbe="petrol">
         <h2 className="panel-label">{t.aufgabenbereiche}</h2>
         {QUALIFICATION_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} bruderLabel={t.bruder} />
         ))}
         {/* Je Hilfsdienst ein Bereich; Gruppen-Dienste (Reinigung) rotieren
             Gruppen statt Personen und haben deshalb keinen. */}
@@ -196,7 +196,7 @@ export function PersonDetail({ person }: { person: Person }) {
         <h2 className="panel-label">{t.wtRollenLabel}</h2>
         <p className="panel-hint">{t.wtRollenHint}</p>
         {WT_ROLE_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} />
+          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} bruderLabel={t.bruder} />
         ))}
         <PlannerToggle person={person} update={update} />
       </div>

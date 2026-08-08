@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER } from '../data/constants'
-import { duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
+import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { LOCALES } from '../i18n/langs'
@@ -36,6 +36,7 @@ function PersonList() {
   const filtered = sorted.filter((p) => passtZumFilter(p, filter))
   const production = state.dataStatus !== 'demo'
   const dupes = duplicateDisplayNames(state.persons)
+  const mehrfachRollen = doppelteFesteRollen(state.persons)
 
   // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen. Mit
   // konfigurierter Domain gehen die Mails direkt raus (send-invite); die
@@ -105,6 +106,26 @@ function PersonList() {
           {dupes.map((d) => (
             <div key={d.name} className="pers-dupes-row">
               <span dir="auto">{fill(t.dublettenRow, { name: d.name, n: d.count })}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Feste Rollen sind der Sache nach je EINE Person. Sind zwei Schalter
+          gesetzt, greift sich die Auto-Zuteilung irgendeinen — bisher ohne
+          jeden Hinweis (F7). Gleiche Optik wie die Dubletten-Warnung; alle
+          Texte sind vorhandene Bausteine, damit sie in jeder Sprache stimmen. */}
+      {mehrfachRollen.length > 0 && (
+        <div className="pers-dupes">
+          <div className="pers-dupes-head">
+            <span className="pers-dupes-badge">!</span>
+            <span className="pers-dupes-title">{t.wtRollenLabel}</span>
+            <span className="pers-dupes-count">{mehrfachRollen.length}</span>
+          </div>
+          <div className="pers-dupes-hint">{t.wtRollenHint}</div>
+          {mehrfachRollen.map((r) => (
+            <div key={r.key} className="pers-dupes-row">
+              <span dir="auto">{fill(t.dublettenRow, { name: privLabel(t, r.key), n: r.count })}</span>
             </div>
           ))}
         </div>

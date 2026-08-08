@@ -39,6 +39,33 @@ export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
 export const WT_ROLE_ORDER: readonly QualificationKey[] = ['wtLeiter', 'wtVertreter']
 
 /**
+ * Bereiche, die fachlich Brüdern vorbehalten sind.
+ *
+ * **Kein Verbot.** Die Schalter im Personen-Detail bleiben frei bedienbar —
+ * das ist Absicht (siehe `PrivToggle`). Diese Liste dient allein dem Hinweis:
+ * ein versehentlich gesetzter Schalter führte die Auto-Zuteilung bisher ohne
+ * jede Rückmeldung zu Gebet oder Vorsitz (F4).
+ *
+ * Nicht enthalten sind `schulung` und `schulungPartner` — Schülerteile
+ * übernehmen auch Schwestern. `ratgeber` steht hier der Vollständigkeit halber
+ * mit; am Slot trägt er ohnehin schon `male: true`, ebenso der
+ * Schülerteil-Vortrag.
+ */
+export const BRUDER_BEREICHE: ReadonlySet<QualificationKey> = new Set<QualificationKey>([
+  'vorsitzMid',
+  'vorsitzWe',
+  'vortrag',
+  'gebet',
+  'bibellesung',
+  'leser',
+  'studium',
+  'treffpunkt',
+  'ratgeber',
+  'wtLeiter',
+  'wtVertreter',
+])
+
+/**
  * Bereichsfarbe → CSS-Token-Suffixe (Panel-Fläche, Label-/Akzentfarbe,
  * Hairline). Nutzung z. B. `var(--t${Panel})`. Siehe styles/tokens.css.
  */
