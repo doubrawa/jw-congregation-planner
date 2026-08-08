@@ -904,6 +904,13 @@ den Nutzer informieren.
 >
 > ✅ **[migration-016](../../supabase/migration-016-wochen-stand.sql) ist
 > eingespielt** (8.8.2026). `schema.sql` enthält sie für Neuinstallationen.
+>
+> ✅ **Im Betrieb nachgestellt** (8.8.2026): Speichern läuft durch. Damit greift
+> der geschützte Weg gegen die echte Datenbank — Stand lesen, als Bedingung
+> mitschicken, neuen Stand übernehmen. Der Vorbehalt zum Zeitstempel-Vergleich
+> (Genauigkeit, Zeitzone, Kodierung in der Abfrage) ist damit ausgeräumt; er war
+> der Grund für den Umweg über das Nachsehen vor dem Konfliktalarm, und den
+> braucht es nun als Sicherung, nicht als Krücke.
 
 ### T40 · Geteilte Logik für Client und Edge Functions 🔧
 Viermal dupliziert: `meetingDayOffsets`, `displayName`, `taskDate`,
@@ -1342,6 +1349,11 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > (`UNAUTHORIZED_NO_AUTH_HEADER`, so bei `substitute`). Am Antwortformat lässt
 > sich also unterscheiden, ob eine Function überhaupt hochgekommen ist —
 > nützlich bei jedem künftigen Deploy.
+>
+> **Und im Betrieb nachgestellt:** Speichern läuft durch. Das belegt zweierlei
+> auf einmal — den geschützten Schreibweg aus T39 gegen die echte Datenbank,
+> und dass der Ladepfad samt der T37-Migration (`migrateItemIds`) durchgelaufen
+> ist; wäre sie gescheitert, hätte es gar nicht erst bis zum Speichern gereicht.
 >
 > Die **Farbschema-Namen** („Jasmin", „Matcha") bleiben in nicht-lateinischen
 > Oberflächen lateinisch stehen — Eigennamen, wie Markennamen auch. Der Punkt
