@@ -528,11 +528,12 @@ Ebenso fehlt ein Konzept für Kongresswochen (Zusammenkunft entfällt).
 > abgeschaltet → Termin-Felder verschwinden, Banner mit durchgestrichenem Namen
 > und „Kongress in Nürnberg", „0 offene Zuteilungen".
 >
-> ⚠ **Offen geblieben:** Die Kreisaufseher-Woche setzt weiterhin nur den Chip
-> (`week.co`); **„Dienstvortrag statt Versammlungsbibelstudium" tauscht den
-> Programmpunkt nicht aus.** Das ist ein Eingriff in den importierten Ablauf,
-> kein Terminthema, und braucht die Vorlage des Dienstvortrags — dafür fehlt
-> die fachliche Vorgabe (Titel, Dauer, Slots). Als eigener Punkt notiert.
+> ✅ **Damals offen geblieben, inzwischen erledigt:** Die Kreisaufseher-Woche
+> setzte zunächst nur den Chip (`week.co`); **„Dienstvortrag statt
+> Versammlungsbibelstudium" tauschte den Programmpunkt nicht aus.** Das ist ein
+> Eingriff in den importierten Ablauf, kein Terminthema, und brauchte die
+> fachliche Vorgabe (Titel, Dauer, Plätze). Der Betreiber hat sie am 8.8.2026
+> gegeben → **T62**.
 
 ### T31 · Treffpunkte in den Bestätigungs-Flow aufnehmen 🏗 ✅ erledigt
 `eachAssignedSlot` läuft nur über `weeks`, nie über `fsWeeks`. Ein zugeteilter
@@ -661,7 +662,7 @@ Eröffnung.
 > „Schlussworte · Lied 76 · Gebet" → „Schlussworte · Lied 151 · Gebet";
 > Beschriftungen auf Hebräisch `שיר פתיחה` / `שיר`; Konsole ohne Fehler.
 
-### T34 · Weitere fachliche Punkte 🔧
+### T34 · Weitere fachliche Punkte 🔧 ✅ erledigt (F12 ⛔ kein Mangel)
 - **F6:** ✅ erledigt — `lacAdd` gab neuen Punkten `bereichsKey: 'vortrag'`
   (= öffentlicher Vortrag), jetzt `'studium'` (`meeting-edit.ts:227`). War die
   einzige Zeile des Blocks, die keine fachliche Absprache brauchte.
@@ -821,7 +822,7 @@ Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 > Reihenfolge beachten: T35 ist die kleine Absicherung, T36 die günstige
 > Verbesserung, T37 der eigentliche Umbau.
 
-### T35 · Wochen beim Laden an ihrer `position` ausrichten 🔧
+### T35 · Wochen beim Laden an ihrer `position` ausrichten 🔧 ✅ erledigt
 **`lib/data.ts:614-625`** reiht die geladenen Zeilen **positionsblind**
 aneinander. Fehlt eine Position (etwa nach einem stillen Schreibfehler, vgl. T5),
 verschieben sich alle Indizes — und damit **jeder** gespeicherte `task_key`.
@@ -836,7 +837,7 @@ Ein Array der Länge `höchstePosition+1` anlegen und jede Zeile an ihren
 > (Lücke in der Mitte, Lücke am Anfang des Fensters); ohne die Änderung fallen
 > beide.
 
-### T36 · Wochenabstand aus `week.start` statt aus dem Index 🔧
+### T36 · Wochenabstand aus `week.start` statt aus dem Index 🔧 ✅ erledigt
 `LOAD_RADIUS = 2` heißt heute „±2 **Einträge**", nicht „±2 Wochen". Fehlt eine
 Woche im Import (Kongress, Urlaub), misst die Fairness-Logik über einen ganz
 anderen Zeitraum — während das Sheet weiter „*n* Aufgaben in 5 Wochen" schreibt.
@@ -1018,7 +1019,7 @@ den Nutzer informieren.
 > der Grund für den Umweg über das Nachsehen vor dem Konfliktalarm, und den
 > braucht es nun als Sicherung, nicht als Krücke.
 
-### T40 · Geteilte Logik für Client und Edge Functions 🔧
+### T40 · Geteilte Logik für Client und Edge Functions 🔧 ✅ erledigt
 Viermal dupliziert: `meetingDayOffsets`, `displayName`, `taskDate`,
 task_key-Bildung, `SKIP_ROLE`. Daraus entstand B8 (`send-reminders` nutzt den
 Array-Index statt `position`, während `substitute` es richtig macht).
