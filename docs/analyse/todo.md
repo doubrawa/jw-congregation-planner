@@ -569,6 +569,12 @@ Ein Array der Länge `höchstePosition+1` anlegen und jede Zeile an ihren
 `position`-Index setzen; Lücken werden `stubWeek()`. Zehn Zeilen.
 → [code-review.md § 2.6](code-review.md)
 
+> **Umgesetzt am 8. August 2026** — genau so, plus eine Schranke: eine Zeile mit
+> einer Position außerhalb des geladenen Fensters wird ausgelassen statt an
+> falscher Stelle gezeigt. Zwei Tests in `data-load.test.ts` halten es fest
+> (Lücke in der Mitte, Lücke am Anfang des Fensters); ohne die Änderung fallen
+> beide.
+
 ### T36 · Wochenabstand aus `week.start` statt aus dem Index 🔧
 `LOAD_RADIUS = 2` heißt heute „±2 **Einträge**", nicht „±2 Wochen". Fehlt eine
 Woche im Import (Kongress, Urlaub), misst die Fairness-Logik über einen ganz
@@ -578,6 +584,25 @@ Betroffen: `assignmentDistance` (`planning.ts:117`), `loadWindow`
 
 Eine Funktion `wochenAbstand(a, b)` aus `start` (Fallback: Indexdifferenz).
 Kein Datenmodell-Umbau.
+
+> **Umgesetzt am 8. August 2026.** `wochenAbstand` liegt in `helpers.ts` und
+> rechnet aus `week.start`; fehlt das Datum (Demo, Platzhalter, von Hand
+> angelegte Wochen), bleibt es beim Indexabstand.
+>
+> Drei Stellen hängen daran, und jede hatte ihren eigenen Fehler:
+> - `assignmentDistance` — die Wartezeit zählte Einträge.
+> - `loadWindow` — die fünf Quadrate liefen über Indizes. Fehlt eine Woche,
+>   zeigten sie eine zwei Wochen alte Aufgabe als „vorige Woche". Jetzt wird
+>   die Woche zum jeweiligen Datum gesucht; gibt es sie nicht, bleibt das
+>   Quadrat leer.
+> - **Serien-Konflikt** — „drei Wochen in Folge" zählte drei *Einträge*. Lag
+>   dazwischen eine Kongresswoche, meldete die App eine Serie, die keine war.
+>
+> Gegenprobe für alle drei einzeln gefahren. Beim Serien-Test fiel dabei auf,
+> dass die erste Fassung grün blieb, ohne etwas zu prüfen: `weekConflicts`
+> meldet nur Serien, die *kürzer* als der geladene Zeitraum sind, und bei genau
+> drei Wochen greift das. Der Test hat jetzt eine vierte Woche — und fällt ohne
+> die Korrektur.
 
 ### T37 · `task_key` von der Position lösen 🏗
 Der positionsbasierte Schlüssel ist die Ursache von T16, der Fragilität von T35

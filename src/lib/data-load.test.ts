@@ -127,6 +127,37 @@ describe('loadCongregationData', () => {
       expect(res.data.weekFrom).toBe(0)
       expect(res.data.weeks).toEqual([])
     })
+
+    /**
+     * T35: jede Zeile an ihre eigene Position, nicht der Reihe nach.
+     *
+     * Vorher wurden die geladenen Zeilen schlicht hintereinander gehängt.
+     * Fehlt eine Position — etwa weil ein Schreibvorgang früher stumm
+     * fehlschlug (T5) —, rutscht alles dahinter einen Index nach vorn. Der
+     * Index **ist** die Position und steckt in jedem `task_key`: sämtliche
+     * Bestätigungen zeigten danach auf die Nachbarwoche.
+     */
+    it('eine fehlende Position verschiebt die folgenden Wochen nicht', async () => {
+      mitWochen(3, [0, 1, 3]) // Position 2 fehlt
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.weeks).toHaveLength(4)
+      expect(res.data.weeks[2].stub).toBe(true) // die Lücke wird Platzhalter …
+      expect(res.data.weeks[3].stub).toBeUndefined() // … und Position 3 bleibt 3
+    })
+
+    it('auch eine Lücke am Anfang des Ladefensters bleibt eine Lücke', async () => {
+      const ab = 60 - WEEK_LIMIT
+      const geladen = Array.from({ length: WEEK_LIMIT }, (_u, i) => ab + i).filter((p) => p !== ab)
+      mitWochen(59, geladen)
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.weeks).toHaveLength(60)
+      expect(res.data.weeks[ab].stub).toBe(true)
+      expect(res.data.weeks[ab + 1].stub).toBeUndefined()
+    })
   })
 
   it('ohne Mitgliedschaft → no-membership', async () => {
