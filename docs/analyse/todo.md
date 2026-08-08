@@ -887,12 +887,25 @@ dort im **Plural, im Titel einer Frage** („Warum veranstalten Jehovas Zeugen
 große Kongresse?"). Für einen Listeneintrag muss der Singular daraus gewonnen
 werden; das ist je Sprache zu prüfen, nicht mechanisch abzuschneiden.
 
-**Entschieden (Betreiber, 8.8.2026):** Der Kongress trägt **von und bis**. Bleibt
-„bis" leer, gilt der eine Tag — ein Kreiskongress dauert einen, ein
-Regionalkongress drei. Damit muss niemand dasselbe Datum zweimal eintragen, und
-die Anzeige kann beides bilden: „Kongress am 17. Oktober" bzw. „Kongress vom 16.
-bis 18. Oktober". Beide Beschriftungen (`von`, `bis`) stehen bereits in allen 34
-Sprachen gemessen bereit.
+**Entschieden (Betreiber, 8.8.2026):** Der Kongress trägt **von und bis**, und
+**„bis" wird beim Eintragen von „von" mit demselben Wert vorbelegt.** Ein
+Kreiskongress dauert einen Tag, ein Regionalkongress drei — mit der Vorbelegung
+muss für den kurzen Fall nichts geändert werden, und trotzdem sind **beide Werte
+immer gefüllt**. Das ist der eigentliche Gewinn gegenüber einem leeren Ende: es
+gibt keinen Sonderfall „kein bis", weder in der Anzeige noch in der
+Konfliktprüfung noch beim Erinnerungsversand.
+
+Vorbelegt wird nur, solange „bis" leer ist oder vor „von" läge — ein bereits
+eingetragenes Ende darf eine spätere Korrektur des Anfangs nicht überschreiben.
+Die Anzeige bildet daraus beides: „Kongress am 17. Oktober", wenn von und bis
+gleich sind, sonst „Kongress vom 16. bis 18. Oktober".
+
+Beide Beschriftungen (`von`, `bis`) stehen bereits in allen 34 Sprachen gemessen
+bereit. Anmerkung fürs Umsetzen: Dasselbe Feldpaar gibt es schon bei den
+**Abwesenheiten**, dort ohne Vorbelegung und stattdessen mit der Prüfung
+„„Von" darf nicht nach „Bis" liegen" (`toastVonNachBis`). Ob die Vorbelegung
+auch dorthin gehört, ist eine eigene Entscheidung — hier nur notiert, damit die
+beiden Stellen nicht unbemerkt auseinanderlaufen.
 
 #### Wo es eingestellt wird: ein vierter Reiter
 
