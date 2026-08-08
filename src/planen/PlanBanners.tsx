@@ -7,6 +7,7 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { fsDate, fsWeekConflicts } from '../data/fs'
+import { istAusgefallen } from '../data/helpers'
 import { openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
 import type { MeetingKey, MeetingTab } from '../data/types'
 import { LOCALES } from '../i18n/langs'
@@ -129,6 +130,8 @@ export function OpenSlotsBanner({ tab, tpw }: { tab: MeetingKey; tpw: (s: string
   const { t, tu } = useT()
   const rawWeek = state.weeks[state.week]
   if (!rawWeek) return null
+
+  if (istAusgefallen(rawWeek, tab)) return null // entfällt → nichts offen (T30)
 
   const openSlots = openSlotLabels(rawWeek[tab], state.services)
   const openTotal = openSlots.reduce((sum, slot) => sum + slot.n, 0)

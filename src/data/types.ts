@@ -275,6 +275,45 @@ export interface Meeting {
   auxRatgeber?: SlotAssignment
 }
 
+/**
+ * Abweichung **einer** Zusammenkunft von der Regel (T30).
+ *
+ * Der Anlass ist praktisch: mehrere Versammlungen teilen sich oft einen
+ * Königreichssaal. Hat eine davon Dienstwoche, muss eine **andere** ihren Tag
+ * verlegen, weil man sich abstimmen muss. Eine Sonderwoche verschiebt also
+ * Tag und Uhrzeit, sie ändert nicht bloß den Ablauf — und es gibt Gründe, die
+ * einen Ausfall rechtfertigen (Kongress, Gedächtnismahl).
+ *
+ * Deshalb **kein** Satz einzelner Schalter je Sonderfall, sondern eine Aussage:
+ * *diese Zusammenkunft weicht ab*. Die bekannten Fälle sind Ausprägungen davon.
+ *
+ * Bewusst ein eigenes Feld statt eines Eintrags in `Meeting.date`: dort steht
+ * **Anzeigetext** in der Sprache der Wochenseite. Aus Anzeigetext Werte
+ * zurückzulesen war schon zweimal der Fehler (T32 die Minuten, T33 das Lied).
+ * `Meeting.date` bleibt als Quelle bestehen — es trägt die Termine der
+ * Alt-Datensätze —, hat aber den niedrigeren Rang.
+ */
+export interface Abweichung {
+  /**
+   * Ausgeschriebener Wochentag, kanonisch deutsch („Donnerstag") — wie überall
+   * in den Wochendaten; übersetzt wird erst bei der Anzeige.
+   */
+  day?: string
+  /** Abweichende Uhrzeit, „19:00". */
+  time?: string
+  /** Die Zusammenkunft entfällt in dieser Woche. */
+  cancelled?: boolean
+  /**
+   * Grund, vom Planer frei formuliert („Kongress in Nürnberg", „Saal belegt —
+   * Dienstwoche der Nachbarversammlung").
+   *
+   * Bleibt unübersetzt: es sind die Worte des Planers, wie ein Name oder ein
+   * Vortragsthema. Genau deshalb ist er zugleich der einzige Text im Banner,
+   * für den nichts erfunden werden musste.
+   */
+  reason?: string
+}
+
 export interface Week {
   range: string // z. B. "7.–13. September"
   book: string // Bibelbuch (kursiv)
@@ -284,6 +323,16 @@ export interface Week {
   co?: boolean // Besuch des Kreisaufsehers (Chip, Dienstvortrag statt VBS)
   mem?: boolean // Gedächtnismahl-Woche (Chip + Banner)
   memCancel?: MeetingTab // ausfallende Zusammenkunft (deren Tab zeigt das Gedächtnismahl)
+  /**
+   * Abweichungen je Zusammenkunft (T30) — verlegter Tag, andere Uhrzeit,
+   * Ausfall, Grund. Fehlt bei allen Wochen, die der Regel folgen.
+   *
+   * `mem`/`memCancel` bleiben daneben bestehen und werden weiterhin gelesen:
+   * eine Gedächtnismahl-Woche ist ein Ausfall mit bekanntem Grund. Gefragt
+   * wird nie direkt, sondern über `istAusgefallen(week, tab)` — die eine
+   * Stelle, die beide Quellen kennt.
+   */
+  dev?: Partial<Record<MeetingKey, Abweichung>>
   mid: Meeting // Unter der Woche
   we: Meeting // Wochenende
   /**

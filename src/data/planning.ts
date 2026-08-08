@@ -18,7 +18,9 @@ import {
   isPlainPublisher,
   isQualified,
   isSong,
+  istAusgefallen,
   LOAD_RADIUS,
+  MEETING_TABS,
   partnerGenderOk,
   partWorkload,
   idAufloeser,
@@ -116,7 +118,9 @@ function assignmentDistance(
     const merken = (map: Map<string, number>, id: string | undefined): void => {
       if (id && (map.get(id) ?? Infinity) > d) map.set(id, d)
     }
-    for (const meeting of [week.mid, week.we]) {
+    for (const tab of MEETING_TABS) {
+      if (istAusgefallen(week, tab)) continue // entfällt → keine Zuteilung (T30)
+      const meeting = week[tab]
       const ratgeber = wer(meeting.auxRatgeber)
       merken(part, ratgeber)
       merken(any, ratgeber)
@@ -423,6 +427,13 @@ export function autoAssignMeeting(
   abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): AutoAssignResult {
   const next = structuredClone(weeks)
+  // Entfällt die Zusammenkunft, gibt es nichts zu besetzen (T30). Ohne diese
+  // Zeile verteilte „Automatisch zuteilen" Aufgaben für einen Abend, an dem
+  // niemand zusammenkommt — und benachteiligte die Gewählten anschließend bei
+  // der nächsten echten Zusammenkunft, weil sie als ausgelastet gälten.
+  if (istAusgefallen(next[weekIndex], tab)) {
+    return { weeks, count: 0, newly: [], newlyIds: [], unfilled: 0 }
+  }
   const meeting = next[weekIndex][tab]
 
   // Reinigungs-Regel: Aufseher und Gehilfe der Gruppe, die in dieser Woche
@@ -1038,6 +1049,11 @@ function eachAssignedSlot(
 ): void {
   weeks.forEach((week, wi) => {
     for (const tab of TABS) {
+      // Entfällt die Zusammenkunft, gibt es dazu nichts zu bestätigen, zu
+      // erinnern oder zu vertreten (T30). Die Zuteilungen bleiben in den Daten
+      // stehen — sie sind nicht verwaist, sie ruhen nur, solange nichts
+      // stattfindet.
+      if (istAusgefallen(week, tab)) continue
       const meeting = week[tab]
       // Echtes Datum der Zusammenkunft (nur bei importierten Wochen) → Countdown.
       const at = meetingDateMs(week, tab, meetings)
@@ -1272,7 +1288,11 @@ export function weekConflicts(
   const conflicts: Conflict[] = []
   const werIst = idAufloeser(persons)
   const nachId = new Map(persons.map((p) => [p.id, p]))
-  const tabs: MeetingKey[] = tab ? [tab] : ['mid', 'we']
+  // Entfallene Zusammenkünfte fallen heraus (T30): wer an einem Tag nicht
+  // drankommt, ist dort weder doppelt eingeteilt noch abwesend-und-eingeteilt.
+  // Ein Warnbanner über eine Zusammenkunft, die gar nicht stattfindet, wäre
+  // Lärm — und verdeckt die echten Konflikte daneben.
+  const tabs = (tab ? [tab] : MEETING_TABS).filter((tb) => !istAusgefallen(week, tb))
 
   // absent: in dieser Woche abwesend, aber eingeteilt
   for (const tb of tabs) {

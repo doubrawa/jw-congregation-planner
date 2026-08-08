@@ -159,6 +159,13 @@
   color: var(--wein);
 }
 
+/* Abweichende Zusammenkunft (T30): verlegt oder ausgefallen. Beschriftet mit
+   dem Namen der betroffenen Zusammenkunft — ausgefallene durchgestrichen. */
+.week-chip--dev {
+  background: var(--tGld);
+  color: var(--gld);
+}
+
 /* Hinweis-Banner Gedächtnismahl (ausfallende Zusammenkunft) */
 .mem-banner {
   margin-top: 12px;

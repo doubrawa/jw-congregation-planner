@@ -7,6 +7,7 @@
  * `week.start` ist der Montag der Woche (nur bei jw.org-importierten Wochen
  * gesetzt); Demo-/Vorlagen-Wochen haben keins → kein Countdown.
  */
+import { abweichung } from './helpers'
 import type { MeetingKey, Week } from './types'
 
 /** Wochentags-Kürzel → Tage nach Montag. */
@@ -76,22 +77,34 @@ export function fromIso(iso: string): Date {
 /**
  * Wochentag-Versatz dieser einen Zusammenkunft: ab Montag gezählt.
  *
- * Ein eigener Termin im `date`-Feld schlägt den Rhythmus aus den Einstellungen
- * — nur so landen Gedächtnismahl und Kongresswoche auf dem richtigen Tag.
+ * Drei Quellen, in dieser Rangfolge:
+ *  1. eine **Abweichung** dieser Woche (`week.dev`, T30) — der Planer hat den
+ *     Tag ausdrücklich verlegt, etwa weil sich mehrere Versammlungen einen
+ *     Saal teilen und eine davon Dienstwoche hat;
+ *  2. ein eigener Termin im `date`-Feld (so tragen Alt-Datensätze das
+ *     Gedächtnismahl und die Kongresswoche);
+ *  3. der Rhythmus aus den Einstellungen.
+ *
  * Diese Regel gehört an EINE Stelle: der Countdown rechnete sie früher nicht
  * mit, Zeitleiste und Abwesenheitsprüfung schon, und dann nannten Erinnerung
  * und Anzeige verschiedene Tage.
  */
 export function meetingOffset(week: Week, tab: MeetingKey, meetings: string): number {
-  return meetingDateParts(week[tab].date).offset ?? meetingDayOffsets(meetings)[tab]
+  const tag = abweichung(week, tab)?.day
+  const verlegt = tag ? WEEKDAY_OFFSET[tag] : undefined
+  return verlegt ?? meetingDateParts(week[tab].date).offset ?? meetingDayOffsets(meetings)[tab]
 }
 
 /**
- * Uhrzeit dieser einen Zusammenkunft — eigener Termin vor Einstellungen,
- * gleiche Rangfolge wie beim Tag. Leer, wenn nirgends eine steht.
+ * Uhrzeit dieser einen Zusammenkunft — Abweichung vor eigenem Termin vor
+ * Einstellungen, gleiche Rangfolge wie beim Tag. Leer, wenn nirgends eine steht.
  */
 export function meetingTime(week: Week, tab: MeetingKey, meetings: string): string {
-  return meetingDateParts(week[tab].date).zeit ?? meetingTimesOf(meetings)[tab]
+  return (
+    abweichung(week, tab)?.time ??
+    meetingDateParts(week[tab].date).zeit ??
+    meetingTimesOf(meetings)[tab]
+  )
 }
 
 /**
@@ -169,8 +182,19 @@ export function meetingDateText(
 ): string {
   const roh = week[tab].date
   const kurz = roh.split(' · ').slice(0, 2).join(' · ')
-  if (meetingDateParts(roh).offset !== undefined) return kurz
-  if (!week.start) return kurz
+  // Eine Abweichung (T30) schlägt auch den eigenen Termin im `date`-Feld: der
+  // Planer hat den Tag ausdrücklich verlegt, das `date`-Feld nennt noch den
+  // alten. Ohne diese Zeile stünde in „Meine Aufgaben", im S-89-Formular und im
+  // Erinnerungstext weiter der Termin, an dem niemand kommt.
+  const abw = abweichung(week, tab)
+  const verlegt = Boolean(abw?.day || abw?.time)
+  if (!verlegt && meetingDateParts(roh).offset !== undefined) return kurz
+  if (!week.start) {
+    // Ohne Startdatum (Demo, Vorlagen) lässt sich kein Kalendertag rechnen. Eine
+    // verlegte Uhrzeit steht trotzdem fest und gehört dazu.
+    if (abw?.time) return `${kurz.split(' · ')[0]} · ${abw.time}`
+    return kurz
+  }
   const zeit = meetingTime(week, tab, meetings)
   const tagText = deutschesDatum(meetingDate(week, wi, tab, new Date(), meetings))
   return zeit ? `${tagText} · ${zeit}` : tagText

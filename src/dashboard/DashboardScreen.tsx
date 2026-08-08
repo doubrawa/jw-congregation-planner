@@ -3,6 +3,7 @@ import { useAbwesend } from '../app/useAbwesend'
 import { CURRENT_PERSON_ID } from '../data/demo'
 import { fsWeekConflicts } from '../data/fs'
 import { currentWeekIndex } from '../data/meeting-dates'
+import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
@@ -49,8 +50,14 @@ export function DashboardScreen() {
 
   const shortDate = (s: string): string => tp(s).split(' · ').slice(0, 2).join(' · ')
 
+  // Entfallene Zusammenkünfte zählen nicht mit (T30): ihre Plätze sind nicht
+  // „offen", sie werden gar nicht gebraucht. Sonst stünde auf dem Start-Bildschirm
+  // eine Zahl, die niemand abarbeiten kann.
   const openSlots = week
-    ? countOpenSlots(week.mid, state.services) + countOpenSlots(week.we, state.services)
+    ? MEETING_TABS.reduce(
+        (n, tab) => n + (istAusgefallen(week, tab) ? 0 : countOpenSlots(week[tab], state.services)),
+        0,
+      )
     : 0
   // Treffpunkte zählen mit: für den Planer ist „3 mögliche Konflikte" eine
   // Zahl über die ganze Woche, und ein abwesender Treffpunkt-Leiter ist genauso

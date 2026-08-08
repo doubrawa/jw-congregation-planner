@@ -101,6 +101,38 @@ Abwesende aus und vergibt niemanden doppelt am selben Tag. Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
+### Sonderwoche: verlegen oder absagen
+
+Manchmal weicht eine Woche ab — mehrere Versammlungen teilen sich einen Saal,
+eine hat Dienstwoche, und ihr müsst euren Tag verschieben. Oder es ist
+Kongress und die Zusammenkunft entfällt ganz.
+
+Im **Planen**-Tab steht dafür über den Zuteilungen ein kleines Feld, jeweils für
+die gerade gewählte Zusammenkunft:
+
+| Bedienelement | Wirkung |
+| --- | --- |
+| **Schalter** neben dem Namen der Zusammenkunft | Aus = sie findet in dieser Woche **nicht** statt |
+| **Wochentag** | Verlegt sie auf einen anderen Tag |
+| **Uhrzeit** | Verlegt den Anfang |
+| **Grund** | Freitext, erscheint im Hinweis — z. B. „Kongress in Nürnberg" |
+
+Wählst du wieder den regulären Tag bzw. die reguläre Uhrzeit, ist die Verlegung
+damit aufgehoben; das Feld verliert seine Hervorhebung.
+
+**Was daran hängt.** Eine Verlegung zieht alles mit: den Termin in „Meine
+Aufgaben", das S-89-Formular, die Erinnerungen und die Beschriftung der Reiter.
+Fällt eine Zusammenkunft aus, hat sie keine offenen Plätze mehr, taucht in
+keiner Konfliktprüfung auf, wird nicht automatisch zugeteilt, verschickt keine
+Erinnerungen und zählt bei niemandem auf die Auslastung.
+
+**Die Zuteilungen bleiben trotzdem stehen.** Nimmst du den Ausfall zurück, ist
+deine Planung wieder da — es geht nichts verloren.
+
+> Die Gedächtnismahl-Woche ist **kein** Ausfall: dort wird der reguläre Ablauf
+> ersetzt, das Mahl hat eigene Zuteilungen. Dafür gibt es weiterhin den eigenen
+> Hinweis.
+
 ### Öffentlicher Vortrag: Gastredner oder eigener Redner
 
 Der Rednerplatz am Wochenende kann beides sein, und du entscheidest es Woche für

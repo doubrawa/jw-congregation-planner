@@ -1,8 +1,8 @@
 import { useApp } from '../app/context'
-import { meetingDayOffsets } from '../data/meeting-dates'
+import { meetingDayOffsets, meetingOffset } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import type { MeetingTab } from '../data/types'
+import type { MeetingTab, Week } from '../data/types'
 import './components.css'
 
 interface MeetingTabsProps {
@@ -10,6 +10,13 @@ interface MeetingTabsProps {
   onChange: (tab: MeetingTab) => void
   className?: string
   showFs?: boolean // dritter Reiter „Predigtdienst“
+  /**
+   * Die gezeigte Woche. Weicht sie ab (T30), steht auf dem Reiter ihr
+   * **tatsächlicher** Tag — nicht der Rhythmus aus den Einstellungen. Sonst
+   * stünde „Sonntag" über einer Zusammenkunft, die auf Samstag verlegt wurde.
+   * Ohne Woche gilt weiterhin der Rhythmus.
+   */
+  week?: Week
 }
 
 /** Wochentagsname (App-Sprache) für einen Versatz 0..6 (Montag..Sonntag). */
@@ -31,7 +38,7 @@ function weekdayName(offset: number, locale: string): string {
  * anderen Sprachen, großer Schriftgrad), bricht die Leiste um — alle Reiter
  * müssen sichtbar sein, seitliches Scrollen findet man nicht.
  */
-export function MeetingTabs({ tab, onChange, className, showFs = false }: MeetingTabsProps) {
+export function MeetingTabs({ tab, onChange, className, showFs = false, week }: MeetingTabsProps) {
   const { state } = useApp()
   const { t } = useT()
   const offsets = meetingDayOffsets(state.congregation.meetings)
@@ -39,7 +46,9 @@ export function MeetingTabs({ tab, onChange, className, showFs = false }: Meetin
   // [Schlüssel, sichtbare Beschriftung, vorgelesene Beschriftung]
   const tabs: ReadonlyArray<[MeetingTab, string, string]> = [
     ...(['mid', 'we'] as const).map((key): [MeetingTab, string, string] => {
-      const day = weekdayName(offsets[key], locale)
+      // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus.
+      const versatz = week ? meetingOffset(week, key, state.congregation.meetings) : offsets[key]
+      const day = weekdayName(versatz, locale)
       return [key, day, fill(t.versammlungTag, { tag: day })]
     }),
     ...(showFs ? ([['fs', t.tabFs, t.tabFs]] as ReadonlyArray<[MeetingTab, string, string]>) : []),
