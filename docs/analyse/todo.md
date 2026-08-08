@@ -692,6 +692,24 @@ Eröffnung.
 
 ---
 
+### T62 · Kreisaufseher-Woche: Dienstvortrag statt Versammlungsbibelstudium 🏗
+Beim Umsetzen von T30 aufgefallen, **nicht** mit erledigt (eigener Punkt, damit
+er nicht untergeht): `week.co` setzt weiterhin nur den Chip. Der Ablauf bleibt
+unverändert — das Versammlungsbibelstudium steht dort, wo in der Dienstwoche
+der Dienstvortrag des Kreisaufsehers gehört.
+
+Das ist kein Terminthema (T30 deckt Verlegung und Ausfall ab), sondern ein
+Eingriff in den importierten Ablauf: ein Punkt wird ersetzt, mit eigenem Titel,
+eigener Dauer und eigenen Plätzen. **Vor der Umsetzung zu klären:**
+
+- Wie heißt der Punkt (kanonisch deutsch, damit ihn `translate-data.ts` fassen
+  kann)? „Dienstvortrag" steht dort bereits in allen Sprachen.
+- Wie lang ist er, und verschiebt sich dadurch das Ende der Zusammenkunft?
+- Welche Plätze hat er — nur den Kreisaufseher (extern, wie `Gastredner`), oder
+  auch einen Leser?
+- Was passiert mit den Zuteilungen des ersetzten Bibelstudiums? Nach dem Muster
+  von T30 sollten sie stehen bleiben und nur nicht zählen.
+
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
 > Reihenfolge beachten: T35 ist die kleine Absicherung, T36 die günstige
@@ -1263,38 +1281,53 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 
 ## Fortschritt
 
-Stand 7. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ☐ offen
+Stand 8. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☑☑☑☑ · Phase 7 ☑☑☐☐☐☑☐☐ ·
-Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☐
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑⚠☑ ·
+Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**51 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 8 offen.**
-Der Testbestand ist von 727 auf 1241 gewachsen; jede Korrektur hat einen Test,
+**60 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 teilweise
+(T41), 1 neu aufgenommen (T62).**
+Der Testbestand ist von 727 auf 1335 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
 
-> **Am 8. August 2026 erledigt:** T32, T33, T34 (F4/F7/F8), T35, T36, T40.
-> Dabei zurückgewiesen: **F12** (Leser braucht keine Trennung nach
+> **Am 8. August 2026 erledigt, erste Runde:** T32, T33, T34 (F4/F7/F8), T35,
+> T36, T40. Dabei zurückgewiesen: **F12** (Leser braucht keine Trennung nach
 > Zusammenkunft). Neu aufgenommen: **T61**.
+>
+> **Am 8. August 2026 erledigt, zweite Runde — die verbliebenen acht:**
+> **T61** (Einfügestelle am Leser-Slot), **T29** (eigener Redner umschaltbar),
+> **T39** (Stand je Woche gegen Schreibkonflikte), **T30** (Sonderwochen als
+> *eine* Abweichung), **T38** (Fremdschlüssel hält), **T37** (Bestätigung am
+> Programmpunkt statt an seiner Position), **T42** (Sperrklinke für
+> `noUncheckedIndexedAccess`, 18 von 23 Produktionsdateien sauber) und **T41**
+> zur Hälfte (Kontexte getrennt, Felder gruppiert — Selektoren stehen aus).
+>
+> Dabei aufgefallen und neu aufgenommen: **T62** (Dienstvortrag statt
+> Versammlungsbibelstudium in der Kreisaufseher-Woche).
 
 ### Was offen ist und warum
 
 > **Der Deploy ist erledigt** (7. August 2026): `substitute` und
 > `send-reminders` laufen in der Fassung des Repos. Alles, was bis dahin nur
 > geschrieben, aber nicht in Betrieb war — T9/T10/T24, T8/T12/T14 und die
-> Treffpunkt-Erinnerungen aus T31 —, ist damit scharf. Offen sind nur noch
-> Code- und Fachfragen.
+> Treffpunkt-Erinnerungen aus T31 —, ist damit scharf.
 
-| | Aufgaben | Warum offen |
+| | Aufgabe | Warum offen |
 | --- | --- | --- |
-| **Phase 6** | T29, T30, T32, T33, T34 | **Fachlich geklärt am 7.8.2026** (siehe die Kästen bei den Punkten): T29 wird umschaltbar (Person ↔ Freitext), von T34 sind F4/F7/F8 freigegeben und **F12 zurückgewiesen**, F6 war schon miterledigt. T32 und T33 brauchten ohnehin keine Absprache. **Nur T30 bleibt offen** — der Betreiber hat den Zuschnitt erweitert (Verlegung von Tag und Uhrzeit, nicht nur Ausfall), das gehört geplant. |
-| **Phase 7** | T37–T39, T41, T42 | **T35, T36 und T40 sind am 8.8.2026 erledigt.** Offen bleiben **T39 + T37** als eigener Block mit Migration (weiterhin abzustimmen) sowie T38/T41/T42 später oder gar nicht. |
+| **Phase 7** | T41 (Selektoren) | Zwei von drei Schritten sind gemacht. Der dritte — `useSyncExternalStore` mit Selektoren — rührt an den Kern von 45 Bausteinen, und es gibt keinen Test, der Render-Verhalten im Zusammenspiel prüft. Gehört in eine eigene Sitzung mit eigenem Sicherheitsnetz. |
+| **Phase 7** | T42 (Rest) | Fünf Produktionsdateien und 34 Testdateien tragen noch Meldungen. Die Sperrklinke hält den Stand; die Zahl kann nur fallen. |
+| **Phase 6** | T62 | Neu, fachliche Vorgabe fehlt (Titel, Dauer, Slots des Dienstvortrags). |
 
-> **Was heute Nacht unbeaufsichtigt laufen darf** (Task
-> `jw-planner-todo-weiter`, einmalig um 3:07): **T32, T33, T35, T40, T36** und
-> aus T34 **F4, F7, F8**. Gesperrt bleiben T29 (fachlich geklärt, aber ein
-> größerer Umbau), T30 (Planung nötig), T39/T37 (Migration) sowie T38/T41/T42.
+> ⚠ **Zwei Dinge liegen beim Betreiber**, sonst wirkt ein Teil der Arbeit nicht:
+>
+> 1. **[migration-016](../../supabase/migration-016-wochen-stand.sql) einspielen** —
+>    ohne sie schlägt jedes Speichern einer Woche mit „Spalte existiert nicht" fehl (T39).
+> 2. **`send-reminders` und `substitute` neu deployen** — für T40 (geteilte
+>    Regeln), T30 (Verlegung und Ausfall) und T37 (Schlüssel über die stabile
+>    Kennung).
 >
 > Die **Farbschema-Namen** („Jasmin", „Matcha") bleiben in nicht-lateinischen
 > Oberflächen lateinisch stehen — Eigennamen, wie Markennamen auch. Der Punkt
