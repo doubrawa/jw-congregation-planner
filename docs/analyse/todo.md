@@ -817,6 +817,165 @@ gebaut wird.
 Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 Älteste)? Werden sie zugeteilt oder nur angekündigt? Gibt es Erinnerungen?
 
+### T64 · Der Anlass der Woche — und wo er eingestellt wird 🏗 — aufgenommen 8. August 2026
+Aufgefallen beim Nachziehen des Designs: Hakt man **BESUCH DES KREISAUFSEHERS**
+an, ändert sich auch das Wochenende — der Schalter steht aber im Panel der
+Zusammenkunft **unter der Woche**.
+
+#### Der Befund
+
+[SonderwochePanel](../../src/planen/SonderwochePanel.tsx) bekommt `tab={mtab}`;
+alles darin gilt **einer** Zusammenkunft, und `setAbweichung` trägt den Reiter
+als Argument. Der Kreisaufseher-Schalter ruft dagegen `setDienstwoche` **ohne**
+Reiter — er gilt der Woche. Zwei Geltungsbereiche in einer Box, benannt nach dem
+kleineren; der Quelltext gibt es im Kommentar darüber selbst zu.
+
+Daraus drei Folgen:
+
+1. Auf dem Wochenend-Reiter ist der Ablauf umgebaut, der Griff dazu fehlt.
+2. Der Schalter erscheint und verschwindet beim Reiterwechsel, obwohl sich an
+   der Sache nichts ändert.
+3. Die Termine aus **T63** hätten dasselbe Problem — sie gehören der Woche und
+   haben heute keinen Ort.
+
+#### Die Regel
+
+> Ein Bedienelement gehört auf die Ebene, die es verändert. Ein **Schalter oder
+> Auswahlfeld** existiert genau dort, wo sich **das Programm selbst** ändert;
+> alles andere ist **Dokumentation** — Freitext, der nichts steuert.
+
+#### Der Anlass der Woche (neues Feld)
+
+| Wert | Was er mit der Woche macht | Termin |
+| --- | --- | --- |
+| Normal | nichts | — |
+| Besuch des Kreisaufsehers | baut beide Zusammenkünfte um (T62) | — |
+| Gedächtnismahl | eine entfällt, die andere wird ersetzt | Datum + Uhrzeit |
+| Kongress | **beide** entfallen | Zeitraum: von – bis |
+
+`co`, `mem` und `memCancel` gehen darin auf — bestehende Wochen müssen einmal
+umgestellt werden. Das Gedächtnismahl wird damit **erstmals einstellbar**;
+bisher steht es nur im Datensatz.
+
+**„Anderer Grund" ist kein Anlass**, sondern dessen Abwesenheit plus eine Notiz:
+„Normal" oben, Freitext unten bei der betroffenen Zusammenkunft. Nähme man ihn
+in die Liste auf, verstecke man das Feld für die drei echten Anlässe — und
+„Dienstwoche, deshalb Freitag statt Dienstag" ließe sich nicht mehr
+danebenschreiben.
+
+**Der Anlass schlägt vor, die Zusammenkunft entscheidet.** „Kongress" schaltet
+beide aus, die Schalter darunter bleiben bedienbar — sonst ließe sich der Fall
+nicht abbilden, in dem nur das Wochenende ausfällt. Dasselbe Verhältnis wie
+zwischen Rhythmus (Einstellungen) und Abweichung (Woche).
+
+#### Warum das Datum der eigentliche Gewinn ist
+
+Der Grund ist Freitext und bleibt **bewusst unübersetzt** — es sind die Worte
+des Planers. Wer heute „Kongress" hineinschreibt, lässt ihn für jeden spanischen
+oder koreanischen Verkündiger auf Deutsch dastehen. Mit Anlass **und** Termin
+bildet die App den Satz selbst: „Kongress vom 16. bis 18. Oktober", aus
+gemessenen Bausteinen plus `Intl`.
+
+Die Datumsfelder kosten **kein neues Vokabular**: `s89Datum` („Datum"), `von`
+(„VON") und `bis` („BIS") stehen bereits in allen 34 Sprachen.
+
+Zu messen sind zwei Wörter: **„Kongress"** und der neutrale erste Eintrag.
+Quelle für das erste (vom Betreiber genannt, 8.8.2026):
+<https://www.jw.org/de/bibliothek/broschueren/wille-jehovas/jehovas-zeugen-kongresse/>
+— der „Lesen in"-Umschalter führt über 200 Sprachen. **Achtung:** Das Wort steht
+dort im **Plural, im Titel einer Frage** („Warum veranstalten Jehovas Zeugen
+große Kongresse?"). Für einen Listeneintrag muss der Singular daraus gewonnen
+werden; das ist je Sprache zu prüfen, nicht mechanisch abzuschneiden.
+
+**Entschieden (Betreiber, 8.8.2026):** Der Kongress trägt **von und bis**. Bleibt
+„bis" leer, gilt der eine Tag — ein Kreiskongress dauert einen, ein
+Regionalkongress drei. Damit muss niemand dasselbe Datum zweimal eintragen, und
+die Anzeige kann beides bilden: „Kongress am 17. Oktober" bzw. „Kongress vom 16.
+bis 18. Oktober". Beide Beschriftungen (`von`, `bis`) stehen bereits in allen 34
+Sprachen gemessen bereit.
+
+#### Wo es eingestellt wird: ein vierter Reiter
+
+Vorschlag des Betreibers (8.8.2026): rechts von „Predigtdienst" ein weiterer
+Reiter als **Stift-Symbol**, der die Konfiguration der Woche öffnet. Sonst sind
+diese Einstellungen nicht zu sehen.
+
+Er schlägt die Alternativen: ein Panel über den Reitern kostet auf jeder
+gewöhnlichen Woche Höhe; ein verstecktes Stift-Symbol am Wochenbereich findet
+man nicht; und ein Chip als Schalter existiert nicht, solange nichts gesetzt ist.
+
+Strukturell ist es eine Wiederholung. `MeetingTab = MeetingKey | 'fs'` kennt
+bereits einen Reiter, der keine Zusammenkunft ist, und
+[persist.ts](../../src/app/persist.ts) ist mit `mtab` der eine Trichter zurück.
+Wird der Typ breiter, hört diese Zeile auf, sauber zu verengen — der Compiler
+zeigt also jede Stelle, die sich entscheiden muss.
+[reducer.ts](../../src/app/reducer.ts) hat die Regel „dieser Reiter ist nicht
+erlaubt → zurück auf `mid`" schon (heute für `fs`).
+
+Zuschnitt:
+
+- Eine **Ansicht**, kein Sheet — alle anderen Reiter tauschen den Inhaltsbereich.
+  Ein Overlay wäre ein Knopf, der wie ein Reiter aussieht.
+- Nur im **Planen**, nur für **Planer**: das Programm ist für alle nur lesend,
+  der Gruppenaufseher sieht ohnehin nur „Predigtdienst".
+- Inhalt: Anlass + Termin, darunter **beide** Zusammenkünfte mit findet statt /
+  Wochentag / Uhrzeit / Grund. Heute geht nur die des aktuellen Reiters —
+  „Mittwoch statt Dienstag" **und** „Wochenende entfällt" sind zwei
+  Reiterwechsel.
+- Später der Ort für **T63**: dessen Termine sind dann keine neue Terminart mehr,
+  sondern eine weitere Zeile in einer Liste, die es schon gibt.
+- Neues Vokabular: der vorgelesene Name des Reiters und der Titel der Ansicht.
+- **Achtung:** Die Reiterleiste bricht bei großem Schriftgrad um, statt seitlich
+  zu scrollen. Ein Symbol-Reiter muss das mitmachen und darf nicht wie ein
+  kaputter Reiter aussehen, wenn er allein in der zweiten Zeile landet; im
+  RTL-Layout bleibt er am Ende der Zeile.
+
+#### Was gleich mit erledigt wird
+
+**1 · Der Schlussvortrag bekommt eine eigene Sektion.**
+[meeting-edit.ts](../../src/data/meeting-edit.ts) hängt ihn heute mit
+`wtItems.push(vortrag)` unter die Überschrift WACHTTURM-STUDIUM — dort steht
+dann ein zweiter Punkt, der keiner ist. Der v3-Prototyp sah dafür eine eigene
+Sektion in **Gold** vor; Gold ist am Wochenende unbenutzt (dort nur neutral,
+petrol, wein) und in allen elf Farbschemata tokenisiert — **keine neue
+Bereichsfarbe nötig**, und inhaltlich passend, denn Gold ist unter der Woche die
+Farbe von „Uns im Dienst verbessern". Das Etikett `DIENSTVORTRAG` steht in allen
+33 Sprachen gemessen bereit. Die Rücknahme muss dann die **Sektion** entfernen
+statt nur den Punkt, und die Sprachvarianten (`Week.alt`) brauchen dieselbe
+Sektion — sonst fällt `localizedWeek` stumm aufs Deutsche zurück.
+
+**2 · `TITEL_SCHLUSSVORTRAG` von `'Vortrag'` auf `'Schlussvortrag'`.** In T62 als
+Platzhalter markiert, weil nicht gemessen. Der Betreiber hat am 8.8.2026 18
+Wortlaute von jw.org geliefert:
+
+| Sprache | Wortlaut | | Sprache | Wortlaut |
+| --- | --- | --- | --- | --- |
+| en | Concluding Service Talk | | sr | Zaključni službeni govor |
+| es | Discurso de servicio final | | bg | Заключителен служебен доклад |
+| fr | Discours de service de conclusion | | fi | Viimeinen palveluspuhe |
+| it | Discorso di servizio conclusivo | | el | Τελική Υπηρεσιακή Ομιλία |
+| pt | Discurso de Serviço Final | | cs | Závěrečný služební proslov |
+| nl | Slotlezing | | sk | Záverečný služobný prejav |
+| pl | Końcowe przemówienie służbowe | | zh | 最后的演讲 |
+| ru | Заключительная служебная речь | | ja | 結びの奉仕の話 |
+| uk | Заключна службова промова | | id | Khotbah Dinas Penutup |
+
+Mehr gibt es dort derzeit nicht. Die übrigen 15 Sprachen bekommen **ihr eigenes
+gemessenes „Vortrag"** — geprüft: der Schlüssel steht in allen 33 Sprachen.
+Im Quelltext als **Rückfall markieren** und die Liste in einem Test festnageln,
+wie bei T25 mit den 22 unübersetzten Titeln; sonst liest das später jemand als
+Übersetzung von „Schlussvortrag". Der Vollständigkeitstest aus T26 verlangt den
+Schlüssel ohnehin in jeder Sprache.
+
+Zwei der 18 brechen das Bildungsmuster: Niederländisch **Slotlezing** und
+Chinesisch **最后的演讲** kommen ohne „Dienst" aus. Das sind gut 10 % der
+Stichprobe — der Beleg dafür, dass sich die fehlenden nicht zusammensetzen
+lassen, sondern gemessen werden müssen.
+
+**3 · Abstand am Kreisaufseher-Schalter.** Solange er im heutigen Panel steht,
+klebt er am Grund-Feld: Luft plus eine **Haarlinie** darüber. Der Abstand allein
+sagt „gehört lockerer dazu", die Linie sagt „ist etwas anderes".
+
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
 > Reihenfolge beachten: T35 ist die kleine Absicherung, T36 die günstige
@@ -1478,8 +1637,9 @@ Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**62 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 neu
-aufgenommen und zurückgestellt (T63).**
+**62 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 neu
+aufgenommen (T63 vom Betreiber zurückgestellt, T64 beschlossen und
+ausgeschrieben).**
 Der Testbestand ist von 727 auf 1399 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
@@ -1515,6 +1675,13 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > Dabei aufgefallen und gleich mitgebaut: **T62** (Kreisaufseher-Woche —
 > Dienstvortrag, verkürztes Wachtturm-Studium, Schlussvortrag). Neu
 > aufgenommen und vom Betreiber zurückgestellt: **T63**.
+>
+> **Beim Nachziehen des Designs aufgefallen und ausgeschrieben: T64.** Der
+> Kreisaufseher-Schalter steht im Panel einer Zusammenkunft, ändert aber beide.
+> Daraus wurde die Regel — ein Bedienelement gehört auf die Ebene, die es
+> verändert — und daraus der **Anlass der Woche** samt Termin, ein **vierter
+> Reiter** als sein Ort, und drei kleine Korrekturen aus T62 (eigene Sektion für
+> den Schlussvortrag, sein gemessener Titel, der Abstand am Schalter).
 
 ### Was offen ist und warum
 
@@ -1527,6 +1694,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
+| **Phase 6** | T64 | Neu, beschlossen und ausgeschrieben — fachlich vollständig geklärt. Der Anlass der Woche (Kreisaufseher / Gedächtnismahl / Kongress samt Termin) und ein vierter Reiter, der ihn beherbergt. Zu messen bleiben zwei Wörter („Kongress" und der neutrale erste Eintrag), sonst ist nichts offen. |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:
