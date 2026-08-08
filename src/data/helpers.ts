@@ -314,6 +314,18 @@ export function rolleNennt(rolle: string | undefined, name: string): boolean {
   return false
 }
 
+/**
+ * Neue stabile Kennung für einen Programmpunkt (`PartItem.iid`, T37).
+ *
+ * Kurz und ohne `|`, weil der Aufgaben-Schlüssel daran zerlegt wird.
+ * `crypto.randomUUID` gäbe es auch, wäre aber 36 Zeichen lang für eine Kennung,
+ * die nur innerhalb **einer** Zusammenkunft eindeutig sein muss — Woche und
+ * Zusammenkunft stehen im Schlüssel ohnehin davor.
+ */
+export function neueItemId(): string {
+  return Math.random().toString(36).slice(2, 10)
+}
+
 /* ---- Sonderwochen: wenn eine Zusammenkunft von der Regel abweicht (T30) ---- */
 
 /**

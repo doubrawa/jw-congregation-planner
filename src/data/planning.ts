@@ -323,7 +323,7 @@ export function changedSlotKeys(
       for (const aux of raeume(next)) {
         const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
         slotsOf(item, aux).forEach((slot, ni) => {
-          if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(partTaskKey(wi, tab, si, ii, ni, aux))
+          if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(slotTaskKey(item, wi, tab, si, ii, ni, aux))
         })
       }
     })
@@ -849,6 +849,53 @@ export function partTaskKey(
   return `${wi}|${tab}|${aux ? 'aux' : 'part'}|${si}|${ii}|${ni}`
 }
 
+/**
+ * Schlüssel eines Programmpunkt-Slots über die **stabile Kennung** des Punkts
+ * (T37) — `"60|mid|part|k3f9x|0"` statt `"60|mid|part|2|1|0"`.
+ *
+ * Der Unterschied ist der Abschnitt und die laufende Nummer: sie sind weg. Eine
+ * Bestätigung folgt damit dem Punkt, nicht seinem Platz in der Liste. Genau
+ * daran scheiterte T16 — ein eingefügter LAC-Punkt verschob alle folgenden, und
+ * die Bestätigungen blieben an der alten Zahl kleben.
+ *
+ * **Beide Formen sind an ihrer Länge unterscheidbar**: fünf Felder hier, sechs
+ * beim alten positionsbasierten Schlüssel. Das braucht die Lade-Migration, um
+ * zu erkennen, was sie schon umgestellt hat.
+ */
+export function itemTaskKey(
+  wi: number,
+  tab: MeetingKey,
+  iid: string,
+  ni: number,
+  aux = false,
+): string {
+  return `${wi}|${tab}|${aux ? 'aux' : 'part'}|${iid}|${ni}`
+}
+
+/**
+ * Schlüssel eines Programmpunkt-Slots — die **eine** Stelle, an der zwischen
+ * stabiler Kennung und altem Positions-Schlüssel entschieden wird.
+ *
+ * Alles andere ruft nur noch hier an. Solange eine Woche noch keine Kennungen
+ * trägt (Demo-Daten, Vorlagen, noch nicht migrierte Datensätze), gilt weiterhin
+ * die Position — dieselben Schlüssel wie bisher, also bleiben bestehende
+ * Bestätigungen gültig.
+ */
+export function slotTaskKey(
+  item: PartItem,
+  wi: number,
+  tab: MeetingKey,
+  si: number,
+  ii: number,
+  ni: number,
+  aux = false,
+): string {
+  return item.iid
+    ? itemTaskKey(wi, tab, item.iid, ni, aux)
+    : partTaskKey(wi, tab, si, ii, ni, aux)
+}
+
+
 /** Stabiler Schlüssel des Ratgebers einer Zusammenkunft. */
 export function ratgeberTaskKey(wi: number, tab: MeetingKey): string {
   return `${wi}|${tab}|ratgeber`
@@ -943,12 +990,20 @@ export function partSwapKeyPairs(
  * Bestätigungen an eine eingefügte oder gelöschte Programmpunkt-Position
  * anpassen.
  *
- * `task_key` ist positionsbasiert (`wi|tab|part|si|ii|ni`). Beim Verschieben
- * eines LAC-Punkts tauscht `swapPartConfirmations` die Status korrekt mit —
- * beim **Löschen** und **Hinzufügen** rutschen aber alle folgenden Punkte um
- * eine Position, und die Bestätigungen blieben an der alten Zahl kleben. Nach
- * dem Löschen erbte der nachfolgende Punkt deshalb die fremde Bestätigung,
- * während der eigentliche wieder als offen galt — und erneut erinnert wurde.
+ * **Betrifft seit T37 nur noch Wochen ohne stabile Kennungen** — Demo-Daten,
+ * Vorlagen und Datensätze, die die Lade-Migration noch nicht erreicht hat.
+ * Trägt ein Punkt eine `iid`, steht sie im Schlüssel statt seiner Position, und
+ * es gibt schlicht nichts zu verschieben; diese Funktion findet dann keinen
+ * passenden Schlüssel und tut nichts. Sie bleibt trotzdem stehen: solange es
+ * Wochen der alten Form gibt, ist sie richtig, und ein leerer Lauf kostet nichts.
+ *
+ * Der alte `task_key` ist positionsbasiert (`wi|tab|part|si|ii|ni`). Beim
+ * Verschieben eines LAC-Punkts tauscht `swapPartConfirmations` die Status
+ * korrekt mit — beim **Löschen** und **Hinzufügen** rutschen aber alle
+ * folgenden Punkte um eine Position, und die Bestätigungen blieben an der alten
+ * Zahl kleben. Nach dem Löschen erbte der nachfolgende Punkt deshalb die fremde
+ * Bestätigung, während der eigentliche wieder als offen galt — und erneut
+ * erinnert wurde.
  *
  * `delta` = −1 beim Löschen von `ab`, +1 beim Einfügen an `ab`.
  *
@@ -1067,7 +1122,7 @@ function eachAssignedSlot(
             slotsOf(item, aux).forEach((slot, ni) => {
               // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
               if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) return
-              const key = partTaskKey(wi, tab, si, ii, ni, aux)
+              const key = slotTaskKey(item, wi, tab, si, ii, ni, aux)
               visit(slot.name, key, () => {
                 const rolle = slot.rolle ?? ''
                 const sel: SlotSelection = {

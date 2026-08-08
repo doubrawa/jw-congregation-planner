@@ -210,6 +210,29 @@ export interface SongItem {
 
 /** Regulärer Programmpunkt. */
 export interface PartItem {
+  /**
+   * Stabile Kennung dieses Programmpunkts (T37).
+   *
+   * Die Bestätigungen hingen bis August 2026 an der **Position**:
+   * `"60|mid|part|2|1|0"` — Woche, Zusammenkunft, Abschnitt, *laufende Nummer
+   * im Abschnitt*, Platz. Das ist die Ursache einer ganzen Reihe von Problemen:
+   *
+   *  - **T16**: ein eingefügter oder gelöschter LAC-Punkt verschiebt alle
+   *    folgenden. Die Bestätigungen blieben an der alten Zahl kleben, der
+   *    nachfolgende Punkt erbte eine fremde — und der eigentliche galt wieder
+   *    als offen und wurde erneut erinnert. Dagegen musste eigens eine
+   *    Umbenennungs-Mechanik gebaut werden (`shiftPartConfirmations`,
+   *    `swapPartConfirmations`).
+   *  - **T35**: der Wochen-Index *ist* die Position in der Datenbank, weil er
+   *    im Schlüssel steckt.
+   *
+   * Mit einer eigenen Kennung folgt die Bestätigung dem **Punkt**, nicht seinem
+   * Platz in der Liste. Verschieben, Einfügen und Löschen lassen sie in Ruhe.
+   *
+   * Optional, weil Wochen aus der Zeit davor sie nicht haben; die Lade-Migration
+   * (`migrateItemIds`) trägt sie nach und benennt die Bestätigungen einmalig mit.
+   */
+  iid?: string
   num?: number // laufende Nummer (kursiv, Bereichsfarbe)
   title: string
   meta?: string // Dauer / Quelle / Rahmen, z. B. "Von Haus zu Haus · 3 Min."
@@ -348,11 +371,15 @@ export interface Week {
    *
    * Der Platz im Array MUSS erhalten bleiben, weil der Index zugleich die
    * `position` in der Datenbank ist und in jedem gespeicherten `task_key`
-   * steckt („60|mid|part|2|1|0"). Würde man nur die geladenen Wochen
-   * durchnummerieren, zeigten alle bestehenden Bestätigungen auf die falsche
-   * Woche. Der Platzhalter ist leer, trägt also nirgends etwas bei — und wird
-   * **nie gespeichert** (siehe saveWeek), damit er die echte Zeile in der
-   * Datenbank nicht überschreibt.
+   * steckt. Würde man nur die geladenen Wochen durchnummerieren, zeigten alle
+   * bestehenden Bestätigungen auf die falsche Woche. Der Platzhalter ist leer,
+   * trägt also nirgends etwas bei — und wird **nie gespeichert** (siehe
+   * saveWeek), damit er die echte Zeile in der Datenbank nicht überschreibt.
+   *
+   * T37 hat den Schlüssel *innerhalb* der Zusammenkunft von der Position gelöst
+   * (`"60|mid|part|k3f9x|0"` statt `"60|mid|part|2|1|0"`) — die **Woche** steht
+   * weiterhin vorn drin. Der Platzhalter bleibt deshalb nötig; nur seine
+   * Begründung ist schmaler geworden.
    */
   stub?: true
 }

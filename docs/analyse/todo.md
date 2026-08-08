@@ -741,11 +741,55 @@ Kein Datenmodell-Umbau.
 > drei Wochen greift das. Der Test hat jetzt eine vierte Woche — und fällt ohne
 > die Korrektur.
 
-### T37 · `task_key` von der Position lösen 🏗
+### T37 · `task_key` von der Position lösen 🏗 ✅ erledigt
 Der positionsbasierte Schlüssel ist die Ursache von T16, der Fragilität von T35
 und des `Week.stub`-Konstrukts. Eine stabile Slot-Id im Datenmodell beseitigt
 alles auf einmal. Braucht eine Migration — wird mit jeder weiteren Funktion teurer.
 → [code-review.md § 2](code-review.md)
+
+> **Umgesetzt am 8. August 2026.** `PartItem.iid` ist die stabile Kennung; der
+> Schlüssel lautet jetzt `"60|mid|part|k3f9x|0"` statt `"60|mid|part|2|1|0"`.
+> Abschnitt und laufende Nummer sind weg — und damit die Ursache von T16.
+>
+> **Die Kennung sitzt am Punkt, nicht am Platz.** Ein Platz (`ni`) wird nur am
+> Ende eines Punkts hinzugefügt oder entfernt (`togglePartner`), verschiebt sich
+> also nie; Abschnitte bewegen sich gar nicht. Bewegt hat sich immer nur die
+> laufende Nummer des Punkts — genau die ist raus.
+>
+> **Eine einzige Stelle entscheidet**: `slotTaskKey(item, …)` nimmt die Kennung,
+> wenn es eine gibt, sonst die Position. Alles andere ruft nur noch dort an.
+> Beide Formen sind an ihrer Länge unterscheidbar (fünf Felder gegen sechs).
+>
+> **Die Migration läuft beim Laden** (`migrateItemIds`), ist idempotent und
+> verlustfrei: ein Punkt mit Kennung wird übersprungen, eine Bestätigung ohne
+> passenden Punkt bleibt liegen. Erst werden die Bestätigungen in der Datenbank
+> umbenannt, **dann** die Wochen gespeichert — bricht das Umbenennen ab, bleiben
+> die Wochen ohne Kennung und der nächste Ladevorgang versucht es erneut.
+> Andersherum wären die Bestätigungen verwaist.
+>
+> **`send-reminders` prüft beide Formen.** Zwischen dem Deploy des Clients und
+> dem nächsten Laden einer Versammlung stehen dort noch Positions-Schlüssel;
+> würde die Function nur die neue Form kennen, hielte sie in dieser Zeit jede
+> Bestätigung für nicht vorhanden und erinnerte doppelt. `substitute` ist nicht
+> betroffen — sein `parseKey` nimmt ausschließlich Hilfsdienst-Schlüssel, und
+> die haben sich nicht geändert.
+>
+> **`shiftPartConfirmations`/`swapPartConfirmations` bleiben stehen**, betreffen
+> aber nur noch Wochen ohne Kennungen (Demo, Vorlagen, noch nicht migriert). Bei
+> einem Punkt mit Kennung finden sie keinen passenden Schlüssel und tun nichts.
+> Sie zu löschen wäre verfrüht, solange es Wochen der alten Form gibt.
+>
+> **`Week.stub` bleibt nötig** — nur seine Begründung ist schmaler geworden: die
+> **Woche** steht weiterhin vorn im Schlüssel, gelöst wurde die Position
+> *innerhalb* der Zusammenkunft.
+>
+> 14 Tests in `src/data/t37.test.ts`, darunter die Gegenprobe am reinen
+> Positions-Schlüssel: nach dem Einfügen zeigt er auf den neuen Punkt, während
+> das Bibelstudium ohne Bestätigung dasteht — genau T16. Mit Kennung passiert
+> das nicht.
+>
+> ⚠ **`send-reminders` braucht einen erneuten Deploy** (zusammen mit dem aus
+> T40 und T30).
 
 ### T38 · `pid` verpflichtend, Name nur noch Anzeige 🏗 ✅ erledigt
 Heute ersetzen **fünf** Mechanismen einen Fremdschlüssel: zwei Lade-Migrationen,

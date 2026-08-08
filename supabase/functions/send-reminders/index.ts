@@ -160,6 +160,8 @@ interface FsInstance {
 interface Item {
   song?: string
   title?: string
+  /** Stabile Kennung des Programmpunkts (T37) — Grundlage des Aufgaben-Schluessels. */
+  iid?: string
   names?: Slot[]
   /** Zweite Platzreihe der Zusaetzlichen Klasse (jw.org S-38, Absatz 26). */
   aux?: Slot[]
@@ -389,7 +391,15 @@ function pendingOfMeeting(
         for (let ni = 0; ni < names.length; ni++) {
           const slot = names[ni]
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-          if (conf.has(`${wi}|${tab}|${abschnitt}|${si}|${ii}|${ni}`)) continue
+          // Schlüssel über die stabile Kennung des Punkts, sonst über seine
+          // Position (T37) — dieselbe Regel wie `slotTaskKey` im Client. Die
+          // Kennung trägt jede Woche, die einmal geladen wurde; Wochen davor
+          // behalten ihren Positions-Schlüssel, bis die Lade-Migration sie
+          // erreicht. Beide Formen werden geprüft, damit in der Zwischenzeit
+          // keine Bestätigung übersehen wird und doppelt erinnert wird.
+          const posKey = `${wi}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
+          const idKey = item.iid ? `${wi}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
+          if (conf.has(posKey) || (idKey !== null && conf.has(idKey))) continue
           const rolle = slot.rolle ?? ''
           const title = item.title ?? 'Zuteilung'
           out.push({
