@@ -6,7 +6,7 @@ import { useDialogFocus } from '../components/useDialogFocus'
 import { useSwipeDown } from '../components/useSwipeDown'
 import { isSong, LOAD_RADIUS, type WeekLoad } from '../data/helpers'
 import { fsLeaderValue } from '../data/fs'
-import { buildS89ForSlot, slotValue } from '../data/planning'
+import { buildS89ForSlot, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, slotValue } from '../data/planning'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { relativeWeekLabel } from '../i18n/relative-time'
@@ -63,19 +63,33 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
         : ''
       : `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
 
-  // Externer Redner (Gastredner/Kreisaufseher): Freitext für Name +
-  // Herkunfts-Versammlung; die Versammlung steckt in der Rolle
-  // ("Gastredner · Vers. Nordheim"), erstes Atom = Basis-Rolle.
+  // Redner-Platz des öffentlichen Vortrags. Er kann **zweierlei** sein, und der
+  // Planer entscheidet es Woche für Woche (T29):
+  //
+  //   Freitext eintragen  → auswärtiger Redner („Gastredner · Vers. Nordheim")
+  //   Person antippen     → eigener Redner (Rolle „Redner" + pid)
+  //
+  // Die Wahl **ist** der Schalter — es braucht keinen zusätzlichen Umschalter.
+  // Das Sheet zeigt beides untereinander, also führt jeder Weg in den jeweils
+  // anderen Zustand zurück.
   const guest = sel.kind === 'part' && Boolean(sel.guest)
-  const slotRolle = (): string => {
+  const rolleJetzt = (): string => {
     if (sel.kind !== 'part') return ''
     const item = state.weeks[sel.wi][sel.tab].sections[sel.si]?.items[sel.ii]
     return !item || isSong(item) ? '' : (item.names[sel.ni]?.rolle ?? '')
   }
-  const rolleAtoms = slotRolle().split(' · ')
-  const guestBase = rolleAtoms[0] || 'Gastredner'
-  const [guestName, setGuestName] = useState(guest ? current : '')
-  const [guestCong, setGuestCong] = useState(guest ? rolleAtoms.slice(1).join(' · ') : '')
+  const rolleAtoms = rolleJetzt().split(' · ')
+  const eigenerRedner = rolleAtoms[0] === ROLE_OWN_SPEAKER
+  // Basis-Rolle für den Freitext-Weg. Steht dort gerade ein eigener Redner,
+  // führt der Freitext zurück zum Gastredner — „Redner" mit Freitext wäre ein
+  // Widerspruch: eine Person der eigenen Versammlung ohne pid.
+  const guestBase = !rolleAtoms[0] || eigenerRedner ? ROLE_GUEST_SPEAKER : rolleAtoms[0]
+  // Beim eigenen Redner bleiben die Freitext-Felder leer: der Name gehört einer
+  // Person, nicht einem Gast. Vorbelegt wäre er ein Angebot, ihn zu verdoppeln.
+  const [guestName, setGuestName] = useState(guest && !eigenerRedner ? current : '')
+  const [guestCong, setGuestCong] = useState(
+    guest && !eigenerRedner ? rolleAtoms.slice(1).join(' · ') : '',
+  )
 
   const applyGuest = () => {
     const name = guestName.trim()
@@ -94,12 +108,16 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
       dispatch({ type: 'showToast', text: fill(t.toastAbsentP, { name: cand.name }) })
       return
     }
-    // Gastredner-Slot: Wahl aus der eigenen Versammlung räumt die fremde
-    // Herkunfts-Versammlung aus der Rolle
-    // pid nur für echte Personen (nicht Gastredner/Gruppen) — stabile Identität.
+    // Redner-Platz: eine Person aus dieser Liste ist per Definition eine der
+    // eigenen Versammlung — die Zuteilung wird damit zum **eigenen Redner**.
+    // Rolle „Redner" und `pid`; die fremde Herkunftsversammlung fällt weg.
+    // Alles Weitere folgt daraus von selbst, weil „Redner" nicht in
+    // `SKIP_ROLE` steht: Aufgabe, Bestätigung, Erinnerung, Auslastung.
+    //
+    // pid nur für echte Personen (nicht für die Gruppen-Rotation).
     dispatch(
       guest
-        ? { type: 'assign', name: cand.assignName, rolle: guestBase }
+        ? { type: 'assign', name: cand.assignName, rolle: ROLE_OWN_SPEAKER, pid: cand.key }
         : { type: 'assign', name: cand.assignName, pid: sel.groups ? undefined : cand.key },
     )
   }
@@ -134,6 +152,11 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                   {t.s89Open}
                 </button>
               )}
+              {/* Entfernen setzt den Redner-Platz auf seinen Ausgangszustand
+                  zurück (`guestBase` ist beim eigenen Redner „Gastredner").
+                  Der leere Platz ist damit wieder auswärtig — so kommt er aus
+                  dem Import, und so bleibt er von der Auto-Zuteilung
+                  unberührt: den Redner vereinbart man, man verlost ihn nicht. */}
               <button
                 type="button"
                 className="sheet-remove"

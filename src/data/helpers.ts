@@ -314,10 +314,61 @@ export function rolleNennt(rolle: string | undefined, name: string): boolean {
   return false
 }
 
+/* ---- Wer den öffentlichen Vortrag hält (Rollen-Vokabular) ---- */
+
+/**
+ * Rollen, die von **außen** kommen: kein Bestätigungs-Flow, keine Erinnerung,
+ * keine Anrechnung auf die Auslastung, und die Auto-Zuteilung lässt sie stehen.
+ */
+const SKIP_ROLE = /Gastredner|Kreisaufseher/
+
+/** Externer Redner-Slot (Gastredner/Kreisaufseher) — Freitext statt Person. */
+export function isGuestRole(rolle: string | undefined): boolean {
+  return Boolean(rolle && SKIP_ROLE.test(rolle))
+}
+
+/**
+ * Der öffentliche Vortrag, gehalten von einem Bruder der **eigenen**
+ * Versammlung (T29). Steht mit Absicht nicht in `SKIP_ROLE`: dadurch bekommt er
+ * ohne jede weitere Sonderregel `pid`, Aufgabe, Bestätigung, Erinnerung und
+ * Anrechnung — all das hängt bereits an `isGuestRole`.
+ *
+ * Kein erfundener Begriff: `translate-data.ts` übersetzt „Redner" seit jeher in
+ * allen 33 Fremdsprachen.
+ */
+export const ROLE_OWN_SPEAKER = 'Redner'
+
+/** Voreinstellung des Vortragsplatzes aus dem Import: auswärtiger Redner. */
+export const ROLE_GUEST_SPEAKER = 'Gastredner'
+
+/**
+ * Basis-Rolle ohne angehängte Herkunft: `"Gastredner · Vers. Nordheim"` →
+ * `"Gastredner"`. Die Herkunftsversammlung hat kein eigenes Feld und wird als
+ * weiteres Atom der Rolle geführt (siehe `AssignSheet`).
+ */
+export function rolleBasis(rolle: string | undefined): string {
+  return (rolle ?? '').split(' · ')[0]
+}
+
+/**
+ * Ist das der Redner-Platz des öffentlichen Vortrags — gleich ob eigener oder
+ * auswärtiger?
+ *
+ * Nicht dasselbe wie `isGuestRole`: **dieser** Test öffnet im Zuteilungs-Sheet
+ * die Freitext-Felder und muss deshalb auch beim eigenen Redner zutreffen.
+ * Sonst gäbe es keinen Weg zurück — einmal auf „eigener Redner" gestellt,
+ * bliebe der Platz es für immer.
+ */
+export function isSpeakerRole(rolle: string | undefined): boolean {
+  return isGuestRole(rolle) || rolleBasis(rolle) === ROLE_OWN_SPEAKER
+}
+
 /** Was eine Zuteilung über ihren Inhaber verrät — Slot, Ratgeber, Hilfsdienst. */
 export interface Zuteilung {
   name?: string
   pid?: string
+  /** Nur Programmpunkt-Slots; entscheidet über den Namens-Rückfall (s. u.). */
+  rolle?: string
 }
 
 /**
@@ -330,16 +381,25 @@ export interface Zuteilung {
  * lösten füreinander Konflikte aus.
  *
  * Rangfolge: die **Id** entscheidet, sobald die Zuteilung eine trägt. Nur
- * Altdaten (vor `pid` gespeichert), externe Redner und Gruppen-Rotationen haben
- * keine — dort bleibt der Anzeigename der einzige Anhalt.
+ * Altdaten (vor `pid` gespeichert) und Gruppen-Rotationen haben keine — dort
+ * bleibt der Anzeigename der einzige Anhalt.
  *
  * Wichtig ist die Richtung: hat die Zuteilung eine Id, wird **nicht** auf den
  * Namen zurückgefallen. Sonst zählte eine Zuteilung, die ausdrücklich Person A
  * meint, auch für die gleichnamige Person B mit.
+ *
+ * **Externe Redner sind vom Namens-Rückfall ausgenommen** (bei T29 aufgefallen).
+ * Ein Gastredner steht als Freitext im Slot und hat naturgemäß keine `pid` —
+ * heißt er zufällig wie ein Bruder der eigenen Versammlung, zählte dessen
+ * Auslastung mit und er galt als „heute schon zugeteilt". Die Warnung vor
+ * doppelten Anzeigenamen greift hier nicht: der Gast steht in keiner
+ * Personenliste. Für ihn ist der Name kein schwächerer Anhalt, sondern gar
+ * keiner — er meint jemanden, den diese Versammlung nicht kennt.
  */
 export function gehoertZu(zuteilung: Zuteilung | undefined, person: Person): boolean {
   if (!zuteilung?.name) return false
-  return zuteilung.pid ? zuteilung.pid === person.id : zuteilung.name === displayName(person)
+  if (zuteilung.pid) return zuteilung.pid === person.id
+  return !isGuestRole(zuteilung.rolle) && zuteilung.name === displayName(person)
 }
 
 /**

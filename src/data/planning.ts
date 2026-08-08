@@ -22,6 +22,9 @@ import {
   partnerGenderOk,
   partWorkload,
   idAufloeser,
+  ROLE_GUEST_SPEAKER,
+  ROLE_OWN_SPEAKER,
+  rolleBasis,
   serviceQualKey,
   tieHash,
   wochenAbstand,
@@ -46,13 +49,24 @@ import type {
   Week,
 } from './types'
 
-/** Rollen, die die Auto-Zuteilung nicht besetzt (kommen von außen). */
+/**
+ * Rollen, die die Auto-Zuteilung nicht besetzt (kommen von außen).
+ *
+ * Das Vokabular selbst steht in `helpers.ts` — dort, wo `gehoertZu` entscheidet,
+ * wem eine Zuteilung gehört, und wo es deshalb gebraucht wird (`helpers.ts` ist
+ * die untere Schicht und darf nicht auf `planning.ts` zugreifen). Hier nur der
+ * Ausdruck für die Suchläufe und ein Weiterreichen der Begriffe, damit die
+ * bestehenden Import-Wege gültig bleiben.
+ */
 const SKIP_ROLE = /Gastredner|Kreisaufseher/
 
-/** Externer Redner-Slot (Gastredner/Kreisaufseher) — Freitext statt Personenliste. */
-export function isGuestRole(rolle: string | undefined): boolean {
-  return Boolean(rolle && SKIP_ROLE.test(rolle))
-}
+export {
+  isGuestRole,
+  isSpeakerRole,
+  rolleBasis,
+  ROLE_GUEST_SPEAKER,
+  ROLE_OWN_SPEAKER,
+} from './helpers'
 
 
 
@@ -141,6 +155,22 @@ export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
     return isSong(item) ? '' : (slotsOf(item, sel.aux === true)[sel.ni]?.name ?? '')
   }
   return meeting.helpers[sel.svc]?.[sel.pos]?.name ?? ''
+}
+
+/**
+ * Aktuelle Rolle auf einem Slot ("" = keine). Nur Programmpunkte tragen eine;
+ * Hilfsdienst-Plätze und der Ratgeber sind über ihren Ort bestimmt.
+ *
+ * Gebraucht, damit der Reducer beim Zuteilen die **tatsächlich geschriebene**
+ * Rolle prüfen kann statt des Auswahl-Flags `sel.guest`. Das war die zweite
+ * Hälfte von F1: selbst mit `rolle: 'Redner'` und `pid` unterblieb der
+ * Bestätigungs-Flow, weil der Reducer noch auf das Flag sah.
+ */
+export function slotRolle(weeks: Week[], sel: MeetingSlotSelection): string {
+  if (sel.kind !== 'part') return ''
+  const item = weeks[sel.wi]?.[sel.tab]?.sections[sel.si]?.items[sel.ii]
+  if (!item || isSong(item)) return ''
+  return slotsOf(item, sel.aux === true)[sel.ni]?.rolle ?? ''
 }
 
 /**
@@ -700,6 +730,12 @@ export function clearAssignments(
             if (slot.name) {
               slot.name = ''
               delete slot.pid
+              // Ein geleerter Redner-Platz fällt auf „Gastredner" zurück — den
+              // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen,
+              // wäre er ein offener Slot, den die Auto-Zuteilung besetzt; den
+              // Redner des öffentlichen Vortrags vereinbart man aber, man
+              // verlost ihn nicht. Derselbe Rückfall wie beim „Entfernen".
+              if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) slot.rolle = ROLE_GUEST_SPEAKER
               count++
             }
           }
