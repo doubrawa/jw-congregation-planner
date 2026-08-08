@@ -41,10 +41,11 @@ export function ProgrammScreen() {
 function ProgrammBody() {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const { week, tpw } = useProgWeek(state.weeks[state.week])
+  const rawWeek = state.weeks[state.week]
+  const { week, tpw } = useProgWeek(rawWeek)
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
-  if (!week) {
+  if (!week || !rawWeek) {
     return (
       <section className="screen">
         <h1 className="sr-only">{t.navProgramm}</h1>
@@ -60,7 +61,6 @@ function ProgrammBody() {
   const meeting = state.tab === 'we' ? week.we : week.mid // fs nutzt Meeting-Inhalt nicht
   // Kanonische Fassung (deutsche Sektions-Labels) zum Erkennen von ERÖFFNUNG/
   // ABSCHLUSS — dort wird das Lied aus dem Sammeltitel mittig+kursiv gezogen.
-  const rawWeek = state.weeks[state.week]
   const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   const myName = me ? displayName(me) : null

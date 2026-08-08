@@ -32,6 +32,10 @@ jobs:
       # verhindern, nicht bloß im Nachhinein melden. `npm run build` führt
       # zusätzlich `tsc -b` aus, deckt die Typen also ab.
       - run: npm run lint
+      # Sperrklinke fuer noUncheckedIndexedAccess (T42): schlaegt an, sobald
+      # eine Datei mehr Meldungen bekommt als die Grundlinie erlaubt oder eine
+      # neue hinzukommt. Die Zahl kann damit nur fallen.
+      - run: npm run typecheck:index
       - run: npm test
       # Supabase-Konfiguration (optional): ohne Secrets baut der Demo-Modus
       - run: npm run build

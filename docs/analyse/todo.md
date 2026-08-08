@@ -927,10 +927,45 @@ keine Selektoren, also rendert jede Änderung alles neu. Eine Aufteilung in drei
 Kontexte macht `readonly.ts` und einen Teil von `persist.ts` überflüssig.
 → [code-review.md § 4.3](code-review.md)
 
-### T42 · `noUncheckedIndexedAccess` schrittweise 🏗
+### T42 · `noUncheckedIndexedAccess` schrittweise 🏗 ✅ erledigt (Sperrklinke steht, Rest folgt)
 213 Treffer, konzentriert genau in den Wochen-Dateien (`translate.ts` 48,
 `meeting-edit.ts` 37, `planning.ts` 31). Die Regel, die zum Datenmodell passt —
 und die T1 verhindert hätte.
+
+> **Umgesetzt am 8. August 2026 — „schrittweise" wörtlich genommen.**
+>
+> Gemessen waren es **965** Meldungen in 57 Dateien, davon 232 in 23
+> Produktionsdateien. Auf einen Schlag ist das nicht zu machen, ohne die
+> Prüfung mit `!` zu entwerten.
+>
+> **18 der 23 Produktionsdateien sind aufgeräumt** — jede Stelle einzeln
+> angesehen, nichts pauschal weggeworfen: `demo.ts`, `fs.ts`, `helpers.ts`,
+> `localize.ts`, `meeting-dates.ts`, `kandidaten.ts`, `AssignSheet`,
+> `PlanenScreen`, `MeetingSection`, `ProfilScreen`, `ProgrammScreen`,
+> `useDialogFocus`, `useSwipeDown`, `useSwipeWeek`, `meeting-times.ts`,
+> `bible-books.ts`, `translate-data.ts`, `lib/data.ts` — dazu
+> `_shared/planung.ts`. Offen sind fünf: `translate.ts` (48),
+> `meeting-edit.ts` (39), `planning.ts` (33), `persist.ts` (25),
+> `reducer.ts` (16).
+>
+> **Die Sperrklinke ist der eigentliche Punkt.** `npm run typecheck:index`
+> läuft mit der Regel und hält das Ergebnis gegen
+> `scripts/index-access-baseline.json` — je Datei die Zahl der noch geduldeten
+> Meldungen. Der Lauf schlägt an, wenn eine Datei **mehr** bekommt oder eine
+> **neue** hinzukommt; wird aufgeräumt, bittet er darum, die Grundlinie
+> nachzuziehen. **Die Zahl kann damit nur fallen**, und neue Dateien halten die
+> Regel von Anfang an ein. In der CI vor `npm test`.
+>
+> **Warum keine zweite tsconfig mit `exclude`:** ausprobiert und verworfen —
+> TypeScript zieht ausgeschlossene Dateien über Importe trotzdem herein,
+> `exclude` steuert nur die Wurzelliste. Eine Grundlinie ist der einzige Weg zu
+> echter Datei-Granularität.
+>
+> Auch `incremental` ist bewusst aus: mit Cache meldete der zweite Lauf weniger
+> als der erste, und eine Grundlinie, die vom Cache abhängt, ist keine.
+>
+> Gegenprobe gefahren: eine Wegwerf-Datei mit `xs[0].toUpperCase()` angelegt →
+> der Lauf schlägt an und nennt sie.
 
 ---
 

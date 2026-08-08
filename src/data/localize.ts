@@ -16,17 +16,22 @@ function mergeMeeting(target: Meeting, alt: Meeting): void {
   // schlimmer als die falsche Sprache.
   if (alt.sections.length !== target.sections.length) return
   const aligned = target.sections.every(
-    (s, si) => alt.sections[si].items.length === s.items.length,
+    (s, si) => alt.sections[si]?.items.length === s.items.length,
   )
   if (!aligned) return
 
   if (alt.date) target.date = alt.date
   if (alt.end) target.end = alt.end
   target.sections.forEach((section, si) => {
+    // Gleiche Länge ist oben geprüft; der Index-Zugriff sieht das nicht. Fehlt
+    // wider Erwarten etwas, bleibt dieser Abschnitt kanonisch — dieselbe
+    // Vorsicht wie beim Struktur-Vergleich darüber.
     const altSection = alt.sections[si]
+    if (!altSection) return
     if (altSection.label) section.label = altSection.label
     section.items.forEach((item, ii) => {
       const altItem = altSection.items[ii]
+      if (!altItem) return
       if (isSong(item) && isSong(altItem)) {
         item.song = altItem.song
       } else if (!isSong(item) && !isSong(altItem)) {

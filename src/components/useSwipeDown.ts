@@ -69,7 +69,10 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, onClose: () => 
       if (scroller && scroller.scrollTop > 0) return // gehört der Liste
       aktiv = true
       ziehen = false
-      startY = e.touches[0].clientY
+      // Genau eine Berührung ist oben geprüft; der Index-Zugriff weiß das nicht.
+      const start = e.touches[0]
+      if (!start) return
+      startY = start.clientY
       startedAt = e.timeStamp
       dy = 0
       el.style.transition = ''
@@ -83,7 +86,9 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, onClose: () => 
         reset(true)
         return
       }
-      dy = e.touches[0].clientY - startY
+      const punkt = e.touches[0]
+      if (!punkt) return
+      dy = punkt.clientY - startY
       if (!ziehen) {
         if (dy <= START_PX) return // nach oben oder noch zu wenig
         ziehen = true

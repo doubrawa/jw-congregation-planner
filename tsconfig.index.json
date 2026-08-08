@@ -1,0 +1,35 @@
+/*
+ * `noUncheckedIndexedAccess` — schrittweise (T42).
+ *
+ * Die Regel besagt: `arr[i]` kann `undefined` sein. Sie passt zu diesem
+ * Datenmodell wie keine zweite, denn hier wird ständig über Indizes
+ * zugegriffen — Wochen über ihre Position, Abschnitte, Programmpunkte, Plätze.
+ * **T1 (Totalausfall in 30 Sprachen) hätte sie verhindert.**
+ *
+ * Sie einfach einzuschalten hätte auf einen Schlag knapp tausend Meldungen
+ * ergeben. Deshalb diese zweite Konfiguration — sie prüft alles, aber ihr
+ * Ergebnis wird gegen eine **Grundlinie** gehalten:
+ *
+ *     npm run typecheck:index
+ *
+ * `scripts/check-index-access.mjs` vergleicht die Meldungen je Datei mit
+ * `scripts/index-access-baseline.json` und schlägt an, sobald eine Datei mehr
+ * bekommt als erlaubt oder eine neue hinzukommt. Wer eine Datei aufräumt,
+ * schreibt die Grundlinie neu (`--update`) — die Zahlen können damit nur
+ * fallen.
+ *
+ * **Warum kein `exclude`:** TypeScript zieht ausgeschlossene Dateien über
+ * Importe trotzdem herein; `exclude` steuert nur die Wurzelliste. Eine
+ * Grundlinie ist der einzige Weg zu echter Datei-Granularität.
+ */
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    // Bewusst ohne `incremental`: ein zwischengespeicherter Stand meldete beim
+    // zweiten Lauf weniger Fehler als beim ersten, und eine Grundlinie, die je
+    // nach Cache anders ausfällt, ist keine.
+    "incremental": false
+  },
+  "include": ["src"]
+}

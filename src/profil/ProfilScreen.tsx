@@ -31,6 +31,9 @@ export function ProfilScreen() {
   const { t } = useT()
   // Position im Regler; unbekannter Wert (z. B. alter localStorage) → Standard.
   const scaleIndex = Math.max(0, FONT_SCALES.indexOf(state.fontScale))
+  // Beide Listen sind gleich lang und der Index ist geklemmt; der
+  // Index-Zugriff sieht das nicht (noUncheckedIndexedAccess).
+  const scaleLabel = FS_LABELS[scaleIndex] ?? FS_LABELS[0]!
   const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
   // Konto-E-Mail des eingeloggten Nutzers (nur Produktion; die eigene
   // Mitglieder-Zeile ist auch für Nicht-Planer sichtbar).
@@ -107,7 +110,7 @@ export function ProfilScreen() {
         </div>
         <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.schriftgroesse}</span>
-          <span className="kv-val">{t[FS_LABELS[scaleIndex]]}</span>
+          <span className="kv-val">{t[scaleLabel]}</span>
         </div>
         <div className="fs-slider">
           <span className="fs-slider-a fs-slider-a--min" aria-hidden="true">
@@ -121,9 +124,9 @@ export function ProfilScreen() {
             step={1}
             value={scaleIndex}
             aria-label={t.schriftgroesse}
-            aria-valuetext={t[FS_LABELS[scaleIndex]]}
+            aria-valuetext={t[scaleLabel]}
             onChange={(e) =>
-              dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] })
+              dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] ?? FONT_SCALES[0]! })
             }
           />
           <span className="fs-slider-a fs-slider-a--max" aria-hidden="true">

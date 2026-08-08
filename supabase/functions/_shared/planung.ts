@@ -60,7 +60,8 @@ export const DAY_OFFSET: Record<string, number> = {
  * falsch statt stillschweigend üblich.
  */
 export function meetingDayOffsets(meetingTimes: string): { mid: number; we: number } {
-  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1]])
+  // Die Gruppe ist im Ausdruck nicht optional — ein Treffer hat sie immer.
+  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1] ?? ''])
   return { mid: found[0] ?? 1, we: found[1] ?? 6 }
 }
 
@@ -129,11 +130,12 @@ export function versatzMitAbweichung(
   fallback: number,
 ): number {
   const verlegt = abweichungFuer(dev, tab)?.day
-  if (verlegt && verlegt in WEEKDAY_OFFSET) return WEEKDAY_OFFSET[verlegt]
+  const ausAbweichung = verlegt ? WEEKDAY_OFFSET[verlegt] : undefined
+  if (ausAbweichung !== undefined) return ausAbweichung
   const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(
     dateFeld ?? '',
   )
-  return tag ? WEEKDAY_OFFSET[tag[1]] : fallback
+  return (tag ? WEEKDAY_OFFSET[tag[1] ?? ''] : undefined) ?? fallback
 }
 
 /** Uhrzeit mit Abweichung — gleiche Rangfolge wie beim Tag. */
@@ -146,5 +148,5 @@ export function zeitMitAbweichung(
   const verlegt = abweichungFuer(dev, tab)?.time
   if (verlegt) return verlegt
   const zeit = /\b(\d{1,2})[:.](\d{2})\b/.exec(dateFeld ?? '')
-  return zeit ? `${zeit[1].padStart(2, '0')}:${zeit[2]}` : fallback
+  return zeit ? `${(zeit[1] ?? '').padStart(2, '0')}:${zeit[2] ?? ''}` : fallback
 }

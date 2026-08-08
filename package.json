@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "icons": "node scripts/make-icons.mjs",
     "contrast": "node scripts/check-contrast.mjs",
+    "typecheck:index": "node scripts/check-index-access.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.all --coverage.include=src/**/*.ts --coverage.include=src/**/*.tsx --coverage.exclude=src/**/*.test.ts --coverage.exclude=src/**/*.test.tsx",
     "preview": "vite preview --base /jw-congregation-planner/"
