@@ -613,20 +613,27 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
     serviceList,
   )
-  // Platzhalter für die nicht geladenen älteren Wochen davorsetzen, damit der
-  // Array-Index weiterhin die DB-Position ist (siehe Week.stub).
-  const weekList = [
-    ...Array.from({ length: weekFrom }, stubWeek),
-    ...normalizeChairKeys(
-      migrateAssignmentPids(
-        migrateAssignmentNames(
-          normalizeWeekHelpers((weeks.data ?? []).map((r) => (r as WeekRow).data)),
-          personList,
-        ),
-        personList,
-      ),
-    ),
-  ]
+  // Jede Zeile an IHRE Position setzen, nicht der Reihe nach aneinanderreihen.
+  //
+  // Vorher wurden die geladenen Zeilen hinter die Platzhalter gehängt und
+  // stillschweigend als lückenlos angenommen. Fehlt eine Position — etwa nach
+  // einem Schreibfehler, der früher verschluckt wurde (T5) —, rutschen alle
+  // folgenden Wochen einen Index nach vorn. Der Index **ist** die Position und
+  // steckt in jedem gespeicherten `task_key` („60|mid|part|2|1|0"): jede
+  // Bestätigung, jede Aufgabe und jede Erinnerung zeigte danach auf die
+  // Nachbarwoche. Lücken werden jetzt zu Platzhaltern, die nie gespeichert
+  // werden (siehe Week.stub).
+  const weekRows = (weeks.data ?? []) as WeekRow[]
+  const letztePos = weekRows.reduce((max, r) => Math.max(max, r.position), weekFrom - 1)
+  const roh = Array.from({ length: letztePos + 1 }, stubWeek)
+  for (const row of weekRows) {
+    // Position außerhalb (negativ oder jenseits des Arrays) wäre kaputt —
+    // lieber die Zeile auslassen als eine Woche an falscher Stelle zeigen.
+    if (row.position >= weekFrom && row.position <= letztePos) roh[row.position] = row.data
+  }
+  const weekList = normalizeChairKeys(
+    migrateAssignmentPids(migrateAssignmentNames(normalizeWeekHelpers(roh), personList), personList),
+  )
 
   const confirmations: ConfirmationMap = {}
   for (const row of (confs.data ?? []) as ConfirmationRow[]) {

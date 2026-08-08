@@ -24,6 +24,7 @@ import {
   idAufloeser,
   serviceQualKey,
   tieHash,
+  wochenAbstand,
   workloadOf,
   type Zuteilung,
 } from './helpers'
@@ -95,7 +96,9 @@ function assignmentDistance(
     if ((map.get(id) ?? Infinity) > d) map.set(id, d)
   }
   weeks.forEach((week, wi) => {
-    const d = Math.abs(wi - weekIndex)
+    // In Wochen gemessen, nicht in Einträgen (T36) — sonst zählt eine fehlende
+    // Woche als Nachbarwoche.
+    const d = wochenAbstand(week, weeks[weekIndex], wi, weekIndex)
     const merken = (map: Map<string, number>, id: string | undefined): void => {
       if (id && (map.get(id) ?? Infinity) > d) map.set(id, d)
     }
@@ -1293,8 +1296,13 @@ export function weekConflicts(
   for (const [kennung, name] of belegt[wi]) {
     let start = wi
     let end = wi
-    while (start - 1 >= 0 && belegt[start - 1].has(kennung)) start--
-    while (end + 1 < weeks.length && belegt[end + 1].has(kennung)) end++
+    // „In Folge" heißt in aufeinanderfolgenden **Wochen**. Liegt zwischen zwei
+    // Einträgen eine Woche, die es gar nicht gibt (Kongress), ist die Serie
+    // dort unterbrochen — sonst meldete die App drei Wochen am Stück, wo in
+    // Wirklichkeit eine Pause dazwischenlag (T36).
+    const folgt = (a: number, b: number) => wochenAbstand(weeks[a], weeks[b], a, b) === 1
+    while (start - 1 >= 0 && belegt[start - 1].has(kennung) && folgt(start - 1, start)) start--
+    while (end + 1 < weeks.length && belegt[end + 1].has(kennung) && folgt(end, end + 1)) end++
     const run = end - start + 1
     if (run >= STREAK_THRESHOLD && run < weeks.length) {
       conflicts.push({ kind: 'streak', name, count: run })

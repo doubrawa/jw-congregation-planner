@@ -473,6 +473,40 @@ export const LOAD_RADIUS = 2
 /** Wie viele Wochen das Auslastungs-Fenster umfasst (aktuelle + beide Seiten). */
 export const LOAD_WEEKS = LOAD_RADIUS * 2 + 1
 
+const WOCHE_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * Abstand zweier Wochen in **Wochen** — nicht in Einträgen.
+ *
+ * `LOAD_RADIUS = 2` hieß bisher „±2 Einträge". Das ist dasselbe, solange die
+ * Wochen lückenlos aufeinanderfolgen. Fehlt eine (Kongress, Urlaub, eine
+ * Woche, die nie importiert wurde), rechnet die Fairness-Logik über einen
+ * anderen Zeitraum als den, den das Sheet daneben behauptet („2 Aufgaben in
+ * 5 Wochen").
+ *
+ * Grundlage ist `week.start`, das ISO-Datum aus dem jw.org-Import. Fehlt es
+ * bei einer der beiden — Demo-Daten, Platzhalter, von Hand angelegte Wochen —,
+ * bleibt es beim Indexabstand: die alte Näherung ist besser als gar keine
+ * Ordnung.
+ */
+export function wochenAbstand(a: Week | undefined, b: Week | undefined, ia: number, ib: number): number {
+  const ta = a?.start ? Date.parse(a.start) : NaN
+  const tb = b?.start ? Date.parse(b.start) : NaN
+  if (Number.isNaN(ta) || Number.isNaN(tb)) return Math.abs(ia - ib)
+  return Math.round(Math.abs(ta - tb) / WOCHE_MS)
+}
+
+/**
+ * Die Woche, die `versatz` Wochen von `weeks[wi]` entfernt liegt — nach Datum,
+ * nicht nach Index. Ohne Datum (Demo, Platzhalter) der schlichte Nachbar.
+ */
+function wocheBeiVersatz(weeks: Week[], wi: number, versatz: number): Week | undefined {
+  const hier = weeks[wi]
+  if (!hier?.start) return weeks[wi + versatz]
+  const ziel = new Date(Date.parse(hier.start) + versatz * WOCHE_MS).toISOString().slice(0, 10)
+  return weeks.find((w) => w?.start === ziel)
+}
+
 /**
  * Belegung je Woche im ±`radius`-Fenster um `wi` (Standard LOAD_RADIUS).
  * `void` = keine solche Woche geladen, `none` = frei, `task` = Programmpunkt
@@ -493,8 +527,10 @@ export function loadWindow(
   radius = LOAD_RADIUS,
 ): WeekLoad[] {
   const out: WeekLoad[] = []
-  for (let i = wi - radius; i <= wi + radius; i++) {
-    const week = weeks[i]
+  // Nach Datum, nicht nach Index (T36): fehlt eine Woche, zeigen die Quadrate
+  // sonst eine, die drei Wochen zurückliegt, als „vor zwei Wochen".
+  for (let versatz = -radius; versatz <= radius; versatz++) {
+    const week = wocheBeiVersatz(weeks, wi, versatz)
     if (!week) out.push('void')
     else if (partWorkload([week], person) > 0) out.push('task')
     else if (helperWorkload([week], person, services) > 0) out.push('helper')
