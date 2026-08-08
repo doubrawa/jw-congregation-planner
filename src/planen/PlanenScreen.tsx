@@ -120,16 +120,23 @@ function PlanenBody() {
           <ConflictsBanner tab={mtab} />
           <OpenSlotsBanner tab={mtab} tpw={tpw} />
 
-          {meeting.sections.map((section, si) => (
-            <MeetingSection
-              key={rawMeeting.sections[si].label}
-              si={si}
-              section={section}
-              rawSection={rawMeeting.sections[si]}
-              mitAux={hatAuxKlasse(rawMeeting)}
-              tpw={tpw}
-            />
-          ))}
+          {/* Die Sprachvariante ist strukturgleich zur kanonischen Woche
+              (`localizedWeek` prüft das) — fehlt der Abschnitt dort trotzdem,
+              wird er übersprungen statt die Ansicht abstürzen zu lassen. */}
+          {meeting.sections.map((section, si) => {
+            const rawSection = rawMeeting.sections[si]
+            if (!rawSection) return null
+            return (
+              <MeetingSection
+                key={rawSection.label}
+                si={si}
+                section={section}
+                rawSection={rawSection}
+                mitAux={hatAuxKlasse(rawMeeting)}
+                tpw={tpw}
+              />
+            )
+          })}
 
           <AuxCounselorPanel meeting={rawMeeting} />
 

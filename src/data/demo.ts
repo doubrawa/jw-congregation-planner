@@ -110,8 +110,10 @@ function buildExtraPersons(): Person[] {
   for (let i = 0; i < XLN.length; i++) {
     const r = i % 7
     const female = r >= 5
-    const fn = female ? XFN_F[i % XFN_F.length] : XFN_M[i % XFN_M.length]
-    const ln = XLN[i]
+    // Modulo bzw. Schleifengrenze halten die Indizes im Bereich; der
+    // Index-Zugriff sieht das nicht (noUncheckedIndexedAccess).
+    const fn = (female ? XFN_F[i % XFN_F.length] : XFN_M[i % XFN_M.length]) ?? ''
+    const ln = XLN[i] ?? ''
     const { role, priv } = extraProfile(r)
     const person: Person = {
       id: `p${17 + i}`,
@@ -499,6 +501,8 @@ export function buildDemoWeeks(): Week[] {
 
 /** Die eine importierbare Arbeitsheft-Woche (Einstellungen → Programm-Import), ohne Zuteilungen. */
 export function buildImportWeek(): Week {
+  // `normalizeChairKeys` gibt so viele Wochen zurück, wie es bekommt — hier
+  // genau eine. Der Index-Zugriff sieht das nicht, deshalb der Nicht-Null-Zusatz.
   return normalizeChairKeys([{
     range: '5.–11. Oktober', book: 'Jeremia 43–45', current: false,
     mid: {
@@ -537,5 +541,5 @@ export function buildImportWeek(): Week {
       ],
       helpers: {},
     },
-  }])[0]
+  }])[0]!
 }

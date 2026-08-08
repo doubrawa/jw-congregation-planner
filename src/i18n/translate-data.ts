@@ -1064,9 +1064,13 @@ const STUDY_PLACEHOLDER: Record<string, string> = {
 }
 for (const code of Object.keys(FRAG)) {
   const f = FRAG[code]
-  if (SONG_WORD[code]) f['Lied'] = SONG_WORD[code]
-  if (TALK_PLACEHOLDER[code]) f['(Vortragsthema eintragen)'] = TALK_PLACEHOLDER[code]
-  if (STUDY_PLACEHOLDER[code]) f['(Studienartikel eintragen)'] = STUDY_PLACEHOLDER[code]
+  if (!f) continue // über `Object.keys` unmöglich; der Index-Zugriff weiß das nicht
+  const lied = SONG_WORD[code]
+  const vortrag = TALK_PLACEHOLDER[code]
+  const studium = STUDY_PLACEHOLDER[code]
+  if (lied) f['Lied'] = lied
+  if (vortrag) f['(Vortragsthema eintragen)'] = vortrag
+  if (studium) f['(Studienartikel eintragen)'] = studium
 }
 
 /* ---- Verweise auf Studienstoff, Gruppen, Versammlungen ------------------

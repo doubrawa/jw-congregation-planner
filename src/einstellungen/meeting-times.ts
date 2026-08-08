@@ -9,9 +9,11 @@ export const DAY_KEYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const
 export type MeetingTime = { day: string; time: string }
 
 export function parseMeetingTimes(text: string): [MeetingTime, MeetingTime] {
+  // Beide Gruppen sind im Ausdruck nicht optional — ein Treffer hat sie also
+  // immer. Der Index-Zugriff auf `m` weiß das nicht.
   const found = [...text.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b\s*(\d{1,2}:\d{2})/g)].map((m) => ({
-    day: m[1],
-    time: m[2].padStart(5, '0'),
+    day: m[1] ?? '',
+    time: (m[2] ?? '').padStart(5, '0'),
   }))
   return [found[0] ?? { day: 'Di', time: '19:00' }, found[1] ?? { day: 'So', time: '10:00' }]
 }

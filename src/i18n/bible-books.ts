@@ -79,12 +79,19 @@ export function buchTabelle(lang: string): { voll: Map<string, string>; kurz: Ma
   if (eintrag) {
     const fehlen = lang === 'ur' ? new Set(UR_FEHLEN.split('|')) : null
     const deVoll = DE_VOLL.split('|').filter((b) => !fehlen?.has(b))
-    const deKurz = DE_KURZ.split('|').filter((_, i) => !fehlen?.has(DE_VOLL.split('|')[i]))
-    const zielVoll = eintrag[0].split('|')
-    const zielKurz = eintrag[1].split('|')
+    const deKurz = DE_KURZ.split('|').filter((_, i) => !fehlen?.has(DE_VOLL.split('|')[i] ?? ''))
+    const zielVoll = (eintrag[0] ?? '').split('|')
+    const zielKurz = (eintrag[1] ?? '').split('|')
     for (let i = 0; i < deVoll.length; i++) {
-      voll.set(deVoll[i], zielVoll[i])
-      kurz.set(deKurz[i], zielKurz[i])
+      // Kürzere Ziel-Liste als Quell-Liste hieße: eine Sprache ist unvollständig
+      // gepflegt. Dann bleibt der Eintrag lieber aus, als leer gesetzt zu werden
+      // — die Anzeige fällt auf den deutschen Namen zurück.
+      const vollZiel = zielVoll[i]
+      const kurzZiel = zielKurz[i]
+      const vollQuelle = deVoll[i]
+      const kurzQuelle = deKurz[i]
+      if (vollQuelle && vollZiel) voll.set(vollQuelle, vollZiel)
+      if (kurzQuelle && kurzZiel) kurz.set(kurzQuelle, kurzZiel)
     }
   }
   const gebaut = { voll, kurz }

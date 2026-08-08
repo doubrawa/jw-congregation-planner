@@ -61,7 +61,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
       ? fsInst
         ? `${fsInst.time} · ${tu(fsInst.place)}`
         : ''
-      : `${tp(state.weeks[sel.wi].range)} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
+      : `${tp(state.weeks[sel.wi]?.range ?? '')} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
 
   // Redner-Platz des öffentlichen Vortrags. Er kann **zweierlei** sein, und der
   // Planer entscheidet es Woche für Woche (T29):
@@ -75,7 +75,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const guest = sel.kind === 'part' && Boolean(sel.guest)
   const rolleJetzt = (): string => {
     if (sel.kind !== 'part') return ''
-    const item = state.weeks[sel.wi][sel.tab].sections[sel.si]?.items[sel.ii]
+    const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
     return !item || isSong(item) ? '' : (item.names[sel.ni]?.rolle ?? '')
   }
   const rolleAtoms = rolleJetzt().split(' · ')

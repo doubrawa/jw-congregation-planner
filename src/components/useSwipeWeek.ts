@@ -141,7 +141,9 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
         phase = 'verworfen'
         return
       }
+      // Genau eine Berührung ist oben geprüft; der Index-Zugriff weiß das nicht.
       const t = e.touches[0]
+      if (!t) return
       // Randzone dem System überlassen (Zurück-Geste).
       if (t.clientX < EDGE_PX || t.clientX > window.innerWidth - EDGE_PX) {
         gestenStart('start', { verworfen: 'Randzone', x: Math.round(t.clientX) })
@@ -167,6 +169,7 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       }
       bewegungen++
       const t = e.touches[0]
+      if (!t) return
       dx = t.clientX - startX
       const dy = t.clientY - startY
       if (phase === 'offen') {

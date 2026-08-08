@@ -46,9 +46,12 @@ export function fsBaseFromWeeks(
 ): Date {
   const i = weeks.findIndex((w) => w.start)
   const iso = weeks[i]?.start // findIndex -1 → weeks[-1] undefined → iso undefined
-  if (iso) {
-    const [y, m, d] = iso.split('-').map(Number)
-    const base = new Date(y, m - 1, d, 12, 0, 0, 0) // lokaler Mittag: kein UTC-Tagesversatz
+  // Ein ISO-Datum hat drei Teile. Fehlt einer, ist das Datum unbrauchbar und
+  // es bleibt beim Rückfall unten — besser als ein `NaN`-Datum, das sich erst
+  // Wochen später als verschobene Zeitleiste zeigt.
+  const [jahr, monat, tag] = (iso ?? '').split('-').map(Number)
+  if (iso && jahr !== undefined && monat !== undefined && tag !== undefined) {
+    const base = new Date(jahr, monat - 1, tag, 12, 0, 0, 0) // lokaler Mittag: kein UTC-Tagesversatz
     base.setDate(base.getDate() - i * 7) // Montag der Woche 0 (i Wochen vor der ersten mit start)
     return base
   }

@@ -18,14 +18,15 @@ const DAY_OFFSET: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, 
  * Wochentage gilt Dienstag (mid) / Sonntag (we) — wie serverseitig.
  */
 export function meetingDayOffsets(meetingTimes: string): Record<MeetingKey, number> {
-  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1]])
+  // Die Gruppe ist im Ausdruck nicht optional — ein Treffer hat sie immer.
+  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1] ?? ''])
   return { mid: found[0] ?? 1, we: found[1] ?? 6 }
 }
 
 /** Erste Uhrzeit in einem Text, auf "HH:MM" normiert. */
 function ersteZeit(text: string): string | undefined {
   const m = /\b(\d{1,2})[:.](\d{2})\b/.exec(text)
-  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : undefined
+  return m ? `${(m[1] ?? '').padStart(2, '0')}:${m[2] ?? ''}` : undefined
 }
 
 /**
@@ -36,7 +37,7 @@ function ersteZeit(text: string): string | undefined {
  */
 export function meetingTimesOf(meetingTimes: string): Record<MeetingKey, string> {
   const found = [...meetingTimes.matchAll(/\b(\d{1,2})[:.](\d{2})\b/g)].map(
-    (m) => `${m[1].padStart(2, '0')}:${m[2]}`,
+    (m) => `${(m[1] ?? '').padStart(2, '0')}:${m[2] ?? ''}`,
   )
   return { mid: found[0] ?? '', we: found[1] ?? '' }
 }
@@ -58,7 +59,7 @@ const WEEKDAY_OFFSET: Record<string, number> = {
  */
 export function meetingDateParts(date: string): { offset?: number; zeit?: string } {
   const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(date)
-  return { offset: tag ? WEEKDAY_OFFSET[tag[1]] : undefined, zeit: ersteZeit(date) }
+  return { offset: tag ? WEEKDAY_OFFSET[tag[1] ?? ''] : undefined, zeit: ersteZeit(date) }
 }
 
 /** Datum als lokales ISO („2026-09-08") — nicht über toISOString, das ist UTC. */
@@ -70,8 +71,10 @@ export function isoDay(d: Date): string {
 
 /** ISO-Datum → lokaler Mittag (kein Tagesversatz durch Zeitzonen). */
 export function fromIso(iso: string): Date {
+  // Ein ISO-Datum hat drei Teile; fehlt einer, entsteht ohnehin ein ungültiges
+  // Datum — dann lieber ausdrücklich als still verrechnet.
   const [y, m, d] = iso.split('-').map(Number)
-  return new Date(y, m - 1, d, 12, 0, 0, 0)
+  return new Date(y ?? NaN, (m ?? 1) - 1, d ?? 1, 12, 0, 0, 0)
 }
 
 /**

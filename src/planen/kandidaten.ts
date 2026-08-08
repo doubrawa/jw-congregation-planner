@@ -149,6 +149,9 @@ function personenKandidaten(
   const geschlechtOk = geschlechtsPruefung(state, sel)
   // Auslastung über dasselbe Fenster wie die Mini-Quadrate daneben.
   const fenster = state.weeks.slice(Math.max(0, sel.wi - LOAD_RADIUS), sel.wi + LOAD_RADIUS + 1)
+  // Die Woche gibt es, sonst wäre das Sheet nicht offen; ohne sie bleibt der
+  // Hinweis „heute schon zugeteilt" einfach aus.
+  const meeting = state.weeks[sel.wi]?.[sel.tab]
   return [...state.persons]
     .sort(personCompare) // alphabetisch; Abwesende wandern stabil ans Ende
     .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && geschlechtOk(p))
@@ -165,7 +168,7 @@ function personenKandidaten(
         name,
         assignName: name,
         sub: `${tu(roleLabel(p))} · ${lastLabel}`,
-        today: assignmentsInMeeting(state.weeks[sel.wi][sel.tab], p, state.services, sel),
+        today: meeting ? assignmentsInMeeting(meeting, p, state.services, sel) : [],
         absent: istAbwesend(abwesend, p.id, sel.wi, sel.tab),
         free: last === 0,
         // Dieselbe Platzgrenze wie `last` eine Zeile darüber — sonst zeigt
@@ -188,7 +191,7 @@ function geschlechtsPruefung(
   sel: Exclude<SlotSelection, { kind: 'fs' }>,
 ): (p: Person) => boolean {
   if (sel.kind !== 'part') return () => true
-  const item = state.weeks[sel.wi][sel.tab].sections[sel.si]?.items[sel.ii]
+  const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
   if (!item || isSong(item)) return () => true
   const plaetze = slotsOf(item, sel.aux === true)
   const platz = plaetze[sel.ni]

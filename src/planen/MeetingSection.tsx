@@ -130,7 +130,10 @@ export function MeetingSection({
             </div>
           )
         }
-        const rawItem = rawSection.items[ii]
+        // Die Sprachvariante ist strukturgleich zur kanonischen Woche
+        // (`localizedWeek` prüft das); ohne kanonisches Gegenstück bleibt der
+        // Punkt lesbar, aber nicht bearbeitbar.
+        const rawItem = rawSection.items[ii] ?? item
         const rawTitle = isSong(rawItem) ? '' : rawItem.title
         const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
         const editable = isLac && rawMins != null
@@ -285,11 +288,13 @@ export function MeetingSection({
             className="lac-add-input talk-song-input"
             placeholder={t.liedNrPh}
             aria-label={isOpening ? t.anfangsliedLbl : schlussliedLbl}
-            defaultValue={
-              isOpening
-                ? openingSongNr(state.weeks[state.week].we)
-                : closingSongNr(state.weeks[state.week].we)
-            }
+            defaultValue={(() => {
+              // Ohne Woche gäbe es diesen Abschnitt nicht; der Index-Zugriff
+              // sieht das nicht.
+              const we = state.weeks[state.week]?.we
+              if (!we) return ''
+              return isOpening ? openingSongNr(we) : closingSongNr(we)
+            })()}
             onInput={(e) => {
               // Nur Ziffern zulassen (Liederbuch-Nummer)
               const el = e.currentTarget

@@ -284,7 +284,9 @@ export function migrateItemIds(
 
   const nextConf = { ...confirmations }
   for (const [alt, neu] of renames) {
-    nextConf[neu] = nextConf[alt]
+    const status = nextConf[alt]
+    if (status === undefined) continue // umbenannt wird nur, was es gibt
+    nextConf[neu] = status
     delete nextConf[alt]
   }
   return { weeks: anyChanged ? next : weeks, confirmations: nextConf, renames }
@@ -797,19 +799,20 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const umgestellt = migrateItemIds(gemigriert, rohConf)
   const weekList = umgestellt.weeks
   const confirmations = umgestellt.confirmations
+  /** Nur die Wochen, die wirklich Kennungen bekommen haben. */
+  const speichereUmgestellte = (): void => {
+    for (let i = 0; i < weekList.length; i++) {
+      const woche = weekList[i]
+      if (woche && woche !== gemigriert[i]) saveWeek(congregationId, i, woche)
+    }
+  }
   if (umgestellt.renames.length > 0) {
     // Erst die Datenbank, dann die Wochen: bricht das Umbenennen ab, bleiben
     // die Wochen ohne Kennung und der nächste Ladevorgang versucht es erneut.
     // Andersherum wären die Bestätigungen verwaist.
-    void renameConfirmationKeys(congregationId, umgestellt.renames).then(() => {
-      for (let i = 0; i < weekList.length; i++) {
-        if (weekList[i] !== gemigriert[i]) saveWeek(congregationId, i, weekList[i])
-      }
-    })
+    void renameConfirmationKeys(congregationId, umgestellt.renames).then(speichereUmgestellte)
   } else {
-    for (let i = 0; i < weekList.length; i++) {
-      if (weekList[i] !== gemigriert[i]) saveWeek(congregationId, i, weekList[i])
-    }
+    speichereUmgestellte()
   }
 
   const settings = ((cong.data?.settings as CongregationSettings | null) ?? {})

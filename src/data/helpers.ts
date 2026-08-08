@@ -22,8 +22,9 @@ export function isSong(item: ProgramItem): item is SongItem {
 export function splitOpeningSong(title: string): { song: string | null; rest: string } {
   const atoms = title.split(' · ')
   const idx = atoms.findIndex((a) => /\d/.test(a))
-  if (idx < 0) return { song: null, rest: title }
-  return { song: atoms[idx].trim(), rest: atoms.filter((_, i) => i !== idx).join(' · ') }
+  const treffer = idx < 0 ? undefined : atoms[idx]
+  if (treffer === undefined) return { song: null, rest: title }
+  return { song: treffer.trim(), rest: atoms.filter((_, i) => i !== idx).join(' · ') }
 }
 
 /**
@@ -416,7 +417,8 @@ export const ROLE_GUEST_SPEAKER = 'Gastredner'
  * weiteres Atom der Rolle geführt (siehe `AssignSheet`).
  */
 export function rolleBasis(rolle: string | undefined): string {
-  return (rolle ?? '').split(' · ')[0]
+  // `split` liefert immer mindestens ein Element; der Index-Zugriff weiß das nicht.
+  return (rolle ?? '').split(' · ')[0] ?? ''
 }
 
 /**
