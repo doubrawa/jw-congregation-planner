@@ -306,13 +306,18 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
     }
   })
 
+  // Eigene Frist: die Simulation rechnet ein halbes Jahr mit **beiden** Räumen
+  // durch, also doppelt so viele Plätze wie die übrigen Läufe. Allein braucht
+  // sie gut anderthalb Sekunden, unter paralleler Last reichten die 5 Sekunden
+  // Vorgabe nicht mehr — sie fiel dann mit „timed out", nicht an einer
+  // Zusage. Die Prüfung selbst bleibt unverändert.
   it('bleibt auch mit Zusätzlicher Klasse ausgewogen (doppelt so viele Plätze)', () => {
     const mitKlasse = strichliste(simulate(persons, WOCHEN, true), sisters)
     const v = [...mitKlasse.values()].sort((a, b) => a - b)
     expect(v[0]).toBeGreaterThan(0)
     // Früher: 16 bis 24 über ein Jahr, weil die Klasse keine Last erzeugte.
     expect(v.at(-1)! - v[0]).toBeLessThanOrEqual(3)
-  })
+  }, 30_000)
 
   /**
    * Gleich viele Aufgaben heißt noch nicht gleich behandelt: eine Schwester
