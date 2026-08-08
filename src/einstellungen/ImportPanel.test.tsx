@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
-import { AppContext, type AppState } from '../app/context'
+import { AppDispatchContext, AppStateContext, type AppState } from '../app/context'
 import { initialState } from '../app/init'
 import type { Week } from '../data/types'
 import { ImportPanel } from './ImportPanel'
@@ -18,9 +18,11 @@ const woche = (patch: Partial<Week> = {}): Week =>
 function zeige(weeks: Week[], patch: Partial<AppState> = {}) {
   const state: AppState = { ...initialState(), weeks, ...patch }
   return render(
-    <AppContext.Provider value={{ state, dispatch: () => {} }}>
+    <AppDispatchContext.Provider value={() => {}}>
+      <AppStateContext.Provider value={state}>
       <ImportPanel />
-    </AppContext.Provider>,
+    </AppStateContext.Provider>
+    </AppDispatchContext.Provider>,
   )
 }
 

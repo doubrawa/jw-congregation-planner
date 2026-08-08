@@ -4,7 +4,7 @@
  * Supabase-Auth bzw. <html>-Attribute.
  */
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
+import { useCallback, useEffect, useReducer, useRef, type ReactNode } from 'react'
 import { isDarkTheme } from '../data/constants'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
@@ -12,7 +12,7 @@ import { dict, loadOverlay } from '../i18n/ui'
 import { setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
-import { AppContext, type AppAction } from './context'
+import { AppDispatchContext, AppStateContext, type AppAction } from './context'
 import { loadAndHydrate } from './hydrate'
 import { initialState } from './init'
 import { persist } from './persist'
@@ -182,6 +182,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer)
   }, [state.toast, dispatch])
 
-  const value = useMemo(() => ({ state, dispatch }), [state, dispatch])
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
+  // Zwei Kontexte statt einem (T41): `dispatch` bleibt über die ganze Sitzung
+  // dieselbe Funktion, sein Kontext ändert sich also nie. Bausteine, die nur
+  // auslösen (`useAppDispatch`), rendern damit bei Zustandsänderungen nicht mit.
+  return (
+    <AppDispatchContext.Provider value={dispatch}>
+      <AppStateContext.Provider value={state}>{children}</AppStateContext.Provider>
+    </AppDispatchContext.Provider>
+  )
 }

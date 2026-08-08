@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { kennungVon } from '../data/planning'
-import { useApp } from '../app/context'
+import { useApp, useAppDispatch } from '../app/context'
 import { FS_TIME_OPTIONS, fsDate } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -15,7 +15,7 @@ const TIME_OPTIONS = FS_TIME_OPTIONS
  * `onlyGroup` grenzt bei Gruppenaufsehern auf die eigene Gruppe ein.
  */
 function FsAutoAssign({ onlyGroup }: { onlyGroup: string | null }) {
-  const { dispatch } = useApp()
+  const dispatch = useAppDispatch()
   const { t } = useT()
   const [armed, setArmed] = useState(false)
   return (
