@@ -75,14 +75,38 @@ export interface HydratePayload {
   invites: Invite[]
 }
 
+/**
+ * Der gesamte Anwendungszustand.
+ *
+ * **Drei Sorten liegen hier nebeneinander** (T41) — sie sind unten in dieser
+ * Reihenfolge gruppiert, weil sie sich in Herkunft, Lebensdauer und Speicherort
+ * grundlegend unterscheiden:
+ *
+ * | Sorte | Herkunft | Wo sie überdauert |
+ * | --- | --- | --- |
+ * | **Serverdaten** | Supabase, beim Anmelden geladen | Datenbank |
+ * | **Ansichtszustand** | Bedienung, kurzlebig | nirgends |
+ * | **Gerätevorlieben** | Bedienung, langlebig | `localStorage`, je Gerät |
+ *
+ * Die Gruppierung ist **nicht** bloß Kosmetik: sie sagt bei jedem Feld, ob eine
+ * Änderung gespeichert werden muss (`persist.ts`), ob sie im Offline-Modus
+ * erlaubt ist (`readonly.ts`) und ob sie in die Momentaufnahme gehört
+ * (`lib/snapshot.ts`). Bisher stand das nirgends und musste je Feld erraten
+ * werden.
+ */
 export interface AppState {
+  /* ---- Ansichtszustand: wo man gerade ist ------------------------------- */
   screen: Screen
   week: number // Index in weeks
   tab: MeetingTab
+
+  /* ---- Gerätevorlieben: je Gerät, in localStorage ----------------------- */
   theme: Theme
   fontScale: FontScale // Schriftgrößen-Faktor (--fs), gerätebezogen wie theme
+  lang: Lang // App-Sprache (UI)
+
+  /* ---- Sitzung und Rechte ----------------------------------------------- */
   planner: boolean // Rechte: Planen/Personen/Einstellungen sichtbar
-  congregation: Congregation
   // Persistenz (Supabase); im Demo-Modus null bzw. 'demo'
   congregationId: string | null
   userId: string | null
@@ -92,9 +116,12 @@ export interface AppState {
   // Daten kommen aus der Offline-Momentaufnahme (lib/snapshot.ts): Zeitpunkt der
   // Aufnahme in ms, sonst null. Solange gesetzt, ist die App nur lesend.
   staleAt: number | null
+  recovery: boolean // Passwort-Reset-Ansicht aktiv (PASSWORD_RECOVERY)
+
+  /* ---- Serverdaten: geladen, geändert, zurückgeschrieben ---------------- */
+  congregation: Congregation
   members: Member[] // Mitglieder-Verwaltung (Planer; Nicht-Planer: nur eigene Zeile)
   invites: Invite[] // offene Einladungscodes (nur Planer)
-  recovery: boolean // Passwort-Reset-Ansicht aktiv (PASSWORD_RECOVERY)
   weeks: Week[]
   /**
    * Index der ersten geladenen Woche. Davor stehen Platzhalter (Week.stub),
@@ -112,24 +139,8 @@ export interface AppState {
   fsBase: Date // Montag der Woche 0 (Bezug für Treffpunkt-Datumsberechnung)
   absences: Absence[]
   notifs: Notification[]
-  notifOpen: boolean
-  slotSel: SlotSelection | null // offenes Zuteilungs-Sheet (Planen)
-  selectedPersonId: string | null // offenes Personen-Detail
-  importing: boolean // Programm-Import läuft (~0.9 s)
-  imported: boolean // alle verfügbaren Wochen importiert
-  // Persönliche Aufgaben & Bestätigungs-Flow. Im Produktionsmodus werden
-  // myTasks/pendingIds aus weeks + confirmations abgeleitet (store.tsx).
-  myTasks: MyTask[]
-  /** Kennungen (Person-Id, sonst `name:…`) mit noch offener Bestätigung — Planen: „…“ */
-  pendingIds: string[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
-  confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
-  myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)
-  substituteReqs: SubstituteReq[] // offene Ersatzgesuche für mich (Einspringen)
-  s89: S89Payload | null // offenes S-89-Formular
   reminders: Reminders
-  // Mehrsprachigkeit
-  lang: Lang // App-Sprache (UI)
   /**
    * Versammlung hat eine Zusätzliche Klasse eingerichtet (jw.org S-38,
    * Absatz 26). Steuert die zweite Platzreihe der Schülerteile und den
@@ -138,6 +149,24 @@ export interface AppState {
   auxClass: boolean
   congLang: string // Versammlungssprache (deutscher Name, z. B. "Deutsch")
   progLangs: string[] // weitere Programmsprachen (deutsche Namen) — Import holt Varianten
+
+  /* ---- Abgeleitet: aus den Serverdaten gerechnet, nie gespeichert -------- */
+  // Persönliche Aufgaben & Bestätigungs-Flow. Im Produktionsmodus werden
+  // myTasks/pendingIds aus weeks + confirmations abgeleitet (store.tsx).
+  myTasks: MyTask[]
+  /** Kennungen (Person-Id, sonst `name:…`) mit noch offener Bestätigung — Planen: „…“ */
+  pendingIds: string[]
+  substituteReqs: SubstituteReq[] // offene Ersatzgesuche für mich (Einspringen)
+
+  /* ---- Ansichtszustand: was gerade offen ist ---------------------------- */
+  notifOpen: boolean
+  slotSel: SlotSelection | null // offenes Zuteilungs-Sheet (Planen)
+  selectedPersonId: string | null // offenes Personen-Detail
+  importing: boolean // Programm-Import läuft (~0.9 s)
+  imported: boolean // alle verfügbaren Wochen importiert
+  confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
+  myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)
+  s89: S89Payload | null // offenes S-89-Formular
   langSheetOpen: boolean // Sprach-Sheet offen
   langSheetFor: 'cong' | 'alt' // Auswahl-Ziel: Versammlungssprache | weitere Programmsprache
   langSearch: string
@@ -259,10 +288,42 @@ export interface AppContextValue {
   dispatch: Dispatch<AppAction>
 }
 
-export const AppContext = createContext<AppContextValue | null>(null)
+/**
+ * Zustand und Versand liegen in **getrennten** Kontexten (T41).
+ *
+ * Vorher trugen sie ein gemeinsames Objekt. Das hatte eine unangenehme Folge:
+ * `dispatch` ist über die ganze Sitzung dieselbe Funktion, das umgebende Objekt
+ * aber nicht — jede Zustandsänderung erzeugte ein neues und rief damit auch die
+ * Bausteine auf den Plan, die gar nichts lesen, sondern nur auslösen.
+ *
+ * Getrennt bleibt der Versand-Kontext unverändert, solange die App läuft. Wer
+ * `useAppDispatch()` nimmt, rendert von einer Zustandsänderung nicht mehr neu.
+ *
+ * `useApp()` gibt es weiter und liefert beides — es baut das Paar nur wieder
+ * zusammen. Wer den Zustand liest, rendert wie bisher bei jeder Änderung neu;
+ * daran ändert eine Kontext-Trennung nichts (React verteilt Kontexte ganz oder
+ * gar nicht). Der Schritt dahin sind Selektoren, siehe todo.md T41.
+ */
+export const AppStateContext = createContext<AppState | null>(null)
+export const AppDispatchContext = createContext<Dispatch<AppAction> | null>(null)
+
+/** Nur der Zustand. */
+export function useAppState(): AppState {
+  const state = useContext(AppStateContext)
+  if (!state) throw new Error('useApp() außerhalb von <AppProvider> aufgerufen')
+  return state
+}
+
+/**
+ * Nur der Versand — für Bausteine, die auslösen ohne zu lesen. Sie rendern
+ * dadurch bei Zustandsänderungen nicht mit.
+ */
+export function useAppDispatch(): Dispatch<AppAction> {
+  const dispatch = useContext(AppDispatchContext)
+  if (!dispatch) throw new Error('useApp() außerhalb von <AppProvider> aufgerufen')
+  return dispatch
+}
 
 export function useApp(): AppContextValue {
-  const ctx = useContext(AppContext)
-  if (!ctx) throw new Error('useApp() außerhalb von <AppProvider> aufgerufen')
-  return ctx
+  return { state: useAppState(), dispatch: useAppDispatch() }
 }

@@ -2,15 +2,16 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import React from 'react'
-import { AppContext, type AppContextValue, type AppState, useApp } from '../app/context'
+import { AppDispatchContext, AppStateContext, type AppState, useApp } from '../app/context'
 import { buildDemoWeeks } from '../data/demo'
 import { fill, useProgWeek, useT } from './useT'
 
 /** Provider-Wrapper mit einem Teil-State (useT liest nur lang/congLang). */
 function wrapper(state: Partial<AppState>) {
-  const ctx: AppContextValue = { state: state as AppState, dispatch: () => {} }
   return ({ children }: { children: React.ReactNode }) => (
-    <AppContext.Provider value={ctx}>{children}</AppContext.Provider>
+    <AppDispatchContext.Provider value={() => {}}>
+      <AppStateContext.Provider value={state as AppState}>{children}</AppStateContext.Provider>
+    </AppDispatchContext.Provider>
   )
 }
 

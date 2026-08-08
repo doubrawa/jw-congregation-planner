@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useApp } from '../app/context'
+import { useAppDispatch } from '../app/context'
 import { useT } from '../i18n/useT'
 
 /**
@@ -10,7 +10,7 @@ import { useT } from '../i18n/useT'
  * Verlässt der Fokus den Button, entschärft er sich wieder.
  */
 function AutoAssignRow({ label, scope }: { label: string; scope: 'parts' | 'helpers' }) {
-  const { dispatch } = useApp()
+  const dispatch = useAppDispatch()
   const { t } = useT()
   const [armed, setArmed] = useState(false)
 

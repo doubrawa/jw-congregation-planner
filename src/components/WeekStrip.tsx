@@ -1,5 +1,5 @@
 import { useRef, type Dispatch, type ReactNode } from 'react'
-import { AppContext, useApp, type AppAction } from '../app/context'
+import { AppDispatchContext, AppStateContext, useApp, useAppState, type AppAction } from '../app/context'
 import { useSwipeWeek } from './useSwipeWeek'
 import './week-strip.css'
 
@@ -68,15 +68,20 @@ const SEITE = {
 
 /** Dieselben Inhalte, nur für eine benachbarte Woche und ohne Bedienbarkeit. */
 function Vorschau({ offset, children }: { offset: -1 | 1; children: ReactNode }) {
-  const { state } = useApp()
+  const state = useAppState()
   // Kein useMemo: `state` ist nach jeder Aktion ein neues Objekt, der Vergleich
   // ginge also ohnehin daneben — und `children` ist bei jedem Render neu, der
   // Teilbaum liefe so oder so durch. Der Spread ist billiger als der Anschein
   // von Abschirmung.
-  const wert = { state: { ...state, week: state.week + offset }, dispatch: keinDispatch }
+  const wert = { ...state, week: state.week + offset }
   return (
     <div className={SEITE[offset]} aria-hidden="true" inert>
-      <AppContext.Provider value={wert}>{children}</AppContext.Provider>
+      {/* Nur der Zustands-Kontext wird überschrieben; der Versand-Kontext bleibt
+          der äußere und wird hier durch `keinDispatch` ersetzt — die Vorschau
+          ist `inert`, ein Klick kommt gar nicht erst an. */}
+      <AppDispatchContext.Provider value={keinDispatch}>
+        <AppStateContext.Provider value={wert}>{children}</AppStateContext.Provider>
+      </AppDispatchContext.Provider>
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useApp } from '../app/context'
+import { useAppDispatch } from '../app/context'
 import { useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
@@ -13,7 +13,7 @@ import './overlays.css'
  * Zuteilungs-Sheet. Geöffnet aus Meine Aufgaben und dem Zuteilungs-Sheet.
  */
 export function S89Sheet({ payload }: { payload: S89Payload }) {
-  const { dispatch } = useApp()
+  const dispatch = useAppDispatch()
   const { t, tp } = useT()
   const close = () => dispatch({ type: 'closeS89' })
   const dlg = useRef<HTMLDivElement>(null)

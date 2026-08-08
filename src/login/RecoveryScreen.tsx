@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useApp } from '../app/context'
+import { useAppDispatch } from '../app/context'
 import { useT } from '../i18n/useT'
 import { updatePassword } from '../lib/supabase'
 import { authFehlerText } from './auth-text'
@@ -10,7 +10,7 @@ import './login.css'
  * führt (PASSWORD_RECOVERY-Event, state.recovery). Nutzt das Login-Layout.
  */
 export function RecoveryScreen() {
-  const { dispatch } = useApp()
+  const dispatch = useAppDispatch()
   const { t } = useT()
   const [password, setPassword] = useState('')
   const [repeat, setRepeat] = useState('')

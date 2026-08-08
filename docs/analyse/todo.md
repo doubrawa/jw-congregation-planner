@@ -921,11 +921,56 @@ Seiten.
 >    `send-reminders/` bzw. `substitute/` zu kopieren — der Paritätstest
 >    bliebe dann bestehen und würde die Dopplung weiter überwachen.
 
-### T41 · `AppState` aufteilen 🏗
+### T41 · `AppState` aufteilen 🏗 ⚠ teilweise — Selektoren stehen aus
 ~60 Felder mischen Serverdaten, UI-Zustand und Gerätevorlieben; der Context hat
 keine Selektoren, also rendert jede Änderung alles neu. Eine Aufteilung in drei
 Kontexte macht `readonly.ts` und einen Teil von `persist.ts` überflüssig.
 → [code-review.md § 4.3](code-review.md)
+
+> **Am 8. August 2026 zur Hälfte umgesetzt — und die andere Hälfte bewusst
+> nicht.** Was gemacht ist:
+>
+> **1. Zustand und Versand liegen in getrennten Kontexten.** `dispatch` ist über
+> die ganze Sitzung dieselbe Funktion, das gemeinsame Objekt aber nicht: jede
+> Zustandsänderung erzeugte ein neues und rief damit auch die Bausteine auf den
+> Plan, die gar nichts lesen, sondern nur auslösen. `useAppDispatch()` rendert
+> jetzt nicht mehr mit; `useApp()` gibt es unverändert weiter (41 Bausteine
+> nutzen es). Vier Bausteine sind umgestellt: `S89Sheet`, `RecoveryScreen`,
+> `AutoAssignPanel`, `FsPlan`.
+>
+> **2. Die Felder sind nach Zuständigkeit gruppiert** — Ansichtszustand,
+> Gerätevorlieben, Sitzung, Serverdaten, Abgeleitetes. Das ist nicht Kosmetik:
+> die Gruppe sagt bei jedem Feld, ob eine Änderung gespeichert werden muss
+> (`persist.ts`), ob sie offline erlaubt ist (`readonly.ts`) und ob sie in die
+> Momentaufnahme gehört. Bisher stand das nirgends und musste je Feld erraten
+> werden — und genau daran hängt der Rest.
+>
+> 4 Tests in `src/app/context.test.tsx` messen die Rendezahl. Gegenprobe:
+> hängt man `useAppDispatch` wieder an den Zustands-Kontext, fällt einer. Der
+> erste Testlauf fiel übrigens auf die eigene Bühne herein — ein bei jedem
+> Render neu erzeugtes `vi.fn()` ist ein anderer Kontextwert und hätte die
+> Trennung genau um das gebracht, was sie leisten soll.
+>
+> ---
+>
+> **Was aussteht: die Selektoren.** Wer den Zustand liest, rendert weiterhin bei
+> jeder Änderung neu — daran ändert eine Kontext-Trennung nichts, React verteilt
+> Kontexte ganz oder gar nicht. Der Weg dahin ist `useSyncExternalStore`: der
+> Provider hält den Zustand in einer Referenz und benachrichtigt Abonnenten,
+> `useAppSelector(fn)` weckt nur, wenn sich der gewählte Ausschnitt ändert.
+>
+> **Bewusst nicht heute gemacht.** Es rührt an den Kern von 45 Bausteinen, und
+> es gibt keinen einzigen Test, der Render-Verhalten im Zusammenspiel prüft —
+> eine falsch gesetzte Abhängigkeit fällt dort nicht auf, sondern erst im
+> Betrieb als veraltete Anzeige. Die beiden Schritte oben sind die Vorarbeit
+> dafür und für sich genommen richtig; der dritte gehört in eine eigene Sitzung
+> mit einem eigenen Sicherheitsnetz.
+>
+> Der Nebensatz des Befunds — „macht `readonly.ts` überflüssig" — trifft
+> übrigens nicht zu: `readonly.ts` führt eine **Positivliste** der reinen
+> Ansichts-Aktionen, damit eine neu hinzugefügte Aktion automatisch als
+> Schreibzugriff gilt. Diese Sicherung hängt an den Aktionen, nicht an der Form
+> des Zustands, und bliebe auch nach einer Aufteilung nötig.
 
 ### T42 · `noUncheckedIndexedAccess` schrittweise 🏗 ✅ erledigt (Sperrklinke steht, Rest folgt)
 213 Treffer, konzentriert genau in den Wochen-Dateien (`translate.ts` 48,
