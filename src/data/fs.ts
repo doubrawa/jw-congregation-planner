@@ -533,3 +533,32 @@ export function fsWeekConflicts(
   }
   return conflicts
 }
+
+/**
+ * Löst die Verweise auf eine gelöschte Person aus den Treffpunkt-Wochen: die
+ * `lpid` verschwindet, **der Name bleibt als Text stehen** — genau wie bei den
+ * Zusammenkünften (`dropPersonPid` in lib/data.ts).
+ *
+ * Ohne das zeigte der Fremdschlüssel ins Leere: `deriveMyFsTasks` und die
+ * Konfliktprüfung entscheiden über die Id und fänden niemanden mehr, während
+ * der Name weiter dastünde. Ohne `lpid` greift wieder der Namensweg.
+ *
+ * Unveränderte Wochen behalten ihre Referenz — daran erkennt der Aufrufer,
+ * welche er speichern muss.
+ */
+export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance[][] {
+  let anyChanged = false
+  const next = fsWeeks.map((week) => {
+    let changed = false
+    const insts = week.map((inst) => {
+      if (inst.lpid !== id) return inst
+      changed = true
+      const { lpid: _weg, ...ohne } = inst
+      return ohne
+    })
+    if (!changed) return week
+    anyChanged = true
+    return insts
+  })
+  return anyChanged ? next : fsWeeks
+}

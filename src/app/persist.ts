@@ -278,6 +278,15 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       for (const m of prev.members) {
         if (m.personId === action.id) saveMemberRow({ ...m, personId: null })
       }
+      // Die gelösten Verweise (T38) müssen auch in der Datenbank landet sein —
+      // sonst zeigt der Fremdschlüssel dort weiter ins Leere. Nur die wirklich
+      // geänderten Wochen: unveränderte behalten ihre Referenz.
+      for (let i = 0; i < next.weeks.length; i++) {
+        if (next.weeks[i] !== prev.weeks[i]) weekSaves.schedule(i, { congId, week: next.weeks[i] })
+      }
+      for (let i = 0; i < next.fsWeeks.length; i++) {
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) saveFsWeek(congId, i, next.fsWeeks[i])
+      }
       break
     }
     case 'setFamily':

@@ -273,6 +273,37 @@ describe('Personen', () => {
     expect(next.members[0].personId).toBeNull()
     expect(next.invites[0].personId).toBeNull()
   })
+
+  it('removePerson löst auch die pid aus Wochen und Treffpunkten (T38)', () => {
+    // Der Name bleibt als Text stehen — so war es immer dokumentiert. Die Id
+    // aber muss weg: ohne Ziel ist sie ein Fremdschlüssel ins Leere, der Slot
+    // zählte nirgends mehr, und eine neu angelegte Person desselben Namens
+    // bekäme eine neue Id und passte nie wieder dazu.
+    const s = makeState()
+    const mitPid = (w: Week): { name: string; pid?: string } | undefined => {
+      for (const tab of ['mid', 'we'] as const) {
+        for (const sec of w[tab].sections) {
+          for (const it of sec.items) {
+            if (isSong(it)) continue
+            const slot = (it as PartItem).names.find((n) => n.pid)
+            if (slot) return slot
+          }
+        }
+      }
+      return undefined
+    }
+    // Eine echte Zuteilung mit pid herstellen und dann ihre Person löschen.
+    const sel = firstPartSlot(s.weeks[0], 'mid')
+    const belegt = reducer(makeState({ slotSel: sel }), {
+      type: 'assign', name: 'Anna Beispiel', pid: 'p1',
+    })
+    expect(mitPid(belegt.weeks[0])?.pid).toBe('p1')
+
+    const geloescht = reducer(belegt, { type: 'removePerson', id: 'p1' })
+    const slot = (geloescht.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0]
+    expect(slot.name).toBe('Anna Beispiel') // Name bleibt
+    expect(slot.pid).toBeUndefined() // Id ist gelöst
+  })
 })
 
 describe('Dienste', () => {

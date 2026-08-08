@@ -8,9 +8,9 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
-import { renameInWeeks } from '../lib/data'
+import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
   assignmentsInMeeting,
@@ -202,6 +202,12 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'addImportedWeek',
   'mergeWeekAlt',
   'updatePerson',
+  // Löst die pid aus Wochen und Treffpunkten (T38) — die Aufgaben der
+  // gelöschten Person müssen verschwinden.
+  'removePerson',
+  // Ein Ausfall nimmt einer ganzen Zusammenkunft die Aufgaben, eine Verlegung
+  // ändert deren Termin (T30).
+  'setAbweichung',
   'lacAdjust',
   'lacRemove',
   'lacMove',
@@ -320,8 +326,17 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'removePerson': {
       // Person löschen: Referenzen lösen (Gruppenleitung, Konto, offene
       // Codes); Namen in bereits geplanten Wochen bleiben als Text stehen.
+      //
+      // **Die `pid` muss dabei weg** (T38): sie ist ein Fremdschlüssel, und
+      // ohne Ziel zeigt sie ins Leere. `gehoertZu` entscheidet über die Id,
+      // fände niemanden mehr, und der Slot zählte nirgends — weder in der
+      // Auslastung noch in den Konflikten noch in den Aufgaben. Ohne Id greift
+      // wieder der Namensweg; legt der Planer dieselbe Person neu an, findet
+      // `migrateAssignmentPids` sie beim nächsten Laden wieder.
       return {
         ...state,
+        weeks: dropPersonPid(state.weeks, action.id),
+        fsWeeks: fsDropPersonPid(state.fsWeeks, action.id),
         persons: state.persons.filter((p) => p.id !== action.id),
         groups: state.groups.map((g) => ({
           ...g,

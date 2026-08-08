@@ -747,11 +747,46 @@ und des `Week.stub`-Konstrukts. Eine stabile Slot-Id im Datenmodell beseitigt
 alles auf einmal. Braucht eine Migration — wird mit jeder weiteren Funktion teurer.
 → [code-review.md § 2](code-review.md)
 
-### T38 · `pid` verpflichtend, Name nur noch Anzeige 🏗
+### T38 · `pid` verpflichtend, Name nur noch Anzeige 🏗 ✅ erledigt
 Heute ersetzen **fünf** Mechanismen einen Fremdschlüssel: zwei Lade-Migrationen,
 `renameInWeeks`, die Dubletten-Warnung, das Feld `dn` und ein serverseitiger
 Rückweg Name → Konto. `FsInstance.leader` hat gar keine `pid`.
 → [code-review.md § 3.3](code-review.md)
+
+> **Umgesetzt am 8. August 2026.** Der Umbau selbst kam schon mit **T57**: seither
+> trägt jede Zuteilung einer echten Person ihre `pid`, und `gehoertZu`
+> entscheidet daran. `FsInstance.lpid` kam mit **T31**. Beim Nachprüfen der
+> verbliebenen fünf Mechanismen blieben zwei Stellen übrig, an denen der
+> Fremdschlüssel seine Zusage brach — beide sind jetzt geschlossen:
+>
+> **1. Umbenennen erreichte nicht jeden Ort.** `renameInWeeks` lief nur über
+> `item.names`. Die **Zusätzliche Klasse** (`item.aux`) und der **Ratgeber**
+> (`meeting.auxRatgeber`) blieben auf dem alten Anzeigenamen stehen. Beide
+> tragen `pid`, funktional stimmte also alles — auf dem Programmblatt der Klasse
+> stand aber ein Name, den es nicht mehr gibt. Umbenennen und Lösen teilen sich
+> jetzt einen Durchlauf (`mapPersonSlots`), der alle vier Orte kennt: Hauptsaal,
+> Klasse, Ratgeber, Hilfsdienst.
+>
+> **2. Löschen ließ die `pid` stehen** — ein Fremdschlüssel ohne Ziel. Die
+> Folgen waren still: `gehoertZu` entscheidet über die Id, fand niemanden mehr,
+> und der Slot zählte nirgends (nicht in der Auslastung, nicht in den
+> Konflikten, nicht in den Aufgaben). Legte der Planer dieselbe Person neu an,
+> bekam sie eine neue Id und passte nie wieder dazu. `dropPersonPid` bzw.
+> `fsDropPersonPid` lösen die Id jetzt und **lassen den Namen stehen** (so war
+> es immer dokumentiert). Damit greift wieder der Namensweg: die Zuteilung
+> verhält sich wie ein Altdatensatz und wird beim nächsten Laden erneut
+> zugeordnet, sobald es wieder jemanden dieses Namens gibt.
+>
+> Gelöst wird **nur über die Id**, nicht über den Namen — sonst träfe es eine
+> zweite Person desselben Anzeigenamens mit.
+>
+> Die verbliebenen drei Mechanismen sind **kein Mangel**, sondern haben ihren
+> Grund: die beiden Lade-Migrationen sind einmalige Nachträge für Altdaten,
+> `dn` ist ein Anzeige-Merkmal, und der serverseitige Rückweg Name → Konto ist
+> seit T57 ein dokumentierter *Rückfall* (`userOf` fragt zuerst die `pid`).
+>
+> 13 Tests in `src/data/t38.test.ts`, einer im Reducer (die Verdrahtung, nicht
+> nur die reine Funktion). Gegenprobe für beide Hälften einzeln gefahren.
 
 ### T39 · Schreibkonflikte zwischen Planern verhindern 🔧 ✅ erledigt
 `saveWeek` schreibt die **komplette Woche** als JSONB-Upsert, ohne Locking und
