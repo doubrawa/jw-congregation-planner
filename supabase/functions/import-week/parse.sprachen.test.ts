@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseWorkbookWeek, type ImportedPart } from './parse'
+import { mitLiedNummer, parseWorkbookWeek, type ImportedPart } from './parse'
 
 /**
  * Der Parser in den Schriften der Welt.
@@ -327,6 +327,25 @@ describe('mins — die Dauer verlässt den Anzeigetext', () => {
     })
     expect(teil(html, 'petrol').mins).toBe(10)
     expect(schluss(html).mins).toBe(3)
+  })
+
+  it('mitLiedNummer setzt das Schlusslied in das vorhandene Atom', () => {
+    // Nicht als eigenes Item davor — sonst stünde „Lied“ zweimal da (F11/T33).
+    expect(mitLiedNummer('Schlussworte · Lied · Gebet', 'Lied 151')).toBe(
+      'Schlussworte · Lied 151 · Gebet',
+    )
+    // Nur die Zahl wird übernommen: die Wochenend-Vorlage ist kanonisch
+    // deutsch und wird erst bei der Anzeige übersetzt.
+    expect(mitLiedNummer('Schlussworte · Lied · Gebet', 'سرود ۱۵۱')).toBe(
+      'Schlussworte · Lied 151 · Gebet',
+    )
+    // Eine schon gesetzte Nummer wird ersetzt, nicht ergänzt.
+    expect(mitLiedNummer('Schlussworte · Lied 44 · Gebet', 'Lied 151')).toBe(
+      'Schlussworte · Lied 151 · Gebet',
+    )
+    // Ohne Zahl bzw. ohne Lied-Atom bleibt der Titel unangetastet.
+    expect(mitLiedNummer('Schlussworte · Lied · Gebet', 'Lied')).toBe('Schlussworte · Lied · Gebet')
+    expect(mitLiedNummer('Schlussworte · Gebet', 'Lied 151')).toBe('Schlussworte · Gebet')
   })
 
   it('ohne Zeitangabe bleibt das Feld leer', () => {

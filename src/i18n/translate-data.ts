@@ -1016,6 +1016,17 @@ const FRAG: Record<string, Record<string, string>> = {
 // „Lied“ (ohne Nummer) fehlte als Atom für zusammengesetzte Titel wie
 // „Schlussworte · Lied · Gebet“. Die beiden Platzhalter erscheinen als
 // editierbarer Titel, solange nichts eingetragen ist.
+/**
+ * Das Wort „Lied“ je Sprache — gemessen, nicht erfunden.
+ *
+ * Doppelt genutzt: als FRAG-Atom für zusammengesetzte Titel („Schlussworte ·
+ * Lied · Gebet“) und als Beschriftung des Schlusslied-Feldes im Planen-Screen.
+ * Für Letzteres wäre „SCHLUSSLIED“ treffender, aber das gäbe es nur in
+ * Deutsch — und die Wörterbuch-Prüfung verlangt zu Recht, dass **jede** der 33
+ * Sprachen einen Schlüssel selbst übersetzt (`ui.test.ts`). Ein erfundenes
+ * Wort in 32 Sprachen wäre der schlechtere Tausch; im ABSCHLUSS-Block, der
+ * direkt darüber steht, ist „Lied“ eindeutig genug.
+ */
 const SONG_WORD: Record<string, string> = {
   en: 'Song', es: 'Canción', fr: 'Cantique', it: 'Cantico', pt: 'Cântico',
   nl: 'Lied', pl: 'Pieśń', ru: 'Песня', uk: 'Пісня', ro: 'Cântarea',
@@ -1543,5 +1554,5 @@ const EXTRA: Record<string, Extra> = {
   ko: { song: n => n + '번 노래', min: n => n + '분', ca: r => '약 ' + r, ende: r => '약 ' + r + ' 종료', mit: x => x + '와 함께', tage: n => n + '일 후', zut: n => n + '건' },
 }
 
-export { FRAG, D, REF, WD, WDA, MON, MONA, EXTRA, EXTRA_EN }
+export { FRAG, D, REF, WD, WDA, MON, MONA, EXTRA, EXTRA_EN, SONG_WORD }
 export type { DateDict, Extra, RefDict }

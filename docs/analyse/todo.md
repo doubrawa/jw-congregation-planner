@@ -486,12 +486,43 @@ falschen Stelle. Strukturell lösbar ohne Textvergleich — das Bibelstudium ist
 der Punkt mit einem `leser`-Slot. In `umgebungspruefungen.md` war die Ursache
 schon notiert (Soft-Hyphens im Rohtext), ohne dass daraus eine Aufgabe wurde.
 
-### T33 · Schlusslied nachtragbar machen ⚡
+### T33 · Schlusslied nachtragbar machen ⚡ ✅ erledigt
 `applyStudy` fügt das Lied als eigenes Item ein, während der Titel weiterhin
 „Schlussworte · **Lied** · Gebet" lautet → das Wort erscheint doppelt. Fehlt das
 Lied, lässt sich die Nummer **nicht** nachtragen: `setOpeningSong` kennt nur die
 Eröffnung.
 → [befunde.md F11](befunde.md)
+
+> **Umgesetzt am 8. August 2026.** Beide Hälften hatten dieselbe Ursache: das
+> Lied wurde als *Ding daneben* behandelt statt als Atom des Titels.
+>
+> - **Import:** `mitLiedNummer` schreibt die Nummer in das vorhandene
+>   „Lied"-Atom, statt ein eigenes Item davorzusetzen. Damit ist der
+>   Wochenend-Abschluss genauso gebaut wie die Eröffnung und der Abschluss
+>   unter der Woche — und die `insertClose`-Gymnastik, die die Sprachvarianten
+>   strukturgleich halten musste, erübrigt sich von selbst.
+> - **Nachtragen:** `setOpeningSong` griff stur auf Atom **0** zu; beim
+>   Abschluss steht das Lied in der Mitte. Jetzt sucht `songAtomIndex` es.
+>   Daraus wurden `setOpeningSong`/`setClosingSong` über einen gemeinsamen
+>   Kern, dazu `closingSongNr` und ein Eingabefeld im ABSCHLUSS-Block.
+> - **Alt-Wochen** tragen das Lied weiter als eigenes Item; dort schreibt
+>   `setClosingSong` die Nummer hinein statt in den Titel, sonst stünde sie
+>   zweimal da. Die Dopplung in der *Anzeige* solcher Wochen verschwindet erst
+>   mit einem erneuten Import — bewusst nicht nachträglich umgebaut, weil ein
+>   entferntes Item alle `task_key` der Sektion verschöbe.
+>
+> **Zur Beschriftung:** „SCHLUSSLIED" gibt es nur auf Deutsch, und `ui.test.ts`
+> verlangt zu Recht, dass jede der 33 Sprachen jeden UI-Schlüssel **selbst**
+> übersetzt („Genau so stand der Familien-Block monatelang in 32 Sprachen
+> englisch da"). 32 Wörter zu erfinden schied aus. Stattdessen das bereits
+> gemessene `SONG_WORD` — das Feld heißt schlicht „LIED" / „SONG" / „שיר",
+> im ABSCHLUSS-Block darüber eindeutig genug.
+> **Offen, falls gewünscht:** die 32 Wortlaute für „Schlusslied" an jw.org
+> messen, dann wird daraus ein normaler UI-Schlüssel.
+>
+> Im Browser geprüft (Demo-Daten, Planen → Sonntag): Eintrag „151" macht aus
+> „Schlussworte · Lied 76 · Gebet" → „Schlussworte · Lied 151 · Gebet";
+> Beschriftungen auf Hebräisch `שיר פתיחה` / `שיר`; Konsole ohne Fehler.
 
 ### T34 · Weitere fachliche Punkte 🔧
 - **F6:** ✅ erledigt — `lacAdd` gab neuen Punkten `bereichsKey: 'vortrag'`

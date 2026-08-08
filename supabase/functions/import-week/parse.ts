@@ -132,6 +132,31 @@ function ersteZahl(text: string): number | undefined {
   return treffer ? zahl(treffer[0]) : undefined
 }
 
+/**
+ * Schlusslied in den Abschluss-Titel setzen: „Schlussworte · Lied · Gebet“ +
+ * „Lied 151“ → „Schlussworte · Lied 151 · Gebet“.
+ *
+ * Der Import setzte stattdessen ein eigenes Lied-Item davor — dann stand „Lied“
+ * zweimal da: einmal als Item, einmal als Atom im Titel, das die
+ * Wochenend-Vorlage ohnehin mitbringt (F11). Angezeigt sieht das Ergebnis
+ * gleich aus, denn die Oberfläche trennt das Nummern-Atom vom Rest ab
+ * (`splitOpeningSong`) — nur ohne Dopplung, und strukturgleich zur Eröffnung
+ * und zum Abschluss unter der Woche, die beide schon so gebaut sind.
+ *
+ * Übernommen wird nur die **Zahl**. Die Wochenend-Vorlage steht kanonisch auf
+ * Deutsch und wird erst bei der Anzeige übersetzt; ein lokalisiertes
+ * „سرود ۱۵۱“ liefe durch keine Übersetzung mehr.
+ */
+export function mitLiedNummer(title: string, lied: string): string {
+  const nr = ersteZahl(lied)
+  if (nr === undefined) return title
+  const atoms = title.split(' · ')
+  const i = atoms.findIndex((a) => a === 'Lied' || a.startsWith('Lied '))
+  if (i < 0) return title
+  atoms[i] = `Lied ${nr}`
+  return atoms.join(' · ')
+}
+
 /* ---- Tokenizer ----------------------------------------------------------- */
 
 type Color = 'teal' | 'gold' | 'maroon' | 'sub' | 'none'

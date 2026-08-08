@@ -37,6 +37,7 @@ import {
   endeAusStartzeit,
   endenNachziehen,
   togglePartner,
+  setClosingSong,
   setOpeningSong,
 } from '../data/meeting-edit'
 import { dict, type Dict } from '../i18n/ui'
@@ -204,6 +205,7 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'lacAdd',
   'talkEdit',
   'openingSong',
+  'closingSong',
   'addService',
   'removeService',
   'changeServiceCount',
@@ -879,6 +881,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         weeks: setOpeningSong(state.weeks, state.week, action.song),
+      }
+    case 'closingSong':
+      return {
+        ...state,
+        weeks: setClosingSong(state.weeks, state.week, action.song),
       }
     case 'changeReminder': {
       const bounds = action.key === 'first' ? { min: 1, max: 21 } : { min: 0, max: 7 }

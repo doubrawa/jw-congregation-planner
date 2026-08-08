@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  closingSongNr,
   editTalkTheme,
   openingSongNr,
+  setClosingSong,
   setOpeningSong,
   TALK_PLACEHOLDER,
 } from './meeting-edit'
@@ -46,6 +48,8 @@ const talkTitle = (w: Week): string => (w.we.sections[1].items[0] as PartItem).t
 const altTalkTitle = (w: Week): string => (w.alt!.en.we.sections[1].items[0] as PartItem).title
 const openingTitle = (w: Week): string => (w.we.sections[0].items[0] as PartItem).title
 const altOpeningTitle = (w: Week): string => (w.alt!.en.we.sections[0].items[0] as PartItem).title
+const closingTitle = (w: Week): string => (w.we.sections[2].items[0] as PartItem).title
+const altClosingTitle = (w: Week): string => (w.alt!.en.we.sections[2].items[0] as PartItem).title
 
 describe('editTalkTheme (Vortragsthema als Freitext)', () => {
   it('setzt das Thema und spiegelt es in die Sprachvariante', () => {
@@ -107,6 +111,64 @@ describe('setOpeningSong (Anfangslied Wochenende)', () => {
     expect(openingSongNr(weeks[0].we)).toBe('')
     const next = setOpeningSong(weeks, 0, '78')
     expect(openingSongNr(next[0].we)).toBe('78')
+  })
+})
+
+describe('setClosingSong (Schlusslied Wochenende)', () => {
+  /**
+   * Das Schlusslied steht nicht im Arbeitsheft, sondern in der
+   * Wachtturm-Studienausgabe. Fehlt sie beim Import, blieb die Nummer bisher
+   * unerreichbar: `setOpeningSong` griff stur auf das **erste** Titel-Atom zu,
+   * und beim Abschluss steht das Lied in der Mitte (F11).
+   */
+  it('setzt die Nummer in das mittlere Atom, nicht in das erste', () => {
+    const next = setClosingSong([makeWeek()], 0, '151')
+    expect(closingTitle(next[0])).toBe('Schlussworte · Lied 151 · Gebet')
+  })
+
+  it('spiegelt in die Sprachvariante', () => {
+    const next = setClosingSong([makeWeek()], 0, '151')
+    expect(altClosingTitle(next[0])).toBe('Schlussworte · Lied 151 · Gebet')
+  })
+
+  it('leere Nummer entfernt sie wieder', () => {
+    const gesetzt = setClosingSong([makeWeek()], 0, '151')
+    const geleert = setClosingSong(gesetzt, 0, '')
+    expect(closingTitle(geleert[0])).toBe('Schlussworte · Lied · Gebet')
+  })
+
+  it('lässt das Anfangslied in Ruhe — und umgekehrt', () => {
+    // Beide Felder greifen auf dasselbe Atom-Muster zu; ein Fehlgriff hier
+    // hieße, dass ein Feld das andere überschreibt.
+    const w = setClosingSong(setOpeningSong([makeWeek()], 0, '78'), 0, '151')
+    expect(openingTitle(w[0])).toBe('Lied 78 · Gebet')
+    expect(closingTitle(w[0])).toBe('Schlussworte · Lied 151 · Gebet')
+    expect(openingSongNr(w[0].we)).toBe('78')
+    expect(closingSongNr(w[0].we)).toBe('151')
+  })
+
+  it('unveränderte Nummer liefert dieselbe Referenz (kein Save nötig)', () => {
+    const weeks = setClosingSong([makeWeek()], 0, '151')
+    expect(setClosingSong(weeks, 0, '151')).toBe(weeks)
+  })
+
+  it('nimmt nur Ziffern entgegen', () => {
+    const next = setClosingSong([makeWeek()], 0, ' Lied 151! ')
+    expect(closingTitle(next[0])).toBe('Schlussworte · Lied 151 · Gebet')
+  })
+
+  it('schreibt bei Alt-Wochen in das eigenständige Lied-Item', () => {
+    // So hat der Import das Schlusslied früher eingefügt: als eigenes Item vor
+    // dem Abschluss — wodurch „Lied“ doppelt dastand. Diese Wochen liegen in
+    // der Datenbank und werden nicht nachträglich umgebaut. Die Nummer gehört
+    // dort in das vorhandene Item; käme sie zusätzlich in den Titel, stünde das
+    // Lied zum dritten Mal da.
+    const alt = makeWeek()
+    alt.we.sections[2].items.unshift({ song: 'Lied 44' })
+    const next = setClosingSong([alt], 0, '151')
+    expect(next[0].we.sections[2].items[0]).toEqual({ song: 'Lied 151' })
+    expect((next[0].we.sections[2].items[1] as PartItem).title).toBe('Schlussworte · Lied · Gebet')
+    expect(closingSongNr(next[0].we)).toBe('151')
   })
 })
 
