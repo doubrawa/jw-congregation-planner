@@ -879,13 +879,22 @@ gemessenen Bausteinen plus `Intl`.
 Die Datumsfelder kosten **kein neues Vokabular**: `s89Datum` („Datum"), `von`
 („VON") und `bis` („BIS") stehen bereits in allen 34 Sprachen.
 
-Zu messen sind zwei Wörter: **„Kongress"** und der neutrale erste Eintrag.
-Quelle für das erste (vom Betreiber genannt, 8.8.2026):
+Zu messen ist **ein** Wort: **„Kongress"**. Quelle (vom Betreiber genannt,
+8.8.2026):
 <https://www.jw.org/de/bibliothek/broschueren/wille-jehovas/jehovas-zeugen-kongresse/>
-— der „Lesen in"-Umschalter führt über 200 Sprachen. **Achtung:** Das Wort steht
-dort im **Plural, im Titel einer Frage** („Warum veranstalten Jehovas Zeugen
-große Kongresse?"). Für einen Listeneintrag muss der Singular daraus gewonnen
-werden; das ist je Sprache zu prüfen, nicht mechanisch abzuschneiden.
+— der „Lesen in"-Umschalter führt über 200 Sprachen, und **der Singular kommt im
+Fließtext vor**, nicht nur der Plural im Fragetitel. Zu holen ist die Seite je
+Sprache über denselben Weg, den `import-week` schon geht
+(`otherAvailLangsChooser`, je Sprache ein `data-url`) — nicht über eine
+Zusammenfassung, die den Wortlaut verliert.
+
+**Der erste Eintrag der Liste braucht kein Wort:** ein **„—"** genügt. Ein
+Gedankenstrich ist in jeder Sprache und jeder Schrift derselbe, und die drei
+anderen Einträge tragen die Bedeutung. Die Alternativen kosten mehr und leisten
+weniger: das Hausmuster `keinePersonOpt` („— keine Person —") bräuchte „Anlass"
+als gemessenes Wort, und `ohneAngabe` („Ohne Angabe") gibt es zwar fertig in
+allen 34, sagt aber etwas anderes — dass ein Anlass besteht, den nur niemand
+genannt hat.
 
 **Entschieden (Betreiber, 8.8.2026):** Der Kongress trägt **von und bis**, und
 **„bis" wird beim Eintragen von „von" mit demselben Wert vorbelegt.** Ein
@@ -1711,7 +1720,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **Phase 6** | T64 | Neu, beschlossen und ausgeschrieben — fachlich vollständig geklärt. Der Anlass der Woche (Kreisaufseher / Gedächtnismahl / Kongress samt Termin) und ein vierter Reiter, der ihn beherbergt. Zu messen bleiben zwei Wörter („Kongress" und der neutrale erste Eintrag), sonst ist nichts offen. |
+| **Phase 6** | T64 | Neu, beschlossen und ausgeschrieben — fachlich vollständig geklärt. Der Anlass der Woche (Kreisaufseher / Gedächtnismahl / Kongress samt Termin) und ein vierter Reiter, der ihn beherbergt. Zu messen bleibt ein Wort („Kongress", Quelle notiert), sonst ist nichts offen. |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:
