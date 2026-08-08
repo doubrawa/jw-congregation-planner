@@ -46,6 +46,13 @@
 
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
+import {
+  meetingDayOffsets,
+  personDisplayName,
+  SKIP_ROLE,
+  taskDateText,
+  WEEKDAY_OFFSET,
+} from '../_shared/planung.ts'
 import { pushTexte } from './texte.ts'
 
 declare const Deno: {
@@ -216,13 +223,10 @@ function nachSprache(subs: SubscriptionRow[]): Array<[string, SubscriptionRow[]]
   return [...nach]
 }
 
-/** Rollen, die von außen kommen — kein Bestätigungs-Flow (wie planning.ts). */
-const SKIP_ROLE = /Gastredner|Kreisaufseher/
-
-/** Anzeigename wie im Client (helpers.ts): dn oder voller Name. */
-function personDisplayName(fn: string, ln: string, dn: string): string {
-  return dn || `${fn} ${ln}`.trim()
-}
+/* `SKIP_ROLE`, `personDisplayName`, `taskDate`, `meetingDayOffsets` und
+   `WEEKDAY_OFFSET` kommen aus `_shared/planung.ts` — dieselben Regeln wie im
+   Client und in substitute. Getrennte Kopien hatten schon einmal
+   auseinandergefunden (B8/T40). */
 
 /** Name eines Hilfsdienst-Platzes; '' = unbesetzt (beide Datenformate). */
 function helperName(entry: HelperEntry | undefined): string {
@@ -235,10 +239,7 @@ function helperPid(entry: HelperEntry | undefined): string | undefined {
   return entry && typeof entry !== 'string' ? entry.pid : undefined
 }
 
-/** "Dienstag, 8. September · 19:00 · Saal" → "Dienstag, 8. September · 19:00". */
-function taskDate(meeting: Meeting): string {
-  return (meeting.date ?? '').split(' · ').slice(0, 2).join(' · ')
-}
+const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
 
 /** Kanonisch deutsche Namen — das Format der Wochendaten (siehe Client). */
 const WOCHENTAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
@@ -279,21 +280,6 @@ function meetingTimesOf(meetingTimes: string): { mid: string; we: string } {
 }
 
 /* ---- Terminberechnung ---------------------------------------------------- */
-
-const DAY_OFFSET: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 }
-
-function meetingDayOffsets(meetingTimes: string): { mid: number; we: number } {
-  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map(
-    (m) => DAY_OFFSET[m[1]],
-  )
-  return { mid: found[0] ?? 1, we: found[1] ?? 6 }
-}
-
-/** Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach Montag. */
-const WEEKDAY_OFFSET: Record<string, number> = {
-  Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
-  Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
-}
 
 /**
  * Wochentag-Versatz dieser einen Zusammenkunft. Ein eigener Termin im

@@ -29,6 +29,7 @@
 
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
+import { meetingDayOffsets, personDisplayName, WEEKDAY_OFFSET } from '../_shared/planung.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 
 declare const Deno: {
@@ -138,20 +139,9 @@ interface Absence {
   to_date: string
 }
 
-/** Wochentags-Kürzel → Tage nach Montag (wie send-reminders und die App). */
-const DAY_OFFSET: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 }
-
-/** "Di 19:00 · So 10:00" → Tage nach Montag je Zusammenkunft. */
-function meetingDayOffsets(meetingTimes: string): Record<'mid' | 'we', number> {
-  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1]])
-  return { mid: found[0] ?? 1, we: found[1] ?? 6 }
-}
-
-/** Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach Montag. */
-const WEEKDAY_OFFSET: Record<string, number> = {
-  Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
-  Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
-}
+/* `meetingDayOffsets`, `WEEKDAY_OFFSET` und `displayName` stehen jetzt in
+   `_shared/planung.ts` — dieselbe Rechnung wie in send-reminders und im
+   Client. Getrennte Kopien hatten schon einmal auseinandergefunden (B8/T40). */
 
 /**
  * Wochentag-Versatz dieser einen Zusammenkunft: ein eigener Termin im
@@ -194,9 +184,7 @@ interface Sub {
   lang: string | null
 }
 
-function displayName(p: Person): string {
-  return p.dn || `${p.fn} ${p.ln}`.trim()
-}
+const displayName = (p: Person): string => personDisplayName(p.fn, p.ln, p.dn)
 
 function parseKey(key: string): { wi: number; tab: 'mid' | 'we'; svc: string; pos: number } | null {
   const p = key.split('|')
