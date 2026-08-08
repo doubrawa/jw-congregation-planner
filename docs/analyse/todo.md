@@ -901,11 +901,15 @@ Die Anzeige bildet daraus beides: „Kongress am 17. Oktober", wenn von und bis
 gleich sind, sonst „Kongress vom 16. bis 18. Oktober".
 
 Beide Beschriftungen (`von`, `bis`) stehen bereits in allen 34 Sprachen gemessen
-bereit. Anmerkung fürs Umsetzen: Dasselbe Feldpaar gibt es schon bei den
-**Abwesenheiten**, dort ohne Vorbelegung und stattdessen mit der Prüfung
-„„Von" darf nicht nach „Bis" liegen" (`toastVonNachBis`). Ob die Vorbelegung
-auch dorthin gehört, ist eine eigene Entscheidung — hier nur notiert, damit die
-beiden Stellen nicht unbemerkt auseinanderlaufen.
+bereit.
+
+**Dieselbe Vorbelegung gilt bei den Abwesenheiten** (Betreiber, 8.8.2026). Dort
+gibt es das Feldpaar schon, bisher ohne Vorbelegung und nur mit der Prüfung
+„„Von" darf nicht nach „Bis" liegen" (`toastVonNachBis`). Ein eintägiger Urlaub
+ist derselbe Fall wie ein eintägiger Kreiskongress, also dieselbe Behandlung —
+eine Regel statt zweier Verhaltensweisen für dasselbe Muster. Die Prüfung bleibt
+als Rückversicherung stehen; sie greift dann nur noch, wenn jemand „bis"
+absichtlich vor „von" setzt.
 
 #### Wo es eingestellt wird: ein vierter Reiter
 
