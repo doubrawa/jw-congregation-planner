@@ -9,7 +9,7 @@ import { isDarkTheme } from '../data/constants'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
-import { setSchreibfehlerMelder } from '../lib/data'
+import { setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
 import { AppContext, type AppAction } from './context'
@@ -58,6 +58,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'showToast', text: dict(stateRef.current.lang).toastSpeicherFehler })
     })
     return () => setSchreibfehlerMelder(null)
+  }, [dispatch])
+
+  // Schreibkonflikt: ein anderer Planer hat dieselbe Woche zuerst gespeichert
+  // (T39). Bis hierher wurde nichts überschrieben — der geschützte Schreibvorgang
+  // hat schlicht keine Zeile getroffen. Jetzt gilt es, den Bildschirm wieder mit
+  // der Datenbank in Übereinstimmung zu bringen, sonst plant der Nutzer auf einer
+  // Fassung weiter, die es nicht mehr gibt, und jeder weitere Schreibversuch
+  // kollidierte erneut.
+  //
+  // Neu geladen wird **alles**, nicht nur die eine Woche: derselbe Weg wie beim
+  // Anmelden, also ohne eigene Zusammenbau-Logik, die auseinanderlaufen könnte.
+  // Konflikte sind selten — eine Handvoll Planer teilt sich eine Versammlung.
+  //
+  // Der Text ist `toastSpeicherFehler` („Änderung konnte nicht gespeichert
+  // werden — bitte neu laden"). Er trifft genau zu und liegt in allen 34
+  // Sprachen gemessen vor. Ein eigener Wortlaut („ein anderer Planer war
+  // schneller") wäre schärfer, hieße aber 33 erfundene Übersetzungen — und eine
+  // erfundene ist schlimmer als eine zutreffende, die es schon gibt.
+  useEffect(() => {
+    let laeuft = false
+    setKonfliktMelder(() => {
+      if (laeuft) return // ein Hinweis genügt; mehrere Wochen reißen oft mit
+      const uid = stateRef.current.userId
+      if (!uid) return
+      laeuft = true
+      dispatch({ type: 'showToast', text: dict(stateRef.current.lang).toastSpeicherFehler })
+      void loadAndHydrate(dispatch, uid, { silent: true }).finally(() => {
+        laeuft = false
+      })
+    })
+    return () => setKonfliktMelder(null)
   }, [dispatch])
 
   // Supabase-Session spiegeln (nur wenn konfiguriert): bestehende Session

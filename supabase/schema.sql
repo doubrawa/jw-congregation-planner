@@ -98,8 +98,30 @@ create table if not exists public.weeks (
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   position        integer not null,                 -- 0 = älteste geladene Woche
   data            jsonb not null,                   -- Week-Objekt aus src/data/types.ts
+  -- Stand der Zeile. Wer schreibt, nennt den Stand, auf dem seine Fassung
+  -- beruht (siehe saveWeek); trifft er nicht mehr zu, war ein anderer Planer
+  -- schneller und der Schreibvorgang findet keine Zeile. Gesetzt wird er vom
+  -- Trigger, nicht vom Client — sonst schriebe man sich daran vorbei.
+  updated_at      timestamptz not null default now(),
   unique (congregation_id, position)
 );
+
+-- Setzt `updated_at` bei jedem Update. Allgemein gehalten, damit dieselbe
+-- Funktion später weitere Tabellen bedienen kann.
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists weeks_touch_updated_at on public.weeks;
+create trigger weeks_touch_updated_at
+  before update on public.weeks
+  for each row execute function public.touch_updated_at();
 
 create table if not exists public.absences (
   id              uuid primary key default gen_random_uuid(),

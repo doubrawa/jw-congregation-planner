@@ -64,16 +64,32 @@ const service: Service = { key: 'mik', name: 'Mikrofone', count: 2, groups: fals
 beforeEach(() => vi.clearAllMocks())
 
 describe('Upsert-Schreiber (onConflict)', () => {
-  it('saveWeek → weeks upsert', () => {
+  /*
+    `saveWeek` ist seit T39 **kein** Upsert mehr: die Woche trägt einen Stand
+    (`weeks.updated_at`), und der Schreibvorgang nennt den Stand, auf dem er
+    beruht. Ein Upsert kennt diese Bedingung nicht — er überschreibt immer, und
+    genau daran verlor der zweite Planer die Arbeit des ersten.
+
+    Der Ablauf mit allen Verzweigungen steht in `week-konflikt.test.ts`. Hier
+    bleibt nur, was in diese Datei gehört: dass ein Platzhalter nie geschrieben
+    wird, und dass es kein Upsert mehr ist.
+  */
+  // `saveWeek` schreibt seit T39 über eine positionsweise Warteschlange und ist
+  // damit asynchron — die Kette läuft erst im nächsten Tick.
+  const geschrieben = () => new Promise((r) => setTimeout(r, 0))
+
+  it('saveWeek ist kein Upsert mehr — der Stand entscheidet (T39)', async () => {
     saveWeek('c1', 3, { range: 'X' } as Week)
+    await geschrieben()
     expect(chain.from).toHaveBeenCalledWith('weeks')
-    expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ congregation_id: 'c1', position: 3 }), { onConflict: 'congregation_id,position' })
-  })
-  it('saveWeek schreibt KEINE Platzhalter-Woche', () => {
-    // An dieser Position steht in der Datenbank die echte, nur nicht geladene
-    // Woche — ein Upsert mit dem leeren Platzhalter würde sie löschen.
-    saveWeek('c1', 3, { range: '', stub: true } as Week)
     expect(chain.upsert).not.toHaveBeenCalled()
+  })
+  it('saveWeek schreibt KEINE Platzhalter-Woche', async () => {
+    // An dieser Position steht in der Datenbank die echte, nur nicht geladene
+    // Woche — ein Schreibvorgang mit dem leeren Platzhalter würde sie löschen.
+    saveWeek('c1', 3, { range: '', stub: true } as Week)
+    await geschrieben()
+    expect(chain.from).not.toHaveBeenCalledWith('weeks')
   })
 
   it('savePerson → persons upsert (Row-Mapping)', () => {
