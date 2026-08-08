@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { itemMinutes, lacAdjust } from './meeting-edit'
 import type { Meeting, PartItem, Week } from './types'
-import { ersteZahl, ersteZahlErsetzen, zahl, zahlWieVorlage } from './ziffern'
+import { ersteZahl, ersteZahlErsetzen, zahl, zahlErsetzen, zahlWieVorlage } from './ziffern'
 
 /**
  * Die Minuten eines Programmpunkts, sprachunabhängig (T32).
@@ -155,3 +155,31 @@ function woche(meta: string, mins?: number): Week {
   }
   return { range: '7.–13. September', book: '', current: false, mid, we: structuredClone(mid) }
 }
+
+describe('zahlErsetzen — eine bestimmte Zahl, nicht die erste', () => {
+  /*
+    Beim Wachtturm-Studium beginnt die Meta-Zeile mit der Nummer des
+    Studienartikels, nicht mit der Dauer. `ersteZahlErsetzen` machte aus
+    „Studienartikel 28 · 60 Min." beim Kürzen ein „Studienartikel 30 · 60 Min.":
+    die Dauer blieb, der Artikel wurde ein anderer. Gefunden vom Test zu T62.
+  */
+  it('trifft die Dauer, nicht die Artikelnummer', () => {
+    expect(zahlErsetzen('Studienartikel 28 · 60 Min.', 60, 30)).toBe('Studienartikel 28 · 30 Min.')
+  })
+
+  it('vergleicht über den Wert, nicht über die Zeichen', () => {
+    // „٦٠" und 60 sind dieselbe Zahl — und ersetzt wird in der Schrift, die
+    // dort steht.
+    expect(zahlErsetzen('المقالة ٢٨ · ٦٠ دق', 60, 30)).toBe('المقالة ٢٨ · ٣٠ دق')
+    expect(zahlErsetzen('研究記事 28 · 60 分', 60, 30)).toBe('研究記事 28 · 30 分')
+  })
+
+  it('lässt den Text in Ruhe, wenn die Zahl nicht vorkommt', () => {
+    expect(zahlErsetzen('Studienartikel 28 · 45 Min.', 60, 30)).toBe('Studienartikel 28 · 45 Min.')
+    expect(zahlErsetzen('ohne Ziffern', 60, 30)).toBe('ohne Ziffern')
+  })
+
+  it('nimmt das erste Vorkommen, wenn die Zahl zweimal dasteht', () => {
+    expect(zahlErsetzen('30 · Kapitel 30', 30, 15)).toBe('15 · Kapitel 30')
+  })
+})

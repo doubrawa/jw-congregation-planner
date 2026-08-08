@@ -2,8 +2,8 @@ import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { istSchuelerteil } from '../data/aux-class'
-import { isSong, splitOpeningSong } from '../data/helpers'
-import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
+import { isSong, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { SONG_WORD } from '../i18n/translate-data'
 import { useT } from '../i18n/useT'
@@ -135,6 +135,10 @@ export function MeetingSection({
         // Punkt lesbar, aber nicht bearbeitbar.
         const rawItem = rawSection.items[ii] ?? item
         const rawTitle = isSong(rawItem) ? '' : rawItem.title
+        // Punkt der Kreisaufseher-Woche? Sein fester Begriff ist das erste Atom
+        // des kanonischen Titels; dahinter steht das Thema (T62).
+        const istCoPunkt = !isSong(rawItem) && rawItem.names.some((n) => n.rolle === ROLE_CIRCUIT)
+        const coBegriff = istCoPunkt ? (rawTitle.split(' · ')[0] ?? '') : ''
         const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
         const editable = isLac && rawMins != null
         const mPos = movables.indexOf(ii)
@@ -151,7 +155,39 @@ export function MeetingSection({
             {song && <div className="panel-song">{song}</div>}
             <div className="plan-item">
             <div className="plan-item-head">
-              {isTalk ? (
+              {coBegriff && !isTalk ? (
+                /*
+                  Dienstvortrag und Schlussvortrag der Kreisaufseher-Woche
+                  (T62): der Begriff steht fest und wird übersetzt, das Thema
+                  ist Freitext dahinter — wie „Bibellesung · Jer 32:6-18".
+                  Erkannt am Rollen-Platz, nicht am Titeltext: der Titel ist in
+                  der Anzeigesprache, die Rolle ist kanonisch.
+                */
+                <div className="plan-item-title plan-item-title--thema">
+                  <span className="co-begriff">{tpw(coBegriff)}</span>
+                  <input
+                    key={`thema-${state.week}-${si}-${ii}`}
+                    type="text"
+                    className="talk-title-input"
+                    placeholder={t.vortragThemaPh}
+                    aria-label={t.vortragThemaPh}
+                    defaultValue={themaVon(rawTitle, coBegriff)}
+                    onBlur={(e) =>
+                      dispatch({
+                        type: 'setPartThema',
+                        tab: state.tab === 'fs' ? 'mid' : state.tab,
+                        si,
+                        ii,
+                        begriff: coBegriff,
+                        thema: e.target.value,
+                      })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.currentTarget.blur()
+                    }}
+                  />
+                </div>
+              ) : isTalk ? (
                 <input
                   key={`talk-${state.week}-${ii}`}
                   type="text"

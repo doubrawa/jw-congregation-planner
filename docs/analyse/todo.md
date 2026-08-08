@@ -692,7 +692,7 @@ Eröffnung.
 
 ---
 
-### T62 · Kreisaufseher-Woche: Dienstvortrag statt Versammlungsbibelstudium 🏗
+### T62 · Kreisaufseher-Woche: Dienstvortrag statt Versammlungsbibelstudium 🏗 ✅ erledigt
 Beim Umsetzen von T30 aufgefallen, **nicht** mit erledigt (eigener Punkt, damit
 er nicht untergeht): `week.co` setzt weiterhin nur den Chip. Der Ablauf bleibt
 unverändert — das Versammlungsbibelstudium steht dort, wo in der Dienstwoche
@@ -742,22 +742,59 @@ T29 bereits (`isSpeakerRole`); Dienstvortrag und Schlussvortrag brauchen
 dieselbe Behandlung, Rolle `Kreisaufseher` (steht schon in `SKIP_ROLE`: kein
 Bestätigungs-Flow, keine Erinnerung, keine Anrechnung, keine Auto-Zuteilung).
 
-#### Lieder
+#### Lieder — nichts zu tun
 
 Verwendet werden die Lieder des Wachtturm-Artikels, also **wie importiert
-vorbelegt**. Der Kreisaufseher kann sie aber anpassen — in dieser Woche müssen
-sie sich daher **ändern lassen**. Anfangs- und Schlusslied können das bereits
-(T33); **das Lied im Wachtturm-Studium ist heute reine Anzeige** und muss
-editierbar werden (`MeetingSection`: `isOpening`/`isClosing` decken nur
-ERÖFFNUNG und ABSCHLUSS ab).
+vorbelegt**. Ändert der Kreisaufseher eines, ist es praktisch immer das
+**Schlusslied**, und das lässt sich seit T33 bereits eintragen. Das Lied im
+Wachtturm-Studium bleibt reine Anzeige — der Betreiber hat das am 8.8.2026
+ausdrücklich so bestätigt, es wird dort nicht getauscht.
 
-#### Offene Umsetzungsfrage
+#### Umsetzung (8. August 2026)
 
-Ob der Ablauf beim Umschalten **in den Daten umgebaut** wird (eine Stelle, alle
-Auswerter unverändert — aber das Zurücknehmen muss die Originale wiederfinden)
-oder bei der **Anzeige abgeleitet** (nichts geht verloren — aber jeder Auswerter
-muss die abgeleitete Woche nehmen, wie schon bei `localizedWeeks`). Beides ist
-vertretbar; die Entscheidung fällt beim Bauen und gehört dann hierher.
+**Umgebaut, nicht abgeleitet.** Ausschlaggebend war die Reichweite: an einer
+abgeleiteten Woche müssten `countOpenSlots`, `weekConflicts`, `deriveMyTasks`,
+die Auto-Zuteilung, das S-89-Formular **und die Edge Functions** vorbeikommen —
+letztere lesen rohes JSONB und müssten die Ableitung ein zweites Mal enthalten.
+Genau daraus entstand B8. Umgebaute Daten sehen dagegen alle gleich; die Edge
+Functions brauchten **keine Zeile** Änderung.
+
+Umbauen heißt nicht wegwerfen: was ersetzt wurde, steht in `week.coData` —
+mitsamt Zuteilungen, und je Sprachvariante auch deren Texte. Ausschalten stellt
+alles wieder her.
+
+**Vier Dinge, die erst beim Bauen auffielen:**
+
+1. **Die erste Zahl der Meta-Zeile ist nicht immer die Dauer.** Beim
+   Wachtturm-Studium steht dort zuerst die Nummer des Studienartikels
+   („Studienartikel 28 · 60 Min."). `ersteZahlErsetzen` machte daraus beim
+   Kürzen „Studienartikel 30 · 60 Min." — falscher Artikel, unveränderte Dauer.
+   Neu: `zahlErsetzen(text, alt, neu)` sucht die Zahl **über ihren Wert**, und
+   die alte Dauer kommt aus `item.mins` (T32), nicht aus dem Text. Fehlt `mins`,
+   bleibt der Anzeigetext unangetastet — geraten wird nicht.
+2. **Die Sprachvarianten tragen eigene Texte.** Ohne Nachführung stand über dem
+   Dienstvortrag weiter „Congregation Bible Study", und die englische Fassung
+   zeigte „60 Min." für ein Studium mit 30. Beim Zurücknehmen kam der Titel nur
+   kanonisch-deutsch wieder. Alle drei Fälle sind jetzt abgelegt und
+   wiederhergestellt.
+3. **Der Test bestand aus dem falschen Grund.** Er prüfte die Struktur der
+   Variante — und `localizedWeek` liefert bei Strukturbruch stillschweigend die
+   kanonische Woche, also bestand er in beiden Fällen. Er prüft jetzt den
+   **englischen Titel**.
+4. **Der Planer kann den Dienstvortrag löschen** (das ✕ der LAC-Zeile). Dann
+   fand das Zurücknehmen den Punkt nicht wieder und das Bibelstudium wäre
+   verloren gewesen. Es kommt jetzt ans Ende des Abschnitts zurück.
+
+**Der öffentliche Vortrag bleibt bei „Gastredner".** Er nimmt seit T29 Freitext,
+funktional ist alles gleich (beide Rollen stehen in `SKIP_ROLE`), und der
+Kreisaufseher **ist** ein auswärtiger Redner. Eine zustandsabhängige
+Voreinstellung nur für die Beschriftung wäre Aufwand ohne Gewinn.
+
+20 Tests in `src/data/t62.test.ts`, 4 weitere zu `zahlErsetzen` in
+`minuten.test.ts`. Im Browser hin und zurück gefahren: eingeschaltet →
+„Dienstvortrag · Bleibt wachsam", „Studienartikel 28 · 30 Min." nur noch mit
+Leiter, „Vortrag · 30 Min."; ausgeschaltet → alles wieder da, samt Leser und
+„60 Min.".
 
 ### T63 · Die übrigen Termine der Dienstwoche 🏗 — vom Betreiber zurückgestellt
 Zur Dienstwoche gehört mehr als die beiden Zusammenkünfte. Der Betreiber hat es
@@ -1364,12 +1401,12 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 Stand 8. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑⚠☑ ·
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑⚠☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**60 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 teilweise
-(T41), 1 neu aufgenommen (T62).**
-Der Testbestand ist von 727 auf 1335 gewachsen; jede Korrektur hat einen Test,
+**61 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 teilweise
+(T41), 1 neu aufgenommen und zurückgestellt (T63).**
+Der Testbestand ist von 727 auf 1359 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
 
@@ -1385,8 +1422,9 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > `noUncheckedIndexedAccess`, 18 von 23 Produktionsdateien sauber) und **T41**
 > zur Hälfte (Kontexte getrennt, Felder gruppiert — Selektoren stehen aus).
 >
-> Dabei aufgefallen und neu aufgenommen: **T62** (Dienstvortrag statt
-> Versammlungsbibelstudium in der Kreisaufseher-Woche).
+> Dabei aufgefallen und gleich mitgebaut: **T62** (Kreisaufseher-Woche —
+> Dienstvortrag, verkürztes Wachtturm-Studium, Schlussvortrag). Neu
+> aufgenommen und vom Betreiber zurückgestellt: **T63**.
 
 ### Was offen ist und warum
 
@@ -1399,7 +1437,6 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T41 (Selektoren) | Zwei von drei Schritten sind gemacht. Der dritte — `useSyncExternalStore` mit Selektoren — rührt an den Kern von 45 Bausteinen, und es gibt keinen Test, der Render-Verhalten im Zusammenspiel prüft. Gehört in eine eigene Sitzung mit eigenem Sicherheitsnetz. |
 | **Phase 7** | T42 (Rest) | Fünf Produktionsdateien und 34 Testdateien tragen noch Meldungen. Die Sperrklinke hält den Stand; die Zahl kann nur fallen. |
-| **Phase 6** | T62 | Neu. **Fachlich vollständig geklärt am 8.8.2026** (Ablauf beider Zusammenkünfte, siehe den Punkt) — nur noch Arbeit. Ein Begriff fehlt: „Schlussvortrag" ist an jw.org zu messen. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser

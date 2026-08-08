@@ -337,6 +337,40 @@ export interface Abweichung {
   reason?: string
 }
 
+/**
+ * Was der Besuch des Kreisaufsehers am Programm verändert hat (T62).
+ *
+ * Der Ablauf wird beim Einschalten **in den Daten umgebaut**, nicht bei der
+ * Anzeige abgeleitet. Der Grund ist die Reichweite: an einer abgeleiteten Woche
+ * müssten `countOpenSlots`, `weekConflicts`, `deriveMyTasks`, die
+ * Auto-Zuteilung, das S-89-Formular **und die Edge Functions** vorbeikommen —
+ * letztere lesen rohes JSONB und müssten die Ableitung ein zweites Mal
+ * enthalten. Genau daraus entstand B8. Umgebaute Daten sehen dagegen alle
+ * gleich.
+ *
+ * Umbauen heißt aber nicht wegwerfen: was ersetzt wurde, steht hier, damit das
+ * Zurücknehmen es wiederfindet — samt seiner Zuteilungen.
+ */
+export interface Dienstwoche {
+  /** Das ersetzte Versammlungsbibelstudium (unter der Woche). */
+  midOrig?: PartItem
+  /** Das ungekürzte Wachtturm-Studium (60 Min., mit Leser). */
+  weOrig?: PartItem
+  /** Kennung des eingefügten Schlussvortrags — damit er beim Zurücknehmen verschwindet. */
+  weVortragIid?: string
+  /**
+   * Titel des ersetzten Bibelstudiums **je Sprachvariante**, und die Meta-Zeile
+   * des ungekürzten Studiums ebenso.
+   *
+   * Die Varianten tragen ihre eigenen Texte; `localizedWeek` übernimmt sie bei
+   * der Anzeige. Ohne diese beiden Ablagen käme der Punkt beim Zurücknehmen nur
+   * kanonisch-deutsch wieder, und die englische Fassung zeigte weiter „60 Min."
+   * für ein Studium, das längst wieder 60 dauert — beides hat der Test gefunden.
+   */
+  midOrigAlt?: Record<string, string>
+  weOrigAlt?: Record<string, string>
+}
+
 export interface Week {
   range: string // z. B. "7.–13. September"
   book: string // Bibelbuch (kursiv)
@@ -344,6 +378,12 @@ export interface Week {
   lang?: string // jw.org-Sprachcode, in dem der Import geholt wurde (Herkunft)
   current: boolean // aktuelle Woche (Chip "AKTUELLE WOCHE")
   co?: boolean // Besuch des Kreisaufsehers (Chip, Dienstvortrag statt VBS)
+  /**
+   * Was der Kreisaufseher-Besuch am Programm verändert hat (T62) — nur
+   * gesetzt, solange `co` gilt. Gefragt wird nie direkt danach; `setDienstwoche`
+   * baut um und wieder zurück.
+   */
+  coData?: Dienstwoche
   mem?: boolean // Gedächtnismahl-Woche (Chip + Banner)
   memCancel?: MeetingTab // ausfallende Zusammenkunft (deren Tab zeigt das Gedächtnismahl)
   /**

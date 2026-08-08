@@ -260,6 +260,10 @@ export type AppAction =
   // aktuellen Woche. `patch` überschreibt nur die genannten Felder; ein Feld
   // auf `undefined` nimmt die Abweichung dort zurück.
   | { type: 'setAbweichung'; tab: MeetingKey; patch: Partial<Abweichung> }
+  // Kreisaufseher-Woche (T62): baut den Ablauf um und wieder zurueck.
+  | { type: 'setDienstwoche'; on: boolean }
+  // Thema eines Vortragspunkts (Dienstvortrag, Schlussvortrag)
+  | { type: 'setPartThema'; tab: MeetingKey; si: number; ii: number; begriff: string; thema: string }
   // Öffentlicher Vortrag / Wochenende (Planen, aktuelle Woche)
   | { type: 'talkEdit'; si: number; ii: number; title: string } // Vortragsthema (Freitext)
   | { type: 'openingSong'; song: string } // Anfangslied-Nummer ("" = entfernen)

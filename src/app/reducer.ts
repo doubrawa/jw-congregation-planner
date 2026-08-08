@@ -40,6 +40,8 @@ import {
   endenNachziehen,
   togglePartner,
   setAbweichung,
+  setDienstwoche,
+  setPartThema,
   setClosingSong,
   setOpeningSong,
 } from '../data/meeting-edit'
@@ -208,6 +210,9 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   // Ein Ausfall nimmt einer ganzen Zusammenkunft die Aufgaben, eine Verlegung
   // ändert deren Termin (T30).
   'setAbweichung',
+  // Baut den Ablauf um bzw. setzt ein Thema (T62) -- beides aendert die Aufgaben.
+  'setDienstwoche',
+  'setPartThema',
   'lacAdjust',
   'lacRemove',
   'lacMove',
@@ -902,6 +907,23 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (!state.weeks[state.week]) return state
       return { ...state, weeks: setAbweichung(state.weeks, state.week, action.tab, action.patch) }
     }
+    case 'setDienstwoche': {
+      if (!state.weeks[state.week]) return state
+      return { ...state, weeks: setDienstwoche(state.weeks, state.week, action.on) }
+    }
+    case 'setPartThema':
+      return {
+        ...state,
+        weeks: setPartThema(
+          state.weeks,
+          state.week,
+          action.tab,
+          action.si,
+          action.ii,
+          action.begriff,
+          action.thema,
+        ),
+      }
     case 'talkEdit':
       return {
         ...state,

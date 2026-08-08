@@ -412,6 +412,43 @@ export const ROLE_OWN_SPEAKER = 'Redner'
 export const ROLE_GUEST_SPEAKER = 'Gastredner'
 
 /**
+ * Der Kreisaufseher (T62) — oder die Begleitung, die er schult.
+ *
+ * Steht wie `Gastredner` in `SKIP_ROLE`: kein Bestätigungs-Flow, keine
+ * Erinnerung, keine Anrechnung auf die Auslastung, keine Auto-Zuteilung. Der
+ * Platz nimmt Freitext, denn **wer** die Aufgabe hält, steht nicht fest: der
+ * Kreisaufseher bringt manchmal jemanden mit, den er schult, und die
+ * Begleitung kann jede der drei Aufgaben übernehmen (Dienstvortrag,
+ * öffentlicher Vortrag, Schlussvortrag). Ein Haken, der die Woche mit seinem
+ * Namen füllt, wäre deshalb regelmäßig falsch.
+ */
+export const ROLE_CIRCUIT = 'Kreisaufseher'
+
+/**
+ * Titel des Dienstvortrags in der Kreisaufseher-Woche. Fester Begriff, in
+ * `translate-data.ts` in allen 34 Sprachen gemessen; das Thema kommt als
+ * zweites Atom dahinter („Dienstvortrag · <Thema>"), wie bei
+ * „Bibellesung · Jer 32:6-18".
+ */
+export const TITEL_DIENSTVORTRAG = 'Dienstvortrag'
+
+/**
+ * Titel des Schlussvortrags am Wochenende.
+ *
+ * Bewusst nur „Vortrag": **einen gemessenen Begriff für „Schlussvortrag" gibt
+ * es nicht.** Nachgesehen wurde in zwei jw.org-Artikeln, die ihn auf Deutsch
+ * verwenden (g20010608, g20020608), in allen dort verfügbaren 47 bzw. 48
+ * Sprachen: die Übersetzungen umschreiben ihn — „discorso conclusivo",
+ * „the day's final discourse", „Końcowy punkt programu", im Schwedischen ganz
+ * ohne Zusatz — und tun das in derselben Sprache zwischen beiden Artikeln
+ * verschieden. Es ist deutsche Fließtext-Prosa, kein Programmbegriff.
+ *
+ * „Vortrag" dagegen ist gemessen und überall vorhanden. Erkennbar bleibt der
+ * Punkt an seinem Platz (letzter des Wachtturm-Abschnitts) und an der Rolle.
+ */
+export const TITEL_SCHLUSSVORTRAG = 'Vortrag'
+
+/**
  * Basis-Rolle ohne angehängte Herkunft: `"Gastredner · Vers. Nordheim"` →
  * `"Gastredner"`. Die Herkunftsversammlung hat kein eigenes Feld und wird als
  * weiteres Atom der Rolle geführt (siehe `AssignSheet`).
