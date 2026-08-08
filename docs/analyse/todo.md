@@ -699,16 +699,85 @@ unverändert — das Versammlungsbibelstudium steht dort, wo in der Dienstwoche
 der Dienstvortrag des Kreisaufsehers gehört.
 
 Das ist kein Terminthema (T30 deckt Verlegung und Ausfall ab), sondern ein
-Eingriff in den importierten Ablauf: ein Punkt wird ersetzt, mit eigenem Titel,
-eigener Dauer und eigenen Plätzen. **Vor der Umsetzung zu klären:**
+Eingriff in den importierten Ablauf: Punkte werden ersetzt, gekürzt und
+ergänzt.
 
-- Wie heißt der Punkt (kanonisch deutsch, damit ihn `translate-data.ts` fassen
-  kann)? „Dienstvortrag" steht dort bereits in allen Sprachen.
-- Wie lang ist er, und verschiebt sich dadurch das Ende der Zusammenkunft?
-- Welche Plätze hat er — nur den Kreisaufseher (extern, wie `Gastredner`), oder
-  auch einen Leser?
-- Was passiert mit den Zuteilungen des ersetzten Bibelstudiums? Nach dem Muster
-  von T30 sollten sie stehen bleiben und nur nicht zählen.
+> **Fachlich vollständig geklärt (8.8.2026).** Der Betreiber hat den Ablauf
+> beider Zusammenkünfte beschrieben; die Umsetzung ist damit nur noch Arbeit.
+
+#### Was sich ändert
+
+| | Punkt | Wirkung |
+| --- | --- | --- |
+| **Unter der Woche** | Versammlungsbibelstudium | wird zum **Dienstvortrag**, 30 Min., **kein Leser** |
+| **Wochenende** | Öffentlicher Vortrag | hält der Kreisaufseher **oder seine Begleitung** |
+| **Wochenende** | Wachtturm-Studium | **auf 30 Min. verkürzt** (statt 60) und **ohne Leser** — die Absätze werden nicht gelesen, es werden nur die Fragen des Artikels besprochen |
+| **Wochenende** | *neu:* **Schlussvortrag** | 30 Min., am Ende, vom Kreisaufseher oder seiner Begleitung |
+
+**Die Endzeiten verschieben sich nicht** — unter der Woche 30 gegen 30, am
+Wochenende −30 (Studium) +30 (Schlussvortrag). `shiftEnd` bleibt außen vor.
+
+#### Titel
+
+„**Dienstvortrag**" und „**Schlussvortrag**" als fester Begriff, das Thema als
+zweites Atom dahinter — wie „Bibellesung · Jer 32:6-18". Damit ist der Kopf
+übersetzbar und das Thema bleibt Freitext des Planers. „Dienstvortrag" steht in
+`translate-data.ts` bereits in allen 34 Sprachen gemessen bereit;
+„Schlussvortrag" ist **noch zu messen** (jw.org, nicht erfinden).
+
+#### Plätze — und die Regel dahinter
+
+Alle drei Aufgaben (Dienstvortrag, öffentlicher Vortrag, Schlussvortrag) haben
+**je einen Platz, Freitext**, keinen Leser und keine zweite Zeile.
+
+> **Der Kreisaufseher wird nirgends automatisch eingetragen.** Er bringt
+> manchmal jemanden mit, den er schult, und diese Begleitung kann eine der drei
+> Aufgaben übernehmen — welche, steht nicht fest. Ein „Kreisaufseher-Haken, der
+> die Woche füllt" wäre deshalb regelmäßig falsch. Jeder Platz wird einzeln von
+> Hand besetzt.
+
+Freitext **nur an diesen drei Plätzen**, nicht an allen: die übrigen Aufgaben
+der Woche vergibt die Versammlung wie sonst auch. Der Rednerplatz kann es seit
+T29 bereits (`isSpeakerRole`); Dienstvortrag und Schlussvortrag brauchen
+dieselbe Behandlung, Rolle `Kreisaufseher` (steht schon in `SKIP_ROLE`: kein
+Bestätigungs-Flow, keine Erinnerung, keine Anrechnung, keine Auto-Zuteilung).
+
+#### Lieder
+
+Verwendet werden die Lieder des Wachtturm-Artikels, also **wie importiert
+vorbelegt**. Der Kreisaufseher kann sie aber anpassen — in dieser Woche müssen
+sie sich daher **ändern lassen**. Anfangs- und Schlusslied können das bereits
+(T33); **das Lied im Wachtturm-Studium ist heute reine Anzeige** und muss
+editierbar werden (`MeetingSection`: `isOpening`/`isClosing` decken nur
+ERÖFFNUNG und ABSCHLUSS ab).
+
+#### Offene Umsetzungsfrage
+
+Ob der Ablauf beim Umschalten **in den Daten umgebaut** wird (eine Stelle, alle
+Auswerter unverändert — aber das Zurücknehmen muss die Originale wiederfinden)
+oder bei der **Anzeige abgeleitet** (nichts geht verloren — aber jeder Auswerter
+muss die abgeleitete Woche nehmen, wie schon bei `localizedWeeks`). Beides ist
+vertretbar; die Entscheidung fällt beim Bauen und gehört dann hierher.
+
+### T63 · Die übrigen Termine der Dienstwoche 🏗 — vom Betreiber zurückgestellt
+Zur Dienstwoche gehört mehr als die beiden Zusammenkünfte. Der Betreiber hat es
+am 8.8.2026 genannt und ausdrücklich **auf später** gelegt — hier notiert, damit
+es nicht untergeht:
+
+| Termin | Besonderheit |
+| --- | --- |
+| **Pionierbesprechung** | zu einem variablen Zeitpunkt in der Woche |
+| **Besprechung mit Dienstamtgehilfen und Ältesten** | zu einem weiteren, anderen Zeitpunkt |
+| **Versammlungstreffpunkte** | in dieser Woche zu abweichenden Zeiten |
+
+Die ersten beiden sind **neue Terminarten** — sie hängen an keiner
+Zusammenkunft und passen weder in `weeks` noch in `fsWeeks`. Der dritte könnte
+mit den vorhandenen Treffpunkt-Instanzen abgedeckt sein (`FsInstance` ist je
+Woche änderbar); das ist beim Angehen zuerst zu prüfen, bevor etwas Neues
+gebaut wird.
+
+Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
+Älteste)? Werden sie zugeteilt oder nur angekündigt? Gibt es Erinnerungen?
 
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
@@ -1330,7 +1399,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T41 (Selektoren) | Zwei von drei Schritten sind gemacht. Der dritte — `useSyncExternalStore` mit Selektoren — rührt an den Kern von 45 Bausteinen, und es gibt keinen Test, der Render-Verhalten im Zusammenspiel prüft. Gehört in eine eigene Sitzung mit eigenem Sicherheitsnetz. |
 | **Phase 7** | T42 (Rest) | Fünf Produktionsdateien und 34 Testdateien tragen noch Meldungen. Die Sperrklinke hält den Stand; die Zahl kann nur fallen. |
-| **Phase 6** | T62 | Neu, fachliche Vorgabe fehlt (Titel, Dauer, Slots des Dienstvortrags). |
+| **Phase 6** | T62 | Neu. **Fachlich vollständig geklärt am 8.8.2026** (Ablauf beider Zusammenkünfte, siehe den Punkt) — nur noch Arbeit. Ein Begriff fehlt: „Schlussvortrag" ist an jw.org zu messen. |
+| **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:
