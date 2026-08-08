@@ -806,8 +806,10 @@ alles auf einmal. Braucht eine Migration — wird mit jeder weiteren Funktion te
 > das Bibelstudium ohne Bestätigung dasteht — genau T16. Mit Kennung passiert
 > das nicht.
 >
-> ⚠ **`send-reminders` braucht einen erneuten Deploy** (zusammen mit dem aus
-> T40 und T30).
+> ✅ **`send-reminders` ist neu deployt** (8.8.2026, zusammen mit T40 und T30).
+> Damit prüft der Versand beide Schlüsselformen; die Umstellung einer
+> Versammlung geschieht beim nächsten Laden, ohne dass in der Zwischenzeit eine
+> Bestätigung übersehen wird.
 
 ### T38 · `pid` verpflichtend, Name nur noch Anzeige 🏗 ✅ erledigt
 Heute ersetzen **fünf** Mechanismen einen Fremdschlüssel: zwei Lade-Migrationen,
@@ -900,10 +902,8 @@ den Nutzer informieren.
 > Platzhalter, echter Schreibfehler). Gegenprobe: ohne die Stand-Bedingung
 > fallen 4.
 >
-> ⚠ **[migration-016](../../supabase/migration-016-wochen-stand.sql) muss beim
-> Betreiber eingespielt werden**, sonst schlägt jedes Speichern einer Woche mit
-> „Spalte existiert nicht" fehl. `schema.sql` enthält sie für
-> Neuinstallationen.
+> ✅ **[migration-016](../../supabase/migration-016-wochen-stand.sql) ist
+> eingespielt** (8.8.2026). `schema.sql` enthält sie für Neuinstallationen.
 
 ### T40 · Geteilte Logik für Client und Edge Functions 🔧
 Viermal dupliziert: `meetingDayOffsets`, `displayName`, `taskDate`,
@@ -929,15 +929,19 @@ Seiten.
 > ist der eigentliche Schutz: eine geteilte Datei kann man wieder auseinander
 > kopieren, ein Vergleich fällt auf.
 >
-> **Zwei Dinge dazu:**
-> 1. **Beide Functions brauchen einen erneuten Deploy**, sonst laufen sie
->    weiter mit ihren alten Kopien — funktional identisch, aber die
->    Zusammenführung ist erst danach real.
-> 2. Ob die CLI `_shared/` mitbündelt, lässt sich hier nicht prüfen (kein Deno,
->    kein Deploy). Es ist die dokumentierte Ablage für geteilten Code; der
->    Deploy zeigt es. Schlägt er fehl, genügt es, die Datei nach
->    `send-reminders/` bzw. `substitute/` zu kopieren — der Paritätstest
->    bliebe dann bestehen und würde die Dopplung weiter überwachen.
+> **Zwei Dinge dazu — beide am 8.8.2026 erledigt:**
+> 1. ✅ **Beide Functions sind neu deployt.** Bis dahin liefen sie mit ihren
+>    alten Kopien — funktional identisch, aber die Zusammenführung war erst
+>    danach real.
+> 2. ✅ **Die CLI bündelt `_shared/` mit** — nachgewiesen, nicht angenommen:
+>    `send-reminders` antwortet ohne Secret mit einem schlichten `Unauthorized`
+>    (401), und das kommt aus dem Handler (`index.ts:452`), der erst läuft, wenn
+>    das Modul samt `import … from '../_shared/planung.ts'` geladen ist. Fehlte
+>    die Datei im Bündel, käme ein Boot-Fehler. Der Unterschied ist am
+>    Antwortformat erkennbar: die **Plattform** meldet JSON
+>    (`UNAUTHORIZED_NO_AUTH_HEADER`, so bei `substitute`, siehe T11), der
+>    **Code** Klartext. Der Ausweichplan (Datei in beide Ordner kopieren) wird
+>    damit nicht gebraucht.
 
 ### T41 · `AppState` aufteilen 🏗 ⚠ teilweise — Selektoren stehen aus
 ~60 Felder mischen Serverdaten, UI-Zustand und Gerätevorlieben; der Context hat
@@ -1321,13 +1325,23 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 7** | T42 (Rest) | Fünf Produktionsdateien und 34 Testdateien tragen noch Meldungen. Die Sperrklinke hält den Stand; die Zahl kann nur fallen. |
 | **Phase 6** | T62 | Neu, fachliche Vorgabe fehlt (Titel, Dauer, Slots des Dienstvortrags). |
 
-> ⚠ **Zwei Dinge liegen beim Betreiber**, sonst wirkt ein Teil der Arbeit nicht:
+> ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
+> Runde scharf:
 >
-> 1. **[migration-016](../../supabase/migration-016-wochen-stand.sql) einspielen** —
->    ohne sie schlägt jedes Speichern einer Woche mit „Spalte existiert nicht" fehl (T39).
-> 2. **`send-reminders` und `substitute` neu deployen** — für T40 (geteilte
->    Regeln), T30 (Verlegung und Ausfall) und T37 (Schlüssel über die stabile
->    Kennung).
+> 1. **[migration-016](../../supabase/migration-016-wochen-stand.sql) ist
+>    eingespielt** → `weeks.updated_at` samt Trigger steht, der Schutz gegen
+>    Schreibkonflikte greift (T39).
+> 2. **`send-reminders` und `substitute` sind neu deployt** → geteilte Regeln
+>    (T40), Verlegung und Ausfall (T30), Schlüssel über die stabile Kennung
+>    (T37).
+>
+> **Dabei nachgewiesen, was vorher offen war:** die Supabase-CLI bündelt
+> `_shared/` mit. `send-reminders` antwortet ohne Secret mit einem schlichten
+> `Unauthorized` (401) — das kommt aus dem Handler, der erst nach dem Laden des
+> Moduls samt Import läuft. Die Plattform meldet dagegen JSON
+> (`UNAUTHORIZED_NO_AUTH_HEADER`, so bei `substitute`). Am Antwortformat lässt
+> sich also unterscheiden, ob eine Function überhaupt hochgekommen ist —
+> nützlich bei jedem künftigen Deploy.
 >
 > Die **Farbschema-Namen** („Jasmin", „Matcha") bleiben in nicht-lateinischen
 > Oberflächen lateinisch stehen — Eigennamen, wie Markennamen auch. Der Punkt

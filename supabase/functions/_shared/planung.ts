@@ -14,6 +14,14 @@
  * und `allowImportingTsExtensions` erlaubt die `.ts`-Endung, die Deno
  * verlangt.
  *
+ * **Dass die CLI `_shared/` mitbündelt, ist nachgewiesen** (8.8.2026, erster
+ * Deploy nach der Zusammenführung): `send-reminders` antwortet ohne Secret mit
+ * einem schlichten `Unauthorized` (401) — und das kommt aus dem Handler selbst
+ * (`index.ts`), der erst läuft, wenn das Modul samt dieses Imports geladen ist.
+ * Fehlte die Datei im Bündel, käme stattdessen ein Boot-Fehler. Der Unterschied
+ * ist am Antwortformat erkennbar: die Plattform meldet JSON
+ * (`UNAUTHORIZED_NO_AUTH_HEADER`, so bei `substitute`), der Code Klartext.
+ *
  * **Was hier hineingehört:** reine Funktionen ohne Laufzeit-Abhängigkeit —
  * kein `Deno.*`, kein `import.meta`, kein Netz. Sonst bricht eine der beiden
  * Seiten.
