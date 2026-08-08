@@ -42,6 +42,7 @@ import type {
   Reminders,
   Role,
   Service,
+  SlotAssignment,
   TaskStatus,
   Week,
 } from '../data/types'
@@ -227,52 +228,121 @@ export function renameInWeeks(weeks: Week[], id: string, oldName: string, newNam
   // Leerer alter Name: nichts tun (sonst würden offene Slots mit leerem Namen
   // versehentlich mit-umbenannt). Ein zugeteilter Slot trägt immer einen Namen.
   if (!oldName || oldName === newName) return weeks
-  // Ein Slot gehört zur Person, wenn seine pid passt (stabil) — oder, ohne pid
-  // (Hilfsdienste/Altdaten), sein Name dem alten Anzeigenamen entspricht.
+  return mapPersonSlots(weeks, id, oldName, (slot) =>
+    slot.name === newName ? slot : { ...slot, name: newName },
+  )
+}
+
+/**
+ * Löst die Verweise auf eine gelöschte Person aus den Wochen: die `pid`
+ * verschwindet, **der Name bleibt als Text stehen** (so war es immer
+ * dokumentiert — eine geplante Woche soll nicht plötzlich Lücken zeigen).
+ *
+ * Ohne das bliebe ein Fremdschlüssel ins Leere zeigen. Die Folgen sind still
+ * und unangenehm: `gehoertZu` entscheidet über die Id, findet niemanden mehr,
+ * und der Slot zählt nirgends — nicht in der Auslastung, nicht in den
+ * Konflikten, nicht in den Aufgaben. Legt der Planer dieselbe Person neu an,
+ * bekommt sie eine neue Id, und der alte Verweis passt nie wieder.
+ *
+ * Ohne `pid` greift wieder der Namensweg: die Zuteilung verhält sich wie ein
+ * Altdatensatz und wird beim nächsten Laden erneut zugeordnet
+ * (`migrateAssignmentPids`), sobald es wieder jemanden dieses Namens gibt.
+ */
+export function dropPersonPid(weeks: Week[], id: string): Week[] {
+  return mapPersonSlots(weeks, id, null, (slot) => {
+    if (!slot.pid) return slot
+    const { pid: _weg, ...ohne } = slot
+    return ohne
+  })
+}
+
+/**
+ * Bildet jeden Slot einer Person über `fix` ab — Programmpunkte (Hauptsaal
+ * **und** Zusätzliche Klasse), den Ratgeber der Klasse und die Hilfsdienste.
+ *
+ * Ein Slot gehört zur Person, wenn seine `pid` passt (stabil) — oder, ohne
+ * `pid` (Altdaten, Hilfsdienste), sein Name dem angegebenen entspricht.
+ * `oldName: null` schaltet den Namensweg ab: beim Lösen einer Id ist nur sie
+ * gemeint, nicht jeder Gleichnamige.
+ *
+ * **Klasse und Ratgeber waren hier lange nicht dabei** (bei T38 aufgefallen).
+ * Beide tragen `pid`, funktional stimmte also alles — aber der Anzeigename
+ * blieb nach einer Umbenennung der alte. Auf dem Programmblatt der Klasse stand
+ * dann ein Name, den es nicht mehr gibt.
+ *
+ * Unveränderte Wochen behalten ihre Referenz; daran erkennt der Aufrufer, welche
+ * er speichern muss. Sprachvarianten (`Week.alt`) tragen keine Namen.
+ */
+function mapPersonSlots(
+  weeks: Week[],
+  id: string,
+  oldName: string | null,
+  fix: (slot: SlotAssignment) => SlotAssignment,
+): Week[] {
+  const meins = (slot: { pid?: string; name: string }): boolean =>
+    slot.pid ? slot.pid === id : oldName !== null && slot.name === oldName
+
   let anyChanged = false
-  const renameMeeting = (m: Week['mid']): Week['mid'] => {
+  const mapMeeting = (m: Week['mid']): Week['mid'] => {
     let changed = false
+    /** Eine Platzreihe (Hauptsaal oder Klasse); gibt dieselbe zurück, wenn nichts passt. */
+    const mapReihe = <T extends SlotAssignment>(arr: T[] | undefined): T[] | undefined => {
+      if (!arr) return arr
+      let reiheChanged = false
+      const next = arr.map((slot) => {
+        if (!meins(slot)) return slot
+        const neu = fix(slot) as T
+        if (neu !== slot) reiheChanged = true
+        return neu
+      })
+      if (!reiheChanged) return arr
+      changed = true
+      return next
+    }
+
     const sections = m.sections.map((section) => ({
       ...section,
       items: section.items.map((item) => {
         if ('song' in item) return item
-        let itemChanged = false
-        const names = item.names.map((slot) => {
-          const mine = slot.pid ? slot.pid === id : slot.name === oldName
-          if (mine && slot.name !== newName) {
-            itemChanged = true
-            return { ...slot, name: newName }
-          }
-          return slot
-        })
-        if (!itemChanged) return item
-        changed = true
-        return { ...item, names }
+        const names = mapReihe(item.names) ?? item.names
+        const aux = mapReihe(item.aux)
+        if (names === item.names && aux === item.aux) return item
+        return { ...item, names, ...(aux ? { aux } : {}) }
       }),
     }))
-    // Hilfsdienste: wie Programmpunkte über pid (Rückfall Name); die
-    // Reinigungs-Rotation („Gruppe N") trägt keine pid und keinen Personennamen.
+
+    // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
+    let ratgeber = m.auxRatgeber
+    if (ratgeber && meins(ratgeber)) {
+      const neu = fix(ratgeber)
+      if (neu !== ratgeber) {
+        ratgeber = neu
+        changed = true
+      }
+    }
+
+    // Hilfsdienste tragen keine Rolle und keinen Bereich, sonst dieselbe Regel;
+    // die Reinigungs-Rotation („Gruppe N") hat weder pid noch Personennamen.
     let helpersChanged = false
     const helpers = Object.fromEntries(
       Object.entries(m.helpers).map(([key, arr]) => [
         key,
         arr.map((slot) => {
-          const mine = slot.pid ? slot.pid === id : slot.name === oldName
-          if (mine && slot.name !== newName) {
-            helpersChanged = true
-            return { ...slot, name: newName }
-          }
-          return slot
+          if (!meins(slot)) return slot
+          const neu = fix(slot)
+          if (neu !== slot) helpersChanged = true
+          return { name: neu.name, ...(neu.pid ? { pid: neu.pid } : {}) }
         }),
       ]),
     )
     if (!changed && !helpersChanged) return m
     anyChanged = true
-    return { ...m, sections, helpers }
+    return { ...m, sections, helpers, ...(ratgeber ? { auxRatgeber: ratgeber } : {}) }
   }
+
   const next = weeks.map((week) => {
-    const mid = renameMeeting(week.mid)
-    const we = renameMeeting(week.we)
+    const mid = mapMeeting(week.mid)
+    const we = mapMeeting(week.we)
     return mid === week.mid && we === week.we ? week : { ...week, mid, we }
   })
   return anyChanged ? next : weeks
