@@ -299,6 +299,27 @@ supabase link --project-ref <dein-project-ref>   # aus der Supabase-URL
 supabase functions deploy import-week
 ```
 
+> **Nach einem Deploy prüfen, ob die Function überhaupt hochgekommen ist.**
+> Ein Aufruf ohne Berechtigung antwortet immer mit 401 — aber **das Format
+> verrät, wer geantwortet hat**:
+>
+> | Antwort | Wer | Bedeutung |
+> | --- | --- | --- |
+> | JSON, z. B. `{"code":"UNAUTHORIZED_NO_AUTH_HEADER"}` | Plattform | Die Anfrage kam nie beim Code an (JWT-Prüfung davor). |
+> | Klartext, z. B. `Unauthorized` | die Function selbst | Das Modul ist **geladen** — samt aller Importe. |
+>
+> Das zweite ist der Nachweis, dass geteilter Code aus
+> [`_shared/`](supabase/functions/_shared/planung.ts) mitgebündelt wurde: der
+> Handler läuft erst nach dem Laden des Moduls. Fehlte die Datei im Bündel,
+> käme ein Boot-Fehler statt einer sauberen Ablehnung.
+>
+> ```bash
+> curl -i -X POST https://<project-ref>.supabase.co/functions/v1/send-reminders
+> ```
+>
+> Unter Windows PowerShell `curl.exe` schreiben — `curl` ist dort ein Alias für
+> `Invoke-WebRequest` und versteht die Optionen nicht.
+
 Danach funktioniert der Import-Button direkt (die App ruft die Function per
 `functions.invoke` mit der Nutzer-Session auf — nur eingeloggte Mitglieder).
 Der Parser ([`parse.ts`](supabase/functions/import-week/parse.ts)) ist
