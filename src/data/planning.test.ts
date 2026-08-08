@@ -13,7 +13,10 @@ import {
   deriveMyTasks,
   derivePendingIds,
   deriveSubstituteReqs,
+  assignSlot,
+  clearAssignments,
   helperTaskKey,
+  slotValue,
   weekConflicts,
 } from './planning'
 import { emptyQualifications } from './helpers'
@@ -791,5 +794,64 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
     }, {})
     expect(proPerson['p-eins'], JSON.stringify(proPerson)).toBe(1)
     expect(proPerson['p-zwei'], JSON.stringify(proPerson)).toBe(1)
+  })
+})
+
+/*
+ * Auch hier läuft jede Funktion die Kette Woche → Zusammenkunft → Abschnitt →
+ * Punkt → Platz ab, und jedes Glied kann fehlen: eine Lücke im geladenen
+ * Fenster (T35), ein Punkt, den die Kreisaufseher-Woche entfernt hat (T62),
+ * eine Auswahl, die noch auf die alte Struktur zeigt. Vorher warf der Zugriff
+ * — im Reducer, also mit der ganzen Ansicht im Schlepptau (T42).
+ */
+describe('Auswahl, die ins Leere zeigt', () => {
+  const WEIT_DRAUSSEN = 99
+  const teilAuswahl = (over: Record<string, unknown> = {}) =>
+    ({
+      kind: 'part' as const, wi: 0, tab: 'mid' as const, si: 0, ii: 0, ni: 0,
+      priv: null, groups: false, label: 'X', ...over,
+    })
+
+  it('slotValue liefert "" statt zu werfen', () => {
+    const weeks = buildDemoWeeks()
+    expect(slotValue(weeks, teilAuswahl({ wi: WEIT_DRAUSSEN }))).toBe('')
+    expect(slotValue(weeks, teilAuswahl({ si: WEIT_DRAUSSEN }))).toBe('')
+    expect(slotValue(weeks, teilAuswahl({ ii: WEIT_DRAUSSEN }))).toBe('')
+  })
+
+  it('assignSlot gibt die Wochen unverändert zurück', () => {
+    const weeks = buildDemoWeeks()
+    expect(assignSlot(weeks, teilAuswahl({ wi: WEIT_DRAUSSEN }), 'Anna')).toBe(weeks)
+    expect(assignSlot(weeks, teilAuswahl({ si: WEIT_DRAUSSEN }), 'Anna')).toBe(weeks)
+    expect(assignSlot(weeks, teilAuswahl({ ni: WEIT_DRAUSSEN }), 'Anna')).toBe(weeks)
+  })
+
+  it('buildS89ForSlot liefert null statt zu werfen', () => {
+    const weeks = buildDemoWeeks()
+    expect(buildS89ForSlot(weeks, teilAuswahl({ wi: WEIT_DRAUSSEN }))).toBeNull()
+    expect(buildS89ForSlot(weeks, teilAuswahl({ si: WEIT_DRAUSSEN }))).toBeNull()
+  })
+
+  it('autoAssignMeeting und clearAssignments zählen null', () => {
+    const weeks = buildDemoWeeks()
+    const auto = autoAssignMeeting(weeks, WEIT_DRAUSSEN, 'mid', DEMO_PERSONS, DEMO_SERVICES)
+    expect(auto.count).toBe(0)
+    expect(auto.weeks).toBe(weeks)
+    const leer = clearAssignments(weeks, WEIT_DRAUSSEN, 'mid', 'parts')
+    expect(leer.count).toBe(0)
+    expect(leer.weeks).toBe(weeks)
+  })
+
+  it('weekConflicts auf eine Woche außerhalb meldet nichts', () => {
+    const weeks = buildDemoWeeks()
+    expect(weekConflicts(weeks, WEIT_DRAUSSEN, DEMO_PERSONS, DEMO_SERVICES)).toEqual([])
+  })
+
+  it('die vorhandene Stelle bleibt bedienbar — die Prüfung sperrt nichts zu', () => {
+    const weeks = buildDemoWeeks()
+    const sel = teilAuswahl({ si: 1, ii: 1 })
+    const nach = assignSlot(weeks, sel, 'Anna Beispiel')
+    expect(nach).not.toBe(weeks)
+    expect(slotValue(nach, sel)).toBe('Anna Beispiel')
   })
 })

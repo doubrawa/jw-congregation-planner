@@ -39,7 +39,7 @@ import {
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
 import { supabase } from '../lib/supabase'
-import type { MeetingKey, MeetingTab, Person, Week } from '../data/types'
+import type { FsInstance, MeetingKey, MeetingTab, Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
 
 /** View-Tab auf eine echte Zusammenkunft eingrenzen (fs hat keine Meeting-Daten). */
@@ -102,6 +102,35 @@ const congSaves = createDebouncedWriter<'info', { congId: string; info: AppState
   (_key, { congId, info }) => saveCongregationInfo(congId, info),
 )
 
+/*
+ * ---- Speichern mit Blick auf den Index (T42) -------------------------------
+ *
+ * Fast jeder Zweig unten schreibt „die Woche zu diesem Index". Der Index kommt
+ * aus der Aktion oder aus dem vorigen Zustand — und muss dort nicht mehr
+ * stehen: eine Lücke im geladenen Fenster (T35), eine Woche, die zwischen
+ * Auswahl und Speichern aus dem Fenster gerutscht ist. `weeks[wi]` ist dann
+ * `undefined`, und ohne Prüfung ginge genau das an die Schreibschicht — die
+ * eine volle Zeile mit einer leeren überschriebe. Kein Index, kein Schreiben.
+ */
+
+/** Woche an `wi` speichern, falls es sie gibt. */
+function wocheSpeichern(congId: string, weeks: Week[], wi: number): void {
+  const week = weeks[wi]
+  if (week) saveWeek(congId, wi, week)
+}
+
+/** Wie `wocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag. */
+function wochePlanen(congId: string, weeks: Week[], wi: number): void {
+  const week = weeks[wi]
+  if (week) weekSaves.schedule(wi, { congId, week })
+}
+
+/** Treffpunkt-Woche an `wi` speichern, falls es sie gibt. */
+function fsWocheSpeichern(congId: string, fsWeeks: FsInstance[][], wi: number): void {
+  const fsWeek = fsWeeks[wi]
+  if (fsWeek) saveFsWeek(congId, wi, fsWeek)
+}
+
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -116,22 +145,20 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       const sel = prev.slotSel
       // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle.
       if (sel && sel.kind === 'fs') {
-        saveFsWeek(congId, sel.wi, next.fsWeeks[sel.wi])
+        fsWocheSpeichern(congId, next.fsWeeks, sel.wi)
         break
       }
       if (sel) {
-        saveWeek(congId, sel.wi, next.weeks[sel.wi])
+        wocheSpeichern(congId, next.weeks, sel.wi)
         // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
-        deleteConfirmationRows(
-          congId,
-          changedSlotKeys(
-            prev.weeks[sel.wi][sel.tab],
-            next.weeks[sel.wi][sel.tab],
-            prev.services,
-            sel.wi,
-            sel.tab,
-          ),
-        )
+        const vorher = prev.weeks[sel.wi]?.[sel.tab]
+        const nachher = next.weeks[sel.wi]?.[sel.tab]
+        if (vorher && nachher) {
+          deleteConfirmationRows(
+            congId,
+            changedSlotKeys(vorher, nachher, prev.services, sel.wi, sel.tab),
+          )
+        }
       }
       break
     }
@@ -144,7 +171,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           congId,
           changedSlotKeys(before, after, prev.services, prev.week, mtab(prev.tab)),
         )
-        saveWeek(congId, prev.week, next.weeks[prev.week])
+        wocheSpeichern(congId, next.weeks, prev.week)
       }
       break
     }
@@ -156,18 +183,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           congId,
           changedSlotKeys(before, after, prev.services, prev.week, mtab(prev.tab)),
         )
-        saveWeek(congId, prev.week, next.weeks[prev.week])
+        wocheSpeichern(congId, next.weeks, prev.week)
       }
       break
     }
     case 'fsInstUpdate':
     case 'fsInstRemove':
-      saveFsWeek(congId, action.wi, next.fsWeeks[action.wi])
+      fsWocheSpeichern(congId, next.fsWeeks, action.wi)
       break
     case 'fsInstAdd':
     case 'fsAutoAssign':
     case 'fsClear':
-      saveFsWeek(congId, prev.week, next.fsWeeks[prev.week])
+      fsWocheSpeichern(congId, next.fsWeeks, prev.week)
       break
     case 'fsRuleAdd':
     case 'fsRuleUpdate':
@@ -176,17 +203,21 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       saveFsRules(congId, next.fsBase.toISOString().slice(0, 10), next.fsRules)
       // Ab der ersten geladenen Woche: davor stehen Platzhalter, deren Zeilen in
       // der Datenbank echte Daten enthalten (siehe Week.stub).
-      for (let i = next.weekFrom; i < next.fsWeeks.length; i++) saveFsWeek(congId, i, next.fsWeeks[i])
+      for (let i = next.weekFrom; i < next.fsWeeks.length; i++) {
+        fsWocheSpeichern(congId, next.fsWeeks, i)
+      }
       break
     }
     case 'lacMove': {
       if (next.weeks === prev.weeks) break // Rand: kein Tausch
-      saveWeek(congId, prev.week, next.weeks[prev.week])
+      wocheSpeichern(congId, next.weeks, prev.week)
       // Bestätigungen der getauschten Positionen in der DB mittauschen
-      const items = prev.weeks[prev.week][mtab(prev.tab)].sections[action.si].items
-      const b = lacMoveTarget(items, action.ii, action.dir)
-      if (b != null) {
-        const count = Math.max(itemNameCount(items[action.ii]), itemNameCount(items[b]))
+      const items = prev.weeks[prev.week]?.[mtab(prev.tab)].sections[action.si]?.items
+      const b = items ? lacMoveTarget(items, action.ii, action.dir) : null
+      const a = items?.[action.ii]
+      const bItem = b == null ? undefined : items?.[b]
+      if (b != null && a && bItem) {
+        const count = Math.max(itemNameCount(a), itemNameCount(bItem))
         void swapConfirmationKeys(
           congId,
           partSwapKeyPairs(prev.week, mtab(prev.tab), action.si, action.ii, b, count),
@@ -196,12 +227,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'lacRemove':
     case 'lacAdd': {
-      saveWeek(congId, prev.week, next.weeks[prev.week])
+      wocheSpeichern(congId, next.weeks, prev.week)
       // Die folgenden Punkte rutschen um eine Position; task_keys sind
       // positionsbasiert, die Bestätigungen müssen also mit umbenannt werden.
       // Dieselbe Rechnung wie im Reducer, damit beide Seiten übereinstimmen.
       const tab = mtab(prev.tab)
-      const items = prev.weeks[prev.week][tab].sections[action.si].items
+      const items = prev.weeks[prev.week]?.[tab].sections[action.si]?.items
+      if (!items) break
       const ab = action.type === 'lacRemove' ? action.ii : lacAddIndex(items)
       const delta = action.type === 'lacRemove' ? -1 : 1
       const { renames, removed } = shiftPartConfirmations(
@@ -224,16 +256,14 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'setAbweichung': // Sonderwoche: Verlegung, Ausfall, Grund (T30)
     case 'setDienstwoche': // Kreisaufseher-Woche: Ablauf umgebaut (T62)
     case 'setPartThema': // Thema eines Vortragspunkts (T62)
-      saveWeek(congId, prev.week, next.weeks[prev.week])
+      wocheSpeichern(congId, next.weeks, prev.week)
       break
     case 'finishImport':
-    case 'addImportedWeek': {
-      const pos = next.weeks.length - 1
-      if (pos >= 0) saveWeek(congId, pos, next.weeks[pos])
+    case 'addImportedWeek':
+      wocheSpeichern(congId, next.weeks, next.weeks.length - 1)
       break
-    }
     case 'mergeWeekAlt':
-      saveWeek(congId, action.wi, next.weeks[action.wi])
+      wocheSpeichern(congId, next.weeks, action.wi)
       break
     case 'addPerson':
       savePerson(congId, action.person)
@@ -245,7 +275,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Namensänderung hat Wochen umgeschrieben (renameInWeeks) → betroffene
       // Wochen ebenfalls (gebündelt) speichern; unveränderte behalten ihre Ref.
       for (let i = 0; i < next.weeks.length; i++) {
-        if (next.weeks[i] !== prev.weeks[i]) weekSaves.schedule(i, { congId, week: next.weeks[i] })
+        if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
       }
       // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
       if ('planner' in action.patch) {
@@ -284,10 +314,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // sonst zeigt der Fremdschlüssel dort weiter ins Leere. Nur die wirklich
       // geänderten Wochen: unveränderte behalten ihre Referenz.
       for (let i = 0; i < next.weeks.length; i++) {
-        if (next.weeks[i] !== prev.weeks[i]) weekSaves.schedule(i, { congId, week: next.weeks[i] })
+        if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
       }
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) saveFsWeek(congId, i, next.fsWeeks[i])
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.fsWeeks, i)
       }
       break
     }
@@ -310,7 +340,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'changeServiceCount': {
       const idx = next.services.findIndex((s) => s.key === action.key)
-      if (idx >= 0) saveService(congId, next.services[idx], idx)
+      const svc = next.services[idx]
+      if (svc) saveService(congId, svc, idx)
       break
     }
     case 'removeService':
@@ -373,7 +404,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // der Reducer gibt unveränderte Wochen identisch zurück.
       if (next.weeks !== prev.weeks) {
         for (let wi = 0; wi < next.weeks.length; wi++) {
-          if (next.weeks[wi] !== prev.weeks[wi]) saveWeek(congId, wi, next.weeks[wi])
+          if (next.weeks[wi] !== prev.weeks[wi]) wocheSpeichern(congId, next.weeks, wi)
         }
       }
       break

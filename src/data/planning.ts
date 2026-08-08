@@ -48,6 +48,7 @@ import type {
   SlotAssignment,
   SlotSelection,
   SubstituteReq,
+  TaskStatus,
   Week,
 } from './types'
 
@@ -152,11 +153,12 @@ function assignmentDistance(
 
 /** Aktueller Name auf einem Slot ("" = offen). */
 export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
-  const meeting = weeks[sel.wi][sel.tab]
+  const meeting = weeks[sel.wi]?.[sel.tab]
+  if (!meeting) return ''
   if (sel.kind === 'ratgeber') return meeting.auxRatgeber?.name ?? ''
   if (sel.kind === 'part') {
-    const item = meeting.sections[sel.si].items[sel.ii]
-    return isSong(item) ? '' : (slotsOf(item, sel.aux === true)[sel.ni]?.name ?? '')
+    const item = meeting.sections[sel.si]?.items[sel.ii]
+    return !item || isSong(item) ? '' : (slotsOf(item, sel.aux === true)[sel.ni]?.name ?? '')
   }
   return meeting.helpers[sel.svc]?.[sel.pos]?.name ?? ''
 }
@@ -251,24 +253,32 @@ export function assignSlot(
   pid?: string,
 ): Week[] {
   const next = structuredClone(weeks)
-  const meeting = next[sel.wi][sel.tab]
+  // Zeigt die Auswahl ins Leere — die Woche ist aus dem geladenen Fenster
+  // gerutscht, der Punkt wurde nebenher gelöscht —, bleibt alles, wie es war.
+  // Vorher warf der Zugriff, und das mitten im Reducer (T42).
+  const meeting = next[sel.wi]?.[sel.tab]
+  if (!meeting) return weeks
   if (sel.kind === 'ratgeber') {
     meeting.auxRatgeber = { ...ratgeberSlot(meeting), name }
     if (name && pid) meeting.auxRatgeber.pid = pid
     else delete meeting.auxRatgeber.pid
   } else if (sel.kind === 'part') {
-    const item = meeting.sections[sel.si].items[sel.ii]
-    if (!isSong(item)) {
-      const slot = slotsOf(item, sel.aux === true)[sel.ni]
-      slot.name = name
-      // Person-Id als stabile Identität mitführen; beim Entfernen bzw. bei
-      // externen Rednern (kein pid) das Feld sauber löschen.
-      if (name && pid) slot.pid = pid
-      else delete slot.pid
-      // Gastredner-Slots: Rolle trägt die Herkunfts-Versammlung mit
-      // ("Gastredner · Vers. Nordheim")
-      if (rolle !== undefined) slot.rolle = rolle
-    }
+    const item = meeting.sections[sel.si]?.items[sel.ii]
+    // Kein Punkt, ein Lied oder kein solcher Platz: nichts zu setzen. Dann die
+    // **Eingabe** zurückgeben, nicht den unveränderten Klon — Reducer und
+    // persist.ts entscheiden über die Identität, ob gespeichert werden muss.
+    // Ein gleicher, aber neuer Klon löste ein Schreiben ohne Änderung aus.
+    if (!item || isSong(item)) return weeks
+    const slot = slotsOf(item, sel.aux === true)[sel.ni]
+    if (!slot) return weeks
+    slot.name = name
+    // Person-Id als stabile Identität mitführen; beim Entfernen bzw. bei
+    // externen Rednern (kein pid) das Feld sauber löschen.
+    if (name && pid) slot.pid = pid
+    else delete slot.pid
+    // Gastredner-Slots: Rolle trägt die Herkunfts-Versammlung mit
+    // ("Gastredner · Vers. Nordheim")
+    if (rolle !== undefined) slot.rolle = rolle
   } else {
     const arr = meeting.helpers[sel.svc] ?? []
     while (arr.length <= sel.pos) arr.push({ name: '' })
@@ -431,10 +441,10 @@ export function autoAssignMeeting(
   // Zeile verteilte „Automatisch zuteilen" Aufgaben für einen Abend, an dem
   // niemand zusammenkommt — und benachteiligte die Gewählten anschließend bei
   // der nächsten echten Zusammenkunft, weil sie als ausgelastet gälten.
-  if (istAusgefallen(next[weekIndex], tab)) {
+  const meeting = next[weekIndex]?.[tab]
+  if (!meeting || istAusgefallen(next[weekIndex], tab)) {
     return { weeks, count: 0, newly: [], newlyIds: [], unfilled: 0 }
   }
-  const meeting = next[weekIndex][tab]
 
   // Reinigungs-Regel: Aufseher und Gehilfe der Gruppe, die in dieser Woche
   // reinigt, sollen möglichst keinen weiteren Hilfsdienst bekommen (sie sind mit
@@ -554,7 +564,7 @@ export function autoAssignMeeting(
         tieHash(`${displayName(a)}|${weekIndex}|${tab}`) -
           tieHash(`${displayName(b)}|${weekIndex}|${tab}`),
     )
-    return candidates[0]
+    return candidates[0] ?? null
   }
 
   /**
@@ -727,7 +737,8 @@ export function clearAssignments(
   scope: Exclude<AssignScope, 'all'>,
 ): { weeks: Week[]; count: number } {
   const next = structuredClone(weeks)
-  const meeting = next[weekIndex][tab]
+  const meeting = next[weekIndex]?.[tab]
+  if (!meeting) return { weeks, count: 0 }
   let count = 0
   if (scope === 'parts') {
     for (const section of meeting.sections) {
@@ -762,7 +773,7 @@ export function clearAssignments(
     for (const key of Object.keys(meeting.helpers)) {
       const arr = meeting.helpers[key] ?? []
       for (let i = 0; i < arr.length; i++) {
-        if (arr[i].name) {
+        if (arr[i]?.name) {
           arr[i] = { name: '' }
           count++
         }
@@ -786,9 +797,8 @@ export function buildS89ForSlot(
 ): S89Payload | null {
   if (sel.kind !== 'part') return null
   const week = weeks[sel.wi]
-  const meeting = week[sel.tab]
-  const item = meeting.sections[sel.si].items[sel.ii]
-  if (isSong(item)) return null
+  const item = week?.[sel.tab].sections[sel.si]?.items[sel.ii]
+  if (!week || !item || isSong(item)) return null
   const raum = sel.aux === true
   const slot = slotsOf(item, raum)[sel.ni]
   const current = slot?.name ?? ''
@@ -923,7 +933,7 @@ export function helperKeyParts(
 ): { wi: number; tab: MeetingKey; svc: string; pos: number } | null {
   const p = key.split('|')
   if (p.length !== 5 || p[2] !== 'helper') return null
-  return { wi: Number(p[0]), tab: p[1] as MeetingKey, svc: p[3], pos: Number(p[4]) }
+  return { wi: Number(p[0]), tab: p[1] as MeetingKey, svc: p[3] ?? '', pos: Number(p[4]) }
 }
 
 /**
@@ -1021,8 +1031,13 @@ export function shiftPartConfirmations(
   delta: -1 | 1,
 ): { map: ConfirmationMap; renames: Array<[string, string]>; removed: string[] } {
   const praefix = `${wi}|${tab}|`
-  const betroffen: Array<{ key: string; art: string; ii: number; ni: string }> = []
-  for (const key of Object.keys(map ?? {})) {
+  const betroffen: Array<{ key: string; art: string; ii: number; ni: string; status: TaskStatus }> =
+    []
+  // Über die Einträge, nicht über die Schlüssel: der Status kommt so aus
+  // derselben Iteration mit, statt ihn unten am Index nachzuschlagen. Der
+  // Nachschlag dort war sicher (der Schlüssel stammt aus der Map), aber nur
+  // durch ein Argument — hier trägt ihn die Struktur (T42).
+  for (const [key, status] of Object.entries(map ?? {})) {
     if (!key.startsWith(praefix)) continue
     const teile = key.split('|')
     if (teile.length !== 6) continue
@@ -1030,7 +1045,7 @@ export function shiftPartConfirmations(
     if ((art !== 'part' && art !== 'aux') || Number(sStr) !== si) continue
     const ii = Number(iStr)
     if (ii < ab) continue
-    betroffen.push({ key, art, ii, ni })
+    betroffen.push({ key, art, ii, ni: ni ?? '', status })
   }
   if (betroffen.length === 0) return { map, renames: [], removed: [] }
 
@@ -1048,7 +1063,6 @@ export function shiftPartConfirmations(
       continue
     }
     const neu = `${praefix}${eintrag.art}|${si}|${eintrag.ii + delta}|${eintrag.ni}`
-    const status = map[eintrag.key]
     delete next[eintrag.key]
     // Ohne Bedingung übernommen, damit Client und Datenbank dieselbe Menge an
     // Schlüsseln behalten: `renames` geht so oder so an die Datenbank. Würde
@@ -1056,7 +1070,7 @@ export function shiftPartConfirmations(
     // was der Client vergessen hat — und die Bestätigung wäre nur noch in
     // einer der beiden Hälften vorhanden. `TaskStatus` kennt heute keinen
     // falsy Wert; die Kopplung soll aber auch dann halten, wenn einer dazukommt.
-    next[neu] = status
+    next[neu] = eintrag.status
     renames.push([eintrag.key, neu])
   }
   return { map: next, renames, removed }
@@ -1291,7 +1305,8 @@ function meetingHelperNames(meeting: Meeting, services: Service[], wer: IdVon): 
     if (svc.groups) continue
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if (arr[pos]?.name) names.push(belegung(arr[pos], wer))
+      const slot = arr[pos]
+      if (slot?.name) names.push(belegung(slot, wer))
     }
   }
   return names
@@ -1404,7 +1419,7 @@ export function weekConflicts(
       : [...meetingPartNames(w.mid, werIst), ...meetingPartNames(w.we, werIst)]
     return new Map(aus.map((b) => [b.kennung, b.name]))
   })
-  for (const [kennung, name] of belegt[wi]) {
+  for (const [kennung, name] of belegt[wi] ?? []) {
     let start = wi
     let end = wi
     // „In Folge" heißt in aufeinanderfolgenden **Wochen**. Liegt zwischen zwei
@@ -1412,8 +1427,8 @@ export function weekConflicts(
     // dort unterbrochen — sonst meldete die App drei Wochen am Stück, wo in
     // Wirklichkeit eine Pause dazwischenlag (T36).
     const folgt = (a: number, b: number) => wochenAbstand(weeks[a], weeks[b], a, b) === 1
-    while (start - 1 >= 0 && belegt[start - 1].has(kennung) && folgt(start - 1, start)) start--
-    while (end + 1 < weeks.length && belegt[end + 1].has(kennung) && folgt(end, end + 1)) end++
+    while (start - 1 >= 0 && belegt[start - 1]?.has(kennung) === true && folgt(start - 1, start)) start--
+    while (end + 1 < weeks.length && belegt[end + 1]?.has(kennung) === true && folgt(end, end + 1)) end++
     const run = end - start + 1
     if (run >= STREAK_THRESHOLD && run < weeks.length) {
       conflicts.push({ kind: 'streak', name, count: run })

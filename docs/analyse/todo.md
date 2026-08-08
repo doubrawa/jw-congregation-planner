@@ -1107,7 +1107,7 @@ Kontexte macht `readonly.ts` und einen Teil von `persist.ts` überflüssig.
 > Schreibzugriff gilt. Diese Sicherung hängt an den Aktionen, nicht an der Form
 > des Zustands, und bliebe auch nach einer Aufteilung nötig.
 
-### T42 · `noUncheckedIndexedAccess` schrittweise 🏗 ✅ erledigt (Sperrklinke steht, Rest folgt)
+### T42 · `noUncheckedIndexedAccess` schrittweise 🏗 ✅ erledigt — Produktionscode vollständig
 213 Treffer, konzentriert genau in den Wochen-Dateien (`translate.ts` 48,
 `meeting-edit.ts` 37, `planning.ts` 31). Die Regel, die zum Datenmodell passt —
 und die T1 verhindert hätte.
@@ -1124,9 +1124,9 @@ und die T1 verhindert hätte.
 > `PlanenScreen`, `MeetingSection`, `ProfilScreen`, `ProgrammScreen`,
 > `useDialogFocus`, `useSwipeDown`, `useSwipeWeek`, `meeting-times.ts`,
 > `bible-books.ts`, `translate-data.ts`, `lib/data.ts` — dazu
-> `_shared/planung.ts`. Offen sind fünf: `translate.ts` (48),
+> `_shared/planung.ts`. Offen blieben fünf: `translate.ts` (48),
 > `meeting-edit.ts` (39), `planning.ts` (33), `persist.ts` (25),
-> `reducer.ts` (16).
+> `reducer.ts` (16) — **inzwischen erledigt, siehe unten.**
 >
 > **Die Sperrklinke ist der eigentliche Punkt.** `npm run typecheck:index`
 > läuft mit der Regel und hält das Ergebnis gegen
@@ -1146,6 +1146,52 @@ und die T1 verhindert hätte.
 >
 > Gegenprobe gefahren: eine Wegwerf-Datei mit `xs[0].toUpperCase()` angelegt →
 > der Lauf schlägt an und nennt sie.
+
+> **Die letzten fünf — erledigt.** Damit halten **alle 23 Produktionsdateien**
+> die Regel ein. Die Grundlinie steht bei **731 Meldungen in 34 Dateien, alle
+> davon Testdateien** (vorher 892 in 39).
+>
+> Es war keine Typkosmetik. Jede der fünf Dateien griff auf Indizes zu, die ins
+> Leere zeigen können, und warf dann — **im Reducer**, also mit der ganzen
+> Ansicht im Schlepptau. 20 neue Tests halten das fest; 17 davon fallen ohne
+> die jeweilige Korrektur, durchweg mit „Cannot read properties of undefined".
+>
+> **Die drei wiederkehrenden Muster und ihre Antwort:**
+>
+> | Muster | Wo | Antwort |
+> | --- | --- | --- |
+> | `saveWeek(congId, wi, weeks[wi])` | persist.ts, 25× | `wocheSpeichern`/`fsWocheSpeichern`/`wochePlanen` — kein Index, kein Schreiben. `saveWeek` liest als Erstes `week.stub`; `undefined` warf mitten im Dispatch. |
+> | `weeks[wi][tab].sections[si].items[ii]` | meeting-edit.ts, planning.ts | `stelle(weeks, wi, tab, si)` liefert Woche, Zusammenkunft und Punkte in einem Griff — oder nichts. Bricht die Kette, bleiben die Wochen **unverändert**: dieselbe Antwort wie auf jede andere unmögliche Bearbeitung. |
+> | `m[1]` aus einem Regex-Treffer | translate.ts, ~40× | `g(m, i)`. Alle Gruppen dort sind Pflichtgruppen; vierzigmal `?? ''` hätte die Stellen, an denen wirklich etwas fehlen kann, unter Rauschen begraben. |
+>
+> **Drei Befunde, die erst beim Aufräumen sichtbar wurden:**
+>
+> 1. **Der Wochentag war nie geprüft.** `datumsRegel` fing den unbekannten
+>    *Monat* ab (das war die T1-Korrektur) — der Wochentag ging daneben
+>    ungeprüft aus `WD[m[1]]` in `Intl`. Dass Ausdruck und Tabelle
+>    übereinstimmen, ist eine Verabredung zwischen zwei Dateien, und genau ihr
+>    Auseinanderlaufen *war* T1. Jetzt schlagen `tagDatumRegel`, `tagZeitRegel`
+>    und `monatsRegel` **vor** dem Formatieren nach und lassen die Regel ganz
+>    aus, wenn eine Tabelle den Namen nicht kennt.
+> 2. **Auch die Namenslisten der Sprache konnten Lücken haben** (`L.wd[i]`,
+>    `L.mon[i]` — kein Test prüfte ihre Länge). `translate-luecke.test.ts`
+>    kürzt sie über einen Mock und weist nach, was ohne die Korrektur
+>    herauskommt: **„undefined, January 8"** und **„Monday, undefined 8"** —
+>    die T1-Signatur, diesmal aus einem Pflegefehler statt aus einer
+>    Tabellendifferenz.
+> 3. **`assignSlot` gab bei einem fehlenden Punkt einen frischen Klon zurück**
+>    statt der Eingabe. Reducer und `persist.ts` entscheiden über die
+>    *Identität*, ob gespeichert werden muss — ein gleicher, aber neuer Klon
+>    löste ein Schreiben ohne Änderung aus. Aufgefallen ist das am eigenen
+>    Test, nicht am Compiler.
+>
+> Nebenbei: `shiftPartConfirmations` läuft jetzt über `Object.entries` statt
+> über `Object.keys` + Nachschlag. Der Nachschlag war sicher — aber nur durch
+> ein Argument; jetzt trägt ihn die Struktur.
+>
+> **Offen bleiben die 34 Testdateien.** Dort ist ein `undefined` ein roter
+> Test, kein Absturz beim Planer; der Nutzen steht nicht im Verhältnis zum
+> Umbau. Die Sperrklinke hält den Stand, die Zahl kann nur fallen.
 
 ---
 
@@ -1406,7 +1452,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 **61 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 teilweise
 (T41), 1 neu aufgenommen und zurückgestellt (T63).**
-Der Testbestand ist von 727 auf 1359 gewachsen; jede Korrektur hat einen Test,
+Der Testbestand ist von 727 auf 1385 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
 
@@ -1422,6 +1468,15 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > `noUncheckedIndexedAccess`, 18 von 23 Produktionsdateien sauber) und **T41**
 > zur Hälfte (Kontexte getrennt, Felder gruppiert — Selektoren stehen aus).
 >
+> **Am 8. August 2026, dritte Runde:** die letzten fünf Produktionsdateien von
+> **T42** — `translate.ts`, `meeting-edit.ts`, `planning.ts`, `persist.ts`,
+> `reducer.ts`. Der Produktionscode hält die Regel jetzt vollständig ein; die
+> Grundlinie fiel von 892 auf 731, und was übrig ist, steht ausnahmslos in
+> Testdateien. Dabei drei Befunde: der **Wochentag** war in den Datumsregeln
+> nie geprüft, die **Namenslisten der Sprachen** konnten Lücken haben, und
+> **`assignSlot`** löste bei einem fehlenden Punkt ein Schreiben ohne Änderung
+> aus.
+>
 > Dabei aufgefallen und gleich mitgebaut: **T62** (Kreisaufseher-Woche —
 > Dienstvortrag, verkürztes Wachtturm-Studium, Schlussvortrag). Neu
 > aufgenommen und vom Betreiber zurückgestellt: **T63**.
@@ -1436,7 +1491,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | | Aufgabe | Warum offen |
 | --- | --- | --- |
 | **Phase 7** | T41 (Selektoren) | Zwei von drei Schritten sind gemacht. Der dritte — `useSyncExternalStore` mit Selektoren — rührt an den Kern von 45 Bausteinen, und es gibt keinen Test, der Render-Verhalten im Zusammenspiel prüft. Gehört in eine eigene Sitzung mit eigenem Sicherheitsnetz. |
-| **Phase 7** | T42 (Rest) | Fünf Produktionsdateien und 34 Testdateien tragen noch Meldungen. Die Sperrklinke hält den Stand; die Zahl kann nur fallen. |
+| **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser

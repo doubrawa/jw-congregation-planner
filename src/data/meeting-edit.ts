@@ -160,6 +160,29 @@ function forEachAltMeeting(week: Week, tab: MeetingKey, fn: (meeting: Meeting) =
 
 /* ---- „Unser Leben als Christ" -------------------------------------------- */
 
+/**
+ * Die Kette `weeks[wi][tab].sections[si]` in einem Griff — Woche, Zusammenkunft
+ * und Punkte des Abschnitts, oder `undefined`, sobald ein Glied fehlt.
+ *
+ * Jede Bearbeitungsfunktion hier läuft diese Kette ab, und jedes Glied kann
+ * fehlen: die Woche ist aus dem geladenen Fenster gerutscht (T35), den
+ * Abschnitt gibt es in dieser Woche nicht (die Kreisaufseher-Woche baut sie
+ * um, T62), der Punkt wurde nebenher gelöscht. Ungeprüft warf der Zugriff —
+ * und weil diese Funktionen aus dem Reducer laufen, riss das die ganze Ansicht
+ * mit. Fehlt etwas, heißt die Antwort durchweg: nichts ändern (T42).
+ */
+function stelle(
+  weeks: Week[],
+  wi: number,
+  tab: MeetingKey,
+  si: number,
+): { week: Week; meeting: Meeting; items: Meeting['sections'][number]['items'] } | undefined {
+  const week = weeks[wi]
+  const meeting = week?.[tab]
+  const items = meeting?.sections[si]?.items
+  return week && meeting && items ? { week, meeting, items } : undefined
+}
+
 /** Minuten eines LAC-Punkts ändern (5..45) und Meeting-Ende nachziehen. */
 export function lacAdjust(
   weeks: Week[],
@@ -170,9 +193,11 @@ export function lacAdjust(
   delta: number,
 ): Week[] {
   const next = structuredClone(weeks)
-  const meeting = next[wi][tab]
-  const item = meeting.sections[si].items[ii]
-  if (isSong(item)) return weeks
+  const an = stelle(next, wi, tab, si)
+  if (!an) return weeks
+  const { week, meeting, items } = an
+  const item = items[ii]
+  if (!item || isSong(item)) return weeks
   const cur = itemMinutes(item)
   if (cur == null) return weeks
   const target = Math.max(5, Math.min(45, cur + delta))
@@ -183,7 +208,7 @@ export function lacAdjust(
   item.mins = target
   item.meta = ersteZahlErsetzen(item.meta ?? '', target)
   meeting.end = shiftEnd(meeting.end, target - cur)
-  forEachAltMeeting(next[wi], tab, (m) => {
+  forEachAltMeeting(week, tab, (m) => {
     const vi = m.sections[si]?.items[ii]
     if (vi && !isSong(vi)) {
       vi.mins = target
@@ -203,12 +228,15 @@ export function lacRemove(
   ii: number,
 ): Week[] {
   const next = structuredClone(weeks)
-  const meeting = next[wi][tab]
-  const item = meeting.sections[si].items[ii]
+  const an = stelle(next, wi, tab, si)
+  if (!an) return weeks
+  const { week, meeting, items } = an
+  const item = items[ii]
+  if (!item) return weeks
   const mins = isSong(item) ? null : itemMinutes(item)
-  meeting.sections[si].items.splice(ii, 1)
+  items.splice(ii, 1)
   if (mins != null) meeting.end = shiftEnd(meeting.end, -mins)
-  forEachAltMeeting(next[wi], tab, (m) => {
+  forEachAltMeeting(week, tab, (m) => {
     m.sections[si]?.items.splice(ii, 1)
     if (mins != null) m.end = shiftEnd(m.end, -mins)
   })
@@ -230,7 +258,7 @@ export function lacMoveTarget(
   const pos = movables.indexOf(ii)
   const tpos = pos + dir
   if (pos < 0 || tpos < 0 || tpos >= movables.length) return null
-  return movables[tpos]
+  return movables[tpos] ?? null
 }
 
 /** Zahl der Namens-Slots eines Items (0 für Lieder). */
@@ -251,15 +279,18 @@ export function lacMove(
   dir: -1 | 1,
 ): Week[] {
   const next = structuredClone(weeks)
-  const items = next[wi][tab].sections[si].items
+  const an = stelle(next, wi, tab, si)
+  if (!an) return weeks
+  const { week, items } = an
   const movables = movableIndices(items)
   const pos = movables.indexOf(ii)
   const tpos = pos + dir
   if (pos < 0 || tpos < 0 || tpos >= movables.length) return weeks
   const a = movables[pos]
   const b = movables[tpos]
+  if (a == null || b == null) return weeks
   swapKeepNums(items, a, b)
-  forEachAltMeeting(next[wi], tab, (m) => {
+  forEachAltMeeting(week, tab, (m) => {
     const arr = m.sections[si]?.items
     if (arr) swapKeepNums(arr, a, b)
   })
@@ -268,18 +299,19 @@ export function lacMove(
 
 /** Zwei Items tauschen; die laufenden Nummern bleiben positionsfest. */
 function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b: number): void {
-  if (a >= items.length || b >= items.length) return
+  const ia = items[a]
+  const ib = items[b]
+  if (!ia || !ib) return
   const movables = movableIndices(items)
   const nums = movables.map((i) => {
     const it = items[i]
-    return isSong(it) ? undefined : it.num
+    return !it || isSong(it) ? undefined : it.num
   })
-  const tmp = items[a]
-  items[a] = items[b]
-  items[b] = tmp
+  items[a] = ib
+  items[b] = ia
   movables.forEach((i, k) => {
     const it = items[i]
-    if (!isSong(it)) it.num = nums[k]
+    if (it && !isSong(it)) it.num = nums[k]
   })
 }
 
@@ -321,8 +353,9 @@ export function lacAdd(
   const trimmed = title.trim()
   if (!trimmed) return weeks
   const next = structuredClone(weeks)
-  const meeting = next[wi][tab]
-  const items = meeting.sections[si].items
+  const an = stelle(next, wi, tab, si)
+  if (!an) return weeks
+  const { week, meeting, items } = an
   // Ein eigener Punkt unter „Unser Leben als Christ" ist kein öffentlicher
   // Vortrag — der Bereich blieb hier fälschlich auf 'vortrag' stehen (F6).
   // Die stabile Kennung (T37) macht die Bestätigungen unabhängig von der
@@ -333,7 +366,7 @@ export function lacAdd(
   items.splice(at, 0, newItem)
   meeting.end = shiftEnd(meeting.end, 10)
   // Eigener Punkt ist lokaler Text — in allen Varianten identisch einfügen
-  forEachAltMeeting(next[wi], tab, (m) => {
+  forEachAltMeeting(week, tab, (m) => {
     const arr = m.sections[si]?.items
     if (arr) arr.splice(Math.min(at, arr.length), 0, { title: trimmed, meta: '10 Min.', mins: 10, names: [] })
     m.end = shiftEnd(m.end, 10)
@@ -348,9 +381,9 @@ export function lacAdd(
  */
 export function togglePartner(weeks: Week[], wi: number, tab: MeetingKey, si: number, ii: number): Week[] {
   const next = structuredClone(weeks)
-  const meeting = next[wi][tab]
-  const item = meeting.sections[si]?.items[ii]
-  if (!item || isSong(item)) return weeks
+  const meeting = next[wi]?.[tab]
+  const item = meeting?.sections[si]?.items[ii]
+  if (!meeting || !item || isSong(item)) return weeks
   const idx = item.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
   if (idx >= 0) item.names.splice(idx, 1)
   else item.names.push({ name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' })
@@ -657,12 +690,13 @@ export const TALK_PLACEHOLDER = '(Vortragsthema eintragen)'
  */
 export function editTalkTheme(weeks: Week[], wi: number, si: number, ii: number, title: string): Week[] {
   const next = structuredClone(weeks)
-  const item = next[wi].we.sections[si]?.items[ii]
-  if (!item || isSong(item)) return weeks
+  const week = next[wi]
+  const item = week?.we.sections[si]?.items[ii]
+  if (!week || !item || isSong(item)) return weeks
   const value = title.trim() || TALK_PLACEHOLDER
   if (item.title === value) return weeks
   item.title = value
-  forEachAltMeeting(next[wi], 'we', (m) => {
+  forEachAltMeeting(week, 'we', (m) => {
     const vi = m.sections[si]?.items[ii]
     if (vi && !isSong(vi)) vi.title = value
   })
@@ -702,10 +736,10 @@ function replaceSongAtom(title: string, value: string): string {
 function setSong(weeks: Week[], wi: number, label: string, song: string): Week[] {
   const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
   const next = structuredClone(weeks)
-  const meeting = next[wi].we
-  const si = meeting.sections.findIndex((s) => s.label === label)
-  if (si < 0) return weeks
-  const items = meeting.sections[si].items
+  const week = next[wi]
+  const si = week?.we.sections.findIndex((s) => s.label === label) ?? -1
+  const items = week?.we.sections[si]?.items
+  if (!week || !items) return weeks
   const value = nr ? `Lied ${nr}` : 'Lied'
 
   // Wochen, die vor dieser Änderung importiert wurden, tragen das Schlusslied
@@ -714,9 +748,9 @@ function setSong(weeks: Week[], wi: number, label: string, song: string): Week[]
   const altItem = items.findIndex(isSong)
   if (altItem >= 0) {
     const s = items[altItem]
-    if (!isSong(s) || s.song === value) return weeks
+    if (!s || !isSong(s) || s.song === value) return weeks
     s.song = value
-    forEachAltMeeting(next[wi], 'we', (m) => {
+    forEachAltMeeting(week, 'we', (m) => {
       const vi = m.sections[si]?.items[altItem]
       if (vi && isSong(vi)) vi.song = value
     })
@@ -724,12 +758,12 @@ function setSong(weeks: Week[], wi: number, label: string, song: string): Week[]
   }
 
   const ii = items.findIndex((x) => !isSong(x) && songAtomIndex(x.title) >= 0)
-  if (ii < 0) return weeks
-  const item = items[ii] as PartItem
+  const item = items[ii]
+  if (!item || isSong(item)) return weeks
   const title = replaceSongAtom(item.title, value)
   if (title === item.title) return weeks
   item.title = title
-  forEachAltMeeting(next[wi], 'we', (m) => {
+  forEachAltMeeting(week, 'we', (m) => {
     const vi = m.sections[si]?.items[ii]
     if (vi && !isSong(vi) && songAtomIndex(vi.title) >= 0) vi.title = replaceSongAtom(vi.title, value)
   })
@@ -757,12 +791,12 @@ function songNr(meeting: Meeting, label: string): string {
   for (const item of section?.items ?? []) {
     if (isSong(item)) {
       const match = /(\d+)/.exec(item.song)
-      if (match) return match[1]
+      if (match?.[1]) return match[1]
       continue
     }
     const i = songAtomIndex(item.title)
     if (i < 0) continue
-    return /(\d+)/.exec(item.title.split(' · ')[i])?.[1] ?? ''
+    return /(\d+)/.exec(item.title.split(' · ')[i] ?? '')?.[1] ?? ''
   }
   return ''
 }

@@ -939,3 +939,55 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     expect(next.myTasks.find((t) => t.id === 'fs|0|tp1')!.status).toBe('bestätigt')
   })
 })
+
+/*
+ * Ein Index aus einer Aktion oder aus dem Zustand kann ins Leere zeigen: eine
+ * Lücke im geladenen Fenster (T35), eine Woche, die zwischen Auswahl und
+ * Ausführung herausgerutscht ist, ein Abschnitt, den es in dieser Woche nicht
+ * gibt. Ungeprüft warf der Zugriff mitten im Dispatch — und ein Reducer, der
+ * wirft, reißt die ganze Ansicht mit. Er gibt jetzt den Zustand zurück (T42).
+ */
+describe('Index außerhalb des Fensters', () => {
+  const WEIT_DRAUSSEN = 99
+
+  it('assign auf eine Woche, die es nicht gibt, stürzt nicht ab', () => {
+    const s = makeState({
+      slotSel: { ...firstPartSlot(buildDemoWeeks()[0]!, 'mid'), wi: WEIT_DRAUSSEN },
+    })
+    let next: AppState | undefined
+    expect(() => {
+      next = reducer(s, { type: 'assign', name: 'Anna Beispiel', pid: 'p1' })
+    }).not.toThrow()
+    // Zugeteilt wird nichts (assignSlot findet die Woche nicht), und die
+    // Mitteilung trägt keinen leeren Trenner.
+    expect(next!.weeks).toBe(s.weeks)
+    expect(next!.notifs[0]?.text ?? '').not.toContain(' · ')
+  })
+
+  it('takeSubstitute auf eine Woche, die es nicht gibt, stürzt nicht ab', () => {
+    const me = person('Simon Krüger')
+    const s = makeState({ dataStatus: 'ready', personId: me.id })
+    expect(() =>
+      reducer(s, { type: 'takeSubstitute', key: `${WEIT_DRAUSSEN}|mid|svc|ordner|0` }),
+    ).not.toThrow()
+  })
+
+  it('lacMove auf einen Abschnitt, den es nicht gibt, stürzt nicht ab', () => {
+    const s = makeState()
+    let next: AppState | undefined
+    expect(() => {
+      next = reducer(s, { type: 'lacMove', si: WEIT_DRAUSSEN, ii: 0, dir: 1 })
+    }).not.toThrow()
+    expect(next!).toBe(s) // kein Tausch möglich → Zustand unverändert
+  })
+
+  it('lacAdd auf einen Abschnitt, den es nicht gibt, stürzt nicht ab', () => {
+    const s = makeState()
+    expect(() => reducer(s, { type: 'lacAdd', si: WEIT_DRAUSSEN, title: 'Neu' })).not.toThrow()
+  })
+
+  it('autoAssign ohne geladene Wochen gibt den Zustand zurück', () => {
+    const s = makeState({ weeks: [] })
+    expect(reducer(s, { type: 'autoAssign', scope: 'all' })).toBe(s)
+  })
+})

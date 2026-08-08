@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoWeeks } from './demo'
-import { endeAusStartzeit, endenNachziehen, MEETING_MINUTES } from './meeting-edit'
+import {
+  editTalkTheme,
+  endeAusStartzeit,
+  endenNachziehen,
+  lacAdd,
+  lacAdjust,
+  lacMove,
+  lacRemove,
+  MEETING_MINUTES,
+  setClosingSong,
+  setOpeningSong,
+  togglePartner,
+} from './meeting-edit'
 import type { Week } from './types'
 
 describe('endeAusStartzeit — Endzeit aus den Zusammenkunftszeiten', () => {
@@ -91,5 +103,60 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
   it('ohne erkennbare Uhrzeit bleibt alles stehen', () => {
     const weeks = importierteWochen()
     expect(endenNachziehen(weeks, 'Di abends · So 10:00', 'Di 18:30 · So 10:00')).toBe(weeks)
+  })
+})
+
+/*
+ * Jede Bearbeitungsfunktion läuft die Kette Woche → Zusammenkunft → Abschnitt →
+ * Punkt ab. Zeigt ein Index ins Leere — Lücke im geladenen Fenster (T35), ein
+ * Abschnitt, den diese Woche nicht hat (die Kreisaufseher-Woche baut sie um,
+ * T62) —, warf der Zugriff bis dahin. Diese Funktionen laufen aus dem Reducer;
+ * ein Wurf dort reißt die Ansicht mit. Sie geben jetzt die Wochen unverändert
+ * zurück (T42): dieselbe Antwort wie auf jede andere unmögliche Bearbeitung.
+ */
+describe('Bearbeitung mit einem Index, den es nicht gibt', () => {
+  const WEIT_DRAUSSEN = 99
+  const w = (): Week[] => buildDemoWeeks()
+
+  it('lacAdjust: fehlende Woche, fehlender Abschnitt, fehlender Punkt', () => {
+    const weeks = w()
+    expect(lacAdjust(weeks, WEIT_DRAUSSEN, 'mid', 0, 0, 5)).toBe(weeks)
+    expect(lacAdjust(weeks, 0, 'mid', WEIT_DRAUSSEN, 0, 5)).toBe(weeks)
+    expect(lacAdjust(weeks, 0, 'mid', 0, WEIT_DRAUSSEN, 5)).toBe(weeks)
+  })
+
+  it('lacRemove: fehlende Woche, fehlender Abschnitt, fehlender Punkt', () => {
+    const weeks = w()
+    expect(lacRemove(weeks, WEIT_DRAUSSEN, 'mid', 0, 0)).toBe(weeks)
+    expect(lacRemove(weeks, 0, 'mid', WEIT_DRAUSSEN, 0)).toBe(weeks)
+    expect(lacRemove(weeks, 0, 'mid', 0, WEIT_DRAUSSEN)).toBe(weeks)
+  })
+
+  it('lacMove und lacAdd: fehlende Woche, fehlender Abschnitt', () => {
+    const weeks = w()
+    expect(lacMove(weeks, WEIT_DRAUSSEN, 'mid', 0, 0, 1)).toBe(weeks)
+    expect(lacMove(weeks, 0, 'mid', WEIT_DRAUSSEN, 0, 1)).toBe(weeks)
+    expect(lacAdd(weeks, WEIT_DRAUSSEN, 'mid', 0, 'Neu')).toBe(weeks)
+    expect(lacAdd(weeks, 0, 'mid', WEIT_DRAUSSEN, 'Neu')).toBe(weeks)
+  })
+
+  it('togglePartner auf eine Woche, die es nicht gibt', () => {
+    const weeks = w()
+    expect(togglePartner(weeks, WEIT_DRAUSSEN, 'mid', 0, 0)).toBe(weeks)
+  })
+
+  it('editTalkTheme und die Lieder auf eine Woche, die es nicht gibt', () => {
+    const weeks = w()
+    expect(editTalkTheme(weeks, WEIT_DRAUSSEN, 0, 0, 'Thema')).toBe(weeks)
+    expect(setOpeningSong(weeks, WEIT_DRAUSSEN, '78')).toBe(weeks)
+    expect(setClosingSong(weeks, WEIT_DRAUSSEN, '78')).toBe(weeks)
+  })
+
+  it('die vorhandene Stelle bleibt bearbeitbar — die Prüfung sperrt nichts zu', () => {
+    // Gegenprobe zur Gegenprobe: sonst wären alle Tests oben auch grün, wenn
+    // die Funktionen gar nichts mehr täten.
+    const weeks = w()
+    expect(setOpeningSong(weeks, 0, '78')).not.toBe(weeks)
+    expect(togglePartner(weeks, 0, 'mid', 1, 1)).not.toBe(weeks)
   })
 })
