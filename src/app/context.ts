@@ -3,7 +3,16 @@
  * Der Provider (Reducer + Effekte) liegt in store.tsx.
  */
 
-import { createContext, useContext, type Dispatch } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+  type Dispatch,
+} from 'react'
 import type { FontScale } from '../data/constants'
 import type {
   Abweichung,
@@ -304,12 +313,37 @@ export interface AppContextValue {
  * `useAppDispatch()` nimmt, rendert von einer Zustandsänderung nicht mehr neu.
  *
  * `useApp()` gibt es weiter und liefert beides — es baut das Paar nur wieder
- * zusammen. Wer den Zustand liest, rendert wie bisher bei jeder Änderung neu;
+ * zusammen. Wer den ganzen Zustand liest, rendert dabei bei jeder Änderung neu;
  * daran ändert eine Kontext-Trennung nichts (React verteilt Kontexte ganz oder
- * gar nicht). Der Schritt dahin sind Selektoren, siehe todo.md T41.
+ * gar nicht). Dafür gibt es `useAppSelector`, siehe unten.
  */
 export const AppStateContext = createContext<AppState | null>(null)
 export const AppDispatchContext = createContext<Dispatch<AppAction> | null>(null)
+
+/**
+ * Der Zustand als **abonnierbarer Speicher** — die Grundlage der Selektoren.
+ *
+ * React verteilt einen Kontext ganz oder gar nicht: wer ihn liest, rendert bei
+ * jeder Änderung neu, auch wenn ihn nur ein einziges Feld angeht. Das trifft
+ * hier besonders `useT()`, an dem 44 Bausteine hängen, obwohl es nur `lang` und
+ * `congLang` liest.
+ *
+ * Ein Speicher außerhalb von React löst das: `holen()` liefert den aktuellen
+ * Zustand aus einer Referenz, `abonnieren()` meldet jede Änderung. Darauf setzt
+ * `useSyncExternalStore` auf und weckt einen Baustein nur, wenn sich **sein**
+ * Ausschnitt geändert hat.
+ *
+ * Der Zustands-Kontext bleibt daneben bestehen: er ist der einfache Weg für
+ * alles, was ohnehin breit liest, und `useAppState()` funktioniert unverändert
+ * weiter. Beide werden im selben Commit aktualisiert, sie können also nicht
+ * auseinanderlaufen.
+ */
+export interface AppStore {
+  holen: () => AppState
+  abonnieren: (melden: () => void) => () => void
+}
+
+export const AppStoreContext = createContext<AppStore | null>(null)
 
 /** Nur der Zustand. */
 export function useAppState(): AppState {
@@ -330,4 +364,100 @@ export function useAppDispatch(): Dispatch<AppAction> {
 
 export function useApp(): AppContextValue {
   return { state: useAppState(), dispatch: useAppDispatch() }
+}
+
+/**
+ * Ein Ausschnitt des Zustands — der Baustein rendert nur neu, wenn **dieser**
+ * sich ändert.
+ *
+ * ```ts
+ * const week = useAppSelector((s) => s.week)              // Zahl: einfach so
+ * const { lang, congLang } = useAppSelector(
+ *   (s) => ({ lang: s.lang, congLang: s.congLang }),
+ *   flachGleich,                                          // Objekt: mit Vergleich!
+ * )
+ * ```
+ *
+ * **Die eine Falle:** ein Selektor, der bei jedem Aufruf ein *neues* Objekt
+ * baut, sieht für React immer geändert aus — ohne passenden Vergleich läuft das
+ * in eine Endlosschleife („The result of getSnapshot should be cached"). Für
+ * gebündelte Felder deshalb `flachGleich` mitgeben; für einzelne Felder ist die
+ * Vorgabe `Object.is` genau richtig. Der Test dazu steht in `context.test.tsx`.
+ */
+export function useAppSelector<T>(
+  waehle: (zustand: AppState) => T,
+  gleich: (a: T, b: T) => boolean = Object.is,
+): T {
+  const store = useContext(AppStoreContext)
+  // Beide Funktionen werden am Aufrufort fast immer inline geschrieben und sind
+  // damit bei jedem Render neue Objekte. Als Abhängigkeit geführt, würde der
+  // Baustein bei jedem Render neu abonnieren — deshalb liegen sie in
+  // Referenzen, die still nachgezogen werden.
+  const waehleRef = useRef(waehle)
+  const gleichRef = useRef(gleich)
+  waehleRef.current = waehle
+  gleichRef.current = gleich
+  // Der zuletzt gelieferte Ausschnitt. `useSyncExternalStore` vergleicht das
+  // Ergebnis von `holen` mit `Object.is`; ohne diesen Zwischenspeicher gäbe ein
+  // Objekt-Selektor bei jedem Aufruf etwas Neues zurück. Solange `gleich` den
+  // Ausschnitt für unverändert hält, kommt derselbe Wert zurück.
+  const zwischen = useRef<{ wert: T } | null>(null)
+  const holen = useCallback((): T => {
+    if (!store) throw new Error('useAppSelector() außerhalb von <AppProvider> aufgerufen')
+    const neu = waehleRef.current(store.holen())
+    const alt = zwischen.current
+    if (alt && gleichRef.current(alt.wert, neu)) return alt.wert
+    zwischen.current = { wert: neu }
+    return neu
+  }, [store])
+  const abonnieren = useCallback(
+    (melden: () => void) => (store ? store.abonnieren(melden) : () => {}),
+    [store],
+  )
+  return useSyncExternalStore(abonnieren, holen, holen)
+}
+
+/**
+ * Flacher Vergleich für Selektoren, die mehrere Felder bündeln: gleich, wenn
+ * jedes Feld gleich ist. Ohne ihn hielte React jedes frisch gebaute Objekt für
+ * eine Änderung — siehe `useAppSelector`.
+ */
+export function flachGleich<T extends Record<string, unknown>>(a: T, b: T): boolean {
+  const schluessel = Object.keys(a)
+  if (schluessel.length !== Object.keys(b).length) return false
+  return schluessel.every((k) => Object.is(a[k], b[k]))
+}
+
+/**
+ * Ein Speicher über einen von außen gegebenen Zustand.
+ *
+ * Wer einen Teilbaum mit einem **abgewandelten** Zustand rendert — die
+ * Wochen-Vorschau in `WeekStrip` zeigt die Nachbarwoche, Tests bauen eine
+ * Bühne —, muss auch den Speicher überschreiben. Sonst läse derselbe Baustein
+ * teils den abgewandelten Zustand (aus dem Kontext) und teils den echten (aus
+ * dem Speicher): zwei Wochen gleichzeitig in einer Ansicht.
+ *
+ * Der Zustand darf sich ändern; nach jedem Render werden die Abonnenten
+ * geweckt. Ein Speicher, der davon schweigt, ließe die Selektoren auf dem
+ * ersten Stand stehen.
+ */
+export function useStaticStore(zustand: AppState): AppStore {
+  const zustandRef = useRef(zustand)
+  zustandRef.current = zustand
+  const abonnentenRef = useRef<Set<() => void> | null>(null)
+  abonnentenRef.current ??= new Set()
+  const abonnenten = abonnentenRef.current
+  useEffect(() => {
+    for (const melden of abonnenten) melden()
+  })
+  return useMemo(
+    () => ({
+      holen: () => zustandRef.current,
+      abonnieren: (melden) => {
+        abonnenten.add(melden)
+        return () => void abonnenten.delete(melden)
+      },
+    }),
+    [abonnenten],
+  )
 }

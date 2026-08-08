@@ -1,5 +1,13 @@
 import { useRef, type Dispatch, type ReactNode } from 'react'
-import { AppDispatchContext, AppStateContext, useApp, useAppState, type AppAction } from '../app/context'
+import {
+  AppDispatchContext,
+  AppStateContext,
+  AppStoreContext,
+  useApp,
+  useAppState,
+  useStaticStore,
+  type AppAction,
+} from '../app/context'
 import { useSwipeWeek } from './useSwipeWeek'
 import './week-strip.css'
 
@@ -74,13 +82,20 @@ function Vorschau({ offset, children }: { offset: -1 | 1; children: ReactNode })
   // Teilbaum liefe so oder so durch. Der Spread ist billiger als der Anschein
   // von Abschirmung.
   const wert = { ...state, week: state.week + offset }
+  // Der Speicher muss mit überschrieben werden, nicht nur der Kontext: sonst
+  // läse ein Baustein der Vorschau den abgewandelten Zustand über `useAppState`
+  // und den echten über `useAppSelector` — zwei Wochen gleichzeitig in einer
+  // Ansicht (T41).
+  const store = useStaticStore(wert)
   return (
     <div className={SEITE[offset]} aria-hidden="true" inert>
-      {/* Nur der Zustands-Kontext wird überschrieben; der Versand-Kontext bleibt
+      {/* Überschrieben werden Zustand und Speicher; der Versand-Kontext bleibt
           der äußere und wird hier durch `keinDispatch` ersetzt — die Vorschau
           ist `inert`, ein Klick kommt gar nicht erst an. */}
       <AppDispatchContext.Provider value={keinDispatch}>
-        <AppStateContext.Provider value={wert}>{children}</AppStateContext.Provider>
+        <AppStoreContext.Provider value={store}>
+          <AppStateContext.Provider value={wert}>{children}</AppStateContext.Provider>
+        </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
     </div>
   )

@@ -1,7 +1,13 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
-import { AppDispatchContext, AppStateContext, type AppState } from '../app/context'
+import {
+  AppDispatchContext,
+  AppStateContext,
+  AppStoreContext,
+  type AppState,
+  useStaticStore,
+} from '../app/context'
 import { initialState } from '../app/init'
 import type { Week } from '../data/types'
 import { ImportPanel } from './ImportPanel'
@@ -15,15 +21,25 @@ import { ImportPanel } from './ImportPanel'
 const woche = (patch: Partial<Week> = {}): Week =>
   ({ range: '7.–13. September', book: 'Jeremia', current: false, ...patch }) as Week
 
-function zeige(weeks: Week[], patch: Partial<AppState> = {}) {
-  const state: AppState = { ...initialState(), weeks, ...patch }
-  return render(
+/**
+ * Bühne mit allen drei Kontexten. Der Speicher gehört seit T41 dazu: `useT`
+ * liest über Selektoren, und die gehen am Zustands-Kontext vorbei.
+ */
+function Buehne({ state }: { state: AppState }) {
+  const store = useStaticStore(state)
+  return (
     <AppDispatchContext.Provider value={() => {}}>
-      <AppStateContext.Provider value={state}>
-      <ImportPanel />
-    </AppStateContext.Provider>
-    </AppDispatchContext.Provider>,
+      <AppStoreContext.Provider value={store}>
+        <AppStateContext.Provider value={state}>
+          <ImportPanel />
+        </AppStateContext.Provider>
+      </AppStoreContext.Provider>
+    </AppDispatchContext.Provider>
   )
+}
+
+function zeige(weeks: Week[], patch: Partial<AppState> = {}) {
+  return render(<Buehne state={{ ...initialState(), weeks, ...patch }} />)
 }
 
 afterEach(cleanup)

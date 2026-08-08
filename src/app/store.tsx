@@ -4,7 +4,7 @@
  * Supabase-Auth bzw. <html>-Attribute.
  */
 
-import { useCallback, useEffect, useReducer, useRef, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import { isDarkTheme } from '../data/constants'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
@@ -12,7 +12,13 @@ import { dict, loadOverlay } from '../i18n/ui'
 import { setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
-import { AppDispatchContext, AppStateContext, type AppAction } from './context'
+import {
+  AppDispatchContext,
+  AppStateContext,
+  AppStoreContext,
+  type AppAction,
+  type AppStore,
+} from './context'
 import { loadAndHydrate } from './hydrate'
 import { initialState } from './init'
 import { persist } from './persist'
@@ -26,6 +32,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // schreibt die Änderung nach Supabase und aktualisiert dann React.
   const stateRef = useRef(state)
   stateRef.current = state
+
+  // Abonnenten der Selektoren (T41). Der Zustand liegt ohnehin schon in
+  // `stateRef` — der Speicher gibt ihn nur nach außen und sagt Bescheid, wenn
+  // er sich geändert hat. Erzeugt wird das Set nur einmal; `useRef(new Set())`
+  // legte bei jedem Render eines an, von denen React alle bis auf das erste
+  // verwirft.
+  const abonnentenRef = useRef<Set<() => void> | null>(null)
+  abonnentenRef.current ??= new Set()
+  const abonnenten = abonnentenRef.current
+
   const dispatch = useCallback((action: AppAction) => {
     const prev = stateRef.current
     // Offline-Stand (staleAt): nur lesen. Schreib-Aktionen abweisen und
@@ -40,7 +56,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     stateRef.current = next
     persist(prev, next, effective)
     rawDispatch(effective)
-  }, [])
+    // Die Selektoren wecken. Das passiert im selben Ereignis wie `rawDispatch`,
+    // React fasst beide Aktualisierungen also zu einem Commit zusammen —
+    // Kontext-Leser und Selektor-Leser sehen nie verschiedene Stände.
+    for (const melden of abonnenten) melden()
+  }, [abonnenten])
+
+  const store = useMemo<AppStore>(
+    () => ({
+      holen: () => stateRef.current,
+      abonnieren: (melden) => {
+        abonnenten.add(melden)
+        return () => abonnenten.delete(melden)
+      },
+    }),
+    [abonnenten],
+  )
 
   // Fehlgeschlagene Schreibvorgänge sichtbar machen. Die Schreiber in data.ts
   // sind fire-and-forget — der Erfolgs-Toast entsteht im Reducer, bevor die
@@ -182,12 +213,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer)
   }, [state.toast, dispatch])
 
-  // Zwei Kontexte statt einem (T41): `dispatch` bleibt über die ganze Sitzung
-  // dieselbe Funktion, sein Kontext ändert sich also nie. Bausteine, die nur
-  // auslösen (`useAppDispatch`), rendern damit bei Zustandsänderungen nicht mit.
+  // Drei Kontexte statt einem (T41), und jeder trägt genau eine Sorte:
+  //  - Versand: über die ganze Sitzung dieselbe Funktion, ändert sich also nie.
+  //    Wer nur auslöst (`useAppDispatch`), rendert bei Zustandsänderungen nicht.
+  //  - Speicher: ebenfalls unveränderlich; darüber laufen die Selektoren
+  //    (`useAppSelector`), die nur bei ihrem eigenen Ausschnitt wecken.
+  //  - Zustand: ändert sich mit jedem Commit, für alles, was breit liest
+  //    (`useAppState`, `useApp`).
   return (
     <AppDispatchContext.Provider value={dispatch}>
-      <AppStateContext.Provider value={state}>{children}</AppStateContext.Provider>
+      <AppStoreContext.Provider value={store}>
+        <AppStateContext.Provider value={state}>{children}</AppStateContext.Provider>
+      </AppStoreContext.Provider>
     </AppDispatchContext.Provider>
   )
 }
