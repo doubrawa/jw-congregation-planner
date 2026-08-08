@@ -3,8 +3,8 @@
  * Regeln stammen aus der Prototyp-Logik (docs/design-handoff).
  */
 
-import { QUALIFICATION_ORDER, ROLE_LABEL } from './constants'
-import type { Group, Meeting, Person, ProgramItem, Qualifications, Service, SongItem, Week } from './types'
+import { BRUDER_BEREICHE, QUALIFICATION_ORDER, ROLE_LABEL, WT_ROLE_ORDER } from './constants'
+import type { Group, Meeting, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
@@ -30,7 +30,7 @@ export function splitOpeningSong(title: string): { song: string | null; rest: st
  * Gruppen-Id, deren Aufseher (ov) oder Gehilfe (as) die Person ist — sonst null.
  * Grundlage der Treffpunkt-Planungsrechte für Gruppenaufseher.
  */
-export function overseerGroup(groups: Group[], personId: string | null): string | null {
+export function overseerGroup(groups: readonly Group[], personId: string | null): string | null {
   if (!personId) return null
   return groups.find((g) => g.ov === personId || g.as === personId)?.id ?? null
 }
@@ -152,6 +152,22 @@ export function duplicateDisplayNames(persons: Person[]): Array<{ name: string; 
     .sort((a, b) => a.name.localeCompare(b.name, 'de'))
 }
 
+/**
+ * Feste Rollen, die mehr als eine Person trägt.
+ *
+ * „Fester Wachtturm-Studium-Leiter; der Vertreter springt bei Abwesenheit ein"
+ * — beides ist der Sache nach **eine** Person. Zwei gesetzte Schalter blieben
+ * bisher folgenlos und unbemerkt (F7): die Auto-Zuteilung greift sich dann
+ * irgendeinen, und der Planer sieht nirgends, dass die Rolle doppelt vergeben
+ * ist. Liefert je betroffener Rolle die Personenzahl.
+ */
+export function doppelteFesteRollen(persons: Person[]): Array<{ key: QualificationKey; count: number }> {
+  return WT_ROLE_ORDER.map((key) => ({
+    key,
+    count: persons.filter((p) => p.priv[key]).length,
+  })).filter(({ count }) => count >= 2)
+}
+
 /** Rollenlabel, für Frauen in weiblicher Form ("Verkündigerin"). */
 export function roleLabel(p: Person): string {
   const label = ROLE_LABEL[p.role]
@@ -179,6 +195,28 @@ export function isQualified(p: Person, priv: string): boolean {
   // deckt der Partner-Slot beide Bereiche ab.
   if (priv === 'schulungPartner') return Boolean(p.priv.schulungPartner || p.priv.schulung)
   return Boolean(p.priv[priv])
+}
+
+/**
+ * Ist dieser Bereich bei dieser Person auffällig — also einer, der fachlich
+ * Brüdern vorbehalten ist, gesetzt bei einer Schwester?
+ *
+ * Nur ein Hinweis, keine Sperre: `isQualified` prüft weiterhin allein die
+ * Schalter (siehe dort). Der Hinweis existiert, weil ein versehentlich
+ * gesetzter Schalter sonst stumm bleibt — die Auto-Zuteilung nimmt ihn ernst
+ * und teilt zum Gebet oder Vorsitz ein, ohne dass irgendwo etwas aufgefallen
+ * wäre (F4).
+ */
+export function istBruderBereichBeiSchwester(person: Person, priv: string): boolean {
+  return Boolean(person.female) && BRUDER_BEREICHE.has(priv as QualificationKey)
+}
+
+/** Die gesetzten Brüder-Bereiche einer Schwester — leer bei Brüdern. */
+export function bruderBereicheEinerSchwester(person: Person): QualificationKey[] {
+  if (!person.female) return []
+  return [...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].filter(
+    (key) => BRUDER_BEREICHE.has(key) && person.priv[key],
+  )
 }
 
 /**

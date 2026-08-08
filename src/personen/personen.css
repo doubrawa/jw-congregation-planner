@@ -267,9 +267,19 @@
   border-bottom: 1px solid var(--panel-hair);
 }
 
-/* Für Schwestern gesperrte Bereiche (nur Brüder). */
+/* Nicht bedienbarer Schalter (eigenes Planer-Recht). */
 .priv-row--locked {
   opacity: 0.4;
+}
+
+/* Hinweis auf einen Bereich, der fachlich Brüdern vorbehalten ist, bei einer
+ * Schwester (F4). Bewusst nur ein Zeichen neben der Beschriftung und keine
+ * Sperre — die Entscheidung bleibt beim Planer, sie soll ihm nur auffallen.
+ * Wein wie die übrigen Warnungen der App. */
+.priv-warn {
+  margin-inline-start: 6px;
+  color: var(--wein);
+  font-size: calc(12px * var(--fs));
 }
 
 .priv-label {

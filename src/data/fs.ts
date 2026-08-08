@@ -13,14 +13,14 @@
  */
 
 import { istAbwesendAm } from './absence'
-import { displayName, idAufloeser, isQualified, tieHash } from './helpers'
+import { displayName, idAufloeser, isQualified, overseerGroup, tieHash } from './helpers'
 import { deutschesDatum } from './meeting-dates'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
 // unterschiedlich anfühlen.
 import type { Conflict } from './planning'
-import type { Absence, ConfirmationMap, FsInstance, FsRule, MyTask, Person } from './types'
+import type { Absence, ConfirmationMap, FsInstance, FsRule, Group, MyTask, Person } from './types'
 
 /** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
 export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }, (_unused, i) => {
@@ -271,6 +271,7 @@ export function fsAutoAssign(
   onlyGroup: string | null = null,
   absences: readonly Absence[] = [],
   base?: Date,
+  groups: readonly Group[] = [],
 ): { fsWeeks: FsInstance[][]; count: number; newly: string[]; newlyIds: string[] } {
   const qualifiziert = persons.filter((p) => isQualified(p, 'treffpunkt'))
   /**
@@ -361,10 +362,30 @@ export function fsAutoAssign(
     // Das ist die Bremse gegen das Häufen — nicht der Lastvergleich. Der sagt
     // nur, WER als Nächstes dran ist, nicht wie oft hintereinander.
     const frei = alle.filter((k) => !inDerWoche.has(k.p.id))
+    // Den Gruppentreffpunkt leitet fachlich jemand aus der Gruppe (F8).
+    //
+    // Die Bevorzugung steht **vor** dem Lastvergleich. Dahinter wäre sie
+    // wirkungslos: sobald irgendjemand außerhalb der Gruppe weniger geleitet
+    // hat, gewänne er — und das ist der Normalfall, nicht die Ausnahme. Die
+    // Gruppe schränkt also den Kreis ein; *innerhalb* des Kreises entscheidet
+    // unverändert dieselbe Staffelung, die Fairness bleibt damit erhalten.
+    // Ist niemand aus der Gruppe frei, greift der Rest — ein Platz bleibt
+    // nicht offen, nur weil die Gruppe gerade nicht kann.
+    //
+    // Treffpunkte ohne Gruppe sind unberührt: dort ist jeder Rang 0, die
+    // Reihenfolge bleibt Zeichen für Zeichen die alte.
+    const gruppenRang = (p: Person): number => (!inst.grp || p.grp === inst.grp ? 0 : 1)
+    // Aufseher und Gehilfe erst bei sonst völligem Gleichstand — stünden sie
+    // weiter vorn, leitete der Aufseher jede Woche seinen eigenen Treffpunkt.
+    // Hier ersetzt die Rangfolge nur den Zufall des Hashes.
+    const aufseherRang = (p: Person): number =>
+      inst.grp && overseerGroup(groups, p.id) === inst.grp ? 0 : 1
     const cand = (frei.length > 0 ? frei : alle).sort(
       (a, b) =>
+        gruppenRang(a.p) - gruppenRang(b.p) ||
         (load.get(a.p.id) ?? 0) - (load.get(b.p.id) ?? 0) ||
         wartezeit(b.p.id) - wartezeit(a.p.id) ||
+        aufseherRang(a.p) - aufseherRang(b.p) ||
         tieHash(`${a.name}|${wi}|${inst.wd}`) - tieHash(`${b.name}|${wi}|${inst.wd}`),
     )
     const pick = cand[0]

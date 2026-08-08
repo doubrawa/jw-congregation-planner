@@ -532,13 +532,26 @@ Eröffnung.
   darf man bei beiden Zusammenkünften lesen. Es braucht keine Unterscheidung."
   Die Asymmetrie zum Vorsitz (`vorsitzMid`/`vorsitzWe`) ist damit gewollt: der
   Vorsitz ist je Zusammenkunft verschieden, das Lesen nicht. Punkt geschlossen.
-- **F7:** kein Hinweis, wenn zwei Personen `wtLeiter` gesetzt haben —
-  ✔ freigegeben
-- **F4:** kein Warnhinweis, wenn ein Brüder-Bereich bei einer Schwester gesetzt
-  wird (nur `male: true` an Schülerteil-Vortrag und Ratgeber) — ✔ freigegeben,
-  der gewichtigste der vier
-- **F8:** `fsAutoAssign` bevorzugt bei Gruppentreffpunkten niemanden aus der
-  Gruppe — ✔ freigegeben
+- **F7:** ✅ erledigt (8.8.2026) — die Personen-Übersicht zeigt jetzt dieselbe
+  Warnkachel wie bei doppelten Anzeigenamen, sobald eine feste Rolle mehrfach
+  vergeben ist (`doppelteFesteRollen`). Leiter und Vertreter getrennt gezählt.
+- **F4:** ✅ erledigt (8.8.2026) — `BRUDER_BEREICHE` benennt die Bereiche, die
+  fachlich Brüdern vorbehalten sind; ist einer bei einer Schwester gesetzt,
+  steht ein ⚠ neben der Beschriftung. **Keine Sperre** — die Schalter bleiben
+  bedienbar, so wie es `PrivToggle` und `isQualified` seit je begründen. Ein
+  eigener Test hält fest, dass der Schalter bedienbar bleibt, damit daraus
+  nicht versehentlich eine Bevormundung wird. Schulungsaufgaben stehen
+  bewusst **nicht** auf der Liste.
+- **F8:** ✅ erledigt (8.8.2026) — `fsAutoAssign` reiht Gruppenmitglieder vor
+  allen anderen ein. Die Bevorzugung steht **vor** dem Lastvergleich: dahinter
+  wäre sie wirkungslos, weil außerhalb der Gruppe fast immer jemand weniger
+  geleitet hat. *Innerhalb* der Gruppe entscheidet unverändert dieselbe
+  Staffelung, die Fairness bleibt also erhalten — gemessen über sechs Wochen:
+  der Gruppentreffpunkt wechselt weiter zwischen den beiden Qualifizierten
+  (3 : 3) statt bei einem hängenzubleiben. Kann die Gruppe nicht, greift der
+  Rest; ein Platz bleibt nicht offen. Aufseher und Gehilfe gewinnen erst bei
+  sonst völligem Gleichstand — stünden sie weiter vorn, leitete der Aufseher
+  jede Woche.
 
 ---
 

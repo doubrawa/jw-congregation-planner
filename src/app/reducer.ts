@@ -642,6 +642,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         action.onlyGroup,
         state.absences,
         state.fsBase,
+        state.groups,
       )
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
       const pending = new Set(state.pendingIds)
