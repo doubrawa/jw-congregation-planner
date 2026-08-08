@@ -299,3 +299,46 @@ describe('Deutsch bleibt unverändert', () => {
     expect(teil(mitAuszeichnung, 'petrol').title).toBe('Erster Punkt')
   })
 })
+
+/* ---- Die Minuten als Zahl, nicht als Text (T32) ------------------------- */
+
+describe('mins — die Dauer verlässt den Anzeigetext', () => {
+  /**
+   * Der Client las die Minuten bisher mit `/(\d+) Min\./` aus `meta` zurück.
+   * Der Parser kennt die Zahl längst — er rechnet sie schriftunabhängig aus,
+   * um die laufende Nummer zu bestimmen. Sie nicht weiterzugeben war die
+   * eigentliche Lücke: eine Zahl, die als Text durch das System reist, kommt
+   * irgendwo als Text an.
+   */
+  const FASSUNGEN: Array<[string, { zeit1: string; schluss: string }]> = [
+    ['de', { zeit1: '(10 Min.)', schluss: 'Schlussworte (3 Min.) | Lied 61' }],
+    ['sw', { zeit1: '(Dak. 10)', schluss: 'Maneno ya kumalizia (Dak. 3) | Wimbo 61' }],
+    ['ja', { zeit1: '(10分)', schluss: '結びの言葉（3分）| 歌 61' }],
+    ['ar', { zeit1: '‏(‏١٠ دق)‏', schluss: 'كلمات ختامية ‏(‏٣ دق)‏ | ترنيمة ٦١' }],
+    ['fa', { zeit1: '‏(‏۱۰ دقیقه)‏', schluss: 'سخنان پایانی ‏(‏۳ دقیقه)‏ | سرود ۶۱' }],
+    ['hi', { zeit1: '(१० मि.)', schluss: 'समाप्ति (३ मि.) | गीत ६१' }],
+    ['th', { zeit1: '(10 นาที)', schluss: 'คำกล่าวปิด (3 นาที) | เพลง 61' }],
+  ]
+
+  it.each(FASSUNGEN)('%s: 10 Minuten sind 10, wie auch immer sie geschrieben stehen', (_lang, o) => {
+    const html = seite({
+      h1: 'x', buch: 'y', punkt1: '1. Erster', punkt2: '4. Zweiter',
+      zeit1: o.zeit1, zeit2: o.zeit1, schluss: o.schluss,
+    })
+    expect(teil(html, 'petrol').mins).toBe(10)
+    expect(schluss(html).mins).toBe(3)
+  })
+
+  it('ohne Zeitangabe bleibt das Feld leer', () => {
+    // Lied und Gebet haben keine Dauer — dort darf keine erfunden werden.
+    const html = seite({
+      h1: 'x', buch: 'y', punkt1: '1. Erster', punkt2: '4. Zweiter',
+      zeit1: '(10 Min.)', zeit2: '(3 Min.)', schluss: 'Ende (3 Min.) | Lied 1',
+    })
+    const eroeffnung = parseWorkbookWeek(html).mid.sections[0].items[0] as ImportedPart
+    // Die Rückfall-Eröffnung trägt ihre eigene Minutenangabe …
+    expect(eroeffnung.mins).toBe(1)
+    // … ein Lied innerhalb einer Sektion dagegen gar keine.
+    expect(teil(html, 'petrol', 0).mins).toBe(10)
+  })
+})

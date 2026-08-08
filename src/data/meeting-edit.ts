@@ -14,13 +14,27 @@ import { LABEL_EROEFFNUNG } from './constants'
 import { isSong } from './helpers'
 import { meetingDateParts, meetingTimesOf } from './meeting-dates'
 import type { Meeting, MeetingKey, PartItem, Week } from './types'
+import { ersteZahl, ersteZahlErsetzen } from './ziffern'
 
-const MIN_RE = /(\d+) Min\./
-
-/** Minuten aus einer Meta-Zeile lesen ("Besprechung · 15 Min." → 15). */
+/**
+ * Minuten eines Programmpunkts.
+ *
+ * Maßgeblich ist `item.mins`: der Import legt die Zahl dort ab, unabhängig
+ * davon, wie die Wochenseite sie schreibt.
+ *
+ * Der Rückfall ist für Wochen da, die vor dieser Änderung importiert wurden.
+ * Er nimmt die **erste** Zahl der Meta-Zeile, und das ist keine Schätzung: der
+ * Parser setzt sie aus Rahmen · Zeit · Quelle zusammen, der Rahmen enthält per
+ * Konstruktion keine Ziffer, und ohne Zeitangabe entsteht gar keine Meta-Zeile.
+ * Die erste Zahl ist deshalb immer die Dauer — auch im thailändischen
+ * „3 นาที · lmd บทเรียน 1 ข้อ 5“, wo zwei weitere Zahlen folgen.
+ *
+ * Früher stand hier `/(\d+) Min\./`. Das traf in keiner der 19 gemessenen
+ * Sprachen außer Deutsch (T32/T59).
+ */
 export function itemMinutes(item: PartItem): number | null {
-  const match = MIN_RE.exec(item.meta ?? '')
-  return match ? Number(match[1]) : null
+  if (typeof item.mins === 'number') return item.mins
+  return ersteZahl(item.meta ?? '')
 }
 
 /**
@@ -157,12 +171,18 @@ export function lacAdjust(
   if (cur == null) return weeks
   const target = Math.max(5, Math.min(45, cur + delta))
   if (target === cur) return weeks
-  item.meta = (item.meta ?? '').replace(MIN_RE, `${target} Min.`)
+  // Die Zahl ist die Wahrheit, die Meta-Zeile nur ihre Anzeige — beide müssen
+  // mit, sonst widersprechen sich Knopf und Text. Ersetzt wird in der Schrift,
+  // die dort steht: aus „٣ دق“ wird „١٥ دق“, nicht „15 دق“.
+  item.mins = target
+  item.meta = ersteZahlErsetzen(item.meta ?? '', target)
   meeting.end = shiftEnd(meeting.end, target - cur)
   forEachAltMeeting(next[wi], tab, (m) => {
     const vi = m.sections[si]?.items[ii]
-    // Lokalisierte Meta ("15 min.", "15 分" …): erste Zahl ersetzen
-    if (vi && !isSong(vi)) vi.meta = (vi.meta ?? '').replace(/\d+/, String(target))
+    if (vi && !isSong(vi)) {
+      vi.mins = target
+      vi.meta = ersteZahlErsetzen(vi.meta ?? '', target)
+    }
     m.end = shiftEnd(m.end, target - cur)
   })
   return next
@@ -288,14 +308,14 @@ export function lacAdd(
   const items = meeting.sections[si].items
   // Ein eigener Punkt unter „Unser Leben als Christ" ist kein öffentlicher
   // Vortrag — der Bereich blieb hier fälschlich auf 'vortrag' stehen (F6).
-  const newItem: PartItem = { title: trimmed, meta: '10 Min.', names: [{ name: '', bereichsKey: 'studium' }] }
+  const newItem: PartItem = { title: trimmed, meta: '10 Min.', mins: 10, names: [{ name: '', bereichsKey: 'studium' }] }
   const at = lacAddIndex(items)
   items.splice(at, 0, newItem)
   meeting.end = shiftEnd(meeting.end, 10)
   // Eigener Punkt ist lokaler Text — in allen Varianten identisch einfügen
   forEachAltMeeting(next[wi], tab, (m) => {
     const arr = m.sections[si]?.items
-    if (arr) arr.splice(Math.min(at, arr.length), 0, { title: trimmed, meta: '10 Min.', names: [] })
+    if (arr) arr.splice(Math.min(at, arr.length), 0, { title: trimmed, meta: '10 Min.', mins: 10, names: [] })
     m.end = shiftEnd(m.end, 10)
   })
   return next
