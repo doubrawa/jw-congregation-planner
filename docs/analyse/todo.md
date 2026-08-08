@@ -635,6 +635,31 @@ Gemeinsames `shared/`-Verzeichnis — oder mindestens ein Fixture-Test über bei
 Seiten.
 → [code-review.md § 5.1](code-review.md)
 
+> **Umgesetzt am 8. August 2026 — beides.**
+>
+> `supabase/functions/_shared/planung.ts` hält jetzt `SKIP_ROLE`/`isGuestRole`,
+> `personDisplayName`, `taskDateText`, `meetingDayOffsets`, `DAY_OFFSET` und
+> `WEEKDAY_OFFSET`. `send-reminders` und `substitute` binden sie ein; ihre
+> eigenen Kopien sind weg. Der Unterstrich im Ordnernamen ist Absicht — die
+> Supabase-CLI hält den Ordner sonst für eine eigene Function.
+>
+> Dazu `src/data/edge-parity.test.ts`: er bindet **beide** Seiten ein und
+> vergleicht sie an denselben Eingaben (Anzeigename inkl. der Randfälle „nur
+> Nachname" und „leerer dn", sieben Schreibweisen der Zusammenkunftszeiten,
+> externe Rollen, Termin-Zuschnitt, beide Schreibweisen des Samstags). Der Test
+> ist der eigentliche Schutz: eine geteilte Datei kann man wieder auseinander
+> kopieren, ein Vergleich fällt auf.
+>
+> **Zwei Dinge dazu:**
+> 1. **Beide Functions brauchen einen erneuten Deploy**, sonst laufen sie
+>    weiter mit ihren alten Kopien — funktional identisch, aber die
+>    Zusammenführung ist erst danach real.
+> 2. Ob die CLI `_shared/` mitbündelt, lässt sich hier nicht prüfen (kein Deno,
+>    kein Deploy). Es ist die dokumentierte Ablage für geteilten Code; der
+>    Deploy zeigt es. Schlägt er fehl, genügt es, die Datei nach
+>    `send-reminders/` bzw. `substitute/` zu kopieren — der Paritätstest
+>    bliebe dann bestehen und würde die Dopplung weiter überwachen.
+
 ### T41 · `AppState` aufteilen 🏗
 ~60 Felder mischen Serverdaten, UI-Zustand und Gerätevorlieben; der Context hat
 keine Selektoren, also rendert jede Änderung alles neu. Eine Aufteilung in drei
@@ -900,12 +925,17 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 Stand 7. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☑☐☐☐ · Phase 7 ☐☐☐☐☐☐☐☐ ·
-Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☐☐☑☑☑☑ · Phase 7 ☑☑☐☐☐☑☐☐ ·
+Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☐
 
-**45 umgesetzt, 2 als „kein Mangel" begründet zurückgewiesen, 13 offen.**
-Der Testbestand ist von 727 auf 1139 gewachsen; jede Korrektur hat einen Test,
-der ohne sie rot wird.
+**51 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 8 offen.**
+Der Testbestand ist von 727 auf 1241 gewachsen; jede Korrektur hat einen Test,
+der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
+zurückgenommen und der Testlauf wiederholt wurde.
+
+> **Am 8. August 2026 erledigt:** T32, T33, T34 (F4/F7/F8), T35, T36, T40.
+> Dabei zurückgewiesen: **F12** (Leser braucht keine Trennung nach
+> Zusammenkunft). Neu aufgenommen: **T61**.
 
 ### Was offen ist und warum
 
@@ -918,7 +948,7 @@ der ohne sie rot wird.
 | | Aufgaben | Warum offen |
 | --- | --- | --- |
 | **Phase 6** | T29, T30, T32, T33, T34 | **Fachlich geklärt am 7.8.2026** (siehe die Kästen bei den Punkten): T29 wird umschaltbar (Person ↔ Freitext), von T34 sind F4/F7/F8 freigegeben und **F12 zurückgewiesen**, F6 war schon miterledigt. T32 und T33 brauchten ohnehin keine Absprache. **Nur T30 bleibt offen** — der Betreiber hat den Zuschnitt erweitert (Verlegung von Tag und Uhrzeit, nicht nur Ausfall), das gehört geplant. |
-| **Phase 7** | T35–T42 | Empfohlene Reihenfolge: **T35 + T40 + T36** zuerst (klein, risikoarm) — **freigegeben am 7.8.2026**; danach **T39 + T37** als eigener Block mit Migration, weiterhin abzustimmen; T38/T41/T42 später oder gar nicht. |
+| **Phase 7** | T37–T39, T41, T42 | **T35, T36 und T40 sind am 8.8.2026 erledigt.** Offen bleiben **T39 + T37** als eigener Block mit Migration (weiterhin abzustimmen) sowie T38/T41/T42 später oder gar nicht. |
 
 > **Was heute Nacht unbeaufsichtigt laufen darf** (Task
 > `jw-planner-todo-weiter`, einmalig um 3:07): **T32, T33, T35, T40, T36** und
