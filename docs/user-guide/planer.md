@@ -133,6 +133,34 @@ deine Planung wieder da — es geht nichts verloren.
 > ersetzt, das Mahl hat eigene Zuteilungen. Dafür gibt es weiterhin den eigenen
 > Hinweis.
 
+### Besuch des Kreisaufsehers
+
+Im selben Feld sitzt der Schalter **Besuch des Kreisaufsehers**. Er betrifft
+beide Zusammenkünfte auf einmal:
+
+| | Was passiert |
+| --- | --- |
+| **Unter der Woche** | Aus dem Versammlungsbibelstudium wird der **Dienstvortrag** — 30 Minuten, ein Platz, kein Leser |
+| **Wochenende** | Das Wachtturm-Studium wird auf **30 Minuten** verkürzt und braucht **keinen Leser** mehr; dahinter kommt ein **Vortrag** von 30 Minuten |
+
+Die Endzeiten ändern sich dabei nicht.
+
+**Das Thema** trägst du direkt am Punkt ein, hinter der Bezeichnung — wie beim
+öffentlichen Vortrag.
+
+**Die Namen trägst du selbst ein**, an jedem der drei Plätze einzeln
+(Dienstvortrag, öffentlicher Vortrag, Vortrag am Wochenende). Das ist Absicht:
+der Kreisaufseher bringt manchmal jemanden mit, den er schult, und die
+Begleitung kann eine dieser Aufgaben übernehmen — welche, steht vorher nicht
+fest. Alle drei nehmen deshalb Freitext.
+
+Wer dort steht, bekommt **keine Erinnerung, keine Bestätigungsanfrage und keine
+Anrechnung auf die Auslastung** — er gehört ja nicht zur Versammlung.
+
+**Schaltest du wieder aus**, ist alles zurück: das Bibelstudium samt seiner
+Zuteilungen, das volle Wachtturm-Studium mit Leser. Es geht nichts verloren,
+falls der Besuch verschoben wird.
+
 ### Öffentlicher Vortrag: Gastredner oder eigener Redner
 
 Der Rednerplatz am Wochenende kann beides sein, und du entscheidest es Woche für

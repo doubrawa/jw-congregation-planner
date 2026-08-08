@@ -222,6 +222,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'openingSong':
     case 'closingSong':
     case 'setAbweichung': // Sonderwoche: Verlegung, Ausfall, Grund (T30)
+    case 'setDienstwoche': // Kreisaufseher-Woche: Ablauf umgebaut (T62)
+    case 'setPartThema': // Thema eines Vortragspunkts (T62)
       saveWeek(congId, prev.week, next.weeks[prev.week])
       break
     case 'finishImport':

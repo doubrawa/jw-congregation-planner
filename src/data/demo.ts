@@ -317,10 +317,19 @@ const part = (
   title: string,
   meta: string | null,
   tuples: NameTuple[],
+  /**
+   * Dauer in Minuten. Wo die Meta-Zeile mit der Dauer **beginnt**, leitet
+   * `itemMinutes` sie daraus ab und der Wert ist entbehrlich. Beim
+   * Wachtturm-Studium steht dort zuerst die Nummer des Studienartikels
+   * („Studienartikel 28 · 60 Min.") — der Rückfall läse also 28. Deshalb dort
+   * ausdrücklich angeben; der Import tut es seit T32 ohnehin für jeden Punkt.
+   */
+  mins?: number,
 ): PartItem => {
   const item: PartItem = { title, names: slots(tuples) }
   if (num != null) item.num = num
   if (meta) item.meta = meta
+  if (mins != null) item.mins = mins
   return item
 }
 
@@ -371,7 +380,7 @@ export function buildDemoWeeks(): Week[] {
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Woran erkennt man echten Glauben?“', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 20'),
-            part(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
+            part(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']], 60),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet', 'gebet']])]),
         ],
@@ -410,7 +419,7 @@ export function buildDemoWeeks(): Week[] {
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Ein Name, der zählt“', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 49'),
-            part(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['Manfred Albrecht', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
+            part(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['Manfred Albrecht', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']], 60),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 106 · Gebet', null, [['Georg Peters', 'Gebet', 'gebet']])]),
         ],

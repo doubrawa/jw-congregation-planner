@@ -121,6 +121,26 @@ export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
           onChange={(e) => setzen({ reason: e.target.value })}
         />
       </label>
+
+      {/* Besuch des Kreisaufsehers (T62). Er betrifft beide Zusammenkünfte auf
+          einmal, steht also nur einmal da — beim Reiter unter der Woche, weil
+          dort der auffälligste Eingriff passiert (der Dienstvortrag ersetzt das
+          Versammlungsbibelstudium). */}
+      {tab === 'mid' && (
+        <div className="sonder-row sonder-row--co">
+          <span className="sonder-name">{t.coWoche}</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={Boolean(week.co)}
+            aria-label={t.coWoche}
+            className={week.co ? 'switch is-on' : 'switch'}
+            onClick={() => dispatch({ type: 'setDienstwoche', on: !week.co })}
+          >
+            <span className="switch-knob" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
