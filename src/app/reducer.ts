@@ -85,6 +85,33 @@ const mtab = (tab: MeetingTab): MeetingKey => (tab === 'fs' ? 'mid' : tab)
  */
 const FS_KANONISCH = 'Treffpunkte'
 
+/**
+ * Die Wochenspanne als Zusatz für Mitteilungstexte („ · 4.–10. August"), leer,
+ * wenn es die Woche zum Index nicht gibt. Sonst stünde in der Mitteilung ein
+ * Trenner ohne Inhalt — oder, vor T42, gar nichts: der Zugriff warf.
+ */
+function wochenZusatz(weeks: Week[], wi: number): string {
+  const range = weeks[wi]?.range
+  return range ? ` · ${range}` : ''
+}
+
+/**
+ * Schlüssel der Slots, die sich zwischen zwei Wochenständen geändert haben —
+ * und eine leere Liste, wenn es die Zusammenkunft an dieser Stelle nicht gibt.
+ * Nichts zu vergleichen heißt nichts abzuräumen (T42).
+ */
+function geaenderteSlots(
+  vorher: Week[],
+  nachher: Week[],
+  wi: number,
+  tab: MeetingKey,
+  services: AppState['services'],
+): string[] {
+  const a = vorher[wi]?.[tab]
+  const b = nachher[wi]?.[tab]
+  return a && b ? changedSlotKeys(a, b, services, wi, tab) : []
+}
+
 /** Toast aus einem übersetzten UI-Schlüssel (Reducer kennt state.lang). */
 function toastKey(
   state: AppState,
@@ -545,7 +572,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
               state.notifs,
               'gesendet',
               'Zuteilung gesendet',
-              `${action.name} — ${FS_KANONISCH} · ${state.weeks[sel.wi].range}`,
+              `${action.name} — ${FS_KANONISCH}${wochenZusatz(state.weeks, sel.wi)}`,
             )
           : state.notifs
         // Neu zugeteilt heißt: noch nicht bestätigt. Über die Id geführt —
@@ -569,7 +596,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
             state.notifs,
             'gesendet',
             'Zuteilung gesendet',
-            `${action.name} — ${sel.label} · ${state.weeks[sel.wi].range}`,
+            `${action.name} — ${sel.label}${wochenZusatz(state.weeks, sel.wi)}`,
           )
         : state.notifs
       // Externe Redner (Gastredner/Kreisaufseher) haben keinen Bestätigungs-Flow.
@@ -594,7 +621,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // neue Person ein fremdes „bestätigt“/„verhindert“)
         confirmations: dropConfirmations(
           state.confirmations,
-          changedSlotKeys(state.weeks[sel.wi][sel.tab], weeks[sel.wi][sel.tab], state.services, sel.wi, sel.tab),
+          geaenderteSlots(state.weeks, weeks, sel.wi, sel.tab, state.services),
         ),
         slotSel: null,
         toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
@@ -624,7 +651,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.notifs,
         'gesendet',
         'Zuteilungen gesendet',
-        `${count} Zuteilungen · ${state.weeks[state.week].range}`,
+        `${count} Zuteilungen${wochenZusatz(state.weeks, state.week)}`,
       )
       return {
         ...state,
@@ -633,13 +660,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         pendingIds: [...pending],
         confirmations: dropConfirmations(
           state.confirmations,
-          changedSlotKeys(
-            state.weeks[state.week][mtab(state.tab)],
-            weeks[state.week][mtab(state.tab)],
-            state.services,
-            state.week,
-            mtab(state.tab),
-          ),
+          geaenderteSlots(state.weeks, weeks, state.week, mtab(state.tab), state.services),
         ),
         toast: toastKey(state, 'toastAutoN', { n: count }),
       }
@@ -653,13 +674,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks,
         confirmations: dropConfirmations(
           state.confirmations,
-          changedSlotKeys(
-            state.weeks[state.week][mtab(state.tab)],
-            weeks[state.week][mtab(state.tab)],
-            state.services,
-            state.week,
-            mtab(state.tab),
-          ),
+          geaenderteSlots(state.weeks, weeks, state.week, mtab(state.tab), state.services),
         ),
         toast: toastKey(state, 'toastGeleertN', { n: count }),
       }
@@ -812,7 +827,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
       const weeks = assignSlot(state.weeks, sel, name, undefined, me.id)
       // „Warnen statt blocken": schon am selben Tag eingeteilt? → Hinweis-Toast.
-      const clash = assignmentsInMeeting(weeks[parts.wi][parts.tab], me, state.services, sel).length > 0
+      const meeting = weeks[parts.wi]?.[parts.tab]
+      const clash = meeting != null && assignmentsInMeeting(meeting, me, state.services, sel).length > 0
       return {
         ...state,
         weeks,
@@ -866,10 +882,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (weeks === state.weeks) return state // Rand: kein Tausch
       // Bestätigungen der beiden getauschten Positionen mitnehmen (task_keys
       // sind positionsbasiert) — sonst erbt der Nachbar den fremden Status.
-      const items = state.weeks[state.week][mtab(state.tab)].sections[action.si].items
+      const items = state.weeks[state.week]?.[mtab(state.tab)].sections[action.si]?.items ?? []
       const b = lacMoveTarget(items, action.ii, action.dir)
+      const a = items[action.ii]
+      const bItem = b == null ? undefined : items[b]
       const confirmations =
-        b == null
+        b == null || !a || !bItem
           ? state.confirmations
           : swapPartConfirmations(
               state.confirmations,
@@ -878,7 +896,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
               action.si,
               action.ii,
               b,
-              Math.max(itemNameCount(items[action.ii]), itemNameCount(items[b])),
+              Math.max(itemNameCount(a), itemNameCount(bItem)),
             )
       return { ...state, weeks, confirmations }
     }
@@ -887,7 +905,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (weeks === state.weeks) return state // leerer Titel
       // Ab der Einfügestelle rutschen alle Punkte eine Position weiter — die
       // Bestätigungen müssen mit, sonst hängen sie am falschen Punkt.
-      const at = lacAddIndex(state.weeks[state.week][mtab(state.tab)].sections[action.si].items)
+      const at = lacAddIndex(state.weeks[state.week]?.[mtab(state.tab)].sections[action.si]?.items ?? [])
       const verschoben = shiftPartConfirmations(
         state.confirmations,
         state.week,

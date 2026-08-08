@@ -76,36 +76,84 @@ function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: num
 type Rule = [RegExp, (m: RegExpMatchArray) => string]
 
 /**
- * Datumsregel mit deutschem Monatsnamen.
+ * Pflicht-Fanggruppe eines Treffers.
  *
- * Die Regeln fangen den Monat als `[A-Za-zäöü]+` — welche Form ankommt, hängt
- * von der Quelle ab: der Programmkopf schreibt „8. September", die
- * Erinnerungstexte „8. Sep". Deshalb wird in beiden Tabellen nachgeschlagen,
- * der ausgeschriebenen (MON) und der Kurzform (MONA).
+ * Alle Gruppen der Regeln hier sind Pflichtgruppen — einen Treffer ohne sie
+ * kann es nicht geben, sie stehen weder in einer Alternative noch hinter `?`.
+ * TypeScript sieht das nicht und hält jede für `string | undefined`. Vierzigmal
+ * `?? ''` danebenzuschreiben würde die Stellen, an denen wirklich etwas fehlen
+ * kann — die Tabellen-Nachschläge unten —, unter Rauschen begraben. Deshalb
+ * steht die Annahme einmal hier, mit Namen.
+ */
+const g = (m: RegExpMatchArray, i: number): string => m[i] ?? ''
+
+/**
+ * Der Notausgang aller Datumsregeln: `null` heißt „diese Regel entfällt", und
+ * der Aufrufer lässt den deutschen Text stehen.
  *
- * Wer nur eine befragt, bekommt für die andere Form `undefined` zurück. Das
+ * Warum es ihn gibt: die Regeln schlagen Wochentage und Monate in Tabellen
+ * nach, und keine dieser Tabellen darf still ins Leere greifen. Ein `undefined`
  * blieb im Hand-Pfad als „Tue, undefined 8" stehen und wurde im Intl-Pfad zum
  * `Invalid Date`, an dem `Intl.format()` einen `RangeError` wirft — ohne Error
- * Boundary der Totalausfall der App. Ein unbekannter Monat lässt die Regel
- * jetzt ganz aus: lieber ein sichtbar deutsch gebliebenes Datum.
+ * Boundary der Totalausfall der App. Das war T1. Ein sichtbar deutsch
+ * gebliebenes Datum ist allemal besser.
  */
-function datumsRegel(
-  re: RegExp,
-  monatsGruppen: number[],
-  fn: (m: RegExpMatchArray, monate: number[]) => string,
-): Rule {
-  return [
-    re,
-    (m) => {
-      const monate: number[] = []
-      for (const g of monatsGruppen) {
-        const idx = MON[m[g]] ?? MONA[m[g]]
-        if (idx === undefined) return m[0]
-        monate.push(idx)
-      }
-      return fn(m, monate)
-    },
-  ]
+type Ausweichend = (m: RegExpMatchArray, ...werte: number[]) => string | null
+
+/** Aus einer ausweichenden Funktion eine Regel machen. */
+function ausweichen(re: RegExp, fn: (m: RegExpMatchArray) => string | null): Rule {
+  return [re, (m) => fn(m) ?? g(m, 0)]
+}
+
+/**
+ * Monatsname → Index, in **beiden** Tabellen nachgeschlagen.
+ *
+ * Die Regeln fangen den Monat als `[A-Za-zäöü]+`; welche Form ankommt, hängt
+ * von der Quelle ab: der Programmkopf schreibt „8. September", die
+ * Erinnerungstexte „8. Sep". Wer nur eine Tabelle befragt, bekommt für die
+ * andere Form `undefined` — genau daran starb T1.
+ */
+const monatIndex = (name: string): number | undefined => MON[name] ?? MONA[name]
+
+/**
+ * Regel „Wochentag, Tag. Monat" — Gruppe 1 Wochentag, 2 Tag, 3 Monat.
+ * Beide Nachschläge passieren **vor** dem Formatieren; fehlt einer, entfällt
+ * die Regel. Vorher war nur der Monat geprüft: ein Wochentag, den die Tabelle
+ * nicht kennt (weil Ausdruck und Tabelle auseinanderlaufen — die Ursache von
+ * T1), ging ungeprüft als `undefined` in `Intl`.
+ */
+function tagDatumRegel(re: RegExp, wdTabelle: Record<string, number>, fn: Ausweichend): Rule {
+  return ausweichen(re, (m) => {
+    const wd = wdTabelle[g(m, 1)]
+    const mon = monatIndex(g(m, 3))
+    return wd === undefined || mon === undefined ? null : fn(m, wd, mon)
+  })
+}
+
+/** Regel „Wochentag Uhrzeit" — Gruppe 1 Wochentag, 2 Uhrzeit. */
+function tagZeitRegel(re: RegExp, wdTabelle: Record<string, number>, fn: Ausweichend): Rule {
+  return ausweichen(re, (m) => {
+    const wd = wdTabelle[g(m, 1)]
+    return wd === undefined ? null : fn(m, wd)
+  })
+}
+
+/**
+ * Regel mit einem oder zwei Monatsnamen (Wochenspanne). `monatsGruppen` nennt
+ * die Fanggruppen; bei nur einer gilt sie für beide Enden — „4.–10. August".
+ */
+function monatsRegel(re: RegExp, monatsGruppen: number[], fn: Ausweichend): Rule {
+  return ausweichen(re, (m) => {
+    const monate: number[] = []
+    for (const gruppe of monatsGruppen) {
+      const idx = monatIndex(g(m, gruppe))
+      if (idx === undefined) return null
+      monate.push(idx)
+    }
+    const mon1 = monate[0]
+    if (mon1 === undefined) return null
+    return fn(m, mon1, monate[1] ?? mon1)
+  })
 }
 
 /**
@@ -123,10 +171,10 @@ function verweisRegeln(code: string): Rule[] {
   // Je Publikation eine eigene Regel: das Kürzel gehört zur Vorlage, weil
   // Ostasien und die RTL-Sprachen es mitübersetzen („th" → 教励, „wcg" → 勇).
   const eins = (re: RegExp, fn: ((n: string) => string) | undefined) => {
-    if (fn) regeln.push([re, (m) => fn(m[1])])
+    if (fn) regeln.push([re, (m) => fn(g(m, 1))])
   }
   const zwei = (re: RegExp, fn: ((n: string, p: string) => string) | undefined) => {
-    if (fn) regeln.push([re, (m) => fn(m[1], m[2])])
+    if (fn) regeln.push([re, (m) => fn(g(m, 1), g(m, 2))])
   }
   eins(/^th Lektion (\d+)$/, ref.thLek)
   zwei(/^lmd Lektion (\d+) Punkt (\d+)$/, ref.lmdLekP)
@@ -136,7 +184,7 @@ function verweisRegeln(code: string): Rule[] {
   eins(/^wcg Kap\. (\d+)$/, ref.wcgKap)
   eins(/^lmd Anhang A Punkt (\d+)$/, ref.lmdAnh)
   eins(/^Gruppe (\d+)$/, ref.gruppe)
-  if (ref.vers) regeln.push([/^Vers\. (.+)$/, (m) => ref.vers!(m[1])])
+  eins(/^Vers\. (.+)$/, ref.vers)
   return regeln
 }
 
@@ -160,7 +208,10 @@ function buchRegeln(code: string): Rule[] {
   return [
     [
       new RegExp(`^(${muster}) (.+)$`),
-      (m) => `${voll.get(m[1]) ?? kurz.get(m[1]) ?? m[1]} ${m[2]}`,
+      (m) => {
+        const buch = g(m, 1)
+        return `${voll.get(buch) ?? kurz.get(buch) ?? buch} ${g(m, 2)}`
+      },
     ],
   ]
 }
@@ -173,35 +224,35 @@ function buchRegeln(code: string): Rule[] {
  */
 function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) => string {
   const one = (f: string): string => {
-    if (M[f] != null) return M[f]
+    const treffer = M[f]
+    if (treffer != null) return treffer
     for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
     if (f.includes(' — ')) return f.split(' — ').map(one).join(' — ')
     return f
   }
   return (s: string): string => {
     if (s == null || s === '') return s
-    if (M[s] != null) return M[s]
-    return s.split(' · ').map(one).join(' · ')
+    return M[s] ?? s.split(' · ').map(one).join(' · ')
   }
 }
 
 function makeTrIntl(code: Lang): (s: string) => string {
   const locale = LOCALES[code] ?? code
-  const M: Record<string, string> = FRAG[code] ?? FRAG.en
+  const M: Record<string, string> = FRAG[code] ?? FRAG.en ?? {}
   const ex: Extra = EXTRA[code] ?? EXTRA_EN
   const rules: Rule[] = [
-    [/^Lied (\d+)$/, m => ex.song(m[1])],
-    [/^(\d+) Min\.$/, m => ex.min(m[1])],
-    [/^Ende ca\. (.+)$/, m => ex.ende(m[1])],
-    [/^ca\. (.+)$/, m => ex.ca(m[1])],
-    datumsRegel(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => intlWeekdayDate(locale, WD[m[1]], +m[2], mo[0], 'long')),
-    datumsRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => intlWeekdayDate(locale, WDA[m[1]], +m[2], mo[0], 'short')),
-    [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => intlWeekdayShort(locale, WDA[m[1]]) + ' ' + m[2]],
-    datumsRegel(/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => intlRange(locale, +m[1], mo[0], +m[2], mo[0])),
-    datumsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mo) => intlRange(locale, +m[1], mo[0], +m[3], mo[1])),
-    [/^mit (.+)$/, m => ex.mit(m[1])],
-    [/^in (\d+) Tagen$/, m => ex.tage(m[1])],
-    [/^(\d+) Zuteilungen$/, m => ex.zut(m[1])],
+    [/^Lied (\d+)$/, m => ex.song(g(m, 1))],
+    [/^(\d+) Min\.$/, m => ex.min(g(m, 1))],
+    [/^Ende ca\. (.+)$/, m => ex.ende(g(m, 1))],
+    [/^ca\. (.+)$/, m => ex.ca(g(m, 1))],
+    tagDatumRegel(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, WD, (m, wd, mon) => intlWeekdayDate(locale, wd, +g(m, 2), mon, 'long')),
+    tagDatumRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, WDA, (m, wd, mon) => intlWeekdayDate(locale, wd, +g(m, 2), mon, 'short')),
+    tagZeitRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, WDA, (m, wd) => `${intlWeekdayShort(locale, wd)} ${g(m, 2)}`),
+    monatsRegel(/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mon) => intlRange(locale, +g(m, 1), mon, +g(m, 2), mon)),
+    monatsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mon1, mon2) => intlRange(locale, +g(m, 1), mon1, +g(m, 3), mon2)),
+    [/^mit (.+)$/, m => ex.mit(g(m, 1))],
+    [/^in (\d+) Tagen$/, m => ex.tage(g(m, 1))],
+    [/^(\d+) Zuteilungen$/, m => ex.zut(g(m, 1))],
     ...verweisRegeln(code),
     ...buchRegeln(code),
   ]
@@ -210,24 +261,44 @@ function makeTrIntl(code: Lang): (s: string) => string {
 
 export function makeTr(code: Lang): (s: string) => string {
   if (!code || code === 'de') return s => s
-  if (!D[code]) return makeTrIntl(code) // Zusatz-Sprachen: Intl-Datum + FRAG/EXTRA
-  const M: Record<string, string> = FRAG[code] ?? {}, L: DateDict = D[code];
+  const L: DateDict | undefined = D[code]
+  if (!L) return makeTrIntl(code) // Zusatz-Sprachen: Intl-Datum + FRAG/EXTRA
+  const M: Record<string, string> = FRAG[code] ?? {}
+  // Wochentags- und Monatsnamen der Sprache: der Index kommt aus WD/MON und
+  // liegt damit im Bereich — solange die Liste vollständig gepflegt ist. Ist
+  // sie es nicht, entfällt die Regel, statt „undefined" ins Programm zu
+  // schreiben. Derselbe Notausgang wie beim unbekannten Monat (T1).
   const rules: Rule[] = [
-    [/^Lied (\d+)$/, m => L.song(m[1])],
-    [/^(\d+) Min\.$/, m => L.min(m[1])],
-    [/^Ende ca\. (.+)$/, m => L.ende(m[1])],
-    [/^ca\. (.+)$/, m => L.ca(m[1])],
-    datumsRegel(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => L.date(L.wd[WD[m[1]]], m[2], L.mon[mo[0]])),
-    datumsRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => L.date(L.wda[WDA[m[1]]], m[2], L.mon[mo[0]])),
-    [/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, m => L.wda[WDA[m[1]]] + ' ' + m[2]],
-    datumsRegel(/^(\d+)\.\u2013(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mo) => L.range1(m[1], m[2], L.mon[mo[0]])),
-    datumsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) \u2013 (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mo) => L.range2(m[1], L.mona[mo[0]], m[3], L.mona[mo[1]])),
+    [/^Lied (\d+)$/, m => L.song(g(m, 1))],
+    [/^(\d+) Min\.$/, m => L.min(g(m, 1))],
+    [/^Ende ca\. (.+)$/, m => L.ende(g(m, 1))],
+    [/^ca\. (.+)$/, m => L.ca(g(m, 1))],
+    tagDatumRegel(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, WD, (m, wd, mon) => {
+      const tag = L.wd[wd], monat = L.mon[mon]
+      return tag && monat ? L.date(tag, g(m, 2), monat) : null
+    }),
+    tagDatumRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, WDA, (m, wd, mon) => {
+      const tag = L.wda[wd], monat = L.mon[mon]
+      return tag && monat ? L.date(tag, g(m, 2), monat) : null
+    }),
+    tagZeitRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, WDA, (m, wd) => {
+      const tag = L.wda[wd]
+      return tag ? `${tag} ${g(m, 2)}` : null
+    }),
+    monatsRegel(/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mon) => {
+      const monat = L.mon[mon]
+      return monat ? L.range1(g(m, 1), g(m, 2), monat) : null
+    }),
+    monatsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mon1, mon2) => {
+      const a = L.mona[mon1], b = L.mona[mon2]
+      return a && b ? L.range2(g(m, 1), a, g(m, 3), b) : null
+    }),
     ...verweisRegeln(code),
     ...buchRegeln(code),
-    [/^Studienartikel (\d+)$/, m => L.artikel(m[1])],
-    [/^mit (.+)$/, m => L.mit(m[1])],
-    [/^in (\d+) Tagen$/, m => L.tage(m[1])],
-    [/^(\d+) Zuteilungen$/, m => L.zut(m[1])]
-  ];
-  return buildTranslator(M, rules);
+    [/^Studienartikel (\d+)$/, m => L.artikel(g(m, 1))],
+    [/^mit (.+)$/, m => L.mit(g(m, 1))],
+    [/^in (\d+) Tagen$/, m => L.tage(g(m, 1))],
+    [/^(\d+) Zuteilungen$/, m => L.zut(g(m, 1))],
+  ]
+  return buildTranslator(M, rules)
 }

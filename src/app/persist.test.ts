@@ -196,6 +196,62 @@ describe('LAC / Import / Vortrag', () => {
   })
 })
 
+/*
+ * Ein Index aus einer Aktion muss nicht mehr im geladenen Fenster stehen — eine
+ * Lücke (T35), eine Woche, die zwischen Auswahl und Speichern herausgerutscht
+ * ist. `weeks[wi]` ist dann undefined. Ungeprüft ging genau das an saveWeek,
+ * und die liest als Erstes `week.stub`: TypeError mitten im Dispatch. Deshalb
+ * hier für jeden Weg eine Probe mit einem Index, den es nicht gibt (T42).
+ */
+describe('Index außerhalb des Fensters', () => {
+  const WEIT_DRAUSSEN = 99
+
+  it('assign auf eine Woche, die es nicht gibt, schreibt nichts', () => {
+    const sel = { kind: 'part', wi: WEIT_DRAUSSEN, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } as const
+    const prev = st({ slotSel: sel })
+    expect(() => persist(prev, st({ slotSel: sel }), { type: 'assign', name: 'A' })).not.toThrow()
+    expect(data.saveWeek).not.toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+  })
+
+  it('assign auf einen Treffpunkt, den es nicht gibt, schreibt nichts', () => {
+    const sel = { kind: 'fs', wi: WEIT_DRAUSSEN, instId: 'x', label: '', priv: null, groups: false } as const
+    persist(st({ slotSel: sel }), st({ slotSel: sel }), { type: 'assign', name: 'A' })
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+
+  it('mergeWeekAlt auf eine Woche, die es nicht gibt, schreibt nichts', () => {
+    persist(st(), st(), { type: 'mergeWeekAlt', wi: WEIT_DRAUSSEN, alt: {} })
+    expect(data.saveWeek).not.toHaveBeenCalled()
+  })
+
+  it('fsInstUpdate auf eine Woche, die es nicht gibt, schreibt nichts', () => {
+    persist(st(), st(), { type: 'fsInstUpdate', wi: WEIT_DRAUSSEN, id: 'x', patch: {} })
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+
+  it('lacMove/lacAdd auf einen Abschnitt, den es nicht gibt, stürzt nicht ab', () => {
+    // Die Woche gibt es, den Abschnitt nicht: hier bricht die Kette erst im
+    // zweiten Glied — die Woche wird gespeichert, die Bestätigungsrechnung
+    // entfällt.
+    const next = st()
+    expect(() =>
+      persist(st(), next, { type: 'lacMove', si: WEIT_DRAUSSEN, ii: 0, dir: 1 }),
+    ).not.toThrow()
+    expect(data.swapConfirmationKeys).not.toHaveBeenCalled()
+    vi.clearAllMocks()
+    expect(() =>
+      persist(st(), next, { type: 'lacAdd', si: WEIT_DRAUSSEN, title: 'T' }),
+    ).not.toThrow()
+    expect(data.renameConfirmationKeys).not.toHaveBeenCalled()
+  })
+
+  it('finishImport ohne eine einzige Woche schreibt nichts', () => {
+    persist(st({ weeks: [] }), st({ weeks: [] }), { type: 'finishImport' })
+    expect(data.saveWeek).not.toHaveBeenCalled()
+  })
+})
+
 describe('Personen (inkl. Debounce)', () => {
   it('addPerson → savePerson sofort', () => {
     const p = DEMO_PERSONS[0]
