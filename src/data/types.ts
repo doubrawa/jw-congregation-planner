@@ -213,6 +213,18 @@ export interface PartItem {
   num?: number // laufende Nummer (kursiv, Bereichsfarbe)
   title: string
   meta?: string // Dauer / Quelle / Rahmen, z. B. "Von Haus zu Haus · 3 Min."
+  /**
+   * Dauer in Minuten — die *Zahl*, nicht ihre Schreibweise.
+   *
+   * `meta` ist Anzeigetext in der Sprache der Wochenseite: „3 Min.“, „3 分“,
+   * „Dak. 3“, „٣ دق“. Die Minuten daraus zurückzulesen war der Fehler (T32) —
+   * die Minuten-Knöpfe im Planen-Screen erschienen dadurch außerhalb des
+   * Deutschen gar nicht erst. Der Import legt die Zahl jetzt hier ab.
+   *
+   * Optional, weil Wochen aus der Zeit davor sie nicht haben; `itemMinutes`
+   * fällt für die auf `meta` zurück.
+   */
+  mins?: number
   names: SlotAssignment[] // Zuteilungen im Hauptsaal
   /**
    * Dieselben Plätze noch einmal für die Zusätzliche Klasse — nur bei

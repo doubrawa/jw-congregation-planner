@@ -32,6 +32,8 @@ export interface ImportedPart {
   num?: number
   title: string
   meta?: string
+  /** Dauer in Minuten — die Zahl aus der Zeitklammer, nicht ihre Schreibweise. */
+  mins?: number
   names: ImportedSlot[]
 }
 export interface ImportedSong {
@@ -114,6 +116,20 @@ function zahl(ziffern: string): number {
   let wert = 0
   for (const c of ziffern) wert = wert * 10 + ziffernWert(c)
   return wert
+}
+/** Eine zusammenhängende Ziffernfolge — in jeder Schrift. */
+const ZIFFERNFOLGE = /\p{Nd}+/u
+/**
+ * Erste Zahl eines Textes, oder `undefined`. Damit werden die Minuten aus der
+ * Zeitklammer gelesen — „10 min.“, „Dak. 10“, „١٠ دق“ ergeben alle 10.
+ *
+ * Bisher gab der Parser nur den Anzeigetext weiter, und der Client las die Zahl
+ * mit `/(\d+) Min\./` daraus zurück. Das ging außerhalb des Deutschen nie gut
+ * (T32).
+ */
+function ersteZahl(text: string): number | undefined {
+  const treffer = ZIFFERNFOLGE.exec(text)
+  return treffer ? zahl(treffer[0]) : undefined
 }
 
 /* ---- Tokenizer ----------------------------------------------------------- */
@@ -309,12 +325,14 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       const hasPipe = tok.text.includes('|')
       const hasTime = TIME_ANY.test(tok.text)
       const [a, b] = pipe(tok.text)
+      const zeit = firstParen(tok.text)
       if (curColor === null) {
         // vor der ersten Sektion → Eröffnung (Vorsitz + Anfangsgebet)
         const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
         opening = {
           title,
-          meta: joinMeta(firstParen(tok.text)),
+          meta: joinMeta(zeit),
+          mins: ersteZahl(zeit),
           names: [
             { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
             { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
@@ -323,7 +341,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       } else if (hasPipe || hasTime) {
         // nach den Sektionen mit „|“/Zeit → Abschluss (Schlussgebet)
         const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
-        closing = { title, meta: joinMeta(firstParen(tok.text)), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
+        closing = { title, meta: joinMeta(zeit), mins: ersteZahl(zeit), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
       } else {
         // schlichtes Lied innerhalb einer Sektion
         sections[curColor].items.push({ song: tok.text })
@@ -361,7 +379,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
     {
       label: 'ABSCHLUSS',
       farbe: 'neutral',
-      items: [closing ?? { title: 'Schlussworte · Gebet', meta: '3 Min.', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
+      items: [closing ?? { title: 'Schlussworte · Gebet', meta: '3 Min.', mins: 3, names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
     },
   ]
 
@@ -424,6 +442,8 @@ function finalizeParts(recs: PartRec[]): void {
     const { part, color, raw, time } = rec
     const title = randTrim(raw.replace(NUMMER, ''))
     const min = firstParen(time)
+    // Die Zahl getrennt vom Anzeigetext — sie ist in jeder Sprache dieselbe.
+    part.mins = ersteZahl(min)
 
     if (color === 'teal' && rec === lastOf.teal) {
       // letzter Schätze-Punkt = Bibellesung. Schriftstelle anhängen.
@@ -454,6 +474,7 @@ function fallbackOpening(): ImportedPart {
   return {
     title: 'Lied · Gebet · Einleitende Worte',
     meta: '1 Min.',
+    mins: 1,
     names: [
       { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
       { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
@@ -468,8 +489,8 @@ function weekendTemplate(range: string): ImportedMeeting {
     end: 'Ende ca. 11:45',
     sections: [
       { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
-      { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
-      { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
+      { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
+      { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', mins: 60, names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
       { label: 'ABSCHLUSS', farbe: 'neutral', items: [{ title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
     ],
     helpers: {},

@@ -434,7 +434,7 @@ bestätigen und bekam keine Erinnerung. `FsInstance.leader` hatte zudem keine
 > `send-reminders` (derselbe Schritt wie T11) — **am 7. August 2026 erfolgt,
 > sie laufen jetzt.**
 
-### T32 · LAC-Minuten sprachunabhängig machen 🔧 — durch T59 belegt
+### T32 · LAC-Minuten sprachunabhängig machen 🔧 ✅ erledigt
 `itemMinutes` (`meeting-edit.ts:16`) sucht `/(\d+) Min\./`; der Import übernimmt
 die Zeit wörtlich aus der Zielsprache. Bei nicht-deutscher Versammlungssprache
 bewirkt „+/−" **nichts** — ohne jede Rückmeldung.
@@ -448,6 +448,43 @@ bewirkt „+/−" **nichts** — ohne jede Rückmeldung.
 Minuten als eigenes Feld führen statt aus dem Anzeigetext zu parsen. Bis dahin
 mindestens einen Toast zeigen, wenn nichts passiert.
 → [befunde.md B7](befunde.md)
+
+> **Umgesetzt am 8. August 2026.** `PartItem.mins` bzw. `ImportedPart.mins`
+> tragen die Zahl; der Parser legt sie beim Import ab (`ersteZahl` über die
+> Zeitklammer). Der Rückfall auf die Meta-Zeile ist geblieben, aber
+> schriftunabhängig — dadurch funktionieren **auch bereits importierte Wochen
+> ohne erneuten Import**, was eine Datenmigration erspart.
+>
+> Neu: `src/data/ziffern.ts` liest und **schreibt** Ziffern jeder Schrift ohne
+> Tabelle (Unicode legt jeden Ziffernsatz als lückenlosen Zehnerblock ab, die
+> Null zuerst). Das Schreiben brauchte es, weil `lacAdjust` die Anzeige
+> mitziehen muss: aus „٣ دق" wird „١٥ دق", nicht „15 دق". Die alte Zeile für
+> die Sprachvarianten (`.replace(/\d+/, …)`) hätte dort ohnehin nie getroffen —
+> derselbe Fehler ein zweites Mal, nur unbemerkt.
+>
+> Warum die *erste* Zahl der Meta-Zeile die Dauer ist und nicht irgendeine:
+> der Parser setzt sie aus Rahmen · Zeit · Quelle zusammen, `settingOf`
+> verwirft ziffernhaltige Rahmen, und ohne Zeitangabe entsteht gar keine
+> Meta-Zeile. Im thailändischen „3 นาที · lmd บทเรียน 1 ข้อ 5" stehen zwei
+> weitere Zahlen — die erste ist trotzdem die richtige.
+>
+> Abgesichert mit 42 Tests (`src/data/minuten.test.ts`, Ergänzung in
+> `parse.sprachen.test.ts`). Gegenprobe gefahren: mit dem alten Ausdruck fallen
+> **14** davon, und zwar genau die zehn nicht-deutschen Fassungen plus die
+> Feld-Tests — Deutsch bleibt grün. Das ist der Punkt: es war keine Lücke,
+> sondern eine deutsche Annahme.
+
+### T61 · `lacAdd` findet das Versammlungsbibelstudium nur auf Deutsch 🔧
+Beim Umsetzen von T32 aufgefallen, **nicht** mit erledigt (eigener Punkt, damit
+er nicht untergeht): `lacAddIndex` (`meeting-edit.ts`) sucht die Einfügestelle
+mit `title.startsWith('Versammlungsbibelstudium')`. Bei nicht-deutscher
+Versammlungssprache trifft das nie — ein neuer eigener Punkt landet dann **hinter**
+dem Bibelstudium statt davor.
+
+Dieselbe Familie wie T32, aber gutartiger: es passiert etwas, nur an der
+falschen Stelle. Strukturell lösbar ohne Textvergleich — das Bibelstudium ist
+der Punkt mit einem `leser`-Slot. In `umgebungspruefungen.md` war die Ursache
+schon notiert (Soft-Hyphens im Rohtext), ohne dass daraus eine Aufgabe wurde.
 
 ### T33 · Schlusslied nachtragbar machen ⚡
 `applyStudy` fügt das Lied als eigenes Item ein, während der Titel weiterhin
