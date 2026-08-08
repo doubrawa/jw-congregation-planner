@@ -10,7 +10,7 @@
  */
 
 import { useMemo } from 'react'
-import { useApp } from '../app/context'
+import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
 import type { Week } from '../data/types'
 import { APP_TO_JW, congAppCode } from './langs'
@@ -32,21 +32,32 @@ export function fill(template: string, params: Record<string, string | number>):
 
 const identity = (s: string) => s
 
+/**
+ * Der meistgenutzte Hook der App — 44 Bausteine hängen an ihm, und er liest
+ * genau zwei Felder.
+ *
+ * Über `useApp()` bedeutete das: **jede** Zustandsänderung, egal welche, rief
+ * alle 44 auf den Plan. Ein einzelner Tastendruck in einem Personenfeld rendert
+ * damit die halbe Anwendung neu, obwohl sich an keiner Übersetzung etwas
+ * geändert hat. Deshalb Selektoren (T41): zwei einzelne Felder, beide einfache
+ * Werte — da genügt der Vergleich mit `Object.is`, es braucht kein `flachGleich`.
+ */
 export function useT(): I18n {
-  const { state } = useApp()
+  const lang = useAppSelector((s) => s.lang)
+  const congLang = useAppSelector((s) => s.congLang)
   // overlayGen invalidiert das Memo, wenn ein Sprach-Overlay nachgeladen
   // wurde (lazy, siehe ui.ts) — lang/congLang ändern sich dabei nicht.
   const overlayGen = overlayGeneration()
   return useMemo(() => {
-    const congCode = congAppCode(state.congLang)
+    const congCode = congAppCode(congLang)
     return {
-      t: dict(state.lang),
-      tu: state.lang === 'de' ? identity : makeTr(state.lang),
+      t: dict(lang),
+      tu: lang === 'de' ? identity : makeTr(lang),
       tp: congCode && congCode !== 'de' ? makeTr(congCode) : identity,
       progFallback: !congCode,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.lang, state.congLang, overlayGen])
+  }, [lang, congLang, overlayGen])
 }
 
 export interface ProgWeek {
@@ -63,14 +74,15 @@ export interface ProgWeek {
  * bleibt alles bei der Versammlungssprache (`tp`).
  */
 export function useProgWeek(week: Week | undefined): ProgWeek {
-  const { state } = useApp()
+  const lang = useAppSelector((s) => s.lang)
+  const congLang = useAppSelector((s) => s.congLang)
   const { tp } = useT()
   return useMemo(() => {
     if (!week) return { week, tpw: tp }
-    const congCode = congAppCode(state.congLang)
-    const jwCode = state.lang !== congCode ? APP_TO_JW[state.lang] : undefined
+    const congCode = congAppCode(congLang)
+    const jwCode = lang !== congCode ? APP_TO_JW[lang] : undefined
     const merged = localizedWeek(week, jwCode)
     if (merged === week) return { week, tpw: tp }
-    return { week: merged, tpw: state.lang === 'de' ? identity : makeTr(state.lang) }
-  }, [week, state.lang, state.congLang, tp])
+    return { week: merged, tpw: lang === 'de' ? identity : makeTr(lang) }
+  }, [week, lang, congLang, tp])
 }

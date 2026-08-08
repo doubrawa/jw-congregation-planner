@@ -1,18 +1,43 @@
 /** @vitest-environment jsdom */
-import { describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, renderHook } from '@testing-library/react'
 import React from 'react'
-import { AppDispatchContext, AppStateContext, type AppState, useApp } from '../app/context'
+import {
+  AppDispatchContext,
+  AppStateContext,
+  AppStoreContext,
+  type AppAction,
+  type AppState,
+  useApp,
+  useAppDispatch,
+  useStaticStore,
+} from '../app/context'
+import { AppProvider } from '../app/store'
 import { buildDemoWeeks } from '../data/demo'
+import { dict } from './ui'
 import { fill, useProgWeek, useT } from './useT'
 
-/** Provider-Wrapper mit einem Teil-State (useT liest nur lang/congLang). */
+// Die gerenderten Bühnen sonst im Dokument stehen — getByText fände dann
+// mehrere Treffer.
+afterEach(cleanup)
+
+/**
+ * Provider-Wrapper mit einem Teil-State (useT liest nur lang/congLang).
+ *
+ * Der Speicher gehört dazu: `useT` liest seit T41 über Selektoren, und die
+ * gehen am Zustands-Kontext vorbei.
+ */
 function wrapper(state: Partial<AppState>) {
-  return ({ children }: { children: React.ReactNode }) => (
-    <AppDispatchContext.Provider value={() => {}}>
-      <AppStateContext.Provider value={state as AppState}>{children}</AppStateContext.Provider>
-    </AppDispatchContext.Provider>
-  )
+  return ({ children }: { children: React.ReactNode }) => {
+    const store = useStaticStore(state as AppState)
+    return (
+      <AppDispatchContext.Provider value={() => {}}>
+        <AppStoreContext.Provider value={store}>
+          <AppStateContext.Provider value={state as AppState}>{children}</AppStateContext.Provider>
+        </AppStoreContext.Provider>
+      </AppDispatchContext.Provider>
+    )
+  }
 }
 
 describe('useApp', () => {
@@ -69,5 +94,63 @@ describe('useProgWeek', () => {
 describe('fill (Sanity im Hook-Umfeld)', () => {
   it('ersetzt Platzhalter', () => {
     expect(fill('{n}x', { n: 2 })).toBe('2x')
+  })
+})
+
+/*
+ * Der eigentliche Ertrag von T41, gemessen.
+ *
+ * `useT` liest zwei Felder — `lang` und `congLang` —, hing aber über `useApp()`
+ * am ganzen Zustand. 44 Bausteine nutzen den Hook: jede Aktion, gleich welche,
+ * rief sie alle auf den Plan. Ein einzelner Tastendruck in einem Personenfeld
+ * rendert damit die halbe Anwendung neu, obwohl sich an keiner Übersetzung
+ * etwas geändert hat.
+ *
+ * Gemessen wird deshalb am **echten** Provider, mit echten Aktionen.
+ */
+describe('useT weckt nur die Sprache', () => {
+  /** Baustein, der wie die 44 anderen nur übersetzen will. */
+  function Uebersetzt({ zaehler }: { zaehler: { n: number } }) {
+    const { t } = useT()
+    zaehler.n++
+    return <span>{t.autoZuteilen}</span>
+  }
+
+  function Ausloeser({ beschriftung, action }: { beschriftung: string; action: AppAction }) {
+    const dispatch = useAppDispatch()
+    return (
+      <button type="button" onClick={() => dispatch(action)}>
+        {beschriftung}
+      </button>
+    )
+  }
+
+  it('eine Aktion ohne Sprachbezug lässt ihn schlafen', () => {
+    const zaehler = { n: 0 }
+    const { getByText } = render(
+      <AppProvider>
+        <Uebersetzt zaehler={zaehler} />
+        <Ausloeser beschriftung="wochenende" action={{ type: 'setTab', tab: 'we' }} />
+      </AppProvider>,
+    )
+    expect(zaehler.n).toBe(1)
+    fireEvent.click(getByText('wochenende'))
+    // Über useApp() stünde hier 2 — und in der echten App 44-mal 2.
+    expect(zaehler.n).toBe(1)
+  })
+
+  it('ein Sprachwechsel weckt ihn sehr wohl — und übersetzt', () => {
+    const zaehler = { n: 0 }
+    const { getByText } = render(
+      <AppProvider>
+        <Uebersetzt zaehler={zaehler} />
+        <Ausloeser beschriftung="englisch" action={{ type: 'setLang', lang: 'en' }} />
+      </AppProvider>,
+    )
+    const deutsch = dict('de').autoZuteilen
+    expect(getByText(deutsch)).toBeTruthy()
+    fireEvent.click(getByText('englisch'))
+    expect(zaehler.n).toBe(2)
+    expect(getByText(dict('en').autoZuteilen)).toBeTruthy()
   })
 })

@@ -1056,14 +1056,14 @@ Seiten.
 >    **Code** Klartext. Der Ausweichplan (Datei in beide Ordner kopieren) wird
 >    damit nicht gebraucht.
 
-### T41 · `AppState` aufteilen 🏗 ⚠ teilweise — Selektoren stehen aus
+### T41 · `AppState` aufteilen 🏗 ✅ erledigt — alle drei Schritte
 ~60 Felder mischen Serverdaten, UI-Zustand und Gerätevorlieben; der Context hat
 keine Selektoren, also rendert jede Änderung alles neu. Eine Aufteilung in drei
 Kontexte macht `readonly.ts` und einen Teil von `persist.ts` überflüssig.
 → [code-review.md § 4.3](code-review.md)
 
-> **Am 8. August 2026 zur Hälfte umgesetzt — und die andere Hälfte bewusst
-> nicht.** Was gemacht ist:
+> **Am 8. August 2026 umgesetzt, in zwei Anläufen.** Zuerst die beiden
+> Vorarbeiten, danach — mit eigenem Sicherheitsnetz — die Selektoren:
 >
 > **1. Zustand und Versand liegen in getrennten Kontexten.** `dispatch` ist über
 > die ganze Sitzung dieselbe Funktion, das gemeinsame Objekt aber nicht: jede
@@ -1088,18 +1088,45 @@ Kontexte macht `readonly.ts` und einen Teil von `persist.ts` überflüssig.
 >
 > ---
 >
-> **Was aussteht: die Selektoren.** Wer den Zustand liest, rendert weiterhin bei
-> jeder Änderung neu — daran ändert eine Kontext-Trennung nichts, React verteilt
-> Kontexte ganz oder gar nicht. Der Weg dahin ist `useSyncExternalStore`: der
-> Provider hält den Zustand in einer Referenz und benachrichtigt Abonnenten,
-> `useAppSelector(fn)` weckt nur, wenn sich der gewählte Ausschnitt ändert.
+> **3. Die Selektoren.** Wer den Zustand liest, rendert bei jeder Änderung neu —
+> daran ändert eine Kontext-Trennung nichts, React verteilt Kontexte ganz oder
+> gar nicht. `useAppSelector(fn)` geht am Kontext vorbei: der Provider hält den
+> Zustand ohnehin schon in einer Referenz (`stateRef`), gibt sie über einen
+> dritten Kontext als Speicher nach außen und weckt nach jedem `dispatch` die
+> Abonnenten. `useSyncExternalStore` liest daraus und weckt einen Baustein nur,
+> wenn sich **sein** Ausschnitt geändert hat.
 >
-> **Bewusst nicht heute gemacht.** Es rührt an den Kern von 45 Bausteinen, und
-> es gibt keinen einzigen Test, der Render-Verhalten im Zusammenspiel prüft —
-> eine falsch gesetzte Abhängigkeit fällt dort nicht auf, sondern erst im
-> Betrieb als veraltete Anzeige. Die beiden Schritte oben sind die Vorarbeit
-> dafür und für sich genommen richtig; der dritte gehört in eine eigene Sitzung
-> mit einem eigenen Sicherheitsnetz.
+> **Zuerst das Netz, dann der Umbau.** Der Grund für den früheren Aufschub war,
+> dass es keinen Test für Render-Verhalten gab; die 11 neuen in
+> `context.test.tsx` messen genau das — Renderzahlen, an der Hand-Bühne und am
+> echten Provider. Erst danach wurde umgestellt.
+>
+> **Umgestellt wurde einer: `useT`.** Und das ist der Punkt. Der Hook liest
+> genau zwei Felder, `lang` und `congLang` — **44 Bausteine hängen an ihm**.
+> Über `useApp()` rief jede Aktion, gleich welche, sie alle auf den Plan: ein
+> Tastendruck in einem Personenfeld rendert die halbe Anwendung neu, obwohl
+> sich an keiner Übersetzung etwas geändert hat. Zwei Selektoren auf zwei
+> einfache Werte beenden das. Die übrigen 42 Aufrufer von `useApp()` bleiben,
+> wie sie sind: sie lesen breit, und ein Selektor darauf wäre eine Umschreibung
+> ohne Gewinn.
+>
+> **Zwei Dinge fielen beim Bauen auf:**
+>
+> 1. **Die Wochen-Vorschau überschreibt den Zustand** (`WeekStrip.Vorschau`
+>    zeigt die Nachbarwochen). Mit Selektoren reicht der Kontext dafür nicht
+>    mehr — derselbe Baustein läse die Nachbarwoche über `useAppState` und die
+>    aktuelle über `useAppSelector`: **zwei Wochen gleichzeitig in einer
+>    Ansicht**, und nichts würde werfen. `useStaticStore(zustand)` überschreibt
+>    jetzt beides; `WeekStrip.test.tsx` prüft, dass die drei Wochen des
+>    Streifens auf beiden Lesewegen dieselben sind.
+> 2. **Die Objekt-Falle.** Ein Selektor, der bei jedem Aufruf ein neues Objekt
+>    baut, sieht für React immer geändert aus. Ohne Vergleich läuft das in eine
+>    Endlosschleife („The result of getSnapshot should be cached") — im Test
+>    nachgestellt und mit `flachGleich` behoben.
+>
+> Beide Wege bleiben nebeneinander gültig und werden im **selben Commit**
+> aktualisiert; ein Test am echten Provider hält fest, dass Kontext-Leser und
+> Selektor-Leser nie verschiedene Stände sehen.
 >
 > Der Nebensatz des Befunds — „macht `readonly.ts` überflüssig" — trifft
 > übrigens nicht zu: `readonly.ts` führt eine **Positivliste** der reinen
@@ -1447,12 +1474,12 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 Stand 8. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑⚠☑ ·
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**61 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 teilweise
-(T41), 1 neu aufgenommen und zurückgestellt (T63).**
-Der Testbestand ist von 727 auf 1385 gewachsen; jede Korrektur hat einen Test,
+**62 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 neu
+aufgenommen und zurückgestellt (T63).**
+Der Testbestand ist von 727 auf 1399 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
 
@@ -1477,6 +1504,13 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > **`assignSlot`** löste bei einem fehlenden Punkt ein Schreiben ohne Änderung
 > aus.
 >
+> **Und der dritte Schritt von T41:** `useAppSelector` über
+> `useSyncExternalStore`. Zuerst 11 Tests, die Renderzahlen messen — das Netz,
+> dessen Fehlen der Grund für den Aufschub war —, dann `useT` umgestellt: zwei
+> Felder statt des ganzen Zustands, und **44 Bausteine** hören auf, bei jeder
+> fremden Aktion mitzurendern. Dabei aufgefallen: die Wochen-Vorschau muss den
+> Speicher mit überschreiben, sonst zeigte ein Baustein zwei Wochen zugleich.
+>
 > Dabei aufgefallen und gleich mitgebaut: **T62** (Kreisaufseher-Woche —
 > Dienstvortrag, verkürztes Wachtturm-Studium, Schlussvortrag). Neu
 > aufgenommen und vom Betreiber zurückgestellt: **T63**.
@@ -1490,7 +1524,6 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 | | Aufgabe | Warum offen |
 | --- | --- | --- |
-| **Phase 7** | T41 (Selektoren) | Zwei von drei Schritten sind gemacht. Der dritte — `useSyncExternalStore` mit Selektoren — rührt an den Kern von 45 Bausteinen, und es gibt keinen Test, der Render-Verhalten im Zusammenspiel prüft. Gehört in eine eigene Sitzung mit eigenem Sicherheitsnetz. |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 
