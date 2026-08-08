@@ -10,7 +10,7 @@
  */
 
 import { angleichen, hatAuxKlasse } from './aux-class'
-import { LABEL_EROEFFNUNG } from './constants'
+import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from './constants'
 import { isSong } from './helpers'
 import { meetingDateParts, meetingTimesOf } from './meeting-dates'
 import type { Meeting, MeetingKey, PartItem, Week } from './types'
@@ -365,55 +365,110 @@ export function editTalkTheme(weeks: Week[], wi: number, si: number, ii: number,
   return next
 }
 
-/** Erstes Titel-Atom ist das Anfangslied ("Lied" bzw. "Lied 78 …"). */
-function isOpeningSongTitle(title: string): boolean {
-  const first = title.split(' · ')[0]
-  return first === 'Lied' || first.startsWith('Lied ')
+/**
+ * Stelle des Lied-Atoms in einem zusammengesetzten Titel — −1, wenn keins da ist.
+ *
+ * Bei der Eröffnung steht es vorn („Lied · Gebet"), beim Abschluss in der Mitte
+ * („Schlussworte · Lied · Gebet"). Früher wurde stur Atom 0 genommen; genau
+ * deshalb ließ sich nur das Anfangslied setzen und das Schlusslied nicht (F11).
+ *
+ * Der Vergleich ist deutsch, und das ist hier ausnahmsweise richtig: die
+ * Wochenend-Vorlage steht kanonisch auf Deutsch im Datenmodell und wird erst
+ * bei der Anzeige übersetzt (`weekendTemplate` im Import).
+ */
+function songAtomIndex(title: string): number {
+  return title.split(' · ').findIndex((a) => a === 'Lied' || a.startsWith('Lied '))
 }
 
-/** Erstes Titel-Atom komplett ersetzen — räumt auch Altlasten ("Lied 44 fff") ab. */
+/** Lied-Atom komplett ersetzen — räumt auch Altlasten ("Lied 44 fff") ab. */
 function replaceSongAtom(title: string, value: string): string {
   const atoms = title.split(' · ')
-  atoms[0] = value
+  const i = songAtomIndex(title)
+  if (i < 0) return title
+  atoms[i] = value
   return atoms.join(' · ')
 }
 
 /**
- * Anfangslied der Wochenend-Zusammenkunft setzen: "Lied · Gebet" →
- * "Lied 78 · Gebet" (leere Nummer entfernt sie wieder). Kanonisch deutsch —
- * die Anzeige übersetzt "Lied 78" atomweise in die Versammlungssprache.
- * Varianten tragen denselben deutschen Vorlagen-Titel → gleiche Ersetzung.
+ * Lied eines Wochenend-Abschnitts setzen: „Lied · Gebet" → „Lied 78 · Gebet"
+ * (leere Nummer entfernt sie wieder). Kanonisch deutsch — die Anzeige übersetzt
+ * „Lied 78" atomweise in die Versammlungssprache. Varianten tragen denselben
+ * deutschen Vorlagen-Titel → gleiche Ersetzung.
  */
-export function setOpeningSong(weeks: Week[], wi: number, song: string): Week[] {
+function setSong(weeks: Week[], wi: number, label: string, song: string): Week[] {
   const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
   const next = structuredClone(weeks)
   const meeting = next[wi].we
-  const si = meeting.sections.findIndex((s) => s.label === LABEL_EROEFFNUNG)
+  const si = meeting.sections.findIndex((s) => s.label === label)
   if (si < 0) return weeks
-  const ii = meeting.sections[si].items.findIndex((x) => !isSong(x) && isOpeningSongTitle(x.title))
-  if (ii < 0) return weeks
-  const item = meeting.sections[si].items[ii] as PartItem
+  const items = meeting.sections[si].items
   const value = nr ? `Lied ${nr}` : 'Lied'
+
+  // Wochen, die vor dieser Änderung importiert wurden, tragen das Schlusslied
+  // als eigenes Item vor dem Abschluss. Dann gehört die Nummer dorthin — würde
+  // sie stattdessen in den Titel geschrieben, stünde das Lied zweimal da.
+  const altItem = items.findIndex(isSong)
+  if (altItem >= 0) {
+    const s = items[altItem]
+    if (!isSong(s) || s.song === value) return weeks
+    s.song = value
+    forEachAltMeeting(next[wi], 'we', (m) => {
+      const vi = m.sections[si]?.items[altItem]
+      if (vi && isSong(vi)) vi.song = value
+    })
+    return next
+  }
+
+  const ii = items.findIndex((x) => !isSong(x) && songAtomIndex(x.title) >= 0)
+  if (ii < 0) return weeks
+  const item = items[ii] as PartItem
   const title = replaceSongAtom(item.title, value)
   if (title === item.title) return weeks
   item.title = title
   forEachAltMeeting(next[wi], 'we', (m) => {
     const vi = m.sections[si]?.items[ii]
-    if (vi && !isSong(vi) && isOpeningSongTitle(vi.title)) vi.title = replaceSongAtom(vi.title, value)
+    if (vi && !isSong(vi) && songAtomIndex(vi.title) >= 0) vi.title = replaceSongAtom(vi.title, value)
   })
   return next
 }
 
-/** Aktuelle Anfangslied-Nummer der Wochenend-Eröffnung ("" = keine). */
-export function openingSongNr(meeting: Meeting): string {
-  for (const section of meeting.sections) {
-    if (section.label !== LABEL_EROEFFNUNG) continue
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      const match = /^Lied (\d+)/.exec(item.title)
+/** Anfangslied der Wochenend-Zusammenkunft setzen. */
+export function setOpeningSong(weeks: Week[], wi: number, song: string): Week[] {
+  return setSong(weeks, wi, LABEL_EROEFFNUNG, song)
+}
+
+/** Schlusslied der Wochenend-Zusammenkunft setzen (F11: ging bisher gar nicht). */
+export function setClosingSong(weeks: Week[], wi: number, song: string): Week[] {
+  return setSong(weeks, wi, LABEL_ABSCHLUSS, song)
+}
+
+/**
+ * Lied-Nummer eines Wochenend-Abschnitts ("" = keine).
+ *
+ * Liest beide Formen: das Atom im Titel (so legt der Import es heute an) und
+ * das eigenständige Lied-Item (so lag es in Wochen von früher).
+ */
+function songNr(meeting: Meeting, label: string): string {
+  const section = meeting.sections.find((s) => s.label === label)
+  for (const item of section?.items ?? []) {
+    if (isSong(item)) {
+      const match = /(\d+)/.exec(item.song)
       if (match) return match[1]
-      if (isOpeningSongTitle(item.title)) return ''
+      continue
     }
+    const i = songAtomIndex(item.title)
+    if (i < 0) continue
+    return /(\d+)/.exec(item.title.split(' · ')[i])?.[1] ?? ''
   }
   return ''
+}
+
+/** Aktuelle Anfangslied-Nummer der Wochenend-Eröffnung ("" = keine). */
+export function openingSongNr(meeting: Meeting): string {
+  return songNr(meeting, LABEL_EROEFFNUNG)
+}
+
+/** Aktuelle Schlusslied-Nummer des Wochenend-Abschlusses ("" = keine). */
+export function closingSongNr(meeting: Meeting): string {
+  return songNr(meeting, LABEL_ABSCHLUSS)
 }

@@ -228,6 +228,7 @@ export type AppAction =
   // Öffentlicher Vortrag / Wochenende (Planen, aktuelle Woche)
   | { type: 'talkEdit'; si: number; ii: number; title: string } // Vortragsthema (Freitext)
   | { type: 'openingSong'; song: string } // Anfangslied-Nummer ("" = entfernen)
+  | { type: 'closingSong'; song: string } // Schlusslied-Nummer ("" = entfernen)
   // Erinnerungen
   | { type: 'changeReminder'; key: ReminderKey; delta: 1 | -1 }
   | { type: 'toggleReminderRepeat' }

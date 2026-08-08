@@ -18,7 +18,7 @@
 // Deploy:  supabase functions deploy import-week
 // =============================================================================
 
-import { applyGoldSlots, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
+import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
 import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
 
 declare const Deno: { serve: (handler: (req: Request) => Promise<Response> | Response) => void }
@@ -184,7 +184,9 @@ function applyStudy(
   }
   if (insertClose && songClose) {
     const abschluss = week.we.sections.find((s) => s.label === 'ABSCHLUSS')
-    abschluss?.items.unshift({ song: songClose })
+    for (const it of abschluss?.items ?? []) {
+      if ('names' in it) it.title = mitLiedNummer(it.title, songClose)
+    }
   }
 }
 

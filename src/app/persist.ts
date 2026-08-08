@@ -220,6 +220,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'togglePartner':
     case 'talkEdit':
     case 'openingSong':
+    case 'closingSong':
       saveWeek(congId, prev.week, next.weeks[prev.week])
       break
     case 'finishImport':

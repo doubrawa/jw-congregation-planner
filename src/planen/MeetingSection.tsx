@@ -3,8 +3,9 @@ import { useApp } from '../app/context'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { istSchuelerteil } from '../data/aux-class'
 import { isSong, splitOpeningSong } from '../data/helpers'
-import { itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
+import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
 import { isGuestRole, kennungVon } from '../data/planning'
+import { SONG_WORD } from '../i18n/translate-data'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
 import { SlotChip } from './SlotChip'
@@ -43,11 +44,19 @@ export function MeetingSection({
   // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
   const isTalk = state.tab === 'we' && rawSection.label === LABEL_VORTRAG
   const isOpening = state.tab === 'we' && rawSection.label === LABEL_EROEFFNUNG
+  // …und am Wochenende ebenso das Schlusslied: es steht nicht im Arbeitsheft,
+  // sondern kommt aus der Studienausgabe — fehlt sie, muss es nachtragbar sein.
+  const isClosing = state.tab === 'we' && rawSection.label === LABEL_ABSCHLUSS
+  // „SCHLUSSLIED“ gäbe es nur auf Deutsch — und jede der 33 Sprachen muss jeden
+  // UI-Schlüssel selbst übersetzen (ui.test.ts). Das Wort „Lied“ liegt dagegen
+  // in allen gemessen vor; im ABSCHLUSS-Block darüber ist es eindeutig genug.
+  const schlussliedLbl = (SONG_WORD[state.lang] ?? 'Lied').toUpperCase()
   // Lied aus dem ERÖFFNUNG/ABSCHLUSS-Sammeltitel mittig+kursiv herausziehen —
-  // außer bei der Wochenend-Eröffnung, wo es als editierbares ANFANGSLIED-Feld
-  // bleibt (isOpening, „beim Planen am Sonntag").
+  // außer dort, wo es als editierbares Nummernfeld bleibt („beim Planen am
+  // Sonntag"): Wochenend-Eröffnung und Wochenend-Abschluss.
   const splitSong =
-    (rawSection.label === LABEL_EROEFFNUNG && !isOpening) || rawSection.label === LABEL_ABSCHLUSS
+    (rawSection.label === LABEL_EROEFFNUNG && !isOpening) ||
+    (rawSection.label === LABEL_ABSCHLUSS && !isClosing)
   const movables = movableIndices(rawSection)
 
   const isPending = (slot: SlotAssignment | undefined) =>
@@ -260,25 +269,33 @@ export function MeetingSection({
           </button>
         </div>
       )}
-      {isOpening && (
+      {(isOpening || isClosing) && (
         <div className="talk-song-row">
-          <span className="plan-helper-label">{t.anfangsliedLbl}</span>
+          <span className="plan-helper-label">
+            {isOpening ? t.anfangsliedLbl : schlussliedLbl}
+          </span>
           <input
-            key={`song-${state.week}`}
+            key={`song-${isOpening ? 'open' : 'close'}-${state.week}`}
             type="text"
             inputMode="numeric"
             maxLength={4}
             className="lac-add-input talk-song-input"
             placeholder={t.liedNrPh}
-            aria-label={t.anfangsliedLbl}
-            defaultValue={openingSongNr(state.weeks[state.week].we)}
+            aria-label={isOpening ? t.anfangsliedLbl : schlussliedLbl}
+            defaultValue={
+              isOpening
+                ? openingSongNr(state.weeks[state.week].we)
+                : closingSongNr(state.weeks[state.week].we)
+            }
             onInput={(e) => {
               // Nur Ziffern zulassen (Liederbuch-Nummer)
               const el = e.currentTarget
               const digits = el.value.replace(/\D/g, '')
               if (el.value !== digits) el.value = digits
             }}
-            onBlur={(e) => dispatch({ type: 'openingSong', song: e.target.value })}
+            onBlur={(e) =>
+              dispatch({ type: isOpening ? 'openingSong' : 'closingSong', song: e.target.value })
+            }
             onKeyDown={(e) => {
               if (e.key === 'Enter') e.currentTarget.blur()
             }}
