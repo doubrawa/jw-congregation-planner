@@ -101,6 +101,23 @@ Abwesende aus und vergibt niemanden doppelt am selben Tag. Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
+### Öffentlicher Vortrag: Gastredner oder eigener Redner
+
+Der Rednerplatz am Wochenende kann beides sein, und du entscheidest es Woche für
+Woche — im Zuteilungs-Fenster, ohne einen zusätzlichen Schalter:
+
+| Was du tust | Was daraus wird |
+| --- | --- |
+| Name und Versammlung in die **Freitext-Felder** eintragen | Gastredner. Er bekommt keine Aufgabe, keine Erinnerung, keine Bestätigung und zählt nicht auf die Auslastung — er gehört ja nicht zu euch. |
+| Eine **Person aus der Liste** antippen | Ein Bruder eurer Versammlung. Er bekommt die Aufgabe wie jede andere: Bestätigung, Erinnerung, Anrechnung auf die Auslastung. |
+
+Beides steht im selben Fenster untereinander, jeder Weg führt also auch wieder
+zurück. **Entfernen** und **Leeren** setzen den Platz auf „Gastredner" zurück —
+den Redner des öffentlichen Vortrags vereinbart man, deshalb besetzt die
+Automatik ihn nie von sich aus.
+
+Ein auswärtiger Redner muss dafür **nicht** als Person angelegt werden.
+
 Die Auslastung zählt dieselben **fünf Wochen**, die du im Zuteilungs-Fenster
 unter jedem Namen siehst („2 Aufgaben in 5 Wochen") und die die fünf kleinen
 Quadrate daneben zeigen – die Zahl erklärt also genau die Reihenfolge, in der die

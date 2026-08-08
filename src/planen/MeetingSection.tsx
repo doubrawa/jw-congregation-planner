@@ -4,7 +4,7 @@ import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../
 import { istSchuelerteil } from '../data/aux-class'
 import { isSong, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER } from '../data/meeting-edit'
-import { isGuestRole, kennungVon } from '../data/planning'
+import { isSpeakerRole, kennungVon } from '../data/planning'
 import { SONG_WORD } from '../i18n/translate-data'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
@@ -102,7 +102,10 @@ export function MeetingSection({
         label: item.title + suffix + raum,
         priv: slot.bereichsKey ?? null,
         groups: false,
-        guest: isGuestRole(slot.rolle),
+        // `isSpeakerRole`, nicht `isGuestRole`: das Flag öffnet die
+        // Freitext-Felder und muss deshalb auch beim **eigenen** Redner gesetzt
+        // sein — sonst gäbe es keinen Weg zurück zum Gastredner (T29).
+        guest: isSpeakerRole(slot.rolle),
       },
     })
   }

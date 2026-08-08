@@ -106,6 +106,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 39 | Abwesende ausgegraut ans Listenende | Zuteilungs-Sheet | Planer | `data/absence.ts` |
 | 40 | Hinweis „heute schon zugeteilt" (warnen statt blocken) | Zuteilungs-Sheet | Planer | `assignmentsInMeeting` |
 | 41 | Externe Redner als Freitext (Gastredner/Kreisaufseher) | Zuteilungs-Sheet | Planer | `PartSlotSelection.guest`, `isGuestRole` |
+| 41a | Öffentlicher Vortrag umschaltbar: Gastredner ↔ eigener Redner (T29) | Zuteilungs-Sheet | Planer | `isSpeakerRole`, `ROLE_OWN_SPEAKER`, `slotRolle` |
 | 42 | Auto-Zuteilung, getrennt nach Aufgaben / Hilfsdiensten | Planen | Planer | `planen/AutoAssignPanel.tsx`, `autoAssignMeeting` |
 | 43 | Leeren mit Zwei-Tipp-Bestätigung | Planen | Planer | `AutoAssignPanel.tsx` |
 | 44 | Konflikt-Banner: abwesend, Doppelbelegung, Hilfsdienst+Aufgabe, Serie ≥3 Wochen | Planen | Planer | `planen/PlanBanners.tsx`, `weekConflicts` |

@@ -22,7 +22,9 @@ import {
   derivePendingIds,
   deriveSubstituteReqs,
   helperKeyParts,
+  isGuestRole,
   shiftPartConfirmations,
+  slotRolle,
   swapPartConfirmations,
 } from '../data/planning'
 import {
@@ -549,8 +551,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
             `${action.name} — ${sel.label} · ${state.weeks[sel.wi].range}`,
           )
         : state.notifs
-      // Externe Redner (Gastredner/Kreisaufseher) haben keinen Bestätigungs-Flow
-      const isGuest = sel.kind === 'part' && sel.guest
+      // Externe Redner (Gastredner/Kreisaufseher) haben keinen Bestätigungs-Flow.
+      //
+      // Entscheidend ist die Rolle, die gerade **geschrieben** wurde — nicht das
+      // Auswahl-Flag `sel.guest`. Das Flag sagt nur, dass es der Redner-Platz
+      // ist; ob dort ein eigener Bruder oder ein Auswärtiger steht, sagt erst
+      // die Rolle. Auf das Flag zu sehen war die zweite Hälfte von F1: der
+      // eigene Redner bekam `pid` und Rolle „Redner", blieb aber trotzdem vom
+      // Bestätigungs-Flow ausgenommen.
+      const isGuest = isGuestRole(slotRolle(weeks, sel))
       const pendingIds =
         action.pid && !isGuest && !state.pendingIds.includes(action.pid)
           ? [...state.pendingIds, action.pid]

@@ -19,7 +19,8 @@ import {
   DEMO_SERVICES,
   FS_BASE,
 } from '../data/demo'
-import { displayName, isSong } from '../data/helpers'
+import { LABEL_VORTRAG } from '../data/constants'
+import { displayName, isSong, ROLE_OWN_SPEAKER } from '../data/helpers'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
@@ -437,10 +438,45 @@ describe('assign (Zuteilen)', () => {
     expect(next.slotSel).toBeNull()
   })
 
-  it('Gastredner-Slot landet nicht in pendingIds', () => {
+  /*
+    Der Redner-Platz des öffentlichen Vortrags trägt beide Fälle, und **die
+    geschriebene Rolle** entscheidet — nicht `sel.guest`. Das Flag sagt nur
+    „das ist der Redner-Platz"; es steht bei beiden Fällen auf true, weil es
+    im Sheet die Freitext-Felder öffnet (T29).
+
+    Vorher las der Reducer das Flag. Dadurch blieb der eigene Redner trotz
+    `pid` und Rolle „Redner" vom Bestätigungs-Flow ausgenommen — die zweite
+    Hälfte von F1.
+  */
+  const rednerPlatz = (): PartSlotSelection => {
     const s = makeState()
-    const sel = { ...firstPartSlot(s.weeks[0], 'mid'), guest: true }
-    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Gast Redner', pid: 'gast-1' })
+    const si = s.weeks[0].we.sections.findIndex((x) => x.label === LABEL_VORTRAG)
+    return { kind: 'part', wi: 0, tab: 'we', si, ii: 0, ni: 0, priv: 'vortrag', groups: false, label: 'Vortrag', guest: true }
+  }
+
+  it('Gastredner landet nicht in pendingIds', () => {
+    const sel = rednerPlatz()
+    const next = reducer(makeState({ slotSel: sel }), {
+      type: 'assign', name: 'Gast Redner', rolle: 'Gastredner · Vers. Nordheim',
+    })
+    expect(next.pendingIds).not.toContain('gast-1')
+    expect(next.confirmations).toEqual({})
+  })
+
+  it('eigener Redner landet sehr wohl in pendingIds', () => {
+    const sel = rednerPlatz()
+    const next = reducer(makeState({ slotSel: sel }), {
+      type: 'assign', name: 'Neue Person', rolle: ROLE_OWN_SPEAKER, pid: 'eigen-1',
+    })
+    expect(next.pendingIds).toContain('eigen-1')
+  })
+
+  it('eine pid allein genügt nicht — auf einem Gastredner-Platz zählt die Rolle', () => {
+    // Gegenprobe zum Flag: dieselbe pid, nur die Rolle unterscheidet sich.
+    const sel = rednerPlatz()
+    const next = reducer(makeState({ slotSel: sel }), {
+      type: 'assign', name: 'Gast Redner', rolle: 'Gastredner', pid: 'gast-1',
+    })
     expect(next.pendingIds).not.toContain('gast-1')
   })
 

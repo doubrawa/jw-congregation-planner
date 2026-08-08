@@ -62,10 +62,28 @@ describe('Wochentage der Zusammenkünfte', () => {
 })
 
 describe('Externe Rollen', () => {
-  const rollen = ['Gastredner', 'Kreisaufseher', 'Vorsitz', 'Gebet', 'Leser', '', 'Gesprächspartner']
+  const rollen = [
+    'Gastredner',
+    'Gastredner · Vers. Nordheim',
+    'Kreisaufseher',
+    'Redner', // eigener Redner (T29) — ausdrücklich NICHT extern
+    'Vorsitz',
+    'Gebet',
+    'Leser',
+    '',
+    'Gesprächspartner',
+  ]
 
   it.each(rollen)('„%s" wird beidseitig gleich eingeordnet', (rolle) => {
     expect(EDGE_SKIP.test(rolle)).toBe(isGuestRole(rolle))
+  })
+
+  it('der eigene Redner bekommt auch in den Edge Functions eine Erinnerung', () => {
+    // Er wird dort nicht gesondert behandelt — er fällt schlicht nicht unter
+    // SKIP_ROLE. Genau darauf beruht T29: eine Rolle, kein Sonderweg. Wäre
+    // „Redner" versehentlich in den Ausdruck geraten, bliebe der eigene Redner
+    // stumm, obwohl die App ihm eine Bestätigung abverlangt.
+    expect(EDGE_SKIP.test('Redner')).toBe(false)
   })
 })
 

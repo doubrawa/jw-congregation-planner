@@ -366,7 +366,7 @@ bleiben dort deutsch.
 > Diese Punkte betreffen Abläufe, nicht Code-Qualität. Vor der Umsetzung
 > abstimmen, wie die Versammlung es tatsächlich handhabt.
 
-### T29 · Öffentlicher Vortrag: eigener Redner möglich machen 🏗
+### T29 · Öffentlicher Vortrag: eigener Redner möglich machen 🏗 ✅ erledigt
 `parse.ts:391` legt den Slot fest mit `rolle: 'Gastredner'` an; `SKIP_ROLE` filtert
 ihn überall heraus. Ein Redner der **eigenen** Versammlung bekommt dadurch keine
 `pid`, keine Aufgabe, keine Bestätigung, keine Erinnerung und zählt nicht in der
@@ -379,6 +379,54 @@ Auslastung. Umschaltbar machen: eigener Redner (Person) ↔ Gastredner (Freitext
 > Freitext wie bisher. Beide Fälle müssen nebeneinander bestehen; ein
 > auswärtiger Redner soll **nicht** als Person angelegt werden müssen.
 > Damit ist T29 fachlich geklärt und nur noch Arbeit.
+
+> **Umgesetzt am 8. August 2026.** Der Schalter ist die Wahl selbst — kein
+> zusätzliches Bedienelement:
+>
+> | Weg im Zuteilungs-Sheet | Rolle im Slot | Folge |
+> | --- | --- | --- |
+> | Freitext (Name + Versammlung) | `Gastredner · <Vers.>` | wie bisher: kein Flow, keine Anrechnung |
+> | Person aus der Liste antippen | `Redner` + `pid` | Aufgabe, Bestätigung, Erinnerung, Auslastung |
+>
+> Beide Wege stehen im selben Sheet untereinander, jeder führt also zurück.
+> `Entfernen` und `Leeren` setzen auf `Gastredner` zurück: ein leerer Platz ist
+> auswärtig, sonst besetzte ihn die Auto-Zuteilung — den Redner vereinbart man.
+>
+> **Kein einziger Sonderweg.** `Redner` steht schlicht nicht in `SKIP_ROLE`;
+> alles Weitere folgt daraus von selbst, in den Edge Functions ebenso wie im
+> Client. Auch der Begriff musste nicht erfunden werden: `translate-data.ts`
+> übersetzt „Redner" seit jeher in allen 33 Fremdsprachen.
+>
+> Die zweite Hälfte saß im Reducer: er entschied über den Bestätigungs-Flow am
+> Auswahl-Flag `sel.guest` statt an der geschriebenen Rolle. Das Flag sagt nur
+> „das ist der Redner-Platz" und steht bei **beiden** Fällen auf true — es
+> öffnet die Freitext-Felder. Jetzt liest der Reducer die Rolle zurück
+> (`slotRolle`).
+>
+> **Dabei aufgefallen, eigene Ursache, mitkorrigiert:** `gehoertZu` fiel ohne
+> `pid` auf den Anzeigenamen zurück — auch bei externen Rednern. Ein Gastredner,
+> der zufällig wie ein Bruder der eigenen Versammlung heißt, erhöhte dessen
+> Auslastung und galt für ihn als „heute schon zugeteilt"; die Auto-Zuteilung
+> überging ihn daraufhin. Die Warnung vor doppelten Anzeigenamen greift dort
+> nicht, denn der Gast steht in keiner Personenliste. Für ihn ist der Name kein
+> schwächerer Anhalt, sondern gar keiner.
+>
+> Damit `gehoertZu` das entscheiden kann, ist das Rollen-Vokabular
+> (`isGuestRole`, `isSpeakerRole`, `ROLE_OWN_SPEAKER`, `rolleBasis`) von
+> `planning.ts` nach `helpers.ts` gewandert — die untere Schicht darf nicht
+> nach oben greifen. `planning.ts` reicht es weiter, alle bestehenden
+> Import-Wege bleiben gültig, und der Paritätstest vergleicht weiterhin
+> Client gegen Edge (er kennt jetzt auch „Redner").
+>
+> 13 Tests in `src/data/t29.test.ts`, drei im Reducer, zwei in
+> `edge-parity.test.ts`. Gegenprobe für beide Hälften einzeln gefahren: ohne
+> den `gehoertZu`-Schutz fallen 3, ohne die Reducer-Korrektur 1.
+>
+> Im Browser nachgestellt: Gastredner-Platz geöffnet, Bruder gewählt → der Slot
+> liest „Redner: Uwe Bergmann…" (das `…` ist die ausstehende Bestätigung, die
+> es vorher nicht gab); Sheet erneut geöffnet → Freitext-Felder leer und
+> erreichbar; Gastredner eingetragen → „Gastredner · Vers. Westtal: K. Steiner✓"
+> ohne Flow. Konsole sauber.
 
 ### T30 · Sonderwochen setzbar machen 🏗 — Zuschnitt erweitert
 `week.co`, `week.mem`, `week.memCancel` werden **nur in `demo.ts`** gesetzt. Chips,
