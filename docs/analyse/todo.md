@@ -474,7 +474,7 @@ mindestens einen Toast zeigen, wenn nichts passiert.
 > Feld-Tests — Deutsch bleibt grün. Das ist der Punkt: es war keine Lücke,
 > sondern eine deutsche Annahme.
 
-### T61 · `lacAdd` findet das Versammlungsbibelstudium nur auf Deutsch 🔧
+### T61 · `lacAdd` findet das Versammlungsbibelstudium nur auf Deutsch 🔧 ✅ erledigt
 Beim Umsetzen von T32 aufgefallen, **nicht** mit erledigt (eigener Punkt, damit
 er nicht untergeht): `lacAddIndex` (`meeting-edit.ts`) sucht die Einfügestelle
 mit `title.startsWith('Versammlungsbibelstudium')`. Bei nicht-deutscher
@@ -485,6 +485,22 @@ Dieselbe Familie wie T32, aber gutartiger: es passiert etwas, nur an der
 falschen Stelle. Strukturell lösbar ohne Textvergleich — das Bibelstudium ist
 der Punkt mit einem `leser`-Slot. In `umgebungspruefungen.md` war die Ursache
 schon notiert (Soft-Hyphens im Rohtext), ohne dass daraus eine Aufgabe wurde.
+
+> **Umgesetzt am 8. August 2026.** `lacAddIndex` sucht jetzt den Punkt mit
+> einem `leser`-Slot. Den vergibt `parse.ts` genau einmal je Zusammenkunft
+> (letzter Unser-Leben-Punkt → Leiter + Leser); die von `lacAdd` erzeugten
+> Punkte tragen nur `studium`, ein zweiter eigener Punkt reiht sich also hinter
+> dem ersten ein statt davor.
+>
+> `src/data/lac-einfuegestelle.test.ts` prüft sechs Sprachen und vier
+> Grenzfälle. Gegenprobe: mit dem alten `startsWith` fallen **7 von 10** —
+> genau die fünf nicht-deutschen Fassungen plus die beiden Struktur-Tests,
+> Deutsch bleibt grün. Das ist der Beleg, dass es eine deutsche Annahme war.
+>
+> Dabei aufgefallen: die Fixture in `localize.test.ts` legte das Bibelstudium
+> **ohne** Leser-Slot an — so entsteht es real nirgends. Sie ist jetzt
+> vollständig; das ist keine Anpassung des Tests an den Code, sondern an den
+> Import.
 
 ### T33 · Schlusslied nachtragbar machen ⚡ ✅ erledigt
 `applyStudy` fügt das Lied als eigenes Item ein, während der Titel weiterhin

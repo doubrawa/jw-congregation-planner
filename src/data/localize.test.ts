@@ -22,7 +22,10 @@ function makeWeek(): Week {
         farbe: 'wein',
         items: [
           { num: 6, title: 'Punkt A', meta: '15 Min.', names: [{ name: '', bereichsKey: 'vortrag' }] },
-          { num: 7, title: 'Versammlungsbibelstudium', meta: '30 Min.', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }] },
+          // Leiter **und** Leser — so legt `parse.ts` den letzten Unser-Leben-Punkt
+          // immer an. Der Leser-Slot ist seit T61 die sprachunabhängige Marke, an
+          // der `lacAddIndex` das Bibelstudium erkennt.
+          { num: 7, title: 'Versammlungsbibelstudium', meta: '30 Min.', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] },
         ],
       },
     ],

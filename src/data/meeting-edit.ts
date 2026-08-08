@@ -282,10 +282,21 @@ function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b:
  * Versammlungsbibelstudium, sonst am Ende. Getrennt exportiert, weil der
  * Reducer sie kennen muss — ab dort rutschen alle Bestätigungen eine Position
  * weiter (task_keys sind positionsbasiert).
+ *
+ * **Erkannt wird das Bibelstudium an seinem Leser-Slot, nicht am Titel** (T61):
+ * `startsWith('Versammlungsbibelstudium')` traf bei fremdsprachiger
+ * Versammlung nie, und der neue Punkt landete dann dahinter statt davor.
+ * Derselbe Fehlertyp wie T32 — eine deutsche Annahme in einer Sprachdatei.
+ *
+ * Der Leser-Slot ist die verlässliche Marke: der Import vergibt ihn genau
+ * einmal je Zusammenkunft (`parse.ts` — letzter Unser-Leben-Punkt bekommt
+ * Leiter + Leser), und die von `lacAdd` erzeugten Punkte tragen nur `studium`.
+ * Ein zweiter eigener Punkt reiht sich damit hinter dem ersten ein, nicht
+ * davor.
  */
 export function lacAddIndex(items: Meeting['sections'][number]['items']): number {
   const vbsIdx = items.findIndex(
-    (x) => !isSong(x) && x.title.startsWith('Versammlungsbibelstudium'),
+    (x) => !isSong(x) && x.names.some((n) => n.bereichsKey === 'leser'),
   )
   return vbsIdx >= 0 ? vbsIdx : items.length
 }
