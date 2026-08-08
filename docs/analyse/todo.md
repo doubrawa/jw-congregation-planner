@@ -680,7 +680,7 @@ Heute ersetzen **fünf** Mechanismen einen Fremdschlüssel: zwei Lade-Migratione
 Rückweg Name → Konto. `FsInstance.leader` hat gar keine `pid`.
 → [code-review.md § 3.3](code-review.md)
 
-### T39 · Schreibkonflikte zwischen Planern verhindern 🔧
+### T39 · Schreibkonflikte zwischen Planern verhindern 🔧 ✅ erledigt
 `saveWeek` schreibt die **komplette Woche** als JSONB-Upsert, ohne Locking und
 ohne Versionsspalte. Zwei gleichzeitig planende Koordinatoren überschreiben sich
 vollständig. Der README behandelt dieses Risiko ausführlich für den
@@ -689,6 +689,51 @@ vollständig. Der README behandelt dieses Risiko ausführlich für den
 `updated_at` in `weeks`, beim Speichern mitschicken, bei Konflikt neu laden und
 den Nutzer informieren.
 → [code-review.md § 3.7](code-review.md)
+
+> **Umgesetzt am 8. August 2026** — genau so, mit drei Zusätzen, die sich beim
+> Bauen als nötig erwiesen.
+>
+> [migration-016](../../supabase/migration-016-wochen-stand.sql) ergänzt
+> `weeks.updated_at` und einen Trigger. **Der Trigger setzt den Stand, nicht der
+> Client** — sonst könnte ein veralteter Client ihn mitliefern und sich an der
+> Prüfung vorbeischreiben; die Sicherung säße auf der falschen Seite. Der Client
+> erfindet den Wert nie: er reicht die Zeichenkette zurück, die PostgREST ihm
+> gegeben hat, womit Genauigkeit und Zeitzone kein Thema sind.
+>
+> Ablauf in `saveWeek`: Stand unbekannt → einfügen (ein Unique-Verstoß heißt
+> dann: ein anderer hat die Zeile angelegt, also Konflikt). Stand bekannt →
+> Update mit Bedingung `updated_at = <Stand>`.
+>
+> **Zusatz 1 — nachsehen, bevor Alarm geschlagen wird.** Ein *falscher*
+> Konfliktalarm verwirft die Arbeit des Nutzers. Trifft das geschützte Update
+> keine Zeile, wird der Stand zuerst gelesen: steht dort noch der eigene, war
+> niemand schneller, und es wird ungeschützt geschrieben. Der zusätzliche Umlauf
+> kostet nur in dem Fall etwas, in dem sonst etwas verlorenginge.
+>
+> **Zusatz 2 — Schreibvorgänge je Position hintereinander.** Ohne das gingen
+> zwei rasch aufeinanderfolgende Änderungen derselben Woche mit demselben Stand
+> los, und die zweite meldete einen Konflikt gegen sich selbst.
+>
+> **Zusatz 3 — bei Konflikt wird alles neu geladen**, nicht nur die eine Woche:
+> derselbe Weg wie beim Anmelden, also ohne zweite Zusammenbau-Logik, die
+> auseinanderlaufen könnte. Konflikte sind selten; eine Handvoll Planer teilt
+> sich eine Versammlung.
+>
+> **Der Text ist `toastSpeicherFehler`** („Änderung konnte nicht gespeichert
+> werden — bitte neu laden"). Er trifft zu und liegt in allen 34 Sprachen
+> gemessen vor. Ein eigener Wortlaut wäre schärfer, hieße aber 33 erfundene
+> Übersetzungen — und eine erfundene ist schlimmer als eine zutreffende, die es
+> schon gibt.
+>
+> 8 Tests in `src/lib/week-konflikt.test.ts` (Stand lernen und nachziehen,
+> echter Konflikt, Unique-Verstoß, falscher Alarm, Serialisierung,
+> Platzhalter, echter Schreibfehler). Gegenprobe: ohne die Stand-Bedingung
+> fallen 4.
+>
+> ⚠ **[migration-016](../../supabase/migration-016-wochen-stand.sql) muss beim
+> Betreiber eingespielt werden**, sonst schlägt jedes Speichern einer Woche mit
+> „Spalte existiert nicht" fehl. `schema.sql` enthält sie für
+> Neuinstallationen.
 
 ### T40 · Geteilte Logik für Client und Edge Functions 🔧
 Viermal dupliziert: `meetingDayOffsets`, `displayName`, `taskDate`,

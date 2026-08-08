@@ -84,6 +84,8 @@ interface GroupRow {
 interface WeekRow {
   position: number
   data: Week
+  /** Stand der Zeile — Grundlage der Konfliktprüfung beim Speichern (T39). */
+  updated_at: string
 }
 
 interface AbsenceRow {
@@ -586,7 +588,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
-    supabase.from('weeks').select('position, data').eq('congregation_id', congregationId).gte('position', weekFrom).order('position'),
+    supabase.from('weeks').select('position, data, updated_at').eq('congregation_id', congregationId).gte('position', weekFrom).order('position'),
     // Versammlungsweit, nicht nur die eigenen: die Planung muss wissen, wer
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
@@ -624,6 +626,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Nachbarwoche. Lücken werden jetzt zu Platzhaltern, die nie gespeichert
   // werden (siehe Week.stub).
   const weekRows = (weeks.data ?? []) as WeekRow[]
+  // Stände merken: jeder spätere Schreibvorgang nennt den Stand, auf dem er
+  // beruht (T39). Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
+  // Konflikt-Nachladen) darf keine Stände einer anderen Versammlung erben.
+  staendeSetzen(weekRows.map((r) => [r.position, r.updated_at]))
   const letztePos = weekRows.reduce((max, r) => Math.max(max, r.position), weekFrom - 1)
   const roh = Array.from({ length: letztePos + 1 }, stubWeek)
   for (const row of weekRows) {
@@ -776,16 +782,150 @@ async function run(promise: PromiseLike<{ error: { message: string } | null }>):
   melder?.()
 }
 
+/* ---- Schreibkonflikte zwischen Planern (T39) ----------------------------- */
+
+/**
+ * Stand je Wochen-Position, wie ihn die Datenbank zuletzt bestätigt hat.
+ *
+ * `saveWeek` schrieb die **komplette Woche** als Upsert — ohne Sperre und ohne
+ * Versionskennzeichen. Planen zwei Koordinatoren gleichzeitig, gewinnt der
+ * Letzte: seine Fassung überschreibt die des anderen vollständig und lautlos.
+ *
+ * Die Werte werden nie selbst gebildet, sondern immer nur zurückgereicht — die
+ * Zeichenkette kommt aus PostgREST und geht unverändert dorthin zurück. Damit
+ * sind Genauigkeit und Zeitzone kein Thema.
+ */
+const wochenStand = new Map<number, string>()
+
+/**
+ * Schreibvorgänge je Position hintereinander.
+ *
+ * Ohne das kämpfte man gegen sich selbst: zwei rasch aufeinanderfolgende
+ * Änderungen derselben Woche gingen beide mit demselben Stand los, und die
+ * zweite meldete einen Konflikt, den es nicht gab.
+ */
+const wochenKette = new Map<number, Promise<void>>()
+
+function staendeSetzen(paare: Array<[number, string]>): void {
+  wochenStand.clear()
+  wochenKette.clear()
+  for (const [pos, stand] of paare) wochenStand.set(pos, stand)
+}
+
+/**
+ * Meldung „ein anderer Planer war schneller". Wie beim Schreibfehler kennt
+ * diese Schicht weder Dispatch noch Sprache — sie meldet nur, *dass* es
+ * passiert ist; wer neu lädt und es anzeigt, meldet sich hier an (store.tsx).
+ */
+type Konfliktmelder = () => void
+
+let konfliktMelder: Konfliktmelder | null = null
+
+export function setKonfliktMelder(fn: Konfliktmelder | null): void {
+  konfliktMelder = fn
+}
+
+/**
+ * Eine Woche schreiben und dabei den Stand prüfen.
+ *
+ * Ablauf:
+ *  1. Kein Stand bekannt → die Zeile gibt es hier noch nicht: einfügen.
+ *  2. Stand bekannt → Update **mit** Bedingung `updated_at = <Stand>`.
+ *     Eine getroffene Zeile bringt den neuen Stand zurück; fertig.
+ *  3. Keine Zeile getroffen → nachsehen, warum. Steht dort noch immer unser
+ *     Stand, war es kein Konflikt, sondern eine Eigenheit des Vergleichs —
+ *     dann ungeschützt schreiben. Steht ein anderer da, war jemand schneller.
+ *
+ * Schritt 3 ist der Grund, warum hier überhaupt nachgefragt wird: ein
+ * **falscher** Konfliktalarm würde die Arbeit des Nutzers verwerfen. Der
+ * zusätzliche Umlauf kostet nur in dem Fall etwas, in dem sonst etwas
+ * verlorenginge.
+ */
+async function schreibeWoche(congregationId: string, position: number, week: Week): Promise<void> {
+  if (!supabase) return
+  const stand = wochenStand.get(position)
+
+  if (stand === undefined) {
+    const { data, error } = await supabase
+      .from('weeks')
+      .insert({ congregation_id: congregationId, position, data: week })
+      .select('updated_at')
+      .maybeSingle()
+    if (error) {
+      // Verstoß gegen unique(congregation_id, position): die Zeile existiert
+      // längst, wir kannten sie nur nicht — also hat sie ein anderer angelegt.
+      if (error.code === '23505') konfliktMelder?.()
+      else {
+        console.error('[persistenz]', error.message)
+        melder?.()
+      }
+      return
+    }
+    if (data) wochenStand.set(position, data.updated_at as string)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('weeks')
+    .update({ data: week })
+    .eq('congregation_id', congregationId)
+    .eq('position', position)
+    .eq('updated_at', stand)
+    .select('updated_at')
+    .maybeSingle()
+  if (error) {
+    console.error('[persistenz]', error.message)
+    melder?.()
+    return
+  }
+  if (data) {
+    wochenStand.set(position, data.updated_at as string)
+    return
+  }
+
+  const { data: jetzt, error: leseFehler } = await supabase
+    .from('weeks')
+    .select('updated_at')
+    .eq('congregation_id', congregationId)
+    .eq('position', position)
+    .maybeSingle()
+  if (leseFehler) {
+    console.error('[persistenz]', leseFehler.message)
+    melder?.()
+    return
+  }
+  if (jetzt && jetzt.updated_at === stand) {
+    // Der Stand ist unverändert — niemand war schneller. Der Filter hat die
+    // Zeile aus einem anderen Grund nicht getroffen; ohne diesen zweiten Anlauf
+    // ginge die Änderung verloren, obwohl nichts kollidiert ist.
+    const { data: erneut, error: schreibFehler } = await supabase
+      .from('weeks')
+      .update({ data: week })
+      .eq('congregation_id', congregationId)
+      .eq('position', position)
+      .select('updated_at')
+      .maybeSingle()
+    if (schreibFehler) {
+      console.error('[persistenz]', schreibFehler.message)
+      melder?.()
+      return
+    }
+    if (erneut) wochenStand.set(position, erneut.updated_at as string)
+    return
+  }
+  konfliktMelder?.()
+}
+
 export function saveWeek(congregationId: string, position: number, week: Week): void {
   if (!supabase) return
   // Platzhalter nie schreiben: an dieser Position steht in der Datenbank die
   // echte, nur nicht geladene Woche — ein Upsert würde sie leeren.
   if (week.stub) return
-  void run(
-    supabase
-      .from('weeks')
-      .upsert({ congregation_id: congregationId, position, data: week }, { onConflict: 'congregation_id,position' }),
-  )
+  const vorher = wochenKette.get(position) ?? Promise.resolve()
+  // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
+  // lassen, sonst schriebe diese Woche nie wieder.
+  const naechster = vorher.then(() => schreibeWoche(congregationId, position, week).catch(() => {}))
+  wochenKette.set(position, naechster)
 }
 
 export function savePerson(congregationId: string, person: Person): void {
