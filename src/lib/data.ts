@@ -18,9 +18,11 @@ import {
   DEMO_SERVICES,
 } from '../data/demo'
 import { fsBaseFromWeeks, regenFsWeeks } from '../data/fs'
+import { itemTaskKey, partTaskKey } from '../data/planning'
 import {
   displayName,
   emptyQualifications,
+  neueItemId,
   normalizeChairKeys,
   serviceQualKey,
   shortDisplayName,
@@ -214,6 +216,78 @@ export function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[]
     mid: mapMeetingNames(week.mid, fix),
     we: mapMeetingNames(week.we, fix),
   }))
+}
+
+/**
+ * Trägt jedem Programmpunkt eine **stabile Kennung** nach und benennt die
+ * Bestätigungen einmalig mit (T37).
+ *
+ * Die Bestätigungen hingen an der Position (`"60|mid|part|2|1|0"`). Das ist die
+ * Ursache von T16 (ein eingefügter LAC-Punkt verschiebt alle folgenden, die
+ * Bestätigungen blieben an der alten Zahl kleben) und der Grund, warum der
+ * Wochen-Index die Datenbank-Position sein *muss*.
+ *
+ * **Idempotent**: ein Punkt, der schon eine Kennung trägt, wird übersprungen.
+ * Beim zweiten Laden gibt es also nichts mehr zu tun.
+ *
+ * **Verlustfrei**: umbenannt wird nur, was es gibt. Ein Punkt ohne Bestätigung
+ * bekommt einfach seine Kennung; eine Bestätigung ohne passenden Punkt (Altlast
+ * eines gelöschten Slots) bleibt liegen, wo sie ist, und stört niemanden.
+ *
+ * Beide Räume werden geprüft — Hauptsaal und Zusätzliche Klasse —, und zwar
+ * unabhängig davon, ob die Klasse gerade besteht: ihre Bestätigungen bleiben
+ * beim Abschalten bewusst stehen, damit ein Wiedereinschalten sie wiederfindet.
+ */
+export function migrateItemIds(
+  weeks: Week[],
+  confirmations: ConfirmationMap,
+): { weeks: Week[]; confirmations: ConfirmationMap; renames: Array<[string, string]> } {
+  const renames: Array<[string, string]> = []
+  let anyChanged = false
+
+  const next = weeks.map((week, wi) => {
+    if (week.stub) return week
+    let weekChanged = false
+    const kopie = { ...week }
+    for (const tab of ['mid', 'we'] as const) {
+      let meetingChanged = false
+      const sections = week[tab].sections.map((section, si) => ({
+        ...section,
+        items: section.items.map((item, ii) => {
+          if ('song' in item || item.iid) return item
+          meetingChanged = true
+          const iid = neueItemId()
+          // Positions-Schlüssel → Kennungs-Schlüssel, für beide Räume.
+          for (const [raum, slots] of [
+            [false, item.names] as const,
+            [true, item.aux ?? []] as const,
+          ]) {
+            slots.forEach((_slot, ni) => {
+              const alt = partTaskKey(wi, tab, si, ii, ni, raum)
+              if (!(alt in confirmations)) return
+              renames.push([alt, itemTaskKey(wi, tab, iid, ni, raum)])
+            })
+          }
+          return { ...item, iid }
+        }),
+      }))
+      if (!meetingChanged) continue
+      kopie[tab] = { ...week[tab], sections }
+      weekChanged = true
+    }
+    if (!weekChanged) return week
+    anyChanged = true
+    return kopie
+  })
+
+  if (renames.length === 0 && !anyChanged) return { weeks, confirmations, renames }
+
+  const nextConf = { ...confirmations }
+  for (const [alt, neu] of renames) {
+    nextConf[neu] = nextConf[alt]
+    delete nextConf[alt]
+  }
+  return { weeks: anyChanged ? next : weeks, confirmations: nextConf, renames }
 }
 
 /**
@@ -707,14 +781,34 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // lieber die Zeile auslassen als eine Woche an falscher Stelle zeigen.
     if (row.position >= weekFrom && row.position <= letztePos) roh[row.position] = row.data
   }
-  const weekList = normalizeChairKeys(
+  const gemigriert = normalizeChairKeys(
     migrateAssignmentPids(migrateAssignmentNames(normalizeWeekHelpers(roh), personList), personList),
   )
 
-  const confirmations: ConfirmationMap = {}
+  const rohConf: ConfirmationMap = {}
   for (const row of (confs.data ?? []) as ConfirmationRow[]) {
     if (row.status === 'bestätigt' || row.status === 'verhindert') {
-      confirmations[row.task_key] = row.status
+      rohConf[row.task_key] = row.status
+    }
+  }
+
+  // Stabile Kennungen nachtragen und die Bestätigungen einmalig mit umbenennen
+  // (T37). Idempotent — beim zweiten Laden gibt es nichts mehr zu tun.
+  const umgestellt = migrateItemIds(gemigriert, rohConf)
+  const weekList = umgestellt.weeks
+  const confirmations = umgestellt.confirmations
+  if (umgestellt.renames.length > 0) {
+    // Erst die Datenbank, dann die Wochen: bricht das Umbenennen ab, bleiben
+    // die Wochen ohne Kennung und der nächste Ladevorgang versucht es erneut.
+    // Andersherum wären die Bestätigungen verwaist.
+    void renameConfirmationKeys(congregationId, umgestellt.renames).then(() => {
+      for (let i = 0; i < weekList.length; i++) {
+        if (weekList[i] !== gemigriert[i]) saveWeek(congregationId, i, weekList[i])
+      }
+    })
+  } else {
+    for (let i = 0; i < weekList.length; i++) {
+      if (weekList[i] !== gemigriert[i]) saveWeek(congregationId, i, weekList[i])
     }
   }
 

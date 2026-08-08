@@ -11,7 +11,7 @@
 
 import { angleichen, hatAuxKlasse } from './aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from './constants'
-import { isSong } from './helpers'
+import { isSong, neueItemId } from './helpers'
 import { meetingDateParts, meetingTimesOf } from './meeting-dates'
 import type { Abweichung, Meeting, MeetingKey, PartItem, Week } from './types'
 import { ersteZahl, ersteZahlErsetzen } from './ziffern'
@@ -319,7 +319,10 @@ export function lacAdd(
   const items = meeting.sections[si].items
   // Ein eigener Punkt unter „Unser Leben als Christ" ist kein öffentlicher
   // Vortrag — der Bereich blieb hier fälschlich auf 'vortrag' stehen (F6).
-  const newItem: PartItem = { title: trimmed, meta: '10 Min.', mins: 10, names: [{ name: '', bereichsKey: 'studium' }] }
+  // Die stabile Kennung (T37) macht die Bestätigungen unabhängig von der
+  // Position: der neue Punkt schiebt die folgenden weiter, ihre Bestätigungen
+  // bleiben trotzdem bei ihnen.
+  const newItem: PartItem = { iid: neueItemId(), title: trimmed, meta: '10 Min.', mins: 10, names: [{ name: '', bereichsKey: 'studium' }] }
   const at = lacAddIndex(items)
   items.splice(at, 0, newItem)
   meeting.end = shiftEnd(meeting.end, 10)
