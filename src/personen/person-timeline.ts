@@ -1,7 +1,7 @@
 import type { AppState } from '../app/context'
 import { displayName } from '../data/helpers'
 import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
-import { deriveMyTasks, taskKeyWeek } from '../data/planning'
+import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
 
 /**
@@ -68,12 +68,13 @@ export function personTimeline(
   )
   for (const task of tasks) {
     const pos = taskKeyWeek(task.id)
-    const week = pos ? state.weeks[pos.wi] : undefined
+    const wi = pos ? wochenIndex(state.weeks, pos.woche) : -1
+    const week = wi >= 0 ? state.weeks[wi] : undefined
     if (!pos || !week) continue
     // Tag und Uhrzeit kommen aus meeting-dates.ts — derselben Quelle wie
     // Countdown, Erinnerung und Abwesenheitsprüfung. Die Zeitleiste hatte
     // dafür eine eigene Rechnung, was bei abweichenden Terminen auseinanderlief.
-    const datum = meetingDate(week, pos.wi, pos.tab, state.fsBase, state.congregation.meetings)
+    const datum = meetingDate(week, wi, pos.tab, state.fsBase, state.congregation.meetings)
     entries.push({
       kind: 'meeting',
       key: task.id,

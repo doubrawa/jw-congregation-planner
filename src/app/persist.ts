@@ -154,7 +154,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         if (vorher && nachher) {
           deleteConfirmationRows(
             congId,
-            changedSlotKeys(vorher, nachher, prev.services, sel.wi, sel.tab),
+            changedSlotKeys(vorher, nachher, prev.services, next.weeks[sel.wi]?.start ?? '', sel.tab),
           )
         }
       }
@@ -167,7 +167,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
         deleteConfirmationRows(
           congId,
-          changedSlotKeys(before, after, prev.services, prev.week, mtab(prev.tab)),
+          changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
         )
         wocheSpeichern(congId, next.weeks, prev.week)
       }
@@ -179,7 +179,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (before && after && next.weeks !== prev.weeks) {
         deleteConfirmationRows(
           congId,
-          changedSlotKeys(before, after, prev.services, prev.week, mtab(prev.tab)),
+          changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
         )
         wocheSpeichern(congId, next.weeks, prev.week)
       }
@@ -218,7 +218,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         const count = Math.max(itemNameCount(a), itemNameCount(bItem))
         void swapConfirmationKeys(
           congId,
-          partSwapKeyPairs(prev.week, mtab(prev.tab), action.si, action.ii, b, count),
+          partSwapKeyPairs(prev.weeks[prev.week]?.start ?? '', mtab(prev.tab), action.si, action.ii, b, count),
         )
       }
       break
@@ -236,7 +236,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       const delta = action.type === 'lacRemove' ? -1 : 1
       const { renames, removed } = shiftPartConfirmations(
         prev.confirmations,
-        prev.week,
+        prev.weeks[prev.week]?.start ?? '',
         tab,
         action.si,
         ab,

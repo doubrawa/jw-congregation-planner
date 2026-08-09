@@ -455,7 +455,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   it('liefert nur die eigenen Leitungen, zugeordnet über die Id', () => {
     const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'Treffpunkt-Leiter')
     expect(tasks).toHaveLength(1)
-    expect(tasks[0].id).toBe('fs|0|a')
+    expect(tasks[0].id).toBe('fs|2026-09-07|a')
     expect(tasks[0].title).toBe('Treffpunkt-Leiter')
   })
 
@@ -484,7 +484,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   })
 
   it('übernimmt den Bestätigungs-Status', () => {
-    const conf = { 'fs|0|a': 'bestätigt' as const }
+    const conf = { 'fs|2026-09-07|a': 'bestätigt' as const }
     const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', conf, 'p1', 'Leiter')
     expect(tasks[0].status).toBe('bestätigt')
     expect(deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'L')[0].status).toBe('offen')

@@ -911,7 +911,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     ]
     const s = makeState({ dataStatus: 'ready', personId: me.id, fsWeeks, myTasks: [] })
     const next = reducer(s, { type: 'setLang', lang: 'de' })
-    const fsTask = next.myTasks.find((t) => t.id === 'fs|0|tp1')
+    const fsTask = next.myTasks.find((t) => t.id === 'fs|2026-09-07|tp1')
     expect(fsTask, 'Treffpunkt fehlt in myTasks').toBeDefined()
     expect(fsTask!.status).toBe('offen')
   })
@@ -926,11 +926,11 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
       dataStatus: 'ready',
       personId: me.id,
       fsWeeks,
-      confirmations: { 'fs|0|tp1': 'bestätigt' },
+      confirmations: { 'fs|2026-09-07|tp1': 'bestätigt' },
       myTasks: [],
     })
     const next = reducer(s, { type: 'setLang', lang: 'de' })
-    expect(next.myTasks.find((t) => t.id === 'fs|0|tp1')!.status).toBe('bestätigt')
+    expect(next.myTasks.find((t) => t.id === 'fs|2026-09-07|tp1')!.status).toBe('bestätigt')
   })
 })
 

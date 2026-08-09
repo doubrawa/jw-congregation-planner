@@ -9,7 +9,7 @@ import { emptyQualifications } from './helpers'
 /**
  * T37 — die Bestätigung hängt am Programmpunkt, nicht an seiner Position.
  *
- * Der Schlüssel lautete `"60|mid|part|2|1|0"`: Woche, Zusammenkunft, Abschnitt,
+ * Der Schlüssel lautete `"2026-09-07|mid|part|2|1|0"`: Woche, Zusammenkunft, Abschnitt,
  * **laufende Nummer im Abschnitt**, Platz. Das ist die Ursache einer ganzen
  * Reihe von Problemen — allen voran **T16**: ein eingefügter oder gelöschter
  * LAC-Punkt verschiebt alle folgenden, und die Bestätigungen blieben an der
@@ -17,7 +17,7 @@ import { emptyQualifications } from './helpers'
  * während der eigentliche wieder als offen galt und erneut erinnert wurde.
  * Dagegen musste eigens eine Umbenennungs-Mechanik gebaut werden.
  *
- * Mit `PartItem.iid` lautet der Schlüssel `"60|mid|part|k3f9x|0"`. Abschnitt und
+ * Mit `PartItem.iid` lautet der Schlüssel `"2026-09-07|mid|part|k3f9x|0"`. Abschnitt und
  * laufende Nummer sind weg — und damit auch das Problem.
  */
 
@@ -63,20 +63,20 @@ const lacItems = (w: Week) => w.mid.sections[0].items as PartItem[]
 describe('Der Schlüssel folgt dem Punkt', () => {
   it('mit Kennung fünf Felder, ohne Kennung sechs', () => {
     // An der Länge unterscheidet die Lade-Migration, was sie schon umgestellt hat.
-    expect(itemTaskKey(60, 'mid', 'k3f9x', 0).split('|')).toHaveLength(5)
-    expect(partTaskKey(60, 'mid', 2, 1, 0).split('|')).toHaveLength(6)
+    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0).split('|')).toHaveLength(5)
+    expect(partTaskKey('2026-09-07', 'mid', 2, 1, 0).split('|')).toHaveLength(6)
   })
 
   it('slotTaskKey nimmt die Kennung, sonst die Position', () => {
     const ohne: PartItem = { title: 'X', names: [] }
     const mit: PartItem = { iid: 'k3f9x', title: 'X', names: [] }
-    expect(slotTaskKey(ohne, 60, 'mid', 2, 1, 0)).toBe('60|mid|part|2|1|0')
-    expect(slotTaskKey(mit, 60, 'mid', 2, 1, 0)).toBe('60|mid|part|k3f9x|0')
+    expect(slotTaskKey(ohne, '2026-09-07', 'mid', 2, 1, 0)).toBe('2026-09-07|mid|part|2|1|0')
+    expect(slotTaskKey(mit, '2026-09-07', 'mid', 2, 1, 0)).toBe('2026-09-07|mid|part|k3f9x|0')
   })
 
   it('die Zusätzliche Klasse bekommt einen eigenen Schlüssel', () => {
     const mit: PartItem = { iid: 'k3f9x', title: 'X', names: [] }
-    expect(slotTaskKey(mit, 60, 'mid', 2, 1, 0, true)).toBe('60|mid|aux|k3f9x|0')
+    expect(slotTaskKey(mit, '2026-09-07', 'mid', 2, 1, 0, true)).toBe('2026-09-07|mid|aux|k3f9x|0')
   })
 
   it('Kennungen enthalten kein Trennzeichen', () => {
@@ -100,22 +100,22 @@ describe('Lade-Migration: Kennungen nachtragen', () => {
 
   it('benennt bestehende Bestätigungen mit um', () => {
     const conf: ConfirmationMap = {
-      '0|mid|part|0|0|0': 'bestätigt',
-      '0|mid|part|0|1|1': 'verhindert',
+      '2026-09-07|mid|part|0|0|0': 'bestätigt',
+      '2026-09-07|mid|part|0|1|1': 'verhindert',
     }
     const res = migrateItemIds([makeWeek()], conf)
     const [a, b] = lacItems(res.weeks[0])
     expect(res.confirmations).toEqual({
-      [itemTaskKey(0, 'mid', a.iid!, 0)]: 'bestätigt',
-      [itemTaskKey(0, 'mid', b.iid!, 1)]: 'verhindert',
+      [itemTaskKey('2026-09-07', 'mid', a.iid!, 0)]: 'bestätigt',
+      [itemTaskKey('2026-09-07', 'mid', b.iid!, 1)]: 'verhindert',
     })
     expect(res.renames).toHaveLength(2)
     // Die Eingabe bleibt unangetastet — der Aufrufer braucht sie zum Vergleich.
-    expect(conf['0|mid|part|0|0|0']).toBe('bestätigt')
+    expect(conf['2026-09-07|mid|part|0|0|0']).toBe('bestätigt')
   })
 
   it('ist idempotent — beim zweiten Laden gibt es nichts zu tun', () => {
-    const erst = migrateItemIds([makeWeek()], { '0|mid|part|0|0|0': 'bestätigt' })
+    const erst = migrateItemIds([makeWeek()], { '2026-09-07|mid|part|0|0|0': 'bestätigt' })
     const zweit = migrateItemIds(erst.weeks, erst.confirmations)
     expect(zweit.renames).toEqual([])
     expect(zweit.weeks).toBe(erst.weeks) // gleiche Referenz: nichts geändert
@@ -133,26 +133,26 @@ describe('Lade-Migration: Kennungen nachtragen', () => {
   it('eine Bestätigung ohne passenden Punkt bleibt liegen', () => {
     // Altlast eines gelöschten Slots — sie zu verwerfen wäre Datenverlust,
     // sie umzubenennen unmöglich.
-    const conf: ConfirmationMap = { '0|mid|part|9|9|9': 'bestätigt' }
+    const conf: ConfirmationMap = { '2026-09-07|mid|part|9|9|9': 'bestätigt' }
     const res = migrateItemIds([makeWeek()], conf)
-    expect(res.confirmations['0|mid|part|9|9|9']).toBe('bestätigt')
+    expect(res.confirmations['2026-09-07|mid|part|9|9|9']).toBe('bestätigt')
   })
 })
 
 describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
   /** Woche mit Kennungen und einer Bestätigung am Bibelstudium. */
   function vorbereitet() {
-    const conf: ConfirmationMap = { '0|mid|part|0|1|0': 'bestätigt' } // Leiter des VBS
+    const conf: ConfirmationMap = { '2026-09-07|mid|part|0|1|0': 'bestätigt' } // Leiter des VBS
     const res = migrateItemIds([makeWeek()], conf)
     return { weeks: res.weeks, conf: res.confirmations }
   }
 
   it('nach dem Einfügen gehört die Bestätigung noch demselben Punkt', () => {
     // Vorher: der neue Punkt landet auf Position 1, das Bibelstudium rutscht
-    // auf 2 — und `"0|mid|part|0|1|0"` zeigte plötzlich auf den neuen Punkt.
+    // auf 2 — und `"2026-09-07|mid|part|0|1|0"` zeigte plötzlich auf den neuen Punkt.
     const { weeks, conf } = vorbereitet()
     const vbsId = lacItems(weeks[0])[1].iid!
-    const schluessel = itemTaskKey(0, 'mid', vbsId, 0)
+    const schluessel = itemTaskKey('2026-09-07', 'mid', vbsId, 0)
     expect(conf[schluessel]).toBe('bestätigt')
 
     const nachher = lacAdd(weeks, 0, 'mid', 0, 'Örtliche Hinweise')
@@ -164,7 +164,7 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     ])
     // Das Bibelstudium steht jetzt an Position 2 — sein Schlüssel ist derselbe.
     expect(items[2].iid).toBe(vbsId)
-    expect(slotTaskKey(items[2], 0, 'mid', 0, 2, 0)).toBe(schluessel)
+    expect(slotTaskKey(items[2], '2026-09-07', 'mid', 0, 2, 0)).toBe(schluessel)
     expect(conf[schluessel]).toBe('bestätigt')
   })
 
@@ -183,7 +183,7 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     const items = lacItems(nachher[0])
     expect(items).toHaveLength(1)
     expect(items[0].iid).toBe(vbsId)
-    expect(conf[slotTaskKey(items[0], 0, 'mid', 0, 0, 0)]).toBe('bestätigt')
+    expect(conf[slotTaskKey(items[0], '2026-09-07', 'mid', 0, 0, 0)]).toBe('bestätigt')
   })
 
   it('die abgeleitete Aufgabe trägt denselben Schlüssel', () => {
@@ -199,16 +199,16 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     // Genau das war T16 — der Test hält fest, wogegen die Kennung hilft.
     // Gerechnet wird hier ausdrücklich mit `partTaskKey`, also so, wie es vor
     // T37 überall lief.
-    const conf: ConfirmationMap = { [partTaskKey(0, 'mid', 0, 1, 0)]: 'bestätigt' }
+    const conf: ConfirmationMap = { [partTaskKey('2026-09-07', 'mid', 0, 1, 0)]: 'bestätigt' }
     const nachher = lacAdd([makeWeek()], 0, 'mid', 0, 'Örtliche Hinweise')
     const items = lacItems(nachher[0])
 
     // Position 1 ist jetzt der NEUE Punkt — und der Schlüssel zeigt auf ihn.
     expect(items[1].title).toBe('Örtliche Hinweise')
-    expect(conf[partTaskKey(0, 'mid', 0, 1, 0)]).toBe('bestätigt')
+    expect(conf[partTaskKey('2026-09-07', 'mid', 0, 1, 0)]).toBe('bestätigt')
     // Das Bibelstudium ist auf 2 gerutscht und steht ohne Bestätigung da.
     expect(items[2].title).toBe('Versammlungsbibelstudium')
-    expect(conf[partTaskKey(0, 'mid', 0, 2, 0)]).toBeUndefined()
+    expect(conf[partTaskKey('2026-09-07', 'mid', 0, 2, 0)]).toBeUndefined()
 
     // Mit Kennung passiert genau das nicht: der Schlüssel wandert mit.
     const { conf: mitConf, weeks: mitWeeks } = vorbereitet()
@@ -216,7 +216,7 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     const danach = lacAdd(mitWeeks, 0, 'mid', 0, 'Örtliche Hinweise')
     const vbs = lacItems(danach[0])[2]
     expect(vbs.title).toBe('Versammlungsbibelstudium')
-    expect(mitConf[itemTaskKey(0, 'mid', vbsId, 0)]).toBe('bestätigt')
+    expect(mitConf[itemTaskKey('2026-09-07', 'mid', vbsId, 0)]).toBe('bestätigt')
     expect(person.id).toBe('p1') // Fixture-Bezug, damit der Vergleich vollständig ist
   })
 })
