@@ -15,6 +15,8 @@ import {
 } from 'react'
 import type { FontScale } from '../data/constants'
 import type {
+  Anlass,
+  AnlassArt,
   Abweichung,
   Absence,
   ConfirmationMap,
@@ -271,6 +273,11 @@ export type AppAction =
   | { type: 'setAbweichung'; tab: MeetingKey; patch: Partial<Abweichung> }
   // Kreisaufseher-Woche (T62): baut den Ablauf um und wieder zurueck.
   | { type: 'setDienstwoche'; on: boolean }
+  // Anlass der Woche (T64): Kreisaufseher, Gedächtnismahl oder Kongress —
+  // `null` hebt ihn auf. Setzt zugleich die Wirkungen (Umbau bzw. Ausfall).
+  | { type: 'setAnlass'; art: AnlassArt | null }
+  // Termin des Anlasses; `von` belegt `bis` mit vor, solange dort nichts steht.
+  | { type: 'setAnlassTermin'; patch: Partial<Anlass> }
   // Thema eines Vortragspunkts (Dienstvortrag, Schlussvortrag)
   | { type: 'setPartThema'; tab: MeetingKey; si: number; ii: number; begriff: string; thema: string }
   // Öffentlicher Vortrag / Wochenende (Planen, aktuelle Woche)

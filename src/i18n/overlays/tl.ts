@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Ulitin araw-araw hanggang makumpirma",
   "coWoche": "PAGDALAW NG TAGAPANGASIWA NG SIRKITO",
   "memWoche": "MEMORYAL",
+  "kongress": "ASAMBLEA",
   "memAusfall": "Kanselado ang pulong na “{m}” ngayong linggo — sa halip ay gaganapin ang Memoryal:",
   "lacPh": "Bagong bahagi, hal. lokal na anunsyo",
   "lacAdd": "+ IPASOK",

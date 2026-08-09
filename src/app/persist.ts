@@ -38,12 +38,10 @@ import {
   substituteTake,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
+import { mtab } from '../data/helpers'
 import { supabase } from '../lib/supabase'
-import type { FsInstance, MeetingKey, MeetingTab, Person, Week } from '../data/types'
+import type { FsInstance, Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
-
-/** View-Tab auf eine echte Zusammenkunft eingrenzen (fs hat keine Meeting-Daten). */
-const mtab = (tab: MeetingTab): MeetingKey => (tab === 'fs' ? 'mid' : tab)
 
 /**
  * Auto-Speichern mit Debounce: Tipp-Änderungen (Personen-Felder, Umbenennung
@@ -255,6 +253,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'closingSong':
     case 'setAbweichung': // Sonderwoche: Verlegung, Ausfall, Grund (T30)
     case 'setDienstwoche': // Kreisaufseher-Woche: Ablauf umgebaut (T62)
+    case 'setAnlass': // Anlass der Woche samt seinen Wirkungen (T64)
+    case 'setAnlassTermin':
     case 'setPartThema': // Thema eines Vortragspunkts (T62)
       wocheSpeichern(congId, next.weeks, prev.week)
       break

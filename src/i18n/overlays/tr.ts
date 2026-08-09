@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Onaylanana kadar her gün tekrarla",
   "coWoche": "ÇEVRE GÖZETMENİNİN ZİYARETİ",
   "memWoche": "ANMA YEMEĞİ",
+  "kongress": "İBADET",
   "memAusfall": "„{m}” ibadeti bu hafta iptal — yerine Anma Yemeği yapılır:",
   "lacPh": "Yeni madde, örn. yerel duyurular",
   "lacAdd": "+ EKLE",

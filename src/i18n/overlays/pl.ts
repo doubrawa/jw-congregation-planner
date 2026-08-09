@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Powtarzaj codziennie do potwierdzenia",
   "coWoche": "WIZYTA NADZORCY OBWODU",
   "memWoche": "PAMIĄTKA",
+  "kongress": "ZGROMADZENIE",
   "memAusfall": "Zebranie „{m}” w tym tygodniu jest odwołane — zamiast niego odbywa się Pamiątka:",
   "lacPh": "Nowy punkt, np. ogłoszenia miejscowe",
   "lacAdd": "+ WSTAW",

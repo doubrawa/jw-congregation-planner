@@ -4,7 +4,8 @@
  */
 
 import { BRUDER_BEREICHE, QUALIFICATION_ORDER, ROLE_LABEL, WT_ROLE_ORDER } from './constants'
-import type { Abweichung, Group, Meeting, MeetingKey, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
+import type { Abweichung, Group, Meeting, MeetingKey,
+  MeetingTab, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
@@ -358,6 +359,22 @@ export function abweichung(week: Week | undefined, tab: MeetingKey): Abweichung 
 }
 
 /**
+ * View-Tab auf eine Zusammenkunft eingrenzen.
+ *
+ * Zwei der vier Tabs sind keine: „Treffpunkte" ('fs', eigene Datenquelle) und
+ * „Bearbeiten" ('edit', die Wochen-Ansicht aus T64). Beide fallen auf die
+ * Zusammenkunft unter der Woche zurück — die Meeting-Aktionen werden dort ohnehin
+ * nie ausgelöst, aber der Rückfall muss irgendwo stehen.
+ *
+ * Diese eine Stelle löst drei Abschriften ab (reducer, persist, Bausteine). Sie
+ * waren alle als `tab === 'fs' ? 'mid' : tab` geschrieben — ein Muster, das beim
+ * vierten Tab still falsch geworden wäre, hätte `MeetingTab` es nicht erzwungen.
+ */
+export function mtab(tab: MeetingTab): MeetingKey {
+  return tab === 'mid' || tab === 'we' ? tab : 'mid'
+}
+
+/**
  * Entfällt diese Zusammenkunft in dieser Woche — findet also gar nichts statt?
  *
  * Eine ausgefallene Zusammenkunft trägt **nirgends** etwas bei: keine offenen
@@ -433,20 +450,45 @@ export const ROLE_CIRCUIT = 'Kreisaufseher'
 export const TITEL_DIENSTVORTRAG = 'Dienstvortrag'
 
 /**
- * Titel des Schlussvortrags am Wochenende.
+ * Titel des Schlussvortrags am Wochenende (T64).
  *
- * Bewusst nur „Vortrag": **einen gemessenen Begriff für „Schlussvortrag" gibt
- * es nicht.** Nachgesehen wurde in zwei jw.org-Artikeln, die ihn auf Deutsch
- * verwenden (g20010608, g20020608), in allen dort verfügbaren 47 bzw. 48
- * Sprachen: die Übersetzungen umschreiben ihn — „discorso conclusivo",
- * „the day's final discourse", „Końcowy punkt programu", im Schwedischen ganz
- * ohne Zusatz — und tun das in derselben Sprache zwischen beiden Artikeln
- * verschieden. Es ist deutsche Fließtext-Prosa, kein Programmbegriff.
+ * **Bis T64 stand hier nur „Vortrag"**, und das aus gutem Grund: Nachgesehen
+ * worden war in zwei jw.org-Artikeln, die das Wort auf Deutsch verwenden
+ * (g20010608, g20020608), in allen dort verfügbaren 47 bzw. 48 Sprachen — dort
+ * wird es umschrieben („discorso conclusivo", „the day's final discourse",
+ * „Końcowy punkt programu"), und zwar in derselben Sprache zwischen beiden
+ * Artikeln verschieden. In *jenem* Zusammenhang ist es deutsche
+ * Fließtext-Prosa, kein Programmbegriff.
  *
- * „Vortrag" dagegen ist gemessen und überall vorhanden. Erkennbar bleibt der
- * Punkt an seinem Platz (letzter des Wachtturm-Abschnitts) und an der Rolle.
+ * **Der Betreiber hat am 8.8.2026 eine bessere Quelle beigebracht**, und sie
+ * zeigt, warum die alte Suche leer ausging: Sie hat am falschen Ort gesucht.
+ * Gemeint ist nicht „der letzte Vortrag eines Kongresstages", sondern der
+ * **abschließende Dienstvortrag des Kreisaufsehers** — und der hat sehr wohl
+ * einen festen Begriff: „Concluding Service Talk", „Discurso de servicio
+ * final", „Końcowe przemówienie służbowe". 18 Sprachen sind damit gemessen.
+ *
+ * Die übrigen 15 tragen in `translate-data.ts` ihr eigenes, gemessenes
+ * „Vortrag" — dort einzeln als Rückfall markiert und in
+ * `translate-data.test.ts` als geschlossene Liste festgehalten, damit auffällt,
+ * wenn jw.org nachliefert.
  */
-export const TITEL_SCHLUSSVORTRAG = 'Vortrag'
+export const TITEL_SCHLUSSVORTRAG = 'Schlussvortrag'
+
+/**
+ * Überschrift des Abschnitts, in dem der Schlussvortrag am Wochenende steht.
+ *
+ * Er bekam bis T64 keinen: `setDienstwoche` hängte ihn an die Punkte des
+ * Wachtturm-Studiums, sodass unter dessen Überschrift ein zweiter Punkt stand,
+ * der keiner ist. Der v3-Prototyp hatte dafür längst eine eigene Sektion in
+ * **Gold** vorgesehen — die Farbe ist am Wochenende frei (dort nur neutral,
+ * petrol, wein), in allen elf Schemata tokenisiert und inhaltlich richtig: Gold
+ * ist unter der Woche die Farbe von „Uns im Dienst verbessern", und ein
+ * Dienstvortrag ist dieselbe Tonart.
+ *
+ * Das Etikett steht in `translate-data.ts` in allen 33 Sprachen gemessen
+ * bereit — vorbereitet für genau diese Sektion, nur nie benutzt.
+ */
+export const LABEL_DIENSTVORTRAG = 'DIENSTVORTRAG'
 
 /**
  * Basis-Rolle ohne angehängte Herkunft: `"Gastredner · Vers. Nordheim"` →

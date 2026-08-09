@@ -11,6 +11,18 @@ interface MeetingTabsProps {
   className?: string
   showFs?: boolean // dritter Reiter „Predigtdienst“
   /**
+   * Vierter Reiter: die Bearbeiten-Ansicht der Woche (T64) — Anlass und
+   * Abweichungen. Nur im Planen und nur für Planer; das Programm ist für alle
+   * nur lesend, und der Gruppenaufseher sieht ohnehin nur „Predigtdienst“.
+   *
+   * Er trägt ein Symbol statt eines Wortes. Das ist keine Sparsamkeit an der
+   * falschen Stelle, sondern die Konsequenz aus `ui.test.ts`: Jeder neue
+   * Schlüssel verlangt 33 Übersetzungen, und erfunden wird hier keine. Der
+   * vorgelesene Name kommt deshalb aus `einstellungen` — die Ansicht *sind* die
+   * Einstellungen dieser Woche.
+   */
+  showEdit?: boolean
+  /**
    * Die gezeigte Woche. Weicht sie ab (T30), steht auf dem Reiter ihr
    * **tatsächlicher** Tag — nicht der Rhythmus aus den Einstellungen. Sonst
    * stünde „Sonntag" über einer Zusammenkunft, die auf Samstag verlegt wurde.
@@ -38,7 +50,7 @@ function weekdayName(offset: number, locale: string): string {
  * anderen Sprachen, großer Schriftgrad), bricht die Leiste um — alle Reiter
  * müssen sichtbar sein, seitliches Scrollen findet man nicht.
  */
-export function MeetingTabs({ tab, onChange, className, showFs = false, week }: MeetingTabsProps) {
+export function MeetingTabs({ tab, onChange, className, showFs = false, showEdit = false, week }: MeetingTabsProps) {
   const { state } = useApp()
   const { t } = useT()
   const offsets = meetingDayOffsets(state.congregation.meetings)
@@ -52,6 +64,9 @@ export function MeetingTabs({ tab, onChange, className, showFs = false, week }: 
       return [key, day, fill(t.versammlungTag, { tag: day })]
     }),
     ...(showFs ? ([['fs', t.tabFs, t.tabFs]] as ReadonlyArray<[MeetingTab, string, string]>) : []),
+    ...(showEdit
+      ? ([['edit', '✎', t.einstellungen]] as ReadonlyArray<[MeetingTab, string, string]>)
+      : []),
   ]
   return (
     <div className={className ? `meeting-tabs ${className}` : 'meeting-tabs'}>
@@ -59,7 +74,7 @@ export function MeetingTabs({ tab, onChange, className, showFs = false, week }: 
         <button
           key={key}
           type="button"
-          className={tab === key ? 'meeting-tab is-active' : 'meeting-tab'}
+          className={[ 'meeting-tab', tab === key ? 'is-active' : '', key === 'edit' ? 'meeting-tab--icon' : '' ].filter(Boolean).join(' ')}
           aria-pressed={tab === key}
           aria-label={label === full ? undefined : full}
           onClick={() => onChange(key)}

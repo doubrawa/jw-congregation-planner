@@ -84,7 +84,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Woran erkennt man echten Glauben?“": "«كيف نميّز الإيمان الحقيقي؟»",
     "„Dient Jehova mit Freude“": "«اخدموا يهوه بفرح»",
     "Brot": "الخبز", "Wein": "الخمر", "nach Sonnenuntergang": "بعد غروب الشمس",
-    "Dienstvortrag": "خطاب الخدمة", "DIENSTVORTRAG": "خطاب الخدمة", "GEDÄCHTNISMAHL": "ذكرى موت المسيح"
+    "Dienstvortrag": "خطاب الخدمة", "Schlussvortrag": "خطاب", "DIENSTVORTRAG": "خطاب الخدمة", "GEDÄCHTNISMAHL": "ذكرى موت المسيح"
   },
   he: {
     "Gesprächspartner": "עוזר", "Ratgeber": "מדריך", "Kreisaufseher": "משגיח נפה",
@@ -142,7 +142,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Woran erkennt man echten Glauben?“": "„כיצד מזהים אמונה אמיתית?“",
     "„Dient Jehova mit Freude“": "„עבדו את יהוה בשמחה“",
     "Brot": "לחם", "Wein": "יין", "nach Sonnenuntergang": "אחרי שקיעת החמה",
-    "Dienstvortrag": "הרצאת השירות", "DIENSTVORTRAG": "הרצאת השירות", "GEDÄCHTNISMAHL": "ערב הזיכרון"
+    "Dienstvortrag": "הרצאת השירות", "Schlussvortrag": "הרצאה", "DIENSTVORTRAG": "הרצאת השירות", "GEDÄCHTNISMAHL": "ערב הזיכרון"
   },
   fa: {
     "Gesprächspartner": "دستیار", "Ratgeber": "مشاور", "Kreisaufseher": "سرپرست حوزه",
@@ -200,7 +200,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Woran erkennt man echten Glauben?“": "«ایمان واقعی را چگونه تشخیص دهیم؟»",
     "„Dient Jehova mit Freude“": "«یَهُوَه را با شادی خدمت کنید»",
     "Brot": "نان", "Wein": "شراب", "nach Sonnenuntergang": "پس از غروب آفتاب",
-    "Dienstvortrag": "سخنرانی خدمت", "DIENSTVORTRAG": "سخنرانی خدمت", "GEDÄCHTNISMAHL": "مراسم یادبود"
+    "Dienstvortrag": "سخنرانی خدمت", "Schlussvortrag": "سخنرانی", "DIENSTVORTRAG": "سخنرانی خدمت", "GEDÄCHTNISMAHL": "مراسم یادبود"
   },
   ur: {
     "Gesprächspartner": "معاون", "Ratgeber": "مشیر", "Kreisaufseher": "حلقے کا نگہبان",
@@ -258,7 +258,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "„Woran erkennt man echten Glauben?“": "”سچا ایمان کیسے پہچانا جائے؟“",
     "„Dient Jehova mit Freude“": "”یہوواہ کی خدمت خوشی سے کریں“",
     "Brot": "روٹی", "Wein": "مے", "nach Sonnenuntergang": "غروبِ آفتاب کے بعد",
-    "Dienstvortrag": "خدمتی تقریر", "DIENSTVORTRAG": "خدمتی تقریر", "GEDÄCHTNISMAHL": "یادگاری تقریب"
+    "Dienstvortrag": "خدمتی تقریر", "Schlussvortrag": "تقریر", "DIENSTVORTRAG": "خدمتی تقریر", "GEDÄCHTNISMAHL": "یادگاری تقریب"
   },
   en: {
     "Gesprächspartner": "Assistant", "Ratgeber": "Counselor",
@@ -280,7 +280,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Gespräche beginnen (informell)': 'Starting a Conversation (informal)',
     'Ton / Video': 'Audio / video', 'Mikrofone': 'Microphones', 'Ordner / Eingang': 'Attendants', 'Reinigung': 'Cleaning',
     'Zoom-Ordner': 'Zoom attendant', 'Eingangsordner': 'Entrance attendant', 'Saalordner': 'Hall attendant', 'Rundgangsordner': 'Roving attendant',
-    'Dienstvortrag': 'Service talk', 'Kreisaufseher': 'Circuit overseer', 'DIENSTVORTRAG': 'SERVICE TALK',
+    'Dienstvortrag': 'Service talk', "Schlussvortrag": "Concluding Service Talk", 'Kreisaufseher': 'Circuit overseer', 'DIENSTVORTRAG': 'SERVICE TALK',
     'GEDÄCHTNISMAHL': 'MEMORIAL', 'Gedächtnismahl-Ansprache': 'Memorial talk',
     '„Schätze Jehovas größtes Geschenk“': '“Treasure Jehovah’s Greatest Gift”',
     'Symbole herumreichen': 'Passing the emblems', 'Brot': 'Bread', 'Wein': 'Wine', 'Redner': 'Speaker',
@@ -330,7 +330,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Gespräche beginnen (informell)': 'Empiece conversaciones (informal)',
     'Ton / Video': 'Audio y video', 'Mikrofone': 'Micrófonos', 'Ordner / Eingang': 'Acomodadores', 'Reinigung': 'Limpieza',
     'Zoom-Ordner': 'Acomodador de Zoom', 'Eingangsordner': 'Acomodador de entrada', 'Saalordner': 'Acomodador de sala', 'Rundgangsordner': 'Acomodador itinerante',
-    'Dienstvortrag': 'Discurso de servicio', 'Kreisaufseher': 'Superintendente de circuito', 'DIENSTVORTRAG': 'DISCURSO DE SERVICIO',
+    'Dienstvortrag': 'Discurso de servicio', "Schlussvortrag": "Discurso de servicio final", 'Kreisaufseher': 'Superintendente de circuito', 'DIENSTVORTRAG': 'DISCURSO DE SERVICIO',
     'GEDÄCHTNISMAHL': 'CONMEMORACIÓN', 'Gedächtnismahl-Ansprache': 'Discurso de la Conmemoración',
     '„Schätze Jehovas größtes Geschenk“': '“Valoremos el mayor regalo de Jehová”',
     'Symbole herumreichen': 'Pasar los emblemas', 'Brot': 'Pan', 'Wein': 'Vino', 'Redner': 'Orador',
@@ -380,7 +380,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Gespräche beginnen (informell)': 'Engage la conversation (informel)',
     'Ton / Video': 'Sonorisation / vidéo', 'Mikrofone': 'Micros', 'Ordner / Eingang': 'Placeurs', 'Reinigung': 'Ménage',
     'Zoom-Ordner': 'Placeur Zoom', 'Eingangsordner': 'Placeur à l\u2019entrée', 'Saalordner': 'Placeur de salle', 'Rundgangsordner': 'Placeur volant',
-    'Dienstvortrag': 'Discours de service', 'Kreisaufseher': 'Responsable de circonscription', 'DIENSTVORTRAG': 'DISCOURS DE SERVICE',
+    'Dienstvortrag': 'Discours de service', "Schlussvortrag": "Discours de service de conclusion", 'Kreisaufseher': 'Responsable de circonscription', 'DIENSTVORTRAG': 'DISCOURS DE SERVICE',
     'GEDÄCHTNISMAHL': 'MÉMORIAL', 'Gedächtnismahl-Ansprache': 'Discours du Mémorial',
     '„Schätze Jehovas größtes Geschenk“': '« Chérissons le plus beau cadeau de Jéhovah »',
     'Symbole herumreichen': 'Passage des emblèmes', 'Brot': 'Pain', 'Wein': 'Vin', 'Redner': 'Orateur',
@@ -429,7 +429,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Di casa in casa', 'Informell': 'Testimonianza informale', 'In der Öffentlichkeit': 'Testimonianza pubblica',
     'Königreichssaal': 'Sala del Regno',
     'Mikrofone': 'Microfoni', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Uscieri', 'Reinigung': 'Pulizie',
-    'Zoom-Ordner': 'Usciere Zoom', 'Eingangsordner': 'Usciere all’ingresso', 'Saalordner': 'Usciere di sala', 'Rundgangsordner': 'Usciere itinerante', 'Dienstvortrag': 'Discorso di servizio',
+    'Zoom-Ordner': 'Usciere Zoom', 'Eingangsordner': 'Usciere all’ingresso', 'Saalordner': 'Usciere di sala', 'Rundgangsordner': 'Usciere itinerante', 'Dienstvortrag': 'Discorso di servizio', "Schlussvortrag": "Discorso di servizio conclusivo",
     'Ältester': 'Anziano', 'Dienstamtgehilfe': 'Servitore di ministero', 'Verkündiger': 'Proclamatore', 'Verkündigerin': 'Proclamatrice',
     "gerade eben": "proprio ora", "ohne Zuteilungen": "senza incarichi", "Brot": "Pane", "Wein": "Vino", "nach Sonnenuntergang": "dopo il tramonto", "Montag": "Lunedì"
   },
@@ -452,7 +452,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'De casa em casa', 'Informell': 'Testemunho informal', 'In der Öffentlichkeit': 'Testemunho público',
     'Königreichssaal': 'Salão do Reino',
     'Mikrofone': 'Microfones', 'Ton / Video': 'Áudio/vídeo', 'Ordner / Eingang': 'Indicadores', 'Reinigung': 'Limpeza',
-    'Zoom-Ordner': 'Indicador do Zoom', 'Eingangsordner': 'Indicador de entrada', 'Saalordner': 'Indicador de sala', 'Rundgangsordner': 'Indicador volante', 'Dienstvortrag': 'Discurso de serviço',
+    'Zoom-Ordner': 'Indicador do Zoom', 'Eingangsordner': 'Indicador de entrada', 'Saalordner': 'Indicador de sala', 'Rundgangsordner': 'Indicador volante', 'Dienstvortrag': 'Discurso de serviço', "Schlussvortrag": "Discurso de Serviço Final",
     'Ältester': 'Ancião', 'Dienstamtgehilfe': 'Servo ministerial', 'Verkündiger': 'Publicador', 'Verkündigerin': 'Publicadora',
     "gerade eben": "agora mesmo", "ohne Zuteilungen": "sem designações", "Brot": "Pão", "Wein": "Vinho", "nach Sonnenuntergang": "após o pôr do sol", "Montag": "Segunda-feira"
   },
@@ -475,7 +475,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Van huis tot huis', 'Informell': 'Informeel getuigenis', 'In der Öffentlichkeit': 'Openbaar getuigenis',
     'Königreichssaal': 'Koninkrijkszaal',
     'Mikrofone': 'Microfoons', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Zaaldienst', 'Reinigung': 'Schoonmaak',
-    'Zoom-Ordner': 'Zoom-zaaldienst', 'Eingangsordner': 'Zaaldienst ingang', 'Saalordner': 'Zaaldienst zaal', 'Rundgangsordner': 'Zaaldienst ronde', 'Dienstvortrag': 'Dienstlezing',
+    'Zoom-Ordner': 'Zoom-zaaldienst', 'Eingangsordner': 'Zaaldienst ingang', 'Saalordner': 'Zaaldienst zaal', 'Rundgangsordner': 'Zaaldienst ronde', 'Dienstvortrag': 'Dienstlezing', "Schlussvortrag": "Slotlezing",
     'Ältester': 'Ouderling', 'Dienstamtgehilfe': 'Dienaar in de bediening', 'Verkündiger': 'Verkondiger', 'Verkündigerin': 'Verkondigster',
     "gerade eben": "zojuist", "ohne Zuteilungen": "zonder toewijzingen", "Brot": "Brood", "Wein": "Wijn", "nach Sonnenuntergang": "na zonsondergang", "Montag": "Maandag"
   },
@@ -498,7 +498,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Od domu do domu', 'Informell': 'Świadczenie nieformalne', 'In der Öffentlichkeit': 'Świadczenie publiczne',
     'Königreichssaal': 'Sala Królestwa',
     'Mikrofone': 'Mikrofony', 'Ton / Video': 'Dźwięk/wideo', 'Ordner / Eingang': 'Porządkowi', 'Reinigung': 'Sprzątanie',
-    'Zoom-Ordner': 'Porządkowy Zoom', 'Eingangsordner': 'Porządkowy przy wejściu', 'Saalordner': 'Porządkowy w sali', 'Rundgangsordner': 'Porządkowy obchodu', 'Dienstvortrag': 'Wykład służbowy',
+    'Zoom-Ordner': 'Porządkowy Zoom', 'Eingangsordner': 'Porządkowy przy wejściu', 'Saalordner': 'Porządkowy w sali', 'Rundgangsordner': 'Porządkowy obchodu', 'Dienstvortrag': 'Wykład służbowy', "Schlussvortrag": "Końcowe przemówienie służbowe",
     'Ältester': 'Starszy', 'Dienstamtgehilfe': 'Sługa pomocniczy', 'Verkündiger': 'Głosiciel', 'Verkündigerin': 'Głosicielka',
     "gerade eben": "przed chwilą", "ohne Zuteilungen": "bez zadań", "Brot": "Chleb", "Wein": "Wino", "nach Sonnenuntergang": "po zachodzie słońca", "Montag": "Poniedziałek"
   },
@@ -521,7 +521,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'По домам', 'Informell': 'Неформальное свидетельствование', 'In der Öffentlichkeit': 'Публичное свидетельствование',
     'Königreichssaal': 'Зал Царства',
     'Mikrofone': 'Микрофоны', 'Ton / Video': 'Звук/видео', 'Ordner / Eingang': 'Распорядители', 'Reinigung': 'Уборка',
-    'Zoom-Ordner': 'Распорядитель Zoom', 'Eingangsordner': 'Распорядитель у входа', 'Saalordner': 'Распорядитель в зале', 'Rundgangsordner': 'Распорядитель обхода', 'Dienstvortrag': 'Речь о служении',
+    'Zoom-Ordner': 'Распорядитель Zoom', 'Eingangsordner': 'Распорядитель у входа', 'Saalordner': 'Распорядитель в зале', 'Rundgangsordner': 'Распорядитель обхода', 'Dienstvortrag': 'Речь о служении', "Schlussvortrag": "Заключительная служебная речь",
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Служебный помощник', 'Verkündiger': 'Возвещатель', 'Verkündigerin': 'Возвещательница',
     "gerade eben": "только что", "ohne Zuteilungen": "без заданий", "Brot": "Хлеб", "Wein": "Вино", "nach Sonnenuntergang": "после захода солнца", "Montag": "Понедельник"
   },
@@ -544,7 +544,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Від дому до дому', 'Informell': 'Неформальне свідчення', 'In der Öffentlichkeit': 'Свідчення в громадських місцях',
     'Königreichssaal': 'Зал Царства',
     'Mikrofone': 'Мікрофони', 'Ton / Video': 'Звук/відео', 'Ordner / Eingang': 'Розпорядники', 'Reinigung': 'Прибирання',
-    'Zoom-Ordner': 'Розпорядник Zoom', 'Eingangsordner': 'Розпорядник біля входу', 'Saalordner': 'Розпорядник у залі', 'Rundgangsordner': 'Розпорядник обходу', 'Dienstvortrag': 'Промова про служіння',
+    'Zoom-Ordner': 'Розпорядник Zoom', 'Eingangsordner': 'Розпорядник біля входу', 'Saalordner': 'Розпорядник у залі', 'Rundgangsordner': 'Розпорядник обходу', 'Dienstvortrag': 'Промова про служіння', "Schlussvortrag": "Заключна службова промова",
     'Ältester': 'Старійшина', 'Dienstamtgehilfe': 'Службовий помічник', 'Verkündiger': 'Вісник', 'Verkündigerin': 'Вісниця',
     "gerade eben": "щойно", "ohne Zuteilungen": "без завдань", "Brot": "Хліб", "Wein": "Вино", "nach Sonnenuntergang": "після заходу сонця", "Montag": "Понеділок"
   },
@@ -567,7 +567,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Din casă în casă', 'Informell': 'Mărturie informală', 'In der Öffentlichkeit': 'Mărturie publică',
     'Königreichssaal': 'Sala Regatului',
     'Mikrofone': 'Microfoane', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Uşieri', 'Reinigung': 'Curățenie',
-    'Zoom-Ordner': 'Uşier Zoom', 'Eingangsordner': 'Uşier la intrare', 'Saalordner': 'Uşier de sală', 'Rundgangsordner': 'Uşier de rond', 'Dienstvortrag': 'Cuvântare de serviciu',
+    'Zoom-Ordner': 'Uşier Zoom', 'Eingangsordner': 'Uşier la intrare', 'Saalordner': 'Uşier de sală', 'Rundgangsordner': 'Uşier de rond', 'Dienstvortrag': 'Cuvântare de serviciu', "Schlussvortrag": "Cuvântare",
     'Ältester': 'Bătrân', 'Dienstamtgehilfe': 'Slujitor auxiliar', 'Verkündiger': 'Vestitor', 'Verkündigerin': 'Vestitoare',
     "gerade eben": "chiar acum", "ohne Zuteilungen": "fără însărcinări", "Brot": "Pâine", "Wein": "Vin", "nach Sonnenuntergang": "după apusul soarelui", "Montag": "Luni"
   },
@@ -590,7 +590,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Dům od domu', 'Informell': 'Neformální svědectví', 'In der Öffentlichkeit': 'Veřejné svědectví',
     'Königreichssaal': 'Sál Království',
     'Mikrofone': 'Mikrofony', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Pořadatelé', 'Reinigung': 'Úklid',
-    'Zoom-Ordner': 'Pořadatel Zoom', 'Eingangsordner': 'Pořadatel u vchodu', 'Saalordner': 'Pořadatel v sále', 'Rundgangsordner': 'Pořadatel obchůzky', 'Dienstvortrag': 'Projev ke službě',
+    'Zoom-Ordner': 'Pořadatel Zoom', 'Eingangsordner': 'Pořadatel u vchodu', 'Saalordner': 'Pořadatel v sále', 'Rundgangsordner': 'Pořadatel obchůzky', 'Dienstvortrag': 'Projev ke službě', "Schlussvortrag": "Závěrečný služební proslov",
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služební pomocník', 'Verkündiger': 'Zvěstovatel', 'Verkündigerin': 'Zvěstovatelka',
     "gerade eben": "právě teď", "ohne Zuteilungen": "bez úkolů", "Brot": "Chléb", "Wein": "Víno", "nach Sonnenuntergang": "po západu slunce", "Montag": "Pondělí"
   },
@@ -613,7 +613,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Z domu do domu', 'Informell': 'Neformálne svedectvo', 'In der Öffentlichkeit': 'Verejné svedectvo',
     'Königreichssaal': 'Sála Kráľovstva',
     'Mikrofone': 'Mikrofóny', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Usporiadatelia', 'Reinigung': 'Upratovanie',
-    'Zoom-Ordner': 'Usporiadateľ Zoom', 'Eingangsordner': 'Usporiadateľ pri vchode', 'Saalordner': 'Usporiadateľ v sále', 'Rundgangsordner': 'Usporiadateľ obchôdzky', 'Dienstvortrag': 'Prejav o službe',
+    'Zoom-Ordner': 'Usporiadateľ Zoom', 'Eingangsordner': 'Usporiadateľ pri vchode', 'Saalordner': 'Usporiadateľ v sále', 'Rundgangsordner': 'Usporiadateľ obchôdzky', 'Dienstvortrag': 'Prejav o službe', "Schlussvortrag": "Záverečný služobný prejav",
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služobný pomocník', 'Verkündiger': 'Zvestovateľ', 'Verkündigerin': 'Zvestovateľka',
     "gerade eben": "práve teraz", "ohne Zuteilungen": "bez úloh", "Brot": "Chlieb", "Wein": "Víno", "nach Sonnenuntergang": "po západe slnka", "Montag": "Pondelok"
   },
@@ -636,7 +636,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Od kuće do kuće', 'Informell': 'Neformalno svjedočenje', 'In der Öffentlichkeit': 'Javno svjedočenje',
     'Königreichssaal': 'Dvorana Kraljevstva',
     'Mikrofone': 'Mikrofoni', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Redari', 'Reinigung': 'Čišćenje',
-    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi',
+    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi', "Schlussvortrag": "Predavanje",
     'Ältester': 'Starješina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavitelj', 'Verkündigerin': 'Objaviteljica',
     "gerade eben": "upravo sada", "ohne Zuteilungen": "bez zadataka", "Brot": "Kruh", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedjeljak"
   },
@@ -659,7 +659,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Od kuće do kuće', 'Informell': 'Neformalno svedočenje', 'In der Öffentlichkeit': 'Javno svedočenje',
     'Königreichssaal': 'Dvorana Kraljevstva',
     'Mikrofone': 'Mikrofoni', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Redari', 'Reinigung': 'Čišćenje',
-    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi',
+    'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi', "Schlussvortrag": "Zaključni službeni govor",
     'Ältester': 'Starešina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavljivač', 'Verkündigerin': 'Objavljivačica',
     "gerade eben": "upravo sada", "ohne Zuteilungen": "bez zaduženja", "Brot": "Hleb", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedeljak"
   },
@@ -682,7 +682,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'От къща на къща', 'Informell': 'Неформално свидетелстване', 'In der Öffentlichkeit': 'Публично свидетелстване',
     'Königreichssaal': 'Зала на Царството',
     'Mikrofone': 'Микрофони', 'Ton / Video': 'Звук/видео', 'Ordner / Eingang': 'Разпоредители', 'Reinigung': 'Почистване',
-    'Zoom-Ordner': 'Разпоредител в Zoom', 'Eingangsordner': 'Разпоредител на входа', 'Saalordner': 'Разпоредител в залата', 'Rundgangsordner': 'Разпоредител на обхода', 'Dienstvortrag': 'Реч за службата',
+    'Zoom-Ordner': 'Разпоредител в Zoom', 'Eingangsordner': 'Разпоредител на входа', 'Saalordner': 'Разпоредител в залата', 'Rundgangsordner': 'Разпоредител на обхода', 'Dienstvortrag': 'Реч за службата', "Schlussvortrag": "Заключителен служебен доклад",
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Помощник-служител', 'Verkündiger': 'Вестител', 'Verkündigerin': 'Вестителка',
     "gerade eben": "току-що", "ohne Zuteilungen": "без назначения", "Brot": "Хляб", "Wein": "Вино", "nach Sonnenuntergang": "след залез слънце", "Montag": "Понеделник"
   },
@@ -705,7 +705,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Házról házra', 'Informell': 'Kötetlen tanúskodás', 'In der Öffentlichkeit': 'Nyilvános tanúskodás',
     'Königreichssaal': 'Királyság-terem',
     'Mikrofone': 'Mikrofonok', 'Ton / Video': 'Hang/videó', 'Ordner / Eingang': 'Rendezők', 'Reinigung': 'Takarítás',
-    'Zoom-Ordner': 'Zoom-rendező', 'Eingangsordner': 'Bejárati rendező', 'Saalordner': 'Termi rendező', 'Rundgangsordner': 'Körjáró rendező', 'Dienstvortrag': 'Szolgálati előadás',
+    'Zoom-Ordner': 'Zoom-rendező', 'Eingangsordner': 'Bejárati rendező', 'Saalordner': 'Termi rendező', 'Rundgangsordner': 'Körjáró rendező', 'Dienstvortrag': 'Szolgálati előadás', "Schlussvortrag": "Előadás",
     'Ältester': 'Vén', 'Dienstamtgehilfe': 'Kisegítőszolga', 'Verkündiger': 'Hírnök', 'Verkündigerin': 'Hírnöknő',
     "gerade eben": "épp most", "ohne Zuteilungen": "feladatok nélkül", "Brot": "Kenyér", "Wein": "Bor", "nach Sonnenuntergang": "napnyugta után", "Montag": "Hétfő"
   },
@@ -728,7 +728,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Από Σπίτι σε Σπίτι', 'Informell': 'Ανεπίσημη Μαρτυρία', 'In der Öffentlichkeit': 'Δημόσια Μαρτυρία',
     'Königreichssaal': 'Αίθουσα Βασιλείας',
     'Mikrofone': 'Μικρόφωνα', 'Ton / Video': 'Ήχος/βίντεο', 'Ordner / Eingang': 'Ταξιθέτες', 'Reinigung': 'Καθαρισμός',
-    'Zoom-Ordner': 'Ταξιθέτης Zoom', 'Eingangsordner': 'Ταξιθέτης εισόδου', 'Saalordner': 'Ταξιθέτης αίθουσας', 'Rundgangsordner': 'Ταξιθέτης περιπολίας', 'Dienstvortrag': 'Ομιλία διακονίας',
+    'Zoom-Ordner': 'Ταξιθέτης Zoom', 'Eingangsordner': 'Ταξιθέτης εισόδου', 'Saalordner': 'Ταξιθέτης αίθουσας', 'Rundgangsordner': 'Ταξιθέτης περιπολίας', 'Dienstvortrag': 'Ομιλία διακονίας', "Schlussvortrag": "Τελική Υπηρεσιακή Ομιλία",
     'Ältester': 'Πρεσβύτερος', 'Dienstamtgehilfe': 'Διακονικός υπηρέτης', 'Verkündiger': 'Ευαγγελιζόμενος', 'Verkündigerin': 'Ευαγγελιζόμενη',
     "gerade eben": "μόλις τώρα", "ohne Zuteilungen": "χωρίς αναθέσεις", "Brot": "Ψωμί", "Wein": "Κρασί", "nach Sonnenuntergang": "μετά τη δύση του ηλίου", "Montag": "Δευτέρα"
   },
@@ -751,7 +751,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Evden eve', 'Informell': 'Resmi olmayan şahitlik', 'In der Öffentlichkeit': 'Umumi şahitlik',
     'Königreichssaal': 'İbadet Salonu',
     'Mikrofone': 'Mikrofonlar', 'Ton / Video': 'Ses/video', 'Ordner / Eingang': 'Görevliler', 'Reinigung': 'Temizlik',
-    'Zoom-Ordner': 'Zoom görevlisi', 'Eingangsordner': 'Giriş görevlisi', 'Saalordner': 'Salon görevlisi', 'Rundgangsordner': 'Devriye görevlisi', 'Dienstvortrag': 'Hizmet konuşması',
+    'Zoom-Ordner': 'Zoom görevlisi', 'Eingangsordner': 'Giriş görevlisi', 'Saalordner': 'Salon görevlisi', 'Rundgangsordner': 'Devriye görevlisi', 'Dienstvortrag': 'Hizmet konuşması', "Schlussvortrag": "Konuşma",
     'Ältester': 'İhtiyar', 'Dienstamtgehilfe': 'Yardımcı hizmetçi', 'Verkündiger': 'Müjdeci', 'Verkündigerin': 'Müjdeci',
     "gerade eben": "az önce", "ohne Zuteilungen": "görev atanmadan", "Brot": "Ekmek", "Wein": "Şarap", "nach Sonnenuntergang": "gün batımından sonra", "Montag": "Pazartesi"
   },
@@ -774,7 +774,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Hus till hus', 'Informell': 'Informellt vittnande', 'In der Öffentlichkeit': 'Offentligt vittnande',
     'Königreichssaal': 'Rikets sal',
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Ljud/video', 'Ordner / Eingang': 'Ordningsvakter', 'Reinigung': 'Städning',
-    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Entrévakt', 'Saalordner': 'Salsvakt', 'Rundgangsordner': 'Rondvakt', 'Dienstvortrag': 'Tjänsteföredrag',
+    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Entrévakt', 'Saalordner': 'Salsvakt', 'Rundgangsordner': 'Rondvakt', 'Dienstvortrag': 'Tjänsteföredrag', "Schlussvortrag": "Föredrag",
     'Ältester': 'Äldste', 'Dienstamtgehilfe': 'Biträdande tjänare', 'Verkündiger': 'Förkunnare', 'Verkündigerin': 'Förkunnare',
     "gerade eben": "nyss", "ohne Zuteilungen": "utan uppgifter", "Brot": "Bröd", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgången", "Montag": "Måndag"
   },
@@ -797,7 +797,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Hus til hus', 'Informell': 'Uformel forkyndelse', 'In der Öffentlichkeit': 'Offentlig forkyndelse',
     'Königreichssaal': 'Rigssal',
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Lyd/video', 'Ordner / Eingang': 'Ordensvagter', 'Reinigung': 'Rengøring',
-    'Zoom-Ordner': 'Zoom-vagt', 'Eingangsordner': 'Indgangsvagt', 'Saalordner': 'Salvagt', 'Rundgangsordner': 'Rondevagt', 'Dienstvortrag': 'Tjenesteforedrag',
+    'Zoom-Ordner': 'Zoom-vagt', 'Eingangsordner': 'Indgangsvagt', 'Saalordner': 'Salvagt', 'Rundgangsordner': 'Rondevagt', 'Dienstvortrag': 'Tjenesteforedrag', "Schlussvortrag": "Foredrag",
     'Ältester': 'Ældste', 'Dienstamtgehilfe': 'Menighedstjener', 'Verkündiger': 'Forkynder', 'Verkündigerin': 'Forkynder',
     "gerade eben": "lige nu", "ohne Zuteilungen": "uden opgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgang", "Montag": "Mandag"
   },
@@ -820,7 +820,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Ovelta ovelle', 'Informell': 'Epävirallinen todistaminen', 'In der Öffentlichkeit': 'Julkinen todistaminen',
     'Königreichssaal': 'Valtakunnansali',
     'Mikrofone': 'Mikrofonit', 'Ton / Video': 'Ääni/video', 'Ordner / Eingang': 'Järjestyksenvalvojat', 'Reinigung': 'Siivous',
-    'Zoom-Ordner': 'Zoom-valvoja', 'Eingangsordner': 'Sisäänkäynnin valvoja', 'Saalordner': 'Salin valvoja', 'Rundgangsordner': 'Kierroksen valvoja', 'Dienstvortrag': 'Palveluspuhe',
+    'Zoom-Ordner': 'Zoom-valvoja', 'Eingangsordner': 'Sisäänkäynnin valvoja', 'Saalordner': 'Salin valvoja', 'Rundgangsordner': 'Kierroksen valvoja', 'Dienstvortrag': 'Palveluspuhe', "Schlussvortrag": "Viimeinen palveluspuhe",
     'Ältester': 'Vanhin', 'Dienstamtgehilfe': 'Avustava palvelija', 'Verkündiger': 'Julistaja', 'Verkündigerin': 'Julistaja',
     "gerade eben": "juuri nyt", "ohne Zuteilungen": "ilman tehtäviä", "Brot": "Leipä", "Wein": "Viini", "nach Sonnenuntergang": "auringonlaskun jälkeen", "Montag": "Maanantai"
   },
@@ -843,7 +843,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Hus til hus', 'Informell': 'Uformelt vitnearbeid', 'In der Öffentlichkeit': 'Offentlig vitnearbeid',
     'Königreichssaal': 'Rikets sal',
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Lyd/video', 'Ordner / Eingang': 'Ordensvakter', 'Reinigung': 'Rengjøring',
-    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Inngangsvakt', 'Saalordner': 'Salvakt', 'Rundgangsordner': 'Rondevakt', 'Dienstvortrag': 'Tjenesteforedrag',
+    'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Inngangsvakt', 'Saalordner': 'Salvakt', 'Rundgangsordner': 'Rondevakt', 'Dienstvortrag': 'Tjenesteforedrag', "Schlussvortrag": "Foredrag",
     'Ältester': 'Eldste', 'Dienstamtgehilfe': 'Menighetstjener', 'Verkündiger': 'Forkynner', 'Verkündigerin': 'Forkynner',
     "gerade eben": "akkurat nå", "ohne Zuteilungen": "uten oppgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "etter solnedgang", "Montag": "Mandag"
   },
@@ -866,7 +866,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Dari rumah ke rumah', 'Informell': 'Kesaksian informal', 'In der Öffentlichkeit': 'Kesaksian umum',
     'Königreichssaal': 'Balai Kerajaan',
     'Mikrofone': 'Mikrofon', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Petugas', 'Reinigung': 'Kebersihan',
-    'Zoom-Ordner': 'Petugas Zoom', 'Eingangsordner': 'Petugas pintu', 'Saalordner': 'Petugas ruang', 'Rundgangsordner': 'Petugas keliling', 'Dienstvortrag': 'Khotbah dinas',
+    'Zoom-Ordner': 'Petugas Zoom', 'Eingangsordner': 'Petugas pintu', 'Saalordner': 'Petugas ruang', 'Rundgangsordner': 'Petugas keliling', 'Dienstvortrag': 'Khotbah dinas', "Schlussvortrag": "Khotbah Dinas Penutup",
     'Ältester': 'Penatua', 'Dienstamtgehilfe': 'Hamba pelayanan', 'Verkündiger': 'Penyiar', 'Verkündigerin': 'Penyiar',
     "gerade eben": "baru saja", "ohne Zuteilungen": "tanpa tugas", "Brot": "Roti", "Wein": "Anggur", "nach Sonnenuntergang": "setelah matahari terbenam", "Montag": "Senin"
   },
@@ -889,7 +889,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Bahay-bahay', 'Informell': 'Impormal na pagpapatotoo', 'In der Öffentlichkeit': 'Pampublikong pagpapatotoo',
     'Königreichssaal': 'Kingdom Hall',
     'Mikrofone': 'Mga Mikropono', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Mga Attendant', 'Reinigung': 'Paglilinis',
-    'Zoom-Ordner': 'Attendant sa Zoom', 'Eingangsordner': 'Attendant sa pinto', 'Saalordner': 'Attendant sa hall', 'Rundgangsordner': 'Attendant sa paglilibot', 'Dienstvortrag': 'Pahayag sa paglilingkod',
+    'Zoom-Ordner': 'Attendant sa Zoom', 'Eingangsordner': 'Attendant sa pinto', 'Saalordner': 'Attendant sa hall', 'Rundgangsordner': 'Attendant sa paglilibot', 'Dienstvortrag': 'Pahayag sa paglilingkod', "Schlussvortrag": "Pahayag",
     'Ältester': 'Elder', 'Dienstamtgehilfe': 'Ministeryal na lingkod', 'Verkündiger': 'Mamamahayag', 'Verkündigerin': 'Mamamahayag',
     "gerade eben": "kanina lang", "ohne Zuteilungen": "walang atas", "Brot": "Tinapay", "Wein": "Alak", "nach Sonnenuntergang": "pagkalubog ng araw", "Montag": "Lunes"
   },
@@ -912,7 +912,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Từng nhà', 'Informell': 'Làm chứng bán chính thức', 'In der Öffentlichkeit': 'Làm chứng nơi công cộng',
     'Königreichssaal': 'Phòng Nước Trời',
     'Mikrofone': 'Micro', 'Ton / Video': 'Âm thanh/video', 'Ordner / Eingang': 'Trật tự viên', 'Reinigung': 'Vệ sinh',
-    'Zoom-Ordner': 'Trật tự viên Zoom', 'Eingangsordner': 'Trật tự viên cửa', 'Saalordner': 'Trật tự viên phòng', 'Rundgangsordner': 'Trật tự viên tuần tra', 'Dienstvortrag': 'Bài giảng về thánh chức',
+    'Zoom-Ordner': 'Trật tự viên Zoom', 'Eingangsordner': 'Trật tự viên cửa', 'Saalordner': 'Trật tự viên phòng', 'Rundgangsordner': 'Trật tự viên tuần tra', 'Dienstvortrag': 'Bài giảng về thánh chức', "Schlussvortrag": "Bài giảng",
     'Ältester': 'Trưởng lão', 'Dienstamtgehilfe': 'Phụ tá hội thánh', 'Verkündiger': 'Người công bố', 'Verkündigerin': 'Người công bố',
     "gerade eben": "vừa xong", "ohne Zuteilungen": "chưa phân công", "Brot": "Bánh", "Wein": "Rượu", "nach Sonnenuntergang": "sau khi mặt trời lặn", "Montag": "Thứ Hai"
   },
@@ -935,7 +935,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': 'Nyumba kwa nyumba', 'Informell': 'Kutoa ushahidi isivyo rasmi', 'In der Öffentlichkeit': 'Kutoa ushahidi hadharani',
     'Königreichssaal': 'Jumba la Ufalme',
     'Mikrofone': 'Maikrofoni', 'Ton / Video': 'Sauti/video', 'Ordner / Eingang': 'Wasimamizi', 'Reinigung': 'Usafi',
-    'Zoom-Ordner': 'Msimamizi wa Zoom', 'Eingangsordner': 'Msimamizi wa mlango', 'Saalordner': 'Msimamizi wa jumba', 'Rundgangsordner': 'Msimamizi wa duru', 'Dienstvortrag': 'Hotuba ya huduma',
+    'Zoom-Ordner': 'Msimamizi wa Zoom', 'Eingangsordner': 'Msimamizi wa mlango', 'Saalordner': 'Msimamizi wa jumba', 'Rundgangsordner': 'Msimamizi wa duru', 'Dienstvortrag': 'Hotuba ya huduma', "Schlussvortrag": "Hotuba",
     'Ältester': 'Mzee', 'Dienstamtgehilfe': 'Mtumishi wa huduma', 'Verkündiger': 'Mhubiri', 'Verkündigerin': 'Mhubiri',
     "gerade eben": "sasa hivi", "ohne Zuteilungen": "bila migawo", "Brot": "Mkate", "Wein": "Divai", "nach Sonnenuntergang": "baada ya machweo", "Montag": "Jumatatu"
   },
@@ -958,7 +958,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': '逐户传道', 'Informell': '非正式见证', 'In der Öffentlichkeit': '公众场所见证',
     'Königreichssaal': '王国聚会所',
     'Mikrofone': '话筒', 'Ton / Video': '音响/视频', 'Ordner / Eingang': '招待员', 'Reinigung': '清洁',
-    'Zoom-Ordner': 'Zoom招待员', 'Eingangsordner': '入口招待员', 'Saalordner': '会场招待员', 'Rundgangsordner': '巡视招待员', 'Dienstvortrag': '服务演讲',
+    'Zoom-Ordner': 'Zoom招待员', 'Eingangsordner': '入口招待员', 'Saalordner': '会场招待员', 'Rundgangsordner': '巡视招待员', 'Dienstvortrag': '服务演讲', "Schlussvortrag": "最后的演讲",
     'Ältester': '长老', 'Dienstamtgehilfe': '助理仆人', 'Verkündiger': '传道员', 'Verkündigerin': '传道员',
     "gerade eben": "刚刚", "ohne Zuteilungen": "尚未分配", "Brot": "饼", "Wein": "酒", "nach Sonnenuntergang": "日落之后", "Montag": "星期一"
   },
@@ -981,7 +981,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': '家から家', 'Informell': '非公式の証言', 'In der Öffentlichkeit': '公共の場所での証言',
     'Königreichssaal': '王国会館',
     'Mikrofone': 'マイク', 'Ton / Video': '音響/映像', 'Ordner / Eingang': '案内係', 'Reinigung': '清掃',
-    'Zoom-Ordner': 'Zoom案内係', 'Eingangsordner': '入り口案内係', 'Saalordner': '会場案内係', 'Rundgangsordner': '巡回案内係', 'Dienstvortrag': '奉仕の話',
+    'Zoom-Ordner': 'Zoom案内係', 'Eingangsordner': '入り口案内係', 'Saalordner': '会場案内係', 'Rundgangsordner': '巡回案内係', 'Dienstvortrag': '奉仕の話', "Schlussvortrag": "結びの奉仕の話",
     'Ältester': '長老', 'Dienstamtgehilfe': '奉仕の僕', 'Verkündiger': '伝道者', 'Verkündigerin': '伝道者',
     "gerade eben": "たった今", "ohne Zuteilungen": "割り当てなし", "Brot": "パン", "Wein": "ぶどう酒", "nach Sonnenuntergang": "日没後", "Montag": "月曜日"
   },
@@ -1004,7 +1004,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Von Haus zu Haus': '호별 전도', 'Informell': '비공식 증거', 'In der Öffentlichkeit': '공개적 증거',
     'Königreichssaal': '왕국회관',
     'Mikrofone': '마이크', 'Ton / Video': '음향/영상', 'Ordner / Eingang': '안내', 'Reinigung': '청소',
-    'Zoom-Ordner': 'Zoom 안내', 'Eingangsordner': '입구 안내', 'Saalordner': '회관 안내', 'Rundgangsordner': '순회 안내', 'Dienstvortrag': '봉사 연설',
+    'Zoom-Ordner': 'Zoom 안내', 'Eingangsordner': '입구 안내', 'Saalordner': '회관 안내', 'Rundgangsordner': '순회 안내', 'Dienstvortrag': '봉사 연설', "Schlussvortrag": "연설",
     'Ältester': '장로', 'Dienstamtgehilfe': '봉사의 종', 'Verkündiger': '전도인', 'Verkündigerin': '전도인',
     "gerade eben": "방금", "ohne Zuteilungen": "배정 없음", "Brot": "빵", "Wein": "포도주", "nach Sonnenuntergang": "해가 진 후", "Montag": "월요일"
   }

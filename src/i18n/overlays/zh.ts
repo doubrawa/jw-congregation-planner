@@ -167,6 +167,7 @@ export default {
   "remRepeat": "每天重复直到确认",
   "coWoche": "分区监督探访",
   "memWoche": "受难纪念聚会",
+  "kongress": "大会",
   "memAusfall": "本周“{m}”聚会取消——改为举行受难纪念聚会：",
   "lacPh": "新项目，例如本地通告",
   "lacAdd": "+ 插入",

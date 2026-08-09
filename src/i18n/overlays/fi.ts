@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Toista päivittäin vahvistukseen asti",
   "coWoche": "KIERTOVALVOJAN VIERAILU",
   "memWoche": "MUISTONVIETTO",
+  "kongress": "KONVENTTI",
   "memAusfall": "Kokous ”{m}” peruuntuu tällä viikolla — sen sijaan pidetään Muistonvietto:",
   "lacPh": "Uusi kohta, esim. paikalliset ilmoitukset",
   "lacAdd": "+ LISÄÄ",

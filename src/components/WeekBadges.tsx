@@ -1,5 +1,6 @@
 import { fill, useT } from '../i18n/useT'
 import { abweichung, istAusgefallen, weichtAb } from '../data/helpers'
+import { anlassArt } from '../data/anlass'
 import type { MeetingKey, MeetingTab, Week } from '../data/types'
 import './components.css'
 
@@ -26,8 +27,14 @@ export function WeekChips({
   const chips: Array<{ key: string; label: string; cls: string }> = []
   if (showCurrent && istAktuell)
     chips.push({ key: 'cur', label: t.aktuelleWoche, cls: 'week-chip--current' })
-  if (week.co) chips.push({ key: 'co', label: t.coWoche, cls: 'week-chip--co' })
-  if (week.mem) chips.push({ key: 'mem', label: t.memWoche, cls: 'week-chip--mem' })
+  // Gefragt wird über `anlassArt`, nicht über die Flags: der Kongress hat
+  // keines (er wirkt als Ausfall beider Zusammenkünfte), und alte Wochen ohne
+  // `anlass` liefern dort trotzdem ihr `co`/`mem` (T64).
+  const art = anlassArt(week)
+  if (art === 'co') chips.push({ key: 'co', label: t.coWoche, cls: 'week-chip--co' })
+  if (art === 'mem') chips.push({ key: 'mem', label: t.memWoche, cls: 'week-chip--mem' })
+  if (art === 'kongress')
+    chips.push({ key: 'kongress', label: t.kongress, cls: 'week-chip--kongress' })
   const abweichungen = abweichungsChips(week, t)
   if (chips.length === 0 && abweichungen.length === 0) return null
   return (

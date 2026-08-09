@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { istSchuelerteil } from '../data/aux-class'
-import { isSong, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { SONG_WORD } from '../i18n/translate-data'
@@ -94,7 +94,7 @@ export function MeetingSection({
       sel: {
         kind: 'part',
         wi: state.week,
-        tab: state.tab === 'fs' ? 'mid' : state.tab,
+        tab: mtab(state.tab),
         si,
         ii,
         ni,
@@ -175,7 +175,7 @@ export function MeetingSection({
                     onBlur={(e) =>
                       dispatch({
                         type: 'setPartThema',
-                        tab: state.tab === 'fs' ? 'mid' : state.tab,
+                        tab: mtab(state.tab),
                         si,
                         ii,
                         begriff: coBegriff,

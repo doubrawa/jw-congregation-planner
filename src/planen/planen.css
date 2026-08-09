@@ -1001,3 +1001,12 @@
   font-size: calc(11.5px * var(--fs));
   margin-top: 2px;
 }
+
+/* Anlass der Woche (T64) — das Auswahlfeld über den beiden Zusammenkünften. */
+.woche-anlass {
+  padding: 10px 0 2px;
+}
+
+.woche-anlass-select {
+  width: 100%;
+}

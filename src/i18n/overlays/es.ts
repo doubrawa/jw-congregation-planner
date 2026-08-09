@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Repetir a diario hasta confirmar",
   "coWoche": "VISITA DEL SUPERINTENDENTE DE CIRCUITO",
   "memWoche": "CONMEMORACIÓN",
+  "kongress": "ASAMBLEA",
   "memAusfall": "La reunión “{m}” se cancela esta semana; en su lugar se celebra la Conmemoración:",
   "lacPh": "Nuevo punto, p. ej., avisos locales",
   "lacAdd": "+ INSERTAR",

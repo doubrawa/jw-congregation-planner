@@ -56,10 +56,17 @@ export type Screen =
 export type MeetingKey = 'mid' | 'we'
 
 /**
- * Ansicht-Tab in Programm/Planen: eine Zusammenkunft (MeetingKey) oder die
- * „Zusammenkünfte für den Predigtdienst" ('fs', eigene Datenquelle fsWeeks).
+ * Ansicht-Tab in Programm/Planen: eine Zusammenkunft (MeetingKey), die
+ * „Zusammenkünfte für den Predigtdienst" ('fs', eigene Datenquelle fsWeeks)
+ * oder die Bearbeiten-Ansicht der Woche ('edit', nur im Planen und nur für
+ * Planer — T64).
+ *
+ * Zwei der vier Werte sind also **keine** Zusammenkunft. Wer aus einem Tab eine
+ * Zusammenkunft braucht, geht durch `mtab()` (app/persist.ts) bzw. verengt
+ * selbst — der Compiler erzwingt das, weil `MeetingTab` nicht auf `MeetingKey`
+ * zuweisbar ist.
  */
-export type MeetingTab = MeetingKey | 'fs'
+export type MeetingTab = MeetingKey | 'fs' | 'edit'
 
 /* ---- Zusammenkünfte für den Predigtdienst ("Treffpunkte") ---- */
 
@@ -371,6 +378,35 @@ export interface Dienstwoche {
   weOrigAlt?: Record<string, string>
 }
 
+/**
+ * Anlässe, die eine ganze Woche prägen (T64).
+ *
+ * Alle drei sind Aussagen über die **Woche**, nicht über eine Zusammenkunft —
+ * das ist das Aufnahmekriterium. „Saal belegt", „Kongress der
+ * Nachbarversammlung" und alles Übrige sind keine Anlässe, sondern Gründe: sie
+ * stehen als Freitext bei der betroffenen Zusammenkunft (`Abweichung.reason`).
+ */
+export type AnlassArt = 'co' | 'mem' | 'kongress'
+
+/** Anlass der Woche samt Termin (T64). */
+export interface Anlass {
+  art: AnlassArt
+  /**
+   * Beginn, ISO-Datum. Beim Gedächtnismahl der Abend, beim Kongress der erste
+   * Tag. Beim Kreisaufseher-Besuch ohne Bedeutung (er füllt die ganze Woche).
+   */
+  von?: string
+  /**
+   * Ende, ISO-Datum — nur beim Kongress. Wird beim Eintragen von `von` mit
+   * demselben Wert **vorbelegt**, damit der eintägige Kreiskongress keine
+   * zweite Eingabe braucht und trotzdem beide Werte gefüllt sind: so gibt es
+   * nirgends den Sonderfall „kein Ende".
+   */
+  bis?: string
+  /** Uhrzeit „19:30" — nur beim Gedächtnismahl (es beginnt nach Sonnenuntergang). */
+  zeit?: string
+}
+
 export interface Week {
   range: string // z. B. "7.–13. September"
   book: string // Bibelbuch (kursiv)
@@ -385,7 +421,27 @@ export interface Week {
    */
   coData?: Dienstwoche
   mem?: boolean // Gedächtnismahl-Woche (Chip + Banner)
-  memCancel?: MeetingTab // ausfallende Zusammenkunft (deren Tab zeigt das Gedächtnismahl)
+  memCancel?: MeetingKey // ausfallende Zusammenkunft (deren Tab zeigt das Gedächtnismahl)
+  /**
+   * **Anlass der Woche** (T64) — was diese Woche besonders macht, samt Termin.
+   *
+   * Er ist die *Ursache*; `co`, `mem`/`memCancel` und `dev[…].cancelled` sind
+   * seine *Wirkungen* und bleiben eigene Felder. Das hat zwei Gründe, und beide
+   * sind hart:
+   *
+   * 1. **Die Edge Functions lesen rohes JSONB.** Würde der Anlass die
+   *    Wirkungen ersetzen, müssten `send-reminders` und `substitute` die
+   *    Ableitung ein zweites Mal enthalten — genau daraus entstand B8, und
+   *    genau deshalb baut T62 den Ablauf in den Daten um statt ihn abzuleiten.
+   * 2. **„Der Anlass schlägt vor, die Zusammenkunft entscheidet."** Ein
+   *    Kongress streicht beide Zusammenkünfte — aber der Planer muss eine davon
+   *    wieder anschalten können. Ginge das nur über den Anlass, wäre der Fall
+   *    nicht abbildbar.
+   *
+   * Alte Wochen tragen das Feld nicht: `anlassArt()` liest dann `co`/`mem` und
+   * liefert dasselbe Ergebnis. Es braucht deshalb **keine Datenwanderung**.
+   */
+  anlass?: Anlass
   /**
    * Abweichungen je Zusammenkunft (T30) — verlegter Tag, andere Uhrzeit,
    * Ausfall, Grund. Fehlt bei allen Wochen, die der Regel folgen.

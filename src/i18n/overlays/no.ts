@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Gjenta daglig til bekreftet",
   "coWoche": "KRETSTILSYNSMANNENS BESØK",
   "memWoche": "MINNEHØYTIDEN",
+  "kongress": "STEVNE",
   "memAusfall": "Møtet «{m}» avlyses denne uken — i stedet holdes Minnehøytiden:",
   "lacPh": "Nytt punkt, f.eks. lokale kunngjøringer",
   "lacAdd": "+ SETT INN",

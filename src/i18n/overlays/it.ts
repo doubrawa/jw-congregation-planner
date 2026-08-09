@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Ripeti ogni giorno fino alla conferma",
   "coWoche": "VISITA DEL SORVEGLIANTE DI CIRCOSCRIZIONE",
   "memWoche": "COMMEMORAZIONE",
+  "kongress": "CONGRESSO",
   "memAusfall": "L’adunanza “{m}” è annullata questa settimana — al suo posto si tiene la Commemorazione:",
   "lacPh": "Nuova parte, es. annunci locali",
   "lacAdd": "+ INSERISCI",

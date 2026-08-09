@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Ulangi setiap hari sampai dikonfirmasi",
   "coWoche": "KUNJUNGAN PENGAWAS WILAYAH",
   "memWoche": "PERINGATAN",
+  "kongress": "KEBAKTIAN",
   "memAusfall": "Perhimpunan “{m}” dibatalkan pekan ini — sebagai gantinya diadakan Peringatan:",
   "lacPh": "Poin baru, mis. pengumuman setempat",
   "lacAdd": "+ SISIPKAN",

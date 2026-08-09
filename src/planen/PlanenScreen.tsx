@@ -13,7 +13,7 @@ import { ConflictsBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanne
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { FsPlan } from './FsPlan'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
-import { SonderwochePanel } from './SonderwochePanel'
+import { WochePanel } from './WochePanel'
 import { HelpersPanel } from './HelpersPanel'
 import { MeetingSection } from './MeetingSection'
 import './planen.css'
@@ -62,6 +62,9 @@ function PlanenBody() {
   const myFsGroup = overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID)
   const fsOverseer = !state.planner && myFsGroup !== null
   const isFs = state.tab === 'fs' || fsOverseer
+  // Die Bearbeiten-Ansicht (T64) gibt es nur für Planer — der Gruppenaufseher
+  // sieht ohnehin nur seine Treffpunkte.
+  const isEdit = state.tab === 'edit' && !fsOverseer
   const mtab: MeetingKey = state.tab === 'we' ? 'we' : 'mid'
   const meeting = week[mtab]
   const rawMeeting = rawWeek[mtab]
@@ -94,11 +97,14 @@ function PlanenBody() {
           tab={state.tab}
           week={rawWeek}
           showFs
+          showEdit
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
       )}
 
-      {isFs ? (
+      {isEdit ? (
+        <WochePanel />
+      ) : isFs ? (
         <>
           <FsConflictsBanner onlyGroup={fsOverseer ? myFsGroup : null} />
           <FsPlan onlyGroup={fsOverseer ? myFsGroup : null} />
@@ -110,9 +116,6 @@ function PlanenBody() {
 
           <p className="plan-hint">{t.planHint}</p>
 
-          {/* Sonderwoche: Verlegung, Ausfall, Grund — vor der Zuteilung, weil
-              sie entscheidet, ob überhaupt zugeteilt wird (T30). */}
-          <SonderwochePanel tab={mtab} />
 
           <AutoAssignPanel />
           <p className="plan-legend">{t.planLegend}</p>

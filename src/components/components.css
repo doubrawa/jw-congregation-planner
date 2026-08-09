@@ -493,3 +493,22 @@ select {
   min-width: 0;
   text-overflow: ellipsis;
 }
+
+/* Kongress-Woche (T64). Neutral getönt: Petrol und Weinrot tragen bereits den
+   Kreisaufseher und das Gedächtnismahl, Gold die abweichende Zusammenkunft —
+   die vierte Bereichsfarbe ist die einzige, die noch frei ist. */
+.week-chip--kongress {
+  background: var(--tNeu2);
+  color: var(--mut);
+}
+
+/* Der Bearbeiten-Reiter (T64) trägt ein Symbol statt eines Wortes. Er bekommt
+   deshalb feste Maße statt Textbreite — und mindestens 24 px in beide
+   Richtungen, wie jedes Trefferziel (T43). Bei großem Schriftgrad wächst er
+   mit, damit er in der umbrechenden Leiste nicht als Rest erscheint. */
+.meeting-tab--icon {
+  min-width: calc(34px * var(--fs));
+  padding-inline: calc(8px * var(--fs));
+  font-size: calc(15px * var(--fs));
+  line-height: 1;
+}
