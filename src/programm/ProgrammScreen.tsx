@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
 import { useApp } from '../app/context'
+import { mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
@@ -150,7 +151,7 @@ function ProgramMeeting({
             meetingDateText(
               rawWeek,
               state.week,
-              tab === 'fs' ? 'mid' : tab,
+              mtab(tab),
               state.congregation.meetings,
             ),
           )}

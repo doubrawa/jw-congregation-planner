@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Opakovat denně do potvrzení",
   "coWoche": "NÁVŠTĚVA KRAJSKÉHO DOZORCE",
   "memWoche": "PAMÁTNÁ SLAVNOST",
+  "kongress": "SJEZD",
   "memAusfall": "Shromáždění „{m}“ se tento týden nekoná — místo něj se koná Památná slavnost:",
   "lacPh": "Nový bod, např. místní oznámení",
   "lacAdd": "+ VLOŽIT",

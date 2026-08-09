@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Gentag dagligt indtil bekræftet",
   "coWoche": "KREDSTILSYNSMANDENS BESØG",
   "memWoche": "MINDEHØJTIDEN",
+  "kongress": "STÆVNE",
   "memAusfall": "Mødet “{m}” aflyses denne uge — i stedet holdes Mindehøjtiden:",
   "lacPh": "Nyt punkt, f.eks. lokale meddelelser",
   "lacAdd": "+ INDSÆT",

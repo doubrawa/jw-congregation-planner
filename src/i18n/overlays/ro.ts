@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Repetă zilnic până la confirmare",
   "coWoche": "VIZITA SUPRAVEGHETORULUI DE CIRCUMSCRIPȚIE",
   "memWoche": "COMEMORAREA",
+  "kongress": "CONGRES",
   "memAusfall": "Întrunirea „{m}” este anulată în această săptămână — în locul ei are loc Comemorarea:",
   "lacPh": "Punct nou, ex. anunțuri locale",
   "lacAdd": "+ INSEREAZĂ",

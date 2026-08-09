@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { mtab } from '../data/helpers'
 import { kennungVon } from '../data/planning'
 import { serviceQualKey } from '../data/helpers'
 import { useT } from '../i18n/useT'
@@ -19,7 +20,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
       sel: {
         kind: 'helper',
         wi: state.week,
-        tab: state.tab === 'fs' ? 'mid' : state.tab,
+        tab: mtab(state.tab),
         svc: service.key,
         pos,
         label: service.name,

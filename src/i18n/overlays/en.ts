@@ -274,6 +274,7 @@ export default {
   "remRepeat": "Repeat daily until confirmed",
   "coWoche": "VISIT OF THE CIRCUIT OVERSEER",
   "memWoche": "MEMORIAL",
+  "kongress": "ASSEMBLY",
   "memAusfall": "The “{m}” meeting is cancelled this week — the Memorial is held instead:",
   "lacPh": "New item, e.g., local announcements",
   "lacAdd": "+ INSERT",

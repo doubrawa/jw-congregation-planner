@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Dagelijks herhalen tot bevestigd",
   "coWoche": "BEZOEK VAN DE KRINGOPZIENER",
   "memWoche": "GEDACHTENISVIERING",
+  "kongress": "BIJEENKOMST",
   "memAusfall": "De vergadering “{m}” vervalt deze week — in plaats daarvan is er de Gedachtenisviering:",
   "lacPh": "Nieuw programmapunt, bijv. plaatselijke mededelingen",
   "lacAdd": "+ INVOEGEN",

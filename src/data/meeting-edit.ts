@@ -15,6 +15,7 @@ import {
   isSong,
   neueItemId,
   ROLE_CIRCUIT,
+  LABEL_DIENSTVORTRAG,
   TITEL_DIENSTVORTRAG,
   TITEL_SCHLUSSVORTRAG,
 } from './helpers'
@@ -563,7 +564,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
         }
       }
     }
-    if (wtItems) {
+    if (wtIdx >= 0) {
       const iid = neueItemId()
       coData.weVortragIid = iid
       const vortrag: PartItem = {
@@ -573,9 +574,24 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
         mins: 30,
         names: [{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }],
       }
-      wtItems.push(vortrag)
+      // **Eine eigene Sektion, kein Anhängsel des Studiums** (T64). Vorher stand
+      // der Vortrag unter der Überschrift WACHTTURM-STUDIUM — ein zweiter Punkt
+      // dort, der keiner ist. Sie kommt direkt hinter das Studium und vor den
+      // ABSCHLUSS, in Gold (siehe LABEL_DIENSTVORTRAG).
+      w.we.sections.splice(wtIdx + 1, 0, {
+        label: LABEL_DIENSTVORTRAG,
+        farbe: 'gold',
+        items: [vortrag],
+      })
+      // Die Varianten brauchen dieselbe Sektion an derselben Stelle: fehlt sie,
+      // ist die Woche nicht mehr strukturgleich und `localizedWeek` fällt stumm
+      // aufs Deutsche zurück — die ganze Woche, nicht nur dieser Punkt.
       forEachAltMeeting(w, 'we', (m) => {
-        m.sections[wtIdx]?.items.push({ iid, title: TITEL_SCHLUSSVORTRAG, meta: '30 Min.', mins: 30, names: [] })
+        m.sections.splice(wtIdx + 1, 0, {
+          label: LABEL_DIENSTVORTRAG,
+          farbe: 'gold',
+          items: [{ iid, title: TITEL_SCHLUSSVORTRAG, meta: '30 Min.', mins: 30, names: [] }],
+        })
       })
     }
 
@@ -626,17 +642,27 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
         }
       }
     }
-    if (coData.weVortragIid) {
-      const weg = (items: Meeting['sections'][number]['items']) => {
-        const idx = items.findIndex((x) => !isSong(x) && x.iid === coData.weVortragIid)
-        if (idx >= 0) items.splice(idx, 1)
+  }
+  if (coData.weVortragIid) {
+    // Seit T64 ist der Schlussvortrag eine **eigene Sektion** — zurückgenommen
+    // wird sie als Ganzes. Gesucht wird trotzdem über die Kennung des Punktes,
+    // nicht über die Überschrift: Wochen, die vor T64 eingeschaltet wurden,
+    // tragen ihn noch im Wachtturm-Abschnitt, und auch die müssen sauber
+    // zurückkommen.
+    const weg = (m: Meeting) => {
+      const si = m.sections.findIndex((s) =>
+        s.items.some((x) => !isSong(x) && x.iid === coData.weVortragIid),
+      )
+      const section = m.sections[si]
+      if (!section) return
+      if (section.label === LABEL_DIENSTVORTRAG) m.sections.splice(si, 1)
+      else {
+        const idx = section.items.findIndex((x) => !isSong(x) && x.iid === coData.weVortragIid)
+        if (idx >= 0) section.items.splice(idx, 1)
       }
-      weg(wtSection.items)
-      forEachAltMeeting(w, 'we', (m) => {
-        const arr = m.sections[wtIdx]?.items
-        if (arr) weg(arr)
-      })
     }
+    weg(w.we)
+    forEachAltMeeting(w, 'we', weg)
   }
   w.co = false
   delete w.coData

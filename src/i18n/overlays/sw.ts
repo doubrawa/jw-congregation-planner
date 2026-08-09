@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Rudia kila siku hadi ithibitishwe",
   "coWoche": "ZIARA YA MWANGALIZI WA MZUNGUKO",
   "memWoche": "UKUMBUSHO WA KIFO CHA KRISTO",
+  "kongress": "KUSANYIKO",
   "memAusfall": "Mkutano wa “{m}” umeghairiwa wiki hii — badala yake kunafanyika Ukumbusho:",
   "lacPh": "Sehemu mpya, mf. matangazo ya eneo",
   "lacAdd": "+ INGIZA",

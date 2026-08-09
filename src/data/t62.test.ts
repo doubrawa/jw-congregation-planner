@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { LABEL_WT_STUDIUM } from './constants'
 import {
   emptyQualifications,
+  isSong,
+  LABEL_DIENSTVORTRAG,
   isGuestRole,
   partWorkload,
   ROLE_CIRCUIT,
@@ -159,14 +162,33 @@ describe('Wochenende: verkürztes Studium und Schlussvortrag', () => {
     expect(bei(stud.names, 0).name).toBe('A. Leiter') // Zuteilung bleibt
   })
 
-  it('hängt den Schlussvortrag dahinter', () => {
-    const teile = wtParts(eine(an()))
-    expect(teile).toHaveLength(2)
-    const vortrag = bei(teile, 1)
-    expect(vortrag.title).toBe(TITEL_SCHLUSSVORTRAG)
-    expect(itemMinutes(vortrag)).toBe(30)
-    expect(vortrag.names).toEqual([{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }])
-    expect(vortrag.iid).toBeTruthy()
+  /*
+    Seit T64 steht der Schlussvortrag in einer **eigenen Sektion**, nicht mehr
+    unter der Überschrift des Wachtturm-Studiums. Dort war er ein zweiter Punkt,
+    der keiner ist — der Betreiber hat es am 8.8.2026 beanstandet.
+  */
+  it('setzt den Schlussvortrag in eine eigene Sektion hinter das Studium', () => {
+    expect(wtParts(eine(an()))).toHaveLength(1) // das Studium ist wieder allein
+
+    const sections = eine(an()).we.sections
+    const si = sections.findIndex((s) => s.label === LABEL_DIENSTVORTRAG)
+    const wtIdx = sections.findIndex((s) => s.label === LABEL_WT_STUDIUM)
+    expect(si).toBe(wtIdx + 1) // direkt dahinter, vor dem ABSCHLUSS
+    expect(bei(sections, si).farbe).toBe('gold')
+
+    const vortrag = bei(sections, si).items.filter((x) => !isSong(x)) as PartItem[]
+    expect(vortrag).toHaveLength(1)
+    expect(bei(vortrag, 0).title).toBe(TITEL_SCHLUSSVORTRAG)
+    expect(itemMinutes(bei(vortrag, 0))).toBe(30)
+    expect(bei(vortrag, 0).names).toEqual([{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }])
+    expect(bei(vortrag, 0).iid).toBeTruthy()
+  })
+
+  it('und nimmt die Sektion beim Zurücknehmen wieder mit', () => {
+    const zurueck = setDienstwoche(an(), 0, false)
+    expect(eine(zurueck).we.sections.some((s) => s.label === LABEL_DIENSTVORTRAG)).toBe(false)
+    // Und keine leere Hülle: die Sektionen sind wieder so viele wie zu Beginn.
+    expect(eine(zurueck).we.sections).toHaveLength(makeWeek().we.sections.length)
   })
 
   it('das Ende verschiebt sich nicht — minus 30, plus 30', () => {
@@ -273,8 +295,13 @@ describe('Die Sprachvarianten laufen mit', () => {
     const an = setDienstwoche([mitVariante()], 0, true)
     const en = localizedWeek(eine(an), 'en')
     expect((bei(bei(en.we.sections, 1).items, 1) as PartItem).title).toBe(EN_STUDIUM)
-    expect(bei(en.we.sections, 1).items).toHaveLength(3) // Lied + Studium + Schlussvortrag
-    expect((bei(bei(en.we.sections, 1).items, 2) as PartItem).title).toBe(TITEL_SCHLUSSVORTRAG)
+    expect(bei(en.we.sections, 1).items).toHaveLength(2) // Lied + Studium — der Vortrag steht jetzt daneben
+    // Die eigene Sektion muss die Variante mitbekommen haben: fehlte sie dort,
+    // wäre die Woche nicht mehr strukturgleich und `localizedWeek` fiele für
+    // **alles** aufs Deutsche zurück — auch für den Studienartikel oben.
+    const si = en.we.sections.findIndex((s) => s.label === LABEL_DIENSTVORTRAG)
+    expect(si).toBe(2)
+    expect((bei(bei(en.we.sections, si).items, 0) as PartItem).title).toBe(TITEL_SCHLUSSVORTRAG)
     expect((bei(bei(en.mid.sections, 0).items, 1) as PartItem).title).toBe(TITEL_DIENSTVORTRAG)
   })
 

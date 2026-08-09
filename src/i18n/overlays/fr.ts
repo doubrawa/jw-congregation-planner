@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Répéter chaque jour jusqu’à confirmation",
   "coWoche": "VISITE DU RESPONSABLE DE CIRCONSCRIPTION",
   "memWoche": "MÉMORIAL",
+  "kongress": "RASSEMBLEMENT",
   "memAusfall": "La réunion « {m} » est annulée cette semaine — le Mémorial a lieu à la place :",
   "lacPh": "Nouveau point, p. ex. annonces locales",
   "lacAdd": "+ INSÉRER",

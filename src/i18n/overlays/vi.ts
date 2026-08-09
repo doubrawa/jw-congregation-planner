@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Lặp lại hằng ngày đến khi xác nhận",
   "coWoche": "CHUYẾN THĂM CỦA GIÁM THỊ VÒNG QUANH",
   "memWoche": "LỄ TƯỞNG NIỆM",
+  "kongress": "HỘI NGHỊ",
   "memAusfall": "Buổi nhóm họp “{m}” bị hủy tuần này — thay vào đó là Lễ Tưởng Niệm:",
   "lacPh": "Mục mới, vd. thông báo địa phương",
   "lacAdd": "+ CHÈN",

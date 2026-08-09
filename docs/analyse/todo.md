@@ -817,7 +817,7 @@ gebaut wird.
 Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 Älteste)? Werden sie zugeteilt oder nur angekündigt? Gibt es Erinnerungen?
 
-### T64 · Der Anlass der Woche — und wo er eingestellt wird 🏗 — aufgenommen 8. August 2026
+### T64 · Der Anlass der Woche — und wo er eingestellt wird 🏗 ✅ erledigt
 Aufgefallen beim Nachziehen des Designs: Hakt man **BESUCH DES KREISAUFSEHERS**
 an, ändert sich auch das Wochenende — der Schalter steht aber im Panel der
 Zusammenkunft **unter der Woche**.
@@ -850,12 +850,34 @@ Daraus drei Folgen:
 | --- | --- | --- |
 | Normal | nichts | — |
 | Besuch des Kreisaufsehers | baut beide Zusammenkünfte um (T62) | — |
-| Gedächtnismahl | eine entfällt, die andere wird ersetzt | Datum + Uhrzeit |
+| Gedächtnismahl | **die** Zusammenkunft entfällt, auf deren Tag es fällt | Datum + Uhrzeit |
 | Kongress | **beide** entfallen | Zeitraum: von – bis |
 
-`co`, `mem` und `memCancel` gehen darin auf — bestehende Wochen müssen einmal
-umgestellt werden. Das Gedächtnismahl wird damit **erstmals einstellbar**;
-bisher steht es nur im Datensatz.
+Das Gedächtnismahl ist damit **erstmals einstellbar**; bisher stand es nur im
+Datensatz.
+
+**Welche Zusammenkunft das Mahl verdrängt, wird abgeleitet, nicht geraten**
+(Betreiber, 8.8.2026): „wenn unter der Woche, fällt diese Zusammenkunft aus;
+wenn am Wochenende, dann die am Wochenende." Beides ist bekannt — der Wochentag
+steht im Datum des Mahls, die Zusammenkunftstage in den Einstellungen. Trifft
+das Mahl keinen der beiden Tage, entfällt keine. Und eine Korrektur des Datums
+nimmt den alten Strich zurück, sonst stünden nach „erst Dienstag, dann Sonntag"
+beide durchgestrichen da.
+
+> **Abweichung vom Plan:** `co`, `mem` und `memCancel` gehen **nicht** im neuen
+> Feld auf, sondern bleiben als seine *Wirkungen* bestehen — der Anlass ist die
+> *Ursache*. Zwei Gründe, beide hart:
+>
+> 1. **Die Edge Functions lesen rohes JSONB.** Ersetzte der Anlass die
+>    Wirkungen, müssten `send-reminders` und `substitute` die Ableitung ein
+>    zweites Mal enthalten — genau daraus entstand B8, und genau deshalb baut
+>    T62 den Ablauf in den Daten um, statt ihn abzuleiten.
+> 2. **„Der Anlass schlägt vor, die Zusammenkunft entscheidet."** Ginge das
+>    Streichen nur über den Anlass, ließe sich der Fall nicht abbilden, in dem
+>    der Kongress bloß das Wochenende frisst.
+>
+> Der angenehme Nebeneffekt: `anlassArt()` liest bei alten Wochen `co`/`mem` —
+> es braucht **keine Datenwanderung**.
 
 **„Anderer Grund" ist kein Anlass**, sondern dessen Abwesenheit plus eine Notiz:
 „Normal" oben, Freitext unten bei der betroffenen Zusammenkunft. Nähme man ihn
@@ -954,13 +976,15 @@ gleich sind, sonst „Kongress vom 16. bis 18. Oktober".
 Beide Beschriftungen (`von`, `bis`) stehen bereits in allen 34 Sprachen gemessen
 bereit.
 
-**Dieselbe Vorbelegung gilt bei den Abwesenheiten** (Betreiber, 8.8.2026). Dort
-gibt es das Feldpaar schon, bisher ohne Vorbelegung und nur mit der Prüfung
-„„Von" darf nicht nach „Bis" liegen" (`toastVonNachBis`). Ein eintägiger Urlaub
-ist derselbe Fall wie ein eintägiger Kreiskongress, also dieselbe Behandlung —
-eine Regel statt zweier Verhaltensweisen für dasselbe Muster. Die Prüfung bleibt
-als Rückversicherung stehen; sie greift dann nur noch, wenn jemand „bis"
-absichtlich vor „von" setzt.
+**Dieselbe Vorbelegung gilt bei den Abwesenheiten** (Betreiber, 8.8.2026) — und
+beim Umsetzen stellte sich heraus: **dort gibt es sie längst.** In
+[AufgabenScreen.tsx](../../src/aufgaben/AufgabenScreen.tsx) steht
+`if (iso && (!to || to < iso)) setTo(iso)`, Buchstabe für Buchstabe dieselbe
+Regel, die hier für den Kongress beschlossen wurde. Die Notiz, dort sei sie
+nicht vorhanden, war falsch. Die Wochen-Ansicht folgt damit einem vorhandenen
+Muster, statt ein zweites zu erfinden — und `toastVonNachBis` bleibt in beiden
+Fällen als Rückversicherung für den, der das Ende absichtlich vor den Anfang
+setzt.
 
 #### Wo es eingestellt wird: ein vierter Reiter
 
@@ -1040,9 +1064,50 @@ Chinesisch **最后的演讲** kommen ohne „Dienst" aus. Das sind gut 10 % der
 Stichprobe — der Beleg dafür, dass sich die fehlenden nicht zusammensetzen
 lassen, sondern gemessen werden müssen.
 
-**3 · Abstand am Kreisaufseher-Schalter.** Solange er im heutigen Panel steht,
-klebt er am Grund-Feld: Luft plus eine **Haarlinie** darüber. Der Abstand allein
-sagt „gehört lockerer dazu", die Linie sagt „ist etwas anderes".
+**3 · Abstand am Kreisaufseher-Schalter** — hat sich erledigt: Der Schalter ist
+aus dem Zusammenkunfts-Panel ausgezogen und im Auswahlfeld der Woche
+aufgegangen. Wo nichts mehr klebt, braucht es keine Haarlinie.
+
+#### Umsetzung (8. August 2026)
+
+| Was | Wo |
+| --- | --- |
+| Anlass, Termin, Vorbelegung, Ableitung des Mahl-Ausfalls | [data/anlass.ts](../../src/data/anlass.ts) |
+| Bearbeiten-Ansicht | [planen/WochePanel.tsx](../../src/planen/WochePanel.tsx) |
+| vierter Reiter (Symbol) | [components/MeetingTabs.tsx](../../src/components/MeetingTabs.tsx) |
+| eigene Sektion für den Schlussvortrag | [data/meeting-edit.ts](../../src/data/meeting-edit.ts) |
+| `kongress` in 34 Wörterbüchern, `Schlussvortrag` in 33 FRAG-Blöcken | `i18n/` |
+
+**Nur ein neuer Schlüssel**, und der war gemessen: `kongress`. Reiter und
+Ansicht heißen `einstellungen`, „kein Anlass" ist ein Gedankenstrich, die
+Termin-Felder nutzen `s89Datum`/`a11yTime`/`von`/`bis` — alles vorhanden. Der
+Plan hatte zwei weitere veranschlagt.
+
+**Nebenbei aufgeräumt:** `mtab` (View-Tab → Zusammenkunft) stand in drei
+Abschriften, alle als `tab === 'fs' ? 'mid' : tab`. Der vierte Reiter machte sie
+still falsch — der Compiler zeigte jede, weil `MeetingTab` nicht mehr auf
+`MeetingKey` zuweisbar war. Jetzt eine Stelle in `data/helpers.ts`.
+
+**Ein Befund aus der Gegenprobe:** Der Wochentag des Gedächtnismahls kam
+zunächst aus `new Date(iso)`. Das ist Mitternacht UTC und in westlichen
+Zeitzonen lokal noch der Vortag — es entfiele die falsche Zusammenkunft. Ein
+Test dagegen bleibt in Mitteleuropa grün, gleich ob die Absicherung dasteht oder
+nicht. Was die Gegenprobe nicht fassen kann, wird nicht abgesichert, sondern
+beseitigt: Der Wochentag wird jetzt **gerechnet** (Sakamoto), ganz ohne `Date`.
+
+**Was nicht gebaut wurde:** Das Programm des Gedächtnismahls (Ansprache,
+Symbole herumreichen, Ordner-Plätze) erzeugt der Anlass **nicht** — er setzt die
+Marke, den Termin und den Ausfall. Wochen, die ein solches Programm mitbringen,
+zeigen es weiterhin über `memCancel`. Das Erzeugen wäre ein eigener Punkt.
+
+29 Tests in [data/anlass.test.ts](../../src/data/anlass.test.ts), 8 in
+[planen/WochePanel.test.tsx](../../src/planen/WochePanel.test.tsx), 2 in
+`t62.test.ts` umgeschrieben. Jede Korrektur einzeln zurückgenommen und der
+Testlauf wiederholt — sieben Mutationen, sieben rote Läufe. Im Browser
+nachgefahren: Kongress → Chip, beide Zusammenkünfte durchgestrichen, „0 offene
+Zuteilungen"; eine wieder angeschaltet → „3 offene", Anlass bleibt;
+Kreisaufseher → Sektion DIENSTVORTRAG mit `data-farbe="gold"` zwischen Studium
+und Abschluss.
 
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
@@ -1702,13 +1767,12 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 Stand 8. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑ ·
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**62 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 neu
-aufgenommen (T63 vom Betreiber zurückgestellt, T64 beschlossen und
-ausgeschrieben).**
-Der Testbestand ist von 727 auf 1399 gewachsen; jede Korrektur hat einen Test,
+**63 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 neu
+aufgenommen und zurückgestellt (T63).**
+Der Testbestand ist von 727 auf 1437 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
 
@@ -1762,7 +1826,6 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **Phase 6** | T64 | Neu, beschlossen und ausgeschrieben — fachlich vollständig geklärt. Der Anlass der Woche (Kreisaufseher / Gedächtnismahl / Kongress samt Termin) und ein vierter Reiter, der ihn beherbergt. Das Vokabular ist vollständig gemessen (Schlussvortrag 18 + Rückfall, Kongress alle 33) — es ist nichts mehr offen, nur noch zu bauen. |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:

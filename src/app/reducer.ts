@@ -9,7 +9,7 @@ import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
-import { displayName, linkFamily, overseerGroup, unlinkFamily } from '../data/helpers'
+import { displayName, linkFamily, mtab, overseerGroup, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
@@ -45,6 +45,7 @@ import {
   setClosingSong,
   setOpeningSong,
 } from '../data/meeting-edit'
+import { setAnlass, setAnlassTermin } from '../data/anlass'
 import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { APP_TO_JW, congAppCode } from '../i18n/langs'
@@ -65,13 +66,6 @@ import type { AppAction, AppState } from './context'
 function nextToast(state: AppState, text: string): AppState['toast'] {
   return { id: (state.toast?.id ?? 0) + 1, text }
 }
-
-/**
- * View-Tab auf eine echte Zusammenkunft eingrenzen. Der fs-Tab („Treffpunkte")
- * hat keine Meeting-Daten; die Meeting-Aktionen werden dort nie ausgelöst
- * (Navigation setzt den Tab beim Verlassen des Programms zurück).
- */
-const mtab = (tab: MeetingTab): MeetingKey => (tab === 'fs' ? 'mid' : tab)
 
 /**
  * „Treffpunkte" in Mitteilungstexten — bewusst kanonisch deutsch.
@@ -239,6 +233,10 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   'setAbweichung',
   // Baut den Ablauf um bzw. setzt ein Thema (T62) -- beides aendert die Aufgaben.
   'setDienstwoche',
+  // Der Anlass der Woche setzt seine Wirkungen mit (T64): Umbau beim
+  // Kreisaufseher, Ausfall beider Zusammenkuenfte beim Kongress.
+  'setAnlass',
+  'setAnlassTermin',
   'setPartThema',
   'lacAdjust',
   'lacRemove',
@@ -304,10 +302,17 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         plannerOnly.includes(action.screen) &&
         !(fsOverseer && action.screen !== 'personen')
       const screen = blocked ? 'programm' : action.screen
-      // Der fs-Tab („Treffpunkte") gibt es nur in Programm/Planen — beim Wechsel
-      // in andere Ansichten auf die Zusammenkunft unter der Woche zurücksetzen.
-      const fsOk = screen === 'programm' || screen === 'planen'
-      const tab: MeetingTab = state.tab === 'fs' && !fsOk ? 'mid' : state.tab
+      // Zwei Tabs sind keine Zusammenkunft und nicht überall erlaubt: „Treffpunkte"
+      // gibt es in Programm und Planen, „Bearbeiten" (T64) **nur** im Planen —
+      // das Programm ist für alle nur lesend. Beim Wechsel woandershin auf die
+      // Zusammenkunft unter der Woche zurücksetzen, sonst stünde die Ansicht auf
+      // einem Reiter, den es dort nicht gibt.
+      const erlaubt: Record<'fs' | 'edit', boolean> = {
+        fs: screen === 'programm' || screen === 'planen',
+        edit: screen === 'planen',
+      }
+      const tab: MeetingTab =
+        (state.tab === 'fs' || state.tab === 'edit') && !erlaubt[state.tab] ? 'mid' : state.tab
       return {
         ...dropNamelessSelected(state),
         screen,
@@ -928,6 +933,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setDienstwoche': {
       if (!state.weeks[state.week]) return state
       return { ...state, weeks: setDienstwoche(state.weeks, state.week, action.on) }
+    }
+    case 'setAnlass': {
+      if (!state.weeks[state.week]) return state
+      return { ...state, weeks: setAnlass(state.weeks, state.week, action.art) }
+    }
+    case 'setAnlassTermin': {
+      if (!state.weeks[state.week]) return state
+      return { ...state, weeks: setAnlassTermin(state.weeks, state.week, action.patch, state.congregation.meetings) }
     }
     case 'setPartThema':
       return {

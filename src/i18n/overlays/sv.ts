@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Upprepa dagligen tills bekräftad",
   "coWoche": "KRETSTILLSYNINGSMANNENS BESÖK",
   "memWoche": "ÅMINNELSEN",
+  "kongress": "SAMMANKOMST",
   "memAusfall": "Mötet ”{m}” ställs in denna vecka — i stället hålls Åminnelsen:",
   "lacPh": "Ny punkt, t.ex. lokala meddelanden",
   "lacAdd": "+ INFOGA",

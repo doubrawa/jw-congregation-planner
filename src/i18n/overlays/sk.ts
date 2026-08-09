@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Opakovať denne do potvrdenia",
   "coWoche": "NÁVŠTEVA KRAJSKÉHO DOZORCU",
   "memWoche": "PAMÄTNÁ SLÁVNOSŤ",
+  "kongress": "ZJAZD",
   "memAusfall": "Zhromaždenie „{m}“ sa tento týždeň nekoná — namiesto neho sa koná Pamätná slávnosť:",
   "lacPh": "Nový bod, napr. miestne oznámenia",
   "lacAdd": "+ VLOŽIŤ",

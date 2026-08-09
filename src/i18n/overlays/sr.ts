@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Ponavljaj svakodnevno do potvrde",
   "coWoche": "POSETA POKRAJINSKOG NADGLEDNIKA",
   "memWoche": "OBELEŽAVANJE HRISTOVE SMRTI",
+  "kongress": "SKUP",
   "memAusfall": "Sastanak „{m}” ove nedelje je otkazan — umesto njega održava se Obeležavanje Hristove smrti:",
   "lacPh": "Nova tačka, npr. lokalne objave",
   "lacAdd": "+ UMETNI",

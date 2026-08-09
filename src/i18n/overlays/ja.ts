@@ -167,6 +167,7 @@ export default {
   "remRepeat": "確認されるまで毎日繰り返す",
   "coWoche": "巡回監督の訪問",
   "memWoche": "記念式",
+  "kongress": "大会",
   "memAusfall": "今週は「{m}」の集会が中止され、代わりに記念式が行われます：",
   "lacPh": "新しい項目、例：地元のお知らせ",
   "lacAdd": "+ 挿入",

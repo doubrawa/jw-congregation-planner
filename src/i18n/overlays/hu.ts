@@ -167,6 +167,7 @@ export default {
   "remRepeat": "Naponta ismételd a megerősítésig",
   "coWoche": "A KÖRZETFELVIGYÁZÓ LÁTOGATÁSA",
   "memWoche": "AZ EMLÉKÜNNEP",
+  "kongress": "KONGRESSZUS",
   "memAusfall": "A(z) „{m}” összejövetel ezen a héten elmarad — helyette az Emlékünnep lesz:",
   "lacPh": "Új pont, pl. helyi közlemények",
   "lacAdd": "+ BESZÚRÁS",

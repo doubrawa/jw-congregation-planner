@@ -211,6 +211,7 @@ export const DE = {
     remRepeat: 'Täglich wiederholen, bis bestätigt',
     coWoche: 'BESUCH DES KREISAUFSEHERS',
     memWoche: 'GEDÄCHTNISMAHL',
+    kongress: 'KONGRESS',
     memAusfall: 'Die Zusammenkunft „{m}“ entfällt in dieser Woche — stattdessen findet das Gedächtnismahl statt:',
     lacPh: 'Neuer Programmpunkt, z. B. Örtliche Hinweise', lacAdd: '+ EINFÜGEN',
     vortragThemaPh: 'Vortragsthema eintragen', anfangsliedLbl: 'ANFANGSLIED', liedNrPh: 'Nr.',

@@ -167,6 +167,7 @@ export default {
   "remRepeat": "확인될 때까지 매일 반복",
   "coWoche": "순회 감독자 방문",
   "memWoche": "기념식",
+  "kongress": "대회",
   "memAusfall": "이번 주 “{m}” 집회는 취소되며 대신 기념식이 열립니다:",
   "lacPh": "새 항목, 예: 지역 공지",
   "lacAdd": "+ 삽입",
