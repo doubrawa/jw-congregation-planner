@@ -1961,7 +1961,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **Phase 7** | T66 | Neu. Eine Woche wird über ihre  identifiziert statt über ihr Datum — die Ordnungszahl ist zugleich Kennung und steckt in jedem .  existiert und liegt brach. Fällt auf, sobald eine Woche in der Mitte fehlt (T65). |
+| **Phase 7** | T66 | Neu. Eine Woche wird über ihre `position` identifiziert statt über ihr Datum — die Ordnungszahl ist zugleich Kennung und steckt in jedem `task_key`. `weeks.id` existiert und liegt brach. Fällt auf, sobald eine Woche in der Mitte fehlt (T65). |
 | **Phase 6** | T65 | Neu, fachlich geklärt. Die Gedächtnismahl-Woche fehlt im Arbeitsheft ganz — der Import überspringt sie, und das Wochenende dieser Woche lässt sich nicht planen. An jw.org nachgemessen (März/April 2026). |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
