@@ -46,7 +46,7 @@ describe('wochenAbstand', () => {
   it('fällt ohne Startdatum auf den Indexabstand zurück', () => {
     // Demo-Daten und von Hand angelegte Wochen haben kein `start`. Die alte
     // Näherung ist dort besser als gar keine Ordnung.
-    const ohne: Week = { range: '', book: '', current: false, mid: meeting(false), we: meeting(false) }
+    const ohne: Week = { range: '', book: '', start: '', current: false, mid: meeting(false), we: meeting(false) }
     expect(wochenAbstand(ohne, woche('2026-06-08', false), 0, 3)).toBe(3)
     expect(wochenAbstand(undefined, undefined, 2, 5)).toBe(3)
   })

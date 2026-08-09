@@ -27,7 +27,7 @@ function meeting(name: string): Meeting {
 }
 
 function week(midName: string, weName: string): Week {
-  return { range: '1.–7.', book: 'Buch', current: false, mid: meeting(midName), we: meeting(weName) }
+  return { range: '1.–7.', book: 'Buch', start: '2026-09-07', current: false, mid: meeting(midName), we: meeting(weName) }
 }
 
 describe('renameInWeeks', () => {

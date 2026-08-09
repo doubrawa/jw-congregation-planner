@@ -97,6 +97,10 @@ create table if not exists public.weeks (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   position        integer not null,                 -- 0 = älteste geladene Woche
+  -- Kennung der Woche (T66): ihr Montag. Nicht die Position -- die ist eine
+  -- Ordnungszahl. Immer Montag, weil jw.org die Programmwoche selbst so
+  -- definiert ("2.-8. Maerz 2026"). Siehe migration-017.
+  start           date not null,
   data            jsonb not null,                   -- Week-Objekt aus src/data/types.ts
   -- Stand der Zeile. Wer schreibt, nennt den Stand, auf dem seine Fassung
   -- beruht (siehe saveWeek); trifft er nicht mehr zu, war ein anderer Planer
@@ -190,8 +194,10 @@ create table if not exists public.fs_weeks (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   position        integer not null,                 -- wie weeks.position
+  start           date not null,                    -- wie weeks.start (T66)
   data            jsonb not null,                   -- FsInstance[]
-  unique (congregation_id, position)
+  unique (congregation_id, position),
+  unique (congregation_id, start)
 );
 
 create index if not exists fs_weeks_congregation_idx

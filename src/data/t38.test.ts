@@ -51,7 +51,7 @@ function makeWeek(): Week {
     helpers: { mik: [{ name: 'Anna Beispiel', pid: ANNA.id }] },
     auxRatgeber: { name: 'Anna Beispiel', pid: ANNA.id, rolle: 'Ratgeber' },
   })
-  return { range: '7.–13. September', book: '', current: false, mid: meeting(), we: meeting() }
+  return { range: '7.–13. September', book: '', start: '2026-09-07', current: false, mid: meeting(), we: meeting() }
 }
 
 /** Jeder Ort, an dem ein Name steht — als flache Liste zum Vergleichen. */

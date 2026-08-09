@@ -1183,7 +1183,7 @@ Die Positions-Falle oben bleibt die erste Entscheidung beim Bauen — **solange*
 `position` die Kennung einer Woche ist. Genau das ist der eigentliche Mangel und
 steht als **T66**.
 
-### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 — aufgenommen 8. August 2026
+### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 ⚠ Stufe 1 von 3 gebaut
 Beim Zuschnitt von T65 aufgefallen und vom Betreiber sofort als Mangel erkannt:
 *„das klingt nach einem Problem — müssen wir da die DB fixen, damit hier nicht
 Annahmen vorausgesetzt werden, sondern richtige Daten drin liegen?"*
@@ -1272,6 +1272,41 @@ Bilden eines `task_key` im Client liegt sie nicht vor.
 Woche geladen ist, wird nie in die Mitte eingefügt. T66 nimmt der Sache
 anschließend die Zerbrechlichkeit — und mit ihr die Reihenfolge-Abhängigkeit
 beim Import überhaupt.
+
+#### Stufe 1 — gebaut am 8. August 2026
+
+**Rein additiv.** `position` bleibt unangetastet, der laufende Client
+funktioniert unverändert weiter; erst Stufe 2 stellt den `task_key` um, erst
+Stufe 3 lässt `position` und die Platzhalter fallen. So kann der Betreiber die
+Migration einspielen, ohne auf einen Deploy warten zu müssen.
+
+| Was | Wo |
+| --- | --- |
+| `Week.start` ist **verpflichtend** | [data/types.ts](../../src/data/types.ts) |
+| Spalte `start date not null` + `unique (congregation_id, start)` | [migration-017](../../supabase/migration-017-wochen-startdatum.sql), [schema.sql](../../supabase/schema.sql) |
+| `saveWeek` und die Erstbefüllung schreiben sie mit | [lib/data.ts](../../src/lib/data.ts) |
+| auch Platzhalter tragen ihr Datum (`montagAn`) | [lib/data.ts](../../src/lib/data.ts) |
+| 6 Tests auf die Form der Kennung | [data/wochenkennung.test.ts](../../src/data/wochenkennung.test.ts) |
+
+**Der Compiler hat die Baustellen gezeigt:** 31 Geburtsorte einer Woche, davon
+5 im Produktionscode. Genau dafür wurde das Feld verpflichtend gemacht, bevor
+irgendetwas anderes umgestellt wurde.
+
+**Dabei aufgefallen** — und das ist der eigentliche Ertrag: Mehrere Testdaten
+gaben allen Wochen **dasselbe** Startdatum, obwohl sie Folgen bauen (die
+Fairness-Simulation über zwölf Wochen, die Abwesenheits-Zuordnung, der
+Fenster-Test). Solange das Datum optional war, fiel das nicht auf — der
+Wochenabstand kam aus dem Index. Zwölf gleiche Startdaten sind aber zwölfmal
+dieselbe Woche. Zwei weitere Stellen führten ihre Startdaten als **zweite
+Liste** neben den Wochen mit; die ist jetzt weg.
+
+„Kein Datum bekannt" ist der **leere String** — die Form für Altbestand, den
+migration-017 nachträgt. Zwei Tests prüfen genau diesen Fall weiter
+(`wochenAbstand` ohne Datum, `missingVariants`).
+
+**Offen für Stufe 2:** `task_key` auf das Datum umstellen, Migration für die
+bestehenden Schlüssel, `send-reminders` und `substitute` nachziehen.
+**Für Stufe 3:** `position` und `Week.stub` fallen lassen.
 
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 

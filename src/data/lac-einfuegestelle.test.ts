@@ -45,7 +45,7 @@ function wocheMit(items: ProgramItem[]): Week[] {
     sections: [{ label: 'UNSER LEBEN ALS CHRIST', farbe: 'wein', items: structuredClone(items) }],
     helpers: {},
   })
-  return [{ range: '7.–13. September', book: '', current: true, mid: meeting(), we: meeting() }]
+  return [{ range: '7.–13. September', book: '', start: '2026-09-07', current: true, mid: meeting(), we: meeting() }]
 }
 
 const titelIndex = (items: ProgramItem[], title: string) =>

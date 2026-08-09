@@ -825,11 +825,9 @@ describe('hydrate / setDataStatus', () => {
   it('springt auf die laufende Woche, nicht auf die älteste geladene', () => {
     // Bisher stand hier weekFrom: nach dem Login zeigte die App die älteste
     // geladene Woche — bei 52 geladenen Wochen ein Jahr altes Programm.
-    const wochen = buildDemoWeeks().slice(0, 3).map((w, i) => ({
-      ...w,
-      current: false,
-      start: ['2026-09-07', '2026-09-14', '2026-09-21'][i],
-    }))
+    // Die Startdaten kommen aus den Demo-Wochen selbst: seit T66 trägt jede
+    // Woche ihre Kennung, eine zweite Liste daneben wäre eine Quelle zu viel.
+    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w, current: false }))
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 16, 10)) // Mittwoch der zweiten Woche
     try {
@@ -844,11 +842,7 @@ describe('hydrate / setDataStatus', () => {
   })
 
   it('bleibt beim Anfang, wenn heute in keine geladene Woche fällt', () => {
-    const wochen = buildDemoWeeks().slice(0, 2).map((w, i) => ({
-      ...w,
-      current: false,
-      start: ['2026-09-07', '2026-09-14'][i],
-    }))
+    const wochen = buildDemoWeeks().slice(0, 2).map((w) => ({ ...w, current: false }))
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2027, 0, 5))
     try {

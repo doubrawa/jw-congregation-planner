@@ -36,7 +36,7 @@ const teil = (bereichsKey: string, plaetze = 1): PartItem => ({
 const woche = (items: PartItem[]): Week =>
   ({
     range: '7.–13. September',
-    book: 'Jeremia',
+    book: 'Jeremia', start: '2026-09-07',
     current: false,
     mid: { date: 'Dienstag', end: '', sections: [{ label: 'X', farbe: 'gold', items } as Section], helpers: {} },
     we: { date: 'Sonntag', end: '', sections: [], helpers: {} },

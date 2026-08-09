@@ -153,7 +153,7 @@ function woche(meta: string, mins?: number): Week {
     sections: [{ label: 'UNSER LEBEN ALS CHRIST', farbe: 'wein', items: [item] }],
     helpers: {},
   }
-  return { range: '7.–13. September', book: '', current: false, mid, we: structuredClone(mid) }
+  return { range: '7.–13. September', book: '', start: '2026-09-07', current: false, mid, we: structuredClone(mid) }
 }
 
 describe('zahlErsetzen — eine bestimmte Zahl, nicht die erste', () => {

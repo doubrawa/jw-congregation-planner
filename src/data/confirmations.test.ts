@@ -26,7 +26,7 @@ function lacMeeting(): Meeting {
 
 function week(): Week {
   const empty: Meeting = { date: '', end: '', sections: [], helpers: {} }
-  return { range: '', book: '', current: false, mid: lacMeeting(), we: empty }
+  return { range: '', book: '', start: '2026-09-07', current: false, mid: lacMeeting(), we: empty }
 }
 
 describe('lacMoveTarget / itemNameCount', () => {

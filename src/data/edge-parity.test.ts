@@ -125,7 +125,7 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
   ]
 
   const woche = (dev: Abweichung | undefined, date: string): Week => ({
-    range: '', book: '', current: false,
+    range: '', book: '', start: '2026-09-07', current: false,
     mid: { date, end: '', sections: [], helpers: {} },
     we: { date: '', end: '', sections: [], helpers: {} },
     dev: dev ? { mid: dev } : undefined,
