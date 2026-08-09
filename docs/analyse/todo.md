@@ -1170,10 +1170,78 @@ Zusammenkunft.
 > einzuschieben, wenn schon spätere Wochen liegen, verschöbe alle Positionen
 > dahinter und ließe jede bestehende Bestätigung auf die falsche Woche zeigen.
 
-Vor der Umsetzung zu klären: Bekommt die Woche einen sichtbaren Hinweis im
-Programm (das Mahl selbst steht ja in keinem Arbeitsheft)? Und soll der Import
-sie stillschweigend anlegen oder als eigene Meldung („Gedächtnismahl-Woche
-ergänzt")?
+**Entschieden (Betreiber, 8.8.2026):** Die Woche bekommt einen sichtbaren
+Hinweis — es genügt „Gedächtnismahl-Woche" oder Ähnliches —, und der Import legt
+sie **stillschweigend** an, ohne eigene Meldung.
+
+> Der Hinweis ist damit **schon gebaut**: `memWoche` („GEDÄCHTNISMAHL") steht
+> gemessen in allen 34 Sprachen, und `WeekChips` zeigt den Chip seit T64, sobald
+> `anlassArt(week) === 'mem'` gilt. Setzt der Import den Anlass, erscheint er von
+> selbst — kein neues Vokabular, kein neuer Baustein.
+
+Die Positions-Falle oben bleibt die erste Entscheidung beim Bauen — **solange**
+`position` die Kennung einer Woche ist. Genau das ist der eigentliche Mangel und
+steht als **T66**.
+
+### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 — aufgenommen 8. August 2026
+Beim Zuschnitt von T65 aufgefallen und vom Betreiber sofort als Mangel erkannt:
+*„das klingt nach einem Problem — müssen wir da die DB fixen, damit hier nicht
+Annahmen vorausgesetzt werden, sondern richtige Daten drin liegen?"*
+
+Ja. Der Befund in einem Bild — [schema.sql](../../supabase/schema.sql):
+
+```sql
+create table if not exists public.weeks (
+  id              uuid primary key default gen_random_uuid(),   -- existiert …
+  position        integer not null,                             -- … und wird nicht benutzt
+  unique (congregation_id, position)
+);
+```
+
+**Der stabile Schlüssel ist längst da und liegt brach.** Identität läuft
+stattdessen über `position` — eine **Ordnungszahl**, die zugleich als **Kennung**
+dient. Das ist die Verwechslung, aus der alles Weitere folgt.
+
+#### Was daran hängt
+
+| Stelle | Was sie annimmt |
+| --- | --- |
+| `confirmations.task_key` | beginnt mit der Position: `"0\|mid\|part\|2\|1\|0"` |
+| `Week.stub` | Platzhalter, **nur** damit der Array-Index die Position bleibt |
+| `send-reminders`, `substitute` | lesen `task_key` aus rohem JSONB |
+| jede Einfügung in der Mitte | verschiebt alle Positionen dahinter |
+
+T37 hat den Schlüssel **innerhalb** der Zusammenkunft schon von der Position
+gelöst (`iid` statt `2|1`). Die **Woche** steht weiterhin als Nummer vorn drin —
+der Umbau blieb auf halbem Weg stehen. T36 hat unabhängig davon den
+Wochenabstand auf `week.start` umgestellt; die Codebasis wandert also ohnehin in
+diese Richtung.
+
+#### Zuschnitt
+
+Die richtige Kennung ist **das Startdatum der Woche** (`week.start`, ISO-Montag):
+eindeutig je Versammlung, stabil, für Menschen lesbar und schon im Datenmodell.
+`weeks.id` (uuid) wäre die Alternative, sagt aber nichts — und beim Bilden eines
+`task_key` im Client liegt sie nicht vor.
+
+1. `Week.start` wird **verpflichtend**. Heute setzt es nur der Import; Demo- und
+   Vorlagenwochen tragen es nicht (siehe README, Erinnerungs-Versand). Nachtragen
+   lässt es sich aus `position` + `fsBase`.
+2. `task_key` führt vorn das Datum statt der Nummer:
+   `"2026-09-07|mid|part|k3f9x|0"`.
+3. Migration schreibt die bestehenden `task_key` um — **eine** Wanderung, danach
+   ist die Annahme weg.
+4. `send-reminders` und `substitute` ziehen nach und werden neu deployt.
+5. `position` behält nur noch die Reihenfolge (oder entfällt zugunsten von
+   `order by start`).
+6. **`Week.stub` wird überflüssig** — seine einzige Begründung ist die
+   Index-Ausrichtung. Das ist der Gradmesser dafür, dass der Umbau vollständig
+   war.
+
+**T65 wartet nicht darauf.** Solange die Lücke erkannt wird, *bevor* die folgende
+Woche geladen ist, wird nie in die Mitte eingefügt. T66 nimmt der Sache
+anschließend die Zerbrechlichkeit — und mit ihr die Reihenfolge-Abhängigkeit
+beim Import überhaupt.
 
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
@@ -1837,7 +1905,8 @@ Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
 **63 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 neu
-aufgenommen und offen (T63 zurückgestellt, T65 fachlich geklärt).**
+aufgenommen und offen (T63 zurückgestellt, T65 fachlich geklärt) sowie **T66**
+als struktureller Mangel, den T65 ans Licht gebracht hat.**
 Der Testbestand ist von 727 auf 1437 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
@@ -1892,6 +1961,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
+| **Phase 7** | T66 | Neu. Eine Woche wird über ihre  identifiziert statt über ihr Datum — die Ordnungszahl ist zugleich Kennung und steckt in jedem .  existiert und liegt brach. Fällt auf, sobald eine Woche in der Mitte fehlt (T65). |
 | **Phase 6** | T65 | Neu, fachlich geklärt. Die Gedächtnismahl-Woche fehlt im Arbeitsheft ganz — der Import überspringt sie, und das Wochenende dieser Woche lässt sich nicht planen. An jw.org nachgemessen (März/April 2026). |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
