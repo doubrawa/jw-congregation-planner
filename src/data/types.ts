@@ -410,7 +410,20 @@ export interface Anlass {
 export interface Week {
   range: string // z. B. "7.–13. September"
   book: string // Bibelbuch (kursiv)
-  start?: string // ISO-Startdatum (nur bei jw.org-Import; für die Reihenfolge)
+  /**
+   * **Die Kennung der Woche** (T66): ihr Montag als ISO-Datum, „2026-09-07".
+   *
+   * Nicht die Position im Array — die ist eine Ordnungszahl und war bis T66
+   * zugleich Kennung, mit allem, was daran hängt (`task_key`, `Week.stub`, jede
+   * Einfügung in der Mitte). Eine Woche *ist* ihre Kalenderwoche.
+   *
+   * **Immer Montag**, und das ist keine gewählte Konvention: jw.org definiert
+   * die Programmwoche selbst als Montag bis Sonntag — „2.–8. März 2026", und
+   * der 2. März ist ein Montag —, in jeder Sprache. Wo der Wochenanfang aus der
+   * Sprache abgeleitet wird (`Intl.Locale#getWeekInfo()`), gehört das in die
+   * Anzeige eines Kalenders, nie in die Bildung eines Schlüssels.
+   */
+  start: string
   lang?: string // jw.org-Sprachcode, in dem der Import geholt wurde (Herkunft)
   current: boolean // aktuelle Woche (Chip "AKTUELLE WOCHE")
   co?: boolean // Besuch des Kreisaufsehers (Chip, Dienstvortrag statt VBS)

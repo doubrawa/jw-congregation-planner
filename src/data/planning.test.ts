@@ -402,8 +402,11 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
   })
 
   it('setzt at aus Wochenstart + Zusammenkunftstag (Countdown); ohne start null', () => {
-    // Ohne week.start (Demo-Wochen) → kein Countdown.
-    const ohne = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {}, 'Di 19:00 · So 10:00')
+    // Ohne Startdatum → kein Countdown. Seit T66 ist `start` verpflichtend;
+    // der leere String ist die Form fuer „aus Altbestand, noch nicht
+    // nachgetragen" (migration-017 traegt es nach).
+    const leer = weeks.map((w) => ({ ...w, start: '' }))
+    const ohne = deriveMyTasks(leer, DEMO_SERVICES, 'Simon Krüger', {}, 'Di 19:00 · So 10:00')
     expect(ohne[0].at).toBeNull()
 
     // Mit ISO-Startdatum: Woche 0 Schulung liegt unter der Woche (Di = Mo + 1).
@@ -665,7 +668,7 @@ describe('helperWorkload zählt nur bis zur eingestellten Platzzahl (T21)', () =
   // zählte aber weiter als Last — die Auto-Zuteilung mied die Person weiterhin.
   const woche = (): Week => ({
     range: '',
-    book: '',
+    book: '', start: '2026-09-07',
     current: false,
     mid: { date: '', end: '', sections: [], helpers: { mik: [{ name: 'Anna' }, { name: 'Bert' }] } },
     we: { date: '', end: '', sections: [], helpers: {} },

@@ -349,7 +349,7 @@ const sec = (
 export function buildDemoWeeks(): Week[] {
   return normalizeChairKeys([
     {
-      range: '7.–13. September', book: 'Jeremia 32–33', current: true,
+      range: '7.–13. September', start: '2026-09-07', book: 'Jeremia 32–33', current: true,
       mid: {
         date: 'Dienstag, 8. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -388,7 +388,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '14.–20. September', book: 'Jeremia 34–36', current: false,
+      range: '14.–20. September', start: '2026-09-14', book: 'Jeremia 34–36', current: false,
       mid: {
         date: 'Dienstag, 15. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -427,7 +427,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '21.–27. September', book: 'Jeremia 37–39', current: false, co: true,
+      range: '21.–27. September', start: '2026-09-21', book: 'Jeremia 37–39', current: false, co: true,
       mid: {
         date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -467,7 +467,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '28. Sep – 4. Okt', book: 'Jeremia 40–42', current: false, mem: true, memCancel: 'we',
+      range: '28. Sep – 4. Okt', start: '2026-09-28', book: 'Jeremia 40–42', current: false, mem: true, memCancel: 'we',
       mid: {
         date: 'Dienstag, 29. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -513,7 +513,7 @@ export function buildImportWeek(): Week {
   // `normalizeChairKeys` gibt so viele Wochen zurück, wie es bekommt — hier
   // genau eine. Der Index-Zugriff sieht das nicht, deshalb der Nicht-Null-Zusatz.
   return normalizeChairKeys([{
-    range: '5.–11. Oktober', book: 'Jeremia 43–45', current: false,
+    range: '5.–11. Oktober', start: '2026-10-05', book: 'Jeremia 43–45', current: false,
     mid: {
       date: 'Dienstag, 6. Oktober · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
       sections: [

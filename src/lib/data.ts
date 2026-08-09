@@ -665,9 +665,29 @@ function notificationFromRow(r: NotificationRow): Notification {
 export const WEEK_LIMIT = 52
 
 /** Leerer Platzhalter für eine nicht geladene Woche (siehe Week.stub). */
-function stubWeek(): Week {
+function stubWeek(start: string): Week {
   const leer = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
-  return { range: '', book: '', current: false, mid: leer(), we: leer(), stub: true }
+  return { range: '', book: '', start, current: false, mid: leer(), we: leer(), stub: true }
+}
+
+/**
+ * Montag der Woche an Position `pos`, gerechnet aus einer bekannten Woche.
+ *
+ * Auch ein Platzhalter trägt seit T66 sein Datum — es ist die Kennung der
+ * Woche, und die hat auch eine, die gerade nicht geladen ist. Gerechnet wird in
+ * UTC, damit keine Zeitzone einen Tag verschiebt; Wochen liegen genau sieben
+ * Tage auseinander, das ist die Definition der Programmwoche.
+ *
+ * Fehlt der Anker (Altbestand ohne `start`, den migration-017 nachträgt),
+ * bleibt es leer. Ein Platzhalter trägt ohnehin nirgends etwas bei und wird nie
+ * gespeichert.
+ */
+function montagAn(pos: number, ankerPos: number, ankerStart: string | undefined): string {
+  if (!ankerStart) return ''
+  const d = new Date(`${ankerStart}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return ''
+  d.setUTCDate(d.getUTCDate() + (pos - ankerPos) * 7)
+  return d.toISOString().slice(0, 10)
 }
 
 export interface CongregationData {
@@ -777,7 +797,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Konflikt-Nachladen) darf keine Stände einer anderen Versammlung erben.
   staendeSetzen(weekRows.map((r) => [r.position, r.updated_at]))
   const letztePos = weekRows.reduce((max, r) => Math.max(max, r.position), weekFrom - 1)
-  const roh = Array.from({ length: letztePos + 1 }, stubWeek)
+  // Anker für die Datumsrechnung der Platzhalter: die erste geladene Woche
+  // (nach `position` sortiert geholt).
+  const anker = weekRows[0]
+  const roh = Array.from({ length: letztePos + 1 }, (_, i) =>
+    stubWeek(anker ? montagAn(i, anker.position, anker.data.start) : ''),
+  )
   for (const row of weekRows) {
     // Position außerhalb (negativ oder jenseits des Arrays) wäre kaputt —
     // lieber die Zeile auslassen als eine Woche an falscher Stelle zeigen.
@@ -906,6 +931,7 @@ export async function seedCongregation(congregationId: string): Promise<string |
   const weekRows = buildDemoWeeks().map((w, i) => ({
     congregation_id: congregationId,
     position: i,
+    start: w.start, // Kennung der Woche (T66) — die Spalte ist `not null`
     data: w,
   }))
 
@@ -1015,7 +1041,10 @@ async function schreibeWoche(congregationId: string, position: number, week: Wee
   if (stand === undefined) {
     const { data, error } = await supabase
       .from('weeks')
-      .insert({ congregation_id: congregationId, position, data: week })
+      // `start` steht seit T66 als eigene Spalte daneben, nicht nur im JSONB:
+      // erst dort kann die Datenbank pruefen, dass es je Kalenderwoche genau
+      // eine Woche gibt. Leer heisst Altbestand, den migration-017 nachtraegt.
+      .insert({ congregation_id: congregationId, position, start: week.start || null, data: week })
       .select('updated_at')
       .maybeSingle()
     if (error) {
@@ -1034,7 +1063,7 @@ async function schreibeWoche(congregationId: string, position: number, week: Wee
 
   const { data, error } = await supabase
     .from('weeks')
-    .update({ data: week })
+    .update({ start: week.start || null, data: week })
     .eq('congregation_id', congregationId)
     .eq('position', position)
     .eq('updated_at', stand)

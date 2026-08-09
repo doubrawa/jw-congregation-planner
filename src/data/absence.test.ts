@@ -8,9 +8,18 @@ const MEETINGS = 'Di 19:00 · So 10:00'
 
 function woche(patch: Partial<Week> = {}): Week {
   const leer = { date: '', end: '', sections: [], helpers: {} }
-  return { range: '', book: '', current: false, mid: { ...leer }, we: { ...leer }, ...patch }
+  return { range: '', book: '', start: '2026-09-07', current: false, mid: { ...leer }, we: { ...leer }, ...patch }
 }
-const wochen = (n: number): Week[] => Array.from({ length: n }, () => woche())
+/** Montag der Woche `i`, ab 7. September 2026. */
+const montag = (i: number): string => new Date(Date.UTC(2026, 8, 7 + i * 7)).toISOString().slice(0, 10)
+/**
+ * `n` aufeinanderfolgende Wochen, beginnend mit der Woche `ab` (Index seit dem
+ * 7.9.2026). Seit T66 trägt jede Woche ihr Startdatum — welche Kalenderwoche
+ * ein Index meint, hängt davon ab, welche Wochen geladen sind, und genau das
+ * prüft der letzte Test hier.
+ */
+const wochen = (n: number, ab = 0): Week[] =>
+  Array.from({ length: n }, (_, i) => woche({ start: montag(ab + i) }))
 
 function abw(patch: Partial<Absence> = {}): Absence {
   return { id: 'a', personId: 'p1', userId: 'u1', from: '', to: '', reason: '', ...patch }
@@ -52,7 +61,9 @@ describe('Abwesenheiten auf Wochen abbilden', () => {
   it('bleibt am selben Datum, wenn andere Wochen geladen sind', () => {
     const eintrag = abw({ from: '2026-09-21', to: '2026-09-27' }) // Woche 2 ab dem 7.9.
     const abDerDrittenWoche = new Date(2026, 8, 21, 12) // Basis zwei Wochen später
-    const spaeter = buildAbsences([eintrag], wochen(3), abDerDrittenWoche, MEETINGS)
+    // Geladen sind jetzt die Wochen ab dem 21.9. — dieselbe Kalenderwoche wie
+    // oben steht damit an Index 0 statt an Index 2.
+    const spaeter = buildAbsences([eintrag], wochen(3, 2), abDerDrittenWoche, MEETINGS)
     // Dieselbe Kalenderwoche ist jetzt Index 0 — nicht mehr 2.
     expect(istWocheAbwesend(spaeter, 'p1', 0)).toBe(true)
     expect(istWocheAbwesend(spaeter, 'p1', 2)).toBe(false)

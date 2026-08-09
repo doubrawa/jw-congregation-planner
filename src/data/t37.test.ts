@@ -125,7 +125,7 @@ describe('Lade-Migration: Kennungen nachtragen', () => {
   it('lässt Platzhalter-Wochen in Ruhe', () => {
     // Sie stehen für nicht geladene Wochen; ihre echten Daten liegen in der
     // Datenbank und dürfen keine Kennungen aus dem Nichts bekommen.
-    const stub: Week = { range: '', book: '', current: false, stub: true, mid: { date: '', end: '', sections: [], helpers: {} }, we: { date: '', end: '', sections: [], helpers: {} } }
+    const stub: Week = { range: '', book: '', start: '2026-09-07', current: false, stub: true, mid: { date: '', end: '', sections: [], helpers: {} }, we: { date: '', end: '', sections: [], helpers: {} } }
     const weeks = [stub]
     expect(migrateItemIds(weeks, {}).weeks).toBe(weeks)
   })

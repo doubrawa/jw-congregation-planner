@@ -42,7 +42,7 @@ function wocheMitKlasse(fuehrerHaupt: string, fuehrerKlasse: string): Week {
   }
   const w: Week = {
     range: '',
-    book: '',
+    book: '', start: '2026-09-07',
     current: false,
     mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
     we: { date: '', end: '', sections: [], helpers: {} },

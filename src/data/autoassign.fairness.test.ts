@@ -123,7 +123,10 @@ function verteilung(proBereich: Map<string, Map<string, number>>, bereich: strin
 
 /** Plant `n` Wochen der Reihe nach durch — wie der Planer Woche für Woche. */
 function simulate(persons: Person[], n: number, aux = false): Week[] {
-  let weeks: Week[] = Array.from({ length: n }, () => buildImportWeek())
+  let weeks: Week[] = Array.from({ length: n }, (_, i) => ({
+    ...buildImportWeek(),
+    start: montag(i),
+  }))
   if (aux) weeks = syncAuxSlots(weeks, true)
   for (let wi = 0; wi < n; wi++) {
     weeks = autoAssignMeeting(weeks, wi, 'mid', persons, DEMO_SERVICES).weeks
@@ -151,8 +154,13 @@ function belegt(name: string, bereich = 'vortrag'): Meeting {
   ;(m.sections[0].items[0] as { names: SlotAssignment[] }).names[0].name = name
   return m
 }
-function wk(mid: Meeting, we: Meeting = emptyMeeting()): Week {
-  return { range: '', book: '', current: false, mid, we }
+/** Montag der Woche `i`, ab 7. September 2026 — Wochen sind sieben Tage. */
+function montag(i: number): string {
+  const d = new Date(Date.UTC(2026, 8, 7 + i * 7))
+  return d.toISOString().slice(0, 10)
+}
+function wk(mid: Meeting, we: Meeting = emptyMeeting(), i = 0): Week {
+  return { range: '', book: '', start: montag(i), current: false, mid, we }
 }
 /** Name auf dem einen Platz der geplanten Woche. */
 function gewaehlt(weeks: Week[], wi: number, persons: Person[]): string {
@@ -173,7 +181,7 @@ describe('Tie-Break bei gleicher Auslastung', () => {
     for (let wi = 0; wi < 12; wi++) {
       // Jede Woche mit LEERER Historie planen: beide stehen bei null und sind
       // gleich lange nicht dran gewesen — es entscheidet allein der Hash.
-      const weeks: Week[] = Array.from({ length: 12 }, () => wk(einPlatz('vortrag')))
+      const weeks: Week[] = Array.from({ length: 12 }, (_, i) => wk(einPlatz('vortrag'), emptyMeeting(), i))
       gewinner.add(gewaehlt(weeks, wi, [a, b]))
     }
     expect(gewinner).toEqual(new Set([displayName(a), displayName(b)]))
@@ -188,7 +196,7 @@ describe('Tie-Break bei gleicher Auslastung', () => {
     const a = mk(['vortrag'], { ln: 'Alt' })
     const b = mk(['vortrag'], { ln: 'Bald' })
     const plan = (langHer: Person, kuerzlich: Person): string => {
-      const weeks: Week[] = Array.from({ length: 12 }, () => wk(emptyMeeting()))
+      const weeks: Week[] = Array.from({ length: 12 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
       weeks[0].mid = belegt(displayName(langHer)) // 10 Wochen her
       weeks[6].mid = belegt(displayName(kuerzlich)) // 4 Wochen her
       weeks[10].mid = einPlatz('vortrag')
@@ -209,7 +217,7 @@ describe('Tie-Break bei gleicher Auslastung', () => {
     // 2). Die Auslastung steht vorn, also gewinnt B.
     const a = mk(['vortrag'], { ln: 'Ausgelastet' })
     const b = mk(['vortrag'], { ln: 'Frei' })
-    const weeks: Week[] = Array.from({ length: 14 }, () => wk(emptyMeeting()))
+    const weeks: Week[] = Array.from({ length: 14 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
     weeks[8].mid = belegt(displayName(a))
     weeks[12].mid = belegt(displayName(a))
     weeks[9].mid = belegt(displayName(b))
@@ -378,7 +386,7 @@ describe('Anzeige und Entscheidung nutzen dasselbe Fenster', () => {
     // mehr in jede Richtung, wäre B der Ausgelastete und A käme dran.
     const a = mk(['vortrag'], { ln: 'Innen' })
     const b = mk(['vortrag'], { ln: 'Aussen' })
-    const weeks: Week[] = Array.from({ length: 20 }, () => wk(emptyMeeting()))
+    const weeks: Week[] = Array.from({ length: 20 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
     weeks[10 - LOAD_RADIUS].mid = belegt(displayName(a))
     weeks[10 - LOAD_RADIUS - 1].mid = belegt(displayName(b))
     weeks[10 + LOAD_RADIUS + 1].mid = belegt(displayName(b))
@@ -405,7 +413,7 @@ describe('Bereichs-Wartezeit als zweiter Tie-Break', () => {
     const a = mk(['vortrag', 'bibellesung'], { ln: 'Aabe' })
     const b = mk(['vortrag', 'bibellesung'], { ln: 'Bebe' })
     const plan = (vortragZuletzt: Person, lesungZuletzt: Person): string => {
-      const weeks: Week[] = Array.from({ length: 12 }, () => wk(emptyMeeting()))
+      const weeks: Week[] = Array.from({ length: 12 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
       // Beide in derselben Woche dran → gleiche Last, gleicher Abstand.
       weeks[5].mid = belegt(displayName(vortragZuletzt), 'vortrag')
       weeks[5].we = belegt(displayName(lesungZuletzt), 'bibellesung')
@@ -421,7 +429,7 @@ describe('Bereichs-Wartezeit als zweiter Tie-Break', () => {
   it('die allgemeine Wartezeit bleibt vorrangig vor dem Bereich', () => {
     const a = mk(['vortrag', 'bibellesung'], { ln: 'Kuerzlich' })
     const b = mk(['vortrag', 'bibellesung'], { ln: 'Lange' })
-    const weeks: Week[] = Array.from({ length: 12 }, () => wk(emptyMeeting()))
+    const weeks: Week[] = Array.from({ length: 12 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
     // Beide Einteilungen liegen außerhalb des Fensters [7..12] → gleiche Last.
     // A war vor 4 Wochen dran (Bibellesung — im Bereich Vortrag also nie),
     // B vor 9 Wochen (Vortrag). Nach dem Bereich müsste A gewinnen; die

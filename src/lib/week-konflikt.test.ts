@@ -67,7 +67,7 @@ const leer = { data: null, error: null }
 
 const woche = (range: string): Week => ({
   range,
-  book: '',
+  book: '', start: '2026-09-07',
   current: false,
   mid: { date: '', end: '', sections: [], helpers: {} },
   we: { date: '', end: '', sections: [], helpers: {} },

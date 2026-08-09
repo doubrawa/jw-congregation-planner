@@ -57,14 +57,14 @@ function makeWeek(): Week {
   const emptyWe: Meeting = { date: '', end: '', sections: [], helpers: {} }
   return {
     range: '7.–13. September',
-    book: 'JEREMIA 32–33',
+    book: 'JEREMIA 32–33', start: '2026-09-07',
     current: false,
     mid,
     we: structuredClone(emptyWe),
     alt: {
       en: {
         range: 'September 7–13',
-        book: 'JEREMIAH 32–33',
+        book: 'JEREMIAH 32–33', start: '2026-09-07',
         current: false,
         mid: altMid,
         we: structuredClone(emptyWe),
@@ -117,7 +117,10 @@ describe('localizedWeek (Sprachvarianten)', () => {
 
 describe('missingVariants (Nachimport-Kandidaten)', () => {
   it('findet Wochen, denen konfigurierte Sprachvarianten fehlen', () => {
-    const w0 = makeWeek() // hat en-Variante, kein start → nicht nachladbar
+    // Hat eine en-Variante, aber kein Startdatum → nicht nachladbar. Seit T66
+    // ist `start` verpflichtend; der leere String ist die Form für „aus
+    // Altbestand, noch nicht nachgetragen".
+    const w0 = { ...makeWeek(), start: '' }
     const w1 = { ...makeWeek(), start: '2026-09-07', lang: 'de' }
     const w2 = { ...makeWeek(), start: '2026-09-14', lang: 'de', alt: undefined }
     const res = missingVariants([w0, w1, w2], ['en', 'uk'], 'de')

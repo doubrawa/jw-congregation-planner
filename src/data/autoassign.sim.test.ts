@@ -110,7 +110,12 @@ function simulate(
   nWeeks: number,
   abwesend: AbsenceSet = new Set(),
 ): Week[] {
-  let weeks: Week[] = Array.from({ length: nWeeks }, () => buildImportWeek())
+  let weeks: Week[] = Array.from({ length: nWeeks }, (_, i) => ({
+    ...buildImportWeek(),
+    // Eigener Montag je Woche (T66): der Abstand steckt seit T36 im Datum,
+    // nicht im Index — zwoelf gleiche Startdaten waeren zwoelfmal dieselbe Woche.
+    start: new Date(Date.UTC(2026, 8, 7 + i * 7)).toISOString().slice(0, 10),
+  }))
   for (let wi = 0; wi < nWeeks; wi++) {
     weeks = autoAssignMeeting(weeks, wi, 'mid', persons, services, [], 'all', abwesend).weeks
     weeks = autoAssignMeeting(weeks, wi, 'we', persons, services, [], 'all', abwesend).weeks
@@ -302,7 +307,7 @@ function partHistoryMeeting(name: string, n: number): Meeting {
   return { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ title: 'T', names }] }], helpers: {} }
 }
 function wk(mid: Meeting, we: Meeting): Week {
-  return { range: '', book: '', current: false, mid, we }
+  return { range: '', book: '', start: '2026-09-07', current: false, mid, we }
 }
 const MIK1: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
 
@@ -392,7 +397,7 @@ describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
 
 describe('Predigtdienstgruppen (Reinigung)', () => {
   const emptyMeeting = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
-  const wk1 = (): Week => ({ range: '', book: '', current: false, mid: emptyMeeting(), we: emptyMeeting() })
+  const wk1 = (): Week => ({ range: '', book: '', start: '2026-09-07', current: false, mid: emptyMeeting(), we: emptyMeeting() })
   const REIN: Service[] = [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }]
 
   it('Reinigung rotiert über die konfigurierten Gruppen (mod Anzahl)', () => {

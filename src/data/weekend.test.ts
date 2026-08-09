@@ -28,14 +28,14 @@ function makeWeek(): Week {
   const emptyMid: Meeting = { date: '', end: '', sections: [], helpers: {} }
   return {
     range: '7.–13. September',
-    book: '',
+    book: '', start: '2026-09-07',
     current: false,
     mid: structuredClone(emptyMid),
     we: weekendMeeting(),
     alt: {
       en: {
         range: 'September 7–13',
-        book: '',
+        book: '', start: '2026-09-07',
         current: false,
         mid: structuredClone(emptyMid),
         we: weekendMeeting(), // Vorlage ist in jeder Sprachfassung deutsch

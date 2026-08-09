@@ -44,7 +44,7 @@ describe('meetingTimesOf', () => {
 })
 
 /** Minimale Woche: nur, was die Datumsrechnung liest. */
-function woche(start: string | undefined, midDate = '', weDate = ''): Week {
+function woche(start = '', midDate = '', weDate = ''): Week {
   const leer = { end: '', sections: [], helpers: {} }
   return {
     range: '',
