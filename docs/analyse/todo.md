@@ -1232,6 +1232,23 @@ Bilden eines `task_key` im Client liegt sie nicht vor.
 > ausgerechnet die auf der Ordnungszahl. Genau das ist gemeint mit „richtige
 > Daten statt Annahmen".
 
+> **Der Wochenanfang ist immer Montag — und das ist keine Konvention, die wir
+> wählen.** Der Betreiber hat zu Recht eingewandt, dass Kulturen die Woche
+> verschieden beginnen (Sonntag in Nordamerika, Samstag in Teilen der
+> arabischen Welt). Für die *Anzeige* stimmt das; für die *Kennung* ist es
+> gegenstandslos: **jw.org definiert die Programmwoche selbst als Montag bis
+> Sonntag**, in jeder Sprache. Nachgemessen an der Ausgabe März/April 2026 —
+> „2.–8. März", „9.–15. März", „16.–22. März" …, und der 2. März 2026 ist ein
+> Montag. Die App übernimmt also die Festlegung des Herausgebers, statt eine
+> eigene zu treffen.
+>
+> Der Code hält das bereits durchgehend ein: der Datumswähler rastert ab Montag
+> (`(first.getUTCDay() + 6) % 7`), `fsBase` ist „der Montag der Woche 0", die
+> Wochentags-Versätze zählen ab Montag. Neu ist nur, dass es als Entscheidung
+> dasteht. **Nicht** verwenden: `Intl.Locale#getWeekInfo()` und alles, was den
+> Wochenanfang aus der Sprache ableitet — das gehört in die Anzeige eines
+> Kalenders, nie in die Bildung eines Schlüssels.
+
 1. **Neue Spalte** `start date not null` mit `unique (congregation_id, start)`.
    Damit hält die Datenbank selbst, was bisher nur Absprache war: eine Woche je
    Kalenderwoche, keine zwei, keine namenlose.
