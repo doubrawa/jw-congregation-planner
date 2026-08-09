@@ -1109,6 +1109,72 @@ Zuteilungen"; eine wieder angeschaltet → „3 offene", Anlass bleibt;
 Kreisaufseher → Sektion DIENSTVORTRAG mit `data-farbe="gold"` zwischen Studium
 und Abschluss.
 
+### T65 · Die Gedächtnismahl-Woche fehlt im Arbeitsheft 🏗 — aufgenommen 8. August 2026
+Vom Betreiber genannt und **an jw.org nachgemessen**: In der Woche des
+Gedächtnismahls steht im Arbeitsheft kein Programm — und zwar nicht ein leeres,
+sondern **gar keine Seite**.
+
+Ausgabe März/April 2026, acht Wochen, eine Lücke:
+
+| Woche | Seite |
+| --- | --- |
+| 23.–29. März 2026 | ✓ |
+| **30. März – 5. April 2026** | **fehlt** |
+| 6.–12. April 2026 | ✓ |
+
+An ihrer Stelle steht `Bibelleseprogramm-für-das-Gedächtnismahl-2026`, und dort
+ausgeschrieben: „DONNERSTAG, 2. APRIL — GEDÄCHTNISMAHL (NACH SONNENUNTERGANG)",
+14. Nisan. Der 2. April 2026 ist ein Donnerstag und liegt genau in der Lücke.
+Das ist ein redaktionelles Mittel, kein Versehen — **und es gilt in jedem Jahr**
+(Betreiber, 8.8.2026).
+
+#### Was heute passiert
+
+`discoverWeeks()` ([import-week/index.ts](../../supabase/functions/import-week/index.ts))
+sammelt nur Seiten mit `Zusammenkunft-…` im Pfad. Die Gedächtnismahl-Woche ist
+keine — der Import springt von 23.–29. März direkt auf 6.–12. April und legt
+für sie **gar keine Zeile** an.
+
+Das ist eine Lücke mit Folgen, denn die **Zusammenkunft am Wochenende dieser
+Woche findet statt**: Öffentlicher Vortrag und Wachtturm-Studium laufen normal —
+nur gibt es keine Woche, in der man sie planen könnte. Und der Anlass
+„Gedächtnismahl" aus T64 braucht eine Woche, auf der er sitzen kann.
+
+**Was nicht bricht:** T36 rechnet den Wochenabstand aus `week.start`, nicht aus
+dem Index — „N Wochen in Folge" bleibt richtig, obwohl zwei benachbarte Einträge
+zwei Kalenderwochen auseinanderliegen. Und `currentWeekIndex` hat den Rückfall
+auf die gewählte Woche, wenn heute in keine geladene fällt. Es stürzt nichts ab;
+es fehlt etwas.
+
+#### Zuschnitt
+
+**Die App soll die Lücke selbst erkennen** (Betreiber, 8.8.2026), nicht der
+Planer die Woche von Hand anlegen. Erkennbar ist sie leicht: `discoverWeeks()`
+liefert die Wochen nach `start` sortiert — beginnt die nächste mehr als sieben
+Tage nach der vorigen, fehlt eine. Zur Gegenprobe steht auf derselben
+Ausgabenseite die Bibelleseprogramm-Seite.
+
+Gebaut werden muss dafür **kein neuer Mechanismus**, nur der vorhandene ohne
+seine erste Hälfte: Der Import baut das Wochenende ohnehin als editierbare
+Vorlage (im Arbeitsheft steht nur die Zusammenkunft unter der Woche). Für die
+Gedächtnismahl-Woche also: Vorlage fürs Wochenende, Zusammenkunft unter der
+Woche entfallen, Anlass `mem` samt Datum gesetzt. Das Datum lässt sich aus der
+Bibelleseprogramm-Seite **messen** — sie nennt den Tag ausgeschrieben —, und
+dann setzt die Ableitung aus T64 den Ausfall von selbst auf die richtige
+Zusammenkunft.
+
+> **Falle, die zuerst zu bedenken ist:** Der Index einer Woche **ist** ihre
+> `position` in der Datenbank und steckt in jedem gespeicherten `task_key`
+> (T37/T35). Die fehlende Woche darf deshalb nur dann entstehen, wenn der Import
+> **an ihr vorbeikäme** — also bevor die folgende geladen wird. Sie nachträglich
+> einzuschieben, wenn schon spätere Wochen liegen, verschöbe alle Positionen
+> dahinter und ließe jede bestehende Bestätigung auf die falsche Woche zeigen.
+
+Vor der Umsetzung zu klären: Bekommt die Woche einen sichtbaren Hinweis im
+Programm (das Mahl selbst steht ja in keinem Arbeitsheft)? Und soll der Import
+sie stillschweigend anlegen oder als eigene Meldung („Gedächtnismahl-Woche
+ergänzt")?
+
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
 > Reihenfolge beachten: T35 ist die kleine Absicherung, T36 die günstige
@@ -1770,8 +1836,8 @@ Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**63 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 neu
-aufgenommen und zurückgestellt (T63).**
+**63 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 neu
+aufgenommen und offen (T63 zurückgestellt, T65 fachlich geklärt).**
 Der Testbestand ist von 727 auf 1437 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
@@ -1826,6 +1892,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
+| **Phase 6** | T65 | Neu, fachlich geklärt. Die Gedächtnismahl-Woche fehlt im Arbeitsheft ganz — der Import überspringt sie, und das Wochenende dieser Woche lässt sich nicht planen. An jw.org nachgemessen (März/April 2026). |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:
