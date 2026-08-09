@@ -149,12 +149,12 @@ describe('Ausschalten beendet die Klasse überall', () => {
 describe('Schlüssel', () => {
   it('Hauptsaal-Schlüssel bleiben unverändert', () => {
     // Entscheidend: bestehende Bestätigungen in der Datenbank hängen daran.
-    expect(partTaskKey(0, 'mid', 1, 2, 0)).toBe('0|mid|part|1|2|0')
+    expect(partTaskKey('2026-09-07', 'mid', 1, 2, 0)).toBe('2026-09-07|mid|part|1|2|0')
   })
 
   it('die Zusätzliche Klasse hat eigene Schlüssel', () => {
-    expect(partTaskKey(0, 'mid', 1, 2, 0, true)).toBe('0|mid|aux|1|2|0')
-    expect(ratgeberTaskKey(0, 'mid')).toBe('0|mid|ratgeber')
+    expect(partTaskKey('2026-09-07', 'mid', 1, 2, 0, true)).toBe('2026-09-07|mid|aux|1|2|0')
+    expect(ratgeberTaskKey('2026-09-07', 'mid')).toBe('2026-09-07|mid|ratgeber')
   })
 })
 

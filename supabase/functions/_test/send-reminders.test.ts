@@ -480,7 +480,9 @@ describe('send-reminders: Treffpunkte', () => {
 
   it('eine bestätigte Leitung löst nichts aus', async () => {
     fsWeeks = [montag({ wd: 3 })]
-    confirmations = [{ task_key: 'fs|0|i1', status: 'bestätigt' }]
+    // Seit T66 trägt der Schlüssel vorn die Kennung der Woche, nicht ihre
+    // Position — `fs|2026-09-07|i1` statt `fs|0|i1`.
+    confirmations = [{ task_key: `fs|${WEEK_START}|i1`, status: 'bestätigt' }]
     expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
   })
 

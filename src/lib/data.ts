@@ -18,7 +18,7 @@ import {
   DEMO_SERVICES,
 } from '../data/demo'
 import { fsBaseFromWeeks, regenFsWeeks } from '../data/fs'
-import { itemTaskKey, partTaskKey } from '../data/planning'
+import { istWochenKennung, itemTaskKey, partTaskKey } from '../data/planning'
 import {
   displayName,
   emptyQualifications,
@@ -191,6 +191,63 @@ export function migrateServicePrivs(persons: Person[], services: Service[]): Per
 }
 
 /**
+ * Schreibt Bestätigungs-Schlüssel von der **Wochen-Position** auf die
+ * **Wochen-Kennung** um (T66): `"60|mid|part|k3f9x|0"` → `"2026-09-07|mid|…"`,
+ * und `"fs|60|inst7"` → `"fs|2026-09-07|inst7"`.
+ *
+ * Dieselbe Bauart wie `migrateItemIds` (T37) — und aus demselben Grund im
+ * Client statt in SQL: Der Ladepfad kennt die Wochen samt ihren Kennungen
+ * ohnehin, und eine Migration, die beim Laden heilt, kommt ohne Stillstand aus.
+ * Der erste Planer, der sich anmeldet, stellt den Bestand um.
+ *
+ * **Idempotent**: Ein Schlüssel, der vorn schon ein Datum trägt, wird
+ * übersprungen — erkannt an `istWochenKennung`. Beim zweiten Laden gibt es
+ * nichts mehr zu tun.
+ *
+ * **Verlustfrei**: Umgeschrieben wird nur, wozu die Woche geladen ist. Zeigt
+ * ein Schlüssel auf eine Woche außerhalb des Ladefensters, bleibt er
+ * unangetastet und wartet auf einen Ladevorgang, der sie umfasst. Er wird
+ * dadurch nicht falsch — nur später umgestellt.
+ */
+export function migrateTaskKeyWeeks(
+  weeks: Week[],
+  confirmations: ConfirmationMap,
+): { confirmations: ConfirmationMap; renames: Array<[string, string]> } {
+  const renames: Array<[string, string]> = []
+  const next: ConfirmationMap = {}
+
+  for (const [key, status] of Object.entries(confirmations)) {
+    const neu = mitWochenKennung(key, weeks)
+    if (neu !== key) renames.push([key, neu])
+    next[neu] = status
+  }
+  return { confirmations: renames.length > 0 ? next : confirmations, renames }
+}
+
+/** Einen einzelnen Schlüssel umschreiben; unverändert, wenn nichts zu tun ist. */
+function mitWochenKennung(key: string, weeks: Week[]): string {
+  const teile = key.split('|')
+  // Treffpunkte tragen die Woche an zweiter Stelle (`fs|<wi>|<instId>`), alles
+  // andere an erster. Der Grund steht bei `fsTaskKey`.
+  const stelle = teile[0] === 'fs' ? 1 : 0
+  const feld = teile[stelle]
+  // `!feld` statt `=== undefined`: **`Number('')` ist 0, nicht `NaN`.** Ein
+  // Schlüssel mit leerem ersten Feld landete sonst bei Woche 0, und eine
+  // Bestätigung wanderte an einen Punkt, zu dem sie nie gehörte. Bei allem
+  // anderen (Datum, Buchstaben) ergibt `Number` ein `NaN`, das die Prüfung
+  // darunter abfängt — die leere Zeichenkette ist der einzige Ausreißer.
+  if (!feld || istWochenKennung(feld)) return key
+
+  const wi = Number(feld)
+  if (!Number.isInteger(wi) || wi < 0) return key
+  const start = weeks[wi]?.start
+  if (!start) return key // nicht geladen oder Altbestand ohne Datum
+
+  teile[stelle] = start
+  return teile.join('|')
+}
+
+/**
  * Migriert in den Wochen gespeicherte Zuteilungs-Namen von der früheren
  * Kurzform "V. Nachname" auf den heutigen Anzeigenamen (voller Name bzw.
  * `dn`). Nur eindeutige Treffer werden ersetzt; "Gruppe N" und externe Namen
@@ -245,7 +302,7 @@ export function migrateItemIds(
   const renames: Array<[string, string]> = []
   let anyChanged = false
 
-  const next = weeks.map((week, wi) => {
+  const next = weeks.map((week) => {
     if (week.stub) return week
     let weekChanged = false
     const kopie = { ...week }
@@ -263,9 +320,9 @@ export function migrateItemIds(
             [true, item.aux ?? []] as const,
           ]) {
             slots.forEach((_slot, ni) => {
-              const alt = partTaskKey(wi, tab, si, ii, ni, raum)
+              const alt = partTaskKey(week.start, tab, si, ii, ni, raum)
               if (!(alt in confirmations)) return
-              renames.push([alt, itemTaskKey(wi, tab, iid, ni, raum)])
+              renames.push([alt, itemTaskKey(week.start, tab, iid, ni, raum)])
             })
           }
           return { ...item, iid }
@@ -823,7 +880,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // (T37). Idempotent — beim zweiten Laden gibt es nichts mehr zu tun.
   const umgestellt = migrateItemIds(gemigriert, rohConf)
   const weekList = umgestellt.weeks
-  const confirmations = umgestellt.confirmations
+  // Und die Woche im Schlüssel von der Position auf ihre Kennung (T66). Nach
+  // T37, nicht davor: jene arbeitet noch mit Positions-Schlüsseln, diese
+  // schreibt das Ergebnis um. Beide sind idempotent.
+  const datiert = migrateTaskKeyWeeks(weekList, umgestellt.confirmations)
+  const confirmations = datiert.confirmations
+  const alleRenames = [...umgestellt.renames, ...datiert.renames]
   /** Nur die Wochen, die wirklich Kennungen bekommen haben. */
   const speichereUmgestellte = (): void => {
     for (let i = 0; i < weekList.length; i++) {
@@ -831,11 +893,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       if (woche && woche !== gemigriert[i]) saveWeek(congregationId, i, woche)
     }
   }
-  if (umgestellt.renames.length > 0) {
+  if (alleRenames.length > 0) {
     // Erst die Datenbank, dann die Wochen: bricht das Umbenennen ab, bleiben
     // die Wochen ohne Kennung und der nächste Ladevorgang versucht es erneut.
     // Andersherum wären die Bestätigungen verwaist.
-    void renameConfirmationKeys(congregationId, umgestellt.renames).then(speichereUmgestellte)
+    void renameConfirmationKeys(congregationId, alleRenames).then(speichereUmgestellte)
   } else {
     speichereUmgestellte()
   }

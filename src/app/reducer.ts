@@ -26,6 +26,7 @@ import {
   shiftPartConfirmations,
   slotRolle,
   swapPartConfirmations,
+  wochenIndex,
 } from '../data/planning'
 import {
   editTalkTheme,
@@ -103,7 +104,9 @@ function geaenderteSlots(
 ): string[] {
   const a = vorher[wi]?.[tab]
   const b = nachher[wi]?.[tab]
-  return a && b ? changedSlotKeys(a, b, services, wi, tab) : []
+  // Die Kennung kommt aus der Woche selbst (T66) — der Index taugt dafuer nicht.
+  const woche = nachher[wi]?.start ?? ''
+  return a && b ? changedSlotKeys(a, b, services, woche, tab) : []
 }
 
 /** Toast aus einem übersetzten UI-Schlüssel (Reducer kennt state.lang). */
@@ -826,13 +829,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
       if (!parts || !me) return state
       const name = displayName(me)
+      const wi = wochenIndex(state.weeks, parts.woche)
+      if (wi < 0) return state // Woche nicht geladen
       const sel = {
-        kind: 'helper' as const, wi: parts.wi, tab: parts.tab, svc: parts.svc, pos: parts.pos,
+        kind: 'helper' as const, wi, tab: parts.tab, svc: parts.svc, pos: parts.pos,
         label: '', priv: null, groups: false,
       }
       const weeks = assignSlot(state.weeks, sel, name, undefined, me.id)
       // „Warnen statt blocken": schon am selben Tag eingeteilt? → Hinweis-Toast.
-      const meeting = weeks[parts.wi]?.[parts.tab]
+      const meeting = weeks[wi]?.[parts.tab]
       const clash = meeting != null && assignmentsInMeeting(meeting, me, state.services, sel).length > 0
       return {
         ...state,
@@ -857,7 +862,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // nachfolgende Punkt die fremde Bestätigung.
       const verschoben = shiftPartConfirmations(
         state.confirmations,
-        state.week,
+        state.weeks[state.week]?.start ?? '',
         mtab(state.tab),
         action.si,
         action.ii,
@@ -896,7 +901,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           ? state.confirmations
           : swapPartConfirmations(
               state.confirmations,
-              state.week,
+              state.weeks[state.week]?.start ?? '',
               mtab(state.tab),
               action.si,
               action.ii,
@@ -913,7 +918,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const at = lacAddIndex(state.weeks[state.week]?.[mtab(state.tab)].sections[action.si]?.items ?? [])
       const verschoben = shiftPartConfirmations(
         state.confirmations,
-        state.week,
+        state.weeks[state.week]?.start ?? '',
         mtab(state.tab),
         action.si,
         at,

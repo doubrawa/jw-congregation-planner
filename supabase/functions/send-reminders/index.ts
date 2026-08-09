@@ -342,17 +342,18 @@ interface Pending {
  *
  * Der Wochentag steht am Treffpunkt selbst (`wd`, 0=So … 6=Sa), nicht in den
  * Zusammenkunftszeiten; als Versatz ab Montag gerechnet wie im Client
- * (`fsDate`). task_key `fs|<wi>|<instId>` — dieselbe Form wie dort.
+ * (`fsDate`). task_key `fs|<Montag>|<instId>` — dieselbe Form wie dort (T66:
+ * vorn steht die **Kennung** der Woche, nicht mehr ihre Position).
  */
 function pendingOfFsWeek(
-  wi: number,
+  woche: string,
   insts: FsInstance[],
   conf: Map<string, string>,
 ): Array<Pending & { offset: number; zeit: string }> {
   const out: Array<Pending & { offset: number; zeit: string }> = []
   for (const inst of insts) {
     if (!inst?.leader) continue
-    if (conf.has(`fs|${wi}|${inst.id}`)) continue
+    if (conf.has(`fs|${woche}|${inst.id}`)) continue
     const ort = inst.place ? ` · ${inst.place}` : ''
     out.push({
       name: inst.leader,
@@ -365,8 +366,16 @@ function pendingOfFsWeek(
   return out
 }
 
-/** Unbestätigte Zuteilungen; task_key-Schema wie partTaskKey/helperTaskKey. */
+/**
+ * Unbestätigte Zuteilungen; task_key-Schema wie partTaskKey/helperTaskKey.
+ *
+ * Vorn steht seit T66 der **Montag der Woche** statt ihrer Position. Der
+ * Positions-Schlüssel wird weiterhin mitgeprüft: Bestätigungen aus der Zeit
+ * davor stellt der Client beim nächsten Laden um (migrateTaskKeyWeeks) — bis
+ * dahin dürfen sie nicht als „unbestätigt" gelten und Erinnerungen auslösen.
+ */
 function pendingOfMeeting(
+  woche: string,
   wi: number,
   tab: 'mid' | 'we',
   meeting: Meeting,
@@ -397,8 +406,12 @@ function pendingOfMeeting(
           // behalten ihren Positions-Schlüssel, bis die Lade-Migration sie
           // erreicht. Beide Formen werden geprüft, damit in der Zwischenzeit
           // keine Bestätigung übersehen wird und doppelt erinnert wird.
-          const posKey = `${wi}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
-          const idKey = item.iid ? `${wi}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
+          const posKey = `${woche}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
+          const idKey = item.iid ? `${woche}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
+          // Altbestand, noch nicht umgestellt (siehe Kopf).
+          const altPos = `${wi}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
+          const altId = item.iid ? `${wi}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
+          if (conf.has(altPos) || (altId && conf.has(altId))) continue
           if (conf.has(posKey) || (idKey !== null && conf.has(idKey))) continue
           const rolle = slot.rolle ?? ''
           const title = item.title ?? 'Zuteilung'
@@ -413,7 +426,7 @@ function pendingOfMeeting(
   }
   // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
   const ratgeber = meeting.auxRatgeber
-  if (ratgeber?.name && !conf.has(`${wi}|${tab}|ratgeber`)) {
+  if (ratgeber?.name && !conf.has(`${woche}|${tab}|ratgeber`) && !conf.has(`${wi}|${tab}|ratgeber`)) {
     out.push({ name: ratgeber.name, pid: ratgeber.pid, label: ratgeber.rolle ?? 'Ratgeber' })
   }
   for (const svc of services) {
@@ -422,7 +435,8 @@ function pendingOfMeeting(
     for (let pos = 0; pos < svc.count; pos++) {
       const name = helperName(arr[pos])
       if (!name) continue // unbesetzter Platz
-      if (conf.has(`${wi}|${tab}|helper|${svc.key}|${pos}`)) continue
+      if (conf.has(`${woche}|${tab}|helper|${svc.key}|${pos}`)) continue
+      if (conf.has(`${wi}|${tab}|helper|${svc.key}|${pos}`)) continue // Altbestand
       out.push({ name, pid: helperPid(arr[pos]), label: svc.name })
     }
   }
@@ -560,7 +574,7 @@ Deno.serve(async (req: Request) => {
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
-          for (const pend of pendingOfMeeting(wi, tab, meeting, services, conf)) {
+          for (const pend of pendingOfMeeting(week.start, wi, tab, meeting, services, conf)) {
             const entry = `${reminderDate(week.start, offset, meeting, zeit, week.dev, tab)}: ${pend.label}`
             const userId = userOf(pend)
             // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
@@ -590,7 +604,7 @@ Deno.serve(async (req: Request) => {
       for (const row of fsWeeks) {
         const start = startOf.get(row.position)
         if (!start) continue
-        for (const pend of pendingOfFsWeek(row.position, row.data ?? [], conf)) {
+        for (const pend of pendingOfFsWeek(start, row.data ?? [], conf)) {
           const days = daysUntil(start, pend.offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)

@@ -322,7 +322,7 @@ export function changedSlotKeys(
   prev: Meeting,
   next: Meeting,
   services: Service[],
-  wi: number,
+  woche: string,
   tab: MeetingKey,
 ): string[] {
   const keys: string[] = []
@@ -333,7 +333,7 @@ export function changedSlotKeys(
       for (const aux of raeume(next)) {
         const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
         slotsOf(item, aux).forEach((slot, ni) => {
-          if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(slotTaskKey(item, wi, tab, si, ii, ni, aux))
+          if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(slotTaskKey(item, woche, tab, si, ii, ni, aux))
         })
       }
     })
@@ -343,11 +343,11 @@ export function changedSlotKeys(
     const nextArr = next.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
       if ((prevArr[pos]?.name ?? '') !== (nextArr[pos]?.name ?? ''))
-        keys.push(helperTaskKey(wi, tab, svc.key, pos))
+        keys.push(helperTaskKey(woche, tab, svc.key, pos))
     }
   }
   if ((prev.auxRatgeber?.name ?? '') !== (next.auxRatgeber?.name ?? '')) {
-    keys.push(ratgeberTaskKey(wi, tab))
+    keys.push(ratgeberTaskKey(woche, tab))
   }
   return keys
 }
@@ -841,6 +841,33 @@ export function buildS89ForSlot(
 const TABS: MeetingKey[] = ['mid', 'we']
 
 /**
+ * Ist das vorderste Feld eines `task_key` eine Wochen-Kennung (T66)?
+ *
+ * Seit T66 steht dort das **Startdatum** der Woche („2026-09-07"), vorher ihre
+ * **Position** („60"). Beide sind auf einen Blick unterscheidbar, und genau das
+ * braucht die Lade-Migration: Sie erkennt daran, was sie schon umgestellt hat.
+ *
+ * Geprüft wird nur die Form, nicht die Gültigkeit des Datums — ein „2026-13-45"
+ * käme aus keiner Quelle, die wir schreiben, und ein zu strenger Test hier
+ * verwürfe im Zweifel echte Schlüssel.
+ */
+export function istWochenKennung(feld: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(feld)
+}
+
+/**
+ * Index der Woche mit dieser Kennung — `-1`, wenn sie nicht geladen ist.
+ *
+ * Das Gegenstück zum Umbau: Wer aus einem Schlüssel wieder eine Woche braucht,
+ * schlägt sie hier nach, statt die Zahl als Index zu missbrauchen. Nicht
+ * geladen heißt nicht ungültig — die Woche kann außerhalb des Ladefensters
+ * liegen (WEEK_LIMIT), und ihr Schlüssel bleibt trotzdem richtig.
+ */
+export function wochenIndex(weeks: readonly Week[], woche: string): number {
+  return woche ? weeks.findIndex((w) => w.start === woche) : -1
+}
+
+/**
  * Stabiler Schlüssel eines Programmpunkt-Slots (auch confirmations.task_key).
  *
  * Der Abschnitt „part" wird für die Zusätzliche Klasse zu „aux" — bewusst an
@@ -849,14 +876,14 @@ const TABS: MeetingKey[] = ['mid', 'we']
  * Bestätigungen behalten ihre Gültigkeit.
  */
 export function partTaskKey(
-  wi: number,
+  woche: string,
   tab: MeetingKey,
   si: number,
   ii: number,
   ni: number,
   aux = false,
 ): string {
-  return `${wi}|${tab}|${aux ? 'aux' : 'part'}|${si}|${ii}|${ni}`
+  return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${si}|${ii}|${ni}`
 }
 
 /**
@@ -873,13 +900,13 @@ export function partTaskKey(
  * zu erkennen, was sie schon umgestellt hat.
  */
 export function itemTaskKey(
-  wi: number,
+  woche: string,
   tab: MeetingKey,
   iid: string,
   ni: number,
   aux = false,
 ): string {
-  return `${wi}|${tab}|${aux ? 'aux' : 'part'}|${iid}|${ni}`
+  return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${iid}|${ni}`
 }
 
 /**
@@ -893,7 +920,7 @@ export function itemTaskKey(
  */
 export function slotTaskKey(
   item: PartItem,
-  wi: number,
+  woche: string,
   tab: MeetingKey,
   si: number,
   ii: number,
@@ -901,39 +928,38 @@ export function slotTaskKey(
   aux = false,
 ): string {
   return item.iid
-    ? itemTaskKey(wi, tab, item.iid, ni, aux)
-    : partTaskKey(wi, tab, si, ii, ni, aux)
+    ? itemTaskKey(woche, tab, item.iid, ni, aux)
+    : partTaskKey(woche, tab, si, ii, ni, aux)
 }
 
 
 /** Stabiler Schlüssel des Ratgebers einer Zusammenkunft. */
-export function ratgeberTaskKey(wi: number, tab: MeetingKey): string {
-  return `${wi}|${tab}|ratgeber`
+export function ratgeberTaskKey(woche: string, tab: MeetingKey): string {
+  return `${woche}|${tab}|ratgeber`
 }
 
 /** Stabiler Schlüssel eines Hilfsdienst-Slots. */
-export function helperTaskKey(wi: number, tab: MeetingKey, svc: string, pos: number): string {
-  return `${wi}|${tab}|helper|${svc}|${pos}`
+export function helperTaskKey(woche: string, tab: MeetingKey, svc: string, pos: number): string {
+  return `${woche}|${tab}|helper|${svc}|${pos}`
 }
 
 /**
  * Woche und Zusammenkunft eines task_key — jeder beginnt mit `<wi>|<tab>|…`,
  * gleich ob Programmpunkt, Ratgeber oder Hilfsdienst. null bei Fremdformaten.
  */
-export function taskKeyWeek(key: string): { wi: number; tab: MeetingKey } | null {
-  const [wi, tab] = key.split('|')
-  const n = Number(wi)
-  if (!Number.isInteger(n) || n < 0) return null
-  return tab === 'mid' || tab === 'we' ? { wi: n, tab } : null
+export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | null {
+  const [woche, tab] = key.split('|')
+  if (!woche || !istWochenKennung(woche)) return null
+  return tab === 'mid' || tab === 'we' ? { woche, tab } : null
 }
 
 /** Zerlegt einen Hilfsdienst-task_key; null, wenn es kein Hilfsdienst-Key ist. */
 export function helperKeyParts(
   key: string,
-): { wi: number; tab: MeetingKey; svc: string; pos: number } | null {
+): { woche: string; tab: MeetingKey; svc: string; pos: number } | null {
   const p = key.split('|')
   if (p.length !== 5 || p[2] !== 'helper') return null
-  return { wi: Number(p[0]), tab: p[1] as MeetingKey, svc: p[3] ?? '', pos: Number(p[4]) }
+  return { woche: p[0] ?? '', tab: p[1] as MeetingKey, svc: p[3] ?? '', pos: Number(p[4]) }
 }
 
 /**
@@ -959,8 +985,10 @@ export function deriveSubstituteReqs(
     const svc = svcByKey.get(parts.svc)
     if (!svc || svc.groups) continue
     if (!isQualified(me, serviceQualKey(parts.svc))) continue
-    if (istAbwesend(abwesend, me.id, parts.wi, parts.tab)) continue
-    const week = weeks[parts.wi]
+    const wi = wochenIndex(weeks, parts.woche)
+    if (wi < 0) continue // Woche nicht geladen — dazu ist nichts zu sagen
+    if (istAbwesend(abwesend, me.id, wi, parts.tab)) continue
+    const week = weeks[wi]
     const meeting = week?.[parts.tab]
     const slot = meeting?.helpers[parts.svc]?.[parts.pos]
     if (!meeting || !slot?.name || slot.name === myName) continue // eigener/leerer Slot
@@ -968,7 +996,7 @@ export function deriveSubstituteReqs(
       key,
       svc: parts.svc,
       title: svc.name,
-      date: taskDate(week, parts.wi, parts.tab, meetings),
+      date: taskDate(week, wi, parts.tab, meetings),
       at: meetingDateMs(week, parts.tab, meetings),
       declinedBy: slot.name,
     })
@@ -982,7 +1010,7 @@ export function deriveSubstituteReqs(
  * folgt die Bestätigung dem Programmpunkt statt der Position.
  */
 export function partSwapKeyPairs(
-  wi: number,
+  woche: string,
   tab: MeetingKey,
   si: number,
   a: number,
@@ -991,7 +1019,7 @@ export function partSwapKeyPairs(
 ): Array<[string, string]> {
   const pairs: Array<[string, string]> = []
   for (let ni = 0; ni < count; ni++) {
-    pairs.push([partTaskKey(wi, tab, si, a, ni), partTaskKey(wi, tab, si, b, ni)])
+    pairs.push([partTaskKey(woche, tab, si, a, ni), partTaskKey(woche, tab, si, b, ni)])
   }
   return pairs
 }
@@ -1024,13 +1052,13 @@ export function partSwapKeyPairs(
  */
 export function shiftPartConfirmations(
   map: ConfirmationMap,
-  wi: number,
+  woche: string,
   tab: MeetingKey,
   si: number,
   ab: number,
   delta: -1 | 1,
 ): { map: ConfirmationMap; renames: Array<[string, string]>; removed: string[] } {
-  const praefix = `${wi}|${tab}|`
+  const praefix = `${woche}|${tab}|`
   const betroffen: Array<{ key: string; art: string; ii: number; ni: string; status: TaskStatus }> =
     []
   // Über die Einträge, nicht über die Schlüssel: der Status kommt so aus
@@ -1079,7 +1107,7 @@ export function shiftPartConfirmations(
 /** Bestätigungs-Status zweier getauschter Positionen in der Map vertauschen. */
 export function swapPartConfirmations(
   map: ConfirmationMap,
-  wi: number,
+  woche: string,
   tab: MeetingKey,
   si: number,
   a: number,
@@ -1088,7 +1116,7 @@ export function swapPartConfirmations(
 ): ConfirmationMap {
   const next = { ...map }
   let changed = false
-  for (const [ka, kb] of partSwapKeyPairs(wi, tab, si, a, b, count)) {
+  for (const [ka, kb] of partSwapKeyPairs(woche, tab, si, a, b, count)) {
     const va = map[ka]
     const vb = map[kb]
     if (va === vb) continue
@@ -1136,7 +1164,7 @@ function eachAssignedSlot(
             slotsOf(item, aux).forEach((slot, ni) => {
               // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
               if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) return
-              const key = slotTaskKey(item, wi, tab, si, ii, ni, aux)
+              const key = slotTaskKey(item, week.start, tab, si, ii, ni, aux)
               visit(slot.name, key, () => {
                 const rolle = slot.rolle ?? ''
                 const sel: SlotSelection = {
@@ -1160,7 +1188,7 @@ function eachAssignedSlot(
       // Ratgeber der Zusätzlichen Klasse: eine Aufgabe je Zusammenkunft.
       const ratgeber = meeting.auxRatgeber
       if (ratgeber?.name) {
-        const key = ratgeberTaskKey(wi, tab)
+        const key = ratgeberTaskKey(week.start, tab)
         visit(ratgeber.name, key, () => ({
           id: key,
           title: RATGEBER_ROLLE,
@@ -1177,7 +1205,7 @@ function eachAssignedSlot(
         for (let pos = 0; pos < svc.count; pos++) {
           const slot = arr[pos]
           if (!slot?.name) continue
-          const key = helperTaskKey(wi, tab, svc.key, pos)
+          const key = helperTaskKey(week.start, tab, svc.key, pos)
           visit(slot.name, key, () => ({
             id: key,
             title: svc.name,

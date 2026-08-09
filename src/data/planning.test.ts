@@ -110,15 +110,15 @@ describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
     item.names[0].name = 'Neue Person'
     // ein Hilfsdienst-Platz leeren
     after.helpers.mik = [{ name: '' }, ...(after.helpers.mik ?? []).slice(1)]
-    const keys = changedSlotKeys(before, after, DEMO_SERVICES, 0, 'mid')
-    expect(keys).toContain('0|mid|part|0|0|0')
-    expect(keys).toContain('0|mid|helper|mik|0')
+    const keys = changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid')
+    expect(keys).toContain('2026-09-07|mid|part|0|0|0')
+    expect(keys).toContain('2026-09-07|mid|helper|mik|0')
     expect(keys).toHaveLength(2)
   })
 
   it('ohne Änderung keine Keys', () => {
     const weeks = buildDemoWeeks()
-    expect(changedSlotKeys(weeks[0].mid, weeks[0].mid, DEMO_SERVICES, 0, 'mid')).toHaveLength(0)
+    expect(changedSlotKeys(weeks[0].mid, weeks[0].mid, DEMO_SERVICES, '2026-09-07', 'mid')).toHaveLength(0)
   })
 })
 
@@ -327,30 +327,30 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
   it('listet einen verhinderten Hilfsdienst, für den ich qualifiziert bin', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
-    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))
     expect(reqs).toHaveLength(1)
-    expect(reqs[0]).toMatchObject({ svc: 'ton', declinedBy: 'A. Absager', key: helperTaskKey(0, 'mid', 'ton', 0) })
+    expect(reqs[0]).toMatchObject({ svc: 'ton', declinedBy: 'A. Absager', key: helperTaskKey('2026-09-07', 'mid', 'ton', 0) })
   })
 
   it('nicht qualifiziert → kein Gesuch', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
-    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'))).toHaveLength(0)
   })
 
   it('nur „verhindert" zählt (bestätigt/offen nicht)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
-    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'bestätigt' as const }
+    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'bestätigt' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))).toHaveLength(0)
   })
 
   it('eigener verhinderter Slot erscheint nicht als Einspringen-Gesuch', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
-    const conf = { [helperTaskKey(0, 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))).toHaveLength(0)
   })
 })

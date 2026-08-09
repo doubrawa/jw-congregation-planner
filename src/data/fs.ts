@@ -213,8 +213,22 @@ export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance)
  *
  * Dieselbe Form benutzt die Personen-Zeitleiste seit je (`fs|wi|instId`).
  */
-export function fsTaskKey(wi: number, instId: string): string {
-  return `fs|${wi}|${instId}`
+/**
+ * Montag der Woche `wi` als Kennung (T66) — aus der Datumsbasis gerechnet.
+ *
+ * Treffpunkt-Wochen liegen parallel zu den Programmwochen und tragen selbst
+ * kein Datum; `fsBase` ist der Montag der Woche 0, und Wochen liegen genau
+ * sieben Tage auseinander. Ohne Basis (Vorlagen, Tests) bleibt es leer — dann
+ * gibt es auch keinen Termin zu zeigen.
+ */
+export function fsWochenStart(fsBase: Date | null, wi: number): string {
+  if (!fsBase) return ''
+  const d = new Date(Date.UTC(fsBase.getFullYear(), fsBase.getMonth(), fsBase.getDate() + wi * 7))
+  return d.toISOString().slice(0, 10)
+}
+
+export function fsTaskKey(woche: string, instId: string): string {
+  return `fs|${woche}|${instId}`
 }
 
 /**
@@ -456,7 +470,7 @@ export function deriveMyFsTasks(
       if (!inst.leader) continue
       const meins = inst.lpid && personId ? inst.lpid === personId : inst.leader === personName
       if (!meins) continue
-      const key = fsTaskKey(wi, inst.id)
+      const key = fsTaskKey(fsWochenStart(fsBase, wi), inst.id)
       // Ohne Datumsbasis (Vorlagen, Tests) gibt es keinen echten Termin — dann
       // bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
       const tag = fsBase ? fsDate(fsBase, wi, inst.wd) : null

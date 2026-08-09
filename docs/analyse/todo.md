@@ -1183,7 +1183,7 @@ Die Positions-Falle oben bleibt die erste Entscheidung beim Bauen — **solange*
 `position` die Kennung einer Woche ist. Genau das ist der eigentliche Mangel und
 steht als **T66**.
 
-### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 ⚠ Stufe 1 von 3 gebaut
+### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 ⚠ Stufe 2 von 3 gebaut
 Beim Zuschnitt von T65 aufgefallen und vom Betreiber sofort als Mangel erkannt:
 *„das klingt nach einem Problem — müssen wir da die DB fixen, damit hier nicht
 Annahmen vorausgesetzt werden, sondern richtige Daten drin liegen?"*
@@ -1304,9 +1304,45 @@ Liste** neben den Wochen mit; die ist jetzt weg.
 migration-017 nachträgt. Zwei Tests prüfen genau diesen Fall weiter
 (`wochenAbstand` ohne Datum, `missingVariants`).
 
-**Offen für Stufe 2:** `task_key` auf das Datum umstellen, Migration für die
-bestehenden Schlüssel, `send-reminders` und `substitute` nachziehen.
-**Für Stufe 3:** `position` und `Week.stub` fallen lassen.
+#### Stufe 2 — gebaut am 8. August 2026 (migration-017 war eingespielt)
+
+Der `task_key` trägt vorn die Kennung: `"2026-09-07|mid|part|k3f9x|0"` statt
+`"60|mid|part|k3f9x|0"`, und `"fs|2026-09-07|inst7"` statt `"fs|60|inst7"`.
+
+| Was | Wo |
+| --- | --- |
+| alle Schlüsselbauer nehmen die Kennung | [data/planning.ts](../../src/data/planning.ts), [data/fs.ts](../../src/data/fs.ts) |
+| `istWochenKennung` / `wochenIndex` — hin und zurück | [data/planning.ts](../../src/data/planning.ts) |
+| `migrateTaskKeyWeeks` schreibt den Bestand beim Laden um | [lib/data.ts](../../src/lib/data.ts) |
+| `send-reminders` und `substitute` nachgezogen | [supabase/functions](../../supabase/functions) |
+| 10 Tests auf die Umschreibung | [lib/taskkey-migration.test.ts](../../src/lib/taskkey-migration.test.ts) |
+
+**Keine SQL-Migration.** Umgeschrieben wird im Client beim Laden — dieselbe
+Bauart wie `migrateItemIds` (T37) und aus demselben Grund: Der Ladepfad kennt
+die Wochen samt Kennungen ohnehin, und eine Migration, die beim Laden heilt,
+kommt ohne Stillstand aus. Der erste Planer, der sich anmeldet, stellt den
+Bestand um; wer eine ältere Fassung der App offen hat, schreibt weiter
+Positions-Schlüssel, und die werden beim nächsten Laden mitgenommen.
+
+Beide Edge Functions **lesen deshalb weiterhin auch die alte Form** — sonst
+erinnerte der Versand an etwas, das längst bestätigt ist, nur eben unter dem
+alten Schlüssel.
+
+> **Der Compiler hat 18 von 19 Stellen gezeigt** — die neunzehnte nicht:
+> `shiftPartConfirmations` baute den Präfix als Template-Literal
+> (`` `${wi}|${tab}|` ``), und darin ist eine Zahl so gültig wie ein Datum. Sie
+> fiel erst im Testlauf auf. **Wo eine Signatur den Typ trägt, hilft der
+> Compiler; wo ein Template-Literal ihn verschluckt, hilft nur der Test.**
+
+**Und ein echter Fehler, gefunden von der Gegenprobe:** Zwei von vier Mutationen
+blieben zunächst grün. Beim Nachsehen war die eine äquivalent — aber die andere
+deckte auf, dass **`Number('')` gleich 0 ist, nicht `NaN`**. Ein Schlüssel mit
+leerem erstem Feld wäre der Woche 0 zugeschlagen worden, und eine Bestätigung
+wäre an einen Punkt gewandert, zu dem sie nie gehörte. Ein Test dafür steht
+jetzt da, und mit ihm werden alle vier Mutationen erkannt.
+
+**Für Stufe 3:** `position` und `Week.stub` fallen lassen, Laden und Speichern
+über `start`, migration-018 löscht die Spalte.
 
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
