@@ -879,14 +879,56 @@ gemessenen Bausteinen plus `Intl`.
 Die Datumsfelder kosten **kein neues Vokabular**: `s89Datum` („Datum"), `von`
 („VON") und `bis` („BIS") stehen bereits in allen 34 Sprachen.
 
-Zu messen ist **ein** Wort: **„Kongress"**. Quelle (vom Betreiber genannt,
-8.8.2026):
+**„Kongress" ist gemessen** (8.8.2026). Quelle:
 <https://www.jw.org/de/bibliothek/broschueren/wille-jehovas/jehovas-zeugen-kongresse/>
-— der „Lesen in"-Umschalter führt über 200 Sprachen, und **der Singular kommt im
-Fließtext vor**, nicht nur der Plural im Fragetitel. Zu holen ist die Seite je
-Sprache über denselben Weg, den `import-week` schon geht
-(`otherAvailLangsChooser`, je Sprache ein `data-url`) — nicht über eine
-Zusammenfassung, die den Wortlaut verliert.
+— vom Betreiber genannt. Geholt über denselben Weg, den `import-week` geht: Die
+deutsche Seite trägt im `otherAvailLangsChooser` je Sprache ein `data-url`
+(450 Sprachen), daraus die 33 nach `JW_TO_APP`. Gegengeprobt wurde jede Form
+einzeln — sie steht **wörtlich** im Fließtext ihrer Seite, nicht nur im
+Fragetitel und nicht abgeleitet:
+
+| | | | | | |
+| --- | --- | --- | --- | --- | --- |
+| de | Kongress | en | assembly | es | asamblea |
+| fr | rassemblement | it | congresso | pt | assembleia |
+| nl | bijeenkomst | pl | zgromadzenie | ru | конгресс |
+| uk | конгрес | ro | congres | el | συνέλευση |
+| cs | sjezd | sk | zjazd | hu | kongresszus |
+| hr | skup | sr | skup | bg | конгрес |
+| sv | sammankomst | da | stævne | fi | konventti |
+| no | stevne | tr | ibadet | zh | 大会 |
+| ja | 大会 | ko | 대회 | id | kebaktian |
+| tl | asamblea | vi | hội nghị | sw | kusanyiko |
+| ar | محفل | he | כינוס | fa | گردهمایی |
+| ur | اجتماع | | | | |
+
+Aufgeführt ist die **Grundform**, wie sie im Text steht; die Großschreibung
+folgt beim Einbau der jeweiligen Sprache. Es ist ein **UI-Schlüssel**, gehört
+also nach [de.ts](../../src/i18n/de.ts) und in die 33 Overlays unter
+`src/i18n/overlays/`, nicht in `translate-data.ts`.
+
+**Wichtig — es ist der Oberbegriff, nicht der Fachbegriff.** Der Artikel nennt
+die drei Anlässe im Jahr einzeln, und dabei zeigt sich: Manche Sprachen haben
+ein Wort für beide Arten, andere zwei.
+
+| Sprache | eintägig (Kreis) | dreitägig (Region) | Oberbegriff |
+| --- | --- | --- | --- |
+| de | Kreiskongress | regionaler Kongress | **Kongress** |
+| el | συνέλευση περιοχής | περιφερειακή συνέλευση | **συνέλευση** |
+| tr | çevre ibadeti | bölge ibadeti | **ibadet** |
+| ja | 巡回大会 | 地区大会 | **大会** |
+| fi | kierroskonventti | aluekonventti | **konventti** |
+| en | circuit assembly | regional **convention** | **assembly** |
+| it | assemblea di circoscrizione | **congresso** di zona | **congresso** |
+| hr/sr | pokrajinski sastanak | regionalni **kongres** | **skup** |
+
+Für die App ist der **Oberbegriff** das Richtige: Der Anlass sagt „diese Woche
+fallen beide Zusammenkünfte aus", gleich welcher der drei Anlässe es ist. Die
+Tabelle oben ist genau dieser Oberbegriff — und zwar so, wie jw.org ihn selbst
+verwendet („Sie besuchen einen unserer Kongresse", englisch „attending one of
+our assemblies"), nicht als eigene Wahl. Wer es in einer Sprache dennoch
+schärfer will, entscheidet das dort bewusst; erfunden ist dann nichts, es steht
+beides gemessen da.
 
 **Der erste Eintrag der Liste braucht kein Wort:** ein **„—"** genügt. Ein
 Gedankenstrich ist in jeder Sprache und jeder Schrift derselbe, und die drei
@@ -1720,7 +1762,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **Phase 6** | T64 | Neu, beschlossen und ausgeschrieben — fachlich vollständig geklärt. Der Anlass der Woche (Kreisaufseher / Gedächtnismahl / Kongress samt Termin) und ein vierter Reiter, der ihn beherbergt. Zu messen bleibt ein Wort („Kongress", Quelle notiert), sonst ist nichts offen. |
+| **Phase 6** | T64 | Neu, beschlossen und ausgeschrieben — fachlich vollständig geklärt. Der Anlass der Woche (Kreisaufseher / Gedächtnismahl / Kongress samt Termin) und ein vierter Reiter, der ihn beherbergt. Das Vokabular ist vollständig gemessen (Schlussvortrag 18 + Rückfall, Kongress alle 33) — es ist nichts mehr offen, nur noch zu bauen. |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:
