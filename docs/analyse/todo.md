@@ -1219,24 +1219,37 @@ diese Richtung.
 
 #### Zuschnitt
 
-Die richtige Kennung ist **das Startdatum der Woche** (`week.start`, ISO-Montag):
-eindeutig je Versammlung, stabil, für Menschen lesbar und schon im Datenmodell.
-`weeks.id` (uuid) wäre die Alternative, sagt aber nichts — und beim Bilden eines
-`task_key` im Client liegt sie nicht vor.
+Die richtige Kennung ist **das Startdatum der Woche** (ISO-Montag): eindeutig je
+Versammlung, stabil, für Menschen lesbar und fachlich das, was eine Woche
+*ist*. `weeks.id` (uuid) wäre die Alternative, sagt aber nichts — und beim
+Bilden eines `task_key` im Client liegt sie nicht vor.
 
-1. `Week.start` wird **verpflichtend**. Heute setzt es nur der Import; Demo- und
+> **Und zwar als Spalte, nicht im Blob** (Betreiber, 8.8.2026: „die Woche sollte
+> nicht einfach eine Position haben, sondern ein Startdatum oder so"). Heute
+> steht `start` **innerhalb** von `weeks.data` (JSONB). Die Datenbank kann es
+> deshalb weder prüfen noch eindeutig halten noch danach sortieren — die einzige
+> Integritätsbedingung ist `unique (congregation_id, position)`, also
+> ausgerechnet die auf der Ordnungszahl. Genau das ist gemeint mit „richtige
+> Daten statt Annahmen".
+
+1. **Neue Spalte** `start date not null` mit `unique (congregation_id, start)`.
+   Damit hält die Datenbank selbst, was bisher nur Absprache war: eine Woche je
+   Kalenderwoche, keine zwei, keine namenlose.
+2. `Week.start` wird **verpflichtend**. Heute setzt es nur der Import; Demo- und
    Vorlagenwochen tragen es nicht (siehe README, Erinnerungs-Versand). Nachtragen
-   lässt es sich aus `position` + `fsBase`.
-2. `task_key` führt vorn das Datum statt der Nummer:
+   lässt es sich aus `position` + `fsBase`, und genau das tut die Migration beim
+   Füllen der neuen Spalte.
+3. `task_key` führt vorn das Datum statt der Nummer:
    `"2026-09-07|mid|part|k3f9x|0"`.
-3. Migration schreibt die bestehenden `task_key` um — **eine** Wanderung, danach
+4. Migration schreibt die bestehenden `task_key` um — **eine** Wanderung, danach
    ist die Annahme weg.
-4. `send-reminders` und `substitute` ziehen nach und werden neu deployt.
-5. `position` behält nur noch die Reihenfolge (oder entfällt zugunsten von
-   `order by start`).
-6. **`Week.stub` wird überflüssig** — seine einzige Begründung ist die
+5. `send-reminders` und `substitute` ziehen nach und werden neu deployt.
+6. **`position` entfällt.** Die Reihenfolge ist `order by start`; eine zweite
+   Quelle für dieselbe Aussage wäre wieder eine Annahme, die auseinanderlaufen
+   kann.
+7. **`Week.stub` wird überflüssig** — seine einzige Begründung ist die
    Index-Ausrichtung. Das ist der Gradmesser dafür, dass der Umbau vollständig
-   war.
+   war: Solange es Platzhalter braucht, trägt der Index noch Bedeutung.
 
 **T65 wartet nicht darauf.** Solange die Lücke erkannt wird, *bevor* die folgende
 Woche geladen ist, wird nie in die Mitte eingefügt. T66 nimmt der Sache
