@@ -242,10 +242,19 @@ export const DEMO_ABSENCES: Absence[] = [
   { id: 'a5', personId: 'p11', userId: '', from: '2026-09-28', to: '2026-10-04', reason: 'Kongress' },
 ]
 
+/**
+ * Zeitpunkte **relativ zum Start** statt fest eingetragen: Die Glocke zeigt
+ * eine relative Angabe („vor 2 Stunden", „gestern"), und ein festes Datum
+ * wäre je nach Tag des Aufrufs Zukunft — dann stünde überall „jetzt" und die
+ * Ansicht zeigte nicht, was sie zeigen soll. Die drei Stufen sind mit Absicht
+ * verschieden gewählt (Minuten, Stunden, Tage).
+ */
+const vorhin = (stunden: number): string => new Date(Date.now() - stunden * 3600_000).toISOString()
+
 export const DEMO_NOTIFICATIONS: Notification[] = [
-  { id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: 'Mikrofone · Sonntag, 20. September', time: 'vor 2 Std.', read: false, taskId: 'a2' },
-  { id: 'n2', type: 'erinnerung', title: 'Erinnerung', text: 'Demoaufgabe 10 · Di, 8. Sep · ca. 19:35', time: 'heute, 08:00', read: false },
-  { id: 'n3', type: 'gesendet', title: 'Plan veröffentlicht', text: 'Demo-Mitteilung', time: 'Montag', read: true },
+  { id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: 'Mikrofone · Sonntag, 20. September', at: vorhin(0.2), read: false, taskId: 'a2' },
+  { id: 'n2', type: 'erinnerung', title: 'Erinnerung', text: 'Demoaufgabe 10 · Di, 8. Sep · ca. 19:35', at: vorhin(3), read: false },
+  { id: 'n3', type: 'gesendet', title: 'Plan veröffentlicht', text: 'Demo-Mitteilung', at: vorhin(50), read: true },
 ]
 
 /* ---- Persönliche Aufgaben, Bestätigungs-Status & Erinnerungen ----------- */

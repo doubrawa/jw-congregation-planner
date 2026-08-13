@@ -4,6 +4,7 @@ import { useDialogFocus } from '../components/useDialogFocus'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { useApp } from './context'
+import { relativeZeit } from '../i18n/zeit'
 
 /** Mitteilungen-Overlay (Kopf-Chip öffnet); Backdrop-Klick oder Escape schließt. */
 export function NotificationsPanel() {
@@ -57,7 +58,7 @@ export function NotificationsPanel() {
               <div>
                 <div className="notif-row-title">{titleKey ? t[titleKey] : notif.title}</div>
                 <div className="notif-row-text">{tu(notif.text)}</div>
-                <div className="notif-row-time">{tu(notif.time)}</div>
+                <div className="notif-row-time">{relativeZeit(notif.at, state.lang)}</div>
                 {canConfirm && (
                   <button
                     type="button"
