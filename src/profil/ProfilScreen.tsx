@@ -1,7 +1,6 @@
 import { useApp } from '../app/context'
 import { useInstallAvailable, usePush } from '../components/usePush'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { fullName } from '../data/helpers'
 
 import type { Lang, Theme } from '../data/types'
@@ -34,7 +33,7 @@ export function ProfilScreen() {
   // Beide Listen sind gleich lang und der Index ist geklemmt; der
   // Index-Zugriff sieht das nicht (noUncheckedIndexedAccess).
   const scaleLabel = FS_LABELS[scaleIndex] ?? FS_LABELS[0]!
-  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+  const me = state.persons.find((p) => p.id === state.personId)
   // Konto-E-Mail des eingeloggten Nutzers (nur Produktion; die eigene
   // Mitglieder-Zeile ist auch für Nicht-Planer sichtbar).
   const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''

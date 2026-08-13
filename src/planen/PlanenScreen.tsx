@@ -4,7 +4,6 @@ import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { AusfallBanner, MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { hatAuxKlasse } from '../data/aux-class'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { istAusgefallen, overseerGroup } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
 import type { MeetingKey } from '../data/types'
@@ -59,7 +58,7 @@ function PlanenBody() {
   }
 
   // Gruppenaufseher (ohne volle Planer-Rechte): nur Treffpunkte der eigenen Gruppe.
-  const myFsGroup = overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID)
+  const myFsGroup = overseerGroup(state.groups, state.personId)
   const fsOverseer = !state.planner && myFsGroup !== null
   const isFs = state.tab === 'fs' || fsOverseer
   // Die Bearbeiten-Ansicht (T64) gibt es nur für Planer — der Gruppenaufseher

@@ -1,6 +1,5 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { fsWeekConflicts } from '../data/fs'
 import { currentWeekIndex } from '../data/meeting-dates'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
@@ -22,7 +21,7 @@ export function DashboardScreen() {
   const { state, dispatch } = useApp()
   const abwesend = useAbwesend()
   const { t, tu, tp } = useT()
-  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+  const me = state.persons.find((p) => p.id === state.personId)
 
   // Tageszeit-Gruß + lokalisiertes Datum (Wochentag · Tag · Monat, Großbuchstaben).
   const hour = new Date().getHours()

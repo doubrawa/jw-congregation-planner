@@ -5,7 +5,7 @@
  */
 
 import { syncAuxSlots } from '../data/aux-class'
-import { buildImportWeek, CURRENT_PERSON_ID } from '../data/demo'
+import { buildImportWeek } from '../data/demo'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
@@ -165,7 +165,7 @@ function dropConfirmations(map: ConfirmationMap, keys: string[]): ConfirmationMa
 
 /** Anzeigename des eingeloggten Nutzers. */
 function currentUserName(state: AppState): string {
-  const id = state.personId ?? CURRENT_PERSON_ID
+  const id = state.personId
   const me = state.persons.find((p) => p.id === id)
   return me ? displayName(me) : ''
 }
@@ -299,7 +299,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Personen.
       const plannerOnly: Screen[] = ['planen', 'personen', 'einstellungen']
       const fsOverseer =
-        !state.planner && overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID) !== null
+        !state.planner && overseerGroup(state.groups, state.personId) !== null
       const blocked =
         !state.planner &&
         plannerOnly.includes(action.screen) &&
@@ -789,7 +789,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Ist nichts mehr offen, verschwindet das „…" der eigenen Person — über
       // die Id, nicht über den Namen: bei Namensgleichheit verlor sonst auch
       // die andere Person ihre Markierung.
-      const meineId = state.personId ?? CURRENT_PERSON_ID
+      const meineId = state.personId
       const pendingIds = stillOpen
         ? state.pendingIds
         : state.pendingIds.filter((id) => id !== meineId)
@@ -836,7 +836,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'takeSubstitute': {
       const parts = helperKeyParts(action.key)
-      const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+      const me = state.persons.find((p) => p.id === state.personId)
       if (!parts || !me) return state
       const name = displayName(me)
       const wi = wochenIndex(state.weeks, parts.woche)

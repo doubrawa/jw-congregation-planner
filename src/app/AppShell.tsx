@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, overseerGroup } from '../data/helpers'
@@ -67,7 +66,7 @@ export function AppShell() {
   const { t } = useT()
   // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
   const isLogin = state.screen === 'login' || state.recovery
-  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+  const me = state.persons.find((p) => p.id === state.personId)
   // Mobiles Seitenmenü (Drawer) — Desktop hat die feste Sidebar
   const [menuOpen, setMenuOpen] = useState(false)
   // Deep-Link aus einem Push-Klick (#go=<screen>): beim Start aus dem Hash, bei
@@ -91,7 +90,7 @@ export function AppShell() {
   }, [menuOpen])
 
   const fsOverseer =
-    !state.planner && overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID) !== null
+    !state.planner && overseerGroup(state.groups, state.personId) !== null
   const navScreens = state.planner
     ? PLANNER_SCREENS
     : fsOverseer

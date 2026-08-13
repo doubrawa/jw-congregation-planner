@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { DatePicker } from '../components/DatePicker'
 import { PushPrompt } from '../components/PushPrompt'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { fullName } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
@@ -17,7 +16,7 @@ import './aufgaben.css'
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
   const { t, tu, tp } = useT()
-  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+  const me = state.persons.find((p) => p.id === state.personId)
 
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')

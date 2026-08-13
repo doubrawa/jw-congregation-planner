@@ -1,5 +1,4 @@
 import { useApp } from '../app/context'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { fsDate } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
@@ -14,7 +13,7 @@ import type { FsInstance } from '../data/types'
 export function FsProgram() {
   const { state } = useApp()
   const { t, tu } = useT()
-  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+  const me = state.persons.find((p) => p.id === state.personId)
   const myName = me ? displayName(me) : null
   const insts = state.fsWeeks[state.week] ?? []
 

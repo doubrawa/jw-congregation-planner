@@ -1,5 +1,4 @@
 import { useApp } from '../app/context'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { overseerGroup } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { CongregationPanel } from './CongregationPanel'
@@ -24,7 +23,7 @@ export function EinstellungenScreen() {
 
   // Gruppenaufseher (ohne volle Planer-Rechte) sehen hier nur den Grundplan
   // ihrer eigenen Gruppe.
-  const myFsGroup = overseerGroup(state.groups, state.personId ?? CURRENT_PERSON_ID)
+  const myFsGroup = overseerGroup(state.groups, state.personId)
   const fsOverseer = !state.planner && myFsGroup !== null
 
   return (
