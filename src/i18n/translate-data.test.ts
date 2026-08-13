@@ -17,53 +17,83 @@ import { makeTr } from './translate'
 const CODES = APP_LANGS.map((l) => l.code).filter((c) => c !== 'de')
 
 /**
- * Veröffentlichte Titel — Artikel, Vorträge, Publikationen. Sie stehen auf
- * jw.org in jeder Sprache, aber mit dem dort gewählten Wortlaut; eine eigene
- * Übersetzung wäre eine Erfindung. Dieselbe Linie wie bei den
- * Verweis-Vorlagen: lieber ein erkennbar deutsch gebliebener Titel als ein
- * ausgedachter (siehe `makeTr('bg')('wcg Kap. 15')` in translate.test.ts).
+ * **Es gibt keine unübersetzten Zeichenketten „für später".** Das ist die
+ * Vorgabe des Betreibers (13.8.2026), und sie hat einen Grund: Fehlende
+ * Übersetzungen sind hier mehrfach erst Monate später aufgefallen (siehe der
+ * Absatz oben) — was mit einem Feature nicht mitgemessen wird, wird vergessen.
  *
- * Die Liste ist bewusst geschlossen: ein neuer Schlüssel, den keine Sprache
- * hat, lässt den Test scheitern, statt hier stillschweigend zu landen. Wer die
- * Titel nachträgt, misst sie an jw.org und streicht sie hier.
+ * Diese Liste ist deshalb **keine Warteschlange**, sondern die Menge der
+ * Zeichenketten, die aus einem *benennbaren* Grund nicht übersetzt werden
+ * können. Jeder Eintrag muss seinen Grund tragen; ein Test darunter prüft das,
+ * ein zweiter deckelt die Größe. Wer etwas hier parkt, statt zu messen, muss
+ * es also aussprechen.
  */
-const NUR_GEMESSEN_UEBERSETZBAR = new Set([
-  '„Schätze Jehovas größtes Geschenk“',
-  '„Lauft so, dass ihr den Preis gewinnt“',
-  '„Bleibt in Gottes Liebe“',
-  '„Ein Name, der zählt“',
-  '„Bewahrt die Einheit“',
-  '„Frieden in einer unruhigen Welt“',
-  '„Jehovas Barmherzigkeit widerspiegeln“',
-  '„Worauf gründet echte Hoffnung?“',
-  '„Bleibt wachsam“',
-  '„Wem kannst du wirklich vertrauen?“',
-  '„Loyal in Prüfungen“',
-  '„Woran erkennt man echten Glauben?“',
-  '„Dient Jehova mit Freude“',
-  'Was wir von den Rechabitern lernen',
-  'Jehova belohnt Mut — das Beispiel Ebed-Melechs',
-  'Baut einander auf',
-  'Auf Jehova hören — auch wenn es schwerfällt',
-  'Jehova sorgt für sein Volk',
-  'Jehovas Wort erfüllt sich immer',
-  'Bleib loyal wie Baruch',
-  'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben',
-  'Geh während der besonderen Aktion zielorientiert vor',
-  // Fachbegriffe des Gedächtnismahls: jw.org hat dafür feste Wendungen, die
-  // je Sprache gemessen gehören („passing the emblems", „Memorial talk").
-  'Gedächtnismahl-Ansprache',
-  'Symbole herumreichen',
-  // Reine Demo-Inhalte (Mitteilungs-Fixtures), nirgends produktiv sichtbar.
-  'Gespräche beginnen (informell)',
-  'Programm für September ist online',
-  'vor 2 Std.',
-  'heute, 08:00',
-])
+type Grund =
+  /**
+   * Frei erfundener Demo-Inhalt im Stil einer jw.org-Veröffentlichung.
+   *
+   * **Nachgemessen am 13.8.2026** und dabei richtiggestellt: Diese Titel
+   * standen hier als „veröffentlichte Titel, die noch zu messen sind". Sie
+   * stehen aber nirgends. Die echte Wochenseite 14.–20. September 2026 nennt
+   * für den ersten Schätze-Punkt „Jehova belohnt Treue und Gehorsam" und als
+   * Lesestoff Jeremia 34–35; die Demo erfindet „Was wir von den Rechabitern
+   * lernen" und Jeremia 34–36. Messen lässt sich also nichts, und selbst
+   * übersetzen hieße, in 33 Sprachen Titel im Stil einer Veröffentlichung zu
+   * erfinden, die es nicht gibt.
+   *
+   * Sichtbar sind sie nur im Demo-Modus, und dort nur, wenn die
+   * Versammlungssprache **nicht** Deutsch ist — sonst übersetzt `tp` den
+   * Programmtext gar nicht.
+   */
+  | 'demo-erfunden'
+  /**
+   * Fachbegriff mit festem jw.org-Wortlaut, den die App produktiv (noch) nicht
+   * erzeugt. Messbar, sobald sie es tut.
+   */
+  | 'fachbegriff-ungenutzt'
+
+const NUR_GEMESSEN_UEBERSETZBAR: Record<string, Grund> = {
+  // Wachtturm-Studienartikel der Demo-Wochenenden.
+  '„Schätze Jehovas größtes Geschenk“': 'demo-erfunden',
+  '„Lauft so, dass ihr den Preis gewinnt“': 'demo-erfunden',
+  '„Bleibt in Gottes Liebe“': 'demo-erfunden',
+  '„Ein Name, der zählt“': 'demo-erfunden',
+  '„Bewahrt die Einheit“': 'demo-erfunden',
+  '„Frieden in einer unruhigen Welt“': 'demo-erfunden',
+  '„Jehovas Barmherzigkeit widerspiegeln“': 'demo-erfunden',
+  '„Worauf gründet echte Hoffnung?“': 'demo-erfunden',
+  '„Bleibt wachsam“': 'demo-erfunden',
+  '„Wem kannst du wirklich vertrauen?“': 'demo-erfunden',
+  '„Loyal in Prüfungen“': 'demo-erfunden',
+  '„Woran erkennt man echten Glauben?“': 'demo-erfunden',
+  '„Dient Jehova mit Freude“': 'demo-erfunden',
+  // Programmpunkte der Demo-Wochen unter der Woche.
+  'Was wir von den Rechabitern lernen': 'demo-erfunden',
+  'Jehova belohnt Mut — das Beispiel Ebed-Melechs': 'demo-erfunden',
+  'Baut einander auf': 'demo-erfunden',
+  'Auf Jehova hören — auch wenn es schwerfällt': 'demo-erfunden',
+  'Jehova sorgt für sein Volk': 'demo-erfunden',
+  'Jehovas Wort erfüllt sich immer': 'demo-erfunden',
+  'Bleib loyal wie Baruch': 'demo-erfunden',
+  'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben': 'demo-erfunden',
+  'Geh während der besonderen Aktion zielorientiert vor': 'demo-erfunden',
+  // Mitteilungs-Vorlagen der Demo.
+  'Gespräche beginnen (informell)': 'demo-erfunden',
+  'Programm für September ist online': 'demo-erfunden',
+  'vor 2 Std.': 'demo-erfunden',
+  'heute, 08:00': 'demo-erfunden',
+  // jw.org hat dafür feste Wendungen („Memorial talk", „passing the
+  // emblems"); die App erzeugt aber kein Gedächtnismahl-Programm — T64/T65
+  // setzen den Anlass und den Ausfall, nicht den Ablauf. Sobald sie es tut,
+  // sind beide zu messen und hier zu streichen.
+  'Gedächtnismahl-Ansprache': 'fachbegriff-ungenutzt',
+  'Symbole herumreichen': 'fachbegriff-ungenutzt',
+}
 
 describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
   const enKeys = Object.keys(FRAG.en).sort()
-  const pflicht = enKeys.filter((k) => !NUR_GEMESSEN_UEBERSETZBAR.has(k))
+  const ausnahmen = Object.keys(NUR_GEMESSEN_UEBERSETZBAR)
+  const pflicht = enKeys.filter((k) => !(k in NUR_GEMESSEN_UEBERSETZBAR))
 
   it('Englisch ist die Referenz und nicht leer', () => {
     expect(enKeys.length).toBeGreaterThan(50)
@@ -72,8 +102,16 @@ describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
   it('die Ausnahmeliste beschreibt nur Vorhandenes', () => {
     // Sonst bliebe ein Tippfehler darin unbemerkt und deckte still ab, was er
     // gar nicht meint.
-    const unbekannt = [...NUR_GEMESSEN_UEBERSETZBAR].filter((k) => !(k in FRAG.en))
-    expect(unbekannt).toEqual([])
+    expect(ausnahmen.filter((k) => !(k in FRAG.en))).toEqual([])
+  })
+
+  it('jede Ausnahme trägt einen Grund', () => {
+    // Der Kern der Vorgabe „nichts bleibt unübersetzt liegen": Ohne benennbaren
+    // Grund gibt es keine Ausnahme. Ein leerer oder unbekannter Wert fällt hier
+    // auf, statt als stille Warteschlange weiterzuwachsen.
+    const gruende = new Set(['demo-erfunden', 'fachbegriff-ungenutzt'])
+    const ohne = ausnahmen.filter((k) => !gruende.has(NUR_GEMESSEN_UEBERSETZBAR[k] ?? ''))
+    expect(ohne).toEqual([])
   })
 
   it('die Ausnahmeliste wächst nicht heimlich', () => {
@@ -82,7 +120,22 @@ describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
     // die Vorlage zu messen, ändert damit auch diese Zahl — und muss es
     // begründen. Die Prüfung darüber („beschreibt nur Vorhandenes") fängt nur
     // Tippfehler, nicht das Wachsen.
-    expect(NUR_GEMESSEN_UEBERSETZBAR.size).toBe(28)
+    expect(ausnahmen.length).toBe(28)
+  })
+
+  it('nichts wird „für später" geparkt — jede Ausnahme ist unerreichbar oder erfunden', () => {
+    /*
+      Beide zugelassenen Gründe sagen dasselbe aus zwei Richtungen: Es gibt
+      **nichts zu messen**. `demo-erfunden` steht für Zeichenketten, die es auf
+      jw.org gar nicht gibt (nachgemessen, siehe Typ oben);
+      `fachbegriff-ungenutzt` für solche, die die App nicht erzeugt. Käme ein
+      dritter Grund im Sinne von „später" hinzu, müsste er hier eingetragen
+      werden — und genau das soll auffallen.
+    */
+    expect([...new Set(Object.values(NUR_GEMESSEN_UEBERSETZBAR))].sort()).toEqual([
+      'demo-erfunden',
+      'fachbegriff-ungenutzt',
+    ])
   })
 
   it.each(CODES)('%s deckt alle Pflicht-Fragmente ab', (code) => {
