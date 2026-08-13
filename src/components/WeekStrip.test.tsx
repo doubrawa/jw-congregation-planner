@@ -49,7 +49,7 @@ afterEach(cleanup)
 describe('Wochen-Vorschau', () => {
   const weeks = buildDemoWeeks()
   // Woche 1 von dreien: links und rechts steht je eine Nachbarwoche.
-  const state: AppState = { ...initialState(), weeks, week: 1, weekFrom: 0 }
+  const state: AppState = { ...initialState(), weeks, week: 1 }
 
   it('beide Lesewege sehen in jeder Vorschau dieselbe Woche', () => {
     const { getAllByTestId } = render(

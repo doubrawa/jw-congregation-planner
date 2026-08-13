@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * er nicht mehr zu, findet der Schreibvorgang keine Zeile — und statt fremde
  * Arbeit zu überschreiben, meldet sich der Client.
  *
- * **Jeder Test beginnt mit einer eigenen Position**, deren Stand noch unbekannt
+ * **Jeder Test beginnt mit einer eigenen Woche**, deren Stand noch unbekannt
  * ist. Der erste Aufruf legt die Zeile also an und lernt dabei den Stand — das
  * ist zugleich die Reihenfolge, die im Betrieb entsteht.
  */
@@ -65,15 +65,24 @@ function chain() {
 const ok = (stand: string) => ({ data: { updated_at: stand }, error: null })
 const leer = { data: null, error: null }
 
-const woche = (range: string): Week => ({
+/**
+ * Eine Woche mit Inhalt `range` und der Kennung `start`.
+ *
+ * Die Kennung bezeichnet seit T66 die Zeile — sie ist das, was hier früher die
+ * Positionsnummer war. Jeder Test unten nimmt deshalb sein **eigenes** Datum:
+ * Stand und Schreibkette werden je Woche geführt, und zwei Tests, die sich
+ * dieselbe teilten, sähen den Stand des jeweils anderen.
+ */
+const woche = (range: string, start: string): Week => ({
   range,
-  book: '', start: '2026-09-07',
+  book: '',
+  start,
   current: false,
   mid: { date: '', end: '', sections: [], helpers: {} },
   we: { date: '', end: '', sections: [], helpers: {} },
 })
 
-/** Auf das Ende der (positionsweise serialisierten) Schreibkette warten. */
+/** Auf das Ende der (je Woche serialisierten) Schreibkette warten. */
 const abgearbeitet = () => new Promise((r) => setTimeout(r, 0))
 
 let konflikte = 0
@@ -97,9 +106,9 @@ beforeEach(() => {
 describe('Der Stand wird gelernt und mitgeschickt', () => {
   it('legt die unbekannte Zeile an und merkt sich ihren Stand', async () => {
     stub.antworten = [ok('S1'), ok('S2')]
-    saveWeek('c1', 100, woche('erste'))
+    saveWeek('c1', woche('erste', '2026-01-05'))
     await abgearbeitet()
-    saveWeek('c1', 100, woche('zweite'))
+    saveWeek('c1', woche('zweite', '2026-01-05'))
     await abgearbeitet()
 
     expect(stub.aufrufe[0].op).toBe('insert')
@@ -113,15 +122,20 @@ describe('Der Stand wird gelernt und mitgeschickt', () => {
   it('zieht den Stand bei jedem Schreibvorgang nach', async () => {
     stub.antworten = [ok('S1'), ok('S2'), ok('S3')]
     for (const r of ['a', 'b', 'c']) {
-      saveWeek('c1', 101, woche(r))
+      saveWeek('c1', woche(r, '2026-01-12'))
       await abgearbeitet()
     }
     expect(stub.aufrufe[1].filter.updated_at).toBe('S1')
     expect(stub.aufrufe[2].filter.updated_at).toBe('S2')
   })
 
-  it('schreibt Platzhalter-Wochen nie', () => {
-    saveWeek('c1', 102, { ...woche('platzhalter'), stub: true })
+  it('schreibt nichts, was keine Woche bezeichnet', () => {
+    // Hier stand bis T66 „schreibt Platzhalter-Wochen nie": Wochen außerhalb
+    // des Ladefensters standen als leere Objekte im Array, damit der Index die
+    // Datenbank-Position blieb — und hätten beim Speichern die echte Zeile
+    // geleert. Die Platzhalter sind weg; geblieben ist die Bedingung dahinter:
+    // ohne Kennung gibt es keine Zeile, die gemeint sein könnte.
+    saveWeek('c1', woche('ohne Kennung', ''))
     expect(stub.aufrufe).toEqual([])
   })
 })
@@ -133,9 +147,9 @@ describe('Ein anderer Planer war schneller', () => {
       leer, // geschütztes Update trifft keine Zeile
       ok('FREMD'), // nachgesehen: dort steht ein anderer Stand
     ]
-    saveWeek('c1', 110, woche('erste'))
+    saveWeek('c1', woche('erste', '2026-01-26'))
     await abgearbeitet()
-    saveWeek('c1', 110, woche('meine Fassung'))
+    saveWeek('c1', woche('meine Fassung', '2026-01-26'))
     await abgearbeitet()
 
     expect(konflikte).toBe(1)
@@ -149,7 +163,7 @@ describe('Ein anderer Planer war schneller', () => {
     // also jemand anders. Als bloßer Schreibfehler gemeldet, bliebe der
     // Bildschirm auf einer Fassung stehen, die es nicht gibt.
     stub.antworten = [{ data: null, error: { code: '23505', message: 'duplicate key' } }]
-    saveWeek('c1', 111, woche('erste'))
+    saveWeek('c1', woche('erste', '2026-02-02'))
     await abgearbeitet()
     expect(konflikte).toBe(1)
     expect(schreibfehler).toBe(0)
@@ -168,20 +182,20 @@ describe('Kein falscher Alarm', () => {
       ok('S1'), // nachgesehen: unverändert
       ok('S2'), // zweiter Anlauf, ungeschützt
     ]
-    saveWeek('c1', 120, woche('erste'))
+    saveWeek('c1', woche('erste', '2026-02-09'))
     await abgearbeitet()
-    saveWeek('c1', 120, woche('meine Fassung'))
+    saveWeek('c1', woche('meine Fassung', '2026-02-09'))
     await abgearbeitet()
 
     expect(konflikte).toBe(0)
     const updates = stub.aufrufe.filter((a) => a.op === 'update')
     expect(updates).toHaveLength(2)
     expect(updates[1].filter.updated_at).toBeUndefined() // ungeschützt
-    expect(updates[1].filter.position).toBe(120)
+    expect(updates[1].filter.start).toBe('2026-02-09')
 
     // Und der neue Stand ist gelernt: der nächste Schreibvorgang nennt S2.
     stub.antworten = [ok('S3')]
-    saveWeek('c1', 120, woche('dritte'))
+    saveWeek('c1', woche('dritte', '2026-02-09'))
     await abgearbeitet()
     expect(stub.aufrufe[stub.aufrufe.length - 1].filter.updated_at).toBe('S2')
   })
@@ -190,8 +204,8 @@ describe('Kein falscher Alarm', () => {
     // Ohne die Serialisierung gingen beide mit demselben Stand los und die
     // zweite meldete einen Konflikt, den es nicht gab — gegen sich selbst.
     stub.antworten = [ok('S1'), ok('S2')]
-    saveWeek('c1', 130, woche('erste'))
-    saveWeek('c1', 130, woche('zweite')) // ohne await dazwischen
+    saveWeek('c1', woche('erste', '2026-02-16'))
+    saveWeek('c1', woche('zweite', '2026-02-16')) // ohne await dazwischen
     await abgearbeitet()
     await abgearbeitet()
 
@@ -205,7 +219,7 @@ describe('Kein falscher Alarm', () => {
 describe('Echte Schreibfehler bleiben Schreibfehler', () => {
   it('ein Datenbankfehler meldet nicht fälschlich einen Konflikt', async () => {
     stub.antworten = [{ data: null, error: { code: '42501', message: 'RLS' } }]
-    saveWeek('c1', 140, woche('erste'))
+    saveWeek('c1', woche('erste', '2026-02-23'))
     await abgearbeitet()
     expect(schreibfehler).toBe(1)
     expect(konflikte).toBe(0)

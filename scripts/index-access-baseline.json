@@ -25,7 +25,7 @@
   "src/i18n/langs.test.ts": 2,
   "src/i18n/translate-data.test.ts": 2,
   "src/i18n/ui.test.ts": 5,
-  "src/lib/data-load.test.ts": 5,
+  "src/lib/data-load.test.ts": 1,
   "src/lib/data-save.test.ts": 2,
   "src/lib/data.test.ts": 11,
   "src/lib/gesture-log.test.ts": 2,

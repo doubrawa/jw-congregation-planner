@@ -327,8 +327,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'prevWeek':
-      // Nicht hinter die erste geladene Woche: davor stehen nur Platzhalter.
-      return { ...state, week: Math.max(state.weekFrom, state.week - 1) }
+      return { ...state, week: Math.max(0, state.week - 1) }
     case 'nextWeek':
       return { ...state, week: Math.min(state.weeks.length - 1, state.week + 1) }
     case 'setTab':
@@ -1022,10 +1021,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'hydrate': {
       const p = action.payload
       const weeks = syncAuxSlots(p.weeks, p.auxClass)
-      // Auf die laufende Woche springen. Bisher stand hier `p.weekFrom`, also
-      // die ÄLTESTE geladene Woche — nach dem Login zeigte die App damit ein
-      // bis zu ein Jahr altes Programm. Fällt heute in keine geladene Woche
-      // (frische Versammlung, Lücke im Import), bleibt es beim Anfang.
+      // Auf die laufende Woche springen. Bisher stand hier die ÄLTESTE geladene
+      // Woche — nach dem Login zeigte die App damit ein bis zu ein Jahr altes
+      // Programm. Fällt heute in keine geladene Woche (frische Versammlung,
+      // Lücke im Import), bleibt es beim Anfang.
       const aktuell = currentWeekIndex(weeks)
       return {
         ...state,
@@ -1055,8 +1054,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         progLangs: p.progLangs,
         members: p.members,
         invites: p.invites,
-        weekFrom: p.weekFrom,
-        week: aktuell >= 0 ? aktuell : p.weekFrom,
+        week: aktuell >= 0 ? aktuell : 0,
       }
     }
     case 'setDataStatus':

@@ -81,7 +81,7 @@ function PlanenBody() {
 
       <WeekNav
         className="plan-week-nav"
-        canPrev={state.week > state.weekFrom}
+        canPrev={state.week > 0}
         canNext={state.week < state.weeks.length - 1}
         onPrev={() => dispatch({ type: 'prevWeek' })}
         onNext={() => dispatch({ type: 'nextWeek' })}

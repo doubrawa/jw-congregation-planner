@@ -89,7 +89,7 @@ Jede Zeile in `weeks` trägt jetzt einen Stand (`updated_at`, gesetzt von einem
 Trigger — nicht vom Client, sonst schriebe man sich daran vorbei,
 [migration-016](supabase/migration-016-wochen-stand.sql)):
 
-1. Beim Laden merkt sich der Client den Stand je Position.
+1. Beim Laden merkt sich der Client den Stand je Woche.
 2. Beim Speichern nennt er ihn als Bedingung. Trifft er noch zu, wird
    geschrieben und der neue Stand übernommen.
 3. Trifft er nicht mehr zu, wurde **nichts** überschrieben. Der Client lädt
@@ -98,7 +98,7 @@ Trigger — nicht vom Client, sonst schriebe man sich daran vorbei,
 Vor Schritt 3 wird nachgesehen, ob dort wirklich ein fremder Stand steht: ein
 falscher Konfliktalarm würde die Arbeit des Nutzers verwerfen, und dieser eine
 zusätzliche Umlauf kostet nur in genau dem Fall etwas. Schreibvorgänge derselben
-Position laufen hintereinander, sonst kämpfte man gegen sich selbst.
+Woche laufen hintereinander, sonst kämpfte man gegen sich selbst.
 
 Zum Nachstellen ohne Netzabbruch: Debug-Hash `#stale=<Stunden>` (nur DEV, siehe
 [docs/user-guide/README.md](docs/user-guide/README.md)).

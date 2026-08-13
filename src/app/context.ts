@@ -71,7 +71,6 @@ export interface HydratePayload {
   services: Service[]
   groups: Group[]
   weeks: Week[]
-  weekFrom: number // erste geladene Woche; davor Platzhalter (Week.stub)
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
   fsBase: string | null // ISO-Datum (Montag der Woche 0)
@@ -133,13 +132,15 @@ export interface AppState {
   congregation: Congregation
   members: Member[] // Mitglieder-Verwaltung (Planer; Nicht-Planer: nur eigene Zeile)
   invites: Invite[] // offene Einladungscodes (nur Planer)
-  weeks: Week[]
   /**
-   * Index der ersten geladenen Woche. Davor stehen Platzhalter (Week.stub),
-   * damit der Index weiterhin der DB-Position entspricht — die Navigation darf
-   * dort nicht hin, und gespeichert werden sie nie.
+   * Die geladenen Wochen, aufsteigend nach ihrem Startdatum.
+   *
+   * Der Index ordnet nur noch — er bedeutet nichts (T66). Bis dahin war er
+   * zugleich die `position` in der Datenbank und steckte in jedem `task_key`;
+   * deshalb standen vor der ersten geladenen Woche Platzhalter, damit die
+   * Zählung stimmte. Die Kennung einer Woche ist ihr `start`.
    */
-  weekFrom: number
+  weeks: Week[]
   persons: Person[]
   services: Service[]
   groups: Group[] // Predigtdienstgruppen (Planer; Reinigungs-Rotation)

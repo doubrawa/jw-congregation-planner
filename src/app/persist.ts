@@ -91,9 +91,11 @@ const personSaves = createDebouncedWriter<string, { congId: string; person: Pers
   SAVE_DELAY,
   (_id, { congId, person }) => savePerson(congId, person),
 )
-const weekSaves = createDebouncedWriter<number, { congId: string; week: Week }>(
+// Gebündelt wird je **Woche**, nicht je Index (T66): der Schlüssel ist ihre
+// Kennung, und der schiebt sich nicht, wenn sich die geladene Menge ändert.
+const weekSaves = createDebouncedWriter<string, { congId: string; week: Week }>(
   SAVE_DELAY,
-  (position, { congId, week }) => saveWeek(congId, position, week),
+  (_woche, { congId, week }) => saveWeek(congId, week),
 )
 const congSaves = createDebouncedWriter<'info', { congId: string; info: AppState['congregation'] }>(
   SAVE_DELAY,
@@ -114,19 +116,25 @@ const congSaves = createDebouncedWriter<'info', { congId: string; info: AppState
 /** Woche an `wi` speichern, falls es sie gibt. */
 function wocheSpeichern(congId: string, weeks: Week[], wi: number): void {
   const week = weeks[wi]
-  if (week) saveWeek(congId, wi, week)
+  if (week) saveWeek(congId, week)
 }
 
 /** Wie `wocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag. */
 function wochePlanen(congId: string, weeks: Week[], wi: number): void {
   const week = weeks[wi]
-  if (week) weekSaves.schedule(wi, { congId, week })
+  if (week) weekSaves.schedule(week.start, { congId, week })
 }
 
-/** Treffpunkt-Woche an `wi` speichern, falls es sie gibt. */
-function fsWocheSpeichern(congId: string, fsWeeks: FsInstance[][], wi: number): void {
+/**
+ * Treffpunkt-Woche an `wi` speichern, falls es sie gibt.
+ *
+ * Die Kennung steht bei der **Woche**, nicht bei den Treffpunkten — deshalb
+ * liegen hier beide Listen. Fehlt die Woche, gibt es nichts zu bezeichnen.
+ */
+function fsWocheSpeichern(congId: string, weeks: Week[], fsWeeks: FsInstance[][], wi: number): void {
+  const week = weeks[wi]
   const fsWeek = fsWeeks[wi]
-  if (fsWeek) saveFsWeek(congId, wi, fsWeek)
+  if (week && fsWeek) saveFsWeek(congId, week.start, fsWeek)
 }
 
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
@@ -143,7 +151,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       const sel = prev.slotSel
       // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle.
       if (sel && sel.kind === 'fs') {
-        fsWocheSpeichern(congId, next.fsWeeks, sel.wi)
+        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, sel.wi)
         break
       }
       if (sel) {
@@ -187,22 +195,20 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'fsInstUpdate':
     case 'fsInstRemove':
-      fsWocheSpeichern(congId, next.fsWeeks, action.wi)
+      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, action.wi)
       break
     case 'fsInstAdd':
     case 'fsAutoAssign':
     case 'fsClear':
-      fsWocheSpeichern(congId, next.fsWeeks, prev.week)
+      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, prev.week)
       break
     case 'fsRuleAdd':
     case 'fsRuleUpdate':
     case 'fsRuleRemove': {
       // Grundplan-Blob + alle (neu materialisierten) Wochen speichern.
       saveFsRules(congId, next.fsBase.toISOString().slice(0, 10), next.fsRules)
-      // Ab der ersten geladenen Woche: davor stehen Platzhalter, deren Zeilen in
-      // der Datenbank echte Daten enthalten (siehe Week.stub).
-      for (let i = next.weekFrom; i < next.fsWeeks.length; i++) {
-        fsWocheSpeichern(congId, next.fsWeeks, i)
+      for (let i = 0; i < next.fsWeeks.length; i++) {
+        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i)
       }
       break
     }
@@ -317,7 +323,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
       }
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.fsWeeks, i)
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i)
       }
       break
     }

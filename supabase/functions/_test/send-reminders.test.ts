@@ -82,8 +82,14 @@ interface Write {
 }
 
 let writes: Write[]
-let weeks: { position: number; data: unknown }[]
-let fsWeeks: { position: number; data: unknown }[]
+/*
+  Die Kennung steht als **Spalte** neben dem Blob, nicht darin (T66) — und in
+  diesen Vorgaben absichtlich NUR dort. `data.start` gab es bis migration-017,
+  bei alten Zeilen fehlt es; wer wieder danach greift, bekommt hier sofort eine
+  Reihe roter Tests statt später einen stummen Ausfall des Versands.
+*/
+let weeks: { start: string; data: unknown }[]
+let fsWeeks: { start: string; data: unknown }[]
 let confirmations: { task_key: string; status: string }[]
 let reminderLog: { user_id: string; kind: string }[]
 let subs: typeof SUBS
@@ -178,7 +184,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(TODAY))
   writes = []
-  weeks = [{ position: 0, data: { start: WEEK_START, mid: midMeeting() } }]
+  weeks = [{ start: WEEK_START, data: { mid: midMeeting() } }]
   fsWeeks = []
   confirmations = []
   reminderLog = []
@@ -255,10 +261,11 @@ describe('send-reminders: wer NICHT erinnert wird', () => {
   })
 
   it('bestätigte und verhinderte Zuteilungen lösen nichts aus', async () => {
+    // Vorn steht die Kennung der Woche (T66), nicht mehr ihre Position.
     confirmations = [
-      { task_key: '0|mid|part|0|1|0', status: 'bestätigt' }, // Max, Schatzgraben
-      { task_key: '0|mid|helper|mikro|0', status: 'bestätigt' }, // Max, Mikrofone
-      { task_key: '0|mid|part|0|3|0', status: 'verhindert' }, // Nina
+      { task_key: `${WEEK_START}|mid|part|0|1|0`, status: 'bestätigt' }, // Max, Schatzgraben
+      { task_key: `${WEEK_START}|mid|helper|mikro|0`, status: 'bestätigt' }, // Max, Mikrofone
+      { task_key: `${WEEK_START}|mid|part|0|3|0`, status: 'verhindert' }, // Nina
     ]
     const r = await run()
     expect(previewFor(r, U_MAX)).toBeUndefined()
@@ -440,10 +447,10 @@ describe('send-reminders: Scharfbetrieb als Gegenprobe', () => {
 
 describe('send-reminders: Treffpunkte', () => {
   // Treffpunkte stehen in fs_weeks, einer zweiten Tabelle mit derselben
-  // Positionsnummer wie weeks. Die Function las sie gar nicht: ein zugeteilter
+  // Wochen-Kennung wie weeks. Die Function las sie gar nicht: ein zugeteilter
   // Leiter bekam nie eine Erinnerung und konnte nichts bestätigen.
   const montag = (patch: Record<string, unknown> = {}) => ({
-    position: 0,
+    start: WEEK_START,
     data: [
       { id: 'i1', grp: '', wd: 1, time: '14:00', place: 'Königreichssaal', leader: 'Max Mustermann', lpid: 'p-max', ...patch },
     ],
@@ -471,10 +478,10 @@ describe('send-reminders: Treffpunkte', () => {
     // Function stattdessen mit dem Dienstag der Zusammenkunft, wären es 8 Tage
     // und es käme gar nichts — der Leiter bekäme seine erste Erinnerung nie.
     weeks = [
-      { position: 0, data: { start: WEEK_START, mid: midMeeting() } },
-      { position: 1, data: { start: '2026-09-14' } },
+      { start: WEEK_START, data: { mid: midMeeting() } },
+      { start: '2026-09-14', data: {} },
     ]
-    fsWeeks = [{ position: 1, data: [{ id: 'i9', grp: '', wd: 1, time: '14:00', place: 'Saal', leader: 'Max Mustermann', lpid: 'p-max' }] }]
+    fsWeeks = [{ start: '2026-09-14', data: [{ id: 'i9', grp: '', wd: 1, time: '14:00', place: 'Saal', leader: 'Max Mustermann', lpid: 'p-max' }] }]
     expect(previewFor(await run(), U_MAX)?.body).toContain('Montag, 14. September')
   })
 
@@ -491,10 +498,24 @@ describe('send-reminders: Treffpunkte', () => {
     expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
   })
 
-  it('ohne Startdatum der Woche kein Termin und keine Erinnerung', async () => {
-    weeks = [{ position: 0, data: { mid: midMeeting() } }] // kein start
-    fsWeeks = [montag({ wd: 3 })]
+  /*
+    Der Treffpunkt braucht die Zusammenkunft nicht mehr. Bis T66 holte sich der
+    Versand das Datum über die gleiche **Positionsnummer** aus `weeks` — fehlte
+    dort das `start`, fiel die Erinnerung aus, obwohl mit dem Treffpunkt selbst
+    alles in Ordnung war. Jetzt trägt die Zeile ihre eigene Kennung; ohne die
+    gibt es nichts zu terminieren, und nur das bleibt als Bedingung.
+  */
+  it('ohne eigene Kennung kein Termin und keine Erinnerung', async () => {
+    // Die Spalte ist `not null` — hier steht sie trotzdem leer, weil die
+    // Function rohes REST-JSON liest und daran nicht zerbrechen darf.
+    fsWeeks = [{ ...montag({ wd: 3 }), start: '' }]
     expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
+  })
+
+  it('eine Woche ohne Zusammenkunfts-Zeile hält den Treffpunkt nicht auf', async () => {
+    weeks = []
+    fsWeeks = [montag({ wd: 3 })]
+    expect(previewFor(await run(), U_MAX)?.body ?? '').toContain('Treffpunkt-Leiter')
   })
 
   it('fehlt die Tabelle ganz, laufen die Zusammenkünfte weiter', async () => {

@@ -189,26 +189,20 @@ const displayName = (p: Person): string => personDisplayName(p.fn, p.ln, p.dn)
 /**
  * Zerlegt einen Hilfsdienst-Schluessel.
  *
- * Vorn steht seit T66 der **Montag der Woche** ("2026-09-07") statt ihrer
- * Position. Beide Formen werden gelesen: Bestaetigungen aus der Zeit davor
- * stellt der Client beim naechsten Laden um (migrateTaskKeyWeeks), und bis
- * dahin muss eine Absage auch mit dem alten Schluessel ankommen. Welche Form
- * es ist, entscheidet die Abfrage weiter unten -- `start` oder `position`.
+ * Vorn steht seit T66 der **Montag der Woche** ("2026-09-07"). Die frueheren
+ * Positions-Schluessel wurden eine Zeit lang mitgelesen; seit Stufe 3 nicht
+ * mehr -- migration-018 hat sie umgeschrieben und `weeks.position` geloescht,
+ * die Spalte, ueber die sie ueberhaupt zu finden waren. Ein Schluessel ohne
+ * Kennung bezeichnet damit keine Woche und wird abgewiesen.
  */
 function parseKey(
   key: string,
-): { woche: string; istKennung: boolean; tab: 'mid' | 'we'; svc: string; pos: number } | null {
+): { woche: string; tab: 'mid' | 'we'; svc: string; pos: number } | null {
   const p = key.split('|')
   if (p.length !== 5 || p[2] !== 'helper' || (p[1] !== 'mid' && p[1] !== 'we')) return null
   const woche = p[0]
-  const istKennung = /^\d{4}-\d{2}-\d{2}$/.test(woche)
-  if (!istKennung && !Number.isInteger(Number(woche))) return null
-  return { woche, istKennung, tab: p[1], svc: p[3], pos: Number(p[4]) }
-}
-
-/** Spalte, ueber die diese Woche zu finden ist -- Kennung oder Altbestand. */
-function wochenFilter(parts: { woche: string; istKennung: boolean }): string {
-  return parts.istKennung ? `start=eq.${parts.woche}` : `position=eq.${parts.woche}`
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(woche)) return null
+  return { woche, tab: p[1], svc: p[3], pos: Number(p[4]) }
 }
 
 function meetingDate(meeting: Meeting | undefined): string {
@@ -293,7 +287,7 @@ Deno.serve(async (req: Request) => {
 
     const [weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
       restGet<{ data: Week }[]>(
-        `weeks?select=data&congregation_id=eq.${cong}&${wochenFilter(parts)}`,
+        `weeks?select=data&congregation_id=eq.${cong}&start=eq.${parts.woche}`,
       ),
       restGet<{ key: string; name: string }[]>(`services?select=key,name&congregation_id=eq.${cong}`),
       restGet<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${cong}`),
@@ -386,7 +380,7 @@ Deno.serve(async (req: Request) => {
       ? `${nameFilter}=eq.${encodeURIComponent(`"${originalName}"`)}`
       : `${nameFilter}=is.null`
     const geschrieben = await restPatchIf(
-      `weeks?congregation_id=eq.${cong}&${wochenFilter(parts)}&${bedingung}`,
+      `weeks?congregation_id=eq.${cong}&start=eq.${parts.woche}&${bedingung}`,
       { data: week },
     )
     if (!geschrieben) return json({ error: 'slot-taken' }, 409)
