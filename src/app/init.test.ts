@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEMO_PERSONS, DEMO_PLANNER } from '../data/demo'
+import { DEMO_PERSONS, DEMO_PLANNER } from '../data/testdaten'
 
 // isSupabaseConfigured umschaltbar machen (real ist es im Testenv true).
 const cfg = vi.hoisted(() => ({ configured: false }))

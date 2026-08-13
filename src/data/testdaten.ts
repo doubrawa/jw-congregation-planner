@@ -244,8 +244,8 @@ export const DEMO_ABSENCES: Absence[] = [
 
 export const DEMO_NOTIFICATIONS: Notification[] = [
   { id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: 'Mikrofone · Sonntag, 20. September', time: 'vor 2 Std.', read: false, taskId: 'a2' },
-  { id: 'n2', type: 'erinnerung', title: 'Erinnerung', text: 'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35', time: 'heute, 08:00', read: false },
-  { id: 'n3', type: 'gesendet', title: 'Plan veröffentlicht', text: 'Programm für September ist online', time: 'Montag', read: true },
+  { id: 'n2', type: 'erinnerung', title: 'Erinnerung', text: 'Demoaufgabe 10 · Di, 8. Sep · ca. 19:35', time: 'heute, 08:00', read: false },
+  { id: 'n3', type: 'gesendet', title: 'Plan veröffentlicht', text: 'Demo-Mitteilung', time: 'Montag', read: true },
 ]
 
 /* ---- Persönliche Aufgaben, Bestätigungs-Status & Erinnerungen ----------- */
@@ -258,7 +258,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
 export const DEMO_MY_TASKS: MyTask[] = [
   {
     id: 'a1',
-    title: 'Gespräche beginnen (informell)',
+    title: 'Demoaufgabe 10',
     date: 'Di, 8. September · ca. 19:35',
     chip: 'in 4 Tagen',
     status: 'offen',
@@ -355,7 +355,7 @@ export function buildDemoWeeks(): Week[] {
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['Konrad Sommer', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
+            part(1, 'Demoaufgabe 8', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Jonas Berger', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['Niklas Feld', '', 'bibellesung']]),
           ]),
@@ -366,7 +366,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 128'),
-            part(7, 'Geh während der besonderen Aktion zielorientiert vor', 'Besprechung · 15 Min.', [['D. Winkler', '', 'vortrag']]),
+            part(7, 'Demoaufgabe 9', 'Besprechung · 15 Min.', [['D. Winkler', '', 'vortrag']]),
             part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['Helmut Vogel', 'Gebet', 'gebet']])]),
@@ -377,10 +377,10 @@ export function buildDemoWeeks(): Week[] {
         date: 'Sonntag, 13. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 138 · Gebet', null, [['A. Brenner', 'Vorsitz', 'vorsitz'], ['J. Winter', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Woran erkennt man echten Glauben?“', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 7', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 20'),
-            part(null, '„Dient Jehova mit Freude“', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']], 60),
+            part(null, 'Demo-Studienartikel 6', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']], 60),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet', 'gebet']])]),
         ],
@@ -394,7 +394,7 @@ export function buildDemoWeeks(): Week[] {
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['Friedrich Neumann', 'Vorsitz', 'vorsitz'], ['Thomas Lindner', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Was wir von den Rechabitern lernen', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
+            part(1, 'Demoaufgabe 1', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['Paul Schröder', '', 'bibellesung']]),
           ]),
@@ -416,10 +416,10 @@ export function buildDemoWeeks(): Week[] {
         date: 'Sonntag, 20. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 12 · Gebet', null, [['Helmut Vogel', 'Vorsitz', 'vorsitz'], ['Ulrich Lang', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Ein Name, der zählt“', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Studienartikel 4', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 49'),
-            part(null, '„Bewahrt die Einheit“', 'Studienartikel 29 · 60 Min.', [['Manfred Albrecht', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']], 60),
+            part(null, 'Demo-Studienartikel 5', 'Studienartikel 29 · 60 Min.', [['Manfred Albrecht', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']], 60),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 106 · Gebet', null, [['Georg Peters', 'Gebet', 'gebet']])]),
         ],
@@ -433,7 +433,7 @@ export function buildDemoWeeks(): Week[] {
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['Friedrich Neumann', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Jehova belohnt Mut — das Beispiel Ebed-Melechs', '10 Min.', [['Friedrich Neumann', '', 'vortrag']]),
+            part(1, 'Demoaufgabe 2', '10 Min.', [['Friedrich Neumann', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['Simon Krüger', '', 'bibellesung']]),
           ]),
@@ -444,8 +444,8 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 44'),
-            part(7, 'Baut einander auf', 'Besprechung · 15 Min.', [['Helmut Vogel', '', 'vortrag']]),
-            part(8, '„Lauft so, dass ihr den Preis gewinnt“', 'Dienstvortrag · 30 Min.', [['K. Wagner', 'Kreisaufseher', '']]),
+            part(7, 'Demoaufgabe 3', 'Besprechung · 15 Min.', [['Helmut Vogel', '', 'vortrag']]),
+            part(8, 'Demo-Studienartikel 2', 'Dienstvortrag · 30 Min.', [['K. Wagner', 'Kreisaufseher', '']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['D. Winkler', 'Gebet', 'gebet']])]),
         ],
@@ -455,12 +455,12 @@ export function buildDemoWeeks(): Week[] {
         date: 'Sonntag, 27. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 25 · Gebet', null, [['Friedrich Neumann', 'Vorsitz', 'vorsitz'], ['Bernd Klein', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Frieden in einer unruhigen Welt“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 1', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 61'),
-            part(null, '„Jehovas Barmherzigkeit widerspiegeln“', 'Studienartikel 30 · 30 Min.', [['Helmut Vogel', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
+            part(null, 'Demo-Vortragsthema 2', 'Studienartikel 30 · 30 Min.', [['Helmut Vogel', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
           ]),
-          sec('DIENSTVORTRAG', 'gold', [part(null, '„Bleibt in Gottes Liebe“', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
+          sec('DIENSTVORTRAG', 'gold', [part(null, 'Demo-Studienartikel 3', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet', 'gebet']])]),
         ],
         helpers: H({ ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 2'] }),
@@ -473,7 +473,7 @@ export function buildDemoWeeks(): Week[] {
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['Thomas Lindner', 'Vorsitz', 'vorsitz'], ['Manfred Albrecht', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-            part(1, 'Auf Jehova hören — auch wenn es schwerfällt', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
+            part(1, 'Demoaufgabe 4', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['Jörg Roth', '', 'bibellesung']]),
           ]),
@@ -484,7 +484,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 65'),
-            part(7, 'Jehova sorgt für sein Volk', '15 Min.', [['Friedrich Neumann', '', 'vortrag']]),
+            part(7, 'Demoaufgabe 5', '15 Min.', [['Friedrich Neumann', '', 'vortrag']]),
             part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['Helmut Vogel', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['Claus Maier', 'Gebet', 'gebet']])]),
@@ -497,7 +497,7 @@ export function buildDemoWeeks(): Week[] {
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 18 · Gebet', null, [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
           sec('GEDÄCHTNISMAHL', 'wein', [
-            part(null, 'Gedächtnismahl-Ansprache — „Schätze Jehovas größtes Geschenk“', '30 Min.', [['Friedrich Neumann', 'Redner', 'vortrag']]),
+            part(null, 'Gedächtnismahl-Ansprache — Demo-Studienartikel 1', '30 Min.', [['Friedrich Neumann', 'Redner', 'vortrag']]),
             part(null, 'Symbole herumreichen', 'Brot · Wein', [['Jonas Berger', '', ORD], ['Paul Schröder', '', ORD], ['Georg Peters', '', ORD], ['Ulrich Lang', '', ORD]]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 149 · Gebet', null, [['Helmut Vogel', 'Gebet', 'gebet']])]),
@@ -519,7 +519,7 @@ export function buildImportWeek(): Week {
       sections: [
         sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 19 · Gebet · Einleitende Worte', '1 Min.', [['', 'Vorsitz', 'vorsitz'], ['', 'Gebet', 'gebet']])]),
         sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
-          part(1, 'Jehovas Wort erfüllt sich immer', '10 Min.', [['', '', 'vortrag']]),
+          part(1, 'Demoaufgabe 6', '10 Min.', [['', '', 'vortrag']]),
           part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['', '', 'vortrag']]),
           part(3, 'Bibellesung · Jer 44:24-30', '4 Min. · th Lektion 3', [['', '', 'bibellesung']]),
         ]),
@@ -530,7 +530,7 @@ export function buildImportWeek(): Week {
         ]),
         sec('UNSER LEBEN ALS CHRIST', 'wein', [
           song('Lied 76'),
-          part(7, 'Bleib loyal wie Baruch', '15 Min.', [['', '', 'vortrag']]),
+          part(7, 'Demoaufgabe 7', '15 Min.', [['', '', 'vortrag']]),
           part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 11', [['', 'Leiter', 'studium'], ['', 'Leser', 'leser']]),
         ]),
         sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 24 · Gebet', '3 Min.', [['', 'Gebet', 'gebet']])]),
@@ -541,10 +541,10 @@ export function buildImportWeek(): Week {
       date: 'Sonntag, 11. Oktober · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
       sections: [
         sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 15 · Gebet', null, [['', 'Vorsitz', 'vorsitz'], ['', 'Gebet', 'gebet']])]),
-        sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, '„Wem kannst du wirklich vertrauen?“', '30 Min.', [['', 'Gastredner', 'vortrag']])]),
+        sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 5', '30 Min.', [['', 'Gastredner', 'vortrag']])]),
         sec('WACHTTURM-STUDIUM', 'wein', [
           song('Lied 123'),
-          part(null, '„Loyal in Prüfungen“', 'Studienartikel 32 · 60 Min.', [['', 'Leiter', 'studium'], ['', 'Leser', 'leser']]),
+          part(null, 'Demo-Vortragsthema 6', 'Studienartikel 32 · 60 Min.', [['', 'Leiter', 'studium'], ['', 'Leser', 'leser']]),
         ]),
         sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 2 · Gebet', null, [['', 'Gebet', 'gebet']])]),
       ],

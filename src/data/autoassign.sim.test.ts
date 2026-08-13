@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildImportWeek, DEMO_SERVICES } from './demo'
+import { buildImportWeek, DEMO_SERVICES } from './testdaten'
 import { displayName, isSong, partWorkload, serviceQualKey, workloadOf } from './helpers'
 import type { AbsenceSet } from './absence'
 import { autoAssignMeeting, clearAssignments } from './planning'

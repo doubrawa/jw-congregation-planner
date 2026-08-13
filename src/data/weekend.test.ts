@@ -53,9 +53,9 @@ const altClosingTitle = (w: Week): string => (w.alt!.en.we.sections[2].items[0] 
 
 describe('editTalkTheme (Vortragsthema als Freitext)', () => {
   it('setzt das Thema und spiegelt es in die Sprachvariante', () => {
-    const next = editTalkTheme([makeWeek()], 0, 1, 0, '„Woran erkennt man echten Glauben?“')
-    expect(talkTitle(next[0])).toBe('„Woran erkennt man echten Glauben?“')
-    expect(altTalkTitle(next[0])).toBe('„Woran erkennt man echten Glauben?“')
+    const next = editTalkTheme([makeWeek()], 0, 1, 0, 'Demo-Vortragsthema 7')
+    expect(talkTitle(next[0])).toBe('Demo-Vortragsthema 7')
+    expect(altTalkTitle(next[0])).toBe('Demo-Vortragsthema 7')
   })
 
   it('leerer Text stellt den Platzhalter wieder her', () => {

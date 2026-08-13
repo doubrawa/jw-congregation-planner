@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDemoWeeks, buildImportWeek } from './demo'
+import { buildDemoWeeks, buildImportWeek } from './testdaten'
 import type { Week } from './types'
 
 /**

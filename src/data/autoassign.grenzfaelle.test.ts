@@ -20,7 +20,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { AbsenceSet } from './absence'
-import { buildImportWeek, DEMO_SERVICES } from './demo'
+import { buildImportWeek, DEMO_SERVICES } from './testdaten'
 import { fsAutoAssign, FS_LOAD_WEEKS } from './fs'
 import { displayName, emptyQualifications, partWorkload } from './helpers'
 import { autoAssignMeeting } from './planning'

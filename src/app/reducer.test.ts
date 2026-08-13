@@ -18,7 +18,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
   FS_BASE,
-} from '../data/demo'
+} from '../data/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
@@ -689,7 +689,7 @@ describe('LAC / Vortrag (über den Reducer)', () => {
   const lacSi = (s: AppState) => s.weeks[0].mid.sections.findIndex((x) => x.label === 'UNSER LEBEN ALS CHRIST')
   const gehIdx = (s: AppState) =>
     s.weeks[0].mid.sections[lacSi(s)].items.findIndex(
-      (i) => !isSong(i) && (i as PartItem).title.startsWith('Geh während'),
+      (i) => !isSong(i) && (i as PartItem).title.startsWith('Demoaufgabe 9'),
     )
 
   it('lacAdd fügt einen Punkt ein (mit Toast)', () => {

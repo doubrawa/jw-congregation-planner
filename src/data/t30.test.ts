@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildImportWeek } from './demo'
+import { buildImportWeek } from './testdaten'
 import { emptyQualifications, helperWorkload, istAusgefallen, partWorkload, weichtAb } from './helpers'
 import { setAbweichung } from './meeting-edit'
 import { meetingDateText, meetingOffset, meetingTime } from './meeting-dates'

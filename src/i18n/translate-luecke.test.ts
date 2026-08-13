@@ -59,7 +59,7 @@ describe('Lücke in den Datumslisten einer Sprache', () => {
     const formen = [
       'Donnerstag, 8. Januar', 'Do, 8. Januar', 'Do 19:00',
       'Montag, 8. März', '7.–13. März', '28. Mär – 4. Apr',
-      'Gespräche beginnen (informell) · Do, 8. Mär · ca. 19:35',
+      'Demoaufgabe 10 · Do, 8. Mär · ca. 19:35',
     ]
     for (const s of formen) {
       expect(() => tr(s)).not.toThrow()

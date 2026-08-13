@@ -4,7 +4,6 @@
  * Dazu die localStorage-Wiederherstellung (Theme, Sprache) und der
  * Dev-Debug-Hash für Headless-Screenshots.
  */
-
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
@@ -18,39 +17,33 @@ import {
   DEMO_GROUPS,
   DEMO_PERSONS,
   DEMO_PLANNER,
-  DEMO_REMINDERS,
   DEMO_SERVICES,
-} from '../data/demo'
+} from '../data/testdaten'
+import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { asFontScale, DEFAULT_FONT_SCALE, THEME_LIST, type FontScale } from '../data/constants'
 import { APP_LANGS } from '../i18n/langs'
 import { isSupabaseConfigured } from '../lib/supabase'
 import type { Lang, MeetingTab, Screen, Theme } from '../data/types'
 import type { AppState } from './context'
-
 /** Alte gespeicherte Werte (vor den 8 Farbschemata) auf Paletten mappen. */
 const LEGACY_THEME: Record<string, Theme> = { light: 'weiss', dark: 'graphit' }
-
 function asTheme(value: string | null): Theme | null {
   if (!value) return null
   if (LEGACY_THEME[value]) return LEGACY_THEME[value]
   return THEME_LIST.some((t) => t.key === value) ? (value as Theme) : null
 }
-
 function getInitialTheme(): Theme {
   // Standard ist Reinweiß, unabhängig von der System-Einstellung (dunkler
   // Modus). Ein anderes Design wählt man im Profil; die Wahl wird gespeichert.
   return asTheme(localStorage.getItem('theme')) ?? 'weiss'
 }
-
 function getInitialFontScale(): FontScale {
   return asFontScale(localStorage.getItem('fontScale')) ?? DEFAULT_FONT_SCALE
 }
-
 function getInitialLang(): Lang {
   const stored = localStorage.getItem('lang')
   return APP_LANGS.some((l) => l.code === stored) ? (stored as Lang) : 'de'
 }
-
 /**
  * Nur im Dev-Build: erlaubt das direkte Anspringen eines Screens/einer Sprache
  * über den URL-Hash `#s=<screen>&l=<lang>&c=<congLang>` — für Headless-
@@ -69,7 +62,6 @@ interface DebugHash {
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
   staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
 }
-
 function parseDebugHash(): DebugHash | null {
   const raw = location.hash.replace(/^#/, '')
   if (!raw) return null
@@ -97,7 +89,6 @@ function parseDebugHash(): DebugHash | null {
   if (Number.isFinite(stale) && stale > 0) out.staleAt = Date.now() - stale * 3600_000
   return Object.keys(out).length ? out : null
 }
-
 /** Montag der aktuellen Woche (Standard-Basis für Treffpunkte ohne DB-Wert). */
 function mondayOfThisWeek(): Date {
   const d = new Date()
@@ -105,13 +96,18 @@ function mondayOfThisWeek(): Date {
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
   return d
 }
-
 export function initialState(): AppState {
   // Konfiguriert (Supabase): leerer Start, Daten kommen per Hydration nach dem
   // Login. Demo-Modus: In-Memory-Demo-Daten wie bisher. Ein Debug-Hash erzwingt
   // im Dev-Build zusätzlich den Demo-Modus (Daten sofort da, ohne Login/Netz).
   const debug = import.meta.env.DEV ? parseDebugHash() : null
-  const demo = !isSupabaseConfigured || debug != null
+  // **Nur im Dev-Build.** Bis zum 13. August 2026 stand hier bloß
+  // `!isSupabaseConfigured || debug != null` — ein Laufzeitwert, an dem der
+  // Bündler nichts entscheiden kann. Die Testdaten landeten deshalb im
+  // ausgelieferten Bündel, obwohl sie dort nie zum Einsatz kamen (die
+  // veröffentlichte Seite hat Supabase konfiguriert). Mit `import.meta.env.DEV`
+  // fällt der ganze Zweig beim Bauen weg — geprüft in `bundle.test.ts`.
+  const demo = import.meta.env.DEV && (!isSupabaseConfigured || debug != null)
   // Screenshot-Modus (nur DEV): Spaltenschatten per Attribut abschalten, damit
   // die Doku-Screenshots randlos zugeschnitten werden können (siehe shell.css).
   if (debug?.shot) document.documentElement.dataset.shot = '1'
@@ -153,7 +149,7 @@ export function initialState(): AppState {
     myTaskId: null,
     substituteReqs: [],
     s89: null,
-    reminders: DEMO_REMINDERS,
+    reminders: STANDARD_ERINNERUNGEN,
     lang: debug?.lang ?? getInitialLang(),
     langSheetOpen: false,
     langSheetFor: 'cong',

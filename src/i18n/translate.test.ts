@@ -44,7 +44,10 @@ describe('makeTr — Programm-Inhalts-Übersetzer', () => {
   it('übersetzt Sonderwochen-Begriffe', () => {
     expect(en('GEDÄCHTNISMAHL')).toBe('MEMORIAL')
     expect(en('Kreisaufseher')).toBe('Circuit overseer')
-    expect(en('„Lauft so, dass ihr den Preis gewinnt“')).toContain('Run in Such a Way')
+    // Hier stand ein Wachtturm-Artikeltitel aus den Testdaten. Der ist am
+    // 13.8.2026 zum Platzhalter geworden („Demo-Studienartikel 2"), und sein
+    // Wörterbuch-Eintrag mit ihm — er bezeichnete nichts, was die App erzeugt.
+    expect(en('Dienstvortrag')).toBe('Service talk')
   })
 
   it('lässt Unbekanntes unverändert (Rückfall auf Deutsch)', () => {
@@ -236,7 +239,7 @@ describe('Datumsregeln in allen Sprachen — nichts wirft', () => {
     '28. Sep – 4. Okt',
     '27. April–3. Mai',
     '30. März–5. April',
-    'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35', // demo.ts:245
+    'Demoaufgabe 10 · Di, 8. Sep · ca. 19:35', // demo.ts:245
   ]
   it.each(APP_LANGS.map((l) => l.code))('%s', (code) => {
     const tr = makeTr(code)

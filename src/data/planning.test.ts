@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
-import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './demo'
+import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './testdaten'
 import { displayName, helperWorkload, isSong, loadWindow, partWorkload, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
@@ -128,7 +128,7 @@ describe('Sonderwochen (v3)', () => {
   it('Woche 2 ist Kreisaufseher-Woche mit Dienstvortrag statt VBS', () => {
     expect(weeks[2].co).toBe(true)
     const lac = weeks[2].mid.sections[lacSectionIndex(weeks[2].mid.sections)]
-    const dv = lac.items.find((i) => !isSong(i) && i.title.startsWith('„Lauft')) as PartItem
+    const dv = lac.items.find((i) => !isSong(i) && i.title.startsWith('Demo-Studienartikel 2')) as PartItem
     expect(dv?.names[0]?.rolle).toBe('Kreisaufseher')
     expect(weeks[2].we.sections.map((s) => s.label)).toContain('DIENSTVORTRAG')
   })
@@ -146,7 +146,7 @@ describe('Auto-Zuteilung', () => {
     const weeks = buildDemoWeeks()
     const lacSi = lacSectionIndex(weeks[2].mid.sections)
     const dvIi = weeks[2].mid.sections[lacSi].items.findIndex(
-      (i) => !isSong(i) && (i as PartItem).title.startsWith('„Lauft'),
+      (i) => !isSong(i) && (i as PartItem).title.startsWith('Demo-Studienartikel 2'),
     )
     ;(weeks[2].mid.sections[lacSi].items[dvIi] as PartItem).names[0].name = ''
     const { weeks: next } = autoAssignMeeting(weeks, 2, 'mid', DEMO_PERSONS, DEMO_SERVICES)
@@ -216,7 +216,7 @@ describe('„Unser Leben als Christ" bearbeiten', () => {
   const weeks = buildDemoWeeks()
   const si = lacSectionIndex(weeks[0].mid.sections)
   const gehIdx = weeks[0].mid.sections[si].items.findIndex(
-    (i) => !isSong(i) && (i as PartItem).title.startsWith('Geh während'),
+    (i) => !isSong(i) && (i as PartItem).title.startsWith('Demoaufgabe 9'),
   )
 
   it('shiftEnd verschiebt die Endzeit (mit Stundenübergang)', () => {

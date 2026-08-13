@@ -5,7 +5,7 @@
  */
 
 import { syncAuxSlots } from '../data/aux-class'
-import { buildImportWeek } from '../data/demo'
+import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
@@ -512,6 +512,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'startImport':
       return state.importing || state.imported ? state : { ...state, importing: true }
     case 'finishImport': {
+      // Der simulierte Import gehört zur Entwickler-Ansicht: Er baut eine
+      // **erfundene** Woche und wird nur aus dem Demo-Zweig des ImportPanels
+      // ausgelöst. Ohne diese Grenze zieht `buildImportWeek` die Testdaten ins
+      // ausgelieferte Bündel — nachgemessen am 13.8.2026, siehe bundle.test.ts.
+      if (!import.meta.env.DEV) return state
       if (state.imported) return state
       const week = buildImportWeek()
       return {
