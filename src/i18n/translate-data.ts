@@ -74,7 +74,6 @@ const FRAG: Record<string, Record<string, string>> = {
     "Verkündigerin": "ناشرة",
     "ohne Zuteilungen": "بدون تعيينات",
     "Montag": "الاثنين",
-    "gerade eben": "الآن",
     "Brot": "الخبز", "Wein": "الخمر", "nach Sonnenuntergang": "بعد غروب الشمس",
     "Dienstvortrag": "خطاب الخدمة", "Schlussvortrag": "خطاب", "DIENSTVORTRAG": "خطاب الخدمة", "GEDÄCHTNISMAHL": "ذكرى موت المسيح"
   },
@@ -124,7 +123,6 @@ const FRAG: Record<string, Record<string, string>> = {
     "Verkündigerin": "מבשרת",
     "ohne Zuteilungen": "ללא שיבוצים",
     "Montag": "יום שני",
-    "gerade eben": "הרגע",
     "Brot": "לחם", "Wein": "יין", "nach Sonnenuntergang": "אחרי שקיעת החמה",
     "Dienstvortrag": "הרצאת השירות", "Schlussvortrag": "הרצאה", "DIENSTVORTRAG": "הרצאת השירות", "GEDÄCHTNISMAHL": "ערב הזיכרון"
   },
@@ -174,7 +172,6 @@ const FRAG: Record<string, Record<string, string>> = {
     "Verkündigerin": "مبشّر",
     "ohne Zuteilungen": "بدون تعیین",
     "Montag": "دوشنبه",
-    "gerade eben": "همین الان",
     "Brot": "نان", "Wein": "شراب", "nach Sonnenuntergang": "پس از غروب آفتاب",
     "Dienstvortrag": "سخنرانی خدمت", "Schlussvortrag": "سخنرانی", "DIENSTVORTRAG": "سخنرانی خدمت", "GEDÄCHTNISMAHL": "مراسم یادبود"
   },
@@ -224,7 +221,6 @@ const FRAG: Record<string, Record<string, string>> = {
     "Verkündigerin": "پبلشر",
     "ohne Zuteilungen": "بغیر تفویض",
     "Montag": "پیر",
-    "gerade eben": "ابھی ابھی",
     "Brot": "روٹی", "Wein": "مے", "nach Sonnenuntergang": "غروبِ آفتاب کے بعد",
     "Dienstvortrag": "خدمتی تقریر", "Schlussvortrag": "تقریر", "DIENSTVORTRAG": "خدمتی تقریر", "GEDÄCHTNISMAHL": "یادگاری تقریب"
   },
@@ -252,7 +248,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Symbole herumreichen': 'Passing the emblems', 'Brot': 'Bread', 'Wein': 'Wine', 'Redner': 'Speaker',
     'nach Sonnenuntergang': 'after sundown',
     'Ältester': 'Elder', 'Dienstamtgehilfe': 'Ministerial servant', 'Verkündiger': 'Publisher', 'Verkündigerin': 'Publisher',
-    'Montag': 'Monday', 'gerade eben': 'just now',
+    'Montag': 'Monday',
     'ohne Zuteilungen': 'without assignments',
   },
   es: {
@@ -279,7 +275,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Symbole herumreichen': 'Pasar los emblemas', 'Brot': 'Pan', 'Wein': 'Vino', 'Redner': 'Orador',
     'nach Sonnenuntergang': 'después de la puesta del sol',
     'Ältester': 'Anciano', 'Dienstamtgehilfe': 'Siervo ministerial', 'Verkündiger': 'Publicador', 'Verkündigerin': 'Publicadora',
-    'Montag': 'lunes', 'gerade eben': 'ahora mismo',
+    'Montag': 'lunes',
     'ohne Zuteilungen': 'sin asignaciones',
   },
   fr: {
@@ -306,7 +302,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Symbole herumreichen': 'Passage des emblèmes', 'Brot': 'Pain', 'Wein': 'Vin', 'Redner': 'Orateur',
     'nach Sonnenuntergang': 'après le coucher du soleil',
     'Ältester': 'Ancien', 'Dienstamtgehilfe': 'Assistant', 'Verkündiger': 'Proclamateur', 'Verkündigerin': 'Proclamatrice',
-    'Montag': 'lundi', 'gerade eben': 'à l\u2019instant',
+    'Montag': 'lundi',
     'ohne Zuteilungen': 'sans attributions',
   },
   it: {
@@ -330,7 +326,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Microfoni', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Uscieri', 'Reinigung': 'Pulizie',
     'Zoom-Ordner': 'Usciere Zoom', 'Eingangsordner': 'Usciere all’ingresso', 'Saalordner': 'Usciere di sala', 'Rundgangsordner': 'Usciere itinerante', 'Dienstvortrag': 'Discorso di servizio', "Schlussvortrag": "Discorso di servizio conclusivo",
     'Ältester': 'Anziano', 'Dienstamtgehilfe': 'Servitore di ministero', 'Verkündiger': 'Proclamatore', 'Verkündigerin': 'Proclamatrice',
-    "gerade eben": "proprio ora", "ohne Zuteilungen": "senza incarichi", "Brot": "Pane", "Wein": "Vino", "nach Sonnenuntergang": "dopo il tramonto", "Montag": "Lunedì"
+    "ohne Zuteilungen": "senza incarichi", "Brot": "Pane", "Wein": "Vino", "nach Sonnenuntergang": "dopo il tramonto", "Montag": "Lunedì"
   },
   pt: {
     "Gesprächspartner": "Ajudante", "Ratgeber": "Conselheiro",
@@ -353,7 +349,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Microfones', 'Ton / Video': 'Áudio/vídeo', 'Ordner / Eingang': 'Indicadores', 'Reinigung': 'Limpeza',
     'Zoom-Ordner': 'Indicador do Zoom', 'Eingangsordner': 'Indicador de entrada', 'Saalordner': 'Indicador de sala', 'Rundgangsordner': 'Indicador volante', 'Dienstvortrag': 'Discurso de serviço', "Schlussvortrag": "Discurso de Serviço Final",
     'Ältester': 'Ancião', 'Dienstamtgehilfe': 'Servo ministerial', 'Verkündiger': 'Publicador', 'Verkündigerin': 'Publicadora',
-    "gerade eben": "agora mesmo", "ohne Zuteilungen": "sem designações", "Brot": "Pão", "Wein": "Vinho", "nach Sonnenuntergang": "após o pôr do sol", "Montag": "Segunda-feira"
+    "ohne Zuteilungen": "sem designações", "Brot": "Pão", "Wein": "Vinho", "nach Sonnenuntergang": "após o pôr do sol", "Montag": "Segunda-feira"
   },
   nl: {
     "Gesprächspartner": "Assistent", "Ratgeber": "Raadgever",
@@ -376,7 +372,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Microfoons', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Zaaldienst', 'Reinigung': 'Schoonmaak',
     'Zoom-Ordner': 'Zoom-zaaldienst', 'Eingangsordner': 'Zaaldienst ingang', 'Saalordner': 'Zaaldienst zaal', 'Rundgangsordner': 'Zaaldienst ronde', 'Dienstvortrag': 'Dienstlezing', "Schlussvortrag": "Slotlezing",
     'Ältester': 'Ouderling', 'Dienstamtgehilfe': 'Dienaar in de bediening', 'Verkündiger': 'Verkondiger', 'Verkündigerin': 'Verkondigster',
-    "gerade eben": "zojuist", "ohne Zuteilungen": "zonder toewijzingen", "Brot": "Brood", "Wein": "Wijn", "nach Sonnenuntergang": "na zonsondergang", "Montag": "Maandag"
+    "ohne Zuteilungen": "zonder toewijzingen", "Brot": "Brood", "Wein": "Wijn", "nach Sonnenuntergang": "na zonsondergang", "Montag": "Maandag"
   },
   pl: {
     "Gesprächspartner": "Pomocnik", "Ratgeber": "Prowadzący",
@@ -399,7 +395,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofony', 'Ton / Video': 'Dźwięk/wideo', 'Ordner / Eingang': 'Porządkowi', 'Reinigung': 'Sprzątanie',
     'Zoom-Ordner': 'Porządkowy Zoom', 'Eingangsordner': 'Porządkowy przy wejściu', 'Saalordner': 'Porządkowy w sali', 'Rundgangsordner': 'Porządkowy obchodu', 'Dienstvortrag': 'Wykład służbowy', "Schlussvortrag": "Końcowe przemówienie służbowe",
     'Ältester': 'Starszy', 'Dienstamtgehilfe': 'Sługa pomocniczy', 'Verkündiger': 'Głosiciel', 'Verkündigerin': 'Głosicielka',
-    "gerade eben": "przed chwilą", "ohne Zuteilungen": "bez zadań", "Brot": "Chleb", "Wein": "Wino", "nach Sonnenuntergang": "po zachodzie słońca", "Montag": "Poniedziałek"
+    "ohne Zuteilungen": "bez zadań", "Brot": "Chleb", "Wein": "Wino", "nach Sonnenuntergang": "po zachodzie słońca", "Montag": "Poniedziałek"
   },
   ru: {
     "Gesprächspartner": "Собеседник", "Ratgeber": "Советник",
@@ -422,7 +418,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Микрофоны', 'Ton / Video': 'Звук/видео', 'Ordner / Eingang': 'Распорядители', 'Reinigung': 'Уборка',
     'Zoom-Ordner': 'Распорядитель Zoom', 'Eingangsordner': 'Распорядитель у входа', 'Saalordner': 'Распорядитель в зале', 'Rundgangsordner': 'Распорядитель обхода', 'Dienstvortrag': 'Речь о служении', "Schlussvortrag": "Заключительная служебная речь",
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Служебный помощник', 'Verkündiger': 'Возвещатель', 'Verkündigerin': 'Возвещательница',
-    "gerade eben": "только что", "ohne Zuteilungen": "без заданий", "Brot": "Хлеб", "Wein": "Вино", "nach Sonnenuntergang": "после захода солнца", "Montag": "Понедельник"
+    "ohne Zuteilungen": "без заданий", "Brot": "Хлеб", "Wein": "Вино", "nach Sonnenuntergang": "после захода солнца", "Montag": "Понедельник"
   },
   uk: {
     "Gesprächspartner": "Співрозмовник", "Ratgeber": "Порадник",
@@ -445,7 +441,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Мікрофони', 'Ton / Video': 'Звук/відео', 'Ordner / Eingang': 'Розпорядники', 'Reinigung': 'Прибирання',
     'Zoom-Ordner': 'Розпорядник Zoom', 'Eingangsordner': 'Розпорядник біля входу', 'Saalordner': 'Розпорядник у залі', 'Rundgangsordner': 'Розпорядник обходу', 'Dienstvortrag': 'Промова про служіння', "Schlussvortrag": "Заключна службова промова",
     'Ältester': 'Старійшина', 'Dienstamtgehilfe': 'Службовий помічник', 'Verkündiger': 'Вісник', 'Verkündigerin': 'Вісниця',
-    "gerade eben": "щойно", "ohne Zuteilungen": "без завдань", "Brot": "Хліб", "Wein": "Вино", "nach Sonnenuntergang": "після заходу сонця", "Montag": "Понеділок"
+    "ohne Zuteilungen": "без завдань", "Brot": "Хліб", "Wein": "Вино", "nach Sonnenuntergang": "після заходу сонця", "Montag": "Понеділок"
   },
   ro: {
     "Gesprächspartner": "Interlocutor", "Ratgeber": "Consilier",
@@ -468,7 +464,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Microfoane', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Uşieri', 'Reinigung': 'Curățenie',
     'Zoom-Ordner': 'Uşier Zoom', 'Eingangsordner': 'Uşier la intrare', 'Saalordner': 'Uşier de sală', 'Rundgangsordner': 'Uşier de rond', 'Dienstvortrag': 'Cuvântare de serviciu', "Schlussvortrag": "Cuvântare",
     'Ältester': 'Bătrân', 'Dienstamtgehilfe': 'Slujitor auxiliar', 'Verkündiger': 'Vestitor', 'Verkündigerin': 'Vestitoare',
-    "gerade eben": "chiar acum", "ohne Zuteilungen": "fără însărcinări", "Brot": "Pâine", "Wein": "Vin", "nach Sonnenuntergang": "după apusul soarelui", "Montag": "Luni"
+    "ohne Zuteilungen": "fără însărcinări", "Brot": "Pâine", "Wein": "Vin", "nach Sonnenuntergang": "după apusul soarelui", "Montag": "Luni"
   },
   cs: {
     "Gesprächspartner": "Pomocník", "Ratgeber": "Rádce",
@@ -491,7 +487,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofony', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Pořadatelé', 'Reinigung': 'Úklid',
     'Zoom-Ordner': 'Pořadatel Zoom', 'Eingangsordner': 'Pořadatel u vchodu', 'Saalordner': 'Pořadatel v sále', 'Rundgangsordner': 'Pořadatel obchůzky', 'Dienstvortrag': 'Projev ke službě', "Schlussvortrag": "Závěrečný služební proslov",
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služební pomocník', 'Verkündiger': 'Zvěstovatel', 'Verkündigerin': 'Zvěstovatelka',
-    "gerade eben": "právě teď", "ohne Zuteilungen": "bez úkolů", "Brot": "Chléb", "Wein": "Víno", "nach Sonnenuntergang": "po západu slunce", "Montag": "Pondělí"
+    "ohne Zuteilungen": "bez úkolů", "Brot": "Chléb", "Wein": "Víno", "nach Sonnenuntergang": "po západu slunce", "Montag": "Pondělí"
   },
   sk: {
     "Gesprächspartner": "Pomocník", "Ratgeber": "Radca",
@@ -514,7 +510,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofóny', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Usporiadatelia', 'Reinigung': 'Upratovanie',
     'Zoom-Ordner': 'Usporiadateľ Zoom', 'Eingangsordner': 'Usporiadateľ pri vchode', 'Saalordner': 'Usporiadateľ v sále', 'Rundgangsordner': 'Usporiadateľ obchôdzky', 'Dienstvortrag': 'Prejav o službe', "Schlussvortrag": "Záverečný služobný prejav",
     'Ältester': 'Starší', 'Dienstamtgehilfe': 'Služobný pomocník', 'Verkündiger': 'Zvestovateľ', 'Verkündigerin': 'Zvestovateľka',
-    "gerade eben": "práve teraz", "ohne Zuteilungen": "bez úloh", "Brot": "Chlieb", "Wein": "Víno", "nach Sonnenuntergang": "po západe slnka", "Montag": "Pondelok"
+    "ohne Zuteilungen": "bez úloh", "Brot": "Chlieb", "Wein": "Víno", "nach Sonnenuntergang": "po západe slnka", "Montag": "Pondelok"
   },
   hr: {
     "Gesprächspartner": "Suradnik", "Ratgeber": "Savjetnik",
@@ -537,7 +533,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofoni', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Redari', 'Reinigung': 'Čišćenje',
     'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi', "Schlussvortrag": "Predavanje",
     'Ältester': 'Starješina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavitelj', 'Verkündigerin': 'Objaviteljica',
-    "gerade eben": "upravo sada", "ohne Zuteilungen": "bez zadataka", "Brot": "Kruh", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedjeljak"
+    "ohne Zuteilungen": "bez zadataka", "Brot": "Kruh", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedjeljak"
   },
   sr: {
     "Gesprächspartner": "Saradnik", "Ratgeber": "Savetnik",
@@ -560,7 +556,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofoni', 'Ton / Video': 'Zvuk/video', 'Ordner / Eingang': 'Redari', 'Reinigung': 'Čišćenje',
     'Zoom-Ordner': 'Redar na Zoomu', 'Eingangsordner': 'Redar na ulazu', 'Saalordner': 'Redar u dvorani', 'Rundgangsordner': 'Redar u obilasku', 'Dienstvortrag': 'Predavanje o službi', "Schlussvortrag": "Zaključni službeni govor",
     'Ältester': 'Starešina', 'Dienstamtgehilfe': 'Sluga pomoćnik', 'Verkündiger': 'Objavljivač', 'Verkündigerin': 'Objavljivačica',
-    "gerade eben": "upravo sada", "ohne Zuteilungen": "bez zaduženja", "Brot": "Hleb", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedeljak"
+    "ohne Zuteilungen": "bez zaduženja", "Brot": "Hleb", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedeljak"
   },
   bg: {
     "Gesprächspartner": "Помощник", "Ratgeber": "Съветник",
@@ -583,7 +579,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Микрофони', 'Ton / Video': 'Звук/видео', 'Ordner / Eingang': 'Разпоредители', 'Reinigung': 'Почистване',
     'Zoom-Ordner': 'Разпоредител в Zoom', 'Eingangsordner': 'Разпоредител на входа', 'Saalordner': 'Разпоредител в залата', 'Rundgangsordner': 'Разпоредител на обхода', 'Dienstvortrag': 'Реч за службата', "Schlussvortrag": "Заключителен служебен доклад",
     'Ältester': 'Старейшина', 'Dienstamtgehilfe': 'Помощник-служител', 'Verkündiger': 'Вестител', 'Verkündigerin': 'Вестителка',
-    "gerade eben": "току-що", "ohne Zuteilungen": "без назначения", "Brot": "Хляб", "Wein": "Вино", "nach Sonnenuntergang": "след залез слънце", "Montag": "Понеделник"
+    "ohne Zuteilungen": "без назначения", "Brot": "Хляб", "Wein": "Вино", "nach Sonnenuntergang": "след залез слънце", "Montag": "Понеделник"
   },
   hu: {
     "Gesprächspartner": "Segítő", "Ratgeber": "Tanácsadó",
@@ -606,7 +602,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofonok', 'Ton / Video': 'Hang/videó', 'Ordner / Eingang': 'Rendezők', 'Reinigung': 'Takarítás',
     'Zoom-Ordner': 'Zoom-rendező', 'Eingangsordner': 'Bejárati rendező', 'Saalordner': 'Termi rendező', 'Rundgangsordner': 'Körjáró rendező', 'Dienstvortrag': 'Szolgálati előadás', "Schlussvortrag": "Előadás",
     'Ältester': 'Vén', 'Dienstamtgehilfe': 'Kisegítőszolga', 'Verkündiger': 'Hírnök', 'Verkündigerin': 'Hírnöknő',
-    "gerade eben": "épp most", "ohne Zuteilungen": "feladatok nélkül", "Brot": "Kenyér", "Wein": "Bor", "nach Sonnenuntergang": "napnyugta után", "Montag": "Hétfő"
+    "ohne Zuteilungen": "feladatok nélkül", "Brot": "Kenyér", "Wein": "Bor", "nach Sonnenuntergang": "napnyugta után", "Montag": "Hétfő"
   },
   el: {
     "Gesprächspartner": "Συνεργάτης", "Ratgeber": "Σύμβουλος",
@@ -629,7 +625,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Μικρόφωνα', 'Ton / Video': 'Ήχος/βίντεο', 'Ordner / Eingang': 'Ταξιθέτες', 'Reinigung': 'Καθαρισμός',
     'Zoom-Ordner': 'Ταξιθέτης Zoom', 'Eingangsordner': 'Ταξιθέτης εισόδου', 'Saalordner': 'Ταξιθέτης αίθουσας', 'Rundgangsordner': 'Ταξιθέτης περιπολίας', 'Dienstvortrag': 'Ομιλία διακονίας', "Schlussvortrag": "Τελική Υπηρεσιακή Ομιλία",
     'Ältester': 'Πρεσβύτερος', 'Dienstamtgehilfe': 'Διακονικός υπηρέτης', 'Verkündiger': 'Ευαγγελιζόμενος', 'Verkündigerin': 'Ευαγγελιζόμενη',
-    "gerade eben": "μόλις τώρα", "ohne Zuteilungen": "χωρίς αναθέσεις", "Brot": "Ψωμί", "Wein": "Κρασί", "nach Sonnenuntergang": "μετά τη δύση του ηλίου", "Montag": "Δευτέρα"
+    "ohne Zuteilungen": "χωρίς αναθέσεις", "Brot": "Ψωμί", "Wein": "Κρασί", "nach Sonnenuntergang": "μετά τη δύση του ηλίου", "Montag": "Δευτέρα"
   },
   tr: {
     "Gesprächspartner": "Yardımcı", "Ratgeber": "Danışman",
@@ -652,7 +648,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofonlar', 'Ton / Video': 'Ses/video', 'Ordner / Eingang': 'Görevliler', 'Reinigung': 'Temizlik',
     'Zoom-Ordner': 'Zoom görevlisi', 'Eingangsordner': 'Giriş görevlisi', 'Saalordner': 'Salon görevlisi', 'Rundgangsordner': 'Devriye görevlisi', 'Dienstvortrag': 'Hizmet konuşması', "Schlussvortrag": "Konuşma",
     'Ältester': 'İhtiyar', 'Dienstamtgehilfe': 'Yardımcı hizmetçi', 'Verkündiger': 'Müjdeci', 'Verkündigerin': 'Müjdeci',
-    "gerade eben": "az önce", "ohne Zuteilungen": "görev atanmadan", "Brot": "Ekmek", "Wein": "Şarap", "nach Sonnenuntergang": "gün batımından sonra", "Montag": "Pazartesi"
+    "ohne Zuteilungen": "görev atanmadan", "Brot": "Ekmek", "Wein": "Şarap", "nach Sonnenuntergang": "gün batımından sonra", "Montag": "Pazartesi"
   },
   sv: {
     "Gesprächspartner": "Medhjälpare", "Ratgeber": "Rådgivare",
@@ -675,7 +671,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Ljud/video', 'Ordner / Eingang': 'Ordningsvakter', 'Reinigung': 'Städning',
     'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Entrévakt', 'Saalordner': 'Salsvakt', 'Rundgangsordner': 'Rondvakt', 'Dienstvortrag': 'Tjänsteföredrag', "Schlussvortrag": "Föredrag",
     'Ältester': 'Äldste', 'Dienstamtgehilfe': 'Biträdande tjänare', 'Verkündiger': 'Förkunnare', 'Verkündigerin': 'Förkunnare',
-    "gerade eben": "nyss", "ohne Zuteilungen": "utan uppgifter", "Brot": "Bröd", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgången", "Montag": "Måndag"
+    "ohne Zuteilungen": "utan uppgifter", "Brot": "Bröd", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgången", "Montag": "Måndag"
   },
   da: {
     "Gesprächspartner": "Medhjælper", "Ratgeber": "Vejleder",
@@ -698,7 +694,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Lyd/video', 'Ordner / Eingang': 'Ordensvagter', 'Reinigung': 'Rengøring',
     'Zoom-Ordner': 'Zoom-vagt', 'Eingangsordner': 'Indgangsvagt', 'Saalordner': 'Salvagt', 'Rundgangsordner': 'Rondevagt', 'Dienstvortrag': 'Tjenesteforedrag', "Schlussvortrag": "Foredrag",
     'Ältester': 'Ældste', 'Dienstamtgehilfe': 'Menighedstjener', 'Verkündiger': 'Forkynder', 'Verkündigerin': 'Forkynder',
-    "gerade eben": "lige nu", "ohne Zuteilungen": "uden opgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgang", "Montag": "Mandag"
+    "ohne Zuteilungen": "uden opgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgang", "Montag": "Mandag"
   },
   fi: {
     "Gesprächspartner": "Avustaja", "Ratgeber": "Neuvoja",
@@ -721,7 +717,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofonit', 'Ton / Video': 'Ääni/video', 'Ordner / Eingang': 'Järjestyksenvalvojat', 'Reinigung': 'Siivous',
     'Zoom-Ordner': 'Zoom-valvoja', 'Eingangsordner': 'Sisäänkäynnin valvoja', 'Saalordner': 'Salin valvoja', 'Rundgangsordner': 'Kierroksen valvoja', 'Dienstvortrag': 'Palveluspuhe', "Schlussvortrag": "Viimeinen palveluspuhe",
     'Ältester': 'Vanhin', 'Dienstamtgehilfe': 'Avustava palvelija', 'Verkündiger': 'Julistaja', 'Verkündigerin': 'Julistaja',
-    "gerade eben": "juuri nyt", "ohne Zuteilungen": "ilman tehtäviä", "Brot": "Leipä", "Wein": "Viini", "nach Sonnenuntergang": "auringonlaskun jälkeen", "Montag": "Maanantai"
+    "ohne Zuteilungen": "ilman tehtäviä", "Brot": "Leipä", "Wein": "Viini", "nach Sonnenuntergang": "auringonlaskun jälkeen", "Montag": "Maanantai"
   },
   no: {
     "Gesprächspartner": "Medhjelper", "Ratgeber": "Veileder",
@@ -744,7 +740,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofoner', 'Ton / Video': 'Lyd/video', 'Ordner / Eingang': 'Ordensvakter', 'Reinigung': 'Rengjøring',
     'Zoom-Ordner': 'Zoom-vakt', 'Eingangsordner': 'Inngangsvakt', 'Saalordner': 'Salvakt', 'Rundgangsordner': 'Rondevakt', 'Dienstvortrag': 'Tjenesteforedrag', "Schlussvortrag": "Foredrag",
     'Ältester': 'Eldste', 'Dienstamtgehilfe': 'Menighetstjener', 'Verkündiger': 'Forkynner', 'Verkündigerin': 'Forkynner',
-    "gerade eben": "akkurat nå", "ohne Zuteilungen": "uten oppgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "etter solnedgang", "Montag": "Mandag"
+    "ohne Zuteilungen": "uten oppgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "etter solnedgang", "Montag": "Mandag"
   },
   id: {
     "Gesprächspartner": "Mitra", "Ratgeber": "Penasihat",
@@ -767,7 +763,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mikrofon', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Petugas', 'Reinigung': 'Kebersihan',
     'Zoom-Ordner': 'Petugas Zoom', 'Eingangsordner': 'Petugas pintu', 'Saalordner': 'Petugas ruang', 'Rundgangsordner': 'Petugas keliling', 'Dienstvortrag': 'Khotbah dinas', "Schlussvortrag": "Khotbah Dinas Penutup",
     'Ältester': 'Penatua', 'Dienstamtgehilfe': 'Hamba pelayanan', 'Verkündiger': 'Penyiar', 'Verkündigerin': 'Penyiar',
-    "gerade eben": "baru saja", "ohne Zuteilungen": "tanpa tugas", "Brot": "Roti", "Wein": "Anggur", "nach Sonnenuntergang": "setelah matahari terbenam", "Montag": "Senin"
+    "ohne Zuteilungen": "tanpa tugas", "Brot": "Roti", "Wein": "Anggur", "nach Sonnenuntergang": "setelah matahari terbenam", "Montag": "Senin"
   },
   tl: {
     "Gesprächspartner": "Katulong", "Ratgeber": "Tagapayo",
@@ -790,7 +786,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Mga Mikropono', 'Ton / Video': 'Audio/video', 'Ordner / Eingang': 'Mga Attendant', 'Reinigung': 'Paglilinis',
     'Zoom-Ordner': 'Attendant sa Zoom', 'Eingangsordner': 'Attendant sa pinto', 'Saalordner': 'Attendant sa hall', 'Rundgangsordner': 'Attendant sa paglilibot', 'Dienstvortrag': 'Pahayag sa paglilingkod', "Schlussvortrag": "Pahayag",
     'Ältester': 'Elder', 'Dienstamtgehilfe': 'Ministeryal na lingkod', 'Verkündiger': 'Mamamahayag', 'Verkündigerin': 'Mamamahayag',
-    "gerade eben": "kanina lang", "ohne Zuteilungen": "walang atas", "Brot": "Tinapay", "Wein": "Alak", "nach Sonnenuntergang": "pagkalubog ng araw", "Montag": "Lunes"
+    "ohne Zuteilungen": "walang atas", "Brot": "Tinapay", "Wein": "Alak", "nach Sonnenuntergang": "pagkalubog ng araw", "Montag": "Lunes"
   },
   vi: {
     "Gesprächspartner": "Người phụ", "Ratgeber": "Người cố vấn",
@@ -813,7 +809,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Micro', 'Ton / Video': 'Âm thanh/video', 'Ordner / Eingang': 'Trật tự viên', 'Reinigung': 'Vệ sinh',
     'Zoom-Ordner': 'Trật tự viên Zoom', 'Eingangsordner': 'Trật tự viên cửa', 'Saalordner': 'Trật tự viên phòng', 'Rundgangsordner': 'Trật tự viên tuần tra', 'Dienstvortrag': 'Bài giảng về thánh chức', "Schlussvortrag": "Bài giảng",
     'Ältester': 'Trưởng lão', 'Dienstamtgehilfe': 'Phụ tá hội thánh', 'Verkündiger': 'Người công bố', 'Verkündigerin': 'Người công bố',
-    "gerade eben": "vừa xong", "ohne Zuteilungen": "chưa phân công", "Brot": "Bánh", "Wein": "Rượu", "nach Sonnenuntergang": "sau khi mặt trời lặn", "Montag": "Thứ Hai"
+    "ohne Zuteilungen": "chưa phân công", "Brot": "Bánh", "Wein": "Rượu", "nach Sonnenuntergang": "sau khi mặt trời lặn", "Montag": "Thứ Hai"
   },
   sw: {
     "Gesprächspartner": "Msaidizi", "Ratgeber": "Mshauri",
@@ -836,7 +832,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'Maikrofoni', 'Ton / Video': 'Sauti/video', 'Ordner / Eingang': 'Wasimamizi', 'Reinigung': 'Usafi',
     'Zoom-Ordner': 'Msimamizi wa Zoom', 'Eingangsordner': 'Msimamizi wa mlango', 'Saalordner': 'Msimamizi wa jumba', 'Rundgangsordner': 'Msimamizi wa duru', 'Dienstvortrag': 'Hotuba ya huduma', "Schlussvortrag": "Hotuba",
     'Ältester': 'Mzee', 'Dienstamtgehilfe': 'Mtumishi wa huduma', 'Verkündiger': 'Mhubiri', 'Verkündigerin': 'Mhubiri',
-    "gerade eben": "sasa hivi", "ohne Zuteilungen": "bila migawo", "Brot": "Mkate", "Wein": "Divai", "nach Sonnenuntergang": "baada ya machweo", "Montag": "Jumatatu"
+    "ohne Zuteilungen": "bila migawo", "Brot": "Mkate", "Wein": "Divai", "nach Sonnenuntergang": "baada ya machweo", "Montag": "Jumatatu"
   },
   zh: {
     "Gesprächspartner": "助手", "Ratgeber": "辅导员",
@@ -859,7 +855,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': '话筒', 'Ton / Video': '音响/视频', 'Ordner / Eingang': '招待员', 'Reinigung': '清洁',
     'Zoom-Ordner': 'Zoom招待员', 'Eingangsordner': '入口招待员', 'Saalordner': '会场招待员', 'Rundgangsordner': '巡视招待员', 'Dienstvortrag': '服务演讲', "Schlussvortrag": "最后的演讲",
     'Ältester': '长老', 'Dienstamtgehilfe': '助理仆人', 'Verkündiger': '传道员', 'Verkündigerin': '传道员',
-    "gerade eben": "刚刚", "ohne Zuteilungen": "尚未分配", "Brot": "饼", "Wein": "酒", "nach Sonnenuntergang": "日落之后", "Montag": "星期一"
+    "ohne Zuteilungen": "尚未分配", "Brot": "饼", "Wein": "酒", "nach Sonnenuntergang": "日落之后", "Montag": "星期一"
   },
   ja: {
     "Gesprächspartner": "補助", "Ratgeber": "助言者",
@@ -882,7 +878,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': 'マイク', 'Ton / Video': '音響/映像', 'Ordner / Eingang': '案内係', 'Reinigung': '清掃',
     'Zoom-Ordner': 'Zoom案内係', 'Eingangsordner': '入り口案内係', 'Saalordner': '会場案内係', 'Rundgangsordner': '巡回案内係', 'Dienstvortrag': '奉仕の話', "Schlussvortrag": "結びの奉仕の話",
     'Ältester': '長老', 'Dienstamtgehilfe': '奉仕の僕', 'Verkündiger': '伝道者', 'Verkündigerin': '伝道者',
-    "gerade eben": "たった今", "ohne Zuteilungen": "割り当てなし", "Brot": "パン", "Wein": "ぶどう酒", "nach Sonnenuntergang": "日没後", "Montag": "月曜日"
+    "ohne Zuteilungen": "割り当てなし", "Brot": "パン", "Wein": "ぶどう酒", "nach Sonnenuntergang": "日没後", "Montag": "月曜日"
   },
   ko: {
     "Gesprächspartner": "보조자", "Ratgeber": "조언자",
@@ -905,7 +901,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Mikrofone': '마이크', 'Ton / Video': '음향/영상', 'Ordner / Eingang': '안내', 'Reinigung': '청소',
     'Zoom-Ordner': 'Zoom 안내', 'Eingangsordner': '입구 안내', 'Saalordner': '회관 안내', 'Rundgangsordner': '순회 안내', 'Dienstvortrag': '봉사 연설', "Schlussvortrag": "연설",
     'Ältester': '장로', 'Dienstamtgehilfe': '봉사의 종', 'Verkündiger': '전도인', 'Verkündigerin': '전도인',
-    "gerade eben": "방금", "ohne Zuteilungen": "배정 없음", "Brot": "빵", "Wein": "포도주", "nach Sonnenuntergang": "해가 진 후", "Montag": "월요일"
+    "ohne Zuteilungen": "배정 없음", "Brot": "빵", "Wein": "포도주", "nach Sonnenuntergang": "해가 진 후", "Montag": "월요일"
   }
 };
 

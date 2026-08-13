@@ -220,10 +220,20 @@ describe('REF — Verweis-Vorlagen', () => {
 })
 
 describe('Produktiv sichtbare Fragmente sind überall übersetzt', () => {
-  // Diese beiden erscheinen nicht nur in den Demo-Daten, sondern bei jedem
-  // Nutzer: der Zeitstempel jeder neuen Mitteilung und der Text nach jedem
-  // Programm-Import.
-  const IMMER = ['gerade eben', 'ohne Zuteilungen', 'Treffpunkte']
+  /*
+    Diese erscheinen nicht nur in den Testdaten, sondern bei jedem Nutzer: der
+    Text nach jedem Programm-Import und der kanonische Begriff aus jeder
+    Treffpunkt-Mitteilung.
+
+    **„gerade eben" stand hier bis zum 13. August 2026 mit dabei** — der
+    Zeitstempel jeder neuen Mitteilung. Er ist jetzt keine Zeichenkette mehr:
+    Die Mitteilung führt ihren Zeitpunkt (`at`), und die Form entsteht beim
+    Anzeigen über `Intl.RelativeTimeFormat` (i18n/zeit.ts). Das war nötig, weil
+    eine Liste von Sätzen den Fall gar nicht abdecken kann — „vor N Stunden"
+    ist eine Form mit Zahl. Im Wörterbuch stand genau eine davon, `vor 2 Std.`,
+    und die auch nur, weil sie zufällig in den Testdaten vorkam.
+  */
+  const IMMER = ['ohne Zuteilungen', 'Treffpunkte']
 
   it.each(CODES)('%s übersetzt sie wirklich (nicht nur Rückfall)', (code) => {
     const tr = makeTr(code)

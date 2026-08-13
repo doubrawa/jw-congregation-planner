@@ -125,7 +125,7 @@ function makeNotif(
   taskId?: string,
 ): Notification {
   // `local`: hier entstanden, also noch zu verteilen (siehe persist.ts).
-  return { id: crypto.randomUUID(), type, title, text, time: 'gerade eben', read: false, taskId, local: true }
+  return { id: crypto.randomUUID(), type, title, text, at: new Date().toISOString(), read: false, taskId, local: true }
 }
 
 /** Neue Mitteilung vorne anfügen. */

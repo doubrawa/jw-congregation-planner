@@ -640,17 +640,17 @@ function absenceFromRow(r: AbsenceRow): Absence {
   }
 }
 
-/** DB-Zeitstempel → grobe relative Zeitangabe (deutsch, wie im Demo-Stil). */
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const min = Math.round(diff / 60000)
-  if (min < 1) return 'gerade eben'
-  if (min < 60) return `vor ${min} Min.`
-  const h = Math.round(min / 60)
-  if (h < 24) return `vor ${h} Std.`
-  const d = Math.round(h / 24)
-  return d === 1 ? 'gestern' : `vor ${d} Tagen`
-}
+/*
+ * Hier stand `relativeTime()` und baute aus dem Zeitstempel einen **deutschen
+ * Satz** („vor 3 Std."), der als `Notification.time` mitgeführt wurde.
+ * Übersetzen ließ er sich danach nur noch über eine feste Liste von
+ * Zeichenketten — und die deckte, wie am 13.8.2026 nachgemessen, ausgerechnet
+ * die Stundenzahl ab, die zufällig in den Testdaten stand. Jede andere blieb
+ * deutsch, in allen 33 Sprachen.
+ *
+ * Die Zeile trägt jetzt ihren Zeitstempel (`at`), und die Form entsteht beim
+ * Anzeigen — `relativeZeit` in i18n/zeit.ts, über `Intl.RelativeTimeFormat`.
+ */
 
 function notificationFromRow(r: NotificationRow): Notification {
   return {
@@ -658,7 +658,7 @@ function notificationFromRow(r: NotificationRow): Notification {
     type: asNotifType(r.type),
     title: r.title,
     text: r.body,
-    time: relativeTime(r.created_at),
+    at: r.created_at,
     read: r.read,
   }
 }

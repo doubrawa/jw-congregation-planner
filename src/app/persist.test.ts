@@ -447,9 +447,9 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
 
 describe('Mitteilungs-Fanout', () => {
   /** Wie der Reducer sie erzeugt: mit `local`-Kennzeichen. */
-  const hier = { id: 'n1', type: 'gesendet' as const, title: 'T', text: 'B', time: '', read: false, local: true as const }
+  const hier = { id: 'n1', type: 'gesendet' as const, title: 'T', text: 'B', at: '2026-09-14T10:00:00Z', read: false, local: true as const }
   /** Wie sie aus der Datenbank kommt: ohne Kennzeichen. */
-  const geladen = { id: 'n2', type: 'gesendet' as const, title: 'T', text: 'B', time: '', read: false }
+  const geladen = { id: 'n2', type: 'gesendet' as const, title: 'T', text: 'B', at: '2026-09-14T10:00:00Z', read: false }
   const planer = [{ userId: 'm1', email: '', personId: null, planner: true }]
 
   it('eine hier entstandene Mitteilung geht an die Planer', () => {

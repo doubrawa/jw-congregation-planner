@@ -664,7 +664,16 @@ export interface Notification {
   type: NotificationType
   title: string
   text: string
-  time: string
+  /**
+   * Zeitpunkt der Entstehung, ISO. **Kein fertiger Satz.**
+   *
+   * Hier stand bis zum 13. August 2026 `time: string` mit einem beim Laden
+   * gebauten deutschen Text („vor 2 Std."). Übersetzt werden konnte der nur
+   * über eine feste Liste von Zeichenketten — und die deckte genau die
+   * Stundenzahl ab, die zufällig in den Testdaten stand. Die Form wird jetzt
+   * beim Anzeigen gebildet (`relativeZeit` in i18n/zeit.ts).
+   */
+  at: string
   read: boolean
   taskId?: string // verknüpfte MyTask → Inline-„Bestätigen“ in der Mitteilung
   /**
