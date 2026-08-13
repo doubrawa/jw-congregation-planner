@@ -3,7 +3,7 @@ import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, overseerGroup } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
-import { redeemInvite, seedCongregation } from '../lib/data'
+import { redeemInvite } from '../lib/data'
 import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -373,18 +373,6 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const seed = async () => {
-    if (!state.congregationId || !state.userId) return
-    dispatch({ type: 'setDataStatus', status: 'loading' })
-    const err = await seedCongregation(state.congregationId)
-    if (err) {
-      dispatch({ type: 'showToast', text: err })
-      dispatch({ type: 'setDataStatus', status: 'ready' })
-      return
-    }
-    await loadAndHydrate(dispatch, state.userId)
-  }
-
   const retry = () => {
     if (state.userId) void loadAndHydrate(dispatch, state.userId)
   }
@@ -437,19 +425,17 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
         </>
       )}
 
+      {/*
+        Eine Versammlung wird vom Administrator angelegt (scripts/
+        versammlung-anlegen.mjs) — mit einem Planer und den Standard-Diensten,
+        aber **ohne Woche**. Ist hier gar nichts da, ist das Skript nicht
+        gelaufen; ein Knopf „Demo-Daten laden" stand hier bis zum 13.8.2026 und
+        füllte vier erfundene Wochen ein, die der Planer erst wegräumen musste.
+      */}
       {kind === 'empty' && (
         <>
           <h1 className="status-title">{t.stLeer}</h1>
-          {state.planner ? (
-            <>
-              <p className="status-text">{t.stLeerTextPlaner}</p>
-              <button type="button" className="btn-primary status-btn" onClick={seed}>
-                {t.stDemoLaden}
-              </button>
-            </>
-          ) : (
-            <p className="status-text">{t.stLeerText}</p>
-          )}
+          <p className="status-text">{t.stLeerText}</p>
         </>
       )}
     </section>
