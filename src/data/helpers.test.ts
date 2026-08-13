@@ -22,7 +22,7 @@ import {
   unlinkFamily,
   workloadOf,
 } from './helpers'
-import { buildDemoWeeks } from './demo'
+import { buildDemoWeeks } from './testdaten'
 import type { PartItem, Person, Qualifications } from './types'
 
 /** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */

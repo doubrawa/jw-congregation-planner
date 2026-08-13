@@ -53,43 +53,13 @@ type Grund =
   | 'fachbegriff-ungenutzt'
 
 const NUR_GEMESSEN_UEBERSETZBAR: Record<string, Grund> = {
-  // Wachtturm-Studienartikel der Demo-Wochenenden.
-  '„Schätze Jehovas größtes Geschenk“': 'demo-erfunden',
-  '„Lauft so, dass ihr den Preis gewinnt“': 'demo-erfunden',
-  '„Bleibt in Gottes Liebe“': 'demo-erfunden',
-  '„Ein Name, der zählt“': 'demo-erfunden',
-  '„Bewahrt die Einheit“': 'demo-erfunden',
-  '„Frieden in einer unruhigen Welt“': 'demo-erfunden',
-  '„Jehovas Barmherzigkeit widerspiegeln“': 'demo-erfunden',
-  '„Worauf gründet echte Hoffnung?“': 'demo-erfunden',
-  '„Bleibt wachsam“': 'demo-erfunden',
-  '„Wem kannst du wirklich vertrauen?“': 'demo-erfunden',
-  '„Loyal in Prüfungen“': 'demo-erfunden',
-  '„Woran erkennt man echten Glauben?“': 'demo-erfunden',
-  '„Dient Jehova mit Freude“': 'demo-erfunden',
-  // Programmpunkte der Demo-Wochen unter der Woche.
-  'Was wir von den Rechabitern lernen': 'demo-erfunden',
-  'Jehova belohnt Mut — das Beispiel Ebed-Melechs': 'demo-erfunden',
-  'Baut einander auf': 'demo-erfunden',
-  'Auf Jehova hören — auch wenn es schwerfällt': 'demo-erfunden',
-  'Jehova sorgt für sein Volk': 'demo-erfunden',
-  'Jehovas Wort erfüllt sich immer': 'demo-erfunden',
-  'Bleib loyal wie Baruch': 'demo-erfunden',
-  'Über Jehovas Eigenschaften nachzudenken, stärkt unseren Glauben': 'demo-erfunden',
-  'Geh während der besonderen Aktion zielorientiert vor': 'demo-erfunden',
-  // Mitteilungs-Vorlagen der Demo.
-  'Gespräche beginnen (informell)': 'demo-erfunden',
-  'Programm für September ist online': 'demo-erfunden',
-  'vor 2 Std.': 'demo-erfunden',
-  'heute, 08:00': 'demo-erfunden',
-  // jw.org hat dafür feste Wendungen („Memorial talk", „passing the
-  // emblems"); die App erzeugt aber kein Gedächtnismahl-Programm — T64/T65
+  // jw.org hat dafuer feste Wendungen (`Memorial talk`, `passing the
+  // emblems`); die App erzeugt aber kein Gedaechtnismahl-Programm - T64/T65
   // setzen den Anlass und den Ausfall, nicht den Ablauf. Sobald sie es tut,
   // sind beide zu messen und hier zu streichen.
   'Gedächtnismahl-Ansprache': 'fachbegriff-ungenutzt',
   'Symbole herumreichen': 'fachbegriff-ungenutzt',
 }
-
 describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
   const enKeys = Object.keys(FRAG.en).sort()
   const ausnahmen = Object.keys(NUR_GEMESSEN_UEBERSETZBAR)
@@ -115,27 +85,30 @@ describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
   })
 
   it('die Ausnahmeliste wächst nicht heimlich', () => {
-    // Eine Ausnahmeliste ohne Deckel ist keine Ausnahme mehr, sondern eine
-    // Abkürzung: Wer künftig ein unübersetztes Fragment hier einträgt, statt
-    // die Vorlage zu messen, ändert damit auch diese Zahl — und muss es
-    // begründen. Die Prüfung darüber („beschreibt nur Vorhandenes") fängt nur
-    // Tippfehler, nicht das Wachsen.
-    expect(ausnahmen.length).toBe(28)
+    /*
+      Eine Ausnahmeliste ohne Deckel ist keine Ausnahme mehr, sondern eine
+      Abkürzung: Wer künftig ein unübersetztes Fragment hier einträgt, statt
+      die Vorlage zu messen, ändert damit auch diese Zahl — und muss es
+      begründen. Die Prüfung darüber („beschreibt nur Vorhandenes") fängt nur
+      Tippfehler, nicht das Wachsen.
+
+      **Von 28 auf 2** am 13. August 2026: 26 der Einträge waren erfundene
+      Demo-Titel im Stil einer jw.org-Veröffentlichung. Sie heißen jetzt
+      „Demoaufgabe 1" und „Demo-Studienartikel 3" — als Platzhalter erkennbar,
+      damit kein Planer sie für sein Programm hält —, und ihre toten
+      Wörterbuch-Einträge sind mit ihnen gegangen.
+    */
+    expect(ausnahmen.length).toBe(2)
   })
 
-  it('nichts wird „für später" geparkt — jede Ausnahme ist unerreichbar oder erfunden', () => {
+  it('nichts wird „für später" geparkt — jede Ausnahme ist unerreichbar', () => {
     /*
-      Beide zugelassenen Gründe sagen dasselbe aus zwei Richtungen: Es gibt
-      **nichts zu messen**. `demo-erfunden` steht für Zeichenketten, die es auf
-      jw.org gar nicht gibt (nachgemessen, siehe Typ oben);
-      `fachbegriff-ungenutzt` für solche, die die App nicht erzeugt. Käme ein
-      dritter Grund im Sinne von „später" hinzu, müsste er hier eingetragen
-      werden — und genau das soll auffallen.
+      Der einzige verbliebene Grund sagt: Die App **erzeugt** diese Zeichenkette
+      gar nicht. `demo-erfunden` gibt es als Grund weiterhin, wird aber von
+      niemandem mehr gebraucht. Käme ein Grund im Sinne von „später" hinzu,
+      müsste er in `Grund` eingetragen werden — und genau das soll auffallen.
     */
-    expect([...new Set(Object.values(NUR_GEMESSEN_UEBERSETZBAR))].sort()).toEqual([
-      'demo-erfunden',
-      'fachbegriff-ungenutzt',
-    ])
+    expect([...new Set(Object.values(NUR_GEMESSEN_UEBERSETZBAR))]).toEqual(['fachbegriff-ungenutzt'])
   })
 
   it.each(CODES)('%s deckt alle Pflicht-Fragmente ab', (code) => {

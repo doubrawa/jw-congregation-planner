@@ -13,7 +13,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { AppProvider } from '../app/store'
-import { buildDemoWeeks } from '../data/demo'
+import { buildDemoWeeks } from '../data/testdaten'
 import { dict } from './ui'
 import { fill, useProgWeek, useT } from './useT'
 

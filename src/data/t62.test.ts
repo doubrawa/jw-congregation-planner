@@ -79,7 +79,7 @@ function makeWeek(): Week {
           { song: 'Lied 20' },
           {
             iid: 'b2',
-            title: '„Dient Jehova mit Freude"',
+            title: 'Demo-Studienartikel 6',
             meta: 'Studienartikel 28 · 60 Min.',
             mins: 60,
             names: [

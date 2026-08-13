@@ -12,7 +12,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { initialState } from '../app/init'
-import { buildDemoWeeks } from '../data/demo'
+import { buildDemoWeeks } from '../data/testdaten'
 import { WeekStrip } from './WeekStrip'
 
 /**

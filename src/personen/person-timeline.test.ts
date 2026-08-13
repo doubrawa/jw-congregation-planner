@@ -6,7 +6,7 @@ import {
   DEMO_PERSONS,
   DEMO_SERVICES,
   FS_BASE,
-} from '../data/demo'
+} from '../data/testdaten'
 import { displayName } from '../data/helpers'
 import { personTimeline, type TimelineDaten } from './person-timeline'
 
