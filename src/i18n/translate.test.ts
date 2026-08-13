@@ -103,6 +103,7 @@ describe('makeTr(en) — jede Wörterbuch-Regel', () => {
     expect(en('Mo, 8. September')).toBe('Mon, September 8')
     expect(en('Mo 19:00')).toBe('Mon 19:00')
     expect(en('28. Sep – 4. Okt')).toBe('Sep 28 – Oct 4')
+    expect(en('27. April–3. Mai')).toBe('April 27 – May 3')
     expect(en('Jeremia 32–33')).toBe('Jeremiah 32–33')
     expect(en('Jer 3:1')).toBe('Jer 3:1')
     expect(en('wcg Kap. 5')).toBe('wcg chap. 5')
@@ -204,6 +205,7 @@ describe('makeTr(el) — Intl-Pfad (kein Hand-Datums-Dict)', () => {
     expect(el('Mo 19:00')).toMatch(/19:00$/)
     changed('7.–13. September')
     changed('28. Sep – 4. Okt')
+    changed('27. April–3. Mai')
     changed('mit Anna')
     changed('in 4 Tagen')
     changed('2 Zuteilungen')
@@ -232,6 +234,8 @@ describe('Datumsregeln in allen Sprachen — nichts wirft', () => {
     '7.–13. September',
     '7.–13. Sep',
     '28. Sep – 4. Okt',
+    '27. April–3. Mai',
+    '30. März–5. April',
     'Gespräche beginnen (informell) · Di, 8. Sep · ca. 19:35', // demo.ts:245
   ]
   it.each(APP_LANGS.map((l) => l.code))('%s', (code) => {
@@ -240,5 +244,33 @@ describe('Datumsregeln in allen Sprachen — nichts wirft', () => {
       expect(() => tr(s)).not.toThrow()
       expect(tr(s)).not.toMatch(/undefined|Invalid Date|NaN/)
     }
+  })
+})
+
+/*
+  Die Kopfzeile einer Woche über den Monatswechsel — **die Form, die jw.org
+  wirklich liefert**: beide Monate ausgeschrieben, Halbgeviertstrich ohne
+  Leerzeichen („27. April–3. Mai", nachgemessen an der Ausgabe März/April 2026).
+
+  Der Übersetzer kannte nur die abgekürzte Form mit Leerzeichen („28. Sep –
+  4. Okt"), und die steht nur in den Demo- und Vorlagenwochen dieser App. Jede
+  importierte Woche über einen Monatswechsel — rund jede vierte — behielt damit
+  in allen 33 Sprachen ihre deutsche Kopfzeile. Nichts stürzte ab, nichts fiel
+  auf; es blieb einfach deutsch stehen.
+
+  Deshalb hier nicht „wirft nicht", sondern **wird übersetzt**: jede Sprache muss
+  etwas anderes liefern als den deutschen Ausgangstext.
+*/
+describe('Wochenspanne über den Monatswechsel — in jeder Sprache übersetzt', () => {
+  const deutsch = '27. April–3. Mai'
+  it.each(APP_LANGS.map((l) => l.code).filter((c) => c !== 'de'))('%s', (code) => {
+    expect(makeTr(code)(deutsch)).not.toBe(deutsch)
+  })
+
+  it('die abgekürzte Form bleibt abgekürzt', () => {
+    // Zwei Muster, zwei Namenslisten: zurückgeschrieben wird, was hereinkam.
+    // Eine gemeinsame Regel hätte „28. Sep – 4. Okt" ausgeschrieben.
+    expect(makeTr('es')('28. Sep – 4. Okt')).toBe('28 de sep. al 4 de oct.')
+    expect(makeTr('es')('27. April–3. Mai')).toBe('27 de abril al 3 de mayo')
   })
 })

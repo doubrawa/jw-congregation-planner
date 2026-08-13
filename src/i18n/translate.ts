@@ -115,6 +115,31 @@ function ausweichen(re: RegExp, fn: (m: RegExpMatchArray) => string | null): Rul
  */
 const monatIndex = (name: string): number | undefined => MON[name] ?? MONA[name]
 
+/*
+ * ---- Wochenspannen: drei Formen, und die dritte fehlte -----------------------
+ *
+ * Der Programmkopf einer Woche ist eine Spanne. Innerhalb eines Monats zieht
+ * jw.org sie zusammen („23.–29. März"); über den Monatswechsel schreibt es beide
+ * Monate **aus** und setzt den Halbgeviertstrich **ohne** Leerzeichen:
+ * „27. April–3. Mai" (nachgemessen an der Ausgabe März/April 2026).
+ *
+ * Genau diese Form kannte der Übersetzer nicht. Er kannte die abgekürzte mit
+ * Leerzeichen — „28. Sep – 4. Okt" —, und die kommt nur in den Demo- und
+ * Vorlagenwochen dieser App vor. Folge: **jede Woche über einen Monatswechsel
+ * trug in allen 33 Sprachen ihre deutsche Kopfzeile**, also rund jede vierte.
+ *
+ * Die Formen stehen hier zusammen, weil beide Übersetzer-Pfade (Wörterbuch und
+ * Intl) dieselben brauchen — laufen sie auseinander, übersetzt eine Sprache,
+ * was die andere stehen lässt.
+ */
+
+/** „23.–29. März" — innerhalb eines Monats. */
+const SPANNE_MONAT = /^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/
+/** „28. Sep – 4. Okt" — Monatswechsel, abgekürzt (Demo- und Vorlagenwochen). */
+const SPANNE_KURZ = /^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/
+/** „27. April–3. Mai" — Monatswechsel, ausgeschrieben. Die Form von jw.org. */
+const SPANNE_LANG = /^(\d+)\. ([A-Za-zäöü]+) ?– ?(\d+)\. ([A-Za-zäöü]+)$/
+
 /**
  * Regel „Wochentag, Tag. Monat" — Gruppe 1 Wochentag, 2 Tag, 3 Monat.
  * Beide Nachschläge passieren **vor** dem Formatieren; fehlt einer, entfällt
@@ -248,8 +273,12 @@ function makeTrIntl(code: Lang): (s: string) => string {
     tagDatumRegel(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), (\d+)\. ([A-Za-zäöü]+)$/, WD, (m, wd, mon) => intlWeekdayDate(locale, wd, +g(m, 2), mon, 'long')),
     tagDatumRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So), (\d+)\. ([A-Za-zäöü]+)$/, WDA, (m, wd, mon) => intlWeekdayDate(locale, wd, +g(m, 2), mon, 'short')),
     tagZeitRegel(/^(Mo|Di|Mi|Do|Fr|Sa|So) (\d+:\d+)$/, WDA, (m, wd) => `${intlWeekdayShort(locale, wd)} ${g(m, 2)}`),
-    monatsRegel(/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mon) => intlRange(locale, +g(m, 1), mon, +g(m, 2), mon)),
-    monatsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mon1, mon2) => intlRange(locale, +g(m, 1), mon1, +g(m, 3), mon2)),
+    monatsRegel(SPANNE_MONAT, [3], (m, mon) => intlRange(locale, +g(m, 1), mon, +g(m, 2), mon)),
+    // Kurz vor Lang: die abgekürzte Form passt auch auf die lange Regel.
+    // `intlRange` schreibt ohnehin immer aus, hier unterscheiden sie sich also
+    // nur im Muster.
+    monatsRegel(SPANNE_KURZ, [2, 4], (m, mon1, mon2) => intlRange(locale, +g(m, 1), mon1, +g(m, 3), mon2)),
+    monatsRegel(SPANNE_LANG, [2, 4], (m, mon1, mon2) => intlRange(locale, +g(m, 1), mon1, +g(m, 3), mon2)),
     [/^mit (.+)$/, m => ex.mit(g(m, 1))],
     [/^in (\d+) Tagen$/, m => ex.tage(g(m, 1))],
     [/^(\d+) Zuteilungen$/, m => ex.zut(g(m, 1))],
@@ -285,12 +314,18 @@ export function makeTr(code: Lang): (s: string) => string {
       const tag = L.wda[wd]
       return tag ? `${tag} ${g(m, 2)}` : null
     }),
-    monatsRegel(/^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/, [3], (m, mon) => {
+    monatsRegel(SPANNE_MONAT, [3], (m, mon) => {
       const monat = L.mon[mon]
       return monat ? L.range1(g(m, 1), g(m, 2), monat) : null
     }),
-    monatsRegel(/^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/, [2, 4], (m, mon1, mon2) => {
+    // Kurz vor Lang, und jede mit ihrer eigenen Namensliste: geschrieben wird
+    // zurück, was hereinkam — abgekürzt bleibt abgekürzt.
+    monatsRegel(SPANNE_KURZ, [2, 4], (m, mon1, mon2) => {
       const a = L.mona[mon1], b = L.mona[mon2]
+      return a && b ? L.range2(g(m, 1), a, g(m, 3), b) : null
+    }),
+    monatsRegel(SPANNE_LANG, [2, 4], (m, mon1, mon2) => {
+      const a = L.mon[mon1], b = L.mon[mon2]
       return a && b ? L.range2(g(m, 1), a, g(m, 3), b) : null
     }),
     ...verweisRegeln(code),

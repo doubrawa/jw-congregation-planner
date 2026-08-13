@@ -507,8 +507,14 @@ function fallbackOpening(): ImportedPart {
   }
 }
 
-/** Wochenend-Vorlage (nicht im Arbeitsheft): vom Koordinator zu füllen. */
-function weekendTemplate(range: string): ImportedMeeting {
+/**
+ * Wochenend-Vorlage (nicht im Arbeitsheft): vom Koordinator zu füllen.
+ *
+ * Durchweg deutsch — die App übersetzt beim Anzeigen. Exportiert, weil die
+ * Gedächtnismahl-Woche dieselbe Vorlage braucht: Ihr Wochenende findet statt,
+ * nur ihre Wochenseite gibt es nicht.
+ */
+export function weekendTemplate(range: string): ImportedMeeting {
   return {
     date: range,
     end: 'Ende ca. 11:45',

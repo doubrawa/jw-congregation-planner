@@ -5,9 +5,6 @@ import { istAusgefallen, abweichung } from './helpers'
 import { setAbweichung } from './meeting-edit'
 import type { Meeting, PartItem, Week } from './types'
 
-/** Zusammenkunftszeiten der Versammlung — Dienstag und Sonntag. */
-const ZEITEN = 'Di 19:00 · So 10:00'
-
 /**
  * T64 — der Anlass der Woche.
  *
@@ -185,38 +182,65 @@ describe('Gedächtnismahl: erstmals einstellbar', () => {
   /*
     Welche Zusammenkunft entfällt, hängt am Datum — das hat der Betreiber am
     8.8.2026 klargestellt: „wenn unter der Woche fällt diese Zusammenkunft aus,
-    wenn am Wochenende dann die Zusammenkunft am Wochenende". Beides ist
-    ableitbar: der Wochentag steht im Datum, die Zusammenkunftstage in den
-    Einstellungen. Hier: Dienstag und Sonntag.
+    wenn am Wochenende dann die Zusammenkunft am Wochenende".
+
+    **Nach Kategorie, nicht nach Tagesgleichheit.** Hier stand zuerst die
+    engere Regel — es entfiel die Zusammenkunft, deren *Tag* mit dem Mahl
+    zusammenfiel. Beim Zuschnitt von T65 an jw.org nachgemessen und widerlegt:
+    Das Arbeitsheft lässt die ganze Woche aus, sobald das Mahl auf einen
+    Werktag fällt (Ausgabe März/April 2026, Mahl Donnerstag, 2. April — die
+    Wochenseite fehlt), und lässt sie stehen, wenn es aufs Wochenende fällt
+    (März/April 2024, Mahl Sonntag, 24. März — alle Seiten da). Der Herausgeber
+    entscheidet das für alle Versammlungen zugleich; ihre Zusammenkunftstage
+    kennt er gar nicht. Deshalb braucht diese Regel sie auch nicht.
   */
-  it('fällt es auf den Tag unter der Woche, entfällt diese', () => {
-    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' }, ZEITEN)
+  it('fällt es auf einen Werktag, entfällt die Zusammenkunft unter der Woche', () => {
+    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' })
     expect(istAusgefallen(eine(ws), 'mid')).toBe(true) // 31.3.2026 ist ein Dienstag
     expect(istAusgefallen(eine(ws), 'we')).toBe(false)
   })
 
   it('fällt es aufs Wochenende, entfällt jene', () => {
-    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-04-05' }, ZEITEN)
+    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-04-05' })
     expect(istAusgefallen(eine(ws), 'we')).toBe(true) // 5.4.2026 ist ein Sonntag
     expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
   })
 
-  it('trifft es keinen der beiden Tage, entfällt keine', () => {
-    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-04-02' }, ZEITEN)
-    expect(istAusgefallen(eine(ws), 'mid')).toBe(false) // Donnerstag
+  /*
+    Der Fall, der die alte Regel widerlegt — und der reale: Das Mahl 2026 liegt
+    auf einem Donnerstag, die Versammlung kommt dienstags zusammen. Nach
+    Tagesgleichheit entfiele **keine**; das Arbeitsheft aber druckt für diese
+    Woche gar nichts, es gibt also nichts zu planen.
+  */
+  it('auch an einem Werktag, an dem die Versammlung gar nicht zusammenkommt', () => {
+    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-04-02' })
+    expect(istAusgefallen(eine(ws), 'mid')).toBe(true) // Donnerstag
+    expect(istAusgefallen(eine(ws), 'we')).toBe(false)
+  })
+
+  it('Samstag zählt zum Wochenende', () => {
+    // Die Grenze liegt zwischen Freitag (4) und Samstag (5) — nicht bei Sonntag.
+    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-04-04' })
+    expect(istAusgefallen(eine(ws), 'we')).toBe(true)
+    expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
+  })
+
+  it('und Freitag noch zur Woche', () => {
+    const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-04-03' })
+    expect(istAusgefallen(eine(ws), 'mid')).toBe(true)
     expect(istAusgefallen(eine(ws), 'we')).toBe(false)
   })
 
   it('eine Korrektur des Datums nimmt den alten Strich zurück', () => {
     // Sonst stünden nach „erst Dienstag, dann Sonntag" beide durchgestrichen da.
-    let ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' }, ZEITEN)
-    ws = setAnlassTermin(ws, 0, { von: '2026-04-05' }, ZEITEN)
+    let ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' })
+    ws = setAnlassTermin(ws, 0, { von: '2026-04-05' })
     expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
     expect(istAusgefallen(eine(ws), 'we')).toBe(true)
   })
 
   it('und das Aufheben des Anlasses beide', () => {
-    let ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' }, ZEITEN)
+    let ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' })
     ws = setAnlass(ws, 0, null)
     expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
     expect(istAusgefallen(eine(ws), 'we')).toBe(false)
@@ -242,35 +266,35 @@ describe('Termin: „bis" wird vorbelegt', () => {
   it('übernimmt beim Eintragen von „von" denselben Wert', () => {
     // Der eintägige Kreiskongress braucht damit keine zweite Eingabe — und
     // beide Werte sind trotzdem gefüllt: nirgends der Sonderfall „kein Ende".
-    const ws = setAnlassTermin(kongress(), 0, { von: '2026-10-17' }, ZEITEN)
+    const ws = setAnlassTermin(kongress(), 0, { von: '2026-10-17' })
     expect(eine(ws).anlass?.von).toBe('2026-10-17')
     expect(eine(ws).anlass?.bis).toBe('2026-10-17')
   })
 
   it('überschreibt ein späteres Ende **nicht**', () => {
     // Eine Korrektur des Anfangs darf die Eingabe des Planers nicht verwerfen.
-    let ws = setAnlassTermin(kongress(), 0, { von: '2026-10-16' }, ZEITEN)
-    ws = setAnlassTermin(ws, 0, { bis: '2026-10-18' }, ZEITEN)
-    ws = setAnlassTermin(ws, 0, { von: '2026-10-15' }, ZEITEN)
+    let ws = setAnlassTermin(kongress(), 0, { von: '2026-10-16' })
+    ws = setAnlassTermin(ws, 0, { bis: '2026-10-18' })
+    ws = setAnlassTermin(ws, 0, { von: '2026-10-15' })
     expect(eine(ws).anlass?.bis).toBe('2026-10-18')
   })
 
   it('zieht ein Ende **vor** dem neuen Anfang mit', () => {
-    let ws = setAnlassTermin(kongress(), 0, { von: '2026-10-16' }, ZEITEN)
-    ws = setAnlassTermin(ws, 0, { bis: '2026-10-18' }, ZEITEN)
-    ws = setAnlassTermin(ws, 0, { von: '2026-10-20' }, ZEITEN)
+    let ws = setAnlassTermin(kongress(), 0, { von: '2026-10-16' })
+    ws = setAnlassTermin(ws, 0, { bis: '2026-10-18' })
+    ws = setAnlassTermin(ws, 0, { von: '2026-10-20' })
     expect(eine(ws).anlass?.bis).toBe('2026-10-20')
   })
 
   it('das Gedächtnismahl trägt Datum und Uhrzeit', () => {
     let ws = setAnlass([makeWeek()], 0, 'mem')
-    ws = setAnlassTermin(ws, 0, { von: '2026-04-01', zeit: '19:30' }, ZEITEN)
+    ws = setAnlassTermin(ws, 0, { von: '2026-04-01', zeit: '19:30' })
     expect(eine(ws).anlass).toEqual({ art: 'mem', von: '2026-04-01', bis: '2026-04-01', zeit: '19:30' })
   })
 
   it('ohne Anlass gibt es nichts zu terminieren', () => {
     const ws = [makeWeek()]
-    expect(setAnlassTermin(ws, 0, { von: '2026-10-17' }, ZEITEN)).toBe(ws)
+    expect(setAnlassTermin(ws, 0, { von: '2026-10-17' })).toBe(ws)
   })
 })
 
@@ -278,7 +302,7 @@ describe('Ränder', () => {
   it('eine Woche, die es nicht gibt, ändert nichts', () => {
     const ws = [makeWeek()]
     expect(setAnlass(ws, 7, 'kongress')).toBe(ws)
-    expect(setAnlassTermin(ws, 7, { von: '2026-10-17' }, ZEITEN)).toBe(ws)
+    expect(setAnlassTermin(ws, 7, { von: '2026-10-17' })).toBe(ws)
   })
 
   it('derselbe Anlass noch einmal gesetzt ist keine Änderung', () => {
