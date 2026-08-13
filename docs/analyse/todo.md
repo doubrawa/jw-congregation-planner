@@ -2204,6 +2204,21 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 
+> ✅ **Beim Betreiber erledigt (13. August 2026)** — T64, T65 und T66 sind
+> vollständig scharf:
+>
+> 1. **[migration-018](../../supabase/migration-018-position-entfaellt.sql) ist
+>    eingespielt** → `position` ist aus `weeks` und `fs_weeks` gelöscht, die
+>    verbliebenen Positions-`task_key` sind auf die Kennung gehoben. Damit gibt
+>    es die Ordnungszahl als Identität nirgends mehr (T66).
+> 2. **`import-week` ist neu deployt** → die Woche des Gedächtnismahls wird
+>    erkannt und angelegt (T65). `send-reminders` und `substitute` liefen schon
+>    aus der Runde davor.
+>
+> Reihenfolge eingehalten: erst der Seiten-Deploy (T66 Stufe 3), dann die
+> Migration. Andersherum hätte der noch laufende Client `select position, data`
+> geholt und gar nichts mehr bekommen.
+
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:
 >
