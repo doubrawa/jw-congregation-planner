@@ -541,18 +541,29 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         mid: { ...action.week.mid, end: endeAusStartzeit(zeiten.mid, action.week.mid.end) },
         we: { ...action.week.we, end: endeAusStartzeit(zeiten.we, action.week.we.end) },
       }
+      // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
+      // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
+      // ohne Ratgeber — die Klasse würde ab dem nächsten Import verschwinden.
+      let weeks = syncAuxSlots([...state.weeks, week], state.auxClass)
+      // Bringt die Woche einen Gedächtnismahl-Termin mit (T65), wird der
+      // Ausfall **hier** abgeleitet und nicht im Import. Die Regel — Werktag
+      // trifft die Zusammenkunft unter der Woche, Wochenende die andere —
+      // steht damit an einer Stelle; ein zweites Mal in eine Edge Function
+      // geschrieben war sie schon einmal die Ursache eines Fehlers (B8/T40).
+      const mem = week.anlass?.art === 'mem' ? week.anlass.von : undefined
+      if (mem) weeks = setAnlassTermin(weeks, weeks.length - 1, { von: mem })
       return {
         ...state,
-        // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
-        // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
-        // ohne Ratgeber — die Klasse würde ab dem nächsten Import verschwinden.
-        weeks: syncAuxSlots([...state.weeks, week], state.auxClass),
+        weeks,
         importing: false,
         notifs: pushNotif(
           state.notifs,
           'import',
           'Programm importiert',
-          `${week.range} · ${week.book} — ohne Zuteilungen`,
+          // Die Gedächtnismahl-Woche hat kein Bibellese-Kapitel — sie hat gar
+          // keine Arbeitsheft-Seite. Ohne diese Bedingung stünde in der Glocke
+          // ein leeres Atom zwischen zwei Trennern.
+          [week.range, week.book].filter(Boolean).join(' · ') + ' — ohne Zuteilungen',
         ),
         toast: toastKey(state, 'toastImportiert'),
       }
@@ -944,7 +955,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'setAnlassTermin': {
       if (!state.weeks[state.week]) return state
-      return { ...state, weeks: setAnlassTermin(state.weeks, state.week, action.patch, state.congregation.meetings) }
+      return { ...state, weeks: setAnlassTermin(state.weeks, state.week, action.patch) }
     }
     case 'setPartThema':
       return {

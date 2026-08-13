@@ -20,7 +20,7 @@ import {
   FS_BASE,
 } from '../data/demo'
 import { LABEL_VORTRAG } from '../data/constants'
-import { displayName, isSong, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
@@ -440,6 +440,56 @@ describe('Import (Demo)', () => {
     const week = { ...s.weeks[0], range: 'Testwoche' }
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(hatAuxKlasse(next.weeks.at(-1)!.mid)).toBe(true)
+  })
+
+  /*
+    T65 — die Gedächtnismahl-Woche kommt aus dem Import mit ihrem Anlass, aber
+    **ohne** Strich. Welche Zusammenkunft entfällt, leitet der Client ab; die
+    Edge Function tut es ausdrücklich nicht. So steht die Regel an einer Stelle
+    — sie ein zweites Mal serverseitig zu führen war schon einmal die Ursache
+    eines Fehlers (B8/T40).
+  */
+  it('eine importierte Gedächtnismahl-Woche bekommt ihren Ausfall abgeleitet', () => {
+    const s = makeState()
+    const week: Week = {
+      ...s.weeks[0]!,
+      range: '30. März–5. April',
+      start: '2026-03-30',
+      anlass: { art: 'mem', von: '2026-04-02' }, // Donnerstag
+      mem: true,
+    }
+    const next = reducer(s, { type: 'addImportedWeek', week })
+    const neu = next.weeks.at(-1)!
+    expect(istAusgefallen(neu, 'mid')).toBe(true)
+    expect(istAusgefallen(neu, 'we')).toBe(false)
+  })
+
+  it('fällt das Mahl aufs Wochenende, entfällt jene', () => {
+    const s = makeState()
+    const week: Week = {
+      ...s.weeks[0]!,
+      start: '2024-03-18',
+      anlass: { art: 'mem', von: '2024-03-24' }, // Sonntag — die Woche gibt es im Heft
+      mem: true,
+    }
+    const neu = reducer(s, { type: 'addImportedWeek', week }).weeks.at(-1)!
+    expect(istAusgefallen(neu, 'we')).toBe(true)
+    expect(istAusgefallen(neu, 'mid')).toBe(false)
+  })
+
+  it('eine gewöhnliche Woche bleibt ungestrichen', () => {
+    const s = makeState()
+    const neu = reducer(s, { type: 'addImportedWeek', week: { ...s.weeks[0]!, range: 'X' } }).weeks.at(-1)!
+    expect(istAusgefallen(neu, 'mid')).toBe(false)
+    expect(istAusgefallen(neu, 'we')).toBe(false)
+  })
+
+  it('ohne Bibellese-Kapitel bleibt kein leeres Atom in der Meldung stehen', () => {
+    // Die Gedächtnismahl-Woche hat keins — sie hat gar keine Arbeitsheft-Seite.
+    const s = makeState()
+    const week: Week = { ...s.weeks[0]!, range: '30. März–5. April', book: '' }
+    const next = reducer(s, { type: 'addImportedWeek', week })
+    expect(next.notifs[0]!.text).toBe('30. März–5. April — ohne Zuteilungen')
   })
 
   it('mergeWeekAlt mischt Sprachvarianten; stopImport beendet', () => {

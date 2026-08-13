@@ -20,6 +20,13 @@
 
 import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
 import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
+import {
+  gedaechtnismahlDatum,
+  gedaechtnismahlWoche,
+  istLeseprogramm,
+  leseprogrammJahr,
+  montagDerWoche,
+} from './gedaechtnismahl.ts'
 
 declare const Deno: { serve: (handler: (req: Request) => Promise<Response> | Response) => void }
 
@@ -61,8 +68,58 @@ function weekStart(url: string): Date | null {
   return null
 }
 
+/**
+ * Eine Woche, die das Arbeitsheft anbietet.
+ *
+ * `url === null` heißt: **es gibt keine Seite** — die Woche des
+ * Gedächtnismahls, die das Heft auslässt (siehe gedaechtnismahl.ts). `mem`
+ * trägt das Datum des Mahls, sobald es in diese Woche fällt; das gilt auch für
+ * Wochen, die ganz normal eine Seite haben (Mahl am Wochenende).
+ */
+interface Wocheneintrag {
+  start: Date
+  url: string | null
+  mem?: string
+}
+
+/**
+ * Das Gedächtnismahl dieser Ausgabe in die Wochenliste eintragen.
+ *
+ * Gemessen statt geraten: Steht auf der Ausgabenseite eine
+ * Bibelleseprogramm-Seite, nennt sie den Tag ausgeschrieben. Aus ihm ergibt
+ * sich der Montag seiner Woche — und erst der Vergleich mit den gefundenen
+ * Wochenseiten sagt, ob eine **fehlt**.
+ *
+ * Eine Lücke einfach an ihrem Abstand zu erkennen wäre verlockend und falsch:
+ * Zwischen zwei Ausgaben klafft ebenfalls eine, wenn die folgende noch nicht
+ * veröffentlicht ist — und in Jahren mit Mahl am Wochenende gibt es gar keine.
+ */
+async function mitGedaechtnismahl(slug: string, seite: string, wochen: Wocheneintrag[]): Promise<void> {
+  const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${slug}/[^"'>]*`, 'g')
+  const pfad = [...seite.matchAll(re)].map((m) => m[0]).find(istLeseprogramm)
+  if (!pfad) return
+  const jahr = leseprogrammJahr(pfad)
+  if (!jahr) return
+
+  let mem: string | null = null
+  try {
+    mem = gedaechtnismahlDatum(await fetchText(BASE + pfad), jahr)
+  } catch {
+    return // Seite nicht abrufbar: dann eben ohne — der Import bricht deswegen nicht ab
+  }
+  if (!mem) return
+
+  const montag = montagDerWoche(mem)
+  const vorhanden = wochen.find((w) => w.start.toISOString().slice(0, 10) === montag)
+  if (vorhanden) {
+    vorhanden.mem = mem // Mahl am Wochenende: die Woche gibt es, sie bekommt nur den Anlass
+    return
+  }
+  wochen.push({ start: new Date(`${montag}T00:00:00Z`), url: null, mem })
+}
+
 /** Kommende Wochen (immer aus dem deutschen Arbeitsheft), nach Startdatum. */
-async function discoverWeeks(): Promise<{ start: Date; url: string }[]> {
+async function discoverWeeks(): Promise<Wocheneintrag[]> {
   const index = await fetchText(`${BASE}/de/bibliothek/jw-arbeitsheft/`)
   const now = new Date()
   const periods = [...new Set([...index.matchAll(/jw-arbeitsheft\/([a-zä]+-[a-zä]+-\d{4}-mwb)\//g)].map((m) => m[1]))]
@@ -75,7 +132,7 @@ async function discoverWeeks(): Promise<{ start: Date; url: string }[]> {
     .sort((a, b) => a.year - b.year || a.endMonth - b.endMonth)
     .slice(0, 3)
 
-  const weeks: { start: Date; url: string }[] = []
+  const weeks: Wocheneintrag[] = []
   for (const p of periods) {
     const page = await fetchText(`${BASE}/de/bibliothek/jw-arbeitsheft/${p.slug}/`)
     const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${p.slug}/[^"'>]*Zusammenkunft-[^"'>]*`, 'g')
@@ -83,6 +140,9 @@ async function discoverWeeks(): Promise<{ start: Date; url: string }[]> {
       const start = weekStart(href)
       if (start) weeks.push({ start, url: `${BASE}${href}` })
     }
+    // Danach, nicht davor: erst wenn die Seiten dieser Ausgabe stehen, ist zu
+    // sehen, ob die Woche des Mahls unter ihnen fehlt.
+    await mitGedaechtnismahl(p.slug, page, weeks)
   }
   weeks.sort((a, b) => a.start.getTime() - b.start.getTime())
   return weeks
@@ -218,6 +278,8 @@ Deno.serve(async (req: Request) => {
 
     let weekUrl = url
     let start = url ? weekStart(url) : null
+    /** Datum des Gedächtnismahls, wenn es in diese Woche fällt. */
+    let mem: string | undefined
 
     if (!weekUrl) {
       const weeks = await discoverWeeks()
@@ -226,8 +288,9 @@ Deno.serve(async (req: Request) => {
         // hinzugefügte Programmsprachen für bereits geladene Wochen zu holen).
         const hit = weeks.find((w) => w.start.toISOString().slice(0, 10) === startParam)
         if (!hit) return json({ error: `Woche ${startParam} nicht (mehr) im Arbeitsheft gefunden.` }, 404)
-        weekUrl = hit.url
+        weekUrl = hit.url ?? undefined
         start = hit.start
+        mem = hit.mem
       } else {
         const now = new Date()
         const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
@@ -235,9 +298,23 @@ Deno.serve(async (req: Request) => {
         const cutoff = after ? new Date(after) : new Date(todayUtc - 6 * 864e5)
         const next = weeks.find((w) => w.start > cutoff) ?? weeks[weeks.length - 1]
         if (!next) return json({ error: 'Keine kommende Woche gefunden.' }, 404)
-        weekUrl = next.url
+        weekUrl = next.url ?? undefined
         start = next.start
+        mem = next.mem
       }
+    }
+
+    // Die Woche des Gedächtnismahls hat keine Seite (T65). Sie wird deshalb
+    // nicht geholt, sondern gebaut — Wochenend-Vorlage wie sonst, Zusammenkunft
+    // unter der Woche leer, Anlass samt Datum gesetzt. Das Wochenend-Studium
+    // trägt der gemeinsame Weg unten ein; die Sprachvarianten entfallen, denn
+    // es gibt keine Seite, aus der sie sich holen ließen.
+    if (!weekUrl) {
+      if (!start || !mem) return json({ error: 'Keine kommende Woche gefunden.' }, 404)
+      const memWeek = gedaechtnismahlWoche(start.toISOString().slice(0, 10), mem)
+      const memStudy = await studyArticle(start, lang)
+      if (memStudy) applyStudy(memWeek, memStudy)
+      return json({ week: { ...memWeek, lang } })
     }
 
     const germanHtml = await fetchText(weekUrl)
@@ -248,10 +325,22 @@ Deno.serve(async (req: Request) => {
       html = await fetchText(loc)
     }
 
-    const week: ImportedWeek & { start?: string; lang?: string; alt?: Record<string, ImportedWeek> } =
-      parseWorkbookWeek(html)
+    const week: ImportedWeek & {
+      start?: string
+      lang?: string
+      alt?: Record<string, ImportedWeek>
+      anlass?: { art: 'mem'; von: string }
+      mem?: true
+    } = parseWorkbookWeek(html)
     if (start) week.start = start.toISOString().slice(0, 10)
     week.lang = lang
+    // Fällt das Mahl aufs Wochenende, gibt es die Wochenseite ganz normal —
+    // nur die Zusammenkunft am Wochenende entfällt. Der Anlass wird trotzdem
+    // gesetzt; welche Zusammenkunft er streicht, leitet der Client daraus ab.
+    if (mem) {
+      week.anlass = { art: 'mem', von: mem }
+      week.mem = true
+    }
 
     // Aufgabenart der Schülerteile (1 oder 2 Personen, männlich) immer aus der
     // deutschen Fassung ableiten — das Arbeitsheft ist weltweit strukturgleich,

@@ -1109,7 +1109,7 @@ Zuteilungen"; eine wieder angeschaltet → „3 offene", Anlass bleibt;
 Kreisaufseher → Sektion DIENSTVORTRAG mit `data-farbe="gold"` zwischen Studium
 und Abschluss.
 
-### T65 · Die Gedächtnismahl-Woche fehlt im Arbeitsheft 🏗 — aufgenommen 8. August 2026
+### T65 · Die Gedächtnismahl-Woche fehlt im Arbeitsheft 🏗 ✅ erledigt (13. August 2026)
 Vom Betreiber genannt und **an jw.org nachgemessen**: In der Woche des
 Gedächtnismahls steht im Arbeitsheft kein Programm — und zwar nicht ein leeres,
 sondern **gar keine Seite**.
@@ -1183,8 +1183,87 @@ sie **stillschweigend** an, ohne eigene Meldung.
 
 Die Positions-Falle oben war die erste Entscheidung beim Bauen — **solange**
 `position` die Kennung einer Woche war. Genau das war der eigentliche Mangel; er
-steht als **T66** und ist erledigt. T65 kann damit ohne Rücksicht auf die
+steht als **T66** und ist erledigt. T65 konnte damit ohne Rücksicht auf die
 Reihenfolge gebaut werden.
+
+#### Gebaut am 13. August 2026 — und beim Messen anders geworden
+
+**Die Lücke gibt es nicht in jedem Jahr.** Das war die Annahme im Zuschnitt
+oben („es gilt in jedem Jahr"), und sie hält der Messung nicht stand:
+
+| Ausgabe | Gedächtnismahl | Wochenseiten | Lücke |
+| --- | --- | --- | --- |
+| März/April 2024 | **Sonntag**, 24. März | 9 | **keine** |
+| März/April 2026 | **Donnerstag**, 2. April | 8 | 23.3. → 6.4. |
+
+Der Grund ist sauber und erklärt beides: Im Arbeitsheft steht **nur die
+Zusammenkunft unter der Woche**. Fällt das Mahl auf einen Werktag, entfällt
+genau diese — dann gibt es für die Woche nichts zu drucken. Fällt es aufs
+Wochenende, läuft sie normal, und die Seite ist da.
+
+Deshalb wird die Lücke **nicht an ihrem Abstand erkannt**. Das wäre verlockend
+und falsch: Zwischen zwei Ausgaben klafft ebenfalls eine, wenn die folgende noch
+nicht veröffentlicht ist. Stattdessen wird das Datum auf der
+Bibelleseprogramm-Seite gemessen — die es in **beiden** Jahren gibt —, und erst
+der Vergleich mit den gefundenen Wochenseiten sagt, ob eine fehlt.
+
+| Was | Wo |
+| --- | --- |
+| Datum messen, Woche erzeugen, Wochenkopf bilden | [import-week/gedaechtnismahl.ts](../../supabase/functions/import-week/gedaechtnismahl.ts) |
+| `discoverWeeks` trägt sie ein — als fehlende oder als vorhandene mit Anlass | [import-week/index.ts](../../supabase/functions/import-week/index.ts) |
+| `weekendTemplate` exportiert: das Wochenende findet statt | [import-week/parse.ts](../../supabase/functions/import-week/parse.ts) |
+| Der Ausfall wird **im Client** abgeleitet, nicht im Import | [app/reducer.ts](../../src/app/reducer.ts) |
+| 26 Tests auf die Messung, 4 auf den Import | [gedaechtnismahl.test.ts](../../supabase/functions/import-week/gedaechtnismahl.test.ts), [reducer.test.ts](../../src/app/reducer.test.ts) |
+
+**Der Ausfall bleibt an einer Stelle.** Die Edge Function setzt nur den Anlass
+samt Datum; welche Zusammenkunft er streicht, rechnet `setAnlassTermin` im
+Client. Die Regel ein zweites Mal serverseitig zu führen war schon einmal die
+Ursache eines Fehlers (B8/T40) — und sie steht ohnehin schon dort, seit T64.
+
+#### Zwei Korrekturen, die dabei anfielen
+
+**1. `memAusfall` aus T64 war zu eng.** Es ließ die Zusammenkunft entfallen,
+deren **Tag** mit dem Mahl zusammenfiel. Die Messung widerlegt das: 2026 fehlt
+das ganze Wochenprogramm — für **alle** Versammlungen, gleich an welchem Werktag
+sie zusammenkommen. Eine Versammlung mit Zusammenkunft am Dienstag hat für den
+2. April kein Programm, also kommt sie auch nicht zusammen. Richtig ist die
+Kategorie, und das ist genau der Satz des Betreibers vom 8.8.2026: Mahl Mo–Fr →
+die Zusammenkunft unter der Woche entfällt, Sa/So → die am Wochenende. Immer
+genau eine, nie keine. `setAnlassTermin` braucht die Zusammenkunftszeiten damit
+**gar nicht mehr** — der Parameter ist weg.
+
+**2. Wochen über den Monatswechsel wurden nie übersetzt.** Gemessen am
+Übersetzer:
+
+| Kopfzeile | Ergebnis (en) |
+| --- | --- |
+| `23.–29. März` | `March 23–29` ✓ |
+| `27. April–3. Mai` | `27. April–3. Mai` ✗ |
+| `28. Sep – 4. Okt` | `Sep 28 – Oct 4` ✓ |
+
+Die mittlere ist die Form, die **jw.org tatsächlich liefert** (nachgemessen an
+der Ausgabe März/April 2026); die untere steht nur in den Demo- und
+Vorlagenwochen dieser App — deshalb passte die Regel zu den eigenen Daten und
+nicht zu den fremden. Rund **jede vierte Woche** trug damit in 33 Sprachen eine
+deutsche Kopfzeile. Nichts stürzte ab, nichts fiel auf. Der Kopf der
+Gedächtnismahl-Woche 2026 heißt „30. März–5. April" — genau diese Form —, also
+fiel es hier mit. Die drei Muster stehen jetzt beisammen und werden von **beiden**
+Übersetzer-Pfaden benutzt; ein Test verlangt für jede der 33 Sprachen eine
+Übersetzung, nicht bloß „wirft nicht".
+
+**Gegenprobe:** 13 Mutationen, 13-mal rot.
+
+> **Was die Tests nicht abdecken, und das steht hier absichtlich:**
+> `discoverWeeks` und der Handler in `import-week/index.ts` haben keinen
+> Test-Aufbau — sie holen Seiten, und ein Test dagegen wäre entweder ein
+> Netzzugriff oder eine nachgebaute jw.org. Die Bausteine sind einzeln geprüft;
+> ihr Zusammenspiel wurde stattdessen **gegen die echten Seiten gemessen** (März/
+> April 2024 → nur Anlass setzen, März/April 2026 → Woche erzeugen, Januar/
+> Februar 2026 → gar keine Leseprogramm-Seite). Ein Test-Aufbau für den Handler
+> wäre eine eigene Aufgabe.
+
+> **`import-week` muss neu deployt werden**, sonst ändert sich nichts:
+> `npx supabase functions deploy import-week`
 
 ### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 ✅ erledigt (drei Stufen)
 Beim Zuschnitt von T65 aufgefallen und vom Betreiber sofort als Mangel erkannt:
@@ -2062,14 +2141,15 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 Stand 8. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**64 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 neu
-aufgenommen und offen (T63 zurückgestellt, T65 fachlich geklärt).** **T66** —
-der strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
-erledigt: eine Woche ist ihr Datum, nicht ihre Nummer.
-Der Testbestand ist von 727 auf 1448 gewachsen; jede Korrektur hat einen Test,
+**65 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 neu
+aufgenommen und offen (T63, vom Betreiber zurückgestellt).** **T66** — der
+strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
+erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
+zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
+Der Testbestand ist von 727 auf 1514 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
 
@@ -2123,7 +2203,6 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **Phase 6** | T65 | Neu, fachlich geklärt. Die Gedächtnismahl-Woche fehlt im Arbeitsheft ganz — der Import überspringt sie, und das Wochenende dieser Woche lässt sich nicht planen. An jw.org nachgemessen (März/April 2026). |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:

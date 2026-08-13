@@ -18,7 +18,6 @@
  * der Kongress nur das Wochenende frisst.
  */
 
-import { meetingDayOffsets } from './meeting-dates'
 import { setAbweichung, setDienstwoche } from './meeting-edit'
 import type { Anlass, AnlassArt, MeetingKey, Week } from './types'
 
@@ -85,7 +84,6 @@ export function setAnlassTermin(
   weeks: Week[],
   wi: number,
   patch: Partial<Anlass>,
-  meetings: string,
 ): Week[] {
   const week = weeks[wi]
   const art = anlassArt(week)
@@ -101,29 +99,34 @@ export function setAnlassTermin(
 
   const next = [...weeks]
   next[wi] = { ...week, anlass: bereinigt }
-  return art === 'mem' && bereinigt.von ? memAusfall(next, wi, bereinigt.von, meetings) : next
+  return art === 'mem' && bereinigt.von ? memAusfall(next, wi, bereinigt.von) : next
 }
 
 /**
- * Beim Gedächtnismahl entfällt **die** Zusammenkunft, auf deren Tag es fällt.
+ * Beim Gedächtnismahl entfällt **eine** Zusammenkunft — die unter der Woche,
+ * wenn das Mahl auf Montag bis Freitag fällt, sonst die am Wochenende.
  *
- * Das ist ableitbar und muss nicht geraten werden: Der Wochentag steht im
- * Datum des Mahls, die Zusammenkunftstage stehen in den Einstellungen. Fällt
- * das Mahl auf den Tag unter der Woche, entfällt diese; fällt es aufs
- * Wochenende, jene. Trifft es keinen der beiden Tage, entfällt keine — dann
- * verdrängt das Mahl nichts.
+ * **Nicht die, deren Tag mit dem Mahl zusammenfällt.** Genau das stand hier
+ * zuerst, und es ist falsch: Das Arbeitsheft lässt die Woche des Mahls
+ * vollständig aus, sobald es auf einen Werktag fällt — nachgemessen an der
+ * Ausgabe März/April 2026 (Mahl Donnerstag, 2. April; die Wochenseite
+ * 30. März – 5. April fehlt) gegen März/April 2024 (Mahl Sonntag, 24. März;
+ * alle Seiten da). Diese Entscheidung trifft der Herausgeber **für alle
+ * Versammlungen zugleich**, ohne ihre Zusammenkunftstage zu kennen. Eine
+ * Versammlung, die dienstags zusammenkommt, hat für den 2. April kein
+ * Programm — sie kommt also auch nicht zusammen.
  *
  * Die jeweils andere wird ausdrücklich **ent**strichen: Korrigiert der Planer
  * das Datum von einem Dienstag auf einen Sonntag, stünden sonst beide
  * durchgestrichen da.
  */
-function memAusfall(weeks: Week[], wi: number, iso: string, meetings: string): Week[] {
+function memAusfall(weeks: Week[], wi: number, iso: string): Week[] {
   const versatz = wochentagVersatz(iso)
   if (versatz === null) return weeks
-  const tage = meetingDayOffsets(meetings)
+  const faelltAus: MeetingKey = versatz <= 4 ? 'mid' : 'we' // 0 = Montag … 6 = Sonntag
   let next = weeks
   for (const tab of BEIDE) {
-    next = setAbweichung(next, wi, tab, { cancelled: tage[tab] === versatz ? true : undefined })
+    next = setAbweichung(next, wi, tab, { cancelled: tab === faelltAus ? true : undefined })
   }
   return next
 }
