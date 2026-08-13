@@ -122,11 +122,13 @@ describe('Lade-Migration: Kennungen nachtragen', () => {
     expect(zweit.confirmations).toBe(erst.confirmations)
   })
 
-  it('lässt Platzhalter-Wochen in Ruhe', () => {
-    // Sie stehen für nicht geladene Wochen; ihre echten Daten liegen in der
-    // Datenbank und dürfen keine Kennungen aus dem Nichts bekommen.
-    const stub: Week = { range: '', book: '', start: '2026-09-07', current: false, stub: true, mid: { date: '', end: '', sections: [], helpers: {} }, we: { date: '', end: '', sections: [], helpers: {} } }
-    const weeks = [stub]
+  it('eine Woche ohne Programm bleibt unangetastet', () => {
+    // Bis T66 war das der Platzhalter-Fall: Wochen außerhalb des Ladefensters
+    // standen leer im Array, damit der Index die Datenbank-Position blieb, und
+    // durften keine Kennungen aus dem Nichts bekommen. Die Platzhalter sind
+    // weg — eine leere Zusammenkunft bleibt trotzdem eine leere.
+    const leer: Week = { range: '', book: '', start: '2026-09-07', current: false, mid: { date: '', end: '', sections: [], helpers: {} }, we: { date: '', end: '', sections: [], helpers: {} } }
+    const weeks = [leer]
     expect(migrateItemIds(weeks, {}).weeks).toBe(weeks)
   })
 

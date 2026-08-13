@@ -413,9 +413,10 @@ export interface Week {
   /**
    * **Die Kennung der Woche** (T66): ihr Montag als ISO-Datum, „2026-09-07".
    *
-   * Nicht die Position im Array — die ist eine Ordnungszahl und war bis T66
-   * zugleich Kennung, mit allem, was daran hängt (`task_key`, `Week.stub`, jede
-   * Einfügung in der Mitte). Eine Woche *ist* ihre Kalenderwoche.
+   * Nicht die Position im Array — die war bis T66 zugleich Kennung, mit allem,
+   * was daran hing (`task_key`, Platzhalter für nicht geladene Wochen, jede
+   * Einfügung in der Mitte). Eine Woche *ist* ihre Kalenderwoche; der Index
+   * sagt seither nur noch, was vor was kommt.
    *
    * **Immer Montag**, und das ist keine gewählte Konvention: jw.org definiert
    * die Programmwoche selbst als Montag bis Sonntag — „2.–8. März 2026", und
@@ -474,23 +475,6 @@ export interface Week {
    * Struktur bleiben kanonisch (siehe localizedWeek in data/localize.ts).
    */
   alt?: Record<string, Week>
-  /**
-   * Platzhalter für eine Woche, die nicht geladen wurde (älter als das
-   * Ladefenster, siehe WEEK_LIMIT in lib/data.ts).
-   *
-   * Der Platz im Array MUSS erhalten bleiben, weil der Index zugleich die
-   * `position` in der Datenbank ist und in jedem gespeicherten `task_key`
-   * steckt. Würde man nur die geladenen Wochen durchnummerieren, zeigten alle
-   * bestehenden Bestätigungen auf die falsche Woche. Der Platzhalter ist leer,
-   * trägt also nirgends etwas bei — und wird **nie gespeichert** (siehe
-   * saveWeek), damit er die echte Zeile in der Datenbank nicht überschreibt.
-   *
-   * T37 hat den Schlüssel *innerhalb* der Zusammenkunft von der Position gelöst
-   * (`"60|mid|part|k3f9x|0"` statt `"60|mid|part|2|1|0"`) — die **Woche** steht
-   * weiterhin vorn drin. Der Platzhalter bleibt deshalb nötig; nur seine
-   * Begründung ist schmaler geworden.
-   */
-  stub?: true
 }
 
 /**

@@ -23,7 +23,6 @@ const emptyData: CongregationData = {
   services: [],
   groups: [],
   weeks: [],
-  weekFrom: 0,
   fsRules: [],
   fsWeeks: [],
   fsBase: null,

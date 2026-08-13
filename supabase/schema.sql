@@ -96,10 +96,11 @@ alter table public.persons
 create table if not exists public.weeks (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  position        integer not null,                 -- 0 = älteste geladene Woche
-  -- Kennung der Woche (T66): ihr Montag. Nicht die Position -- die ist eine
-  -- Ordnungszahl. Immer Montag, weil jw.org die Programmwoche selbst so
-  -- definiert ("2.-8. Maerz 2026"). Siehe migration-017.
+  -- Kennung der Woche (T66): ihr Montag. Keine Ordnungszahl -- die stand hier
+  -- bis migration-018 als `position` daneben und war zugleich Kennung, mit
+  -- allem, was daran hing (`task_key`, Platzhalter, jede Einfuegung in der
+  -- Mitte). Immer Montag, weil jw.org die Programmwoche selbst so definiert
+  -- ("2.-8. Maerz 2026"). Sortiert wird danach.
   start           date not null,
   data            jsonb not null,                   -- Week-Objekt aus src/data/types.ts
   -- Stand der Zeile. Wer schreibt, nennt den Stand, auf dem seine Fassung
@@ -107,8 +108,10 @@ create table if not exists public.weeks (
   -- schneller und der Schreibvorgang findet keine Zeile. Gesetzt wird er vom
   -- Trigger, nicht vom Client — sonst schriebe man sich daran vorbei.
   updated_at      timestamptz not null default now(),
-  unique (congregation_id, position)
+  unique (congregation_id, start)
 );
+
+create index if not exists weeks_start_idx on public.weeks (congregation_id, start);
 
 -- Setzt `updated_at` bei jedem Update. Allgemein gehalten, damit dieselbe
 -- Funktion später weitere Tabellen bedienen kann.
@@ -193,15 +196,15 @@ create table if not exists public.fs_rules (
 create table if not exists public.fs_weeks (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  position        integer not null,                 -- wie weeks.position
   start           date not null,                    -- wie weeks.start (T66)
   data            jsonb not null,                   -- FsInstance[]
-  unique (congregation_id, position),
   unique (congregation_id, start)
 );
 
 create index if not exists fs_weeks_congregation_idx
   on public.fs_weeks (congregation_id);
+create index if not exists fs_weeks_start_idx
+  on public.fs_weeks (congregation_id, start);
 
 -- Versand-Tagebuch der Erinnerungen: send-reminders trägt ein, wem es an
 -- welchem Tag welche Art geschickt hat, und überspringt beim zweiten Lauf am

@@ -370,13 +370,13 @@ function pendingOfFsWeek(
  * Unbestätigte Zuteilungen; task_key-Schema wie partTaskKey/helperTaskKey.
  *
  * Vorn steht seit T66 der **Montag der Woche** statt ihrer Position. Der
- * Positions-Schlüssel wird weiterhin mitgeprüft: Bestätigungen aus der Zeit
- * davor stellt der Client beim nächsten Laden um (migrateTaskKeyWeeks) — bis
- * dahin dürfen sie nicht als „unbestätigt" gelten und Erinnerungen auslösen.
+ * Positions-Schlüssel wurde eine Zeit lang mitgeprüft; seit Stufe 3 nicht mehr
+ * — migration-018 hat den Rest umgeschrieben und die Spalte gelöscht, an der er
+ * hing. Was jetzt noch positionsförmig wäre, zeigt auf eine Woche, die es nicht
+ * gibt.
  */
 function pendingOfMeeting(
   woche: string,
-  wi: number,
   tab: 'mid' | 'we',
   meeting: Meeting,
   services: ServiceRow[],
@@ -401,17 +401,11 @@ function pendingOfMeeting(
           const slot = names[ni]
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
           // Schlüssel über die stabile Kennung des Punkts, sonst über seine
-          // Position (T37) — dieselbe Regel wie `slotTaskKey` im Client. Die
-          // Kennung trägt jede Woche, die einmal geladen wurde; Wochen davor
-          // behalten ihren Positions-Schlüssel, bis die Lade-Migration sie
-          // erreicht. Beide Formen werden geprüft, damit in der Zwischenzeit
-          // keine Bestätigung übersehen wird und doppelt erinnert wird.
+          // Position **innerhalb** der Zusammenkunft (T37) — dieselbe Regel wie
+          // `slotTaskKey` im Client. Beide Formen werden geprüft, weil Punkte
+          // ohne `iid` erst beim nächsten Laden eine bekommen.
           const posKey = `${woche}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
           const idKey = item.iid ? `${woche}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
-          // Altbestand, noch nicht umgestellt (siehe Kopf).
-          const altPos = `${wi}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
-          const altId = item.iid ? `${wi}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
-          if (conf.has(altPos) || (altId && conf.has(altId))) continue
           if (conf.has(posKey) || (idKey !== null && conf.has(idKey))) continue
           const rolle = slot.rolle ?? ''
           const title = item.title ?? 'Zuteilung'
@@ -426,7 +420,7 @@ function pendingOfMeeting(
   }
   // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
   const ratgeber = meeting.auxRatgeber
-  if (ratgeber?.name && !conf.has(`${woche}|${tab}|ratgeber`) && !conf.has(`${wi}|${tab}|ratgeber`)) {
+  if (ratgeber?.name && !conf.has(`${woche}|${tab}|ratgeber`)) {
     out.push({ name: ratgeber.name, pid: ratgeber.pid, label: ratgeber.rolle ?? 'Ratgeber' })
   }
   for (const svc of services) {
@@ -436,7 +430,6 @@ function pendingOfMeeting(
       const name = helperName(arr[pos])
       if (!name) continue // unbesetzter Platz
       if (conf.has(`${woche}|${tab}|helper|${svc.key}|${pos}`)) continue
-      if (conf.has(`${wi}|${tab}|helper|${svc.key}|${pos}`)) continue // Altbestand
       out.push({ name, pid: helperPid(arr[pos]), label: svc.name })
     }
   }
@@ -501,17 +494,19 @@ Deno.serve(async (req: Request) => {
       const zeiten = meetingTimesOf(cong.meeting_times)
 
       const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
-        rest<{ data: Week }[]>(
-          `weeks?select=position,data&congregation_id=eq.${cong.id}&order=position.asc`,
+        // Die Kennung kommt aus der Spalte, nicht aus dem Blob: `data->>'start'`
+        // fehlt bei Wochen, die vor migration-017 geschrieben wurden.
+        rest<{ start: string; data: Week }[]>(
+          `weeks?select=start,data&congregation_id=eq.${cong.id}&order=start.asc`,
         ),
-        // Treffpunkte: eigene Tabelle, gleiche Positionsnummer wie `weeks`.
-        rest<{ position: number; data: FsInstance[] }[]>(
-          `fs_weeks?select=position,data&congregation_id=eq.${cong.id}&order=position.asc`,
+        // Treffpunkte: eigene Tabelle, dieselbe Kennung wie `weeks`.
+        rest<{ start: string; data: FsInstance[] }[]>(
+          `fs_weeks?select=start,data&congregation_id=eq.${cong.id}&order=start.asc`,
         ).catch((err) => {
           // Fehlt die Tabelle (Migration nicht eingespielt), lieber die
           // Zusammenkünfte erinnern als den ganzen Lauf verlieren.
           console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
-          return [] as { position: number; data: FsInstance[] }[]
+          return [] as { start: string; data: FsInstance[] }[]
         }),
         rest<{ task_key: string; status: string }[]>(
           `confirmations?select=task_key,status&congregation_id=eq.${cong.id}`,
@@ -554,9 +549,10 @@ Deno.serve(async (req: Request) => {
       const mainByUser = new Map<string, string[]>() // Glocke nur an first/last-Tagen
       const unreachable: string[] = []
 
-      weeks.forEach((row, wi) => {
+      weeks.forEach((row) => {
         const week = row.data
-        if (!week?.start) return
+        const start = row.start
+        if (!week || !start) return
         for (const tab of ['mid', 'we'] as const) {
           const meeting = week[tab]
           if (!meeting) continue
@@ -570,12 +566,12 @@ Deno.serve(async (req: Request) => {
           // Abwesenheitsprüfung den echten nennen.
           const offset = versatzMitAbweichung(week.dev, tab, meeting.date, offsets[tab])
           const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
-          const days = daysUntil(week.start, offset, todayUTC)
+          const days = daysUntil(start, offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
-          for (const pend of pendingOfMeeting(week.start, wi, tab, meeting, services, conf)) {
-            const entry = `${reminderDate(week.start, offset, meeting, zeit, week.dev, tab)}: ${pend.label}`
+          for (const pend of pendingOfMeeting(start, tab, meeting, services, conf)) {
+            const entry = `${reminderDate(start, offset, meeting, zeit, week.dev, tab)}: ${pend.label}`
             const userId = userOf(pend)
             // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
             // Push-Abo. Wer ein Konto hat, bekommt trotzdem die persönliche
@@ -598,11 +594,10 @@ Deno.serve(async (req: Request) => {
       })
 
       // Treffpunkte: eigene Tabelle, eigener Wochentag je Eintrag. Das Datum
-      // kommt aus dem `start` DERSELBEN Wochenposition — beide Tabellen zählen
-      // die Wochen gleich (weeks.position / fs_weeks.position).
-      const startOf = new Map(weeks.map((row, wi) => [wi, row.data?.start]))
+      // steht seit T66 an der Zeile selbst — bis dahin musste es über die
+      // gleiche Positionsnummer aus `weeks` geholt werden.
       for (const row of fsWeeks) {
-        const start = startOf.get(row.position)
+        const start = row.start
         if (!start) continue
         for (const pend of pendingOfFsWeek(start, row.data ?? [], conf)) {
           const days = daysUntil(start, pend.offset, todayUTC)

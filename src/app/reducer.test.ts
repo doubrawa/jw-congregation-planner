@@ -28,7 +28,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
   return {
     screen: 'start',
     week: 0,
-    weekFrom: 0,
     tab: 'mid',
     theme: 'weiss',
     fontScale: 1,
@@ -167,12 +166,11 @@ describe('Wochennavigation', () => {
     expect(reducer(makeState({ week: 0 }), { type: 'nextWeek' }).week).toBe(1)
   })
 
-  it('geht nicht hinter die erste geladene Woche zurück (weekFrom)', () => {
-    // Vor weekFrom stehen nur Platzhalter nicht geladener Wochen — dort gibt es
-    // kein Programm zu zeigen.
-    const s = makeState({ week: 2, weekFrom: 2 })
-    expect(reducer(s, { type: 'prevWeek' }).week).toBe(2)
-    expect(reducer(makeState({ week: 3, weekFrom: 2 }), { type: 'prevWeek' }).week).toBe(2)
+  it('geht nicht vor die erste Woche zurück', () => {
+    // Bis T66 lag diese Grenze bei `weekFrom`: davor standen Platzhalter für
+    // Wochen außerhalb des Ladefensters, damit der Index die Datenbank-Position
+    // blieb. Die Platzhalter sind weg — die erste geladene Woche ist die erste.
+    expect(reducer(makeState({ week: 0 }), { type: 'prevWeek' }).week).toBe(0)
   })
 })
 
@@ -800,7 +798,6 @@ describe('hydrate / setDataStatus', () => {
     services: DEMO_SERVICES,
     groups: DEMO_GROUPS,
     weeks: buildDemoWeeks(),
-    weekFrom: 0,
     fsRules: DEMO_FS_RULES,
     fsWeeks: buildDemoFsWeeks(),
     fsBase: '2026-09-07',
@@ -833,7 +830,7 @@ describe('hydrate / setDataStatus', () => {
     try {
       const next = reducer(makeState({ week: 0 }), {
         type: 'hydrate',
-        payload: { ...payload, weeks: wochen, weekFrom: 0 },
+        payload: { ...payload, weeks: wochen },
       })
       expect(next.week).toBe(1)
     } finally {
@@ -848,7 +845,7 @@ describe('hydrate / setDataStatus', () => {
     try {
       const next = reducer(makeState(), {
         type: 'hydrate',
-        payload: { ...payload, weeks: wochen, weekFrom: 0 },
+        payload: { ...payload, weeks: wochen },
       })
       expect(next.week).toBe(0)
     } finally {

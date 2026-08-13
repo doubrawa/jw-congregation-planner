@@ -120,7 +120,6 @@ export function endenNachziehen(weeks: Week[], alt: string, neu: string): Week[]
 
   let geaendert = false
   const next = weeks.map((week) => {
-    if (week.stub) return week
     const kopie = { ...week }
     for (const tab of ['mid', 'we'] as const) {
       if (delta[tab] === 0) continue

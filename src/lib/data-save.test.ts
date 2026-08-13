@@ -71,23 +71,23 @@ describe('Upsert-Schreiber (onConflict)', () => {
     genau daran verlor der zweite Planer die Arbeit des ersten.
 
     Der Ablauf mit allen Verzweigungen steht in `week-konflikt.test.ts`. Hier
-    bleibt nur, was in diese Datei gehört: dass ein Platzhalter nie geschrieben
+    bleibt nur, was in diese Datei gehört: dass ohne Kennung nichts geschrieben
     wird, und dass es kein Upsert mehr ist.
   */
-  // `saveWeek` schreibt seit T39 über eine positionsweise Warteschlange und ist
-  // damit asynchron — die Kette läuft erst im nächsten Tick.
+  // `saveWeek` schreibt seit T39 über eine Warteschlange je Woche und ist damit
+  // asynchron — die Kette läuft erst im nächsten Tick.
   const geschrieben = () => new Promise((r) => setTimeout(r, 0))
 
   it('saveWeek ist kein Upsert mehr — der Stand entscheidet (T39)', async () => {
-    saveWeek('c1', 3, { range: 'X' } as Week)
+    saveWeek('c1', { range: 'X', start: '2026-09-07' } as Week)
     await geschrieben()
     expect(chain.from).toHaveBeenCalledWith('weeks')
     expect(chain.upsert).not.toHaveBeenCalled()
   })
-  it('saveWeek schreibt KEINE Platzhalter-Woche', async () => {
-    // An dieser Position steht in der Datenbank die echte, nur nicht geladene
-    // Woche — ein Schreibvorgang mit dem leeren Platzhalter würde sie löschen.
-    saveWeek('c1', 3, { range: '', stub: true } as Week)
+  it('saveWeek schreibt nichts ohne Kennung der Woche (T66)', async () => {
+    // Die Kennung sagt, welche Zeile gemeint ist. Ohne sie gibt es keine —
+    // und ein Schreibvorgang ins Ungefähre wäre schlimmer als keiner.
+    saveWeek('c1', { range: 'X', start: '' } as Week)
     await geschrieben()
     expect(chain.from).not.toHaveBeenCalledWith('weeks')
   })
@@ -102,9 +102,13 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.from).toHaveBeenCalledWith('fs_rules')
     expect(chain.upsert).toHaveBeenCalledWith({ congregation_id: 'c1', base: '2026-09-07', rules: [] }, { onConflict: 'congregation_id' })
   })
-  it('saveFsWeek → fs_weeks upsert je Position', () => {
-    saveFsWeek('c1', 2, [])
-    expect(chain.upsert).toHaveBeenCalledWith({ congregation_id: 'c1', position: 2, data: [] }, { onConflict: 'congregation_id,position' })
+  it('saveFsWeek → fs_weeks upsert je Wochen-Kennung', () => {
+    saveFsWeek('c1', '2026-09-14', [])
+    expect(chain.upsert).toHaveBeenCalledWith({ congregation_id: 'c1', start: '2026-09-14', data: [] }, { onConflict: 'congregation_id,start' })
+  })
+  it('saveFsWeek schreibt ebenfalls nichts ohne Kennung', () => {
+    saveFsWeek('c1', '', [])
+    expect(chain.from).not.toHaveBeenCalledWith('fs_weeks')
   })
   it('saveService → services upsert', () => {
     saveService('c1', service, 4)

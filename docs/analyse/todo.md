@@ -1163,12 +1163,14 @@ Bibelleseprogramm-Seite **messen** — sie nennt den Tag ausgeschrieben —, und
 dann setzt die Ableitung aus T64 den Ausfall von selbst auf die richtige
 Zusammenkunft.
 
-> **Falle, die zuerst zu bedenken ist:** Der Index einer Woche **ist** ihre
-> `position` in der Datenbank und steckt in jedem gespeicherten `task_key`
-> (T37/T35). Die fehlende Woche darf deshalb nur dann entstehen, wenn der Import
-> **an ihr vorbeikäme** — also bevor die folgende geladen wird. Sie nachträglich
-> einzuschieben, wenn schon spätere Wochen liegen, verschöbe alle Positionen
-> dahinter und ließe jede bestehende Bestätigung auf die falsche Woche zeigen.
+> **~~Falle, die zuerst zu bedenken ist:~~ erledigt durch T66.** Der Index einer
+> Woche **war** ihre `position` in der Datenbank und steckte in jedem
+> gespeicherten `task_key` (T37/T35). Die fehlende Woche hätte deshalb nur
+> entstehen dürfen, wenn der Import **an ihr vorbeikäme** — sie nachträglich
+> einzuschieben, wenn schon spätere Wochen lagen, verschob alle Positionen
+> dahinter und ließ jede bestehende Bestätigung auf die falsche Woche zeigen.
+> Seit T66 ist eine Woche ihr Datum: Sie lässt sich jederzeit einschieben, und
+> die Reihenfolge, in der importiert wird, spielt keine Rolle mehr.
 
 **Entschieden (Betreiber, 8.8.2026):** Die Woche bekommt einen sichtbaren
 Hinweis — es genügt „Gedächtnismahl-Woche" oder Ähnliches —, und der Import legt
@@ -1179,11 +1181,12 @@ sie **stillschweigend** an, ohne eigene Meldung.
 > `anlassArt(week) === 'mem'` gilt. Setzt der Import den Anlass, erscheint er von
 > selbst — kein neues Vokabular, kein neuer Baustein.
 
-Die Positions-Falle oben bleibt die erste Entscheidung beim Bauen — **solange**
-`position` die Kennung einer Woche ist. Genau das ist der eigentliche Mangel und
-steht als **T66**.
+Die Positions-Falle oben war die erste Entscheidung beim Bauen — **solange**
+`position` die Kennung einer Woche war. Genau das war der eigentliche Mangel; er
+steht als **T66** und ist erledigt. T65 kann damit ohne Rücksicht auf die
+Reihenfolge gebaut werden.
 
-### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 ⚠ Stufe 2 von 3 gebaut
+### T66 · Eine Woche ist ihr Datum, nicht ihre Nummer 🏗 ✅ erledigt (drei Stufen)
 Beim Zuschnitt von T65 aufgefallen und vom Betreiber sofort als Mangel erkannt:
 *„das klingt nach einem Problem — müssen wir da die DB fixen, damit hier nicht
 Annahmen vorausgesetzt werden, sondern richtige Daten drin liegen?"*
@@ -1341,8 +1344,63 @@ leerem erstem Feld wäre der Woche 0 zugeschlagen worden, und eine Bestätigung
 wäre an einen Punkt gewandert, zu dem sie nie gehörte. Ein Test dafür steht
 jetzt da, und mit ihm werden alle vier Mutationen erkannt.
 
-**Für Stufe 3:** `position` und `Week.stub` fallen lassen, Laden und Speichern
-über `start`, migration-018 löscht die Spalte.
+#### Stufe 3 — gebaut am 13. August 2026
+
+**`position` entfällt.** Laden und Speichern laufen über die Kennung, die
+Platzhalter sind weg, und die Spalte wird gelöscht.
+
+| Was | Wo |
+| --- | --- |
+| `Week.stub` und `AppState.weekFrom` ersatzlos gestrichen | [data/types.ts](../../src/data/types.ts), [app/context.ts](../../src/app/context.ts) |
+| Ladefenster über das Datum; `start` kommt aus der **Spalte** | [lib/data.ts](../../src/lib/data.ts) |
+| `saveWeek(congId, week)` — die Woche sagt selbst, welche Zeile gemeint ist | [lib/data.ts](../../src/lib/data.ts) |
+| `saveFsWeek` und die Bündelung je Woche statt je Index | [lib/data.ts](../../src/lib/data.ts), [app/persist.ts](../../src/app/persist.ts) |
+| Treffpunkte werden über das Datum zugeordnet, nicht über die Zeilenfolge | [lib/data.ts](../../src/lib/data.ts) |
+| `send-reminders` und `substitute` lesen `start`, nicht `position` | [supabase/functions](../../supabase/functions) |
+| Restliche Positions-Schlüssel umschreiben, dann Spalte löschen | [migration-018](../../supabase/migration-018-position-entfaellt.sql) |
+
+**Die Client-Migration aus Stufe 2 ist weg — und das war keine Aufräumarbeit,
+sondern zwingend.** `migrateTaskKeyWeeks` hob einen Schlüssel über `weeks[60]`
+auf sein Datum; diese Brücke ist der Array-Index als Datenbank-Position, also
+genau das, was Stufe 3 abreißt. Wäre sie stehen geblieben, hätte sie
+Bestätigungen der falschen Woche zugeordnet. **migration-018 macht dieselbe
+Arbeit in SQL** — dort liegen `position` und `start` ein letztes Mal
+nebeneinander, und zwar für alle Versammlungen, nicht nur für die, deren Planer
+sich anmeldet. Der Sonderfall dabei: derselbe Bruder kann beide Formen tragen
+(unter einer älteren, noch offenen Fassung bestätigt, nachdem der Schlüssel
+schon umgeschrieben war). Dann gewinnt die datierte, sonst scheiterte das
+Umbenennen an `unique (congregation_id, task_key, user_id)`.
+
+**Zwei Dinge wurden dabei nebenbei richtig**, beide vorher stumm falsch:
+
+1. **Treffpunkte hingen an der Zeilenfolge.** `fsByPos.get(i)` nahm den
+   Array-Index, `startOf.get(row.position)` im Versand die Positionsnummer.
+   Fehlte eine Woche, saßen die Treffpunkte eine Woche daneben. Jetzt führen
+   beide Tabellen dieselbe Kennung, und zugeordnet wird darüber.
+2. **`data->>'start'` konnte fehlen.** migration-017 füllte die *Spalte*, nicht
+   den Blob. Wer die Kennung aus `data` las — Client wie Versand —, bekam bei
+   Zeilen von vor migration-017 nichts. Beide lesen sie jetzt aus der Spalte.
+
+**Und ein Fehler in `schema.sql`, aus Stufe 1 übrig:** `weeks` bekam dort die
+Regel `unique (congregation_id, start)` nie — migration-017 legt sie per `alter
+table` an, `schema.sql` beschreibt aber die *frische* Installation. Eine neue
+Instanz hätte die Eindeutigkeit auf der Kennung nicht gehabt. Nachgetragen, und
+migration-018 trägt sie auch bestehenden Instanzen nach.
+
+> **Reihenfolge: erst deployen, dann migration-018.** Der neue Client kennt
+> `position` nicht mehr; solange die Spalte `not null` dasteht, scheitern
+> deshalb genau zwei Dinge — das Einfügen einer neuen Woche (Import) und das
+> erste Materialisieren von Treffpunkten. Beide melden sich sichtbar. Umgekehrt
+> wäre es schlimmer: der alte Client holt `select position, data` und bekäme
+> nach dem Löschen gar nichts mehr. Die Edge Functions müssen vorher ebenfalls
+> neu deployt sein.
+
+**Gegenprobe:** zehn Mutationen, zehnmal rot. Eine blieb zunächst grün — die
+Bündelung der gepufferten Schreibvorgänge (`weekSaves`) je Index statt je
+Kennung. Sie ist **nicht** gleichwertig: verschiebt sich die geladene Menge
+zwischen zwei Änderungen (stilles Nachladen nach einem Schreibkonflikt), steht
+dieselbe Woche an einem anderen Index, und über den Index gebündelt schriebe der
+ältere Eintrag seine überholte Fassung hinterher. Der Test dafür steht jetzt da.
 
 ## Phase 7 — Struktur (🏗 planen, nicht nebenbei)
 
@@ -1703,8 +1761,10 @@ und die T1 verhindert hätte.
 > der Lauf schlägt an und nennt sie.
 
 > **Die letzten fünf — erledigt.** Damit halten **alle 23 Produktionsdateien**
-> die Regel ein. Die Grundlinie steht bei **731 Meldungen in 34 Dateien, alle
-> davon Testdateien** (vorher 892 in 39).
+> die Regel ein. Die Grundlinie stand danach bei **731 Meldungen in 34 Dateien,
+> alle davon Testdateien** (vorher 892 in 39); heute sind es 727 — T66 hat die
+> Ladefenster-Tests von Positionen auf Datumsangaben umgestellt und dabei vier
+> Index-Zugriffe mitgenommen.
 >
 > Es war keine Typkosmetik. Jede der fünf Dateien griff auf Indizes zu, die ins
 > Leere zeigen können, und warf dann — **im Reducer**, also mit der ganzen
@@ -2002,13 +2062,14 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 Stand 8. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
-Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑ ·
+Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
 
-**63 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 neu
-aufgenommen und offen (T63 zurückgestellt, T65 fachlich geklärt) sowie **T66**
-als struktureller Mangel, den T65 ans Licht gebracht hat.**
-Der Testbestand ist von 727 auf 1437 gewachsen; jede Korrektur hat einen Test,
+**64 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 neu
+aufgenommen und offen (T63 zurückgestellt, T65 fachlich geklärt).** **T66** —
+der strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
+erledigt: eine Woche ist ihr Datum, nicht ihre Nummer.
+Der Testbestand ist von 727 auf 1448 gewachsen; jede Korrektur hat einen Test,
 der ohne sie rot wird — bei jeder einzeln nachgewiesen, indem die Korrektur
 zurückgenommen und der Testlauf wiederholt wurde.
 
@@ -2060,9 +2121,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 | | Aufgabe | Warum offen |
 | --- | --- | --- |
-| **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 731 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
+| **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **Phase 7** | T66 | Neu. Eine Woche wird über ihre `position` identifiziert statt über ihr Datum — die Ordnungszahl ist zugleich Kennung und steckt in jedem `task_key`. `weeks.id` existiert und liegt brach. Fällt auf, sobald eine Woche in der Mitte fehlt (T65). |
 | **Phase 6** | T65 | Neu, fachlich geklärt. Die Gedächtnismahl-Woche fehlt im Arbeitsheft ganz — der Import überspringt sie, und das Wochenende dieser Woche lässt sich nicht planen. An jw.org nachgemessen (März/April 2026). |
 
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser

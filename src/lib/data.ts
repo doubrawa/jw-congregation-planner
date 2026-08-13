@@ -18,7 +18,7 @@ import {
   DEMO_SERVICES,
 } from '../data/demo'
 import { fsBaseFromWeeks, regenFsWeeks } from '../data/fs'
-import { istWochenKennung, itemTaskKey, partTaskKey } from '../data/planning'
+import { itemTaskKey, partTaskKey } from '../data/planning'
 import {
   displayName,
   emptyQualifications,
@@ -35,7 +35,6 @@ import type {
   Group,
   HelperSlot,
   Invite,
-  Meeting,
   Member,
   Notification,
   NotificationType,
@@ -85,7 +84,8 @@ interface GroupRow {
 }
 
 interface WeekRow {
-  position: number
+  /** Kennung der Woche (T66): ihr Montag. Eigene Spalte, nicht aus `data`. */
+  start: string
   data: Week
   /** Stand der Zeile — Grundlage der Konfliktprüfung beim Speichern (T39). */
   updated_at: string
@@ -190,62 +190,21 @@ export function migrateServicePrivs(persons: Person[], services: Service[]): Per
   })
 }
 
-/**
- * Schreibt Bestätigungs-Schlüssel von der **Wochen-Position** auf die
- * **Wochen-Kennung** um (T66): `"60|mid|part|k3f9x|0"` → `"2026-09-07|mid|…"`,
- * und `"fs|60|inst7"` → `"fs|2026-09-07|inst7"`.
+/*
+ * Die Umstellung der Bestätigungs-Schlüssel von der Wochen-**Position** auf die
+ * Wochen-**Kennung** stand bis T66 Stufe 3 hier: `migrateTaskKeyWeeks` schrieb
+ * `"60|mid|part|k3f9x|0"` beim Laden auf `"2026-09-07|mid|…"` um, so wie
+ * `migrateItemIds` es darunter mit den Programmpunkten tut.
  *
- * Dieselbe Bauart wie `migrateItemIds` (T37) — und aus demselben Grund im
- * Client statt in SQL: Der Ladepfad kennt die Wochen samt ihren Kennungen
- * ohnehin, und eine Migration, die beim Laden heilt, kommt ohne Stillstand aus.
- * Der erste Planer, der sich anmeldet, stellt den Bestand um.
+ * Sie ist **weggefallen, nicht vergessen**: Ihre Brücke war `weeks[60]` — der
+ * Array-Index als Datenbank-Position. Genau die gibt es seit Stufe 3 nicht mehr;
+ * der Index sagt nur noch, was vor was kommt. Eine Migration, die trotzdem
+ * hierbliebe, ordnete Bestätigungen der falschen Woche zu.
  *
- * **Idempotent**: Ein Schlüssel, der vorn schon ein Datum trägt, wird
- * übersprungen — erkannt an `istWochenKennung`. Beim zweiten Laden gibt es
- * nichts mehr zu tun.
- *
- * **Verlustfrei**: Umgeschrieben wird nur, wozu die Woche geladen ist. Zeigt
- * ein Schlüssel auf eine Woche außerhalb des Ladefensters, bleibt er
- * unangetastet und wartet auf einen Ladevorgang, der sie umfasst. Er wird
- * dadurch nicht falsch — nur später umgestellt.
+ * Was übrig war, hebt **migration-018** in SQL — dort liegen `position` und
+ * `start` ein letztes Mal nebeneinander, und zwar für alle Versammlungen, nicht
+ * nur für die, deren Planer sich anmeldet.
  */
-export function migrateTaskKeyWeeks(
-  weeks: Week[],
-  confirmations: ConfirmationMap,
-): { confirmations: ConfirmationMap; renames: Array<[string, string]> } {
-  const renames: Array<[string, string]> = []
-  const next: ConfirmationMap = {}
-
-  for (const [key, status] of Object.entries(confirmations)) {
-    const neu = mitWochenKennung(key, weeks)
-    if (neu !== key) renames.push([key, neu])
-    next[neu] = status
-  }
-  return { confirmations: renames.length > 0 ? next : confirmations, renames }
-}
-
-/** Einen einzelnen Schlüssel umschreiben; unverändert, wenn nichts zu tun ist. */
-function mitWochenKennung(key: string, weeks: Week[]): string {
-  const teile = key.split('|')
-  // Treffpunkte tragen die Woche an zweiter Stelle (`fs|<wi>|<instId>`), alles
-  // andere an erster. Der Grund steht bei `fsTaskKey`.
-  const stelle = teile[0] === 'fs' ? 1 : 0
-  const feld = teile[stelle]
-  // `!feld` statt `=== undefined`: **`Number('')` ist 0, nicht `NaN`.** Ein
-  // Schlüssel mit leerem ersten Feld landete sonst bei Woche 0, und eine
-  // Bestätigung wanderte an einen Punkt, zu dem sie nie gehörte. Bei allem
-  // anderen (Datum, Buchstaben) ergibt `Number` ein `NaN`, das die Prüfung
-  // darunter abfängt — die leere Zeichenkette ist der einzige Ausreißer.
-  if (!feld || istWochenKennung(feld)) return key
-
-  const wi = Number(feld)
-  if (!Number.isInteger(wi) || wi < 0) return key
-  const start = weeks[wi]?.start
-  if (!start) return key // nicht geladen oder Altbestand ohne Datum
-
-  teile[stelle] = start
-  return teile.join('|')
-}
 
 /**
  * Migriert in den Wochen gespeicherte Zuteilungs-Namen von der früheren
@@ -303,7 +262,6 @@ export function migrateItemIds(
   let anyChanged = false
 
   const next = weeks.map((week) => {
-    if (week.stub) return week
     let weekChanged = false
     const kopie = { ...week }
     for (const tab of ['mid', 'we'] as const) {
@@ -721,29 +679,18 @@ function notificationFromRow(r: NotificationRow): Notification {
  */
 export const WEEK_LIMIT = 52
 
-/** Leerer Platzhalter für eine nicht geladene Woche (siehe Week.stub). */
-function stubWeek(start: string): Week {
-  const leer = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
-  return { range: '', book: '', start, current: false, mid: leer(), we: leer(), stub: true }
-}
-
 /**
- * Montag der Woche an Position `pos`, gerechnet aus einer bekannten Woche.
+ * Anfang des Ladefensters: der Montag `WEEK_LIMIT - 1` Wochen vor der jüngsten
+ * Woche. Gerechnet wird in UTC, damit keine Zeitzone einen Tag verschiebt.
  *
- * Auch ein Platzhalter trägt seit T66 sein Datum — es ist die Kennung der
- * Woche, und die hat auch eine, die gerade nicht geladen ist. Gerechnet wird in
- * UTC, damit keine Zeitzone einen Tag verschiebt; Wochen liegen genau sieben
- * Tage auseinander, das ist die Definition der Programmwoche.
- *
- * Fehlt der Anker (Altbestand ohne `start`, den migration-017 nachträgt),
- * bleibt es leer. Ein Platzhalter trägt ohnehin nirgends etwas bei und wird nie
- * gespeichert.
+ * Gibt es noch keine Woche, ist die Grenze gegenstandslos — dann liefert jede
+ * Abfrage ohnehin nichts, und die Aufrufer lassen den Filter weg.
  */
-function montagAn(pos: number, ankerPos: number, ankerStart: string | undefined): string {
-  if (!ankerStart) return ''
-  const d = new Date(`${ankerStart}T00:00:00Z`)
+function fensterAnfang(juengste: string | undefined): string {
+  if (!juengste) return ''
+  const d = new Date(`${juengste}T00:00:00Z`)
   if (Number.isNaN(d.getTime())) return ''
-  d.setUTCDate(d.getUTCDate() + (pos - ankerPos) * 7)
+  d.setUTCDate(d.getUTCDate() - (WEEK_LIMIT - 1) * 7)
   return d.toISOString().slice(0, 10)
 }
 
@@ -754,9 +701,8 @@ export interface CongregationData {
   persons: Person[]
   services: Service[]
   groups: Group[]
+  /** Die geladenen Wochen, aufsteigend nach ihrer Kennung (`start`). */
   weeks: Week[]
-  /** Index der ersten wirklich geladenen Woche; davor stehen Platzhalter. */
-  weekFrom: number
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
   fsBase: string | null // ISO-Datum (Montag der Woche 0) oder null
@@ -793,25 +739,32 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  // Ladefenster bestimmen: nur die jüngsten WEEK_LIMIT Wochen holen. Die
-  // Positionen bleiben dabei absolut (siehe weekFrom/Week.stub) — sie stecken
-  // in jedem gespeicherten task_key.
+  // Ladefenster bestimmen: nur die jüngsten WEEK_LIMIT Wochen holen. Gemessen
+  // wird seit T66 am Datum, nicht an einer Ordnungszahl — eine Lücke im Bestand
+  // (T65: die Woche des Gedächtnismahls fehlt im Arbeitsheft) verschiebt damit
+  // nichts mehr.
   const { data: letzte } = await supabase
     .from('weeks')
-    .select('position')
+    .select('start')
     .eq('congregation_id', congregationId)
-    .order('position', { ascending: false })
+    .order('start', { ascending: false })
     .limit(1)
     .maybeSingle()
-  const hoechste = (letzte?.position as number | undefined) ?? -1
-  const weekFrom = Math.max(0, hoechste - WEEK_LIMIT + 1)
+  const ab = fensterAnfang(letzte?.start as string | undefined)
+
+  // Beide Wochen-Tabellen im selben Fenster. Ohne Anker (noch keine Woche) wird
+  // gar nicht gefiltert: ein leerer Datumswert wäre für PostgREST kein Datum.
+  let wochenAbfrage = supabase.from('weeks').select('start, data, updated_at').eq('congregation_id', congregationId)
+  if (ab) wochenAbfrage = wochenAbfrage.gte('start', ab)
+  let fsWochenAbfrage = supabase.from('fs_weeks').select('start, data').eq('congregation_id', congregationId)
+  if (ab) fsWochenAbfrage = fsWochenAbfrage.gte('start', ab)
 
   const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows] = await Promise.all([
     supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
-    supabase.from('weeks').select('position, data, updated_at').eq('congregation_id', congregationId).gte('position', weekFrom).order('position'),
+    wochenAbfrage.order('start'),
     // Versammlungsweit, nicht nur die eigenen: die Planung muss wissen, wer
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
@@ -823,7 +776,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
     supabase.from('fs_rules').select('base, rules').eq('congregation_id', congregationId).maybeSingle(),
-    supabase.from('fs_weeks').select('position, data').eq('congregation_id', congregationId).gte('position', weekFrom).order('position'),
+    fsWochenAbfrage.order('start'),
   ])
 
   // Alle zwölf Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -838,33 +791,21 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
     serviceList,
   )
-  // Jede Zeile an IHRE Position setzen, nicht der Reihe nach aneinanderreihen.
-  //
-  // Vorher wurden die geladenen Zeilen hinter die Platzhalter gehängt und
-  // stillschweigend als lückenlos angenommen. Fehlt eine Position — etwa nach
-  // einem Schreibfehler, der früher verschluckt wurde (T5) —, rutschen alle
-  // folgenden Wochen einen Index nach vorn. Der Index **ist** die Position und
-  // steckt in jedem gespeicherten `task_key` („60|mid|part|2|1|0"): jede
-  // Bestätigung, jede Aufgabe und jede Erinnerung zeigte danach auf die
-  // Nachbarwoche. Lücken werden jetzt zu Platzhaltern, die nie gespeichert
-  // werden (siehe Week.stub).
   const weekRows = (weeks.data ?? []) as WeekRow[]
   // Stände merken: jeder spätere Schreibvorgang nennt den Stand, auf dem er
   // beruht (T39). Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
   // Konflikt-Nachladen) darf keine Stände einer anderen Versammlung erben.
-  staendeSetzen(weekRows.map((r) => [r.position, r.updated_at]))
-  const letztePos = weekRows.reduce((max, r) => Math.max(max, r.position), weekFrom - 1)
-  // Anker für die Datumsrechnung der Platzhalter: die erste geladene Woche
-  // (nach `position` sortiert geholt).
-  const anker = weekRows[0]
-  const roh = Array.from({ length: letztePos + 1 }, (_, i) =>
-    stubWeek(anker ? montagAn(i, anker.position, anker.data.start) : ''),
-  )
-  for (const row of weekRows) {
-    // Position außerhalb (negativ oder jenseits des Arrays) wäre kaputt —
-    // lieber die Zeile auslassen als eine Woche an falscher Stelle zeigen.
-    if (row.position >= weekFrom && row.position <= letztePos) roh[row.position] = row.data
-  }
+  staendeSetzen(weekRows.map((r) => [r.start, r.updated_at]))
+  // Die Kennung kommt aus der **Spalte**, nicht aus dem Blob: migration-017 hat
+  // sie dort nachgetragen, im JSONB kann sie bei Altbestand noch fehlen. Damit
+  // trägt jede geladene Woche ihr Datum, auch die älteste.
+  //
+  // Hier wurde bis T66 ein Array der Länge `höchstePosition + 1` aufgespannt
+  // und jede Zeile an ihren Index gesetzt, mit Platzhaltern in den Lücken —
+  // weil der Index die Position war und in jedem `task_key` steckte. Jetzt
+  // reihen sich die Zeilen einfach nach Datum: eine fehlende Woche ist eine
+  // fehlende Woche und verschiebt nichts.
+  const roh = weekRows.map((r) => ({ ...r.data, start: r.start }))
   const gemigriert = normalizeChairKeys(
     migrateAssignmentPids(migrateAssignmentNames(normalizeWeekHelpers(roh), personList), personList),
   )
@@ -880,24 +821,19 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // (T37). Idempotent — beim zweiten Laden gibt es nichts mehr zu tun.
   const umgestellt = migrateItemIds(gemigriert, rohConf)
   const weekList = umgestellt.weeks
-  // Und die Woche im Schlüssel von der Position auf ihre Kennung (T66). Nach
-  // T37, nicht davor: jene arbeitet noch mit Positions-Schlüsseln, diese
-  // schreibt das Ergebnis um. Beide sind idempotent.
-  const datiert = migrateTaskKeyWeeks(weekList, umgestellt.confirmations)
-  const confirmations = datiert.confirmations
-  const alleRenames = [...umgestellt.renames, ...datiert.renames]
+  const confirmations = umgestellt.confirmations
   /** Nur die Wochen, die wirklich Kennungen bekommen haben. */
   const speichereUmgestellte = (): void => {
     for (let i = 0; i < weekList.length; i++) {
       const woche = weekList[i]
-      if (woche && woche !== gemigriert[i]) saveWeek(congregationId, i, woche)
+      if (woche && woche !== gemigriert[i]) saveWeek(congregationId, woche)
     }
   }
-  if (alleRenames.length > 0) {
+  if (umgestellt.renames.length > 0) {
     // Erst die Datenbank, dann die Wochen: bricht das Umbenennen ab, bleiben
     // die Wochen ohne Kennung und der nächste Ladevorgang versucht es erneut.
     // Andersherum wären die Bestätigungen verwaist.
-    void renameConfirmationKeys(congregationId, alleRenames).then(speichereUmgestellte)
+    void renameConfirmationKeys(congregationId, umgestellt.renames).then(speichereUmgestellte)
   } else {
     speichereUmgestellte()
   }
@@ -909,7 +845,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     repeat: settings.reminders?.repeat ?? DEMO_REMINDERS.repeat,
   }
 
-  // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Position → Daten).
+  // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Kennung → Daten).
   // Die Basis wird aus dem echten ISO-Startdatum der Wochen (`week.start`,
   // jw.org-Import) abgeleitet — unabhängig von der gespeicherten Basis und vom
   // `current`-Flag, die beide veralten können; anschließend werden die Wochen neu
@@ -919,13 +855,16 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const fsRules = (fsRulesRow.data?.rules as FsRule[] | undefined) ?? []
   const fsBaseDate = fsBaseFromWeeks(weekList, new Date())
   const fsBase = fsBaseDate.toISOString().slice(0, 10)
-  const fsByPos = new Map<number, FsInstance[]>()
-  for (const row of (fsWeeksRows.data ?? []) as { position: number; data: FsInstance[] }[]) {
-    fsByPos.set(row.position, row.data)
+  // Zugeordnet wird über das Datum, nicht über die Zeilenfolge: beide Tabellen
+  // führen dieselbe Kennung, und nur so bleiben Treffpunkte an ihrer Woche,
+  // wenn im Bestand eine fehlt.
+  const fsNachWoche = new Map<string, FsInstance[]>()
+  for (const row of (fsWeeksRows.data ?? []) as { start: string; data: FsInstance[] }[]) {
+    fsNachWoche.set(row.start, row.data)
   }
-  const storedFsWeeks: FsInstance[][] = Array.from({ length: weekList.length }, (_u, i) => fsByPos.get(i) ?? [])
+  const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
   const fsWeeks = fsRules.length
-    ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true, weekFrom)
+    ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true)
     : storedFsWeeks
 
   const data: CongregationData = {
@@ -940,7 +879,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     services: serviceList,
     groups: (groups.data ?? []).map((r) => groupFromRow(r as GroupRow)),
     weeks: weekList,
-    weekFrom,
     fsRules,
     fsWeeks,
     fsBase,
@@ -990,9 +928,8 @@ export async function seedCongregation(congregationId: string): Promise<string |
   const groupRows = DEMO_GROUPS.map((g, i) =>
     groupToRow({ ...g, id: groupId.get(g.id)!, ov: mapPerson(g.ov), as: mapPerson(g.as) }, congregationId, i),
   )
-  const weekRows = buildDemoWeeks().map((w, i) => ({
+  const weekRows = buildDemoWeeks().map((w) => ({
     congregation_id: congregationId,
-    position: i,
     start: w.start, // Kennung der Woche (T66) — die Spalte ist `not null`
     data: w,
   }))
@@ -1040,7 +977,8 @@ async function run(promise: PromiseLike<{ error: { message: string } | null }>):
 /* ---- Schreibkonflikte zwischen Planern (T39) ----------------------------- */
 
 /**
- * Stand je Wochen-Position, wie ihn die Datenbank zuletzt bestätigt hat.
+ * Stand je Woche, wie ihn die Datenbank zuletzt bestätigt hat — geführt über
+ * ihre Kennung (`start`), seit T66 nicht mehr über eine Ordnungszahl.
  *
  * `saveWeek` schrieb die **komplette Woche** als Upsert — ohne Sperre und ohne
  * Versionskennzeichen. Planen zwei Koordinatoren gleichzeitig, gewinnt der
@@ -1050,21 +988,21 @@ async function run(promise: PromiseLike<{ error: { message: string } | null }>):
  * Zeichenkette kommt aus PostgREST und geht unverändert dorthin zurück. Damit
  * sind Genauigkeit und Zeitzone kein Thema.
  */
-const wochenStand = new Map<number, string>()
+const wochenStand = new Map<string, string>()
 
 /**
- * Schreibvorgänge je Position hintereinander.
+ * Schreibvorgänge je Woche hintereinander.
  *
  * Ohne das kämpfte man gegen sich selbst: zwei rasch aufeinanderfolgende
  * Änderungen derselben Woche gingen beide mit demselben Stand los, und die
  * zweite meldete einen Konflikt, den es nicht gab.
  */
-const wochenKette = new Map<number, Promise<void>>()
+const wochenKette = new Map<string, Promise<void>>()
 
-function staendeSetzen(paare: Array<[number, string]>): void {
+function staendeSetzen(paare: Array<[string, string]>): void {
   wochenStand.clear()
   wochenKette.clear()
-  for (const [pos, stand] of paare) wochenStand.set(pos, stand)
+  for (const [woche, stand] of paare) wochenStand.set(woche, stand)
 }
 
 /**
@@ -1096,21 +1034,18 @@ export function setKonfliktMelder(fn: Konfliktmelder | null): void {
  * zusätzliche Umlauf kostet nur in dem Fall etwas, in dem sonst etwas
  * verlorenginge.
  */
-async function schreibeWoche(congregationId: string, position: number, week: Week): Promise<void> {
+async function schreibeWoche(congregationId: string, woche: string, week: Week): Promise<void> {
   if (!supabase) return
-  const stand = wochenStand.get(position)
+  const stand = wochenStand.get(woche)
 
   if (stand === undefined) {
     const { data, error } = await supabase
       .from('weeks')
-      // `start` steht seit T66 als eigene Spalte daneben, nicht nur im JSONB:
-      // erst dort kann die Datenbank pruefen, dass es je Kalenderwoche genau
-      // eine Woche gibt. Leer heisst Altbestand, den migration-017 nachtraegt.
-      .insert({ congregation_id: congregationId, position, start: week.start || null, data: week })
+      .insert({ congregation_id: congregationId, start: woche, data: week })
       .select('updated_at')
       .maybeSingle()
     if (error) {
-      // Verstoß gegen unique(congregation_id, position): die Zeile existiert
+      // Verstoß gegen unique(congregation_id, start): die Zeile existiert
       // längst, wir kannten sie nur nicht — also hat sie ein anderer angelegt.
       if (error.code === '23505') konfliktMelder?.()
       else {
@@ -1119,15 +1054,15 @@ async function schreibeWoche(congregationId: string, position: number, week: Wee
       }
       return
     }
-    if (data) wochenStand.set(position, data.updated_at as string)
+    if (data) wochenStand.set(woche, data.updated_at as string)
     return
   }
 
   const { data, error } = await supabase
     .from('weeks')
-    .update({ start: week.start || null, data: week })
+    .update({ data: week })
     .eq('congregation_id', congregationId)
-    .eq('position', position)
+    .eq('start', woche)
     .eq('updated_at', stand)
     .select('updated_at')
     .maybeSingle()
@@ -1137,7 +1072,7 @@ async function schreibeWoche(congregationId: string, position: number, week: Wee
     return
   }
   if (data) {
-    wochenStand.set(position, data.updated_at as string)
+    wochenStand.set(woche, data.updated_at as string)
     return
   }
 
@@ -1145,7 +1080,7 @@ async function schreibeWoche(congregationId: string, position: number, week: Wee
     .from('weeks')
     .select('updated_at')
     .eq('congregation_id', congregationId)
-    .eq('position', position)
+    .eq('start', woche)
     .maybeSingle()
   if (leseFehler) {
     console.error('[persistenz]', leseFehler.message)
@@ -1160,7 +1095,7 @@ async function schreibeWoche(congregationId: string, position: number, week: Wee
       .from('weeks')
       .update({ data: week })
       .eq('congregation_id', congregationId)
-      .eq('position', position)
+      .eq('start', woche)
       .select('updated_at')
       .maybeSingle()
     if (schreibFehler) {
@@ -1168,22 +1103,28 @@ async function schreibeWoche(congregationId: string, position: number, week: Wee
       melder?.()
       return
     }
-    if (erneut) wochenStand.set(position, erneut.updated_at as string)
+    if (erneut) wochenStand.set(woche, erneut.updated_at as string)
     return
   }
   konfliktMelder?.()
 }
 
-export function saveWeek(congregationId: string, position: number, week: Week): void {
+/**
+ * Eine Woche speichern. Welche Zeile gemeint ist, sagt ihre eigene Kennung —
+ * kein Index von außen mehr (T66).
+ */
+export function saveWeek(congregationId: string, week: Week): void {
   if (!supabase) return
-  // Platzhalter nie schreiben: an dieser Position steht in der Datenbank die
-  // echte, nur nicht geladene Woche — ein Upsert würde sie leeren.
-  if (week.stub) return
-  const vorher = wochenKette.get(position) ?? Promise.resolve()
+  // Ohne Kennung gibt es keine Zeile, die gemeint sein könnte. Hier stand bis
+  // T66 die Platzhalter-Prüfung; sie hatte denselben Zweck — nichts schreiben,
+  // was keine Woche bezeichnet.
+  const woche = week.start
+  if (!woche) return
+  const vorher = wochenKette.get(woche) ?? Promise.resolve()
   // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
   // lassen, sonst schriebe diese Woche nie wieder.
-  const naechster = vorher.then(() => schreibeWoche(congregationId, position, week).catch(() => {}))
-  wochenKette.set(position, naechster)
+  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week).catch(() => {}))
+  wochenKette.set(woche, naechster)
 }
 
 export function savePerson(congregationId: string, person: Person): void {
@@ -1201,15 +1142,15 @@ export function saveFsRules(congregationId: string, base: string, rules: FsRule[
   )
 }
 
-/** Materialisierte Treffpunkte einer Woche (Position → FsInstance[]). */
-export function saveFsWeek(congregationId: string, position: number, insts: FsInstance[]): void {
-  if (!supabase) return
+/** Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]). */
+export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): void {
+  if (!supabase || !woche) return
   void run(
     supabase
       .from('fs_weeks')
       .upsert(
-        { congregation_id: congregationId, position, data: insts },
-        { onConflict: 'congregation_id,position' },
+        { congregation_id: congregationId, start: woche, data: insts },
+        { onConflict: 'congregation_id,start' },
       ),
   )
 }

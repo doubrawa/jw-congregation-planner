@@ -20,9 +20,10 @@ import { reset as resetPush, sent as sentPush } from './web-push.stub'
 
 const SUPABASE_URL = 'https://test.supabase.co'
 const CONG = 'cong-1'
-const WI = 3
+/** Kennung der Woche, um die es geht (T66): ihr Montag. */
+const WI = '2026-09-07'
 const SVC = 'mikro'
-/** Hilfsdienst-Slot, um den es geht: `wi|tab|helper|svc|pos`. */
+/** Hilfsdienst-Slot, um den es geht: `woche|tab|helper|svc|pos`. */
 const KEY = `${WI}|mid|helper|${SVC}|0`
 
 const U_ME = 'user-me' // qualifiziert, springt ein
@@ -125,7 +126,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       const aktuell = gespeicherterName()
       if (erwartet !== aktuell) return jsonRes([]) // niemand getroffen → jemand war schneller
       week = (body as { data: unknown }).data
-      return jsonRes([{ position: WI, data: week }])
+      return jsonRes([{ start: WI, data: week }])
     }
     return new Response(null, { status: 204 })
   }
@@ -138,11 +139,11 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('absences')) return jsonRes(ABSENCES)
   if (path.startsWith('confirmations')) return jsonRes(absagen)
   if (path.startsWith('weeks')) {
-    const pos = Number(/position=eq\.(\d+)/.exec(path)?.[1])
+    const pos = /start=eq\.([\d-]+)/.exec(path)?.[1]
     // Antwort steht mit dem Serialisieren fest; danach darf der Konkurrent den
     // Slot ändern. Genau dieses Zeitfenster — zwischen Lesen und Schreiben —
     // ist der Fall, den die Bedingung beim Schreiben abfangen muss.
-    const antwort = jsonRes(pos === WI ? [{ data: week }] : []) // andere Position → nicht geladen
+    const antwort = jsonRes(pos === WI ? [{ data: week }] : []) // andere Woche → gibt es nicht
     if (pos === WI && konkurrent) {
       konkurrent()
       konkurrent = null
@@ -269,7 +270,7 @@ describe('substitute: Slot muss existieren', () => {
     ['Position außerhalb der Liste', `${WI}|mid|helper|${SVC}|7`],
     ['unbekannter Dienst', `${WI}|mid|helper|gibtsnicht|0`],
     ['Zusammenkunft ohne diesen Dienst', `${WI}|we|helper|${SVC}|0`],
-    ['nicht geladene Woche', `99|mid|helper|${SVC}|0`],
+    ['Woche, die es nicht gibt', `2026-12-28|mid|helper|${SVC}|0`],
   ])('%s → 404, kein Schreibzugriff', async (_name, taskKey) => {
     const res = await call(take({ taskKey }))
     expect(res.status).toBe(404)

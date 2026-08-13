@@ -46,7 +46,6 @@ function st(over: Partial<AppState> = {}): AppState {
     userId: 'u1',
     personId: 'p9',
     week: 0,
-    weekFrom: 0,
     tab: 'mid',
     weeks: buildDemoWeeks(),
     fsWeeks: buildDemoFsWeeks(),
@@ -100,7 +99,7 @@ describe('Zuteilen', () => {
     const prev = st({ slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } })
     const next = st()
     persist(prev, next, { type: 'assign', name: 'A' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', 0, next.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     expect(data.deleteConfirmationRows).toHaveBeenCalled()
   })
 
@@ -108,7 +107,7 @@ describe('Zuteilen', () => {
     const prev = st({ slotSel: { kind: 'fs', wi: 0, instId: 'x', label: '', priv: null, groups: false } })
     const next = st()
     persist(prev, next, { type: 'assign', name: 'A' })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', 0, next.fsWeeks[0])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[0]?.start, next.fsWeeks[0])
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
@@ -116,7 +115,7 @@ describe('Zuteilen', () => {
     const prev = st()
     const next = st()
     persist(prev, next, { type: 'autoAssign' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', 0, next.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     expect(data.deleteConfirmationRows).toHaveBeenCalled()
   })
 
@@ -133,16 +132,16 @@ describe('Treffpunkte', () => {
   it('fsInstUpdate/Remove speichern die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'fsInstUpdate', wi: 2, id: 'x', patch: {} })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', 2, next.fsWeeks[2])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[2]?.start, next.fsWeeks[2])
     vi.clearAllMocks()
     persist(st(), next, { type: 'fsInstRemove', wi: 3, id: 'x' })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', 3, next.fsWeeks[3])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[3]?.start, next.fsWeeks[3])
   })
 
   it('fsInstAdd speichert die aktuelle Woche', () => {
     const next = st({ week: 1 })
     persist(st({ week: 1 }), next, { type: 'fsInstAdd', inst: {} as never })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', 1, next.fsWeeks[1])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[1]?.start, next.fsWeeks[1])
   })
 
   it('fsRuleAdd speichert Grundplan + alle Wochen', () => {
@@ -152,14 +151,26 @@ describe('Treffpunkte', () => {
     expect((data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.length).toBe(next.fsWeeks.length)
   })
 
-  it('fsRuleAdd lässt nicht geladene Wochen aus (weekFrom)', () => {
-    // Positionen unterhalb von weekFrom sind Platzhalter; ihre Zeilen in der
-    // Datenbank enthalten echte Treffpunkte, die nicht geleert werden dürfen.
-    const next = st({ weekFrom: 2 })
-    persist(st({ weekFrom: 2 }), next, { type: 'fsRuleAdd', grp: '' })
-    const positionen = (data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1])
-    expect(Math.min(...positionen)).toBe(2)
-    expect(positionen).toHaveLength(next.fsWeeks.length - 2)
+  /*
+    Gespeichert wird unter der **Kennung der Woche**, nicht unter ihrem Index
+    (T66). Hier stand bis dahin der umgekehrte Test: „lässt Wochen unterhalb von
+    `weekFrom` aus" — Platzhalter, deren Zeilen in der Datenbank echte
+    Treffpunkte enthielten und nicht geleert werden durften. Die gibt es nicht
+    mehr; jede geladene Woche ist eine echte.
+  */
+  it('fsRuleAdd schreibt jede Woche unter ihre Kennung', () => {
+    const next = st()
+    persist(st(), next, { type: 'fsRuleAdd', grp: '' })
+    const kennungen = (data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1])
+    expect(kennungen).toEqual(next.weeks.map((w) => w.start))
+  })
+
+  it('ohne die Woche selbst wird ihr Treffpunkt-Blatt nicht geschrieben', () => {
+    // Die Kennung steht bei der Woche. Fehlt sie, gäbe es nichts zu bezeichnen
+    // — und ein Schreibversuch träfe entweder nichts oder das Falsche.
+    const next = st({ weeks: [] })
+    persist(st({ weeks: [] }), next, { type: 'fsRuleAdd', grp: '' })
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
 })
 
@@ -179,20 +190,20 @@ describe('LAC / Import / Vortrag', () => {
     ] as AppAction[]) {
       vi.clearAllMocks()
       persist(st(), next, action)
-      expect(data.saveWeek).toHaveBeenCalledWith('c1', 0, next.weeks[0])
+      expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     }
   })
 
   it('finishImport/addImportedWeek speichern die letzte Woche', () => {
     const next = st({ weeks: [...buildDemoWeeks(), { range: 'Neu' } as Week] })
     persist(st(), next, { type: 'finishImport' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.length - 1, next.weeks.at(-1))
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1))
   })
 
   it('mergeWeekAlt speichert die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'mergeWeekAlt', wi: 1, alt: {} })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', 1, next.weeks[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1])
   })
 })
 
@@ -265,6 +276,33 @@ describe('Personen (inkl. Debounce)', () => {
     expect(data.savePerson).not.toHaveBeenCalled() // noch nicht
     vi.advanceTimersByTime(600)
     expect(data.savePerson).toHaveBeenCalledWith('c1', p)
+  })
+
+  /*
+    Gebündelt wird je **Woche**, nicht je Index (T66).
+
+    Der Unterschied wird erst sichtbar, wenn sich die geladene Menge zwischen
+    zwei Änderungen verschiebt — beim stillen Nachladen nach einem
+    Schreibkonflikt etwa, das eine ältere Woche mitbringt. Dieselbe Woche steht
+    dann an einem anderen Index. Über den Index gebündelt lägen zwei Einträge in
+    der Warteschlange, und der ältere schriebe seine überholte Fassung
+    hinterher; über die Kennung gebündelt bleibt es bei einem.
+  */
+  it('bündelt dieselbe Woche auch dann, wenn ihr Index sich verschoben hat', () => {
+    const p = DEMO_PERSONS[0]!
+    const [w0, w1] = [buildDemoWeeks()[0]!, buildDemoWeeks()[1]!]
+    const aendern = (w: Week): Week => ({ ...w, book: `${w.book}!` })
+    // Erst steht w1 an Index 1 …
+    const vorher = st({ weeks: [w0, w1] })
+    const neuer1 = aendern(w1)
+    persist(vorher, st({ weeks: [w0, neuer1] }), { type: 'updatePerson', id: p.id, patch: { ln: 'A' } })
+    // … dann ist w0 aus dem Fenster gerutscht und w1 steht an Index 0.
+    const neuer2 = aendern(neuer1)
+    persist(st({ weeks: [neuer1] }), st({ weeks: [neuer2] }), { type: 'updatePerson', id: p.id, patch: { ln: 'B' } })
+
+    vi.advanceTimersByTime(600)
+    expect(data.saveWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2)
   })
 
   it('updatePerson mit Planer-Recht spiegelt Konten/Codes sofort', () => {
@@ -381,7 +419,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
       patch: { meetings: 'Di 18:30 · So 10:00' },
     })
     expect(data.saveWeek).toHaveBeenCalledTimes(1) // nur die eine geänderte
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', 1, weeks[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1])
   })
 
   it('updateCongregation ohne Zeitänderung schreibt keine Woche', () => {
