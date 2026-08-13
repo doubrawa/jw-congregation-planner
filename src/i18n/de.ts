@@ -249,9 +249,8 @@ export const DE = {
     errTitel: 'Anzeige gestört', errText: 'Dieser Bereich konnte nicht angezeigt werden. Der Rest der App funktioniert weiter.',
     toastSpeicherFehler: 'Änderung konnte nicht gespeichert werden — bitte neu laden',
     stErneut: 'ERNEUT VERSUCHEN', stLeer: 'Versammlung ist noch leer',
-    stLeerTextPlaner: 'Es sind noch keine Personen und Wochen hinterlegt. Du kannst den Demo-Datensatz als Startpunkt laden und danach anpassen.',
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Koordinator.',
-    stDemoLaden: 'DEMO-DATEN LADEN',    keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',    toastMitgliedEntfernt: 'Mitglied entfernt', toastEinladungErstellt: 'Einladungscode erstellt',
+    keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',    toastMitgliedEntfernt: 'Mitglied entfernt', toastEinladungErstellt: 'Einladungscode erstellt',
     toastEinladungGeloescht: 'Einladung gelöscht',
     // Konfliktprüfungen (Planen)
     konflikteTitle: 'MÖGLICHE KONFLIKTE',

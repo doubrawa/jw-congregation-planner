@@ -17,7 +17,7 @@ vi.mock('./supabase', () => ({
   supabase: { from: fromMock },
 }))
 
-import { loadCongregationData, seedCongregation, WEEK_LIMIT } from './data'
+import { loadCongregationData, WEEK_LIMIT } from './data'
 import { buildDemoWeeks } from '../data/demo'
 
 function chainFor(table: string) {
@@ -222,21 +222,13 @@ describe('loadCongregationData', () => {
   })
 })
 
-describe('seedCongregation', () => {
-  it('schreibt Personen, dann Dienste/Gruppen/Wochen; null bei Erfolg', async () => {
-    store.responses = {
-      persons: [{ data: null, error: null }],
-      services: [{ data: null, error: null }],
-      groups: [{ data: null, error: null }],
-      weeks: [{ data: null, error: null }],
-    }
-    expect(await seedCongregation('c1')).toBeNull()
-    const tables = fromMock.mock.calls.map((c) => c[0])
-    expect(tables).toEqual(expect.arrayContaining(['persons', 'services', 'groups', 'weeks']))
-  })
+/*
+  `seedCongregation` stand hier bis zum 13. August 2026 und schrieb den
+  Demo-Datensatz in eine leere Versammlung — Personen, Dienste, Gruppen und
+  **vier erfundene Wochen**, die der Planer erst wegräumen musste.
 
-  it('gibt die Fehlermeldung zurück, wenn das Personen-Insert scheitert', async () => {
-    store.responses = { persons: [{ data: null, error: { message: 'FK-Verletzung' } }] }
-    expect(await seedCongregation('c1')).toBe('FK-Verletzung')
-  })
-})
+  Eine Versammlung legt jetzt der Administrator an
+  (`scripts/versammlung-anlegen.mjs`): einen Planer, die Standard-Dienste, und
+  keine einzige Woche. Die erste holt der Planer über den Import — mit echtem
+  Programm statt erfundenem.
+*/

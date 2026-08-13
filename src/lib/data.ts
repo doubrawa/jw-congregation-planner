@@ -10,13 +10,7 @@
  * geräteweise in localStorage): App-Sprache und Darstellung.
  */
 
-import {
-  buildDemoWeeks,
-  DEMO_GROUPS,
-  DEMO_PERSONS,
-  DEMO_REMINDERS,
-  DEMO_SERVICES,
-} from '../data/demo'
+import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { fsBaseFromWeeks, regenFsWeeks } from '../data/fs'
 import { itemTaskKey, partTaskKey } from '../data/planning'
 import {
@@ -840,9 +834,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const settings = ((cong.data?.settings as CongregationSettings | null) ?? {})
   const reminders: Reminders = {
-    first: settings.reminders?.first ?? DEMO_REMINDERS.first,
-    last: settings.reminders?.last ?? DEMO_REMINDERS.last,
-    repeat: settings.reminders?.repeat ?? DEMO_REMINDERS.repeat,
+    first: settings.reminders?.first ?? STANDARD_ERINNERUNGEN.first,
+    last: settings.reminders?.last ?? STANDARD_ERINNERUNGEN.last,
+    repeat: settings.reminders?.repeat ?? STANDARD_ERINNERUNGEN.repeat,
   }
 
   // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Kennung → Daten).
@@ -905,45 +899,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const empty = personList.length === 0 && weekList.length === 0
   return { ok: true, empty, data, congregationId, userId }
-}
-
-/* ---- Erstbefüllung (Demo-Datensatz in eine leere Versammlung) ------------ */
-
-/**
- * Schreibt den Demo-Datensatz (Personen, Dienste, Wochen) in eine noch leere
- * Versammlung — als Startpunkt zum Weiterbearbeiten. Nur für Planer (RLS).
- */
-export async function seedCongregation(congregationId: string): Promise<string | null> {
-  if (!supabase) return 'kein Client'
-  // Neue UUIDs vergeben und Referenzen (Person.grp, Group.ov/as) konsistent
-  // ummappen, damit die Demo-Verknüpfungen erhalten bleiben.
-  const personId = new Map(DEMO_PERSONS.map((p) => [p.id, crypto.randomUUID()]))
-  const groupId = new Map(DEMO_GROUPS.map((g) => [g.id, crypto.randomUUID()]))
-  const mapPerson = (id: string | null | undefined) => (id ? (personId.get(id) ?? null) : null)
-
-  const personRows = DEMO_PERSONS.map((p) =>
-    personToRow({ ...p, id: personId.get(p.id)!, grp: p.grp ? (groupId.get(p.grp) ?? null) : null }, congregationId),
-  )
-  const serviceRows = DEMO_SERVICES.map((s, i) => serviceToRow(s, congregationId, i))
-  const groupRows = DEMO_GROUPS.map((g, i) =>
-    groupToRow({ ...g, id: groupId.get(g.id)!, ov: mapPerson(g.ov), as: mapPerson(g.as) }, congregationId, i),
-  )
-  const weekRows = buildDemoWeeks().map((w) => ({
-    congregation_id: congregationId,
-    start: w.start, // Kennung der Woche (T66) — die Spalte ist `not null`
-    data: w,
-  }))
-
-  // Personen zuerst (Gruppen referenzieren sie per FK), dann Gruppen.
-  const err1 = (await supabase.from('persons').insert(personRows)).error
-  if (err1) return err1.message
-  const results = await Promise.all([
-    supabase.from('services').insert(serviceRows),
-    supabase.from('groups').insert(groupRows),
-    supabase.from('weeks').insert(weekRows),
-  ])
-  const err = results.find((r) => r.error)?.error
-  return err ? err.message : null
 }
 
 /* ---- Schreiben ----------------------------------------------------------- */
