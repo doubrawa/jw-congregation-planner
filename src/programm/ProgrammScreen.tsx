@@ -7,7 +7,6 @@ import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { hatAuxKlasse } from '../data/aux-class'
-import { CURRENT_PERSON_ID } from '../data/demo'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { displayName, isSong, splitOpeningSong } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
@@ -63,7 +62,7 @@ function ProgrammBody() {
   // Kanonische Fassung (deutsche Sektions-Labels) zum Erkennen von ERÖFFNUNG/
   // ABSCHLUSS — dort wird das Lied aus dem Sammeltitel mittig+kursiv gezogen.
   const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
-  const me = state.persons.find((p) => p.id === (state.personId ?? CURRENT_PERSON_ID))
+  const me = state.persons.find((p) => p.id === state.personId)
   const myName = me ? displayName(me) : null
   const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
 
