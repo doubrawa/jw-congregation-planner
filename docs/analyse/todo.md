@@ -2138,7 +2138,7 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 
 ## Fortschritt
 
-Stand 8. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -2192,6 +2192,28 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > Reiter** als sein Ort, und drei kleine Korrekturen aus T62 (eigene Sektion für
 > den Schlussvortrag, sein gemessener Titel, der Abstand am Schalter).
 
+> **Am 15. August 2026, Bestands-Review:** kein Punkt aus dieser Liste, sondern
+> eine eigene Runde über den gewachsenen Stand. Daraus entstanden: die Rolle
+> **„keine"** für Personen ohne Verkündiger-Status (samt
+> [migration-019](../../supabase/migration-019-rolle-keine.sql)), Skripte zum
+> **Zurücksetzen der Versammlung** und zum Einspielen der Wochenplanung, fünf
+> Befunde aus dem Review selbst (`fb29d3f`), an ihre Person gebundene
+> **Treffpunkt-Leitungen** — und die **Sprachhälften** durchgezogen: Rollen in
+> der Sprache des Lesers, Titel in der der Versammlung.
+>
+> **Zwei Vollständigkeitsproben** sind dabei entstanden, beide von den Daten her
+> gedacht statt von den Funktionen: `src/data/alle-plaetze.test.ts` fragt jeden
+> Aufrufer nach allen vier Platzsorten (Hauptsaal, Zusätzliche Klasse, Ratgeber,
+> Hilfsdienste), `src/i18n/aufgaben-label-quelle.test.ts` prüft am Quelltext,
+> dass keine Anzeige die beiden Sprachhälften selbst zusammensetzt. Beide haben
+> beim Anlegen sofort einen echten, bis dahin unbekannten Fund geliefert — und
+> genau darauf zielen sie: die häufigste Fehlerart hier ist die zentral
+> richtiggestellte Regel mit dem vergessenen Aufrufer, im Review elfmal. Einzelne
+> Regressionstests haben das nie verhindert, weil sie je Funktion geschrieben
+> werden und die nächste Funktion niemandem einfällt.
+>
+> Testbestand nach dieser Runde: **1708** in 88 Dateien, grün (15.8., 19:34).
+
 ### Was offen ist und warum
 
 > **Der Deploy ist erledigt** (7. August 2026): `substitute` und
@@ -2203,6 +2225,40 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
+
+> ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
+> vollständig in Betrieb:
+>
+> 1. **`import-week`, `substitute` und `send-reminders` sind neu deployt**
+>    (15:44 Uhr). Nachgesehen mit `functions list`: `updated_at` aller drei liegt
+>    hinter `92b4a9e` (14:28 Uhr), dem letzten Commit, der `supabase/functions/`
+>    anfasst. Damit ist scharf, was seit dem 8. August dort auflief: der
+>    **Ratgeber der Zusätzlichen Klasse** in den Erinnerungen, die **Ausfälle in
+>    der Ersatzsuche** (`a915a0c`), die an ihre Person gebundenen
+>    **Treffpunkt-Leitungen** (`92b4a9e`) und die fünf Befunde aus `fb29d3f`.
+> 2. **[migration-019](../../supabase/migration-019-rolle-keine.sql) ist
+>    eingespielt** → `persons.role` lässt „keine" zu. Damit nehmen das
+>    Rücksetz- und das Wochenplanungs-Skript auch Personen ohne
+>    Verkündiger-Status an; vorher hätte die Datenbank sie abgewiesen.
+>
+> **Dabei aufgefallen — eine Lücke im Eintrag vom 13. August.** Dort steht,
+> `send-reminders` und `substitute` liefen „schon aus der Runde davor", also in
+> der Fassung vom 8. August. Die las `weeks?select=position,data` — und
+> migration-018 hat `position` am selben 13. August gelöscht. Der Hinweis stand
+> im Kopf der Migration („müssen vor dieser Migration ebenfalls neu deployt
+> sein"); die eingehaltene Reihenfolge galt aber nur dem Seiten-Deploy. In
+> `send-reminders` hängt die Wochen-Abfrage ohne `catch` im `Promise.all` (nur
+> `fs_weeks` fängt ab) — der Lauf bricht also als Ganzes ab. **Daraus folgt:**
+> die Cron-Läufe vom 14. und 15. August (08:00 UTC) sind ausgefallen, und
+> „Einspringen" war zwei Tage lang tot. Das ist geschlossen, nicht gemessen —
+> belegt sind Code und Zeitstempel, die Function-Logs sind ungelesen.
+> Nachzuholen ist nichts: der Lauf am 16. August greift wieder; verloren sind
+> nur die Erinnerungen, deren Tag genau in die Lücke fiel.
+>
+> **Regel für den nächsten Deploy:** Ein Eintrag „X ist deployt, Y lief schon"
+> muss belegen, dass Y seither unberührt ist. `git log <letzter Deploy>..HEAD --
+> supabase/functions` beantwortet das in einer Zeile — und `functions list`
+> zeigt hinterher, ob der Stand wirklich hochgekommen ist.
 
 > ✅ **Beim Betreiber erledigt (13. August 2026)** — T64, T65 und T66 sind
 > vollständig scharf:
