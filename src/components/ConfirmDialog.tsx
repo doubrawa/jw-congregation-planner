@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useApp } from '../app/context'
-import { useT } from '../i18n/useT'
+import { aufgabenLabel, useT } from '../i18n/useT'
 import { useDialogFocus } from './useDialogFocus'
 import './overlays.css'
 
@@ -12,7 +12,8 @@ import './overlays.css'
  */
 export function ConfirmDialog() {
   const { state, dispatch } = useApp()
-  const { t, tp } = useT()
+  const i18n = useT()
+  const { t, tp } = i18n
   const openTasks = state.myTasks.filter((task) => task.status === 'offen')
   const dlg = useRef<HTMLDivElement>(null)
   useDialogFocus(dlg)
@@ -26,7 +27,7 @@ export function ConfirmDialog() {
         <p className="confirm-intro">{t.confirmIntro}</p>
         {openTasks.map((task) => (
           <div key={task.id} className="confirm-task">
-            <div className="confirm-task-title">{tp(task.title)}</div>
+            <div className="confirm-task-title">{aufgabenLabel(task, i18n)}</div>
             <div className="confirm-task-date">{tp(task.date)}</div>
             <div className="confirm-actions">
               <button
