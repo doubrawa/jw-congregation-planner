@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Ouderling",
   "rolleDag": "Dienaar in de bediening",
   "rolleVerk": "Verkondiger",
+  "rolleKeine": "Geen",
   "privVorsitz": "Voorzitterschap",
   "privVortrag": "Lezingen",
   "privGebet": "Gebeden",

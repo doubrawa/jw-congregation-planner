@@ -130,7 +130,7 @@ interface CongregationSettings {
   auxClass?: boolean // Zusaetzliche Klasse eingerichtet (jw.org S-38, Absatz 26)
 }
 
-const ROLES: Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger']
+const ROLES: Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine']
 const asRole = (r: string): Role => (ROLES.includes(r as Role) ? (r as Role) : 'verkuendiger')
 
 const NOTIF_TYPES: NotificationType[] = ['zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert']

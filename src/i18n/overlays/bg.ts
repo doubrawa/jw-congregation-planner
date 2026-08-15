@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Старейшина",
   "rolleDag": "Помощник-служител",
   "rolleVerk": "Вестител",
+  "rolleKeine": "Няма",
   "privVorsitz": "Председателство",
   "privVortrag": "Речи",
   "privGebet": "Молитви",

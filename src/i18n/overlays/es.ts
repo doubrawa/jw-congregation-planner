@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Anciano",
   "rolleDag": "Siervo ministerial",
   "rolleVerk": "Publicador",
+  "rolleKeine": "Ninguno",
   "privVorsitz": "Presidencia",
   "privVortrag": "Discursos",
   "privGebet": "Oraciones",

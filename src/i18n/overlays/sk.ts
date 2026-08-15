@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Starší",
   "rolleDag": "Služobný pomocník",
   "rolleVerk": "Zvestovateľ",
+  "rolleKeine": "Žiadna",
   "privVorsitz": "Predsedníctvo",
   "privVortrag": "Prejavy",
   "privGebet": "Modlitby",

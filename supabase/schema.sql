@@ -46,7 +46,7 @@ create table if not exists public.persons (
   ln              text not null default '',
   dn              text not null default '', -- optionaler Anzeigename (Kurzform); leer = "V. Nachname"
   role            text not null default 'verkuendiger'
-                  check (role in ('aeltester', 'dienstamtgehilfe', 'verkuendiger')),
+                  check (role in ('aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine')),
   female          boolean not null default false,   -- Anzeige "Verkündigerin"
   tel             text not null default '',
   mail            text not null default '',

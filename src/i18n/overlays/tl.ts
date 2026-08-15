@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Elder",
   "rolleDag": "Ministeryal na lingkod",
   "rolleVerk": "Mamamahayag",
+  "rolleKeine": "Wala",
   "privVorsitz": "Pagkatsirman",
   "privVortrag": "Mga Pahayag",
   "privGebet": "Mga Panalangin",

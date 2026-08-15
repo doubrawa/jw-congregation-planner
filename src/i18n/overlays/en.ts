@@ -216,6 +216,7 @@ export default {
   "rolleAeltester": "Elder",
   "rolleDag": "Ministerial servant",
   "rolleVerk": "Publisher",
+  "rolleKeine": "None",
   "privVorsitz": "Chairman",
   "privVortrag": "Talks",
   "privGebet": "Prayers",

@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "长老",
   "rolleDag": "助理仆人",
   "rolleVerk": "传道员",
+  "rolleKeine": "无",
   "privVorsitz": "主持",
   "privVortrag": "演讲",
   "privGebet": "祷告",

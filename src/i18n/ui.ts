@@ -108,6 +108,7 @@ export const ROLE_KEY: Record<Role, keyof Dict> = {
   aeltester: 'rolleAeltester',
   dienstamtgehilfe: 'rolleDag',
   verkuendiger: 'rolleVerk',
+  keine: 'rolleKeine',
 }
 
 /** Deutscher Mitteilungs-Titel → Wörterbuch-Schlüssel (Übersetzung bei Anzeige). */

@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Anziano",
   "rolleDag": "Servitore di ministero",
   "rolleVerk": "Proclamatore",
+  "rolleKeine": "Nessuno",
   "privVorsitz": "Presidenza",
   "privVortrag": "Discorsi",
   "privGebet": "Preghiere",

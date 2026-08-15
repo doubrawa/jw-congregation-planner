@@ -179,6 +179,7 @@ export default {
   "rolleAeltester": "پیر",
   "rolleDag": "خادم",
   "rolleVerk": "مبشّر",
+  "rolleKeine": "هیچ‌کدام",
   "privVorsitz": "رئیس جلسه",
   "privVortrag": "سخنرانی‌ها",
   "privGebet": "دعاها",

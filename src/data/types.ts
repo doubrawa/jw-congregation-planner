@@ -98,8 +98,9 @@ export interface FsInstance {
   manual?: boolean // nur für diese Woche hinzugefügt (kein Grundplan)
 }
 
-/** Rolle einer Person (steuert Sichtbarkeit/Rechte). */
-export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger'
+/** Rolle einer Person (steuert Sichtbarkeit/Rechte). `keine` = kein Verkündiger
+ * (z. B. inaktive Schüler, die nur Schülerteile haben). */
+export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger' | 'keine'
 
 /**
  * Aufgabenbereiche einer Person (Toggles im Personen-Detail).

@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Старійшина",
   "rolleDag": "Службовий помічник",
   "rolleVerk": "Вісник",
+  "rolleKeine": "Немає",
   "privVorsitz": "Головування",
   "privVortrag": "Промови",
   "privGebet": "Молитви",

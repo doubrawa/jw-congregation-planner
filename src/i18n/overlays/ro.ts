@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Bătrân",
   "rolleDag": "Slujitor auxiliar",
   "rolleVerk": "Vestitor",
+  "rolleKeine": "Niciunul",
   "privVorsitz": "Președinție",
   "privVortrag": "Cuvântări",
   "privGebet": "Rugăciuni",

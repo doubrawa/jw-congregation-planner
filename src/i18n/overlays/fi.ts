@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Vanhin",
   "rolleDag": "Avustava palvelija",
   "rolleVerk": "Julistaja",
+  "rolleKeine": "Ei mitään",
   "privVorsitz": "Puheenjohtajuus",
   "privVortrag": "Puheet",
   "privGebet": "Rukoukset",

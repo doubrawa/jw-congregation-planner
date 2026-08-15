@@ -182,6 +182,7 @@ export default {
   "rolleAeltester": "شيخ",
   "rolleDag": "خادم مساعد",
   "rolleVerk": "ناشر",
+  "rolleKeine": "بدون",
   "privVorsitz": "الرئاسة",
   "privVortrag": "الخطابات",
   "privGebet": "الصلوات",
