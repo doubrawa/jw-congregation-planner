@@ -2123,6 +2123,149 @@ begründete Entscheidung. **Zur Bestätigung offen:** die Farbschema-Namen
 
 ---
 
+## Aufgenommen am 15. August 2026 — Vorhaben (T67–T72)
+
+Zwölf Punkte aus der Durchsicht des Betreibers: sechs Vorhaben, sechs Fehler
+(T73–T78 unten). Reihenfolge wie genannt, der Aufwand ist geschätzt und nicht
+gemessen. Wo der Ort im Code schon feststeht, steht er dabei — nachgesehen ist
+damit **wo** etwas liegt, nicht warum es so ist und erst recht nicht, wie es zu
+lösen wäre.
+
+### T67 · Die Tests selbst prüfen — wirklichkeitsnah und vollständig? 🏗
+**Vorgabe des Betreibers.** 1708 grüne Tests sind kein Beleg für Abdeckung. Zu
+prüfen ist beides: ob sie **die Wirklichkeit** treffen (echte Wochen, echte
+Zuteilungen, echte Abläufe statt bequemer Fixtures) und ob sie **vollständig**
+sind — welche Regel hat gar keinen Test, welcher Zweig läuft nie.
+
+Anhaltspunkt für den Zuschnitt: die beiden Vollständigkeitsproben
+(`alle-plaetze`, `aufgaben-label-quelle`) haben beim Anlegen sofort echte Funde
+geliefert, die Hunderte von Einzeltests nicht hatten. Die Frage ist also nicht
+„mehr Tests", sondern welche Proben **von den Daten her** denken statt von den
+Funktionen.
+
+**Prüfen:** Coverage ehrlich lesen (T56), dazu je Bereich stichprobenweise eine
+Regel absichtlich brechen und sehen, ob überhaupt etwas rot wird.
+
+### T68 · Datenmodell und Schlüssel prüfen 🏗
+**Vorgabe des Betreibers.** Ergibt das Modell als Ganzes noch Sinn, sind die
+Schlüssel gut gewählt? Der Anlass ist berechtigt: T37 (`task_key` an der
+Kennung statt an der Position), T66 (eine Woche ist ihr Datum) und die vier
+Platzsorten (`PartItem.names`, `PartItem.aux`, `Meeting.auxRatgeber`,
+`Meeting.helpers`) sind allesamt aus Schlüssel-Entscheidungen entstanden, die
+sich später als zu eng erwiesen haben.
+
+Anzusehen: der Aufbau des `task_key` (`wi|tab|part|si|ii|ni`), `FsInstance.id`,
+die JSONB-Blobs `weeks.data`/`fs_weeks.data` gegenüber echten Spalten, und ob
+`Qualifications` mit der Index-Signatur `svc:<key>` noch trägt.
+
+### T69 · „Einspringen" beim Öffnen der App zeigen — wie das Bestätigen 🔧
+**Vorgabe des Betreibers.** Ein offenes Ersatzgesuch muss beim Öffnen der App
+vorgelegt werden, genau wie eine offene Bestätigung — und zwar **allen**
+Nutzern, nicht nur denen, die über einen Push hereinkommen. Heute lädt die App
+die Daten still nach, wenn ein Deep-Link aus einem Push-Klick kommt, damit der
+„Einspringen"-Bereich die neue Anfrage sofort zeigt (`app/AppShell.tsx:138`);
+ohne Push sieht sie nur, wer von selbst nachschaut.
+
+**Zuerst zu klären:** wo die Vorlage beim Öffnen entsteht und ob das Ersatzgesuch
+denselben Weg nehmen kann — dann ist es eine Ergänzung und keine zweite Mechanik.
+
+### T70 · Zusammengesetzte Klassennamen — gibt es das noch woanders? 🔧
+**Vorgabe des Betreibers.** Er erinnert einen Kommentar, wonach ein Klassenname
+zusammengesetzt war und eine Referenz deshalb nicht gefunden wurde: „das klingt
+sehr schlecht."
+
+**Der Fall ist echt**, nachzulesen in `components/week-strip.css:44` und
+`components/WeekStrip.tsx:64`: `week-page--${…}` war interpoliert, die Suche
+nach `week-page--vor` fand nichts, die CSS-Regeln galten als tot und wurden
+entfernt — danach lagen beide Nachbarwochen ohne Versatz über der aktuellen,
+Programm und Planen zeigten zwei Wochen übereinander. **Dort** ist es behoben
+(Namen ausgeschrieben in `SEITE`, ein Test hält beide Seiten zusammen).
+
+**Offen ist die Verallgemeinerung:** der übrige Quelltext ist daraufhin nie
+durchgesehen worden. Die Regel wäre — der Klassenname steht immer wörtlich im
+Quelltext; zusammengesetzt werden darf höchstens ein Zustands-Zusatz
+(`${basis} is-armed`), nie der Name selbst. Das ist prüfbar, in der Art der
+beiden anderen Vollständigkeitsproben: eine Probe, die `className`-Ausdrücke
+nach interpolierten Namen absucht.
+
+### T71 · Schülerzettel drucken — 4 oder 6 auf ein A4 🔧
+**Vorgabe des Betreibers.** Die Zuteilungen für die Schulungsaufgaben sollen
+gedruckt werden können, 4 oder 6 Stück eingepasst auf ein DIN A4. Der einzelne
+Zettel besteht schon (`components/S89Sheet.tsx`); zu bauen ist der Bogen darum
+herum: Raster, Seitenumbruch und ein `@media print`, das nur ihn zeigt.
+
+**Zu klären:** 4 oder 6 zur Auswahl oder fest? Welche Wochen — die aktuelle oder
+eine Spanne? Die Zettel der Zusätzlichen Klasse gehören mit auf den Bogen; sie
+ist überall gleichberechtigt.
+
+### T72 · Abwesenheiten als Zeitstrahl — erst zu überlegen 🏗
+**Vorgabe des Betreibers, ausdrücklich als Überlegung** („das muss man noch
+überlegen"): eine Übersicht aller Abwesenheiten, eventuell als Zeitstrahl.
+
+Vor dem Bauen zu klären, wozu sie dient. Beim **Planen** sehen, wer wann fehlt —
+dann gehört sie in den Planen-Reiter und zeigt die Wochen der Planung. Oder die
+**Verwaltung** der Meldungen — dann eher eine Liste je Person. Ein Baustein
+existiert: `PersonTimeline` zeigt die Zeitleiste einer einzelnen Person.
+
+---
+
+## Aufgenommen am 15. August 2026 — Fehler (T73–T78)
+
+### T73 · Personen-Detail: Aufgaben und Hilfsdienste gehören getrennt ⚡
+Ein einziges Panel „AUFGABENBEREICHE" hält heute beides: die festen
+Programm-Bereiche aus `QUALIFICATION_ORDER` und darunter je Hilfsdienst einen
+Schalter (`personen/PersonDetail.tsx:175`). Gewünscht sind **zwei** Bereiche —
+Aufgaben und Hilfsdienste —, **beide alphabetisch sortiert**.
+
+Beim Sortieren aufpassen: die Namen sind übersetzt. Also nach `localeCompare` in
+der Sprache des Lesers sortieren, nicht nach dem Schlüssel — sonst steht die
+Liste in jeder Sprache in deutscher Reihenfolge.
+
+### T74 · Erinnerungen: „Bei Zuteilung · Sofort" ist gar keine Auswahl ⚡
+`einstellungen/RemindersPanel.tsx:24` schreibt die Zeile als festen Text hin
+(`kv-row` mit `remBeiZut`/`remSofort`) — daneben stehen zwei echte Stepper und
+ein Schalter. Ein Wert ohne Bedienelement sieht aus wie ein vergessenes Feld.
+
+Entweder wird daraus eine echte Einstellung (sofort · gebündelt · gar nicht),
+oder die Zeile verschwindet und der Satz steht im Hinweistext darüber.
+
+### T75 · Personenliste: „Nachname, Vorname" — so, wie sortiert wird ⚡
+Sortiert wird nach `ln`, dann `fn` (`personCompare`, `data/helpers.ts:135`),
+angezeigt aber „Vorname Nachname" (`personLabel` → `fullName`,
+`data/helpers.ts:93`). Für den Leser springt die Liste dadurch scheinbar
+willkürlich. **In der Liste** „Nachname, Vorname" zeigen.
+
+Nur dort: anderswo bleibt der volle Name in Leserichtung — da ist er Anrede,
+nicht Sortierschlüssel (`displayName` ist seit `e00cfa4` bewusst der volle Name).
+
+### T76 · Konflikt-Banner: „+N weitere" muss aufklappen — und färben 🔧
+`planen/PlanBanners.tsx` zeigt Serien-Konflikte nur bis `STREAK_SHOWN = 2`, der
+Rest wird zu „+{n} weitere mögliche Konflikte" (`konfMehr`) — als toter Text,
+nicht als Schalter. Zwei Dinge fehlen: das **Aufklappen**, und die **farbliche
+Markierung der betroffenen Zuteilungen** im Programm darunter, damit man sie
+beim Durchgehen der Zusammenkunft sieht, statt sie im Banner suchen zu müssen.
+
+### T77 · Vergangenes verschwindet: Bestätigen, Dashboard, Mitteilungen 🔧
+Zuteilungen, deren Termin vorbei ist, dürfen weder zum Bestätigen vorgelegt
+werden noch im Dashboard stehen; abgelaufene Mitteilungen gehören weg — „die
+interessieren keinen mehr". Der Zeitbezug ist vorhanden und wird beim Filtern
+nur nicht benutzt: `deriveMyTasks` trägt `at`, und seit T66 trägt jede Woche ihr
+Datum.
+
+**Zu klären:** ab wann gilt eine Aufgabe als vorbei — Ende der Zusammenkunft
+oder Ende des Tages? Und was geschieht mit einer vergangenen Aufgabe, die nie
+bestätigt wurde: still verschwinden oder für den Planer sichtbar bleiben?
+
+### T78 · Mandantentrennung nachweisen, bevor es zwei Versammlungen gibt 🏗
+Sobald eine zweite Versammlung dazukommt, muss alles getrennt sein — keine
+fremden Personen, Wochen, Mitteilungen, Abos. Angelegt ist das (RLS über
+`my_congregation_id()`), **nachgewiesen ist es nicht**: genau deshalb stehen S2
+und S3 unten unter „Was bewusst offen bleibt" — der Nachweis braucht zwei echte
+Konten. Mit einer zweiten Versammlung wird er erst möglich — und dann Pflicht,
+Tabelle für Tabelle.
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -2142,10 +2285,12 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
-Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑
+Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
+15. August ☐☐☐☐☐☐☐☐☐☐☐☐
 
-**65 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 neu
-aufgenommen und offen (T63, vom Betreiber zurückgestellt).** **T66** — der
+**65 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 13 offen:** T63
+(vom Betreiber zurückgestellt) und die zwölf Punkte vom 15. August — T67–T78,
+sechs Vorhaben und sechs Fehler, noch nicht angefangen. **T66** — der
 strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
 erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
 zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
@@ -2225,6 +2370,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
+| **15. August** | T67–T78 | Frisch aufgenommen: sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und sechs Fehler. Noch nicht angefangen; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
