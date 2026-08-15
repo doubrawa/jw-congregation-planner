@@ -36,4 +36,4 @@ export const STANDARD_DIENSTE: Service[] = [
  * `congregations.settings` nichts Eigenes stehen hat — also auch für jede
  * bestehende, die die Einstellung nie angefasst hat.
  */
-export const STANDARD_ERINNERUNGEN: Reminders = { first: 7, last: 1, repeat: true }
+export const STANDARD_ERINNERUNGEN: Reminders = { first: 7, last: 1, repeat: true, onAssign: true }

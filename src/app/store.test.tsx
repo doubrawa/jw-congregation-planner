@@ -33,7 +33,7 @@ const payload: HydratePayload = {
   absences: [],
   notifications: [],
   confirmations: {},
-  reminders: { first: 7, last: 1, repeat: false },
+  reminders: { first: 7, last: 1, repeat: false, onAssign: true },
   congLang: 'Deutsch',
   progLangs: [],
   members: [],

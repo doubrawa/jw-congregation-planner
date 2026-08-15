@@ -303,7 +303,7 @@ export const DEMO_PENDING_IDS: string[] = [
   'name:Elke Brandt',
 ]
 
-export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true }
+export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true, onAssign: true }
 
 /* ---- Wochenprogramme ----------------------------------------------------
  * Kompakte Baus­teine wie im Prototyp: Namen als Tupel [Name, Rolle,

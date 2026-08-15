@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { familyMembers, initials, personCompare, personLabel, serviceQualKey } from '../data/helpers'
+import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { ROLE_KEY } from '../i18n/ui'
 import type { Person } from '../data/types'
@@ -26,6 +27,31 @@ export function PersonDetail({ person }: { person: Person }) {
   const family = familyMembers(state.persons, person)
   const famIds = new Set([person.id, ...family.map((m) => m.id)])
   const addableFamily = state.persons.filter((p) => !famIds.has(p.id)).sort(personCompare)
+
+  /**
+   * Zwei Bereiche statt einem, jeder für sich alphabetisch: Aufgaben und
+   * Hilfsdienste sind verschiedene Dinge — die einen kommen aus dem Programm,
+   * die anderen aus den Einstellungen der Versammlung —, und in einer Liste
+   * aus einem Dutzend Schaltern sucht man nach dem Wort, nicht nach der
+   * Programmreihenfolge.
+   *
+   * Sortiert wird nach der **übersetzten** Beschriftung (wie in der
+   * Filterleiste der Liste). Nach dem Schlüssel stünde jede Sprache in
+   * deutscher Reihenfolge da. `numeric` hält „Ordner 2" vor „Ordner 10".
+   */
+  const locale = LOCALES[state.lang]
+  const nachLabel = (a: { label: string }, b: { label: string }): number =>
+    a.label.localeCompare(b.label, locale, { numeric: true })
+
+  const aufgaben = QUALIFICATION_ORDER.map((key) => ({ key, label: privLabel(t, key) })).sort(
+    nachLabel,
+  )
+  // Je Hilfsdienst ein Bereich; Gruppen-Dienste (Reinigung) rotieren Gruppen
+  // statt Personen und haben deshalb keinen.
+  const hilfsdienste = state.services
+    .filter((service) => !service.groups)
+    .map((service) => ({ key: serviceQualKey(service.key), label: tu(service.name) }))
+    .sort(nachLabel)
 
   const fields: Array<[keyof Person & ('fn' | 'ln' | 'dn' | 'tel' | 'mail'), string]> = [
     ['fn', t.vorname],
@@ -174,22 +200,16 @@ export function PersonDetail({ person }: { person: Person }) {
 
       <div className="panel panel--pb10" data-farbe="petrol">
         <h2 className="panel-label">{t.aufgabenbereiche}</h2>
-        {QUALIFICATION_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} bruderLabel={t.bruder} />
+        {aufgaben.map(({ key, label }) => (
+          <PrivToggle key={key} qkey={key} label={label} person={person} update={update} bruderLabel={t.bruder} />
         ))}
-        {/* Je Hilfsdienst ein Bereich; Gruppen-Dienste (Reinigung) rotieren
-            Gruppen statt Personen und haben deshalb keinen. */}
-        {state.services
-          .filter((service) => !service.groups)
-          .map((service) => (
-            <PrivToggle
-              key={service.key}
-              qkey={serviceQualKey(service.key)}
-              label={tu(service.name)}
-              person={person}
-              update={update}
-            />
-          ))}
+      </div>
+
+      <div className="panel panel--pb10" data-farbe="neutral2">
+        <h2 className="panel-label">{t.hilfsdienste}</h2>
+        {hilfsdienste.map(({ key, label }) => (
+          <PrivToggle key={key} qkey={key} label={label} person={person} update={update} />
+        ))}
       </div>
 
       <div className="panel panel--pb10" data-farbe="acc">

@@ -100,6 +100,25 @@ export function personLabel(p: Person): string {
 }
 
 /**
+ * Name in der **Personenliste**: „Nachname, Vorname" — dieselbe Reihenfolge,
+ * nach der die Liste sortiert ist (`personCompare`). Vorher stand dort
+ * „Vorname Nachname"; für den Leser sprang die Liste damit scheinbar
+ * willkürlich, weil der sichtbare erste Buchstabe nichts mit der Sortierung zu
+ * tun hatte.
+ *
+ * Ein gesetzter Anzeigename gewinnt unverändert: er ist die einzige
+ * Unterscheidung zwischen zwei Personen gleichen Namens („Josef Mayer (1)")
+ * und ließe sich nicht umstellen, ohne ihn zu zerlegen.
+ *
+ * Nur für Listen. Überall sonst bleibt der volle Name in Leserichtung — dort
+ * ist er Anrede, nicht Sortierschlüssel.
+ */
+export function listName(p: Person): string {
+  if (p.dn) return p.dn
+  return [p.ln, p.fn].filter(Boolean).join(', ') || personLabel(p)
+}
+
+/**
  * Frische Qualifikations-Map mit allen festen Programm-Bereichen auf `false` —
  * einzige Quelle der Standard-Bereiche (neue Person, normalizePriv). Dynamische
  * Hilfsdienst-Bereiche (`svc:<key>`) kommen erst durch Zuweisung hinzu.

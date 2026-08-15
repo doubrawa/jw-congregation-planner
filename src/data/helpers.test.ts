@@ -10,10 +10,12 @@ import {
   isQualified,
   isSong,
   linkFamily,
+  listName,
   loadWindow,
   partnerGenderOk,
   partWorkload,
   personCompare,
+  personLabel,
   rolleNennt,
   serviceQualKey,
   shortDisplayName,
@@ -235,6 +237,40 @@ describe('personCompare (alphabetisch: Nachname, dann Vorname)', () => {
   it('bei gleichem Nachnamen entscheidet der Vorname', () => {
     const list = [person({ fn: 'Sven', ln: 'Keller' }), person({ fn: 'Anna', ln: 'Keller' })]
     expect(list.sort(personCompare).map((p) => p.fn)).toEqual(['Anna', 'Sven'])
+  })
+})
+
+/**
+ * T75. Die Liste ist nach `personCompare` sortiert — also nach dem Nachnamen.
+ * Angezeigt wurde „Vorname Nachname", und damit hatte der sichtbare erste
+ * Buchstabe nichts mit der Reihenfolge zu tun.
+ */
+describe('listName (Anzeige in der Personenliste)', () => {
+  it('zeigt „Nachname, Vorname" — in der Reihenfolge, nach der sortiert wird', () => {
+    expect(listName(person({ fn: 'Simon', ln: 'Krüger' }))).toBe('Krüger, Simon')
+  })
+
+  it('sortiert und angezeigt beginnen mit demselben Wort', () => {
+    const list = [person({ fn: 'Sven', ln: 'Zimmer' }), person({ fn: 'Anna', ln: 'Adler' })]
+    const gezeigt = list.sort(personCompare).map(listName)
+    expect(gezeigt).toEqual(['Adler, Anna', 'Zimmer, Sven'])
+    expect(gezeigt.map((n) => n[0])).toEqual(['A', 'Z']) // aufsteigend, wie gelesen
+  })
+
+  it('ein gesetzter Anzeigename gewinnt — er unterscheidet Namensgleiche', () => {
+    expect(listName(person({ fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer (2)' }))).toBe('Josef Mayer (2)')
+  })
+
+  it('halbe und leere Datensätze fallen nicht auseinander', () => {
+    expect(listName(person({ fn: 'Anna', ln: '' }))).toBe('Anna')
+    expect(listName(person({ fn: '', ln: 'Adler' }))).toBe('Adler')
+    expect(listName(person({ fn: '', ln: '' }))).toBe('—')
+  })
+
+  it('anderswo bleibt der volle Name in Leserichtung', () => {
+    // personLabel ist die Anrede (Detail-Kopf, Familien-Chips) — dort wäre
+    // „Krüger, Simon" falsch.
+    expect(personLabel(person({ fn: 'Simon', ln: 'Krüger' }))).toBe('Simon Krüger')
   })
 })
 

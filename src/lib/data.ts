@@ -861,6 +861,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     first: settings.reminders?.first ?? STANDARD_ERINNERUNGEN.first,
     last: settings.reminders?.last ?? STANDARD_ERINNERUNGEN.last,
     repeat: settings.reminders?.repeat ?? STANDARD_ERINNERUNGEN.repeat,
+    // Fehlt in allen Versammlungen, die vor dem Schalter angelegt wurden —
+    // dort galt „sofort" fest, also ist der Standard `true`.
+    onAssign: settings.reminders?.onAssign ?? STANDARD_ERINNERUNGEN.onAssign,
   }
 
   // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Kennung → Daten).

@@ -253,6 +253,9 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
 
 ![Personenliste](screenshots/planer-personen.png)
 
+- Die Liste steht alphabetisch nach dem **Nachnamen** und zeigt ihn deshalb
+  zuerst: „Krüger, Simon". Überall sonst – im Detail, in den Zuteilungen, in
+  Mitteilungen – steht der Name wie gesprochen: „Simon Krüger".
 - **+ Neue Person anlegen** erstellt einen neuen Eintrag; **+ Alle ohne Konto
   einladen** verschickt Einladungscodes an alle, die noch kein Konto haben.
 - Über **Suchen** findest du schnell eine Person – gesucht wird in **Name,
@@ -287,8 +290,10 @@ Im Detail legst du fest:
   Schülerteilen auch geschlechtsübergreifend Gesprächspartner sein (z. B.
   Ehepaar, Vater/Tochter).
 - **Aufgabenbereiche** – welche Aufgaben die Person übernehmen darf (Vorsitz,
-  Vorträge, Gebet, Bibellesung, Schulung, Hilfsdienste …). Diese Bereiche steuern,
-  wen die Automatik und die Kandidatenlisten vorschlagen.
+  Vorträge, Gebet, Bibellesung, Schulung …). Diese Bereiche steuern, wen die
+  Automatik und die Kandidatenlisten vorschlagen.
+- **Hilfsdienste** – dasselbe für die Dienste (Ton, Mikrofone, Ordner …), als
+  eigener Bereich darunter. Beide Listen stehen alphabetisch.
 - **Konto & Einladung** – hier lädst du eine Person zur App‑Nutzung ein (Code bzw.
   Einladungs‑E‑Mail) und vergibst bei Bedarf **Planer‑Rechte**.
 
@@ -330,7 +335,11 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
   Reinigung rotiert automatisch über die Gruppen.
 - **Hilfsdienste** – welche Dienste es gibt und mit wie vielen Plätzen.
 - **Erinnerungen** – wie viele Tage vorher und wie oft an offene Aufgaben erinnert
-  wird (per Push, nie per E‑Mail).
+  wird (per Push, nie per E‑Mail). **Bei Zuteilung · Sofort** ist ein eigener
+  Schalter: Er bestimmt, ob beim Zuteilen sofort eine Mitteilung an die Planer
+  entsteht („Zuteilung gesendet"). Abgeschaltet bleibt die Glocke ruhig; die
+  zeitlichen Erinnerungen an die eingeteilten Personen laufen unabhängig davon
+  weiter.
 - **Sprachen** – Versammlungssprache und weitere Programmsprachen. Zusätzliche
   Sprachen werden beim Import als Varianten mitgeholt.
 - **Programm‑Import** – neue Wochen von jw.org laden (siehe unten).
