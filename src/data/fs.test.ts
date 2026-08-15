@@ -458,8 +458,8 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
     expect(tasks[0].id).toBe('fs|2026-09-07|a')
     // „Treffpunkt-Leiter" ist eine Rolle und steht deshalb in `rolle`, nicht
     // im Titel: die Anzeige übersetzt beide Hälften verschieden (MyTask.rolle).
-    expect(tasks[0].title).toBe('')
-    expect(tasks[0].rolle).toBe('Treffpunkt-Leiter')
+    expect(tasks[0]!.title).toBe('')
+    expect(tasks[0]!.rolle).toBe('Treffpunkt-Leiter')
   })
 
   it('die Id schlägt den Namen — Namensgleiche sehen nichts Fremdes', () => {

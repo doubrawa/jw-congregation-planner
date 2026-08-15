@@ -170,14 +170,14 @@ describe('Treffpunkte: dieselbe Regel', () => {
   it('zieht den neuen Namen über die lpid nach', () => {
     const vorher = [[inst('a', 'Anna Beispiel', ANNA.id), inst('b', 'Bernd Anders', 'p-bernd')]]
     const next = fsRenameLeader(vorher, ANNA.id, 'Anna Beispiel', 'Anna Neumann')
-    expect(next[0][0].leader).toBe('Anna Neumann')
-    expect(next[0][0].lpid).toBe(ANNA.id)
-    expect(next[0][1].leader).toBe('Bernd Anders') // fremder Treffpunkt unberührt
+    expect(next[0]![0]!.leader).toBe('Anna Neumann')
+    expect(next[0]![0]!.lpid).toBe(ANNA.id)
+    expect(next[0]![1]!.leader).toBe('Bernd Anders') // fremder Treffpunkt unberührt
   })
 
   it('ohne lpid über den alten Namen (Altdaten)', () => {
     const vorher = [[inst('a', 'Anna Beispiel')]]
-    expect(fsRenameLeader(vorher, ANNA.id, 'Anna Beispiel', 'Anna Neumann')[0][0].leader).toBe(
+    expect(fsRenameLeader(vorher, ANNA.id, 'Anna Beispiel', 'Anna Neumann')[0]![0]!.leader).toBe(
       'Anna Neumann',
     )
   })
@@ -209,8 +209,8 @@ describe('Treffpunkte: dieselbe Regel', () => {
   it('bindet Leiter ohne lpid beim Laden wieder an ihre Person', () => {
     const vorher = [[inst('a', 'Anna Beispiel'), inst('b', 'Gruppe 2')]]
     const next = fsMigrateLeaderPids(vorher, [ANNA])
-    expect(next[0][0].lpid).toBe(ANNA.id)
-    expect(next[0][1].lpid).toBeUndefined() // Gruppenname meint keine Person
+    expect(next[0]![0]!.lpid).toBe(ANNA.id)
+    expect(next[0]![1]!.lpid).toBeUndefined() // Gruppenname meint keine Person
   })
 
   it('ordnet mehrdeutige Namen nicht zu und lässt gesetzte lpid in Ruhe', () => {
