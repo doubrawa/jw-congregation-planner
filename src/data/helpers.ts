@@ -531,9 +531,16 @@ export function isSpeakerRole(rolle: string | undefined): boolean {
 const BLOCK_LABELS = new Set<string>([LABEL_EROEFFNUNG, LABEL_ABSCHLUSS])
 
 /**
- * Beschriftung einer Zuteilung — die **eine** Stelle, an der entschieden wird,
- * wie ein belegter Platz benannt wird (Aufgabenliste, Bestätigen, Erinnerung,
- * Banner der offenen Plätze).
+ * Beschriftung einer Zuteilung als **ein** String.
+ *
+ * So gebraucht sie die Erinnerung: dort steht kein Übersetzer dazwischen, der
+ * Text geht kanonisch deutsch hinaus und wird beim Anzeigen übersetzt. Die
+ * Oberfläche dagegen zeigt die beiden Hälften getrennt — der Titel gehört in
+ * die Sprache der Versammlung, die Rolle in die des Lesers (`MyTask.rolle`,
+ * `OpenSlot.rolle`, zusammengesetzt in `aufgabenLabel`). Sie baut sie deshalb
+ * aus denselben Bausteinen selbst zusammen: `istBlockAbschnitt` und
+ * `eigeneRolle`. Diese Funktion hält die Regel in der Form fest, die die Edge
+ * Function braucht, und `edge-parity.test.ts` hält beide Fassungen zusammen.
  *
  * Regel:
  *  - Ohne Rolle trägt der Titel des Programmpunkts („Bibellesung · Jer 44:24-30").

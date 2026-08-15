@@ -1365,6 +1365,14 @@ interface Extra {
   mit: (x: string) => string
   tage: (n: string) => string
   zut: (n: string) => string
+  /*
+   * KEIN `artikel` — anders als `DateDict` oben. „Studienartikel 28" bleibt
+   * über diesen Pfad deshalb deutsch stehen (siehe die Notiz in
+   * `translate.ts`). Ein optionales Feld mit englischem Rückfall wäre schnell
+   * geschrieben und würde die Vollständigkeitsprüfung in
+   * `translate-data.test.ts` unterlaufen, die die Pflichtfelder aus `EXTRA_EN`
+   * ableitet. Erst messen, dann eintragen — für alle Sprachen zugleich.
+   */
 }
 
 const EXTRA_EN: Extra = {

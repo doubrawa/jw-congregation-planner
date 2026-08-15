@@ -476,7 +476,11 @@ export function deriveMyFsTasks(
       // Segment vor und lässt einen unbekannten Ortsnamen stehen.
       tasks.push({
         id: key,
-        title: titel,
+        // „Treffpunkt-Leiter" ist eine Rolle und gehört damit in die Sprache
+        // des Lesers. Als Titel lief sie durch `tp` — bei deutscher App und
+        // englischer Versammlungssprache stand dort Englisch.
+        title: '',
+        rolle: titel,
         date: tag
           ? `${deutschesDatum(tag)} · ${inst.time} · ${inst.place}`
           : `${inst.time} · ${inst.place}`,
