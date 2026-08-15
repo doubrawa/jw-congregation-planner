@@ -747,7 +747,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     case 'fsRuleAdd': {
       const rule: FsRule = {
-        id: `r${Date.now()}`,
+        // Eindeutig statt zeitgestempelt: `r${Date.now()}` vergab zwei Regeln
+        // derselben Millisekunde dieselbe Id — und die Id steckt in jeder
+        // Treffpunkt-Kennung (`<wi>|<ruleId>`) und darüber im Aufgaben-
+        // Schlüssel. Zwei Regeln mit einer Id hießen zwei Treffpunkte mit einer
+        // Bestätigung. `crypto.randomUUID` nutzt der Reducer für Mitteilungen
+        // ohnehin; das Präfix hält die Kennung lesbar.
+        id: `r${crypto.randomUUID()}`,
         grp: action.grp,
         wd: 6,
         time: '09:30',

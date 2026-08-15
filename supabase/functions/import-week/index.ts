@@ -366,7 +366,11 @@ Deno.serve(async (req: Request) => {
       if (!loc) continue
       try {
         const altWeek = parseWorkbookWeek(await fetchText(loc))
-        applyGoldSlots(altWeek, germanWeek) // Schülerteil-Art aus der deutschen Fassung
+        // Kein `applyGoldSlots` hier: `stripVariant` unten leert alle `names`
+        // wieder, und `localizedWeek` (src/data/localize.ts) übernimmt aus einer
+        // Variante ohnehin nur Texte — die Slots bleiben kanonisch. Der Aufruf
+        // stand hier und tat nichts; er las sich nur so, als trüge die Variante
+        // eine eigene Slot-Struktur.
         const altStudy = start ? await studyArticle(start, code) : null
         // mirror immer setzen: die Variante folgt strukturell der Primärwoche
         applyStudy(altWeek, altStudy, study ?? { title: null, songOpen: null, songClose: null })
