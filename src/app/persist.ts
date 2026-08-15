@@ -283,6 +283,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       for (let i = 0; i < next.weeks.length; i++) {
         if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
       }
+      // Dasselbe für die Treffpunkte (fsRenameLeader) — eigene Tabelle, eigener
+      // Schreibweg. Ohne dies hielte der neue Name nur bis zum nächsten Laden.
+      for (let i = 0; i < next.fsWeeks.length; i++) {
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i)
+      }
       // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
       if ('planner' in action.patch) {
         for (const m of next.members) {

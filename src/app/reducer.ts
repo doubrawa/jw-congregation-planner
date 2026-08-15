@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, overseerGroup, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -413,6 +413,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         const newName = displayName({ ...oldPerson, ...action.patch })
         if (oldName !== newName) {
           next.weeks = renameInWeeks(state.weeks, action.id, oldName, newName)
+          // Treffpunkte sind die zweite Datenquelle und tragen den Leiter
+          // ebenfalls als Text — ohne dies stand dort weiter der alte Name,
+          // während die Zusammenkünfte längst den neuen zeigten.
+          next.fsWeeks = fsRenameLeader(state.fsWeeks, action.id, oldName, newName)
         }
       }
       // Planer-Recht in verknüpfte Konten und offene Einladungscodes spiegeln

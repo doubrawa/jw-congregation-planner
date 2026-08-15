@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications, gehoertZu, partWorkload } from './helpers'
-import { fsDropPersonPid } from './fs'
+import { fsDropPersonPid, fsRenameLeader } from './fs'
 import { assignSlot } from './planning'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import type { FsInstance, Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
@@ -158,6 +158,46 @@ describe('Treffpunkte: dieselbe Regel', () => {
   it('unveränderte Wochen behalten ihre Referenz', () => {
     const vorher = [[inst('a', 'Anna Beispiel', ANNA.id)]]
     expect(fsDropPersonPid(vorher, 'p-fremd')).toBe(vorher)
+  })
+
+  /*
+   * Das Umbenennen kam bei der zweiten Datenquelle nie an: `renameInWeeks`
+   * zog den Namen durch die Zusammenkünfte, die Treffpunkte behielten den
+   * alten. Funktional stimmte alles (die `lpid` trägt die Zuordnung) — auf
+   * dem Treffpunkt-Plan stand aber ein Name, den es nicht mehr gibt. Genau
+   * die Beschreibung von Punkt 1 oben, nur eine Tabelle weiter.
+   */
+  it('zieht den neuen Namen über die lpid nach', () => {
+    const vorher = [[inst('a', 'Anna Beispiel', ANNA.id), inst('b', 'Bernd Anders', 'p-bernd')]]
+    const next = fsRenameLeader(vorher, ANNA.id, 'Anna Beispiel', 'Anna Neumann')
+    expect(next[0][0].leader).toBe('Anna Neumann')
+    expect(next[0][0].lpid).toBe(ANNA.id)
+    expect(next[0][1].leader).toBe('Bernd Anders') // fremder Treffpunkt unberührt
+  })
+
+  it('ohne lpid über den alten Namen (Altdaten)', () => {
+    const vorher = [[inst('a', 'Anna Beispiel')]]
+    expect(fsRenameLeader(vorher, ANNA.id, 'Anna Beispiel', 'Anna Neumann')[0][0].leader).toBe(
+      'Anna Neumann',
+    )
+  })
+
+  it('trägt die lpid vor dem Namen — Gleichnamige bleiben verschont', () => {
+    // Dieselbe Rangfolge wie `gehoertZu`: wer eine Id hat, wird über sie
+    // gemeint. Sonst bekäme eine zweite Person desselben Anzeigenamens den
+    // neuen Namen mit.
+    const vorher = [[inst('a', 'Anna Beispiel', 'p-zwilling')]]
+    expect(fsRenameLeader(vorher, ANNA.id, 'Anna Beispiel', 'Anna Neumann')).toBe(vorher)
+  })
+
+  it('leerer alter Name ändert nichts — offene Plätze bleiben offen', () => {
+    const vorher = [[inst('a', '')]]
+    expect(fsRenameLeader(vorher, ANNA.id, '', 'Anna Neumann')).toBe(vorher)
+  })
+
+  it('unveränderte Wochen behalten auch beim Umbenennen ihre Referenz', () => {
+    const vorher = [[inst('a', 'Anna Beispiel', ANNA.id)]]
+    expect(fsRenameLeader(vorher, 'p-fremd', 'Wer Anders', 'Neu')).toBe(vorher)
   })
 })
 
