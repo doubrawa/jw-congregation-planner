@@ -575,3 +575,44 @@ export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance
   })
   return anyChanged ? next : fsWeeks
 }
+
+/**
+ * Zieht den Anzeigenamen einer umbenannten Person durch die Treffpunkt-Wochen.
+ *
+ * Gegenstück zu `renameInWeeks` (lib/data.ts). Der Leiter steht als **Text** in
+ * den Treffpunkt-Daten, `lpid` ist nur der Fremdschlüssel — ohne dieses
+ * Nachziehen stand auf jedem Treffpunkt weiter der alte Name, während die
+ * Zusammenkünfte längst den neuen zeigten.
+ *
+ * Es ist derselbe Fehler, den T38 schon zweimal behoben hat: einmal für die
+ * Zusätzliche Klasse und den Ratgeber, einmal beim Löschen (`fsDropPersonPid`
+ * gleich darüber). Nur das Umbenennen kam bei der zweiten Datenquelle nie an.
+ *
+ * Getroffen wird über die `lpid`; ohne sie (Altdaten) über den alten Namen —
+ * dieselbe Rangfolge wie in `gehoertZu`. Unveränderte Wochen behalten ihre
+ * Referenz, daran erkennt der Aufrufer, welche er speichern muss.
+ */
+export function fsRenameLeader(
+  fsWeeks: FsInstance[][],
+  id: string,
+  oldName: string,
+  newName: string,
+): FsInstance[][] {
+  // Ohne alten Namen nichts tun: sonst bekämen offene Plätze (leerer Leiter)
+  // den neuen Namen. Ein zugeteilter Treffpunkt trägt immer einen.
+  if (!oldName || oldName === newName) return fsWeeks
+  let anyChanged = false
+  const next = fsWeeks.map((week) => {
+    let changed = false
+    const insts = week.map((inst) => {
+      const meint = inst.lpid ? inst.lpid === id : inst.leader === oldName
+      if (!meint || inst.leader === newName) return inst
+      changed = true
+      return { ...inst, leader: newName }
+    })
+    if (!changed) return week
+    anyChanged = true
+    return insts
+  })
+  return anyChanged ? next : fsWeeks
+}

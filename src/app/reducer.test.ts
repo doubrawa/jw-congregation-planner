@@ -243,6 +243,24 @@ describe('Personen', () => {
     expect(next.pendingIds).toContain(target.id)
   })
 
+  it('updatePerson zieht die Namensänderung auch durch die Treffpunkte', () => {
+    // Zweite Datenquelle, eigener Schreibweg — und lange vergessen: der
+    // Treffpunkt-Plan zeigte weiter den alten Namen, während die
+    // Zusammenkünfte daneben schon den neuen trugen.
+    const target = person('Manfred Albrecht')
+    const s = makeState({
+      fsWeeks: [[
+        { id: '0|r1', ruleId: 'r1', grp: '', wd: 6, time: '09:30', place: 'Saal',
+          leader: 'Manfred Albrecht', lpid: target.id },
+        { id: '0|r2', ruleId: 'r2', grp: '', wd: 3, time: '09:30', place: 'Halle',
+          leader: 'Jemand Anders', lpid: 'p-fremd' },
+      ]],
+    })
+    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfredo' } })
+    expect(next.fsWeeks[0][0].leader).toBe('Manfredo Albrecht')
+    expect(next.fsWeeks[0][1].leader).toBe('Jemand Anders')
+  })
+
   it('updatePerson spiegelt das Planer-Recht in Konten/Codes (eigenes Konto ausgenommen)', () => {
     const target = person('Manfred Albrecht')
     const s = makeState({

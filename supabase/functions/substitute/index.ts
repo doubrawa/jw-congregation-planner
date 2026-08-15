@@ -16,6 +16,11 @@
 //     Läuft mit Service-Role, weil Wochen/Bestätigungen nur der Planer schreibt.
 //     Der Slot wird bedingt geschrieben (409, wenn jemand schneller war).
 //
+// Beide Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
+// 'meeting-cancelled'): dort ist nichts zu vertreten. Die App zeigt solche
+// Aufgaben gar nicht erst an — hier landet nur, wer den Ausfall noch nicht
+// gesehen hat.
+//
 // Sicherheit: Aufrufer muss per JWT eingeloggtes Mitglied DIESER Versammlung
 // sein; für 'take' zusätzlich für den Dienst qualifiziert. Alle DB-Zugriffe sind
 // auf die Versammlung des Aufrufers gescoped.
@@ -31,6 +36,7 @@
 import webpush from 'npm:web-push@3.6.7'
 import {
   type Abweichungen,
+  istAusgefallenFuer,
   meetingDayOffsets,
   personDisplayName,
   versatzMitAbweichung,
@@ -311,6 +317,13 @@ Deno.serve(async (req: Request) => {
     const meeting = week?.[parts.tab]
     const slot = meeting?.helpers?.[parts.svc]?.[parts.pos]
     if (!week || !meeting || !slot) return json({ error: 'slot-not-found' }, 404)
+    // Entfällt die Zusammenkunft, gibt es nichts zu vertreten (T30): weder
+    // jemanden zu suchen noch einzutragen. Die App zeigt solche Aufgaben gar
+    // nicht erst an (`istAusgefallen` in deriveMyTasks) — hier landet also nur,
+    // wer den Ausfall noch nicht gesehen hat. Genau dafür ist der Server da.
+    if (istAusgefallenFuer(week.dev, parts.tab)) {
+      return json({ error: 'meeting-cancelled' }, 409)
+    }
 
     const svcName = services.find((s) => s.key === parts.svc)?.name ?? parts.svc
     const date = meetingDate(meeting)

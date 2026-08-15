@@ -339,6 +339,19 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
    * Freitag stattfand. Anna (7.–9.9. weg) galt damit als verhindert, obwohl
    * sie am 11.9. längst wieder da ist.
    */
+  it('eine ausgefallene Zusammenkunft wird abgewiesen — niemand wird gesucht', async () => {
+    // Entfällt die Zusammenkunft (T30), gibt es nichts zu vertreten. Die App
+    // zeigt solche Aufgaben gar nicht an; hier landet nur, wer den Ausfall
+    // noch nicht gesehen hat.
+    const w = week as { dev?: Record<string, { cancelled: boolean }> }
+    w.dev = { mid: { cancelled: true } }
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'meeting-cancelled' })
+    expect(writes).toEqual([])
+    expect(sentPush).toEqual([])
+  })
+
   it('rechnet mit dem verlegten Tag, nicht mit dem regulären', async () => {
     const w = week as { dev?: Record<string, { day: string }> }
     w.dev = { mid: { day: 'Freitag' } } // 11.9. — nach Annas Abwesenheit
