@@ -787,15 +787,94 @@ describe('LAC / Vortrag (über den Reducer)', () => {
 
 describe('Erinnerungen', () => {
   it('changeReminder klemmt first (1..21) und last (0..7)', () => {
-    const s = makeState({ reminders: { first: 1, last: 0, repeat: false } })
+    const s = makeState({ reminders: { first: 1, last: 0, repeat: false, onAssign: true } })
     expect(reducer(s, { type: 'changeReminder', key: 'first', delta: -1 }).reminders.first).toBe(1)
     expect(reducer(s, { type: 'changeReminder', key: 'last', delta: -1 }).reminders.last).toBe(0)
-    const hi = makeState({ reminders: { first: 21, last: 7, repeat: false } })
+    const hi = makeState({ reminders: { first: 21, last: 7, repeat: false, onAssign: true } })
     expect(reducer(hi, { type: 'changeReminder', key: 'first', delta: 1 }).reminders.first).toBe(21)
     expect(reducer(hi, { type: 'changeReminder', key: 'last', delta: 1 }).reminders.last).toBe(7)
   })
   it('toggleReminderRepeat kippt den Schalter', () => {
-    expect(reducer(makeState({ reminders: { first: 5, last: 1, repeat: false } }), { type: 'toggleReminderRepeat' }).reminders.repeat).toBe(true)
+    expect(reducer(makeState({ reminders: { first: 5, last: 1, repeat: false, onAssign: true } }), { type: 'toggleReminderRepeat' }).reminders.repeat).toBe(true)
+  })
+
+  it('toggleReminderOnAssign kippt den Schalter', () => {
+    const aus = reducer(makeState(), { type: 'toggleReminderOnAssign' })
+    expect(aus.reminders.onAssign).toBe(false)
+    expect(reducer(aus, { type: 'toggleReminderOnAssign' }).reminders.onAssign).toBe(true)
+  })
+})
+
+/**
+ * T74. Die Mitteilung „Zuteilung gesendet" entsteht auf **vier** Wegen:
+ * einzeln, Treffpunkt-Leiter, Auto-Zuteilung, Treffpunkt-Auto. Der Schalter
+ * muss an jedem greifen — genau hier verliert sich sonst einer, ohne dass
+ * etwas fehlschlägt (die Mitteilung geht ja weiter hinaus).
+ *
+ * Geprüft wird zusätzlich, dass **nur** die Mitteilung wegfällt: zugeteilt
+ * wird weiter, und die Aufgabe bleibt unbestätigt (`pendingIds`).
+ */
+describe('reminders.onAssign — die Mitteilung beim Zuteilen (T74)', () => {
+  const ohneMeldung = (over: Partial<AppState> = {}) =>
+    makeState({ ...over, reminders: { ...DEMO_REMINDERS, onAssign: false } })
+
+  it('einzelner Programmpunkt: keine Mitteilung, Zuteilung trotzdem', () => {
+    const sel = firstPartSlot(makeState().weeks[0], 'mid')
+    const s = ohneMeldung({ slotSel: sel })
+    const next = reducer(s, { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
+    expect(next.notifs).toBe(s.notifs)
+    expect((next.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0].name).toBe('Neue Person')
+    expect(next.pendingIds).toContain('neu-1')
+  })
+
+  it('Treffpunkt-Leiter: keine Mitteilung, Leiter trotzdem gesetzt', () => {
+    const inst = makeState().fsWeeks[0][0]
+    const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
+    const s = ohneMeldung({ slotSel: sel })
+    const next = reducer(s, { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
+    expect(next.notifs).toBe(s.notifs)
+    expect(next.fsWeeks[0].find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
+  })
+
+  /** Demo-Woche mit einem offenen Programmpunkt — sonst gibt es nichts zu tun. */
+  const mitOffenemSlot = (over: Partial<AppState> = {}) => {
+    const weeks = buildDemoWeeks()
+    const closeSi = weeks[0].mid.sections.length - 1
+    ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
+    return makeState({ weeks, week: 0, tab: 'mid', ...over })
+  }
+
+  /** Treffpunkt-Woche ohne Leiter — geleert über die eigene Aktion. */
+  const mitOffenenTreffpunkten = (over: Partial<AppState> = {}) => {
+    const geleert = reducer(makeState({ week: 0 }), { type: 'fsClear', onlyGroup: null })
+    return makeState({ fsWeeks: geleert.fsWeeks, week: 0, ...over })
+  }
+
+  it('Auto-Zuteilung: keine Mitteilung, Plätze trotzdem besetzt', () => {
+    const s = mitOffenemSlot({ reminders: { ...DEMO_REMINDERS, onAssign: false } })
+    const next = reducer(s, { type: 'autoAssign', scope: 'parts' })
+    expect(next.notifs).toBe(s.notifs)
+    expect(next.weeks).not.toBe(s.weeks) // zugeteilt wurde trotzdem
+  })
+
+  it('Treffpunkt-Auto: keine Mitteilung, Leiter trotzdem besetzt', () => {
+    const s = mitOffenenTreffpunkten({ reminders: { ...DEMO_REMINDERS, onAssign: false } })
+    const next = reducer(s, { type: 'fsAutoAssign', onlyGroup: null })
+    expect(next.notifs).toBe(s.notifs)
+    expect(next.fsWeeks).not.toBe(s.fsWeeks)
+  })
+
+  it('eingeschaltet meldet jeder der vier Wege', () => {
+    const sel = firstPartSlot(makeState().weeks[0], 'mid')
+    const inst = makeState().fsWeeks[0][0]
+    const fsSel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
+    const wege: AppState[] = [
+      reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person', pid: 'neu-1' }),
+      reducer(makeState({ slotSel: fsSel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' }),
+      reducer(mitOffenemSlot(), { type: 'autoAssign', scope: 'parts' }),
+      reducer(mitOffenenTreffpunkten(), { type: 'fsAutoAssign', onlyGroup: null }),
+    ]
+    for (const next of wege) expect(next.notifs[0]!.type).toBe('gesendet')
   })
 })
 

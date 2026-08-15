@@ -394,6 +394,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'changeReminder':
     case 'toggleReminderRepeat':
+    case 'toggleReminderOnAssign':
     case 'setAuxClass':
     case 'setCongLang':
     case 'addProgLang':

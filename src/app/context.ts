@@ -288,6 +288,7 @@ export type AppAction =
   // Erinnerungen
   | { type: 'changeReminder'; key: ReminderKey; delta: 1 | -1 }
   | { type: 'toggleReminderRepeat' }
+  | { type: 'toggleReminderOnAssign' }
   // Sprache
   | { type: 'setLang'; lang: Lang }
   | { type: 'openLangSheet'; mode?: 'cong' | 'alt' }

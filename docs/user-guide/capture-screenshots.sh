@@ -43,8 +43,9 @@ SHOTS=(
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"
   "planer-personen|s=personen"
-  # höher als der Rest: unter den Stammdaten folgt die Zeitleiste der Zuteilungen
-  "planer-person-detail|s=personen&p=p1|920x1250"
+  # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
+  # Zuteilungen und die beiden Bereichs-Karten (Aufgaben, Hilfsdienste)
+  "planer-person-detail|s=personen&p=p1|920x2400"
   "planer-einstellungen|s=einstellungen"
   "offline-stand|s=programm&tab=mid&stale=5"
 )

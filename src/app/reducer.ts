@@ -140,6 +140,19 @@ function pushNotif(
 }
 
 /**
+ * Mitteilung beim Zuteilen — aber nur, wenn die Versammlung sie eingeschaltet
+ * hat (`reminders.onAssign`, Einstellungen → Erinnerungen).
+ *
+ * **Eine Stelle für alle vier Zuteilungswege** (einzeln, Treffpunkt-Leiter,
+ * Auto-Zuteilung, Treffpunkt-Auto). Den Schalter an jedem Weg einzeln
+ * abzufragen ist genau die Fehlerart, die hier am häufigsten vorkommt: einer
+ * wird vergessen, und niemand sieht es — die Mitteilung geht ja hinaus.
+ */
+function zuteilungsNotif(state: AppState, title: string, text: string): Notification[] {
+  return state.reminders.onAssign ? pushNotif(state.notifs, 'gesendet', title, text) : state.notifs
+}
+
+/**
  * Beim Anlegen abgebrochene Personen (komplett ohne Namen) werden beim
  * Verlassen des Details automatisch wieder entfernt — sonst blieben durch das
  * Auto-Speichern leere Einträge in der Liste stehen.
@@ -596,9 +609,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (sel.kind === 'fs') {
         const fsWeeks = fsSetLeader(state.fsWeeks, sel.wi, sel.instId, action.name, action.pid)
         const notifs = action.name
-          ? pushNotif(
-              state.notifs,
-              'gesendet',
+          ? zuteilungsNotif(
+              state,
               'Zuteilung gesendet',
               `${action.name} — ${FS_KANONISCH}${wochenZusatz(state.weeks, sel.wi)}`,
             )
@@ -620,9 +632,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
       const weeks = assignSlot(state.weeks, sel, action.name, action.rolle, action.pid)
       const notifs = action.name
-        ? pushNotif(
-            state.notifs,
-            'gesendet',
+        ? zuteilungsNotif(
+            state,
             'Zuteilung gesendet',
             `${action.name} — ${sel.label}${wochenZusatz(state.weeks, sel.wi)}`,
           )
@@ -675,9 +686,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
       const pending = new Set(state.pendingIds)
       for (const id of newlyIds) pending.add(id)
-      const notifs = pushNotif(
-        state.notifs,
-        'gesendet',
+      const notifs = zuteilungsNotif(
+        state,
         'Zuteilungen gesendet',
         `${count} Zuteilungen${wochenZusatz(state.weeks, state.week)}`,
       )
@@ -720,9 +730,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
       const pending = new Set(state.pendingIds)
       for (const id of newlyIds) pending.add(id)
-      const notifs = pushNotif(
-        state.notifs,
-        'gesendet',
+      const notifs = zuteilungsNotif(
+        state,
         'Zuteilungen gesendet',
         `${count} · ${FS_KANONISCH} · ${state.weeks[state.week]?.range ?? ''}`,
       )
@@ -1011,6 +1020,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'toggleReminderRepeat':
       return { ...state, reminders: { ...state.reminders, repeat: !state.reminders.repeat } }
+    case 'toggleReminderOnAssign':
+      return { ...state, reminders: { ...state.reminders, onAssign: !state.reminders.onAssign } }
     case 'setLang':
       return { ...state, lang: action.lang }
     case 'openLangSheet':

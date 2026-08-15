@@ -2211,32 +2211,61 @@ existiert: `PersonTimeline` zeigt die Zeitleiste einer einzelnen Person.
 
 ## Aufgenommen am 15. August 2026 — Fehler (T73–T78)
 
-### T73 · Personen-Detail: Aufgaben und Hilfsdienste gehören getrennt ⚡
-Ein einziges Panel „AUFGABENBEREICHE" hält heute beides: die festen
-Programm-Bereiche aus `QUALIFICATION_ORDER` und darunter je Hilfsdienst einen
-Schalter (`personen/PersonDetail.tsx:175`). Gewünscht sind **zwei** Bereiche —
-Aufgaben und Hilfsdienste —, **beide alphabetisch sortiert**.
+### T73 · Personen-Detail: Aufgaben und Hilfsdienste gehören getrennt ⚡ ✅ erledigt
+Ein einziges Panel „AUFGABENBEREICHE" hielt beides: die festen Programm-Bereiche
+aus `QUALIFICATION_ORDER` und darunter je Hilfsdienst einen Schalter. Jetzt sind
+es **zwei** Karten — AUFGABENBEREICHE (petrol) und HILFSDIENSTE (neutral2, wie
+derselbe Begriff im Planen-Reiter) —, **beide alphabetisch**.
 
-Beim Sortieren aufpassen: die Namen sind übersetzt. Also nach `localeCompare` in
-der Sprache des Lesers sortieren, nicht nach dem Schlüssel — sonst steht die
-Liste in jeder Sprache in deutscher Reihenfolge.
+Sortiert wird nach der **übersetzten** Beschriftung (`localeCompare` mit der
+Sprache des Lesers, `numeric` für „Ordner 2" vor „Ordner 10") — nach dem
+Schlüssel stünde jede Sprache in deutscher Reihenfolge. Kein neuer
+i18n-Schlüssel: `hilfsdienste` gibt es längst (Einstellungen, Planen, Programm).
+Gruppen-Dienste (Reinigung) bleiben wie vorher draußen — sie rotieren Gruppen,
+nicht Personen.
 
-### T74 · Erinnerungen: „Bei Zuteilung · Sofort" ist gar keine Auswahl ⚡
-`einstellungen/RemindersPanel.tsx:24` schreibt die Zeile als festen Text hin
-(`kv-row` mit `remBeiZut`/`remSofort`) — daneben stehen zwei echte Stepper und
-ein Schalter. Ein Wert ohne Bedienelement sieht aus wie ein vergessenes Feld.
+**Geprüft:** `personen/PersonDetail.test.tsx` (vier Fälle: eigener Bereich,
+beide alphabetisch, Gruppen-Dienst draußen, leere Dienstliste) und am laufenden
+Demo-Stand nachgesehen.
 
-Entweder wird daraus eine echte Einstellung (sofort · gebündelt · gar nicht),
-oder die Zeile verschwindet und der Satz steht im Hinweistext darüber.
+### T74 · Erinnerungen: „Bei Zuteilung · Sofort" ist gar keine Auswahl ⚡ ✅ erledigt
+Die Zeile stand als fester Text (`kv-row`) neben zwei echten Steppern und einem
+Schalter und sah dadurch aus wie ein vergessenes Feld. **Entschieden (Betreiber,
+15.8.2026): ein echter Schalter**, an/aus — nicht der kleinere Weg, den Satz in
+den Hinweistext zu schieben.
 
-### T75 · Personenliste: „Nachname, Vorname" — so, wie sortiert wird ⚡
-Sortiert wird nach `ln`, dann `fn` (`personCompare`, `data/helpers.ts:135`),
-angezeigt aber „Vorname Nachname" (`personLabel` → `fullName`,
-`data/helpers.ts:93`). Für den Leser springt die Liste dadurch scheinbar
-willkürlich. **In der Liste** „Nachname, Vorname" zeigen.
+Umgesetzt als `reminders.onAssign` (Standard `true`, liegt in
+`congregations.settings` → **keine Migration**; fehlt das Feld, gilt „an", denn
+so lief es vorher). Beschriftung `${remBeiZut} · ${remSofort}` aus den
+vorhandenen Bausteinen — 34 Sprachen ohne neuen Schlüssel.
 
-Nur dort: anderswo bleibt der volle Name in Leserichtung — da ist er Anrede,
-nicht Sortierschlüssel (`displayName` ist seit `e00cfa4` bewusst der volle Name).
+**Beim Bauen gemessen, was der Schalter wirklich schaltet:** Die Mitteilung
+„Zuteilung gesendet" geht an die **Planer** (`persist.ts` verteilt lokale
+Mitteilungen an `members.planner`), nicht an die eingeteilte Person. Die erfährt
+es über die zeitlichen Erinnerungen — `send-reminders` kennt nur die Arten
+`main`/`self`/`planner`, alle tagbasiert, keine sofortige. Der Schalter nimmt
+ihr also nichts weg; er entscheidet, ob die Glocke des Planers bei jeder
+Zuteilung eine Zeile bekommt. **Ein sofortiger Anstoß an die zugeteilte Person
+wäre ein eigenes Stück Arbeit** (Web-Push kann nur die Edge Function) — nicht
+Teil von T74.
+
+Alle vier Zuteilungswege (einzeln, Treffpunkt-Leiter, Auto-Zuteilung,
+Treffpunkt-Auto) laufen dafür durch **eine** Funktion `zuteilungsNotif` — den
+Schalter an jedem Weg einzeln abzufragen ist die Fehlerart aus
+`alle-plaetze.test.ts`. `reducer.test.ts` prüft jeden der vier Wege in beiden
+Stellungen.
+
+### T75 · Personenliste: „Nachname, Vorname" — so, wie sortiert wird ⚡ ✅ erledigt
+Sortiert wird nach `ln`, dann `fn` (`personCompare`), angezeigt wurde aber
+„Vorname Nachname" — der sichtbare erste Buchstabe hatte mit der Reihenfolge
+nichts zu tun. Neu: `listName` (helpers.ts) liefert „Krüger, Simon" und wird
+**nur** in der Personenliste verwendet.
+
+Zwei Fälle stecken drin: ein gesetzter **Anzeigename** gewinnt unverändert (er
+unterscheidet Namensgleiche und ließe sich nicht umstellen, ohne ihn zu
+zerlegen), und halbe Datensätze fallen nicht auseinander (nur Vorname, nur
+Nachname, ganz leer → „—"). Überall sonst bleibt `personLabel` — dort ist der
+Name Anrede, nicht Sortierschlüssel.
 
 ### T76 · Konflikt-Banner: „+N weitere" muss aufklappen — und färben 🔧
 `planen/PlanBanners.tsx` zeigt Serien-Konflikte nur bis `STREAK_SHOWN = 2`, der
@@ -2286,11 +2315,12 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☐☐☐☐☐☐☐☐☐☐
+15. August ☐☐☐☐☐☐ ☑☑☑☐☐☐
 
-**65 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 13 offen:** T63
-(vom Betreiber zurückgestellt) und die zwölf Punkte vom 15. August — T67–T78,
-sechs Vorhaben und sechs Fehler, noch nicht angefangen. **T66** — der
+**68 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 10 offen:** T63
+(vom Betreiber zurückgestellt), die sechs Vorhaben T67–T72 und die drei
+verbliebenen Fehler T76–T78. **T73, T74 und T75** sind noch am 15. August
+erledigt worden. **T66** — der
 strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
 erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
 zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
@@ -2370,7 +2400,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T67–T78 | Frisch aufgenommen: sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und sechs Fehler. Noch nicht angefangen; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **15. August** | T67–T72, T76–T78 | Sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und drei Fehler. T73/T74/T75 sind am selben Tag erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
