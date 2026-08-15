@@ -41,7 +41,10 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
             <div className="plan-slots">
               {Array.from({ length: service.count }, (_, pos) => {
                 const name = assigned[pos]?.name ?? ''
-                const isGroup = name.startsWith('Gruppe')
+                // Am Dienst erkannt, nicht am Wort: `startsWith('Gruppe')`
+                // traf nur deutsche Gruppennamen. Ob hier eine Gruppe rotiert,
+                // sagt der Dienst selbst — und der steht daneben.
+                const isGroup = Boolean(service.groups)
                 return (
                   <SlotChip
                     key={pos}

@@ -611,7 +611,17 @@ export interface Reminders {
 interface SlotSelectionBase {
   wi: number // Wochenindex
   tab: MeetingKey
-  label: string // Sheet-Titel, z. B. "Bibellesung · Jer 32:6-18 · Leser"
+  /**
+   * Sheet-Titel — der Programmpunkt, **Versammlungssprache**
+   * („Bibellesung · Jer 32:6-18").
+   */
+  label: string
+  /**
+   * Rolle und Raum hinter dem Titel („Leser", „Zusätzliche Klasse") —
+   * **App-Sprache**, wie überall bei Rollen (`MyTask.rolle`, `OpenSlot.rolle`).
+   * Getrennt, weil ein einzelner Übersetzer für beide Hälften nicht stimmen kann.
+   */
+  labelRolle?: string
   priv: QualificationKey | string | null // nötige Qualifikation (null = alle)
   groups: boolean // Gruppen-Rotation (Reinigung): Kandidaten sind Gruppe 1–3
 }
@@ -645,6 +655,7 @@ export interface FsSlotSelection {
   wi: number // Wochenindex
   instId: string // FsInstance.id
   label: string
+  labelRolle?: string
   priv: QualificationKey | string | null
   groups: boolean
 }

@@ -103,13 +103,19 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const [place, setPlace] = useState('')
   const addInst = () => {
     const inst: FsInstance = {
-      id: `x${Date.now()}`,
+      // Eindeutig statt zeitgestempelt: `x${Date.now()}` gab zwei Treffpunkte
+      // derselben Millisekunde dieselbe Id — und sie steckt im Aufgaben-
+      // Schlüssel (`fs|<Montag>|<instId>`). Zwei Treffpunkte hätten sich eine
+      // Bestätigung geteilt. Dieselbe Stelle gab es bei den Regeln.
+      id: `x${crypto.randomUUID()}`,
       ruleId: null,
       manual: true,
       grp,
       wd,
       time,
-      place: place.trim() || 'Königreichssaal',
+      // Vorgabe ist der Saal **dieser** Versammlung, nicht das deutsche Wort:
+      // „Königreichssaal" stand sonst auch in einer spanischen Versammlung da.
+      place: place.trim() || state.congregation.hall,
       leader: '',
     }
     dispatch({ type: 'fsInstAdd', inst })

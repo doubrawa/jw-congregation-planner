@@ -55,7 +55,14 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const fsInst = sel.kind === 'fs' ? state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId) : undefined
   const current = sel.kind === 'fs' ? fsLeaderValue(state.fsWeeks, sel.wi, sel.instId) : slotValue(state.weeks, sel)
   const s89 = sel.kind === 'fs' ? null : buildS89ForSlot(state.weeks, sel, state.congregation.meetings)
-  const title = sel.kind === 'part' ? tp(sel.label) : tu(sel.label)
+  // Titel in der Sprache der Versammlung, Rolle und Raum in der des Lesers.
+  // Zusammengefügt war beides ein String und lief ganz durch `tp` — „Leser"
+  // stand damit in der Versammlungssprache, „Zusätzliche Klasse" war schon
+  // übersetzt und wurde ein zweites Mal hindurchgeschickt.
+  const titelTeil = sel.kind === 'part' ? tp(sel.label) : tu(sel.label)
+  const title = [titelTeil, sel.labelRolle ? tu(sel.labelRolle) : '']
+    .filter(Boolean)
+    .join(' · ')
   const sub =
     sel.kind === 'fs'
       ? fsInst

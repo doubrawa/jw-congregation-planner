@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { istSchuelerteil } from '../data/aux-class'
-import { isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { eigeneRolle, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { SONG_WORD } from '../i18n/translate-data'
@@ -37,7 +37,7 @@ export function MeetingSection({
   tpw: (s: string) => string
 }) {
   const { state, dispatch } = useApp()
-  const { t } = useT()
+  const { t, tu } = useT()
   const [lacTitle, setLacTitle] = useState('')
 
   const isLac = rawSection.label === LABEL_LAC
@@ -75,7 +75,11 @@ export function MeetingSection({
 
   const partChipText = (slot: SlotAssignment): string => {
     if (!slot.name) return t.zuteilenChip
-    return slot.rolle && !slot.rolle.startsWith('mit') ? `${tpw(slot.rolle)}: ${slot.name}` : slot.name
+    // Die Rolle in der Sprache des Lesers (`tu`), nicht der Versammlung: sie
+    // gehört zur Bedienung, nicht zum Programmtext. Über `tpw` stand sie in
+    // einer anderen Sprache als dieselbe Rolle im Banner darüber.
+    const rolle = eigeneRolle(slot.rolle)
+    return rolle ? `${tu(rolle)}: ${slot.name}` : slot.name
   }
 
   const openPartSlot = (
@@ -85,10 +89,12 @@ export function MeetingSection({
     slot: SlotAssignment,
     aux = false,
   ) => {
-    const suffix = slot.rolle && !slot.rolle.startsWith('mit') ? ` · ${slot.rolle}` : ''
-    // Im Sheet-Titel den Raum nennen: sonst sieht man beim Zuteilen nicht,
-    // ob man gerade den Hauptsaal oder die Zusätzliche Klasse besetzt.
-    const raum = aux ? ` · ${t.auxKlasse}` : ''
+    // Rolle und Raum stehen getrennt vom Titel: beide gehören in die Sprache
+    // des Lesers, der Titel in die der Versammlung (siehe SlotSelection.label).
+    // Im Sheet-Titel den Raum nennen — sonst sieht man beim Zuteilen nicht, ob
+    // man gerade den Hauptsaal oder die Zusätzliche Klasse besetzt.
+    const rolle = eigeneRolle(slot.rolle)
+    const raum = aux ? t.auxKlasse : ''
     dispatch({
       type: 'openSlot',
       sel: {
@@ -99,7 +105,8 @@ export function MeetingSection({
         ii,
         ni,
         aux: aux || undefined,
-        label: item.title + suffix + raum,
+        label: item.title,
+        labelRolle: [rolle, raum].filter(Boolean).join(' · ') || undefined,
         priv: slot.bereichsKey ?? null,
         groups: false,
         // `isSpeakerRole`, nicht `isGuestRole`: das Flag öffnet die
