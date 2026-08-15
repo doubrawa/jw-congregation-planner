@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Penatua",
   "rolleDag": "Hamba pelayanan",
   "rolleVerk": "Penyiar",
+  "rolleKeine": "Tidak ada",
   "privVorsitz": "Ketua",
   "privVortrag": "Khotbah",
   "privGebet": "Doa",

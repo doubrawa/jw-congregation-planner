@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "İhtiyar",
   "rolleDag": "Yardımcı hizmetçi",
   "rolleVerk": "Müjdeci",
+  "rolleKeine": "Yok",
   "privVorsitz": "Başkanlık",
   "privVortrag": "Konuşmalar",
   "privGebet": "Dualar",

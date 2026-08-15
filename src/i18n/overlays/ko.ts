@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "장로",
   "rolleDag": "봉사의 종",
   "rolleVerk": "전도인",
+  "rolleKeine": "없음",
   "privVorsitz": "사회",
   "privVortrag": "연설",
   "privGebet": "기도",

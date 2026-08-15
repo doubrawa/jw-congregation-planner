@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Starszy",
   "rolleDag": "Sługa pomocniczy",
   "rolleVerk": "Głosiciel",
+  "rolleKeine": "Brak",
   "privVorsitz": "Przewodniczenie",
   "privVortrag": "Przemówienia",
   "privGebet": "Modlitwy",

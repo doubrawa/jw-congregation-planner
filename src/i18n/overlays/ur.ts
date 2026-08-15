@@ -179,6 +179,7 @@ export default {
   "rolleAeltester": "بزرگ",
   "rolleDag": "خادم",
   "rolleVerk": "پبلشر",
+  "rolleKeine": "کوئی نہیں",
   "privVorsitz": "چیئرمین",
   "privVortrag": "تقاریر",
   "privGebet": "دعائیں",

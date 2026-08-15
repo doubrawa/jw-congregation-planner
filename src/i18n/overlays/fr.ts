@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Ancien",
   "rolleDag": "Assistant",
   "rolleVerk": "Proclamateur",
+  "rolleKeine": "Aucun",
   "privVorsitz": "Présidence",
   "privVortrag": "Discours",
   "privGebet": "Prières",

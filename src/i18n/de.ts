@@ -173,7 +173,7 @@ export const DE = {
     notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
     notifErsatzGesucht: 'Ersatz gesucht', notifErsatzGefunden: 'Ersatz gefunden',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
-    rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger',
+    rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleKeine: 'Keine',
     // Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Begriffe stammen aus
     // dem Artikel „Anweisungen für die Leben-und-Dienst-Zusammenkunft" in der
     // jeweiligen Sprache — auxKlassen ist dort die Abschnittsüberschrift.

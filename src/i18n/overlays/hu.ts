@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Vén",
   "rolleDag": "Kisegítőszolga",
   "rolleVerk": "Hírnök",
+  "rolleKeine": "Nincs",
   "privVorsitz": "Elnöklés",
   "privVortrag": "Előadások",
   "privGebet": "Imák",

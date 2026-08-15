@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Πρεσβύτερος",
   "rolleDag": "Διακονικός υπηρέτης",
   "rolleVerk": "Ευαγγελιζόμενος",
+  "rolleKeine": "Καμία",
   "privVorsitz": "Προεδρία",
   "privVortrag": "Ομιλίες",
   "privGebet": "Προσευχές",

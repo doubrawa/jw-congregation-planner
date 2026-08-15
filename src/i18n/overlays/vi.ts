@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Trưởng lão",
   "rolleDag": "Phụ tá hội thánh",
   "rolleVerk": "Người công bố",
+  "rolleKeine": "Không có",
   "privVorsitz": "Chủ tọa",
   "privVortrag": "Bài giảng",
   "privGebet": "Cầu nguyện",

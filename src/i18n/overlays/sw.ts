@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Mzee",
   "rolleDag": "Mtumishi wa huduma",
   "rolleVerk": "Mhubiri",
+  "rolleKeine": "Hakuna",
   "privVorsitz": "Uenyekiti",
   "privVortrag": "Hotuba",
   "privGebet": "Sala",

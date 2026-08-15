@@ -179,6 +179,7 @@ export default {
   "rolleAeltester": "זקן־קהילה",
   "rolleDag": "משרת בקהילה",
   "rolleVerk": "מבשר",
+  "rolleKeine": "ללא",
   "privVorsitz": "יושב־ראש",
   "privVortrag": "הרצאות",
   "privGebet": "תפילות",

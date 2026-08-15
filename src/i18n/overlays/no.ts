@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Eldste",
   "rolleDag": "Menighetstjener",
   "rolleVerk": "Forkynner",
+  "rolleKeine": "Ingen",
   "privVorsitz": "Ordførerskap",
   "privVortrag": "Taler",
   "privGebet": "Bønner",

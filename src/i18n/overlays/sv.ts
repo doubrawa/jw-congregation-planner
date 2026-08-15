@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Äldste",
   "rolleDag": "Biträdande tjänare",
   "rolleVerk": "Förkunnare",
+  "rolleKeine": "Ingen",
   "privVorsitz": "Ordförandeskap",
   "privVortrag": "Tal",
   "privGebet": "Böner",

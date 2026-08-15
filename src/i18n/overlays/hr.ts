@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "Starješina",
   "rolleDag": "Sluga pomoćnik",
   "rolleVerk": "Objavitelj",
+  "rolleKeine": "Nijedna",
   "privVorsitz": "Predsjedanje",
   "privVortrag": "Govori",
   "privGebet": "Molitve",

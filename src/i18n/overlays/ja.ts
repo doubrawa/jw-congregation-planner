@@ -124,6 +124,7 @@ export default {
   "rolleAeltester": "長老",
   "rolleDag": "奉仕の僕",
   "rolleVerk": "伝道者",
+  "rolleKeine": "なし",
   "privVorsitz": "司会",
   "privVortrag": "話",
   "privGebet": "祈り",
