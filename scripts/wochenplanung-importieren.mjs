@@ -50,7 +50,12 @@
  *
  * `--trocken`  zeigt nur, was geschähe, und schreibt nichts.
  * `--nur-leere` füllt nur offene Plätze; ohne die Flagge gewinnt NWS auch über
- *              bereits gesetzte Namen.
+ *              bereits gesetzte Namen. Die Flagge schützt **Zuteilungen** —
+ *              Liednummern gehören zur Programmstruktur und folgen immer NWS.
+ *
+ * Übersprungen wird, was der Planer selbst entschieden hat: Wochen mit Anlass
+ * (Kreisaufseher, Gedächtnismahl, Kongress) und einzeln gestrichene
+ * Zusammenkünfte. NWS kennt beides nicht und teilte sonst ins Leere.
  *
  * Der **Service-Role-Key** umgeht RLS und darf niemals in die App oder ins
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
@@ -368,6 +373,19 @@ export function setSlot(names, idx, val, zaehler, nurLeere) {
   if (!val || !val.name) return false
   const slot = names?.[idx]
   if (!slot) { zaehler.fehlplatz++; return false }
+  return setSlotObj(slot, val, zaehler, nurLeere)
+}
+
+/**
+ * Dasselbe auf einem Platz-**Objekt**. Der Ratgeber der Zusätzlichen Klasse
+ * steht als einziger Platz nicht in einer Namensliste, sondern direkt in
+ * `meeting.auxRatgeber` — er soll aber denselben Regeln folgen: `nurLeere`
+ * achten und eine alte `pid` löschen, wenn NWS keine mitbringt (sonst trüge der
+ * neue Name die Id der vorigen Person, und `gehoertZu` zählte die Aufgabe der
+ * falschen Person zu).
+ */
+export function setSlotObj(slot, val, zaehler, nurLeere) {
+  if (!val || !val.name) return false
   if (nurLeere && slot.name) return false
   slot.name = val.name
   if (val.pid != null) slot.pid = val.pid
@@ -446,9 +464,7 @@ export function verteileMitte(meeting, mid, zaehler, nurLeere, keyMap) {
 
   // Ratgeber nur eintragen, wenn die Woche eine Zusätzliche Klasse führt.
   if (mid.auxCounselor && meeting.auxRatgeber !== undefined) {
-    meeting.auxRatgeber = { ...(meeting.auxRatgeber || {}), name: mid.auxCounselor.name }
-    if (mid.auxCounselor.pid != null) meeting.auxRatgeber.pid = mid.auxCounselor.pid
-    zaehler.gesetzt++
+    setSlotObj(meeting.auxRatgeber, mid.auxCounselor, zaehler, nurLeere)
   }
 
   verteileHelpers(meeting, mid.helpers, zaehler, nurLeere, keyMap)
@@ -461,12 +477,19 @@ export function verteileWochenende(meeting, we, zaehler, nurLeere, keyMap) {
   const abschluss = s[s.length - 1]
   const openItem = partItems(eroeffnung)[0]
   setSlot(openItem?.names, 0, we.chairman, zaehler, nurLeere)
+  // Liednummern sind keine Zuteilung, sondern Programmstruktur — sie folgen
+  // deshalb auch bei `--nur-leere` immer NWS. (Die Flagge schützt Namen, die
+  // der Planer gesetzt hat; ein Lied hat er nicht „vergeben".)
   if (openItem && we.openingSong != null) openItem.title = mitLiedNummer(openItem.title, we.openingSong)
 
   const vortrag = partItems(byFarbe(meeting, 'petrol') ?? {})[0]
   if (vortrag && we.speaker) {
-    setSlot(vortrag.names, 0, we.speaker, zaehler, nurLeere)
-    if (we.speaker.theme) vortrag.title = we.speaker.theme
+    // Das Thema gehört zum Redner — es wird nur mitgeschrieben, wenn auch sein
+    // Name gesetzt wurde. Sonst stünde bei `--nur-leere` das NWS-Thema über dem
+    // Redner, den der Planer selbst eingetragen hat.
+    if (setSlot(vortrag.names, 0, we.speaker, zaehler, nurLeere) && we.speaker.theme) {
+      vortrag.title = we.speaker.theme
+    }
   }
 
   const wt = partItems(byFarbe(meeting, 'wein') ?? {})
@@ -480,11 +503,25 @@ export function verteileWochenende(meeting, we, zaehler, nurLeere, keyMap) {
   verteileHelpers(meeting, we.helpers, zaehler, nurLeere, keyMap)
 }
 
-/** Eine ganze Woche (jsonb `data`) mit NWS-Zuteilungen füllen; liefert Bericht. */
+/**
+ * Eine ganze Woche (jsonb `data`) mit NWS-Zuteilungen füllen; liefert Bericht.
+ *
+ * **Eine gestrichene Zusammenkunft bleibt leer.** NWS kennt den Ausfall nicht
+ * und teilt weiter zu; die Namen lägen unsichtbar in den Daten und träten
+ * hervor, sobald der Planer den Strich zurücknimmt — der löscht nur
+ * `cancelled`, nicht die Zuteilungen. Sonderwochen (Anlass) fängt schon
+ * `main()` ab; hier geht es um einzeln gestrichene Zusammenkünfte, deren Grund
+ * kein Anlass der Woche ist („Saal belegt").
+ */
 export function verteileWoche(data, gebunden, nurLeere, keyMap) {
-  const zaehler = { gesetzt: 0, ohnePid: 0, fehlplatz: 0, helfer: 0, helferOhnePid: 0, helferOhneDienst: 0 }
-  if (data.mid) verteileMitte(data.mid, gebunden.mid, zaehler, nurLeere, keyMap)
-  if (data.we) verteileWochenende(data.we, gebunden.we, zaehler, nurLeere, keyMap)
+  const zaehler = { gesetzt: 0, ohnePid: 0, fehlplatz: 0, helfer: 0, helferOhnePid: 0, helferOhneDienst: 0, gestrichen: 0 }
+  const faelltAus = (tab) => {
+    if (!data.dev?.[tab]?.cancelled) return false
+    zaehler.gestrichen++
+    return true
+  }
+  if (data.mid && !faelltAus('mid')) verteileMitte(data.mid, gebunden.mid, zaehler, nurLeere, keyMap)
+  if (data.we && !faelltAus('we')) verteileWochenende(data.we, gebunden.we, zaehler, nurLeere, keyMap)
   return zaehler
 }
 
@@ -648,20 +685,24 @@ async function main() {
   }
 
   // 3) Woche für Woche füllen
-  let getroffen = 0, ohneWoche = 0, sonder = 0
+  let getroffen = 0, ohneWoche = 0, sonder = 0, gestrichen = 0
   let gesetzt = 0, ohnePid = 0, fehlplatz = 0, helfer = 0, helferOhnePid = 0, helferOhneDienst = 0
   const geschrieben = []
   for (const [montag, roh] of [...nwsWochen].sort((a, b) => a[0].localeCompare(b[0]))) {
     const zeile = nachStart.get(montag)
     if (!zeile) { ohneWoche++; continue }
-    // Sonderwochen (Kreisaufseher, Gedächtnismahl) haben ein umgebautes Programm
-    // (Dienstvortrag statt VBS o. Ä.) — Plätze verschieben sich, NWS trägt sie
-    // anders. Solche Wochen bleiben dem Planer überlassen.
-    if (zeile.data.co || zeile.data.mem) { sonder++; continue }
+    // Wochen mit Anlass bleiben dem Planer überlassen: Beim Kreisaufseher ist
+    // das Programm umgebaut (Dienstvortrag statt VBS) — Plätze verschieben sich,
+    // NWS trägt sie anders —, beim Gedächtnismahl entfällt eine Zusammenkunft,
+    // beim Kongress die ganze Woche. Geprüft wird wie `anlassArt()` in der App:
+    // das neue Feld, sonst die alten Flags. Alle drei Arten sind Aussagen über
+    // die Woche, deshalb genügt „hat einen Anlass".
+    const anlass = zeile.data.anlass?.art ?? (zeile.data.co ? 'co' : zeile.data.mem ? 'mem' : undefined)
+    if (anlass) { sonder++; continue }
     getroffen++
     const gebunden = loeseWoche(roh, bind)
     const z = verteileWoche(zeile.data, gebunden, nurLeere, keyMap)
-    gesetzt += z.gesetzt; ohnePid += z.ohnePid; fehlplatz += z.fehlplatz
+    gesetzt += z.gesetzt; ohnePid += z.ohnePid; fehlplatz += z.fehlplatz; gestrichen += z.gestrichen
     helfer += z.helfer; helferOhnePid += z.helferOhnePid; helferOhneDienst += z.helferOhneDienst
     if (z.gesetzt + z.helfer > 0) geschrieben.push({ montag, data: zeile.data, z })
   }
@@ -679,6 +720,7 @@ async function main() {
   }
 
   console.log(`\nGetroffene Wochen: ${getroffen} · ohne jw.org-Import: ${ohneWoche} · Sonderwochen übersprungen: ${sonder}`)
+  if (gestrichen) console.log(`Gestrichene Zusammenkünfte übersprungen: ${gestrichen}`)
   console.log(`Programmplätze gesetzt: ${gesetzt} (ohne pid/extern: ${ohnePid}) · Slots fehlten: ${fehlplatz}`)
   console.log(`Hilfsdienst-Plätze gesetzt: ${helfer} (ohne pid: ${helferOhnePid})`)
   if (helferOhneDienst) console.log(`  ! ${helferOhneDienst} Hilfsdienst-Plätze ohne passenden App-Dienst — nicht geschrieben (siehe Zuordnung oben).`)

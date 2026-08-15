@@ -126,8 +126,11 @@ describe('Familien-/Haushaltszugehörigkeit', () => {
     expect(next.find((p) => p.id === 'a')!.fam).toBeNull()
   })
 
-  it('isPlainPublisher: nur Verkündiger, nicht Ältester/DAG', () => {
+  it('isPlainPublisher: Verkündiger und Rolle „keine", nicht Ältester/DAG', () => {
     expect(isPlainPublisher(person({ role: 'verkuendiger' }))).toBe(true)
+    // Rolle „keine" ist für Schüler ohne Verkündiger-Status — sie gehört in den
+    // Pool, nicht in den Malus-Rang der Ältesten/Dienstamtgehilfen.
+    expect(isPlainPublisher(person({ role: 'keine' }))).toBe(true)
     expect(isPlainPublisher(person({ role: 'aeltester' }))).toBe(false)
     expect(isPlainPublisher(person({ role: 'dienstamtgehilfe' }))).toBe(false)
   })

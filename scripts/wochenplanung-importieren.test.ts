@@ -380,4 +380,49 @@ describe('verteileWoche', () => {
     // ein leerer Platz wird trotzdem gefüllt
     expect(data.mid.sections[0].items[0].names[1]).toMatchObject({ name: 'P1' })
   })
+
+  it('--nur-leere schützt auch den Ratgeber und das Vortragsthema, nicht aber die Lieder', () => {
+    const roh = sammleNwsWochen(nwsTabellen(), nameOf).get('2026-08-17')!
+    const gebunden = loeseWoche(roh, bind)
+    const data = { mid: mitteWoche(), we: wochenendWoche() }
+    // Ratgeber, Redner und dessen Thema hat der Planer selbst eingetragen
+    data.mid.auxRatgeber.name = 'Schon da'
+    data.mid.auxRatgeber.pid = 'alt'
+    const vortrag = data.we.sections[1].items[0]
+    vortrag.names[0].name = 'Max Muster'
+    vortrag.names[0].pid = 'alt-we'
+    vortrag.title = 'Handverlesenes Thema'
+    verteileWoche(data, gebunden, true)
+    expect(data.mid.auxRatgeber).toMatchObject({ name: 'Schon da', pid: 'alt' })
+    expect(vortrag.names[0]).toMatchObject({ name: 'Max Muster', pid: 'alt-we' })
+    // Das Thema gehört zum Redner — bleibt der stehen, bleibt auch sein Thema
+    expect(vortrag.title).toBe('Handverlesenes Thema')
+    // Liednummern sind Programmstruktur, keine Zuteilung: sie folgen immer NWS
+    expect(data.we.sections[0].items[0].title).toBe('Lied 5 · Gebet')
+  })
+
+  it('Ratgeber ohne pid aus NWS löscht die alte pid (kein neuer Name auf fremder Id)', () => {
+    const roh = sammleNwsWochen(nwsTabellen(), nameOf).get('2026-08-17')!
+    const gebunden = loeseWoche(roh, bind)
+    gebunden.mid.auxCounselor = { name: 'Namensdublette' } // bind fand keine pid
+    const data = { mid: mitteWoche(), we: wochenendWoche() }
+    data.mid.auxRatgeber.name = 'Anton'
+    data.mid.auxRatgeber.pid = 'id-anton'
+    const z = verteileWoche(data, gebunden, false)
+    expect(data.mid.auxRatgeber.name).toBe('Namensdublette')
+    expect(data.mid.auxRatgeber.pid).toBeUndefined() // sonst zählte gehoertZu die Aufgabe Anton zu
+    expect(z.ohnePid).toBeGreaterThan(0) // und der Bericht weist es aus
+  })
+
+  it('gestrichene Zusammenkünfte bleiben leer — NWS kennt den Ausfall nicht', () => {
+    const roh = sammleNwsWochen(nwsTabellen(), nameOf, groupOf).get('2026-08-17')!
+    const gebunden = loeseWoche(roh, bind)
+    const data = { mid: mitteWoche(), we: wochenendWoche(), dev: { we: { cancelled: true } } }
+    const z = verteileWoche(data, gebunden, false)
+    expect(partItems(data.mid.sections[0])[0].names[0].name).toBe('P1') // Mitte wird gefüllt
+    expect(partItems(data.we.sections[0])[0].names[0].name).toBe('') // Wochenende unberührt
+    expect(data.we.sections[0].items[0].title).toBe('Lied · Gebet') // auch keine Liednummer
+    expect(data.we.helpers).toEqual({})
+    expect(z.gestrichen).toBe(1)
+  })
 })

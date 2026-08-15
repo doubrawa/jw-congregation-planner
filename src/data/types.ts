@@ -165,7 +165,8 @@ export interface Person {
    */
   dn?: string
   role: Role
-  female?: boolean // weibliche Rollenbezeichnung ("Verkündigerin")
+  female?: boolean // Schwester — steuert Partner-Zuordnung im Schülerteil und
+  //                  die Brüder-Bereiche (Vorsitz, Gebet, Vortrag …)
   tel: string
   mail: string
   priv: Qualifications
@@ -448,10 +449,10 @@ export interface Week {
    *    Wirkungen ersetzen, müssten `send-reminders` und `substitute` die
    *    Ableitung ein zweites Mal enthalten — genau daraus entstand B8, und
    *    genau deshalb baut T62 den Ablauf in den Daten um statt ihn abzuleiten.
-   * 2. **„Der Anlass schlägt vor, die Zusammenkunft entscheidet."** Ein
-   *    Kongress streicht beide Zusammenkünfte — aber der Planer muss eine davon
-   *    wieder anschalten können. Ginge das nur über den Anlass, wäre der Fall
-   *    nicht abbildbar.
+   * 2. **Nicht jeder Ausfall hat einen Anlass.** „Saal belegt" streicht eine
+   *    einzelne Zusammenkunft, ist aber kein Anlass der Woche (siehe
+   *    `AnlassArt`): solche Gründe stehen als Freitext bei der betroffenen
+   *    Zusammenkunft. Ohne eigenes `cancelled` wäre der Fall nicht abbildbar.
    *
    * Alte Wochen tragen das Feld nicht: `anlassArt()` liest dann `co`/`mem` und
    * liefert dasselbe Ergebnis. Es braucht deshalb **keine Datenwanderung**.
