@@ -163,6 +163,15 @@
   border-bottom: 1px solid var(--panel-hair);
 }
 
+/*
+ * Letzte Zeile einer Karte: gleiche Schrift und gleiche Abstände wie die
+ * übrigen, aber ohne Trenner — eine Haarlinie am Kartenende wäre ein Strich
+ * ins Leere.
+ */
+.svc-row--schluss {
+  border-bottom: none;
+}
+
 .svc-name {
   font-size: calc(12.5px * var(--fs));
   font-weight: 600;

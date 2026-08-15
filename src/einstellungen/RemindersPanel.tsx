@@ -29,11 +29,10 @@ export function RemindersPanel() {
     <div className="panel panel--pb14" data-farbe="wein">
       <h2 className="panel-label">{t.erinnerungenCard}</h2>
       <p className="panel-hint">{t.remDesc}</p>
-      {/* Dieselbe Zeilenform wie die beiden Erinnerungen darunter (`svc-row`:
-          Schnitt, Abstände, Haarlinie) — es ist ein Punkt derselben Liste und
-          soll nicht als eigene Sorte dastehen. Nur der letzte Schalter der
-          Karte bleibt `rem-toggle-row`: eine Haarlinie am Kartenende wäre ein
-          Strich ins Leere. */}
+      {/* Alle vier Zeilen der Karte haben dieselbe Form (`svc-row`: Schnitt,
+          Abstände, Haarlinie) — es sind Punkte einer Liste, und einer davon
+          soll nicht als eigene Sorte dastehen. Die letzte trägt zusätzlich
+          `--schluss` und damit keinen Trenner. */}
       <div className="svc-row">
         <span className="svc-name">{beiZuteilung}</span>
         <button
@@ -74,8 +73,8 @@ export function RemindersPanel() {
           </div>
         </div>
       ))}
-      <div className="rem-toggle-row">
-        <span className="rem-toggle-label">{t.remRepeat}</span>
+      <div className="svc-row svc-row--schluss">
+        <span className="svc-name">{t.remRepeat}</span>
         <button
           type="button"
           role="switch"
