@@ -58,6 +58,27 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
+
+/* ===================== Stabile Identität (uuid5) ========================== */
+
+/**
+ * Deterministische uuid5 (RFC 4122) — **dieselbe Ableitung wie der
+ * Personen-Generator** (`build-personen-sql.mjs`): die App-Person trägt
+ * `uuid5("person:<NWS-ID>")` als `id`. Darüber lässt sich eine NWS-Person
+ * eindeutig ihrer App-Person zuordnen, auch wenn zwei denselben Anzeigenamen
+ * tragen (Dublette „Josef Mayer"). Namespace und Eingabeform müssen exakt zum
+ * Generator passen, sonst stimmt die id nicht.
+ */
+const UUID_NS = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'
+export function uuid5(name) {
+  const ns = Buffer.from(UUID_NS.replace(/-/g, ''), 'hex')
+  const h = createHash('sha1').update(ns).update(name, 'utf8').digest()
+  h[6] = (h[6] & 0x0f) | 0x50 // Version 5
+  h[8] = (h[8] & 0x3f) | 0x80 // Variante
+  const s = h.subarray(0, 16).toString('hex')
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20, 32)}`
+}
 
 /* ===================== NWS-Aufzählungen (aus der Assembly) ================= */
 
@@ -499,13 +520,26 @@ function ladeTabellen(dir) {
   return t
 }
 
-/** NWS-Namensauflösung: mid **und** volle ID → Anzeigename. */
-export function nwsNamensAufloeser(persons) {
+/**
+ * NWS-Namensauflösung: mid **und** volle ID → Anzeigename.
+ *
+ * Ist `appById` (App-Person-`id` → Anzeigename) gegeben, wird die Person zuerst
+ * über ihre **stabile id** gesucht (`uuid5("person:<NWS-ID>")`, wie sie der
+ * Generator vergibt) und deren App-Anzeigename genommen. Das löst
+ * Namensdubletten, die der bloße NWS-Name nicht eindeutig träfe: „Josef Mayer"
+ * steht in der App als „Josef Mayer (2)" — über den Namen allein findet der
+ * Import keinen Treffer, über die id schon. Ohne `appById` (Tests, kein
+ * App-Kontext) bleibt der rohe NWS-Name.
+ *
+ * Getrimmt: NWS-Anzeigenamen tragen vereinzelt ein Leerzeichen am Ende, das
+ * sonst den Abgleich mit der App-Person verfehlt („Charlette Born “).
+ */
+export function nwsNamensAufloeser(persons, appById = null) {
   const m = new Map()
   for (const p of persons) {
-    // getrimmt: NWS-Anzeigenamen tragen vereinzelt ein Leerzeichen am Ende, das
-    // sonst den Abgleich mit der App-Person verfehlt („Charlette Born “).
-    const name = (p.d || `${p.a ?? ''} ${p.b ?? ''}`).trim()
+    const roh = (p.d || `${p.a ?? ''} ${p.b ?? ''}`).trim()
+    const appName = appById && p.ID != null ? appById.get(uuid5(`person:${p.ID}`)) : undefined
+    const name = appName ?? roh
     if (p.mid != null) m.set(p.mid, name)
     if (p.ID != null) m.set(p.ID, name)
   }
@@ -560,23 +594,26 @@ async function main() {
     return text ? JSON.parse(text) : null
   }
 
-  // 1) NWS-Daten einsammeln
+  // 1) Versammlung + App-Personen ZUERST — die NWS→App-Namensauflösung braucht
+  //    sie, um Dubletten über die stabile id aufzulösen (siehe unten).
   const tabellen = ladeTabellen(datenDir)
-  const nwsNameOf = nwsNamensAufloeser(tabellen.persons)
-  const groupNameOf = gruppenNamensAufloeser(tabellen.fieldServiceGroups)
-  const nwsWochen = sammleNwsWochen(tabellen, nwsNameOf, groupNameOf)
-  console.log(`NWS: ${nwsWochen.size} Programmwochen mit Zuteilungen.`)
-
-  // 2) Versammlung, Personen (Name→pid), Wochen laden
   const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
   if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
   const personen = await rest(`persons?select=id,fn,ln,dn&congregation_id=eq.${cong}`)
   const nachName = new Map()
+  const appById = new Map() // id → Anzeigename, für die id-basierte Auflösung
   for (const p of personen) {
     const n = personDisplayName(p.fn, p.ln, p.dn)
     if (!nachName.has(n)) nachName.set(n, [])
     nachName.get(n).push({ id: p.id, name: n })
+    appById.set(p.id, n)
   }
+
+  // 2) NWS-Zuteilungen einsammeln — Namen über die id an die App-Person gebunden.
+  const nwsNameOf = nwsNamensAufloeser(tabellen.persons, appById)
+  const groupNameOf = gruppenNamensAufloeser(tabellen.fieldServiceGroups)
+  const nwsWochen = sammleNwsWochen(tabellen, nwsNameOf, groupNameOf)
+  console.log(`NWS: ${nwsWochen.size} Programmwochen mit Zuteilungen.`)
   const nwsNamen = nwsPersonenNamen(tabellen.persons)
   const dubletten = new Set()
   const fehlendePersonen = new Set()

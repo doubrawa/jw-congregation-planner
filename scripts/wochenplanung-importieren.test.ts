@@ -8,9 +8,11 @@ import {
   meetingOfDuty,
   mitLiedNummer,
   mondayOf,
+  nwsNamensAufloeser,
   PART,
   partItems,
   sammleNwsWochen,
+  uuid5,
   verteileWoche,
 } from './wochenplanung-importieren.mjs'
 
@@ -188,6 +190,35 @@ describe('sammleNwsWochen', () => {
     expect(mid.helpers.rein).toBeUndefined() // Reinigung steht separat in `cleaning`
     expect(mid.cleaning).toBe('Gruppe 6') // NWS-Gruppe (Typ 15, d:1) → App-Gruppe
     expect(we.helpers).toEqual({ saal: ['P9'], mik: ['P10'] })
+  })
+})
+
+describe('nwsNamensAufloeser (Dubletten über die stabile id)', () => {
+  // Zwei „Josef Mayer" in NWS: Nachname „Mayer 1"/„Mayer 2", Anzeigename gleich.
+  // Nur die volle ID (bzw. mid) unterscheidet sie — der Name allein nicht.
+  const persons = [
+    { mid: 1, ID: 1001, a: 'Josef', b: 'Mayer 1', d: 'Josef Mayer' },
+    { mid: 2, ID: 1002, a: 'Josef', b: 'Mayer 2', d: 'Josef Mayer' },
+    { mid: 3, ID: 1003, a: 'Anna', b: 'Klar', d: 'Anna Klar' },
+  ]
+
+  it('bindet die Dublette über uuid5(person:<ID>) an den App-Anzeigenamen', () => {
+    // App-Personen tragen uuid5("person:<ID>") als id (wie der Generator sie vergibt).
+    const appById = new Map([
+      [uuid5('person:1001'), 'Josef Mayer (1)'],
+      [uuid5('person:1002'), 'Josef Mayer (2)'],
+    ])
+    const auf = nwsNamensAufloeser(persons, appById)
+    expect(auf(2)).toBe('Josef Mayer (2)') // über mid aufgelöst
+    expect(auf(1002)).toBe('Josef Mayer (2)') // über die volle ID
+    expect(auf(1)).toBe('Josef Mayer (1)')
+    expect(auf(3)).toBe('Anna Klar') // nicht in appById → roher NWS-Name
+  })
+
+  it('ohne appById bleibt der rohe NWS-Name (Rückwärtskompatibilität)', () => {
+    const auf = nwsNamensAufloeser(persons)
+    expect(auf(1)).toBe('Josef Mayer')
+    expect(auf(2)).toBe('Josef Mayer')
   })
 })
 
