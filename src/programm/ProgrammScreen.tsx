@@ -201,8 +201,14 @@ function ProgramMeeting({
       {mitAux && rawMeeting.auxRatgeber && (
         <div className="panel panel--pb16" data-farbe="neutral2">
           <h2 className="panel-label">{t.auxKlassen}</h2>
+          {/* Der Titel steht hier schon in der Sprache des Lesers (`t.…`) und
+              geht deshalb als fertiger Text hinein, nicht durch `tpw`: „Ratgeber"
+              ist ein Programm-Fragment, das der Übersetzer sonst ein zweites Mal
+              anfasst — bei deutscher App und englischer Versammlungssprache stand
+              „Counselor" unter der deutschen Überschrift. */}
           <ProgramRow
             item={{ title: t.auxRatgeber, names: [rawMeeting.auxRatgeber] }}
+            title={t.auxRatgeber}
             mitAux={false}
             myName={myName}
             tpw={tpw}
