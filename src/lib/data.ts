@@ -434,12 +434,17 @@ function mapPersonSlots(
 }
 
 /**
- * Bildet alle zugeteilten Namen (Programmpunkte + Hilfsdienste) einer
- * Zusammenkunft über `fix` ab und liefert eine neue Zusammenkunft. Lieder
- * tragen keine Namen und bleiben unangetastet. Basis der Lade-Migration
- * (migrateAssignmentNames).
+ * Bildet **alle** zugeteilten Namen einer Zusammenkunft über `fix` ab und
+ * liefert eine neue Zusammenkunft. Lieder tragen keine Namen und bleiben
+ * unangetastet. Basis der Lade-Migration (migrateAssignmentNames).
+ *
+ * „Alle" heißt vier Sorten: Hauptsaal, Zusätzliche Klasse, Ratgeber und
+ * Hilfsdienste. Die mittleren beiden fehlten hier — dieselbe Lücke wie
+ * seinerzeit in `mapPersonSlots` (T38) und in `migrateAssignmentPids`.
+ * `alle-plaetze.test.ts` fragt seither jede solche Funktion nach allen vieren.
  */
 function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
+  const platz = <T extends { name: string }>(slot: T): T => ({ ...slot, name: fix(slot.name) })
   return {
     ...meeting,
     sections: meeting.sections.map((section) => ({
@@ -447,14 +452,16 @@ function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week
       items: section.items.map((item) =>
         'song' in item
           ? item
-          : { ...item, names: item.names.map((slot) => ({ ...slot, name: fix(slot.name) })) },
+          : {
+              ...item,
+              names: item.names.map(platz),
+              ...(item.aux ? { aux: item.aux.map(platz) } : {}),
+            },
       ),
     })),
+    ...(meeting.auxRatgeber ? { auxRatgeber: platz(meeting.auxRatgeber) } : {}),
     helpers: Object.fromEntries(
-      Object.entries(meeting.helpers).map(([key, arr]) => [
-        key,
-        arr.map((slot) => ({ ...slot, name: fix(slot.name) })),
-      ]),
+      Object.entries(meeting.helpers).map(([key, arr]) => [key, arr.map(platz)]),
     ),
   }
 }
