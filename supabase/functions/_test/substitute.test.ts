@@ -143,7 +143,12 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     // Antwort steht mit dem Serialisieren fest; danach darf der Konkurrent den
     // Slot ändern. Genau dieses Zeitfenster — zwischen Lesen und Schreiben —
     // ist der Fall, den die Bedingung beim Schreiben abfangen muss.
-    const antwort = jsonRes(pos === WI ? [{ data: week }] : []) // andere Woche → gibt es nicht
+    // Mit `start`-Spalte, wie die Datenbank sie seit T66 führt: die Kennung
+    // steht neben dem Blob. Stand hier lange nur `data`, und die Function las
+    // sie aus dem Blob — der Tag der Zusammenkunft (und damit die
+    // Abwesenheitsprüfung) hing dadurch an einem Feld, das jederzeit wegfallen
+    // kann. Ohne die Spalte hier bliebe der Fehler unbemerkt.
+    const antwort = jsonRes(pos === WI ? [{ start: WI, data: week }] : []) // andere Woche → gibt es nicht
     if (pos === WI && konkurrent) {
       konkurrent()
       konkurrent = null
@@ -324,6 +329,23 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
     // Gegenprobe: niemand aus den ausgeschlossenen Gruppen ist dabei.
     const got = new Set(rows.map((r) => r.user_id))
     for (const u of [U_ORIG, U_UNQUAL, U_ABSENT, U_PLANNER]) expect(got.has(u)).toBe(false)
+  })
+
+  /*
+   * Verlegte Zusammenkunft (T30): Die Abwesenheit gilt einem **Tag**, nicht
+   * einer Woche. Die Ersatzsuche rechnete den Tag lange mit einer eigenen
+   * Fassung des Wochentag-Versatzes aus, die die Abweichung nicht kannte —
+   * sie prüfte also den regulären Dienstag, während die Zusammenkunft am
+   * Freitag stattfand. Anna (7.–9.9. weg) galt damit als verhindert, obwohl
+   * sie am 11.9. längst wieder da ist.
+   */
+  it('rechnet mit dem verlegten Tag, nicht mit dem regulären', async () => {
+    const w = week as { dev?: Record<string, { day: string }> }
+    w.dev = { mid: { day: 'Freitag' } } // 11.9. — nach Annas Abwesenheit
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ABSENT]))
   })
 })
 

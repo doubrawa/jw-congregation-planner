@@ -148,6 +148,10 @@ export function OpenSlotsBanner({ tab, tpw }: { tab: MeetingKey; tpw: (s: string
         <div key={i} className="plan-open-row">
           <span className="plan-open-label" dir="auto">
             {slot.lang === 'u' ? tu(slot.text) : tpw(slot.text)}
+            {/* Die Rolle kommt aus dem Wörterbuch des Lesers, der Titel aus dem
+                der Versammlung — deshalb getrennt übersetzt und erst hier
+                zusammengesetzt (siehe OpenSlot.rolle). */}
+            {slot.rolle ? ` · ${tu(slot.rolle)}` : ''}
             {slot.n > 1 ? ` ×${slot.n}` : ''}
           </span>
         </div>

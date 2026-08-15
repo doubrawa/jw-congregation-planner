@@ -29,7 +29,12 @@
 
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
-import { meetingDayOffsets, personDisplayName, WEEKDAY_OFFSET } from '../_shared/planung.ts'
+import {
+  type Abweichungen,
+  meetingDayOffsets,
+  personDisplayName,
+  versatzMitAbweichung,
+} from '../_shared/planung.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 
 declare const Deno: {
@@ -125,6 +130,12 @@ interface Week {
   start?: string
   mid?: Meeting
   we?: Meeting
+  /**
+   * Abweichungen dieser Woche — verlegter Tag, andere Uhrzeit, Ausfall (T30).
+   * Ohne sie rechnete die Ersatzsuche am regulären Wochentag und prüfte die
+   * Abwesenheit am falschen Datum; `send-reminders` liest sie längst.
+   */
+  dev?: Abweichungen
 }
 interface Person {
   id: string
@@ -143,19 +154,14 @@ interface Absence {
    `_shared/planung.ts` — dieselbe Rechnung wie in send-reminders und im
    Client. Getrennte Kopien hatten schon einmal auseinandergefunden (B8/T40). */
 
-/**
- * Wochentag-Versatz dieser einen Zusammenkunft: ein eigener Termin im
- * `date`-Feld (Gedächtnismahl, Kongress) schlägt den Rhythmus aus den
- * Einstellungen. Gleiche Rangfolge wie `meetingOffset` im Client
- * (src/data/meeting-dates.ts) und in send-reminders — sonst prüft die
- * Ersatzsuche die Abwesenheit am falschen Tag.
+/*
+ * Der Wochentag-Versatz stand hier als eigene Fassung — und kannte als einzige
+ * der drei die Abweichungen nicht (T30). Verlegte der Planer eine
+ * Zusammenkunft, prüfte die Ersatzsuche die Abwesenheit am regulären Tag und
+ * bot jemanden an, der am echten fehlt. Jetzt gilt `versatzMitAbweichung` aus
+ * `_shared/planung.ts`, dieselbe Rangfolge wie im Client und in
+ * send-reminders: Abweichung → eigener Termin im `date`-Feld → Rhythmus.
  */
-function meetingOffset(meeting: Meeting | undefined, fallback: number): number {
-  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(
-    meeting?.date ?? '',
-  )
-  return tag ? WEEKDAY_OFFSET[tag[1]] : fallback
-}
 
 /** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
 function meetingISO(startISO: string | undefined, offset: number): string | null {
@@ -286,8 +292,10 @@ Deno.serve(async (req: Request) => {
     if (!caller) return json({ error: 'forbidden' }, 403)
 
     const [weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
-      restGet<{ data: Week }[]>(
-        `weeks?select=data&congregation_id=eq.${cong}&start=eq.${parts.woche}`,
+      // `start` aus der **Spalte**, nicht aus dem Blob (T66): die Kennung steht
+      // dort, `data.start` ist nur noch Beifang und könnte jederzeit wegfallen.
+      restGet<{ start: string; data: Week }[]>(
+        `weeks?select=start,data&congregation_id=eq.${cong}&start=eq.${parts.woche}`,
       ),
       restGet<{ key: string; name: string }[]>(`services?select=key,name&congregation_id=eq.${cong}`),
       restGet<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${cong}`),
@@ -309,8 +317,13 @@ Deno.serve(async (req: Request) => {
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
     const tagISO = meetingISO(
-      week.start,
-      meetingOffset(meeting, meetingDayOffsets(congRows[0]?.meeting_times ?? '')[parts.tab]),
+      weekRows[0]?.start,
+      versatzMitAbweichung(
+        week.dev,
+        parts.tab,
+        meeting.date,
+        meetingDayOffsets(congRows[0]?.meeting_times ?? '')[parts.tab],
+      ),
     )
     const qualKey = `svc:${parts.svc}`
     const personById = new Map(persons.map((p) => [p.id, p]))

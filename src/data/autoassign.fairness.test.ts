@@ -446,7 +446,12 @@ describe('Verteilung der Hilfsdienste über ein halbes Jahr', () => {
     const ORD = serviceQualKey('ord')
     const pool = many(14, [ORD])
     const services: Service[] = [{ key: 'ord', name: 'Ordner', count: 2, groups: false }]
-    let weeks: Week[] = Array.from({ length: 26 }, () => wk(emptyMeeting(), emptyMeeting()))
+    // Mit fortlaufenden Montagen: das Auslastungs-Fenster rechnet in Wochen,
+    // nicht in Einträgen (`lastFenster`). Trügen alle Wochen dasselbe Datum,
+    // fiele das Fenster auf eine einzige zusammen.
+    let weeks: Week[] = Array.from({ length: 26 }, (_unused, i) =>
+      wk(emptyMeeting(), emptyMeeting(), i),
+    )
     for (let wi = 0; wi < 26; wi++) {
       weeks = autoAssignMeeting(weeks, wi, 'mid', pool, services).weeks
       weeks = autoAssignMeeting(weeks, wi, 'we', pool, services).weeks

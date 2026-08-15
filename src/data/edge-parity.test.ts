@@ -8,8 +8,9 @@ import {
   versatzMitAbweichung as edgeVersatz,
   WEEKDAY_OFFSET as EDGE_WEEKDAY,
   zeitMitAbweichung as edgeZeit,
+  zuteilungsLabel as edgeLabel,
 } from '../../supabase/functions/_shared/planung.ts'
-import { displayName, istAusgefallen } from './helpers'
+import { displayName, istAusgefallen, zuteilungsLabel } from './helpers'
 import { meetingDayOffsets, meetingOffset, meetingTime } from './meeting-dates'
 import { isGuestRole } from './planning'
 import { emptyQualifications } from './helpers'
@@ -45,6 +46,31 @@ describe('Anzeigename', () => {
 
   it.each(faelle)('„%s %s" (dn: %s) gleich auf beiden Seiten', (fn, ln, dn) => {
     expect(edgeName(fn, ln, dn)).toBe(displayName(person(fn, ln, dn)))
+  })
+})
+
+describe('Beschriftung einer Zuteilung', () => {
+  const faelle: Array<[string, string, string | undefined]> = [
+    ['ERÖFFNUNG', 'Lied 27 · Gebet · Einleitende Worte', 'Vorsitz'],
+    ['ERÖFFNUNG', 'Lied 27 · Gebet · Einleitende Worte', 'Gebet'],
+    ['ABSCHLUSS', 'Schlussworte · Lied 24 · Gebet', 'Gebet'],
+    ['UNSER LEBEN ALS CHRIST', 'Versammlungsbibelstudium', 'Leiter'],
+    ['UNS IM DIENST VERBESSERN', 'Gespräche beginnen', 'Gesprächspartner'],
+    ['UNS IM DIENST VERBESSERN', 'Gespräche beginnen', 'mit A. Hoffmann'], // Begleiter
+    ['SCHÄTZE AUS GOTTES WORT', 'Bibellesung · Jer 44:24-30', ''],
+    ['SCHÄTZE AUS GOTTES WORT', 'Bibellesung · Jer 44:24-30', undefined],
+    ['', 'Zuteilung', 'Leser'], // Abschnitt ohne Überschrift
+  ]
+
+  it.each(faelle)('„%s" / „%s" / Rolle „%s" gleich auf beiden Seiten', (label, titel, rolle) => {
+    expect(edgeLabel(label, titel, rolle)).toBe(zuteilungsLabel(label, titel, rolle))
+  })
+
+  it('nennt in ERÖFFNUNG weder Lied noch Einleitende Worte', () => {
+    const text = zuteilungsLabel('ERÖFFNUNG', 'Lied 27 · Gebet · Einleitende Worte', 'Vorsitz')
+    expect(text).toBe('Vorsitz')
+    expect(text).not.toContain('Lied')
+    expect(text).not.toContain('Einleitende Worte')
   })
 })
 

@@ -21,7 +21,7 @@ import {
   initials,
   isQualified,
   isSong,
-  LOAD_RADIUS,
+  lastFenster,
   LOAD_WEEKS,
   loadWindow,
   partnerGenderOk,
@@ -145,8 +145,10 @@ function personenKandidaten(
   t: Dict,
 ): Candidate[] {
   const geschlechtOk = geschlechtsPruefung(state, sel)
-  // Auslastung über dasselbe Fenster wie die Mini-Quadrate daneben.
-  const fenster = state.weeks.slice(Math.max(0, sel.wi - LOAD_RADIUS), sel.wi + LOAD_RADIUS + 1)
+  // Auslastung über dasselbe Fenster wie die Mini-Quadrate daneben — dieselbe
+  // Funktion, nicht dieselbe Absicht: `slice` schnitt nach Position, die
+  // Quadrate rechnen nach Datum (siehe `lastFenster`).
+  const fenster = lastFenster(state.weeks, sel.wi)
   // Die Woche gibt es, sonst wäre das Sheet nicht offen; ohne sie bleibt der
   // Hinweis „heute schon zugeteilt" einfach aus.
   const meeting = state.weeks[sel.wi]?.[sel.tab]

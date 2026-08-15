@@ -14,12 +14,14 @@ import { raeume, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
+  eigeneRolle,
   gehoertZu,
   isPlainPublisher,
+  istBlockAbschnitt,
   isQualified,
   isSong,
   istAusgefallen,
-  LOAD_RADIUS,
+  lastFenster,
   MEETING_TABS,
   partnerGenderOk,
   partWorkload,
@@ -31,6 +33,7 @@ import {
   tieHash,
   wochenAbstand,
   workloadOf,
+  zuteilungsLabel,
   type Zuteilung,
 } from './helpers'
 import { meetingDateMs, meetingDateText } from './meeting-dates'
@@ -356,6 +359,14 @@ export function changedSlotKeys(
 export interface OpenSlot {
   text: string
   lang: 'u' | 'p'
+  /**
+   * Rolle hinter dem Titel („Versammlungsbibelstudium · Leiter"), **immer**
+   * App-Sprache. Sie steht als eigenes Feld und nicht im Text, weil beide
+   * Hälften aus verschiedenen Wörterbüchern kommen: der Titel aus der Sprache
+   * der Versammlung (`tpw`), die Rolle aus der des Lesers (`tu`). In einem
+   * String zusammengefügt bekäme eine der beiden die falsche.
+   */
+  rolle?: string
   n: number // Anzahl offener Plätze (Hilfsdienste können mehrere haben)
 }
 
@@ -375,11 +386,14 @@ export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[
       for (const aux of raeume(meeting)) {
         for (const slot of slotsOf(item, aux)) {
           if (slot.name) continue
-          const rolle = slot.rolle ?? ''
+          // Dieselbe Regel wie in der Aufgabenliste (`zuteilungsLabel`), nur in
+          // zwei Atomen statt einem — Titel und Rolle kommen aus verschiedenen
+          // Sprachen (siehe OpenSlot.rolle).
+          const rolle = eigeneRolle(slot.rolle)
           out.push(
-            rolle && !rolle.startsWith('mit')
-              ? { text: `${item.title} · ${rolle}`, lang: 'p', n: 1 }
-              : { text: item.title, lang: 'p', n: 1 },
+            rolle && istBlockAbschnitt(section.label)
+              ? { text: rolle, lang: 'u', n: 1 }
+              : { text: item.title, lang: 'p', rolle: rolle || undefined, n: 1 },
           )
         }
       }
@@ -463,31 +477,34 @@ export function autoAssignMeeting(
 
   // Wer in dieser Zusammenkunft schon eingeteilt ist. Nach Id: zwei Personen
   // desselben Namens sperrten sich sonst gegenseitig, obwohl nur eine dran ist.
+  //
+  // Über **beide Räume** und den Ratgeber, genau wie `partWorkload` zählt und
+  // `assignmentsInMeeting` anzeigt: die Plätze der Zusätzlichen Klasse sind
+  // gleichwertige Zuteilungen. Gelesen wurde hier lange nur `item.names` —
+  // wer von Hand in die Klasse eingeteilt war, fehlte in dieser Menge und
+  // bekam vom nächsten Lauf zusätzlich einen Platz im Hauptsaal. Dieselbe
+  // Person zur selben Zeit in zwei Räumen, und niemand sah es: die Klasse
+  // steht in der Ansicht daneben, nicht darin.
   const used = new Set<string>()
+  const merken = (slot: Zuteilung | undefined): void => {
+    const id = werIst(slot)
+    if (id) used.add(id)
+  }
+  merken(meeting.auxRatgeber)
   for (const section of meeting.sections) {
     for (const item of section.items) {
       if (isSong(item)) continue
-      for (const slot of item.names) {
-        const id = werIst(slot)
-        if (id) used.add(id)
-      }
+      for (const aux of raeume(meeting)) for (const slot of slotsOf(item, aux)) merken(slot)
     }
   }
-  for (const arr of Object.values(meeting.helpers)) {
-    for (const slot of arr) {
-      const id = werIst(slot)
-      if (id) used.add(id)
-    }
-  }
+  for (const arr of Object.values(meeting.helpers)) for (const slot of arr) merken(slot)
 
   // Gleitendes Fenster: nur ±LOAD_RADIUS Wochen um die geplante Woche zählen,
   // damit uralte Einteilungen die aktuelle Verteilung nicht verzerren. Dasselbe
   // Fenster, das im Zuteilungs-Sheet unter dem Namen steht („2 Aufgaben in 5
   // Wochen") — sonst sortiert die Automatik nach einer anderen Zahl, als der
-  // Planer liest.
-  const lo = Math.max(0, weekIndex - LOAD_RADIUS)
-  const hi = Math.min(weeks.length - 1, weekIndex + LOAD_RADIUS)
-  const windowWeeks = weeks.slice(lo, hi + 1)
+  // Planer liest. Gemessen wird in Wochen, nicht in Einträgen (`lastFenster`).
+  const windowWeeks = lastFenster(weeks, weekIndex)
 
   // Zwei Live-Strichlisten (Startwert aus dem Fenster, während des Laufs
   // hochgezählt): partLoad = nur Aufgaben, totalLoad = Aufgaben + Hilfsdienste.
@@ -1173,7 +1190,7 @@ function eachAssignedSlot(
                 }
                 return {
                   id: key,
-                  title: rolle && !rolle.startsWith('mit ') ? `${item.title} · ${rolle}` : item.title,
+                  title: zuteilungsLabel(section.label, item.title, rolle),
                   date: taskDate(week, wi, tab, meetings),
                   chip: '',
                   at,

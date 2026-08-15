@@ -55,6 +55,7 @@ import {
   taskDateText,
   versatzMitAbweichung,
   zeitMitAbweichung,
+  zuteilungsLabel,
 } from '../_shared/planung.ts'
 import { pushTexte } from './texte.ts'
 
@@ -167,6 +168,11 @@ interface Item {
   aux?: Slot[]
 }
 interface Section {
+  /**
+   * Kanonisch deutsche Überschrift („ERÖFFNUNG", „ABSCHLUSS", …). Sie
+   * entscheidet mit, wie eine Zuteilung benannt wird (`zuteilungsLabel`).
+   */
+  label?: string
   items?: Item[]
 }
 /**
@@ -407,12 +413,12 @@ function pendingOfMeeting(
           const posKey = `${woche}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
           const idKey = item.iid ? `${woche}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
           if (conf.has(posKey) || (idKey !== null && conf.has(idKey))) continue
-          const rolle = slot.rolle ?? ''
-          const title = item.title ?? 'Zuteilung'
           out.push({
             name: slot.name,
             pid: slot.pid,
-            label: rolle && !rolle.startsWith('mit') ? ` · ` : title,
+            // Dieselbe Regel wie in der Aufgabenliste des Clients: in
+            // ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein, sonst Titel · Rolle.
+            label: zuteilungsLabel(sections[si].label ?? '', item.title ?? 'Zuteilung', slot.rolle),
           })
         }
       }
