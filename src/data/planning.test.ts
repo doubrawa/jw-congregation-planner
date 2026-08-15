@@ -569,6 +569,15 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
 })
 
 describe('Konfliktprüfungen (Planen)', () => {
+  /**
+   * Die Kennung, unter der ein Konflikt geführt wird: die Person-Id, wo es eine
+   * gibt, sonst `name:<Anzeigename>`. Sie steht im Konflikt, damit der Plan
+   * genau die betroffene Zuteilung hervorheben kann (T76) — bei zwei
+   * Namensgleichen leuchtete über den Namen auch die falsche auf.
+   */
+  const kennungFuer = (name: string): string =>
+    DEMO_PERSONS.find((p) => displayName(p) === name)?.id ?? `name:${name}`
+
   it('erkennt Abwesende, die trotzdem eingeteilt sind', () => {
     // Ulrich Lang ist vom 7. bis 13.9. weg (DEMO_ABSENCES) — das ist Woche 0,
     // und dort ist er Eingangsordner (mid). Prüft zugleich, dass aus dem
@@ -576,7 +585,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     const weeks = buildDemoWeeks()
     const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.meetings)
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
-    expect(conflicts).toContainEqual({ kind: 'absent', name: 'Ulrich Lang', tab: 'mid' })
+    expect(conflicts).toContainEqual({ kind: 'absent', name: 'Ulrich Lang', kennung: kennungFuer('Ulrich Lang'), tab: 'mid' })
   })
 
   it('meldet niemanden abwesend, dessen Zeitraum die Woche nicht trifft', () => {
@@ -591,7 +600,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Manfred Albrecht' }] // ist schon Vorsitz (Programmpunkt) in derselben ZK
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
-    expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'Manfred Albrecht', tab: 'mid' })
+    expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'Manfred Albrecht', kennung: kennungFuer('Manfred Albrecht'), tab: 'mid' })
   })
 
   it('erkennt zwei Hilfsdienste am selben Tag (double)', () => {
@@ -599,7 +608,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     weeks[0].mid.helpers.ton = [{ name: 'Xaver Testhelfer' }] // nur Hilfsdienste, kein Programmpunkt
     weeks[0].mid.helpers.mik = [{ name: 'Xaver Testhelfer' }, { name: '' }]
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
-    expect(conflicts).toContainEqual({ kind: 'double', name: 'Xaver Testhelfer', tab: 'mid', count: 2 })
+    expect(conflicts).toContainEqual({ kind: 'double', name: 'Xaver Testhelfer', kennung: 'name:Xaver Testhelfer', tab: 'mid', count: 2 })
   })
 
   it('meldet zwei Programmpunkte (z. B. Vorsitz + Anfangsgebet) NICHT als Konflikt', () => {
@@ -619,7 +628,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     const mid = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, 'mid')
     expect(mid.some((c) => c.name === 'Nur Wochenende')).toBe(false)
     const we = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, 'we')
-    expect(we).toContainEqual({ kind: 'double', name: 'Nur Wochenende', tab: 'we', count: 2 })
+    expect(we).toContainEqual({ kind: 'double', name: 'Nur Wochenende', kennung: 'name:Nur Wochenende', tab: 'we', count: 2 })
   })
 
   it('tab-bezogene Serie: zählt nur die jeweilige Zusammenkunftsart', () => {
@@ -629,7 +638,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     const midStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'mid').filter((c) => c.kind === 'streak')
     expect(midStreak.some((c) => c.name === 'WE Serie')).toBe(false)
     const weStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'we').filter((c) => c.kind === 'streak')
-    expect(weStreak).toContainEqual({ kind: 'streak', name: 'WE Serie', count: 3 })
+    expect(weStreak).toContainEqual({ kind: 'streak', name: 'WE Serie', kennung: 'name:WE Serie', count: 3 })
   })
 
   it('erkennt Serien von 3 Wochen in Folge (nur Aufgaben, nicht dort)', () => {
@@ -637,7 +646,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     // Programmpunkt (Vorsitz) drei Wochen in Folge → Serie.
     for (const wi of [0, 1, 2]) (weeks[wi].mid.sections[0].items[0] as PartItem).names[0].name = 'R. Serie'
     const streak = weekConflicts(weeks, 1, [], DEMO_SERVICES).filter((c) => c.kind === 'streak')
-    expect(streak).toContainEqual({ kind: 'streak', name: 'R. Serie', count: 3 })
+    expect(streak).toContainEqual({ kind: 'streak', name: 'R. Serie', kennung: 'name:R. Serie', count: 3 })
     // Woche 3 gehört nicht zur Serie
     const w3 = weekConflicts(weeks, 3, [], DEMO_SERVICES)
     expect(w3.some((c) => c.kind === 'streak' && c.name === 'R. Serie')).toBe(false)

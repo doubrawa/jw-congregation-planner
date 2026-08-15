@@ -19,6 +19,7 @@ import { deutschesDatum } from './meeting-dates'
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
 // unterschiedlich anfühlen.
+import { kennungVon } from './planning'
 import type { Conflict } from './planning'
 import type { Absence, ConfirmationMap, FsInstance, FsRule, Group, MyTask, Person } from './types'
 
@@ -526,26 +527,34 @@ export function fsWeekConflicts(
   if (!week) return []
   const conflicts: Conflict[] = []
   const nachName = new Map(persons.map((p) => [displayName(p), p]))
+  // Gezählt wird über die Kennung, angezeigt der Name — wie bei den
+  // Zusammenkünften (`weekConflicts`). Über den Namen zu zählen legte zwei
+  // Gleichnamige zusammen, und die Markierung im Plan träfe danach beide.
   const proTag = new Map<number, Map<string, number>>()
+  const namen = new Map<string, string>()
 
   for (const inst of week) {
     if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) continue
+    const kennung = kennungVon(inst.leader, inst.lpid)
+    namen.set(kennung, inst.leader)
     // Zählung je Wochentag für `fsDouble` — auch ohne Datumsbasis prüfbar.
     const tag = proTag.get(inst.wd) ?? new Map<string, number>()
-    tag.set(inst.leader, (tag.get(inst.leader) ?? 0) + 1)
+    tag.set(kennung, (tag.get(kennung) ?? 0) + 1)
     proTag.set(inst.wd, tag)
 
     if (!base) continue
     // Über die Id, mit Rückfall auf den Namen für Altdaten.
     const person = inst.lpid ? persons.find((p) => p.id === inst.lpid) : nachName.get(inst.leader)
     if (person && istAbwesendAm(absences, person.id, fsDate(base, wi, inst.wd))) {
-      conflicts.push({ kind: 'fsAbsent', name: inst.leader, wd: inst.wd, ort: inst.place })
+      conflicts.push({ kind: 'fsAbsent', name: inst.leader, kennung, wd: inst.wd, ort: inst.place })
     }
   }
 
   for (const [wd, tag] of proTag) {
-    for (const [name, n] of tag) {
-      if (n >= 2) conflicts.push({ kind: 'fsDouble', name, wd, count: n })
+    for (const [kennung, n] of tag) {
+      if (n >= 2) {
+        conflicts.push({ kind: 'fsDouble', name: namen.get(kennung) ?? '', kennung, wd, count: n })
+      }
     }
   }
   return conflicts

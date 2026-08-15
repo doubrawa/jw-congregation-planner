@@ -5,6 +5,7 @@ import { istSchuelerteil } from '../data/aux-class'
 import { eigeneRolle, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
+import { useKonflikte } from './useKonflikte'
 import { SONG_WORD } from '../i18n/translate-data'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
@@ -61,6 +62,9 @@ export function MeetingSection({
 
   const isPending = (slot: SlotAssignment | undefined) =>
     state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
+
+  // Wer im Konflikt-Banner über dem Programm steht, wird hier hervorgehoben.
+  const { betrifft } = useKonflikte(mtab(state.tab))
 
   /**
    * Die Platzreihen eines Programmpunkts: nur Hauptsaal — oder Hauptsaal und
@@ -254,6 +258,7 @@ export function MeetingSection({
                       open={!slot.name}
                       showStatus={Boolean(slot.name)}
                       pending={isPending(slot)}
+                      konflikt={betrifft(slot)}
                       onClick={() => openPartSlot(ii, ni, item, slot, aux)}
                     />
                   ))}

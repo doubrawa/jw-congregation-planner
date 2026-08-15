@@ -5,6 +5,7 @@ import { serviceQualKey } from '../data/helpers'
 import { useT } from '../i18n/useT'
 import type { Meeting, Service, SlotAssignment } from '../data/types'
 import { SlotChip } from './SlotChip'
+import { useKonflikte } from './useKonflikte'
 
 /** Hilfsdienste-Panel beim Planen: je konfiguriertem Dienst so viele Slot-Chips wie Plätze. */
 export function HelpersPanel({ meeting }: { meeting: Meeting }) {
@@ -13,6 +14,11 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
 
   const isPending = (slot: SlotAssignment | undefined) =>
     state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
+
+  // Hilfsdienste sind die häufigste Hälfte der Konflikte („Hilfsdienst UND
+  // Programmpunkt", „zweimal Hilfsdienst") — sie dürfen bei der Markierung
+  // nicht fehlen.
+  const { betrifft } = useKonflikte(mtab(state.tab))
 
   const openHelperSlot = (service: Service, pos: number) => {
     dispatch({
@@ -52,6 +58,8 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
                     open={!name}
                     showStatus={Boolean(name) && !isGroup}
                     pending={isPending(assigned[pos])}
+                    // Gruppen-Rotation ist keine Person und steht in keinem Konflikt.
+                    konflikt={!isGroup && betrifft(assigned[pos])}
                     onClick={() => openHelperSlot(service, pos)}
                   />
                 )
