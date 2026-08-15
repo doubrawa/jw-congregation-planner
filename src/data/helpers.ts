@@ -260,9 +260,16 @@ export function unlinkFamily(persons: Person[], memberId: string): Person[] {
   return rest.length <= 1 ? next.map((p) => (p.fam === hid ? { ...p, fam: null } : p)) : next
 }
 
-/** Nur-Verkündiger (kein Ältester/Dienstamtgehilfe) — Pool für Gesprächsteile. */
+/**
+ * Kein Ältester/Dienstamtgehilfe — Pool für Gesprächsteile.
+ *
+ * Bewusst negativ formuliert: `verkuendiger` und `keine` gehören beide dazu
+ * (die Rolle `keine` gerade deshalb, weil sie für Schüler ohne
+ * Verkündiger-Status gedacht ist), und eine künftige Rolle fällt nicht
+ * stillschweigend aus dem Pool.
+ */
 export function isPlainPublisher(p: Person): boolean {
-  return p.role === 'verkuendiger'
+  return p.role !== 'aeltester' && p.role !== 'dienstamtgehilfe'
 }
 
 /**
