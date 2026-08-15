@@ -8,10 +8,10 @@ import { MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { hatAuxKlasse } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
-import { displayName, isSong, splitOpeningSong } from '../data/helpers'
+import { gehoertZu, isSong, splitOpeningSong } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { fill, useProgWeek, useT } from '../i18n/useT'
-import type { Lang, Meeting, MeetingTab, PartItem, Week } from '../data/types'
+import type { Lang, Meeting, MeetingTab, PartItem, Person, Week } from '../data/types'
 import { FsProgram } from './FsProgram'
 import './programm.css'
 import './print.css'
@@ -63,7 +63,6 @@ function ProgrammBody() {
   // ABSCHLUSS — dort wird das Lied aus dem Sammeltitel mittig+kursiv gezogen.
   const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
   const me = state.persons.find((p) => p.id === state.personId)
-  const myName = me ? displayName(me) : null
   const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
 
   return (
@@ -104,7 +103,7 @@ function ProgrammBody() {
           week={week}
           rawWeek={rawWeek}
           tab={state.tab}
-          myName={myName}
+          me={me}
           tpw={tpw}
         />
       )}
@@ -119,7 +118,7 @@ function ProgramMeeting({
   week,
   rawWeek,
   tab,
-  myName,
+  me,
   tpw,
 }: {
   meeting: Meeting
@@ -128,7 +127,8 @@ function ProgramMeeting({
   /** Unübersetzte Woche — der Termin wird aus den kanonischen Daten gerechnet. */
   rawWeek: Week
   tab: MeetingTab
-  myName: string | null
+  /** Die eigene Person — für den DU-Chip. Entschieden wird über `gehoertZu`. */
+  me: Person | undefined
   tpw: (s: string) => string
 }) {
   const { state } = useApp()
@@ -186,7 +186,7 @@ function ProgramMeeting({
                     item={item}
                     title={song ? rest : undefined}
                     mitAux={mitAux}
-                    myName={myName}
+                    me={me}
                     tpw={tpw}
                   />
                 </Fragment>
@@ -210,7 +210,7 @@ function ProgramMeeting({
             item={{ title: t.auxRatgeber, names: [rawMeeting.auxRatgeber] }}
             title={t.auxRatgeber}
             mitAux={false}
-            myName={myName}
+            me={me}
             tpw={tpw}
           />
         </div>
@@ -253,13 +253,14 @@ function ProgramRow({
   item,
   title,
   mitAux,
-  myName,
+  me,
   tpw,
 }: {
   item: PartItem
   title?: string // überschriebener Titel (Lied bereits herausgezogen)
   mitAux: boolean // Zusammenkunft mit Zusätzlicher Klasse
-  myName: string | null
+  /** Die eigene Person — für den DU-Chip. Entschieden wird über `gehoertZu`. */
+  me: Person | undefined
   tpw: (s: string) => string
 }) {
   const { t, tu } = useT()
@@ -283,7 +284,12 @@ function ProgramRow({
             {(aux ? item.aux ?? [] : item.names).map((slot, index) => (
               <div key={index} className="prog-name-block">
                 <div className="prog-name">
-                  {myName !== null && slot.name === myName && <span className="chip-du">DU</span>}
+                  {/* „Id vor Name", wie überall: `gehoertZu` ist die eine
+                      Stelle, an der entschieden wird, wem eine Zuteilung
+                      gehört. Der bloße Namensvergleich gab den DU-Chip an
+                      beide Namensgleichen — und an einen Verkündiger, der
+                      zufällig heißt wie der Gastredner. */}
+                  {me && gehoertZu(slot, me) && <span className="chip-du">DU</span>}
                   <span>{slot.name || t.offenDash}</span>
                 </div>
                 {slot.rolle && <div className="prog-role">{tu(slot.rolle)}</div>}

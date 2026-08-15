@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import type { Person } from '../data/types'
 import { LOCALES } from '../i18n/langs'
-import { useT } from '../i18n/useT'
+import { aufgabenLabel, useT } from '../i18n/useT'
 import { personTimeline, type TimelineEntry } from './person-timeline'
 
 /**
@@ -11,7 +11,8 @@ import { personTimeline, type TimelineEntry } from './person-timeline'
  */
 export function PersonTimeline({ person }: { person: Person }) {
   const { state } = useApp()
-  const { t, tu, tp } = useT()
+  const i18n = useT()
+  const { t, tu } = i18n
   const entries = personTimeline(person, state)
   if (entries.length === 0) return null
 
@@ -35,7 +36,9 @@ export function PersonTimeline({ person }: { person: Person }) {
             <span className="pers-zeit-dot" aria-hidden="true" />
             <div className="pers-zeit-datum">{wann(e)}</div>
             <div className="pers-zeit-art">
-              {e.kind === 'meeting' ? tp(e.titel) : `${t.privTreffpunkt} · ${tu(e.ort)}`}
+              {e.kind === 'meeting'
+                ? aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)
+                : `${t.privTreffpunkt} · ${tu(e.ort)}`}
             </div>
           </li>
         ))}

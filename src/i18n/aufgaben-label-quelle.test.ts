@@ -45,8 +45,20 @@ const QUELLEN = new Map(
   ]),
 )
 
-/** Die beiden Stellen, an denen die Hälften zusammenkommen — und nur die. */
+/** Die beiden Stellen, an denen die Hälften zusammenkommen. */
 const ZUSAMMENSETZER = ['data/planning.ts', 'i18n/useT.ts']
+
+/**
+ * Wer die Hälften **durchreicht**, ohne sie zu beschriften.
+ *
+ * Die Zeitleiste im Personen-Detail baut aus einer Aufgabe ihren eigenen
+ * Eintrag und gibt beide Hälften unverändert weiter — beschriftet wird erst in
+ * `PersonTimeline.tsx`, und zwar über `aufgabenLabel`. Wer hier etwas
+ * hinzufügt, muss dasselbe zusichern können.
+ */
+const DURCHREICHER = ['personen/person-timeline.ts']
+
+const ERLAUBT = [...ZUSAMMENSETZER, ...DURCHREICHER].sort()
 
 describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
   const einzelzugriffe = [...QUELLEN]
@@ -59,8 +71,12 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
     .map(([pfad]) => pfad)
     .sort()
 
-  it('nur useT und planning greifen auf eine einzelne Hälfte zu', () => {
-    expect(einzelzugriffe).toEqual(ZUSAMMENSETZER)
+  it('nur die Zusammensetzer und die Zeitleiste greifen auf eine einzelne Hälfte zu', () => {
+    expect(einzelzugriffe).toEqual(ERLAUBT)
+  })
+
+  it('die Zeitleiste beschriftet über aufgabenLabel, nicht selbst', () => {
+    expect(QUELLEN.get('personen/PersonTimeline.tsx')).toContain('aufgabenLabel')
   })
 
   it('und beide setzen sie auch wirklich zusammen', () => {

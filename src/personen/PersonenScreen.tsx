@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useApp } from '../app/context'
-import { QUALIFICATION_ORDER, ROLE_ORDER } from '../data/constants'
+import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
@@ -11,6 +11,7 @@ import { appUrl, linkedMember, makeInvite, openInvite } from './invite-helpers'
 import { OrphanAccounts } from './OrphanAccounts'
 import { PersonDetail } from './PersonDetail'
 import { KEIN_FILTER, passtZumFilter, type PersonFilter } from './person-filter'
+import type { Person } from '../data/types'
 import { privLabel } from './priv-label'
 import './personen.css'
 
@@ -23,6 +24,20 @@ export function PersonenScreen() {
   const { state } = useApp()
   const selected = state.persons.find((p) => p.id === state.selectedPersonId)
   return selected ? <PersonDetail person={selected} /> : <PersonList />
+}
+
+/**
+ * Zahl der gesetzten **Aufgabenbereiche** einer Person.
+ *
+ * Ohne die festen Wachtturm-Rollen: `person.priv` trägt sie mit
+ * (`wtLeiter`/`wtVertreter`), das Detail zeigt sie aber ausdrücklich in einer
+ * eigenen Karte („Feste Rollen") neben den Aufgabenbereichen. Über alle Werte
+ * zu zählen hieß, dass der feste Studienleiter in der Liste einen Bereich mehr
+ * hatte, als sein Detail zeigt.
+ */
+function bereicheCount(person: Person): number {
+  const feste = new Set<string>(WT_ROLE_ORDER)
+  return Object.entries(person.priv).filter(([key, an]) => an && !feste.has(key)).length
 }
 
 function PersonList() {
@@ -210,8 +225,7 @@ function PersonList() {
             <span>
               <span className="pers-name">{personLabel(person)}</span>
               <span className="pers-sub">
-                {t[ROLE_KEY[person.role]]} ·{' '}
-                {fill(t.aufgabenbereicheN, { n: Object.values(person.priv).filter(Boolean).length })}
+                {t[ROLE_KEY[person.role]]} · {fill(t.aufgabenbereicheN, { n: bereicheCount(person) })}
               </span>
             </span>
             <span className="pers-chevron">›</span>
