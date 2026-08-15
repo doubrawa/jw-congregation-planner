@@ -667,6 +667,18 @@ describe('Treffpunkte-Grundplan (Regeln)', () => {
     expect(grp.fsRules.at(-1)).toMatchObject({ grp: 'g1', skipCong: true })
     expect(cong.fsWeeks.length).toBe(cong.weeks.length === 0 ? 0 : cong.fsWeeks.length) // regeneriert
   })
+  it('fsRuleAdd vergibt eindeutige Ids, auch zweimal hintereinander', () => {
+    // Die Id steckt in jeder Treffpunkt-Kennung (`<wi>|<ruleId>`) und darüber
+    // im Aufgaben-Schlüssel. `r${Date.now()}` gab zwei Regeln derselben
+    // Millisekunde dieselbe — zwei Treffpunkte teilten sich dann eine
+    // Bestätigung.
+    const eins = reducer(makeState(), { type: 'fsRuleAdd', grp: '' })
+    const zwei = reducer(eins, { type: 'fsRuleAdd', grp: '' })
+    const ids = zwei.fsRules.map((r) => r.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.some((id) => id.includes('|'))).toBe(false) // sonst bräche der Schlüssel
+  })
+
   it('fsRuleUpdate patcht eine Regel', () => {
     const s = makeState()
     const id = s.fsRules[0].id

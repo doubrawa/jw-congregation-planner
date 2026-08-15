@@ -577,6 +577,53 @@ export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance
 }
 
 /**
+ * Backfill der `lpid` aus dem gespeicherten Leiter-Namen — das Gegenstück zu
+ * `migrateAssignmentPids` (lib/data.ts) für die zweite Datenquelle.
+ *
+ * Zwei Fälle brauchen es. Der erste sind **Bestandsdaten**: Treffpunkte, die
+ * vor der `lpid` zugeteilt wurden, tragen nur einen Namen. Der zweite wiegt
+ * schwerer und entsteht im laufenden Betrieb: Wird eine Person gelöscht,
+ * nimmt `fsDropPersonPid` ihre Id aus den Treffpunkten und lässt den Namen
+ * stehen. Legt der Planer sie neu an, fanden die Zusammenkünfte wieder
+ * zusammen, die Treffpunkte nie — dort blieb ein Name ohne Person, und die
+ * Leitung zählte in keiner Auslastung und in keiner Aufgabenliste mehr.
+ *
+ * Nur **eindeutige** Namen werden zugeordnet; bei Dubletten bliebe es ein
+ * Raten, und die App warnt davor ohnehin (`duplicateDisplayNames`).
+ * Idempotent, und unveränderte Wochen behalten ihre Referenz.
+ */
+export function fsMigrateLeaderPids(
+  fsWeeks: FsInstance[][],
+  persons: readonly Person[],
+): FsInstance[][] {
+  const nachName = new Map<string, string>()
+  const doppelt = new Set<string>()
+  for (const p of persons) {
+    const n = displayName(p)
+    if (nachName.has(n)) doppelt.add(n)
+    nachName.set(n, p.id)
+  }
+  for (const d of doppelt) nachName.delete(d)
+  if (nachName.size === 0) return fsWeeks
+
+  let anyChanged = false
+  const next = fsWeeks.map((week) => {
+    let changed = false
+    const insts = week.map((inst) => {
+      if (inst.lpid || !inst.leader) return inst
+      const id = nachName.get(inst.leader)
+      if (!id) return inst // Gruppenname, Unbekannter, Dublette
+      changed = true
+      return { ...inst, lpid: id }
+    })
+    if (!changed) return week
+    anyChanged = true
+    return insts
+  })
+  return anyChanged ? next : fsWeeks
+}
+
+/**
  * Zieht den Anzeigenamen einer umbenannten Person durch die Treffpunkt-Wochen.
  *
  * Gegenstück zu `renameInWeeks` (lib/data.ts). Der Leiter steht als **Text** in

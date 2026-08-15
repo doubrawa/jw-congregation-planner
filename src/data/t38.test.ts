@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications, gehoertZu, partWorkload } from './helpers'
-import { fsDropPersonPid, fsRenameLeader } from './fs'
+import { fsDropPersonPid, fsMigrateLeaderPids, fsRenameLeader } from './fs'
 import { assignSlot } from './planning'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import type { FsInstance, Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
@@ -198,6 +198,28 @@ describe('Treffpunkte: dieselbe Regel', () => {
   it('unveränderte Wochen behalten auch beim Umbenennen ihre Referenz', () => {
     const vorher = [[inst('a', 'Anna Beispiel', ANNA.id)]]
     expect(fsRenameLeader(vorher, 'p-fremd', 'Wer Anders', 'Neu')).toBe(vorher)
+  })
+
+  /*
+   * Der Rückweg: `fsDropPersonPid` nimmt die Id heraus und lässt den Namen
+   * stehen. Die Zusammenkünfte finden beim nächsten Laden wieder zusammen
+   * (`migrateAssignmentPids`) — die Treffpunkte hatten kein Gegenstück und
+   * blieben für immer ein Name ohne Person.
+   */
+  it('bindet Leiter ohne lpid beim Laden wieder an ihre Person', () => {
+    const vorher = [[inst('a', 'Anna Beispiel'), inst('b', 'Gruppe 2')]]
+    const next = fsMigrateLeaderPids(vorher, [ANNA])
+    expect(next[0][0].lpid).toBe(ANNA.id)
+    expect(next[0][1].lpid).toBeUndefined() // Gruppenname meint keine Person
+  })
+
+  it('ordnet mehrdeutige Namen nicht zu und lässt gesetzte lpid in Ruhe', () => {
+    const zwilling: Person = { ...ANNA, id: 'p-zwilling' }
+    const doppelt = [[inst('a', 'Anna Beispiel')]]
+    expect(fsMigrateLeaderPids(doppelt, [ANNA, zwilling])).toBe(doppelt)
+
+    const gesetzt = [[inst('a', 'Anna Beispiel', 'schon')]]
+    expect(fsMigrateLeaderPids(gesetzt, [ANNA])).toBe(gesetzt)
   })
 })
 

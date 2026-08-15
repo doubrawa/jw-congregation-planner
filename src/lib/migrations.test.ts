@@ -208,6 +208,34 @@ describe('Personen-Id-Bindung (pid)', () => {
     expect(migrateAssignmentPids(weeks, [p('pA', 'Anna')])).toBe(weeks)
   })
 
+  /*
+   * Die Zusätzliche Klasse und ihr Ratgeber gehörten hier lange nicht dazu —
+   * dieselbe Lücke, die T38 an `mapPersonSlots` geschlossen hat, nur in der
+   * Gegenrichtung. Sie fällt auf, sobald eine Person gelöscht und neu angelegt
+   * wird: `dropPersonPid` nimmt die Id überall heraus, zurück bekam sie nur
+   * der Hauptsaal. Der Platz der Klasse zählte danach in keiner Auslastung,
+   * keiner Konfliktprüfung und keiner Aufgabenliste mehr.
+   */
+  it('migrateAssignmentPids bindet auch Klasse und Ratgeber', () => {
+    const w = wk([{ name: 'Anna' }])
+    const item = w.mid.sections[0].items[0] as PartItem
+    item.aux = [{ name: 'Anna' }]
+    w.mid.auxRatgeber = { name: 'Anna', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
+
+    const [next] = migrateAssignmentPids([w], [p('pA', 'Anna')])
+    const nextItem = next.mid.sections[0].items[0] as PartItem
+    expect(nextItem.names[0].pid).toBe('pA')
+    expect(nextItem.aux?.[0].pid).toBe('pA')
+    expect(next.mid.auxRatgeber?.pid).toBe('pA')
+  })
+
+  it('migrateAssignmentPids erfindet keinen Ratgeber, wo keiner ist', () => {
+    // Ohne Zusätzliche Klasse darf der Schlüssel nicht auftauchen: `hatAuxKlasse`
+    // liest ihn als Marke „hier gibt es eine Klasse".
+    const [next] = migrateAssignmentPids([wk([{ name: 'Anna' }])], [p('pA', 'Anna')])
+    expect('auxRatgeber' in next.mid).toBe(false)
+  })
+
   it('renameInWeeks über pid: nur der Slot der richtigen Person; Namensgleiche bleiben', () => {
     const [w] = renameInWeeks([wk([{ name: 'Max', pid: 'pM1' }, { name: 'Max', pid: 'pM2' }])], 'pM1', 'Max', 'Max Eins')
     expect(partNames(w)[0].name).toBe('Max Eins') // pid pM1 → umbenannt

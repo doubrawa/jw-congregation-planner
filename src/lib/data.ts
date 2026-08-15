@@ -11,7 +11,7 @@
  */
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
-import { fsBaseFromWeeks, regenFsWeeks } from '../data/fs'
+import { fsBaseFromWeeks, fsMigrateLeaderPids, regenFsWeeks } from '../data/fs'
 import { itemTaskKey, partTaskKey } from '../data/planning'
 import {
   displayName,
@@ -477,6 +477,12 @@ export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] 
   for (const d of dupes) byName.delete(d) // mehrdeutig → nicht zuordnen
   if (byName.size === 0) return weeks
   let anyChanged = false
+  /** Platz mit `pid` versehen, wenn der Name eindeutig eine Person meint. */
+  const mitPid = <T extends { name: string; pid?: string }>(slot: T): T => {
+    if (slot.pid || !slot.name) return slot
+    const id = byName.get(slot.name)
+    return id ? { ...slot, pid: id } : slot
+  }
   const fixMeeting = (m: Week['mid']): Week['mid'] => {
     let changed = false
     const sections = m.sections.map((section) => ({
@@ -485,33 +491,44 @@ export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] 
         if ('song' in item) return item
         let itemChanged = false
         const names = item.names.map((slot) => {
-          if (slot.pid || !slot.name) return slot
-          const id = byName.get(slot.name)
-          if (!id) return slot
-          itemChanged = true
-          return { ...slot, pid: id }
+          const neu = mitPid(slot)
+          if (neu !== slot) itemChanged = true
+          return neu
+        })
+        // Die Zusätzliche Klasse gehört dazu — dieselbe Lücke, die T38 an
+        // `mapPersonSlots` geschlossen hat. Ohne sie bekam ein Platz der Klasse
+        // seine Id nie zurück: beim Löschen einer Person wird sie überall
+        // entfernt (`dropPersonPid`), beim Wiederanlegen aber nur im Hauptsaal
+        // wiederhergestellt. Der Platz zählte dann nirgends mehr.
+        const aux = item.aux?.map((slot) => {
+          const neu = mitPid(slot)
+          if (neu !== slot) itemChanged = true
+          return neu
         })
         if (!itemChanged) return item
         changed = true
-        return { ...item, names }
+        return aux ? { ...item, names, aux } : { ...item, names }
       }),
     }))
+    // Der Ratgeber der Klasse, aus demselben Grund.
+    const auxRatgeber = m.auxRatgeber ? mitPid(m.auxRatgeber) : m.auxRatgeber
+    if (auxRatgeber !== m.auxRatgeber) changed = true
     // Hilfsdienste ebenso (Gruppen-Namen matchen keine Person → bleiben ohne pid).
     const helpers = Object.fromEntries(
       Object.entries(m.helpers).map(([key, arr]) => [
         key,
         arr.map((slot) => {
-          if (slot.pid || !slot.name) return slot
-          const id = byName.get(slot.name)
-          if (!id) return slot
-          changed = true
-          return { ...slot, pid: id }
+          const neu = mitPid(slot)
+          if (neu !== slot) changed = true
+          return neu
         }),
       ]),
     )
     if (!changed) return m
     anyChanged = true
-    return { ...m, sections, helpers }
+    // `auxRatgeber` nur setzen, wenn es die Zusammenkunft hat — sonst stünde
+    // der Schlüssel mit `undefined` da, wo vorher gar keiner war.
+    return auxRatgeber ? { ...m, sections, helpers, auxRatgeber } : { ...m, sections, helpers }
   }
   const next = weeks.map((week) => {
     const mid = fixMeeting(week.mid)
@@ -857,9 +874,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsNachWoche.set(row.start, row.data)
   }
   const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
-  const fsWeeks = fsRules.length
+  const ausgerichtet = fsRules.length
     ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true)
     : storedFsWeeks
+  // Leiter ohne `lpid` an ihre Person binden — dasselbe, was
+  // `migrateAssignmentPids` eine Bildschirmhöhe weiter oben für die
+  // Zusammenkünfte tut. Ohne das blieb eine gelöschte und neu angelegte Person
+  // in ihren Treffpunkten für immer ein bloßer Name.
+  const fsWeeks = fsMigrateLeaderPids(ausgerichtet, personList)
 
   const data: CongregationData = {
     congregation: {
