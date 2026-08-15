@@ -5,13 +5,6 @@
 
 import type { QualificationKey, Role, SectionColor, Theme } from './types'
 
-export const ROLE_LABEL: Record<Role, string> = {
-  aeltester: 'Ältester',
-  dienstamtgehilfe: 'Dienstamtgehilfe',
-  verkuendiger: 'Verkündiger',
-  keine: 'Keine',
-}
-
 /** Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen. */
 export const PLANNER_ROLES: readonly Role[] = ['aeltester', 'dienstamtgehilfe']
 

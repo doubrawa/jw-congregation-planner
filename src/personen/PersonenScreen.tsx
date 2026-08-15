@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER } from '../data/constants'
-import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
+import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, personCompare, personLabel, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { LOCALES } from '../i18n/langs'
@@ -210,7 +210,7 @@ function PersonList() {
             <span>
               <span className="pers-name">{personLabel(person)}</span>
               <span className="pers-sub">
-                {tu(roleLabel(person))} ·{' '}
+                {t[ROLE_KEY[person.role]]} ·{' '}
                 {fill(t.aufgabenbereicheN, { n: Object.values(person.priv).filter(Boolean).length })}
               </span>
             </span>

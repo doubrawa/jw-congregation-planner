@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { familyMembers, initials, personCompare, personLabel, roleLabel, serviceQualKey } from '../data/helpers'
+import { familyMembers, initials, personCompare, personLabel, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { ROLE_KEY } from '../i18n/ui'
 import type { Person } from '../data/types'
@@ -53,7 +53,7 @@ export function PersonDetail({ person }: { person: Person }) {
         <div>
           <h1 className="pers-detail-name">{personLabel(person)}</h1>
           <div className="pers-detail-sub">
-            {tu(roleLabel(person))} · {fill(t.congLabel, { name: state.congregation.name })}
+            {t[ROLE_KEY[person.role]]} · {fill(t.congLabel, { name: state.congregation.name })}
           </div>
         </div>
       </div>

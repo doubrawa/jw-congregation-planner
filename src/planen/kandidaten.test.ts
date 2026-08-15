@@ -146,6 +146,39 @@ describe('Kandidatenliste allgemein', () => {
   })
 })
 
+describe('Rollen-Beschriftung der Kandidaten', () => {
+  /**
+   * Die Rolle kommt aus dem UI-Wörterbuch (`ROLE_KEY` → Dict), nicht mehr aus
+   * dem Fragment-Übersetzer. Der Unterschied ist nicht kosmetisch: FRAG fällt
+   * bei einer Lücke stumm auf Deutsch zurück und wird von keiner
+   * Vollständigkeitsprüfung erfasst — der Rollen-Chip im Personen-Detail stand
+   * dann in der Fremdsprache und die Zeile darunter auf Deutsch, für dieselbe
+   * Person auf demselben Bildschirm.
+   *
+   * Die weibliche Form ist zugleich gestrichen (Betreiber-Entscheid
+   * 15.8.2026): Sie hing als deutsches `+ "in"` im Code und war damit in den
+   * übrigen 33 Sprachen ohnehin nie richtig.
+   */
+  const AELTESTER: Person = { ...BRUDER_A, id: 'b9', fn: 'Ernst', ln: 'Egger', role: 'aeltester' }
+
+  // Leerer Führerplatz: dann entfällt die Geschlechtsregel des Partner-Slots
+  // und beide stehen zur Wahl (siehe geschlechtsPruefung).
+  const rollen = (personen: Person[]) =>
+    kandidaten(daten([wocheMitKlasse('', '')], personen), partnerSlot(false), KEINE_ABWESENHEIT, DE, (s) => s)
+      .map((c) => [c.name, c.sub.split(' · ')[0]])
+
+  it('nimmt das Wörterbuch-Label der Rolle', () => {
+    expect(rollen([SCHWESTER_C, AELTESTER])).toEqual([
+      ['Clara Cohn', DE.rolleVerk],
+      ['Ernst Egger', DE.rolleAeltester],
+    ])
+  })
+
+  it('Schwestern tragen keine weibliche Form mehr', () => {
+    expect(rollen([SCHWESTER_C])).toEqual([['Clara Cohn', 'Verkündiger']])
+  })
+})
+
 describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
   it('Reinigung o. Ä.', () => {
     const state: KandidatenDaten = {

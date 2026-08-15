@@ -26,13 +26,12 @@ import {
   loadWindow,
   partnerGenderOk,
   personCompare,
-  roleLabel,
   workloadOf,
   type WeekLoad,
 } from '../data/helpers'
 import { assignmentsInMeeting, type MeetingAssignment } from '../data/planning'
 import type { Person, SlotSelection } from '../data/types'
-import type { Dict } from '../i18n/ui'
+import { ROLE_KEY, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 
 export interface Candidate {
@@ -66,7 +65,7 @@ export function kandidaten(
 ): Candidate[] {
   if (sel.kind === 'fs') return fsKandidaten(state, sel, t, tu)
   if (sel.groups) return gruppenKandidaten(state, t, tu)
-  return personenKandidaten(state, sel, abwesend, t, tu)
+  return personenKandidaten(state, sel, abwesend, t)
 }
 
 /**
@@ -100,7 +99,7 @@ function fsKandidaten(
         initials: initials(p),
         name,
         assignName: name,
-        sub: tu(roleLabel(p)),
+        sub: t[ROLE_KEY[p.role]],
         today: schonHeute(name),
         // Am Tag DIESES Treffpunkts, nicht in der ganzen Woche.
         absent: inst
@@ -144,7 +143,6 @@ function personenKandidaten(
   sel: Exclude<SlotSelection, { kind: 'fs' }>,
   abwesend: AbsenceSet,
   t: Dict,
-  tu: (s: string) => string,
 ): Candidate[] {
   const geschlechtOk = geschlechtsPruefung(state, sel)
   // Auslastung über dasselbe Fenster wie die Mini-Quadrate daneben.
@@ -167,7 +165,7 @@ function personenKandidaten(
         initials: initials(p),
         name,
         assignName: name,
-        sub: `${tu(roleLabel(p))} · ${lastLabel}`,
+        sub: `${t[ROLE_KEY[p.role]]} · ${lastLabel}`,
         today: meeting ? assignmentsInMeeting(meeting, p, state.services, sel) : [],
         absent: istAbwesend(abwesend, p.id, sel.wi, sel.tab),
         free: last === 0,

@@ -3,7 +3,7 @@
  * Regeln stammen aus der Prototyp-Logik (docs/design-handoff).
  */
 
-import { BRUDER_BEREICHE, QUALIFICATION_ORDER, ROLE_LABEL, WT_ROLE_ORDER } from './constants'
+import { BRUDER_BEREICHE, QUALIFICATION_ORDER, WT_ROLE_ORDER } from './constants'
 import type { Abweichung, Group, Meeting, MeetingKey,
   MeetingTab, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
 
@@ -168,12 +168,6 @@ export function doppelteFesteRollen(persons: Person[]): Array<{ key: Qualificati
     key,
     count: persons.filter((p) => p.priv[key]).length,
   })).filter(({ count }) => count >= 2)
-}
-
-/** Rollenlabel, für Frauen in weiblicher Form ("Verkündigerin"). */
-export function roleLabel(p: Person): string {
-  const label = ROLE_LABEL[p.role]
-  return p.female && p.role === 'verkuendiger' ? `${label}in` : label
 }
 
 /**
