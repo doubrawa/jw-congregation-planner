@@ -76,7 +76,13 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
   const title = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
     new Date(Date.UTC(view.y, view.m, 1)),
   )
-  const todayIso = iso(new Date())
+  // „Heute" ist ein **örtlicher** Begriff, anders als die Rasterrechnung
+  // darüber: `iso(new Date())` nimmt den UTC-Tag, und der ist in Mitteleuropa
+  // zwischen Mitternacht und 01:00 bzw. 02:00 noch der gestrige — die
+  // Markierung saß dann einen Tag daneben. Aus den örtlichen Bestandteilen
+  // gebaut, wie es `fsWochenStart` in data/fs.ts vormacht.
+  const jetzt = new Date()
+  const todayIso = iso(new Date(Date.UTC(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate())))
   const shift = (delta: number) => {
     const d = new Date(Date.UTC(view.y, view.m + delta, 1))
     setView({ y: d.getUTCFullYear(), m: d.getUTCMonth() })
