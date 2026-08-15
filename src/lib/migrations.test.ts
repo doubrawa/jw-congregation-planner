@@ -218,22 +218,22 @@ describe('Personen-Id-Bindung (pid)', () => {
    */
   it('migrateAssignmentPids bindet auch Klasse und Ratgeber', () => {
     const w = wk([{ name: 'Anna' }])
-    const item = w.mid.sections[0].items[0] as PartItem
+    const item = w.mid.sections[0]!.items[0] as PartItem
     item.aux = [{ name: 'Anna' }]
     w.mid.auxRatgeber = { name: 'Anna', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
 
     const [next] = migrateAssignmentPids([w], [p('pA', 'Anna')])
-    const nextItem = next.mid.sections[0].items[0] as PartItem
-    expect(nextItem.names[0].pid).toBe('pA')
-    expect(nextItem.aux?.[0].pid).toBe('pA')
-    expect(next.mid.auxRatgeber?.pid).toBe('pA')
+    const nextItem = next!.mid.sections[0]!.items[0] as PartItem
+    expect(nextItem.names[0]!.pid).toBe('pA')
+    expect(nextItem.aux?.[0]!.pid).toBe('pA')
+    expect(next!.mid.auxRatgeber?.pid).toBe('pA')
   })
 
   it('migrateAssignmentPids erfindet keinen Ratgeber, wo keiner ist', () => {
     // Ohne Zusätzliche Klasse darf der Schlüssel nicht auftauchen: `hatAuxKlasse`
     // liest ihn als Marke „hier gibt es eine Klasse".
     const [next] = migrateAssignmentPids([wk([{ name: 'Anna' }])], [p('pA', 'Anna')])
-    expect('auxRatgeber' in next.mid).toBe(false)
+    expect('auxRatgeber' in next!.mid).toBe(false)
   })
 
   it('renameInWeeks über pid: nur der Slot der richtigen Person; Namensgleiche bleiben', () => {

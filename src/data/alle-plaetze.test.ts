@@ -101,10 +101,21 @@ function woche(belegt = true): Week {
   }
 }
 
-/** An welchen der vier Sorten steht diese Person? */
-function besetzt(week: Week, pruefe: (slot: { name: string; pid?: string }) => boolean): Platz[] {
+/**
+ * An welchen der vier Sorten steht diese Person?
+ *
+ * Nimmt `Week | undefined`, weil jeder Aufrufer das Ergebnis einer Funktion
+ * indiziert (`next[0]`). Die fehlende Woche wäre ein Fehler in der geprüften
+ * Funktion und soll als solcher benannt werden — nicht als „undefined ist
+ * nicht zuweisbar" an der Aufrufstelle.
+ */
+function besetzt(
+  week: Week | undefined,
+  pruefe: (slot: { name: string; pid?: string }) => boolean,
+): Platz[] {
+  if (!week) throw new Error('keine Woche zurückbekommen')
   const m = week.mid
-  const item = m.sections[0].items[0] as PartItem
+  const item = m.sections[0]!.items[0] as PartItem
   const out: Platz[] = []
   if (item.names.some(pruefe)) out.push('hauptsaal')
   if ((item.aux ?? []).some(pruefe)) out.push('klasse')
@@ -156,11 +167,11 @@ describe('Wer schreibt eine Zuteilung um?', () => {
     // Alt-Bestand in der früheren Kurzform „A. Beispiel".
     const alt = woche()
     const kurz = (s: { name: string }): void => { s.name = 'A. Beispiel' }
-    const item = alt.mid.sections[0].items[0] as PartItem
+    const item = alt.mid.sections[0]!.items[0] as PartItem
     item.names.forEach(kurz)
     ;(item.aux ?? []).forEach(kurz)
     if (alt.mid.auxRatgeber) kurz(alt.mid.auxRatgeber)
-    alt.mid.helpers.mik.forEach(kurz)
+    alt.mid.helpers.mik!.forEach(kurz)
 
     const next = migrateAssignmentNames([alt], [ANNA])
     expect(besetzt(next[0], (s) => s.name === NAME)).toEqual(ALLE)
@@ -199,13 +210,13 @@ describe('Wer weiß, dass die Person schon eingeteilt ist?', () => {
       priv: { ...emptyQualifications(), schulung: true, vortrag: true },
     }
     const w = woche()
-    w.mid.sections[0].items.push({
+    w.mid.sections[0]!.items.push({
       title: 'Noch ein Punkt', meta: '', names: [{ name: '', bereichsKey: 'vortrag' }],
     })
 
     const { weeks } = autoAssignMeeting([w], 0, 'mid', [qualifiziert], SERVICES)
-    const zweiter = weeks[0].mid.sections[0].items[1] as PartItem
-    expect(zweiter.names[0].name, 'Anna wurde ein zweites Mal eingeteilt').toBe('')
+    const zweiter = weeks[0]!.mid.sections[0]!.items[1] as PartItem
+    expect(zweiter.names[0]!.name, 'Anna wurde ein zweites Mal eingeteilt').toBe('')
   })
 
   it('… und lässt einen anderen ran', () => {
@@ -216,13 +227,13 @@ describe('Wer weiß, dass die Person schon eingeteilt ist?', () => {
       priv: { ...emptyQualifications(), vortrag: true },
     }
     const w = woche()
-    w.mid.sections[0].items.push({
+    w.mid.sections[0]!.items.push({
       title: 'Noch ein Punkt', meta: '', names: [{ name: '', bereichsKey: 'vortrag' }],
     })
 
     const { weeks } = autoAssignMeeting([w], 0, 'mid', [bernd], SERVICES)
-    const zweiter = weeks[0].mid.sections[0].items[1] as PartItem
-    expect(zweiter.names[0].name).toBe('Bernd Anders')
+    const zweiter = weeks[0]!.mid.sections[0]!.items[1] as PartItem
+    expect(zweiter.names[0]!.name).toBe('Bernd Anders')
   })
 })
 

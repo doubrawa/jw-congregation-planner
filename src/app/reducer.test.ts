@@ -257,8 +257,8 @@ describe('Personen', () => {
       ]],
     })
     const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfredo' } })
-    expect(next.fsWeeks[0][0].leader).toBe('Manfredo Albrecht')
-    expect(next.fsWeeks[0][1].leader).toBe('Jemand Anders')
+    expect(next.fsWeeks[0]![0]!.leader).toBe('Manfredo Albrecht')
+    expect(next.fsWeeks[0]![1]!.leader).toBe('Jemand Anders')
   })
 
   it('updatePerson spiegelt das Planer-Recht in Konten/Codes (eigenes Konto ausgenommen)', () => {
@@ -529,7 +529,7 @@ describe('assign (Zuteilen)', () => {
     const s = makeState()
     const sel = firstPartSlot(s.weeks[0], 'mid')
     const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
-    expect((next.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0].name).toBe('Neue Person')
+    expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('Neue Person')
     expect(next.pendingIds).toContain('neu-1')
     expect(next.notifs[0].type).toBe('gesendet')
     expect(next.slotSel).toBeNull()
@@ -591,7 +591,7 @@ describe('assign (Zuteilen)', () => {
     const inst = s.fsWeeks[0][0]
     const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
     const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
-    expect(next.fsWeeks[0].find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
+    expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
     expect(next.pendingIds).toContain('fritz-1')
     expect(next.notifs[0].type).toBe('gesendet')
   })
@@ -600,8 +600,8 @@ describe('assign (Zuteilen)', () => {
 describe('autoAssign / clearAssignments', () => {
   it('autoAssign füllt offene Slots (Mitteilung + Toast mit Anzahl)', () => {
     const weeks = buildDemoWeeks()
-    const closeSi = weeks[0].mid.sections.length - 1
-    ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
+    const closeSi = weeks[0]!.mid.sections.length - 1
+    ;(weeks[0]!.mid.sections[closeSi]!.items[0] as PartItem).names[0]!.name = ''
     const s = makeState({ weeks, week: 0, tab: 'mid' })
     const next = reducer(s, { type: 'autoAssign', scope: 'parts' })
     expect(next.notifs[0].type).toBe('gesendet')
@@ -610,8 +610,8 @@ describe('autoAssign / clearAssignments', () => {
 
   it('autoAssign ohne besetzbare Person → „keine passende" (count 0, unfilled>0)', () => {
     const weeks = buildDemoWeeks()
-    const closeSi = weeks[0].mid.sections.length - 1
-    ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
+    const closeSi = weeks[0]!.mid.sections.length - 1
+    ;(weeks[0]!.mid.sections[closeSi]!.items[0] as PartItem).names[0]!.name = ''
     const s = makeState({ weeks, week: 0, tab: 'mid', persons: [] })
     const next = reducer(s, { type: 'autoAssign', scope: 'parts' })
     expect(next.weeks).toBe(weeks) // nichts zugeteilt
@@ -819,28 +819,28 @@ describe('reminders.onAssign — die Mitteilung beim Zuteilen (T74)', () => {
     makeState({ ...over, reminders: { ...DEMO_REMINDERS, onAssign: false } })
 
   it('einzelner Programmpunkt: keine Mitteilung, Zuteilung trotzdem', () => {
-    const sel = firstPartSlot(makeState().weeks[0], 'mid')
+    const sel = firstPartSlot(makeState().weeks[0]!, 'mid')
     const s = ohneMeldung({ slotSel: sel })
     const next = reducer(s, { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
     expect(next.notifs).toBe(s.notifs)
-    expect((next.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0].name).toBe('Neue Person')
+    expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('Neue Person')
     expect(next.pendingIds).toContain('neu-1')
   })
 
   it('Treffpunkt-Leiter: keine Mitteilung, Leiter trotzdem gesetzt', () => {
-    const inst = makeState().fsWeeks[0][0]
+    const inst = makeState().fsWeeks[0]![0]!
     const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
     const s = ohneMeldung({ slotSel: sel })
     const next = reducer(s, { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
     expect(next.notifs).toBe(s.notifs)
-    expect(next.fsWeeks[0].find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
+    expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
   })
 
   /** Demo-Woche mit einem offenen Programmpunkt — sonst gibt es nichts zu tun. */
   const mitOffenemSlot = (over: Partial<AppState> = {}) => {
     const weeks = buildDemoWeeks()
-    const closeSi = weeks[0].mid.sections.length - 1
-    ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
+    const closeSi = weeks[0]!.mid.sections.length - 1
+    ;(weeks[0]!.mid.sections[closeSi]!.items[0] as PartItem).names[0]!.name = ''
     return makeState({ weeks, week: 0, tab: 'mid', ...over })
   }
 
@@ -865,8 +865,8 @@ describe('reminders.onAssign — die Mitteilung beim Zuteilen (T74)', () => {
   })
 
   it('eingeschaltet meldet jeder der vier Wege', () => {
-    const sel = firstPartSlot(makeState().weeks[0], 'mid')
-    const inst = makeState().fsWeeks[0][0]
+    const sel = firstPartSlot(makeState().weeks[0]!, 'mid')
+    const inst = makeState().fsWeeks[0]![0]!
     const fsSel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
     const wege: AppState[] = [
       reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person', pid: 'neu-1' }),

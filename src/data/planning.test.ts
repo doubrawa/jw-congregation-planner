@@ -453,7 +453,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     // Worte"). Wer Vorsitz hat, las bisher drei Angaben, die ihn nichts
     // angehen, und seine eigene ganz am Ende.
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Manfred Albrecht', {})
-    expect(aufgabenBezeichnung(tasks[0])).toBe('Vorsitz')
+    expect(aufgabenBezeichnung(tasks[0]!)).toBe('Vorsitz')
     // Und zwar als Rolle, nicht als Titel — sie gehört in die Sprache des
     // Lesers, der Titel in die der Versammlung.
     expect(tasks[0]).toMatchObject({ title: '', rolle: 'Vorsitz' })
@@ -461,11 +461,11 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
 
   it('sonst steht die Rolle hinter dem Titel', () => {
     const w = buildDemoWeeks()
-    const vbs = w[0].mid.sections
+    const vbs = w[0]!.mid.sections
       .flatMap((s) => s.items)
       .find((it) => !isSong(it) && it.title.startsWith('Versammlungsbibelstudium')) as PartItem
-    vbs.names[0].name = 'Manfred Albrecht'
-    delete vbs.names[0].pid
+    vbs.names[0]!.name = 'Manfred Albrecht'
+    delete vbs.names[0]!.pid
     const tasks = deriveMyTasks(w, DEMO_SERVICES, 'Manfred Albrecht', {})
     expect(tasks.map(aufgabenBezeichnung)).toContain('Versammlungsbibelstudium · Leiter')
   })
@@ -888,14 +888,14 @@ describe('Auto-Zuteilung: beide Räume teilen sich die belegten Personen', () =>
   it('wer in der Zusätzlichen Klasse steht, bekommt keinen zweiten Platz', () => {
     const pool = [vielseitig('x'), vielseitig('a'), vielseitig('b')]
     let weeks = syncAuxSlots([buildImportWeek()], true)
-    const ziel = weeks[0].mid.sections
+    const ziel = weeks[0]!.mid.sections
       .flatMap((s) => s.items)
       .find((i) => !isSong(i) && (i.aux?.length ?? 0) > 0) as PartItem
-    ziel.aux![0] = { ...ziel.aux![0], name: displayName(pool[0]), pid: 'x' }
+    ziel.aux![0] = { ...ziel.aux![0]!, name: displayName(pool[0]!), pid: 'x' }
 
     weeks = autoAssignMeeting(weeks, 0, 'mid', pool, DEMO_SERVICES, [], 'all').weeks
     // Genau der eine Platz, den der Planer gesetzt hat — kein zweiter dazu.
-    const wo = belegungen(weeks[0], 'x')
+    const wo = belegungen(weeks[0]!, 'x')
     expect(wo, wo.join(' + ')).toHaveLength(1)
     expect(wo[0]).toMatch(/^klasse\|/)
   })
@@ -903,11 +903,11 @@ describe('Auto-Zuteilung: beide Räume teilen sich die belegten Personen', () =>
   it('ein bereits eingeteilter Ratgeber bekommt keinen zweiten Platz', () => {
     const pool = [vielseitig('y'), vielseitig('a'), vielseitig('b')]
     let weeks = syncAuxSlots([buildImportWeek()], true)
-    weeks[0].mid.auxRatgeber = {
-      ...weeks[0].mid.auxRatgeber!, name: displayName(pool[0]), pid: 'y',
+    weeks[0]!.mid.auxRatgeber = {
+      ...weeks[0]!.mid.auxRatgeber!, name: displayName(pool[0]!), pid: 'y',
     }
     weeks = autoAssignMeeting(weeks, 0, 'mid', pool, DEMO_SERVICES, [], 'all').weeks
-    expect(belegungen(weeks[0], 'y')).toEqual(['ratgeber'])
+    expect(belegungen(weeks[0]!, 'y')).toEqual(['ratgeber'])
   })
 })
 
