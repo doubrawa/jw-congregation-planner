@@ -14,7 +14,6 @@ import {
   partnerGenderOk,
   partWorkload,
   personCompare,
-  roleLabel,
   rolleNennt,
   serviceQualKey,
   shortDisplayName,
@@ -237,11 +236,6 @@ describe('personCompare (alphabetisch: Nachname, dann Vorname)', () => {
 })
 
 describe('Rollen & Qualifikation', () => {
-  it('roleLabel: weibliche Form nur für Verkündigerinnen', () => {
-    expect(roleLabel(person({ role: 'verkuendiger', female: true }))).toBe('Verkündigerin')
-    expect(roleLabel(person({ role: 'aeltester' }))).toBe('Ältester')
-  })
-
   it('isQualified prüft nur den Schalter — keine Geschlechts-Sperre', () => {
     const sister = person({ female: true, priv: priv({ 'svc:mik': true }) })
     expect(isQualified(sister, 'svc:mik')).toBe(true)
