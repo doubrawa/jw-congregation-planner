@@ -25,6 +25,25 @@ export interface I18n {
   progFallback: boolean
 }
 
+/**
+ * Beschriftung einer Aufgabe aus ihren zwei Hälften — die **eine** Stelle, an
+ * der sie zusammenkommen.
+ *
+ * Der Titel des Programmpunkts steht in der Sprache der Versammlung (`tp`), die
+ * Rolle in der des Lesers (`tu`); ein einzelner Übersetzer kann für beide nicht
+ * stimmen. Fehlt eine Hälfte, trägt die andere allein — in Eröffnung und
+ * Abschluss ist das die Rolle, denn der Titel benennt dort den ganzen Block
+ * („Lied 27 · Gebet · Einleitende Worte").
+ */
+export function aufgabenLabel(
+  task: { title: string; rolle?: string },
+  i18n: Pick<I18n, 'tp' | 'tu'>,
+): string {
+  const links = task.title ? i18n.tp(task.title) : ''
+  const rechts = task.rolle ? i18n.tu(task.rolle) : ''
+  return links && rechts ? `${links} · ${rechts}` : links || rechts
+}
+
 /** Platzhalter {n}, {name}, {m} … in einer Übersetzung ersetzen. */
 export function fill(template: string, params: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? ''))

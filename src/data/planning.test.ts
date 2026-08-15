@@ -5,6 +5,7 @@ import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERS
 import { displayName, helperWorkload, isSong, loadWindow, partWorkload, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
+  aufgabenBezeichnung,
   assignmentsInMeeting,
   autoAssignMeeting,
   buildS89ForSlot,
@@ -414,7 +415,9 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
     // Woche 0: Schulungsaufgabe · Woche 1: Mikrofone (We) ·
     // Woche 2: Bibellesung · Woche 3: Mikrofone (Gedächtnismahl)
-    expect(tasks.map((t) => t.title)).toEqual([
+    // Über die zusammengefügte Form geprüft: Titel und Rolle stehen getrennt,
+    // weil die Anzeige sie verschieden übersetzt (MyTask.rolle).
+    expect(tasks.map(aufgabenBezeichnung)).toEqual([
       'Gespräche beginnen',
       'Mikrofone',
       'Bibellesung · Jer 38:1-13',
@@ -450,7 +453,10 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     // Worte"). Wer Vorsitz hat, las bisher drei Angaben, die ihn nichts
     // angehen, und seine eigene ganz am Ende.
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Manfred Albrecht', {})
-    expect(tasks[0].title).toBe('Vorsitz')
+    expect(aufgabenBezeichnung(tasks[0])).toBe('Vorsitz')
+    // Und zwar als Rolle, nicht als Titel — sie gehört in die Sprache des
+    // Lesers, der Titel in die der Versammlung.
+    expect(tasks[0]).toMatchObject({ title: '', rolle: 'Vorsitz' })
   })
 
   it('sonst steht die Rolle hinter dem Titel', () => {
@@ -461,7 +467,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     vbs.names[0].name = 'Manfred Albrecht'
     delete vbs.names[0].pid
     const tasks = deriveMyTasks(w, DEMO_SERVICES, 'Manfred Albrecht', {})
-    expect(tasks.map((t) => t.title)).toContain('Versammlungsbibelstudium · Leiter')
+    expect(tasks.map(aufgabenBezeichnung)).toContain('Versammlungsbibelstudium · Leiter')
   })
 
   it('ordnet Aufgaben über pid zu — Namensgleiche sehen keine fremden Aufgaben', () => {

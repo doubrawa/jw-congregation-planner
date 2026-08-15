@@ -6,7 +6,7 @@ import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { fill, useT } from '../i18n/useT'
+import { aufgabenLabel, fill, useT } from '../i18n/useT'
 import type { MeetingTab } from '../data/types'
 import './dashboard.css'
 
@@ -20,7 +20,8 @@ import './dashboard.css'
 export function DashboardScreen() {
   const { state, dispatch } = useApp()
   const abwesend = useAbwesend()
-  const { t, tu, tp } = useT()
+  const i18n = useT()
+  const { t, tu, tp } = i18n
   const me = state.persons.find((p) => p.id === state.personId)
 
   // Tageszeit-Gruß + lokalisiertes Datum (Wochentag · Tag · Monat, Großbuchstaben).
@@ -87,7 +88,7 @@ export function DashboardScreen() {
             className="dash-hero-open"
             onClick={() => dispatch({ type: 'openMyTask', id: nextTask.id })}
           >
-            <div className="dash-hero-title">{tp(nextTask.title)}</div>
+            <div className="dash-hero-title">{aufgabenLabel(nextTask, i18n)}</div>
             <div className="dash-hero-date">{tp(nextTask.date)}</div>
           </button>
           <div className="dash-hero-actions">

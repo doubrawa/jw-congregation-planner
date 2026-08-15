@@ -553,7 +553,24 @@ export interface S89Payload {
 /** Eine dem eingeloggten Nutzer zugeteilte Aufgabe (persönlicher Bereich). */
 export interface MyTask {
   id: string
-  title: string // "Gespräche beginnen (informell)"
+  /**
+   * Titel des Programmpunkts, **Versammlungssprache** („Gespräche beginnen") —
+   * leer, wo die Rolle allein trägt (Eröffnung/Abschluss, Ratgeber,
+   * Hilfsdienste).
+   */
+  title: string
+  /**
+   * Rolle, Ratgeber-Bezeichnung oder Dienstname — **App-Sprache**, also die des
+   * Lesers, und deshalb ein eigenes Feld.
+   *
+   * Beides in einen String zu fügen ging lange gut und war trotzdem falsch: die
+   * Aufgabenliste schickte den ganzen Titel durch `tp` (Versammlungssprache),
+   * und „Vorsitz" stand damit in der Sprache der Versammlung, während der Rest
+   * des Bildschirms in der des Lesers war. `useT` sagt es ausdrücklich:
+   * „tu(name) … Namen/Rollen/Zeiten in App-Sprache". Zusammengesetzt wird erst
+   * beim Anzeigen (`aufgabenLabel`).
+   */
+  rolle?: string
   date: string // "Di, 8. September · ca. 19:35"
   chip: string // Countdown-Text NUR im Demo-Modus (z. B. "in 4 Tagen")
   at?: number | null // UTC-ms des Zusammenkunftstags → Live-Countdown (Intl); null = keiner

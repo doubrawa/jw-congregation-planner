@@ -1,7 +1,7 @@
 import type { AppState } from '../app/context'
 import { displayName } from '../data/helpers'
 import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
-import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
+import { aufgabenBezeichnung, deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
 
 /**
@@ -84,7 +84,7 @@ export function personTimeline(
       datum,
       zeit: meetingTime(week, pos.tab, state.congregation.meetings),
       vergangen: datum < grenze,
-      titel: task.title,
+      titel: aufgabenBezeichnung(task),
     })
   }
 

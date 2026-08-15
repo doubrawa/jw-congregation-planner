@@ -33,7 +33,6 @@ import {
   tieHash,
   wochenAbstand,
   workloadOf,
-  zuteilungsLabel,
   type Zuteilung,
 } from './helpers'
 import { meetingDateMs, meetingDateText } from './meeting-dates'
@@ -1188,9 +1187,15 @@ function eachAssignedSlot(
                   kind: 'part', wi, tab, si, ii, ni, aux: aux || undefined,
                   label: '', priv: slot.bereichsKey ?? null, groups: false,
                 }
+                // Zwei Hälften statt einer: der Titel gehört in die Sprache der
+                // Versammlung, die Rolle in die des Lesers (siehe MyTask.rolle).
+                // In Eröffnung/Abschluss trägt die Rolle allein — der Titel
+                // benennt dort den ganzen Block (`istBlockAbschnitt`).
+                const eigen = eigeneRolle(rolle)
                 return {
                   id: key,
-                  title: zuteilungsLabel(section.label, item.title, rolle),
+                  title: eigen && istBlockAbschnitt(section.label) ? '' : item.title,
+                  ...(eigen ? { rolle: eigen } : {}),
                   date: taskDate(week, wi, tab, meetings),
                   chip: '',
                   at,
@@ -1208,7 +1213,8 @@ function eachAssignedSlot(
         const key = ratgeberTaskKey(week.start, tab)
         visit(ratgeber.name, key, () => ({
           id: key,
-          title: RATGEBER_ROLLE,
+          title: '', // die Bezeichnung ist die Rolle — App-Sprache
+          rolle: RATGEBER_ROLLE,
           date: taskDate(week, wi, tab, meetings),
           chip: '',
           at,
@@ -1225,7 +1231,10 @@ function eachAssignedSlot(
           const key = helperTaskKey(week.start, tab, svc.key, pos)
           visit(slot.name, key, () => ({
             id: key,
-            title: svc.name,
+            // Dienstnamen zeigt die App in der Sprache des Lesers — so hält es
+            // auch `SubstituteReq.title` („Anzeige über tu").
+            title: '',
+            rolle: svc.name,
             date: taskDate(week, wi, tab, meetings),
             chip: '',
             at,
@@ -1236,6 +1245,16 @@ function eachAssignedSlot(
       }
     }
   })
+}
+
+/**
+ * Beide Hälften einer Aufgabe zu **einem kanonisch deutschen** Text —
+ * für alles, was keinen Übersetzer dazwischen hat: die Mitteilung an den Planer
+ * und die Zeitleiste im Personen-Detail. Die Oberfläche nimmt stattdessen
+ * `aufgabenLabel` (i18n/useT.ts) und übersetzt jede Hälfte für sich.
+ */
+export function aufgabenBezeichnung(task: Pick<MyTask, 'title' | 'rolle'>): string {
+  return [task.title, task.rolle].filter(Boolean).join(' · ')
 }
 
 /**

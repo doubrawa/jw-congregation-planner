@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useApp } from '../app/context'
-import { useT } from '../i18n/useT'
+import { aufgabenLabel, useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
 import './overlays.css'
@@ -13,7 +13,8 @@ import './overlays.css'
  */
 export function MyTaskSheet() {
   const { state, dispatch } = useApp()
-  const { t, tp } = useT()
+  const i18n = useT()
+  const { t, tp } = i18n
   const dlg = useRef<HTMLDivElement>(null)
   useDialogFocus(dlg)
   const close = () => dispatch({ type: 'closeMyTask' })
@@ -22,6 +23,7 @@ export function MyTaskSheet() {
 
   const task = state.myTasks.find((x) => x.id === state.myTaskId)
   if (!task) return null
+  const label = aufgabenLabel(task, i18n)
   const isHelper = task.id.split('|')[2] === 'helper'
   const decline = () => dispatch({ type: 'declineTask', id: task.id })
   const confirm = () => dispatch({ type: 'confirmTask', id: task.id })
@@ -33,13 +35,13 @@ export function MyTaskSheet() {
         className="confirm-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={task.title}
+        aria-label={label}
         ref={dlg}
       >
         <button type="button" className="mytask-close" aria-label={t.a11yClose} onClick={close}>
           ✕
         </button>
-        <div className="confirm-task-title">{tp(task.title)}</div>
+        <div className="confirm-task-title">{label}</div>
         <div className="confirm-task-date">{tp(task.date)}</div>
 
         {task.status === 'bestätigt' && <div className="mytask-status">✓ {t.bestaetigt}</div>}

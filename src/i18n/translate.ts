@@ -282,6 +282,20 @@ function makeTrIntl(code: Lang): (s: string) => string {
     [/^mit (.+)$/, m => ex.mit(g(m, 1))],
     [/^in (\d+) Tagen$/, m => ex.tage(g(m, 1))],
     [/^(\d+) Zuteilungen$/, m => ex.zut(g(m, 1))],
+    /*
+     * FEHLT HIER: „Studienartikel 28" — der Verweis in der Meta-Zeile des
+     * Wachtturm-Studiums. Die Regel gibt es nur im Wörterbuch-Pfad
+     * (`makeTr`, also en/es/fr); über Intl laufen die übrigen ~30 Sprachen,
+     * und dort bleibt der Verweis deutsch stehen. Dieselbe Sorte Lücke, die
+     * der Kommentar bei REF beschreibt („deshalb blieb ‚Gruppe 2‘ in 30
+     * Sprachen deutsch").
+     *
+     * Nicht mit einem englischen Rückfall geschlossen, und das mit Absicht:
+     * `translate-data.test.ts` leitet die Pflichtfelder aus `EXTRA_EN` ab und
+     * verlangt sie von JEDER Sprache — ein optionales Feld unterläuft genau
+     * die Vollständigkeit, die dort erzwungen wird. Die Wortlaute gehören an
+     * jw.org gemessen (wie die REF-Tabelle), nicht geraten.
+     */
     ...verweisRegeln(code),
     ...buchRegeln(code),
   ]

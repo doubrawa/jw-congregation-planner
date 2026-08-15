@@ -5,7 +5,7 @@ import { PushPrompt } from '../components/PushPrompt'
 import { fullName } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { fill, useT } from '../i18n/useT'
+import { aufgabenLabel, fill, useT } from '../i18n/useT'
 import './aufgaben.css'
 
 /**
@@ -15,7 +15,8 @@ import './aufgaben.css'
  */
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
-  const { t, tu, tp } = useT()
+  const i18n = useT()
+  const { t, tu, tp } = i18n
   const me = state.persons.find((p) => p.id === state.personId)
 
   const [from, setFrom] = useState('')
@@ -87,7 +88,7 @@ export function AufgabenScreen() {
                 className="auf-open"
                 onClick={() => dispatch({ type: 'openMyTask', id: task.id })}
               >
-                <div className="auf-title">{tp(task.title)}</div>
+                <div className="auf-title">{aufgabenLabel(task, i18n)}</div>
                 <div className="auf-date">{tp(task.date)}</div>
               </button>
               <div className="auf-actions">

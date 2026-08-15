@@ -13,6 +13,7 @@ import { displayName, linkFamily, mtab, overseerGroup, unlinkFamily } from '../d
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
+  aufgabenBezeichnung,
   assignmentsInMeeting,
   assignSlot,
   autoAssignMeeting,
@@ -819,10 +820,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'declineTask': {
       const task = state.myTasks.find((t) => t.id === action.id)
+      // Kanonisch deutsch in die Mitteilung — beide Hälften, denn dort steht
+      // kein Übersetzer dazwischen (die Glocke übersetzt beim Anzeigen).
+      const bezeichnung = task ? aufgabenBezeichnung(task) : ''
       const notif = makeNotif(
         'verhindert',
         'Verhinderung gemeldet',
-        `${task?.title ?? ''} — ${currentUserName(state)}`,
+        `${bezeichnung} — ${currentUserName(state)}`,
       )
       // Bei Hilfsdiensten wird automatisch ein Ersatz gesucht (Ersatzgesuch) →
       // eigener Toast; sonst nur die Verhinderungs-Meldung an den Planer.
