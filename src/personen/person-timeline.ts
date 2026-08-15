@@ -1,7 +1,7 @@
 import type { AppState } from '../app/context'
 import { displayName } from '../data/helpers'
 import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
-import { aufgabenBezeichnung, deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
+import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
 
 /**
@@ -22,7 +22,16 @@ export type TimelineEntry = {
   zeit: string
   /** Liegt vor dem heutigen Tag. */
   vergangen: boolean
-} & ({ kind: 'meeting'; titel: string } | { kind: 'fs'; ort: string })
+} & (
+  | {
+      kind: 'meeting'
+      /** Programmpunkt — Versammlungssprache; leer, wo die Rolle allein trägt. */
+      titel: string
+      /** Rolle/Dienstname — App-Sprache (siehe `MyTask.rolle`). */
+      rolle?: string
+    }
+  | { kind: 'fs'; ort: string }
+)
 
 /** Was die Zeitleiste aus dem Zustand braucht (erleichtert das Testen). */
 export type TimelineDaten = Pick<
@@ -84,7 +93,10 @@ export function personTimeline(
       datum,
       zeit: meetingTime(week, pos.tab, state.congregation.meetings),
       vergangen: datum < grenze,
-      titel: aufgabenBezeichnung(task),
+      // Beide Hälften getrennt weiterreichen: die Anzeige übersetzt den Titel
+      // in die Sprache der Versammlung, die Rolle in die des Lesers.
+      titel: task.title,
+      ...(task.rolle ? { rolle: task.rolle } : {}),
     })
   }
 

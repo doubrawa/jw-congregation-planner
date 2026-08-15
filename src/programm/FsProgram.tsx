@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { fsDate } from '../data/fs'
-import { displayName } from '../data/helpers'
+import { gehoertZu } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
@@ -14,7 +14,6 @@ export function FsProgram() {
   const { state } = useApp()
   const { t, tu } = useT()
   const me = state.persons.find((p) => p.id === state.personId)
-  const myName = me ? displayName(me) : null
   const insts = state.fsWeeks[state.week] ?? []
 
   if (insts.length === 0) {
@@ -65,7 +64,12 @@ export function FsProgram() {
               </div>
               <div className="fs-leader">
                 <div className="fs-leader-name">
-                  {myName !== null && inst.leader === myName && <span className="chip-du">DU</span>}
+                  {/* Über `gehoertZu`, nicht über den Namen — „Id vor Name",
+                      wie es `deriveMyFsTasks` für dieselben Treffpunkte tut.
+                      Namensgleiche sahen den Chip sonst beide. */}
+                  {me && gehoertZu({ name: inst.leader, pid: inst.lpid }, me) && (
+                    <span className="chip-du">DU</span>
+                  )}
                   <span className={inst.leader ? '' : 'fs-leader-open'}>
                     {inst.leader || t.offenDash}
                   </span>

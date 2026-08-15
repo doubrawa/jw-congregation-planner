@@ -32,7 +32,9 @@ describe('Zeitleiste einer Person', () => {
     const meeting = eintraege.find((e) => e.kind === 'meeting')
     expect(meeting).toBeDefined()
     if (meeting?.kind !== 'meeting') throw new Error('kein Zusammenkunfts-Eintrag')
-    expect(meeting.titel).not.toBe('')
+    // Titel und Rolle stehen getrennt (die Anzeige übersetzt sie verschieden);
+    // benannt sein muss der Eintrag, gleich über welche der beiden Hälften.
+    expect(`${meeting.titel}${meeting.rolle ?? ''}`).not.toBe('')
     // Demo: Woche 0 beginnt Mo, 7.9.; Einstellungen sagen „Di 19:00 · So 10:00"
     expect(meeting.datum.getDay()).toBe(2) // Dienstag
     expect(meeting.datum.getDate()).toBe(8)
