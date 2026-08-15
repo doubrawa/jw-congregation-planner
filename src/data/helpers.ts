@@ -3,7 +3,13 @@
  * Regeln stammen aus der Prototyp-Logik (docs/design-handoff).
  */
 
-import { BRUDER_BEREICHE, QUALIFICATION_ORDER, WT_ROLE_ORDER } from './constants'
+import {
+  BRUDER_BEREICHE,
+  LABEL_ABSCHLUSS,
+  LABEL_EROEFFNUNG,
+  QUALIFICATION_ORDER,
+  WT_ROLE_ORDER,
+} from './constants'
 import type { Abweichung, Group, Meeting, MeetingKey,
   MeetingTab, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
 
@@ -514,6 +520,64 @@ export function isSpeakerRole(rolle: string | undefined): boolean {
   return isGuestRole(rolle) || rolleBasis(rolle) === ROLE_OWN_SPEAKER
 }
 
+/**
+ * Abschnitte, deren Titel den **Block** benennen und nicht die Aufgabe.
+ *
+ * ERÖFFNUNG heißt „Lied 27 · Gebet · Einleitende Worte", ABSCHLUSS
+ * „Schlussworte · Lied 24 · Gebet" — drei Atome, von denen keines jemandem
+ * zugeteilt ist. Lied und Einleitende Worte gehören zur Programmstruktur; wer
+ * hier eingeteilt ist, hat Vorsitz oder Gebet.
+ */
+const BLOCK_LABELS = new Set<string>([LABEL_EROEFFNUNG, LABEL_ABSCHLUSS])
+
+/**
+ * Beschriftung einer Zuteilung — die **eine** Stelle, an der entschieden wird,
+ * wie ein belegter Platz benannt wird (Aufgabenliste, Bestätigen, Erinnerung,
+ * Banner der offenen Plätze).
+ *
+ * Regel:
+ *  - Ohne Rolle trägt der Titel des Programmpunkts („Bibellesung · Jer 44:24-30").
+ *  - Mit Rolle steht sie dahinter („Versammlungsbibelstudium · Leiter").
+ *  - In ERÖFFNUNG/ABSCHLUSS steht **nur** die Rolle: der Titel benennt dort den
+ *    ganzen Block. Wer Vorsitz hat, las bisher „Lied 27 · Gebet · Einleitende
+ *    Worte · Vorsitz" — drei Angaben, die ihn nichts angehen, und seine eigene
+ *    ganz am Ende.
+ *  - Begleiter-Rollen („mit A. Hoffmann") benennen keine eigene Aufgabe; dort
+ *    trägt weiterhin der Titel. Geprüft wird mit Leerzeichen, wie es
+ *    `buildS89ForSlot` beim Zerlegen derselben Form tut.
+ *
+ * Die Zusammenkunft ist der Zusammenhang: „Leiter" ist darin eindeutig, denn
+ * Versammlungsbibelstudium und Wachtturm-Studium liegen in verschiedenen.
+ *
+ * **Zweitschrift beachten:** `supabase/functions/_shared/planung.ts` trägt
+ * dieselbe Regel für die Edge Functions (eigene Laufzeit, kein Zugriff auf
+ * `src/`). Ändert sich hier etwas, gehört es dort mitgezogen — getrennte
+ * Kopien einer Regel waren hier schon zweimal die Fehlerursache (B8/T40).
+ */
+export function zuteilungsLabel(
+  sectionLabel: string,
+  title: string,
+  rolle: string | undefined,
+): string {
+  const r = eigeneRolle(rolle)
+  if (!r) return title
+  return istBlockAbschnitt(sectionLabel) ? r : `${title} · ${r}`
+}
+
+/** Benennt der Titel dieses Abschnitts den Block statt die Aufgabe? */
+export function istBlockAbschnitt(sectionLabel: string): boolean {
+  return BLOCK_LABELS.has(sectionLabel)
+}
+
+/**
+ * Die Rolle, sofern sie eine eigene Aufgabe benennt — sonst "".
+ * Begleiter-Rollen („mit A. Hoffmann") tun das nicht (siehe `zuteilungsLabel`).
+ */
+export function eigeneRolle(rolle: string | undefined): string {
+  const r = rolle ?? ''
+  return r.startsWith('mit ') ? '' : r
+}
+
 /** Was eine Zuteilung über ihren Inhaber verrät — Slot, Ratgeber, Hilfsdienst. */
 export interface Zuteilung {
   name?: string
@@ -724,6 +788,30 @@ function wocheBeiVersatz(weeks: Week[], wi: number, versatz: number): Week | und
   if (!hier?.start) return weeks[wi + versatz]
   const ziel = new Date(Date.parse(hier.start) + versatz * WOCHE_MS).toISOString().slice(0, 10)
   return weeks.find((w) => w?.start === ziel)
+}
+
+/**
+ * Die Wochen des Auslastungs-Fensters um `wi` — **nach Datum**, nicht nach
+ * Position (T36), und damit genau die, die `loadWindow` als Quadrate zeigt.
+ *
+ * Es gab die Rechnung zweimal: die Quadrate liefen über `wocheBeiVersatz`, die
+ * Zahl daneben („2 Aufgaben in 5 Wochen") und die Auto-Zuteilung schnitten mit
+ * `slice` nach Position. Solange die Wochen lückenlos folgen, ist das
+ * dasselbe; fehlt eine — eine nie importierte Woche —, beschreiben Quadrat und
+ * Zahl verschiedene Zeiträume, und sortiert wird nach einem dritten. Genau
+ * diese Verwechslung hat T36 an anderer Stelle schon einmal behoben.
+ *
+ * Fehlende Wochen fallen weg; das Fenster ist dann kleiner als `LOAD_WEEKS`.
+ * Das ist die richtige Auskunft: eine Woche, die es nicht gibt, trägt nichts
+ * bei — weder Last noch Gelegenheit.
+ */
+export function lastFenster(weeks: Week[], wi: number, radius = LOAD_RADIUS): Week[] {
+  const out: Week[] = []
+  for (let versatz = -radius; versatz <= radius; versatz++) {
+    const week = wocheBeiVersatz(weeks, wi, versatz)
+    if (week) out.push(week)
+  }
+  return out
 }
 
 /**

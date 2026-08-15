@@ -49,13 +49,30 @@ function mk(quals: string[], patch: Partial<Person> = {}): Person {
 /** Qualifikationen, die die Schülerteile und Lesungen abdecken. */
 const SCHUL = ['schulung', 'schulungPartner', 'bibellesung', 'leser']
 
-/** Wochenplan der Zusammenkünfte über `n` Wochen; `poolAb` darf je Woche wechseln. */
+/** Montag der Woche `i` ab 5.10.2026 — fortlaufend, wie im echten Bestand. */
+function montag(i: number): string {
+  return new Date(Date.UTC(2026, 9, 5) + i * 7 * 864e5).toISOString().slice(0, 10)
+}
+
+/**
+ * Wochenplan der Zusammenkünfte über `n` Wochen; `poolAb` darf je Woche
+ * wechseln.
+ *
+ * Jede Woche trägt ihren **eigenen** Montag. Das ist keine Zierde: das
+ * Auslastungs-Fenster rechnet in Wochen, nicht in Einträgen (`lastFenster`),
+ * und `assignmentDistance` misst die Wartezeit am Datum. Trügen alle Wochen
+ * dasselbe, fiele das Fenster auf eine einzige zusammen und jede Wartezeit auf
+ * null — die Simulation prüfte dann eine Fairness, die es so nicht gibt.
+ */
 function planeWochen(
   n: number,
   poolAb: (wi: number) => Person[],
   abwesend: AbsenceSet = new Set<string>(),
 ): Week[] {
-  let weeks: Week[] = Array.from({ length: n }, () => buildImportWeek())
+  let weeks: Week[] = Array.from({ length: n }, (_unused, i) => ({
+    ...buildImportWeek(),
+    start: montag(i),
+  }))
   for (let wi = 0; wi < n; wi++) {
     const pool = poolAb(wi)
     weeks = autoAssignMeeting(weeks, wi, 'mid', pool, DEMO_SERVICES, [], 'all', abwesend).weeks

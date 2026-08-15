@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
+import { syncAuxSlots } from './aux-class'
 import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './testdaten'
 import { displayName, helperWorkload, isSong, loadWindow, partWorkload, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
@@ -74,13 +75,39 @@ describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
     helpers: { mik: [], rein: [] },
   }
 
-  it('listet offene Programmpunkte (Rolle im Titel) und Hilfsdienste gebündelt', () => {
+  it('listet offene Programmpunkte (Rolle getrennt) und Hilfsdienste gebündelt', () => {
     const open = openSlotLabels(meeting, services)
+    // Titel und Rolle stehen als zwei Felder da, nicht als ein String: der Titel
+    // kommt aus der Sprache der Versammlung, die Rolle aus der des Lesers.
     expect(open).toEqual([
-      { text: 'Versammlungsbibelstudium · Leser', lang: 'p', n: 1 },
+      { text: 'Versammlungsbibelstudium', lang: 'p', rolle: 'Leser', n: 1 },
       { text: 'Gespräche beginnen', lang: 'p', n: 1 }, // "mit …"-Rolle → nur Titel
       { text: 'Mikrofone', lang: 'u', n: 2 },
       { text: 'Reinigung', lang: 'u', n: 1 },
+    ])
+  })
+
+  it('in ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein — ohne Lied und Einleitende Worte', () => {
+    const eroeffnung: Meeting = {
+      ...meeting,
+      sections: [
+        {
+          label: 'ERÖFFNUNG',
+          farbe: 'neutral',
+          items: [
+            {
+              title: 'Lied 27 · Gebet · Einleitende Worte',
+              meta: '',
+              names: [{ name: '', rolle: 'Vorsitz' }, { name: '', rolle: 'Gebet' }],
+            },
+          ],
+        },
+      ],
+      helpers: {},
+    }
+    expect(openSlotLabels(eroeffnung, [])).toEqual([
+      { text: 'Vorsitz', lang: 'u', n: 1 },
+      { text: 'Gebet', lang: 'u', n: 1 },
     ])
   })
 
@@ -418,9 +445,23 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     expect(mit[1].at).toBe(Date.parse('2026-09-13'))
   })
 
-  it('hängt Rollenlabels (außer Begleiter) an den Titel an', () => {
+  it('in ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein', () => {
+    // Der Titel benennt dort den ganzen Block („Lied 1 · Gebet · Einleitende
+    // Worte"). Wer Vorsitz hat, las bisher drei Angaben, die ihn nichts
+    // angehen, und seine eigene ganz am Ende.
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Manfred Albrecht', {})
-    expect(tasks[0].title).toBe('Lied 1 · Gebet · Einleitende Worte · Vorsitz')
+    expect(tasks[0].title).toBe('Vorsitz')
+  })
+
+  it('sonst steht die Rolle hinter dem Titel', () => {
+    const w = buildDemoWeeks()
+    const vbs = w[0].mid.sections
+      .flatMap((s) => s.items)
+      .find((it) => !isSong(it) && it.title.startsWith('Versammlungsbibelstudium')) as PartItem
+    vbs.names[0].name = 'Manfred Albrecht'
+    delete vbs.names[0].pid
+    const tasks = deriveMyTasks(w, DEMO_SERVICES, 'Manfred Albrecht', {})
+    expect(tasks.map((t) => t.title)).toContain('Versammlungsbibelstudium · Leiter')
   })
 
   it('ordnet Aufgaben über pid zu — Namensgleiche sehen keine fremden Aufgaben', () => {
@@ -797,6 +838,70 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
     }, {})
     expect(proPerson['p-eins'], JSON.stringify(proPerson)).toBe(1)
     expect(proPerson['p-zwei'], JSON.stringify(proPerson)).toBe(1)
+  })
+})
+
+/*
+ * Niemand kann zur selben Zeit in zwei Räumen sein.
+ *
+ * Die `used`-Menge wurde lange nur aus `item.names` gefüllt — dem Hauptsaal.
+ * Wer von Hand in die Zusätzliche Klasse eingeteilt war, fehlte darin und bekam
+ * vom nächsten Lauf zusätzlich einen Platz im Hauptsaal; dasselbe galt für
+ * einen schon eingeteilten Ratgeber. Auffallen konnte es kaum: die Klasse steht
+ * in der Ansicht neben dem Hauptsaal, nicht darin.
+ */
+describe('Auto-Zuteilung: beide Räume teilen sich die belegten Personen', () => {
+  const vielseitig = (id: string): Person => {
+    const priv = { ...emptyQualifications() } as unknown as Record<string, boolean>
+    for (const k of Object.keys(priv)) priv[k] = true
+    priv.ratgeber = true
+    return {
+      id, fn: 'V' + id, ln: 'N' + id, role: 'verkuendiger', female: false, tel: '', mail: '',
+      priv: priv as unknown as Person['priv'],
+    }
+  }
+
+  /** Alle Plätze der Zusammenkunft, auf denen diese pid steht. */
+  const belegungen = (week: Week, pid: string): string[] => {
+    const m = week.mid
+    const out: string[] = []
+    if (m.auxRatgeber?.pid === pid) out.push('ratgeber')
+    m.sections.forEach((s, si) =>
+      s.items.forEach((item, ii) => {
+        if (isSong(item)) return
+        item.names.forEach((n, ni) => { if (n.pid === pid) out.push(`hauptsaal|${si}|${ii}|${ni}`) })
+        ;(item.aux ?? []).forEach((n, ni) => { if (n.pid === pid) out.push(`klasse|${si}|${ii}|${ni}`) })
+      }),
+    )
+    for (const [k, arr] of Object.entries(m.helpers)) {
+      arr.forEach((n, i) => { if (n.pid === pid) out.push(`helfer|${k}|${i}`) })
+    }
+    return out
+  }
+
+  it('wer in der Zusätzlichen Klasse steht, bekommt keinen zweiten Platz', () => {
+    const pool = [vielseitig('x'), vielseitig('a'), vielseitig('b')]
+    let weeks = syncAuxSlots([buildImportWeek()], true)
+    const ziel = weeks[0].mid.sections
+      .flatMap((s) => s.items)
+      .find((i) => !isSong(i) && (i.aux?.length ?? 0) > 0) as PartItem
+    ziel.aux![0] = { ...ziel.aux![0], name: displayName(pool[0]), pid: 'x' }
+
+    weeks = autoAssignMeeting(weeks, 0, 'mid', pool, DEMO_SERVICES, [], 'all').weeks
+    // Genau der eine Platz, den der Planer gesetzt hat — kein zweiter dazu.
+    const wo = belegungen(weeks[0], 'x')
+    expect(wo, wo.join(' + ')).toHaveLength(1)
+    expect(wo[0]).toMatch(/^klasse\|/)
+  })
+
+  it('ein bereits eingeteilter Ratgeber bekommt keinen zweiten Platz', () => {
+    const pool = [vielseitig('y'), vielseitig('a'), vielseitig('b')]
+    let weeks = syncAuxSlots([buildImportWeek()], true)
+    weeks[0].mid.auxRatgeber = {
+      ...weeks[0].mid.auxRatgeber!, name: displayName(pool[0]), pid: 'y',
+    }
+    weeks = autoAssignMeeting(weeks, 0, 'mid', pool, DEMO_SERVICES, [], 'all').weeks
+    expect(belegungen(weeks[0], 'y')).toEqual(['ratgeber'])
   })
 })
 

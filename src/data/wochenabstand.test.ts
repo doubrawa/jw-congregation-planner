@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyQualifications, loadWindow, wochenAbstand } from './helpers'
+import { emptyQualifications, lastFenster, loadWindow, wochenAbstand } from './helpers'
 import { weekConflicts } from './planning'
 import type { Meeting, Person, Week } from './types'
 
@@ -71,6 +71,47 @@ describe('loadWindow zählt Wochen, keine Einträge', () => {
   it('bei lückenlosen Wochen unverändert', () => {
     const weeks = [woche('2026-06-01', false), woche('2026-06-08', true), woche('2026-06-15', false)]
     expect(loadWindow(weeks, PERSON, 1, undefined, 1)).toEqual(['none', 'task', 'none'])
+  })
+})
+
+/*
+ * Die Zahl unter dem Namen („2 Aufgaben in 5 Wochen") und die Quadrate daneben
+ * beschreiben dasselbe Fenster — sie wurden aber verschieden gerechnet: die
+ * Quadrate nach Datum, die Zahl und die Auto-Zuteilung mit `slice` nach
+ * Position. Bei lückenlosen Wochen ist das dasselbe; fehlt eine, las der
+ * Planer eine Zahl, nach der nicht sortiert worden war — genau der Fehler, den
+ * T36 an den Quadraten schon behoben hatte.
+ */
+describe('lastFenster: das Fenster, das die Quadrate zeigen', () => {
+  const mitLuecke = [
+    woche('2026-06-01', false),
+    woche('2026-06-08', true),
+    woche('2026-06-22', false), // der 15. Juni fehlt
+    woche('2026-06-29', false),
+  ]
+
+  it('überspringt die fehlende Woche, statt eine ältere hereinzuholen', () => {
+    // Fenster um den 22. Juni: 15. Juni gibt es nicht, also bleiben 22. und 29.
+    // Nach Position hätte es den 8. Juni mitgezählt — zwei Wochen entfernt.
+    expect(lastFenster(mitLuecke, 2, 1).map((w) => w.start)).toEqual(['2026-06-22', '2026-06-29'])
+  })
+
+  it('deckt sich mit den Quadraten daneben', () => {
+    // Dieselbe Auskunft in zwei Formen: `loadWindow` malt 'void' für jede
+    // Woche, die es nicht gibt — `lastFenster` lässt genau diese weg.
+    for (const wi of mitLuecke.keys()) {
+      const quadrate = loadWindow(mitLuecke, PERSON, wi, undefined, 1)
+      expect(lastFenster(mitLuecke, wi, 1), `Woche ${wi}`).toHaveLength(
+        quadrate.filter((q) => q !== 'void').length,
+      )
+    }
+  })
+
+  it('bei lückenlosen Wochen bleibt es beim vollen Fenster', () => {
+    const dicht = [woche('2026-06-01', false), woche('2026-06-08', true), woche('2026-06-15', false)]
+    expect(lastFenster(dicht, 1, 1).map((w) => w.start)).toEqual([
+      '2026-06-01', '2026-06-08', '2026-06-15',
+    ])
   })
 })
 

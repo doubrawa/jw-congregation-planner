@@ -48,6 +48,29 @@ export function personDisplayName(fn: string, ln: string, dn?: string | null): s
 }
 
 /**
+ * Abschnitte, deren Titel den **Block** benennen statt die Aufgabe — kanonisch
+ * deutsch wie alle Sektions-Labels in den Wochendaten (LABEL_EROEFFNUNG /
+ * LABEL_ABSCHLUSS in src/data/constants.ts).
+ */
+const BLOCK_LABELS = new Set<string>(['ERÖFFNUNG', 'ABSCHLUSS'])
+
+/**
+ * Beschriftung einer Zuteilung — Zweitschrift von `zuteilungsLabel`
+ * (src/data/helpers.ts). Dort steht die Begründung; hier steht sie, weil die
+ * Edge-Laufzeit nicht auf `src/` zugreifen kann. `edge-parity.test.ts` hält
+ * beide Fassungen zusammen.
+ */
+export function zuteilungsLabel(
+  sectionLabel: string,
+  title: string,
+  rolle: string | undefined,
+): string {
+  const r = rolle ?? ''
+  if (!r || r.startsWith('mit ')) return title
+  return BLOCK_LABELS.has(sectionLabel) ? r : `${title} · ${r}`
+}
+
+/**
  * Termin aus dem `date`-Feld einer Zusammenkunft:
  * „Dienstag, 8. September · 19:00 · Saal" → „Dienstag, 8. September · 19:00".
  */

@@ -315,7 +315,13 @@ describe('Gleitendes Fenster (±3 Wochen)', () => {
   it('zählt nur Einteilungen innerhalb des Fensters', () => {
     const a = named('Anton', 'Anton', [MIK]) // "A. Anton"
     const b = named('Bruno', 'Bruno', [MIK]) // "B. Bruno"
-    const weeks: Week[] = Array.from({ length: 6 }, () => wk(emptyMeeting(), emptyMeeting()))
+    // Fortlaufende Montage: das Fenster wird in Wochen gemessen, nicht in
+    // Einträgen (`lastFenster`). Mit sechsmal demselben Datum gäbe es keinen
+    // Abstand, den dieser Test prüfen könnte.
+    const weeks: Week[] = Array.from({ length: 6 }, (_unused, i) => ({
+      ...wk(emptyMeeting(), emptyMeeting()),
+      start: new Date(Date.UTC(2026, 8, 7) + i * 7 * 864e5).toISOString().slice(0, 10),
+    }))
     weeks[0].mid.helpers.mik = [{ name: 'Anton Anton' }] // weit weg → außerhalb des Fensters von Woche 5
     weeks[4].mid.helpers.mik = [{ name: 'Bruno Bruno' }] // nah dran → innerhalb des Fensters
     // Fenster für Woche 5 = [2..5]: A zählt als 0, B als 1 → A wird gewählt

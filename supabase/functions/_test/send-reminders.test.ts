@@ -73,6 +73,40 @@ function midMeeting(): unknown {
   }
 }
 
+/**
+ * Zusammenkunft, deren Plätze **Rollen** tragen — eigene Vorgabe, damit die
+ * Beschriftungs-Tests die Positionen der gemeinsamen nicht verschieben.
+ * Beide Plätze gehören Max: so bleibt die Planer-Meldung unberührt.
+ */
+function midMitRollen(): unknown {
+  return {
+    date: 'Dienstag, 8. September · 19:00 · Königreichssaal',
+    sections: [
+      {
+        // Zusammengesetzter Block-Titel: Lied und Einleitende Worte gehören
+        // niemandem. Wer hier steht, hat Vorsitz — das gehört in die Erinnerung.
+        label: 'ERÖFFNUNG',
+        items: [
+          {
+            title: 'Lied 27 · Gebet · Einleitende Worte',
+            names: [{ name: 'Max Mustermann', rolle: 'Vorsitz' }],
+          },
+        ],
+      },
+      {
+        label: 'UNSER LEBEN ALS CHRIST',
+        items: [
+          {
+            title: 'Versammlungsbibelstudium',
+            names: [{ name: 'Max Mustermann', rolle: 'Leiter' }],
+          },
+        ],
+      },
+    ],
+    helpers: {},
+  }
+}
+
 /* ---- Simulierte Umgebung ------------------------------------------------- */
 
 interface Write {
@@ -243,6 +277,42 @@ describe('send-reminders: Dry-Run ist die sichere Voreinstellung', () => {
     const r = await run({ SEND_PUSH: '1' })
     expect(r.dryRun).toBe(true)
     expect(writes).toEqual([])
+  })
+})
+
+/*
+ * Was in der Erinnerung steht. Bis 091eb9f stand dort für jede Zuteilung mit
+ * Rolle nur „ · ": ein Refactoring hatte `${title} · ${rolle}` zu ` · `
+ * verkürzt, die Platzhalter fielen weg. Aufgefallen ist es niemandem, weil
+ * kein einziger Platz dieser Vorgaben eine Rolle trug — geprüft wurde bis
+ * dahin nur, wer NICHT erinnert wird, nie, was der Erinnerte liest.
+ */
+describe('send-reminders: was in der Erinnerung steht', () => {
+  /** Lauf gegen die Woche mit Rollen; liefert Max' Erinnerungstext. */
+  const textFuerMax = async (): Promise<string> => {
+    weeks = [{ start: WEEK_START, data: { mid: midMitRollen() } }]
+    const r = await run()
+    return (r.preview ?? []).filter((p) => p.userId === U_MAX).map((p) => p.body).join(' | ')
+  }
+
+  it('nennt in ERÖFFNUNG die Rolle allein — ohne Lied und Einleitende Worte', async () => {
+    const text = await textFuerMax()
+    expect(text).toContain('Vorsitz')
+    expect(text).not.toContain('Lied 27')
+    expect(text).not.toContain('Einleitende Worte')
+  })
+
+  it('nennt sonst Titel und Rolle', async () => {
+    expect(await textFuerMax()).toContain('Versammlungsbibelstudium · Leiter')
+  })
+
+  it('lässt keine Erinnerung ohne Aufgabenbezeichnung hinaus', async () => {
+    weeks = [{ start: WEEK_START, data: { mid: midMitRollen() } }]
+    for (const p of (await run()).preview ?? []) {
+      // „<Termin>:  · " — ein Doppelpunkt, dem nur ein Trenner folgt, heißt:
+      // der Empfänger erfährt nicht, wofür er erinnert wird.
+      expect(p.body, p.body).not.toMatch(/:\s*·/)
+    }
   })
 })
 
