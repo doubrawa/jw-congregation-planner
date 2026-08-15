@@ -2267,12 +2267,36 @@ zerlegen), und halbe Datensätze fallen nicht auseinander (nur Vorname, nur
 Nachname, ganz leer → „—"). Überall sonst bleibt `personLabel` — dort ist der
 Name Anrede, nicht Sortierschlüssel.
 
-### T76 · Konflikt-Banner: „+N weitere" muss aufklappen — und färben 🔧
-`planen/PlanBanners.tsx` zeigt Serien-Konflikte nur bis `STREAK_SHOWN = 2`, der
-Rest wird zu „+{n} weitere mögliche Konflikte" (`konfMehr`) — als toter Text,
-nicht als Schalter. Zwei Dinge fehlen: das **Aufklappen**, und die **farbliche
-Markierung der betroffenen Zuteilungen** im Programm darunter, damit man sie
-beim Durchgehen der Zusammenkunft sieht, statt sie im Banner suchen zu müssen.
+### T76 · Konflikt-Banner: „+N weitere" muss aufklappen — und färben 🔧 ✅ erledigt
+Die Zeile „+{n} weitere mögliche Konflikte" war toter Text; jetzt ist sie der
+Schalter, der sie schon immer sein sollte (`aria-expanded`, Winkel dreht sich,
+Beschriftung unverändert `konfMehr` — kein neuer Schlüssel für 34 Sprachen).
+Gekürzt werden weiterhin nur die **Serien**: die häufigste und am wenigsten
+dringende Art.
+
+**Die Markierung im Plan** trägt `Conflict.kennung` — die Person-Id, sonst
+`name:<Anzeigename>`. `useKonflikte(tab)` rechnet die Konflikte **einmal** und
+gibt beides heraus: die Liste fürs Banner und `betrifft(slot)` für die Chips.
+Zwei Quellen hätten früher oder später auseinandergelegen, und dann nennt das
+Banner einen Namen, den im Programm nichts hervorhebt. Markiert wird an allen
+vier Platzsorten plus den Treffpunkten; die Gruppen-Rotation ist keine Person
+und bleibt außen vor.
+
+**Am laufenden Stand gefunden, nicht am Reißbrett:** Die Konfliktprüfung löst
+den Namen über die Personenliste zu einer Id auf (`idAufloeser`), die
+Markierung verglich zuerst `pid`/Name direkt — und im Demo-Bestand tragen die
+Hilfsdienst-Plätze **keine** `pid`. Der abwesende Ordner stand also im Banner,
+sein Chip blieb blass. Beide Seiten benutzen jetzt dieselbe Auflösung
+(`machBetrifft`); ein Test hält den Fall fest.
+
+Dabei mitgenommen: `fsWeekConflicts` zählte die Doppelbelegung über den
+**Namen** — zwei Gleichnamige wurden zu einer Meldung, und die Markierung träfe
+beide. Jetzt über die Kennung, wie bei den Zusammenkünften.
+
+**Geprüft:** `planen/konflikte.test.tsx` (8 Fälle: Aufklappen und Zuklappen,
+kein Schalter ohne Rest, Markierung mit und ohne `pid`, Namensgleiche,
+Gruppen-Rotation) und am Demo-Stand nachgesehen — die drei Namen des Banners
+haben genau drei markierte Chips.
 
 ### T77 · Vergangenes verschwindet: Bestätigen, Dashboard, Mitteilungen 🔧
 Zuteilungen, deren Termin vorbei ist, dürfen weder zum Bestätigen vorgelegt
@@ -2315,12 +2339,12 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☐☐☐☐ ☑☑☑☐☐☐
+15. August ☐☐☐☐☐☐ ☑☑☑☑☐☐
 
-**68 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 10 offen:** T63
-(vom Betreiber zurückgestellt), die sechs Vorhaben T67–T72 und die drei
-verbliebenen Fehler T76–T78. **T73, T74 und T75** sind noch am 15. August
-erledigt worden. **T66** — der
+**69 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
+(vom Betreiber zurückgestellt), die sechs Vorhaben T67–T72 und die beiden
+verbliebenen Fehler T77 und T78. **T73, T74, T75 und T76** sind noch am
+15. August erledigt worden. **T66** — der
 strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
 erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
 zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
@@ -2400,7 +2424,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T67–T72, T76–T78 | Sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und drei Fehler. T73/T74/T75 sind am selben Tag erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **15. August** | T67–T72, T77, T78 | Sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und zwei Fehler. T73–T76 sind am selben Tag erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:

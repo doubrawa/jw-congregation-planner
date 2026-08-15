@@ -509,7 +509,7 @@ describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
   it('meldet, wer am Tag seines Treffpunkts abwesend ist', () => {
     const weeks = [[inst({ id: 'a', wd: 1, place: 'Saal', leader: 'Anton Muster', lpid: 'p1' })]]
     const c = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), BASE)
-    expect(c).toEqual([{ kind: 'fsAbsent', name: 'Anton Muster', wd: 1, ort: 'Saal' }])
+    expect(c).toEqual([{ kind: 'fsAbsent', name: 'Anton Muster', kennung: 'p1', wd: 1, ort: 'Saal' }])
   })
 
   it('sperrt nur den Tag, nicht die ganze Woche', () => {
@@ -542,7 +542,7 @@ describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
       ],
     ]
     const c = fsWeekConflicts(weeks, 0, [anton])
-    expect(c).toEqual([{ kind: 'fsDouble', name: 'Anton Muster', wd: 6, count: 2 }])
+    expect(c).toEqual([{ kind: 'fsDouble', name: 'Anton Muster', kennung: 'p1', wd: 6, count: 2 }])
   })
 
   it('zwei Treffpunkte an VERSCHIEDENEN Tagen sind kein Konflikt', () => {

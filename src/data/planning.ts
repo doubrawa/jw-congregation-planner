@@ -1328,6 +1328,15 @@ export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'streak' | 'fsAb
 export interface Conflict {
   kind: ConflictKind
   name: string // Anzeigename der Person
+  /**
+   * Wen es betrifft — Person-Id, sonst `name:<Anzeigename>` (`kennungVon`).
+   *
+   * Der Anzeigename allein reichte nicht: das Banner nennt den Konflikt, die
+   * Zuteilung darunter wird danach markiert, und bei zwei Personen desselben
+   * Namens leuchtete sonst auch die falsche auf — dieselbe Verwechslung, die
+   * T57 aus der Zählung genommen hat.
+   */
+  kennung: string
   tab?: MeetingKey // betroffene Zusammenkunft (absent/double/helperTask)
   count?: number // double: Hilfsdienste in der Zusammenkunft; streak: Wochen in Folge
   // Treffpunkte haben keine Zusammenkunft, sondern einen eigenen Wochentag und
@@ -1436,7 +1445,7 @@ export function weekConflicts(
       gesehen.add(b.kennung)
       const person = nachId.get(b.kennung)
       if (person && istAbwesend(abwesend, person.id, wi, tb)) {
-        conflicts.push({ kind: 'absent', name: b.name, tab: tb })
+        conflicts.push({ kind: 'absent', name: b.name, kennung: b.kennung, tab: tb })
       }
     }
   }
@@ -1464,8 +1473,8 @@ export function weekConflicts(
       const pc = partCounts.get(kennung) ?? 0
       const hc = helperCounts.get(kennung) ?? 0
       const name = namen.get(kennung) ?? ''
-      if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, tab: tb })
-      else if (hc >= 2) conflicts.push({ kind: 'double', name, tab: tb, count: hc })
+      if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
+      else if (hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
     }
   }
 
@@ -1495,7 +1504,7 @@ export function weekConflicts(
     while (end + 1 < weeks.length && belegt[end + 1]?.has(kennung) === true && folgt(end, end + 1)) end++
     const run = end - start + 1
     if (run >= STREAK_THRESHOLD && run < weeks.length) {
-      conflicts.push({ kind: 'streak', name, count: run })
+      conflicts.push({ kind: 'streak', name, kennung, count: run })
     }
   }
 

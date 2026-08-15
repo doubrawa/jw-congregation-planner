@@ -116,7 +116,7 @@ describe('Ausfall: es kommt niemand zusammen', () => {
     // ist das kein Konflikt, sondern Lärm — und verdeckt die echten daneben.
     const dienste = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
     expect(weekConflicts([makeWeek()], 0, [person], dienste, 'mid')).toEqual([
-      { kind: 'helperTask', name: 'A. Beispiel', tab: 'mid' },
+      { kind: 'helperTask', name: 'A. Beispiel', kennung: person.id, tab: 'mid' },
     ])
     expect(weekConflicts([aus()], 0, [person], dienste, 'mid')).toEqual([])
   })

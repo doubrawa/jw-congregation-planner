@@ -4,11 +4,12 @@
  * State — kein eigener Zustand.
  */
 
+import { useState } from 'react'
 import { useApp } from '../app/context'
-import { useAbwesend } from '../app/useAbwesend'
 import { fsDate, fsWeekConflicts } from '../data/fs'
 import { istAusgefallen } from '../data/helpers'
-import { openSlotLabels, weekConflicts, type Conflict } from '../data/planning'
+import { openSlotLabels, type Conflict } from '../data/planning'
+import { useKonflikte } from './useKonflikte'
 import type { MeetingKey, MeetingTab } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
@@ -24,19 +25,31 @@ const STREAK_SHOWN = 2
 
 /** Konflikt-Banner der aktuellen Zusammenkunft (Abwesende, Doppelbelegung, Serien). */
 export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
-  const { state } = useApp()
-  const abwesend = useAbwesend()
   const { t } = useT()
-  const conflicts = weekConflicts(state.weeks, state.week, state.persons, state.services, tab, abwesend)
+  const { liste: conflicts } = useKonflikte(tab)
+  // Aufgeklappt bleibt es, bis der Planer wieder zuklappt — auch über den
+  // Wochenwechsel hinweg. Wer die vollständige Liste sehen wollte, will sie
+  // in der nächsten Woche meist auch.
+  const [offen, setOffen] = useState(false)
   if (conflicts.length === 0) return null
 
-  const shownConflicts = [
+  const reihenfolge = [
+    ...conflicts.filter((c) => c.kind === 'absent'),
+    ...conflicts.filter((c) => c.kind === 'double'),
+    ...conflicts.filter((c) => c.kind === 'streak'),
+    ...conflicts.filter((c) => c.kind === 'helperTask'),
+  ]
+  // Gekürzt wird nur bei den Serien: sie sind die häufigsten und die am
+  // wenigsten dringenden. Ausgelassen wird nichts mehr — der Rest steht eine
+  // Berührung weiter.
+  const gekuerzt = [
     ...conflicts.filter((c) => c.kind === 'absent'),
     ...conflicts.filter((c) => c.kind === 'double'),
     ...conflicts.filter((c) => c.kind === 'streak').slice(0, STREAK_SHOWN),
     ...conflicts.filter((c) => c.kind === 'helperTask'),
   ]
-  const hiddenConflicts = conflicts.length - shownConflicts.length
+  const shownConflicts = offen ? reihenfolge : gekuerzt
+  const hiddenConflicts = conflicts.length - gekuerzt.length
 
   const conflictText = (c: Conflict): string => {
     if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName(t, c.tab) })
@@ -61,7 +74,24 @@ export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
         </div>
       ))}
       {hiddenConflicts > 0 && (
-        <div className="plan-conflict-more">{fill(t.konfMehr, { n: hiddenConflicts })}</div>
+        /*
+         * Die Zeile war bisher toter Text: sie nannte eine Zahl und ließ den
+         * Planer damit stehen. Jetzt klappt sie die übrigen Serien auf.
+         * Beschriftung bleibt `konfMehr` — auch aufgeklappt sagt sie, worum es
+         * bei diesen Zeilen geht; die Richtung des Winkels sagt den Zustand,
+         * `aria-expanded` sagt ihn den Vorlesern.
+         */
+        <button
+          type="button"
+          className={offen ? 'plan-conflict-more is-open' : 'plan-conflict-more'}
+          aria-expanded={offen}
+          onClick={() => setOffen((v) => !v)}
+        >
+          {fill(t.konfMehr, { n: hiddenConflicts })}
+          <span className="plan-conflict-chev" aria-hidden="true">
+            ›
+          </span>
+        </button>
       )}
     </div>
   )

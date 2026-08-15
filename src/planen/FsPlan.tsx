@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { kennungVon } from '../data/planning'
 import { useApp, useAppDispatch } from '../app/context'
-import { FS_TIME_OPTIONS, fsDate } from '../data/fs'
+import { FS_TIME_OPTIONS, fsDate, fsWeekConflicts } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
 import { SlotChip } from './SlotChip'
+import { machBetrifft } from './useKonflikte'
 
 const TIME_OPTIONS = FS_TIME_OPTIONS
 
@@ -66,6 +67,13 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const wi = state.week
   // Gruppenaufseher sehen/planen nur die Treffpunkte ihrer eigenen Gruppe.
   const insts = (state.fsWeeks[wi] ?? []).filter((i) => !onlyGroup || i.grp === onlyGroup)
+
+  // Wie bei den Zusammenkünften: wen das Banner darüber nennt, den hebt der
+  // Plan hervor. Eigene Quelle, weil Treffpunkte eine eigene haben.
+  const betrifft = machBetrifft(
+    state.persons,
+    fsWeekConflicts(state.fsWeeks, wi, state.persons, state.absences, state.fsBase, onlyGroup),
+  )
 
   const groupName = (grp: string): string => {
     const g = state.groups.find((x) => x.id === grp)
@@ -195,6 +203,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                   open={!inst.leader}
                   showStatus={Boolean(inst.leader)}
                   pending={state.pendingIds.includes(kennungVon(inst.leader, inst.lpid))}
+                  konflikt={betrifft({ name: inst.leader, pid: inst.lpid })}
                   onClick={() => openLeader(inst)}
                 />
               </div>
