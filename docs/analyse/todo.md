@@ -2131,7 +2131,7 @@ gemessen. Wo der Ort im Code schon feststeht, steht er dabei — nachgesehen ist
 damit **wo** etwas liegt, nicht warum es so ist und erst recht nicht, wie es zu
 lösen wäre.
 
-### T67 · Die Tests selbst prüfen — wirklichkeitsnah und vollständig? 🏗
+### T67 · Die Tests selbst prüfen — wirklichkeitsnah und vollständig? 🏗 ✅ erledigt
 **Vorgabe des Betreibers.** 1708 grüne Tests sind kein Beleg für Abdeckung. Zu
 prüfen ist beides: ob sie **die Wirklichkeit** treffen (echte Wochen, echte
 Zuteilungen, echte Abläufe statt bequemer Fixtures) und ob sie **vollständig**
@@ -2145,6 +2145,135 @@ Funktionen.
 
 **Prüfen:** Coverage ehrlich lesen (T56), dazu je Bereich stichprobenweise eine
 Regel absichtlich brechen und sehen, ob überhaupt etwas rot wird.
+
+> **Umgesetzt am 16. August 2026 — und zwar genau so: gemessen, nicht
+> geschätzt.** Aus „stichprobenweise eine Regel brechen" ist ein Messgerät
+> geworden, das man wieder ansetzen kann:
+> **[`npm run mutationsprobe`](../../scripts/mutationsprobe.mjs)**.
+>
+> #### Wie sie fragt
+>
+> Sie bricht eine Regel im Quelltext absichtlich und lässt den **ganzen**
+> Testbestand darüber laufen. Wird er rot, ist die Regel bewacht. Bleibt er
+> grün, könnte man sie morgen versehentlich entfernen, und 1800 Tests
+> schwiegen dazu.
+>
+> Der ganze Bestand, nicht die „zuständige" Datei: **Welcher Test eine Regel
+> deckt, ist ja die Frage.** Wer die Auswahl vorher trifft, bekommt die
+> Antwort heraus, die er hineingesteckt hat. `--bail=1` macht das bezahlbar —
+> bewachte Regeln brechen nach Sekunden ab, nur ungewachte kosten den vollen
+> Lauf.
+>
+> Die eigentliche Arbeit ist der **Katalog**: 37 Einträge, jeder eine fachliche
+> Aussage („niemand ist zur selben Zeit in zwei Räumen", „eine ausgefallene
+> Zusammenkunft zählt nicht zur Auslastung"), keine Syntaxvariante. Eine
+> Mutation, die keine Regel bricht, darf grün bleiben und gehört nicht hinein.
+>
+> Und sie **rostet laut**: Findet ein Eintrag seine Stelle nicht mehr — gar
+> nicht oder zweimal —, bricht der Lauf ab. Sonst stünde eines Tages ein
+> Katalog da, der nichts mehr misst und lauter Häkchen meldet. Genau das ist
+> beim ersten Anlauf passiert (ein Ausdruck kam zweimal vor) und war sofort
+> sichtbar.
+>
+> #### Was herauskam: 27 von 31
+>
+> Vier Regeln standen ungeschützt da — und es sind nicht die, die man geraten
+> hätte:
+>
+> | Regel | Wirkung, wenn sie stillschweigend wegfällt |
+> | --- | --- |
+> | Jeder Platz eines Hilfsdienstes wird besetzt | Von zwei Mikrofonen ist jede Woche eines offen |
+> | Der Partner der Klasse folgt **ihrem** Führer (T18) | Die Zusätzliche Klasse richtet sich nach dem Hauptsaal |
+> | Partner und Führer haben dasselbe Geschlecht | Ein Bruder wird einer Schwester als Begleitung zugeteilt |
+> | Die ausgefallene Zusammenkunft erinnert nicht (T30) | Push an alle für einen Abend, an dem niemand kommt |
+>
+> **Alle vier sind Aufrufer-Lücken** — dieselbe Fehlerart, die schon die beiden
+> Vollständigkeitsproben aufgedeckt haben. Die Regel selbst war je geprüft
+> (`partnerGenderOk` in `helpers.test.ts`, T18 im Zuteilungs-Sheet
+> `kandidaten.test.ts`, `istAusgefallenFuer` in `edge-parity.test.ts`) — die
+> **Anwendung** nicht. Wer nur nach fehlenden Tests sucht, findet sie nie: Es
+> gibt ja einen.
+>
+> #### Der Fund, der die Frage des Betreibers beantwortet
+>
+> Ein Test hieß „Gesprächsteil: Führer + Partner gleiches Geschlecht" — und
+> blieb grün, als die Geschlechtsprüfung entfernt wurde. Sein Aufbau war so
+> bequem gewählt, dass die beiden Schwestern ohnehin als Einzige übrig blieben
+> (der eine Bruder am Ton, der andere mit Ältesten-Malus beim männlichen
+> Vortrag). **Die Regel entschied dort gar nichts** — und was nichts
+> entscheidet, kann man auch nicht messen.
+>
+> Das ist die Antwort auf „wirklichkeitsnah?": Nicht die Fixtures sind das
+> Problem, sondern Vorgaben, in denen das Erwartete auch ohne die Regel
+> herauskommt. Der Test steht jetzt daneben, mit einer Vorgabe, in der allein
+> sie entscheidet: Der Bruder ist der Unbelastetste und gewönne jeden
+> Vergleich — er darf nur nicht.
+>
+> #### Zwei weitere Lücken, die die Abdeckung zeigte
+>
+> * **`kandidaten.ts`, Zweig „Treffpunkt".** T23 hat die Kandidatenlogik
+>   ausdrücklich als reine Funktion herausgezogen, damit sie prüfbar ist —
+>   zwei ihrer drei Zweige wurden geprüft, der dritte von keinem Test je
+>   aufgerufen. Er hat eigene Regeln: „schon heute" meint den Wochentag
+>   **dieses** Treffpunkts, und die Abwesenheit wird an **seinem** Datum
+>   gemessen.
+> * **`clipboard.ts`, 0 %.** Die Reihenfolge ist die ganze Datei: der
+>   gestensichere `execCommand`-Weg **zuerst**, die moderne API nur als
+>   Rückfall — wer sie zuerst abwartet, verlässt die Nutzergeste und beide Wege
+>   scheitern (genau der behobene Fehler). Sieht man einer Datei nicht an;
+>   beide Wege kopieren ja.
+>
+> Beim Schreiben dieses Tests kam **ein echter Mangel** heraus: Wirft
+> `execCommand` — in älteren Browsern und unter strengen Berechtigungen tut es
+> das, statt `false` zu liefern —, blieb das versteckte Textfeld im Dokument
+> stehen. Unsichtbar, aber bei jedem Versuch eines mehr. Behoben mit `finally`.
+>
+> #### Die Abdeckungszahl war selbst nicht ehrlich
+>
+> `npm run test:coverage` maß **nur `src/`**. Die drei Edge Functions — der
+> Code, der unbeaufsichtigt mit Service-Role läuft — kamen in der Zahl gar
+> nicht vor. Nachgemessen und aufgenommen; dabei fiel auf:
+>
+> **`send-invite` stand bei 0 %** — 137 Zeilen ohne einen einzigen Test, und
+> es ist die einzige Function, die **an Menschen hinausgeht**. Ungefährlich war
+> das nur, weil sie mangels `INVITE_FROM` bisher gar nicht sendet; mit der
+> gekauften Domain wird sie scharf. Jetzt 16 Tests auf
+> genau das, was nicht gehen darf: Nur Planer dürfen aufrufen, die Adresse
+> kommt **immer** aus der Personen-Tabelle der eigenen Versammlung (sonst
+> stünde ein offenes Mail-Relay im Netz), ohne verifizierten Absender wird
+> nicht gesendet — und zwar vor der ersten Datenbank-Abfrage.
+>
+> Ebenso ungleich behandelt: `send-reminders/texte.ts` hat seit T24 eine
+> Vollständigkeitsprüfung über alle 34 Sprachen, `substitute/texte.ts` hatte
+> keine. Zwei Wörterbücher derselben Bauart; käme eine 35. Sprache dazu, würde
+> der eine Versand rot und der andere schickte still auf Deutsch hinaus.
+>
+> #### Stand danach
+>
+> | | vorher | nachher |
+> | --- | --- | --- |
+> | Tests | 1782 in 96 Dateien | 1822 in 99 Dateien |
+> | Bewachte Regeln im Katalog | 27/31 | **37/37** |
+> | Abdeckung (Anweisungen) | 79,6 % — ohne `supabase/` | **81,0 %** — mit |
+> | `send-invite` | 0 % | 93 % |
+> | `kandidaten.ts` | 61 % | 89 % |
+>
+> Jede der sieben geschlossenen Lücken ist **einzeln nachgewiesen**: Die
+> Mutation, die vorher durchging, macht jetzt genau den neuen Test rot — mit
+> demselben Werkzeug, das sie gefunden hat.
+>
+> #### Was die Probe nicht kann — und was offen bleibt
+>
+> Sie misst nur, was im Katalog steht. Eine Regel, die niemand aufgeschrieben
+> hat, bleibt ungemessen; der Katalog ist damit selbst ein Dokument, das
+> gepflegt sein will. Und sie sagt nichts über **Bedienoberflächen**: Dort
+> steht die Abdeckung weiter niedrig — `MeetingSection.tsx` (363 Zeilen) bei
+> 0 %, `FsPlan.tsx` bei 1,5 %, `PlanBanners.tsx` bei 9 %, die Bildschirme
+> Programm und Aufgaben bei 27 %. Ob das eine Lücke ist oder die richtige
+> Grenze, ist eine eigene Frage: Die **Regeln** dieser Ansichten liegen
+> ausnahmslos in geprüften reinen Funktionen; ungeprüft ist ihr Zusammenbau.
+> Ein Fehler dort ist sichtbar, kein stiller — und stille Fehler waren der
+> Grund für diese Runde.
 
 ### T68 · Datenmodell und Schlüssel prüfen 🏗
 **Vorgabe des Betreibers.** Ergibt das Modell als Ganzes noch Sinn, sind die
@@ -2768,11 +2897,15 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑
+15. August ☑☐☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑
 
-**82 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 5 offen:** T63
-(vom Betreiber zurückgestellt), die drei verbliebenen Vorhaben T67, T68, T72
-und der Nachweis T78. **T73–T76** sind noch am 15. August erledigt worden;
+**83 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 4 offen:** T63
+(vom Betreiber zurückgestellt), die beiden verbliebenen Vorhaben T68 und T72
+und der Nachweis T78. **T67** — die Tests selbst geprüft — ist am 16. August
+dazugekommen: eine [Mutationsprobe](../../scripts/mutationsprobe.mjs), die
+Regeln absichtlich bricht und nachsieht, ob etwas rot wird. Sieben ungewachte
+Regeln gefunden und geschlossen, darunter ein Test, der seine eigene Regel
+nicht prüfte. **T73–T76** sind noch am 15. August erledigt worden;
 **T79 bis T81** kamen beim Benutzen desselben Tages dazu (T80 als Nachwehe von
 T76, T81 als Widerruf seiner Kürzungs-Mechanik) und sind erledigt.
 
@@ -2864,8 +2997,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T67, T68, T72, T78 | Drei Vorhaben (Tests, Datenmodell, Abwesenheiten) und der Mandanten-Nachweis. T71, T73–T77 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
-| **16. August** | — | T70, T71 und T82–T86 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
+| **15. August** | T68, T72, T78 | Zwei Vorhaben (Datenmodell, Abwesenheiten) und der Mandanten-Nachweis. T67, T71, T73–T77 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **16. August** | — | T67, T70, T71 und T82–T86 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:

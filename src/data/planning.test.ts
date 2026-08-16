@@ -592,6 +592,172 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
     // Vortrag geht an den einzigen freien Bruder (Emil), nie an eine Schwester
     expect(talk).toBe('Emil T')
   })
+
+  /*
+   * Der Test darüber hat keine Zähne — und das ist erst durch die
+   * Mutationsprobe herausgekommen: Nimmt man die Geschlechtsprüfung aus der
+   * Auto-Zuteilung heraus, bleibt er grün. In seinem Aufbau sind die beiden
+   * Schwestern ohnehin die einzigen, die übrig bleiben (Bruno am Ton, Emil mit
+   * Ältesten-Malus zum männlichen Vortrag); die Regel entscheidet dort gar
+   * nichts, und was nichts entscheidet, kann man auch nicht messen.
+   *
+   * Hier entscheidet allein sie: Der Bruder ist der Unbelasteteste und gewönne
+   * jeden Vergleich — er darf nur nicht.
+   */
+  describe('und zwar so, dass die Regel wirklich entscheidet', () => {
+    /**
+     * Vorgabe: Schwester A führt, Schwester B trägt eine Last, Bruder C hat
+     * keine. Deshalb steht C beim Lastvergleich vorn und käme dran, sobald die
+     * Geschlechtsprüfung fehlt.
+     *
+     * Die Last kommt aus dem **Wochenende** derselben Woche — es zählt in
+     * dasselbe Auslastungs-Fenster, sperrt aber nicht den Dienstagabend
+     * (`used` gilt je Zusammenkunft).
+     */
+    function partnerVorgabe(fuehrer: { female: boolean }) {
+      const base = buildDemoWeeks()[0]!
+      const week: Week = {
+        ...base,
+        mid: {
+          ...base.mid,
+          helpers: {},
+          sections: [
+            {
+              label: 'UNS IM DIENST VERBESSERN',
+              farbe: 'gold' as const,
+              items: [
+                {
+                  num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.',
+                  names: [
+                    { name: '', bereichsKey: 'schulung' },
+                    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        // Belastet den zweiten gleichgeschlechtlichen Kandidaten.
+        we: { ...base.we, helpers: { ton: [{ name: 'Bea T', pid: 'b' }] }, sections: [] },
+      }
+      const persons: Person[] = [
+        // Führt: als Einzige für „schulung" freigegeben, also nie strittig.
+        p('a', 'Alex', fuehrer.female, 'verkuendiger', qp({ schulung: true })),
+        // Gleiches Geschlecht wie der Führer, aber belastet.
+        p('b', 'Bea', fuehrer.female, 'verkuendiger', qp({ schulungPartner: true, 'svc:ton': true })),
+        // Anderes Geschlecht, unbelastet — gewönne ohne die Regel.
+        p('c', 'Chris', !fuehrer.female, 'verkuendiger', qp({ schulungPartner: true })),
+      ]
+      return { weeks: [week], persons }
+    }
+
+    const partnerVon = (fuehrer: { female: boolean }): { lead: string; partner: string } => {
+      const { weeks, persons } = partnerVorgabe(fuehrer)
+      const res = autoAssignMeeting(weeks, 0, 'mid', persons, DEMO_SERVICES, [], 'parts')
+      const item = (res.weeks[0]!.mid.sections[0]!.items as PartItem[])[0]!
+      return { lead: item.names[0]!.name, partner: item.names[1]!.name }
+    }
+
+    it('Schwester führt → Schwester als Partnerin, obwohl der Bruder freier ist', () => {
+      expect(partnerVon({ female: true })).toEqual({ lead: 'Alex T', partner: 'Bea T' })
+    })
+
+    it('Bruder führt → Bruder als Partner, obwohl die Schwester freier ist', () => {
+      expect(partnerVon({ female: false })).toEqual({ lead: 'Alex T', partner: 'Bea T' })
+    })
+  })
+
+  /*
+   * Die Zusätzliche Klasse richtet sich nach IHREM Führer (T18). Der Befund
+   * betraf das Zuteilungs-Sheet und wurde dort auch geprüft
+   * (`kandidaten.test.ts`); die Auto-Zuteilung machte es von jeher richtig und
+   * begründet es ausdrücklich im Quelltext — nur hielt sie nichts daran fest.
+   */
+  describe('Zusätzliche Klasse: der Partner folgt dem Führer IHRES Raums', () => {
+    it('Klasse mit Schwester als Führerin bekommt keine männliche Begleitung', () => {
+      const base = buildDemoWeeks()[0]!
+      const week: Week = {
+        ...base,
+        mid: {
+          ...base.mid,
+          helpers: {},
+          sections: [
+            {
+              label: 'UNS IM DIENST VERBESSERN',
+              farbe: 'gold' as const,
+              items: [
+                {
+                  num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.',
+                  // Hauptsaal: Bruder führt. Klasse: Schwester führt.
+                  names: [
+                    { name: 'Mark T', pid: 'm', bereichsKey: 'schulung' },
+                    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                  ],
+                  aux: [
+                    { name: 'Nora T', pid: 'n', bereichsKey: 'schulung' },
+                    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }
+      const persons: Person[] = [
+        p('m', 'Mark', false, 'verkuendiger', qp({ schulung: true })),
+        p('n', 'Nora', true, 'verkuendiger', qp({ schulung: true })),
+        // Zwei Brüder: einer für den Hauptsaal, einer bleibt übrig. Ohne die
+        // Regel füllte er die Klasse — mit ihr kommt nur die Schwester infrage.
+        p('r', 'Rolf', false, 'verkuendiger', qp({ schulungPartner: true })),
+        p('s', 'Sven', false, 'verkuendiger', qp({ schulungPartner: true })),
+        p('t', 'Tina', true, 'verkuendiger', qp({ schulungPartner: true })),
+      ]
+      // Die Klasse besteht nur, wenn die Woche sie trägt (auxRatgeber).
+      const weeks = syncAuxSlots([week], true)
+      const res = autoAssignMeeting(weeks, 0, 'mid', persons, DEMO_SERVICES, [], 'parts')
+      const item = (res.weeks[0]!.mid.sections[0]!.items as PartItem[])[0]!
+      expect(item.names[1]!.name, 'Hauptsaal: Bruder führt → Bruder').toMatch(/Rolf T|Sven T/)
+      expect(item.aux?.[1]!.name, 'Klasse: Schwester führt → Schwester').toBe('Tina T')
+    })
+  })
+})
+
+/*
+ * Ein Hilfsdienst hat so viele Plätze, wie eingestellt sind. Die Zahl steht in
+ * `svc.count` und wird an fünf Stellen gelesen; die Auto-Zuteilung war die
+ * einzige, an der niemand nachgezählt hat. Ein Lauf, der nur den ersten Platz
+ * besetzt, hätte jede Woche das halbe Mikrofon-Team offen gelassen — und das
+ * Banner „offene Zuteilungen" hätte es gemeldet, ohne dass jemand die Ursache
+ * gesehen hätte.
+ */
+describe('Auto-Zuteilung: jeder Platz eines Hilfsdienstes', () => {
+  const DIENSTE: Service[] = [
+    { key: 'mik', name: 'Mikrofone', count: 3, groups: false },
+    { key: 'ton', name: 'Ton', count: 1, groups: false },
+  ]
+
+  function helfer(n: number): Person[] {
+    return Array.from({ length: n }, (_unused, i) => ({
+      id: `h${i}`, fn: `H${i}`, ln: 'Helfer', role: 'verkuendiger' as const, female: false,
+      tel: '', mail: '',
+      priv: { ...emptyQualifications(), 'svc:mik': true, 'svc:ton': true } as Person['priv'],
+    }))
+  }
+
+  it('besetzt alle drei Mikrofon-Plätze, nicht nur den ersten', () => {
+    const res = autoAssignMeeting([buildImportWeek()], 0, 'mid', helfer(6), DIENSTE, [], 'helpers')
+    const mik = res.weeks[0]!.mid.helpers.mik ?? []
+    expect(mik.filter((s) => s.name).length).toBe(3)
+    // Und niemand steht doppelt: derselbe Dienst, drei verschiedene Personen.
+    expect(new Set(mik.map((s) => s.name)).size).toBe(3)
+  })
+
+  it('zu wenige Qualifizierte → der Rest bleibt offen und wird gezählt', () => {
+    const res = autoAssignMeeting([buildImportWeek()], 0, 'mid', helfer(2), DIENSTE, [], 'helpers')
+    const mik = res.weeks[0]!.mid.helpers.mik ?? []
+    expect(mik.filter((s) => s.name).length).toBe(2)
+    expect(res.unfilled).toBeGreaterThan(0)
+  })
 })
 
 describe('Konfliktprüfungen (Planen)', () => {

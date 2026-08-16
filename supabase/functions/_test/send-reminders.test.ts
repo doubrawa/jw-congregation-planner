@@ -468,6 +468,68 @@ describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
   })
 })
 
+/*
+ * Ausgefallene Zusammenkunft (T30). Die Regel selbst (`istAusgefallenFuer`)
+ * war geprüft, ihre **Anwendung** hier nicht: Die Mutationsprobe konnte
+ * `if (istAusgefallenFuer(...)) continue` ersatzlos streichen, ohne dass ein
+ * einziger Test rot wurde. Es ist derselbe Zuschnitt wie bei den vier
+ * Platzsorten — die zentrale Regel steht, der Aufrufer ist vergessen.
+ *
+ * Wirkung im Betrieb: Erinnerungen an einen Abend, an dem niemand kommt, und
+ * die Planer-Meldung „nicht erreichbar" gleich hinterher.
+ */
+describe('send-reminders: die ausgefallene Zusammenkunft erinnert nicht (T30)', () => {
+  /** Woche mit beiden Zusammenkünften; `mid` fällt aus, `we` findet statt. */
+  const midFaelltAus = (): void => {
+    weeks = [
+      {
+        start: WEEK_START,
+        data: {
+          mid: midMeeting(),
+          we: {
+            date: 'Sonntag, 13. September · 10:00 · Königreichssaal',
+            sections: [{ items: [{ title: 'Öffentlicher Vortrag', names: [{ name: 'Max Mustermann' }] }] }],
+            helpers: {},
+          },
+          dev: { mid: { cancelled: true, reason: 'Kongress in Nürnberg' } },
+        },
+      },
+    ]
+  }
+
+  it('kein Wort über die ausgefallene Zusammenkunft', async () => {
+    midFaelltAus()
+    const texte = ((await run()).preview ?? []).map((p) => p.body).join(' | ')
+    expect(texte).not.toContain('Dienstag')
+  })
+
+  it('die andere Zusammenkunft derselben Woche bleibt unberührt', async () => {
+    // Sonst hätte man den Ausfall auch dadurch „bestanden", dass die ganze
+    // Woche stumm bleibt — und das wäre der umgekehrte Fehler.
+    midFaelltAus()
+    const texte = ((await run()).preview ?? []).map((p) => p.body).join(' | ')
+    expect(texte).toContain('Sonntag')
+  })
+
+  it('niemand wird den Planern als „nicht erreichbar" gemeldet', async () => {
+    // Nina (Konto ohne Abo) und Otto (ohne Konto) stehen nur in der
+    // ausgefallenen Zusammenkunft. Ohne die Regel bekämen die Planer am
+    // letzten Erinnerungstag eine Liste zum persönlichen Nachfassen — für
+    // einen Abend, den es nicht gibt.
+    midFaelltAus()
+    const anPlaner = ((await run()).preview ?? []).filter((p) => p.userId === U_PLANER)
+    expect(anPlaner).toEqual([])
+  })
+
+  it('Gegenprobe: ohne Ausfall wird für dieselbe Woche erinnert', async () => {
+    midFaelltAus()
+    const w = weeks[0].data as { dev?: unknown }
+    delete w.dev
+    const texte = ((await run()).preview ?? []).map((p) => p.body).join(' | ')
+    expect(texte).toContain('Dienstag')
+  })
+})
+
 describe('send-reminders: Termin statt Wochenspanne im Text', () => {
   it('rechnet den Tag, wenn die Woche nur ihre Spanne trägt', async () => {
     // Importierte Wochen tragen im date-Feld die Überschrift der jw.org-Seite:
