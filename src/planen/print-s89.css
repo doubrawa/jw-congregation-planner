@@ -1,0 +1,231 @@
+/*
+ * Druckbogen der S-89-Zettel (T71) — 4 oder 6 auf ein A4.
+ *
+ * Am Bildschirm ist der Bogen unsichtbar; er entsteht erst im Druck. Deshalb
+ * gibt es keine zweite Ansicht, die man pflegen müsste, und der Zettel auf dem
+ * Papier ist derselbe Baustein wie im Sheet.
+ *
+ * Das Kennzeichen `data-print="s89"` am Wurzelelement entscheidet, welcher der
+ * beiden Ausdrucke gemeint ist: Ohne es gilt `programm/print.css` (das Programm),
+ * mit ihm dieser Bogen. Zwei Regelwerke, die beide „alles außer mir ausblenden"
+ * sagen, hebelten sich sonst gegenseitig aus.
+ *
+ * Wie beim Programm-Ausdruck bewusst ohne Tonflächen: Browser drucken
+ * Hintergründe standardmäßig nicht, und der Zettel soll mit wie ohne
+ * „Hintergrundgrafiken drucken" gleich aussehen.
+ */
+
+/* Der Bogen selbst — am Bildschirm nie zu sehen. */
+.s89-bogen {
+  display: none;
+}
+
+/* Leiste im Planen: Anzahl links, Aufteilung und Knopf rechts. */
+.s89-druck-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+
+.s89-druck-count {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.s89-druck-ctl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.s89-druck-n {
+  min-width: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--bord);
+  border-radius: var(--r-pill);
+  background: var(--card);
+  color: var(--mut);
+  font-size: calc(12px * var(--fs));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.s89-druck-n.is-active {
+  border-color: var(--acc);
+  color: var(--acc);
+}
+
+.s89-druck-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--acc);
+  border-radius: var(--r-pill);
+  background: var(--card);
+  color: var(--acc);
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+@media print {
+  /*
+   * Nur wenn dieser Ausdruck gemeint ist — und **innerhalb** des Bildschirms
+   * ausgeblendet, nicht darüber: Ein erster Entwurf blendete `.app-main > *`
+   * aus und schaltete die Vorfahren des Bogens darunter wieder sichtbar. Damit
+   * hob die zweite Regel die erste auf (gleiche Spezifität, später in der
+   * Kaskade), und der Ausdruck zeigte die ganze Planen-Seite mit den Zetteln
+   * mittendrin. Am Bild gesehen, nicht im Kopf.
+   */
+  /*
+   * **Die Nachbarwochen dürfen nicht mit aufs Papier.** Das Planen steht in
+   * einem Wochenstreifen: Links und rechts hängt je eine Vorschau derselben
+   * Ansicht (`week-page`, siehe WeekStrip) — mit eigenem Bogen und den Zetteln
+   * ihrer Woche. Ohne diese Zeile druckte der Planer drei Wochen auf einmal und
+   * merkte es nicht, weil am Bildschirm nur eine zu sehen ist. Beim Messen der
+   * Seitenaufteilung ist es aufgefallen: Es waren mehr Bögen im Baum als
+   * gedacht.
+   */
+  :root[data-print='s89'] .week-page,
+  :root[data-print='s89'] .screen > *:not(.s89-bogen),
+  :root[data-print='s89'] .sidebar,
+  :root[data-print='s89'] .mobile-header,
+  :root[data-print='s89'] .desktop-topbar,
+  :root[data-print='s89'] .sheet,
+  :root[data-print='s89'] .sheet-backdrop,
+  :root[data-print='s89'] .confirm-modal,
+  :root[data-print='s89'] .confirm-backdrop,
+  :root[data-print='s89'] .toast {
+    display: none !important;
+  }
+
+  :root[data-print='s89'] .desk,
+  :root[data-print='s89'] .app-main,
+  :root[data-print='s89'] .app-content,
+  :root[data-print='s89'] .screen {
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  /* Der Bogen ist der einzige sichtbare Teil des Bildschirms. */
+  :root[data-print='s89'] .s89-bogen {
+    display: block !important;
+  }
+
+  /*
+   * Je Blatt eine Tabelle mit erzwungenem Umbruch dahinter. Die Aufteilung
+   * steht im Bauplan (`seiten()`), nicht im Ermessen des Browsers: Chrome brach
+   * sowohl ein Raster als auch eine durchgehende Tabelle nach zwei Reihen um,
+   * obwohl die dritte noch aufs Blatt gepasst hätte — aus „6 je Seite" wurden
+   * stillschweigend 4.
+   */
+  :root[data-print='s89'] .s89-seite {
+    display: table;
+    /*
+     * Keine feste Höhe: Ein Blatt, das exakt so hoch ist wie das Papier, kippt
+     * bei jedem Rundungsrest auf ein zweites, leeres — gemessen mit
+     * `printToPDF`, das aus einer Seite zwei machte. Der Umbruch kommt
+     * stattdessen von `break-after` unten, und wie viele Zettel auf ein Blatt
+     * gehören, entscheidet ohnehin `seiten()`.
+     */
+    width: 100%;
+    box-sizing: border-box;
+    border-collapse: separate;
+    border-spacing: 3mm;
+    table-layout: fixed;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  :root[data-print='s89'] .s89-seite:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  :root[data-print='s89'] .s89-seite td {
+    width: 50%;
+    vertical-align: top;
+  }
+
+  /* Helle Palette erzwingen — wie beim Programm-Ausdruck. */
+  :root[data-print='s89'] {
+    --card: #fff;
+    --bg: #fff;
+    --ink: #000;
+    --mut: #444;
+    --acc: #5c4517;
+    --bord: #999;
+    --line2: #d5d5d5;
+  }
+
+  :root[data-print='s89'] .s89-zettel {
+    /* Ein Zettel wird nie über den Seitenumbruch zerrissen. */
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #999;
+    border-radius: 2mm;
+    padding: 4mm 5mm;
+  }
+
+  /* Vier je Seite: zwei Reihen, jede Zelle höher. Sechs: drei Reihen.
+     Die Höhe ist gesetzt, damit die Zettel eine gleichmäßige Seite ergeben und
+     nicht je nach Textlänge springen — 4er ≈ 128 mm, 6er ≈ 85 mm bei 297 mm
+     Papier abzüglich Rand. */
+  :root[data-print='s89'] .s89-bogen[data-pro-seite='4'] .s89-zettel {
+    height: 125mm;
+  }
+
+  :root[data-print='s89'] .s89-bogen[data-pro-seite='6'] .s89-zettel {
+    height: 82mm;
+  }
+
+  :root[data-print='s89'] .s89-box {
+    margin-top: 2mm;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: none;
+  }
+
+  :root[data-print='s89'] .s89-row {
+    padding: 1.6mm 0;
+    border-bottom: 1px solid #d5d5d5;
+  }
+
+  :root[data-print='s89'] .s89-label {
+    font-size: 7.5pt;
+  }
+
+  :root[data-print='s89'] .s89-value {
+    font-size: 10.5pt;
+  }
+
+  :root[data-print='s89'] .s89-eyebrow {
+    font-size: 7.5pt;
+  }
+
+  :root[data-print='s89'] .s89-note {
+    margin-top: 2mm;
+    font-size: 7pt;
+    line-height: 1.35;
+  }
+
+  :root[data-print='s89'] .s89-druck {
+    display: none !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 9mm;
+  }
+}

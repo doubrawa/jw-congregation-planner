@@ -57,6 +57,12 @@ dabei – du wirst beim Hin- und Herwechseln nicht wieder umgesetzt.
 
 ![Planen‑Ansicht](screenshots/planer-planen-woche.png)
 
+Unter den Zuteilungs-Knöpfen steht **S-89**: Dort siehst du, wie viele
+Schülerzettel diese Woche hat, wählst **4 oder 6 je Blatt** und druckst sie als
+DIN‑A4‑Bogen. Ein Zettel je Aufgabe – bei einem Gespräch stehen Schüler und
+Partner gemeinsam darauf, so wie das Formular es vorsieht. Die Zettel der
+Zusätzlichen Klasse sind dabei und tragen ihren Raum.
+
 - **Auf eine Zuteilung tippen**, um sie zu ändern. Es öffnet sich eine Liste
   passender Personen. Dabei werden **Abwesenheiten** und **Aufgabenbereiche**
   (Qualifikationen) berücksichtigt, und Doppelbelegungen am selben Tag werden

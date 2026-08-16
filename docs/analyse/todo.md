@@ -2236,15 +2236,52 @@ Ecken weiter in einer beliebig benannten Variablen entsteht. Und die CSS-Seite �
 `import.meta.glob(…, '?raw')` liefert für `.css` im Testlauf eine **leere**
 Zeichenkette, ein Test darauf wäre grün und hielte nichts.
 
-### T71 · Schülerzettel drucken — 4 oder 6 auf ein A4 🔧
+### T71 · Schülerzettel drucken — 4 oder 6 auf ein A4 🔧 ✅ erledigt
 **Vorgabe des Betreibers.** Die Zuteilungen für die Schulungsaufgaben sollen
 gedruckt werden können, 4 oder 6 Stück eingepasst auf ein DIN A4. Der einzelne
 Zettel besteht schon (`components/S89Sheet.tsx`); zu bauen ist der Bogen darum
 herum: Raster, Seitenumbruch und ein `@media print`, das nur ihn zeigt.
 
-**Zu klären:** 4 oder 6 zur Auswahl oder fest? Welche Wochen — die aktuelle oder
-eine Spanne? Die Zettel der Zusätzlichen Klasse gehören mit auf den Bogen; sie
-ist überall gleichberechtigt.
+**Die drei Fragen sind entschieden:** **4 oder 6 zur Auswahl** (zwei Knöpfe im
+Planen, 6 als Vorgabe — der übliche Fall). **Die Woche, die offen ist** — dieselbe
+Regel wie beim Programm-Ausdruck; wer eine andere braucht, blättert hin. Und die
+**Zusätzliche Klasse ist dabei**, mit ihrem Ort auf dem Zettel: Für wen der
+Zettel gedacht ist, muss wissen, in welchem Raum er drankommt.
+
+**Ein Zettel je Aufgabe, nicht je Person.** Ein Gespräch hat zwei Plätze
+(Schüler und Partner) — das Formular nennt beide, also wäre der zweite Zettel
+eine Abschrift des ersten.
+
+**Der Zettel selbst ist derselbe Baustein wie am Bildschirm** (`S89Karte`, aus
+`S89Sheet` herausgelöst). Das Papier soll nicht etwas anderes zeigen als die
+App; zwei Fassungen desselben Formulars wären früher oder später zwei Inhalte.
+
+**Drei Dinge, die erst das Messen gezeigt hat** — alle drei hätte man am
+Reißbrett nicht gesehen:
+
+1. **Der Wochenstreifen druckte mit.** Das Planen hängt in `WeekStrip`: Links
+   und rechts steht je eine **vollständige zweite Ansicht** der Nachbarwoche
+   (`week-page`), mit eigenem Bogen. Der Ausdruck hätte drei Wochen enthalten,
+   und am Bildschirm sieht man davon nichts. Aufgefallen beim Nachzählen der
+   Blätter: Es lagen mehr im Baum als gedacht.
+2. **Der Browser bricht dort um, wo er will.** Weder ein CSS-Raster noch eine
+   durchgehende Tabelle brachten verlässlich drei Reihen auf ein Blatt — aus
+   „6 je Seite" wurden stillschweigend 4. Jetzt ist **je Blatt eine eigene
+   Tabelle** mit erzwungenem Umbruch dahinter; die Aufteilung rechnet `seiten()`
+   und ein Test hält sie fest.
+3. **Ein Blatt so hoch wie das Papier kippt.** Der Versuch, die Höhe auf 297 mm
+   festzunageln, erzeugte hinter jedem Blatt ein zweites, leeres — an
+   `printToPDF` gemessen (aus einer Seite wurden zwei). Die Höhe ist deshalb
+   wieder frei; den Umbruch macht allein `break-after`.
+
+**Ohne neuen Wörterbuch-Schlüssel:** Die Leiste zeigt „{n} × S-89" (Zahl und
+Formularname sagen es in jeder Sprache), die Knöpfe tragen „4" und „6", und der
+Druckknopf steht auf `drucken`.
+
+**Geprüft:** 11 Tests (Aufzählung inkl. Zusätzlicher Klasse und Doppelzählung,
+Aufteilung auf Blätter, Bedienung, Kennzeichen beim Drucken) — und am laufenden
+Stand als **PDF**: eine Seite bei 4 Zetteln, zwei bei zweien je Blatt, die
+Nachbarwochen nicht dabei.
 
 ### T72 · Abwesenheiten als Zeitstrahl — erst zu überlegen 🏗
 **Vorgabe des Betreibers, ausdrücklich als Überlegung** („das muss man noch
@@ -2730,9 +2767,9 @@ Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☐☐☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑
 
-**81 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 6 offen:** T63
-(vom Betreiber zurückgestellt), die vier verbliebenen Vorhaben T67, T68, T71,
-T72 und der Nachweis T78. **T73–T76** sind noch am 15. August erledigt worden;
+**82 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 5 offen:** T63
+(vom Betreiber zurückgestellt), die drei verbliebenen Vorhaben T67, T68, T72
+und der Nachweis T78. **T73–T76** sind noch am 15. August erledigt worden;
 **T79 bis T81** kamen beim Benutzen desselben Tages dazu (T80 als Nachwehe von
 T76, T81 als Widerruf seiner Kürzungs-Mechanik) und sind erledigt.
 
@@ -2824,8 +2861,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T67, T68, T71, T72, T78 | Vier Vorhaben (Tests, Datenmodell, Druckbogen, Abwesenheiten) und der Mandanten-Nachweis. T73–T77 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
-| **16. August** | — | T82–T86 und T70 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
+| **15. August** | T67, T68, T72, T78 | Drei Vorhaben (Tests, Datenmodell, Abwesenheiten) und der Mandanten-Nachweis. T71, T73–T77 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **16. August** | — | T70, T71 und T82–T86 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:

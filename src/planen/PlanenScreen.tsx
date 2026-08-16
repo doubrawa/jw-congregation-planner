@@ -10,6 +10,7 @@ import type { MeetingKey } from '../data/types'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { AutoAssignPanel } from './AutoAssignPanel'
+import { S89Bogen } from './S89Bogen'
 import { FsPlan } from './FsPlan'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { WochePanel } from './WochePanel'
@@ -118,6 +119,10 @@ function PlanenBody() {
 
           <AutoAssignPanel />
           <p className="plan-legend">{t.planLegend}</p>
+
+          {/* Schulungsaufgaben gibt es nur unter der Woche — der Bogen steht
+              deshalb nur dort und zeigt sich gar nicht, wenn keine da sind. */}
+          {mtab === 'mid' && <S89Bogen />}
 
           <ConflictsBanner tab={mtab} />
           <OpenSlotsBanner tab={mtab} tpw={tpw} />
