@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Confirmă totuși",
   "ersatzHint": "Dacă anulezi o sarcină de sprijin, se caută automat un înlocuitor dintre cei calificați.",
   "einspringenTitle": "ÎNLOCUIRE",
-  "einspringenHint": "Pentru aceste sarcini de sprijin se caută un înlocuitor — tu ești calificat.",
+  "einspringenHint": "Pentru aceste sarcini de sprijin se caută un înlocuitor — poți prelua?",
   "uebernehmen": "Preiau eu",
   "toastErsatzGesucht": "Anulat · se caută un înlocuitor",
   "toastUebernommen": "Mulțumim! Ai preluat sarcina de sprijin",

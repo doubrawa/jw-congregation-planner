@@ -201,7 +201,7 @@ export const DE = {
     bestaetigen: 'Bestätigen', bestaetigt: 'Bestätigt', verhindert: 'Ich bin verhindert', verhindertChip: 'Verhindert',
     kannNicht: 'Ich kann nicht', absagen: 'Absagen — ich kann doch nicht', dochBestaetigen: 'Doch bestätigen',
     ersatzHint: 'Wenn du einen Hilfsdienst absagst, wird automatisch ein Ersatz aus dem Kreis der Qualifizierten gesucht.',
-    einspringenTitle: 'EINSPRINGEN', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — du bist qualifiziert.',
+    einspringenTitle: 'EINSPRINGEN', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
     uebernehmen: 'Übernehmen',
     planLegend: '✓ bestätigt · … wartet auf Bestätigung',
     erinnerungenCard: 'ERINNERUNGEN', remDesc: 'Automatische Mitteilungen zu Zuteilungen, bis sie bestätigt sind.',

@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Jednak potwierdź",
   "ersatzHint": "Gdy odwołasz zadanie pomocnicze, automatycznie szukamy zastępstwa wśród osób, które się do tego nadają.",
   "einspringenTitle": "ZASTĘPSTWO",
-  "einspringenHint": "Do tych zadań pomocniczych szukamy zastępstwa — nadajesz się do nich.",
+  "einspringenHint": "Do tych zadań pomocniczych szukamy zastępstwa — czy możesz się tym zająć?",
   "uebernehmen": "Podejmij się",
   "toastErsatzGesucht": "Odwołano · szukamy zastępstwa",
   "toastUebernommen": "Dziękujemy! Podjąłeś się tego zadania pomocniczego",

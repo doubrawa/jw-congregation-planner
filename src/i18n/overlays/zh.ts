@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "还是确认",
   "ersatzHint": "如果你取消辅助任务，系统会自动在合资格的人当中找人替补。",
   "einspringenTitle": "替补",
-  "einspringenHint": "这些辅助任务正在找人替补，你合资格。",
+  "einspringenHint": "这些辅助任务正在找人替补，你能接手吗？",
   "uebernehmen": "我来做",
   "toastErsatzGesucht": "已取消 · 正在找人替补",
   "toastUebernommen": "谢谢！你接下了这项辅助任务",

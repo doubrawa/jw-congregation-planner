@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Mégis megerősítem",
   "ersatzHint": "Ha lemondasz egy kisegítő feladatot, a rendszer automatikusan helyettest keres az alkalmasak közül.",
   "einspringenTitle": "BEUGRÁS",
-  "einspringenHint": "Ezekhez a kisegítő feladatokhoz helyettest keresünk — te alkalmas vagy rá.",
+  "einspringenHint": "Ezekhez a kisegítő feladatokhoz helyettest keresünk — el tudod vállalni?",
   "uebernehmen": "Vállalom",
   "toastErsatzGesucht": "Lemondva · helyettest keresünk",
   "toastUebernommen": "Köszönjük! Elvállaltad a kisegítő feladatot",

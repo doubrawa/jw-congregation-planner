@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Přece potvrdit",
   "ersatzHint": "Když odřekneš pomocný úkol, automaticky se hledá náhrada mezi těmi, kdo jsou k tomu způsobilí.",
   "einspringenTitle": "ZASKOČIT",
-  "einspringenHint": "K těmto pomocným úkolům se hledá náhrada — ty jsi způsobilý.",
+  "einspringenHint": "K těmto pomocným úkolům se hledá náhrada — můžeš to převzít?",
   "uebernehmen": "Vezmu si to",
   "toastErsatzGesucht": "Odřeknuto · hledá se náhrada",
   "toastUebernommen": "Díky! Pomocný úkol sis vzal na starost",

@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Tetap konfirmasi",
   "ersatzHint": "Kalau kamu membatalkan tugas pendukung, penggantinya dicari otomatis di antara yang memenuhi syarat.",
   "einspringenTitle": "MENGGANTIKAN",
-  "einspringenHint": "Sedang dicari pengganti untuk tugas pendukung ini — kamu memenuhi syarat.",
+  "einspringenHint": "Sedang dicari pengganti untuk tugas pendukung ini — bisakah kamu mengambilnya?",
   "uebernehmen": "Ambil alih",
   "toastErsatzGesucht": "Dibatalkan · pengganti sedang dicari",
   "toastUebernommen": "Terima kasih! Kamu mengambil alih tugas pendukung itu",

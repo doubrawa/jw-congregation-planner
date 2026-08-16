@@ -130,6 +130,9 @@ Koordinator neu zu.
 
 Sagt jemand einen Hilfsdienst ab, für den **du** eingetragen bist, bekommst du
 eine Mitteilung („Ersatz gesucht") und – falls aktiviert – eine Push-Nachricht.
+Die Anfrage geht **nur an die, die für diesen Dienst freigegeben und an dem Tag
+nicht abwesend sind** – du bekommst also nichts angeboten, was nicht zu dir
+passt.
 
 Du bekommst es auf zwei Wegen zu sehen, und dafür musst du nichts suchen:
 
