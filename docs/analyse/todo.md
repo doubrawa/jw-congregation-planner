@@ -2638,7 +2638,7 @@ nicht mit.
 
 Kein neuer Wörterbuch-Schlüssel: `sheetSchonHeute` gibt es in allen 34 Sprachen.
 
-### T86 · Die Glocke behält „Ersatz gesucht", auch wenn längst jemand da ist 🔧
+### T86 · Die Glocke behält „Ersatz gesucht", auch wenn längst jemand da ist 🔧 ⏳ wartet auf Migration + Deploy
 Aus T84 mitgenommen und **nicht** behoben: Die Mitteilung „Ersatz gesucht", die
 beim Absagen an alle Qualifizierten geht, bleibt in deren Glocke stehen — auch
 nachdem jemand eingesprungen ist. Die Ursprungsperson und die Planer bekommen
@@ -2653,6 +2653,26 @@ nichts, wonach man die erledigten löschen könnte. Das braucht eine Migration
 betrifft einen Termin, der vorbei ist" lässt sich ohne Bezug nicht sagen. Die
 beiden gehören deshalb in einen Zug — und in einen Deploy, denn beides ist
 Server-Arbeit.
+
+**Geschrieben ist es, scharf noch nicht.** Fertig im Repo:
+
+1. **[migration-020](../../supabase/migration-020-mitteilung-task-key.sql)** —
+   `notifications.task_key` (NULL-bar, mit Index; Altbestand bleibt stehen und
+   läuft über die 50er-Grenze aus). Auch in `schema.sql` nachgetragen, sonst
+   schlägt die Schema-Probe an.
+2. **`substitute`** schreibt den Schlüssel bei der Suche und **löscht beim
+   Einspringen** die „Ersatz gesucht"-Zeilen zu genau diesem Platz — bei allen
+   Empfängern. „Ersatz gefunden" entsteht danach und bleibt.
+3. **Die App** liest den Schlüssel und lässt beim Laden weg, was zu einem
+   vergangenen Termin gehört (`taskKeyVorbei`) — gemessen am echten Termin der
+   Woche, nicht am Montag; bei nicht geladenen Wochen am spätestmöglichen Tag
+   der Woche. Fremdformate bleiben stehen: Wer nichts über den Termin weiß,
+   löscht nichts.
+
+**Zu tun beim Betreiber, in dieser Reihenfolge:** migration-020 einspielen, dann
+`substitute` neu deployen. Vorher schadet nichts — die alte Fassung schreibt die
+Spalte einfach nicht, und der neue Aufräum-Aufruf trifft ohne Spalte keine Zeile
+(er meldet in die Logs, bricht die Übernahme aber nicht ab).
 
 ---
 

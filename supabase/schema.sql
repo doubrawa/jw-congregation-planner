@@ -150,8 +150,16 @@ create table if not exists public.notifications (
   title           text not null,
   body            text not null default '',
   read            boolean not null default false,
+  -- Aufgabe, um die es geht (migration-020): derselbe stabile Slot-Pfad wie in
+  -- `confirmations`. Damit lässt sich eine erledigte Mitteilung wiederfinden
+  -- („Ersatz gesucht", nachdem jemand eingesprungen ist) und eine abgelaufene
+  -- erkennen. NULL bei Mitteilungen ohne Aufgabenbezug (Import, Einladung).
+  task_key        text,
   created_at      timestamptz not null default now()
 );
+
+create index if not exists notifications_task_key_idx
+  on public.notifications (congregation_id, task_key);
 
 -- Aufgaben-Bestätigungen: task_key = stabiler Slot-Pfad einer Zuteilung
 -- (siehe partTaskKey/helperTaskKey in src/data/planning.ts). Jedes Mitglied

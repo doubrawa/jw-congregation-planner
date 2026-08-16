@@ -12,7 +12,7 @@
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { fsBaseFromWeeks, fsMigrateLeaderPids, regenFsWeeks } from '../data/fs'
-import { itemTaskKey, partTaskKey } from '../data/planning'
+import { itemTaskKey, partTaskKey, taskKeyVorbei } from '../data/planning'
 import {
   displayName,
   emptyQualifications,
@@ -101,6 +101,8 @@ interface NotificationRow {
   body: string
   read: boolean
   created_at: string
+  /** Aufgabe, um die es geht — seit migration-020; ältere Zeilen tragen null. */
+  task_key?: string | null
 }
 
 export interface ConfirmationRow {
@@ -708,6 +710,7 @@ function notificationFromRow(r: NotificationRow): Notification {
     text: r.body,
     at: r.created_at,
     read: r.read,
+    ...(r.task_key ? { taskId: r.task_key } : {}),
   }
 }
 
@@ -928,7 +931,16 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsWeeks,
     fsBase,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
-    notifications: (notifs.data ?? []).map((r) => notificationFromRow(r as NotificationRow)),
+    /*
+     * Abgelaufenes fällt heraus (T77): Eine Mitteilung über einen Platz, dessen
+     * Tag vorbei ist, interessiert niemanden mehr — „Ersatz gesucht" für
+     * letzten Dienstag am wenigsten. Möglich erst, seit die Zeile weiß, worum
+     * es geht (migration-020); ältere Zeilen tragen keinen Schlüssel und
+     * bleiben stehen, sie laufen ohnehin über die 50er-Grenze aus.
+     */
+    notifications: (notifs.data ?? [])
+      .map((r) => notificationFromRow(r as NotificationRow))
+      .filter((n) => !n.taskId || !taskKeyVorbei(n.taskId, weekList, cong.data?.meeting_times ?? '')),
     confirmations,
     reminders,
     auxClass: settings.auxClass ?? false,

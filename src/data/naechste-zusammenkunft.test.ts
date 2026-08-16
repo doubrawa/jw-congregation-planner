@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { istVorbei, naechsteZusammenkunft } from './meeting-dates'
+import { taskKeyVorbei } from './planning'
 import type { Meeting, Week } from './types'
 
 /**
@@ -44,6 +45,33 @@ describe('istVorbei (T77)', () => {
     // lassen hieße raten.
     expect(istVorbei(null, new Date('2026-09-08T12:00:00'))).toBe(false)
     expect(istVorbei(undefined, new Date('2026-09-08T12:00:00'))).toBe(false)
+  })
+})
+
+describe('taskKeyVorbei (T77 — abgelaufene Mitteilungen)', () => {
+  const KEY = (woche: string, tab: string) => `${woche}|${tab}|helper|mik|0`
+
+  it('misst am echten Termin der Woche, nicht am Montag', () => {
+    // Wochenmitte am Dienstag: Am Mittwoch ist sie vorbei, am Dienstag nicht.
+    expect(taskKeyVorbei(KEY('2026-09-07', 'mid'), WOCHEN, MEETINGS, am('2026-09-08'))).toBe(false)
+    expect(taskKeyVorbei(KEY('2026-09-07', 'mid'), WOCHEN, MEETINGS, am('2026-09-09'))).toBe(true)
+    // Das Wochenende derselben Woche ist am Mittwoch noch lange nicht vorbei.
+    expect(taskKeyVorbei(KEY('2026-09-07', 'we'), WOCHEN, MEETINGS, am('2026-09-09'))).toBe(false)
+  })
+
+  it('nicht geladene Woche: gerechnet, nicht geraten', () => {
+    // Der Schlüssel trägt den Montag; die Zusammenkunft liegt spätestens sechs
+    // Tage später. Am Sonntag ist also noch nichts vorbei, eine Woche danach
+    // sicher.
+    expect(taskKeyVorbei(KEY('2026-01-05', 'mid'), WOCHEN, MEETINGS, am('2026-01-11'))).toBe(false)
+    expect(taskKeyVorbei(KEY('2026-01-05', 'mid'), WOCHEN, MEETINGS, am('2026-01-12'))).toBe(true)
+  })
+
+  it('Fremdformate bleiben stehen', () => {
+    // Wer nichts über den Termin weiß, lässt die Zeile stehen — lieber eine zu
+    // viel als eine, die noch gebraucht wird.
+    expect(taskKeyVorbei('kaputt', WOCHEN, MEETINGS, am('2026-10-01'))).toBe(false)
+    expect(taskKeyVorbei('', WOCHEN, MEETINGS, am('2026-10-01'))).toBe(false)
   })
 })
 
