@@ -190,6 +190,39 @@
   font-weight: 600;
 }
 
+/* Name + Zahl sind der Weg in die Freigabe-Liste des Dienstes: ein Schalter,
+   der wie die Zeile aussieht (Rand, Fläche, Polster weg) und links ausrichtet.
+   Der Winkel sagt, dass es weitergeht. */
+.svc-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  color: inherit;
+  cursor: pointer;
+}
+
+.svc-open .svc-name,
+.svc-open .svc-sub {
+  display: block;
+}
+
+.svc-open .chev {
+  flex: none;
+  color: var(--mut);
+}
+
+/* Die Freigabe-Liste selbst: die Zeilen sind dieselben wie im Personen-Detail
+   und erwarten deren Haarlinie — im Sheet gibt es kein Panel, das sie setzt. */
+.svc-persons {
+  --panel-hair: var(--line);
+}
+
 .svc-controls {
   display: flex;
   align-items: center;

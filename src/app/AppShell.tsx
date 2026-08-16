@@ -11,6 +11,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { MyTaskSheet } from '../components/MyTaskSheet'
 import { LanguageSheet } from '../components/LanguageSheet'
+import { ServicePersonsSheet } from '../einstellungen/ServicePersonsSheet'
 import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
 import { LoginScreen } from '../login/LoginScreen'
@@ -178,6 +179,7 @@ export function AppShell() {
     (state.notifOpen && 'notif') ||
     (state.slotSel && 'slot') ||
     (state.langSheetOpen && 'lang') ||
+    (state.svcSheet && 'svc') ||
     (state.s89 && 's89') ||
     (state.myTaskId && 'myTask') ||
     (state.confirmOpen && 'confirm') ||
@@ -284,6 +286,7 @@ export function AppShell() {
           {state.notifOpen && <NotificationsPanel />}
           {state.slotSel && <AssignSheet sel={state.slotSel} />}
           {state.langSheetOpen && <LanguageSheet />}
+          {state.svcSheet && <ServicePersonsSheet svcKey={state.svcSheet} />}
           {state.s89 && <S89Sheet payload={state.s89} />}
           {state.myTaskId && <MyTaskSheet />}
           {state.confirmOpen && state.myTasks.some((t) => t.status === 'offen') && <ConfirmDialog />}

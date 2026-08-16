@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
+import { Chevron } from '../components/Chevron'
 import { isQualified, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import type { Service } from '../data/types'
@@ -23,12 +24,11 @@ export function ServicesPanel() {
   const freigegeben = (service: Service): number =>
     state.persons.filter((p) => isQualified(p, serviceQualKey(service.key))).length
 
-  // Jeder Dienst ist sein eigener Aufgabenbereich (Schalter im Personen-Detail);
-  // nur Gruppen-Dienste rotieren stattdessen Gruppen und brauchen niemanden.
+  // Jeder Dienst ist sein eigener Aufgabenbereich; nur Gruppen-Dienste rotieren
+  // stattdessen Gruppen und brauchen niemanden. Dass es ein eigener Bereich ist,
+  // sagt die Zahl von selbst — der Satz davor stand nur im Weg.
   const serviceSub = (service: Service): string =>
-    service.groups
-      ? t.gruppenRotation
-      : `${t.eigenerBereich} · ${fill(t.personenCount, { n: freigegeben(service) })}`
+    service.groups ? t.gruppenRotation : fill(t.personenCount, { n: freigegeben(service) })
 
   const addService = (event: FormEvent) => {
     event.preventDefault()
@@ -50,12 +50,28 @@ export function ServicesPanel() {
       <p className="panel-hint">{t.hdDesc}</p>
       {state.services.map((service) => (
         <div key={service.key} className="svc-row">
-          <div>
-            <div className="svc-name">{tu(service.name)}</div>
-            <div className={freigegeben(service) === 0 && !service.groups ? 'svc-sub svc-sub--leer' : 'svc-sub'}>
-              {serviceSub(service)}
+          {service.groups ? (
+            // Die Gruppen-Rotation hat keinen Aufgabenbereich — hier gibt es
+            // nichts freizugeben, also auch nichts zu öffnen.
+            <div>
+              <div className="svc-name">{tu(service.name)}</div>
+              <div className="svc-sub">{serviceSub(service)}</div>
             </div>
-          </div>
+          ) : (
+            <button
+              type="button"
+              className="svc-open"
+              onClick={() => dispatch({ type: 'openServiceSheet', key: service.key })}
+            >
+              <span>
+                <span className="svc-name">{tu(service.name)}</span>
+                <span className={freigegeben(service) === 0 ? 'svc-sub svc-sub--leer' : 'svc-sub'}>
+                  {serviceSub(service)}
+                </span>
+              </span>
+              <Chevron dir="next" />
+            </button>
+          )}
           <div className="svc-controls">
             <button
               type="button"

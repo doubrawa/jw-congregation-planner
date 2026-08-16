@@ -301,6 +301,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         slotSel: null,
         selectedPersonId: null,
         langSheetOpen: false,
+        svcSheet: null,
         s89: null,
         confirmOpen: false,
         recovery: false,
@@ -460,6 +461,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         services: state.services.filter((s) => s.key !== action.key),
+        // Die Freigabe-Liste des gelöschten Dienstes darf nicht offen bleiben —
+        // sie zeigte sonst Schalter für einen Bereich, den es nicht mehr gibt.
+        svcSheet: state.svcSheet === action.key ? null : state.svcSheet,
         toast: toastKey(state, 'toastDienstDel'),
       }
     case 'addService':
@@ -1030,6 +1034,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, langSheetOpen: false, langSearch: '' }
     case 'setLangSearch':
       return { ...state, langSearch: action.text }
+    case 'openServiceSheet':
+      return { ...state, svcSheet: action.key }
+    case 'closeServiceSheet':
+      return { ...state, svcSheet: null }
     case 'setAuxClass':
       // Beim Einschalten bekommen alle Schuelerteile ihre zweite Platzreihe.
       // Beim Ausschalten bleibt sie stehen (nur unsichtbar) — sonst waere die

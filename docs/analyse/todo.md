@@ -2372,19 +2372,41 @@ Der Text kommt ohne neuen Schlüssel aus: `personenCount` gibt es in allen 34
 Sprachen. Die Gruppen-Rotation bleibt außen vor, sie hat keinen Bereich; eine
 0 wäre dort eine falsche Warnung.
 
-**Offen bleibt die Ursache beim Betreiber** — sie steht in den echten Daten,
-nicht im Code: In der laufenden App unter Einstellungen → Hilfsdienste ablesen,
-was beim **Rundgangsordner** steht. Steht dort 0, ist es Fall 1 oder 3 (der
-Bereich ist bei niemandem gesetzt, entweder nie gesetzt worden oder auf einen
-anderen Dienst-Schlüssel gelaufen); steht dort eine Zahl > 0 und der Platz
-bleibt trotzdem leer, ist es Fall 2 (die Reihenfolge). Die Algorithmus-Änderung
-für Fall 2 wartet, bis das feststeht — sonst repariert sie eine Ursache, die es
-gar nicht ist.
+**Am lebenden Stand gemessen — es ist Fall 1/3.** Der Betreiber liest ab:
+Rundgangsordner **0 Personen**. Und im Personen-Detail eines Ordner-Bruders:
+Eingangs- und Saalordner an, Rundgang aus. Es fehlt also genau **ein** Bereich,
+nicht der ganze Block — Fall 2 (die Reihenfolge) ist es nicht, und die
+Algorithmus-Änderung dafür bleibt ungeschrieben. Sie hätte eine Ursache
+repariert, die es nicht gibt.
 
-**Zu klären:** Soll ein neu angelegter Dienst mit „niemand freigegeben" starten
-(heute so — sicher, aber der Dienst ist bis zum ersten Schalter tot) oder mit
-„alle Verkündiger" (sofort verteilbar, dafür muss man einschränken statt
-freigeben)?
+Woran es beim Anlegen gelegen hat, ist damit nicht bewiesen: Der Erzeuger setzt
+`svc:rund` bei 14 Personen (Flag `dk`, das als einziges aus der Reihe `ch`–`cl`
+fällt), in der Datenbank ist es bei keiner. Entweder ist beim Einspielen eine
+ältere Fassung gelaufen, oder der Dienst wurde in der App einmal gelöscht und
+neu angelegt — dann trägt er einen `svc-<uuid>` und die alten Freigaben zeigen
+ins Leere. Beides ist Vergangenheit; **repariert wird über die App**, nicht über
+ein Skript, damit derselbe Fall beim nächsten neuen Dienst nicht wiederkommt.
+
+**Umgesetzt, zweiter Teil: die Freigabe-Liste je Dienst.** Ein Tippen auf den
+Dienst öffnet alle Personen mit je einem Schalter, mit Suchfeld und in der
+Ordnung der Personenliste. Es sind dieselben `PrivToggle`-Zeilen wie im
+Personen-Detail — derselbe Schalter, dasselbe Speichern, nur nach der anderen
+Seite aufgezogen: dort eine Person und ihre Bereiche, hier ein Bereich und
+seine Personen. Ein zweiter Schalter mit eigener Logik wäre früher oder später
+ein zweites Verhalten. Auch das ohne neuen Wörterbuch-Schlüssel (Titel ist der
+Dienstname, Unterzeile `eigenerBereich` + `personenCount`, Suchfeld `suchen`).
+
+Die Zeile im Panel nennt seither nur noch die Zahl: dass es ein eigener Bereich
+ist, sagt sie von selbst, und der Satz davor stand im Weg.
+
+**Geprüft:** 10 Tests (Panel und Sheet), dazu die Reducer-Fälle — inklusive:
+wird der Dienst gelöscht, während seine Liste offen steht, schließt sie mit.
+Am laufenden Stand durchgespielt: Schalter um → Kopf 52 → 53 Personen → nach
+dem Schließen steht die 53 auch am Dienst.
+
+**Zu klären bleibt:** Soll ein neu angelegter Dienst mit „niemand freigegeben"
+starten (heute so — sicher, und seit der Freigabe-Liste kein Sackgassen-Weg
+mehr) oder mit „alle Verkündiger"?
 
 ### T80 · Konflikt-Markierung und „Unser Leben als Christ" tragen dieselbe Farbe ⚡ ✅ erledigt
 Aus T76: Der markierte Chip bekommt `background: var(--tWein)` und Rand/Schrift
