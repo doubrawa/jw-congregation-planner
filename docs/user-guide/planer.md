@@ -342,7 +342,13 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
   Zusammenkünfte.
 - **Predigtdienstgruppen** – Gruppen mit **Aufseher** und **Gehilfe**. Die
   Reinigung rotiert automatisch über die Gruppen.
-- **Hilfsdienste** – welche Dienste es gibt und mit wie vielen Plätzen.
+- **Hilfsdienste** – welche Dienste es gibt und mit wie vielen Plätzen. Unter
+  jedem Dienst steht, **für wie viele Personen er freigegeben ist**. Steht dort
+  **0 Personen** (rot), kann die automatische Zuteilung diesen Dienst nie
+  besetzen – so beginnt jeder neu angelegte Dienst, denn der Schalter dafür ist
+  zunächst bei niemandem gesetzt. Du legst ihn im Personen‑Detail unter
+  **Hilfsdienste** um, bei jeder Person, die den Dienst übernehmen darf. Die
+  Reinigung braucht das nicht: Sie rotiert über die Predigtdienstgruppen.
 - **Erinnerungen** – wie viele Tage vorher und wie oft an offene Aufgaben erinnert
   wird (per Push, nie per E‑Mail). **Bei Zuteilung · Sofort** ist ein eigener
   Schalter: Er bestimmt, ob beim Zuteilen sofort eine Mitteilung an die Planer

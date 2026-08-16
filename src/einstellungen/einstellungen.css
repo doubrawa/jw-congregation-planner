@@ -183,6 +183,13 @@
   margin-top: 1px;
 }
 
+/* Niemand freigegeben — dieser Dienst kann nie automatisch besetzt werden
+   (T79). Dieselbe Warnfarbe wie die Konflikte im Planen. */
+.svc-sub--leer {
+  color: var(--wein);
+  font-weight: 600;
+}
+
 .svc-controls {
   display: flex;
   align-items: center;
