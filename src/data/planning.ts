@@ -852,15 +852,23 @@ export function buildS89ForSlot(
  * wird über **beide Räume**: Die Zusätzliche Klasse ist überall gleichberechtigt,
  * und ihre Zettel sind sogar die, bei denen der Ort auf dem Papier zählt.
  *
- * **Ein Zettel je Aufgabe, nicht je Person.** Ein Gespräch hat zwei Plätze
- * (Schüler und Partner), aber `buildS89ForSlot` liefert für beide denselben
- * Zettel — er nennt beide Namen, so wie das Formular es vorsieht. Ohne diese
- * Zusammenfassung stünde jedes Gespräch doppelt auf dem Bogen.
+ * **Ein Zettel je Aufgabe — mit Partner zwei.** Ein Gespräch hat zwei Plätze
+ * (Schüler und Partner); `buildS89ForSlot` liefert für beide denselben Zettel,
+ * er nennt ja beide Namen. Gezählt wird deshalb die **Aufgabe**, nicht der
+ * Platz — sonst hinge die Zahl daran, wie viele Plätze ein Punkt zufällig hat.
+ * Und weil beide je einen Zettel in die Hand bekommen, wird er zweimal
+ * gedruckt: derselbe Inhalt, zwei Blattstücke.
  *
  * Die Reihenfolge ist die des Programms: So liegen die Zettel hinterher in der
  * Reihenfolge, in der die Teile drankommen.
  */
-export function alleS89DerWoche(weeks: Week[], wi: number, meetings = ''): S89Payload[] {
+export function alleS89DerWoche(
+  weeks: Week[],
+  wi: number,
+  meetings = '',
+  /** Bei einem Gespräch zwei Zettel drucken — einen für den Partner. */
+  partnerZweimal = true,
+): S89Payload[] {
   const week = weeks[wi]
   if (!week) return []
   const out: S89Payload[] = []
@@ -876,8 +884,9 @@ export function alleS89DerWoche(weeks: Week[], wi: number, meetings = ''): S89Pa
             label: '', priv: slots[ni]?.bereichsKey ?? null, groups: false,
           }, meetings)
           if (zettel) {
-            out.push(zettel)
-            break // je Aufgabe und Raum genau einer
+            // Mit Gesprächspartner zweimal: beide bekommen einen in die Hand.
+            out.push(zettel, ...(partnerZweimal && zettel.partner ? [zettel] : []))
+            break // je Aufgabe und Raum genau ein Durchgang
           }
         }
       }

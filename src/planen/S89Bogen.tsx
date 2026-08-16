@@ -24,11 +24,24 @@ import './print-s89.css'
  * Programm-Ausdruck. Schulungsaufgaben gibt es nur unter der Woche; der Bogen
  * hängt deshalb nicht am Reiter.
  */
+/**
+ * Zettel je Blatt. **Fest**, nicht zur Auswahl: Sechs füllen das A4 sauber aus,
+ * der Zettel bleibt dabei gut lesbar — der Betreiber hat es am Ausdruck
+ * verglichen. Eine Einstellung, die man einmal ansieht und nie wieder anfasst,
+ * ist eine Einstellung zu viel.
+ */
+const JE_BLATT = 6
+
 export function S89Bogen() {
   const { state } = useApp()
   const { t } = useT()
-  const [proSeite, setProSeite] = useState<4 | 6>(6)
-  const zettel = alleS89DerWoche(state.weeks, state.week, state.congregation.meetings)
+  /*
+   * Der Zettel eines Gesprächs geht an beide — Schüler und Partner —, also
+   * kommt er zweimal aufs Papier. Abschaltbar, weil manche Versammlungen ihn
+   * nur dem Schüler geben; eingeschaltet, weil das der übliche Fall ist.
+   */
+  const [mitPartner, setMitPartner] = useState(true)
+  const zettel = alleS89DerWoche(state.weeks, state.week, state.congregation.meetings, mitPartner)
 
   // Nach dem Druck das Kennzeichen wieder weg — sonst druckte der nächste
   // Ctrl+P-Versuch im Programm still die Zettel.
@@ -52,30 +65,29 @@ export function S89Bogen() {
 
   return (
     <>
+      {/*
+        Die Überschrift sagt, worum es geht — zusammengesetzt aus dem
+        Formularnamen und `drucken`, also ohne neuen Wörterbuch-Schlüssel (der
+        hieße 34 Übersetzungen). Darunter steht nur noch die **Zahl**: „S-89"
+        ein zweites Mal wäre dieselbe Auskunft zweimal.
+      */}
       <div className="panel panel--pb14 s89-druck" data-farbe="neutral2">
-        <h2 className="panel-label">S-89</h2>
+        <h2 className="panel-label">S-89 {t.drucken}</h2>
         <div className="s89-druck-row">
-          {/* „6 × S-89" statt eines Satzes: Die Zahl und der Formularname sagen
-              es in jeder Sprache, ohne einen neuen Wörterbuch-Schlüssel (der
-              hieße 34 Übersetzungen). */}
-          <span className="s89-druck-count">{zettel.length} × S-89</span>
-          <div className="s89-druck-ctl" role="group" aria-label={t.drucken}>
-            {/* Die Zahlen sprechen für sich — der Knopf daneben sagt, wozu. */}
-            {([4, 6] as const).map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={proSeite === n ? 's89-druck-n is-active' : 's89-druck-n'}
-                aria-pressed={proSeite === n}
-                onClick={() => setProSeite(n)}
-              >
-                {n}
-              </button>
-            ))}
-            <button type="button" className="s89-druck-btn" onClick={drucken}>
-              {t.drucken}
-            </button>
-          </div>
+          <span className="s89-druck-count">{t.s89Partner}</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={mitPartner}
+            aria-label={t.s89Partner}
+            className={mitPartner ? 'switch is-on' : 'switch'}
+            onClick={() => setMitPartner((v) => !v)}
+          >
+            <span className="switch-knob" />
+          </button>
+          <button type="button" className="s89-druck-btn" onClick={drucken}>
+            {t.drucken}
+          </button>
         </div>
       </div>
 
@@ -84,8 +96,8 @@ export function S89Bogen() {
         `aria-hidden`: Dieser Bogen ist nur für Papier da — am Bildschirm zeigt
         ihn niemand, und in der Vorlese-Reihenfolge hätte er nichts zu suchen.
       */}
-      <div className="s89-bogen" data-pro-seite={proSeite} aria-hidden="true">
-        {seiten(zettel, proSeite).map((reihen, si) => (
+      <div className="s89-bogen" aria-hidden="true">
+        {seiten(zettel, JE_BLATT).map((reihen, si) => (
           <table key={si} className="s89-seite" role="presentation">
             <tbody>
               {reihen.map((reihe, ri) => (

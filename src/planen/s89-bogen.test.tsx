@@ -40,18 +40,25 @@ function Buehne({ state }: { state: AppState }) {
 afterEach(cleanup)
 
 describe('alleS89DerWoche', () => {
-  it('nimmt jede Schulungsaufgabe der Woche — und jede nur einmal', () => {
+  it('nimmt jede Schulungsaufgabe — mit Gesprächspartner zweimal', () => {
+    /*
+     * Der Zettel geht auch an den Partner, also braucht es zwei davon. Gezählt
+     * wird trotzdem die **Aufgabe** und nicht der Platz: Sonst hinge die Zahl
+     * daran, wie viele Plätze ein Programmpunkt zufällig hat.
+     */
     const weeks = buildDemoWeeks()
     const zettel = alleS89DerWoche(weeks, 0)
     expect(zettel.length).toBeGreaterThan(0)
-    // Ein Gespräch hat Schüler UND Partner als eigene Plätze. Stünde je Platz
-    // ein Zettel auf dem Bogen, käme dieselbe Aufgabe doppelt.
-    const doppelte = zettel.filter(
-      (z, i) => zettel.findIndex((a) => a.name === z.name && a.type === z.type && a.aux === z.aux) !== i,
-    )
-    expect(doppelte).toEqual([])
     // Jeder Zettel trägt einen Namen — ein leerer Platz gibt keinen.
     expect(zettel.every((z) => z.name !== '')).toBe(true)
+
+    const mitPartner = zettel.filter((z) => z.partner)
+    expect(mitPartner.length, 'die Demo-Woche hat Gespräche').toBeGreaterThan(0)
+    // Jeder Partner-Zettel kommt genau doppelt vor, jeder andere genau einmal.
+    const wieOft = (z: (typeof zettel)[number]) =>
+      zettel.filter((a) => a.name === z.name && a.type === z.type && a.aux === z.aux).length
+    expect(mitPartner.every((z) => wieOft(z) === 2)).toBe(true)
+    expect(zettel.filter((z) => !z.partner).every((z) => wieOft(z) === 1)).toBe(true)
   })
 
   it('die Zusätzliche Klasse ist mit dabei — mit ihrem Ort', () => {
@@ -115,22 +122,49 @@ describe('seiten: die Aufteilung steht im Bauplan', () => {
 describe('S89Bogen (Bedienung)', () => {
   const state = (): AppState => ({ ...initialState(), weeks: buildDemoWeeks(), week: 0 })
 
-  it('zeigt die Zahl der Zettel und ebenso viele Karten', () => {
+  it('legt für jede Aufgabe eine Karte an', () => {
     const { container } = render(<Buehne state={state()} />)
-    const anzahl = alleS89DerWoche(buildDemoWeeks(), 0).length
-    expect(container.querySelectorAll('.s89-zettel')).toHaveLength(anzahl)
-    expect(container.querySelector('.s89-druck-count')?.textContent).toContain(String(anzahl))
+    expect(container.querySelectorAll('.s89-zettel')).toHaveLength(
+      alleS89DerWoche(buildDemoWeeks(), 0).length,
+    )
   })
 
-  it('4 oder 6 je Seite — die Wahl steht am Bogen', () => {
+  it('der Schalter entscheidet, ob der Partner-Zettel mitkommt', () => {
     const { container } = render(<Buehne state={state()} />)
-    const bogen = container.querySelector('.s89-bogen')
-    // Sechs sind die Vorgabe: der übliche Fall, und mehr passt nicht.
-    expect(bogen?.getAttribute('data-pro-seite')).toBe('6')
-    const vier = [...container.querySelectorAll('.s89-druck-n')].find((b) => b.textContent === '4')
-    fireEvent.click(vier!)
-    expect(container.querySelector('.s89-bogen')?.getAttribute('data-pro-seite')).toBe('4')
-    expect(vier?.getAttribute('aria-pressed')).toBe('true')
+    const schalter = container.querySelector('[role="switch"]')
+    // Eingeschaltet: der übliche Fall, beide bekommen einen in die Hand.
+    expect(schalter?.getAttribute('aria-checked')).toBe('true')
+    const mit = container.querySelectorAll('.s89-zettel').length
+
+    fireEvent.click(schalter!)
+    const ohne = container.querySelectorAll('.s89-zettel').length
+    expect(ohne).toBeLessThan(mit)
+    // Genau die Gespräche fallen weg — nicht mehr und nicht weniger.
+    expect(mit - ohne).toBe(alleS89DerWoche(buildDemoWeeks(), 0, '', false).filter((z) => z.partner).length)
+  })
+
+  it('ohne Partner-Zettel bleibt je Aufgabe einer', () => {
+    const einfach = alleS89DerWoche(buildDemoWeeks(), 0, '', false)
+    const doppelt = alleS89DerWoche(buildDemoWeeks(), 0)
+    expect(einfach.length).toBeLessThan(doppelt.length)
+    const wieOft = (z: (typeof einfach)[number]) =>
+      einfach.filter((a) => a.name === z.name && a.type === z.type && a.aux === z.aux).length
+    expect(einfach.every((z) => wieOft(z) === 1)).toBe(true)
+  })
+
+  it('sechs je Blatt, ohne Auswahl', () => {
+    /*
+     * Der Betreiber hat beide Aufteilungen am Ausdruck verglichen: Sechs füllen
+     * das A4 sauber und bleiben lesbar. Die Wahl ist deshalb wieder weg — eine
+     * Einstellung, die man einmal ansieht und nie wieder anfasst, ist eine zu
+     * viel.
+     */
+    const { container } = render(<Buehne state={state()} />)
+    expect(container.querySelectorAll('.s89-druck-n')).toHaveLength(0)
+    // Blätter = Zettel durch sechs, aufgerundet — nachgerechnet, nicht geraten:
+    // Wie viele Zettel die Demo-Woche hat, hängt an ihren Gesprächen.
+    const anzahl = alleS89DerWoche(buildDemoWeeks(), 0).length
+    expect(container.querySelectorAll('.s89-seite')).toHaveLength(Math.ceil(anzahl / 6))
   })
 
   it('der Knopf kennzeichnet den Ausdruck und ruft den Druck', () => {
