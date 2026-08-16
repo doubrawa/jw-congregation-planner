@@ -22,10 +22,17 @@ export async function copyText(text: string): Promise<boolean> {
   return false
 }
 
-/** Verstecktes Textfeld markieren und per execCommand kopieren (synchron). */
+/**
+ * Verstecktes Textfeld markieren und per execCommand kopieren (synchron).
+ *
+ * Das Aufräumen steht in `finally`: Wirft `execCommand` — in älteren Browsern
+ * und unter strengen Berechtigungen tut es das, statt `false` zu liefern —,
+ * bliebe das Feld sonst im Dokument stehen. Unsichtbar, aber bei jedem
+ * Versuch eines mehr.
+ */
 function legacyCopy(text: string): boolean {
+  const ta = document.createElement('textarea')
   try {
-    const ta = document.createElement('textarea')
     ta.value = text
     ta.setAttribute('readonly', '')
     ta.style.position = 'fixed'
@@ -34,10 +41,10 @@ function legacyCopy(text: string): boolean {
     document.body.appendChild(ta)
     ta.focus()
     ta.select()
-    const ok = document.execCommand('copy')
-    document.body.removeChild(ta)
-    return ok
+    return document.execCommand('copy')
   } catch {
     return false
+  } finally {
+    ta.remove()
   }
 }

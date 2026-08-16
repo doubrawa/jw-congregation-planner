@@ -11,7 +11,8 @@
     "contrast": "node scripts/check-contrast.mjs",
     "typecheck:index": "node scripts/check-index-access.mjs",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.all --coverage.include=src/**/*.ts --coverage.include=src/**/*.tsx --coverage.exclude=src/**/*.test.ts --coverage.exclude=src/**/*.test.tsx",
+    "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.all --coverage.include=src/**/*.ts --coverage.include=src/**/*.tsx --coverage.include=supabase/functions/**/*.ts --coverage.exclude=**/*.test.ts --coverage.exclude=**/*.test.tsx --coverage.exclude=supabase/functions/_test/**",
+    "mutationsprobe": "node scripts/mutationsprobe.mjs",
     "preview": "vite preview --base /jw-congregation-planner/"
   },
   "dependencies": {

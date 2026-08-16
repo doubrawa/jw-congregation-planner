@@ -179,6 +179,81 @@ describe('Rollen-Beschriftung der Kandidaten', () => {
   })
 })
 
+/*
+ * Der Treffpunkt-Zweig derselben Funktion. Er war der einzige der drei, den
+ * kein Test je aufrief — aufgefallen beim Lesen der Abdeckung (T67), nicht
+ * beim Benutzen: Er tut ja etwas, nur eben ungeprüft. Und er hat eigene
+ * Regeln, die den beiden anderen gerade nicht gleichen — „schon heute" meint
+ * hier den Wochentag DIESES Treffpunkts, und die Abwesenheit wird an seinem
+ * Datum gemessen, nicht an der Zusammenkunft.
+ */
+describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
+  const LEITER_E = person('l1', 'Emil', 'Ernst', false, 'treffpunkt')
+  const LEITER_F = person('l2', 'Frida', 'Falk', true, 'treffpunkt')
+  const OHNE = person('l3', 'Gustav', 'Gross', false, 'schulung')
+
+  /** Zwei Treffpunkte am Montag, einer am Mittwoch. */
+  const TREFFPUNKTE = [
+    { id: 'a', ruleId: null, grp: '', wd: 1, time: '09:00', place: 'Saal', leader: '' },
+    { id: 'b', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Park', leader: '' },
+    { id: 'c', ruleId: null, grp: '', wd: 3, time: '09:00', place: 'Halle', leader: '' },
+  ]
+
+  function fsDaten(instanzen = TREFFPUNKTE, absences: Absence[] = []): KandidatenDaten {
+    return { ...daten([], [LEITER_E, LEITER_F, OHNE], absences), fsWeeks: [instanzen] }
+  }
+
+  const fsSlot = (instId: string): SlotSelection => ({
+    kind: 'fs', wi: 0, instId, label: 'Treffpunkt', priv: 'treffpunkt', groups: false,
+  })
+
+  const liste = (instId: string, state: KandidatenDaten) =>
+    kandidaten(state, fsSlot(instId), KEINE_ABWESENHEIT, DE, (s) => s)
+
+  it('nur treffpunkt-Qualifizierte, alphabetisch', () => {
+    expect(liste('a', fsDaten()).map((c) => c.name)).toEqual(['Emil Ernst', 'Frida Falk'])
+  })
+
+  it('„schon heute" nennt den anderen Treffpunkt desselben Wochentags', () => {
+    const belegt = TREFFPUNKTE.map((i) => (i.id === 'b' ? { ...i, leader: 'Emil Ernst' } : i))
+    const emil = liste('a', fsDaten(belegt))[0]!
+    expect(emil.name).toBe('Emil Ernst')
+    expect(emil.today.map((h) => h.text)).toEqual([`14:00 · ${DE.fsVers}`])
+  })
+
+  it('ein Treffpunkt an einem ANDEREN Wochentag zählt nicht dazu', () => {
+    // Wer am Mittwoch leitet, ist am Montag frei — sonst sperrte eine Leitung
+    // die ganze Woche.
+    const belegt = TREFFPUNKTE.map((i) => (i.id === 'c' ? { ...i, leader: 'Emil Ernst' } : i))
+    expect(liste('a', fsDaten(belegt))[0]!.today).toEqual([])
+  })
+
+  it('der eigene Platz zählt nicht als „schon heute"', () => {
+    const belegt = TREFFPUNKTE.map((i) => (i.id === 'a' ? { ...i, leader: 'Emil Ernst' } : i))
+    expect(liste('a', fsDaten(belegt))[0]!.today).toEqual([])
+  })
+
+  it('abwesend am Tag DIESES Treffpunkts, nicht irgendwann in der Woche', () => {
+    // Montag, 7.9.2026 ist die Basis; der Mittwochs-Treffpunkt liegt am 9.9.
+    const nurMittwoch: Absence[] = [
+      { id: 'u', personId: 'l1', userId: '', from: '2026-09-09', to: '2026-09-09', reason: '' },
+    ]
+    const state = fsDaten(TREFFPUNKTE, nurMittwoch)
+    expect(liste('a', state).find((c) => c.key === 'l1')?.absent, 'Montag').toBe(false)
+    expect(liste('c', state).find((c) => c.key === 'l1')?.absent, 'Mittwoch').toBe(true)
+  })
+
+  it('Abwesende bleiben in der Liste, rutschen aber ans Ende', () => {
+    const emilWeg: Absence[] = [
+      { id: 'u', personId: 'l1', userId: '', from: '2026-09-07', to: '2026-09-07', reason: '' },
+    ]
+    expect(liste('a', fsDaten(TREFFPUNKTE, emilWeg)).map((c) => c.name)).toEqual([
+      'Frida Falk',
+      'Emil Ernst',
+    ])
+  })
+})
+
 describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
   it('Reinigung o. Ä.', () => {
     const state: KandidatenDaten = {
