@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { naechsteZusammenkunft } from './meeting-dates'
+import { istVorbei, naechsteZusammenkunft } from './meeting-dates'
 import type { Meeting, Week } from './types'
 
 /**
@@ -22,6 +22,30 @@ function woche(start: string, over: Partial<Week> = {}): Week {
 /** Zwei aufeinanderfolgende Wochen ab Montag, 7. September 2026. */
 const WOCHEN = [woche('2026-09-07'), woche('2026-09-14')]
 const am = (iso: string) => new Date(`${iso}T12:00:00`)
+
+describe('istVorbei (T77)', () => {
+  /** UTC-Mitternacht eines Tages — so trägt `MyTask.at` seinen Termin. */
+  const tag = (iso: string) => Date.parse(iso)
+
+  it('am Tag selbst ist nichts vorbei — auch abends nicht', () => {
+    expect(istVorbei(tag('2026-09-08'), new Date('2026-09-08T23:30:00'))).toBe(false)
+  })
+
+  it('am Tag danach schon', () => {
+    expect(istVorbei(tag('2026-09-08'), new Date('2026-09-09T00:10:00'))).toBe(true)
+  })
+
+  it('Künftiges ist nie vorbei', () => {
+    expect(istVorbei(tag('2026-09-20'), new Date('2026-09-08T12:00:00'))).toBe(false)
+  })
+
+  it('ohne Datum (Demo, Vorlagen) ist nichts vorbei', () => {
+    // Diese Wochen liegen nirgends im Kalender — dort etwas verschwinden zu
+    // lassen hieße raten.
+    expect(istVorbei(null, new Date('2026-09-08T12:00:00'))).toBe(false)
+    expect(istVorbei(undefined, new Date('2026-09-08T12:00:00'))).toBe(false)
+  })
+})
 
 describe('naechsteZusammenkunft', () => {
   it('am Samstag steht das Wochenende an — nicht die schon gelaufene Wochenmitte', () => {

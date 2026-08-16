@@ -21,6 +21,7 @@ import {
 } from '../data/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { deriveMyTasks } from '../data/planning'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
@@ -1109,6 +1110,30 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     // Über die Kennung: die Demo-Wochen tragen teils noch keine pid, dann
     // greift der Namensschlüssel.
     expect(next.pendingIds.some((k) => k === me.id || k === `name:${displayName(me)}`)).toBe(true)
+  })
+
+  it('Vergangenes legt sich nicht mehr zum Bestätigen vor (T77)', () => {
+    /*
+     * Befund des Betreibers: „vergangene zuteilungen dürfen nicht auftauchen
+     * zum bestätigen oder im dashboard". Die Liste ist nach Termin sortiert —
+     * Vergangenes stand also vorn und galt auf dem Start-Bildschirm als
+     * „nächste Aufgabe".
+     */
+    const me = person('Simon Krüger')
+    const weeks = buildDemoWeeks()
+    const vorbei = weeks[0]!
+    vorbei.start = '2026-01-05' // Montag, sicher in der Vergangenheit
+    ;(vorbei.mid.sections[0]!.items[0] as PartItem).names[0]!.name = displayName(me)
+    const s = makeState({ dataStatus: 'ready', personId: me.id, weeks, myTasks: [] })
+    const next = reducer(s, { type: 'setLang', lang: 'de' })
+
+    const heute = new Date()
+    const heuteMs = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate())
+    // Gegenprobe, damit der Test nicht ins Leere prüft: In der alten Woche
+    // steckt sehr wohl eine Zuteilung für mich.
+    const roh = deriveMyTasks(weeks, DEMO_SERVICES, displayName(me), {}, '', me.id)
+    expect(roh.some((t) => t.at != null && t.at < heuteMs)).toBe(true)
+    expect(next.myTasks.some((t) => t.at != null && t.at < heuteMs)).toBe(false)
   })
 
   it('im Demo-Modus bleiben die Demo-Aufgaben unangetastet', () => {

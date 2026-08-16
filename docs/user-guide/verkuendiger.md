@@ -97,7 +97,9 @@ Bist **du** eingeteilt, siehst du am Block, in welchem Raum – und auf deinem
 ## 4. Meine Aufgaben
 
 Unter **Meine Aufgaben** siehst du alle Zuteilungen, die dich betreffen, in
-zeitlicher Reihenfolge.
+zeitlicher Reihenfolge. **Vergangenes fällt heraus** – ab dem Tag nach der
+Zusammenkunft. Es wird dir also nicht mehr zum Bestätigen vorgelegt und zählt
+auf der Startseite nicht mehr mit.
 
 ![Meine Aufgaben mit Bestätigung](screenshots/verkuendiger-aufgaben.png)
 
