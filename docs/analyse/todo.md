@@ -2242,15 +2242,19 @@ gedruckt werden können, 4 oder 6 Stück eingepasst auf ein DIN A4. Der einzelne
 Zettel besteht schon (`components/S89Sheet.tsx`); zu bauen ist der Bogen darum
 herum: Raster, Seitenumbruch und ein `@media print`, das nur ihn zeigt.
 
-**Die drei Fragen sind entschieden:** **4 oder 6 zur Auswahl** (zwei Knöpfe im
-Planen, 6 als Vorgabe — der übliche Fall). **Die Woche, die offen ist** — dieselbe
-Regel wie beim Programm-Ausdruck; wer eine andere braucht, blättert hin. Und die
-**Zusätzliche Klasse ist dabei**, mit ihrem Ort auf dem Zettel: Für wen der
-Zettel gedacht ist, muss wissen, in welchem Raum er drankommt.
+**Die drei Fragen sind entschieden** — zwei davon vom Betreiber am fertigen
+Ausdruck: **Sechs je Blatt, fest.** Beide Aufteilungen lagen zum Vergleich vor;
+sechs füllen das A4 sauber und bleiben lesbar, also ist die Auswahl wieder weg —
+eine Einstellung, die man einmal ansieht und nie wieder anfasst, ist eine zu
+viel. **Die Woche, die offen ist** — dieselbe Regel wie beim Programm-Ausdruck.
+Und die **Zusätzliche Klasse ist dabei**, mit ihrem Ort auf dem Zettel: Wer ihn
+bekommt, muss wissen, in welchem Raum er drankommt.
 
-**Ein Zettel je Aufgabe, nicht je Person.** Ein Gespräch hat zwei Plätze
-(Schüler und Partner) — das Formular nennt beide, also wäre der zweite Zettel
-eine Abschrift des ersten.
+**Der Zettel eines Gesprächs kommt zweimal** — einer für den Schüler, einer für
+den Partner; beide bekommen ihn in die Hand. Ein Schalter im Panel schaltet das
+ab, für Versammlungen, die es anders halten. Gezählt wird trotzdem die
+**Aufgabe** und nicht der Platz: Sonst hinge die Zahl daran, wie viele Plätze
+ein Programmpunkt zufällig hat.
 
 **Der Zettel selbst ist derselbe Baustein wie am Bildschirm** (`S89Karte`, aus
 `S89Sheet` herausgelöst). Das Papier soll nicht etwas anderes zeigen als die
@@ -2274,14 +2278,13 @@ Reißbrett nicht gesehen:
    `printToPDF` gemessen (aus einer Seite wurden zwei). Die Höhe ist deshalb
    wieder frei; den Umbruch macht allein `break-after`.
 
-**Ohne neuen Wörterbuch-Schlüssel:** Die Leiste zeigt „{n} × S-89" (Zahl und
-Formularname sagen es in jeder Sprache), die Knöpfe tragen „4" und „6", und der
-Druckknopf steht auf `drucken`.
+**Ohne neuen Wörterbuch-Schlüssel:** Die Überschrift ist `S-89` + `drucken`, der
+Schalter trägt `s89Partner` („Gesprächspartner/in") und der Knopf `drucken`.
 
-**Geprüft:** 11 Tests (Aufzählung inkl. Zusätzlicher Klasse und Doppelzählung,
-Aufteilung auf Blätter, Bedienung, Kennzeichen beim Drucken) — und am laufenden
-Stand als **PDF**: eine Seite bei 4 Zetteln, zwei bei zweien je Blatt, die
-Nachbarwochen nicht dabei.
+**Geprüft:** 13 Tests (Aufzählung inkl. Zusätzlicher Klasse, doppelter
+Partner-Zettel und dessen Abschalten, Aufteilung auf Blätter, Bedienung,
+Kennzeichen beim Drucken) — und am laufenden Stand als **PDF**: die Blätter
+zählen richtig, die Nachbarwochen sind nicht dabei.
 
 ### T72 · Abwesenheiten als Zeitstrahl — erst zu überlegen 🏗
 **Vorgabe des Betreibers, ausdrücklich als Überlegung** („das muss man noch

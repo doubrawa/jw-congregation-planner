@@ -20,43 +20,22 @@
   display: none;
 }
 
-/* Leiste im Planen: Anzahl links, Aufteilung und Knopf rechts. */
+/* Leiste im Planen: Schalter für die Partner-Zettel links, Druckknopf rechts.
+   Wie viele auf ein Blatt kommen, steht nicht zur Wahl — sechs, siehe
+   `JE_BLATT`. */
 .s89-druck-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
   padding-top: 6px;
 }
 
 .s89-druck-count {
+  flex: 1;
+  min-width: 0;
   font-size: calc(12.5px * var(--fs));
   font-weight: 600;
   color: var(--ink);
-}
-
-.s89-druck-ctl {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.s89-druck-n {
-  min-width: 34px;
-  padding: 6px 10px;
-  border: 1px solid var(--bord);
-  border-radius: var(--r-pill);
-  background: var(--card);
-  color: var(--mut);
-  font-size: calc(12px * var(--fs));
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.s89-druck-n.is-active {
-  border-color: var(--acc);
-  color: var(--acc);
 }
 
 .s89-druck-btn {
@@ -177,15 +156,10 @@
     padding: 4mm 5mm;
   }
 
-  /* Vier je Seite: zwei Reihen, jede Zelle höher. Sechs: drei Reihen.
-     Die Höhe ist gesetzt, damit die Zettel eine gleichmäßige Seite ergeben und
-     nicht je nach Textlänge springen — 4er ≈ 128 mm, 6er ≈ 85 mm bei 297 mm
-     Papier abzüglich Rand. */
-  :root[data-print='s89'] .s89-bogen[data-pro-seite='4'] .s89-zettel {
-    height: 125mm;
-  }
-
-  :root[data-print='s89'] .s89-bogen[data-pro-seite='6'] .s89-zettel {
+  /* Feste Höhe, damit die sechs Zettel eine gleichmäßige Seite ergeben und
+     nicht je nach Textlänge springen: drei Reihen à 82 mm bei 297 mm Papier
+     abzüglich Rand. */
+  :root[data-print='s89'] .s89-zettel {
     height: 82mm;
   }
 
