@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useAppDispatch } from '../app/context'
+import { S89Karte } from './S89Karte'
 import { useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
@@ -14,7 +15,7 @@ import './overlays.css'
  */
 export function S89Sheet({ payload }: { payload: S89Payload }) {
   const dispatch = useAppDispatch()
-  const { t, tp } = useT()
+  const { t } = useT()
   const close = () => dispatch({ type: 'closeS89' })
   const dlg = useRef<HTMLDivElement>(null)
   useDialogFocus(dlg)
@@ -28,17 +29,6 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [dispatch])
-
-  const rows: Array<[string, string]> = [
-    [t.s89Name, payload.name],
-    ...(payload.partner ? ([[t.s89Partner, payload.partner]] as [string, string][]) : []),
-    [t.s89Datum, tp(payload.date)],
-    [t.s89Aufgabe, tp(payload.type)],
-    ...(payload.point ? ([[t.s89Punkt, tp(payload.point)]] as [string, string][]) : []),
-    // Der Ort stand hier bis 2026-08 als Konstante „Hauptsaal" — auf jedem
-    // Zettel, auch wenn der Teil in der Zusätzlichen Klasse stattfand.
-    [t.s89Ort, payload.aux ? t.auxKlasse : t.auxHauptsaal],
-  ]
 
   return (
     <>
@@ -54,15 +44,7 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
             ✕
           </button>
         </div>
-        <div className="s89-box">
-          {rows.map(([label, value]) => (
-            <div key={label} className="s89-row">
-              <div className="s89-label">{label}</div>
-              <div className="s89-value">{value}</div>
-            </div>
-          ))}
-        </div>
-        <p className="s89-note">{t.s89Note}</p>
+        <S89Karte payload={payload} />
       </div>
     </>
   )

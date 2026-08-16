@@ -164,6 +164,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 73 | Familie/Haushalt verknüpfen | Detail | Planer | `linkFamily`, `unlinkFamily` |
 | 74 | Aufgabenbereiche: 11 feste + je Hilfsdienst einer | Detail | Planer | `QUALIFICATION_ORDER`, `serviceQualKey` |
 | 74a | Freigabe je Hilfsdienst: alle Personen mit Schalter, Zahl am Dienst | Einstellungen | Planer | `einstellungen/ServicePersonsSheet.tsx` |
+| 74b | S-89-Druckbogen der Woche, 4 oder 6 je A4 | Planen | Planer | `planen/S89Bogen.tsx`, `alleS89DerWoche`, `planen/print-s89.css` |
 | 75 | Feste Wachtturm-Rollen (Leiter, Vertreter) | Detail | Planer | `WT_ROLE_ORDER` |
 | 76 | Zeitleiste der Zuteilungen (Datum + Art, Vergangenes blasser) | Detail | Planer | `personen/PersonTimeline.tsx`, `person-timeline.ts` |
 | 77 | Konto-Karte (Status App-Zugang, einladen) | Detail | Planer | `personen/KontoCard.tsx` |

@@ -845,6 +845,47 @@ export function buildS89ForSlot(
   }
 }
 
+/**
+ * Alle S-89-Zettel einer Woche — für den Druckbogen (T71).
+ *
+ * Schulungsaufgaben gibt es nur unter der Woche, deshalb nur `mid`. Gelaufen
+ * wird über **beide Räume**: Die Zusätzliche Klasse ist überall gleichberechtigt,
+ * und ihre Zettel sind sogar die, bei denen der Ort auf dem Papier zählt.
+ *
+ * **Ein Zettel je Aufgabe, nicht je Person.** Ein Gespräch hat zwei Plätze
+ * (Schüler und Partner), aber `buildS89ForSlot` liefert für beide denselben
+ * Zettel — er nennt beide Namen, so wie das Formular es vorsieht. Ohne diese
+ * Zusammenfassung stünde jedes Gespräch doppelt auf dem Bogen.
+ *
+ * Die Reihenfolge ist die des Programms: So liegen die Zettel hinterher in der
+ * Reihenfolge, in der die Teile drankommen.
+ */
+export function alleS89DerWoche(weeks: Week[], wi: number, meetings = ''): S89Payload[] {
+  const week = weeks[wi]
+  if (!week) return []
+  const out: S89Payload[] = []
+  week.mid.sections.forEach((section, si) => {
+    section.items.forEach((item, ii) => {
+      if (isSong(item)) return
+      for (const aux of raeume(week.mid)) {
+        const slots = slotsOf(item, aux)
+        for (let ni = 0; ni < slots.length; ni++) {
+          const zettel = buildS89ForSlot(weeks, {
+            kind: 'part', wi, tab: 'mid', si, ii, ni,
+            aux: aux || undefined,
+            label: '', priv: slots[ni]?.bereichsKey ?? null, groups: false,
+          }, meetings)
+          if (zettel) {
+            out.push(zettel)
+            break // je Aufgabe und Raum genau einer
+          }
+        }
+      }
+    })
+  })
+  return out
+}
+
 /* ---- Aufgaben-Ableitung (Produktionsmodus) -------------------------------
  * Im Demo-Modus sind "Meine Aufgaben" feste Demo-Daten; mit Persistenz werden
  * sie aus den Wochen-Zuteilungen berechnet. Der Bestätigungs-Status hängt am
