@@ -2431,11 +2431,41 @@ Der Versand greift jetzt selbst nach der stabilen Kennung (`stabileKennung`) —
 **das ist die vierte Aufrufer-Lücke dieses Tages**, gefunden durch dieselbe
 Frage wie die anderen drei: Wer liest diese Daten noch?
 
-> **Nutzer-Schritt:** `send-reminders` muss dafür neu deployt werden
-> (`npx supabase functions deploy send-reminders --project-ref …`). Ohne den
-> Deploy passiert nichts Schlimmes — die Erinnerungen laufen weiter wie
-> bisher; erst wenn die App die Schlüssel gehoben hat, könnten bestätigte
-> Treffpunkte noch einmal erinnert werden.
+> **Nutzer-Schritt — nur `send-reminders`.** Nachgesehen mit
+> `git log <letzter Deploy>..HEAD -- supabase/functions`: `import-week` ist
+> seit dem Deploy vom 15. August unberührt, an `substitute` hat sich seit dem
+> 16. August nur eine **Testdatei** geändert (`texte.test.ts`, liegt wie ihre
+> Schwester neben der `index.ts` und wird nie importiert). Zu deployen ist
+> also genau eine Function:
+>
+> ```
+> npx supabase functions deploy send-reminders --project-ref izxrhrufdbpbuwbvxdqr
+> ```
+>
+> **Kein `--no-verify-jwt`** — `supabase/config.toml` hält die Einstellung je
+> Function fest, damit ein vergessenes Flag die Sicherheitsgrenze nicht still
+> verstellt. „WARNING: Docker is not running" ist harmlos, die CLI lädt über
+> die API; `_shared/planung.ts` kommt automatisch mit.
+>
+> **Danach prüfen, in dieser Reihenfolge:**
+>
+> 1. `npx supabase functions list --project-ref izxrhrufdbpbuwbvxdqr` —
+>    `updated_at` von `send-reminders` muss **hinter** dem Commit `08bca56`
+>    liegen. Das ist der einzige harte Beleg; „lief schon" ist keiner.
+> 2. Rauchtest ohne Nebenwirkung: POST mit absichtlich falschem
+>    `Authorization: Bearer falsch` → **401**. Beweist, dass der neue Code
+>    läuft und die Abwehr greift, ohne etwas auszulösen. (Unter Windows
+>    `curl.exe` schreiben — `curl` ist in PowerShell ein Alias auf
+>    `Invoke-WebRequest` und versteht `-s -X -d` nicht.)
+>
+> **Nicht von Hand mit gültigem Secret aufrufen:** `SEND_PUSH=true` ist
+> gesetzt, der Versand ist scharf — ein Handaufruf schickt echte Push-Nachrichten
+> an die ganze Versammlung. Der Cron läuft ohnehin täglich um 08:00 UTC.
+>
+> **Ohne den Deploy passiert nichts Schlimmes:** Die Erinnerungen laufen weiter
+> wie bisher. Erst wenn die App die Schlüssel gehoben hat, könnte ein
+> bestätigter Treffpunkt noch einmal erinnert werden — und auch das nur, bis
+> der Planer die betroffene Woche das nächste Mal anfasst.
 
 **Geprüft:** 11 Tests in `src/data/fs-kennung.test.ts` (gleiche Kennung über
 verschiedene Fensterpositionen, gleicher `task_key`, überlebender Leiter,
@@ -2572,7 +2602,7 @@ Partner-Zettel und dessen Abschalten, Aufteilung auf Blätter, Bedienung,
 Kennzeichen beim Drucken) — und am laufenden Stand als **PDF**: die Blätter
 zählen richtig, die Nachbarwochen sind nicht dabei.
 
-### T72 · Abwesenheiten als Zeitstrahl — erst zu überlegen 🏗
+### T72 · Abwesenheiten als Zeitstrahl — erst zu überlegen 🏗 ⏸ zurückgestellt
 **Vorgabe des Betreibers, ausdrücklich als Überlegung** („das muss man noch
 überlegen"): eine Übersicht aller Abwesenheiten, eventuell als Zeitstrahl.
 
@@ -2580,6 +2610,11 @@ Vor dem Bauen zu klären, wozu sie dient. Beim **Planen** sehen, wer wann fehlt 
 dann gehört sie in den Planen-Reiter und zeigt die Wochen der Planung. Oder die
 **Verwaltung** der Meldungen — dann eher eine Liste je Person. Ein Baustein
 existiert: `PersonTimeline` zeigt die Zeitleiste einer einzelnen Person.
+
+> **Vom Betreiber am 16. August 2026 weiter zurückgestellt.** Die Frage nach
+> dem Zweck wurde vorgelegt (Planen-Ansicht, Verwaltungs-Liste oder beides) —
+> die Antwort lautet: noch nicht. Der Punkt bleibt offen, ohne dass etwas
+> daran gebaut wird; ein Zuschnitt auf Verdacht wäre die falsche Reihenfolge.
 
 ---
 
