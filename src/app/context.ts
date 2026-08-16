@@ -303,6 +303,12 @@ export type AppAction =
   | { type: 'closeLangSheet' }
   | { type: 'openServiceSheet'; key: string }
   | { type: 'closeServiceSheet' }
+  /**
+   * Das Blatt beim Öffnen weglegen. Gibt es **nur** Ersatzgesuche, ist nichts
+   * zu tun — einspringen kann man, muss man aber nicht. Solange eine
+   * Bestätigung offen ist, bleibt es stehen (dann gibt es kein ✕).
+   */
+  | { type: 'closeConfirm' }
   | { type: 'setLangSearch'; text: string }
   | { type: 'setAuxClass'; on: boolean }
   | { type: 'setCongLang'; name: string }
