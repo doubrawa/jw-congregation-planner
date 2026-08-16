@@ -2421,11 +2421,28 @@ adressiert. Ohne diese Trennung hätte derselbe Leiter in allen vier
 Demo-Wochen gestanden: Die Kennung beschreibt den Treffpunkt, nicht seinen
 Termin.
 
+**Die dritte Stelle liest gar nicht mit — sie liest direkt.** `send-reminders`
+holt den Blob aus der Datenbank, nicht aus der App, und der trägt die alte
+Kennung so lange, bis ein Planer die Woche das nächste Mal anfasst. Zwischen
+dem Umbenennen der Bestätigungen (beim ersten Laden) und diesem Anfassen
+rechnete der Versand mit `fs|<Montag>|3|r1`, während die Bestätigung längst
+`fs|<Montag>|r1` heißt: Der Leiter hätte bestätigt und würde weiter erinnert.
+Der Versand greift jetzt selbst nach der stabilen Kennung (`stabileKennung`) —
+**das ist die vierte Aufrufer-Lücke dieses Tages**, gefunden durch dieselbe
+Frage wie die anderen drei: Wer liest diese Daten noch?
+
+> **Nutzer-Schritt:** `send-reminders` muss dafür neu deployt werden
+> (`npx supabase functions deploy send-reminders --project-ref …`). Ohne den
+> Deploy passiert nichts Schlimmes — die Erinnerungen laufen weiter wie
+> bisher; erst wenn die App die Schlüssel gehoben hat, könnten bestätigte
+> Treffpunkte noch einmal erinnert werden.
+
 **Geprüft:** 11 Tests in `src/data/fs-kennung.test.ts` (gleiche Kennung über
 verschiedene Fensterpositionen, gleicher `task_key`, überlebender Leiter,
-Altbestand heben, Idempotenz, manuelle Treffpunkte, Bestätigungen). Gegenprobe
-mit der alten Kennung gefahren: **6 von 11** fallen. Drei Einträge im Katalog
-der Mutationsprobe halten die drei Hälften künftig fest.
+Altbestand heben, Idempotenz, manuelle Treffpunkte, Bestätigungen) und zwei in
+`send-reminders.test.ts` (Altbestand mit und ohne Bestätigung). Gegenprobe
+mit der alten Kennung gefahren: **6 von 11** fallen. Vier Einträge im Katalog
+der Mutationsprobe halten die vier Hälften künftig fest.
 
 ### T69 · „Einspringen" beim Öffnen der App zeigen — wie das Bestätigen 🔧 ✅ erledigt
 **Vorgabe des Betreibers.** Ein offenes Ersatzgesuch muss beim Öffnen der App

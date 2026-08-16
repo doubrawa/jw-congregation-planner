@@ -334,6 +334,13 @@ const KATALOG = [
     ersetzen: 'if (false) continue',
   },
   {
+    id: 'erinnerung-fs-kennung',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Der Versand greift nach der stabilen Treffpunkt-Kennung, auch im Altbestand (T87).',
+    suchen: 'if (conf.has(`fs|${woche}|${stabileKennung(inst.id)}`)) continue',
+    ersetzen: 'if (conf.has(`fs|${woche}|${inst.id}`)) continue',
+  },
+  {
     id: 'ersatz-nur-qualifizierte',
     datei: 'supabase/functions/substitute/index.ts',
     regel: 'Übernehmen darf nur, wer für den Dienst freigegeben ist.',
