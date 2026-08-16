@@ -196,10 +196,10 @@ describe('buildFsWeeks', () => {
     const seed = { '0|r1': 'Thomas Lindner', '3|r3': 'Simon Krüger' }
     const weeks = buildFsWeeks(BASE, 4, RULES, seed)
     expect(weeks).toHaveLength(4)
-    expect(weeks[0].find((i) => i.id === '0|r1')?.leader).toBe('Thomas Lindner')
-    expect(weeks[3].find((i) => i.id === '3|r3')?.leader).toBe('Simon Krüger')
+    expect(weeks[0].find((i) => i.id === 'r1')?.leader).toBe('Thomas Lindner')
+    expect(weeks[3].find((i) => i.id === 'r3')?.leader).toBe('Simon Krüger')
     // Nicht geseedete Instanzen bleiben offen.
-    expect(weeks[0].find((i) => i.id === '0|r2')?.leader).toBe('')
+    expect(weeks[0].find((i) => i.id === 'r2')?.leader).toBe('')
   })
 })
 
@@ -226,34 +226,34 @@ describe('fs-Wochenbearbeitung (Planen)', () => {
 
   it('fsLeaderValue liest den Leiter ("" wenn offen/unbekannt)', () => {
     const w = build()
-    expect(fsLeaderValue(w, 0, '0|r1')).toBe('')
+    expect(fsLeaderValue(w, 0, 'r1')).toBe('')
     expect(fsLeaderValue(w, 0, 'gibtsnicht')).toBe('')
-    expect(fsLeaderValue(w, 99, '0|r1')).toBe('') // Woche außerhalb
+    expect(fsLeaderValue(w, 99, 'r1')).toBe('') // Woche außerhalb
   })
 
   it('fsSetLeader setzt und entfernt den Leiter, nur in der Zielwoche', () => {
     const w = build()
-    const set = fsSetLeader(w, 0, '0|r1', 'A. Leiter')
-    expect(fsLeaderValue(set, 0, '0|r1')).toBe('A. Leiter')
+    const set = fsSetLeader(w, 0, 'r1', 'A. Leiter')
+    expect(fsLeaderValue(set, 0, 'r1')).toBe('A. Leiter')
     expect(set[1]).toBe(w[1]) // andere Wochen behalten ihre Referenz
     expect(w[0][0].leader).toBe('') // Original unverändert (rein)
-    expect(fsLeaderValue(fsSetLeader(set, 0, '0|r1', ''), 0, '0|r1')).toBe('')
+    expect(fsLeaderValue(fsSetLeader(set, 0, 'r1', ''), 0, 'r1')).toBe('')
   })
 
   it('fsUpdateInst ändert Zeit/Ort und sortiert neu', () => {
     const w = build()
     // r2 (Mi 09:30) auf Mo-Zeit vorziehen → bleibt aber Mi; nur Zeit/Ort ändern
-    const upd = fsUpdateInst(w, 0, '0|r2', { time: '08:00', place: 'Neu' })
-    const r2 = upd[0].find((i) => i.id === '0|r2')!
+    const upd = fsUpdateInst(w, 0, 'r2', { time: '08:00', place: 'Neu' })
+    const r2 = upd[0].find((i) => i.id === 'r2')!
     expect(r2.time).toBe('08:00')
     expect(r2.place).toBe('Neu')
   })
 
   it('fsRemoveInst entfernt genau eine Instanz der Woche', () => {
     const w = build()
-    const rm = fsRemoveInst(w, 0, '0|r1')
-    expect(rm[0].some((i) => i.id === '0|r1')).toBe(false)
-    expect(rm[0].some((i) => i.id === '0|r2')).toBe(true)
+    const rm = fsRemoveInst(w, 0, 'r1')
+    expect(rm[0].some((i) => i.id === 'r1')).toBe(false)
+    expect(rm[0].some((i) => i.id === 'r2')).toBe(true)
   })
 
   it('fsAddInst fügt eine manuelle Instanz ein und sortiert', () => {

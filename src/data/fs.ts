@@ -75,6 +75,26 @@ export function fsSort(a: FsInstance, b: FsInstance): number {
   return ((a.wd + 6) % 7) - ((b.wd + 6) % 7) || a.time.localeCompare(b.time) || a.grp.localeCompare(b.grp)
 }
 
+/**
+ * Kennung eines Treffpunkts aus dem Grundplan: **die Regel, sonst nichts** (T87).
+ *
+ * Sie trug bis August 2026 die Wochennummer vorn (`"3|r1"`) — dieselbe
+ * Ordnungszahl, die T66 überall sonst abgeschafft hat, hier übersehen. Die
+ * Nummer ist die Position im Ladefenster, und das Fenster rutscht: Es hält die
+ * jüngsten 52 Wochen, seine erste wandert also mit jedem Import weiter.
+ * Dieselbe Kalenderwoche hieß danach `"2|r1"` statt `"3|r1"` — und weil
+ * `regenFsWeeks` die gespeicherte Leitung über die Kennung wiederfindet, war
+ * der zugeteilte Leiter beim nächsten Laden **weg**. Nachgemessen, nicht
+ * vermutet: siehe `fs-kennung.test.ts`.
+ *
+ * Eindeutig ist die Regel-Id auch allein: `genFsWeek` materialisiert jede Regel
+ * höchstens einmal je Woche, und gespeichert wird ohnehin je Woche eine eigene
+ * Zeile (`fs_weeks`). Die Woche steht im `task_key` davor — dort gehört sie hin.
+ */
+function instanzId(rule: FsRule): string {
+  return rule.id
+}
+
 /** Materialisiert alle Treffpunkte der Woche `wi` aus dem Grundplan. */
 export function genFsWeek(base: Date, wi: number, rules: FsRule[]): FsInstance[] {
   const out: FsInstance[] = []
@@ -84,13 +104,13 @@ export function genFsWeek(base: Date, wi: number, rules: FsRule[]): FsInstance[]
 
   for (const r of rules) {
     if (r.grp === '' && fits(r)) {
-      out.push({ id: `${wi}|${r.id}`, ruleId: r.id, grp: '', wd: r.wd, time: r.time, place: r.place, leader: '' })
+      out.push({ id: instanzId(r), ruleId: r.id, grp: '', wd: r.wd, time: r.time, place: r.place, leader: '' })
       congDays.add(r.wd)
     }
   }
   for (const r of rules) {
     if (r.grp !== '' && fits(r) && !(r.skipCong && congDays.has(r.wd))) {
-      out.push({ id: `${wi}|${r.id}`, ruleId: r.id, grp: r.grp, wd: r.wd, time: r.time, place: r.place, leader: '' })
+      out.push({ id: instanzId(r), ruleId: r.id, grp: r.grp, wd: r.wd, time: r.time, place: r.place, leader: '' })
     }
   }
   out.sort(fsSort)
@@ -98,8 +118,14 @@ export function genFsWeek(base: Date, wi: number, rules: FsRule[]): FsInstance[]
 }
 
 /**
- * Baut die Treffpunkte aller Wochen aus dem Grundplan; `seedLeaders` (Instanz-Id
- * → Name) belegt vorab Leiter (Demo). Reine Funktion — je Aufruf frische Objekte.
+ * Baut die Treffpunkte aller Wochen aus dem Grundplan; `seedLeaders` belegt
+ * vorab Leiter (Demo). Reine Funktion — je Aufruf frische Objekte.
+ *
+ * Die Vorbelegung ist **je Woche** adressiert (`"<wi>|<instanzId>"`), die
+ * Kennung der Instanz dagegen nicht mehr (T87): Sie beschreibt den Treffpunkt,
+ * nicht seinen Termin, und wäre als Schlüssel hier mehrdeutig — dieselbe Regel
+ * gibt es in jeder Woche. Ohne die Wochennummer davor stünde derselbe Leiter
+ * in allen vier Demo-Wochen.
  */
 export function buildFsWeeks(
   base: Date,
@@ -108,7 +134,7 @@ export function buildFsWeeks(
   seedLeaders: Record<string, string> = {},
 ): FsInstance[][] {
   return Array.from({ length: weekCount }, (_unused, wi) =>
-    genFsWeek(base, wi, rules).map((inst) => ({ ...inst, leader: seedLeaders[inst.id] ?? '' })),
+    genFsWeek(base, wi, rules).map((inst) => ({ ...inst, leader: seedLeaders[`${wi}|${inst.id}`] ?? '' })),
   )
 }
 
@@ -581,6 +607,38 @@ export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance
       changed = true
       const { lpid: _weg, ...ohne } = inst
       return ohne
+    })
+    if (!changed) return week
+    anyChanged = true
+    return insts
+  })
+  return anyChanged ? next : fsWeeks
+}
+
+/**
+ * Alt-Kennungen der Treffpunkte auf die Regel-Id heben (T87):
+ * `"3|r1c8…"` → `"r1c8…"`.
+ *
+ * Die führende Zahl war die Position der Woche im Ladefenster. Sie ändert
+ * sich, sobald das Fenster weiterrutscht — und `regenFsWeeks` findet die
+ * gespeicherte Leitung dann nicht wieder (siehe `instanzId`). Diese Umstellung
+ * läuft beim Laden, **bevor** ausgerichtet wird, und macht die beiden Seiten
+ * wieder gleich: hier die Kennung der Instanz, drüben die des `task_key`
+ * (`migrateFsTaskKeys` in lib/data.ts).
+ *
+ * Von Hand angelegte Treffpunkte (`x<uuid>`) bleiben unberührt — sie tragen
+ * keine Zahl vorn. Idempotent, und unveränderte Wochen behalten ihre Referenz.
+ */
+export function fsMigrateInstIds(fsWeeks: FsInstance[][]): FsInstance[][] {
+  const ALT = /^\d+\|(.+)$/
+  let anyChanged = false
+  const next = fsWeeks.map((week) => {
+    let changed = false
+    const insts = week.map((inst) => {
+      const treffer = ALT.exec(inst.id)
+      if (!treffer?.[1]) return inst
+      changed = true
+      return { ...inst, id: treffer[1] }
     })
     if (!changed) return week
     anyChanged = true

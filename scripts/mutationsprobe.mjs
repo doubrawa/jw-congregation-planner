@@ -252,6 +252,27 @@ const KATALOG = [
     ersetzen: 'const frei = alle',
   },
   {
+    id: 'fs-kennung-ohne-wochennummer',
+    datei: 'src/data/fs.ts',
+    regel: 'Die Kennung eines Treffpunkts trägt keine Wochennummer (T87).',
+    suchen: 'function instanzId(rule: FsRule): string {\n  return rule.id\n}',
+    ersetzen: 'function instanzId(rule: FsRule): string {\n  return `1|${rule.id}`\n}',
+  },
+  {
+    id: 'fs-kennung-altbestand',
+    datei: 'src/data/fs.ts',
+    regel: 'Gespeicherte Treffpunkte werden beim Laden auf die stabile Kennung gehoben.',
+    suchen: "      const treffer = ALT.exec(inst.id)\n      if (!treffer?.[1]) return inst",
+    ersetzen: '      return inst\n',
+  },
+  {
+    id: 'fs-schluessel-altbestand',
+    datei: 'src/lib/data.ts',
+    regel: 'Die Bestätigung eines Treffpunkts wandert auf den stabilen Schlüssel mit.',
+    suchen: '    if (treffer) renames.push([key, `fs|${treffer[1]}|${treffer[2]}`])',
+    ersetzen: '    if (false && treffer) renames.push([key, key])',
+  },
+  {
     id: 'fs-tagessperre',
     datei: 'src/data/fs.ts',
     regel: 'Wer an einem Wochentag schon leitet, leitet dort nicht ein zweites Mal.',
