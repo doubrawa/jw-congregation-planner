@@ -154,6 +154,9 @@ export function initialState(): AppState {
     langSheetOpen: false,
     langSheetFor: 'cong',
     svcSheet: null,
+    // Ein Debug-Hash mit `tab=` ist eine Wahl — sonst spränge der Reiter beim
+    // ersten Navigieren weg und die Doku-Screenshots zeigten das Falsche.
+    terminGewaehlt: debug?.tab != null,
     auxClass: false,
     congLang: debug?.congLang ?? 'Deutsch',
     progLangs: [],

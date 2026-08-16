@@ -7,7 +7,7 @@
  * `week.start` ist der Montag der Woche (nur bei jw.org-importierten Wochen
  * gesetzt); Demo-/Vorlagen-Wochen haben keins → kein Countdown.
  */
-import { abweichung } from './helpers'
+import { abweichung, istAusgefallen, MEETING_TABS } from './helpers'
 import type { MeetingKey, Week } from './types'
 
 /** Wochentags-Kürzel → Tage nach Montag. */
@@ -238,4 +238,50 @@ export function currentWeekIndex(weeks: readonly Week[], heute = new Date()): nu
     if (abstand >= 0 && abstand < 7) return i
   }
   return -1
+}
+
+/**
+ * Die **nächste** Zusammenkunft: Woche und Reiter — oder `null`, wenn keine zu
+ * finden ist (keine Woche trägt ein Startdatum, alle Termine liegen zurück,
+ * oder alles fällt aus).
+ *
+ * „Nächste" heißt: der früheste Termin, der **heute oder später** liegt. Der
+ * laufende Tag zählt mit — wer am Sonntagvormittag hereinschaut, will den
+ * Sonntag sehen und nicht schon die kommende Woche. Genauer als auf den Tag
+ * wird bewusst nicht gerechnet: Die Anfangszeit steht zwar in den
+ * Einstellungen, wann eine Zusammenkunft *vorbei* ist, weiß aber niemand — ein
+ * Umspringen um 20:47 wäre geraten.
+ *
+ * Was hier zusammenkommt und einzeln nicht reicht:
+ *  - **Woche und Reiter gehören zusammen.** Am Sonntagabend ist die nächste
+ *    Zusammenkunft die der Folgewoche; der Reiter allein spränge dann auf einen
+ *    Termin, der schon vorbei ist.
+ *  - **Entfallenes ist nichts, was ansteht** (T30): Kongresswochen und die
+ *    Woche des Gedächtnismahls werden übersprungen.
+ *  - **Der Wochentag steht nicht fest.** Er kommt je Versammlung aus den
+ *    Einstellungen und kann in einer einzelnen Woche abweichen — `meetingDateMs`
+ *    kennt beide Quellen; hier wird nichts geraten.
+ *
+ * Gesucht wird über **alle** Wochen und in jeder über beide Zusammenkünfte, nicht
+ * die erste passende genommen: In der Woche des Gedächtnismahls liegt der
+ * Sondertermin auch mal vor dem der Wochenmitte.
+ */
+export function naechsteZusammenkunft(
+  weeks: readonly Week[],
+  meetings: string,
+  heute = new Date(),
+): { wi: number; tab: MeetingKey } | null {
+  const heuteMs = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate())
+  let beste: { wi: number; tab: MeetingKey; ms: number } | null = null
+  for (let wi = 0; wi < weeks.length; wi++) {
+    const week = weeks[wi]
+    if (!week) continue
+    for (const tab of MEETING_TABS) {
+      if (istAusgefallen(week, tab)) continue
+      const ms = meetingDateMs(week, tab, meetings)
+      if (ms === null || ms < heuteMs) continue
+      if (!beste || ms < beste.ms) beste = { wi, tab, ms }
+    }
+  }
+  return beste ? { wi: beste.wi, tab: beste.tab } : null
 }

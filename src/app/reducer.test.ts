@@ -69,6 +69,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     langSheetOpen: false,
     langSheetFor: 'cong',
     svcSheet: null,
+    terminGewaehlt: true, // Tests wählen Woche/Reiter selbst — kein Springen (T82)
     congLang: 'Deutsch',
     progLangs: [],
     langSearch: '',
@@ -888,6 +889,34 @@ describe('Sprache', () => {
     expect(reducer(makeState({ langSheetOpen: true, langSearch: 'x' }), { type: 'closeLangSheet' })).toMatchObject({ langSheetOpen: false, langSearch: '' })
     expect(reducer(makeState(), { type: 'setLangSearch', text: 'fr' }).langSearch).toBe('fr')
     expect(reducer(makeState({ langSheetOpen: true }), { type: 'setCongLang', name: 'Englisch' })).toMatchObject({ congLang: 'Englisch', langSheetOpen: false })
+  })
+
+  it('Programm und Planen öffnen mit der nächsten Zusammenkunft (T82)', () => {
+    // Wochen ab Montag, 7. September 2026; heute ist in dieser Testumgebung
+    // fest verdrahtet nicht steuerbar, deshalb prüft der Test die Weiche und
+    // nicht das Datum — das tut `naechste-zusammenkunft.test.ts`.
+    const s = makeState({ terminGewaehlt: false, tab: 'we', week: 3 })
+    // Ohne Wochen mit Datum gibt es keine nächste — dann bleibt alles stehen.
+    const ohne = reducer({ ...s, weeks: [] }, { type: 'navigate', screen: 'planen' })
+    expect(ohne).toMatchObject({ tab: 'we', week: 3 })
+
+    // Eine eigene Wahl schlägt den Sprung — sonst würde der Planer beim
+    // Hin- und Herwechseln immer wieder umgesetzt.
+    const gewaehlt = reducer(makeState({ terminGewaehlt: true, tab: 'we', week: 3 }), {
+      type: 'navigate', screen: 'planen',
+    })
+    expect(gewaehlt).toMatchObject({ tab: 'we', week: 3 })
+
+    // Reiter- und Wochenwechsel sind eine solche Wahl.
+    expect(reducer(makeState({ terminGewaehlt: false }), { type: 'setTab', tab: 'we' }).terminGewaehlt).toBe(true)
+    expect(reducer(makeState({ terminGewaehlt: false }), { type: 'nextWeek' }).terminGewaehlt).toBe(true)
+    expect(reducer(makeState({ terminGewaehlt: false }), { type: 'prevWeek' }).terminGewaehlt).toBe(true)
+
+    // Die Treffpunkte meint, wer sie ansieht — dort wird nichts umgesetzt.
+    const fs = reducer(makeState({ terminGewaehlt: false, tab: 'fs', week: 3 }), {
+      type: 'navigate', screen: 'programm',
+    })
+    expect(fs).toMatchObject({ tab: 'fs', week: 3 })
   })
 
   it('das Blatt beim Öffnen hält auch ein Ersatzgesuch (T69)', () => {

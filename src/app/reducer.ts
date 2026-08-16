@@ -7,7 +7,7 @@
 import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
-import { currentWeekIndex, meetingTimesOf } from '../data/meeting-dates'
+import { currentWeekIndex, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, overseerGroup, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
@@ -240,6 +240,20 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
 }
 
 /**
+ * Woche und Reiter auf die nächste Zusammenkunft setzen (T82) — es sei denn,
+ * der Nutzer hat in dieser Sitzung schon selbst gewählt.
+ *
+ * Gibt es keine nächste (keine Wochen geladen, alle Termine vorbei), bleibt
+ * alles stehen: eine Ansicht auf gut Glück zu verschieben wäre schlechter als
+ * die, auf der man ist.
+ */
+function zurNaechstenZusammenkunft(state: AppState): AppState {
+  if (state.terminGewaehlt) return state
+  const naechste = naechsteZusammenkunft(state.weeks, state.congregation.meetings)
+  return naechste ? { ...state, week: naechste.wi, tab: naechste.tab } : state
+}
+
+/**
  * Gibt es beim Öffnen etwas vorzulegen? (Bestätigung Pflicht, Einspringen
  * freiwillig.)
  *
@@ -322,6 +336,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         selectedPersonId: null,
         langSheetOpen: false,
         svcSheet: null,
+        // Neue Sitzung: Programm und Planen öffnen wieder mit der nächsten
+        // Zusammenkunft, nicht mit dem Reiter des Vorgängers am selben Gerät.
+        terminGewaehlt: false,
         s89: null,
         confirmOpen: false,
         recovery: false,
@@ -351,7 +368,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
       const tab: MeetingTab =
         (state.tab === 'fs' || state.tab === 'edit') && !erlaubt[state.tab] ? 'mid' : state.tab
-      return {
+      const nachher = {
         ...dropNamelessSelected(state),
         screen,
         tab,
@@ -360,13 +377,23 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         selectedPersonId: null,
         langSheetOpen: false,
       }
+      // Programm und Planen öffnen mit der nächsten Zusammenkunft (T82) —
+      // solange der Nutzer nicht selbst gewählt hat. Die Treffpunkte bleiben
+      // unangetastet: Wer sie ansieht, meint sie und keine Zusammenkunft.
+      const zeigtZusammenkunft = screen === 'programm' || screen === 'planen'
+      return zeigtZusammenkunft && tab !== 'fs' ? zurNaechstenZusammenkunft(nachher) : nachher
     }
     case 'prevWeek':
-      return { ...state, week: Math.max(0, state.week - 1) }
+      return { ...state, week: Math.max(0, state.week - 1), terminGewaehlt: true }
     case 'nextWeek':
-      return { ...state, week: Math.min(state.weeks.length - 1, state.week + 1) }
+      return {
+        ...state,
+        week: Math.min(state.weeks.length - 1, state.week + 1),
+        terminGewaehlt: true,
+      }
     case 'setTab':
-      return { ...state, tab: action.tab }
+      // Eine eigene Wahl — ab jetzt springt die Ansicht nicht mehr (T82).
+      return { ...state, tab: action.tab, terminGewaehlt: true }
     case 'setTheme':
       return { ...state, theme: action.theme }
     case 'setFontScale':
@@ -1103,7 +1130,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Programm. Fällt heute in keine geladene Woche (frische Versammlung,
       // Lücke im Import), bleibt es beim Anfang.
       const aktuell = currentWeekIndex(weeks)
-      return {
+      const geladen: AppState = {
         ...state,
         congregation: p.congregation,
         congregationId: p.congregationId,
@@ -1133,6 +1160,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         invites: p.invites,
         week: aktuell >= 0 ? aktuell : 0,
       }
+      // Nach dem Laden gleich auf die nächste Zusammenkunft (T82): Woche UND
+      // Reiter. `aktuell` allein trifft nur die Woche — am Sonntagabend steht
+      // die nächste schon in der Folgewoche. Erst hier, nicht vorher: Die
+      // Wochentage kommen aus `p.congregation`, das im Zustand darüber noch
+      // der alte ist.
+      return zurNaechstenZusammenkunft(geladen)
     }
     case 'setDataStatus':
       return { ...state, dataStatus: action.status, userId: action.userId ?? state.userId }
