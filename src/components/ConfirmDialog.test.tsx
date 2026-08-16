@@ -27,7 +27,7 @@ const aufgabe = (id: string): MyTask => ({
 })
 
 const gesuch = (key: string, title = 'Mikrofone'): SubstituteReq => ({
-  key, svc: 'mik', title, date: 'Di, 8. September', declinedBy: 'Jonas Berger',
+  key, svc: 'mik', title, date: 'Di, 8. September', declinedBy: 'Jonas Berger', schonHeute: [],
 })
 
 function zeige(over: Partial<AppState>) {

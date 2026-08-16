@@ -90,6 +90,14 @@ export function ConfirmDialog() {
                 <div className="confirm-task-date">
                   {tp(req.date)} · {tu(req.declinedBy)}
                 </div>
+                {/* Was ich an dem Tag schon habe — vor dem Zusagen, nicht als
+                    Toast danach. Wortlaut wie im Zuteilungs-Sheet des Planers. */}
+                {req.schonHeute.length > 0 && (
+                  <div className="confirm-task-warn">
+                    {t.sheetSchonHeute}:{' '}
+                    {req.schonHeute.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
+                  </div>
+                )}
                 <div className="confirm-actions">
                   <button
                     type="button"

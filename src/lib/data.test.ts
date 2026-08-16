@@ -1,6 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { generateInviteCode, renameInWeeks } from './data'
+import { confirmationMap, generateInviteCode, renameInWeeks } from './data'
 import type { Meeting, Week } from '../data/types'
+
+describe('confirmationMap: ein Platz, zwei Zeilen', () => {
+  const K = '2026-09-07|mid|helper|mik|0'
+
+  it('„bestätigt" gewinnt — in beiden Lesereihenfolgen', () => {
+    /*
+     * Der Befund am laufenden Stand: Nach dem Einspringen kam das Gesuch beim
+     * Neuladen wieder. A hat abgesagt, B ist eingesprungen — beide Zeilen
+     * stehen unter demselben Schlüssel, und die Abfrage kommt **ungeordnet**
+     * zurück. Vorher gewann schlicht die letzte gelesene Zeile.
+     */
+    expect(confirmationMap([
+      { task_key: K, status: 'verhindert' },
+      { task_key: K, status: 'bestätigt' },
+    ])[K]).toBe('bestätigt')
+    expect(confirmationMap([
+      { task_key: K, status: 'bestätigt' },
+      { task_key: K, status: 'verhindert' },
+    ])[K]).toBe('bestätigt')
+  })
+
+  it('eine einzelne Absage bleibt eine Absage', () => {
+    expect(confirmationMap([{ task_key: K, status: 'verhindert' }])[K]).toBe('verhindert')
+  })
+
+  it('unbekannte Status fallen heraus (offen = keine Zeile)', () => {
+    expect(confirmationMap([{ task_key: K, status: 'irgendwas' }])).toEqual({})
+  })
+})
 
 describe('Einladungscodes', () => {
   it('erzeugt 8 Zeichen aus dem eindeutigen Alphabet (ohne 0/O/1/I)', () => {

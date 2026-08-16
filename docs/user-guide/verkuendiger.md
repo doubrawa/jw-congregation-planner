@@ -144,8 +144,9 @@ Du bekommst es auf zwei Wegen zu sehen, und dafür musst du nichts suchen:
   solange die Anfrage offen ist.
 
 Beide zeigen dasselbe: den gesuchten Dienst, den Termin und den Namen dessen,
-der abgesagt hat. Ein Tipp auf **Übernehmen** trägt dich ein und bestätigt die
-Aufgabe gleich mit.
+der abgesagt hat. Hast du an dem Tag **schon etwas anderes**, steht es rot
+darunter („An diesem Tag schon: …") – du siehst es also, bevor du zusagst. Ein
+Tipp auf **Übernehmen** trägt dich ein und bestätigt die Aufgabe gleich mit.
 
 Es gilt: **wer zuerst tippt.** War jemand schneller, verschwindet der Eintrag –
 dann ist der Dienst schon besetzt.

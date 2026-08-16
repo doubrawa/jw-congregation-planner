@@ -138,6 +138,13 @@ export function AufgabenScreen() {
                 <div className="auf-sub-meta">
                   {tp(req.date)} · {tu(req.declinedBy)}
                 </div>
+                {/* Was ich an dem Tag schon habe — vor dem Zusagen. */}
+                {req.schonHeute.length > 0 && (
+                  <div className="auf-sub-warn">
+                    {t.sheetSchonHeute}:{' '}
+                    {req.schonHeute.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
+                  </div>
+                )}
               </div>
               <button
                 type="button"

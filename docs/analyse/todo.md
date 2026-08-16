@@ -2571,6 +2571,63 @@ laufende Tag zählt mit, Sonntagabend → Folgewoche, eigene Wochentage aus den
 Einstellungen, Kongresswoche übersprungen, Gedächtnismahl vor der Wochenmitte,
 und „keine nächste" → alles bleibt stehen) und die Weichen im Reducer.
 
+### T84 · Das erledigte Ersatzgesuch kam nach dem Neuladen wieder 🔧 ✅ erledigt
+**Befund des Betreibers.** Er ist eingesprungen, wurde zugeteilt — und nach dem
+Neuladen der Seite stand das Gesuch wieder da. „Das sollte doch erledigt sein,
+sobald jemand einspringt. Und dann weder mir noch irgendjemand anderen mehr
+angezeigt werden."
+
+**Ein Platz kann zwei Bestätigungs-Zeilen haben.** Sagt A ab und springt B ein,
+steht unter demselben `task_key` A mit „verhindert" und B mit „bestätigt". Die
+Abfrage beim Laden kommt **ungeordnet** zurück, und die Karte `task_key →
+Status` nahm schlicht die zuletzt gelesene Zeile. Mal stand der Platz danach als
+besetzt da, mal als abgesagt — und im zweiten Fall leitete `deriveSubstituteReqs`
+daraus wieder ein offenes Gesuch ab, für **alle** Qualifizierten.
+
+Jetzt gewinnt **„bestätigt"** (`confirmationMap`, `lib/data.ts`): Ein Platz hat
+genau einen Bearbeiter; hat einer bestätigt, ist er besetzt, gleich wer vorher
+abgesagt hat. Wer selbst erst zusagt und dann absagt, hat nur **eine** Zeile
+(dieselbe wird überschrieben) — dieser Fall wird also nicht verdeckt. Die
+Reihenfolge der Zeilen spielt keine Rolle mehr, und das ist der Punkt: Sie war
+nie garantiert.
+
+**Was nicht gemessen ist:** ob beim Betreiber tatsächlich beide Zeilen standen.
+Die Edge Function löscht die alten Bestätigungen vor dem Eintragen — dann gäbe
+es das Paar gar nicht, und die Ursache läge woanders (etwa: die Übernahme kam
+serverseitig nie an, dann wäre nach dem Neuladen auch die **Zuteilung** wieder
+weg). Die Reihenfolge-Abhängigkeit war unabhängig davon falsch und ist die
+einzige Erklärung, die zum Bild passt — „mal so, mal so" beim Neuladen.
+Bleibt es dabei, ist die nächste Messung: Steht die Zuteilung nach dem Neuladen
+noch?
+
+### T85 · „An diesem Tag schon" kam erst nach dem Zusagen 🔧 ✅ erledigt
+**Befund des Betreibers.** Er ist eingesprungen und war an dem Tag längst
+eingeteilt. Den Hinweis gab es — aber als Toast **hinterher**
+(`toastUebernommenKonflikt`). Das ist die falsche Reihenfolge: Wer es vorher
+weiß, entscheidet anders.
+
+`SubstituteReq` trägt jetzt `schonHeute` — dieselbe Liste, die das
+Zuteilungs-Sheet dem Planer seit jeher neben jedem Namen zeigt
+(`assignmentsInMeeting`, Beschriftung `sheetSchonHeute`, Warnfarbe wie dort).
+Sie steht in **beiden** Ansichten des Gesuchs: im Aufgaben-Bildschirm und im
+Blatt beim Öffnen — eine Quelle, zwei Anzeigen. Der offene Platz selbst zählt
+nicht mit.
+
+Kein neuer Wörterbuch-Schlüssel: `sheetSchonHeute` gibt es in allen 34 Sprachen.
+
+### T86 · Die Glocke behält „Ersatz gesucht", auch wenn längst jemand da ist 🔧
+Aus T84 mitgenommen und **nicht** behoben: Die Mitteilung „Ersatz gesucht", die
+beim Absagen an alle Qualifizierten geht, bleibt in deren Glocke stehen — auch
+nachdem jemand eingesprungen ist. Die Ursprungsperson und die Planer bekommen
+danach zwar „Ersatz gefunden", die übrigen aber behalten die alte Zeile.
+
+**Warum es nicht nebenbei ging:** `notifications` trägt keinen Bezug zur Aufgabe
+(`id, congregation_id, user_id, type, title, body, read, created_at`) — es gibt
+nichts, wonach man die erledigten löschen könnte. Das braucht eine Migration
+(`task_key` an der Mitteilung) und dann zwei Zeilen in der Edge Function.
+Zusammen mit **T77** zu machen: Dort geht es ohnehin um Mitteilungen, die
+niemanden mehr interessieren.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -2593,16 +2650,18 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☑☐☐☐ ☑☑☑☑☐☐☑☑☑ · 16. August ☐☑
+15. August ☐☐☑☐☐☐ ☑☑☑☑☐☐☑☑☑ · 16. August ☑☑☑☑☐
 
-**74 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
+**78 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
 (vom Betreiber zurückgestellt), die fünf verbliebenen Vorhaben T67, T68, T70,
-T71, T72 und die Fehler T77, T78 sowie das neue T82. **T73–T76** sind noch am
-15. August erledigt worden; **T79 bis T81** kamen beim Benutzen desselben Tages
-dazu (T80 als Nachwehe von T76, T81 als Widerruf seiner Kürzungs-Mechanik) und
-sind erledigt. Am **16. August** kamen **T69** (Einspringen beim Öffnen) und die
-Freigabe-Liste aus T79 hinzu; neu aufgenommen: **T82** (Reiter der nächsten
-Zusammenkunft). **T66** — der
+T71, T72, die Fehler T77 und T78 sowie das neue **T86** (Glocke behält „Ersatz
+gesucht"). **T73–T76** sind noch am 15. August erledigt worden; **T79 bis T81**
+kamen beim Benutzen desselben Tages dazu (T80 als Nachwehe von T76, T81 als
+Widerruf seiner Kürzungs-Mechanik) und sind erledigt. Am **16. August** kamen
+**T69** (Einspringen beim Öffnen), die Freigabe-Liste aus T79, **T82** (Reiter
+der nächsten Zusammenkunft), **T83** (Wortlaut), **T84** (erledigtes Gesuch kam
+wieder) und **T85** („an diesem Tag schon" vor dem Zusagen) hinzu — die letzten
+drei aus dem Benutzen heraus. **T66** — der
 strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
 erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
 zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
@@ -2683,7 +2742,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 | **15. August** | T67, T68, T70, T71, T72, T77, T78 | Fünf Vorhaben (Tests, Datenmodell, Klassennamen, Druckbogen, Abwesenheiten) und zwei Fehler. T73–T76 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. T77 braucht zwei Entscheidungen des Betreibers. |
-| **16. August** | T82 | Programm und Planen sollen mit dem Reiter der nächsten Zusammenkunft öffnen. T83 (Wortlaut „Einspringen") ist am selben Tag erledigt. |
+| **16. August** | T86 | Die Glocke behält „Ersatz gesucht", auch wenn längst jemand eingesprungen ist — braucht eine Migration und gehört zu T77. T82–T85 sind am selben Tag erledigt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:

@@ -583,6 +583,17 @@ export interface MyTask {
  * gemeldet; qualifizierte Personen (gleicher Dienst) können einspringen. Rein
  * abgeleitet (planning.ts deriveSubstituteReqs), nicht gespeichert.
  */
+/**
+ * Eine bereits bestehende Zuteilung einer Person in einer Zusammenkunft — für
+ * den Doppelbelegungs-Hinweis im Zuteilungs-Sheet und im Ersatzgesuch.
+ * `lang` steuert die Übersetzung bei der Anzeige: 'u' = App-Sprache
+ * (Rollen/Dienstnamen), 'p' = Versammlungssprache (Programmpunkt-Titel).
+ */
+export interface MeetingAssignment {
+  text: string
+  lang: 'u' | 'p'
+}
+
 export interface SubstituteReq {
   key: string // Hilfsdienst-task_key
   svc: string // Dienst-Key
@@ -590,6 +601,15 @@ export interface SubstituteReq {
   date: string
   at?: number | null // UTC-ms des Zusammenkunftstags → Countdown
   declinedBy: string // Anzeigename der Person, die nicht kann
+  /**
+   * Was der Leser an diesem Tag schon hat (Programmpunkte + Hilfsdienste).
+   *
+   * Der Hinweis stand bisher **hinterher** im Toast („übernommen — aber du hast
+   * an dem Tag schon etwas"). Das ist die falsche Reihenfolge: Wer es vorher
+   * weiß, entscheidet anders. Dieselbe Angabe zeigt das Zuteilungs-Sheet dem
+   * Planer schon lange neben jedem Namen (`sheetSchonHeute`).
+   */
+  schonHeute: MeetingAssignment[]
 }
 
 /**

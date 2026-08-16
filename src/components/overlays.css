@@ -138,6 +138,14 @@
   font-weight: 500;
 }
 
+/* „An diesem Tag schon: …" im Ersatzgesuch — Warnfarbe wie beim Planer. */
+.confirm-task-warn {
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+  color: var(--wein);
+  margin-top: 2px;
+}
+
 .confirm-task-date {
   font-size: calc(11px * var(--fs));
   color: var(--mut);

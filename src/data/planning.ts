@@ -40,6 +40,7 @@ import type {
   ConfirmationMap,
   Group,
   Meeting,
+  MeetingAssignment,
   MeetingKey,
   MeetingSlotSelection,
   MyTask,
@@ -181,16 +182,13 @@ export function slotRolle(weeks: Week[], sel: MeetingSlotSelection): string {
   return slotsOf(item, sel.aux === true)[sel.ni]?.rolle ?? ''
 }
 
-/**
- * Eine bereits bestehende Zuteilung einer Person in einer Zusammenkunft — für
- * den Doppelbelegungs-Hinweis im Zuteilungs-Sheet.
- * `lang` steuert die Übersetzung bei der Anzeige: 'u' = App-Sprache
- * (Rollen/Dienstnamen), 'p' = Versammlungssprache (Programmpunkt-Titel).
+/*
+ * `MeetingAssignment` steht in `types.ts` — auch `SubstituteReq` trägt sie
+ * inzwischen („an diesem Tag schon"), und types.ts darf planning.ts nicht
+ * kennen (Ringschluss). Hier nur weitergereicht, damit die bisherigen Importe
+ * bleiben, wo sie sind.
  */
-export interface MeetingAssignment {
-  text: string
-  lang: 'u' | 'p'
-}
+export type { MeetingAssignment }
 
 /**
  * Alle Zuteilungen, die `name` in dieser Zusammenkunft schon hat (Programmpunkte
@@ -1015,6 +1013,12 @@ export function deriveSubstituteReqs(
       date: taskDate(week, wi, parts.tab, meetings),
       at: meetingDateMs(week, parts.tab, meetings),
       declinedBy: slot.name,
+      // Was ich an dem Tag schon habe — vor dem Klick, nicht im Toast danach.
+      // Der offene Platz selbst zählt nicht mit (`exclude`).
+      schonHeute: assignmentsInMeeting(meeting, me, services, {
+        kind: 'helper', wi, tab: parts.tab, svc: parts.svc, pos: parts.pos,
+        label: '', priv: null, groups: false,
+      }),
     })
   }
   return out.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
