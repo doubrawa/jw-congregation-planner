@@ -3080,6 +3080,44 @@ tragen keinen Schlüssel. Sie lassen sich weder aufräumen noch als abgelaufen
 erkennen und bleiben stehen, bis sie über die 50er-Grenze hinauslaufen. Das ist
 Absicht: Sie nachträglich zu deuten hieße, aus dem Anzeigetext zu raten.
 
+### T88 · Die Actions des Deploys sind zwei bis drei Hauptversionen zurück ⚡
+Beim Push vom 16. August aufgefallen — der Lauf war grün, meldete aber:
+
+> Node.js 20 is deprecated. The following actions target Node.js 20 but are
+> being forced to run on Node.js 24: `actions/checkout@v4`,
+> `actions/setup-node@v4`, `actions/upload-artifact@v4`, `actions/deploy-pages@v4`.
+
+**Heute harmlos, irgendwann ein Stillstand.** GitHub zwingt die alten Actions
+derzeit auf Node 24; fällt diese Brücke weg, bleibt der Deploy stehen — und
+zwar an der Stelle, an der die Versammlung die App bekommt. Das merkt man erst,
+wenn ein Push nicht ankommt (genau so stand die Seite am 15. August sechs
+Stunden auf einem alten Stand).
+
+**Der Abstand ist größer als gedacht.** Gemessen am 16.8.2026 über
+`gh api repos/<action>/releases/latest`, nicht geschätzt:
+
+| In `.github/workflows/deploy.yml` | dort | aktuell |
+| --- | --- | --- |
+| `actions/checkout` | v4 | **v7** |
+| `actions/setup-node` | v4 | **v7** |
+| `actions/upload-pages-artifact` | v3 | **v5** |
+| `actions/deploy-pages` | v4 | **v5** |
+
+**`actions/upload-artifact@v4` steht gar nicht in der Datei.** Die Meldung
+nennt es trotzdem, weil `upload-pages-artifact@v3` es intern benutzt — wer nur
+hebt, was er sieht, wird diese eine Warnung nicht los. Sie verschwindet mit dem
+Heben von `upload-pages-artifact`.
+
+**Warum das kein reines Nachziehen von Zahlen ist:** Hauptversionen dieser
+Actions haben schon Verhalten geändert (Artefakte unveränderlich, Namen
+eindeutig), und `upload-pages-artifact` und `deploy-pages` müssen
+zusammenpassen — beide zugleich heben, nicht einzeln.
+
+**Prüfen:** heben, pushen, den Lauf ansehen. Grün **und** ohne
+Deprecation-Anmerkung ist das Ziel; danach `gh run list` und die Seite selbst
+gegen den neuen Commit prüfen. Geht es schief, ist die Rücknahme ein Commit —
+nur eben einer, der erst auffällt, wenn jemand die Seite aufruft.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -3104,8 +3142,9 @@ Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑
 
-**85 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 3 offen:** T63
-(vom Betreiber zurückgestellt), das Vorhaben T72 und der Nachweis T78.
+**85 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 4 offen:** T63
+und T72 (beide vom Betreiber zurückgestellt), der Nachweis T78 und **T88** —
+die Actions des Deploy-Workflows, aufgenommen am 16. August.
 **T67** — die Tests selbst geprüft — ist am 16. August dazugekommen: eine
 [Mutationsprobe](../../scripts/mutationsprobe.mjs), die Regeln absichtlich
 bricht und nachsieht, ob etwas rot wird. Sieben ungewachte Regeln gefunden und
@@ -3206,7 +3245,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 | **15. August** | T72, T78 | Ein Vorhaben (Abwesenheiten) und der Mandanten-Nachweis. T67–T71 und T73–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
-| **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
+| **16. August** | T88 | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu: Die Actions des Deploy-Workflows liegen zwei bis drei Hauptversionen zurück. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
