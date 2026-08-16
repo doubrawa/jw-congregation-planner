@@ -143,7 +143,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 57 | Eigene Aufgaben mit Countdown-Chip | Meine Aufgaben | alle | `aufgaben/AufgabenScreen.tsx`, `deriveMyTasks` |
 | 58 | Bestätigen / „Ich bin verhindert" | Meine Aufgaben, Start, Sheet | alle | `confirmTask`, `declineTask` |
 | 59 | Aktions-Sheet je Aufgabe (auch Verhinderung zurücknehmen) | Overlay | alle | `components/MyTaskSheet.tsx` |
-| 60 | Pflicht-Dialog beim Öffnen der App, solange etwas offen ist | Overlay | alle | `components/ConfirmDialog.tsx` |
+| 60 | Blatt beim Öffnen der App: Bestätigungen (Pflicht) + Ersatzgesuche (freiwillig, wegzulegen) | Overlay | alle | `components/ConfirmDialog.tsx`, `vorzulegen` |
 | 61 | S-89 anzeigen (Schulungsaufgaben) | Meine Aufgaben | alle | `components/S89Sheet.tsx` |
 | 62 | Abwesenheit eintragen (Von–Bis + Grund, eigener Datepicker) | Meine Aufgaben | alle | `components/DatePicker.tsx`, `addAbsence` |
 | 63 | Eigene Abwesenheiten löschen | Meine Aufgaben | alle | `removeAbsence` |

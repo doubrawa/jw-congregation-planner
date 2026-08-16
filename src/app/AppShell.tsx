@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, overseerGroup } from '../data/helpers'
+import { vorzulegen } from './reducer'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite } from '../lib/data'
 import { performLogout } from '../lib/supabase'
@@ -289,7 +290,7 @@ export function AppShell() {
           {state.svcSheet && <ServicePersonsSheet svcKey={state.svcSheet} />}
           {state.s89 && <S89Sheet payload={state.s89} />}
           {state.myTaskId && <MyTaskSheet />}
-          {state.confirmOpen && state.myTasks.some((t) => t.status === 'offen') && <ConfirmDialog />}
+          {state.confirmOpen && vorzulegen(state.myTasks, state.substituteReqs) && <ConfirmDialog />}
         </ErrorBoundary>
         {state.toast && (
           <div key={state.toast.id} className="toast" role="status">

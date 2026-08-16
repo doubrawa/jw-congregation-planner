@@ -890,6 +890,25 @@ describe('Sprache', () => {
     expect(reducer(makeState({ langSheetOpen: true }), { type: 'setCongLang', name: 'Englisch' })).toMatchObject({ congLang: 'Englisch', langSheetOpen: false })
   })
 
+  it('das Blatt beim Öffnen hält auch ein Ersatzgesuch (T69)', () => {
+    const gesuch = { key: 'k1', svc: 'mik', title: 'Mikrofone', date: 'Di', declinedBy: 'A. B.' }
+    // Nichts zu bestätigen, aber ein Gesuch offen: früher blieb das Blatt weg,
+    // und wer nicht von selbst nachsah, erfuhr nie davon.
+    const s = makeState({ myTasks: [], substituteReqs: [gesuch] })
+    expect(reducer(s, { type: 'login' }).confirmOpen).toBe(true)
+    // Weglegen darf man es — einspringen ist freiwillig.
+    expect(reducer({ ...s, confirmOpen: true }, { type: 'closeConfirm' }).confirmOpen).toBe(false)
+    // Solange etwas zu bestätigen ist, hält es.
+    const mitAufgabe = makeState({
+      confirmOpen: true,
+      substituteReqs: [gesuch],
+      myTasks: [{ id: 't1', title: 'X', date: 'Di', chip: '', status: 'offen', s89: null }],
+    })
+    expect(reducer(mitAufgabe, { type: 'closeConfirm' }).confirmOpen).toBe(true)
+    // Und ohne beides gibt es nichts vorzulegen.
+    expect(reducer(makeState({ myTasks: [], substituteReqs: [] }), { type: 'login' }).confirmOpen).toBe(false)
+  })
+
   it('Freigabe-Liste eines Hilfsdienstes: öffnen, schließen — und beim Löschen mit weg (T79)', () => {
     expect(reducer(makeState(), { type: 'openServiceSheet', key: 'rund' }).svcSheet).toBe('rund')
     expect(reducer(makeState({ svcSheet: 'rund' }), { type: 'closeServiceSheet' }).svcSheet).toBeNull()

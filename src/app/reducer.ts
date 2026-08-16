@@ -56,10 +56,12 @@ import type {
   FsRule,
   MeetingKey,
   MeetingTab,
+  MyTask,
   Notification,
   NotificationType,
   Person,
   Screen,
+  SubstituteReq,
   Week,
 } from '../data/types'
 import type { AppAction, AppState } from './context'
@@ -214,22 +216,40 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         ),
       ].sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
     : []
+  const substituteReqs = me
+    ? deriveSubstituteReqs(
+        weeks,
+        state.services,
+        state.confirmations,
+        me,
+        state.congregation.meetings,
+        buildAbsences(state.absences, weeks, state.fsBase, state.congregation.meetings),
+      )
+    : []
   return {
     ...state,
     myTasks,
     pendingIds: derivePendingIds(weeks, state.services, state.confirmations),
-    substituteReqs: me
-      ? deriveSubstituteReqs(
-          weeks,
-          state.services,
-          state.confirmations,
-          me,
-          state.congregation.meetings,
-          buildAbsences(state.absences, weeks, state.fsBase, state.congregation.meetings),
-        )
-      : [],
-    confirmOpen: (openConfirm || state.confirmOpen) && myTasks.some((t) => t.status === 'offen'),
+    substituteReqs,
+    // Das Blatt beim Öffnen zeigt beides: unbestätigte Zuteilungen und offene
+    // Ersatzgesuche (T69). Ein Gesuch erreichte bis dahin nur, wer von selbst
+    // unter „Aufgaben" nachsah oder über einen Push hereinkam — die übrigen
+    // erfuhren nie davon. Es ist dieselbe Vorlage, nicht eine zweite Mechanik.
+    confirmOpen: (openConfirm || state.confirmOpen) && vorzulegen(myTasks, substituteReqs),
   }
+}
+
+/**
+ * Gibt es beim Öffnen etwas vorzulegen? (Bestätigung Pflicht, Einspringen
+ * freiwillig.)
+ *
+ * Eine Stelle für beide Seiten: Der Reducer entscheidet damit, ob `confirmOpen`
+ * gesetzt bleibt, und die Hülle, ob sie das Blatt zeigt. Zwei Bedingungen, die
+ * dasselbe meinen, laufen früher oder später auseinander — dann steht ein
+ * leeres Blatt da oder ein volles bleibt weg.
+ */
+export function vorzulegen(myTasks: MyTask[], substituteReqs: SubstituteReq[]): boolean {
+  return myTasks.some((t) => t.status === 'offen') || substituteReqs.length > 0
 }
 
 /** Aktionen, nach denen die Aufgaben-Ableitung neu berechnet werden muss. */
@@ -288,7 +308,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         screen: 'start',
-        confirmOpen: state.myTasks.some((t) => t.status === 'offen'),
+        confirmOpen: vorzulegen(state.myTasks, state.substituteReqs),
         welcomePending: action.welcome === true,
       }
     case 'welcomeShown':
@@ -827,7 +847,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         myTasks,
         pendingIds,
         myTaskId: null,
-        confirmOpen: state.confirmOpen && stillOpen,
+        // Nicht `stillOpen`: ein offenes Ersatzgesuch hält das Blatt ebenfalls
+        // (T69) — sonst verschwände es unter der Hand, sobald die letzte
+        // Bestätigung gegeben ist.
+        confirmOpen: state.confirmOpen && vorzulegen(myTasks, state.substituteReqs),
         toast: toastKey(state, 'toastBestaetigt'),
       }
     }
@@ -856,11 +879,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const myTasks = state.myTasks.map((t) =>
         t.id === action.id ? { ...t, status: 'verhindert' as const } : t,
       )
-      const stillOpen = myTasks.some((t) => t.status === 'offen')
       return {
         ...state,
         myTasks,
-        confirmOpen: state.confirmOpen && stillOpen,
+        // Nicht nur „noch etwas offen?": ein Ersatzgesuch hält das Blatt ebenfalls
+        // (T69) — sonst verschwände es unter der Hand, sobald die letzte
+        // Bestätigung gegeben ist.
+        confirmOpen: state.confirmOpen && vorzulegen(myTasks, state.substituteReqs),
         notifs: [notif, ...state.notifs],
         myTaskId: null,
         toast: toastKey(state, declineToast),
@@ -1038,6 +1063,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, svcSheet: action.key }
     case 'closeServiceSheet':
       return { ...state, svcSheet: null }
+    case 'closeConfirm':
+      // Nur wegzulegen, solange nichts zu bestätigen ist — die Pflicht bleibt.
+      return state.myTasks.some((t) => t.status === 'offen') ? state : { ...state, confirmOpen: false }
     case 'setAuxClass':
       // Beim Einschalten bekommen alle Schuelerteile ihre zweite Platzreihe.
       // Beim Ausschalten bleibt sie stehen (nur unsichtbar) — sonst waere die

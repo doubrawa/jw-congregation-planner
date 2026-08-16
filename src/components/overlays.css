@@ -181,6 +181,23 @@
   margin-top: 14px;
 }
 
+/* Ersatzgesuche im selben Blatt (T69). Stehen Bestätigungen darüber, trennt
+   eine Haarlinie die Pflicht von der Bitte. */
+.confirm-subs--nach {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Das ✕ gibt es nur, wenn nichts zu bestätigen ist; es steht dann neben der
+   Überschrift — nicht schwebend, das Blatt scrollt in sich. */
+.confirm-subs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 /* ---- Eigenes Aufgaben-Aktions-Sheet (MyTaskSheet) ------------------------- */
 
 .mytask-close {

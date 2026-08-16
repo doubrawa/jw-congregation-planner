@@ -131,9 +131,18 @@ Koordinator neu zu.
 Sagt jemand einen Hilfsdienst ab, für den **du** eingetragen bist, bekommst du
 eine Mitteilung („Ersatz gesucht") und – falls aktiviert – eine Push-Nachricht.
 
-Unter **Meine Aufgaben** erscheint dann der Bereich **EINSPRINGEN** mit dem
-gesuchten Dienst, dem Termin und dem Namen dessen, der abgesagt hat. Ein Tipp
-auf **Übernehmen** trägt dich ein und bestätigt die Aufgabe gleich mit.
+Du bekommst es auf zwei Wegen zu sehen, und dafür musst du nichts suchen:
+
+- **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
+  Zuteilungen erinnert, zeigt darunter den Bereich **EINSPRINGEN**. Hast du
+  nichts zu bestätigen, steht dort nur die Anfrage, und du kannst das Blatt mit
+  **✕** weglegen: Einspringen kannst du, müssen tust du es nicht.
+- Unter **Meine Aufgaben** – dort steht der Bereich **EINSPRINGEN** dauerhaft,
+  solange die Anfrage offen ist.
+
+Beide zeigen dasselbe: den gesuchten Dienst, den Termin und den Namen dessen,
+der abgesagt hat. Ein Tipp auf **Übernehmen** trägt dich ein und bestätigt die
+Aufgabe gleich mit.
 
 Es gilt: **wer zuerst tippt.** War jemand schneller, verschwindet der Eintrag –
 dann ist der Dienst schon besetzt.

@@ -2158,7 +2158,7 @@ Anzusehen: der Aufbau des `task_key` (`wi|tab|part|si|ii|ni`), `FsInstance.id`,
 die JSONB-Blobs `weeks.data`/`fs_weeks.data` gegenüber echten Spalten, und ob
 `Qualifications` mit der Index-Signatur `svc:<key>` noch trägt.
 
-### T69 · „Einspringen" beim Öffnen der App zeigen — wie das Bestätigen 🔧
+### T69 · „Einspringen" beim Öffnen der App zeigen — wie das Bestätigen 🔧 ✅ erledigt
 **Vorgabe des Betreibers.** Ein offenes Ersatzgesuch muss beim Öffnen der App
 vorgelegt werden, genau wie eine offene Bestätigung — und zwar **allen**
 Nutzern, nicht nur denen, die über einen Push hereinkommen. Heute lädt die App
@@ -2166,8 +2166,32 @@ die Daten still nach, wenn ein Deep-Link aus einem Push-Klick kommt, damit der
 „Einspringen"-Bereich die neue Anfrage sofort zeigt (`app/AppShell.tsx:138`);
 ohne Push sieht sie nur, wer von selbst nachschaut.
 
-**Zuerst zu klären:** wo die Vorlage beim Öffnen entsteht und ob das Ersatzgesuch
-denselben Weg nehmen kann — dann ist es eine Ergänzung und keine zweite Mechanik.
+**Es ist eine Ergänzung geworden, keine zweite Mechanik.** Die Vorlage entsteht
+in `withDerivedTasks` — dieselbe Ableitung, die `myTasks` **und**
+`substituteReqs` berechnet. Sie standen also längst nebeneinander im Zustand;
+gezeigt wurde nur das eine. Das Blatt beim Öffnen zeigt jetzt beides: oben die
+Bestätigungen, darunter — durch eine Haarlinie getrennt — die Gesuche.
+
+**Der Unterschied zwischen Pflicht und Bitte bleibt stehen.** Eine offene
+Bestätigung hält das Blatt wie bisher (kein ✕, kein Klick auf den Hintergrund).
+Steht dort **nur** ein Gesuch, lässt es sich weglegen: Einspringen kann man,
+müssen tut man es nicht. `closeConfirm` verweigert deshalb, solange eine
+Bestätigung offen ist — die Regel steht im Reducer, nicht in der Ansicht.
+
+**Eine Stelle entscheidet, ob es etwas vorzulegen gibt.** `vorzulegen(myTasks,
+substituteReqs)` benutzen der Reducer (setzt `confirmOpen`) und die Hülle (zeigt
+das Blatt). Zwei Bedingungen, die dasselbe meinen, laufen früher oder später
+auseinander — dann steht ein leeres Blatt da oder ein volles bleibt weg. Aus
+demselben Grund hält jetzt auch ein Gesuch das Blatt, wenn die **letzte**
+Bestätigung gegeben wird: vorher verschwand es unter der Hand.
+
+Ohne neuen Wörterbuch-Schlüssel: `einspringenTitle`, `einspringenHint` und
+`uebernehmen` gibt es seit dem Aufgaben-Bildschirm in allen 34 Sprachen.
+
+**Geprüft:** 5 Tests am Blatt (Gesuch allein, Gesuch neben Pflicht, ✕ und
+Hintergrund, Übernehmen, unverändertes Verhalten ohne Gesuch) und einer am
+Reducer; Gegenprobe durch Zurücknehmen von `vorzulegen` — der Reducer-Test wurde
+rot. Beide Fassungen am laufenden Stand angesehen.
 
 ### T70 · Zusammengesetzte Klassennamen — gibt es das noch woanders? 🔧
 **Vorgabe des Betreibers.** Er erinnert einen Kommentar, wonach ein Klassenname
@@ -2487,6 +2511,27 @@ Wochen in Folge nichts mehr melden; im Banner, dass genau dieser Fall gar kein
 Banner mehr erzeugt), und am laufenden Stand nachgesehen: Wo vorher Serien
 standen, nennt das Banner nur noch die zwei Abwesenden.
 
+### T82 · Programm und Planen öffnen mit der nächsten Zusammenkunft ⚡
+**Vorgabe des Betreibers.** Wer Programm oder Planen aufruft, soll den Reiter
+der **nächsten** Zusammenkunft vorfinden: Am Samstag also den Sonntag mit dem,
+was als Nächstes ansteht — nicht den Reiter, der zuletzt offen war oder fest
+voreingestellt ist.
+
+Heute steht der Reiter fest auf `mid` (`init.ts:117`, nur ein Debug-Hash
+überschreibt ihn) und bleibt danach, wo der Nutzer ihn zuletzt gelassen hat. Die
+**Woche** wird bereits nach dem Datum gewählt (`currentWeekIndex`), die
+Zusammenkunft darin nicht.
+
+**Was zu bedenken ist:** Die Wochentage stehen je Versammlung in den
+Einstellungen (`congregation.meetings`), es gibt sie also nicht fest — der Sprung
+muss sie lesen, nicht raten. Eine **entfallene** Zusammenkunft ist keine nächste
+(T30: Kongress, Gedächtnismahl), und wenn die Zusammenkunft unter der Woche
+vorbei ist, liegt die nächste am Wochenende **derselben** Woche, danach in der
+folgenden — die Wahl von Reiter und Woche gehört deshalb zusammen. Zu klären
+bleibt, ob der Sprung nur beim ersten Betreten je Sitzung gilt: Wer im Planen
+den Reiter wechselt, zur Personenliste geht und zurückkommt, will kaum wieder
+umgesetzt werden.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -2509,14 +2554,16 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☐☐☐☐ ☑☑☑☑☐☐☐☑☑
+15. August ☐☐☑☐☐☐ ☑☑☑☑☐☐☑☑☑ · 16. August ☐
 
-**71 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 10 offen:** T63
-(vom Betreiber zurückgestellt), die sechs Vorhaben T67–T72 und die drei
-verbliebenen Fehler T77, T78 und T79. **T73, T74, T75 und T76** sind noch am
-15. August erledigt worden — **T79 bis T81** sind beim Benutzen desselben Tages
-dazugekommen, T80 als Nachwehe von T76 und T81 als Widerruf seiner
-Kürzungs-Mechanik; **T80 und T81** sind gleich mit erledigt. **T66** — der
+**73 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
+(vom Betreiber zurückgestellt), die fünf verbliebenen Vorhaben T67, T68, T70,
+T71, T72 und die Fehler T77, T78 sowie das neue T82. **T73–T76** sind noch am
+15. August erledigt worden; **T79 bis T81** kamen beim Benutzen desselben Tages
+dazu (T80 als Nachwehe von T76, T81 als Widerruf seiner Kürzungs-Mechanik) und
+sind erledigt. Am **16. August** kamen **T69** (Einspringen beim Öffnen) und die
+Freigabe-Liste aus T79 hinzu; neu aufgenommen: **T82** (Reiter der nächsten
+Zusammenkunft). **T66** — der
 strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
 erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
 zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
@@ -2596,7 +2643,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T67–T72, T77, T78, T79 | Sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und drei Fehler. T73–T76, T80 und T81 sind am selben Tag erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. T79 (ausgelassene Hilfsdienste) braucht einen Blick in die lebende Datenbank. |
+| **15. August** | T67, T68, T70, T71, T72, T77, T78 | Fünf Vorhaben (Tests, Datenmodell, Klassennamen, Druckbogen, Abwesenheiten) und zwei Fehler. T73–T76 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. T77 braucht zwei Entscheidungen des Betreibers. |
+| **16. August** | T82 | Programm und Planen sollen mit dem Reiter der nächsten Zusammenkunft öffnen. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
