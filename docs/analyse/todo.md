@@ -2193,7 +2193,7 @@ Hintergrund, Übernehmen, unverändertes Verhalten ohne Gesuch) und einer am
 Reducer; Gegenprobe durch Zurücknehmen von `vorzulegen` — der Reducer-Test wurde
 rot. Beide Fassungen am laufenden Stand angesehen.
 
-### T70 · Zusammengesetzte Klassennamen — gibt es das noch woanders? 🔧
+### T70 · Zusammengesetzte Klassennamen — gibt es das noch woanders? 🔧 ✅ erledigt
 **Vorgabe des Betreibers.** Er erinnert einen Kommentar, wonach ein Klassenname
 zusammengesetzt war und eine Referenz deshalb nicht gefunden wurde: „das klingt
 sehr schlecht."
@@ -2205,12 +2205,36 @@ entfernt — danach lagen beide Nachbarwochen ohne Versatz über der aktuellen,
 Programm und Planen zeigten zwei Wochen übereinander. **Dort** ist es behoben
 (Namen ausgeschrieben in `SEITE`, ein Test hält beide Seiten zusammen).
 
-**Offen ist die Verallgemeinerung:** der übrige Quelltext ist daraufhin nie
-durchgesehen worden. Die Regel wäre — der Klassenname steht immer wörtlich im
-Quelltext; zusammengesetzt werden darf höchstens ein Zustands-Zusatz
-(`${basis} is-armed`), nie der Name selbst. Das ist prüfbar, in der Art der
-beiden anderen Vollständigkeitsproben: eine Probe, die `className`-Ausdrücke
-nach interpolierten Namen absucht.
+**Die Verallgemeinerung steht jetzt als dritte Vollständigkeitsprobe**
+(`styles/klassennamen.test.ts`). Die Regel, die sie durchsetzt: Eingesetzt
+werden darf nur ein **ganzer** Name oder ein **ganzer** Zusatz —
+`${basis} is-armed` ist recht, `week-page--${richtung}` und `'plan-' + art`
+sind es nicht. Erkennbar am Rand der Einsetzung: Klebt sie an einem
+Namenszeichen, ist der Name zerschnitten.
+
+**Ergebnis der Durchsicht: kein weiterer Fall.** Die Probe meldete sechs
+Stellen, keine davon ein Mangel — und beide Sorten waren lehrreich genug, um sie
+festzuhalten:
+
+* Viermal `…${armed ? ' is-armed' : ''}` — klebt am Namen, setzt aber nur einen
+  ganzen Zusatz ein. Die Probe prüft das jetzt am Inhalt: Beginnt jede
+  Zeichenkette darin mit Leerraum (oder ist leer), ist es recht. Eine Einsetzung
+  ohne jede Zeichenkette (`${key}`) fällt durch — was sie liefert, weiß niemand.
+* Zweimal `htmlFor={`pers-${key}`}` — eine zusammengesetzte **Kennung**, kein
+  Klassenname. Dafür liest die Probe seither genau den Ausdruck hinter
+  `className=` statt des Restes der Zeile. Wer eine Probe dreimal umsonst
+  gelesen hat, glaubt ihr beim vierten Mal nicht mehr.
+
+**Gegenprobe:** Ein zusammengesetzter Name in `SlotChip.tsx` eingebaut — die
+Probe meldete genau ihn und sonst nichts; danach zurückgenommen. Dabei kam
+heraus, dass sie den Ausdruck **an** der Fundstelle statt **dahinter** las und
+Sammelvariablen (`const klassen = […]`) gar nicht ansah: Beides hätte sie
+stillschweigend blind gemacht.
+
+**Was sie nicht sieht** (im Kopf der Datei vermerkt): einen Namen, der drei
+Ecken weiter in einer beliebig benannten Variablen entsteht. Und die CSS-Seite —
+`import.meta.glob(…, '?raw')` liefert für `.css` im Testlauf eine **leere**
+Zeichenkette, ein Test darauf wäre grün und hielte nichts.
 
 ### T71 · Schülerzettel drucken — 4 oder 6 auf ein A4 🔧
 **Vorgabe des Betreibers.** Die Zuteilungen für die Schulungsaufgaben sollen
@@ -2322,7 +2346,7 @@ kein Schalter ohne Rest, Markierung mit und ohne `pid`, Namensgleiche,
 Gruppen-Rotation) und am Demo-Stand nachgesehen — die drei Namen des Banners
 haben genau drei markierte Chips.
 
-### T77 · Vergangenes verschwindet: Bestätigen, Dashboard, Mitteilungen 🔧 ⚠ teilweise
+### T77 · Vergangenes verschwindet: Bestätigen, Dashboard, Mitteilungen 🔧 ✅ erledigt
 Zuteilungen, deren Termin vorbei ist, dürfen weder zum Bestätigen vorgelegt
 werden noch im Dashboard stehen; abgelaufene Mitteilungen gehören weg — „die
 interessieren keinen mehr". Der Zeitbezug war vorhanden und wurde beim Filtern
@@ -2347,10 +2371,12 @@ App inzwischen hält:
 Mitgenommen: Ein **Ersatzgesuch** für einen vergangenen Termin fällt ebenfalls
 heraus — niemand springt für gestern ein.
 
-**Was offen bleibt: die Mitteilungen.** Sie tragen keinen Bezug zur Aufgabe und
-lassen sich deshalb nicht danach aussortieren — dieselbe Lücke wie in **T86**.
-Beides braucht `task_key` an der Mitteilung, also eine Migration; erst dann
-lässt sich sagen, welche Zeile in der Glocke erledigt ist.
+**Die Mitteilungen kamen mit T86 hinterher**, denn dieselbe Lücke stand im Weg:
+Sie trugen keinen Bezug zur Aufgabe. Seit migration-020 (eingespielt am
+16. August) tun sie es, und was zu einem vergangenen Termin gehört, fällt beim
+Laden heraus (`taskKeyVorbei`). Zeilen von **vor** dem Deploy tragen keinen
+Schlüssel und bleiben stehen, bis sie über die 50er-Grenze hinauslaufen — sie
+nachträglich zu deuten hieße, aus dem Anzeigetext zu raten.
 
 **Geprüft:** `istVorbei` in vier Fällen (Tag selbst abends, Tag danach,
 Künftiges, ohne Datum) und die Ableitung im Reducer — mit Gegenprobe, dass in
@@ -2638,7 +2664,7 @@ nicht mit.
 
 Kein neuer Wörterbuch-Schlüssel: `sheetSchonHeute` gibt es in allen 34 Sprachen.
 
-### T86 · Die Glocke behält „Ersatz gesucht", auch wenn längst jemand da ist 🔧 ⏳ wartet auf Migration + Deploy
+### T86 · Die Glocke behält „Ersatz gesucht", auch wenn längst jemand da ist 🔧 ✅ erledigt
 Aus T84 mitgenommen und **nicht** behoben: Die Mitteilung „Ersatz gesucht", die
 beim Absagen an alle Qualifizierten geht, bleibt in deren Glocke stehen — auch
 nachdem jemand eingesprungen ist. Die Ursprungsperson und die Planer bekommen
@@ -2669,10 +2695,16 @@ Server-Arbeit.
    der Woche. Fremdformate bleiben stehen: Wer nichts über den Termin weiß,
    löscht nichts.
 
-**Zu tun beim Betreiber, in dieser Reihenfolge:** migration-020 einspielen, dann
-`substitute` neu deployen. Vorher schadet nichts — die alte Fassung schreibt die
-Spalte einfach nicht, und der neue Aufräum-Aufruf trifft ohne Spalte keine Zeile
-(er meldet in die Logs, bricht die Übernahme aber nicht ab).
+**Beim Betreiber erledigt am 16. August 2026:** migration-020 eingespielt,
+`substitute` neu deployt. Nachgesehen mit `functions list`: `updated_at` steht
+auf 15:30 Uhr und liegt damit hinter dem Commit `0e07f08` (15:01 Uhr), der die
+Function anfasst; seither gibt es keinen weiteren Commit unter
+`supabase/functions` — der Stand des Repos ist also in Betrieb.
+
+**Was das nicht heilt:** Mitteilungen, die **vor** dem Deploy entstanden sind,
+tragen keinen Schlüssel. Sie lassen sich weder aufräumen noch als abgelaufen
+erkennen und bleiben stehen, bis sie über die 50er-Grenze hinauslaufen. Das ist
+Absicht: Sie nachträglich zu deuten hieße, aus dem Anzeigetext zu raten.
 
 ---
 
@@ -2696,18 +2728,21 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☑☐☐☐ ☑☑☑☑☐☐☑☑☑ · 16. August ☑☑☑☑☐
+15. August ☐☐☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑
 
-**78 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
-(vom Betreiber zurückgestellt), die fünf verbliebenen Vorhaben T67, T68, T70,
-T71, T72, die Fehler T77 und T78 sowie das neue **T86** (Glocke behält „Ersatz
-gesucht"). **T73–T76** sind noch am 15. August erledigt worden; **T79 bis T81**
-kamen beim Benutzen desselben Tages dazu (T80 als Nachwehe von T76, T81 als
-Widerruf seiner Kürzungs-Mechanik) und sind erledigt. Am **16. August** kamen
-**T69** (Einspringen beim Öffnen), die Freigabe-Liste aus T79, **T82** (Reiter
-der nächsten Zusammenkunft), **T83** (Wortlaut), **T84** (erledigtes Gesuch kam
-wieder) und **T85** („an diesem Tag schon" vor dem Zusagen) hinzu — die letzten
-drei aus dem Benutzen heraus. **T66** — der
+**81 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 6 offen:** T63
+(vom Betreiber zurückgestellt), die vier verbliebenen Vorhaben T67, T68, T71,
+T72 und der Nachweis T78. **T73–T76** sind noch am 15. August erledigt worden;
+**T79 bis T81** kamen beim Benutzen desselben Tages dazu (T80 als Nachwehe von
+T76, T81 als Widerruf seiner Kürzungs-Mechanik) und sind erledigt.
+
+Am **16. August** kamen **T69** (Einspringen beim Öffnen), die Freigabe-Liste
+aus T79, **T82** (Reiter der nächsten Zusammenkunft), **T83** (Wortlaut),
+**T84** (erledigtes Gesuch kam wieder) und **T85** („an diesem Tag schon" vor
+dem Zusagen) hinzu — die letzten drei aus dem Benutzen heraus. Am selben Tag
+erledigt: **T77** (Vergangenes verschwindet) und **T86** (die Glocke räumt sich
+auf, migration-020 eingespielt), dazu **T70** — die dritte
+Vollständigkeitsprobe, die zusammengesetzte Klassennamen aufspürt. **T66** — der
 strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
 erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
 zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
@@ -2767,7 +2802,9 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > gedacht statt von den Funktionen: `src/data/alle-plaetze.test.ts` fragt jeden
 > Aufrufer nach allen vier Platzsorten (Hauptsaal, Zusätzliche Klasse, Ratgeber,
 > Hilfsdienste), `src/i18n/aufgaben-label-quelle.test.ts` prüft am Quelltext,
-> dass keine Anzeige die beiden Sprachhälften selbst zusammensetzt. Beide haben
+> dass keine Anzeige die beiden Sprachhälften selbst zusammensetzt. (Eine
+> **dritte** kam am 16. August dazu: `src/styles/klassennamen.test.ts`, T70 —
+> kein Klassenname wird zusammengesetzt.) Beide haben
 > beim Anlegen sofort einen echten, bis dahin unbekannten Fund geliefert — und
 > genau darauf zielen sie: die häufigste Fehlerart hier ist die zentral
 > richtiggestellte Regel mit dem vergessenen Aufrufer, im Review elfmal. Einzelne
@@ -2787,8 +2824,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T67, T68, T70, T71, T72, T77, T78 | Fünf Vorhaben (Tests, Datenmodell, Klassennamen, Druckbogen, Abwesenheiten) und zwei Fehler. T73–T76 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. T77 braucht zwei Entscheidungen des Betreibers. |
-| **16. August** | T86 | Die Glocke behält „Ersatz gesucht", auch wenn längst jemand eingesprungen ist — braucht eine Migration und gehört zu T77. T82–T85 sind am selben Tag erledigt. |
+| **15. August** | T67, T68, T71, T72, T78 | Vier Vorhaben (Tests, Datenmodell, Druckbogen, Abwesenheiten) und der Mandanten-Nachweis. T73–T77 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **16. August** | — | T82–T86 und T70 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
