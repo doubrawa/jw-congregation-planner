@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "그래도 수락",
   "ersatzHint": "보조 임명을 취소하면 자격이 되는 사람 중에서 대신할 사람을 자동으로 찾습니다.",
   "einspringenTitle": "대신 맡기",
-  "einspringenHint": "이 보조 임명에 대신할 사람을 찾고 있습니다. 당신은 자격이 됩니다.",
+  "einspringenHint": "이 보조 임명에 대신할 사람을 찾고 있습니다. 맡아 주실 수 있습니까?",
   "uebernehmen": "맡기",
   "toastErsatzGesucht": "취소됨 · 대신할 사람을 찾고 있습니다",
   "toastUebernommen": "감사합니다! 보조 임명을 맡았습니다",

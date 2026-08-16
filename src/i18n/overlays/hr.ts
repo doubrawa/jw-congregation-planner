@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Ipak potvrdi",
   "ersatzHint": "Ako otkažeš pomoćni zadatak, automatski se traži zamjena među onima koji su za to prikladni.",
   "einspringenTitle": "USKOČI",
-  "einspringenHint": "Za ove pomoćne zadatke traži se zamjena — ti si prikladan.",
+  "einspringenHint": "Za ove pomoćne zadatke traži se zamjena — možeš li preuzeti?",
   "uebernehmen": "Preuzimam",
   "toastErsatzGesucht": "Otkazano · traži se zamjena",
   "toastUebernommen": "Hvala! Preuzeo si pomoćni zadatak",

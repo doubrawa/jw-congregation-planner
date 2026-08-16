@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Confirmar mesmo assim",
   "ersatzHint": "Se você cancelar um serviço de apoio, um substituto é procurado automaticamente entre os qualificados.",
   "einspringenTitle": "SUBSTITUIR",
-  "einspringenHint": "Está sendo procurado um substituto para estes serviços de apoio — você é qualificado.",
+  "einspringenHint": "Está sendo procurado um substituto para estes serviços de apoio — você pode assumir?",
   "uebernehmen": "Aceitar",
   "toastErsatzGesucht": "Cancelado · um substituto está sendo procurado",
   "toastUebernommen": "Obrigado! Você aceitou o serviço de apoio",

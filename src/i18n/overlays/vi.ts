@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Vẫn xác nhận",
   "ersatzHint": "Nếu bạn hủy một nhiệm vụ hỗ trợ, hệ thống sẽ tự động tìm người thay thế trong số những người hội đủ điều kiện.",
   "einspringenTitle": "THAY THẾ",
-  "einspringenHint": "Đang tìm người thay thế cho các nhiệm vụ hỗ trợ này — bạn hội đủ điều kiện.",
+  "einspringenHint": "Đang tìm người thay thế cho các nhiệm vụ hỗ trợ này — bạn có thể nhận không?",
   "uebernehmen": "Nhận làm",
   "toastErsatzGesucht": "Đã hủy · đang tìm người thay thế",
   "toastUebernommen": "Cảm ơn bạn! Bạn đã nhận nhiệm vụ hỗ trợ này",

@@ -331,7 +331,7 @@ export default {
   "dochBestaetigen": "تأكيد رغم ذلك",
   "ersatzHint": "إذا ألغيت خدمة مساندة، يُبحث تلقائيًا عن بديل بين المؤهلين لها.",
   "einspringenTitle": "الحلول محل غيرك",
-  "einspringenHint": "يُبحث عن بديل لخدمات المساندة هذه — وأنت مؤهل لها.",
+  "einspringenHint": "يُبحث عن بديل لخدمات المساندة هذه — هل يمكنك تولّيها؟",
   "uebernehmen": "أتولاها",
   "toastErsatzGesucht": "أُلغيت · يُبحث عن بديل",
   "toastUebernommen": "شكرًا! توليت خدمة المساندة",

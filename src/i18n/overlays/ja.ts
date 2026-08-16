@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "やはり承諾する",
   "ersatzHint": "補助の割り当てを取り消すと，資格のある人の中から代わりの人が自動的に探されます。",
   "einspringenTitle": "代わりを務める",
-  "einspringenHint": "これらの補助の割り当てで代わりの人を探しています。あなたには資格があります。",
+  "einspringenHint": "これらの補助の割り当てで代わりの人を探しています。引き受けられますか。",
   "uebernehmen": "引き受ける",
   "toastErsatzGesucht": "取り消しました · 代わりの人を探しています",
   "toastUebernommen": "ありがとうございます！補助の割り当てを引き受けました",

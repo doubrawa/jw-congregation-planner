@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Bekräfta ändå",
   "ersatzHint": "Om du tackar nej till en stöduppgift söks automatiskt en ersättare bland dem som är lämpliga.",
   "einspringenTitle": "HOPPA IN",
-  "einspringenHint": "En ersättare söks för de här stöduppgifterna — du är lämplig.",
+  "einspringenHint": "En ersättare söks för de här stöduppgifterna — kan du ta över?",
   "uebernehmen": "Ta över",
   "toastErsatzGesucht": "Avbokat · en ersättare söks",
   "toastUebernommen": "Tack! Du har tagit över stöduppgiften",

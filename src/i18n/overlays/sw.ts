@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Thibitisha hata hivyo",
   "ersatzHint": "Ukighairi mgawo wa usaidizi, mtu wa kuchukua nafasi hutafutwa kiotomatiki kati ya wanaostahili.",
   "einspringenTitle": "CHUKUA NAFASI",
-  "einspringenHint": "Mtu wa kuchukua nafasi anatafutwa kwa migawo hii ya usaidizi — wewe unastahili.",
+  "einspringenHint": "Mtu wa kuchukua nafasi anatafutwa kwa migawo hii ya usaidizi — je, unaweza kuchukua?",
   "uebernehmen": "Nitachukua",
   "toastErsatzGesucht": "Imeghairiwa · mtu wa kuchukua nafasi anatafutwa",
   "toastUebernommen": "Asante! Umechukua mgawo wa usaidizi",

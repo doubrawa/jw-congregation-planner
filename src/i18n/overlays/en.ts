@@ -254,7 +254,7 @@ export default {
   "dochBestaetigen": "Confirm after all",
   "ersatzHint": "If you cancel a support duty, a substitute is automatically sought among those qualified.",
   "einspringenTitle": "STEP IN",
-  "einspringenHint": "A substitute is being sought for these support duties — you’re qualified.",
+  "einspringenHint": "A substitute is being sought for these support duties — can you take it on?",
   "uebernehmen": "Take over",
   "planLegend": "✓ confirmed · … awaiting confirmation",
   "toastBestaetigt": "Confirmed · the coordinator can see the status",

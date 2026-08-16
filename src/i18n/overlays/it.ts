@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Conferma comunque",
   "ersatzHint": "Se annulli un servizio di supporto, viene cercato automaticamente un sostituto tra chi è idoneo.",
   "einspringenTitle": "SOSTITUIRE",
-  "einspringenHint": "Per questi servizi di supporto si cerca un sostituto: tu sei idoneo.",
+  "einspringenHint": "Per questi servizi di supporto si cerca un sostituto: puoi occupartene tu?",
   "uebernehmen": "Me ne occupo",
   "toastErsatzGesucht": "Annullato · si cerca un sostituto",
   "toastUebernommen": "Grazie! Ti sei preso il servizio di supporto",

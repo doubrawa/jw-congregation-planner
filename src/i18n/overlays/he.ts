@@ -368,7 +368,7 @@ export default {
   "dochBestaetigen": "בכל זאת אשר",
   "ersatzHint": "אם תבטל תפקיד עזר, יחופש אוטומטית מחליף מבין המתאימים לכך.",
   "einspringenTitle": "החלפה",
-  "einspringenHint": "מחפשים מחליף לתפקידי העזר האלה — אתה מתאים לכך.",
+  "einspringenHint": "מחפשים מחליף לתפקידי העזר האלה — תוכל לקחת על עצמך?",
   "uebernehmen": "אקח על עצמי",
   "toastErsatzGesucht": "בוטל · מחפשים מחליף",
   "toastUebernommen": "תודה! לקחת על עצמך את תפקיד העזר",

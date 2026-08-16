@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Vahvista sittenkin",
   "ersatzHint": "Jos perut tukitehtävän, sijaista etsitään automaattisesti niiden joukosta, jotka siihen soveltuvat.",
   "einspringenTitle": "TULE SIJAISEKSI",
-  "einspringenHint": "Näihin tukitehtäviin etsitään sijaista — sinä soveltuisit.",
+  "einspringenHint": "Näihin tukitehtäviin etsitään sijaista — voitko ottaa sen hoitaaksesi?",
   "uebernehmen": "Otan tämän",
   "toastErsatzGesucht": "Peruttu · sijaista etsitään",
   "toastUebernommen": "Kiitos! Otit tukitehtävän hoitaaksesi",

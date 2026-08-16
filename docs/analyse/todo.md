@@ -2511,6 +2511,28 @@ Wochen in Folge nichts mehr melden; im Banner, dass genau dieser Fall gar kein
 Banner mehr erzeugt), und am laufenden Stand nachgesehen: Wo vorher Serien
 standen, nennt das Banner nur noch die zwei Abwesenden.
 
+### T83 · „du bist qualifiziert" ist eine Selbstverständlichkeit ⚡ ✅ erledigt
+**Vorgabe des Betreibers.** Der Hinweis über den Ersatzgesuchen lautete: „Für
+diese Hilfsdienste wird ein Ersatz gesucht — du bist qualifiziert." Wer den Satz
+überhaupt zu sehen bekommt, **ist** qualifiziert; die zweite Hälfte sagt also
+nichts und nimmt der ersten die Frage. Jetzt: „… — kannst du übernehmen?"
+
+**Die Bedingung dahinter stand schon und ist nachgeprüft**, nicht angenommen:
+`deriveSubstituteReqs` überspringt jedes Gesuch, für dessen Dienst der Leser
+nicht freigegeben ist (`isQualified(me, serviceQualKey(...))`) — ebenso den
+eigenen Slot, abgesagte Wochen, an denen er abwesend ist, und die
+Gruppen-Rotation. Ein Test hält es fest („nicht qualifiziert → kein Gesuch").
+Auch die Edge Function verteilt Mitteilung und Push nur an
+`priv[svc:<key>]`-Träger und weist ein `take` ohne Freigabe mit 403 ab. Und weil
+Aufgaben-Bildschirm und das Blatt beim Öffnen **dieselbe** Ableitung benutzen,
+gilt die Regel an beiden Stellen — es gibt nur eine.
+
+**Die 33 Übersetzungen sind mitgezogen**, nicht liegen geblieben: Von jeder
+Sprache bleibt die geprüfte erste Hälfte stehen, ersetzt wird allein der
+Schlussteil. Das ist gewöhnlicher Bedientext, kein jw.org-Fachbegriff — die
+Regel „lieber zusammensetzen als erfinden" gilt der Terminologie, und ein
+deutscher Satz in 33 Sprachen wäre schlechter als ein übersetzter.
+
 ### T82 · Programm und Planen öffnen mit der nächsten Zusammenkunft ⚡
 **Vorgabe des Betreibers.** Wer Programm oder Planen aufruft, soll den Reiter
 der **nächsten** Zusammenkunft vorfinden: Am Samstag also den Sonntag mit dem,
@@ -2554,9 +2576,9 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☑☐☐☐ ☑☑☑☑☐☐☑☑☑ · 16. August ☐
+15. August ☐☐☑☐☐☐ ☑☑☑☑☐☐☑☑☑ · 16. August ☐☑
 
-**73 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
+**74 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
 (vom Betreiber zurückgestellt), die fünf verbliebenen Vorhaben T67, T68, T70,
 T71, T72 und die Fehler T77, T78 sowie das neue T82. **T73–T76** sind noch am
 15. August erledigt worden; **T79 bis T81** kamen beim Benutzen desselben Tages
@@ -2644,7 +2666,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 | **15. August** | T67, T68, T70, T71, T72, T77, T78 | Fünf Vorhaben (Tests, Datenmodell, Klassennamen, Druckbogen, Abwesenheiten) und zwei Fehler. T73–T76 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. T77 braucht zwei Entscheidungen des Betreibers. |
-| **16. August** | T82 | Programm und Planen sollen mit dem Reiter der nächsten Zusammenkunft öffnen. |
+| **16. August** | T82 | Programm und Planen sollen mit dem Reiter der nächsten Zusammenkunft öffnen. T83 (Wortlaut „Einspringen") ist am selben Tag erledigt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:

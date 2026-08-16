@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Toch bevestigen",
   "ersatzHint": "Als je een ondersteunende taak afzegt, wordt automatisch een vervanger gezocht onder wie daarvoor in aanmerking komt.",
   "einspringenTitle": "INVALLEN",
-  "einspringenHint": "Voor deze ondersteunende taken wordt een vervanger gezocht — jij komt ervoor in aanmerking.",
+  "einspringenHint": "Voor deze ondersteunende taken wordt een vervanger gezocht — kun jij het overnemen?",
   "uebernehmen": "Overnemen",
   "toastErsatzGesucht": "Afgezegd · er wordt een vervanger gezocht",
   "toastUebernommen": "Bedankt! Je hebt de ondersteunende taak overgenomen",

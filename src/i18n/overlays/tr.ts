@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Yine de onayla",
   "ersatzHint": "Bir yardımcı görevi iptal edersen, uygun olanlar arasından otomatik olarak bir yedek aranır.",
   "einspringenTitle": "DEVRAL",
-  "einspringenHint": "Bu yardımcı görevler için yedek aranıyor — sen uygunsun.",
+  "einspringenHint": "Bu yardımcı görevler için yedek aranıyor — üstlenebilir misin?",
   "uebernehmen": "Ben yaparım",
   "toastErsatzGesucht": "İptal edildi · yedek aranıyor",
   "toastUebernommen": "Teşekkürler! Yardımcı görevi üstlendin",

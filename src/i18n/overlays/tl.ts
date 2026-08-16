@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Kumpirmahin pa rin",
   "ersatzHint": "Kapag kinansela mo ang isang suportang atas, awtomatikong maghahanap ng papalit mula sa mga kuwalipikado.",
   "einspringenTitle": "PUMALIT",
-  "einspringenHint": "May hinahanap na papalit para sa mga suportang atas na ito — kuwalipikado ka.",
+  "einspringenHint": "May hinahanap na papalit para sa mga suportang atas na ito — puwede mo bang gawin?",
   "uebernehmen": "Ako na",
   "toastErsatzGesucht": "Nakansela · naghahanap ng papalit",
   "toastUebernommen": "Salamat! Ikaw na ang humawak sa suportang atas",

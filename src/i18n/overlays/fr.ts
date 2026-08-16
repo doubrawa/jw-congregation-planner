@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Confirmer finalement",
   "ersatzHint": "Si vous annulez un service auxiliaire, un remplaçant est automatiquement recherché parmi ceux qui sont qualifiés.",
   "einspringenTitle": "REMPLACER",
-  "einspringenHint": "Un remplaçant est recherché pour ces services auxiliaires — vous êtes qualifié.",
+  "einspringenHint": "Un remplaçant est recherché pour ces services auxiliaires — pouvez-vous vous en charger ?",
   "uebernehmen": "Me charger",
   "toastErsatzGesucht": "Annulé · un remplaçant est recherché",
   "toastUebernommen": "Merci ! Vous vous chargez de ce service auxiliaire",

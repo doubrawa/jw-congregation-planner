@@ -369,7 +369,7 @@ export default {
   "dochBestaetigen": "Bekræft alligevel",
   "ersatzHint": "Melder du fra til en hjælpeopgave, søges der automatisk en afløser blandt dem der er egnede.",
   "einspringenTitle": "TRÆD TIL",
-  "einspringenHint": "Der søges en afløser til disse hjælpeopgaver — du er egnet.",
+  "einspringenHint": "Der søges en afløser til disse hjælpeopgaver — kan du overtage?",
   "uebernehmen": "Overtag",
   "toastErsatzGesucht": "Meldt fra · der søges en afløser",
   "toastUebernommen": "Tak! Du har overtaget hjælpeopgaven",
