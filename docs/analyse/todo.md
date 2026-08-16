@@ -2466,6 +2466,19 @@ Frage wie die anderen drei: Wer liest diese Daten noch?
 > wie bisher. Erst wenn die App die Schlüssel gehoben hat, könnte ein
 > bestätigter Treffpunkt noch einmal erinnert werden — und auch das nur, bis
 > der Planer die betroffene Woche das nächste Mal anfasst.
+>
+> ✅ **Beim Betreiber erledigt am 16. August 2026, 20:05 Uhr.** `functions list`
+> zeigt `send-reminders` als **v25** mit `updated_at` = 20:05:18 und damit
+> hinter dem Commit `08bca56` (19:27:51). `verify_jwt` steht dort auf `false`
+> und bei allen übrigen auf `true` — der Soll-Zustand aus `config.toml` ist
+> beim Deploy nicht verrutscht.
+>
+> Der Rauchtest lieferte **401**, und das sagt hier mehr als „abgewiesen":
+> Weil `send-reminders` ohne Plattform-Prüfung läuft, kommt die Absage aus dem
+> **Handler** — der erst arbeitet, nachdem das Modul samt `_shared/planung.ts`
+> geladen ist. Ein Fehler am Import hätte einen 500 oder einen Boot-Fehler
+> ergeben, kein glattes 401. Damit ist belegt, dass das neue Bündel läuft und
+> nicht nur hochgeladen wurde.
 
 **Geprüft:** 11 Tests in `src/data/fs-kennung.test.ts` (gleiche Kennung über
 verschiedene Fensterpositionen, gleicher `task_key`, überlebender Leiter,
