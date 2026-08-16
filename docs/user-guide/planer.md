@@ -49,6 +49,12 @@ wechselst du zwischen **Zusammenkunft unter der Woche**, **am Wochenende** und d
 **Zusammenkünften für den Predigtdienst**; mit ‹ › wählst du die Woche – auf
 Handy und Tablet geht auch seitwärts wischen.
 
+Beim Öffnen stehen Planen und Programm auf der **nächsten** Zusammenkunft: am
+Samstag also auf dem Wochenende, am Sonntagabend schon auf der Wochenmitte der
+kommenden Woche. Entfällt eine (Kongress, Gedächtnismahl), wird sie
+übersprungen. Sobald du selbst eine Woche oder einen Reiter wählst, bleibt es
+dabei – du wirst beim Hin- und Herwechseln nicht wieder umgesetzt.
+
 ![Planen‑Ansicht](screenshots/planer-planen-woche.png)
 
 - **Auf eine Zuteilung tippen**, um sie zu ändern. Es öffnet sich eine Liste

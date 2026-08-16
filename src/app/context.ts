@@ -190,6 +190,16 @@ export interface AppState {
    * durch die ganze Versammlung, sonst bleibt sein Platz für immer leer (T79).
    */
   svcSheet: string | null
+  /**
+   * Der Nutzer hat Woche oder Reiter in dieser Sitzung selbst gewählt (T82).
+   *
+   * Programm und Planen öffnen sonst mit der **nächsten** Zusammenkunft: Am
+   * Samstag steht das Wochenende da, nicht die schon gelaufene Wochenmitte. Wer
+   * aber gerade die übernächste Woche plant, kurz in die Personenliste geht und
+   * zurückkommt, will dort weitermachen und nicht wieder umgesetzt werden —
+   * eine eigene Wahl schlägt den Sprung, bis die App neu geladen wird.
+   */
+  terminGewaehlt: boolean
   toast: Toast | null
   /**
    * Es wurde sich gerade angemeldet und die Begrüßung steht noch aus.

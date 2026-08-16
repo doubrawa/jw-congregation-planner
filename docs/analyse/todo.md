@@ -2533,7 +2533,7 @@ Schlussteil. Das ist gewöhnlicher Bedientext, kein jw.org-Fachbegriff — die
 Regel „lieber zusammensetzen als erfinden" gilt der Terminologie, und ein
 deutscher Satz in 33 Sprachen wäre schlechter als ein übersetzter.
 
-### T82 · Programm und Planen öffnen mit der nächsten Zusammenkunft ⚡
+### T82 · Programm und Planen öffnen mit der nächsten Zusammenkunft ⚡ ✅ erledigt
 **Vorgabe des Betreibers.** Wer Programm oder Planen aufruft, soll den Reiter
 der **nächsten** Zusammenkunft vorfinden: Am Samstag also den Sonntag mit dem,
 was als Nächstes ansteht — nicht den Reiter, der zuletzt offen war oder fest
@@ -2544,15 +2544,32 @@ Heute steht der Reiter fest auf `mid` (`init.ts:117`, nur ein Debug-Hash
 **Woche** wird bereits nach dem Datum gewählt (`currentWeekIndex`), die
 Zusammenkunft darin nicht.
 
-**Was zu bedenken ist:** Die Wochentage stehen je Versammlung in den
-Einstellungen (`congregation.meetings`), es gibt sie also nicht fest — der Sprung
-muss sie lesen, nicht raten. Eine **entfallene** Zusammenkunft ist keine nächste
-(T30: Kongress, Gedächtnismahl), und wenn die Zusammenkunft unter der Woche
-vorbei ist, liegt die nächste am Wochenende **derselben** Woche, danach in der
-folgenden — die Wahl von Reiter und Woche gehört deshalb zusammen. Zu klären
-bleibt, ob der Sprung nur beim ersten Betreten je Sitzung gilt: Wer im Planen
-den Reiter wechselt, zur Personenliste geht und zurückkommt, will kaum wieder
-umgesetzt werden.
+**`naechsteZusammenkunft(weeks, meetings, heute)`** liefert Woche **und** Reiter
+— beides zusammen, weil der Reiter allein am Sonntagabend auf einen Termin
+spränge, der schon vorbei ist. Gemessen wird auf den **Tag**: Die Anfangszeit
+steht zwar in den Einstellungen, aber wann eine Zusammenkunft *vorbei* ist, weiß
+niemand — ein Umspringen um 20:47 wäre geraten. Der laufende Tag zählt deshalb
+mit.
+
+Die Wochentage kommen aus `meetingDateMs` und damit aus derselben Quelle wie
+Erinnerungen und Countdown: Abweichung der Woche vor eigenem Termin vor
+Einstellungen. Entfallenes wird übersprungen (T30). Gesucht wird über **alle**
+Wochen und in jeder über beide Zusammenkünfte statt die erste passende zu
+nehmen: In der Woche des Gedächtnismahls liegt der Sondertermin auch mal vor
+dem der Wochenmitte.
+
+**Die offene Frage ist entschieden: Der Sprung gilt, bis der Nutzer selbst
+wählt.** `terminGewaehlt` wird von `setTab`, `prevWeek` und `nextWeek` gesetzt;
+danach bleibt die Ansicht, wo sie ist. Wer die übernächste Woche plant, kurz in
+die Personenliste geht und zurückkommt, macht dort weiter. Mit dem nächsten
+Laden (`hydrate`) fängt es wieder von vorn an — es ist eine Sitzungs-Sache, kein
+gespeicherter Zustand. Die Treffpunkte bleiben ebenfalls unangetastet: Wer sie
+ansieht, meint sie und keine Zusammenkunft.
+
+**Geprüft:** 8 Fälle am Datum (Samstag → Wochenende, Montag → Wochenmitte, der
+laufende Tag zählt mit, Sonntagabend → Folgewoche, eigene Wochentage aus den
+Einstellungen, Kongresswoche übersprungen, Gedächtnismahl vor der Wochenmitte,
+und „keine nächste" → alles bleibt stehen) und die Weichen im Reducer.
 
 ---
 
