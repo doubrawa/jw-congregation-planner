@@ -375,6 +375,32 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))).toHaveLength(0)
   })
 
+  it('nennt, was ich an dem Tag schon habe — vor dem Zusagen', () => {
+    /*
+     * Am laufenden Stand aufgefallen: Der Betreiber sagte zu und war an dem Tag
+     * längst eingeteilt. Den Hinweis gab es, aber erst **hinterher** als Toast
+     * („übernommen — aber …"). Wer es vorher weiß, entscheidet anders.
+     */
+    const weeks = buildDemoWeeks()
+    const ich = qualified('ton')
+    const mid = weeks[0]!.mid
+    mid.helpers.ton = [{ name: 'A. Absager' }]
+    mid.helpers.mik = [{ name: displayName(ich) }, { name: '' }] // ich habe schon Mikrofon
+    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich)
+    expect(reqs).toHaveLength(1)
+    expect(reqs[0]?.schonHeute.map((a) => a.text)).toContain('Mikrofone')
+  })
+
+  it('ohne andere Zuteilung an dem Tag bleibt der Hinweis leer', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, {
+      [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const,
+    }, qualified('ton'))
+    expect(reqs[0]?.schonHeute).toEqual([])
+  })
+
   it('eigener verhinderter Slot erscheint nicht als Einspringen-Gesuch', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)

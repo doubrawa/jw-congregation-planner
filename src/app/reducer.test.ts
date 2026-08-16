@@ -920,7 +920,7 @@ describe('Sprache', () => {
   })
 
   it('das Blatt beim Öffnen hält auch ein Ersatzgesuch (T69)', () => {
-    const gesuch = { key: 'k1', svc: 'mik', title: 'Mikrofone', date: 'Di', declinedBy: 'A. B.' }
+    const gesuch = { key: 'k1', svc: 'mik', title: 'Mikrofone', date: 'Di', declinedBy: 'A. B.', schonHeute: [] }
     // Nichts zu bestätigen, aber ein Gesuch offen: früher blieb das Blatt weg,
     // und wer nicht von selbst nachsah, erfuhr nie davon.
     const s = makeState({ myTasks: [], substituteReqs: [gesuch] })

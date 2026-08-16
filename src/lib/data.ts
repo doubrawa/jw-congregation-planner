@@ -103,9 +103,33 @@ interface NotificationRow {
   created_at: string
 }
 
-interface ConfirmationRow {
+export interface ConfirmationRow {
   task_key: string
   status: string
+}
+
+/**
+ * Bestätigungs-Zeilen zur Karte `task_key → Status`.
+ *
+ * Ein Platz kann **zwei** Zeilen haben: Sagt A ab und springt B ein, steht unter
+ * demselben `task_key` A mit „verhindert" und B mit „bestätigt". Die Abfrage
+ * kommt ungeordnet zurück — wer zuletzt gelesen wurde, gewann. Beim Einspringen
+ * hieß das: Nach dem Neuladen stand der Platz mal als besetzt, mal als abgesagt
+ * da, und das längst erledigte Ersatzgesuch tauchte wieder auf.
+ *
+ * **„Bestätigt" gewinnt.** Ein Platz hat genau einen Bearbeiter; hat einer
+ * bestätigt, ist er besetzt — gleich wer vorher abgesagt hat. Wer selbst erst
+ * zusagt und dann absagt, hat nur **eine** Zeile (dieselbe wird überschrieben);
+ * dieser Fall wird also nicht verdeckt.
+ */
+export function confirmationMap(rows: readonly ConfirmationRow[]): ConfirmationMap {
+  const out: ConfirmationMap = {}
+  for (const row of rows) {
+    if (row.status !== 'bestätigt' && row.status !== 'verhindert') continue
+    if (out[row.task_key] === 'bestätigt') continue
+    out[row.task_key] = row.status
+  }
+  return out
 }
 
 interface MemberRow {
@@ -828,12 +852,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     migrateAssignmentPids(migrateAssignmentNames(normalizeWeekHelpers(roh), personList), personList),
   )
 
-  const rohConf: ConfirmationMap = {}
-  for (const row of (confs.data ?? []) as ConfirmationRow[]) {
-    if (row.status === 'bestätigt' || row.status === 'verhindert') {
-      rohConf[row.task_key] = row.status
-    }
-  }
+  const rohConf = confirmationMap((confs.data ?? []) as ConfirmationRow[])
 
   // Stabile Kennungen nachtragen und die Bestätigungen einmalig mit umbenennen
   // (T37). Idempotent — beim zweiten Laden gibt es nichts mehr zu tun.
