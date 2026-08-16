@@ -2275,7 +2275,7 @@ Regel absichtlich brechen und sehen, ob überhaupt etwas rot wird.
 > Ein Fehler dort ist sichtbar, kein stiller — und stille Fehler waren der
 > Grund für diese Runde.
 
-### T68 · Datenmodell und Schlüssel prüfen 🏗
+### T68 · Datenmodell und Schlüssel prüfen 🏗 ✅ erledigt
 **Vorgabe des Betreibers.** Ergibt das Modell als Ganzes noch Sinn, sind die
 Schlüssel gut gewählt? Der Anlass ist berechtigt: T37 (`task_key` an der
 Kennung statt an der Position), T66 (eine Woche ist ihr Datum) und die vier
@@ -2286,6 +2286,146 @@ sich später als zu eng erwiesen haben.
 Anzusehen: der Aufbau des `task_key` (`wi|tab|part|si|ii|ni`), `FsInstance.id`,
 die JSONB-Blobs `weeks.data`/`fs_weeks.data` gegenüber echten Spalten, und ob
 `Qualifications` mit der Index-Signatur `svc:<key>` noch trägt.
+
+> **Geprüft am 16. August 2026 — vier Fragen, vier Antworten.** Drei davon
+> lauten „trägt", eine hat einen Fehler zutage gefördert, der seine eigene
+> Nummer bekommen hat (**T87**, unten).
+>
+> #### 1. `task_key` — trägt, mit einer Naht
+>
+> Der Schlüssel besteht aus Woche, Zusammenkunft, Art und dem, was die Art
+> braucht:
+>
+> | Art | Form |
+> | --- | --- |
+> | Programmpunkt | `2026-09-07\|mid\|part\|k3f9x\|0` |
+> | Zusätzliche Klasse | dasselbe mit `aux` an der Stelle von `part` |
+> | Hilfsdienst | `2026-09-07\|mid\|helper\|mik\|1` |
+> | Ratgeber | `2026-09-07\|mid\|ratgeber` |
+> | **Treffpunkt** | `fs\|2026-09-07\|r1c8…` |
+>
+> Die ersten vier sind nach T37 und T66 in Ordnung: vorn das **Datum** der
+> Woche, in der Mitte die **stabile Kennung** des Punkts. Beides ist gegen
+> Verschieben und Umsortieren unempfindlich, und beide Umstellungen laufen als
+> Lade-Migration weiter, bis der letzte Altbestand gehoben ist.
+>
+> Die Naht ist der Treffpunkt: Er trägt seine Art **vorn** statt an dritter
+> Stelle, weil er kein mid/we hat. Das ist begründet (der Kommentar an
+> `fsTaskKey` sagt es) und hat eine Folge, die dort nicht steht: `taskKeyWeek`
+> liest Woche und Zusammenkunft aus den ersten beiden Feldern und liefert für
+> einen `fs`-Schlüssel `null` — womit `taskKeyVorbei` (T77) einen abgelaufenen
+> Treffpunkt-Hinweis nie als abgelaufen erkennt.
+>
+> **Folgenlos, aber wissenswert:** Heute trägt gar keine Mitteilung einen
+> `fs`-Schlüssel. `substitute` kennt nur Hilfsdienste, und die Erinnerungen aus
+> `send-reminders` schreiben überhaupt keinen — eine Erinnerung bündelt die
+> Aufgaben eines Tages in **einer** Zeile, ein einzelner `task_key` würde sie
+> gar nicht beschreiben. Der richtige Schlüssel wäre dort Woche + Zusammenkunft,
+> nicht der Platz. Deshalb ist hier nichts zu ändern, sondern etwas zu
+> vermerken: Wer je Treffpunkt-Mitteilungen mit Schlüssel schreibt, muss
+> `taskKeyWeek` vorher beibringen, was ein `fs` ist.
+>
+> #### 2. `FsInstance.id` — **trug nicht.** Siehe T87.
+>
+> #### 3. JSONB-Blob gegen echte Spalten — bewusst so, und richtig so
+>
+> `weeks.data` und `fs_weeks.data` halten die ganze Woche als ein Dokument.
+> Dagegen spricht das Übliche: keine Integrität in der Datenbank, keine Abfrage
+> auf einzelne Plätze, und jede Edge Function muss die Struktur selbst lesen
+> können. Dafür spricht der Zuschnitt dieser Anwendung:
+>
+> * Eine Versammlung, ein Planer, der schreibt — der Wettlauf ist der zwischen
+>   zwei Planern, und den löst T39 je Woche über `updated_at`. Feinere Zeilen
+>   brächten feinere Sperren für ein Problem, das es nicht gibt.
+> * Die Struktur einer Woche hat sich in einem Jahr **mehrfach** geändert
+>   (`aux`, `auxRatgeber`, `iid`, `mins`, `dev`, `anlass`). Als Spalten wäre
+>   jede dieser Änderungen eine Migration gewesen; als Blob war keine nötig —
+>   die 20 Migrationen betreffen fast alle andere Tabellen.
+> * Das doppelte Lesen ist gesehen und abgesichert: `_shared/planung.ts` teilt
+>   die Regeln, und `edge-parity.test.ts` hält Client und Function an denselben
+>   Eingaben gegeneinander.
+>
+> Was der Blob **kostet**, ist die Ordnung darin — und genau die ist zweimal
+> teuer geworden (T66, T87). Nicht die Ablageform war das Problem, sondern
+> Ordnungszahlen als Identität. Die sind jetzt weg.
+>
+> #### 4. `Qualifications` mit `[svc:<key>]` — trägt
+>
+> Die Index-Signatur erlaubt jedem Hilfsdienst seinen eigenen Bereich, ohne
+> dass eine Zeile Code dazukommt (T79 hat davon gelebt). Der Preis: ein Tippfehler
+> in einem **festen** Bereich fällt dem Compiler nicht auf, weil jeder String
+> ein gültiger Schlüssel ist.
+>
+> Nachgezählt statt befürchtet: Im Produktionscode stehen **sechs** feste
+> Bereiche als Zeichenkette (`vorsitzMid`, `vorsitzWe`, `bibellesung`, `leser`,
+> `schulung`, `schulungPartner`) und vier bei `isQualified` — alle gültig, alle
+> von der Auto-Zuteilung durchlaufen, die bei einem Tippfehler sofort Plätze
+> offen ließe. Der Rest geht über `QUALIFICATION_ORDER` und `serviceQualKey`.
+> Zehn Stellen rechtfertigen keine eigene Probe; die Signatur bleibt.
+>
+> #### 5. Die vier Platzsorten — bleiben, weil die Probe sie bewacht
+>
+> Eine Zuteilung steht in `item.names`, `item.aux`, `meeting.auxRatgeber` oder
+> `meeting.helpers` — drei verschiedene Formen (Liste, Einzelplatz, Verzeichnis
+> von Listen). Zusammenzulegen wäre theoretisch schöner und praktisch eine
+> Migration jedes Wochen-Blobs **und** jedes `task_key`, für einen rein inneren
+> Gewinn. Die Fehlerart, die daraus entsteht — ein Aufrufer kennt nur eine
+> Sorte —, ist seit dem 15. August durch `alle-plaetze.test.ts` abgedeckt, und
+> die Mutationsprobe (T67) hat dort zwei weitere Lücken gefunden und
+> geschlossen. Damit ist die Asymmetrie bezahlt; sie bleibt.
+
+### T87 · Der Treffpunkt vergisst seinen Leiter, sobald das Jahr voll ist 🔧 ✅ erledigt
+Bei der Modellprüfung (T68) gefunden, **eigener Punkt, damit er nicht
+untergeht** — und der schwerwiegendste Fund dieser Runde: stiller Datenverlust,
+mit Zeitzünder.
+
+`FsInstance.id` lautete `"<wi>|<ruleId>"` — mit `wi` = **Position der Woche im
+Ladefenster**. Das ist dieselbe Ordnungszahl als Identität, die T66 überall
+sonst abgeschafft hat; im Treffpunkt-Strang ist sie stehen geblieben.
+
+**Warum es bisher nicht aufgefallen ist.** Das Fenster hält die jüngsten 52
+Wochen (`WEEK_LIMIT`). Solange die Versammlung weniger hat, beginnt es immer
+bei derselben Woche, und die Nummer einer Kalenderwoche steht still. Vom ersten
+Import jenseits eines Jahres an rutscht es mit **jeder** neuen Woche eine
+weiter.
+
+**Was dann geschieht — gemessen, nicht überlegt:**
+
+| | vor dem Rutschen | danach |
+| --- | --- | --- |
+| Kalenderwoche | 26.01.2026 | 26.01.2026 |
+| Kennung | `3\|r1` | `2\|r1` |
+| `task_key` | `fs\|2026-01-26\|3\|r1` | `fs\|2026-01-26\|2\|r1` |
+| Zugeteilter Leiter | Emil Ernst | **""** |
+
+Der Leiter ist weg. Nicht die Bestätigung — der **Eintrag**: `regenFsWeeks`
+richtet die gespeicherten Wochen beim Laden am Grundplan aus und findet die
+gespeicherte Leitung über die Kennung wieder. Findet sie sie nicht, steht der
+Treffpunkt wieder offen. Ohne Meldung, ohne Spur, mitten in einer fertigen
+Planung — und ein Jahr nach dem Start jede Woche aufs Neue.
+
+**Behoben:** Die Kennung ist jetzt die **Regel** (`instanzId`), sonst nichts.
+Eindeutig ist sie auch allein — jede Regel wird höchstens einmal je Woche
+materialisiert, und gespeichert wird ohnehin je Woche eine eigene Zeile. Die
+Woche steht im `task_key` davor; dort gehört sie hin.
+
+Zwei Lade-Migrationen heben den Bestand, jede rein und idempotent:
+`fsMigrateInstIds` die Kennungen im Blob, `migrateFsTaskKeys` die
+Bestätigungen (`fs|<Datum>|3|r1` → `fs|<Datum>|r1`) über denselben Weg, den
+T37 dafür gebaut hat. Von Hand angelegte Treffpunkte (`x<uuid>`) bleiben
+unberührt: Sie tragen keine Zahl vorn.
+
+**Dabei mitgezogen:** `buildFsWeeks` belegt seine Demo-Leiter weiterhin je
+Woche — die Vorbelegung ist jetzt ausdrücklich mit `"<wi>|<instanzId>"`
+adressiert. Ohne diese Trennung hätte derselbe Leiter in allen vier
+Demo-Wochen gestanden: Die Kennung beschreibt den Treffpunkt, nicht seinen
+Termin.
+
+**Geprüft:** 11 Tests in `src/data/fs-kennung.test.ts` (gleiche Kennung über
+verschiedene Fensterpositionen, gleicher `task_key`, überlebender Leiter,
+Altbestand heben, Idempotenz, manuelle Treffpunkte, Bestätigungen). Gegenprobe
+mit der alten Kennung gefahren: **6 von 11** fallen. Drei Einträge im Katalog
+der Mutationsprobe halten die drei Hälften künftig fest.
 
 ### T69 · „Einspringen" beim Öffnen der App zeigen — wie das Bestätigen 🔧 ✅ erledigt
 **Vorgabe des Betreibers.** Ein offenes Ersatzgesuch muss beim Öffnen der App
@@ -2897,15 +3037,18 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☑☐☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑
+15. August ☑☑☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑
 
-**83 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 4 offen:** T63
-(vom Betreiber zurückgestellt), die beiden verbliebenen Vorhaben T68 und T72
-und der Nachweis T78. **T67** — die Tests selbst geprüft — ist am 16. August
-dazugekommen: eine [Mutationsprobe](../../scripts/mutationsprobe.mjs), die
-Regeln absichtlich bricht und nachsieht, ob etwas rot wird. Sieben ungewachte
-Regeln gefunden und geschlossen, darunter ein Test, der seine eigene Regel
-nicht prüfte. **T73–T76** sind noch am 15. August erledigt worden;
+**85 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 3 offen:** T63
+(vom Betreiber zurückgestellt), das Vorhaben T72 und der Nachweis T78.
+**T67** — die Tests selbst geprüft — ist am 16. August dazugekommen: eine
+[Mutationsprobe](../../scripts/mutationsprobe.mjs), die Regeln absichtlich
+bricht und nachsieht, ob etwas rot wird. Sieben ungewachte Regeln gefunden und
+geschlossen, darunter ein Test, der seine eigene Regel nicht prüfte. **T68**
+(Datenmodell und Schlüssel) hat drei Fragen mit „trägt" beantwortet und eine
+mit **T87**: Die Kennung eines Treffpunkts hing an der Wochennummer und hätte
+ein Jahr nach dem Start jede Woche einen zugeteilten Leiter verschluckt.
+**T73–T76** sind noch am 15. August erledigt worden;
 **T79 bis T81** kamen beim Benutzen desselben Tages dazu (T80 als Nachwehe von
 T76, T81 als Widerruf seiner Kürzungs-Mechanik) und sind erledigt.
 
@@ -2997,8 +3140,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T68, T72, T78 | Zwei Vorhaben (Datenmodell, Abwesenheiten) und der Mandanten-Nachweis. T67, T71, T73–T77 und T79–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
-| **16. August** | — | T67, T70, T71 und T82–T86 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
+| **15. August** | T72, T78 | Ein Vorhaben (Abwesenheiten) und der Mandanten-Nachweis. T67–T71 und T73–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt und `substitute` deployt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:

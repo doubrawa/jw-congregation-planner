@@ -11,7 +11,7 @@
  */
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
-import { fsBaseFromWeeks, fsMigrateLeaderPids, regenFsWeeks } from '../data/fs'
+import { fsBaseFromWeeks, fsMigrateInstIds, fsMigrateLeaderPids, regenFsWeeks } from '../data/fs'
 import { itemTaskKey, partTaskKey, taskKeyVorbei } from '../data/planning'
 import {
   displayName,
@@ -325,6 +325,41 @@ export function migrateItemIds(
     delete nextConf[alt]
   }
   return { weeks: anyChanged ? next : weeks, confirmations: nextConf, renames }
+}
+
+/**
+ * Alt-Schlüssel der Treffpunkte auf die stabile Kennung heben (T87):
+ * `fs|2026-01-26|3|r1c8…` → `fs|2026-01-26|r1c8…`
+ *
+ * Die `3` war die **Position der Woche im Ladefenster** — die letzte
+ * Ordnungszahl, die T66 übersehen hatte. Sie ändert sich, sobald das Fenster
+ * weiterrutscht (es hält die jüngsten 52 Wochen), und nahm die Bestätigung
+ * jedes Treffpunkts mit ins Leere.
+ *
+ * Rein und idempotent: Schlüssel ohne Zahl an dritter Stelle bleiben unberührt,
+ * also auch die schon umgestellten und die von Hand angelegten Treffpunkte
+ * (`x<uuid>`). Regel-Kennungen sind `r<uuid>` und damit nie eine Zahl — ein
+ * Schlüssel kann also nicht versehentlich zweimal gekürzt werden.
+ */
+export function migrateFsTaskKeys(confirmations: ConfirmationMap): {
+  confirmations: ConfirmationMap
+  renames: Array<[string, string]>
+} {
+  const ALT = /^fs\|(\d{4}-\d{2}-\d{2})\|\d+\|(.+)$/
+  const renames: Array<[string, string]> = []
+  for (const key of Object.keys(confirmations)) {
+    const treffer = ALT.exec(key)
+    if (treffer) renames.push([key, `fs|${treffer[1]}|${treffer[2]}`])
+  }
+  if (renames.length === 0) return { confirmations, renames }
+  const next = { ...confirmations }
+  for (const [alt, neu] of renames) {
+    const status = next[alt]
+    if (status === undefined) continue
+    next[neu] = status
+    delete next[alt]
+  }
+  return { confirmations: next, renames }
 }
 
 /**
@@ -861,7 +896,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // (T37). Idempotent — beim zweiten Laden gibt es nichts mehr zu tun.
   const umgestellt = migrateItemIds(gemigriert, rohConf)
   const weekList = umgestellt.weeks
-  const confirmations = umgestellt.confirmations
+  // Und dasselbe für die Treffpunkte (T87) — dieselbe Ursache, andere Tabelle.
+  const fsUmgestellt = migrateFsTaskKeys(umgestellt.confirmations)
+  const confirmations = fsUmgestellt.confirmations
+  const alleRenames = [...umgestellt.renames, ...fsUmgestellt.renames]
   /** Nur die Wochen, die wirklich Kennungen bekommen haben. */
   const speichereUmgestellte = (): void => {
     for (let i = 0; i < weekList.length; i++) {
@@ -869,11 +907,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       if (woche && woche !== gemigriert[i]) saveWeek(congregationId, woche)
     }
   }
-  if (umgestellt.renames.length > 0) {
+  if (alleRenames.length > 0) {
     // Erst die Datenbank, dann die Wochen: bricht das Umbenennen ab, bleiben
     // die Wochen ohne Kennung und der nächste Ladevorgang versucht es erneut.
     // Andersherum wären die Bestätigungen verwaist.
-    void renameConfirmationKeys(congregationId, umgestellt.renames).then(speichereUmgestellte)
+    void renameConfirmationKeys(congregationId, alleRenames).then(speichereUmgestellte)
   } else {
     speichereUmgestellte()
   }
@@ -905,7 +943,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   for (const row of (fsWeeksRows.data ?? []) as { start: string; data: FsInstance[] }[]) {
     fsNachWoche.set(row.start, row.data)
   }
-  const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
+  // Erst die Kennungen heben (T87), dann ausrichten: `regenFsWeeks` findet die
+  // gespeicherte Leitung über die Kennung wieder — trüge sie noch die alte
+  // Wochennummer, ginge sie beim Ausrichten verloren.
+  const storedFsWeeks: FsInstance[][] = fsMigrateInstIds(
+    weekList.map((w) => fsNachWoche.get(w.start) ?? []),
+  )
   const ausgerichtet = fsRules.length
     ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true)
     : storedFsWeeks
