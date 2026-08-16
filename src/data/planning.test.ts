@@ -631,32 +631,21 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(we).toContainEqual({ kind: 'double', name: 'Nur Wochenende', kennung: 'name:Nur Wochenende', tab: 'we', count: 2 })
   })
 
-  it('tab-bezogene Serie: zählt nur die jeweilige Zusammenkunftsart', () => {
+  it('meldet Wochen in Folge überhaupt nicht mehr (T81)', () => {
+    /*
+     * Bis T81 gab es hier die „Serie": drei Wochen am Stück eingeteilt = eine
+     * Meldung. Sie ist gestrichen, weil sie in einer kleinen Versammlung fast
+     * immer stand und die Meldungen daneben zudeckte. Dieser Test hält die
+     * Streichung fest — er wird rot, sobald jemand die Serie zurückholt.
+     *
+     * Drei Wochen, dazu eine leere vierte: Die alte Prüfung meldete nur, wenn
+     * die Serie kürzer war als der geladene Zeitraum. Ohne die vierte Woche
+     * bliebe die Meldung also auch früher schon aus, und der Test prüfte nichts.
+     */
     const weeks = buildDemoWeeks()
-    // Person nur in der Wochenend-ZK dreier Wochen in Folge (Programmpunkt Vorsitz).
-    for (const wi of [0, 1, 2]) (weeks[wi].we.sections[0].items[0] as PartItem).names[0].name = 'WE Serie'
-    const midStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'mid').filter((c) => c.kind === 'streak')
-    expect(midStreak.some((c) => c.name === 'WE Serie')).toBe(false)
-    const weStreak = weekConflicts(weeks, 1, [], DEMO_SERVICES, 'we').filter((c) => c.kind === 'streak')
-    expect(weStreak).toContainEqual({ kind: 'streak', name: 'WE Serie', kennung: 'name:WE Serie', count: 3 })
-  })
-
-  it('erkennt Serien von 3 Wochen in Folge (nur Aufgaben, nicht dort)', () => {
-    const weeks = buildDemoWeeks()
-    // Programmpunkt (Vorsitz) drei Wochen in Folge → Serie.
     for (const wi of [0, 1, 2]) (weeks[wi].mid.sections[0].items[0] as PartItem).names[0].name = 'R. Serie'
-    const streak = weekConflicts(weeks, 1, [], DEMO_SERVICES).filter((c) => c.kind === 'streak')
-    expect(streak).toContainEqual({ kind: 'streak', name: 'R. Serie', kennung: 'name:R. Serie', count: 3 })
-    // Woche 3 gehört nicht zur Serie
-    const w3 = weekConflicts(weeks, 3, [], DEMO_SERVICES)
-    expect(w3.some((c) => c.kind === 'streak' && c.name === 'R. Serie')).toBe(false)
-  })
-
-  it('Hilfsdienst mehrmals in Folge ist KEINE Serie', () => {
-    const weeks = buildDemoWeeks()
-    for (const wi of [0, 1, 2]) weeks[wi].mid.helpers.ton = [{ name: 'H. Dauerhelfer' }]
-    const streak = weekConflicts(weeks, 1, [], DEMO_SERVICES).filter((c) => c.kind === 'streak')
-    expect(streak.some((c) => c.name === 'H. Dauerhelfer')).toBe(false)
+    ;(weeks[3].mid.sections[0].items[0] as PartItem).names[0].name = ''
+    expect(weekConflicts(weeks, 1, [], DEMO_SERVICES).some((c) => c.name === 'R. Serie')).toBe(false)
   })
 
   it('meldet externe Redner und Gruppen-Rotation nicht', () => {

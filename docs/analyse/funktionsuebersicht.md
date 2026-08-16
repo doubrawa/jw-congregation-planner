@@ -110,7 +110,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 41b | Sonderwoche: Tag/Uhrzeit verlegen, Zusammenkunft absagen, Grund (T30) | Planen | Planer | `Week.dev`, `SonderwochePanel`, `istAusgefallen` |
 | 42 | Auto-Zuteilung, getrennt nach Aufgaben / Hilfsdiensten | Planen | Planer | `planen/AutoAssignPanel.tsx`, `autoAssignMeeting` |
 | 43 | Leeren mit Zwei-Tipp-Bestätigung | Planen | Planer | `AutoAssignPanel.tsx` |
-| 44 | Konflikt-Banner: abwesend, Doppelbelegung, Hilfsdienst+Aufgabe, Serie ≥3 Wochen | Planen | Planer | `planen/PlanBanners.tsx`, `weekConflicts` |
+| 44 | Konflikt-Banner: abwesend, Doppelbelegung, Hilfsdienst+Aufgabe (Serien seit T81 nicht mehr) | Planen | Planer | `planen/PlanBanners.tsx`, `weekConflicts` |
 | 45 | Banner der offenen Slots (ganze Woche) | Planen | Planer | `openSlotLabels` |
 | 46 | Status je Chip: ✓ bestätigt / … wartet | Planen | Planer | `pendingNames` |
 | 47 | „Unser Leben als Christ": Punkte hinzufügen, löschen, verschieben, Minuten ±, Endzeit zieht mit | Planen | Planer | `data/meeting-edit.ts` (`lacAdd/lacRemove/lacMove/lacAdjust`, `shiftEnd`) |

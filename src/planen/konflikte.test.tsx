@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import {
   AppDispatchContext,
@@ -16,12 +16,14 @@ import { ConflictsBanner } from './PlanBanners'
 import { HelpersPanel } from './HelpersPanel'
 
 /**
- * T76 — das Konflikt-Banner und der Plan darunter.
+ * Das Konflikt-Banner und der Plan darunter.
  *
- * Zwei Befunde in einem: „+N weitere mögliche Konflikte" war **toter Text** —
- * es nannte eine Zahl und ließ den Planer damit stehen; und die betroffenen
- * Zuteilungen sahen im Programm aus wie alle anderen, sodass man den im Banner
- * genannten Namen darunter erst suchen musste.
+ * **T76:** Die betroffenen Zuteilungen sahen im Programm aus wie alle anderen —
+ * den im Banner genannten Namen musste man darunter erst suchen. Jetzt hebt
+ * sich der Chip ab.
+ *
+ * **T81:** Die Serie („3 Wochen in Folge") ist ganz weggefallen, und mit ihr
+ * der Aufklapper, der einzig sie kürzte.
  *
  * Die Wochen hier sind mit Absicht selbst gebaut und nicht die Demo-Daten: die
  * bringen eigene Konflikte mit, und dann prüfte der Test die Demo statt die
@@ -98,10 +100,7 @@ const basis = (over: Partial<AppState>): AppState => ({
   ...over,
 })
 
-describe('T76 — „+N weitere" klappt die übrigen Konflikte auf', () => {
-  const zeilen = (c: HTMLElement) => c.querySelectorAll('.plan-conflict-row').length
-  const schalter = (c: HTMLElement) => c.querySelector('.plan-conflict-more')
-
+describe('T81 — Serien stehen nicht mehr im Banner', () => {
   const zeige = (anzahl: number) => {
     const { weeks, persons } = mitSerien(anzahl)
     return render(
@@ -111,31 +110,23 @@ describe('T76 — „+N weitere" klappt die übrigen Konflikte auf', () => {
     )
   }
 
-  it('zeigt zunächst zwei Serien und einen Schalter für den Rest', () => {
+  it('drei Wochen in Folge ergeben kein Banner mehr', () => {
+    /*
+     * Der Fall, der das Banner früher füllte: drei Personen, jede drei Wochen
+     * am Stück auf demselben Programmpunkt. Das war der Normalfall einer
+     * kleinen Versammlung — und stand deshalb fast immer da. Jetzt bleibt das
+     * Banner ganz weg, wenn es nichts Echtes zu melden gibt.
+     */
     const { container } = zeige(3)
-    expect(zeilen(container)).toBe(2)
-    const mehr = schalter(container)
-    // Ein Schalter, kein Text — genau das war der Befund.
-    expect(mehr?.tagName).toBe('BUTTON')
-    expect(mehr?.getAttribute('aria-expanded')).toBe('false')
-    expect(mehr?.textContent).toContain('1') // „+1 weitere …"
+    expect(container.querySelector('.plan-conflicts')).toBeNull()
   })
 
-  it('klappt auf und wieder zu', () => {
-    const { container } = zeige(3)
-    fireEvent.click(schalter(container)!)
-    expect(zeilen(container)).toBe(3)
-    expect(schalter(container)?.getAttribute('aria-expanded')).toBe('true')
-
-    fireEvent.click(schalter(container)!)
-    expect(zeilen(container)).toBe(2)
-    expect(schalter(container)?.getAttribute('aria-expanded')).toBe('false')
-  })
-
-  it('ohne Rest kein Schalter', () => {
-    const { container } = zeige(2)
-    expect(zeilen(container)).toBe(2)
-    expect(schalter(container)).toBeNull()
+  it('auch der Aufklapper ist mit den Serien weggefallen', () => {
+    // „+{n} weitere mögliche Konflikte" kürzte einzig die Serien; ohne sie
+    // hätte der Schalter nichts mehr zu zeigen.
+    const { container } = zeige(6)
+    expect(container.querySelector('.plan-conflict-more')).toBeNull()
+    expect(container.querySelectorAll('.plan-conflict-row')).toHaveLength(0)
   })
 })
 
@@ -169,6 +160,26 @@ describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
     // Bernd steht nur einmal da und bleibt unberührt.
     const bernd = chips(container).find((el) => el.textContent?.includes('Bernd'))
     expect(bernd?.className).not.toContain('is-konflikt')
+  })
+
+  it('markiert mit einem Punkt — der Chip behält seine Fläche (T80)', () => {
+    /*
+     * Die Markierung war anfangs eine Farbfläche in `--tWein`. Das ist der Ton
+     * des Bereichs „Unser Leben als Christ": dort ging die Hervorhebung im
+     * Panel unter. Jetzt trägt sie der Punkt, den das Banner ebenfalls führt.
+     */
+    const { state, meeting } = mitHelferKonflikt()
+    const { container } = render(
+      <Buehne state={state}>
+        <HelpersPanel meeting={meeting} />
+      </Buehne>,
+    )
+    const punkte = container.querySelectorAll('.slot-konflikt-dot')
+    expect(punkte).toHaveLength(1)
+    expect(punkte[0]?.closest('.slot-chip')?.className).toContain('is-konflikt')
+    // Und nur der markierte Chip trägt ihn.
+    const bernd = chips(container).find((el) => el.textContent?.includes('Bernd'))
+    expect(bernd?.querySelector('.slot-konflikt-dot')).toBeNull()
   })
 
   it('ohne Konflikt bleibt kein Chip markiert', () => {

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications, lastFenster, loadWindow, wochenAbstand } from './helpers'
-import { weekConflicts } from './planning'
 import type { Meeting, Person, Week } from './types'
 
 /**
@@ -115,35 +114,9 @@ describe('lastFenster: das Fenster, das die Quadrate zeigen', () => {
   })
 })
 
-describe('Serien-Konflikt zählt Wochen in Folge', () => {
-  it('eine fehlende Woche unterbricht die Serie', () => {
-    // Drei Einträge am Stück, aber die letzten beiden liegen zwei Wochen
-    // auseinander — das ist keine Serie von drei Wochen.
-    //
-    // Die vierte, leere Woche ist nötig, damit der Test überhaupt etwas sagt:
-    // `weekConflicts` meldet eine Serie nur, wenn sie kürzer als der geladene
-    // Zeitraum ist (wer in *jeder* Woche dran ist, ist durchgehend aktiv, keine
-    // auffällige Häufung). Bei genau drei Wochen bliebe die Meldung also auch
-    // ohne diese Korrektur aus — der Test wäre grün ohne etwas zu prüfen.
-    const weeks = [
-      woche('2026-06-01', true),
-      woche('2026-06-08', true),
-      woche('2026-06-22', true),
-      woche('2026-06-29', false),
-    ]
-    const serien = weekConflicts(weeks, 1, [PERSON], []).filter((c) => c.kind === 'streak')
-    expect(serien).toEqual([])
-  })
-
-  it('drei echte Wochen in Folge melden weiterhin', () => {
-    const weeks = [
-      woche('2026-06-01', true),
-      woche('2026-06-08', true),
-      woche('2026-06-15', true),
-      woche('2026-06-22', false),
-    ]
-    const serien = weekConflicts(weeks, 1, [PERSON], []).filter((c) => c.kind === 'streak')
-    expect(serien).toHaveLength(1)
-    expect(serien[0].count).toBe(3)
-  })
-})
+/*
+ * Hier stand bis T81 die Serie („3 Wochen in Folge"), deren Lauf über
+ * `wochenAbstand` bei einer fehlenden Woche brechen musste. Die Meldung ist
+ * gestrichen; was `wochenAbstand` heute noch trägt — das Ladefenster und die
+ * Quadrate des Personen-Sheets — steht oben und bleibt geprüft.
+ */

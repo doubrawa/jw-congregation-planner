@@ -199,55 +199,8 @@
   background: var(--gld);
 }
 
-.plan-conflict-dot[data-kind='streak'] {
-  background: var(--pet);
-}
-
 .plan-conflict-dot[data-kind='helperTask'] {
   background: var(--acc);
-}
-
-/*
- * Aufklapper für die übrigen Konflikte. Sieht aus wie die Zeile vorher, ist
- * aber ein Schalter — deshalb Button-Grundlage (Rand, Fläche, Polster weg) und
- * ein Zeiger, der das auch zeigt.
- */
-.plan-conflict-more {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 9px;
-  padding: 4px 0;
-  border: 0;
-  background: none;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  color: var(--wein);
-  cursor: pointer;
-}
-
-.plan-conflict-chev {
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
-
-.plan-conflict-more.is-open .plan-conflict-chev {
-  transform: rotate(90deg);
-}
-
-/* In RTL zeigt der Winkel nach links; aufgeklappt ebenso nach unten. */
-[dir='rtl'] .plan-conflict-chev {
-  transform: scaleX(-1);
-}
-
-[dir='rtl'] .plan-conflict-more.is-open .plan-conflict-chev {
-  transform: scaleX(-1) rotate(-90deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .plan-conflict-chev {
-    transition: none;
-  }
 }
 
 /* Offene Zuteilung: Präfix (Zusammenkunft) in Akzentfarbe, Aufgabe dunkel. */
@@ -357,21 +310,44 @@
 }
 
 /*
- * Diese Person steht im Konflikt-Banner darüber. Dieselben Farben wie das
- * Banner (Wein auf Wein-Ton), damit die Verbindung ohne Erklärung sichtbar ist
- * — und ein kräftigerer Rand statt einer Farbfläche, damit der Chip weiter wie
- * ein Chip aussieht und der Bestätigungs-Haken daneben lesbar bleibt.
+ * Diese Person steht im Konflikt-Banner darüber.
+ *
+ * **Form statt Fläche** (T80): Der Chip hatte zuerst `--tWein` als Hintergrund
+ * — genau den Ton, den der Bereich „Unser Leben als Christ" für sich führt
+ * (`SECTION_TOKENS.wein`). Dort verschwand die Hervorhebung im Panel, statt
+ * aufzufallen, und dieselbe Farbe bedeutete zweierlei. Eine andere Tönung hilft
+ * nicht: **jede** Panel-Fläche der App ist die Farbe irgendeines Bereichs. Der
+ * Chip behält deshalb seine eigene Fläche und markiert mit Rand und Punkt —
+ * demselben Punkt, den das Banner vor jeder Zeile führt.
  */
 .slot-chip.is-konflikt {
   border-color: var(--wein);
-  border-width: 1.5px;
-  padding: 4.5px 10.5px; /* gleicht den dickeren Rand aus — kein Springen */
-  background: var(--tWein);
+  /*
+   * 2px, nicht 1,5px: Chrome rechnet Randbreiten auf **ganze Gerätepixel
+   * ab**runden. Auf einem 125-%-Bildschirm (Windows-Standard) wurden aus 1,5px
+   * 1,875 Gerätepixel → 1, also genau so viel wie beim gewöhnlichen Chip: der
+   * „kräftigere Rand" war dort nie zu sehen. Am laufenden Stand gemessen.
+   */
+  border-width: 2px;
+  padding: 4px 10px; /* gleicht den dickeren Rand aus — kein Springen */
   color: var(--wein);
 }
 
 .slot-chip.is-konflikt:hover {
   border-color: var(--wein);
+}
+
+/* Der Punkt trägt die Markierung dort, wo Rand und Schrift einem Farbschema zu
+   nahe kommen (im einfarbigen ist `--wein` ein Grau). Logischer Rand, damit er
+   in RTL auf der anderen Seite steht. */
+.slot-konflikt-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-inline-end: 5px;
+  border-radius: 50%;
+  background: var(--wein);
+  vertical-align: middle;
 }
 
 .slot-status {

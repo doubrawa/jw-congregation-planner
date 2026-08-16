@@ -2209,7 +2209,7 @@ existiert: `PersonTimeline` zeigt die Zeitleiste einer einzelnen Person.
 
 ---
 
-## Aufgenommen am 15. August 2026 — Fehler (T73–T78)
+## Aufgenommen am 15. August 2026 — Fehler (T73–T81)
 
 ### T73 · Personen-Detail: Aufgaben und Hilfsdienste gehören getrennt ⚡ ✅ erledigt
 Ein einziges Panel „AUFGABENBEREICHE" hielt beides: die festen Programm-Bereiche
@@ -2317,6 +2317,136 @@ und S3 unten unter „Was bewusst offen bleibt" — der Nachweis braucht zwei ec
 Konten. Mit einer zweiten Versammlung wird er erst möglich — und dann Pflicht,
 Tabelle für Tabelle.
 
+### T79 · Auto-Zuteilung lässt Hilfsdienste aus — und sagt nichts 🔧
+Der Betreiber meldet: Beim automatischen Verteilen bleiben **selbst angelegte**
+Hilfsdienste leer, und der **Rundgangsordner** wird nicht zugeteilt.
+
+Die Zuteilung läuft über `state.services` und ist dem Namen nach vollständig —
+sie geht jeden Dienst der Liste durch, gleich ob Standard oder selbst angelegt
+([planning.ts:712](../../src/data/planning.ts)). Es hakt eine Stufe tiefer, bei
+der Frage, **wer** für einen Dienst überhaupt infrage kommt. Zwei Stellen kommen
+dafür in Betracht; welche davon es beim Betreiber ist, ist **gelesen, nicht
+gemessen**:
+
+1. **Ein neuer Dienst kennt niemanden.** Jeder Dienst ist sein eigener
+   Aufgabenbereich (`svc:<key>`), und ein selbst angelegter bekommt den
+   Schlüssel `svc-<uuid>` — einen Bereich, den bis dahin keine einzige Person
+   gesetzt hat. `pick('helper', serviceQualKey(...))` findet also keinen
+   Kandidaten, der Platz bleibt leer, und das bleibt so, bis der Planer den
+   Schalter in **jedem** Personen-Detail einzeln umlegt. Beim Rundgangsordner
+   liefe es auf dasselbe hinaus, wenn im Bestand des Betreibers nur
+   „Eingangsordner" und „Saalordner" angehakt sind — nachzusehen ist das an den
+   echten Daten, nicht an der Demo (die setzt alle drei Ordner-Bereiche).
+2. **Der letzte Dienst geht leer aus.** Die Dienste werden in Listenreihenfolge
+   besetzt, erst nach den Programmpunkten, und niemand bekommt zweierlei in
+   einer Zusammenkunft (`used`). Der Rundgangsordner steht in
+   `STANDARD_DIENSTE` an letzter Stelle — ist der Kreis der Ordner vorher
+   aufgebraucht, bleibt ausgerechnet er übrig. Das wäre dann kein Zufall,
+   sondern Bauart.
+3. **Kommt der Bereich überhaupt aus NWS mit?** Der Betreiber vermutet, der
+   Rundgangsordner sei bei **allen** Personen ausgeschaltet. Der Erzeuger ist es
+   nicht: `build-personen-sql.mjs` bildet `svc:rund` auf das NWS-Flag `dk` ab
+   (die anderen fünf Dienste liegen auf `ch`–`cl`, `rund` fällt aus der Reihe —
+   auffällig, aber offenbar richtig), und beide erzeugten Dateien setzen den
+   Bereich bei **14 Personen** von 111 — genauso viele wie Saalordner (13) und
+   Eingangsordner (11–12). Nachzusehen bleibt also das andere Ende: ob die
+   **lebende** Datenbank diese 14 heute noch trägt, und ob die Dienstliste der
+   Versammlung den Schlüssel `rund` überhaupt noch führt. Trüge sie stattdessen
+   einen selbst angelegten `svc-<uuid>`, zeigten beide Hälften dieses Fehlers
+   auf **dieselbe** Ursache: Der Bereich der Person und der Schlüssel des
+   Dienstes gingen aneinander vorbei.
+
+**Was den Fehler unsichtbar macht**, unabhängig von der Ursache: Die
+Auto-Zuteilung zählt offen gebliebene Plätze zwar mit (`unfilled`), sagt es aber
+nur, wenn **gar nichts** zugeteilt wurde
+([reducer.ts:681](../../src/app/reducer.ts)). Wurden zehn Plätze besetzt und
+zwei nicht, meldet der Toast nur die zehn. Der Planer erfährt nie, dass ein
+Dienst nicht besetzt werden konnte — und schon gar nicht, welcher und warum.
+
+**Zu klären:** Soll ein neu angelegter Dienst mit „niemand qualifiziert"
+starten (heute so — sicher, aber stumm) oder mit „alle Verkündiger" (sofort
+verteilbar, dafür muss man einschränken statt freigeben)? Und soll die
+Rückmeldung nach dem Verteilen die offen gebliebenen Dienste beim Namen nennen?
+
+### T80 · Konflikt-Markierung und „Unser Leben als Christ" tragen dieselbe Farbe ⚡ ✅ erledigt
+Aus T76: Der markierte Chip bekommt `background: var(--tWein)` und Rand/Schrift
+in `--wein` ([planen.css:365](../../src/planen/planen.css)). Genau diese beiden
+Marken sind aber die **Bereichsfarbe** von „Unser Leben als Christ"
+(`farbe: 'wein'` → Panel `tWein`, Akzent `wein`,
+[constants.ts:74](../../src/data/constants.ts)). In diesem Bereich sitzt die
+Markierung damit auf ihrem eigenen Ton: ein gewöhnlicher Chip ist `--card` und
+hebt sich vom Panel ab, der markierte verschwindet **in** ihm — die
+Hervorhebung wirkt dort wie ein Chip, dem die Füllung fehlt. Und dieselbe Farbe
+bedeutet zweierlei: einmal „dieser Programmteil", einmal „hier stimmt etwas
+nicht".
+
+Der Grund steht im Kommentar der Regel: die Farbe war bewusst die des
+Konflikt-Banners, damit man Banner und Chip zusammendenkt. Das bleibt richtig —
+nur darf die Verbindung nicht dieselbe Marke benutzen, die ein Bereich schon
+für sich beansprucht.
+
+**Gelöst mit Form statt Fläche.** Der Chip behält seine eigene Fläche
+(`--card`) und markiert mit Rand und einem **Punkt** vor dem Namen — demselben
+Punkt, den das Banner vor jeder Zeile führt. Eine andere Tönung wäre keine
+Lösung gewesen: `tNeu`, `tNeu2`, `tPet`, `tGld`, `tWein` — **jede** Panel-Fläche
+der App ist die Farbe irgendeines Bereichs, ein freier Ton existiert nicht.
+
+**Dabei aufgefallen, am laufenden Stand gemessen:** Der „kräftigere Rand" aus
+T76 war auf diesem Bildschirm gar keiner. Chrome rundet Randbreiten auf ganze
+**Geräte**pixel ab; bei 125 % Skalierung (Windows-Standard) wurden aus 1,5 px
+1,875 → 1 Gerätepixel, genau so viel wie beim gewöhnlichen Chip. Getragen hatte
+die Markierung also allein die Farbfläche — die jetzt weg ist. Mit 2 px sind es
+2 Gerätepixel, sichtbar doppelt so dick; der Ausgleich im Polster hält die
+Chip-Höhe (gemessen: 27,9 px gegenüber 28,3 px).
+
+**Geprüft:** Ein Test hält den Punkt fest (nur der markierte Chip trägt ihn),
+und nachgesehen im Bereich „Unser Leben als Christ" in drei Schemata — hell
+(Jasmin), einfarbig (Sesam) und dunkel (Matcha). Kontrastprobe grün.
+
+### T81 · „X ist 3 Wochen in Folge eingeteilt" gehört nicht mehr ins Banner ⚡ ✅ erledigt
+Der Betreiber: „es gibt einfach zu viele Meldungen von dieser Sorte und dauernd
+wird das angezeigt. das stört nur." Damit ist die Serie (`kind: 'streak'`) aus
+der Konfliktanzeige zu nehmen.
+
+Das ist kein Widerruf von T36 — die Serienzählung ist sauber, sie überspringt
+Kongresswochen, zählt über die Kennung und nur Programmpunkte. Sie ist bloß
+**keine Warnung**: Die anderen drei Arten nennen etwas, das so nicht bleiben
+kann (abwesend und trotzdem eingeteilt, zweimal in derselben Zusammenkunft,
+Aufgabe und Hilfsdienst zugleich). Dreimal hintereinander eingeteilt zu sein ist
+in einer kleinen Versammlung der Normalfall. Eine Meldung, die fast immer steht,
+bringt der Planer sich ab — und übersieht daneben die, auf die es ankommt.
+
+**Was dranhängt:** Die Serie ist die **einzige** gekürzte Art — „+{n} weitere
+mögliche Konflikte" aus T76 klappt nichts anderes auf. Fällt sie weg, ist der
+Schalter ohne Inhalt und gehört mit weg (`STREAK_SHOWN`, der Zustand `offen`,
+die Winkel-Regeln). Fällt auch die Berechnung weg, werden `STREAK_THRESHOLD`,
+der Punkt `[data-kind='streak']` und der Textschlüssel `konfSerie` zu totem Code
+— sauberer wäre, sie in einem Zug mit zu entfernen (T50).
+
+**So umgesetzt: an der Quelle gestrichen, nicht in der Anzeige gefiltert.** Ein
+Konflikt, den `weekConflicts` liefert und niemand zeigt, wäre beim nächsten
+Umbau ungefragt wieder ins Bild gewandert. Weg sind damit: die Serienrechnung,
+`STREAK_THRESHOLD`, die Art `'streak'`, der Aufklapper samt Winkel-Regeln
+(`STREAK_SHOWN`, RTL- und Bewegungs-Varianten), der Punkt
+`[data-kind='streak']` — und die beiden Wörterbuch-Schlüssel `konfliktStreak`
+und `konfMehr` in **allen 34 Sprachen**. Der Kopf des Abschnitts in
+`planning.ts` sagt, warum es sie nicht mehr gibt; das verhindert die
+Wiedereinführung besser als eine leere Stelle.
+
+**Ein Test hing daran, ohne dass es zunächst auffiel.** Die Langzeit-Fairness
+maß ihren Erfolg mit `weekConflicts(...).kind === 'streak'`: „erzeugt keine
+Serien, die die Konfliktprüfung anschließend anmahnt". Nach dem Streichen wäre
+er grün geblieben, ohne noch etwas zu prüfen — 0 = 0. Die **Eigenschaft** ist
+weiter richtig (die Reihenfolge der Wartezeiten verhindert, dass jemand drei
+Wochen am Stück drankommt), also zählt der Test die Serien jetzt selbst. Zur
+Gegenprobe die Schwelle auf 2 gesenkt: 8 Personen mit einer Serie der Länge 2 —
+die Messung sieht also wirklich etwas.
+
+**Geprüft:** Zwei Tests halten die Streichung fest (in `planning.ts`, dass drei
+Wochen in Folge nichts mehr melden; im Banner, dass genau dieser Fall gar kein
+Banner mehr erzeugt), und am laufenden Stand nachgesehen: Wo vorher Serien
+standen, nennt das Banner nur noch die zwei Abwesenden.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -2339,12 +2469,14 @@ Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☐☐☐☐☐☐ ☑☑☑☑☐☐
+15. August ☐☐☐☐☐☐ ☑☑☑☑☐☐☐☑☑
 
-**69 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 9 offen:** T63
-(vom Betreiber zurückgestellt), die sechs Vorhaben T67–T72 und die beiden
-verbliebenen Fehler T77 und T78. **T73, T74, T75 und T76** sind noch am
-15. August erledigt worden. **T66** — der
+**71 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 10 offen:** T63
+(vom Betreiber zurückgestellt), die sechs Vorhaben T67–T72 und die drei
+verbliebenen Fehler T77, T78 und T79. **T73, T74, T75 und T76** sind noch am
+15. August erledigt worden — **T79 bis T81** sind beim Benutzen desselben Tages
+dazugekommen, T80 als Nachwehe von T76 und T81 als Widerruf seiner
+Kürzungs-Mechanik; **T80 und T81** sind gleich mit erledigt. **T66** — der
 strukturelle Mangel, den T65 ans Licht gebracht hat — ist in drei Stufen
 erledigt: eine Woche ist ihr Datum, nicht ihre Nummer. **T65** hat beim Messen
 zwei weitere Fehler aufgedeckt und mitgenommen (siehe dort).
@@ -2424,7 +2556,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
-| **15. August** | T67–T72, T77, T78 | Sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und zwei Fehler. T73–T76 sind am selben Tag erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **15. August** | T67–T72, T77, T78, T79 | Sechs Vorhaben (Tests, Datenmodell, Einspringen beim Öffnen, Klassennamen, Druckbogen, Abwesenheiten) und drei Fehler. T73–T76, T80 und T81 sind am selben Tag erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. T79 (ausgelassene Hilfsdienste) braucht einen Blick in die lebende Datenbank. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
