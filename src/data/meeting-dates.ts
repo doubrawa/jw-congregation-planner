@@ -241,6 +241,23 @@ export function currentWeekIndex(weeks: readonly Week[], heute = new Date()): nu
 }
 
 /**
+ * Ist dieser Termin vorbei? **Tagesgenau** — vorbei ist er ab dem Tag danach
+ * (T77).
+ *
+ * Dieselbe Körnung wie bei `naechsteZusammenkunft` und aus demselben Grund: Die
+ * Anfangszeit steht in den Einstellungen, aber wann eine Zusammenkunft *zu Ende*
+ * ist, weiß niemand. Eine Aufgabe, die um 20:47 aus der Liste fällt, wäre
+ * geraten — am Tag danach ist sie unstrittig vorbei.
+ *
+ * `at` fehlt bei Wochen ohne Startdatum (Demo, Vorlagen): Die liegen nirgends im
+ * Kalender, also ist dort nichts vorbei.
+ */
+export function istVorbei(at: number | null | undefined, heute = new Date()): boolean {
+  if (at == null) return false
+  return at < Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate())
+}
+
+/**
  * Die **nächste** Zusammenkunft: Woche und Reiter — oder `null`, wenn keine zu
  * finden ist (keine Woche trägt ein Startdatum, alle Termine liegen zurück,
  * oder alles fällt aus).

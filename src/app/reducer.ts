@@ -7,7 +7,7 @@
 import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
-import { currentWeekIndex, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
+import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, overseerGroup, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
@@ -214,7 +214,20 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
           me.id,
           dict(state.lang).fsLeiterLbl,
         ),
-      ].sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
+      ]
+        /*
+         * Vergangenes fällt heraus (T77). Eine Aufgabe von letzter Woche legte
+         * sich beim Öffnen zum Bestätigen vor, stand auf dem Start-Bildschirm
+         * als „nächste Aufgabe" (die Liste ist nach Termin sortiert, das
+         * Vergangene steht also vorn) und zählte in „noch zu bestätigen" mit.
+         * Bestätigen kann man nichts mehr, was vorbei ist.
+         *
+         * Die „…"-Markierung im Planen bleibt davon unberührt: Sie ist die
+         * Auskunft des Planers darüber, wer nie zugesagt hat, und die gilt auch
+         * hinterher noch.
+         */
+        .filter((task) => !istVorbei(task.at))
+        .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
     : []
   const substituteReqs = me
     ? deriveSubstituteReqs(
@@ -224,7 +237,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         me,
         state.congregation.meetings,
         buildAbsences(state.absences, weeks, state.fsBase, state.congregation.meetings),
-      )
+      ).filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
     : []
   return {
     ...state,

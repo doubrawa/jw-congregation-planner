@@ -2322,16 +2322,39 @@ kein Schalter ohne Rest, Markierung mit und ohne `pid`, Namensgleiche,
 Gruppen-Rotation) und am Demo-Stand nachgesehen — die drei Namen des Banners
 haben genau drei markierte Chips.
 
-### T77 · Vergangenes verschwindet: Bestätigen, Dashboard, Mitteilungen 🔧
+### T77 · Vergangenes verschwindet: Bestätigen, Dashboard, Mitteilungen 🔧 ⚠ teilweise
 Zuteilungen, deren Termin vorbei ist, dürfen weder zum Bestätigen vorgelegt
 werden noch im Dashboard stehen; abgelaufene Mitteilungen gehören weg — „die
-interessieren keinen mehr". Der Zeitbezug ist vorhanden und wird beim Filtern
+interessieren keinen mehr". Der Zeitbezug war vorhanden und wurde beim Filtern
 nur nicht benutzt: `deriveMyTasks` trägt `at`, und seit T66 trägt jede Woche ihr
 Datum.
 
-**Zu klären:** ab wann gilt eine Aufgabe als vorbei — Ende der Zusammenkunft
-oder Ende des Tages? Und was geschieht mit einer vergangenen Aufgabe, die nie
-bestätigt wurde: still verschwinden oder für den Planer sichtbar bleiben?
+**Die beiden offenen Fragen sind entschieden** — beide so, wie es der Rest der
+App inzwischen hält:
+
+1. **Vorbei ist der Termin am Tag danach** (`istVorbei`, tagesgenau). Dieselbe
+   Körnung wie bei T82 und aus demselben Grund: Die Anfangszeit steht in den
+   Einstellungen, aber wann eine Zusammenkunft *zu Ende* ist, weiß niemand. Eine
+   Aufgabe, die um 20:47 aus der Liste fällt, wäre geraten.
+2. **Für den Betroffenen verschwindet sie, für den Planer nicht.** Gefiltert
+   wird die abgeleitete Aufgabenliste (`myTasks`) — damit ist sie aus dem
+   Bestätigen, aus „Meine Aufgaben" und aus beiden Zahlen des
+   Start-Bildschirms heraus („nächste Aufgabe", „noch zu bestätigen"). Die
+   **„…"-Markierung im Planen** bleibt: Sie ist die Auskunft darüber, wer nie
+   zugesagt hat, und die gilt auch hinterher noch. Bestätigen kann man nichts
+   mehr, was vorbei ist; nachsehen schon.
+
+Mitgenommen: Ein **Ersatzgesuch** für einen vergangenen Termin fällt ebenfalls
+heraus — niemand springt für gestern ein.
+
+**Was offen bleibt: die Mitteilungen.** Sie tragen keinen Bezug zur Aufgabe und
+lassen sich deshalb nicht danach aussortieren — dieselbe Lücke wie in **T86**.
+Beides braucht `task_key` an der Mitteilung, also eine Migration; erst dann
+lässt sich sagen, welche Zeile in der Glocke erledigt ist.
+
+**Geprüft:** `istVorbei` in vier Fällen (Tag selbst abends, Tag danach,
+Künftiges, ohne Datum) und die Ableitung im Reducer — mit Gegenprobe, dass in
+der zurückliegenden Woche wirklich eine Zuteilung für den Leser steckt.
 
 ### T78 · Mandantentrennung nachweisen, bevor es zwei Versammlungen gibt 🏗
 Sobald eine zweite Versammlung dazukommt, muss alles getrennt sein — keine
@@ -2625,8 +2648,11 @@ danach zwar „Ersatz gefunden", die übrigen aber behalten die alte Zeile.
 (`id, congregation_id, user_id, type, title, body, read, created_at`) — es gibt
 nichts, wonach man die erledigten löschen könnte. Das braucht eine Migration
 (`task_key` an der Mitteilung) und dann zwei Zeilen in der Edge Function.
-Zusammen mit **T77** zu machen: Dort geht es ohnehin um Mitteilungen, die
-niemanden mehr interessieren.
+
+**Der Rest von T77 hängt an derselben Migration:** Auch „diese Mitteilung
+betrifft einen Termin, der vorbei ist" lässt sich ohne Bezug nicht sagen. Die
+beiden gehören deshalb in einen Zug — und in einen Deploy, denn beides ist
+Server-Arbeit.
 
 ---
 
