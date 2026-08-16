@@ -182,6 +182,14 @@ export interface AppState {
   langSheetOpen: boolean // Sprach-Sheet offen
   langSheetFor: 'cong' | 'alt' // Auswahl-Ziel: Versammlungssprache | weitere Programmsprache
   langSearch: string
+  /**
+   * Hilfsdienst, dessen Freigabe-Liste offen ist (Dienst-Schlüssel), sonst null.
+   *
+   * Wer einen Dienst übernehmen darf, stand bis dahin nur im Personen-Detail —
+   * ein Schalter je Person. Für einen neu angelegten Dienst hieß das: einmal
+   * durch die ganze Versammlung, sonst bleibt sein Platz für immer leer (T79).
+   */
+  svcSheet: string | null
   toast: Toast | null
   /**
    * Es wurde sich gerade angemeldet und die Begrüßung steht noch aus.
@@ -293,6 +301,8 @@ export type AppAction =
   | { type: 'setLang'; lang: Lang }
   | { type: 'openLangSheet'; mode?: 'cong' | 'alt' }
   | { type: 'closeLangSheet' }
+  | { type: 'openServiceSheet'; key: string }
+  | { type: 'closeServiceSheet' }
   | { type: 'setLangSearch'; text: string }
   | { type: 'setAuxClass'; on: boolean }
   | { type: 'setCongLang'; name: string }

@@ -68,6 +68,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     lang: 'de',
     langSheetOpen: false,
     langSheetFor: 'cong',
+    svcSheet: null,
     congLang: 'Deutsch',
     progLangs: [],
     langSearch: '',
@@ -887,6 +888,18 @@ describe('Sprache', () => {
     expect(reducer(makeState({ langSheetOpen: true, langSearch: 'x' }), { type: 'closeLangSheet' })).toMatchObject({ langSheetOpen: false, langSearch: '' })
     expect(reducer(makeState(), { type: 'setLangSearch', text: 'fr' }).langSearch).toBe('fr')
     expect(reducer(makeState({ langSheetOpen: true }), { type: 'setCongLang', name: 'Englisch' })).toMatchObject({ congLang: 'Englisch', langSheetOpen: false })
+  })
+
+  it('Freigabe-Liste eines Hilfsdienstes: öffnen, schließen — und beim Löschen mit weg (T79)', () => {
+    expect(reducer(makeState(), { type: 'openServiceSheet', key: 'rund' }).svcSheet).toBe('rund')
+    expect(reducer(makeState({ svcSheet: 'rund' }), { type: 'closeServiceSheet' }).svcSheet).toBeNull()
+    // Wird der Dienst gelöscht, während seine Liste offen steht, zeigte sie
+    // Schalter für einen Bereich, den es nicht mehr gibt.
+    const geloescht = reducer(makeState({ svcSheet: 'rund' }), { type: 'removeService', key: 'rund' })
+    expect(geloescht.svcSheet).toBeNull()
+    // Ein anderer Dienst geht die offene Liste nichts an.
+    expect(reducer(makeState({ svcSheet: 'rund' }), { type: 'removeService', key: 'ton' }).svcSheet).toBe('rund')
+    expect(reducer(makeState({ svcSheet: 'rund' }), { type: 'logout' }).svcSheet).toBeNull()
   })
 
   it('addProgLang überspringt Versammlungssprache und Duplikate', () => {

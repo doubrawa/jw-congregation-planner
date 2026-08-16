@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -23,10 +23,10 @@ import { ServicesPanel } from './ServicesPanel'
  * sichtbar, und zwar dort, wo der Planer es ändern kann.
  */
 
-function Buehne({ state }: { state: AppState }) {
+function Buehne({ state, dispatch }: { state: AppState; dispatch?: () => void }) {
   const store = useStaticStore(state)
   return (
-    <AppDispatchContext.Provider value={() => {}}>
+    <AppDispatchContext.Provider value={dispatch ?? (() => {})}>
       <AppStoreContext.Provider value={store}>
         <AppStateContext.Provider value={state}>
           <ServicesPanel />
@@ -75,6 +75,17 @@ describe('T79 — Hilfsdienste zeigen, für wie viele Personen sie freigegeben s
     expect(unterzeile(container, 'Ton / Video')?.className).not.toContain('svc-sub--leer')
   })
 
+  it('die Zeile öffnet die Freigabe-Liste des Dienstes', () => {
+    const dispatch = vi.fn()
+    const state = { ...initialState(), services: DIENSTE, persons: [person('a', ['ton'])] }
+    const { container } = render(<Buehne state={state} dispatch={dispatch} />)
+    const zeile = [...container.querySelectorAll('.svc-row')].find(
+      (el) => el.querySelector('.svc-name')?.textContent === 'Parkplatz',
+    )
+    fireEvent.click(zeile!.querySelector('.svc-open')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openServiceSheet', key: 'svc-neu' })
+  })
+
   it('die Gruppen-Rotation braucht niemanden und wird nie hervorgehoben', () => {
     // Reinigung geht reihum durch die Predigtdienstgruppen — sie hat gar keinen
     // Aufgabenbereich, eine 0 wäre dort eine falsche Warnung.
@@ -82,5 +93,10 @@ describe('T79 — Hilfsdienste zeigen, für wie viele Personen sie freigegeben s
     const rein = unterzeile(container, 'Reinigung')
     expect(rein?.className).not.toContain('svc-sub--leer')
     expect(rein?.textContent).not.toContain('0')
+    // Und sie führt in keine Freigabe-Liste: dort gibt es nichts freizugeben.
+    const zeile = [...container.querySelectorAll('.svc-row')].find(
+      (el) => el.querySelector('.svc-name')?.textContent === 'Reinigung',
+    )
+    expect(zeile?.querySelector('.svc-open')).toBeNull()
   })
 })

@@ -163,6 +163,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 72 | Geschlecht, Rolle, Predigtdienstgruppe | Detail | Planer | `PersonDetail.tsx` |
 | 73 | Familie/Haushalt verknüpfen | Detail | Planer | `linkFamily`, `unlinkFamily` |
 | 74 | Aufgabenbereiche: 11 feste + je Hilfsdienst einer | Detail | Planer | `QUALIFICATION_ORDER`, `serviceQualKey` |
+| 74a | Freigabe je Hilfsdienst: alle Personen mit Schalter, Zahl am Dienst | Einstellungen | Planer | `einstellungen/ServicePersonsSheet.tsx` |
 | 75 | Feste Wachtturm-Rollen (Leiter, Vertreter) | Detail | Planer | `WT_ROLE_ORDER` |
 | 76 | Zeitleiste der Zuteilungen (Datum + Art, Vergangenes blasser) | Detail | Planer | `personen/PersonTimeline.tsx`, `person-timeline.ts` |
 | 77 | Konto-Karte (Status App-Zugang, einladen) | Detail | Planer | `personen/KontoCard.tsx` |
