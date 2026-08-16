@@ -340,6 +340,25 @@ interface Pending {
 }
 
 /**
+ * Kennung eines Treffpunkts ohne führende Wochennummer (T87).
+ *
+ * Der Client hebt beim Laden beides — die Kennungen im Blob und die
+ * `task_key` der Bestätigungen. Der Versand liest den Blob aber **direkt aus
+ * der Datenbank**, und der bleibt so lange auf dem alten Stand, bis ein Planer
+ * die Woche das nächste Mal anfasst. Ohne diesen Griff rechnete er in der
+ * Zwischenzeit mit `fs|<Montag>|3|r1`, während die Bestätigung längst
+ * `fs|<Montag>|r1` heißt: Der Leiter hätte bestätigt und würde trotzdem weiter
+ * erinnert.
+ *
+ * Regel-Kennungen sind `r<uuid>`, von Hand angelegte `x<uuid>` — eine Zahl
+ * vorn hat nur der Altbestand.
+ */
+function stabileKennung(instId: string): string {
+  const treffer = /^\d+\|(.+)$/.exec(instId)
+  return treffer?.[1] ?? instId
+}
+
+/**
  * Unbestätigte Treffpunkt-Leitungen einer Woche.
  *
  * Zweite Datenquelle (`fs_weeks`), die hier lange gar nicht gelesen wurde: ein
@@ -359,7 +378,7 @@ function pendingOfFsWeek(
   const out: Array<Pending & { offset: number; zeit: string }> = []
   for (const inst of insts) {
     if (!inst?.leader) continue
-    if (conf.has(`fs|${woche}|${inst.id}`)) continue
+    if (conf.has(`fs|${woche}|${stabileKennung(inst.id)}`)) continue
     const ort = inst.place ? ` · ${inst.place}` : ''
     out.push({
       name: inst.leader,

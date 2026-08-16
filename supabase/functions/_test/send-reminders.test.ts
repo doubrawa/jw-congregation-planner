@@ -630,6 +630,22 @@ describe('send-reminders: Treffpunkte', () => {
     expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
   })
 
+  it('auch mit alter Kennung im Blob greift die Bestätigung (T87)', async () => {
+    // Der Client hebt beim Laden beides — Kennung und Schlüssel. Diese Zeile
+    // liest aber die Datenbank, und die trägt die alte Kennung so lange, bis
+    // ein Planer die Woche anfasst. Ohne den Griff nach der stabilen Kennung
+    // erinnerte der Versand in der Zwischenzeit einen Leiter, der längst
+    // bestätigt hat.
+    fsWeeks = [montag({ wd: 3, id: '0|i1' })]
+    confirmations = [{ task_key: `fs|${WEEK_START}|i1`, status: 'bestätigt' }]
+    expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
+  })
+
+  it('… und ohne Bestätigung wird weiter erinnert', async () => {
+    fsWeeks = [montag({ wd: 3, id: '0|i1' })]
+    expect(previewFor(await run(), U_MAX)?.body ?? '').toContain('Treffpunkt-Leiter')
+  })
+
   /*
     Der Treffpunkt braucht die Zusammenkunft nicht mehr. Bis T66 holte sich der
     Versand das Datum über die gleiche **Positionsnummer** aus `weeks` — fehlte
