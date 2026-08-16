@@ -434,8 +434,14 @@ describe('substitute: Positivfall als Gegenprobe', () => {
     expect(writesTo('confirmations').map((w) => w.method)).toEqual(['DELETE', 'POST'])
     const conf = writesTo('confirmations')[1]?.body as { user_id: string; status: string }[]
     expect(conf[0]).toMatchObject({ user_id: U_ME, status: 'bestätigt' })
+    // Die Suche ist beendet: „Ersatz gesucht" verschwindet aus den Glocken
+    // aller Qualifizierten (T86) — vorher blieb die Zeile stehen, obwohl es
+    // nichts mehr zu übernehmen gab.
+    expect(writesTo('notifications').map((w) => w.method)).toEqual(['DELETE', 'POST'])
+    expect(writesTo('notifications')[0]?.path).toContain('task_key=eq.')
+    expect(writesTo('notifications')[0]?.path).toContain('Ersatz')
     // Ursprungsperson und Planer werden informiert
-    const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
+    const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
     expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER]))
   })
 })
@@ -446,15 +452,20 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
   // erschienen deshalb in allen 33 Sprachen deutsch.
   it('Glocken-Titel ist der feste, kanonisch deutsche Schlüssel', async () => {
     await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
-    const rows = writesTo('notifications')[0]?.body as { title: string; body: string }[]
+    const rows = writesTo('notifications')[0]?.body as
+      { title: string; body: string; task_key?: string }[]
     expect(rows[0].title).toBe('Ersatz gesucht') // ohne Dienstnamen
     // Rumpf nur aus ' · '-Atomen, die der Fragment-Übersetzer erledigt.
     expect(rows[0].body).toBe('Mikrofone · Di, 8. Sep · 19:00 · Otto Riginal')
+    // Die Zeile weiß, worum es geht (migration-020) — sonst ließe sie sich
+    // später weder aufräumen noch als abgelaufen erkennen.
+    expect(rows[0].task_key).toBe(KEY)
   })
 
   it('dasselbe beim Einspringen', async () => {
     await call(take())
-    const rows = writesTo('notifications')[0]?.body as { title: string; body: string }[]
+    // [0] ist das Aufräumen der Suche (DELETE), [1] die neue Mitteilung.
+    const rows = writesTo('notifications')[1]?.body as { title: string; body: string }[]
     expect(rows[0].title).toBe('Ersatz gefunden')
     expect(rows[0].body).toBe('Mikrofone · Di, 8. Sep · 19:00 · Ich Selbst')
   })

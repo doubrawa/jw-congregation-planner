@@ -260,6 +260,12 @@ async function notifyUsers(
   pushTitel: (lang: string | null) => string,
   body: string,
   url: string,
+  /**
+   * Aufgabe, um die es geht (migration-020). Damit laesst sich die Zeile
+   * spaeter wiederfinden — „Ersatz gesucht" blieb sonst in der Glocke aller
+   * Qualifizierten stehen, auch wenn laengst jemand eingesprungen war (T86).
+   */
+  taskKey?: string,
 ): Promise<void> {
   const ids = [...new Set(userIds)]
   if (ids.length === 0) return
@@ -269,7 +275,14 @@ async function notifyUsers(
   await restSend(
     'POST',
     'notifications',
-    ids.map((user_id) => ({ congregation_id: cong, user_id, type: 'zuteilung', title: titel, body })),
+    ids.map((user_id) => ({
+      congregation_id: cong,
+      user_id,
+      type: 'zuteilung',
+      title: titel,
+      body,
+      ...(taskKey ? { task_key: taskKey } : {}),
+    })),
   )
   await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), pushTitel, body, url)
 }
@@ -385,6 +398,7 @@ Deno.serve(async (req: Request) => {
         // Wörterbuch-Schlüssel.
         [svcName, date, declinedBy].filter(Boolean).join(' · '),
         `${APP_URL}#go=aufgaben`,
+        payload.taskKey,
       )
       return json({ ok: true, notified: [...new Set(peers)].length })
     }
@@ -410,6 +424,19 @@ Deno.serve(async (req: Request) => {
       { data: week },
     )
     if (!geschrieben) return json({ error: 'slot-taken' }, 409)
+
+    // Die Suche ist beendet: Die Zeilen „Ersatz gesucht" in den Glocken ALLER
+    // Qualifizierten weg (T86). Sie standen dort sonst weiter, obwohl es nichts
+    // mehr zu übernehmen gab — und wer darauf tippte, fand nichts. Nur die
+    // Mitteilungen zu genau diesem Platz; „Ersatz gefunden" entsteht erst
+    // danach und bleibt.
+    // Vor migration-020 gibt es die Spalte nicht: Dann trifft der Filter keine
+    // Zeile und der Aufruf bleibt folgenlos (restSend meldet einen Fehler in
+    // die Logs, bricht die Übernahme aber nicht ab).
+    await restSend(
+      'DELETE',
+      `notifications?congregation_id=eq.${cong}&task_key=eq.${taskKeyEnc}&title=eq.${encodeURIComponent(TITEL_GESUCHT)}`,
+    )
 
     // Alte Bestätigung(en) dieses Slots weg, eigene „bestätigt" setzen.
     // Ungefährlich, weil oben nur ein einziger Aufruf durchkommt.

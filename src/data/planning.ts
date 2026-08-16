@@ -35,7 +35,7 @@ import {
   workloadOf,
   type Zuteilung,
 } from './helpers'
-import { meetingDateMs, meetingDateText } from './meeting-dates'
+import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
 import type {
   ConfirmationMap,
   Group,
@@ -965,6 +965,34 @@ export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | n
   const [woche, tab] = key.split('|')
   if (!woche || !istWochenKennung(woche)) return null
   return tab === 'mid' || tab === 'we' ? { woche, tab } : null
+}
+
+/**
+ * Ist der Termin vorbei, auf den sich dieser `task_key` bezieht? (T77)
+ *
+ * Für Mitteilungen: „Ersatz gesucht", „Erinnerung" und dergleichen beziehen
+ * sich auf einen Platz an einem bestimmten Tag — ist der herum, interessieren
+ * sie niemanden mehr. Seit migration-020 trägt die Mitteilung den Schlüssel und
+ * damit die Antwort.
+ *
+ * Ohne erkennbaren Schlüssel: **false**. Wer nichts über den Termin weiß, lässt
+ * die Zeile stehen — lieber eine zu viel als eine, die noch gebraucht wird.
+ */
+export function taskKeyVorbei(
+  key: string,
+  weeks: Week[],
+  meetings: string,
+  heute = new Date(),
+): boolean {
+  const teil = taskKeyWeek(key)
+  if (!teil) return false
+  const week = weeks.find((w) => w.start === teil.woche)
+  if (week) return istVorbei(meetingDateMs(week, teil.tab, meetings), heute)
+  // Woche nicht geladen (der Ladebereich deckt ein Jahr um heute ab, siehe
+  // lib/data.ts). Auch dann nicht geraten, sondern gerechnet: Der Schlüssel
+  // trägt den Montag, die Zusammenkunft liegt spätestens sechs Tage später.
+  const montag = Date.parse(teil.woche)
+  return Number.isNaN(montag) ? false : istVorbei(montag + 6 * 864e5, heute)
 }
 
 /** Zerlegt einen Hilfsdienst-task_key; null, wenn es kein Hilfsdienst-Key ist. */
