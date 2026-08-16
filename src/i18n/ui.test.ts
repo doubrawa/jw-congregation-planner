@@ -69,7 +69,7 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
     // Alle App-Sprachen sind inzwischen vollständig übersetzt; die eigene
     // Übersetzung hat Vorrang vor der EN-Fallback-Schicht.
     expect(dict('hr').keineWochenTitel).not.toBe(dict('en').keineWochenTitel)
-    expect(dict('es').konfMehr).not.toBe(dict('en').konfMehr)
+    expect(dict('es').konflikteTitle).not.toBe(dict('en').konflikteTitle)
     // DE ist die Basis, EN eine getrennte Schicht darüber.
     expect(dict('de').keineWochenTitel).not.toBe(dict('en').keineWochenTitel)
   })

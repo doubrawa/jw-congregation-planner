@@ -1316,14 +1316,20 @@ export function kennungVon(name: string, pid?: string): string {
 
 /* ---- Konfliktprüfungen (Planen) ------------------------------------------
  * Warnungen für den Planer, aus den Wochen abgeleitet: jemand ist trotz
- * Abwesenheit eingeteilt, mehrfach in derselben Zusammenkunft, oder über
- * mehrere Wochen am Stück eingeteilt. Reine Ableitung, keine Persistenz.
+ * Abwesenheit eingeteilt oder mehrfach in derselben Zusammenkunft. Reine
+ * Ableitung, keine Persistenz.
+ *
+ * **Die Serie ist weg, nicht vergessen** (T81). „X ist 3 Wochen in Folge
+ * eingeteilt" stand hier jahrelang und war der häufigste Eintrag des Banners —
+ * in einer kleinen Versammlung ist das der Normalfall, kein Missstand. Eine
+ * Warnung, die fast immer steht, bringt der Planer sich ab und übersieht
+ * daneben die, auf die es ankommt. Was hier bleibt, nennt nur noch Dinge, die
+ * so nicht bleiben können. Die Auslastung selbst ist damit nicht aus dem Blick:
+ * die Auto-Zuteilung rechnet sie (`partLoad`/`anyDist`), und das Personen-Sheet
+ * zeigt sie in den Quadraten.
  */
 
-/** Ab wie vielen Wochen in Folge ein „streak“-Konflikt entsteht. */
-const STREAK_THRESHOLD = 3
-
-export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'streak' | 'fsAbsent' | 'fsDouble'
+export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'fsAbsent' | 'fsDouble'
 
 export interface Conflict {
   kind: ConflictKind
@@ -1338,7 +1344,7 @@ export interface Conflict {
    */
   kennung: string
   tab?: MeetingKey // betroffene Zusammenkunft (absent/double/helperTask)
-  count?: number // double: Hilfsdienste in der Zusammenkunft; streak: Wochen in Folge
+  count?: number // double: Hilfsdienste in der Zusammenkunft
   // Treffpunkte haben keine Zusammenkunft, sondern einen eigenen Wochentag und
   // Ort — beides gehört in den Hinweis, sonst weiß der Planer nicht, welchen
   // der Treffpunkte dieser Woche er ansehen soll.
@@ -1410,13 +1416,12 @@ function belegung(z: Zuteilung, wer: IdVon): Belegung {
 }
 
 /**
- * Konflikte der Woche `wi`: Abwesende trotz Zuteilung, Mehrfach-Zuteilung in
- * einer Zusammenkunft und Serien von `STREAK_THRESHOLD`+ Wochen in Folge
- * (die `wi` enthalten). Reihenfolge: absent, double, streak.
+ * Konflikte der Woche `wi`: Abwesende trotz Zuteilung und Mehrfach-Zuteilung in
+ * einer Zusammenkunft. Reihenfolge: absent, double/helperTask.
  *
  * `tab` grenzt die Prüfung auf eine Zusammenkunft ein (das Planen zeigt Konflikte
- * je Reiter) — inkl. tab-bezogener Serie (Häufung nur in dieser Zusammenkunftsart).
- * Ohne `tab` werden beide Zusammenkünfte geprüft (Wochen-Gesamtzahl fürs Dashboard).
+ * je Reiter). Ohne `tab` werden beide Zusammenkünfte geprüft (Wochen-Gesamtzahl
+ * fürs Dashboard).
  */
 export function weekConflicts(
   weeks: Week[],
@@ -1478,35 +1483,7 @@ export function weekConflicts(
     }
   }
 
-  // streak: Häufung von STREAK_THRESHOLD+ Wochen am Stück. Bewusst nur, wenn
-  // der Lauf kürzer als der geladene Zeitraum ist — wer schlicht in *jeder*
-  // Woche eingeteilt ist, ist durchgehend aktiv (Auslastungsthema), keine
-  // auffällige Serie, und würde sonst nur Rauschen erzeugen. Zählt NUR Aufgaben
-  // (Programmpunkte), keine Hilfsdienste — mehrmals in Folge Hilfsdienst ist ok.
-  // Mit `tab` zählt nur die jeweilige Zusammenkunftsart, sonst beide.
-  // Auch die Serie zählt über die Kennung: bei zwei Gleichnamigen entstand
-  // sonst eine Serie, die keine ist — abwechselnd war je eine von beiden dran.
-  const belegt = weeks.map((w) => {
-    const aus = tab
-      ? meetingPartNames(w[tab], werIst)
-      : [...meetingPartNames(w.mid, werIst), ...meetingPartNames(w.we, werIst)]
-    return new Map(aus.map((b) => [b.kennung, b.name]))
-  })
-  for (const [kennung, name] of belegt[wi] ?? []) {
-    let start = wi
-    let end = wi
-    // „In Folge" heißt in aufeinanderfolgenden **Wochen**. Liegt zwischen zwei
-    // Einträgen eine Woche, die es gar nicht gibt (Kongress), ist die Serie
-    // dort unterbrochen — sonst meldete die App drei Wochen am Stück, wo in
-    // Wirklichkeit eine Pause dazwischenlag (T36).
-    const folgt = (a: number, b: number) => wochenAbstand(weeks[a], weeks[b], a, b) === 1
-    while (start - 1 >= 0 && belegt[start - 1]?.has(kennung) === true && folgt(start - 1, start)) start--
-    while (end + 1 < weeks.length && belegt[end + 1]?.has(kennung) === true && folgt(end, end + 1)) end++
-    const run = end - start + 1
-    if (run >= STREAK_THRESHOLD && run < weeks.length) {
-      conflicts.push({ kind: 'streak', name, kennung, count: run })
-    }
-  }
+  // Hier stand die Serie („3 Wochen in Folge"), siehe Kopf des Abschnitts.
 
   return conflicts
 }

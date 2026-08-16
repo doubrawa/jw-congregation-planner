@@ -202,19 +202,21 @@ Leser übernehmen können.
 
 Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin:
 
-- **Mögliche Konflikte** – z. B. „Person ist abwesend, aber eingeteilt",
-  Doppelbelegungen oder Personen, die drei Wochen in Folge eingeteilt sind.
-  Sind es viele, stehen die Serien zunächst gekürzt da; **„+N weitere mögliche
-  Konflikte"** klappt den Rest auf und wieder zu.
+- **Mögliche Konflikte** – „Person ist abwesend, aber eingeteilt",
+  Doppelbelegungen und „Hilfsdienst und Aufgabe am selben Tag". Es steht nur
+  da, was so nicht bleiben kann; dass jemand mehrere Wochen hintereinander
+  drankommt, meldet die App nicht mehr – in einer kleinen Versammlung ist das
+  der Normalfall, und die Meldung verdeckte die wichtigen daneben.
 - **Offene Zuteilungen** – noch unbesetzte Programmpunkte und Hilfsdienste,
   gebündelt aufgelistet.
 
 So siehst du auf einen Blick, was vor der Zusammenkunft noch zu erledigen ist.
 
-Die genannten Zuteilungen **heben sich im Programm darunter ab** – rot umrandet
-und hinterlegt, in beiden Zusammenkünften, in der Zusätzlichen Klasse, bei den
-Hilfsdiensten und bei den Treffpunkten. Du musst den Namen aus dem Banner also
-nicht suchen: Beim Durchgehen der Zusammenkunft fällt er von selbst auf.
+Die genannten Zuteilungen **heben sich im Programm darunter ab** – kräftiger
+Rand und ein Punkt davor, wie ihn auch jede Zeile im Banner trägt; in beiden
+Zusammenkünften, in der Zusätzlichen Klasse, bei den Hilfsdiensten und bei den
+Treffpunkten. Du musst den Namen aus dem Banner also nicht suchen: Beim
+Durchgehen der Zusammenkunft fällt er von selbst auf.
 
 ### Wenn jemand absagt
 

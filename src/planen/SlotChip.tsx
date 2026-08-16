@@ -22,6 +22,10 @@ export function SlotChip({
   const klassen = ['slot-chip', open ? 'is-open' : '', konflikt ? 'is-konflikt' : '']
   return (
     <button type="button" className={klassen.filter(Boolean).join(' ')} onClick={onClick}>
+      {/* Derselbe Punkt, den das Banner vor jeder Zeile führt — er verbindet
+          beide, ohne eine Farbfläche zu benutzen (T80). Rein zeichenhaft: was
+          er bedeutet, steht als Satz im Banner darüber. */}
+      {konflikt && <span className="slot-konflikt-dot" aria-hidden="true" />}
       {text}
       {showStatus && (
         <span className={pending ? 'slot-status is-pending' : 'slot-status'}>

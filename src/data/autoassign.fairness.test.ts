@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { syncAuxSlots } from './aux-class'
 import { buildImportWeek, DEMO_SERVICES } from './testdaten'
 import { displayName, isSong, LOAD_RADIUS, LOAD_WEEKS, loadWindow, partWorkload, serviceQualKey } from './helpers'
-import { autoAssignMeeting, weekConflicts } from './planning'
+import { autoAssignMeeting } from './planning'
 import type { Meeting, Person, Qualifications, Service, SlotAssignment, Week } from './types'
 
 /** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
@@ -359,15 +359,28 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
    * Die Reihenfolge der beiden Wartezeiten ist keine Geschmacksfrage. Steht der
    * Bereich vorn, rotiert jeder Bereich für sich — dieselbe Person landet dann
    * in drei aufeinanderfolgenden Wochen in drei verschiedenen Bereichen. In
-   * genau dieser Aufstellung waren das 33 Serien-Konflikte („3 Wochen in Folge
-   * eingeteilt"), also das, wovor die Planen-Seite selbst warnt.
+   * genau dieser Aufstellung waren das 33 solche Serien.
+   *
+   * Gemessen wurde das früher mit `weekConflicts(...).kind === 'streak'` — die
+   * Meldung ist mit T81 gestrichen, weil sie den Planer nur belästigte. Die
+   * **Eigenschaft** bleibt richtig, also zählt der Test die Serien seither
+   * selbst. Ein Maßstab, der aus der Anzeige verschwindet, darf die Messung
+   * nicht mitnehmen.
    */
-  it('erzeugt keine Serien, die die Konfliktprüfung anschließend anmahnt', () => {
-    let serien = 0
-    for (let wi = 0; wi < WOCHEN; wi++) {
-      serien += weekConflicts(weeks, wi, persons, DEMO_SERVICES).filter((c) => c.kind === 'streak').length
+  it('teilt niemanden drei Wochen am Stück ein', () => {
+    const lauf = new Map<string, number>()
+    const laengste = new Map<string, number>()
+    for (const week of weeks) {
+      const dran = new Set([...partNames(week.mid), ...partNames(week.we)])
+      for (const p of persons) {
+        const name = displayName(p)
+        const n = dran.has(name) ? (lauf.get(name) ?? 0) + 1 : 0
+        lauf.set(name, n)
+        laengste.set(name, Math.max(laengste.get(name) ?? 0, n))
+      }
     }
-    expect(serien).toBe(0)
+    const serien = [...laengste].filter(([, n]) => n >= 3).map(([name, n]) => `${name}: ${n}`)
+    expect(serien).toEqual([])
   })
 })
 

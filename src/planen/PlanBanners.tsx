@@ -1,10 +1,9 @@
 /**
- * Warn-Banner im Planen: Konflikte (Abwesenheit, Doppelbelegung, Serien) und
- * offene Slots der ganzen Woche (beide Zusammenkünfte). Reine Ableitung aus dem
+ * Warn-Banner im Planen: Konflikte (Abwesenheit, Doppelbelegung) und offene
+ * Slots der ganzen Woche (beide Zusammenkünfte). Reine Ableitung aus dem
  * State — kein eigener Zustand.
  */
 
-import { useState } from 'react'
 import { useApp } from '../app/context'
 import { fsDate, fsWeekConflicts } from '../data/fs'
 import { istAusgefallen } from '../data/helpers'
@@ -20,44 +19,28 @@ function tabName(t: Dict, tab: MeetingTab | undefined): string {
   return tab === 'we' ? t.tabWe : t.tabMid
 }
 
-/** Serien-Konflikte (streak) auf so viele Zeilen begrenzen; Rest → „+N weitere". */
-const STREAK_SHOWN = 2
-
-/** Konflikt-Banner der aktuellen Zusammenkunft (Abwesende, Doppelbelegung, Serien). */
+/** Konflikt-Banner der aktuellen Zusammenkunft (Abwesende, Doppelbelegung). */
 export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
   const { t } = useT()
   const { liste: conflicts } = useKonflikte(tab)
-  // Aufgeklappt bleibt es, bis der Planer wieder zuklappt — auch über den
-  // Wochenwechsel hinweg. Wer die vollständige Liste sehen wollte, will sie
-  // in der nächsten Woche meist auch.
-  const [offen, setOffen] = useState(false)
   if (conflicts.length === 0) return null
 
-  const reihenfolge = [
+  /*
+   * Alle Zeilen stehen da, ohne Aufklapper (T81). Der Schalter „+{n} weitere"
+   * kürzte einzig die Serien — die gibt es nicht mehr, und was übrig ist, ist
+   * jedes Mal wenig und jedes Mal wichtig.
+   */
+  const shownConflicts = [
     ...conflicts.filter((c) => c.kind === 'absent'),
     ...conflicts.filter((c) => c.kind === 'double'),
-    ...conflicts.filter((c) => c.kind === 'streak'),
     ...conflicts.filter((c) => c.kind === 'helperTask'),
   ]
-  // Gekürzt wird nur bei den Serien: sie sind die häufigsten und die am
-  // wenigsten dringenden. Ausgelassen wird nichts mehr — der Rest steht eine
-  // Berührung weiter.
-  const gekuerzt = [
-    ...conflicts.filter((c) => c.kind === 'absent'),
-    ...conflicts.filter((c) => c.kind === 'double'),
-    ...conflicts.filter((c) => c.kind === 'streak').slice(0, STREAK_SHOWN),
-    ...conflicts.filter((c) => c.kind === 'helperTask'),
-  ]
-  const shownConflicts = offen ? reihenfolge : gekuerzt
-  const hiddenConflicts = conflicts.length - gekuerzt.length
 
   const conflictText = (c: Conflict): string => {
     if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName(t, c.tab) })
     if (c.kind === 'double')
       return fill(t.konfliktDouble, { name: c.name, n: c.count ?? 2, tab: tabName(t, c.tab) })
-    if (c.kind === 'helperTask')
-      return fill(t.konfliktHelperTask, { name: c.name, tab: tabName(t, c.tab) })
-    return fill(t.konfliktStreak, { name: c.name, n: c.count ?? 3 })
+    return fill(t.konfliktHelperTask, { name: c.name, tab: tabName(t, c.tab) })
   }
 
   return (
@@ -73,26 +56,6 @@ export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
           <span className="plan-conflict-text">{conflictText(c)}</span>
         </div>
       ))}
-      {hiddenConflicts > 0 && (
-        /*
-         * Die Zeile war bisher toter Text: sie nannte eine Zahl und ließ den
-         * Planer damit stehen. Jetzt klappt sie die übrigen Serien auf.
-         * Beschriftung bleibt `konfMehr` — auch aufgeklappt sagt sie, worum es
-         * bei diesen Zeilen geht; die Richtung des Winkels sagt den Zustand,
-         * `aria-expanded` sagt ihn den Vorlesern.
-         */
-        <button
-          type="button"
-          className={offen ? 'plan-conflict-more is-open' : 'plan-conflict-more'}
-          aria-expanded={offen}
-          onClick={() => setOffen((v) => !v)}
-        >
-          {fill(t.konfMehr, { n: hiddenConflicts })}
-          <span className="plan-conflict-chev" aria-hidden="true">
-            ›
-          </span>
-        </button>
-      )}
     </div>
   )
 }
