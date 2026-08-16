@@ -2356,17 +2356,35 @@ gemessen**:
    auf **dieselbe** Ursache: Der Bereich der Person und der Schlüssel des
    Dienstes gingen aneinander vorbei.
 
-**Was den Fehler unsichtbar macht**, unabhängig von der Ursache: Die
-Auto-Zuteilung zählt offen gebliebene Plätze zwar mit (`unfilled`), sagt es aber
-nur, wenn **gar nichts** zugeteilt wurde
-([reducer.ts:681](../../src/app/reducer.ts)). Wurden zehn Plätze besetzt und
-zwei nicht, meldet der Toast nur die zehn. Der Planer erfährt nie, dass ein
-Dienst nicht besetzt werden konnte — und schon gar nicht, welcher und warum.
+**Was fehlte, war nicht das *Ob*, sondern das *Warum*.** Ein erster Entwurf
+dieses Eintrags behauptete, der Planer erfahre gar nicht, dass ein Dienst offen
+blieb — das stimmt nicht: Das Banner „Offene Zuteilungen" nennt jeden
+unbesetzten Hilfsdienst beim Namen (`openSlotLabels` geht die Dienste mit
+durch). Nur steht dort dasselbe, ob niemand mehr **frei** war oder ob überhaupt
+niemand **freigegeben** ist — im zweiten Fall bleibt der Platz auch nächste
+Woche und übernächste offen, und nichts sagt es.
 
-**Zu klären:** Soll ein neu angelegter Dienst mit „niemand qualifiziert"
-starten (heute so — sicher, aber stumm) oder mit „alle Verkündiger" (sofort
-verteilbar, dafür muss man einschränken statt freigeben)? Und soll die
-Rückmeldung nach dem Verteilen die offen gebliebenen Dienste beim Namen nennen?
+**Umgesetzt: die Zahl steht jetzt am Dienst.** Einstellungen → Hilfsdienste
+zeigt unter jedem Dienst „Eigener Aufgabenbereich · {n} Personen"; bei **0** in
+Warnfarbe. Damit ist die Frage, die diesen Fehler aufwirft, in einem Blick
+beantwortet — und zwar an der Stelle, an der der Planer sie auch beheben kann.
+Der Text kommt ohne neuen Schlüssel aus: `personenCount` gibt es in allen 34
+Sprachen. Die Gruppen-Rotation bleibt außen vor, sie hat keinen Bereich; eine
+0 wäre dort eine falsche Warnung.
+
+**Offen bleibt die Ursache beim Betreiber** — sie steht in den echten Daten,
+nicht im Code: In der laufenden App unter Einstellungen → Hilfsdienste ablesen,
+was beim **Rundgangsordner** steht. Steht dort 0, ist es Fall 1 oder 3 (der
+Bereich ist bei niemandem gesetzt, entweder nie gesetzt worden oder auf einen
+anderen Dienst-Schlüssel gelaufen); steht dort eine Zahl > 0 und der Platz
+bleibt trotzdem leer, ist es Fall 2 (die Reihenfolge). Die Algorithmus-Änderung
+für Fall 2 wartet, bis das feststeht — sonst repariert sie eine Ursache, die es
+gar nicht ist.
+
+**Zu klären:** Soll ein neu angelegter Dienst mit „niemand freigegeben" starten
+(heute so — sicher, aber der Dienst ist bis zum ersten Schalter tot) oder mit
+„alle Verkündiger" (sofort verteilbar, dafür muss man einschränken statt
+freigeben)?
 
 ### T80 · Konflikt-Markierung und „Unser Leben als Christ" tragen dieselbe Farbe ⚡ ✅ erledigt
 Aus T76: Der markierte Chip bekommt `background: var(--tWein)` und Rand/Schrift
