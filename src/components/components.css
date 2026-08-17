@@ -512,3 +512,43 @@ select {
   font-size: calc(15px * var(--fs));
   line-height: 1;
 }
+
+/* ---- Weitere Termine der Woche (T63) --------------------------------------
+   Ankündigungen, keine Zuteilungen: kein Chip, kein Status, kein Antippen.
+   Bezeichnung und Ort sind die Worte des Planers und stehen unübersetzt da —
+   nur der Wochentag kommt aus `Intl`. */
+.termin-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.termin-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px 8px;
+  background: var(--card);
+  border-radius: 10px;
+  padding: 7px 12px;
+  line-height: 1.45;
+}
+
+.termin-wann {
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--mut);
+}
+
+.termin-was {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+.termin-ort {
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}

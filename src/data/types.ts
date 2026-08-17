@@ -402,6 +402,42 @@ export interface Dienstwoche {
  * Nachbarversammlung" und alles Übrige sind keine Anlässe, sondern Gründe: sie
  * stehen als Freitext bei der betroffenen Zusammenkunft (`Abweichung.reason`).
  */
+/**
+ * Ein weiterer Termin der Woche (T63) — **eine allgemeine Art, keine Sammlung
+ * Sonderfälle.**
+ *
+ * Der Anlass kam vom Betreiber: Zur Dienstwoche gehört mehr als die beiden
+ * Zusammenkünfte — eine Pionierbesprechung, eine Besprechung mit
+ * Dienstamtgehilfen und Ältesten, je zu einem eigenen Zeitpunkt. Gebaut sind
+ * daraus nicht zwei feste Termine, sondern **einer, den es beliebig oft gibt**;
+ * dieselbe Entscheidung wie bei der `Abweichung` (T30), und aus demselben
+ * Grund: Der nächste Anlass braucht dann keinen neuen Bau.
+ *
+ * **Reine Ankündigung** (Entscheidung des Betreibers, 17.8.2026): kein
+ * Bearbeiter, keine Bestätigung, keine Erinnerung, keine Ersatzsuche — und
+ * kein Teilnehmerkreis, alle sehen alles. Deshalb fasst der Termin die
+ * Aufgaben-Maschinerie an keiner Stelle an, und er trägt auch keinen
+ * `task_key`.
+ */
+export interface Termin {
+  id: string
+  /**
+   * Die Bezeichnung, vom Planer frei formuliert („Pionierbesprechung",
+   * „Ältestenbesprechung", „Saalreinigung").
+   *
+   * Bleibt **unübersetzt** — es sind seine Worte, wie der Grund einer
+   * `Abweichung`, ein Name oder ein Vortragsthema. Genau deshalb kommt die
+   * Bedienung ohne einen erfundenen Fachbegriff aus.
+   */
+  title: string
+  /** Ausgeschriebener Wochentag, kanonisch deutsch („Donnerstag") — wie `Abweichung.day`. */
+  day?: string
+  /** Uhrzeit, „19:00". */
+  time?: string
+  /** Ort, Freitext („Königreichssaal") — wie `FsInstance.place`. */
+  place?: string
+}
+
 export type AnlassArt = 'co' | 'mem' | 'kongress'
 
 /** Anlass der Woche samt Termin (T64). */
@@ -481,6 +517,11 @@ export interface Week {
    * wird nie direkt, sondern über `istAusgefallen(week, tab)` — die eine
    * Stelle, die beide Quellen kennt.
    */
+  /**
+   * Weitere Termine dieser Woche (T63) — Pionierbesprechung,
+   * Ältestenbesprechung, was sonst ansteht.
+   */
+  termine?: Termin[]
   dev?: Partial<Record<MeetingKey, Abweichung>>
   mid: Meeting // Unter der Woche
   we: Meeting // Wochenende

@@ -5,6 +5,7 @@ import type { Anlass, AnlassArt, MeetingKey } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { SonderwochePanel } from './SonderwochePanel'
+import { TerminePanel } from './TerminePanel'
 
 /**
  * Die Bearbeiten-Ansicht der Woche (T64) — hinter dem Stift-Reiter.
@@ -121,6 +122,12 @@ export function WochePanel() {
             </div>
           </div>
         )}
+
+        {/* Weitere Termine der Woche (T63) — Pionierbesprechung,
+            Ältestenbesprechung, was sonst ansteht. Sie stehen im selben Panel
+            wie der Anlass, weil sie derselben Ebene gehören: der Woche. Eine
+            eigene Überschrift bekämen sie nur mit einem erfundenen Wort. */}
+        <TerminePanel />
       </div>
 
       {/* Beide Zusammenkünfte, in der Reihenfolge der Woche. Der Anlass oben hat

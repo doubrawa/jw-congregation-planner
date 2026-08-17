@@ -261,6 +261,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'setDienstwoche': // Kreisaufseher-Woche: Ablauf umgebaut (T62)
     case 'setAnlass': // Anlass der Woche samt seinen Wirkungen (T64)
     case 'setAnlassTermin':
+    case 'terminAdd': // Weitere Termine der Woche (T63)
+    case 'terminUpdate':
+    case 'terminRemove':
     case 'setPartThema': // Thema eines Vortragspunkts (T62)
       wocheSpeichern(congId, next.weeks, prev.week)
       break

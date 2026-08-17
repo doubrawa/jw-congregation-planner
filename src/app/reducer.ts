@@ -48,6 +48,7 @@ import {
   setOpeningSong,
 } from '../data/meeting-edit'
 import { setAnlass, setAnlassTermin } from '../data/anlass'
+import { terminAdd, terminRemove, terminUpdate } from '../data/termine'
 import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { APP_TO_JW, congAppCode } from '../i18n/langs'
@@ -301,6 +302,10 @@ const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']
   // Kreisaufseher, Ausfall beider Zusammenkuenfte beim Kongress.
   'setAnlass',
   'setAnlassTermin',
+  // Weitere Termine der Woche (T63)
+  'terminAdd',
+  'terminUpdate',
+  'terminRemove',
   'setPartThema',
   'lacAdjust',
   'lacRemove',
@@ -1061,6 +1066,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (!state.weeks[state.week]) return state
       return { ...state, weeks: setAnlassTermin(state.weeks, state.week, action.patch) }
     }
+    // Weitere Termine der Woche (T63). Reine Ankündigung — kein `task_key`,
+    // keine Bestätigung, keine Mitteilung, kein `pendingIds`.
+    case 'terminAdd': {
+      if (!state.weeks[state.week]) return state
+      return { ...state, weeks: terminAdd(state.weeks, state.week, `t${crypto.randomUUID()}`) }
+    }
+    case 'terminUpdate':
+      return { ...state, weeks: terminUpdate(state.weeks, state.week, action.id, action.patch) }
+    case 'terminRemove':
+      return { ...state, weeks: terminRemove(state.weeks, state.week, action.id) }
     case 'setPartThema':
       return {
         ...state,

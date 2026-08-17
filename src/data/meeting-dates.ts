@@ -42,8 +42,15 @@ export function meetingTimesOf(meetingTimes: string): Record<MeetingKey, string>
   return { mid: found[0] ?? '', we: found[1] ?? '' }
 }
 
-/** Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach Montag. */
-const WEEKDAY_OFFSET: Record<string, number> = {
+/**
+ * Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach
+ * Montag.
+ *
+ * Exportiert seit T63: Die Termine der Woche tragen denselben kanonischen Tag
+ * und sortieren danach. Eine zweite Tabelle wäre eine zweite Gelegenheit,
+ * „Sonnabend" zu vergessen.
+ */
+export const WEEKDAY_OFFSET: Record<string, number> = {
   Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
   Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
 }

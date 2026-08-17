@@ -1040,3 +1040,8 @@
 .woche-anlass-select {
   width: 100%;
 }
+
+/* Termin hinzufügen (T63) — unter den Terminen im Wochen-Reiter. */
+.termin-add {
+  margin-top: 10px;
+}

@@ -4,7 +4,7 @@ import { mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
-import { MemorialBanner, WeekChips } from '../components/WeekBadges'
+import { MemorialBanner, TerminListe, WeekChips } from '../components/WeekBadges'
 import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { hatAuxKlasse } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
@@ -85,6 +85,11 @@ function ProgrammBody() {
       </WeekNav>
 
       <WeekChips week={week} showCurrent istAktuell={currentWeekIndex(state.weeks) === state.week} />
+
+      {/* Weitere Termine der Woche (T63): über den Reitern, weil sie zu keiner
+          der drei Zusammenkünfte gehören, sondern zur Woche — und damit auf
+          jedem Reiter sichtbar bleiben. */}
+      <TerminListe week={rawWeek} />
 
       <MeetingTabs
         className="prog-tabs"

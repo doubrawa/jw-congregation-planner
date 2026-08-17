@@ -2,8 +2,8 @@ import { useApp } from '../app/context'
 import { abweichung, weichtAb } from '../data/helpers'
 import { meetingOffset, meetingTime } from '../data/meeting-dates'
 import type { MeetingKey } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
+import { WOCHENTAGE, wochentagName } from './wochentage'
 
 /**
  * Sonderwoche: diese Zusammenkunft weicht von der Regel ab (T30).
@@ -126,32 +126,3 @@ export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
   )
 }
 
-/**
- * Kanonisch deutsche Wochentage — dieselbe Schreibweise wie in den Wochendaten
- * (`WEEKDAY_OFFSET`), Index = Tage nach Montag. Gespeichert wird immer diese
- * Form; übersetzt wird erst bei der Anzeige.
- */
-const WOCHENTAGE = [
-  'Montag',
-  'Dienstag',
-  'Mittwoch',
-  'Donnerstag',
-  'Freitag',
-  'Samstag',
-  'Sonntag',
-]
-
-/**
- * Wochentagsname in der App-Sprache — aus `Intl`, nicht aus dem Wörterbuch.
- *
- * Derselbe Weg wie im Treffpunkt-Konfliktbanner: die Namen der Wochentage sind
- * in jeder Sprache Teil der Laufzeitumgebung. Sie zusätzlich in 34
- * Wörterbücher zu schreiben, hieße 238 Übersetzungen zu pflegen, die es
- * geschenkt gibt.
- *
- * Der 5. Januar 2026 ist ein Montag — Bezugspunkt für den Versatz.
- */
-function wochentagName(versatz: number, lang: string): string {
-  const d = new Date(2026, 0, 5 + versatz)
-  return d.toLocaleDateString(LOCALES[lang as keyof typeof LOCALES], { weekday: 'long' })
-}
