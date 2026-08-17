@@ -870,11 +870,19 @@ const FRAG: Record<string, Record<string, string>> = {
  *
  * Doppelt genutzt: als FRAG-Atom für zusammengesetzte Titel („Schlussworte ·
  * Lied · Gebet“) und als Beschriftung des Schlusslied-Feldes im Planen-Screen.
- * Für Letzteres wäre „SCHLUSSLIED“ treffender, aber das gäbe es nur in
- * Deutsch — und die Wörterbuch-Prüfung verlangt zu Recht, dass **jede** der 33
- * Sprachen einen Schlüssel selbst übersetzt (`ui.test.ts`). Ein erfundenes
- * Wort in 32 Sprachen wäre der schlechtere Tausch; im ABSCHLUSS-Block, der
- * direkt darüber steht, ist „Lied“ eindeutig genug.
+ * Für Letzteres wäre „SCHLUSSLIED“ treffender — und die Wörterbuch-Prüfung
+ * verlangt zu Recht, dass **jede** der 33 Sprachen einen Schlüssel selbst
+ * übersetzt (`ui.test.ts`), ein erfundenes Wort in 32 Sprachen wäre also der
+ * schlechtere Tausch.
+ *
+ * Am 17.8.2026 gemessen statt bloß behauptet (T33): das Kongressprogramm 2018
+ * führt „Schlusslied und Gebet“ und liegt unter **einer** Kennung in allen 34
+ * Sprachen vor. Es trägt trotzdem nicht — 8 Sprachen hängen das Schlusswort an
+ * Lied *und* Gebet zugleich („Canción y oración de conclusión“), ein Schnitt
+ * ergäbe dort bloß „Lied“; Französisch schreibt gar kein Schlusswort. Also
+ * bleibt es bei „Lied“ unter der ebenfalls gemessenen Überschrift ABSCHLUSS —
+ * zwei belegte Hälften statt einer erfundenen. Belege in docs/analyse/todo.md
+ * (T33).
  */
 const SONG_WORD: Record<string, string> = {
   en: 'Song', es: 'Canción', fr: 'Cantique', it: 'Cantico', pt: 'Cântico',

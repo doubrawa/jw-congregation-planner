@@ -48,9 +48,11 @@ export function MeetingSection({
   // …und am Wochenende ebenso das Schlusslied: es steht nicht im Arbeitsheft,
   // sondern kommt aus der Studienausgabe — fehlt sie, muss es nachtragbar sein.
   const isClosing = state.tab === 'we' && rawSection.label === LABEL_ABSCHLUSS
-  // „SCHLUSSLIED“ gäbe es nur auf Deutsch — und jede der 33 Sprachen muss jeden
-  // UI-Schlüssel selbst übersetzen (ui.test.ts). Das Wort „Lied“ liegt dagegen
-  // in allen gemessen vor; im ABSCHLUSS-Block darüber ist es eindeutig genug.
+  // „SCHLUSSLIED“ als eigener UI-Schlüssel scheitert nicht am Aufwand, sondern
+  // an der Quelle: gemessen am Kongressprogramm in allen 34 Sprachen (T33)
+  // nennen 8 davon Lied und Gebet mit *einem* Schlusswort, Französisch mit gar
+  // keinem. „Lied“ liegt dagegen überall gemessen vor — unter der ebenfalls
+  // gemessenen Überschrift ABSCHLUSS ist es eindeutig.
   const schlussliedLbl = (SONG_WORD[state.lang] ?? 'Lied').toUpperCase()
   // Lied aus dem ERÖFFNUNG/ABSCHLUSS-Sammeltitel mittig+kursiv herausziehen —
   // außer dort, wo es als editierbares Nummernfeld bleibt („beim Planen am
