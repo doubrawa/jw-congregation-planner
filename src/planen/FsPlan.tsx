@@ -198,17 +198,16 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                 onChange={(e) => dispatch({ type: 'fsInstUpdate', wi, id: inst.id, patch: { place: e.target.value } })}
               />
               <div className="fs-edit-slot">
-                {/* `pending`: Freitext hat keinen Bestätigungs-Flow — und die
-                    Markierung liefe sonst über `name:…` und träfe einen
-                    Gleichnamigen. `konflikt` fragt aus demselben Grund
+                {/* Beim Freitext-Leiter bleibt das Bestätigungs-Zeichen ganz
+                    weg: „✓" heißt *bestätigt*, und der Kreisaufseher hat die
+                    App gar nicht — ein Haken behauptete dort etwas, das nie
+                    passiert ist. `konflikt` fragt aus demselben Grund
                     `fsLeiterZuteilung`. */}
                 <SlotChip
                   text={inst.leader ? `${tu('Leiter')}: ${inst.leader}` : t.zuteilenChip}
                   open={!inst.leader}
-                  showStatus={Boolean(inst.leader)}
-                  pending={
-                    !inst.lext && state.pendingIds.includes(kennungVon(inst.leader, inst.lpid))
-                  }
+                  showStatus={Boolean(inst.leader) && !inst.lext}
+                  pending={state.pendingIds.includes(kennungVon(inst.leader, inst.lpid))}
                   konflikt={betrifft(fsLeiterZuteilung(inst))}
                   onClick={() => openLeader(inst)}
                 />

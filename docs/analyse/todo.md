@@ -932,6 +932,46 @@ Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 > Auslastung, `fsAutoAssign` und `fsRenamePerson`. Genau die Fehlerart, gegen
 > die es hier die Vollständigkeitsproben gibt; eine davon (`alle-plaetze`)
 > ist der passende Ort.
+>
+> ✅ **Teil B umgesetzt am 17. August 2026.** `FsInstance.lext` sagt „der
+> Leiter ist Freitext"; im Sheet steht dasselbe Paar wie beim Redner —
+> Namensfeld mit `ÜBERNEHMEN`, darunter „Oder aus der eigenen Versammlung
+> wählen". Ohne neuen Wörterbuch-Schlüssel: `nameLbl`, `uebernehmenBtn` und
+> `oderPersonWaehlen` liegen gemessen vor.
+>
+> **Die Regel hat einen Namen bekommen, statt sich zu wiederholen.**
+> `fsLeiterZuteilung(inst)` gibt den Freitext-Leiter gar nicht erst als Person
+> aus. Sie war an sechs Stellen fällig, und **vier davon lagen außerhalb von
+> `fs.ts`** — genau die „vergessenen Aufrufer", von denen es hier elf im
+> Review gab:
+>
+> | Wo | Was ohne die Regel geschähe |
+> | --- | --- |
+> | `fsMigrateLeaderPids` | macht den Freitext bei **jedem Laden** wieder zur Person — der Fehler wäre selbstheilend in die falsche Richtung |
+> | `fsAutoAssign` (Last) | der Kreisaufseher erhöht die Auslastung des Gleichnamigen, die Auto-Zuteilung übergeht ihn daraufhin |
+> | `deriveMyFsTasks` | fremde Leitung in „Meine Aufgaben" |
+> | `fsWeekConflicts` | Abwesenheit des Gleichnamigen wird als Konflikt gemeldet |
+> | `fsRenameLeader` | Umbenennen des Bruders benennt den Kreisaufseher mit um |
+> | `person-timeline`, `kandidaten`, `FsProgram`, `FsPlan` | fremde Leitung in der Zeitleiste, blockierter Kandidat, falsches „DU", falsche Markierung |
+> | **`send-reminders`** | erinnert den gleichnamigen Bruder an eine Leitung, die er nicht hat ⚠ **Deploy nötig** |
+>
+> **Dabei aufgefallen und mitkorrigiert:** Der Chip trug das
+> Bestätigungs-Zeichen `✓` auch beim Freitext — „✓" heißt *bestätigt*, und der
+> Kreisaufseher hat die App gar nicht. Jetzt bleibt es dort weg. (Am
+> Gastredner aus T29 steht dasselbe `✓` weiterhin; dieselbe Ursache, eigene
+> Stelle — nicht mitgeändert, damit es nicht unbemerkt mitläuft.)
+>
+> **11 Tests** in `src/data/t63-leiter-freitext.test.ts`, in denen der
+> Freitext-Leiter absichtlich wie ein Bruder der Versammlung heißt
+> („K. Steiner"). Gegenprobe gefahren: mit zurückgenommenen Wachen fallen
+> **8 von 11**; jede Wache ist einzeln belegt. Im Browser nachgestellt: „Jonas
+> Berger" als Freitext eingetragen → Chip „Leiter: Jonas Berger" **ohne** ✓,
+> während der echte Jonas Berger am Mittwoch seines behält. Konsole sauber,
+> alle vier CI-Schritte grün (1846 Tests).
+>
+> **Offen an Teil B:** nur der Deploy von `send-reminders` — bis dahin
+> erinnert die laufende Fassung einen gleichnamigen Bruder. Teil A (die
+> Termine) ist noch nicht gebaut.
 
 ### T64 · Der Anlass der Woche — und wo er eingestellt wird 🏗 ✅ erledigt
 Aufgefallen beim Nachziehen des Designs: Hakt man **BESUCH DES KREISAUFSEHERS**
