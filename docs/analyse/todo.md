@@ -848,7 +848,7 @@ Voreinstellung nur für die Beschriftung wäre Aufwand ohne Gewinn.
 Leiter, „Vortrag · 30 Min."; ausgeschaltet → alles wieder da, samt Leser und
 „60 Min.".
 
-### T63 · Die übrigen Termine der Dienstwoche 🏗 — vom Betreiber zurückgestellt
+### T63 · Die übrigen Termine der Dienstwoche 🏗 ✅ fachlich geklärt · Bau offen
 Zur Dienstwoche gehört mehr als die beiden Zusammenkünfte. Der Betreiber hat es
 am 8.8.2026 genannt und ausdrücklich **auf später** gelegt — hier notiert, damit
 es nicht untergeht:
@@ -867,6 +867,71 @@ gebaut wird.
 
 Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 Älteste)? Werden sie zugeteilt oder nur angekündigt? Gibt es Erinnerungen?
+
+> **Fachlich geklärt (Betreiber, 17. August 2026).** Vier Fragen gestellt, vier
+> beantwortet — und drei davon schneiden den Punkt kleiner, als er aussah:
+>
+> | Frage | Entscheidung | Folge |
+> | --- | --- | --- |
+> | Zuschnitt | **eine allgemeine Terminart**, nicht zwei feste Sonderfälle | wie T30: eine Aussage statt einer Sammlung. Pionier- und Ältestenbesprechung sind nur zwei Ausprägungen |
+> | Teilnehmerkreis | **alle sehen alles** | kein Pionier-Merkmal, keine Migration, keine Rechteprüfung |
+> | Zuteilung | **nur Ankündigung** | kein `task_key`, keine Bestätigung, keine Erinnerung, keine Ersatzsuche — der Termin fasst die Aufgaben-Maschinerie nicht an |
+> | Treffpunkte | **etwas anderes fehlt** (siehe unten) | nicht der Termin, sondern der Leiter |
+>
+> **Zuerst geprüft, was schon geht — ein Drittel des Punktes war bereits da.**
+> `FsInstance` trägt Tag, Zeit, Ort und Leiter **je Woche**; `fsInstUpdate`
+> ändert Zeit und Ort für genau eine Woche, `fsInstAdd`/`fsInstRemove` fügen
+> hinzu und nehmen weg — der Kommentar in `FsPlan.tsx` nennt „z. B.
+> Pioniertage" ausdrücklich als Zweck. Die „abweichenden Zeiten der
+> Dienstwoche" aus der Tabelle oben brauchen also nichts Neues. Nicht direkt
+> umstellbar ist allein der **Wochentag** (heute nur über Entfernen und
+> Neuanlegen); das war dem Betreiber nicht der fehlende Punkt.
+>
+> #### Was zu bauen ist — A: der Termin
+>
+> `Week.termine`: eine Liste je Woche, jeder Eintrag mit Bezeichnung
+> (Freitext), Wochentag, Uhrzeit und Ort. Sichtbar für alle, ohne Bearbeiter.
+> Der Ort ist der Wochen-Reiter aus T64 (`WochePanel`) — dieselbe Ebene, die
+> auch den Anlass trägt, nach derselben Regel: ein Bedienelement gehört auf die
+> Ebene, die es verändert.
+>
+> Die Bezeichnung **bleibt unübersetzt**, wie `Abweichung.reason`: es sind die
+> Worte des Planers. Damit braucht die Bedienung fast nichts Neues —
+> `a11yWeekday`, `a11yTime`, `fsOrtPh`, `hinzufuegen`, `entfernen` liegen alle
+> gemessen vor.
+>
+> ⚠ **Eine Wortfrage bleibt offen:** Für die Überschrift des Blocks und den
+> Platzhalter des Bezeichnungsfeldes gibt es **keinen** vorhandenen Schlüssel,
+> und „Termin" ist kein JW-Fachbegriff, den man messen könnte (das
+> Kongressprogramm aus T33 führt ihn nicht). Erste Fassung deshalb ohne beides:
+> Die Zeilen stehen im vorhandenen Wochen-Panel unter `einstellungen`, das
+> Bezeichnungsfeld bleibt ohne Platzhalter. Fällt das beim Benutzen
+> unangenehm auf, ist es **ein** neuer Schlüssel — dann aber bewusst und
+> benannt, nicht nebenbei.
+>
+> #### Was zu bauen ist — B: der Treffpunkt-Leiter als Freitext
+>
+> **Vom Betreiber am 17.8.2026 nachgereicht** und der eigentliche Kern der
+> dritten Zeile: „Der Kreisaufseher leitet in der Regel den Treffpunkt, und der
+> ist ja kein Teil der Versammlungspersonen." Gewünscht ist derselbe Weg wie
+> beim Redner am Sonntag (T29): Person aus der Liste **oder** Freitext.
+>
+> ⚠ **Beim Nachsehen eine Falle gefunden — die Abwesenheit der `lpid` reicht
+> als Kennzeichen nicht.** `fsMigrateLeaderPids` (`data/fs.ts`) läuft bei jedem
+> Laden und hängt **jedem** Leiter-Namen, der eindeutig auf eine Person passt,
+> deren Id an. Ein Freitext-Leiter, der zufällig wie ein Bruder der
+> Versammlung heißt, würde damit stillschweigend zu ihm: Auslastung, „Meine
+> Aufgaben", Erinnerungen. Dieselbe Ursache wie in T29 (`gehoertZu` fiel ohne
+> `pid` auf den Namen zurück), nur an der zweiten Datenquelle — und dort
+> zusätzlich mit einem Migrationsschritt, der es aktiv wieder herstellt.
+>
+> Folgerung: Der Freitext braucht ein **eigenes Kennzeichen** an der Instanz,
+> so wie T29 die Rolle in den Platz schreibt statt sich auf die fehlende `pid`
+> zu verlassen. Die Leser des Namens sind einzeln durchzugehen — mindestens
+> `fsMigrateLeaderPids`, `fsWeekConflicts`, `deriveMyFsTasks`, die
+> Auslastung, `fsAutoAssign` und `fsRenamePerson`. Genau die Fehlerart, gegen
+> die es hier die Vollständigkeitsproben gibt; eine davon (`alle-plaetze`)
+> ist der passende Ort.
 
 ### T64 · Der Anlass der Woche — und wo er eingestellt wird 🏗 ✅ erledigt
 Aufgefallen beim Nachziehen des Designs: Hakt man **BESUCH DES KREISAUFSEHERS**
