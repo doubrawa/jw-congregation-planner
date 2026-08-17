@@ -21,6 +21,7 @@ import { deutschesDatum } from './meeting-dates'
 // unterschiedlich anfühlen.
 import { kennungVon } from './planning'
 import type { Conflict } from './planning'
+import type { Zuteilung } from './helpers'
 import type { Absence, ConfirmationMap, FsInstance, FsRule, Group, MyTask, Person } from './types'
 
 /** Uhrzeiten im 15-Minuten-Raster (06:00–22:00) für Zeit-Auswahlen. */
@@ -173,18 +174,41 @@ function patchWeek(fsWeeks: FsInstance[][], wi: number, fn: (week: FsInstance[])
   return fsWeeks.map((week, i) => (i === wi ? fn(week) : week))
 }
 
+/**
+ * Der Leiter als **Zuteilung** — oder `undefined`, wenn keine Person
+ * dahintersteht.
+ *
+ * Die eine Stelle, an der „Freitext gehört niemandem hier" steht. Jeder, der
+ * aus einem Treffpunkt eine Person machen will (Auslastung, „gehört mir",
+ * Konflikt-Markierung), fragt hier — sonst wiederholt sich die Regel an fünf
+ * Stellen und die sechste vergisst sie. Genau diese Fehlerart ist hier die
+ * häufigste, und `alle-plaetze.test.ts` gibt es ihretwegen.
+ */
+export function fsLeiterZuteilung(inst: FsInstance): Zuteilung | undefined {
+  if (!inst.leader || inst.lext) return undefined
+  return { name: inst.leader, pid: inst.lpid }
+}
+
 /** Aktueller Leiter eines Treffpunkts ("" = offen / nicht gefunden). */
 export function fsLeaderValue(fsWeeks: FsInstance[][], wi: number, instId: string): string {
   return fsWeeks[wi]?.find((i) => i.id === instId)?.leader ?? ''
 }
 
-/** Leiter eines Treffpunkts setzen ("" = entfernen). */
+/**
+ * Leiter eines Treffpunkts setzen ("" = entfernen).
+ *
+ * Zwei Wege, wie beim Redner am Sonntag (T29): eine **Person** der Versammlung
+ * (mit `pid`) oder **Freitext** (`extern`) für jemanden von außerhalb — in der
+ * Regel den Kreisaufseher. Beide schließen einander aus, und jeder räumt die
+ * Spur des anderen weg; sonst bliebe ein Platz halb das eine, halb das andere.
+ */
 export function fsSetLeader(
   fsWeeks: FsInstance[][],
   wi: number,
   instId: string,
   name: string,
   pid?: string,
+  extern = false,
 ): FsInstance[][] {
   return patchWeek(fsWeeks, wi, (week) =>
     week.map((inst) => {
@@ -192,10 +216,13 @@ export function fsSetLeader(
       // `lpid` nur setzen, wenn wirklich eine Person dahintersteht. Beim Leeren
       // (name = '') muss die alte Id weg, sonst gehörte der freie Platz weiter
       // jemandem — „Meine Aufgaben" zeigte ihn dann bei einer Person, die gar
-      // nicht mehr eingeteilt ist.
+      // nicht mehr eingeteilt ist. Dasselbe gilt für das Freitext-Kennzeichen:
+      // Ein leerer Platz ist weder auswärtig noch eigen, er ist offen.
       const next = { ...inst, leader: name }
       if (name && pid) next.lpid = pid
       else delete next.lpid
+      if (name && !pid && extern) next.lext = true
+      else delete next.lext
       return next
     }),
   )
@@ -333,8 +360,11 @@ export function fsAutoAssign(
   // Personen desselben Namens teilten sich sonst eine Strichliste, sperrten
   // sich gegenseitig am selben Wochentag und erbten gegenseitig die Wartezeit.
   const werIst = idAufloeser(persons)
-  const idVon = (inst: FsInstance): string | undefined =>
-    werIst({ name: inst.leader, pid: inst.lpid })
+  // Ein Freitext-Leiter steht in keiner Personenliste; sein Name ist kein
+  // schwächerer Anhalt, sondern gar keiner (T29). Ohne das erhöhte der
+  // Kreisaufseher die Auslastung eines gleichnamigen Bruders — und die
+  // Auto-Zuteilung überginge ihn daraufhin.
+  const idVon = (inst: FsInstance): string | undefined => werIst(fsLeiterZuteilung(inst))
 
   // Grundlast: Leitungen je Person im Fenster der letzten FS_LOAD_WEEKS Wochen.
   const load = new Map<string, number>()
@@ -456,8 +486,9 @@ export function fsClear(
     if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
     count++
     // Auch die Id muss weg: sonst gehörte der geleerte Platz weiter jemandem
-    // und stünde bei ihm in „Meine Aufgaben".
-    const { lpid: _weg, ...ohne } = inst
+    // und stünde bei ihm in „Meine Aufgaben". Das Freitext-Kennzeichen ebenso —
+    // ein geleerter Platz ist offen, nicht auswärtig.
+    const { lpid: _weg, lext: _auch, ...ohne } = inst
     return { ...ohne, leader: '' }
   })
   if (count === 0) return { fsWeeks, count: 0 }
@@ -490,7 +521,7 @@ export function deriveMyFsTasks(
   if (!personName && !personId) return tasks
   fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
-      if (!inst.leader) continue
+      if (!inst.leader || inst.lext) continue // Freitext: gehört niemandem hier
       const meins = inst.lpid && personId ? inst.lpid === personId : inst.leader === personName
       if (!meins) continue
       const key = fsTaskKey(fsWochenStart(fsBase, wi), inst.id)
@@ -569,8 +600,16 @@ export function fsWeekConflicts(
     proTag.set(inst.wd, tag)
 
     if (!base) continue
-    // Über die Id, mit Rückfall auf den Namen für Altdaten.
-    const person = inst.lpid ? persons.find((p) => p.id === inst.lpid) : nachName.get(inst.leader)
+    // Über die Id, mit Rückfall auf den Namen für Altdaten — beim Freitext
+    // aber gar nicht: Von jemandem außerhalb der Versammlung kennt die App
+    // keine Abwesenheiten, und der Namensweg träfe einen Gleichnamigen.
+    // Die Doppelbelegung oben zählt ihn weiter mit: zweimal am selben Tag ist
+    // auch beim Kreisaufseher ein Planungsfehler.
+    const person = inst.lext
+      ? undefined
+      : inst.lpid
+        ? persons.find((p) => p.id === inst.lpid)
+        : nachName.get(inst.leader)
     if (person && istAbwesendAm(absences, person.id, fsDate(base, wi, inst.wd))) {
       conflicts.push({ kind: 'fsAbsent', name: inst.leader, kennung, wd: inst.wd, ort: inst.place })
     }
@@ -681,7 +720,11 @@ export function fsMigrateLeaderPids(
   const next = fsWeeks.map((week) => {
     let changed = false
     const insts = week.map((inst) => {
-      if (inst.lpid || !inst.leader) return inst
+      // `lext` ist die Ausnahme, für die es das Flag überhaupt gibt: Ohne sie
+      // machte dieser Backfill den Freitext-Leiter bei jedem Laden wieder zu
+      // einer Person — der Fehler wäre nicht nur möglich, sondern selbstheilend
+      // in die falsche Richtung.
+      if (inst.lpid || inst.lext || !inst.leader) return inst
       const id = nachName.get(inst.leader)
       if (!id) return inst // Gruppenname, Unbekannter, Dublette
       changed = true
@@ -723,7 +766,9 @@ export function fsRenameLeader(
   const next = fsWeeks.map((week) => {
     let changed = false
     const insts = week.map((inst) => {
-      const meint = inst.lpid ? inst.lpid === id : inst.leader === oldName
+      // Freitext bleibt unberührt: Wer außerhalb der Versammlung steht, wird
+      // nicht mitumbenannt, nur weil ein Bruder zufällig so hieß.
+      const meint = inst.lext ? false : inst.lpid ? inst.lpid === id : inst.leader === oldName
       if (!meint || inst.leader === newName) return inst
       changed = true
       return { ...inst, leader: newName }

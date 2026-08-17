@@ -95,6 +95,20 @@ export interface FsInstance {
   leader: string // zugeteilter Leiter ("" = offen)
   lpid?: string // Person-Id des Leiters — stabile Identität statt Name-Match.
   //             Wie `SlotAssignment.pid`; fehlt bei Altdaten.
+  /**
+   * Der Leiter ist **Freitext**: jemand außerhalb der Versammlung, in der Regel
+   * der Kreisaufseher. Entspricht dem Gastredner aus T29.
+   *
+   * Warum ein eigenes Feld und nicht einfach „keine `lpid`": Die fehlende Id
+   * heißt schon etwas anderes — **Altdaten**, deren Person noch nachzutragen
+   * ist. `fsMigrateLeaderPids` hängt jedem eindeutig passenden Namen bei jedem
+   * Laden die Person an; ein Freitext-Leiter, der zufällig wie ein Bruder der
+   * Versammlung heißt, würde damit stillschweigend zu ihm — mit Auslastung,
+   * „Meine Aufgaben" und Erinnerungen. T29 hat denselben Fehler an der ersten
+   * Datenquelle behoben und dort die **Rolle** in den Platz geschrieben,
+   * statt sich auf die fehlende `pid` zu verlassen; hier ist es dieses Flag.
+   */
+  lext?: boolean
   manual?: boolean // nur für diese Woche hinzugefügt (kein Grundplan)
 }
 

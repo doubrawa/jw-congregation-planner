@@ -108,6 +108,23 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     dispatch({ type: 'assign', name, rolle: cong ? `${guestBase} · ${cong}` : guestBase })
   }
 
+  // Treffpunkt-Leiter: derselbe Doppelweg wie beim Redner, aus demselben Grund
+  // — den Treffpunkt der Dienstwoche leitet in der Regel der Kreisaufseher, und
+  // der steht in keiner Personenliste. Nur ein Feld statt zweier: eine
+  // Herkunftsversammlung hat er nicht, und Zeit und Ort stehen schon im Kopf.
+  const fsFrei = sel.kind === 'fs'
+  // Vorbelegt nur, wenn dort schon Freitext steht. Gehört der Name einer
+  // Person, wäre er hier ein Angebot, sie zu verdoppeln (wie beim Redner).
+  const [externName, setExternName] = useState(fsInst?.lext ? current : '')
+  const applyExtern = () => {
+    const name = externName.trim()
+    if (!name) {
+      dispatch({ type: 'showToast', text: t.toastNameEingeben })
+      return
+    }
+    dispatch({ type: 'assign', name, extern: true })
+  }
+
   const candidates = kandidaten(state, sel, abwesend, t, tu)
 
   const pick = (cand: Candidate) => {
@@ -196,6 +213,23 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               onChange={(e) => setGuestCong(e.target.value)}
             />
             <button type="button" className="lac-add-btn" onClick={applyGuest}>
+              {t.uebernehmenBtn}
+            </button>
+            <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
+          </div>
+        )}
+
+        {fsFrei && (
+          <div className="sheet-guest">
+            <input
+              type="text"
+              className="lac-add-input"
+              placeholder={t.nameLbl}
+              aria-label={t.nameLbl}
+              value={externName}
+              onChange={(e) => setExternName(e.target.value)}
+            />
+            <button type="button" className="lac-add-btn" onClick={applyExtern}>
               {t.uebernehmenBtn}
             </button>
             <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>

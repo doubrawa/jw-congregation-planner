@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { kennungVon } from '../data/planning'
 import { useApp, useAppDispatch } from '../app/context'
-import { FS_TIME_OPTIONS, fsDate, fsWeekConflicts } from '../data/fs'
+import { FS_TIME_OPTIONS, fsDate, fsLeiterZuteilung, fsWeekConflicts } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
@@ -198,12 +198,18 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                 onChange={(e) => dispatch({ type: 'fsInstUpdate', wi, id: inst.id, patch: { place: e.target.value } })}
               />
               <div className="fs-edit-slot">
+                {/* `pending`: Freitext hat keinen Bestätigungs-Flow — und die
+                    Markierung liefe sonst über `name:…` und träfe einen
+                    Gleichnamigen. `konflikt` fragt aus demselben Grund
+                    `fsLeiterZuteilung`. */}
                 <SlotChip
                   text={inst.leader ? `${tu('Leiter')}: ${inst.leader}` : t.zuteilenChip}
                   open={!inst.leader}
                   showStatus={Boolean(inst.leader)}
-                  pending={state.pendingIds.includes(kennungVon(inst.leader, inst.lpid))}
-                  konflikt={betrifft({ name: inst.leader, pid: inst.lpid })}
+                  pending={
+                    !inst.lext && state.pendingIds.includes(kennungVon(inst.leader, inst.lpid))
+                  }
+                  konflikt={betrifft(fsLeiterZuteilung(inst))}
                   onClick={() => openLeader(inst)}
                 />
               </div>

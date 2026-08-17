@@ -1,5 +1,5 @@
 import { useApp } from '../app/context'
-import { fsDate } from '../data/fs'
+import { fsDate, fsLeiterZuteilung } from '../data/fs'
 import { gehoertZu } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -66,8 +66,12 @@ export function FsProgram() {
                 <div className="fs-leader-name">
                   {/* Über `gehoertZu`, nicht über den Namen — „Id vor Name",
                       wie es `deriveMyFsTasks` für dieselben Treffpunkte tut.
-                      Namensgleiche sahen den Chip sonst beide. */}
-                  {me && gehoertZu({ name: inst.leader, pid: inst.lpid }, me) && (
+                      Namensgleiche sahen den Chip sonst beide. `gehoertZu`
+                      fällt ohne pid auf den Namen zurück (außer bei
+                      Gast-Rollen, die ein Treffpunkt nicht hat) — deshalb
+                      kommt die Zuteilung aus `fsLeiterZuteilung`, das den
+                      Freitext-Leiter gar nicht erst als Person ausgibt. */}
+                  {me && gehoertZu(fsLeiterZuteilung(inst), me) && (
                     <span className="chip-du">DU</span>
                   )}
                   <span className={inst.leader ? '' : 'fs-leader-open'}>
