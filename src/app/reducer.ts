@@ -671,7 +671,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (!sel) return state
       // Treffpunkt-Leiter: eigene Datenquelle (fsWeeks), kein Bestätigungs-Slot.
       if (sel.kind === 'fs') {
-        const fsWeeks = fsSetLeader(state.fsWeeks, sel.wi, sel.instId, action.name, action.pid)
+        const fsWeeks = fsSetLeader(
+          state.fsWeeks,
+          sel.wi,
+          sel.instId,
+          action.name,
+          action.pid,
+          action.extern,
+        )
         const notifs = action.name
           ? zuteilungsNotif(
               state,

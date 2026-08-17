@@ -157,6 +157,13 @@ interface FsInstance {
   leader?: string
   /** Person-Id des Leiters. */
   lpid?: string
+  /**
+   * Leiter ist Freitext (auswaertig, in der Regel der Kreisaufseher) — er hat
+   * kein Konto und bekommt keine Erinnerung. Ohne dieses Feld faende der
+   * Namensweg unten einen gleichnamigen Bruder und erinnerte **ihn** an eine
+   * Leitung, die er gar nicht hat.
+   */
+  lext?: boolean
 }
 interface Item {
   song?: string
@@ -377,7 +384,7 @@ function pendingOfFsWeek(
 ): Array<Pending & { offset: number; zeit: string }> {
   const out: Array<Pending & { offset: number; zeit: string }> = []
   for (const inst of insts) {
-    if (!inst?.leader) continue
+    if (!inst?.leader || inst.lext) continue
     if (conf.has(`fs|${woche}|${stabileKennung(inst.id)}`)) continue
     const ort = inst.place ? ` · ${inst.place}` : ''
     out.push({

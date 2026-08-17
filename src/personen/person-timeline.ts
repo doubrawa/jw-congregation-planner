@@ -105,7 +105,10 @@ export function personTimeline(
   // nur den Namen; Namensgleiche sahen dadurch gegenseitig ihre Leitungen.
   state.fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
-      if (!inst.leader) continue
+      // Freitext (Kreisaufseher) fällt hier heraus: Er gehört keiner Person,
+      // und der Namensweg träfe einen Gleichnamigen — dieselbe Regel wie in
+      // `fsLeiterZuteilung`, nur mit eigener Rangfolge.
+      if (!inst.leader || inst.lext) continue
       if (!(inst.lpid ? inst.lpid === person.id : inst.leader === name)) continue
       const tag = wi * 7 + ((inst.wd + 6) % 7) // wd: 0=So … 6=Sa → Tage nach Montag
       const datum = datumVon(tag)

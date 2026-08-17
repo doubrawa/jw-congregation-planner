@@ -83,7 +83,9 @@ function fsKandidaten(
     if (!inst) return []
     const out: MeetingAssignment[] = []
     for (const o of state.fsWeeks[sel.wi] ?? []) {
-      if (o.id === sel.instId || o.wd !== inst.wd || o.leader !== name) continue
+      // `o.lext`: Ein Freitext-Leiter blockiert keinen Gleichnamigen — er ist
+      // nicht diese Person, er heißt nur so.
+      if (o.id === sel.instId || o.wd !== inst.wd || o.lext || o.leader !== name) continue
       const ttl = o.grp === '' ? t.fsVers : (state.groups.find((g) => g.id === o.grp)?.name ?? o.grp)
       out.push({ text: `${o.time} · ${tu(ttl)}`, lang: 'u' })
     }

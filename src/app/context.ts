@@ -260,7 +260,7 @@ export type AppAction =
   | { type: 'addImportedWeek'; week: Week } // Produktion: echte jw.org-Woche
   | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, Week> } // nachgeladene Sprachvarianten
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
-  | { type: 'assign'; name: string; pid?: string; rolle?: string } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots
+  | { type: 'assign'; name: string; pid?: string; rolle?: string; extern?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher)
   | { type: 'autoAssign'; scope?: 'parts' | 'helpers' | 'all' } // aktuelle Woche + Tab; Bereich (Default: alles)
   | { type: 'clearAssignments'; scope: 'parts' | 'helpers' } // aktuelle Woche + Tab: Zuteilungen des Bereichs leeren
   // Treffpunkte (Wochen-Bearbeitung im Planen-Tab)
