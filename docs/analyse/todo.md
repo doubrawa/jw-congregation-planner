@@ -2764,7 +2764,7 @@ und S3 unten unter „Was bewusst offen bleibt" — der Nachweis braucht zwei ec
 Konten. Mit einer zweiten Versammlung wird er erst möglich — und dann Pflicht,
 Tabelle für Tabelle.
 
-### T79 · Auto-Zuteilung lässt Hilfsdienste aus — und sagt nichts 🔧
+### T79 · Auto-Zuteilung lässt Hilfsdienste aus — und sagt nichts 🔧 ✅ erledigt
 Der Betreiber meldet: Beim automatischen Verteilen bleiben **selbst angelegte**
 Hilfsdienste leer, und der **Rundgangsordner** wird nicht zugeteilt.
 
@@ -2851,9 +2851,13 @@ wird der Dienst gelöscht, während seine Liste offen steht, schließt sie mit.
 Am laufenden Stand durchgespielt: Schalter um → Kopf 52 → 53 Personen → nach
 dem Schließen steht die 53 auch am Dienst.
 
-**Zu klären bleibt:** Soll ein neu angelegter Dienst mit „niemand freigegeben"
-starten (heute so — sicher, und seit der Freigabe-Liste kein Sackgassen-Weg
-mehr) oder mit „alle Verkündiger"?
+**Entschieden (Betreiber, 17. August 2026): „niemand freigegeben".** Ein neuer
+Dienst startet leer, wie heute — es bleibt also alles, wie es ist, und **nichts
+zu ändern**. Der Grund, aus dem die Frage überhaupt aufkam, ist mit der
+Freigabe-Liste weggefallen: Der leere Dienst ist keine Sackgasse mehr, sondern
+ein Schritt, den der Planer an einer Stelle erledigt. „Alle Verkündiger" hätte
+das Gegenteil bedeutet — einen Dienst, der von selbst mit Leuten besetzt wird,
+die niemand dafür vorgesehen hat. Damit ist T79 in allen Teilen geschlossen.
 
 ### T80 · Konflikt-Markierung und „Unser Leben als Christ" tragen dieselbe Farbe ⚡ ✅ erledigt
 Aus T76: Der markierte Chip bekommt `background: var(--tWein)` und Rand/Schrift
@@ -3080,7 +3084,7 @@ tragen keinen Schlüssel. Sie lassen sich weder aufräumen noch als abgelaufen
 erkennen und bleiben stehen, bis sie über die 50er-Grenze hinauslaufen. Das ist
 Absicht: Sie nachträglich zu deuten hieße, aus dem Anzeigetext zu raten.
 
-### T88 · Die Actions des Deploys sind zwei bis drei Hauptversionen zurück ⚡
+### T88 · Die Actions des Deploys sind zwei bis drei Hauptversionen zurück ⚡ ✅ gehoben
 Beim Push vom 16. August aufgefallen — der Lauf war grün, meldete aber:
 
 > Node.js 20 is deprecated. The following actions target Node.js 20 but are
@@ -3118,6 +3122,34 @@ Deprecation-Anmerkung ist das Ziel; danach `gh run list` und die Seite selbst
 gegen den neuen Commit prüfen. Geht es schief, ist die Rücknahme ein Commit —
 nur eben einer, der erst auffällt, wenn jemand die Seite aufruft.
 
+> **Gehoben am 17. August 2026.** Alle vier auf den heutigen Stand, am selben
+> Tag über `gh api .../releases/latest` nachgemessen (nicht aus der Tabelle
+> oben übernommen — sie ist einen Tag alt): `checkout@v7`, `setup-node@v7`,
+> `upload-pages-artifact@v5`, `deploy-pages@v5`. Alle vier laufen jetzt auf
+> `node24`, damit ist die Meldung an der Wurzel behoben und nicht übertönt.
+>
+> **Drei Brüche standen auf dem Weg — keiner trifft dieses Repo, alle drei
+> nachgesehen statt vermutet:**
+>
+> | Bruch | Nachgesehen | Ergebnis |
+> | --- | --- | --- |
+> | `upload-pages-artifact@v4`: Dotfiles fallen aus dem Artefakt | `find dist -name '.*'` | keine — kein `.nojekyll`, keine `CNAME` |
+> | `setup-node@v5/v6`: cacht von selbst, wenn `packageManager` in `package.json` steht | `package.json` | Feld gibt es nicht, und `cache: npm` steht ohnehin ausdrücklich da |
+> | `checkout@v7`: Fork-PRs bei `pull_request_target`/`workflow_run` gesperrt | `on:` im Workflow | nur `push` auf main und `workflow_dispatch` |
+>
+> Ebenfalls geprüft statt angenommen: Die drei benutzten Eingaben
+> (`node-version`, `cache`, `path`) stehen in den `action.yml` der neuen
+> Fassungen unverändert, und die Artefaktnamen passen weiter zusammen — beide
+> Pages-Actions haben `github-pages` als Vorgabe. Genau daran hängt, dass die
+> beiden nur **gemeinsam** gehoben werden dürfen; ein Kommentar an der Stelle
+> sagt es jetzt, damit die nächste Runde nicht eine von beiden vergisst.
+>
+> Die gleitenden Hauptversions-Tags bleiben (`@v7` statt einer SHA) — so war es
+> hier schon, und kleine Versionen kommen dann von selbst nach.
+>
+> **Offen bleibt der Beleg:** Grün *und* ohne Deprecation-Anmerkung zeigt sich
+> erst am Lauf nach dem Push.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -3135,16 +3167,18 @@ nur eben einer, der erst auffällt, wenn jemand die Seite aufruft.
 
 ## Fortschritt
 
-Stand 15. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 17. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☑☑☑☑☐☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑
+15. August ☑☑☑☑☑☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑⚠
 
-**85 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 4 offen:** T63
-und T72 (beide vom Betreiber zurückgestellt), der Nachweis T78 und **T88** —
-die Actions des Deploy-Workflows, aufgenommen am 16. August.
+**86 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 3 offen:** T63
+und T72 (beide vom Betreiber zurückgestellt) und der Nachweis T78.
+**T88** ist gehoben (⚠, weil der Beleg erst am Lauf nach dem Push sichtbar
+wird); **T79** ist mit der Entscheidung vom 17. August („niemand freigegeben"
+bleibt) in allen Teilen geschlossen.
 **T67** — die Tests selbst geprüft — ist am 16. August dazugekommen: eine
 [Mutationsprobe](../../scripts/mutationsprobe.mjs), die Regeln absichtlich
 bricht und nachsieht, ob etwas rot wird. Sieben ungewachte Regeln gefunden und
@@ -3245,7 +3279,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 | **15. August** | T72, T78 | Ein Vorhaben (Abwesenheiten) und der Mandanten-Nachweis. T67–T71 und T73–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
-| **16. August** | T88 | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu: Die Actions des Deploy-Workflows liegen zwei bis drei Hauptversionen zurück. |
+| **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu und ist am 17. August gehoben — offen ist daran nur noch der Beleg, den erst der nächste Lauf zeigt. |
+| **17. August** | — | **T79** ist mit der Entscheidung des Betreibers geschlossen: Ein neu angelegter Hilfsdienst startet weiter mit „niemand freigegeben". Zu ändern war daran nichts. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
