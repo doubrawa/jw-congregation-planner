@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { istSchuelerteil } from '../data/aux-class'
-import { eigeneRolle, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { eigeneRolle, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
@@ -253,12 +253,19 @@ export function MeetingSection({
                   <div className="plan-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>
                 )}
                 <div className="plan-slots">
+                  {/* Kein Bestätigungs-Zeichen, wo es nichts zu bestätigen
+                      gibt: „✓" heißt *bestätigt*, und wer in `SKIP_ROLE` steht
+                      (Gastredner, Kreisaufseher), hat weder Aufgabe noch
+                      Erinnerung noch die App. Der Haken behauptete dort etwas,
+                      das nie passiert ist. Dieselbe Regel führt `HelpersPanel`
+                      seit jeher für die Gruppen-Rotation („keine Person") und
+                      `FsPlan` seit T63 für den Freitext-Leiter. */}
                   {slots.map((slot, ni) => (
                     <SlotChip
                       key={ni}
                       text={partChipText(slot)}
                       open={!slot.name}
-                      showStatus={Boolean(slot.name)}
+                      showStatus={Boolean(slot.name) && !isGuestRole(slot.rolle)}
                       pending={isPending(slot)}
                       konflikt={betrifft(slot)}
                       onClick={() => openPartSlot(ii, ni, item, slot, aux)}

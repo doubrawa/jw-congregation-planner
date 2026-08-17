@@ -957,9 +957,34 @@ Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 >
 > **Dabei aufgefallen und mitkorrigiert:** Der Chip trug das
 > Bestätigungs-Zeichen `✓` auch beim Freitext — „✓" heißt *bestätigt*, und der
-> Kreisaufseher hat die App gar nicht. Jetzt bleibt es dort weg. (Am
-> Gastredner aus T29 steht dasselbe `✓` weiterhin; dieselbe Ursache, eigene
-> Stelle — nicht mitgeändert, damit es nicht unbemerkt mitläuft.)
+> Kreisaufseher hat die App gar nicht.
+>
+> ✅ **Und beim Gastredner nachgezogen (17.8.2026, auf Ansage des Betreibers).**
+> Dieselbe Ursache, eigene Stelle: `MeetingSection` setzte `showStatus` auf
+> `Boolean(slot.name)`. Jetzt fragt es `isGuestRole` — damit fällt der Haken
+> nicht nur beim Gastredner weg, sondern auch bei den
+> **Kreisaufseher**-Plätzen aus T62 (Dienstvortrag, Schlussvortrag,
+> öffentlicher Vortrag der Dienstwoche); beide stehen in `SKIP_ROLE`, und am
+> Wort zu prüfen wäre der stille Rückschritt gewesen.
+>
+> **Die Regel war zweimal vergessen worden, deshalb hat sie jetzt einen
+> Wächter.** `HelpersPanel` führte sie seit jeher richtig („Gruppen-Rotation
+> ist keine Person"), aber als gewöhnlichen Ausdruck mitten in einer
+> Eigenschaft — sichtbar nur, wer genau diese Datei liest. T29 baute daneben
+> und übernahm sie nicht; T63 wäre denselben Weg gegangen, wäre es beim
+> Nachstellen im Browser nicht aufgefallen. Ein Verhaltenstest trägt hier
+> wenig (MeetingSection 0 %, FsPlan 1,5 % Abdeckung), also eine **Probe am
+> Quelltext** nach dem Muster von `aufgaben-label-quelle.test.ts`:
+> `src/planen/slot-status-quelle.test.ts` führt alle vier `SlotChip`-Aufrufer
+> namentlich samt ihrer `showStatus`-Angabe. Genau einer darf unbedingt sein —
+> der Ratgeber der Zusätzlichen Klasse, und der ist immer ein Bruder der
+> eigenen Versammlung. Wer einen fünften Aufrufer hinzufügt oder eine Angabe
+> ändert, wird rot und muss sich entscheiden.
+>
+> Gegenprobe auch hier gefahren: mit dem alten `Boolean(slot.name)` fällt die
+> Probe. Im Browser nachgestellt: „Gastredner · Vers. Nordheim: M. Hartmann"
+> ohne Haken, „Vorsitz: A. Brenner✓" mit, „Simon Krüger…" behält das
+> ausstehende Zeichen, die Gruppen wie bisher ohne.
 >
 > **11 Tests** in `src/data/t63-leiter-freitext.test.ts`, in denen der
 > Freitext-Leiter absichtlich wie ein Bruder der Versammlung heißt
@@ -969,9 +994,21 @@ Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 > während der echte Jonas Berger am Mittwoch seines behält. Konsole sauber,
 > alle vier CI-Schritte grün (1846 Tests).
 >
-> **Offen an Teil B:** nur der Deploy von `send-reminders` — bis dahin
-> erinnert die laufende Fassung einen gleichnamigen Bruder. Teil A (die
-> Termine) ist noch nicht gebaut.
+> ✅ **`send-reminders` ist deployt** (17.8.2026, 21:29:47 — Version 26), also
+> nach dem Commit `7c75489` (21:17:06), der die Wache trägt. `functions list`
+> zeigt `verify_jwt: false`, wie `config.toml` es für diese eine Function
+> vorsieht: Sie ruft der Cron-Job ohne Nutzer-Login, geschützt über
+> `CRON_SECRET`. Das Flag `--no-verify-jwt` beim Deploy passt hier deshalb —
+> anders als bei `substitute`, wo es 2026 der Fehler war (T11).
+>
+> **Rauchtest gefahren, beide Wege 401:** ohne Header und mit falschem Secret.
+> Der Rumpf ist das schlichte `Unauthorized` aus dem Handler, nicht das JSON
+> der Plattform — es kommt also von Code, der erst **nach** dem Laden des
+> Moduls samt `_shared/` läuft. Damit ist belegt, dass das neue Bündel
+> wirklich hochgekommen ist und nicht nur hochgeladen wurde. Mit gültigem
+> Secret wurde bewusst **nicht** gerufen: `SEND_PUSH` ist scharf.
+>
+> **Offen an T63:** nur noch Teil A, die Termine.
 
 ### T64 · Der Anlass der Woche — und wo er eingestellt wird 🏗 ✅ erledigt
 Aufgefallen beim Nachziehen des Designs: Hakt man **BESUCH DES KREISAUFSEHERS**
