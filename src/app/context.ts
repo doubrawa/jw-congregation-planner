@@ -37,6 +37,7 @@ import type {
   Service,
   SlotSelection,
   SubstituteReq,
+  Termin,
   Theme,
   Week,
 } from '../data/types'
@@ -301,6 +302,10 @@ export type AppAction =
   | { type: 'setPartThema'; tab: MeetingKey; si: number; ii: number; begriff: string; thema: string }
   // Öffentlicher Vortrag / Wochenende (Planen, aktuelle Woche)
   | { type: 'talkEdit'; si: number; ii: number; title: string } // Vortragsthema (Freitext)
+  // Weitere Termine der Woche (T63) — reine Ankündigung, kein Bearbeiter.
+  | { type: 'terminAdd' }
+  | { type: 'terminUpdate'; id: string; patch: Partial<Omit<Termin, 'id'>> }
+  | { type: 'terminRemove'; id: string }
   | { type: 'openingSong'; song: string } // Anfangslied-Nummer ("" = entfernen)
   | { type: 'closingSong'; song: string } // Schlusslied-Nummer ("" = entfernen)
   // Erinnerungen

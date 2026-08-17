@@ -120,8 +120,11 @@ Manchmal weicht eine Woche ab — mehrere Versammlungen teilen sich einen Saal,
 eine hat Dienstwoche, und ihr müsst euren Tag verschieben. Oder es ist
 Kongress und die Zusammenkunft entfällt ganz.
 
-Im **Planen**-Tab steht dafür über den Zuteilungen ein kleines Feld, jeweils für
-die gerade gewählte Zusammenkunft:
+Dafür gibt es im **Planen**-Tab einen eigenen Reiter neben „Dienstag",
+„Sonntag" und „Predigtdienst": den **Stift** (✎). Er gehört der ganzen Woche,
+nicht einer einzelnen Zusammenkunft — deshalb stellst du dort **beide**
+Zusammenkünfte ein, ohne den Reiter zu wechseln. Je Zusammenkunft steht ein
+Feld:
 
 | Bedienelement | Wirkung |
 | --- | --- |
@@ -145,6 +148,34 @@ deine Planung wieder da — es geht nichts verloren.
 > Die Gedächtnismahl-Woche ist **kein** Ausfall: dort wird der reguläre Ablauf
 > ersetzt, das Mahl hat eigene Zuteilungen. Dafür gibt es weiterhin den eigenen
 > Hinweis.
+
+### Weitere Termine der Woche
+
+Zu einer Woche gehört manchmal mehr als die beiden Zusammenkünfte und die
+Treffpunkte — eine **Pionierbesprechung**, eine **Besprechung mit
+Dienstamtgehilfen und Ältesten**, was sonst ansteht.
+
+Im **Stift**-Reiter (✎) legst du mit **+ HINZUFÜGEN** so viele Termine an, wie
+du brauchst. Jeder hat vier Felder, alle bis auf den Namen freiwillig:
+
+| Feld | Wofür |
+| --- | --- |
+| **Name** | Wie der Termin heißen soll — deine Worte, z. B. „Pionierbesprechung" |
+| **Wochentag** | Lass ihn auf „—", solange der Tag noch nicht feststeht |
+| **Uhrzeit** | |
+| **Ort** | Freitext, z. B. „Königreichssaal" |
+
+Die Termine erscheinen im **Programm** über den Reitern — also auf jedem
+Reiter, denn sie gehören zu keiner einzelnen Zusammenkunft. **Alle sehen sie**,
+und zwar nach Wochentag und Uhrzeit geordnet; Termine ohne Tag stehen hinten.
+
+> **Ein Termin ist eine Ankündigung, keine Zuteilung.** Es gibt dazu keinen
+> Bearbeiter, keine Bestätigung und keine Erinnerung — er steht einfach da.
+> Wer etwas leiten soll, bekommt es als Programmpunkt oder Treffpunkt.
+
+Name und Ort bleiben so stehen, wie du sie schreibst; sie werden **nicht**
+übersetzt — es sind deine Worte, wie der Grund einer Verlegung. Nur der
+Wochentag erscheint bei jedem in seiner eigenen Sprache.
 
 ### Besuch des Kreisaufsehers
 
@@ -266,6 +297,17 @@ Der regelmäßige Rhythmus kommt aus dem **Grundplan** (siehe
 [Einstellungen](#7-einstellungen)); pro Woche kannst du Uhrzeit, Ort und **Leiter**
 anpassen oder einen einmaligen Treffpunkt ergänzen. **Gruppenaufseher** können die
 Treffpunkte **ihrer** Gruppe selbst planen, ohne vollen Planer‑Zugang.
+
+**Der Leiter kann auch jemand von außerhalb sein.** In der Dienstwoche leitet
+in der Regel der **Kreisaufseher** den Treffpunkt, und der steht in keiner
+Personenliste. Tippe den Treffpunkt-Leiter an: Oben im Blatt gibst du einen
+**Namen als Freitext** ein und bestätigst mit **ÜBERNEHMEN** — darunter steht
+weiterhin die Liste der eigenen Verkündiger, falls es doch jemand von euch
+sein soll. Beide Wege führen zurück, du kannst also jederzeit wechseln.
+
+> Ein Freitext-Leiter hat die App nicht: Er bekommt keine Aufgabe, keine
+> Erinnerung und keinen Bestätigungs-Haken, und er zählt bei niemandem auf die
+> Auslastung. Auch dann nicht, wenn er zufällig so heißt wie jemand bei euch.
 
 ---
 

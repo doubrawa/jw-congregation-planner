@@ -848,7 +848,7 @@ Voreinstellung nur für die Beschriftung wäre Aufwand ohne Gewinn.
 Leiter, „Vortrag · 30 Min."; ausgeschaltet → alles wieder da, samt Leser und
 „60 Min.".
 
-### T63 · Die übrigen Termine der Dienstwoche 🏗 ✅ fachlich geklärt · Bau offen
+### T63 · Die übrigen Termine der Dienstwoche 🏗 ✅ erledigt
 Zur Dienstwoche gehört mehr als die beiden Zusammenkünfte. Der Betreiber hat es
 am 8.8.2026 genannt und ausdrücklich **auf später** gelegt — hier notiert, damit
 es nicht untergeht:
@@ -900,14 +900,44 @@ Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 > `a11yWeekday`, `a11yTime`, `fsOrtPh`, `hinzufuegen`, `entfernen` liegen alle
 > gemessen vor.
 >
-> ⚠ **Eine Wortfrage bleibt offen:** Für die Überschrift des Blocks und den
-> Platzhalter des Bezeichnungsfeldes gibt es **keinen** vorhandenen Schlüssel,
-> und „Termin" ist kein JW-Fachbegriff, den man messen könnte (das
-> Kongressprogramm aus T33 führt ihn nicht). Erste Fassung deshalb ohne beides:
-> Die Zeilen stehen im vorhandenen Wochen-Panel unter `einstellungen`, das
-> Bezeichnungsfeld bleibt ohne Platzhalter. Fällt das beim Benutzen
-> unangenehm auf, ist es **ein** neuer Schlüssel — dann aber bewusst und
-> benannt, nicht nebenbei.
+> ✅ **Teil A umgesetzt am 17. August 2026.** `Week.termine` hält die Liste,
+> `data/termine.ts` die Logik (anlegen, ändern, entfernen, Reihenfolge). Die
+> Bedienung steht im Wochen-Reiter unter dem Anlass — dieselbe Ebene, dieselbe
+> Regel wie T64. Angezeigt wird sie im Programm **über** den Reitern, denn ein
+> Termin gehört zu keiner der drei Zusammenkünfte, sondern zur Woche; damit
+> sieht ihn jeder, auf jedem Reiter.
+>
+> **Die Wortfrage hat sich erledigt, ohne einen neuen Schlüssel.** Für das
+> Bezeichnungsfeld trägt `nameLbl` („Name") — es *ist* der Name des Termins.
+> Der Rest kommt aus geprüften Bausteinen: `a11yWeekday`, `a11yTime`,
+> `fsOrtPh`, `hinzufuegen`, `a11yRemove`, für „kein Tag" ein Gedankenstrich,
+> und die Wochentage aus `Intl` statt aus 34 Wörterbüchern. Eine Überschrift
+> braucht der Block nicht: Er steht im Panel des Anlasses, dem er ohnehin
+> gehört.
+>
+> **Übersetzt wird nur, was gemessen vorliegt.** Die Bezeichnung und der Ort
+> sind die Worte des Planers und bleiben stehen — wie `Abweichung.reason`. Im
+> Browser auf Japanisch nachgestellt: `木曜日 · 19:00 · Pionierbesprechung ·
+> Königreichssaal`. Der Wochentag wechselt, der Rest nicht, und genau so ist es
+> gemeint.
+>
+> **Zwei Entscheidungen, die erst beim Bauen auffielen:**
+>
+> - **Sortiert wird beim Lesen, nicht beim Schreiben** (`termineVon`). Spränge
+>   die Zeile schon beim Eintippen des Tages an ihren Platz, verlöre das Feld
+>   darunter den Fokus mitten in der Eingabe. `fsSort` darf es beim Schreiben
+>   tun, weil dort Zeit und Ort aus fertigen Auswahlfeldern kommen.
+> - **Der letzte Termin nimmt das Feld mit.** Sonst bliebe in den Daten für
+>   immer ein `termine: []` stehen, und jede Woche, die einmal einen Termin
+>   trug, wäre von den übrigen unterscheidbar, ohne es zu sein.
+>
+> `WEEKDAY_OFFSET` ist dafür aus `meeting-dates.ts` exportiert und die
+> Wochentags-Auswahl aus `SonderwochePanel` nach `planen/wochentage.ts`
+> gewandert: Zwei Listen deutscher Wochentage wären zwei Gelegenheiten,
+> „Sonnabend" zu vergessen — ein eigener Test hält genau das fest.
+>
+> **11 Tests** in `src/data/termine.test.ts`. Alle vier CI-Schritte grün
+> (1860 Tests), Konsole sauber.
 >
 > #### Was zu bauen ist — B: der Treffpunkt-Leiter als Freitext
 >
@@ -1008,7 +1038,7 @@ Vor der Umsetzung zu klären: Wer sieht diese Termine (alle, nur Pioniere, nur
 > wirklich hochgekommen ist und nicht nur hochgeladen wurde. Mit gültigem
 > Secret wurde bewusst **nicht** gerufen: `SEND_PUSH` ist scharf.
 >
-> **Offen an T63:** nur noch Teil A, die Termine.
+> **T63 ist damit vollständig** — beide Teile gebaut, belegt und in Betrieb.
 
 ### T64 · Der Anlass der Woche — und wo er eingestellt wird 🏗 ✅ erledigt
 Aufgefallen beim Nachziehen des Designs: Hakt man **BESUCH DES KREISAUFSEHERS**
@@ -3379,8 +3409,10 @@ Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑☑
 
-**86 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 3 offen:** T63
-und T72 (beide vom Betreiber zurückgestellt) und der Nachweis T78.
+**87 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 offen:** T72
+(vom Betreiber zurückgestellt) und der Nachweis T78. **T63** ist am
+17. August fachlich geklärt und in beiden Teilen gebaut worden — eine
+allgemeine Terminart für die Woche und der Treffpunkt-Leiter als Freitext.
 **T88** ist am 17. August gehoben **und belegt** — der Lauf danach ist grün und
 trägt keine Deprecation-Anmerkung mehr, die Seite steht auf dem neuen Commit;
 **T79** ist mit der Entscheidung vom selben Tag („niemand freigegeben" bleibt)
@@ -3487,7 +3519,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | | Aufgabe | Warum offen |
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
-| **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
+| **Phase 6** | — | **T63** ist am 17. August geklärt und gebaut: eine allgemeine Terminart für die Woche, dazu der Treffpunkt-Leiter als Freitext. Die abweichenden Treffpunkt-Zeiten der Dienstwoche konnte die App schon. |
 | **15. August** | T72, T78 | Ein Vorhaben (Abwesenheiten) und der Mandanten-Nachweis. T67–T71 und T73–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
 | **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu und ist am 17. August gehoben und belegt. |
 | **17. August** | — | **T79** ist mit der Entscheidung des Betreibers geschlossen: Ein neu angelegter Hilfsdienst startet weiter mit „niemand freigegeben". Zu ändern war daran nichts. Ebenso der **Rest von T33**: die Wortlaute für „Schlusslied" sind an einer echten Parallelquelle gemessen — 26 Sprachen geben ihn her, 8 nicht, Französisch gar nicht. `SONG_WORD` bleibt. |
