@@ -3135,7 +3135,7 @@ tragen keinen Schlüssel. Sie lassen sich weder aufräumen noch als abgelaufen
 erkennen und bleiben stehen, bis sie über die 50er-Grenze hinauslaufen. Das ist
 Absicht: Sie nachträglich zu deuten hieße, aus dem Anzeigetext zu raten.
 
-### T88 · Die Actions des Deploys sind zwei bis drei Hauptversionen zurück ⚡ ✅ gehoben
+### T88 · Die Actions des Deploys sind zwei bis drei Hauptversionen zurück ⚡ ✅ erledigt
 Beim Push vom 16. August aufgefallen — der Lauf war grün, meldete aber:
 
 > Node.js 20 is deprecated. The following actions target Node.js 20 but are
@@ -3198,8 +3198,20 @@ nur eben einer, der erst auffällt, wenn jemand die Seite aufruft.
 > Die gleitenden Hauptversions-Tags bleiben (`@v7` statt einer SHA) — so war es
 > hier schon, und kleine Versionen kommen dann von selbst nach.
 >
-> **Offen bleibt der Beleg:** Grün *und* ohne Deprecation-Anmerkung zeigt sich
-> erst am Lauf nach dem Push.
+> **Beleg gefahren, grün — und zwar beide Hälften.** Lauf `32055303642` zu
+> `c5a28ae`: build 54 s, deploy 8 s, alle Schritte ✓. Entscheidend ist die
+> zweite Hälfte, und die ist an der API gemessen, nicht am Auge:
+> `check-runs/<job>/annotations` liefert für diesen Lauf **null Anmerkungen**,
+> für den Lauf davor (`31969450599`) noch zwei — „Node.js 20 is deprecated …
+> `actions/checkout@v4`, `actions/setup-node@v4`, `actions/upload-artifact@v4`"
+> und dieselbe Meldung für `actions/deploy-pages@v4`. Damit ist auch die
+> Vermutung bestätigt, dass `upload-artifact` nur mitgeschleift war: Es taucht
+> nirgends in der Datei auf und ist trotzdem mit verschwunden.
+>
+> Und angekommen ist es auch: Das Pages-Deployment steht auf `c5a28ae` (vorher
+> `04b3414`), die Seite lädt, zeigt die Anmeldung samt Sprachwahl, Konsole
+> ohne Fehler. Genau die Kette, deren Stillstand dieser Punkt verhindern
+> sollte.
 
 ---
 
@@ -3223,13 +3235,14 @@ Stand 17. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilwe
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☑☑☑☑☑☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑⚠
+15. August ☑☑☑☑☑☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑☑
 
 **86 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 3 offen:** T63
 und T72 (beide vom Betreiber zurückgestellt) und der Nachweis T78.
-**T88** ist gehoben (⚠, weil der Beleg erst am Lauf nach dem Push sichtbar
-wird); **T79** ist mit der Entscheidung vom 17. August („niemand freigegeben"
-bleibt) in allen Teilen geschlossen. Am selben Tag ist der **Rest von T33**
+**T88** ist am 17. August gehoben **und belegt** — der Lauf danach ist grün und
+trägt keine Deprecation-Anmerkung mehr, die Seite steht auf dem neuen Commit;
+**T79** ist mit der Entscheidung vom selben Tag („niemand freigegeben" bleibt)
+in allen Teilen geschlossen. Am selben Tag ist der **Rest von T33**
 gemessen worden — 34 Sprachfassungen desselben Kongressprogramms — und
 **negativ ausgegangen**: ein durchgängiges Wort für „Schlusslied" gibt es
 nicht. Das ist kein Ausweichen mehr, sondern ein Befund mit Beleg; er steht
@@ -3334,7 +3347,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 | **15. August** | T72, T78 | Ein Vorhaben (Abwesenheiten) und der Mandanten-Nachweis. T67–T71 und T73–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
-| **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu und ist am 17. August gehoben — offen ist daran nur noch der Beleg, den erst der nächste Lauf zeigt. |
+| **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu und ist am 17. August gehoben und belegt. |
 | **17. August** | — | **T79** ist mit der Entscheidung des Betreibers geschlossen: Ein neu angelegter Hilfsdienst startet weiter mit „niemand freigegeben". Zu ändern war daran nichts. Ebenso der **Rest von T33**: die Wortlaute für „Schlusslied" sind an einer echten Parallelquelle gemessen — 26 Sprachen geben ihn her, 8 nicht, Französisch gar nicht. `SONG_WORD` bleibt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
