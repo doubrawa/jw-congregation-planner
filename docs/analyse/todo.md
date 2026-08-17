@@ -624,7 +624,7 @@ schon notiert (Soft-Hyphens im Rohtext), ohne dass daraus eine Aufgabe wurde.
 > vollständig; das ist keine Anpassung des Tests an den Code, sondern an den
 > Import.
 
-### T33 · Schlusslied nachtragbar machen ⚡ ✅ erledigt
+### T33 · Schlusslied nachtragbar machen ⚡ ✅ erledigt · Rest ⛔ gemessen, kein Wort
 `applyStudy` fügt das Lied als eigenes Item ein, während der Titel weiterhin
 „Schlussworte · **Lied** · Gebet" lautet → das Wort erscheint doppelt. Fehlt das
 Lied, lässt sich die Nummer **nicht** nachtragen: `setOpeningSong` kennt nur die
@@ -655,8 +655,59 @@ Eröffnung.
 > englisch da"). 32 Wörter zu erfinden schied aus. Stattdessen das bereits
 > gemessene `SONG_WORD` — das Feld heißt schlicht „LIED" / „SONG" / „שיר",
 > im ABSCHLUSS-Block darüber eindeutig genug.
-> **Offen, falls gewünscht:** die 32 Wortlaute für „Schlusslied" an jw.org
-> messen, dann wird daraus ein normaler UI-Schlüssel.
+> ⛔ **Gemessen am 17. August 2026 — es gibt kein durchgängiges Wort.** Der
+> Auftrag lautete, die 32 Wortlaute an jw.org zu messen. Die Messung ist
+> gelaufen, vollständig und an einer echten Parallelquelle; sie trägt nicht.
+> `SONG_WORD` bleibt, jetzt aus Beleg statt aus Verlegenheit.
+>
+> **Die Quelle taugte.** Nicht die S-38-Anweisungen — die sagen „Die
+> Zusammenkunft endet mit Lied und Gebet" und kennen den Begriff gar nicht —,
+> sondern das **2018er Kongressprogramm** (`CO-pgm18`, Sonntag), dort als
+> Programmpunkt „15.50 Schlusslied und Gebet". Es ist die beste erreichbare
+> Parallelquelle: **eine** Dokumentkennung, die WOL in **jeder** Sprache
+> ausliefert (`wol.jw.org/<lang>/wol/d/r<N>/lp-<lib>/1102018403`, die
+> `r`/`lp`-Paare stehen in der Bibliotheksliste `/de/wol/li/r10/lp-x`). Alle
+> 34 Fassungen geholt, alle 200.
+>
+> **Und daran scheitert es**, an derselben Stelle wie „entfällt" in T30: Der
+> Programmpunkt nennt Lied **und** Gebet, das Wort für „Schluss" gehört mal
+> allein dem Lied, mal beiden zusammen.
+>
+> | Trennbar (26) | Zeile → Begriff |
+> | --- | --- |
+> | de en pt nl ru uk cs sk hr sr bg hu el tr sv da fi no tl sw zh ja ko he fa ur | „Closing Song and Prayer" → `Closing Song`; „Zaključna pesma i molitva" → `Zaključna pesma`; „結びの歌と祈り" → `結びの歌`; „Loppulaulu ja -rukous" → `Loppulaulu` |
+>
+> | Nicht trennbar (8) | gemessene Zeile | was ein Schnitt ergäbe |
+> | --- | --- | --- |
+> | **fr** | Cantique et prière | — **kein Schlusswort im Text** |
+> | es | Canción y oración de conclusión | „Canción" (bloß „Lied") |
+> | it | Cantico e preghiera conclusivi | „Cantico" — `conclusivi` steht im Plural für beide, der Singular wäre erfunden |
+> | ro | Cântarea și rugăciunea de încheiere | „Cântarea" |
+> | pl | Pieśń i modlitwa końcowa | „Pieśń" |
+> | id | Nyanyian dan Doa Penutup | „Nyanyian" |
+> | vi | Bài hát và cầu nguyện kết thúc | „Bài hát" |
+> | ar | الترنيمة والصلاة الختامية | „الترنيمة" |
+>
+> **Französisch entscheidet die Sache.** Für die sieben anderen ließe sich der
+> richtige Alleinstand grammatisch herleiten — das wäre schon Erfindung mit
+> Anlauf. Französisch gibt gar nichts her: Die Publikationen kennen
+> nebeneinander „cantique final" (33 Treffer als exakte Wendung, durchweg
+> erzählend: *„entonner le cantique final"*), „cantique de conclusion" und
+> „cantique de clôture". Vier Kandidaten sind kein gemessenes Wort, sondern
+> eine Auswahl — und die zu treffen ist genau das, was hier nicht passieren
+> soll.
+>
+> **Der bestehende Weg ist der gemessene.** Die Panel-Überschrift `ABSCHLUSS`
+> liegt in allen 34 Sprachen gemessen vor (`CONCLUSION` · `CONCLUSIÓN` ·
+> `الختام` · `סיום`) und steht direkt über dem Feld; darunter das ebenfalls
+> gemessene `SONG_WORD`. Beide Hälften sind belegt — nur eben getrennt, so wie
+> der Schalter in T30 den Namen der Zusammenkunft trägt, statt „entfällt" zu
+> erfinden.
+>
+> **Wer es erneut versucht, fängt hier an:** Die Kennung `1102018403` ist
+> sprachunabhängig, die Sprachliste steht oben. Zu suchen wäre eine Quelle, die
+> das Schlusslied **allein** nennt — im Kongressprogramm steht es nie ohne das
+> Gebet.
 >
 > Im Browser geprüft (Demo-Daten, Planen → Sonntag): Eintrag „151" macht aus
 > „Schlussworte · Lied 76 · Gebet" → „Schlussworte · Lied 151 · Gebet";
@@ -3178,7 +3229,11 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 und T72 (beide vom Betreiber zurückgestellt) und der Nachweis T78.
 **T88** ist gehoben (⚠, weil der Beleg erst am Lauf nach dem Push sichtbar
 wird); **T79** ist mit der Entscheidung vom 17. August („niemand freigegeben"
-bleibt) in allen Teilen geschlossen.
+bleibt) in allen Teilen geschlossen. Am selben Tag ist der **Rest von T33**
+gemessen worden — 34 Sprachfassungen desselben Kongressprogramms — und
+**negativ ausgegangen**: ein durchgängiges Wort für „Schlusslied" gibt es
+nicht. Das ist kein Ausweichen mehr, sondern ein Befund mit Beleg; er steht
+dort samt Quelle, damit die Suche nicht ein drittes Mal beginnt.
 **T67** — die Tests selbst geprüft — ist am 16. August dazugekommen: eine
 [Mutationsprobe](../../scripts/mutationsprobe.mjs), die Regeln absichtlich
 bricht und nachsieht, ob etwas rot wird. Sieben ungewachte Regeln gefunden und
@@ -3280,7 +3335,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **Phase 6** | T63 | Neu. Die übrigen Termine der Dienstwoche — vom Betreiber ausdrücklich zurückgestellt. |
 | **15. August** | T72, T78 | Ein Vorhaben (Abwesenheiten) und der Mandanten-Nachweis. T67–T71 und T73–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
 | **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu und ist am 17. August gehoben — offen ist daran nur noch der Beleg, den erst der nächste Lauf zeigt. |
-| **17. August** | — | **T79** ist mit der Entscheidung des Betreibers geschlossen: Ein neu angelegter Hilfsdienst startet weiter mit „niemand freigegeben". Zu ändern war daran nichts. |
+| **17. August** | — | **T79** ist mit der Entscheidung des Betreibers geschlossen: Ein neu angelegter Hilfsdienst startet weiter mit „niemand freigegeben". Zu ändern war daran nichts. Ebenso der **Rest von T33**: die Wortlaute für „Schlusslied" sind an einer echten Parallelquelle gemessen — 26 Sprachen geben ihn her, 8 nicht, Französisch gar nicht. `SONG_WORD` bleibt. |
 
 > ✅ **Beim Betreiber erledigt (15. August 2026)** — der Stand des Repos ist
 > vollständig in Betrieb:
@@ -3369,3 +3424,4 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **T51** (vier z-index-Ebenen) | umgesetzt mit **sieben**; vier hätten die Reihenfolge geändert |
 | **T15** (Endzeit) | umgesetzt als feste 105 min statt Summe der Programmminuten — das Arbeitsheft führt Lieder und Gebete nicht auf |
 | **T25** (Fragmente) | teilweise; 22 veröffentlichte Titel bleiben unübersetzt, als geschlossene Liste im Test festgehalten |
+| **T33** (Beschriftung „Schlusslied") | ⛔ gemessen, kein Wort: das Kongressprogramm nennt Lied und Gebet zusammen — in 8 Sprachen ergäbe ein Schnitt bloß „Lied", auf Französisch steht gar kein Schlusswort. `SONG_WORD` unter der gemessenen Überschrift `ABSCHLUSS` bleibt |
