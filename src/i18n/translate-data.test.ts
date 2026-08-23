@@ -240,3 +240,87 @@ describe('Produktiv sichtbare Fragmente sind überall übersetzt', () => {
     for (const s of IMMER) expect(tr(s), `${code}: „${s}"`).not.toBe(s)
   })
 })
+
+/**
+ * **Die Verweis-Vorlagen einmal wirklich benutzen.**
+ *
+ * Die Prüfung darüber fragt, ob es die Vorlage *gibt* — `typeof === 'function'`.
+ * Das ist die halbe Frage. Eine Vorlage, die ihre Zahl verschluckt
+ * (`thLek: () => 'th Lektion'`), ist eine Funktion und käme durch; jede
+ * Schulungsaufgabe dieser Sprache stünde danach ohne Lektionsnummer da, und
+ * kein Test würde rot. Genau gegen diesen Fall führt die EXTRA-Prüfung ihre
+ * Durchreiche-Probe — REF hatte sie nicht, und deshalb waren **281** dieser
+ * Vorlagen (33 Sprachen × 9) nie ausgeführt.
+ *
+ * Gemessen wird hier am echten Weg: die Zeichenkette, wie der Programm-Parser
+ * sie erzeugt, durch `makeTr` — nicht die Vorlage direkt. So läuft dieselbe
+ * Regel-Reihenfolge wie beim Nutzer (`verweisRegeln`), und eine Vorlage, die
+ * zwar richtig ist, aber nie greift, fällt mit auf.
+ */
+describe('REF — jede Vorlage reicht ihre Werte auch wirklich durch', () => {
+  /** Eingabe (kanonisch deutsch) → die Teile, die im Ergebnis stehen müssen. */
+  const FAELLE: Array<[keyof RefDict, string, string[]]> = [
+    ['thLek', 'th Lektion 11', ['11']],
+    // Beide Zahlen: eine Vorlage, die nur die Lektion behält, wäre sonst blind.
+    ['lmdLekP', 'lmd Lektion 4 Punkt 3', ['4', '3']],
+    ['lffLekP', 'lff Lektion 20 Punkt 7', ['20', '7']],
+    ['lmdLek', 'lmd Lektion 4', ['4']],
+    ['lffLek', 'lff Lektion 20', ['20']],
+    ['wcgKap', 'wcg Kap. 15', ['15']],
+    ['lmdAnh', 'lmd Anhang A Punkt 21', ['21']],
+    ['gruppe', 'Gruppe 2', ['2']],
+    // Kein Zahlenfall: der Name einer fremden Versammlung ist Freitext und
+    // muss unverändert durchkommen.
+    ['vers', 'Vers. Nordheim', ['Nordheim']],
+  ]
+
+  /** Die Vorlage mit denselben Werten selbst aufrufen — das Soll des Wegs. */
+  const direkt = (ref: RefDict, feld: keyof RefDict, teile: string[]): string => {
+    const fn = ref[feld] as ((...a: string[]) => string) | undefined
+    return fn!(...teile)
+  }
+
+  it.each(CODES)('%s', (code) => {
+    const ref = REF[code]
+    if (!ref) return // ohne REF bleibt der Verweis erkennbar deutsch (oben geprüft)
+    const tr = makeTr(code)
+    for (const [feld, eingabe, teile] of FAELLE) {
+      if (typeof ref[feld] !== 'function') continue // Altbestand-Lücke, oben verzeichnet
+      const aus = tr(eingabe)
+      // Die Regel muss auf die echte Eingabe greifen — nicht bloß existieren.
+      // Verglichen wird gegen die Vorlage selbst statt gegen „ungleich der
+      // Eingabe": Dänisch und Norwegisch sagen ebenfalls „Gruppe", und dort
+      // ist ein unverändertes Ergebnis richtig, nicht ein Durchfall.
+      expect(aus, `${code}.${feld}: die Regel greift nicht auf „${eingabe}"`).toBe(
+        direkt(ref, feld, teile),
+      )
+      for (const teil of teile) {
+        expect(aus, `${code}.${feld}: „${teil}" fehlt in „${aus}"`).toContain(teil)
+      }
+    }
+  })
+
+  it('die beiden Zahlen dürfen nicht vertauscht werden', () => {
+    // Lektion und Punkt sind nicht symmetrisch: „Lektion 3 Punkt 4" verweist
+    // auf etwas anderes als „Lektion 4 Punkt 3". Eine Vorlage, die sie dreht,
+    // enthält beide Zahlen und käme durch die Probe darüber.
+    for (const code of CODES) {
+      const ref = REF[code]
+      if (typeof ref?.lmdLekP !== 'function') continue
+      const aus = ref.lmdLekP('4', '3')
+      expect(aus.indexOf('4'), `${code}: Lektion steht nicht vor dem Punkt — „${aus}"`)
+        .toBeLessThan(aus.indexOf('3'))
+    }
+  })
+
+  it('verschiedene Publikationen bekommen verschiedene Vorlagen', () => {
+    // th, lmd, lff und wcg sind vier Bücher. Wo eine Sprache das Kürzel
+    // mitübersetzt (Ostasien, RTL), fällt ein kopierter Eintrag sonst nicht
+    // auf — und der Verweis zeigte auf die falsche Veröffentlichung.
+    for (const code of CODES) {
+      const ref = REF[code]
+      if (!ref?.thLek || !ref.wcgKap) continue
+      expect(ref.thLek('5'), `${code}: th und wcg tragen dieselbe Vorlage`).not.toBe(ref.wcgKap('5'))
+    }
+  })
+})

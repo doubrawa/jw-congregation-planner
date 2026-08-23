@@ -10,6 +10,7 @@ genannt) oder ⚠️ (plausibel, nicht nachgestellt) gekennzeichnet.
 | **[todo.md](todo.md)** | **Arbeitsliste in Abarbeitungsreihenfolge** — T1–T56 in 10 Phasen, nach Abhängigkeit sortiert. Hier anfangen. |
 | **[nachtrag-pruefung.md](nachtrag-pruefung.md)** | **Neuester Stand** — Gegenprüfung der Abarbeitung: welche Widersprüche tragen, was danach noch behoben wurde (N1–N8), was zu entscheiden bleibt |
 | **[nachtrag-fairness.md](nachtrag-fairness.md)** | **T58** — Fairness der Auto-Zuteilung: gemessene Überschüttung von Neulingen, was geändert wurde, was verworfen wurde und warum |
+| **[testbewertung.md](testbewertung.md)** | **August 2026** — jeder Test einzeln bewertet: was der Bestand gut macht, warum der Coverage-Bericht 21 ungeprüfte Dateien als „100 %" auswies, und die 1041 Tests, die die Bedienoberfläche nachziehen |
 | [funktionsuebersicht.md](funktionsuebersicht.md) | Was die App kann — 134 Funktionen nach Bereich, Rollen/Rechte, Datenmodell, Backend |
 | [befunde.md](befunde.md) | Was nicht stimmt — Fehler (B), fachliche Lücken (F), Ungereimtheiten (U), Übersetzungslücken (D), Testlücken (E), Sicherheit (S), Verbesserungen (V) |
 | [code-review.md](code-review.md) | Warum es passiert — Wochen-Array als tragende Annahme, Robustheit, SOLID, Clean Code, Performance |

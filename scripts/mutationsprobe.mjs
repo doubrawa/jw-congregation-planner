@@ -436,6 +436,95 @@ const KATALOG = [
     suchen: "if (color === 'teal' && rec === lastOf.teal) {",
     ersetzen: "if (color === 'teal' && rec === recs[0]) {",
   },
+
+  // ── Rechte und Bedienung ──────────────────────────────────────────────────
+  // Die Rechteprüfung steht an zwei Stellen: der Wächter im Reducer weist eine
+  // gesperrte Ansicht ab, die Navigationsliste entscheidet, welcher Eintrag
+  // überhaupt dasteht. Der Wächter war bewacht, die Liste bis dahin nicht.
+  {
+    id: 'nav-gruppenaufseher-ohne-personen',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Der Gruppenaufseher sieht Planen und Einstellungen, aber nicht Personen.',
+    suchen: "const GROUP_OV_SCREENS: readonly Screen[] = [\n  'start',\n  'programm',\n  'aufgaben',\n  'planen',\n  'einstellungen',\n  'profil',\n]",
+    ersetzen: "const GROUP_OV_SCREENS: readonly Screen[] = PLANNER_SCREENS",
+  },
+  {
+    id: 'nav-deeplink-rechte',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Ein Push-Deep-Link führt nur in einen Bereich, den man betreten darf.',
+    suchen: "const target = navScreens.includes(pendingNav) ? pendingNav : 'aufgaben'",
+    ersetzen: 'const target = pendingNav',
+  },
+  {
+    id: 'leeren-zwei-tipp',
+    datei: 'src/planen/AutoAssignPanel.tsx',
+    regel: '„Leeren" verlangt zwei Tipps — es macht eine Woche Arbeit zunichte.',
+    suchen: "            if (armed) {\n              setArmed(false)\n              dispatch({ type: 'clearAssignments', scope })\n            } else {\n              setArmed(true)\n            }",
+    ersetzen: "            dispatch({ type: 'clearAssignments', scope })",
+  },
+  {
+    id: 'person-loeschen-zwei-tipp',
+    datei: 'src/personen/PersonDetail.tsx',
+    regel: '„Person löschen" verlangt zwei Tipps — es löst Gruppen-, Konto- und Code-Bezüge.',
+    suchen: '          if (!loeschArmed) {\n            setLoeschArmed(true)\n            return\n          }\n',
+    ersetzen: '',
+  },
+  {
+    id: 'sheet-abwesende-gesperrt',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Ein Abwesender steht in der Liste, lässt sich aber nicht zuteilen.',
+    suchen: "    if (cand.absent) {\n      dispatch({ type: 'showToast', text: fill(t.toastAbsentP, { name: cand.name }) })\n      return\n    }",
+    ersetzen: '',
+  },
+  {
+    id: 'sheet-redner-rueckweg',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Über einem eigenen Redner führt der Freitext zurück zum Gastredner (T29).',
+    suchen: 'const guestBase = !rolleAtoms[0] || eigenerRedner ? ROLE_GUEST_SPEAKER : rolleAtoms[0]',
+    ersetzen: 'const guestBase = rolleAtoms[0] || ROLE_GUEST_SPEAKER',
+  },
+  {
+    id: 'sheet-gruppe-ohne-pid',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Eine Gruppen-Rotation ist keine Person und bekommt keine Person-Id.',
+    suchen: 'pid: sel.groups ? undefined : cand.key',
+    ersetzen: 'pid: cand.key',
+  },
+  {
+    id: 'chip-status-nur-mit-flow',
+    datei: 'src/planen/MeetingSection.tsx',
+    regel: 'Das Bestätigungs-Zeichen steht nur, wo jemand bestätigen kann — nicht am Gastredner.',
+    suchen: 'showStatus={Boolean(slot.name) && !isGuestRole(slot.rolle)}',
+    ersetzen: 'showStatus={Boolean(slot.name)}',
+  },
+  {
+    id: 'dialog-fokusfalle',
+    datei: 'src/components/useDialogFocus.ts',
+    regel: 'Der Fokus bleibt im modalen Dialog — Tab am Ende springt an den Anfang zurück.',
+    suchen: '      if (e.shiftKey && document.activeElement === firstEl) {\n        e.preventDefault()\n        lastEl.focus()\n      } else if (!e.shiftKey && document.activeElement === lastEl) {\n        e.preventDefault()\n        firstEl.focus()\n      }',
+    ersetzen: '      void firstEl\n      void lastEl',
+  },
+  {
+    id: 'push-nie-von-allein',
+    datei: 'src/components/PushPrompt.tsx',
+    regel: 'Der Push-Hinweis bleibt weg, wenn Push auf diesem Gerät gar nicht erreichbar ist.',
+    suchen: 'if (!supported && !needsInstall && !installAvail) return null',
+    ersetzen: '',
+  },
+  {
+    id: 'install-ereignis-verbraucht',
+    datei: 'src/lib/install.ts',
+    regel: 'Das Installations-Ereignis lässt sich nur einmal benutzen — danach kein Angebot mehr.',
+    suchen: 'deferred = null // Event ist verbraucht und lässt sich nicht erneut nutzen',
+    ersetzen: '',
+  },
+  {
+    id: 'ref-vorlage-reicht-durch',
+    datei: 'src/i18n/translate-data.ts',
+    regel: 'Eine Verweis-Vorlage gibt ihre Zahl weiter — „th Lektion 11" verliert die 11 nicht.',
+    suchen: "    thLek: n => 'th study ' + n,",
+    ersetzen: "    thLek: () => 'th study',",
+  },
 ]
 
 // ── Lauf ────────────────────────────────────────────────────────────────────
