@@ -16,16 +16,17 @@ Die Fachlogik war hervorragend geprüft, die **Bedienoberfläche gar nicht** —
 und weil dort Regeln stecken, die es sonst nirgends gibt, war das keine
 Kosmetiklücke. Der Coverage-Bericht hat sie zudem aktiv verdeckt.
 
-| | vorher | nachher |
-| --- | --- | --- |
-| Testdateien | 113 | 134 |
-| Testfälle | 1596 | 2637 |
-| Zeilen-Abdeckung | 82,9 % ¹ | **95,4 %** |
-| Funktions-Abdeckung | 71,1 % ¹ | **93,9 %** |
-| Dateien ohne jede Testberührung | **21** (2554 Zeilen) | 0 |
-| Einträge in der Mutationsprobe | 48 | **60** |
+| | vorher | nach § 7 | nach § 8 |
+| --- | --- | --- | --- |
+| Testdateien | 113 | 134 | **138** |
+| Testfälle | 1596 | 2637 | **2769** |
+| Zeilen-Abdeckung | 82,9 % ¹ | 95,4 % | **96,9 %** |
+| Funktions-Abdeckung | 71,1 % ¹ | 93,9 % | **95,9 %** |
+| Zweig-Abdeckung | 74,3 % ¹ | 84,3 % | **86,4 %** |
+| Dateien ohne jede Testberührung | **21** (2554 Zeilen) | 0 | 0 |
+| Einträge in der Mutationsprobe | 48 | 60 | **67** |
 
-¹ Beide Zahlen waren zu hoch — siehe § 3.
+¹ Alle drei Zahlen waren zu hoch — siehe § 3.
 
 ---
 
@@ -187,18 +188,58 @@ als *bewacht* nachgewiesen.
 
 ---
 
-## 8. Was offen bleibt
+## 8. Die zunächst offenen Punkte — nachgezogen
 
-Bewusst nicht angefasst, mit Begründung:
+Fünf Stellen waren mit Begründung liegengeblieben. Beim Nachziehen hat sich
+gezeigt, dass **vier der fünf Begründungen nicht trugen**: Was wie „braucht
+eine echte Umgebung" aussah, war in Wahrheit die Seite der App an einem
+Vertrag — und die lässt sich messen, ohne die Gegenseite zu haben.
 
-| Stelle | Abdeckung | Warum offen |
+| Stelle | vorher | jetzt | Was die Begründung übersehen hatte |
+| --- | --- | --- | --- |
+| `import-week/index.ts` | 68 % | **88,5 %** | Nicht die jw.org-Antworten waren ungeprüft, sondern der **fremdsprachige Import**: der „Lesen in"-Umschalter ist der einzige Anker zur übersetzten Wochenseite. Fällt er weg, importiert jede nichtdeutsche Versammlung ab dann stillschweigend Deutsch. |
+| `app/store.tsx` | 80 % | **97,5 %** | Der Sitzungs-Listener braucht keine Instanz — geprüft wird, was die App auf `SIGNED_IN`/`SIGNED_OUT`/`PASSWORD_RECOVERY` tut, nicht was Supabase sendet. Dazu die beiden Melder (Schreibfehler-Sperrfrist, Konflikt-Nachladen nach T39). |
+| `planen/PlanenScreen.tsx` | 64 % | **95,5 %** | „Reine Zusammensetzung" stimmt nicht: Die **Auswahl** ist die Regel — der Gruppenaufseher bekommt keine Reiterleiste und keine Bearbeiten-Ansicht. |
+| `AbsencePanel` / `DatePicker` | 79 / 88 % | **93 / 100 %** | Nicht „nur Kalender-Navigation": Dort sitzt die Vorbelegung von „Bis" und die Untergrenze, die verhindert, dass ein Zeitraum entsteht, den keine Prüfung je trifft. |
+| `planen/WochePanel.tsx`, `PlanBanners.tsx` | 69 / 77 % | **100 / 100 %** | Standen gar nicht in der Liste — dabei fehlten dort das Eintragen des Gedächtnismahl-Datums und alle drei Konflikt-Sätze. |
+| Zweig-Abdeckung | 84 % | **86,4 %** | Trug am ehesten — der Rest sind wirklich Defensiv-Zweige. |
+
+Dabei kam eine Lücke heraus, die in der Liste gar nicht stand: Das
+**Konflikt-Banner** war nur auf sein *Ausbleiben* geprüft (T81). Was es
+schreibt, wenn ein Konflikt vorliegt — die drei Sätze und ihre feste
+Reihenfolge —, stand nirgends. Genau daran handelt der Planer.
+
+132 weitere Fälle in vier neuen Dateien und sieben Ergänzungen:
+
+| Datei | Fälle | Deckt ab |
 | --- | --- | --- |
-| `import-week/index.ts` | 68 % | Die Fehlerpfade hängen an echten jw.org-Antworten. Parser, Gedächtnismahl-Woche und Studienartikel sind einzeln geprüft; der Orchestrierungsrest wäre Mock-Arithmetik. |
-| `planen/PlanenScreen.tsx` | 64 % | Reine Zusammensetzung — jedes eingebettete Panel ist jetzt für sich geprüft. |
-| `app/store.tsx` | 80 % | Der ungedeckte Rest ist der Supabase-Sitzungs-Listener; er braucht eine echte Instanz (siehe `offene-pruefungen.md`). |
-| `components/AbsencePanel.tsx`, `DatePicker.tsx` | 79 / 88 % | Über `abwesenheiten.test.tsx` fachlich abgedeckt; offen ist nur Kalender-Navigation. |
-| Zweig-Abdeckung insgesamt | 84 % | Der Rest sind Defensiv-Zweige (`?? ''`, `if (!x) return`), die als Ränder bereits geprüft sind. |
+| `components/abwesenheit-eintragen.test.tsx` | 27 | Datumswähler (Monatswechsel, Untergrenze, „heute"), Vorbelegung, wer eintragen darf |
+| `app/store.effekte.test.tsx` | 26 | Schreibfehler-Meldung, Konflikt-Nachladen, Sitzung, Theme/Schrift/Sprache auf `<html>`, Toast-Auslauf |
+| `planen/PlanenScreen.test.tsx` | 21 | Reiter je Rolle, Bearbeiten-Ansicht, Gruppenaufseher-Grenze, Sprachvariante mit Struktur-Abweichung |
+| `import-week/text.test.ts` | 18 | HTML-Entities in allen drei Schreibweisen, Ruby, CJK-Fugen |
+| `_test/import-week.test.ts` (ergänzt) | +14 | „Lesen in"-Umschalter, Sprachvarianten, Deckel bei vier, Zwischenspeicher, OPTIONS |
+| `planen/WochePanel.test.tsx` (ergänzt) | +7 | Gedächtnismahl-Datum und Kongress-Zeitraum eintragen |
+| `planen/konflikte.test.tsx` (ergänzt) | +6 | Die drei Konflikt-Sätze und ihre Reihenfolge |
+| `components/WeekStrip.test.tsx` (ergänzt) | +4 | Wischgeste verdrahtet, Grenzen, Vorschau löst nichts aus |
+| `components/ConfirmDialog.test.tsx` (ergänzt) | +4 | Bestätigen/Absagen treffen die richtige Karte |
+| `i18n/relative-time.test.ts` (ergänzt) | +3 | Unbekanntes Sprach-Tag: kein Chip statt Absturz |
+| `components/ErrorBoundary.test.tsx` (ergänzt) | +2 | „Neu laden" lädt wirklich neu |
 
-**Nicht durch Tests ersetzbar** bleibt, was `offene-pruefungen.md` schon nennt:
-echte Geräte, die fachliche Abnahme durch einen Koordinator und der
-Mehrbenutzer-Betrieb.
+Sieben weitere Regeln stehen jetzt in `scripts/mutationsprobe.mjs` (67 statt 60)
+und sind dort einzeln als *bewacht* nachgewiesen.
+
+---
+
+## 9. Was nicht durch Tests zu ersetzen ist
+
+Hier hört das Messen auf — und zwar nicht aus Aufwandsgründen:
+
+| Prüfung | Warum kein Test sie ersetzt |
+| --- | --- |
+| **Echte Geräte** | Wischgesten brechen auf einem Android-Handy ab, wo sie in der Emulation durchlaufen. Genau dafür gibt es die versteckte Gesten-Diagnose im Profil (fünf Antipper auf die Build-Zeile). |
+| **Fachliche Abnahme** | Ob die Auto-Zuteilung *richtig* verteilt, entscheidet ein Koordinator, keine Zusicherung. Die Tests halten fest, was einmal entschieden wurde. |
+| **Mehrbenutzer real** | Zwei Planer, zwei Konten, dieselbe Woche. Der Schreibkonflikt (T39) ist einseitig geprüft — dass die Datenbank ihn erzeugt, belegt nur die echte Instanz. |
+| **RLS gegen die Produktivinstanz** | Steht in `umgebungspruefungen.md`; die Richtlinien selbst sind kein Anwendungscode. |
+
+Alles davon steht seit August in [offene-pruefungen.md](offene-pruefungen.md)
+und bleibt dort.

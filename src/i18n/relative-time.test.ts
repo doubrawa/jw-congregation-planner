@@ -48,3 +48,31 @@ describe('relativeWeekLabel', () => {
     expect(relativeWeekLabel(-2, 'en')).toBe('2 weeks ago')
   })
 })
+
+/**
+ * **Ein Sprach-Tag, das die Laufzeitumgebung nicht kennt.**
+ *
+ * `Intl.RelativeTimeFormat` wirft dann — und der Wurf entstünde mitten im
+ * Rendern des Dashboards bzw. der Aufgabenliste, also dort, wo die App
+ * anschließend weiß bleibt. Beide Funktionen fangen ihn deshalb ab und liefern
+ * lieber gar keinen Chip als einen kaputten. Geprüft mit einem Tag, das kein
+ * gültiges BCP-47 ist; die 34 echten App-Sprachen laufen darüber hinweg.
+ */
+describe('Unbekannte Sprache: lieber kein Chip als ein Absturz', () => {
+  const kaputt = 'x' as never
+
+  it('relativeDayLabel bleibt leer, statt zu werfen', () => {
+    expect(() => relativeDayLabel(NOW + day, kaputt, NOW)).not.toThrow()
+    expect(relativeDayLabel(NOW + day, kaputt, NOW)).toBe('')
+  })
+
+  it('relativeWeekLabel ebenso', () => {
+    expect(() => relativeWeekLabel(1, kaputt)).not.toThrow()
+    expect(relativeWeekLabel(1, kaputt)).toBe('')
+  })
+
+  it('die echten App-Sprachen liefern sehr wohl etwas — sonst prüfte das hier nichts', () => {
+    expect(relativeDayLabel(NOW + day, 'de', NOW)).not.toBe('')
+    expect(relativeWeekLabel(1, 'de')).not.toBe('')
+  })
+})

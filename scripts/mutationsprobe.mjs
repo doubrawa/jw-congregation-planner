@@ -525,6 +525,62 @@ const KATALOG = [
     suchen: "    thLek: n => 'th study ' + n,",
     ersetzen: "    thLek: () => 'th study',",
   },
+
+  // ── Import in fremden Sprachen ────────────────────────────────────────────
+  {
+    id: 'import-sprache-kein-rueckfall',
+    datei: 'supabase/functions/import-week/index.ts',
+    regel: 'Fehlt die Woche in der Versammlungssprache, ist das ein Fehler — kein stiller Rückfall auf Deutsch.',
+    suchen:
+      'if (!loc) return json({ error: `Diese Woche ist in der gewählten Sprache (${lang}) noch nicht verfügbar.` }, 404)',
+    ersetzen: 'if (!loc) { /* deutsche Fassung behalten */ }',
+  },
+  {
+    id: 'import-varianten-deckel',
+    datei: 'supabase/functions/import-week/index.ts',
+    regel: 'Höchstens vier Sprachvarianten je Woche — die Abrufe gegenüber jw.org bleiben überschaubar.',
+    suchen: "const wanted = [...new Set(altLangs)].filter((c) => c && c !== lang).slice(0, 4)",
+    ersetzen: "const wanted = [...new Set(altLangs)].filter((c) => c && c !== lang)",
+  },
+  {
+    id: 'import-entity-numerisch',
+    datei: 'supabase/functions/import-week/text.ts',
+    regel: 'Numerische HTML-Entities werden dekodiert — sonst steht „Gespr&#228;che" im Programm.',
+    suchen: "    .replace(/&#(\\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))\n",
+    ersetzen: '',
+  },
+
+  // ── Provider-Effekte ──────────────────────────────────────────────────────
+  {
+    id: 'schreibfehler-sperrfrist',
+    datei: 'src/app/store.tsx',
+    regel: 'Ein Bündel fehlgeschlagener Schreibvorgänge erzeugt EINEN Hinweis, nicht lauter sich überschreibende.',
+    suchen: '      if (jetzt - zuletzt < 5000) return\n',
+    ersetzen: '',
+  },
+  {
+    id: 'konflikt-laedt-nach',
+    datei: 'src/app/store.tsx',
+    regel: 'Nach einem Schreibkonflikt wird der Stand der Datenbank nachgeladen (T39).',
+    suchen: "      void loadAndHydrate(dispatch, uid, { silent: true }).finally(() => {\n        laeuft = false\n      })",
+    ersetzen: '      laeuft = false',
+  },
+
+  // ── Bedienung, Fortsetzung ────────────────────────────────────────────────
+  {
+    id: 'planen-aufseher-ohne-bearbeiten',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: 'Der Gruppenaufseher kommt nicht in die Bearbeiten-Ansicht der Woche (T64).',
+    suchen: "const isEdit = state.tab === 'edit' && !fsOverseer",
+    ersetzen: "const isEdit = state.tab === 'edit'",
+  },
+  {
+    id: 'datumswaehler-untergrenze',
+    datei: 'src/components/DatePicker.tsx',
+    regel: '„Bis" lässt keinen Tag vor „Von" zu — sonst entsteht ein Zeitraum, den keine Prüfung trifft.',
+    suchen: 'const disabled = (min != null && di < min) || (max != null && di > max)',
+    ersetzen: 'const disabled = max != null && di > max',
+  },
 ]
 
 // ── Lauf ────────────────────────────────────────────────────────────────────

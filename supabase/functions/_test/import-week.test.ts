@@ -64,8 +64,19 @@ const leseSeite = (kopf: string): string => `<html><body>
   <p><strong>GEDÄCHTNISMAHL</strong> (NACH SONNENUNTERGANG)</p>
 </body></html>`
 
+/**
+ * Der „Lesen in"-Umschalter, wie ihn die deutsche Seite trägt: je Sprache eine
+ * Option mit `value` (Code) und `data-url` (Pfad derselben Woche). Genau
+ * daran hängt der ganze fremdsprachige Import — es gibt keinen zweiten Weg zur
+ * Übersetzung einer Wochenseite.
+ */
+const umschalter = (slug: string, codes: string[]): string =>
+  codes
+    .map((c) => `<option value="${c}" data-url="/${c}/bibliothek/jw-arbeitsheft/${SLUG}/${slug}/"></option>`)
+    .join('')
+
 /** Wochenseite in erfundener Sprache — die Struktur ist das Gemessene. */
-const wochenSeite = (kopf: string): string => `<article>
+const wochenSeite = (kopf: string, schalter = ''): string => `<article>${schalter}
   <h1 data-pid="1" class="du-color--textSubdued">${kopf}</h1>
   <h2 data-pid="2" class="du-fontSize--base">QORBLA 13-15</h2>
   <h3 data-pid="3" class="x"><span class="dc-icon--music"></span> Xylo 12 qi Preku | Vorqi Blen (1 vim)</h3>
@@ -90,6 +101,8 @@ interface Seiten {
   memKopf: string
   /** Antwortet die Leseprogramm-Seite mit einem Fehler? */
   leseKaputt: boolean
+  /** Sprachen, die der „Lesen in"-Umschalter dieser Woche anbietet. */
+  sprachen: string[]
 }
 
 let seiten: Seiten
@@ -106,6 +119,14 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   if (url.includes(encodeURI(LESE_SLUG)) || url.includes(LESE_SLUG)) {
     return seiten.leseKaputt ? weg() : text(leseSeite(seiten.memKopf))
   }
+  // Fremdsprachige Fassung derselben Woche (Pfad aus dem Umschalter).
+  const variante = new RegExp(`^${BASE}/([a-z-]+)/bibliothek/jw-arbeitsheft/`).exec(url)
+  if (variante && variante[1] !== 'de') {
+    const code = variante[1]
+    if (!seiten.sprachen.includes(code)) return weg()
+    const w = WOCHEN_SLUGS.find((x) => url.includes(x))
+    return w ? text(wochenSeite(`[${code}] ${w}`)) : weg()
+  }
   const woche = WOCHEN_SLUGS.find((s) => url.includes(s))
   if (woche) {
     // Kopfzeile aus dem Slug, in der **gemessenen** Form der h1: innerhalb
@@ -115,7 +136,7 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
     const m = /^(\d+)-(\d+)-([A-Za-zäöü]+)-\d{4}$/.exec(t)
     const kreuz = /^(\d+)-([A-Za-zäöü]+)-(\d+)-([A-Za-zäöü]+)-\d{4}$/.exec(t)
     const kopf = m ? `${m[1]}.-${m[2]}. ${m[3]}` : kreuz ? `${kreuz[1]}. ${kreuz[2]}–${kreuz[3]}. ${kreuz[4]}` : t
-    return text(wochenSeite(kopf))
+    return text(wochenSeite(kopf, umschalter(woche, seiten.sprachen)))
   }
   // Studienausgaben: nicht vorhanden → applyStudy lässt die Vorlage stehen.
   return weg()
@@ -143,6 +164,7 @@ interface Antwort {
     mem?: true
     mid: { sections: unknown[] }
     we: { sections: { label: string }[] }
+    alt?: Record<string, { range: string; mid: { sections: Array<{ items: Array<{ names?: unknown[] }> }> }; we: { sections: unknown[] } }>
   }
   error?: string
 }
@@ -159,7 +181,10 @@ async function hole(body: Record<string, unknown> = {}): Promise<Antwort> {
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(HEUTE))
-  seiten = { leseprogramm: true, memKopf: 'DONNERSTAG, 2. APRIL', leseKaputt: false }
+  seiten = {
+    leseprogramm: true, memKopf: 'DONNERSTAG, 2. APRIL', leseKaputt: false,
+    sprachen: ['en', 'es', 'fr'],
+  }
   geholt = []
 })
 
@@ -304,5 +329,130 @@ describe('import-week: wenn das Leseprogramm fehlt', () => {
     seiten.memKopf = 'DONNERSTAG, 2. GRUMBEL'
     const { week } = await hole({ after: '2026-03-23' })
     expect(week?.start).toBe('2026-04-06')
+  })
+})
+
+/**
+ * **Der fremdsprachige Import** — der Weg, den jede Versammlung geht, deren
+ * Sprache nicht Deutsch ist.
+ *
+ * Er hängt an genau einem Anker: dem „Lesen in"-Umschalter auf der deutschen
+ * Wochenseite. Es gibt keinen zweiten Weg zur übersetzten Fassung — die Pfade
+ * lassen sich nicht aus dem deutschen ableiten, weil der Slug übersetzt ist.
+ * Fällt der Anker weg, importiert jede nichtdeutsche Versammlung ab dann nur
+ * noch Deutsch, ohne Fehlermeldung.
+ *
+ * Die zweite Regel hier ist die **Kulanz**: eine Woche, die es in der
+ * Versammlungssprache nicht gibt, ist ein Fehler (der Planer bekäme sonst
+ * stillschweigend deutsches Programm). Eine *zusätzliche* Programmsprache, die
+ * fehlt, ist keiner — sie wird still übersprungen, und die Woche kommt trotzdem.
+ */
+describe('import-week: in der Sprache der Versammlung', () => {
+  it('holt die übersetzte Fassung über den Umschalter, nicht die deutsche', async () => {
+    const { week } = await hole({ after: '2026-03-02', lang: 'es' })
+    expect(week?.lang).toBe('es')
+    expect(geholt.some((u) => u.startsWith(`${BASE}/es/bibliothek/jw-arbeitsheft/`))).toBe(true)
+  })
+
+  it('Deutsch braucht den Umweg nicht', async () => {
+    await hole({ after: '2026-03-02', lang: 'de' })
+    expect(geholt.some((u) => u.startsWith(`${BASE}/de/bibliothek/`) && u.includes('März'))).toBe(true)
+    expect(geholt.some((u) => /\/(es|en|fr)\/bibliothek\//.test(u))).toBe(false)
+  })
+
+  it('fehlt die Woche in dieser Sprache, ist das ein Fehler — kein stiller Rückfall', async () => {
+    // Sonst bekäme eine spanische Versammlung deutsches Programm, ohne dass
+    // irgendwo stünde, warum.
+    seiten.sprachen = ['en']
+    const { week, error } = await hole({ after: '2026-03-02', lang: 'es' })
+    expect(week).toBeUndefined()
+    expect(error).toContain('es')
+  })
+
+  it('das ISO-Startdatum bleibt sprachunabhängig — daran hängt jede Kennung', async () => {
+    const de = await hole({ after: '2026-03-02', lang: 'de' })
+    const es = await hole({ after: '2026-03-02', lang: 'es' })
+    expect(es.week?.start).toBe(de.week?.start)
+  })
+})
+
+describe('import-week: weitere Programmsprachen als Varianten', () => {
+  it('holt jede gewünschte Sprache mit und hängt sie an die Woche', async () => {
+    const { week } = await hole({ after: '2026-03-02', lang: 'de', altLangs: ['en', 'fr'] })
+    expect(Object.keys(week?.alt ?? {}).sort()).toEqual(['en', 'fr'])
+  })
+
+  it('die Primärsprache wird nicht als eigene Variante mitgeholt', async () => {
+    const { week } = await hole({ after: '2026-03-02', lang: 'es', altLangs: ['es', 'en'] })
+    expect(Object.keys(week?.alt ?? {})).toEqual(['en'])
+  })
+
+  it('eine fehlende Zusatzsprache wird still übersprungen — die Woche kommt trotzdem', async () => {
+    seiten.sprachen = ['en']
+    const { week } = await hole({ after: '2026-03-02', lang: 'de', altLangs: ['en', 'fr'] })
+    expect(week?.start).toBe('2026-03-09')
+    expect(Object.keys(week?.alt ?? {})).toEqual(['en'])
+  })
+
+  it('eine Variante trägt nur Texte — keine Zuteilungs-Plätze', async () => {
+    // `localizedWeek` übernimmt aus einer Variante ohnehin nur Texte; stünden
+    // dort Plätze, sähe es aus, als brächte sie eine eigene Struktur mit.
+    const { week } = await hole({ after: '2026-03-02', lang: 'de', altLangs: ['en'] })
+    const abschnitte = week?.alt?.en?.mid.sections ?? []
+    expect(abschnitte.length).toBeGreaterThan(0)
+    for (const s of abschnitte) {
+      for (const item of s.items) {
+        if ('names' in item) expect(item.names).toEqual([])
+      }
+    }
+  })
+
+  it('höchstens vier — die Abrufe gegenüber jw.org bleiben überschaubar', async () => {
+    seiten.sprachen = ['en', 'es', 'fr', 'it', 'pt', 'nl']
+    const { week } = await hole({
+      after: '2026-03-02', lang: 'de', altLangs: ['en', 'es', 'fr', 'it', 'pt', 'nl'],
+    })
+    expect(Object.keys(week?.alt ?? {})).toHaveLength(4)
+  })
+
+  it('ohne Zusatzsprachen entsteht gar kein `alt`-Feld', async () => {
+    const { week } = await hole({ after: '2026-03-02', lang: 'de' })
+    expect(week?.alt).toBeUndefined()
+  })
+
+  it('die Gedächtnismahl-Woche bekommt keine Varianten — es gibt keine Seite dazu', async () => {
+    const { week } = await hole({ after: '2026-03-23', lang: 'de', altLangs: ['en'] })
+    expect(week?.mem).toBe(true)
+    expect(week?.alt).toBeUndefined()
+  })
+})
+
+describe('import-week: Netz und Aufruf', () => {
+  it('dieselbe Seite wird nicht zweimal geholt (Zwischenspeicher)', async () => {
+    const handler = await loadFn()
+    const einmal = async () =>
+      await handler(new Request('https://fn.test/import-week', {
+        method: 'POST', body: JSON.stringify({ after: '2026-03-02' }),
+      }))
+    await einmal()
+    const nachErstem = geholt.length
+    geholt = []
+    await einmal()
+    // Der zweite Lauf kommt mit deutlich weniger Abrufen aus als der erste.
+    expect(geholt.length).toBeLessThan(nachErstem)
+  })
+
+  it('ein Vorab-Aufruf des Browsers (OPTIONS) wird beantwortet, ohne etwas zu holen', async () => {
+    const handler = await loadFn()
+    geholt = []
+    const res = await handler(new Request('https://fn.test/import-week', { method: 'OPTIONS' }))
+    expect(res.status).toBe(200)
+    expect(geholt).toEqual([])
+  })
+
+  it('ein Aufruf ohne JSON-Rumpf stürzt nicht ab, sondern sucht die nächste Woche', async () => {
+    const handler = await loadFn()
+    const res = await handler(new Request('https://fn.test/import-week', { method: 'POST' }))
+    expect([200, 404]).toContain(res.status)
   })
 })

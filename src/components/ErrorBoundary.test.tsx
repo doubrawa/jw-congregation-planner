@@ -76,3 +76,45 @@ describe('ErrorBoundary', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 })
+
+/**
+ * **Der Knopf im Auffangbereich.** Er ist die einzige Handlung, die dem Nutzer
+ * dort bleibt — und die einzige Stelle im Projekt, an der die App sich selbst
+ * neu lädt. Bliebe er wirkungslos, stünde man vor einem Kasten mit einer
+ * Schaltfläche, die nichts tut.
+ */
+describe('ErrorBoundary — die angebotene Handlung', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+  })
+
+  it('„Neu laden" lädt die Seite wirklich neu', () => {
+    const reload = vi.fn()
+    const echt = window.location
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...echt, reload, pathname: '/', search: '', hash: '' },
+    })
+    render(
+      <ErrorBoundary {...TEXTE}>
+        <Kaputt />
+      </ErrorBoundary>,
+    )
+    screen.getByText(TEXTE.aktion).click()
+    expect(reload).toHaveBeenCalled()
+    Object.defineProperty(window, 'location', { configurable: true, value: echt })
+  })
+
+  it('der Kasten meldet sich als Warnung — auch für Screenreader', () => {
+    const { container } = render(
+      <ErrorBoundary {...TEXTE}>
+        <Kaputt />
+      </ErrorBoundary>,
+    )
+    expect(container.querySelector('.err-box')?.getAttribute('role')).toBe('alert')
+  })
+})

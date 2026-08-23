@@ -149,3 +149,120 @@ describe('Der Reiter gilt nur im Planen', () => {
     expect(reducer(stand, { type: 'navigate', screen: 'programm' }).tab).toBe('fs')
   })
 })
+
+/**
+ * **Den Termin des Anlasses eintragen.**
+ *
+ * Die Prüfung oben hält fest, dass die Felder zum passenden Anlass erscheinen.
+ * Was sie schreiben, stand nirgends — und daran hängt mehr als eine Anzeige:
+ * Aus dem Gedächtnismahl-Datum leitet die App ab, **welche Zusammenkunft
+ * entfällt** (`anlass.ts`, geprüft in `anlass.test.ts`). Kommt das Datum nicht
+ * an, bleibt beides stehen, und der Plan zeigt ein Programm, das nicht
+ * stattfindet.
+ *
+ * Beim Kongress ist es ein **Zeitraum**: ein Kreiskongress dauert einen Tag,
+ * ein Regionalkongress drei. „Bis" übernimmt beim Eintragen von „Von" denselben
+ * Wert — dieselbe Regel wie bei den Abwesenheiten, nicht eine zweite erfundene.
+ */
+describe('Der Termin des Anlasses', () => {
+  /** Zustand mit gesetztem Anlass — über den echten Reducer, nicht von Hand. */
+  const mitAnlass = (art: 'mem' | 'kongress'): AppState =>
+    reducer(basis(), { type: 'setAnlass', art })
+
+  function zeige(state: AppState) {
+    const gesendet: Array<{ type: string } & Record<string, unknown>> = []
+    function Bahn() {
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={(a) => gesendet.push(a as never)}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <WochePanel />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    return { gesendet, ...render(<Bahn />) }
+  }
+
+  /** Im Datumswähler mit der Beschriftung `label` einen Tag anklicken. */
+  const waehle = (c: HTMLElement, label: string, tag: string) => {
+    const feld = [...c.querySelectorAll<HTMLButtonElement>('.dp-field')].find(
+      (b) => b.getAttribute('aria-label') === label,
+    )!
+    fireEvent.click(feld)
+    const knopf = [...feld.closest('.dp')!.querySelectorAll<HTMLButtonElement>('.dp-day')]
+      .filter((b) => !b.className.includes('dp-day--muted'))
+      .find((b) => b.textContent === tag)!
+    fireEvent.click(knopf)
+  }
+
+  const termine = (g: Array<{ type: string } & Record<string, unknown>>) =>
+    g.filter((a) => a.type === 'setAnlassTermin').map((a) => a.patch)
+
+  it('das Gedächtnismahl trägt ein Datum — daraus folgt der Ausfall', () => {
+    const { container, gesendet } = zeige(mitAnlass('mem'))
+    waehle(container, t.s89Datum, '15')
+    expect(termine(gesendet)).toHaveLength(1)
+    expect(String((termine(gesendet)[0] as { von: string }).von)).toMatch(/^\d{4}-\d{2}-15$/)
+  })
+
+  it('und eine Uhrzeit — es ist ein Abend nach Sonnenuntergang', () => {
+    const { container, gesendet } = zeige(mitAnlass('mem'))
+    fireEvent.change(container.querySelector('.sonder-time')!, { target: { value: '19:30' } })
+    expect(termine(gesendet)).toContainEqual({ zeit: '19:30' })
+  })
+
+  it('der Kongress trägt Von und Bis — er dauert einen bis drei Tage', () => {
+    const { container, gesendet } = zeige(mitAnlass('kongress'))
+    waehle(container, t.von, '10')
+    waehle(container, t.bis, '12')
+    const felder = termine(gesendet) as Array<Record<string, string>>
+    expect(felder.some((p) => 'von' in p)).toBe(true)
+    expect(felder.some((p) => 'bis' in p)).toBe(true)
+  })
+
+  it('„Bis" kann nicht vor „Von" liegen — die früheren Tage sind gesperrt', () => {
+    const state = reducer(mitAnlass('kongress'), {
+      type: 'setAnlassTermin', patch: { von: '2026-09-10' },
+    })
+    const { container } = zeige(state)
+    const bis = [...container.querySelectorAll<HTMLButtonElement>('.dp-field')].find(
+      (b) => b.getAttribute('aria-label') === t.bis,
+    )!
+    fireEvent.click(bis)
+    const tage = [...bis.closest('.dp')!.querySelectorAll<HTMLButtonElement>('.dp-day')]
+      .filter((b) => !b.className.includes('dp-day--muted'))
+    expect(tage.find((b) => b.textContent === '9')?.disabled).toBe(true)
+    expect(tage.find((b) => b.textContent === '10')?.disabled).toBe(false)
+  })
+
+  it('ein eingetragener Termin steht in den Feldern', () => {
+    const state = reducer(mitAnlass('mem'), {
+      type: 'setAnlassTermin', patch: { von: '2026-04-02', zeit: '19:30' },
+    })
+    const { container } = zeige(state)
+    const feld = [...container.querySelectorAll('.dp-field')].find(
+      (b) => b.getAttribute('aria-label') === t.s89Datum,
+    )!
+    expect(feld.textContent).toContain('2. Apr. 2026')
+    expect(container.querySelector<HTMLInputElement>('.sonder-time')?.value).toBe('19:30')
+  })
+
+  it('der Anlass selbst wird über die Auswahl gesetzt und wieder aufgehoben', () => {
+    const { container, gesendet } = zeige(basis())
+    const wahl = container.querySelector('.woche-anlass-select')!
+    fireEvent.change(wahl, { target: { value: 'kongress' } })
+    expect(gesendet).toContainEqual({ type: 'setAnlass', art: 'kongress' })
+    cleanup()
+    const zweiter = zeige(mitAnlass('kongress'))
+    fireEvent.change(zweiter.container.querySelector('.woche-anlass-select')!, { target: { value: '' } })
+    expect(zweiter.gesendet).toContainEqual({ type: 'setAnlass', art: null })
+  })
+
+  it('ohne geladene Woche steht gar nichts da', () => {
+    const { container } = zeige({ ...basis(), weeks: [] })
+    expect(container.querySelector('.woche-anlass')).toBeNull()
+  })
+})

@@ -97,3 +97,41 @@ describe('T69 — das Blatt beim Öffnen zeigt auch Ersatzgesuche', () => {
     expect(schliessen(container)).toBeNull()
   })
 })
+
+/**
+ * **Die Pflichthälfte des Blattes** — die Bestätigungen, für die es ursprünglich
+ * gebaut wurde. T69 hat die Ersatzgesuche danebengestellt; geprüft war bislang
+ * nur die neue Hälfte.
+ *
+ * Hier steht die alte: Sie legt jede offene Zuteilung vor, und zu jeder gibt es
+ * genau zwei Wege. Beide müssen den **richtigen** Punkt treffen — bei mehreren
+ * Karten ist das keine Selbstverständlichkeit, und wer versehentlich für eine
+ * fremde Aufgabe absagt, merkt es erst, wenn der Platz neu vergeben ist.
+ */
+describe('Bestätigen und Absagen im Blatt', () => {
+  it('jede offene Aufgabe bekommt eine eigene Karte', () => {
+    const { container } = zeige({ myTasks: [aufgabe('t1'), aufgabe('t2')], substituteReqs: [] })
+    expect(karten(container)).toHaveLength(2)
+  })
+
+  it('„Bestätigen" trifft genau die Aufgabe seiner Karte', () => {
+    const { container, dispatch } = zeige({
+      myTasks: [aufgabe('t1'), aufgabe('t2')], substituteReqs: [],
+    })
+    fireEvent.click([...container.querySelectorAll('.confirm-task .confirm-yes')][1]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: 't2' })
+  })
+
+  it('„Ich bin verhindert" ebenso', () => {
+    const { container, dispatch } = zeige({
+      myTasks: [aufgabe('t1'), aufgabe('t2')], substituteReqs: [],
+    })
+    fireEvent.click([...container.querySelectorAll('.confirm-task .confirm-no')][0]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', id: 't1' })
+  })
+
+  it('der Fuß sagt, warum das Blatt nicht wegzuklicken ist', () => {
+    const { container } = zeige({ myTasks: [aufgabe('t1')], substituteReqs: [] })
+    expect(container.querySelector('.confirm-foot')?.textContent).toBeTruthy()
+  })
+})

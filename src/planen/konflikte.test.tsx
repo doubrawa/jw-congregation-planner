@@ -246,3 +246,104 @@ describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
     expect(gruppe?.className).not.toContain('is-konflikt')
   })
 })
+
+/**
+ * **Was das Banner sagt, wenn es etwas zu sagen hat.**
+ *
+ * Die Prüfungen oben halten fest, wann es **weg**bleibt (T81). Was es
+ * schreibt, wenn ein echter Konflikt vorliegt, stand bislang nirgends — und
+ * genau darauf handelt der Planer: Er liest einen Namen und eine Aussage und
+ * geht dann in den Plan. Steht dort die falsche Aussage, sucht er den falschen
+ * Fehler.
+ *
+ * Drei Arten, drei Sätze, feste Reihenfolge: Abwesenheit zuerst (sie ist die
+ * schwerste, denn die Person kommt gar nicht), dann Doppelbelegung, dann
+ * Hilfsdienst-und-Aufgabe. Die Zahl im Kopf zählt **alle**.
+ */
+describe('Die drei Konflikt-Sätze', () => {
+  const KAI = person('p-k', 'Kai')
+
+  const zeigeKonflikt = (over: Partial<AppState>) =>
+    render(
+      <Buehne state={basis({ persons: [KAI], week: 0, ...over })}>
+        <ConflictsBanner tab="mid" />
+      </Buehne>,
+    )
+
+  const zeilen = (c: HTMLElement) =>
+    [...c.querySelectorAll('.plan-conflict-text')].map((x) => x.textContent ?? '')
+  const arten = (c: HTMLElement) =>
+    [...c.querySelectorAll('.plan-conflict-dot')].map((x) => x.getAttribute('data-kind'))
+
+  it('abwesend und trotzdem eingeteilt — mit Namen und Zusammenkunft', () => {
+    const { container } = zeigeKonflikt({
+      weeks: [woche(0, zusammenkunft([{ name: 'Kai', pid: 'p-k' }]))],
+      absences: [{ id: 'a1', personId: 'p-k', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
+      congregation: { name: '', hall: '', meetings: 'Di 19:00 · So 10:00' },
+    })
+    expect(zeilen(container)).toEqual(['Kai ist abwesend, aber eingeteilt · Zusammenkunft unter der Woche'])
+    expect(arten(container)).toEqual(['absent'])
+  })
+
+  it('zweimal Hilfsdienst am selben Tag — mit der Anzahl', () => {
+    const { container } = zeigeKonflikt({
+      weeks: [woche(0, zusammenkunft([{ name: '' }], {
+        mik: [{ name: 'Kai', pid: 'p-k' }],
+        ton: [{ name: 'Kai', pid: 'p-k' }],
+      }))],
+    })
+    expect(zeilen(container)).toEqual(['Kai ist 2× in einer Zusammenkunft · Zusammenkunft unter der Woche'])
+    expect(arten(container)).toEqual(['double'])
+  })
+
+  it('Hilfsdienst und Programmpunkt am selben Tag — der eigene Satz', () => {
+    const { container } = zeigeKonflikt({
+      weeks: [woche(0, zusammenkunft([{ name: 'Kai', pid: 'p-k' }], {
+        mik: [{ name: 'Kai', pid: 'p-k' }],
+      }))],
+    })
+    expect(zeilen(container)).toEqual([
+      'Kai hat Hilfsdienst und Aufgabe am selben Tag · Zusammenkunft unter der Woche',
+    ])
+    expect(arten(container)).toEqual(['helperTask'])
+  })
+
+  it('der Kopf nennt Titel und Anzahl', () => {
+    const { container } = zeigeKonflikt({
+      weeks: [woche(0, zusammenkunft([{ name: 'Kai', pid: 'p-k' }], {
+        mik: [{ name: 'Kai', pid: 'p-k' }],
+      }))],
+    })
+    expect(container.querySelector('.plan-banner-title')?.textContent).toBe('MÖGLICHE KONFLIKTE')
+    expect(container.querySelector('.plan-banner-count')?.textContent).toBe('1')
+  })
+
+  it('mehrere Arten stehen in fester Reihenfolge: abwesend, doppelt, Hilfsdienst+Aufgabe', () => {
+    // Sonst wandert die schwerste Meldung je nach Datenlage an eine andere
+    // Stelle, und der Planer sucht sie jedes Mal neu.
+    const LEA = person('p-l', 'Lea')
+    const MIA = person('p-m', 'Mia')
+    const { container } = zeigeKonflikt({
+      persons: [KAI, LEA, MIA],
+      weeks: [woche(0, zusammenkunft([{ name: 'Kai', pid: 'p-k' }, { name: 'Mia', pid: 'p-m' }], {
+        mik: [{ name: 'Lea', pid: 'p-l' }, { name: 'Lea', pid: 'p-l' }],
+        ton: [{ name: 'Mia', pid: 'p-m' }],
+      }))],
+      absences: [{ id: 'a1', personId: 'p-k', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
+      congregation: { name: '', hall: '', meetings: 'Di 19:00 · So 10:00' },
+    })
+    expect(arten(container)).toEqual(['absent', 'double', 'helperTask'])
+    expect(container.querySelector('.plan-banner-count')?.textContent).toBe('3')
+  })
+
+  it('am Wochenende nennt derselbe Satz die andere Zusammenkunft', () => {
+    const w = woche(0, zusammenkunft([{ name: '' }]))
+    w.we = zusammenkunft([{ name: 'Kai', pid: 'p-k' }], { mik: [{ name: 'Kai', pid: 'p-k' }] })
+    const { container } = render(
+      <Buehne state={basis({ persons: [KAI], week: 0, weeks: [w] })}>
+        <ConflictsBanner tab="we" />
+      </Buehne>,
+    )
+    expect(zeilen(container)[0]).toContain('Zusammenkunft am Wochenende')
+  })
+})
