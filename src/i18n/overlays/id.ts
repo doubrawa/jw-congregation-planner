@@ -49,6 +49,7 @@ export default {
   "grundPh": "mis. liburan",
   "abwEintragen": "TAMBAH KETIDAKHADIRAN",
   "deineEintraege": "ENTRI ANDA",
+  "eintraege": "ENTRI",
   "ohneAngabe": "Tanpa alasan",
   "keineAbw": "Tidak ada ketidakhadiran.",
   "profil": "PROFIL",

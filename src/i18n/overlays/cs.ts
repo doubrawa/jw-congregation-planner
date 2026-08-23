@@ -49,6 +49,7 @@ export default {
   "grundPh": "např. dovolená",
   "abwEintragen": "PŘIDAT NEPŘÍTOMNOST",
   "deineEintraege": "VAŠE ZÁZNAMY",
+  "eintraege": "ZÁZNAMY",
   "ohneAngabe": "Bez důvodu",
   "keineAbw": "Žádné nepřítomnosti.",
   "profil": "PROFIL",

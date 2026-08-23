@@ -97,6 +97,25 @@ describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
     expect(s.selectedPersonId).toBe('p9')
   })
 
+  it('me=<Person> meldet jemanden an — p= wählt nur aus', () => {
+    /*
+     * Zwei verschiedene Dinge, die sich leicht verwechseln: `p` ist die im
+     * Personen-Screen **ausgewählte** Person, `me` die **angemeldete**. Nur an
+     * `me` hängt, was persönlich ist — der DU-Chip, „Deine Einträge" und die
+     * Treffpunkte der eigenen Predigtdienstgruppe. Ohne `me` gehört die
+     * Demo-App niemandem; genau deshalb war die Verkündiger-Ansicht der
+     * Gruppentreffpunkte vorher nicht anzusehen.
+     */
+    vi.stubEnv('DEV', true)
+    cfg.configured = true
+    location.hash = '#s=programm&p=p1&me=p9'
+    const s = initialState()
+    expect(s.personId).toBe('p9')
+    expect(s.selectedPersonId).toBe('p1')
+    location.hash = '#s=programm&p=p1'
+    expect(initialState().personId).toBeNull()
+  })
+
   it('tab und pl (Rechte) steuern Reiter und Rolle für Doku-Screenshots', () => {
     vi.stubEnv('DEV', true)
     cfg.configured = true

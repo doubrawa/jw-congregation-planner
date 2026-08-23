@@ -338,9 +338,22 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
   it('addAbsence / removeAbsence', () => {
     const abs = { id: 'a1', personId: 'p9', userId: 'u1', from: '', to: '', reason: '' }
     persist(st(), st(), { type: 'addAbsence', absence: abs })
-    expect(data.saveAbsence).toHaveBeenCalledWith('c1', 'u1', 'p9', abs)
+    expect(data.saveAbsence).toHaveBeenCalledWith('c1', abs)
     persist(st(), st(), { type: 'removeAbsence', id: 'a1' })
     expect(data.deleteAbsenceRow).toHaveBeenCalledWith('a1')
+  })
+
+  it('addAbsence für eine ANDERE Person geht auch an diese Person', () => {
+    /*
+     * Der Planer trägt im Personen-Detail für jemand anderen ein. Die
+     * Effekt-Schicht hat dabei früher `state.personId` mitgegeben — die eigene
+     * Person des Angemeldeten. Die Zeile wäre auf dem Planer gelandet, und
+     * gemerkt hätte es niemand: In seiner Liste taucht sie nicht auf (die
+     * filtert seit T93 über die Person), beim Gemeinten auch nicht.
+     */
+    const fremd = { id: 'a2', personId: 'p-anders', userId: 'u1', from: '', to: '', reason: '' }
+    persist(st(), st(), { type: 'addAbsence', absence: fremd })
+    expect(data.saveAbsence).toHaveBeenCalledWith('c1', fremd)
   })
 
   it('addService / changeServiceCount / removeService', () => {

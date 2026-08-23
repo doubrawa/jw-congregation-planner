@@ -49,6 +49,7 @@ export default {
   "grundPh": "t.ex. semester",
   "abwEintragen": "LÄGG TILL FRÅNVARO",
   "deineEintraege": "DINA POSTER",
+  "eintraege": "POSTER",
   "ohneAngabe": "Ingen orsak",
   "keineAbw": "Ingen frånvaro registrerad.",
   "profil": "PROFIL",

@@ -49,6 +49,7 @@ export default {
   "grundPh": "esim. loma",
   "abwEintragen": "LISÄÄ POISSAOLO",
   "deineEintraege": "MERKINTÄSI",
+  "eintraege": "MERKINNÄT",
   "ohneAngabe": "Ei syytä",
   "keineAbw": "Ei kirjattuja poissaoloja.",
   "profil": "PROFIILI",

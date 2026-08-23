@@ -133,7 +133,10 @@ create trigger weeks_touch_updated_at
 create table if not exists public.absences (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  user_id         uuid not null references auth.users (id) on delete cascade, -- Ersteller
+  -- Ersteller; NULL = importiert (migration-021), z. B. aus New World Scheduler.
+  -- Die Abwesenheit hängt fachlich an `person_id`, nicht am Konto: Die meisten
+  -- Verkündiger haben gar keines.
+  user_id         uuid references auth.users (id) on delete cascade,
   person_id       uuid references public.persons (id) on delete set null,
   from_date       date not null,
   to_date         date not null,
@@ -268,6 +271,18 @@ as $$
   )
 $$;
 
+-- Eigene Person des angemeldeten Kontos (members.person_id) — oder NULL, wenn
+-- das Konto noch keiner Person zugeordnet ist. Grundlage dafür, dass jemand
+-- seine eigenen Daten auch dann pflegen darf, wenn ein Import sie angelegt hat
+-- (absences ohne user_id, migration-021).
+create or replace function public.my_person_id()
+returns uuid
+language sql stable security definer
+set search_path = public
+as $$
+  select person_id from public.members where user_id = auth.uid()
+$$;
+
 -- Ist der aktuelle Nutzer Aufseher oder Gehilfe irgendeiner Predigtdienstgruppe?
 -- Sie dürfen die Treffpunkte pflegen, ohne volle Planer-Rechte zu haben; die
 -- Einschränkung auf die eigene Gruppe macht die App.
@@ -374,7 +389,8 @@ create policy weeks_write on public.weeks
   using (congregation_id = public.my_congregation_id() and public.is_planner())
   with check (congregation_id = public.my_congregation_id() and public.is_planner());
 
--- Abwesenheiten: Versammlung liest; eigene Einträge oder Planer schreiben.
+-- Abwesenheiten: Versammlung liest; der Ersteller, der Betroffene (auch bei
+-- importierten Einträgen ohne Ersteller) oder ein Planer schreiben.
 drop policy if exists absences_select on public.absences;
 create policy absences_select on public.absences
   for select using (congregation_id = public.my_congregation_id());
@@ -384,11 +400,19 @@ create policy absences_write on public.absences
   for all
   using (
     congregation_id = public.my_congregation_id()
-    and (user_id = auth.uid() or public.is_planner())
+    and (
+      user_id = auth.uid()
+      or (person_id is not null and person_id = public.my_person_id())
+      or public.is_planner()
+    )
   )
   with check (
     congregation_id = public.my_congregation_id()
-    and (user_id = auth.uid() or public.is_planner())
+    and (
+      user_id = auth.uid()
+      or (person_id is not null and person_id = public.my_person_id())
+      or public.is_planner()
+    )
   );
 
 -- Mitteilungen sind personalisiert (je Empfänger eine Zeile): jeder sieht/ändert/

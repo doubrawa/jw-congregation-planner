@@ -49,6 +49,7 @@ export default {
   "grundPh": "p. ex. vacances",
   "abwEintragen": "AJOUTER UNE ABSENCE",
   "deineEintraege": "TES SAISIES",
+  "eintraege": "SAISIES",
   "ohneAngabe": "Sans précision",
   "keineAbw": "Aucune absence enregistrée.",
   "profil": "PROFIL",

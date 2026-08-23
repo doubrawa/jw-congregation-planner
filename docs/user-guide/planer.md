@@ -298,6 +298,11 @@ Der regelmäßige Rhythmus kommt aus dem **Grundplan** (siehe
 anpassen oder einen einmaligen Treffpunkt ergänzen. **Gruppenaufseher** können die
 Treffpunkte **ihrer** Gruppe selbst planen, ohne vollen Planer‑Zugang.
 
+> **Wer sieht was.** Einen Gruppentreffpunkt zeigt das Programm nur den
+> Verkündigern **dieser** Gruppe (und ihrem Aufseher). Versammlungstreffpunkte
+> sehen alle. Du als Planer siehst weiterhin alles — du planst ja für jede
+> Gruppe.
+
 **Der Leiter kann auch jemand von außerhalb sein.** In der Dienstwoche leitet
 in der Regel der **Kreisaufseher** den Treffpunkt, und der steht in keiner
 Personenliste. Tippe den Treffpunkt-Leiter an: Oben im Blatt gibst du einen
@@ -344,6 +349,18 @@ Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
 Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)
 („Di 19:00 · So 10:00"). Weicht eine Woche davon ab – z. B. das Gedächtnismahl –,
 gilt der Termin dieser Woche.
+
+Darunter steht die Karte **Abwesenheiten** – die Gegenrichtung zur Zeitleiste:
+wann diese Person **nicht** da ist. Als Planer trägst du hier für sie ein (nach
+einem Anruf „wir sind im Oktober weg"); die meisten Verkündiger haben kein
+Konto und können es nicht selbst. Wer eines hat, sieht dieselben Einträge in
+seinem eigenen Bereich unter **Meine Aufgaben** und kann sie dort ebenfalls
+pflegen – es ist dieselbe Angabe, nicht zwei.
+
+Abwesenheiten wirken sofort auf die Planung: Wer weg ist, lässt sich für diese
+Woche gar nicht erst zuteilen, die automatische Zuteilung übergeht ihn, und eine
+bereits bestehende Zuteilung erscheint im Konflikt‑Banner. Bei den Treffpunkten
+zählt dabei der Wochentag des jeweiligen Treffpunkts, nicht die ganze Woche.
 
 Im Detail legst du fest:
 

@@ -49,6 +49,7 @@ export default {
   "grundPh": "p. ex. férias",
   "abwEintragen": "ADICIONAR AUSÊNCIA",
   "deineEintraege": "OS SEUS REGISTOS",
+  "eintraege": "REGISTOS",
   "ohneAngabe": "Sem motivo",
   "keineAbw": "Nenhuma ausência registada.",
   "profil": "PERFIL",

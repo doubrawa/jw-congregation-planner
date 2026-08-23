@@ -342,7 +342,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     case 'addAbsence':
-      saveAbsence(congId, userId, next.personId, action.absence)
+      // Person und Ersteller stehen im Datensatz — der Planer trägt hier auch
+      // für andere ein, und `next.personId` wäre dann seine eigene Person.
+      saveAbsence(congId, action.absence)
       break
     case 'removeAbsence':
       deleteAbsenceRow(action.id)

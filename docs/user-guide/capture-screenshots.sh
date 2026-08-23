@@ -5,7 +5,9 @@
 # Voraussetzung: der Dev-Server läuft (`npm run dev`, Port 5173). Die App wird
 # über den DEV-Debug-Hash direkt in den jeweiligen Zustand versetzt
 # (Demo-Modus, kein Login/Netz):
-#   #s=<screen>&tab=<mid|we|fs>&pl=<0|1>&p=<personId>&t=<theme>&l=<lang>&c=<congLang>
+#   #s=<screen>&tab=<mid|we|fs>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>
+# (`p=` waehlt eine Person im Personen-Screen aus, `me=` meldet sie an — davon
+#  haengt ab, was jemand von seiner eigenen Gruppe sieht.)
 # Details siehe src/app/init.ts (parseDebugHash).
 #
 # Aufruf:  bash docs/user-guide/capture-screenshots.sh
@@ -38,14 +40,19 @@ SHOTS=(
   "verkuendiger-start|s=start&pl=0&p=p9"
   "verkuendiger-aufgaben|s=aufgaben&pl=0&p=p9"
   "verkuendiger-profil|s=profil&pl=0&p=p9"
+  # Angemeldet als p9 (Gruppe 1): zeigt die Treffpunkte der EIGENEN Gruppe —
+  # fremde Gruppen stehen hier bewusst nicht (siehe fsVisible in src/data/fs.ts).
+  "verkuendiger-treffpunkte|s=programm&tab=fs&pl=0&me=p9"
   "planer-start|s=start"
   "planer-aufgaben|s=aufgaben"
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
-  # Zuteilungen und die beiden Bereichs-Karten (Aufgaben, Hilfsdienste)
-  "planer-person-detail|s=personen&p=p1|920x2400"
+  # Zuteilungen, die Abwesenheiten und die beiden Bereichs-Karten (Aufgaben,
+  # Hilfsdienste). Reicht die Höhe nicht, schneidet Chrome unten ab — die Seite
+  # war mit der Abwesenheiten-Karte auf 2946px gewachsen.
+  "planer-person-detail|s=personen&p=p1|920x3100"
   "planer-einstellungen|s=einstellungen"
   "offline-stand|s=programm&tab=mid&stale=5"
 )

@@ -74,11 +74,13 @@ Oben wählst du zwischen drei Ansichten:
 | **Zusammenkunft am Wochenende** | Öffentlicher Vortrag und Wachtturm‑Studium. |
 | **Zusammenkünfte für den Predigtdienst** | Die „Treffpunkte" – wann und wo sich die Versammlung bzw. deine Gruppe zum Predigtdienst trifft, mit dem jeweiligen Leiter. |
 
-![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/programm-treffpunkte.png)
+![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
 
 Bei den Treffpunkten siehst du **Versammlungstreffpunkte** (für alle) und die
 **Gruppentreffpunkte** deiner Predigtdienstgruppe – jeweils mit Uhrzeit, Ort und
-Leiter.
+Leiter. Die Treffpunkte **anderer** Gruppen stehen nicht dabei; sie gehen dich
+nicht an, und die Liste bliebe sonst voller Termine, zu denen niemand geht.
+Bist du keiner Gruppe zugeordnet, siehst du die Versammlungstreffpunkte.
 
 ### Zusätzliche Klasse
 
@@ -182,6 +184,12 @@ nicht eingeteilt.
 
 Deine eingetragenen Zeiträume erscheinen darunter unter „Deine Einträge" und
 lassen sich mit dem ✕ wieder entfernen.
+
+Dort stehen auch Zeiträume, die **nicht du** eingetragen hast: Der Planer kann
+sie für dich erfassen (etwa wenn du angerufen hast), und beim Umstieg von einem
+anderen Programm sind sie mit übernommen worden. Es ist dieselbe Liste – du
+kannst sie genauso ändern oder entfernen. Umgekehrt siehst du hier **nur deine
+eigenen**; die Abwesenheiten anderer gehen dich nichts an.
 
 **Es zählt der Tag, nicht die Woche.** Bist du nur übers Wochenende weg, bleibst
 du für die Zusammenkunft unter der Woche eingeplant – und umgekehrt. Auch bei den

@@ -1,9 +1,7 @@
-import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
-import { DatePicker } from '../components/DatePicker'
+import { AbsencePanel } from '../components/AbsencePanel'
 import { PushPrompt } from '../components/PushPrompt'
 import { fullName } from '../data/helpers'
-import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
 import './aufgaben.css'
@@ -19,55 +17,25 @@ export function AufgabenScreen() {
   const { t, tu, tp } = i18n
   const me = state.persons.find((p) => p.id === state.personId)
 
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
-  const [reason, setReason] = useState('')
-
-  const fmtDate = (iso: string): string => {
-    if (!iso) return ''
-    const date = new Date(`${iso}T12:00:00`)
-    return date.toLocaleDateString(LOCALES[state.lang], { day: 'numeric', month: 'long' })
-  }
-
   /**
    * „Deine Einträge": seit die Abwesenheiten versammlungsweit geladen werden
    * (die Planung braucht sie), muss hier wieder auf die eigenen eingegrenzt
-   * werden — selbst erfasst oder zur eigenen Person. Ohne Konto (Demo) gibt es
-   * nichts einzugrenzen.
+   * werden. Ohne Konto (Demo) gibt es nichts einzugrenzen.
+   *
+   * **Die Person entscheidet, nicht der Ersteller.** Wer eingetragen hat, ist
+   * eine andere Frage als wen es betrifft — und seit es beides getrennt gibt
+   * (Import ohne Konto, Planer trägt für andere ein), führt der Ersteller in die
+   * Irre: Nach `userId === meiner` stünden dem Planer alle Abwesenheiten der
+   * Versammlung unter „Deine Einträge". Der Ersteller trägt nur noch den Fall,
+   * für den er gedacht war: ein Konto **ohne** eigene Person (`personId` null),
+   * das seine Einträge sonst nicht wiederfände.
    */
   const eigeneAbwesenheiten = state.userId
-    ? state.absences.filter(
-        (a) => a.userId === state.userId || (state.personId != null && a.personId === state.personId),
+    ? state.absences.filter((a) =>
+        a.personId != null ? a.personId === state.personId : a.userId === state.userId,
       )
     : state.absences
 
-  const addAbsence = (event: FormEvent) => {
-    event.preventDefault()
-    if (!from || !to) {
-      dispatch({ type: 'showToast', text: t.toastVonBis })
-      return
-    }
-    if (from > to) {
-      dispatch({ type: 'showToast', text: t.toastVonNachBis })
-      return
-    }
-    dispatch({
-      type: 'addAbsence',
-      // personId verknüpft die Abwesenheit mit dem Programm — ohne sie weiß die
-      // Planung nicht, wer fehlt. userId bleibt der Ersteller (siehe Absence).
-      absence: {
-        id: crypto.randomUUID(),
-        personId: state.personId,
-        userId: state.userId ?? '',
-        from,
-        to,
-        reason,
-      },
-    })
-    setFrom('')
-    setTo('')
-    setReason('')
-  }
 
   return (
     <section className="screen">
@@ -158,78 +126,7 @@ export function AufgabenScreen() {
         </div>
       )}
 
-      <form className="panel panel--pb16" data-farbe="neutral" onSubmit={addAbsence}>
-        <h2 className="panel-label">{t.abwesenheiten}</h2>
-        <div className="abs-form-row">
-          <div className="abs-field">
-            <span className="field-label">{t.von}</span>
-            <DatePicker
-              value={from}
-              onChange={(iso) => {
-                setFrom(iso)
-                // "Bis" mit demselben Tag vorbelegen → Ein-Tages-Abwesenheit
-                // ist ein einziger Klick; korrigiert auch ein Bis vor dem Von.
-                if (iso && (!to || to < iso)) setTo(iso)
-              }}
-              locale={LOCALES[state.lang]}
-              placeholder={t.datumPh}
-              ariaLabel={t.von}
-              prevLabel={t.a11yPrevMonth}
-              nextLabel={t.a11yNextMonth}
-            />
-          </div>
-          <div className="abs-field">
-            <span className="field-label">{t.bis}</span>
-            <DatePicker
-              value={to}
-              onChange={setTo}
-              locale={LOCALES[state.lang]}
-              min={from || undefined}
-              placeholder={t.datumPh}
-              ariaLabel={t.bis}
-              prevLabel={t.a11yPrevMonth}
-              nextLabel={t.a11yNextMonth}
-            />
-          </div>
-        </div>
-        <div className="abs-reason">
-          <label className="field-label" htmlFor="abs-reason">
-            {t.grundOpt}
-          </label>
-          <input
-            id="abs-reason"
-            className="field-input"
-            type="text"
-            placeholder={t.grundPh}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        </div>
-        <button type="submit" className="btn-outline abs-submit">
-          {t.abwEintragen}
-        </button>
-
-        <div className="panel-label auf-entries-label">{t.deineEintraege}</div>
-        {eigeneAbwesenheiten.map((absence) => (
-          <div key={absence.id} className="abs-row">
-            <div>
-              <div className="abs-range">
-                {fmtDate(absence.from)} – {fmtDate(absence.to)}
-              </div>
-              <div className="abs-reason-text">{absence.reason || t.ohneAngabe}</div>
-            </div>
-            <button
-              type="button"
-              className="abs-remove"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'removeAbsence', id: absence.id })}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        {eigeneAbwesenheiten.length === 0 && <p className="abs-empty">{t.keineAbw}</p>}
-      </form>
+      <AbsencePanel personId={state.personId} entries={eigeneAbwesenheiten} listLabel={t.deineEintraege} />
     </section>
   )
 }

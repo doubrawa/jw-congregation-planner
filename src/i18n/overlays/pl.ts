@@ -49,6 +49,7 @@ export default {
   "grundPh": "np. urlop",
   "abwEintragen": "DODAJ NIEOBECNOŚĆ",
   "deineEintraege": "TWOJE WPISY",
+  "eintraege": "WPISY",
   "ohneAngabe": "Bez podania",
   "keineAbw": "Brak zarejestrowanych nieobecności.",
   "profil": "PROFIL",

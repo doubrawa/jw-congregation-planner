@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
+import { AbsencePanel } from '../components/AbsencePanel'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { familyMembers, initials, personCompare, personLabel, serviceQualKey } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
@@ -197,6 +198,20 @@ export function PersonDetail({ person }: { person: Person }) {
       </div>
 
       <PersonTimeline person={person} />
+
+      {/*
+       * Abwesenheiten direkt unter der Zeitleiste: Beides sagt, wann diese
+       * Person verfügbar war und sein wird — die Zeitleiste rückwärts, die
+       * Abwesenheiten vorwärts. Der Planer trägt sie hier für andere ein (die
+       * meisten Verkündiger haben kein Konto und können es nicht selbst), und
+       * die aus New World Scheduler importierten stehen ebenfalls hier — sonst
+       * sähe sie außer dem Betroffenen niemand.
+       */}
+      <AbsencePanel
+        personId={person.id}
+        entries={state.absences.filter((a) => a.personId === person.id)}
+        listLabel={t.eintraege}
+      />
 
       <div className="panel panel--pb10" data-farbe="petrol">
         <h2 className="panel-label">{t.aufgabenbereiche}</h2>

@@ -167,6 +167,44 @@ export function regenFsWeeks(
   })
 }
 
+/* ---- Sichtbarkeit ---- */
+
+/**
+ * Die Treffpunkte, die jemand **sehen** darf.
+ *
+ * Ein Versammlungstreffpunkt (`grp ''`) gilt allen und wird allen gezeigt. Ein
+ * Gruppentreffpunkt ist die Sache seiner Gruppe: ihn sieht, wer zu ihr gehört
+ * (`Person.grp`) oder sie leitet (Aufseher/Gehilfe — er muss nicht in ihr
+ * geführt sein). Der Planer sieht alles; er plant alle Gruppen.
+ *
+ * **Das ist eine Anzeige-Regel, keine Sperre.** Alle Treffpunkte einer Woche
+ * liegen in *einer* jsonb-Zeile (`fs_weeks.data`); RLS kann darin keine
+ * einzelnen Einträge ausblenden, und der Lader holt die Zeile ganz. Wer die
+ * Datenbank direkt fragt, sieht weiterhin alle. Eine echte Sperre bräuchte eine
+ * Zeile je Gruppe (`unique (congregation_id, start, grp)`) — bewusst nicht
+ * gebaut: Treffpunkte sind innerhalb der Versammlung nichts Vertrauliches, die
+ * Trennung dient der Übersicht.
+ *
+ * Deshalb steht die Regel **hier** und nicht in der Ansicht: Jede neue Stelle,
+ * die Treffpunkte einer Woche zeigt, geht durch diese Funktion — genau die
+ * Aufrufer-Lücke, die dieses Projekt am häufigsten trifft.
+ */
+export function fsVisible(
+  insts: readonly FsInstance[],
+  persons: readonly Person[],
+  groups: readonly Group[],
+  personId: string | null,
+  planner: boolean,
+): FsInstance[] {
+  if (planner) return [...insts]
+  const meine = new Set<string>()
+  const eigene = personId ? persons.find((p) => p.id === personId)?.grp : null
+  if (eigene) meine.add(eigene)
+  const geleitet = overseerGroup(groups, personId)
+  if (geleitet) meine.add(geleitet)
+  return insts.filter((inst) => inst.grp === '' || meine.has(inst.grp))
+}
+
 /* ---- Wochen-Bearbeitung (Planen) ---- */
 
 /** Nur die Woche `wi` ersetzen (die übrigen behalten ihre Referenz). */

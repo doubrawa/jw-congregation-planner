@@ -49,6 +49,7 @@ export default {
   "grundPh": "f.eks. ferie",
   "abwEintragen": "TILFØJ FRAVÆR",
   "deineEintraege": "DINE POSTER",
+  "eintraege": "POSTER",
   "ohneAngabe": "Ingen årsag",
   "keineAbw": "Intet fravær registreret.",
   "profil": "PROFIL",

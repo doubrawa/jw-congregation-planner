@@ -57,6 +57,16 @@ interface DebugHash {
   theme?: Theme
   fontScale?: FontScale // fs=<Faktor> — Schriftgrößen-Stufe für Doku-Screenshots
   personId?: string
+  /**
+   * `me=<Person-Id>` — **wessen** App das hier ist (`state.personId`).
+   *
+   * Nicht dasselbe wie `p=`: Das wählt eine Person im Personen-Screen aus
+   * (`selectedPersonId`), das hier meldet einen an. Im Demo-Modus gehört die
+   * App sonst niemandem, und alles, was von der eigenen Person abhängt, ist
+   * nicht anzusehen: der DU-Chip, „Deine Einträge" — und die
+   * Treffpunkte der **eigenen** Predigtdienstgruppe.
+   */
+  me?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
@@ -79,6 +89,8 @@ function parseDebugHash(): DebugHash | null {
   if (fs) out.fontScale = fs
   const person = p.get('p')
   if (person) out.personId = person
+  const me = p.get('me')
+  if (me) out.me = me
   const tab = p.get('tab')
   if (tab === 'mid' || tab === 'we' || tab === 'fs') out.tab = tab
   const pl = p.get('pl')
@@ -121,7 +133,9 @@ export function initialState(): AppState {
     congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', meetings: '' },
     congregationId: null,
     userId: null,
-    personId: null,
+    // Im Demo-Modus gehört die App niemandem — außer der Debug-Hash meldet
+    // jemanden an (`me=`, nur DEV; siehe DebugHash).
+    personId: (demo && debug?.me) || null,
     dataStatus: demo ? 'demo' : 'ready',
     dataEmpty: false,
     staleAt: debug?.staleAt ?? null,

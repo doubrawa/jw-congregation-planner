@@ -51,6 +51,8 @@ export const DE = {
     von: 'VON', bis: 'BIS', grundOpt: 'GRUND (OPTIONAL)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',
     abwEintragen: 'ABWESENHEIT EINTRAGEN', deineEintraege: 'DEINE EINTRÄGE', ohneAngabe: 'Ohne Angabe',
+    // „EINTRÄGE" ohne „Deine": im Personen-Detail geht es um jemand anderen.
+    eintraege: 'EINTRÄGE',
     keineAbw: 'Keine Abwesenheiten eingetragen.', profil: 'PROFIL',
     nameLbl: 'Name', versammlungLbl: 'Versammlung', emailKv: 'E-Mail',
     darstellung: 'Darstellung', spracheLbl: 'Sprache',

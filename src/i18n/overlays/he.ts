@@ -51,6 +51,7 @@ export default {
   "datumPh": "בחר תאריך",
   "abwEintragen": "הוסף היעדרות",
   "deineEintraege": "הרשומות שלך",
+  "eintraege": "רשומות",
   "ohneAngabe": "ללא ציון סיבה",
   "keineAbw": "לא נרשמו היעדרויות.",
   "profil": "פרופיל",

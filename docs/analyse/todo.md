@@ -2979,13 +2979,53 @@ nachträglich zu deuten hieße, aus dem Anzeigetext zu raten.
 Künftiges, ohne Datum) und die Ableitung im Reducer — mit Gegenprobe, dass in
 der zurückliegenden Woche wirklich eine Zuteilung für den Leser steckt.
 
-### T78 · Mandantentrennung nachweisen, bevor es zwei Versammlungen gibt 🏗
+### T78 · Mandantentrennung nachweisen, bevor es zwei Versammlungen gibt 🏗 ✅ erledigt
 Sobald eine zweite Versammlung dazukommt, muss alles getrennt sein — keine
 fremden Personen, Wochen, Mitteilungen, Abos. Angelegt ist das (RLS über
 `my_congregation_id()`), **nachgewiesen ist es nicht**: genau deshalb stehen S2
 und S3 unten unter „Was bewusst offen bleibt" — der Nachweis braucht zwei echte
 Konten. Mit einer zweiten Versammlung wird er erst möglich — und dann Pflicht,
 Tabelle für Tabelle.
+
+> **Gemessen am 19. August 2026 — bestanden.** Es fehlte nie die Richtlinie,
+> sondern der zweite Mandant. Der ist jetzt da:
+> [testversammlung-anlegen.mjs](../../scripts/testversammlung-anlegen.mjs) legt
+> „Probeversammlung Talheim" an — 30 erfundene Personen, drei Gruppen, die
+> Dienste, Treffpunkt-Regeln, **echte** jw.org-Wochen über `import-week` samt
+> Zuteilungen und zwei Konten (Planer und einfaches Mitglied). Erfundener
+> Bestand steht bewusst in einem **eigenen** Skript: `versammlung-anlegen.mjs`
+> legt aus gutem Grund keinen an, und ein Schalter hätte diese Doktrin
+> aufgeweicht. `--entfernen <id|name> --wirklich` nimmt alles restlos zurück,
+> Konten ohne `members`-Zeile eingeschlossen.
+>
+> Gemessen wird mit
+> [mandanten-nachweis.mjs](../../scripts/mandanten-nachweis.mjs), und zwar mit
+> dem **anon**-Key plus Anmeldung — nie mit dem Service-Role-Key, der RLS
+> umgeht. Geprüft wird genau das, was ein Besucher in der Hand hat.
+>
+> | Probe | Ergebnis |
+> | --- | --- |
+> | **ohne Anmeldung** | 14 Tabellen → **0 Zeilen**. Ohne diese Kontrolle bewiese der Rest nichts: Eine Abfrage, die jedem nichts liefert, sähe genauso aus wie eine, die richtig filtert. |
+> | **Liste, je Tabelle** | Der Talheim-Planer sieht 30 Personen, 3 Gruppen, 7 Dienste, 2 Wochen, 1 `fs_rules` — und **0 fremde Zeilen** in allen 14 Tabellen. `reminder_log` liefert auch der eigenen Versammlung nichts (RLS ohne Policy, wie vorgesehen). |
+> | **gezielt über Kreuz** | Bekannte Zeilen der anderen Seite, über ihre Id geholt, kommen leer zurück — schärfer als eine Liste, die auch zufällig nichts Fremdes enthalten kann. |
+> | **Schreiben** | Einfügen in die fremde Versammlung abgewiesen, Ändern trifft null Zeilen. Beides in beide Richtungen. |
+>
+> **Die schärfste Zahl ist `congregations = 1`:** Eine Abfrage ohne Filter,
+> während nachweislich **zwei** Versammlungen existieren.
+>
+> Die Schreibprobe fasst echte Daten an und ist deshalb entschärft: Das Ändern
+> schreibt den **vorhandenen** Wert zurück (`tel` auf sich selbst), gelöscht
+> wird nichts, und ein durchgerutschtes Einfügen räumt das Skript sofort wieder
+> weg. Eine Vollständigkeitsprobe hält die Prüfliste an `schema.sql`: Jede
+> Tabelle mit `enable row level security` muss darin stehen, sonst wird der
+> Test rot — eine neue Tabelle kann nicht stillschweigend ungeprüft bleiben.
+>
+> **Dabei aufgefallen:** Der erste scharfe Lauf des Anlege-Skripts brach an
+> einer vertippten Kennung ab (`planner` statt `planer`) — in `main()`, das
+> kein Test betritt, und oxlint sah es nicht. Die Regel `no-undef` findet
+> genau das; sie ist jetzt in [.oxlintrc.json](../../.oxlintrc.json) an (mit
+> `env` für Browser und Node und drei Globals). Über den ganzen Baum meldete
+> sie **einen** Treffer: diesen.
 
 ### T79 · Auto-Zuteilung lässt Hilfsdienste aus — und sagt nichts 🔧 ✅ erledigt
 Der Betreiber meldet: Beim automatischen Verteilen bleiben **selbst angelegte**
@@ -3385,14 +3425,219 @@ nur eben einer, der erst auffällt, wenn jemand die Seite aufruft.
 > ohne Fehler. Genau die Kette, deren Stillstand dieser Punkt verhindern
 > sollte.
 
+### T89 · S2 und S3 messen, nicht lesen 🔧 ✅ erledigt (19. August 2026)
+Beide Befunde stammten aus dem Lesen der Richtlinien und standen seit dem
+7. August unter „Was bewusst offen bleibt" — der Nachweis brauchte **zwei
+Mitgliedskonten derselben Versammlung**. Seit T78 gibt es die.
+
+[mitgliedsrechte-probe.mjs](../../scripts/mitgliedsrechte-probe.mjs) misst mit
+dem anon-Key und zwei Anmeldungen, was ein **einfaches** Mitglied schreiben
+kann. Vier Versuche, davon zwei Gegenproben — ohne sie bliebe offen, ob die
+Richtlinie überhaupt etwas tut:
+
+| | Versuch | Ergebnis |
+| --- | --- | --- |
+| 1 | Bestätigung auf eine **fremde** Aufgabe, eigene `user_id` | **angekommen (201)** — S2 bestätigt |
+| 2 | dieselbe Zeile mit **fremder** `user_id` | abgewiesen (403) — die Grenze greift |
+| 3 | Mitteilung `verhindert` mit freiem Text an den Planer | **angekommen (201)** — S3 bestätigt |
+| 4 | dieselbe Mitteilung als Typ `zuteilung` (nur Planer) | abgewiesen (403) — die Grenze greift |
+
+Gemessen am schärfsten Fall: Das Mitglied setzte **„verhindert" auf einen
+fremden Hilfsdienst** (Mikrofon, Fabian Ziegler) — genau die Zeile, aus der
+`deriveSubstituteReqs` ein Ersatzgesuch macht. Der Planer sah sie anschließend
+auf dem fremden Platz. Jede geschriebene Zeile hat die Probe sofort wieder
+gelöscht; nachgesehen: `confirmations` und `notifications` sind hinterher leer.
+
+> **Beinahe ein falscher Freispruch.** Die erste Fassung schrieb mit
+> `Prefer: return=representation` und bekam auf die Mitteilung ein **403** —
+> S3 wäre als „greift nicht mehr" abgehakt worden. Ursache ist nicht die
+> Richtlinie: PostgreSQL wendet SELECT-Richtlinien auf die
+> `RETURNING`-Klausel an, und der Absender darf eine Mitteilung an jemand
+> anderen nicht zurücklesen. Mit `return=minimal` geht dieselbe Zeile durch.
+> Die App macht es von sich aus richtig ([data.ts:1336](../../src/lib/data.ts:1336)
+> fügt ohne `.select()` ein) — die Probe tat es nicht. Seither hängt das Urteil
+> daran, ob die Zeile **am Ziel** liegt, nicht am Status; ein Test hält den
+> Fall fest.
+
+**Was daraus folgt** — der Befund ist bestätigt, die Lücke damit offen:
+`confirmations_write` prüft nur, wem die Zeile gehört, nicht ob der `task_key`
+dieser Person zugeteilt ist. Zu schließen wäre das in der Richtlinie (der
+`task_key` müsste gegen die Zuteilung geprüft werden) — beim Programmpunkt
+steckt die Zuteilung allerdings im JSONB der Woche, was eine Prüfung in SQL
+teuer macht. Der Zuschnitt gehört mit dem Betreiber besprochen, bevor jemand
+eine Migration schreibt.
+
+---
+
+## Aufgenommen am 22. August 2026 — NWS-Import und Gruppentreffpunkte (T90–T92)
+
+Aus einer Frage des Betreibers: „Kannst du Treffpunkte auch aus NWS
+extrahieren?" — und, im selben Atemzug: „Meine Abwesenheiten scheinen nicht
+importiert worden zu sein."
+
+### T90 · Abwesenheiten kamen nie in die App — und wurden dabei gelöscht 🏗 ✅ erledigt
+Der Verdacht des Betreibers war zu freundlich („vielleicht hat niemand
+importiert"). Es gab **keinen Weg**: Kein Skript hat je in `absences`
+geschrieben. Umgekehrt schon: Der Personen-Neuaufbau
+(`nws-export/build-personen-sql.mjs`) begann mit `delete from public.absences;`
+— er löschte damit das einzige, was Verkündiger selbst erfassen, und baute es
+nicht wieder auf, weil Abwesenheiten gar nicht aus den Stammdaten kommen.
+
+Die Planung liest `absences` seit [migration-015](../../supabase/migration-015-abwesenheit-datum.sql)
+versammlungsweit. Ohne Import plante die App also gegen einen leeren Kalender
+und teilte Verreiste ein, ohne dass es jemandem auffiel — dieselbe stille
+Fehlerart, die dieses Dokument von der ersten Seite an verfolgt.
+
+> **Erledigt.** [abwesenheiten-importieren.mjs](../../scripts/abwesenheiten-importieren.mjs)
+> holt `AwayPeriods` (72 lebende Zeiträume) über die stabile Id
+> (`uuid5("person:<NWS-ID>")`) an die App-Person. `UnavailablePeriods`
+> („nicht verfügbar") sind mit `--auch-unverfuegbar` dazuzunehmen — fachlich
+> etwas anderes, für die Planung dieselbe Folge; voreingestellt aus, weil davon
+> fast alles Vergangenheit ist. Vergangenes bleibt ohnehin draußen (Grenze ist
+> das **Bis**-Datum, nicht das Von — der laufende Zeitraum ist der wichtigste),
+> und ein zweiter Lauf legt nichts doppelt an.
+>
+> **Person statt Konto.** Eine importierte Abwesenheit hat keinen Ersteller.
+> Trüge sie ersatzweise das Konto des Planers, stünden dessen „Deine Einträge"
+> voll mit den Abwesenheiten der ganzen Versammlung —
+> [AufgabenScreen.tsx:38](../../src/aufgaben/AufgabenScreen.tsx:38) filtert auf
+> `userId === meiner || personId === meine`. Deshalb macht
+> [migration-021](../../supabase/migration-021-abwesenheit-import.sql)
+> `user_id` NULL-bar. Das riss aber den Schreibschutz auf: Die alte Regel war
+> `user_id = auth.uid() or is_planner()`, und bei NULL hätte nicht einmal der
+> Betroffene seine eigene Abwesenheit löschen können. Also kam der Zweig über
+> die **Person** dazu (`my_person_id()`, gebaut wie `is_planner()`).
+>
+> **Am Trockenlauf aufgefallen (23. August):** NWS behält beim Ändern die alte
+> Zeile. Eine ganze Familie stand mit `10.–30.08.` (Zeitstempel 8. Januar)
+> **und** `10.–31.08.` (30. Januar, ein Tag drangehängt) im Bestand, beide
+> lebend; dazu Zeiträume, die ganz in einem anderen liegen (`01.–28.12.` neben
+> `11.–21.12.`, sogar mit demselben Zeitstempel), und eine exakte Dublette mit
+> zwei IDs. Gemessen: **7 Personen, 12 überlappende Paare** von 72 Zeiträumen.
+> Der Import fasst sie jetzt je Person zusammen — die **Vereinigung**, nicht
+> „die neuere gewinnt": Abwesend ist ein Ja/Nein je Tag, zwei überlappende
+> Zeiträume können nichts Verschiedenes behaupten, und am Zeitstempel zu
+> entscheiden hieße raten (bei den enthaltenen ist er identisch). Zusammengefasst
+> wird **vor** dem Datumsfilter, weil ein abgelaufener Zeitraum einen laufenden
+> verlängern kann. Aus 69 einzufügenden Zeilen wurden so 59.
+>
+> `build-personen-sql.mjs` löscht die Abwesenheiten nicht mehr — und hebt die
+> Verknüpfung zur Person über den Neuaufbau (der Fremdschlüssel steht auf
+> `on delete set null`, das Löschen der Personen kappte sie sonst; möglich ist
+> das Zurückschreiben, weil die Person-Ids deterministisch sind). Im selben Zug
+> ist dort die Spalte `absent` aus dem `insert` verschwunden: migration-015 hat
+> sie entfernt, das erzeugte SQL wäre an der ersten Personenzeile gescheitert.
+
+### T91 · Treffpunkte aus NWS — die Leiter fehlten 🏗 ✅ erledigt
+NWS führt in `FieldServiceMeetings` jeden Treffpunkt mit Datum, Uhrzeit, Ort
+(`FieldServiceLocations`) und Leiter; die App kannte davon nichts. Der
+**Grundplan** bleibt bewusst beim Planer — importiert wird, was sich Woche für
+Woche ändert.
+
+> **Erledigt.** [treffpunkte-importieren.mjs](../../scripts/treffpunkte-importieren.mjs)
+> ordnet jeden Termin über den Montag seiner Woche und darin über
+> **Wochentag + Uhrzeit** einem Treffpunkt zu und setzt dessen Leiter (Name und
+> `lpid`). Was der Grundplan nicht kennt — Pioniertag, „Großer Treffpunkt", ein
+> einzelner Nachmittag —, wird als Treffpunkt **nur für diese Woche** angelegt,
+> mit einer aus der NWS-Kennung abgeleiteten Id: Beim zweiten Lauf steht er
+> nicht ein zweites Mal da. Am echten Bestand gemessen: 74 Termine in 29
+> Wochen, mit einem Grundplan aus Mo 14:30 / Mi 09:30 ergibt das 48 gesetzte
+> Leiter und 18 zusätzliche Termine.
+>
+> Zwei Regeln, an denen mehr hängt, als es aussieht. **Ein leerer NWS-Leiter
+> löscht nichts** — in NWS steht dann `-2`, und ein fehlender Wert ist keine
+> Aussage; überschriebe er, wäre die Zuteilung des Planers weg, ohne dass es
+> auffiele. Und **die Freitext-Marke fällt weg**, wenn eine Person aus der
+> Versammlung übernimmt (T63): Bliebe `lext` stehen, zählte die Leitung in
+> keiner Auslastung und in keiner Aufgabenliste — der Import hätte jemanden
+> eingeteilt, der davon nie erführe.
+>
+> **Gruppen kennt NWS nicht.** Alles Importierte ist deshalb
+> Versammlungstreffpunkt; passt ein Termin auf mehrere Gruppentreffpunkte und
+> auf keinen der Versammlung, wird er gemeldet statt geraten.
+
+### T92 · Ein Gruppentreffpunkt geht nur seine Gruppe an 🔧 ✅ erledigt
+Anlegen und Planen war längst richtig zugeschnitten (`is_group_overseer()`,
+`onlyGroup` in Grundplan und Planen-Tab). Das **Sehen** nicht: Der
+Programm-Reiter zeigte jedem alle Gruppentreffpunkte — bei vier Gruppen vier
+Samstagstermine, von denen drei niemanden angehen. Das Handbuch behauptete
+dabei seit jeher das Richtige („die Gruppentreffpunkte **deiner**
+Predigtdienstgruppe"), nur die App tat es nicht.
+
+> **Erledigt.** `fsVisible` ([fs.ts](../../src/data/fs.ts)) ist die eine Stelle:
+> Versammlungstreffpunkte für alle, ein Gruppentreffpunkt für seine Gruppe
+> (`Person.grp`) und für den, der sie leitet — Aufseher und Gehilfe stehen nicht
+> zwingend selbst in ihrer Gruppe, säßen sonst vor einem leeren Programm. Der
+> Planer sieht weiter alles; er plant für jede Gruppe.
+>
+> Es ist eine **Anzeige-Regel, keine Sperre**: Alle Treffpunkte einer Woche
+> liegen in *einer* jsonb-Zeile (`fs_weeks.data`), RLS kann darin nichts
+> ausblenden. Eine echte Trennung bräuchte eine Zeile je Gruppe — bewusst nicht
+> gebaut, Treffpunkte sind innerhalb der Versammlung nichts Vertrauliches.
+>
+> Bewacht ist **der Aufrufer**, nicht nur die Regel: Ein DOM-Test rendert den
+> Programm-Reiter als Verkündiger der Gruppe 1 und verlangt, dass Gruppe 2 nicht
+> darin vorkommt; zwei Einträge im
+> [Mutationskatalog](../../scripts/mutationsprobe.mjs) messen beide Hälften.
+> Genau daran hätte die alte Fehlerart wieder gegriffen — Regel richtig, Ansicht
+> fragt sie nicht.
+>
+> **Nebenbefund:** Die Verkündiger-Ansicht war gar nicht anzusehen. Der
+> Debug-Hash kannte nur `p=` (*ausgewählte* Person); im Demo-Modus gehörte die
+> App niemandem, `state.personId` blieb null. Neu ist `me=<Person-Id>` — damit
+> zeigt der Doku-Screenshot `verkuendiger-treffpunkte.png` erstmals, was ein
+> Verkündiger wirklich sieht.
+
+### T93 · Abwesenheiten gehören der Person, nicht dem Konto 🔧 ✅ erledigt
+Nach dem Import (T90) stellte der Betreiber die naheliegende Frage: „Wo sehe ich
+meine Abwesenheiten und die von anderen?" Die eigenen: unter **Meine Aufgaben**.
+Die von anderen: **nirgends**. Sie wirkten nur, wo sie etwas verhindern — als
+Chip „Abwesend" im Zuteil-Blatt, im Konflikt-Banner, in der Auto-Zuteilung.
+Eintragen konnte der Planer für niemanden, obwohl die Datenbank es ihm erlaubt
+(`is_planner()`): Die meisten Verkündiger haben gar kein Konto und können es
+selbst nicht.
+
+> **Erledigt.** Die Karte steht jetzt auch im **Personen-Detail**, direkt unter
+> der Zeitleiste — die Gegenrichtung zu ihr: die Zeitleiste sagt, wann jemand
+> dran war, die Abwesenheiten, wann er nicht kann. Eine **gemeinsame**
+> Komponente (`src/components/AbsencePanel.tsx`) bedient beide Stellen; zweimal
+> abgeschrieben wäre die Prüfung „Von vor Bis" beim zweiten Mal verloren
+> gegangen. Bearbeiten darf, wen es selbst betrifft, oder ein Planer — dieselbe
+> Grenze wie `absences_write`, sonst zeigte das Formular etwas an, das die
+> Datenbank abweist.
+>
+> **Zwei Fehler kamen dabei heraus, beide von der Sorte „zweiter Aufrufer".**
+>
+> `persist.ts` gab `saveAbsence` die Person des **Angemeldeten** mit
+> (`next.personId`) statt der aus dem Datensatz. Solange jeder nur seine eigenen
+> erfassen konnte, stimmte das; beim ersten Eintrag des Planers für jemand
+> anderen wäre die Zeile auf ihm gelandet — und aufgefallen wäre es niemandem,
+> weil sie in **keiner** der beiden Listen erschiene. `saveAbsence` nimmt Person
+> und Ersteller jetzt aus dem Datensatz; die Parameter daneben sind weg.
+>
+> „Deine Einträge" filterte auf `userId === meiner || personId === meine`. Der
+> erste Zweig war schon vor dem Import zu weit — mit ihm hätte der Planer alles,
+> was er für andere einträgt, in seiner **persönlichen** Liste stehen. Jetzt
+> entscheidet die **Person**; der Ersteller trägt nur noch den Fall, für den er
+> gedacht war: ein Konto ohne eigene Person, das seine Einträge sonst nicht
+> wiederfände. Beide Regeln stehen im
+> [Mutationskatalog](../../scripts/mutationsprobe.mjs), und
+> `src/components/abwesenheiten.test.tsx` stellt jede Frage an **beide**
+> Aufrufer.
+>
+> **Nebenbefund:** `ui.test.ts` verlangt jeden Schlüssel in jedem Overlay (kein
+> stiller Englisch-Rückfall). Das neue „EINTRÄGE" ist deshalb in allen 33
+> Sprachen nachgetragen — aus der jeweils vorhandenen Wendung für „DEINE
+> EINTRÄGE" abgeleitet.
+
 ---
 
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
 | --- | --- |
-| **S2/S3 praktisch nachweisen** | braucht zwei echte Mitgliedskonten derselben Versammlung |
-| **D7 Mehrbenutzer-Konflikt** | dito; statisch belegt (siehe T39) |
+| ~~**S2/S3 praktisch nachweisen**~~ | ✅ **am 19. August 2026 gemessen — beide Befunde bestätigt.** Siehe T89. |
+| **D7 Mehrbenutzer-Konflikt** | die Voraussetzung ist seit T78 da (zwei Konten derselben Versammlung); statisch belegt (siehe T39), praktisch noch nicht |
 | **D4 echte Geräte** | das dokumentierte `pointercancel`-Verhalten ist nicht emulierbar |
 | **D5 fachliche Abnahme** | nur ein Koordinator kann beurteilen, ob die Abläufe stimmen |
 | **B4 Übersetzungswortlaut** | Abgleich mit jw.org je Sprache |
@@ -3402,15 +3647,21 @@ nur eben einer, der erst auffällt, wenn jemand die Seite aufruft.
 
 ## Fortschritt
 
-Stand 17. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 19. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☑☑☑☑☑☐ ☑☑☑☑☑☐☑☑☑ · 16. August ☑☑☑☑☑☑☑
+15. August ☑☑☑☑☑☐ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑
 
-**87 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 2 offen:** T72
-(vom Betreiber zurückgestellt) und der Nachweis T78. **T63** ist am
+**89 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 offen:** T72
+(vom Betreiber zurückgestellt). **T78** ist am 19. August gemessen und
+bestanden — mit einer zweiten Versammlung als Testbestand, in beide
+Richtungen, Tabelle für Tabelle (siehe dort). Sie brachte zugleich **zwei
+Mitgliedskonten derselben Versammlung** und damit **T89**: S2 und S3 sind am
+selben Tag gemessen worden und **beide bestätigt** — die Lücke bei den
+Bestätigungen ist keine Lesart mehr, sondern ein Befund mit Beleg. Offen
+bleibt daraus D7. **T63** ist am
 17. August fachlich geklärt und in beiden Teilen gebaut worden — eine
 allgemeine Terminart für die Woche und der Treffpunkt-Leiter als Freitext.
 **T88** ist am 17. August gehoben **und belegt** — der Lauf danach ist grün und
@@ -3520,7 +3771,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | --- | --- | --- |
 | **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
 | **Phase 6** | — | **T63** ist am 17. August geklärt und gebaut: eine allgemeine Terminart für die Woche, dazu der Treffpunkt-Leiter als Freitext. Die abweichenden Treffpunkt-Zeiten der Dienstwoche konnte die App schon. |
-| **15. August** | T72, T78 | Ein Vorhaben (Abwesenheiten) und der Mandanten-Nachweis. T67–T71 und T73–T81 sind erledigt; T72 ist ausdrücklich erst zu überlegen, T78 wird erst mit einer zweiten Versammlung prüfbar. |
+| **15. August** | T72 | Nur noch das Vorhaben „Abwesenheiten" — es ist ausdrücklich erst zu überlegen. T67–T71 und T73–T81 sind erledigt. |
+| **19. August** | — | **T78** ist gemessen und bestanden: zweite Versammlung als Testbestand angelegt, Trennung in beide Richtungen und über alle 14 Tabellen mit RLS geprüft — mit dem anon-Key, nicht mit der Service-Role. Darauf **T89**: S2 und S3 gemessen, beide bestätigt. Nebenbei entstand der Wächter `no-undef` im Lint. |
 | **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu und ist am 17. August gehoben und belegt. |
 | **17. August** | — | **T79** ist mit der Entscheidung des Betreibers geschlossen: Ein neu angelegter Hilfsdienst startet weiter mit „niemand freigegeben". Zu ändern war daran nichts. Ebenso der **Rest von T33**: die Wortlaute für „Schlusslied" sind an einer echten Parallelquelle gemessen — 26 Sprachen geben ihn her, 8 nicht, Französisch gar nicht. `SONG_WORD` bleibt. |
 

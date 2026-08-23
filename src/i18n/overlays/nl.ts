@@ -49,6 +49,7 @@ export default {
   "grundPh": "bijv. vakantie",
   "abwEintragen": "AFWEZIGHEID TOEVOEGEN",
   "deineEintraege": "JOUW INVOER",
+  "eintraege": "INVOER",
   "ohneAngabe": "Geen reden",
   "keineAbw": "Geen afwezigheden ingevoerd.",
   "profil": "PROFIEL",

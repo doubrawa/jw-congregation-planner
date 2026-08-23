@@ -236,6 +236,22 @@ const KATALOG = [
     ersetzen: "  return ersteZahl(item.meta ?? '')",
   },
 
+  // ── Abwesenheiten ─────────────────────────────────────────────────────────
+  {
+    id: 'abwesenheit-gehoert-der-person',
+    datei: 'src/aufgaben/AufgabenScreen.tsx',
+    regel: '„Deine Einträge" hängen an der Person, nicht am Ersteller.',
+    suchen: 'a.personId != null ? a.personId === state.personId : a.userId === state.userId,',
+    ersetzen: 'a.userId === state.userId || a.personId === state.personId,',
+  },
+  {
+    id: 'abwesenheit-person-aus-datensatz',
+    datei: 'src/app/persist.ts',
+    regel: 'Gespeichert wird die Person der Abwesenheit — nicht die des Angemeldeten.',
+    suchen: 'saveAbsence(congId, action.absence)',
+    ersetzen: 'saveAbsence(congId, { ...action.absence, personId: next.personId })',
+  },
+
   // ── Treffpunkte ───────────────────────────────────────────────────────────
   {
     id: 'fs-gruppe-zuerst',
@@ -281,11 +297,26 @@ const KATALOG = [
   },
 
   {
+    id: 'fs-fremde-gruppe',
+    datei: 'src/data/fs.ts',
+    regel: 'Einen Gruppentreffpunkt sieht nur, wer zu der Gruppe gehört oder sie leitet.',
+    suchen: "  return insts.filter((inst) => inst.grp === '' || meine.has(inst.grp))",
+    ersetzen: '  return [...insts]',
+  },
+  {
+    id: 'fs-anzeige-fragt-sichtbarkeit',
+    datei: 'src/programm/FsProgram.tsx',
+    regel: 'Die Treffpunkt-Anzeige liest gefiltert aus der Woche, nicht roh (der Aufrufer).',
+    suchen: '  const insts = fsVisible(',
+    ersetzen: '  const insts = ((roh: FsInstance[]) => roh)(',
+  },
+
+  {
     id: 'fs-kandidaten-wochentag',
     datei: 'src/planen/kandidaten.ts',
     regel: '„Schon heute" meint den Wochentag DIESES Treffpunkts, nicht die ganze Woche.',
-    suchen: 'if (o.id === sel.instId || o.wd !== inst.wd || o.leader !== name) continue',
-    ersetzen: 'if (o.id === sel.instId || o.leader !== name) continue',
+    suchen: 'if (o.id === sel.instId || o.wd !== inst.wd || o.lext || o.leader !== name) continue',
+    ersetzen: 'if (o.id === sel.instId || o.lext || o.leader !== name) continue',
   },
 
   // ── Zwischenablage ────────────────────────────────────────────────────────

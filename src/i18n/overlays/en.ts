@@ -56,6 +56,7 @@ export default {
   "datumPh": "Select date",
   "abwEintragen": "ADD ABSENCE",
   "deineEintraege": "YOUR ENTRIES",
+  "eintraege": "ENTRIES",
   "ohneAngabe": "No reason given",
   "keineAbw": "No absences recorded.",
   "profil": "PROFILE",

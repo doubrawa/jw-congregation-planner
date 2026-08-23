@@ -49,6 +49,7 @@ export default {
   "grundPh": "hal. bakasyon",
   "abwEintragen": "MAGDAGDAG NG PAGLIBAN",
   "deineEintraege": "MGA ENTRY MO",
+  "eintraege": "MGA ENTRY",
   "ohneAngabe": "Walang dahilan",
   "keineAbw": "Walang nakatalang pagliban.",
   "profil": "PROFILE",

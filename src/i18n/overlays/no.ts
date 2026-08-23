@@ -49,6 +49,7 @@ export default {
   "grundPh": "f.eks. ferie",
   "abwEintragen": "LEGG TIL FRAVÆR",
   "deineEintraege": "DINE OPPFØRINGER",
+  "eintraege": "OPPFØRINGER",
   "ohneAngabe": "Ingen årsak",
   "keineAbw": "Ingen fravær registrert.",
   "profil": "PROFIL",

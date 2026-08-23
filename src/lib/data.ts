@@ -88,7 +88,7 @@ interface WeekRow {
 interface AbsenceRow {
   id: string
   person_id: string | null
-  user_id: string
+  user_id: string | null // NULL = importiert (migration-021)
   from_date: string
   to_date: string
   reason: string
@@ -1293,19 +1293,25 @@ export function deletePushSubscription(endpoint: string): void {
   void run(supabase.from('push_subscriptions').delete().eq('endpoint', endpoint))
 }
 
-export function saveAbsence(
-  congregationId: string,
-  userId: string,
-  personId: string | null,
-  absence: Absence,
-): void {
+/**
+ * Abwesenheit anlegen.
+ *
+ * Ersteller und betroffene Person kommen **aus dem Datensatz**, nicht von
+ * außen. Sie standen bis August 2026 als eigene Parameter daneben, und der
+ * einzige Aufrufer füllte sie aus dem angemeldeten Konto — was stimmte, solange
+ * jeder nur seine eigenen erfassen konnte. Seit der Planer sie im Personen-
+ * Detail für **andere** einträgt, wäre das falsch: Die Zeile landete auf seiner
+ * Person statt auf der gemeinten, und niemand sähe es. Ein Datensatz, der beide
+ * Angaben schon trägt, darf sie nicht ein zweites Mal übergeben bekommen.
+ */
+export function saveAbsence(congregationId: string, absence: Absence): void {
   if (!supabase) return
   void run(
     supabase.from('absences').insert({
       id: absence.id,
       congregation_id: congregationId,
-      user_id: userId,
-      person_id: personId,
+      user_id: absence.userId,
+      person_id: absence.personId,
       from_date: absence.from,
       to_date: absence.to,
       reason: absence.reason,

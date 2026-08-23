@@ -49,6 +49,7 @@ export default {
   "grundPh": "π.χ. διακοπές",
   "abwEintragen": "ΠΡΟΣΘΗΚΗ ΑΠΟΥΣΙΑΣ",
   "deineEintraege": "ΟΙ ΚΑΤΑΧΩΡΙΣΕΙΣ ΣΑΣ",
+  "eintraege": "ΚΑΤΑΧΩΡΙΣΕΙΣ",
   "ohneAngabe": "Χωρίς λόγο",
   "keineAbw": "Δεν έχουν καταχωριστεί απουσίες.",
   "profil": "ΠΡΟΦΙΛ",

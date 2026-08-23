@@ -49,6 +49,7 @@ export default {
   "grundPh": "mf. likizo",
   "abwEintragen": "ONGEZA KUTOKUWEPO",
   "deineEintraege": "MAINGIZO YAKO",
+  "eintraege": "MAINGIZO",
   "ohneAngabe": "Hakuna sababu",
   "keineAbw": "Hakuna kutokuwepo kulikorekodiwa.",
   "profil": "WASIFU",

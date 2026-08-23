@@ -28,14 +28,15 @@ dadurch bleiben Bilder und App immer konsistent.
 
 ### Debug‑Hash (nur DEV, siehe `src/app/init.ts` → `parseDebugHash`)
 
-`#s=<screen>&tab=<mid|we|fs>&pl=<0|1>&p=<personId>&t=<theme>&l=<lang>&c=<congLang>`
+`#s=<screen>&tab=<mid|we|fs>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
 
 | Parameter | Bedeutung |
 | --- | --- |
 | `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `planen`, `personen`, `einstellungen`, `profil` |
 | `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Treffpunkte) |
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Planer |
-| `p`   | Person‑Id (setzt „DU"; auf der Personen‑Seite öffnet es das Detail) |
+| `p`   | **Ausgewählte** Person‑Id — auf der Personen‑Seite öffnet es deren Detail |
+| `me`  | **Angemeldete** Person‑Id: wessen App das hier ist. Davon hängt ab, was persönlich ist — der „DU"‑Chip, „Deine Einträge", und welche **Gruppentreffpunkte** überhaupt erscheinen (nur die der eigenen Gruppe) |
 | `t`   | Theme (z. B. `weiss` für die druckfreundliche Doku) |
 | `fs`  | Schriftgröße‑Faktor (`0.9`, `1`, `1.15`, `1.3`, `1.45`) — für Layout‑Tests bei großer Schrift |
 | `l` / `c` | App‑Sprache / Versammlungssprache |
@@ -53,10 +54,11 @@ Ende automatisch auf; du musst nichts extra tun.
 | `login.png` | `s=login` | beide |
 | `programm-woche.png` | `s=programm&tab=mid` | (Reserve) |
 | `programm-wochenende.png` | `s=programm&tab=we` | (Reserve) |
-| `programm-treffpunkte.png` | `s=programm&tab=fs` | beide |
+| `programm-treffpunkte.png` | `s=programm&tab=fs` | planer |
 | `verkuendiger-start.png` | `s=start&pl=0&p=p9` | verkuendiger |
 | `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&p=p9` | verkuendiger |
 | `verkuendiger-profil.png` | `s=profil&pl=0&p=p9` | verkuendiger |
+| `verkuendiger-treffpunkte.png` | `s=programm&tab=fs&pl=0&me=p9` | verkuendiger |
 | `planer-start.png` | `s=start` | planer |
 | `planer-aufgaben.png` | `s=aufgaben` | (Reserve) |
 | `planer-planen-woche.png` | `s=planen&tab=mid` | planer |

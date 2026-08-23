@@ -134,10 +134,29 @@ describe('Upsert-Schreiber (onConflict)', () => {
 })
 
 describe('Insert-Schreiber', () => {
-  it('saveAbsence → absences insert', () => {
-    saveAbsence('c1', 'u1', 'p1', { id: 'a1', personId: 'p1', userId: 'u1', from: '2026-01-01', to: '2026-01-02', reason: 'r' })
+  it('saveAbsence → absences insert, Person und Ersteller aus dem Datensatz', () => {
+    /*
+     * Beide standen bis August 2026 als eigene Parameter daneben — und der
+     * Aufrufer füllte sie aus dem angemeldeten Konto. Seit der Planer im
+     * Personen-Detail für **andere** einträgt, wäre das die falsche Person, ohne
+     * dass es auffiele. Deshalb hier ausdrücklich geprüft: geschrieben wird, was
+     * im Datensatz steht.
+     */
+    saveAbsence('c1', { id: 'a1', personId: 'p-fremd', userId: 'u1', from: '2026-01-01', to: '2026-01-02', reason: 'r' })
     expect(chain.from).toHaveBeenCalledWith('absences')
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'a1', from_date: '2026-01-01', to_date: '2026-01-02' }))
+    expect(chain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'a1', person_id: 'p-fremd', user_id: 'u1',
+        from_date: '2026-01-01', to_date: '2026-01-02',
+      }),
+    )
+  })
+
+  it('saveAbsence → importierte Abwesenheit ohne Ersteller bleibt ohne', () => {
+    // `user_id` null = importiert (migration-021). Ein hier eingesetztes Konto
+    // trüge die Zeile in dessen „Deine Einträge".
+    saveAbsence('c1', { id: 'a2', personId: 'p1', userId: null, from: '2026-02-01', to: '2026-02-02', reason: '' })
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'a2', user_id: null }))
   })
   it('saveInvite → invites insert', () => {
     saveInvite('c1', { id: 'i1', code: 'ABC', personId: 'p1', planner: false })

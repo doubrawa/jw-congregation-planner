@@ -1,5 +1,5 @@
 import { useApp } from '../app/context'
-import { fsDate, fsLeiterZuteilung } from '../data/fs'
+import { fsDate, fsLeiterZuteilung, fsVisible } from '../data/fs'
 import { gehoertZu } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -9,12 +9,22 @@ import type { FsInstance } from '../data/types'
  * Treffpunkte-Anzeige (Programm-Tab „Zusammenkünfte für den Predigtdienst"):
  * pro Tag eine gold getönte Karte mit Zeit · Versammlungs-/Gruppentreffpunkt ·
  * Ort und dem zugeteilten Leiter (DU-Chip beim angemeldeten Nutzer).
+ *
+ * Gezeigt wird nur, was den Leser angeht: die Versammlungstreffpunkte und die
+ * seiner eigenen Gruppe (`fsVisible`). Fremde Gruppentreffpunkte stünden hier
+ * sonst als Termine, zu denen niemand kommt.
  */
 export function FsProgram() {
   const { state } = useApp()
   const { t, tu } = useT()
   const me = state.persons.find((p) => p.id === state.personId)
-  const insts = state.fsWeeks[state.week] ?? []
+  const insts = fsVisible(
+    state.fsWeeks[state.week] ?? [],
+    state.persons,
+    state.groups,
+    state.personId,
+    state.planner,
+  )
 
   if (insts.length === 0) {
     return (

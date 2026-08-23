@@ -49,6 +49,7 @@ export default {
   "grundPh": "例如休假",
   "abwEintragen": "添加缺席",
   "deineEintraege": "你的记录",
+  "eintraege": "记录",
   "ohneAngabe": "未说明原因",
   "keineAbw": "没有缺席记录。",
   "profil": "个人资料",

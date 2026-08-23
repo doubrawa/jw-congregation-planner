@@ -561,11 +561,20 @@ export interface Service {
  * wer fehlt. `userId` bleibt daneben stehen, damit „Deine Einträge" im
  * persönlichen Bereich auch dann die eigenen zeigt, wenn das Konto noch keiner
  * Person zugeordnet ist (`personId` null).
+ *
+ * Umgekehrt gibt es seit dem NWS-Import Einträge ohne Konto (`userId` null),
+ * die nur über `personId` jemandem gehören — siehe dort.
  */
 export interface Absence {
   id: string
   personId: string | null // verknüpfte Person — nur damit zählt sie für die Planung
-  userId: string // Ersteller
+  /**
+   * Ersteller — oder `null` bei importierten Einträgen (migration-021): Ein
+   * Import kennt die Person, nicht das Konto, und die meisten Verkündiger haben
+   * gar keines. Für die Planung zählt ohnehin nur `personId`; `userId`
+   * entscheidet allein, wessen „Deine Einträge" den Eintrag zeigt.
+   */
+  userId: string | null
   from: string // ISO-Datum
   to: string // ISO-Datum
   reason: string // optional

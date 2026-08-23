@@ -54,6 +54,7 @@ export default {
   "grundPh": "مثلاً: إجازة",
   "abwEintragen": "تسجيل غياب",
   "deineEintraege": "إدخالاتك",
+  "eintraege": "إدخالات",
   "ohneAngabe": "دون ذكر السبب",
   "keineAbw": "لا توجد غيابات مسجّلة.",
   "profil": "الملف الشخصي",

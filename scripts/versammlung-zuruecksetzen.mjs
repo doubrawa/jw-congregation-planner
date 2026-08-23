@@ -19,6 +19,11 @@
  * über den **Personennamen** und stellt sie danach wieder her — unabhängig von
  * der Adresse.
  *
+ * Die **Abwesenheiten** sind hier bewusst dabei (ein Zurücksetzen setzt zurück),
+ * lassen sich danach aber wiederholen: `abwesenheiten-importieren.mjs` holt sie
+ * aus denselben NWS-Daten zurück. Der reine Personen-Neuaufbau
+ * (`build-personen-sql.mjs`) löscht sie dagegen **nicht** mehr.
+ *
  * **Was gelöscht wird:** alle Wochen, Bestätigungen, Mitteilungen, Abwesenheiten,
  * Push-Abos, materialisierten Treffpunkte (`fs_weeks`), Erinnerungs-Logs — und
  * die Personen und Gruppen, die anschließend aus dem Personen-Import-SQL mit

@@ -51,6 +51,7 @@ export default {
   "datumPh": "انتخاب تاریخ",
   "abwEintragen": "افزودن غیبت",
   "deineEintraege": "ثبت‌های شما",
+  "eintraege": "ثبت‌ها",
   "ohneAngabe": "بدون ذکر دلیل",
   "keineAbw": "غیبتی ثبت نشده است.",
   "profil": "پروفایل",

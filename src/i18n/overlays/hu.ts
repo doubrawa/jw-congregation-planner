@@ -49,6 +49,7 @@ export default {
   "grundPh": "pl. szabadság",
   "abwEintragen": "TÁVOLLÉT HOZZÁADÁSA",
   "deineEintraege": "BEJEGYZÉSEID",
+  "eintraege": "BEJEGYZÉSEK",
   "ohneAngabe": "Nincs megadva",
   "keineAbw": "Nincs rögzített távollét.",
   "profil": "PROFIL",

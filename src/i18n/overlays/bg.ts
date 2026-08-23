@@ -49,6 +49,7 @@ export default {
   "grundPh": "напр. отпуск",
   "abwEintragen": "ДОБАВИ ОТСЪСТВИЕ",
   "deineEintraege": "ТВОИТЕ ЗАПИСИ",
+  "eintraege": "ЗАПИСИ",
   "ohneAngabe": "Без причина",
   "keineAbw": "Няма въведени отсъствия.",
   "profil": "ПРОФИЛ",

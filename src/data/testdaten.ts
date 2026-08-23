@@ -240,6 +240,11 @@ export const DEMO_ABSENCES: Absence[] = [
   { id: 'a3', personId: 'p10', userId: '', from: '2026-09-14', to: '2026-09-20', reason: 'Urlaub' },
   { id: 'a4', personId: 'p16', userId: '', from: '2026-09-21', to: '2026-09-27', reason: '' },
   { id: 'a5', personId: 'p11', userId: '', from: '2026-09-28', to: '2026-10-04', reason: 'Kongress' },
+  // Bewusst **außerhalb** der vier Demo-Wochen (7.9.–4.10.): Diese Abwesenheit
+  // zeigt die Karte im Personen-Detail (Doku-Screenshot), ohne eine Zuteilung
+  // zum Konflikt zu machen. Die Wochen davor prüfen die Planungsregeln, und die
+  // sollen von einer Anzeige nicht abhängen.
+  { id: 'a6', personId: 'p1', userId: '', from: '2026-11-02', to: '2026-11-06', reason: 'Besuch' },
 ]
 
 /**

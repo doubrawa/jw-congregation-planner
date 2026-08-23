@@ -49,6 +49,7 @@ export default {
   "grundPh": "npr. godišnji",
   "abwEintragen": "DODAJ IZOSTANAK",
   "deineEintraege": "TVOJI UNOSI",
+  "eintraege": "UNOSI",
   "ohneAngabe": "Bez razloga",
   "keineAbw": "Nema unesenih izostanaka.",
   "profil": "PROFIL",

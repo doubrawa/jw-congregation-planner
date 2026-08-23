@@ -49,6 +49,7 @@ export default {
   "grundPh": "vd. nghỉ phép",
   "abwEintragen": "THÊM VẮNG MẶT",
   "deineEintraege": "MỤC CỦA BẠN",
+  "eintraege": "MỤC",
   "ohneAngabe": "Không có lý do",
   "keineAbw": "Chưa ghi nhận vắng mặt.",
   "profil": "HỒ SƠ",

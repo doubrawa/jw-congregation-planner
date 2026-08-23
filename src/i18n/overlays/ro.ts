@@ -49,6 +49,7 @@ export default {
   "grundPh": "ex. concediu",
   "abwEintragen": "ADAUGĂ ABSENȚĂ",
   "deineEintraege": "ÎNREGISTRĂRILE TALE",
+  "eintraege": "ÎNREGISTRĂRI",
   "ohneAngabe": "Fără motiv",
   "keineAbw": "Nicio absență înregistrată.",
   "profil": "PROFIL",

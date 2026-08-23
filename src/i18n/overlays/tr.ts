@@ -49,6 +49,7 @@ export default {
   "grundPh": "örn. tatil",
   "abwEintragen": "YOKLUK EKLE",
   "deineEintraege": "KAYITLARINIZ",
+  "eintraege": "KAYITLAR",
   "ohneAngabe": "Neden belirtilmedi",
   "keineAbw": "Kayıtlı yokluk yok.",
   "profil": "PROFİL",

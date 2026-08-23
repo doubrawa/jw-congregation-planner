@@ -49,6 +49,7 @@ export default {
   "grundPh": "npr. godišnji",
   "abwEintragen": "DODAJ ODSUSTVO",
   "deineEintraege": "TVOJI UNOSI",
+  "eintraege": "UNOSI",
   "ohneAngabe": "Bez razloga",
   "keineAbw": "Nema unetih odsustava.",
   "profil": "PROFIL",

@@ -49,6 +49,7 @@ export default {
   "grundPh": "es. vacanze",
   "abwEintragen": "AGGIUNGI ASSENZA",
   "deineEintraege": "LE TUE VOCI",
+  "eintraege": "VOCI",
   "ohneAngabe": "Senza motivo",
   "keineAbw": "Nessuna assenza registrata.",
   "profil": "PROFILO",
