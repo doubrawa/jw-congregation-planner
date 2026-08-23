@@ -65,7 +65,7 @@ describe('parseKuratiert', () => {
     GRUPPE_ZEILE,
     PERSON_ZEILE,
     "insert into public.persons (id, congregation_id, fn, ln, dn, role, female, tel, mail, absent, priv, grp, fam) values " +
-      "('0279161b-80c9-4d0f-8500-f54c8dd62a9a', (select id from public.congregations limit 1), 'Philemon', 'Grünwald', '', " +
+      "('0279161b-80c9-4d0f-8500-f54c8dd62a9a', (select id from public.congregations limit 1), 'Jörg', 'Grünwald', '', " +
       "'dienstamtgehilfe', false, '', 'pweissbrodt@web.de', '{}', '{\"gebet\":true}'::jsonb, '7e11d338-7108-4114-94ab-b5dd413c0217', null);",
     "update public.groups set overseer_id = 'fffabbc7-a7c4-41d4-a116-e1ef8a5c338f', assistant_id = '01b5d280-c831-4b67-8bae-00e88d775441' where id = '74af963f-fb80-4604-b776-0da94c213311';",
     'commit;',
