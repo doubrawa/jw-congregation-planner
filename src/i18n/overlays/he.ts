@@ -51,6 +51,8 @@ export default {
   "datumPh": "בחר תאריך",
   "abwEintragen": "הוסף היעדרות",
   "deineEintraege": "הרשומות שלך",
+  "engpassTitle": "לא ניתן לאייש",
+  "engpassZeile": "{bereich} · נדרש {b} · זמינים {v} · נעדרים {a} מתוך {q}",
   "eintraege": "רשומות",
   "zeitleiste": "ציר זמן",
   "ohneAngabe": "ללא ציון סיבה",

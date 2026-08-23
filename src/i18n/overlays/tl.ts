@@ -49,6 +49,8 @@ export default {
   "grundPh": "hal. bakasyon",
   "abwEintragen": "MAGDAGDAG NG PAGLIBAN",
   "deineEintraege": "MGA ENTRY MO",
+  "engpassTitle": "HINDI MAPUPUNAN",
+  "engpassZeile": "{bereich} · kailangan {b} · available {v} · wala {a} sa {q}",
   "eintraege": "MGA ENTRY",
   "zeitleiste": "TIMELINE",
   "ohneAngabe": "Walang dahilan",

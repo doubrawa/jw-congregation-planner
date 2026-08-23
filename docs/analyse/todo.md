@@ -3780,6 +3780,39 @@ Fragen, die eine Idee beantworten sollte, bevor sie hier steht:
 Die Reihenfolge ist die Lehre aus T72: erst der Zweck, dann der Zuschnitt.
 Ein Dashboard „schöner machen" ohne Frage dahinter wird eine Kachelwand.
 
+### T96 · Warnen, wenn Plätze gar nicht besetzbar sind 🔧 ✅ erledigt
+**Vorgabe des Betreibers am 23. August 2026**, an die Stelle der
+Wochenübersicht aus T72 getreten und die bessere Frage: Nicht *wer* fehlt,
+sondern *was daraus folgt*. Wörtlich: „wenn es 10 Personen gibt, die Mikrofon
+machen können, 3 Mikrofonplätze besetzt werden müssen, aber von den 10 an einem
+Tag 8 nicht da sind — dann bleibt 1 Platz frei, weil gar nicht genügend Leute
+da sind."
+
+Ohne diesen Hinweis lässt die Auto-Zuteilung die Plätze **kommentarlos** offen,
+und warum, sieht man ihr nicht an. Der Planer sucht den Fehler bei sich.
+
+> **Erledigt.** `src/data/bedarf.ts` zählt je Bereich die Plätze der
+> Zusammenkunft (über **alle vier Platzsorten** — in `alle-plaetze.test.ts`
+> eingetragen) gegen die Qualifizierten, die an **diesem Tag** da sind. Das
+> Banner „NICHT BESETZBAR" steht im Planen zwischen den Konflikten und den
+> offenen Zuteilungen: Es erklärt einen Teil von deren Zahl, deshalb darüber.
+>
+> **Die Zahl ist eine Untergrenze, keine Vorhersage.** Wer für zwei Bereiche
+> taugt, zählt in beiden mit, obwohl er nur eine Aufgabe übernimmt — der
+> Engpass kann größer ausfallen als gemeldet, nie kleiner. Das ist die richtige
+> Richtung: Eine Warnung, die auch nur manchmal grundlos erscheint, wird
+> weggeklickt und dann auch dann übersehen, wenn sie stimmt. Gezählt werden
+> **alle** Plätze, nicht nur die offenen — sonst verschwände die Warnung,
+> sobald der Planer die zwei Verfügbaren einträgt, und der dritte Platz stünde
+> unerklärt da.
+>
+> **Beim Übersetzen aufgefallen:** Die erste Fassung war ein Satz („{b} Plätze,
+> {v} verfügbar"). „1 Plätze" ist schon im Deutschen falsch, und
+> Russisch/Polnisch/Kroatisch haben **drei** Pluralformen — in mindestens einem
+> Fall wäre jede der 34 Übersetzungen falsch gewesen, ohne dass es je jemand
+> meldet. Jetzt steht Beschriftung neben Zahl („nötig 3 · verfügbar 2 ·
+> abwesend 8 von 10"); die Form hat das Problem nicht.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -3812,9 +3845,9 @@ Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑ ☐
+22./23. August ☑☑☑☑☑☑ ☐
 
-**95 von 96 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+**96 von 97 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. Offen ist einer: **T95** (Ideen für den
 Start-Bildschirm), am 23. August nebenbei aufgenommen und ausdrücklich noch
 kein Bauauftrag. Zuletzt fielen die beiden

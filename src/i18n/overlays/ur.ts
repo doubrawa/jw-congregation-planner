@@ -51,6 +51,8 @@ export default {
   "datumPh": "تاریخ منتخب کریں",
   "abwEintragen": "غیر حاضری شامل کریں",
   "deineEintraege": "آپ کے اندراجات",
+  "engpassTitle": "تفویض ممکن نہیں",
+  "engpassZeile": "{bereich} · درکار {b} · دستیاب {v} · غیر حاضر {a}/{q}",
   "eintraege": "اندراجات",
   "zeitleiste": "ٹائم لائن",
   "ohneAngabe": "کوئی وجہ نہیں دی گئی",

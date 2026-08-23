@@ -49,6 +49,8 @@ export default {
   "grundPh": "例：休暇",
   "abwEintragen": "欠席を追加",
   "deineEintraege": "あなたの記録",
+  "engpassTitle": "割り当て不可",
+  "engpassZeile": "{bereich} · 必要 {b} · 可能 {v} · 不在 {a}/{q}",
   "eintraege": "記録",
   "zeitleiste": "タイムライン",
   "ohneAngabe": "理由なし",

@@ -51,6 +51,8 @@ export default {
   "datumPh": "انتخاب تاریخ",
   "abwEintragen": "افزودن غیبت",
   "deineEintraege": "ثبت‌های شما",
+  "engpassTitle": "قابل تعیین نیست",
+  "engpassZeile": "{bereich} · لازم {b} · در دسترس {v} · غایب {a} از {q}",
   "eintraege": "ثبت‌ها",
   "zeitleiste": "خط زمانی",
   "ohneAngabe": "بدون ذکر دلیل",

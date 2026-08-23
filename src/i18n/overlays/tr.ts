@@ -49,6 +49,8 @@ export default {
   "grundPh": "örn. tatil",
   "abwEintragen": "YOKLUK EKLE",
   "deineEintraege": "KAYITLARINIZ",
+  "engpassTitle": "DOLDURULAMAZ",
+  "engpassZeile": "{bereich} · gereken {b} · müsait {v} · yok {a}/{q}",
   "eintraege": "KAYITLAR",
   "zeitleiste": "ZAMAN ÇİZELGESİ",
   "ohneAngabe": "Neden belirtilmedi",

@@ -54,6 +54,8 @@ export default {
   "grundPh": "مثلاً: إجازة",
   "abwEintragen": "تسجيل غياب",
   "deineEintraege": "إدخالاتك",
+  "engpassTitle": "يتعذّر التعيين",
+  "engpassZeile": "{bereich} · المطلوب {b} · المتاح {v} · الغياب {a} من {q}",
   "eintraege": "إدخالات",
   "zeitleiste": "الجدول الزمني",
   "ohneAngabe": "دون ذكر السبب",

@@ -49,6 +49,8 @@ export default {
   "grundPh": "esim. loma",
   "abwEintragen": "LISÄÄ POISSAOLO",
   "deineEintraege": "MERKINTÄSI",
+  "engpassTitle": "EI VOIDA TÄYTTÄÄ",
+  "engpassZeile": "{bereich} · tarvitaan {b} · käytettävissä {v} · poissa {a}/{q}",
   "eintraege": "MERKINNÄT",
   "zeitleiste": "AIKAJANA",
   "ohneAngabe": "Ei syytä",

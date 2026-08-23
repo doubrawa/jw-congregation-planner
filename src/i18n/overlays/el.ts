@@ -49,6 +49,8 @@ export default {
   "grundPh": "π.χ. διακοπές",
   "abwEintragen": "ΠΡΟΣΘΗΚΗ ΑΠΟΥΣΙΑΣ",
   "deineEintraege": "ΟΙ ΚΑΤΑΧΩΡΙΣΕΙΣ ΣΑΣ",
+  "engpassTitle": "ΔΕΝ ΚΑΛΥΠΤΕΤΑΙ",
+  "engpassZeile": "{bereich} · απαιτούνται {b} · διαθέσιμοι {v} · απόντες {a} από {q}",
   "eintraege": "ΚΑΤΑΧΩΡΙΣΕΙΣ",
   "zeitleiste": "ΧΡΟΝΟΛΟΓΙΟ",
   "ohneAngabe": "Χωρίς λόγο",

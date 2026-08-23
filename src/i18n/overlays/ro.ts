@@ -49,6 +49,8 @@ export default {
   "grundPh": "ex. concediu",
   "abwEintragen": "ADAUGĂ ABSENȚĂ",
   "deineEintraege": "ÎNREGISTRĂRILE TALE",
+  "engpassTitle": "NU POATE FI ACOPERIT",
+  "engpassZeile": "{bereich} · necesare {b} · disponibili {v} · absenți {a} din {q}",
   "eintraege": "ÎNREGISTRĂRI",
   "zeitleiste": "CRONOLOGIE",
   "ohneAngabe": "Fără motiv",

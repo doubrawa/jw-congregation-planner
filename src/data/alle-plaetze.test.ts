@@ -34,6 +34,7 @@
  * ändert, prüft es in `supabase/functions/_test/send-reminders.test.ts`.
  */
 import { describe, expect, it } from 'vitest'
+import { bedarfJeBereich } from './bedarf'
 import { emptyQualifications, partWorkload, workloadOf } from './helpers'
 import {
   assignmentsInMeeting,
@@ -197,6 +198,22 @@ describe('Wer sieht einen offenen Platz?', () => {
   it('openSlotLabels nennt alle vier', () => {
     const offen = openSlotLabels(woche(false).mid, SERVICES)
     expect(offen.reduce((n, o) => n + o.n, 0)).toBe(ALLE.length)
+  })
+
+  it('bedarfJeBereich zählt alle vier (T96)', () => {
+    /*
+     * Der Bedarf entscheidet, ob gewarnt wird, dass Plätze offen bleiben
+     * müssen. Übersähe er die Zusätzliche Klasse, fehlten genau die Plätze in
+     * der Rechnung, die den Engpass ausmachen — und die Warnung bliebe aus,
+     * wo sie am nötigsten ist.
+     */
+    const bedarf = bedarfJeBereich(woche(false).mid, SERVICES)
+    // Hauptsaal + Klasse teilen sich den Bereich „schulung" (zwei Plätze),
+    // Ratgeber und Hilfsdienst haben je einen eigenen.
+    expect(bedarf.get('schulung')).toBe(2)
+    expect(bedarf.get('ratgeber')).toBe(1)
+    expect(bedarf.get('svc:mik')).toBe(1)
+    expect([...bedarf.values()].reduce((n, v) => n + v, 0)).toBe(ALLE.length)
   })
 })
 

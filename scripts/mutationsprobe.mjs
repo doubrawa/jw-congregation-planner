@@ -236,6 +236,22 @@ const KATALOG = [
     ersetzen: "  return ersteZahl(item.meta ?? '')",
   },
 
+  // ── Nicht besetzbar (Engpass) ─────────────────────────────────────────────
+  {
+    id: 'engpass-nur-wenn-sicher',
+    datei: 'src/data/bedarf.ts',
+    regel: 'Gewarnt wird erst, wenn WENIGER Leute da sind als Plätze — nicht schon bei gleich vielen.',
+    suchen: 'if (verfuegbar >= benoetigt) continue',
+    ersetzen: 'if (verfuegbar > benoetigt) continue',
+  },
+  {
+    id: 'engpass-zaehlt-abwesende-mit',
+    datei: 'src/data/bedarf.ts',
+    regel: 'Verfügbar ist, wer qualifiziert UND an diesem Tag da ist.',
+    suchen: 'const verfuegbar = qualifizierte.filter((p) => !istAbwesend(abwesend, p.id, wi, tab)).length',
+    ersetzen: 'const verfuegbar = qualifizierte.length',
+  },
+
   // ── Abwesenheiten ─────────────────────────────────────────────────────────
   {
     id: 'abwesenheit-gehoert-der-person',

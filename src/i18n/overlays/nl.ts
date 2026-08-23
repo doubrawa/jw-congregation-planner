@@ -49,6 +49,8 @@ export default {
   "grundPh": "bijv. vakantie",
   "abwEintragen": "AFWEZIGHEID TOEVOEGEN",
   "deineEintraege": "JOUW INVOER",
+  "engpassTitle": "NIET IN TE VULLEN",
+  "engpassZeile": "{bereich} · nodig {b} · beschikbaar {v} · afwezig {a} van {q}",
   "eintraege": "INVOER",
   "zeitleiste": "TIJDLIJN",
   "ohneAngabe": "Geen reden",

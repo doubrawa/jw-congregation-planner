@@ -49,6 +49,8 @@ export default {
   "grundPh": "npr. godišnji",
   "abwEintragen": "DODAJ IZOSTANAK",
   "deineEintraege": "TVOJI UNOSI",
+  "engpassTitle": "NE MOŽE SE POPUNITI",
+  "engpassZeile": "{bereich} · potrebno {b} · dostupno {v} · odsutno {a} od {q}",
   "eintraege": "UNOSI",
   "zeitleiste": "VREMENSKA CRTA",
   "ohneAngabe": "Bez razloga",

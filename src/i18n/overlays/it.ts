@@ -49,6 +49,8 @@ export default {
   "grundPh": "es. vacanze",
   "abwEintragen": "AGGIUNGI ASSENZA",
   "deineEintraege": "LE TUE VOCI",
+  "engpassTitle": "NON ASSEGNABILE",
+  "engpassZeile": "{bereich} · necessari {b} · disponibili {v} · assenti {a} su {q}",
   "eintraege": "VOCI",
   "zeitleiste": "CRONOLOGIA",
   "ohneAngabe": "Senza motivo",

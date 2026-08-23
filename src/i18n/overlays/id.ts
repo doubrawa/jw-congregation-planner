@@ -49,6 +49,8 @@ export default {
   "grundPh": "mis. liburan",
   "abwEintragen": "TAMBAH KETIDAKHADIRAN",
   "deineEintraege": "ENTRI ANDA",
+  "engpassTitle": "TIDAK BISA DIISI",
+  "engpassZeile": "{bereich} · dibutuhkan {b} · tersedia {v} · tidak hadir {a} dari {q}",
   "eintraege": "ENTRI",
   "zeitleiste": "LINIMASA",
   "ohneAngabe": "Tanpa alasan",

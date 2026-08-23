@@ -49,6 +49,8 @@ export default {
   "grundPh": "p. ej., vacaciones",
   "abwEintragen": "REGISTRAR AUSENCIA",
   "deineEintraege": "TUS REGISTROS",
+  "engpassTitle": "NO SE PUEDE CUBRIR",
+  "engpassZeile": "{bereich} · necesarios {b} · disponibles {v} · ausentes {a} de {q}",
   "eintraege": "REGISTROS",
   "zeitleiste": "CRONOLOGÍA",
   "ohneAngabe": "Sin motivo",

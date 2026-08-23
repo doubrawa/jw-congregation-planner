@@ -251,10 +251,23 @@ Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin:
   da, was so nicht bleiben kann; dass jemand mehrere Wochen hintereinander
   drankommt, meldet die App nicht mehr – in einer kleinen Versammlung ist das
   der Normalfall, und die Meldung verdeckte die wichtigen daneben.
+- **Nicht besetzbar** – Bereiche, in denen an diesem Tag **weniger Leute
+  verfügbar sind als Plätze zu besetzen**: „Mikrofone · nötig 3 · verfügbar 2 ·
+  abwesend 8 von 10". Die Zahl oben rechts sagt, wie viele Plätze deshalb offen
+  bleiben *müssen*. Das ist kein Rückstand, sondern eine Grenze — die
+  automatische Zuteilung lässt diese Plätze kommentarlos leer, und ohne den
+  Hinweis suchst du den Fehler bei dir.
 - **Offene Zuteilungen** – noch unbesetzte Programmpunkte und Hilfsdienste,
   gebündelt aufgelistet.
 
 So siehst du auf einen Blick, was vor der Zusammenkunft noch zu erledigen ist.
+
+> Die Rechnung ist **vorsichtig**: Gezählt wird je Bereich einzeln, und wer für
+> zwei Bereiche taugt, zählt in beiden mit — obwohl er an dem Tag nur eine
+> Aufgabe übernimmt. Der Engpass kann also größer ausfallen als gemeldet, nie
+> kleiner. Lieber eine Warnung zu wenig als eine grundlose: Eine, die auch nur
+> manchmal ohne Anlass erscheint, klickt man weg — und übersieht sie dann auch,
+> wenn sie stimmt.
 
 Die genannten Zuteilungen **heben sich im Programm darunter ab** – kräftiger
 Rand und ein Punkt davor, wie ihn auch jede Zeile im Banner trägt; in beiden

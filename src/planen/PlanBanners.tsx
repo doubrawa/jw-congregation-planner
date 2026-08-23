@@ -5,11 +5,14 @@
  */
 
 import { useApp } from '../app/context'
+import { useAbwesend } from '../app/useAbwesend'
+import { engpaesse, offenTrotzAllem } from '../data/bedarf'
 import { fsDate, fsWeekConflicts } from '../data/fs'
-import { istAusgefallen } from '../data/helpers'
+import { istAusgefallen, serviceQualKey } from '../data/helpers'
 import { openSlotLabels, type Conflict } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
-import type { MeetingKey, MeetingTab } from '../data/types'
+import { privLabel } from '../personen/priv-label'
+import type { MeetingKey, MeetingTab, QualificationKey } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -146,6 +149,66 @@ export function OpenSlotsBanner({ tab, tpw }: { tab: MeetingKey; tpw: (s: string
                 zusammengesetzt (siehe OpenSlot.rolle). */}
             {slot.rolle ? ` · ${tu(slot.rolle)}` : ''}
             {slot.n > 1 ? ` ×${slot.n}` : ''}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * **Was gar nicht besetzbar ist** — nicht zu verwechseln mit „offene
+ * Zuteilungen" darüber. Die sagen, was der Planer noch nicht getan hat; hier
+ * steht, was er auch nicht tun *kann*: Für diesen Bereich sind an diesem Tag
+ * weniger Leute da als Plätze zu besetzen sind.
+ *
+ * Ohne den Hinweis sucht er den Fehler bei sich oder bei der Auto-Zuteilung —
+ * die lässt die Plätze nämlich kommentarlos offen, und warum, sieht man ihr
+ * nicht an. Deshalb nennt jede Zeile auch den Grund: „8 von 10 fehlen".
+ *
+ * Steht **über** dem Offene-Zuteilungen-Banner: Es erklärt einen Teil von
+ * dessen Zahl, und die Erklärung gehört vor die Aufzählung.
+ */
+export function EngpassBanner({ tab }: { tab: MeetingKey }) {
+  const { state } = useApp()
+  const { t, tu } = useT()
+  const abwesend = useAbwesend()
+  const rawWeek = state.weeks[state.week]
+  if (!rawWeek) return null
+  if (istAusgefallen(rawWeek, tab)) return null // entfällt → nichts zu besetzen (T30)
+
+  const treffer = engpaesse(rawWeek[tab], state.services, state.persons, abwesend, state.week, tab)
+  if (treffer.length === 0) return null
+
+  /**
+   * Beschriftung eines Bereichs: der Name des Hilfsdienstes, wie ihn die
+   * Versammlung angelegt hat (`tu`, denn er ist Datum, kein UI-Text), sonst
+   * die feste Bereichs-Beschriftung aus dem Wörterbuch.
+   */
+  const bereichName = (key: string): string => {
+    const svc = state.services.find((s) => serviceQualKey(s.key) === key)
+    if (svc) return tu(svc.name)
+    return privLabel(t, key as QualificationKey)
+  }
+
+  return (
+    <div className="plan-engpass">
+      <div className="plan-banner-head">
+        <span className="plan-banner-badge">!</span>
+        <span className="plan-banner-title">{t.engpassTitle}</span>
+        <span className="plan-banner-count">{offenTrotzAllem(treffer)}</span>
+      </div>
+      {treffer.map((e) => (
+        <div key={e.key} className="plan-conflict-row">
+          <span className="plan-conflict-dot" data-kind="engpass" />
+          <span className="plan-conflict-text">
+            {fill(t.engpassZeile, {
+              bereich: bereichName(e.key),
+              b: e.benoetigt,
+              v: e.verfuegbar,
+              a: e.qualifiziert - e.verfuegbar,
+              q: e.qualifiziert,
+            })}
           </span>
         </div>
       ))}

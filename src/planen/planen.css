@@ -195,6 +195,32 @@
   background: var(--wein);
 }
 
+/* „Nicht besetzbar": Rahmen wie das Offene-Zuteilungen-Banner darunter — es
+   erklärt einen Teil von dessen Zahl —, aber in der Warnfarbe der Konflikte,
+   denn hier ist nichts mehr zu tun. Es ist kein Rückstand, sondern eine
+   Grenze. */
+.plan-engpass {
+  margin-top: 12px;
+  background: var(--tAcc);
+  border: 1.5px solid var(--wein);
+  border-radius: 14px;
+  padding: 12px 14px 13px;
+  box-shadow: 0 3px 12px -6px var(--wein);
+}
+
+.plan-engpass .plan-banner-badge,
+.plan-engpass .plan-banner-count {
+  background: var(--wein);
+}
+
+.plan-engpass .plan-banner-title {
+  color: var(--wein);
+}
+
+.plan-conflict-dot[data-kind='engpass'] {
+  background: var(--wein);
+}
+
 .plan-conflict-dot[data-kind='double'] {
   background: var(--gld);
 }

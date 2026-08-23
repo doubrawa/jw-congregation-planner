@@ -49,6 +49,8 @@ export default {
   "grundPh": "f.eks. ferie",
   "abwEintragen": "LEGG TIL FRAVÆR",
   "deineEintraege": "DINE OPPFØRINGER",
+  "engpassTitle": "KAN IKKE BESETTES",
+  "engpassZeile": "{bereich} · nødvendig {b} · tilgjengelige {v} · borte {a} av {q}",
   "eintraege": "OPPFØRINGER",
   "zeitleiste": "TIDSLINJE",
   "ohneAngabe": "Ingen årsak",

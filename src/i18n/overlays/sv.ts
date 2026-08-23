@@ -49,6 +49,8 @@ export default {
   "grundPh": "t.ex. semester",
   "abwEintragen": "LÄGG TILL FRÅNVARO",
   "deineEintraege": "DINA POSTER",
+  "engpassTitle": "GÅR INTE ATT TILLSÄTTA",
+  "engpassZeile": "{bereich} · behövs {b} · tillgängliga {v} · borta {a} av {q}",
   "eintraege": "POSTER",
   "zeitleiste": "TIDSLINJE",
   "ohneAngabe": "Ingen orsak",

@@ -51,6 +51,11 @@ export const DE = {
     von: 'VON', bis: 'BIS', grundOpt: 'GRUND (OPTIONAL)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',
     abwEintragen: 'ABWESENHEIT EINTRAGEN', deineEintraege: 'DEINE EINTRÄGE', ohneAngabe: 'Ohne Angabe',
+    // Warnung im Planen: Für diesen Bereich sind an dem Tag weniger Leute da
+    // als Plätze. Der Zähler im Kopf nennt die Plätze, die offen bleiben
+    // MÜSSEN — anders als „offene Zuteilungen", die nur noch nicht getan sind.
+    engpassTitle: 'NICHT BESETZBAR',
+    engpassZeile: '{bereich} · nötig {b} · verfügbar {v} · abwesend {a} von {q}',
     // „EINTRÄGE" ohne „Deine": im Personen-Detail geht es um jemand anderen.
     eintraege: 'EINTRÄGE',
     // Überschrift der Leiste im Personen-Detail. Sie hieß „AUFGABEN", zeigt

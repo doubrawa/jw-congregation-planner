@@ -49,6 +49,8 @@ export default {
   "grundPh": "напр. отпуск",
   "abwEintragen": "ДОБАВИТЬ ОТСУТСТВИЕ",
   "deineEintraege": "ВАШИ ЗАПИСИ",
+  "engpassTitle": "НЕВОЗМОЖНО НАЗНАЧИТЬ",
+  "engpassZeile": "{bereich} · нужно {b} · доступно {v} · отсутствуют {a} из {q}",
   "eintraege": "ЗАПИСИ",
   "zeitleiste": "ХРОНОЛОГИЯ",
   "ohneAngabe": "Без причины",

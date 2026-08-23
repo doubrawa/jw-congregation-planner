@@ -56,6 +56,8 @@ export default {
   "datumPh": "Select date",
   "abwEintragen": "ADD ABSENCE",
   "deineEintraege": "YOUR ENTRIES",
+  "engpassTitle": "CANNOT BE FILLED",
+  "engpassZeile": "{bereich} · needed {b} · available {v} · away {a} of {q}",
   "eintraege": "ENTRIES",
   "zeitleiste": "TIMELINE",
   "ohneAngabe": "No reason given",

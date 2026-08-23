@@ -49,6 +49,8 @@ export default {
   "grundPh": "napr. dovolenka",
   "abwEintragen": "PRIDAŤ NEPRÍTOMNOSŤ",
   "deineEintraege": "VAŠE ZÁZNAMY",
+  "engpassTitle": "NEDÁ SA OBSADIŤ",
+  "engpassZeile": "{bereich} · potrebné {b} · k dispozícii {v} · chýba {a} z {q}",
   "eintraege": "ZÁZNAMY",
   "zeitleiste": "ČASOVÁ OS",
   "ohneAngabe": "Bez dôvodu",

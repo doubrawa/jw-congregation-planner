@@ -49,6 +49,8 @@ export default {
   "grundPh": "p. ex. vacances",
   "abwEintragen": "AJOUTER UNE ABSENCE",
   "deineEintraege": "TES SAISIES",
+  "engpassTitle": "IMPOSSIBLE À POURVOIR",
+  "engpassZeile": "{bereich} · requis {b} · disponibles {v} · absents {a} sur {q}",
   "eintraege": "SAISIES",
   "zeitleiste": "CHRONOLOGIE",
   "ohneAngabe": "Sans précision",

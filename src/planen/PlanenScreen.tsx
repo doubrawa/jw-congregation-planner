@@ -8,7 +8,7 @@ import { istAusgefallen, overseerGroup } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
 import type { MeetingKey } from '../data/types'
 import { fill, useProgWeek, useT } from '../i18n/useT'
-import { ConflictsBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
+import { ConflictsBanner, EngpassBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
 import { FsPlan } from './FsPlan'
@@ -125,6 +125,10 @@ function PlanenBody() {
           {mtab === 'mid' && <S89Bogen />}
 
           <ConflictsBanner tab={mtab} />
+          {/* Über den offenen Zuteilungen: Das Banner erklärt einen Teil ihrer
+              Zahl — die Plätze, die offen bleiben MÜSSEN, weil zu wenige da
+              sind. Die Erklärung gehört vor die Aufzählung. */}
+          <EngpassBanner tab={mtab} />
           <OpenSlotsBanner tab={mtab} tpw={tpw} />
 
           {/* Die Sprachvariante ist strukturgleich zur kanonischen Woche

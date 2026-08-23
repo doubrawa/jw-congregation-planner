@@ -49,6 +49,8 @@ export default {
   "grundPh": "f.eks. ferie",
   "abwEintragen": "TILFØJ FRAVÆR",
   "deineEintraege": "DINE POSTER",
+  "engpassTitle": "KAN IKKE BESÆTTES",
+  "engpassZeile": "{bereich} · nødvendige {b} · tilgængelige {v} · fraværende {a} af {q}",
   "eintraege": "POSTER",
   "zeitleiste": "TIDSLINJE",
   "ohneAngabe": "Ingen årsag",

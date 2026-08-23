@@ -49,6 +49,8 @@ export default {
   "grundPh": "pl. szabadság",
   "abwEintragen": "TÁVOLLÉT HOZZÁADÁSA",
   "deineEintraege": "BEJEGYZÉSEID",
+  "engpassTitle": "NEM TÖLTHETŐ BE",
+  "engpassZeile": "{bereich} · szükséges {b} · elérhető {v} · hiányzik {a} / {q}",
   "eintraege": "BEJEGYZÉSEK",
   "zeitleiste": "IDŐVONAL",
   "ohneAngabe": "Nincs megadva",

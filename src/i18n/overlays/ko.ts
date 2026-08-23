@@ -49,6 +49,8 @@ export default {
   "grundPh": "예: 휴가",
   "abwEintragen": "결석 추가",
   "deineEintraege": "내 기록",
+  "engpassTitle": "배정 불가",
+  "engpassZeile": "{bereich} · 필요 {b} · 가능 {v} · 부재 {a}/{q}",
   "eintraege": "기록",
   "zeitleiste": "타임라인",
   "ohneAngabe": "이유 없음",

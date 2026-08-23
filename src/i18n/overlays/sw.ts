@@ -49,6 +49,8 @@ export default {
   "grundPh": "mf. likizo",
   "abwEintragen": "ONGEZA KUTOKUWEPO",
   "deineEintraege": "MAINGIZO YAKO",
+  "engpassTitle": "HAIWEZI KUJAZWA",
+  "engpassZeile": "{bereich} · zinahitajika {b} · wanaopatikana {v} · hawapo {a} kati ya {q}",
   "eintraege": "MAINGIZO",
   "zeitleiste": "RATIBA YA MUDA",
   "ohneAngabe": "Hakuna sababu",

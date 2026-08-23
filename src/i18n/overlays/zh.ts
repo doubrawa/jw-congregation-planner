@@ -49,6 +49,8 @@ export default {
   "grundPh": "例如休假",
   "abwEintragen": "添加缺席",
   "deineEintraege": "你的记录",
+  "engpassTitle": "无法安排",
+  "engpassZeile": "{bereich} · 需要 {b} · 可用 {v} · 缺席 {a}/{q}",
   "eintraege": "记录",
   "zeitleiste": "时间线",
   "ohneAngabe": "未说明原因",

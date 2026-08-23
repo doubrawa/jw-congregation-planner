@@ -49,6 +49,8 @@ export default {
   "grundPh": "vd. nghỉ phép",
   "abwEintragen": "THÊM VẮNG MẶT",
   "deineEintraege": "MỤC CỦA BẠN",
+  "engpassTitle": "KHÔNG THỂ SẮP XẾP",
+  "engpassZeile": "{bereich} · cần {b} · có mặt {v} · vắng {a}/{q}",
   "eintraege": "MỤC",
   "zeitleiste": "DÒNG THỜI GIAN",
   "ohneAngabe": "Không có lý do",

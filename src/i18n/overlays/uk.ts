@@ -49,6 +49,8 @@ export default {
   "grundPh": "напр. відпустка",
   "abwEintragen": "ДОДАТИ ВІДСУТНІСТЬ",
   "deineEintraege": "ВАШІ ЗАПИСИ",
+  "engpassTitle": "НЕМОЖЛИВО ПРИЗНАЧИТИ",
+  "engpassZeile": "{bereich} · потрібно {b} · доступно {v} · відсутні {a} з {q}",
   "eintraege": "ЗАПИСИ",
   "zeitleiste": "ХРОНОЛОГІЯ",
   "ohneAngabe": "Без причини",

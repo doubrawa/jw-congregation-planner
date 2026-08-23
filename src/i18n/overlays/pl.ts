@@ -49,6 +49,8 @@ export default {
   "grundPh": "np. urlop",
   "abwEintragen": "DODAJ NIEOBECNOŚĆ",
   "deineEintraege": "TWOJE WPISY",
+  "engpassTitle": "NIE DO OBSADZENIA",
+  "engpassZeile": "{bereich} · potrzeba {b} · dostępnych {v} · nieobecnych {a} z {q}",
   "eintraege": "WPISY",
   "zeitleiste": "OŚ CZASU",
   "ohneAngabe": "Bez podania",

@@ -49,6 +49,8 @@ export default {
   "grundPh": "p. ex. férias",
   "abwEintragen": "ADICIONAR AUSÊNCIA",
   "deineEintraege": "OS SEUS REGISTOS",
+  "engpassTitle": "NÃO É POSSÍVEL PREENCHER",
+  "engpassZeile": "{bereich} · necessários {b} · disponíveis {v} · ausentes {a} de {q}",
   "eintraege": "REGISTOS",
   "zeitleiste": "CRONOLOGIA",
   "ohneAngabe": "Sem motivo",
