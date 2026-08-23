@@ -3758,6 +3758,28 @@ behielten.
 > Abwesenheiten gerettet werden. Ohne das verlöre jeder Ohne-Konto-Admin sein
 > Recht bei jedem Personen-Import, still.
 
+### T95 · Start-Bildschirm: Ideen sammeln 🔧 ☐ offen
+Vom Betreiber am 23. August 2026 nebenbei aufgenommen: **Ideen für eine bessere
+Dashboard-Ansicht.** Ausdrücklich noch kein Auftrag zu bauen — erst sammeln.
+
+Was heute darauf steht: Begrüßung mit Datum, die **nächste eigene Aufgabe** als
+Hero-Karte (mit Bestätigen/Öffnen), zwei Kacheln (offene Zuteilungen, mögliche
+Konflikte), die aktuelle Woche und für Planer ein Sprung ins Planen.
+
+Fragen, die eine Idee beantworten sollte, bevor sie hier steht:
+
+- **Für wen?** Verkündiger und Planer sehen denselben Bildschirm, brauchen aber
+  Verschiedenes — der eine seine nächste Aufgabe, der andere den Stand der
+  Woche. Bisher ist es beides in einer Spalte.
+- **Was ist die Handlung?** Jede Kachel sollte zu etwas führen. „3 mögliche
+  Konflikte" tut das (Sprung ins Planen), eine reine Zahl täte es nicht.
+- **Was fehlt heute wirklich?** Kandidaten aus dem Betrieb: wie viele Wochen
+  noch geladen sind (der Import läuft nicht von selbst), wer diese Woche fehlt
+  (siehe T72), ob Erinnerungen rausgegangen sind.
+
+Die Reihenfolge ist die Lehre aus T72: erst der Zweck, dann der Zuschnitt.
+Ein Dashboard „schöner machen" ohne Frage dahinter wird eine Kachelwand.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -3790,10 +3812,12 @@ Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑
+22./23. August ☑☑☑☑☑ ☐
 
-**Alle 95 Punkte sind abgearbeitet** — erledigt oder mit Begründung als „kein
-Mangel" zurückgewiesen; offen ist keiner mehr. Zuletzt fielen die beiden
+**95 von 96 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. Offen ist einer: **T95** (Ideen für den
+Start-Bildschirm), am 23. August nebenbei aufgenommen und ausdrücklich noch
+kein Bauauftrag. Zuletzt fielen die beiden
 letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
 nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
 **T89** ist am 23. August mit migration-022 nicht nur gemessen, sondern
