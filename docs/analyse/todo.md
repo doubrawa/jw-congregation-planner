@@ -2838,7 +2838,7 @@ Partner-Zettel und dessen Abschalten, Aufteilung auf Blätter, Bedienung,
 Kennzeichen beim Drucken) — und am laufenden Stand als **PDF**: die Blätter
 zählen richtig, die Nachbarwochen sind nicht dabei.
 
-### T72 · Abwesenheiten als Zeitstrahl — erst zu überlegen 🏗 ⏸ zurückgestellt
+### T72 · Abwesenheiten als Zeitstrahl — erst zu überlegen 🏗 ✅ erledigt
 **Vorgabe des Betreibers, ausdrücklich als Überlegung** („das muss man noch
 überlegen"): eine Übersicht aller Abwesenheiten, eventuell als Zeitstrahl.
 
@@ -2851,6 +2851,20 @@ existiert: `PersonTimeline` zeigt die Zeitleiste einer einzelnen Person.
 > dem Zweck wurde vorgelegt (Planen-Ansicht, Verwaltungs-Liste oder beides) —
 > die Antwort lautet: noch nicht. Der Punkt bleibt offen, ohne dass etwas
 > daran gebaut wird; ein Zuschnitt auf Verdacht wäre die falsche Reihenfolge.
+
+> **Erledigt am 23. August 2026 — und die Reihenfolge hat sich gelohnt.** Die
+> Frage nach dem Zweck hat der Betrieb beantwortet, nicht die Überlegung: Erst
+> als 59 Abwesenheiten aus New World Scheduler in der App standen (T90), wurde
+> gefragt, wo man sie eigentlich sieht. Gebaut wurde daraufhin die
+> **Verwaltungs-Hälfte** — die Zeiträume stehen in der Zeitleiste des
+> Personen-Details, Beginn und Ende als eigene Punkte, die Strecke dazwischen
+> eingefärbt (T93). Genau der Baustein, der hier schon als vorhanden notiert
+> war.
+>
+> Die **Planungs-Hälfte** („wer fehlt diese Woche") ist damit nicht gebaut und
+> wird es vorerst nicht: „das passt erst mal so." Sie stünde als eigener Punkt
+> wieder auf, wenn sie im Betrieb vermisst wird — dann aber mit einem Zweck aus
+> der Erfahrung statt aus der Vermutung.
 
 ---
 
@@ -3425,7 +3439,7 @@ nur eben einer, der erst auffällt, wenn jemand die Seite aufruft.
 > ohne Fehler. Genau die Kette, deren Stillstand dieser Punkt verhindern
 > sollte.
 
-### T89 · S2 und S3 messen, nicht lesen 🔧 ✅ erledigt (19. August 2026)
+### T89 · S2 und S3 messen, nicht lesen 🔧 ✅ erledigt (gemessen 19.8., geschlossen 23.8.2026)
 Beide Befunde stammten aus dem Lesen der Richtlinien und standen seit dem
 7. August unter „Was bewusst offen bleibt" — der Nachweis brauchte **zwei
 Mitgliedskonten derselben Versammlung**. Seit T78 gibt es die.
@@ -3466,6 +3480,43 @@ dieser Person zugeteilt ist. Zu schließen wäre das in der Richtlinie (der
 steckt die Zuteilung allerdings im JSONB der Woche, was eine Prüfung in SQL
 teuer macht. Der Zuschnitt gehört mit dem Betreiber besprochen, bevor jemand
 eine Migration schreibt.
+
+> **Geschlossen am 23. August 2026 —
+> [migration-022](../../supabase/migration-022-nur-eigene-aufgaben-bestaetigen.sql).**
+> Der Betreiber hat den Zuschnitt entschieden („mach T89"), und die Prüfung ist
+> billiger als befürchtet: Der `task_key` **sagt selbst, wo die Zuteilung
+> steht** — Wochen-Kennung, Zusammenkunft und der Weg zum Platz. Nachgeschlagen
+> wird damit nur die **Speicherform** (`data->'mid'->'sections'->…`), nicht die
+> Fachregel; das Wissen wird also nicht in einer zweiten Sprache verdoppelt.
+> Teuer ist es auch nicht: Eine Bestätigung schreibt jemand ein paar Mal die
+> Woche, kein Massenpfad.
+>
+> `public.task_gehoert_mir(task_key)` kennt alle sechs Formen (Programmpunkt
+> mit stabiler Kennung und in der alten Position, beides auch für die
+> Zusätzliche Klasse, Ratgeber, Hilfsdienst, Treffpunkt), dazu die beiden
+> Speicherarten eines Hilfsdienst-Platzes (Objekt und Alt-String) und den
+> Namens-Rückfall für Plätze ohne `pid`. Ein **Freitext**-Leiter gehört
+> niemandem hier (T63) — ihn kann auch niemand bestätigen.
+>
+> **Unbekannte Formen bleiben ausdrücklich erlaubt.** Eine zu strenge
+> Richtlinie bräche das Bestätigen, und zwar fast lautlos — der Client schreibt
+> fire-and-forget. Ein Schlüssel, den die App liest, ist immer eine der sechs
+> Formen; eine erfundene trifft keinen Platz und bleibt wirkungslos. Damit ist
+> der schlimmste Ausgang „so offen wie bisher", nicht „App kaputt".
+>
+> Gegen das Rosten dieser Liste steht eine Vollständigkeitsprobe:
+> `src/data/task-key-formen.test.ts` liest die Schlüssel-Erzeuger im Quelltext
+> und wird rot, sobald eine Form dazukommt oder sich ändert — sonst fiele die
+> siebte still in den Durchlass.
+>
+> Die zweite Hälfte (S3) ist mitgeschlossen: Eine Mitteilung vom Typ
+> `verhindert` darf nur noch an **Planer** gehen, nicht mehr an beliebige
+> Mitglieder. Was bleibt und hier offen benannt sei: Ein Mitglied kann den
+> Planern eine erfundene Absage schicken. Dafür bräuchte die Mitteilung den
+> `task_key` — den setzt der Client an dieser Stelle noch nicht, und ihn
+> nachzurüsten hieße, die Reihenfolge zweier unabhängiger Schreibvorgänge zu
+> garantieren (beide laufen fire-and-forget). Der Rest-Schaden ist ein Planer,
+> der einmal nachfragt.
 
 ---
 
@@ -3700,26 +3751,41 @@ behielten.
 
 | Punkt | Warum |
 | --- | --- |
-| ~~**S2/S3 praktisch nachweisen**~~ | ✅ **am 19. August 2026 gemessen — beide Befunde bestätigt.** Siehe T89. |
+| ~~**S2/S3 praktisch nachweisen**~~ | ✅ **gemessen am 19., geschlossen am 23. August 2026** (migration-022). Siehe T89. |
 | **D7 Mehrbenutzer-Konflikt** | die Voraussetzung ist seit T78 da (zwei Konten derselben Versammlung); statisch belegt (siehe T39), praktisch noch nicht |
 | **D4 echte Geräte** | das dokumentierte `pointercancel`-Verhalten ist nicht emulierbar |
 | **D5 fachliche Abnahme** | nur ein Koordinator kann beurteilen, ob die Abläufe stimmen |
-| **B4 Übersetzungswortlaut** | Abgleich mit jw.org je Sprache |
-| **B6 Design-Soll-Ist** | erfordert Rendern und Vergleichen der Prototypen |
+
+**Vom Betreiber am 23. August 2026 gestrichen**, nicht vergessen:
+
+- **B4 Übersetzungswortlaut** — „das machen die Nutzer im Produktiveinsatz, das
+  kann ich nicht verifizieren." Der Abgleich beträfe ohnehin nur das
+  UI-Wörterbuch; die Programm-Inhalte kommen amtlich aus dem jw.org-Import. Und
+  der Präzedenzfall T33 zeigt den Aufwand: 34 Sprachfassungen für ein einziges
+  Wort, Ergebnis „gibt es nicht einheitlich".
+- **B6 Design-Soll-Ist** — „wir sind schon weit weg vom Prototyp und brauchen da
+  nichts mehr vergleichen." Der Handoff bleibt die Referenz für Tokens und
+  Bauteile, nicht mehr für den Bildvergleich.
 
 ---
 
 ## Fortschritt
 
-Stand 19. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 23. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
-15. August ☑☑☑☑☑☐ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑
+15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
+22./23. August ☑☑☑☑☑
 
-**89 umgesetzt, 3 als „kein Mangel" begründet zurückgewiesen, 1 offen:** T72
-(vom Betreiber zurückgestellt). **T78** ist am 19. August gemessen und
+**Alle 95 Punkte sind abgearbeitet** — erledigt oder mit Begründung als „kein
+Mangel" zurückgewiesen; offen ist keiner mehr. Zuletzt fielen die beiden
+letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
+nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
+**T89** ist am 23. August mit migration-022 nicht nur gemessen, sondern
+geschlossen. Am selben Tag hat der Betreiber **B4** und **B6** gestrichen
+(siehe „Was bewusst offen bleibt"). **T78** ist am 19. August gemessen und
 bestanden — mit einer zweiten Versammlung als Testbestand, in beide
 Richtungen, Tabelle für Tabelle (siehe dort). Sie brachte zugleich **zwei
 Mitgliedskonten derselben Versammlung** und damit **T89**: S2 und S3 sind am
