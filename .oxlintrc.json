@@ -2,8 +2,14 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "typescript", "oxc"],
   "ignorePatterns": ["docs/**", "dist/**"],
+  "env": { "browser": true, "node": true, "es2024": true },
+  "globals": {
+    "__BUILD_ID__": "readonly",
+    "clients": "readonly"
+  },
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-undef": "error"
   }
 }
