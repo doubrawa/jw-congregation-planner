@@ -71,8 +71,24 @@ export function PrivToggle({
 export function PlannerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
   const { state } = useApp()
   const { t } = useT()
-  const self = state.members.some((m) => m.personId === person.id && m.userId === state.userId)
-  const on = Boolean(person.planner)
+  /**
+   * Das Recht steht an **zwei** Stellen, und nur eine entscheidet.
+   *
+   * `persons.planner` ist die Vormerkung: Sie wird beim Einladen in den Code
+   * übernommen, damit jemand das Recht schon hat, wenn er sich anmeldet.
+   * Sobald ein Konto verknüpft ist, zählt aber `members.planner` — daran hängt
+   * `is_planner()` in der Datenbank und `state.planner` in der App.
+   *
+   * Angezeigt wurde bis August 2026 die Vormerkung. Das ging gut, solange beide
+   * gemeinsam entstanden; der Personen-Neuaufbau aus New World Scheduler
+   * schreibt die Spalte aber gar nicht mit. Seither stand sie bei allen auf
+   * `false`, während die Konten ihr Recht behielten: Der Betreiber sah bei sich
+   * selbst „Admin: aus" — und war Admin. Deshalb entscheidet hier jetzt das
+   * Konto, und die Vormerkung trägt nur noch, wo es keines gibt.
+   */
+  const konten = state.members.filter((m) => m.personId === person.id)
+  const self = konten.some((m) => m.userId === state.userId)
+  const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.planner)
   return (
     <div className={self ? 'priv-row priv-row--locked' : 'priv-row'}>
       <span className="priv-label">{t.planerLbl}</span>

@@ -245,6 +245,13 @@ const KATALOG = [
     ersetzen: 'a.userId === state.userId || a.personId === state.personId,',
   },
   {
+    id: 'admin-schalter-zeigt-wirksames-recht',
+    datei: 'src/personen/PrivToggle.tsx',
+    regel: 'Der Admin-Schalter zeigt das Recht des Kontos, nicht die Vormerkung an der Person.',
+    suchen: 'const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.planner)',
+    ersetzen: 'const on = Boolean(person.planner)',
+  },
+  {
     id: 'abwesenheit-person-aus-datensatz',
     datei: 'src/app/persist.ts',
     regel: 'Gespeichert wird die Person der Abwesenheit — nicht die des Angemeldeten.',

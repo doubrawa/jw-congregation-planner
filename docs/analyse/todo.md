@@ -3637,12 +3637,18 @@ selbst nicht.
 > der Leiste — zwei Punkte für Beginn und Ende, die Strecke dazwischen
 > eingefärbt. Was hineinfällt, sitzt sichtbar darin.
 >
-> Der Punkt trägt die kräftige Farbe (`--wein`), die Strecke die gedämpfte und
-> etwas breitere; zwei warme Töne auf gold getöntem Grund sind sonst kaum zu
-> unterscheiden (nachgemessen: `164,117,81` gegen `201,176,116` — zu wenig, die
-> Breite trägt hier mit). Gerechnet wird die Färbung nicht paarweise, sondern
-> mit einem Zähler offener Zeiträume: Bei zwei überlappenden hätte das erste
-> Ende die Farbe sonst abgeschaltet, obwohl der zweite noch läuft.
+> Der Punkt trägt die volle Farbe (`--wein`), die Strecke dieselbe leicht
+> gedämpft und etwas breiter. Die Dämpfung war zuerst zu stark: Über den gold
+> getönten Grund gemischt wandert Rot nach Braun und steht dann neben der
+> goldenen Grundlinie — zwei warme Töne, die man erst beim Hinsehen
+> unterscheidet (gemessen `164,117,81` gegen `201,176,116`; der Betreiber hat
+> es prompt gemeldet). Bei 85 % sind es `131,65,50` und damit ein klares Rot.
+> **Lehre:** Eine Farbe auf getöntem Grund ist nicht die Farbe, die im Token
+> steht — sie gehört am gerenderten Bild nachgemessen, nicht am Wert.
+>
+> Gerechnet wird die Färbung nicht paarweise, sondern mit einem Zähler offener
+> Zeiträume: Bei zwei überlappenden hätte das erste Ende die Farbe sonst
+> abgeschaltet, obwohl der zweite noch läuft.
 >
 > Die Ränder fassen den Tag ein — der Beginn steht vor den Zuteilungen seines
 > Tages, das Ende dahinter. Ohne diese Reihenfolge liefe die Strecke an einer
@@ -3652,6 +3658,41 @@ selbst nicht.
 > Sie führt jetzt beide Richtungen — wann jemand dran ist und wann er nicht
 > kann. Entfernt wird mit dem ✕ am Beginn; ohne das ließe sich ein Eintrag nur
 > noch anlegen, nie wieder löschen.
+>
+> **Dabei aufgefallen:** Die Blätter-Pfeile der Datumsauswahl saßen nicht mittig
+> im Kreis. `.dp-nav` zentrierte seinen Inhalt nicht — und das Chevron ist ein
+> `display:block`-SVG (Chevron.tsx), also ein Block-Kind, das an den Anfang der
+> Inhaltsbox rückt und auf das `text-align` nicht wirkt. Gemessen: 1 px links
+> gegen 18,3 px rechts, senkrecht mittig. `.week-arrow` hatte die drei
+> Flex-Zeilen von Anfang an, `.dp-nav` nie.
+
+### T94 · Der Admin-Schalter zeigte die falsche der zwei Wahrheiten 🔧 ✅ erledigt
+Der Betreiber fragte, warum „Admin" bei seinem eigenen Konto ausgegraut ist.
+Ausgegraut ist es mit Absicht — es ist die eigene Person, und niemand soll sich
+mit einem Fingertipp aussperren; dieselbe Grenze zieht die Datenbank
+(`members_delete` … `user_id <> auth.uid()`). Dass der Schalter dabei **aus**
+zeigte, war jedoch falsch: Er ist Admin.
+
+Das Recht steht an zwei Stellen. `persons.planner` ist die **Vormerkung** (wird
+beim Einladen in den Code übernommen, damit jemand das Recht ab der ersten
+Anmeldung hat); sobald ein Konto verknüpft ist, entscheidet `members.planner` —
+daran hängen `is_planner()` und `state.planner`. Angezeigt wurde die
+Vormerkung.
+
+Solange beide gemeinsam entstanden, fiel das nicht auf. Der Personen-Neuaufbau
+aus New World Scheduler schreibt die Spalte aber gar nicht mit — in
+`import-live-personen.sql` kommt das Wort `planner` **null Mal** vor. Seither
+stand sie bei allen 111 Personen auf `false`, während die Konten ihr Recht
+behielten.
+
+> **Erledigt.** Der Schalter nimmt jetzt das Konto, wo es eines gibt, und die
+> Vormerkung nur dort, wo keines existiert (Eingeladene, die sich noch nicht
+> angemeldet haben). Im Katalog der Mutationsprobe bewacht.
+>
+> `build-personen-sql.mjs` legt die Vormerkung über den Neuaufbau beiseite und
+> schreibt sie zurück — dieselbe Stelle, an der seit T90 schon die
+> Abwesenheiten gerettet werden. Ohne das verlöre jeder Ohne-Konto-Admin sein
+> Recht bei jedem Personen-Import, still.
 
 ---
 

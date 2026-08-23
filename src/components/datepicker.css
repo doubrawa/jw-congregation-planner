@@ -72,6 +72,14 @@
   font-size: calc(17px * var(--fs));
   line-height: 1;
   cursor: pointer;
+  /* Das Chevron ist ein `display:block`-SVG (siehe Chevron.tsx): Ein Block-Kind
+     rückt an den Anfang der Inhaltsbox, und `text-align` greift auf ihm nicht.
+     Es klebte dadurch am linken Rand des Kreises — nachgemessen 1 px links
+     gegen 18,3 px rechts, während es senkrecht schon mittig saß. `.week-arrow`
+     zentriert aus demselben Grund genauso. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dp-nav:hover {

@@ -221,7 +221,11 @@
   inset-inline-start: -16.5px;
   width: 3px;
   background: var(--wein);
-  opacity: 0.55;
+  /* Kaum gedämpft: Über den gold getönten Grund gemischt wandert Rot sonst
+     nach Braun und steht neben der goldenen Grundlinie — zwei warme Töne, die
+     man erst beim Hinsehen unterscheidet. Der Punkt bleibt die volle Farbe und
+     damit die dunklere Marke. */
+  opacity: 0.85;
 }
 
 .pers-zeit-row--abw-oben::before {

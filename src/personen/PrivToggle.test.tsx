@@ -1,9 +1,29 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
-import { PrivToggle } from './PrivToggle'
+import { PlannerToggle, PrivToggle } from './PrivToggle'
 import { emptyQualifications } from '../data/helpers'
-import type { Person } from '../data/types'
+import type { Member, Person } from '../data/types'
+ import {
+  AppDispatchContext,
+  AppStateContext,
+  AppStoreContext,
+  type AppState,
+  useStaticStore,
+} from '../app/context'
+ import { initialState } from '../app/init'
+ import type { ReactNode } from 'react'
+
+ function Buehne({ state, children }: { state: AppState; children: ReactNode }) {
+  const store = useStaticStore(state)
+  return (
+    <AppDispatchContext.Provider value={() => {}}>
+      <AppStoreContext.Provider value={store}>
+        <AppStateContext.Provider value={state}>{children}</AppStateContext.Provider>
+      </AppStoreContext.Provider>
+    </AppDispatchContext.Provider>
+  )
+ }
 
 const person = (patch: Partial<Person['priv']> = {}): Person => ({
   id: 'p', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '',
@@ -108,5 +128,47 @@ describe('PrivToggle — Hinweis auf Brüder-Bereiche (F4)', () => {
     expect((getByRole('switch') as HTMLButtonElement).disabled).toBe(false)
     fireEvent.click(getByRole('switch'))
     expect(update).toHaveBeenCalledWith({ priv: expect.objectContaining({ gebet: false }) })
+  })
+})
+
+/**
+ * Der Admin-Schalter zeigt das **wirksame** Recht.
+ *
+ * Es steht an zwei Stellen: `persons.planner` ist die Vormerkung für die
+ * Einladung, `members.planner` das, wonach App und Datenbank entscheiden. Wer
+ * die Vormerkung anzeigt, zeigt bei jedem, dessen Person aus dem NWS-Import
+ * stammt, „aus" — auch beim Betreiber selbst, der sehr wohl Admin ist.
+ */
+describe('PlannerToggle — welches der beiden Rechte gilt', () => {
+  const konto = (userId: string, personId: string | null, planner: boolean): Member =>
+    ({ userId, email: `${userId}@example.org`, personId, planner })
+
+  const zeige = (over: Partial<AppState>, p: Person = person()) =>
+    render(
+      <Buehne state={{ ...initialState(), userId: 'u-ich', ...over }}>
+        <PlannerToggle person={p} update={() => {}} />
+      </Buehne>,
+    )
+
+  it('nimmt das Konto, nicht die Vormerkung an der Person', () => {
+    // Genau der gemeldete Fall: `persons.planner` false (der Personen-Import
+    // schreibt die Spalte nicht), das Konto hat das Recht trotzdem.
+    const { getByRole } = zeige({ members: [konto('u-fremd', 'p', true)] })
+    expect(getByRole('switch').getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('ohne Konto trägt die Vormerkung an der Person', () => {
+    // Für Eingeladene, die sich noch nicht angemeldet haben — sie sollen das
+    // Recht ab der ersten Anmeldung haben.
+    const { getByRole } = zeige({ members: [] }, { ...person(), planner: true })
+    expect(getByRole('switch').getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('am eigenen Konto ist der Schalter gesperrt', () => {
+    // Sonst nimmt sich jemand mit einem Fingertipp den Zugang zu Planen,
+    // Personen und Einstellungen — zurückgeben könnte ihn nur ein zweiter
+    // Admin. Die Datenbank zieht dieselbe Grenze (`user_id <> auth.uid()`).
+    const { getByRole } = zeige({ members: [konto('u-ich', 'p', true)] })
+    expect((getByRole('switch') as HTMLButtonElement).disabled).toBe(true)
   })
 })
