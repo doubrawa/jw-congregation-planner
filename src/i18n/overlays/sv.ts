@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "LÄGG TILL FRÅNVARO",
   "deineEintraege": "DINA POSTER",
   "eintraege": "POSTER",
+  "zeitleiste": "TIDSLINJE",
   "ohneAngabe": "Ingen orsak",
   "keineAbw": "Ingen frånvaro registrerad.",
   "profil": "PROFIL",

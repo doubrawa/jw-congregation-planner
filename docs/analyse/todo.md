@@ -3629,6 +3629,29 @@ selbst nicht.
 > stiller Englisch-Rückfall). Das neue „EINTRÄGE" ist deshalb in allen 33
 > Sprachen nachgetragen — aus der jeweils vorhandenen Wendung für „DEINE
 > EINTRÄGE" abgeleitet.
+>
+> **Nachgezogen am 23. August — in die Zeitleiste statt darunter.** Die Liste
+> unter dem Formular zeigte, *dass* jemand weg ist, aber nicht, was in den
+> Zeitraum fällt: Eine Zuteilung mitten in einer Abwesenheit stand ein Panel
+> weiter oben und hatte damit nichts zu tun. Jetzt stehen die Zeiträume **in**
+> der Leiste — zwei Punkte für Beginn und Ende, die Strecke dazwischen
+> eingefärbt. Was hineinfällt, sitzt sichtbar darin.
+>
+> Der Punkt trägt die kräftige Farbe (`--wein`), die Strecke die gedämpfte und
+> etwas breitere; zwei warme Töne auf gold getöntem Grund sind sonst kaum zu
+> unterscheiden (nachgemessen: `164,117,81` gegen `201,176,116` — zu wenig, die
+> Breite trägt hier mit). Gerechnet wird die Färbung nicht paarweise, sondern
+> mit einem Zähler offener Zeiträume: Bei zwei überlappenden hätte das erste
+> Ende die Farbe sonst abgeschaltet, obwohl der zweite noch läuft.
+>
+> Die Ränder fassen den Tag ein — der Beginn steht vor den Zuteilungen seines
+> Tages, das Ende dahinter. Ohne diese Reihenfolge liefe die Strecke an einer
+> Zuteilung vorbei, die sehr wohl in den Zeitraum fällt.
+>
+> Die Überschrift heißt darum nicht mehr „AUFGABEN", sondern **„ZEITLEISTE"**:
+> Sie führt jetzt beide Richtungen — wann jemand dran ist und wann er nicht
+> kann. Entfernt wird mit dem ✕ am Beginn; ohne das ließe sich ein Eintrag nur
+> noch anlegen, nie wieder löschen.
 
 ---
 

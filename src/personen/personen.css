@@ -145,10 +145,10 @@
   color: var(--ink);
 }
 
-/* ---- Zeitleiste der Zuteilungen (zwischen Stammdaten und Bereichen) ------ */
+/* ---- Zeitleiste (zwischen Stammdaten und Bereichen) ---------------------- */
 
-/* Die Beschriftung kommt aus dem Navigationspunkt („Aufgaben") und ist als
-   einzige Panel-Beschriftung hier nicht schon groß geschrieben. */
+/* Groß geschrieben wie jede Panel-Beschriftung; das Wörterbuch liefert sie in
+   manchen Sprachen gemischt. */
 .pers-zeit-label {
   text-transform: uppercase;
 }
@@ -176,6 +176,9 @@
 .pers-zeit-row {
   position: relative;
   padding: 7px 0;
+  /* Platz für das ✕ der Abwesenheiten — auch dort, wo keines steht, damit die
+     Zeilen dieselbe Textbreite haben. */
+  padding-inline-end: 28px;
 }
 
 /* Vergangenes bleibt lesbar, tritt aber hinter das Kommende zurück. */
@@ -191,6 +194,61 @@
   height: 9px;
   border-radius: 50%;
   background: var(--panel-accent);
+}
+
+/* ---- Abwesenheiten in der Zeitleiste ----------------------------------- */
+
+/* Beginn und Ende einer Abwesenheit. Der Punkt trägt die kräftige Farbe, die
+   Strecke dazwischen die gedämpfte — sonst verschwände der Rand in der Linie,
+   und man sähe nicht mehr, WO der Zeitraum anfängt. Beide aus der
+   „wein"-Familie, die in jedem Farbschema definiert ist. */
+.pers-zeit-dot--abw {
+  background: var(--wein);
+}
+
+/* Die Strecke wird je Zeile gezeichnet, oberhalb und unterhalb des Punktes
+   getrennt: Der Punkt ist die Grenze des Zeitraums, nicht seine Mitte. Sie
+   liegt genau auf der Grundlinie (`.pers-zeit::before`, dort 4px vom Rand des
+   ol = -16px vom Rand der Zeile) und deckt sie ab. */
+.pers-zeit-row--abw-oben::before,
+.pers-zeit-row--abw-unten::after {
+  content: '';
+  position: absolute;
+  /* Ein Stück breiter als die Grundlinie (2px) und um ihre halbe Mehrbreite
+     nach außen gerückt, damit beide auf derselben Achse liegen. Die Breite
+     trägt hier mit: In Gold getönt sind zwei warme Farben nebeneinander schwer
+     zu unterscheiden — als Band ist der Zeitraum auf einen Blick zu sehen. */
+  inset-inline-start: -16.5px;
+  width: 3px;
+  background: var(--wein);
+  opacity: 0.55;
+}
+
+.pers-zeit-row--abw-oben::before {
+  top: 0;
+  height: 17px; /* bis zur Mitte des Punktes (top 12px + 9px/2) */
+}
+
+.pers-zeit-row--abw-unten::after {
+  top: 16px;
+  bottom: 0;
+}
+
+.pers-zeit-remove {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--mut);
+  font-size: calc(12px * var(--fs));
+  line-height: 1;
+}
+
+.pers-zeit-remove:hover {
+  background: var(--hov);
+  color: var(--ink);
 }
 
 .pers-zeit-datum {

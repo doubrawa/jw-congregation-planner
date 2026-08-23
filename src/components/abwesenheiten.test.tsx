@@ -71,6 +71,12 @@ function karte(container: HTMLElement): HTMLElement {
 const gruende = (el: HTMLElement): string[] =>
   [...el.querySelectorAll('.abs-reason-text')].map((e) => e.textContent ?? '')
 
+/** Die Beschriftungen der Abwesenheits-Punkte in der Zeitleiste. */
+const zeitleiste = (container: HTMLElement): string[] =>
+  [...container.querySelectorAll('.pers-zeit-row')]
+    .filter((r) => r.querySelector('.pers-zeit-dot--abw'))
+    .map((r) => r.querySelector('.pers-zeit-art')?.textContent ?? '')
+
 const basis = (over: Partial<AppState>): AppState => ({
   ...initialState(),
   userId: 'u-ich',
@@ -87,11 +93,28 @@ describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
       </Buehne>,
     )
 
-  it('zeigt ihre Abwesenheiten — und nur ihre', () => {
+  it('zeigt ihre Abwesenheiten in der Zeitleiste — und nur ihre', () => {
+    /*
+     * Nicht mehr als Liste unter dem Formular: Die Zeiträume stehen in der
+     * Zeitleiste, damit man sieht, was in sie hineinfällt. Unter dem Formular
+     * steht nichts mehr — sonst stünde dasselbe zweimal da.
+     */
     const { container } = zeigen({
       absences: [abw('a1', 'p-andere', null, '2026-09-01'), abw('a2', 'p-ich', 'u-ich', '2026-09-02')],
     })
-    expect(gruende(karte(container))).toEqual(['Grund a1'])
+    expect(zeitleiste(container)).toEqual(['Abwesend · Grund a1'])
+    expect(gruende(karte(container))).toEqual([])
+  })
+
+  it('entfernt eine Abwesenheit aus der Zeitleiste heraus', () => {
+    // Die Liste unter dem Formular ist weg — ohne das ✕ an der Leiste liesse
+    // sich ein Eintrag nur noch anlegen, nie wieder entfernen.
+    const dispatch = vi.fn()
+    const { container } = zeigen({ absences: [abw('a1', 'p-andere', null, '2026-09-01')] }, dispatch)
+    const knopf = container.querySelector('.pers-zeit-remove')
+    if (!knopf) throw new Error('kein Entfernen-Knopf in der Zeitleiste')
+    fireEvent.click(knopf)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
   })
 
   it('trägt eine neue auf DIESE Person ein, nicht auf die eigene', () => {
@@ -116,14 +139,14 @@ describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
     )
   })
 
-  it('ohne Planer-Recht kein Formular für eine fremde Person', () => {
+  it('ohne Planer-Recht weder Formular noch Entfernen — sehen schon', () => {
     // Dieselbe Grenze zieht die Datenbank (`absences_write`). Ein Formular, das
     // ins Leere schriebe, wäre schlimmer als keins: Der Eintrag stünde da und
     // wäre beim nächsten Laden weg.
     const { container } = zeigen({ planner: false, absences: [abw('a1', 'p-andere', null, '2026-09-01')] })
-    const panel = karte(container)
-    expect(within(panel).queryByText('ABWESENHEIT EINTRAGEN')).toBeNull()
-    expect(gruende(panel)).toEqual(['Grund a1']) // lesen darf er
+    expect(within(karte(container)).queryByText('ABWESENHEIT EINTRAGEN')).toBeNull()
+    expect(container.querySelector('.pers-zeit-remove')).toBeNull()
+    expect(zeitleiste(container)).toEqual(['Abwesend · Grund a1']) // lesen darf er
   })
 })
 

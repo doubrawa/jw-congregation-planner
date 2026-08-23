@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "欠席を追加",
   "deineEintraege": "あなたの記録",
   "eintraege": "記録",
+  "zeitleiste": "タイムライン",
   "ohneAngabe": "理由なし",
   "keineAbw": "欠席の記録はありません。",
   "profil": "プロフィール",

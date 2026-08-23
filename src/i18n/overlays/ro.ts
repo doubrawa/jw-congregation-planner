@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "ADAUGĂ ABSENȚĂ",
   "deineEintraege": "ÎNREGISTRĂRILE TALE",
   "eintraege": "ÎNREGISTRĂRI",
+  "zeitleiste": "CRONOLOGIE",
   "ohneAngabe": "Fără motiv",
   "keineAbw": "Nicio absență înregistrată.",
   "profil": "PROFIL",

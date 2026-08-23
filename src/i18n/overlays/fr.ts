@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "AJOUTER UNE ABSENCE",
   "deineEintraege": "TES SAISIES",
   "eintraege": "SAISIES",
+  "zeitleiste": "CHRONOLOGIE",
   "ohneAngabe": "Sans précision",
   "keineAbw": "Aucune absence enregistrée.",
   "profil": "PROFIL",

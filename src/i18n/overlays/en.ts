@@ -57,6 +57,7 @@ export default {
   "abwEintragen": "ADD ABSENCE",
   "deineEintraege": "YOUR ENTRIES",
   "eintraege": "ENTRIES",
+  "zeitleiste": "TIMELINE",
   "ohneAngabe": "No reason given",
   "keineAbw": "No absences recorded.",
   "profil": "PROFILE",

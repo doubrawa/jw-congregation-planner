@@ -52,6 +52,7 @@ export default {
   "abwEintragen": "غیر حاضری شامل کریں",
   "deineEintraege": "آپ کے اندراجات",
   "eintraege": "اندراجات",
+  "zeitleiste": "ٹائم لائن",
   "ohneAngabe": "کوئی وجہ نہیں دی گئی",
   "keineAbw": "کوئی غیر حاضری درج نہیں۔",
   "profil": "پروفائل",

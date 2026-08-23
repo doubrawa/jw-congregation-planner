@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "LEGG TIL FRAVÆR",
   "deineEintraege": "DINE OPPFØRINGER",
   "eintraege": "OPPFØRINGER",
+  "zeitleiste": "TIDSLINJE",
   "ohneAngabe": "Ingen årsak",
   "keineAbw": "Ingen fravær registrert.",
   "profil": "PROFIL",

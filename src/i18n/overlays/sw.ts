@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "ONGEZA KUTOKUWEPO",
   "deineEintraege": "MAINGIZO YAKO",
   "eintraege": "MAINGIZO",
+  "zeitleiste": "RATIBA YA MUDA",
   "ohneAngabe": "Hakuna sababu",
   "keineAbw": "Hakuna kutokuwepo kulikorekodiwa.",
   "profil": "WASIFU",

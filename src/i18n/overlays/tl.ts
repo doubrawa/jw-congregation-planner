@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "MAGDAGDAG NG PAGLIBAN",
   "deineEintraege": "MGA ENTRY MO",
   "eintraege": "MGA ENTRY",
+  "zeitleiste": "TIMELINE",
   "ohneAngabe": "Walang dahilan",
   "keineAbw": "Walang nakatalang pagliban.",
   "profil": "PROFILE",

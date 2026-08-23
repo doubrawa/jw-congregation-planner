@@ -55,6 +55,7 @@ export default {
   "abwEintragen": "تسجيل غياب",
   "deineEintraege": "إدخالاتك",
   "eintraege": "إدخالات",
+  "zeitleiste": "الجدول الزمني",
   "ohneAngabe": "دون ذكر السبب",
   "keineAbw": "لا توجد غيابات مسجّلة.",
   "profil": "الملف الشخصي",

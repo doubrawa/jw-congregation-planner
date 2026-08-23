@@ -52,6 +52,7 @@ export default {
   "abwEintragen": "הוסף היעדרות",
   "deineEintraege": "הרשומות שלך",
   "eintraege": "רשומות",
+  "zeitleiste": "ציר זמן",
   "ohneAngabe": "ללא ציון סיבה",
   "keineAbw": "לא נרשמו היעדרויות.",
   "profil": "פרופיל",

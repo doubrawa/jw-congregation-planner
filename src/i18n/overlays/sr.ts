@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "DODAJ ODSUSTVO",
   "deineEintraege": "TVOJI UNOSI",
   "eintraege": "UNOSI",
+  "zeitleiste": "VREMENSKA LINIJA",
   "ohneAngabe": "Bez razloga",
   "keineAbw": "Nema unetih odsustava.",
   "profil": "PROFIL",

@@ -4,6 +4,10 @@ import { DatePicker } from './DatePicker'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { Absence } from '../data/types'
+// Die `.abs-*`-Regeln stehen dort, wo die Karte herkommt. Ausdrücklich
+// eingebunden, statt sich darauf zu verlassen, dass der Aufgaben-Screen sie
+// schon geladen hat — die Karte steht inzwischen auch im Personen-Detail.
+import '../aufgaben/aufgaben.css'
 
 /**
  * Abwesenheiten einer Person: eintragen, auflisten, entfernen.
@@ -25,10 +29,17 @@ export function AbsencePanel({
   personId,
   entries,
   listLabel,
+  showList = true,
 }: {
   personId: string | null
   entries: readonly Absence[]
   listLabel: string
+  /**
+   * Liste unter dem Formular zeigen. Im Personen-Detail **nicht**: Dort stehen
+   * die Zeiträume in der Zeitleiste, mit Beginn und Ende als eigene Punkte —
+   * zweimal dasselbe untereinander wäre nur eine zweite Wahrheit.
+   */
+  showList?: boolean
 }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
@@ -129,8 +140,8 @@ export function AbsencePanel({
         </>
       )}
 
-      <div className="panel-label auf-entries-label">{listLabel}</div>
-      {entries.map((absence) => (
+      {showList && <div className="panel-label auf-entries-label">{listLabel}</div>}
+      {showList && entries.map((absence) => (
         <div key={absence.id} className="abs-row">
           <div>
             <div className="abs-range">
@@ -150,7 +161,7 @@ export function AbsencePanel({
           )}
         </div>
       ))}
-      {entries.length === 0 && <p className="abs-empty">{t.keineAbw}</p>}
+      {showList && entries.length === 0 && <p className="abs-empty">{t.keineAbw}</p>}
     </form>
   )
 }

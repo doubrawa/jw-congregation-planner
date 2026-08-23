@@ -22,6 +22,14 @@ export type TimelineEntry = {
   zeit: string
   /** Liegt vor dem heutigen Tag. */
   vergangen: boolean
+  /**
+   * Läuft an dieser Stelle eine Abwesenheit — oberhalb bzw. unterhalb des
+   * Punktes? Daraus färbt die Anzeige die Linie **zwischen** Beginn und Ende
+   * ein. Getrennt nach oben und unten, weil der Punkt selbst die Grenze ist:
+   * Beim Beginn ist nur das Stück darunter drin, beim Ende nur das darüber.
+   */
+  abwOben?: boolean
+  abwUnten?: boolean
 } & (
   | {
       kind: 'meeting'
@@ -31,12 +39,23 @@ export type TimelineEntry = {
       rolle?: string
     }
   | { kind: 'fs'; ort: string }
+  | {
+      kind: 'abw'
+      /** Id der Abwesenheit — zum Entfernen aus der Zeitleiste heraus. */
+      abwId: string
+      grund: string
+      /**
+       * Welches Ende des Zeitraums. `einzel` = ein einziger Tag; dann gibt es
+       * nur einen Punkt und keine Strecke.
+       */
+      rand: 'start' | 'ende' | 'einzel'
+    }
 )
 
 /** Was die Zeitleiste aus dem Zustand braucht (erleichtert das Testen). */
 export type TimelineDaten = Pick<
   AppState,
-  'weeks' | 'services' | 'confirmations' | 'congregation' | 'fsWeeks' | 'fsBase'
+  'weeks' | 'services' | 'confirmations' | 'congregation' | 'fsWeeks' | 'fsBase' | 'absences'
 >
 
 /**
@@ -124,6 +143,72 @@ export function personTimeline(
     }
   })
 
-  // Stabil: bei gleichem Tag bleibt die Programmreihenfolge erhalten.
-  return entries.sort((a, b) => a.tag - b.tag)
+  /*
+   * Abwesenheiten — die Gegenrichtung zu den Zuteilungen: wann jemand NICHT da
+   * ist. Sie stehen als eigene Punkte in derselben Leiste, statt darunter als
+   * zweite Liste; erst dadurch sieht man, dass eine Zuteilung mitten in einen
+   * Zeitraum fällt.
+   *
+   * Ein Zeitraum gibt **zwei** Punkte (Beginn und Ende), ein einzelner Tag
+   * einen. Das Ende-Datum gehört noch dazu (`istAbwesendAm` prüft
+   * `von <= tag <= bis`), deshalb trägt auch der letzte Punkt „abwesend".
+   *
+   * Anders als Zuteilungen sind Abwesenheiten **nicht** an die geladenen Wochen
+   * gebunden — eine im übernächsten Monat gehört hierher, auch wenn so weit
+   * noch kein Programm reicht.
+   */
+  const tagVon = (iso: string): Date => new Date(`${iso}T12:00:00`)
+  for (const abw of state.absences) {
+    if (abw.personId !== person.id) continue
+    const raender: Array<'start' | 'ende' | 'einzel'> =
+      abw.from === abw.to ? ['einzel'] : ['start', 'ende']
+    for (const rand of raender) {
+      const datum = tagVon(rand === 'ende' ? abw.to : abw.from)
+      entries.push({
+        kind: 'abw',
+        key: `abw|${abw.id}|${rand}`,
+        tag: tageZwischen(state.fsBase, datum),
+        datum,
+        zeit: '',
+        vergangen: datum < grenze,
+        abwId: abw.id,
+        grund: abw.reason,
+        rand,
+      })
+    }
+  }
+
+  /*
+   * Stabil sortiert: bei gleichem Tag bleibt die Programmreihenfolge erhalten.
+   * Die Ränder einer Abwesenheit fassen den Tag ein — der Beginn steht vor den
+   * Zuteilungen dieses Tages, das Ende dahinter. Sonst liefe die Färbung an
+   * einer Zuteilung vorbei, die sehr wohl in den Zeitraum fällt.
+   */
+  const rang = (e: TimelineEntry): number =>
+    e.kind === 'abw' ? (e.rand === 'ende' ? 1 : -1) : 0
+  entries.sort((a, b) => a.tag - b.tag || rang(a) - rang(b))
+  return markiereAbwesenheiten(entries)
+}
+
+/**
+ * Färbt die Strecken zwischen Beginn und Ende: Jeder Eintrag bekommt gesagt, ob
+ * ober- bzw. unterhalb seines Punktes gerade eine Abwesenheit läuft.
+ *
+ * Ein Durchlauf mit Zähler statt eines Vergleichs je Paar — so tragen auch
+ * **überlappende** Zeiträume (zwei offene gleichzeitig) durchgehend, statt sich
+ * gegenseitig wieder auszuschalten. Verändert die Einträge an Ort und Stelle;
+ * sie sind in dieser Funktion gerade erst entstanden.
+ */
+function markiereAbwesenheiten(entries: TimelineEntry[]): TimelineEntry[] {
+  let offen = 0
+  for (const e of entries) {
+    const vorher = offen
+    if (e.kind === 'abw') {
+      if (e.rand === 'start') offen++
+      else if (e.rand === 'ende') offen--
+    }
+    e.abwOben = vorher > 0
+    e.abwUnten = offen > 0
+  }
+  return entries
 }

@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "ДОДАТИ ВІДСУТНІСТЬ",
   "deineEintraege": "ВАШІ ЗАПИСИ",
   "eintraege": "ЗАПИСИ",
+  "zeitleiste": "ХРОНОЛОГІЯ",
   "ohneAngabe": "Без причини",
   "keineAbw": "Відсутностей не вказано.",
   "profil": "ПРОФІЛЬ",

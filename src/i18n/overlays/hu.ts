@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "TÁVOLLÉT HOZZÁADÁSA",
   "deineEintraege": "BEJEGYZÉSEID",
   "eintraege": "BEJEGYZÉSEK",
+  "zeitleiste": "IDŐVONAL",
   "ohneAngabe": "Nincs megadva",
   "keineAbw": "Nincs rögzített távollét.",
   "profil": "PROFIL",

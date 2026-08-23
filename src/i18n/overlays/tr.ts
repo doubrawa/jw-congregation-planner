@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "YOKLUK EKLE",
   "deineEintraege": "KAYITLARINIZ",
   "eintraege": "KAYITLAR",
+  "zeitleiste": "ZAMAN ÇİZELGESİ",
   "ohneAngabe": "Neden belirtilmedi",
   "keineAbw": "Kayıtlı yokluk yok.",
   "profil": "PROFİL",

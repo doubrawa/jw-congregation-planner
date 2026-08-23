@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "PRIDAŤ NEPRÍTOMNOSŤ",
   "deineEintraege": "VAŠE ZÁZNAMY",
   "eintraege": "ZÁZNAMY",
+  "zeitleiste": "ČASOVÁ OS",
   "ohneAngabe": "Bez dôvodu",
   "keineAbw": "Žiadne neprítomnosti.",
   "profil": "PROFIL",

@@ -339,23 +339,30 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
 
 ![Person bearbeiten](screenshots/planer-person-detail.png)
 
-Unter den Stammdaten steht die **Zeitleiste der Zuteilungen**: alle Aufgaben
-dieser Person aus den geladenen Wochen, chronologisch, jeweils mit Wochentag,
-Datum und Uhrzeit – Programmpunkte, Hilfsdienste und geleitete Treffpunkte.
-Vergangenes wird blasser dargestellt. Hat jemand keine Zuteilung, entfällt der
-Abschnitt.
+Unter den Stammdaten steht die **Zeitleiste**: alle Aufgaben dieser Person aus
+den geladenen Wochen, chronologisch, jeweils mit Wochentag, Datum und Uhrzeit –
+Programmpunkte, Hilfsdienste und geleitete Treffpunkte. Vergangenes wird blasser
+dargestellt. Hat jemand weder Zuteilung noch Abwesenheit, entfällt der Abschnitt.
 
 Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
 Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)
 („Di 19:00 · So 10:00"). Weicht eine Woche davon ab – z. B. das Gedächtnismahl –,
 gilt der Termin dieser Woche.
 
-Darunter steht die Karte **Abwesenheiten** – die Gegenrichtung zur Zeitleiste:
-wann diese Person **nicht** da ist. Als Planer trägst du hier für sie ein (nach
-einem Anruf „wir sind im Oktober weg"); die meisten Verkündiger haben kein
-Konto und können es nicht selbst. Wer eines hat, sieht dieselben Einträge in
-seinem eigenen Bereich unter **Meine Aufgaben** und kann sie dort ebenfalls
-pflegen – es ist dieselbe Angabe, nicht zwei.
+In derselben Leiste stehen die **Abwesenheiten** – die Gegenrichtung zu den
+Zuteilungen: wann diese Person **nicht** da ist. Ein Zeitraum bekommt zwei
+Punkte, für Beginn und Ende, und die Strecke dazwischen ist eingefärbt. So ist
+auf einen Blick zu sehen, was in einen Zeitraum hineinfällt – eine Zuteilung
+mitten in einer Abwesenheit sitzt sichtbar in der farbigen Strecke. Ein
+einzelner Tag ergibt einen Punkt.
+
+Eingetragen wird darunter in der Karte **Abwesenheiten** (Von, Bis, optional ein
+Grund); entfernt wird mit dem ✕ am Beginn des Zeitraums in der Leiste. Als
+Planer trägst du hier für andere ein (nach einem Anruf „wir sind im Oktober
+weg"); die meisten Verkündiger haben kein Konto und können es nicht selbst. Wer
+eines hat, sieht dieselben Einträge in seinem eigenen Bereich unter **Meine
+Aufgaben** und kann sie dort ebenfalls pflegen – es ist dieselbe Angabe, nicht
+zwei.
 
 Abwesenheiten wirken sofort auf die Planung: Wer weg ist, lässt sich für diese
 Woche gar nicht erst zuteilen, die automatische Zuteilung übergeht ihn, und eine

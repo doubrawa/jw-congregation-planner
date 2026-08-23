@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "TILFØJ FRAVÆR",
   "deineEintraege": "DINE POSTER",
   "eintraege": "POSTER",
+  "zeitleiste": "TIDSLINJE",
   "ohneAngabe": "Ingen årsag",
   "keineAbw": "Intet fravær registreret.",
   "profil": "PROFIL",

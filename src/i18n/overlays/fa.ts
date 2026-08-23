@@ -52,6 +52,7 @@ export default {
   "abwEintragen": "افزودن غیبت",
   "deineEintraege": "ثبت‌های شما",
   "eintraege": "ثبت‌ها",
+  "zeitleiste": "خط زمانی",
   "ohneAngabe": "بدون ذکر دلیل",
   "keineAbw": "غیبتی ثبت نشده است.",
   "profil": "پروفایل",

@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "AGGIUNGI ASSENZA",
   "deineEintraege": "LE TUE VOCI",
   "eintraege": "VOCI",
+  "zeitleiste": "CRONOLOGIA",
   "ohneAngabe": "Senza motivo",
   "keineAbw": "Nessuna assenza registrata.",
   "profil": "PROFILO",

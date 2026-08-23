@@ -200,18 +200,13 @@ export function PersonDetail({ person }: { person: Person }) {
       <PersonTimeline person={person} />
 
       {/*
-       * Abwesenheiten direkt unter der Zeitleiste: Beides sagt, wann diese
-       * Person verfügbar war und sein wird — die Zeitleiste rückwärts, die
-       * Abwesenheiten vorwärts. Der Planer trägt sie hier für andere ein (die
-       * meisten Verkündiger haben kein Konto und können es nicht selbst), und
-       * die aus New World Scheduler importierten stehen ebenfalls hier — sonst
-       * sähe sie außer dem Betroffenen niemand.
+       * Nur das Eingabe-Formular: Die eingetragenen Zeiträume stehen oben in
+       * der Zeitleiste, mit Beginn und Ende als eigene Punkte und der Strecke
+       * dazwischen eingefärbt. Eine zweite Liste darunter wiederholte sie nur —
+       * und zeigte gerade das nicht, worauf es ankommt: welche Zuteilung in
+       * einen Zeitraum fällt.
        */}
-      <AbsencePanel
-        personId={person.id}
-        entries={state.absences.filter((a) => a.personId === person.id)}
-        listLabel={t.eintraege}
-      />
+      <AbsencePanel personId={person.id} entries={[]} listLabel={t.eintraege} showList={false} />
 
       <div className="panel panel--pb10" data-farbe="petrol">
         <h2 className="panel-label">{t.aufgabenbereiche}</h2>

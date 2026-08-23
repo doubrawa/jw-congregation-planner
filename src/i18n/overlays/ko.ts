@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "결석 추가",
   "deineEintraege": "내 기록",
   "eintraege": "기록",
+  "zeitleiste": "타임라인",
   "ohneAngabe": "이유 없음",
   "keineAbw": "등록된 결석이 없습니다.",
   "profil": "프로필",

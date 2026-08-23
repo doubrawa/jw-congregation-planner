@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "LISÄÄ POISSAOLO",
   "deineEintraege": "MERKINTÄSI",
   "eintraege": "MERKINNÄT",
+  "zeitleiste": "AIKAJANA",
   "ohneAngabe": "Ei syytä",
   "keineAbw": "Ei kirjattuja poissaoloja.",
   "profil": "PROFIILI",

@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "DODAJ NIEOBECNOŚĆ",
   "deineEintraege": "TWOJE WPISY",
   "eintraege": "WPISY",
+  "zeitleiste": "OŚ CZASU",
   "ohneAngabe": "Bez podania",
   "keineAbw": "Brak zarejestrowanych nieobecności.",
   "profil": "PROFIL",

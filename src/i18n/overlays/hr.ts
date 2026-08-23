@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "DODAJ IZOSTANAK",
   "deineEintraege": "TVOJI UNOSI",
   "eintraege": "UNOSI",
+  "zeitleiste": "VREMENSKA CRTA",
   "ohneAngabe": "Bez razloga",
   "keineAbw": "Nema unesenih izostanaka.",
   "profil": "PROFIL",

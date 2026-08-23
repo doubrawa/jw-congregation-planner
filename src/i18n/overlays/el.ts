@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "ΠΡΟΣΘΗΚΗ ΑΠΟΥΣΙΑΣ",
   "deineEintraege": "ΟΙ ΚΑΤΑΧΩΡΙΣΕΙΣ ΣΑΣ",
   "eintraege": "ΚΑΤΑΧΩΡΙΣΕΙΣ",
+  "zeitleiste": "ΧΡΟΝΟΛΟΓΙΟ",
   "ohneAngabe": "Χωρίς λόγο",
   "keineAbw": "Δεν έχουν καταχωριστεί απουσίες.",
   "profil": "ΠΡΟΦΙΛ",

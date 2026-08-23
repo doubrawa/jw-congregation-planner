@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "ADICIONAR AUSÊNCIA",
   "deineEintraege": "OS SEUS REGISTOS",
   "eintraege": "REGISTOS",
+  "zeitleiste": "CRONOLOGIA",
   "ohneAngabe": "Sem motivo",
   "keineAbw": "Nenhuma ausência registada.",
   "profil": "PERFIL",

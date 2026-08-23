@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "ДОБАВИ ОТСЪСТВИЕ",
   "deineEintraege": "ТВОИТЕ ЗАПИСИ",
   "eintraege": "ЗАПИСИ",
+  "zeitleiste": "ХРОНОЛОГИЯ",
   "ohneAngabe": "Без причина",
   "keineAbw": "Няма въведени отсъствия.",
   "profil": "ПРОФИЛ",

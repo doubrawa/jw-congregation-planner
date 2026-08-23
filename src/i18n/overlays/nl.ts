@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "AFWEZIGHEID TOEVOEGEN",
   "deineEintraege": "JOUW INVOER",
   "eintraege": "INVOER",
+  "zeitleiste": "TIJDLIJN",
   "ohneAngabe": "Geen reden",
   "keineAbw": "Geen afwezigheden ingevoerd.",
   "profil": "PROFIEL",

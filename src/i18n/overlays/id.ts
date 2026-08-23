@@ -50,6 +50,7 @@ export default {
   "abwEintragen": "TAMBAH KETIDAKHADIRAN",
   "deineEintraege": "ENTRI ANDA",
   "eintraege": "ENTRI",
+  "zeitleiste": "LINIMASA",
   "ohneAngabe": "Tanpa alasan",
   "keineAbw": "Tidak ada ketidakhadiran.",
   "profil": "PROFIL",

@@ -8,6 +8,7 @@ import {
   FS_BASE,
 } from '../data/testdaten'
 import { displayName } from '../data/helpers'
+import type { Absence } from '../data/types'
 import { personTimeline, type TimelineDaten } from './person-timeline'
 
 function daten(patch: Partial<TimelineDaten> = {}): TimelineDaten {
@@ -18,9 +19,15 @@ function daten(patch: Partial<TimelineDaten> = {}): TimelineDaten {
     congregation: CONGREGATION,
     fsWeeks: buildDemoFsWeeks(),
     fsBase: FS_BASE,
+    absences: [],
     ...patch,
   }
 }
+
+/** Abwesenheit dieser Person, so wie sie aus der Datenbank käme. */
+const abwesenheit = (id: string, from: string, to: string, reason = ''): Absence => ({
+  id, personId: person.id, userId: null, from, to, reason,
+})
 
 /** Erste Person, die in den Demo-Wochen überhaupt zugeteilt ist. */
 const person = DEMO_PERSONS.find((p) => p.id === 'p1')!
@@ -133,5 +140,98 @@ describe('Zeitleiste einer Person', () => {
   it('ohne Zuteilungen bleibt die Leiste leer', () => {
     const fremd = { ...person, id: 'gibt-es-nicht', fn: 'Niemand', ln: 'Ohnenamen', dn: undefined }
     expect(personTimeline(fremd, daten())).toEqual([])
+  })
+})
+
+/**
+ * Abwesenheiten stehen in derselben Leiste wie die Zuteilungen — nicht als
+ * zweite Liste darunter. Erst dadurch ist zu sehen, dass eine Zuteilung in
+ * einen Zeitraum fällt; und genau das muss die Markierung tragen, aus der die
+ * Anzeige die Strecke einfärbt.
+ */
+describe('Abwesenheiten in der Zeitleiste', () => {
+  /** Nur die Abwesenheits-Ränder, in der Reihenfolge der Leiste. */
+  const raender = (e: ReturnType<typeof personTimeline>) =>
+    e.filter((x) => x.kind === 'abw').map((x) => (x.kind === 'abw' ? x.rand : ''))
+
+  it('macht aus einem Zeitraum zwei Punkte — Beginn und Ende', () => {
+    const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-14', '2026-09-20', 'Urlaub')] }))
+    expect(raender(eintraege)).toEqual(['start', 'ende'])
+    const [beginn, ende] = eintraege.filter((e) => e.kind === 'abw')
+    expect(beginn?.datum.getDate()).toBe(14)
+    expect(ende?.datum.getDate()).toBe(20)
+  })
+
+  it('macht aus einem einzelnen Tag einen einzigen Punkt', () => {
+    // Zwei Punkte auf demselben Datum wären keine Strecke, sondern ein Doppel.
+    const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-14', '2026-09-14')] }))
+    expect(raender(eintraege)).toEqual(['einzel'])
+  })
+
+  it('färbt die Strecke zwischen Beginn und Ende — und nur sie', () => {
+    /*
+     * Die Markierung ist nach oben und unten getrennt, weil der Punkt die
+     * **Grenze** ist: Beim Beginn gehört nur das Stück darunter zum Zeitraum,
+     * beim Ende nur das darüber. Ohne diese Trennung liefe die Farbe über den
+     * Rand hinaus, und der Zeitraum sähe größer aus, als er ist.
+     */
+    const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-08', '2026-09-27')] }))
+    const beginn = eintraege.find((e) => e.kind === 'abw' && e.rand === 'start')
+    const ende = eintraege.find((e) => e.kind === 'abw' && e.rand === 'ende')
+    expect([beginn?.abwOben, beginn?.abwUnten]).toEqual([false, true])
+    expect([ende?.abwOben, ende?.abwUnten]).toEqual([true, false])
+    // Der letzte Eintrag liegt hinter dem Ende — dort ist nichts mehr gefärbt.
+    expect(eintraege[eintraege.length - 1]?.abwUnten).toBe(false)
+  })
+
+  it('markiert die Zuteilungen, die IN den Zeitraum fallen', () => {
+    // Der eigentliche Gewinn gegenüber der Liste unter dem Formular: Man sieht,
+    // dass jemand eingeteilt ist, obwohl er weg ist.
+    const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-08', '2026-09-27')] }))
+    const drin = eintraege.filter((e) => e.kind !== 'abw' && e.abwOben && e.abwUnten)
+    expect(drin.length).toBeGreaterThan(0)
+    for (const e of drin) {
+      expect(e.datum >= new Date('2026-09-08T00:00:00')).toBe(true)
+      expect(e.datum <= new Date('2026-09-27T23:59:59')).toBe(true)
+    }
+  })
+
+  it('fasst den Tag ein: Beginn vor den Zuteilungen des Tages, Ende dahinter', () => {
+    /*
+     * Am selben Kalendertag entscheidet die Reihenfolge über die Färbung. Stünde
+     * der Beginn hinter der Zuteilung dieses Tages, liefe die Strecke an ihr
+     * vorbei — obwohl sie sehr wohl in den Zeitraum fällt.
+     */
+    const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-08', '2026-09-08')] }))
+    const amTag = eintraege.filter((e) => e.datum.getDate() === 8)
+    expect(amTag[0]?.kind).toBe('abw')
+  })
+
+  it('zeigt auch, was jenseits der geladenen Wochen liegt', () => {
+    // Die Demo-Wochen enden Anfang Oktober; eine Abwesenheit im Dezember
+    // gehört trotzdem hierher — geplant ist sie ja.
+    const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-12-24', '2026-12-28')] }))
+    expect(raender(eintraege)).toEqual(['start', 'ende'])
+    expect(eintraege[eintraege.length - 1]?.datum.getMonth()).toBe(11)
+  })
+
+  it('nimmt nur die Abwesenheiten dieser Person', () => {
+    const fremd: Absence = { id: 'f', personId: 'p2', userId: null, from: '2026-09-14', to: '2026-09-20', reason: '' }
+    expect(raender(personTimeline(person, daten({ absences: [fremd] })))).toEqual([])
+  })
+
+  it('trägt auch bei überlappenden Zeiträumen durchgehend', () => {
+    /*
+     * Der Import fasst Überlappendes zwar zusammen, von Hand lässt sich aber
+     * beides eintragen. Ein Vergleich je Paar hätte die Farbe am ersten Ende
+     * abgeschaltet, obwohl der zweite Zeitraum noch läuft — deshalb zählt die
+     * Markierung offene Zeiträume, statt sie zu paaren.
+     */
+    const eintraege = personTimeline(
+      person,
+      daten({ absences: [abwesenheit('a', '2026-09-08', '2026-09-20'), abwesenheit('b', '2026-09-14', '2026-09-27')] }),
+    )
+    const ersteEnde = eintraege.find((e) => e.kind === 'abw' && e.rand === 'ende')
+    expect(ersteEnde?.abwUnten).toBe(true) // der zweite Zeitraum läuft weiter
   })
 })

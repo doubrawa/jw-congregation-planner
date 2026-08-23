@@ -53,6 +53,10 @@ export const DE = {
     abwEintragen: 'ABWESENHEIT EINTRAGEN', deineEintraege: 'DEINE EINTRÄGE', ohneAngabe: 'Ohne Angabe',
     // „EINTRÄGE" ohne „Deine": im Personen-Detail geht es um jemand anderen.
     eintraege: 'EINTRÄGE',
+    // Überschrift der Leiste im Personen-Detail. Sie hieß „AUFGABEN", zeigt
+    // aber seit den Abwesenheiten beide Richtungen — wann jemand dran ist und
+    // wann er nicht kann.
+    zeitleiste: 'ZEITLEISTE',
     keineAbw: 'Keine Abwesenheiten eingetragen.', profil: 'PROFIL',
     nameLbl: 'Name', versammlungLbl: 'Versammlung', emailKv: 'E-Mail',
     darstellung: 'Darstellung', spracheLbl: 'Sprache',
