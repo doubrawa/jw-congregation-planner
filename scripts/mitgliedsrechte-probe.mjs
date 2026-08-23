@@ -13,19 +13,26 @@
  * | **S2** | `confirmations_write` prüft nur `user_id = auth.uid()`, **nicht**, ob der `task_key` zu einem Slot gehört, der dieser Person zugeteilt ist. Ein Mitglied könnte damit eine fremde Aufgabe als „bestätigt" markieren — der Planer sähe ✓, und die eigentlich zuständige Person würde nicht mehr erinnert. Über einen fremden **Hilfsdienst** als „verhindert" ließe sich sogar ein Ersatzgesuch auslösen. |
  * | **S3** | `notifications_insert` erlaubt jedem Mitglied Zeilen vom Typ `verhindert` — mit frei wählbarem `title`, `body` und **Empfänger**. Ein Mitglied könnte im Namen der App beliebige Mitteilungen verschicken. |
  *
- * **Vier Versuche, zwei davon müssen scheitern.** Die Probe misst nicht nur, ob
- * etwas durchkommt, sondern auch, wo die Grenze *doch* greift — sonst bliebe
- * offen, ob die Richtlinie überhaupt etwas tut:
+ * **Seit migration-022 misst sie den geschlossenen Zustand** (23. August 2026).
+ * Beide Befunde sind behoben; die Probe belegt es jetzt in beide Richtungen —
+ * denn eine Richtlinie, die *alles* abweist, bestünde jede Fremd-Probe glänzend
+ * und bräche dabei die App:
  *
- *   1. fremder `task_key`, eigene `user_id`  → laut S2 **durchgelassen**
- *   2. fremde `user_id`                      → muss **abgewiesen** werden
- *   3. Mitteilung `verhindert` an jemanden   → laut S3 **durchgelassen**
- *   4. Mitteilung `zuteilung` (nur Planer)   → muss **abgewiesen** werden
+ *   1. fremder `task_key`, eigene `user_id`   → muss **abgewiesen** werden (S2)
+ *   2. fremde `user_id`                       → muss **abgewiesen** werden
+ *   3. `verhindert` an einen Nicht-Planer      → muss **abgewiesen** werden (S3)
+ *   4. Mitteilung `zuteilung` (nur Planer)     → muss **abgewiesen** werden
+ *   5. **eigene** Aufgabe bestätigen           → muss **durchkommen**
+ *   6. Absage an den Planer (legitimer Weg)    → muss **durchkommen**
  *
- * **Jede durchgekommene Zeile wird sofort wieder gelöscht.** Die Mitteilung aus
- * (3) kann das Mitglied nicht selbst wegräumen — `notifications_delete` verlangt
- * `user_id = auth.uid()`, und Empfänger ist der Planer. Deshalb braucht die
- * Probe ohnehin beide Anmeldungen; der Planer räumt seine Zeile selbst weg.
+ * Kommt (1) oder (3) durch, steht der jeweilige Befund wieder offen. Scheitert
+ * (5) oder (6), ist die Richtlinie zu streng — das wiegt schwerer, weil der
+ * Client fire-and-forget schreibt und der Verlust fast lautlos wäre.
+ *
+ * **Jede durchgekommene Zeile wird sofort wieder gelöscht.** Wer aufräumen darf,
+ * hängt am Empfänger: `notifications_delete` verlangt `user_id = auth.uid()`,
+ * also räumt bei (6) der Planer seine eigene Zeile weg. Deshalb braucht die
+ * Probe beide Anmeldungen.
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
@@ -94,6 +101,38 @@ export function fremdeSlots(week, eigenePid) {
     for (const [svc, plaetze] of Object.entries(meeting.helpers ?? {})) {
       plaetze.forEach((slot, pos) => {
         if (!slot.pid || slot.pid === eigenePid) return
+        out.push({ art: `Hilfsdienst ${svc}`, wer: slot.name, key: helferSchluessel(week.start, tab, svc, pos) })
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * Das Gegenstück: die Slots, die der Person **gehören**. Ohne einen davon misst
+ * die Probe nur die halbe Wahrheit — dass die Richtlinie Fremdes abweist,
+ * bewiese nichts, wenn sie alles abwiese. Genau das ist die Gefahr an
+ * migration-022: Eine zu strenge Prüfung bräche das Bestätigen, und der Client
+ * schreibt fire-and-forget.
+ */
+export function eigeneSlots(week, eigenePid) {
+  if (!eigenePid) return []
+  const out = []
+  for (const tab of ['mid', 'we']) {
+    const meeting = week[tab]
+    if (!meeting) continue
+    ;(meeting.sections ?? []).forEach((sec, si) => {
+      ;(sec.items ?? []).forEach((item, ii) => {
+        if (!Array.isArray(item.names)) return
+        item.names.forEach((slot, ni) => {
+          if (slot.pid !== eigenePid) return
+          out.push({ art: 'Programm', wer: slot.name, key: slotSchluessel(item, week.start, tab, si, ii, ni) })
+        })
+      })
+    })
+    for (const [svc, plaetze] of Object.entries(meeting.helpers ?? {})) {
+      plaetze.forEach((slot, pos) => {
+        if (slot.pid !== eigenePid) return
         out.push({ art: `Hilfsdienst ${svc}`, wer: slot.name, key: helferSchluessel(week.start, tab, svc, pos) })
       })
     }
@@ -210,15 +249,23 @@ async function main() {
   console.log(`Mitglied:    ${mitglied.mail} (Person ${mitglied.pid ?? '—'})\n`)
 
   // Eine fremde Aufgabe suchen — aus der Sicht des Planers, der alle Wochen sieht.
-  const { daten: wochen } = await planer.rest('weeks?select=start,data&order=start&limit=1')
+  const { daten: wochen } = await planer.rest('weeks?select=start,data&order=start&limit=12')
   const week = wochen?.[0]?.data
   if (!week) {
     console.error('Keine Woche in dieser Versammlung — ohne Zuteilungen ist S2 nicht zu messen.')
     process.exit(1)
   }
-  const fremde = fremdeSlots(week, mitglied.pid)
+  // Die Kennung der Woche steht in der **Spalte**; im JSONB kann sie bei
+  // Altbestand fehlen (migration-017). Ohne sie hiesse der Schlüssel
+  // "undefined|mid|…" und träfe nichts.
+  const mitKennung = (z) => ({ ...z.data, start: z.start })
+  const fremde = fremdeSlots(mitKennung(wochen[0]), mitglied.pid)
   const programm = fremde.find((s) => s.art === 'Programm')
   const dienst = fremde.find((s) => s.art.startsWith('Hilfsdienst'))
+  // Eine EIGENE Aufgabe — über alle geladenen Wochen gesucht: In einer
+  // einzelnen ist nicht jeder eingeteilt, und ohne sie fehlt der Probe der
+  // Beweis, dass die Richtlinie nicht zu streng ist (Fall 5).
+  const eigen = (wochen ?? []).flatMap((z) => eigeneSlots(mitKennung(z), mitglied.pid))[0]
   if (!programm) {
     console.error('Kein fremder Programmplatz gefunden.')
     process.exit(1)
@@ -248,8 +295,8 @@ async function main() {
   // Nachgesehen wird beim **Planer**: Er ist der, dem die falsche Bestätigung
   // etwas vorspiegeln würde.
   const { daten: sicht } = await planer.rest(`confirmations?select=status,user_id&task_key=eq.${schluessel}`)
-  const e1 = bewerteVersuch(s2.status, Boolean(sicht?.length), true)
-  ergebnis(1, `Bestätigung auf eine fremde Aufgabe (${ziel.art}: ${ziel.wer})`, e1, e1.durch ? 'S2 bestätigt' : 'S2 greift nicht mehr')
+  const e1 = bewerteVersuch(s2.status, Boolean(sicht?.length), false)
+  ergebnis(1, `Bestätigung auf eine fremde Aufgabe (${ziel.art}: ${ziel.wer})`, e1, e1.durch ? 'S2 STEHT NOCH OFFEN' : 'abgewiesen — migration-022 greift')
   if (e1.durch) {
     console.log(`      Der Planer sieht auf ${ziel.wer}s Platz: ${sicht.map((z) => z.status).join(', ')}`)
     console.log(`      — geschrieben hat sie ${sicht.some((z) => z.user_id === mitglied.uid) ? 'das Mitglied' : 'jemand anderes'}`)
@@ -271,29 +318,30 @@ async function main() {
     await planer.rest(`confirmations?task_key=eq.${encodeURIComponent(programm.key)}&user_id=eq.${planer.uid}`, 'DELETE', undefined, 'return=minimal')
   }
 
-  // ---- 3) S3: Mitteilung mit freiem Text an einen anderen ------------------
+  // ---- 3) S3: freier Text an einen Empfaenger, der KEIN Planer ist ---------
+  // Empfänger ist hier das Mitglied selbst — nicht aus Bequemlichkeit, sondern
+  // weil es die Frage stellt, auf die es ankommt: Der legitime Weg adressiert
+  // die **Planer**, alles andere ist der Missbrauch aus S3. Und nachsehen kann
+  // in dieser Glocke nur der Empfänger (`notifications_select`).
   const s3 = await mitglied.rest(
     'notifications',
     'POST',
     {
       congregation_id: versammlung,
-      user_id: planer.uid,
+      user_id: mitglied.uid,
       type: 'verhindert',
       title: `${marke} — frei erfundener Titel`,
       body: 'Diese Mitteilung hat ein einfaches Mitglied geschrieben, nicht die App.',
     },
     'return=minimal',
   )
-  // Nur der Empfänger kann nachsehen — `notifications_select` verlangt
-  // `user_id = auth.uid()`. Dass der Absender seine eigene Mitteilung nicht
-  // wiederfindet, gehört zum Befund.
-  const angekommen3 = await planer.rest(`notifications?select=id,type,title&title=like.${marke}*`)
-  const e3 = bewerteVersuch(s3.status, Boolean(angekommen3.daten?.length), true)
-  ergebnis(3, 'Mitteilung mit freiem Text an den Planer', e3, e3.durch ? 'S3 bestätigt' : 'S3 greift nicht mehr')
+  const angekommen3 = await mitglied.rest(`notifications?select=id,type,title&title=like.${marke}*`)
+  const e3 = bewerteVersuch(s3.status, Boolean(angekommen3.daten?.length), false)
+  ergebnis(3, 'Mitteilung mit freiem Text an einen Nicht-Planer', e3, e3.durch ? 'S3 STEHT NOCH OFFEN' : 'abgewiesen — migration-022 greift')
   for (const z of angekommen3.daten ?? []) {
-    console.log(`      Beim Planer in der Glocke: „${z.title}" (${z.type})`)
-    const weg = await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
-    console.log(weg.status < 400 ? '      (vom Planer wieder gelöscht)' : `      !! Mitteilung ${z.id} blieb stehen (${weg.status}) !!`)
+    console.log(`      In der Glocke gelandet: „${z.title}" (${z.type})`)
+    const weg = await mitglied.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
+    console.log(weg.status < 400 ? '      (wieder gelöscht)' : `      !! Mitteilung ${z.id} blieb stehen (${weg.status}) !!`)
   }
 
   // ---- 4) Gegenprobe: Mitteilungstyp, den nur Planer setzen dürfen ---------
@@ -309,6 +357,45 @@ async function main() {
   for (const z of angekommen4.daten ?? []) {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
   }
+
+  // ---- 5) Der Beweis, dass die Richtlinie nicht zu streng ist --------------
+  // Ohne diesen Fall bewiese die Probe nichts: Eine Richtlinie, die ALLES
+  // abweist, bestünde (1) bis (4) glänzend und bräche die App. Fehlt dem
+  // Mitglied in den geladenen Wochen jede eigene Aufgabe, wird das gesagt statt
+  // stillschweigend übersprungen.
+  if (!eigen) {
+    console.log('  ? (5) eigene Aufgabe bestätigen — KEINE gefunden, nicht gemessen')
+    console.log('      Ohne eigene Zuteilung bleibt offen, ob die Richtlinie zu streng ist.')
+  } else {
+    const eigenKey = encodeURIComponent(eigen.key)
+    const s5 = await mitglied.rest(
+      'confirmations',
+      'POST',
+      { congregation_id: versammlung, user_id: mitglied.uid, task_key: eigen.key, status: 'bestätigt' },
+      'return=minimal',
+    )
+    const { daten: sicht5 } = await mitglied.rest(`confirmations?select=status&task_key=eq.${eigenKey}&user_id=eq.${mitglied.uid}`)
+    const e5 = bewerteVersuch(s5.status, Boolean(sicht5?.length), true)
+    ergebnis(5, `eigene Aufgabe bestätigen (${eigen.art}: ${eigen.wer})`, e5, e5.durch ? 'der Weg steht offen' : 'ZU STRENG — die App kann nicht mehr bestätigen')
+    if (e5.durch) {
+      await mitglied.rest(`confirmations?task_key=eq.${eigenKey}&user_id=eq.${mitglied.uid}`, 'DELETE', undefined, 'return=minimal')
+    }
+  }
+
+  // ---- 6) und dass der legitime Meldeweg offen bleibt ----------------------
+  const s6 = await mitglied.rest(
+    'notifications',
+    'POST',
+    { congregation_id: versammlung, user_id: planer.uid, type: 'verhindert', title: `${marke} — Absage an den Planer`, body: '' },
+    'return=minimal',
+  )
+  const angekommen6 = await planer.rest(`notifications?select=id&title=like.${marke}*`)
+  const e6 = bewerteVersuch(s6.status, Boolean(angekommen6.daten?.length), true)
+  ergebnis(6, 'Absage-Mitteilung an den Planer (der legitime Weg)', e6, e6.durch ? 'kommt an' : 'ZU STRENG — Absagen erreichen den Planer nicht mehr')
+  for (const z of angekommen6.daten ?? []) {
+    await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
+  }
+
 
   const durch = befunde.filter((b) => b.durch).length
   const ueberraschungen = befunde.filter((b) => !b.wieErwartet)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bewerteVersuch, fremdeSlots, helferSchluessel, slotSchluessel } from './mitgliedsrechte-probe.mjs'
+import { bewerteVersuch, eigeneSlots, fremdeSlots, helferSchluessel, slotSchluessel } from './mitgliedsrechte-probe.mjs'
 import { helperTaskKey, slotTaskKey } from '../src/data/planning'
 import type { PartItem } from '../src/data/types'
 
@@ -75,6 +75,23 @@ describe('Fremde Aufgaben finden', () => {
     const treffer = fremdeSlots(week, 'ich')
     expect(treffer.find((t) => t.art === 'Programm')?.key).toBe('2026-08-17|mid|part|a1|1')
     expect(treffer.find((t) => t.art.startsWith('Hilfsdienst'))?.key).toBe('2026-08-17|mid|helper|mik|1')
+  })
+
+  it('findet umgekehrt die eigenen — der Gegenbeweis zur Strenge', () => {
+    /*
+     * Ohne diesen Fund misst die Probe nur die halbe Wahrheit: Eine Richtlinie,
+     * die ALLES abweist, bestünde jede Fremd-Probe glänzend und bräche die App.
+     * Fall (5) braucht deshalb eine Aufgabe, die dem Mitglied wirklich gehört.
+     */
+    const treffer = eigeneSlots(week, 'ich')
+    expect(treffer.map((t) => t.art)).toEqual(['Programm', 'Hilfsdienst mik'])
+    expect(treffer.every((t) => t.wer === 'Ich')).toBe(true)
+  })
+
+  it('ohne eigene Person gibt es keine eigenen Plätze', () => {
+    // Ein Konto ohne verknüpfte Person hat keine Aufgaben — dann bleibt (5)
+    // ungemessen, statt zufällig einen fremden Platz zu treffen.
+    expect(eigeneSlots(week, null)).toEqual([])
   })
 
   it('ohne eigene Person gilt alles Besetzte als fremd — bis auf den Gastredner', () => {
