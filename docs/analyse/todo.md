@@ -3509,6 +3509,19 @@ eine Migration schreibt.
 > und wird rot, sobald eine Form dazukommt oder sich ändert — sonst fiele die
 > siebte still in den Durchlass.
 >
+> **Offen: die Gegenprobe.** Die Migration ist am 23. August eingespielt, aber
+> noch nicht gemessen — und gerade hier zählt nur das Messen. Dafür ist
+> `scripts/mitgliedsrechte-probe.mjs` umgestellt: Sie prüft nicht mehr, ob die
+> Lücke da ist, sondern ob sie zu ist — **in beide Richtungen**. Vier Versuche
+> müssen scheitern, zwei müssen durchkommen (eigene Aufgabe bestätigen; Absage
+> an den Planer). Ohne die letzten beiden bewiese sie nichts: Eine Richtlinie,
+> die alles abweist, bestünde jede Fremd-Probe glänzend und bräche dabei die
+> App — fast lautlos, weil der Client fire-and-forget schreibt.
+>
+> `node scripts/mitgliedsrechte-probe.mjs --versammlung 0a43ea1b-…` (Talheim,
+> nicht die echte Versammlung — die Probe schreibt kurz). Erwartet: **2 von 6
+> kamen durch**.
+>
 > Die zweite Hälfte (S3) ist mitgeschlossen: Eine Mitteilung vom Typ
 > `verhindert` darf nur noch an **Planer** gehen, nicht mehr an beliebige
 > Mitglieder. Was bleibt und hier offen benannt sei: Ein Mitglied kann den
