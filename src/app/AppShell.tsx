@@ -3,6 +3,7 @@ import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, overseerGroup } from '../data/helpers'
 import { vorzulegen } from './reducer'
+import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite } from '../lib/data'
 import { performLogout } from '../lib/supabase'
@@ -337,7 +338,19 @@ function OfflineBanner() {
   }
   let stamp: string
   try {
-    stamp = when.toLocaleString(state.lang, opts)
+    // Über LOCALES — dieselbe Tabelle wie Countdown, Wochentagsnamen und das
+    // Datum im Kopf des Start-Bildschirms. Hier stand als einzige Stelle der
+    // App der nackte Sprachcode.
+    //
+    // **Kein gemessener Unterschied**, und das ist der ehrliche Stand: Intl
+    // löst die Abweichler von selbst auf (`tl` → `fil`, `no` → `nb`), und für
+    // dieses rein numerische Format kam derselbe Text heraus — nachgemessen am
+    // 25.8.2026 über alle 34 Sprachen. Die Zeile bleibt trotzdem, weil sie eine
+    // zweite Quelle für dieselbe Zuordnung beseitigt: `LOCALES` trägt die
+    // bewussten Entscheidungen (`sr-Latn-RS` statt kyrillisch, `zh-CN`,
+    // `fil-PH`), und die gelten dann auch hier, sobald jemand das Format
+    // ausschreibt oder eine Sprache dazukommt, die Intl nicht selbst auflöst.
+    stamp = when.toLocaleString(LOCALES[state.lang] ?? state.lang, opts)
   } catch {
     stamp = when.toLocaleString(undefined, opts) // unbekanntes Sprach-Tag
   }

@@ -15,7 +15,7 @@ export function pushSupported(): boolean {
 }
 
 /** iOS/iPadOS-Gerät (iPadOS meldet sich als „Macintosh" mit Touch). */
-export function isIOS(): boolean {
+function isIOS(): boolean {
   const ua = navigator.userAgent
   return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && 'ontouchend' in document)
 }

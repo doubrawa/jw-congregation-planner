@@ -451,7 +451,7 @@ function abschnitt(meeting: Meeting, label: string): number {
 }
 
 /** Titel aus festem Begriff und optionalem Thema: „Dienstvortrag · <Thema>". */
-export function mitThema(begriff: string, thema: string | undefined): string {
+function mitThema(begriff: string, thema: string | undefined): string {
   const t = (thema ?? '').trim()
   return t ? `${begriff} · ${t}` : begriff
 }

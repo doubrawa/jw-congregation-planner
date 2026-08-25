@@ -446,7 +446,11 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
   Personen‑Detail, nur von der anderen Seite. Die Reinigung hat keinen solchen
   Bereich: Sie rotiert über die Predigtdienstgruppen.
 - **Erinnerungen** – wie viele Tage vorher und wie oft an offene Aufgaben erinnert
-  wird (per Push, nie per E‑Mail). **Bei Zuteilung · Sofort** ist ein eigener
+  wird (per Push, nie per E‑Mail). **Erste Erinnerung** und **Letzte Erinnerung**
+  sind die beiden Tage, an denen auf jeden Fall erinnert wird; **Täglich
+  wiederholen** füllt die Tage **dazwischen** auf. Nach der letzten kommt nichts
+  mehr – wer auch am Tag der Zusammenkunft selbst erinnern will, stellt „Letzte
+  Erinnerung" auf **0** („am Tag"). **Bei Zuteilung · Sofort** ist ein eigener
   Schalter: Er bestimmt, ob beim Zuteilen sofort eine Mitteilung an die Planer
   entsteht („Zuteilung gesendet"). Abgeschaltet bleibt die Glocke ruhig; die
   zeitlichen Erinnerungen an die eingeteilten Personen laufen unabhängig davon

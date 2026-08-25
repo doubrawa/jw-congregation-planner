@@ -39,11 +39,6 @@ export function anlassArt(week: Week | undefined): AnlassArt | undefined {
   return undefined
 }
 
-/** Termin des Anlasses (Datum/Uhrzeit) — leer, wenn keiner eingetragen ist. */
-export function anlassTermin(week: Week | undefined): Anlass | undefined {
-  return week?.anlass
-}
-
 /**
  * Anlass setzen oder aufheben (`art === null`).
  *

@@ -30,8 +30,13 @@ import type {
 /** Bereich der Ordner, die beim Gedächtnismahl die Symbole herumreichen. */
 const ORD = serviceQualKey('ord')
 
-/** Angemeldete Demo-Person (Simon Krüger) — steuert den "DU"-Chip. */
-export const CURRENT_PERSON_ID = 'p9'
+/*
+ * Hier stand `CURRENT_PERSON_ID = 'p9'` als „angemeldete Demo-Person". Der
+ * Demo-Modus startet aber ohne Person (`state.personId` bleibt null); wer eine
+ * bestimmte sehen will, nennt sie im Debug-Hash (`#me=<Person-Id>`, siehe
+ * app/init.ts). Die Konstante hatte keinen Aufrufer und behauptete eine
+ * Vorbelegung, die es nicht gibt.
+ */
 
 /** Demo-Rechte: Prototyp zeigt Simon als Koordinator (volle Navigation). */
 export const DEMO_PLANNER = true

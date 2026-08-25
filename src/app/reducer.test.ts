@@ -20,8 +20,8 @@ import {
   FS_BASE,
 } from '../data/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
-import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
-import { deriveMyTasks } from '../data/planning'
+import { displayName, emptyQualifications, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { deriveMyTasks, derivePendingIds } from '../data/planning'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
@@ -1173,6 +1173,79 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     })
     const next = reducer(s, { type: 'setLang', lang: 'de' })
     expect(next.myTasks.find((t) => t.id === 'fs|2026-09-07|tp1')!.status).toBe('bestätigt')
+  })
+
+  /*
+   * Dieselbe Lücke, eine Zeile weiter: `pendingIds`.
+   *
+   * `withDerivedTasks` baut die Liste bei **jeder** Ableitungs-Aktion neu auf und
+   * überschreibt damit, was der Reducer beim Zuteilen gerade eingetragen hat.
+   * Solange dort nur `derivePendingIds` (Zusammenkünfte) stand, ging die
+   * Treffpunkt-Kennung jedes Mal verloren — der Chip im Treffpunkt-Plan trug ein
+   * „✓", also die Behauptung, der Leiter habe zugesagt, obwohl ihn noch niemand
+   * gefragt hatte. Und umgekehrt ein „…" für jemanden, der seinen Treffpunkt
+   * längst bestätigt hatte, sobald irgendeine Zusammenkunfts-Aufgabe von ihm
+   * offen war.
+   *
+   * Geprüft wird mit einer Person **ohne** Zusammenkunfts-Zuteilungen: sonst
+   * stünde ihre Kennung ohnehin schon in der Liste und der Test bewiese nichts.
+   */
+  describe('pendingIds kennt beide Datenquellen', () => {
+    /** Person, die in keiner Woche eingeteilt ist — sie darf nur über fs hereinkommen. */
+    const nurFs = (): Person => ({
+      id: 'p-nur-fs', fn: 'Timo', ln: 'Treffpunkt', role: 'verkuendiger',
+      tel: '', mail: '', priv: { ...emptyQualifications(), treffpunkt: true },
+    })
+
+    const mitLeiter = (over: Partial<AppState> = {}): AppState => {
+      const p = nurFs()
+      const fsWeeks = buildDemoFsWeeks()
+      fsWeeks[0] = [
+        { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(p), lpid: p.id },
+      ]
+      return makeState({
+        dataStatus: 'ready',
+        persons: [...DEMO_PERSONS, p],
+        personId: p.id,
+        fsWeeks,
+        myTasks: [],
+        pendingIds: [],
+        ...over,
+      })
+    }
+
+    it('ein zugeteilter, nicht bestätigter Treffpunkt-Leiter trägt „…"', () => {
+      const s = mitLeiter()
+      // Gegenprobe: aus den Zusammenkünften käme diese Kennung nicht.
+      expect(derivePendingIds(s.weeks, s.services, s.confirmations)).not.toContain('p-nur-fs')
+      expect(reducer(s, { type: 'setLang', lang: 'de' }).pendingIds).toContain('p-nur-fs')
+    })
+
+    it('nach seiner Bestätigung verschwindet das Zeichen', () => {
+      const s = mitLeiter({ confirmations: { 'fs|2026-09-07|tp1': 'bestätigt' } })
+      expect(reducer(s, { type: 'setLang', lang: 'de' }).pendingIds).not.toContain('p-nur-fs')
+    })
+
+    it('das Zuteilen selbst hält bis zur Ableitung durch', () => {
+      // Der Weg, auf dem es auffiel: zuteilen, und der Chip stand sofort auf „✓".
+      const p = nurFs()
+      const inst = buildDemoFsWeeks()[0]![0]!
+      const sel = {
+        kind: 'fs' as const, wi: 0, instId: inst.id,
+        label: 'Leiter', priv: 'treffpunkt', groups: false,
+      }
+      const s = makeState({
+        dataStatus: 'ready',
+        persons: [...DEMO_PERSONS, p],
+        personId: p.id,
+        slotSel: sel,
+        myTasks: [],
+        pendingIds: [],
+      })
+      const next = reducer(s, { type: 'assign', name: displayName(p), pid: p.id })
+      expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe(displayName(p))
+      expect(next.pendingIds).toContain(p.id)
+    })
   })
 })
 

@@ -235,6 +235,20 @@ const KATALOG = [
     suchen: "  if (typeof item.mins === 'number') return item.mins\n  return ersteZahl(item.meta ?? '')",
     ersetzen: "  return ersteZahl(item.meta ?? '')",
   },
+  {
+    id: 'ziffern-jeder-satz',
+    datei: 'src/data/ziffern.ts',
+    regel: 'Der Wert einer Ziffer stimmt in JEDEM Satz — auch in einem, der direkt an den nächsten grenzt.',
+    suchen: '  return ziffernTabelle().get(c) ?? ziffernWertGezaehlt(c)',
+    ersetzen: '  return ziffernWertGezaehlt(c)',
+  },
+  {
+    id: 'ziffern-parser-jeder-satz',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Auch der Import liest jeden Ziffernsatz richtig — die Zweitschrift darf nicht zurückfallen.',
+    suchen: '  const bekannt = ziffernTabelle().get(c)\n  if (bekannt !== undefined) return bekannt',
+    ersetzen: '',
+  },
 
   // ── Nicht besetzbar (Engpass) ─────────────────────────────────────────────
   {
@@ -341,6 +355,20 @@ const KATALOG = [
     suchen: 'if (o.id === sel.instId || o.wd !== inst.wd || o.lext || o.leader !== name) continue',
     ersetzen: 'if (o.id === sel.instId || o.lext || o.leader !== name) continue',
   },
+  {
+    id: 'fs-markierung-zweite-quelle',
+    datei: 'src/app/reducer.ts',
+    regel: 'Das „…" kennt beide Datenquellen — auch eine unbestätigte Treffpunkt-Leitung.',
+    suchen: '        ...fsPendingIds(state.fsWeeks, state.fsBase, state.confirmations),\n',
+    ersetzen: '',
+  },
+  {
+    id: 'fs-markierung-bestaetigt',
+    datei: 'src/data/fs.ts',
+    regel: 'Eine bestätigte Treffpunkt-Leitung trägt kein „…" mehr — „verhindert" schon.',
+    suchen: "if (confirmations[key] !== 'bestätigt') pending.add(kennungVon(inst.leader, inst.lpid))",
+    ersetzen: 'pending.add(kennungVon(inst.leader, inst.lpid))',
+  },
 
   // ── Zwischenablage ────────────────────────────────────────────────────────
   {
@@ -393,6 +421,13 @@ const KATALOG = [
     regel: 'Der Versand greift nach der stabilen Treffpunkt-Kennung, auch im Altbestand (T87).',
     suchen: 'if (conf.has(`fs|${woche}|${stabileKennung(inst.id)}`)) continue',
     ersetzen: 'if (conf.has(`fs|${woche}|${inst.id}`)) continue',
+  },
+  {
+    id: 'erinnerung-letzte-ist-letzte',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Die Wiederholung deckt die Tage zwischen erster und letzter Erinnerung ab — nicht die danach.',
+    suchen: '  return days > frueh && days < spaet ? \'repeat\' : null',
+    ersetzen: '  return days < spaet ? \'repeat\' : null',
   },
   {
     id: 'ersatz-nur-qualifizierte',
@@ -456,6 +491,13 @@ const KATALOG = [
     ersetzen: 'const target = pendingNav',
   },
   {
+    id: 'start-termin-gerechnet',
+    datei: 'src/dashboard/DashboardScreen.tsx',
+    regel: 'Der Termin auf dem Start wird gerechnet — importierte Wochen tragen im date-Feld nur die Wochenspanne.',
+    suchen: 'shortDate(meetingDateText(week, weekIdx, tab, state.congregation.meetings))',
+    ersetzen: 'shortDate(week[tab].date)',
+  },
+  {
     id: 'leeren-zwei-tipp',
     datei: 'src/planen/AutoAssignPanel.tsx',
     regel: '„Leeren" verlangt zwei Tipps — es macht eine Woche Arbeit zunichte.',
@@ -503,6 +545,13 @@ const KATALOG = [
     regel: 'Der Fokus bleibt im modalen Dialog — Tab am Ende springt an den Anfang zurück.',
     suchen: '      if (e.shiftKey && document.activeElement === firstEl) {\n        e.preventDefault()\n        lastEl.focus()\n      } else if (!e.shiftKey && document.activeElement === lastEl) {\n        e.preventDefault()\n        firstEl.focus()\n      }',
     ersetzen: '      void firstEl\n      void lastEl',
+  },
+  {
+    id: 'wischen-eine-frist',
+    datei: 'src/components/useSwipeWeek.ts',
+    regel: 'Es gibt immer nur einen Zeitgeber — eine abgebrochene Bewegung räumt nicht in die nächste hinein.',
+    suchen: '    const spaeter = (fn: () => void, ms: number): void => {\n      stoppen()',
+    ersetzen: '    const spaeter = (fn: () => void, ms: number): void => {',
   },
   {
     id: 'push-nie-von-allein',
@@ -608,6 +657,21 @@ const KATALOG = [
     regel: 'Einspringen setzt eine Absage zu genau dieser Aufgabe voraus — sonst verdrängt jeder Qualifizierte jeden.',
     suchen: "if (absagen.length === 0) return json({ error: 'not-sought' }, 409)",
     ersetzen: '',
+  },
+  {
+    id: 'ersatz-ausfall',
+    datei: 'src/data/planning.ts',
+    regel: 'Für eine ausgefallene Zusammenkunft wird kein Ersatz gesucht (T30) — die App lädt sonst zu etwas ein, das sie selbst ablehnt.',
+    suchen: 'if (istAusgefallen(week, parts.tab)) continue',
+    ersetzen: '',
+  },
+  {
+    id: 'programm-hilfsdienst-platzweise',
+    datei: 'src/programm/ProgrammScreen.tsx',
+    regel: 'Das Programmblatt zeigt Hilfsdienste platzweise bis zur eingestellten Zahl — kein Name rückt nach vorn oder über die Grenze.',
+    suchen: '              const name = arr[pos]?.name\n              return name ? tu(name) : t.offenWort',
+    ersetzen:
+      '              const name = arr.map((s) => s.name).filter(Boolean)[pos]\n              return name ? tu(name) : t.offenWort',
   },
   {
     id: 'import-nur-jw-org',

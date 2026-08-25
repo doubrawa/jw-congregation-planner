@@ -329,6 +329,47 @@ describe('mins — die Dauer verlässt den Anzeigetext', () => {
     expect(schluss(html).mins).toBe(3)
   })
 
+  /*
+   * **Nicht jeder Ziffernsatz endet vor einer Nicht-Ziffer.**
+   *
+   * Der Parser zählte von einer Ziffer rückwärts, bis das Zeichen davor keine
+   * Ziffer mehr ist. Unicode legt Sätze aber auch unmittelbar aneinander — die
+   * Ziffern des **östlichen Pwo-Karen** (U+116DA) folgen direkt auf die des
+   * Pao. Dort lief die Zählung in den Nachbarsatz und schlug an der
+   * Zehnerbremse an: Aus „(𑛛𑛚 Min.)“ wurde nicht 10, sondern eine Zahl aus
+   * lauter Zehnen.
+   *
+   * Geprüft wird nicht dieser eine Satz, sondern **jeder**, den die
+   * Laufzeitumgebung führt — und zwar durch den echten Parser, nicht an der
+   * Hilfsfunktion vorbei. Kommt ein Satz dazu, der ebenso angrenzt, fällt es
+   * hier auf und nicht erst in einem Arbeitsheft.
+   */
+  it('jeder Ziffernsatz der Laufzeit wird richtig gelesen', () => {
+    const ZIFFER = /\p{Nd}/u
+    const falsch: string[] = []
+    let geprueft = 0
+    for (const nu of Intl.supportedValuesOf('numberingSystem')) {
+      let zehn: string
+      try {
+        zehn = new Intl.NumberFormat(`en-u-nu-${nu}`, { useGrouping: false }).format(10)
+      } catch {
+        continue
+      }
+      // Nur echte Dezimalsätze; algorithmische (römisch) fallen heraus.
+      if ([...zehn].length !== 2 || ![...zehn].every((c) => ZIFFER.test(c))) continue
+      geprueft++
+      const html = seite({
+        h1: 'x', buch: 'y', punkt1: '1. Erster', punkt2: '4. Zweiter',
+        zeit1: `(${zehn} Min.)`, zeit2: `(${zehn} Min.)`,
+        schluss: `Schlussworte (${zehn} Min.) | Lied 61`,
+      })
+      const gelesen = teil(html, 'petrol').mins
+      if (gelesen !== 10) falsch.push(`${nu}: ${String(gelesen)} statt 10`)
+    }
+    expect(geprueft).toBeGreaterThan(50) // sonst prüfte der Test nichts
+    expect(falsch).toEqual([])
+  })
+
   it('mitLiedNummer setzt das Schlusslied in das vorhandene Atom', () => {
     // Nicht als eigenes Item davor — sonst stünde „Lied“ zweimal da (F11/T33).
     expect(mitLiedNummer('Schlussworte · Lied · Gebet', 'Lied 151')).toBe(

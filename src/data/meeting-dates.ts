@@ -77,7 +77,7 @@ export function isoDay(d: Date): string {
 }
 
 /** ISO-Datum → lokaler Mittag (kein Tagesversatz durch Zeitzonen). */
-export function fromIso(iso: string): Date {
+function fromIso(iso: string): Date {
   // Ein ISO-Datum hat drei Teile; fehlt einer, entsteht ohnehin ein ungültiges
   // Datum — dann lieber ausdrücklich als still verrechnet.
   const [y, m, d] = iso.split('-').map(Number)

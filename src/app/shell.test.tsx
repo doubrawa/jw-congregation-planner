@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
 import { initialState } from './init'
+import { APP_LANGS, LOCALES } from '../i18n/langs'
 import { dict } from '../i18n/ui'
 import { emptyQualifications } from '../data/helpers'
 import type { Group, Notification, Person } from '../data/types'
@@ -223,6 +224,31 @@ describe('Das Offline-Banner nennt den Stand', () => {
     const at = new Date(2026, 7, 23, 14, 5).getTime()
     expect(() => zeige({ staleAt: at, lang: 'xx-nicht-echt' as AppState['lang'] })).not.toThrow()
     expect(document.querySelector('.offline-banner')).toBeTruthy()
+  })
+
+  /*
+   * Der Stand steht in der Sprache des Lesers, nicht in der des Systems.
+   *
+   * Geprüft wird die **Wirkung**, nicht der Weg dorthin: dass der Text
+   * derselbe ist, den `LOCALES` für diese Sprache ergibt. Ob die Zeile den
+   * nackten Sprachcode oder die Tabelle benutzt, unterscheidet Intl bei diesem
+   * rein numerischen Format nicht (es löst `tl` selbst zu `fil` auf) — ein Test
+   * darauf wäre eine Behauptung ohne Deckung. Was er hält, hält er dafür für
+   * jede der 34 Sprachen: Sobald eine dabei ist, die Intl nicht selbst
+   * auflöst, fällt es hier auf.
+   */
+  it('nennt den Zeitpunkt in der Sprache des Lesers, in jeder Sprache', () => {
+    const at = new Date(2026, 7, 23, 14, 5).getTime()
+    const opts: Intl.DateTimeFormatOptions = {
+      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+    }
+    for (const { code } of APP_LANGS) {
+      const { container } = zeige({ staleAt: at, lang: code })
+      expect(container.querySelector('.offline-banner')!.textContent, code).toContain(
+        new Date(at).toLocaleString(LOCALES[code], opts),
+      )
+      cleanup()
+    }
   })
 
   it('„Neu laden" lädt die Seite neu', () => {

@@ -127,6 +127,8 @@ let fsWeeks: { start: string; data: unknown }[]
 let confirmations: { task_key: string; status: string }[]
 let reminderLog: { user_id: string; kind: string }[]
 let subs: typeof SUBS
+/** Erinnerungs-Einstellungen der Versammlung — je Test überschreibbar. */
+let reminders: { first: number; last: number; repeat: boolean }
 
 const writesTo = (table: string) => writes.filter((w) => w.path.startsWith(table))
 
@@ -145,11 +147,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   }
   if (path.startsWith('congregations')) {
     return jsonRes([
-      {
-        id: CONG,
-        meeting_times: 'Di 19:00 · So 10:00',
-        settings: { reminders: { first: 7, last: 1, repeat: true } },
-      },
+      { id: CONG, meeting_times: 'Di 19:00 · So 10:00', settings: { reminders } },
     ])
   }
   if (path.startsWith('reminder_log')) return jsonRes(reminderLog)
@@ -223,6 +221,7 @@ beforeEach(() => {
   confirmations = []
   reminderLog = []
   subs = [...SUBS]
+  reminders = { first: 7, last: 1, repeat: true }
   resetPush()
 })
 
@@ -369,6 +368,54 @@ describe('send-reminders: wer NICHT erinnert wird', () => {
     const r = (await (await handler(request())).json()) as Result
     ;(globalThis as Record<string, unknown>).fetch = origFetch
     expect(r.preview).toEqual([])
+  })
+
+  /*
+   * **„Letzte Erinnerung" heißt letzte.**
+   *
+   * Geprüft wurde nur `days < first`, und damit deckte die Wiederholung auch
+   * die Tage **nach** der letzten Erinnerung ab: Bei `7 · 1 · wiederholen` ging
+   * am Tag der Zusammenkunft selbst (Tag 0 < 7) noch eine hinaus. Wer „1 Tag
+   * vorher" einstellt, hat sich ausdrücklich gegen den Tag selbst entschieden —
+   * dafür gibt es den eigenen Wert `last = 0`. Die Einstellung blieb also
+   * folgenlos, ohne dass irgendwo etwas fehlschlug: Die Erinnerung kam ja an.
+   *
+   * Der Tag der Zusammenkunft ist der Fall, an dem es zählt: Wer am Morgen eine
+   * Erinnerung für den Abend bekommt, kann nichts mehr ändern — genau deshalb
+   * kann man diesen Tag abwählen.
+   */
+  describe('die Wiederholung deckt die Tage dazwischen ab — nicht die danach', () => {
+    // mid liegt am Di 8.9.: der 8.9. ist Tag 0, der 7.9. Tag 1 (= last).
+    const AM_TAG = '2026-09-08T09:00:00Z'
+
+    it('am Tag der Zusammenkunft schweigt sie (last = 1)', async () => {
+      vi.setSystemTime(new Date(AM_TAG))
+      expect((await run()).preview).toEqual([])
+    })
+
+    it('mit „am Tag" (last = 0) kommt sie sehr wohl — die Einstellung wirkt', async () => {
+      // Gegenprobe, damit der Test nicht bloß eine stumme Function prüft.
+      reminders = { first: 7, last: 0, repeat: true }
+      vi.setSystemTime(new Date(AM_TAG))
+      expect(previewFor(await run(), U_MAX)).toBeDefined()
+    })
+
+    it('dazwischen kommt sie weiterhin', async () => {
+      vi.setSystemTime(new Date('2026-09-04T09:00:00Z')) // mid in 4 Tagen
+      expect(previewFor(await run(), U_MAX)).toBeDefined()
+    })
+
+    it('vor der ersten Erinnerung bleibt es still', async () => {
+      vi.setSystemTime(new Date('2026-08-31T09:00:00Z')) // mid in 8 Tagen (> first)
+      expect((await run()).preview).toEqual([])
+    })
+
+    it('an den beiden Haupttagen selbst kommt sie immer', async () => {
+      for (const tag of ['2026-09-01T09:00:00Z', '2026-09-07T09:00:00Z']) {
+        vi.setSystemTime(new Date(tag)) // 7 bzw. 1 Tag vorher
+        expect(previewFor(await run(), U_MAX), tag).toBeDefined()
+      }
+    })
   })
 
   it('heute schon erinnert → übersprungen, kein zweiter Versand', async () => {

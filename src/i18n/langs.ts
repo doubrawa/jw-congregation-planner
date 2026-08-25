@@ -9,10 +9,11 @@
  *
  * CONG_LANGS (Anzeigenamen) speist den Versammlungssprachen-Picker;
  * CONG_TO_JW (Name -> code) liefert den Sprachcode fuer den Import (die Woche
- * wird dann direkt in dieser Sprache von jw.org geholt). APP_LANGS/CONG_TO_CODE:
- * die vier UI-Sprachen bzw. deren Uebersetzungscode — nur fuer Demo-
- * Programminhalte (kanonisch deutsch -> makeTr) relevant; importierte Wochen
- * sind bereits in der Zielsprache.
+ * wird dann direkt in dieser Sprache von jw.org geholt). APP_LANGS sind die
+ * UI-Sprachen; welchen Uebersetzungscode eine Versammlungssprache hat, sagt
+ * `congAppCode()` (CONG_TO_JW -> JW_TO_APP) — nur fuer Vorlagen-Texte
+ * (kanonisch deutsch -> makeTr) relevant; importierte Wochen sind bereits in
+ * der Zielsprache.
  */
 
 import type { Lang } from '../data/types'
@@ -60,20 +61,21 @@ export const APP_LANGS_SORTED: ReadonlyArray<{ code: Lang; label: string }> = [.
 )
 
 /** RTL-Sprachen (Rechts-nach-links); steuern dir="rtl" + gespiegeltes Layout. */
-export const RTL_LANGS: ReadonlySet<Lang> = new Set<Lang>(['ar', 'he', 'fa', 'ur'])
+const RTL_LANGS: ReadonlySet<Lang> = new Set<Lang>(['ar', 'he', 'fa', 'ur'])
 
 /** true, wenn die App-Sprache von rechts nach links läuft. */
 export function isRTL(lang: Lang): boolean {
   return RTL_LANGS.has(lang)
 }
 
-/** Versammlungssprache (deutscher Name) -> Programmuebersetzungs-Code (nur Demo). */
-export const CONG_TO_CODE: Record<string, Lang | undefined> = {
-  Deutsch: 'de',
-  Englisch: 'en',
-  Spanisch: 'es',
-  Französisch: 'fr',
-}
+/*
+ * Hier stand `CONG_TO_CODE` — eine Tabelle „Versammlungssprache (deutscher
+ * Name) → Uebersetzungscode" mit genau vier Eintraegen (Deutsch, Englisch,
+ * Spanisch, Franzoesisch). Sie stammt aus der Zeit, als es vier UI-Sprachen
+ * gab; heute geht derselbe Weg ueber `congAppCode()` (CONG_TO_JW → JW_TO_APP)
+ * und deckt alle 34 ab. Die Tabelle hatte keinen Aufrufer mehr und haette bei
+ * jeder fuenften Sprache die falsche Antwort gegeben.
+ */
 
 /** App-Sprachcode → BCP-47-Locale (Intl-Datums-/Zahlenformatierung). */
 export const LOCALES: Record<Lang, string> = {

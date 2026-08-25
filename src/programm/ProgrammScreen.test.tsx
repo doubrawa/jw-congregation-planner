@@ -330,6 +330,38 @@ describe('Die Hilfsdienst-Übersicht', () => {
       `${t.offenWort} · ${t.offenWort}`,
     )
   })
+
+  /*
+   * **Der Platz zählt, nicht die Reihenfolge der Einträge.**
+   *
+   * Gefiltert wurde zuerst („leere Namen weg") und erst danach abgeschnitten.
+   * Das rückte die Besetzung nach vorn — und zeigte im schlimmsten Fall einen
+   * Namen, den es gar nicht mehr gibt: Reduziert der Planer die Platzzahl,
+   * bleiben die Namen dahinter in den Wochendaten stehen (bewusst, siehe
+   * `helperWorkload`). Das Programmblatt nannte dann jemanden, den die
+   * Aufgabenliste, die Auslastung und der Planen-Screen längst nicht mehr
+   * kennen — eine Zuteilung, von der nur dieses eine Blatt weiß.
+   */
+  it('ein offener erster Platz bleibt an seiner Stelle', () => {
+    const w = woche()
+    w.mid.helpers.mik = [{ name: '' }, { name: 'Anton Alt' }]
+    const { container } = zeige({ weeks: [w] })
+    expect(seite(container).querySelector('.prog-helper-names')?.textContent).toBe(
+      `${t.offenWort} · Anton Alt`,
+    )
+  })
+
+  it('ein Name hinter der Platzzahl wird nicht nach vorn gezogen', () => {
+    // Zwei Plätze auf einen reduziert; besetzt war nur der zweite. Der Dienst
+    // hat damit genau einen Platz, und der ist offen.
+    const w = woche()
+    w.mid.helpers.mik = [{ name: '' }, { name: 'Anton Alt' }]
+    const { container } = zeige({
+      weeks: [w],
+      services: [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }],
+    })
+    expect(seite(container).querySelector('.prog-helper-names')?.textContent).toBe(t.offenWort)
+  })
 })
 
 describe('Ohne geladene Woche', () => {

@@ -15,6 +15,7 @@ import {
   genFsWeek,
   regenFsWeeks,
   deriveMyFsTasks,
+  fsPendingIds,
   fsWeekConflicts,
 } from './fs'
 import { emptyQualifications } from './helpers'
@@ -496,6 +497,64 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   it('offene Treffpunkte gehören niemandem', () => {
     const offen = [[inst({ id: 'a', leader: '' })]]
     expect(deriveMyFsTasks(offen, BASE, 'Anton Muster', {}, 'p1', 'L')).toEqual([])
+  })
+})
+
+/**
+ * Das „…" am Treffpunkt-Chip: **noch nicht bestätigt**.
+ *
+ * Es hing an `derivePendingIds`, und das läuft nur über die Zusammenkünfte —
+ * die zweite Datenquelle war schlicht vergessen. Der Reducer baute die Kennung
+ * beim Zuteilen sorgfältig auf, `withDerivedTasks` überschrieb die Liste eine
+ * Zeile später vollständig. Sichtbar wurde das als Behauptung: ein frisch
+ * zugeteilter Leiter trug ein „✓", obwohl ihn noch niemand gefragt hatte.
+ *
+ * Geprüft wird deshalb hier die Ableitung selbst und in `reducer.test.ts` der
+ * Weg durch den Zustand — die Lücke lag zwischen beiden.
+ */
+describe('fsPendingIds — wer noch nicht zugesagt hat', () => {
+  const wochen = (): FsInstance[][] => [
+    [inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })],
+    [inst({ id: 'b', wd: 3, leader: 'Bernd Muster', lpid: 'p2' })],
+  ]
+
+  it('nennt jede Leitung ohne „bestätigt"', () => {
+    expect(fsPendingIds(wochen(), BASE, {}).sort()).toEqual(['p1', 'p2'])
+  })
+
+  it('eine Bestätigung nimmt genau diese Person heraus', () => {
+    expect(fsPendingIds(wochen(), BASE, { 'fs|2026-09-07|a': 'bestätigt' })).toEqual(['p2'])
+  })
+
+  it('„verhindert" zählt wie offen — der Platz ist erst wieder besetzt, wenn neu zugeteilt ist', () => {
+    // Dieselbe Regel wie bei `derivePendingIds`; ohne sie verschwände das
+    // Zeichen bei einer Absage, und der Platz sähe erledigt aus.
+    expect(fsPendingIds(wochen(), BASE, { 'fs|2026-09-07|a': 'verhindert' }).sort()).toEqual(['p1', 'p2'])
+  })
+
+  it('offene Plätze und Freitext-Leiter bleiben draußen', () => {
+    // Der Kreisaufseher hat die App nicht — `FsPlan` zeigt bei ihm gar kein
+    // Zeichen. Stünde er hier, bekäme ein gleichnamiger Bruder dessen „…".
+    const wochenMitGast: FsInstance[][] = [
+      [
+        inst({ id: 'a', leader: '' }),
+        inst({ id: 'b', leader: 'Kreisaufseher', lext: true }),
+      ],
+    ]
+    expect(fsPendingIds(wochenMitGast, BASE, {})).toEqual([])
+  })
+
+  it('ohne Person-Id greift der Namensschlüssel (Altdaten)', () => {
+    // Dieselbe Kennung wie `derivePendingIds` sie bildet (`kennungVon`),
+    // sonst passte die Markierung im Plan nicht auf den Chip.
+    const alt = [[inst({ id: 'a', leader: 'Anton Muster' })]]
+    expect(fsPendingIds(alt, BASE, {})).toEqual(['name:Anton Muster'])
+  })
+
+  it('ohne Datumsbasis gibt es keinen Schlüssel — dann gilt alles als offen', () => {
+    // `fsWochenStart(null, …)` ist leer; eine Bestätigung kann dann nicht
+    // zugeordnet werden. Lieber ein „…" zu viel als ein „✓", das nie gegeben wurde.
+    expect(fsPendingIds(wochen(), null, { 'fs|2026-09-07|a': 'bestätigt' }).sort()).toEqual(['p1', 'p2'])
   })
 })
 

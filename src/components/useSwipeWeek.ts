@@ -92,11 +92,36 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       el.style.transition = ms === null ? '' : `transform ${ms}ms ease-out`
     }
 
+    /**
+     * Es gibt **immer nur einen** Zeitgeber — jeder neue löscht den alten.
+     *
+     * `timer` wurde vorher nur überschrieben. Die alte Frist lief dann weiter
+     * und schlug mitten in die nächste Bewegung: Wer nach einem Zurückfedern
+     * sofort weiterwischt (die 200 ms sind kürzer als eine zügige zweite
+     * Geste), bekam den Aufräum-Schlag des Zurückfederns mitten ins Blättern —
+     * `setTransition(null)` nimmt die Übergangsdauer weg, der Streifen springt
+     * statt zu gleiten. Und beim Abmelden konnte die Hülle nur die zuletzt
+     * gemerkte Frist abbrechen; jede ältere lief weiter und griff auf ein
+     * Element zu, das längst aus dem Baum war — genau das, was der Kommentar
+     * am Ende dieser Funktion verspricht.
+     */
+    const stoppen = (): void => {
+      if (timer !== undefined) window.clearTimeout(timer)
+      timer = undefined
+    }
+    const spaeter = (fn: () => void, ms: number): void => {
+      stoppen()
+      timer = window.setTimeout(fn, ms)
+    }
+
     /** Zurück auf null — „hier geht es nicht weiter" oder zu kurz gezogen. */
     const release = (animate: boolean) => {
+      // Auch ohne Animation: eine noch offene Frist gehört zur vorigen
+      // Bewegung und hat in dieser nichts mehr zu suchen.
+      stoppen()
       setTransition(animate ? SPRING_MS : null)
       setShift(0)
-      if (animate) timer = window.setTimeout(() => setTransition(null), SPRING_MS + 20)
+      if (animate) spaeter(() => setTransition(null), SPRING_MS + 20)
     }
 
     /**
@@ -126,7 +151,7 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
 
       setTransition(SLIDE_MS)
       setShift(richtung * weg)
-      timer = window.setTimeout(() => {
+      spaeter(() => {
         setTransition(null)
         flushSync(richtung === 1 ? o.current.onPrev : o.current.onNext)
         setShift(0)
@@ -247,10 +272,11 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     const abmelden = bindTouch(el, { start: onStart, move: onMove, end: onEnd, cancel: onCancel })
     return () => {
       abmelden()
-      // Laufende Animation abbrechen — sonst greifen die Zeitgeber auf ein
+      // Laufende Animation abbrechen — sonst greift der Zeitgeber auf ein
       // Element zu, das längst aus dem Baum ist, und das Standbild bliebe über
-      // dem nächsten Bildschirm liegen.
-      if (timer !== undefined) window.clearTimeout(timer)
+      // dem nächsten Bildschirm liegen. Weil es immer nur einen gibt
+      // (`spaeter`), reicht dieses eine Abbrechen wirklich aus.
+      stoppen()
       el.style.removeProperty('--week-shift')
       el.style.transition = ''
     }

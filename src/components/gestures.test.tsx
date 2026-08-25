@@ -415,6 +415,52 @@ describe('useSwipeWeek', () => {
     fertig()
     expect(onNext).not.toHaveBeenCalled()
   })
+
+  /*
+   * **Eine Bewegung darf nicht in die nächste hineinschlagen.**
+   *
+   * Jede Animation setzt eine Aufräum-Frist. Sie wurde nur überschrieben, nie
+   * abgebrochen — die alte lief weiter. Wer nach einem Zurückfedern gleich
+   * weiterwischt (und dessen 200 ms sind kürzer als eine zügige zweite Geste),
+   * bekam mitten im Blättern `transition: ''` gesetzt: der Streifen springt an
+   * seinen Platz, statt zu gleiten. Auf dem Gerät sieht das aus, als hätte die
+   * App die Geste verschluckt und dann doch geblättert.
+   */
+  it('eine abgebrochene Bewegung räumt nicht in die nächste hinein', () => {
+    const { el, onNext } = setup()
+    swipe(el, [200, 300], [170, 300]) // zu kurz → federt zurück, Frist läuft
+    vi.advanceTimersByTime(100) // sie ist noch offen (SPRING_MS + 20 = 200)
+
+    swipe(el, [200, 300], [100, 300]) // jetzt eine, die blättert
+    expect(el.style.transition).toContain('200ms')
+
+    // Genau der Moment, in dem die alte Frist zugeschlagen hätte.
+    vi.advanceTimersByTime(120)
+    expect(el.style.transition, 'die Übergangsdauer wurde mitten im Blättern weggenommen').toContain(
+      '200ms',
+    )
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-400px')
+
+    fertig()
+    expect(onNext).toHaveBeenCalledTimes(1)
+    expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
+  })
+
+  it('beim Abmelden bleibt keine Frist offen — auch keine ältere', () => {
+    // Die Hülle konnte nur die zuletzt gemerkte abbrechen; was davor lief,
+    // griff danach auf ein Element zu, das nicht mehr im Baum steht. Gezählt
+    // statt an einer Wirkung abgelesen: Die alte Frist tat am Ende dasselbe
+    // wie das Aufräumen (`transition: ''`) und blieb dadurch unsichtbar —
+    // ein Test auf die Wirkung wäre grün geblieben, ob der Fehler dasteht
+    // oder nicht.
+    const r = render(<WeekHarness />)
+    const el = r.getByTestId('screen')
+    swipe(el, [200, 300], [170, 300]) // Zurückfedern: Frist eins
+    vi.advanceTimersByTime(100)
+    swipe(el, [200, 300], [100, 300]) // Blättern: Frist zwei
+    r.unmount()
+    expect(vi.getTimerCount()).toBe(0)
+  })
 })
 
 /* ---- Sheet nach unten wischen -------------------------------------------- */

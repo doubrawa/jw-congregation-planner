@@ -42,6 +42,46 @@ describe('Ziffern fremder Schriften', () => {
     expect(zahl('15')).toBe(15)
   })
 
+  /*
+   * **Nicht jeder Ziffernsatz endet vor einer Nicht-Ziffer.**
+   *
+   * Die Rückwärts-Zählung setzte genau das voraus: von der Ziffer aus so weit
+   * zurück, wie noch Ziffern kommen. Unicode legt aber Sätze auch direkt
+   * aneinander — die Ziffern des **östlichen Pwo-Karen** (U+116DA) folgen
+   * unmittelbar auf die des Pao. Von dort lief die Zählung in den Nachbarsatz
+   * und schlug an der Zehnerbremse an: Die Null ergab 10, die Eins ebenso.
+   *
+   * Geprüft wird nicht dieser eine Fall, sondern die Behauptung selbst — über
+   * **alle** Zahlensysteme, die die Laufzeitumgebung führt. Kommt eines dazu,
+   * das ebenso angrenzt, fällt es hier auf und nicht erst in einem Arbeitsheft.
+   */
+  it('liest jeden Ziffernsatz richtig, den die Laufzeit kennt', () => {
+    const ZIFFER = /\p{Nd}/u
+    const falsch: string[] = []
+    let geprueft = 0
+    for (const nu of Intl.supportedValuesOf('numberingSystem')) {
+      let ziffern: string
+      try {
+        ziffern = new Intl.NumberFormat(`en-u-nu-${nu}`, { useGrouping: false }).format(1234567890)
+      } catch {
+        continue
+      }
+      const zeichen = [...ziffern]
+      // Nur echte Dezimalsätze; algorithmische (römisch, hebräisch) und
+      // Wortschriften (hanidec) sind keine `\p{Nd}`-Folgen.
+      if (zeichen.length !== 10 || !zeichen.every((c) => ZIFFER.test(c))) continue
+      geprueft++
+      // format(1234567890): Index 9 ist die Null, davor 1…9.
+      const erwartet = zeichen.map((_c, i) => (i + 1) % 10).join('')
+      const gelesen = zeichen.map((c) => zahl(c)).join('')
+      if (gelesen !== erwartet) falsch.push(`${nu}: ${gelesen} statt ${erwartet}`)
+      // Und die Gegenrichtung: geschrieben wird in der Schrift der Vorlage.
+      if (zahlWieVorlage(1234567890, zeichen[0]!) !== ziffern) falsch.push(`${nu} (schreiben)`)
+    }
+    expect(geprueft).toBeGreaterThan(50) // sonst prüfte der Test nichts
+    expect(falsch).toEqual([])
+  })
+
   it('schreibt in der Schrift der Vorlage zurück', () => {
     // Aus „٣“ wird „١٥“ — nicht „15“. Eine westliche Zahl mitten in einem
     // arabischen Programm wäre für den Leser ein Fremdkörper.

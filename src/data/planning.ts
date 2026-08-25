@@ -915,7 +915,7 @@ const TABS: MeetingKey[] = ['mid', 'we']
  * käme aus keiner Quelle, die wir schreiben, und ein zu strenger Test hier
  * verwürfe im Zweifel echte Schlüssel.
  */
-export function istWochenKennung(feld: string): boolean {
+function istWochenKennung(feld: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(feld)
 }
 
@@ -1081,6 +1081,15 @@ export function deriveSubstituteReqs(
     if (wi < 0) continue // Woche nicht geladen — dazu ist nichts zu sagen
     if (istAbwesend(abwesend, me.id, wi, parts.tab)) continue
     const week = weeks[wi]
+    // Entfällt die Zusammenkunft, gibt es nichts zu vertreten (T30) — dieselbe
+    // Grenze, die `eachAssignedSlot` für die eigenen Aufgaben zieht und die die
+    // Edge Function `substitute` serverseitig durchsetzt ('meeting-cancelled').
+    // Sie fehlte allein hier: Sagte jemand ab und wurde die Woche danach
+    // gestrichen (Kongress, Saal belegt), stand das Gesuch weiter im
+    // Aufgaben-Blatt und legte sich beim Öffnen sogar als Modal vor
+    // (`vorzulegen`). Wer darauf zusagte, bekam vom Server ein 409 und davon
+    // nur einen Speicherfehler zu sehen.
+    if (istAusgefallen(week, parts.tab)) continue
     const meeting = week?.[parts.tab]
     const slot = meeting?.helpers[parts.svc]?.[parts.pos]
     if (!meeting || !slot?.name || slot.name === myName) continue // eigener/leerer Slot

@@ -82,7 +82,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 
 | # | Funktion | Wo | Wer | Umsetzung |
 | --- | --- | --- | --- | --- |
-| 23 | Wochenprogramm in Arbeitsheft-Farblogik (Panels petrol/gold/wein/neutral) | Programm | alle | `programm/ProgrammScreen.tsx`, `SECTION_TOKENS` |
+| 23 | Wochenprogramm in Arbeitsheft-Farblogik (Panels petrol/gold/wein/neutral) | Programm | alle | `programm/ProgrammScreen.tsx` (`data-farbe`), `styles/tokens.css` |
 | 24 | Drei Reiter: unter der Woche / Wochenende / Treffpunkte | Programm | alle | `components/MeetingTabs.tsx` |
 | 25 | Wochen blättern per Pfeil | Programm | alle | `components/WeekNav.tsx` |
 | 26 | Wochen blättern per Wischgeste (Touch-Events, drei Wochen im Streifen) | Programm, Planen | alle | `components/WeekStrip.tsx`, `useSwipeWeek.ts`, `bindTouch.ts` |

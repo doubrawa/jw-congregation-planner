@@ -130,7 +130,7 @@ export interface Abweichung {
 export type Abweichungen = Partial<Record<'mid' | 'we', Abweichung>>
 
 /** Abweichung dieser einen Zusammenkunft, falls es eine gibt. */
-export function abweichungFuer(
+function abweichungFuer(
   dev: Abweichungen | undefined,
   tab: 'mid' | 'we',
 ): Abweichung | undefined {

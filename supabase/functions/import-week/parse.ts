@@ -98,12 +98,51 @@ function randTrim(s: string): string {
  * Wert einer Ziffernfolge, gleich in welcher Schrift („١٢“ → 12, „１２“ → 12).
  * `Number()` kennt nur westliche Ziffern und liefert sonst `NaN`.
  *
- * Ohne Tabelle: die Dezimalziffern jeder Schrift liegen als Zehnerblock
- * hintereinander im Unicode. Von einer Ziffer aus rückwärts zählen, bis das
- * Zeichen davor keine Ziffer mehr ist, ergibt ihren Wert — das gilt für jede
- * Schrift, auch für die, an die hier niemand gedacht hat.
+ * Die Dezimalziffern jeder Schrift liegen als Zehnerblock hintereinander im
+ * Unicode; von einer Ziffer rückwärts zu zählen, bis das Zeichen davor keine
+ * Ziffer mehr ist, ergibt ihren Wert. **Nur endet nicht jeder Block vor einer
+ * Nicht-Ziffer:** Es gibt Sätze, die unmittelbar aneinandergrenzen — die
+ * Ziffern des östlichen Pwo-Karen (U+116DA) folgen direkt auf die des Pao. Die
+ * Zählung läuft dort in den Nachbarsatz und schlägt an der Zehnerbremse an.
+ *
+ * Deshalb zuerst die Tabelle, die die Laufzeitumgebung selbst mitbringt: `Intl`
+ * führt die Zahlensysteme, und `format(1234567890)` liefert je System dessen
+ * zehn Ziffern in einem Zug (die letzte ist die Null). Keine Sprachliste von
+ * Hand — abgeleitet, wie im Client (`src/data/ziffern.ts`). Was `Intl` nicht
+ * kennt, fällt auf die Zählung zurück.
  */
+let ziffernWerte: Map<string, number> | null = null
+
+function ziffernTabelle(): Map<string, number> {
+  if (ziffernWerte) return ziffernWerte
+  const map = new Map<string, number>()
+  let systeme: string[] = []
+  try {
+    systeme = Intl.supportedValuesOf('numberingSystem')
+  } catch {
+    // Laufzeit ohne `supportedValuesOf` — dann bleibt es bei der Zählung.
+  }
+  for (const nu of systeme) {
+    let ziffern: string
+    try {
+      ziffern = new Intl.NumberFormat(`en-u-nu-${nu}`, { useGrouping: false }).format(1234567890)
+    } catch {
+      continue
+    }
+    const zeichen = [...ziffern]
+    // Genau zehn Zeichen und alle Dezimalziffern: algorithmische Systeme
+    // (römisch, hebräisch) und Wortschriften (`hanidec`) fallen heraus —
+    // `ZIFFERNFOLGE` fände sie ohnehin nie.
+    if (zeichen.length !== 10 || !zeichen.every((c) => ZIFFER.test(c))) continue
+    zeichen.forEach((c, i) => map.set(c, (i + 1) % 10))
+  }
+  ziffernWerte = map
+  return map
+}
+
 function ziffernWert(c: string): number {
+  const bekannt = ziffernTabelle().get(c)
+  if (bekannt !== undefined) return bekannt
   let cp = c.codePointAt(0) ?? 0
   let n = 0
   while (n < 10 && ZIFFER.test(String.fromCodePoint(cp - 1))) {

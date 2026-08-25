@@ -1,6 +1,6 @@
 import { fill, useT } from '../i18n/useT'
 import { useApp } from '../app/context'
-import { abweichung, istAusgefallen, weichtAb } from '../data/helpers'
+import { abweichungsGrund, istAusgefallen, weichtAb } from '../data/helpers'
 import { anlassArt } from '../data/anlass'
 import { WEEKDAY_OFFSET } from '../data/meeting-dates'
 import { termineVon } from '../data/termine'
@@ -91,7 +91,7 @@ export function AusfallBanner({ week, tab }: { week: Week | undefined; tab: Meet
   const { t } = useT()
   if (!week || !istAusgefallen(week, tab)) return null
   const name = tab === 'we' ? t.tabWe : t.tabMid
-  const grund = abweichung(week, tab)?.reason ?? ''
+  const grund = abweichungsGrund(week, tab)
   return (
     <div className="ausfall-banner" role="status">
       <s className="ausfall-name">{name}</s>

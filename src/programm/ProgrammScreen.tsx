@@ -225,14 +225,24 @@ function ProgramMeeting({
         <h2 className="panel-label">{t.hilfsdienste}</h2>
         <div className="prog-helpers-grid">
           {state.services.map((service) => {
-            const assigned = (meeting.helpers[service.key] ?? [])
-              .map((slot) => slot.name)
-              .filter(Boolean)
-              .slice(0, service.count)
-              .map((n) => tu(n))
-            const cells = assigned.concat(
-              Array<string>(Math.max(0, service.count - assigned.length)).fill(t.offenWort),
-            )
+            const arr = meeting.helpers[service.key] ?? []
+            /*
+             * Platz für Platz, genau so weit wie `service.count` reicht — die
+             * gleiche Grenze, nach der `countOpenSlots`, `deriveMyTasks` und
+             * `helperWorkload` rechnen.
+             *
+             * Vorher wurden erst die leeren Namen weggeworfen und dann
+             * abgeschnitten. Das verschob die Besetzung nach vorn (Platz 2
+             * besetzt, Platz 1 offen → „Anna · offen") und, schlimmer, zeigte
+             * einen Namen, den es gar nicht mehr gibt: Reduziert der Planer die
+             * Platzzahl, bleiben die Namen dahinter in den Wochendaten stehen —
+             * das Programmblatt nannte dann jemanden, den die Aufgabenliste,
+             * die Auslastung und der Planen-Screen längst nicht mehr kennen.
+             */
+            const cells = Array.from({ length: service.count }, (_unused, pos) => {
+              const name = arr[pos]?.name
+              return name ? tu(name) : t.offenWort
+            })
             return (
               <div key={service.key}>
                 <div className="prog-helper-label">{tu(service.name).toUpperCase()}</div>

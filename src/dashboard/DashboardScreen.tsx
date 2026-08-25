@@ -1,13 +1,13 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { fsWeekConflicts } from '../data/fs'
-import { currentWeekIndex } from '../data/meeting-dates'
+import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
-import type { MeetingTab } from '../data/types'
+import type { MeetingKey } from '../data/types'
 import './dashboard.css'
 
 /**
@@ -46,9 +46,28 @@ export function DashboardScreen() {
   // aus `week.current` gelesen: das Flag setzt nur der Demo-Datensatz und wird
   // nie nachgeführt — die Konfliktzahl stand deshalb dauerhaft auf 0.
   const curIdx = currentWeekIndex(state.weeks)
-  const week = curIdx >= 0 ? state.weeks[curIdx] : (state.weeks[state.week] ?? null)
+  // Der Index wird mitgeführt, nicht nur die Woche: `meetingDateText` rechnet
+  // den Termin aus Startdatum und Wochentag und braucht dafür beides.
+  const weekIdx = curIdx >= 0 ? curIdx : state.week
+  const week = state.weeks[weekIdx] ?? null
 
   const shortDate = (s: string): string => tp(s).split(' · ').slice(0, 2).join(' · ')
+
+  /**
+   * Termin einer Zusammenkunft — **gerechnet**, nicht aus dem `date`-Feld
+   * gelesen.
+   *
+   * Importierte Wochen tragen dort nur die Wochenspanne („7.–13. September"),
+   * denn die Überschrift der jw.org-Seite nennt weder Wochentag noch Uhrzeit.
+   * Hier stand `meeting.date` roh, und damit las „Diese Woche" zweimal
+   * dieselbe Zeile: „unter der Woche · 7.–13. September" und daneben
+   * „Wochenende · 7.–13. September". Genau dafür gibt es `meetingDateText`;
+   * „Meine Aufgaben", das S-89-Formular, das Programm und die Erinnerungen
+   * gehen längst darüber. Wochen mit eigenem Termin im `date`-Feld (Demo,
+   * Gedächtnismahl) sind unberührt — der gilt dort weiterhin.
+   */
+  const meetingDate = (tab: MeetingKey): string =>
+    week ? shortDate(meetingDateText(week, weekIdx, tab, state.congregation.meetings)) : ''
 
   // Entfallene Zusammenkünfte zählen nicht mit (T30): ihre Plätze sind nicht
   // „offen", sie werden gar nicht gebraucht. Sonst stünde auf dem Start-Bildschirm
@@ -128,14 +147,14 @@ export function DashboardScreen() {
       {week && (
         <div className="dash-week">
           <div className="dash-week-label">{t.aktuelleWoche}</div>
-          {(['mid', 'we'] as MeetingTab[]).map((tab) => {
-            const meeting = tab === 'mid' ? week.mid : week.we
+          {MEETING_TABS.map((tab) => {
+            const meeting = week[tab]
             const has = me ? assignmentsInMeeting(meeting, me, state.services).length > 0 : false
             return (
               <div key={tab} className="dash-week-row">
                 <div>
                   <div className="dash-week-name">{tab === 'mid' ? t.tabMid : t.tabWe}</div>
-                  <div className="dash-week-date">{shortDate(meeting.date)}</div>
+                  <div className="dash-week-date">{meetingDate(tab)}</div>
                 </div>
                 {has ? (
                   <span className="dash-week-chip">{t.dashDeineAufgabe}</span>

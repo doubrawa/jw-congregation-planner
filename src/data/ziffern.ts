@@ -6,11 +6,17 @@
  * NaN und `/\d/` trifft nicht — weshalb die Minuten eines Programmpunkts
  * außerhalb des Deutschen unlesbar waren (T32).
  *
- * Eine Tabelle braucht es dafür nicht. Unicode legt jeden Dezimalziffernsatz
- * lückenlos und in derselben Reihenfolge ab, die Null zuerst. Der Wert einer
- * Ziffer ist deshalb ihr Abstand zur Null ihres eigenen Satzes — und den findet
- * man, indem man so weit zurückgeht, wie das Zeichen davor noch eine Ziffer
- * ist. Rückwärts gilt dasselbe; auch das Schreiben kommt ohne Sprachliste aus.
+ * Unicode legt jeden Dezimalziffernsatz lückenlos und in derselben Reihenfolge
+ * ab, die Null zuerst. Der Wert einer Ziffer ist deshalb ihr Abstand zur Null
+ * ihres eigenen Satzes — und den fand man, indem man so weit zurückging, wie
+ * das Zeichen davor noch eine Ziffer ist.
+ *
+ * **Nur endet nicht jeder Satz vor einer Nicht-Ziffer.** Es gibt Sätze, die
+ * unmittelbar aneinandergrenzen; die Zählung läuft dann in den Nachbarsatz
+ * hinein. Deshalb steht sie jetzt hinter einer aus `Intl` **abgeleiteten**
+ * Tabelle — keine Sprachliste von Hand, sondern das, was die Laufzeitumgebung
+ * ohnehin weiß (siehe `ziffernTabelle`). Das Schreiben (`zahlWieVorlage`)
+ * kommt über denselben Weg an den richtigen Satzanfang.
  *
  * Dieselbe Rechnung steht im Import-Parser
  * (`supabase/functions/import-week/parse.ts`). Sie dort und hier zu haben ist
@@ -23,8 +29,59 @@ const ZIFFER = /\p{Nd}/u
 /** Eine zusammenhängende Ziffernfolge. */
 const ZIFFERNFOLGE = /\p{Nd}+/u
 
-/** Wert einer einzelnen Ziffer: „٣“ → 3, „7“ → 7. */
-function ziffernWert(c: string): number {
+/**
+ * Ziffernwerte, die die Laufzeitumgebung selbst kennt.
+ *
+ * **Warum es das braucht, obwohl die Rückwärts-Zählung so schön ohne Tabelle
+ * auskommt:** Sie setzt voraus, dass vor der Null eines Satzes keine Ziffer
+ * steht. Unicode garantiert das nicht — es gibt Sätze, die **unmittelbar
+ * aneinandergrenzen**. Nachgemessen an allen 78 Zahlensystemen, die `Intl`
+ * führt: fünf sind betroffen, vier davon mathematische Auszeichnungen — und
+ * eines eine echte Sprache, das **ostliche Pwo-Karen** (U+116DA, direkt hinter
+ * der Neun der Pao-Ziffern). Von dort aus läuft die Zählung in den Nachbarsatz
+ * und schlägt an der Zehnerbremse an: `zahl('𑛚')` ergab 10 statt 0.
+ *
+ * Die Tabelle ist trotzdem keine von Hand gepflegte Liste — sie wird aus
+ * `Intl` **abgeleitet**, wie die relativen Zeitangaben (`i18n/zeit.ts`) und die
+ * Wochentagsnamen: `format(1234567890)` liefert je System dessen zehn Ziffern
+ * in einem Zug, die letzte ist die Null. Was `Intl` nicht kennt, fällt auf die
+ * Zählung zurück; für einen Satz, den die Laufzeit noch nicht führt, ist sie
+ * weiterhin die beste verfügbare Antwort.
+ *
+ * Aufgebaut wird erst beim ersten Bedarf: Wer die App auf Deutsch benutzt,
+ * zahlt die 77 Formatierungen nie.
+ */
+let werte: Map<string, number> | null = null
+
+function ziffernTabelle(): Map<string, number> {
+  if (werte) return werte
+  const map = new Map<string, number>()
+  let systeme: string[] = []
+  try {
+    systeme = Intl.supportedValuesOf('numberingSystem')
+  } catch {
+    // Ältere Laufzeit ohne `supportedValuesOf` — dann bleibt es bei der Zählung.
+  }
+  for (const nu of systeme) {
+    let ziffern: string
+    try {
+      ziffern = new Intl.NumberFormat(`en-u-nu-${nu}`, { useGrouping: false }).format(1234567890)
+    } catch {
+      continue
+    }
+    const zeichen = [...ziffern]
+    // Genau zehn Zeichen und alle Dezimalziffern: algorithmische Systeme
+    // (römisch, hebräisch) und Wortschriften (`hanidec`) fallen damit heraus —
+    // `ZIFFERNFOLGE` fände sie ohnehin nie.
+    if (zeichen.length !== 10 || !zeichen.every((c) => ZIFFER.test(c))) continue
+    zeichen.forEach((c, i) => map.set(c, (i + 1) % 10))
+  }
+  werte = map
+  return map
+}
+
+/** Rückfall: von der Ziffer aus rückwärts zählen, solange Ziffern kommen. */
+function ziffernWertGezaehlt(c: string): number {
   let cp = c.codePointAt(0) ?? 0
   let n = 0
   while (n < 10 && ZIFFER.test(String.fromCodePoint(cp - 1))) {
@@ -32,6 +89,11 @@ function ziffernWert(c: string): number {
     n++
   }
   return n
+}
+
+/** Wert einer einzelnen Ziffer: „٣“ → 3, „7“ → 7. */
+function ziffernWert(c: string): number {
+  return ziffernTabelle().get(c) ?? ziffernWertGezaehlt(c)
 }
 
 /** Codepunkt der Null in dem Ziffernsatz, zu dem `c` gehört. */

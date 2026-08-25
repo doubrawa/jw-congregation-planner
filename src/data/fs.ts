@@ -591,6 +591,45 @@ export function deriveMyFsTasks(
 }
 
 /**
+ * Kennungen mit mindestens einer **nicht bestätigten** Treffpunkt-Leitung —
+ * das Gegenstück zu `derivePendingIds` (planning.ts) für die zweite
+ * Datenquelle.
+ *
+ * Ohne sie war die „…"-Markierung im Treffpunkt-Plan blind für genau das, was
+ * sie anzeigen soll: `derivePendingIds` läuft nur über die Zusammenkünfte, und
+ * `withDerivedTasks` überschreibt damit die Liste vollständig. Ein frisch
+ * zugeteilter Leiter trug daher ein „✓" — die Behauptung, er habe zugesagt,
+ * obwohl ihn noch niemand gefragt hat. Umgekehrt bekam ein Leiter, der seinen
+ * Treffpunkt längst bestätigt hatte, ein „…", sobald irgendeine
+ * Zusammenkunfts-Aufgabe von ihm offen war. Beide Richtungen falsch, und beide
+ * still: Der Reducer baute die Kennung beim Zuteilen sorgfältig auf
+ * (`newlyIds`), nur um sie eine Zeile später wieder zu verlieren.
+ *
+ * Gleiche Regeln wie dort: „verhindert" zählt wie offen (bis der Planer neu
+ * zuteilt), und die Kennung ist die Person-Id, sonst der Namensschlüssel
+ * (`kennungVon`).
+ *
+ * **Freitext-Leiter bleiben draußen.** Der Kreisaufseher hat die App nicht; für
+ * ihn zeigt `FsPlan` gar kein Zeichen (`showStatus`). Stünde er hier, gälte
+ * sein Name als „offen" — und ein gleichnamiger Bruder bekäme dessen „…".
+ */
+export function fsPendingIds(
+  fsWeeks: FsInstance[][],
+  fsBase: Date | null,
+  confirmations: ConfirmationMap,
+): string[] {
+  const pending = new Set<string>()
+  fsWeeks.forEach((week, wi) => {
+    for (const inst of week) {
+      if (!inst.leader || inst.lext) continue
+      const key = fsTaskKey(fsWochenStart(fsBase, wi), inst.id)
+      if (confirmations[key] !== 'bestätigt') pending.add(kennungVon(inst.leader, inst.lpid))
+    }
+  })
+  return [...pending]
+}
+
+/**
  * Konflikte der Treffpunkte einer Woche — das Gegenstück zu `weekConflicts`
  * für die zweite Datenquelle.
  *

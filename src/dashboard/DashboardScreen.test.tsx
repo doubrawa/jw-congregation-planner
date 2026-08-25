@@ -58,16 +58,33 @@ function laufendeWoche(over: Partial<Week> = {}): Week {
   return {
     range: 'diese Woche', book: '', start: iso, current: false,
     mid: {
-      date: 'Di, 8. September · 19:00', end: '20:45',
+      // Ausgeschriebener Wochentag — die Form, in der Wochen mit eigenem Termin
+      // ihn tragen (Demo-Bestand, Gedächtnismahl). Die Kurzform „Di," kommt in
+      // keiner Datenquelle vor und wird von `meetingDateParts` bewusst nicht
+      // erkannt; sie stand hier und ließ den Test etwas anderes prüfen als das,
+      // was der Bildschirm sieht.
+      date: 'Dienstag, 8. September · 19:00', end: '20:45',
       sections: [{
         label: 'X', farbe: 'petrol',
         items: [{ num: 1, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
       }],
       helpers: { mik: [] },
     },
-    we: { date: 'So, 13. September · 10:00', end: '11:45', sections: [], helpers: { mik: [] } },
+    we: { date: 'Sonntag, 13. September · 10:00', end: '11:45', sections: [], helpers: { mik: [] } },
     ...over,
   }
+}
+
+/**
+ * Woche, wie sie der jw.org-Import ablegt: im `date`-Feld steht die
+ * **Wochenspanne**, kein Termin (die Überschrift der Wochenseite nennt weder
+ * Wochentag noch Uhrzeit). Der Tag muss daraus gerechnet werden.
+ */
+function importierteWoche(): Week {
+  const w = laufendeWoche()
+  w.mid = { ...w.mid, date: w.range }
+  w.we = { ...w.we, date: w.range }
+  return w
 }
 
 /** Der eine Programm-Platz der Wochenmitte — die Testwoche hat genau einen. */
@@ -207,14 +224,46 @@ describe('„Diese Woche"', () => {
     expect(zeilen.map((z) => z.querySelector('.dash-week-name')?.textContent)).toEqual([
       t.tabMid, t.tabWe,
     ])
-    expect(zeilen[0]!.querySelector('.dash-week-date')?.textContent).toBe('Di, 8. September · 19:00')
+    expect(zeilen[0]!.querySelector('.dash-week-date')?.textContent).toBe('Dienstag, 8. September · 19:00')
   })
 
   it('ein angehängter Ort fällt weg — auf dem Start zählt der Termin, nicht der Saal', () => {
     const w = laufendeWoche()
-    w.mid.date = 'Di, 8. September · 19:00 · Königreichssaal Nord'
+    w.mid.date = 'Dienstag, 8. September · 19:00 · Königreichssaal Nord'
     const { container } = zeige({ weeks: [w] })
-    expect(container.querySelector('.dash-week-date')?.textContent).toBe('Di, 8. September · 19:00')
+    expect(container.querySelector('.dash-week-date')?.textContent).toBe('Dienstag, 8. September · 19:00')
+  })
+
+  /*
+   * Der wichtigste Fall und der einzige, den es in der Produktion überhaupt
+   * gibt: eine **importierte** Woche. Ihr `date`-Feld trägt die Wochenspanne,
+   * keinen Termin. Roh angezeigt las „Diese Woche" deshalb zweimal dieselbe
+   * Zeile — „unter der Woche · 7.–13. September" und darunter „Wochenende ·
+   * 7.–13. September" —, also gerade nicht das, wonach gefragt ist. Gerechnet
+   * wird aus Startdatum und Wochentag, wie in „Meine Aufgaben", im Programm und
+   * in den Erinnerungen (`meetingDateText`).
+   */
+  it('importierte Woche: der Termin wird gerechnet, nicht die Wochenspanne gezeigt', () => {
+    const { container } = zeige({ weeks: [importierteWoche()] })
+    const zeilen = [...container.querySelectorAll('.dash-week-row')]
+    const daten = zeilen.map((z) => z.querySelector('.dash-week-date')?.textContent ?? '')
+    for (const d of daten) expect(d).not.toContain('diese Woche')
+    // Dienstag/Sonntag aus den Zusammenkunftszeiten der Versammlung, samt Uhrzeit.
+    expect(daten[0]).toMatch(/^Dienstag, \d+\. \S+ · 19:00$/)
+    expect(daten[1]).toMatch(/^Sonntag, \d+\. \S+ · 10:00$/)
+    // Und vor allem: zwei verschiedene Tage, nicht zweimal derselbe Text.
+    expect(daten[0]).not.toBe(daten[1])
+  })
+
+  it('verlegte Zusammenkunft: der Start zeigt den neuen Tag, nicht den geplanten', () => {
+    // Eine Abweichung (T30) schlägt den Rhythmus — sonst stünde auf dem
+    // Start-Bildschirm ein Abend, an dem niemand kommt.
+    const w = importierteWoche()
+    w.dev = { mid: { day: 'Donnerstag', time: '18:30' } }
+    const { container } = zeige({ weeks: [w] })
+    expect(container.querySelector('.dash-week-date')?.textContent).toMatch(
+      /^Donnerstag, \d+\. \S+ · 18:30$/,
+    )
   })
 
   it('markiert die Zusammenkunft, in der ich selbst dran bin', () => {

@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, overseerGroup, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -243,7 +243,17 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   return {
     ...state,
     myTasks,
-    pendingIds: derivePendingIds(weeks, state.services, state.confirmations),
+    // Beide Datenquellen, wie bei `myTasks` eine Zeile darüber: die
+    // „…"-Markierung im Plan gilt für Zusammenkünfte **und** Treffpunkte.
+    // Stand hier nur `derivePendingIds`, überschrieb diese Zeile die Kennung,
+    // die der Reducer beim Zuteilen eines Treffpunkt-Leiters gerade erst
+    // aufgebaut hatte (siehe `fsPendingIds`).
+    pendingIds: [
+      ...new Set([
+        ...derivePendingIds(weeks, state.services, state.confirmations),
+        ...fsPendingIds(state.fsWeeks, state.fsBase, state.confirmations),
+      ]),
+    ],
     substituteReqs,
     // Das Blatt beim Öffnen zeigt beides: unbestätigte Zuteilungen und offene
     // Ersatzgesuche (T69). Ein Gesuch erreichte bis dahin nur, wer von selbst

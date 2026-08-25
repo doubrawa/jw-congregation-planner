@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildImportWeek } from './testdaten'
-import { emptyQualifications, helperWorkload, istAusgefallen, partWorkload, weichtAb } from './helpers'
+import { emptyQualifications, helperWorkload, istAusgefallen, partWorkload, serviceQualKey, weichtAb } from './helpers'
 import { setAbweichung } from './meeting-edit'
 import { meetingDateText, meetingOffset, meetingTime } from './meeting-dates'
-import { autoAssignMeeting, deriveMyTasks, weekConflicts } from './planning'
+import { autoAssignMeeting, deriveMyTasks, deriveSubstituteReqs, helperTaskKey, weekConflicts } from './planning'
 import type { Meeting, Person, Week } from './types'
 
 /**
@@ -137,6 +137,30 @@ describe('Ausfall: es kommt niemand zusammen', () => {
 
     // Gegenprobe: ohne den Ausfall besetzt dieselbe Vorlage sehr wohl.
     expect(autoAssignMeeting([buildImportWeek()], 0, 'mid', kandidaten, []).count).toBeGreaterThan(0)
+  })
+
+  /*
+   * Ersatzgesuche sind die vierte Ableitung an derselben Grenze — und die
+   * einzige, die sie nicht kannte.
+   *
+   * Der Hergang ist alltäglich: Jemand sagt seinen Hilfsdienst ab, danach fällt
+   * die Zusammenkunft aus (Kongress, Saal belegt). Das Gesuch blieb stehen: im
+   * Aufgaben-Blatt, in der Zahl „noch zu erledigen" — und `vorzulegen` legte es
+   * beim nächsten Öffnen sogar als Modal vor. Wer daraufhin zusagte, bekam vom
+   * Server ein 409 ('meeting-cancelled') und davon nur einen Speicherfehler zu
+   * sehen: eine Einladung zu etwas, das die App selbst ablehnt.
+   */
+  it('sucht keinen Ersatz mehr — für einen Abend, an dem niemand kommt', () => {
+    const dienste = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
+    const einspringer: Person = {
+      id: 'p2', fn: 'Bernd', ln: 'Bereit', role: 'verkuendiger', tel: '', mail: '',
+      priv: { ...emptyQualifications(), [serviceQualKey('mik')]: true },
+    }
+    const abgesagt = { [helperTaskKey('2026-09-07', 'mid', 'mik', 0)]: 'verhindert' as const }
+
+    // Gegenprobe zuerst: findet die Zusammenkunft statt, gibt es das Gesuch.
+    expect(deriveSubstituteReqs([makeWeek()], dienste, abgesagt, einspringer, ZEITEN)).toHaveLength(1)
+    expect(deriveSubstituteReqs([aus()], dienste, abgesagt, einspringer, ZEITEN)).toEqual([])
   })
 
   it('lässt die Zuteilungen stehen — Zurücknehmen stellt die Planung wieder her', () => {

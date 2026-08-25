@@ -3,10 +3,17 @@
  * Reine Referenzwerte — keine Demo-Daten (die kommen aus dem Prototyp).
  */
 
-import type { QualificationKey, Role, SectionColor, Theme } from './types'
+import type { QualificationKey, Role, Theme } from './types'
 
-/** Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen. */
-export const PLANNER_ROLES: readonly Role[] = ['aeltester', 'dienstamtgehilfe']
+/*
+ * Hier stand `PLANNER_ROLES = ['aeltester', 'dienstamtgehilfe']` mit dem Satz
+ * „Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen". Beides ist
+ * überholt: Das Planer-Recht hängt seit den Mitgliedschaften an
+ * `members.planner` bzw. `Person.planner`, **nicht** an der Rolle — ein
+ * Ältester ohne Haken plant nichts, ein Verkündiger mit Haken schon. Die
+ * Konstante hatte keinen Aufrufer mehr und behauptete das Gegenteil der
+ * geltenden Regel; ein falscher Wegweiser ist schlechter als keiner.
+ */
 
 /** Rollen-Reihenfolge in der Oberfläche (Chips im Detail, Filter der Liste). */
 export const ROLE_ORDER: readonly Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine']
@@ -59,20 +66,14 @@ export const BRUDER_BEREICHE: ReadonlySet<QualificationKey> = new Set<Qualificat
   'wtVertreter',
 ])
 
-/**
- * Bereichsfarbe → CSS-Token-Suffixe (Panel-Fläche, Label-/Akzentfarbe,
- * Hairline). Nutzung z. B. `var(--t${Panel})`. Siehe styles/tokens.css.
+/*
+ * Hier stand `SECTION_TOKENS` — eine Zuordnung Bereichsfarbe → CSS-Token-
+ * Namen, gedacht für `var(--t${Panel})` im JSX. Gebaut wurde es nie so: Die
+ * Panels tragen `data-farbe="petrol"`, und die Farben stehen als
+ * Attribut-Regeln in `styles/tokens.css`. Damit lag die Zuordnung zweimal
+ * vor — einmal wirksam im CSS, einmal unbenutzt hier —, und nur eine der
+ * beiden wurde gepflegt.
  */
-export const SECTION_TOKENS: Record<
-  SectionColor,
-  { panel: string; accent: string; hairline: string }
-> = {
-  neutral: { panel: 'tNeu', accent: 'mut', hairline: 'lineNeu' },
-  neutral2: { panel: 'tNeu2', accent: 'mut', hairline: 'lineNeu' },
-  petrol: { panel: 'tPet', accent: 'pet', hairline: 'linePet' },
-  gold: { panel: 'tGld', accent: 'gld', hairline: 'lineGld' },
-  wein: { panel: 'tWein', accent: 'wein', hairline: 'lineWein' },
-}
 
 /**
  * Farbschemata (Profil → Darstellung), Reihenfolge = Combobox.

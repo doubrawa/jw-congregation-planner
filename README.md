@@ -413,7 +413,9 @@ Home-Bildschirm“ installiert wurde (iOS 16.4+).
 
 Ablauf laut Einstellungen → ERINNERUNGEN (`settings.reminders`): erste
 Erinnerung `first` Tage vorher, letzte `last` Tage vorher (jeweils Push +
-Glocke), mit `repeat` zusätzlich täglich per Push bis zur Bestätigung.
+Glocke), mit `repeat` zusätzlich täglich per Push an den Tagen **dazwischen**.
+Nach `last` kommt nichts mehr — „letzte Erinnerung“ heißt letzte; wer auch am
+Tag der Zusammenkunft erinnern will, setzt `last = 0`.
 Bestätigt/verhindert beendet die Erinnerungen; Gastredner/Kreisaufseher und
 Gruppen-Rotationen sind ausgenommen. Der Zusammenkunftstag wird aus
 `meeting_times` gelesen („Di 19:00 · So 10:00“ → Di/So der Programmwoche).

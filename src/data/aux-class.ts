@@ -142,17 +142,6 @@ function gleich(a: SlotAssignment[] | undefined, b: SlotAssignment[]): boolean {
   return a.every((s, i) => JSON.stringify(s) === JSON.stringify(b[i]))
 }
 
-/** Alle Schülerteile einer Zusammenkunft mit ihren Positionen. */
-export function schuelerteile(meeting: Meeting): Array<{ si: number; ii: number; item: PartItem }> {
-  const out: Array<{ si: number; ii: number; item: PartItem }> = []
-  meeting.sections.forEach((section, si) =>
-    section.items.forEach((item, ii) => {
-      if (istSchuelerteil(item)) out.push({ si, ii, item: item as PartItem })
-    }),
-  )
-  return out
-}
-
 /**
  * Rollenbezeichnung des Ratgebers — kanonisch deutsch wie alle Rollen in den
  * Wochendaten (Vorsitz, Gebet, Leser …); übersetzt wird erst bei der Anzeige.
