@@ -313,8 +313,8 @@ Deno.serve(async (req: Request) => {
     const payload = (await req.json().catch(() => null)) as {
       action?: string
       /**
-       * Wird **nicht ausgewertet**. Der Client schickt das Feld noch mit; die
-       * Versammlung stammt aber aus der Mitgliedszeile des Aufrufers (unten).
+       * Wird **nicht ausgewertet** — die Versammlung stammt aus der
+       * Mitgliedszeile des Aufrufers (unten).
        *
        * Vorher hing daran alles: Der Rumpfwert ging ungeprüft in jeden
        * REST-Pfad, und ein angehängtes `#` schnitt die nachfolgenden Filter ab
@@ -324,6 +324,11 @@ Deno.serve(async (req: Request) => {
        * Ein zweiter Weg zur selben Auskunft ist immer der schwächere: Der
        * Aufrufer hat ohnehin genau eine Versammlung, also wird sie gelesen,
        * nicht geglaubt. So macht es `send-invite` seit jeher.
+       *
+       * Das Feld steht hier nur noch als **Duldung**: Der Client schickt es
+       * seit dem 24.8.2026 nicht mehr, aber eine App, die als PWA installiert
+       * ist, kann eine ältere Fassung im Cache haben. Ihr Aufruf soll
+       * funktionieren, nicht an einem überzähligen Feld scheitern.
        */
       congregationId?: string
       taskKey?: string

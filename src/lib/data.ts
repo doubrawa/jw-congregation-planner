@@ -1348,15 +1348,15 @@ export function insertNotifications(
  * Push nur mit dem privaten VAPID-Schlüssel geht. Fire-and-forget.
  */
 /*
- * `congregationId` wird von der Function **nicht mehr ausgewertet** — sie liest
- * die Versammlung aus der Mitgliedszeile des Aufrufers (S10). Das Feld bleibt
- * trotzdem stehen: Eine ältere, noch nicht neu ausgerollte Fassung der Function
- * verlangt es und antwortet sonst mit 400. Erst entfernen, wenn die neue
- * Fassung sicher überall läuft.
+ * **Ohne `congregationId`.** Das Feld stand hier, seit es die Function gab, und
+ * war der Angriffsweg aus S10: Der Server nahm die Versammlung aus dem Rumpf,
+ * statt sie zu lesen. Seit dem Ausrollen am 24.8.2026 wertet er es nicht mehr
+ * aus — und ein Feld, das niemand auswertet, ist genau die offene Fläche, die
+ * bei `import-week` zu S12 geführt hat. Also weg damit.
  */
-export function substituteSeek(congregationId: string, taskKey: string): void {
+export function substituteSeek(taskKey: string): void {
   if (!supabase) return
-  void run(supabase.functions.invoke('substitute', { body: { action: 'seek', congregationId, taskKey } }))
+  void run(supabase.functions.invoke('substitute', { body: { action: 'seek', taskKey } }))
 }
 
 /**
@@ -1365,11 +1365,11 @@ export function substituteSeek(congregationId: string, taskKey: string): void {
  * Wochen/Bestätigungen nur der Planer schreiben darf (RLS). Fire-and-forget —
  * der Client aktualisiert seinen Stand optimistisch.
  */
-export function substituteTake(congregationId: string, taskKey: string): void {
+export function substituteTake(taskKey: string): void {
   if (!supabase) return
   // Über run(): scheitert die Übernahme, hat der Aufrufer sonst „Übernommen"
   // gesehen, während der Slot serverseitig unverändert blieb.
-  void run(supabase.functions.invoke('substitute', { body: { action: 'take', congregationId, taskKey } }))
+  void run(supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }))
 }
 
 export function markNotificationsRead(congregationId: string, userId: string): void {

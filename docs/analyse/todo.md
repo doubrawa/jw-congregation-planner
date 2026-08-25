@@ -3519,8 +3519,13 @@ eine Migration schreibt.
 > App — fast lautlos, weil der Client fire-and-forget schreibt.
 >
 > `node scripts/mitgliedsrechte-probe.mjs --versammlung 0a43ea1b-…` (Talheim,
-> nicht die echte Versammlung — die Probe schreibt kurz). Erwartet: **2 von 6
-> kamen durch**.
+> nicht die echte Versammlung — die Probe schreibt kurz).
+>
+> **Nachtrag 24.8.2026:** Die Probe deckt jetzt auch S10, S11 und S13 ab (siehe
+> T97) — zehn Fälle statt sechs, drei davon Gegenproben. Erwartet: **0 von 7
+> verbotenen Schreibversuchen kamen durch**. Die Gegenprobe zu 022 ist damit
+> immer noch nicht *gelaufen*, aber sie wäre jetzt eine Messung aller fünf
+> Befunde in einem Durchgang statt zweier getrennter Termine.
 >
 > Die zweite Hälfte (S3) ist mitgeschlossen: Eine Mitteilung vom Typ
 > `verhindert` darf nur noch an **Planer** gehen, nicht mehr an beliebige
@@ -3883,11 +3888,32 @@ hätte.
 > Geltungsbereich geprüft; der README-Hinweis `migration-00*.sql` übersprang
 > stillschweigend alles ab der zehnten.
 >
-> **Tests:** +41 Fälle (2769 → 2810) und sechs neue Einträge in der
-> Mutationsprobe (67 → 73), alle als *bewacht* nachgewiesen. Die Attrappe in
+> **Tests:** +51 Fälle (2769 → 2820) und elf neue Einträge in der
+> Mutationsprobe (67 → 78), alle als *bewacht* nachgewiesen. Die Attrappe in
 > `substitute.test.ts` wertet jetzt **Filter aus**, statt jede Tabelle pauschal
 > auszugeben — vorher sah „Filter weg" genauso aus wie „Filter da", und das ist
 > genau der Unterschied, um den es bei S10 ging.
+>
+> **Nach dem Ausrollen (24.8.).** Zwei Nachzüge, die erst gehen, wenn die neue
+> Fassung läuft:
+>
+> `congregationId` ist aus `substituteSeek`/`substituteTake` verschwunden. Das
+> Feld war der Angriffsweg aus S10, und ein Feld, das niemand mehr auswertet,
+> ist genau die offene Fläche, die bei `import-week` zu S12 geführt hat. Die
+> Function duldet es weiter, weil eine installierte PWA eine ältere Fassung im
+> Cache haben kann; der Client schickt es nicht mehr, und ein Test in
+> `data-save.test.ts` hält den Rumpf auf genau `{ action, taskKey }` fest.
+>
+> `scripts/mitgliedsrechte-probe.mjs` misst jetzt zehn Fälle statt sechs. Neu:
+> Abwesenheit auf eine fremde Person (S11) mit der Gegenprobe „eigene
+> Abwesenheit geht weiter", fremden Platz übernehmen ohne Absage (S13), und
+> Ersatzsuche mit einer per `#` gefälschten Versammlungskennung (S10). Die
+> beiden letzten rufen die Edge Function mit dem **Nutzer-Token** auf — sie
+> arbeitet intern mit Service-Role, ihre Grenze hängt also allein daran, wen
+> dieses Token ausweist. Fall 9 sagt ausdrücklich „nicht gemessen", wenn das
+> Probe-Mitglied für den Dienst gar nicht qualifiziert ist: Dann antwortet die
+> Function schon vorher mit `not-qualified`, und das sähe wie ein Erfolg aus,
+> ohne dass die Prüfung, um die es geht, je erreicht wurde.
 
 ---
 
@@ -3896,6 +3922,7 @@ hätte.
 | Punkt | Warum |
 | --- | --- |
 | ~~**S2/S3 praktisch nachweisen**~~ | ✅ **gemessen am 19., geschlossen am 23. August 2026** (migration-022). Siehe T89. |
+| **S10/S11/S13 praktisch nachweisen** | Code und Regeln sind ausgerollt (24.8.), die Messung steht aus. `scripts/mitgliedsrechte-probe.mjs` kann alle drei — ein Lauf gegen die Probeversammlung genügt, siehe T97. |
 | **D7 Mehrbenutzer-Konflikt** | die Voraussetzung ist seit T78 da (zwei Konten derselben Versammlung); statisch belegt (siehe T39), praktisch noch nicht |
 | **D4 echte Geräte** | das dokumentierte `pointercancel`-Verhalten ist nicht emulierbar |
 | **D5 fachliche Abnahme** | nur ein Koordinator kann beurteilen, ob die Abläufe stimmen |

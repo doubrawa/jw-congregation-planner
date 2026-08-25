@@ -390,12 +390,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'declineTask':
       saveConfirmation(congId, userId, action.id, 'verhindert')
       // Hilfsdienst: automatisch Ersatz suchen (qualifizierte Personen anpingen).
-      if (helperKeyParts(action.id)) substituteSeek(congId, action.id)
+      if (helperKeyParts(action.id)) substituteSeek(action.id)
       break
     case 'takeSubstitute':
       // Nicht clientseitig speichern (Wochen/Bestätigungen sind planer-only) —
       // die Edge Function trägt ein und benachrichtigt Ursprungsperson + Planer.
-      substituteTake(congId, action.key)
+      substituteTake(action.key)
       break
     case 'changeReminder':
     case 'toggleReminderRepeat':

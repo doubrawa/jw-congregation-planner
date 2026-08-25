@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { bewerteVersuch, eigeneSlots, fremdeSlots, helferSchluessel, slotSchluessel } from './mitgliedsrechte-probe.mjs'
+import {
+  bewerteVersuch,
+  dienstAusSchluessel,
+  eigeneSlots,
+  fremdeSlots,
+  helferSchluessel,
+  qualifiziertFuer,
+  slotSchluessel,
+} from './mitgliedsrechte-probe.mjs'
 import { helperTaskKey, slotTaskKey } from '../src/data/planning'
-import type { PartItem } from '../src/data/types'
+import { isQualified, serviceQualKey } from '../src/data/helpers'
+import type { PartItem, Person } from '../src/data/types'
 
 /**
  * Die Probe selbst läuft nur gegen eine echte Datenbank. Geprüft wird hier das,
@@ -128,5 +137,42 @@ describe('Einen Schreibversuch bewerten', () => {
     const e = bewerteVersuch(403, true, true)
     expect(e).toMatchObject({ durch: true, wieErwartet: true })
     expect(e.text).toBe('ANGEKOMMEN (HTTP 403)')
+  })
+})
+
+describe('Ist das Mitglied für den Platz überhaupt qualifiziert? (Fall 9)', () => {
+  /*
+    Ohne diese Vorprüfung misst Fall 9 nichts: `take` weist zuerst ab, wer für
+    den Dienst nicht freigeschaltet ist („not-qualified"), und das sähe genauso
+    aus wie die Prüfung, um die es geht („not-sought"). Die Probe muss den
+    Unterschied kennen, sonst meldet sie S13 als geschlossen, ohne dort gewesen
+    zu sein.
+  */
+  it('liest den Dienst aus einem Hilfsdienst-Schlüssel', () => {
+    expect(dienstAusSchluessel(helperTaskKey('2026-08-17', 'mid', 'mik', 1))).toBe('mik')
+  })
+
+  it.each([
+    ['Programmpunkt', '2026-08-17|mid|part|k3f9x|0'],
+    ['Treffpunkt', 'fs|2026-08-17|abc'],
+    ['zu kurz', '2026-08-17|mid'],
+    ['leer', ''],
+    ['nichts', undefined],
+  ])('%s ist kein Hilfsdienst — null', (_name, key) => {
+    expect(dienstAusSchluessel(key)).toBeNull()
+  })
+
+  it('die Freischaltung wird genauso gelesen wie in der App', () => {
+    const person = { priv: { 'svc:mik': true } } as unknown as Person
+    expect(qualifiziertFuer(person, 'mik')).toBe(isQualified(person, serviceQualKey('mik')))
+    expect(qualifiziertFuer(person, 'ton')).toBe(isQualified(person, serviceQualKey('ton')))
+  })
+
+  it('und eine Person ohne priv fällt nicht auf die Nase', () => {
+    // Im Altbestand kann `priv` fehlen; ein Absturz hier bräche die ganze Probe
+    // ab, statt Fall 9 als „nicht gemessen" zu melden.
+    for (const p of [undefined, null, {}, { priv: null }]) {
+      expect(qualifiziertFuer(p, 'mik')).toBe(false)
+    }
   })
 })

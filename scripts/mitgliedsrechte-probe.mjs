@@ -29,6 +29,22 @@
  * (5) oder (6), ist die Richtlinie zu streng — das wiegt schwerer, weil der
  * Client fire-and-forget schreibt und der Verlust fast lautlos wäre.
  *
+ * **Seit dem 24. August 2026 misst sie zusätzlich S10, S11 und S13** — dieselbe
+ * Anlage, andere Grenzen. (7)–(8) hängen wieder an RLS, (9)–(10) an der Edge
+ * Function `substitute`, die mit Service-Role arbeitet und sich deshalb selbst
+ * schützen muss:
+ *
+ *   7. Abwesenheit auf eine **fremde** Person  → muss **abgewiesen** werden (S11)
+ *   8. **eigene** Abwesenheit                  → muss **durchkommen**
+ *   9. fremden Platz übernehmen, ohne Absage   → muss **abgewiesen** werden (S13)
+ *  10. Ersatzsuche mit gefälschter Versammlung → muss **abgewiesen** werden (S10)
+ *
+ * (10) ist die einzige, die nicht bloß eine Regel prüft, sondern einen **Weg**:
+ * Der Rumpfwert trägt ein angehängtes `#`. Ging der ungekodiert in die
+ * REST-Pfade, schnitt er dort alles Folgende ab — und die Prüfung, wer eine
+ * Ersatzsuche auslösen darf, lief ins Leere. Kommt (10) durch, ist nicht eine
+ * Richtlinie offen, sondern die ganze Kodierung.
+ *
  * **Jede durchgekommene Zeile wird sofort wieder gelöscht.** Wer aufräumen darf,
  * hängt am Empfänger: `notifications_delete` verlangt `user_id = auth.uid()`,
  * also räumt bei (6) der Planer seine eigene Zeile weg. Deshalb braucht die
@@ -76,6 +92,23 @@ export function slotSchluessel(item, woche, tab, si, ii, ni, aux = false) {
 /** Stabiler Schlüssel eines Hilfsdienst-Slots (Spiegel von `helperTaskKey`). */
 export function helferSchluessel(woche, tab, svc, pos) {
   return `${woche}|${tab}|helper|${svc}|${pos}`
+}
+
+/**
+ * Der Dienst aus einem Hilfsdienst-Schlüssel — oder null, wenn es keiner ist.
+ *
+ * Gebraucht für (9): `take` weist zuerst ab, wer für den Dienst gar nicht
+ * qualifiziert ist. Wäre das Mitglied es nicht, bekäme die Probe `not-qualified`
+ * und hätte über S13 nichts gemessen, sähe aber genauso aus wie ein Erfolg.
+ */
+export function dienstAusSchluessel(key) {
+  const p = String(key ?? '').split('|')
+  return p.length === 5 && p[2] === 'helper' ? p[3] : null
+}
+
+/** Ist die Person für diesen Dienst freigeschaltet? (Spiegel von `isQualified`.) */
+export function qualifiziertFuer(person, svc) {
+  return Boolean(person?.priv?.[`svc:${svc}`])
 }
 
 /**
@@ -209,9 +242,31 @@ async function anmelden(url, anon, mail, pass) {
     return { status: antwort.status, daten }
   }
 
+  /**
+   * Eine Edge Function aufrufen — mit dem **Nutzer-Token**, wie die App es tut.
+   * Die Function arbeitet intern mit Service-Role; ihre Rechteprüfung hängt
+   * also allein daran, wen dieses Token ausweist. Genau das ist die Grenze,
+   * die (9) und (10) messen.
+   */
+  const funktion = async (name, rumpf) => {
+    const antwort = await fetch(`${url}/functions/v1/${name}`, {
+      method: 'POST',
+      headers: { apikey: anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(rumpf),
+    })
+    const text = await antwort.text()
+    let daten = null
+    try {
+      daten = text ? JSON.parse(text) : null
+    } catch {
+      daten = text
+    }
+    return { status: antwort.status, daten }
+  }
+
   const { daten: mitglied } = await rest('members?select=congregation_id,person_id,planner')
   if (!mitglied?.[0]) throw new Error(`${mail} ist in keiner Versammlung.`)
-  return { mail, rest, uid: user.id, cong: mitglied[0].congregation_id, pid: mitglied[0].person_id, planer: Boolean(mitglied[0].planner) }
+  return { mail, rest, funktion, uid: user.id, cong: mitglied[0].congregation_id, pid: mitglied[0].person_id, planer: Boolean(mitglied[0].planner) }
 }
 
 /* ===================== Ausführung ========================================= */
@@ -396,13 +451,99 @@ async function main() {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
   }
 
+  // ---- 7) S11: Abwesenheit auf eine FREMDE Person -------------------------
+  // Der Zweig „die Zeile gehört mir" (`user_id = auth.uid()`) sagte nichts über
+  // `person_id` — und die entscheidet, um wen es geht. Kommt das durch, fällt
+  // der Betroffene aus jeder Zuteilung, unter seinem Namen, ohne sein Zutun.
+  const fremdePid = planer.pid
+  if (!fremdePid || fremdePid === mitglied.pid) {
+    console.log('  ? (7) Abwesenheit auf eine fremde Person — keine zweite Person verknüpft, nicht gemessen')
+  } else {
+    const absId = crypto.randomUUID()
+    const s7 = await mitglied.rest(
+      'absences',
+      'POST',
+      { id: absId, congregation_id: versammlung, user_id: mitglied.uid, person_id: fremdePid, from_date: '2099-01-01', to_date: '2099-01-02', reason: marke },
+      'return=minimal',
+    )
+    // Nachgesehen wird beim Planer: Er ist der, dem die erfundene Abwesenheit
+    // den Betroffenen aus der Zuteilung nimmt.
+    const { daten: sicht7 } = await planer.rest(`absences?select=id,person_id&id=eq.${absId}`)
+    const e7 = bewerteVersuch(s7.status, Boolean(sicht7?.length), false)
+    ergebnis(7, 'Abwesenheit auf eine fremde Person eintragen', e7, e7.durch ? 'S11 STEHT NOCH OFFEN' : 'abgewiesen — migration-023 greift')
+    if (e7.durch) {
+      const weg = await planer.rest(`absences?id=eq.${absId}`, 'DELETE', undefined, 'return=minimal')
+      console.log(weg.status < 400 ? '      (Zeile wieder gelöscht)' : `      !! Zeile blieb stehen (${weg.status}) !!`)
+    }
+  }
 
-  const durch = befunde.filter((b) => b.durch).length
+  // ---- 8) Gegenprobe: die eigene Abwesenheit -----------------------------
+  // Ohne sie bewiese (7) nichts. Ein Konto ohne verknüpfte Person schreibt mit
+  // `person_id: null` — genau der Fall, für den der erste Zweig noch offen ist.
+  const eigeneAbsId = crypto.randomUUID()
+  const s8 = await mitglied.rest(
+    'absences',
+    'POST',
+    { id: eigeneAbsId, congregation_id: versammlung, user_id: mitglied.uid, person_id: mitglied.pid, from_date: '2099-01-01', to_date: '2099-01-02', reason: marke },
+    'return=minimal',
+  )
+  const { daten: sicht8 } = await mitglied.rest(`absences?select=id&id=eq.${eigeneAbsId}`)
+  const e8 = bewerteVersuch(s8.status, Boolean(sicht8?.length), true)
+  ergebnis(8, `eigene Abwesenheit eintragen (Person ${mitglied.pid ?? 'keine'})`, e8, e8.durch ? 'der Weg steht offen' : 'ZU STRENG — niemand kann sich mehr abmelden')
+  if (e8.durch) await mitglied.rest(`absences?id=eq.${eigeneAbsId}`, 'DELETE', undefined, 'return=minimal')
+
+  // ---- 9) S13: einen fremden Platz übernehmen, ohne dass Ersatz gesucht ist
+  // `take` verlangte Mitgliedschaft und Qualifikation — nicht, dass jemand
+  // abgesagt hat. Wer den Dienst kann, konnte damit jeden Platz an sich ziehen.
+  const svc = dienst ? dienstAusSchluessel(dienst.key) : null
+  const { daten: meinePerson } = mitglied.pid
+    ? await mitglied.rest(`persons?select=priv&id=eq.${mitglied.pid}`)
+    : { daten: null }
+  if (!dienst) {
+    console.log('  ? (9) fremden Platz übernehmen — kein fremder Hilfsdienst-Platz in der Woche, nicht gemessen')
+  } else if (!qualifiziertFuer(meinePerson?.[0], svc)) {
+    console.log(`  ? (9) fremden Platz übernehmen — Mitglied ist für „${svc}" nicht qualifiziert, nicht gemessen`)
+    console.log('      Die Function wiese schon vorher mit „not-qualified" ab; über S13 sagt das nichts.')
+  } else {
+    const vorher = dienst.wer
+    const a9 = await mitglied.funktion('substitute', { action: 'take', taskKey: dienst.key })
+    // Nachgesehen wird an der Woche selbst: Der Statuscode allein genügt nicht,
+    // denn geschrieben wird mit Service-Role — ein Fehlschlag danach sähe wie
+    // eine Ablehnung aus, während der Platz längst umgeschrieben wäre.
+    const { daten: w9 } = await planer.rest(`weeks?select=data&start=eq.${wochen[0].start}`)
+    const jetzt = fremdeSlots({ ...w9?.[0]?.data, start: wochen[0].start }, mitglied.pid).find((s) => s.key === dienst.key)
+    const e9 = bewerteVersuch(a9.status, jetzt?.wer !== vorher, false)
+    ergebnis(9, `fremden Platz übernehmen, ohne dass Ersatz gesucht ist (${dienst.wer})`, e9, e9.durch ? 'S13 STEHT NOCH OFFEN' : `abgewiesen (${a9.daten?.error ?? '—'})`)
+    if (e9.durch) console.log(`      Auf dem Platz steht jetzt: ${jetzt?.wer ?? '(leer)'} statt ${vorher}`)
+  }
+
+  // ---- 10) S10: Ersatzsuche mit gefälschter Versammlungskennung ------------
+  // Doppelt verboten: Das Mitglied steht in diesem Platz nicht und hat für ihn
+  // nicht abgesagt. Das angehängte `#` war der Weg, die Prüfung dahin
+  // laufen zu lassen — es schnitt die nachfolgenden Filter aus dem REST-Pfad.
+  const a10 = await mitglied.funktion('substitute', {
+    action: 'seek',
+    congregationId: `${versammlung}#`,
+    taskKey: ziel.key,
+  })
+  const nachher10 = await mitglied.rest(`notifications?select=id&title=eq.${encodeURIComponent('Ersatz gesucht')}&user_id=eq.${mitglied.uid}`)
+  const e10 = bewerteVersuch(a10.status, a10.status < 400, false)
+  ergebnis(10, 'Ersatzsuche für einen fremden Platz, Versammlung mit „#" gefälscht', e10, e10.durch ? 'S10 STEHT NOCH OFFEN' : `abgewiesen (${a10.daten?.error ?? '—'})`)
+  if (e10.durch) {
+    console.log(`      Die Function hat gearbeitet: ${JSON.stringify(a10.daten)}`)
+    for (const z of nachher10.daten ?? []) {
+      await mitglied.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
+    }
+  }
+
+  const verboten = befunde.filter((b) => b.nr !== 5 && b.nr !== 6 && b.nr !== 8)
+  const durch = verboten.filter((b) => b.durch).length
   const ueberraschungen = befunde.filter((b) => !b.wieErwartet)
-  console.log(`\n${durch} von 4 Schreibversuchen kamen durch.`)
+  console.log(`\n${durch} von ${verboten.length} verbotenen Schreibversuchen kamen durch.`)
   if (ueberraschungen.length === 0) {
-    console.log('Genau die erwarteten: S2 und S3 sind damit nicht mehr gelesen, sondern gemessen —')
-    console.log('und die beiden Gegenproben zeigen, dass die Richtlinie im Übrigen greift.')
+    console.log('Genau die erwarteten: S2, S3, S10, S11 und S13 sind damit nicht mehr gelesen,')
+    console.log('sondern gemessen — und die drei Gegenproben zeigen, dass die Regeln nicht zu')
+    console.log('streng geraten sind: Bestätigen, Abmelden und Absagen gehen weiter.')
     return
   }
   console.log(`Abweichend von der Erwartung: ${ueberraschungen.map((b) => `(${b.nr})`).join(', ')} — das ist der Blick wert.`)

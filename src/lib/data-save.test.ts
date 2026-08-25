@@ -52,6 +52,7 @@ import {
   saveSettings,
   saveWeek,
   setSchreibfehlerMelder,
+  substituteSeek,
   substituteTake,
   swapConfirmationKeys,
 } from './data'
@@ -310,8 +311,25 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     const melder = vi.fn()
     setSchreibfehlerMelder(melder)
     chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
-    substituteTake('c1', 'k1')
+    substituteTake('k1')
     await abwarten()
     expect(melder).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['Einspringen', () => substituteTake('k1'), 'take'],
+    ['Ersatzsuche', () => substituteSeek('k1'), 'seek'],
+  ])('%s schickt keine Versammlung mit — die liest der Server selbst (S10)', async (_name, ruf, action) => {
+    // Der Server nahm die Versammlung früher aus diesem Rumpf. Ein angehängtes
+    // `#` schnitt dort die folgenden Filter ab, und ein einfaches Mitglied
+    // konnte damit die Wochen der ganzen Versammlung überschreiben. Er liest
+    // sie jetzt aus der eigenen Mitgliedszeile — und was der Client gar nicht
+    // erst schickt, kann auch niemand fälschen.
+    chain.functions.invoke.mockClear()
+    ruf()
+    await abwarten()
+    const [name, optionen] = chain.functions.invoke.mock.calls[0] as [string, { body: unknown }]
+    expect(name).toBe('substitute')
+    expect(optionen.body).toEqual({ action, taskKey: 'k1' })
   })
 })
