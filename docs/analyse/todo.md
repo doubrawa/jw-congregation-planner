@@ -3813,6 +3813,82 @@ und warum, sieht man ihr nicht an. Der Planer sucht den Fehler bei sich.
 > meldet. Jetzt steht Beschriftung neben Zahl („nötig 3 · verfügbar 2 ·
 > abwesend 8 von 10"); die Form hat das Problem nicht.
 
+### T97 · Sicherheitsdurchsicht des ganzen Bestands 🏗 ✅ erledigt
+**Vorgabe des Betreibers am 24. August 2026:** Durchsicht nicht nur der
+Änderungen, sondern des **ganzen Repos** — und anschließend alles beheben, auch
+das, was kein Sicherheitsrisiko ist.
+
+Vier Befunde haben die Gegenprüfung überstanden (**S10–S13** in
+[befunde.md](befunde.md)), dazu vier kleinere Härtungen und ein
+Korrektheitsmangel, der beinahe zwei geschlossene Löcher wieder aufgemacht
+hätte.
+
+> **Erledigt.** Der Reihe nach:
+>
+> **S10 — `substitute` glaubte dem Rumpf.** `congregationId` kam aus dem JSON
+> des Aufrufers und ging ungekodiert in jeden REST-Pfad. Ein angehängtes `#`
+> schnitt beim URL-Parser alles Folgende ab: Das PATCH verlor Woche und
+> Vergleiche-und-Tausche und überschrieb **jede** Wochenzeile der Versammlung,
+> die DELETEs verloren ihren `task_key` und räumten alle Bestätigungen und
+> Mitteilungen ab — mit Service-Role, also an RLS vorbei, ausgelöst von einem
+> einfachen Mitglied mit einer einzigen Anfrage. Die Versammlung kommt jetzt aus
+> der **eigenen Mitgliedszeile**; `wert()` kodiert zusätzlich jeden Pfadwert.
+>
+> **S11 — fremde Abwesenheiten.** Der Zweig „die Zeile gehört mir"
+> (`user_id = auth.uid()`) sagte nichts über `person_id`. `migration-023`
+> bindet ihn an die eigene Person und lässt ihn nur noch für Konten ohne
+> verknüpfte Person offen — genau den Fall, für den es ihn gibt. Das `using`
+> bleibt breiter als das `with check`, damit Altbestand löschbar bleibt.
+>
+> **S12 — `import-week` als Bote.** Das Feld `url` wurde geholt, wie es kam.
+> **Kein Aufrufer hat es je geschickt** — es ist entfernt, und `fetchText`
+> lässt als einzige Engstelle nur `https://www.jw.org` durch. Die Prüfung sitzt
+> dort und nicht beim Auswerten des Rumpfes, weil `localizedUrl` eine Adresse
+> aus fremdem Markup liest.
+>
+> **S13 — Einspringen ohne Gesuch.** Der Zwilling zu T81/S7, damals mit einem
+> Satz abgetan („der take-Pfad prüft sauber auf Qualifikation"). Das beantwortet
+> aber, WER eingetragen werden darf, nicht OB der Platz frei wird. Jetzt verlangt
+> `take` dieselbe Absage, aus der `seek` seine Berechtigung zieht.
+>
+> **Was `verify_jwt = true` wirklich zusagt.** Nämlich: dass ein Token
+> mitkommt, das mit dem Projekt-Geheimnis signiert ist. Das ist auch der
+> anon-Key, der per Design im Bundle steht — ein Nutzer-Login ist es **nicht**.
+> Der Kommentar in `config.toml` behauptete das Gegenteil und war damit die
+> Wurzel von S12. Korrigiert, samt der Regel: Wer wissen muss, wer da ruft,
+> fragt `/auth/v1/user` (`send-invite`, `substitute`).
+>
+> **`schema.sql` war unausführbar.** Beim Einarbeiten von `migration-022` hatte
+> ein Suchen-und-Ersetzen `$'` in der Regex `'^\d+$'` als Ersetzungsmuster
+> gelesen: `$$` fiel auf `$` zusammen (Syntaxfehler ab Zeile 295, also **vor**
+> jedem `enable row level security`), und der Dateirest wurde sechsmal
+> eingespleißt — 570 → 2110 Zeilen. Von sechs Fassungen jeder Richtlinie gewinnt
+> beim Ausführen die **letzte**, und das waren die schwachen von vor
+> `migration-022`. Kein Sicherheitsbefund (die Datei lief gar nicht, die
+> laufende Instanz hängt an der Migrationskette), aber jede Neuinstallation wäre
+> gescheitert, und die naheliegende Reparatur `$` → `$$` hätte S2 und S3
+> stillschweigend wieder aufgemacht. Neu erzeugt aus der letzten heilen Fassung
+> plus 022 und 023; ein Abgleich meldet **null Abweichung** gegen die Kette.
+>
+> **Warum `schema.test.ts` grün blieb** — und was sie jetzt prüft: Sie suchte
+> nur **Namen** (`create function public.task_gehoert_mir` stand ja da). Neu
+> sind vier Proben: vollständige Dollar-Rümpfe, jede Richtlinie genau einmal,
+> und jeder Rumpf so wie in der jüngsten Migration — dazu drei Fälle, die die
+> Rechteprüfungen einzeln festnageln, für den Fall, dass eine Regel aus Schema
+> **und** Migration zugleich verschwindet.
+>
+> **Kleineres:** Fehlertexte (roher PostgREST-Rumpf) gehen in die Logs statt zum
+> Aufrufer; die `mailto:`-Adresse wird kodiert (`?bcc=…` hängte sonst eine
+> stille Kopie an); der Mitteilungs-Klick im Service Worker wird gegen den
+> Geltungsbereich geprüft; der README-Hinweis `migration-00*.sql` übersprang
+> stillschweigend alles ab der zehnten.
+>
+> **Tests:** +41 Fälle (2769 → 2810) und sechs neue Einträge in der
+> Mutationsprobe (67 → 73), alle als *bewacht* nachgewiesen. Die Attrappe in
+> `substitute.test.ts` wertet jetzt **Filter aus**, statt jede Tabelle pauschal
+> auszugeben — vorher sah „Filter weg" genauso aus wie „Filter da", und das ist
+> genau der Unterschied, um den es bei S10 ging.
+
 ---
 
 ## Was bewusst offen bleibt

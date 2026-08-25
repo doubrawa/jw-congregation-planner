@@ -16,12 +16,23 @@
 project_id = "jw-congregation-planner"
 
 # --- Edge Functions -----------------------------------------------------------
-# verify_jwt = true  → die Plattform verlangt ein gültiges Nutzer-Login, bevor
-#                      die Funktion überhaupt startet.
-# verify_jwt = false → die Funktion ist offen erreichbar und MUSS sich selbst
-#                      schützen. Nur dort, wo genau das der Fall ist.
+# verify_jwt = true  → die Plattform verlangt ein Token, das mit dem
+#                      Projekt-Geheimnis signiert ist, bevor die Funktion
+#                      startet.
+# verify_jwt = false → die Funktion ist ganz offen erreichbar und MUSS sich
+#                      selbst schützen. Nur dort, wo genau das der Fall ist.
+#
+# ACHTUNG, hier stand jahrelang „verlangt ein gültiges Nutzer-Login": Das ist
+# falsch. Ein gültiges Token ist auch der **anon-Key** — der steht per Design im
+# Frontend-Bundle und ist damit öffentlich. `verify_jwt = true` hält also nur
+# den ab, der gar nichts mitschickt; wer wissen muss, WER da ruft, fragt selbst
+# `/auth/v1/user` (so machen es send-invite und substitute) und prüft danach die
+# Mitgliedschaft. Eine Funktion, die das nicht tut, ist effektiv öffentlich und
+# darf entsprechend nichts Vertrauliches anfassen.
 
-# Wird aus der App mit dem Login des Planers aufgerufen.
+# Öffentlich erreichbar (siehe oben) und ohne eigene Prüfung — deshalb rührt sie
+# keine Versammlungsdaten an: Sie holt ausschließlich von jw.org (`fetchText`
+# lässt nichts anderes durch) und gibt das Ergebnis zurück.
 [functions.import-week]
 verify_jwt = true
 

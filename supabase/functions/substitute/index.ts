@@ -21,9 +21,11 @@
 // Aufgaben gar nicht erst an — hier landet nur, wer den Ausfall noch nicht
 // gesehen hat.
 //
-// Sicherheit: Aufrufer muss per JWT eingeloggtes Mitglied DIESER Versammlung
-// sein; für 'take' zusätzlich für den Dienst qualifiziert. Alle DB-Zugriffe sind
-// auf die Versammlung des Aufrufers gescoped.
+// Sicherheit: Aufrufer muss per JWT eingeloggtes Mitglied sein; für 'take'
+// zusätzlich für den Dienst qualifiziert, und es muss überhaupt ein Ersatz
+// gesucht sein. Die **Versammlung kommt aus der eigenen Mitgliedszeile**, nie
+// aus dem Rumpf (siehe `congregationId` unten) — alle DB-Zugriffe sind darauf
+// gescoped, und jeder Wert geht durch `wert()` in den Pfad.
 //
 // Secrets: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT (wie
 //   send-reminders), APP_URL optional. SUPABASE_URL / SERVICE_ROLE_KEY automatisch.
@@ -69,6 +71,21 @@ function json(body: unknown, status = 200): Response {
 }
 
 const AUTH = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
+
+/**
+ * Wert für einen PostgREST-Filter im Pfad.
+ *
+ * Ungekodiert **beendet ein `#` die Abfrage**: Der URL-Parser macht alles
+ * dahinter zum Fragment, und `fetch` sendet das nie mit. Aus
+ * `…&congregation_id=eq.X#&task_key=eq.Y` wird beim Server also
+ * `…&congregation_id=eq.X` — der Filter, der die Zeile eingrenzt, fällt weg.
+ * Ein DELETE trifft dann die ganze Versammlung statt einer Aufgabe, ein PATCH
+ * verliert zusätzlich seine Vergleiche-und-Tausche-Bedingung.
+ *
+ * Deshalb geht hier kein Wert mehr roh in einen Pfad — auch keiner, der heute
+ * aus der Datenbank kommt und harmlos aussieht.
+ */
+const wert = (v: string | number): string => encodeURIComponent(String(v))
 
 async function restGet<T>(path: string): Promise<T> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: AUTH })
@@ -241,7 +258,7 @@ async function pushTo(
     } catch (err) {
       const status = (err as { statusCode?: number }).statusCode
       if (status === 404 || status === 410) {
-        await restSend('DELETE', `push_subscriptions?endpoint=eq.${encodeURIComponent(s.endpoint)}`)
+        await restSend('DELETE', `push_subscriptions?endpoint=eq.${wert(s.endpoint)}`)
       } else {
         console.error(`web-push ${status}: ${(err as Error).message}`)
       }
@@ -295,35 +312,55 @@ Deno.serve(async (req: Request) => {
 
     const payload = (await req.json().catch(() => null)) as {
       action?: string
+      /**
+       * Wird **nicht ausgewertet**. Der Client schickt das Feld noch mit; die
+       * Versammlung stammt aber aus der Mitgliedszeile des Aufrufers (unten).
+       *
+       * Vorher hing daran alles: Der Rumpfwert ging ungeprüft in jeden
+       * REST-Pfad, und ein angehängtes `#` schnitt die nachfolgenden Filter ab
+       * (siehe `wert()`). Ein einfaches Mitglied konnte damit die Wochen der
+       * ganzen Versammlung überschreiben und sämtliche Bestätigungen und
+       * Mitteilungen löschen — alles mit Service-Role, also an RLS vorbei.
+       * Ein zweiter Weg zur selben Auskunft ist immer der schwächere: Der
+       * Aufrufer hat ohnehin genau eine Versammlung, also wird sie gelesen,
+       * nicht geglaubt. So macht es `send-invite` seit jeher.
+       */
       congregationId?: string
       taskKey?: string
     } | null
-    const cong = payload?.congregationId ?? ''
     const parts = parseKey(payload?.taskKey ?? '')
-    if (!cong || !parts || (payload?.action !== 'seek' && payload?.action !== 'take')) {
+    if (!parts || (payload?.action !== 'seek' && payload?.action !== 'take')) {
       return json({ error: 'bad-request' }, 400)
     }
 
-    const members = await restGet<Member[]>(
-      `members?select=user_id,person_id,planner&congregation_id=eq.${cong}`,
+    const eigene = await restGet<(Member & { congregation_id: string })[]>(
+      `members?select=user_id,person_id,planner,congregation_id&user_id=eq.${wert(userId)}`,
     )
-    const caller = members.find((m) => m.user_id === userId)
+    const caller = eigene[0]
     if (!caller) return json({ error: 'forbidden' }, 403)
+    const cong = caller.congregation_id
 
-    const [weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
+    const [members, weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
+      restGet<Member[]>(
+        `members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`,
+      ),
       // `start` aus der **Spalte**, nicht aus dem Blob (T66): die Kennung steht
       // dort, `data.start` ist nur noch Beifang und könnte jederzeit wegfallen.
       restGet<{ start: string; data: Week }[]>(
-        `weeks?select=start,data&congregation_id=eq.${cong}&start=eq.${parts.woche}`,
+        `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}`,
       ),
-      restGet<{ key: string; name: string }[]>(`services?select=key,name&congregation_id=eq.${cong}`),
-      restGet<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${cong}`),
+      restGet<{ key: string; name: string }[]>(
+        `services?select=key,name&congregation_id=eq.${wert(cong)}`,
+      ),
+      restGet<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${wert(cong)}`),
       restGet<Sub[]>(
-        `push_subscriptions?select=user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${cong}`,
+        `push_subscriptions?select=user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
-      restGet<{ meeting_times: string }[]>(`congregations?select=meeting_times&id=eq.${cong}`),
+      restGet<{ meeting_times: string }[]>(
+        `congregations?select=meeting_times&id=eq.${wert(cong)}`,
+      ),
       restGet<Absence[]>(
-        `absences?select=person_id,from_date,to_date&congregation_id=eq.${cong}`,
+        `absences?select=person_id,from_date,to_date&congregation_id=eq.${wert(cong)}`,
       ),
     ])
     const week = weekRows[0]?.data
@@ -359,7 +396,7 @@ Deno.serve(async (req: Request) => {
     for (const s of subsRows) subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
 
     const callerPerson = caller.person_id ? personById.get(caller.person_id) : undefined
-    const taskKeyEnc = encodeURIComponent(payload.taskKey!)
+    const taskKeyEnc = wert(payload.taskKey!)
 
     if (payload.action === 'seek') {
       // Eine Ersatzsuche verschickt an alle Qualifizierten die Aussage
@@ -373,8 +410,8 @@ Deno.serve(async (req: Request) => {
         (slot.pid === callerPerson.id || slot.name === displayName(callerPerson))
       if (!istEingeteilt) {
         const eigeneAbsage = await restGet<{ user_id: string }[]>(
-          `confirmations?select=user_id&congregation_id=eq.${cong}` +
-            `&task_key=eq.${taskKeyEnc}&status=eq.verhindert&user_id=eq.${userId}`,
+          `confirmations?select=user_id&congregation_id=eq.${wert(cong)}` +
+            `&task_key=eq.${taskKeyEnc}&status=eq.verhindert&user_id=eq.${wert(userId)}`,
         )
         if (eigeneAbsage.length === 0) return json({ error: 'forbidden' }, 403)
       }
@@ -409,18 +446,36 @@ Deno.serve(async (req: Request) => {
     const originalName = slot.name ?? ''
     if (originalName === callerName) return json({ ok: true, already: true }) // idempotent
 
+    // Einspringen setzt voraus, dass jemand da war und abgesagt hat.
+    //
+    // Bisher genügten Mitgliedschaft und Qualifikation. Damit konnte sich jeder,
+    // der einen Hilfsdienst kann, in JEDEN Platz dieses Dienstes schreiben — den
+    // Eingeteilten verdrängen, dessen Bestätigung löschen und ihm und allen
+    // Planern „Ersatz gefunden" schicken, ohne dass je ein Ersatz gesucht war.
+    // Der Knopf dafür steht in der App zwar nur bei offenen Gesuchen
+    // (`deriveSubstituteReqs`), aber ein Knopf ist keine Rechteprüfung.
+    //
+    // Dieselbe Überlegung wie bei 'seek' oben, dieselbe Quelle: die Absage.
+    // Der leere Platz fällt damit von selbst weg — für ihn gibt es keine.
+    if (!originalName) return json({ error: 'not-sought' }, 409)
+    const absagen = await restGet<{ user_id: string }[]>(
+      `confirmations?select=user_id&congregation_id=eq.${wert(cong)}` +
+        `&task_key=eq.${taskKeyEnc}&status=eq.verhindert`,
+    )
+    if (absagen.length === 0) return json({ error: 'not-sought' }, 409)
+
     // Slot auf den Aufrufer umschreiben — aber nur, solange dort noch der
     // Name steht, den wir gelesen haben. Sonst war jemand schneller; ohne
     // diese Bedingung überschrieben sich zwei Übernahmen gegenseitig und der
     // Zweite löschte danach die Bestätigung des Ersten.
     slot.name = callerName
     slot.pid = callerPerson.id
-    const nameFilter = `data->${parts.tab}->helpers->${encodeURIComponent(parts.svc)}->${parts.pos}->>name`
-    const bedingung = originalName
-      ? `${nameFilter}=eq.${encodeURIComponent(`"${originalName}"`)}`
-      : `${nameFilter}=is.null`
+    // `originalName` ist hier nie leer (oben abgewiesen), der Filter also immer
+    // ein Namensvergleich.
+    const nameFilter = `data->${parts.tab}->helpers->${wert(parts.svc)}->${parts.pos}->>name`
+    const bedingung = `${nameFilter}=eq.${wert(`"${originalName}"`)}`
     const geschrieben = await restPatchIf(
-      `weeks?congregation_id=eq.${cong}&start=eq.${parts.woche}&${bedingung}`,
+      `weeks?congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}&${bedingung}`,
       { data: week },
     )
     if (!geschrieben) return json({ error: 'slot-taken' }, 409)
@@ -435,12 +490,16 @@ Deno.serve(async (req: Request) => {
     // die Logs, bricht die Übernahme aber nicht ab).
     await restSend(
       'DELETE',
-      `notifications?congregation_id=eq.${cong}&task_key=eq.${taskKeyEnc}&title=eq.${encodeURIComponent(TITEL_GESUCHT)}`,
+      `notifications?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}` +
+        `&title=eq.${wert(TITEL_GESUCHT)}`,
     )
 
     // Alte Bestätigung(en) dieses Slots weg, eigene „bestätigt" setzen.
     // Ungefährlich, weil oben nur ein einziger Aufruf durchkommt.
-    await restSend('DELETE', `confirmations?congregation_id=eq.${cong}&task_key=eq.${taskKeyEnc}`)
+    await restSend(
+      'DELETE',
+      `confirmations?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}`,
+    )
     await restSend('POST', 'confirmations', [
       { congregation_id: cong, user_id: userId, task_key: payload.taskKey, status: 'bestätigt' },
     ])
@@ -462,6 +521,11 @@ Deno.serve(async (req: Request) => {
     )
     return json({ ok: true, taken: true })
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : String(err) }, 500)
+    // Nur in die Logs, nicht in die Antwort: `restGet` hängt bei einem Fehler
+    // Pfad und rohen PostgREST-Rumpf an die Meldung. Das ist beim Suchen
+    // nützlich und beim Angreifen genauso — es verriet Tabellen, Spalten und
+    // die Bedingung, an der ein Versuch scheiterte.
+    console.error('substitute:', err instanceof Error ? err.message : String(err))
+    return json({ error: 'server-error' }, 500)
   }
 })

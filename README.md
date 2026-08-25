@@ -161,7 +161,7 @@ docs/
   user-guide/       Benutzerhandbücher (Planer/Verkündiger) + Auto-Screenshots
 supabase/
   schema.sql        DB-Schema (Tabellen + RLS + Funktionen), im SQL-Editor ausführen
-  migration-00*.sql Nachzügler-Migrationen für früher eingerichtete Datenbanken
+  migration-*.sql   Nachzügler-Migrationen für früher eingerichtete Datenbanken
 .github/workflows/
   deploy.yml        Auto-Deployment auf GitHub Pages (reicht Supabase-Secrets durch)
 ```
@@ -350,7 +350,9 @@ Teilen/Kopieren) und „Alle ohne Konto einladen" in der Liste. Neue Mitglieder
 registrieren sich in der App und lösen ihren Code ein (`redeem_invite`). Nur
 die allererste Versammlung + Koordinator-Mitgliedschaft entsteht per SQL
 (siehe Ende der `schema.sql`). Bereits eingerichtete Datenbanken einmalig mit
-den `supabase/migration-00*.sql`-Dateien nachziehen (in Nummern-Reihenfolge).
+den `supabase/migration-*.sql`-Dateien nachziehen (in Nummern-Reihenfolge).
+Nicht `migration-00*` — das Muster übergeht alles ab der zehnten, und darunter
+sind die Treffpunkte und sämtliche Rechteverschärfungen.
 
 ### Auto-Zuteilung (Regeln)
 

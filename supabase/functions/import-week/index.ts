@@ -2,8 +2,10 @@
 // Supabase Edge Function: import-week
 // =============================================================================
 // Holt das Arbeitsheft-Programm einer Woche von jw.org (serverseitig, umgeht
-// CORS) und liefert es als Week-JSON zurück. Ohne konkrete `url` wird die
-// nächste kommende Woche automatisch ermittelt (Übersicht → Zeitraum → Woche).
+// CORS) und liefert es als Week-JSON zurück. Welche Woche, ermittelt die
+// Funktion selbst (Übersicht → Zeitraum → Woche); der Aufruf sagt höchstens,
+// ab wann (`after`) oder welches Startdatum (`start`). Eine Adresse nimmt sie
+// **nicht** entgegen — geholt wird nur, was `fetchText` als jw.org durchlässt.
 //
 // MEHRSPRACHIG: Die Woche wird immer zuerst auf **Deutsch** ermittelt (der
 // deutsche Index ist die verlässliche Anker-Sprache; andere Sprachen haben
@@ -42,7 +44,36 @@ const CORS: Record<string, string> = {
 const TTL = 10 * 60 * 1000
 const cache = new Map<string, { at: number; text: string }>()
 
+/**
+ * Nur jw.org, nur https.
+ *
+ * Diese Funktion holt Seiten aus dem Netz — und stand deshalb als Bote bereit:
+ * Wer die Adresse bestimmen konnte, ließ sie aus der Supabase-Umgebung heraus
+ * abrufen und las am Fehlertext ab, was dort antwortet. Interne Adressen
+ * (`http://10.0.0.5:8080/`) sind von dort erreichbar, von außen nicht.
+ *
+ * Die Prüfung sitzt bewusst hier, an der einen Engstelle, und nicht bei den
+ * Aufrufern: `localizedUrl` liest eine Adresse aus fremdem Markup, und was
+ * jw.org morgen in ein `data-url` schreibt, entscheidet nicht dieses Projekt.
+ */
+function istJwOrg(url: string): boolean {
+  let u: URL
+  try {
+    u = new URL(url)
+  } catch {
+    return false // relativ oder unsinnig — beides ist hier keine Seite
+  }
+  if (u.protocol !== 'https:') return false
+  // Genau der Host, nicht „endet auf": `www.jw.org.example.com` wäre sonst drin.
+  return u.hostname === 'www.jw.org' || u.hostname === 'jw.org'
+}
+
 async function fetchText(url: string): Promise<string> {
+  // Geprüft wird die zerlegte Adresse, geholt die ursprüngliche Zeichenkette:
+  // `new URL()` normiert (Umlaute werden prozentkodiert), und die Pfade des
+  // Arbeitshefts tragen Umlaute. `fetch` zerlegt ohnehin nach denselben
+  // Regeln — Ziel und Prüfung meinen also dieselbe Adresse.
+  if (!istJwOrg(url)) throw new Error(`Adresse ausserhalb von jw.org: ${url}`)
   const hit = cache.get(url)
   if (hit && Date.now() - hit.at < TTL) return hit.text
   const res = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'de' } })
@@ -266,42 +297,44 @@ function stripVariant(week: ImportedWeek): ImportedWeek {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    const { url, after, start: startParam, lang = 'de', altLangs = [] } = (await req
+    // Kein `url`-Feld mehr. Es hat nie ein Aufrufer geschickt (src/lib/import.ts
+    // kennt nur `after`/`start`/`lang`/`altLangs`), aber der Server nahm es an
+    // und holte, was darin stand — offene Fläche ohne Nutzen. Welche Seite
+    // geholt wird, entscheidet jetzt ausschließlich die Wochensuche unten;
+    // `fetchText` lässt zusätzlich nur jw.org durch.
+    const { after, start: startParam, lang = 'de', altLangs = [] } = (await req
       .json()
       .catch(() => ({}))) as {
-      url?: string
       after?: string
       start?: string // ISO-Startdatum: genau DIESE Woche liefern (Varianten-Nachimport)
       lang?: string
       altLangs?: string[]
     }
 
-    let weekUrl = url
-    let start = url ? weekStart(url) : null
+    let weekUrl: string | undefined
+    let start: Date | null = null
     /** Datum des Gedächtnismahls, wenn es in diese Woche fällt. */
     let mem: string | undefined
 
-    if (!weekUrl) {
-      const weeks = await discoverWeeks()
-      if (startParam) {
-        // Nachimport: exakt die Woche mit diesem Startdatum (z. B. um später
-        // hinzugefügte Programmsprachen für bereits geladene Wochen zu holen).
-        const hit = weeks.find((w) => w.start.toISOString().slice(0, 10) === startParam)
-        if (!hit) return json({ error: `Woche ${startParam} nicht (mehr) im Arbeitsheft gefunden.` }, 404)
-        weekUrl = hit.url ?? undefined
-        start = hit.start
-        mem = hit.mem
-      } else {
-        const now = new Date()
-        const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-        // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück).
-        const cutoff = after ? new Date(after) : new Date(todayUtc - 6 * 864e5)
-        const next = weeks.find((w) => w.start > cutoff) ?? weeks[weeks.length - 1]
-        if (!next) return json({ error: 'Keine kommende Woche gefunden.' }, 404)
-        weekUrl = next.url ?? undefined
-        start = next.start
-        mem = next.mem
-      }
+    const weeks = await discoverWeeks()
+    if (startParam) {
+      // Nachimport: exakt die Woche mit diesem Startdatum (z. B. um später
+      // hinzugefügte Programmsprachen für bereits geladene Wochen zu holen).
+      const hit = weeks.find((w) => w.start.toISOString().slice(0, 10) === startParam)
+      if (!hit) return json({ error: `Woche ${startParam} nicht (mehr) im Arbeitsheft gefunden.` }, 404)
+      weekUrl = hit.url ?? undefined
+      start = hit.start
+      mem = hit.mem
+    } else {
+      const now = new Date()
+      const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+      // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück).
+      const cutoff = after ? new Date(after) : new Date(todayUtc - 6 * 864e5)
+      const next = weeks.find((w) => w.start > cutoff) ?? weeks[weeks.length - 1]
+      if (!next) return json({ error: 'Keine kommende Woche gefunden.' }, 404)
+      weekUrl = next.url ?? undefined
+      start = next.start
+      mem = next.mem
     }
 
     // Die Woche des Gedächtnismahls hat keine Seite (T65). Sie wird deshalb
@@ -382,6 +415,10 @@ Deno.serve(async (req: Request) => {
 
     return json({ week })
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : String(err) }, 500)
+    // Der Fehlertext bleibt in den Logs. In der Antwort verriet er, was beim
+    // Abruf passiert ist — bei einer fremden Adresse also, ob dort etwas
+    // antwortet und mit welchem Status. Genau das machte den Boten nützlich.
+    console.error('import-week:', err instanceof Error ? err.message : String(err))
+    return json({ error: 'Import fehlgeschlagen.' }, 500)
   }
 })

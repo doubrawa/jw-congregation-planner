@@ -38,5 +38,12 @@ export function inviteMailHref(
   bodyTemplate: string,
 ): string {
   const body = fill(bodyTemplate, { name: person.fn, code, url: appUrl() })
-  return `mailto:${person.mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  // Auch die Adresse kodieren, nicht nur Betreff und Text: Ein `?` oder `&`
+  // darin hängt sonst eigene Kopfzeilen an den Entwurf — `a@b.de?bcc=…` setzt
+  // beim Öffnen eine stille Kopie. Die Adresse ist ein Feld, das ein anderer
+  // gepflegt haben kann; sie ist damit genauso wenig „unser Text" wie der Rest.
+  // Das `@` bleibt stehen: Es gehört laut RFC 6068 unkodiert in die Adresse,
+  // und `%40` verwirrt manche Mail-Programme.
+  const an = encodeURIComponent(person.mail).replace(/%40/g, '@')
+  return `mailto:${an}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }

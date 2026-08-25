@@ -1347,6 +1347,13 @@ export function insertNotifications(
  * (Sofort-Push + In-App). Läuft serverseitig (Edge Function `substitute`), weil
  * Push nur mit dem privaten VAPID-Schlüssel geht. Fire-and-forget.
  */
+/*
+ * `congregationId` wird von der Function **nicht mehr ausgewertet** — sie liest
+ * die Versammlung aus der Mitgliedszeile des Aufrufers (S10). Das Feld bleibt
+ * trotzdem stehen: Eine ältere, noch nicht neu ausgerollte Fassung der Function
+ * verlangt es und antwortet sonst mit 400. Erst entfernen, wenn die neue
+ * Fassung sicher überall läuft.
+ */
 export function substituteSeek(congregationId: string, taskKey: string): void {
   if (!supabase) return
   void run(supabase.functions.invoke('substitute', { body: { action: 'seek', congregationId, taskKey } }))

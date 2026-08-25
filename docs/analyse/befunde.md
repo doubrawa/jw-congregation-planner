@@ -54,6 +54,10 @@ Nach Wirkung auf den echten Betrieb, nicht nach Aufwand.
 | **B16** | Einspringen ohne Sperre | Zwei Einspringende: der erste steht danach nirgends, sah aber „übernommen" |
 | **D5** | Ersatzsuche kommuniziert nur deutsch | Glocke **und** Push in 33 Sprachen deutsch |
 | **B10** | Offline lässt sich die eigene Aufgabe nicht öffnen | Genau der Fall, für den der Offline-Modus gebaut wurde |
+| **S10** | `substitute` nahm die **Versammlung aus dem Anfrage-Rumpf** | Ein `#` daran schnitt die folgenden Filter ab: alle Wochen überschrieben, alle Bestätigungen und Mitteilungen gelöscht |
+| **S11** | Abwesenheit ließ sich auf eine **fremde Person** eintragen | Der Betroffene fällt monatelang aus jeder Zuteilung — ohne sein Zutun, unter seinem Namen |
+| **S12** | `import-week` holte **jede Adresse**, die im Rumpf stand | Bote ins interne Netz, offen erreichbar; der Fehlertext war der Rückkanal |
+| **S13** | `substitute: take` prüfte nicht, ob **überhaupt Ersatz gesucht** war | Jeder Qualifizierte konnte jeden Platz an sich ziehen und die fremde Bestätigung löschen |
 
 ---
 
@@ -816,6 +820,11 @@ Der `take`-Pfad prüft dagegen sauber auf Qualifikation (Z. 274). Der Client ruf
 `seek` nur nach `declineTask` auf (`persist.ts:312`) — die Function verlässt sich
 darauf, dass der Client sich benimmt.
 
+> **Nachtrag 24.8.2026:** Der letzte Absatz war der Fehlschluss. „Prüft auf
+> Qualifikation" beantwortet die Frage, WER eingetragen werden darf — nicht, OB
+> dieser Platz überhaupt frei wird. Genau diese zweite Frage fehlte auch bei
+> `take`; sie steht jetzt als **S13** und ist geschlossen.
+
 ### S8 — Google Fonts von externem Host ✅
 
 `index.html:60-66` lädt Newsreader und IBM Plex Sans von
@@ -836,6 +845,109 @@ sonst nutzt die App eigene Dialoge bzw. die Zwei-Tipp-Bestätigung
 Standalone-Modus unterschiedlich und lässt sich nicht per Backdrop schließen.
 Zudem: Das Löschen einer Person entfernt **nicht** ihre Namen aus bereits geplanten
 Wochen (dokumentiert, `reducer.ts:294`) — davor warnt der Dialogtext nicht.
+
+### S10 — `substitute` nahm die Versammlung aus dem Anfrage-Rumpf ✅
+
+`congregationId` kam aus dem JSON des Aufrufers, wurde nur auf „nicht leer"
+geprüft und ging **ungekodiert** in jeden REST-Pfad. Ein angehängtes `#` macht
+beim URL-Parser alles Folgende zum Fragment — und Fragmente werden nicht
+gesendet. Aus
+
+    weeks?congregation_id=eq.<id>#&start=eq.2026-09-07&…->>name=eq."Otto"
+
+wurde beim Server
+
+    weeks?congregation_id=eq.<id>
+
+Das PATCH verlor damit Woche **und** Vergleiche-und-Tausche und schrieb den Blob
+einer Woche in **jede** Wochenzeile der Versammlung; die beiden DELETEs verloren
+ihren `task_key` und räumten sämtliche Bestätigungen und Mitteilungen ab. Alles
+mit Service-Role, also an RLS vorbei (`weeks_write` ist Planern vorbehalten), und
+alles auslösbar von einem einfachen Mitglied mit einer einzigen Anfrage. Die
+Mitgliedsprüfung selbst blieb wirksam — der Schaden endet an der Versammlungs-
+grenze, ist darin aber vollständig und ohne Historie nicht rückholbar.
+
+Die Ursache ist nicht das fehlende Kodieren, sondern der zweite Weg zu einer
+Auskunft, die es schon gab: Der Aufrufer hat genau eine Versammlung. Sie wird
+jetzt aus seiner Mitgliedszeile **gelesen**, nicht geglaubt — wie `send-invite`
+es seit jeher tut. Das Kodieren (`wert()`) kommt als zweites Schloss dazu.
+
+### S11 — Abwesenheit ließ sich auf eine fremde Person eintragen ✅
+
+`absences_write` erlaubte das Schreiben unter anderem, wenn `user_id =
+auth.uid()` — „die Zeile gehört mir". Über `person_id`, die Spalte, die
+entscheidet **um wen** es geht, sagte dieser Zweig nichts. Eigene `user_id`
+hinein, fremde `person_id` daneben: fertig. Die Person-Id ist keine Hürde,
+`persons_select` gibt sie versammlungsweit heraus.
+
+Der Betroffene fällt damit aus der automatischen Zuteilung, der Kandidatenliste,
+dem Treffpunkt-Pool und den Verfügbarkeitszahlen — und auch aus der
+serverseitigen Ersatzsuche, die dieselbe Tabelle liest. Der frei wählbare
+`reason` steht dabei unter **seinem** Namen in der Zeitleiste, denn zugeordnet
+wird nach Person, nicht nach Ersteller. Und weil `for all` gilt, ließ sich
+`person_id` einer selbst angelegten Zeile später weiterreichen.
+
+Dieselbe Bauart wie S2: eine Regel, die prüft, wem die **Zeile** gehört, statt
+wem die **Sache** gehört. Geschlossen mit `migration-023`.
+
+### S12 — `import-week` holte jede Adresse, die im Rumpf stand ✅
+
+Das Feld `url` ging unverändert an `fetch` — kein Host, kein Protokoll geprüft.
+`BASE` galt nur für Adressen, die die Function selbst gefunden hatte. Ein
+`{"url":"http://10.0.0.5:8080/"}` wurde damit aus der Supabase-Umgebung heraus
+abgerufen; erreichbar ist von dort, was von außen nicht erreichbar ist. Der
+Rückkanal war der Fehlertext, den der Handler wörtlich zurückgab (`HTTP 403 bei
+…`, oder die rohe Transportmeldung): genug, um interne Adressen und Ports
+abzutasten.
+
+Erreichbar war das **ohne Konto**. `verify_jwt = true` verlangt kein Nutzer-
+Login, sondern nur ein Token, das mit dem Projekt-Geheimnis signiert ist — und
+das ist auch der anon-Key, der per Design im Bundle steht. Die Funktion prüfte
+als einzige nichts Eigenes. Der Kommentar in `config.toml`, der das Gegenteil
+behauptete, ist mitkorrigiert.
+
+Das Feld ist entfernt — **kein Aufrufer hat es je geschickt** (`src/lib/import.ts`
+kennt nur `after`/`start`/`lang`/`altLangs`). Zusätzlich lässt `fetchText` als
+einzige Engstelle nur `https://www.jw.org` durch; die Prüfung sitzt bewusst dort
+und nicht beim Auswerten des Rumpfes, weil `localizedUrl` eine Adresse aus
+**fremdem Markup** liest.
+
+### S13 — `take` prüfte nicht, ob überhaupt Ersatz gesucht war ✅
+
+Der Zwilling zu S7, in der damaligen Durchsicht mit einem Satz abgetan (siehe
+Nachtrag dort). `take` verlangte Mitgliedschaft und Qualifikation — nicht, dass
+jemand abgesagt hat. Wer einen Hilfsdienst kann, konnte sich damit in **jeden**
+Platz dieses Dienstes schreiben: den Eingeteilten verdrängen, dessen Bestätigung
+löschen und ihm und allen Planern „Ersatz gefunden" schicken. Über den
+`is.null`-Zweig ging auch jeder **leere** Platz — den vergibt der Planer.
+
+Vier der fünf Schreibzugriffe sind einem Mitglied per RLS verwehrt; die Function
+führt sie mit Service-Role aus. Der einzige Riegel stand im Client
+(`deriveSubstituteReqs` zeigt den Knopf nur bei offenem Gesuch) — und ein Knopf
+ist keine Rechteprüfung.
+
+Geschlossen mit derselben Quelle, aus der `seek` seine Antwort zieht: der
+`verhindert`-Bestätigung zu genau diesem `task_key`.
+
+### Kleineres, mitgenommen ✅
+
+- **Fehlertexte**: `substitute` und `import-week` gaben die Ausnahme wörtlich
+  zurück. Bei `restGet` steckt darin der rohe PostgREST-Rumpf samt Pfad — beim
+  Suchen nützlich, beim Ausprobieren genauso. Geht jetzt in die Logs.
+- **`mailto:`-Adresse**: Betreff und Text waren kodiert, die Empfängeradresse
+  nicht. Ein gepflegtes `a@b.de?bcc=…` hätte dem Entwurf eine stille Kopie
+  angehängt (`src/personen/invite-helpers.ts`).
+- **Mitteilungs-Klick**: `sw.js` gab die Adresse aus der Push-Nutzlast direkt an
+  `clients.openWindow()`. Heute baut sie der Server aus `APP_URL`; wer aber
+  zustellen darf, bestimmte damit das Ziel. Wird jetzt gegen den
+  Geltungsbereich geprüft.
+- **`schema.sql` war unausführbar** (siehe `docs/analyse/todo.md`, T97): Ein
+  Suchen-und-Ersetzen hatte `$$` auf `$` zusammenfallen lassen und den Dateirest
+  sechsmal eingespleißt. Von sechs Fassungen jeder Richtlinie gewinnt die
+  **letzte** — und das waren die schwachen von vor `migration-022`. Kein
+  Sicherheitsbefund (die Datei lief gar nicht, die laufende Instanz hängt an der
+  Migrationskette), aber jede Neuinstallation wäre gescheitert und eine naive
+  Reparatur hätte S2 und S3 stillschweigend wieder aufgemacht.
 
 ---
 
@@ -968,12 +1080,15 @@ ruft `buildAbsences` erneut (Z. 539).
 | `src/planen/AssignSheet.tsx` | B5, B6, B15, U4 |
 | `src/dashboard/DashboardScreen.tsx` | B2 |
 | `src/personen/PersonDetail.tsx` | S9, F7 |
-| `supabase/schema.sql` | S2, S3, S4 |
+| `src/personen/invite-helpers.ts` | (mailto-Kopfzeilen, siehe „Kleineres") |
+| `supabase/schema.sql` | S2, S3, S4, S11 |
+| `supabase/migration-021-abwesenheit-import.sql` | S11 |
+| `supabase/config.toml` | S12 (was `verify_jwt` wirklich zusagt) |
 | `supabase/functions/send-reminders/index.ts` | B8, S1, U1, V3 |
-| `supabase/functions/substitute/index.ts` | B16, S7, D5 |
+| `supabase/functions/substitute/index.ts` | B16, S7, S10, S13, D5 |
 | `supabase/functions/import-week/parse.ts` | B4, B7, F1, F5, F12, D7 |
-| `supabase/functions/import-week/index.ts` | F11 |
-| `public/sw.js` | B17, V9, V10 |
+| `supabase/functions/import-week/index.ts` | F11, S12 |
+| `public/sw.js` | B17, V9, V10, (Klick-Ziel, siehe „Kleineres") |
 
 ---
 

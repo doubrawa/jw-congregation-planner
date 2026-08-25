@@ -52,4 +52,16 @@ describe('appUrl / inviteMailHref (Browser-Kontext)', () => {
     expect(href).toContain(`subject=${encodeURIComponent('Einladung')}`)
     expect(decodeURIComponent(href)).toContain('Hallo Anna, dein Code: CODE123')
   })
+
+  it('eine Adresse mit Sonderzeichen hängt keine eigenen Kopfzeilen an', () => {
+    // Die E-Mail-Adresse pflegt der Planer — oder ein Import. Stünde darin
+    // `a@b.de?bcc=…`, öffnete der Entwurf mit einer stillen Kopie an einen
+    // Dritten, und im Fenster stünde nur der Name. Betreff und Text waren
+    // immer kodiert; die Adresse blieb roh.
+    const person = { id: 'p1', fn: 'Anna', ln: 'B', mail: 'anna@example.com?bcc=fremd@example.org&' } as Person
+    const href = inviteMailHref(person, 'CODE123', 'Einladung', '{code}')
+    const kopfzeilen = href.slice(href.indexOf('?') + 1).split('&').map((p) => p.split('=')[0])
+    expect(kopfzeilen).toEqual(['subject', 'body'])
+    expect(href).not.toContain('bcc=')
+  })
 })

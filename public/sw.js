@@ -123,9 +123,32 @@ self.addEventListener('push', (event) => {
   )
 })
 
+/**
+ * Ziel eines Mitteilungs-Klicks — aber nur innerhalb dieser App.
+ *
+ * Die Adresse kommt aus der Push-Nutzlast. Heute baut sie der Server aus
+ * `APP_URL` plus festem `#go=…`, aber wer eine Mitteilung zustellen darf,
+ * bestimmt damit, wohin ein Klick führt. `openWindow` folgt jeder Adresse;
+ * `navigate` bleibt zwar von sich aus in der Herkunft, meldet dann aber nur
+ * einen Fehler. Deshalb wird hier verglichen, bevor irgendetwas geöffnet wird
+ * — und im Zweifel die App selbst geöffnet.
+ */
+function zielInDerApp(roh) {
+  // Der Geltungsbereich endet auf '/'; ohne diesen Schrägstrich wäre
+  // '…/planner-fremd/' ein Präfixtreffer von '…/planner'.
+  const scope = self.registration.scope
+  const start = new URL(scope.endsWith('/') ? scope : scope + '/')
+  try {
+    const ziel = new URL(roh, start)
+    return ziel.href.startsWith(start.href) ? ziel.href : start.href
+  } catch {
+    return start.href
+  }
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = (event.notification.data && event.notification.data.url) || '.'
+  const url = zielInDerApp((event.notification.data && event.notification.data.url) || '.')
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {

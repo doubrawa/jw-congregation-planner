@@ -70,9 +70,13 @@ const leseSeite = (kopf: string): string => `<html><body>
  * daran hängt der ganze fremdsprachige Import — es gibt keinen zweiten Weg zur
  * Übersetzung einer Wochenseite.
  */
-const umschalter = (slug: string, codes: string[]): string =>
-  codes
-    .map((c) => `<option value="${c}" data-url="/${c}/bibliothek/jw-arbeitsheft/${SLUG}/${slug}/"></option>`)
+const umschalter = (slug: string, codes: string[], fremd?: { code: string; url: string }): string =>
+  [...codes, ...(fremd ? [fremd.code] : [])]
+    .map((c) =>
+      c === fremd?.code
+        ? `<option value="${c}" data-url="${fremd.url}"></option>`
+        : `<option value="${c}" data-url="/${c}/bibliothek/jw-arbeitsheft/${SLUG}/${slug}/"></option>`,
+    )
     .join('')
 
 /** Wochenseite in erfundener Sprache — die Struktur ist das Gemessene. */
@@ -103,6 +107,13 @@ interface Seiten {
   leseKaputt: boolean
   /** Sprachen, die der „Lesen in"-Umschalter dieser Woche anbietet. */
   sprachen: string[]
+  /**
+   * Sprachcode, für den der Umschalter eine **fremde, absolute** Adresse
+   * ausweist statt eines jw.org-Pfads. jw.org tut das heute nicht — aber der
+   * Umschalter ist fremdes Markup, und was darin steht, entscheidet nicht
+   * dieses Projekt. Der Fall gehört deshalb geprüft.
+   */
+  fremdeVariante?: { code: string; url: string }
 }
 
 let seiten: Seiten
@@ -136,7 +147,7 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
     const m = /^(\d+)-(\d+)-([A-Za-zäöü]+)-\d{4}$/.exec(t)
     const kreuz = /^(\d+)-([A-Za-zäöü]+)-(\d+)-([A-Za-zäöü]+)-\d{4}$/.exec(t)
     const kopf = m ? `${m[1]}.-${m[2]}. ${m[3]}` : kreuz ? `${kreuz[1]}. ${kreuz[2]}–${kreuz[3]}. ${kreuz[4]}` : t
-    return text(wochenSeite(kopf, umschalter(woche, seiten.sprachen)))
+    return text(wochenSeite(kopf, umschalter(woche, seiten.sprachen, seiten.fremdeVariante)))
   }
   // Studienausgaben: nicht vorhanden → applyStudy lässt die Vorlage stehen.
   return weg()
@@ -454,5 +465,79 @@ describe('import-week: Netz und Aufruf', () => {
     const handler = await loadFn()
     const res = await handler(new Request('https://fn.test/import-week', { method: 'POST' }))
     expect([200, 404]).toContain(res.status)
+  })
+})
+
+describe('import-week: geholt wird nur bei jw.org', () => {
+  /*
+   * Diese Function holt Seiten aus dem Netz, und sie steht offen: `verify_jwt`
+   * lässt den anon-Key durch, der per Design im Bundle liegt. Wer die Adresse
+   * bestimmen konnte, hatte damit einen Boten in der Supabase-Umgebung —
+   * `http://10.0.0.5:8080/` ist von dort erreichbar, von außen nicht, und der
+   * zurückgereichte Fehlertext verriet, ob und wie dort etwas antwortet.
+   *
+   * Zwei Schlösser, beide hier geprüft: Das `url`-Feld gibt es nicht mehr
+   * (kein Aufrufer hat es je geschickt), und `fetchText` lässt als einzige
+   * Engstelle nur https://www.jw.org durch.
+   */
+  const FREMD = 'http://169.254.169.254/latest/meta-data/'
+
+  /** Adressen, die nicht zu jw.org gehören — muss immer leer sein. */
+  const fremdeAbrufe = (): string[] => geholt.filter((u) => !u.startsWith(`${BASE}/`))
+
+  it('ein `url` im Rumpf wird nicht geholt — die Woche kommt aus dem Arbeitsheft', async () => {
+    const { week } = await hole({ url: FREMD, after: '2026-03-02' })
+    // Die Anfrage läuft ganz normal durch: das Feld ist schlicht wirkungslos.
+    expect(week?.start).toBe('2026-03-09')
+    expect(fremdeAbrufe()).toEqual([])
+    expect(geholt).toContain(`${BASE}/de/bibliothek/jw-arbeitsheft/`)
+  })
+
+  it.each([
+    ['fremder Host', 'https://evil.example/x'],
+    ['internes Netz', 'http://10.0.0.5:8080/'],
+    ['Metadaten-Dienst', FREMD],
+    ['lokale Datei', 'file:///etc/passwd'],
+    ['unverschlüsselt, aber jw.org', 'http://www.jw.org/de/'],
+    ['täuschender Host', 'https://www.jw.org.evil.example/de/'],
+  ])('%s wird nie abgerufen, auch nicht als `url`', async (_name, url) => {
+    await hole({ url, after: '2026-03-02' })
+    expect(geholt).not.toContain(url)
+    expect(fremdeAbrufe()).toEqual([])
+  })
+
+  it('auch eine fremde Adresse aus dem „Lesen in"-Umschalter wird nicht geholt', async () => {
+    // Der zweite Weg: nicht der Aufrufer bestimmt die Adresse, sondern das
+    // Markup der geholten Seite. Deshalb sitzt die Prüfung in `fetchText` und
+    // nicht beim Auswerten des Rumpfes.
+    seiten.fremdeVariante = { code: 'xx', url: FREMD }
+    const { week, error } = await hole({ after: '2026-03-02', lang: 'xx' })
+    expect(fremdeAbrufe()).toEqual([])
+    // Die Sprache gilt als nicht verfügbar; eine Woche entsteht nicht.
+    expect(week).toBeUndefined()
+    expect(error).toBeTruthy()
+  })
+
+  it('eine fremde Adresse als Sprachvariante lässt die Woche unbeschadet', async () => {
+    // Varianten sind Beiwerk: Fällt eine weg, steht die Woche trotzdem.
+    seiten.fremdeVariante = { code: 'xx', url: FREMD }
+    const { week } = await hole({ after: '2026-03-02', altLangs: ['xx', 'en'] })
+    expect(fremdeAbrufe()).toEqual([])
+    expect(Object.keys(week?.alt ?? {})).toEqual(['en'])
+  })
+
+  it('der Fehlertext verrät den Abruf nicht', async () => {
+    // Vorher stand in der Antwort `HTTP 404 bei <Adresse>` — genau das machte
+    // den Boten nützlich: Er sagte, ob dort etwas antwortet und mit welchem
+    // Status. Der Text gehört in die Logs, nicht zum Aufrufer.
+    const handler = await loadFn()
+    seiten.leseprogramm = false
+    const res = await handler(new Request('https://fn.test/import-week', {
+      method: 'POST',
+      body: JSON.stringify({ start: 'kein-datum' }),
+    }))
+    const { error } = (await res.json()) as Antwort
+    expect(error ?? '').not.toContain('http')
+    expect(error ?? '').not.toMatch(/HTTP \d{3}/)
   })
 })

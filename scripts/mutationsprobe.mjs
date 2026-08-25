@@ -581,6 +581,103 @@ const KATALOG = [
     suchen: 'const disabled = (min != null && di < min) || (max != null && di > max)',
     ersetzen: 'const disabled = max != null && di > max',
   },
+
+  // ── Sicherheitsgrenzen (T97) ──────────────────────────────────────────────
+  // Die vier Regeln aus der Sicherheitsdurchsicht vom 24.8.2026. Sie haben
+  // gemeinsam, dass ihr Bruch nicht auffällt: Die App verhält sich unverändert,
+  // weil sie den Missbrauch gar nicht erst anbietet. Bemerkbar wird er nur,
+  // wenn jemand die Function oder PostgREST direkt anspricht — deshalb stehen
+  // sie hier und nicht im Vertrauen auf die Bedienoberfläche.
+  {
+    id: 'ersatz-versammlung-aus-dem-rumpf',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Die Versammlung kommt aus der eigenen Mitgliedszeile, nie aus dem Anfrage-Rumpf.',
+    suchen: 'const caller = eigene[0]\n    if (!caller) return json({ error: \'forbidden\' }, 403)\n    const cong = caller.congregation_id',
+    ersetzen: 'const caller = eigene[0]\n    if (!caller) return json({ error: \'forbidden\' }, 403)\n    const cong = payload?.congregationId ?? caller.congregation_id',
+  },
+  {
+    id: 'ersatz-filterwert-kodiert',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Jeder Wert in einem REST-Pfad wird kodiert — ein rohes # schneidet die folgenden Filter ab.',
+    suchen: "const wert = (v: string | number): string => encodeURIComponent(String(v))",
+    ersetzen: 'const wert = (v: string | number): string => String(v)',
+  },
+  {
+    id: 'ersatz-nur-mit-gesuch',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Einspringen setzt eine Absage zu genau dieser Aufgabe voraus — sonst verdrängt jeder Qualifizierte jeden.',
+    suchen: "if (absagen.length === 0) return json({ error: 'not-sought' }, 409)",
+    ersetzen: '',
+  },
+  {
+    id: 'import-nur-jw-org',
+    datei: 'supabase/functions/import-week/index.ts',
+    regel: 'Geholt wird nur von jw.org und nur über https — sonst ist die Function ein Bote ins interne Netz.',
+    suchen: "if (!istJwOrg(url)) throw new Error(`Adresse ausserhalb von jw.org: ${url}`)",
+    ersetzen: '',
+  },
+  {
+    id: 'mitteilungs-klick-bleibt-drinnen',
+    datei: 'public/sw.js',
+    regel: 'Ein Mitteilungs-Klick führt nur in den Geltungsbereich der App, nie zu einer fremden Adresse.',
+    suchen: 'return ziel.href.startsWith(start.href) ? ziel.href : start.href',
+    ersetzen: 'return ziel.href',
+  },
+  {
+    id: 'einladungsmail-adresse-kodiert',
+    datei: 'src/personen/invite-helpers.ts',
+    regel: 'Die Empfängeradresse wird kodiert — ein ? darin hängt sonst eigene Kopfzeilen an den Entwurf.',
+    suchen: "const an = encodeURIComponent(person.mail).replace(/%40/g, '@')",
+    ersetzen: 'const an = person.mail',
+  },
+
+  // ── Das Schema selbst (T97) ───────────────────────────────────────────────
+  // `schema.sql` ist der Einstieg für Neuinstallationen. Am 23.8.2026 stand
+  // dort monatelang eine Datei, die weder ausführbar war noch die
+  // verschärften Richtlinien enthielt — und die Suite blieb grün, weil sie nur
+  // Namen suchte. Die fünf Einträge brechen genau die Zusagen, die seitdem
+  // dazugekommen sind.
+  {
+    id: 'schema-dollar-rumpf',
+    datei: 'supabase/schema.sql',
+    regel: 'Jede Funktion im Schema hat einen geschlossenen $$-Rumpf — sonst bricht die ganze Datei ab.',
+    suchen: 'set search_path = public\nas $$\n  select coalesce(nullif(btrim(p.dn)',
+    ersetzen: 'set search_path = public\nas $\n  select coalesce(nullif(btrim(p.dn)',
+  },
+  {
+    id: 'schema-richtlinie-eindeutig',
+    datei: 'supabase/schema.sql',
+    regel: 'Jede Richtlinie steht genau einmal — beim Ausführen gewinnt sonst die letzte, ältere Fassung.',
+    suchen: 'drop policy if exists confirmations_delete_planner on public.confirmations;',
+    ersetzen:
+      'drop policy if exists confirmations_write on public.confirmations;\n' +
+      'create policy confirmations_write on public.confirmations\n' +
+      '  for all\n' +
+      '  using (congregation_id = public.my_congregation_id() and user_id = auth.uid())\n' +
+      '  with check (congregation_id = public.my_congregation_id() and user_id = auth.uid());\n\n' +
+      'drop policy if exists confirmations_delete_planner on public.confirmations;',
+  },
+  {
+    id: 'schema-bestaetigen-eigene-aufgabe',
+    datei: 'supabase/schema.sql',
+    regel: 'Bestätigen darf nur, wem die Aufgabe gehört (S2/T89) — nicht nur, wem die Zeile gehört.',
+    suchen: '\n    and public.task_gehoert_mir(task_key)',
+    ersetzen: '',
+  },
+  {
+    id: 'schema-abwesenheit-eigene-person',
+    datei: 'supabase/schema.sql',
+    regel: 'Eine Abwesenheit gilt nur der eigenen Person (S11) — die eigene Zeile allein genügt nicht.',
+    suchen: '      (user_id = auth.uid() and (person_id is null or person_id = public.my_person_id()))',
+    ersetzen: '      user_id = auth.uid()',
+  },
+  {
+    id: 'schema-verhindert-nur-an-planer',
+    datei: 'supabase/schema.sql',
+    regel: 'Eine Verhinderungs-Meldung geht nur an Planer (S3) — nicht an jeden Empfänger der Versammlung.',
+    suchen: '             and m.planner',
+    ersetzen: '             and true',
+  },
 ]
 
 // ── Lauf ────────────────────────────────────────────────────────────────────

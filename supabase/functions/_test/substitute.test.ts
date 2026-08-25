@@ -37,12 +37,12 @@ const U_FOREIGN = 'user-foreign' // Mitglied einer ANDEREN Versammlung
 const QUAL = { [`svc:${SVC}`]: true }
 
 const MEMBERS = [
-  { user_id: U_ME, person_id: 'p-me', planner: false },
-  { user_id: U_ORIG, person_id: 'p-orig', planner: false },
-  { user_id: U_UNQUAL, person_id: 'p-unqual', planner: false },
-  { user_id: U_NOPERSON, person_id: null, planner: false },
-  { user_id: U_ABSENT, person_id: 'p-absent', planner: false },
-  { user_id: U_PLANNER, person_id: 'p-planner', planner: true },
+  { user_id: U_ME, person_id: 'p-me', planner: false, congregation_id: CONG },
+  { user_id: U_ORIG, person_id: 'p-orig', planner: false, congregation_id: CONG },
+  { user_id: U_UNQUAL, person_id: 'p-unqual', planner: false, congregation_id: CONG },
+  { user_id: U_NOPERSON, person_id: null, planner: false, congregation_id: CONG },
+  { user_id: U_ABSENT, person_id: 'p-absent', planner: false, congregation_id: CONG },
+  { user_id: U_PLANNER, person_id: 'p-planner', planner: true, congregation_id: CONG },
 ]
 
 const PERSONS = [
@@ -87,7 +87,7 @@ let authUser: string | null
 let week: unknown
 let writes: Write[]
 /** Vorhandene `verhindert`-Zeilen (Tabelle confirmations). */
-let absagen: { user_id: string }[]
+let absagen: { user_id: string; task_key: string }[]
 /** Wird einmal ausgeführt, nachdem die Woche gelesen wurde (Wettlauf). */
 let konkurrent: (() => void) | null
 
@@ -104,8 +104,24 @@ function gespeicherterName(): string | null {
   return w.mid?.helpers?.[SVC]?.[0]?.name ?? null
 }
 
+/**
+ * Wert eines `spalte=eq.…`-Filters aus dem Pfad, dekodiert — oder null.
+ *
+ * Die Attrappe wertet Filter aus, statt jede Tabelle pauschal auszugeben. Erst
+ * dadurch kann ein fehlender oder abgeschnittener Filter im Test überhaupt
+ * auffallen: Gäbe sie weiterhin alles zurück, sähe „Filter weg" genauso aus
+ * wie „Filter da".
+ */
+function filterWert(path: string, spalte: string): string | null {
+  const m = new RegExp(`[?&]${spalte}=eq\\.([^&]*)`).exec(path)
+  return m ? decodeURIComponent(m[1]) : null
+}
+
 const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
-  const url = String(input)
+  // `fetch` bekommt hier immer einen String; ein `#` darin ist also genau das,
+  // was der echte URL-Parser als Fragment abschneiden würde. Damit der Test
+  // dieselbe Wirkung sieht wie der Server, wird hier ebenso abgeschnitten.
+  const url = String(input).split('#')[0]
   const method = init?.method ?? 'GET'
 
   // Auth: löst das JWT des Aufrufers auf.
@@ -131,13 +147,31 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     return new Response(null, { status: 204 })
   }
 
-  if (path.startsWith('members')) return jsonRes(MEMBERS)
-  if (path.startsWith('services')) return jsonRes(SERVICES)
-  if (path.startsWith('persons')) return jsonRes(PERSONS)
-  if (path.startsWith('push_subscriptions')) return jsonRes(SUBS)
+  // Die Versammlung wird an JEDER Tabelle geprüft: Fällt der Filter weg oder
+  // steht ein fremder Wert darin, gibt es hier nichts. Vorher nahm die Function
+  // die Kennung aus dem Anfrage-Rumpf — dann arbeitete sie mit dem, was der
+  // Aufrufer behauptete, statt mit dem, wo er Mitglied ist.
+  const cong = filterWert(path, 'congregation_id')
+  const fremd = cong !== null && cong !== CONG
+
+  if (path.startsWith('members')) {
+    const wer = filterWert(path, 'user_id')
+    if (wer !== null) return jsonRes(MEMBERS.filter((m) => m.user_id === wer))
+    return jsonRes(fremd ? [] : MEMBERS)
+  }
+  if (path.startsWith('services')) return jsonRes(fremd ? [] : SERVICES)
+  if (path.startsWith('persons')) return jsonRes(fremd ? [] : PERSONS)
+  if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
   if (path.startsWith('congregations')) return jsonRes(CONGREGATIONS)
-  if (path.startsWith('absences')) return jsonRes(ABSENCES)
-  if (path.startsWith('confirmations')) return jsonRes(absagen)
+  if (path.startsWith('absences')) return jsonRes(fremd ? [] : ABSENCES)
+  if (path.startsWith('confirmations')) {
+    const wer = filterWert(path, 'user_id')
+    const aufgabe = filterWert(path, 'task_key')
+    let rows = fremd ? [] : absagen
+    if (wer !== null) rows = rows.filter((a) => a.user_id === wer)
+    if (aufgabe !== null) rows = rows.filter((a) => a.task_key === aufgabe)
+    return jsonRes(rows)
+  }
   if (path.startsWith('weeks')) {
     const pos = /start=eq\.([\d-]+)/.exec(path)?.[1]
     // Antwort steht mit dem Serialisieren fest; danach darf der Konkurrent den
@@ -180,7 +214,10 @@ beforeEach(() => {
   authUser = U_ME
   week = freshWeek()
   writes = []
-  absagen = []
+  // Ausgangslage für „take": Otto steht im Slot und hat abgesagt. Ohne eine
+  // solche Absage gibt es nichts zu übernehmen — genau das prüft die Function
+  // jetzt (siehe „Einspringen setzt ein Gesuch voraus").
+  absagen = [{ user_id: U_ORIG, task_key: KEY }]
   konkurrent = null
   resetPush()
 })
@@ -247,7 +284,6 @@ describe('substitute: ungültige Anfragen', () => {
   })
 
   it.each([
-    ['fehlende congregationId', { congregationId: '' }],
     ['unbekannte Aktion', { action: 'delete' }],
     ['leerer taskKey', { taskKey: '' }],
     ['taskKey mit unbekanntem Tab', { taskKey: `${WI}|xx|helper|${SVC}|0` }],
@@ -267,6 +303,123 @@ describe('substitute: ungültige Anfragen', () => {
     )
     expect(res.status).toBe(400)
     expect(writes).toEqual([])
+  })
+})
+
+describe('substitute: die Versammlung kommt nicht aus dem Rumpf', () => {
+  /*
+   * Der gemessene Missbrauch: `congregationId` ging ungeprüft in jeden
+   * REST-Pfad. Ein angehängtes `#` machte beim URL-Parser alles Folgende zum
+   * Fragment — und Fragmente werden nicht gesendet. Aus
+   *   weeks?congregation_id=eq.X#&start=eq.…&…->>name=eq."Otto"
+   * wurde beim Server
+   *   weeks?congregation_id=eq.X
+   * Das PATCH verlor damit Woche UND Vergleiche-und-Tausche und überschrieb
+   * JEDE Woche der Versammlung; die beiden DELETEs verloren ihren task_key und
+   * räumten sämtliche Bestätigungen und Mitteilungen ab. Alles mit
+   * Service-Role, also an RLS vorbei, und alles für ein einfaches Mitglied.
+   *
+   * Die Function liest die Versammlung jetzt aus der eigenen Mitgliedszeile.
+   * Der Rumpfwert ist damit wirkungslos — das prüfen die drei Fälle hier.
+   */
+  const boese = `${CONG}#`
+
+  it('ein angehängtes # bleibt wirkungslos — die Übernahme läuft normal', async () => {
+    const res = await call(take({ congregationId: boese }))
+    expect(res.status).toBe(200)
+    expect(savedSlotName()).toBe('Ich Selbst')
+  })
+
+  it('kein Pfad verliert seine Filter — jeder Schreibzugriff bleibt eng', async () => {
+    await call(take({ congregationId: boese }))
+
+    const patch = writesTo('weeks').find((w) => w.method === 'PATCH')!
+    // Die Woche und der erwartete Name müssen im Pfad ankommen, sonst trifft
+    // das PATCH mehr als den einen Platz.
+    expect(patch.path).toContain(`start=eq.${WI}`)
+    expect(patch.path).toContain('->>name=eq.')
+
+    // Beide DELETEs nennen die Aufgabe. Ohne diesen Filter löschen sie die
+    // Bestätigungen bzw. Mitteilungen der ganzen Versammlung.
+    for (const w of writes.filter((x) => x.method === 'DELETE')) {
+      expect(w.path, `DELETE ohne task_key: ${w.path}`).toContain('task_key=eq.')
+    }
+  })
+
+  it('eine fremde Versammlung im Rumpf ändert nichts — gearbeitet wird in der eigenen', async () => {
+    // Früher entschied dieser Wert, welche Zeilen die Function anfasst.
+    const res = await call(take({ congregationId: 'cong-fremd' }))
+    expect(res.status).toBe(200)
+    expect(savedSlotName()).toBe('Ich Selbst')
+    // Gegenprobe: Die genannte Versammlung taucht nirgends auf — weder in
+    // einem Pfad noch in einer geschriebenen Zeile.
+    for (const w of writes) {
+      expect(w.path, w.path).not.toContain('cong-fremd')
+      expect(JSON.stringify(w.body ?? null), w.path).not.toContain('cong-fremd')
+      // Filternde Pfade (PATCH/DELETE) grenzen auf die eigene Versammlung ein;
+      // die beiden POSTs tragen sie stattdessen in jeder Zeile.
+      if (w.path.includes('?')) expect(w.path).toContain(`congregation_id=eq.${CONG}`)
+      else {
+        const rows = w.body as { congregation_id: string }[]
+        for (const r of rows) expect(r.congregation_id).toBe(CONG)
+      }
+    }
+  })
+})
+
+describe('substitute: Einspringen setzt ein Gesuch voraus', () => {
+  /*
+   * Bisher genügten Mitgliedschaft und Qualifikation. Wer einen Hilfsdienst
+   * kann, konnte sich damit in JEDEN Platz dieses Dienstes schreiben: den
+   * Eingeteilten verdrängen, dessen Bestätigung löschen und ihm und allen
+   * Planern „Ersatz gefunden" schicken — ohne dass je jemand abgesagt hätte.
+   * Die App bietet den Knopf zwar nur bei offenen Gesuchen an, aber ein Knopf
+   * ist keine Rechteprüfung.
+   */
+  it('ohne Absage → 409, der Slot behält die ursprüngliche Person', async () => {
+    absagen = []
+    const res = await call(take())
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'not-sought' })
+    expect(gespeicherterName()).toBe('Otto Riginal')
+    expect(savedSlotName()).toBeNull() // nichts umgeschrieben
+  })
+
+  it('ohne Absage wird auch nichts gelöscht und niemand benachrichtigt', async () => {
+    absagen = []
+    await call(take())
+    // Der eigentliche Schaden lag nicht im Slot, sondern hier: fremde
+    // Bestätigung weg, fremde Mitteilungen weg, falsche Push an die Planer.
+    expect(writesTo('confirmations')).toEqual([])
+    expect(writesTo('notifications')).toEqual([])
+    expect(sentPush).toEqual([])
+  })
+
+  it('eine Absage zu einer ANDEREN Aufgabe zählt nicht', async () => {
+    // Sonst genügte irgendeine offene Absage in der Versammlung, um sich in
+    // jeden beliebigen Platz zu schreiben.
+    absagen = [{ user_id: U_ORIG, task_key: `${WI}|we|helper|${SVC}|0` }]
+    const res = await call(take())
+    expect(res.status).toBe(409)
+    expect(savedSlotName()).toBeNull()
+  })
+
+  it('ein leerer Slot lässt sich nicht übernehmen', async () => {
+    // Einspringen setzt voraus, dass jemand da war. Für einen leeren Platz
+    // gibt es niemanden, der abgesagt haben könnte — er gehört dem Planer.
+    const w = week as { mid: { helpers: Record<string, unknown[]> } }
+    w.mid.helpers[SVC][0] = {}
+    const res = await call(take())
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'not-sought' })
+    expect(writes).toEqual([])
+  })
+
+  it('mit Absage geht es — sonst prüfte hier nichts mehr etwas', async () => {
+    absagen = [{ user_id: U_ORIG, task_key: KEY }]
+    const res = await call(take())
+    expect(res.status).toBe(200)
+    expect(savedSlotName()).toBe('Ich Selbst')
   })
 })
 
@@ -388,7 +541,7 @@ describe('substitute: seek darf nur auslösen, wen es angeht', () => {
 
   it('wer für genau diesen Slot abgesagt hat, darf ebenfalls', async () => {
     // Der Slot kann inzwischen neu besetzt sein; die Absage bleibt der Beleg.
-    absagen = [{ user_id: U_UNQUAL }]
+    absagen = [{ user_id: U_UNQUAL, task_key: KEY }]
     const res = await call(seek, { auth: U_UNQUAL })
     expect(res.status).toBe(200)
   })
