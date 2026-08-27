@@ -11,7 +11,8 @@ import {
   WT_ROLE_ORDER,
 } from './constants'
 import type { Abweichung, Group, Meeting, MeetingKey,
-  MeetingTab, Person, ProgramItem, QualificationKey, Qualifications, Service, SongItem, Week } from './types'
+  MeetingTab, PartItem, Person, ProgramItem, QualificationKey, Qualifications, Section,
+  Service, SlotAssignment, SongItem, Week } from './types'
 
 export function isSong(item: ProgramItem): item is SongItem {
   return 'song' in item
@@ -309,6 +310,63 @@ export function isPlainPublisher(p: Person): boolean {
  */
 export function hatAuxKlasse(meeting: Meeting): boolean {
   return meeting.auxRatgeber != null
+}
+
+/**
+ * Die Räume, in denen diese Zusammenkunft stattfindet: nur der Hauptsaal
+ * (`false`) — oder Hauptsaal und Zusätzliche Klasse (`true`).
+ */
+export function raeume(meeting: Meeting): boolean[] {
+  return hatAuxKlasse(meeting) ? [false, true] : [false]
+}
+
+/** Plätze eines Punkts — Hauptsaal oder Zusätzliche Klasse. */
+export function slotsOf(item: PartItem, aux: boolean): SlotAssignment[] {
+  return aux ? (item.aux ?? []) : item.names
+}
+
+/** Ein Programmpunkt-Platz mit seiner vollständigen Adresse. */
+export interface ProgrammPlatz {
+  slot: SlotAssignment
+  section: Section
+  si: number
+  item: PartItem
+  ii: number
+  ni: number
+  /** Zusätzliche Klasse statt Hauptsaal. */
+  aux: boolean
+}
+
+/**
+ * Jeder Programmpunkt-Platz dieser Zusammenkunft — beide Räume, mit Adresse.
+ *
+ * Diese vier Ebenen (Abschnitt → Punkt → Lied überspringen → Raum → Platz)
+ * standen an elf Stellen abgeschrieben da, und das ist der Grund für
+ * `alle-plaetze.test.ts`: „Seither ist derselbe Fehler viermal passiert: eine
+ * Funktion wurde erweitert, die nächste nicht." Vergessen wurde dabei jedes Mal
+ * dasselbe — die zweite Platzreihe der Zusätzlichen Klasse.
+ *
+ * Wer hier durchläuft, kann sie nicht mehr übersehen. Die Adresse kommt mit,
+ * weil die Aufrufer sie brauchen: der Bestätigungs-Schlüssel hängt am Pfad
+ * (`si`/`ii`/`ni`), und `aux` unterscheidet die beiden Reihen.
+ *
+ * Steht hier und nicht in `aux-class.ts`, wohin es fachlich gehörte: dieses
+ * Modul ist die untere Schicht, und `partWorkload` weiter unten braucht den
+ * Durchlauf ebenfalls. `aux-class.ts` reicht ihn weiter.
+ *
+ * Lieder tragen keine Plätze und kommen deshalb gar nicht erst vor.
+ */
+export function* programmPlaetze(meeting: Meeting): Generator<ProgrammPlatz> {
+  for (const [si, section] of meeting.sections.entries()) {
+    for (const [ii, item] of section.items.entries()) {
+      if (isSong(item)) continue
+      for (const aux of raeume(meeting)) {
+        for (const [ni, slot] of slotsOf(item, aux).entries()) {
+          yield { slot, section, si, item, ii, ni, aux }
+        }
+      }
+    }
+  }
 }
 
 /** Zeichen, das noch zu einem Namen gehört (Buchstabe oder Ziffer, jede Schrift). */
@@ -767,21 +825,18 @@ export function partWorkload(weeks: Week[], person: Person): number {
       // wochenlang als beschäftigt und die Auto-Zuteilung überginge ihn.
       if (istAusgefallen(week, tab)) continue
       const meeting = week[tab]
-      const mitKlasse = hatAuxKlasse(meeting)
-      if (mitKlasse && gehoertZu(meeting.auxRatgeber, person)) count++
-      for (const section of meeting.sections) {
-        for (const item of section.items) {
-          if (isSong(item)) continue
-          for (const slot of item.names) {
-            if (gehoertZu(slot, person)) count++
-            if (rolleNennt(slot.rolle, name)) count++
-          }
-          // Nur zählen, solange die Klasse besteht: beim Abschalten bleiben die
-          // Namen bewusst stehen (damit ein Wiedereinschalten sie hat). Ohne
-          // diese Prüfung schleppte die Auto-Zuteilung eine Last mit, die es
-          // gar nicht mehr gibt, und bevorzugte dauerhaft die Falschen.
-          if (mitKlasse) for (const slot of item.aux ?? []) if (gehoertZu(slot, person)) count++
-        }
+      if (hatAuxKlasse(meeting) && gehoertZu(meeting.auxRatgeber, person)) count++
+      // Beide Räume in einem Durchlauf. Dass die Klasse nur zählt, solange sie
+      // besteht, entscheidet `raeume()` darin — beim Abschalten bleiben die
+      // Namen bewusst stehen (damit ein Wiedereinschalten sie hat), und ohne
+      // diese Grenze schleppte die Auto-Zuteilung eine Last mit, die es gar
+      // nicht mehr gibt.
+      for (const { slot, aux } of programmPlaetze(meeting)) {
+        if (gehoertZu(slot, person)) count++
+        // Die Begleiter-Erwähnung nur im Hauptsaal: `angleichen` kopiert die
+        // Rollenbeschriftung in die Klasse, sie dort erneut zu zählen
+        // verdoppelte dieselbe Begleitung.
+        if (!aux && rolleNennt(slot.rolle, name)) count++
       }
     }
   }

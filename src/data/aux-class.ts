@@ -13,8 +13,8 @@
  * (Aufgabenbereich `ratgeber`) — einer je Zusammenkunft, nicht je Punkt.
  */
 
-import type { Meeting, PartItem, ProgramItem, Section, SlotAssignment, Week } from './types'
-import { hatAuxKlasse, isSong } from './helpers'
+import type { Meeting, PartItem, ProgramItem, SlotAssignment, Week } from './types'
+import { hatAuxKlasse, isSong, programmPlaetze, raeume, slotsOf } from './helpers'
 
 /**
  * Bereiche, die einen Programmpunkt zum Schülerteil machen. Bewusst über die
@@ -29,66 +29,17 @@ export function istSchuelerteil(item: ProgramItem): boolean {
   return item.names.some((s) => s.bereichsKey != null && SCHUELER_BEREICHE.has(s.bereichsKey))
 }
 
-// hatAuxKlasse steht in helpers.ts — `partWorkload` braucht sie dort, und
+// Diese vier stehen in helpers.ts — `partWorkload` braucht sie dort, und
 // helpers.ts darf dieses Modul nicht importieren (Zyklus). Hier weiter
-// exportiert, weil die Marke fachlich zur Zusätzlichen Klasse gehört und alle
+// exportiert, weil sie fachlich zur Zusätzlichen Klasse gehören und alle
 // Aufrufer sie von hier holen.
-export { hatAuxKlasse }
-
-/**
- * Die Räume, in denen diese Zusammenkunft stattfindet: nur der Hauptsaal
- * (`false`) — oder Hauptsaal und Zusätzliche Klasse (`true`). Gedacht für
- * `for (const aux of raeume(meeting))` über beide Platzreihen.
- */
-export function raeume(meeting: Meeting): boolean[] {
-  return hatAuxKlasse(meeting) ? [false, true] : [false]
-}
-
-/** Plätze eines Punkts — Hauptsaal oder Zusätzliche Klasse. */
-export function slotsOf(item: PartItem, aux: boolean): SlotAssignment[] {
-  return aux ? (item.aux ?? []) : item.names
-}
-
-/** Ein Programmpunkt-Platz mit seiner vollständigen Adresse. */
-export interface ProgrammPlatz {
-  slot: SlotAssignment
-  section: Section
-  si: number
-  item: PartItem
-  ii: number
-  ni: number
-  /** Zusätzliche Klasse statt Hauptsaal. */
-  aux: boolean
-}
-
-/**
- * Jeder Programmpunkt-Platz dieser Zusammenkunft — beide Räume, mit Adresse.
- *
- * Diese vier Ebenen (Abschnitt → Punkt → Lied überspringen → Raum → Platz)
- * standen an einem Dutzend Stellen abgeschrieben da, und das ist der Grund für
- * `alle-plaetze.test.ts`: „Seither ist derselbe Fehler viermal passiert: eine
- * Funktion wurde erweitert, die nächste nicht." Vergessen wurde dabei jedes Mal
- * dasselbe — die zweite Platzreihe der Zusätzlichen Klasse.
- *
- * Wer hier durchläuft, kann sie nicht mehr übersehen. Die Adresse kommt
- * mit, weil die Aufrufer sie brauchen: der Bestätigungs-Schlüssel hängt am
- * Pfad (`si`/`ii`/`ni`), und `aux` unterscheidet die beiden Reihen.
- *
- * Lieder tragen keine Plätze und kommen deshalb gar nicht erst vor.
- */
-export function* programmPlaetze(meeting: Meeting): Generator<ProgrammPlatz> {
-  for (const [si, section] of meeting.sections.entries()) {
-    for (const [ii, item] of section.items.entries()) {
-      if (isSong(item)) continue
-      for (const aux of raeume(meeting)) {
-        const slots = slotsOf(item, aux)
-        for (const [ni, slot] of slots.entries()) {
-          yield { slot, section, si, item, ii, ni, aux }
-        }
-      }
-    }
-  }
-}
+//
+// `programmPlaetze` ging denselben Weg wie `hatAuxKlasse` vor ihm, und aus
+// demselben Grund: `partWorkload` ist eine der Funktionen, die
+// `alle-plaetze.test.ts` namentlich als Wiederholungstäter führt. Sie musste
+// den Durchlauf erreichen können.
+export { hatAuxKlasse, programmPlaetze, raeume, slotsOf }
+export type { ProgrammPlatz } from './helpers'
 
 /** Leerer Platz mit denselben Regeln wie sein Gegenstück im Hauptsaal. */
 function leererPlatz(vorlage: SlotAssignment): SlotAssignment {
