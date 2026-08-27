@@ -341,3 +341,57 @@ describe('Randfälle, die im Betrieb vorkommen', () => {
     expect(stud.mins).toBe(30) // die Zahl stimmt trotzdem
   })
 })
+
+/*
+  Die Ueberschriften der drei farbigen Abschnitte kommen woertlich aus der
+  Zielsprache (parse.ts: `sections[tok.color].label = tok.text`) — nur
+  EROEFFNUNG und ABSCHLUSS bleiben kanonisch deutsch. Solange der Abschnitt
+  ueber seinen Namen gesucht wurde, fand `setDienstwoche` bei einer
+  fremdsprachigen Versammlung gar nichts: der Dienstvortrag wurde nicht
+  eingesetzt, ohne Fehler, ohne Hinweis.
+
+  Seit `Section.kind` haengt die Suche an der Art, und die ist in jeder Sprache
+  dieselbe.
+*/
+describe('Fremdsprachige Woche findet ihre Abschnitte', () => {
+  /** Dieselbe Woche, aber mit spanischen Ueberschriften — wie der Import sie liefert. */
+  function spanisch(): Week {
+    const w = makeWeek()
+    const mid = w.mid.sections[0]
+    // Der Wachtturm-Abschnitt steht am Wochenende an zweiter Stelle (hinter dem
+    // oeffentlichen Vortrag) — dieselbe Reihenfolge wie im Arbeitsheft.
+    const we = w.we.sections[1]
+    if (mid) {
+      mid.label = 'NUESTRA VIDA CRISTIANA'
+      mid.kind = 'lac'
+    }
+    if (we) {
+      we.label = 'ESTUDIO DE LA ATALAYA'
+      we.kind = 'wtStudium'
+    }
+    return w
+  }
+
+  it('setzt den Dienstvortrag auch ohne deutsche Ueberschrift ein', () => {
+    const an = setDienstwoche([spanisch()], 0, true)
+    const titel = eine(an).mid.sections.flatMap((s) => s.items.map((i) => ('title' in i ? i.title : '')))
+    expect(titel).toContain(TITEL_DIENSTVORTRAG)
+    expect(titel).not.toContain('Versammlungsbibelstudium')
+  })
+
+  it('kuerzt auch das Wachtturm-Studium am Wochenende', () => {
+    const an = setDienstwoche([spanisch()], 0, true)
+    const stud = wtParts(eine(an)).find((i) => i.mins === 30)
+    expect(stud).toBeDefined()
+  })
+
+  it('ohne Art bleibt der kanonische Name der Anhalt (Bestandswochen)', () => {
+    // Wochen, die vor dem Feld gespeichert wurden, tragen es nicht — fuer sie
+    // entscheidet weiterhin der deutsche Name, und der steht dort auch.
+    const alt = makeWeek()
+    for (const s of [...alt.mid.sections, ...alt.we.sections]) delete s.kind
+    const an = setDienstwoche([alt], 0, true)
+    const titel = eine(an).mid.sections.flatMap((s) => s.items.map((i) => ('title' in i ? i.title : '')))
+    expect(titel).toContain(TITEL_DIENSTVORTRAG)
+  })
+})

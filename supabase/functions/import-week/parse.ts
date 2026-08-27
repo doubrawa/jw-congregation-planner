@@ -42,6 +42,17 @@ export interface ImportedSong {
 export type ImportedItem = ImportedPart | ImportedSong
 export interface ImportedSection {
   label: string
+  /**
+   * Was der Abschnitt **ist** — der Logik-Schlüssel neben der Überschrift.
+   *
+   * Notwendig, weil die Überschriften der drei farbigen Abschnitte wörtlich aus
+   * der Zielsprache übernommen werden (siehe Kopf dieser Datei). Der Name eignet
+   * sich dort also gerade nicht zum Entscheiden: bei einer fremdsprachigen
+   * Versammlung fand `setDienstwoche` den „UNSER LEBEN ALS CHRIST"-Abschnitt
+   * nicht mehr. Die Art kommt aus der Farbklasse bzw. der Position — beides ist
+   * in jeder Sprache dasselbe.
+   */
+  kind?: string
   farbe: string
   items: ImportedItem[]
 }
@@ -333,6 +344,8 @@ const FALLBACK_LABEL: Record<SecColor, string> = {
   gold: 'UNS IM DIENST VERBESSERN',
   maroon: 'UNSER LEBEN ALS CHRIST',
 }
+/** Art je Farbklasse — dieselbe in jeder Sprache, anders als die Überschrift. */
+const ART: Record<SecColor, string> = { teal: 'schaetze', gold: 'dienst', maroon: 'lac' }
 
 /* ---- Hauptfunktion ------------------------------------------------------- */
 
@@ -353,9 +366,9 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   let closing: ImportedPart | null = null
 
   const sections: Record<SecColor, ImportedSection> = {
-    teal: { label: FALLBACK_LABEL.teal, farbe: FARBE.teal, items: [] },
-    gold: { label: FALLBACK_LABEL.gold, farbe: FARBE.gold, items: [] },
-    maroon: { label: FALLBACK_LABEL.maroon, farbe: FARBE.maroon, items: [] },
+    teal: { label: FALLBACK_LABEL.teal, kind: ART.teal, farbe: FARBE.teal, items: [] },
+    gold: { label: FALLBACK_LABEL.gold, kind: ART.gold, farbe: FARBE.gold, items: [] },
+    maroon: { label: FALLBACK_LABEL.maroon, kind: ART.maroon, farbe: FARBE.maroon, items: [] },
   }
   const recs: PartRec[] = []
   let curColor: SecColor | null = null
@@ -434,6 +447,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   const midSections: ImportedSection[] = [
     {
       label: 'ERÖFFNUNG',
+      kind: 'eroeffnung',
       farbe: 'neutral',
       items: [opening ?? fallbackOpening()],
     },
@@ -442,6 +456,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
     sections.maroon,
     {
       label: 'ABSCHLUSS',
+      kind: 'abschluss',
       farbe: 'neutral',
       items: [closing ?? { title: 'Schlussworte · Gebet', meta: '3 Min.', mins: 3, names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
     },
@@ -558,10 +573,10 @@ export function weekendTemplate(range: string): ImportedMeeting {
     date: range,
     end: 'Ende ca. 11:45',
     sections: [
-      { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
-      { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
-      { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', mins: 60, names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
-      { label: 'ABSCHLUSS', farbe: 'neutral', items: [{ title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
+      { label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
+      { label: 'ÖFFENTLICHER VORTRAG', kind: 'vortrag', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
+      { label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', mins: 60, names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
+      { label: 'ABSCHLUSS', kind: 'abschluss', farbe: 'neutral', items: [{ title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
     ],
     helpers: {},
   }

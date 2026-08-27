@@ -268,13 +268,15 @@ function applyStudy(
   const songClose = study?.songClose ?? mirror?.songClose ?? null
   const insertClose = mirror ? Boolean(mirror.songClose) : Boolean(study?.songClose)
 
-  const wt = week.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')
+  // Nach der Art, nicht nach deutschem Text: die Ueberschrift kommt bei einer
+  // fremdsprachigen Woche in der Zielsprache (siehe parse.ts).
+  const wt = week.we.sections.find((s) => s.kind === 'wtStudium')
   for (const it of wt?.items ?? []) {
     if ('song' in it && songOpen) it.song = songOpen
     else if ('names' in it && title) it.title = title
   }
   if (insertClose && songClose) {
-    const abschluss = week.we.sections.find((s) => s.label === 'ABSCHLUSS')
+    const abschluss = week.we.sections.find((s) => s.kind === 'abschluss')
     for (const it of abschluss?.items ?? []) {
       if ('names' in it) it.title = mitLiedNummer(it.title, songClose)
     }
