@@ -10,7 +10,7 @@
  */
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { raeume, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
+import { programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
@@ -132,18 +132,11 @@ function assignmentDistance(
       merken(part, ratgeber)
       merken(any, ratgeber)
       merkenJe('ratgeber', ratgeber, d)
-      for (const section of meeting.sections) {
-        for (const item of section.items) {
-          if (isSong(item)) continue
-          for (const aux of raeume(meeting)) {
-            for (const slot of slotsOf(item, aux)) {
-              const id = wer(slot)
-              merken(part, id)
-              merken(any, id)
-              merkenJe(slot.bereichsKey, id, d)
-            }
-          }
-        }
+      for (const { slot } of programmPlaetze(meeting)) {
+        const id = wer(slot)
+        merken(part, id)
+        merken(any, id)
+        merkenJe(slot.bereichsKey, id, d)
       }
       for (const [key, arr] of Object.entries(meeting.helpers)) {
         for (const slot of arr) {
@@ -205,35 +198,27 @@ export function assignmentsInMeeting(
   exclude?: SlotSelection,
 ): MeetingAssignment[] {
   const out: MeetingAssignment[] = []
-  meeting.sections.forEach((section, si) => {
-    section.items.forEach((item, ii) => {
-      if (isSong(item)) return
-      // Über beide Räume, wie countOpenSlots und clearAssignments: die Plätze
-      // der Zusätzlichen Klasse sind gleichwertige Zuteilungen. Ohne sie blieb
-      // der Hinweis „heute schon zugeteilt" aus, das Dashboard zeigte „frei"
-      // für jemanden, der in der Klasse eingeteilt war, und takeSubstitute
-      // übersah den Konflikt.
-      for (const aux of raeume(meeting)) {
-        slotsOf(item, aux).forEach((slot, ni) => {
-          if (!gehoertZu(slot, person)) return
-          if (
-            exclude?.kind === 'part' &&
-            exclude.si === si &&
-            exclude.ii === ii &&
-            exclude.ni === ni &&
-            (exclude.aux === true) === aux
-          ) {
-            return
-          }
-          const rolle = slot.rolle ?? ''
-          // Rolle bevorzugen (Vorsitz/Gebet/Leiter/Leser …); Begleiter-Label
-          // ("mit …") ignorieren und stattdessen den Programmpunkt-Titel zeigen.
-          if (rolle && !rolle.startsWith('mit')) out.push({ text: rolle, lang: 'u' })
-          else out.push({ text: item.title, lang: 'p' })
-        })
-      }
-    })
-  })
+  // Über beide Räume: die Plätze der Zusätzlichen Klasse sind gleichwertige
+  // Zuteilungen. Ohne sie blieb der Hinweis „heute schon zugeteilt" aus, das
+  // Dashboard zeigte „frei" für jemanden, der in der Klasse eingeteilt war, und
+  // takeSubstitute übersah den Konflikt.
+  for (const { slot, si, item, ii, ni, aux } of programmPlaetze(meeting)) {
+    if (!gehoertZu(slot, person)) continue
+    if (
+      exclude?.kind === 'part' &&
+      exclude.si === si &&
+      exclude.ii === ii &&
+      exclude.ni === ni &&
+      (exclude.aux === true) === aux
+    ) {
+      continue
+    }
+    const rolle = slot.rolle ?? ''
+    // Rolle bevorzugen (Vorsitz/Gebet/Leiter/Leser …); Begleiter-Label
+    // ("mit …") ignorieren und stattdessen den Programmpunkt-Titel zeigen.
+    if (rolle && !rolle.startsWith('mit')) out.push({ text: rolle, lang: 'u' })
+    else out.push({ text: item.title, lang: 'p' })
+  }
   // Ratgeber der Zusätzlichen Klasse — eine Zuteilung je Zusammenkunft.
   if (gehoertZu(meeting.auxRatgeber, person)) out.push({ text: RATGEBER_ROLLE, lang: 'u' })
   for (const svc of services) {
@@ -300,14 +285,7 @@ export function assignSlot(
  */
 export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   let count = 0
-  for (const section of meeting.sections) {
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      for (const aux of raeume(meeting)) {
-        for (const slot of slotsOf(item, aux)) if (!slot.name) count++
-      }
-    }
-  }
+  for (const { slot } of programmPlaetze(meeting)) if (!slot.name) count++
   if (meeting.auxRatgeber && !meeting.auxRatgeber.name) count++
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
@@ -330,18 +308,11 @@ export function changedSlotKeys(
   tab: MeetingKey,
 ): string[] {
   const keys: string[] = []
-  next.sections.forEach((section, si) => {
-    section.items.forEach((item, ii) => {
-      if (isSong(item)) return
-      const prevItem = prev.sections[si]?.items[ii]
-      for (const aux of raeume(next)) {
-        const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
-        slotsOf(item, aux).forEach((slot, ni) => {
-          if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(slotTaskKey(item, woche, tab, si, ii, ni, aux))
-        })
-      }
-    })
-  })
+  for (const { slot, si, item, ii, ni, aux } of programmPlaetze(next)) {
+    const prevItem = prev.sections[si]?.items[ii]
+    const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
+    if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(slotTaskKey(item, woche, tab, si, ii, ni, aux))
+  }
   for (const svc of services) {
     const prevArr = prev.helpers[svc.key] ?? []
     const nextArr = next.helpers[svc.key] ?? []
@@ -378,27 +349,19 @@ export interface OpenSlot {
  */
 export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[] {
   const out: OpenSlot[] = []
-  for (const section of meeting.sections) {
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      // Beide Räume und der Ratgeber, genau wie countOpenSlots zählt. Vorher
-      // nannte der Planen-Kopf eine höhere Zahl, als das Banner darunter
-      // auflistete.
-      for (const aux of raeume(meeting)) {
-        for (const slot of slotsOf(item, aux)) {
-          if (slot.name) continue
-          // Dieselbe Regel wie in der Aufgabenliste (`zuteilungsLabel`), nur in
-          // zwei Atomen statt einem — Titel und Rolle kommen aus verschiedenen
-          // Sprachen (siehe OpenSlot.rolle).
-          const rolle = eigeneRolle(slot.rolle)
-          out.push(
-            rolle && istBlockAbschnitt(section.label)
-              ? { text: rolle, lang: 'u', n: 1 }
-              : { text: item.title, lang: 'p', rolle: rolle || undefined, n: 1 },
-          )
-        }
-      }
-    }
+  // Beide Räume und der Ratgeber, genau wie countOpenSlots zählt. Vorher nannte
+  // der Planen-Kopf eine höhere Zahl, als das Banner darunter auflistete.
+  for (const { slot, section, item } of programmPlaetze(meeting)) {
+    if (slot.name) continue
+    // Dieselbe Regel wie in der Aufgabenliste (`zuteilungsLabel`), nur in zwei
+    // Atomen statt einem — Titel und Rolle kommen aus verschiedenen Sprachen
+    // (siehe OpenSlot.rolle).
+    const rolle = eigeneRolle(slot.rolle)
+    out.push(
+      rolle && istBlockAbschnitt(section.label)
+        ? { text: rolle, lang: 'u', n: 1 }
+        : { text: item.title, lang: 'p', rolle: rolle || undefined, n: 1 },
+    )
   }
   if (meeting.auxRatgeber && !meeting.auxRatgeber.name) {
     out.push({ text: RATGEBER_ROLLE, lang: 'u', n: 1 })
@@ -493,12 +456,7 @@ export function autoAssignMeeting(
     if (id) used.add(id)
   }
   merken(meeting.auxRatgeber)
-  for (const section of meeting.sections) {
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      for (const aux of raeume(meeting)) for (const slot of slotsOf(item, aux)) merken(slot)
-    }
-  }
+  for (const { slot } of programmPlaetze(meeting)) merken(slot)
   for (const arr of Object.values(meeting.helpers)) for (const slot of arr) merken(slot)
 
   // Gleitendes Fenster: nur ±LOAD_RADIUS Wochen um die geplante Woche zählen,
@@ -650,24 +608,17 @@ export function autoAssignMeeting(
   //    Die Zusätzliche Klasse läuft in derselben Schleife mit: ihre Plätze
   //    sind gleichwertige Aufgaben und teilen sich die `used`-Menge mit dem
   //    Hauptsaal — niemand kann zur selben Zeit in beiden Räumen sein.
-  for (const section of meeting.sections) {
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      for (const aux of raeume(meeting)) {
-        for (const slot of slotsOf(item, aux)) {
-          if (slot.name || isGuestRole(slot.rolle)) continue
-          if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
-          // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
-          const person = pick('part', slot.bereichsKey, ministryOpts(item, slot, aux))
-          if (person) {
-            slot.name = displayName(person)
-            slot.pid = person.id
-            claim('part', person)
-          } else {
-            unfilled++
-          }
-        }
-      }
+  for (const { slot, section, item, aux } of programmPlaetze(meeting)) {
+    if (slot.name || isGuestRole(slot.rolle)) continue
+    if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
+    // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
+    const person = pick('part', slot.bereichsKey, ministryOpts(item, slot, aux))
+    if (person) {
+      slot.name = displayName(person)
+      slot.pid = person.id
+      claim('part', person)
+    } else {
+      unfilled++
     }
   }
 
@@ -761,27 +712,20 @@ export function clearAssignments(
   if (!meeting) return { weeks, count: 0 }
   let count = 0
   if (scope === 'parts') {
-    for (const section of meeting.sections) {
-      for (const item of section.items) {
-        if (isSong(item)) continue
-        // Beide Räume leeren: „Leeren" meint die Aufgaben dieser Ansicht,
-        // und die Zusätzliche Klasse gehört dazu.
-        for (const aux of raeume(meeting)) {
-          for (const slot of slotsOf(item, aux)) {
-            if (isGuestRole(slot.rolle)) continue // externer Redner bleibt
-            if (slot.name) {
-              slot.name = ''
-              delete slot.pid
-              // Ein geleerter Redner-Platz fällt auf „Gastredner" zurück — den
-              // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen,
-              // wäre er ein offener Slot, den die Auto-Zuteilung besetzt; den
-              // Redner des öffentlichen Vortrags vereinbart man aber, man
-              // verlost ihn nicht. Derselbe Rückfall wie beim „Entfernen".
-              if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) slot.rolle = ROLE_GUEST_SPEAKER
-              count++
-            }
-          }
-        }
+    // Beide Räume leeren: „Leeren" meint die Aufgaben dieser Ansicht, und die
+    // Zusätzliche Klasse gehört dazu.
+    for (const { slot } of programmPlaetze(meeting)) {
+      if (isGuestRole(slot.rolle)) continue // externer Redner bleibt
+      if (slot.name) {
+        slot.name = ''
+        delete slot.pid
+        // Ein geleerter Redner-Platz fällt auf „Gastredner" zurück — den
+        // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen, wäre er
+        // ein offener Slot, den die Auto-Zuteilung besetzt; den Redner des
+        // öffentlichen Vortrags vereinbart man aber, man verlost ihn nicht.
+        // Derselbe Rückfall wie beim „Entfernen".
+        if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) slot.rolle = ROLE_GUEST_SPEAKER
+        count++
       }
     }
     if (meeting.auxRatgeber?.name) {
@@ -878,26 +822,25 @@ export function alleS89DerWoche(
   const week = weeks[wi]
   if (!week) return []
   const out: S89Payload[] = []
-  week.mid.sections.forEach((section, si) => {
-    section.items.forEach((item, ii) => {
-      if (isSong(item)) return
-      for (const aux of raeume(week.mid)) {
-        const slots = slotsOf(item, aux)
-        for (let ni = 0; ni < slots.length; ni++) {
-          const zettel = buildS89ForSlot(weeks, {
-            kind: 'part', wi, tab: 'mid', si, ii, ni,
-            aux: aux || undefined,
-            label: '', priv: slots[ni]?.bereichsKey ?? null, groups: false,
-          }, meetings)
-          if (zettel) {
-            // Mit Gesprächspartner zweimal: beide bekommen einen in die Hand.
-            out.push(zettel, ...(partnerZweimal && zettel.partner ? [zettel] : []))
-            break // je Aufgabe und Raum genau ein Durchgang
-          }
-        }
-      }
-    })
-  })
+  // Je Aufgabe und Raum genau ein Zettel: der erste Platz, für den einer
+  // entsteht, deckt den Punkt ab (der Gesprächspartner steht mit darauf).
+  // `programmPlaetze` liefert die Plätze eines Punkts zusammenhängend, deshalb
+  // genügt es, sich den zuletzt erledigten Raum zu merken.
+  let erledigt = ''
+  for (const { si, ii, ni, aux, slot } of programmPlaetze(week.mid)) {
+    const raum = `${si}|${ii}|${aux}`
+    if (raum === erledigt) continue
+    const zettel = buildS89ForSlot(weeks, {
+      kind: 'part', wi, tab: 'mid', si, ii, ni,
+      aux: aux || undefined,
+      label: '', priv: slot.bereichsKey ?? null, groups: false,
+    }, meetings)
+    if (zettel) {
+      // Mit Gesprächspartner zweimal: beide bekommen einen in die Hand.
+      out.push(zettel, ...(partnerZweimal && zettel.partner ? [zettel] : []))
+      erledigt = raum
+    }
+  }
   return out
 }
 
@@ -1258,43 +1201,36 @@ function eachAssignedSlot(
       const meeting = week[tab]
       // Echtes Datum der Zusammenkunft (nur bei importierten Wochen) → Countdown.
       const at = meetingDateMs(week, tab, meetings)
-      meeting.sections.forEach((section, si) => {
-        section.items.forEach((item, ii) => {
-          if (isSong(item)) return
-          // Hauptsaal und Zusätzliche Klasse laufen durch dieselbe Schleife —
-          // die Plätze der Klasse sind gleichwertige Aufgaben (bestätigen,
-          // erinnern, S-89), nur mit eigenem Schlüssel und eigenem Ort.
-          for (const aux of raeume(meeting)) {
-            slotsOf(item, aux).forEach((slot, ni) => {
-              // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
-              if (!slot.name || isGuestRole(slot.rolle)) return
-              const key = slotTaskKey(item, week.start, tab, si, ii, ni, aux)
-              visit(slot.name, key, () => {
-                const rolle = slot.rolle ?? ''
-                const sel: SlotSelection = {
-                  kind: 'part', wi, tab, si, ii, ni, aux: aux || undefined,
-                  label: '', priv: slot.bereichsKey ?? null, groups: false,
-                }
-                // Zwei Hälften statt einer: der Titel gehört in die Sprache der
-                // Versammlung, die Rolle in die des Lesers (siehe MyTask.rolle).
-                // In Eröffnung/Abschluss trägt die Rolle allein — der Titel
-                // benennt dort den ganzen Block (`istBlockAbschnitt`).
-                const eigen = eigeneRolle(rolle)
-                return {
-                  id: key,
-                  title: eigen && istBlockAbschnitt(section.label) ? '' : item.title,
-                  ...(eigen ? { rolle: eigen } : {}),
-                  date: meetingDateText(week, wi, tab, meetings),
-                  chip: '',
-                  at,
-                  status: 'offen',
-                  s89: buildS89ForSlot(weeks, sel, meetings),
-                }
-              }, slot.pid)
-            })
+      // Hauptsaal und Zusätzliche Klasse laufen durch dieselbe Schleife — die
+      // Plätze der Klasse sind gleichwertige Aufgaben (bestätigen, erinnern,
+      // S-89), nur mit eigenem Schlüssel und eigenem Ort.
+      for (const { slot, section, si, item, ii, ni, aux } of programmPlaetze(meeting)) {
+        // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
+        if (!slot.name || isGuestRole(slot.rolle)) continue
+        const key = slotTaskKey(item, week.start, tab, si, ii, ni, aux)
+        visit(slot.name, key, () => {
+          const rolle = slot.rolle ?? ''
+          const sel: SlotSelection = {
+            kind: 'part', wi, tab, si, ii, ni, aux: aux || undefined,
+            label: '', priv: slot.bereichsKey ?? null, groups: false,
           }
-        })
-      })
+          // Zwei Hälften statt einer: der Titel gehört in die Sprache der
+          // Versammlung, die Rolle in die des Lesers (siehe MyTask.rolle).
+          // In Eröffnung/Abschluss trägt die Rolle allein — der Titel benennt
+          // dort den ganzen Block (`istBlockAbschnitt`).
+          const eigen = eigeneRolle(rolle)
+          return {
+            id: key,
+            title: eigen && istBlockAbschnitt(section.label) ? '' : item.title,
+            ...(eigen ? { rolle: eigen } : {}),
+            date: meetingDateText(week, wi, tab, meetings),
+            chip: '',
+            at,
+            status: 'offen',
+            s89: buildS89ForSlot(weeks, sel, meetings),
+          }
+        }, slot.pid)
+      }
       // Ratgeber der Zusätzlichen Klasse: eine Aufgabe je Zusammenkunft.
       const ratgeber = meeting.auxRatgeber
       if (ratgeber?.name) {
@@ -1448,18 +1384,11 @@ export interface Conflict {
 /** Belegte Namen der Programmpunkte (ohne Lieder, ohne externe Slots). */
 function meetingPartNames(meeting: Meeting, wer: IdVon): Belegung[] {
   const names: Belegung[] = []
-  for (const section of meeting.sections) {
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      // Beide Räume: wer im Hauptsaal UND in der Zusätzlichen Klasse steht,
-      // ist zur selben Zeit an zwei Orten — genau das soll die Prüfung finden.
-      for (const aux of raeume(meeting)) {
-        for (const slot of slotsOf(item, aux)) {
-          if (!slot.name || isGuestRole(slot.rolle)) continue
-          names.push(belegung(slot, wer))
-        }
-      }
-    }
+  // Beide Räume: wer im Hauptsaal UND in der Zusätzlichen Klasse steht, ist zur
+  // selben Zeit an zwei Orten — genau das soll die Prüfung finden.
+  for (const { slot } of programmPlaetze(meeting)) {
+    if (!slot.name || isGuestRole(slot.rolle)) continue
+    names.push(belegung(slot, wer))
   }
   if (meeting.auxRatgeber?.name) names.push(belegung(meeting.auxRatgeber, wer))
   return names

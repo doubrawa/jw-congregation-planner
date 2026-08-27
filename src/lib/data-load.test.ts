@@ -23,8 +23,14 @@ import { buildDemoWeeks } from '../data/testdaten'
 function chainFor(table: string) {
   const resp = (store.responses[table] ?? []).shift() ?? { data: null, error: null }
   const chain: Record<string, unknown> = {}
-  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'in', 'is', 'order', 'limit', 'maybeSingle']) {
+  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'in', 'is', 'order', 'maybeSingle']) {
     chain[m] = () => chain
+  }
+  // Die Obergrenze wird mitgeschrieben: das Ladefenster steckt jetzt in ihr
+  // (und in der Sortierung), nicht mehr in einem `gte` aus einer Vorabfrage.
+  chain.limit = (wert: unknown) => {
+    store.filter.push([table, 'limit', '', wert])
+    return chain
   }
   // Filter werden mitgeschrieben: seit T66 steckt im `gte` das Ladefenster, und
   // ohne diese Aufzeichnung wäre es von außen nicht mehr zu sehen.
@@ -37,6 +43,10 @@ function chainFor(table: string) {
   chain.then = (resolve: (v: unknown) => void) => resolve(resp)
   return chain
 }
+
+/** Obergrenze, mit der `table` abgefragt wurde (undefined: keine). */
+const grenze = (table: string): unknown =>
+  store.filter.find(([t, m]) => t === table && m === 'limit')?.[3]
 
 /** Wert des `gte`-Filters, mit dem `table` abgefragt wurde (undefined: keiner). */
 const fenster = (table: string): unknown =>
@@ -57,11 +67,9 @@ function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error
     persons: [{ data: [personRow], error: null }],
     services: [{ data: [serviceRow], error: null }],
     groups: [{ data: [groupRow], error: null }],
-    // Zwei Antworten: erst die juengste Woche (Ladefenster), dann die Daten.
-    weeks: [
-      { data: { start: '2026-09-07' }, error: null },
-      { data: [{ start: '2026-09-07', data: buildDemoWeeks()[0] }], error: null },
-    ],
+    // Eine Antwort: das Ladefenster braucht keine Vorabfrage mehr, die
+    // Datumsgrenze ergibt sich aus der jüngsten Zeile des Ergebnisses.
+    weeks: [{ data: [{ start: '2026-09-07', data: buildDemoWeeks()[0] }], error: null }],
     absences: [{ data: [], error: null }],
     notifications: [{ data: [], error: null }],
     confirmations: [{ data: [{ task_key: 'k1', status: 'bestätigt' }], error: null }],
@@ -112,26 +120,90 @@ describe('loadCongregationData', () => {
     const montag = (n: number): string =>
       new Date(Date.UTC(2026, 0, 5) + n * 7 * 864e5).toISOString().slice(0, 10)
 
-    /** Antworten für eine Versammlung, deren jüngste Woche `juengste` ist. */
-    const mitWochen = (juengste: string, geladen: string[]) =>
+    /**
+     * Antworten für eine Versammlung mit diesen Wochen (hier aufsteigend
+     * genannt, weil sich das so liest).
+     *
+     * Die Datenbank liefert **absteigend** und höchstens `WEEK_LIMIT` Zeilen —
+     * genau das stellt der Stub nach. Sonst prüfte der Test eine Reihenfolge,
+     * die es so nie gibt.
+     */
+    const mitWochen = (geladen: string[]) =>
       seedResponses({
         weeks: [
-          { data: { start: juengste }, error: null },
-          { data: geladen.map((start) => ({ start, data: buildDemoWeeks()[0] })), error: null },
+          {
+            data: [...geladen]
+              .reverse()
+              .slice(0, WEEK_LIMIT)
+              .map((start) => ({ start, data: buildDemoWeeks()[0] })),
+            error: null,
+          },
         ],
       })
 
-    it('fragt ab dem Montag WEEK_LIMIT-1 Wochen vor der jüngsten', async () => {
-      mitWochen(montag(59), [montag(59)])
+    /*
+      Bis hierher wurde der Anker (`max(start)`) in einer eigenen Abfrage
+      **vor** allen anderen geholt — eine volle Netzrunde, bevor überhaupt
+      etwas geladen wurde, und das bei jeder Anmeldung, jedem SIGNED_IN und
+      jedem Konflikt-Neuladen. Zwei Proben halten fest, dass sie weg ist:
+      nichts wird mehr vor dem Bündel gefragt, und die Datumsgrenze ist kein
+      Abfrageparameter mehr, sondern wird am Ergebnis angelegt.
+    */
+    it('kommt mit einer einzigen Antwort je Wochentabelle aus', async () => {
+      // Der Stub gibt jede hinterlegte Antwort genau einmal heraus. Käme die
+      // Ankerabfrage zurück, äße sie diese eine Antwort auf und für das
+      // eigentliche Laden bliebe nichts — die Wochen kämen leer an.
+      mitWochen([montag(0), montag(1)])
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.weeks.map((w) => w.start)).toEqual([montag(0), montag(1)])
+    })
+
+    it('setzt die Datumsgrenze nicht mehr als Abfragefilter', async () => {
+      mitWochen([montag(0), montag(1)])
       await loadCongregationData('u1')
-      expect(fenster('weeks')).toBe(montag(59 - (WEEK_LIMIT - 1)))
-      // Die Treffpunkte im selben Fenster — sonst hätte eine Woche ihre
+      expect(fenster('weeks')).toBeUndefined()
+      expect(fenster('fs_weeks')).toBeUndefined()
+    })
+
+    it('holt höchstens WEEK_LIMIT Wochen — auch die Treffpunkte', async () => {
+      mitWochen([montag(0)])
+      await loadCongregationData('u1')
+      expect(grenze('weeks')).toBe(WEEK_LIMIT)
+      // Dieselbe Grenze für die Treffpunkte — sonst hätte eine Woche ihre
       // Zusammenkunft ohne ihre Treffpunkte oder umgekehrt.
-      expect(fenster('fs_weeks')).toBe(fenster('weeks'))
+      expect(grenze('fs_weeks')).toBe(WEEK_LIMIT)
+    })
+
+    /*
+      Das Fenster misst am Datum, nicht an der Zeilenzahl. Fiele eine Kennung
+      je auf einen anderen Wochentag als Montag, kämen mehr Zeilen in denselben
+      Zeitraum — was älter ist als der Montag WEEK_LIMIT-1 Wochen vor der
+      jüngsten, gehört trotzdem nicht dazu.
+    */
+    it('schneidet ab, was älter ist als WEEK_LIMIT-1 Wochen vor der jüngsten', async () => {
+      seedResponses({
+        weeks: [
+          {
+            data: [montag(59), montag(59 - (WEEK_LIMIT - 1)), montag(59 - WEEK_LIMIT)].map(
+              (start) => ({ start, data: buildDemoWeeks()[0] }),
+            ),
+            error: null,
+          },
+        ],
+      })
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.weeks.map((w) => w.start)).toEqual([
+        montag(59 - (WEEK_LIMIT - 1)),
+        montag(59),
+      ])
     })
 
     it('reicht genau so weit zurück wie die Wochen, die es gibt', async () => {
-      mitWochen(montag(3), [montag(0), montag(1), montag(2), montag(3)])
+      mitWochen([montag(0), montag(1), montag(2), montag(3)])
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
       if (!res.ok) return
@@ -140,14 +212,13 @@ describe('loadCongregationData', () => {
     })
 
     it('leere Versammlung: keine Wochen und gar kein Fenster', async () => {
-      // Ohne Anker gibt es keine Untergrenze zu setzen — und ein leerer
-      // Datumswert wäre für PostgREST kein Datum, sondern ein Fehler.
-      seedResponses({ weeks: [{ data: null, error: null }, { data: [], error: null }] })
+      // Ohne jüngste Woche gibt es keine Untergrenze zu rechnen — und nichts,
+      // worauf sie sich beziehen könnte.
+      seedResponses({ weeks: [{ data: [], error: null }] })
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
       if (!res.ok) return
       expect(res.data.weeks).toEqual([])
-      expect(fenster('weeks')).toBeUndefined()
     })
 
     /**
@@ -158,7 +229,7 @@ describe('loadCongregationData', () => {
      * eine fehlende Woche.
      */
     it('eine fehlende Woche wird nicht aufgefüllt', async () => {
-      mitWochen(montag(3), [montag(0), montag(1), montag(3)])
+      mitWochen([montag(0), montag(1), montag(3)])
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
       if (!res.ok) return
@@ -173,10 +244,7 @@ describe('loadCongregationData', () => {
     it('nimmt das Datum aus der Spalte, nicht aus dem Blob', async () => {
       const ohneStart = { ...buildDemoWeeks()[0], start: undefined }
       seedResponses({
-        weeks: [
-          { data: { start: montag(0) }, error: null },
-          { data: [{ start: montag(0), data: ohneStart }], error: null },
-        ],
+        weeks: [{ data: [{ start: montag(0), data: ohneStart }], error: null }],
       })
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
@@ -187,7 +255,7 @@ describe('loadCongregationData', () => {
     /** Treffpunkte hängen an der Kennung ihrer Woche, nicht an der Zeilenfolge. */
     it('ordnet die Treffpunkte über das Datum zu', async () => {
       const inst = [{ id: 'i1', grp: '', wd: 3, time: '14:00', place: 'Saal', leader: 'Max' }]
-      mitWochen(montag(2), [montag(0), montag(1), montag(2)])
+      mitWochen([montag(0), montag(1), montag(2)])
       store.responses.fs_weeks = [{ data: [{ start: montag(2), data: inst }], error: null }]
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
@@ -196,6 +264,7 @@ describe('loadCongregationData', () => {
       expect(res.data.fsWeeks[2]).toEqual(inst)
     })
   })
+
 
   it('ohne Mitgliedschaft → no-membership', async () => {
     seedResponses({ members: [{ data: null, error: null }] })

@@ -13,7 +13,7 @@
  * (Aufgabenbereich `ratgeber`) — einer je Zusammenkunft, nicht je Punkt.
  */
 
-import type { Meeting, PartItem, ProgramItem, SlotAssignment, Week } from './types'
+import type { Meeting, PartItem, ProgramItem, Section, SlotAssignment, Week } from './types'
 import { hatAuxKlasse, isSong } from './helpers'
 
 /**
@@ -47,6 +47,47 @@ export function raeume(meeting: Meeting): boolean[] {
 /** Plätze eines Punkts — Hauptsaal oder Zusätzliche Klasse. */
 export function slotsOf(item: PartItem, aux: boolean): SlotAssignment[] {
   return aux ? (item.aux ?? []) : item.names
+}
+
+/** Ein Programmpunkt-Platz mit seiner vollständigen Adresse. */
+export interface ProgrammPlatz {
+  slot: SlotAssignment
+  section: Section
+  si: number
+  item: PartItem
+  ii: number
+  ni: number
+  /** Zusätzliche Klasse statt Hauptsaal. */
+  aux: boolean
+}
+
+/**
+ * Jeder Programmpunkt-Platz dieser Zusammenkunft — beide Räume, mit Adresse.
+ *
+ * Diese vier Ebenen (Abschnitt → Punkt → Lied überspringen → Raum → Platz)
+ * standen an einem Dutzend Stellen abgeschrieben da, und das ist der Grund für
+ * `alle-plaetze.test.ts`: „Seither ist derselbe Fehler viermal passiert: eine
+ * Funktion wurde erweitert, die nächste nicht." Vergessen wurde dabei jedes Mal
+ * dasselbe — die zweite Platzreihe der Zusätzlichen Klasse.
+ *
+ * Wer hier durchläuft, kann sie nicht mehr übersehen. Die Adresse kommt
+ * mit, weil die Aufrufer sie brauchen: der Bestätigungs-Schlüssel hängt am
+ * Pfad (`si`/`ii`/`ni`), und `aux` unterscheidet die beiden Reihen.
+ *
+ * Lieder tragen keine Plätze und kommen deshalb gar nicht erst vor.
+ */
+export function* programmPlaetze(meeting: Meeting): Generator<ProgrammPlatz> {
+  for (const [si, section] of meeting.sections.entries()) {
+    for (const [ii, item] of section.items.entries()) {
+      if (isSong(item)) continue
+      for (const aux of raeume(meeting)) {
+        const slots = slotsOf(item, aux)
+        for (const [ni, slot] of slots.entries()) {
+          yield { slot, section, si, item, ii, ni, aux }
+        }
+      }
+    }
+  }
 }
 
 /** Leerer Platz mit denselben Regeln wie sein Gegenstück im Hauptsaal. */

@@ -1,5 +1,5 @@
-import { raeume, ratgeberSlot, slotsOf } from './aux-class'
-import { isQualified, isSong, serviceQualKey } from './helpers'
+import { programmPlaetze, ratgeberSlot } from './aux-class'
+import { isQualified, serviceQualKey } from './helpers'
 import { istAbwesend, type AbsenceSet } from './absence'
 import type { MeetingKey, Meeting, Person, Service } from './types'
 
@@ -55,14 +55,7 @@ export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]):
     out.set(key, (out.get(key) ?? 0) + 1)
   }
 
-  for (const section of meeting.sections) {
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      for (const aux of raeume(meeting)) {
-        for (const slot of slotsOf(item, aux)) zaehl(slot.bereichsKey)
-      }
-    }
-  }
+  for (const { slot } of programmPlaetze(meeting)) zaehl(slot.bereichsKey)
   // Der Ratgeber ist ein eigener Platz je Zusammenkunft — aber nur, wenn die
   // Zusätzliche Klasse überhaupt läuft (wie `countOpenSlots` es prüft).
   if (meeting.auxRatgeber) zaehl(ratgeberSlot(meeting).bereichsKey)

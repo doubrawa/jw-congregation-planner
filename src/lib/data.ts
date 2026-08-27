@@ -814,32 +814,35 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  // Ladefenster bestimmen: nur die jüngsten WEEK_LIMIT Wochen holen. Gemessen
-  // wird seit T66 am Datum, nicht an einer Ordnungszahl — eine Lücke im Bestand
-  // (T65: die Woche des Gedächtnismahls fehlt im Arbeitsheft) verschiebt damit
-  // nichts mehr.
-  const { data: letzte } = await supabase
+  // Ladefenster: nur die jüngsten WEEK_LIMIT Wochen. Gemessen wird seit T66 am
+  // Datum, nicht an einer Ordnungszahl — eine Lücke im Bestand (T65: die Woche
+  // des Gedächtnismahls fehlt im Arbeitsheft) verschiebt damit nichts mehr.
+  //
+  // Der Anker dafür (`max(start)`) stand bis hierher in einer **eigenen
+  // Abfrage vor allen anderen**: eine volle Netzrunde auf dem kritischen Pfad
+  // jeder Anmeldung, jedes SIGNED_IN und jedes Konflikt-Neuladens, nur um eine
+  // Datumsgrenze zu erfahren. Die Grenze steckt aber im Ergebnis selbst — die
+  // jüngste Woche ist die erste Zeile. Also absteigend holen und die Grenze
+  // danach anlegen; beide Wochen-Tabellen fahren im selben Zug mit.
+  const wochenAbfrage = supabase
     .from('weeks')
-    .select('start')
+    .select('start, data, updated_at')
     .eq('congregation_id', congregationId)
     .order('start', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const ab = fensterAnfang(letzte?.start as string | undefined)
-
-  // Beide Wochen-Tabellen im selben Fenster. Ohne Anker (noch keine Woche) wird
-  // gar nicht gefiltert: ein leerer Datumswert wäre für PostgREST kein Datum.
-  let wochenAbfrage = supabase.from('weeks').select('start, data, updated_at').eq('congregation_id', congregationId)
-  if (ab) wochenAbfrage = wochenAbfrage.gte('start', ab)
-  let fsWochenAbfrage = supabase.from('fs_weeks').select('start, data').eq('congregation_id', congregationId)
-  if (ab) fsWochenAbfrage = fsWochenAbfrage.gte('start', ab)
+    .limit(WEEK_LIMIT)
+  const fsWochenAbfrage = supabase
+    .from('fs_weeks')
+    .select('start, data')
+    .eq('congregation_id', congregationId)
+    .order('start', { ascending: false })
+    .limit(WEEK_LIMIT)
 
   const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows] = await Promise.all([
     supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
-    wochenAbfrage.order('start'),
+    wochenAbfrage,
     // Versammlungsweit, nicht nur die eigenen: die Planung muss wissen, wer
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
@@ -851,7 +854,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
     supabase.from('fs_rules').select('base, rules').eq('congregation_id', congregationId).maybeSingle(),
-    fsWochenAbfrage.order('start'),
+    fsWochenAbfrage,
   ])
 
   // Alle zwölf Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -866,7 +869,18 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
     serviceList,
   )
-  const weekRows = (weeks.data ?? []) as WeekRow[]
+  // Absteigend geholt, aufsteigend gebraucht (`CongregationData.weeks`).
+  const wochenAbsteigend = (weeks.data ?? []) as WeekRow[]
+  const ab = fensterAnfang(wochenAbsteigend[0]?.start)
+  // Die Grenze bleibt dieselbe Rechnung wie zuvor. Sie schneidet hier nichts
+  // mehr weg, was die Abfrage nicht ohnehin ausgelassen hätte: die Kennung ist
+  // ein Montag (T66) und je Versammlung eindeutig, in ein Fenster von
+  // WEEK_LIMIT Wochen passen also nie mehr als WEEK_LIMIT Wochen. Sie steht
+  // trotzdem da — als das, was das Fenster ausmacht, und als Halt, falls je
+  // eine Kennung auf einen anderen Wochentag fiele.
+  const imFenster = <T extends { start: string }>(rows: T[]): T[] =>
+    (ab ? rows.filter((r) => r.start >= ab) : rows).slice().reverse()
+  const weekRows = imFenster(wochenAbsteigend)
   // Stände merken: jeder spätere Schreibvorgang nennt den Stand, auf dem er
   // beruht (T39). Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
   // Konflikt-Nachladen) darf keine Stände einer anderen Versammlung erben.
@@ -935,7 +949,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // führen dieselbe Kennung, und nur so bleiben Treffpunkte an ihrer Woche,
   // wenn im Bestand eine fehlt.
   const fsNachWoche = new Map<string, FsInstance[]>()
-  for (const row of (fsWeeksRows.data ?? []) as { start: string; data: FsInstance[] }[]) {
+  for (const row of imFenster((fsWeeksRows.data ?? []) as { start: string; data: FsInstance[] }[])) {
     fsNachWoche.set(row.start, row.data)
   }
   // Erst die Kennungen heben (T87), dann ausrichten: `regenFsWeeks` findet die
