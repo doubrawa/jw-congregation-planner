@@ -716,7 +716,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
         }
       }
-      const weeks = assignSlot(state.weeks, sel, action.name, action.rolle, action.pid)
+      const weeks = assignSlot(state.weeks, sel, action.name, action.rolle, action.pid, action.herkunft)
       const notifs = action.name
         ? zuteilungsNotif(
             state,

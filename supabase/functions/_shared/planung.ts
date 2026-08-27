@@ -60,6 +60,21 @@ const BLOCK_LABELS = new Set<string>(['ERÖFFNUNG', 'ABSCHLUSS'])
  * Edge-Laufzeit nicht auf `src/` zugreifen kann. `edge-parity.test.ts` hält
  * beide Fassungen zusammen.
  */
+/**
+ * Rolle und Herkunft als ein Text — Spiegelbild von `rolleMitHerkunft` in
+ * `src/data/helpers.ts` (gegengeprüft in `edge-parity.test.ts`).
+ *
+ * Die Heimatversammlung eines auswärtigen Redners steht seit dem Aufteilen im
+ * eigenen Feld; Altdaten tragen sie weiter als zweites Atom der Rolle. Beide
+ * Formen ergeben denselben Text.
+ */
+export function rolleMitHerkunft(slot: { rolle?: string; herkunft?: string } | undefined): string | undefined {
+  const basis = (slot?.rolle ?? '').split(' · ')[0] ?? ''
+  if (!basis) return slot?.rolle
+  const her = slot?.herkunft || (slot?.rolle ?? '').split(' · ').slice(1).join(' · ')
+  return her ? `${basis} · ${her}` : basis
+}
+
 export function zuteilungsLabel(
   sectionLabel: string,
   title: string,

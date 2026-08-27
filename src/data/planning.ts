@@ -31,6 +31,7 @@ import {
   ROLE_GUEST_SPEAKER,
   ROLE_OWN_SPEAKER,
   rolleBasis,
+  rolleMitHerkunft,
   serviceQualKey,
   tieHash,
   wochenAbstand,
@@ -239,6 +240,7 @@ export function assignSlot(
   name: string,
   rolle?: string,
   pid?: string,
+  herkunft?: string,
 ): Week[] {
   const next = klonWoche(weeks, sel.wi)
   if (!next) return weeks
@@ -265,9 +267,14 @@ export function assignSlot(
     // externen Rednern (kein pid) das Feld sauber löschen.
     if (name && pid) slot.pid = pid
     else delete slot.pid
-    // Gastredner-Slots: Rolle trägt die Herkunfts-Versammlung mit
-    // ("Gastredner · Vers. Nordheim")
+    // Rolle und Herkunft getrennt: die Rolle trägt die Regel, die Versammlung
+    // wird nur angezeigt. Ein leerer Wert löscht das Feld, statt eine leere
+    // Zeichenkette zu hinterlassen.
     if (rolle !== undefined) slot.rolle = rolle
+    if (herkunft !== undefined) {
+      if (herkunft) slot.herkunft = herkunft
+      else delete slot.herkunft
+    }
   } else {
     const arr = meeting.helpers[sel.svc] ?? []
     while (arr.length <= sel.pos) arr.push({ name: '' })
@@ -356,7 +363,7 @@ export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[
     // Dieselbe Regel wie in der Aufgabenliste (`zuteilungsLabel`), nur in zwei
     // Atomen statt einem — Titel und Rolle kommen aus verschiedenen Sprachen
     // (siehe OpenSlot.rolle).
-    const rolle = eigeneRolle(slot.rolle)
+    const rolle = eigeneRolle(rolleMitHerkunft(slot))
     out.push(
       rolle && istBlockSektion(section)
         ? { text: rolle, lang: 'u', n: 1 }
@@ -1209,7 +1216,7 @@ function eachAssignedSlot(
         if (!slot.name || isGuestRole(slot.rolle)) continue
         const key = slotTaskKey(item, week.start, tab, si, ii, ni, aux)
         visit(slot.name, key, () => {
-          const rolle = slot.rolle ?? ''
+          const rolle = rolleMitHerkunft(slot) ?? ''
           const sel: SlotSelection = {
             kind: 'part', wi, tab, si, ii, ni, aux: aux || undefined,
             label: '', priv: slot.bereichsKey ?? null, groups: false,

@@ -650,6 +650,29 @@ export function rolleBasis(rolle: string | undefined): string {
 }
 
 /**
+ * Heimatversammlung eines Redners — aus dem eigenen Feld, sonst aus dem
+ * Rollentext (Altdaten: `"Gastredner · Vers. Nordheim"`).
+ */
+export function herkunftVon(slot: Zuteilung | undefined): string {
+  if (slot?.herkunft) return slot.herkunft
+  return (slot?.rolle ?? '').split(' · ').slice(1).join(' · ')
+}
+
+/**
+ * Rolle und Herkunft als **ein** Text — die Form, in der eine Zuteilung
+ * angezeigt und in Erinnerungen genannt wird.
+ *
+ * Getrennt gespeichert, zusammengesetzt gezeigt: gespeichert entscheidet nur
+ * die Rolle über Regeln, gezeigt gehört die Versammlung dazu.
+ */
+export function rolleMitHerkunft(slot: Zuteilung | undefined): string | undefined {
+  const basis = rolleBasis(slot?.rolle)
+  if (!basis) return slot?.rolle
+  const her = herkunftVon(slot)
+  return her ? `${basis} · ${her}` : basis
+}
+
+/**
  * Ist das der Redner-Platz des öffentlichen Vortrags — gleich ob eigener oder
  * auswärtiger?
  *
@@ -770,6 +793,8 @@ export interface Zuteilung {
   pid?: string
   /** Nur Programmpunkt-Slots; entscheidet über den Namens-Rückfall (s. u.). */
   rolle?: string
+  /** Heimatversammlung eines auswärtigen Redners (nur Anzeige). */
+  herkunft?: string
 }
 
 /**

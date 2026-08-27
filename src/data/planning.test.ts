@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
 import { syncAuxSlots } from './aux-class'
 import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './testdaten'
-import { displayName, helperWorkload, isSong, loadWindow, partWorkload, workloadOf } from './helpers'
+import { displayName, helperWorkload, isGuestRole, isSong, loadWindow, partWorkload, rolleMitHerkunft, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
   aufgabenBezeichnung,
@@ -1157,5 +1157,59 @@ describe('Auswahl, die ins Leere zeigt', () => {
     const nach = assignSlot(weeks, sel, 'Anna Beispiel')
     expect(nach).not.toBe(weeks)
     expect(slotValue(nach, sel)).toBe('Anna Beispiel')
+  })
+})
+
+/*
+  Die Heimatversammlung eines auswaertigen Redners stand als zweites Atom in
+  `rolle` — mitten in dem Feld, ueber das `isGuestRole` und die
+  Auto-Zuteilung entscheiden. Sie hat jetzt ihr eigenes Feld.
+
+  Geprueft wird der ganze Weg: zuteilen, speichern, anzeigen — und dass eine
+  Bestandswoche, die sie noch im Rollentext traegt, unveraendert weiterlaeuft.
+*/
+describe('Herkunft eines auswaertigen Redners', () => {
+  const auswahl = {
+    kind: 'part' as const, wi: 0, tab: 'we' as const, si: 1, ii: 0, ni: 0,
+    priv: null, groups: false, label: 'X',
+  }
+
+  /** Der Redner-Platz der Wochenend-Vorlage. */
+  const rednerPlatz = (weeks: ReturnType<typeof buildDemoWeeks>) => {
+    const item = weeks[0]?.we.sections[1]?.items[0]
+    return item && !isSong(item) ? item.names[0] : undefined
+  }
+
+  it('speichert Rolle und Herkunft getrennt', () => {
+    const weeks = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner', undefined, 'Vers. Nordheim')
+    const slot = rednerPlatz(weeks)
+    expect(slot?.name).toBe('Gustav Gast')
+    expect(slot?.rolle).toBe('Gastredner')
+    expect(slot?.herkunft).toBe('Vers. Nordheim')
+  })
+
+  it('zusammengesetzt ergibt sich derselbe Text wie zuvor', () => {
+    const weeks = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner', undefined, 'Vers. Nordheim')
+    expect(rolleMitHerkunft(rednerPlatz(weeks))).toBe('Gastredner · Vers. Nordheim')
+  })
+
+  it('eine leere Herkunft loescht das Feld, statt es leer zu hinterlassen', () => {
+    const mit = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner', undefined, 'Nordheim')
+    const ohne = assignSlot(mit, auswahl, 'Gustav Gast', 'Gastredner', undefined, '')
+    expect(rednerPlatz(ohne)).not.toHaveProperty('herkunft')
+    expect(rolleMitHerkunft(rednerPlatz(ohne))).toBe('Gastredner')
+  })
+
+  it('bleibt ein externer Platz — die Regel haengt an der Rolle, nicht am Anhang', () => {
+    const weeks = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner', undefined, 'Nordheim')
+    expect(isGuestRole(rednerPlatz(weeks)?.rolle)).toBe(true)
+  })
+
+  it('Bestandsdaten mit der Herkunft im Rollentext ergeben denselben Text', () => {
+    const weeks = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner · Vers. Nordheim')
+    const slot = rednerPlatz(weeks)
+    expect(slot?.herkunft).toBeUndefined()
+    expect(rolleMitHerkunft(slot)).toBe('Gastredner · Vers. Nordheim')
+    expect(isGuestRole(slot?.rolle)).toBe(true)
   })
 })

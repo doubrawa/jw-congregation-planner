@@ -223,6 +223,18 @@ export interface SlotAssignment {
   pid?: string // Person-Id der Zuteilung — stabile Identität (statt Name-Match).
   //            Fehlt bei externen Rednern (Gastredner/Kreisaufseher) und Altdaten.
   rolle?: string // Rollenlabel: Vorsitz, Gebet, Leiter, Leser, Gesprächspartner …
+  /**
+   * Heimatversammlung eines auswärtigen Redners.
+   *
+   * Stand bis hierher als zweites Atom **in** `rolle`
+   * (`"Gastredner · Vers. Nordheim"`), also mitten in dem Feld, über das
+   * `isGuestRole` und die Auto-Zuteilung entscheiden. Ein Versammlungsname ist
+   * aber kein Teil einer Rolle: er trägt keine Regel, er wird nur angezeigt.
+   *
+   * Altdaten tragen ihn weiter im Rollentext; `herkunftVon` liest beide Formen,
+   * `rolleMitHerkunft` setzt sie fürs Anzeigen wieder zusammen.
+   */
+  herkunft?: string
   bereichsKey?: QualificationKey | string // nötige Qualifikation für den Slot
   male?: boolean // Slot nur männlich besetzbar (z. B. Schülerteil-Vortrag)
 }

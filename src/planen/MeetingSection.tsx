@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { istSchuelerteil } from '../data/aux-class'
-import { istArt, eigeneRolle, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { rolleMitHerkunft, istArt, eigeneRolle, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
@@ -83,7 +83,7 @@ export function MeetingSection({
     // Die Rolle in der Sprache des Lesers (`tu`), nicht der Versammlung: sie
     // gehört zur Bedienung, nicht zum Programmtext. Über `tpw` stand sie in
     // einer anderen Sprache als dieselbe Rolle im Banner darüber.
-    const rolle = eigeneRolle(slot.rolle)
+    const rolle = eigeneRolle(rolleMitHerkunft(slot))
     return rolle ? `${tu(rolle)}: ${slot.name}` : slot.name
   }
 
@@ -98,7 +98,7 @@ export function MeetingSection({
     // des Lesers, der Titel in die der Versammlung (siehe SlotSelection.label).
     // Im Sheet-Titel den Raum nennen — sonst sieht man beim Zuteilen nicht, ob
     // man gerade den Hauptsaal oder die Zusätzliche Klasse besetzt.
-    const rolle = eigeneRolle(slot.rolle)
+    const rolle = eigeneRolle(rolleMitHerkunft(slot))
     const raum = aux ? t.auxKlasse : ''
     dispatch({
       type: 'openSlot',

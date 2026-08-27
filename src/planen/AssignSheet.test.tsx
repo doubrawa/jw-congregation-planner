@@ -279,8 +279,10 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     fireEvent.change(felder[0]!, { target: { value: '  Gustav Gast  ' } })
     fireEvent.change(felder[1]!, { target: { value: 'Nordheim' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
+    // Die Herkunft steht in ihrem eigenen Feld, nicht als zweites Atom in der
+    // Rolle: ein Versammlungsname trägt keine Regel, er wird nur angezeigt.
     expect(dispatch).toHaveBeenCalledWith({
-      type: 'assign', name: 'Gustav Gast', rolle: `${ROLE_GUEST_SPEAKER} · Nordheim`,
+      type: 'assign', name: 'Gustav Gast', rolle: ROLE_GUEST_SPEAKER, herkunft: 'Nordheim',
     })
   })
 
@@ -289,7 +291,9 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     const felder = container.querySelectorAll<HTMLInputElement>('.sheet-guest .lac-add-input')
     fireEvent.change(felder[0]!, { target: { value: 'Gustav Gast' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: 'Gustav Gast', rolle: ROLE_GUEST_SPEAKER })
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'assign', name: 'Gustav Gast', rolle: ROLE_GUEST_SPEAKER, herkunft: '',
+    })
   })
 
   it('ein leerer Name teilt nicht zu, sondern bittet um einen', () => {
@@ -338,7 +342,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({
-      type: 'assign', name: 'Gustav Gast', rolle: ROLE_GUEST_SPEAKER,
+      type: 'assign', name: 'Gustav Gast', rolle: ROLE_GUEST_SPEAKER, herkunft: '',
     })
   })
 

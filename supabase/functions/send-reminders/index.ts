@@ -53,6 +53,7 @@ import {
   meetingDayOffsets,
   meetingTimesOf,
   personDisplayName,
+  rolleMitHerkunft,
   SKIP_ROLE,
   taskDateText,
   versatzMitAbweichung,
@@ -458,7 +459,7 @@ function pendingOfMeeting(
             pid: slot.pid,
             // Dieselbe Regel wie in der Aufgabenliste des Clients: in
             // ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein, sonst Titel · Rolle.
-            label: zuteilungsLabel(sections[si].label ?? '', item.title ?? 'Zuteilung', slot.rolle),
+            label: zuteilungsLabel(sections[si].label ?? '', item.title ?? 'Zuteilung', rolleMitHerkunft(slot)),
           })
         }
       }

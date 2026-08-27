@@ -5,6 +5,7 @@ import {
   meetingDayOffsets as edgeOffsets,
   meetingTimesOf as edgeTimes,
   personDisplayName as edgeName,
+  rolleMitHerkunft as edgeHerkunft,
   SKIP_ROLE as EDGE_SKIP,
   taskDateText as edgeDate,
   versatzMitAbweichung as edgeVersatz,
@@ -12,7 +13,7 @@ import {
   zeitMitAbweichung as edgeZeit,
   zuteilungsLabel as edgeLabel,
 } from '../../supabase/functions/_shared/planung.ts'
-import { displayName, istAusgefallen, zuteilungsLabel } from './helpers'
+import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
 import { deutschesDatum, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
 import { isGuestRole } from './planning'
 import { emptyQualifications } from './helpers'
@@ -73,6 +74,42 @@ describe('Beschriftung einer Zuteilung', () => {
     expect(text).toBe('Vorsitz')
     expect(text).not.toContain('Lied')
     expect(text).not.toContain('Einleitende Worte')
+  })
+})
+
+describe('Rolle mit Herkunft', () => {
+  /*
+    Die Heimatversammlung eines auswärtigen Redners stand als zweites Atom in
+    `rolle` — mitten in dem Feld, über das `isGuestRole` und die
+    Auto-Zuteilung entscheiden. Sie hat jetzt ihr eigenes Feld.
+
+    Beide Formen müssen denselben Text ergeben, und zwar auf beiden Seiten:
+    die Erinnerung nennt ihn, und sie entsteht in der Edge Function.
+  */
+  const faelle: Array<[string, { rolle?: string; herkunft?: string }]> = [
+    ['eigenes Feld', { rolle: 'Gastredner', herkunft: 'Vers. Nordheim' }],
+    ['Altdaten im Rollentext', { rolle: 'Gastredner · Vers. Nordheim' }],
+    ['ohne Herkunft', { rolle: 'Gastredner' }],
+    ['leere Herkunft', { rolle: 'Gastredner', herkunft: '' }],
+    ['gewöhnliche Rolle', { rolle: 'Vorsitz' }],
+    ['Begleiter-Beschriftung', { rolle: 'mit A. Hoffmann' }],
+    ['gar keine Rolle', {}],
+    ['Versammlungsname mit Trenner', { rolle: 'Gastredner', herkunft: 'Nord · Süd' }],
+  ]
+
+  it.each(faelle)('%s ergibt beidseitig denselben Text', (_name, slot) => {
+    expect(edgeHerkunft(slot)).toBe(rolleMitHerkunft(slot))
+  })
+
+  it('beide Formen sind derselbe Text', () => {
+    const neu = rolleMitHerkunft({ rolle: 'Gastredner', herkunft: 'Vers. Nordheim' })
+    const alt = rolleMitHerkunft({ rolle: 'Gastredner · Vers. Nordheim' })
+    expect(neu).toBe('Gastredner · Vers. Nordheim')
+    expect(alt).toBe(neu)
+  })
+
+  it('ohne Herkunft steht kein Trenner ins Leere', () => {
+    expect(rolleMitHerkunft({ rolle: 'Gastredner', herkunft: '' })).toBe('Gastredner')
   })
 })
 

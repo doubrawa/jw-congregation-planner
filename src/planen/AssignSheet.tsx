@@ -5,13 +5,13 @@ import { useBackDismiss } from '../components/useBackDismiss'
 import { useEscape } from '../components/useEscape'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { useSwipeDown } from '../components/useSwipeDown'
-import { isSong, LOAD_RADIUS, type WeekLoad } from '../data/helpers'
+import { herkunftVon, isSong, LOAD_RADIUS, slotsOf, type WeekLoad } from '../data/helpers'
 import { fsLeaderValue } from '../data/fs'
 import { buildS89ForSlot, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, slotValue } from '../data/planning'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { relativeWeekLabel } from '../i18n/relative-time'
-import type { Lang, SlotSelection } from '../data/types'
+import type { Lang, SlotAssignment, SlotSelection } from '../data/types'
 import { kandidaten, type Candidate } from './kandidaten'
 import '../components/overlays.css'
 import './planen.css'
@@ -75,11 +75,13 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   // Das Sheet zeigt beides untereinander, also führt jeder Weg in den jeweils
   // anderen Zustand zurück.
   const guest = sel.kind === 'part' && Boolean(sel.guest)
-  const rolleJetzt = (): string => {
-    if (sel.kind !== 'part') return ''
+  /** Der Platz, um den es hier geht — nur bei Programmpunkten. */
+  const slotJetzt = (): SlotAssignment | undefined => {
+    if (sel.kind !== 'part') return undefined
     const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
-    return !item || isSong(item) ? '' : (item.names[sel.ni]?.rolle ?? '')
+    return !item || isSong(item) ? undefined : slotsOf(item, sel.aux === true)[sel.ni]
   }
+  const rolleJetzt = (): string => slotJetzt()?.rolle ?? ''
   const rolleAtoms = rolleJetzt().split(' · ')
   const eigenerRedner = rolleAtoms[0] === ROLE_OWN_SPEAKER
   // Basis-Rolle für den Freitext-Weg. Steht dort gerade ein eigener Redner,
@@ -90,7 +92,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   // Person, nicht einem Gast. Vorbelegt wäre er ein Angebot, ihn zu verdoppeln.
   const [guestName, setGuestName] = useState(guest && !eigenerRedner ? current : '')
   const [guestCong, setGuestCong] = useState(
-    guest && !eigenerRedner ? rolleAtoms.slice(1).join(' · ') : '',
+    guest && !eigenerRedner ? herkunftVon(slotJetzt()) : '',
   )
 
   const applyGuest = () => {
@@ -100,7 +102,9 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
       return
     }
     const cong = guestCong.trim()
-    dispatch({ type: 'assign', name, rolle: cong ? `${guestBase} · ${cong}` : guestBase })
+    // Herkunft als eigenes Feld: an die Rolle gehängt stünde ein
+    // Versammlungsname mitten in dem Feld, über das die Regeln entscheiden.
+    dispatch({ type: 'assign', name, rolle: guestBase, herkunft: cong })
   }
 
   // Treffpunkt-Leiter: derselbe Doppelweg wie beim Redner, aus demselben Grund
