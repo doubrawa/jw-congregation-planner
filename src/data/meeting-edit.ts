@@ -10,9 +10,10 @@
  */
 
 import { angleichen, hatAuxKlasse } from './aux-class'
-import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_WT_STUDIUM } from './constants'
+import type { SectionKind } from './constants'
 import {
   isSong,
+  istArt,
   klonWoche,
   MEETING_TABS,
   neueItemId,
@@ -451,8 +452,8 @@ function mitLeser(items: Meeting['sections'][number]['items']): number {
 }
 
 /** Abschnitt an seinem kanonischen Label finden; −1, wenn es ihn nicht gibt. */
-function abschnitt(meeting: Meeting, label: string): number {
-  return meeting.sections.findIndex((s) => s.label === label)
+function abschnitt(meeting: Meeting, art: SectionKind): number {
+  return meeting.sections.findIndex((s) => istArt(s, art))
 }
 
 /** Titel aus festem Begriff und optionalem Thema: „Dienstvortrag · <Thema>". */
@@ -500,7 +501,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
     const coData: Dienstwoche = {}
 
     // --- unter der Woche: Dienstvortrag statt Bibelstudium ---
-    const lacIdx = abschnitt(w.mid, LABEL_LAC)
+    const lacIdx = abschnitt(w.mid, 'lac')
     const lacItems = lacIdx >= 0 ? w.mid.sections[lacIdx]?.items : undefined
     const vbsIdx = lacItems ? mitLeser(lacItems) : -1
     if (lacItems && vbsIdx >= 0) {
@@ -534,7 +535,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
     }
 
     // --- Wochenende: Studium verkürzt, Schlussvortrag dahinter ---
-    const wtIdx = abschnitt(w.we, LABEL_WT_STUDIUM)
+    const wtIdx = abschnitt(w.we, 'wtStudium')
     const wtItems = wtIdx >= 0 ? w.we.sections[wtIdx]?.items : undefined
     const studIdx = wtItems ? mitLeser(wtItems) : -1
     if (wtItems && studIdx >= 0) {
@@ -585,6 +586,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
       // ABSCHLUSS, in Gold (siehe LABEL_DIENSTVORTRAG).
       w.we.sections.splice(wtIdx + 1, 0, {
         label: LABEL_DIENSTVORTRAG,
+        kind: 'dienstvortrag',
         farbe: 'gold',
         items: [vortrag],
       })
@@ -594,6 +596,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
       forEachAltMeeting(w, 'we', (m) => {
         m.sections.splice(wtIdx + 1, 0, {
           label: LABEL_DIENSTVORTRAG,
+          kind: 'dienstvortrag',
           farbe: 'gold',
           items: [{ iid, title: TITEL_SCHLUSSVORTRAG, meta: '30 Min.', mins: 30, names: [] }],
         })
@@ -607,7 +610,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
 
   // --- zurücknehmen ---
   const coData = w.coData ?? {}
-  const lacIdx = abschnitt(w.mid, LABEL_LAC)
+  const lacIdx = abschnitt(w.mid, 'lac')
   const lacItems = lacIdx >= 0 ? w.mid.sections[lacIdx]?.items : undefined
   if (lacItems && coData.midOrig) {
     let idx = lacItems.findIndex((x) => !isSong(x) && x.iid === coData.midOrig?.iid)
@@ -631,7 +634,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
       }
     }
   }
-  const wtIdx = abschnitt(w.we, LABEL_WT_STUDIUM)
+  const wtIdx = abschnitt(w.we, 'wtStudium')
   const wtSection = wtIdx >= 0 ? w.we.sections[wtIdx] : undefined
   if (wtSection) {
     if (coData.weOrig) {
@@ -660,7 +663,7 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
       )
       const section = m.sections[si]
       if (!section) return
-      if (section.label === LABEL_DIENSTVORTRAG) m.sections.splice(si, 1)
+      if (istArt(section, 'dienstvortrag')) m.sections.splice(si, 1)
       else {
         const idx = section.items.findIndex((x) => !isSong(x) && x.iid === coData.weVortragIid)
         if (idx >= 0) section.items.splice(idx, 1)
@@ -766,12 +769,12 @@ function replaceSongAtom(title: string, value: string): string {
  * „Lied 78" atomweise in die Versammlungssprache. Varianten tragen denselben
  * deutschen Vorlagen-Titel → gleiche Ersetzung.
  */
-function setSong(weeks: Week[], wi: number, label: string, song: string): Week[] {
+function setSong(weeks: Week[], wi: number, art: SectionKind, song: string): Week[] {
   const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
   const next = klonWoche(weeks, wi)
   if (!next) return weeks
   const week = next[wi]
-  const si = week?.we.sections.findIndex((s) => s.label === label) ?? -1
+  const si = week?.we.sections.findIndex((s) => istArt(s, art)) ?? -1
   const items = week?.we.sections[si]?.items
   if (!week || !items) return weeks
   const value = nr ? `Lied ${nr}` : 'Lied'
@@ -806,12 +809,12 @@ function setSong(weeks: Week[], wi: number, label: string, song: string): Week[]
 
 /** Anfangslied der Wochenend-Zusammenkunft setzen. */
 export function setOpeningSong(weeks: Week[], wi: number, song: string): Week[] {
-  return setSong(weeks, wi, LABEL_EROEFFNUNG, song)
+  return setSong(weeks, wi, 'eroeffnung', song)
 }
 
 /** Schlusslied der Wochenend-Zusammenkunft setzen (F11: ging bisher gar nicht). */
 export function setClosingSong(weeks: Week[], wi: number, song: string): Week[] {
-  return setSong(weeks, wi, LABEL_ABSCHLUSS, song)
+  return setSong(weeks, wi, 'abschluss', song)
 }
 
 /**
@@ -820,8 +823,8 @@ export function setClosingSong(weeks: Week[], wi: number, song: string): Week[] 
  * Liest beide Formen: das Atom im Titel (so legt der Import es heute an) und
  * das eigenständige Lied-Item (so lag es in Wochen von früher).
  */
-function songNr(meeting: Meeting, label: string): string {
-  const section = meeting.sections.find((s) => s.label === label)
+function songNr(meeting: Meeting, art: SectionKind): string {
+  const section = meeting.sections.find((s) => istArt(s, art))
   for (const item of section?.items ?? []) {
     if (isSong(item)) {
       const match = /(\d+)/.exec(item.song)
@@ -837,10 +840,10 @@ function songNr(meeting: Meeting, label: string): string {
 
 /** Aktuelle Anfangslied-Nummer der Wochenend-Eröffnung ("" = keine). */
 export function openingSongNr(meeting: Meeting): string {
-  return songNr(meeting, LABEL_EROEFFNUNG)
+  return songNr(meeting, 'eroeffnung')
 }
 
 /** Aktuelle Schlusslied-Nummer des Wochenend-Abschlusses ("" = keine). */
 export function closingSongNr(meeting: Meeting): string {
-  return songNr(meeting, LABEL_ABSCHLUSS)
+  return songNr(meeting, 'abschluss')
 }

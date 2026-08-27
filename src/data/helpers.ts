@@ -4,9 +4,10 @@
  */
 
 import {
+  artVonLabel,
   BRUDER_BEREICHE,
-  LABEL_ABSCHLUSS,
-  LABEL_EROEFFNUNG,
+  LABEL_DIENSTVORTRAG,
+  type SectionKind,
   QUALIFICATION_ORDER,
   WT_ROLE_ORDER,
 } from './constants'
@@ -636,7 +637,7 @@ export const TITEL_SCHLUSSVORTRAG = 'Schlussvortrag'
  * Das Etikett steht in `translate-data.ts` in allen 33 Sprachen gemessen
  * bereit — vorbereitet für genau diese Sektion, nur nie benutzt.
  */
-export const LABEL_DIENSTVORTRAG = 'DIENSTVORTRAG'
+export { LABEL_DIENSTVORTRAG }
 
 /**
  * Basis-Rolle ohne angehängte Herkunft: `"Gastredner · Vers. Nordheim"` →
@@ -669,7 +670,12 @@ export function isSpeakerRole(rolle: string | undefined): boolean {
  * zugeteilt ist. Lied und Einleitende Worte gehören zur Programmstruktur; wer
  * hier eingeteilt ist, hat Vorsitz oder Gebet.
  */
-const BLOCK_LABELS = new Set<string>([LABEL_EROEFFNUNG, LABEL_ABSCHLUSS])
+/**
+ * Block-Abschnitte: Eröffnung und Abschluss. Dort benennt der Titel den ganzen
+ * Block („Lied · Gebet · Einleitende Worte"), nicht die einzelne Aufgabe —
+ * deshalb trägt dort die Rolle allein.
+ */
+const BLOCK_ARTEN = new Set<SectionKind>(['eroeffnung', 'abschluss'])
 
 /**
  * Beschriftung einer Zuteilung als **ein** String.
@@ -714,7 +720,39 @@ export function zuteilungsLabel(
 
 /** Benennt der Titel dieses Abschnitts den Block statt die Aufgabe? */
 export function istBlockAbschnitt(sectionLabel: string): boolean {
-  return BLOCK_LABELS.has(sectionLabel)
+  const art = artVonLabel(sectionLabel)
+  return art != null && BLOCK_ARTEN.has(art)
+}
+
+/**
+ * Art eines Abschnitts: das gespeicherte Feld, sonst aus dem kanonischen Namen.
+ *
+ * Der Rückfall ist kein Notbehelf, sondern der Übergang: Wochen, die vor dem
+ * Feld gespeichert wurden, tragen es nicht, und ihr Name ist kanonisch deutsch
+ * (übersetzt wird erst bei der Anzeige). Wer fragt, muss den Unterschied nicht
+ * kennen.
+ */
+export function abschnittsArt(section: Section): SectionKind | undefined {
+  return section.kind ?? artVonLabel(section.label)
+}
+
+/** Ist dieser Abschnitt von der genannten Art? */
+export function istArt(section: Section, art: SectionKind): boolean {
+  return abschnittsArt(section) === art
+}
+
+/**
+ * Block-Abschnitt (Eröffnung/Abschluss) — dort benennt der Titel den ganzen
+ * Block, deshalb trägt die Rolle allein.
+ *
+ * Wie `istBlockAbschnitt`, nur mit dem Abschnitt statt seinem Namen: hier ist
+ * das gespeicherte Feld verfügbar und hat Vorrang. Die Namensfassung bleibt für
+ * `zuteilungsLabel`, das dieselbe Frage in der Edge Function beantworten muss
+ * und dort nur den Namen hat (`edge-parity.test.ts`).
+ */
+export function istBlockSektion(section: Section): boolean {
+  const art = abschnittsArt(section)
+  return art != null && BLOCK_ARTEN.has(art)
 }
 
 /**

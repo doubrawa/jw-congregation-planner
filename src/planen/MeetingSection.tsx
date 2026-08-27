@@ -1,8 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
-import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { istSchuelerteil } from '../data/aux-class'
-import { eigeneRolle, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { istArt, eigeneRolle, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
@@ -41,13 +40,13 @@ export function MeetingSection({
   const { t, tu } = useT()
   const [lacTitle, setLacTitle] = useState('')
 
-  const isLac = rawSection.label === LABEL_LAC
+  const isLac = istArt(rawSection, 'lac')
   // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
-  const isTalk = state.tab === 'we' && rawSection.label === LABEL_VORTRAG
-  const isOpening = state.tab === 'we' && rawSection.label === LABEL_EROEFFNUNG
+  const isTalk = state.tab === 'we' && istArt(rawSection, 'vortrag')
+  const isOpening = state.tab === 'we' && istArt(rawSection, 'eroeffnung')
   // …und am Wochenende ebenso das Schlusslied: es steht nicht im Arbeitsheft,
   // sondern kommt aus der Studienausgabe — fehlt sie, muss es nachtragbar sein.
-  const isClosing = state.tab === 'we' && rawSection.label === LABEL_ABSCHLUSS
+  const isClosing = state.tab === 'we' && istArt(rawSection, 'abschluss')
   // „SCHLUSSLIED“ als eigener UI-Schlüssel scheitert nicht am Aufwand, sondern
   // an der Quelle: gemessen am Kongressprogramm in allen 34 Sprachen (T33)
   // nennen 8 davon Lied und Gebet mit *einem* Schlusswort, Französisch mit gar
@@ -58,8 +57,8 @@ export function MeetingSection({
   // außer dort, wo es als editierbares Nummernfeld bleibt („beim Planen am
   // Sonntag"): Wochenend-Eröffnung und Wochenend-Abschluss.
   const splitSong =
-    (rawSection.label === LABEL_EROEFFNUNG && !isOpening) ||
-    (rawSection.label === LABEL_ABSCHLUSS && !isClosing)
+    (istArt(rawSection, 'eroeffnung') && !isOpening) ||
+    (istArt(rawSection, 'abschluss') && !isClosing)
   const movables = movableIndices(rawSection)
 
   const isPending = (slot: SlotAssignment | undefined) =>

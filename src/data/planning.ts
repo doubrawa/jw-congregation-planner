@@ -11,7 +11,6 @@
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
 import { programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
-import { LABEL_EROEFFNUNG, LABEL_WT_STUDIUM } from './constants'
 import {
   displayName,
   eigeneRolle,
@@ -19,7 +18,8 @@ import {
   isGuestRole,
   isPlainPublisher,
   klonWoche,
-  istBlockAbschnitt,
+  istArt,
+  istBlockSektion,
   isQualified,
   isSong,
   istAusgefallen,
@@ -358,7 +358,7 @@ export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[
     // (siehe OpenSlot.rolle).
     const rolle = eigeneRolle(slot.rolle)
     out.push(
-      rolle && istBlockAbschnitt(section.label)
+      rolle && istBlockSektion(section)
         ? { text: rolle, lang: 'u', n: 1 }
         : { text: item.title, lang: 'p', rolle: rolle || undefined, n: 1 },
     )
@@ -584,7 +584,7 @@ export function autoAssignMeeting(
   if (doParts) {
   // 1) WT-Studium-Leiter zuerst reservieren (nur Wochenende hat diese Sektion).
   for (const section of meeting.sections) {
-    if (section.label !== LABEL_WT_STUDIUM) continue
+    if (!istArt(section, 'wtStudium')) continue
     for (const item of section.items) {
       if (isSong(item)) continue
       for (const slot of item.names) {
@@ -610,7 +610,7 @@ export function autoAssignMeeting(
   //    Hauptsaal — niemand kann zur selben Zeit in beiden Räumen sein.
   for (const { slot, section, item, aux } of programmPlaetze(meeting)) {
     if (slot.name || isGuestRole(slot.rolle)) continue
-    if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
+    if (istArt(section, 'eroeffnung') && slot.rolle === 'Gebet') continue
     // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
     const person = pick('part', slot.bereichsKey, ministryOpts(item, slot, aux))
     if (person) {
@@ -637,7 +637,7 @@ export function autoAssignMeeting(
 
   // 3) Vorsitz betet zu Beginn (Standard, manuell änderbar): Anfangsgebet =
   //    Vorsitz-Person, sofern das Gebet noch offen ist.
-  const opening = meeting.sections.find((s) => s.label === LABEL_EROEFFNUNG)
+  const opening = meeting.sections.find((s) => istArt(s, 'eroeffnung'))
   if (opening) {
     const openingSlots = opening.items.flatMap((i) => (isSong(i) ? [] : i.names))
     const vorsitzSlot = openingSlots.find((s) => s.rolle === 'Vorsitz')
@@ -1221,7 +1221,7 @@ function eachAssignedSlot(
           const eigen = eigeneRolle(rolle)
           return {
             id: key,
-            title: eigen && istBlockAbschnitt(section.label) ? '' : item.title,
+            title: eigen && istBlockSektion(section) ? '' : item.title,
             ...(eigen ? { rolle: eigen } : {}),
             date: meetingDateText(week, wi, tab, meetings),
             chip: '',

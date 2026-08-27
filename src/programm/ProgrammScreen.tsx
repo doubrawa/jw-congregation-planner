@@ -1,13 +1,12 @@
 import { Fragment } from 'react'
 import { useApp } from '../app/context'
-import { mtab } from '../data/helpers'
+import { istBlockAbschnitt, mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, TerminListe, WeekChips } from '../components/WeekBadges'
 import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { hatAuxKlasse } from '../data/aux-class'
-import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { gehoertZu, isSong, splitOpeningSong } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { fill, useProgWeek, useT } from '../i18n/useT'
@@ -169,7 +168,7 @@ function ProgramMeeting({
         // ERÖFFNUNG/ABSCHLUSS tragen das Lied im Sammeltitel — herausgezogen
         // als eigene mittig+kursive Zeile (einheitlich mit den übrigen Liedern).
         const canonical = rawMeeting.sections[si]?.label
-        const splitHere = canonical === LABEL_EROEFFNUNG || canonical === LABEL_ABSCHLUSS
+        const splitHere = istBlockAbschnitt(canonical ?? '')
         return (
           <div key={section.label} className="panel" data-farbe={section.farbe}>
             <h2 className="panel-label">{tpw(section.label)}</h2>

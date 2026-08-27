@@ -1,3 +1,4 @@
+import type { SectionKind } from './constants'
 /**
  * Datenmodell — abgeleitet aus dem Design-Handoff (State-Referenz der
  * Prototyp-Logikklasse, siehe docs/design-handoff/README.md → "State").
@@ -301,6 +302,14 @@ export interface HelperSlot {
 
 export interface Section {
   label: string // Caps-Label, z. B. "SCHÄTZE AUS GOTTES WORT"
+  /**
+   * Was dieser Abschnitt **ist** — der Logik-Schlüssel neben dem Anzeigetext.
+   *
+   * Optional, weil Wochen aus der Zeit davor ihn nicht tragen; `abschnittsArt`
+   * fällt für die auf den kanonischen Namen zurück. Derselbe Weg, den
+   * `PartItem.iid` (T37) für die Programmpunkte schon gegangen ist.
+   */
+  kind?: SectionKind
   farbe: SectionColor
   items: ProgramItem[]
 }

@@ -138,3 +138,54 @@ export const LABEL_WT_STUDIUM = 'WACHTTURM-STUDIUM'
 export const LABEL_LAC = 'UNSER LEBEN ALS CHRIST'
 export const LABEL_VORTRAG = 'ÖFFENTLICHER VORTRAG'
 export const LABEL_ABSCHLUSS = 'ABSCHLUSS'
+export const LABEL_SCHAETZE = 'SCHÄTZE AUS GOTTES WORT'
+export const LABEL_DIENST = 'UNS IM DIENST VERBESSERN'
+/**
+ * Der Dienstvortrag der Dienstwoche — kein Abschnitt des Arbeitshefts, sondern
+ * einer, den die App selbst einsetzt (`setDienstwoche`). Stand bis hierher als
+ * einziger seiner Art in `helpers.ts`, also außerhalb dieser Gruppe.
+ */
+export const LABEL_DIENSTVORTRAG = 'DIENSTVORTRAG'
+
+/**
+ * Was ein Abschnitt **ist** — unabhängig davon, wie er heißt.
+ *
+ * Bis hierher entschied der Anzeigetext über Verhalten: „Ist das der
+ * Wachtturm-Abschnitt?" wurde als `section.label === 'WACHTTURM-STUDIUM'`
+ * gefragt, an über dreißig Stellen, zwei davon als fest verdrahtetes Deutsch in
+ * der Deno-Laufzeit. Die Wochendaten sind zwar kanonisch deutsch — aber ein
+ * Anzeigetext ist trotzdem der falsche Schlüssel: Er ist zum Lesen da, nicht
+ * zum Entscheiden, und wer ihn ändert, ändert stillschweigend Verhalten.
+ */
+export type SectionKind =
+  | 'eroeffnung'
+  | 'schaetze'
+  | 'dienst'
+  | 'lac'
+  | 'wtStudium'
+  | 'vortrag'
+  | 'dienstvortrag'
+  | 'abschluss'
+
+/**
+ * Die **einzige** Stelle, an der ein Abschnittsname auf seine Art abgebildet
+ * wird. Alles andere fragt nach der Art, nicht nach dem Namen.
+ */
+const ART_JE_LABEL: Record<string, SectionKind> = {
+  [LABEL_EROEFFNUNG]: 'eroeffnung',
+  [LABEL_SCHAETZE]: 'schaetze',
+  [LABEL_DIENST]: 'dienst',
+  [LABEL_LAC]: 'lac',
+  [LABEL_WT_STUDIUM]: 'wtStudium',
+  [LABEL_VORTRAG]: 'vortrag',
+  [LABEL_DIENSTVORTRAG]: 'dienstvortrag',
+  [LABEL_ABSCHLUSS]: 'abschluss',
+}
+
+/**
+ * Art eines Abschnitts aus seinem kanonischen Namen — `undefined`, wenn der
+ * Name keiner bekannten Art entspricht (dann hängt auch kein Verhalten daran).
+ */
+export function artVonLabel(label: string): SectionKind | undefined {
+  return ART_JE_LABEL[label]
+}
