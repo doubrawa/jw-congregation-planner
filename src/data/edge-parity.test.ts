@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  deutschesDatum as edgeDeutschesDatum,
   istAusgefallenFuer as edgeAusgefallen,
   meetingDayOffsets as edgeOffsets,
+  meetingTimesOf as edgeTimes,
   personDisplayName as edgeName,
   SKIP_ROLE as EDGE_SKIP,
   taskDateText as edgeDate,
@@ -11,7 +13,7 @@ import {
   zuteilungsLabel as edgeLabel,
 } from '../../supabase/functions/_shared/planung.ts'
 import { displayName, istAusgefallen, zuteilungsLabel } from './helpers'
-import { meetingDayOffsets, meetingOffset, meetingTime } from './meeting-dates'
+import { deutschesDatum, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
 import { isGuestRole } from './planning'
 import { emptyQualifications } from './helpers'
 import type { Abweichung, Person, Week } from './types'
@@ -71,6 +73,40 @@ describe('Beschriftung einer Zuteilung', () => {
     expect(text).toBe('Vorsitz')
     expect(text).not.toContain('Lied')
     expect(text).not.toContain('Einleitende Worte')
+  })
+})
+
+describe('Uhrzeiten der Zusammenkünfte', () => {
+  // Dieselbe Zeichenkette, die andere Hälfte: die Tag-Hälfte war längst
+  // geteilt und geprüft, die Uhrzeit-Hälfte lag nur in `send-reminders`.
+  const faelle = [
+    'Di 19:00 · So 10:00',
+    'Mi 19.30 · Sa 17.00', // Punkt statt Doppelpunkt
+    'Di 9:00 · So 10:00', // einstellige Stunde → beidseitig führende Null
+    '', // ohne Angabe → beidseitig leer, keine erfundene Zeit
+    'Di · So', // Kürzel ohne Zeiten
+    'Fr 19:00', // nur eine Angabe
+  ]
+
+  it.each(faelle)('„%s" ergibt beidseitig dieselben Uhrzeiten', (zeiten) => {
+    expect(edgeTimes(zeiten)).toEqual(meetingTimesOf(zeiten))
+  })
+})
+
+describe('Deutsches Datum', () => {
+  // Der Client liest die Felder in Ortszeit, die Edge Function auf einem
+  // UTC-Zeitstempel — dieselben Tabellen, dieselbe Zusammensetzung. Geprüft
+  // wird an Mitternacht UTC, wo beide Ablesungen denselben Tag ergeben.
+  const faelle = ['2026-09-08', '2026-01-01', '2026-12-31', '2026-02-28', '2026-03-01']
+
+  it.each(faelle)('%s schreibt sich beidseitig gleich', (iso) => {
+    const utcMitternacht = new Date(`${iso}T00:00:00Z`)
+    const ortszeit = new Date(`${iso}T12:00:00`)
+    expect(edgeDeutschesDatum(utcMitternacht, true)).toBe(deutschesDatum(ortszeit))
+  })
+
+  it('nennt Wochentag, Tag und Monat — nicht die Wochenspanne', () => {
+    expect(deutschesDatum(new Date('2026-09-08T12:00:00'))).toBe('Dienstag, 8. September')
   })
 })
 

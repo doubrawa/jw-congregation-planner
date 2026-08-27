@@ -4,9 +4,8 @@ import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { AusfallBanner, MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { hatAuxKlasse } from '../data/aux-class'
-import { istAusgefallen, overseerGroup } from '../data/helpers'
+import { istAusgefallen, mtab, aufseherGruppe } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
-import type { MeetingKey } from '../data/types'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, EngpassBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { AutoAssignPanel } from './AutoAssignPanel'
@@ -59,18 +58,18 @@ function PlanenBody() {
   }
 
   // Gruppenaufseher (ohne volle Planer-Rechte): nur Treffpunkte der eigenen Gruppe.
-  const myFsGroup = overseerGroup(state.groups, state.personId)
+  const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
   const fsOverseer = !state.planner && myFsGroup !== null
   const isFs = state.tab === 'fs' || fsOverseer
   // Die Bearbeiten-Ansicht (T64) gibt es nur für Planer — der Gruppenaufseher
   // sieht ohnehin nur seine Treffpunkte.
   const isEdit = state.tab === 'edit' && !fsOverseer
-  const mtab: MeetingKey = state.tab === 'we' ? 'we' : 'mid'
-  const meeting = week[mtab]
-  const rawMeeting = rawWeek[mtab]
+  const tab = mtab(state.tab)
+  const meeting = week[tab]
+  const rawMeeting = rawWeek[tab]
   // Entfällt die Zusammenkunft, sind ihre Plätze nicht offen — sie werden nicht
   // gebraucht (T30).
-  const openCount = istAusgefallen(rawWeek, mtab) ? 0 : countOpenSlots(rawMeeting, state.services)
+  const openCount = istAusgefallen(rawWeek, tab) ? 0 : countOpenSlots(rawMeeting, state.services)
 
   return (
     <section className="screen">
@@ -112,7 +111,7 @@ function PlanenBody() {
       ) : (
         <>
           <MemorialBanner week={week} tab={state.tab} />
-          <AusfallBanner week={rawWeek} tab={mtab} />
+          <AusfallBanner week={rawWeek} tab={tab} />
 
           <p className="plan-hint">{t.planHint}</p>
 
@@ -122,14 +121,14 @@ function PlanenBody() {
 
           {/* Schulungsaufgaben gibt es nur unter der Woche — der Bogen steht
               deshalb nur dort und zeigt sich gar nicht, wenn keine da sind. */}
-          {mtab === 'mid' && <S89Bogen />}
+          {tab === 'mid' && <S89Bogen />}
 
-          <ConflictsBanner tab={mtab} />
+          <ConflictsBanner tab={tab} />
           {/* Über den offenen Zuteilungen: Das Banner erklärt einen Teil ihrer
               Zahl — die Plätze, die offen bleiben MÜSSEN, weil zu wenige da
               sind. Die Erklärung gehört vor die Aufzählung. */}
-          <EngpassBanner tab={mtab} />
-          <OpenSlotsBanner tab={mtab} tpw={tpw} />
+          <EngpassBanner tab={tab} />
+          <OpenSlotsBanner tab={tab} tpw={tpw} />
 
           {/* Die Sprachvariante ist strukturgleich zur kanonischen Woche
               (`localizedWeek` prüft das) — fehlt der Abschnitt dort trotzdem,

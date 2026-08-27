@@ -101,6 +101,17 @@ const congSaves = createDebouncedWriter<'info', { congId: string; info: AppState
   SAVE_DELAY,
   (_key, { congId, info }) => saveCongregationInfo(congId, info),
 )
+// Treffpunkte: derselbe Weg wie bei den Wochen — gebündelt je Kennung.
+const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsInstance[] }>(
+  SAVE_DELAY,
+  (woche, { congId, insts }) => saveFsWeek(congId, woche, insts),
+)
+// Der Grundplan hängt an einem Freitextfeld (Ort) und änderte sich deshalb je
+// Tastenanschlag — mitsamt jeder daraus erzeugten Woche.
+const fsRuleSaves = createDebouncedWriter<'rules', { congId: string; base: string; rules: AppState['fsRules'] }>(
+  SAVE_DELAY,
+  (_key, { congId, base, rules }) => saveFsRules(congId, base, rules),
+)
 
 /*
  * ---- Speichern mit Blick auf den Index (T42) -------------------------------
@@ -135,6 +146,13 @@ function fsWocheSpeichern(congId: string, weeks: Week[], fsWeeks: FsInstance[][]
   const week = weeks[wi]
   const fsWeek = fsWeeks[wi]
   if (week && fsWeek) saveFsWeek(congId, week.start, fsWeek)
+}
+
+/** Wie `fsWocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag. */
+function fsWochePlanen(congId: string, weeks: Week[], fsWeeks: FsInstance[][], wi: number): void {
+  const week = weeks[wi]
+  const fsWeek = fsWeeks[wi]
+  if (week && fsWeek) fsWeekSaves.schedule(week.start, { congId, insts: fsWeek })
 }
 
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
@@ -205,10 +223,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'fsRuleAdd':
     case 'fsRuleUpdate':
     case 'fsRuleRemove': {
-      // Grundplan-Blob + alle (neu materialisierten) Wochen speichern.
-      saveFsRules(congId, next.fsBase.toISOString().slice(0, 10), next.fsRules)
+      // Grundplan-Blob + die neu materialisierten Wochen. Beides gebündelt:
+      // der Ort ist ein Freitextfeld, und ohne Bündelung ging je Tastenanschlag
+      // der Grundplan **und** jede Woche einzeln an die Datenbank. Geschrieben
+      // wird zudem nur, was sich wirklich geändert hat — `regenFsWeeks` lässt
+      // unberührten Wochen ihre Referenz.
+      fsRuleSaves.schedule('rules', {
+        congId,
+        base: next.fsBase.toISOString().slice(0, 10),
+        rules: next.fsRules,
+      })
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i)
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i)
       }
       break
     }
@@ -316,6 +342,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       personSaves.flush()
       weekSaves.flush()
       congSaves.flush()
+      fsWeekSaves.flush()
+      fsRuleSaves.flush()
       break
     }
     case 'removePerson': {

@@ -48,8 +48,10 @@
 import webpush from 'npm:web-push@3.6.7'
 import {
   type Abweichungen,
+  deutschesDatum,
   istAusgefallenFuer,
   meetingDayOffsets,
+  meetingTimesOf,
   personDisplayName,
   SKIP_ROLE,
   taskDateText,
@@ -70,6 +72,15 @@ const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
+/**
+ * Wie viele Push-Zustellungen gleichzeitig unterwegs sein duerfen.
+ *
+ * Nicht unbegrenzt: die Push-Dienste drosseln, und ein ganzer Schwung offener
+ * Verbindungen brachte der Edge Function nichts als Fehler. Gebuendelt zu
+ * zehnt bleibt die Laufzeit im Rahmen, ohne dass jemand gedrosselt wird.
+ */
+const PUSH_PARALLEL = 10
+
 const SEND_PUSH = Deno.env.get('SEND_PUSH') === 'true'
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
@@ -261,13 +272,6 @@ function helperPid(entry: HelperEntry | undefined): string | undefined {
 
 const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
 
-/** Kanonisch deutsche Namen — das Format der Wochendaten (siehe Client). */
-const WOCHENTAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
-const MONATE = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-]
-
 /**
  * Termin im Erinnerungstext: „Dienstag, 8. September · 19:00".
  *
@@ -297,16 +301,8 @@ function reminderDate(
   const ms = Date.parse(startISO)
   if (Number.isNaN(ms)) return taskDate(meeting)
   const d = new Date(ms + offset * 864e5)
-  const text = `${WOCHENTAGE[(d.getUTCDay() + 6) % 7]}, ${d.getUTCDate()}. ${MONATE[d.getUTCMonth()]}`
+  const text = deutschesDatum(d, true)
   return zeit ? `${text} · ${zeit}` : text
-}
-
-/** "Di 19:00 · So 10:00" → Uhrzeiten je Zusammenkunft. */
-function meetingTimesOf(meetingTimes: string): { mid: string; we: string } {
-  const found = [...meetingTimes.matchAll(/\b(\d{1,2})[:.](\d{2})\b/g)].map(
-    (m) => `${m[1].padStart(2, '0')}:${m[2]}`,
-  )
-  return { mid: found[0] ?? '', we: found[1] ?? '' }
 }
 
 /* ---- Terminberechnung ---------------------------------------------------- */
@@ -730,25 +726,39 @@ Deno.serve(async (req: Request) => {
     }
 
     if (SEND_PUSH) {
-      for (const { push, subs } of sendQueue) {
+      // Jede Zustellung ist eine eigene HTTPS-Fahrt zu FCM/Mozilla/Apple und
+      // haengt an keiner anderen. Nacheinander summierten sich die Laufzeiten
+      // ueber den ganzen installierten Bestand — die Edge Function hat dafuer
+      // kein Zeitbudget. Gebuendelt bleibt die Behandlung je Abo dieselbe.
+      const zustellungen = sendQueue.flatMap(({ push, subs }) => {
         const payload = JSON.stringify({ title: push.title, body: push.body, url: push.url ?? APP_URL })
-        for (const sub of subs) {
-          try {
-            await webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-              payload,
-              { TTL: 24 * 3600 },
-            )
-            sent++
-          } catch (err) {
-            const status = (err as { statusCode?: number }).statusCode
-            if (status === 404 || status === 410) {
-              await restDeleteSubscription(sub.id)
-              expired++
-            } else {
+        return subs.map((sub) => ({ sub, payload }))
+      })
+      for (let i = 0; i < zustellungen.length; i += PUSH_PARALLEL) {
+        const teil = zustellungen.slice(i, i + PUSH_PARALLEL)
+        const ergebnisse = await Promise.all(
+          teil.map(async ({ sub, payload }) => {
+            try {
+              await webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                payload,
+                { TTL: 24 * 3600 },
+              )
+              return 'sent' as const
+            } catch (err) {
+              const status = (err as { statusCode?: number }).statusCode
+              if (status === 404 || status === 410) {
+                await restDeleteSubscription(sub.id)
+                return 'expired' as const
+              }
               console.error(`web-push ${status}: ${(err as Error).message}`)
+              return 'failed' as const
             }
-          }
+          }),
+        )
+        for (const e of ergebnisse) {
+          if (e === 'sent') sent++
+          else if (e === 'expired') expired++
         }
       }
       await restInsert('notifications', notifRows)

@@ -15,7 +15,9 @@ import { fsBaseFromWeeks, fsMigrateInstIds, fsMigrateLeaderPids, regenFsWeeks } 
 import { itemTaskKey, partTaskKey, taskKeyVorbei } from '../data/planning'
 import {
   displayName,
+  eindeutigeNamen,
   emptyQualifications,
+  MEETING_TABS,
   neueItemId,
   normalizeChairKeys,
   serviceQualKey,
@@ -284,7 +286,7 @@ export function migrateItemIds(
   const next = weeks.map((week) => {
     let weekChanged = false
     const kopie = { ...week }
-    for (const tab of ['mid', 'we'] as const) {
+    for (const tab of MEETING_TABS) {
       let meetingChanged = false
       const sections = week[tab].sections.map((section, si) => ({
         ...section,
@@ -535,14 +537,7 @@ function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week
  * Speicher; persistiert beim nächsten Speichern der Woche.
  */
 export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] {
-  const byName = new Map<string, string>()
-  const dupes = new Set<string>()
-  for (const p of persons) {
-    const n = displayName(p)
-    if (byName.has(n)) dupes.add(n)
-    byName.set(n, p.id)
-  }
-  for (const d of dupes) byName.delete(d) // mehrdeutig → nicht zuordnen
+  const byName = eindeutigeNamen(persons)
   if (byName.size === 0) return weeks
   let anyChanged = false
   /** Platz mit `pid` versehen, wenn der Name eindeutig eine Person meint. */

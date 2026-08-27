@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fsAutoAssign } from './fs'
-import {
-  bruderBereicheEinerSchwester,
-  doppelteFesteRollen,
-  istBruderBereichBeiSchwester,
-} from './helpers'
+import { doppelteFesteRollen, istBruderBereichBeiSchwester } from './helpers'
+import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from './constants'
 import type { FsInstance, Group, Person, Qualifications } from './types'
 
 /**
@@ -31,22 +28,32 @@ function person(id: string, patch: Partial<Person> = {}): Person {
 
 /* ---- F4 ------------------------------------------------------------------ */
 
+/**
+ * Die gemeldeten Bereiche einer Person — dieselbe Frage, die `PrivToggle` je
+ * Schalter stellt, hier über alle Bereiche in ihrer festen Reihenfolge.
+ */
+function gemeldeteBereiche(p: Person): string[] {
+  return [...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].filter(
+    (key) => p.priv[key] && istBruderBereichBeiSchwester(p, key),
+  )
+}
+
 describe('F4 — Brüder-Bereiche bei einer Schwester', () => {
   it('meldet Gebet und Vorsitz bei einer Schwester', () => {
     const s = person('s', { female: true, priv: { ...KEINE, gebet: true, vorsitzMid: true } })
-    expect(bruderBereicheEinerSchwester(s)).toEqual(['vorsitzMid', 'gebet'])
+    expect(gemeldeteBereiche(s)).toEqual(['vorsitzMid', 'gebet'])
   })
 
   it('meldet nichts bei einem Bruder — auch nicht bei denselben Bereichen', () => {
     const b = person('b', { priv: { ...KEINE, gebet: true, vorsitzMid: true } })
-    expect(bruderBereicheEinerSchwester(b)).toEqual([])
+    expect(gemeldeteBereiche(b)).toEqual([])
   })
 
   it('Schulungsaufgaben sind kein Brüder-Bereich', () => {
     // Schülerteile übernehmen auch Schwestern — ein Hinweis dort wäre falsch
     // und würde die echten Fälle im Rauschen untergehen lassen.
     const s = person('s', { female: true, priv: { ...KEINE, schulung: true, schulungPartner: true } })
-    expect(bruderBereicheEinerSchwester(s)).toEqual([])
+    expect(gemeldeteBereiche(s)).toEqual([])
     expect(istBruderBereichBeiSchwester(s, 'schulung')).toBe(false)
   })
 
@@ -59,21 +66,21 @@ describe('F4 — Brüder-Bereiche bei einer Schwester', () => {
         bibellesung: true, leser: true, studium: true,
       },
     })
-    expect(bruderBereicheEinerSchwester(s)).toEqual([
+    expect(gemeldeteBereiche(s)).toEqual([
       'vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'studium',
     ])
   })
 
   it('erfasst auch die festen Rollen', () => {
     const s = person('s', { female: true, priv: { ...KEINE, wtLeiter: true } })
-    expect(bruderBereicheEinerSchwester(s)).toEqual(['wtLeiter'])
+    expect(gemeldeteBereiche(s)).toEqual(['wtLeiter'])
   })
 
   it('ein nicht gesetzter Bereich meldet nichts', () => {
     // Der Hinweis hängt am gesetzten Schalter, nicht am Bereich allein —
     // sonst stünde er in jedem Personen-Detail einer Schwester.
     const s = person('s', { female: true })
-    expect(bruderBereicheEinerSchwester(s)).toEqual([])
+    expect(gemeldeteBereiche(s)).toEqual([])
   })
 })
 

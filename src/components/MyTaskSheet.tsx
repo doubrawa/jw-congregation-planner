@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { helperKeyParts } from '../data/planning'
 import { useApp } from '../app/context'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
@@ -24,7 +25,7 @@ export function MyTaskSheet() {
   const task = state.myTasks.find((x) => x.id === state.myTaskId)
   if (!task) return null
   const label = aufgabenLabel(task, i18n)
-  const isHelper = task.id.split('|')[2] === 'helper'
+  const isHelper = helperKeyParts(task.id) !== null
   const decline = () => dispatch({ type: 'declineTask', id: task.id })
   const confirm = () => dispatch({ type: 'confirmTask', id: task.id })
 

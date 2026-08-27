@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
+import { useEscape } from '../components/useEscape'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
@@ -14,13 +15,7 @@ export function NotificationsPanel() {
   useDialogFocus(dlg)
   useBackDismiss(true, () => dispatch({ type: 'closeNotifs' }))
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') dispatch({ type: 'closeNotifs' })
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [dispatch])
+  useEscape(() => dispatch({ type: 'closeNotifs' }))
 
   return (
     <>

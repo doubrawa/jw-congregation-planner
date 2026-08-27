@@ -46,6 +46,9 @@
 
 import fs from 'node:fs'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
+import { argumente, personDisplayName } from './gemeinsam.mjs'
+export { argumente }
+export { personDisplayName as displayName }
 
 /* ===================== Kuratierte Daten aus dem SQL lesen ================= */
 
@@ -128,24 +131,7 @@ export function parseKuratiert(sql) {
   return { groups, persons, ovas }
 }
 
-/** Anzeigename wie in der App: eigener Kurzname, sonst voller Name. */
-export function displayName(fn, ln, dn) {
-  return (dn && dn.trim()) || `${fn ?? ''} ${ln ?? ''}`.trim()
-}
-
 /* ===================== Argumente ========================================= */
-
-export function argumente(argv) {
-  const out = {}
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if (!a.startsWith('--')) continue
-    const next = argv[i + 1]
-    if (next === undefined || next.startsWith('--')) out[a.slice(2)] = true
-    else { out[a.slice(2)] = next; i++ }
-  }
-  return out
-}
 
 /* ===================== Ausführung ======================================== */
 
@@ -199,7 +185,7 @@ async function main() {
   // bereits gelöscht, also aus der DB nicht mehr ableitbar), kommt sie von dort —
   // sonst ginge die Anmeldung des Planers verloren.
   const dbPersonen = await rest(`persons?select=id,fn,ln,dn&congregation_id=eq.${cong}`)
-  const nameNachId = new Map(dbPersonen.map((p) => [p.id, displayName(p.fn, p.ln, p.dn)]))
+  const nameNachId = new Map(dbPersonen.map((p) => [p.id, personDisplayName(p.fn, p.ln, p.dn)]))
   const members = await rest(`members?select=email,person_id&congregation_id=eq.${cong}`)
   const sidecar = `${sqlPfad}.members.json`
   let verknuepfungen = members
@@ -222,7 +208,7 @@ async function main() {
 
   if (arg.trocken) {
     // Prüfen, ob jede erhaltene Verknüpfung im kuratierten Bestand landet.
-    const namen = new Set(kuratiert.persons.map((p) => displayName(p.fn, p.ln, p.dn)))
+    const namen = new Set(kuratiert.persons.map((p) => personDisplayName(p.fn, p.ln, p.dn)))
     for (const v of verknuepfungen) {
       if (!namen.has(v.personName)) console.log(`  ! ${v.personName} fehlt im SQL — Konto bliebe unverknüpft.`)
     }
@@ -261,7 +247,7 @@ async function main() {
   }
 
   // 5) Konto→Person-Verknüpfung über den Namen wiederherstellen (per E-Mail des Kontos)
-  const idNachName = new Map(kuratiert.persons.map((p) => [displayName(p.fn, p.ln, p.dn), p.id]))
+  const idNachName = new Map(kuratiert.persons.map((p) => [personDisplayName(p.fn, p.ln, p.dn), p.id]))
   let verknuepft = 0
   const unverknuepft = []
   for (const v of verknuepfungen) {

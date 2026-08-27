@@ -1,6 +1,6 @@
 import { fill, useT } from '../i18n/useT'
 import { useApp } from '../app/context'
-import { abweichungsGrund, istAusgefallen, weichtAb } from '../data/helpers'
+import { abweichungsGrund, istAusgefallen, MEETING_TABS, weichtAb } from '../data/helpers'
 import { anlassArt } from '../data/anlass'
 import { WEEKDAY_OFFSET } from '../data/meeting-dates'
 import { termineVon } from '../data/termine'
@@ -155,7 +155,7 @@ export function TerminListe({ week }: { week: Week | undefined }) {
  */
 function abweichungsChips(week: Week, t: ReturnType<typeof useT>['t']): Array<{ key: string; label: string; aus: boolean }> {
   const out: Array<{ key: string; label: string; aus: boolean }> = []
-  for (const tab of ['mid', 'we'] as const) {
+  for (const tab of MEETING_TABS) {
     if (!weichtAb(week, tab)) continue
     out.push({ key: tab, label: tab === 'we' ? t.tabWe : t.tabMid, aus: istAusgefallen(week, tab) })
   }

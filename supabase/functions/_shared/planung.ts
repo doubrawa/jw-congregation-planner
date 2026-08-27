@@ -97,6 +97,46 @@ export function meetingDayOffsets(meetingTimes: string): { mid: number; we: numb
 }
 
 /**
+ * „Di 19:00 · So 10:00" → Uhrzeiten je Zusammenkunft.
+ *
+ * Die Tag-Hälfte derselben Zeichenkette liest `meetingDayOffsets` — die
+ * Uhrzeit-Hälfte stand bis hierher nur in `send-reminders`, also gerade
+ * **nicht** unter der Gegenprobe, die es für die Tag-Hälfte längst gab.
+ * Ohne erkennbare Uhrzeit bleibt der jeweilige Wert leer; der Aufrufer lässt
+ * ihn dann weg, statt eine Zeit zu erfinden.
+ */
+export function meetingTimesOf(meetingTimes: string): { mid: string; we: string } {
+  const found = [...meetingTimes.matchAll(/\b(\d{1,2})[:.](\d{2})\b/g)].map(
+    (m) => `${(m[1] ?? '').padStart(2, '0')}:${m[2] ?? ''}`,
+  )
+  return { mid: found[0] ?? '', we: found[1] ?? '' }
+}
+
+/**
+ * Kanonisch deutsche Namen — das Format, in dem Programmdaten gespeichert
+ * werden; übersetzt wird erst bei der Anzeige.
+ */
+const WOCHENTAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+const MONATE = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+]
+
+/**
+ * „Dienstag, 8. September" — die Schreibweise der Wochendaten.
+ *
+ * `utc` wählt die Zeitzone der Felder: der Client rechnet in Ortszeit
+ * (`deutschesDatum`), die Edge Function auf einem UTC-Zeitstempel. Dieselben
+ * Tabellen, dieselbe Zusammensetzung — nur die Ablesung unterscheidet sich.
+ */
+export function deutschesDatum(d: Date, utc = false): string {
+  const tag = utc ? d.getUTCDay() : d.getDay()
+  const datum = utc ? d.getUTCDate() : d.getDate()
+  const monat = utc ? d.getUTCMonth() : d.getMonth()
+  return `${WOCHENTAGE[(tag + 6) % 7]}, ${datum}. ${MONATE[monat]}`
+}
+
+/**
  * Ausgeschriebener Wochentag → Tage nach Montag. Die Wochendaten sind
  * kanonisch deutsch, auch bei fremdsprachiger Versammlung (übersetzt wird
  * erst bei der Anzeige). „Sonnabend" steht mit drin, weil ältere Datensätze

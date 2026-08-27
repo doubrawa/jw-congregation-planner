@@ -68,6 +68,9 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
+import { argumente, personDisplayName } from './gemeinsam.mjs'
+export { argumente }
+export { personDisplayName as displayName }
 
 /* ===================== Der erfundene Bestand ============================== */
 
@@ -173,11 +176,6 @@ export const TEST_GASTREDNER = [
  */
 export const EXTERNE_ROLLE = /Gastredner|Kreisaufseher/
 
-/** Anzeigename wie in der App: eigener Kurzname, sonst voller Name. */
-export function displayName(fn, ln, dn) {
-  return (dn && dn.trim()) || `${fn ?? ''} ${ln ?? ''}`.trim()
-}
-
 /**
  * Kennwort für ein Testkonto — aus `crypto`, nicht aus `Math.random()`. Es
  * schützt zwar nur erfundene Daten, liegt aber in derselben Auth-Tabelle wie
@@ -253,7 +251,7 @@ export function fuelleZuteilungen(week, personen, dienste, gruppen, stand = { za
     wohin.add(p.id)
     stand.zaehler.set(p.id, (stand.zaehler.get(p.id) ?? 0) + 1)
     gesetzt++
-    return { name: displayName(p.fn, p.ln, p.dn), pid: p.id }
+    return { name: personDisplayName(p.fn, p.ln, p.dn), pid: p.id }
   }
 
   for (const mk of ['mid', 'we']) {
@@ -331,22 +329,6 @@ export function fuelleZuteilungen(week, personen, dienste, gruppen, stand = { za
     }
   }
   return gesetzt
-}
-
-/** Argumente `--name Wert`; `--flagge` → true. */
-export function argumente(argv) {
-  const out = {}
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if (!a.startsWith('--')) continue
-    const next = argv[i + 1]
-    if (next === undefined || next.startsWith('--')) out[a.slice(2)] = true
-    else {
-      out[a.slice(2)] = next
-      i++
-    }
-  }
-  return out
 }
 
 /* ===================== Ausführung ========================================= */
@@ -640,7 +622,7 @@ async function main() {
       'return=minimal',
     )
     if (planer) await rest(`persons?id=eq.${person.id}`, 'PATCH', { planner: true }, 'return=minimal')
-    konten.push({ mail, pw, person: displayName(person.fn, person.ln, person.dn), planer })
+    konten.push({ mail, pw, person: personDisplayName(person.fn, person.ln, person.dn), planer })
     console.log(`  Konto ${mail}${user.uebernommen ? ' (vorhandenes übernommen, Kennwort neu gesetzt)' : ''}`)
   }
 

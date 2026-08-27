@@ -35,6 +35,8 @@
  *
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  */
+import { argumente } from './gemeinsam.mjs'
+export { argumente }
 
 /**
  * Hilfsdienste, die jede Versammlung zunächst bekommt.
@@ -53,22 +55,6 @@ export const STANDARD_DIENSTE = [
   { key: 'rund', name: 'Rundgangsordner', count: 1, groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
-
-/** Argumente der Form `--name Wert` einlesen; `--flagge` wird `true`. */
-export function argumente(argv) {
-  const out = {}
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if (!a.startsWith('--')) continue
-    const naechstes = argv[i + 1]
-    if (naechstes === undefined || naechstes.startsWith('--')) out[a.slice(2)] = true
-    else {
-      out[a.slice(2)] = naechstes
-      i++
-    }
-  }
-  return out
-}
 
 /**
  * Einladungscode: sechs Zeichen, **ohne** die Paare, die sich auf Papier und am

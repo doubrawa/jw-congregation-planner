@@ -1,7 +1,8 @@
 import { useApp } from '../app/context'
 import { DatePicker } from '../components/DatePicker'
 import { anlassArt } from '../data/anlass'
-import type { Anlass, AnlassArt, MeetingKey } from '../data/types'
+import { MEETING_TABS } from '../data/helpers'
+import type { Anlass, AnlassArt } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { SonderwochePanel } from './SonderwochePanel'
@@ -134,11 +135,10 @@ export function WochePanel() {
           seine Wirkung schon gesetzt — hier kann der Planer sie übersteuern:
           fällt der Kongress nur aufs Wochenende, schaltet er die Zusammenkunft
           unter der Woche wieder an. */}
-      {MEETINGS.map((tab) => (
+      {MEETING_TABS.map((tab) => (
         <SonderwochePanel key={tab} tab={tab} />
       ))}
     </>
   )
 }
 
-const MEETINGS: readonly MeetingKey[] = ['mid', 'we']

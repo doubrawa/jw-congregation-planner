@@ -16,7 +16,9 @@ import {
   displayName,
   eigeneRolle,
   gehoertZu,
+  isGuestRole,
   isPlainPublisher,
+  klonWoche,
   istBlockAbschnitt,
   isQualified,
   isSong,
@@ -61,10 +63,11 @@ import type {
  * Das Vokabular selbst steht in `helpers.ts` — dort, wo `gehoertZu` entscheidet,
  * wem eine Zuteilung gehört, und wo es deshalb gebraucht wird (`helpers.ts` ist
  * die untere Schicht und darf nicht auf `planning.ts` zugreifen). Hier nur der
- * Ausdruck für die Suchläufe und ein Weiterreichen der Begriffe, damit die
- * bestehenden Import-Wege gültig bleiben.
+ * Weiterreichen der Begriffe, damit die bestehenden Import-Wege gültig
+ * bleiben. Gefragt wird über `isGuestRole` — eine zweite Abschrift des
+ * Ausdrucks wäre eine zweite Gelegenheit, das Vokabular zu ändern und hier zu
+ * vergessen.
  */
-const SKIP_ROLE = /Gastredner|Kreisaufseher/
 
 export {
   isGuestRole,
@@ -252,7 +255,8 @@ export function assignSlot(
   rolle?: string,
   pid?: string,
 ): Week[] {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, sel.wi)
+  if (!next) return weeks
   // Zeigt die Auswahl ins Leere — die Woche ist aus dem geladenen Fenster
   // gerutscht, der Punkt wurde nebenher gelöscht —, bleibt alles, wie es war.
   // Vorher warf der Zugriff, und das mitten im Reducer (T42).
@@ -447,7 +451,8 @@ export function autoAssignMeeting(
   scope: AssignScope = 'all',
   abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): AutoAssignResult {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, weekIndex)
+  if (!next) return { weeks, count: 0, newly: [], newlyIds: [], unfilled: 0 }
   // Entfällt die Zusammenkunft, gibt es nichts zu besetzen (T30). Ohne diese
   // Zeile verteilte „Automatisch zuteilen" Aufgaben für einen Abend, an dem
   // niemand zusammenkommt — und benachteiligte die Gewählten anschließend bei
@@ -650,7 +655,7 @@ export function autoAssignMeeting(
       if (isSong(item)) continue
       for (const aux of raeume(meeting)) {
         for (const slot of slotsOf(item, aux)) {
-          if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
+          if (slot.name || isGuestRole(slot.rolle)) continue
           if (section.label === LABEL_EROEFFNUNG && slot.rolle === 'Gebet') continue
           // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
           const person = pick('part', slot.bereichsKey, ministryOpts(item, slot, aux))
@@ -750,7 +755,8 @@ export function clearAssignments(
   tab: MeetingKey,
   scope: Exclude<AssignScope, 'all'>,
 ): { weeks: Week[]; count: number } {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, weekIndex)
+  if (!next) return { weeks, count: 0 }
   const meeting = next[weekIndex]?.[tab]
   if (!meeting) return { weeks, count: 0 }
   let count = 0
@@ -762,7 +768,7 @@ export function clearAssignments(
         // und die Zusätzliche Klasse gehört dazu.
         for (const aux of raeume(meeting)) {
           for (const slot of slotsOf(item, aux)) {
-            if (SKIP_ROLE.test(slot.rolle ?? '')) continue // externer Redner bleibt
+            if (isGuestRole(slot.rolle)) continue // externer Redner bleibt
             if (slot.name) {
               slot.name = ''
               delete slot.pid
@@ -902,7 +908,6 @@ export function alleS89DerWoche(
  * der Status bewusst nicht mit (v1-Kompromiss, Status gilt dann als offen).
  */
 
-const TABS: MeetingKey[] = ['mid', 'we']
 
 /**
  * Ist das vorderste Feld eines `task_key` eine Wochen-Kennung (T66)?
@@ -1036,7 +1041,7 @@ export function taskKeyVorbei(
 ): boolean {
   const teil = taskKeyWeek(key)
   if (!teil) return false
-  const week = weeks.find((w) => w.start === teil.woche)
+  const week = weeks[wochenIndex(weeks, teil.woche)]
   if (week) return istVorbei(meetingDateMs(week, teil.tab, meetings), heute)
   // Woche nicht geladen (der Ladebereich deckt ein Jahr um heute ab, siehe
   // lib/data.ts). Auch dann nicht geraten, sondern gerechnet: Der Schlüssel
@@ -1097,7 +1102,7 @@ export function deriveSubstituteReqs(
       key,
       svc: parts.svc,
       title: svc.name,
-      date: taskDate(week, wi, parts.tab, meetings),
+      date: meetingDateText(week, wi, parts.tab, meetings),
       at: meetingDateMs(week, parts.tab, meetings),
       declinedBy: slot.name,
       // Was ich an dem Tag schon habe — vor dem Klick, nicht im Toast danach.
@@ -1236,14 +1241,6 @@ export function swapPartConfirmations(
   return changed ? next : map
 }
 
-/**
- * Termin einer Aufgabe. Geht über meetingDateText, damit importierte Wochen
- * nicht ihre Wochenspanne ("7.–13. September") als Termin ausgeben.
- */
-function taskDate(week: Week, wi: number, tab: MeetingKey, meetings: string): string {
-  return meetingDateText(week, wi, tab, meetings)
-}
-
 /** Besucht alle belegten Slots (Programmpunkte + Hilfsdienste) aller Wochen. */
 function eachAssignedSlot(
   weeks: Week[],
@@ -1252,7 +1249,7 @@ function eachAssignedSlot(
   visit: (name: string, key: string, task: () => MyTask, pid?: string) => void,
 ): void {
   weeks.forEach((week, wi) => {
-    for (const tab of TABS) {
+    for (const tab of MEETING_TABS) {
       // Entfällt die Zusammenkunft, gibt es dazu nichts zu bestätigen, zu
       // erinnern oder zu vertreten (T30). Die Zuteilungen bleiben in den Daten
       // stehen — sie sind nicht verwaist, sie ruhen nur, solange nichts
@@ -1270,7 +1267,7 @@ function eachAssignedSlot(
           for (const aux of raeume(meeting)) {
             slotsOf(item, aux).forEach((slot, ni) => {
               // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
-              if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) return
+              if (!slot.name || isGuestRole(slot.rolle)) return
               const key = slotTaskKey(item, week.start, tab, si, ii, ni, aux)
               visit(slot.name, key, () => {
                 const rolle = slot.rolle ?? ''
@@ -1287,7 +1284,7 @@ function eachAssignedSlot(
                   id: key,
                   title: eigen && istBlockAbschnitt(section.label) ? '' : item.title,
                   ...(eigen ? { rolle: eigen } : {}),
-                  date: taskDate(week, wi, tab, meetings),
+                  date: meetingDateText(week, wi, tab, meetings),
                   chip: '',
                   at,
                   status: 'offen',
@@ -1306,7 +1303,7 @@ function eachAssignedSlot(
           id: key,
           title: '', // die Bezeichnung ist die Rolle — App-Sprache
           rolle: RATGEBER_ROLLE,
-          date: taskDate(week, wi, tab, meetings),
+          date: meetingDateText(week, wi, tab, meetings),
           chip: '',
           at,
           status: 'offen',
@@ -1326,7 +1323,7 @@ function eachAssignedSlot(
             // auch `SubstituteReq.title` („Anzeige über tu").
             title: '',
             rolle: svc.name,
-            date: taskDate(week, wi, tab, meetings),
+            date: meetingDateText(week, wi, tab, meetings),
             chip: '',
             at,
             status: 'offen',
@@ -1458,7 +1455,7 @@ function meetingPartNames(meeting: Meeting, wer: IdVon): Belegung[] {
       // ist zur selben Zeit an zwei Orten — genau das soll die Prüfung finden.
       for (const aux of raeume(meeting)) {
         for (const slot of slotsOf(item, aux)) {
-          if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
+          if (!slot.name || isGuestRole(slot.rolle)) continue
           names.push(belegung(slot, wer))
         }
       }

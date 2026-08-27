@@ -56,8 +56,7 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import fs from 'node:fs'
-import path from 'node:path'
+import { ladeTabellen } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { argumente } from './wochenplanung-importieren.mjs'
 
@@ -194,14 +193,6 @@ const TABELLEN = {
   unavailablePeriods: 'UnavailablePeriods_7.5.json',
 }
 
-function ladeTabellen(dir) {
-  const t = {}
-  for (const [key, datei] of Object.entries(TABELLEN)) {
-    t[key] = JSON.parse(fs.readFileSync(path.join(dir, datei), 'utf8'))
-  }
-  return t
-}
-
 /** Heute als ISO-Datum (lokal, nicht UTC — „ab wann" ist eine Kalenderfrage). */
 export function heuteISO(jetzt = new Date()) {
   const j = jetzt.getFullYear()
@@ -237,7 +228,7 @@ async function main() {
     return text ? JSON.parse(text) : null
   }
 
-  const tabellen = ladeTabellen(datenDir)
+  const tabellen = ladeTabellen(datenDir, TABELLEN)
   const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
   if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
 

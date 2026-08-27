@@ -18,11 +18,9 @@
  * der Kongress nur das Wochenende frisst.
  */
 
+import { MEETING_TABS } from './helpers'
 import { setAbweichung, setDienstwoche } from './meeting-edit'
 import type { Anlass, AnlassArt, MeetingKey, Week } from './types'
-
-/** Beide Zusammenkünfte — in dieser Reihenfolge. */
-const BEIDE: readonly MeetingKey[] = ['mid', 'we']
 
 /**
  * Welcher Anlass gilt in dieser Woche?
@@ -120,7 +118,7 @@ function memAusfall(weeks: Week[], wi: number, iso: string): Week[] {
   if (versatz === null) return weeks
   const faelltAus: MeetingKey = versatz <= 4 ? 'mid' : 'we' // 0 = Montag … 6 = Sonntag
   let next = weeks
-  for (const tab of BEIDE) {
+  for (const tab of MEETING_TABS) {
     next = setAbweichung(next, wi, tab, { cancelled: tab === faelltAus ? true : undefined })
   }
   return next
@@ -182,7 +180,7 @@ function zuruecknehmen(weeks: Week[], wi: number, art: AnlassArt | undefined): W
 /** Beide Zusammenkünfte streichen bzw. den Strich wieder aufheben. */
 function beideStreichen(weeks: Week[], wi: number, aus: boolean): Week[] {
   let next = weeks
-  for (const tab of BEIDE) {
+  for (const tab of MEETING_TABS) {
     next = setAbweichung(next, wi, tab, { cancelled: aus ? true : undefined })
   }
   return next

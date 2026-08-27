@@ -13,6 +13,8 @@ import { angleichen, hatAuxKlasse } from './aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_WT_STUDIUM } from './constants'
 import {
   isSong,
+  klonWoche,
+  MEETING_TABS,
   neueItemId,
   ROLE_CIRCUIT,
   LABEL_DIENSTVORTRAG,
@@ -110,7 +112,7 @@ export function endenNachziehen(weeks: Week[], alt: string, neu: string): Week[]
   // die Wochenmitte 10:00, und die Verschiebung wäre um Stunden daneben.
   // Dann lieber gar nichts anfassen.
   const delta: Record<MeetingKey, number> = { mid: 0, we: 0 }
-  for (const tab of ['mid', 'we'] as const) {
+  for (const tab of MEETING_TABS) {
     const a = minuten(alteZeit[tab])
     const n = minuten(neueZeit[tab])
     if (a === null || n === null) return weeks
@@ -121,7 +123,7 @@ export function endenNachziehen(weeks: Week[], alt: string, neu: string): Week[]
   let geaendert = false
   const next = weeks.map((week) => {
     const kopie = { ...week }
-    for (const tab of ['mid', 'we'] as const) {
+    for (const tab of MEETING_TABS) {
       if (delta[tab] === 0) continue
       if (meetingDateParts(week[tab].date).zeit !== undefined) continue
       const ende = shiftEnd(week[tab].end, delta[tab])
@@ -192,7 +194,8 @@ export function lacAdjust(
   ii: number,
   delta: number,
 ): Week[] {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const an = stelle(next, wi, tab, si)
   if (!an) return weeks
   const { week, meeting, items } = an
@@ -227,7 +230,8 @@ export function lacRemove(
   si: number,
   ii: number,
 ): Week[] {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const an = stelle(next, wi, tab, si)
   if (!an) return weeks
   const { week, meeting, items } = an
@@ -278,21 +282,20 @@ export function lacMove(
   ii: number,
   dir: -1 | 1,
 ): Week[] {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const an = stelle(next, wi, tab, si)
   if (!an) return weeks
   const { week, items } = an
-  const movables = movableIndices(items)
-  const pos = movables.indexOf(ii)
-  const tpos = pos + dir
-  if (pos < 0 || tpos < 0 || tpos >= movables.length) return weeks
-  const a = movables[pos]
-  const b = movables[tpos]
-  if (a == null || b == null) return weeks
-  swapKeepNums(items, a, b)
+  // Welcher Tausch zulässig ist, steht in `lacMoveTarget` — dieselbe Auskunft,
+  // die Reducer und `persist.ts` nutzen, um die Bestätigungen mitzutauschen.
+  // Eine zweite Rechnung hier wäre eine zweite Antwort auf dieselbe Frage.
+  const b = lacMoveTarget(items, ii, dir)
+  if (b == null) return weeks
+  swapKeepNums(items, ii, b)
   forEachAltMeeting(week, tab, (m) => {
     const arr = m.sections[si]?.items
-    if (arr) swapKeepNums(arr, a, b)
+    if (arr) swapKeepNums(arr, ii, b)
   })
   return next
 }
@@ -352,7 +355,8 @@ export function lacAdd(
 ): Week[] {
   const trimmed = title.trim()
   if (!trimmed) return weeks
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const an = stelle(next, wi, tab, si)
   if (!an) return weeks
   const { week, meeting, items } = an
@@ -380,7 +384,8 @@ export function lacAdd(
  * Primär-Meeting — die Sprachvarianten tragen keine Zuteilungen.
  */
 export function togglePartner(weeks: Week[], wi: number, tab: MeetingKey, si: number, ii: number): Week[] {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const meeting = next[wi]?.[tab]
   const item = meeting?.sections[si]?.items[ii]
   if (!meeting || !item || isSong(item)) return weeks
@@ -486,7 +491,8 @@ export function themaVon(titel: string, begriff: string): string {
 export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
   const week = weeks[wi]
   if (!week || Boolean(week.co) === on) return weeks
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const w = next[wi]
   if (!w) return weeks
 
@@ -689,7 +695,8 @@ export function setPartThema(
   if (!item || isSong(item)) return weeks
   const titel = mitThema(begriff, thema)
   if (item.title === titel) return weeks
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const ziel = next[wi]?.[tab].sections[si]?.items[ii]
   if (!ziel || isSong(ziel)) return weeks
   ziel.title = titel
@@ -714,7 +721,8 @@ export const TALK_PLACEHOLDER = '(Vortragsthema eintragen)'
  * Freitext → identisch in alle Sprachvarianten spiegeln (wie lacAdd).
  */
 export function editTalkTheme(weeks: Week[], wi: number, si: number, ii: number, title: string): Week[] {
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const week = next[wi]
   const item = week?.we.sections[si]?.items[ii]
   if (!week || !item || isSong(item)) return weeks
@@ -760,7 +768,8 @@ function replaceSongAtom(title: string, value: string): string {
  */
 function setSong(weeks: Week[], wi: number, label: string, song: string): Week[] {
   const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
-  const next = structuredClone(weeks)
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
   const week = next[wi]
   const si = week?.we.sections.findIndex((s) => s.label === label) ?? -1
   const items = week?.we.sections[si]?.items

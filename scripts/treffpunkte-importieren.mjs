@@ -54,8 +54,7 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import fs from 'node:fs'
-import path from 'node:path'
+import { ladeTabellen } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { argumente, mondayOf, personDisplayName, uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -283,14 +282,6 @@ const TABELLEN = {
   locations: 'FieldServiceLocations_7.5.json',
 }
 
-function ladeTabellen(dir) {
-  const t = {}
-  for (const [key, datei] of Object.entries(TABELLEN)) {
-    t[key] = JSON.parse(fs.readFileSync(path.join(dir, datei), 'utf8'))
-  }
-  return t
-}
-
 async function main() {
   const arg = argumente(process.argv.slice(2))
   const url = process.env.SUPABASE_URL
@@ -318,7 +309,7 @@ async function main() {
     return text ? JSON.parse(text) : null
   }
 
-  const tabellen = ladeTabellen(datenDir)
+  const tabellen = ladeTabellen(datenDir, TABELLEN)
   const congRow = arg.cong
     ? (await rest(`congregations?select=id,hall&id=eq.${arg.cong}`))[0]
     : (await rest('congregations?select=id,hall&limit=1'))[0]

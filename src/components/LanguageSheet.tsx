@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useApp } from '../app/context'
 import { langChoices, useLangNames } from '../i18n/langnames'
 import { fill, useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
+import { useEscape } from './useEscape'
 import { useDialogFocus } from './useDialogFocus'
 import { useSwipeDown } from './useSwipeDown'
 import './overlays.css'
@@ -33,13 +34,7 @@ export function LanguageSheet() {
   const isActive = (name: string) =>
     altMode ? state.progLangs.includes(name) : state.congLang === name
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') dispatch({ type: 'closeLangSheet' })
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [dispatch])
+  useEscape(() => dispatch({ type: 'closeLangSheet' }))
 
   // Gesucht wird über beide Namen: wer „Hebräisch" tippt, findet עברית, und wer
   // עברית tippt, findet es auch. Nach einem Sprachwechsel weiß man oft nur noch

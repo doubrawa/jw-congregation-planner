@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useBackDismiss } from '../components/useBackDismiss'
+import { useEscape } from '../components/useEscape'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { useSwipeDown } from '../components/useSwipeDown'
 import { isSong, LOAD_RADIUS, type WeekLoad } from '../data/helpers'
@@ -43,13 +44,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   useBackDismiss(true, close)
   useSwipeDown(dlg, close)
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') dispatch({ type: 'closeSlot' })
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [dispatch])
+  useEscape(() => dispatch({ type: 'closeSlot' }))
 
   // Treffpunkt-Leiter (fs) hat eine eigene Datenquelle und keine Meeting-Slots.
   const fsInst = sel.kind === 'fs' ? state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId) : undefined

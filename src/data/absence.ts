@@ -12,6 +12,7 @@
  * abgeleitet und werden nie gespeichert.
  */
 
+import { MEETING_TABS } from './helpers'
 import { isoDay, meetingDate } from './meeting-dates'
 import type { Absence, MeetingKey, Week } from './types'
 
@@ -21,7 +22,6 @@ export type AbsenceSet = ReadonlySet<string>
 /** Niemand ist abwesend — Vorgabe für Aufrufer ohne Abwesenheitsdaten (Tests). */
 export const KEINE_ABWESENHEIT: AbsenceSet = new Set<string>()
 
-const MEETINGS: MeetingKey[] = ['mid', 'we']
 
 /**
  * Baut die Abwesenheits-Menge für die geladenen Wochen.
@@ -49,7 +49,7 @@ export function buildAbsences(
     const { personId, from, to } = abwesenheit
     if (!personId || !from || !to) continue
     tage.forEach((tag, wi) => {
-      for (const tab of MEETINGS) {
+      for (const tab of MEETING_TABS) {
         if (tag[tab] >= from && tag[tab] <= to) out.add(`${personId}|${wi}|${tab}`)
       }
     })
@@ -65,11 +65,6 @@ export function istAbwesend(
   tab: MeetingKey,
 ): boolean {
   return personId != null && set.has(`${personId}|${wi}|${tab}`)
-}
-
-/** Fehlt diese Person in dieser Woche — in mindestens einer Zusammenkunft? */
-export function istWocheAbwesend(set: AbsenceSet, personId: string | undefined, wi: number): boolean {
-  return MEETINGS.some((tab) => istAbwesend(set, personId, wi, tab))
 }
 
 /**

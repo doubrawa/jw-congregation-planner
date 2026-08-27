@@ -13,7 +13,14 @@
  */
 
 import { istAbwesendAm } from './absence'
-import { displayName, idAufloeser, isQualified, overseerGroup, tieHash } from './helpers'
+import {
+  displayName,
+  eindeutigeNamen,
+  idAufloeser,
+  isQualified,
+  overseerGroup,
+  tieHash,
+} from './helpers'
 import { deutschesDatum } from './meeting-dates'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
@@ -42,6 +49,22 @@ export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }
  * Nur wenn keine Woche ein Startdatum hat (Demo/Vorlagen), wird ersatzweise an
  * der als `current` markierten Woche relativ zu `today` verankert.
  */
+/**
+ * Montag der Woche, in der `heute` liegt — auf **lokalem Mittag** verankert.
+ *
+ * Der Mittag ist kein Schmuck: Um Mitternacht kippt die Zeitzone den Tag, und
+ * genau daraus entstand der Treffpunkt-Wochenversatz. Deshalb steht die
+ * Rechnung hier und nicht ein zweites Mal beim Anfangszustand — beide füllen
+ * dasselbe Feld (`state.fsBase`), und die Abschrift trug die Begründung nicht
+ * mit sich.
+ */
+export function montagDieserWoche(heute: Date): Date {
+  const d = new Date(heute)
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return d
+}
+
 export function fsBaseFromWeeks(
   weeks: ReadonlyArray<{ current: boolean; start?: string }>,
   today: Date,
@@ -58,9 +81,8 @@ export function fsBaseFromWeeks(
     return base
   }
   const curIdx = Math.max(0, weeks.findIndex((w) => w.current))
-  const d = new Date(today)
-  d.setHours(12, 0, 0, 0)
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - curIdx * 7) // Montag dieser Woche, dann curIdx Wochen zurück
+  const d = montagDieserWoche(today)
+  d.setDate(d.getDate() - curIdx * 7) // von diesem Montag curIdx Wochen zurück
   return d
 }
 
@@ -147,6 +169,20 @@ export function buildFsWeeks(
  * Zeit/Ort auf die Regelwerte zurück; true (Neu-Ausrichtung beim Laden) behält
  * auch Zeit/Ort, damit wochenspezifische Anpassungen nicht verloren gehen.
  */
+/**
+ * Gleicher Inhalt? Treffpunkt-Instanzen sind flach — ein Feldvergleich genügt.
+ */
+function gleicheInstanzen(a: FsInstance[], b: FsInstance[]): boolean {
+  if (a.length !== b.length) return false
+  return a.every((x, i) => {
+    const y = b[i]
+    if (!y) return false
+    const kx = Object.keys(x)
+    if (kx.length !== Object.keys(y).length) return false
+    return kx.every((k) => x[k as keyof FsInstance] === y[k as keyof FsInstance])
+  })
+}
+
 export function regenFsWeeks(
   base: Date,
   fsWeeks: FsInstance[][],
@@ -163,7 +199,10 @@ export function regenFsWeeks(
     })
     const all = gen.concat(week.filter((o) => o.manual))
     all.sort(fsSort)
-    return all
+    // Ändert eine Regel nichts an dieser Woche, bleibt es bei der alten Liste.
+    // An dieser Referenz erkennt `persist.ts`, was wirklich zu schreiben ist —
+    // sonst sähen nach jedem Tastenanschlag alle 52 Wochen verändert aus.
+    return gleicheInstanzen(all, week) ? week : all
   })
 }
 
@@ -377,7 +416,7 @@ export function fsAutoAssign(
   absences: readonly Absence[] = [],
   base?: Date,
   groups: readonly Group[] = [],
-): { fsWeeks: FsInstance[][]; count: number; newly: string[]; newlyIds: string[] } {
+): { fsWeeks: FsInstance[][]; count: number; newlyIds: string[] } {
   const qualifiziert = persons.filter((p) => isQualified(p, 'treffpunkt'))
   /**
    * Kandidaten für einen Wochentag. Die Abwesenheit wird am echten Tag des
@@ -509,8 +548,8 @@ export function fsAutoAssign(
     newlyIds.push(pick.p.id)
     return { ...inst, leader: pick.name, lpid: pick.p.id }
   })
-  if (newly.length === 0) return { fsWeeks, count: 0, newly: [], newlyIds: [] }
-  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, newly, newlyIds }
+  if (newly.length === 0) return { fsWeeks, count: 0, newlyIds: [] }
+  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, newlyIds }
 }
 
 /** Leiter der Woche `wi` leeren (`onlyGroup` grenzt auf eine Gruppe ein). */
@@ -714,21 +753,41 @@ export function fsWeekConflicts(
  * Unveränderte Wochen behalten ihre Referenz — daran erkennt der Aufrufer,
  * welche er speichern muss.
  */
-export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance[][] {
+/**
+ * Jede Treffpunkt-Instanz durch `fn` schicken — unter Erhalt der Referenzen.
+ *
+ * Vier Umstellungen trugen dasselbe Gerüst mit sich: ein `changed` je Woche,
+ * ein `anyChanged` darüber, und am Ende die Rückgabe der Eingabe, falls
+ * nichts geschah. Nur die Verwandlung selbst war jeweils anders.
+ *
+ * Ob sich etwas geändert hat, sagt die **Identität**: Wer nichts zu ändern
+ * hat, gibt seine Eingabe zurück — das taten die vier Aufrufer ohnehin schon.
+ * Damit steht der Vertrag „unveränderte Wochen behalten ihre Referenz" an
+ * einer Stelle statt an vieren; `persist.ts` entscheidet daran, was zu
+ * schreiben ist.
+ */
+function mapInsts(fsWeeks: FsInstance[][], fn: (inst: FsInstance) => FsInstance): FsInstance[][] {
   let anyChanged = false
   const next = fsWeeks.map((week) => {
     let changed = false
     const insts = week.map((inst) => {
-      if (inst.lpid !== id) return inst
-      changed = true
-      const { lpid: _weg, ...ohne } = inst
-      return ohne
+      const neu = fn(inst)
+      if (neu !== inst) changed = true
+      return neu
     })
     if (!changed) return week
     anyChanged = true
     return insts
   })
   return anyChanged ? next : fsWeeks
+}
+
+export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance[][] {
+  return mapInsts(fsWeeks, (inst) => {
+    if (inst.lpid !== id) return inst
+    const { lpid: _weg, ...ohne } = inst
+    return ohne
+  })
 }
 
 /**
@@ -747,20 +806,10 @@ export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance
  */
 export function fsMigrateInstIds(fsWeeks: FsInstance[][]): FsInstance[][] {
   const ALT = /^\d+\|(.+)$/
-  let anyChanged = false
-  const next = fsWeeks.map((week) => {
-    let changed = false
-    const insts = week.map((inst) => {
-      const treffer = ALT.exec(inst.id)
-      if (!treffer?.[1]) return inst
-      changed = true
-      return { ...inst, id: treffer[1] }
-    })
-    if (!changed) return week
-    anyChanged = true
-    return insts
+  return mapInsts(fsWeeks, (inst) => {
+    const treffer = ALT.exec(inst.id)
+    return treffer?.[1] ? { ...inst, id: treffer[1] } : inst
   })
-  return anyChanged ? next : fsWeeks
 }
 
 /**
@@ -783,35 +832,19 @@ export function fsMigrateLeaderPids(
   fsWeeks: FsInstance[][],
   persons: readonly Person[],
 ): FsInstance[][] {
-  const nachName = new Map<string, string>()
-  const doppelt = new Set<string>()
-  for (const p of persons) {
-    const n = displayName(p)
-    if (nachName.has(n)) doppelt.add(n)
-    nachName.set(n, p.id)
-  }
-  for (const d of doppelt) nachName.delete(d)
+  const nachName = eindeutigeNamen(persons)
   if (nachName.size === 0) return fsWeeks
 
-  let anyChanged = false
-  const next = fsWeeks.map((week) => {
-    let changed = false
-    const insts = week.map((inst) => {
-      // `lext` ist die Ausnahme, für die es das Flag überhaupt gibt: Ohne sie
-      // machte dieser Backfill den Freitext-Leiter bei jedem Laden wieder zu
-      // einer Person — der Fehler wäre nicht nur möglich, sondern selbstheilend
-      // in die falsche Richtung.
-      if (inst.lpid || inst.lext || !inst.leader) return inst
-      const id = nachName.get(inst.leader)
-      if (!id) return inst // Gruppenname, Unbekannter, Dublette
-      changed = true
-      return { ...inst, lpid: id }
-    })
-    if (!changed) return week
-    anyChanged = true
-    return insts
+  return mapInsts(fsWeeks, (inst) => {
+    // `lext` ist die Ausnahme, für die es das Flag überhaupt gibt: Ohne sie
+    // machte dieser Backfill den Freitext-Leiter bei jedem Laden wieder zu
+    // einer Person — der Fehler wäre nicht nur möglich, sondern selbstheilend
+    // in die falsche Richtung.
+    if (inst.lpid || inst.lext || !inst.leader) return inst
+    const id = nachName.get(inst.leader)
+    if (!id) return inst // Gruppenname, Unbekannter, Dublette
+    return { ...inst, lpid: id }
   })
-  return anyChanged ? next : fsWeeks
 }
 
 /**
@@ -839,20 +872,11 @@ export function fsRenameLeader(
   // Ohne alten Namen nichts tun: sonst bekämen offene Plätze (leerer Leiter)
   // den neuen Namen. Ein zugeteilter Treffpunkt trägt immer einen.
   if (!oldName || oldName === newName) return fsWeeks
-  let anyChanged = false
-  const next = fsWeeks.map((week) => {
-    let changed = false
-    const insts = week.map((inst) => {
-      // Freitext bleibt unberührt: Wer außerhalb der Versammlung steht, wird
-      // nicht mitumbenannt, nur weil ein Bruder zufällig so hieß.
-      const meint = inst.lext ? false : inst.lpid ? inst.lpid === id : inst.leader === oldName
-      if (!meint || inst.leader === newName) return inst
-      changed = true
-      return { ...inst, leader: newName }
-    })
-    if (!changed) return week
-    anyChanged = true
-    return insts
+  return mapInsts(fsWeeks, (inst) => {
+    // Freitext bleibt unberührt: Wer außerhalb der Versammlung steht, wird
+    // nicht mitumbenannt, nur weil ein Bruder zufällig so hieß.
+    const meint = inst.lext ? false : inst.lpid ? inst.lpid === id : inst.leader === oldName
+    if (!meint || inst.leader === newName) return inst
+    return { ...inst, leader: newName }
   })
-  return anyChanged ? next : fsWeeks
 }

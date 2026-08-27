@@ -61,9 +61,9 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import fs from 'node:fs'
-import path from 'node:path'
 import { createHash } from 'node:crypto'
+import { argumente, ladeTabellen, personDisplayName } from './gemeinsam.mjs'
+export { argumente, personDisplayName }
 
 /* ===================== Stabile Identität (uuid5) ========================== */
 
@@ -174,11 +174,6 @@ export function dienstZuordnung(services) {
 }
 
 /* ============================= Datum ====================================== */
-
-/** Anzeigename wie in der App (`_shared/planung.ts`). */
-export function personDisplayName(fn, ln, dn) {
-  return (dn && dn.trim()) || `${fn ?? ''} ${ln ?? ''}`.trim()
-}
 
 /** Montag (ISO) der Woche, in der `iso` liegt. NWS-Wochenende (Sa) → dieser Montag. */
 export function mondayOf(iso) {
@@ -527,19 +522,6 @@ export function verteileWoche(data, gebunden, nurLeere, keyMap) {
 
 /* ============================= Ausführung ================================= */
 
-/** Argumente `--name Wert`; `--flagge` → true. */
-export function argumente(argv) {
-  const out = {}
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if (!a.startsWith('--')) continue
-    const next = argv[i + 1]
-    if (next === undefined || next.startsWith('--')) out[a.slice(2)] = true
-    else { out[a.slice(2)] = next; i++ }
-  }
-  return out
-}
-
 const TABELLEN = {
   persons: 'Persons_7.5.json',
   clmAssignments: 'CLMAssignments_7.5.json',
@@ -547,14 +529,6 @@ const TABELLEN = {
   assignments: 'Assignments_7.5.json',
   duties: 'Duties_7.5.json',
   fieldServiceGroups: 'FieldServiceGroups_7.5.json',
-}
-
-function ladeTabellen(dir) {
-  const t = {}
-  for (const [key, datei] of Object.entries(TABELLEN)) {
-    t[key] = JSON.parse(fs.readFileSync(path.join(dir, datei), 'utf8'))
-  }
-  return t
 }
 
 /**
@@ -633,7 +607,7 @@ async function main() {
 
   // 1) Versammlung + App-Personen ZUERST — die NWS→App-Namensauflösung braucht
   //    sie, um Dubletten über die stabile id aufzulösen (siehe unten).
-  const tabellen = ladeTabellen(datenDir)
+  const tabellen = ladeTabellen(datenDir, TABELLEN)
   const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
   if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
   const personen = await rest(`persons?select=id,fn,ln,dn&congregation_id=eq.${cong}`)

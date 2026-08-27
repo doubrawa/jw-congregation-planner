@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildAbsences, istAbwesend, istAbwesendAm, istWocheAbwesend } from './absence'
+import { buildAbsences, istAbwesend, istAbwesendAm } from './absence'
+import { MEETING_TABS } from './helpers'
+
+/** Fehlt jemand in dieser Woche — in mindestens einer Zusammenkunft? */
+const inWocheAbwesend = (set: Parameters<typeof istAbwesend>[0], pid: string, wi: number) =>
+  MEETING_TABS.some((tab) => istAbwesend(set, pid, wi, tab))
 import type { Absence, Week } from './types'
 
 /** Montag der Woche 0 = 7.9.2026; Zusammenkünfte Di 19:00 und So 10:00. */
@@ -31,7 +36,7 @@ describe('Abwesenheiten auf Wochen abbilden', () => {
     const set = buildAbsences([abw({ from: '2026-09-07', to: '2026-09-13' })], wochen(3), BASE, MEETINGS)
     expect(istAbwesend(set, 'p1', 0, 'mid')).toBe(true)
     expect(istAbwesend(set, 'p1', 0, 'we')).toBe(true)
-    expect(istWocheAbwesend(set, 'p1', 1)).toBe(false)
+    expect(inWocheAbwesend(set, 'p1', 1)).toBe(false)
   })
 
   it('sperrt nur die getroffene Zusammenkunft, nicht die ganze Woche', () => {
@@ -43,8 +48,8 @@ describe('Abwesenheiten auf Wochen abbilden', () => {
 
   it('deckt mehrere Wochen ab', () => {
     const set = buildAbsences([abw({ from: '2026-09-07', to: '2026-09-27' })], wochen(5), BASE, MEETINGS)
-    for (const wi of [0, 1, 2]) expect(istWocheAbwesend(set, 'p1', wi)).toBe(true)
-    expect(istWocheAbwesend(set, 'p1', 3)).toBe(false)
+    for (const wi of [0, 1, 2]) expect(inWocheAbwesend(set, 'p1', wi)).toBe(true)
+    expect(inWocheAbwesend(set, 'p1', 3)).toBe(false)
   })
 
   it('nimmt Anfangs- und Endtag mit (einschließlich)', () => {
@@ -65,8 +70,8 @@ describe('Abwesenheiten auf Wochen abbilden', () => {
     // oben steht damit an Index 0 statt an Index 2.
     const spaeter = buildAbsences([eintrag], wochen(3, 2), abDerDrittenWoche, MEETINGS)
     // Dieselbe Kalenderwoche ist jetzt Index 0 — nicht mehr 2.
-    expect(istWocheAbwesend(spaeter, 'p1', 0)).toBe(true)
-    expect(istWocheAbwesend(spaeter, 'p1', 2)).toBe(false)
+    expect(inWocheAbwesend(spaeter, 'p1', 0)).toBe(true)
+    expect(inWocheAbwesend(spaeter, 'p1', 2)).toBe(false)
   })
 
   it('nutzt das ISO-Startdatum der Woche, wenn es eines gibt', () => {

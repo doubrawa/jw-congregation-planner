@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { useAppDispatch } from '../app/context'
 import { S89Karte } from './S89Karte'
 import { useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
+import { useEscape } from './useEscape'
 import { useDialogFocus } from './useDialogFocus'
 import { useSwipeDown } from './useSwipeDown'
 import type { S89Payload } from '../data/types'
@@ -22,13 +23,7 @@ export function S89Sheet({ payload }: { payload: S89Payload }) {
   useBackDismiss(true, close)
   useSwipeDown(dlg, close)
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') dispatch({ type: 'closeS89' })
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [dispatch])
+  useEscape(() => dispatch({ type: 'closeS89' }))
 
   return (
     <>

@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { MEETING_TABS } from '../data/helpers'
 import { meetingDayOffsets, meetingOffset } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
@@ -57,7 +58,7 @@ export function MeetingTabs({ tab, onChange, className, showFs = false, showEdit
   const locale = LOCALES[state.lang]
   // [Schlüssel, sichtbare Beschriftung, vorgelesene Beschriftung]
   const tabs: ReadonlyArray<[MeetingTab, string, string]> = [
-    ...(['mid', 'we'] as const).map((key): [MeetingTab, string, string] => {
+    ...MEETING_TABS.map((key): [MeetingTab, string, string] => {
       // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus.
       const versatz = week ? meetingOffset(week, key, state.congregation.meetings) : offsets[key]
       const day = weekdayName(versatz, locale)

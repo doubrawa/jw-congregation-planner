@@ -41,6 +41,7 @@ import {
   istAusgefallenFuer,
   meetingDayOffsets,
   personDisplayName,
+  taskDateText,
   versatzMitAbweichung,
 } from '../_shared/planung.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
@@ -56,6 +57,15 @@ const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
+/**
+ * Wie viele Push-Zustellungen gleichzeitig unterwegs sein duerfen.
+ *
+ * Nicht unbegrenzt: die Push-Dienste drosseln, und ein ganzer Schwung offener
+ * Verbindungen brachte der Edge Function nichts als Fehler. Gebuendelt zu
+ * zehnt bleibt die Laufzeit im Rahmen, ohne dass jemand gedrosselt wird.
+ */
+const PUSH_PARALLEL = 10
+
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -194,10 +204,20 @@ function meetingISO(startISO: string | undefined, offset: number): string | null
   return new Date(ms + offset * 864e5).toISOString().slice(0, 10)
 }
 
-/** Fehlt die Person an diesem Tag? Ohne Tag (Vorlagenwoche) nie. */
-function abwesendAm(absences: Absence[], personId: string, tagISO: string | null): boolean {
-  if (!tagISO) return false
-  return absences.some((a) => a.person_id === personId && a.from_date <= tagISO && tagISO <= a.to_date)
+/**
+ * Wer an diesem Tag fehlt — einmal je Anfrage, nicht je Person.
+ *
+ * Abwesenheiten sammeln sich unbegrenzt an; die Frage gilt aber genau einem
+ * Tag. Ein Durchgang baut die Menge, danach ist die Auskunft ein Nachschlagen.
+ * Ohne Tag (Vorlagenwoche) fehlt niemand.
+ */
+function abwesendeAm(absences: Absence[], tagISO: string | null): ReadonlySet<string> {
+  if (!tagISO) return new Set()
+  const out = new Set<string>()
+  for (const a of absences) {
+    if (a.from_date <= tagISO && tagISO <= a.to_date) out.add(a.person_id)
+  }
+  return out
 }
 interface Member {
   user_id: string
@@ -234,10 +254,6 @@ function parseKey(
   return { woche, tab: p[1], svc: p[3], pos: Number(p[4]) }
 }
 
-function meetingDate(meeting: Meeting | undefined): string {
-  return (meeting?.date ?? '').split(' · ').slice(0, 2).join(' · ')
-}
-
 async function pushTo(
   subs: Sub[],
   titel: (lang: string | null) => string,
@@ -246,23 +262,29 @@ async function pushTo(
 ): Promise<void> {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
-  for (const s of subs) {
-    // Titel je Geraet: die Sprache haengt am Abo, nicht am Nutzer.
-    const payload = JSON.stringify({ title: titel(s.lang), body, url })
-    try {
-      await webpush.sendNotification(
-        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        payload,
-        { TTL: 24 * 3600 },
-      )
-    } catch (err) {
-      const status = (err as { statusCode?: number }).statusCode
-      if (status === 404 || status === 410) {
-        await restSend('DELETE', `push_subscriptions?endpoint=eq.${wert(s.endpoint)}`)
-      } else {
-        console.error(`web-push ${status}: ${(err as Error).message}`)
-      }
-    }
+  // Der Anfragende wartet auf diesen Versand. Die Zustellungen haengen nicht
+  // voneinander ab, also laufen sie gebuendelt statt nacheinander.
+  for (let i = 0; i < subs.length; i += PUSH_PARALLEL) {
+    await Promise.all(
+      subs.slice(i, i + PUSH_PARALLEL).map(async (s) => {
+        // Titel je Geraet: die Sprache haengt am Abo, nicht am Nutzer.
+        const payload = JSON.stringify({ title: titel(s.lang), body, url })
+        try {
+          await webpush.sendNotification(
+            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+            payload,
+            { TTL: 24 * 3600 },
+          )
+        } catch (err) {
+          const status = (err as { statusCode?: number }).statusCode
+          if (status === 404 || status === 410) {
+            await restSend('DELETE', `push_subscriptions?endpoint=eq.${wert(s.endpoint)}`)
+          } else {
+            console.error(`web-push ${status}: ${(err as Error).message}`)
+          }
+        }
+      }),
+    )
   }
 }
 
@@ -381,7 +403,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const svcName = services.find((s) => s.key === parts.svc)?.name ?? parts.svc
-    const date = meetingDate(meeting)
+    const date = taskDateText(meeting?.date)
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
     const tagISO = meetingISO(
@@ -422,10 +444,9 @@ Deno.serve(async (req: Request) => {
       }
 
       const declinedBy = slot.name ?? ''
+      const abwesende = abwesendeAm(absences, tagISO)
       const peers = persons
-        .filter(
-          (p) => p.priv?.[qualKey] && !abwesendAm(absences, p.id, tagISO) && displayName(p) !== declinedBy,
-        )
+        .filter((p) => p.priv?.[qualKey] && !abwesende.has(p.id) && displayName(p) !== declinedBy)
         .map((p) => userByPerson.get(p.id))
         .filter((u): u is string => Boolean(u) && u !== userId)
       await notifyUsers(

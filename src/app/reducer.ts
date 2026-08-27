@@ -9,7 +9,7 @@ import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
-import { displayName, linkFamily, mtab, overseerGroup, unlinkFamily } from '../data/helpers'
+import { displayName, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import {
@@ -379,7 +379,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Personen.
       const plannerOnly: Screen[] = ['planen', 'personen', 'einstellungen']
       const fsOverseer =
-        !state.planner && overseerGroup(state.groups, state.personId) !== null
+        aufseherGruppe(state.planner, state.groups, state.personId) !== null
       const blocked =
         !state.planner &&
         plannerOnly.includes(action.screen) &&

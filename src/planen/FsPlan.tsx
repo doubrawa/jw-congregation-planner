@@ -8,7 +8,6 @@ import type { FsInstance } from '../data/types'
 import { SlotChip } from './SlotChip'
 import { machBetrifft } from './useKonflikte'
 
-const TIME_OPTIONS = FS_TIME_OPTIONS
 
 /**
  * Automatisch zuteilen / Leeren der Treffpunkt-Leiter (wie beim Meeting-Panel,
@@ -173,7 +172,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                   aria-label={title(inst)}
                   onChange={(e) => dispatch({ type: 'fsInstUpdate', wi, id: inst.id, patch: { time: e.target.value } })}
                 >
-                  {TIME_OPTIONS.map((tm) => (
+                  {FS_TIME_OPTIONS.map((tm) => (
                     <option key={tm} value={tm}>
                       {tm}
                     </option>
@@ -238,7 +237,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
             ))}
           </select>
           <select className="fs-select" value={time} aria-label={t.a11yTime} onChange={(e) => setTime(e.target.value)}>
-            {TIME_OPTIONS.map((tm) => (
+            {FS_TIME_OPTIONS.map((tm) => (
               <option key={tm} value={tm}>
                 {tm}
               </option>

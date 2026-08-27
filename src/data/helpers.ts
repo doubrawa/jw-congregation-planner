@@ -232,14 +232,6 @@ export function istBruderBereichBeiSchwester(person: Person, priv: string): bool
   return Boolean(person.female) && BRUDER_BEREICHE.has(priv as QualificationKey)
 }
 
-/** Die gesetzten Brüder-Bereiche einer Schwester — leer bei Brüdern. */
-export function bruderBereicheEinerSchwester(person: Person): QualificationKey[] {
-  if (!person.female) return []
-  return [...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].filter(
-    (key) => BRUDER_BEREICHE.has(key) && person.priv[key],
-  )
-}
-
 /**
  * Darf `cand` als Gesprächspartner zu `lead` eingeteilt werden? Die Anweisungen
  * verlangen dasselbe Geschlecht **oder** Familienangehörige — beides prüft
@@ -365,6 +357,78 @@ export function neueItemId(): string {
  * die Zusammenkunft daraus geholt.
  */
 export const MEETING_TABS: readonly MeetingKey[] = ['mid', 'we']
+
+/**
+ * Nur die Woche `wi` tief kopieren — die übrigen behalten ihre Referenz.
+ *
+ * Bis hierher klonte jede einzelne Änderung (ein Name, fünf Minuten, ein Lied)
+ * den **ganzen** geladenen Jahrgang: bis zu 52 Wochen, jede mitsamt ihren
+ * Sprachvarianten (`Week.alt`). Bezahlt wurde das bei jedem Tippen im
+ * Zuteilungs-Blatt.
+ *
+ * Der zweite Gewinn wiegt schwerer als der erste: Weil die unberührten Wochen
+ * ihre Referenz behalten, erkennt `persist.ts` an genau dieser Referenz, welche
+ * Woche wirklich zu schreiben ist — vorher sahen alle 52 verändert aus.
+ *
+ * `null`, wenn es die Woche nicht gibt; der Aufrufer gibt dann seine Eingabe
+ * unverändert zurück. Das Gegenstück für die Treffpunkte heißt `patchWeek`
+ * (`fs.ts`) und tut dasselbe.
+ */
+/**
+ * Die Gruppe, die jemand als **Gruppenaufseher** betreut — `null`, wenn keine.
+ *
+ * Ein Planer ist nie Gruppenaufseher: er plant ohnehin alles, und die
+ * Einschränkung auf eine Gruppe wäre dann falsch. Genau diese Verbindung stand
+ * an vier Stellen ausgeschrieben (Reducer, Navigation, Einstellungen, Planen) —
+ * sie entscheidet, welche Ansichten es gibt und was darin zu sehen ist. Wer sie
+ * an einer Stelle ändert und die anderen übersieht, zeigt einen Bildschirm an,
+ * den der Reducer gleich wieder abweist.
+ */
+export function aufseherGruppe(
+  planner: boolean,
+  groups: readonly Group[],
+  personId: string | null,
+): string | null {
+  return planner ? null : overseerGroup(groups, personId)
+}
+
+/**
+ * Anzeigename → Personen-Id, **ohne** die mehrdeutigen.
+ *
+ * Tragen zwei Personen denselben Anzeigenamen, wird der Name gar nicht erst
+ * aufgenommen: Aus ihm ist nicht zu erkennen, wer gemeint ist, und eine
+ * geratene Zuordnung schriebe die Aufgabe der falschen Person zu. Lieber kein
+ * Fremdschlüssel als ein falscher — der Name bleibt dann Text, und der Planer
+ * entscheidet.
+ *
+ * Diese Regel stand in drei Fassungen nebeneinander (`migrateAssignmentPids`,
+ * `fsMigrateLeaderPids` und, auf den Kurznamen bezogen,
+ * `migrateAssignmentNames`). Sie entscheidet, wem eine Aufgabe gehört; eine
+ * davon zu ändern und die anderen zu übersehen, hieße zwei Antworten auf
+ * dieselbe Frage.
+ */
+export function eindeutigeNamen(
+  persons: readonly Person[],
+  name: (p: Person) => string = displayName,
+): Map<string, string> {
+  const nachName = new Map<string, string>()
+  const doppelt = new Set<string>()
+  for (const p of persons) {
+    const n = name(p)
+    if (nachName.has(n)) doppelt.add(n)
+    nachName.set(n, p.id)
+  }
+  for (const d of doppelt) nachName.delete(d) // mehrdeutig → nicht zuordnen
+  return nachName
+}
+
+export function klonWoche(weeks: Week[], wi: number): Week[] | null {
+  const woche = weeks[wi]
+  if (!woche) return null
+  const next = weeks.slice()
+  next[wi] = structuredClone(woche)
+  return next
+}
 
 /**
  * Abweichung dieser einen Zusammenkunft, falls es eine gibt.

@@ -144,9 +144,13 @@ describe('Treffpunkte', () => {
     expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[1]?.start, next.fsWeeks[1])
   })
 
-  it('fsRuleAdd speichert Grundplan + alle Wochen', () => {
+  // Gebündelt: der Ort ist ein Freitextfeld, und ohne Bündelung ging je
+  // Tastenanschlag der Grundplan samt jeder erzeugten Woche an die Datenbank.
+  it('fsRuleAdd speichert Grundplan + alle Wochen (gebündelt)', () => {
     const next = st()
     persist(st(), next, { type: 'fsRuleAdd', grp: '' })
+    expect(data.saveFsRules).not.toHaveBeenCalled() // erst nach der Bündelung
+    vi.advanceTimersByTime(600)
     expect(data.saveFsRules).toHaveBeenCalledWith('c1', FS_BASE.toISOString().slice(0, 10), next.fsRules)
     expect((data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.length).toBe(next.fsWeeks.length)
   })
@@ -161,8 +165,35 @@ describe('Treffpunkte', () => {
   it('fsRuleAdd schreibt jede Woche unter ihre Kennung', () => {
     const next = st()
     persist(st(), next, { type: 'fsRuleAdd', grp: '' })
+    vi.advanceTimersByTime(600)
     const kennungen = (data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1])
     expect(kennungen).toEqual(next.weeks.map((w) => w.start))
+  })
+
+  /*
+    Der Ort einer Regel ist ein Freitextfeld: `fsRuleUpdate` kam je
+    Tastenanschlag. Ungebündelt hieß das ein Grundplan-Upsert **plus** ein
+    Upsert je materialisierter Woche — für einen fünfzehn Zeichen langen
+    Ortsnamen mehrere Hundert Anfragen, während der Benutzer noch tippt.
+  */
+  it('mehrere Tastenanschläge werden zu einem Schreibvorgang gebündelt', () => {
+    const next = st()
+    for (const ort of ['S', 'Sa', 'Saa', 'Saal']) {
+      persist(st(), next, { type: 'fsRuleUpdate', id: 'r1', patch: { place: ort } })
+    }
+    expect(data.saveFsRules).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(600)
+    expect(data.saveFsRules).toHaveBeenCalledTimes(1)
+  })
+
+  it('unveränderte Treffpunkt-Wochen werden nicht geschrieben', () => {
+    // Gleiche Referenz auf beiden Seiten = nichts hat sich geändert. Vorher
+    // ging trotzdem jede der Wochen einzeln an die Datenbank.
+    const gemeinsam = st().fsWeeks
+    const prev = st({ fsWeeks: gemeinsam })
+    persist(prev, st({ fsWeeks: gemeinsam }), { type: 'fsRuleUpdate', id: 'r1', patch: { place: 'X' } })
+    vi.advanceTimersByTime(600)
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
 
   it('ohne die Woche selbst wird ihr Treffpunkt-Blatt nicht geschrieben', () => {
@@ -170,6 +201,7 @@ describe('Treffpunkte', () => {
     // — und ein Schreibversuch träfe entweder nichts oder das Falsche.
     const next = st({ weeks: [] })
     persist(st({ weeks: [] }), next, { type: 'fsRuleAdd', grp: '' })
+    vi.advanceTimersByTime(600)
     expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
 })
