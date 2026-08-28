@@ -37,10 +37,18 @@ export function CongregationPanel() {
           <label className="field-label" htmlFor={`cong-${key}`}>
             {label}
           </label>
+          {/*
+            Name und Anschrift des Königreichssaals gehören der Versammlung,
+            nicht der App — sie stehen in ihrer eigenen Schrift und Richtung
+            (`dir="auto"`, wie die Personenfelder und die Freitexte des
+            Planers). Eine Hausnummer in einer arabischen Oberfläche liefe sonst
+            an die falsche Seite der Straße.
+          */}
           <input
             id={`cong-${key}`}
             className="field-input"
             type="text"
+            dir="auto"
             value={state.congregation[key]}
             onChange={(e) => dispatch({ type: 'updateCongregation', patch: { [key]: e.target.value } })}
           />

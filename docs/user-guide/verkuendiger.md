@@ -241,7 +241,10 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
   bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
   Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.
 - **Sprache** – die Anzeigesprache der App. Ist das Programm in einer weiteren
-  Sprache verfügbar, werden Programmpunkte automatisch mit übersetzt.
+  Sprache verfügbar, werden Programmpunkte automatisch mit übersetzt. Bei
+  Arabisch, Hebräisch, Persisch und Urdu läuft die ganze Oberfläche von rechts
+  nach links – auch das Blättern zwischen den Wochen: Dort liegt die **vorige**
+  Woche rechts.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
   ausschalten (siehe [Abschnitt 7](#7-app-installieren--erinnerungen)).
 - **Abmelden** – meldet dich auf diesem Gerät ab.

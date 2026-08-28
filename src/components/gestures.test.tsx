@@ -461,6 +461,80 @@ describe('useSwipeWeek', () => {
     r.unmount()
     expect(vi.getTimerCount()).toBe(0)
   })
+
+  /**
+   * **Von rechts nach links gelesen dreht sich der Streifen mit.**
+   *
+   * Der Wochenstreifen ist eine Zeitachse, und die läuft in die Leserichtung.
+   * Auf Arabisch, Hebräisch, Persisch und Urdu liegt die **vorige** Woche
+   * rechts — dorthin zieht der Leser, um zurückzublättern.
+   *
+   * Vorher stimmte beides nicht zusammen: Das CSS setzte die Nachbarn mit
+   * festem `right`/`left`, und die Geste rechnete „rechts = zurück". Ein
+   * arabischer Planer zog also nach rechts (für ihn: in die Vergangenheit) und
+   * landete in der **nächsten** Woche — jedes Mal, in beide Richtungen falsch.
+   *
+   * Gemessen wird an `document.documentElement.dir`, weil der Hook genau dort
+   * nachsieht; im laufenden Programm setzt `store.tsx` das Attribut, und
+   * `index.html` tut es schon vor dem ersten Paint.
+   */
+  describe('Rechts-nach-links', () => {
+    beforeEach(() => {
+      document.documentElement.dir = 'rtl'
+    })
+    afterEach(() => {
+      document.documentElement.removeAttribute('dir')
+    })
+
+    it('nach rechts wischen blättert vorwärts, nach links zurück', () => {
+      const a = setup()
+      swipe(a.el, [200, 300], [300, 300]) // nach rechts
+      fertig()
+      expect(a.onNext).toHaveBeenCalledTimes(1)
+      expect(a.onPrev).not.toHaveBeenCalled()
+
+      const b = setup()
+      swipe(b.el, [200, 300], [100, 300]) // nach links
+      fertig()
+      expect(b.onPrev).toHaveBeenCalledTimes(1)
+      expect(b.onNext).not.toHaveBeenCalled()
+    })
+
+    it('der Streifen wandert in die Richtung, in die gezogen wurde', () => {
+      // Der Versatz folgt dem Finger — das ändert sich durch die Leserichtung
+      // nicht. Was sich ändert, ist, welche Woche danach in der Mitte steht.
+      const { el, onPrev } = setup()
+      swipe(el, [200, 300], [80, 300]) // 120 px nach links
+      expect(el.style.getPropertyValue('--week-shift')).toBe('-400px')
+      fertig()
+      expect(onPrev).toHaveBeenCalledTimes(1)
+      expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
+    })
+
+    it('an der ersten Woche gibt es nach links nur zäh nach', () => {
+      // Die Grenze dreht sich mit: „keine vorige Woche" bremst jetzt den Wisch
+      // nach **links**, nicht mehr den nach rechts.
+      const { el, onPrev } = setup({ canPrev: false })
+      swipe(el, [200, 300], [100, 300])
+      fertig()
+      expect(onPrev).not.toHaveBeenCalled()
+
+      const b = setup({ canNext: false })
+      swipe(b.el, [200, 300], [300, 300])
+      fertig()
+      expect(b.onNext).not.toHaveBeenCalled()
+    })
+
+    it('auf Deutsch bleibt es beim Gewohnten — die Umstellung wirkt nur in RTL', () => {
+      // Gegenprobe im selben Block: Ohne sie ließe sich nicht unterscheiden, ob
+      // die Geste die Leserichtung liest oder schlicht vertauscht wurde.
+      document.documentElement.dir = 'ltr'
+      const { el, onNext } = setup()
+      swipe(el, [200, 300], [100, 300]) // nach links
+      fertig()
+      expect(onNext).toHaveBeenCalledTimes(1)
+    })
+  })
 })
 
 /* ---- Sheet nach unten wischen -------------------------------------------- */

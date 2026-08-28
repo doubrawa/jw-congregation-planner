@@ -52,7 +52,7 @@ export function ProfilScreen() {
         <h2 className="panel-label">{t.profil}</h2>
         <div className="kv-row">
           <span className="kv-key">{t.nameLbl}</span>
-          <span className="kv-val">{me ? fullName(me) : ''}</span>
+          <span className="kv-val" dir="auto">{me ? fullName(me) : ''}</span>
         </div>
         {myEmail && (
           <div className="kv-row">

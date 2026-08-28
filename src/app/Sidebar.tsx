@@ -74,7 +74,7 @@ export function SidebarFooter({
       <div className="sidebar-profile">
         <div className="avatar avatar--ink avatar--32">{me ? initials(me) : '–'}</div>
         <div>
-          <div className="sidebar-profile-name">{me ? fullName(me) : ''}</div>
+          <div className="sidebar-profile-name" dir="auto">{me ? fullName(me) : ''}</div>
           <div className="sidebar-profile-role">{roleLabel}</div>
         </div>
       </div>

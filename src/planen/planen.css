@@ -377,7 +377,7 @@
 }
 
 .slot-status {
-  margin-left: 5px;
+  margin-inline-start: 5px;
   color: var(--pet);
 }
 
@@ -815,7 +815,7 @@
   gap: 8px;
   align-items: center;
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: 10px 0;
   border-bottom: 1px solid var(--line2);
 }

@@ -55,12 +55,22 @@ describe('Wochen-Streifen: Klassen und Regeln passen zusammen', () => {
     expect(ohneKlasse).toEqual([])
   })
 
-  it('beide Nachbarn bekommen einen waagerechten Versatz', () => {
-    // Der Kern der Sache: die Regeln dürfen nicht leer sein. `right: 100%`
-    // schiebt die vorige Woche nach links hinaus, `left: 100%` die nächste
-    // nach rechts.
-    expect(css).toMatch(/\.week-page--vor\s*\{[^}]*right:\s*100%/)
-    expect(css).toMatch(/\.week-page--nach\s*\{[^}]*left:\s*100%/)
+  it('beide Nachbarn bekommen einen waagerechten Versatz — in Leserichtung', () => {
+    /*
+      Der Kern der Sache: die Regeln dürfen nicht leer sein. Der Versatz ist
+      **logisch** angegeben, nicht physisch: `inset-inline-end` schiebt die
+      vorige Woche auf die Seite, von der der Leser kommt — links auf Deutsch,
+      rechts auf Arabisch —, `inset-inline-start` die nächste auf die andere.
+
+      Mit `right`/`left` lagen die Nachbarn in den vier
+      Rechts-nach-links-Sprachen vertauscht: Der Leser wischte in die Richtung,
+      in der für ihn die Vergangenheit liegt, und bekam die nächste Woche. Die
+      Geste dreht sich mit (`useSwipeWeek`, `vorigeSeite`).
+    */
+    expect(css).toMatch(/\.week-page--vor\s*\{[^}]*inset-inline-end:\s*100%/)
+    expect(css).toMatch(/\.week-page--nach\s*\{[^}]*inset-inline-start:\s*100%/)
+    // Und keine physische Angabe daneben, die sie wieder festnagelt.
+    expect(css).not.toMatch(/\.week-page--(vor|nach)\s*\{[^}]*\b(left|right):/)
   })
 
   it('der Klassenname steht ausgeschrieben im Quelltext, nicht zusammengesetzt', () => {

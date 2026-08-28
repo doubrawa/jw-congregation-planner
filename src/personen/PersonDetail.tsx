@@ -78,7 +78,7 @@ export function PersonDetail({ person }: { person: Person }) {
       <div className="pers-detail-head">
         <span className="avatar avatar--tint avatar--54">{initials(person)}</span>
         <div>
-          <h1 className="pers-detail-name">{personLabel(person)}</h1>
+          <h1 className="pers-detail-name" dir="auto">{personLabel(person)}</h1>
           <div className="pers-detail-sub">
             {t[ROLE_KEY[person.role]]} · {fill(t.congLabel, { name: state.congregation.name })}
           </div>
@@ -92,10 +92,25 @@ export function PersonDetail({ person }: { person: Person }) {
             <label className="field-label" htmlFor={`pers-${key}`}>
               {label}
             </label>
+            {/*
+              `dir="auto"` statt der Richtung der Oberfläche: Was hier steht,
+              gehört einer Person, nicht der App. Ein arabischer Name soll von
+              rechts nach links stehen, ein lateinischer von links nach rechts —
+              und eine **Telefonnummer** immer von links nach rechts.
+
+              Der letzte Fall ist der, der wirklich falsch aussah: In einer
+              rechts-nach-links-Oberfläche zerlegt der Bidi-Algorithmus
+              „+49 159 774 21 08" an den Leerzeichen und dreht die Blöcke um —
+              angezeigt stand „08 21 774 159 49+". Keine falsche Zeichenkette,
+              aber eine falsche Nummer. `auto` nimmt das erste Zeichen mit
+              starker Richtung; die Nummer hat keines und läuft deshalb links
+              nach rechts.
+            */}
             <input
               id={`pers-${key}`}
               className="field-input"
               type="text"
+              dir="auto"
               value={person[key] ?? ''}
               onChange={(e) => update({ [key]: e.target.value })}
             />

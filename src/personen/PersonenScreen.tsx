@@ -223,7 +223,7 @@ function PersonList() {
           >
             <span className="avatar avatar--tint avatar--40">{initials(person)}</span>
             <span>
-              <span className="pers-name">{listName(person)}</span>
+              <span className="pers-name" dir="auto">{listName(person)}</span>
               <span className="pers-sub">
                 {t[ROLE_KEY[person.role]]} · {fill(t.aufgabenbereicheN, { n: bereicheCount(person) })}
               </span>

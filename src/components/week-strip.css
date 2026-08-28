@@ -44,12 +44,19 @@
  * die Klassennamen im TSX zusammengesetzt waren und eine Textsuche sie nicht
  * fand. Sie stehen dort jetzt ausgeschrieben (WeekStrip.tsx, `SEITE`), und ein
  * Test hält beide Seiten zusammen.
+ *
+ * **Logisch, nicht physisch** (`inset-inline-*` statt `right`/`left`): Der
+ * Streifen ist eine Zeitachse, und die läuft in die Leserichtung. Auf Arabisch,
+ * Hebräisch, Persisch und Urdu liegt die **vorige** Woche rechts und die
+ * nächste links — mit festem `right: 100%` lag sie dort weiter links, also auf
+ * der Seite, von der der Leser die Zukunft erwartet. Der Wisch dreht sich
+ * entsprechend mit (`useSwipeWeek`).
  */
 .week-page--vor {
-  right: 100%;
+  inset-inline-end: 100%;
 }
 
 .week-page--nach {
-  left: 100%;
+  inset-inline-start: 100%;
 }
 

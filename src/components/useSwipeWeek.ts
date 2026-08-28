@@ -125,12 +125,32 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     }
 
     /**
+     * **Wohin die vorige Woche gehört: +1 nach rechts, −1 nach links.**
+     *
+     * Der Streifen ist eine Zeitachse, und die läuft in die Leserichtung: Auf
+     * Deutsch liegt die vorige Woche links, auf Arabisch, Hebräisch, Persisch
+     * und Urdu rechts (`week-strip.css` setzt beide Nachbarn seit dieser
+     * Änderung über `inset-inline-*`).
+     *
+     * Damit dreht sich auch die Geste um. Ohne das war beides gegenläufig: Der
+     * Leser zog nach rechts — dorthin, wo für ihn die Vergangenheit liegt — und
+     * bekam die **nächste** Woche.
+     *
+     * Gelesen wird am `<html>`-Element, nicht am Zustand: Dort steht die
+     * Richtung ohnehin (store.tsx setzt sie, `index.html` schon vor dem ersten
+     * Paint), und dieser Hook kennt den Zustand nicht. Bei jeder Geste neu
+     * gefragt — die Sprache lässt sich im laufenden Betrieb umstellen.
+     */
+    const vorigeSeite = (): 1 | -1 =>
+      document.documentElement.dir === 'rtl' ? -1 : 1
+
+    /**
      * Blättern: den Streifen um genau eine Wochenbreite weiterschieben.
      *
-     * `richtung` -1 = nach links (nächste Woche), +1 = nach rechts; daraus
-     * ergibt sich auch, welcher Rückruf blättert. Die Nachbarwochen sind
-     * bereits gezeichnet (WeekStrip), es gibt also nichts einzublenden — nur
-     * zu verschieben.
+     * Das Ziel ist **fachlich** benannt (`prev`/`next`), nicht als Richtung —
+     * welche Seite das ist, entscheidet die Leserichtung. Die Nachbarwochen
+     * sind bereits gezeichnet (WeekStrip), es gibt also nichts einzublenden —
+     * nur zu verschieben.
      *
      * Am Ende der Bewegung steht die Nachbarwoche dort, wo die mittlere hin
      * gehört. Der Wochenwechsel macht sie zur mittleren, und der Versatz geht
@@ -138,8 +158,9 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
      * dazwischen nichts gezeichnet wird. `flushSync`, weil ein späteres
      * Rendern genau dieses eine Bild kosten würde.
      */
-    const slide = (richtung: -1 | 1) => {
+    const slide = (ziel: 'prev' | 'next') => {
       laeuft = true
+      const richtung = ziel === 'prev' ? vorigeSeite() : -vorigeSeite()
       /*
        * Verschoben wird um die Breite des BILDSCHIRMS, nicht des Fensters. Die
        * App-Spalte ist auf 430 px (mobil) bzw. 660 px begrenzt und sitzt
@@ -147,13 +168,13 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
        * Rückfall auf die Fensterbreite nur, wenn keine Breite messbar ist.
        */
       const weg = el.getBoundingClientRect().width || window.innerWidth
-      gestenLog('BLÄTTERN', { richtung, weg: Math.round(weg) })
+      gestenLog('BLÄTTERN', { ziel, richtung, weg: Math.round(weg) })
 
       setTransition(SLIDE_MS)
       setShift(richtung * weg)
       spaeter(() => {
         setTransition(null)
-        flushSync(richtung === 1 ? o.current.onPrev : o.current.onNext)
+        flushSync(ziel === 'prev' ? o.current.onPrev : o.current.onNext)
         setShift(0)
         laeuft = false
       }, SLIDE_MS)
@@ -219,7 +240,10 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       // 1:1 mitschieben — der Inhalt wandert ja wirklich hinaus. Nur am
       // Anfang/Ende zäh mitgeben: dort federt es gleich wieder zurück, und
       // genau das soll „hier ist Schluss" heißen.
-      const blocked = (dx > 0 && !o.current.canPrev) || (dx < 0 && !o.current.canNext)
+      // „Zur vorigen Woche gezogen" — welche Seite das ist, sagt die
+      // Leserichtung (siehe `vorigeSeite`).
+      const zurueck = dx * vorigeSeite()
+      const blocked = (zurueck > 0 && !o.current.canPrev) || (zurueck < 0 && !o.current.canNext)
       setShift(blocked ? dx * RUBBER : dx)
     }
 
@@ -253,10 +277,12 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
         canNext: o.current.canNext,
       })
       if (warWaagerecht && Math.abs(moved) >= COMMIT_PX) {
-        // Nach rechts gezogen (moved > 0) heißt: die vorige Woche liegt links
-        // — die alte wandert also nach rechts hinaus.
-        if (moved > 0 && o.current.canPrev) return slide(1)
-        if (moved < 0 && o.current.canNext) return slide(-1)
+        // Zur Seite der vorigen Woche gezogen heißt: zurückblättern — die alte
+        // Woche wandert dorthin hinaus. Auf Deutsch ist das rechts, auf
+        // Arabisch links (`vorigeSeite`).
+        const zurueck = moved * vorigeSeite()
+        if (zurueck > 0 && o.current.canPrev) return slide('prev')
+        if (zurueck < 0 && o.current.canNext) return slide('next')
       }
       // Nur zurückfedern, wenn überhaupt etwas verschoben war — ein bloßes
       // Antippen soll keine Animation und keinen Zeitgeber auslösen.

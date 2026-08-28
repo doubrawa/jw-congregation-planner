@@ -130,7 +130,7 @@
 }
 
 .prog-names {
-  text-align: right;
+  text-align: end;
   min-width: 0;
   /* Letzte Sicherung: ein einzelner sehr langer Name bricht um, statt die
      Spalte aufzublähen. */
@@ -211,7 +211,7 @@
 
 .fs-leader {
   flex: none;
-  text-align: right;
+  text-align: end;
 }
 
 .fs-leader-name {

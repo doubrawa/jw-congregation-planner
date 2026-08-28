@@ -166,7 +166,7 @@
     top: 0;
     height: 100vh;
     background: var(--bg);
-    border-right: 1px solid var(--line);
+    border-inline-end: 1px solid var(--line);
     padding: 26px 16px 22px;
   }
 }
@@ -205,7 +205,7 @@
 .sidebar-nav-item {
   display: block;
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: 10px 12px;
   border-radius: 10px;
   background: transparent;
@@ -248,7 +248,7 @@
 }
 
 .sidebar-logout {
-  text-align: left;
+  text-align: start;
   font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--wein);

@@ -260,7 +260,7 @@
   justify-content: center;
   color: var(--wein);
   font-size: calc(11px * var(--fs));
-  margin-left: 4px;
+  margin-inline-start: 4px;
 }
 
 .svc-add-row {
@@ -328,7 +328,7 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: 12px 0;
 }
 

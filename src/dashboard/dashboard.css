@@ -54,7 +54,7 @@
 .dash-hero-open {
   display: block;
   width: 100%;
-  text-align: left;
+  text-align: start;
 }
 
 .dash-hero-open:hover .dash-hero-title {
@@ -198,7 +198,7 @@
   min-width: 0;
   border-radius: 16px;
   padding: 13px 14px;
-  text-align: left;
+  text-align: start;
 }
 
 .dash-tile--acc {
@@ -240,7 +240,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  text-align: left;
+  text-align: start;
   background: var(--tPet);
   border-radius: 14px;
   padding: 12px 14px;

@@ -125,10 +125,16 @@ export function AbsencePanel({
             <label className="field-label" htmlFor={`abs-reason-${personId ?? 'ich'}`}>
               {t.grundOpt}
             </label>
+            {/*
+              Der Grund sind die Worte des Eintragenden — sie tragen ihre eigene
+              Schreibrichtung, nicht die der Oberfläche (`dir="auto"`, wie die
+              Personenfelder und die Freitexte des Planers).
+            */}
             <input
               id={`abs-reason-${personId ?? 'ich'}`}
               className="field-input"
               type="text"
+              dir="auto"
               placeholder={t.grundPh}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -147,7 +153,7 @@ export function AbsencePanel({
             <div className="abs-range">
               {fmtDate(absence.from)} – {fmtDate(absence.to)}
             </div>
-            <div className="abs-reason-text">{absence.reason || t.ohneAngabe}</div>
+            <div className="abs-reason-text" dir="auto">{absence.reason || t.ohneAngabe}</div>
           </div>
           {darfBearbeiten && (
             <button

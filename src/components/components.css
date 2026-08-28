@@ -87,6 +87,14 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/*
+ * **Kein `[dir='rtl'] .chev` hier.** Die richtungsabhängigen Pfeile werden
+ * bereits gespiegelt, und zwar dort, wo sie sitzen: `.week-arrow` und
+ * `.pers-back-chev` in `app/rtl.css`, `.dp-nav` in `datepicker.css`. Eine
+ * zusätzliche Regel auf `.chev` kippte sie ein **zweites** Mal — der Knopf
+ * „vorige Woche" zeigte dann wieder nach links. Nachgemessen am 28.8.2026 im
+ * Vergleich zweier Aufnahmen mit und ohne die Regel.
+ */
 
 /* ---- Wochen-Navigation (Programm + Planen) ------------------------------ */
 

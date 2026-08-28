@@ -19,7 +19,7 @@
 .auf-open {
   display: block;
   width: 100%;
-  text-align: left;
+  text-align: start;
 }
 
 .auf-open:hover .auf-title {
@@ -290,7 +290,7 @@
 
 .prof-push-hint {
   flex: 1;
-  text-align: right;
+  text-align: end;
   font-size: calc(11.5px * var(--fs));
   line-height: 1.4;
   color: var(--mut);
