@@ -4,7 +4,7 @@ import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constant
 import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, listName, personCompare, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
-import { LOCALES } from '../i18n/langs'
+import { congAppCode, LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { ROLE_KEY } from '../i18n/ui'
 import { appUrl, linkedMember, makeInvite, openInvite } from './invite-helpers'
@@ -75,7 +75,7 @@ function PersonList() {
     // Zwischenablage best effort — misslingt sie, stehen die Codes weiterhin an
     // den Personen (Konto-Karte).
     await copyText(text)
-    const res = mailable.length > 0 ? await sendInviteMails(mailable) : null
+    const res = mailable.length > 0 ? await sendInviteMails(mailable, congAppCode(state.congLang)) : null
     if (res?.ok && res.sent > 0) {
       dispatch({
         type: 'showToast',

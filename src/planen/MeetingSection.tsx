@@ -5,7 +5,7 @@ import { rolleMitHerkunft, istArt, eigeneRolle, isGuestRole, isSong, mtab, ROLE_
 import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
-import { SONG_WORD } from '../i18n/translate-data'
+import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.ts'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
 import { SlotChip } from './SlotChip'

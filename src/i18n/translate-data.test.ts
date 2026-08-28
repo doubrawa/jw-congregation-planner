@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { APP_LANGS } from './langs'
-import { EXTRA, EXTRA_EN, FRAG, REF, type RefDict } from './translate-data'
+import { EXTRA, EXTRA_EN, FRAG, REF, type RefDict } from '../../supabase/functions/_shared/i18n/translate-data.ts'
 import { makeTr } from './translate'
 
 /**

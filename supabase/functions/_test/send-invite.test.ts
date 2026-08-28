@@ -15,6 +15,7 @@
  * Function beim Laden, deshalb wird das Modul je Szenario frisch importiert.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { inviteTexte } from '../send-invite/texte.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -231,6 +232,99 @@ describe('send-invite: was in der Einladung steht', () => {
   it('leere Liste → 400, nicht etwa „0 gesendet"', async () => {
     const r = await call({ invites: [] })
     expect(r.status).toBe(400)
+  })
+
+  it('ohne Sprachangabe bleibt es beim Deutschen', async () => {
+    // Der Rückfall: Aufrufer von vor dieser Änderung schicken kein `lang` mit,
+    // und eine Mail in einer Sprache, die niemand gewählt hat, wäre schlechter
+    // als die bisherige.
+    await call(einladung)
+    const mail = mails[0]
+    expect(mail?.subject).toBe(inviteTexte('de').subject)
+    expect(mail?.text).toMatch(/^Hallo /)
+  })
+})
+
+/**
+ * **Die Einladung spricht die Sprache der Versammlung.**
+ *
+ * Sie ist die Stelle, an der fertiger Text das Haus verlässt und sich
+ * nachträglich nicht mehr übersetzen lässt — und die heikelste davon: Für den
+ * Empfänger ist sie die **erste** Berührung mit dieser App. Er hat noch kein
+ * Konto und also auch keine eingestellte Sprache; maßgeblich ist die der
+ * Versammlung, in der er zusammenkommt.
+ *
+ * Bis zum 28.8.2026 ging sie immer deutsch hinaus, während der mailto-Rückfall
+ * im Client (ohne eigene Absender-Domain) längst übersetzt war: **dieselbe
+ * Handlung, zwei Ergebnisse**, je nachdem ob `INVITE_FROM` gesetzt ist.
+ *
+ * Erfunden werden musste dafür nichts — die zwei Sätze stehen seit jeher im
+ * Wörterbuch (`inviteMailSubject`, `inviteMailBody`); `texte.ts` ist eine
+ * Abschrift daraus, und der letzte Test unten hält beide zusammen.
+ */
+describe('send-invite: in der Sprache der Versammlung', () => {
+  const mitSprache = (lang: string) => ({ ...einladung, lang })
+
+  it.each(['en', 'es', 'ko', 'ar'])('%s: Betreff und Rumpf kommen übersetzt an', async (lang) => {
+    await call(mitSprache(lang))
+    const mail = mails[0]
+    expect(mail?.subject, lang).toBe(inviteTexte(lang).subject)
+    expect(mail?.subject, `${lang} blieb deutsch`).not.toBe(inviteTexte('de').subject)
+    expect(mail?.text, lang).not.toMatch(/^Hallo /)
+  })
+
+  it.each(['en', 'es', 'ko', 'ar'])('%s: Name, Link und Code stehen trotzdem drin', async (lang) => {
+    // Der Rumpf ist eine Vorlage mit drei Platzhaltern. Eine Sprache, deren
+    // Vorlage einen davon verschluckt, verschickt eine Einladung ohne Code —
+    // und der Empfänger kommt nicht hinein.
+    await call(mitSprache(lang))
+    const text = mails[0]?.text ?? ''
+    expect(text, `${lang}: Name fehlt`).toContain('Anna')
+    expect(text, `${lang}: Link fehlt`).toContain('https://app.test/')
+    expect(text, `${lang}: Code fehlt`).toContain('ABC-123')
+    expect(text, `${lang}: Platzhalter blieb stehen`).not.toMatch(/\{\w+\}/)
+  })
+
+  it('jede App-Sprache hat ihren eigenen Text — kein stiller Rückfall auf Deutsch', async () => {
+    const { APP_LANGS } = await import('../../../src/i18n/langs')
+    const deutsch = inviteTexte('de')
+    for (const { code } of APP_LANGS) {
+      if (code === 'de') continue
+      expect(inviteTexte(code).subject, `${code}: Betreff`).not.toBe(deutsch.subject)
+      expect(inviteTexte(code).body, `${code}: Rumpf`).not.toBe(deutsch.body)
+    }
+  })
+
+  it('jede Vorlage trägt alle drei Platzhalter', async () => {
+    // Gemessen an der Vorlage selbst, nicht am Versand: Eine Sprache, die nur
+    // selten eingeladen wird, fiele sonst erst beim Empfänger auf.
+    const { APP_LANGS } = await import('../../../src/i18n/langs')
+    for (const { code } of APP_LANGS) {
+      for (const platz of ['{name}', '{url}', '{code}']) {
+        expect(inviteTexte(code).body, `${code}: ${platz}`).toContain(platz)
+      }
+    }
+  })
+
+  it('ein unbekannter Sprachcode fällt auf Deutsch zurück, statt leer zu bleiben', async () => {
+    await call(mitSprache('gibt-es-nicht'))
+    expect(mails[0]?.subject).toBe(inviteTexte('de').subject)
+  })
+
+  it('die Tabelle ist die Abschrift des Wörterbuchs — Zeichen für Zeichen', async () => {
+    /*
+      Zwei Fassungen desselben Textes: die des Clients (mailto) aus dem
+      Wörterbuch, die des Servers aus `texte.ts`. Laufen sie auseinander,
+      bekommt derselbe Empfänger je nach Konfiguration einen anderen Wortlaut —
+      genau die Sorte stiller Doppelung, aus der hier schon B8 entstanden ist.
+    */
+    const { dict, loadOverlay } = await import('../../../src/i18n/ui')
+    const { APP_LANGS } = await import('../../../src/i18n/langs')
+    await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
+    for (const { code } of APP_LANGS) {
+      expect(inviteTexte(code).subject, `${code}: Betreff`).toBe(dict(code).inviteMailSubject)
+      expect(inviteTexte(code).body, `${code}: Rumpf`).toBe(dict(code).inviteMailBody)
+    }
   })
 })
 

@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
+import { congAppCode } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { appUrl, inviteMailHref, linkedMember, makeInvite, openInvite } from './invite-helpers'
 import type { Person } from '../data/types'
@@ -44,7 +45,7 @@ export function KontoCard({ person }: { person: Person }) {
     const created = makeInvite(person)
     dispatch({ type: 'addInvite', invite: created })
     if (!person.mail) return
-    const res = await sendInviteMails([{ personId: person.id, code: created.code }])
+    const res = await sendInviteMails([{ personId: person.id, code: created.code }], congAppCode(state.congLang))
     if (res.ok && res.sent > 0) {
       dispatch({ type: 'showToast', text: t.toastInviteMail })
       return
@@ -53,7 +54,7 @@ export function KontoCard({ person }: { person: Person }) {
   }
 
   const mailInvite = async (code: string) => {
-    const res = await sendInviteMails([{ personId: person.id, code }])
+    const res = await sendInviteMails([{ personId: person.id, code }], congAppCode(state.congLang))
     if (res.ok && res.sent > 0) {
       dispatch({ type: 'showToast', text: t.toastInviteMail })
       return

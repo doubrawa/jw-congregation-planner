@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buchTabelle } from './bible-books'
+import { buchTabelle } from '../../supabase/functions/_shared/i18n/bible-books.ts'
 import { APP_LANGS } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
 import { dict, loadOverlay } from './ui'

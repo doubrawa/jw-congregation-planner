@@ -392,9 +392,20 @@ Englisch als Fallback. Datums-/Wochentagsnamen der Zusatz-Sprachen kommen über
 `Intl` (keine handgepflegten Listen). Getrennt davon ist die
 **Versammlungssprache** (Programm-Inhalte) frei aus der vollen jw.org-Liste
 wählbar. Neue App-Sprache hinzufügen: Code in `Lang` ([types.ts](src/data/types.ts))
-+ `APP_LANGS`/`LOCALES` ([langs.ts](src/i18n/langs.ts)) + Overlay in
++ `APP_LANGS` ([langs.ts](src/i18n/langs.ts)) + Locale in
+[locales.ts](supabase/functions/_shared/i18n/locales.ts) + Overlay in
 [ui.ts](src/i18n/ui.ts) und optional `FRAG`/`EXTRA` in
-[translate.ts](src/i18n/translate.ts) (Rollen/Dienste/Phrasen).
+[translate-data.ts](supabase/functions/_shared/i18n/translate-data.ts)
+(Rollen/Dienste/Phrasen) sowie die zwei Sätze der Einladungs-Mail in
+[send-invite/texte.ts](supabase/functions/send-invite/texte.ts).
+
+Der Fragment-Übersetzer und die Locale-Tabelle liegen in
+`supabase/functions/_shared/i18n/`, weil **beide Seiten** sie brauchen: der
+Client beim Anzeigen, `send-reminders` beim Verschicken. `src/i18n/translate.ts`
+reicht sie nur durch. Ausgehende Texte tragen ihre Sprache selbst — eine
+verschickte Nachricht lässt sich beim Lesen nicht mehr übersetzen: die
+Push-Erinnerung die des Geräts, die Einladungs-Mail die der Versammlung (der
+Empfänger hat noch kein Konto und also auch keine eingestellte Sprache).
 
 ## Erinnerungs-Versand (Web-Push)
 
@@ -421,6 +432,12 @@ Gruppen-Rotationen sind ausgenommen. Der Zusammenkunftstag wird aus
 `meeting_times` gelesen („Di 19:00 · So 10:00“ → Di/So der Programmwoche).
 Personen ohne verknüpftes App-Konto können nicht erinnert werden — steht ihre
 letzte Erinnerung an, bekommen die Planer einen Sammel-Push.
+
+**Der Push-Text geht in der Sprache des Geräts hinaus** (`push_subscriptions.lang`),
+Titel *und* Rumpf — er ist fertiger Text, sobald er das Gerät erreicht, und lässt
+sich beim Lesen nicht mehr übersetzen. Die Glocken-Mitteilung dagegen bleibt
+kanonisch deutsch: Sie wird beim Anzeigen übersetzt, also in der Sprache, die der
+Empfänger *heute* eingestellt hat.
 
 **Konfiguration (einmalig pro Projekt):**
 - **Dry-Run ist Standard**: ohne Secret `SEND_PUSH=true` wird nichts versendet

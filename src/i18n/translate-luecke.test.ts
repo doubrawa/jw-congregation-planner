@@ -17,9 +17,9 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('./translate-data', async () => {
+vi.mock('../../supabase/functions/_shared/i18n/translate-data.ts', async () => {
   const echt =
-    await vi.importActual<typeof import('./translate-data')>('./translate-data')
+    await vi.importActual<typeof import('../../supabase/functions/_shared/i18n/translate-data.ts')>('../../supabase/functions/_shared/i18n/translate-data.ts')
   const en = echt.D.en
   if (!en) throw new Error('Testaufbau: D.en fehlt')
   return {

@@ -13,6 +13,9 @@
  */
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
+import { pushTexte } from '../send-reminders/texte.ts'
+import { APP_LANGS } from '../../../src/i18n/langs'
+import { makeTr } from '../../../src/i18n/translate'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -100,6 +103,26 @@ function midMitRollen(): unknown {
             title: 'Versammlungsbibelstudium',
             names: [{ name: 'Max Mustermann', rolle: 'Leiter' }],
           },
+        ],
+      },
+    ],
+    helpers: {},
+  }
+}
+
+/**
+ * Zusammenkunft mit einer **Schriftstelle** im Titel — so legt der Import die
+ * Bibellesung an („Bibellesung · Jer 38:1-13"). Eigene Vorgabe, damit die
+ * übrigen Prüfungen ihre Positionen behalten.
+ */
+function midMitSchriftstelle(): unknown {
+  return {
+    date: 'Dienstag, 8. September · 19:00 · Königreichssaal',
+    sections: [
+      {
+        label: 'SCHÄTZE AUS GOTTES WORT',
+        items: [
+          { title: 'Bibellesung · Jer 38:1-13', names: [{ name: 'Max Mustermann' }] },
         ],
       },
     ],
@@ -740,5 +763,224 @@ describe('send-reminders: Treffpunkte', () => {
   it('ohne Id (Altdaten) zählt weiter der Name', async () => {
     fsWeeks = [montag({ wd: 3, leader: 'Max Mustermann', lpid: undefined })]
     expect(previewFor(await run(), U_MAX)?.body).toContain('Treffpunkt-Leiter')
+  })
+})
+
+/**
+ * **Was von einer Erinnerung in der Sprache des Lesers ankommt — und was nicht.**
+ *
+ * Eine Push-Nachricht ist fertiger Text, sobald sie das Gerät erreicht: Anders
+ * als die Glocke in der App lässt sie sich beim Anzeigen nicht mehr übersetzen.
+ * Der Service Worker zeigt `title` und `body` unverändert an
+ * (`public/sw.js`).
+ *
+ * Der **Titel** wird deshalb serverseitig übersetzt, je Abo (`push_subscriptions.lang`
+ * — die Sprache hängt am Gerät, nicht am Nutzer). `texte.test.ts` prüft die
+ * Vollständigkeit dieser Tabelle. Was dort nicht steht: ob der Versand sie auch
+ * wirklich benutzt, und was mit dem **Rumpf** geschieht.
+ */
+describe('send-reminders: die Sprache am Push-Abo', () => {
+  const abo = (id: string, lang: string | null) => ({
+    id, user_id: U_MAX, endpoint: `https://push.test/${id}`, p256dh: 'k', auth: 'a', lang,
+  })
+
+  it('der Titel steht in der Sprache des Geräts', async () => {
+    subs = [abo('s-ko', 'ko')]
+    const p = previewFor(await run(), U_MAX)
+    expect(p?.title).toBe(pushTexte('ko').erinnerung)
+    expect(p?.title).not.toBe(pushTexte('de').erinnerung)
+  })
+
+  it('zwei Geräte in zwei Sprachen bekommen zwei Nachrichten', async () => {
+    // Die Sprache gehört zum Abo. Wer die App auf dem Handy koreanisch und am
+    // Tablet englisch nutzt, soll auf jedem Gerät seine Sprache lesen — ein
+    // Versand je Sprache, nicht einer für den Nutzer.
+    subs = [abo('s-ko', 'ko'), abo('s-en', 'en'), abo('s-ko2', 'ko')]
+    const titel = (await run()).preview?.filter((p) => p.userId === U_MAX).map((p) => p.title) ?? []
+    expect(titel.sort()).toEqual([pushTexte('en').erinnerung, pushTexte('ko').erinnerung].sort())
+  })
+
+  it('ein Abo ohne Sprache bekommt Deutsch (Abos von vor migration-014)', async () => {
+    subs = [abo('s-alt', null)]
+    expect(previewFor(await run(), U_MAX)?.title).toBe(pushTexte('de').erinnerung)
+  })
+
+  /**
+   * **Der Rumpf spricht dieselbe Sprache wie der Titel.**
+   *
+   * Bis zum 28.8.2026 tat er das nicht: Der Titel wurde je Abo übersetzt, der
+   * Rumpf ging kanonisch deutsch hinaus — ein koreanischer Verkündiger las
+   * einen koreanischen Titel über einer deutschen Zeile. Grund war eine
+   * Trennung, keine Absicht: Der Fragment-Übersetzer lag im Client-Bündel, und
+   * die Edge-Laufzeit kommt nicht an `src/` heran.
+   *
+   * Er liegt jetzt in `_shared/i18n/` — **dieselbe** Datei, die der Client
+   * benutzt, keine zweite Abschrift (siehe den Kopf von `translate.ts`).
+   */
+  it('der Rumpf kommt in der Sprache des Geräts', async () => {
+    subs = [abo('s-ko', 'ko')]
+    const koreanisch = previewFor(await run(), U_MAX)
+    subs = [abo('s-de', 'de')]
+    const deutsch = previewFor(await run(), U_MAX)
+
+    expect(koreanisch?.body, 'der Rumpf ist leer — dann prüft das hier nichts').toBeTruthy()
+    expect(koreanisch?.title).not.toBe(deutsch?.title)
+    expect(koreanisch?.body).not.toBe(deutsch?.body)
+    // Kein deutscher Wochentag, kein deutscher Monat mehr.
+    expect(koreanisch?.body).not.toMatch(/Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag/)
+    expect(koreanisch?.body).not.toMatch(/Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember/)
+    // Die deutsche Fassung dagegen sehr wohl — sonst prüfte die Zeile darüber
+    // nur, dass irgendetwas anders ist.
+    expect(deutsch?.body).toMatch(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /)
+  })
+
+  it('die Uhrzeit und die Struktur bleiben, wie sie sind', async () => {
+    // Übersetzt werden Wochentag, Monat und die Rollen — nicht die Uhrzeit und
+    // nicht die Trennzeichen. Sonst stünde in der Erinnerung eine andere Zeit
+    // als in der App.
+    subs = [abo('s-ko', 'ko')]
+    const p = previewFor(await run(), U_MAX)
+    expect(p?.body).toContain('19:00')
+    expect(p?.body).toContain(': ')
+  })
+
+  it('jedes Stück des Rumpfs wird übersetzt, keins bleibt deutsch hängen', async () => {
+    /*
+      Der Rumpf entsteht aus zwei **Hälften** je Zeile: Termin und Bezeichnung.
+      Zusammengefügt ließe er sich gar nicht übersetzen — der Zerleger trennt an
+      „ · ", und „…19:00: Bibellesung" wäre dann ein einziges, unbekanntes
+      Stück. Genau das prüft diese Zeile: Kommt jemand auf die Idee, erst zu
+      verbinden und dann zu übersetzen, bleibt der mittlere Teil deutsch.
+    */
+    subs = [abo('s-ko', 'ko')]
+    const p = previewFor(await run(), U_MAX)
+    const teile = (p?.body ?? '').split(' · ')
+    expect(teile.length, 'nur ein Stück — dann prüft das hier nichts').toBeGreaterThan(1)
+    for (const teil of teile) {
+      expect(teil, `„${teil}" blieb deutsch`).not.toMatch(
+        /Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag/,
+      )
+    }
+  })
+
+  it('auch der Buchname einer Schriftstelle', async () => {
+    /*
+      Die Bibellesung heißt „Bibellesung · Jer 38:1-13" — eine Schriftstelle im
+      Titel. Ihre Buchnamen liegen in einem eigenen Modul, das der Client erst
+      bei Bedarf nachlädt; hier gibt es kein „bei Bedarf", die Erinnerung
+      entsteht in einem Zug. Ohne das Nachladen bliebe ausgerechnet der
+      Buchname als einziges Stück deutsch stehen.
+
+      Kapitel und Verse bleiben unangetastet — ein verschobener Vers wäre
+      schlimmer als ein deutscher Buchname.
+    */
+    weeks = [{ start: WEEK_START, data: { mid: midMitSchriftstelle() } }]
+    subs = [abo('s-ko', 'ko')]
+    const body = previewFor(await run(), U_MAX)?.body ?? ''
+    expect(body, `Rumpf: ${body}`).not.toContain('Jer ')
+    expect(body).toContain('38:1-13')
+  })
+
+  it('zwei Geräte in zwei Sprachen bekommen zwei verschiedene Rümpfe', async () => {
+    subs = [abo('s-ko', 'ko'), abo('s-ar', 'ar')]
+    const rumpfe = (await run()).preview?.filter((p) => p.userId === U_MAX).map((p) => p.body) ?? []
+    expect(rumpfe).toHaveLength(2)
+    expect(rumpfe[0]).not.toBe(rumpfe[1])
+  })
+
+  it('die Glocke bleibt kanonisch deutsch — sie wird beim Anzeigen übersetzt', async () => {
+    /*
+      Die andere Hälfte derselben Regel, und sie darf sich **nicht** ändern:
+      Eine Mitteilung steht kanonisch deutsch in der Datenbank; welche Sprache
+      der Leser eingestellt hat, entscheidet sich erst beim Anzeigen
+      (`tu` in `NotificationsPanel`). Wer sie hier mitübersetzte, legte die
+      Sprache eines *Geräts* auf einen Datensatz fest, den alle Geräte lesen.
+    */
+    subs = [abo('s-ko', 'ko')]
+    await live()
+    const notifs = writesTo('notifications')
+      .filter((w) => w.method === 'POST')
+      .flatMap((w) => (w.body as { body?: string }[]).map((n) => n.body ?? ''))
+    expect(notifs.length).toBeGreaterThan(0)
+    expect(notifs.join(' ')).toMatch(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /)
+  })
+})
+
+/**
+ * **Die Glocke wird beim Anzeigen übersetzt — also muss sie übersetzbar sein.**
+ *
+ * Anders als der Push steht eine Mitteilung kanonisch deutsch in der Datenbank
+ * und geht erst in der App durch `tu` (`NotificationsPanel`). Das ist der
+ * bessere Weg — er kommt ohne serverseitige Wörterbücher aus —, aber er hat
+ * eine Bedingung: **Jedes Stück, das der Versand schreibt, muss im
+ * Fragment-Wörterbuch stehen.** Sonst steht es in 33 Sprachen deutsch da, ohne
+ * dass irgendwo ein Fehler entsteht.
+ *
+ * Genau so blieb „vor 3 Std." monatelang unübersetzt: Im Wörterbuch stand
+ * ausgerechnet „vor 2 Std." — weil diese eine Zeichenkette in den Testdaten
+ * vorkam. Die Wörterbücher waren aus den eigenen Vorgaben gefüllt worden statt
+ * aus dem, was der Code erzeugt.
+ *
+ * Deshalb nimmt diese Prüfung **nicht** eine Liste erwarteter Texte, sondern
+ * das, was die Function in diesem Lauf tatsächlich schreibt.
+ */
+describe('send-reminders: was in der Glocke steht, ist übersetzbar', () => {
+  /** Alle Mitteilungs-Rümpfe eines scharfen Laufs. */
+  async function rumpfe(): Promise<string[]> {
+    await live()
+    return writesTo('notifications')
+      .filter((w) => w.method === 'POST')
+      .flatMap((w) => (w.body as { body?: string }[]).map((n) => n.body ?? ''))
+      .filter(Boolean)
+  }
+
+  /** Ein Atom, das kein Eigenname ist — Namen werden nie übersetzt. */
+  const NAMEN = ['Max Mustermann', 'Nina Nolink', 'Otto Ohnekonto', 'Fremder Bruder']
+  const uebersetzbar = (atom: string) =>
+    atom !== '' && !NAMEN.includes(atom) && !/^\d{1,2}:\d{2}$/.test(atom)
+
+  it('der Lauf schreibt überhaupt Mitteilungen', async () => {
+    // Sonst liefe die Prüfung darunter über eine leere Liste.
+    const alle = await rumpfe()
+    expect(alle.length).toBeGreaterThan(0)
+  })
+
+  it.each(APP_LANGS.map((l) => l.code).filter((c) => c !== 'de'))(
+    '%s: jedes Stück des Rumpfs wird übersetzt',
+    async (code) => {
+      const tr = makeTr(code)
+      const deutsch: string[] = []
+      let geprueft = 0
+      for (const rumpf of await rumpfe()) {
+        // Die Glocke zeigt `tu(notif.text)` — genau dieser Aufruf, mit
+        // demselben Zerlegen an „ · " und „: ".
+        for (const teil of rumpf.split(/ · |: /)) {
+          const atom = teil.trim()
+          if (!uebersetzbar(atom)) continue
+          geprueft++
+          if (tr(atom) === atom) deutsch.push(atom)
+        }
+      }
+      // Der Titel des Programmpunkts steht in der Sprache der **Versammlung**
+      // und ist keine Übersetzungslücke — hier ist er frei erfunden
+      // („Schatzgraben") und bleibt naturgemäß stehen.
+      const erwartetOffen = ['Schatzgraben', 'Bibellesung', 'Gespräch', 'Leerer Teil', 'Vortrag']
+      const echteLuecken = deutsch.filter((a) => !erwartetOffen.includes(a))
+      // Ohne diese Zahl bliebe unbemerkt, wenn das Zerlegen ins Leere liefe und
+      // die Prüfung gar nichts ansieht.
+      expect(geprueft, `${code}: nichts zu prüfen`).toBeGreaterThan(3)
+      expect(echteLuecken, `${code}: ${[...new Set(echteLuecken)].join(', ')}`).toEqual([])
+    },
+  )
+
+  it('die erwartet offenen Stücke sind wirklich nur die Programmtitel', async () => {
+    /*
+      Ausnahmelisten wachsen, wenn niemand hinsieht. Diese hier darf nur Titel
+      enthalten, die die Vorgabe oben selbst erfindet — käme ein echter
+      Fachbegriff hinein, wäre die Lücke damit stillgelegt statt behoben.
+    */
+    const titelDerVorgabe = ['Schatzgraben', 'Bibellesung', 'Gespräch', 'Leerer Teil', 'Vortrag']
+    const roh = JSON.stringify(midMeeting())
+    for (const titel of titelDerVorgabe) expect(roh, titel).toContain(titel)
   })
 })

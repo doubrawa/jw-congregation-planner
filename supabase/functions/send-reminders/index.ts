@@ -60,6 +60,7 @@ import {
   zeitMitAbweichung,
   zuteilungsLabel,
 } from '../_shared/planung.ts'
+import { bibelbuecherLaden, makeTr } from '../_shared/i18n/translate.ts'
 import { pushTexte } from './texte.ts'
 
 declare const Deno: {
@@ -272,6 +273,62 @@ function helperPid(entry: HelperEntry | undefined): string | undefined {
 }
 
 const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
+
+/**
+ * Eine Zeile der Erinnerung — **in zwei Hälften**, nicht als fertiger Satz.
+ *
+ * Beide sind kanonisch deutsch, und beide müssen einzeln durch den Übersetzer:
+ * `datum` („Dienstag, 8. September · 19:00") und `label`
+ * („Versammlungsbibelstudium · Leiter"). Zusammengefügt ginge das nicht — der
+ * Fragment-Übersetzer zerlegt an „ · ", und in „…19:00: Bibellesung" steckte
+ * das „19:00: Bibellesung" dann als ein einziges, unbekanntes Stück.
+ *
+ * Die **Glocke** bekommt sie weiterhin deutsch zusammengesetzt: Mitteilungen
+ * stehen kanonisch in der Datenbank und werden erst beim Anzeigen übersetzt.
+ */
+interface Eintrag {
+  datum: string
+  label: string
+}
+
+/** Kanonisch deutsch — so steht die Zeile in der Glocke. */
+const kanonisch = (e: Eintrag): string => `${e.datum}: ${e.label}`
+
+/**
+ * Dieselbe Zeile in der Sprache eines Push-Abos.
+ *
+ * **Warum das überhaupt hier passiert.** Ein Push ist fertiger Text, sobald er
+ * das Gerät erreicht — der Service Worker zeigt `title` und `body` unverändert
+ * an (`public/sw.js`), und die App ist dabei gar nicht beteiligt. Der Titel
+ * wurde deshalb längst übersetzt; der Rumpf ging bis zum 28.8.2026 kanonisch
+ * deutsch hinaus. Ein koreanischer Verkündiger las einen koreanischen Titel
+ * über einer deutschen Zeile.
+ *
+ * Möglich wurde es, indem der Fragment-Übersetzer nach `_shared/` gezogen ist —
+ * **dieselbe** Datei, die der Client benutzt, keine zweite Abschrift.
+ */
+const uebersetzt = (e: Eintrag, tr: (s: string) => string): string =>
+  `${tr(e.datum)}: ${tr(e.label)}`
+
+/**
+ * Ein Übersetzer je Sprache, einmal gebaut.
+ *
+ * `makeTr` stellt bei jedem Aufruf ein paar Dutzend reguläre Ausdrücke
+ * zusammen; bei hundert Empfängern in derselben Sprache wäre das hundertmal
+ * dieselbe Arbeit.
+ */
+function uebersetzerFuer(): (lang: string | null) => (s: string) => string {
+  const gebaut = new Map<string, (s: string) => string>()
+  return (lang) => {
+    const code = lang ?? 'de'
+    let tr = gebaut.get(code)
+    if (!tr) {
+      tr = makeTr(code)
+      gebaut.set(code, tr)
+    }
+    return tr
+  }
+}
 
 /**
  * Termin im Erinnerungstext: „Dienstag, 8. September · 19:00".
@@ -530,6 +587,17 @@ Deno.serve(async (req: Request) => {
     const sendQueue: Array<{ push: Push; subs: SubscriptionRow[] }> = []
     // Was in diesem Lauf gesendet wird → nach echtem Versand ins reminder_log.
     const logRows: { congregation_id: string; user_id: string; kind: string }[] = []
+    const uebersetzer = uebersetzerFuer()
+    /*
+     * Die Bibelbuch-Tabellen nachladen, bevor irgendein Rumpf entsteht.
+     *
+     * Im Client sind sie ein eigener, spät geholter Brocken — wer die App auf
+     * Deutsch benutzt, braucht sie nie. Hier gilt das nicht: Ein Lauf erinnert
+     * an die Bibellesung, und deren Bezeichnung ist eine Schriftstelle
+     * („Bibellesung · Jer 44:24-30"). Ohne die Tabellen bliebe der Buchname als
+     * einziges Stück deutsch stehen — mitten in einem sonst übersetzten Satz.
+     */
+    await bibelbuecherLaden()
 
     for (const cong of congs) {
       const rem: Reminders = {
@@ -592,9 +660,9 @@ Deno.serve(async (req: Request) => {
         subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
       }
 
-      const entriesByUser = new Map<string, string[]>()
-      const mainByUser = new Map<string, string[]>() // Glocke nur an first/last-Tagen
-      const unreachable: string[] = []
+      const entriesByUser = new Map<string, Eintrag[]>()
+      const mainByUser = new Map<string, Eintrag[]>() // Glocke nur an first/last-Tagen
+      const unreachable: Array<{ name: string; eintrag: Eintrag }> = []
 
       weeks.forEach((row) => {
         const week = row.data
@@ -618,7 +686,10 @@ Deno.serve(async (req: Request) => {
           const kind = dueKind(rem, days)
           if (!kind) continue
           for (const pend of pendingOfMeeting(start, tab, meeting, services, conf)) {
-            const entry = `${reminderDate(start, offset, meeting, zeit, week.dev, tab)}: ${pend.label}`
+            const entry: Eintrag = {
+              datum: reminderDate(start, offset, meeting, zeit, week.dev, tab),
+              label: pend.label,
+            }
             const userId = userOf(pend)
             // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
             // Push-Abo. Wer ein Konto hat, bekommt trotzdem die persönliche
@@ -634,7 +705,7 @@ Deno.serve(async (req: Request) => {
             // Nicht per Push erreichbar (kein Konto ODER kein Abo) → am letzten
             // Erinnerungstag den Planern melden, damit sie persönlich erinnern.
             if (!reachable && days === rem.last) {
-              unreachable.push(`${pend.name} — ${entry}`)
+              unreachable.push({ name: pend.name, eintrag: entry })
             }
           }
         }
@@ -651,8 +722,10 @@ Deno.serve(async (req: Request) => {
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
-          const tag = reminderDate(start, pend.offset, {}, pend.zeit)
-          const entry = `${tag}: ${pend.label}`
+          const entry: Eintrag = {
+            datum: reminderDate(start, pend.offset, {}, pend.zeit),
+            label: pend.label,
+          }
           const userId = userOf(pend)
           const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
           if (userId) {
@@ -662,7 +735,7 @@ Deno.serve(async (req: Request) => {
             }
           }
           if (!reachable && days === rem.last) {
-            unreachable.push(`${pend.name} — ${entry}`)
+            unreachable.push({ name: pend.name, eintrag: entry })
           }
         }
       }
@@ -678,10 +751,11 @@ Deno.serve(async (req: Request) => {
         // Nachricht das Gerät erreicht. Wer Geräte in zwei Sprachen hat,
         // bekommt auf jedem die passende.
         for (const [lang, subs] of nachSprache(subsByUser.get(userId) ?? [])) {
+          const tr = uebersetzer(lang)
           const push: Push = {
             userId,
             title: pushTexte(lang).erinnerung,
-            body: entries.join(' · '),
+            body: entries.map((e) => uebersetzt(e, tr)).join(' · '),
             url: `${APP_URL}#go=aufgaben`,
           }
           preview.push(push)
@@ -698,13 +772,12 @@ Deno.serve(async (req: Request) => {
             user_id: userId,
             type: 'erinnerung',
             title: 'Erinnerung: Zuteilung bestätigen',
-            body: mainEntries.join(' · '),
+            body: mainEntries.map(kanonisch).join(' · '),
           })
         }
         logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'self' })
       }
       if (unreachable.length > 0) {
-        const body = unreachable.join(' · ')
         for (const m of members) {
           if (!m.planner) continue
           if (sentToday.has(`${m.user_id}|planner`)) {
@@ -712,10 +785,14 @@ Deno.serve(async (req: Request) => {
             continue
           }
           for (const [lang, subs] of nachSprache(subsByUser.get(m.user_id) ?? [])) {
+            // Auch die Sammelmeldung an die Planer: derselbe Rumpf, je Sprache
+            // eigens gebaut. Der Name bleibt, was er ist — Eigennamen werden
+            // nicht übersetzt.
+            const tr = uebersetzer(lang)
             const p: Push = {
               userId: m.user_id,
               title: pushTexte(lang).unerreichbar,
-              body,
+              body: unreachable.map((u) => `${u.name} — ${uebersetzt(u.eintrag, tr)}`).join(' · '),
               url: `${APP_URL}#go=planen`,
             }
             preview.push(p)

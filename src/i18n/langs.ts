@@ -17,6 +17,7 @@
  */
 
 import type { Lang } from '../data/types'
+import { LOCALES as SHARED_LOCALES } from '../../supabase/functions/_shared/i18n/locales.ts'
 
 export const APP_LANGS: ReadonlyArray<{ code: Lang; label: string }> = [
   { code: 'de', label: 'Deutsch' },
@@ -77,16 +78,20 @@ export function isRTL(lang: Lang): boolean {
  * jeder fuenften Sprache die falsche Antwort gegeben.
  */
 
-/** App-Sprachcode → BCP-47-Locale (Intl-Datums-/Zahlenformatierung). */
-export const LOCALES: Record<Lang, string> = {
-  de: 'de-DE', en: 'en-US', es: 'es-ES', fr: 'fr-FR', it: 'it-IT',
-  pt: 'pt-PT', nl: 'nl-NL', pl: 'pl-PL', ru: 'ru-RU', uk: 'uk-UA',
-  ro: 'ro-RO', el: 'el-GR', cs: 'cs-CZ', sk: 'sk-SK', hu: 'hu-HU',
-  hr: 'hr-HR', sr: 'sr-Latn-RS', bg: 'bg-BG', sv: 'sv-SE', da: 'da-DK',
-  fi: 'fi-FI', no: 'nb-NO', tr: 'tr-TR', zh: 'zh-CN', ja: 'ja-JP',
-  ko: 'ko-KR', id: 'id-ID', tl: 'fil-PH', vi: 'vi-VN', sw: 'sw-KE',
-  ar: 'ar', he: 'he-IL', fa: 'fa-IR', ur: 'ur-PK',
-}
+/**
+ * App-Sprachcode → BCP-47-Locale (Intl-Datums-/Zahlenformatierung).
+ *
+ * **Die Tabelle steht in `supabase/functions/_shared/i18n/locales.ts`**, weil
+ * der Fragment-Übersetzer daneben liegt und beide Seiten sie brauchen — der
+ * Client beim Anzeigen, `send-reminders` beim Verschicken. Dort begründet ein
+ * langer Kommentar auch, warum Persisch `-u-ca-gregory` trägt.
+ *
+ * Hier bekommt sie ihren **Typ** zurück: `Record<Lang, string>` verlangt für
+ * jede App-Sprache einen Eintrag. Fehlte einer, fiele die Sprache still auf die
+ * Umgebungs-Locale zurück — ein tagalogischer Nutzer bekäme englische
+ * Wochentage, ohne dass irgendwo ein Fehler entstünde.
+ */
+export const LOCALES: Record<Lang, string> = SHARED_LOCALES
 
 /**
  * jw.org-Sprachtabelle: "code|name" je Eintrag, mit ";" getrennt. code =

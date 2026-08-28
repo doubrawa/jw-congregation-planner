@@ -80,7 +80,7 @@ function nextToast(state: AppState, text: string): AppState['toast'] {
  * also die Sprache dessen, der zugeteilt hat: ein französischer Planer
  * hinterließ „Réunion pour la prédication" in der deutschen Ansicht. Der
  * Begriff steht als Programm-Fragment in allen Sprachen (FRAG in
- * i18n/translate-data.ts), wird beim Anzeigen also richtig ersetzt.
+ * _shared/i18n/translate-data.ts), wird beim Anzeigen also richtig ersetzt.
  */
 const FS_KANONISCH = 'Treffpunkte'
 

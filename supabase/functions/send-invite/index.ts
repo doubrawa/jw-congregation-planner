@@ -8,7 +8,9 @@
 // werden (frei wählbar ist nur der Code-String in der Vorlage).
 //
 // Request  (mit Nutzer-JWT, supabase.functions.invoke):
-//   { invites: [{ personId: string, code: string }, …] }   (max. 200)
+//   { invites: [{ personId: string, code: string }, …], lang?: string }  (max. 200)
+//   lang = App-Sprachcode der Versammlung; fehlt er, geht die Mail deutsch
+//   hinaus (siehe mailText / texte.ts).
 // Response 200:
 //   { sent: n, skipped: n }          skipped = Person ohne E-Mail/nicht gefunden
 //   { error: 'not-configured' }      INVITE_FROM fehlt → Client nutzt mailto
@@ -26,6 +28,8 @@
 // Deploy:  npx supabase functions deploy send-invite
 // (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
 // =============================================================================
+
+import { fuellen, inviteTexte } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -71,13 +75,24 @@ async function userIdFromRequest(req: Request): Promise<string | null> {
   return user.id ?? null
 }
 
-function mailText(fn: string, code: string): { subject: string; body: string } {
+/**
+ * Betreff und Rumpf der Einladung — in der Sprache, die der Aufrufer nennt.
+ *
+ * Bis hierher stand hier ein fester deutscher Text. Für den Empfänger ist die
+ * Einladung die **erste** Berührung mit dieser App; er hat noch kein Konto und
+ * also auch keine eingestellte Sprache. Der Client schickt deshalb die Sprache
+ * der **Versammlung** mit (`congAppCode(state.congLang)`) — dieselbe, in der
+ * die Zusammenkünfte gehalten werden.
+ *
+ * Dass ein Aufrufer hier einen beliebigen Code hineinschreiben könnte, ist
+ * ohne Folgen: Er wählt einen Text aus einer festen Tabelle aus, mehr nicht.
+ * Unbekanntes fällt auf Deutsch zurück.
+ */
+function mailText(fn: string, code: string, lang: string | null): { subject: string; body: string } {
+  const texte = inviteTexte(lang)
   return {
-    subject: 'Einladung: Congregation Planner',
-    body:
-      `Hallo ${fn},\n\n` +
-      `bitte registriere dich in unserer Versammlungs-App:\n${APP_URL}\n\n` +
-      `Löse nach der Registrierung diesen Einladungscode ein:\n${code}\n`,
+    subject: texte.subject,
+    body: `${fuellen(texte.body, { name: fn, url: APP_URL, code })}\n`,
   }
 }
 
@@ -99,7 +114,10 @@ Deno.serve(async (req: Request) => {
 
     const payload = (await req.json().catch(() => null)) as {
       invites?: Array<{ personId?: string; code?: string }>
+      /** Sprache der Versammlung (App-Code) — siehe `mailText`. */
+      lang?: string
     } | null
+    const lang = typeof payload?.lang === 'string' ? payload.lang : null
     const invites = (payload?.invites ?? []).slice(0, 200)
     if (invites.length === 0) return json({ error: 'keine Einladungen übergeben' }, 400)
 
@@ -117,7 +135,7 @@ Deno.serve(async (req: Request) => {
         skipped++
         continue
       }
-      const { subject, body } = mailText(person.fn, code)
+      const { subject, body } = mailText(person.fn, code, lang)
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
