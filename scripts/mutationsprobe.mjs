@@ -69,8 +69,15 @@ const KATALOG = [
     id: 'zuteilung-beide-raeume',
     datei: 'src/data/planning.ts',
     regel: 'Niemand ist zur selben Zeit im Hauptsaal und in der Zusätzlichen Klasse.',
-    suchen: 'for (const aux of raeume(meeting)) for (const slot of slotsOf(item, aux)) merken(slot)',
-    ersetzen: 'for (const slot of item.names) merken(slot)',
+    /*
+      Die Stelle ist seit 244e1a0 („Ein Durchlauf statt elf") ein Aufruf von
+      `programmPlaetze` — der Generator liefert beide Räume. Die Mutation nimmt
+      ihm den zweiten wieder weg, indem sie nur `item.names` (Hauptsaal) liest;
+      das ist genau die Fassung, mit der der Fehler entstanden ist.
+    */
+    suchen: 'for (const { slot } of programmPlaetze(meeting)) merken(slot)',
+    ersetzen:
+      'for (const s of meeting.sections) for (const it of s.items) if (!isSong(it)) for (const slot of it.names) merken(slot)',
   },
   {
     id: 'zuteilung-reinigungs-malus',
@@ -140,7 +147,9 @@ const KATALOG = [
     id: 'zuteilung-gastredner',
     datei: 'src/data/planning.ts',
     regel: 'Gastredner und Kreisaufseher werden nicht automatisch besetzt (SKIP_ROLE).',
-    suchen: "if (slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue",
+    // Gefragt wird inzwischen über `isGuestRole` statt direkt über den
+    // Ausdruck — eine Abschrift weniger (siehe planning.ts, Kopfkommentar).
+    suchen: 'if (slot.name || isGuestRole(slot.rolle)) continue',
     ersetzen: 'if (slot.name) continue',
   },
 
@@ -149,8 +158,15 @@ const KATALOG = [
     id: 'last-klasse-nur-wenn-vorhanden',
     datei: 'src/data/helpers.ts',
     regel: 'Die Zusätzliche Klasse zählt nur, solange sie besteht (T20).',
-    suchen: 'if (mitKlasse) for (const slot of item.aux ?? []) if (gehoertZu(slot, person)) count++',
-    ersetzen: 'for (const slot of item.aux ?? []) if (gehoertZu(slot, person)) count++',
+    /*
+      Die Grenze steht seit dem gemeinsamen Durchlauf (244e1a0) in `raeume()`
+      statt in jeder Zählschleife einzeln — beim Abschalten der Klasse bleiben
+      die Namen bewusst stehen, damit ein Wiedereinschalten sie hat. Die
+      Mutation gibt beide Räume bedingungslos zurück; die Auslastung schleppte
+      dann eine Last mit, die es gar nicht mehr gibt.
+    */
+    suchen: 'return hatAuxKlasse(meeting) ? [false, true] : [false]',
+    ersetzen: 'return [false, true]',
   },
   {
     id: 'last-hilfsdienst-platzzahl',
@@ -163,8 +179,11 @@ const KATALOG = [
     id: 'last-ausfall',
     datei: 'src/data/helpers.ts',
     regel: 'Eine ausgefallene Zusammenkunft erzeugt keine Auslastung (T30).',
-    suchen: '      if (istAusgefallen(week, tab)) continue\n      const meeting = week[tab]\n      const mitKlasse',
-    ersetzen: '      const meeting = week[tab]\n      const mitKlasse',
+    // Die Zeile steht in `partWorkload` **und** in `helperWorkload`; die
+    // Nachbarzeile darunter macht sie eindeutig (Ratgeber statt Hilfsdienst).
+    suchen:
+      '      if (istAusgefallen(week, tab)) continue\n      const meeting = week[tab]\n      if (hatAuxKlasse(meeting)',
+    ersetzen: '      const meeting = week[tab]\n      if (hatAuxKlasse(meeting)',
   },
   {
     id: 'last-fenster-nach-datum',
@@ -315,8 +334,10 @@ const KATALOG = [
     id: 'fs-kennung-altbestand',
     datei: 'src/data/fs.ts',
     regel: 'Gespeicherte Treffpunkte werden beim Laden auf die stabile Kennung gehoben.',
-    suchen: "      const treffer = ALT.exec(inst.id)\n      if (!treffer?.[1]) return inst",
-    ersetzen: '      return inst\n',
+    // Seit 61c7629 („Abschriften zusammengeführt") ein Ausdruck statt zweier
+    // Zeilen; die Mutation lässt die Kennung, wie sie war.
+    suchen: "    return treffer?.[1] ? { ...inst, id: treffer[1] } : inst",
+    ersetzen: '    return inst',
   },
   {
     id: 'fs-schluessel-altbestand',
@@ -401,10 +422,101 @@ const KATALOG = [
   // ── Übersetzung ───────────────────────────────────────────────────────────
   {
     id: 'monat-beide-tabellen',
-    datei: 'src/i18n/translate.ts',
+    datei: 'supabase/functions/_shared/i18n/translate.ts',
     regel: 'Monatsnamen werden in Lang- UND Kurztabelle nachgeschlagen (T1).',
     suchen: 'const monatIndex = (name: string): number | undefined => MON[name] ?? MONA[name]',
     ersetzen: 'const monatIndex = (name: string): number | undefined => MON[name]',
+  },
+  {
+    id: 'mitteilungstitel-schluessel',
+    datei: 'src/i18n/ui.ts',
+    regel: 'Jeder erzeugte Mitteilungs-Titel hat seinen Wörterbuch-Schlüssel — sonst steht er in 33 Sprachen deutsch in der Glocke.',
+    suchen: "  'Programm importiert': 'notifProgImportiert',\n",
+    ersetzen: '',
+  },
+  {
+    id: 'datum-gregorianisch',
+    datei: 'supabase/functions/_shared/i18n/locales.ts',
+    regel: 'Datumsangaben stehen in jeder Sprache im gregorianischen Kalender — auch auf Persisch.',
+    suchen: "fa: 'fa-IR-u-ca-gregory'",
+    ersetzen: "fa: 'fa-IR'",
+  },
+  {
+    id: 'sprache-am-html',
+    datei: 'src/app/store.tsx',
+    regel: 'Die Schreibrichtung folgt der Sprache — RTL für Arabisch, Hebräisch, Farsi, Urdu.',
+    suchen: "document.documentElement.dir = isRTL(state.lang) ? 'rtl' : 'ltr'",
+    ersetzen: "document.documentElement.dir = 'ltr'",
+  },
+  {
+    id: 'toast-in-der-lesersprache',
+    datei: 'src/app/reducer.ts',
+    regel: 'Die Meldungen des Reducers stehen in der Sprache des Nutzers, nicht auf Deutsch.',
+    suchen: 'return nextToast(state, fill(dict(state.lang)[key], params ?? {}))',
+    ersetzen: "return nextToast(state, fill(dict('de')[key], params ?? {}))",
+  },
+  {
+    id: 's89-bibellesung-am-bereich',
+    datei: 'src/data/planning.ts',
+    regel: 'Die Bibellesung wird am Bereich erkannt, nicht am deutschen Titel — sonst fehlt der S-89-Zettel in jeder anderen Sprache.',
+    suchen: "    sel.priv === 'bibellesung' ||\n",
+    ersetzen: '',
+  },
+  {
+    id: 's89-rahmen-an-der-form',
+    datei: 'src/data/planning.ts',
+    regel: 'Der Rahmen eines Schülerteils ist das Meta-Stück ohne Ziffer — keine deutsche Wortliste.',
+    suchen: "const setting = metaFrags.find((f) => f !== '' && ersteZahl(f) === null) ?? ''",
+    ersetzen: "const setting = metaFrags.find((f) => f === 'Von Haus zu Haus') ?? ''",
+  },
+  {
+    id: 's89-quelle-hinter-der-dauer',
+    datei: 'src/data/planning.ts',
+    regel: 'Der Schulungspunkt ist das Meta-Stück hinter der Dauer — nicht das mit „th"/„lmd" davor (die Kürzel werden mitübersetzt).',
+    suchen: "const point = (zeitIdx >= 0 ? metaFrags[zeitIdx + 1] : undefined) ?? ''",
+    ersetzen: "const point = metaFrags.find((f) => /^(th|lmd) /.test(f)) ?? ''",
+  },
+  {
+    id: 'programm-block-an-der-art',
+    datei: 'src/programm/ProgrammScreen.tsx',
+    regel: 'Eröffnung und Abschluss werden an der Abschnitts-Art erkannt, nicht am Namen.',
+    suchen: 'const splitHere = rawSection ? istBlockSektion(rawSection) : false',
+    ersetzen: 'const splitHere = false',
+  },
+  {
+    id: 'wischen-leserichtung',
+    datei: 'src/components/useSwipeWeek.ts',
+    regel: 'Der Wochenwisch folgt der Leserichtung — in RTL liegt die vorige Woche rechts.',
+    suchen: "      document.documentElement.dir === 'rtl' ? -1 : 1",
+    ersetzen: '      1',
+  },
+  {
+    id: 'pfeil-leserichtung',
+    datei: 'src/app/rtl.css',
+    regel: 'Die Wochen-Pfeile kippen in RTL — sonst zeigt „vorige Woche" nach vorn.',
+    suchen: "[dir='rtl'] .week-arrow {\n  transform: scaleX(-1);\n}",
+    ersetzen: "[dir='rtl'] .week-arrow {\n  transform: none;\n}",
+  },
+  {
+    id: 'streifen-leserichtung',
+    datei: 'src/components/week-strip.css',
+    regel: 'Die Nachbarwochen liegen in Leserichtung — logisch angegeben, nicht physisch.',
+    suchen: '  inset-inline-end: 100%;',
+    ersetzen: '  right: 100%;',
+  },
+  {
+    id: 'bidi-eigene-texte',
+    datei: 'src/personen/PersonDetail.tsx',
+    regel: 'Personenfelder tragen ihre eigene Schreibrichtung — eine Telefonnummer dreht sich sonst in einer RTL-Oberfläche um.',
+    suchen: '              dir="auto"\n',
+    ersetzen: '',
+  },
+  {
+    id: 'datumswaehler-montag',
+    datei: 'src/components/DatePicker.tsx',
+    regel: 'Der Kalender beginnt in jeder Sprache am Montag — wie die Programmwoche selbst.',
+    suchen: 'const lead = (first.getUTCDay() + 6) % 7 // Montag = 0',
+    ersetzen: 'const lead = first.getUTCDay()',
   },
 
   // ── Edge Functions ────────────────────────────────────────────────────────
@@ -458,6 +570,34 @@ const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'erinnerung-rumpf-uebersetzt',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Der Rumpf einer Push-Erinnerung steht in der Sprache des Geräts — nicht nur ihr Titel.',
+    suchen: 'body: entries.map((e) => uebersetzt(e, tr)).join(\' · \'),',
+    ersetzen: "body: entries.map(kanonisch).join(' · '),",
+  },
+  {
+    id: 'erinnerung-schriftstelle',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Auch der Buchname einer Schriftstelle wird übersetzt — die Tabellen werden vor dem Bauen geholt.',
+    suchen: '    await bibelbuecherLaden()',
+    ersetzen: '',
+  },
+  {
+    id: 'einladung-sprache',
+    datei: 'supabase/functions/send-invite/index.ts',
+    regel: 'Die Einladungs-Mail spricht die Sprache der Versammlung, nicht immer Deutsch.',
+    suchen: '  const texte = inviteTexte(lang)',
+    ersetzen: "  const texte = inviteTexte('de')",
+  },
+  {
+    id: 'einladung-texte-vollstaendig',
+    datei: 'supabase/functions/send-invite/texte.ts',
+    regel: 'Jede App-Sprache hat ihren eigenen Einladungstext — kein stiller Rückfall auf Deutsch.',
+    suchen: '  it: {\n',
+    ersetzen: '  itX: {\n',
+  },
+  {
     id: 'ersatz-texte-vollstaendig',
     datei: 'supabase/functions/substitute/texte.ts',
     regel: 'Jede App-Sprache hat ihren eigenen Ersatz-Text — kein stiller Rückfall auf Deutsch.',
@@ -480,8 +620,10 @@ const KATALOG = [
     id: 'nav-gruppenaufseher-ohne-personen',
     datei: 'src/app/AppShell.tsx',
     regel: 'Der Gruppenaufseher sieht Planen und Einstellungen, aber nicht Personen.',
-    suchen: "const GROUP_OV_SCREENS: readonly Screen[] = [\n  'start',\n  'programm',\n  'aufgaben',\n  'planen',\n  'einstellungen',\n  'profil',\n]",
-    ersetzen: "const GROUP_OV_SCREENS: readonly Screen[] = PLANNER_SCREENS",
+    // Die Liste wird inzwischen aus der des Planers abgeleitet; die Mutation
+    // nimmt den Abzug weg und gibt dem Gruppenaufseher die Personen mit dazu.
+    suchen: "const GROUP_OV_SCREENS: readonly Screen[] = PLANNER_SCREENS.filter((s) => s !== 'personen')",
+    ersetzen: 'const GROUP_OV_SCREENS: readonly Screen[] = PLANNER_SCREENS',
   },
   {
     id: 'nav-deeplink-rechte',
@@ -569,7 +711,7 @@ const KATALOG = [
   },
   {
     id: 'ref-vorlage-reicht-durch',
-    datei: 'src/i18n/translate-data.ts',
+    datei: 'supabase/functions/_shared/i18n/translate-data.ts',
     regel: 'Eine Verweis-Vorlage gibt ihre Zahl weiter — „th Lektion 11" verliert die 11 nicht.',
     suchen: "    thLek: n => 'th study ' + n,",
     ersetzen: "    thLek: () => 'th study',",

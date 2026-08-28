@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { DE } from '../i18n/de'
+import { APP_LANGS, isRTL } from '../i18n/langs'
+import { dict, loadOverlay } from '../i18n/ui'
 
 /**
  * **Was der Provider nebenher tut** — die Effekte, die keiner Aktion gehören.
@@ -365,6 +367,64 @@ describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => 
       result.current.dispatch({ type: 'setLang', lang: 'ar' })
     })
     expect(document.documentElement.dir).toBe('rtl')
+  })
+
+  /**
+   * **Alle 34, nicht zwei.**
+   *
+   * Zwei Sprachen zu messen und auf die übrigen 32 zu schließen ist genau der
+   * Schluss, der in diesem Projekt mehrfach danebenging. Hier hängt an ihm
+   * mehr als ein Wort: `lang` steuert, wie Screenreader vorlesen und wie der
+   * Browser trennt; `dir` dreht das ganze Layout.
+   */
+  it.each(APP_LANGS.map((l) => l.code))('%s: lang und dir werden gesetzt', async (code) => {
+    const { result } = starte()
+    await act(async () => {
+      result.current.dispatch({ type: 'setLang', lang: code })
+    })
+    expect(document.documentElement.lang).toBe(code)
+    expect(localStorage.getItem('lang')).toBe(code)
+    expect(document.documentElement.dir).toBe(isRTL(code) ? 'rtl' : 'ltr')
+  })
+
+  it('genau vier Sprachen drehen das Layout — und die Rückkehr dreht es zurück', async () => {
+    // Der Rückweg ist die Hälfte, die man vergisst: Wer von Arabisch auf
+    // Deutsch wechselt, muss wieder von links nach rechts lesen. Ein `dir`,
+    // das nur gesetzt und nie zurückgenommen wird, fällt beim Umschalten in
+    // eine Richtung nicht auf.
+    const { result } = starte()
+    const rtl: string[] = []
+    for (const { code } of APP_LANGS) {
+      await act(async () => {
+        result.current.dispatch({ type: 'setLang', lang: code })
+      })
+      if (document.documentElement.dir === 'rtl') rtl.push(code)
+    }
+    expect(rtl.sort()).toEqual(['ar', 'fa', 'he', 'ur'])
+    await act(async () => {
+      result.current.dispatch({ type: 'setLang', lang: 'de' })
+    })
+    expect(document.documentElement.dir).toBe('ltr')
+  })
+
+  it('das Sprach-Overlay wird nachgeladen und die Oberfläche danach neu gezeichnet', async () => {
+    /*
+      Die Overlays liegen als eigene Chunks (Code-Splitting). Bis eines da ist,
+      liefert `dict()` den **englischen** Rückfall. Der Nachladeschritt stößt
+      deshalb ein zweites `setLang` an — ohne das bliebe die Oberfläche für
+      jede der ~30 lazy geladenen Sprachen dauerhaft englisch, ohne Fehler und
+      ohne dass ein Test es sähe.
+    */
+    const { result } = starte()
+    await act(async () => {
+      result.current.dispatch({ type: 'setLang', lang: 'ko' })
+    })
+    // Der Effekt löst den Import aus; abwarten, bis er durch ist.
+    await act(async () => {
+      await loadOverlay('ko')
+    })
+    expect(dict('ko').navProfil).not.toBe(dict('en').navProfil)
+    expect(dict('ko').navProfil).not.toBe(dict('de').navProfil)
   })
 })
 

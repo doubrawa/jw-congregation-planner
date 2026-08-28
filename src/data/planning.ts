@@ -39,6 +39,7 @@ import {
   type Zuteilung,
 } from './helpers'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
+import { ersteZahl } from './ziffern'
 import type {
   ConfirmationMap,
   Group,
@@ -774,8 +775,21 @@ export function buildS89ForSlot(
   const slot = slotsOf(item, raum)[sel.ni]
   const current = slot?.name ?? ''
   if (!current) return null
+  // Woran ein Schulungsplatz erkannt wird: am **Bereich**, nicht am Titel.
+  // `item.title.startsWith('Bibellesung')` stand hier allein — und traf bei
+  // einer fremdsprachigen Versammlung nie, denn der Import übernimmt den Titel
+  // wörtlich aus der Zielsprache („Lectura de la Biblia"). Die Bibellesung bekam
+  // dort **keinen S-89-Zettel**, ohne Fehler und ohne Hinweis; dieselbe Familie
+  // wie T61 (Bibelstudium am deutschen Titel gesucht). Den Bereich vergibt der
+  // Import in jeder Sprache (`bereichsKey: 'bibellesung'`, parse.ts).
+  //
+  // Der Titelvergleich bleibt als Rückfall für Bestandswochen, deren
+  // Bibellesungs-Platz noch keinen Bereich trägt — die sind kanonisch deutsch.
   const isStudent =
-    sel.priv === 'schulung' || sel.priv === 'schulungPartner' || item.title.startsWith('Bibellesung')
+    sel.priv === 'schulung' ||
+    sel.priv === 'schulungPartner' ||
+    sel.priv === 'bibellesung' ||
+    item.title.startsWith('Bibellesung')
   if (!isStudent) return null
   // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
   // getrennte Slots im selben Punkt. Alt-Daten trugen den Partner als "mit X" im
@@ -785,11 +799,35 @@ export function buildS89ForSlot(
   const role = slot?.rolle ?? ''
   const legacyPartner = role.startsWith('mit ') ? role.slice(4) : ''
   const metaFrags = (item.meta ?? '').split(' · ')
-  const setting =
-    metaFrags.find(
-      (f) => f === 'Von Haus zu Haus' || f === 'Informell' || f === 'In der Öffentlichkeit',
-    ) ?? ''
-  const point = metaFrags.find((f) => /^(th|lmd) /.test(f)) ?? ''
+  // Der Rahmen („Von Haus zu Haus") — **an der Form erkannt, nicht am Wort**.
+  //
+  // Hier standen die drei deutschen Wendungen als Aufzählung. In einer
+  // fremdsprachigen Versammlung steht im Meta „De casa en casa" oder „‏מבית
+  // לבית", und der Zettel ging ohne Rahmen hinaus — der Schüler erfuhr nicht,
+  // in welchem Rahmen er seine Aufgabe halten soll.
+  //
+  // Der Import setzt die Meta-Zeile als „[Rahmen ·] Zeit [· Quelle]" zusammen
+  // und gewinnt den Rahmen bereits sprachunabhängig (`settingOf` in parse.ts:
+  // der kurze Satz nach der Zeitklammer, **ohne Ziffer**). Genau daran ist er
+  // auch hier wieder zu erkennen: Dauer und Quellenangabe tragen immer eine
+  // Zahl, in welcher Schrift auch immer („٣ دق", „lmd lección 1"), der Rahmen
+  // nie.
+  const setting = metaFrags.find((f) => f !== '' && ersteZahl(f) === null) ?? ''
+  // Der Schulungspunkt — die **Quelle** der Meta-Zeile, also das Stück hinter
+  // der Dauer.
+  //
+  // Hier stand `/^(th|lmd) /`. Das Publikationskürzel ist aber keine Konstante:
+  // zh/ja/ko/ar/he/fa/ur übersetzen es mit („th" → 教励, „教导", „הר"), und dort
+  // ging der Schulungspunkt verloren — der Schüler bekam einen Zettel ohne den
+  // Punkt, an dem er arbeiten soll. Nebenbei fehlte `lff`, obwohl es dieselbe
+  // Rolle spielt wie `th`/`lmd`.
+  //
+  // Die Zerlegung nutzt dieselbe Zusicherung, auf der schon `itemMinutes`
+  // ruht: Der Import setzt die Zeile als „[Rahmen ·] Zeit [· Quelle]" zusammen,
+  // der Rahmen trägt nie eine Ziffer — die erste Zahl ist also immer die Dauer,
+  // und was danach steht, ist die Quelle.
+  const zeitIdx = metaFrags.findIndex((f) => ersteZahl(f) !== null)
+  const point = (zeitIdx >= 0 ? metaFrags[zeitIdx + 1] : undefined) ?? ''
   return {
     name: leadName || current, // Bibellesung hat keinen schulung-Slot → aktueller Name
     partner: partnerName || legacyPartner,

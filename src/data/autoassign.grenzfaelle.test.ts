@@ -322,12 +322,20 @@ describe('Gleichmaß über lange Zeiträume', () => {
     expect(Math.max(...summen) - Math.min(...summen), `Verteilung ${summen.join(' ')}`).toBeLessThanOrEqual(3)
   })
 
+  /*
+    Eigene Frist: 52 Wochen × 16 Personen ist die längste Simulation im ganzen
+    Bestand. Ohne Instrumentierung läuft sie in gut einer Sekunde; unter
+    `npm run test:coverage` zählt V8 jede Verzweigung mit, und dieselbe Rechnung
+    überschreitet die Vorgabe von 5 s. Der Lauf wurde dadurch **nur unter
+    Coverage** rot — also ausgerechnet dann, wenn man Lücken sucht und eine rote
+    Zeile für einen Befund hält.
+  */
   it('Aufgaben: ein Jahr, niemand geht leer aus', () => {
     const alle = Array.from({ length: 16 }, () => mk(SCHUL))
     const weeks = planeWochen(52, () => alle)
     const summen = alle.map((p) => summe(aufgabenJeWoche(weeks, p), 0, 52))
     expect(Math.min(...summen), `Verteilung ${summen.join(' ')}`).toBeGreaterThan(0)
-  })
+  }, 20_000)
 
   it('Hilfsdienste: ein enger Kreis wird gleichmäßig durchgetauscht', () => {
     // Nur vier Personen für den Ton — die Strichliste muss sie durchrotieren.

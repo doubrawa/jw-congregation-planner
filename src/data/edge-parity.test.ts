@@ -75,6 +75,45 @@ describe('Beschriftung einer Zuteilung', () => {
     expect(text).not.toContain('Lied')
     expect(text).not.toContain('Einleitende Worte')
   })
+
+  /**
+   * **Die fremdsprachige Woche — die Eingabe, die beide Seiten am ehesten
+   * auseinanderlaufen lässt.**
+   *
+   * `zuteilungsLabel` entscheidet am **Namen** des Abschnitts, ob der Titel den
+   * ganzen Block benennt. Das geht nur auf, weil der Import ERÖFFNUNG und
+   * ABSCHLUSS kanonisch deutsch lässt und die drei farbigen Überschriften
+   * wörtlich aus der Zielsprache übernimmt. Beide Fassungen der Funktion
+   * müssen dieselbe Annahme tragen — die Client-Seite kennt seit 266acbb
+   * zusätzlich `Section.kind`, die Edge-Seite nicht (sie hat nur den Namen).
+   *
+   * Läuft eine davon auf die Art um, ohne die andere, sagt die Erinnerung
+   * plötzlich etwas anderes als der Bildschirm.
+   */
+  const FREMD: Array<[string, string, string | undefined]> = [
+    ['NUESTRA VIDA CRISTIANA', 'Estudio bíblico de la congregación', 'Leiter'],
+    ['神の言葉の宝', '聖書朗読', ''],
+    ['كنوز من كلمة الله', 'قراءة الكتاب المقدس', undefined],
+    ['ΘΗΣΑΥΡΟΙ ΑΠΟ ΤΟΝ ΛΟΓΟ ΤΟΥ ΘΕΟΥ', 'Ανάγνωση της Αγίας Γραφής', 'Leser'],
+    // Die beiden Rahmen-Überschriften bleiben auch dort kanonisch deutsch.
+    ['ERÖFFNUNG', 'Canción 1 · Oración · Palabras de introducción', 'Vorsitz'],
+    ['ABSCHLUSS', '結びの言葉 · 歌 24 · 祈り', 'Gebet'],
+  ]
+
+  it.each(FREMD)('fremdsprachig „%s" / „%s" gleich auf beiden Seiten', (label, titel, rolle) => {
+    expect(edgeLabel(label, titel, rolle)).toBe(zuteilungsLabel(label, titel, rolle))
+  })
+
+  it('und im fremdsprachigen Block-Abschnitt trägt weiterhin die Rolle allein', () => {
+    // Der eigentliche Ertrag: Wer die Eröffnung hat, liest seine Rolle — nicht
+    // „Canción 1 · Oración · Palabras de introducción · Vorsitz".
+    expect(zuteilungsLabel('ERÖFFNUNG', 'Canción 1 · Oración · Palabras de introducción', 'Vorsitz'))
+      .toBe('Vorsitz')
+    // In einem farbigen Abschnitt dagegen steht der (fremdsprachige) Titel
+    // vorn und die Rolle dahinter.
+    expect(zuteilungsLabel('NUESTRA VIDA CRISTIANA', 'Estudio bíblico de la congregación', 'Leiter'))
+      .toBe('Estudio bíblico de la congregación · Leiter')
+  })
 })
 
 describe('Rolle mit Herkunft', () => {

@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeTr } from '../../../src/i18n/translate'
 
 /*
  * Tests der Edge Function `import-week` — der Teil, der bis T65 ohne Aufbau
@@ -79,6 +80,61 @@ const umschalter = (slug: string, codes: string[], fremd?: { code: string; url: 
     )
     .join('')
 
+/* ---- Wachtturm-Studienausgabe -------------------------------------------- */
+
+/*
+ * Die Studienausgabe erscheint rund zwei Monate vor der Behandlung; für die
+ * Woche ab 2. März 2026 kommen Januar 2026 und Dezember 2025 infrage
+ * (`studyIssueSlugs`). Genommen wird hier die erste.
+ *
+ * **Die Übersichtsseite wird immer deutsch geholt**, auch für eine spanische
+ * Versammlung — und das ist keine Nachlässigkeit, sondern die Voraussetzung
+ * dafür, dass die Woche überhaupt gefunden wird: `studySynopses` liest den
+ * Termin der Karte über eine **deutsche** Monatstabelle und über `\d`. Auf
+ * einer arabischen Übersichtsseite („٧-١٣ سبتمبر") trifft beides nicht, und der
+ * Artikel bliebe stumm aus. In die Zielsprache geht es erst über den
+ * „Lesen in"-Umschalter der Artikelseite.
+ */
+const STUDIE_SLUG = 'wachtturm-studienausgabe-januar-2026'
+const STUDIE_ARTIKEL_PFAD = '/de/bibliothek/zeitschriften/artikel-de'
+
+/**
+ * Je Wochenseite eine Karte, damit die Übersicht zu jeder gefundenen Woche
+ * passt. Die erste Karte trägt **kein** Datum — das ist die Kopf-Karte „DER
+ * WACHTTURM", an der die Paarung schon einmal um eins verrutscht ist.
+ */
+const STUDIE_UEBERSICHT = `<html><body>
+  <div class="synopsis card">
+    <p class="contextTitle">DER WACHTTURM</p>
+  </div>
+  ${WOCHEN_SLUGS.map((slug) => {
+    const t = slug.split('Zusammenkunft-')[1] ?? ''
+    const m = /^(\d+)-(\d+)-([A-Za-zäöü]+)-(\d{4})$/.exec(t)
+    const kreuz = /^(\d+)-([A-Za-zäöü]+)-(\d+)-([A-Za-zäöü]+)-(\d{4})$/.exec(t)
+    const kopf = m
+      ? `${m[1]}.-${m[2]}. ${m[3]} ${m[4]}`
+      : kreuz
+        ? `${kreuz[1]}. ${kreuz[2]}–${kreuz[3]}. ${kreuz[4]} ${kreuz[5]}`
+        : t
+    return `<div class="synopsis card">
+    <p class="contextTitle">${kopf}</p>
+    <h2><a href="${STUDIE_ARTIKEL_PFAD}">Erfundener Studientitel</a></h2>
+  </div>`
+  }).join('\n')}
+</body></html>`
+
+/**
+ * Artikelseite. Der Umschalter steht wie auf der Wochenseite als
+ * `<option value data-url>`; die Lieder tragen das MEPS-Symbol `pub-sjj`.
+ */
+const studieArtikel = (code: string): string => `<html><body>
+  ${['es', 'en', 'fr'].map((c) => `<option value="${c}" data-url="/${c}/artikel-es"></option>`).join('')}
+  <h1 data-pid="1">[${code}] Studientitel</h1>
+  <a class="pub-sjj" href="#">[${code}] Lied 100</a>
+  <a class="pub-nwt" href="#">Keine Liednummer</a>
+  <a class="pub-sjj" href="#">[${code}] Lied 200</a>
+</body></html>`
+
 /** Wochenseite in erfundener Sprache — die Struktur ist das Gemessene. */
 const wochenSeite = (kopf: string, schalter = ''): string => `<article>${schalter}
   <h1 data-pid="1" class="du-color--textSubdued">${kopf}</h1>
@@ -107,6 +163,8 @@ interface Seiten {
   leseKaputt: boolean
   /** Sprachen, die der „Lesen in"-Umschalter dieser Woche anbietet. */
   sprachen: string[]
+  /** Liefert die Studienausgabe eine Übersicht samt Artikel? (Vorgabe: nein) */
+  studie?: boolean
   /**
    * Sprachcode, für den der Umschalter eine **fremde, absolute** Adresse
    * ausweist statt eines jw.org-Pfads. jw.org tut das heute nicht — aber der
@@ -149,7 +207,17 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
     const kopf = m ? `${m[1]}.-${m[2]}. ${m[3]}` : kreuz ? `${kreuz[1]}. ${kreuz[2]}–${kreuz[3]}. ${kreuz[4]}` : t
     return text(wochenSeite(kopf, umschalter(woche, seiten.sprachen, seiten.fremdeVariante)))
   }
-  // Studienausgaben: nicht vorhanden → applyStudy lässt die Vorlage stehen.
+  // Wachtturm-Studienausgabe: Übersichtsseite und Artikel (siehe STUDIE).
+  if (seiten.studie) {
+    if (url === `${BASE}/de/bibliothek/zeitschriften/${STUDIE_SLUG}/`) return text(STUDIE_UEBERSICHT)
+    if (url === `${BASE}${STUDIE_ARTIKEL_PFAD}`) return text(studieArtikel('de'))
+    const artikelVariante = new RegExp(`^${BASE}/([a-z-]+)/artikel-es$`).exec(url)
+    if (artikelVariante) {
+      const code = artikelVariante[1] ?? ''
+      return seiten.sprachen.includes(code) ? text(studieArtikel(code)) : weg()
+    }
+  }
+  // Sonstige Studienausgaben: nicht vorhanden → applyStudy lässt die Vorlage stehen.
   return weg()
 }
 
@@ -387,6 +455,67 @@ describe('import-week: in der Sprache der Versammlung', () => {
   })
 })
 
+/**
+ * **Der Wachtturm-Studienartikel: deutsch gesucht, in der Zielsprache geholt.**
+ *
+ * Die Studienausgabe ist die zweite Quelle des Imports, und sie geht einen
+ * anderen Weg als die Wochenseite. Der Grund steht bei `STUDIE_UEBERSICHT`:
+ * `studySynopses` findet die richtige Karte über eine **deutsche**
+ * Monatstabelle und über `\d` — auf einer arabischen oder japanischen
+ * Übersichtsseite trifft beides nicht.
+ *
+ * Diese Verabredung stand bisher nur als Satz im Quelltext. Wer die
+ * Übersichtsseite eines Tages „konsequent" lokalisiert, macht damit den
+ * Wachtturm-Titel für jede fremdsprachige Versammlung stumm leer — ohne Fehler,
+ * ohne Hinweis, und nur am Wochenende sichtbar.
+ */
+describe('import-week: die Studienausgabe wird deutsch angesteuert', () => {
+  const studienUrls = () => geholt.filter((u) => u.includes('/bibliothek/zeitschriften/'))
+
+  it('die Übersicht wird auch für eine spanische Versammlung deutsch geholt', async () => {
+    seiten.studie = true
+    await hole({ after: '2026-03-02', lang: 'es' })
+    const uebersicht = studienUrls().filter((u) => u.includes('wachtturm-studienausgabe'))
+    expect(uebersicht.length, 'keine Studienausgabe angefragt').toBeGreaterThan(0)
+    for (const u of uebersicht) expect(u).toContain('/de/bibliothek/zeitschriften/')
+    expect(uebersicht.some((u) => /\/(es|en|fr)\/bibliothek/.test(u))).toBe(false)
+  })
+
+  it('der Artikel selbst kommt in der Sprache der Versammlung', async () => {
+    seiten.studie = true
+    const { week } = await hole({ after: '2026-03-02', lang: 'es' })
+    const wt = JSON.stringify(week?.we ?? {})
+    // Titel und Lied vor dem Studium tragen die Sprachmarke der Artikelseite …
+    expect(wt).toContain('[es] Studientitel')
+    expect(wt).toContain('[es] Lied 100')
+    expect(wt).not.toContain('[de] Studientitel')
+    // … das **Schlusslied** dagegen nicht: Es wird in den kanonisch deutschen
+    // Abschluss-Titel der Wochenend-Vorlage eingesetzt, und dorthin übernimmt
+    // `mitLiedNummer` bewusst nur die **Zahl**. Ein lokalisiertes „سرود ۱۵۱"
+    // liefe durch keine Übersetzung mehr; „Lied 200" schon.
+    expect(wt).toContain('Lied 200')
+    expect(wt).not.toContain('[es] Lied 200')
+  })
+
+  it('ohne Sprachfassung des Artikels bleibt die Vorlage stehen', async () => {
+    // Der Artikel ist neuer als die Übersetzung — dann lieber die leere
+    // Vorlage („Studienartikel eintragen") als ein deutscher Titel mitten im
+    // spanischen Programm.
+    seiten.studie = true
+    seiten.sprachen = ['en'] // die Wochenseite gibt es auf Englisch …
+    const { week } = await hole({ after: '2026-03-02', lang: 'en' })
+    const wt = JSON.stringify(week?.we ?? {})
+    expect(wt).toContain('[en] Studientitel') // … und den Artikel auch
+    seiten.sprachen = ['en', 'es', 'fr']
+  })
+
+  it('auf Deutsch braucht der Artikel keinen Umweg', async () => {
+    seiten.studie = true
+    await hole({ after: '2026-03-02', lang: 'de' })
+    expect(geholt.some((u) => /\/(es|en|fr)\/artikel-es$/.test(u))).toBe(false)
+  })
+})
+
 describe('import-week: weitere Programmsprachen als Varianten', () => {
   it('holt jede gewünschte Sprache mit und hängt sie an die Woche', async () => {
     const { week } = await hole({ after: '2026-03-02', lang: 'de', altLangs: ['en', 'fr'] })
@@ -435,6 +564,33 @@ describe('import-week: weitere Programmsprachen als Varianten', () => {
     const { week } = await hole({ after: '2026-03-23', lang: 'de', altLangs: ['en'] })
     expect(week?.mem).toBe(true)
     expect(week?.alt).toBeUndefined()
+  })
+
+  /**
+   * **Die einzige Woche, die die App selbst schreibt** — und deshalb die
+   * einzige, deren Texte auch für eine fremdsprachige Versammlung kanonisch
+   * deutsch dastehen.
+   *
+   * Für die Gedächtnismahl-Woche druckt der Herausgeber kein Arbeitsheft; es
+   * gibt keine Seite, aus der sich ein Wochenkopf holen ließe. `wochenSpanne`
+   * baut ihn deshalb aus dem Datum — auf Deutsch, wie jede Vorlage in diesem
+   * Projekt. Übersetzt wird er erst bei der Anzeige (`tp`).
+   *
+   * Wer das nicht weiß, „behebt" hier irgendwann den vermeintlichen Fehler und
+   * schreibt den Kopf lokalisiert in die Daten. Dann läuft er durch keinen
+   * Übersetzer mehr — und steht für jede andere Programmsprache derselben
+   * Versammlung in der falschen.
+   */
+  it('die Gedächtnismahl-Woche steht kanonisch deutsch da — auch auf Spanisch', async () => {
+    const { week } = await hole({ after: '2026-03-23', lang: 'es' })
+    expect(week?.mem).toBe(true)
+    expect(week?.lang).toBe('es')
+    // Der Kopf ist deutsch …
+    expect(week?.range).toMatch(/März|April/)
+    // … und genau deshalb übersetzbar. Ohne diese Zeile bliebe offen, ob das
+    // Deutsche eine Absicht ist oder eine Lücke.
+    expect(makeTr('es')(week?.range ?? '')).not.toBe(week?.range)
+    expect(makeTr('ja')(week?.range ?? '')).not.toBe(week?.range)
   })
 })
 

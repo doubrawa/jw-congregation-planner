@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import { useApp } from '../app/context'
-import { istBlockAbschnitt, mtab } from '../data/helpers'
+import { istBlockSektion, mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
@@ -167,8 +167,16 @@ function ProgramMeeting({
       {meeting.sections.map((section, si) => {
         // ERÖFFNUNG/ABSCHLUSS tragen das Lied im Sammeltitel — herausgezogen
         // als eigene mittig+kursive Zeile (einheitlich mit den übrigen Liedern).
-        const canonical = rawMeeting.sections[si]?.label
-        const splitHere = istBlockAbschnitt(canonical ?? '')
+        //
+        // Gefragt wird die **Art** des Abschnitts, nicht sein Name: `section`
+        // ist hier die angezeigte (womöglich übersetzte) Fassung, `rawSection`
+        // die kanonische. Der Name griff bisher nur, weil ERÖFFNUNG und
+        // ABSCHLUSS die einzigen Überschriften sind, die der Import **nicht**
+        // aus der Zielsprache übernimmt — eine stille Verabredung mit
+        // `parse.ts`, an deren Gegenstück (`LABEL_LAC`) genau dieser Weg schon
+        // einmal gescheitert ist.
+        const rawSection = rawMeeting.sections[si]
+        const splitHere = rawSection ? istBlockSektion(rawSection) : false
         return (
           <div key={section.label} className="panel" data-farbe={section.farbe}>
             <h2 className="panel-label">{tpw(section.label)}</h2>

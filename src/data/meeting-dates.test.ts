@@ -175,3 +175,61 @@ describe('tageZwischen', () => {
     expect(tageZwischen(new Date(2026, 8, 7, 6), new Date(2026, 8, 7, 20))).toBe(0)
   })
 })
+
+/**
+ * **Der Termin einer fremdsprachigen Woche.**
+ *
+ * Bei einer Versammlung, die nicht auf Deutsch zusammenkommt, holt der Import
+ * die Wochenseite in der Zielsprache — und schreibt deren Kopf in
+ * `Meeting.date`: „7–13 de septiembre", „9月7–13日", „٧–١٣ سبتمبر". Die Rangfolge
+ * in `meetingOffset`/`meetingDateText` fragt dieses Feld zuerst, und zwar über
+ * einen Ausdruck mit **deutschen** Wochentagsnamen.
+ *
+ * Das geht auf, weil der Kopf einer Wochenseite gar keinen Wochentag nennt —
+ * weder deutsch noch sonstwie. Die Regel greift also nicht, und gerechnet wird
+ * aus `week.start` plus dem eingestellten Rhythmus; heraus kommt ein kanonisch
+ * deutsches Datum, das die Anzeige übersetzt.
+ *
+ * Geprüft war das nie: Alle Fälle oben tragen einen deutschen Kopf. Ein
+ * Ausdruck, der eines Tages auch fremdsprachige Wochentage kennt („Tuesday"),
+ * bräche das — die Woche stünde dann auf dem Tag, den der **Kopf** nennt, statt
+ * auf dem der Zusammenkunft.
+ */
+describe('meetingDateText bei fremdsprachiger Versammlung', () => {
+  const KOEPFE: Array<[string, string]> = [
+    ['spanisch', '7-13 de septiembre'],
+    ['japanisch', '9月7–13日'],
+    ['arabisch', '٧–١٣ سبتمبر'],
+    ['griechisch', '7–13 Σεπτεμβρίου'],
+    ['englisch', 'September 7–13'],
+    ['ungarisch', 'szeptember 7–13.'],
+  ]
+
+  it.each(KOEPFE)('%s: der Termin wird gerechnet, nicht aus dem Kopf gelesen', (_name, kopf) => {
+    const w = woche(MONTAG, kopf, kopf)
+    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Dienstag, 8. September · 19:00')
+    expect(meetingDateText(w, 0, 'we', MEETINGS)).toBe('Sonntag, 13. September · 10:00')
+  })
+
+  it.each(KOEPFE)('%s: und der Versatz kommt aus den Einstellungen', (_name, kopf) => {
+    const w = woche(MONTAG, kopf, kopf)
+    expect(meetingOffset(w, 'mid', MEETINGS)).toBe(1) // Dienstag
+    expect(meetingOffset(w, 'we', MEETINGS)).toBe(6) // Sonntag
+  })
+
+  it('eine Abweichung schlägt auch hier den Kopf', () => {
+    // T30: Der Planer verlegt die Zusammenkunft. Der fremdsprachige Kopf nennt
+    // ohnehin keinen Tag — aber die Rangfolge muss dieselbe bleiben.
+    const w = woche(MONTAG, '7-13 de septiembre')
+    w.dev = { mid: { day: 'Donnerstag', time: '18:30' } }
+    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Donnerstag, 10. September · 18:30')
+  })
+
+  it('ein eigener Termin bleibt kanonisch deutsch, auch in einer spanischen Woche', () => {
+    // Den schreibt die App selbst (Gedächtnismahl, verlegte Woche) — deshalb
+    // deutsch, und deshalb greift der Ausdruck hier sehr wohl.
+    const w = woche(MONTAG, 'Samstag, 12. September · 19:30 · Königreichssaal')
+    w.lang = 'es'
+    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Samstag, 12. September · 19:30')
+  })
+})

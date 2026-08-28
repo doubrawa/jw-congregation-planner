@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { APP_LANGS, LOCALES } from './langs'
 import { relativeDayLabel, relativeWeekLabel } from './relative-time'
 
 // Fester „Jetzt"-Zeitpunkt, damit die Tage-Differenz deterministisch ist.
@@ -74,5 +75,93 @@ describe('Unbekannte Sprache: lieber kein Chip als ein Absturz', () => {
   it('die echten App-Sprachen liefern sehr wohl etwas — sonst prüfte das hier nichts', () => {
     expect(relativeDayLabel(NOW + day, 'de', NOW)).not.toBe('')
     expect(relativeWeekLabel(1, 'de')).not.toBe('')
+  })
+})
+
+/**
+ * **Und jetzt alle 34 — nicht nur Deutsch und Englisch.**
+ *
+ * Die Prüfungen oben messen zwei Sprachen und schließen von ihnen auf den Rest.
+ * Genau dieser Schluss ist hier schon einmal danebengegangen: Die Glocke
+ * (`i18n/zeit.ts`) baute ihre Zeitangaben aus einer Liste fertiger Sätze, und
+ * weil `vor 2 Std.` in den Testdaten vorkam, stand ausgerechnet diese eine
+ * Form übersetzt da — jede andere Stundenzahl blieb in 33 Sprachen deutsch.
+ * `zeit.test.ts` prüft seither jede Sprache; dieselbe Prüfung fehlte für den
+ * Countdown der Aufgaben und für das Wochen-Label.
+ *
+ * Der Chip ist keine Nebensache: An ihm steht, ob eine Aufgabe „heute" oder
+ * „in 4 Tagen" ansteht. Ein deutscher Chip in einer koreanischen Oberfläche ist
+ * unbrauchbar; ein **leerer** wäre es auch, und leer wird er genau dann, wenn
+ * `Intl` die Locale nicht kennt (dort fängt der Code ab, statt zu werfen).
+ */
+describe('Jede App-Sprache bekommt ihren eigenen Chip', () => {
+  const FREMD = APP_LANGS.map((l) => l.code).filter((c) => c !== 'de')
+
+  /**
+   * Gemessen wird die **ganze Reihe**, nicht die einzelne Form.
+   *
+   * Einzeln verglichen gäbe es falsche Treffer: Niederländisch sagt zu „morgen"
+   * tatsächlich „morgen", Dänisch und Norwegisch schreiben „Gruppe" wie das
+   * Deutsche. Ein stiller Rückfall sieht anders aus — dann stimmt **jede** Form
+   * überein. Geprüft wird deshalb: nichts ist leer, und die Reihe als Ganzes
+   * unterscheidet sich.
+   */
+  const gleich = (a: string[], b: string[]) => a.every((s, i) => s === b[i])
+
+  it.each(FREMD)('%s: der Tages-Countdown ist weder leer noch durchweg deutsch', (code) => {
+    const STUFEN = [0, 1, 4, -3]
+    const eigen = STUFEN.map((tage) => relativeDayLabel(NOW + tage * day, code, NOW))
+    const deutsch = STUFEN.map((tage) => relativeDayLabel(NOW + tage * day, 'de', NOW))
+    expect(eigen.filter(Boolean), `${code}: leere Chips`).toHaveLength(STUFEN.length)
+    expect(gleich(eigen, deutsch), `${code}: ${eigen.join(' / ')}`).toBe(false)
+  })
+
+  it.each(FREMD)('%s: das Wochen-Label ebenso', (code) => {
+    const STUFEN = [0, 1, -1, 2, -2]
+    const eigen = STUFEN.map((v) => relativeWeekLabel(v, code))
+    const deutsch = STUFEN.map((v) => relativeWeekLabel(v, 'de'))
+    expect(eigen.filter(Boolean), `${code}: leere Labels`).toHaveLength(STUFEN.length)
+    expect(gleich(eigen, deutsch), `${code}: ${eigen.join(' / ')}`).toBe(false)
+  })
+
+  it.each(APP_LANGS.map((l) => l.code))('%s: keine Form enthält „undefined" oder „NaN"', (code) => {
+    // Der Rand: sehr große Abstände, negative wie positive. `Intl` formatiert
+    // sie klaglos — solange die Zahl eine ist.
+    for (const tage of [0, 1, -1, 6, 7, 30, 365, -365]) {
+      const text = relativeDayLabel(NOW + tage * day, code, NOW)
+      expect(text, `${code}/${tage}`).not.toMatch(/undefined|NaN|Invalid/)
+    }
+    for (const versatz of [0, 1, -1, 52, -52]) {
+      expect(relativeWeekLabel(versatz, code), `${code}/${versatz}`).not.toMatch(
+        /undefined|NaN|Invalid/,
+      )
+    }
+  })
+
+  it.each(FREMD)('%s: „heute"/„morgen" sind Wörter, keine gezählten Tage', (code) => {
+    /*
+      `numeric: 'auto'` ist der ganze Grund für diesen Weg: Ohne ihn stünde da
+      „in 1 Tag" statt „morgen", und in Sprachen mit Dual, Paukal oder eigenen
+      Zählwörtern wäre die Form schlicht falsch.
+
+      Belegt wird es nicht an einer Behauptung über die Wörter — die kennt hier
+      niemand für 33 Sprachen —, sondern am **Unterschied zur gezählten Form**:
+      Dasselbe `Intl` mit `numeric: 'always'` muss etwas anderes liefern. Tut es
+      das nicht, ist die Option wirkungslos geworden.
+    */
+    const locale = LOCALES[code]
+    const gezaehlt = new Intl.RelativeTimeFormat(locale, { numeric: 'always' })
+    for (const versatz of [0, 1, -1]) {
+      const auto = relativeDayLabel(NOW + versatz * day, code, NOW)
+      expect(auto, `${code}/${versatz}`).not.toBe(gezaehlt.format(versatz, 'day'))
+    }
+  })
+
+  it('ein Tag weiter kann trotzdem ein eigenes Wort sein', () => {
+    // Japanisch hat für „übermorgen" ein Wort (明後日) und schreibt dort keine
+    // Zahl. Wer prüft „ab zwei Tagen steht eine Zahl da", prüft eine deutsche
+    // Eigenheit — deshalb steht das hier als Merkposten und nicht als Regel.
+    expect(relativeDayLabel(NOW + 2 * day, 'ja', NOW)).not.toMatch(/\p{Nd}/u)
+    expect(relativeDayLabel(NOW + 4 * day, 'ja', NOW)).toMatch(/\p{Nd}/u)
   })
 })

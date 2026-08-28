@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { isNameless, reducer } from './reducer'
 import { hatAuxKlasse } from '../data/aux-class'
-import type { AppState } from './context'
+import type { AppAction, AppState } from './context'
 import type { HydratePayload } from './context'
 import {
   buildDemoFsWeeks,
@@ -1298,5 +1298,59 @@ describe('Index außerhalb des Fensters', () => {
   it('autoAssign ohne geladene Wochen gibt den Zustand zurück', () => {
     const s = makeState({ weeks: [] })
     expect(reducer(s, { type: 'autoAssign', scope: 'all' })).toBe(s)
+  })
+})
+
+/**
+ * **Die Meldungen des Reducers sprechen die Sprache des Nutzers.**
+ *
+ * Der Reducer ist die einzige Stelle außerhalb der Bausteine, die selbst Text
+ * erzeugt: „Person angelegt", „12 Zuteilungen vergeben", „Bestätigt". Er hat
+ * keinen `useT`-Hook, sondern greift über `dict(state.lang)` — eine zweite
+ * Zuleitung zum selben Wörterbuch, und eine, die niemand gemessen hat: Alle
+ * Toast-Prüfungen oben verlangen nur `toBeTruthy()`, und der Zustand ist überall
+ * deutsch.
+ *
+ * Damit wäre `dict(DE)` statt `dict(state.lang)` durch keinen Test gefallen —
+ * und jede Meldung stünde für 33 Sprachen deutsch da.
+ */
+describe('Toasts in der Sprache des Nutzers', () => {
+  /** Aktionen, die eine Meldung erzeugen — je eine je Bauart. */
+  const AKTIONEN: Array<[string, AppAction, Partial<AppState>?]> = [
+    ['Person angelegt', { type: 'addPerson', person: { id: 'pX', fn: 'Neu', ln: 'Person', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null } }],
+    ['Abwesenheit angelegt', { type: 'addAbsence', absence: { id: 'aX', personId: 'p1', userId: 'u1', from: '2026-09-01', to: '2026-09-05', reason: '' } }],
+    ['Gruppe angelegt', { type: 'addGroup', group: { id: 'gX', name: 'Gruppe 9', ov: null, as: null } }],
+    ['Dienst angelegt', { type: 'addService', service: { key: 'svcX', name: 'Neuer Dienst', count: 1 } }],
+    ['automatisch zugeteilt', { type: 'autoAssign', scope: 'all' }],
+    ['geleert', { type: 'clearAssignments', scope: 'parts' }],
+  ]
+
+  it.each(AKTIONEN)('%s: koreanisch statt deutsch', async (name, action, over) => {
+    const { loadOverlay } = await import('../i18n/ui')
+    await loadOverlay('ko')
+    const deutsch = reducer(makeState({ lang: 'de', ...over }), action).toast?.text ?? ''
+    const koreanisch = reducer(makeState({ lang: 'ko', ...over }), action).toast?.text ?? ''
+    expect(deutsch, `${name}: gar keine Meldung`).toBeTruthy()
+    expect(koreanisch, `${name}: gar keine Meldung`).toBeTruthy()
+    expect(koreanisch, `${name}: blieb deutsch`).not.toBe(deutsch)
+  })
+
+  it('eine Meldung mit Zahl behält ihre Zahl', () => {
+    // `fill()` setzt `{n}` ein — in jeder Sprache dieselbe Zahl, nur an
+    // womöglich anderer Stelle im Satz.
+    const de = reducer(makeState({ lang: 'de' }), { type: 'autoAssign', scope: 'all' })
+    const ko = reducer(makeState({ lang: 'ko' }), { type: 'autoAssign', scope: 'all' })
+    const zahl = (s: string) => (s.match(/\d+/) ?? [''])[0]
+    expect(zahl(de.toast!.text)).toBeTruthy()
+    expect(zahl(ko.toast!.text)).toBe(zahl(de.toast!.text))
+  })
+
+  it('kein Platzhalter bleibt ungefüllt stehen', () => {
+    // Ein vergessenes `fill()` zeigt sich als „{n}" im Text — sichtbar, aber
+    // nur, wenn jemand hinsieht.
+    for (const [name, action, over] of AKTIONEN) {
+      const text = reducer(makeState({ lang: 'ko', ...over }), action).toast?.text ?? ''
+      expect(text, `${name}: ${text}`).not.toMatch(/\{\w+\}/)
+    }
   })
 })

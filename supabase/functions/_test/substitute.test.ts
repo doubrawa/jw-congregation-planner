@@ -15,6 +15,9 @@
  */
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
+import { APP_LANGS } from '../../../src/i18n/langs'
+import { makeTr } from '../../../src/i18n/translate'
+import { dict, NOTIF_TITLE_KEY, loadOverlay } from '../../../src/i18n/ui'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -622,4 +625,55 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
     expect(rows[0].title).toBe('Ersatz gefunden')
     expect(rows[0].body).toBe('Mikrofone · Di, 8. Sep · 19:00 · Ich Selbst')
   })
+
+  /*
+   * **„Übersetzbar" ist eine Behauptung — hier wird sie gemessen.**
+   *
+   * Die beiden Prüfungen oben halten die Form fest: fester Titel, Rumpf aus
+   * ' · '-Atomen. Ob der Fragment-Übersetzer diese Atome auch **kennt**, stand
+   * darin nicht. Genau daran hing die Sache schon einmal: Die Wörterbücher
+   * waren aus den eigenen Vorgaben gefüllt worden statt aus dem, was der Code
+   * erzeugt — „vor 2 Std." war übersetzt, „vor 3 Std." nicht.
+   *
+   * Deshalb läuft der tatsächlich geschriebene Rumpf hier durch **jede** der 33
+   * Fremdsprachen, Atom für Atom, so wie die Glocke ihn zeigt.
+   */
+  it.each(APP_LANGS.map((l) => l.code).filter((c) => c !== 'de'))(
+    '%s: jedes Atom des Rumpfs wird übersetzt',
+    async (code) => {
+      await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+      const rows = writesTo('notifications')[0]?.body as { title: string; body: string }[]
+      const tr = makeTr(code)
+      // „Otto Riginal" ist ein Name und bleibt; „19:00" ist eine Uhrzeit.
+      const NAME = 'Otto Riginal'
+      const atome = (rows[0]?.body ?? '').split(' · ').filter((a) => a && a !== NAME && !/^\d/.test(a))
+      expect(atome.length, `${code}: nichts zu prüfen`).toBeGreaterThan(1)
+      const deutsch = atome.filter((a) => tr(a) === a)
+      expect(deutsch, `${code}: ${deutsch.join(', ')}`).toEqual([])
+    },
+  )
+
+  beforeAll(async () => {
+    // Ohne Nachladen liefert `dict()` den EN-Rückfall: Der Titel wäre dann
+    // englisch statt koreanisch — und der Vergleich „nicht deutsch" ginge
+    // trotzdem durch. Genau dieser stille Rückfall ließ 92 Schlüssel
+    // monatelang englisch dastehen.
+    await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
+  })
+
+  it.each(APP_LANGS.map((l) => l.code).filter((c) => c !== 'de'))(
+    '%s: und der Titel findet seinen Wörterbuch-Schlüssel',
+    async (code) => {
+      // Die Glocke übersetzt den Titel nicht über den Fragment-Übersetzer,
+      // sondern über NOTIF_TITLE_KEY — eine zweite Zuordnung, die mit dem
+      // Wortlaut der Function übereinstimmen muss.
+      await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+      const rows = writesTo('notifications')[0]?.body as { title: string }[]
+      const key = NOTIF_TITLE_KEY[rows[0]?.title ?? '']
+      expect(key, `kein Schlüssel für „${rows[0]?.title}"`).toBeDefined()
+      const text = dict(code)[key as keyof ReturnType<typeof dict>]
+      expect(text, `${code}/${key}`).toBeTruthy()
+      expect(text, `${code}/${key} blieb deutsch`).not.toBe(dict('de')[key as keyof ReturnType<typeof dict>])
+    },
+  )
 })

@@ -338,3 +338,90 @@ describe('Die Liste darunter', () => {
     expect(container.querySelector('.abs-form-row')).toBeTruthy()
   })
 })
+
+/**
+ * **Der Datumswähler in fremden Sprachen.**
+ *
+ * Alles darüber misst ihn auf `de-DE`. Er ist aber der einzige Baustein der
+ * App, der einen ganzen **Kalender** zeichnet — und Kalender sind das Gebiet,
+ * auf dem Sprachen am weitesten auseinandergehen: andere Wochentagskürzel,
+ * andere Monatsnamen, andere Ziffern, andere Leserichtung. Und in `en-US`
+ * beginnt die Woche am **Sonntag**.
+ *
+ * Genau darauf verzichtet dieser Kalender bewusst: Das Raster startet immer am
+ * Montag (`grid`), weil die Programmwoche dieser App per Definition am Montag
+ * beginnt (`Week.start`, T66) — ein locale-abhängiger Wochenanfang würde die
+ * Spalten gegen die Wochen des Programms verschieben. Diese Entscheidung stand
+ * nur im Quelltext; hier wird sie gemessen.
+ */
+describe('Der Datumswähler in anderen Sprachen', () => {
+  const oeffne = (locale: string, value = '2026-03-15') => {
+    const r = render(
+      <DatePicker
+        value={value}
+        onChange={vi.fn()}
+        locale={locale}
+        placeholder={t.datumPh}
+        ariaLabel={t.von}
+        prevLabel={t.a11yPrevMonth}
+        nextLabel={t.a11yNextMonth}
+      />,
+    )
+    fireEvent.click(r.container.querySelector('.dp-field')!)
+    return r
+  }
+
+  const LOCALES_PROBE: Array<[string, string, RegExp]> = [
+    ['englisch', 'en-US', /March/],
+    ['spanisch', 'es-ES', /marzo/],
+    ['griechisch', 'el-GR', /\p{Script=Greek}/u],
+    ['japanisch', 'ja-JP', /3月/],
+    ['koreanisch', 'ko-KR', /3월/],
+    ['arabisch', 'ar', /\p{Script=Arabic}/u],
+    ['hebräisch', 'he-IL', /\p{Script=Hebrew}/u],
+    // Persisch ist der Grund für `-u-ca-gregory` in LOCALES: ohne die
+    // Erweiterung stünde hier ein Dschalali-Monat statt März.
+    ['persisch', 'fa-IR-u-ca-gregory', /مارس/],
+  ]
+
+  it.each(LOCALES_PROBE)('%s: Monatstitel in der eigenen Sprache', (_name, locale, muster) => {
+    const { container } = oeffne(locale)
+    expect(container.querySelector('.dp-title')?.textContent, locale).toMatch(muster)
+  })
+
+  it.each(LOCALES_PROBE)('%s: die Wochentagsköpfe kommen aus der Locale', (_name, locale) => {
+    const { container } = oeffne(locale)
+    const koepfe = [...container.querySelectorAll('.dp-weekdays span')].map((e) => e.textContent ?? '')
+    expect(koepfe, locale).toHaveLength(7)
+    expect(koepfe.every(Boolean), locale).toBe(true)
+    // Nicht die deutschen — sonst wäre die Locale nicht angekommen.
+    const deutsch = [...oeffne('de-DE').container.querySelectorAll('.dp-weekdays span')].map((e) => e.textContent)
+    expect(koepfe.join('|'), locale).not.toBe(deutsch.join('|'))
+  })
+
+  it.each(LOCALES_PROBE)('%s: das Raster beginnt trotzdem am Montag', (_name, locale) => {
+    /*
+      Die eigentliche Zusicherung. `en-US` und `ar` beginnen die Woche sonst am
+      Sonntag, `fa` am Samstag. Bliebe das Raster locale-abhängig, stünde der
+      1. März 2026 (ein Sonntag) in einer anderen Spalte als die Woche des
+      Programms — und der Planer klickte auf den falschen Tag.
+    */
+    const { container } = oeffne(locale, '2026-03-15')
+    const tage = [...container.querySelectorAll('.dp-day')]
+    expect(tage.length, locale).toBe(42)
+    // Der erste Tag des Rasters für März 2026 ist Montag, der 23. Februar.
+    const ersterTitel = tage[0]?.textContent ?? ''
+    expect(ersterTitel, `${locale}: ${ersterTitel}`).toMatch(/23/)
+  })
+
+  it('auf Deutsch ist der erste Rasterplatz derselbe — die Sprache verschiebt nichts', () => {
+    // Gegenprobe: Fände die Prüfung oben „23" auch bei einem sonntagsbasierten
+    // Raster, prüfte sie nichts. Deutsch beginnt ohnehin am Montag; entscheidend
+    // ist, dass **alle** dasselbe zeigen.
+    const de = [...oeffne('de-DE').container.querySelectorAll('.dp-day')]
+    const en = [...oeffne('en-US').container.querySelectorAll('.dp-day')]
+    expect(en.length).toBe(de.length)
+    expect(en[0]?.textContent).toBe(de[0]?.textContent)
+    expect(en[41]?.textContent).toBe(de[41]?.textContent)
+  })
+})
