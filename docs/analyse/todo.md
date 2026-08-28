@@ -3917,6 +3917,50 @@ hätte.
 
 ---
 
+## Aufgenommen am 28. August 2026 — Dokumentation (T98)
+
+### T98 · Die Dokumentation auf den Stand des Codes bringen 🔧 ☐ offen
+**Vorgabe des Betreibers am 28. August 2026.** Seit dem letzten Stand der
+Handbücher (25.8., `84dbe05`) sind neun Commits gelaufen, drei davon am
+Sprachverhalten der ganzen App. Die Handbücher beschreiben also eine App, die
+es so nicht mehr gibt — und das fällt hier später auf als überall sonst, weil
+kein Test eine Doku liest.
+
+**Was gemessen veraltet ist:**
+
+- **Die Zahl stimmt nicht.** `README.md:389` sagt „~30 Sprachen"; `APP_LANGS`
+  zählt **34**. Dieselbe Zahl steht in acht Dateien unter `docs/analyse/` in
+  drei verschiedenen Fassungen (30, 33, 34) — 33 meint dort meist „die
+  Fremdsprachen ohne Deutsch" und ist richtig, 30 ist überall falsch.
+- **Sechs Pfadangaben zeigen ins Leere.** `src/i18n/translate.ts`,
+  `translate-data.ts` und `bible-books.ts` liegen seit `4326b45` unter
+  `supabase/functions/_shared/i18n/`. Dabei zu unterscheiden: Ein **Befund**
+  beschreibt den Stand seines Tages und behält seinen Pfad (T1 nennt
+  `translate.ts:165` — dort stand der Absturz); eine **Wegweisung** wie die
+  Tabelle in `befunde.md:1079` gehört richtiggestellt.
+- **Die Handbücher kennen drei Neuerungen nicht:** die Herkunft eines Redners
+  als eigenes Feld (`4f1c554`), die Art eines Abschnitts (`266acbb`) und das
+  ganze Sprachverhalten — Rechts-nach-links, der übersetzte Rumpf der
+  Push-Erinnerung, die Einladungs-Mail in der Sprache der Versammlung. In
+  `verkuendiger.md` steht dazu bisher **ein Satz**.
+- **Die 16 Aufnahmen sind vom 23. August** (`1d5c185`) und damit älter als die
+  Bildschirme, die sie zeigen: `266acbb` und `4f1c554` haben `MeetingSection`,
+  `AssignSheet` und `ProgrammScreen` angefasst — betroffen sind also
+  `planer-planen-woche`, `programm-woche` und `programm-wochenende`. [`capture-screenshots.sh`](../user-guide/capture-screenshots.sh) erzeugt sie
+  neu (Chrome-Headless über den Debug-Hash, danach `trim.mjs`).
+
+**Prüfen:** Ein Leser, der nur die Handbücher kennt, muss die App bedienen
+können, ohne auf etwas zu stoßen, das anders heißt oder anders aussieht.
+Konkret nachziehbar: kein Vorkommen von „~30 Sprachen" mehr; `grep` nach den
+drei alten `src/i18n/`-Pfaden findet nur noch Befundtexte; jede Aufnahme jünger
+als der letzte Commit, der ihren Bildschirm anfasst.
+
+**Nicht Teil der Aufgabe:** `docs/analyse/` rückwirkend umschreiben. Die
+Analysen sind datierte Protokolle; was dort steht, galt an seinem Tag. Zu
+ändern sind nur Angaben, die als Wegweiser gemeint sind.
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -3942,18 +3986,20 @@ hätte.
 
 ## Fortschritt
 
-Stand 23. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 28. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑☑ ☐
+22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐
 
-**96 von 97 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. Offen ist einer: **T95** (Ideen für den
+**96 von 98 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. Offen sind zwei: **T95** (Ideen für den
 Start-Bildschirm), am 23. August nebenbei aufgenommen und ausdrücklich noch
-kein Bauauftrag. Zuletzt fielen die beiden
+kein Bauauftrag, und **T98** (die Dokumentation auf den Stand des Codes
+bringen), am 28. August aufgenommen — die Handbücher stehen auf dem 25. August,
+seither sind neun Commits gelaufen, drei davon am Sprachverhalten der ganzen App. Zuletzt fielen die beiden
 letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
 nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
 **T89** ist am 23. August mit migration-022 nicht nur gemessen, sondern
