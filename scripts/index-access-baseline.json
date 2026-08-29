@@ -1,7 +1,7 @@
 {
   "src/app/hydrate.test.ts": 4,
   "src/app/persist.test.ts": 10,
-  "src/app/reducer.test.ts": 72,
+  "src/app/reducer.test.ts": 69,
   "src/components/gestures.test.tsx": 4,
   "src/data/autoassign.fairness.test.ts": 33,
   "src/data/autoassign.grenzfaelle.test.ts": 12,

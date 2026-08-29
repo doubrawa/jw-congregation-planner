@@ -239,10 +239,16 @@ export function pendingOfMeeting(
 ): Pending[] {
   const out: Pending[] = []
   const sections = meeting.sections ?? []
-  for (let si = 0; si < sections.length; si++) {
-    const items = sections[si].items ?? []
-    for (let ii = 0; ii < items.length; ii++) {
-      const item = items[ii]
+  /*
+   * Über `entries()` statt über Zählschleifen: Ein Index-Zugriff liefert unter
+   * `noUncheckedIndexedAccess` ein `| undefined`, und zwölf davon in einer
+   * Schleife wären zwölf Prüfungen, die alle nie zutreffen. Die Aufzählung
+   * gibt Nummer und Wert zusammen heraus — dieselbe Form, die `programmPlaetze`
+   * im Client benutzt. Die Nummern werden gebraucht: Sie bilden den
+   * positionsbasierten Aufgaben-Schlüssel für Punkte ohne `iid`.
+   */
+  for (const [si, section] of sections.entries()) {
+    for (const [ii, item] of (section.items ?? []).entries()) {
       if ('song' in item) continue
       // Hauptsaal ("part") und Zusätzliche Klasse ("aux") — gleichwertige
       // Zuteilungen mit eigenen Schlüsseln; ohne die zweite Runde bliebe die
@@ -252,8 +258,7 @@ export function pendingOfMeeting(
       const raeume: Array<['part' | 'aux', Slot[]]> = [['part', item.names ?? []]]
       if (meeting.auxRatgeber) raeume.push(['aux', item.aux ?? []])
       for (const [abschnitt, names] of raeume) {
-        for (let ni = 0; ni < names.length; ni++) {
-          const slot = names[ni]
+        for (const [ni, slot] of names.entries()) {
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
           // Schlüssel über die stabile Kennung des Punkts, sonst über seine
           // Position **innerhalb** der Zusammenkunft (T37) — dieselbe Regel wie
@@ -267,7 +272,7 @@ export function pendingOfMeeting(
             pid: slot.pid,
             // Dieselbe Regel wie in der Aufgabenliste des Clients: in
             // ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein, sonst Titel · Rolle.
-            label: zuteilungsLabel(sections[si].label ?? '', item.title ?? 'Zuteilung', rolleMitHerkunft(slot)),
+            label: zuteilungsLabel(section.label ?? '', item.title ?? 'Zuteilung', rolleMitHerkunft(slot)),
             // Der stabile Schlüssel, wo es einen gibt — unter dem legt auch der
             // Client die Bestätigung ab.
             key: idKey ?? posKey,
