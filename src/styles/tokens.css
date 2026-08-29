@@ -339,7 +339,16 @@
   --tAcc: #d4d4d4;
 
   --ink: #101010;
-  --mut: #565656;
+  /*
+   * Dunkler als die anderen Paletten es bräuchten (#565656 → #4a4a4a), weil
+   * hier die getönten Sektionsflächen selbst grau sind: `--tGld` ist #bcbcbc,
+   * und darauf kam der gedämpfte Text nur auf 3.86:1. Das betrifft nicht erst
+   * „Plan senden" — jedes goldene Panel trägt seinen Hinweistext in `--mut`
+   * (`.panel-hint`), also auch Treffpunkte, Aufgaben und die Zeitleiste.
+   * Gefunden hat es die Paarung `mut/tGld`, die `check-contrast.mjs` mit T99
+   * dazubekommen hat.
+   */
+  --mut: #4a4a4a;
   --mut2: #5b5b5b;
 
   --acc: #3f3f3f;

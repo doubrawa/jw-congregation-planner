@@ -61,6 +61,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     myTasks: [...DEMO_MY_TASKS],
     pendingIds: [...DEMO_PENDING_IDS],
     confirmations: {},
+    sentLog: {},
     confirmOpen: false,
     myTaskId: null,
     substituteReqs: [],
@@ -528,13 +529,14 @@ describe('assign (Zuteilen)', () => {
     expect(reducer(s, { type: 'assign', name: 'X' })).toBe(s)
   })
 
-  it('Programmpunkt: setzt Namen, ergänzt pendingIds + Mitteilung', () => {
+  it('Programmpunkt: setzt Namen und ergänzt pendingIds', () => {
     const s = makeState()
     const sel = firstPartSlot(s.weeks[0], 'mid')
     const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
     expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('Neue Person')
     expect(next.pendingIds).toContain('neu-1')
-    expect(next.notifs[0].type).toBe('gesendet')
+    // Eine Mitteilung entsteht dabei nicht mehr (T99) — dafür gibt es den
+    // eigenen Fall weiter unten.
     expect(next.slotSel).toBeNull()
   })
 
@@ -596,18 +598,16 @@ describe('assign (Zuteilen)', () => {
     const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
     expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
     expect(next.pendingIds).toContain('fritz-1')
-    expect(next.notifs[0].type).toBe('gesendet')
   })
 })
 
 describe('autoAssign / clearAssignments', () => {
-  it('autoAssign füllt offene Slots (Mitteilung + Toast mit Anzahl)', () => {
+  it('autoAssign füllt offene Slots (Toast mit Anzahl)', () => {
     const weeks = buildDemoWeeks()
     const closeSi = weeks[0]!.mid.sections.length - 1
     ;(weeks[0]!.mid.sections[closeSi]!.items[0] as PartItem).names[0]!.name = ''
     const s = makeState({ weeks, week: 0, tab: 'mid' })
     const next = reducer(s, { type: 'autoAssign', scope: 'parts' })
-    expect(next.notifs[0].type).toBe('gesendet')
     expect(next.toast!.text).toMatch(/\d/) // enthält die Anzahl
   })
 
@@ -790,55 +790,37 @@ describe('LAC / Vortrag (über den Reducer)', () => {
 
 describe('Erinnerungen', () => {
   it('changeReminder klemmt first (1..21) und last (0..7)', () => {
-    const s = makeState({ reminders: { first: 1, last: 0, repeat: false, onAssign: true } })
+    const s = makeState({ reminders: { first: 1, last: 0, repeat: false } })
     expect(reducer(s, { type: 'changeReminder', key: 'first', delta: -1 }).reminders.first).toBe(1)
     expect(reducer(s, { type: 'changeReminder', key: 'last', delta: -1 }).reminders.last).toBe(0)
-    const hi = makeState({ reminders: { first: 21, last: 7, repeat: false, onAssign: true } })
+    const hi = makeState({ reminders: { first: 21, last: 7, repeat: false } })
     expect(reducer(hi, { type: 'changeReminder', key: 'first', delta: 1 }).reminders.first).toBe(21)
     expect(reducer(hi, { type: 'changeReminder', key: 'last', delta: 1 }).reminders.last).toBe(7)
   })
   it('toggleReminderRepeat kippt den Schalter', () => {
-    expect(reducer(makeState({ reminders: { first: 5, last: 1, repeat: false, onAssign: true } }), { type: 'toggleReminderRepeat' }).reminders.repeat).toBe(true)
+    expect(reducer(makeState({ reminders: { first: 5, last: 1, repeat: false } }), { type: 'toggleReminderRepeat' }).reminders.repeat).toBe(true)
   })
 
-  it('toggleReminderOnAssign kippt den Schalter', () => {
-    const aus = reducer(makeState(), { type: 'toggleReminderOnAssign' })
-    expect(aus.reminders.onAssign).toBe(false)
-    expect(reducer(aus, { type: 'toggleReminderOnAssign' }).reminders.onAssign).toBe(true)
-  })
 })
 
 /**
- * T74. Die Mitteilung „Zuteilung gesendet" entsteht auf **vier** Wegen:
- * einzeln, Treffpunkt-Leiter, Auto-Zuteilung, Treffpunkt-Auto. Der Schalter
- * muss an jedem greifen — genau hier verliert sich sonst einer, ohne dass
- * etwas fehlschlägt (die Mitteilung geht ja weiter hinaus).
+ * T99. **Zuteilen erzeugt keine Mitteilung mehr.**
  *
- * Geprüft wird zusätzlich, dass **nur** die Mitteilung wegfällt: zugeteilt
- * wird weiter, und die Aufgabe bleibt unbestätigt (`pendingIds`).
+ * Vorher entstand bei jedem Zuteilungsklick eine Zeile „Zuteilung gesendet" —
+ * adressiert an die Planer, also an den, der gerade selbst geklickt hatte. Eine
+ * von Hand geteilte Woche schrieb so 35 Zeilen in die Glocke jedes Planers und
+ * verdrängte im Ladefenster von 50 alles andere, die eigenen Erinnerungen
+ * eingeschlossen. Wer eingeteilt wurde, erfuhr davon nichts.
+ *
+ * Geprüft wird auf **allen vier Wegen** (einzeln, Treffpunkt-Leiter,
+ * Auto-Zuteilung, Treffpunkt-Auto) — genau hier verliert sich sonst einer, ohne
+ * dass etwas fehlschlägt: eine Mitteilung zu viel bricht nichts, sie sammelt
+ * sich nur an. Dieselbe Sorgfalt, die vorher der Schalter brauchte.
+ *
+ * Und zugleich, dass **nur** die Mitteilung wegfällt: zugeteilt wird weiter,
+ * und die Aufgabe bleibt unbestätigt (`pendingIds`).
  */
-describe('reminders.onAssign — die Mitteilung beim Zuteilen (T74)', () => {
-  const ohneMeldung = (over: Partial<AppState> = {}) =>
-    makeState({ ...over, reminders: { ...DEMO_REMINDERS, onAssign: false } })
-
-  it('einzelner Programmpunkt: keine Mitteilung, Zuteilung trotzdem', () => {
-    const sel = firstPartSlot(makeState().weeks[0]!, 'mid')
-    const s = ohneMeldung({ slotSel: sel })
-    const next = reducer(s, { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
-    expect(next.notifs).toBe(s.notifs)
-    expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('Neue Person')
-    expect(next.pendingIds).toContain('neu-1')
-  })
-
-  it('Treffpunkt-Leiter: keine Mitteilung, Leiter trotzdem gesetzt', () => {
-    const inst = makeState().fsWeeks[0]![0]!
-    const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
-    const s = ohneMeldung({ slotSel: sel })
-    const next = reducer(s, { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
-    expect(next.notifs).toBe(s.notifs)
-    expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
-  })
-
+describe('Zuteilen meldet nichts mehr an die Planer (T99)', () => {
   /** Demo-Woche mit einem offenen Programmpunkt — sonst gibt es nichts zu tun. */
   const mitOffenemSlot = (over: Partial<AppState> = {}) => {
     const weeks = buildDemoWeeks()
@@ -853,31 +835,48 @@ describe('reminders.onAssign — die Mitteilung beim Zuteilen (T74)', () => {
     return makeState({ fsWeeks: geleert.fsWeeks, week: 0, ...over })
   }
 
+  it('einzelner Programmpunkt: keine Mitteilung, Zuteilung trotzdem', () => {
+    const sel = firstPartSlot(makeState().weeks[0]!, 'mid')
+    const s = makeState({ slotSel: sel })
+    const next = reducer(s, { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
+    expect(next.notifs).toBe(s.notifs)
+    expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('Neue Person')
+    expect(next.pendingIds).toContain('neu-1')
+  })
+
+  it('Treffpunkt-Leiter: keine Mitteilung, Leiter trotzdem gesetzt', () => {
+    const inst = makeState().fsWeeks[0]![0]!
+    const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
+    const s = makeState({ slotSel: sel })
+    const next = reducer(s, { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
+    expect(next.notifs).toBe(s.notifs)
+    expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
+  })
+
   it('Auto-Zuteilung: keine Mitteilung, Plätze trotzdem besetzt', () => {
-    const s = mitOffenemSlot({ reminders: { ...DEMO_REMINDERS, onAssign: false } })
+    const s = mitOffenemSlot()
     const next = reducer(s, { type: 'autoAssign', scope: 'parts' })
     expect(next.notifs).toBe(s.notifs)
     expect(next.weeks).not.toBe(s.weeks) // zugeteilt wurde trotzdem
   })
 
   it('Treffpunkt-Auto: keine Mitteilung, Leiter trotzdem besetzt', () => {
-    const s = mitOffenenTreffpunkten({ reminders: { ...DEMO_REMINDERS, onAssign: false } })
+    const s = mitOffenenTreffpunkten()
     const next = reducer(s, { type: 'fsAutoAssign', onlyGroup: null })
     expect(next.notifs).toBe(s.notifs)
     expect(next.fsWeeks).not.toBe(s.fsWeeks)
   })
 
-  it('eingeschaltet meldet jeder der vier Wege', () => {
-    const sel = firstPartSlot(makeState().weeks[0]!, 'mid')
-    const inst = makeState().fsWeeks[0]![0]!
-    const fsSel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
-    const wege: AppState[] = [
-      reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person', pid: 'neu-1' }),
-      reducer(makeState({ slotSel: fsSel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' }),
-      reducer(mitOffenemSlot(), { type: 'autoAssign', scope: 'parts' }),
-      reducer(mitOffenenTreffpunkten(), { type: 'fsAutoAssign', onlyGroup: null }),
-    ]
-    for (const next of wege) expect(next.notifs[0]!.type).toBe('gesendet')
+  it('auch nach vielen Zuteilungen bleibt die Glocke unverändert', () => {
+    // Die eigentliche Beschwerde war die Menge: eine Woche hat gut 35 Plätze.
+    // Ein einzelner Weg, der wieder meldet, fiele in den Einzelproben oben
+    // vielleicht durch — hier nicht, weil hier alle zusammen laufen.
+    let s = mitOffenemSlot()
+    const vorher = s.notifs
+    s = reducer(s, { type: 'autoAssign', scope: 'parts' })
+    s = reducer(s, { type: 'autoAssign', scope: 'helpers' })
+    s = reducer(s, { type: 'fsAutoAssign', onlyGroup: null })
+    expect(s.notifs).toBe(vorher)
   })
 })
 
@@ -1025,6 +1024,7 @@ describe('hydrate / setDataStatus', () => {
     absences: [],
     notifications: [],
     confirmations: {},
+    sentLog: {},
     reminders: DEMO_REMINDERS,
     congLang: 'Deutsch',
     progLangs: [],
@@ -1267,10 +1267,11 @@ describe('Index außerhalb des Fensters', () => {
     expect(() => {
       next = reducer(s, { type: 'assign', name: 'Anna Beispiel', pid: 'p1' })
     }).not.toThrow()
-    // Zugeteilt wird nichts (assignSlot findet die Woche nicht), und die
-    // Mitteilung trägt keinen leeren Trenner.
+    // Zugeteilt wird nichts (assignSlot findet die Woche nicht) — und es
+    // entsteht auch keine Mitteilung mehr, in der ein leerer Trenner stünde
+    // (die war der ursprüngliche Anlass dieser Probe, siehe T42/T99).
     expect(next!.weeks).toBe(s.weeks)
-    expect(next!.notifs[0]?.text ?? '').not.toContain(' · ')
+    expect(next!.notifs).toBe(s.notifs)
   })
 
   it('takeSubstitute auf eine Woche, die es nicht gibt, stürzt nicht ab', () => {

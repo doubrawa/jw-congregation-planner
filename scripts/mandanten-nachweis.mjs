@@ -76,6 +76,11 @@ export const RLS_TABELLEN = [
   // Versand-Tagebuch: RLS an, aber bewusst **ohne** Policy — das sperrt alles.
   // Nur die Edge Function kommt heran, und die arbeitet mit der Service-Role.
   { name: 'reminder_log', spalte: 'congregation_id', keineZeilen: true },
+  // Zuteilungs-Tagebuch (migration-024): die eigene Versammlung darf **lesen**
+  // — der Planen-Screen zeigt an, wann eine Zuteilung hinausging. Geschrieben
+  // wird nur mit der Service-Role, deshalb steht es hier wie jede andere
+  // Tabelle mit Mandanten-Spalte und nicht als „keine Zeilen".
+  { name: 'assignment_log', spalte: 'congregation_id' },
 ]
 
 /** Tabellen, aus denen eine „Landmarke" der anderen Seite geholt wird. */

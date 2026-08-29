@@ -47,6 +47,10 @@ SHOTS=(
   "planer-aufgaben|s=aufgaben"
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"
+  # „Plan senden" (T99) steht am Ende der Woche. Aufgenommen im
+  # Treffpunkt-Reiter, weil der kurz genug ist, dass die Karte mit ins Bild
+  # passt — sie gilt ohnehin für die ganze Woche, nicht für den Reiter.
+  "planer-plan-senden|s=planen&tab=fs|920x2100"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
   # Zuteilungen, die Abwesenheiten und die beiden Bereichs-Karten (Aufgaben,

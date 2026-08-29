@@ -22,9 +22,22 @@ export interface PushTexte {
   unerreichbar: string
 }
 
+/*
+ * Kanonisch deutsch — und zugleich der Schlüssel, unter dem die **Glocke** die
+ * Zeile übersetzt (NOTIF_TITLE_KEY in src/i18n/ui.ts). Beide Meldungen stehen
+ * inzwischen in beiden Kanälen: als Push (hier je Sprache) und als
+ * Glocken-Zeile (kanonisch deutsch in der Datenbank).
+ *
+ * Als benannte Konstanten und nicht bloß als Feld von `DE`, damit
+ * `mitteilungs-titel.test.ts` sie im Quelltext findet — dieselbe Machart wie in
+ * `substitute/texte.ts` und `send-plan/texte.ts`.
+ */
+export const TITEL_ERINNERUNG = 'Erinnerung: Zuteilung bestätigen'
+export const TITEL_UNERREICHBAR = 'Unbestätigte Zuteilungen (nicht erreichbar)'
+
 const DE: PushTexte = {
-  erinnerung: 'Erinnerung: Zuteilung bestätigen',
-  unerreichbar: 'Unbestätigte Zuteilungen (nicht erreichbar)',
+  erinnerung: TITEL_ERINNERUNG,
+  unerreichbar: TITEL_UNERREICHBAR,
 }
 
 const TEXTE: Record<string, PushTexte> = {

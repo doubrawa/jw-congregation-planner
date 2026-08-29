@@ -704,6 +704,16 @@ export interface SubstituteReq {
  */
 export type ConfirmationMap = Record<string, TaskStatus>
 
+/**
+ * Versand-Tagebuch: `sentKey(task_key, name)` → Zeitpunkt der Meldung (ISO).
+ *
+ * Was hier steht, hat die eingeteilte Person schon erfahren — „Plan senden"
+ * überspringt es. Geschrieben wird ausschließlich serverseitig
+ * (`send-plan`, migration-024); der Client liest es nur, um am Platz „gesendet
+ * am …" anzuzeigen und den Knopf zu beschriften.
+ */
+export type SentLog = Record<string, string>
+
 /** Erinnerungs-Einstellungen (Einstellungen → ERINNERUNGEN). */
 export interface Reminders {
   first: number // erste Erinnerung: N Tage vorher (1..21)
@@ -723,7 +733,7 @@ export interface Reminders {
    * ankommt. Stand 15.8.2026; ein sofortiger Anstoß an sie wäre ein eigenes
    * Stück Arbeit (Web-Push kann nur die Edge Function).
    */
-  onAssign: boolean
+
 }
 
 /* ---- Zuteilungs-Sheet (Planen) ---- */

@@ -234,26 +234,23 @@ describe('Predigtdienstgruppen', () => {
 describe('Erinnerungen', () => {
   const zeilen = (c: HTMLElement) => [...c.querySelectorAll('.svc-row')]
 
-  it('vier Zeilen: bei Zuteilung, erste, letzte, wiederholen', () => {
+  /*
+   * Drei Zeilen, nicht mehr vier. Die erste war „Bei Zuteilung · Sofort" (T74)
+   * und steuerte die Mitteilung „Zuteilung gesendet" an die **Planer**. Mit
+   * T99 gibt es die nicht mehr — der Planer drückt jetzt „Plan senden", und
+   * die Nachricht geht an die eingeteilte Person. Damit steuerte der Schalter
+   * nichts mehr, und ein Schalter ohne Wirkung ist schlimmer als keiner.
+   */
+  it('drei Zeilen: erste, letzte, wiederholen', () => {
     const { container } = zeige('reminders')
     expect(zeilen(container).map((r) => r.querySelector('.svc-name')?.textContent)).toEqual([
-      `${t.remBeiZut} · ${t.remSofort}`, t.remErste, t.remLetzte, t.remRepeat,
+      t.remErste, t.remLetzte, t.remRepeat,
     ])
-  })
-
-  it('„bei Zuteilung" ist ein echter Schalter, kein Text — er sah wie ein vergessenes Feld aus (T74)', () => {
-    const { container, dispatch } = zeige('reminders', {
-      reminders: { first: 7, last: 1, repeat: false, onAssign: true },
-    })
-    const schalter = zeilen(container)[0]!.querySelector('[role="switch"]')!
-    expect(schalter.getAttribute('aria-checked')).toBe('true')
-    fireEvent.click(schalter)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'toggleReminderOnAssign' })
   })
 
   it('die Tage lassen sich in Einerschritten verstellen', () => {
     const { container, dispatch } = zeige('reminders')
-    const erste = zeilen(container)[1]!
+    const erste = zeilen(container)[0]!
     fireEvent.click(erste.querySelector(`[aria-label="${t.a11yIncrease}"]`)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'changeReminder', key: 'first', delta: 1 })
     fireEvent.click(erste.querySelector(`[aria-label="${t.a11yDecrease}"]`)!)
@@ -262,22 +259,22 @@ describe('Erinnerungen', () => {
 
   it('unter der Zahl steht, was sie bedeutet — in Worten', () => {
     const { container } = zeige('reminders', {
-      reminders: { first: 7, last: 1, repeat: false, onAssign: true },
+      reminders: { first: 7, last: 1, repeat: false },
     })
-    expect(zeilen(container)[1]!.querySelector('.svc-sub')?.textContent).toBe('7 Tage vorher')
-    expect(zeilen(container)[2]!.querySelector('.svc-sub')?.textContent).toBe(t.remTagVorher)
+    expect(zeilen(container)[0]!.querySelector('.svc-sub')?.textContent).toBe('7 Tage vorher')
+    expect(zeilen(container)[1]!.querySelector('.svc-sub')?.textContent).toBe(t.remTagVorher)
   })
 
   it('null Tage heißt „am Tag der Aufgabe", nicht „0 Tage vorher"', () => {
     const { container } = zeige('reminders', {
-      reminders: { first: 7, last: 0, repeat: false, onAssign: true },
+      reminders: { first: 7, last: 0, repeat: false },
     })
-    expect(zeilen(container)[2]!.querySelector('.svc-sub')?.textContent).toBe(t.remAmTag)
+    expect(zeilen(container)[1]!.querySelector('.svc-sub')?.textContent).toBe(t.remAmTag)
   })
 
   it('„täglich wiederholen" ist der letzte Schalter', () => {
     const { container, dispatch } = zeige('reminders')
-    fireEvent.click(zeilen(container)[3]!.querySelector('[role="switch"]')!)
+    fireEvent.click(zeilen(container)[2]!.querySelector('[role="switch"]')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'toggleReminderRepeat' })
   })
 })

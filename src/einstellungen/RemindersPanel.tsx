@@ -12,13 +12,13 @@ export function RemindersPanel() {
     return n === 1 ? t.remTagVorher : fill(t.remTageVorher, { n })
   }
 
-  /**
-   * „Bei Zuteilung · Sofort" stand hier als fester Text neben lauter echten
-   * Bedienelementen und sah dadurch aus wie ein vergessenes Feld (T74). Jetzt
-   * ist es der Schalter, der es immer war — die Beschriftung aus denselben
-   * beiden Bausteinen, also in allen 34 Sprachen und ohne neuen Schlüssel.
+  /*
+   * Hier stand der Schalter „Bei Zuteilung · Sofort" (T74). Er steuerte eine
+   * Mitteilung, die an die **Planer** ging — nicht an die eingeteilte Person
+   * (das war schon damals gemessen und vertagt). Mit T99 hat der Planer statt
+   * dessen den Knopf „Plan senden" im Planen-Screen, und die Nachricht geht an
+   * den, den sie angeht. Damit steuerte der Schalter nichts mehr.
    */
-  const beiZuteilung = `${t.remBeiZut} · ${t.remSofort}`
 
   const reminderRows: Array<{ key: 'first' | 'last'; name: keyof Dict }> = [
     { key: 'first', name: 'remErste' },
@@ -29,23 +29,10 @@ export function RemindersPanel() {
     <div className="panel panel--pb14" data-farbe="wein">
       <h2 className="panel-label">{t.erinnerungenCard}</h2>
       <p className="panel-hint">{t.remDesc}</p>
-      {/* Alle vier Zeilen der Karte haben dieselbe Form (`svc-row`: Schnitt,
+      {/* Alle Zeilen der Karte haben dieselbe Form (`svc-row`: Schnitt,
           Abstände, Haarlinie) — es sind Punkte einer Liste, und einer davon
           soll nicht als eigene Sorte dastehen. Die letzte trägt zusätzlich
           `--schluss` und damit keinen Trenner. */}
-      <div className="svc-row">
-        <span className="svc-name">{beiZuteilung}</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={state.reminders.onAssign}
-          aria-label={beiZuteilung}
-          className={state.reminders.onAssign ? 'switch is-on' : 'switch'}
-          onClick={() => dispatch({ type: 'toggleReminderOnAssign' })}
-        >
-          <span className="switch-knob" />
-        </button>
-      </div>
       {reminderRows.map(({ key, name }) => (
         <div key={key} className="svc-row">
           <div>

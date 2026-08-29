@@ -47,21 +47,30 @@
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
 import {
-  type Abweichungen,
-  deutschesDatum,
   istAusgefallenFuer,
   meetingDayOffsets,
   meetingTimesOf,
   personDisplayName,
-  rolleMitHerkunft,
-  SKIP_ROLE,
-  taskDateText,
   versatzMitAbweichung,
   zeitMitAbweichung,
-  zuteilungsLabel,
 } from '../_shared/planung.ts'
-import { bibelbuecherLaden, makeTr } from '../_shared/i18n/translate.ts'
-import { pushTexte } from './texte.ts'
+import {
+  type Eintrag,
+  type FsInstance,
+  kanonisch,
+  nachSprache,
+  pendingOfFsWeek,
+  pendingOfMeeting,
+  type Pending,
+  type ServiceRow,
+  type SubscriptionRow,
+  terminText,
+  uebersetzerFuer,
+  uebersetzt,
+  type Week,
+} from '../_shared/zuteilungen.ts'
+import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
+import { pushTexte, TITEL_UNERREICHBAR } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -152,215 +161,16 @@ async function pruneNotifications(): Promise<void> {
   if (!res.ok) console.error(`REST DELETE notifications ${res.status}: ${await res.text()}`)
 }
 
-/* ---- Datenmodell (Teilmengen der Client-Typen aus src/data/types.ts) ---- */
-
-interface Slot {
-  name?: string
-  /** Person-Id der Zuteilung — stabile Identität statt Name-Match. */
-  pid?: string
-  rolle?: string
-}
-/** Ein Treffpunkt einer Woche (FsInstance im Client). */
-interface FsInstance {
-  id: string
-  grp?: string
-  wd: number
-  time?: string
-  place?: string
-  leader?: string
-  /** Person-Id des Leiters. */
-  lpid?: string
-  /**
-   * Leiter ist Freitext (auswaertig, in der Regel der Kreisaufseher) — er hat
-   * kein Konto und bekommt keine Erinnerung. Ohne dieses Feld faende der
-   * Namensweg unten einen gleichnamigen Bruder und erinnerte **ihn** an eine
-   * Leitung, die er gar nicht hat.
-   */
-  lext?: boolean
-}
-interface Item {
-  song?: string
-  title?: string
-  /** Stabile Kennung des Programmpunkts (T37) — Grundlage des Aufgaben-Schluessels. */
-  iid?: string
-  names?: Slot[]
-  /** Zweite Platzreihe der Zusaetzlichen Klasse (jw.org S-38, Absatz 26). */
-  aux?: Slot[]
-}
-interface Section {
-  /**
-   * Kanonisch deutsche Überschrift („ERÖFFNUNG", „ABSCHLUSS", …). Sie
-   * entscheidet mit, wie eine Zuteilung benannt wird (`zuteilungsLabel`).
-   */
-  label?: string
-  items?: Item[]
-}
-/**
- * Hilfsdienst-Platz. Aktuell ein Objekt { name, pid? }; Bestandsdaten in der DB
- * können noch reine Namens-Strings sein (siehe normalizeWeekHelpers in
- * src/lib/data.ts — der Client hebt sie beim Laden an, die DB behält das
- * Alt-Format aber, bis die Woche neu gespeichert wird). Beides muss hier
- * gelesen werden können.
+/*
+ * Das Datenmodell der Woche, die Ermittlung der offenen Plätze und die
+ * Textbausteine stehen in `_shared/zuteilungen.ts` — dieselbe Datei, aus der
+ * `send-plan` liest. Hier bleibt nur, was allein den Erinnerungs-Rhythmus
+ * betrifft.
  */
-type HelperEntry = string | { name?: string; pid?: string } | null
-interface Meeting {
-  date?: string
-  sections?: Section[]
-  helpers?: Record<string, HelperEntry[]>
-  /** Ratgeber der Zusaetzlichen Klasse (eine Zuteilung je Zusammenkunft). */
-  auxRatgeber?: Slot
-}
-interface Week {
-  start?: string
-  mid?: Meeting
-  we?: Meeting
-  /** Abweichungen dieser Woche — verlegter Tag, andere Uhrzeit, Ausfall (T30). */
-  dev?: Abweichungen
-}
-interface ServiceRow {
-  key: string
-  name: string
-  count: number
-  groups: boolean
-}
 interface Reminders {
   first: number
   last: number
   repeat: boolean
-}
-interface SubscriptionRow {
-  id: string
-  user_id: string
-  endpoint: string
-  p256dh: string
-  auth: string
-  /** App-Sprache des Geraets; null bei Abos von vor migration-014 → Deutsch. */
-  lang: string | null
-}
-
-/**
- * Abos eines Nutzers nach Sprache gruppieren — je Gruppe geht ein eigener
- * Versand hinaus, weil der Text beim Verschicken feststeht.
- *
- * Ohne Abos bleibt eine leere deutsche Gruppe übrig: dann wird nichts
- * verschickt (keine Empfänger), die Vorschau des Probelaufs zeigt den Eintrag
- * aber weiterhin an.
- */
-function nachSprache(subs: SubscriptionRow[]): Array<[string, SubscriptionRow[]]> {
-  if (subs.length === 0) return [['de', []]]
-  const nach = new Map<string, SubscriptionRow[]>()
-  for (const s of subs) {
-    const lang = s.lang ?? 'de'
-    nach.set(lang, [...(nach.get(lang) ?? []), s])
-  }
-  return [...nach]
-}
-
-/* `SKIP_ROLE`, `personDisplayName`, `taskDate`, `meetingDayOffsets` und
-   `WEEKDAY_OFFSET` kommen aus `_shared/planung.ts` — dieselben Regeln wie im
-   Client und in substitute. Getrennte Kopien hatten schon einmal
-   auseinandergefunden (B8/T40). */
-
-/** Name eines Hilfsdienst-Platzes; '' = unbesetzt (beide Datenformate). */
-function helperName(entry: HelperEntry | undefined): string {
-  if (!entry) return ''
-  return typeof entry === 'string' ? entry : (entry.name ?? '')
-}
-
-/** Person-Id eines Hilfsdienst-Platzes; Alt-Format (reiner String) hat keine. */
-function helperPid(entry: HelperEntry | undefined): string | undefined {
-  return entry && typeof entry !== 'string' ? entry.pid : undefined
-}
-
-const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
-
-/**
- * Eine Zeile der Erinnerung — **in zwei Hälften**, nicht als fertiger Satz.
- *
- * Beide sind kanonisch deutsch, und beide müssen einzeln durch den Übersetzer:
- * `datum` („Dienstag, 8. September · 19:00") und `label`
- * („Versammlungsbibelstudium · Leiter"). Zusammengefügt ginge das nicht — der
- * Fragment-Übersetzer zerlegt an „ · ", und in „…19:00: Bibellesung" steckte
- * das „19:00: Bibellesung" dann als ein einziges, unbekanntes Stück.
- *
- * Die **Glocke** bekommt sie weiterhin deutsch zusammengesetzt: Mitteilungen
- * stehen kanonisch in der Datenbank und werden erst beim Anzeigen übersetzt.
- */
-interface Eintrag {
-  datum: string
-  label: string
-}
-
-/** Kanonisch deutsch — so steht die Zeile in der Glocke. */
-const kanonisch = (e: Eintrag): string => `${e.datum}: ${e.label}`
-
-/**
- * Dieselbe Zeile in der Sprache eines Push-Abos.
- *
- * **Warum das überhaupt hier passiert.** Ein Push ist fertiger Text, sobald er
- * das Gerät erreicht — der Service Worker zeigt `title` und `body` unverändert
- * an (`public/sw.js`), und die App ist dabei gar nicht beteiligt. Der Titel
- * wurde deshalb längst übersetzt; der Rumpf ging bis zum 28.8.2026 kanonisch
- * deutsch hinaus. Ein koreanischer Verkündiger las einen koreanischen Titel
- * über einer deutschen Zeile.
- *
- * Möglich wurde es, indem der Fragment-Übersetzer nach `_shared/` gezogen ist —
- * **dieselbe** Datei, die der Client benutzt, keine zweite Abschrift.
- */
-const uebersetzt = (e: Eintrag, tr: (s: string) => string): string =>
-  `${tr(e.datum)}: ${tr(e.label)}`
-
-/**
- * Ein Übersetzer je Sprache, einmal gebaut.
- *
- * `makeTr` stellt bei jedem Aufruf ein paar Dutzend reguläre Ausdrücke
- * zusammen; bei hundert Empfängern in derselben Sprache wäre das hundertmal
- * dieselbe Arbeit.
- */
-function uebersetzerFuer(): (lang: string | null) => (s: string) => string {
-  const gebaut = new Map<string, (s: string) => string>()
-  return (lang) => {
-    const code = lang ?? 'de'
-    let tr = gebaut.get(code)
-    if (!tr) {
-      tr = makeTr(code)
-      gebaut.set(code, tr)
-    }
-    return tr
-  }
-}
-
-/**
- * Termin im Erinnerungstext: „Dienstag, 8. September · 19:00".
- *
- * Importierte Wochen tragen im `date`-Feld nur die Wochenspanne — die
- * Erinnerung nannte deshalb eine Woche statt eines Tages. Rangfolge wie im
- * Client (`meetingDateText`): eigener Termin vor gerechnetem Datum.
- */
-function reminderDate(
-  startISO: string,
-  offset: number,
-  meeting: Meeting,
-  zeit: string,
-  dev?: Abweichungen,
-  tab?: 'mid' | 'we',
-): string {
-  // Eine Abweichung schlägt auch den eigenen Termin im `date`-Feld: der Planer
-  // hat den Tag ausdrücklich verlegt, das `date`-Feld nennt noch den alten
-  // (gleiche Regel wie `meetingDateText` im Client).
-  const abw = tab ? dev?.[tab] : undefined
-  const verlegt = Boolean(abw?.day || abw?.time)
-  if (
-    !verlegt &&
-    /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.test(meeting.date ?? '')
-  ) {
-    return taskDate(meeting)
-  }
-  const ms = Date.parse(startISO)
-  if (Number.isNaN(ms)) return taskDate(meeting)
-  const d = new Date(ms + offset * 864e5)
-  const text = deutschesDatum(d, true)
-  return zeit ? `${text} · ${zeit}` : text
 }
 
 /* ---- Terminberechnung ---------------------------------------------------- */
@@ -403,141 +213,6 @@ function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
   const frueh = Math.min(rem.first, rem.last)
   const spaet = Math.max(rem.first, rem.last)
   return days > frueh && days < spaet ? 'repeat' : null
-}
-
-/* ---- Offene Zuteilungen -------------------------------------------------- */
-
-interface Pending {
-  name: string
-  /**
-   * Person-Id, wo die Zuteilung eine trägt. Zugeordnet wird darüber und erst
-   * ersatzweise über den Anzeigenamen: zwei Personen desselben Namens bekamen
-   * sonst gegenseitig die Erinnerungen des anderen.
-   */
-  pid?: string
-  label: string
-}
-
-/**
- * Kennung eines Treffpunkts ohne führende Wochennummer (T87).
- *
- * Der Client hebt beim Laden beides — die Kennungen im Blob und die
- * `task_key` der Bestätigungen. Der Versand liest den Blob aber **direkt aus
- * der Datenbank**, und der bleibt so lange auf dem alten Stand, bis ein Planer
- * die Woche das nächste Mal anfasst. Ohne diesen Griff rechnete er in der
- * Zwischenzeit mit `fs|<Montag>|3|r1`, während die Bestätigung längst
- * `fs|<Montag>|r1` heißt: Der Leiter hätte bestätigt und würde trotzdem weiter
- * erinnert.
- *
- * Regel-Kennungen sind `r<uuid>`, von Hand angelegte `x<uuid>` — eine Zahl
- * vorn hat nur der Altbestand.
- */
-function stabileKennung(instId: string): string {
-  const treffer = /^\d+\|(.+)$/.exec(instId)
-  return treffer?.[1] ?? instId
-}
-
-/**
- * Unbestätigte Treffpunkt-Leitungen einer Woche.
- *
- * Zweite Datenquelle (`fs_weeks`), die hier lange gar nicht gelesen wurde: ein
- * zugeteilter Treffpunkt-Leiter bekam nie eine Erinnerung und konnte nichts
- * bestätigen — er erfuhr von seiner Einteilung nur beim Nachschauen.
- *
- * Der Wochentag steht am Treffpunkt selbst (`wd`, 0=So … 6=Sa), nicht in den
- * Zusammenkunftszeiten; als Versatz ab Montag gerechnet wie im Client
- * (`fsDate`). task_key `fs|<Montag>|<instId>` — dieselbe Form wie dort (T66:
- * vorn steht die **Kennung** der Woche, nicht mehr ihre Position).
- */
-function pendingOfFsWeek(
-  woche: string,
-  insts: FsInstance[],
-  conf: Map<string, string>,
-): Array<Pending & { offset: number; zeit: string }> {
-  const out: Array<Pending & { offset: number; zeit: string }> = []
-  for (const inst of insts) {
-    if (!inst?.leader || inst.lext) continue
-    if (conf.has(`fs|${woche}|${stabileKennung(inst.id)}`)) continue
-    const ort = inst.place ? ` · ${inst.place}` : ''
-    out.push({
-      name: inst.leader,
-      pid: inst.lpid,
-      label: `Treffpunkt-Leiter${ort}`,
-      offset: ((inst.wd ?? 1) + 6) % 7,
-      zeit: inst.time ?? '',
-    })
-  }
-  return out
-}
-
-/**
- * Unbestätigte Zuteilungen; task_key-Schema wie partTaskKey/helperTaskKey.
- *
- * Vorn steht seit T66 der **Montag der Woche** statt ihrer Position. Der
- * Positions-Schlüssel wurde eine Zeit lang mitgeprüft; seit Stufe 3 nicht mehr
- * — migration-018 hat den Rest umgeschrieben und die Spalte gelöscht, an der er
- * hing. Was jetzt noch positionsförmig wäre, zeigt auf eine Woche, die es nicht
- * gibt.
- */
-function pendingOfMeeting(
-  woche: string,
-  tab: 'mid' | 'we',
-  meeting: Meeting,
-  services: ServiceRow[],
-  conf: Map<string, string>,
-): Pending[] {
-  const out: Pending[] = []
-  const sections = meeting.sections ?? []
-  for (let si = 0; si < sections.length; si++) {
-    const items = sections[si].items ?? []
-    for (let ii = 0; ii < items.length; ii++) {
-      const item = items[ii]
-      if ('song' in item) continue
-      // Hauptsaal ("part") und Zusätzliche Klasse ("aux") — gleichwertige
-      // Zuteilungen mit eigenen Schlüsseln; ohne die zweite Runde bliebe die
-      // halbe Klasse ohne Erinnerung. Ob es eine Klasse gibt, sagt der
-      // Ratgeber-Platz (wie hatAuxKlasse im Client): die Namen der Klasse
-      // bleiben beim Ausschalten stehen, erinnert wird dann aber nicht mehr.
-      const raeume: Array<['part' | 'aux', Slot[]]> = [['part', item.names ?? []]]
-      if (meeting.auxRatgeber) raeume.push(['aux', item.aux ?? []])
-      for (const [abschnitt, names] of raeume) {
-        for (let ni = 0; ni < names.length; ni++) {
-          const slot = names[ni]
-          if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-          // Schlüssel über die stabile Kennung des Punkts, sonst über seine
-          // Position **innerhalb** der Zusammenkunft (T37) — dieselbe Regel wie
-          // `slotTaskKey` im Client. Beide Formen werden geprüft, weil Punkte
-          // ohne `iid` erst beim nächsten Laden eine bekommen.
-          const posKey = `${woche}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
-          const idKey = item.iid ? `${woche}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
-          if (conf.has(posKey) || (idKey !== null && conf.has(idKey))) continue
-          out.push({
-            name: slot.name,
-            pid: slot.pid,
-            // Dieselbe Regel wie in der Aufgabenliste des Clients: in
-            // ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein, sonst Titel · Rolle.
-            label: zuteilungsLabel(sections[si].label ?? '', item.title ?? 'Zuteilung', rolleMitHerkunft(slot)),
-          })
-        }
-      }
-    }
-  }
-  // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
-  const ratgeber = meeting.auxRatgeber
-  if (ratgeber?.name && !conf.has(`${woche}|${tab}|ratgeber`)) {
-    out.push({ name: ratgeber.name, pid: ratgeber.pid, label: ratgeber.rolle ?? 'Ratgeber' })
-  }
-  for (const svc of services) {
-    if (svc.groups) continue
-    const arr = meeting.helpers?.[svc.key] ?? []
-    for (let pos = 0; pos < svc.count; pos++) {
-      const name = helperName(arr[pos])
-      if (!name) continue // unbesetzter Platz
-      if (conf.has(`${woche}|${tab}|helper|${svc.key}|${pos}`)) continue
-      out.push({ name, pid: helperPid(arr[pos]), label: svc.name })
-    }
-  }
-  return out
 }
 
 /* ---- Versand ------------------------------------------------------------- */
@@ -603,7 +278,10 @@ Deno.serve(async (req: Request) => {
       const rem: Reminders = {
         first: cong.settings?.reminders?.first ?? 7,
         last: cong.settings?.reminders?.last ?? 1,
-        repeat: cong.settings?.reminders?.repeat ?? true,
+        // Ohne eigene Einstellung: **keine** Wiederholung (T99). Der Rückfall
+        // muss derselbe sein wie `STANDARD_ERINNERUNGEN` im Client — sonst
+        // zeigt die App „aus" und der Versand erinnert trotzdem täglich.
+        repeat: cong.settings?.reminders?.repeat ?? false,
       }
       const offsets = meetingDayOffsets(cong.meeting_times)
       const zeiten = meetingTimesOf(cong.meeting_times)
@@ -660,8 +338,16 @@ Deno.serve(async (req: Request) => {
         subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
       }
 
-      const entriesByUser = new Map<string, Eintrag[]>()
-      const mainByUser = new Map<string, Eintrag[]>() // Glocke nur an first/last-Tagen
+      /*
+       * Der Aufgaben-Schlüssel reist mit. Er wird für die Glocke gebraucht:
+       * `notifications.task_key` macht aus der Mitteilung eine, auf der man
+       * gleich bestätigen kann (`notif.taskId` → Knopf im Panel). Ausgerechnet
+       * die Erinnerung „Zuteilung bestätigen" hatte ihn bisher nicht — der
+       * Knopf war im Betrieb also nie zu sehen.
+       */
+      type MitKey = Eintrag & { key: string }
+      const entriesByUser = new Map<string, MitKey[]>()
+      const mainByUser = new Map<string, MitKey[]>() // Glocke nur an first/last-Tagen
       const unreachable: Array<{ name: string; eintrag: Eintrag }> = []
 
       weeks.forEach((row) => {
@@ -686,9 +372,10 @@ Deno.serve(async (req: Request) => {
           const kind = dueKind(rem, days)
           if (!kind) continue
           for (const pend of pendingOfMeeting(start, tab, meeting, services, conf)) {
-            const entry: Eintrag = {
-              datum: reminderDate(start, offset, meeting, zeit, week.dev, tab),
+            const entry: MitKey = {
+              datum: terminText(start, offset, meeting, zeit, week.dev, tab),
               label: pend.label,
+              key: pend.key,
             }
             const userId = userOf(pend)
             // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
@@ -722,9 +409,10 @@ Deno.serve(async (req: Request) => {
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
-          const entry: Eintrag = {
-            datum: reminderDate(start, pend.offset, {}, pend.zeit),
+          const entry: MitKey = {
+            datum: terminText(start, pend.offset, {}, pend.zeit),
             label: pend.label,
+            key: pend.key,
           }
           const userId = userOf(pend)
           const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
@@ -773,6 +461,11 @@ Deno.serve(async (req: Request) => {
             type: 'erinnerung',
             title: 'Erinnerung: Zuteilung bestätigen',
             body: mainEntries.map(kanonisch).join(' · '),
+            // Nur bei **einer** offenen Aufgabe: dann trägt die Glocke den
+            // Bestätigen-Knopf, und die Erinnerung lässt sich an Ort und Stelle
+            // erledigen. Bei mehreren zeigte ein einzelner Knopf auf eine
+            // willkürliche davon — dafür gibt es das Bestätigungsblatt.
+            ...(mainEntries.length === 1 ? { task_key: mainEntries[0].key } : {}),
           })
         }
         logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'self' })
@@ -798,6 +491,26 @@ Deno.serve(async (req: Request) => {
             preview.push(p)
             sendQueue.push({ push: p, subs })
           }
+          /*
+           * **Auch in die Glocke, nicht nur als Push.**
+           *
+           * Diese Meldung ging bis dahin ausschließlich per Push hinaus — und
+           * die Schleife darüber läuft je Push-Abo. Ein Planer ohne Abo bekam
+           * also gar nichts, wurde aber unten trotzdem als benachrichtigt
+           * verbucht. Genau die Auskunft, die er braucht, um jemanden
+           * persönlich zu erinnern, erreichte ihn damit nie.
+           *
+           * Kanonisch deutsch wie jede Glocken-Zeile; übersetzt wird beim
+           * Anzeigen. Kein `task_key`: die Aufgabe gehört einem anderen, der
+           * Planer hat hier nichts zu bestätigen.
+           */
+          notifRows.push({
+            congregation_id: cong.id,
+            user_id: m.user_id,
+            type: 'erinnerung',
+            title: TITEL_UNERREICHBAR,
+            body: unreachable.map((u) => `${u.name} — ${kanonisch(u.eintrag)}`).join(' · '),
+          })
           logRows.push({ congregation_id: cong.id, user_id: m.user_id, kind: 'planner' })
         }
       }

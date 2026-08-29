@@ -1,10 +1,11 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useEscape } from '../components/useEscape'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { useApp } from './context'
+import { loadAndHydrate } from './hydrate'
 import { relativeZeit } from '../i18n/zeit'
 
 /** Mitteilungen-Overlay (Kopf-Chip öffnet); Backdrop-Klick oder Escape schließt. */
@@ -16,6 +17,28 @@ export function NotificationsPanel() {
   useBackDismiss(true, () => dispatch({ type: 'closeNotifs' }))
 
   useEscape(() => dispatch({ type: 'closeNotifs' }))
+
+  /*
+   * **Beim Öffnen still nachladen.**
+   *
+   * Die Mitteilungen kamen bis dahin ausschließlich beim Start der App aus der
+   * Datenbank — es gibt kein Realtime-Abo und kein Nachladen bei Fokus. Wer die
+   * App als PWA offen liegen hat, sah in der Glocke also den Stand vom letzten
+   * echten Start: Ein zweiter Planer teilte zu, jemand sagte ab, ein Ersatz
+   * wurde gesucht — nichts davon kam an, bis die App neu gestartet wurde.
+   *
+   * Der Push-Klick löst dasselbe Nachladen schon aus (AppShell). Was fehlte,
+   * war der Fall, in dem jemand von sich aus nachsieht — und das ist genau der
+   * Moment, in dem er den aktuellen Stand erwartet.
+   *
+   * Einmal beim Öffnen, nicht wiederholt: Die leere Abhängigkeitsliste ist hier
+   * Absicht, das Panel wird beim Schließen ausgehängt.
+   */
+  const userId = state.userId
+  useEffect(() => {
+    if (userId) void loadAndHydrate(dispatch, userId, { silent: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <>

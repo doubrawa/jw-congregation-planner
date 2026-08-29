@@ -12,7 +12,7 @@
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { fsBaseFromWeeks, fsMigrateInstIds, fsMigrateLeaderPids, regenFsWeeks } from '../data/fs'
-import { itemTaskKey, partTaskKey, taskKeyVorbei } from '../data/planning'
+import { itemTaskKey, partTaskKey, sentKey, taskKeyVorbei } from '../data/planning'
 import {
   displayName,
   eindeutigeNamen,
@@ -38,6 +38,7 @@ import type {
   Qualifications,
   Reminders,
   Role,
+  SentLog,
   Service,
   SlotAssignment,
   TaskStatus,
@@ -790,6 +791,8 @@ export interface CongregationData {
   auxClass: boolean // Zusaetzliche Klasse eingerichtet
   members: Member[]
   invites: Invite[]
+  /** Wer wurde wann über welchen Platz benachrichtigt (migration-024). */
+  sentLog: SentLog
 }
 
 export type LoadResult =
@@ -837,7 +840,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows, sentLogRows] = await Promise.all([
     supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -855,14 +858,24 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
     supabase.from('fs_rules').select('base, rules').eq('congregation_id', congregationId).maybeSingle(),
     fsWochenAbfrage,
+    // Versand-Tagebuch: welcher Platz wurde wann gemeldet (migration-024). Der
+    // Planen-Screen zeigt es an, und der „Plan senden"-Knopf zählt daraus, was
+    // noch aussteht.
+    supabase.from('assignment_log').select('task_key, name, sent_at').eq('congregation_id', congregationId),
   ])
 
-  // Alle zwölf Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
+  // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
   // Liste, blieb ein Ladefehler dort stumm und die Treffpunkte kamen einfach
   // leer an — genau der Fall bei einer Instanz ohne Migration 010.
+  //
+  // Das Versand-Tagebuch steht **nicht** in dieser Liste, und zwar mit Absicht:
+  // Wer migration-024 noch nicht eingespielt hat, soll die App weiter benutzen
+  // können. Fehlt die Tabelle, bleibt die Anzeige „benachrichtigt am" leer —
+  // das ist eine fehlende Auskunft, kein fehlender Datenbestand.
   const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
+  if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = migrateServicePrivs(
@@ -930,9 +943,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     first: settings.reminders?.first ?? STANDARD_ERINNERUNGEN.first,
     last: settings.reminders?.last ?? STANDARD_ERINNERUNGEN.last,
     repeat: settings.reminders?.repeat ?? STANDARD_ERINNERUNGEN.repeat,
-    // Fehlt in allen Versammlungen, die vor dem Schalter angelegt wurden —
-    // dort galt „sofort" fest, also ist der Standard `true`.
-    onAssign: settings.reminders?.onAssign ?? STANDARD_ERINNERUNGEN.onAssign,
+    // `onAssign` stand hier bis T99. Der Schalter steuerte die Mitteilung
+    // „Zuteilung gesendet" an die Planer, und die gibt es nicht mehr — an ihre
+    // Stelle ist „Plan senden" getreten. In `congregations.settings` bleibt das
+    // Feld bei bestehenden Versammlungen stehen; gelesen wird es nirgends, und
+    // eine Migration dafür wäre Aufwand ohne Wirkung.
   }
 
   // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Kennung → Daten).
@@ -1010,6 +1025,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       personId: r.person_id,
       planner: r.planner,
     })),
+    sentLog: Object.fromEntries(
+      ((sentLogRows.data ?? []) as { task_key: string; name: string; sent_at: string }[]).map(
+        (r) => [sentKey(r.task_key, r.name), r.sent_at],
+      ),
+    ),
   }
 
   const empty = personList.length === 0 && weekList.length === 0
@@ -1379,6 +1399,67 @@ export function substituteTake(taskKey: string): void {
   // Über run(): scheitert die Übernahme, hat der Aufrufer sonst „Übernommen"
   // gesehen, während der Slot serverseitig unverändert blieb.
   void run(supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }))
+}
+
+/** Ergebnis eines „Plan senden"-Laufs (Edge Function `send-plan`). */
+export interface PlanVersand {
+  /** Wie viele Personen eine Nachricht bekommen haben. */
+  personen: number
+  /** Wie viele Aufgaben darin steckten (eine Nachricht kann mehrere tragen). */
+  aufgaben: number
+  /** Namen ohne App-Konto — die muss der Planer persönlich ansprechen. */
+  ohneKonto: string[]
+}
+
+/**
+ * „Plan senden": jede eingeteilte Person bekommt **eine** Nachricht mit allen
+ * ihren Aufgaben dieser Woche.
+ *
+ * Läuft serverseitig, weil Web-Push den privaten VAPID-Schlüssel braucht und
+ * weil das Versand-Tagebuch (`assignment_log`) nur die Service-Role schreiben
+ * darf — ein Client, der sich selbst als „informiert" einträgt, könnte damit
+ * Nachrichten unterdrücken.
+ *
+ * **Nicht** fire-and-forget wie die übrigen Aufrufe: Der Planer hat den Knopf
+ * bewusst gedrückt und muss erfahren, was daraus wurde — vor allem, wen er
+ * mangels Konto selbst ansprechen muss.
+ */
+export async function sendPlan(weekStart: string): Promise<PlanVersand | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('send-plan', {
+    body: { action: 'plan', weekStart },
+  })
+  if (error) {
+    console.error('[send-plan]', error.message)
+    return null
+  }
+  const res = data as Partial<PlanVersand> | null
+  return {
+    personen: res?.personen ?? 0,
+    aufgaben: res?.aufgaben ?? 0,
+    ohneKonto: res?.ohneKonto ?? [],
+  }
+}
+
+/**
+ * Eine **bestätigte** Zuteilung wurde zurückgezogen oder verlegt — die
+ * betroffene Person erfährt es sofort.
+ *
+ * Das ist der einzige Fall, in dem eine Zuteilungs-Nachricht nicht auf den
+ * Knopf wartet: Wer zugesagt hat, bereitet vor. Bliebe es beim nächsten „Plan
+ * senden", übte jemand tagelang für einen Platz, den er nicht mehr hat.
+ *
+ * Bezeichnung und Termin gehen kanonisch deutsch mit — der Client hat den Platz
+ * gerade in der Hand, die Function könnte ihn nach dem Überschreiben nicht mehr
+ * nachschlagen.
+ */
+export function sendPlanEntzug(taskKey: string, name: string, label: string, datum: string): void {
+  if (!supabase) return
+  void run(
+    supabase.functions.invoke('send-plan', {
+      body: { action: 'entzug', taskKey, name, label, datum },
+    }),
+  )
 }
 
 export function markNotificationsRead(congregationId: string, userId: string): void {

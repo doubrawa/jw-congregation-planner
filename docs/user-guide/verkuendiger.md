@@ -103,6 +103,26 @@ zeitlicher Reihenfolge. **Vergangenes fällt heraus** – ab dem Tag nach der
 Zusammenkunft. Es wird dir also nicht mehr zum Bestätigen vorgelegt und zählt
 auf der Startseite nicht mehr mit.
 
+### Wie du von einer Zuteilung erfährst
+
+**Wenn der Koordinator die Woche freigibt**, bekommst du eine Mitteilung
+„Neue Zuteilung" mit allen deinen Aufgaben dieser Woche auf einmal – in der App
+und, wenn du Push aktiviert hast, auch als Benachrichtigung auf dem Gerät. Beim
+nächsten Öffnen der App legt sie dir die offenen Zuteilungen zum Bestätigen vor.
+
+Zwei weitere Nachrichten können dich erreichen:
+
+- **„Erinnerung: Zuteilung bestätigen"** – solange du nicht bestätigt hast,
+  einige Tage vor der Zusammenkunft und noch einmal kurz davor. Betrifft sie
+  nur eine Aufgabe, kannst du direkt in der Mitteilung bestätigen.
+- **„Zuteilung zurückgezogen"** – der Koordinator hat dir eine Aufgabe wieder
+  genommen, die du **schon bestätigt** hattest. Dann brauchst du dich nicht
+  weiter vorzubereiten.
+
+> Solange der Koordinator noch plant, erfährst du nichts – auch wenn dein Name
+> im Programm schon steht. Das ist Absicht: Bis die Woche steht, wird oft noch
+> umsortiert.
+
 ![Meine Aufgaben mit Bestätigung](screenshots/verkuendiger-aufgaben.png)
 
 Für jede Aufgabe gilt:
@@ -301,6 +321,10 @@ funktioniert das
 **nur aus der installierten App** – im normalen Safari‑Tab kommen keine
 Benachrichtigungen an. **Erinnerungen kommen ausschließlich als Push‑Nachricht –
 nie per E‑Mail.**
+
+Ohne Push verpasst du nichts: Jede Nachricht steht auch in der App unter der
+**Glocke** oben rechts, und offene Zuteilungen legt dir die App beim Öffnen
+ohnehin vor. Push spart dir nur das Nachsehen.
 
 ---
 

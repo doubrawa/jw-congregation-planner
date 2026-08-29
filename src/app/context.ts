@@ -34,6 +34,7 @@ import type {
   Reminders,
   S89Payload,
   Screen,
+  SentLog,
   Service,
   SlotSelection,
   SubstituteReq,
@@ -78,6 +79,7 @@ export interface HydratePayload {
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
+  sentLog: SentLog
   reminders: Reminders
   congLang: string
   progLangs: string[]
@@ -153,6 +155,12 @@ export interface AppState {
   absences: Absence[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
+  /**
+   * Versand-Tagebuch: welcher Platz wurde mit welchem Namen schon gemeldet
+   * (migration-024). Nur zum Anzeigen im Planen — geschrieben wird es
+   * ausschließlich von der Edge Function `send-plan` mit der Service-Role.
+   */
+  sentLog: SentLog
   reminders: Reminders
   /**
    * Versammlung hat eine Zusätzliche Klasse eingerichtet (jw.org S-38,
@@ -311,7 +319,6 @@ export type AppAction =
   // Erinnerungen
   | { type: 'changeReminder'; key: ReminderKey; delta: 1 | -1 }
   | { type: 'toggleReminderRepeat' }
-  | { type: 'toggleReminderOnAssign' }
   // Sprache
   | { type: 'setLang'; lang: Lang }
   | { type: 'openLangSheet'; mode?: 'cong' | 'alt' }

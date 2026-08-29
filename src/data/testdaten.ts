@@ -262,9 +262,13 @@ export const DEMO_ABSENCES: Absence[] = [
 const vorhin = (stunden: number): string => new Date(Date.now() - stunden * 3600_000).toISOString()
 
 export const DEMO_NOTIFICATIONS: Notification[] = [
+  // Die drei Titel sind genau die, die im Betrieb entstehen — `send-plan`,
+  // `send-reminders`, `substitute`. Der Demo-Bestand wird angezeigt wie echte
+  // Daten, also darf hier nichts stehen, was es sonst nirgends gibt;
+  // `mitteilungs-titel.test.ts` liest ihn als fünfte Quelle mit.
   { id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: 'Mikrofone · Sonntag, 20. September', at: vorhin(0.2), read: false, taskId: 'a2' },
-  { id: 'n2', type: 'erinnerung', title: 'Erinnerung', text: 'Demoaufgabe 10 · Di, 8. Sep · ca. 19:35', at: vorhin(3), read: false },
-  { id: 'n3', type: 'gesendet', title: 'Plan veröffentlicht', text: 'Demo-Mitteilung', at: vorhin(50), read: true },
+  { id: 'n2', type: 'erinnerung', title: 'Erinnerung: Zuteilung bestätigen', text: 'Demoaufgabe 10 · Di, 8. Sep · ca. 19:35', at: vorhin(3), read: false },
+  { id: 'n3', type: 'zuteilung', title: 'Ersatz gesucht', text: 'Mikrofone · Sonntag, 20. September · M. Ernst', at: vorhin(50), read: true },
 ]
 
 /* ---- Persönliche Aufgaben, Bestätigungs-Status & Erinnerungen ----------- */
@@ -313,7 +317,7 @@ export const DEMO_PENDING_IDS: string[] = [
   'name:Elke Brandt',
 ]
 
-export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true, onAssign: true }
+export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true }
 
 /* ---- Wochenprogramme ----------------------------------------------------
  * Kompakte Baus­teine wie im Prototyp: Namen als Tupel [Name, Rolle,

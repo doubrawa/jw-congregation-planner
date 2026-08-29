@@ -153,6 +153,7 @@ export function initialState(): AppState {
     myTasks: demo ? DEMO_MY_TASKS : [],
     pendingIds: demo ? DEMO_PENDING_IDS : [],
     confirmations: {},
+    sentLog: {},
     confirmOpen: false,
     myTaskId: null,
     substituteReqs: [],

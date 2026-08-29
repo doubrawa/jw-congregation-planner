@@ -292,6 +292,39 @@ Bei **Programmpunkten** gibt es keine automatische Suche — dort teilst du neu
 zu. Der Name des Absagenden bleibt im Slot stehen, damit du siehst, worum es
 geht.
 
+### Den Plan senden
+
+**Solange du planst, erfährt niemand etwas.** Das ist Absicht: Beim Planen wird
+umsortiert, und für jeden Zwischenstand eine Nachricht zu verschicken wäre eine
+Zumutung. Wann die Woche steht, entscheidest du.
+
+![Plan senden](screenshots/planer-plan-senden.png)
+
+Ganz unten im Planen-Screen steht dafür **PLAN SENDEN**. Die Karte sagt dir,
+wie viele Zuteilungen dieser Woche noch niemandem mitgeteilt sind; sind es nur
+noch wenige, nennt sie auch die Namen. Ein Tipp auf **Plan senden**, und jede
+eingeteilte Person bekommt **eine** Nachricht mit allen ihren Aufgaben dieser
+Woche — in der App und, wo aktiviert, als Push.
+
+Drei Dinge, auf die du dich verlassen kannst:
+
+- **Es geht nichts doppelt hinaus.** Die App merkt sich, welcher Platz mit
+  welchem Namen schon gemeldet wurde. Besserst du danach einen Platz nach und
+  drückst noch einmal, bekommt nur die neue Person eine Nachricht.
+- **Wer kein App-Konto hat, bleibt danach sichtbar stehen.** Diese Namen musst
+  du persönlich ansprechen — die Karte nennt sie dir, bis du die Woche
+  wechselst.
+- **Der Knopf gilt für die ganze Woche**, beide Zusammenkünfte und die
+  Treffpunkte. Du musst ihn nicht in jedem Reiter drücken.
+
+Darunter steht, wann für diese Woche zuletzt etwas hinausging.
+
+> **Eine Ausnahme wartet nicht auf den Knopf.** Nimmst du jemandem eine Aufgabe
+> weg, die er **schon bestätigt** hatte, erfährt er das sofort („Zuteilung
+> zurückgezogen"). Wer zugesagt hat, bereitet vor — er soll nicht weiter für
+> etwas üben, das ihm nicht mehr gehört. Unbestätigte Zuteilungen darfst du
+> umsortieren, ohne dass jemand etwas merkt.
+
 ---
 
 ## 5. Treffpunkte planen

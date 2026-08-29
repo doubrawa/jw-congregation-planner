@@ -407,6 +407,41 @@ verschickte Nachricht lässt sich beim Lesen nicht mehr übersetzen: die
 Push-Erinnerung die des Geräts, die Einladungs-Mail die der Versammlung (der
 Empfänger hat noch kein Konto und also auch keine eingestellte Sprache).
 
+## Mitteilungen: wer wann was erfährt
+
+Vier Kanäle mit je eigener Aufgabe — sie sauber zu trennen ist der Kern von T99:
+
+| Kanal | wofür |
+| --- | --- |
+| **Bestätigungsblatt** beim Öffnen der App | handeln: offene Zuteilungen bestätigen oder absagen |
+| **Push** | „schau jetzt hin" — führt über `#go=` in die App |
+| **Glocke** (Mitteilungen) | „das ist passiert", als Verlauf; lädt beim Öffnen still nach |
+| **Planen-Screen** | „das ist der Stand" — Konflikte, offene Plätze, Engpässe, „…" |
+
+Und drei Takte:
+
+1. **Auf Knopfdruck — „Plan senden".** Der Planer arbeitet die Woche fertig und
+   gibt sie frei ([`supabase/functions/send-plan/`](supabase/functions/send-plan/)).
+   Jede eingeteilte Person bekommt **eine** Nachricht mit allen ihren Aufgaben
+   dieser Woche. Verschickt wird nur, was noch nicht verschickt war — das
+   Versand-Tagebuch `assignment_log`
+   ([migration-024](supabase/migration-024-zuteilungs-tagebuch.sql)) merkt sich
+   Platz und Name. Das Panel zeigt dem Planer, wie viele noch nichts wissen,
+   wann zuletzt etwas hinausging und wen er mangels App-Konto persönlich
+   ansprechen muss.
+2. **Sofort.** Was eine Zusage bricht oder Eile hat: eine bestätigte Zuteilung
+   wird zurückgezogen (`send-plan`, Aktion `entzug`), ein Hilfsdienst wird
+   abgesagt und ein Ersatz gesucht, jemand springt ein
+   ([`substitute`](supabase/functions/substitute/)), eine Verhinderung wird an
+   die Planer gemeldet.
+3. **Täglich.** Die Erinnerungen an Unbestätigtes (siehe unten).
+
+**Zuteilen selbst meldet nichts.** Bis T99 schrieb jeder Zuteilungsklick eine
+Zeile „Zuteilung gesendet" in die Glocke der **Planer** — bei einer von Hand
+geplanten Woche gut 35 Stück, für Klicks, die der Planer selbst getan hatte,
+während die eingeteilte Person nichts erfuhr. Der Planer sieht den Stand seiner
+Woche im Planen-Screen; die Nachricht geht an den, den sie angeht.
+
 ## Erinnerungs-Versand (Web-Push)
 
 [`supabase/functions/send-reminders/`](supabase/functions/send-reminders/)
@@ -425,13 +460,20 @@ Home-Bildschirm“ installiert wurde (iOS 16.4+).
 Ablauf laut Einstellungen → ERINNERUNGEN (`settings.reminders`): erste
 Erinnerung `first` Tage vorher, letzte `last` Tage vorher (jeweils Push +
 Glocke), mit `repeat` zusätzlich täglich per Push an den Tagen **dazwischen**.
+`repeat` ist **voreingestellt aus** (T99): Zwei Anstöße für eine Zuteilung
+genügen, sieben Push-Nachrichten in Folge sind eine Zumutung — und wer dann
+noch nicht reagiert hat, wird ohnehin den Planern gemeldet.
 Nach `last` kommt nichts mehr — „letzte Erinnerung“ heißt letzte; wer auch am
 Tag der Zusammenkunft erinnern will, setzt `last = 0`.
 Bestätigt/verhindert beendet die Erinnerungen; Gastredner/Kreisaufseher und
 Gruppen-Rotationen sind ausgenommen. Der Zusammenkunftstag wird aus
 `meeting_times` gelesen („Di 19:00 · So 10:00“ → Di/So der Programmwoche).
+Betrifft die Erinnerung genau **eine** Aufgabe, trägt die Glocken-Zeile deren
+`task_key` — dann lässt sie sich an Ort und Stelle bestätigen.
 Personen ohne verknüpftes App-Konto können nicht erinnert werden — steht ihre
-letzte Erinnerung an, bekommen die Planer einen Sammel-Push.
+letzte Erinnerung an, bekommen die Planer einen Sammel-Push **und** eine
+Glocken-Zeile (ohne die zweite ging die Meldung an jedem Planer ohne Push-Abo
+vorbei).
 
 **Der Push-Text geht in der Sprache des Geräts hinaus** (`push_subscriptions.lang`),
 Titel *und* Rumpf — er ist fertiger Text, sobald er das Gerät erreicht, und lässt

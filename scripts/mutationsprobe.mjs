@@ -529,10 +529,13 @@ const KATALOG = [
   },
   {
     id: 'erinnerung-fs-kennung',
-    datei: 'supabase/functions/send-reminders/index.ts',
+    // Seit T99 in `_shared/zuteilungen.ts`: `send-plan` zählt dieselben Plätze
+    // auf wie `send-reminders`, und zwei Fassungen einer solchen Aufzählung
+    // waren hier schon die Ursache eines Fehlers (B8/T40).
+    datei: 'supabase/functions/_shared/zuteilungen.ts',
     regel: 'Der Versand greift nach der stabilen Treffpunkt-Kennung, auch im Altbestand (T87).',
-    suchen: 'if (conf.has(`fs|${woche}|${stabileKennung(inst.id)}`)) continue',
-    ersetzen: 'if (conf.has(`fs|${woche}|${inst.id}`)) continue',
+    suchen: '    const key = `fs|${woche}|${stabileKennung(inst.id)}`',
+    ersetzen: '    const key = `fs|${woche}|${inst.id}`',
   },
   {
     id: 'erinnerung-letzte-ist-letzte',
@@ -883,6 +886,67 @@ const KATALOG = [
     regel: 'Eine Verhinderungs-Meldung geht nur an Planer (S3) — nicht an jeden Empfänger der Versammlung.',
     suchen: '             and m.planner',
     ersetzen: '             and true',
+  },
+
+  // ── „Plan senden" (T99) ───────────────────────────────────────────────────
+  {
+    id: 'plan-bestaetigte-nicht-erneut',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Wer bestätigt oder abgesagt hat, weiß Bescheid — er steht nicht mehr auf der Sendeliste.',
+    suchen: '    if (confirmations[key]) return',
+    ersetzen: '    if (false) return',
+  },
+  {
+    id: 'plan-tagebuch-traegt-den-namen',
+    datei: 'src/data/planning.ts',
+    /*
+      Ohne den Namen im Schlüssel zählte ein umgeteilter Platz als gemeldet:
+      Die alte Person hatte ihre Nachricht, die neue bekäme nie eine. Genau
+      dieser Fall ist der Grund, warum das Tagebuch nicht nur den Platz führt.
+    */
+    regel: 'Das Versand-Tagebuch merkt sich Platz UND Name, nicht nur den Platz.',
+    suchen: '  return `${taskKey} ${name}`',
+    ersetzen: '  return taskKey',
+  },
+  {
+    id: 'plan-entzug-nur-bestaetigte',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Zurückgezogen wird nur gemeldet, wem etwas genommen wurde — nicht, wer seinen Platz behält.',
+    suchen: '    if (neu.get(key) === eintrag.name) continue // unverändert',
+    ersetzen: '    if (false) continue',
+  },
+  {
+    id: 'plan-entzug-braucht-zusage',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Solange niemand zugesagt hat, ist der Plan ein Entwurf — Umsortieren meldet nichts.',
+    suchen: "    if (conf[key] !== 'bestätigt') continue",
+    ersetzen: '    if (false) continue',
+  },
+  {
+    id: 'plan-nur-planer',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Nachrichten an die ganze Versammlung darf nur ein Planer auslösen.',
+    suchen: "    if (!mich?.planner) return json({ error: 'forbidden' }, 403)",
+    ersetzen: "    if (false) return json({ error: 'forbidden' }, 403)",
+  },
+  {
+    id: 'plan-nicht-zweimal',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Gesendet wird nur, was das Tagebuch noch nicht kennt — sonst kommt nach jeder Nachbesserung alles erneut.',
+    suchen: '    const neu = offen.filter((p) => !schonGemeldet.has(`${p.key} ${p.name}`))',
+    ersetzen: '    const neu = offen',
+  },
+  {
+    id: 'plan-je-person-eine',
+    datei: 'supabase/functions/send-plan/index.ts',
+    /*
+      Ohne die Bündelung bekäme jemand mit drei Plätzen drei Nachrichten. Die
+      Mutation gibt jedem Eintrag einen eigenen Schlüssel — dieselbe Wirkung
+      wie „je Aufgabe eine Nachricht".
+    */
+    regel: 'Je eingeteilter Person geht EINE Nachricht hinaus, nicht je Aufgabe.',
+    suchen: '      const schluessel = uid ?? ` ohne:${p.name}`',
+    ersetzen: '      const schluessel = (uid ?? ` ohne:${p.name}`) + p.key',
   },
 ]
 

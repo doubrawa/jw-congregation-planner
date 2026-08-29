@@ -235,6 +235,27 @@ create table if not exists public.reminder_log (
 create index if not exists reminder_log_sent_on_idx
   on public.reminder_log (sent_on);
 
+-- Versand-Tagebuch der Zuteilungen: `send-plan` trägt ein, welcher Platz mit
+-- welchem Namen schon gemeldet wurde. „Plan senden" verschickt daraufhin nur,
+-- was fehlt — ohne das schickte ein zweiter Druck nach einer kleinen
+-- Nachbesserung allen dieselbe Nachricht erneut. Der Name statt der Person-Id
+-- als Schlüssel, weil auch Plätze ohne `pid` vorkommen (Altdaten, Hilfsdienste
+-- als reine Zeichenkette); teilt der Planer um, ist der Name ein anderer und
+-- die neue Person erfährt es.
+create table if not exists public.assignment_log (
+  id              uuid primary key default gen_random_uuid(),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  task_key        text not null,
+  name            text not null,
+  person_id       uuid references public.persons (id) on delete set null,
+  user_id         uuid references auth.users (id) on delete set null,
+  sent_at         timestamptz not null default now(),
+  unique (congregation_id, task_key, name)
+);
+
+create index if not exists assignment_log_cong_idx
+  on public.assignment_log (congregation_id, task_key);
+
 -- Einladungscodes: Planer erstellen sie, registrierte Nutzer treten damit der
 -- Versammlung bei (redeem_invite unten) — kein SQL für neue Mitglieder nötig.
 create table if not exists public.invites (
@@ -642,6 +663,16 @@ create policy fs_weeks_write on public.fs_weeks
 -- Versand-Tagebuch: bewusst ohne Policy. RLS ohne Policy sperrt alles; die
 -- Edge Function arbeitet mit der Service-Role und umgeht RLS.
 alter table public.reminder_log enable row level security;
+
+-- Zuteilungs-Tagebuch: die Versammlung darf **lesen** — der Planen-Screen zeigt
+-- an jedem Platz, wann die Nachricht hinausging. Geschrieben wird nur von
+-- `send-plan` mit der Service-Role: ein Client, der sich selbst als
+-- „informiert" einträgt, könnte damit sonst Nachrichten unterdrücken.
+alter table public.assignment_log enable row level security;
+
+drop policy if exists assignment_log_select on public.assignment_log;
+create policy assignment_log_select on public.assignment_log
+  for select using (congregation_id = public.my_congregation_id());
 
 -- ---------------------------------------------------------------------------
 -- Beitritt per Einladungscode (security definer: der Beitretende hat noch

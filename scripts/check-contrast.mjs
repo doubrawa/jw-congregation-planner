@@ -111,6 +111,12 @@ const PAIRS = [
   ['mut', 'card', 4.5, 'Sekundärtext auf Karte'],
   ['mut', 'tNeu', 4.5, 'Sektionslabel neutral'],
   ['mut', 'tNeu2', 4.5, 'Sektionslabel neutral 2'],
+  // „Plan senden" (T99) trägt seine Nebenangaben — die Namen derer, die noch
+  // nichts wissen, und der Zeitpunkt des letzten Versands — gedämpft auf der
+  // goldenen Fläche. Bisher stand `mut` nur auf Seite, Karte und den beiden
+  // neutralen Sektionen; auf einer getönten Fläche ist es eine eigene Paarung.
+  ['mut', 'tGld', 4.5, 'Nebenangaben auf Sektion Gold'],
+  ['wein', 'tGld', 4.5, 'Warnung „ohne Konto" auf Sektion Gold'],
   ['mut2', 'bg', 4.5, 'Sekundärtext 2 auf Seite'],
   ['acc', 'bg', 4.5, 'Akzenttext auf Seite'],
   ['acc', 'card', 4.5, 'Akzenttext auf Karte'],

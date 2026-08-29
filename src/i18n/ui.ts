@@ -113,14 +113,18 @@ export const ROLE_KEY: Record<Role, keyof Dict> = {
 
 /** Deutscher Mitteilungs-Titel → Wörterbuch-Schlüssel (Übersetzung bei Anzeige). */
 export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
+  // „Plan senden" (Edge Function `send-plan`) — an die eingeteilte Person.
+  // Beide Titel gingen früher nirgends hinaus: Zugeteilt wurde ohne Nachricht,
+  // und dass eine bestätigte Zusage zurückgezogen wurde, erfuhr niemand (T99).
   'Neue Zuteilung': 'notifZuteilung',
-  Erinnerung: 'notifErinnerung',
+  'Zuteilung zurückgezogen': 'notifEntzug',
   // Titel der Erinnerungen aus send-reminders — steht kanonisch deutsch in der
   // Datenbank und wird hier in die Sprache des Lesers gebracht.
   'Erinnerung: Zuteilung bestätigen': 'notifErinnerungBest',
-  'Plan veröffentlicht': 'notifPlan',
-  'Zuteilung gesendet': 'notifZutGesendet',
-  'Zuteilungen gesendet': 'notifZutsGesendet',
+  // Sammelmeldung an die Planer über Personen, die per Push nicht zu erreichen
+  // sind. Ging bis T99 nur als Push hinaus — ein Planer ohne Abo bekam sie also
+  // nie, obwohl gerade er sie braucht (er muss persönlich erinnern).
+  'Unbestätigte Zuteilungen (nicht erreichbar)': 'notifUnerreichbar',
   'Programm importiert': 'notifProgImportiert',
   'Verhinderung gemeldet': 'notifVerhindert',
   // Ersatzsuche (Edge Function `substitute`) — die Titel sind fest, alles

@@ -13,11 +13,13 @@ import { DEMO_NOTIFICATIONS } from '../data/testdaten'
  * ausgegeben — auf Deutsch, in allen 33 Fremdsprachen, ohne Fehler und ohne
  * dass irgendwo etwas rot würde.
  *
- * Die Titel entstehen an **vier** Stellen, drei davon außerhalb der App:
+ * Die Titel entstehen an **fünf** Stellen, drei davon außerhalb der App:
  *
- *  - `src/app/reducer.ts` — Import, Zuteilung gesendet, Verhinderung,
+ *  - `src/app/reducer.ts` — Import und Verhinderung,
  *  - `supabase/functions/send-reminders/index.ts` — die Erinnerung,
  *  - `supabase/functions/substitute/texte.ts` — Ersatz gesucht/gefunden,
+ *  - `supabase/functions/send-plan/texte.ts` — „Plan senden" und der Entzug
+ *    einer bestätigten Zuteilung (T99),
  *  - `src/data/testdaten.ts` — der Demo-Bestand (er sieht aus wie echte Daten
  *    und wird auch so angezeigt).
  *
@@ -47,15 +49,17 @@ const quelle = (endet: string): string => {
  *
  * Beide Erzeuger nehmen den Titel als **zweites** Argument hinter der Art
  * (`makeNotif('import', 'Programm importiert', …)`,
- * `pushNotif(state.notifs, 'import', …)`). `zuteilungsNotif` nimmt ihn als
- * zweites Argument hinter dem Zustand.
+ * `pushNotif(state.notifs, 'import', …)`).
+ *
+ * `zuteilungsNotif` stand hier als dritter Erzeuger. Mit T99 ist er entfallen:
+ * Zuteilen meldet nichts mehr an die Planer, die Nachricht geht stattdessen an
+ * die eingeteilte Person — und zwar aus `send-plan`.
  */
 function titelAusReducer(): string[] {
   const text = quelle('app/reducer.ts')
   const gefunden = new Set<string>()
   for (const m of text.matchAll(/makeNotif\(\s*'[^']*',\s*'([^']+)'/g)) gefunden.add(m[1] ?? '')
   for (const m of text.matchAll(/pushNotif\(\s*[^,]+,\s*'[^']*',\s*'([^']+)'/g)) gefunden.add(m[1] ?? '')
-  for (const m of text.matchAll(/zuteilungsNotif\(\s*[^,]+,\s*'([^']+)'/g)) gefunden.add(m[1] ?? '')
   return [...gefunden]
 }
 
@@ -65,16 +69,33 @@ function titelAusErinnerung(): string[] {
   return [...text.matchAll(/^\s*title: '([^']+)',/gm)].map((m) => m[1] ?? '')
 }
 
-/** Titel der Ersatzsuche — dort stehen sie als benannte Konstanten. */
-function titelAusErsatz(): string[] {
-  const text = quelle('substitute/texte.ts')
+/**
+ * Titel der beiden Functions, die sie als benannte Konstanten führen —
+ * Ersatzsuche und „Plan senden". Beide Dateien halten es gleich: `TITEL_…`
+ * ist zugleich der kanonisch deutsche Text und der Schlüssel für die Glocke.
+ */
+function titelAusKonstanten(datei: string): string[] {
+  const text = quelle(datei)
   return [...text.matchAll(/export const TITEL_\w+ = '([^']+)'/g)].map((m) => m[1] ?? '')
 }
+
+const titelAusErsatz = (): string[] => titelAusKonstanten('substitute/texte.ts')
+const titelAusPlan = (): string[] => titelAusKonstanten('send-plan/texte.ts')
+/**
+ * Die Erinnerungs-Function schreibt einen Titel als Literal in die Zeile
+ * (`titelAusErinnerung`) und einen über die benannte Konstante
+ * `TITEL_UNERREICHBAR` — die Sammelmeldung an die Planer, die seit T99 auch in
+ * die Glocke geht. Beide Wege werden gelesen, sonst bliebe der zweite
+ * unbemerkt deutsch.
+ */
+const titelAusErinnerungsKonstanten = (): string[] => titelAusKonstanten('send-reminders/texte.ts')
 
 const ALLE_ERZEUGTEN = [
   ...titelAusReducer(),
   ...titelAusErinnerung(),
+  ...titelAusErinnerungsKonstanten(),
   ...titelAusErsatz(),
+  ...titelAusPlan(),
   ...DEMO_NOTIFICATIONS.map((n) => n.title),
 ]
 
@@ -90,9 +111,10 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
       Funktionsaufrufe über mehrere Zeilen; ein Umbau der Formatierung reicht,
       damit ein Muster ins Leere greift.
     */
-    expect(titelAusReducer().length, 'reducer.ts').toBeGreaterThan(2)
+    expect(titelAusReducer().length, 'reducer.ts').toBeGreaterThan(1)
     expect(titelAusErinnerung().length, 'send-reminders').toBeGreaterThan(0)
     expect(titelAusErsatz().length, 'substitute/texte.ts').toBe(2)
+    expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(2)
     expect(DEMO_NOTIFICATIONS.length, 'Demo-Bestand').toBeGreaterThan(0)
   })
 

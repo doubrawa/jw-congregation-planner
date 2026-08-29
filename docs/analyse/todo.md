@@ -3961,6 +3961,135 @@ Analysen sind datierte Protokolle; was dort steht, galt an seinem Tag. Zu
 
 ---
 
+## Aufgenommen am 29. August 2026 — Mitteilungen (T99)
+
+### T99 · Der Mitteilungs-Mechanismus als Ganzes 🏗 ✅ erledigt
+**Vorgabe des Betreibers am 29. August 2026**, nach einer Durchsicht des
+Bestands: „wer kriegt wieviele und welche Mitteilungen, macht das alles Sinn,
+bringt mir das was oder stört es nur." Und danach: ein durchdachter Ablauf,
+„das ist ein wichtiger Bestandteil der App".
+
+**Was die Durchsicht ergab.** Die Mitteilungen waren falsch adressiert —
+benachrichtigt wurde, wer handelt, nicht, wen es angeht.
+
+- **Wer eingeteilt wurde, erfuhr es nicht.** „Zuteilung gesendet" ging an die
+  **Planer**; für die eingeteilte Person passierte bis zur zeitlichen
+  Erinnerung nichts, also bis `first` Tage vor der Zusammenkunft. Wer drei
+  Wochen im Voraus plant, dessen Leute wussten zwei Wochen lang nichts. (In
+  T74 beim Bauen gemessen und ausdrücklich vertagt.)
+- **Wer eine bestätigte Zusage wieder verlor, erfuhr es auch nicht.** Das
+  Umteilen verwarf die Bestätigung still (`dropConfirmations`); es gab keinen
+  Erzeuger für „deine Aufgabe ist weg". Wer zugesagt hatte, bereitete weiter
+  vor.
+- **Der Planer bekam zu viel.** Gemessen an der Demo-Woche hat eine Woche
+  **35 Plätze** (22 unter der Woche, 13 am Wochenende, alle vier Platzsorten).
+  Von Hand geteilt hieß das 35 Glocken-Zeilen je Planer — für Klicks, die er
+  selbst getan und als Toast quittiert bekommen hatte. Dieselbe Woche per
+  Auto-Zuteilung: **eine** Zeile. Das Ladefenster von 50 war damit nach
+  anderthalb Wochen voll und verdrängte alles andere.
+- **Drei Dinge funktionierten schlicht nicht:** Der Bestätigen-Knopf in der
+  Glocke erschien im Betrieb nie (`send-reminders` schrieb kein `task_key`;
+  nur der Demo-Bestand stellte den Zustand her). Die Planer-Meldung „nicht
+  erreichbar" ging **nur** als Push hinaus — ein Planer ohne Abo bekam sie nie,
+  wurde aber im `reminder_log` als benachrichtigt verbucht. Und zwei Titel
+  („Neue Zuteilung", „Plan veröffentlicht") standen in 34 Sprachfassungen ohne
+  jeden Erzeuger.
+- **Der Takt war laut:** Voreinstellung `repeat: true` — sieben Push-Nachrichten
+  an sieben Tagen in Folge für dieselbe Aufgabe, davon fünf ohne neuen Inhalt
+  (die Glocke bekommt nur an `first` und `last` eine Zeile).
+
+**Der Grundsatz, nach dem umgebaut wurde:** Eine Mitteilung ist eine Bitte um
+Handlung oder die Nachricht, dass eine Zusage nicht mehr gilt. Adressiert wird,
+wen es angeht — nie, wer es ausgelöst hat. Gebündelt wird nach Person, nicht
+nach Ereignis. Und den Zeitpunkt bestimmt der Planer, nicht der Klick: Planen
+ist eine Sitzung, kein Einzelakt.
+
+**Umgesetzt:**
+
+1. **„Plan senden"** (`PlanSendenPanel` → neue Edge Function `send-plan`). Der
+   Planer arbeitet die Woche fertig und gibt sie frei; jede eingeteilte Person
+   bekommt **eine** Nachricht mit allen ihren Aufgaben dieser Woche, als Glocke
+   und als Push. Der Knopf gilt für die ganze Woche, beide Zusammenkünfte und
+   die Treffpunkte, und steht deshalb in beiden Ansichten.
+2. **Versand-Tagebuch** `assignment_log`
+   ([migration-024](../../supabase/migration-024-zuteilungs-tagebuch.sql)) —
+   dasselbe Muster wie `reminder_log`. Gesendet wird nur, was noch nicht
+   gesendet war; ein zweiter Druck nach einer Nachbesserung erreicht nur die
+   neue Person. Der Schlüssel führt **Platz und Name**, weil ein Platz die
+   Person wechseln kann.
+3. **Der Planer sieht, wer wann informiert wurde** — das Panel nennt die Zahl,
+   bei wenigen auch die Namen, dazu den Zeitpunkt des letzten Versands. Wer
+   kein App-Konto hat, bleibt nach dem Senden sichtbar stehen: Ihn muss der
+   Planer persönlich ansprechen, und ein Toast wäre dafür zu flüchtig.
+4. **Entzogene Zusagen gehen sofort hinaus** (`send-plan`, Aktion 'entzug').
+   Erkannt wird das an **einer** Stelle in `persist.ts` über den
+   Vorher/Nachher-Vergleich der Woche — nicht als Aufzählung der auslösenden
+   Aktionen, denn wer eine vergisst, merkt es nie.
+5. **Das Planer-Protokoll ist entfallen:** „Zuteilung gesendet" und
+   „Zuteilungen gesendet" gibt es nicht mehr, und mit ihnen den Schalter
+   `reminders.onAssign`, der nichts anderes steuerte. Was der Planer über den
+   Stand seiner Woche wissen muss, steht im Planen-Screen.
+6. **Vier Reparaturen am Bestand:** `task_key` in der Erinnerung (der
+   Bestätigen-Knopf funktioniert jetzt); „nicht erreichbar" auch als
+   Glocken-Zeile; die Glocke lädt beim Öffnen still nach (bis dahin kam sie nur
+   beim App-Start aus der Datenbank — eine dauerhaft offene PWA sah nie etwas
+   Neues); und `repeat` steht voreingestellt auf **aus**.
+
+**Geteilt statt abgeschrieben:** Die Aufzählung der Plätze wohnt jetzt in
+`supabase/functions/_shared/zuteilungen.ts` — dieselbe Datei für
+`send-reminders` und `send-plan`. Zwei Fassungen einer solchen Aufzählung waren
+hier schon einmal die Ursache eines Fehlers (B8/T40).
+
+**Was das mengenmäßig heißt:**
+
+| | vorher | nachher |
+| --- | --- | --- |
+| Planer, vier Wochen von Hand geplant | ~140 Glocken-Zeilen | 2–5 (nur Absagen) |
+| Verkündiger, 2 Aufgaben im Monat | 0 bei der Zuteilung, dann 4 Glocken + bis zu 14 Push | 1–2 „Neue Zuteilung" + 0–2 Erinnerungen |
+
+**Beim Bauen gefunden — zwei Dinge, die niemand gesucht hatte:**
+
+- In `send-plan` war der Trenner des Tagebuch-Schlüssels zwischenzeitlich kein
+  Leerzeichen, sondern ein Steuerzeichen. **Alle Tests der Function blieben
+  grün** — sie verglich ja mit sich selbst; nur der Client hätte nicht dazu
+  gepasst. Daraus ist die Gleichlauf-Probe in `edge-parity.test.ts` geworden,
+  die beide Seiten an denselben Eingaben misst, und die geteilte Funktion
+  `tagebuchSchluessel`.
+- Die neue Kontrast-Paarung `mut/tGld` deckte einen **Bestandsmangel** auf: In
+  der Palette „grau" stand der gedämpfte Hinweistext auf goldenen Panels bei
+  3.86:1. Das betraf nicht das neue Panel, sondern jedes `panel-hint` auf Gold
+  — Treffpunkte, Aufgaben, Zeitleiste. `--mut` ist dort jetzt dunkler.
+
+**Prüfen:** Eine Woche von Hand zuteilen — in der Glocke des Planers steht
+nichts. „Plan senden" drücken — jede eingeteilte Person mit Konto hat genau
+eine Mitteilung, der Zähler steht auf null, die Antwort nennt die ohne Konto.
+Erneut drücken — es geht nichts hinaus. Einen **bestätigten** Platz umteilen —
+der bisherige Inhaber bekommt sofort „Zuteilung zurückgezogen".
+
+**Absichtlich nicht umgesetzt: „Zusammenkunft fällt aus" als eigene Nachricht.**
+Der Betreiber am 29.8.: „das kommt eigentlich nie vor. man weiß zur planzeit
+schon, ob eine zusammenkunft an einem anderen tag als gewöhnlich ist. dieser
+punkt sollte nur umgesetzt werden, wenn es kaum aufwand darstellt." Ehrlich
+gerechnet wäre es kein kleiner: ein neuer Titel in 34 Sprachfassungen, ein
+neuer Auslöser, eine eigene Empfängerregel. Und die eigentliche Abhilfe ist
+geschenkt — steht die Verlegung zur Planzeit fest, trägt die gesendete
+Zuteilung von vornherein den richtigen Tag (`terminText` liest `week.dev`).
+Wer nach dem Senden verlegt, ändert damit bestätigte Zusagen und löst Punkt 4
+aus.
+
+**Tests:** `src/data/plan-versand.test.ts` (21), `supabase/functions/_test/send-plan.test.ts` (19),
+`src/planen/PlanSendenPanel.test.tsx` (13), dazu die Gleichlauf-Proben in
+`edge-parity.test.ts` und sieben neue Einträge im Mutationskatalog — alle
+bewacht.
+
+**Vom Betreiber ausgeführt (29. August 2026):**
+[migration-024](../../supabase/migration-024-zuteilungs-tagebuch.sql)
+eingespielt, `send-plan` deployt, `send-reminders` neu deployt. Damit ist
+scharf, was hier steht — offen bleibt nur die Probe im Betrieb: eine Woche
+freigeben und nachsehen, ob die Nachricht ankommt.
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -3986,20 +4115,23 @@ Analysen sind datierte Protokolle; was dort steht, galt an seinem Tag. Zu
 
 ## Fortschritt
 
-Stand 28. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 29. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐
+22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐ · 29. August ☑
 
-**96 von 98 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+**97 von 99 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. Offen sind zwei: **T95** (Ideen für den
 Start-Bildschirm), am 23. August nebenbei aufgenommen und ausdrücklich noch
 kein Bauauftrag, und **T98** (die Dokumentation auf den Stand des Codes
 bringen), am 28. August aufgenommen — die Handbücher stehen auf dem 25. August,
-seither sind neun Commits gelaufen, drei davon am Sprachverhalten der ganzen App. Zuletzt fielen die beiden
+seither sind neun Commits gelaufen, drei davon am Sprachverhalten der ganzen App.
+Zuletzt fiel **T99**: der Mitteilungs-Mechanismus, vom Betreiber am 29. August
+im Ganzen zur Durchsicht gegeben und danach umgebaut — die Nachricht geht jetzt
+an die eingeteilte Person statt an den Planer, auf dessen Knopfdruck. Davor fielen die beiden
 letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
 nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
 **T89** ist am 23. August mit migration-022 nicht nur gemessen, sondern
@@ -4110,6 +4242,18 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > Testbestand nach dieser Runde: **1708** in 88 Dateien, grün (15.8., 19:34).
 
 ### Was offen ist und warum
+
+> ✅ **Beim Betreiber erledigt (29. August 2026)** — T99 ist damit vollständig
+> in Betrieb:
+>
+> 1. **[migration-024](../../supabase/migration-024-zuteilungs-tagebuch.sql) ist
+>    eingespielt** → `assignment_log` steht, die Wiederholungssperre greift.
+> 2. **`send-plan` ist deployt** → der Knopf „Plan senden" hat seine
+>    Gegenstelle.
+> 3. **`send-reminders` ist neu deployt** → die Erinnerung trägt jetzt den
+>    `task_key` (Bestätigen direkt in der Glocke), die Sammelmeldung „nicht
+>    erreichbar" geht auch als Glocken-Zeile hinaus, und der Rückfall für
+>    `repeat` steht auf `false` wie im Client.
 
 > **Der Deploy ist erledigt** (7. August 2026): `substitute` und
 > `send-reminders` laufen in der Fassung des Repos. Alles, was bis dahin nur

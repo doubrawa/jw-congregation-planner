@@ -60,6 +60,10 @@ function st(over: Partial<AppState> = {}): AppState {
     slotSel: null,
     selectedPersonId: null,
     congregation: { name: 'K', hall: 'H', meetings: 'M' },
+    // Ohne Bestätigungen kann nichts entzogen werden — die Prüfung auf
+    // zurückgezogene Zusagen (T99) liest sie bei jeder Wochen-Änderung.
+    confirmations: {},
+    sentLog: {},
     reminders: { first: 7, last: 1, repeat: false },
     congLang: 'Deutsch',
     progLangs: [],

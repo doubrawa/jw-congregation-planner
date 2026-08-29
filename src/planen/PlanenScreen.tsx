@@ -8,6 +8,7 @@ import { istAusgefallen, mtab, aufseherGruppe } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, EngpassBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
+import { PlanSendenPanel } from './PlanSendenPanel'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
 import { FsPlan } from './FsPlan'
@@ -107,6 +108,11 @@ function PlanenBody() {
         <>
           <FsConflictsBanner onlyGroup={fsOverseer ? myFsGroup : null} />
           <FsPlan onlyGroup={fsOverseer ? myFsGroup : null} />
+          {/* Derselbe Knopf wie bei den Zusammenkünften: er gibt die **ganze**
+              Woche frei, Treffpunkte eingeschlossen. Er steht in beiden
+              Ansichten, weil ein Planer die Woche in beiden fertig machen kann
+              — und nicht zweimal senden muss. */}
+          <PlanSendenPanel />
         </>
       ) : (
         <>
@@ -151,6 +157,11 @@ function PlanenBody() {
           <AuxCounselorPanel meeting={rawMeeting} />
 
           <HelpersPanel meeting={meeting} />
+
+          {/* Ganz unten, weil es der letzte Schritt ist: erst steht der Plan,
+              dann geht er hinaus. Er gilt für die ganze Woche, nicht für den
+              Reiter darüber. */}
+          <PlanSendenPanel />
         </>
       )}
     </section>

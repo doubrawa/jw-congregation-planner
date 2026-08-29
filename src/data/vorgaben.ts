@@ -32,8 +32,17 @@ export const STANDARD_DIENSTE: Service[] = [
 
 /**
  * Erinnerungs-Vorgaben: erste Erinnerung sieben Tage vorher, letzte einen Tag
- * vorher, dazwischen wiederholt. Sie greifen, solange eine Versammlung in
- * `congregations.settings` nichts Eigenes stehen hat — also auch für jede
- * bestehende, die die Einstellung nie angefasst hat.
+ * vorher — und **dazwischen nichts**. Sie greifen, solange eine Versammlung in
+ * `congregations.settings` nichts Eigenes stehen hat.
+ *
+ * `repeat` stand hier auf `true` und war damit die lauteste Voreinstellung der
+ * App: Wer nicht bestätigte, bekam sieben Tage in Folge einen Push für dieselbe
+ * Sache — an fünf dieser Tage ohne jeden neuen Inhalt, denn die Glocke bekommt
+ * nur an `first` und `last` eine Zeile. Zwei Anstöße für eine Zuteilung sind
+ * genug; wer dann noch nicht reagiert hat, wird ohnehin den Planern gemeldet
+ * („nicht erreichbar"), und der spricht persönlich mit ihm.
+ *
+ * Der Schalter bleibt — eine Versammlung, die es anders will, stellt ihn an.
+ * Geändert hat sich nur, was gilt, wenn niemand etwas einstellt.
  */
-export const STANDARD_ERINNERUNGEN: Reminders = { first: 7, last: 1, repeat: true, onAssign: true }
+export const STANDARD_ERINNERUNGEN: Reminders = { first: 7, last: 1, repeat: false }

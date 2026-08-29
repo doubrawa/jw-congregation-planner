@@ -7,6 +7,7 @@
 
 import { changedSlotKeys, partSwapKeyPairs, shiftPartConfirmations } from '../data/planning'
 import { itemNameCount, lacAddIndex, lacMoveTarget } from '../data/meeting-edit'
+import { entzogeneZusagen } from '../data/plan-versand'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
@@ -36,6 +37,7 @@ import {
   saveWeek,
   substituteSeek,
   substituteTake,
+  sendPlanEntzug,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
 import { mtab } from '../data/helpers'
@@ -427,7 +429,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'changeReminder':
     case 'toggleReminderRepeat':
-    case 'toggleReminderOnAssign':
     case 'setAuxClass':
     case 'setCongLang':
     case 'addProgLang':
@@ -486,5 +487,43 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   if (neu?.local && neu !== prev.notifs[0]) {
     const planners = next.members.filter((m) => m.planner).map((m) => m.userId)
     insertNotifications(congId, planners, neu.type, neu.title, neu.text)
+  }
+
+  /*
+   * **Wem eine bestätigte Zusage genommen wurde, erfährt es sofort** (T99).
+   *
+   * Nach demselben Grundsatz wie oben an **einer** Stelle für alle Wege:
+   * einzeln zuteilen, umteilen, leeren, Auto-Zuteilung, Treffpunkt-Leiter,
+   * Treffpunkt-Auto — und alles, was künftig dazukommt. Eine Aufzählung der
+   * auslösenden Aktionen wäre die zweite Buchführung: wer eine vergisst, merkt
+   * es nie, weil nichts fehlschlägt — es geht nur eine Nachricht weniger
+   * hinaus, und der Betroffene übt weiter für einen Platz, den er nicht mehr
+   * hat.
+   *
+   * Verglichen wird gegen `prev.confirmations`: Der Reducer hat den Eintrag zu
+   * diesem Zeitpunkt schon verworfen (`dropConfirmations`), im vorigen Stand
+   * steht er noch.
+   *
+   * `hydrate` ist ausgenommen, und nur das: Dort wird der ganze Bestand
+   * ersetzt, und ein Neuladen nach einem Schreibkonflikt brächte sonst Wochen
+   * voller vermeintlicher Entzüge hervor.
+   */
+  if (action.type !== 'hydrate' && (prev.weeks !== next.weeks || prev.fsWeeks !== next.fsWeeks)) {
+    for (let wi = 0; wi < prev.weeks.length; wi++) {
+      // Unberührte Wochen behalten ihre Referenz — der Vergleich kostet nichts.
+      if (prev.weeks[wi] === next.weeks[wi] && prev.fsWeeks[wi] === next.fsWeeks[wi]) continue
+      const entzogen = entzogeneZusagen(
+        prev.weeks[wi],
+        next.weeks[wi],
+        prev.fsWeeks[wi],
+        next.fsWeeks[wi],
+        wi,
+        prev.fsBase,
+        prev.services,
+        prev.congregation.meetings,
+        prev.confirmations,
+      )
+      for (const z of entzogen) sendPlanEntzug(z.key, z.name, z.label, z.datum)
+    }
   }
 }

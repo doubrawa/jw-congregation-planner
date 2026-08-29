@@ -13,9 +13,11 @@ import {
   zeitMitAbweichung as edgeZeit,
   zuteilungsLabel as edgeLabel,
 } from '../../supabase/functions/_shared/planung.ts'
+import { tagebuchSchluessel as edgeTagebuch } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { STANDARD_ERINNERUNGEN } from './vorgaben'
 import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
 import { deutschesDatum, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
-import { isGuestRole } from './planning'
+import { isGuestRole, sentKey } from './planning'
 import { emptyQualifications } from './helpers'
 import type { Abweichung, Person, Week } from './types'
 
@@ -310,5 +312,74 @@ describe('Ausgeschriebene Wochentage', () => {
   it('Montag ist 0 und Sonntag 6 — die Woche beginnt am Montag', () => {
     expect(EDGE_WEEKDAY.Montag).toBe(0)
     expect(EDGE_WEEKDAY.Sonntag).toBe(6)
+  })
+})
+
+/**
+ * **Das Versand-Tagebuch (T99).**
+ *
+ * Der Planen-Screen zeigt „12 noch nicht gesendet", die Function entscheidet,
+ * was wirklich hinausgeht — beide bilden dafür denselben Schlüssel aus Platz
+ * und Name. Weichen sie ab, geht der Zähler nach dem Drücken nicht auf null:
+ * Der Planer sieht „0 gesendet" und darüber unverändert „12".
+ *
+ * Diese Probe steht hier, weil genau das schon passiert ist: In der Function
+ * war der Trenner zwischenzeitlich kein Leerzeichen, sondern ein unsichtbares
+ * Steuerzeichen. Alle Tests der Function blieben grün — sie verglich ja mit
+ * sich selbst. Erst der Blick auf **beide** Seiten fällt darauf herein nicht.
+ */
+describe('Versand-Tagebuch: Client und Function bilden denselben Schlüssel', () => {
+  const faelle: Array<[string, string]> = [
+    ['2026-09-07|mid|part|i1|0', 'A. Berg'],
+    ['2026-09-07|mid|helper|mikro|1', 'Bernd Cohn'],
+    ['fs|2026-09-07|r1', 'T. Lindner'],
+    // Namen dürfen alles enthalten — Bindestriche, Apostrophe, mehrere Wörter.
+    ['2026-09-07|we|ratgeber', "Jörg O'Brien-Müller"],
+  ]
+
+  it.each(faelle)('%s / %s', (key, name) => {
+    expect(sentKey(key, name)).toBe(edgeTagebuch(key, name))
+  })
+
+  it('und der Trenner ist ein echtes Leerzeichen', () => {
+    // Ohne diese Zeile wären zwei gleich falsche Fassungen ununterscheidbar
+    // von zwei gleich richtigen.
+    expect(sentKey('k', 'n')).toBe('k n')
+  })
+})
+
+/**
+ * **Der Erinnerungs-Rhythmus.**
+ *
+ * Die Voreinstellung steht an zwei Stellen: im Client (`STANDARD_ERINNERUNGEN`,
+ * gezeigt in den Einstellungen) und als Rückfall in `send-reminders`, wo eine
+ * Versammlung nichts Eigenes gespeichert hat. Läuft das auseinander, zeigt die
+ * App „Wiederholung aus" und der Versand erinnert trotzdem täglich — sichtbar
+ * nur für den Empfänger, der sich über sieben Push-Nachrichten wundert.
+ */
+describe('Voreinstellung der Erinnerungen: Client und Versand sind sich einig', () => {
+  // Über Vite eingelesen, nicht über `node:fs`: Diese Suite läuft in der
+  // Browser-Umgebung des Projekts, dieselbe Machart wie in
+  // `i18n/mitteilungs-titel.test.ts`.
+  const EDGE = import.meta.glob('../../supabase/functions/send-reminders/index.ts', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>
+  const quelle = Object.values(EDGE)[0] ?? ''
+  const rueckfall = (feld: string): string => {
+    // Gelesen wird der Quelltext, weil die Function nicht importierbar ist
+    // (sie ruft beim Laden `Deno.serve`). Findet das Muster seine Stelle nicht
+    // mehr, bricht die Probe laut ab, statt stillschweigend grün zu bleiben.
+    const muster = new RegExp(
+      `${feld}: cong\\.settings\\?\\.reminders\\?\\.${feld} \\?\\? ([^,\\n]+),`,
+    )
+    const m = muster.exec(quelle)
+    if (!m) throw new Error(`Rückfall für \`${feld}\` nicht gefunden — Stelle nachziehen`)
+    return m[1]!.trim()
+  }
+
+  it.each([['first'], ['last'], ['repeat']])('%s', (feld) => {
+    expect(rueckfall(feld)).toBe(String(STANDARD_ERINNERUNGEN[feld as keyof typeof STANDARD_ERINNERUNGEN]))
   })
 })

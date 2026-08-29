@@ -1071,3 +1071,67 @@
 .termin-add {
   margin-top: 10px;
 }
+
+/* ---- „Plan senden" (T99) --------------------------------------------------
+   Der letzte Schritt einer Woche: Der Planer gibt sie frei, und erst dann
+   erfahren die Eingeteilten davon. Optisch ein Banner wie die darüber — es
+   gehört in dieselbe Reihe von Aussagen über den Stand der Woche —, aber in
+   --gld statt --acc/--wein: Es warnt nicht, es steht bereit.
+   Jede Schriftgröße über calc(px * var(--fs)), sonst folgt sie dem Regler
+   nicht (siehe Schriftgrößen-Token). */
+.plan-senden {
+  margin-top: 16px;
+  background: var(--tGld);
+  border: 1.5px solid var(--gld);
+  border-radius: 14px;
+  padding: 12px 14px 14px;
+}
+
+.plan-senden .plan-banner-title {
+  color: var(--gld);
+}
+
+.plan-senden .plan-banner-count {
+  background: var(--gld);
+}
+
+.plan-senden-hint {
+  margin: 8px 0 0;
+  font-size: calc(12px * var(--fs));
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+/* Die Namen derer, die noch nichts wissen — eine bloße Zahl ließe den Planer
+   suchen, wen sie meint. */
+.plan-senden-namen {
+  margin-top: 6px;
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.5;
+  color: var(--mut);
+}
+
+.plan-senden-zuletzt {
+  margin: 6px 0 0;
+  font-size: calc(10.5px * var(--fs));
+  color: var(--mut);
+}
+
+/* Wer kein Konto hat, ist auf keinem Weg zu erreichen: der Planer muss selbst
+   hingehen. Deshalb in der Warnfarbe und nicht als bloße Randnotiz. */
+.plan-senden-ohne {
+  margin: 8px 0 0;
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.45;
+  color: var(--wein);
+}
+
+.plan-senden .plan-auto-btn {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.plan-senden .plan-auto-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

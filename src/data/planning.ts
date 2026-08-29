@@ -1001,6 +1001,20 @@ export function helperTaskKey(woche: string, tab: MeetingKey, svc: string, pos: 
 }
 
 /**
+ * Schlüssel im Versand-Tagebuch: Platz **und** Name.
+ *
+ * Der Name gehört dazu, weil ein Platz die Person wechseln kann. Teilt der
+ * Planer um, ist es ein anderer Schlüssel — die neue Person zählt als noch
+ * nicht benachrichtigt und bekommt beim nächsten „Plan senden" ihre Nachricht.
+ * Der Name statt der Person-Id, weil auch Plätze ohne `pid` vorkommen
+ * (Altdaten, Hilfsdienste als reine Zeichenkette); die Function bildet ihn
+ * genauso.
+ */
+export function sentKey(taskKey: string, name: string): string {
+  return `${taskKey} ${name}`
+}
+
+/**
  * Woche und Zusammenkunft eines task_key — jeder beginnt mit `<wi>|<tab>|…`,
  * gleich ob Programmpunkt, Ratgeber oder Hilfsdienst. null bei Fremdformaten.
  */
@@ -1230,7 +1244,7 @@ export function swapPartConfirmations(
 }
 
 /** Besucht alle belegten Slots (Programmpunkte + Hilfsdienste) aller Wochen. */
-function eachAssignedSlot(
+export function eachAssignedSlot(
   weeks: Week[],
   services: Service[],
   meetings: string,

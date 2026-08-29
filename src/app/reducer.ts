@@ -73,28 +73,6 @@ function nextToast(state: AppState, text: string): AppState['toast'] {
 }
 
 /**
- * „Treffpunkte" in Mitteilungstexten — bewusst kanonisch deutsch.
- *
- * Mitteilungen werden an alle Planer verteilt und erst beim Anzeigen übersetzt
- * (`tu` in NotificationsPanel). Hier stand vorher `dict(state.lang).fsShort`,
- * also die Sprache dessen, der zugeteilt hat: ein französischer Planer
- * hinterließ „Réunion pour la prédication" in der deutschen Ansicht. Der
- * Begriff steht als Programm-Fragment in allen Sprachen (FRAG in
- * _shared/i18n/translate-data.ts), wird beim Anzeigen also richtig ersetzt.
- */
-const FS_KANONISCH = 'Treffpunkte'
-
-/**
- * Die Wochenspanne als Zusatz für Mitteilungstexte („ · 4.–10. August"), leer,
- * wenn es die Woche zum Index nicht gibt. Sonst stünde in der Mitteilung ein
- * Trenner ohne Inhalt — oder, vor T42, gar nichts: der Zugriff warf.
- */
-function wochenZusatz(weeks: Week[], wi: number): string {
-  const range = weeks[wi]?.range
-  return range ? ` · ${range}` : ''
-}
-
-/**
  * Schlüssel der Slots, die sich zwischen zwei Wochenständen geändert haben —
  * und eine leere Liste, wenn es die Zusammenkunft an dieser Stelle nicht gibt.
  * Nichts zu vergleichen heißt nichts abzuräumen (T42).
@@ -142,18 +120,27 @@ function pushNotif(
   return [makeNotif(type, title, text), ...notifs]
 }
 
-/**
- * Mitteilung beim Zuteilen — aber nur, wenn die Versammlung sie eingeschaltet
- * hat (`reminders.onAssign`, Einstellungen → Erinnerungen).
+/*
+ * Hier stand `zuteilungsNotif` — eine Mitteilung „Zuteilung gesendet" bei jedem
+ * einzelnen Zuteilungsklick, adressiert an die **Planer** (T99).
  *
- * **Eine Stelle für alle vier Zuteilungswege** (einzeln, Treffpunkt-Leiter,
- * Auto-Zuteilung, Treffpunkt-Auto). Den Schalter an jedem Weg einzeln
- * abzufragen ist genau die Fehlerart, die hier am häufigsten vorkommt: einer
- * wird vergessen, und niemand sieht es — die Mitteilung geht ja hinaus.
+ * Sie ist ersatzlos entfallen, und zwar aus zwei Gründen. Erstens ging sie an
+ * den Falschen: Die eingeteilte Person erfuhr nichts, der Planer bekam die
+ * Meldung über seine eigene Handlung, die er als Toast gerade quittiert hatte.
+ * Zweitens war es zu viel — eine Woche hat gut 35 Plätze, von Hand geteilt also
+ * 35 Zeilen in der Glocke jedes Planers; das Ladefenster von 50 war nach
+ * anderthalb Wochen voll und verdrängte alles andere, die eigenen Erinnerungen
+ * eingeschlossen.
+ *
+ * An ihre Stelle tritt „Plan senden" (`PlanSendenPanel` → Edge Function
+ * `send-plan`): eine Nachricht je **eingeteilter Person**, wenn der Plan steht.
+ * Was der Planer über den Stand seiner Woche wissen muss, steht ohnehin im
+ * Planen-Screen — Konflikte, offene Plätze, Engpässe und das „…" an jedem
+ * unbestätigten Platz. Dafür braucht es keine Nachricht.
+ *
+ * Mit ihr entfiel der Schalter `reminders.onAssign`, der nichts anderes
+ * steuerte.
  */
-function zuteilungsNotif(state: AppState, title: string, text: string): Notification[] {
-  return state.reminders.onAssign ? pushNotif(state.notifs, 'gesendet', title, text) : state.notifs
-}
 
 /**
  * Beim Anlegen abgebrochene Personen (komplett ohne Namen) werden beim
@@ -694,13 +681,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           action.pid,
           action.extern,
         )
-        const notifs = action.name
-          ? zuteilungsNotif(
-              state,
-              'Zuteilung gesendet',
-              `${action.name} — ${FS_KANONISCH}${wochenZusatz(state.weeks, sel.wi)}`,
-            )
-          : state.notifs
         // Neu zugeteilt heißt: noch nicht bestätigt. Über die Id geführt —
         // ohne Id (Gast) gibt es nichts zu markieren.
         const pendingIds =
@@ -710,20 +690,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         return {
           ...state,
           fsWeeks,
-          notifs,
           pendingIds,
           slotSel: null,
           toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
         }
       }
       const weeks = assignSlot(state.weeks, sel, action.name, action.rolle, action.pid, action.herkunft)
-      const notifs = action.name
-        ? zuteilungsNotif(
-            state,
-            'Zuteilung gesendet',
-            `${action.name} — ${sel.label}${wochenZusatz(state.weeks, sel.wi)}`,
-          )
-        : state.notifs
       // Externe Redner (Gastredner/Kreisaufseher) haben keinen Bestätigungs-Flow.
       //
       // Entscheidend ist die Rolle, die gerade **geschrieben** wurde — nicht das
@@ -740,10 +712,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         weeks,
-        notifs,
         pendingIds,
         // Geänderte Slots: alten Bestätigungs-Status abräumen (sonst erbt die
-        // neue Person ein fremdes „bestätigt“/„verhindert“)
+        // neue Person ein fremdes „bestätigt“/„verhindert“).
+        //
+        // Wer hier eine **bestätigte** Zusage verliert, erfährt es sofort —
+        // persist.ts liest das aus dem Vorher/Nachher-Vergleich und ruft
+        // `send-plan` mit 'entzug' (T99). Der Reducer bleibt rein.
         confirmations: dropConfirmations(
           state.confirmations,
           geaenderteSlots(state.weeks, weeks, sel.wi, sel.tab, state.services),
@@ -772,15 +747,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
       const pending = new Set(state.pendingIds)
       for (const id of newlyIds) pending.add(id)
-      const notifs = zuteilungsNotif(
-        state,
-        'Zuteilungen gesendet',
-        `${count} Zuteilungen${wochenZusatz(state.weeks, state.week)}`,
-      )
       return {
         ...state,
         weeks,
-        notifs,
         pendingIds: [...pending],
         confirmations: dropConfirmations(
           state.confirmations,
@@ -816,12 +785,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
       const pending = new Set(state.pendingIds)
       for (const id of newlyIds) pending.add(id)
-      const notifs = zuteilungsNotif(
-        state,
-        'Zuteilungen gesendet',
-        `${count} · ${FS_KANONISCH} · ${state.weeks[state.week]?.range ?? ''}`,
-      )
-      return { ...state, fsWeeks, notifs, pendingIds: [...pending], toast: toastKey(state, 'toastAutoN', { n: count }) }
+      return { ...state, fsWeeks, pendingIds: [...pending], toast: toastKey(state, 'toastAutoN', { n: count }) }
     }
     case 'fsClear': {
       const { fsWeeks, count } = fsClear(state.fsWeeks, state.week, action.onlyGroup)
@@ -1121,8 +1085,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'toggleReminderRepeat':
       return { ...state, reminders: { ...state.reminders, repeat: !state.reminders.repeat } }
-    case 'toggleReminderOnAssign':
-      return { ...state, reminders: { ...state.reminders, onAssign: !state.reminders.onAssign } }
     case 'setLang':
       return { ...state, lang: action.lang }
     case 'openLangSheet':
@@ -1197,6 +1159,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         absences: p.absences,
         notifs: p.notifications,
         confirmations: p.confirmations,
+        // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie
+        // wurde geschrieben, bevor es das Tagebuch gab.
+        sentLog: p.sentLog ?? {},
         reminders: p.reminders,
         auxClass: p.auxClass,
         congLang: p.congLang,
