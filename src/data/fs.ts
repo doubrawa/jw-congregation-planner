@@ -21,7 +21,7 @@ import {
   overseerGroup,
   tieHash,
 } from './helpers'
-import { deutschesDatum } from './meeting-dates'
+import { deutschesDatum, fromIso } from './meeting-dates'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
@@ -86,15 +86,8 @@ export function fsBaseFromWeeks(
   return d
 }
 
-/** Datum des Wochentags `wd` (0=So..6=Sa) in Woche `wi`, ausgehend vom Montag der Woche 0. */
-export function fsDate(base: Date, wi: number, wd: number): Date {
-  const d = new Date(base.getTime())
-  d.setDate(d.getDate() + wi * 7 + ((wd + 6) % 7)) // (wd+6)%7 = Offset ab Montag
-  return d
-}
-
 /**
- * **Der Montag jeder Treffpunkt-Woche** — die eine Auskunft, an der Schlüssel
+ * **Der Montag einer Treffpunkt-Woche** — die eine Auskunft, an der Schlüssel
  * und Datum hängen.
  *
  * Bis T100 rechnete jede Stelle für sich `fsBase + wi·7`. Das gilt nur, solange
@@ -112,12 +105,27 @@ export function fsDate(base: Date, wi: number, wd: number): Date {
  * Deshalb kommt der Montag jetzt aus der Woche selbst. `fsBase + wi·7` bleibt
  * der Rückfall für Wochen ohne Kennung (Vorlagen, Demo, Tests) — dort gibt es
  * keine Datenbankzeile, mit der man sich uneinig werden könnte.
+ *
+ * **Die Einzahl ist die Grundform.** Fast jeder Aufrufer hält genau eine Woche
+ * in der Hand. Gäbe es nur die Liste, müsste er 52 Kennungen abbilden, um eine
+ * zu behalten — oder die Regel wie `plan-versand.ts` ein zweites Mal
+ * hinschreiben. Dann stünde sie wieder an zwei Orten, und der nächste Rückfall
+ * käme nur an einem davon an.
  */
+export function fsKennung(
+  week: { start?: string } | undefined,
+  fsBase: Date | null,
+  wi: number,
+): string {
+  return week?.start || fsWochenStart(fsBase, wi)
+}
+
+/** Alle Kennungen der geladenen Wochen — `fsKennung` über die ganze Liste. */
 export function fsWochenKennungen(
   weeks: ReadonlyArray<{ start?: string }>,
   fsBase: Date | null,
 ): string[] {
-  return weeks.map((w, wi) => w.start || fsWochenStart(fsBase, wi))
+  return weeks.map((w, wi) => fsKennung(w, fsBase, wi))
 }
 
 /**
@@ -128,11 +136,29 @@ export function fsWochenKennungen(
  */
 export function fsTag(wochenStart: string, wd: number): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(wochenStart)) return null
-  // Lokaler Mittag wie überall sonst im Projekt: kein UTC-Tagesversatz.
-  const d = new Date(`${wochenStart}T12:00:00`)
+  // Über `fromIso`, damit „ISO-Datum → lokaler Mittag" eine einzige
+  // Schreibweise hat: Ein UTC-Versatz an einer der Fassungen verschöbe genau
+  // die Tage, um die es hier geht.
+  const d = fromIso(wochenStart)
   if (Number.isNaN(d.getTime())) return null
   d.setDate(d.getDate() + ((wd + 6) % 7)) // (wd+6)%7 = Offset ab Montag
   return d
+}
+
+/**
+ * Termin eines Treffpunkts, kanonisch deutsch: „Dienstag, 8. September · 19:00
+ * · Bahnhof". Übersetzt wird erst bei der Anzeige, Segment für Segment.
+ *
+ * **Eine Zeichenkette, ein Erzeuger.** Der Text steht in „Meine Aufgaben" und
+ * in der Entzugs-Nachricht — die zweite kann der Empfänger nirgends
+ * nachlesen, sie muss also dasselbe sagen. Zwei Fassungen waren schon
+ * auseinander: Ein Treffpunkt ohne Ort endete hier auf „ · " und dort sauber.
+ *
+ * Leere Teile fallen heraus: Ohne brauchbare Kennung (Vorlagen, Tests) gibt es
+ * keinen Tag, und einen zu erfinden wäre schlimmer, als keinen zu nennen.
+ */
+export function fsTerminText(tag: Date | null, inst: { time: string; place: string }): string {
+  return [tag ? deutschesDatum(tag) : '', inst.time, inst.place].filter(Boolean).join(' · ')
 }
 
 /** Sortierung: Wochentag (Mo→So), dann Uhrzeit, dann Gruppe. */
@@ -664,10 +690,6 @@ export function deriveMyFsTasks(
       // Ohne brauchbare Kennung (Vorlagen, Tests) gibt es keinen echten Termin —
       // dann bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
       const tag = fsTag(kennung, inst.wd)
-      // Termin kanonisch deutsch wie bei den Zusammenkünften („Dienstag,
-      // 8. September · 19:00"): übersetzt wird erst bei der Anzeige. Der Ort
-      // hängt als eigenes Segment dran — der Übersetzer geht Segment für
-      // Segment vor und lässt einen unbekannten Ortsnamen stehen.
       tasks.push({
         id: key,
         // „Treffpunkt-Leiter" ist eine Rolle und gehört damit in die Sprache
@@ -675,9 +697,7 @@ export function deriveMyFsTasks(
         // englischer Versammlungssprache stand dort Englisch.
         title: '',
         rolle: titel,
-        date: tag
-          ? `${deutschesDatum(tag)} · ${inst.time} · ${inst.place}`
-          : `${inst.time} · ${inst.place}`,
+        date: fsTerminText(tag, inst),
         chip: '',
         at: tag ? tag.getTime() : null,
         status: confirmations[key] ?? 'offen',

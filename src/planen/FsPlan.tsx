@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { kennungVon } from '../data/planning'
 import { useApp, useAppDispatch } from '../app/context'
-import { FS_TIME_OPTIONS, fsDate, fsLeiterZuteilung, fsWeekConflicts, fsWochenKennungen } from '../data/fs'
+import { FS_TIME_OPTIONS, fsKennung, fsLeiterZuteilung, fsTag, fsWeekConflicts } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
 import { SlotChip } from './SlotChip'
 import { machBetrifft } from './useKonflikte'
+import { wochentagName } from './wochentage'
 
 
 /**
@@ -69,16 +70,10 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
 
   // Wie bei den Zusammenkünften: wen das Banner darüber nennt, den hebt der
   // Plan hervor. Eigene Quelle, weil Treffpunkte eine eigene haben.
+  const kennung = fsKennung(state.weeks[wi], state.fsBase, wi)
   const betrifft = machBetrifft(
     state.persons,
-    fsWeekConflicts(
-      state.fsWeeks,
-      wi,
-      state.persons,
-      state.absences,
-      fsWochenKennungen(state.weeks, state.fsBase)[wi] ?? '',
-      onlyGroup,
-    ),
+    fsWeekConflicts(state.fsWeeks, wi, state.persons, state.absences, kennung, onlyGroup),
   )
 
   const groupName = (grp: string): string => {
@@ -86,12 +81,14 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
     return g ? tu(g.name) : grp
   }
   const title = (inst: FsInstance): string => (inst.grp === '' ? t.fsVers : groupName(inst.grp))
-  const dayLabel = (wd: number): string =>
-    fsDate(state.fsBase, wi, wd).toLocaleDateString(LOCALES[state.lang], {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    })
+  const dayLabel = (wd: number): string => {
+    const tag = fsTag(kennung, wd)
+    // Ohne brauchbare Kennung (Vorlagen, Demo) bleibt der Wochentag stehen —
+    // ein erfundenes Datum wäre schlimmer als ein fehlendes.
+    return tag
+      ? tag.toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
+      : wochentagName((wd + 6) % 7, state.lang)
+  }
 
   const openLeader = (inst: FsInstance) =>
     dispatch({
@@ -137,8 +134,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   }
 
   const wdOptions = [1, 2, 3, 4, 5, 6, 0]
-  const wdName = (d: number): string =>
-    fsDate(state.fsBase, 0, d).toLocaleDateString(LOCALES[state.lang], { weekday: 'long' })
+  const wdName = (d: number): string => wochentagName((d + 6) % 7, state.lang)
 
   // Treffpunkte dieser Woche ohne zugeteilten Leiter → Warn-Banner (analog zu
   // den offenen Zuteilungen der Zusammenkünfte). Konflikte gibt es hier nicht.

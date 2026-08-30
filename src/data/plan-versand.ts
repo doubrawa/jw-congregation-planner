@@ -21,9 +21,8 @@
  * steht: eine Platzsorte wird vergessen, und niemand merkt es, weil nichts
  * fehlschlägt — es geht nur eine Nachricht weniger hinaus.
  */
-import { fsTag, fsTaskKey, fsWochenStart } from './fs'
+import { fsKennung, fsTag, fsTaskKey, fsTerminText } from './fs'
 import { hatAuxKlasse, istAusgefallen } from './helpers'
-import { deutschesDatum } from './meeting-dates'
 import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
 import type {
   ConfirmationMap,
@@ -147,6 +146,7 @@ export function entzogeneZusagen(
   // Nebeneffekt-Schicht (`persist.ts`), und ein Fehler dort risse das
   // **Speichern** mit. Lieber keine Nachricht als eine verlorene Woche.
   const conf = confirmations ?? {}
+  const kennung = fsKennung(vorher, fsBase, wi)
 
   /** Wer den Platz vorher hatte — die Bezeichnung erst, wenn sie gebraucht wird. */
   interface Vorher {
@@ -156,9 +156,13 @@ export function entzogeneZusagen(
   }
   const alt = new Map<string, Vorher>()
   eachAssignedSlot([vorher], services, meetings, (name, key, task, pid) => {
-    // `task()` bleibt ungerufen: Es baut den ganzen S-89-Bogen mit auf, und von
-    // gut 35 Plätzen sind am Ende ein bis drei bestätigt. Erst unten, für die,
-    // die wirklich hinausgehen.
+    // Unbestätigtes gar nicht erst aufnehmen — es fiele unten ohnehin heraus.
+    // Von gut 35 Plätzen sind ein bis drei bestätigt, und diese Funktion läuft
+    // bei jeder Wochenänderung; `fsRuleAdd` und `setAuxClass` setzen alle 52
+    // Wochen auf einmal neu.
+    if (conf[key] !== 'bestätigt') return
+    // `task()` bleibt ungerufen: Es baut den ganzen S-89-Bogen mit auf. Erst
+    // unten, für die, die wirklich hinausgehen.
     alt.set(key, {
       name,
       pid,
@@ -170,18 +174,21 @@ export function entzogeneZusagen(
   })
   for (const inst of vorherFs ?? []) {
     if (!inst.leader || inst.lext) continue
-    const key = fsTaskKey(fsKennung(vorher, fsBase, wi), inst.id)
+    const key = fsTaskKey(kennung, inst.id)
+    if (conf[key] !== 'bestätigt') continue
     alt.set(key, {
       name: inst.leader,
       pid: inst.lpid,
       // Termin kanonisch deutsch wie überall sonst („Dienstag, 8. September ·
       // 19:00 · Bahnhof"). Aus Zeit und Ort allein ging der **Tag** nicht
       // hervor: Wer einen wöchentlichen Treffpunkt leitet, las „10:00 ·
-      // Bahnhof" und wusste nicht, welche Woche gemeint war. Gebaut wie in
-      // `deriveMyFsTasks` — dieselbe Datenlage, dieselbe Zeichenkette.
-      beschreiben: () => ({ label: FS_LEITER, datum: fsTermin(fsKennung(vorher, fsBase, wi), inst) }),
+      // Bahnhof" und wusste nicht, welche Woche gemeint war. `fsTerminText`
+      // baut ihn — dieselbe Zeichenkette, die auch in „Meine Aufgaben" steht.
+      beschreiben: () => ({ label: FS_LEITER, datum: fsTerminText(fsTag(kennung, inst.wd), inst) }),
     })
   }
+
+  if (alt.size === 0) return []
 
   const neu = new Map<string, { name: string; pid?: string }>()
   if (nachher) {
@@ -191,7 +198,7 @@ export function entzogeneZusagen(
   }
   for (const inst of nachherFs ?? []) {
     if (!inst.leader || inst.lext) continue
-    neu.set(fsTaskKey(fsKennung(vorher, fsBase, wi), inst.id), {
+    neu.set(fsTaskKey(kennung, inst.id), {
       name: inst.leader,
       pid: inst.lpid,
     })
@@ -200,7 +207,6 @@ export function entzogeneZusagen(
 
   const out: EntzogeneZusage[] = []
   for (const [key, war] of alt) {
-    if (conf[key] !== 'bestätigt') continue
     if (!platzNochDa(nachher, key, fsLeer)) continue
     const jetzt = neu.get(key)
     if (jetzt && dieselbePerson(war, jetzt)) continue // unverändert
@@ -248,32 +254,6 @@ function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): b
   // mehr auf. Die Namen bleiben dabei absichtlich in den Daten stehen.
   if (abschnitt === 'aux' || abschnitt === 'ratgeber') return hatAuxKlasse(nachher[wo.tab])
   return true
-}
-
-/**
- * Termin eines Treffpunkts, kanonisch deutsch — dieselbe Zeichenkette, die
- * `deriveMyFsTasks` für „Meine Aufgaben" bildet.
- *
- * Ohne Datumsbasis (Vorlagen, Tests) bleibt es bei Zeit und Ort: einen Tag zu
- * erfinden wäre schlimmer, als keinen zu nennen.
- */
-function fsTermin(wochenStart: string, inst: FsInstance): string {
-  const tag = fsTag(wochenStart, inst.wd)
-  return [tag ? deutschesDatum(tag) : '', inst.time, inst.place].filter(Boolean).join(' · ')
-}
-
-/**
- * Der Montag dieser Woche — die Kennung, an der die Treffpunkt-Schlüssel hängen.
- *
- * Aus der Woche selbst, nicht aus `fsBase + wi·7`: Fehlt im Bestand eine Woche,
- * liegen die beiden sieben Tage auseinander — und die Edge Function nimmt den
- * Montag aus der **Datenbankzeile**. Sie schriebe dann Tagebuch-Einträge unter
- * einem Schlüssel, den diese Datei nie sucht: Der Knopf zeigte „12 noch nicht
- * gesendet", der Druck meldete „0 gesendet", und die Zahl bliebe stehen.
- * `fsWochenStart` bleibt der Rückfall für Wochen ohne Kennung.
- */
-function fsKennung(week: Week | undefined, fsBase: Date | null, wi: number): string {
-  return week?.start || fsWochenStart(fsBase, wi)
 }
 
 /**

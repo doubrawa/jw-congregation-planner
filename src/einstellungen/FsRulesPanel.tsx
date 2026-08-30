@@ -1,8 +1,8 @@
 import { useApp } from '../app/context'
-import { FS_TIME_OPTIONS, fsDate } from '../data/fs'
-import { LOCALES } from '../i18n/langs'
+import { FS_TIME_OPTIONS } from '../data/fs'
 import { useT } from '../i18n/useT'
 import type { FsRule } from '../data/types'
+import { wochentagName } from '../planen/wochentage'
 
 /**
  * Grundplan der Treffpunkte (Einstellungen): regelmäßige Zeiten/Orte je
@@ -14,8 +14,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
   const { t, tu } = useT()
 
   const wdOptions = [1, 2, 3, 4, 5, 6, 0]
-  const wdName = (d: number): string =>
-    fsDate(state.fsBase, 0, d).toLocaleDateString(LOCALES[state.lang], { weekday: 'long' })
+  const wdName = (d: number): string => wochentagName((d + 6) % 7, state.lang)
   const freqOptions: ReadonlyArray<[number, string]> = [
     [0, t.fsFreqW],
     [1, t.fsFreqM1],

@@ -7,13 +7,13 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { engpaesse, offenTrotzAllem } from '../data/bedarf'
-import { fsDate, fsWeekConflicts, fsWochenKennungen } from '../data/fs'
+import { fsKennung, fsWeekConflicts } from '../data/fs'
 import { istAusgefallen, serviceQualKey } from '../data/helpers'
 import { openSlotLabels, type Conflict } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
+import { wochentagName } from './wochentage'
 import { privLabel } from '../personen/priv-label'
 import type { MeetingKey, MeetingTab, QualificationKey } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 
@@ -82,15 +82,13 @@ export function FsConflictsBanner({ onlyGroup }: { onlyGroup: string | null }) {
     state.week,
     state.persons,
     state.absences,
-    fsWochenKennungen(state.weeks, state.fsBase)[state.week] ?? '',
+    fsKennung(state.weeks[state.week], state.fsBase, state.week),
     onlyGroup,
   )
   if (conflicts.length === 0) return null
 
   const wochentag = (wd: number | undefined): string =>
-    wd === undefined || !state.fsBase
-      ? ''
-      : fsDate(state.fsBase, 0, wd).toLocaleDateString(LOCALES[state.lang], { weekday: 'long' })
+    wd === undefined ? '' : wochentagName((wd + 6) % 7, state.lang)
 
   const text = (c: Conflict): string => {
     if (c.kind === 'fsAbsent') {

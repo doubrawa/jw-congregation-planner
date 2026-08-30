@@ -381,7 +381,7 @@ const KATALOG = [
     datei: 'src/app/reducer.ts',
     regel: 'Das „…" kennt beide Datenquellen — auch eine unbestätigte Treffpunkt-Leitung.',
     suchen:
-      '        ...fsPendingIds(state.fsWeeks, fsWochenKennungen(weeks, state.fsBase), state.confirmations),\n',
+      '        ...fsPendingIds(state.fsWeeks, kennungen, state.confirmations),\n',
     ersetzen: '',
   },
   {
@@ -956,7 +956,23 @@ const KATALOG = [
   {
     id: 'plan-entzug-braucht-zusage',
     datei: 'src/data/plan-versand.ts',
-    regel: 'Solange niemand zugesagt hat, ist der Plan ein Entwurf — Umsortieren meldet nichts.',
+    /*
+      Seit T101 wird nur Bestätigtes überhaupt aufgenommen, statt alles
+      aufzunehmen und später zu verwerfen. Damit steht die Regel an zwei
+      Stellen — je eine für die beiden Datenquellen —, und beide brauchen
+      ihren eigenen Eintrag: Fiele nur eine weg, meldete die andere weiter,
+      und ein Eintrag über beide zusammen bliebe grün.
+    */
+    regel:
+      'Solange niemand zugesagt hat, ist der Plan ein Entwurf — Umsortieren meldet nichts (Zusammenkünfte).',
+    suchen: "    if (conf[key] !== 'bestätigt') return",
+    ersetzen: '    if (false) return',
+  },
+  {
+    id: 'plan-entzug-braucht-zusage-treffpunkt',
+    datei: 'src/data/plan-versand.ts',
+    regel:
+      'Dieselbe Regel für die zweite Datenquelle: ein unbestätigter Treffpunkt-Leiter meldet beim Wechseln nichts.',
     suchen: "    if (conf[key] !== 'bestätigt') continue",
     ersetzen: '    if (false) continue',
   },
@@ -1000,16 +1016,43 @@ const KATALOG = [
     */
     regel:
       'Der Montag einer Treffpunkt-Woche kommt aus der Woche selbst, nicht aus der Ordnungszahl — sonst verschiebt eine fehlende Woche Schlüssel, Datum und Monatsregel um sieben Tage.',
-    suchen: '  return weeks.map((w, wi) => w.start || fsWochenStart(fsBase, wi))',
-    ersetzen: '  return weeks.map((_w, wi) => fsWochenStart(fsBase, wi))',
+    suchen: '  return week?.start || fsWochenStart(fsBase, wi)',
+    ersetzen: '  return fsWochenStart(fsBase, wi)',
+  },
+  {
+    id: 'fs-woche-im-kandidatenblatt',
+    datei: 'src/planen/kandidaten.ts',
+    regel:
+      'Das Kandidatenblatt prüft die Abwesenheit am Tag DIESER Woche — sonst widerspricht es dem Konfliktbanner daneben um sieben Tage.',
+    /*
+      Die Mutation nimmt dem Blatt die Woche aus der Hand, sodass nur noch der
+      Rückfall `fsBase + wi·7` greift — dieselbe alte Rechnung, ohne dafür
+      einen Import einzuschleppen, den der Quelltext sonst nicht braucht.
+    */
+    suchen: 'fsTag(fsKennung(state.weeks[sel.wi], state.fsBase, sel.wi), inst.wd)',
+    ersetzen: 'fsTag(fsKennung(undefined, state.fsBase, sel.wi), inst.wd)',
+  },
+  {
+    id: 'fs-woche-in-der-zeitleiste',
+    datei: 'src/personen/person-timeline.ts',
+    regel:
+      'Auch die Zeitleiste nimmt den Montag aus der Woche — sonst nennt sie bei einer Lücke im Bestand zwei Termine derselben Woche eine Woche auseinander.',
+    suchen: "        fsTag(fsKennung(state.weeks[wi], state.fsBase, wi), inst.wd) ??\n",
+    ersetzen: '',
   },
   {
     id: 'fs-woche-im-versand',
     datei: 'src/data/plan-versand.ts',
+    /*
+      Seit T101 rechnet der Versand nicht mehr selbst — er ruft `fsKennung`.
+      Die Mutation nimmt ihm die Woche aus der Hand, sodass nur noch der
+      Rückfall `fsBase + wi·7` greift: dieselbe alte Rechnung wie vorher, nur
+      eine Ebene höher erzwungen.
+    */
     regel:
       'Auch „Plan senden" nimmt den Montag aus der Woche — die Edge Function nimmt ihn aus der Datenbankzeile, und beide müssen dieselbe Woche meinen.',
-    suchen: '  return week?.start || fsWochenStart(fsBase, wi)',
-    ersetzen: '  return fsWochenStart(fsBase, wi)',
+    suchen: '    nimm(fsTaskKey(fsKennung(week, fsBase, wi), inst.id), inst.leader)',
+    ersetzen: '    nimm(fsTaskKey(fsKennung(undefined, fsBase, wi), inst.id), inst.leader)',
   },
   {
     id: 'fs-kennung-migration-kette',

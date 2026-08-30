@@ -1,4 +1,5 @@
 import type { AppState } from '../app/context'
+import { fsKennung, fsTag } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
@@ -129,12 +130,27 @@ export function personTimeline(
       // `fsLeiterZuteilung`, nur mit eigener Rangfolge.
       if (!inst.leader || inst.lext) continue
       if (!(inst.lpid ? inst.lpid === person.id : inst.leader === name)) continue
-      const tag = wi * 7 + ((inst.wd + 6) % 7) // wd: 0=So … 6=Sa → Tage nach Montag
-      const datum = datumVon(tag)
+      /*
+       * **Der Tag kommt aus dem Montag DIESER Woche**, nicht aus `fsBase +
+       * wi·7` (T101). Seit T66 stehen die Wochen nach Datum nebeneinander, ohne
+       * Platzhalter: Fehlt eine im geladenen Bestand, nannte die alte Rechnung
+       * ab dort jeden Treffpunkt sieben Tage zu früh — und zwar nur hier, denn
+       * der Zusammenkunfts-Zweig oben rechnet längst über `meetingDate`.
+       * Dieselbe Leiste zeigte damit zwei Termine derselben Woche eine Woche
+       * auseinander.
+       *
+       * Ohne brauchbare Kennung (Demo, Vorlagen) bleibt es beim alten Weg —
+       * dort gibt es keine Wochenzeile, mit der man sich uneinig werden könnte.
+       */
+      const datum =
+        fsTag(fsKennung(state.weeks[wi], state.fsBase, wi), inst.wd) ??
+        datumVon(wi * 7 + ((inst.wd + 6) % 7))
       entries.push({
         kind: 'fs',
         key: `fs|${wi}|${inst.id}`,
-        tag,
+        // Sortierschlüssel bleibt „Tage seit dem Montag der Woche 0" — wie im
+        // Zweig darüber, damit sich beide Arten ineinander einordnen.
+        tag: tageZwischen(state.fsBase, datum),
         datum,
         zeit: inst.time,
         vergangen: datum < grenze,

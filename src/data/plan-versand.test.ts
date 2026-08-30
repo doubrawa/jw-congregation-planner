@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { entzogeneZusagen, offeneMeldungen, zuletztGesendet } from './plan-versand'
 import { sentKey } from './planning'
-import type { ConfirmationMap, FsInstance, Meeting, PartItem, Service, Week } from './types'
+import type { ConfirmationMap, FsInstance, Meeting, PartItem, SentLog, Service, Week } from './types'
 
 /**
  * **„Plan senden" — wer weiß noch nichts?**
@@ -72,17 +72,35 @@ const treffpunkt = (over: Partial<FsInstance> = {}): FsInstance => ({
 
 const ohne: ConfirmationMap = {}
 
+/**
+ * `offeneMeldungen` mit sieben Argumenten, von denen jeder Fall eines
+ * abwandelt. Ausgeschrieben stand hier zehnmal dieselbe Zeile, und welches
+ * Argument der Fall variiert, musste man aus dem Stellungsvergleich lesen —
+ * derselbe Griff wie `ruf` im Abschnitt darunter.
+ */
+const offeneVon = (
+  w: Week,
+  {
+    fs = [] as FsInstance[],
+    conf = ohne,
+    log = {} as SentLog,
+    base = null as Date | null,
+  } = {},
+) => offeneMeldungen(w, fs, 0, base, DIENSTE, conf, log)
+
+/** Der Montag als Datumsbasis — für die Fälle mit Treffpunkten. */
+const BASIS = new Date(`${MONTAG}T12:00:00`)
+
 describe('Wer von seiner Zuteilung noch nichts weiß', () => {
   it('eine frisch geplante Woche: jeder Platz steht auf der Liste', () => {
     const w = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')], { mik: [{ name: 'B. Cohn' }] }))
-    const offen = offeneMeldungen(w, [], 0, null, DIENSTE, ohne, {})
-    expect(offen.map((o) => o.name).sort()).toEqual(['A. Berg', 'B. Cohn'])
+    expect(offeneVon(w).map((o) => o.name).sort()).toEqual(['A. Berg', 'B. Cohn'])
   })
 
   it('nach dem Senden ist nichts mehr offen — das Tagebuch trägt Platz UND Name', () => {
     const w = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
     const log = { [sentKey(KEY_ERSTER, 'A. Berg')]: '2026-08-29T10:00:00Z' }
-    expect(offeneMeldungen(w, [], 0, null, DIENSTE, ohne, log)).toEqual([])
+    expect(offeneVon(w, { log })).toEqual([])
   })
 
   it('nach dem Umteilen steht der neue Name wieder da — der alte Eintrag gilt nicht für ihn', () => {
@@ -90,47 +108,47 @@ describe('Wer von seiner Zuteilung noch nichts weiß', () => {
     // ihn zählte der Platz als gemeldet, und die neue Person erführe nie davon.
     const w = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     const log = { [sentKey(KEY_ERSTER, 'A. Berg')]: '2026-08-29T10:00:00Z' }
-    expect(offeneMeldungen(w, [], 0, null, DIENSTE, ohne, log).map((o) => o.name)).toEqual(['C. Dorn'])
+    expect(offeneVon(w, { log }).map((o) => o.name)).toEqual(['C. Dorn'])
   })
 
   it('wer bestätigt hat, weiß Bescheid — auch ohne Eintrag im Tagebuch', () => {
     const w = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
     const conf: ConfirmationMap = { [KEY_ERSTER]: 'bestätigt' }
-    expect(offeneMeldungen(w, [], 0, null, DIENSTE, conf, {})).toEqual([])
+    expect(offeneVon(w, { conf })).toEqual([])
   })
 
   it('und wer abgesagt hat, ebenso', () => {
     const w = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
     const conf: ConfirmationMap = { [KEY_ERSTER]: 'verhindert' }
-    expect(offeneMeldungen(w, [], 0, null, DIENSTE, conf, {})).toEqual([])
+    expect(offeneVon(w, { conf })).toEqual([])
   })
 
   it('ein Gastredner bekommt nichts — er gehört nicht zur Versammlung', () => {
     const w = woche(zusammenkunft([punkt('Vortrag', 'E. Fremd', 'Gastredner')]))
-    expect(offeneMeldungen(w, [], 0, null, DIENSTE, ohne, {})).toEqual([])
+    expect(offeneVon(w)).toEqual([])
   })
 
   it('ein Dienst mit Gruppen-Rotation auch nicht — er gehört keiner Person', () => {
     const w = woche(zusammenkunft([], { rein: [{ name: 'Gruppe 1' }] }))
-    expect(offeneMeldungen(w, [], 0, null, DIENSTE, ohne, {})).toEqual([])
+    expect(offeneVon(w)).toEqual([])
   })
 
   it('eine ausgefallene Zusammenkunft meldet nichts (T30)', () => {
     const w = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
     const aus = { ...w, dev: { mid: { cancelled: true } } } as unknown as Week
-    expect(offeneMeldungen(aus, [], 0, null, DIENSTE, ohne, {})).toEqual([])
+    expect(offeneVon(aus)).toEqual([])
   })
 
   it('Treffpunkt-Leiter zählen mit — sie sind die zweite Datenquelle', () => {
     const w = woche(zusammenkunft([]))
-    const offen = offeneMeldungen(w, [treffpunkt()], 0, new Date(`${MONTAG}T12:00:00`), DIENSTE, ohne, {})
+    const offen = offeneVon(w, { fs: [treffpunkt()], base: BASIS })
     expect(offen.map((o) => o.name)).toEqual(['T. Lindner'])
   })
 
   it('ein auswärtiger Leiter (Freitext) nicht — er hat kein Konto', () => {
     const w = woche(zusammenkunft([]))
     const extern = [treffpunkt({ leader: 'Kreisaufseher', lext: true })]
-    expect(offeneMeldungen(w, extern, 0, new Date(`${MONTAG}T12:00:00`), DIENSTE, ohne, {})).toEqual([])
+    expect(offeneVon(w, { fs: extern, base: BASIS })).toEqual([])
   })
 })
 
@@ -210,6 +228,25 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
       0, new Date(`${MONTAG}T12:00:00`), DIENSTE, '', conf,
     )
     expect(raus.map((z) => z.name)).toEqual(['T. Lindner'])
+  })
+
+  it('ein unbestätigter Treffpunkt-Leiter nicht — solange niemand zugesagt hat, ist es ein Entwurf', () => {
+    /*
+     * Gegenstück zum Fall darüber, und die zweite Hälfte derselben Regel: Die
+     * Zusage-Prüfung greift für Zusammenkünfte **und** Treffpunkte. Sie steht
+     * seit T101 an zwei Stellen — einmal im Besucher von `eachAssignedSlot`,
+     * einmal in der Treffpunkt-Schleife —, weil nur Bestätigtes überhaupt
+     * aufgenommen wird. Ohne diesen Fall wäre die zweite Stelle ungedeckt: Der
+     * Planer dürfte den Leiter nicht mehr wechseln, ohne dem ersten eine
+     * Rücknahme zu schicken, die er nie zugesagt hat.
+     */
+    const raus = entzogeneZusagen(
+      vorher, vorher,
+      [treffpunkt()],
+      [treffpunkt({ leader: 'M. Albrecht' })],
+      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, '', ohne,
+    )
+    expect(raus).toEqual([])
   })
 
   it('ohne vorigen Stand gibt es nichts zu vergleichen', () => {

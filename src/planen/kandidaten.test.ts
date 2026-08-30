@@ -243,6 +243,39 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     expect(liste('c', state).find((c) => c.key === 'l1')?.absent, 'Mittwoch').toBe(true)
   })
 
+  it('bei einer Lücke im Bestand zählt der Tag DIESER Woche, nicht fsBase + wi·7', () => {
+    /*
+     * **Zwei Antworten auf dieselbe Frage.** „Ist die Person am Tag dieses
+     * Treffpunkts abwesend?" beantwortete das Konfliktbanner über den Montag
+     * der Woche (`fsWeekConflicts`), das Kandidatenblatt aber über
+     * `fsBase + wi·7`. Ohne Lücke im Bestand ist das dasselbe — fehlt eine
+     * Woche, liegen beide sieben Tage auseinander, und der Planer sah im Banner
+     * eine Abwesenheit, die die Liste daneben nicht kannte.
+     *
+     * Hier steht in Position 1 der 21.9. (der 14. fehlt). Der Montags-
+     * Treffpunkt liegt also am 21., nicht am 14.
+     */
+    const leer = (start: string) =>
+      ({
+        range: '', start, book: '', current: false,
+        mid: { date: '', end: '', sections: [], helpers: {} },
+        we: { date: '', end: '', sections: [], helpers: {} },
+      }) as unknown as Week
+    const state: KandidatenDaten = {
+      ...daten([], [LEITER_E, LEITER_F, OHNE]),
+      weeks: [leer('2026-09-07'), leer('2026-09-21')],
+      fsWeeks: [[], TREFFPUNKTE],
+      absences: [
+        { id: 'u', personId: 'l1', userId: '', from: '2026-09-21', to: '2026-09-21', reason: '' },
+      ],
+    }
+    const sel: SlotSelection = {
+      kind: 'fs', wi: 1, instId: 'a', label: 'Treffpunkt', priv: 'treffpunkt', groups: false,
+    }
+    const emil = kandidaten(state, sel, KEINE_ABWESENHEIT, DE, (s) => s).find((c) => c.key === 'l1')
+    expect(emil?.absent, 'Montag der Woche 1 ist der 21.9.').toBe(true)
+  })
+
   it('Abwesende bleiben in der Liste, rutschen aber ans Ende', () => {
     const emilWeg: Absence[] = [
       { id: 'u', personId: 'l1', userId: '', from: '2026-09-07', to: '2026-09-07', reason: '' },

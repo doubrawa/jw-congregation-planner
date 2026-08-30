@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
-import { fsWeekConflicts, fsWochenKennungen } from '../data/fs'
+import { fsKennung, fsWeekConflicts } from '../data/fs'
 import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
@@ -90,7 +90,7 @@ export function DashboardScreen() {
           curIdx,
           state.persons,
           state.absences,
-          fsWochenKennungen(state.weeks, state.fsBase)[curIdx] ?? '',
+          fsKennung(state.weeks[curIdx], state.fsBase, curIdx),
         ).length
       : 0
 

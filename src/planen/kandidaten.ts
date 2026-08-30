@@ -15,7 +15,7 @@
 import type { AppState } from '../app/context'
 import { istAbwesend, istAbwesendAm, type AbsenceSet } from '../data/absence'
 import { slotsOf } from '../data/aux-class'
-import { fsDate } from '../data/fs'
+import { fsKennung, fsTag } from '../data/fs'
 import {
   displayName,
   initials,
@@ -79,6 +79,10 @@ function fsKandidaten(
   tu: (s: string) => string,
 ): Candidate[] {
   const inst = state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId)
+  // Derselbe Montag, mit dem `fsWeekConflicts` rechnet. Über `fsBase + wi·7`
+  // widersprachen sich Konfliktbanner und Kandidatenblatt bei einer Lücke im
+  // Bestand um sieben Tage — bei derselben Frage, am selben Treffpunkt.
+  const tag = inst ? fsTag(fsKennung(state.weeks[sel.wi], state.fsBase, sel.wi), inst.wd) : null
   const schonHeute = (name: string): MeetingAssignment[] => {
     if (!inst) return []
     const out: MeetingAssignment[] = []
@@ -104,9 +108,7 @@ function fsKandidaten(
         sub: t[ROLE_KEY[p.role]],
         today: schonHeute(name),
         // Am Tag DIESES Treffpunkts, nicht in der ganzen Woche.
-        absent: inst
-          ? istAbwesendAm(state.absences, p.id, fsDate(state.fsBase, sel.wi, inst.wd))
-          : false,
+        absent: tag ? istAbwesendAm(state.absences, p.id, tag) : false,
         free: workloadOf(state.weeks, p, state.services) === 0,
       }
     })

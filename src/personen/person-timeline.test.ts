@@ -98,6 +98,41 @@ describe('Zeitleiste einer Person', () => {
     expect(fs[0].ort).toBe(mit[0][0].place)
   })
 
+  it('bei einer Lücke im Bestand nennt der Treffpunkt den Tag SEINER Woche', () => {
+    /*
+     * **Der Fall, den ein lückenloser Bestand nicht messen kann.** Seit T66
+     * stehen die Wochen nach Datum nebeneinander, ohne Platzhalter: Fehlt eine
+     * im geladenen Fenster, ist die Woche mit Index 1 nicht der 14., sondern
+     * der 21. September. `fsBase + wi·7` nennt ab dort jeden Treffpunkt sieben
+     * Tage zu früh — und niemand merkt es, weil beide Rechnungen ohne Lücke
+     * dasselbe liefern.
+     *
+     * Sichtbar wird es genau hier: Der Zusammenkunfts-Zweig rechnet längst über
+     * `meetingDate`, der Treffpunkt-Zweig tat es nicht. Dieselbe Leiste zeigte
+     * damit zwei Termine derselben Woche eine Woche auseinander.
+     */
+    const alle = buildDemoWeeks()
+    // Woche 1 (14.9.) fällt heraus — übrig: 7.9., 21.9., 28.9.
+    const mitLuecke = [alle[0]!, alle[2]!, alle[3]!]
+    const fsOhne = buildDemoFsWeeks().map((w) => w.map((i) => ({ ...i, leader: '' })))
+    // Der Treffpunkt steht in der Woche mit Index 1 — also am 21.9., nicht am 14.
+    const fsWeeks = fsOhne.map((w, wi) =>
+      w.map((inst, i) => (wi === 1 && i === 0 ? { ...inst, leader: displayName(person) } : inst)),
+    )
+    const fs = personTimeline(person, daten({ weeks: mitLuecke, fsWeeks })).filter(
+      (e) => e.kind === 'fs',
+    )
+    expect(fs).toHaveLength(1)
+    const montag = new Date(`${mitLuecke[1]!.start}T12:00:00`)
+    const versatz = ((fsWeeks[1]![0]!.wd + 6) % 7) // 0=So … 6=Sa → Tage nach Montag
+    const erwartet = new Date(montag)
+    erwartet.setDate(erwartet.getDate() + versatz)
+    expect(fs[0]!.datum.getDate()).toBe(erwartet.getDate())
+    expect(fs[0]!.datum.getMonth()).toBe(erwartet.getMonth())
+    // Und die Sortierung zieht mit: 14 Tage nach dem Montag der Woche 0, nicht 7.
+    expect(fs[0]!.tag).toBe(14 + versatz)
+  })
+
   it('ordnet Zusammenkünfte und Treffpunkte chronologisch ineinander', () => {
     const fsWeeks = buildDemoFsWeeks().map((week, wi) =>
       week.map((inst) => (wi === 0 ? { ...inst, leader: displayName(person) } : inst)),

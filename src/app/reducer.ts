@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsKennung, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -186,6 +186,8 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // der Wochen, falls vorhanden) — Slot-Pfade/Namen sind variantenunabhängig.
   const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
   const weeks = localizedWeeks(state.weeks, jwCode)
+  // Einmal für beide Ableitungen unten — dieselben Wochen, dieselbe Basis.
+  const kennungen = fsWochenKennungen(weeks, state.fsBase)
   // Zusammenkunfts-Aufgaben und Treffpunkt-Leitungen kommen aus zwei getrennten
   // Quellen (`weeks` und `fsWeeks`) und bleiben es auch — sie zählen nicht in
   // dieselbe Auslastung. Für den Nutzer sind es aber beides Aufgaben: ein
@@ -196,7 +198,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         ...deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings, me.id),
         ...deriveMyFsTasks(
           state.fsWeeks,
-          fsWochenKennungen(weeks, state.fsBase),
+          kennungen,
           displayName(me),
           state.confirmations,
           me.id,
@@ -238,7 +240,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
     pendingIds: [
       ...new Set([
         ...derivePendingIds(weeks, state.services, state.confirmations),
-        ...fsPendingIds(state.fsWeeks, fsWochenKennungen(weeks, state.fsBase), state.confirmations),
+        ...fsPendingIds(state.fsWeeks, kennungen, state.confirmations),
       ]),
     ],
     substituteReqs,
@@ -779,7 +781,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.persons,
         action.onlyGroup,
         state.absences,
-        fsWochenKennungen(state.weeks, state.fsBase)[state.week] ?? '',
+        fsKennung(state.weeks[state.week], state.fsBase, state.week),
         state.groups,
       )
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }

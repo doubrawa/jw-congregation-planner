@@ -5,11 +5,11 @@ import {
   fsAutoAssign,
   fsBaseFromWeeks,
   fsClear,
-  fsDate,
   fsLeaderValue,
   fsRemoveInst,
   fsSetLeader,
   fsSort,
+  fsTag,
   fsWochenStart,
   fsUpdateInst,
   FS_LOAD_WEEKS,
@@ -58,13 +58,23 @@ const RULES: FsRule[] = [
 
 const ids = (insts: { ruleId: string | null }[]) => insts.map((i) => i.ruleId)
 
-describe('fsDate', () => {
+/**
+ * Wochentag `wd` in Woche `wi` bei lückenlosem Bestand.
+ *
+ * Bis T101 gab es dafür `fsDate(base, wi, wd)`. Die Rechnung ist jetzt zerlegt:
+ * `fsWochenStart` liefert den Montag, `fsTag` den Versatz darin — damit die
+ * Wochen ihren Montag auch dann aus der eigenen Zeile nehmen können, wenn im
+ * Bestand eine fehlt. Ohne Lücke kommt hier dasselbe heraus wie vorher.
+ */
+const tagIn = (base: Date, wi: number, wd: number): Date => fsTag(fsWochenStart(base, wi), wd)!
+
+describe('Wochentag im Wochenraster', () => {
   it('bildet Wochentage ab dem Montag der Woche ab', () => {
-    expect(fsDate(BASE, 0, 1).getDate()).toBe(7) // Mo 7. Sep
-    expect(fsDate(BASE, 0, 3).getDate()).toBe(9) // Mi 9. Sep
-    expect(fsDate(BASE, 0, 6).getDate()).toBe(12) // Sa 12. Sep
-    expect(fsDate(BASE, 0, 0).getDate()).toBe(13) // So 13. Sep (Ende der Woche)
-    expect(fsDate(BASE, 1, 1).getDate()).toBe(14) // Mo der Folgewoche
+    expect(tagIn(BASE, 0, 1).getDate()).toBe(7) // Mo 7. Sep
+    expect(tagIn(BASE, 0, 3).getDate()).toBe(9) // Mi 9. Sep
+    expect(tagIn(BASE, 0, 6).getDate()).toBe(12) // Sa 12. Sep
+    expect(tagIn(BASE, 0, 0).getDate()).toBe(13) // So 13. Sep (Ende der Woche)
+    expect(tagIn(BASE, 1, 1).getDate()).toBe(14) // Mo der Folgewoche
   })
 })
 
@@ -79,7 +89,7 @@ describe('genFsWeek', () => {
 
   it('Woche 3: 1. Samstag im Monat (3.10.) → Versammlungstreffpunkt, Gruppen-Samstage entfallen (skipCong)', () => {
     const w3 = genFsWeek(KENN[3]!, RULES)
-    expect(fsDate(BASE, 3, 6).getDate()).toBe(3) // Sa 3. Oktober = 1. Samstag
+    expect(tagIn(BASE, 3, 6).getDate()).toBe(3) // Sa 3. Oktober = 1. Samstag
     expect(ids(w3)).toContain('r3')
     for (const g of ['r4', 'r5', 'r6', 'r7']) expect(ids(w3)).not.toContain(g)
     expect(ids(w3)).toContain('r1') // wöchentliche bleiben
@@ -137,7 +147,7 @@ describe('fsBaseFromWeeks', () => {
       expect(base.getMonth()).toBe(6)
       expect(base.getDate()).toBe(13) // Montag der Woche 0 = start[0], nicht 20.
       // Die Woche, die today enthält (Index 1), zeigt korrekt IHREN Samstag:
-      expect(fsDate(base, 1, 6).getDate()).toBe(25) // Sa 25.7., nicht 1.8.
+      expect(tagIn(base, 1, 6).getDate()).toBe(25) // Sa 25.7., nicht 1.8.
     })
 
     it('rechnet vom ersten vorhandenen start auf Woche 0 zurück', () => {
@@ -170,9 +180,9 @@ describe('fsBaseFromWeeks', () => {
     })
 
     it('Datum der current-Woche stimmt mit der realen Woche überein', () => {
-      // current bei Index 1 → fsDate(base, 1, Sa) muss der Samstag dieser Woche sein.
+      // current bei Index 1 → der Samstag der Woche 1 muss der dieser Woche sein.
       const base = fsBaseFromWeeks([{ current: false }, { current: true }], friday)
-      expect(fsDate(base, 1, 6).getDate()).toBe(25) // Sa 25. Juli
+      expect(tagIn(base, 1, 6).getDate()).toBe(25) // Sa 25. Juli
     })
   })
 })
@@ -482,7 +492,19 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
     const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'Leiter')
     // Montag der Woche 0 ist der 7.9.2026; wd 1 = Montag.
     expect(tasks[0].date).toBe('Montag, 7. September · 14:00 · Königreichssaal')
-    expect(tasks[0].at).toBe(fsDate(BASE, 0, 1).getTime())
+    expect(tasks[0].at).toBe(tagIn(BASE, 0, 1).getTime())
+  })
+
+  it('ohne Ort endet der Termin nicht auf einem Trenner', () => {
+    /*
+     * Ein Treffpunkt ohne Ort ist erlaubt (der Ort ist ein freies Feld). Der
+     * Termin wurde hier fest zusammengesetzt und endete dann auf „ · " — im
+     * Entzugs-Text, der dieselbe Datenlage beschreibt, stand er sauber. Seit
+     * beide über `fsTerminText` gehen, fallen leere Teile in **beiden** heraus.
+     */
+    const ohneOrt = [[inst({ id: 'a', wd: 1, time: '14:00', place: '', leader: 'Anton Muster', lpid: 'p1' })]]
+    const tasks = deriveMyFsTasks(ohneOrt, KENN, 'Anton Muster', {}, 'p1', 'Leiter')
+    expect(tasks[0]!.date).toBe('Montag, 7. September · 14:00')
   })
 
   it('ohne Datumsbasis kein erfundener Termin', () => {
