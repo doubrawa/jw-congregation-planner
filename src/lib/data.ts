@@ -391,11 +391,28 @@ export function migrateFsWochenKeys(
   weeks: ReadonlyArray<{ start?: string }>,
   fsBase: Date | null,
 ): { confirmations: ConfirmationMap; renames: Array<[string, string]> } {
+  /*
+   * **Einmal über die Schlüssel, nicht einmal je verschobener Woche.** Genau
+   * der Fall, für den diese Funktion geschrieben ist — eine Lücke im Bestand —
+   * macht *jede* spätere Woche verschoben: Bei einer Lücke in der Mitte sind
+   * das gut zwei Dutzend. Der verschachtelte Weg materialisierte für jede von
+   * ihnen die volle Schlüsselliste neu und verglich sie ganz. Das läuft im
+   * Ladepfad, blockierend, vor dem ersten Bild.
+   *
+   * Die Woche steht im Schlüssel an fester Stelle (`fs|<woche>|…`), lässt sich
+   * also herausschneiden und nachschlagen, statt jeden Kandidaten
+   * durchzuprobieren.
+   */
+  const ziele = new Map(verschobeneWochen(weeks, fsBase))
   const gefunden: Array<[string, string]> = []
-  for (const [alt, neu] of verschobeneWochen(weeks, fsBase)) {
+  if (ziele.size > 0) {
     for (const key of Object.keys(confirmations)) {
-      if (!key.startsWith(`fs|${alt}|`)) continue
-      gefunden.push([key, `fs|${neu}|${key.slice(`fs|${alt}|`.length)}`])
+      if (!key.startsWith('fs|')) continue
+      const ende = key.indexOf('|', 3)
+      if (ende < 0) continue
+      const neu = ziele.get(key.slice(3, ende))
+      if (neu === undefined) continue
+      gefunden.push([key, `fs|${neu}|${key.slice(ende + 1)}`])
     }
   }
   // Ein besetztes Ziel bleibt stehen — **es sei denn**, es zieht selbst weiter.
@@ -1497,8 +1514,6 @@ export function substituteTake(taskKey: string): void {
 export interface PlanVersand {
   /** Wie viele Personen eine Nachricht bekommen haben. */
   personen: number
-  /** Wie viele Aufgaben darin steckten (eine Nachricht kann mehrere tragen). */
-  aufgaben: number
   /** Namen ohne App-Konto — die muss der Planer persönlich ansprechen. */
   ohneKonto: string[]
 }
@@ -1528,7 +1543,6 @@ export async function sendPlan(weekStart: string): Promise<PlanVersand | null> {
   const res = data as Partial<PlanVersand> | null
   return {
     personen: res?.personen ?? 0,
-    aufgaben: res?.aufgaben ?? 0,
     ohneKonto: res?.ohneKonto ?? [],
   }
 }

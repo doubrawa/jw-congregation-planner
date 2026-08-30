@@ -113,7 +113,7 @@ const knopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.plan-send
 
 beforeEach(() => {
   sendPlan.mockReset()
-  sendPlan.mockResolvedValue({ personen: 1, aufgaben: 1, ohneKonto: [] })
+  sendPlan.mockResolvedValue({ personen: 1, ohneKonto: [] })
 })
 afterEach(cleanup)
 
@@ -182,7 +182,7 @@ describe('Was beim Drücken geschieht', () => {
   })
 
   it('danach steht im Toast, wie viele benachrichtigt wurden', async () => {
-    sendPlan.mockResolvedValue({ personen: 3, aufgaben: 5, ohneKonto: [] })
+    sendPlan.mockResolvedValue({ personen: 3, ohneKonto: [] })
     const { container, dispatch } = buehne()
     fireEvent.click(knopf(container)!)
     await waitFor(() =>
@@ -191,7 +191,7 @@ describe('Was beim Drücken geschieht', () => {
   })
 
   it('war nichts zu senden, sagt der Toast auch das', async () => {
-    sendPlan.mockResolvedValue({ personen: 0, aufgaben: 0, ohneKonto: [] })
+    sendPlan.mockResolvedValue({ personen: 0, ohneKonto: [] })
     const { container, dispatch } = buehne()
     fireEvent.click(knopf(container)!)
     await waitFor(() =>
@@ -202,7 +202,7 @@ describe('Was beim Drücken geschieht', () => {
   it('wer kein Konto hat, bleibt danach sichtbar stehen', async () => {
     // Sie stehen im Tagebuch wie alle anderen und verschwänden sonst aus der
     // Liste — dabei sind gerade sie die, die der Planer selbst ansprechen muss.
-    sendPlan.mockResolvedValue({ personen: 1, aufgaben: 2, ohneKonto: ['Karl Onto'] })
+    sendPlan.mockResolvedValue({ personen: 1, ohneKonto: ['Karl Onto'] })
     const { container } = buehne()
     fireEvent.click(knopf(container)!)
     await waitFor(() =>
@@ -225,7 +225,7 @@ describe('Was beim Drücken geschieht', () => {
      * daneben standen die Nachzügler von Woche 37 unter Woche 38 — unter Namen,
      * die dort gar nichts haben, und mit der Aufforderung, sie anzusprechen.
      */
-    sendPlan.mockResolvedValue({ personen: 1, aufgaben: 2, ohneKonto: ['Karl Onto'] })
+    sendPlan.mockResolvedValue({ personen: 1, ohneKonto: ['Karl Onto'] })
     const { container, wechsle } = buehne()
     fireEvent.click(knopf(container)!)
     await waitFor(() =>

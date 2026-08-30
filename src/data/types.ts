@@ -709,8 +709,9 @@ export type ConfirmationMap = Record<string, TaskStatus>
  *
  * Was hier steht, hat die eingeteilte Person schon erfahren — „Plan senden"
  * überspringt es. Geschrieben wird ausschließlich serverseitig
- * (`send-plan`, migration-024); der Client liest es nur, um am Platz „gesendet
- * am …" anzuzeigen und den Knopf zu beschriften.
+ * (`send-plan`, migration-024); der Client liest es nur zweierlei: ob ein Platz
+ * schon gemeldet wurde (`offeneMeldungen`, beschriftet den Knopf) und wann für
+ * die Woche zuletzt etwas hinausging (`zuletztGesendet`).
  */
 export type SentLog = Record<string, string>
 

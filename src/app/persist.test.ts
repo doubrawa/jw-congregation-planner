@@ -652,7 +652,6 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
      * bei der Person an, deren Namen man gerade berichtigte.
      */
     const vorher = wocheMitKlasse()
-    const nachher = { ...vorher, mid: { ...vorher.mid } }
     const umbenannt = data.renameInWeeks([vorher], 'pA', 'A. Berg', 'A. Bergh')[0] as Week
 
     persist(mitWoche(vorher), mitWoche(umbenannt), {
@@ -662,7 +661,6 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
     })
 
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
-    expect(nachher).toBeTruthy() // (nur damit der Aufbau oben nicht ungenutzt ist)
   })
 
   it('das Abschalten der Zusätzlichen Klasse meldet nichts', () => {
