@@ -29,6 +29,7 @@
 // (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
 // =============================================================================
 
+import { CORS, json, restKlient } from '../_shared/rest.ts'
 import { fuellen, inviteTexte } from './texte.ts'
 
 declare const Deno: {
@@ -42,38 +43,7 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
 const INVITE_FROM = Deno.env.get('INVITE_FROM') ?? ''
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
 
-const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-  })
-}
-
-/** REST mit Service-Role (umgeht RLS — Zugriffe sind unten explizit gescoped). */
-async function rest<T>(path: string): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-  })
-  if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`)
-  return res.json() as Promise<T>
-}
-
-/** Eingeloggten Nutzer aus dem mitgeschickten JWT auflösen. */
-async function userIdFromRequest(req: Request): Promise<string | null> {
-  const auth = req.headers.get('Authorization') ?? ''
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SERVICE_KEY, Authorization: auth },
-  })
-  if (!res.ok) return null
-  const user = (await res.json()) as { id?: string }
-  return user.id ?? null
-}
+const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 
 /**
  * Betreff und Rumpf der Einladung — in der Sprache, die der Aufrufer nennt.
@@ -102,11 +72,11 @@ Deno.serve(async (req: Request) => {
     if (!INVITE_FROM) return json({ error: 'not-configured' })
     if (!RESEND_API_KEY) return json({ error: 'not-configured' })
 
-    const userId = await userIdFromRequest(req)
+    const userId = await rest.userId(req)
     if (!userId) return json({ error: 'unauthorized' }, 401)
 
     // Nur Admins; alles Weitere ist auf ihre Versammlung beschränkt.
-    const membership = await rest<{ congregation_id: string; planner: boolean }[]>(
+    const membership = await rest.get<{ congregation_id: string; planner: boolean }[]>(
       `members?select=congregation_id,planner&user_id=eq.${userId}`,
     )
     const member = membership[0]
@@ -121,7 +91,7 @@ Deno.serve(async (req: Request) => {
     const invites = (payload?.invites ?? []).slice(0, 200)
     if (invites.length === 0) return json({ error: 'keine Einladungen übergeben' }, 400)
 
-    const persons = await rest<{ id: string; fn: string; mail: string }[]>(
+    const persons = await rest.get<{ id: string; fn: string; mail: string }[]>(
       `persons?select=id,fn,mail&congregation_id=eq.${member.congregation_id}`,
     )
     const personById = new Map(persons.map((p) => [p.id, p]))

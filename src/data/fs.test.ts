@@ -10,6 +10,7 @@ import {
   fsRemoveInst,
   fsSetLeader,
   fsSort,
+  fsWochenStart,
   fsUpdateInst,
   FS_LOAD_WEEKS,
   genFsWeek,
@@ -38,6 +39,11 @@ function inst(patch: Partial<FsInstance>): FsInstance {
 
 /** Montag der Woche 0 = 7. September 2026 (wie im Demo). */
 const BASE = new Date(2026, 8, 7, 12)
+/**
+ * Die Wochenkennungen zu BASE — seit T100 hängen Schlüssel und Datum daran und
+ * nicht mehr an der Ordnungszahl. Hier lückenlos, also genau `BASE + wi·7`.
+ */
+const KENN = Array.from({ length: 8 }, (_unused, wi) => fsWochenStart(BASE, wi))
 
 /** Grundplan wie im Design-Seed: Versammlung Mo/Mi wöchentlich + 1. Sa im Monat; je Gruppe Sa. */
 const RULES: FsRule[] = [
@@ -64,7 +70,7 @@ describe('fsDate', () => {
 
 describe('genFsWeek', () => {
   it('Woche 0: wöchentliche Versammlung (Mo/Mi) + alle Gruppen-Samstage; kein 1.-Sa (fällt auf 12.9.)', () => {
-    const w0 = genFsWeek(BASE, 0, RULES)
+    const w0 = genFsWeek(KENN[0]!, RULES)
     expect(ids(w0)).toContain('r1')
     expect(ids(w0)).toContain('r2')
     expect(ids(w0)).not.toContain('r3') // 12.9. ist der 2. Samstag
@@ -72,7 +78,7 @@ describe('genFsWeek', () => {
   })
 
   it('Woche 3: 1. Samstag im Monat (3.10.) → Versammlungstreffpunkt, Gruppen-Samstage entfallen (skipCong)', () => {
-    const w3 = genFsWeek(BASE, 3, RULES)
+    const w3 = genFsWeek(KENN[3]!, RULES)
     expect(fsDate(BASE, 3, 6).getDate()).toBe(3) // Sa 3. Oktober = 1. Samstag
     expect(ids(w3)).toContain('r3')
     for (const g of ['r4', 'r5', 'r6', 'r7']) expect(ids(w3)).not.toContain(g)
@@ -82,12 +88,12 @@ describe('genFsWeek', () => {
   it('skipCong greift nur bei Versammlungstreffpunkt am selben Wochentag', () => {
     // Ohne die 1.-Sa-Regel bleiben die Gruppen-Samstage in jeder Woche.
     const noCongSat = RULES.filter((r) => r.id !== 'r3')
-    const w3 = genFsWeek(BASE, 3, noCongSat)
+    const w3 = genFsWeek(KENN[3]!, noCongSat)
     for (const g of ['r4', 'r5', 'r6', 'r7']) expect(ids(w3)).toContain(g)
   })
 
   it('sortiert nach Wochentag (Mo vor Sa)', () => {
-    const w0 = genFsWeek(BASE, 0, RULES)
+    const w0 = genFsWeek(KENN[0]!, RULES)
     const wds = w0.map((i) => (i.wd + 6) % 7)
     expect([...wds]).toEqual([...wds].sort((a, b) => a - b))
   })
@@ -178,7 +184,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
   it('preserveEdits behält wochenspezifische Zeit/Ort + Leiter', () => {
     const built = buildFsWeeks(BASE, 1, RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo', time: '15:30' })))
-    const keep = regenFsWeeks(BASE, edited, RULE, true)
+    const keep = regenFsWeeks(KENN, edited, RULE, true)
     expect(keep[0][0].place).toBe('Anderswo')
     expect(keep[0][0].time).toBe('15:30')
     expect(keep[0][0].leader).toBe('A. Leiter')
@@ -186,7 +192,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
   it('ohne preserveEdits: Zeit/Ort auf Regelwerte zurück, Leiter bleibt', () => {
     const built = buildFsWeeks(BASE, 1, RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
-    const reset = regenFsWeeks(BASE, edited, RULE, false)
+    const reset = regenFsWeeks(KENN, edited, RULE, false)
     expect(reset[0][0].place).toBe('Königreichssaal')
     expect(reset[0][0].leader).toBe('A. Leiter')
   })
@@ -281,25 +287,23 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
 
   it('überspringt am Tag des Treffpunkts abwesende Personen', () => {
     // Basis-Montag 7.9.2026; wd 1 = Montag der Woche 0, also der 7.9.
-    const base = new Date(2026, 8, 7, 12)
     const week = [inst({ id: 'a', wd: 1 })]
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]
     const abw: Absence[] = [
       { id: 'x', personId: 'p1', userId: '', from: '2026-09-05', to: '2026-09-09', reason: '' },
     ]
-    const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, base)
+    const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, '2026-09-07')
     expect(fsWeeks[0][0].leader).toBe('Bernd Muster')
   })
 
   it('sperrt nur den Tag, nicht die ganze Woche', () => {
     // Anton ist am Wochenende weg — den Treffpunkt am Montag kann er leiten.
-    const base = new Date(2026, 8, 7, 12)
     const week = [inst({ id: 'a', wd: 1 })] // Montag, 7.9.
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' })]
     const abw: Absence[] = [
       { id: 'x', personId: 'p1', userId: '', from: '2026-09-12', to: '2026-09-13', reason: '' },
     ]
-    const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, base)
+    const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, '2026-09-07')
     expect(fsWeeks[0][0].leader).toBe('Anton Muster')
   })
 
@@ -454,7 +458,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   ]
 
   it('liefert nur die eigenen Leitungen, zugeordnet über die Id', () => {
-    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'Treffpunkt-Leiter')
+    const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'Treffpunkt-Leiter')
     expect(tasks).toHaveLength(1)
     expect(tasks[0].id).toBe('fs|2026-09-07|a')
     // „Treffpunkt-Leiter" ist eine Rolle und steht deshalb in `rolle`, nicht
@@ -465,38 +469,38 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
 
   it('die Id schlägt den Namen — Namensgleiche sehen nichts Fremdes', () => {
     // Zwei Personen heißen gleich; nur die mit der passenden Id ist eingeteilt.
-    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p9', 'Leiter')
+    const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p9', 'Leiter')
     expect(tasks).toEqual([])
   })
 
   it('ohne Id (Altdaten) zählt weiter der Name', () => {
     const alt = [[inst({ id: 'a', leader: 'Anton Muster' })]]
-    expect(deriveMyFsTasks(alt, BASE, 'Anton Muster', {}, 'p1', 'Leiter')).toHaveLength(1)
+    expect(deriveMyFsTasks(alt, KENN, 'Anton Muster', {}, 'p1', 'Leiter')).toHaveLength(1)
   })
 
   it('Termin kanonisch deutsch, mit echtem Zeitstempel für den Countdown', () => {
-    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'Leiter')
+    const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'Leiter')
     // Montag der Woche 0 ist der 7.9.2026; wd 1 = Montag.
     expect(tasks[0].date).toBe('Montag, 7. September · 14:00 · Königreichssaal')
     expect(tasks[0].at).toBe(fsDate(BASE, 0, 1).getTime())
   })
 
   it('ohne Datumsbasis kein erfundener Termin', () => {
-    const tasks = deriveMyFsTasks(wochen(), null, 'Anton Muster', {}, 'p1', 'Leiter')
+    const tasks = deriveMyFsTasks(wochen(), [], 'Anton Muster', {}, 'p1', 'Leiter')
     expect(tasks[0].at).toBeNull()
     expect(tasks[0].date).toBe('14:00 · Königreichssaal')
   })
 
   it('übernimmt den Bestätigungs-Status', () => {
     const conf = { 'fs|2026-09-07|a': 'bestätigt' as const }
-    const tasks = deriveMyFsTasks(wochen(), BASE, 'Anton Muster', conf, 'p1', 'Leiter')
+    const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', conf, 'p1', 'Leiter')
     expect(tasks[0].status).toBe('bestätigt')
-    expect(deriveMyFsTasks(wochen(), BASE, 'Anton Muster', {}, 'p1', 'L')[0].status).toBe('offen')
+    expect(deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'L')[0].status).toBe('offen')
   })
 
   it('offene Treffpunkte gehören niemandem', () => {
     const offen = [[inst({ id: 'a', leader: '' })]]
-    expect(deriveMyFsTasks(offen, BASE, 'Anton Muster', {}, 'p1', 'L')).toEqual([])
+    expect(deriveMyFsTasks(offen, KENN, 'Anton Muster', {}, 'p1', 'L')).toEqual([])
   })
 })
 
@@ -519,17 +523,17 @@ describe('fsPendingIds — wer noch nicht zugesagt hat', () => {
   ]
 
   it('nennt jede Leitung ohne „bestätigt"', () => {
-    expect(fsPendingIds(wochen(), BASE, {}).sort()).toEqual(['p1', 'p2'])
+    expect(fsPendingIds(wochen(), KENN, {}).sort()).toEqual(['p1', 'p2'])
   })
 
   it('eine Bestätigung nimmt genau diese Person heraus', () => {
-    expect(fsPendingIds(wochen(), BASE, { 'fs|2026-09-07|a': 'bestätigt' })).toEqual(['p2'])
+    expect(fsPendingIds(wochen(), KENN, { 'fs|2026-09-07|a': 'bestätigt' })).toEqual(['p2'])
   })
 
   it('„verhindert" zählt wie offen — der Platz ist erst wieder besetzt, wenn neu zugeteilt ist', () => {
     // Dieselbe Regel wie bei `derivePendingIds`; ohne sie verschwände das
     // Zeichen bei einer Absage, und der Platz sähe erledigt aus.
-    expect(fsPendingIds(wochen(), BASE, { 'fs|2026-09-07|a': 'verhindert' }).sort()).toEqual(['p1', 'p2'])
+    expect(fsPendingIds(wochen(), KENN, { 'fs|2026-09-07|a': 'verhindert' }).sort()).toEqual(['p1', 'p2'])
   })
 
   it('offene Plätze und Freitext-Leiter bleiben draußen', () => {
@@ -541,20 +545,20 @@ describe('fsPendingIds — wer noch nicht zugesagt hat', () => {
         inst({ id: 'b', leader: 'Kreisaufseher', lext: true }),
       ],
     ]
-    expect(fsPendingIds(wochenMitGast, BASE, {})).toEqual([])
+    expect(fsPendingIds(wochenMitGast, KENN, {})).toEqual([])
   })
 
   it('ohne Person-Id greift der Namensschlüssel (Altdaten)', () => {
     // Dieselbe Kennung wie `derivePendingIds` sie bildet (`kennungVon`),
     // sonst passte die Markierung im Plan nicht auf den Chip.
     const alt = [[inst({ id: 'a', leader: 'Anton Muster' })]]
-    expect(fsPendingIds(alt, BASE, {})).toEqual(['name:Anton Muster'])
+    expect(fsPendingIds(alt, KENN, {})).toEqual(['name:Anton Muster'])
   })
 
   it('ohne Datumsbasis gibt es keinen Schlüssel — dann gilt alles als offen', () => {
     // `fsWochenStart(null, …)` ist leer; eine Bestätigung kann dann nicht
     // zugeordnet werden. Lieber ein „…" zu viel als ein „✓", das nie gegeben wurde.
-    expect(fsPendingIds(wochen(), null, { 'fs|2026-09-07|a': 'bestätigt' }).sort()).toEqual(['p1', 'p2'])
+    expect(fsPendingIds(wochen(), [], { 'fs|2026-09-07|a': 'bestätigt' }).sort()).toEqual(['p1', 'p2'])
   })
 })
 
@@ -567,14 +571,14 @@ describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
 
   it('meldet, wer am Tag seines Treffpunkts abwesend ist', () => {
     const weeks = [[inst({ id: 'a', wd: 1, place: 'Saal', leader: 'Anton Muster', lpid: 'p1' })]]
-    const c = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), BASE)
+    const c = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), KENN[0]!)
     expect(c).toEqual([{ kind: 'fsAbsent', name: 'Anton Muster', kennung: 'p1', wd: 1, ort: 'Saal' }])
   })
 
   it('sperrt nur den Tag, nicht die ganze Woche', () => {
     // Anton ist am Wochenende weg — den Treffpunkt am Montag kann er leiten.
     const weeks = [[inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })]]
-    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-12', '2026-09-13'), BASE)).toEqual([])
+    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-12', '2026-09-13'), KENN[0]!)).toEqual([])
   })
 
   it('ordnet über die Person-Id zu, nicht über den Namen', () => {
@@ -583,13 +587,13 @@ describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
     // es nicht gibt — genau dafür trägt der Treffpunkt jetzt eine Id.
     const zwilling = tpLeader({ id: 'p2', fn: 'Anton' }) // ebenfalls „Anton Muster"
     const weeks = [[inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })]]
-    const c = fsWeekConflicts(weeks, 0, [anton, zwilling], abw('2026-09-05', '2026-09-09', 'p2'), BASE)
+    const c = fsWeekConflicts(weeks, 0, [anton, zwilling], abw('2026-09-05', '2026-09-09', 'p2'), KENN[0]!)
     expect(c).toEqual([])
   })
 
-  it('ohne Datumsbasis entfällt die Abwesenheitsprüfung', () => {
+  it('ohne Wochenkennung entfällt die Abwesenheitsprüfung', () => {
     const weeks = [[inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })]]
-    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), null)).toEqual([])
+    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), '')).toEqual([])
   })
 
   it('meldet dieselbe Person zweimal am selben Wochentag', () => {
@@ -621,10 +625,10 @@ describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
         inst({ id: 'b', wd: 1, grp: 'g2', leader: 'Anton Muster', lpid: 'p1' }),
       ],
     ]
-    const alle = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), BASE)
+    const alle = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), KENN[0]!)
     expect(alle).toHaveLength(1) // ohne Gruppenfilter zählt g2 mit
     // Gruppenaufseher sieht nur die eigene Gruppe.
-    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), BASE, 'g1')).toEqual([])
+    expect(fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), KENN[0]!, 'g1')).toEqual([])
   })
 
   it('nicht geladene Woche → keine Konflikte', () => {

@@ -44,8 +44,8 @@
 // Deploy:  npx supabase functions deploy send-reminders --no-verify-jwt
 // =============================================================================
 
-// @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
-import webpush from 'npm:web-push@3.6.7'
+import { restKlient, wert } from '../_shared/rest.ts'
+import { vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
   meetingDayOffsets,
@@ -83,46 +83,19 @@ const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
-/**
- * Wie viele Push-Zustellungen gleichzeitig unterwegs sein duerfen.
- *
- * Nicht unbegrenzt: die Push-Dienste drosseln, und ein ganzer Schwung offener
- * Verbindungen brachte der Edge Function nichts als Fehler. Gebuendelt zu
- * zehnt bleibt die Laufzeit im Rahmen, ohne dass jemand gedrosselt wird.
- */
-const PUSH_PARALLEL = 10
-
 const SEND_PUSH = Deno.env.get('SEND_PUSH') === 'true'
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
-/** REST-Abfrage gegen PostgREST mit Service-Role (umgeht RLS). */
-async function rest<T>(path: string): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-  })
-  if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`)
-  return res.json() as Promise<T>
-}
+const klient = restKlient(SUPABASE_URL, SERVICE_KEY)
 
-async function restInsert(path: string, rows: unknown[]): Promise<void> {
-  if (rows.length === 0) return
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method: 'POST',
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(rows),
-  })
-  if (!res.ok) console.error(`REST POST ${path} ${res.status}: ${await res.text()}`)
-}
+/** Abgelaufenes Push-Abo entfernen (Push-Dienst meldete 404/410). */
+const abbestellen = (id: string): Promise<void> =>
+  klient.send('DELETE', `push_subscriptions?id=eq.${wert(id)}`)
 
 /** Heutige Versand-Einträge als Menge "userId|kind" (Doppel-Versand-Sperre). */
 async function loadSentToday(todayISO: string): Promise<Set<string>> {
   try {
-    const rows = await rest<{ user_id: string; kind: string }[]>(
+    const rows = await klient.get<{ user_id: string; kind: string }[]>(
       `reminder_log?select=user_id,kind&sent_on=eq.${todayISO}`,
     )
     return new Set(rows.map((r) => `${r.user_id}|${r.kind}`))
@@ -131,15 +104,6 @@ async function loadSentToday(todayISO: string): Promise<Set<string>> {
     console.error(`reminder_log nicht lesbar: ${(err as Error).message}`)
     return new Set()
   }
-}
-
-/** Abgelaufenes Push-Abo entfernen (Push-Service meldete 404/410). */
-async function restDeleteSubscription(id: string): Promise<void> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${id}`, {
-    method: 'DELETE',
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-  })
-  if (!res.ok) console.error(`REST DELETE push_subscriptions ${res.status}`)
 }
 
 /** Aufbewahrungsfrist der Glocken-Mitteilungen (Tage). */
@@ -238,15 +202,16 @@ Deno.serve(async (req: Request) => {
     return new Response('Unauthorized', { status: 401 })
   }
   try {
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
-
+    // Die VAPID-Schlüssel setzt `vapidSetzen` erst unmittelbar vor dem Versand
+    // — hier stand der Aufruf ungeprüft und flog bei leerem Schlüssel, obwohl
+    // ein Lauf ohne Push (`SEND_PUSH` aus) völlig in Ordnung ist.
     const now = new Date()
     const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
     const todayISO = new Date(todayUTC).toISOString().slice(0, 10)
     // Wer heute schon benachrichtigt wurde ("userId|kind") → nicht erneut senden.
     const sentToday = await loadSentToday(todayISO)
 
-    const congs = await rest<
+    const congs = await klient.get<
       {
         id: string
         meeting_times: string
@@ -289,11 +254,11 @@ Deno.serve(async (req: Request) => {
       const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
         // Die Kennung kommt aus der Spalte, nicht aus dem Blob: `data->>'start'`
         // fehlt bei Wochen, die vor migration-017 geschrieben wurden.
-        rest<{ start: string; data: Week }[]>(
+        klient.get<{ start: string; data: Week }[]>(
           `weeks?select=start,data&congregation_id=eq.${cong.id}&order=start.asc`,
         ),
         // Treffpunkte: eigene Tabelle, dieselbe Kennung wie `weeks`.
-        rest<{ start: string; data: FsInstance[] }[]>(
+        klient.get<{ start: string; data: FsInstance[] }[]>(
           `fs_weeks?select=start,data&congregation_id=eq.${cong.id}&order=start.asc`,
         ).catch((err) => {
           // Fehlt die Tabelle (Migration nicht eingespielt), lieber die
@@ -301,19 +266,19 @@ Deno.serve(async (req: Request) => {
           console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
           return [] as { start: string; data: FsInstance[] }[]
         }),
-        rest<{ task_key: string; status: string }[]>(
+        klient.get<{ task_key: string; status: string }[]>(
           `confirmations?select=task_key,status&congregation_id=eq.${cong.id}`,
         ),
-        rest<{ user_id: string; person_id: string | null; planner: boolean }[]>(
+        klient.get<{ user_id: string; person_id: string | null; planner: boolean }[]>(
           `members?select=user_id,person_id,planner&congregation_id=eq.${cong.id}`,
         ),
-        rest<{ id: string; fn: string; ln: string; dn: string }[]>(
+        klient.get<{ id: string; fn: string; ln: string; dn: string }[]>(
           `persons?select=id,fn,ln,dn&congregation_id=eq.${cong.id}`,
         ),
-        rest<ServiceRow[]>(
+        klient.get<ServiceRow[]>(
           `services?select=key,name,count,groups&congregation_id=eq.${cong.id}&order=position.asc`,
         ),
-        rest<SubscriptionRow[]>(
+        klient.get<SubscriptionRow[]>(
           `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${cong.id}`,
         ),
       ])
@@ -518,45 +483,25 @@ Deno.serve(async (req: Request) => {
 
     if (SEND_PUSH) {
       // Jede Zustellung ist eine eigene HTTPS-Fahrt zu FCM/Mozilla/Apple und
-      // haengt an keiner anderen. Nacheinander summierten sich die Laufzeiten
-      // ueber den ganzen installierten Bestand — die Edge Function hat dafuer
-      // kein Zeitbudget. Gebuendelt bleibt die Behandlung je Abo dieselbe.
-      const zustellungen = sendQueue.flatMap(({ push, subs }) => {
-        const payload = JSON.stringify({ title: push.title, body: push.body, url: push.url ?? APP_URL })
-        return subs.map((sub) => ({ sub, payload }))
-      })
-      for (let i = 0; i < zustellungen.length; i += PUSH_PARALLEL) {
-        const teil = zustellungen.slice(i, i + PUSH_PARALLEL)
-        const ergebnisse = await Promise.all(
-          teil.map(async ({ sub, payload }) => {
-            try {
-              await webpush.sendNotification(
-                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-                payload,
-                { TTL: 24 * 3600 },
-              )
-              return 'sent' as const
-            } catch (err) {
-              const status = (err as { statusCode?: number }).statusCode
-              if (status === 404 || status === 410) {
-                await restDeleteSubscription(sub.id)
-                return 'expired' as const
-              }
-              console.error(`web-push ${status}: ${(err as Error).message}`)
-              return 'failed' as const
-            }
-          }),
-        )
-        for (const e of ergebnisse) {
-          if (e === 'sent') sent++
-          else if (e === 'expired') expired++
-        }
-      }
-      await restInsert('notifications', notifRows)
+      // hängt an keiner anderen — gebündelt wird deshalb über den **ganzen**
+      // Lauf, nicht je Empfänger (`_shared/push.ts`).
+      vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+      const zustellungen: Zustellung[] = sendQueue.flatMap(({ push, subs }) =>
+        subs.map((abo) => ({
+          abo,
+          titel: push.title,
+          body: push.body,
+          url: push.url ?? APP_URL,
+        })),
+      )
+      const erg = await zustellen(zustellungen, abbestellen)
+      sent += erg.gesendet
+      expired += erg.abgelaufen
+      await klient.insert('notifications', notifRows)
       // Versand-Tagebuch schreiben, damit ein zweiter Lauf heute nicht doppelt
       // sendet. Nach dem eigentlichen Versand — scheitert das Schreiben, wurde
       // immerhin gesendet (schlimmstenfalls eine Wiederholung, nie Verlust).
-      await restInsert('reminder_log', logRows)
+      await klient.insert('reminder_log', logRows)
       // Wartung im selben Lauf: alte Mitteilungen nach Aufbewahrungsfrist löschen
       await pruneNotifications()
     }

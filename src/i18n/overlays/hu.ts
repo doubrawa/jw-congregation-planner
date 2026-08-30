@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Akadályoztatás jelentve",
   "erinnerungenCard": "EMLÉKEZTETŐK",
   "remDesc": "Automatikus értesítések a kiosztásokról a megerősítésig.",
-  "remBeiZut": "Kiosztáskor",
-  "remSofort": "Azonnal",
   "remErste": "Első emlékeztető",
   "remLetzte": "Utolsó emlékeztető",
   "remTageVorher": "{n} nappal előtte",

@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Naiulat ang hadlang",
   "erinnerungenCard": "MGA PAALALA",
   "remDesc": "Awtomatikong abiso para sa mga atas hanggang makumpirma.",
-  "remBeiZut": "Kapag itinalaga",
-  "remSofort": "Agad",
   "remErste": "Unang paalala",
   "remLetzte": "Huling paalala",
   "remTageVorher": "{n} araw bago",

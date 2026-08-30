@@ -47,8 +47,17 @@ create table if not exists public.assignment_log (
   unique (congregation_id, task_key, name)
 );
 
-create index if not exists assignment_log_cong_idx
-  on public.assignment_log (congregation_id, task_key);
+-- Hier stand ein eigener Index auf (congregation_id, task_key). Er trug nichts
+-- bei: Die Eindeutigkeitsbedingung oben legt bereits einen Index über
+-- (congregation_id, task_key, name) an, und Postgres nutzt dessen führende
+-- Spalten für genau dieselben Abfragen. Beide Leser filtern ohnehin nur nach
+-- `congregation_id`.
+--
+-- Die Zeile ist **nicht** nötig, wenn diese Datei zum ersten Mal läuft — sie
+-- räumt nur bei den Instanzen auf, die den überflüssigen Index vom ersten
+-- Aufspielen her noch führen. Schadet dort auch niemandem, wer sie stehen
+-- lässt; es ist ein bisschen Schreibaufwand je Zeile, mehr nicht.
+drop index if exists public.assignment_log_cong_idx;
 
 alter table public.assignment_log enable row level security;
 

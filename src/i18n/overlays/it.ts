@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Impedimento segnalato",
   "erinnerungenCard": "PROMEMORIA",
   "remDesc": "Notifiche automatiche per gli incarichi finché non sono confermati.",
-  "remBeiZut": "All’assegnazione",
-  "remSofort": "Subito",
   "remErste": "Primo promemoria",
   "remLetzte": "Ultimo promemoria",
   "remTageVorher": "{n} giorni prima",

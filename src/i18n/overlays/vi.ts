@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Đã báo trở ngại",
   "erinnerungenCard": "NHẮC NHỞ",
   "remDesc": "Thông báo tự động về nhiệm vụ cho đến khi được xác nhận.",
-  "remBeiZut": "Khi phân công",
-  "remSofort": "Ngay lập tức",
   "remErste": "Nhắc lần đầu",
   "remLetzte": "Nhắc lần cuối",
   "remTageVorher": "trước {n} ngày",

@@ -125,6 +125,15 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // sind. Ging bis T99 nur als Push hinaus — ein Planer ohne Abo bekam sie also
   // nie, obwohl gerade er sie braucht (er muss persönlich erinnern).
   'Unbestätigte Zuteilungen (nicht erreichbar)': 'notifUnerreichbar',
+  // **Abgelegte Titel.** Diese Mitteilungen entstehen seit T99 nicht mehr —
+  // aber die Glocke hält Zeilen 30 Tage lang, und wer die App vorher benutzt
+  // hat, hat sie noch vor sich. Ohne die Einträge stünde dort deutscher
+  // Klartext über einem übersetzten Rumpf. Sie dürfen weg, sobald keine
+  // Versammlung mehr Zeilen aus der Zeit davor hat.
+  Erinnerung: 'notifErinnerung',
+  'Plan veröffentlicht': 'notifPlan',
+  'Zuteilung gesendet': 'notifZutGesendet',
+  'Zuteilungen gesendet': 'notifZutsGesendet',
   'Programm importiert': 'notifProgImportiert',
   'Verhinderung gemeldet': 'notifVerhindert',
   // Ersatzsuche (Edge Function `substitute`) — die Titel sind fest, alles

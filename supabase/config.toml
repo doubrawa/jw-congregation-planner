@@ -49,3 +49,10 @@ verify_jwt = true
 # Geheimnis antwortet sie 401. Deshalb hier - und nur hier - false.
 [functions.send-reminders]
 verify_jwt = false
+
+# Prüft ebenfalls selbst über /auth/v1/user, wer da ruft — und verlangt darüber
+# hinaus das Planer-Recht: Wer keins hat, bekommt 403, bevor irgendetwas
+# hinausgeht. Die Versammlung kommt aus der Mitgliedszeile des Aufrufers, nie
+# aus dem Rumpf.
+[functions.send-plan]
+verify_jwt = true

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { kennungVon } from '../data/planning'
 import { useApp, useAppDispatch } from '../app/context'
-import { FS_TIME_OPTIONS, fsDate, fsLeiterZuteilung, fsWeekConflicts } from '../data/fs'
+import { FS_TIME_OPTIONS, fsDate, fsLeiterZuteilung, fsWeekConflicts, fsWochenKennungen } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
@@ -71,7 +71,14 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   // Plan hervor. Eigene Quelle, weil Treffpunkte eine eigene haben.
   const betrifft = machBetrifft(
     state.persons,
-    fsWeekConflicts(state.fsWeeks, wi, state.persons, state.absences, state.fsBase, onlyGroup),
+    fsWeekConflicts(
+      state.fsWeeks,
+      wi,
+      state.persons,
+      state.absences,
+      fsWochenKennungen(state.weeks, state.fsBase)[wi] ?? '',
+      onlyGroup,
+    ),
   )
 
   const groupName = (grp: string): string => {
@@ -144,7 +151,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
       <FsAutoAssign onlyGroup={onlyGroup} />
 
       {openLeaders.length > 0 && (
-        <div className="plan-open">
+        <div className="plan-banner-box plan-open">
           <div className="plan-banner-head">
             <span className="plan-banner-badge">?</span>
             <span className="plan-banner-title">{t.offeneTitle}</span>

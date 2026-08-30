@@ -63,6 +63,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `planer-aufgaben.png` | `s=aufgaben` | (Reserve) |
 | `planer-planen-woche.png` | `s=planen&tab=mid` | planer |
 | `planer-planen-treffpunkte.png` | `s=planen&tab=fs` | (Reserve) |
+| `planer-plan-senden.png` | `s=planen&tab=fs` (920×2100) | planer |
 | `planer-personen.png` | `s=personen` | planer |
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |

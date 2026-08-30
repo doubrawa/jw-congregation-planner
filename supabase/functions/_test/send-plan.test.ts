@@ -36,6 +36,8 @@ const U_ANNA = 'user-anna'
 const U_BERND = 'user-bernd'
 const U_FREMD = 'user-fremd' // Planer einer ANDEREN Versammlung
 const U_MITGLIED = 'user-mitglied' // Mitglied ohne Planer-Recht
+const U_TIM_A = 'user-tim-a' // zwei Konten, ein Anzeigename
+const U_TIM_B = 'user-tim-b'
 
 const MEMBERS = [
   { user_id: U_PLANER, person_id: 'p-planer', planner: true, congregation_id: CONG },
@@ -43,6 +45,10 @@ const MEMBERS = [
   { user_id: U_BERND, person_id: 'p-bernd', planner: false, congregation_id: CONG },
   { user_id: U_MITGLIED, person_id: 'p-mit', planner: false, congregation_id: CONG },
   { user_id: U_FREMD, person_id: 'p-fremd', planner: true, congregation_id: 'cong-2' },
+  { user_id: U_TIM_A, person_id: 'p-tim-a', planner: false, congregation_id: CONG },
+  // ZULETZT: Über den Namen gewinnt der letzte Eintrag. Am Namen allein landete
+  // die Nachricht für Tim A also immer hier bei Tim B.
+  { user_id: U_TIM_B, person_id: 'p-tim-b', planner: false, congregation_id: CONG },
 ]
 
 const PERSONS = [
@@ -52,12 +58,18 @@ const PERSONS = [
   { id: 'p-mit', fn: 'Mia', ln: 'Glied', dn: 'Mia Glied' },
   // Eingeteilt, aber ohne App-Konto — muss persönlich angesprochen werden.
   { id: 'p-ohne', fn: 'Karl', ln: 'Onto', dn: 'Karl Onto' },
+  // Zwei Brüder mit demselben Anzeigenamen. Die App warnt den Planer davor,
+  // verbietet es aber nicht.
+  { id: 'p-tim-a', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
+  { id: 'p-tim-b', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
 ]
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone', count: 1, groups: false }]
 const CONGREGATIONS = [{ meeting_times: 'Di 19:00 · So 10:00' }]
 const SUBS = [
   { id: 's1', user_id: U_ANNA, endpoint: 'https://push.test/anna', p256dh: 'k', auth: 'a', lang: 'de' },
+  { id: 's2', user_id: U_TIM_A, endpoint: 'https://push.test/tim-a', p256dh: 'k', auth: 'a', lang: 'de' },
+  { id: 's3', user_id: U_TIM_B, endpoint: 'https://push.test/tim-b', p256dh: 'k', auth: 'a', lang: 'de' },
 ]
 
 /** Programmpunkt mit einem Platz. */
@@ -98,6 +110,7 @@ interface Write {
   method: string
   path: string
   body: unknown
+  headers: Record<string, string>
 }
 
 let handler: (req: Request) => Promise<Response>
@@ -120,7 +133,10 @@ function filterWert(path: string, spalte: string): string | null {
   return m ? decodeURIComponent(m[1]) : null
 }
 
-const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
+const fakeFetch = async (
+  input: unknown,
+  init?: { method?: string; body?: unknown; headers?: Record<string, string> },
+): Promise<Response> => {
   // Ein rohes `#` schnitte hier ab, genau wie im echten URL-Parser — dadurch
   // fällt ein nicht kodierter Filterwert im Test überhaupt auf.
   const url = String(input).split('#')[0]
@@ -132,7 +148,14 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
 
   const path = url.slice(url.indexOf('/rest/v1/') + '/rest/v1/'.length)
   if (method !== 'GET') {
-    writes.push({ method, path, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+    writes.push({
+      method,
+      path,
+      body: init?.body ? JSON.parse(String(init.body)) : undefined,
+      // Die Kopfzeilen gehören dazu: In `Prefer` steht, ob ein Stapel bei einer
+      // Dublette **ganz** scheitert oder nur sie überspringt.
+      headers: init?.headers ?? {},
+    })
     return new Response(null, { status: 204 })
   }
 
@@ -397,5 +420,67 @@ describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
     authUser = U_MITGLIED
     expect((await entzug()).status).toBe(403)
     expect(writes).toEqual([])
+  })
+
+  /*
+   * **Zwei Gleichnamige.** Über den Namen gewinnt der zuletzt gelesene
+   * Mitgliedseintrag — Tim B bekäme also den Entzug, den Tim A angeht: Der eine
+   * erschrickt über einen Verlust, den es nie gab, der andere übt weiter für
+   * einen Platz, den er nicht mehr hat. Deshalb die Id zuerst, genau wie beim
+   * „Plan senden".
+   */
+  it('mit Person-Id erreicht der Entzug den Richtigen, nicht den Namensvetter', async () => {
+    const res = await ruf({
+      action: 'entzug',
+      taskKey: KEY_ANNA,
+      name: 'Tim Zwill',
+      pid: 'p-tim-a',
+      label: 'Bibellesung',
+      datum: 'Dienstag, 8. September · 19:00',
+    })
+    expect(res.status).toBe(200)
+    expect(zeilenIn('notifications')[0]).toMatchObject({ user_id: U_TIM_A })
+    expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/tim-a'])
+  })
+
+  it('ohne Person-Id bleibt der Name der Weg — Altdaten und Hilfsdienste', async () => {
+    const res = await ruf({
+      action: 'entzug',
+      taskKey: KEY_ANNA,
+      name: 'Anna Berg',
+      label: 'Mikrofone',
+      datum: 'Dienstag, 8. September · 19:00',
+    })
+    expect(res.status).toBe(200)
+    expect(zeilenIn('notifications')[0]).toMatchObject({ user_id: U_ANNA })
+  })
+})
+
+/*
+ * **Das Tagebuch muss geschrieben werden können, auch wenn eine Zeile schon
+ * dasteht.**
+ *
+ * Ein INSERT ist in Postgres ganz oder gar nicht. Eine einzige Dublette verwarf
+ * damit den ganzen Stapel — und `restInsert` schluckt den Fehler, die Antwort
+ * meldete weiter Erfolg. Der teure Teil kommt danach: Ohne Tagebuch-Zeilen gilt
+ * jeder Platz weiter als ungemeldet, und **jeder** weitere Druck schickt allen
+ * dieselbe Nachricht erneut. Für immer, denn die störende Zeile bleibt liegen.
+ */
+describe('Das Versand-Tagebuch verträgt eine Dublette', () => {
+  it('der Stapel bittet um „überspringen", nicht um „alles verwerfen"', async () => {
+    await plan()
+    const eintrag = writes.find((w) => w.method === 'POST' && w.path.startsWith('assignment_log'))
+    expect(eintrag, 'kein POST auf assignment_log').toBeTruthy()
+    expect(String(eintrag!.headers['Prefer'] ?? '')).toContain('resolution=ignore-duplicates')
+  })
+
+  it('die Mitteilungen dagegen sollen vollständig geschrieben werden', async () => {
+    // Gegenprobe: Die Bitte gilt nur dem Tagebuch. Bei den Mitteilungen gibt es
+    // keine Eindeutigkeit zu verletzen, und ein stilles Überspringen verdeckte
+    // dort einen echten Fehler.
+    await plan()
+    const zeile = writes.find((w) => w.method === 'POST' && w.path.startsWith('notifications'))
+    expect(zeile, 'kein POST auf notifications').toBeTruthy()
+    expect(String(zeile!.headers['Prefer'] ?? '')).not.toContain('ignore-duplicates')
   })
 })

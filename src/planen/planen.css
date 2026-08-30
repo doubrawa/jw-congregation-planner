@@ -98,21 +98,28 @@
 
 /* ---- Konflikt-Warnungen ------------------------------------------------- */
 
+/* Der gemeinsame Kasten der vier Banner unter dem Plan (Konflikte, offene
+   Plätze, Engpass, „Plan senden"). Sie standen viermal ausgeschrieben da und
+   waren dabei schon auseinandergelaufen — verschiedene Innenabstände, einer
+   ohne Schatten. Farbe und Abstand nach oben bleiben je Banner eigen; alles
+   andere gehört allen. */
+.plan-banner-box {
+  margin-top: 12px;
+  border: 1.5px solid;
+  border-radius: 14px;
+  padding: 12px 14px 13px;
+}
+
 .plan-conflicts {
   margin-top: 14px;
   background: var(--tWein);
-  border: 1.5px solid var(--wein);
-  border-radius: 14px;
-  padding: 12px 14px 13px;
+  border-color: var(--wein);
   box-shadow: 0 3px 12px -6px var(--wein);
 }
 
 .plan-open {
-  margin-top: 12px;
   background: var(--tAcc);
-  border: 1.5px solid var(--acc);
-  border-radius: 14px;
-  padding: 12px 14px 13px;
+  border-color: var(--acc);
   box-shadow: 0 3px 12px -6px var(--acc);
 }
 
@@ -200,11 +207,8 @@
    denn hier ist nichts mehr zu tun. Es ist kein Rückstand, sondern eine
    Grenze. */
 .plan-engpass {
-  margin-top: 12px;
   background: var(--tAcc);
-  border: 1.5px solid var(--wein);
-  border-radius: 14px;
-  padding: 12px 14px 13px;
+  border-color: var(--wein);
   box-shadow: 0 3px 12px -6px var(--wein);
 }
 
@@ -1082,9 +1086,8 @@
 .plan-senden {
   margin-top: 16px;
   background: var(--tGld);
-  border: 1.5px solid var(--gld);
-  border-radius: 14px;
-  padding: 12px 14px 14px;
+  border-color: var(--gld);
+  box-shadow: 0 3px 12px -6px var(--gld);
 }
 
 .plan-senden .plan-banner-title {

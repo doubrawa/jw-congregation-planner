@@ -13,13 +13,17 @@ import {
   zeitMitAbweichung as edgeZeit,
   zuteilungsLabel as edgeLabel,
 } from '../../supabase/functions/_shared/planung.ts'
-import { tagebuchSchluessel as edgeTagebuch } from '../../supabase/functions/_shared/zuteilungen.ts'
+import {
+  pendingOfFsWeek as edgeFsPending,
+  tagebuchSchluessel as edgeTagebuch,
+} from '../../supabase/functions/_shared/zuteilungen.ts'
 import { STANDARD_ERINNERUNGEN } from './vorgaben'
 import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
 import { deutschesDatum, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
 import { isGuestRole, sentKey } from './planning'
+import { offeneMeldungen } from './plan-versand'
 import { emptyQualifications } from './helpers'
-import type { Abweichung, Person, Week } from './types'
+import type { Abweichung, FsInstance, Person, Week } from './types'
 
 /**
  * Client und Edge Functions rechnen gleich — geprüft, nicht angenommen.
@@ -345,6 +349,60 @@ describe('Versand-Tagebuch: Client und Function bilden denselben Schlüssel', ()
     // Ohne diese Zeile wären zwei gleich falsche Fassungen ununterscheidbar
     // von zwei gleich richtigen.
     expect(sentKey('k', 'n')).toBe('k n')
+  })
+})
+
+/**
+ * **Treffpunkte: Client und Function meinen dieselbe Woche.**
+ *
+ * Bis dahin verglich diese Datei nur die *Form* der Schlüssel, nie die
+ * *Menge* — und genau dazwischen lag der Fehler: Die Function nimmt den Montag
+ * aus der Spalte `weeks.start`, der Client rechnete ihn aus der Ordnungszahl
+ * (`fsBase + wi·7`). Ohne Lücke im Bestand ist das dasselbe, mit Lücke nicht.
+ * Beide Seiten liefen dann sauber durch und redeten über verschiedene Wochen:
+ * Der Knopf zeigte „1 noch nicht gesendet", der Druck meldete „0 gesendet",
+ * und die Zahl blieb stehen.
+ *
+ * Geprüft wird deshalb an einem Bestand **mit** Lücke — ohne sie könnte auch
+ * die alte Rechnung bestehen.
+ */
+describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', () => {
+  const MONTAG = '2026-09-21' // zweite geladene Woche; die vom 14. fehlt
+  const BASIS = new Date(2026, 8, 7, 12)
+  const inst = {
+    id: 'r1',
+    ruleId: 'r1',
+    grp: '',
+    wd: 6,
+    time: '09:30',
+    place: 'Königreichssaal',
+    leader: 'T. Lindner',
+    lpid: 'p1',
+  }
+  const woche = {
+    range: '',
+    book: '',
+    start: MONTAG,
+    current: false,
+    mid: { date: '', end: '', sections: [], helpers: {} },
+    we: { date: '', end: '', sections: [], helpers: {} },
+  } as unknown as Week
+
+  it('derselbe Schlüssel für denselben Treffpunkt', () => {
+    // Client: die Woche ist die zweite geladene (wi = 1).
+    const client = offeneMeldungen(woche, [inst as FsInstance], 1, BASIS, [], {}, {})
+    // Function: der Montag kommt aus der Datenbankzeile.
+    const server = edgeFsPending(MONTAG, [inst as never], new Map())
+    expect(client.map((o) => o.key)).toEqual(server.map((p) => p.key))
+    expect(client.map((o) => o.name)).toEqual(server.map((p) => p.name))
+  })
+
+  it('und ein Freitext-Leiter bleibt auf beiden Seiten draußen', () => {
+    // Der Kreisaufseher hat kein Konto — die Ausnahme muss beidseitig gelten,
+    // sonst geht eine Nachricht ins Leere oder gar keine hinaus.
+    const extern = { ...inst, lext: true }
+    expect(offeneMeldungen(woche, [extern as FsInstance], 1, BASIS, [], {}, {})).toEqual([])
+    expect(edgeFsPending(MONTAG, [extern as never], new Map())).toEqual([])
   })
 })
 

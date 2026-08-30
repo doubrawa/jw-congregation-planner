@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Sprečenost prijavljena",
   "erinnerungenCard": "PODSETNICI",
   "remDesc": "Automatska obaveštenja o zaduženjima dok se ne potvrde.",
-  "remBeiZut": "Pri dodeli",
-  "remSofort": "Odmah",
   "remErste": "Prvi podsetnik",
   "remLetzte": "Poslednji podsetnik",
   "remTageVorher": "{n} dana pre",

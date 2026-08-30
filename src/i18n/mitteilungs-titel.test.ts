@@ -99,6 +99,26 @@ const ALLE_ERZEUGTEN = [
   ...DEMO_NOTIFICATIONS.map((n) => n.title),
 ]
 
+/**
+ * Titel, die **nicht mehr entstehen**, aber noch in den Glocken stehen.
+ *
+ * Die Glocke hält ihre Zeilen 30 Tage (`NOTIFICATION_RETENTION_DAYS`). Wer die
+ * App vor T99 benutzt hat, hat diese Mitteilungen also noch vor sich —
+ * „Zuteilung gesendet" ging damals an die Planer, „Plan veröffentlicht" gab es
+ * einmal, und „Erinnerung" heißt inzwischen „Erinnerung: Zuteilung
+ * bestätigen". Ohne ihren Eintrag in `NOTIF_TITLE_KEY` stünde bei einem
+ * koreanischen Leser deutscher Klartext über einem koreanischen Rumpf.
+ *
+ * Sie dürfen aus beidem verschwinden, sobald keine Versammlung mehr Zeilen aus
+ * der Zeit davor hat — also 30 Tage nach dem letzten Aufspielen.
+ */
+const ABGELEGT = new Set([
+  'Erinnerung',
+  'Plan veröffentlicht',
+  'Zuteilung gesendet',
+  'Zuteilungen gesendet',
+])
+
 beforeAll(async () => {
   await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
 })
@@ -126,9 +146,26 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
   it('und die Zuordnung beschreibt nur Titel, die es wirklich gibt', () => {
     // Ein Eintrag, den niemand mehr erzeugt, ist toter Ballast — und verdeckt,
     // dass der wirkliche Titel inzwischen anders lautet.
+    //
+    // Ausgenommen sind die **abgelegten** Titel unten: Sie entstehen nicht mehr,
+    // stehen aber noch in den Glocken bestehender Versammlungen. Sie hier
+    // einzeln zu nennen ist Absicht — die Liste ist kurz, wächst nur beim
+    // Abschaffen einer Mitteilungsart, und jeder neue tote Eintrag fällt
+    // weiterhin auf.
     const erzeugt = new Set(ALLE_ERZEUGTEN)
-    const tot = Object.keys(NOTIF_TITLE_KEY).filter((t) => !erzeugt.has(t))
+    const tot = Object.keys(NOTIF_TITLE_KEY).filter(
+      (t) => !erzeugt.has(t) && !ABGELEGT.has(t),
+    )
     expect(tot, `niemand erzeugt: ${tot.join(', ')}`).toEqual([])
+  })
+
+  it('und jeder abgelegte Titel hat noch seine Übersetzung', () => {
+    // Der Sinn der Ausnahme ist genau diese Übersetzung. Fällt der Schlüssel
+    // aus dem Wörterbuch, stünde in der Glocke wieder deutscher Klartext — und
+    // die Ausnahme oben verdeckte es.
+    for (const titel of ABGELEGT) {
+      expect(NOTIF_TITLE_KEY[titel], `${titel} ohne Schlüssel`).toBeTruthy()
+    }
   })
 })
 

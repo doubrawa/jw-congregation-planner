@@ -719,21 +719,10 @@ export interface Reminders {
   first: number // erste Erinnerung: N Tage vorher (1..21)
   last: number // letzte Erinnerung: N Tage vorher (0..7, 0 = am Tag)
   repeat: boolean // täglich wiederholen, bis bestätigt
-  /**
-   * Beim Zuteilen sofort eine Mitteilung erzeugen („Zuteilung gesendet").
-   *
-   * Sie geht an die **Planer** der Versammlung — sie ist das Protokoll dessen,
-   * was hinausgegangen ist, und in einer großen Versammlung entsteht dabei je
-   * Zuteilung eine Zeile. Wer das nicht will, schaltet sie hier ab; die
-   * zeitlichen Erinnerungen (`first`/`last`/`repeat`) laufen unabhängig davon
-   * weiter.
-   *
-   * Die zugeteilte Person erfährt es nicht hierüber, sondern durch die
-   * Erinnerungen — deshalb ändert dieser Schalter nichts an dem, was bei ihr
-   * ankommt. Stand 15.8.2026; ein sofortiger Anstoß an sie wäre ein eigenes
-   * Stück Arbeit (Web-Push kann nur die Edge Function).
-   */
-
+  // Hier stand bis T99 `onAssign`: „beim Zuteilen sofort eine Mitteilung".
+  // Sie ging an die **Planer**, nicht an den Zugeteilten — an ihre Stelle ist
+  // „Plan senden" getreten. Das Feld bleibt in `congregations.settings`
+  // bestehender Versammlungen stehen, gelesen wird es nirgends.
 }
 
 /* ---- Zuteilungs-Sheet (Planen) ---- */

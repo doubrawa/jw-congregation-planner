@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
-import { fsWeekConflicts } from '../data/fs'
+import { fsWeekConflicts, fsWochenKennungen } from '../data/fs'
 import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
@@ -85,7 +85,13 @@ export function DashboardScreen() {
   const conflicts =
     curIdx >= 0
       ? weekConflicts(state.weeks, curIdx, state.persons, state.services, undefined, abwesend).length +
-        fsWeekConflicts(state.fsWeeks, curIdx, state.persons, state.absences, state.fsBase).length
+        fsWeekConflicts(
+          state.fsWeeks,
+          curIdx,
+          state.persons,
+          state.absences,
+          fsWochenKennungen(state.weeks, state.fsBase)[curIdx] ?? '',
+        ).length
       : 0
 
   return (

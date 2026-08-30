@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Förhinder rapporterat",
   "erinnerungenCard": "PÅMINNELSER",
   "remDesc": "Automatiska aviseringar om tilldelningar tills de bekräftas.",
-  "remBeiZut": "Vid tilldelning",
-  "remSofort": "Direkt",
   "remErste": "Första påminnelsen",
   "remLetzte": "Sista påminnelsen",
   "remTageVorher": "{n} dagar innan",

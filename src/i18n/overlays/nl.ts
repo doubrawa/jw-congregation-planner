@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Verhindering gemeld",
   "erinnerungenCard": "HERINNERINGEN",
   "remDesc": "Automatische meldingen voor toewijzingen totdat ze bevestigd zijn.",
-  "remBeiZut": "Bij toewijzing",
-  "remSofort": "Direct",
   "remErste": "Eerste herinnering",
   "remLetzte": "Laatste herinnering",
   "remTageVorher": "{n} dagen ervoor",

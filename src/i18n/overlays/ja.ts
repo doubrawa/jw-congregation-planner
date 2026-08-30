@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "不参加を報告",
   "erinnerungenCard": "リマインダー",
   "remDesc": "確認されるまで割り当ての通知を自動送信します。",
-  "remBeiZut": "割り当て時",
-  "remSofort": "すぐに",
   "remErste": "最初のリマインダー",
   "remLetzte": "最後のリマインダー",
   "remTageVorher": "{n} 日前",

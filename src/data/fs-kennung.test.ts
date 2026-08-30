@@ -29,6 +29,10 @@ const RULES: FsRule[] = [
 const montag = (i: number): string =>
   new Date(Date.UTC(2026, 0, 5) + i * 7 * 864e5).toISOString().slice(0, 10)
 
+/** Wochenkennungen ab Basis `i` — so viele, wie ein Aufruf braucht. */
+const kennAb = (i: number, n = 8): string[] =>
+  Array.from({ length: n }, (_unused, wi) => fsWochenStart(basisAb(i), wi))
+
 const basisAb = (i: number): Date =>
   fsBaseFromWeeks([{ current: false, start: montag(i) }], new Date())
 
@@ -54,7 +58,7 @@ describe('Die Kennung eines Treffpunkts hängt nicht an der Wochennummer', () =>
     const vorher = buildFsWeeks(basisAb(0), 6, RULES)
     vorher[3]![0]!.leader = 'Emil Ernst'
     const gespeichert = vorher.slice(1) // Woche 0 fällt aus dem Fenster
-    const nachher = regenFsWeeks(basisAb(1), gespeichert, RULES, true)
+    const nachher = regenFsWeeks(kennAb(1), gespeichert, RULES, true)
     expect(nachher[2]![0]!.leader).toBe('Emil Ernst')
   })
 
@@ -92,7 +96,7 @@ describe('Altbestand wird beim Laden gehoben', () => {
   it('nach der Umstellung findet das Ausrichten die Leitung wieder', () => {
     // Der ganze Weg, wie beim Laden: Blob heben → ausrichten.
     const gehoben = fsMigrateInstIds([altWoche(7, 'Emil Ernst')])
-    const ausgerichtet = regenFsWeeks(basisAb(0), gehoben, RULES, true)
+    const ausgerichtet = regenFsWeeks(kennAb(0), gehoben, RULES, true)
     expect(ausgerichtet[0]?.find((i) => i.ruleId === 'r-samstag')?.leader).toBe('Emil Ernst')
   })
 })
@@ -110,7 +114,7 @@ describe('Die Bestätigungen wandern mit', () => {
     // Die Probe darauf, dass beide Seiten dieselbe Form meinen: hier der
     // gehobene Alt-Schlüssel, dort der aus der Instanz gerechnete.
     const { confirmations } = migrateFsTaskKeys({ 'fs|2026-01-26|3|r-samstag': 'bestätigt' })
-    const woche = regenFsWeeks(basisAb(0), fsMigrateInstIds([[]]), RULES, true)[0]!
+    const woche = regenFsWeeks(kennAb(0), fsMigrateInstIds([[]]), RULES, true)[0]!
     const key = fsTaskKey('2026-01-26', woche.find((i) => i.ruleId === 'r-samstag')!.id)
     expect(confirmations[key]).toBe('bestätigt')
   })

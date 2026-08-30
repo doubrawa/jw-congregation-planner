@@ -279,8 +279,6 @@ export default {
   "notifVerhindert": "Conflict reported",
   "erinnerungenCard": "REMINDERS",
   "remDesc": "Automatic notifications for assignments until they are confirmed.",
-  "remBeiZut": "When assigned",
-  "remSofort": "Immediately",
   "remErste": "First reminder",
   "remLetzte": "Final reminder",
   "remTageVorher": "{n} days before",

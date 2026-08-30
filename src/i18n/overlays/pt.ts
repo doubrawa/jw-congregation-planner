@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Impedimento comunicado",
   "erinnerungenCard": "LEMBRETES",
   "remDesc": "Notificações automáticas das designações até serem confirmadas.",
-  "remBeiZut": "Ao atribuir",
-  "remSofort": "De imediato",
   "remErste": "Primeiro lembrete",
   "remLetzte": "Último lembrete",
   "remTageVorher": "{n} dias antes",

@@ -20,6 +20,7 @@
 // Deploy:  supabase functions deploy import-week
 // =============================================================================
 
+import { CORS, json } from '../_shared/rest.ts'
 import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
 import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
 import {
@@ -34,12 +35,6 @@ declare const Deno: { serve: (handler: (req: Request) => Promise<Response> | Res
 
 const BASE = 'https://www.jw.org'
 const UA = 'jw-congregation-planner/1.0 (+https://github.com/doubrawa/jw-congregation-planner)'
-
-const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
 
 const TTL = 10 * 60 * 1000
 const cache = new Map<string, { at: number; text: string }>()
@@ -242,13 +237,6 @@ async function studyArticle(start: Date, lang: string): Promise<StudyArticle | n
     }
   }
   return null
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-  })
 }
 
 /**

@@ -250,11 +250,13 @@ create table if not exists public.assignment_log (
   person_id       uuid references public.persons (id) on delete set null,
   user_id         uuid references auth.users (id) on delete set null,
   sent_at         timestamptz not null default now(),
+  -- Ein eigener Index auf (congregation_id, task_key) stand hier einmal und
+  -- trug nichts bei: Diese Bedingung legt schon einen über
+  -- (congregation_id, task_key, name) an, und Postgres nutzt dessen führende
+  -- Spalten für dieselben Abfragen. Beide Leser filtern ohnehin nur nach
+  -- `congregation_id`.
   unique (congregation_id, task_key, name)
 );
-
-create index if not exists assignment_log_cong_idx
-  on public.assignment_log (congregation_id, task_key);
 
 -- Einladungscodes: Planer erstellen sie, registrierte Nutzer treten damit der
 -- Versammlung bei (redeem_invite unten) — kein SQL für neue Mitglieder nötig.

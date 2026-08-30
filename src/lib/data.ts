@@ -11,7 +11,7 @@
  */
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
-import { fsBaseFromWeeks, fsMigrateInstIds, fsMigrateLeaderPids, regenFsWeeks } from '../data/fs'
+import { fsBaseFromWeeks, fsMigrateInstIds, fsMigrateLeaderPids, fsWochenKennungen, fsWochenStart, regenFsWeeks } from '../data/fs'
 import { itemTaskKey, partTaskKey, sentKey, taskKeyVorbei } from '../data/planning'
 import {
   displayName,
@@ -363,6 +363,70 @@ export function migrateFsTaskKeys(confirmations: ConfirmationMap): {
     delete next[alt]
   }
   return { confirmations: next, renames }
+}
+
+/**
+ * **Treffpunkt-Schlüssel von der Ordnungszahl auf die Wochenkennung** (T100).
+ *
+ * Bis dahin baute der Client den Montag als `fsBase + wi·7`. Das stimmt nur bei
+ * lückenlosem Bestand; fehlt eine Woche, liegt jede spätere sieben Tage daneben
+ * — und die Edge Functions nehmen den Montag aus der Datenbankzeile, reden also
+ * über eine andere Woche. Bestätigungen aus dieser Zeit tragen den alten
+ * Schlüssel und fänden ihren Platz nicht wieder: Der Leiter stünde erneut als
+ * unbestätigt da und bekäme Erinnerungen für etwas, das er längst zugesagt hat.
+ *
+ * Umbenannt wird nur, wo beide Kennungen wirklich auseinandergehen — bei
+ * lückenlosem Bestand (der Normalfall) gibt es nichts zu tun.
+ *
+ * **In einem Zug aus dem Ausgangsstand**, nicht Schritt für Schritt: Bei einer
+ * Lücke rutschen die Wochen um eine Stelle, und der alte Schlüssel der einen
+ * Woche ist der neue der nächsten. Nacheinander angewandt überschriebe sich die
+ * Kette selbst.
+ *
+ * Ein bereits belegter Zielschlüssel bleibt unangetastet — er ist der
+ * authentische Eintrag, der alte daneben der Irrläufer.
+ */
+export function migrateFsWochenKeys(
+  confirmations: ConfirmationMap,
+  weeks: ReadonlyArray<{ start?: string }>,
+  fsBase: Date | null,
+): { confirmations: ConfirmationMap; renames: Array<[string, string]> } {
+  const gefunden: Array<[string, string]> = []
+  for (const [alt, neu] of verschobeneWochen(weeks, fsBase)) {
+    for (const key of Object.keys(confirmations)) {
+      if (!key.startsWith(`fs|${alt}|`)) continue
+      gefunden.push([key, `fs|${neu}|${key.slice(`fs|${alt}|`.length)}`])
+    }
+  }
+  // Ein besetztes Ziel bleibt stehen — **es sei denn**, es zieht selbst weiter.
+  // Bei einer Lücke rutscht die ganze Kette: Der alte Schlüssel der einen Woche
+  // ist der neue der nächsten, und ohne diese Ausnahme blockierte jedes Glied
+  // seinen Vorgänger. Die Prüfung braucht deshalb erst die volle Liste.
+  const zieht = new Set(gefunden.map(([alt]) => alt))
+  const renames = gefunden.filter(
+    ([, ziel]) => confirmations[ziel] === undefined || zieht.has(ziel),
+  )
+  if (renames.length === 0) return { confirmations, renames }
+  const next = { ...confirmations }
+  for (const [alt] of renames) delete next[alt]
+  for (const [alt, neu] of renames) {
+    const status = confirmations[alt]
+    if (status !== undefined) next[neu] = status
+  }
+  return { confirmations: next, renames }
+}
+
+/** Wochen, deren gerechnete Kennung nicht ihrer echten entspricht. */
+function verschobeneWochen(
+  weeks: ReadonlyArray<{ start?: string }>,
+  fsBase: Date | null,
+): Array<[string, string]> {
+  const out: Array<[string, string]> = []
+  weeks.forEach((w, wi) => {
+    const gerechnet = fsWochenStart(fsBase, wi)
+    if (w.start && gerechnet && gerechnet !== w.start) out.push([gerechnet, w.start])
+  })
+  return out
 }
 
 /**
@@ -756,6 +820,15 @@ function notificationFromRow(r: NotificationRow): Notification {
 export const WEEK_LIMIT = 52
 
 /**
+ * Wie viele Tagebuch-Zeilen ein Ladevorgang mitnimmt.
+ *
+ * Reichlich bemessen auf das Ladefenster: Eine Woche hat gut 35 Plätze, und
+ * jedes Umteilen legt eine weitere Zeile an. Sechzig je Woche lassen dafür Luft
+ * und decken damit alles ab, was für die geladenen Wochen je gebraucht wird.
+ */
+export const SENT_LOG_LIMIT = WEEK_LIMIT * 60
+
+/**
  * Anfang des Ladefensters: der Montag `WEEK_LIMIT - 1` Wochen vor der jüngsten
  * Woche. Gerechnet wird in UTC, damit keine Zeitzone einen Tag verschiebt.
  *
@@ -861,7 +934,20 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Versand-Tagebuch: welcher Platz wurde wann gemeldet (migration-024). Der
     // Planen-Screen zeigt es an, und der „Plan senden"-Knopf zählt daraus, was
     // noch aussteht.
-    supabase.from('assignment_log').select('task_key, name, sent_at').eq('congregation_id', congregationId),
+    //
+    // **Jüngste zuerst, und begrenzt.** Die Tabelle wächst und wird nie
+    // aufgeräumt: rund 35 Plätze je Woche, ein Jahr sind gegen 1800 Zeilen, und
+    // dabei bleibt es nicht. Ungebremst holte jeder Kaltstart nach ein paar
+    // Jahren den ganzen Bestand — in den Zustand, von dort in die
+    // Momentaufnahme im Browser-Speicher, und deren Platz ist knapp. Absteigend
+    // sortiert kann die Grenze nichts Gebrauchtes abschneiden: Was für die
+    // geladenen Wochen zählt, wurde zuletzt gemeldet und steht damit vorn.
+    supabase
+      .from('assignment_log')
+      .select('task_key, name, sent_at')
+      .eq('congregation_id', congregationId)
+      .order('sent_at', { ascending: false })
+      .limit(SENT_LOG_LIMIT),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -920,8 +1006,15 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const weekList = umgestellt.weeks
   // Und dasselbe für die Treffpunkte (T87) — dieselbe Ursache, andere Tabelle.
   const fsUmgestellt = migrateFsTaskKeys(umgestellt.confirmations)
-  const confirmations = fsUmgestellt.confirmations
-  const alleRenames = [...umgestellt.renames, ...fsUmgestellt.renames]
+  // Die Datumsbasis steht schon hier, weil die Wochen-Migration darunter sie
+  // braucht: Sie rechnet aus, welche Kennung eine Woche **hatte**, solange sie
+  // aus der Ordnungszahl kam.
+  const fsBaseDate = fsBaseFromWeeks(weekList, new Date())
+  // Und die dritte aus derselben Wurzel (T100): Der Montag einer
+  // Treffpunkt-Woche kam aus `fsBase + wi·7` statt aus der Woche selbst.
+  const fsWochen = migrateFsWochenKeys(fsUmgestellt.confirmations, weekList, fsBaseDate)
+  const confirmations = fsWochen.confirmations
+  const alleRenames = [...umgestellt.renames, ...fsUmgestellt.renames, ...fsWochen.renames]
   /** Nur die Wochen, die wirklich Kennungen bekommen haben. */
   const speichereUmgestellte = (): void => {
     for (let i = 0; i < weekList.length; i++) {
@@ -958,7 +1051,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Regel→Woche-Zuordnung (z. B. „1. Samstag im Monat") wird anhand der korrekten
   // Datumsbasis neu bestimmt.
   const fsRules = (fsRulesRow.data?.rules as FsRule[] | undefined) ?? []
-  const fsBaseDate = fsBaseFromWeeks(weekList, new Date())
   const fsBase = fsBaseDate.toISOString().slice(0, 10)
   // Zugeordnet wird über das Datum, nicht über die Zeilenfolge: beide Tabellen
   // führen dieselbe Kennung, und nur so bleiben Treffpunkte an ihrer Woche,
@@ -974,7 +1066,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     weekList.map((w) => fsNachWoche.get(w.start) ?? []),
   )
   const ausgerichtet = fsRules.length
-    ? regenFsWeeks(fsBaseDate, storedFsWeeks, fsRules, true)
+    ? regenFsWeeks(fsWochenKennungen(weekList, fsBaseDate), storedFsWeeks, fsRules, true)
     : storedFsWeeks
   // Leiter ohne `lpid` an ihre Person binden — dasselbe, was
   // `migrateAssignmentPids` eine Bildschirmhöhe weiter oben für die
@@ -1453,13 +1545,23 @@ export async function sendPlan(weekStart: string): Promise<PlanVersand | null> {
  * gerade in der Hand, die Function könnte ihn nach dem Überschreiben nicht mehr
  * nachschlagen.
  */
-export function sendPlanEntzug(taskKey: string, name: string, label: string, datum: string): void {
+export function sendPlanEntzug(
+  taskKey: string,
+  name: string,
+  pid: string | undefined,
+  label: string,
+  datum: string,
+): void {
   if (!supabase) return
-  void run(
-    supabase.functions.invoke('send-plan', {
-      body: { action: 'entzug', taskKey, name, label, datum },
-    }),
-  )
+  // **Kein `run()`**: Dessen Fehlerweg meldet „Änderung konnte nicht gespeichert
+  // werden" — hier ist aber nichts zu speichern, sondern eine Nachricht zu
+  // schicken. Der Planer bekäme eine Warnung über einen Verlust, den es nicht
+  // gab, während seine Änderung längst in der Datenbank steht.
+  void supabase.functions
+    .invoke('send-plan', { body: { action: 'entzug', taskKey, name, pid, label, datum } })
+    .then(({ error }) => {
+      if (error) console.error('[send-plan/entzug]', error.message)
+    })
 }
 
 export function markNotificationsRead(congregationId: string, userId: string): void {

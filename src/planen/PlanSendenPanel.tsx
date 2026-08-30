@@ -1,10 +1,19 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
 import { offeneMeldungen, zuletztGesendet } from '../data/plan-versand'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
 import { sendPlan } from '../lib/data'
+
+/**
+ * Bis zu so vielen Namen lohnt die Aufzählung; darüber steht nur die Zahl.
+ *
+ * Gemessen an der Demo-Woche: frisch geplant sind es 26 Namen — eine Wand, die
+ * den Knopf nach unten schiebt und niemandem etwas sagt. Interessant wird die
+ * Liste erst zum Schluss, wenn nur noch ein paar fehlen.
+ */
+const NAMEN_GRENZE = 8
 
 /**
  * „Plan senden" — der Knopf, mit dem der Planer eine fertige Woche freigibt.
@@ -25,46 +34,73 @@ import { sendPlan } from '../lib/data'
  * so auf ihm; sonst hielte man ihn für eine Aktion des Reiters, unter dem er
  * gerade steht.
  */
-/**
- * Bis zu so vielen Namen lohnt die Aufzählung; darüber steht nur die Zahl.
- *
- * Gemessen an der Demo-Woche: frisch geplant sind es 26 Namen — eine Wand, die
- * den Knopf nach unten schiebt und niemandem etwas sagt. Interessant wird die
- * Liste erst zum Schluss, wenn nur noch ein paar fehlen.
- */
-const NAMEN_GRENZE = 8
-
 export function PlanSendenPanel() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const [laeuft, setLaeuft] = useState(false)
   /*
-   * Namen ohne App-Konto aus dem letzten Versand.
+   * Namen ohne App-Konto aus dem letzten Versand — **mit der Woche, zu der sie
+   * gehören**.
    *
    * Sie stehen im Tagebuch wie alle anderen — sonst zeigte der Knopf für sie
    * auf ewig „noch nicht gesendet", obwohl niemand sie erreichen kann. Damit
    * verschwinden sie aber aus der Liste oben, und genau sie sind die, die der
-   * Planer jetzt persönlich ansprechen muss. Also bleiben sie hier stehen, bis
-   * er die Woche wechselt.
+   * Planer jetzt persönlich ansprechen muss. Also bleiben sie stehen, bis er
+   * die Woche wechselt.
+   *
+   * Die Kennung gehört dazu, weil der Baustein beim Blättern **nicht** neu
+   * aufgesetzt wird: Ohne sie standen die Namen aus Woche 37 unter Woche 38, wo
+   * die Genannten gar nichts haben. Verglichen statt zurückgesetzt, weil ein
+   * Effekt hier nur eine zweite Buchführung über dasselbe wäre.
    */
-  const [ohneKonto, setOhneKonto] = useState<string[]>([])
+  const [ohneKontoStand, setOhneKonto] = useState<{ woche: string; namen: string[] } | null>(null)
+
+  const week = state.weeks[state.week]
+
+  /*
+   * **Vor** den Abbrüchen unten, weil Hooks nicht bedingt laufen dürfen —
+   * daher auch der Umweg über `week ? … : …` statt eines frühen `return`.
+   *
+   * Gemerkt, weil beides teuer und der Anlass häufig ist: Der Baustein hängt am
+   * ganzen Zustand und rechnet damit bei **jedem** Dispatch neu — auch bei jedem
+   * Tastenanschlag in einem Freitextfeld nebenan. `offeneMeldungen` läuft dabei
+   * über alle gut 35 Plätze der Woche, `zuletztGesendet` über das gesamte
+   * Tagebuch, das mit jedem Versand wächst.
+   */
+  const offen = useMemo(
+    () =>
+      week
+        ? offeneMeldungen(
+            week,
+            state.fsWeeks[state.week],
+            state.week,
+            state.fsBase,
+            state.services,
+            state.confirmations,
+            state.sentLog,
+          )
+        : [],
+    [week, state.fsWeeks, state.week, state.fsBase, state.services, state.confirmations, state.sentLog],
+  )
+  const zuletzt = useMemo(
+    () => (week ? zuletztGesendet(state.sentLog, week.start) : null),
+    [state.sentLog, week],
+  )
 
   // Nur Planer: `send-plan` weist jeden anderen ab (403). Ein Knopf, der
   // verlässlich scheitert, ist schlimmer als keiner.
-  if (!state.planner) return null
-  const week = state.weeks[state.week]
+  //
+  // Und nur auf frischem Stand: Nach einem gescheiterten Laden zeigt die App
+  // die Momentaufnahme und lässt keine Änderungen zu (`staleAt`). Der Knopf
+  // liefe daran vorbei — er ruft die Function unmittelbar auf, nicht über den
+  // Reducer — und gäbe eine Woche frei, die der Planer so gar nicht vor sich
+  // hat.
+  if (!state.planner || state.staleAt) return null
   if (!week) return null
 
-  const offen = offeneMeldungen(
-    week,
-    state.fsWeeks[state.week],
-    state.week,
-    state.fsBase,
-    state.services,
-    state.confirmations,
-    state.sentLog,
-  )
-  const zuletzt = zuletztGesendet(state.sentLog, week.start)
+  // Nur die Namen dieser Woche: Beim Blättern bleibt der Baustein stehen, und
+  // ohne den Vergleich stünden die Nachzügler von Woche 37 unter Woche 38.
+  const ohneKonto = ohneKontoStand?.woche === week.start ? ohneKontoStand.namen : []
   // Je Person einmal: Wer drei Plätze hat, steht nicht dreimal da.
   const namen = [...new Set(offen.map((o) => o.name))]
   /*
@@ -88,7 +124,7 @@ export function PlanSendenPanel() {
       dispatch({ type: 'showToast', text: t.toastSpeicherFehler })
       return
     }
-    setOhneKonto(res.ohneKonto)
+    setOhneKonto({ woche: week.start, namen: res.ohneKonto })
     dispatch({
       type: 'showToast',
       text:
@@ -102,7 +138,7 @@ export function PlanSendenPanel() {
   }
 
   return (
-    <div className="plan-senden">
+    <div className="plan-banner-box plan-senden">
       <div className="plan-banner-head">
         <span className="plan-banner-title">{t.planSendenTitle}</span>
         {offen.length > 0 && <span className="plan-banner-count">{offen.length}</span>}

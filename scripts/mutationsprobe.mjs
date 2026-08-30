@@ -380,7 +380,8 @@ const KATALOG = [
     id: 'fs-markierung-zweite-quelle',
     datei: 'src/app/reducer.ts',
     regel: 'Das „…" kennt beide Datenquellen — auch eine unbestätigte Treffpunkt-Leitung.',
-    suchen: '        ...fsPendingIds(state.fsWeeks, state.fsBase, state.confirmations),\n',
+    suchen:
+      '        ...fsPendingIds(state.fsWeeks, fsWochenKennungen(weeks, state.fsBase), state.confirmations),\n',
     ersetzen: '',
   },
   {
@@ -790,11 +791,17 @@ const KATALOG = [
     ersetzen: 'const caller = eigene[0]\n    if (!caller) return json({ error: \'forbidden\' }, 403)\n    const cong = payload?.congregationId ?? caller.congregation_id',
   },
   {
-    id: 'ersatz-filterwert-kodiert',
-    datei: 'supabase/functions/substitute/index.ts',
+    id: 'rest-filterwert-kodiert',
+    datei: 'supabase/functions/_shared/rest.ts',
+    /*
+      Stand bis T100 in `substitute/index.ts`. Seit die Hülle geteilt ist, deckt
+      diese eine Regel **alle** Functions ab — vorher konnte eine von ihnen die
+      Kodierung verlieren, ohne dass hier etwas anschlug. Genau so waren die
+      vier Abschriften auch auseinandergelaufen.
+    */
     regel: 'Jeder Wert in einem REST-Pfad wird kodiert — ein rohes # schneidet die folgenden Filter ab.',
-    suchen: "const wert = (v: string | number): string => encodeURIComponent(String(v))",
-    ersetzen: 'const wert = (v: string | number): string => String(v)',
+    suchen: 'export const wert = (v: string | number): string => encodeURIComponent(String(v))',
+    ersetzen: 'export const wert = (v: string | number): string => String(v)',
   },
   {
     id: 'ersatz-nur-mit-gesuch',
@@ -912,8 +919,39 @@ const KATALOG = [
     id: 'plan-entzug-nur-bestaetigte',
     datei: 'src/data/plan-versand.ts',
     regel: 'Zurückgezogen wird nur gemeldet, wem etwas genommen wurde — nicht, wer seinen Platz behält.',
-    suchen: '    if (neu.get(key) === eintrag.name) continue // unverändert',
+    suchen: '    if (jetzt && dieselbePerson(war, jetzt)) continue // unverändert',
     ersetzen: '    if (false) continue',
+  },
+  {
+    id: 'plan-entzug-person-per-id',
+    datei: 'src/data/plan-versand.ts',
+    regel:
+      'Wer dieselbe Person ist, entscheidet die Person-Id — am Namen allein meldete eine berichtigte Schreibweise einen Entzug, und zwischen zwei Gleichnamigen umzuteilen meldete gar keinen.',
+    suchen: '  return a.pid && b.pid ? a.pid === b.pid : a.name === b.name',
+    ersetzen: '  return a.name === b.name',
+  },
+  {
+    id: 'plan-entzug-nur-vorhandene-plaetze',
+    datei: 'src/data/plan-versand.ts',
+    regel:
+      'Ein Platz, den es im neuen Stand gar nicht mehr gibt (ausgefallene Zusammenkunft, abgeschaltete Zusätzliche Klasse), ist kein Entzug — sonst meldete eine Kongress-Woche der halben Versammlung einen Verlust.',
+    suchen: '    if (!platzNochDa(nachher, key, fsLeer)) continue',
+    ersetzen: '    if (false) continue',
+  },
+  {
+    id: 'plan-entzug-ausfall-schweigt',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Fällt die Zusammenkunft aus, ruhen ihre Zuteilungen — sie sind nicht verwaist (T30).',
+    suchen: '  if (istAusgefallen(nachher, wo.tab)) return false',
+    ersetzen: '  if (false) return false',
+  },
+  {
+    id: 'plan-entzug-klasse-schweigt',
+    datei: 'src/data/plan-versand.ts',
+    regel:
+      'Wird die Zusätzliche Klasse abgeschaltet, bleiben ihre Namen absichtlich stehen — der Raum ist abwesend, nicht geleert.',
+    suchen: "  if (abschnitt === 'aux' || abschnitt === 'ratgeber') return hatAuxKlasse(nachher[wo.tab])",
+    ersetzen: '  if (false) return false',
   },
   {
     id: 'plan-entzug-braucht-zusage',
@@ -933,7 +971,8 @@ const KATALOG = [
     id: 'plan-nicht-zweimal',
     datei: 'supabase/functions/send-plan/index.ts',
     regel: 'Gesendet wird nur, was das Tagebuch noch nicht kennt — sonst kommt nach jeder Nachbesserung alles erneut.',
-    suchen: '    const neu = offen.filter((p) => !schonGemeldet.has(`${p.key} ${p.name}`))',
+    suchen:
+      '    const neu = offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))',
     ersetzen: '    const neu = offen',
   },
   {
@@ -941,12 +980,49 @@ const KATALOG = [
     datei: 'supabase/functions/send-plan/index.ts',
     /*
       Ohne die Bündelung bekäme jemand mit drei Plätzen drei Nachrichten. Die
-      Mutation gibt jedem Eintrag einen eigenen Schlüssel — dieselbe Wirkung
-      wie „je Aufgabe eine Nachricht".
+      Mutation wirft die bisherigen Aufgaben weg, statt die neue anzuhängen —
+      dann trägt die Nachricht nur noch eine, und der Fall „wer zwei Aufgaben
+      hat, bekommt EINE Nachricht mit beiden" fällt auf.
     */
     regel: 'Je eingeteilter Person geht EINE Nachricht hinaus, nicht je Aufgabe.',
-    suchen: '      const schluessel = uid ?? ` ohne:${p.name}`',
-    ersetzen: '      const schluessel = (uid ?? ` ohne:${p.name}`) + p.key',
+    suchen: '      jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])',
+    ersetzen: '      jePerson.set(uid, [p])',
+  },
+
+  // ── Treffpunkt-Wochenkennung (T100) ───────────────────────────────────────
+  {
+    id: 'fs-woche-aus-der-woche',
+    datei: 'src/data/fs.ts',
+    /*
+      Die Mutation stellt die alte Rechnung wieder her. Ohne Lücke im Bestand
+      ist sie identisch — jeder Test mit lückenlosen Wochen bleibt grün. Nur
+      wer eine Lücke prüft, merkt etwas.
+    */
+    regel:
+      'Der Montag einer Treffpunkt-Woche kommt aus der Woche selbst, nicht aus der Ordnungszahl — sonst verschiebt eine fehlende Woche Schlüssel, Datum und Monatsregel um sieben Tage.',
+    suchen: '  return weeks.map((w, wi) => w.start || fsWochenStart(fsBase, wi))',
+    ersetzen: '  return weeks.map((_w, wi) => fsWochenStart(fsBase, wi))',
+  },
+  {
+    id: 'fs-woche-im-versand',
+    datei: 'src/data/plan-versand.ts',
+    regel:
+      'Auch „Plan senden" nimmt den Montag aus der Woche — die Edge Function nimmt ihn aus der Datenbankzeile, und beide müssen dieselbe Woche meinen.',
+    suchen: '  return week?.start || fsWochenStart(fsBase, wi)',
+    ersetzen: '  return fsWochenStart(fsBase, wi)',
+  },
+  {
+    id: 'fs-kennung-migration-kette',
+    datei: 'src/lib/data.ts',
+    /*
+      Bei einer Lücke rutscht die ganze Kette: Der alte Schlüssel der einen
+      Woche ist der neue der nächsten. Ohne die Ausnahme blockierte jedes Glied
+      seinen Vorgänger, und die älteste Bestätigung bliebe liegen.
+    */
+    regel:
+      'Beim Umschreiben der Treffpunkt-Schlüssel blockiert ein besetztes Ziel nur dann, wenn es nicht selbst weiterzieht.',
+    suchen: '    ([, ziel]) => confirmations[ziel] === undefined || zieht.has(ziel),',
+    ersetzen: '    ([, ziel]) => confirmations[ziel] === undefined,',
   },
 ]
 

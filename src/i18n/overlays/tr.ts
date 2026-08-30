@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Uygun olmama bildirildi",
   "erinnerungenCard": "HATIRLATMALAR",
   "remDesc": "Onaylanana kadar görevler için otomatik bildirimler.",
-  "remBeiZut": "Atandığında",
-  "remSofort": "Hemen",
   "remErste": "İlk hatırlatma",
   "remLetzte": "Son hatırlatma",
   "remTageVorher": "{n} gün önce",

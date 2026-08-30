@@ -324,6 +324,13 @@ Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 > zurückgezogen"). Wer zugesagt hat, bereitet vor — er soll nicht weiter für
 > etwas üben, das ihm nicht mehr gehört. Unbestätigte Zuteilungen darfst du
 > umsortieren, ohne dass jemand etwas merkt.
+>
+> **Was dabei nicht als „weggenommen" gilt:** eine Zusammenkunft, die du
+> ausfallen lässt (in einer Kongress-Woche fallen alle aus) — die Zuteilungen
+> ruhen dann nur. Ebenso das Abschalten der Zusätzlichen Klasse: Ihre Namen
+> bleiben stehen und kommen beim Einschalten wieder. Und eine berichtigte
+> Schreibweise eines Namens ist ohnehin keine Änderung an der Zuteilung. In all
+> diesen Fällen geht keine Nachricht hinaus.
 
 ---
 

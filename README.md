@@ -309,9 +309,16 @@ supabase functions deploy import-week
 > | Klartext, z. B. `Unauthorized` | die Function selbst | Das Modul ist **geladen** — samt aller Importe. |
 >
 > Das zweite ist der Nachweis, dass geteilter Code aus
-> [`_shared/`](supabase/functions/_shared/planung.ts) mitgebündelt wurde: der
-> Handler läuft erst nach dem Laden des Moduls. Fehlte die Datei im Bündel,
-> käme ein Boot-Fehler statt einer sauberen Ablehnung.
+> [`_shared/`](supabase/functions/_shared/) mitgebündelt wurde: der Handler
+> läuft erst nach dem Laden des Moduls. Fehlte eine Datei im Bündel, käme ein
+> Boot-Fehler statt einer sauberen Ablehnung. Dort liegen inzwischen vier
+> Bausteine — [`planung.ts`](supabase/functions/_shared/planung.ts) (Termine
+> und Beschriftungen), [`zuteilungen.ts`](supabase/functions/_shared/zuteilungen.ts)
+> (welche Plätze offen sind), [`rest.ts`](supabase/functions/_shared/rest.ts)
+> (CORS, Antwortform, PostgREST) und [`push.ts`](supabase/functions/_shared/push.ts)
+> (Web-Push samt Aufräumen abgelaufener Abos). Die letzten beiden standen bis
+> T101 in bis zu fünf Abschriften nebeneinander und waren dabei schon
+> auseinandergelaufen.
 >
 > ```bash
 > curl -i -X POST https://<project-ref>.supabase.co/functions/v1/send-reminders
@@ -434,6 +441,16 @@ Und drei Takte:
    abgesagt und ein Ersatz gesucht, jemand springt ein
    ([`substitute`](supabase/functions/substitute/)), eine Verhinderung wird an
    die Planer gemeldet.
+
+   Der Entzug wird an **einer** Stelle erkannt ([`persist.ts`](src/app/persist.ts),
+   Vorher/Nachher-Vergleich der Woche) statt an jeder auslösenden Aktion — sonst
+   fehlte irgendwann eine, und niemand merkte es. Damit das trägt, gelten zwei
+   Regeln in [`plan-versand.ts`](src/data/plan-versand.ts): Wer **dieselbe
+   Person** ist, entscheidet die Person-Id (am Anzeigenamen meldete das
+   Berichtigen einer Schreibweise einen Entzug, und zwischen zwei Gleichnamigen
+   umzuteilen meldete keinen), und den **Platz muss es noch geben** — fällt die
+   Zusammenkunft aus oder ist die Zusätzliche Klasse abgeschaltet, ruhen die
+   Zuteilungen, sie sind nicht verwaist.
 3. **Täglich.** Die Erinnerungen an Unbestätigtes (siehe unten).
 
 **Zuteilen selbst meldet nichts.** Bis T99 schrieb jeder Zuteilungsklick eine

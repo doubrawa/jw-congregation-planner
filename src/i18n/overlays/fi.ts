@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Este ilmoitettu",
   "erinnerungenCard": "MUISTUTUKSET",
   "remDesc": "Automaattiset ilmoitukset tehtävistä, kunnes ne on vahvistettu.",
-  "remBeiZut": "Tehtävää jaettaessa",
-  "remSofort": "Heti",
   "remErste": "Ensimmäinen muistutus",
   "remLetzte": "Viimeinen muistutus",
   "remTageVorher": "{n} päivää ennen",

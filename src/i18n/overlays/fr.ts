@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Empêchement signalé",
   "erinnerungenCard": "RAPPELS",
   "remDesc": "Notifications automatiques pour les attributions, jusqu’à confirmation.",
-  "remBeiZut": "À l’attribution",
-  "remSofort": "Immédiatement",
   "remErste": "Premier rappel",
   "remLetzte": "Dernier rappel",
   "remTageVorher": "{n} jours avant",

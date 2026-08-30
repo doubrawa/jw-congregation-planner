@@ -8,6 +8,7 @@ import {
   fsRenameLeader,
   fsSetLeader,
   fsWeekConflicts,
+  fsWochenStart,
 } from './fs'
 import { emptyQualifications } from './helpers'
 import type { Absence, FsInstance, Person } from './types'
@@ -45,6 +46,8 @@ function inst(patch: Partial<FsInstance> = {}): FsInstance {
 
 /** Montag der Woche 0 = 7. September 2026 (wie in fs.test.ts). */
 const BASE = new Date(2026, 8, 7, 12)
+/** Wochenkennungen zu BASE — Schlüssel und Datum hängen seit T100 daran. */
+const KENN = Array.from({ length: 6 }, (_unused, wi) => fsWochenStart(BASE, wi))
 
 describe('T63 · Freitext-Leiter: setzen und zurücknehmen', () => {
   it('Freitext setzt `lext` und lässt keine Person-Id stehen', () => {
@@ -93,10 +96,10 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
   })
 
   it('er steht nicht in „Meine Aufgaben" des Bruders', () => {
-    const frei = deriveMyFsTasks([[inst({ leader: KS, lext: true })]], BASE, KS, {}, 'p1', 'T')
+    const frei = deriveMyFsTasks([[inst({ leader: KS, lext: true })]], KENN, KS, {}, 'p1', 'T')
     expect(frei).toHaveLength(0)
     // Gegenprobe: derselbe Name ohne Flag gehört ihm sehr wohl.
-    const eigen = deriveMyFsTasks([[inst({ leader: KS })]], BASE, KS, {}, 'p1', 'T')
+    const eigen = deriveMyFsTasks([[inst({ leader: KS })]], KENN, KS, {}, 'p1', 'T')
     expect(eigen).toHaveLength(1)
   })
 
@@ -104,10 +107,10 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
     const abw: Absence[] = [
       { id: 'a1', personId: 'p1', userId: 'u1', from: '2026-09-07', to: '2026-09-13', reason: '' },
     ]
-    const frei = fsWeekConflicts([[inst({ leader: KS, lext: true })]], 0, [person()], abw, BASE)
+    const frei = fsWeekConflicts([[inst({ leader: KS, lext: true })]], 0, [person()], abw, KENN[0]!)
     expect(frei.filter((c) => c.kind === 'fsAbsent')).toHaveLength(0)
     // Gegenprobe: der Bruder selbst, am selben Tag abwesend, wird gemeldet.
-    const eigen = fsWeekConflicts([[inst({ leader: KS, lpid: 'p1' })]], 0, [person()], abw, BASE)
+    const eigen = fsWeekConflicts([[inst({ leader: KS, lpid: 'p1' })]], 0, [person()], abw, KENN[0]!)
     expect(eigen.filter((c) => c.kind === 'fsAbsent')).toHaveLength(1)
   })
 
@@ -116,7 +119,7 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
       inst({ id: 'i1', leader: KS, lext: true }),
       inst({ id: 'i2', leader: KS, lext: true, time: '14:00' }),
     ]
-    const doppelt = fsWeekConflicts([woche], 0, [person()], [], BASE).filter(
+    const doppelt = fsWeekConflicts([woche], 0, [person()], [], KENN[0]!).filter(
       (c) => c.kind === 'fsDouble',
     )
     expect(doppelt).toHaveLength(1)
@@ -147,7 +150,7 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
       ],
       [inst({ id: 'i4' })],
     ]
-    const { fsWeeks } = fsAutoAssign(wochen, 1, [bruder, andere], null, [], BASE)
+    const { fsWeeks } = fsAutoAssign(wochen, 1, [bruder, andere], null, [], KENN[0]!)
     expect(fsWeeks[1]?.[0]?.lpid).toBe('p1')
   })
 })

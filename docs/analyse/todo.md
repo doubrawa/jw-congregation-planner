@@ -4090,6 +4090,127 @@ freigeben und nachsehen, ob die Nachricht ankommt.
 
 ---
 
+## Aufgenommen am 30. August 2026 — Durchsicht der Mitteilungen (T100/T101)
+
+### T100 · Durchsicht von T99 — was daran falsch war 🏗 ✅ erledigt
+
+Der Mitteilungs-Mechanismus wurde am 30. August im Ganzen gegengelesen. Der
+Befund verteilte sich auf einen einzigen Entwurfsfehler und seine Folgen.
+
+**Die Wurzel.** „Wem wurde etwas genommen?" wurde aus dem reinen Vorher/Nachher-
+Vergleich der Wochen erschlossen. Diese Schicht sieht aber **jede**
+Zustandsänderung, nicht nur das Umteilen — und drei ganz alltägliche Vorgänge
+schreiben Namen in Wochen, ohne dass jemandem etwas genommen wird:
+
+| Vorgang | was hinausging | warum |
+| --- | --- | --- |
+| eine Schreibweise berichtigen | „Zuteilung zurückgezogen" an genau die Person, deren Namen man gerade berichtigte — **je Tastenanschlag** | am Namen verglichen; die Datenbank führte wegen der Bündelung noch den alten, also kam die Nachricht wirklich an |
+| Zusätzliche Klasse abschalten | ein Entzug je bestätigtem Platz der Klasse, in **allen** geladenen Wochen | ohne die Marke `auxRatgeber` zählt die Aufzählung den Raum nicht mehr auf — der Reducer speichert die Wochen dabei nicht einmal |
+| eine Zusammenkunft ausfallen lassen | ein Entzug je bestätigtem Platz — im Regelfall die **Kongress-Woche**, wo alle ausfallen | ausgefallene Zusammenkünfte tragen keine Aufgaben (T30); der Unterschied las sich wie „alle Plätze geleert" |
+
+Und derselbe Namensvergleich versagte in die andere Richtung: Zwischen zwei
+Gleichnamigen umzuteilen meldete **gar nichts** — der, der zugesagt und
+vorbereitet hatte, erfuhr es nie.
+
+**Behoben** in `entzogeneZusagen` durch zwei Regeln statt einer Aufzählung
+auslösender Aktionen (die wäre die zweite Buchführung gewesen, gegen die T99
+selbst argumentiert):
+
+1. **Wer dieselbe Person ist, entscheidet die Person-Id** — der Name nur, wo
+   keine Id dasteht. Dieselbe Rangfolge wie `deriveMyTasks`. Die Id geht auch an
+   `send-plan` mit, sonst stellte die Function nach dem Namen zu.
+2. **Den Platz muss es im neuen Stand noch geben.** Fällt die Zusammenkunft aus
+   oder ist die Klasse abgeschaltet, ist der Platz nicht leer, sondern
+   *abwesend*. Ein einzeln gelöschter Punkt bleibt ein Entzug.
+
+**Warum es niemand gemerkt hat.** Die reine Rechenfunktion hatte 23 Tests, der
+**Auslöser** keinen: `persist.test.ts` bekam für T99 zwei leere Felder
+(`confirmations: {}`), und ohne Bestätigungen kann nichts entzogen werden. Jetzt
+prüfen sechs Fälle den Auslöser selbst, jeder mit seiner Gegenprobe.
+
+**Weiteres aus derselben Durchsicht:**
+
+- **Die Sperrklinke lief nicht.** `mutationsprobe.mjs` brach beim ersten Eintrag
+  ab (seine Stelle war beim NUL-Byte-Umbau verschoben worden) — und damit liefen
+  **alle** Regeln nicht mehr. Dahinter lag ein zweiter verschütteter Eintrag.
+  Nachgezogen, dazu fünf neue Regeln für die Entzugs-Logik.
+- **Das Tagebuch konnte sich selbst blockieren.** Ein INSERT ist ganz oder gar
+  nicht: War `assignment_log` einmal nicht lesbar (der Fang liefert dann eine
+  leere Liste), enthielt der Stapel vorhandene Zeilen, **keine** wurde
+  geschrieben — und von da an schickte jeder Druck allen alles erneut, für
+  immer. Jetzt `resolution=ignore-duplicates`.
+- **`send-plan` fehlte in `config.toml`.** Fünf Functions auf der Platte, vier
+  eingetragen — die Datei gibt es genau dafür.
+- **Das Nachladen trug den Planer aus seiner Woche.** Sowohl nach „Plan senden"
+  als auch beim bloßen Öffnen der Glocke sprang die App auf die laufende Woche
+  zurück. `hydrate` hält eine selbst gewählte Woche jetzt fest — wiedergefunden
+  über ihre Kennung, nicht über die Ordnungszahl.
+- **Der Knopf lief am Offline-Stand vorbei** (`staleAt`): Er ruft die Function
+  unmittelbar, nicht über den Reducer, und hätte eine Woche freigegeben, die der
+  Planer so gar nicht vor sich hatte.
+- **Die Namen ohne Konto blieben beim Blättern stehen** — unter einer Woche, in
+  der die Genannten nichts haben. Sie hängen jetzt an der Wochenkennung.
+- **Der Treffpunkt-Entzug nannte keinen Tag** („10:00 · Bahnhof"), obwohl jede
+  andere Nachricht über denselben Platz das Datum trägt.
+- **Ein fehlgeschlagener Versand meldete „Änderung konnte nicht gespeichert
+  werden"** — gespeichert war längst, nur die Nachricht ging nicht hinaus.
+- **Das Tagebuch wurde beim Start unbegrenzt geladen**, als einzige Abfrage ohne
+  Grenze, und wächst ohne Aufräumen. Jetzt jüngste zuerst und gedeckelt.
+- Kleinkram: verwaister Doku-Block für das entfernte `onAssign`, fehlende Zeile
+  im Screenshot-Verzeichnis, und vier Mitteilungs-Titel, die zwar nicht mehr
+  entstehen, aber noch 30 Tage in den Glocken stehen und sonst unübersetzt
+  blieben.
+
+### T101 · Die Ordnungszahl als Anker — zweimal beseitigt 🏗 ✅ erledigt
+
+Zwei Punkte, die bei der Durchsicht als „zu groß für einen Review-Fix" beiseite
+gelegt und danach ausdrücklich nachgeholt wurden.
+
+**1. Der Montag einer Treffpunkt-Woche kommt aus der Woche, nicht aus ihrer
+Position.** Der Client rechnete ihn als `fsBase + wi·7`. Seit T66 stehen die
+Wochen aber nach Datum nebeneinander, ohne Platzhalter — „eine fehlende Woche
+ist eine fehlende Woche und verschiebt nichts". Fehlt eine Zeile, liegt von dort
+an jede Woche sieben Tage daneben, und zwar dreifach:
+
+| was daran hängt | was schiefging |
+| --- | --- |
+| Aufgaben-Schlüssel `fs\|<montag>\|<id>` | Die Edge Functions nehmen den Montag aus der **Datenbankzeile**. Client und Server redeten über verschiedene Wochen: Der Knopf zeigte „1 noch nicht gesendet", der Druck meldete „0 gesendet", und die Zahl blieb stehen — genau die Fehlerart, gegen die `plan-versand.ts` geschrieben ist. |
+| das angezeigte Datum | „Meine Aufgaben" nannte einen Tag, an dem nichts stattfand. |
+| die Monatsregel („1. Samstag") | griff in der falschen Woche und materialisierte den Treffpunkt am falschen Termin. |
+
+Behoben durch **eine** Auskunft (`fsWochenKennungen`), die alle drei speist;
+`fsBase + wi·7` bleibt der Rückfall für Wochen ohne Kennung (Vorlagen, Demo).
+`genFsWeek`, `regenFsWeeks`, `deriveMyFsTasks`, `fsPendingIds`, `fsWeekConflicts`
+und `fsAutoAssign` nehmen jetzt die Kennung statt `(fsBase, wi)`. Bestätigungen
+aus der Zeit davor schreibt `migrateFsWochenKeys` beim Laden um — **in einem
+Zug**, denn bei einer Lücke rutscht die ganze Kette und der alte Schlüssel der
+einen Woche ist der neue der nächsten.
+
+Der Fehler war unsichtbar, weil ohne Lücke **beide** Rechnungen dasselbe
+liefern: Jeder Test mit lückenlosem Bestand ist grün, auch der falsche Code.
+`fs-wochenkennung.test.ts` prüft deshalb ausdrücklich einen Bestand *mit* Lücke,
+und `edge-parity.test.ts` vergleicht dort erstmals die **Menge** der Schlüssel
+zwischen Client und Function statt nur ihre Form.
+
+**2. Die vierfach kopierte Präambel der Edge Functions liegt in `_shared/`.**
+CORS, `json()`, `wert()`, die REST-Hüllen, die JWT-Auflösung und die
+Push-Zustellung standen in bis zu fünf Abschriften — und waren bereits
+auseinandergelaufen: Ein abgelaufenes Abo bestellte `substitute` über
+`endpoint` ab, `send-plan` über `id`, `send-reminders` schickte die Id
+**unkodiert** in den Pfad. Jetzt `_shared/rest.ts` (als Fabrik, damit `_shared`
+frei von `Deno` bleibt und importierbar ist) und `_shared/push.ts`.
+
+Nebenbei fielen zwei Sachfehler weg: `send-plan` bündelte den Push nur
+*innerhalb* eines Empfängers und lief die Empfänger nacheinander durch — bei
+gut zwei Dutzend Personen mit ein bis zwei Geräten griff die Bündelung damit
+nie. Und `send-reminders` rief `setVapidDetails` ungeprüft am Anfang jedes
+Laufs, was bei leerem Schlüssel flog, obwohl ein Lauf ohne Push in Ordnung ist.
+
+Die Mutationsregel „jeder Wert im REST-Pfad wird kodiert" ist mitgezogen: Sie
+stand an einer Function und deckt jetzt alle ab.
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -4115,15 +4236,15 @@ freigeben und nachsehen, ob die Nachricht ankommt.
 
 ## Fortschritt
 
-Stand 29. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 30. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐ · 29. August ☑
+22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐ · 29. August ☑ · 30. August ☑☑
 
-**97 von 99 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+**99 von 101 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. Offen sind zwei: **T95** (Ideen für den
 Start-Bildschirm), am 23. August nebenbei aufgenommen und ausdrücklich noch
 kein Bauauftrag, und **T98** (die Dokumentation auf den Stand des Codes
@@ -4131,7 +4252,17 @@ bringen), am 28. August aufgenommen — die Handbücher stehen auf dem 25. Augus
 seither sind neun Commits gelaufen, drei davon am Sprachverhalten der ganzen App.
 Zuletzt fiel **T99**: der Mitteilungs-Mechanismus, vom Betreiber am 29. August
 im Ganzen zur Durchsicht gegeben und danach umgebaut — die Nachricht geht jetzt
-an die eingeteilte Person statt an den Planer, auf dessen Knopfdruck. Davor fielen die beiden
+an die eingeteilte Person statt an den Planer, auf dessen Knopfdruck. Und
+**T100**, die Gegenprobe dazu am 30. August: Der Umbau erkannte einen Entzug am
+Anzeigenamen und aus dem bloßen Wochen-Unterschied — davon meldete das
+Berichtigen einer Schreibweise, das Abschalten der Zusätzlichen Klasse und jede
+Kongress-Woche einen Verlust, den es nicht gab. Jetzt entscheidet die
+Person-Id, und der Platz muss es noch geben. **T101** holte danach die beiden
+Punkte nach, die dabei als „zu groß" beiseite lagen: Der Montag einer
+Treffpunkt-Woche kommt jetzt aus der Woche statt aus ihrer Ordnungszahl (eine
+Lücke im Bestand verschob sonst Schlüssel, Datum und Monatsregel um sieben
+Tage), und die vierfach kopierte Präambel der Edge Functions liegt in
+`_shared/` — sie war bereits auseinandergelaufen. Davor fielen die beiden
 letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
 nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
 **T89** ist am 23. August mit migration-022 nicht nur gemessen, sondern
@@ -4254,6 +4385,10 @@ zurückgenommen und der Testlauf wiederholt wurde.
 >    `task_key` (Bestätigen direkt in der Glocke), die Sammelmeldung „nicht
 >    erreichbar" geht auch als Glocken-Zeile hinaus, und der Rückfall für
 >    `repeat` steht auf `false` wie im Client.
+>
+> ⚠ **Nach der Durchsicht am 30. August ist ein zweiter Deploy nötig** (T100):
+> `send-plan` muss neu hinaus, sonst bleibt der Entzug am Namen hängen und das
+> Tagebuch kann bei einer Dublette gar nicht mehr schreiben.
 
 > **Der Deploy ist erledigt** (7. August 2026): `substitute` und
 > `send-reminders` laufen in der Fassung des Repos. Alles, was bis dahin nur

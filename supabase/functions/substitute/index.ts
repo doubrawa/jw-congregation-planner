@@ -34,8 +34,8 @@
 // (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
 // =============================================================================
 
-// @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
-import webpush from 'npm:web-push@3.6.7'
+import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
+import { vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   type Abweichungen,
   istAusgefallenFuer,
@@ -57,98 +57,11 @@ const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
-/**
- * Wie viele Push-Zustellungen gleichzeitig unterwegs sein duerfen.
- *
- * Nicht unbegrenzt: die Push-Dienste drosseln, und ein ganzer Schwung offener
- * Verbindungen brachte der Edge Function nichts als Fehler. Gebuendelt zu
- * zehnt bleibt die Laufzeit im Rahmen, ohne dass jemand gedrosselt wird.
- */
-const PUSH_PARALLEL = 10
+const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 
-
-const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-  })
-}
-
-const AUTH = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
-
-/**
- * Wert für einen PostgREST-Filter im Pfad.
- *
- * Ungekodiert **beendet ein `#` die Abfrage**: Der URL-Parser macht alles
- * dahinter zum Fragment, und `fetch` sendet das nie mit. Aus
- * `…&congregation_id=eq.X#&task_key=eq.Y` wird beim Server also
- * `…&congregation_id=eq.X` — der Filter, der die Zeile eingrenzt, fällt weg.
- * Ein DELETE trifft dann die ganze Versammlung statt einer Aufgabe, ein PATCH
- * verliert zusätzlich seine Vergleiche-und-Tausche-Bedingung.
- *
- * Deshalb geht hier kein Wert mehr roh in einen Pfad — auch keiner, der heute
- * aus der Datenbank kommt und harmlos aussieht.
- */
-const wert = (v: string | number): string => encodeURIComponent(String(v))
-
-async function restGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: AUTH })
-  if (!res.ok) throw new Error(`GET ${path} ${res.status}: ${await res.text()}`)
-  return res.json() as Promise<T>
-}
-
-async function restSend(method: string, path: string, body?: unknown): Promise<void> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method,
-    headers: { ...AUTH, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (!res.ok) console.error(`${method} ${path} ${res.status}: ${await res.text()}`)
-}
-
-/**
- * Bedingtes PATCH: schreibt nur, wenn der Filter im Pfad noch zutrifft, und
- * meldet zurück, ob dabei eine Zeile getroffen wurde.
- *
- * Das ist ein Vergleiche-und-Tausche in einer einzigen Anweisung — genau das
- * fehlte beim Einspringen. Zwischen Lesen und Schreiben lag nichts: zwei
- * gleichzeitige Übernahmen überschrieben sich, und der zweite Aufruf löschte
- * anschließend per `DELETE confirmations?task_key=…` sogar die Bestätigung des
- * ersten. Der stand danach nirgends mehr, hatte aber „Übernommen" gesehen.
- *
- * `return=representation` ist der Weg, die Trefferzahl zu erfahren: PostgREST
- * liefert die tatsächlich geänderten Zeilen zurück, bei verfehltem Filter ein
- * leeres Array.
- */
-async function restPatchIf(path: string, body: unknown): Promise<boolean> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method: 'PATCH',
-    headers: { ...AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    console.error(`PATCH ${path} ${res.status}: ${await res.text()}`)
-    return false
-  }
-  const rows = (await res.json().catch(() => [])) as unknown[]
-  return Array.isArray(rows) && rows.length > 0
-}
-
-/** Eingeloggten Nutzer aus dem JWT auflösen. */
-async function userIdFromRequest(req: Request): Promise<string | null> {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SERVICE_KEY, Authorization: req.headers.get('Authorization') ?? '' },
-  })
-  if (!res.ok) return null
-  const user = (await res.json()) as { id?: string }
-  return user.id ?? null
-}
+/** Abgelaufenes Push-Abo entfernen (Push-Dienst meldete 404/410). */
+const abbestellen = (id: string): Promise<void> =>
+  rest.send('DELETE', `push_subscriptions?id=eq.${wert(id)}`)
 
 /* ---- Datenmodell (Teilmengen) ---- */
 interface Slot {
@@ -225,6 +138,8 @@ interface Member {
   planner: boolean
 }
 interface Sub {
+  /** Primärschlüssel — darüber wird ein abgelaufenes Abo abbestellt. */
+  id: string
   user_id: string
   endpoint: string
   p256dh: string
@@ -254,38 +169,25 @@ function parseKey(
   return { woche, tab: p[1], svc: p[3], pos: Number(p[4]) }
 }
 
+/**
+ * Push an eine Menge von Abos — Titel je **Gerätesprache**, nicht je Nutzer:
+ * Die Sprache hängt am Abo. Der Anfragende wartet auf diesen Versand, deshalb
+ * gebündelt statt nacheinander (das übernimmt `zustellen`).
+ */
 async function pushTo(
   subs: Sub[],
   titel: (lang: string | null) => string,
   body: string,
   url: string,
 ): Promise<void> {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
-  // Der Anfragende wartet auf diesen Versand. Die Zustellungen haengen nicht
-  // voneinander ab, also laufen sie gebuendelt statt nacheinander.
-  for (let i = 0; i < subs.length; i += PUSH_PARALLEL) {
-    await Promise.all(
-      subs.slice(i, i + PUSH_PARALLEL).map(async (s) => {
-        // Titel je Geraet: die Sprache haengt am Abo, nicht am Nutzer.
-        const payload = JSON.stringify({ title: titel(s.lang), body, url })
-        try {
-          await webpush.sendNotification(
-            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            payload,
-            { TTL: 24 * 3600 },
-          )
-        } catch (err) {
-          const status = (err as { statusCode?: number }).statusCode
-          if (status === 404 || status === 410) {
-            await restSend('DELETE', `push_subscriptions?endpoint=eq.${wert(s.endpoint)}`)
-          } else {
-            console.error(`web-push ${status}: ${(err as Error).message}`)
-          }
-        }
-      }),
-    )
-  }
+  if (!vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)) return
+  const zustellungen: Zustellung[] = subs.map((s) => ({
+    abo: s,
+    titel: titel(s.lang),
+    body,
+    url,
+  }))
+  await zustellen(zustellungen, abbestellen)
 }
 
 /** In-App-Mitteilung + Push (mit Deep-Link-Ziel) an eine Menge von Nutzern. */
@@ -311,7 +213,7 @@ async function notifyUsers(
   // In der Glocke steht der kanonisch deutsche Titel; NOTIF_TITLE_KEY bringt
   // ihn beim Anzeigen in die Sprache des Lesers. Der Rumpf besteht aus
   // ' · '-Atomen (Dienst, Termin, Name), die der Fragment-Uebersetzer erledigt.
-  await restSend(
+  await rest.send(
     'POST',
     'notifications',
     ids.map((user_id) => ({
@@ -329,7 +231,7 @@ async function notifyUsers(
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    const userId = await userIdFromRequest(req)
+    const userId = await rest.userId(req)
     if (!userId) return json({ error: 'unauthorized' }, 401)
 
     const payload = (await req.json().catch(() => null)) as {
@@ -360,7 +262,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'bad-request' }, 400)
     }
 
-    const eigene = await restGet<(Member & { congregation_id: string })[]>(
+    const eigene = await rest.get<(Member & { congregation_id: string })[]>(
       `members?select=user_id,person_id,planner,congregation_id&user_id=eq.${wert(userId)}`,
     )
     const caller = eigene[0]
@@ -368,25 +270,25 @@ Deno.serve(async (req: Request) => {
     const cong = caller.congregation_id
 
     const [members, weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
-      restGet<Member[]>(
+      rest.get<Member[]>(
         `members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`,
       ),
       // `start` aus der **Spalte**, nicht aus dem Blob (T66): die Kennung steht
       // dort, `data.start` ist nur noch Beifang und könnte jederzeit wegfallen.
-      restGet<{ start: string; data: Week }[]>(
+      rest.get<{ start: string; data: Week }[]>(
         `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}`,
       ),
-      restGet<{ key: string; name: string }[]>(
+      rest.get<{ key: string; name: string }[]>(
         `services?select=key,name&congregation_id=eq.${wert(cong)}`,
       ),
-      restGet<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${wert(cong)}`),
-      restGet<Sub[]>(
-        `push_subscriptions?select=user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
+      rest.get<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${wert(cong)}`),
+      rest.get<Sub[]>(
+        `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
-      restGet<{ meeting_times: string }[]>(
+      rest.get<{ meeting_times: string }[]>(
         `congregations?select=meeting_times&id=eq.${wert(cong)}`,
       ),
-      restGet<Absence[]>(
+      rest.get<Absence[]>(
         `absences?select=person_id,from_date,to_date&congregation_id=eq.${wert(cong)}`,
       ),
     ])
@@ -436,7 +338,7 @@ Deno.serve(async (req: Request) => {
         callerPerson !== undefined &&
         (slot.pid === callerPerson.id || slot.name === displayName(callerPerson))
       if (!istEingeteilt) {
-        const eigeneAbsage = await restGet<{ user_id: string }[]>(
+        const eigeneAbsage = await rest.get<{ user_id: string }[]>(
           `confirmations?select=user_id&congregation_id=eq.${wert(cong)}` +
             `&task_key=eq.${taskKeyEnc}&status=eq.verhindert&user_id=eq.${wert(userId)}`,
         )
@@ -484,7 +386,7 @@ Deno.serve(async (req: Request) => {
     // Dieselbe Überlegung wie bei 'seek' oben, dieselbe Quelle: die Absage.
     // Der leere Platz fällt damit von selbst weg — für ihn gibt es keine.
     if (!originalName) return json({ error: 'not-sought' }, 409)
-    const absagen = await restGet<{ user_id: string }[]>(
+    const absagen = await rest.get<{ user_id: string }[]>(
       `confirmations?select=user_id&congregation_id=eq.${wert(cong)}` +
         `&task_key=eq.${taskKeyEnc}&status=eq.verhindert`,
     )
@@ -500,7 +402,7 @@ Deno.serve(async (req: Request) => {
     // ein Namensvergleich.
     const nameFilter = `data->${parts.tab}->helpers->${wert(parts.svc)}->${parts.pos}->>name`
     const bedingung = `${nameFilter}=eq.${wert(`"${originalName}"`)}`
-    const geschrieben = await restPatchIf(
+    const geschrieben = await rest.patchIf(
       `weeks?congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}&${bedingung}`,
       { data: week },
     )
@@ -514,7 +416,7 @@ Deno.serve(async (req: Request) => {
     // Vor migration-020 gibt es die Spalte nicht: Dann trifft der Filter keine
     // Zeile und der Aufruf bleibt folgenlos (restSend meldet einen Fehler in
     // die Logs, bricht die Übernahme aber nicht ab).
-    await restSend(
+    await rest.send(
       'DELETE',
       `notifications?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}` +
         `&title=eq.${wert(TITEL_GESUCHT)}`,
@@ -522,11 +424,11 @@ Deno.serve(async (req: Request) => {
 
     // Alte Bestätigung(en) dieses Slots weg, eigene „bestätigt" setzen.
     // Ungefährlich, weil oben nur ein einziger Aufruf durchkommt.
-    await restSend(
+    await rest.send(
       'DELETE',
       `confirmations?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}`,
     )
-    await restSend('POST', 'confirmations', [
+    await rest.send('POST', 'confirmations', [
       { congregation_id: cong, user_id: userId, task_key: payload.taskKey, status: 'bestätigt' },
     ])
 

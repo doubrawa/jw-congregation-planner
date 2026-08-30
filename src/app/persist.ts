@@ -523,7 +523,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         prev.congregation.meetings,
         prev.confirmations,
       )
-      for (const z of entzogen) sendPlanEntzug(z.key, z.name, z.label, z.datum)
+      for (const z of entzogen) sendPlanEntzug(z.key, z.name, z.pid, z.label, z.datum)
     }
   }
 }

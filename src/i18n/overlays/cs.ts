@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Nahlášena nemožnost",
   "erinnerungenCard": "PŘIPOMÍNKY",
   "remDesc": "Automatická oznámení o přiděleních až do potvrzení.",
-  "remBeiZut": "Při přidělení",
-  "remSofort": "Ihned",
   "remErste": "První připomínka",
   "remLetzte": "Poslední připomínka",
   "remTageVorher": "{n} dní předem",

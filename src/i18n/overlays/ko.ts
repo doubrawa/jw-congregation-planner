@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "불참 보고됨",
   "erinnerungenCard": "알림",
   "remDesc": "확인될 때까지 임명에 대한 알림을 자동으로 보냅니다.",
-  "remBeiZut": "배정 시",
-  "remSofort": "즉시",
   "remErste": "첫 번째 알림",
   "remLetzte": "마지막 알림",
   "remTageVorher": "{n}일 전",

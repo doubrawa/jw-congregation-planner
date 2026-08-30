@@ -21,7 +21,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AbsenceSet } from './absence'
 import { buildImportWeek, DEMO_SERVICES } from './testdaten'
-import { fsAutoAssign, FS_LOAD_WEEKS } from './fs'
+import { fsAutoAssign, FS_LOAD_WEEKS, fsWochenStart } from './fs'
 import { displayName, emptyQualifications, partWorkload } from './helpers'
 import { autoAssignMeeting } from './planning'
 import type { Absence, FsInstance, Person, Qualifications, Week } from './types'
@@ -97,7 +97,7 @@ function planeTreffpunkte(
 ): FsInstance[][] {
   let fsWeeks = leereTreffpunkte(n)
   for (let wi = 0; wi < n; wi++) {
-    fsWeeks = fsAutoAssign(fsWeeks, wi, poolAb(wi), null, absences, base).fsWeeks
+    fsWeeks = fsAutoAssign(fsWeeks, wi, poolAb(wi), null, absences, fsWochenStart(base ?? null, wi)).fsWeeks
   }
   return fsWeeks
 }

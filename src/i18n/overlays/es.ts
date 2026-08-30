@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Impedimento avisado",
   "erinnerungenCard": "RECORDATORIOS",
   "remDesc": "Notificaciones automáticas de asignaciones hasta que se confirmen.",
-  "remBeiZut": "Al asignar",
-  "remSofort": "De inmediato",
   "remErste": "Primer recordatorio",
   "remLetzte": "Último recordatorio",
   "remTageVorher": "{n} días antes",

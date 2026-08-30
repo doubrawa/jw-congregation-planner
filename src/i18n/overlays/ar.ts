@@ -218,8 +218,6 @@ export default {
   "planLegend": "✓ مؤكّد · … بانتظار التأكيد",
   "erinnerungenCard": "التذكيرات",
   "remDesc": "إشعارات تلقائية للتعيينات إلى أن تُؤكّد.",
-  "remBeiZut": "عند التعيين",
-  "remSofort": "فوراً",
   "remErste": "التذكير الأول",
   "remLetzte": "التذكير الأخير",
   "remTageVorher": "قبل {n} أيام",

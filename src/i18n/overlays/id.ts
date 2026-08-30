@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Halangan dilaporkan",
   "erinnerungenCard": "PENGINGAT",
   "remDesc": "Notifikasi otomatis untuk tugas sampai dikonfirmasi.",
-  "remBeiZut": "Saat ditetapkan",
-  "remSofort": "Segera",
   "remErste": "Pengingat pertama",
   "remLetzte": "Pengingat terakhir",
   "remTageVorher": "{n} hari sebelumnya",

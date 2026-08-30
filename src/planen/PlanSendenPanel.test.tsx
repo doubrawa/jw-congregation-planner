@@ -75,30 +75,38 @@ function woche(namen: string[] = ['A. Berg']): Week {
 /** Schlüssel des Platzes im n-ten Punkt. */
 const key = (i: number) => `${MONTAG}|mid|part|i${i}|0`
 
+const stand = (over: Partial<AppState> = {}): AppState => ({
+  ...initialState(),
+  dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+  persons: [person('p-a', 'Anna', 'Berg')], services: DIENSTE, groups: [], absences: [],
+  weeks: [woche()], fsWeeks: [[]], week: 0,
+  fsBase: new Date(2026, 8, 7, 12, 0),
+  congregation: { name: 'Test', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+  ...over,
+})
+
 function buehne(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
-  const state: AppState = {
-    ...initialState(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
-    persons: [person('p-a', 'Anna', 'Berg')], services: DIENSTE, groups: [], absences: [],
-    weeks: [woche()], fsWeeks: [[]], week: 0,
-    fsBase: new Date(2026, 8, 7, 12, 0),
-    congregation: { name: 'Test', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
-    ...over,
-  }
-  function Buehne() {
-    const store = useStaticStore(state)
+  function Buehne({ s }: { s: AppState }) {
+    const store = useStaticStore(s)
     return (
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
-          <AppStateContext.Provider value={state}>
+          <AppStateContext.Provider value={s}>
             <PlanSendenPanel />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
     )
   }
-  return { dispatch, ...render(<Buehne />) }
+  const r = render(<Buehne s={stand(over)} />)
+  /*
+   * Neuer Zustand, **derselbe** eingehängte Baustein — genau die Lage beim
+   * Blättern: `PlanenScreen` hängt das Panel nicht neu ein, wenn die Woche
+   * wechselt. Ein `render()` mit anderen Daten prüfte das nicht, weil es den
+   * inneren Zustand mit zurücksetzt.
+   */
+  return { dispatch, ...r, wechsle: (o: Partial<AppState>) => r.rerender(<Buehne s={stand(o)} />) }
 }
 
 const knopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.plan-senden .plan-auto-btn')
@@ -209,5 +217,46 @@ describe('Was beim Drücken geschieht', () => {
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastSpeicherFehler }),
     )
+  })
+
+  it('beim Blättern verschwinden sie wieder — sie gehören zu ihrer Woche', async () => {
+    /*
+     * Der Baustein bleibt beim Wochenwechsel eingehängt. Ohne die Kennung
+     * daneben standen die Nachzügler von Woche 37 unter Woche 38 — unter Namen,
+     * die dort gar nichts haben, und mit der Aufforderung, sie anzusprechen.
+     */
+    sendPlan.mockResolvedValue({ personen: 1, aufgaben: 2, ohneKonto: ['Karl Onto'] })
+    const { container, wechsle } = buehne()
+    fireEvent.click(knopf(container)!)
+    await waitFor(() =>
+      expect(container.querySelector('.plan-senden-ohne')?.textContent).toContain('Karl Onto'),
+    )
+
+    // Eine andere Woche (andere Kennung, sonst gleicher Aufbau).
+    const andere = { ...woche(['C. Dorn']), start: '2026-09-14' } as Week
+    wechsle({ weeks: [andere] })
+    expect(container.querySelector('.plan-senden-ohne')).toBeNull()
+
+    // Und zurück: Es war nicht verworfen, nur der falschen Woche vorenthalten.
+    wechsle({})
+    expect(container.querySelector('.plan-senden-ohne')?.textContent).toContain('Karl Onto')
+  })
+})
+
+describe('Auf veraltetem Stand gibt es nichts freizugeben', () => {
+  it('nach einem gescheiterten Laden erscheint der Knopf nicht', () => {
+    /*
+     * Scheitert das Laden, zeigt die App die Momentaufnahme und lässt keine
+     * Änderungen zu (`staleAt`). Der Knopf liefe daran vorbei — er ruft die
+     * Function unmittelbar auf, nicht über den Reducer — und gäbe eine Woche
+     * frei, die der Planer so gar nicht vor sich hat.
+     */
+    const { container } = buehne({ staleAt: 1_700_000_000_000 })
+    expect(container.querySelector('.plan-senden')).toBeNull()
+  })
+
+  it('auf frischem Stand dagegen schon', () => {
+    const { container } = buehne()
+    expect(container.querySelector('.plan-senden')).toBeTruthy()
   })
 })

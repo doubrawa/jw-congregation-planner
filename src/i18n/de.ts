@@ -229,7 +229,6 @@ export const DE = {
     toastPlanGesendet: '{n} Personen benachrichtigt',
     toastPlanNichts: 'Es war nichts zu senden',
     erinnerungenCard: 'ERINNERUNGEN', remDesc: 'Automatische Mitteilungen zu Zuteilungen, bis sie bestätigt sind.',
-    remBeiZut: 'Bei Zuteilung', remSofort: 'Sofort',
     remErste: 'Erste Erinnerung', remLetzte: 'Letzte Erinnerung',
     remTageVorher: '{n} Tage vorher', remTagVorher: '1 Tag vorher', remAmTag: 'Am Tag der Aufgabe',
     remRepeat: 'Täglich wiederholen, bis bestätigt',

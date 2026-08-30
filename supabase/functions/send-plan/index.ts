@@ -9,7 +9,7 @@
 //     (Glocke + Web-Push). Verschickt wird nur, was noch nicht verschickt war —
 //     das Versand-Tagebuch `assignment_log` (migration-024) merkt sich das.
 //
-//   { action: 'entzug', taskKey, name }
+//   { action: 'entzug', taskKey, name, pid? }
 //     Eine bereits **bestätigte** Zuteilung wurde zurückgezogen oder verlegt.
 //     Die betroffene Person erfährt es sofort. Ohne diesen Weg bereitete
 //     jemand weiter etwas vor, das ihm längst genommen war.
@@ -37,8 +37,8 @@
 // (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
 // =============================================================================
 
-// @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
-import webpush from 'npm:web-push@3.6.7'
+import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
+import { vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
   meetingDayOffsets,
@@ -78,65 +78,11 @@ const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
 
-/**
- * Wie viele Push-Zustellungen gleichzeitig unterwegs sein duerfen.
- *
- * Nicht unbegrenzt: die Push-Dienste drosseln, und ein ganzer Schwung offener
- * Verbindungen brachte der Edge Function nichts als Fehler. Gebuendelt zu
- * zehnt bleibt die Laufzeit im Rahmen, ohne dass jemand gedrosselt wird.
- */
-const PUSH_PARALLEL = 10
+const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 
-const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-  })
-}
-
-const AUTH = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
-
-/**
- * Wert für einen PostgREST-Filter im Pfad.
- *
- * Ungekodiert **beendet ein `#` die Abfrage**: Der URL-Parser macht alles
- * dahinter zum Fragment, und `fetch` sendet das nie mit — der eingrenzende
- * Filter fällt dann weg. Deshalb geht hier kein Wert roh in einen Pfad, auch
- * keiner, der aus der eigenen Datenbank kommt (Aufgaben-Schlüssel enthalten
- * `|`, Namen können alles enthalten).
- */
-const wert = (v: string | number): string => encodeURIComponent(String(v))
-
-async function restGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: AUTH })
-  if (!res.ok) throw new Error(`GET ${path} ${res.status}: ${await res.text()}`)
-  return res.json() as Promise<T>
-}
-
-async function restInsert(path: string, rows: unknown[]): Promise<void> {
-  if (rows.length === 0) return
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method: 'POST',
-    headers: { ...AUTH, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: JSON.stringify(rows),
-  })
-  if (!res.ok) console.error(`POST ${path} ${res.status}: ${await res.text()}`)
-}
-
-async function userIdFromRequest(req: Request): Promise<string | null> {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SERVICE_KEY, Authorization: req.headers.get('Authorization') ?? '' },
-  })
-  if (!res.ok) return null
-  const user = (await res.json()) as { id?: string }
-  return user.id ?? null
-}
+/** Abgelaufenes Push-Abo entfernen (Push-Dienst meldete 404/410). */
+const abbestellen = (id: string): Promise<void> =>
+  rest.send('DELETE', `push_subscriptions?id=eq.${wert(id)}`)
 
 interface MemberRow {
   user_id: string
@@ -175,44 +121,6 @@ interface Nachricht {
   ziel: string
 }
 
-async function pushZustellen(
-  subs: SubscriptionRow[],
-  titel: string,
-  body: string,
-  url: string,
-): Promise<number> {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return 0
-  let sent = 0
-  for (let i = 0; i < subs.length; i += PUSH_PARALLEL) {
-    const ergebnisse = await Promise.all(
-      subs.slice(i, i + PUSH_PARALLEL).map(async (s) => {
-        const payload = JSON.stringify({ title: titel, body, url })
-        try {
-          await webpush.sendNotification(
-            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            payload,
-            { TTL: 24 * 3600 },
-          )
-          return true
-        } catch (err) {
-          const status = (err as { statusCode?: number }).statusCode
-          if (status === 404 || status === 410) {
-            await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${wert(s.id)}`, {
-              method: 'DELETE',
-              headers: AUTH,
-            })
-          } else {
-            console.error(`web-push ${status}: ${(err as Error).message}`)
-          }
-          return false
-        }
-      }),
-    )
-    sent += ergebnisse.filter(Boolean).length
-  }
-  return sent
-}
-
 /**
  * Glocken-Zeilen und Push-Nachrichten hinausschicken.
  *
@@ -233,29 +141,28 @@ async function verschicken(
     body: n.eintraege.map(kanonisch).join(' · '),
     ...(n.taskKey ? { task_key: n.taskKey } : {}),
   }))
-  await restInsert('notifications', notifRows)
+  await rest.insert('notifications', notifRows)
 
-  if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
-  }
+  const kannSenden = vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
   const uebersetzer = uebersetzerFuer()
-  let push = 0
+  // Erst alle Texte bilden, dann in einem Zug zustellen.
+  const zustellungen: Zustellung[] = []
   for (const n of nachrichten) {
-    // Je Sprache ein eigener Versand: der Text steht fest, sobald die Nachricht
-    // das Gerät erreicht. Wer Geräte in zwei Sprachen hat, bekommt auf jedem
-    // die passende.
+    // Je Sprache ein eigener Text: Er steht fest, sobald die Nachricht das Gerät
+    // erreicht. Wer Geräte in zwei Sprachen hat, bekommt auf jedem die passende.
     for (const [lang, subs] of nachSprache(n.empfaenger.subs)) {
       if (subs.length === 0) continue
       const tr = uebersetzer(lang)
-      push += await pushZustellen(
-        subs,
-        n.titelFuer(lang),
-        n.eintraege.map((e) => uebersetzt(e, tr)).join(' · '),
-        n.ziel,
-      )
+      const titel = n.titelFuer(lang)
+      const body = n.eintraege.map((e) => uebersetzt(e, tr)).join(' · ')
+      for (const abo of subs) zustellungen.push({ abo, titel, body, url: n.ziel })
     }
   }
-  return { personen: notifRows.length, push }
+  // Ohne VAPID-Schlüssel bleibt es bei der Glocke — kein Grund abzubrechen.
+  const { gesendet } = kannSenden
+    ? await zustellen(zustellungen, abbestellen)
+    : { gesendet: 0 }
+  return { personen: notifRows.length, push: gesendet }
 }
 
 /* ---- Handler ------------------------------------------------------------- */
@@ -263,7 +170,7 @@ async function verschicken(
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    const userId = await userIdFromRequest(req)
+    const userId = await rest.userId(req)
     if (!userId) return json({ error: 'unauthorized' }, 401)
 
     const payload = (await req.json().catch(() => null)) as {
@@ -271,6 +178,8 @@ Deno.serve(async (req: Request) => {
       weekStart?: string
       taskKey?: string
       name?: string
+      /** Nur bei 'entzug': Person-Id des Betroffenen, wo der Platz eine trug. */
+      pid?: string
       /** Nur bei 'entzug': Bezeichnung und Termin des Platzes, kanonisch deutsch. */
       label?: string
       datum?: string
@@ -282,7 +191,7 @@ Deno.serve(async (req: Request) => {
     // Die Versammlung stammt aus der Mitgliedszeile des Aufrufers, nie aus dem
     // Rumpf — sonst schickte ein beliebiges Konto Nachrichten in fremde
     // Versammlungen. Und schreiben darf hier nur ein Planer.
-    const eigene = await restGet<MemberRow[]>(
+    const eigene = await rest.get<MemberRow[]>(
       `members?select=user_id,person_id,planner,congregation_id&user_id=eq.${wert(userId)}`,
     )
     const mich = eigene[0] as (MemberRow & { congregation_id?: string }) | undefined
@@ -291,9 +200,9 @@ Deno.serve(async (req: Request) => {
     if (!mich?.planner) return json({ error: 'forbidden' }, 403)
 
     const [members, persons, subs] = await Promise.all([
-      restGet<MemberRow[]>(`members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`),
-      restGet<PersonRow[]>(`persons?select=id,fn,ln,dn&congregation_id=eq.${wert(cong)}`),
-      restGet<SubscriptionRow[]>(
+      rest.get<MemberRow[]>(`members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`),
+      rest.get<PersonRow[]>(`persons?select=id,fn,ln,dn&congregation_id=eq.${wert(cong)}`),
+      rest.get<SubscriptionRow[]>(
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
     ])
@@ -332,13 +241,18 @@ Deno.serve(async (req: Request) => {
        * mehr. Bliebe er stehen, bekäme sie bei einer erneuten Zuteilung auf
        * denselben Platz keine Nachricht mehr — der Platz zählte als gemeldet.
        */
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/assignment_log?congregation_id=eq.${wert(cong)}` +
+      await rest.send(
+        'DELETE',
+        `assignment_log?congregation_id=eq.${wert(cong)}` +
           `&task_key=eq.${wert(key)}&name=eq.${wert(name)}`,
-        { method: 'DELETE', headers: AUTH },
       )
 
-      const uid = userByName.get(name)
+      // Id zuerst, Name als Rückfall — genau wie beim „Plan senden" unten. Am
+      // Namen allein bekämen zwei Gleichnamige gegenseitig die Nachricht des
+      // anderen: Der eine übt weiter für einen Platz, den er nicht mehr hat,
+      // und der andere erschrickt über einen Entzug, den es nie gab.
+      const pid = payload.pid ?? ''
+      const uid = (pid ? userByPerson.get(pid) : undefined) ?? userByName.get(name)
       // Kein Konto → nichts zuzustellen. Kein Fehler: der Planer sagt es
       // persönlich, und die Antwort nennt ihm den Namen.
       if (!uid) return json({ ok: true, personen: 0, ohneKonto: [name] })
@@ -365,26 +279,26 @@ Deno.serve(async (req: Request) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return json({ error: 'bad-request' }, 400)
 
     const [congRows, weekRows, fsRows, confs, services, log] = await Promise.all([
-      restGet<{ meeting_times: string }[]>(
+      rest.get<{ meeting_times: string }[]>(
         `congregations?select=meeting_times&id=eq.${wert(cong)}`,
       ),
-      restGet<{ start: string; data: Week }[]>(
+      rest.get<{ start: string; data: Week }[]>(
         `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
       ),
-      restGet<{ start: string; data: FsInstance[] }[]>(
+      rest.get<{ start: string; data: FsInstance[] }[]>(
         `fs_weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
       ).catch((err) => {
         // Fehlt die Tabelle, lieber die Zusammenkünfte melden als gar nichts.
         console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
         return [] as { start: string; data: FsInstance[] }[]
       }),
-      restGet<{ task_key: string; status: string }[]>(
+      rest.get<{ task_key: string; status: string }[]>(
         `confirmations?select=task_key,status&congregation_id=eq.${wert(cong)}`,
       ),
-      restGet<ServiceRow[]>(
+      rest.get<ServiceRow[]>(
         `services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}&order=position.asc`,
       ),
-      restGet<{ task_key: string; name: string }[]>(
+      rest.get<{ task_key: string; name: string }[]>(
         `assignment_log?select=task_key,name&congregation_id=eq.${wert(cong)}`,
       ).catch((err) => {
         // Fehlt das Tagebuch (Migration nicht eingespielt), würde ohne diesen
@@ -435,24 +349,29 @@ Deno.serve(async (req: Request) => {
 
     // Je Person **eine** Nachricht mit allen ihren Aufgaben — nicht je Aufgabe
     // eine. Wer an einem Wochenende drei Plätze hat, soll einmal hinsehen.
+    //
+    // Zwei getrennte Behälter statt eines mit Kennzeichen: Wer kein Konto hat,
+    // gehört gar nicht in die Zustell-Liste. Hier stand einmal ein Schlüssel
+    // der Form „ ohne:<Name>", der unten wieder zerlegt wurde — und ein Name,
+    // der zufällig so begann, wäre still aus dem Versand gefallen, während das
+    // Tagebuch ihn als gemeldet führte.
     const jePerson = new Map<string, Array<Pending & { eintrag: Eintrag }>>()
+    const ohneKonto = new Set<string>()
     for (const p of neu) {
       const uid = (p.pid ? userByPerson.get(p.pid) : undefined) ?? userByName.get(p.name)
-      // Ohne Konto ist niemand zu erreichen; der Schlüssel bleibt der Name,
-      // damit der Planer unten erfährt, wen er persönlich ansprechen muss.
-      const schluessel = uid ?? ` ohne:${p.name}`
-      jePerson.set(schluessel, [...(jePerson.get(schluessel) ?? []), p])
+      // Ohne Konto ist niemand zu erreichen — gemerkt wird der Name, damit der
+      // Planer unten erfährt, wen er persönlich ansprechen muss.
+      if (!uid) {
+        ohneKonto.add(p.name)
+        continue
+      }
+      jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])
     }
 
     const nachrichten: Nachricht[] = []
-    const ohneKonto: string[] = []
-    for (const [schluessel, eintraege] of jePerson) {
-      if (schluessel.startsWith(' ohne:')) {
-        ohneKonto.push(schluessel.slice(' ohne:'.length))
-        continue
-      }
+    for (const [uid, eintraege] of jePerson) {
       nachrichten.push({
-        empfaenger: empfaengerFuer(schluessel),
+        empfaenger: empfaengerFuer(uid),
         titelDe: TITEL_ZUTEILUNG,
         titelFuer: (lang) => planTexte(lang).zuteilung,
         eintraege: eintraege.map((e) => e.eintrag),
@@ -469,7 +388,7 @@ Deno.serve(async (req: Request) => {
     // gesendet (schlimmstenfalls eine Wiederholung, nie ein Ausfall). Auch die
     // ohne Konto werden eingetragen: sonst zeigte der Knopf für sie auf ewig
     // „noch nicht benachrichtigt", obwohl niemand sie erreichen kann.
-    await restInsert(
+    await rest.insert(
       'assignment_log',
       neu.map((p) => ({
         congregation_id: cong,
@@ -478,6 +397,9 @@ Deno.serve(async (req: Request) => {
         person_id: p.pid ?? personByName.get(p.name) ?? null,
         user_id: (p.pid ? userByPerson.get(p.pid) : undefined) ?? userByName.get(p.name) ?? null,
       })),
+      // Was schon dasteht, bleibt stehen; der Rest kommt hinzu. Ohne das
+      // verwirft eine einzige Dublette den ganzen Stapel — siehe `restInsert`.
+      { ignoreDuplicates: true },
     )
 
     return json({
@@ -485,7 +407,7 @@ Deno.serve(async (req: Request) => {
       personen: nachrichten.length,
       aufgaben: neu.length,
       push,
-      ohneKonto: [...new Set(ohneKonto)],
+      ohneKonto: [...ohneKonto],
     })
   } catch (err) {
     // Nur in die Logs, nicht in die Antwort: die REST-Fehler tragen Pfad und

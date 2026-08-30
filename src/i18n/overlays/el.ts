@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Αναφέρθηκε κώλυμα",
   "erinnerungenCard": "ΥΠΕΝΘΥΜΙΣΕΙΣ",
   "remDesc": "Αυτόματες ειδοποιήσεις για αναθέσεις μέχρι να επιβεβαιωθούν.",
-  "remBeiZut": "Κατά την ανάθεση",
-  "remSofort": "Αμέσως",
   "remErste": "Πρώτη υπενθύμιση",
   "remLetzte": "Τελευταία υπενθύμιση",
   "remTageVorher": "{n} ημέρες πριν",

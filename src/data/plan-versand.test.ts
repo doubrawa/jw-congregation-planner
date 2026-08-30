@@ -27,8 +27,13 @@ const DIENSTE: Service[] = [
 ]
 
 /** Ein Programmpunkt mit einem Platz. */
-function punkt(titel: string, name: string, rolle?: string): PartItem {
-  return { iid: `i-${titel}`, title: titel, mins: 5, names: [{ name, rolle: rolle ?? '' }] }
+function punkt(titel: string, name: string, rolle?: string, pid?: string): PartItem {
+  return {
+    iid: `i-${titel}`,
+    title: titel,
+    mins: 5,
+    names: [{ name, rolle: rolle ?? '', ...(pid ? { pid } : {}) }],
+  }
 }
 
 function zusammenkunft(items: PartItem[], helpers: Record<string, { name: string }[]> = {}): Meeting {
@@ -209,6 +214,71 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
 
   it('ohne vorigen Stand gibt es nichts zu vergleichen', () => {
     expect(ruf(undefined, vorher)).toEqual([])
+  })
+
+  /*
+   * **Wer dieselbe Person ist, entscheidet die Id.** Am Anzeigenamen allein
+   * ging es in beide Richtungen schief, und beide Richtungen stehen hier: Der
+   * eine Fall meldete zu viel, der andere zu wenig.
+   */
+  it('zwei Gleichnamige: das Umteilen zwischen ihnen wird bemerkt', () => {
+    // Am Namen verglichen sah das aus wie „unverändert" — und der, der
+    // zugesagt und vorbereitet hatte, erfuhr nie etwas.
+    const v = woche(zusammenkunft([punkt('Bibellesung', 'M. Weber', undefined, 'pA')]))
+    const n = woche(zusammenkunft([punkt('Bibellesung', 'M. Weber', undefined, 'pB')]))
+    const raus = ruf(v, n)
+    expect(raus).toHaveLength(1)
+    // Die Id geht mit hinaus: Sonst stellte die Function nach dem Namen zu und
+    // träfe womöglich den anderen der beiden.
+    expect(raus[0]!.pid).toBe('pA')
+  })
+
+  it('nur die Schreibweise des Namens berichtigt: nichts', () => {
+    // Dieselbe Person-Id, anderer Text. Personenfelder lösen je Tastenanschlag
+    // aus — hier hing die lauteste Fehlmeldung der ganzen App.
+    const v = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg', undefined, 'pA')]))
+    const n = woche(zusammenkunft([punkt('Bibellesung', 'A. Bergh', undefined, 'pA')]))
+    expect(ruf(v, n)).toEqual([])
+  })
+
+  it('eine nachgetragene Id ist kein Wechsel', () => {
+    // Altdaten bekommen ihre `pid` beim Laden angehängt. Ein halbseitiger
+    // Vergleich (eine Seite mit Id, die andere ohne) fiele auf „ungleich".
+    const v = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
+    const n = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg', undefined, 'pA')]))
+    expect(ruf(v, n)).toEqual([])
+  })
+
+  it('der Termin eines Treffpunkts nennt den Tag, nicht nur die Uhrzeit', () => {
+    /*
+     * „10:00 · Bahnhof" sagt niemandem, welche Woche gemeint ist — und wer
+     * einen wöchentlichen Treffpunkt leitet, hat genau diese Frage. Gebaut wie
+     * in `deriveMyFsTasks`, damit beide Nachrichten über denselben Platz
+     * dasselbe sagen.
+     */
+    const key = `fs|${MONTAG}|r1`
+    const raus = entzogeneZusagen(
+      vorher, vorher,
+      [treffpunkt()],
+      [treffpunkt({ leader: '' })],
+      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, '', { [key]: 'bestätigt' },
+    )
+    expect(raus).toHaveLength(1)
+    expect(raus[0]!.datum).toMatch(/September/)
+  })
+
+  it('fällt die Zusammenkunft aus, ist das kein Entzug', () => {
+    // Kongress-Woche: Dort fallen ALLE Zusammenkünfte aus, planmäßig. Die
+    // Zuteilungen ruhen dann, sie sind nicht verwaist.
+    const aus = { ...vorher, dev: { mid: { cancelled: true } } } as unknown as Week
+    expect(ruf(vorher, aus)).toEqual([])
+  })
+
+  it('wird ein einzelner Punkt gelöscht, bleibt es ein Entzug', () => {
+    // Die Gegenprobe zum Ausfall: Den Teil gibt es nicht mehr, und wer ihn
+    // vorbereitet hat, muss das erfahren.
+    const leer = woche(zusammenkunft([]))
+    expect(ruf(vorher, leer).map((z) => z.name)).toEqual(['A. Berg'])
   })
 
   it('eine fehlende Bestätigungs-Liste stürzt nicht ab', () => {

@@ -222,8 +222,6 @@ export default {
   "notifVerhindert": "عدم امکان گزارش شد",
   "erinnerungenCard": "یادآوری‌ها",
   "remDesc": "اعلان‌های خودکار برای وظایف تا زمان تأیید آن‌ها.",
-  "remBeiZut": "هنگام تعیین",
-  "remSofort": "فوری",
   "remErste": "اولین یادآوری",
   "remLetzte": "آخرین یادآوری",
   "remTageVorher": "{n} روز قبل",

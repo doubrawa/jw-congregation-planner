@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Kizuizi kimeripotiwa",
   "erinnerungenCard": "VIKUMBUSHO",
   "remDesc": "Arifa za kiotomatiki kuhusu migawo hadi zithibitishwe.",
-  "remBeiZut": "Wakati wa kugawa",
-  "remSofort": "Mara moja",
   "remErste": "Ukumbusho wa kwanza",
   "remLetzte": "Ukumbusho wa mwisho",
   "remTageVorher": "siku {n} kabla",

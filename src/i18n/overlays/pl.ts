@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Zgłoszono niedyspozycję",
   "erinnerungenCard": "PRZYPOMNIENIA",
   "remDesc": "Automatyczne powiadomienia o przydziałach do czasu potwierdzenia.",
-  "remBeiZut": "Przy przydziale",
-  "remSofort": "Natychmiast",
   "remErste": "Pierwsze przypomnienie",
   "remLetzte": "Ostatnie przypomnienie",
   "remTageVorher": "{n} dni wcześniej",

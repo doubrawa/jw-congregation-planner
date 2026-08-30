@@ -2,14 +2,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persist } from './persist'
 import type { AppAction, AppState } from './context'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from '../data/testdaten'
+import { syncAuxSlots } from '../data/aux-class'
 import type { Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
 
-// Gesamte Persistenz-Schicht mocken: wir prüfen NUR, welche Schreibfunktion
-// mit welchen Argumenten je Aktion aufgerufen wird (kein echtes Supabase).
-vi.mock('../lib/data', () => ({
+/*
+ * Persistenz-Schicht mocken: Wir prüfen NUR, welche Schreibfunktion mit welchen
+ * Argumenten je Aktion aufgerufen wird (kein echtes Supabase).
+ *
+ * Der echte Modulinhalt bleibt darunter liegen (`importActual`), weil dort auch
+ * **reine** Helfer wohnen — `renameInWeeks` etwa, das der Reducer beim
+ * Umbenennen einer Person braucht. Ohne ihn wäre der Vorher/Nachher-Stand, den
+ * die Entzugs-Prüfung unten sieht, von Hand nachgebaut statt echt.
+ *
+ * **Jede** Funktion, die `persist` aufruft, ist darunter überschrieben — die
+ * Liste unten deckt sich mit der Importliste in persist.ts. Bliebe eine übrig,
+ * liefe sie gegen den leeren Supabase-Stub und flöge.
+ */
+vi.mock('../lib/data', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/data')>()),
   deleteAbsenceRow: vi.fn(),
   deleteConfirmationRows: vi.fn(),
   renameConfirmationKeys: vi.fn(),
@@ -36,6 +49,9 @@ vi.mock('../lib/data', () => ({
   saveService: vi.fn(),
   saveSettings: vi.fn(),
   saveWeek: vi.fn(),
+  substituteSeek: vi.fn(),
+  substituteTake: vi.fn(),
+  sendPlanEntzug: vi.fn(),
 }))
 
 import * as data from '../lib/data'
@@ -533,5 +549,178 @@ describe('Mitteilungs-Fanout', () => {
     // ergaenzt, muss an keiner zweiten Stelle etwas eintragen.
     persist(st({ notifs: [] }), st({ notifs: [hier], members: planer }), { type: 'autoAssign' })
     expect(data.insertNotifications).toHaveBeenCalledTimes(1)
+  })
+})
+
+/*
+ * **Wann eine Nachricht „Zuteilung zurückgezogen" hinausgeht — und wann nicht.**
+ *
+ * Der Auslöser steht am Ende von `persist` und liest den Vorher/Nachher-Stand
+ * der Wochen. Genau darin lag die Gefahr, und genau die prüfen die Fälle hier:
+ * Die reine Rechenfunktion (`entzogeneZusagen`) hatte ihre Tests, der Auslöser
+ * keinen — und deshalb fiel lange nicht auf, dass ganz andere Vorgänge als das
+ * Umteilen denselben Vorher/Nachher-Unterschied erzeugen.
+ *
+ * Der teure Fehler ist hier die **falsche** Nachricht: Wer erfährt, ihm sei
+ * etwas genommen worden, hört auf vorzubereiten. Deshalb steht unter jedem
+ * Fall, der schweigen muss, auch einer, der reden muss — sonst wäre die
+ * Prüfung mit einem `return []` zu bestehen.
+ */
+describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
+  const MONTAG = '2026-09-07'
+  const SCHLUESSEL = `${MONTAG}|mid|part|i-lesung|0`
+  const AUX_SCHLUESSEL = `${MONTAG}|mid|aux|i-lesung|0`
+  const RATGEBER = `${MONTAG}|mid|ratgeber`
+
+  /** Eine Woche mit einem Schülerteil im Hauptsaal und in der Zweitklasse. */
+  function wocheMitKlasse(): Week {
+    return {
+      range: '7.–13. September',
+      book: '',
+      start: MONTAG,
+      current: true,
+      mid: {
+        date: '',
+        end: '',
+        sections: [
+          {
+            label: 'SCHÄTZE AUS GOTTES WORT',
+            kind: 'schatz',
+            items: [
+              {
+                iid: 'i-lesung',
+                title: 'Bibellesung',
+                mins: 4,
+                names: [{ name: 'A. Berg', rolle: '', pid: 'pA' }],
+                aux: [{ name: 'K. Zwei', rolle: '', pid: 'pK' }],
+              },
+            ],
+          },
+        ],
+        helpers: {},
+        auxRatgeber: { name: 'R. Geber', rolle: '', pid: 'pR' },
+      },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    } as unknown as Week
+  }
+
+  const bestaetigt = {
+    [SCHLUESSEL]: 'bestätigt',
+    [AUX_SCHLUESSEL]: 'bestätigt',
+    [RATGEBER]: 'bestätigt',
+  } as const
+
+  /** Zustand mit **einer** Woche — sonst mischen sich die Demo-Wochen ein. */
+  function mitWoche(week: Week, over: Partial<AppState> = {}): AppState {
+    return st({
+      weeks: [week],
+      fsWeeks: [[]],
+      services: [],
+      confirmations: { ...bestaetigt },
+      ...over,
+    })
+  }
+
+  it('das Umteilen eines bestätigten Platzes meldet — mit Person-Id', () => {
+    // Die Gegenprobe zu allem Folgenden: Der Weg funktioniert überhaupt.
+    const vorher = wocheMitKlasse()
+    const nachher = wocheMitKlasse()
+    const punkt = nachher.mid.sections[0]?.items[0] as { names: { name: string; pid?: string }[] }
+    punkt.names[0] = { name: 'B. Neu', pid: 'pB' }
+
+    persist(mitWoche(vorher), mitWoche(nachher), { type: 'assign', name: 'B. Neu' })
+
+    expect(data.sendPlanEntzug).toHaveBeenCalledTimes(1)
+    // Die Id muss mit: Zwei Gleichnamige bekämen sonst gegenseitig die
+    // Nachricht des anderen — die Function stellt danach zu.
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
+      SCHLUESSEL,
+      'A. Berg',
+      'pA',
+      expect.any(String),
+      expect.any(String),
+    )
+  })
+
+  it('eine berichtigte Schreibweise des Namens meldet nichts', () => {
+    /*
+     * Der teuerste der falschen Fälle: Personenfelder lösen **je
+     * Tastenanschlag** aus, und der Reducer zieht den neuen Namen durch alle
+     * geladenen Wochen (`renameInWeeks`). Am Namen verglichen sah das aus wie
+     * „ein anderer sitzt jetzt dort" — und weil die Datenbank wegen der
+     * Verzögerung noch den alten Namen führte, kam die Nachricht auch wirklich
+     * bei der Person an, deren Namen man gerade berichtigte.
+     */
+    const vorher = wocheMitKlasse()
+    const nachher = { ...vorher, mid: { ...vorher.mid } }
+    const umbenannt = data.renameInWeeks([vorher], 'pA', 'A. Berg', 'A. Bergh')[0] as Week
+
+    persist(mitWoche(vorher), mitWoche(umbenannt), {
+      type: 'updatePerson',
+      id: 'pA',
+      patch: { ln: 'Bergh' },
+    })
+
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+    expect(nachher).toBeTruthy() // (nur damit der Aufbau oben nicht ungenutzt ist)
+  })
+
+  it('das Abschalten der Zusätzlichen Klasse meldet nichts', () => {
+    /*
+     * Beim Ausschalten bleiben die Namen der Klasse absichtlich stehen — der
+     * Reducer nimmt nur die Marke `auxRatgeber` weg, damit ein Fehlgriff nicht
+     * die Planung mehrerer Wochen kostet. Danach zählt die Aufzählung den Raum
+     * nicht mehr auf. Das ist kein Entzug, sondern ein abwesender Raum: Die
+     * Zuteilungen ruhen, sie sind nicht verwaist.
+     */
+    const vorher = wocheMitKlasse()
+    const nachher = syncAuxSlots([vorher], false)[0] as Week
+
+    persist(mitWoche(vorher), mitWoche(nachher), { type: 'setAuxClass', on: false })
+
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  it('eine ausgefallene Zusammenkunft meldet nichts', () => {
+    /*
+     * Der Regelfall dafür ist die Kongress-Woche: Dort fallen **alle**
+     * Zusammenkünfte aus, planmäßig und jedes Jahr. Ohne diese Prüfung ginge
+     * an die halbe Versammlung „Zuteilung zurückgezogen" — und beim
+     * Zurücknehmen des Hakens käme keine Berichtigung hinterher.
+     */
+    const vorher = wocheMitKlasse()
+    const nachher = { ...vorher, dev: { mid: { cancelled: true } } } as unknown as Week
+
+    persist(mitWoche(vorher), mitWoche(nachher), {
+      type: 'setAbweichung',
+      tab: 'mid',
+      dev: { cancelled: true },
+    } as unknown as AppAction)
+
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  it('ein Neuladen meldet nichts, auch wenn der Bestand ein anderer ist', () => {
+    // `hydrate` ersetzt alles auf einmal. Zählte es mit, brächte jedes
+    // Nachladen nach einem Schreibkonflikt ganze Wochen voller Entzüge hervor.
+    persist(mitWoche(wocheMitKlasse()), mitWoche({ ...wocheMitKlasse(), mid: { date: '', end: '', sections: [], helpers: {} } } as unknown as Week), {
+      type: 'hydrate',
+      payload: {} as never,
+    })
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  it('unbestätigte Zuteilungen bleiben still — sie sind Entwurf', () => {
+    const vorher = wocheMitKlasse()
+    const nachher = wocheMitKlasse()
+    const punkt = nachher.mid.sections[0]?.items[0] as { names: { name: string; pid?: string }[] }
+    punkt.names[0] = { name: 'B. Neu', pid: 'pB' }
+
+    persist(mitWoche(vorher, { confirmations: {} }), mitWoche(nachher, { confirmations: {} }), {
+      type: 'assign',
+      name: 'B. Neu',
+    })
+
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
 })

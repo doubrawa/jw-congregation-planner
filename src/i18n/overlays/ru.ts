@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Сообщено о невозможности",
   "erinnerungenCard": "НАПОМИНАНИЯ",
   "remDesc": "Автоматические уведомления о назначениях до их подтверждения.",
-  "remBeiZut": "При назначении",
-  "remSofort": "Сразу",
   "remErste": "Первое напоминание",
   "remLetzte": "Последнее напоминание",
   "remTageVorher": "за {n} дн.",

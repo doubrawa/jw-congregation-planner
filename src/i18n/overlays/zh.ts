@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "已上报无法出席",
   "erinnerungenCard": "提醒",
   "remDesc": "任务在确认前会自动发送通知。",
-  "remBeiZut": "分配时",
-  "remSofort": "立即",
   "remErste": "首次提醒",
   "remLetzte": "最后提醒",
   "remTageVorher": "提前 {n} 天",

@@ -222,8 +222,6 @@ export default {
   "notifVerhindert": "דווח על מניעה",
   "erinnerungenCard": "תזכורות",
   "remDesc": "התראות אוטומטיות למטלות עד לאישורן.",
-  "remBeiZut": "בעת השיבוץ",
-  "remSofort": "מיד",
   "remErste": "תזכורת ראשונה",
   "remLetzte": "תזכורת אחרונה",
   "remTageVorher": "{n} ימים לפני",

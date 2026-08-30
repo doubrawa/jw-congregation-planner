@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Indisponibilitate raportată",
   "erinnerungenCard": "MEMENTOURI",
   "remDesc": "Notificări automate pentru însărcinări până la confirmare.",
-  "remBeiZut": "La atribuire",
-  "remSofort": "Imediat",
   "remErste": "Primul memento",
   "remLetzte": "Ultimul memento",
   "remTageVorher": "cu {n} zile înainte",

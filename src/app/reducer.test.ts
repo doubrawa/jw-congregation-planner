@@ -1033,7 +1033,14 @@ describe('hydrate / setDataStatus', () => {
   }
 
   it('übernimmt die Nutzdaten, setzt ready und Woche 0', () => {
-    const next = reducer(makeState({ dataStatus: 'loading', week: 3 }), { type: 'hydrate', payload })
+    // `terminGewaehlt: false` ist die Lage beim **Start** — so steht es in
+    // init.ts, solange kein Debug-Hash einen Reiter vorgibt. Nur dann darf das
+    // Laden die Woche bestimmen; hat der Planer selbst geblättert, bleibt sie
+    // stehen (siehe „lässt eine selbst gewählte Woche stehen").
+    const next = reducer(makeState({ dataStatus: 'loading', week: 3, terminGewaehlt: false }), {
+      type: 'hydrate',
+      payload,
+    })
     expect(next.dataStatus).toBe('ready')
     expect(next.week).toBe(0)
     expect(next.congregation.name).toBe('Krumbach')
@@ -1049,11 +1056,53 @@ describe('hydrate / setDataStatus', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 16, 10)) // Mittwoch der zweiten Woche
     try {
-      const next = reducer(makeState({ week: 0 }), {
+      const next = reducer(makeState({ week: 0, terminGewaehlt: false }), {
         type: 'hydrate',
         payload: { ...payload, weeks: wochen },
       })
       expect(next.week).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  /*
+   * **Ein stilles Nachladen darf den Planer nicht aus seiner Woche tragen** (T99).
+   *
+   * Seit „Plan senden" und der Glocke lädt die App auch mitten in der Arbeit
+   * nach. Sprang sie dabei auf die laufende Woche, gab der Planer Woche +3 frei
+   * und stand danach vor einer anderen — mit deren Zahlen und deren Namen.
+   */
+  it('lässt eine selbst gewählte Woche stehen und findet sie über ihre Kennung wieder', () => {
+    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w, current: false }))
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 16, 10)) // Mittwoch der zweiten Woche
+    try {
+      // Der Planer steht auf der dritten Woche (nicht der laufenden).
+      const gewaehlt = makeState({ week: 2, terminGewaehlt: true, weeks: wochen })
+      const kennung = wochen[2]?.start
+
+      // Gleicher Bestand: die Woche bleibt.
+      const gleich = reducer(gewaehlt, { type: 'hydrate', payload: { ...payload, weeks: wochen } })
+      expect(gleich.weeks[gleich.week]?.start).toBe(kennung)
+
+      // Eine Woche ist **vorn** dazugekommen — die Ordnungszahl zeigt jetzt
+      // woandershin, die Kennung nicht. Genau dafür wird über sie gesucht.
+      const davor = { ...(buildDemoWeeks()[0] as (typeof wochen)[number]), start: '2026-08-24', current: false }
+      const laenger = [davor, ...wochen]
+      const verschoben = reducer(gewaehlt, {
+        type: 'hydrate',
+        payload: { ...payload, weeks: laenger },
+      })
+      expect(verschoben.weeks[verschoben.week]?.start).toBe(kennung)
+      expect(verschoben.week).toBe(3)
+
+      // Ist sie gar nicht mehr dabei, gilt wieder die laufende Woche.
+      const ohne = reducer(gewaehlt, {
+        type: 'hydrate',
+        payload: { ...payload, weeks: wochen.slice(0, 2) },
+      })
+      expect(ohne.week).toBe(1)
     } finally {
       vi.useRealTimers()
     }

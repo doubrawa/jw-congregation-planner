@@ -93,6 +93,48 @@ export function fsDate(base: Date, wi: number, wd: number): Date {
   return d
 }
 
+/**
+ * **Der Montag jeder Treffpunkt-Woche** — die eine Auskunft, an der Schlüssel
+ * und Datum hängen.
+ *
+ * Bis T100 rechnete jede Stelle für sich `fsBase + wi·7`. Das gilt nur, solange
+ * die geladenen Wochen lückenlos aufeinanderfolgen — und seit T66 tun sie das
+ * nicht mehr: „eine fehlende Woche ist eine fehlende Woche und verschiebt
+ * nichts" (`lib/data.ts`). Fehlt eine Zeile, liegt jede spätere Woche um sieben
+ * Tage daneben, und zwar gleich dreifach:
+ *
+ *  - der Aufgaben-Schlüssel (`fs|<montag>|<id>`) trifft die Bestätigung nicht
+ *    mehr, und die Edge Functions — die den Montag aus der **Datenbankzeile**
+ *    nehmen — reden über eine andere Woche als der Client,
+ *  - das angezeigte Datum eines Treffpunkts nennt den falschen Tag,
+ *  - die Monatsregel („1. Samstag") greift in der falschen Woche.
+ *
+ * Deshalb kommt der Montag jetzt aus der Woche selbst. `fsBase + wi·7` bleibt
+ * der Rückfall für Wochen ohne Kennung (Vorlagen, Demo, Tests) — dort gibt es
+ * keine Datenbankzeile, mit der man sich uneinig werden könnte.
+ */
+export function fsWochenKennungen(
+  weeks: ReadonlyArray<{ start?: string }>,
+  fsBase: Date | null,
+): string[] {
+  return weeks.map((w, wi) => w.start || fsWochenStart(fsBase, wi))
+}
+
+/**
+ * Datum eines Treffpunkts: Montag der Woche plus Wochentagsversatz.
+ *
+ * Ohne brauchbare Kennung `null` — einen Tag zu erfinden wäre schlimmer, als
+ * keinen zu nennen (so hält es auch `deriveMyFsTasks`).
+ */
+export function fsTag(wochenStart: string, wd: number): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(wochenStart)) return null
+  // Lokaler Mittag wie überall sonst im Projekt: kein UTC-Tagesversatz.
+  const d = new Date(`${wochenStart}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+  d.setDate(d.getDate() + ((wd + 6) % 7)) // (wd+6)%7 = Offset ab Montag
+  return d
+}
+
 /** Sortierung: Wochentag (Mo→So), dann Uhrzeit, dann Gruppe. */
 export function fsSort(a: FsInstance, b: FsInstance): number {
   return ((a.wd + 6) % 7) - ((b.wd + 6) % 7) || a.time.localeCompare(b.time) || a.grp.localeCompare(b.grp)
@@ -118,12 +160,21 @@ function instanzId(rule: FsRule): string {
   return rule.id
 }
 
-/** Materialisiert alle Treffpunkte der Woche `wi` aus dem Grundplan. */
-export function genFsWeek(base: Date, wi: number, rules: FsRule[]): FsInstance[] {
+/**
+ * Materialisiert alle Treffpunkte einer Woche aus dem Grundplan.
+ *
+ * `wochenStart` ist der Montag dieser Woche (siehe `fsWochenKennungen`) — an
+ * ihm hängt die Monatsregel. Ist er unbrauchbar, greift sie nicht: Lieber eine
+ * Regel, die nicht auslöst, als eine, die in der falschen Woche auslöst.
+ */
+export function genFsWeek(wochenStart: string, rules: FsRule[]): FsInstance[] {
   const out: FsInstance[] = []
   const congDays = new Set<number>()
-  const fits = (r: FsRule): boolean =>
-    !r.monthly || Math.ceil(fsDate(base, wi, r.wd).getDate() / 7) === r.monthly
+  const fits = (r: FsRule): boolean => {
+    if (!r.monthly) return true
+    const tag = fsTag(wochenStart, r.wd)
+    return tag !== null && Math.ceil(tag.getDate() / 7) === r.monthly
+  }
 
   for (const r of rules) {
     if (r.grp === '' && fits(r)) {
@@ -156,8 +207,13 @@ export function buildFsWeeks(
   rules: FsRule[],
   seedLeaders: Record<string, string> = {},
 ): FsInstance[][] {
+  // Der Demo-Bestand hat keine Datenbankzeilen und damit keine Lücken — hier
+  // ist `base + wi·7` die Kennung, nicht bloß ein Rückfall.
   return Array.from({ length: weekCount }, (_unused, wi) =>
-    genFsWeek(base, wi, rules).map((inst) => ({ ...inst, leader: seedLeaders[`${wi}|${inst.id}`] ?? '' })),
+    genFsWeek(fsWochenStart(base, wi), rules).map((inst) => ({
+      ...inst,
+      leader: seedLeaders[`${wi}|${inst.id}`] ?? '',
+    })),
   )
 }
 
@@ -184,13 +240,13 @@ function gleicheInstanzen(a: FsInstance[], b: FsInstance[]): boolean {
 }
 
 export function regenFsWeeks(
-  base: Date,
+  kennungen: readonly string[],
   fsWeeks: FsInstance[][],
   rules: FsRule[],
   preserveEdits = false,
 ): FsInstance[][] {
   return fsWeeks.map((week, wi) => {
-    const gen = genFsWeek(base, wi, rules).map((inst) => {
+    const gen = genFsWeek(kennungen[wi] ?? '', rules).map((inst) => {
       const old = week.find((o) => o.id === inst.id)
       if (!old) return inst
       return preserveEdits
@@ -414,7 +470,8 @@ export function fsAutoAssign(
   persons: Person[],
   onlyGroup: string | null = null,
   absences: readonly Absence[] = [],
-  base?: Date,
+  /** Montag dieser Woche (siehe `fsWochenKennungen`); leer = keine Abwesenheitsprüfung. */
+  wochenStart = '',
   groups: readonly Group[] = [],
 ): { fsWeeks: FsInstance[][]; count: number; newlyIds: string[] } {
   const qualifiziert = persons.filter((p) => isQualified(p, 'treffpunkt'))
@@ -428,7 +485,7 @@ export function fsAutoAssign(
   const poolFor = (wd: number): Person[] => {
     const fertig = poolAm.get(wd)
     if (fertig) return fertig
-    const tag = base ? fsDate(base, wi, wd) : null
+    const tag = fsTag(wochenStart, wd)
     const pool = qualifiziert.filter((p) => !tag || !istAbwesendAm(absences, p.id, tag))
     poolAm.set(wd, pool)
     return pool
@@ -588,7 +645,8 @@ export function fsClear(
  */
 export function deriveMyFsTasks(
   fsWeeks: FsInstance[][],
-  fsBase: Date | null,
+  /** Montag je Woche (siehe `fsWochenKennungen`) — Schlüssel und Termin hängen daran. */
+  kennungen: readonly string[],
   personName: string,
   confirmations: ConfirmationMap,
   personId: string | undefined,
@@ -601,10 +659,11 @@ export function deriveMyFsTasks(
       if (!inst.leader || inst.lext) continue // Freitext: gehört niemandem hier
       const meins = inst.lpid && personId ? inst.lpid === personId : inst.leader === personName
       if (!meins) continue
-      const key = fsTaskKey(fsWochenStart(fsBase, wi), inst.id)
-      // Ohne Datumsbasis (Vorlagen, Tests) gibt es keinen echten Termin — dann
-      // bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
-      const tag = fsBase ? fsDate(fsBase, wi, inst.wd) : null
+      const kennung = kennungen[wi] ?? ''
+      const key = fsTaskKey(kennung, inst.id)
+      // Ohne brauchbare Kennung (Vorlagen, Tests) gibt es keinen echten Termin —
+      // dann bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
+      const tag = fsTag(kennung, inst.wd)
       // Termin kanonisch deutsch wie bei den Zusammenkünften („Dienstag,
       // 8. September · 19:00"): übersetzt wird erst bei der Anzeige. Der Ort
       // hängt als eigenes Segment dran — der Übersetzer geht Segment für
@@ -654,14 +713,14 @@ export function deriveMyFsTasks(
  */
 export function fsPendingIds(
   fsWeeks: FsInstance[][],
-  fsBase: Date | null,
+  kennungen: readonly string[],
   confirmations: ConfirmationMap,
 ): string[] {
   const pending = new Set<string>()
   fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
       if (!inst.leader || inst.lext) continue
-      const key = fsTaskKey(fsWochenStart(fsBase, wi), inst.id)
+      const key = fsTaskKey(kennungen[wi] ?? '', inst.id)
       if (confirmations[key] !== 'bestätigt') pending.add(kennungVon(inst.leader, inst.lpid))
     }
   })
@@ -693,7 +752,8 @@ export function fsWeekConflicts(
   wi: number,
   persons: Person[],
   absences: readonly Absence[] = [],
-  base: Date | null = null,
+  /** Montag dieser Woche; leer = keine Abwesenheitsprüfung. */
+  wochenStart = '',
   onlyGroup: string | null = null,
 ): Conflict[] {
   const week = fsWeeks[wi]
@@ -715,7 +775,7 @@ export function fsWeekConflicts(
     tag.set(kennung, (tag.get(kennung) ?? 0) + 1)
     proTag.set(inst.wd, tag)
 
-    if (!base) continue
+    if (!wochenStart) continue
     // Über die Id, mit Rückfall auf den Namen für Altdaten — beim Freitext
     // aber gar nicht: Von jemandem außerhalb der Versammlung kennt die App
     // keine Abwesenheiten, und der Namensweg träfe einen Gleichnamigen.
@@ -726,7 +786,10 @@ export function fsWeekConflicts(
       : inst.lpid
         ? persons.find((p) => p.id === inst.lpid)
         : nachName.get(inst.leader)
-    if (person && istAbwesendAm(absences, person.id, fsDate(base, wi, inst.wd))) {
+    // Nicht `tag` genannt: Der Name ist oben schon für die Zählung je
+    // Wochentag vergeben.
+    const datum = fsTag(wochenStart, inst.wd)
+    if (person && datum && istAbwesendAm(absences, person.id, datum)) {
       conflicts.push({ kind: 'fsAbsent', name: inst.leader, kennung, wd: inst.wd, ort: inst.place })
     }
   }

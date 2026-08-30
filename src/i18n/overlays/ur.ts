@@ -222,8 +222,6 @@ export default {
   "notifVerhindert": "عدم دستیابی کی اطلاع",
   "erinnerungenCard": "یاد دہانیاں",
   "remDesc": "ذمہ داریوں کے لیے تصدیق ہونے تک خودکار اطلاعات۔",
-  "remBeiZut": "تفویض پر",
-  "remSofort": "فوراً",
   "remErste": "پہلی یاد دہانی",
   "remLetzte": "آخری یاد دہانی",
   "remTageVorher": "{n} دن پہلے",

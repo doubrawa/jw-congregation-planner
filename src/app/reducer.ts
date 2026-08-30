@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -196,7 +196,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         ...deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings, me.id),
         ...deriveMyFsTasks(
           state.fsWeeks,
-          state.fsBase,
+          fsWochenKennungen(weeks, state.fsBase),
           displayName(me),
           state.confirmations,
           me.id,
@@ -238,7 +238,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
     pendingIds: [
       ...new Set([
         ...derivePendingIds(weeks, state.services, state.confirmations),
-        ...fsPendingIds(state.fsWeeks, state.fsBase, state.confirmations),
+        ...fsPendingIds(state.fsWeeks, fsWochenKennungen(weeks, state.fsBase), state.confirmations),
       ]),
     ],
     substituteReqs,
@@ -779,7 +779,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.persons,
         action.onlyGroup,
         state.absences,
-        state.fsBase,
+        fsWochenKennungen(state.weeks, state.fsBase)[state.week] ?? '',
         state.groups,
       )
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
@@ -825,20 +825,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(state.fsBase, state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(fsWochenKennungen(state.weeks, state.fsBase), state.fsWeeks, fsRules),
         toast: toastKey(state, 'toastFsRuleAdd'),
       }
     }
     case 'fsRuleUpdate': {
       const fsRules = state.fsRules.map((r) => (r.id === action.id ? { ...r, ...action.patch } : r))
-      return { ...state, fsRules, fsWeeks: regenFsWeeks(state.fsBase, state.fsWeeks, fsRules) }
+      return { ...state, fsRules, fsWeeks: regenFsWeeks(fsWochenKennungen(state.weeks, state.fsBase), state.fsWeeks, fsRules) }
     }
     case 'fsRuleRemove': {
       const fsRules = state.fsRules.filter((r) => r.id !== action.id)
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(state.fsBase, state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(fsWochenKennungen(state.weeks, state.fsBase), state.fsWeeks, fsRules),
         toast: toastKey(state, 'toastFsRuleDel'),
       }
     }
@@ -1137,6 +1137,23 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Programm. Fällt heute in keine geladene Woche (frische Versammlung,
       // Lücke im Import), bleibt es beim Anfang.
       const aktuell = currentWeekIndex(weeks)
+      /*
+       * **Eine selbst gewählte Woche übersteht das Nachladen** (T99).
+       *
+       * Seit „Plan senden" und der Glocke lädt die App auch mitten in der
+       * Arbeit still nach. Sprang sie dabei auf die laufende Woche, verlor der
+       * Planer seinen Platz: Er gab Woche +3 frei und stand danach auf der
+       * aktuellen, mit Zahlen einer anderen Woche vor sich.
+       *
+       * Wiedergefunden wird über die **Kennung**, nicht über die Ordnungszahl —
+       * ein Nachladen kann Wochen davor gebracht haben, und dann zeigte der
+       * alte Index auf eine andere Woche. Ist sie nicht mehr dabei, gilt wieder
+       * die laufende.
+       */
+      const gewaehlteKennung = state.terminGewaehlt ? state.weeks[state.week]?.start : undefined
+      const gewaehlt = gewaehlteKennung
+        ? weeks.findIndex((w) => w.start === gewaehlteKennung)
+        : -1
       const geladen: AppState = {
         ...state,
         congregation: p.congregation,
@@ -1168,7 +1185,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         progLangs: p.progLangs,
         members: p.members,
         invites: p.invites,
-        week: aktuell >= 0 ? aktuell : 0,
+        week: gewaehlt >= 0 ? gewaehlt : aktuell >= 0 ? aktuell : 0,
       }
       // Nach dem Laden gleich auf die nächste Zusammenkunft (T82): Woche UND
       // Reiter. `aktuell` allein trifft nur die Woche — am Sonntagabend steht

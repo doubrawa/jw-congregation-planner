@@ -162,8 +162,6 @@ export default {
   "notifVerhindert": "Forhindring rapporteret",
   "erinnerungenCard": "PÅMINDELSER",
   "remDesc": "Automatiske notifikationer om tildelinger, indtil de bekræftes.",
-  "remBeiZut": "Ved tildeling",
-  "remSofort": "Med det samme",
   "remErste": "Første påmindelse",
   "remLetzte": "Sidste påmindelse",
   "remTageVorher": "{n} dage før",

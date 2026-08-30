@@ -21,8 +21,10 @@
  * steht: eine Platzsorte wird vergessen, und niemand merkt es, weil nichts
  * fehlschlägt — es geht nur eine Nachricht weniger hinaus.
  */
-import { fsTaskKey, fsWochenStart } from './fs'
-import { aufgabenBezeichnung, eachAssignedSlot, sentKey } from './planning'
+import { fsTag, fsTaskKey, fsWochenStart } from './fs'
+import { hatAuxKlasse, istAusgefallen } from './helpers'
+import { deutschesDatum } from './meeting-dates'
+import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
 import type {
   ConfirmationMap,
   FsInstance,
@@ -73,7 +75,7 @@ export function offeneMeldungen(
   // Freitext-Leiter (auswärtig) gehört niemandem und bekommt nichts.
   for (const inst of fsWeek ?? []) {
     if (!inst.leader || inst.lext) continue
-    nimm(fsTaskKey(fsWochenStart(fsBase, wi), inst.id), inst.leader)
+    nimm(fsTaskKey(fsKennung(week, fsBase, wi), inst.id), inst.leader)
   }
   return out
 }
@@ -83,6 +85,14 @@ export interface EntzogeneZusage {
   key: string
   /** Wer sie hatte — der Anzeigename, unter dem er auch das Konto findet. */
   name: string
+  /**
+   * Person-Id, wo der Platz eine trug.
+   *
+   * Sie geht an `send-plan` mit: Am Namen allein bekämen zwei Gleichnamige
+   * gegenseitig die Nachricht des anderen — dieselbe Rangfolge, nach der die
+   * Function auch beim „Plan senden" zustellt (Id zuerst, Name als Rückfall).
+   */
+  pid?: string
   /** Bezeichnung des Platzes, kanonisch deutsch. */
   label: string
   /** Termin, kanonisch deutsch („Dienstag, 8. September · 19:00"). */
@@ -101,9 +111,22 @@ export interface EntzogeneZusage {
  * mehr gehört. Bisher passierte genau das: Das Umteilen verwarf seine
  * Bestätigung still (`dropConfirmations`), und keine Nachricht ging hinaus.
  *
- * Verglichen werden die **Namen je Aufgaben-Schlüssel**, nicht die Slots. Wer
+ * Verglichen wird **die Person je Aufgaben-Schlüssel**, nicht der Slot. Wer
  * seinen Platz behält und nur eine andere Rolle bekommt, hat nichts verloren
  * und bekommt nichts; wer verschwindet oder ersetzt wird, schon.
+ *
+ * **Wer dieselbe Person ist, entscheidet die Person-Id** — der Name nur, wo
+ * keine Id dasteht (Hilfsdienste als reine Zeichenkette, Altdaten). Am Namen
+ * allein ging es zweifach schief: Eine berichtigte Schreibweise las sich als
+ * Entzug, und zwischen zwei Gleichnamigen umzuteilen las sich als gar nichts.
+ * Dieselbe Rangfolge wie `deriveMyTasks` — dort steht sie aus demselben Grund.
+ *
+ * **Und der Platz muss es noch geben.** Verschwindet er, weil die ganze
+ * Zusammenkunft ausfällt oder die Zusätzliche Klasse abgeschaltet wurde, hat
+ * niemandem jemand etwas genommen: Die Zuteilungen ruhen, sie sind nicht
+ * verwaist (dieselbe Lesart wie in `eachAssignedSlot`). Ohne diese Prüfung
+ * schickte eine Kongress-Woche — in der planmäßig **alle** Zusammenkünfte
+ * ausfallen — der halben Versammlung „Zuteilung zurückgezogen".
  *
  * Unbestätigte Zuteilungen bleiben außen vor: Sie sind Entwurf. Der Planer darf
  * umsortieren, solange niemand zugesagt hat.
@@ -120,41 +143,137 @@ export function entzogeneZusagen(
   confirmations: ConfirmationMap,
 ): EntzogeneZusage[] {
   if (!vorher) return []
-
-  const alt = new Map<string, EntzogeneZusage>()
-  eachAssignedSlot([vorher], services, meetings, (name, key, task) => {
-    const t = task()
-    alt.set(key, { key, name, label: aufgabenBezeichnung(t), datum: t.date })
-  })
-  for (const inst of vorherFs ?? []) {
-    if (!inst.leader || inst.lext) continue
-    const key = fsTaskKey(fsWochenStart(fsBase, wi), inst.id)
-    alt.set(key, {
-      key,
-      name: inst.leader,
-      label: FS_LEITER,
-      datum: [inst.time, inst.place].filter(Boolean).join(' · '),
-    })
-  }
-
-  const neu = new Map<string, string>()
-  if (nachher) eachAssignedSlot([nachher], services, meetings, (name, key) => neu.set(key, name))
-  for (const inst of nachherFs ?? []) {
-    if (!inst.leader || inst.lext) continue
-    neu.set(fsTaskKey(fsWochenStart(fsBase, wi), inst.id), inst.leader)
-  }
-
-  const out: EntzogeneZusage[] = []
   // Gegen eine fehlende Map abgesichert: Diese Funktion läuft in der
   // Nebeneffekt-Schicht (`persist.ts`), und ein Fehler dort risse das
   // **Speichern** mit. Lieber keine Nachricht als eine verlorene Woche.
   const conf = confirmations ?? {}
-  for (const [key, eintrag] of alt) {
+
+  /** Wer den Platz vorher hatte — die Bezeichnung erst, wenn sie gebraucht wird. */
+  interface Vorher {
+    name: string
+    pid?: string
+    beschreiben: () => { label: string; datum: string }
+  }
+  const alt = new Map<string, Vorher>()
+  eachAssignedSlot([vorher], services, meetings, (name, key, task, pid) => {
+    // `task()` bleibt ungerufen: Es baut den ganzen S-89-Bogen mit auf, und von
+    // gut 35 Plätzen sind am Ende ein bis drei bestätigt. Erst unten, für die,
+    // die wirklich hinausgehen.
+    alt.set(key, {
+      name,
+      pid,
+      beschreiben: () => {
+        const t = task()
+        return { label: aufgabenBezeichnung(t), datum: t.date }
+      },
+    })
+  })
+  for (const inst of vorherFs ?? []) {
+    if (!inst.leader || inst.lext) continue
+    const key = fsTaskKey(fsKennung(vorher, fsBase, wi), inst.id)
+    alt.set(key, {
+      name: inst.leader,
+      pid: inst.lpid,
+      // Termin kanonisch deutsch wie überall sonst („Dienstag, 8. September ·
+      // 19:00 · Bahnhof"). Aus Zeit und Ort allein ging der **Tag** nicht
+      // hervor: Wer einen wöchentlichen Treffpunkt leitet, las „10:00 ·
+      // Bahnhof" und wusste nicht, welche Woche gemeint war. Gebaut wie in
+      // `deriveMyFsTasks` — dieselbe Datenlage, dieselbe Zeichenkette.
+      beschreiben: () => ({ label: FS_LEITER, datum: fsTermin(fsKennung(vorher, fsBase, wi), inst) }),
+    })
+  }
+
+  const neu = new Map<string, { name: string; pid?: string }>()
+  if (nachher) {
+    eachAssignedSlot([nachher], services, meetings, (name, key, _task, pid) =>
+      neu.set(key, { name, pid }),
+    )
+  }
+  for (const inst of nachherFs ?? []) {
+    if (!inst.leader || inst.lext) continue
+    neu.set(fsTaskKey(fsKennung(vorher, fsBase, wi), inst.id), {
+      name: inst.leader,
+      pid: inst.lpid,
+    })
+  }
+  const fsLeer = (nachherFs ?? []).length === 0
+
+  const out: EntzogeneZusage[] = []
+  for (const [key, war] of alt) {
     if (conf[key] !== 'bestätigt') continue
-    if (neu.get(key) === eintrag.name) continue // unverändert
-    out.push(eintrag)
+    if (!platzNochDa(nachher, key, fsLeer)) continue
+    const jetzt = neu.get(key)
+    if (jetzt && dieselbePerson(war, jetzt)) continue // unverändert
+    const { label, datum } = war.beschreiben()
+    out.push({ key, name: war.name, ...(war.pid ? { pid: war.pid } : {}), label, datum })
   }
   return out
+}
+
+/**
+ * Zwei Besetzungen desselben Platzes — dieselbe Person?
+ *
+ * Die Id entscheidet, sobald **beide** Seiten eine tragen; sonst der Name. Ein
+ * halbseitiger Vergleich (eine Seite mit Id, die andere ohne) fiele sonst auf
+ * „ungleich" und meldete einen Entzug, wo nur eine Id nachgetragen wurde.
+ */
+function dieselbePerson(a: { name: string; pid?: string }, b: { name: string; pid?: string }): boolean {
+  return a.pid && b.pid ? a.pid === b.pid : a.name === b.name
+}
+
+/**
+ * Gibt es den Platz im neuen Stand überhaupt noch — unabhängig davon, wer
+ * darauf steht?
+ *
+ * Nur wenn ja, ist „niemand mehr darauf" ein Entzug. Fällt die Zusammenkunft
+ * aus oder ist die Zusätzliche Klasse abgeschaltet, zählt `eachAssignedSlot`
+ * den Platz gar nicht mehr auf — er ist dann nicht leer, sondern abwesend.
+ *
+ * Ein einzeln **gelöschter** Programmpunkt ist etwas anderes und bleibt ein
+ * Entzug: Den Teil gibt es nicht mehr, und wer ihn vorbereitet hat, muss das
+ * erfahren. Ebenso ein einzeln gelöschter Treffpunkt — nur ein Wochenblatt,
+ * das im Ganzen leer wird, gilt als Strukturwechsel und schweigt.
+ */
+function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): boolean {
+  if (key.startsWith('fs|')) return !fsLeer
+  const wo = taskKeyWeek(key)
+  // Fremdformat: nicht wegfiltern. Wer den Schlüssel nicht deuten kann, hält
+  // die Nachricht lieber zurück als sie fälschlich zu unterdrücken.
+  if (!wo) return true
+  if (!nachher) return false
+  if (istAusgefallen(nachher, wo.tab)) return false
+  const abschnitt = key.split('|')[2]
+  // Zusätzliche Klasse: die Plätze der zweiten Reihe und ihr Ratgeber hängen
+  // beide an `auxRatgeber` — ist die Marke weg, zählt `raeume()` den Raum nicht
+  // mehr auf. Die Namen bleiben dabei absichtlich in den Daten stehen.
+  if (abschnitt === 'aux' || abschnitt === 'ratgeber') return hatAuxKlasse(nachher[wo.tab])
+  return true
+}
+
+/**
+ * Termin eines Treffpunkts, kanonisch deutsch — dieselbe Zeichenkette, die
+ * `deriveMyFsTasks` für „Meine Aufgaben" bildet.
+ *
+ * Ohne Datumsbasis (Vorlagen, Tests) bleibt es bei Zeit und Ort: einen Tag zu
+ * erfinden wäre schlimmer, als keinen zu nennen.
+ */
+function fsTermin(wochenStart: string, inst: FsInstance): string {
+  const tag = fsTag(wochenStart, inst.wd)
+  return [tag ? deutschesDatum(tag) : '', inst.time, inst.place].filter(Boolean).join(' · ')
+}
+
+/**
+ * Der Montag dieser Woche — die Kennung, an der die Treffpunkt-Schlüssel hängen.
+ *
+ * Aus der Woche selbst, nicht aus `fsBase + wi·7`: Fehlt im Bestand eine Woche,
+ * liegen die beiden sieben Tage auseinander — und die Edge Function nimmt den
+ * Montag aus der **Datenbankzeile**. Sie schriebe dann Tagebuch-Einträge unter
+ * einem Schlüssel, den diese Datei nie sucht: Der Knopf zeigte „12 noch nicht
+ * gesendet", der Druck meldete „0 gesendet", und die Zahl bliebe stehen.
+ * `fsWochenStart` bleibt der Rückfall für Wochen ohne Kennung.
+ */
+function fsKennung(week: Week | undefined, fsBase: Date | null, wi: number): string {
+  return week?.start || fsWochenStart(fsBase, wi)
 }
 
 /**

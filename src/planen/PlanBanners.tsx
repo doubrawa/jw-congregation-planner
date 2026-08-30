@@ -7,7 +7,7 @@
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { engpaesse, offenTrotzAllem } from '../data/bedarf'
-import { fsDate, fsWeekConflicts } from '../data/fs'
+import { fsDate, fsWeekConflicts, fsWochenKennungen } from '../data/fs'
 import { istAusgefallen, serviceQualKey } from '../data/helpers'
 import { openSlotLabels, type Conflict } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
@@ -47,7 +47,7 @@ export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
   }
 
   return (
-    <div className="plan-conflicts">
+    <div className="plan-banner-box plan-conflicts">
       <div className="plan-banner-head">
         <span className="plan-banner-badge">!</span>
         <span className="plan-banner-title">{t.konflikteTitle}</span>
@@ -82,7 +82,7 @@ export function FsConflictsBanner({ onlyGroup }: { onlyGroup: string | null }) {
     state.week,
     state.persons,
     state.absences,
-    state.fsBase,
+    fsWochenKennungen(state.weeks, state.fsBase)[state.week] ?? '',
     onlyGroup,
   )
   if (conflicts.length === 0) return null
@@ -101,7 +101,7 @@ export function FsConflictsBanner({ onlyGroup }: { onlyGroup: string | null }) {
   }
 
   return (
-    <div className="plan-conflicts">
+    <div className="plan-banner-box plan-conflicts">
       <div className="plan-banner-head">
         <span className="plan-banner-badge">!</span>
         <span className="plan-banner-title">{t.konflikteTitle}</span>
@@ -134,7 +134,7 @@ export function OpenSlotsBanner({ tab, tpw }: { tab: MeetingKey; tpw: (s: string
   if (openTotal === 0) return null
 
   return (
-    <div className="plan-open">
+    <div className="plan-banner-box plan-open">
       <div className="plan-banner-head">
         <span className="plan-banner-badge">?</span>
         <span className="plan-banner-title">{t.offeneTitle}</span>
@@ -192,7 +192,7 @@ export function EngpassBanner({ tab }: { tab: MeetingKey }) {
   }
 
   return (
-    <div className="plan-engpass">
+    <div className="plan-banner-box plan-engpass">
       <div className="plan-banner-head">
         <span className="plan-banner-badge">!</span>
         <span className="plan-banner-title">{t.engpassTitle}</span>
