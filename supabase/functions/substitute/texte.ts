@@ -17,6 +17,8 @@
  * und dort vom Fragment-Übersetzer erledigt werden.
  */
 
+import { texteFuer } from '../_shared/texte.ts'
+
 export interface SubstituteTexte {
   /** Es wird ein Ersatz gesucht (an alle Qualifizierten). */
   gesucht: string
@@ -68,6 +70,4 @@ const TEXTE: Record<string, SubstituteTexte> = {
 }
 
 /** Texte für eine Sprache; unbekannte Codes fallen auf Deutsch zurück. */
-export function substituteTexte(lang: string | null | undefined): SubstituteTexte {
-  return TEXTE[lang ?? ''] ?? DE
-}
+export const substituteTexte = texteFuer(TEXTE, DE)

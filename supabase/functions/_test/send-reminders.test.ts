@@ -16,6 +16,7 @@ import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { pushTexte } from '../send-reminders/texte.ts'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
+import { jsonRes, schreibZugriff } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -153,11 +154,7 @@ let subs: typeof SUBS
 /** Erinnerungs-Einstellungen der Versammlung — je Test überschreibbar. */
 let reminders: { first: number; last: number; repeat: boolean }
 
-const writesTo = (table: string) => writes.filter((w) => w.path.startsWith(table))
-
-function jsonRes(body: unknown): Response {
-  return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } })
-}
+const { writesTo } = schreibZugriff(() => writes)
 
 const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
   const url = String(input)

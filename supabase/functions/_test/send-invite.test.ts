@@ -16,6 +16,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { inviteTexte } from '../send-invite/texte.ts'
+import { jsonRes } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -51,10 +52,6 @@ let mails: Mail[]
 /** REST-Pfade, die die Function abgefragt hat — zeigt den Zuschnitt. */
 let restPfade: string[]
 let resendAntwort: number
-
-function jsonRes(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-}
 
 const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
   const url = String(input)

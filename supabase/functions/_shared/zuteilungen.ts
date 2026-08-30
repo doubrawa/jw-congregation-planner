@@ -114,17 +114,17 @@ export interface SubscriptionRow {
 /* ---- Plätze lesen -------------------------------------------------------- */
 
 /** Name eines Hilfsdienst-Platzes; '' = unbesetzt (beide Datenformate). */
-export function helperName(entry: HelperEntry | undefined): string {
+function helperName(entry: HelperEntry | undefined): string {
   if (!entry) return ''
   return typeof entry === 'string' ? entry : (entry.name ?? '')
 }
 
 /** Person-Id eines Hilfsdienst-Platzes; Alt-Format (reiner String) hat keine. */
-export function helperPid(entry: HelperEntry | undefined): string | undefined {
+function helperPid(entry: HelperEntry | undefined): string | undefined {
   return entry && typeof entry !== 'string' ? entry.pid : undefined
 }
 
-export const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
+const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
 
 /**
  * Kennung eines Treffpunkts ohne führende Wochennummer (T87).
@@ -140,7 +140,7 @@ export const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
  * Regel-Kennungen sind `r<uuid>`, von Hand angelegte `x<uuid>` — eine Zahl
  * vorn hat nur der Altbestand.
  */
-export function stabileKennung(instId: string): string {
+function stabileKennung(instId: string): string {
   const treffer = /^\d+\|(.+)$/.exec(instId)
   return treffer?.[1] ?? instId
 }
@@ -195,7 +195,7 @@ export interface Pending {
  *
  * Der Wochentag steht am Treffpunkt selbst (`wd`, 0=So … 6=Sa), nicht in den
  * Zusammenkunftszeiten; als Versatz ab Montag gerechnet wie im Client
- * (`fsDate`). task_key `fs|<Montag>|<instId>` — dieselbe Form wie dort (T66:
+ * (`fsTag`). task_key `fs|<Montag>|<instId>` — dieselbe Form wie dort (T66:
  * vorn steht die **Kennung** der Woche, nicht mehr ihre Position).
  */
 export function pendingOfFsWeek(

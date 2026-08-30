@@ -18,6 +18,7 @@ import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
 import { dict, NOTIF_TITLE_KEY, loadOverlay } from '../../../src/i18n/ui'
+import { filterWert, jsonRes, ohneFragment, schreibZugriff } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -95,11 +96,7 @@ let absagen: { user_id: string; task_key: string }[]
 let konkurrent: (() => void) | null
 
 /** Alle schreibenden REST-Aufrufe (PATCH/POST/DELETE) dieses Testlaufs. */
-const writesTo = (table: string) => writes.filter((w) => w.path.startsWith(table))
-
-function jsonRes(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-}
+const { writesTo } = schreibZugriff(() => writes)
 
 /** Name, der aktuell im simulierten Slot der Datenbank steht (null = keiner). */
 function gespeicherterName(): string | null {
@@ -107,24 +104,8 @@ function gespeicherterName(): string | null {
   return w.mid?.helpers?.[SVC]?.[0]?.name ?? null
 }
 
-/**
- * Wert eines `spalte=eq.…`-Filters aus dem Pfad, dekodiert — oder null.
- *
- * Die Attrappe wertet Filter aus, statt jede Tabelle pauschal auszugeben. Erst
- * dadurch kann ein fehlender oder abgeschnittener Filter im Test überhaupt
- * auffallen: Gäbe sie weiterhin alles zurück, sähe „Filter weg" genauso aus
- * wie „Filter da".
- */
-function filterWert(path: string, spalte: string): string | null {
-  const m = new RegExp(`[?&]${spalte}=eq\\.([^&]*)`).exec(path)
-  return m ? decodeURIComponent(m[1]) : null
-}
-
 const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
-  // `fetch` bekommt hier immer einen String; ein `#` darin ist also genau das,
-  // was der echte URL-Parser als Fragment abschneiden würde. Damit der Test
-  // dieselbe Wirkung sieht wie der Server, wird hier ebenso abgeschnitten.
-  const url = String(input).split('#')[0]
+  const url = ohneFragment(input)
   const method = init?.method ?? 'GET'
 
   // Auth: löst das JWT des Aufrufers auf.

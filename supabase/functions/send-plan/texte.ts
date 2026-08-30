@@ -19,6 +19,8 @@
  * Aufgabe), die der Fragment-Übersetzer erledigt.
  */
 
+import { texteFuer } from '../_shared/texte.ts'
+
 export interface PlanTexte {
   /** „Plan senden": die eigenen Aufgaben einer Woche, an die eingeteilte Person. */
   zuteilung: string
@@ -70,6 +72,4 @@ const TEXTE: Record<string, PlanTexte> = {
 }
 
 /** Texte für eine Sprache; unbekannte Codes fallen auf Deutsch zurück. */
-export function planTexte(lang: string | null | undefined): PlanTexte {
-  return TEXTE[lang ?? ''] ?? DE
-}
+export const planTexte = texteFuer(TEXTE, DE)

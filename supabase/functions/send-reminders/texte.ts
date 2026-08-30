@@ -15,6 +15,8 @@
  * Deutsch wie bisher.
  */
 
+import { texteFuer } from '../_shared/texte.ts'
+
 export interface PushTexte {
   /** Titel der persönlichen Erinnerung an eine offene Zuteilung. */
   erinnerung: string
@@ -30,7 +32,9 @@ export interface PushTexte {
  *
  * Als benannte Konstanten und nicht bloß als Feld von `DE`, damit
  * `mitteilungs-titel.test.ts` sie im Quelltext findet — dieselbe Machart wie in
- * `substitute/texte.ts` und `send-plan/texte.ts`.
+ * `substitute/texte.ts` und `send-plan/texte.ts`. `index.ts` schreibt beide
+ * Titel über diese Konstanten in die Glocke; stünde dort noch das Literal,
+ * gäbe es den kanonisch deutschen Text zweimal.
  */
 export const TITEL_ERINNERUNG = 'Erinnerung: Zuteilung bestätigen'
 export const TITEL_UNERREICHBAR = 'Unbestätigte Zuteilungen (nicht erreichbar)'
@@ -78,9 +82,7 @@ const TEXTE: Record<string, PushTexte> = {
 }
 
 /** Texte für eine Sprache; unbekannt oder fehlend → Deutsch. */
-export function pushTexte(lang: string | null | undefined): PushTexte {
-  return (lang && TEXTE[lang]) || DE
-}
+export const pushTexte = texteFuer(TEXTE, DE)
 
 /** Nur für Tests/Prüfungen: welche Sprachen abgedeckt sind. */
 export const PUSH_SPRACHEN = Object.keys(TEXTE)

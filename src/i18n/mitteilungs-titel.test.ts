@@ -16,7 +16,8 @@ import { DEMO_NOTIFICATIONS } from '../data/testdaten'
  * Die Titel entstehen an **fünf** Stellen, drei davon außerhalb der App:
  *
  *  - `src/app/reducer.ts` — Import und Verhinderung,
- *  - `supabase/functions/send-reminders/index.ts` — die Erinnerung,
+ *  - `supabase/functions/send-reminders/texte.ts` — die Erinnerung und die
+ *    Sammelmeldung an die Planer,
  *  - `supabase/functions/substitute/texte.ts` — Ersatz gesucht/gefunden,
  *  - `supabase/functions/send-plan/texte.ts` — „Plan senden" und der Entzug
  *    einer bestätigten Zuteilung (T99),
@@ -63,16 +64,16 @@ function titelAusReducer(): string[] {
   return [...gefunden]
 }
 
-/** Titel, die die Erinnerungs-Function in die Glocke schreibt. */
-function titelAusErinnerung(): string[] {
-  const text = quelle('send-reminders/index.ts')
-  return [...text.matchAll(/^\s*title: '([^']+)',/gm)].map((m) => m[1] ?? '')
-}
-
 /**
- * Titel der beiden Functions, die sie als benannte Konstanten führen —
- * Ersatzsuche und „Plan senden". Beide Dateien halten es gleich: `TITEL_…`
- * ist zugleich der kanonisch deutsche Text und der Schlüssel für die Glocke.
+ * Titel der drei Functions — alle führen sie als benannte Konstanten in ihrer
+ * `texte.ts`: `TITEL_…` ist zugleich der kanonisch deutsche Text und der
+ * Schlüssel, unter dem die Glocke übersetzt.
+ *
+ * Bis T101 schrieb `send-reminders/index.ts` einen der Titel als Literal in
+ * die Zeile, und diese Prüfung fischte ihn mit einem Muster auf `title: '…'`
+ * wieder heraus. Ein Wächter über die **Schreibweise** ist kein Fundament: Er
+ * bricht bei jeder Umformatierung und misst nicht den Wert. Seit die Function
+ * ihre Konstante benutzt, liest ein einziger Leser alle drei Quellen.
  */
 function titelAusKonstanten(datei: string): string[] {
   const text = quelle(datei)
@@ -82,18 +83,14 @@ function titelAusKonstanten(datei: string): string[] {
 const titelAusErsatz = (): string[] => titelAusKonstanten('substitute/texte.ts')
 const titelAusPlan = (): string[] => titelAusKonstanten('send-plan/texte.ts')
 /**
- * Die Erinnerungs-Function schreibt einen Titel als Literal in die Zeile
- * (`titelAusErinnerung`) und einen über die benannte Konstante
- * `TITEL_UNERREICHBAR` — die Sammelmeldung an die Planer, die seit T99 auch in
- * die Glocke geht. Beide Wege werden gelesen, sonst bliebe der zweite
- * unbemerkt deutsch.
+ * Beide Titel der Erinnerungs-Function: die persönliche Erinnerung und die
+ * Sammelmeldung an die Planer, die seit T99 ebenfalls in die Glocke geht.
  */
-const titelAusErinnerungsKonstanten = (): string[] => titelAusKonstanten('send-reminders/texte.ts')
+const titelAusErinnerung = (): string[] => titelAusKonstanten('send-reminders/texte.ts')
 
 const ALLE_ERZEUGTEN = [
   ...titelAusReducer(),
   ...titelAusErinnerung(),
-  ...titelAusErinnerungsKonstanten(),
   ...titelAusErsatz(),
   ...titelAusPlan(),
   ...DEMO_NOTIFICATIONS.map((n) => n.title),
@@ -132,7 +129,7 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
       damit ein Muster ins Leere greift.
     */
     expect(titelAusReducer().length, 'reducer.ts').toBeGreaterThan(1)
-    expect(titelAusErinnerung().length, 'send-reminders').toBeGreaterThan(0)
+    expect(titelAusErinnerung().length, 'send-reminders/texte.ts').toBe(2)
     expect(titelAusErsatz().length, 'substitute/texte.ts').toBe(2)
     expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(2)
     expect(DEMO_NOTIFICATIONS.length, 'Demo-Bestand').toBeGreaterThan(0)

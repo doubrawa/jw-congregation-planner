@@ -23,6 +23,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { TITEL_ENTZUG, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
+import { filterWert, jsonRes, ohneFragment, schreibZugriff } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -120,26 +121,13 @@ let writes: Write[]
 let confirmations: { task_key: string; status: string }[]
 let log: { task_key: string; name: string }[]
 
-const writesTo = (table: string) => writes.filter((w) => w.path.startsWith(table))
-const zeilenIn = (table: string): Record<string, unknown>[] =>
-  writesTo(table).flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body]) as Record<string, unknown>[])
-
-function jsonRes(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-}
-
-function filterWert(path: string, spalte: string): string | null {
-  const m = new RegExp(`[?&]${spalte}=eq\\.([^&]*)`).exec(path)
-  return m ? decodeURIComponent(m[1]) : null
-}
+const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
 const fakeFetch = async (
   input: unknown,
   init?: { method?: string; body?: unknown; headers?: Record<string, string> },
 ): Promise<Response> => {
-  // Ein rohes `#` schnitte hier ab, genau wie im echten URL-Parser — dadurch
-  // fällt ein nicht kodierter Filterwert im Test überhaupt auf.
-  const url = String(input).split('#')[0]
+  const url = ohneFragment(input)
   const method = init?.method ?? 'GET'
 
   if (url.includes('/auth/v1/user')) {
@@ -255,11 +243,9 @@ describe('Plan senden: jede eingeteilte Person erfährt von ihrer Aufgabe', () =
   })
 
   it('bei genau einer Aufgabe trägt die Mitteilung den Schlüssel — dann gibt es den Bestätigen-Knopf', async () => {
-    const zeilen = zeilenIn('notifications')
     await plan()
     const bernd = zeilenIn('notifications').find((z) => z.user_id === U_BERND)!
     expect(bernd.task_key).toBe(KEY_BERND)
-    expect(zeilen).toHaveLength(0) // vor dem Lauf war nichts geschrieben
   })
 
   it('bei mehreren keinen — ein Knopf zeigte sonst auf eine willkürliche davon', async () => {

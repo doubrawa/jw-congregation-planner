@@ -29,7 +29,7 @@
 // (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
 // =============================================================================
 
-import { CORS, json, restKlient } from '../_shared/rest.ts'
+import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
 import { fuellen, inviteTexte } from './texte.ts'
 
 declare const Deno: {
@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
 
     // Nur Admins; alles Weitere ist auf ihre Versammlung beschränkt.
     const membership = await rest.get<{ congregation_id: string; planner: boolean }[]>(
-      `members?select=congregation_id,planner&user_id=eq.${userId}`,
+      `members?select=congregation_id,planner&user_id=eq.${wert(userId)}`,
     )
     const member = membership[0]
     if (!member?.planner) return json({ error: 'forbidden' }, 403)
@@ -92,7 +92,7 @@ Deno.serve(async (req: Request) => {
     if (invites.length === 0) return json({ error: 'keine Einladungen übergeben' }, 400)
 
     const persons = await rest.get<{ id: string; fn: string; mail: string }[]>(
-      `persons?select=id,fn,mail&congregation_id=eq.${member.congregation_id}`,
+      `persons?select=id,fn,mail&congregation_id=eq.${wert(member.congregation_id)}`,
     )
     const personById = new Map(persons.map((p) => [p.id, p]))
 

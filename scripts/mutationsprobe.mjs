@@ -563,7 +563,7 @@ const KATALOG = [
     id: 'einladung-eigene-versammlung',
     datei: 'supabase/functions/send-invite/index.ts',
     regel: 'Empfänger kommen aus der eigenen Versammlung — kein offenes Mail-Relay.',
-    suchen: '`persons?select=id,fn,mail&congregation_id=eq.${member.congregation_id}`',
+    suchen: '`persons?select=id,fn,mail&congregation_id=eq.${wert(member.congregation_id)}`',
     ersetzen: "'persons?select=id,fn,mail'",
   },
   {

@@ -17,6 +17,8 @@
 
 // @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
 import webpush from 'npm:web-push@3.6.7'
+import type { Rest } from './rest.ts'
+import { wert } from './rest.ts'
 
 /**
  * Wie viele Zustellungen gleichzeitig unterwegs sein dürfen.
@@ -25,7 +27,7 @@ import webpush from 'npm:web-push@3.6.7'
  * Verbindungen brachte der Edge Function nichts als Fehler. Gebündelt zu zehnt
  * bleibt die Laufzeit im Rahmen, ohne dass jemand gedrosselt wird.
  */
-export const PUSH_PARALLEL = 10
+const PUSH_PARALLEL = 10
 
 /** Ein Push-Abo, so wie es in `push_subscriptions` steht. */
 export interface PushAbo {
@@ -49,6 +51,17 @@ export interface PushErgebnis {
   abgelaufen: number
   fehlgeschlagen: number
 }
+
+/**
+ * Abgelaufenes Push-Abo entfernen — das Gegenstück, das `zustellen` braucht.
+ *
+ * Stand in allen drei Functions als dieselbe Zeile. Der Einreichpunkt war für
+ * eine Abweichung gedacht, die es nicht gibt: Alle drei löschen über `id`,
+ * und genau an dieser Stelle waren die alten Abschriften auseinander (`id`
+ * gegen `endpoint`, einmal unkodiert im Pfad).
+ */
+export const abbestellerFuer = (rest: Rest) => (id: string): Promise<void> =>
+  rest.send('DELETE', `push_subscriptions?id=eq.${wert(id)}`)
 
 /**
  * VAPID-Schlüssel setzen. Gibt zurück, ob überhaupt gesendet werden kann.

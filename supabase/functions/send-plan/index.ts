@@ -38,7 +38,7 @@
 // =============================================================================
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
-import { vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
+import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
   meetingDayOffsets,
@@ -64,7 +64,7 @@ import {
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
-import { planTexte, TITEL_ENTZUG, TITEL_ZUTEILUNG } from './texte.ts'
+import { type PlanTexte, planTexte } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -79,10 +79,6 @@ const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.o
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
 
 const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
-
-/** Abgelaufenes Push-Abo entfernen (Push-Dienst meldete 404/410). */
-const abbestellen = (id: string): Promise<void> =>
-  rest.send('DELETE', `push_subscriptions?id=eq.${wert(id)}`)
 
 interface MemberRow {
   user_id: string
@@ -103,9 +99,19 @@ interface Empfaenger {
   subs: SubscriptionRow[]
 }
 
+/** Wohin ein Tipp auf die Nachricht führt — beide Arten meinen dieselbe Liste. */
+const ZIEL = `${APP_URL}#go=aufgaben`
+
 /**
  * Eine Nachricht an einen Empfänger: Glocke (kanonisch deutsch) und Push (je
  * Gerätesprache eigens gebaut).
+ *
+ * **Die Art bestimmt den Titel, nicht der Aufrufer.** Hier standen einmal drei
+ * Felder nebeneinander — der deutsche Titel, eine Funktion für den übersetzten
+ * und das Ziel —, die an beiden Bauplätzen fest zusammengehörten. Der deutsche
+ * Titel ist per Konstruktion `planTexte('de')[art]`; ihn getrennt mitzugeben
+ * hieß, denselben Text zweimal zu führen und beim Hinzufügen einer dritten Art
+ * an drei Stellen daran zu denken.
  *
  * `taskKey` wird nur gesetzt, wenn die Nachricht **genau eine** Aufgabe
  * betrifft — dann macht die Glocke daraus eine, auf der man gleich bestätigen
@@ -114,11 +120,9 @@ interface Empfaenger {
  */
 interface Nachricht {
   empfaenger: Empfaenger
-  titelDe: string
-  titelFuer: (lang: string | null) => string
+  art: keyof PlanTexte
   eintraege: Eintrag[]
   taskKey?: string
-  ziel: string
 }
 
 /**
@@ -137,7 +141,7 @@ async function verschicken(
     congregation_id: cong,
     user_id: n.empfaenger.userId,
     type: 'zuteilung',
-    title: n.titelDe,
+    title: planTexte('de')[n.art],
     body: n.eintraege.map(kanonisch).join(' · '),
     ...(n.taskKey ? { task_key: n.taskKey } : {}),
   }))
@@ -153,14 +157,14 @@ async function verschicken(
     for (const [lang, subs] of nachSprache(n.empfaenger.subs)) {
       if (subs.length === 0) continue
       const tr = uebersetzer(lang)
-      const titel = n.titelFuer(lang)
+      const titel = planTexte(lang)[n.art]
       const body = n.eintraege.map((e) => uebersetzt(e, tr)).join(' · ')
-      for (const abo of subs) zustellungen.push({ abo, titel, body, url: n.ziel })
+      for (const abo of subs) zustellungen.push({ abo, titel, body, url: ZIEL })
     }
   }
   // Ohne VAPID-Schlüssel bleibt es bei der Glocke — kein Grund abzubrechen.
   const { gesendet } = kannSenden
-    ? await zustellen(zustellungen, abbestellen)
+    ? await zustellen(zustellungen, abbestellerFuer(rest))
     : { gesendet: 0 }
   return { personen: notifRows.length, push: gesendet }
 }
@@ -228,6 +232,17 @@ Deno.serve(async (req: Request) => {
       userId: uid,
       subs: subsByUser.get(uid) ?? [],
     })
+    /**
+     * Konto einer eingeteilten Person: **Id zuerst, Name als Rückfall.**
+     *
+     * Am Namen allein bekämen zwei Gleichnamige gegenseitig die Nachricht des
+     * anderen — der eine übt weiter für einen Platz, den er nicht mehr hat,
+     * und der andere erschrickt über einen Entzug, den es nie gab. Die Regel
+     * stand hier dreimal wörtlich; `send-reminders` trägt ihre eigene vierte
+     * Abschrift.
+     */
+    const kontoFuer = (pid: string | undefined, name: string): string | undefined =>
+      (pid ? userByPerson.get(pid) : undefined) ?? userByName.get(name)
 
     /* ---- Aktion: eine bestätigte Zuteilung wurde zurückgezogen ---- */
     if (payload.action === 'entzug') {
@@ -247,12 +262,7 @@ Deno.serve(async (req: Request) => {
           `&task_key=eq.${wert(key)}&name=eq.${wert(name)}`,
       )
 
-      // Id zuerst, Name als Rückfall — genau wie beim „Plan senden" unten. Am
-      // Namen allein bekämen zwei Gleichnamige gegenseitig die Nachricht des
-      // anderen: Der eine übt weiter für einen Platz, den er nicht mehr hat,
-      // und der andere erschrickt über einen Entzug, den es nie gab.
-      const pid = payload.pid ?? ''
-      const uid = (pid ? userByPerson.get(pid) : undefined) ?? userByName.get(name)
+      const uid = kontoFuer(payload.pid, name)
       // Kein Konto → nichts zuzustellen. Kein Fehler: der Planer sagt es
       // persönlich, und die Antwort nennt ihm den Namen.
       if (!uid) return json({ ok: true, personen: 0, ohneKonto: [name] })
@@ -265,10 +275,8 @@ Deno.serve(async (req: Request) => {
       const { personen, push } = await verschicken(cong, [
         {
           empfaenger: empfaengerFuer(uid),
-          titelDe: TITEL_ENTZUG,
-          titelFuer: (lang) => planTexte(lang).entzug,
+          art: 'entzug',
           eintraege: [eintrag],
-          ziel: `${APP_URL}#go=aufgaben`,
         },
       ])
       return json({ ok: true, personen, push, ohneKonto: [] })
@@ -358,7 +366,7 @@ Deno.serve(async (req: Request) => {
     const jePerson = new Map<string, Array<Pending & { eintrag: Eintrag }>>()
     const ohneKonto = new Set<string>()
     for (const p of neu) {
-      const uid = (p.pid ? userByPerson.get(p.pid) : undefined) ?? userByName.get(p.name)
+      const uid = kontoFuer(p.pid, p.name)
       // Ohne Konto ist niemand zu erreichen — gemerkt wird der Name, damit der
       // Planer unten erfährt, wen er persönlich ansprechen muss.
       if (!uid) {
@@ -372,13 +380,11 @@ Deno.serve(async (req: Request) => {
     for (const [uid, eintraege] of jePerson) {
       nachrichten.push({
         empfaenger: empfaengerFuer(uid),
-        titelDe: TITEL_ZUTEILUNG,
-        titelFuer: (lang) => planTexte(lang).zuteilung,
+        art: 'zuteilung',
         eintraege: eintraege.map((e) => e.eintrag),
         // Nur bei genau einer Aufgabe: dann trägt die Glocke den
         // Bestätigen-Knopf. Bei mehreren zeigte er auf eine willkürliche davon.
         ...(eintraege.length === 1 ? { taskKey: eintraege[0].key } : {}),
-        ziel: `${APP_URL}#go=aufgaben`,
       })
     }
 
@@ -395,7 +401,7 @@ Deno.serve(async (req: Request) => {
         task_key: p.key,
         name: p.name,
         person_id: p.pid ?? personByName.get(p.name) ?? null,
-        user_id: (p.pid ? userByPerson.get(p.pid) : undefined) ?? userByName.get(p.name) ?? null,
+        user_id: kontoFuer(p.pid, p.name) ?? null,
       })),
       // Was schon dasteht, bleibt stehen; der Rest kommt hinzu. Ohne das
       // verwirft eine einzige Dublette den ganzen Stapel — siehe `restInsert`.

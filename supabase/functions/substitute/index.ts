@@ -35,7 +35,7 @@
 // =============================================================================
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
-import { vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
+import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   type Abweichungen,
   istAusgefallenFuer,
@@ -58,10 +58,6 @@ const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
 const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
-
-/** Abgelaufenes Push-Abo entfernen (Push-Dienst meldete 404/410). */
-const abbestellen = (id: string): Promise<void> =>
-  rest.send('DELETE', `push_subscriptions?id=eq.${wert(id)}`)
 
 /* ---- Datenmodell (Teilmengen) ---- */
 interface Slot {
@@ -187,7 +183,7 @@ async function pushTo(
     body,
     url,
   }))
-  await zustellen(zustellungen, abbestellen)
+  await zustellen(zustellungen, abbestellerFuer(rest))
 }
 
 /** In-App-Mitteilung + Push (mit Deep-Link-Ziel) an eine Menge von Nutzern. */
@@ -428,7 +424,7 @@ Deno.serve(async (req: Request) => {
       'DELETE',
       `confirmations?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}`,
     )
-    await rest.send('POST', 'confirmations', [
+    await rest.insert('confirmations', [
       { congregation_id: cong, user_id: userId, task_key: payload.taskKey, status: 'bestätigt' },
     ])
 

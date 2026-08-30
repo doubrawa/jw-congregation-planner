@@ -20,6 +20,8 @@
  * dieselbe Bauart wie `send-reminders/texte.ts`.
  */
 
+import { texteFuer } from '../_shared/texte.ts'
+
 export interface InviteTexte {
   /** Betreff der Einladung. */
   subject: string
@@ -183,9 +185,7 @@ const DE: InviteTexte = {
  * Texte für einen Sprachcode. Unbekannt oder fehlend → Deutsch: Eine Einladung
  * in einer Sprache, die niemand gewählt hat, wäre schlechter als die bisherige.
  */
-export function inviteTexte(lang: string | null | undefined): InviteTexte {
-  return (lang && TEXTE[lang]) || DE
-}
+export const inviteTexte = texteFuer(TEXTE, DE)
 
 /** Platzhalter {name}, {url}, {code} einsetzen — wie `fill` im Client. */
 export function fuellen(vorlage: string, werte: Record<string, string>): string {

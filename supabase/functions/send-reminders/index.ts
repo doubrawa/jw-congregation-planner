@@ -44,8 +44,8 @@
 // Deploy:  npx supabase functions deploy send-reminders --no-verify-jwt
 // =============================================================================
 
-import { restKlient, wert } from '../_shared/rest.ts'
-import { vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
+import { json, restKlient, wert } from '../_shared/rest.ts'
+import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
   meetingDayOffsets,
@@ -70,7 +70,7 @@ import {
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
-import { pushTexte, TITEL_UNERREICHBAR } from './texte.ts'
+import { pushTexte, TITEL_ERINNERUNG, TITEL_UNERREICHBAR } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -88,15 +88,11 @@ const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
 const klient = restKlient(SUPABASE_URL, SERVICE_KEY)
 
-/** Abgelaufenes Push-Abo entfernen (Push-Dienst meldete 404/410). */
-const abbestellen = (id: string): Promise<void> =>
-  klient.send('DELETE', `push_subscriptions?id=eq.${wert(id)}`)
-
 /** Heutige Versand-Einträge als Menge "userId|kind" (Doppel-Versand-Sperre). */
 async function loadSentToday(todayISO: string): Promise<Set<string>> {
   try {
     const rows = await klient.get<{ user_id: string; kind: string }[]>(
-      `reminder_log?select=user_id,kind&sent_on=eq.${todayISO}`,
+      `reminder_log?select=user_id,kind&sent_on=eq.${wert(todayISO)}`,
     )
     return new Set(rows.map((r) => `${r.user_id}|${r.kind}`))
   } catch (err) {
@@ -115,14 +111,7 @@ const NOTIFICATION_RETENTION_DAYS = 30
  */
 async function pruneNotifications(): Promise<void> {
   const cutoff = new Date(Date.now() - NOTIFICATION_RETENTION_DAYS * 864e5).toISOString()
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/notifications?created_at=lt.${encodeURIComponent(cutoff)}`,
-    {
-      method: 'DELETE',
-      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-    },
-  )
-  if (!res.ok) console.error(`REST DELETE notifications ${res.status}: ${await res.text()}`)
+  await klient.send('DELETE', `notifications?created_at=lt.${wert(cutoff)}`)
 }
 
 /*
@@ -255,11 +244,11 @@ Deno.serve(async (req: Request) => {
         // Die Kennung kommt aus der Spalte, nicht aus dem Blob: `data->>'start'`
         // fehlt bei Wochen, die vor migration-017 geschrieben wurden.
         klient.get<{ start: string; data: Week }[]>(
-          `weeks?select=start,data&congregation_id=eq.${cong.id}&order=start.asc`,
+          `weeks?select=start,data&congregation_id=eq.${wert(cong.id)}&order=start.asc`,
         ),
         // Treffpunkte: eigene Tabelle, dieselbe Kennung wie `weeks`.
         klient.get<{ start: string; data: FsInstance[] }[]>(
-          `fs_weeks?select=start,data&congregation_id=eq.${cong.id}&order=start.asc`,
+          `fs_weeks?select=start,data&congregation_id=eq.${wert(cong.id)}&order=start.asc`,
         ).catch((err) => {
           // Fehlt die Tabelle (Migration nicht eingespielt), lieber die
           // Zusammenkünfte erinnern als den ganzen Lauf verlieren.
@@ -267,19 +256,19 @@ Deno.serve(async (req: Request) => {
           return [] as { start: string; data: FsInstance[] }[]
         }),
         klient.get<{ task_key: string; status: string }[]>(
-          `confirmations?select=task_key,status&congregation_id=eq.${cong.id}`,
+          `confirmations?select=task_key,status&congregation_id=eq.${wert(cong.id)}`,
         ),
         klient.get<{ user_id: string; person_id: string | null; planner: boolean }[]>(
-          `members?select=user_id,person_id,planner&congregation_id=eq.${cong.id}`,
+          `members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong.id)}`,
         ),
         klient.get<{ id: string; fn: string; ln: string; dn: string }[]>(
-          `persons?select=id,fn,ln,dn&congregation_id=eq.${cong.id}`,
+          `persons?select=id,fn,ln,dn&congregation_id=eq.${wert(cong.id)}`,
         ),
         klient.get<ServiceRow[]>(
-          `services?select=key,name,count,groups&congregation_id=eq.${cong.id}&order=position.asc`,
+          `services?select=key,name,count,groups&congregation_id=eq.${wert(cong.id)}&order=position.asc`,
         ),
         klient.get<SubscriptionRow[]>(
-          `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${cong.id}`,
+          `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong.id)}`,
         ),
       ])
 
@@ -424,7 +413,7 @@ Deno.serve(async (req: Request) => {
             congregation_id: cong.id,
             user_id: userId,
             type: 'erinnerung',
-            title: 'Erinnerung: Zuteilung bestätigen',
+            title: TITEL_ERINNERUNG,
             body: mainEntries.map(kanonisch).join(' · '),
             // Nur bei **einer** offenen Aufgabe: dann trägt die Glocke den
             // Bestätigen-Knopf, und die Erinnerung lässt sich an Ort und Stelle
@@ -436,6 +425,20 @@ Deno.serve(async (req: Request) => {
         logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'self' })
       }
       if (unreachable.length > 0) {
+        // Der Rumpf ist für **alle** Planer derselbe und hängt nur an der
+        // Sprache. Beides stand bis hierher in der Planer-Schleife und wurde
+        // je Planer (und je Sprache) neu zusammengesetzt.
+        const rumpfDeutsch = unreachable.map((u) => `${u.name} — ${kanonisch(u.eintrag)}`).join(' · ')
+        const rumpfJeSprache = new Map<string, string>()
+        const rumpfFuer = (lang: string): string => {
+          const fertig = rumpfJeSprache.get(lang)
+          if (fertig !== undefined) return fertig
+          const tr = uebersetzer(lang)
+          // Der Name bleibt, was er ist — Eigennamen werden nicht übersetzt.
+          const gebaut = unreachable.map((u) => `${u.name} — ${uebersetzt(u.eintrag, tr)}`).join(' · ')
+          rumpfJeSprache.set(lang, gebaut)
+          return gebaut
+        }
         for (const m of members) {
           if (!m.planner) continue
           if (sentToday.has(`${m.user_id}|planner`)) {
@@ -443,14 +446,10 @@ Deno.serve(async (req: Request) => {
             continue
           }
           for (const [lang, subs] of nachSprache(subsByUser.get(m.user_id) ?? [])) {
-            // Auch die Sammelmeldung an die Planer: derselbe Rumpf, je Sprache
-            // eigens gebaut. Der Name bleibt, was er ist — Eigennamen werden
-            // nicht übersetzt.
-            const tr = uebersetzer(lang)
             const p: Push = {
               userId: m.user_id,
               title: pushTexte(lang).unerreichbar,
-              body: unreachable.map((u) => `${u.name} — ${uebersetzt(u.eintrag, tr)}`).join(' · '),
+              body: rumpfFuer(lang),
               url: `${APP_URL}#go=planen`,
             }
             preview.push(p)
@@ -474,7 +473,7 @@ Deno.serve(async (req: Request) => {
             user_id: m.user_id,
             type: 'erinnerung',
             title: TITEL_UNERREICHBAR,
-            body: unreachable.map((u) => `${u.name} — ${kanonisch(u.eintrag)}`).join(' · '),
+            body: rumpfDeutsch,
           })
           logRows.push({ congregation_id: cong.id, user_id: m.user_id, kind: 'planner' })
         }
@@ -494,7 +493,7 @@ Deno.serve(async (req: Request) => {
           url: push.url ?? APP_URL,
         })),
       )
-      const erg = await zustellen(zustellungen, abbestellen)
+      const erg = await zustellen(zustellungen, abbestellerFuer(klient))
       sent += erg.gesendet
       expired += erg.abgelaufen
       await klient.insert('notifications', notifRows)
@@ -506,23 +505,17 @@ Deno.serve(async (req: Request) => {
       await pruneNotifications()
     }
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        dryRun: !SEND_PUSH,
-        pushes: SEND_PUSH ? sent : preview.length,
-        skipped, // heute bereits benachrichtigt (Doppel-Versand-Sperre)
-        expired,
-        notifications: notifRows.length,
-        // Vorschau nur im Dry-Run — zum gefahrlosen Testen per curl
-        preview: SEND_PUSH ? undefined : preview,
-      }),
-      { headers: { 'Content-Type': 'application/json' } },
-    )
+    return json({
+      ok: true,
+      dryRun: !SEND_PUSH,
+      pushes: SEND_PUSH ? sent : preview.length,
+      skipped, // heute bereits benachrichtigt (Doppel-Versand-Sperre)
+      expired,
+      notifications: notifRows.length,
+      // Vorschau nur im Dry-Run — zum gefahrlosen Testen per curl
+      preview: SEND_PUSH ? undefined : preview,
+    })
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
-    )
+    return json({ error: err instanceof Error ? err.message : String(err) }, 500)
   }
 })
