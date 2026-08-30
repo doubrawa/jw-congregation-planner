@@ -4386,9 +4386,13 @@ zurückgenommen und der Testlauf wiederholt wurde.
 >    erreichbar" geht auch als Glocken-Zeile hinaus, und der Rückfall für
 >    `repeat` steht auf `false` wie im Client.
 >
-> ⚠ **Nach der Durchsicht am 30. August ist ein zweiter Deploy nötig** (T100):
-> `send-plan` muss neu hinaus, sonst bleibt der Entzug am Namen hängen und das
-> Tagebuch kann bei einer Dublette gar nicht mehr schreiben.
+> ✅ **Zweiter Deploy erledigt (30. August 2026)** — nach T100/T101 gingen
+> **alle fünf** Functions neu hinaus, nicht nur `send-plan`: Seit die Hülle in
+> `_shared/rest.ts` liegt, binden sie alle dieselbe Datei ein. Damit ist auch
+> der Entzug über die Person-Id scharf und das Tagebuch verträgt Dubletten.
+>
+> **Was jetzt noch aussteht, ist keine Technik, sondern der Betrieb:** eine
+> Woche freigeben und nachsehen, ob die Nachricht wirklich ankommt.
 
 > **Der Deploy ist erledigt** (7. August 2026): `substitute` und
 > `send-reminders` laufen in der Fassung des Repos. Alles, was bis dahin nur
