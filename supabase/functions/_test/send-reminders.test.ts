@@ -655,13 +655,34 @@ describe('send-reminders: Treffpunkte', () => {
     ],
   })
 
-  it('erinnert den Leiter am fälligen Tag', async () => {
+  it('erinnert den Leiter am fälligen Tag — Ort im Termin, nicht in der Bezeichnung', async () => {
     // Woche beginnt Mo 07.09., wd 1 = Montag = heute → days 0 … also nicht
     // fällig (last = 1). Mittwoch (wd 3) liegt 2 Tage weg → repeat.
+    //
+    // **Der Ort gehört zum Termin.** Hier stand einmal
+    // `Treffpunkt-Leiter · Nebenraum` bei ortlosem Termin, während der Client
+    // in „Meine Aufgaben" und im Entzug den Ort in den Termin schrieb —
+    // dieselbe Auskunft in zwei Reihenfolgen, je nachdem, woher die Nachricht
+    // kam. Deshalb hier der **ganze** Satz und nicht nur ein `toContain`: Nur
+    // so fällt eine wieder abweichende Reihenfolge auf.
     fsWeeks = [montag({ wd: 3, place: 'Nebenraum' })]
     const body = previewFor(await run(), U_MAX)?.body ?? ''
-    expect(body).toContain('Treffpunkt-Leiter · Nebenraum')
-    expect(body).toContain('Mittwoch, 9. September · 14:00')
+    // Die Zeile steht als letzte im Rumpf — als Ganzes geprüft, nicht als
+    // Teilzeichenkette: Ein `toContain` überstünde ein angehängtes
+    // „ · Nebenraum" hinter der Bezeichnung, und genau das war der Fehler.
+    expect(body.endsWith('Mittwoch, 9. September · 14:00 · Nebenraum: Treffpunkt-Leiter')).toBe(
+      true,
+    )
+    // Und der Ort steht **einmal** da, nicht zweimal.
+    expect(body.split('Nebenraum')).toHaveLength(2)
+  })
+
+  it('ohne Ort bleibt der Termin sauber — kein „ · " am Ende', async () => {
+    // Der Rand, an dem die zwei Fassungen einmal auseinanderliefen: Ein
+    // Treffpunkt ohne Ort endete auf einem hängenden Trenner.
+    fsWeeks = [montag({ wd: 3, place: '' })]
+    const body = previewFor(await run(), U_MAX)?.body ?? ''
+    expect(body).toContain('Mittwoch, 9. September · 14:00: Treffpunkt-Leiter')
   })
 
   it('rechnet mit dem Wochentag des Treffpunkts, nicht mit dem der Zusammenkunft', async () => {

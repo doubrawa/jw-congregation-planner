@@ -633,13 +633,42 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
     expect(data.sendPlanEntzug).toHaveBeenCalledTimes(1)
     // Die Id muss mit: Zwei Gleichnamige bekämen sonst gegenseitig die
     // Nachricht des anderen — die Function stellt danach zu.
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
-      SCHLUESSEL,
-      'A. Berg',
-      'pA',
-      expect.any(String),
-      expect.any(String),
-    )
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
+      {
+        key: SCHLUESSEL,
+        name: 'A. Berg',
+        pid: 'pA',
+        label: expect.any(String),
+        datum: expect.any(String),
+      },
+    ])
+  })
+
+  it('mehrere Entzüge derselben Änderung gehen in EINEM Aufruf hinaus', () => {
+    /*
+     * Je Entzug ein eigener Aufruf hieß: Die Function las für jeden davon
+     * aufs Neue alle Mitglieder, Personen und Push-Abos der Versammlung. Eine
+     * Auto-Zuteilung fasst aber die ganze Zusammenkunft an — aus einer
+     * Handlung wurden ein Dutzend voller Aufrufe.
+     *
+     * Geprüft wird deshalb die **Zahl der Aufrufe**, nicht nur ihr Inhalt:
+     * Die alte Fassung bestünde jede Inhaltsprüfung und fiele nur hier.
+     */
+    const vorher = wocheMitKlasse()
+    const nachher = wocheMitKlasse()
+    const punkt = nachher.mid.sections[0]?.items[0] as {
+      names: { name: string; pid?: string }[]
+      aux: { name: string; pid?: string }[]
+    }
+    punkt.names[0] = { name: 'B. Neu', pid: 'pB' }
+    punkt.aux[0] = { name: 'C. Neu', pid: 'pC' }
+
+    persist(mitWoche(vorher), mitWoche(nachher), { type: 'autoAssign' })
+
+    expect(data.sendPlanEntzug).toHaveBeenCalledTimes(1)
+    const liste = (data.sendPlanEntzug as unknown as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as Array<{ key: string }>
+    expect(liste.map((z) => z.key).sort()).toEqual([SCHLUESSEL, AUX_SCHLUESSEL].sort())
   })
 
   it('eine berichtigte Schreibweise des Namens meldet nichts', () => {

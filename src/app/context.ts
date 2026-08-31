@@ -239,6 +239,12 @@ export type AppAction =
   | { type: 'setFamily'; id: string; memberId: string; add: boolean } // Familienangehörige
   | { type: 'openNotifs' }
   | { type: 'closeNotifs' }
+  /**
+   * Nur die Glocken-Liste ersetzen — das leichte Nachladen beim Öffnen der
+   * Glocke (`loadNotifications`). Ein voller `hydrate` wirft den ganzen
+   * Bestand um; hier ändert sich nichts als die Liste selbst.
+   */
+  | { type: 'setNotifs'; notifs: Notification[] }
   | { type: 'markAllRead' }
   | { type: 'clearNotifs' } // löscht die eigenen Mitteilungen (Feed ist personalisiert)
   | { type: 'openSlot'; sel: SlotSelection }

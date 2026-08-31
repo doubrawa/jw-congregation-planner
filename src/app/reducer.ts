@@ -419,6 +419,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, notifOpen: true }
     case 'closeNotifs':
       return { ...state, notifOpen: false }
+    case 'setNotifs':
+      return { ...state, notifs: action.notifs }
     case 'markAllRead':
       return { ...state, notifs: state.notifs.map((n) => ({ ...n, read: true })) }
     case 'clearNotifs':

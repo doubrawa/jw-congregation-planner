@@ -202,20 +202,20 @@ export function pendingOfFsWeek(
   woche: string,
   insts: FsInstance[],
   conf: Map<string, string>,
-): Array<Pending & { offset: number; zeit: string }> {
-  const out: Array<Pending & { offset: number; zeit: string }> = []
+): Array<Pending & { offset: number; datum: string }> {
+  const out: Array<Pending & { offset: number; datum: string }> = []
   for (const inst of insts) {
     if (!inst?.leader || inst.lext) continue
     const key = `fs|${woche}|${stabileKennung(inst.id)}`
     if (conf.has(key)) continue
-    const ort = inst.place ? ` · ${inst.place}` : ''
+    const offset = ((inst.wd ?? 1) + 6) % 7
     out.push({
       name: inst.leader,
       pid: inst.lpid,
-      label: `Treffpunkt-Leiter${ort}`,
+      label: FS_LEITER,
       key,
-      offset: ((inst.wd ?? 1) + 6) % 7,
-      zeit: inst.time ?? '',
+      offset,
+      datum: fsTerminText(woche, offset, inst.time ?? '', inst.place ?? ''),
     })
   }
   return out
@@ -395,6 +395,42 @@ export function terminText(
   const d = new Date(ms + offset * 864e5)
   const text = deutschesDatum(d, true)
   return zeit ? `${text} · ${zeit}` : text
+}
+
+/**
+ * „Treffpunkt-Leiter" — die Bezeichnung eines Treffpunkt-Platzes, kanonisch
+ * deutsch.
+ *
+ * **Ohne den Ort.** Hier stand einmal `Treffpunkt-Leiter · <Ort>`, während der
+ * Client den Ort in den *Termin* schrieb — dieselbe Auskunft in zwei
+ * Reihenfolgen, je nachdem, ob die Nachricht aus der Function oder aus dem
+ * Browser kam. Der Ort gehört zum Termin: Er beantwortet „wo und wann", nicht
+ * „was". So steht es auch in „Meine Aufgaben", und nur so liest der Empfänger
+ * in Erinnerung, Zuteilung und Entzug dreimal dasselbe.
+ *
+ * Der Client bindet diese Konstante mit ein (`src/data/plan-versand.ts`) —
+ * eine zweite Abschrift war genau der Grund, aus dem die beiden auseinander
+ * liefen.
+ */
+export const FS_LEITER = 'Treffpunkt-Leiter'
+
+/**
+ * Termin eines Treffpunkts: „Samstag, 12. September · 09:30 · Bahnhof".
+ *
+ * Gegenstück zu `fsTerminText` im Client (`src/data/fs.ts`) — dieselbe Form,
+ * dieselbe Reihenfolge, leere Teile fallen heraus. Der Tag kommt hier aus der
+ * Wochenkennung plus Versatz statt aus einem fertigen `Date`, weil die Function
+ * nur die Zeile aus `fs_weeks` vor sich hat. `edge-parity.test.ts` vergleicht
+ * die beiden an denselben Eingaben.
+ */
+export function fsTerminText(
+  woche: string,
+  offset: number,
+  zeit: string,
+  ort: string,
+): string {
+  const termin = terminText(woche, offset, {}, zeit)
+  return ort ? `${termin} · ${ort}` : termin
 }
 
 /**

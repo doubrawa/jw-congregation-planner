@@ -422,7 +422,7 @@ Vier Kanäle mit je eigener Aufgabe — sie sauber zu trennen ist der Kern von T
 | --- | --- |
 | **Bestätigungsblatt** beim Öffnen der App | handeln: offene Zuteilungen bestätigen oder absagen |
 | **Push** | „schau jetzt hin" — führt über `#go=` in die App |
-| **Glocke** (Mitteilungen) | „das ist passiert", als Verlauf; lädt beim Öffnen still nach |
+| **Glocke** (Mitteilungen) | „das ist passiert", als Verlauf; lädt beim Öffnen still nach — erst nur die Zeilen, den ganzen Bestand nur, wenn eine neue dabei ist |
 | **Planen-Screen** | „das ist der Stand" — Konflikte, offene Plätze, Engpässe, „…" |
 
 Und drei Takte:
@@ -435,7 +435,10 @@ Und drei Takte:
    ([migration-024](supabase/migration-024-zuteilungs-tagebuch.sql)) merkt sich
    Platz und Name. Das Panel zeigt dem Planer, wie viele noch nichts wissen,
    wann zuletzt etwas hinausging und wen er mangels App-Konto persönlich
-   ansprechen muss.
+   ansprechen muss. Gelesen werden Bestätigungen und Tagebuch nur für **diese**
+   Woche — die steht im Aufgaben-Schlüssel selbst, in zwei Formen
+   (`<Montag>|…` und `fs|<Montag>|…`); beide Tabellen wachsen sonst ungebremst
+   in jeden Knopfdruck hinein.
 2. **Sofort.** Was eine Zusage bricht oder Eile hat: eine bestätigte Zuteilung
    wird zurückgezogen (`send-plan`, Aktion `entzug`), ein Hilfsdienst wird
    abgesagt und ein Ersatz gesucht, jemand springt ein
@@ -444,7 +447,10 @@ Und drei Takte:
 
    Der Entzug wird an **einer** Stelle erkannt ([`persist.ts`](src/app/persist.ts),
    Vorher/Nachher-Vergleich der Woche) statt an jeder auslösenden Aktion — sonst
-   fehlte irgendwann eine, und niemand merkte es. Damit das trägt, gelten zwei
+   fehlte irgendwann eine, und niemand merkte es. Alle Entzüge einer Änderung
+   gehen in **einem** Aufruf hinaus und je Person als **eine** Nachricht: Eine
+   Auto-Zuteilung fasst eine ganze Zusammenkunft an, `setAuxClass` und
+   `fsRuleAdd` fassen alle 52 Wochen an. Damit das trägt, gelten zwei
    Regeln in [`plan-versand.ts`](src/data/plan-versand.ts): Wer **dieselbe
    Person** ist, entscheidet die Person-Id (am Anzeigenamen meldete das
    Berichtigen einer Schreibweise einen Entzug, und zwischen zwei Gleichnamigen

@@ -37,6 +37,33 @@ export function filterWert(path: string, spalte: string): string | null {
 }
 
 /**
+ * Muster aller `spalte=like.…`-Filter eines Pfades, dekodiert.
+ *
+ * Aus demselben Grund wie `filterWert`: Eine Attrappe, die den Filter nicht
+ * auswertet, kann seinen Verlust nicht bemerken. `send-plan` holt
+ * `confirmations` und `assignment_log` seit dem Wochenfilter **nur noch für
+ * eine Woche** — ohne diese Auswertung sähe „ganze Tabelle" hier genauso aus
+ * wie „eine Woche", und die Prüfung wäre eine Zusicherung ohne Deckung.
+ */
+export function likeMuster(path: string, spalte: string): string[] {
+  const treffer = path.matchAll(new RegExp(`[?&]${spalte}=like\\.([^&]*)`, 'g'))
+  return [...treffer].map((m) => decodeURIComponent(m[1] ?? ''))
+}
+
+/**
+ * Trifft ein PostgREST-`like`-Muster auf diesen Wert? (`*` ist der Platzhalter.)
+ *
+ * Bewusst nur der Platzhalter und sonst gar nichts: Alles Übrige wird wörtlich
+ * genommen, wie es PostgREST für einen kodierten Wert auch tut. Ein Muster mit
+ * regulär-magischen Zeichen (`|` steht in jedem Aufgaben-Schlüssel) darf hier
+ * nicht als Ausdruck gelesen werden.
+ */
+export function passtAufMuster(wert: string, muster: string): boolean {
+  const teile = muster.split('*').map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  return new RegExp(`^${teile.join('.*')}$`).test(wert)
+}
+
+/**
  * Pfad ohne Fragment.
  *
  * `fetch` bekommt hier immer eine Zeichenkette; ein rohes `#` darin ist genau

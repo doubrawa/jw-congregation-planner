@@ -9,10 +9,17 @@
 //     (Glocke + Web-Push). Verschickt wird nur, was noch nicht verschickt war —
 //     das Versand-Tagebuch `assignment_log` (migration-024) merkt sich das.
 //
-//   { action: 'entzug', taskKey, name, pid? }
-//     Eine bereits **bestätigte** Zuteilung wurde zurückgezogen oder verlegt.
-//     Die betroffene Person erfährt es sofort. Ohne diesen Weg bereitete
-//     jemand weiter etwas vor, das ihm längst genommen war.
+//   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
+//     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
+//     oder verlegt. Die Betroffenen erfahren es sofort. Ohne diesen Weg
+//     bereitete jemand weiter etwas vor, das ihm längst genommen war.
+//
+//     **Eine Liste, kein Einzelfall.** Der Client schickte je Entzug einen
+//     eigenen Aufruf, und jeder wiederholte davor dieselben fünf REST-Runden
+//     über alle Mitglieder, Personen und Push-Abos. Wer eine ganze
+//     Zusammenkunft neu besetzt, löste damit ein Dutzend voller Aufrufe aus.
+//     Die alte Einzelform (taskKey/name/… im Rumpf) wird weiter angenommen —
+//     ein Browser-Tab, der seit Tagen offen liegt, schickt noch sie.
 //
 // WARUM ES DIESE FUNCTION GIBT. Bis hierher erfuhr die eingeteilte Person von
 // ihrer Zuteilung überhaupt nichts: die Mitteilung „Zuteilung gesendet" ging an
@@ -90,6 +97,23 @@ interface PersonRow {
   fn: string
   ln: string
   dn: string
+}
+
+/**
+ * Ein zurückgezogener Platz, wie der Client ihn meldet.
+ *
+ * Bezeichnung und Termin kommen von dort und nicht aus der Datenbank: Der
+ * Client hat den Platz gerade in der Hand, die Function könnte ihn nach dem
+ * Überschreiben nicht mehr nachschlagen. Beides kanonisch deutsch, wie jeder
+ * Mitteilungsrumpf; übersetzt wird beim Anzeigen bzw. je Gerät.
+ */
+interface EntzugRumpf {
+  taskKey?: string
+  name?: string
+  /** Person-Id des Betroffenen, wo der Platz eine trug. */
+  pid?: string
+  label?: string
+  datum?: string
 }
 
 /* ---- Versand ------------------------------------------------------------- */
@@ -177,17 +201,9 @@ Deno.serve(async (req: Request) => {
     const userId = await rest.userId(req)
     if (!userId) return json({ error: 'unauthorized' }, 401)
 
-    const payload = (await req.json().catch(() => null)) as {
-      action?: string
-      weekStart?: string
-      taskKey?: string
-      name?: string
-      /** Nur bei 'entzug': Person-Id des Betroffenen, wo der Platz eine trug. */
-      pid?: string
-      /** Nur bei 'entzug': Bezeichnung und Termin des Platzes, kanonisch deutsch. */
-      label?: string
-      datum?: string
-    } | null
+    const payload = (await req.json().catch(() => null)) as
+      | ({ action?: string; weekStart?: string; entzuege?: EntzugRumpf[] } & EntzugRumpf)
+      | null
     if (payload?.action !== 'plan' && payload?.action !== 'entzug') {
       return json({ error: 'bad-request' }, 400)
     }
@@ -244,47 +260,103 @@ Deno.serve(async (req: Request) => {
     const kontoFuer = (pid: string | undefined, name: string): string | undefined =>
       (pid ? userByPerson.get(pid) : undefined) ?? userByName.get(name)
 
-    /* ---- Aktion: eine bestätigte Zuteilung wurde zurückgezogen ---- */
+    /* ---- Aktion: bestätigte Zuteilungen wurden zurückgezogen ---- */
     if (payload.action === 'entzug') {
-      const name = payload.name ?? ''
-      const key = payload.taskKey ?? ''
-      if (!name || !key) return json({ error: 'bad-request' }, 400)
+      /*
+       * **Liste oder Einzelfall.** Neue Clients schicken `entzuege`; die alte
+       * Form (taskKey/name/… unmittelbar im Rumpf) bleibt gültig, solange ein
+       * Browser-Tab sie noch schickt. Beides mündet in dieselbe Liste — eine
+       * zweite Bearbeitung daneben wäre die zweite Buchführung.
+       */
+      const roh = Array.isArray(payload.entzuege) ? payload.entzuege : [payload]
+      const entzuege = roh.filter(
+        (e): e is EntzugRumpf & { taskKey: string; name: string } => Boolean(e?.taskKey && e?.name),
+      )
+      if (entzuege.length === 0) return json({ error: 'bad-request' }, 400)
 
       /*
-       * Der Eintrag im Tagebuch muss weg, **bevor** irgendetwas anderes
-       * passiert. Er sagt „diese Person weiß von diesem Platz"; das gilt nicht
-       * mehr. Bliebe er stehen, bekäme sie bei einer erneuten Zuteilung auf
-       * denselben Platz keine Nachricht mehr — der Platz zählte als gemeldet.
+       * Die Einträge im Tagebuch müssen weg, **bevor** irgendetwas anderes
+       * passiert. Sie sagen „diese Person weiß von diesem Platz"; das gilt
+       * nicht mehr. Blieben sie stehen, bekäme sie bei einer erneuten
+       * Zuteilung auf denselben Platz keine Nachricht mehr — der Platz zählte
+       * als gemeldet. **Jeder** der Liste, nicht nur der erste.
        */
-      await rest.send(
-        'DELETE',
-        `assignment_log?congregation_id=eq.${wert(cong)}` +
-          `&task_key=eq.${wert(key)}&name=eq.${wert(name)}`,
+      await Promise.all(
+        entzuege.map((e) =>
+          rest.send(
+            'DELETE',
+            `assignment_log?congregation_id=eq.${wert(cong)}` +
+              `&task_key=eq.${wert(e.taskKey)}&name=eq.${wert(e.name)}`,
+          ),
+        ),
       )
 
-      const uid = kontoFuer(payload.pid, name)
-      // Kein Konto → nichts zuzustellen. Kein Fehler: der Planer sagt es
-      // persönlich, und die Antwort nennt ihm den Namen.
-      if (!uid) return json({ ok: true, personen: 0, ohneKonto: [name] })
+      // Je Person **eine** Nachricht, wie beim „Plan senden": Wer beim
+      // Umbesetzen einer Zusammenkunft zwei Plätze verliert, soll einmal
+      // hinsehen müssen und nicht zweimal erschrecken.
+      const jeEntzug = new Map<string, Eintrag[]>()
+      const ohneKonto = new Set<string>()
+      for (const e of entzuege) {
+        const uid = kontoFuer(e.pid, e.name)
+        // Kein Konto → nichts zuzustellen. Kein Fehler: der Planer sagt es
+        // persönlich, und die Antwort nennt ihm den Namen.
+        if (!uid) {
+          ohneKonto.add(e.name)
+          continue
+        }
+        const eintrag: Eintrag = { datum: e.datum ?? '', label: e.label ?? '' }
+        jeEntzug.set(uid, [...(jeEntzug.get(uid) ?? []), eintrag])
+      }
+      if (jeEntzug.size === 0) {
+        return json({ ok: true, personen: 0, push: 0, ohneKonto: [...ohneKonto] })
+      }
 
       await bibelbuecherLaden()
-      // Termin und Bezeichnung kommen vom Client — er hat den Platz gerade in
-      // der Hand, samt Datum der Zusammenkunft. Beides kanonisch deutsch, wie
-      // jeder Mitteilungsrumpf; übersetzt wird beim Anzeigen bzw. je Gerät.
-      const eintrag: Eintrag = { datum: payload.datum ?? '', label: payload.label ?? '' }
-      const { personen, push } = await verschicken(cong, [
-        {
+      const { personen, push } = await verschicken(
+        cong,
+        [...jeEntzug].map(([uid, eintraege]) => ({
           empfaenger: empfaengerFuer(uid),
-          art: 'entzug',
-          eintraege: [eintrag],
-        },
-      ])
-      return json({ ok: true, personen, push, ohneKonto: [] })
+          art: 'entzug' as const,
+          eintraege,
+        })),
+      )
+      return json({ ok: true, personen, push, ohneKonto: [...ohneKonto] })
     }
 
     /* ---- Aktion: Plan einer Woche senden ---- */
     const weekStart = payload.weekStart ?? ''
     if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return json({ error: 'bad-request' }, 400)
+
+    /**
+     * Zeilen einer `task_key`-Tabelle, **nur für diese Woche**.
+     *
+     * `confirmations` und `assignment_log` wurden hier je Knopfdruck ganz
+     * gelesen — beide wachsen mit der Zeit (gut 35 Plätze je Woche, und das
+     * Tagebuch wird nie aufgeräumt), gebraucht wird davon aber immer nur eine
+     * Woche. Nach ein paar Jahren holte ein Druck Zehntausende Zeilen, um in
+     * dreißig davon nachzusehen.
+     *
+     * Die Woche steht im Schlüssel selbst, in genau zwei Formen: `<Montag>|…`
+     * für die Zusammenkünfte und `fs|<Montag>|…` für die Treffpunkte (T66).
+     * Fehlt die zweite, gilt jede Treffpunkt-Leitung als noch nicht gemeldet
+     * und der Leiter bekommt bei jedem Druck dieselbe Nachricht erneut.
+     *
+     * Zwei einfache `like`-Abfragen statt eines `or=`: Sie laufen parallel, und
+     * ihre Bedeutung ist ohne Nachschlagen in der PostgREST-Grammatik zu
+     * erkennen. `weekStart` ist oben auf `YYYY-MM-DD` geprüft, enthält also
+     * weder `%` noch `_`, die als Muster wirkten.
+     */
+    const jeWoche = async <T>(tabelle: string, spalten: string): Promise<T[]> => {
+      const teile = await Promise.all(
+        [`${weekStart}|*`, `fs|${weekStart}|*`].map((muster) =>
+          rest.get<T[]>(
+            `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` +
+              `&task_key=like.${wert(muster)}`,
+          ),
+        ),
+      )
+      return teile.flat()
+    }
 
     const [congRows, weekRows, fsRows, confs, services, log] = await Promise.all([
       rest.get<{ meeting_times: string }[]>(
@@ -300,15 +372,11 @@ Deno.serve(async (req: Request) => {
         console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
         return [] as { start: string; data: FsInstance[] }[]
       }),
-      rest.get<{ task_key: string; status: string }[]>(
-        `confirmations?select=task_key,status&congregation_id=eq.${wert(cong)}`,
-      ),
+      jeWoche<{ task_key: string; status: string }>('confirmations', 'task_key,status'),
       rest.get<ServiceRow[]>(
         `services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}&order=position.asc`,
       ),
-      rest.get<{ task_key: string; name: string }[]>(
-        `assignment_log?select=task_key,name&congregation_id=eq.${wert(cong)}`,
-      ).catch((err) => {
+      jeWoche<{ task_key: string; name: string }>('assignment_log', 'task_key,name').catch((err) => {
         // Fehlt das Tagebuch (Migration nicht eingespielt), würde ohne diesen
         // Fang gar nichts hinausgehen. Lieber senden — schlimmstenfalls eine
         // Wiederholung, nie ein Ausfall.
@@ -344,7 +412,9 @@ Deno.serve(async (req: Request) => {
     for (const pend of pendingOfFsWeek(weekStart, fsRows[0]?.data ?? [], conf)) {
       offen.push({
         ...pend,
-        eintrag: { datum: terminText(weekStart, pend.offset, {}, pend.zeit), label: pend.label },
+        // Termin und Bezeichnung stehen fertig in der Aufzählung — beim Treffpunkt
+        // trägt der Termin den Ort (siehe `FS_LEITER`).
+        eintrag: { datum: pend.datum, label: pend.label },
       })
     }
 

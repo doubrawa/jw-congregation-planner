@@ -13,6 +13,7 @@
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { fsBaseFromWeeks, fsMigrateInstIds, fsMigrateLeaderPids, fsWochenKennungen, fsWochenStart, regenFsWeeks } from '../data/fs'
 import { itemTaskKey, partTaskKey, sentKey, taskKeyVorbei } from '../data/planning'
+import type { EntzogeneZusage } from '../data/plan-versand'
 import {
   displayName,
   eindeutigeNamen,
@@ -826,6 +827,75 @@ function notificationFromRow(r: NotificationRow): Notification {
   }
 }
 
+/**
+ * Wie viele Glocken-Zeilen ein Ladevorgang mitnimmt. Älteres räumt
+ * `send-reminders` serverseitig ab (30 Tage).
+ */
+const NOTIF_LIMIT = 50
+
+/**
+ * Die Glocken-Abfrage — **eine** Fassung für den vollen Ladevorgang und für das
+ * Nachladen beim Öffnen der Glocke. Liefe sie auseinander (andere Grenze,
+ * andere Sortierung), zeigte die Glocke nach dem Nachladen etwas anderes als
+ * nach einem Neustart, und niemand fände den Grund.
+ *
+ * Auf die eigene `user_id` filtert die Abfrage nicht: Der Feed ist seit
+ * migration-009 personalisiert, und RLS lässt ohnehin nur die eigenen Zeilen
+ * durch.
+ */
+function notifAbfrage(client: NonNullable<typeof supabase>, congregationId: string) {
+  return client
+    .from('notifications')
+    .select('*')
+    .eq('congregation_id', congregationId)
+    .order('created_at', { ascending: false })
+    .limit(NOTIF_LIMIT)
+}
+
+/**
+ * Rohzeilen → Glocken-Zeilen.
+ *
+ * Abgelaufenes fällt heraus (T77): Eine Mitteilung über einen Platz, dessen Tag
+ * vorbei ist, interessiert niemanden mehr — „Ersatz gesucht" für letzten
+ * Dienstag am wenigsten. Möglich erst, seit die Zeile weiß, worum es geht
+ * (migration-020); ältere Zeilen tragen keinen Schlüssel und bleiben stehen,
+ * sie laufen ohnehin über die Grenze aus.
+ */
+function notificationsAus(
+  rows: NotificationRow[],
+  weeks: Week[],
+  meetings: string,
+): Notification[] {
+  return rows
+    .map(notificationFromRow)
+    .filter((n) => !n.taskId || !taskKeyVorbei(n.taskId, weeks, meetings))
+}
+
+/**
+ * Nur die Glocken-Zeilen nachladen — der leichte Teil eines Ladevorgangs.
+ *
+ * Beim Öffnen der Glocke lief bis hierher der **volle** Ladevorgang: dreizehn
+ * Abfragen, darunter 52 Wochen als JSONB und das ganze Versand-Tagebuch, um
+ * fünfzig Zeilen anzuzeigen. Wer die App als PWA offen liegen hat und
+ * gelegentlich nachsieht, lud damit jedes Mal die ganze Versammlung neu.
+ *
+ * `null` heißt „nicht gelesen" (kein Client, Fehler) — dann bleibt der
+ * bisherige Stand stehen, wie bei jedem stillen Nachladen.
+ */
+export async function loadNotifications(
+  congregationId: string,
+  weeks: Week[],
+  meetings: string,
+): Promise<Notification[] | null> {
+  if (!supabase) return null
+  const { data, error } = await notifAbfrage(supabase, congregationId)
+  if (error) {
+    console.error('[notifications]', error.message)
+    return null
+  }
+  return notificationsAus((data ?? []) as NotificationRow[], weeks, meetings)
+}
+
 /* ---- Laden --------------------------------------------------------------- */
 
 /**
@@ -940,8 +1010,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
     supabase.from('absences').select('*').eq('congregation_id', congregationId).order('from_date'),
-    // Nur die neuesten 50 — Altbestand räumt send-reminders serverseitig ab
-    supabase.from('notifications').select('*').eq('congregation_id', congregationId).order('created_at', { ascending: false }).limit(50),
+    // Dieselbe Abfrage, die auch das Nachladen beim Öffnen der Glocke benutzt.
+    notifAbfrage(supabase, congregationId),
     supabase.from('confirmations').select('task_key, status').eq('congregation_id', congregationId),
     // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
     supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
@@ -1107,16 +1177,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsWeeks,
     fsBase,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
-    /*
-     * Abgelaufenes fällt heraus (T77): Eine Mitteilung über einen Platz, dessen
-     * Tag vorbei ist, interessiert niemanden mehr — „Ersatz gesucht" für
-     * letzten Dienstag am wenigsten. Möglich erst, seit die Zeile weiß, worum
-     * es geht (migration-020); ältere Zeilen tragen keinen Schlüssel und
-     * bleiben stehen, sie laufen ohnehin über die 50er-Grenze aus.
-     */
-    notifications: (notifs.data ?? [])
-      .map((r) => notificationFromRow(r as NotificationRow))
-      .filter((n) => !n.taskId || !taskKeyVorbei(n.taskId, weekList, cong.data?.meeting_times ?? '')),
+    notifications: notificationsAus(
+      (notifs.data ?? []) as NotificationRow[],
+      weekList,
+      cong.data?.meeting_times ?? '',
+    ),
     confirmations,
     reminders,
     auxClass: settings.auxClass ?? false,
@@ -1548,31 +1613,47 @@ export async function sendPlan(weekStart: string): Promise<PlanVersand | null> {
 }
 
 /**
- * Eine **bestätigte** Zuteilung wurde zurückgezogen oder verlegt — die
- * betroffene Person erfährt es sofort.
+ * **Bestätigte** Zuteilungen wurden zurückgezogen oder verlegt — die
+ * betroffenen Personen erfahren es sofort.
  *
  * Das ist der einzige Fall, in dem eine Zuteilungs-Nachricht nicht auf den
  * Knopf wartet: Wer zugesagt hat, bereitet vor. Bliebe es beim nächsten „Plan
  * senden", übte jemand tagelang für einen Platz, den er nicht mehr hat.
  *
+ * **Ein Aufruf für alle Entzüge einer Änderung.** Hier ging je Entzug ein
+ * eigener `invoke` hinaus, und die Function wiederholte für jeden davor
+ * dieselben fünf REST-Runden über Mitglieder, Personen und Push-Abos. Eine
+ * Auto-Zuteilung, die eine Zusammenkunft neu besetzt, löste damit ein Dutzend
+ * voller Aufrufe aus — für Nachrichten, die ohnehin alle aus demselben Bestand
+ * zugestellt werden. Als Liste sind es fünf Runden, einmal.
+ *
  * Bezeichnung und Termin gehen kanonisch deutsch mit — der Client hat den Platz
  * gerade in der Hand, die Function könnte ihn nach dem Überschreiben nicht mehr
  * nachschlagen.
+ *
+ * **Reihenfolge beim Ausrollen:** Die Function muss die Listenform kennen,
+ * bevor ein Client sie schickt (`npx supabase functions deploy send-plan`).
+ * Umgekehrt ist es unkritisch — die alte Einzelform nimmt sie weiter an.
  */
-export function sendPlanEntzug(
-  taskKey: string,
-  name: string,
-  pid: string | undefined,
-  label: string,
-  datum: string,
-): void {
-  if (!supabase) return
+export function sendPlanEntzug(entzuege: EntzogeneZusage[]): void {
+  if (!supabase || entzuege.length === 0) return
   // **Kein `run()`**: Dessen Fehlerweg meldet „Änderung konnte nicht gespeichert
   // werden" — hier ist aber nichts zu speichern, sondern eine Nachricht zu
   // schicken. Der Planer bekäme eine Warnung über einen Verlust, den es nicht
   // gab, während seine Änderung längst in der Datenbank steht.
   void supabase.functions
-    .invoke('send-plan', { body: { action: 'entzug', taskKey, name, pid, label, datum } })
+    .invoke('send-plan', {
+      body: {
+        action: 'entzug',
+        entzuege: entzuege.map((z) => ({
+          taskKey: z.key,
+          name: z.name,
+          pid: z.pid,
+          label: z.label,
+          datum: z.datum,
+        })),
+      },
+    })
     .then(({ error }) => {
       if (error) console.error('[send-plan/entzug]', error.message)
     })

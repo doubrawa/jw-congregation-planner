@@ -4211,6 +4211,94 @@ stand an einer Function und deckt jetzt alle ab.
 
 ---
 
+## Aufgenommen am 31. August 2026 — der Rest aus der Durchsicht (T102)
+
+### T102 · Die fünf offenen Punkte des `/simplify` 🔧 ✅ erledigt
+**Vorgabe des Betreibers am 31. August 2026:** „fix die offenen sachen aus dem
+simplify". Gemeint sind die Punkte, die die Durchsicht vom 30.8. als *Aufwand
+oder Entscheidung* zurückgestellt hatte — kein Fehler war darunter, aber vier
+davon kosten im Betrieb messbar, und einer sagt dem Empfänger zweierlei.
+
+**1. Ein Aufruf für alle Entzüge.** `sendPlanEntzug` ging je zurückgezogenem
+Platz einzeln hinaus, und `send-plan` wiederholte für jeden davon dieselben
+fünf REST-Runden über alle Mitglieder, Personen und Push-Abos. Eine
+Auto-Zuteilung fasst aber eine ganze Zusammenkunft an; `setAuxClass` und
+`fsRuleAdd` fassen alle 52 Wochen auf einmal an. Aus **einer** Handlung wurden
+Dutzende voller Aufrufe. `persist.ts` sammelt jetzt erst und schickt einmal;
+die Function nimmt eine Liste und bündelt sie **je Person** zu einer Nachricht
+— dieselbe Regel wie beim „Plan senden": Wer beim Umbesetzen zwei Plätze
+verliert, soll einmal hinsehen müssen und nicht zweimal erschrecken.
+
+> **Vertragsänderung, also Reihenfolge beachten:** `npx supabase functions
+> deploy send-plan` muss **vor** dem Client hinausgehen. Umgekehrt ist es
+> unkritisch — die alte Einzelform nimmt die Function weiter an, denn ein
+> Browser-Tab, der seit Tagen offen liegt, schickt noch sie.
+
+**2. Der Druck liest nur seine Woche.** `confirmations` und `assignment_log`
+wurden je Knopfdruck **ganz** gelesen. Beide wachsen mit jeder geplanten Woche,
+und das Tagebuch wird nie aufgeräumt (siehe Punkt 3) — nach ein paar Jahren
+holte ein Druck Zehntausende Zeilen, um in dreißig davon nachzusehen. Die Woche
+steht im Schlüssel selbst, in genau zwei Formen (T66): `<Montag>|…` und
+`fs|<Montag>|…`. Also zwei schlichte `like`-Abfragen je Tabelle statt eines
+`or=` — sie laufen parallel, und ihre Bedeutung ist ohne Nachschlagen in der
+PostgREST-Grammatik zu erkennen. Die Analyse hatte eine Spalte `week_start`
+vorgeschlagen; die hätte eine Migration gekostet und dasselbe geleistet.
+Die zweite Form ist die wichtige: Fehlt sie, gilt jede Treffpunkt-Leitung als
+noch nicht gemeldet, und der Leiter bekommt bei **jedem** Druck dieselbe
+Nachricht erneut.
+
+> **Gegen echtes PostgREST gemessen**, nicht angenommen — das war der
+> ausdrückliche Vorbehalt des Befunds. Beide Filter antworten am Live-Projekt
+> mit 200 (`…&task_key=like.2026-09-07%7C*` und `…like.fs%7C2026-09-07%7C*`);
+> die Gegenprobe mit einem unbekannten Operator antwortet 400 (`PGRST100`), die
+> Endpunkte melden Syntaxfehler also durchaus. Ohne Anmeldung kommen wegen RLS
+> keine Zeilen zurück — **dass** der Filter greift, prüft die Attrappe, die
+> `like` jetzt selbst auswertet (`likeMuster`/`passtAufMuster` in
+> `_test/attrappe.ts`); vorher sah „ganze Tabelle" dort genauso aus wie „eine
+> Woche".
+
+**3. Aufbewahrungsfrist für `assignment_log` — verworfen, nicht vergessen.**
+Der Betreiber hat entschieden: **keine Löschregel.** Nach dem Lesefilter aus
+Punkt 2 liest niemand mehr die ganze Tabelle; rund 2000 Zeilen im Jahr sind für
+Postgres nichts, und das Tagebuch bleibt als vollständiger Nachweis erhalten,
+wer wann benachrichtigt wurde. Die Entscheidung ist reversibel — eine
+Löschregel lässt sich jederzeit nachrüsten, gelöschte Zeilen nicht.
+
+**4. Die Glocke lädt in zwei Stufen.** Ihr Öffnen löste den **vollen**
+Ladevorgang aus: dreizehn Abfragen, darunter 52 Wochen als JSONB, alle
+Bestätigungen und das Versand-Tagebuch — für fünfzig Zeilen Text. Jetzt holt
+die erste Stufe nur die Glocken-Zeilen (`loadNotifications`, eine Abfrage); ist
+keine neue dabei, bleibt es dabei.
+
+Die zweite Stufe ist dabei **nicht** wegzulassen, und genau darin lag die
+Frage, die der Befund offengelassen hatte („Fix ändert, wie frisch der Stand
+danach ist"): Eine frische Zeile trägt oft einen Aufgaben-Schlüssel, und ob
+daraus ein Bestätigen-Knopf wird, entscheidet `state.myTasks` — abgeleitet aus
+Wochen und Bestätigungen. Ohne den vollen Nachlauf zeigte die Glocke die neue
+Zuteilung an und verschwiege genau den Knopf, für den sie den Schlüssel
+mitbringt. Also: neue Zeile → voller Lauf wie bisher, sonst nur die Liste.
+
+**5. Eine Bezeichnung für den Treffpunkt-Leiter.** Die Function schrieb
+`Treffpunkt-Leiter · <Ort>` und ließ den Termin ohne Ort; der Client schrieb
+`Treffpunkt-Leiter` und setzte den Ort in den Termin. Dieselbe Auskunft in zwei
+Reihenfolgen, je nachdem, ob die Nachricht aus dem Versand oder aus dem Browser
+kam — wer erst erinnert und dann entzogen wurde, las zweierlei. Es gilt die
+Client-Form: **der Ort gehört zum Termin**, er beantwortet „wo und wann", nicht
+„was", und so steht es auch in „Meine Aufgaben". Die Zeichenkette liegt jetzt
+einmal da (`FS_LEITER` in `_shared/zuteilungen.ts`, vom Client mit eingebunden)
+statt zweimal.
+
+**Nicht angefasst:** Punkt 6 der Durchsicht (`_shared/zuteilungen.ts` filtert
+`conf` innerhalb der Aufzählung). Den Filter herauszuziehen verlöre still die
+Doppelprüfung gegen `posKey` **und** `idKey`; das war und bleibt Absicht.
+
+**Prüfen:** `npm test` (4801), `tsc -b`, `oxlint`, Sperrklinke unverändert.
+Fünf neue Einträge in `scripts/mutationsprobe.mjs` (126) — jede der fünf Regeln
+einmal gebrochen und der Lauf rot gesehen, beim Nachladen der Glocke in
+**beide** Richtungen (nie nachladen · immer nachladen).
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -4236,15 +4324,16 @@ stand an einer Function und deckt jetzt alle ab.
 
 ## Fortschritt
 
-Stand 30. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 31. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐ · 29. August ☑ · 30. August ☑☑
+22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐ · 29. August ☑ · 30. August ☑☑ ·
+31. August ☑
 
-**99 von 101 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+**100 von 102 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. Offen sind zwei: **T95** (Ideen für den
 Start-Bildschirm), am 23. August nebenbei aufgenommen und ausdrücklich noch
 kein Bauauftrag, und **T98** (die Dokumentation auf den Stand des Codes
@@ -4262,7 +4351,12 @@ Punkte nach, die dabei als „zu groß" beiseite lagen: Der Montag einer
 Treffpunkt-Woche kommt jetzt aus der Woche statt aus ihrer Ordnungszahl (eine
 Lücke im Bestand verschob sonst Schlüssel, Datum und Monatsregel um sieben
 Tage), und die vierfach kopierte Präambel der Edge Functions liegt in
-`_shared/` — sie war bereits auseinandergelaufen. Davor fielen die beiden
+`_shared/` — sie war bereits auseinandergelaufen. **T102** hat am 31. August
+den Rest jener Durchsicht abgeräumt: Entzüge gehen in einem Aufruf hinaus statt
+einzeln, „Plan senden" liest nur noch seine Woche statt beider Tabellen ganz,
+die Glocke lädt in zwei Stufen, und der Ort eines Treffpunkts steht auf beiden
+Seiten im Termin. Eine Aufbewahrungsfrist für das Versand-Tagebuch hat der
+Betreiber dabei ausdrücklich verworfen. Davor fielen die beiden
 letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
 nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
 **T89** ist am 23. August mit migration-022 nicht nur gemessen, sondern

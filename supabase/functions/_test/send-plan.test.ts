@@ -23,7 +23,14 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { TITEL_ENTZUG, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
-import { filterWert, jsonRes, ohneFragment, schreibZugriff } from './attrappe.ts'
+import {
+  filterWert,
+  jsonRes,
+  likeMuster,
+  ohneFragment,
+  passtAufMuster,
+  schreibZugriff,
+} from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -120,6 +127,10 @@ let woche: unknown
 let writes: Write[]
 let confirmations: { task_key: string; status: string }[]
 let log: { task_key: string; name: string }[]
+/** Treffpunkte der Woche (`fs_weeks`) — zweite Datenquelle, eigener Schlüsselraum. */
+let fsWoche: unknown[]
+/** Die Lesepfade auf `confirmations`/`assignment_log` eines Laufs. */
+let gelesen: string[]
 
 const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
@@ -161,9 +172,32 @@ const fakeFetch = async (
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
   if (path.startsWith('services')) return jsonRes(fremd ? [] : SERVICES)
   if (path.startsWith('congregations')) return jsonRes(fremd ? [] : CONGREGATIONS)
-  if (path.startsWith('confirmations')) return jsonRes(fremd ? [] : confirmations)
-  if (path.startsWith('assignment_log')) return jsonRes(fremd ? [] : log)
-  if (path.startsWith('fs_weeks')) return jsonRes([])
+  /*
+   * **Die Wochen-Filter werden ausgewertet, nicht überlesen.**
+   *
+   * Beide Tabellen wachsen ohne Grenze und wurden hier je Knopfdruck ganz
+   * gelesen. Gäbe die Attrappe weiterhin alles zurück, sähe „ganze Tabelle"
+   * genauso aus wie „eine Woche" — der Filter wäre eine Zusicherung ohne
+   * Deckung. Ohne Filter im Pfad bleibt es beim ganzen Bestand: So sieht der
+   * Test denselben Unterschied wie der Server.
+   */
+  const zurWoche = <T extends { task_key: string }>(rows: T[]): T[] => {
+    const muster = likeMuster(path, 'task_key')
+    if (muster.length === 0) return rows
+    return rows.filter((r) => muster.some((m) => passtAufMuster(r.task_key, m)))
+  }
+  if (path.startsWith('confirmations')) {
+    gelesen.push(path)
+    return jsonRes(fremd ? [] : zurWoche(confirmations))
+  }
+  if (path.startsWith('assignment_log')) {
+    gelesen.push(path)
+    return jsonRes(fremd ? [] : zurWoche(log))
+  }
+  if (path.startsWith('fs_weeks')) {
+    const start = filterWert(path, 'start')
+    return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: fsWoche }] : [])
+  }
   if (path.startsWith('weeks')) {
     const start = filterWert(path, 'start')
     return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: woche }] : [])
@@ -195,6 +229,8 @@ beforeEach(() => {
   writes = []
   confirmations = []
   log = []
+  fsWoche = []
+  gelesen = []
   resetPush()
 })
 
@@ -359,6 +395,75 @@ describe('Eine ausgefallene Zusammenkunft wird nicht gemeldet (T30)', () => {
   })
 })
 
+/* ---- Wochenfilter -------------------------------------------------------- */
+
+/**
+ * **Ein Druck holt eine Woche, nicht das ganze Archiv.**
+ *
+ * `confirmations` und `assignment_log` wurden hier ganz gelesen. Beide wachsen
+ * mit jeder geplanten Woche (gut 35 Plätze, und das Tagebuch wird nie
+ * aufgeräumt) — nach ein paar Jahren holte ein Knopfdruck Zehntausende Zeilen,
+ * um in dreißig davon nachzusehen.
+ *
+ * Der Filter darf dabei nach **beiden** Seiten nicht danebenliegen: Zu weit,
+ * und das Wachstum bleibt; zu eng, und eine Zeile dieser Woche fehlt — dann
+ * gilt ein längst bestätigter Platz als unbestätigt und die Nachricht geht ein
+ * zweites Mal hinaus. Die Treffpunkte hängen daran besonders, weil ihr
+ * Schlüssel als einziger **nicht** mit dem Montag beginnt (`fs|<Montag>|…`).
+ */
+describe('Plan senden liest nur die Woche, die es sendet', () => {
+  const ANDERE = '2026-09-14' // die Woche danach
+
+  it('beide Tabellen werden nur mit Wochenfilter gelesen — keine Voll-Lesung', async () => {
+    await plan()
+    for (const tabelle of ['confirmations', 'assignment_log']) {
+      const pfade = gelesen.filter((p) => p.startsWith(tabelle))
+      expect(pfade.length, `${tabelle} gar nicht gelesen`).toBeGreaterThan(0)
+      // Keine einzige Abfrage ohne Filter — eine genügte, um wieder alles zu holen.
+      for (const pfad of pfade) {
+        expect(likeMuster(pfad, 'task_key'), `ohne Wochenfilter: ${pfad}`).toHaveLength(1)
+      }
+      // Und zusammen decken sie **beide** Schlüsselformen ab (T66): der Montag
+      // vorn für die Zusammenkünfte, `fs|` davor für die Treffpunkte.
+      const muster = pfade.flatMap((p) => likeMuster(p, 'task_key')).sort()
+      expect(muster, tabelle).toEqual([`${WOCHE}|*`, `fs|${WOCHE}|*`].sort())
+    }
+  })
+
+  it('eine Bestätigung der Nachbarwoche hält niemanden zurück', async () => {
+    // Derselbe Platz, andere Woche: Wer nächste Woche zugesagt hat, hat für
+    // diese noch nichts gehört.
+    confirmations = [{ task_key: `${ANDERE}|mid|part|i1|0`, status: 'bestätigt' }]
+    const res = (await (await plan()).json()) as { aufgaben: number }
+    expect(res.aufgaben).toBe(3)
+  })
+
+  it('aber die Bestätigung DIESER Woche hält ihn zurück', async () => {
+    // Die Gegenprobe: Ein Filter, der zu viel wegschneidet, bestünde die
+    // Prüfung darüber und fiele hier.
+    confirmations = [{ task_key: KEY_ANNA, status: 'bestätigt' }]
+    const res = (await (await plan()).json()) as { aufgaben: number }
+    expect(res.aufgaben).toBe(2)
+  })
+
+  it('ein Treffpunkt-Eintrag im Tagebuch wird gefunden — trotz `fs|`-Schlüssel', async () => {
+    /*
+     * Der Schlüssel eines Treffpunkts beginnt mit `fs|`, nicht mit dem Montag.
+     * Ein Filter, der nur `<Montag>|*` kennt, findet ihn nie — der Leiter
+     * bekäme bei jedem Druck erneut dieselbe Nachricht, und das dauerhaft.
+     */
+    fsWoche = [
+      { id: 'r1', grp: '', wd: 6, time: '09:30', place: 'Bahnhof', leader: 'Bernd Cohn', lpid: 'p-bernd' },
+    ]
+    const key = `fs|${WOCHE}|r1`
+    log = [{ task_key: key, name: 'Bernd Cohn' }]
+    const res = (await (await plan()).json()) as { aufgaben: number }
+    // Anna und Karl bleiben; der Treffpunkt UND der Hilfsdienst von Bernd …
+    expect(res.aufgaben).toBe(3)
+    expect(zeilenIn('assignment_log').map((z) => z.task_key)).not.toContain(key)
+  })
+})
+
 /* ---- Entzug -------------------------------------------------------------- */
 
 describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
@@ -439,6 +544,105 @@ describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
     })
     expect(res.status).toBe(200)
     expect(zeilenIn('notifications')[0]).toMatchObject({ user_id: U_ANNA })
+  })
+})
+
+/**
+ * **Mehrere Entzüge, ein Aufruf.**
+ *
+ * Der Client schickte je zurückgezogenem Platz einen eigenen `invoke`, und die
+ * Function las davor jedes Mal aufs Neue alle Mitglieder, alle Personen und
+ * alle Push-Abos der Versammlung. Wer eine Zusammenkunft neu besetzt oder die
+ * Zusätzliche Klasse umstellt, löste damit ein Dutzend voller Aufrufe aus —
+ * für Nachrichten, die ohnehin alle aus demselben Bestand zugestellt werden.
+ *
+ * Die Prüfungen darüber schicken weiter die **alte Einzelform**; das ist kein
+ * Versehen, sondern der zweite Anwendungsfall: Ein Browser-Tab, der seit Tagen
+ * offen liegt, kennt die Liste noch nicht und muss weiter durchkommen.
+ */
+describe('Entzug als Liste: ein Aufruf für alle', () => {
+  it('zwei Betroffene bekommen je ihre eigene Nachricht', async () => {
+    const res = await ruf({
+      action: 'entzug',
+      entzuege: [
+        { taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di' },
+        { taskKey: KEY_BERND, name: 'Bernd Cohn', pid: 'p-bernd', label: 'Mikrofone', datum: 'Di' },
+      ],
+    })
+    expect(res.status).toBe(200)
+    const zeilen = zeilenIn('notifications')
+    expect(zeilen.map((z) => z.user_id).sort()).toEqual([U_ANNA, U_BERND].sort())
+    expect(zeilen.every((z) => z.title === TITEL_ENTZUG)).toBe(true)
+  })
+
+  it('wer zwei Plätze verliert, bekommt EINE Nachricht mit beiden', async () => {
+    // Dieselbe Regel wie beim „Plan senden": einmal hinsehen, nicht zweimal
+    // erschrecken.
+    const res = await ruf({
+      action: 'entzug',
+      entzuege: [
+        { taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di' },
+        { taskKey: KEY_BERND, name: 'Anna Berg', pid: 'p-anna', label: 'Mikrofone', datum: 'Di' },
+      ],
+    })
+    expect(res.status).toBe(200)
+    const zeilen = zeilenIn('notifications')
+    expect(zeilen).toHaveLength(1)
+    expect(String(zeilen[0]!.body)).toContain('Bibellesung')
+    expect(String(zeilen[0]!.body)).toContain('Mikrofone')
+  })
+
+  it('jeder Platz der Liste verschwindet aus dem Tagebuch', async () => {
+    /*
+     * Der Eintrag sagt „diese Person weiß von diesem Platz". Bliebe einer
+     * stehen, bekäme sie bei einer erneuten Zuteilung auf denselben Platz
+     * keine Nachricht mehr — er zählte als gemeldet. Eine Fassung, die nur den
+     * ersten der Liste löscht, bestünde jede Prüfung oben und fiele hier.
+     */
+    await ruf({
+      action: 'entzug',
+      entzuege: [
+        { taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di' },
+        { taskKey: KEY_BERND, name: 'Bernd Cohn', pid: 'p-bernd', label: 'Mikrofone', datum: 'Di' },
+      ],
+    })
+    const geloescht = writes
+      .filter((w) => w.method === 'DELETE' && w.path.startsWith('assignment_log'))
+      .map((w) => w.path)
+    expect(geloescht).toHaveLength(2)
+    expect(geloescht.some((p) => p.includes(encodeURIComponent(KEY_ANNA)))).toBe(true)
+    expect(geloescht.some((p) => p.includes(encodeURIComponent(KEY_BERND)))).toBe(true)
+  })
+
+  it('wer kein Konto hat, steht in der Antwort — die anderen gehen trotzdem hinaus', async () => {
+    const res = await ruf({
+      action: 'entzug',
+      entzuege: [
+        { taskKey: KEY_OHNE, name: 'Karl Onto', pid: 'p-ohne', label: 'Schatz', datum: 'Di' },
+        { taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di' },
+      ],
+    })
+    const body = (await res.json()) as { personen: number; ohneKonto: string[] }
+    expect(body).toMatchObject({ personen: 1, ohneKonto: ['Karl Onto'] })
+    expect(zeilenIn('notifications')[0]).toMatchObject({ user_id: U_ANNA })
+  })
+
+  it('eine Liste ohne brauchbaren Eintrag ist ein Fehler, kein stiller Nichtversand', async () => {
+    // Sonst quittierte die Function einen kaputten Rumpf mit „ok" — und der
+    // Betroffene erführe nie von seinem Verlust.
+    expect((await ruf({ action: 'entzug', entzuege: [] })).status).toBe(400)
+    expect((await ruf({ action: 'entzug', entzuege: [{ name: 'Anna Berg' }] })).status).toBe(400)
+    expect(writes).toEqual([])
+  })
+
+  it('auch die Liste ist Planern vorbehalten', async () => {
+    authUser = U_MITGLIED
+    const res = await ruf({
+      action: 'entzug',
+      entzuege: [{ taskKey: KEY_ANNA, name: 'Anna Berg', label: 'x', datum: 'Di' }],
+    })
+    expect(res.status).toBe(403)
+    expect(writes).toEqual([])
   })
 })
 

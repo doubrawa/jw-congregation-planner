@@ -364,7 +364,7 @@ Deno.serve(async (req: Request) => {
           const kind = dueKind(rem, days)
           if (!kind) continue
           const entry: MitKey = {
-            datum: terminText(start, pend.offset, {}, pend.zeit),
+            datum: pend.datum,
             label: pend.label,
             key: pend.key,
           }

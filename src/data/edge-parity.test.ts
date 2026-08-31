@@ -21,7 +21,7 @@ import { STANDARD_ERINNERUNGEN } from './vorgaben'
 import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
 import { deutschesDatum, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
 import { isGuestRole, sentKey } from './planning'
-import { offeneMeldungen } from './plan-versand'
+import { entzogeneZusagen, offeneMeldungen } from './plan-versand'
 import { emptyQualifications } from './helpers'
 import type { Abweichung, FsInstance, Person, Week } from './types'
 
@@ -395,6 +395,47 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
     const server = edgeFsPending(MONTAG, [inst as never], new Map())
     expect(client.map((o) => o.key)).toEqual(server.map((p) => p.key))
     expect(client.map((o) => o.name)).toEqual(server.map((p) => p.name))
+  })
+
+  /**
+   * **Und dieselbe Zeile, nicht nur derselbe Schlüssel.**
+   *
+   * Die Function schrieb `Treffpunkt-Leiter · Bahnhof` und ließ den Termin ohne
+   * Ort; der Client schrieb `Treffpunkt-Leiter` und setzte den Ort in den
+   * Termin. Zwei Reihenfolgen derselben Auskunft, je nachdem, ob die Nachricht
+   * aus dem Versand oder aus dem Browser kam — und dazwischen liegt nur, wer
+   * gerade schreibt. Wer erst erinnert und dann entzogen wird, las zweierlei.
+   */
+  it('dieselbe Bezeichnung und derselbe Termin auf beiden Seiten', () => {
+    const nachher = { ...inst, leader: 'A. Anders', lpid: 'p2' }
+    const key = `fs|${MONTAG}|r1`
+    const client = entzogeneZusagen(
+      woche,
+      woche,
+      [inst as FsInstance],
+      [nachher as FsInstance],
+      1,
+      BASIS,
+      [],
+      '',
+      { [key]: 'bestätigt' },
+    )
+    const server = edgeFsPending(MONTAG, [inst as never], new Map())
+    expect(client).toHaveLength(1)
+    expect(server).toHaveLength(1)
+    expect(client[0]!.label).toBe(server[0]!.label)
+    expect(client[0]!.datum).toBe(server[0]!.datum)
+    // Und zwar so herum: der Ort gehört zum Termin, nicht in die Bezeichnung.
+    expect(server[0]!.label).toBe('Treffpunkt-Leiter')
+    expect(server[0]!.datum).toBe('Samstag, 26. September · 09:30 · Königreichssaal')
+  })
+
+  it('ohne Ort endet der Termin nicht auf einem hängenden Trenner', () => {
+    // Der Rand, an dem die zwei Fassungen schon einmal auseinanderliefen.
+    const ohneOrt = { ...inst, place: '' }
+    expect(edgeFsPending(MONTAG, [ohneOrt as never], new Map())[0]!.datum).toBe(
+      'Samstag, 26. September · 09:30',
+    )
   })
 
   it('und ein Freitext-Leiter bleibt auf beiden Seiten draußen', () => {

@@ -1067,6 +1067,78 @@ const KATALOG = [
     suchen: '    ([, ziel]) => confirmations[ziel] === undefined || zieht.has(ziel),',
     ersetzen: '    ([, ziel]) => confirmations[ziel] === undefined,',
   },
+
+  // ── Mitteilungen: Umfang und Bezeichnung (T102) ───────────────────────────
+  {
+    id: 'plan-liest-nur-die-woche',
+    datei: 'supabase/functions/send-plan/index.ts',
+    /*
+      Der Filter darf nach beiden Seiten nicht danebenliegen. Die Mutation
+      lässt die zweite Schlüsselform weg — die der Treffpunkte, als einzige
+      ohne führenden Montag. Ohne sie gilt jede Treffpunkt-Leitung als noch
+      nicht gemeldet, und der Leiter bekommt bei jedem Druck dieselbe
+      Nachricht erneut.
+    */
+    regel:
+      'Der Wochenfilter deckt BEIDE Schlüsselformen ab — `<Montag>|…` und `fs|<Montag>|…`.',
+    suchen: '[`${weekStart}|*`, `fs|${weekStart}|*`]',
+    ersetzen: '[`${weekStart}|*`]',
+  },
+  {
+    id: 'entzug-loescht-jeden-eintrag',
+    datei: 'supabase/functions/send-plan/index.ts',
+    /*
+      Seit der Entzug als Liste kommt, ist „den Eintrag löschen" ein „jeden
+      Eintrag löschen". Die Mutation nimmt nur den ersten. Bliebe einer stehen,
+      bekäme die Person bei einer erneuten Zuteilung auf denselben Platz keine
+      Nachricht mehr — er zählte als gemeldet.
+    */
+    regel:
+      'Ein Entzug räumt JEDEN Platz der Liste aus dem Versand-Tagebuch, nicht nur den ersten.',
+    suchen: '        entzuege.map((e) =>\n          rest.send(',
+    ersetzen: '        entzuege.slice(0, 1).map((e) =>\n          rest.send(',
+  },
+  {
+    id: 'entzug-als-liste',
+    datei: 'src/app/persist.ts',
+    /*
+      Je Entzug ein eigener Aufruf hieß: Die Function las für jeden davon aufs
+      Neue alle Mitglieder, Personen und Push-Abos. Die Mutation stellt genau
+      das wieder her — inhaltlich geht dasselbe hinaus, nur eben in N Aufrufen
+      und als N Nachrichten an dieselbe Person.
+    */
+    regel:
+      'Alle Entzüge einer Änderung gehen in EINEM Aufruf hinaus — und je Person als eine Nachricht.',
+    suchen: '    if (entzogen.length > 0) sendPlanEntzug(entzogen)',
+    ersetzen: '    for (const z of entzogen) sendPlanEntzug([z])',
+  },
+  {
+    id: 'treffpunkt-ort-im-termin',
+    datei: 'supabase/functions/_shared/zuteilungen.ts',
+    /*
+      Die Mutation stellt die alte Fassung wieder her: Ort in der Bezeichnung,
+      Termin ohne Ort. Der Client macht es umgekehrt — wer erst erinnert und
+      dann entzogen wird, las dieselbe Auskunft in zwei Reihenfolgen.
+    */
+    regel:
+      'Der Ort eines Treffpunkts steht im Termin, nicht in der Bezeichnung — auf beiden Seiten gleich.',
+    suchen: '      label: FS_LEITER,',
+    ersetzen: '      label: inst.place ? `${FS_LEITER} · ${inst.place}` : FS_LEITER,',
+  },
+  {
+    id: 'glocke-laedt-nach-wenn-neu',
+    datei: 'src/app/NotificationsPanel.tsx',
+    /*
+      Zwei Fehler sind hier möglich, und die Probe misst beide Richtungen über
+      denselben Ausdruck: Wer nie voll nachlädt, zeigt die frische Zuteilung
+      ohne den Bestätigen-Knopf, für den sie den Schlüssel mitbringt; wer immer
+      voll nachlädt, holt für fünfzig Zeilen Text die ganze Versammlung.
+    */
+    regel:
+      'Die Glocke lädt den ganzen Bestand nur nach, wenn wirklich eine neue Zeile dabei ist.',
+    suchen: 'if (frisch.some((n) => !bekannt.current.has(n.id))) {',
+    ersetzen: 'if (false) {',
+  },
 ]
 
 // ── Lauf ────────────────────────────────────────────────────────────────────

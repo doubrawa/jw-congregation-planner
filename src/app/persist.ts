@@ -7,7 +7,7 @@
 
 import { changedSlotKeys, partSwapKeyPairs, shiftPartConfirmations } from '../data/planning'
 import { itemNameCount, lacAddIndex, lacMoveTarget } from '../data/meeting-edit'
-import { entzogeneZusagen } from '../data/plan-versand'
+import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
@@ -509,21 +509,34 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * voller vermeintlicher Entzüge hervor.
    */
   if (action.type !== 'hydrate' && (prev.weeks !== next.weeks || prev.fsWeeks !== next.fsWeeks)) {
+    /*
+     * **Erst sammeln, dann einmal schicken.** Je Entzug ein eigener Aufruf
+     * hieß: Die Function las für jeden davon aufs Neue alle Mitglieder, alle
+     * Personen und alle Push-Abos der Versammlung. Eine Auto-Zuteilung fasst
+     * aber eine ganze Zusammenkunft an, und `setAuxClass` oder `fsRuleAdd`
+     * fassen alle 52 Wochen auf einmal an — aus einer Handlung wurden Dutzende
+     * Aufrufe. Gesammelt ist es einer, und wer zwei Plätze verliert, bekommt
+     * eine Nachricht statt zweier.
+     */
+    const entzogen: EntzogeneZusage[] = []
     for (let wi = 0; wi < prev.weeks.length; wi++) {
       // Unberührte Wochen behalten ihre Referenz — der Vergleich kostet nichts.
       if (prev.weeks[wi] === next.weeks[wi] && prev.fsWeeks[wi] === next.fsWeeks[wi]) continue
-      const entzogen = entzogeneZusagen(
-        prev.weeks[wi],
-        next.weeks[wi],
-        prev.fsWeeks[wi],
-        next.fsWeeks[wi],
-        wi,
-        prev.fsBase,
-        prev.services,
-        prev.congregation.meetings,
-        prev.confirmations,
+      entzogen.push(
+        ...entzogeneZusagen(
+          prev.weeks[wi],
+          next.weeks[wi],
+          prev.fsWeeks[wi],
+          next.fsWeeks[wi],
+          wi,
+          prev.fsBase,
+          prev.services,
+          prev.congregation.meetings,
+          prev.confirmations,
+        ),
       )
-      for (const z of entzogen) sendPlanEntzug(z.key, z.name, z.pid, z.label, z.datum)
     }
+    // Der Regelfall: nichts verloren, nichts zu schicken.
+    if (entzogen.length > 0) sendPlanEntzug(entzogen)
   }
 }

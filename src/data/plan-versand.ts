@@ -21,6 +21,16 @@
  * steht: eine Platzsorte wird vergessen, und niemand merkt es, weil nichts
  * fehlschlägt — es geht nur eine Nachricht weniger hinaus.
  */
+/*
+ * **Kein zweites „Treffpunkt-Leiter".** Die Bezeichnung stand hier als eigene
+ * Konstante neben der in `_shared/zuteilungen.ts` — und die beiden waren
+ * auseinander: Die Function schrieb `Treffpunkt-Leiter · <Ort>` mit ortlosem
+ * Termin, der Client `Treffpunkt-Leiter` mit dem Ort im Termin. Dieselbe
+ * Auskunft in zwei Reihenfolgen, je nachdem, ob die Nachricht aus der Function
+ * oder aus dem Browser kam. Jetzt gibt es die Zeichenkette einmal; der Ort
+ * gehört zum Termin (siehe dort).
+ */
+import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { fsKennung, fsTag, fsTaskKey, fsTerminText } from './fs'
 import { hatAuxKlasse, istAusgefallen } from './helpers'
 import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
@@ -255,13 +265,6 @@ function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): b
   if (abschnitt === 'aux' || abschnitt === 'ratgeber') return hatAuxKlasse(nachher[wo.tab])
   return true
 }
-
-/**
- * „Treffpunkt-Leiter" kanonisch deutsch — dieselbe Zeichenkette, die
- * `_shared/zuteilungen.ts` für die Erinnerungen bildet. Sie steht als
- * Programm-Fragment in allen Sprachen und wird beim Anzeigen übersetzt.
- */
-const FS_LEITER = 'Treffpunkt-Leiter'
 
 /**
  * Wann ging für diese Woche zuletzt etwas hinaus? (ISO-Zeitpunkt, sonst null.)
