@@ -584,3 +584,37 @@ describe('Abwesende bleiben unbesetzt — über den ganzen Bestand', () => {
     expect(belegt, 'fast nichts besetzt — die Zusicherung wäre wertlos').toBeGreaterThan(300)
   })
 })
+
+/**
+ * **Eine große Versammlung darf die Oberfläche nicht einfrieren.**
+ *
+ * `autoAssignMeeting` läuft synchron im Reducer, also im Klick auf
+ * „Automatisch zuteilen". Die Auswahl je Platz sortiert alle Kandidaten, und
+ * der Vergleicher fragt dabei nach ihrer Last — rund `n log n` Mal je Platz.
+ * Solange dieser Wert bei jedem Blick neu über fünf Wochen gezählt wurde,
+ * kostete eine Zusammenkunft bei 300 Personen **620 ms**; die Strichlisten
+ * merken ihn sich jetzt, und es sind **18 ms**.
+ *
+ * Die Schranke unten ist bewusst weit (zehnfacher Abstand zum gemessenen Wert):
+ * Sie soll keine langsame Maschine anschwärzen, sondern den Rückfall auf das
+ * Neuzählen bemerken — das war ein Faktor 34.
+ */
+describe('Große Versammlung: die Zuteilung bleibt zügig', () => {
+  it('300 Personen, eine Zusammenkunft — deutlich unter einer Viertelsekunde', () => {
+    const alles = [
+      'vorsitzMid', 'vorsitzWe', 'gebet', 'vortrag', 'bibellesung', 'leser',
+      'studium', 'schulung', 'schulungPartner', 'ratgeber',
+      ...DEMO_SERVICES.filter((s) => !s.groups).map((s) => `svc:${s.key}`),
+    ]
+    const leute = Array.from({ length: 300 }, (_, i) => mk(alles, { female: i % 3 === 0 }))
+    const weeks: Week[] = Array.from({ length: 52 }, (_, i) => ({ ...buildImportWeek(), start: montag(i) }))
+
+    const t0 = performance.now()
+    const { count } = autoAssignMeeting(weeks, 0, 'mid', leute, DEMO_SERVICES, [], 'all')
+    const dauer = performance.now() - t0
+
+    // Gegenprobe: Es wurde wirklich zugeteilt, nicht bloß schnell nichts getan.
+    expect(count, 'nichts zugeteilt').toBeGreaterThan(10)
+    expect(dauer, `${Math.round(dauer)} ms — zählt die Last wieder je Vergleich?`).toBeLessThan(250)
+  })
+})
