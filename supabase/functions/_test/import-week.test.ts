@@ -246,6 +246,8 @@ interface Antwort {
     alt?: Record<string, { range: string; mid: { sections: Array<{ items: Array<{ names?: unknown[] }> }> }; we: { sections: unknown[] } }>
   }
   error?: string
+  /** HTTP-Status der Antwort — nur `hole()` setzt ihn. */
+  status?: number
 }
 
 async function hole(body: Record<string, unknown> = {}): Promise<Antwort> {
@@ -254,7 +256,9 @@ async function hole(body: Record<string, unknown> = {}): Promise<Antwort> {
     method: 'POST',
     body: JSON.stringify(body),
   }))
-  return (await res.json()) as Antwort
+  // Der Status gehört zur Antwort: „ist ein Fehler" heißt 404, nicht
+  // irgendein Fehlschlag. Ohne ihn zählte auch ein Absturz als richtige Absage.
+  return { ...((await res.json()) as Antwort), status: res.status }
 }
 
 beforeEach(() => {
@@ -440,12 +444,25 @@ describe('import-week: in der Sprache der Versammlung', () => {
   })
 
   it('fehlt die Woche in dieser Sprache, ist das ein Fehler — kein stiller Rückfall', async () => {
-    // Sonst bekäme eine spanische Versammlung deutsches Programm, ohne dass
-    // irgendwo stünde, warum.
+    /*
+      Sonst bekäme eine spanische Versammlung deutsches Programm, ohne dass
+      irgendwo stünde, warum.
+
+      **Die Zusicherung war zu weit.** Hier stand `expect(error).toContain('es')`
+      — und „es" steckt in „Adresse". Nimmt man die Absage heraus, läuft der
+      Import mit `loc = null` weiter und stirbt eine Zeile später an
+      „Adresse ausserhalb von jw.org"; `week` blieb leer, der Fehlertext traf
+      zufällig, und der Test blieb grün. Die Mutationsprobe hat es gefunden
+      (`import-sprache-kein-rueckfall`), 125 von 126 Regeln waren bewacht.
+
+      Geprüft wird jetzt die Absage selbst: Status 404 und der Sprachcode in
+      Klammern, wie ihn nur diese eine Meldung schreibt.
+    */
     seiten.sprachen = ['en']
-    const { week, error } = await hole({ after: '2026-03-02', lang: 'es' })
+    const { week, error, status } = await hole({ after: '2026-03-02', lang: 'es' })
     expect(week).toBeUndefined()
-    expect(error).toContain('es')
+    expect(status).toBe(404)
+    expect(error).toMatch(/\(es\)/)
   })
 
   it('das ISO-Startdatum bleibt sprachunabhängig — daran hängt jede Kennung', async () => {
