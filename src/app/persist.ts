@@ -126,10 +126,31 @@ const fsRuleSaves = createDebouncedWriter<'rules', { congId: string; base: strin
  * eine volle Zeile mit einer leeren überschriebe. Kein Index, kein Schreiben.
  */
 
-/** Woche an `wi` speichern, falls es sie gibt. */
-function wocheSpeichern(congId: string, weeks: Week[], wi: number): void {
+/**
+ * Woche an `wi` speichern — falls es sie gibt und falls sie sich geändert hat.
+ *
+ * **Die zweite Bedingung ist die wichtigere.** Dieser Zweig entscheidet über
+ * die *Aktion*, nicht über einen Vergleich: `case 'talkEdit': wocheSpeichern(…)`
+ * schreibt, ob am Thema etwas anders ist oder nicht. Und mehrere Aktionen
+ * kommen im Betrieb regelmäßig ohne Änderung an — die Freitextfelder schicken
+ * bei **jedem** Verlassen (`onBlur`), auch wenn niemand getippt hat; die
+ * Minuten-Knöpfe schicken auch am Anschlag (5 bzw. 45); ein schon gesetzter
+ * Anlass lässt sich noch einmal auswählen.
+ *
+ * Ohne den Vergleich ging jedes Hineinklicken in ein Feld als Schreibvorgang
+ * hinaus. Das ist nicht bloß Verschwendung: Die Wochen werden mit
+ * Vergleiche-und-Tausche gespeichert (T39), ein Schreibvorgang hebt also den
+ * Zeitstempel — und der nächste Planer bekommt einen Konflikt für eine Woche
+ * gemeldet, die niemand angefasst hat, samt neu geladener Ansicht.
+ *
+ * Der Reducer gibt unberührte Wochen **identisch** zurück; darauf baut die
+ * ganze Persistenzschicht auf (siehe `geaenderteWochenSpeichern` darunter, das
+ * dieselbe Prüfung schon länger macht). Hier fehlte sie nur.
+ */
+function wocheSpeichern(congId: string, vorher: Week[], weeks: Week[], wi: number): void {
   const week = weeks[wi]
-  if (week) saveWeek(congId, week)
+  if (!week || vorher[wi] === week) return
+  saveWeek(congId, week)
 }
 
 /**
@@ -146,7 +167,7 @@ function wocheSpeichern(congId: string, weeks: Week[], wi: number): void {
 function geaenderteWochenSpeichern(congId: string, vorher: Week[], nachher: Week[]): void {
   if (vorher === nachher) return
   for (let wi = 0; wi < nachher.length; wi++) {
-    if (nachher[wi] !== vorher[wi]) wocheSpeichern(congId, nachher, wi)
+    if (nachher[wi] !== vorher[wi]) wocheSpeichern(congId, vorher, nachher, wi)
   }
 }
 
@@ -219,7 +240,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         break
       }
       if (sel) {
-        wocheSpeichern(congId, next.weeks, sel.wi)
+        wocheSpeichern(congId, prev.weeks, next.weeks, sel.wi)
         // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
         const vorher = prev.weeks[sel.wi]?.[sel.tab]
         const nachher = next.weeks[sel.wi]?.[sel.tab]
@@ -241,7 +262,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           congId,
           changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
         )
-        wocheSpeichern(congId, next.weeks, prev.week)
+        wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       }
       break
     }
@@ -253,7 +274,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           congId,
           changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
         )
-        wocheSpeichern(congId, next.weeks, prev.week)
+        wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       }
       break
     }
@@ -286,7 +307,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'lacMove': {
       if (next.weeks === prev.weeks) break // Rand: kein Tausch
-      wocheSpeichern(congId, next.weeks, prev.week)
+      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       // Bestätigungen der getauschten Positionen in der DB mittauschen
       const items = prev.weeks[prev.week]?.[mtab(prev.tab)].sections[action.si]?.items
       const b = items ? lacMoveTarget(items, action.ii, action.dir) : null
@@ -303,7 +324,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'lacRemove':
     case 'lacAdd': {
-      wocheSpeichern(congId, next.weeks, prev.week)
+      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       // Die folgenden Punkte rutschen um eine Position; task_keys sind
       // positionsbasiert, die Bestätigungen müssen also mit umbenannt werden.
       // Dieselbe Rechnung wie im Reducer, damit beide Seiten übereinstimmen.
@@ -337,14 +358,14 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'terminUpdate':
     case 'terminRemove':
     case 'setPartThema': // Thema eines Vortragspunkts (T62)
-      wocheSpeichern(congId, next.weeks, prev.week)
+      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       break
     case 'finishImport':
     case 'addImportedWeek':
-      wocheSpeichern(congId, next.weeks, next.weeks.length - 1)
+      wocheSpeichern(congId, prev.weeks, next.weeks, next.weeks.length - 1)
       break
     case 'mergeWeekAlt':
-      wocheSpeichern(congId, next.weeks, action.wi)
+      wocheSpeichern(congId, prev.weeks, next.weeks, action.wi)
       break
     case 'addPerson':
       savePerson(congId, action.person)
