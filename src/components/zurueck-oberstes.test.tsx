@@ -32,10 +32,15 @@ import type { S89Payload } from '../data/types'
  * S-89-Formular ansieht und zurückgeht, landet damit nicht bei der Zuteilung,
  * aus der er kam, sondern im Plan.
  *
- * **Eine eigene Datei**, weil der Zähler in `useBackDismiss` modulweit liegt:
- * Jedes Abmelden eines früheren Tests räumt seinen Verlaufseintrag selbst ab
- * und lässt dabei ein `popstate` offen. Der erste synthetische Rückschritt
- * dieser Datei muss der erste des Moduls sein, sonst wird er verschluckt.
+ * **Eine eigene Datei**, weil `useBackDismiss` seinen Stapel modulweit führt:
+ * Der synthetische Rückschritt hier soll auf genau die beiden Blätter treffen,
+ * die dieser Test aufgebaut hat, und auf keine Reste aus einer anderen Datei.
+ *
+ * Hier stand als Grund einmal etwas anderes: Ein früheres Abmelden lasse „ein
+ * `popstate` offen", der erste Rückschritt dieser Datei müsse deshalb der erste
+ * des Moduls sein. Das war kein Testaufbau, sondern der Fehler selbst — die
+ * Ankündigung des eigenen Aufräumens verfiel nie und verschluckte den nächsten
+ * Zurück-Druck. Sie verfällt jetzt von selbst (`zurueck-zaehler.test.tsx`).
  */
 
 vi.mock('../app/hydrate', () => ({ loadAndHydrate: () => Promise.resolve() }))

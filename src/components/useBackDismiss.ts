@@ -37,14 +37,60 @@ const MARKER = 'cpOverlay'
 const stapel: Array<object> = []
 
 /**
- * Wie viele selbst ausgelöste history.back() noch unbeantwortet sind.
+ * Angekündigte eigene `history.back()`, die noch auf ihr `popstate` warten.
  *
- * Auch unser eigenes Aufräumen erzeugt ein `popstate` — ohne diesen Zähler
- * hielte ein anderer (oder neu registrierter) Listener das für einen echten
+ * Auch unser eigenes Aufräumen erzeugt ein `popstate` — ohne diese Ankündigung
+ * hielte ein anderer (oder neu registrierter) Horcher es für einen echten
  * Zurück-Druck und schlösse sein Overlay gleich mit. Modulweit, weil das
- * Ereignis am window hängt und jeden Listener erreicht.
+ * Ereignis am window hängt und jeden Horcher erreicht.
+ *
+ * **Eine Marke je Ankündigung, keine bloße Zahl.** Hier stand ein Zähler, den
+ * nur ein *anderes*, noch offenes Blatt wieder herunterzog — und im
+ * Normalfall gibt es keines: Wer das einzige offene Blatt per ✕, Escape oder
+ * Hintergrund-Tipp schließt, kündigt an, ruft `history.back()`, und das
+ * folgende `popstate` erreicht **niemanden** mehr. Der Zähler blieb stehen,
+ * und das nächste geöffnete Blatt verschluckte damit den ersten echten
+ * Zurück-Druck des Nutzers: Das Blatt blieb liegen, sein Verlaufseintrag war
+ * aber schon weg, und der zweite Druck verließ die App. Mit jedem ✕ wuchs der
+ * Zähler um eins weiter.
+ *
+ * Jede Ankündigung räumt sich deshalb selbst wieder ab (`eigenesZurueck`).
  */
-let pendingBacks = 0
+const angekuendigt = new Set<object>()
+
+/**
+ * Gehört dieses `popstate` zu einem eigenen Aufräumen? Dann verbrauchen.
+ *
+ * Verbraucht wird die **älteste** offene Ankündigung: Welche es genau war,
+ * spielt keine Rolle — es geht nur darum, dass eine davon jetzt beantwortet
+ * ist.
+ */
+function warEigenesZurueck(): boolean {
+  const erste = angekuendigt.values().next()
+  if (erste.done) return false
+  angekuendigt.delete(erste.value)
+  return true
+}
+
+/**
+ * Den eigenen Verlaufseintrag abräumen — angekündigt und mit Verfallsdatum.
+ *
+ * Die Ankündigung verfällt beim nächsten `popstate`, aber erst **einen
+ * Durchlauf später**: Alle Horcher dieses Ereignisses sollen sie noch sehen.
+ * Der eigene Horcher hier ist zwangsläufig der zuletzt angemeldete und käme
+ * sonst vor einem Blatt an die Reihe, das sich nach ihm angemeldet hat — genau
+ * das tut React im Strict-Modus, wenn es einen Effekt doppelt einhängt.
+ */
+function eigenesZurueck(): void {
+  const marke = {}
+  angekuendigt.add(marke)
+  const verfallen = (): void => {
+    window.removeEventListener('popstate', verfallen)
+    window.setTimeout(() => angekuendigt.delete(marke), 0)
+  }
+  window.addEventListener('popstate', verfallen)
+  history.back()
+}
 
 export function useBackDismiss(active: boolean, onDismiss: () => void): void {
   // Über eine Ref, damit ein neu erzeugtes onDismiss den Effekt nicht neu
@@ -62,10 +108,7 @@ export function useBackDismiss(active: boolean, onDismiss: () => void): void {
       // Zähler: Sonst zöge der erste Horcher ihn herunter und der zweite hielte
       // dasselbe Ereignis für ein echtes Zurück.
       if (stapel[stapel.length - 1] !== marke) return
-      if (pendingBacks > 0) {
-        pendingBacks-- // unser eigenes Aufräumen, kein Zurück des Nutzers
-        return
-      }
+      if (warEigenesZurueck()) return // unser eigenes Aufräumen, kein Zurück des Nutzers
       dismiss.current()
     }
     window.addEventListener('popstate', onPop)
@@ -77,11 +120,8 @@ export function useBackDismiss(active: boolean, onDismiss: () => void): void {
       const i = stapel.lastIndexOf(marke)
       if (i >= 0) stapel.splice(i, 1)
       const state = history.state as Record<string, unknown> | null
-      if (state?.[MARKER]) {
-        // Eigener Eintrag liegt noch obenauf → selbst abräumen.
-        pendingBacks++
-        history.back()
-      }
+      // Eigener Eintrag liegt noch obenauf → selbst abräumen.
+      if (state?.[MARKER]) eigenesZurueck()
     }
   }, [active])
 }
