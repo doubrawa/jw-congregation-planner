@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Valóban törlöd őt: „{name}”? A már betervezett feladatok szövegként megmaradnak a heteknél.",
   "toastPersonDel": "Személy törölve",
   "kontoVerknuepft": "Fiók összekapcsolva",
+  "keinKonto": "Nincs fiókja",
   "einladenBtn": "+ MEGHÍVÁS",
   "einladenHintMail": "Létrehoz egy meghívókódot, és megnyit egy kész e-mailt a levelezőalkalmazásodban.",
   "einladenHintOhneMail": "Nincs e-mail cím — hozz létre kódot, és add át személyesen a Megosztás vagy Másolás gombbal.",

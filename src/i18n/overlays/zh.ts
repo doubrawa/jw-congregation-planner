@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "确定删除“{name}”吗？已安排的任务会作为文本保留在各周里。",
   "toastPersonDel": "已删除人员",
   "kontoVerknuepft": "账户已关联",
+  "keinKonto": "没有应用账号",
   "einladenBtn": "+ 邀请",
   "einladenHintMail": "生成邀请码并在邮件应用中打开一封现成的邮件。",
   "einladenHintOhneMail": "没有邮箱地址——生成邀请码，通过“分享”或“复制”亲自转交。",

@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Talagang tanggalin si “{name}”? Ang mga naiiskedyul nang atas ay mananatiling teksto sa mga linggo.",
   "toastPersonDel": "Natanggal ang tao",
   "kontoVerknuepft": "Naka-link ang account",
+  "keinKonto": "Walang account sa app",
   "einladenBtn": "+ MAG-IMBITA",
   "einladenHintMail": "Gumagawa ng invitation code at nagbubukas ng handang email sa iyong mail app.",
   "einladenHintOhneMail": "Walang email — gumawa ng code at ibigay nang personal sa pamamagitan ng Ibahagi o Kopyahin.",

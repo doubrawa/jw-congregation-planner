@@ -87,6 +87,7 @@ export default {
   "confirmPersonDel": "Really delete “{name}”? Assignments already planned remain as text in the weeks.",
   "toastPersonDel": "Person deleted",
   "kontoVerknuepft": "Account linked",
+  "keinKonto": "No app account",
   "einladenBtn": "+ INVITE",
   "einladenHintMail": "Creates an invitation code and opens a ready-made email in your mail app.",
   "einladenHintOhneMail": "No email address on file — create a code and pass it on personally via Share or Copy.",

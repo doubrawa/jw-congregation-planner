@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "“{name}” gerçekten silinsin mi? Önceden planlanmış görevler haftalarda metin olarak kalır.",
   "toastPersonDel": "Kişi silindi",
   "kontoVerknuepft": "Hesap bağlandı",
+  "keinKonto": "Uygulama hesabı yok",
   "einladenBtn": "+ DAVET ET",
   "einladenHintMail": "Bir davet kodu oluşturur ve e-posta uygulamanızda hazır bir e-posta açar.",
   "einladenHintOhneMail": "E-posta yok — bir kod oluşturup Paylaş veya Kopyala ile şahsen iletin.",

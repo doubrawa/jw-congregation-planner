@@ -81,6 +81,7 @@ export default {
   "confirmPersonDel": "למחוק את “{name}”? מטלות שכבר תוכננו יישארו כטקסט בשבועות.",
   "toastPersonDel": "האדם נמחק",
   "kontoVerknuepft": "החשבון מקושר",
+  "keinKonto": "ללא חשבון באפליקציה",
   "einladenBtn": "+ הזמן",
   "einladenHintMail": "יוצר קוד הזמנה ופותח אימייל מוכן ביישום הדוא״ל שלך.",
   "einladenHintOhneMail": "אין כתובת אימייל — צור קוד והעבר אותו אישית באמצעות שיתוף או העתקה.",

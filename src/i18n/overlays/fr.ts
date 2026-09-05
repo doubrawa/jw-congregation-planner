@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Vraiment supprimer « {name} » ? Les attributions déjà planifiées restent sous forme de texte dans les semaines.",
   "toastPersonDel": "Personne supprimée",
   "kontoVerknuepft": "Compte lié",
+  "keinKonto": "Sans compte dans l’application",
   "einladenBtn": "+ INVITER",
   "einladenHintMail": "Crée un code d’invitation et ouvre un e-mail prêt à l’emploi dans ta messagerie.",
   "einladenHintOhneMail": "Pas d’adresse e-mail enregistrée — crée un code et transmets-le en personne via Partager ou Copier.",

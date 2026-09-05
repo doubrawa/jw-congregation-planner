@@ -81,6 +81,19 @@
   margin-top: 2px;
 }
 
+/*
+ * „Ohne App-Konto" in der Personenliste (V13).
+ *
+ * Hebt sich ab, ohne zu alarmieren: Es ist kein Missstand, sondern eine
+ * Auskunft — die meisten Verkündiger haben kein Konto, und der Planer muss nur
+ * wissen, wen er persönlich anspricht. Deshalb dieselbe Zeile und dieselbe
+ * Größe wie der Rest der Unterzeile, nur kräftiger.
+ */
+.pers-ohne-konto {
+  color: var(--txt);
+  font-weight: 600;
+}
+
 .pers-chevron {
   color: var(--mut);
   font-size: calc(24px * var(--fs));

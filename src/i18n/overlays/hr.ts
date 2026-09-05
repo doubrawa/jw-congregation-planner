@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Zaista izbrisati „{name}”? Već isplanirani zadaci ostaju kao tekst u tjednima.",
   "toastPersonDel": "Osoba izbrisana",
   "kontoVerknuepft": "Račun povezan",
+  "keinKonto": "Bez računa u aplikaciji",
   "einladenBtn": "+ POZOVI",
   "einladenHintMail": "Stvara pozivni kôd i otvara gotovu e-poruku u tvojoj aplikaciji za e-poštu.",
   "einladenHintOhneMail": "Nema e-adrese — stvori kôd i predaj ga osobno putem Podijeli ili Kopiraj.",

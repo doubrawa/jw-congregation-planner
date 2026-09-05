@@ -1067,10 +1067,23 @@ verteilt als das Gespräch im selben Abschnitt, obwohl beides Schülerteile sind
 F5 und B4 gemeinsam lösen: Beim Import `date` und `end` aus `meeting_times` +
 Programmdauer erzeugen, statt Wochenspanne und Festwert zu schreiben.
 
-### V13 — Personen ohne Konto in der Liste kennzeichnen
+### V13 — Personen ohne Konto in der Liste kennzeichnen ✅ erledigt
 
-Ein kleines Symbol in der Personenliste („kein App-Zugang") würde den Planern die
-Arbeit abnehmen, die `send-reminders` heute per Sammel-Push nachholt (F10).
+Die Unterzeile jeder Person trägt „Ohne App-Konto", solange kein Konto
+verknüpft ist (5.9.2026). Bisher erfuhr der Planer das erst hinterher: „Plan
+senden" nennt die Namen in seiner Antwort, `send-reminders` meldet sie am
+letzten Erinnerungstag per Sammel-Push — beides, wenn der Plan schon steht. Die
+Marke steht da, während er ihn macht.
+
+Gefragt wird nach dem **verknüpften Konto**, nicht nach einem offenen
+Einladungscode: Ein Code, den niemand einlöst, macht niemanden erreichbar.
+Genau diese Grenze zieht `send-plan` für seine `ohneKonto`-Liste — die Marke
+muss dieselbe Menge treffen, sonst nennt die Liste nach dem Senden Namen, die
+vorher unmarkiert dastanden.
+
+Der Wörterbuch-Schlüssel `keinKonto` ist in allen 33 Sprachen **keine
+Erfindung**: Es ist die erste Hälfte von `planSendenOhneKonto`, der
+Formulierung, die dieses Projekt für denselben Sachverhalt längst trägt.
 
 ### V14 — Leistung: doppelte Berechnungen im Reducer ⚠️
 

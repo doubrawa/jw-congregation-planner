@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "정말 “{name}” 님을 삭제할까요? 이미 계획된 임무는 각 주에 텍스트로 남습니다.",
   "toastPersonDel": "사람을 삭제했습니다",
   "kontoVerknuepft": "계정이 연결되었습니다",
+  "keinKonto": "앱 계정 없음",
   "einladenBtn": "+ 초대",
   "einladenHintMail": "초대 코드를 만들고 메일 앱에서 준비된 이메일을 엽니다.",
   "einladenHintOhneMail": "이메일이 없습니다. 코드를 만들어 공유 또는 복사로 직접 전달하세요.",

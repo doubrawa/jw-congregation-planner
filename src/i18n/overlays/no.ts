@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Vil du virkelig slette «{name}»? Allerede planlagte oppgaver blir stående som tekst i ukene.",
   "toastPersonDel": "Person slettet",
   "kontoVerknuepft": "Konto koblet",
+  "keinKonto": "Uten konto i appen",
   "einladenBtn": "+ INVITER",
   "einladenHintMail": "Oppretter en invitasjonskode og åpner en ferdig e-post i e-postappen din.",
   "einladenHintOhneMail": "Ingen e-postadresse — opprett en kode og gi den videre personlig via Del eller Kopier.",

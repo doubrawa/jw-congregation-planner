@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Excluir mesmo «{name}»? As designações já planejadas permanecem como texto nas semanas.",
   "toastPersonDel": "Pessoa excluída",
   "kontoVerknuepft": "Conta vinculada",
+  "keinKonto": "Sem conta no app",
   "einladenBtn": "+ CONVIDAR",
   "einladenHintMail": "Cria um código de convite e abre um e-mail pronto no seu aplicativo de e-mail.",
   "einladenHintOhneMail": "Nenhum e-mail registrado — crie um código e repasse-o pessoalmente por Compartilhar ou Copiar.",

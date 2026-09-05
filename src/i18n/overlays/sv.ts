@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Verkligen ta bort ”{name}”? Redan inplanerade uppgifter finns kvar som text i veckorna.",
   "toastPersonDel": "Person borttagen",
   "kontoVerknuepft": "Konto kopplat",
+  "keinKonto": "Utan konto i appen",
   "einladenBtn": "+ BJUD IN",
   "einladenHintMail": "Skapar en inbjudningskod och öppnar ett färdigt mejl i din e-postapp.",
   "einladenHintOhneMail": "Ingen e-postadress — skapa en kod och lämna den personligen via Dela eller Kopiera.",

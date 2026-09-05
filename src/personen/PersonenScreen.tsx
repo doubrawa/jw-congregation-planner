@@ -243,6 +243,23 @@ function PersonList() {
               <span className="pers-name" dir="auto">{listName(person)}</span>
               <span className="pers-sub">
                 {t[ROLE_KEY[person.role]]} · {fill(t.aufgabenbereicheN, { n: bereicheCount(person) })}
+                {/*
+                  **Wer kein App-Konto hat, erfährt nichts von selbst** (V13/F10).
+                  Weder „Plan senden" noch die Erinnerung erreichen ihn — der
+                  Planer muss ihn persönlich ansprechen. Bisher erfuhr er das
+                  erst hinterher: „Plan senden" nennt die Namen in seiner
+                  Antwort, und `send-reminders` meldet sie am letzten
+                  Erinnerungstag per Sammel-Push. Beides kommt, wenn der Plan
+                  schon steht. Hier steht es, während er ihn macht.
+
+                  Gefragt wird nach dem **verknüpften Konto**, nicht nach einem
+                  offenen Einladungscode: Ein Code, den niemand einlöst, macht
+                  niemanden erreichbar. Genau diese Grenze zieht auch
+                  `send-plan` für seine `ohneKonto`-Liste.
+                */}
+                {!linkedMember(state, person.id) && (
+                  <> · <span className="pers-ohne-konto">{t.keinKonto}</span></>
+                )}
               </span>
             </span>
             <span className="pers-chevron">›</span>

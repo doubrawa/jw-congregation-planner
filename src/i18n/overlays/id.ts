@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Yakin menghapus “{name}”? Tugas yang sudah direncanakan tetap ada sebagai teks di minggu-minggu.",
   "toastPersonDel": "Orang dihapus",
   "kontoVerknuepft": "Akun tertaut",
+  "keinKonto": "Tanpa akun aplikasi",
   "einladenBtn": "+ UNDANG",
   "einladenHintMail": "Membuat kode undangan dan membuka email siap pakai di aplikasi email Anda.",
   "einladenHintOhneMail": "Tidak ada email — buat kode dan serahkan langsung melalui Bagikan atau Salin.",

@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Opravdu odstranit „{name}“? Již naplánované úkoly zůstanou jako text v týdnech.",
   "toastPersonDel": "Osoba odstraněna",
   "kontoVerknuepft": "Účet propojen",
+  "keinKonto": "Bez účtu v aplikaci",
   "einladenBtn": "+ POZVAT",
   "einladenHintMail": "Vytvoří kód pozvánky a otevře připravený e-mail ve vaší e-mailové aplikaci.",
   "einladenHintOhneMail": "Žádný e-mail — vytvořte kód a předejte ho osobně přes Sdílet nebo Kopírovat.",

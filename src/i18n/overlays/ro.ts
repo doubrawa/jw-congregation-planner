@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Chiar ștergi „{name}”? Însărcinările deja planificate rămân ca text în săptămâni.",
   "toastPersonDel": "Persoană ștearsă",
   "kontoVerknuepft": "Cont asociat",
+  "keinKonto": "Fără cont în aplicație",
   "einladenBtn": "+ INVITĂ",
   "einladenHintMail": "Creează un cod de invitație și deschide un e-mail gata pregătit în aplicația ta de e-mail.",
   "einladenHintOhneMail": "Nicio adresă de e-mail — creează un cod și transmite-l personal prin Partajează sau Copiază.",

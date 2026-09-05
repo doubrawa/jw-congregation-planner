@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "¿Eliminar de verdad a «{name}»? Las asignaciones ya planificadas quedan como texto en las semanas.",
   "toastPersonDel": "Persona eliminada",
   "kontoVerknuepft": "Cuenta vinculada",
+  "keinKonto": "Sin cuenta en la aplicación",
   "einladenBtn": "+ INVITAR",
   "einladenHintMail": "Crea un código de invitación y abre un correo listo en tu aplicación de correo.",
   "einladenHintOhneMail": "No hay correo registrado: crea un código y compártelo en persona mediante Compartir o Copiar.",

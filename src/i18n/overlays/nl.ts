@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "«{name}» echt verwijderen? Al geplande toewijzingen blijven als tekst in de weken staan.",
   "toastPersonDel": "Persoon verwijderd",
   "kontoVerknuepft": "Account gekoppeld",
+  "keinKonto": "Zonder app-account",
   "einladenBtn": "+ UITNODIGEN",
   "einladenHintMail": "Maakt een uitnodigingscode en opent een kant-en-klare e-mail in je mailapp.",
   "einladenHintOhneMail": "Geen e-mailadres bekend — maak een code en geef die persoonlijk door via Delen of Kopiëren.",

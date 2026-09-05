@@ -115,11 +115,61 @@ describe('Die Liste', () => {
   })
 
   it('jede Zeile nennt Rolle und Zahl der Aufgabenbereiche', () => {
-    const { container } = zeige()
+    // Mit Konto, damit die Marke „Ohne App-Konto" hier nicht mitspricht — die
+    // hat ihre eigenen Zeilen weiter unten.
+    const alleMitKonto: Member[] = PERSONEN.map((pp, i) => ({
+      userId: `u${i}`, personId: pp.id, email: '', planner: false,
+    }))
+    const { container } = zeige({ members: alleMitKonto })
     expect(zeilen(container)[2]!.querySelector('.pers-sub')?.textContent).toBe(
       'Verkündiger · 1 Aufgabenbereiche',
     )
     expect(zeilen(container)[1]!.querySelector('.pers-sub')?.textContent).toContain('Ältester')
+  })
+
+  /**
+   * **Wer kein App-Konto hat, erfährt nichts von selbst** (V13/F10).
+   *
+   * Weder „Plan senden" noch die Erinnerung erreichen ihn. Bisher erfuhr der
+   * Planer das erst hinterher — „Plan senden" nennt die Namen in seiner
+   * Antwort, `send-reminders` meldet sie am letzten Erinnerungstag per
+   * Sammel-Push. Beides kommt, wenn der Plan schon steht. Die Marke steht
+   * dagegen da, während er ihn macht.
+   */
+  describe('Ohne App-Konto', () => {
+    const MIT_KONTO: Member[] = [{ userId: 'u9', personId: 'p-b', email: 'b@x.de', planner: false }]
+    const sub = (c: HTMLElement, i: number) =>
+      zeilen(c)[i]!.querySelector('.pers-sub')?.textContent ?? ''
+
+    it('steht bei jedem, der keins hat — und bei den anderen nicht', () => {
+      const { container } = zeige({ members: MIT_KONTO })
+      // Reihenfolge: Alt (p-a), Brand (p-b), Cohn (p-c).
+      expect(sub(container, 0), 'Alt hat kein Konto').toContain('Ohne App-Konto')
+      expect(sub(container, 1), 'Brand hat eins').not.toContain('Ohne App-Konto')
+      expect(sub(container, 2), 'Cohn hat kein Konto').toContain('Ohne App-Konto')
+    })
+
+    it('ein offener Einladungscode zählt nicht als Konto', () => {
+      /*
+        Ein Code, den niemand einlöst, macht niemanden erreichbar. Genau diese
+        Grenze zieht `send-plan` für seine `ohneKonto`-Liste — die Marke muss
+        dieselbe Menge treffen, sonst nennt die Liste nach dem Senden Namen,
+        die vorher unmarkiert dastanden.
+      */
+      const code: Invite[] = [{ id: 'i1', code: 'ABC123', personId: 'p-a', planner: false }]
+      const { container } = zeige({ members: MIT_KONTO, invites: code })
+      expect(sub(container, 0)).toContain('Ohne App-Konto')
+    })
+
+    it('hat jeder ein Konto, steht die Marke nirgends', () => {
+      // Gegenprobe: Sonst wäre die Zeile oben auch dann grün, wenn sie immer
+      // dastünde.
+      const alle: Member[] = PERSONEN.map((pp, i) => ({
+        userId: `u${i}`, personId: pp.id, email: '', planner: false,
+      }))
+      const { container } = zeige({ members: alle })
+      expect(container.textContent).not.toContain('Ohne App-Konto')
+    })
   })
 
   it('die feste Wachtturm-Rolle zählt nicht als Aufgabenbereich — sie hat eine eigene Karte', () => {

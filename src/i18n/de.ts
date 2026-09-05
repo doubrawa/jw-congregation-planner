@@ -79,6 +79,10 @@ export const DE = {
     confirmPersonDel: '„{name}“ wirklich löschen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
     toastPersonDel: 'Person gelöscht',
     kontoVerknuepft: 'Konto verknüpft',
+    // Kurzform von `planSendenOhneKonto` — dieselbe Aussage, nur als
+    // Marke in der Personenliste. Die Übersetzungen sind deshalb keine
+    // Erfindung, sondern die erste Hälfte des dortigen Satzes.
+    keinKonto: 'Ohne App-Konto',
     einladenBtn: '+ EINLADEN',
     einladenHintMail: 'Erstellt einen Einladungscode und öffnet eine fertige E-Mail in deinem Mail-Programm.',
     einladenHintOhneMail: 'Keine E-Mail-Adresse hinterlegt — Code erstellen und per Teilen oder Kopieren persönlich weitergeben.',

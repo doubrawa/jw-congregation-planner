@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Thật sự xóa “{name}”? Những nhiệm vụ đã lên lịch vẫn giữ dưới dạng văn bản trong các tuần.",
   "toastPersonDel": "Đã xóa người",
   "kontoVerknuepft": "Đã liên kết tài khoản",
+  "keinKonto": "Không có tài khoản",
   "einladenBtn": "+ MỜI",
   "einladenHintMail": "Tạo mã mời và mở một email soạn sẵn trong ứng dụng email của bạn.",
   "einladenHintOhneMail": "Không có email — hãy tạo mã và trao trực tiếp qua Chia sẻ hoặc Sao chép.",

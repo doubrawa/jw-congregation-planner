@@ -82,6 +82,7 @@ export default {
   "confirmPersonDel": "هل تريد حقًا حذف {name}؟ تبقى التعيينات المخططة كنص في الأسابيع.",
   "toastPersonDel": "تم حذف الشخص",
   "kontoVerknuepft": "الحساب مرتبط",
+  "keinKonto": "بلا حساب في التطبيق",
   "einladenBtn": "+ دعوة",
   "einladenHintMail": "يُنشئ رمز دعوة ويفتح رسالة جاهزة في برنامج البريد الخاص بك.",
   "einladenHintOhneMail": "لا يوجد بريد إلكتروني — أنشئ رمزًا وسلّمه شخصيًا عبر المشاركة أو النسخ.",

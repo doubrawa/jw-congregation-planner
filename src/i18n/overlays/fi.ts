@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Poistetaanko todella ”{name}”? Jo suunnitellut tehtävät jäävät tekstinä viikkoihin.",
   "toastPersonDel": "Henkilö poistettu",
   "kontoVerknuepft": "Tili yhdistetty",
+  "keinKonto": "Ei sovellustiliä",
   "einladenBtn": "+ KUTSU",
   "einladenHintMail": "Luo kutsukoodin ja avaa valmiin sähköpostin sähköpostisovelluksessasi.",
   "einladenHintOhneMail": "Ei sähköpostiosoitetta — luo koodi ja välitä se henkilökohtaisesti Jaa- tai Kopioi-toiminnolla.",

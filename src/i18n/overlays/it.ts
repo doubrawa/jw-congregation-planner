@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Eliminare davvero «{name}»? Gli incarichi già pianificati restano come testo nelle settimane.",
   "toastPersonDel": "Persona eliminata",
   "kontoVerknuepft": "Account collegato",
+  "keinKonto": "Senza account nell’app",
   "einladenBtn": "+ INVITA",
   "einladenHintMail": "Crea un codice d’invito e apre un’email pronta nella tua app di posta.",
   "einladenHintOhneMail": "Nessuna email registrata: crea un codice e passalo di persona tramite Condividi o Copia.",

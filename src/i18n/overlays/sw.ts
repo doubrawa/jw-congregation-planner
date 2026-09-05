@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Kweli kumfuta “{name}”? Migawo iliyopangwa tayari inabaki kama maandishi katika wiki.",
   "toastPersonDel": "Mtu amefutwa",
   "kontoVerknuepft": "Akaunti imeunganishwa",
+  "keinKonto": "Hawana akaunti",
   "einladenBtn": "+ ALIKA",
   "einladenHintMail": "Hutengeneza msimbo wa mwaliko na kufungua barua pepe iliyo tayari katika programu yako ya barua pepe.",
   "einladenHintOhneMail": "Hakuna barua pepe — tengeneza msimbo na umkabidhi mtu binafsi kupitia Shiriki au Nakili.",

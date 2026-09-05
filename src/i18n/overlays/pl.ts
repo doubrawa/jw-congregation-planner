@@ -223,6 +223,7 @@ export default {
   "confirmPersonDel": "Na pewno usunąć „{name}”? Już zaplanowane zadania pozostaną jako tekst w tygodniach.",
   "toastPersonDel": "Osoba usunięta",
   "kontoVerknuepft": "Konto powiązane",
+  "keinKonto": "Bez konta w aplikacji",
   "einladenBtn": "+ ZAPROŚ",
   "einladenHintMail": "Tworzy kod zaproszenia i otwiera gotowy e-mail w Twojej aplikacji pocztowej.",
   "einladenHintOhneMail": "Brak adresu e-mail — utwórz kod i przekaż go osobiście przez Udostępnij lub Kopiuj.",
