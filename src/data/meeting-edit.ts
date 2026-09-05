@@ -169,6 +169,26 @@ function forEachAltMeeting(week: Week, tab: MeetingKey, fn: (meeting: Meeting) =
   }
 }
 
+/**
+ * **Vermerken, dass der Ablauf nicht mehr der von jw.org ist** — auf der
+ * Zusammenkunft und auf jeder Sprachvariante, die sie hat (siehe
+ * `Meeting.umgebaut`).
+ *
+ * Zu setzen bei jeder Änderung, die den Ablauf selbst betrifft: ein eigener
+ * Punkt, ein gelöschter, ein verschobener, ein ausgetauschter Titel. **Nicht**
+ * bei Zuteilungen, Minuten oder Liedern — die stehen an derselben Stelle wie
+ * vorher, und eine später nachgeholte Variante passt dort weiterhin.
+ *
+ * Wer hier eine Zeile vergisst, merkt nichts: Die Woche sieht richtig aus, und
+ * erst eine Sprache, die Monate später dazukommt, legt fremde Titel darüber.
+ */
+function umbauMerken(week: Week, tab: MeetingKey): void {
+  week[tab].umgebaut = true
+  forEachAltMeeting(week, tab, (m) => {
+    m.umgebaut = true
+  })
+}
+
 /* ---- „Unser Leben als Christ" -------------------------------------------- */
 
 /**
@@ -253,6 +273,7 @@ export function lacRemove(
     m.sections[si]?.items.splice(ii, 1)
     if (mins != null) m.end = shiftEnd(m.end, -mins)
   })
+  umbauMerken(week, tab)
   return next
 }
 
@@ -306,6 +327,7 @@ export function lacMove(
     const arr = m.sections[si]?.items
     if (arr) swapKeepNums(arr, ii, b)
   })
+  umbauMerken(week, tab)
   return next
 }
 
@@ -384,6 +406,7 @@ export function lacAdd(
     if (arr) arr.splice(Math.min(at, arr.length), 0, { title: trimmed, meta: '10 Min.', mins: 10, names: [] })
     m.end = shiftEnd(m.end, 10)
   })
+  umbauMerken(week, tab)
   return next
 }
 
@@ -611,6 +634,12 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
       })
     }
 
+    // Beide Zusammenkünfte tragen jetzt einen Ablauf, den es auf jw.org nicht
+    // gibt: unter der Woche steht der Dienstvortrag an der Stelle des
+    // Bibelstudiums (gleiche Anzahl, anderer Punkt!), am Wochenende kommt eine
+    // ganze Sektion hinzu.
+    umbauMerken(w, 'mid')
+    umbauMerken(w, 'we')
     w.co = true
     w.coData = coData
     return next
@@ -680,6 +709,12 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
     weg(w.we)
     forEachAltMeeting(w, 'we', weg)
   }
+  // Auch das Zurücknehmen ist ein Umbau: Es stellt zwar den ursprünglichen
+  // Ablauf wieder her, aber nur so weit, wie `coData` reicht — und was eine
+  // nachgeholte Variante angeht, ist eine zweimal umgebaute Woche keinen Deut
+  // sicherer als eine einmal umgebaute (siehe `Meeting.umgebaut`).
+  umbauMerken(w, 'mid')
+  umbauMerken(w, 'we')
   w.co = false
   delete w.coData
   return next

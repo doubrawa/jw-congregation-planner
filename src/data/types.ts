@@ -340,6 +340,30 @@ export interface Meeting {
    * — ohne Ratgeber keine Klasse (S-38, Absatz 26). Siehe `hatAuxKlasse`.
    */
   auxRatgeber?: SlotAssignment
+  /**
+   * **Diese Zusammenkunft ist nicht mehr die von jw.org.**
+   *
+   * Gesetzt, sobald der Planer am Ablauf selbst etwas geändert hat: einen
+   * eigenen Punkt angelegt, einen gelöscht, einen verschoben, die
+   * Kreisaufseher-Woche eingerichtet. Die Sprachvarianten (`Week.alt`) ziehen
+   * bei jeder dieser Änderungen mit — und bekommen die Marke deshalb ebenso.
+   *
+   * Sie beantwortet genau eine Frage, und zwar in `localizedWeek`: **Darf diese
+   * Variante die Titel setzen?** Eine Variante, die erst später nachgeholt
+   * wurde (eine Programmsprache kam nach dem Import dazu, `missingVariants`),
+   * kommt frisch von jw.org und weiß von alldem nichts. Bis hierher verglich
+   * die Prüfung nur die **Anzahl** der Punkte — und eine ganz gewöhnliche
+   * Handlung hebt die auf: einen Punkt löschen und einen eigenen anlegen. Dann
+   * stimmt die Zahl wieder, die Punkte sind aber andere, und der Leser der
+   * zweiten Sprache bekam fremde Titel über seine Zuteilungen gelegt.
+   *
+   * Die Marke bleibt stehen, auch wenn eine Änderung später zurückgenommen
+   * wird. Der Preis ist bekannt und klein: Für diese eine Woche zeigt eine
+   * **nachträglich** hinzugefügte Sprache den Ablauf in der
+   * Versammlungssprache — genau der Rückfall, den die Prüfung ohnehin schon
+   * vorsieht. Der Preis der Gegenrichtung wäre ein falsches Programm.
+   */
+  umgebaut?: true
 }
 
 /**

@@ -217,8 +217,26 @@ describe('Zurücknehmen stellt alles wieder her', () => {
     const zurueck = setDienstwoche(setDienstwoche([vorher], 0, true), 0, false)
     expect(eine(zurueck).co).toBe(false)
     expect(eine(zurueck).coData).toBeUndefined()
-    expect(eine(zurueck).mid).toEqual(vorher.mid)
-    expect(eine(zurueck).we).toEqual(vorher.we)
+    /*
+      **Eine Spur bleibt, und das mit Absicht.** `Meeting.umgebaut` sagt nicht
+      „hier ist gerade Dienstwoche", sondern „dieser Ablauf ist einmal ein
+      anderer gewesen als der von jw.org". Genau das bleibt wahr, denn das
+      Zurücknehmen ist kein sauberer Rückwärtsgang: Hat der Planer den
+      Dienstvortrag zwischendurch gelöscht, kommt das Bibelstudium ans **Ende**
+      des Abschnitts zurück, nicht an seinen Platz. Eine später nachgeholte
+      Sprachvariante legte dann wieder fremde Titel darüber.
+
+      Geprüft wird deshalb ohne die Marke — Programm und Zuteilungen sind das,
+      was hier wiederkommen muss —, und die Marke selbst gleich darunter.
+    */
+    const ohneMarke = (m: Meeting): Meeting => {
+      const { umgebaut: _weg, ...rest } = m
+      return rest
+    }
+    expect(ohneMarke(eine(zurueck).mid)).toEqual(ohneMarke(vorher.mid))
+    expect(ohneMarke(eine(zurueck).we)).toEqual(ohneMarke(vorher.we))
+    expect(eine(zurueck).mid.umgebaut, 'die Marke muss stehen bleiben').toBe(true)
+    expect(eine(zurueck).we.umgebaut, 'die Marke muss stehen bleiben').toBe(true)
   })
 
   it('der Leser hat seine beiden Aufgaben wieder', () => {

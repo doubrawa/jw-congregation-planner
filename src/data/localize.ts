@@ -11,9 +11,22 @@ import type { Meeting, Week } from './types'
 
 /** Texte einer Zusammenkunft aus der Variante übernehmen (Struktur muss passen). */
 function mergeMeeting(target: Meeting, alt: Meeting): void {
-  // Defensive: weicht die Struktur ab (z. B. nach nicht gespiegelten Edits),
-  // bleibt die ganze Zusammenkunft kanonisch — falsche Titelzuordnung wäre
-  // schlimmer als die falsche Sprache.
+  /*
+   * Defensive: weicht die Struktur ab (z. B. nach nicht gespiegelten Edits),
+   * bleibt die ganze Zusammenkunft kanonisch — falsche Titelzuordnung wäre
+   * schlimmer als die falsche Sprache.
+   *
+   * **Die Anzahl allein genügt dafür nicht.** Eine Variante, die erst später
+   * nachgeholt wurde (`missingVariants`, wenn eine Programmsprache nach dem
+   * Import dazukommt), kommt frisch von jw.org. Löscht der Planer inzwischen
+   * einen Punkt und legt einen eigenen an, stimmt die Zahl wieder — und die
+   * fremden Titel legten sich Punkt für Punkt über einen anderen Ablauf. Wer
+   * den eigenen Punkt zugeteilt bekommen hat, bereitete etwas vor, das gar
+   * nicht auf dem Programm steht. Deshalb zuerst die Marke: Ist die
+   * Zusammenkunft umgebaut worden, muss die Variante denselben Umbau
+   * mitgemacht haben (`Meeting.umgebaut`).
+   */
+  if (Boolean(target.umgebaut) !== Boolean(alt.umgebaut)) return
   if (alt.sections.length !== target.sections.length) return
   const aligned = target.sections.every(
     (s, si) => alt.sections[si]?.items.length === s.items.length,
