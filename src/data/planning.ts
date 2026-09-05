@@ -1516,16 +1516,22 @@ function meetingPartNames(meeting: Meeting, wer: IdVon): Belegung[] {
 }
 
 /**
- * Belegte Kennungen **je Raum** — Hauptsaal und Zusätzliche Klasse getrennt.
+ * Belegte Kennungen **je Raum** — Hauptsaal, Zusätzliche Klasse und der
+ * Ratgeber-Platz getrennt.
  *
- * Der Ratgeber gehört zur Klasse: Er sitzt dort die ganze Zeit, genau wie die
- * Schüler seiner Reihe.
+ * Gebraucht für die Doppelungen unter den Programmpunkten, die wirklich
+ * unmöglich sind. Zwei Punkte **im selben** Raum sind es nicht (Vorsitz und
+ * Anfangsgebet) — deshalb reicht eine einzige Menge nicht aus.
  *
- * Gebraucht für die einzige Doppelung unter den Programmpunkten, die wirklich
- * unmöglich ist — zwei Räume zur selben Zeit. Zwei Punkte **im selben** Raum
- * sind es nicht (Vorsitz und Anfangsgebet).
+ * Der Ratgeber steht für sich, obwohl er in der Klasse sitzt: Er begleitet
+ * **die ganze Reihe**, ist also die einzige Zuteilung, die jede andere im
+ * selben Raum ausschließt. Ein Schüler seiner Klasse kann nicht zugleich sein
+ * eigener Ratgeber sein.
  */
-function raumBelegung(meeting: Meeting, wer: IdVon): { haupt: Map<string, string>; klasse: Map<string, string> } {
+function raumBelegung(
+  meeting: Meeting,
+  wer: IdVon,
+): { haupt: Map<string, string>; klasse: Map<string, string>; ratgeber: Belegung | null } {
   const haupt = new Map<string, string>()
   const klasse = new Map<string, string>()
   for (const { slot, aux } of programmPlaetze(meeting)) {
@@ -1533,12 +1539,9 @@ function raumBelegung(meeting: Meeting, wer: IdVon): { haupt: Map<string, string
     const b = belegung(slot, wer)
     ;(aux ? klasse : haupt).set(b.kennung, b.name)
   }
-  const ratgeber = meeting.auxRatgeber
-  if (ratgeber?.name) {
-    const b = belegung(ratgeber, wer)
-    klasse.set(b.kennung, b.name)
-  }
-  return { haupt, klasse }
+  const platz = meeting.auxRatgeber
+  const ratgeber = platz?.name ? belegung(platz, wer) : null
+  return { haupt, klasse, ratgeber }
 }
 
 /** Belegte Namen der Hilfsdienste (ohne Gruppen-Rotation). */
@@ -1656,12 +1659,28 @@ export function weekConflicts(
      * Zusammenkunft" — trifft es, und ein eigener Schlüssel hieße 34
      * Übersetzungen für eine Aussage, die schon dasteht.
      */
-    const { haupt, klasse } = raumBelegung(week[tb], werIst)
+    const { haupt, klasse, ratgeber } = raumBelegung(week[tb], werIst)
+    /**
+     * Zwei Plätze, die einander ausschließen?
+     *
+     *  - **Beide Räume**: zur selben Zeit an zwei Orten.
+     *  - **Ratgeber und irgendein Programmpunkt**: Er begleitet die ganze
+     *    Reihe seiner Klasse. Im Hauptsaal wäre er gar nicht da; in seiner
+     *    eigenen Klasse wäre er sein eigener Ratgeber. Die Automatik verhindert
+     *    beides seit je (`used` kennt den Ratgeber-Platz), von Hand blieb es
+     *    möglich — und der Ratgeber steht in der Ansicht neben dem Programm,
+     *    nicht darin.
+     */
+    const raumKonflikt = (kennung: string): boolean => {
+      if (klasse.has(kennung) && haupt.has(kennung)) return true
+      if (ratgeber?.kennung !== kennung) return false
+      return haupt.has(kennung) || klasse.has(kennung)
+    }
     for (const kennung of new Set([...partCounts.keys(), ...helperCounts.keys()])) {
       const pc = partCounts.get(kennung) ?? 0
       const hc = helperCounts.get(kennung) ?? 0
       const name = namen.get(kennung) ?? ''
-      if (klasse.has(kennung) && haupt.has(kennung)) {
+      if (raumKonflikt(kennung)) {
         conflicts.push({ kind: 'double', name, kennung, tab: tb, count: pc + hc })
       } else if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
       else if (hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })

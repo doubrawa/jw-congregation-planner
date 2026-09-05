@@ -896,6 +896,64 @@ describe('Konfliktprüfungen (Planen)', () => {
     ])
   })
 
+  it('der Ratgeber kann nicht zugleich Schüler seiner eigenen Klasse sein', () => {
+    /*
+      Der Ratgeber begleitet die **ganze Reihe** seiner Klasse — er ist die
+      eine Zuteilung, die jede andere im selben Raum ausschließt. Die Automatik
+      hält das seit je ein (`used` kennt den Ratgeber-Platz), von Hand blieb es
+      möglich: Der Ratgeber steht in der Ansicht **neben** dem Programm, nicht
+      darin, und wer ihn dort einträgt, sieht die Klasse gerade nicht.
+
+      Bis hierher meldete die Prüfung nichts: Zwei Programmpunkte sind bewusst
+      kein Konflikt, und der Ratgeber ist einer davon.
+    */
+    const person: Person = {
+      id: 'p-rat', fn: 'Rat', ln: 'Geber', role: 'aeltester',
+      tel: '', mail: '', priv: emptyQualifications(),
+    }
+    const item = {
+      iid: 'i1',
+      title: 'Gespräche beginnen',
+      names: [{ name: '', bereichsKey: 'schulung' }],
+    } as unknown as PartItem
+    const roh = {
+      range: '', book: '', start: '2026-09-07', current: false,
+      mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    } as unknown as Week
+    const week = syncAuxSlots([roh], true)[0]!
+    // Er steht als Ratgeber **und** als Schüler in derselben Klasse.
+    week.mid.auxRatgeber = { name: 'Rat Geber', pid: 'p-rat', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
+    const klassenPlatz = (week.mid.sections[0]!.items[0] as PartItem).aux![0]!
+    klassenPlatz.name = 'Rat Geber'
+    klassenPlatz.pid = 'p-rat'
+
+    expect(weekConflicts([week], 0, [person], [], 'mid')).toEqual([
+      { kind: 'double', name: 'Rat Geber', kennung: 'p-rat', tab: 'mid', count: 2 },
+    ])
+  })
+
+  it('… und ebenso wenig zugleich im Hauptsaal stehen', () => {
+    const person: Person = {
+      id: 'p-rat', fn: 'Rat', ln: 'Geber', role: 'aeltester',
+      tel: '', mail: '', priv: emptyQualifications(),
+    }
+    const item = {
+      iid: 'i1',
+      title: 'Gespräche beginnen',
+      names: [{ name: 'Rat Geber', pid: 'p-rat', bereichsKey: 'schulung' }],
+    } as unknown as PartItem
+    const roh = {
+      range: '', book: '', start: '2026-09-07', current: false,
+      mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    } as unknown as Week
+    const week = syncAuxSlots([roh], true)[0]!
+    week.mid.auxRatgeber = { name: 'Rat Geber', pid: 'p-rat', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
+
+    expect(weekConflicts([week], 0, [person], [], 'mid')).toHaveLength(1)
+  })
+
   it('zwei Punkte im SELBEN Raum bleiben in Ordnung (Vorsitz und Gebet)', () => {
     // Die Gegenprobe: Der neue Hinweis darf nicht zum Dauerbrenner werden.
     const person: Person = {

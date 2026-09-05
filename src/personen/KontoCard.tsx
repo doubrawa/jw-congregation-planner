@@ -70,6 +70,13 @@ export function KontoCard({ person }: { person: Person }) {
     window.location.href = inviteMailHref(person, created.code, t.inviteMailSubject, t.inviteMailBody)
   }
 
+  /*
+   * **Ohne Offline-Wache, und das mit Absicht:** Hier geht ein Code hinaus, den
+   * es in der Datenbank schon gibt (die Karte zeigt diesen Knopf nur bei einem
+   * offenen Code). Nichts wird erzeugt, nichts geht verloren — und wenn das
+   * Netz inzwischen wieder da ist, ist das Verschicken genau das Richtige.
+   * Anders als beim „Einladen" oben, wo der Code erst hier entsteht.
+   */
   const mailInvite = async (code: string) => {
     const res = await sendInviteMails([{ personId: person.id, code }], congAppCode(state.congLang))
     if (res.ok && res.sent > 0) {
