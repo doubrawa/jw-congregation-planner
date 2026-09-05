@@ -371,8 +371,20 @@ Deno.serve(async (req: Request) => {
 
       const declinedBy = slot.name ?? ''
       const abwesende = abwesendeAm(absences, tagISO)
+      /*
+       * Der Absagende selbst wird nicht gefragt — **über die Id**, wo der Platz
+       * eine trägt.
+       *
+       * Über den Namen fiel auch sein Namensvetter heraus: ausgerechnet der,
+       * der ihn am ehesten vertreten könnte (gleiche Qualifikation, gleiche
+       * Versammlung). Der Client zeigt ihm das Gesuch (`deriveSubstituteReqs`
+       * fragt `gehoertZu`) — dann muss es ihn auch erreichen, sonst sieht er in
+       * der App etwas, wovon er nie erfahren hat.
+       */
+      const istAbsager = (p: Person): boolean =>
+        slot.pid ? p.id === slot.pid : displayName(p) === declinedBy
       const peers = persons
-        .filter((p) => p.priv?.[qualKey] && !abwesende.has(p.id) && displayName(p) !== declinedBy)
+        .filter((p) => p.priv?.[qualKey] && !abwesende.has(p.id) && !istAbsager(p))
         .map((p) => userByPerson.get(p.id))
         .filter((u): u is string => Boolean(u) && u !== userId)
       await notifyUsers(

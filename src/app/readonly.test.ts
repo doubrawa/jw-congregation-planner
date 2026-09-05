@@ -139,3 +139,52 @@ describe('Was nichts schreibt, darf offline laufen', () => {
     expect(heikel, `Ansichts-Aktion mit Schreibfall: ${heikel.join(', ')}`).toEqual([])
   })
 })
+
+/**
+ * **Wer eine Edge Function unmittelbar ruft, kommt am Reducer vorbei.**
+ *
+ * Die Positivliste oben schützt den Zustand — mehr nicht. Ein Baustein, der in
+ * derselben Funktion erst `dispatch` und dann eine Function ruft, läuft nach
+ * der abgewiesenen Aktion einfach weiter. Genau das ist passiert: „Einladen"
+ * und „Alle einladen" schickten im Offline-Stand Mails mit Codes, die nie
+ * gespeichert wurden, und legten sie in die Zwischenablage; der Import holte
+ * eine Woche von jw.org, die der abgewiesene `addImportedWeek` wieder wegwarf.
+ * `PlanSendenPanel` zog die Grenze seit je („Der Knopf liefe daran vorbei").
+ *
+ * Die Regel ist einfach und daher messbar: Wer einen dieser Aufrufe im
+ * Quelltext trägt, muss `staleAt` lesen. `persist.ts` ist nicht darunter —
+ * dort steht die Prüfung am Anfang der Datei und gilt für alles.
+ */
+describe('Direkte Function-Aufrufe prüfen den Offline-Stand', () => {
+  const BAUSTEINE = import.meta.glob('../**/*.tsx', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>
+
+  /** Aufrufe, die ohne Umweg über den Reducer nach draußen gehen. */
+  const DIREKT = [
+    'sendInviteMails(',
+    'sendPlan(',
+    'importNextWeek(',
+    'importWeekVariants(',
+    'substituteSeek(',
+    'substituteTake(',
+  ]
+
+  const bausteine = (): Array<[string, string]> =>
+    Object.entries(BAUSTEINE).filter(([pfad]) => !pfad.includes('.test.'))
+
+  const ruftDirekt = (text: string): boolean => DIREKT.some((name) => text.includes(name))
+
+  it('es gibt überhaupt solche Bausteine — sonst prüft der Wächter ins Leere', () => {
+    expect(bausteine().filter(([, text]) => ruftDirekt(text)).length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('und jeder von ihnen liest staleAt', () => {
+    const ohne = bausteine()
+      .filter(([, text]) => ruftDirekt(text) && !text.includes('staleAt'))
+      .map(([pfad]) => pfad)
+    expect(ohne, `ohne Offline-Prüfung: ${ohne.join(', ')}`).toEqual([])
+  })
+})

@@ -454,6 +454,22 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     expect(reqs[0]?.schonHeute).toEqual([])
   })
 
+  it('der gleichnamige Bruder ist nicht ich — sein Gesuch erreicht mich', () => {
+    /*
+      Zwei Anzeigenamen dürfen gleich sein (die App warnt, verbietet es nicht).
+      Über den Namen verglichen galt die Absage des anderen als die eigene, und
+      das Gesuch verschwand — bei dem, der ihn am ehesten vertreten könnte.
+    */
+    const weeks = buildDemoWeeks()
+    const ich = qualified('ton')
+    weeks[0].mid.helpers.ton = [{ name: displayName(ich), pid: 'p-namensvetter' }]
+    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich)
+    expect(reqs, 'das Gesuch des Namensvetters galt als das eigene').toHaveLength(1)
+    expect(reqs[0]?.declinedBy).toBe(displayName(ich))
+  })
+
   it('eigener verhinderter Slot erscheint nicht als Einspringen-Gesuch', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)

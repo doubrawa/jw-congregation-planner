@@ -919,15 +919,43 @@ const STUDY_PLACEHOLDER: Record<string, string> = {
   zh: '(输入研究文章)', ja: '(研究記事を入力)', ko: '(연구 기사 입력)', ar: '(أدخل مقالة الدرس)',
   he: '(הזן את מאמר הלימוד)', fa: '(مقالهٔ مطالعه را وارد کنید)', ur: '(مطالعے کا مضمون درج کریں)',
 }
+/**
+ * „Treffpunkt-Leiter“ je Sprache — die Bezeichnung, mit der die Edge Functions
+ * eine Treffpunkt-Leitung in Mitteilung und Push benennen (`FS_LEITER` in
+ * `_shared/zuteilungen.ts`).
+ *
+ * **Warum das hier noch einmal steht.** Die Übersetzung gibt es längst: als
+ * `fsLeiterLbl` im App-Wörterbuch, gemessen in allen 33 Sprachen. Nur kommt die
+ * Edge-Laufzeit nicht an `src/` heran, und der Rumpf einer Mitteilung wird Atom
+ * für Atom über FRAG übersetzt — dort fehlte das Wort als einziges aller
+ * Rollen. Ein Treffpunkt-Leiter las in der Glocke und im Push „Treffpunkt-
+ * Leiter“ auf Deutsch, während „Meine Aufgaben“ daneben seine Sprache zeigte.
+ *
+ * Keine zweite Übersetzung, nur eine zweite Ablage derselben —
+ * `fs-leiter-wort.test.ts` hält beide Seiten Zeichen für Zeichen zusammen.
+ */
+const FS_LEADER_WORD: Record<string, string> = {
+  ar: "مشرفو اجتماعات الخدمة", bg: "Водещи на сбирките за проповядване", cs: "Vedoucí skupinek ke službě", da: "Ledere af møderne for tjenesten",
+  el: "Υπεύθυνοι των συγκεντρώσεων για υπηρεσία", en: "Meeting-point leaders", es: "Conductores de las salidas", fa: "مسئولان جلسات خدمت موعظه",
+  fi: "Kenttäpalvelustilaisuuksien johtajat", fr: "Responsables des points de rencontre", he: "מנחי המפגשים לשירות", hr: "Voditelji sastanaka za službu",
+  hu: "A szolgálati összejövetelek vezetői", id: "Pemimpin perhimpunan untuk dinas", it: "Conduttori dei gruppi di servizio", ja: "野外奉仕の集まりの司会者",
+  ko: "야외 봉사 모임 사회자", nl: "Leiders van de samenkomsten voor de velddienst", no: "Ledere for møtene for tjenesten", pl: "Prowadzący zbiórki do służby",
+  pt: "Dirigentes das saídas de campo", ro: "Conducătorii întrunirilor pentru predicare", ru: "Ведущие встреч для проповеди", sk: "Vedúci skupiniek do služby",
+  sr: "Voditelji sastanaka za službu", sv: "Ledare för mötena för tjänsten", sw: "Waongozaji wa mikutano ya utumishi", tl: "Mga tagapangasiwa ng mga pagpupulong para sa paglilingkod",
+  tr: "Hizmet buluşmalarının sorumluları", uk: "Ведучі зібрань для проповідування", ur: "مُنادی کے اِجتماعات کے نگران", vi: "Người điều khiển buổi nhóm rao giảng",
+  zh: "传道聚集的主持人",
+}
 for (const code of Object.keys(FRAG)) {
   const f = FRAG[code]
   if (!f) continue // über `Object.keys` unmöglich; der Index-Zugriff weiß das nicht
   const lied = SONG_WORD[code]
   const vortrag = TALK_PLACEHOLDER[code]
   const studium = STUDY_PLACEHOLDER[code]
+  const fsLeiter = FS_LEADER_WORD[code]
   if (lied) f['Lied'] = lied
   if (vortrag) f['(Vortragsthema eintragen)'] = vortrag
   if (studium) f['(Studienartikel eintragen)'] = studium
+  if (fsLeiter) f['Treffpunkt-Leiter'] = fsLeiter
 }
 
 /* ---- Verweise auf Studienstoff, Gruppen, Versammlungen ------------------

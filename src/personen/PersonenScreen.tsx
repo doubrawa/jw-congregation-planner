@@ -58,6 +58,23 @@ function PersonList() {
   // Liste "Name: Code" landet zusätzlich in der Zwischenablage (für Personen
   // ohne E-Mail bzw. als Fallback ohne Domain).
   const inviteAll = async () => {
+    /*
+     * **Offline-Stand: gar nicht erst anfangen.**
+     *
+     * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`) —
+     * aber nur den Reducer. Was danach in derselben Funktion steht, lief
+     * weiter: Die Codes entstehen hier im Baustein, keiner davon landet im Zustand
+     * oder in der Datenbank — und die Mails gingen trotzdem an **alle** ohne
+     * Konto, samt Liste in der Zwischenablage. Lauter Codes, die
+     * `redeem_invite` nicht kennt.
+     *
+     * `PlanSendenPanel` zieht dieselbe Grenze und aus demselben Grund: Wer eine
+     * Edge Function unmittelbar ruft, kommt am Reducer vorbei.
+     */
+    if (state.staleAt) {
+      dispatch({ type: 'showToast', text: t.offlineReadOnly })
+      return
+    }
     const candidates = sorted.filter((p) => !linkedMember(state, p.id) && !openInvite(state, p.id))
     if (candidates.length === 0) {
       dispatch({ type: 'showToast', text: t.toastAlleHabenKonto })

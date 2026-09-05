@@ -42,6 +42,23 @@ export function KontoCard({ person }: { person: Person }) {
   // Einladen: Code anlegen; mit E-Mail zuerst Server-Versand (eigene Domain
   // via send-invite) versuchen, sonst/als Fallback das Mail-Programm öffnen.
   const invitePerson = async () => {
+    /*
+     * **Offline-Stand: gar nicht erst anfangen.**
+     *
+     * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`) —
+     * aber nur den Reducer. Was danach in derselben Funktion steht, lief
+     * weiter: Der Einladungscode entsteht hier im Baustein, die Zeile landet
+     * nie im Zustand und nie in der Datenbank, und die Mail ging trotzdem
+     * hinaus. Der Eingeladene bekam einen Code, den `redeem_invite` nicht
+     * kennt.
+     *
+     * `PlanSendenPanel` zieht dieselbe Grenze und aus demselben Grund: Wer eine
+     * Edge Function unmittelbar ruft, kommt am Reducer vorbei.
+     */
+    if (state.staleAt) {
+      dispatch({ type: 'showToast', text: t.offlineReadOnly })
+      return
+    }
     const created = makeInvite(person)
     dispatch({ type: 'addInvite', invite: created })
     if (!person.mail) return

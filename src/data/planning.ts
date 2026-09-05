@@ -1097,7 +1097,6 @@ export function deriveSubstituteReqs(
   abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): SubstituteReq[] {
   const out: SubstituteReq[] = []
-  const myName = displayName(me)
   const svcByKey = new Map(services.map((s) => [s.key, s]))
   for (const [key, status] of Object.entries(confirmations)) {
     if (status !== 'verhindert') continue
@@ -1121,7 +1120,16 @@ export function deriveSubstituteReqs(
     if (istAusgefallen(week, parts.tab)) continue
     const meeting = week?.[parts.tab]
     const slot = meeting?.helpers[parts.svc]?.[parts.pos]
-    if (!meeting || !slot?.name || slot.name === myName) continue // eigener/leerer Slot
+    /*
+     * Der eigene Slot ist keiner, für den man einspringt — **über `gehoertZu`**,
+     * nicht über den Namen.
+     *
+     * Hier stand `slot.name === myName`. Sagt der gleichnamige Bruder ab, hieß
+     * das „das bin ich" und sein Gesuch verschwand: Ausgerechnet der, der ihn
+     * am ehesten vertreten könnte (gleiche Qualifikation, gleiche Versammlung),
+     * bekam es nie zu sehen. Trägt der Slot eine `pid`, entscheidet sie.
+     */
+    if (!meeting || !slot?.name || gehoertZu(slot, me)) continue // eigener/leerer Slot
     out.push({
       key,
       svc: parts.svc,

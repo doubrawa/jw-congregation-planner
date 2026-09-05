@@ -427,3 +427,23 @@ describe('Konten ohne verknüpfte Person', () => {
     expect(container.querySelector('.pers-orphans')).toBeNull()
   })
 })
+
+/**
+ * Dasselbe eine Ebene höher — und dort schlimmer: „Alle einladen" erzeugt Codes
+ * für **jeden** ohne Konto, schickt sie per Mail und legt die Liste in die
+ * Zwischenablage. Im Offline-Stand entsteht keine einzige Zeile in der
+ * Datenbank; alles davon wäre wertlos gewesen.
+ */
+describe('Sammel-Einladung im Offline-Stand', () => {
+  it('erzeugt nichts, verschickt nichts, kopiert nichts', async () => {
+    const { container, dispatch } = zeige({ staleAt: Date.now() - 3600_000 })
+    fireEvent.click(knopf(container, t.alleEinladen))
+
+    await waitFor(() =>
+      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly }),
+    )
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(false)
+    expect(sendInviteMails).not.toHaveBeenCalled()
+    expect(copyText).not.toHaveBeenCalled()
+  })
+})

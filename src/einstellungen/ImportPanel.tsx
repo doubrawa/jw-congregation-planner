@@ -38,6 +38,23 @@ export function ImportPanel() {
 
   const importWorkbook = async () => {
     if (state.importing) return
+    /*
+     * **Offline-Stand: gar nicht erst anfangen.**
+     *
+     * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`) —
+     * aber nur den Reducer. Was danach in derselben Funktion steht, lief
+     * weiter: Der Abruf lief weiter — eine Woche von jw.org holen, Varianten
+     * nachladen, und am Ende wirft der abgewiesene `addImportedWeek` alles
+     * wieder weg. `startImport` steht mit Absicht nicht in der Positivliste;
+     * die Antwort darauf ist der Hinweis, nicht ein Ladebalken ins Leere.
+     *
+     * `PlanSendenPanel` zieht dieselbe Grenze und aus demselben Grund: Wer eine
+     * Edge Function unmittelbar ruft, kommt am Reducer vorbei.
+     */
+    if (state.staleAt) {
+      dispatch({ type: 'showToast', text: t.offlineReadOnly })
+      return
+    }
     // Demo-Modus: simulierter Abruf (eine Beispielwoche) wie bisher
     if (state.dataStatus === 'demo') {
       if (state.imported) {

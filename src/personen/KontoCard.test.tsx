@@ -249,3 +249,27 @@ describe('Zustand 3: noch nichts — einladen', () => {
     await waitFor(() => expect(window.location.href).toContain('mailto:anton@example.org'))
   })
 })
+
+/**
+ * **Offline entsteht kein Code — also darf auch keine Mail hinausgehen.**
+ *
+ * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`), aber
+ * nur den Reducer: Der Code entsteht im Baustein, `addInvite` verpufft, und die
+ * Mail ging trotzdem hinaus — mit einem Code, den `redeem_invite` nicht kennt.
+ * Der Eingeladene stünde vor einer Anmeldung, die nicht funktioniert, und
+ * niemand wüsste warum.
+ */
+describe('Konto-Karte im Offline-Stand', () => {
+  it('lädt niemanden ein', async () => {
+    const { container, dispatch } = zeige(person({ mail: 'a@example.org' }), {
+      staleAt: Date.now() - 3600_000,
+    })
+    fireEvent.click(knopf(container, t.einladenBtn)!)
+
+    await waitFor(() =>
+      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly }),
+    )
+    expect(sendInviteMails).not.toHaveBeenCalled()
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(false)
+  })
+})

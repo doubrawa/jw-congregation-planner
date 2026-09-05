@@ -38,6 +38,7 @@ const U_NOPERSON = 'user-noperson' // Konto ohne verknüpfte Person
 const U_ABSENT = 'user-absent' // qualifiziert, aber in dieser Woche abwesend
 const U_PLANNER = 'user-planner'
 const U_FOREIGN = 'user-foreign' // Mitglied einer ANDEREN Versammlung
+const U_ORIG_ZWILL = 'user-orig-zwill' // heißt wie der Absagende und kann denselben Dienst
 
 const QUAL = { [`svc:${SVC}`]: true }
 
@@ -48,16 +49,21 @@ const MEMBERS = [
   { user_id: U_NOPERSON, person_id: null, planner: false, congregation_id: CONG },
   { user_id: U_ABSENT, person_id: 'p-absent', planner: false, congregation_id: CONG },
   { user_id: U_PLANNER, person_id: 'p-planner', planner: true, congregation_id: CONG },
+  { user_id: U_ORIG_ZWILL, person_id: 'p-orig-zwill', planner: false, congregation_id: CONG },
 ]
 
 const PERSONS = [
   /*
-    Ein Namensvetter der Ursprungsperson, **vor** ihr in der Liste und ohne
-    Konto: Wer den Eingeteilten über den Namen sucht, findet zuerst ihn — und
-    damit niemanden, der zu benachrichtigen wäre. Nicht qualifiziert, damit die
-    Ersatzsuche oben unberührt bleibt.
+    Ein Namensvetter der Ursprungsperson, **vor** ihr in der Liste. Er trägt
+    dieselbe Qualifikation und hat ein eigenes Konto — beides gehört zum Fall:
+
+     - Wer den Eingeteilten über den **Namen** sucht, findet zuerst ihn.
+     - Wer den Absagenden über den Namen **ausnimmt**, nimmt ihn mit heraus —
+       und damit den, der am ehesten einspringen könnte.
+
+    Kein Push-Abo, damit die Zustell-Prüfungen ihre Endpunkte behalten.
   */
-  { id: 'p-orig-zwill', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: {} },
+  { id: 'p-orig-zwill', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: QUAL },
   { id: 'p-me', fn: 'Ich', ln: 'Selbst', dn: 'Ich Selbst', priv: QUAL },
   { id: 'p-orig', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: QUAL },
   { id: 'p-unqual', fn: 'Uwe', ln: 'Nqual', dn: 'Uwe Nqual', priv: {} },
@@ -489,10 +495,12 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
   it('weder den Absagenden noch Unqualifizierte, Abwesende oder Kontolose', async () => {
     const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
     expect(res.status).toBe(200)
-    await expect(res.json()).resolves.toEqual({ ok: true, notified: 1 })
+    await expect(res.json()).resolves.toEqual({ ok: true, notified: 2 })
 
     const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
-    expect(rows.map((r) => r.user_id)).toEqual([U_ME])
+    // Der gleichnamige Bruder ist **nicht** der Absagende: Er kann denselben
+    // Dienst und wird gefragt (siehe `istAbsager`).
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ORIG_ZWILL]))
     // Gegenprobe: niemand aus den ausgeschlossenen Gruppen ist dabei.
     const got = new Set(rows.map((r) => r.user_id))
     for (const u of [U_ORIG, U_UNQUAL, U_ABSENT, U_PLANNER]) expect(got.has(u)).toBe(false)
@@ -525,8 +533,9 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
     const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
     expect(res.status).toBe(200)
     const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
-    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ABSENT]))
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ABSENT, U_ORIG_ZWILL]))
   })
+
 })
 
 describe('substitute: seek darf nur auslösen, wen es angeht', () => {
