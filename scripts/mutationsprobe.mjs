@@ -571,6 +571,13 @@ const KATALOG = [
     ersetzen: 'if (!callerPerson) return json({ error: \'not-qualified\' }, 403)',
   },
   {
+    id: 'ersatz-suchen-id-vor-name',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Trägt der Platz eine Id, entscheidet sie — der Namensvetter löst keine fremde Ersatzsuche aus.',
+    suchen: '(slot.pid ? slot.pid === callerPerson.id : slot.name === displayName(callerPerson))',
+    ersetzen: '(slot.pid === callerPerson.id || slot.name === displayName(callerPerson))',
+  },
+  {
     id: 'einladung-nur-planer',
     datei: 'supabase/functions/send-invite/index.ts',
     regel: 'Einladungen verschicken darf nur ein Planer.',

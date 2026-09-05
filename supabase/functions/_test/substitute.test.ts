@@ -568,6 +568,38 @@ describe('substitute: seek darf nur auslösen, wen es angeht', () => {
     const res = await call(seek, { auth: U_UNQUAL })
     expect(res.status).toBe(200)
   })
+
+  it('der Namensvetter darf NICHT — der Platz trägt eine Id', async () => {
+    /*
+      **Id vor Name, auch hier.** Der Slot nennt `pid: 'p-orig'`; damit ist
+      entschieden, wem er gehört, und der Anzeigename ist kein Anhalt mehr
+      (`gehoertZu` in helpers.ts: „hat die Zuteilung eine Id, wird **nicht** auf
+      den Namen zurückgefallen").
+
+      Hier stand ein Oder — `slot.pid === id || slot.name === name`. Der
+      Namensvetter kam damit durch und konnte für einen fremden Platz an alle
+      Qualifizierten der Versammlung schicken lassen, „Otto Riginal kann
+      nicht". Zwei Zeilen tiefer hält `istAbsager` die Regel längst richtig
+      herum; die beiden widersprachen sich in derselben Funktion.
+    */
+    const res = await call(seek, { auth: U_ORIG_ZWILL })
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({ error: 'forbidden' })
+    expect(sentPush).toEqual([])
+  })
+
+  it('… ohne Id bleibt der Name der Anhalt — Altbestand geht weiter', async () => {
+    // Gegenprobe: Die Absicherung darf den Weg nicht ganz zumauern. Wochen aus
+    // der Zeit vor `pid` tragen nur einen Namen, und dort ist er alles, was es
+    // gibt.
+    week = {
+      start: '2026-09-07',
+      mid: { date: '7.–13. September', helpers: { [SVC]: [{ name: 'Otto Riginal' }] } },
+      we: { date: '7.–13. September', helpers: {} },
+    }
+    const res = await call(seek, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+  })
 })
 
 describe('substitute: zwei Übernahmen gleichzeitig', () => {

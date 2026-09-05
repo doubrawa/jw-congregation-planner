@@ -364,9 +364,16 @@ Deno.serve(async (req: Request) => {
       // es dem, der eingeteilt ist, oder wer für genau diesen Slot bereits
       // abgesagt hat (der Slot behält den Namen, kann aber inzwischen neu
       // besetzt sein).
+      //
+      // **Id vor Name** — dieselbe Rangfolge wie in `gehoertZu` (helpers.ts)
+      // und wie in `istAbsager` ein paar Zeilen tiefer. Hier stand ein Oder,
+      // und damit kam der Namensvetter durch: Er konnte für einen fremden Platz
+      // an alle Qualifizierten schicken lassen, „<Name> kann nicht". Trägt der
+      // Platz eine Id, ist entschieden, wem er gehört; der Name ist nur dort
+      // ein Anhalt, wo es keine Id gibt (Altbestand).
       const istEingeteilt =
         callerPerson !== undefined &&
-        (slot.pid === callerPerson.id || slot.name === displayName(callerPerson))
+        (slot.pid ? slot.pid === callerPerson.id : slot.name === displayName(callerPerson))
       if (!istEingeteilt) {
         const eigeneAbsage = await rest.get<{ user_id: string }[]>(
           `confirmations?select=user_id&congregation_id=eq.${wert(cong)}` +
