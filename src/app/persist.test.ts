@@ -827,3 +827,88 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * **Was der Reducer dauerhaft ändert, muss die Persistenz auch schreiben.**
+ *
+ * `readonly.test.ts` prüft die eine Richtung: Wofür `persist` keinen Fall hat,
+ * das darf offline laufen. Hier steht die andere, und sie ist die teurere —
+ * fehlt ein Fall, ist die Änderung auf dem Bildschirm da und beim nächsten
+ * Laden weg. Genau das war bei `setAuxClass` so: Der Schalter wurde
+ * gespeichert, die Wochen, die `syncAuxSlots` gerade umgebaut hatte, nicht.
+ *
+ * Gelesen wird der Quelltext (wie in `readonly.test.ts`): Welche Zustandsteile
+ * ein `case` schreibt, steht im Rückgabewert und nirgends zur Laufzeit.
+ */
+describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
+  const roh = (glob: Record<string, unknown>): string =>
+    String(Object.values(glob)[0] ?? '').split('\r\n').join('\n')
+  const REDUCER = import.meta.glob('./reducer.ts', { query: '?raw', import: 'default', eager: true })
+  const PERSIST = import.meta.glob('./persist.ts', { query: '?raw', import: 'default', eager: true })
+
+  /** Zustandsteile, die in der Datenbank stehen. */
+  const DAUERHAFT = [
+    'weeks', 'fsWeeks', 'fsRules', 'fsBase', 'persons', 'services', 'groups',
+    'confirmations', 'absences', 'members', 'invites', 'congregation',
+    'reminders', 'congLang', 'progLangs', 'auxClass', 'notifs',
+  ]
+
+  /**
+   * Aktionen, die einen dauerhaften Teil setzen und trotzdem keinen Schreibweg
+   * brauchen — beide, weil sie **gelesene** Daten einsetzen statt neue zu
+   * erzeugen.
+   */
+  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs'])
+
+  const WORTZEICHEN = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.'
+
+  /** Setzt dieser Fall das Feld — als eigene Eigenschaft, nicht als `x.feld:`? */
+  const setztFeld = (text: string, feld: string): boolean => {
+    for (let i = text.indexOf(feld + ':'); i >= 0; i = text.indexOf(feld + ':', i + 1)) {
+      if (i === 0 || !WORTZEICHEN.includes(text[i - 1]!)) return true
+    }
+    return false
+  }
+
+  /** Die `case`-Zweige von `baseReducer`, Durchreichen aufgelöst. */
+  const faelle = (): Array<[string, string]> => {
+    const quelle = roh(REDUCER)
+    const ab = quelle.indexOf('function baseReducer(')
+    if (ab < 0) throw new Error('baseReducer nicht gefunden')
+    const teile = quelle.slice(ab).split('\n    case ')
+    const roheFaelle: Array<[string, string]> = []
+    for (const teil of teile.slice(1)) {
+      const ende = teil.indexOf("':")
+      if (ende < 0 || teil[0] !== "'") continue
+      roheFaelle.push([teil.slice(1, ende), teil.slice(ende + 2)])
+    }
+    if (roheFaelle.length < 60) throw new Error(`Fälle nicht gefunden (${roheFaelle.length})`)
+    // `case 'a': case 'b': <Rumpf>` — der leere Zweig erbt den nächsten.
+    return roheFaelle.map(([name], i) => {
+      let j = i
+      while (roheFaelle[j]![1].trim() === '' && j + 1 < roheFaelle.length) j++
+      return [name, roheFaelle[j]![1]] as [string, string]
+    })
+  }
+
+  it('kein Fall ändert etwas Dauerhaftes ohne Schreibweg', () => {
+    const persistQuelle = roh(PERSIST)
+    const offen: string[] = []
+    for (const [name, text] of faelle()) {
+      if (AUS_DER_DATENBANK.has(name)) continue
+      if (persistQuelle.includes(`case '${name}':`)) continue
+      const felder = DAUERHAFT.filter((f) => setztFeld(text, f))
+      if (felder.length > 0) offen.push(`${name} → ${felder.join(', ')}`)
+    }
+    expect(offen, `ohne Schreibweg: ${offen.join(' | ')}`).toEqual([])
+  })
+
+  it('und die Ausnahmen sind wirklich welche', () => {
+    // Gegenprobe: Stünde eine der beiden doch in `persist`, wäre die Ausnahme
+    // überflüssig und der Wächter schwächer als er aussieht.
+    const persistQuelle = roh(PERSIST)
+    for (const name of AUS_DER_DATENBANK) {
+      expect(persistQuelle.includes(`case '${name}':`), name).toBe(false)
+    }
+  })
+})

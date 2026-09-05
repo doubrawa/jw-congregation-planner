@@ -466,9 +466,14 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   return { range, book, current: false, mid, we: weekendTemplate(range) }
 }
 
-// Schülerteil-Typen (deutscher Titel/Meta — die deutsche Wochenseite wird beim
-// Import ohnehin geladen; für andere Sprachen erkennt die Heuristik nicht und es
-// bleibt bei 1 Slot, den Partner fügt der Planer dann von Hand hinzu).
+// Schülerteil-Typen — die Heuristik liest **deutschen** Titel und Meta.
+//
+// Das ist keine Einschränkung mehr: Die deutsche Wochenseite wird beim Import
+// ohnehin geladen, und `applyGoldSlots` überträgt die Slot-Vorlagen von dort
+// positionsgenau auf die lokalisierte Woche (siehe index.ts). Hier stand, der
+// Planer müsse den Partner in fremdsprachigen Versammlungen von Hand nachtragen
+// — das galt vor `applyGoldSlots` und liest sich seither wie ein offener
+// Mangel, den es nicht gibt.
 const CONVO_RE = /Gespräche beginnen|Interesse fördern|Menschen zu Jüngern machen|Jünger machen/i
 const TALK_RE = /Ansprache|\bVortrag\b/i
 const BELIEF_RE = /Glaubensansichten erklären/i

@@ -113,3 +113,25 @@ describe('cleanText: Auszeichnung raus, Sinn bleibt', () => {
     expect(cleanText('<p></p>')).toBe('')
   })
 })
+
+/**
+ * **Das Und-Zeichen kommt zuletzt zurück.**
+ *
+ * Ein Dekodierer, der `&amp;` vor den übrigen Entities auflöst, dekodiert sein
+ * eigenes Ergebnis gleich noch einmal mit: `&amp;lt;` wird erst zu `&lt;` und
+ * dann zu `<`. Aus dem **Text** „&lt;" würde damit ein Zeichen, das niemand
+ * geschrieben hat — und aus „&amp;#39;" ein Apostroph.
+ */
+describe('Entity-Reihenfolge', () => {
+  it('dekodiert nicht zweimal', () => {
+    expect(decodeEntities('&amp;lt;')).toBe('&lt;')
+    expect(decodeEntities('&amp;#39;')).toBe('&#39;')
+    expect(decodeEntities('&amp;amp;')).toBe('&amp;')
+  })
+
+  it('und die einfachen Fälle bleiben, wie sie waren', () => {
+    expect(decodeEntities('R&amp;D')).toBe('R&D')
+    expect(decodeEntities('&lt;b&gt;')).toBe('<b>')
+    expect(decodeEntities('&#39;')).toBe("'")
+  })
+})

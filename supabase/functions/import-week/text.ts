@@ -11,14 +11,22 @@
 // derselben Woche nicht. Deshalb eine Stelle für beide.
 // =============================================================================
 
-/** HTML-Entities in Zeichen zurückverwandeln (numerisch, hex und benannt). */
+/**
+ * HTML-Entities in Zeichen zurückverwandeln (numerisch, hex und benannt).
+ *
+ * **`&amp;` steht zuletzt**, und das ist keine Kosmetik: Es stand einmal vor
+ * `&lt;`, und damit lief `&amp;lt;` durch zwei Runden — erst zu `&lt;`, dann zu
+ * `<`. Aus dem Text „&lt;" wurde so ein Zeichen, das keiner geschrieben hat.
+ * Dieselbe Regel gilt in jedem Entity-Dekodierer: Das Und-Zeichen kommt
+ * zurück, wenn alle anderen fertig sind, sonst dekodiert man sein Ergebnis
+ * gleich noch einmal mit.
+ */
 export function decodeEntities(s: string): string {
   return s
     .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
     .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
     .replace(/&nbsp;/g, ' ')
     .replace(/&shy;/g, '') // Soft Hyphen als Entity
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
@@ -26,6 +34,7 @@ export function decodeEntities(s: string): string {
     .replace(/&lsquo;/g, '‘')
     .replace(/&ldquo;/g, '„')
     .replace(/&rdquo;/g, '“')
+    .replace(/&amp;/g, '&')
 }
 
 /**
