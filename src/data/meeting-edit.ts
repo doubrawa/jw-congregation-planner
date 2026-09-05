@@ -765,6 +765,11 @@ export function setPartThema(
       const vi = m.sections[si]?.items[ii]
       if (vi && !isSong(vi)) vi.title = titel
     })
+    // Ein ausgetauschter Titel ist ein Umbau — genau der Fall, den der Kopf von
+    // `umbauMerken` nennt. Das Thema ist Text des Planers; eine Woche später
+    // nachgeholte Variante brächte den jw.org-Titel mit, und der legte sich
+    // darüber (`Meeting.umgebaut`).
+    umbauMerken(w, tab)
   }
   return next
 }
@@ -792,6 +797,10 @@ export function editTalkTheme(weeks: Week[], wi: number, si: number, ii: number,
     const vi = m.sections[si]?.items[ii]
     if (vi && !isSong(vi)) vi.title = value
   })
+  // Wie bei `setPartThema`: ein ausgetauschter Titel ist ein Umbau. Der
+  // Vortragstitel ist sogar der Freitext schlechthin — eine nachgeholte
+  // Variante trägt dort nur den Platzhalter.
+  umbauMerken(week, 'we')
   return next
 }
 
@@ -837,9 +846,14 @@ function replaceSongAtom(title: string, value: string): string {
  * Deshalb dieselbe Auskunft für beide Seiten: `setSong` unten steigt daran aus,
  * und das Eingabefeld erscheint erst gar nicht. Was nicht wirken kann, wird
  * nicht angeboten.
+ *
+ * **Ohne Zusammenkunft kein Platz**, deshalb `undefined` erlaubt: Der Aufrufer
+ * baute sonst eine leere Attrappe (`{ date: '', end: '', sections: [], … }`),
+ * nur damit der Typ stimmt — ein zweiter, stiller Vertrag, der bei jedem neuen
+ * Pflichtfeld an `Meeting` mitwandern müsste.
  */
-export function hatLiedPlatz(meeting: Meeting, art: SectionKind): boolean {
-  const section = meeting.sections.find((s) => istArt(s, art))
+export function hatLiedPlatz(meeting: Meeting | undefined, art: SectionKind): boolean {
+  const section = meeting?.sections.find((s) => istArt(s, art))
   return (section?.items ?? []).some((it) => isSong(it) || songAtomIndex(it.title) >= 0)
 }
 

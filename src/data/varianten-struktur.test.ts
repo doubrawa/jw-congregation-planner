@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { lacAdd, lacRemove, setDienstwoche } from './meeting-edit'
+import {
+  editTalkTheme,
+  lacAdd,
+  lacRemove,
+  setDienstwoche,
+  setOpeningSong,
+  setPartThema,
+} from './meeting-edit'
 import { localizedWeek } from './localize'
 import { buildImportWeek } from './testdaten'
-import { isSong } from './helpers'
+import { isSong, istArt } from './helpers'
 import type { Meeting, PartItem, Week } from './types'
 
 /**
@@ -112,5 +119,93 @@ describe('Nachgeholte Sprachvariante einer bearbeiteten Woche', () => {
 
     const gezeigt = localizedWeek(nachher, 'en')
     expect(titel(gezeigt.mid, 1)).toEqual(titel(nachher.alt!.en!.mid, 1))
+  })
+})
+
+describe('Ein ausgetauschter Titel zählt ebenfalls als Umbau', () => {
+  /**
+   * `umbauMerken` nennt in seinem Kopf ausdrücklich „ein ausgetauschter Titel" —
+   * gerufen wurde es aber nur beim Anlegen, Löschen, Verschieben und in der
+   * Kreisaufseher-Woche. Die beiden Stellen, an denen der Planer **eigenen
+   * Text** einträgt, fehlten: das Thema eines Schülerteils und das
+   * Vortragsthema.
+   *
+   * Beides sind Sätze, die es auf jw.org nicht gibt. Eine Variante, die
+   * Monate später nachkommt, bringt an derselben Stelle den Vorlagentitel mit
+   * und legte ihn darüber — der Zugeteilte bereitete etwas vor, das nicht auf
+   * dem Programm steht.
+   */
+  const LAC_ABSCHNITT = 3
+
+  it('das Thema eines Punkts überlebt eine nachgeholte Variante', () => {
+    const woche = buildImportWeek()
+    const punkt = woche.mid.sections[LAC_ABSCHNITT]!.items[1]!
+    const begriff = isSong(punkt) ? '' : punkt.title
+    const nachher = setPartThema([woche], 0, 'mid', LAC_ABSCHNITT, 1, begriff, 'Eigenes Thema')[0]!
+    expect(nachher.mid.umgebaut, 'keine Umbau-Marke gesetzt').toBe(true)
+
+    nachher.alt = { en: alsVariante(woche) }
+    const gezeigt = localizedWeek(nachher, 'en')
+    expect(titel(gezeigt.mid, LAC_ABSCHNITT)).toEqual(titel(nachher.mid, LAC_ABSCHNITT))
+  })
+
+  it('… und das Vortragsthema ebenso', () => {
+    const woche = buildImportWeek()
+    const si = woche.we.sections.findIndex((s) => istArt(s, 'vortrag'))
+    const nachher = editTalkTheme([woche], 0, si, 0, 'Mein Vortragsthema')[0]!
+    expect(nachher.we.umgebaut, 'keine Umbau-Marke gesetzt').toBe(true)
+
+    nachher.alt = { en: alsVariante(woche) }
+    const gezeigt = localizedWeek(nachher, 'en')
+    expect(titel(gezeigt.we, si)).toEqual(titel(nachher.we, si))
+  })
+
+  it('Lieder bleiben ausgenommen — sie stehen, wo sie standen', () => {
+    // Gegenprobe: Die Marke darf nicht bei jeder Änderung fallen, sonst wäre
+    // die Übersetzung nach dem ersten Lied für immer aus.
+    const woche = buildImportWeek()
+    const nachher = setOpeningSong([woche], 0, '78')[0]!
+    expect(nachher.we.umgebaut).toBeUndefined()
+  })
+})
+
+/**
+ * **Wer künftig einen Titel austauscht, muss die Marke mitsetzen.**
+ *
+ * Der Kopf von `umbauMerken` sagt es, aber gelesen wird ein Kommentar erst,
+ * wenn man ihn sucht. Hier wird der Quelltext selbst gefragt: Jede exportierte
+ * Funktion dieser Datei, die einen `title` schreibt oder Punkte umsortiert,
+ * braucht ein `umbauMerken`.
+ *
+ * Ausgenommen ist allein `setSong` — Liednummern stehen an derselben Stelle wie
+ * vorher, eine nachgeholte Variante passt dort weiterhin (siehe den Kopf von
+ * `umbauMerken`). Steht hier je eine zweite Ausnahme, gehört sie begründet.
+ */
+describe('Jede Ablauf-Änderung merkt den Umbau', () => {
+  const QUELLE = import.meta.glob('./meeting-edit.ts', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>
+
+  const AUSGENOMMEN = new Set(['setSong'])
+
+  it('keine Titel- oder Reihenfolge-Änderung ohne umbauMerken', () => {
+    const quelle = String(Object.values(QUELLE)[0] ?? '')
+    // Bei jeder Funktionsdefinition auf Spaltenebene 0 aufteilen; das erste
+    // Stück davor ist der Dateikopf.
+    const stuecke = quelle.split(/\n(?=(?:export )?function )/)
+    expect(stuecke.length, 'keine Funktionen gefunden — der Test misst nichts').toBeGreaterThan(10)
+
+    const fehlend: string[] = []
+    for (const stueck of stuecke) {
+      const name = /^(?:export )?function (\w+)/.exec(stueck)?.[1]
+      if (!name || AUSGENOMMEN.has(name)) continue
+      const aendertAblauf =
+        /\.title = /.test(stueck) || /\.items\.splice\(/.test(stueck) || /swapKeepNums\(/.test(stueck)
+      if (aendertAblauf && !stueck.includes('umbauMerken(')) fehlend.push(name)
+    }
+    // `swapKeepNums` selbst ist die Hilfsfunktion, nicht ihr Aufrufer.
+    expect(fehlend.filter((n) => n !== 'swapKeepNums'), 'ohne umbauMerken').toEqual([])
   })
 })

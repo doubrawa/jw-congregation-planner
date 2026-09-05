@@ -73,8 +73,7 @@ export function MeetingSection({
   // „Lied", in der Anzeigesprache steht womöglich „Song" oder „سرود".
   const liedPlatzDa =
     (isOpening || isClosing) &&
-    hatLiedPlatz(state.weeks[state.week]?.we ?? { date: '', end: '', sections: [], helpers: {} },
-      isOpening ? 'eroeffnung' : 'abschluss')
+    hatLiedPlatz(state.weeks[state.week]?.we, isOpening ? 'eroeffnung' : 'abschluss')
 
   const isPending = (slot: SlotAssignment | undefined) =>
     state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
