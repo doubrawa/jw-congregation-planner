@@ -63,10 +63,21 @@ Vites HMR abfangen; Push funktioniert trotzdem. `npm run preview` cacht wie
 Produktion — nur damit ist Offline lokal testbar.
 
 **2. Datenstand** — [`src/lib/snapshot.ts`](src/lib/snapshot.ts) legt nach jedem
-erfolgreichen Laden die `HydratePayload` unverändert im localStorage ab (an die
-Benutzer-Id gebunden, beim Abmelden und bei verlorener Mitgliedschaft gelöscht).
-Scheitert das Laden, spielt [`hydrate.ts`](src/app/hydrate.ts) sie über dieselbe
+erfolgreichen Laden die `HydratePayload` im localStorage ab (an die Benutzer-Id
+gebunden, beim Abmelden und bei verlorener Mitgliedschaft gelöscht). Scheitert
+das Laden, spielt [`hydrate.ts`](src/app/hydrate.ts) sie über dieselbe
 `hydrate`-Aktion zurück und setzt `staleAt`.
+
+Zwei Grenzen dabei, weil die Aufnahme im Klartext liegt und **die Sitzung
+überlebt** — nach Ablauf des Tokens ist sie auf einem geteilten Gerät weiterhin
+lesbar:
+
+- **Sie verfällt nach 14 Tagen** und wird beim Lesen nicht nur verworfen,
+  sondern gelöscht. Wer so lange ohne Netz war, dem nützt der alte Stand nicht.
+- **Der Abwesenheitsgrund bleibt draußen** — der einzige Freitext, der
+  Gesundheitsangaben tragen kann, und der einzige, den offline niemand braucht.
+  Telefon und E-Mail bleiben: Offline ist die Nummer oft der Grund, die App
+  überhaupt zu öffnen.
 
 Solange `staleAt` gesetzt ist, ist die App **nur lesend**:
 

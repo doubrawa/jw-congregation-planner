@@ -794,14 +794,29 @@ besteht es unverändert.
 
 Gleiches gilt für gleichzeitige Importe (beide schreiben Position `n`).
 
-### S6 — Personenbezogene Daten in der Offline-Momentaufnahme ⚠️
+### S6 — Personenbezogene Daten in der Offline-Momentaufnahme ✅ entschieden
 
-`lib/snapshot.ts` legt die vollständige `HydratePayload` (alle Personen mit Telefon
-und E-Mail, alle Abwesenheiten inkl. Grund) unverschlüsselt im `localStorage` ab.
-Das ist bewusst so gebaut und beim Abmelden gelöscht — auf einem geteilten Gerät
-bleibt es zwischen den Sitzungen aber lesbar. Erwähnenswert, weil die
-Datenschutz-Argumentation des README („personenbezogene Daten in der EU") sonst
-sorgfältig ist.
+`lib/snapshot.ts` legt die `HydratePayload` unverschlüsselt im `localStorage` ab.
+Für sich genommen ist das kaum ein Zugewinn für einen Angreifer: Im selben
+Speicher liegt das Supabase-Sitzungstoken, und damit bekäme er dieselben Daten
+live. **Einen Unterschied macht die Aufnahme an genau einer Stelle — sie
+überlebt die Sitzung.** Ist das Token abgelaufen und hat sich niemand
+abgemeldet, bleibt sie lesbar; auf einem geteilten Saal-Tablet Monate später.
+
+Am 5.9.2026 entschieden und umgesetzt (gemessen: 186 kB bei 80 Personen und 52
+Wochen):
+
+  * **Verfallsdatum von 14 Tagen.** Was älter ist, wird beim Lesen verworfen
+    **und gelöscht** — nur zu verwerfen hätte die Anzeige abgeschaltet und den
+    Bestand behalten. Länger als jede Reise ohne Netz, kürzer als „irgendwann";
+    ein Programm von vor drei Wochen ist ohnehin keine Auskunft mehr.
+  * **Der Abwesenheitsgrund bleibt draußen.** Der einzige Freitext im Bestand,
+    der Gesundheitsangaben tragen kann („Reha", „Krankenhaus") — und der
+    einzige, den offline niemand braucht. Beide Anzeigestellen kommen ohne aus.
+
+Telefon und E-Mail bleiben bewusst drin: Offline ist die Nummer oft genau das,
+wofür man die App aufmacht. **Verschlüsselung** wurde verworfen — der Schlüssel
+müsste auf demselben Gerät liegen und wäre genauso lesbar.
 
 ### S7 — `substitute: seek` prüft nicht, wer aufruft ✅
 

@@ -40,7 +40,9 @@ describe('saveSnapshot / readSnapshot', () => {
     saveSnapshot(p)
     const snap = readSnapshot('u1')
     expect(snap?.at).toBe(Date.parse('2026-07-25T10:30:00Z'))
-    expect(snap?.payload).toEqual(p) // 1:1, damit hydrate sie direkt annehmen kann
+    // Bis auf die Abwesenheitsgründe 1:1, damit `hydrate` sie direkt annehmen
+    // kann (siehe „Was liegen bleibt, ist beschnitten" unten).
+    expect(snap?.payload).toEqual(p)
     vi.useRealTimers()
   })
 
@@ -72,6 +74,73 @@ describe('saveSnapshot / readSnapshot', () => {
     expect(() => saveSnapshot(payload())).not.toThrow()
     setItem.mockRestore()
     expect(readSnapshot('u1')).toBeNull()
+  })
+})
+
+describe('Was liegen bleibt, ist beschnitten (S6)', () => {
+  const mitGrund = (): HydratePayload =>
+    payload({
+      persons: [
+        {
+          id: 'p1', fn: 'Xavo', ln: 'Quintus', role: 'verkuendiger',
+          tel: '+49 170 1234567', mail: 'x@example.com',
+          priv: {} as HydratePayload['persons'][number]['priv'],
+        },
+      ],
+      absences: [
+        { id: 'a1', personId: 'p1', userId: 'u1', from: '2026-07-01', to: '2026-07-14', reason: 'Reha' },
+        { id: 'a2', personId: 'p1', userId: 'u1', from: '2026-08-01', to: '2026-08-03', reason: '' },
+      ],
+    })
+
+  it('der Abwesenheitsgrund bleibt draußen', () => {
+    // Der einzige Freitext im Bestand, der Gesundheitsangaben tragen kann —
+    // und der einzige, den offline niemand braucht.
+    saveSnapshot(mitGrund())
+    const roh = localStorage.getItem('snapshot') as string
+    expect(roh, 'der Grund steht im Klartext im localStorage').not.toContain('Reha')
+    expect(readSnapshot('u1')?.payload.absences.map((a) => a.reason)).toEqual(['', ''])
+  })
+
+  it('Telefon und E-Mail bleiben — offline ist die Nummer oft der Grund für die App', () => {
+    saveSnapshot(mitGrund())
+    const person = readSnapshot('u1')?.payload.persons[0]
+    expect(person?.tel).toBe('+49 170 1234567')
+    expect(person?.mail).toBe('x@example.com')
+  })
+
+  it('die Nutzlast des Aufrufers bleibt unangetastet', () => {
+    // Dieselbe Nutzlast geht gleich danach in den Zustand — dort **mit** Grund,
+    // denn dort ist sie frisch aus der Datenbank.
+    const p = mitGrund()
+    saveSnapshot(p)
+    expect(p.absences[0]!.reason).toBe('Reha')
+  })
+})
+
+describe('Eine Aufnahme läuft ab (S6)', () => {
+  const tage = (n: number) => n * 24 * 3600 * 1000
+
+  it('nach 13 Tagen gilt sie noch', () => {
+    vi.setSystemTime(new Date('2026-07-01T10:00:00Z'))
+    saveSnapshot(payload())
+    vi.setSystemTime(new Date(Date.parse('2026-07-01T10:00:00Z') + tage(13)))
+    expect(readSnapshot('u1')).not.toBeNull()
+    vi.useRealTimers()
+  })
+
+  it('nach 15 Tagen nicht mehr — und sie wird dabei gelöscht', () => {
+    /*
+      Das Verwerfen allein genügt nicht: Es geht ja gerade darum, dass die Daten
+      nicht liegen bleiben. Wer nur `null` zurückgäbe, hätte die Anzeige
+      abgeschaltet und den Bestand behalten.
+    */
+    vi.setSystemTime(new Date('2026-07-01T10:00:00Z'))
+    saveSnapshot(payload())
+    vi.setSystemTime(new Date(Date.parse('2026-07-01T10:00:00Z') + tage(15)))
+    expect(readSnapshot('u1')).toBeNull()
+    expect(localStorage.getItem('snapshot'), 'die Aufnahme liegt weiter da').toBeNull()
+    vi.useRealTimers()
   })
 })
 
