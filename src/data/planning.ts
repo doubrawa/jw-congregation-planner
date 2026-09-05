@@ -1680,10 +1680,23 @@ export function weekConflicts(
       const pc = partCounts.get(kennung) ?? 0
       const hc = helperCounts.get(kennung) ?? 0
       const name = namen.get(kennung) ?? ''
-      if (raumKonflikt(kennung)) {
-        conflicts.push({ kind: 'double', name, kennung, tab: tb, count: pc + hc })
-      } else if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
-      else if (hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
+      /*
+       * Die beiden Meldungen schließen einander **nicht** aus, und das ist der
+       * Punkt: Sie sagen Verschiedenes. „Ist n× in einer Zusammenkunft" nennt
+       * die Menge, „Aufgabe und Hilfsdienst zugleich" die Art — der Planer
+       * löst beides unterschiedlich auf.
+       *
+       * Hier stand ein `else if`: Der neue Raumkonflikt verdrängte damit die
+       * Hilfsdienst-Warnung. Wer im Hauptsaal stand, in der Klasse stand und
+       * zusätzlich als Ordner eingetragen war, bekam nur noch die Zahl zu
+       * sehen.
+       */
+      const raum = raumKonflikt(kennung)
+      if (raum) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: pc + hc })
+      if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
+      // Zwei Hilfsdienste allein sind ihre eigene Doppelung — es sei denn, die
+      // Zeile darüber hat sie mitgezählt.
+      else if (!raum && hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
     }
   }
 

@@ -954,6 +954,43 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(weekConflicts([week], 0, [person], [], 'mid')).toHaveLength(1)
   })
 
+  it('und der Hilfsdienst-Hinweis daneben bleibt bestehen', () => {
+    /*
+      Die beiden Meldungen sagen Verschiedenes: „ist n× in einer
+      Zusammenkunft" nennt die Menge, „Aufgabe und Hilfsdienst zugleich" die
+      Art — und der Planer löst beides unterschiedlich auf. Der neue
+      Raumkonflikt stand in einem `else if` davor und verdrängte die zweite.
+    */
+    const person: Person = {
+      id: 'p-zwei', fn: 'Kim', ln: 'Sommer', role: 'verkuendiger',
+      tel: '', mail: '', priv: emptyQualifications(),
+    }
+    const item = {
+      iid: 'i1',
+      title: 'Gespräche beginnen',
+      names: [{ name: 'Kim Sommer', pid: 'p-zwei', bereichsKey: 'schulung' }],
+    } as unknown as PartItem
+    const roh = {
+      range: '', book: '', start: '2026-09-07', current: false,
+      mid: {
+        date: '', end: '',
+        sections: [{ label: 'X', farbe: 'gold', items: [item] }],
+        helpers: { mik: [{ name: 'Kim Sommer', pid: 'p-zwei' }] },
+      },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    } as unknown as Week
+    const week = syncAuxSlots([roh], true)[0]!
+    // Zusätzlich in der Klasse — damit steht er in beiden Räumen.
+    const klassenPlatz = (week.mid.sections[0]!.items[0] as PartItem).aux![0]!
+    klassenPlatz.name = 'Kim Sommer'
+    klassenPlatz.pid = 'p-zwei'
+
+    const dienste: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
+    const arten = weekConflicts([week], 0, [person], dienste, 'mid').map((c) => c.kind)
+    expect(arten, 'die Hilfsdienst-Warnung fiel weg').toContain('helperTask')
+    expect(arten).toContain('double')
+  })
+
   it('zwei Punkte im SELBEN Raum bleiben in Ordnung (Vorsitz und Gebet)', () => {
     // Die Gegenprobe: Der neue Hinweis darf nicht zum Dauerbrenner werden.
     const person: Person = {
