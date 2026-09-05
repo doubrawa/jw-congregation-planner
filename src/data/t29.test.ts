@@ -224,6 +224,22 @@ describe('Ein Gastredner überlebt die Lade-Migrationen', () => {
     expect(vortragsSlot(next[0]!).pid).toBeUndefined()
   })
 
+  it('und eine schon vergebene wird ihm wieder abgenommen', () => {
+    /*
+      Der Bestand. Die frühere Fassung gab dem Gastredner-Platz die Id des
+      Namensvetters, und `loadCongregationData` schrieb die geänderte Woche
+      weg — die falsche Id **steht** in der Datenbank. Ein Wächter, der nur
+      neue Fälle verhindert, ließe sie für immer liegen: `gehoertZu`
+      entscheidet über die Id, der Vortrag des Auswärtigen bliebe die Aufgabe
+      des Bruders.
+    */
+    const w = gastWoche('M. Hartmann')
+    vortragsSlot(w).pid = person.id // so kam sie aus der alten Migration
+    const next = migrateAssignmentPids([w], [person])
+    expect(next[0], 'die Woche muss sich ändern, sonst wird sie nicht gespeichert').not.toBe(w)
+    expect(vortragsSlot(next[0]!).pid).toBeUndefined()
+  })
+
   it('der eigene Redner bekommt sie dagegen', () => {
     // Die Gegenprobe: Ohne sie wäre die Zeile oben auch dann grün, wenn der
     // Backfill gar nichts mehr täte.

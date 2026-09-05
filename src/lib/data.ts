@@ -74,7 +74,8 @@ interface ServiceRow {
   position: number
 }
 
-interface GroupRow {
+/** Eine Zeile aus `groups` — exportiert für `gruppenPositionenNachtragen`. */
+export interface GroupRow {
   id: string
   name: string
   overseer_id: string | null
@@ -652,9 +653,35 @@ function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week
  * Reinigungs-Rotation („Gruppe N") bleiben unangetastet. Idempotent. Rein im
  * Speicher; persistiert beim nächsten Speichern der Woche.
  */
+/**
+ * **Die Id eines externen Redners wieder abnehmen.**
+ *
+ * Ein Gastredner-Platz darf gar keine `pid` tragen: Er ist Freitext und meint
+ * jemanden, den diese Versammlung nicht kennt. Die frühere Fassung von `mitPid`
+ * gab ihm trotzdem die Id des gleichnamigen Bruders, und `loadCongregationData`
+ * schrieb die geänderte Woche weg — die falsche Id **steht** also im Bestand.
+ *
+ * Der neue Wächter in `mitPid` verhindert nur neue Fälle; für die alten
+ * entscheidet `gehoertZu` weiterhin über die Id, und der Vortrag des
+ * Auswärtigen bliebe für immer die Aufgabe des Namensvetters: in seiner Liste,
+ * mit Bestätigungspflicht, Erinnerung und Anrechnung auf die Auslastung.
+ * Deshalb wird sie hier abgenommen — im selben Durchlauf, der die Woche ohnehin
+ * prüft und bei Änderung speichert.
+ *
+ * Der **eigene** Redner (T29, `rolle: 'Redner'`) ist kein Gast und behält
+ * seine Id; die Grenze zieht allein `isGuestRole`.
+ */
+function ohneFremdePid<T extends { pid?: string }>(slot: T): T {
+  if (!slot.pid) return slot
+  const { pid: _weg, ...rest } = slot
+  return rest as T
+}
+
 export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] {
+  // Kein `return weeks` bei leerer Namensliste mehr: Der Durchlauf trägt nicht
+  // nur Ids nach, er nimmt auch falsch vergebene wieder ab (`ohneFremdePid`) —
+  // und das hängt an keiner Person.
   const byName = eindeutigeNamen(persons)
-  if (byName.size === 0) return weeks
   let anyChanged = false
   /**
    * Platz mit `pid` versehen, wenn der Name eindeutig eine Person meint.
@@ -673,7 +700,8 @@ export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] 
    * unverändert — er ist eine Person dieser Versammlung.
    */
   const mitPid = <T extends { name: string; pid?: string; rolle?: string }>(slot: T): T => {
-    if (slot.pid || !slot.name || isGuestRole(slot.rolle)) return slot
+    if (isGuestRole(slot.rolle)) return ohneFremdePid(slot)
+    if (slot.pid || !slot.name) return slot
     const id = byName.get(slot.name)
     return id ? { ...slot, pid: id } : slot
   }
@@ -802,6 +830,29 @@ function personToRow(p: Person, congregationId: string) {
 
 function groupFromRow(r: GroupRow): Group {
   return { id: r.id, name: r.name, ov: r.overseer_id, as: r.assistant_id }
+}
+
+/**
+ * **Predigtdienstgruppen, die alle auf Position 0 stehen, einmalig durchnummerieren.**
+ *
+ * `saveGroupRow` schrieb lange eine feste `0`. Dass es das jetzt richtig macht,
+ * hilft dem Bestand nicht: Dort steht überall die Null, und die **eine**
+ * berichtigte Zeile bekommt eine Zahl größer als null — `.order('position')`
+ * schiebt sie damit ans Ende. Wer den Aufseher von „Gruppe 2" ändert, sieht sie
+ * danach hinter „Gruppe 4" stehen, genau wie vorher. Und mit der Reihenfolge
+ * dreht sich die Reinigungs-Rotation (`groups[weekIndex % groups.length]`).
+ *
+ * Deshalb einmal die Reihenfolge festschreiben, in der die Datenbank sie gerade
+ * ausliefert: Sie ist beliebig, aber sie ist die, die der Planer heute vor sich
+ * hat — eine andere zu wählen hieße, ihm die Liste ohne Anlass umzustellen.
+ *
+ * Nur wenn **alle** auf null stehen und es mehr als eine gibt: Sobald eine
+ * einzige Zeile eine echte Position trägt, ist die Umstellung gelaufen und
+ * jeder weitere Eingriff verschöbe wieder etwas.
+ */
+export function gruppenPositionenNachtragen(congregationId: string, rows: GroupRow[]): void {
+  if (rows.length < 2 || rows.some((r) => (r.position ?? 0) !== 0)) return
+  rows.forEach((r, i) => saveGroupRow(congregationId, groupFromRow(r), i))
 }
 
 function groupToRow(g: Group, congregationId: string, position: number) {
@@ -1038,13 +1089,18 @@ export type LoadResult =
  * Der Preis ist eine kurze Wartezeit — aber nur auf dem Ladevorgang, der
  * ohnehin umstellt. Und die Daten, die die App danach zeigt, sind die, die auch
  * in der Datenbank stehen.
+ *
+ * **Ohne „ist das nötig?"-Schalter.** Hier stand ein dritter Parameter, mit dem
+ * der Aufrufer die leere Umbenennungsliste selbst abfangen musste — dieselbe
+ * Bedingung zweimal, an zwei Stellen, die auseinanderlaufen können.
+ * `renameConfirmationKeys` läuft über die Paare und tut bei keinem nichts; die
+ * Frage stellt sich also gar nicht.
  */
 export async function umstellungSchreiben(
   umbenennen: () => Promise<void>,
-  noetig: boolean,
   speichern: () => void,
 ): Promise<void> {
-  if (noetig) await umbenennen()
+  await umbenennen()
   speichern()
 }
 
@@ -1195,9 +1251,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   }
   await umstellungSchreiben(
     () => renameConfirmationKeys(congregationId, alleRenames),
-    alleRenames.length > 0,
     speichereUmgestellte,
   )
+
+  // Bestand der Predigtdienstgruppen: einmalig durchnummerieren, solange alle
+  // auf null stehen (siehe `gruppenPositionenNachtragen`).
+  const gruppenZeilen = (groups.data ?? []) as GroupRow[]
+  gruppenPositionenNachtragen(congregationId, gruppenZeilen)
+  const gruppenListe = gruppenZeilen.map(groupFromRow)
 
   const settings = ((cong.data?.settings as CongregationSettings | null) ?? {})
   const reminders: Reminders = {
@@ -1252,7 +1313,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     personId: (member.person_id as string | null) ?? null,
     persons: personList,
     services: serviceList,
-    groups: (groups.data ?? []).map((r) => groupFromRow(r as GroupRow)),
+    groups: gruppenListe,
     weeks: weekList,
     fsRules,
     fsWeeks,

@@ -39,7 +39,7 @@ describe('Kennungs-Umstellung beim Laden', () => {
       })
     const speichern = () => reihenfolge.push('wochen gespeichert')
 
-    const lauf = umstellungSchreiben(umbenennen, true, speichern)
+    const lauf = umstellungSchreiben(umbenennen, speichern)
     /*
       Der entscheidende Moment: Das Umbenennen läuft noch — und der Aufrufer
       **wartet**. Nur das unterscheidet die beiden Wege: Ob die Wochen vor oder
@@ -66,14 +66,16 @@ describe('Kennungs-Umstellung beim Laden', () => {
     ])
   })
 
-  it('ohne Umbenennungen wird trotzdem gespeichert — und nichts umbenannt', () => {
-    // Der Normalfall: Die Wochen tragen ihre Kennungen längst, es gibt nichts
-    // zu verschieben. Dann darf der Ladevorgang nicht auf eine Zusage warten,
-    // die niemand gegeben hat.
+  it('ohne Umbenennungen wird trotzdem gespeichert', async () => {
+    /*
+      Der Normalfall: Die Wochen tragen ihre Kennungen längst, es gibt nichts zu
+      verschieben. `renameConfirmationKeys` läuft dann über eine leere Liste und
+      tut nichts — deshalb braucht es hier keinen Schalter, der dasselbe ein
+      zweites Mal entscheidet. Gespeichert wird trotzdem.
+    */
     const umbenennen = vi.fn(() => Promise.resolve())
     const speichern = vi.fn()
-    void umstellungSchreiben(umbenennen, false, speichern)
-    expect(umbenennen).not.toHaveBeenCalled()
+    await umstellungSchreiben(umbenennen, speichern)
     expect(speichern).toHaveBeenCalledTimes(1)
   })
 
@@ -87,7 +89,7 @@ describe('Kennungs-Umstellung beim Laden', () => {
     */
     const speichern = vi.fn()
     await expect(
-      umstellungSchreiben(() => Promise.reject(new Error('Netz weg')), true, speichern),
+      umstellungSchreiben(() => Promise.reject(new Error('Netz weg')), speichern),
     ).rejects.toThrow('Netz weg')
     expect(speichern).not.toHaveBeenCalled()
   })

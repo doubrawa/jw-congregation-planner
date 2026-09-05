@@ -42,6 +42,8 @@ import {
   saveFsRules,
   saveFsWeek,
   saveGroupRow,
+  gruppenPositionenNachtragen,
+  type GroupRow,
   saveInvite,
   saveInvitePlanner,
   saveMemberRow,
@@ -127,6 +129,44 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.from).toHaveBeenCalledWith('confirmations')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ task_key: 'k1', status: 'bestätigt' }), { onConflict: 'congregation_id,task_key,user_id' })
   })
+  it('gruppenPositionenNachtragen: Bestand auf lauter Nullen wird durchnummeriert', () => {
+    /*
+      Der Bestand: `saveGroupRow` schrieb lange eine feste `0`. Dass es das
+      jetzt richtig macht, hilft diesen Zeilen nicht — die **eine** berichtigte
+      bekäme eine Zahl größer null und stünde bei `.order('position')` hinter
+      allen anderen. Genau die Verschiebung, gegen die der Fix gedacht war,
+      samt gedrehter Reinigungs-Rotation.
+    */
+    const zeilen: GroupRow[] = [
+      { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0 },
+      { id: 'g2', name: 'Gruppe 2', overseer_id: null, assistant_id: null, position: 0 },
+      { id: 'g3', name: 'Gruppe 3', overseer_id: null, assistant_id: null, position: 0 },
+    ]
+    gruppenPositionenNachtragen('c1', zeilen)
+    const geschrieben = (chain.upsert?.mock.calls ?? []).map(
+      ([zeile]) => zeile as { id: string; position: number },
+    )
+    expect(geschrieben.map((g) => [g.id, g.position])).toEqual([
+      ['g1', 0],
+      ['g2', 1],
+      ['g3', 2],
+    ])
+  })
+
+  it('… aber nur einmal: eine echte Position beendet die Umstellung', () => {
+    // Gegenprobe. Liefe es bei jedem Laden, würde jede Umsortierung, die der
+    // Planer je vornimmt, beim nächsten Start wieder eingeebnet.
+    const zeilen: GroupRow[] = [
+      { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0 },
+      { id: 'g2', name: 'Gruppe 2', overseer_id: null, assistant_id: null, position: 1 },
+    ]
+    gruppenPositionenNachtragen('c1', zeilen)
+    expect(chain.upsert).not.toHaveBeenCalled()
+    // Und eine einzelne Gruppe hat keine Reihenfolge, die verrutschen könnte.
+    gruppenPositionenNachtragen('c1', zeilen.slice(0, 1))
+    expect(chain.upsert).not.toHaveBeenCalled()
+  })
+
   it('savePushSubscription → push_subscriptions upsert (endpoint)', () => {
     savePushSubscription('c1', 'u1', { endpoint: 'e', p256dh: 'p', auth: 'a' }, 'fr')
     expect(chain.from).toHaveBeenCalledWith('push_subscriptions')
