@@ -1,7 +1,10 @@
 import { execSync } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vitest/config'
+import { defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { alsCacheName, SW_PLATZHALTER, swMitKennung } from './scripts/sw-kennung.mjs'
 
 /**
  * Kennung des Stands, den ein Gerät gerade ausführt — im Profil sichtbar.
@@ -16,15 +19,55 @@ import react from '@vitejs/plugin-react'
  * 330 kB neu zu laden, nur weil jemand gebaut hat. Der Commit identifiziert
  * den Stand ohnehin eindeutig; das Datum sagt bloß, wie alt er ist.
  */
-function buildId(): string {
+function standKennung(): { commit: string; datum: string } {
   try {
-    const commit = execSync('git rev-parse --short HEAD').toString().trim()
-    const datum = execSync('git show -s --format=%cs HEAD').toString().trim()
-    return `${datum} · ${commit}`
+    return {
+      commit: execSync('git rev-parse --short HEAD').toString().trim(),
+      datum: execSync('git show -s --format=%cs HEAD').toString().trim(),
+    }
   } catch {
     // Kein Git zur Hand (z. B. aus einem Archiv gebaut). Bewusst ohne
     // Zeitstempel — der brächte die Hash-Instabilität zurück.
-    return 'unbekannt'
+    return { commit: 'unbekannt', datum: '' }
+  }
+}
+
+function buildId(): string {
+  const { commit, datum } = standKennung()
+  return datum ? `${datum} · ${commit}` : commit
+}
+
+/**
+ * **Die Stand-Kennung in den Service Worker eintragen.**
+ *
+ * `public/` geht unverändert nach `dist/`; `define` erreicht die Datei nicht.
+ * Der Worker braucht sie aber im Cache-Namen, und zwar aus zwei Gründen
+ * zugleich: `activate` löscht nur Caches mit **anderem** Namen, und `activate`
+ * läuft überhaupt nur, wenn sich `sw.js` selbst geändert hat. Ohne Kennung hieß
+ * der Cache immer gleich — es wurde nie etwas gelöscht, und die gehashten
+ * Assets jedes Builds blieben liegen (V9).
+ *
+ * `writeBundle`, nicht `generateBundle`: Zu dem Zeitpunkt liegt `public/` schon
+ * in `dist/`. Fehlt der Platzhalter, bricht der Build ab — ein stillschweigend
+ * wirkungsloser Schritt wäre schlimmer als gar keiner.
+ */
+function serviceWorkerKennung(): Plugin {
+  return {
+    name: 'sw-kennung',
+    apply: 'build',
+    writeBundle(options) {
+      const pfad = join(options.dir ?? 'dist', 'sw.js')
+      const { quelle, ersetzt } = swMitKennung(
+        readFileSync(pfad, 'utf8'),
+        alsCacheName(standKennung().commit),
+      )
+      if (!ersetzt) {
+        throw new Error(
+          `sw.js trägt kein ${SW_PLATZHALTER} mehr — der Cache-Name bliebe konstant (V9).`,
+        )
+      }
+      writeFileSync(pfad, quelle)
+    },
   }
 }
 
@@ -36,7 +79,7 @@ function buildId(): string {
 // bzw. beim Build via `vite build --base=/` überschreiben.
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/jw-congregation-planner/' : '/',
-  plugins: [react()],
+  plugins: [react(), serviceWorkerKennung()],
   // Nur beim Build ermitteln: sonst liefe bei jedem Dev-Start und jedem
   // Testlauf ein git-Prozess mit, obwohl die Kennung dort nichts aussagt.
   define: { __BUILD_ID__: JSON.stringify(command === 'build' ? buildId() : 'dev') },

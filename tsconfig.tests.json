@@ -1,0 +1,22 @@
+/*
+ * Die Prüfstände in `tests/` typprüfen — sie standen in keinem Projekt.
+ *
+ * `tsconfig.app.json` schließt `src` ein und zieht alles Importierte mit. Was
+ * daneben liegt und von `src` **niemand** importiert, bleibt draußen: die
+ * projektweiten Prüfstände in `tests/` (Leserichtung im CSS, der Service
+ * Worker). Vitest führt sie aus und wirft die Typen dabei weg.
+ *
+ * Dieselbe Lücke wie bei den Edge Functions am 5.9.2026 — und dieselbe Antwort:
+ * ein eigenes Projekt statt eines erweiterten `include`, weil die Umgebung eine
+ * andere ist. Diese Dateien lesen den Quelltext von der Platte (`node:fs`) und
+ * brauchen deshalb die Node-Typen, die in `src` nichts zu suchen haben: Was
+ * dort läuft, läuft im Browser.
+ */
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tests.tsbuildinfo",
+    "types": ["vite/client", "node"]
+  },
+  "include": ["tests"]
+}

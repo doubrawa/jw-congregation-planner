@@ -1020,18 +1020,25 @@ Typprüfer nennt jeden Aufrufer, der sie vergisst — es braucht keine Liste.
 Gemessen in `sortiert-in-der-lesersprache.test.ts`: Å/Æ/Ø stehen auf Dänisch
 und Schwedisch hinter Z, auf Deutsch bei A und O.
 
-### V9 — Cache-Versionierung im Service Worker
+### V9 — Cache-Versionierung im Service Worker ✅ erledigt
 
-`sw.js:13` `CACHE = 'shell-v1'` ist konstant, `activate` löscht nur **andere**
-Namen. Alte Assets bleiben unbegrenzt liegen. Ein Cache-Name mit Build-Id
-(`__BUILD_ID__` existiert bereits) räumt automatisch auf und behebt zugleich einen
-Teil von B17.
+Der Cache heißt jetzt `shell-<commit>` (5.9.2026). Der Platzhalter steht in
+`public/sw.js`, eingetragen wird er beim Bauen (`scripts/sw-kennung.mjs`, als
+Vite-Plugin) — `public/` geht sonst unverändert nach `dist/` und `define`
+erreicht die Datei nicht. Die Kennung ist dabei beides zugleich: der Grund fürs
+Aufräumen (`activate` löscht jeden Cache mit anderem Namen) **und** sein
+Auslöser (`activate` läuft nur, wenn sich `sw.js` selbst geändert hat).
 
-### V10 — Push-Benachrichtigungen bündeln
+### V10 — Push-Benachrichtigungen bündeln ✅ erledigt
 
-`sw.js:117` `showNotification` ohne `tag` — bei täglicher Wiederholung stapeln sich
-die Erinnerungen auf dem Sperrbildschirm. Ein fester `tag` je Art ersetzt statt zu
-stapeln.
+`showNotification` bekommt `tag` (Vorgabe: der Titel, also die Art) und
+`renotify` (5.9.2026). Der Absender darf den `tag` überschreiben, ohne dass der
+Worker erneut angefasst werden muss.
+
+**Beides ist ab jetzt nachmessbar:** `tests/sw-umgebung.ts` lädt den
+ausgelieferten Worker in eine nachgebaute Umgebung, `tests/service-worker.test.ts`
+prüft ihn — Offline-Start, Cache-Aufräumen, Bündelung, und dass ein
+Mitteilungs-Klick nur in die eigene App führt.
 
 ### V11 — Auto-Zuteilung: männliche Schülerteile konsistent behandeln ✅
 

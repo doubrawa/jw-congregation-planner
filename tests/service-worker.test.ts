@@ -1,183 +1,220 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { antwort, ladeServiceWorker, swQuelle } from './sw-umgebung'
+import { alsCacheName, SW_PLATZHALTER, swMitKennung } from '../scripts/sw-kennung.mjs'
 
 /**
- * Der Klick auf eine Mitteilung führt in die App — und nirgendwo sonst.
+ * **Der Service Worker, endlich nachgemessen.**
  *
- * `public/sw.js` liest das Sprungziel aus der Push-Nutzlast und übergibt es an
- * `clients.openWindow()` bzw. `client.navigate()`. Heute setzt der Server diese
- * Adresse aus `APP_URL` plus einem festen `#go=…` zusammen; wer eine Mitteilung
- * zustellen darf, bestimmt damit aber, wohin ein Klick führt. `openWindow`
- * folgt jeder Adresse, auch einer fremden. Deshalb wird das Ziel geprüft,
- * bevor irgendetwas geöffnet wird.
+ * Er war die einzige Datei ohne jede Prüfung — und die mit den teuersten
+ * Fehlerbildern: Ein kaputter Offline-Start zeigt der installierten App eine
+ * Browser-Fehlerseite, eine verschluckte Benachrichtigung erreicht niemanden.
+ * Beide melden sich nicht; man merkt sie erst, wenn jemand nicht erscheint.
  *
- * Steht außerhalb von `src/`, weil die Datei als **Text** gelesen und in einer
- * nachgebauten Service-Worker-Umgebung ausgeführt wird: `public/` wird nicht
- * gebündelt, es gibt also nichts zu importieren. Geprüft wird damit die Datei,
- * die tatsächlich ausgeliefert wird — nicht eine Nachbildung ihrer Regeln.
+ * Geprüft wird die **ausgelieferte Datei selbst** (`tests/sw-umgebung.ts` lädt
+ * sie in eine nachgebaute Worker-Umgebung), nicht eine Abschrift.
  */
 
-const QUELLE = readFileSync(fileURLToPath(new URL('../public/sw.js', import.meta.url)), 'utf8')
+const SCOPE = 'https://app.test/planner/'
+const req = (url: string, extra: Record<string, unknown> = {}) => ({
+  url: new URL(url, SCOPE).href,
+  method: 'GET',
+  mode: 'no-cors',
+  ...extra,
+})
 
-const SCOPE = 'https://example.test/jw-congregation-planner/'
+describe('Service Worker: die Shell für den Offline-Start', () => {
+  it('legt beim Installieren die Shell in den Cache', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('install', {})
+    const cache = [...sw.speicher.values()][0]
+    expect(cache, 'gar kein Cache angelegt').toBeDefined()
+    const abgelegt = [...cache!.eintraege.keys()].map((u) => u.replace(SCOPE, ''))
+    expect(abgelegt).toContain('index.html')
+    expect(abgelegt).toContain('manifest.webmanifest')
+  })
 
-interface Fenster {
-  focus: () => unknown
-  navigate: (url: string) => Promise<unknown>
-  postMessage: (msg: unknown) => void
-}
+  it('im Dev-Server bleibt das Caching aus', async () => {
+    // Sonst finge der Worker Vites HMR ab.
+    const sw = ladeServiceWorker({ dev: true })
+    await sw.feuere('install', {})
+    expect(sw.speicher.size).toBe(0)
+  })
 
-interface Bühne {
-  /** Adressen, zu denen ein offenes Fenster geschickt wurde. */
-  navigiert: string[]
-  /** Adressen, für die ein neues Fenster geöffnet wurde. */
-  geoeffnet: string[]
-  /** Nachrichten an offene Fenster. */
-  nachrichten: unknown[]
-  klick: (url: unknown) => Promise<void>
-}
+  it('offline liefert ein Seitenaufruf die gecachte Shell', async () => {
+    /*
+      Der eigentliche Zweck des Ganzen: Die installierte App startet ohne Netz
+      mit ihrer eigenen Oberfläche statt mit einer Browser-Fehlerseite. Die
+      Daten dazu kommen aus der Momentaufnahme im localStorage.
+    */
+    const sw = ladeServiceWorker()
+    await sw.feuere('install', {})
 
-/**
- * Lädt `sw.js` in einer nachgebauten Worker-Umgebung und gibt einen Auslöser
- * für den Mitteilungs-Klick zurück. `mitFenster` entscheidet, welcher der
- * beiden Wege genommen wird — beide öffnen etwas und gehören geprüft.
- */
-function bühne(mitFenster: boolean): Bühne {
-  const navigiert: string[] = []
-  const geoeffnet: string[] = []
-  const nachrichten: unknown[] = []
+    const offline = ladeServiceWorker({ netz: () => undefined })
+    // Denselben Cache übernehmen, als wäre die App schon einmal online gewesen.
+    for (const [name, c] of sw.speicher) offline.speicher.set(name, c)
 
-  const fenster: Fenster = {
-    focus: () => 'fokussiert',
-    navigate: (url) => {
-      navigiert.push(url)
-      return Promise.resolve(null)
-    },
-    postMessage: (msg) => {
-      nachrichten.push(msg)
-    },
-  }
-
-  const listeners = new Map<string, (event: unknown) => void>()
-  const self = {
-    location: { href: SCOPE + 'sw.js' },
-    registration: { scope: SCOPE, showNotification: () => Promise.resolve() },
-    skipWaiting: () => {},
-    clients: { claim: () => Promise.resolve() },
-    addEventListener: (art: string, fn: (event: unknown) => void) => listeners.set(art, fn),
-  }
-  const clients = {
-    matchAll: () => Promise.resolve(mitFenster ? [fenster] : []),
-    openWindow: (url: string) => {
-      geoeffnet.push(url)
-      return Promise.resolve(null)
-    },
-  }
-  const caches = {
-    open: () => Promise.resolve({ add: () => Promise.resolve(), put: () => Promise.resolve() }),
-    keys: () => Promise.resolve([]),
-    match: () => Promise.resolve(undefined),
-    delete: () => Promise.resolve(true),
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
-  new Function('self', 'clients', 'caches', 'fetch', QUELLE)(self, clients, caches, () =>
-    Promise.reject(new Error('kein Netz im Test')),
-  )
-
-  const klick = async (url: unknown): Promise<void> => {
-    const fn = listeners.get('notificationclick')
-    if (!fn) throw new Error('sw.js meldet keinen notificationclick an')
-    let warten: Promise<unknown> = Promise.resolve()
-    fn({
-      notification: { close: () => {}, data: url === undefined ? undefined : { url } },
-      waitUntil: (p: Promise<unknown>) => {
-        warten = p
-      },
+    const res = await offline.feuere('fetch', {
+      request: req('./', { mode: 'navigate' }),
     })
-    await warten
-  }
-
-  return { navigiert, geoeffnet, nachrichten, klick }
-}
-
-/** Alles, wohin dieser Klick geführt hat — egal auf welchem Weg. */
-function ziele(b: Bühne): string[] {
-  return [...b.navigiert, ...b.geoeffnet]
-}
-
-describe('Service Worker: der Mitteilungs-Klick bleibt in der App', () => {
-  let mitFenster: Bühne
-  let ohneFenster: Bühne
-
-  beforeEach(() => {
-    mitFenster = bühne(true)
-    ohneFenster = bühne(false)
+    expect(res, 'kein Rückfall auf die Shell — die App startet offline nicht').toBeDefined()
   })
 
-  it('das gewöhnliche Ziel kommt unverändert an', async () => {
-    // Gegenprobe zu allem Weiteren: Griffe die Prüfung zu hart, landete auch
-    // der Deep-Link im Nichts und die Mitteilung führte nirgendwo mehr hin.
-    const ziel = `${SCOPE}#go=aufgaben`
-    await mitFenster.klick(ziel)
-    await ohneFenster.klick(ziel)
-    expect(mitFenster.navigiert).toEqual([ziel])
-    expect(ohneFenster.geoeffnet).toEqual([ziel])
-    expect(mitFenster.nachrichten).toEqual([{ type: 'navigate', url: ziel }])
+  it('Supabase läuft ungefiltert durch — der Worker fasst fremde Daten nicht an', async () => {
+    const sw = ladeServiceWorker()
+    const res = await sw.feuere('fetch', {
+      request: { url: 'https://xyz.supabase.co/rest/v1/weeks', method: 'GET', mode: 'cors' },
+    })
+    expect(res, 'der Worker hat die Datenabfrage beantwortet').toBeUndefined()
+  })
+})
+
+describe('Service Worker: der Cache räumt sich auf (V9)', () => {
+  it('beim Aktivieren fliegt jeder fremde Cache heraus', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('install', {})
+    const eigener = [...sw.speicher.keys()][0]!
+    // Ein Cache aus einem früheren Stand.
+    sw.speicher.set('shell-alt', sw.speicher.get(eigener)!)
+
+    await sw.feuere('activate', {})
+    expect([...sw.speicher.keys()]).toEqual([eigener])
   })
 
-  it.each([
-    ['fremde Herkunft', 'https://evil.example/phish'],
-    ['Protokoll-relativ', '//evil.example/phish'],
-    ['dieselbe Herkunft, andere App', 'https://example.test/andere-app/'],
-    ['Präfix-Trick ohne Schrägstrich', 'https://example.test/jw-congregation-planner-fremd/'],
-    ['javascript:', 'javascript:alert(1)'],
-    ['Datenadresse', 'data:text/html,<h1>x'],
-  ])('%s führt in die App, nicht nach draußen', async (_name, url) => {
-    await mitFenster.klick(url)
-    await ohneFenster.klick(url)
-    for (const gegangen of [...ziele(mitFenster), ...ziele(ohneFenster)]) {
-      expect(gegangen).toBe(SCOPE)
-    }
-    // Auch das offene Fenster darf die fremde Adresse nicht zugestellt
-    // bekommen: Es navigiert selbst, sobald es sie liest.
-    expect(JSON.stringify(mitFenster.nachrichten)).not.toContain('evil.example')
-    expect(JSON.stringify(mitFenster.nachrichten)).not.toContain('javascript:')
+  it('der Cache-Name trägt die Kennung des Stands', async () => {
+    /*
+      **Der Kern von V9.** `activate` löscht nur Caches mit *anderem* Namen —
+      hieß er immer gleich (`shell-v1`), wurde nie etwas gelöscht. Die
+      gehashten Assets jedes Builds blieben unbegrenzt liegen, und irgendwann
+      räumt der Browser unter Speicherdruck die ganze Herkunft ab, samt der
+      Offline-Momentaufnahme im localStorage.
+
+      Und der Name muss sich mit dem Stand ändern, nicht nur variabel sein:
+      `activate` läuft überhaupt nur, wenn sich `sw.js` selbst geändert hat.
+      Die Kennung im Namen ist deshalb beides — der Grund für das Aufräumen
+      **und** der Auslöser dafür.
+    */
+    // Die ganze Kette in einem Zug: Der ausgelieferte Worker trägt den
+    // Platzhalter, der Bauschritt ersetzt ihn, und der Cache heißt danach nach
+    // dem Stand. Fehlt ein Glied, fällt es hier auf — nicht erst nach dem
+    // dritten Deployment an einem vollen Speicher.
+    const roh = ladeServiceWorker()
+    await roh.feuere('install', {})
+    const platzhalter = [...roh.speicher.keys()][0]!
+    expect(platzhalter, 'der Cache-Name ist wieder fest verdrahtet').toContain(SW_PLATZHALTER)
+
+    const { quelle, ersetzt } = swMitKennung(swQuelle(), alsCacheName('a1b2c3d'))
+    expect(ersetzt).toBe(true)
+    const gebaut = ladeServiceWorker({ quelle })
+    await gebaut.feuere('install', {})
+    expect([...gebaut.speicher.keys()]).toEqual(['shell-a1b2c3d'])
   })
 
-  it.each([
-    ['gar kein Ziel', undefined],
-    ['leeres Ziel', ''],
-  ])('%s öffnet die App statt zu scheitern', async (_name, url) => {
-    await ohneFenster.klick(url)
-    expect(ohneFenster.geoeffnet).toEqual([SCOPE])
+  it('ein Stand räumt den Cache des vorigen weg', () => {
+    // Der eigentliche Zweck: Zwei Stände haben verschiedene Namen, und
+    // `activate` löscht jeden fremden. Das war mit `shell-v1` unmöglich.
+    const a = swMitKennung(swQuelle(), alsCacheName('a1b2c3d')).quelle
+    const b = swMitKennung(swQuelle(), alsCacheName('9f8e7d6')).quelle
+    expect(a).not.toBe(b)
+  })
+})
+
+describe('Service Worker: Benachrichtigungen (V10)', () => {
+  const push = (data: unknown) => ({ data: { json: () => data } })
+
+  it('zeigt Titel und Rumpf aus der Nutzlast', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Erinnerung', body: 'Bibellesung', url: '#go=aufgaben' }))
+    expect(sw.meldungen[0]?.[0]).toBe('Erinnerung')
+    expect(sw.meldungen[0]?.[1].body).toBe('Bibellesung')
   })
 
-  it.each([
-    ['Zahl', 42],
-    ['Objekt', { boese: 'https://evil.example/' }],
-    ['null', null],
-  ])('%s als Ziel bleibt in jedem Fall innerhalb der App', async (_name, url) => {
-    // Was keine Adresse ist, wird zu einer relativen — die löst gegen den
-    // Geltungsbereich auf und bleibt damit drinnen. Geprüft wird genau das,
-    // nicht eine bestimmte Zeichenkette.
-    await ohneFenster.klick(url)
-    expect(ohneFenster.geoeffnet).toHaveLength(1)
-    expect(ohneFenster.geoeffnet[0].startsWith(SCOPE)).toBe(true)
+  it('gleiche Art ersetzt statt zu stapeln', async () => {
+    /*
+      **V10.** Ohne `tag` legt jede Erinnerung eine weitere Meldung auf den
+      Sperrbildschirm. Bei täglicher Wiederholung stehen dort nach einer Woche
+      sieben Mal dieselbe Sache, und die eine neue Nachricht daneben geht darin
+      unter. Ein `tag` je Art ersetzt die vorige.
+
+      `renotify` gehört dazu: Eine Ersetzung ohne es wäre lautlos, und der
+      Leser bekäme von der neuen Fassung nichts mit.
+    */
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Erinnerung', body: 'Montag' }))
+    const opt = sw.meldungen[0]?.[1] ?? {}
+    expect(opt.tag, 'ohne tag stapeln sich die Erinnerungen').toBeTruthy()
+    expect(opt.renotify, 'die Ersetzung bliebe lautlos').toBe(true)
   })
 
-  it('ein Unterpfad der App bleibt erlaubt', async () => {
-    const ziel = `${SCOPE}index.html#go=programm`
-    await ohneFenster.klick(ziel)
-    expect(ohneFenster.geoeffnet).toEqual([ziel])
+  it('der Absender darf die Art bestimmen', async () => {
+    // Damit sich später verschiedene Sorten getrennt bündeln lassen, ohne den
+    // Worker erneut anzufassen.
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Ersatz gesucht', tag: 'ersatz' }))
+    expect(sw.meldungen[0]?.[1].tag).toBe('ersatz')
   })
 
-  it('jeder Klick öffnet genau ein Ziel', async () => {
-    // Sonst könnte die Prüfung „die App zusätzlich" öffnen und das fremde
-    // Ziel trotzdem durchlassen — beide Zusagen wären erfüllt, die Absicht
-    // nicht.
-    await mitFenster.klick('https://evil.example/phish')
-    expect(ziele(mitFenster)).toHaveLength(1)
+  it('ohne Nutzlast bleibt es bei den Standardtexten', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', { data: null })
+    expect(sw.meldungen[0]?.[0]).toBe('Congregation Planner')
+  })
+})
+
+describe('Service Worker: der Klick führt nur in die eigene App', () => {
+  const klick = (url: string) => ({
+    notification: { close: () => {}, data: { url } },
+  })
+
+  it('ein fremdes Ziel wird durch die App ersetzt', async () => {
+    // Wer eine Mitteilung zustellen darf, bestimmt sonst, wohin ein Klick führt.
+    const sw = ladeServiceWorker()
+    await sw.feuere('notificationclick', klick('https://boese.test/'))
+    expect(sw.geoeffnet).toEqual([SCOPE])
+  })
+
+  it('ein Präfix-Nachbar zählt nicht als eigene App', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('notificationclick', klick('https://app.test/planner-fremd/'))
+    expect(sw.geoeffnet).toEqual([SCOPE])
+  })
+
+  it('ein eigenes Ziel wird geöffnet', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('notificationclick', klick('#go=aufgaben'))
+    expect(sw.geoeffnet[0]).toBe(`${SCOPE}#go=aufgaben`)
+  })
+
+  it('ein offenes Fenster bekommt das Ziel auf beiden Wegen', async () => {
+    // Je nach Browser greift mal postMessage, mal client.navigate.
+    const sw = ladeServiceWorker({ fenster: [{ navigate: true }] })
+    await sw.feuere('notificationclick', klick('#go=planen'))
+    expect(sw.gesendet).toEqual([{ type: 'navigate', url: `${SCOPE}#go=planen` }])
+    expect(sw.geoeffnet).toEqual([`${SCOPE}#go=planen`])
+  })
+})
+
+describe('Service Worker: Assets', () => {
+  it('gehashte Assets kommen beim zweiten Mal aus dem Cache', async () => {
+    const sw = ladeServiceWorker()
+    const asset = req('assets/index-abc123.js')
+    await sw.feuere('fetch', { request: asset })
+    await sw.feuere('fetch', { request: asset })
+    expect(sw.geholt.filter((u) => u.includes('assets/')).length, 'zweimal geholt').toBe(1)
+  })
+
+  it('index.html kommt immer zuerst aus dem Netz', async () => {
+    // Sonst zeigte die App nach einem Deployment weiter den alten Stand.
+    const sw = ladeServiceWorker()
+    await sw.feuere('fetch', { request: req('index.html') })
+    await sw.feuere('fetch', { request: req('index.html') })
+    expect(sw.geholt.filter((u) => u.endsWith('index.html')).length).toBe(2)
+  })
+
+  it('eine fehlgeschlagene Antwort landet nicht im Cache', async () => {
+    // Sonst servierte der Worker eine 404-Seite als Anwendung.
+    const sw = ladeServiceWorker({ netz: (u) => antwort(u, false) })
+    await sw.feuere('fetch', { request: req('assets/index-abc123.js') })
+    const abgelegt = [...sw.speicher.values()].flatMap((c) => [...c.eintraege.keys()])
+    expect(abgelegt).toEqual([])
   })
 })

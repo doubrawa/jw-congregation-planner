@@ -10,7 +10,18 @@
  * src/lib/push.ts) — es würde Vites HMR abfangen. Push funktioniert trotzdem.
  */
 
-const CACHE = 'shell-v1'
+/*
+ * **Der Cache-Name trägt die Kennung des Stands** (V9). Beim Bauen ersetzt
+ * (`scripts/sw-kennung.mjs`); im Dev-Server bleibt der Platzhalter stehen, dort
+ * ist das Caching ohnehin aus.
+ *
+ * Hier stand `'shell-v1'` — konstant. `activate` löscht nur Caches mit
+ * **anderem** Namen, es wurde also nie etwas gelöscht: Die gehashten Assets
+ * jedes Builds blieben unbegrenzt liegen. Und `activate` läuft überhaupt nur,
+ * wenn sich diese Datei selbst geändert hat; die Kennung ist deshalb beides
+ * zugleich — der Grund fürs Aufräumen und sein Auslöser.
+ */
+const CACHE = 'shell-__BUILD_ID__'
 const DEV = new URL(self.location.href).searchParams.has('dev')
 
 // Relative URLs lösen gegen den SW-Pfad auf, also den App-Basispfad
@@ -118,6 +129,23 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: 'icon-192.png',
       badge: 'icon-192.png',
+      /*
+       * **Gleiche Art ersetzt, statt zu stapeln** (V10). Ohne `tag` legt jede
+       * Erinnerung eine weitere Meldung auf den Sperrbildschirm; bei täglicher
+       * Wiederholung stehen dort nach einer Woche sieben Mal dieselbe Sache,
+       * und die eine neue Nachricht daneben geht darin unter.
+       *
+       * Der Titel ist die Art („Erinnerung", „Ersatz gesucht") und damit der
+       * natürliche Schlüssel. Der Absender darf ihn überschreiben, falls sich
+       * eine Sorte später feiner trennen soll — dann ohne diese Datei erneut
+       * anzufassen.
+       *
+       * `renotify` gehört dazu: Eine Ersetzung ohne es wäre lautlos, und vom
+       * neuen Inhalt bekäme der Leser nichts mit. Verloren geht dabei nichts —
+       * die Glocke in der App führt jede Zeile einzeln.
+       */
+      tag: data.tag || data.title || 'cp',
+      renotify: true,
       data: { url: data.url || '.' },
     }),
   )
