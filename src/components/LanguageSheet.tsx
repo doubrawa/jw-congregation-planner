@@ -62,6 +62,7 @@ export function LanguageSheet() {
         </div>
         <input
           type="text"
+          dir="auto"
           className="lang-search"
           placeholder={t.langSearchPh}
           aria-label={t.langSearchPh}

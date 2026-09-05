@@ -76,6 +76,7 @@ export function ServicePersonsSheet({ svcKey }: { svcKey: string }) {
         </div>
         <input
           type="text"
+          dir="auto"
           className="lang-search"
           placeholder={t.suchen}
           aria-label={t.suchen}
