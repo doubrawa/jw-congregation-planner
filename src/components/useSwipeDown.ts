@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { bindTouch } from './bindTouch'
+import { einZeitgeber } from './einZeitgeber'
 
 /**
  * Bottom-Sheet nach unten wischen zum Schließen.
@@ -56,11 +57,17 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, onClose: () => 
     let startedAt = 0
     let dy = 0
 
+    // Eine Frist, nicht viele — und beim Abmelden ist sie weg (`einZeitgeber`).
+    const { spaeter, stoppen } = einZeitgeber()
+
     const setDrag = (px: number) => el.style.setProperty('--sheet-drag', `${px}px`)
     const reset = (animate: boolean) => {
+      // Auch ohne Animation: eine noch offene Frist gehört zur vorigen
+      // Bewegung und hat in dieser nichts mehr zu suchen.
+      stoppen()
       el.style.transition = animate ? 'transform 180ms ease-out' : ''
       setDrag(0)
-      if (animate) window.setTimeout(() => (el.style.transition = ''), 200)
+      if (animate) spaeter(() => (el.style.transition = ''), 200)
     }
 
     const onStart = (e: TouchEvent) => {
@@ -123,6 +130,9 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, onClose: () => 
     const abmelden = bindTouch(el, { start: onStart, move: onMove, end: onEnd, cancel: onCancel })
     return () => {
       abmelden()
+      // Sonst greift die Frist auf ein Element zu, das nicht mehr im Baum
+      // steht — dieselbe Zusicherung wie beim Wochenwischen.
+      stoppen()
       el.style.removeProperty('--sheet-drag')
       el.style.transition = ''
     }

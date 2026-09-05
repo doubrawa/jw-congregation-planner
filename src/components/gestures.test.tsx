@@ -628,4 +628,88 @@ describe('useSwipeDown', () => {
     touch(sheet, 'touchcancel', [[200, 320]], true, 110)
     expect(onClose).not.toHaveBeenCalled()
   })
+
+  /*
+   * **Dieselben zwei Fristen-Fehler wie beim Wochenwischen** — der Zwilling
+   * hier blieb bei der Reparatur liegen. Beide Gesten teilen sich seit `bindTouch`
+   * das An- und Abmelden; die Frist blieb jeder für sich, und nur eine wurde
+   * in Ordnung gebracht.
+   */
+  describe('Aufräum-Fristen', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    it('eine abgebrochene Bewegung räumt nicht in die nächste hinein', () => {
+      const r = render(<SheetHarness onClose={vi.fn()} />)
+      const sheet = r.getByTestId('sheet')
+      // Zu kurz gezogen → federt zurück, Frist eins läuft (180 + 20 ms).
+      swipe(sheet, [200, 200], [200, 240])
+      vi.advanceTimersByTime(100)
+      // Zügig noch einmal — auch zu kurz, federt wieder zurück.
+      swipe(sheet, [200, 200], [200, 240])
+      expect(sheet.style.transition).toContain('180ms')
+
+      // Genau der Moment, in dem die alte Frist zuschlüge.
+      vi.advanceTimersByTime(120)
+      expect(
+        sheet.style.transition,
+        'die Übergangsdauer wurde mitten im Zurückfedern weggenommen',
+      ).toContain('180ms')
+    })
+
+    it('beim Abmelden bleibt keine Frist offen — auch keine ältere', () => {
+      // Gezählt statt an einer Wirkung abgelesen: Die alte Frist tut am Ende
+      // dasselbe wie das Aufräumen (`transition: ''`) und bliebe sonst
+      // unsichtbar — genau wie beim Wochenwischen.
+      const r = render(<SheetHarness onClose={vi.fn()} />)
+      const sheet = r.getByTestId('sheet')
+      swipe(sheet, [200, 200], [200, 240]) // Frist eins
+      vi.advanceTimersByTime(100)
+      swipe(sheet, [200, 200], [200, 240]) // Frist zwei
+      r.unmount()
+      expect(vi.getTimerCount()).toBe(0)
+    })
+  })
+})
+
+/* ---- Und dass es dabei bleibt -------------------------------------------- */
+
+/**
+ * **Keine eigene Frist mehr in einer Wischgeste.**
+ *
+ * Beide Fehler oben gab es zweimal, und repariert wurde zuerst nur einer —
+ * der Zwilling stand daneben und blieb liegen. Die Wirkung zu prüfen genügt
+ * dagegen nicht: Sie ist an genau einen Ablauf gebunden, und eine dritte Geste
+ * brächte ihre eigene Frist mit, ohne dass ein Test etwas dazu sagte.
+ *
+ * Gelesen wird deshalb der Quelltext selbst — dieselbe Bauart wie die übrigen
+ * Vollständigkeitsproben im Bestand.
+ */
+describe('Fristen laufen über einen einzigen Zeitgeber', () => {
+  const GESTEN = import.meta.glob('./useSwipe*.ts', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>
+
+  it('keine der Wischgesten ruft setTimeout selbst auf', () => {
+    const dateien = Object.entries(GESTEN)
+    // Gegenprobe: Ohne Treffer prüfte der Test nichts.
+    expect(dateien.length, 'keine Gesten-Dateien gefunden').toBeGreaterThan(1)
+
+    const eigenmaechtig = dateien
+      // Ohne Muster: `window.setTimeout` und `setTimeout` sollen beide auffallen.
+      .filter(([, quelle]) => quelle.includes('setTimeout'))
+      .map(([pfad]) => pfad)
+    expect(
+      eigenmaechtig,
+      `eigene Frist statt einZeitgeber: ${eigenmaechtig.join(', ')}`,
+    ).toEqual([])
+  })
+
+  it('… und jede holt sich den geteilten', () => {
+    for (const [pfad, quelle] of Object.entries(GESTEN)) {
+      expect(quelle, `${pfad} bindet einZeitgeber nicht ein`).toContain('einZeitgeber')
+    }
+  })
 })

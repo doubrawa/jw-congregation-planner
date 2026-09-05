@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
 import { bindTouch } from './bindTouch'
+import { einZeitgeber } from './einZeitgeber'
 import { gestenLog, gestenStart } from '../lib/gesture-log'
 
 /**
@@ -84,7 +85,6 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     let dx = 0
     let bewegungen = 0 // nur fuers Protokoll
 
-    let timer: number | undefined
     let laeuft = false // Blätter-Animation läuft; neue Gesten warten
 
     const setShift = (px: number) => el.style.setProperty('--week-shift', `${px}px`)
@@ -92,27 +92,12 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
       el.style.transition = ms === null ? '' : `transform ${ms}ms ease-out`
     }
 
-    /**
-     * Es gibt **immer nur einen** Zeitgeber — jeder neue löscht den alten.
-     *
-     * `timer` wurde vorher nur überschrieben. Die alte Frist lief dann weiter
-     * und schlug mitten in die nächste Bewegung: Wer nach einem Zurückfedern
-     * sofort weiterwischt (die 200 ms sind kürzer als eine zügige zweite
-     * Geste), bekam den Aufräum-Schlag des Zurückfederns mitten ins Blättern —
-     * `setTransition(null)` nimmt die Übergangsdauer weg, der Streifen springt
-     * statt zu gleiten. Und beim Abmelden konnte die Hülle nur die zuletzt
-     * gemerkte Frist abbrechen; jede ältere lief weiter und griff auf ein
-     * Element zu, das längst aus dem Baum war — genau das, was der Kommentar
-     * am Ende dieser Funktion verspricht.
+    /*
+     * Es gibt **immer nur einen** Zeitgeber, und das Abmelden räumt ihn weg.
+     * Warum das nötig ist und was ohne ihn schiefging, steht bei
+     * `einZeitgeber` — dort, wo sich beide Wischgesten die Frist teilen.
      */
-    const stoppen = (): void => {
-      if (timer !== undefined) window.clearTimeout(timer)
-      timer = undefined
-    }
-    const spaeter = (fn: () => void, ms: number): void => {
-      stoppen()
-      timer = window.setTimeout(fn, ms)
-    }
+    const { spaeter, stoppen } = einZeitgeber()
 
     /** Zurück auf null — „hier geht es nicht weiter" oder zu kurz gezogen. */
     const release = (animate: boolean) => {
