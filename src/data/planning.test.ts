@@ -841,6 +841,68 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(conflicts.some((c) => c.kind === 'absent' && c.name === 'Ulrich Lang')).toBe(false)
   })
 
+  it('erkennt, wer zugleich im Hauptsaal und in der Zusätzlichen Klasse steht', () => {
+    /*
+      **Zwei Räume zur selben Zeit.**
+
+      `meetingPartNames` zählt beide Räume zusammen, und der Kommentar dort
+      nennt genau diesen Fall als den, den die Prüfung finden soll. Sie fand
+      ihn nicht: Zwei Programmpunkte sind bewusst kein Konflikt (Vorsitz und
+      Anfangsgebet) — und damit fiel auch der durch, der in beiden Räumen
+      steht.
+
+      Die Automatik verhindert es seit je (`autoassign.klasse.test.ts`), von
+      Hand blieb es möglich. Erst die zweite Platzreihe hat den Fall überhaupt
+      geschaffen.
+    */
+    const person: Person = {
+      id: 'p-zwei', fn: 'Kim', ln: 'Sommer', role: 'verkuendiger',
+      tel: '', mail: '', priv: emptyQualifications(),
+    }
+    const item = {
+      iid: 'i1',
+      title: 'Gespräche beginnen',
+      names: [{ name: 'Kim Sommer', pid: 'p-zwei', bereichsKey: 'schulung' }],
+    } as unknown as PartItem
+    const roh = {
+      range: '', book: '', start: '2026-09-07', current: false,
+      mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    } as unknown as Week
+    const week = syncAuxSlots([roh], true)[0]!
+    const klassenPlatz = (week.mid.sections[0]!.items[0] as PartItem).aux![0]!
+    klassenPlatz.name = 'Kim Sommer'
+    klassenPlatz.pid = 'p-zwei'
+
+    const conflicts = weekConflicts([week], 0, [person], [], 'mid')
+    expect(conflicts).toEqual([
+      { kind: 'double', name: 'Kim Sommer', kennung: 'p-zwei', tab: 'mid', count: 2 },
+    ])
+  })
+
+  it('zwei Punkte im SELBEN Raum bleiben in Ordnung (Vorsitz und Gebet)', () => {
+    // Die Gegenprobe: Der neue Hinweis darf nicht zum Dauerbrenner werden.
+    const person: Person = {
+      id: 'p-eins', fn: 'Vor', ln: 'Sitz', role: 'verkuendiger',
+      tel: '', mail: '', priv: emptyQualifications(),
+    }
+    const item = {
+      iid: 'i1',
+      title: 'Lied · Gebet · Einleitende Worte',
+      names: [
+        { name: 'Vor Sitz', pid: 'p-eins', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
+        { name: 'Vor Sitz', pid: 'p-eins', rolle: 'Gebet', bereichsKey: 'gebet' },
+      ],
+    } as unknown as PartItem
+    const week = {
+      range: '', book: '', start: '2026-09-07', current: false,
+      mid: { date: '', end: '', sections: [{ label: 'ERÖFFNUNG', farbe: 'neutral', items: [item] }], helpers: {} },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    } as unknown as Week
+
+    expect(weekConflicts([week], 0, [person], [], 'mid')).toEqual([])
+  })
+
   it('erkennt Helfer + Aufgabe am selben Tag (helperTask)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Manfred Albrecht' }] // ist schon Vorsitz (Programmpunkt) in derselben ZK

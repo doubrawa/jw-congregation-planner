@@ -131,6 +131,23 @@ function midMitSchriftstelle(): unknown {
   }
 }
 
+/**
+ * Zusammenkunft, deren einziger Platz einer Person **mit Id** gehört, die kein
+ * Konto hat — und die einen Namensvetter mit Konto hat.
+ */
+function midMitNamensvetter(): unknown {
+  return {
+    date: 'Dienstag, 8. September · 19:00 · Königreichssaal',
+    sections: [
+      {
+        label: 'SCHÄTZE AUS GOTTES WORT',
+        items: [{ title: 'Bibellesung', names: [{ name: 'Max Mustermann', pid: 'p-doppel' }] }],
+      },
+    ],
+    helpers: {},
+  }
+}
+
 /* ---- Simulierte Umgebung ------------------------------------------------- */
 
 interface Write {
@@ -151,6 +168,8 @@ let fsWeeks: { start: string; data: unknown }[]
 let confirmations: { task_key: string; status: string }[]
 let reminderLog: { user_id: string; kind: string }[]
 let subs: typeof SUBS
+/** Personen der Versammlung — je Test überschreibbar (Namensvetter). */
+let persons: typeof PERSONS
 /** Erinnerungs-Einstellungen der Versammlung — je Test überschreibbar. */
 let reminders: { first: number; last: number; repeat: boolean }
 
@@ -175,7 +194,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('fs_weeks')) return jsonRes(fsWeeks)
   if (path.startsWith('confirmations')) return jsonRes(confirmations)
   if (path.startsWith('members')) return jsonRes(MEMBERS)
-  if (path.startsWith('persons')) return jsonRes(PERSONS)
+  if (path.startsWith('persons')) return jsonRes(persons)
   if (path.startsWith('services')) return jsonRes(SERVICES)
   if (path.startsWith('push_subscriptions')) return jsonRes(subs)
   return jsonRes([])
@@ -242,6 +261,7 @@ beforeEach(() => {
   confirmations = []
   reminderLog = []
   subs = [...SUBS]
+  persons = [...PERSONS]
   reminders = { first: 7, last: 1, repeat: true }
   resetPush()
 })
@@ -1032,5 +1052,69 @@ describe('send-reminders: der Bericht sagt, was nicht ankam', () => {
     const r = await live()
     expect(r.pushes).toBeGreaterThan(0)
     expect(r.failed).toBe(0)
+  })
+})
+
+/**
+ * **Die Id entscheidet, nicht der Name** — auch dann, wenn sie zu niemandem
+ * führt.
+ *
+ * `userOf` fiel bisher auch dann auf den Namen zurück, wenn der Platz eine `pid`
+ * trug: `(pend.pid ? userByPerson.get(pend.pid) : undefined) ?? userByName.get(…)`.
+ * Der Kommentar darüber sagt seit je etwas anderes — der Namensweg sei „der
+ * Rückfall für Altdaten **ohne** Id". Trägt der Platz eine Id und hat die
+ * gemeinte Person kein Konto, ist die Antwort „nicht erreichbar" und nicht
+ * „dann eben der Namensvetter".
+ *
+ * `idAufloeser` im Client zieht dieselbe Grenze ausdrücklich: Eine unbekannte
+ * Id ergibt `undefined`, nie einen Namenstreffer.
+ */
+describe('send-reminders: die Id entscheidet, nicht der Name', () => {
+  beforeEach(() => {
+    // Zwei Brüder desselben Namens: einer mit Konto (p-max), einer ohne.
+    persons = [...PERSONS, { id: 'p-doppel', fn: 'Max', ln: 'Mustermann', dn: 'Max Mustermann' }]
+    weeks = [{ start: WEEK_START, data: { mid: midMitNamensvetter() } }]
+  })
+
+  it('der Namensvetter mit Konto bekommt die Erinnerung nicht', async () => {
+    const r = await run()
+    expect(
+      previewFor(r, U_MAX),
+      'Max bekam die Erinnerung seines Namensvetters',
+    ).toBeUndefined()
+  })
+
+  it('stattdessen erfahren die Planer, wen sie persönlich erinnern müssen', async () => {
+    // Der Preis des alten Rückfalls war nicht nur die falsche Nachricht: Wer als
+    // „erreichbar" galt, fiel aus der Liste der Unerreichbaren — und damit
+    // erfuhr niemand, dass der Bruder ohne Konto nichts weiß.
+    const r = await run()
+    const anPlaner = previewFor(r, U_PLANER)
+    expect(anPlaner, 'Planer-Meldung fehlt').toBeDefined()
+    expect(anPlaner!.body).toContain('Max Mustermann')
+  })
+
+  it('ohne Id bleibt der Namensweg — dafür ist er da', async () => {
+    // Gegenprobe: Ein Platz ohne `pid` (Altdaten, Hilfsdienste) findet sein
+    // Konto weiterhin über den Namen.
+    weeks = [
+      {
+        start: WEEK_START,
+        data: {
+          mid: {
+            date: 'Dienstag, 8. September · 19:00 · Königreichssaal',
+            sections: [
+              {
+                label: 'SCHÄTZE AUS GOTTES WORT',
+                items: [{ title: 'Bibellesung', names: [{ name: 'Max Mustermann' }] }],
+              },
+            ],
+            helpers: {},
+          },
+        },
+      },
+    ]
+    const r = await run()
+    expect(previewFor(r, U_MAX), 'Namensweg ohne Id verloren').toBeDefined()
   })
 })

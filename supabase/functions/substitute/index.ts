@@ -399,6 +399,12 @@ Deno.serve(async (req: Request) => {
     if (!callerPerson || !callerPerson.priv?.[qualKey]) return json({ error: 'not-qualified' }, 403)
     const callerName = displayName(callerPerson)
     const originalName = slot.name ?? ''
+    /*
+     * **Die Id des Eingeteilten festhalten, bevor der Slot umgeschrieben wird.**
+     * Ein paar Zeilen tiefer steht dort der Aufrufer — und ganz unten soll der
+     * Verdrängte erfahren, dass sein Platz weg ist.
+     */
+    const originalPid = slot.pid
     if (originalName === callerName) return json({ ok: true, already: true }) // idempotent
 
     // Einspringen setzt voraus, dass jemand da war und abgesagt hat.
@@ -459,8 +465,23 @@ Deno.serve(async (req: Request) => {
       { congregation_id: cong, user_id: userId, task_key: payload.taskKey, status: 'bestätigt' },
     ])
 
-    // Ursprungsperson + Planer informieren.
-    const originalPerson = persons.find((p) => displayName(p) === originalName)
+    /*
+     * Ursprungsperson + Planer informieren — die Ursprungsperson **über ihre
+     * Id**, wo der Platz eine trägt.
+     *
+     * Hier stand allein `persons.find((p) => displayName(p) === originalName)`.
+     * Bei zwei Gleichnamigen entschied damit die Reihenfolge der Personenliste,
+     * wer die Nachricht bekommt; hatte der zuerst gefundene kein Konto, bekam
+     * sie **niemand** — der Eingeteilte verlor seinen Platz, ohne es zu
+     * erfahren, und im Planen stand er als abgesagt.
+     *
+     * Dieselbe Grenze wie in `send-plan`, `send-reminders` und `idAufloeser`:
+     * Trägt die Zuteilung eine Id, gilt sie. Der Name bleibt der Weg für
+     * Altdaten und Hilfsdienste ohne Id.
+     */
+    const originalPerson = originalPid
+      ? personById.get(originalPid)
+      : persons.find((p) => displayName(p) === originalName)
     const recipients = [
       ...(originalPerson ? [userByPerson.get(originalPerson.id)].filter(Boolean) as string[] : []),
       ...members.filter((m) => m.planner).map((m) => m.user_id),

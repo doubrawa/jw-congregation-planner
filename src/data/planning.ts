@@ -565,8 +565,13 @@ export function autoAssignMeeting(
     if (slot.bereichsKey === 'schulungPartner') {
       // Der Gesprächspartner muss zum Führer DESSELBEN Raums passen — sonst
       // richtete sich die Zusätzliche Klasse nach dem Hauptsaal.
-      const leadName = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')?.name ?? ''
-      const lead = leadName ? persons.find((p) => displayName(p) === leadName) : undefined
+      const leadPlatz = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')
+      // Über `gehoertZu`, nicht über den Namen: Trägt der Führer-Platz eine
+      // `pid` — und das tut er, sobald ihn jemand zugeteilt hat —, ist sie der
+      // Anhalt. Am Namen allein entschied die Reihenfolge der Personenliste,
+      // wer als Führer gilt; bei zwei Gleichnamigen verschiedenen Geschlechts
+      // richtete sich die Partnerwahl danach nach dem Falschen.
+      const lead = leadPlatz?.name ? persons.find((p) => gehoertZu(leadPlatz, p)) : undefined
       return {
         byTotal: true,
         malus: (p: Person) => !isPlainPublisher(p),
@@ -1470,6 +1475,32 @@ function meetingPartNames(meeting: Meeting, wer: IdVon): Belegung[] {
   return names
 }
 
+/**
+ * Belegte Kennungen **je Raum** — Hauptsaal und Zusätzliche Klasse getrennt.
+ *
+ * Der Ratgeber gehört zur Klasse: Er sitzt dort die ganze Zeit, genau wie die
+ * Schüler seiner Reihe.
+ *
+ * Gebraucht für die einzige Doppelung unter den Programmpunkten, die wirklich
+ * unmöglich ist — zwei Räume zur selben Zeit. Zwei Punkte **im selben** Raum
+ * sind es nicht (Vorsitz und Anfangsgebet).
+ */
+function raumBelegung(meeting: Meeting, wer: IdVon): { haupt: Map<string, string>; klasse: Map<string, string> } {
+  const haupt = new Map<string, string>()
+  const klasse = new Map<string, string>()
+  for (const { slot, aux } of programmPlaetze(meeting)) {
+    if (!slot.name || isGuestRole(slot.rolle)) continue
+    const b = belegung(slot, wer)
+    ;(aux ? klasse : haupt).set(b.kennung, b.name)
+  }
+  const ratgeber = meeting.auxRatgeber
+  if (ratgeber?.name) {
+    const b = belegung(ratgeber, wer)
+    klasse.set(b.kennung, b.name)
+  }
+  return { haupt, klasse }
+}
+
 /** Belegte Namen der Hilfsdienste (ohne Gruppen-Rotation). */
 function meetingHelperNames(meeting: Meeting, services: Service[], wer: IdVon): Belegung[] {
   const names: Belegung[] = []
@@ -1567,11 +1598,32 @@ export function weekConflicts(
     }
     const partCounts = zaehle(meetingPartNames(week[tb], werIst))
     const helperCounts = zaehle(meetingHelperNames(week[tb], services, werIst))
+    /*
+     * **Zwei Räume zur selben Zeit.**
+     *
+     * `meetingPartNames` zählt Hauptsaal und Klasse zusammen — der Kommentar
+     * dort nennt genau diesen Fall als den, den die Prüfung finden soll. Sie
+     * fand ihn nicht: Zwei Programmpunkte sind bewusst kein Konflikt (Vorsitz
+     * und Anfangsgebet), und damit fiel auch der Mensch durch, der zugleich im
+     * Hauptsaal und in der Zusätzlichen Klasse stand.
+     *
+     * Die Automatik verhindert es seit je (`autoassign.klasse.test.ts`:
+     * „Niemand steht zur selben Zeit in zwei Räumen"); von Hand blieb es
+     * möglich, und niemand sagte etwas. Erst der Ratgeber-Platz und die zweite
+     * Reihe haben den Fall überhaupt geschaffen.
+     *
+     * Gemeldet als `double`: Der Satz dazu — „{name} ist {n}× in einer
+     * Zusammenkunft" — trifft es, und ein eigener Schlüssel hieße 34
+     * Übersetzungen für eine Aussage, die schon dasteht.
+     */
+    const { haupt, klasse } = raumBelegung(week[tb], werIst)
     for (const kennung of new Set([...partCounts.keys(), ...helperCounts.keys()])) {
       const pc = partCounts.get(kennung) ?? 0
       const hc = helperCounts.get(kennung) ?? 0
       const name = namen.get(kennung) ?? ''
-      if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
+      if (klasse.has(kennung) && haupt.has(kennung)) {
+        conflicts.push({ kind: 'double', name, kennung, tab: tb, count: pc + hc })
+      } else if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
       else if (hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
     }
   }

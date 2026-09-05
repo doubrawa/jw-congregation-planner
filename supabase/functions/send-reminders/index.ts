@@ -295,8 +295,26 @@ Deno.serve(async (req: Request) => {
         userByName.set(personDisplayName(p.fn, p.ln, p.dn), m.user_id)
         userByPerson.set(p.id, m.user_id)
       }
+      /*
+       * Konto einer eingeteilten Person: **Id zuerst — und sonst gar nicht.**
+       *
+       * **Der Namensweg gilt nur, wo es keine Id gibt.** Hier stand ein `??`, das
+       * ihn auch dann noch nachschob, wenn der Platz eine `pid` trug und die
+       * gemeinte Person kein Konto hat. Getroffen wurde damit zwangsläufig ein
+       * **anderer**: Wer kein Konto hat, steht in keiner der beiden Tabellen —
+       * ein Treffer über den Namen kann also nur von einem Namensvetter kommen.
+       *
+       * Der Preis war doppelt. Der Namensvetter bekam eine Nachricht, die ihn
+       * nichts angeht (in seiner Aufgabenliste steht sie nicht, der Client
+       * entscheidet über die Id). Und der Gemeinte galt als erreicht — er fiel
+       * damit aus der Liste, mit der die Planer erfahren, wen sie persönlich
+       * ansprechen müssen.
+       *
+       * `idAufloeser` im Client zieht dieselbe Grenze ausdrücklich: Eine
+       * unbekannte Id ergibt `undefined`, nie einen Namenstreffer.
+       */
       const userOf = (pend: Pending): string | undefined =>
-        (pend.pid ? userByPerson.get(pend.pid) : undefined) ?? userByName.get(pend.name)
+        pend.pid ? userByPerson.get(pend.pid) : userByName.get(pend.name)
       const subsByUser = new Map<string, SubscriptionRow[]>()
       for (const s of subs) {
         subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])

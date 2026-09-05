@@ -18,6 +18,7 @@ import { slotsOf } from '../data/aux-class'
 import { fsKennung, fsLast, fsTag } from '../data/fs'
 import {
   displayName,
+  gehoertZu,
   idAufloeser,
   initials,
   isQualified,
@@ -215,12 +216,17 @@ function geschlechtsPruefung(
   if (!item || isSong(item)) return () => true
   const plaetze = slotsOf(item, sel.aux === true)
   const platz = plaetze[sel.ni]
-  const fuehrerName =
+  const fuehrerPlatz =
     sel.priv === 'schulungPartner'
-      ? (plaetze.find((n, i) => i !== sel.ni && n.bereichsKey === 'schulung')?.name ?? '')
-      : ''
-  const fuehrer = fuehrerName
-    ? state.persons.find((p) => displayName(p) === fuehrerName)
+      ? plaetze.find((n, i) => i !== sel.ni && n.bereichsKey === 'schulung')
+      : undefined
+  // Über `gehoertZu`, nicht über den Namen: Trägt der Führer-Platz eine
+  // `pid` — und das tut er, sobald ihn jemand zugeteilt hat —, ist sie der
+  // Anhalt. Am Namen allein entschied die Reihenfolge der Personenliste,
+  // wer als Führer gilt; bei zwei Gleichnamigen verschiedenen Geschlechts
+  // richtete sich die Partnerwahl danach nach dem Falschen.
+  const fuehrer = fuehrerPlatz?.name
+    ? state.persons.find((p) => gehoertZu(fuehrerPlatz, p))
     : undefined
   return (p: Person) => {
     if (platz?.male && p.female) return false

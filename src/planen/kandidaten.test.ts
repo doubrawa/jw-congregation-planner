@@ -103,6 +103,28 @@ describe('Gesprächspartner richtet sich nach dem Führer DESSELBEN Raums', () =
   })
 })
 
+  it('der Führer wird über seine Id erkannt, nicht über seinen Namen', () => {
+    /*
+      Zwei Gleichnamige verschiedenen Geschlechts — die App warnt davor, sie
+      verbietet es aber nicht, und `dn` macht es ausdrücklich möglich. Am Namen
+      allein entschied die **Reihenfolge der Personenliste**, wer als Führer
+      gilt: Steht die Schwester vorn, bekam der Bruder Schwestern als
+      Gesprächspartnerinnen vorgeschlagen.
+
+      Der Platz trägt eine `pid`, sobald ihn jemand zugeteilt hat. `gehoertZu`
+      ist die Stelle, an der „gehört dieser Platz dieser Person?" entschieden
+      wird — hier stand eine vierte Fassung derselben Frage.
+    */
+    const w = wocheMitKlasse('Anton Alt', 'Clara Cohn')
+    const fuehrer = (w.mid.sections[0].items[0] as PartItem).names[0]!
+    fuehrer.pid = BRUDER_A.id
+    // Die Namensvetterin steht VOR ihm — `find` über den Namen träfe sie.
+    const schwesterAlt = person('s9', 'Anton', 'Alt', true, 'schulung', 'schulungPartner')
+    const s = daten([w], [schwesterAlt, ...PERSONEN])
+
+    expect(namen(partnerSlot(false), s)).toEqual(['Anton Alt', 'Bernd Brand'])
+  })
+
 describe('Kandidatenliste allgemein', () => {
   const state = daten([wocheMitKlasse('Anton Alt', 'Clara Cohn')])
 

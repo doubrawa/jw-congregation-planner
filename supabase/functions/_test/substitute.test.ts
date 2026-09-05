@@ -51,6 +51,13 @@ const MEMBERS = [
 ]
 
 const PERSONS = [
+  /*
+    Ein Namensvetter der Ursprungsperson, **vor** ihr in der Liste und ohne
+    Konto: Wer den Eingeteilten über den Namen sucht, findet zuerst ihn — und
+    damit niemanden, der zu benachrichtigen wäre. Nicht qualifiziert, damit die
+    Ersatzsuche oben unberührt bleibt.
+  */
+  { id: 'p-orig-zwill', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: {} },
   { id: 'p-me', fn: 'Ich', ln: 'Selbst', dn: 'Ich Selbst', priv: QUAL },
   { id: 'p-orig', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: QUAL },
   { id: 'p-unqual', fn: 'Uwe', ln: 'Nqual', dn: 'Uwe Nqual', priv: {} },
@@ -601,6 +608,27 @@ describe('substitute: Positivfall als Gegenprobe', () => {
     expect(writesTo('notifications')[0]?.path).toContain('task_key=eq.')
     expect(writesTo('notifications')[0]?.path).toContain('Ersatz')
     // Ursprungsperson und Planer werden informiert
+    const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER]))
+  })
+})
+
+/**
+ * **Wer verdrängt wurde, erfährt es — über die Id, nicht über den Namen.**
+ *
+ * Der Slot trägt eine `pid`; gesucht wurde die Ursprungsperson trotzdem mit
+ * `persons.find((p) => displayName(p) === originalName)`. Gibt es einen
+ * Namensvetter, entschied die Reihenfolge der Personenliste, wer die Nachricht
+ * bekommt — und wenn der Vetter kein Konto hat, bekam sie **niemand**: Der
+ * Eingeteilte verlor seinen Platz, ohne es zu erfahren.
+ *
+ * Dieselbe Grenze wie in `send-plan`, `send-reminders` und `idAufloeser`: Trägt
+ * die Zuteilung eine Id, gilt sie — der Name ist dann kein schwächerer Anhalt,
+ * sondern keiner.
+ */
+describe('substitute: die Id entscheidet, wer verdrängt wurde', () => {
+  it('„Ersatz gefunden" erreicht den Eingeteilten, nicht den Namensvetter', async () => {
+    await call(take())
     const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
     expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER]))
   })

@@ -449,3 +449,76 @@ describe('Kleine Kreise und Ausnahmezustände', () => {
     expect(FS_LOAD_WEEKS).toBe(12)
   })
 })
+
+/**
+ * **Der Gesprächsführer wird über seine Id erkannt, nicht über seinen Namen.**
+ *
+ * `ministryOpts` suchte die Person des Führer-Platzes mit
+ * `persons.find((p) => displayName(p) === leadName)`. Bei zwei Gleichnamigen
+ * entschied damit die Reihenfolge der Personenliste, wer als Führer gilt — und
+ * die Partnerwahl richtete sich nach dem Geschlecht des Falschen. Zwei
+ * Anzeigenamen dürfen gleich sein: Die App warnt den Planer davor, verbietet es
+ * aber nicht, und `dn` ist genau dafür da.
+ *
+ * `gehoertZu` ist die Stelle, an der „gehört dieser Platz dieser Person?"
+ * entschieden wird; hier stand eine weitere Fassung derselben Frage.
+ */
+describe('Gesprächspartner: die Id des Führers entscheidet', () => {
+  /** Ein Schülerteil mit besetztem Führer- und offenem Partner-Platz. */
+  const woche = (fuehrer: { name: string; pid?: string }): Week =>
+    ({
+      range: '',
+      book: '',
+      start: montag(0),
+      current: false,
+      mid: {
+        date: '',
+        end: '',
+        sections: [
+          {
+            label: 'UNS IM DIENST VERBESSERN',
+            farbe: 'gold',
+            items: [
+              {
+                iid: 'i1',
+                title: 'Gespräche beginnen',
+                names: [
+                  { ...fuehrer, bereichsKey: 'schulung' },
+                  { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                ],
+              },
+            ],
+          },
+        ],
+        helpers: {},
+      },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    }) as unknown as Week
+
+  it('ein gleichnamiger Namensvetter anderen Geschlechts ändert nichts', () => {
+    const fuehrer = mk(SCHUL, { id: 'f-echt', fn: 'Kim', ln: 'Sommer' })
+    // Dieselbe Schreibweise, anderes Geschlecht — und **vor** ihm in der Liste,
+    // damit ein Namenstreffer sie zuerst fände.
+    const vetterin = mk(SCHUL, { id: 'f-vetter', fn: 'Kim', ln: 'Sommer', female: true })
+    const bruder = mk(SCHUL, { id: 'kand-b', fn: 'Bo', ln: 'Bruder' })
+    const schwester = mk(SCHUL, { id: 'kand-s', fn: 'Su', ln: 'Schwester', female: true })
+    const leute = [vetterin, fuehrer, bruder, schwester]
+
+    // Gegenprobe der Vorgabe: Beide heißen wirklich gleich.
+    expect(displayName(vetterin)).toBe(displayName(fuehrer))
+
+    const { weeks } = autoAssignMeeting(
+      [woche({ name: displayName(fuehrer), pid: fuehrer.id })],
+      0,
+      'mid',
+      leute,
+      [],
+      [],
+      'parts',
+    )
+
+    const punkt = weeks[0]!.mid.sections[0]!.items[0] as { names: Array<{ pid?: string; bereichsKey?: string }> }
+    const partner = punkt.names.find((n) => n.bereichsKey === 'schulungPartner')
+    expect(partner?.pid, 'die Partnerwahl folgte dem Namensvetter').toBe(bruder.id)
+  })
+})

@@ -70,6 +70,9 @@ const PERSONS = [
   // verbietet es aber nicht.
   { id: 'p-tim-a', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
   { id: 'p-tim-b', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
+  // Der dritte trägt denselben Namen und hat **kein** Konto. An ihm hängt die
+  // Frage, was gilt, wenn die Id zu niemandem führt.
+  { id: 'p-tim-c', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
 ]
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone', count: 1, groups: false }]
@@ -532,6 +535,31 @@ describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
     expect(res.status).toBe(200)
     expect(zeilenIn('notifications')[0]).toMatchObject({ user_id: U_TIM_A })
     expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/tim-a'])
+  })
+
+  it('führt die Id zu niemandem, ist niemand zu erreichen — nicht der Namensvetter', async () => {
+    /*
+      Der Fall, den die Prüfung darüber nicht erwischt: Dort haben **beide**
+      Gleichnamigen ein Konto, die Id trifft also. Hat die gemeinte Person
+      keines, stand hier ein `??`, das den Namensweg trotzdem nachschob — und
+      der kann dann nur einen anderen treffen: Wer kein Konto hat, steht in
+      keiner der beiden Tabellen.
+
+      Richtig ist „nicht erreichbar". Der Planer erfährt den Namen und spricht
+      ihn selbst an; genau dafür gibt es `ohneKonto`.
+    */
+    const res = await ruf({
+      action: 'entzug',
+      taskKey: KEY_ANNA,
+      name: 'Tim Zwill',
+      pid: 'p-tim-c',
+      label: 'Bibellesung',
+      datum: 'Dienstag, 8. September · 19:00',
+    })
+    expect(res.status).toBe(200)
+    expect((await res.json()) as { ohneKonto: string[] }).toMatchObject({ ohneKonto: ['Tim Zwill'] })
+    expect(zeilenIn('notifications')).toEqual([])
+    expect(sentPush).toEqual([])
   })
 
   it('ohne Person-Id bleibt der Name der Weg — Altdaten und Hilfsdienste', async () => {

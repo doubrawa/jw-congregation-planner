@@ -256,9 +256,24 @@ Deno.serve(async (req: Request) => {
      * und der andere erschrickt über einen Entzug, den es nie gab. Die Regel
      * stand hier dreimal wörtlich; `send-reminders` trägt ihre eigene vierte
      * Abschrift.
+     *
+     * **Der Namensweg gilt nur, wo es keine Id gibt.** Hier stand ein `??`, das
+     * ihn auch dann noch nachschob, wenn der Platz eine `pid` trug und die
+     * gemeinte Person kein Konto hat. Getroffen wurde damit zwangsläufig ein
+     * **anderer**: Wer kein Konto hat, steht in keiner der beiden Tabellen —
+     * ein Treffer über den Namen kann also nur von einem Namensvetter kommen.
+     *
+     * Der Preis war doppelt. Der Namensvetter bekam eine Nachricht, die ihn
+     * nichts angeht (in seiner Aufgabenliste steht sie nicht, der Client
+     * entscheidet über die Id). Und der Gemeinte galt als erreicht — er fiel
+     * damit aus der Liste, mit der die Planer erfahren, wen sie persönlich
+     * ansprechen müssen.
+     *
+     * `idAufloeser` im Client zieht dieselbe Grenze ausdrücklich: Eine
+     * unbekannte Id ergibt `undefined`, nie einen Namenstreffer.
      */
     const kontoFuer = (pid: string | undefined, name: string): string | undefined =>
-      (pid ? userByPerson.get(pid) : undefined) ?? userByName.get(name)
+      pid ? userByPerson.get(pid) : userByName.get(name)
 
     /* ---- Aktion: bestätigte Zuteilungen wurden zurückgezogen ---- */
     if (payload.action === 'entzug') {
