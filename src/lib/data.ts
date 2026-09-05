@@ -1012,6 +1012,42 @@ export type LoadResult =
  * `no-membership`, wenn das Konto keiner Versammlung zugeordnet ist,
  * und `empty`, wenn die Versammlung noch keine Personen/Wochen hat.
  */
+/**
+ * **Die Umstellung ist fertig, bevor die App sie zu sehen bekommt.**
+ *
+ * Zwei Schritte gehören zusammen: die Bestätigungen auf die neuen Schlüssel
+ * umbenennen und dann die Wochen mit ihren neuen Kennungen speichern. Die
+ * Reihenfolge ist bindend — bricht das Umbenennen ab, bleiben die Wochen ohne
+ * Kennung und der nächste Ladevorgang versucht es erneut; andersherum wären die
+ * Bestätigungen verwaist.
+ *
+ * **Gewartet wird darauf, und das ist der Punkt.** Hier stand
+ * `void rename(…).then(speichern)`: Der Ladevorgang lief weiter, die App
+ * hydrierte, und irgendwann danach schrieb `speichern` die Wochen — mit dem
+ * Stand vom **Ladezeitpunkt**. Was der Planer in der Zwischenzeit geändert
+ * hatte, war überschrieben, und die Vergleiche-und-Tausche-Sperre (T39) half
+ * dabei nicht: Sie vergleicht gegen den zuletzt selbst geschriebenen Stand, und
+ * den hatte die eigene Änderung gerade gehoben.
+ *
+ * Das Fenster ist die Dauer der Umbenennungen — sie laufen nacheinander, je
+ * Schlüssel eine Anweisung. Und es ist **keine Altlast**: Eine frisch
+ * importierte Woche trägt keine Kennungen (`parse.ts` vergibt keine), ihre
+ * Bestätigungen hängen also an der Position. Wird darin bestätigt, bevor die
+ * App das nächste Mal lädt, geht genau dieser Weg auf.
+ *
+ * Der Preis ist eine kurze Wartezeit — aber nur auf dem Ladevorgang, der
+ * ohnehin umstellt. Und die Daten, die die App danach zeigt, sind die, die auch
+ * in der Datenbank stehen.
+ */
+export async function umstellungSchreiben(
+  umbenennen: () => Promise<void>,
+  noetig: boolean,
+  speichern: () => void,
+): Promise<void> {
+  if (noetig) await umbenennen()
+  speichern()
+}
+
 export async function loadCongregationData(userId: string): Promise<LoadResult> {
   if (!supabase) return { ok: false, reason: 'error', message: 'kein Client' }
 
@@ -1157,14 +1193,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       if (woche && woche !== gemigriert[i]) saveWeek(congregationId, woche)
     }
   }
-  if (alleRenames.length > 0) {
-    // Erst die Datenbank, dann die Wochen: bricht das Umbenennen ab, bleiben
-    // die Wochen ohne Kennung und der nächste Ladevorgang versucht es erneut.
-    // Andersherum wären die Bestätigungen verwaist.
-    void renameConfirmationKeys(congregationId, alleRenames).then(speichereUmgestellte)
-  } else {
-    speichereUmgestellte()
-  }
+  await umstellungSchreiben(
+    () => renameConfirmationKeys(congregationId, alleRenames),
+    alleRenames.length > 0,
+    speichereUmgestellte,
+  )
 
   const settings = ((cong.data?.settings as CongregationSettings | null) ?? {})
   const reminders: Reminders = {
