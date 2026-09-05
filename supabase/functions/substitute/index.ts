@@ -184,6 +184,7 @@ async function pushTo(
   titel: (lang: string | null) => string,
   body: string,
   url: string,
+  tag?: string,
 ): Promise<void> {
   if (!vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)) return
   const zustellungen: Zustellung[] = subs.map((s) => ({
@@ -191,6 +192,7 @@ async function pushTo(
     titel: titel(s.lang),
     body,
     url,
+    ...(tag ? { tag } : {}),
   }))
   await zustellen(zustellungen, abbestellerFuer(rest))
 }
@@ -212,6 +214,15 @@ async function notifyUsers(
    * Qualifizierten stehen, auch wenn laengst jemand eingesprungen war (T86).
    */
   taskKey?: string,
+  /**
+   * Bündelung auf dem Sperrbildschirm (`Zustellung.tag`).
+   *
+   * Ohne Angabe bündelt der Service Worker nach dem **Titel** — und der ist bei
+   * beiden Meldungen dieser Function für jede Aufgabe derselbe. Zwei offene
+   * Ersatzgesuche verdrängten sich dadurch gegenseitig: Wer beide betreuen
+   * könnte, sah nur das jüngere. Deshalb je Aufgabe ein eigener Schlüssel.
+   */
+  pushTag?: string,
 ): Promise<void> {
   const ids = [...new Set(userIds)]
   if (ids.length === 0) return
@@ -230,7 +241,7 @@ async function notifyUsers(
       ...(taskKey ? { task_key: taskKey } : {}),
     })),
   )
-  await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), pushTitel, body, url)
+  await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), pushTitel, body, url, pushTag)
 }
 
 Deno.serve(async (req: Request) => {
@@ -416,6 +427,7 @@ Deno.serve(async (req: Request) => {
         [svcName, date, alsFreitext(declinedBy)].filter(Boolean).join(' · '),
         `${APP_URL}#go=aufgaben`,
         payload.taskKey,
+        payload.taskKey, // je Gesuch eine eigene Meldung, siehe `pushTag`
       )
       return json({ ok: true, notified: [...new Set(peers)].length })
     }
@@ -519,6 +531,8 @@ Deno.serve(async (req: Request) => {
       (lang) => substituteTexte(lang).gefunden,
       [svcName, date, alsFreitext(callerName)].filter(Boolean).join(' · '),
       `${APP_URL}#go=aufgaben`,
+      undefined, // die Glocken-Zeile trägt hier keinen Aufgabenschlüssel …
+      payload.taskKey, // … der Push bündelt trotzdem je Aufgabe
     )
     return json({ ok: true, taken: true })
   } catch (err) {

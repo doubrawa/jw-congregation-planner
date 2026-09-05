@@ -44,6 +44,21 @@ export interface Zustellung {
   titel: string
   body: string
   url: string
+  /**
+   * **Womit sich diese Meldung auf dem Sperrbildschirm bündelt** (`tag` im
+   * Service Worker).
+   *
+   * Ohne Angabe bündelt der Worker nach dem Titel: Eine tägliche Erinnerung
+   * ersetzt damit die vorige, statt sich siebenmal zu stapeln — genau dafür ist
+   * das gedacht. Für Meldungen, die **jede für sich** gelten, ist es aber
+   * falsch: Zwei offene Ersatzgesuche tragen beide den Titel „Ersatz gesucht",
+   * und das zweite löschte das erste vom Sperrbildschirm. Die Glocke führte
+   * beide weiter — nur anstoßen tut der Push.
+   *
+   * Wer eine solche Sorte schickt, gibt hier etwas an, das die einzelne Sache
+   * benennt (der Aufgabenschlüssel).
+   */
+  tag?: string
 }
 
 export interface PushErgebnis {
@@ -91,11 +106,11 @@ export async function zustellen(
   const erg: PushErgebnis = { gesendet: 0, abgelaufen: 0, fehlgeschlagen: 0 }
   for (let i = 0; i < zustellungen.length; i += PUSH_PARALLEL) {
     const ergebnisse = await Promise.all(
-      zustellungen.slice(i, i + PUSH_PARALLEL).map(async ({ abo, titel, body, url }) => {
+      zustellungen.slice(i, i + PUSH_PARALLEL).map(async ({ abo, titel, body, url, tag }) => {
         try {
           await webpush.sendNotification(
             { endpoint: abo.endpoint, keys: { p256dh: abo.p256dh, auth: abo.auth } },
-            JSON.stringify({ title: titel, body, url }),
+            JSON.stringify({ title: titel, body, url, ...(tag ? { tag } : {}) }),
             { TTL: 24 * 3600 },
           )
           return 'gesendet' as const

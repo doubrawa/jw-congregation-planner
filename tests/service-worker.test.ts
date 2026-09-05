@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { antwort, ladeServiceWorker, swQuelle } from './sw-umgebung'
 import { alsCacheName, SW_PLATZHALTER, swMitKennung } from '../scripts/sw-kennung.mjs'
 
@@ -216,5 +217,40 @@ describe('Service Worker: Assets', () => {
     await sw.feuere('fetch', { request: req('assets/index-abc123.js') })
     const abgelegt = [...sw.speicher.values()].flatMap((c) => [...c.eintraege.keys()])
     expect(abgelegt).toEqual([])
+  })
+})
+
+describe('… und der Absender nutzt das auch (Ersatzgesuche)', () => {
+  /**
+   * **Die andere Hälfte desselben Vertrags.**
+   *
+   * Der Worker bündelt nach `data.tag` und fällt ohne ihn auf den **Titel**
+   * zurück. Das ist für eine täglich wiederholte Erinnerung genau richtig — und
+   * für ein Ersatzgesuch falsch: Alle tragen den Titel „Ersatz gesucht", das
+   * zweite offene Gesuch löschte damit das erste vom Sperrbildschirm. Geschickt
+   * hat den `tag` lange gar niemand; das Feld war im Worker vorgesehen und im
+   * Versand nicht vorhanden.
+   *
+   * Geprüft wird deshalb der Quelltext beider Seiten: Trägt die Nutzlast den
+   * `tag`, und gibt `substitute` je Aufgabe einen mit?
+   */
+  const lies = (rel: string): string =>
+    readFileSync(new URL(rel, import.meta.url), 'utf8')
+
+  it('die Push-Nutzlast trägt den tag', () => {
+    const push = lies('../supabase/functions/_shared/push.ts')
+    expect(push).toContain('tag?: string')
+    expect(push, 'der tag steht in der Schnittstelle, geht aber nicht hinaus').toMatch(
+      /JSON\.stringify\(\{[^}]*tag/,
+    )
+  })
+
+  it('substitute gibt je Aufgabe einen eigenen tag mit', () => {
+    const quelle = lies('../supabase/functions/substitute/index.ts')
+    // Beide Meldungen dieser Function betreffen genau eine Aufgabe: das Gesuch
+    // und die Entwarnung danach.
+    const mitTag = [...quelle.matchAll(/payload\.taskKey/g)].length
+    expect(mitTag, 'zu wenige Stellen reichen den Aufgabenschlüssel weiter').toBeGreaterThanOrEqual(3)
+    expect(quelle).toContain('pushTag')
   })
 })
