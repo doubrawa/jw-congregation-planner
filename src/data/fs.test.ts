@@ -492,7 +492,15 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
     const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'Leiter')
     // Montag der Woche 0 ist der 7.9.2026; wd 1 = Montag.
     expect(tasks[0].date).toBe('Montag, 7. September · 14:00 · Königreichssaal')
-    expect(tasks[0].at).toBe(tagIn(BASE, 0, 1).getTime())
+    /*
+      `at` ist der **Kalendertag** als UTC-Mitternacht — dieselbe Form, die
+      `meetingDateMs` für die Zusammenkünfte liefert (siehe `MyTask.at`).
+      Hier stand der Zeitstempel von `fsTag`, also der örtliche Mittag: eine
+      zweite Kodierung derselben Angabe, und der Countdown las daraus östlich
+      von UTC+12 den Vortag.
+    */
+    const tag = tagIn(BASE, 0, 1)
+    expect(tasks[0].at).toBe(Date.UTC(tag.getFullYear(), tag.getMonth(), tag.getDate()))
   })
 
   it('ohne Ort endet der Termin nicht auf einem Trenner', () => {

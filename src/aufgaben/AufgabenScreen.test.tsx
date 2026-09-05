@@ -139,7 +139,12 @@ describe('Die Aufgabenliste', () => {
   })
 
   it('der Countdown rechnet aus dem echten Termin', () => {
-    const { container } = zeige({ myTasks: [task({ at: Date.now() + 24 * 3600_000 })] })
+    // `MyTask.at` ist ein Kalendertag als UTC-Mitternacht, kein Zeitpunkt —
+    // `Date.now() + 24h` wäre eine Form, die keine Quelle erzeugt, und der
+    // Test hinge an der Uhrzeit des Laufs (siehe MyTask.at in types.ts).
+    const heute = new Date()
+    const morgen = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate() + 1)
+    const { container } = zeige({ myTasks: [task({ at: morgen })] })
     expect(container.querySelector('.auf-chip')?.textContent).toBe('morgen')
   })
 

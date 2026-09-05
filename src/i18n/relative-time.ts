@@ -8,12 +8,27 @@
 import type { Lang } from '../data/types'
 import { LOCALES } from './langs'
 
-/** Ganze Kalendertage zwischen zwei UTC-ms-Zeitpunkten (auf Mitternacht normiert). */
-function wholeDaysBetween(fromMs: number, toMs: number): number {
-  const day = 864e5
-  const a = Math.floor(fromMs / day)
-  const b = Math.floor(toMs / day)
-  return b - a
+/** Der Kalendertag eines UTC-Zeitstempels als fortlaufende Zahl. */
+function tagIndex(ms: number): number {
+  return Math.floor(ms / 864e5)
+}
+
+/**
+ * **Heute** — als derselbe Tagesindex, aber aus den **örtlichen** Bestandteilen.
+ *
+ * Hier stand `Math.floor(Date.now() / 864e5)`, also der Tag in UTC. Ein Termin
+ * dagegen ist ein Kalendertag (`meetingDateMs` legt ihn auf UTC-Mitternacht).
+ * Zwischen Mitternacht und 01:00 bzw. 02:00 ist der UTC-Tag in Mitteleuropa
+ * noch der gestrige, und dann zählte der Countdown einen Tag zu viel: Wer am
+ * Dienstagmorgen um halb eins nachsah, las über seiner Aufgabe **„morgen"** —
+ * für eine Zusammenkunft an diesem Abend.
+ *
+ * `istVorbei` (data/meeting-dates.ts) rechnet längst so; die beiden waren sich
+ * in dieser Stunde uneinig. Dieselbe Verwechslung wie im Datumswähler.
+ */
+function heuteIndex(now: number): number {
+  const d = new Date(now)
+  return tagIndex(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
 }
 
 /**
@@ -26,7 +41,7 @@ export function relativeDayLabel(
   now: number = Date.now(),
 ): string {
   if (at == null) return ''
-  const days = wholeDaysBetween(now, at)
+  const days = tagIndex(at) - heuteIndex(now)
   const locale = LOCALES[lang] ?? lang
   try {
     return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(days, 'day')

@@ -13,10 +13,9 @@
  * die Entscheidung der jeweiligen Function.
  */
 import {
-  deutschesDatum,
   rolleMitHerkunft,
   SKIP_ROLE,
-  taskDateText,
+  terminText,
   zuteilungsLabel,
   type Abweichungen,
 } from './planung.ts'
@@ -123,8 +122,6 @@ function helperName(entry: HelperEntry | undefined): string {
 function helperPid(entry: HelperEntry | undefined): string | undefined {
   return entry && typeof entry !== 'string' ? entry.pid : undefined
 }
-
-const taskDate = (meeting: Meeting): string => taskDateText(meeting.date)
 
 /**
  * Kennung eines Treffpunkts ohne führende Wochennummer (T87).
@@ -364,38 +361,13 @@ export function uebersetzerFuer(): (lang: string | null) => (s: string) => strin
   }
 }
 
-/**
- * Termin im Mitteilungstext: „Dienstag, 8. September · 19:00".
- *
- * Importierte Wochen tragen im `date`-Feld nur die Wochenspanne — die
- * Erinnerung nannte deshalb eine Woche statt eines Tages. Rangfolge wie im
- * Client (`meetingDateText`): eigener Termin vor gerechnetem Datum.
+/*
+ * `terminText` steht in `_shared/planung.ts` — die Regel „Termin einer
+ * Zusammenkunft" gehört in die untere, abhängigkeitsfreie Schicht, damit auch
+ * `substitute` sie benutzen kann, ohne den Fragment-Übersetzer mitzuladen.
+ * Hier nur weitergereicht, damit die bestehenden Import-Wege gültig bleiben.
  */
-export function terminText(
-  startISO: string,
-  offset: number,
-  meeting: Meeting,
-  zeit: string,
-  dev?: Abweichungen,
-  tab?: 'mid' | 'we',
-): string {
-  // Eine Abweichung schlägt auch den eigenen Termin im `date`-Feld: der Planer
-  // hat den Tag ausdrücklich verlegt, das `date`-Feld nennt noch den alten
-  // (gleiche Regel wie `meetingDateText` im Client).
-  const abw = tab ? dev?.[tab] : undefined
-  const verlegt = Boolean(abw?.day || abw?.time)
-  if (
-    !verlegt &&
-    /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.test(meeting.date ?? '')
-  ) {
-    return taskDate(meeting)
-  }
-  const ms = Date.parse(startISO)
-  if (Number.isNaN(ms)) return taskDate(meeting)
-  const d = new Date(ms + offset * 864e5)
-  const text = deutschesDatum(d, true)
-  return zeit ? `${text} · ${zeit}` : text
-}
+export { terminText }
 
 /**
  * „Treffpunkt-Leiter" — die Bezeichnung eines Treffpunkt-Platzes, kanonisch
@@ -429,7 +401,7 @@ export function fsTerminText(
   zeit: string,
   ort: string,
 ): string {
-  const termin = terminText(woche, offset, {}, zeit)
+  const termin = terminText(woche, offset, undefined, zeit)
   return ort ? `${termin} · ${ort}` : termin
 }
 

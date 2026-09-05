@@ -197,6 +197,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           <div className="sheet-guest">
             <input
               type="text"
+              dir="auto"
               className="lac-add-input"
               placeholder={t.rednerNamePh}
               aria-label={t.rednerNamePh}
@@ -205,6 +206,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             />
             <input
               type="text"
+              dir="auto"
               className="lac-add-input"
               placeholder={t.rednerVersPh}
               aria-label={t.rednerVersPh}
@@ -222,6 +224,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           <div className="sheet-guest">
             <input
               type="text"
+              dir="auto"
               className="lac-add-input"
               placeholder={t.nameLbl}
               aria-label={t.nameLbl}

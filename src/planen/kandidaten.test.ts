@@ -276,6 +276,59 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     expect(emil?.absent, 'Montag der Woche 1 ist der 21.9.').toBe(true)
   })
 
+  /*
+    **„frei" muss von Treffpunkten reden.**
+
+    Hier stand `workloadOf(state.weeks, …)` — die **Zusammenkunfts**-Last, und
+    zwar über *alle* geladenen Wochen. Zwei Fehler in einer Zeile: Treffpunkte
+    zählen ausdrücklich nicht in `workloadOf` (sie sind eine getrennte Größe),
+    und über ein ganzes Jahr trägt fast jeder irgendetwas. Der Chip war deshalb
+    im Regelfall stumm — und in dem einen Fall, in dem er ansprang, log er:
+    Wer keine Zusammenkunfts-Aufgabe hat, bekam „frei", auch wenn er in
+    derselben Woche schon Treffpunkte leitet.
+  */
+  it('„frei" heißt: leitet im Lastfenster keinen Treffpunkt', () => {
+    const belegt = TREFFPUNKTE.map((i) =>
+      i.id === 'c' ? { ...i, leader: 'Emil Ernst', lpid: 'l1' } : i,
+    )
+    const liste_ = liste('a', fsDaten(belegt))
+    expect(liste_.find((c) => c.key === 'l1')?.free, 'Emil leitet am Mittwoch').toBe(false)
+    expect(liste_.find((c) => c.key === 'l2')?.free, 'Frida leitet nichts').toBe(true)
+  })
+
+  it('eine Zusammenkunfts-Aufgabe macht niemanden unfrei', () => {
+    // Die Gegenprobe: Emil hat keine Treffpunkt-Leitung, aber eine Aufgabe in
+    // der Zusammenkunft. Für dieses Blatt ist er frei.
+    const mitAufgabe: Week = {
+      range: '', book: '', start: '2026-09-07', current: false,
+      mid: {
+        date: '', end: '',
+        sections: [
+          {
+            label: 'X', farbe: 'gold',
+            items: [{ title: 'Irgendetwas', names: [{ name: 'Emil Ernst', pid: 'l1' }] }],
+          },
+        ],
+        helpers: {},
+      },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    }
+    const state: KandidatenDaten = {
+      ...daten([mitAufgabe], [LEITER_E, LEITER_F, OHNE]),
+      fsWeeks: [TREFFPUNKTE],
+    }
+    expect(liste('a', state).find((c) => c.key === 'l1')?.free).toBe(true)
+  })
+
+  it('ein Freitext-Leiter macht seinen Namensvetter nicht unfrei', () => {
+    // Wer als Freitext dasteht, ist nicht diese Person — er heißt nur so
+    // (`fsLeiterZuteilung`).
+    const gast = TREFFPUNKTE.map((i) =>
+      i.id === 'c' ? { ...i, leader: 'Emil Ernst', lext: true } : i,
+    )
+    expect(liste('a', fsDaten(gast)).find((c) => c.key === 'l1')?.free).toBe(true)
+  })
+
   it('Abwesende bleiben in der Liste, rutschen aber ans Ende', () => {
     const emilWeg: Absence[] = [
       { id: 'u', personId: 'l1', userId: '', from: '2026-09-07', to: '2026-09-07', reason: '' },

@@ -63,6 +63,44 @@ describe('Bibelbücher', () => {
     expect(en('10 Min.')).toBe('10 min.')
   })
 
+  /*
+    **Ein Buchname ist erst mit einer Zahl dahinter eine Schriftstelle.**
+
+    Sehr viele Bibelbücher heißen wie ein Vorname: Daniel, Markus, Ruth,
+    Titus, Simon, Judas, Petrus, Hiob. Der Fragment-Übersetzer läuft über
+    **jedes** „ · "-Atom, das die Oberfläche zeigt — und in den Mitteilungen
+    ist der Name ein eigenes Atom („Mikrofone · Dienstag, 8. September ·
+    Markus Weber", so baut `substitute` den Rumpf). Ohne die Zahl-Bedingung
+    stand dort in jeder fremdsprachigen Oberfläche ein anderer Mensch:
+
+    | Eingabe | vorher (ko) | vorher (ru) |
+    | --- | --- | --- |
+    | Markus Weber | 마가복음 Weber | Марка Weber |
+    | Ruth Meyer | 룻기 Meyer | Руфь Meyer |
+
+    Dass die Prüfung greift, hängt daran, dass die Tabellen **geladen** sind —
+    ohne sie gibt es die Regel gar nicht, und der Test wäre grün ohne Aussage.
+    Der `beforeAll`-Aufruf oben in dieser Datei sorgt dafür; die Fälle darüber
+    („Jeremia 32–33" wird übersetzt) sind zugleich die Gegenprobe.
+  */
+  it('lässt Personennamen in Ruhe, die wie ein Bibelbuch heißen', () => {
+    const namen = ['Daniel Berger', 'Markus Weber', 'Ruth Meyer', 'Titus Klein', 'Simon Krüger']
+    const veraendert: string[] = []
+    for (const { code } of APP_LANGS) {
+      const tr = makeTr(code)
+      for (const name of namen) if (tr(name) !== name) veraendert.push(`${code}: ${name} → ${tr(name)}`)
+    }
+    expect(veraendert, veraendert.slice(0, 5).join(' | ')).toEqual([])
+  })
+
+  it('mit Kapitelangabe dahinter greift die Regel weiterhin', () => {
+    // Die Gegenprobe zur Zeile darüber: Dieselben Bücher, diesmal als
+    // Schriftstelle. Ginge die Regel ganz verloren, bliebe der Test oben grün.
+    expect(makeTr('en')('Markus 5–6')).toBe('Mark 5–6')
+    expect(makeTr('ru')('Ruth 1:16')).toBe('Руфь 1:16')
+    expect(makeTr('ko')('Daniel 2')).toBe('다니엘 2')
+  })
+
   it('zerlegt zusammengesetzte Titel weiterhin an ihren Trennern', () => {
     // Ein zu gieriger Ausdruck würde das ganze Segment schlucken und die
     // Aufteilung an „ · " / „ — " in buildTranslator umgehen.

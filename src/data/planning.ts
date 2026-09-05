@@ -794,7 +794,24 @@ export function buildS89ForSlot(
   // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
   // getrennte Slots im selben Punkt. Alt-Daten trugen den Partner als "mit X" im
   // Rollentext — als Rückfall weiter unterstützt.
-  const leadName = slotsOf(item, raum).find((n) => n.bereichsKey === 'schulung')?.name ?? ''
+  const schulungsPlatz = slotsOf(item, raum).find((n) => n.bereichsKey === 'schulung')
+  /*
+   * **Ohne Schüler kein Zettel.**
+   *
+   * Der S-89 gehört dem Schüler; der Gesprächspartner steht nur mit darauf und
+   * bekommt eine Abschrift. Ist der Schüler-Platz dieses Punkts noch offen und
+   * nur der Partner zugeteilt — der Planer fängt beim Partner an, oder der
+   * Schüler wird wieder entfernt —, fiel `leadName` leer aus und der
+   * Rückfall `|| current` setzte den **Partner** an die Stelle des Schülers:
+   * Der Zettel nannte dieselbe Person zweimal, als Schülerin und als
+   * Gesprächspartnerin, und der Druckbogen legte ihn gleich zweimal aus.
+   *
+   * Der Rückfall bleibt, wofür er gedacht ist: Die **Bibellesung** hat gar
+   * keinen `schulung`-Platz (ihr Platz trägt `bibellesung`), dort ist der
+   * aktuelle Name der des Schülers.
+   */
+  if (schulungsPlatz && !schulungsPlatz.name) return null
+  const leadName = schulungsPlatz?.name ?? ''
   const partnerName = slotsOf(item, raum).find((n) => n.bereichsKey === 'schulungPartner')?.name ?? ''
   const role = slot?.rolle ?? ''
   const legacyPartner = role.startsWith('mit ') ? role.slice(4) : ''

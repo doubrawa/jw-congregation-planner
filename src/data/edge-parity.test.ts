@@ -8,6 +8,7 @@ import {
   rolleMitHerkunft as edgeHerkunft,
   SKIP_ROLE as EDGE_SKIP,
   taskDateText as edgeDate,
+  terminText as edgeTermin,
   versatzMitAbweichung as edgeVersatz,
   WEEKDAY_OFFSET as EDGE_WEEKDAY,
   zeitMitAbweichung as edgeZeit,
@@ -15,15 +16,16 @@ import {
 } from '../../supabase/functions/_shared/planung.ts'
 import {
   pendingOfFsWeek as edgeFsPending,
+  pendingOfMeeting as edgePending,
   tagebuchSchluessel as edgeTagebuch,
 } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { STANDARD_ERINNERUNGEN } from './vorgaben'
 import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
-import { deutschesDatum, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
+import { deutschesDatum, meetingDateText, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
 import { isGuestRole, sentKey } from './planning'
 import { entzogeneZusagen, offeneMeldungen } from './plan-versand'
 import { emptyQualifications } from './helpers'
-import type { Abweichung, FsInstance, Person, Week } from './types'
+import type { Abweichung, FsInstance, Meeting, Person, Section, Service, Week } from './types'
 
 /**
  * Client und Edge Functions rechnen gleich — geprüft, nicht angenommen.
@@ -286,6 +288,35 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
     expect(edgeZeit(w.dev, 'mid', date, '19:00')).toBe(zeit)
   })
 
+  /*
+    Nicht nur Tag und Uhrzeit einzeln — auch der **fertige Satz** muss auf
+    beiden Seiten derselbe sein. Er steht dem Empfänger zweimal vor Augen: in
+    „Meine Aufgaben" (Client) und in Erinnerung, Zuteilung, Entzug und
+    Ersatzsuche (Function). Liest er dort zwei verschiedene Termine, glaubt er
+    keinem von beiden.
+
+    Der erste Fall der Tabelle ist der, der im Betrieb der Regelfall ist: Eine
+    importierte Woche trägt im `date`-Feld nur die Wochenspanne. Wer es
+    ungeprüft übernimmt, schreibt „7.–13. September" statt „Dienstag, 8.
+    September · 19:00" — genau das tat `substitute` als einzige der drei
+    Functions.
+  */
+  it.each(faelle)('%s — derselbe Termin-Text', (_name, dev, date, tag, zeit) => {
+    const w = woche(dev, date)
+    const zeiten = 'Di 19:00 · So 10:00'
+    expect(edgeTermin(w.start, tag, date, zeit, w.dev, 'mid')).toBe(
+      meetingDateText(w, 0, 'mid', zeiten),
+    )
+  })
+
+  it('die Wochenspanne allein ist kein Termin', () => {
+    // Die Gegenprobe zur Zeile darüber: Das rohe `date`-Feld einer
+    // importierten Woche nennt keinen Tag — beide Seiten müssen ihn rechnen.
+    const w = woche(undefined, '7.–13. September')
+    expect(edgeDate(w.mid.date)).toBe('7.–13. September')
+    expect(meetingDateText(w, 0, 'mid', 'Di 19:00 · So 10:00')).toBe('Dienstag, 8. September · 19:00')
+  })
+
   it('„entfällt" heißt auf beiden Seiten dasselbe', () => {
     const aus = woche({ cancelled: true }, '7.–13. September')
     expect(istAusgefallen(aus, 'mid')).toBe(true)
@@ -480,5 +511,147 @@ describe('Voreinstellung der Erinnerungen: Client und Versand sind sich einig', 
 
   it.each([['first'], ['last'], ['repeat']])('%s', (feld) => {
     expect(rueckfall(feld)).toBe(String(STANDARD_ERINNERUNGEN[feld as keyof typeof STANDARD_ERINNERUNGEN]))
+  })
+})
+
+
+/**
+ * **„Plan senden" trifft auf beiden Seiten dieselbe Menge** — auch bei den
+ * Zusammenkünften.
+ *
+ * Der Knopf im Planen-Screen beschriftet sich aus der Client-Vorschau
+ * (`offeneMeldungen`), verschickt wird aus der Function (`pendingOfMeeting`).
+ * Weichen die beiden ab, zeigt der Knopf eine Zahl an, die nach dem Drücken
+ * nicht auf null geht — der Planer drückt, bekommt „0 gesendet", und die Zahl
+ * steht unverändert da. Niemand sieht, woran es liegt.
+ *
+ * Für die **Treffpunkte** stand diese Gegenprobe längst hier (siehe oben); für
+ * die Zusammenkünfte fehlte sie — und dort liegen die vier Platzsorten, die
+ * `alle-plaetze.test.ts` als Wiederholungstäter führt: beide Räume, der
+ * Ratgeber der Zusätzlichen Klasse, die Hilfsdienste bis `svc.count` — samt
+ * der Unterscheidung zwischen stabilem und positionsbasiertem Schlüssel.
+ */
+describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunft)', () => {
+  const MONTAG_PS = '2026-09-07'
+  const dienste: Service[] = [
+    { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
+    { key: 'rein', name: 'Reinigung', count: 1, groups: true }, // Rotation: keine Person
+    { key: 'ton', name: 'Ton', count: 1, groups: false },
+  ]
+
+  /** Eine Zusammenkunft mit allem, was je vergessen wurde. */
+  function zusammenkunft(): Meeting {
+    const sections: Section[] = [
+      {
+        label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral',
+        items: [
+          { song: 'Lied 1' }, // Lieder tragen keine Plätze
+          { iid: 'a1', title: 'Lied 1 · Gebet · Einleitende Worte', meta: '', names: [
+            { name: 'Anton Alt', pid: 'p1', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
+            { name: 'Bernd Berg', pid: 'p2', rolle: 'Gebet', bereichsKey: 'gebet' },
+          ] },
+        ],
+      },
+      {
+        label: 'UNS IM DIENST VERBESSERN', kind: 'dienst', farbe: 'gold',
+        items: [
+          // Schülerteil in beiden Räumen — die zweite Reihe ist die Platzsorte,
+          // die am häufigsten übersehen wurde.
+          { iid: 'b1', title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.', names: [
+            { name: 'Clara Cord', pid: 'p3', bereichsKey: 'schulung' },
+            { name: 'Dora Dill', pid: 'p4', rolle: 'mit Clara Cord', bereichsKey: 'schulungPartner' },
+          ], aux: [
+            { name: 'Emil Erd', pid: 'p5', bereichsKey: 'schulung' },
+            { name: '', bereichsKey: 'schulungPartner' }, // offen → gehört niemandem
+          ] },
+          // Punkt ohne stabile Kennung (Altbestand) → positionsbasierter Schlüssel
+          { title: 'Alter Punkt', meta: '', names: [{ name: 'Fritz Feld', pid: 'p6', bereichsKey: 'schulung' }] },
+        ],
+      },
+      {
+        label: 'ÖFFENTLICHER VORTRAG', kind: 'vortrag', farbe: 'petrol',
+        items: [
+          { iid: 'c1', title: 'Vortrag', meta: '', names: [
+            { name: 'Gustav Gast', rolle: 'Gastredner', herkunft: 'Nordheim', bereichsKey: 'vortrag' },
+          ] },
+        ],
+      },
+    ]
+    return {
+      date: '7.–13. September', end: '', sections,
+      helpers: {
+        // Der dritte Name steht hinter `count: 2` — er zählt nirgends.
+        mik: [{ name: 'Hans Hell', pid: 'p7' }, { name: '' }, { name: 'Ida Idyll', pid: 'p8' }],
+        rein: [{ name: 'Gruppe 2' }],
+        ton: [{ name: 'Jens Jung', pid: 'p9' }],
+      },
+      auxRatgeber: { name: 'Karl Kern', pid: 'p10', rolle: 'Ratgeber', bereichsKey: 'ratgeber' },
+    }
+  }
+
+  const wochePS = (mid: Meeting): Week => ({
+    range: '', book: '', start: MONTAG_PS, current: false,
+    mid,
+    we: { date: '', end: '', sections: [], helpers: {} },
+  } as unknown as Week)
+
+  const beideSeiten = (
+    mid: Meeting,
+    svc: Service[] = dienste,
+    conf: Record<string, 'bestätigt' | 'verhindert'> = {},
+  ): [string[], string[]] => [
+    offeneMeldungen(wochePS(mid), [], 0, null, svc, conf, {})
+      .map((o) => `${o.key} | ${o.name}`)
+      .sort(),
+    edgePending(MONTAG_PS, 'mid', mid as never, svc as never, new Map(Object.entries(conf)))
+      .map((p) => `${p.key} | ${p.name}`)
+      .sort(),
+  ]
+
+  it('dieselben Schlüssel und Namen über alle vier Platzsorten', () => {
+    const [client, server] = beideSeiten(zusammenkunft())
+    expect(client).toEqual(server)
+    // Und es ist die erwartete Menge: kein Lied, kein Gastredner, keine
+    // Gruppen-Rotation, kein offener Platz, nichts hinter `count`.
+    expect(client).toEqual([
+      `${MONTAG_PS}|mid|aux|b1|0 | Emil Erd`,
+      `${MONTAG_PS}|mid|helper|mik|0 | Hans Hell`,
+      `${MONTAG_PS}|mid|helper|ton|0 | Jens Jung`,
+      `${MONTAG_PS}|mid|part|1|1|0 | Fritz Feld`, // ohne iid → Position
+      `${MONTAG_PS}|mid|part|a1|0 | Anton Alt`,
+      `${MONTAG_PS}|mid|part|a1|1 | Bernd Berg`,
+      `${MONTAG_PS}|mid|part|b1|0 | Clara Cord`,
+      `${MONTAG_PS}|mid|part|b1|1 | Dora Dill`,
+      `${MONTAG_PS}|mid|ratgeber | Karl Kern`,
+    ])
+  })
+
+  it('abgeschaltete Klasse: die zweite Reihe zählt auf keiner Seite', () => {
+    // Die Namen bleiben beim Abschalten absichtlich stehen (damit ein
+    // Wiedereinschalten sie hat). Erkennungsmerkmal ist der Ratgeber-Platz.
+    const mid = zusammenkunft()
+    delete mid.auxRatgeber
+    const [client, server] = beideSeiten(mid)
+    expect(client).toEqual(server)
+    expect(client.join(' ')).not.toContain('Emil Erd')
+    expect(client.join(' ')).not.toContain('Karl Kern')
+  })
+
+  it('wer bestätigt oder abgesagt hat, fällt beidseitig heraus', () => {
+    const conf = {
+      [`${MONTAG_PS}|mid|part|a1|0`]: 'bestätigt' as const,
+      [`${MONTAG_PS}|mid|helper|mik|0`]: 'verhindert' as const,
+    }
+    const [client, server] = beideSeiten(zusammenkunft(), dienste, conf)
+    expect(client).toEqual(server)
+    expect(client.join(' ')).not.toContain('Anton Alt')
+    expect(client.join(' ')).not.toContain('Hans Hell')
+  })
+
+  it('reduzierte Platzzahl: der Name dahinter zählt auf keiner Seite', () => {
+    const wenig = dienste.map((s) => (s.key === 'mik' ? { ...s, count: 1 } : s))
+    const [client, server] = beideSeiten(zusammenkunft(), wenig)
+    expect(client).toEqual(server)
+    expect(client.join(' ')).not.toContain('Ida Idyll')
   })
 })

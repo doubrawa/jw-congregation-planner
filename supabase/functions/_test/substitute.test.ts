@@ -14,6 +14,7 @@
  * gespeichert wurde.
  */
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
@@ -70,13 +71,35 @@ const CONGREGATIONS = [{ meeting_times: 'Di 19:00 · So 10:00' }]
 const ABSENCES = [{ person_id: 'p-absent', from_date: '2026-09-07', to_date: '2026-09-09' }]
 const SUBS = [{ user_id: U_ME, endpoint: 'https://push.test/me', p256dh: 'k', auth: 'a' }]
 
+/**
+ * Die Woche so, wie der Import sie anlegt.
+ *
+ * **Im `date`-Feld steht die Wochenspanne, kein Termin** — die
+ * jw.org-Überschrift nennt weder Wochentag noch Uhrzeit (`date: range` in
+ * parse.ts). Hier stand einmal „Di, 8. Sep · 19:00", also ein fertiger Termin
+ * in einer Schreibweise, die die App nirgends erzeugt. Damit sah der Test
+ * einen Wert, den es im Betrieb nicht gibt — und deckte zu, dass die Function
+ * das Feld ungeprüft übernahm: Ihre Meldungen nannten die ganze Woche statt
+ * des Tages. Der Termin muss aus `start` + Wochentag + Uhrzeit gerechnet
+ * werden, genau wie in `send-reminders` und `send-plan`.
+ */
 function freshWeek(): unknown {
   return {
     start: '2026-09-07',
-    mid: { date: 'Di, 8. Sep · 19:00', helpers: { [SVC]: [{ name: 'Otto Riginal', pid: 'p-orig' }] } },
-    we: { date: 'So, 13. Sep · 10:00', helpers: {} },
+    mid: { date: '7.–13. September', helpers: { [SVC]: [{ name: 'Otto Riginal', pid: 'p-orig' }] } },
+    we: { date: '7.–13. September', helpers: {} },
   }
 }
+
+/** Der Termin, den die Woche oben bedeutet: Montag + „Di 19:00". */
+const TERMIN = 'Dienstag, 8. September · 19:00'
+
+/*
+ * Namen gehen als **gekennzeichneter Freitext** hinaus (`_shared/i18n/freitext.ts`):
+ * Die Glocke übersetzt beim Anzeigen jedes „ · "-Atom, und sehr viele
+ * Bibelbücher heißen wie ein Vorname. Der Rumpf trägt die Marke deshalb schon
+ * hier — sie ist unsichtbar und wird beim Anzeigen wieder abgenommen.
+ */
 
 /* ---- Simulierte Umgebung ------------------------------------------------- */
 
@@ -593,10 +616,27 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
       { title: string; body: string; task_key?: string }[]
     expect(rows[0].title).toBe('Ersatz gesucht') // ohne Dienstnamen
     // Rumpf nur aus ' · '-Atomen, die der Fragment-Übersetzer erledigt.
-    expect(rows[0].body).toBe('Mikrofone · Di, 8. Sep · 19:00 · Otto Riginal')
+    expect(rows[0].body).toBe(`Mikrofone · ${TERMIN} · ${alsFreitext('Otto Riginal')}`)
     // Die Zeile weiß, worum es geht (migration-020) — sonst ließe sie sich
     // später weder aufräumen noch als abgelaufen erkennen.
     expect(rows[0].task_key).toBe(KEY)
+  })
+
+  it('nennt den Termin, nicht die Wochenspanne', async () => {
+    /*
+      Importierte Wochen tragen im `date`-Feld die Überschrift der
+      jw.org-Seite: „7.–13. September" — weder Wochentag noch Uhrzeit (B4).
+      Genau das stand vorher in beiden Meldungen dieser Function, während die
+      App daneben „Dienstag, 8. September · 19:00" zeigte. Wer „Ersatz gesucht"
+      bekam, wusste damit nicht, ob es um die Zusammenkunft unter der Woche
+      oder die am Wochenende geht.
+
+      Gegenstück zu „send-reminders: Termin statt Wochenspanne im Text".
+    */
+    await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    const rows = writesTo('notifications')[0]?.body as { body: string }[]
+    expect(rows[0].body).toContain(TERMIN)
+    expect(rows[0].body).not.toContain('7.–13.')
   })
 
   it('dasselbe beim Einspringen', async () => {
@@ -604,7 +644,7 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
     // [0] ist das Aufräumen der Suche (DELETE), [1] die neue Mitteilung.
     const rows = writesTo('notifications')[1]?.body as { title: string; body: string }[]
     expect(rows[0].title).toBe('Ersatz gefunden')
-    expect(rows[0].body).toBe('Mikrofone · Di, 8. Sep · 19:00 · Ich Selbst')
+    expect(rows[0].body).toBe(`Mikrofone · ${TERMIN} · ${alsFreitext('Ich Selbst')}`)
   })
 
   /*

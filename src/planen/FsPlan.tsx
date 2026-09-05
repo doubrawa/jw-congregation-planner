@@ -194,6 +194,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
               <input
                 className="fs-input"
                 type="text"
+                dir="auto"
                 value={inst.place}
                 placeholder={t.fsOrtPh}
                 aria-label={t.fsOrtPh}
@@ -249,6 +250,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
           <input
             className="fs-input"
             type="text"
+            dir="auto"
             value={place}
             placeholder={t.fsOrtPh}
             aria-label={t.fsOrtPh}

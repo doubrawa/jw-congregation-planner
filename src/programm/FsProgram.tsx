@@ -71,7 +71,8 @@ export function FsProgram() {
                   {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")
                       steht im Wörterbuch — ohne tu bliebe er als einziges Feld
                       dieser Karte deutsch. */}
-                  <div className="fs-place">{tu(inst.place)}</div>
+                  {/* Freitext der Versammlung — eigene Schreibrichtung. */}
+                  <div className="fs-place" dir="auto">{tu(inst.place)}</div>
                 </div>
               </div>
               <div className="fs-leader">

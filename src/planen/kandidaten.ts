@@ -15,9 +15,10 @@
 import type { AppState } from '../app/context'
 import { istAbwesend, istAbwesendAm, type AbsenceSet } from '../data/absence'
 import { slotsOf } from '../data/aux-class'
-import { fsKennung, fsTag } from '../data/fs'
+import { fsKennung, fsLast, fsTag } from '../data/fs'
 import {
   displayName,
+  idAufloeser,
   initials,
   isQualified,
   isSong,
@@ -45,6 +46,16 @@ export interface Candidate {
   /** Schon an diesem Tag zugeteilt — Hinweis auf Doppelbelegung. */
   today: MeetingAssignment[]
   absent: boolean
+  /**
+   * Der „frei"-Chip: **im Lastfenster dieser Liste nichts zu tun.**
+   *
+   * Welches Fenster das ist, hängt an der Liste, und das ist kein Versehen:
+   * Zusammenkünfte und Treffpunkte sind zwei getrennte Größen mit zwei
+   * Strichlisten (`workloadOf` bzw. `fsLast`) und zwei verschieden breiten
+   * Fenstern (`LOAD_WEEKS` bzw. `FS_LOAD_WEEKS`). Der Chip meint jeweils die,
+   * nach der auch die Automatik dieses Platzes wählt — sonst behauptet er
+   * etwas, das die Entscheidung daneben nicht trägt.
+   */
   free: boolean
   /** Belegung der 5 Wochen (aktuelle ±2) für die Mini-Quadrate. */
   load?: WeekLoad[]
@@ -79,6 +90,11 @@ function fsKandidaten(
   tu: (s: string) => string,
 ): Candidate[] {
   const inst = state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId)
+  // „frei" heißt hier: leitet im Treffpunkt-Lastfenster keinen Treffpunkt —
+  // dieselbe Strichliste, nach der auch die Automatik wählt. Vorher stand hier
+  // `workloadOf` über alle geladenen Wochen, also die Zusammenkunfts-Last: die
+  // falsche Größe und der falsche Zeitraum (siehe `fsLast`).
+  const fsLastFenster = fsLast(state.fsWeeks, sel.wi, idAufloeser(state.persons))
   // Derselbe Montag, mit dem `fsWeekConflicts` rechnet. Über `fsBase + wi·7`
   // widersprachen sich Konfliktbanner und Kandidatenblatt bei einer Lücke im
   // Bestand um sieben Tage — bei derselben Frage, am selben Treffpunkt.
@@ -109,7 +125,7 @@ function fsKandidaten(
         today: schonHeute(name),
         // Am Tag DIESES Treffpunkts, nicht in der ganzen Woche.
         absent: tag ? istAbwesendAm(state.absences, p.id, tag) : false,
-        free: workloadOf(state.weeks, p, state.services) === 0,
+        free: (fsLastFenster.get(p.id) ?? 0) === 0,
       }
     })
     .sort((a, b) => Number(a.absent) - Number(b.absent))

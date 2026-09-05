@@ -123,16 +123,24 @@ export function endenNachziehen(weeks: Week[], alt: string, neu: string): Week[]
 
   let geaendert = false
   const next = weeks.map((week) => {
-    const kopie = { ...week }
+    // **Unveränderte Wochen behalten ihre Referenz.** Hier stand `{ ...week }`
+    // vor der Schleife — also bekam jede Woche eine neue Hülle, auch die, an
+    // der nichts zu verschieben war. Daran entscheidet `persist.ts` aber, was
+    // zu schreiben ist: Eine Woche mit eigenem Termin (Gedächtnismahl) wird
+    // von dieser Umstellung ausdrücklich nicht berührt — und ging trotzdem an
+    // die Datenbank. Hat dort inzwischen ein anderer Planer geschrieben,
+    // meldet `schreibeWoche` einen Konflikt für eine Woche, die niemand
+    // angefasst hat, und lädt dem Nutzer die Ansicht neu.
+    let kopie: Week | null = null
     for (const tab of MEETING_TABS) {
       if (delta[tab] === 0) continue
       if (meetingDateParts(week[tab].date).zeit !== undefined) continue
       const ende = shiftEnd(week[tab].end, delta[tab])
       if (ende === week[tab].end) continue
-      kopie[tab] = { ...week[tab], end: ende }
+      kopie = { ...(kopie ?? week), [tab]: { ...week[tab], end: ende } }
       geaendert = true
     }
-    return kopie
+    return kopie ?? week
   })
   return geaendert ? next : weeks
 }

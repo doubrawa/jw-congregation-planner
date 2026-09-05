@@ -472,6 +472,43 @@ export function fsTaskKey(woche: string, instId: string): string {
 export const FS_LOAD_WEEKS = 12
 
 /**
+ * **Die Treffpunkt-Strichliste**: Leitungen je Person im Fenster der letzten
+ * `FS_LOAD_WEEKS` Wochen bis einschließlich `wi`.
+ *
+ * Sie steht hier und nicht in `fsAutoAssign`, weil zwei Stellen sie brauchen:
+ * die Auswahl der Automatik und der „frei"-Chip im Zuteilungs-Blatt. Der las
+ * bis hierher `workloadOf` — also die **Zusammenkunfts**-Last über alle
+ * geladenen Wochen. Das ist die falsche Größe und der falsche Zeitraum
+ * zugleich: Treffpunkte zählen ausdrücklich nicht in `workloadOf` (siehe
+ * `deriveMyFsTasks`), und über ein ganzes Jahr trägt fast jeder irgendetwas.
+ * Der Chip war deshalb im Regelfall stumm — und in dem einen Fall, in dem er
+ * ansprang (jemand ohne Zusammenkunfts-Aufgabe), behauptete er „frei" für
+ * jemanden, der in derselben Woche schon drei Treffpunkte leitet.
+ *
+ * Gezählt wird über die Person-Id; ein Freitext-Leiter gehört niemandem hier
+ * (`fsLeiterZuteilung`) und zählt für niemanden.
+ *
+ * Den Auflöser bringt der Aufrufer mit, statt dass ihn jeder Aufruf neu baut:
+ * `fsAutoAssign` hält ihn ohnehin schon (zwei Maps über alle Personen), und im
+ * Zuteilungs-Blatt entsteht er einmal je Liste statt einmal je Kandidat.
+ */
+export function fsLast(
+  fsWeeks: FsInstance[][],
+  wi: number,
+  werIst: (z: Zuteilung | undefined) => string | undefined,
+): Map<string, number> {
+  const load = new Map<string, number>()
+  const vonWoche = Math.max(0, wi - FS_LOAD_WEEKS + 1)
+  for (let i = vonWoche; i <= wi; i++) {
+    for (const inst of fsWeeks[i] ?? []) {
+      const id = werIst(fsLeiterZuteilung(inst))
+      if (id) load.set(id, (load.get(id) ?? 0) + 1)
+    }
+  }
+  return load
+}
+
+/**
  * Besetzt offene Treffpunkt-Leiter der Woche `wi` automatisch: Kandidaten sind
  * treffpunkt-qualifiziert (wie im Zuteilungs-Sheet, ohne Gruppenbindung) und in
  * der Woche nicht abwesend. Niemand leitet zwei Treffpunkte am selben
@@ -527,14 +564,9 @@ export function fsAutoAssign(
   const idVon = (inst: FsInstance): string | undefined => werIst(fsLeiterZuteilung(inst))
 
   // Grundlast: Leitungen je Person im Fenster der letzten FS_LOAD_WEEKS Wochen.
-  const load = new Map<string, number>()
-  const vonWoche = Math.max(0, wi - FS_LOAD_WEEKS + 1)
-  for (let i = vonWoche; i <= wi; i++) {
-    for (const inst of fsWeeks[i] ?? []) {
-      const id = idVon(inst)
-      if (id) load.set(id, (load.get(id) ?? 0) + 1)
-    }
-  }
+  // Dieselbe Rechnung, die das Zuteilungs-Blatt für seinen „frei"-Chip liest
+  // (`fsLast`) — sonst zeigt es eine andere Zahl an, als die Automatik wählt.
+  const load = fsLast(fsWeeks, wi, werIst)
   // Wartezeit: Abstand zur nächstgelegenen eigenen Leitung über ALLE geladenen
   // Wochen — auch außerhalb des Lastfensters, sonst wären alle dort auf null
   // Stehenden ununterscheidbar. Genau wie `assignmentDistance` es für die
@@ -699,7 +731,15 @@ export function deriveMyFsTasks(
         rolle: titel,
         date: fsTerminText(tag, inst),
         chip: '',
-        at: tag ? tag.getTime() : null,
+        /*
+         * **Der Kalendertag, nicht der Zeitpunkt** — als UTC-Mitternacht, wie
+         * `meetingDateMs` ihn für die Zusammenkünfte liefert (siehe
+         * `MyTask.at`). `fsTag` gibt den örtlichen Mittag zurück; das ist für
+         * das Datum richtig und für diese Zahl die falsche Form: Der Countdown
+         * liest daraus den UTC-Tag, und Ortsmittag fällt östlich von UTC+12 auf
+         * den Vortag. Zwei Quellen, eine Kodierung.
+         */
+        at: tag ? Date.UTC(tag.getFullYear(), tag.getMonth(), tag.getDate()) : null,
         status: confirmations[key] ?? 'offen',
         s89: null,
       })

@@ -18,6 +18,7 @@ import {
   displayName,
   eindeutigeNamen,
   emptyQualifications,
+  isGuestRole,
   MEETING_TABS,
   neueItemId,
   normalizeChairKeys,
@@ -493,8 +494,9 @@ export function dropPersonPid(weeks: Week[], id: string): Week[] {
  *
  * Ein Slot gehört zur Person, wenn seine `pid` passt (stabil) — oder, ohne
  * `pid` (Altdaten, Hilfsdienste), sein Name dem angegebenen entspricht.
- * `oldName: null` schaltet den Namensweg ab: beim Lösen einer Id ist nur sie
- * gemeint, nicht jeder Gleichnamige.
+ * Externe Redner sind vom Namensweg ausgenommen (siehe `meins`).
+ * `oldName: null` schaltet den Namensweg ganz ab: beim Lösen einer Id ist nur
+ * sie gemeint, nicht jeder Gleichnamige.
  *
  * **Klasse und Ratgeber waren hier lange nicht dabei** (bei T38 aufgefallen).
  * Beide tragen `pid`, funktional stimmte also alles — aber der Anzeigename
@@ -510,8 +512,26 @@ function mapPersonSlots(
   oldName: string | null,
   fix: (slot: SlotAssignment) => SlotAssignment,
 ): Week[] {
-  const meins = (slot: { pid?: string; name: string }): boolean =>
-    slot.pid ? slot.pid === id : oldName !== null && slot.name === oldName
+  const meins = (slot: { pid?: string; name: string; rolle?: string }): boolean => {
+    if (slot.pid) return slot.pid === id
+    /*
+     * **Externe Redner sind vom Namensweg ausgenommen** (`isGuestRole`) — die
+     * dritte Sorte Platz ohne `pid`, die der Kommentar über dieser Funktion
+     * nicht nannte.
+     *
+     * Ein Gastredner steht als Freitext im Slot, häufig in der Kurzform
+     * „M. Hartmann" — und genau das ist auch die Schreibweise, in der
+     * Zuteilungen einmal gespeichert wurden. Berichtigte der Planer den Namen
+     * des gleichnamigen Bruders dieser Versammlung, wurde der Auswärtige mit
+     * umbenannt: Auf dem Programmblatt stand danach jemand anderes, als am
+     * Sonntag kommt.
+     *
+     * Dieselbe Grenze zieht `gehoertZu` (die Stelle, an der „gehört dieser
+     * Platz dieser Person?" entschieden wird), und seither auch
+     * `migrateAssignmentPids` und `mapMeetingNames`.
+     */
+    return oldName !== null && !isGuestRole(slot.rolle) && slot.name === oldName
+  }
 
   let anyChanged = false
   const mapMeeting = (m: Week['mid']): Week['mid'] => {
@@ -590,7 +610,20 @@ function mapPersonSlots(
  * `alle-plaetze.test.ts` fragt seither jede solche Funktion nach allen vieren.
  */
 function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
-  const platz = <T extends { name: string }>(slot: T): T => ({ ...slot, name: fix(slot.name) })
+  /**
+   * **Externe Redner bleiben, wie sie dastehen** (`isGuestRole`).
+   *
+   * Die Kurzform „M. Hartmann" war die Schreibweise, in der Zuteilungen
+   * einmal gespeichert wurden — und es ist zugleich die Form, in der ein
+   * Gastredner von Hand eingetragen wird. Ohne diese Grenze machte die
+   * Migration aus dem auswärtigen „M. Hartmann" den vollen Namen des
+   * gleichnamigen Bruders dieser Versammlung: Auf dem Programmblatt stand
+   * danach jemand anderes, als am Sonntag kommt.
+   *
+   * Hilfsdienst-Plätze tragen keine Rolle; für sie ändert die Prüfung nichts.
+   */
+  const platz = <T extends { name: string; rolle?: string }>(slot: T): T =>
+    isGuestRole(slot.rolle) ? slot : { ...slot, name: fix(slot.name) }
   return {
     ...meeting,
     sections: meeting.sections.map((section) => ({
@@ -623,9 +656,24 @@ export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] 
   const byName = eindeutigeNamen(persons)
   if (byName.size === 0) return weeks
   let anyChanged = false
-  /** Platz mit `pid` versehen, wenn der Name eindeutig eine Person meint. */
-  const mitPid = <T extends { name: string; pid?: string }>(slot: T): T => {
-    if (slot.pid || !slot.name) return slot
+  /**
+   * Platz mit `pid` versehen, wenn der Name eindeutig eine Person meint.
+   *
+   * **Externe Redner sind ausgenommen** (`isGuestRole`) — der Kommentar über
+   * dieser Funktion sagte das seit jeher, der Code tat es nicht. Ein
+   * Gastredner steht als Freitext im Slot; heißt er zufällig wie ein Bruder
+   * dieser Versammlung, bekam der Platz dessen Id — und damit gehörte er ihm
+   * wirklich: `gehoertZu` entscheidet über die Id, also erschien der Vortrag
+   * eines Auswärtigen unter „Meine Aufgaben" des Namensvetters, verlangte
+   * seine Bestätigung, löste Erinnerungen aus und zählte auf seine
+   * Auslastung. Und anders als beim bloßen Namens-Rückfall blieb es stehen:
+   * die Id wird beim nächsten Speichern der Woche mitgeschrieben.
+   *
+   * Der **eigene** Redner (T29, `rolle: 'Redner'`) bekommt seine Id
+   * unverändert — er ist eine Person dieser Versammlung.
+   */
+  const mitPid = <T extends { name: string; pid?: string; rolle?: string }>(slot: T): T => {
+    if (slot.pid || !slot.name || isGuestRole(slot.rolle)) return slot
     const id = byName.get(slot.name)
     return id ? { ...slot, pid: id } : slot
   }
@@ -1438,9 +1486,28 @@ export function deleteServiceRow(congregationId: string, key: string): void {
   void run(supabase.from('services').delete().eq('congregation_id', congregationId).eq('key', key))
 }
 
-export function saveGroupRow(congregationId: string, group: Group): void {
+/**
+ * Eine Predigtdienstgruppe speichern — **mit ihrer Position**.
+ *
+ * Hier stand eine feste `0`. Geladen werden die Gruppen aber `.order('position')`
+ * (siehe unten), und bei lauter Nullen ist die Reihenfolge das, was die
+ * Datenbank gerade zurückgibt: die Ablage im Heap. Ein `update` schreibt eine
+ * neue Version der Zeile, meist ans Ende — wer den Aufseher von „Gruppe 2"
+ * ändert, sah sie danach hinter „Gruppe 4" stehen.
+ *
+ * Es bleibt nicht bei der Liste: Die **Reinigung rotiert über die Gruppen**
+ * (`groups[weekIndex % groups.length]` in `autoAssignMeeting`). Springt eine
+ * Gruppe in der Reihenfolge, rotiert die Zuteilung ab da anders herum, als der
+ * Planer sie kennt — für dieselbe Woche käme beim nächsten Lauf eine andere
+ * Gruppe heraus.
+ *
+ * `position` ist der Index in `state.groups`, genau wie bei den Diensten
+ * (`saveService`): Die Liste steht in Ladereihenfolge, und neue Gruppen hängen
+ * sich hinten an.
+ */
+export function saveGroupRow(congregationId: string, group: Group, position: number): void {
   if (!supabase) return
-  void run(supabase.from('groups').upsert(groupToRow(group, congregationId, 0)))
+  void run(supabase.from('groups').upsert(groupToRow(group, congregationId, position)))
 }
 
 export function deleteGroupRow(id: string): void {

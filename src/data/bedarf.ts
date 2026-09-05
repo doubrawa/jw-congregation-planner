@@ -1,5 +1,5 @@
 import { programmPlaetze, ratgeberSlot } from './aux-class'
-import { isQualified, serviceQualKey } from './helpers'
+import { isGuestRole, isQualified, serviceQualKey } from './helpers'
 import { istAbwesend, type AbsenceSet } from './absence'
 import type { MeetingKey, Meeting, Person, Service } from './types'
 
@@ -47,6 +47,24 @@ export interface Engpass {
  *
  * Gruppen-Dienste (Reinigung) bleiben draußen: Sie rotieren über
  * Predigtdienstgruppen, nicht über Personen, und kennen keine Qualifikation.
+ *
+ * **Und die Plätze, die von außen besetzt werden, ebenso** (`isGuestRole`).
+ * Der öffentliche Vortrag kommt aus dem Import mit `rolle: 'Gastredner'` —
+ * **und** mit `bereichsKey: 'vortrag'` (parse.ts, `weekendTemplate`). Über den
+ * Bereich zählte er hier mit, und in einer Versammlung, die den Vortrag nicht
+ * selbst hält, standen damit an **jedem** Wochenende „0 von 0 verfügbar" im
+ * Banner — für einen Platz, den ein Auswärtiger füllt und den die
+ * Auto-Zuteilung von sich aus nie anfasst. Genau die Sorte Warnung, gegen die
+ * dieser Hinweis gebaut ist: eine, die immer dasteht und deshalb weggesehen
+ * wird.
+ *
+ * Der **eigene** Redner (T29, `rolle: 'Redner'`) zählt weiter mit — er ist ein
+ * Bruder dieser Versammlung und braucht den Bereich. Der Unterschied steht in
+ * `isGuestRole` und nirgends sonst.
+ *
+ * Nicht zu verwechseln mit `countOpenSlots`: Ein unbesetzter Gastredner-Platz
+ * ist sehr wohl eine **offene Zuteilung** — der Planer muss den Namen
+ * eintragen. Er ist nur kein Engpass der Versammlung.
  */
 export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]): Map<string, number> {
   const out = new Map<string, number>()
@@ -55,7 +73,10 @@ export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]):
     out.set(key, (out.get(key) ?? 0) + 1)
   }
 
-  for (const { slot } of programmPlaetze(meeting)) zaehl(slot.bereichsKey)
+  for (const { slot } of programmPlaetze(meeting)) {
+    if (isGuestRole(slot.rolle)) continue
+    zaehl(slot.bereichsKey)
+  }
   // Der Ratgeber ist ein eigener Platz je Zusammenkunft — aber nur, wenn die
   // Zusätzliche Klasse überhaupt läuft (wie `countOpenSlots` es prüft).
   if (meeting.auxRatgeber) zaehl(ratgeberSlot(meeting).bereichsKey)

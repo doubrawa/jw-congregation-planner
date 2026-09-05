@@ -180,6 +180,7 @@ export function MeetingSection({
                   <input
                     key={`thema-${state.week}-${si}-${ii}`}
                     type="text"
+                    dir="auto"
                     className="talk-title-input"
                     placeholder={t.vortragThemaPh}
                     aria-label={t.vortragThemaPh}
@@ -203,6 +204,7 @@ export function MeetingSection({
                 <input
                   key={`talk-${state.week}-${ii}`}
                   type="text"
+                  dir="auto"
                   className="talk-title-input"
                   placeholder={t.vortragThemaPh}
                   aria-label={t.vortragThemaPh}
@@ -320,6 +322,7 @@ export function MeetingSection({
         <div className="lac-add-row">
           <input
             type="text"
+            dir="auto"
             className="lac-add-input"
             placeholder={t.lacPh}
             aria-label={t.lacPh}

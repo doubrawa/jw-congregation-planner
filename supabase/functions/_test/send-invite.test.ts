@@ -52,6 +52,8 @@ let mails: Mail[]
 /** REST-Pfade, die die Function abgefragt hat — zeigt den Zuschnitt. */
 let restPfade: string[]
 let resendAntwort: number
+/** Lässt die Personen-Abfrage scheitern — für den Fehlerpfad. */
+let personenFehler: boolean
 
 const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
   const url = String(input)
@@ -69,7 +71,11 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   const path = url.slice(url.indexOf('/rest/v1/') + '/rest/v1/'.length)
   restPfade.push(path)
   if (path.startsWith('members')) return jsonRes(MEMBERS[authUser ?? ''] ?? [])
-  if (path.startsWith('persons')) return jsonRes(PERSONS)
+  if (path.startsWith('persons')) {
+    // Der rohe PostgREST-Rumpf, wie ihn `restKlient.get` an die Meldung hängt.
+    if (personenFehler) return new Response('{"message":"permission denied for table persons"}', { status: 403 })
+    return jsonRes(PERSONS)
+  }
   return jsonRes([])
 }
 
@@ -127,6 +133,7 @@ beforeEach(() => {
   mails = []
   restPfade = []
   resendAntwort = 200
+  personenFehler = false
 })
 
 /* ---- Tests --------------------------------------------------------------- */
@@ -337,5 +344,36 @@ describe('send-invite: wenn Resend nicht mitspielt', () => {
     })
     expect(r.body).toEqual({ sent: 0, skipped: 2 })
     stumm.mockRestore()
+  })
+})
+
+describe('send-invite: was der Fehlertext preisgibt', () => {
+  /*
+    **Der rohe Fehler gehört in die Logs, nicht in die Antwort.**
+
+    `restKlient.get` hängt bei einem Fehlschlag Pfad und PostgREST-Rumpf an die
+    Meldung — beim Suchen nützlich, beim Angreifen genauso: Er verrät Tabellen,
+    Spalten und die Bedingung, an der ein Versuch scheiterte. `substitute`,
+    `send-plan` und `import-week` halten ihn deshalb längst zurück; diese
+    Function war als einzige der vier noch bei der alten Fassung.
+
+    Der Aufrufer verliert nichts: Er wertet nur aus, **ob** gesendet wurde —
+    bei `ok: false` fällt der Client auf das Mail-Programm zurück (KontoCard).
+  */
+  it('nennt weder Tabelle noch Pfad noch Status', async () => {
+    personenFehler = true
+    const r = await call(einladung)
+    expect(r.status).toBe(500)
+    expect(r.body.error).toBe('server-error')
+    const text = JSON.stringify(r.body)
+    expect(text).not.toContain('persons')
+    expect(text).not.toContain('permission denied')
+    expect(text).not.toMatch(/\b40\d\b/)
+  })
+
+  it('und es geht dabei keine Mail hinaus', async () => {
+    personenFehler = true
+    await call(einladung)
+    expect(mails).toEqual([])
   })
 })

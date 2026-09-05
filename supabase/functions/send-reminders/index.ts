@@ -69,6 +69,7 @@ import {
   uebersetzt,
   type Week,
 } from '../_shared/zuteilungen.ts'
+import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
 import { pushTexte, TITEL_ERINNERUNG, TITEL_UNERREICHBAR } from './texte.ts'
 
@@ -210,6 +211,15 @@ Deno.serve(async (req: Request) => {
 
     let sent = 0
     let expired = 0
+    /**
+     * Zustellungen, die der Push-Dienst abgewiesen hat.
+     *
+     * Die Zahl entstand schon immer (`PushErgebnis.fehlgeschlagen`) und wurde
+     * weggeworfen. Damit antwortete ein Lauf, in dem **keine einzige**
+     * Nachricht ankam, mit `ok: true, pushes: 0` — nicht zu unterscheiden von
+     * einem Tag, an dem nichts anstand. Wer den Cron beobachtet, sah Erfolg.
+     */
+    let failed = 0
     let skipped = 0 // heute bereits benachrichtigt (Doppel-Versand-Sperre)
     const preview: Push[] = []
     const notifRows: unknown[] = []
@@ -327,7 +337,7 @@ Deno.serve(async (req: Request) => {
           if (!kind) continue
           for (const pend of pendingOfMeeting(start, tab, meeting, services, conf)) {
             const entry: MitKey = {
-              datum: terminText(start, offset, meeting, zeit, week.dev, tab),
+              datum: terminText(start, offset, meeting.date, zeit, week.dev, tab),
               label: pend.label,
               key: pend.key,
             }
@@ -428,14 +438,18 @@ Deno.serve(async (req: Request) => {
         // Der Rumpf ist für **alle** Planer derselbe und hängt nur an der
         // Sprache. Beides stand bis hierher in der Planer-Schleife und wurde
         // je Planer (und je Sprache) neu zusammengesetzt.
-        const rumpfDeutsch = unreachable.map((u) => `${u.name} — ${kanonisch(u.eintrag)}`).join(' · ')
+        // Der Name als gekennzeichneter Freitext — die Glocke übersetzt beim
+        // Anzeigen jedes Atom, und ein Bruder namens „Markus 2" stünde dort
+        // sonst als „Mark 2" (`_shared/i18n/freitext.ts`). Für den Push gilt
+        // dasselbe eine Zeile tiefer, wo der Kommentar es seit je fordert.
+        const rumpfDeutsch = unreachable.map((u) => `${alsFreitext(u.name)} — ${kanonisch(u.eintrag)}`).join(' · ')
         const rumpfJeSprache = new Map<string, string>()
         const rumpfFuer = (lang: string): string => {
           const fertig = rumpfJeSprache.get(lang)
           if (fertig !== undefined) return fertig
           const tr = uebersetzer(lang)
           // Der Name bleibt, was er ist — Eigennamen werden nicht übersetzt.
-          const gebaut = unreachable.map((u) => `${u.name} — ${uebersetzt(u.eintrag, tr)}`).join(' · ')
+          const gebaut = unreachable.map((u) => `${alsFreitext(u.name)} — ${uebersetzt(u.eintrag, tr)}`).join(' · ')
           rumpfJeSprache.set(lang, gebaut)
           return gebaut
         }
@@ -484,7 +498,14 @@ Deno.serve(async (req: Request) => {
       // Jede Zustellung ist eine eigene HTTPS-Fahrt zu FCM/Mozilla/Apple und
       // hängt an keiner anderen — gebündelt wird deshalb über den **ganzen**
       // Lauf, nicht je Empfänger (`_shared/push.ts`).
-      vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+      //
+      // **Ohne VAPID-Schlüssel gar nicht erst antreten.** `vapidSetzen` sagt
+      // es; sein Rückgabewert wurde hier als einziger der drei Functions
+      // weggeworfen (`send-plan` und `substitute` fragen ihn seit je). Ohne
+      // Schlüssel scheiterte danach jede einzelne Zustellung — laut, aber nur
+      // in den Logs. Die Glocke geht so oder so hinaus; sie ist der Teil, der
+      // bleibt.
+      const kannSenden = vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
       const zustellungen: Zustellung[] = sendQueue.flatMap(({ push, subs }) =>
         subs.map((abo) => ({
           abo,
@@ -493,9 +514,12 @@ Deno.serve(async (req: Request) => {
           url: push.url ?? APP_URL,
         })),
       )
-      const erg = await zustellen(zustellungen, abbestellerFuer(klient))
+      const erg = kannSenden
+        ? await zustellen(zustellungen, abbestellerFuer(klient))
+        : { gesendet: 0, abgelaufen: 0, fehlgeschlagen: zustellungen.length }
       sent += erg.gesendet
       expired += erg.abgelaufen
+      failed += erg.fehlgeschlagen
       await klient.insert('notifications', notifRows)
       // Versand-Tagebuch schreiben, damit ein zweiter Lauf heute nicht doppelt
       // sendet. Nach dem eigentlichen Versand — scheitert das Schreiben, wurde
@@ -511,11 +535,22 @@ Deno.serve(async (req: Request) => {
       pushes: SEND_PUSH ? sent : preview.length,
       skipped, // heute bereits benachrichtigt (Doppel-Versand-Sperre)
       expired,
+      failed, // vom Push-Dienst abgewiesen — sonst sieht ein Totalausfall aus wie Ruhe
       notifications: notifRows.length,
       // Vorschau nur im Dry-Run — zum gefahrlosen Testen per curl
       preview: SEND_PUSH ? undefined : preview,
     })
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : String(err) }, 500)
+    // Nur in die Logs, nicht in die Antwort — dieselbe Linie wie in
+    // `substitute`, `send-plan`, `import-week` und `send-invite`: Die
+    // REST-Fehler tragen Pfad und rohen PostgREST-Rumpf, verraten also
+    // Tabellen, Spalten und die Bedingung, an der ein Versuch scheiterte.
+    //
+    // Hier hinter dem `CRON_SECRET` zwar nur für den Betreiber sichtbar — aber
+    // eine Ausnahme, die man begründen muss, ist eine Ausnahme zu viel: Wer
+    // die fünf Functions nebeneinander liest, soll überall dieselbe Antwort
+    // finden. Der Cron wertet ohnehin nur den Status aus.
+    console.error('send-reminders:', err instanceof Error ? err.message : String(err))
+    return json({ error: 'server-error' }, 500)
   }
 })

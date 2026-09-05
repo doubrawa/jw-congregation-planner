@@ -205,3 +205,73 @@ describe('Zugängliche Beschriftungen sind Ausdrücke', () => {
 const ERLAUBTES_ATTRIBUT: Record<string, Grund> = {
   '••••••••': 'kein-wort',
 }
+
+
+/**
+ * **Fremder Text trägt seine eigene Schreibrichtung — geprüft am Quelltext.**
+ *
+ * Was in einem Freitextfeld steht, gehört nicht der App: ein Ortsname, ein
+ * Vortragsthema, der Name eines auswärtigen Redners und seine Versammlung. Die
+ * Richtung der Oberfläche gilt dafür nicht — sonst zerlegt der Bidi-Algorithmus,
+ * was zusammengehört. Gemessen wurde es an einer Telefonnummer: In der
+ * arabischen Fassung stand „+49 159 774 21 08" als „08 21 774 159 49+".
+ *
+ * `oberflaeche-fremdsprache.test.tsx` prüft das am gerenderten DOM — aber nur
+ * für die Felder, die sein Bestand erreicht (Personen-Detail und
+ * Versammlungs-Angaben). Genau daran fehlte es: Der Treffpunkt-Ort, das
+ * Vortragsthema, der eigene Programmpunkt, der Name des Gastredners und der
+ * neue Dienst trugen die Angabe nicht — sieben Felder, die kein Test je
+ * angesehen hat.
+ *
+ * Diese Prüfung geht deshalb über **alle** Textfelder des Quelltextes. Die
+ * Ausnahmen tragen ihren Grund; wer ein Feld hinzufügt, muss sich entscheiden.
+ */
+describe('Freitextfelder tragen dir="auto"', () => {
+  /**
+   * Felder, die **keinen** fremden Text aufnehmen — mit Begründung.
+   *
+   * Ein Suchfeld hält nichts fest; sein Inhalt ist im nächsten Moment wieder
+   * weg und steht nirgends neben anderem Text. Ein Einladungscode und eine
+   * Liednummer sind Zeichenfolgen ohne Sprache.
+   */
+  const OHNE_GRUND: Record<string, string> = {
+    'codePh': 'Einladungscode — Zeichenfolge ohne Sprache',
+    'langSearchPh': 'Suchfeld — nichts, was gespeichert wird',
+    'suchen': 'Suchfeld — nichts, was gespeichert wird',
+    'liedNrPh': 'Liednummer — eine Zahl',
+  }
+
+  /** Jedes `<input type="text">` (bzw. `<textarea>`) samt seiner Attribute. */
+  const felder = (): Array<{ datei: string; platzhalter: string; hatDir: boolean }> => {
+    const out: Array<{ datei: string; platzhalter: string; hatDir: boolean }> = []
+    for (const [datei, text] of QUELLEN) {
+      if (!datei.endsWith('.tsx')) continue
+      for (const treffer of text.matchAll(/<(?:input|textarea)\b([\s\S]*?)\/?>/g)) {
+        const attrs = treffer[1] ?? ''
+        if (!/\btype="text"/.test(attrs) && !treffer[0].startsWith('<textarea')) continue
+        const ph = /placeholder=\{t\.(\w+)\}/.exec(attrs)?.[1] ?? ''
+        out.push({ datei, platzhalter: ph, hatDir: /\bdir=/.test(attrs) })
+      }
+    }
+    return out
+  }
+
+  it('die Suche findet überhaupt Felder', () => {
+    // Sonst ginge alles darunter grün durch, ohne etwas zu prüfen.
+    expect(felder().length).toBeGreaterThan(8)
+  })
+
+  it('jedes Textfeld trägt dir="auto" — oder steht mit Grund in der Liste', () => {
+    const ohne = felder()
+      .filter((f) => !f.hatDir && OHNE_GRUND[f.platzhalter] === undefined)
+      .map((f) => `${f.datei} (${f.platzhalter || 'ohne Platzhalter'})`)
+    expect(ohne, ohne.join(', ')).toEqual([])
+  })
+
+  it('die Ausnahmeliste ist ehrlich — jeder Eintrag kommt auch vor', () => {
+    // Ein Eintrag, den es nicht mehr gibt, macht die Liste zur Behauptung.
+    const vorhanden = new Set(felder().map((f) => f.platzhalter))
+    const tote = Object.keys(OHNE_GRUND).filter((k) => !vorhanden.has(k))
+    expect(tote, `nicht mehr vorhanden: ${tote.join(', ')}`).toEqual([])
+  })
+})

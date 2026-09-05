@@ -120,6 +120,14 @@ Deno.serve(async (req: Request) => {
     }
     return json({ sent, skipped })
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : String(err) }, 500)
+    // Nur in die Logs, nicht in die Antwort — dieselbe Linie wie in
+    // `substitute`, `send-plan` und `import-week`: Die REST-Fehler tragen Pfad
+    // und rohen PostgREST-Rumpf, verraten also Tabellen, Spalten und die
+    // Bedingung, an der ein Versuch scheiterte. Diese Function war als einzige
+    // der vier noch bei der alten Fassung. Der Aufrufer sieht ohnehin nur, ob
+    // der Versand geklappt hat: bei `ok: false` fällt der Client auf das
+    // Mail-Programm zurück (`KontoCard`), der Text wird nirgends angezeigt.
+    console.error('send-invite:', err instanceof Error ? err.message : String(err))
+    return json({ error: 'server-error' }, 500)
   }
 })

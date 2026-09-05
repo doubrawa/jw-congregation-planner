@@ -11,7 +11,22 @@ export function OrphanAccounts() {
   const { t } = useT()
   const orphanAccounts = state.members.filter((m) => !m.personId)
   if (state.dataStatus === 'demo' || orphanAccounts.length === 0) return null
-  const sorted = [...state.persons].sort(personCompare)
+  /*
+   * **Nur Personen ohne eigenes Konto.**
+   *
+   * Die Verknüpfung ist eins zu eins gedacht, und die ganze Oberfläche
+   * unterstellt es: `linkedMember` nimmt das **erste** passende Mitglied, die
+   * Konto-Karte zeigt genau eines, und `send-plan` wie `send-reminders` führen
+   * je Person genau eine Konto-Id (`userByPerson`).
+   *
+   * Angeboten wurde trotzdem jede. Wer hier eine wählte, die schon ein Konto
+   * hat, hängte ihr ein zweites an: Beide sahen ihre Aufgaben und konnten
+   * bestätigen, die Benachrichtigung erreichte nur eines von beiden, und in
+   * der Konto-Karte der Person stand das zweite nirgends — von dort ließ es
+   * sich also auch nicht wieder lösen.
+   */
+  const vergeben = new Set(state.members.map((m) => m.personId).filter(Boolean))
+  const sorted = state.persons.filter((p) => !vergeben.has(p.id)).sort(personCompare)
 
   return (
     <div className="panel panel--pb14 pers-orphans" data-farbe="neutral2">

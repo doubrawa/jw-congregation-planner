@@ -12,6 +12,7 @@ import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsK
 import { displayName, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
+import { alsFreitext } from '../i18n/translate'
 import {
   aufgabenBezeichnung,
   assignmentsInMeeting,
@@ -279,58 +280,53 @@ export function vorzulegen(myTasks: MyTask[], substituteReqs: SubstituteReq[]): 
   return myTasks.some((t) => t.status === 'offen') || substituteReqs.length > 0
 }
 
-/** Aktionen, nach denen die Aufgaben-Ableitung neu berechnet werden muss. */
-const DERIVE_ACTIONS: ReadonlySet<AppAction['type']> = new Set<AppAction['type']>([
-  'hydrate',
-  'assign',
-  'autoAssign',
-  'clearAssignments',
-  'finishImport',
-  'addImportedWeek',
-  'mergeWeekAlt',
-  'updatePerson',
-  // Löst die pid aus Wochen und Treffpunkten (T38) — die Aufgaben der
-  // gelöschten Person müssen verschwinden.
-  'removePerson',
-  // Ein Ausfall nimmt einer ganzen Zusammenkunft die Aufgaben, eine Verlegung
-  // ändert deren Termin (T30).
-  'setAbweichung',
-  // Baut den Ablauf um bzw. setzt ein Thema (T62) -- beides aendert die Aufgaben.
-  'setDienstwoche',
-  // Der Anlass der Woche setzt seine Wirkungen mit (T64): Umbau beim
-  // Kreisaufseher, Ausfall beider Zusammenkuenfte beim Kongress.
-  'setAnlass',
-  'setAnlassTermin',
-  // Weitere Termine der Woche (T63)
-  'terminAdd',
-  'terminUpdate',
-  'terminRemove',
-  'setPartThema',
-  'lacAdjust',
-  'lacRemove',
-  'lacMove',
-  'lacAdd',
-  'talkEdit',
-  'openingSong',
-  'closingSong',
-  'addService',
-  'removeService',
-  'changeServiceCount',
-  'confirmTask',
-  'declineTask',
-  'takeSubstitute',
-  // Sprachwechsel ändert die Programmsprache der abgeleiteten Aufgaben-Titel
-  'setLang',
-  'setCongLang',
-  // Ein-/Ausschalten der Zusaetzlichen Klasse aendert die Plaetze der Wochen
-  'setAuxClass',
-])
+/**
+ * Die Zustandsteile, aus denen `withDerivedTasks` rechnet — in der Reihenfolge,
+ * in der sie dort vorkommen.
+ *
+ * Hier stand eine Liste von 33 **Aktionsnamen**, in die sich jede neue Aktion
+ * eintragen musste, die eine dieser Quellen anfasst. Das ging schief, sobald
+ * jemand es vergaß, und es fiel nicht auf: Der Zustand bleibt gültig, nur eben
+ * veraltet. `updateCongregation` fehlte — wer den Tag der Zusammenkunft
+ * umstellte, sah in „Meine Aufgaben" weiter den alten, während das Programm
+ * daneben schon den neuen zeigte. Ebenso fehlten die Treffpunkt-Aktionen
+ * (`fsClear`, `fsInstRemove`, `fsRule*`) und `addAbsence`/`removeAbsence`.
+ *
+ * Die Frage ist nicht, *welche Aktion* gelaufen ist, sondern *ob sich die
+ * Rechengrundlage geändert hat* — und das steht im Zustand selbst. Verglichen
+ * wird über die Referenz: Der Reducer kopiert nur, was er ändert, also ist
+ * gleiche Referenz gleicher Inhalt.
+ */
+function ableitungsQuellen(s: AppState): readonly unknown[] {
+  return [
+    s.dataStatus,
+    s.personId,
+    s.persons,
+    s.lang,
+    s.congLang,
+    s.weeks,
+    s.fsWeeks,
+    s.fsBase,
+    s.services,
+    s.confirmations,
+    s.congregation.meetings,
+    s.absences,
+  ]
+}
+
+/** Hat die Aktion an einer der Rechengrundlagen gedreht? */
+function quellenGeaendert(vorher: AppState, nachher: AppState): boolean {
+  const a = ableitungsQuellen(vorher)
+  const b = ableitungsQuellen(nachher)
+  return a.some((wert, i) => !Object.is(wert, b[i]))
+}
 
 export function reducer(state: AppState, action: AppAction): AppState {
   const next = baseReducer(state, action)
-  return DERIVE_ACTIONS.has(action.type)
-    ? withDerivedTasks(next, action.type === 'hydrate')
-    : next
+  // `hydrate` ist der einzige Sonderfall: Es legt zusätzlich das
+  // Bestätigungs-Blatt vor, wenn etwas offen ist.
+  if (action.type === 'hydrate') return withDerivedTasks(next, true)
+  return quellenGeaendert(state, next) ? withDerivedTasks(next, false) : next
 }
 
 function baseReducer(state: AppState, action: AppAction): AppState {
@@ -892,7 +888,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const notif = makeNotif(
         'verhindert',
         'Verhinderung gemeldet',
-        `${bezeichnung} — ${currentUserName(state)}`,
+        // Der Name als gekennzeichneter Freitext: Die Glocke übersetzt beim
+        // Anzeigen Atom für Atom, und ein Bruder namens „Markus 2" (die
+        // Schreibweise für Namensgleiche) stand dort sonst als „Mark 2".
+        // Siehe `i18n/freitext.ts`.
+        `${bezeichnung} — ${alsFreitext(currentUserName(state))}`,
       )
       // Bei Hilfsdiensten wird automatisch ein Ersatz gesucht (Ersatzgesuch) →
       // eigener Toast; sonst nur die Verhinderungs-Meldung an den Planer.

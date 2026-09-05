@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { confirmationMap, generateInviteCode, renameInWeeks } from './data'
-import type { Meeting, Week } from '../data/types'
+import type { Meeting, PartItem, Week } from '../data/types'
 
 describe('confirmationMap: ein Platz, zwei Zeilen', () => {
   const K = '2026-09-07|mid|helper|mik|0'
@@ -76,6 +76,53 @@ describe('renameInWeeks', () => {
     expect(next[0]).toBe(untouched) // keine Namensänderung → identische Referenz
     expect(next[1]).not.toBe(touched) // enthält oldName → neue Referenz
     expect(next[1].we).toBe(touched.we) // Wochenende unberührt → alte Referenz
+  })
+
+  it('lässt den gleichnamigen Gastredner stehen', () => {
+    /*
+      Der Namensweg gilt für Plätze **ohne** `pid` — Altdaten und
+      Hilfsdienste. Der auswärtige Redner hat ebenfalls keine, ist aber keine
+      Person dieser Versammlung: Er steht als Freitext im Slot, oft in der
+      Kurzform „M. Hartmann", und genau die ist auch die Schreibweise, in der
+      Zuteilungen einmal gespeichert wurden.
+
+      Berichtigte der Planer den Namen des gleichnamigen Bruders, wurde der
+      Gast mit umbenannt — auf dem Programmblatt stand danach jemand anderes,
+      als am Sonntag kommt. `gehoertZu` nimmt ihn seit T29 aus, ebenso
+      `migrateAssignmentPids` und `mapMeetingNames`; hier fehlte es.
+    */
+    const eigen = { name: 'M. Hartmann', pid: 'p1' }
+    const gast = { name: 'M. Hartmann', rolle: 'Gastredner', herkunft: 'Nordheim' }
+    const w: Week = {
+      range: '1.–7.',
+      book: 'Buch',
+      start: '2026-09-07',
+      current: false,
+      mid: {
+        date: '',
+        end: '',
+        sections: [
+          { label: 'SCHÄTZE', farbe: 'petrol', items: [{ title: 'Bibellesung', names: [eigen] }] },
+        ],
+        helpers: {},
+      },
+      we: {
+        date: '',
+        end: '',
+        sections: [
+          { label: 'VORTRAG', farbe: 'petrol', items: [{ title: 'Vortrag', names: [gast] }] },
+        ],
+        helpers: {},
+      },
+    }
+
+    const next = renameInWeeks([w], 'p1', 'M. Hartmann', 'Martin Hartmann')
+    const eigenNachher = (next[0].mid.sections[0].items[0] as PartItem).names[0]
+    const gastNachher = (next[0].we.sections[0].items[0] as PartItem).names[0]
+
+    // Gegenprobe: Der eigene Bruder heißt jetzt anders.
+    expect(eigenNachher.name).toBe('Martin Hartmann')
+    expect(gastNachher.name, 'der Auswärtige wurde mit umbenannt').toBe('M. Hartmann')
   })
 
   it('ist ein No-op bei leerem oder unverändertem Namen', () => {

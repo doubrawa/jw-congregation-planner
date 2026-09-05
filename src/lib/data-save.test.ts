@@ -117,8 +117,12 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ key: 'mik', position: 4 }), { onConflict: 'congregation_id,key' })
   })
   it('saveGroupRow → groups upsert; saveConfirmation → confirmations upsert', () => {
-    saveGroupRow('c1', group)
+    saveGroupRow('c1', group, 2)
     expect(chain.from).toHaveBeenCalledWith('groups')
+    // Die Position muss mit: geladen wird `.order('position')`, und bei lauter
+    // Nullen entscheidet die Ablage der Datenbank — auch über die Reihenfolge,
+    // in der die Reinigung rotiert.
+    expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ id: group.id, position: 2 }))
     saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
     expect(chain.from).toHaveBeenCalledWith('confirmations')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ task_key: 'k1', status: 'bestätigt' }), { onConflict: 'congregation_id,task_key,user_id' })

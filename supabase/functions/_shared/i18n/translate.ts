@@ -25,6 +25,7 @@
  */
 
 /* eslint-disable */
+import { istFreitext, ohneAlleMarken, ohneMarke } from './freitext.ts'
 import { LOCALE_JE_CODE as LOCALES } from './locales.ts'
 import { D, EXTRA, EXTRA_EN, FRAG, MON, MONA, REF, WD, WDA, type DateDict, type Extra, type RefDict } from './translate-data.ts'
 
@@ -248,7 +249,30 @@ function buchRegeln(code: string): Rule[] {
   const muster = namen.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
   return [
     [
-      new RegExp(`^(${muster}) (.+)$`),
+      /*
+       * **Hinter dem Buchnamen muss eine Ziffer stehen.**
+       *
+       * Ohne diese Bedingung stand dort `(.+)$` — und damit traf die Regel
+       * nicht nur Schriftstellen, sondern auch **Personennamen**. Sehr viele
+       * Bibelbücher heißen wie ein Vorname: Daniel, Markus, Ruth, Titus,
+       * Simon, Judas, Petrus, Hiob. Der Fragment-Übersetzer läuft aber über
+       * jedes „ · "-Atom, das die Oberfläche anzeigt — und in den Mitteilungen
+       * steht der Name als eigenes Atom („Mikrofone · Dienstag, 8. September ·
+       * Markus Weber"). In einer fremdsprachigen Oberfläche wurde daraus
+       * „Mark Weber" (en), „Руфь Meyer" (ru) oder „마가복음 Weber" (ko —
+       * wörtlich „Markusevangelium Weber").
+       *
+       * Eine Schriftstelle trägt hinter dem Buch **immer** eine Zahl:
+       * „Jeremia 32–33", „Jer 32:6-18". Ein Name nie. `\p{Nd}` statt `\d`,
+       * weil die Wochendaten einer fremdsprachigen Versammlung ihre Kapitel in
+       * der eigenen Schrift schreiben können.
+       *
+       * Der Kopf über dieser Funktion verwirft `^(.+) (\d.*)$` — einen
+       * Fänger, der jeden Vorspann schluckt. Das gilt weiter: Gefangen wird
+       * nach wie vor nur, was auch wirklich ein Buchname ist. Die Ziffer kommt
+       * als **zweite** Bedingung dazu, nicht an die Stelle der ersten.
+       */
+      new RegExp(`^(${muster}) (\\p{Nd}.*)$`, 'u'),
       (m) => {
         const buch = g(m, 1)
         return `${voll.get(buch) ?? kurz.get(buch) ?? buch} ${g(m, 2)}`
@@ -265,6 +289,13 @@ function buchRegeln(code: string): Rule[] {
  */
 function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) => string {
   const one = (f: string): string => {
+    // Gekennzeichneter Freitext (Personenname): Marke ab, sonst nichts.
+    //
+    // **Vor** dem Wörterbuch-Treffer, nicht danach: Die Falle sind nicht nur
+    // die Regeln. Wer „Ton" heißt, stünde sonst als „Sound" in der Glocke,
+    // und „Markus 2" (die Schreibweise für Namensgleiche, siehe
+    // `displayName`) als „Mark 2". Siehe `freitext.ts`.
+    if (istFreitext(f)) return ohneMarke(f)
     const treffer = M[f]
     if (treffer != null) return treffer
     for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
@@ -273,7 +304,10 @@ function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) 
   }
   return (s: string): string => {
     if (s == null || s === '') return s
-    return M[s] ?? s.split(' · ').map(one).join(' · ')
+    // Am Ende die Marken pauschal herunter — siehe `ohneAlleMarken`: Eine Regel
+    // kann ein Atom samt eingebettetem Namen verschluckt haben, bevor es zur
+    // Teilung kam.
+    return ohneAlleMarken(M[s] ?? s.split(' · ').map(one).join(' · '))
   }
 }
 
@@ -318,8 +352,17 @@ function makeTrIntl(code: string): (s: string) => string {
   return buildTranslator(M, rules)
 }
 
+/**
+ * Deutsch braucht keine Übersetzung — aber die Freitext-Marken müssen trotzdem
+ * herunter, sonst stünden die unsichtbaren Isolat-Zeichen im DOM. Deshalb ist
+ * der deutsche Zweig die Marken-Abnahme und nicht mehr die reine Identität.
+ */
+export function ohneMarken(s: string): string {
+  return s == null || s === '' ? s : ohneAlleMarken(s)
+}
+
 export function makeTr(code: string): (s: string) => string {
-  if (!code || code === 'de') return s => s
+  if (!code || code === 'de') return ohneMarken
   const L: DateDict | undefined = D[code]
   if (!L) return makeTrIntl(code) // Zusatz-Sprachen: Intl-Datum + FRAG/EXTRA
   const M: Record<string, string> = FRAG[code] ?? {}

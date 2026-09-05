@@ -421,17 +421,64 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
   })
 
   it('addGroup / updateGroup / removeGroup (inkl. grp-Auflösung)', () => {
+    /*
+      **Die Position gehört dazu.** Geladen werden die Gruppen
+      `.order('position')`; stünden alle auf 0, entschiede die Ablage der
+      Datenbank über die Reihenfolge — und ein `update` schreibt eine neue
+      Version der Zeile, meist ans Ende. „Gruppe 2" stünde danach hinter
+      „Gruppe 4", und die Reinigung rotierte ab da in einer anderen Folge
+      (`groups[weekIndex % groups.length]`).
+    */
     const g = { id: 'g9', name: 'G', ov: null, as: null }
-    persist(st(), st(), { type: 'addGroup', group: g })
-    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', g)
-    persist(st({ groups: [g] }), st({ groups: [{ ...g, ov: 'p1' }] }), { type: 'updateGroup', id: 'g9', patch: { ov: 'p1' } })
-    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...g, ov: 'p1' })
+    const g0 = { id: 'g0', name: 'A', ov: null, as: null }
+    persist(st({ groups: [g0] }), st({ groups: [g0, g] }), { type: 'addGroup', group: g })
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', g, 1) // hinten angehängt
+    persist(st({ groups: [g0, g] }), st({ groups: [g0, { ...g, ov: 'p1' }] }), { type: 'updateGroup', id: 'g9', patch: { ov: 'p1' } })
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...g, ov: 'p1' }, 1) // bleibt, wo sie war
     // removeGroup: ein Mitglied hatte grp='g9', jetzt null → savePersonGroup
     const before = { id: 'pm', grp: 'g9' } as never
     const after = { id: 'pm', grp: null } as never
     persist(st({ persons: [before] }), st({ persons: [after] }), { type: 'removeGroup', id: 'g9' })
     expect(data.deleteGroupRow).toHaveBeenCalledWith('g9')
     expect(data.savePersonGroup).toHaveBeenCalledWith(after)
+  })
+
+  it('Löschen aus der Mitte nummeriert die Nachrücker neu', () => {
+    /*
+      **Sonst wird dieselbe Nummer zweimal vergeben.** Die Position ist der
+      Index in der Liste. Fällt die zweite von vieren weg und bleiben die alten
+      Nummern stehen (0, 2, 3), bekommt die nächste **neu angelegte** Gruppe
+      `Länge − 1` = 3 — also die der letzten. `.order('position')` ist damit
+      für zwei Zeilen unentschieden: Die Reihenfolge kann beim nächsten Laden
+      kippen, und mit ihr die Reinigungs-Rotation, die über sie läuft.
+
+      Geschrieben wird nur, was wirklich verrutscht ist: Der Reducer filtert,
+      unberührte Einträge behalten ihre Referenz.
+    */
+    const grp = (id: string) => ({ id, name: id.toUpperCase(), ov: null, as: null })
+    const vorher = [grp('a'), grp('b'), grp('c'), grp('d')]
+    const nachher = vorher.filter((g) => g.id !== 'b')
+
+    persist(st({ groups: vorher }), st({ groups: nachher }), { type: 'removeGroup', id: 'b' })
+
+    expect(data.deleteGroupRow).toHaveBeenCalledWith('b')
+    // „a" steht weiter auf 0 und wird nicht angefasst.
+    expect(data.saveGroupRow).toHaveBeenCalledTimes(2)
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', nachher[1], 1)
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', nachher[2], 2)
+  })
+
+  it('dasselbe bei den Diensten — dieselbe Nummerierung, dieselbe Lücke', () => {
+    const svc = (key: string) => ({ key, name: key, count: 1, groups: false })
+    const vorher = [svc('a'), svc('b'), svc('c')]
+    const nachher = vorher.filter((x) => x.key !== 'a')
+
+    persist(st({ services: vorher }), st({ services: nachher }), { type: 'removeService', key: 'a' })
+
+    expect(data.deleteServiceRow).toHaveBeenCalledWith('c1', 'a')
+    expect(data.saveService).toHaveBeenCalledTimes(2)
+    expect(data.saveService).toHaveBeenCalledWith('c1', nachher[0], 0)
+    expect(data.saveService).toHaveBeenCalledWith('c1', nachher[1], 1)
   })
 })
 
@@ -494,6 +541,35 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
       patch: { name: 'Neu' },
     })
     expect(data.saveWeek).not.toHaveBeenCalled()
+  })
+
+  it('setAuxClass speichert die Wochen, die es dabei umgebaut hat', () => {
+    /*
+      Der Schalter steht in den Einstellungen, die Zusätzliche Klasse steht in
+      den **Wochen**: `syncAuxSlots` setzt beim Einschalten in jede Woche die
+      Marke `auxRatgeber` und nimmt sie beim Ausschalten wieder heraus.
+
+      Genau an dieser Marke erkennen die Edge Functions, ob es die Klasse gibt
+      (`zuteilungen.ts`: „if (meeting.auxRatgeber)") — sie kennen die
+      Einstellung nicht. Blieb die Marke in der Datenbank stehen, hielten sie
+      die Klasse weiter für eingerichtet: Erinnerungen und „Plan senden" gingen
+      an einen Raum, den der Planer längst abgeschaltet hatte, und an einen
+      Ratgeber, den die App nirgends mehr zeigt.
+    */
+    const mitKlasse = syncAuxSlots(st().weeks, true)
+    const prev = st({ weeks: mitKlasse, auxClass: true })
+    const weeks = syncAuxSlots(mitKlasse, false)
+
+    // Gegenprobe: Das Ausschalten hat wirklich Wochen angefasst — sonst prüfte
+    // der Test ins Leere.
+    const geaendert = weeks.filter((w, i) => w !== prev.weeks[i])
+    expect(geaendert.length, 'nichts umgebaut').toBeGreaterThan(0)
+
+    persist(prev, st({ weeks, auxClass: false }), { type: 'setAuxClass', on: false })
+
+    expect(data.saveSettings).toHaveBeenCalled()
+    expect(data.saveWeek).toHaveBeenCalledTimes(geaendert.length)
+    for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w)
   })
 
   it('updateMember / removeMember / addInvite / removeInvite', () => {

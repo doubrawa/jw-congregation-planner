@@ -17,6 +17,7 @@ import {
   AppStateContext,
   AppStoreContext,
   type AppAction,
+  type AppState,
   type AppStore,
 } from './context'
 import { loadAndHydrate } from './hydrate'
@@ -25,8 +26,39 @@ import { persist } from './persist'
 import { isViewAction } from './readonly'
 import { reducer } from './reducer'
 
+/**
+ * Reacts Reducer ist die **Identität** — der Folgezustand kommt fertig herein.
+ *
+ * Er stand hier lange als `useReducer(reducer, …)`, und damit lief der Reducer
+ * **zweimal** je Aktion: einmal unten in `dispatch` (für `persist`, das den
+ * Vorher/Nachher-Vergleich braucht) und ein zweites Mal in React, das die
+ * Aktion selbst noch einmal anwendet. Für einen reinen Reducer wäre das nur
+ * doppelte Arbeit. Er ist aber nicht ganz rein: An fünf Stellen erzeugt er
+ * eine **Kennung** — `crypto.randomUUID()` für Mitteilungen, Termine (T63),
+ * Haushalte und die Treffpunkt-Regeln (`fsRuleAdd`), dazu den Zeitstempel
+ * einer Mitteilung.
+ *
+ * Beim zweiten Lauf fielen diese Kennungen **anders** aus. Was in die
+ * Datenbank ging, war deshalb ein anderer Stand als der, den der Bildschirm
+ * zeigte — und bei den Treffpunkten kostete das die Planung:
+ *
+ *  1. Neue Regel anlegen → `fs_rules` bekommt Kennung A, der Client hält B.
+ *  2. Leiter zuteilen → `fs_weeks` bekommt B (der Client schreibt seinen Stand).
+ *  3. Neu laden → `regenFsWeeks` erzeugt aus der Regel wieder A, findet unter
+ *     A keine gespeicherte Leitung und wirft die unter B liegende weg.
+ *
+ * Der Leiter war weg, ohne Fehler und ohne Hinweis — dieselbe Wirkung wie bei
+ * T87, nur über eine andere Ursache.
+ *
+ * Die Kennungen in die Aktionen zu ziehen wäre die zweite Buchführung: Sie
+ * müsste bei jeder künftigen Aktion mitgedacht werden, und wer sie vergisst,
+ * merkt es nie. Deshalb wird der Zustand **einmal** gerechnet und als Wert
+ * weitergereicht. Damit ist die Frage strukturell erledigt statt Fall für Fall.
+ */
+const uebernehmen = (_bisher: AppState, neu: AppState): AppState => neu
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, rawDispatch] = useReducer(reducer, undefined, initialState)
+  const [state, rawDispatch] = useReducer(uebernehmen, undefined, initialState)
 
   // Persistenz-Wrapper: berechnet den Folgezustand (Reducer ist rein),
   // schreibt die Änderung nach Supabase und aktualisiert dann React.
@@ -55,7 +87,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const next = reducer(prev, effective)
     stateRef.current = next
     persist(prev, next, effective)
-    rawDispatch(effective)
+    // **Denselben** Stand an React, nicht noch einmal die Aktion (siehe
+    // `uebernehmen`): Was gespeichert wurde, ist damit Zeichen für Zeichen das,
+    // was der Bildschirm zeigt.
+    rawDispatch(next)
     // Die Selektoren wecken. Das passiert im selben Ereignis wie `rawDispatch`,
     // React fasst beide Aktualisierungen also zu einem Commit zusammen —
     // Kontext-Leser und Selektor-Leser sehen nie verschiedene Stände.

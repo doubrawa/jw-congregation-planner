@@ -186,6 +186,7 @@ interface Result {
   dryRun?: boolean
   pushes?: number
   skipped?: number
+  failed?: number
   notifications?: number
   preview?: { userId: string; title: string; body: string; url?: string }[]
 }
@@ -1000,5 +1001,36 @@ describe('send-reminders: was in der Glocke steht, ist übersetzbar', () => {
     const titelDerVorgabe = ['Schatzgraben', 'Bibellesung', 'Gespräch', 'Leerer Teil', 'Vortrag']
     const roh = JSON.stringify(midMeeting())
     for (const titel of titelDerVorgabe) expect(roh, titel).toContain(titel)
+  })
+})
+
+/**
+ * **Ein Lauf, in dem nichts ankommt, darf nicht wie Ruhe aussehen.**
+ *
+ * `zustellen` zählt die abgewiesenen Zustellungen seit je; die Zahl wurde hier
+ * als einziger der drei Functions weggeworfen. Ein Lauf ohne VAPID-Schlüssel
+ * — der Betreiber schaltet `SEND_PUSH` ein und vergisst die Schlüssel —
+ * antwortete deshalb mit `ok: true, pushes: 0`, also genau so wie ein Tag, an
+ * dem nichts anstand. Die Glocken-Zeilen entstehen dabei trotzdem; sie sind
+ * der Teil, der bleibt.
+ */
+describe('send-reminders: der Bericht sagt, was nicht ankam', () => {
+  it('ohne VAPID-Schlüssel: keine Sendung, aber die Zahl steht da', async () => {
+    const r = await run({ SEND_PUSH: 'true' }) // Schlüssel fehlen absichtlich
+    expect(r.dryRun).toBe(false)
+    expect(r.pushes).toBe(0)
+    expect(r.failed, 'abgewiesene Zustellungen').toBeGreaterThan(0)
+    // Und es ging wirklich nichts hinaus.
+    expect(sentPush).toEqual([])
+    // Die Glocke bleibt: sie hängt nicht am Push.
+    expect(r.notifications).toBeGreaterThan(0)
+  })
+
+  it('mit Schlüsseln bleibt die Zahl auf null', async () => {
+    // Gegenprobe: Ohne sie wäre der Fall oben auch dann grün, wenn `failed`
+    // schlicht immer hochgezählt würde.
+    const r = await live()
+    expect(r.pushes).toBeGreaterThan(0)
+    expect(r.failed).toBe(0)
   })
 })

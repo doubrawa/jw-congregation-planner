@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { bedarfJeBereich, engpaesse, offenTrotzAllem } from './bedarf'
 import { buildAbsences } from './absence'
 import { emptyQualifications } from './helpers'
-import type { Absence, Meeting, Person, Service, Week } from './types'
+import { weekendTemplate } from '../../supabase/functions/import-week/parse.ts'
+import type { Absence, Meeting, PartItem, Person, Service, Week } from './types'
 
 /**
  * „Es sind gar nicht genug Leute da."
@@ -88,13 +89,64 @@ describe('Was gezählt wird und was nicht', () => {
   })
 
   it('ein Platz ohne Bereich zählt nirgends mit', () => {
-    // Gastredner und Kreisaufseher tragen keinen Bereichs-Schlüssel — für sie
-    // gibt es keinen Bewerberkreis, den man zählen könnte.
     const m = zusammenkunft()
-    m.sections = [{ label: 'ÖFFENTLICHER VORTRAG', farbe: 'wein', items: [
-      { title: 'Vortrag', meta: '', names: [{ name: '', rolle: 'Gastredner' }] },
+    m.sections = [{ label: 'X', farbe: 'wein', items: [
+      { title: 'Etwas', meta: '', names: [{ name: '' }] },
     ] }]
     expect(bedarfJeBereich(m, []).size).toBe(0)
+  })
+
+  /*
+    **Der Gastredner trägt sehr wohl einen Bereich.**
+
+    Hier stand die Behauptung, „Gastredner und Kreisaufseher tragen keinen
+    Bereichs-Schlüssel", und das Beispiel darunter war entsprechend gebaut —
+    ein Platz ohne `bereichsKey`. Der Import erzeugt aber genau den nicht:
+    `weekendTemplate` setzt `rolle: 'Gastredner'` **und**
+    `bereichsKey: 'vortrag'`. Das Beispiel prüfte damit eine Datenform, die es
+    im Betrieb nicht gibt, und deckte zu, dass der Platz über seinen Bereich
+    mitgezählt wurde: In einer Versammlung, die den öffentlichen Vortrag nicht
+    selbst hält, stand an jedem Wochenende „0 von 0 verfügbar" im Banner.
+
+    Deshalb kommt die Vorlage jetzt aus dem Import selbst, nicht aus einer
+    nachgebauten Zusammenkunft.
+  */
+  /** Der Vortragsplatz aus der Import-Vorlage. */
+  const vortragsPlatz = (we: Meeting) => {
+    const item = we.sections[1]?.items[0]
+    if (!item || !('names' in item)) throw new Error('Vortragsplatz nicht gefunden')
+    const slot = (item as PartItem).names[0]
+    if (!slot) throw new Error('Vortragsplatz ohne Platz')
+    return slot
+  }
+
+  it('der Gastredner-Platz aus dem Import zählt nicht als Bedarf', () => {
+    const we = weekendTemplate('7.–13. September') as unknown as Meeting
+    const vortragsSlot = vortragsPlatz(we)
+    // Die Voraussetzung des Befunds — fällt sie weg, prüft der Test nichts mehr.
+    expect(vortragsSlot.rolle).toBe('Gastredner')
+    expect(vortragsSlot.bereichsKey).toBe('vortrag')
+    expect(bedarfJeBereich(we, []).get('vortrag')).toBeUndefined()
+    // Und damit auch kein Engpass, gleich wie viele den Bereich haben.
+    const keiner = engpaesse(we, [], [], set([]), 0, 'we')
+    expect(keiner.map((e) => e.key)).not.toContain('vortrag')
+  })
+
+  it('der EIGENE Redner zählt dagegen mit — er ist einer von uns', () => {
+    // T29: `rolle: 'Redner'` steht bewusst nicht in `SKIP_ROLE`. Wer den
+    // Vortrag selbst hält, braucht den Bereich, und wenn niemand ihn hat, ist
+    // das ein echter Engpass.
+    const we = weekendTemplate('7.–13. September') as unknown as Meeting
+    const slot = vortragsPlatz(we)
+    slot.rolle = 'Redner'
+    expect(bedarfJeBereich(we, []).get('vortrag')).toBe(1)
+  })
+
+  it('der Kreisaufseher ebenso wenig wie der Gastredner', () => {
+    const we = weekendTemplate('7.–13. September') as unknown as Meeting
+    const slot = vortragsPlatz(we)
+    slot.rolle = 'Kreisaufseher'
+    expect(bedarfJeBereich(we, []).get('vortrag')).toBeUndefined()
   })
 
   it('besetzte Plätze zählen mit — gefragt ist, ob die Versammlung genug Leute HAT', () => {

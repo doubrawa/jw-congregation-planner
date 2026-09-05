@@ -380,6 +380,29 @@ describe('Konten ohne verknüpfte Person', () => {
     })
   })
 
+  it('bietet nur Personen ohne eigenes Konto an', () => {
+    /*
+      Die Verknüpfung ist eins zu eins gedacht — die ganze Oberfläche
+      unterstellt es: `linkedMember` nimmt das **erste** passende Mitglied, die
+      Konto-Karte zeigt genau eines, und `send-plan` wie `send-reminders`
+      führen je Person genau eine Konto-Id (`userByPerson`).
+
+      Die Liste bot trotzdem jede Person an. Wurde eine gewählt, die schon ein
+      Konto hat, hingen zwei daran: Beide sahen ihre Aufgaben und konnten
+      bestätigen, die Benachrichtigung erreichte nur eines von beiden, und die
+      Konto-Karte der Person zeigte das zweite nirgends — es ließ sich von dort
+      also auch nicht wieder lösen.
+    */
+    const { container } = zeige({
+      members: [...WAISE, { userId: 'u8', personId: 'p-a', email: 'a@x.de', planner: false }],
+    })
+    const auswahl = container.querySelector<HTMLSelectElement>('.pers-orphans .mem-select')!
+    const werte = [...auswahl.options].map((o) => o.value)
+    expect(werte, 'Person mit Konto steht zur Wahl').not.toContain('p-a')
+    // Gegenprobe: die übrigen stehen sehr wohl zur Wahl.
+    expect(werte).toContain('p-b')
+  })
+
   it('oder entfernen', () => {
     const { container, dispatch } = zeige({ members: WAISE })
     fireEvent.click(container.querySelector('.pers-orphans .svc-remove')!)

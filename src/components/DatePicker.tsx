@@ -22,8 +22,26 @@ interface DatePickerProps {
 
 const DAY = 864e5
 const iso = (d: Date): string => d.toISOString().slice(0, 10)
+/**
+ * Der Monat, mit dem das Popup aufgeht.
+ *
+ * **Mit Wert** kommt er aus dem ISO-Datum, über UTC-Mittag gelesen — dieselbe
+ * Rechnung wie das Raster darunter, und damit zeitzonenfrei.
+ *
+ * **Ohne Wert** ist „dieser Monat" gemeint, und das ist ein **örtlicher**
+ * Begriff. Hier stand `new Date()` mit `getUTC…` daneben: Zwischen Mitternacht
+ * und 01:00 bzw. 02:00 ist der UTC-Tag in Mitteleuropa noch der gestrige, am
+ * Monatsersten also der Vormonat. Der Kalender ging dann im **Februar** auf,
+ * während die Heute-Marke auf dem 1. März in der ausgegrauten Nachzeile saß.
+ * Genau dieselbe Verwechslung, die `todayIso` weiter unten schon benennt — nur
+ * die halbe Stelle war behoben.
+ */
 const monthStart = (v: string): { y: number; m: number } => {
-  const d = v ? new Date(`${v}T12:00:00Z`) : new Date()
+  if (!v) {
+    const jetzt = new Date()
+    return { y: jetzt.getFullYear(), m: jetzt.getMonth() }
+  }
+  const d = new Date(`${v}T12:00:00Z`)
   return { y: d.getUTCFullYear(), m: d.getUTCMonth() }
 }
 

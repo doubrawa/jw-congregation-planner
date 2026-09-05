@@ -658,7 +658,19 @@ export interface MyTask {
   rolle?: string
   date: string // "Di, 8. September · ca. 19:35"
   chip: string // Countdown-Text NUR im Demo-Modus (z. B. "in 4 Tagen")
-  at?: number | null // UTC-ms des Zusammenkunftstags → Live-Countdown (Intl); null = keiner
+  /**
+   * Der Tag der Aufgabe als **UTC-Mitternacht** — ein Kalendertag, keine
+   * Uhrzeit. `null`, wo es keinen gibt (Demo- und Vorlagenwochen).
+   *
+   * Die Kodierung gehört zur Zusage: `relativeDayLabel` und `istVorbei` lesen
+   * daraus den Kalendertag, und beide vergleichen ihn mit **heute**, örtlich
+   * gerechnet. Ein Zeitpunkt mitten am Tag (etwa Ortsmittag) sähe daneben aus
+   * wie derselbe Tag — bis auf die Stunden nach Mitternacht, in denen der
+   * UTC-Tag noch der gestrige ist. Genau daran liefen die beiden Quellen
+   * auseinander: `meetingDateMs` liefert UTC-Mitternacht, `deriveMyFsTasks`
+   * lieferte den Ortsmittag.
+   */
+  at?: number | null
   status: TaskStatus
   s89: S89Payload | null // Schulungsaufgabe → S-89 anzeigbar
 }

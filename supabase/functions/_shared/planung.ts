@@ -224,6 +224,57 @@ export function versatzMitAbweichung(
   return (tag ? WEEKDAY_OFFSET[tag[1] ?? ''] : undefined) ?? fallback
 }
 
+/**
+ * **Der Termin einer Zusammenkunft als Text** — „Dienstag, 8. September · 19:00".
+ *
+ * Die eine Stelle, an der aus Wochenkennung, Wochentag und Uhrzeit ein Datum
+ * wird; Gegenstück zu `meetingDateText` im Client, und dieselbe Rangfolge:
+ * eigener Termin im `date`-Feld vor gerechnetem Datum, eine Abweichung vor
+ * beidem.
+ *
+ * **Warum das Feld allein nicht reicht.** Importierte Wochen tragen im `date`
+ * nur die Wochenspanne („7.–13. September") — die jw.org-Überschrift nennt
+ * weder Wochentag noch Uhrzeit. Wer es ungeprüft nimmt, schreibt eine Woche,
+ * wo ein Termin stehen müsste (B4). Genau das tat `substitute` bis hierher als
+ * einzige der drei Functions: Seine Ersatzsuche nannte die Spanne, während die
+ * App daneben den Tag zeigte — dieselbe Auskunft in zwei Fassungen, je
+ * nachdem, ob sie aus dem Push oder aus dem Aufgaben-Blatt kam.
+ *
+ * Steht hier und nicht in `zuteilungen.ts`, wo sie herkommt: Dieses Modul ist
+ * die untere, abhängigkeitsfreie Schicht. `zuteilungen.ts` zieht den
+ * Fragment-Übersetzer samt seiner Wörterbücher nach — ein Preis, den eine
+ * Function zahlen soll, die auch übersetzt, nicht eine, die nur ein Datum
+ * braucht.
+ *
+ * `dateFeld` statt der ganzen Zusammenkunft: Gebraucht wurde davon immer nur
+ * dieses eine Feld, und die Treffpunkte haben gar keine Zusammenkunft.
+ */
+export function terminText(
+  startISO: string,
+  offset: number,
+  dateFeld: string | undefined,
+  zeit: string,
+  dev?: Abweichungen,
+  tab?: 'mid' | 'we',
+): string {
+  // Eine Abweichung schlägt auch den eigenen Termin im `date`-Feld: der Planer
+  // hat den Tag ausdrücklich verlegt, das `date`-Feld nennt noch den alten
+  // (gleiche Regel wie `meetingDateText` im Client).
+  const abw = tab ? dev?.[tab] : undefined
+  const verlegt = Boolean(abw?.day || abw?.time)
+  if (
+    !verlegt &&
+    /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.test(dateFeld ?? '')
+  ) {
+    return taskDateText(dateFeld)
+  }
+  const ms = Date.parse(startISO)
+  if (Number.isNaN(ms)) return taskDateText(dateFeld)
+  const d = new Date(ms + offset * 864e5)
+  const text = deutschesDatum(d, true)
+  return zeit ? `${text} · ${zeit}` : text
+}
+
 /** Uhrzeit mit Abweichung — gleiche Rangfolge wie beim Tag. */
 export function zeitMitAbweichung(
   dev: Abweichungen | undefined,

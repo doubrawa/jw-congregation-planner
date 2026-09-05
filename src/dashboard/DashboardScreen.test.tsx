@@ -206,7 +206,15 @@ describe('Die eigene nächste Aufgabe', () => {
   })
 
   it('der Countdown rechnet aus dem echten Termin — nicht aus einem gespeicherten Satz', () => {
-    const morgen = Date.now() + 24 * 3600_000
+    /*
+      `MyTask.at` ist ein **Kalendertag** als UTC-Mitternacht, kein Zeitpunkt
+      (siehe dort). Hier stand `Date.now() + 24h` — eine Uhrzeit von jetzt aus,
+      eine Form, die keine der beiden Quellen erzeugt. In den Stunden nach
+      Mitternacht liegt ihr UTC-Tag noch auf heute, und der Test hing damit an
+      der Uhrzeit des Testlaufs.
+    */
+    const heute = new Date()
+    const morgen = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate() + 1)
     const { container } = zeige({ myTasks: [task({ at: morgen })] })
     expect(container.querySelector('.dash-hero-chip')?.textContent).toBe('morgen')
   })
@@ -351,6 +359,33 @@ describe('Die Planungs-Kachel gehört dem Planer', () => {
     ]
     const { container } = zeige({ planner: true, weeks: [w], absences: abwesend })
     expect(container.querySelector('.dash-plan-text')?.textContent).toContain(t.dashKonflikteN.replace('{n}', '1'))
+  })
+
+  it('zählt Konflikte auch, wenn heute in keine geladene Woche fällt', () => {
+    /*
+      **Beide Hälften der Kachel müssen dieselbe Woche meinen.**
+
+      „Offene Zuteilungen" fällt auf die gerade **gewählte** Woche zurück, wenn
+      heute in keine geladene fällt — die Konfliktzahl daneben tat das nicht und
+      blieb dann stumm auf 0. Eine Kachel, zwei Wochen.
+
+      Der Fall ist kein Randfall: Eine frisch eingerichtete Versammlung holt mit
+      „Programm importieren" die **nächste** Woche. Bis der Montag kommt, liegt
+      heute in keiner geladenen Woche — und genau in dieser Zeit plant der
+      Koordinator. Er sah offene Plätze, aber keinen einzigen Konflikt.
+    */
+    const zukunft = laufendeWoche()
+    const montag = new Date(`${zukunft.start}T12:00:00`)
+    montag.setDate(montag.getDate() + 21) // drei Wochen voraus
+    zukunft.start = `${montag.getFullYear()}-${String(montag.getMonth() + 1).padStart(2, '0')}-${String(montag.getDate()).padStart(2, '0')}`
+    platz(zukunft).name = 'Anton Alt'
+    platz(zukunft).pid = 'p-a'
+    const abwesend: Absence[] = [
+      { id: 'a1', personId: 'p-a', userId: null, from: zukunft.start, to: '2099-12-31', reason: '' },
+    ]
+    const { container } = zeige({ planner: true, weeks: [zukunft], week: 0, absences: abwesend })
+    const text = container.querySelector('.dash-plan-text')?.textContent ?? ''
+    expect(text, text).toContain(t.dashKonflikteN.replace('{n}', '1'))
   })
 
   it('sie führt ins Planen', () => {

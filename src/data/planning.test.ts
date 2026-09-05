@@ -5,6 +5,7 @@ import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERS
 import { displayName, helperWorkload, isGuestRole, isSong, loadWindow, partWorkload, rolleMitHerkunft, workloadOf } from './helpers'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
+  alleS89DerWoche,
   aufgabenBezeichnung,
   assignmentsInMeeting,
   autoAssignMeeting,
@@ -313,6 +314,58 @@ describe('S-89-Nutzlast', () => {
       kind: 'part', wi: 0, tab: 'mid', si: pet, ii, ni: 0, priv: 'lesen', groups: false, label: '',
     })
     expect(s89?.point).toBe('th Lektion 2')
+  })
+
+  /*
+    **Ohne Schüler kein Zettel.**
+
+    Der S-89 gehört dem Schüler; der Gesprächspartner steht mit darauf und
+    bekommt eine Abschrift. Ist nur der Partner zugeteilt — der Planer fängt
+    dort an, oder der Schüler wird wieder entfernt —, fiel der Führername leer
+    aus, und der Rückfall `leadName || current` setzte den **Partner** an die
+    Stelle des Schülers: Der Zettel nannte dieselbe Person zweimal, und der
+    Druckbogen legte ihn gleich zweimal aus.
+
+    Der Rückfall bleibt, wofür er gedacht ist — die Bibellesung hat gar keinen
+    `schulung`-Platz; der Fall darüber prüft ihn.
+  */
+  it('ohne zugeteilten Schüler gibt es keinen Zettel für den Partner allein', () => {
+    const w = buildDemoWeeks()
+    const uid = w[0].mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
+    const ii = w[0].mid.sections[uid].items.findIndex(
+      (i) => !isSong(i) && (i as PartItem).names.some((n) => n.bereichsKey === 'schulungPartner'),
+    )
+    const punkt = w[0].mid.sections[uid].items[ii] as PartItem
+    const fuehrer = punkt.names.find((n) => n.bereichsKey === 'schulung')!
+    const partnerNi = punkt.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
+    fuehrer.name = '' // nur der Partner steht da
+    delete fuehrer.pid
+    const sel = {
+      kind: 'part' as const, wi: 0, tab: 'mid' as const, si: uid, ii, ni: partnerNi,
+      priv: 'schulungPartner', groups: false, label: '',
+    }
+    expect(buildS89ForSlot(w, sel)).toBeNull()
+    // Und der Druckbogen legt ihn erst recht nicht zweimal aus.
+    expect(alleS89DerWoche(w, 0).filter((z) => z.name === z.partner)).toEqual([])
+  })
+
+  it('mit Schüler steht der Zettel wieder da — und nennt beide', () => {
+    // Gegenprobe: Ohne sie wäre die Zeile oben auch dann grün, wenn gar kein
+    // Zettel mehr entstünde.
+    const w = buildDemoWeeks()
+    const uid = w[0].mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
+    const ii = w[0].mid.sections[uid].items.findIndex(
+      (i) => !isSong(i) && (i as PartItem).names.some((n) => n.bereichsKey === 'schulungPartner'),
+    )
+    const punkt = w[0].mid.sections[uid].items[ii] as PartItem
+    const partnerNi = punkt.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
+    const zettel = buildS89ForSlot(w, {
+      kind: 'part', wi: 0, tab: 'mid', si: uid, ii, ni: partnerNi,
+      priv: 'schulungPartner', groups: false, label: '',
+    })
+    expect(zettel?.name).toBeTruthy()
+    expect(zettel?.partner).toBeTruthy()
+    expect(zettel?.name).not.toBe(zettel?.partner)
   })
 
   it('liefert null für Nicht-Schulungsslots', () => {

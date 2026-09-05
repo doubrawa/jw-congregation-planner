@@ -95,6 +95,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                   <input
                     className="fsr-input"
                     type="text"
+                    dir="auto"
                     value={rule.place}
                     placeholder={t.fsOrtPh}
                     aria-label={t.fsOrtPh}

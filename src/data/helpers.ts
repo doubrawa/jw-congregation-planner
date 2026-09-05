@@ -840,17 +840,28 @@ export function gehoertZu(zuteilung: Zuteilung | undefined, person: Person): boo
  * Person), bekommt `undefined` und fällt aus der Rechnung — richtig so: eine
  * Auslastung hat nur, wer zugeteilt werden kann.
  *
+ * **Der externe Redner ist dabei kein Sonderfall, sondern dieselbe Regel wie
+ * in `gehoertZu`** — und stand hier lange nur im Kommentar. Ein Gastredner
+ * steht als Freitext im Slot und hat naturgemäß keine `pid`; der Name fiel
+ * damit auf die Personenliste zurück und traf einen gleichnamigen Bruder der
+ * eigenen Versammlung. Der zählte dann fremde Last (`assignmentDistance`) und
+ * galt in `autoAssignMeeting` als „an diesem Tag schon eingeteilt" — war der
+ * Vortrag von außen vergeben, blieb sein Namensvetter am selben Wochenende
+ * unbesetzbar, ohne Hinweis. Für einen Gast ist der Name kein schwächerer
+ * Anhalt, sondern gar keiner: er meint jemanden, den diese Versammlung nicht
+ * kennt.
+ *
  * Bei doppelten Anzeigenamen und Altdaten ohne Id bleibt eine Zweideutigkeit,
  * die keine Auflösung beheben kann; deshalb warnt die App vor Dubletten
  * (`duplicateDisplayNames`).
  */
-export function idAufloeser(persons: Person[]): (z: Zuteilung | undefined) => string | undefined {
+export function idAufloeser(persons: readonly Person[]): (z: Zuteilung | undefined) => string | undefined {
   const nachId = new Set(persons.map((p) => p.id))
   const nachName = new Map(persons.map((p) => [displayName(p), p.id]))
   return (z) => {
     if (!z?.name) return undefined
     if (z.pid) return nachId.has(z.pid) ? z.pid : undefined
-    return nachName.get(z.name)
+    return isGuestRole(z.rolle) ? undefined : nachName.get(z.name)
   }
 }
 

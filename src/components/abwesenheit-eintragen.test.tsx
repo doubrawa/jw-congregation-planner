@@ -177,6 +177,35 @@ describe('Der Datumswähler', () => {
     expect(heute[0]!.className).not.toContain('dp-day--sel')
   })
 
+  it('geht ohne Wert im ÖRTLICHEN Monat auf, nicht im UTC-Monat', () => {
+    /*
+      „Dieser Monat" ist ein örtlicher Begriff. Der Kalender las ihn über
+      `getUTCMonth()`, und in Mitteleuropa ist der UTC-Tag zwischen Mitternacht
+      und 01:00 bzw. 02:00 noch der gestrige — am Monatsersten also der
+      Vormonat. Wer nach Mitternacht eine Abwesenheit eintrug, bekam den
+      **Februar** vorgelegt, während die Heute-Marke auf dem 1. März in der
+      ausgegrauten Nachzeile saß.
+
+      Für die Heute-Marke selbst steht dieselbe Begründung längst im
+      Quelltext (`todayIso`) — nur die Monatswahl daneben war noch die alte.
+      Die Tests der Suite laufen sonst auf 12:00 mittags und können den
+      Unterschied gar nicht sehen; deshalb stellt dieser die Uhr selbst.
+    */
+    vi.setSystemTime(new Date(2026, 2, 1, 0, 30)) // 1. März 2026, 00:30 Ortszeit
+    const { container } = zeigeDP('')
+    fireEvent.click(container.querySelector('.dp-field')!)
+    expect(container.querySelector('.dp-title')?.textContent).toContain('März')
+  })
+
+  it('mit Wert entscheidet der Wert, nicht die Uhr', () => {
+    // Die Gegenprobe: Das ISO-Datum wird über UTC-Mittag gelesen und ist
+    // damit zeitzonenfrei — daran ändert die Uhrzeit nichts.
+    vi.setSystemTime(new Date(2026, 2, 1, 0, 30))
+    const { container } = zeigeDP('2026-08-01')
+    fireEvent.click(container.querySelector('.dp-field')!)
+    expect(container.querySelector('.dp-title')?.textContent).toContain('August')
+  })
+
   it('Tage vor `min` sind gesperrt — „Bis" kann nicht vor „Von" liegen', () => {
     const { container } = zeigeDP('', { value: '', min: '2026-10-10' })
     fireEvent.click(container.querySelector('.dp-field')!)

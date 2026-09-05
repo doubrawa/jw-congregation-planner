@@ -14,7 +14,7 @@ import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
 import type { Week } from '../data/types'
 import { APP_TO_JW, congAppCode } from './langs'
-import { makeTr } from './translate'
+import { makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
 
 export interface I18n {
@@ -49,7 +49,12 @@ export function fill(template: string, params: Record<string, string | number>):
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? ''))
 }
 
-const identity = (s: string) => s
+/**
+ * Kein Wörterbuch nötig (Deutsch) — die Freitext-Marken müssen trotzdem
+ * herunter, sonst stehen die unsichtbaren Isolat-Zeichen im DOM (siehe
+ * `i18n/freitext.ts`).
+ */
+const identity = ohneMarken
 
 /**
  * Der meistgenutzte Hook der App — 44 Bausteine hängen an ihm, und er liest

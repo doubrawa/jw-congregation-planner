@@ -22,6 +22,7 @@ import {
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, emptyQualifications, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { deriveMyTasks, derivePendingIds } from '../data/planning'
+import { alsFreitext } from '../i18n/translate'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
@@ -110,6 +111,17 @@ function weeksContainName(weeks: Week[], name: string): boolean {
 }
 
 const person = (name: string): Person => DEMO_PERSONS.find((p) => displayName(p) === name)!
+
+/**
+ * Eine Neuableitung anstoßen (`myTasks`, `pendingIds`, `substituteReqs`).
+ *
+ * Der Reducer rechnet nach, sobald sich eine seiner Rechengrundlagen geändert
+ * hat; ein Sprachwechsel ist der billigste Anstoß dafür. Auf **dieselbe**
+ * Sprache zu wechseln ändert nichts und löst deshalb zu Recht auch nichts aus —
+ * darum hier immer die andere.
+ */
+const neuAbgeleitet = (s: AppState): AppState =>
+  reducer(s, { type: 'setLang', lang: s.lang === 'de' ? 'en' : 'de' })
 
 describe('isNameless', () => {
   it('true nur ohne jeglichen Namen', () => {
@@ -716,6 +728,25 @@ describe('Bestätigungs-Flow', () => {
     expect(dec.confirmations['slot|key|2']).toBe('verhindert')
     expect(dec.notifs[0].type).toBe('verhindert')
   })
+
+  it('der Name in der Meldung geht als Freitext hinaus', () => {
+    /*
+      Die Glocke übersetzt beim Anzeigen jedes „ · "-Atom (und rekursiv jede
+      „ — "-Hälfte). Der Name gehört zu den Atomen, die kein Übersetzer
+      anfassen darf: Sehr viele Bibelbücher heißen wie ein Vorname, und die
+      Schreibweise für Namensgleiche („Markus 2", siehe `displayName`) trägt
+      obendrein die Ziffer, an der die Buch-Regel Schriftstellen erkennt.
+      Deshalb trägt er die Freitext-Marke schon hier (`i18n/freitext.ts`).
+    */
+    const ich = person('Simon Krüger')
+    const s = makeState({ dataStatus: 'ready', personId: ich.id })
+    const dec = reducer(s, { type: 'declineTask', id: 'slot|key|2' })
+    const text = dec.notifs[0]!.text
+
+    expect(text).toContain(alsFreitext(displayName(ich)))
+    // Gegenprobe: unmarkiert stünde der Name nicht drin.
+    expect(text.includes(` — ${displayName(ich)}`)).toBe(false)
+  })
 })
 
 describe('LAC / Vortrag (über den Reducer)', () => {
@@ -1150,11 +1181,10 @@ describe('hydrate / setDataStatus', () => {
 })
 
 describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
-  it('DERIVE_ACTIONS berechnen myTasks/pendingIds aus den Wochen neu', () => {
+  it('eine geänderte Rechengrundlage berechnet myTasks/pendingIds neu', () => {
     const me = person('Simon Krüger')
     const s = makeState({ dataStatus: 'ready', personId: me.id, myTasks: [], pendingIds: [] })
-    // setLang ist eine DERIVE_ACTION → withDerivedTasks greift (Produktion)
-    const next = reducer(s, { type: 'setLang', lang: 'de' })
+    const next = neuAbgeleitet(s)
     expect(next.myTasks.length).toBeGreaterThan(0)
     // Über die Kennung: die Demo-Wochen tragen teils noch keine pid, dann
     // greift der Namensschlüssel.
@@ -1174,7 +1204,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     vorbei.start = '2026-01-05' // Montag, sicher in der Vergangenheit
     ;(vorbei.mid.sections[0]!.items[0] as PartItem).names[0]!.name = displayName(me)
     const s = makeState({ dataStatus: 'ready', personId: me.id, weeks, myTasks: [] })
-    const next = reducer(s, { type: 'setLang', lang: 'de' })
+    const next = neuAbgeleitet(s)
 
     const heute = new Date()
     const heuteMs = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate())
@@ -1183,6 +1213,40 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const roh = deriveMyTasks(weeks, DEMO_SERVICES, displayName(me), {}, '', me.id)
     expect(roh.some((t) => t.at != null && t.at < heuteMs)).toBe(true)
     expect(next.myTasks.some((t) => t.at != null && t.at < heuteMs)).toBe(false)
+  })
+
+  it('geänderte Zusammenkunftszeit zieht die Termine meiner Aufgaben nach', () => {
+    /*
+      Die Termine der Aufgaben stehen nirgends in den Wochendaten: sie werden
+      bei jeder Ableitung aus `congregation.meetings` gerechnet. Wird der Tag
+      der Zusammenkunft umgestellt, muss die Ableitung deshalb erneut laufen —
+      sonst nennt „Meine Aufgaben" weiter den alten Tag, während das Programm
+      daneben schon den neuen zeigt.
+    */
+    const me = person('Simon Krüger')
+    // Importierte Wochen: im `date`-Feld steht die Wochenspanne, kein Termin —
+    // erst dann kommt der Tag aus den Einstellungen (`meetingOffset`).
+    const weeks = buildDemoWeeks()
+    for (const week of weeks) week.mid.date = '7.–13. September'
+    const s = makeState({
+      dataStatus: 'ready',
+      personId: me.id,
+      weeks,
+      congregation: { ...CONGREGATION, meetings: 'Di 19:00 · So 10:00' },
+      myTasks: [],
+    })
+    const vorher = neuAbgeleitet(s)
+    const midTask = vorher.myTasks.find((t) => t.id.includes('|mid|'))
+    expect(midTask, 'keine Zusammenkunfts-Aufgabe in den Demo-Wochen').toBeDefined()
+    expect(midTask!.at).toBe(Date.UTC(2026, 8, 8)) // Dienstag der ersten Demo-Woche
+
+    const nachher = reducer(vorher, {
+      type: 'updateCongregation',
+      patch: { meetings: 'Do 19:00 · So 10:00' },
+    })
+    const neuerTermin = nachher.myTasks.find((t) => t.id === midTask!.id)
+    expect(neuerTermin, 'Aufgabe verschwunden').toBeDefined()
+    expect(neuerTermin!.at, 'Termin hängt an der alten Einstellung').toBe(Date.UTC(2026, 8, 10))
   })
 
   it('im Demo-Modus bleiben die Demo-Aufgaben unangetastet', () => {
@@ -1201,7 +1265,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
       { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
     ]
     const s = makeState({ dataStatus: 'ready', personId: me.id, fsWeeks, myTasks: [] })
-    const next = reducer(s, { type: 'setLang', lang: 'de' })
+    const next = neuAbgeleitet(s)
     const fsTask = next.myTasks.find((t) => t.id === 'fs|2026-09-07|tp1')
     expect(fsTask, 'Treffpunkt fehlt in myTasks').toBeDefined()
     expect(fsTask!.status).toBe('offen')
@@ -1220,8 +1284,43 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
       confirmations: { 'fs|2026-09-07|tp1': 'bestätigt' },
       myTasks: [],
     })
-    const next = reducer(s, { type: 'setLang', lang: 'de' })
+    const next = neuAbgeleitet(s)
     expect(next.myTasks.find((t) => t.id === 'fs|2026-09-07|tp1')!.status).toBe('bestätigt')
+  })
+
+  it('ein gelöschter Treffpunkt nimmt meine Aufgabe mit', () => {
+    /*
+      Die Treffpunkt-Aktionen standen allesamt nicht in der Liste der
+      Ableitungs-Aktionen: Wer den Treffpunkt löschte, dem blieb die Aufgabe
+      unter „Meine Aufgaben" stehen — samt Bestätigungs-Knopf für eine
+      Zusammenkunft, die es nicht mehr gab. Dasselbe galt für `fsClear` und für
+      jede gelöschte Regel (`fsRuleRemove` baut die Wochen neu auf).
+    */
+    const me = person('Simon Krüger')
+    const fsWeeks = buildDemoFsWeeks()
+    fsWeeks[0] = [
+      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
+    ]
+    const s = neuAbgeleitet(makeState({ dataStatus: 'ready', personId: me.id, fsWeeks, myTasks: [] }))
+    expect(s.myTasks.some((t) => t.id === 'fs|2026-09-07|tp1'), 'Aufgabe fehlt schon vorher').toBe(true)
+
+    const nachher = reducer(s, { type: 'fsInstRemove', wi: 0, id: 'tp1' })
+    expect(
+      nachher.myTasks.some((t) => t.id === 'fs|2026-09-07|tp1'),
+      'Aufgabe zu einem gelöschten Treffpunkt',
+    ).toBe(false)
+  })
+
+  it('was die Rechengrundlage nicht anfasst, rechnet auch nicht neu', () => {
+    // Die Kehrseite: Die Ableitung hängt an den Quellen, nicht am Aktionsnamen.
+    // Ein Farbwechsel fasst keine an — `myTasks` bleibt dasselbe Objekt und
+    // niemand rendert deswegen neu.
+    const s = neuAbgeleitet(
+      makeState({ dataStatus: 'ready', personId: person('Simon Krüger').id, myTasks: [] }),
+    )
+    const nachher = reducer(s, { type: 'setTheme', theme: 'indigo' })
+    expect(nachher.myTasks).toBe(s.myTasks)
+    expect(nachher.pendingIds).toBe(s.pendingIds)
   })
 
   /*
@@ -1267,12 +1366,12 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
       const s = mitLeiter()
       // Gegenprobe: aus den Zusammenkünften käme diese Kennung nicht.
       expect(derivePendingIds(s.weeks, s.services, s.confirmations)).not.toContain('p-nur-fs')
-      expect(reducer(s, { type: 'setLang', lang: 'de' }).pendingIds).toContain('p-nur-fs')
+      expect(neuAbgeleitet(s).pendingIds).toContain('p-nur-fs')
     })
 
     it('nach seiner Bestätigung verschwindet das Zeichen', () => {
       const s = mitLeiter({ confirmations: { 'fs|2026-09-07|tp1': 'bestätigt' } })
-      expect(reducer(s, { type: 'setLang', lang: 'de' }).pendingIds).not.toContain('p-nur-fs')
+      expect(neuAbgeleitet(s).pendingIds).not.toContain('p-nur-fs')
     })
 
     it('das Zuteilen selbst hält bis zur Ableitung durch', () => {
@@ -1305,6 +1404,67 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
  * gibt. Ungeprüft warf der Zugriff mitten im Dispatch — und ein Reducer, der
  * wirft, reißt die ganze Ansicht mit. Er gibt jetzt den Zustand zurück (T42).
  */
+/**
+ * **Die Rechengrundlagen gegen die Ableitung gehalten.**
+ *
+ * `reducer` rechnet `myTasks`/`pendingIds`/`substituteReqs` neu, sobald sich
+ * eine der Quellen in `ableitungsQuellen` geaendert hat. Diese Liste ist von
+ * Hand gepflegt — und damit steht und faellt die ganze Mechanik: Liest
+ * `withDerivedTasks` kuenftig ein Feld, das dort nicht steht, bleibt der
+ * abgeleitete Zustand nach der ausloesenden Aktion veraltet. Gueltig, nur
+ * falsch, und ohne Test bemerkt es niemand — genau die Fehlerklasse, die die
+ * Vorgaengerloesung (eine Liste von Aktionsnamen) jahrelang getragen hat.
+ *
+ * Gelesen wird der Quelltext, wie in `readonly.test.ts`: Beide Listen sind
+ * Ausdruecke und existieren zur Laufzeit nicht als Daten.
+ */
+describe('ableitungsQuellen deckt ab, was withDerivedTasks liest', () => {
+  const REDUCER = import.meta.glob('./reducer.ts', { query: '?raw', import: 'default', eager: true })
+  const quelle = String(Object.values(REDUCER)[0] ?? '').replace(/\r\n/g, '\n')
+
+  /** Rumpf einer Top-Level-Funktion: ab ihrem Kopf bis zur schliessenden Klammer in Spalte 0. */
+  const rumpf = (kopf: string): string => {
+    const ab = quelle.indexOf(kopf)
+    if (ab < 0) throw new Error(`${kopf} nicht gefunden — Muster nachziehen`)
+    const ende = quelle.indexOf('\n}\n', ab)
+    if (ende < 0) throw new Error(`Ende von ${kopf} nicht gefunden`)
+    return quelle.slice(ab, ende)
+  }
+
+  /** Die ersten Glieder aller `<praefix>.<feld>`-Zugriffe. */
+  const felder = (text: string, praefix: string): Set<string> =>
+    new Set([...text.matchAll(new RegExp(`\\b${praefix}\\.([a-zA-Z]+)`, 'g'))].map((m) => m[1]!))
+
+  const gelesen = () => felder(rumpf('function withDerivedTasks('), 'state')
+  const quellen = () => felder(rumpf('function ableitungsQuellen('), 's')
+
+  /**
+   * Gelesen, aber keine Rechengrundlage: `confirmOpen` geht nur durch —
+   * `withDerivedTasks` traegt den vorigen Wert weiter und prueft ihn gegen das
+   * frische Ergebnis. Stuende es in den Quellen, liefe die Ableitung bei jedem
+   * Oeffnen und Schliessen des Blattes, ohne dass sich etwas aendern koennte.
+   */
+  const DURCHGEREICHT = new Set(['confirmOpen'])
+
+  it('jedes gelesene Feld steht in den Quellen', () => {
+    const a = gelesen()
+    const b = quellen()
+    // Gegenprobe: Ohne Treffer prueft der Test nichts.
+    expect(a.size, 'keine state-Zugriffe gefunden').toBeGreaterThan(8)
+    expect(b.size, 'keine Quellen gefunden').toBeGreaterThan(8)
+
+    const fehlend = [...a].filter((f) => !b.has(f) && !DURCHGEREICHT.has(f))
+    expect(fehlend, `gelesen, aber keine Quelle: ${fehlend.join(', ')}`).toEqual([])
+  })
+
+  it('und keine Quelle steht dort umsonst', () => {
+    // Die Gegenrichtung: Ein Feld, das niemand mehr liest, loest Ableitungen
+    // ohne Anlass aus — bei `persons` etwa je Tastenanschlag im Personen-Detail.
+    const ueberzaehlig = [...quellen()].filter((f) => !gelesen().has(f))
+    expect(ueberzaehlig, `Quelle ohne Leser: ${ueberzaehlig.join(', ')}`).toEqual([])
+  })
+})
+
 describe('Index außerhalb des Fensters', () => {
   const WEIT_DRAUSSEN = 99
 

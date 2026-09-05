@@ -91,6 +91,28 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
     expect(next[1].mid.end).toBe('Ende ca. 20:15') // mitgezogen
   })
 
+  it('eine unberührte Woche behält ihre Referenz', () => {
+    /*
+      „Unberührt" muss man **sehen** können: `persist.ts` entscheidet an der
+      Referenz, welche Woche es zu schreiben gibt. Hier stand ein `{ ...week }`
+      vor der Schleife — jede Woche bekam damit eine neue Hülle, auch die, an
+      der nichts zu verschieben war. Eine Gedächtnismahl-Woche ging so bei
+      jeder Zeitumstellung an die Datenbank; hatte dort inzwischen ein anderer
+      Planer geschrieben, meldete der Stand-Vergleich einen Konflikt für eine
+      Woche, die niemand angefasst hatte.
+
+      Der Test daneben („dasselbe Array") prüft nur den Fall, dass gar nichts
+      geschieht. Dieser hier prüft den, der im Betrieb vorkommt: es geschieht
+      etwas — nur nicht überall.
+    */
+    const weeks = importierteWochen()
+    weeks[0].mid.date = 'Dienstag, 8. September · 19:45' // eigener Termin
+    weeks[0].we.date = 'Sonntag, 13. September · 10:30'
+    const next = endenNachziehen(weeks, 'Di 19:00 · So 10:00', 'Di 18:30 · So 09:30')
+    expect(next[0]).toBe(weeks[0]) // keine der beiden Zusammenkünfte betroffen
+    expect(next[1]).not.toBe(weeks[1]) // diese schon
+  })
+
   it('gibt bei unveränderter Zeit dasselbe Array zurück', () => {
     // Identität, damit React nicht ohne Grund neu rendert und die Persistenz
     // nicht 52 unveränderte Wochen schreibt.

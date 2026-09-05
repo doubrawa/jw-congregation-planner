@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { APP_LANGS, LOCALES } from './langs'
+import { istVorbei } from '../data/meeting-dates'
 import { relativeDayLabel, relativeWeekLabel } from './relative-time'
 
 // Fester „Jetzt"-Zeitpunkt, damit die Tage-Differenz deterministisch ist.
@@ -27,6 +28,46 @@ describe('relativeDayLabel', () => {
 
   it('vergangene Aufgaben → "vor N Tagen"', () => {
     expect(relativeDayLabel(NOW - 3 * day, 'de', NOW)).toBe('vor 3 Tagen')
+  })
+
+  /*
+    **„Heute" ist ein örtlicher Begriff.**
+
+    Ein Termin ist ein Kalendertag und liegt als UTC-Mitternacht vor
+    (`meetingDateMs`). „Jetzt" war dagegen ein Zeitpunkt, und der Tag daraus
+    wurde ebenfalls in UTC genommen — zwischen Mitternacht und 01:00 bzw. 02:00
+    ist das in Mitteleuropa noch der gestrige. Der Countdown zählte dann einen
+    Tag zu viel: Wer am Dienstagmorgen um halb eins nachsah, las über seiner
+    Aufgabe „morgen" — für die Zusammenkunft an diesem Abend.
+
+    Die Uhrzeiten stehen hier bewusst als **örtliche** Zeit (`new Date(j, m, t,
+    …)`), nicht als UTC-Zeichenkette: Nur so prüft der Fall dasselbe, egal in
+    welcher Zeitzone die Prüfung läuft. Die Fälle darüber liegen alle auf
+    UTC-Mitternacht und können den Unterschied gar nicht sehen.
+  */
+  const TERMIN = Date.UTC(2026, 8, 8) // Dienstag, 8. September 2026
+
+  it('am Zusammenkunftstag um 00:30 Ortszeit heißt es „heute"', () => {
+    const jetzt = new Date(2026, 8, 8, 0, 30).getTime()
+    expect(relativeDayLabel(TERMIN, 'de', jetzt)).toBe('heute')
+    // Und die zweite Auskunft über denselben Tag sagt dasselbe.
+    expect(istVorbei(TERMIN, new Date(jetzt))).toBe(false)
+  })
+
+  it('am Vorabend um 23:30 Ortszeit heißt es „morgen"', () => {
+    const jetzt = new Date(2026, 8, 7, 23, 30).getTime()
+    expect(relativeDayLabel(TERMIN, 'de', jetzt)).toBe('morgen')
+  })
+
+  it('vier Tage vorher um 00:30 Ortszeit sind es vier, nicht fünf', () => {
+    const jetzt = new Date(2026, 8, 4, 0, 30).getTime()
+    expect(relativeDayLabel(TERMIN, 'de', jetzt)).toBe('in 4 Tagen')
+  })
+
+  it('am Tag danach um 00:30 Ortszeit ist er vorbei — beide Auskünfte einig', () => {
+    const jetzt = new Date(2026, 8, 9, 0, 30).getTime()
+    expect(relativeDayLabel(TERMIN, 'de', jetzt)).toBe('gestern')
+    expect(istVorbei(TERMIN, new Date(jetzt))).toBe(true)
   })
 
   it('kein Zeitpunkt → leerer Chip', () => {

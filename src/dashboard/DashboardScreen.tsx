@@ -82,17 +82,25 @@ export function DashboardScreen() {
   // Zahl über die ganze Woche, und ein abwesender Treffpunkt-Leiter ist genauso
   // einer wie ein abwesender Redner. Die Prüfung selbst bleibt getrennt —
   // andere Datenquelle, eigener Wochentag.
-  const conflicts =
-    curIdx >= 0
-      ? weekConflicts(state.weeks, curIdx, state.persons, state.services, undefined, abwesend).length +
-        fsWeekConflicts(
-          state.fsWeeks,
-          curIdx,
-          state.persons,
-          state.absences,
-          fsKennung(state.weeks[curIdx], state.fsBase, curIdx),
-        ).length
-      : 0
+  //
+  // **Über `weekIdx`, nicht über `curIdx`** — dieselbe Woche, aus der die
+  // offenen Zuteilungen darüber kommen. Hier stand `curIdx >= 0 ? … : 0`: Fiel
+  // heute in keine geladene Woche, nannte dieselbe Kachel die offenen Plätze
+  // der **gewählten** Woche und dazu null Konflikte. Eine Kachel, zwei Wochen.
+  //
+  // Der Fall ist kein Randfall: Eine frisch eingerichtete Versammlung holt mit
+  // „Programm importieren" die **nächste** Woche. Bis der Montag kommt, liegt
+  // heute in keiner geladenen — und genau in dieser Zeit plant der Koordinator.
+  const conflicts = week
+    ? weekConflicts(state.weeks, weekIdx, state.persons, state.services, undefined, abwesend).length +
+      fsWeekConflicts(
+        state.fsWeeks,
+        weekIdx,
+        state.persons,
+        state.absences,
+        fsKennung(week, state.fsBase, weekIdx),
+      ).length
+    : 0
 
   return (
     <section className="screen dash">

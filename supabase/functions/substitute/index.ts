@@ -40,10 +40,13 @@ import {
   type Abweichungen,
   istAusgefallenFuer,
   meetingDayOffsets,
+  meetingTimesOf,
   personDisplayName,
-  taskDateText,
+  terminText,
   versatzMitAbweichung,
+  zeitMitAbweichung,
 } from '../_shared/planung.ts'
+import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 
 declare const Deno: {
@@ -301,18 +304,43 @@ Deno.serve(async (req: Request) => {
     }
 
     const svcName = services.find((s) => s.key === parts.svc)?.name ?? parts.svc
-    const date = taskDateText(meeting?.date)
+    // Wochentag und Uhrzeit dieser einen Zusammenkunft — einmal gerechnet und
+    // zweimal gebraucht: für die Abwesenheitsprüfung (welcher Kalendertag?)
+    // und für den Termin im Nachrichtentext (welcher Tag steht da?).
+    const zusammenkunftszeiten = congRows[0]?.meeting_times ?? ''
+    const versatz = versatzMitAbweichung(
+      week.dev,
+      parts.tab,
+      meeting.date,
+      meetingDayOffsets(zusammenkunftszeiten)[parts.tab],
+    )
+    /*
+     * **Der Termin, nicht die Wochenspanne.**
+     *
+     * Hier stand `taskDateText(meeting.date)` — das rohe `date`-Feld. Bei einer
+     * importierten Woche trägt das aber nur „7.–13. September": Die
+     * jw.org-Überschrift nennt weder Wochentag noch Uhrzeit (B4). „Ersatz
+     * gesucht" nannte damit eine ganze Woche, und wer die Meldung bekam, wusste
+     * nicht, ob es um die Zusammenkunft unter der Woche oder die am Wochenende
+     * geht. Die App daneben zeigte längst den Tag (`meetingDateText` über
+     * `deriveSubstituteReqs`) — dieselbe Auskunft in zwei Fassungen, je nachdem,
+     * ob sie aus dem Push oder aus dem Aufgaben-Blatt kam.
+     *
+     * `terminText` ist die Regel, nach der auch `send-reminders` und
+     * `send-plan` rechnen: eigener Termin im `date`-Feld vor gerechnetem Datum,
+     * eine Abweichung vor beidem.
+     */
+    const date = terminText(
+      weekRows[0]?.start ?? '',
+      versatz,
+      meeting.date,
+      zeitMitAbweichung(week.dev, parts.tab, meeting.date, meetingTimesOf(zusammenkunftszeiten)[parts.tab]),
+      week.dev,
+      parts.tab,
+    )
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
-    const tagISO = meetingISO(
-      weekRows[0]?.start,
-      versatzMitAbweichung(
-        week.dev,
-        parts.tab,
-        meeting.date,
-        meetingDayOffsets(congRows[0]?.meeting_times ?? '')[parts.tab],
-      ),
-    )
+    const tagISO = meetingISO(weekRows[0]?.start, versatz)
     const qualKey = `svc:${parts.svc}`
     const personById = new Map(persons.map((p) => [p.id, p]))
     const userByPerson = new Map<string, string>()
@@ -357,7 +385,10 @@ Deno.serve(async (req: Request) => {
         // springt ein?") steckte früher im Rumpf und stand deshalb in allen
         // 33 Sprachen deutsch da — dynamischer Text kommt durch keinen
         // Wörterbuch-Schlüssel.
-        [svcName, date, declinedBy].filter(Boolean).join(' · '),
+        //
+        // Der Name geht als gekennzeichneter Freitext hinaus: Er ist das eine
+        // Atom, das kein Übersetzer anfassen darf (`_shared/i18n/freitext.ts`).
+        [svcName, date, alsFreitext(declinedBy)].filter(Boolean).join(' · '),
         `${APP_URL}#go=aufgaben`,
         payload.taskKey,
       )
@@ -440,7 +471,7 @@ Deno.serve(async (req: Request) => {
       subsByUser,
       TITEL_GEFUNDEN,
       (lang) => substituteTexte(lang).gefunden,
-      [svcName, date, callerName].filter(Boolean).join(' · '),
+      [svcName, date, alsFreitext(callerName)].filter(Boolean).join(' · '),
       `${APP_URL}#go=aufgaben`,
     )
     return json({ ok: true, taken: true })

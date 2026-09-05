@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { emptyQualifications, partWorkload } from './helpers'
+import { emptyQualifications, idAufloeser, partWorkload } from './helpers'
 import {
   assignmentsInMeeting,
   assignSlot,
+  autoAssignMeeting,
   clearAssignments,
   deriveMyTasks,
   isGuestRole,
@@ -12,6 +13,7 @@ import {
   ROLE_OWN_SPEAKER,
   slotRolle,
 } from './planning'
+import { migrateAssignmentNames, migrateAssignmentPids } from '../lib/data'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
 
 /**
@@ -72,6 +74,7 @@ const person: Person = {
 }
 
 const vortragsSlot = (w: Week) => (w.we.sections[1].items[0] as PartItem).names[0]
+const vorsitzSlot = (w: Week) => (w.we.sections[0].items[0] as PartItem).names[0]
 
 describe('Die Rollen sagen, wer den Vortrag hält', () => {
   it('„Redner" ist nicht extern — genau daran hängt alles Weitere', () => {
@@ -157,6 +160,99 @@ describe('Ein Gastredner heißt zufällig wie ein Bruder von uns', () => {
     // mitgerissen werden. Unterschieden wird an der Rolle, nicht an der pid.
     const alt = assignSlot([makeWeek()], { ...REDNER, si: 0 }, 'M. Hartmann')
     expect(partWorkload(alt, person)).toBe(1)
+  })
+
+  /*
+    Die zweite Hälfte desselben Befunds, ein Jahr später gefunden: Die Regel
+    stand nur in `gehoertZu`. `idAufloeser` beantwortet dieselbe Frage für die
+    Auto-Zuteilung — und fiel weiter auf den Namen zurück, obwohl sein eigener
+    Kommentar den externen Redner ausdrücklich ausnahm. Diese Hälfte kostet
+    nicht nur eine Strichliste, sondern eine Zuteilung.
+  */
+  it('gibt für ihn keine Person-Id her (idAufloeser)', () => {
+    const werIst = idAufloeser([person])
+    expect(werIst({ name: 'M. Hartmann', rolle: 'Gastredner · Vers. Nordheim' })).toBeUndefined()
+    // Der eigene Redner dagegen IST eine Person der Versammlung.
+    expect(werIst({ name: 'M. Hartmann', rolle: ROLE_OWN_SPEAKER })).toBe(person.id)
+    // Und ohne Rolle (Altdaten, Hilfsdienste) bleibt der Rückfall.
+    expect(werIst({ name: 'M. Hartmann' })).toBe(person.id)
+  })
+
+  it('sperrt den Namensvetter nicht für die Auto-Zuteilung desselben Tages', () => {
+    // `autoAssignMeeting` merkt sich über `idAufloeser`, wer in dieser
+    // Zusammenkunft schon eingeteilt ist. Löste der Gastredner-Freitext dort
+    // auf den Namensvetter auf, stand dieser in der `used`-Menge — und der
+    // Vorsitz blieb offen, obwohl er der einzige Kandidat war. Ohne Fehler,
+    // ohne Hinweis: der Platz sah einfach aus wie nicht besetzbar.
+    const vorsitzender: Person = { ...person, priv: { ...emptyQualifications(), vorsitzWe: true } }
+    const { weeks, unfilled } = autoAssignMeeting(gast(), 0, 'we', [vorsitzender], [])
+    expect(vorsitzSlot(weeks[0]).name).toBe('M. Hartmann')
+    expect(unfilled).toBe(0)
+  })
+})
+
+/**
+ * **Die Lade-Migrationen fassen ihn ebenfalls nicht an.**
+ *
+ * Die drei Prüfungen oben halten die *Ableitungen* zusammen — Auslastung,
+ * Doppelbelegung, Auto-Zuteilung. Die beiden hier gelten den **Migrationen**,
+ * und die wiegen schwerer: Was sie ändern, bleibt stehen. Beide laufen bei
+ * jedem Laden über alle Wochen und schreiben ihr Ergebnis beim nächsten
+ * Speichern in die Datenbank.
+ *
+ * Beide Kommentare nahmen den externen Redner ausdrücklich aus; beide taten es
+ * nicht.
+ */
+describe('Ein Gastredner überlebt die Lade-Migrationen', () => {
+  const gastWoche = (name: string): Week => {
+    const w = makeWeek()
+    const slot = vortragsSlot(w)
+    slot.name = name
+    slot.rolle = 'Gastredner'
+    slot.herkunft = 'Vers. Nordheim'
+    return w
+  }
+
+  it('bekommt nicht die Person-Id seines Namensvetters', () => {
+    // Mit Id gehört ihm der Platz **wirklich**: `gehoertZu` entscheidet über
+    // sie. Der Vortrag eines Auswärtigen stünde damit unter „Meine Aufgaben"
+    // des Bruders, verlangte seine Bestätigung, löste Erinnerungen aus und
+    // zählte auf seine Auslastung.
+    const next = migrateAssignmentPids([gastWoche('M. Hartmann')], [person])
+    expect(vortragsSlot(next[0]!).pid).toBeUndefined()
+  })
+
+  it('der eigene Redner bekommt sie dagegen', () => {
+    // Die Gegenprobe: Ohne sie wäre die Zeile oben auch dann grün, wenn der
+    // Backfill gar nichts mehr täte.
+    const w = makeWeek()
+    const slot = vortragsSlot(w)
+    slot.name = 'M. Hartmann'
+    slot.rolle = ROLE_OWN_SPEAKER
+    expect(vortragsSlot(migrateAssignmentPids([w], [person])[0]!).pid).toBe(person.id)
+  })
+
+  it('behält seinen Namen, wenn er wie eine alte Kurzform aussieht', () => {
+    /*
+      „M. Hartmann" ist zweierlei: die Schreibweise, in der Zuteilungen einmal
+      gespeichert wurden — und die Form, in der ein Planer einen auswärtigen
+      Redner von Hand einträgt. Die Migration hob die erste auf den vollen
+      Namen und traf dabei die zweite mit: Auf dem Programmblatt stand danach
+      jemand anderes, als am Sonntag kommt.
+    */
+    const ohneDn: Person = { ...person, dn: undefined } // Kurzform ≠ voller Name
+    const next = migrateAssignmentNames([gastWoche('M. Hartmann')], [ohneDn])
+    expect(vortragsSlot(next[0]!).name).toBe('M. Hartmann')
+  })
+
+  it('eine echte Altzuteilung wird weiterhin gehoben', () => {
+    // Gegenprobe wie oben: derselbe Name, aber kein externer Redner.
+    const ohneDn: Person = { ...person, dn: undefined }
+    const w = makeWeek()
+    const slot = vortragsSlot(w)
+    slot.name = 'M. Hartmann'
+    delete slot.rolle
+    expect(vortragsSlot(migrateAssignmentNames([w], [ohneDn])[0]!).name).toBe('Martin Hartmann')
   })
 })
 

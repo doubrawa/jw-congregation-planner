@@ -404,7 +404,7 @@ Deno.serve(async (req: Request) => {
       const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
       // Der Termin trägt die Verlegung bereits in sich: steht sie zur Planzeit
       // fest, nennt die Nachricht von vornherein den richtigen Tag.
-      const datum = terminText(weekStart, offset, meeting, zeit, week.dev, tab)
+      const datum = terminText(weekStart, offset, meeting.date, zeit, week.dev, tab)
       for (const pend of pendingOfMeeting(weekStart, tab, meeting, services, conf)) {
         offen.push({ ...pend, eintrag: { datum, label: pend.label } })
       }

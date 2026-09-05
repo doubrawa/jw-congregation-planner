@@ -104,6 +104,7 @@ export function ServicesPanel() {
       <div className="svc-add-row">
         <input
           type="text"
+          dir="auto"
           className="svc-add-input"
           placeholder={t.neuerDienstPh}
           aria-label={t.neuerDienstPh}

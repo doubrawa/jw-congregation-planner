@@ -132,6 +132,50 @@ function wocheSpeichern(congId: string, weeks: Week[], wi: number): void {
   if (week) saveWeek(congId, week)
 }
 
+/**
+ * Jede Woche speichern, die sich zwischen zwei Ständen geändert hat.
+ *
+ * Zwei Einstellungen greifen in die Wochendaten selbst: die
+ * Zusammenkunftszeit zieht die Endzeiten nach, und die Zusätzliche Klasse
+ * setzt bzw. entfernt in jeder Woche die Marke `auxRatgeber` samt zweiter
+ * Platzreihe. Beides steht in den Wochenzeilen, nicht in den Einstellungen.
+ *
+ * Geschrieben wird nur, was sich wirklich geändert hat — der Reducer gibt
+ * unberührte Wochen identisch zurück, und `syncAuxSlots` tut das ebenso.
+ */
+function geaenderteWochenSpeichern(congId: string, vorher: Week[], nachher: Week[]): void {
+  if (vorher === nachher) return
+  for (let wi = 0; wi < nachher.length; wi++) {
+    if (nachher[wi] !== vorher[wi]) wocheSpeichern(congId, nachher, wi)
+  }
+}
+
+/**
+ * Nach einem Löschen die **Nachrücker** neu nummerieren.
+ *
+ * `position` ist der Index in der Liste (Dienste wie Gruppen). Wird aus der
+ * Mitte gelöscht, rutscht alles dahinter eine Stelle vor — bleiben die alten
+ * Nummern stehen, entsteht eine Lücke, und die nächste **neu angelegte** Zeile
+ * bekommt `Länge − 1`, also eine Nummer, die es schon gibt. `.order('position')`
+ * ist dann für zwei Zeilen unentschieden: Die Liste kann beim nächsten Laden
+ * kippen, und mit ihr die Reinigungs-Rotation, die über die Gruppenreihenfolge
+ * läuft (`groups[weekIndex % groups.length]` in `autoAssignMeeting`).
+ *
+ * Geschrieben wird nur, was wirklich verrutscht ist: Der Reducer filtert die
+ * Liste, unberührte Einträge behalten also ihre Referenz — steht an Index `i`
+ * ein anderes Objekt als vorher, ist es verschoben.
+ */
+function positionenNachziehen<T>(
+  vorher: readonly T[],
+  nachher: readonly T[],
+  schreiben: (eintrag: T, position: number) => void,
+): void {
+  for (let i = 0; i < nachher.length; i++) {
+    const eintrag = nachher[i]
+    if (eintrag !== undefined && vorher[i] !== eintrag) schreiben(eintrag, i)
+  }
+}
+
 /** Wie `wocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag. */
 function wochePlanen(congId: string, weeks: Week[], wi: number): void {
   const week = weeks[wi]
@@ -392,17 +436,23 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'removeService':
       deleteServiceRow(congId, action.key)
+      positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
       break
     case 'addGroup':
-      saveGroupRow(congId, action.group)
+      // Die Position ist der Index in der Liste — sie hängt sich hinten an.
+      // Ohne sie stünden alle Gruppen auf 0, und die Ladereihenfolge wäre die
+      // Ablage der Datenbank (siehe `saveGroupRow`).
+      saveGroupRow(congId, action.group, next.groups.length - 1)
       break
     case 'updateGroup': {
-      const group = next.groups.find((g) => g.id === action.id)
-      if (group) saveGroupRow(congId, group)
+      const idx = next.groups.findIndex((g) => g.id === action.id)
+      const group = next.groups[idx]
+      if (group) saveGroupRow(congId, group, idx)
       break
     }
     case 'removeGroup':
       deleteGroupRow(action.id)
+      positionenNachziehen(prev.groups, next.groups, (grp, pos) => saveGroupRow(congId, grp, pos))
       // Mitglieder der Gruppe haben grp=null bekommen → mitschreiben
       for (const p of next.persons) {
         if (prev.persons.find((q) => q.id === p.id)?.grp === action.id) savePersonGroup(p)
@@ -439,6 +489,23 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         progLangs: next.progLangs,
         auxClass: next.auxClass,
       })
+      /*
+       * **Der Schalter allein genügt nicht.** `setAuxClass` baut über
+       * `syncAuxSlots` jede geladene Woche um: Ein- und Ausschalten setzt bzw.
+       * entfernt dort die Marke `auxRatgeber` und die zweite Platzreihe.
+       *
+       * Genau an dieser Marke erkennen die Edge Functions, ob es die
+       * Zusätzliche Klasse gibt (`_shared/zuteilungen.ts`) — die Einstellung
+       * selbst lesen sie nicht. Blieb sie in der Datenbank stehen, hielten sie
+       * die Klasse für eingerichtet und schickten Erinnerungen und
+       * „Plan senden" weiter an einen Raum, den der Planer abgeschaltet hatte,
+       * und an einen Ratgeber, den die App nirgends mehr zeigte. Beim nächsten
+       * Laden war er dann auch wieder da.
+       *
+       * Die übrigen Aktionen dieser Gruppe fassen keine Woche an; für sie ist
+       * der Aufruf ein Nichts.
+       */
+      geaenderteWochenSpeichern(congId, prev.weeks, next.weeks)
       break
     case 'updateCongregation':
       congSaves.schedule('info', { congId, info: next.congregation })
@@ -448,11 +515,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // gespeichert werden, sonst steht die alte Endzeit nach dem nächsten
       // Laden wieder da. Gespeichert wird nur, was sich wirklich geändert hat:
       // der Reducer gibt unveränderte Wochen identisch zurück.
-      if (next.weeks !== prev.weeks) {
-        for (let wi = 0; wi < next.weeks.length; wi++) {
-          if (next.weeks[wi] !== prev.weeks[wi]) wocheSpeichern(congId, next.weeks, wi)
-        }
-      }
+      geaenderteWochenSpeichern(congId, prev.weeks, next.weeks)
       break
     case 'updateMember': {
       const member = next.members.find((m) => m.userId === action.userId)
