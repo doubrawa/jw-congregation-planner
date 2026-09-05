@@ -15,7 +15,8 @@
 // Moduls.
 // =============================================================================
 
-// @ts-expect-error npm-Import wird von der Deno-Edge-Runtime aufgelöst
+// `npm:` löst die Deno-Edge-Runtime auf; für den Typprüfer steht der Ausschnitt
+// in `supabase/functions/deno.d.ts`.
 import webpush from 'npm:web-push@3.6.7'
 import type { Rest } from './rest.ts'
 import { wert } from './rest.ts'

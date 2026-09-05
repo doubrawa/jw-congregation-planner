@@ -1,0 +1,38 @@
+/*
+ * Die Edge Functions typprüfen — sie standen in keinem Projekt.
+ *
+ * `tsconfig.app.json` schließt `src` ein. Alles, was von dort aus importiert
+ * wird, kommt mit — deshalb war `_shared/` immer geprüft, und `parse.ts` auch
+ * (ein Test in `src` holt `weekendTemplate` daraus). Die **Einstiegspunkte**
+ * der fünf Functions importiert dagegen niemand aus `src`: Sie werden von
+ * Supabase deployt und in `_test/` gegen ihren Handler gefahren, und Vitest
+ * wirft Typen weg, statt sie zu prüfen.
+ *
+ * Am 5.9.2026 nachgemessen: Ein `const x: number = 'keine Zahl'` in
+ * `send-plan/index.ts` kam durch `tsc`, durch `oxlint` und durch alle 4924
+ * Tests. 2149 Zeilen ohne Netz — und zwar die, die jede Benachrichtigung
+ * verschicken und jede Woche importieren.
+ *
+ * **Eigene Konfiguration, nicht `include` erweitern.** Die Laufzeit ist eine
+ * andere: kein DOM, kein Node, dafür das globale `Deno` und
+ * `npm:`-Spezifizierer (`supabase/functions/deno.d.ts`). In dieselbe
+ * Konfiguration wie die App gepackt, gälten deren Bibliotheken hier — und die
+ * Edge-Function dürfte plötzlich `document` anfassen.
+ */
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.edge.tsbuildinfo",
+    // Kein DOM-Global, aber die DOM-Typen: `fetch`, `Request`, `Response` und
+    // `URL` gehören zur Edge-Laufzeit. `lib` liefert die Typen, ohne dass
+    // dadurch ein `document` entstünde — das gäbe es nur über `types`.
+    "lib": ["ES2023", "DOM"],
+    // `vite/client` wegen der Prüfstände: Sie vergleichen die Texte der
+    // Functions mit den Wörterbüchern der App und ziehen `src/i18n/ui.ts`
+    // herein, das `import.meta.glob` benutzt. Ein globales `document` entsteht
+    // dadurch nicht — das käme aus `lib`, und dort steht DOM ohnehin schon für
+    // `fetch`/`Request`/`Response`.
+    "types": ["vite/client"]
+  },
+  "include": ["supabase/functions"]
+}

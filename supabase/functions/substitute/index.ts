@@ -127,6 +127,12 @@ function abwesendeAm(absences: Absence[], tagISO: string | null): ReadonlySet<st
   if (!tagISO) return new Set()
   const out = new Set<string>()
   for (const a of absences) {
+    // Ohne Person gehört die Abwesenheit niemandem: Sie kam von einem Konto
+    // ohne verknüpfte Person, oder die Person wurde gelöscht (`on delete set
+    // null`). Der Client zieht dieselbe Grenze (`absence.ts`); hier landete
+    // stattdessen ein `null` in einer Menge von Kennungen — wirkungslos, weil
+    // keine Id darauf passt, aber eben auch nur zufällig.
+    if (!a.person_id) continue
     if (a.from_date <= tagISO && tagISO <= a.to_date) out.add(a.person_id)
   }
   return out
