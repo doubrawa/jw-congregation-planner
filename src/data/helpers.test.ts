@@ -231,12 +231,12 @@ describe('duplicateDisplayNames', () => {
 describe('personCompare (alphabetisch: Nachname, dann Vorname)', () => {
   it('sortiert nach Nachname mit deutscher Kollation (Umlaute einsortiert)', () => {
     const list = [person({ ln: 'Zimmer' }), person({ ln: 'Öhler' }), person({ ln: 'Adler' })]
-    expect(list.sort(personCompare).map((p) => p.ln)).toEqual(['Adler', 'Öhler', 'Zimmer'])
+    expect(list.sort((a, b) => personCompare(a, b, 'de')).map((p) => p.ln)).toEqual(['Adler', 'Öhler', 'Zimmer'])
   })
 
   it('bei gleichem Nachnamen entscheidet der Vorname', () => {
     const list = [person({ fn: 'Sven', ln: 'Keller' }), person({ fn: 'Anna', ln: 'Keller' })]
-    expect(list.sort(personCompare).map((p) => p.fn)).toEqual(['Anna', 'Sven'])
+    expect(list.sort((a, b) => personCompare(a, b, 'de')).map((p) => p.fn)).toEqual(['Anna', 'Sven'])
   })
 })
 
@@ -252,7 +252,7 @@ describe('listName (Anzeige in der Personenliste)', () => {
 
   it('sortiert und angezeigt beginnen mit demselben Wort', () => {
     const list = [person({ fn: 'Sven', ln: 'Zimmer' }), person({ fn: 'Anna', ln: 'Adler' })]
-    const gezeigt = list.sort(personCompare).map(listName)
+    const gezeigt = list.sort((a, b) => personCompare(a, b, 'de')).map(listName)
     expect(gezeigt).toEqual(['Adler, Anna', 'Zimmer, Sven'])
     expect(gezeigt.map((n) => n[0])).toEqual(['A', 'Z']) // aufsteigend, wie gelesen
   })

@@ -42,7 +42,10 @@ export function ServicePersonsSheet({ svcKey }: { svcKey: string }) {
   const qkey = serviceQualKey(svcKey)
   // Dieselbe Ordnung wie in der Personenliste — wer dort sucht, sucht hier
   // gleich.
-  const personen = useMemo(() => [...state.persons].sort(personCompare), [state.persons])
+  const personen = useMemo(
+    () => [...state.persons].sort((a, b) => personCompare(a, b, state.lang)),
+    [state.persons, state.lang],
+  )
   if (!service) return null
 
   const query = suche.trim().toLowerCase()

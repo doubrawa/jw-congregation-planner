@@ -27,7 +27,7 @@ export function PersonDetail({ person }: { person: Person }) {
 
   const family = familyMembers(state.persons, person)
   const famIds = new Set([person.id, ...family.map((m) => m.id)])
-  const addableFamily = state.persons.filter((p) => !famIds.has(p.id)).sort(personCompare)
+  const addableFamily = state.persons.filter((p) => !famIds.has(p.id)).sort((a, b) => personCompare(a, b, state.lang))
 
   /**
    * Zwei Bereiche statt einem, jeder für sich alphabetisch: Aufgaben und

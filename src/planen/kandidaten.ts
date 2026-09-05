@@ -65,7 +65,9 @@ export interface Candidate {
 /** Was die Kandidatenliste aus dem Zustand braucht (erleichtert das Testen). */
 export type KandidatenDaten = Pick<
   AppState,
-  'weeks' | 'persons' | 'groups' | 'services' | 'fsWeeks' | 'fsBase' | 'absences'
+  // `lang` gehört dazu, seit die Liste in der Sprache des Lesers sortiert
+  // (`personCompare`) — sie steht im Zuteilungs-Sheet und wird dort gesucht.
+  'weeks' | 'persons' | 'groups' | 'services' | 'fsWeeks' | 'fsBase' | 'absences' | 'lang'
 >
 
 export function kandidaten(
@@ -113,7 +115,7 @@ function fsKandidaten(
     return out
   }
   return [...state.persons]
-    .sort(personCompare)
+    .sort((a, b) => personCompare(a, b, state.lang))
     .filter((p) => isQualified(p, 'treffpunkt'))
     .map((p) => {
       const name = displayName(p)
@@ -174,7 +176,7 @@ function personenKandidaten(
   // Hinweis „heute schon zugeteilt" einfach aus.
   const meeting = state.weeks[sel.wi]?.[sel.tab]
   return [...state.persons]
-    .sort(personCompare) // alphabetisch; Abwesende wandern stabil ans Ende
+    .sort((a, b) => personCompare(a, b, state.lang)) // alphabetisch; Abwesende wandern stabil ans Ende
     .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && geschlechtOk(p))
     .map((p) => {
       const name = displayName(p)

@@ -57,6 +57,7 @@ function daten(weeks: Week[], persons = PERSONEN, absences: Absence[] = []): Kan
   return {
     weeks,
     persons,
+    lang: 'de',
     groups: [],
     services: DIENSTE,
     fsWeeks: [],

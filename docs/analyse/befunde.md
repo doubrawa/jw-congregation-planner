@@ -1013,9 +1013,12 @@ der jetzige Zustand, der ein Versprechen macht, das die App nicht hält.
 Nichtstun stumm `weeks` zurück. Der Nutzer tippt und sieht nichts. Ein Toast
 („Minuten konnten nicht gelesen werden") kostet wenig und erklärt viel.
 
-### V8 — Personenliste in der Sprache des Nutzers sortieren
+### V8 — Personenliste in der Sprache des Nutzers sortieren ✅ erledigt
 
-U8 beheben: `personCompare` einen Locale-Parameter geben.
+`personCompare` nimmt die Sprache jetzt als Parameter (5.9.2026). Der
+Typprüfer nennt jeden Aufrufer, der sie vergisst — es braucht keine Liste.
+Gemessen in `sortiert-in-der-lesersprache.test.ts`: Å/Æ/Ø stehen auf Dänisch
+und Schwedisch hinter Z, auf Deutsch bei A und O.
 
 ### V9 — Cache-Versionierung im Service Worker
 

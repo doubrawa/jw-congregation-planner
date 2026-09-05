@@ -47,7 +47,7 @@ function PersonList() {
   const setz = (patch: Partial<PersonFilter>) => setFilter((f) => ({ ...f, ...patch }))
   const locale = LOCALES[state.lang]
 
-  const sorted = [...state.persons].sort(personCompare)
+  const sorted = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
   const filtered = sorted.filter((p) => passtZumFilter(p, filter))
   const production = state.dataStatus !== 'demo'
   const dupes = duplicateDisplayNames(state.persons)

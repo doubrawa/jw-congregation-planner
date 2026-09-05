@@ -8,7 +8,7 @@ export function GroupsPanel() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
 
-  const sortedPersons = [...state.persons].sort(personCompare)
+  const sortedPersons = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
 
   // Aufseher nur aus Ältesten/Dienstamtgehilfen, Gehilfe aus allen außer
   // Schwestern (Predigtdienstgruppen).

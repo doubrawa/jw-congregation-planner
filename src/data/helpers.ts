@@ -11,6 +11,9 @@ import {
   QUALIFICATION_ORDER,
   WT_ROLE_ORDER,
 } from './constants'
+// Dieselbe Tabelle, die `i18n/langs.ts` weiterreicht — direkt aus der unteren
+// Schicht geholt, damit das Datenmodell nicht an der Oberfläche hängt.
+import { LOCALES } from '../../supabase/functions/_shared/i18n/locales.ts'
 import type { Abweichung, Group, Meeting, MeetingKey,
   MeetingTab, PartItem, Person, ProgramItem, QualificationKey, Qualifications, Section,
   Service, SlotAssignment, SongItem, Week } from './types'
@@ -152,11 +155,29 @@ export function initials(p: Person): string {
   return ((p.fn[0] ?? '') + (p.ln[0] ?? '')).toUpperCase() || '–'
 }
 
-/** Alphabetische Personen-Sortierung: Nachname, dann Vorname (deutsch). */
-export function personCompare(a: Person, b: Person): number {
+/**
+ * **Die Personenliste sortiert in der Sprache des Lesers**, nicht immer
+ * deutsch (U8/V8).
+ *
+ * Hier stand fest `'de'`. Für die meisten Schriften macht das keinen sichtbaren
+ * Unterschied — die Wurzel-Sortierung greift ohnehin —, für eine ganze Reihe
+ * der 33 Sprachen aber sehr wohl: Dänisch, Norwegisch und Schwedisch ordnen
+ * Å/Ø/Æ hinter Z, deutsch stehen sie bei A und O; Türkisch trennt ı und i.
+ * Der Leser fand einen Namen dann nicht dort, wo er ihn sucht.
+ *
+ * Die Sprache kommt **als Parameter**, nicht aus einem Modulzustand: Diese
+ * Datei ist die untere Schicht und kennt den Zustand nicht. Wer sie aufruft,
+ * hat ihn — und der Prüfstand hält fest, dass ihn auch jeder mitgibt
+ * (`sortiert-in-der-lesersprache.test.ts`).
+ *
+ * `sensitivity: 'base'` bleibt: Groß-/Kleinschreibung und Akzente sollen die
+ * Reihenfolge nicht bestimmen, sonst stünde „Öhler" weit weg von „Ohler".
+ */
+export function personCompare(a: Person, b: Person, lang: string): number {
+  const locale = LOCALES[lang as keyof typeof LOCALES] ?? lang
   return (
-    a.ln.localeCompare(b.ln, 'de', { sensitivity: 'base' }) ||
-    a.fn.localeCompare(b.fn, 'de', { sensitivity: 'base' })
+    a.ln.localeCompare(b.ln, locale, { sensitivity: 'base' }) ||
+    a.fn.localeCompare(b.fn, locale, { sensitivity: 'base' })
   )
 }
 

@@ -26,7 +26,7 @@ export function OrphanAccounts() {
    * sich also auch nicht wieder lösen.
    */
   const vergeben = new Set(state.members.map((m) => m.personId).filter(Boolean))
-  const sorted = state.persons.filter((p) => !vergeben.has(p.id)).sort(personCompare)
+  const sorted = state.persons.filter((p) => !vergeben.has(p.id)).sort((a, b) => personCompare(a, b, state.lang))
 
   return (
     <div className="panel panel--pb14 pers-orphans" data-farbe="neutral2">
