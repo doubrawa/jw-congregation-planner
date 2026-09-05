@@ -22,7 +22,7 @@ import { describe, expect, it } from 'vitest'
 import type { AbsenceSet } from './absence'
 import { buildImportWeek, DEMO_SERVICES } from './testdaten'
 import { fsAutoAssign, FS_LOAD_WEEKS, fsWochenStart } from './fs'
-import { displayName, emptyQualifications, partWorkload } from './helpers'
+import { displayName, emptyQualifications, idAufloeser, partWorkload, programmPlaetze } from './helpers'
 import { autoAssignMeeting } from './planning'
 import type { Absence, FsInstance, Person, Qualifications, Week } from './types'
 
@@ -520,5 +520,67 @@ describe('Gesprächspartner: die Id des Führers entscheidet', () => {
     const punkt = weeks[0]!.mid.sections[0]!.items[0] as { names: Array<{ pid?: string; bereichsKey?: string }> }
     const partner = punkt.names.find((n) => n.bereichsKey === 'schulungPartner')
     expect(partner?.pid, 'die Partnerwahl folgte dem Namensvetter').toBe(bruder.id)
+  })
+})
+
+/**
+ * **Wer nicht da ist, wird nicht eingeteilt** — über einen ganzen Bestand,
+ * nicht nur im Einzelfall.
+ *
+ * `autoassign.sim.test.ts` prüft einzelne Abwesenheiten (der Studienleiter ist
+ * weg, der Vertreter übernimmt). Was fehlte, war die Zusicherung über die
+ * ganze Fläche: zwanzig Wochen, beide Zusammenkünfte, alle vier Platzsorten und
+ * alle Hilfsdienste, mit wechselnd 40 % Abwesenden. Es ist die Zusicherung, an
+ * der ein Planer die Automatik misst — steht dort jemand, der im Urlaub ist,
+ * traut er ihr nie wieder.
+ *
+ * Die Gegenprobe steht daneben: Wären fast alle Plätze offen geblieben, wäre
+ * die Zusicherung wertlos erfüllt.
+ */
+describe('Abwesende bleiben unbesetzt — über den ganzen Bestand', () => {
+  it('zwanzig Wochen, 40 % abwesend, kein einziger Verstoß', () => {
+    const alles = [
+      'vorsitzMid', 'vorsitzWe', 'gebet', 'vortrag', 'bibellesung', 'leser',
+      'studium', 'schulung', 'schulungPartner', 'ratgeber',
+      ...DEMO_SERVICES.filter((s) => !s.groups).map((s) => `svc:${s.key}`),
+    ]
+    const leute = Array.from({ length: 25 }, (_, i) => mk(alles, { female: i % 3 === 0 }))
+    let weeks: Week[] = Array.from({ length: 20 }, (_, i) => ({ ...buildImportWeek(), start: montag(i) }))
+
+    // Wechselnde Gruppen: jede Person ist mal weg, nie alle zugleich.
+    const abwesend: AbsenceSet = new Set(
+      weeks.flatMap((_, wi) =>
+        leute
+          .filter((_, pi) => (pi + wi) % 5 < 2)
+          .flatMap((p) => [`${p.id}|${wi}|mid`, `${p.id}|${wi}|we`]),
+      ),
+    )
+
+    for (let wi = 0; wi < weeks.length; wi++) {
+      weeks = autoAssignMeeting(weeks, wi, 'mid', leute, DEMO_SERVICES, [], 'all', abwesend).weeks
+      weeks = autoAssignMeeting(weeks, wi, 'we', leute, DEMO_SERVICES, [], 'all', abwesend).weeks
+    }
+
+    const werIst = idAufloeser(leute)
+    const verstoesse: string[] = []
+    let belegt = 0
+    weeks.forEach((w, wi) => {
+      for (const tab of ['mid', 'we'] as const) {
+        const melde = (slot: { name: string; pid?: string; rolle?: string }, wo: string) => {
+          const id = werIst(slot)
+          if (slot.name) belegt++
+          if (id && abwesend.has(`${id}|${wi}|${tab}`)) verstoesse.push(`W${wi} ${tab} ${wo}: ${slot.name}`)
+        }
+        for (const { slot } of programmPlaetze(w[tab])) melde(slot, 'Programm')
+        if (w[tab].auxRatgeber) melde(w[tab].auxRatgeber, 'Ratgeber')
+        for (const svc of DEMO_SERVICES) {
+          for (const s of w[tab].helpers[svc.key] ?? []) melde(s, svc.key)
+        }
+      }
+    })
+
+    expect(verstoesse.slice(0, 8), verstoesse.slice(0, 3).join(' | ')).toEqual([])
+    // Gegenprobe: Die Automatik hat wirklich gearbeitet.
+    expect(belegt, 'fast nichts besetzt — die Zusicherung wäre wertlos').toBeGreaterThan(300)
   })
 })

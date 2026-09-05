@@ -28,10 +28,12 @@
  * Beim Anlegen hat die Probe gleich die fünfte Fundstelle geliefert:
  * `migrateAssignmentNames` erreichte nur Hauptsaal und Hilfsdienste.
  *
- * **Eine Stelle bleibt außerhalb:** `pendingOfMeeting` in der Edge Function
- * `send-reminders` läuft ebenfalls über alle vier (Stand heute vollständig),
- * ist aber weder exportiert noch in dieser Laufzeit erreichbar. Wer dort etwas
- * ändert, prüft es in `supabase/functions/_test/send-reminders.test.ts`.
+ * **Die Edge-Seite steht seit T101 mit drin.** Hier stand einmal, `pendingOfMeeting`
+ * sei „weder exportiert noch in dieser Laufzeit erreichbar" — das galt, bevor
+ * die Aufzählung nach `_shared/zuteilungen.ts` gezogen ist. Sie ist die
+ * fünfte und einzige Stelle außerhalb des Clients, die alle vier Sorten kennen
+ * muss: Wer dort einen Raum vergisst, bekommt keine Erinnerung und keine
+ * Nachricht beim „Plan senden". Genau die Sorte Ausfall, die niemand meldet.
  */
 import { describe, expect, it } from 'vitest'
 import { bedarfJeBereich } from './bedarf'
@@ -51,6 +53,10 @@ import {
   migrateAssignmentPids,
   renameInWeeks,
 } from '../lib/data'
+import {
+  pendingOfMeeting,
+  type Meeting as EdgeMeeting,
+} from '../../supabase/functions/_shared/zuteilungen.ts'
 import type { Meeting, PartItem, Person, Service, Week } from './types'
 
 /* ---- Die Person und die vier Plätze -------------------------------------- */
@@ -155,6 +161,35 @@ describe('Wer zählt eine Zuteilung mit?', () => {
 
   it('derivePendingIds kennt die Person', () => {
     expect(derivePendingIds([woche()], SERVICES, {})).toContain(ANNA.id)
+  })
+})
+
+/**
+ * Die Edge-Seite: Wer bekommt eine Erinnerung, wer eine Nachricht beim
+ * „Plan senden"?
+ *
+ * `pendingOfMeeting` zählt dieselben vier Plätze auf — in einer anderen
+ * Laufzeit, mit einer eigenen Fassung der Typen und ohne Zugriff auf `src/`.
+ * Genau deshalb gehört sie hierher: Zwei Aufzählungen derselben Sache laufen
+ * auseinander, sobald eine Platzsorte dazukommt und nur eine davon nachgezogen
+ * wird.
+ */
+describe('Wer erinnert und benachrichtigt? (Edge Function)', () => {
+  it('pendingOfMeeting zählt alle vier', () => {
+    const mid = zusammenkunft(true) as unknown as EdgeMeeting
+    const dienste = SERVICES.map((s) => ({ key: s.key, name: s.name, count: s.count, groups: Boolean(s.groups) }))
+    const offen = pendingOfMeeting('2026-09-07', 'mid', mid, dienste, new Map())
+    expect(offen.map((p) => p.key.split('|')[2]).sort()).toEqual(['aux', 'helper', 'part', 'ratgeber'])
+    expect(offen.every((p) => p.name === NAME && p.pid === ANNA.id)).toBe(true)
+  })
+
+  it('… und schweigt, wo schon bestätigt wurde', () => {
+    // Gegenprobe: Ohne sie könnte die Aufzählung schlicht alles melden.
+    const mid = zusammenkunft(true) as unknown as EdgeMeeting
+    const dienste = SERVICES.map((s) => ({ key: s.key, name: s.name, count: s.count, groups: Boolean(s.groups) }))
+    const alleKeys = pendingOfMeeting('2026-09-07', 'mid', mid, dienste, new Map()).map((p) => p.key)
+    const conf = new Map(alleKeys.map((k) => [k, 'bestätigt']))
+    expect(pendingOfMeeting('2026-09-07', 'mid', mid, dienste, conf)).toEqual([])
   })
 })
 
