@@ -1158,6 +1158,25 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const gewaehlt = gewaehlteKennung
         ? weeks.findIndex((w) => w.start === gewaehlteKennung)
         : -1
+      /*
+       * **Der offene Platz meint dieselbe Woche wie vorher** — derselbe Weg wie
+       * eine Zeile darüber, und aus demselben Grund.
+       *
+       * `slotSel` trägt die Woche als Ordnungszahl. Normalerweise ist das egal,
+       * weil `navigate` das Blatt schließt; ein Weg führt aber daran vorbei:
+       * Schlägt ein Schreibvorgang wegen eines Konflikts fehl (T39), lädt
+       * `store.tsx` **still** nach — ohne Navigation, mitten in der Arbeit,
+       * also genau dann, wenn ein Zuteilungs-Blatt offen steht. Rutscht das
+       * Fenster dabei (52 Wochen, vorn fällt die älteste heraus), zeigte
+       * `slotSel.wi` danach auf eine andere Woche, und der nächste Klick schrieb
+       * den Namen dorthin. Lautlos, in eine Woche, die niemand offen hatte.
+       *
+       * Ist die Woche gar nicht mehr dabei, wird das Blatt geschlossen: Ein
+       * Platz ohne Woche ist keiner.
+       */
+      const slotKennung = state.slotSel ? state.weeks[state.slotSel.wi]?.start : undefined
+      const slotWi = slotKennung ? weeks.findIndex((w) => w.start === slotKennung) : -1
+      const slotSel = !state.slotSel ? null : slotWi >= 0 ? { ...state.slotSel, wi: slotWi } : null
       const geladen: AppState = {
         ...state,
         congregation: p.congregation,
@@ -1190,6 +1209,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         members: p.members,
         invites: p.invites,
         week: gewaehlt >= 0 ? gewaehlt : aktuell >= 0 ? aktuell : 0,
+        slotSel,
       }
       // Nach dem Laden gleich auf die nächste Zusammenkunft (T82): Woche UND
       // Reiter. `aktuell` allein trifft nur die Woche — am Sonntagabend steht
