@@ -2,7 +2,16 @@ import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { istSchuelerteil } from '../data/aux-class'
 import { rolleMitHerkunft, istArt, eigeneRolle, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
-import { closingSongNr, itemMinutes, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
+import {
+  closingSongNr,
+  hatLiedPlatz,
+  itemMinutes,
+  LAC_MAX_MINUTEN,
+  LAC_MIN_MINUTEN,
+  openingSongNr,
+  TALK_PLACEHOLDER,
+  themaVon,
+} from '../data/meeting-edit'
 import { isSpeakerRole, kennungVon } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
 import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.ts'
@@ -60,6 +69,12 @@ export function MeetingSection({
     (istArt(rawSection, 'eroeffnung') && !isOpening) ||
     (istArt(rawSection, 'abschluss') && !isClosing)
   const movables = movableIndices(rawSection)
+  // Gefragt wird an der **kanonischen** Woche: Das Lied-Atom heißt dort
+  // „Lied", in der Anzeigesprache steht womöglich „Song" oder „سرود".
+  const liedPlatzDa =
+    (isOpening || isClosing) &&
+    hatLiedPlatz(state.weeks[state.week]?.we ?? { date: '', end: '', sections: [], helpers: {} },
+      isOpening ? 'eroeffnung' : 'abschluss')
 
   const isPending = (slot: SlotAssignment | undefined) =>
     state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
@@ -286,10 +301,18 @@ export function MeetingSection({
             )}
             {editable && (
               <div className="lac-edit">
+                {/*
+                  Am Anschlag wird der Knopf abgeschaltet, statt ins Leere zu
+                  tippen (V7) — dieselbe Antwort, die die Pfeile daneben am Rand
+                  seit je geben. Die Grenzen kommen aus `meeting-edit.ts`, wo
+                  auch gerechnet wird; zwei Zahlen an zwei Stellen wären eine
+                  Abschrift zu viel.
+                */}
                 <button
                   type="button"
                   className="lac-step-btn"
                   aria-label={t.a11yDecrease}
+                  disabled={rawMins <= LAC_MIN_MINUTEN}
                   onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: -5 })}
                 >
                   –
@@ -299,6 +322,7 @@ export function MeetingSection({
                   type="button"
                   className="lac-step-btn"
                   aria-label={t.a11yIncrease}
+                  disabled={rawMins >= LAC_MAX_MINUTEN}
                   onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: 5 })}
                 >
                   +
@@ -334,7 +358,12 @@ export function MeetingSection({
           </button>
         </div>
       )}
-      {(isOpening || isClosing) && (
+      {/*
+        Nur wo die Nummer auch landen kann (V7): Trägt der Abschnitt weder ein
+        Lied-Item noch ein Lied-Atom im Titel, hätte `setSong` nichts, wohin es
+        schreiben könnte — der Planer tippte eine Zahl ein und sähe nichts.
+      */}
+      {(isOpening || isClosing) && liedPlatzDa && (
         <div className="talk-song-row">
           <span className="plan-helper-label">
             {isOpening ? t.anfangsliedLbl : schlussliedLbl}

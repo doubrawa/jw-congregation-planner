@@ -297,10 +297,35 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
     expect([...container.querySelectorAll('.lac-mins')].map((x) => x.textContent)).toEqual([
       '5 Min.', '30 Min.',
     ])
-    fireEvent.click(container.querySelectorAll('.lac-step-btn')[1]!) // „+" beim ersten Punkt
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdjust', si: 0, ii: 0, delta: 5 })
-    fireEvent.click(container.querySelectorAll('.lac-step-btn')[0]!) // „–"
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdjust', si: 0, ii: 0, delta: -5 })
+    // Der **zweite** Punkt (30 Min.) liegt zwischen den Grenzen; beim ersten
+    // steht „–" am Anschlag und ist abgeschaltet (siehe unten).
+    const knopf = [...container.querySelectorAll('.lac-step-btn')]
+    fireEvent.click(knopf[3]!) // „+" beim zweiten Punkt
+    expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdjust', si: 0, ii: 1, delta: 5 })
+    fireEvent.click(knopf[2]!) // „–" beim zweiten Punkt
+    expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdjust', si: 0, ii: 1, delta: -5 })
+  })
+
+  it('am Anschlag ist der Schritt gesperrt — wie das Verschieben am Rand (V7)', () => {
+    /*
+      `lacAdjust` klemmt auf 5..45 und gab am Anschlag stumm dieselbe Woche
+      zurück: Der Planer tippte, und nichts geschah. Ein Hinweis wäre die
+      zweitbeste Antwort — was nicht wirken kann, wird gar nicht erst
+      angeboten. Genau so hält es das Verschieben daneben seit je.
+    */
+    const rand: Section = {
+      label: LABEL_LAC, farbe: 'wein',
+      items: [
+        { num: 8, title: 'Kurz', meta: '5 Min.', mins: 5, names: [{ name: '' }] },
+        { num: 9, title: 'Lang', meta: '45 Min.', mins: 45, names: [{ name: '' }] },
+      ],
+    }
+    const { container } = zeige(rand)
+    const knopf = [...container.querySelectorAll<HTMLButtonElement>('.lac-step-btn')]
+    expect(knopf[0]!.disabled, '„–" bei 5 Min. muss gesperrt sein').toBe(true)
+    expect(knopf[1]!.disabled, '„+" bei 5 Min. muss gehen').toBe(false)
+    expect(knopf[2]!.disabled, '„–" bei 45 Min. muss gehen').toBe(false)
+    expect(knopf[3]!.disabled, '„+" bei 45 Min. muss gesperrt sein').toBe(true)
   })
 
   it('am Rand ist das Verschieben gesperrt — nach oben beim ersten, nach unten beim letzten', () => {
@@ -447,6 +472,32 @@ describe('Am Wochenende: Vortragsthema und Lieder', () => {
     const s: Section = { label: LABEL_EROEFFNUNG, farbe: 'neutral', items: [{ song: 'Lied 44' }] }
     const { container } = zeige(s, { tab: 'mid' })
     expect(container.querySelector('.talk-song-input')).toBeNull()
+  })
+
+  it('ohne Platz für die Nummer steht auch kein Feld da (V7)', () => {
+    /*
+      `setSong` schreibt die Zahl entweder in ein Lied-Item oder in das
+      Lied-Atom eines Sammeltitels. Trägt der Abschnitt keins von beidem, hätte
+      es nichts, wohin — und gab stumm dieselbe Woche zurück: Der Planer tippte
+      eine Nummer ein und sah nichts. Was nicht wirken kann, wird nicht
+      angeboten.
+    */
+    const ohneLied: Section = {
+      label: LABEL_EROEFFNUNG, farbe: 'neutral',
+      items: [{ num: null as unknown as number, title: 'Gebet', meta: '', names: [{ name: '' }] }],
+    }
+    const { container } = zeige(ohneLied, { tab: 'we', weeks: [woche([], [ohneLied])] })
+    expect(container.querySelector('.talk-song-input')).toBeNull()
+  })
+
+  it('… mit Lied-Atom im Sammeltitel dagegen schon', () => {
+    // Gegenprobe: So legt der Import die Wochenend-Eröffnung an.
+    const mitAtom: Section = {
+      label: LABEL_EROEFFNUNG, farbe: 'neutral',
+      items: [{ title: 'Lied · Gebet', meta: '', names: [{ name: '' }] }],
+    }
+    const { container } = zeige(mitAtom, { tab: 'we', weeks: [woche([], [mitAtom])] })
+    expect(container.querySelector('.talk-song-input')).not.toBeNull()
   })
 })
 

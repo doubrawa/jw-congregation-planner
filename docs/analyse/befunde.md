@@ -1022,11 +1022,28 @@ der jetzige Zustand, der ein Versprechen macht, das die App nicht hält.
 - „Ratgeber ist gleichzeitig Programmpunkt-Teilnehmer" (er begleitet die ganze Klasse)
 - Hinweis, wenn eine Person ohne App-Konto zugeteilt wird (F10)
 
-### V7 — Rückmeldung, wenn eine Aktion nichts bewirkt
+### V7 — Rückmeldung, wenn eine Aktion nichts bewirkt ✅ erledigt
 
-`lacAdjust` (B7), `editTalkTheme`, `setOpeningSong` und `lacMove` geben bei
-Nichtstun stumm `weeks` zurück. Der Nutzer tippt und sieht nichts. Ein Toast
-(„Minuten konnten nicht gelesen werden") kostet wenig und erklärt viel.
+Nachgesehen, welche der vier Stellen wirklich stumm bleiben (5.9.2026):
+
+  * **`lacMove`** war es nie — die Pfeile sind am Rand seit je abgeschaltet.
+  * **`lacAdjust` bei unlesbaren Minuten** ebenso wenig: Ohne `mins` erscheinen
+    die Knöpfe gar nicht (`editable`).
+  * **`editTalkTheme` bei unverändertem Text** ist kein Ausfall, sondern der
+    Normalfall — wer ein Feld verlässt, ohne zu tippen, braucht keinen Hinweis.
+
+Zwei blieben übrig, und beide sind behoben — **nicht** mit einem Hinweis,
+sondern indem gar nichts mehr angeboten wird, was nicht wirken kann. Das ist
+dieselbe Antwort, die das Verschieben daneben seit je gibt, und sie kostet
+keinen erfundenen Satz in 33 Sprachen:
+
+  * **`lacAdjust` am Anschlag** (5 bzw. 45 Min.): Der Schritt-Knopf ist dort
+    jetzt abgeschaltet. Die Grenzen stehen als `LAC_MIN_MINUTEN` /
+    `LAC_MAX_MINUTEN` in `meeting-edit.ts` — zwei Zahlen an zwei Stellen wären
+    eine Abschrift zu viel.
+  * **`setSong` ohne Platz für die Nummer**: Trägt der Abschnitt weder ein
+    Lied-Item noch ein Lied-Atom im Titel, erscheint das Eingabefeld nicht
+    mehr. Beide Seiten fragen dieselbe Auskunft (`hatLiedPlatz`).
 
 ### V8 — Personenliste in der Sprache des Nutzers sortieren ✅ erledigt
 

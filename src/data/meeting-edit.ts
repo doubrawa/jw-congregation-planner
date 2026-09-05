@@ -214,6 +214,19 @@ function stelle(
   return week && meeting && items ? { week, meeting, items } : undefined
 }
 
+/**
+ * Grenzen der Punkt-Dauer.
+ *
+ * **Exportiert, weil die Knöpfe sie brauchen** (V7): Am Anschlag tut ein Tipp
+ * nichts, und ohne Rückmeldung sieht das aus wie eine hängende App. Statt einen
+ * Hinweis nachzuschieben, wird der Knopf gar nicht erst angeboten — dieselbe
+ * Antwort, die das Verschieben daneben seit je gibt (dort sind die Pfeile am
+ * Rand abgeschaltet). Zwei Zahlen an zwei Stellen wären genau die Sorte
+ * Abschrift, die hier schon mehrfach auseinandergelaufen ist.
+ */
+export const LAC_MIN_MINUTEN = 5
+export const LAC_MAX_MINUTEN = 45
+
 /** Minuten eines LAC-Punkts ändern (5..45) und Meeting-Ende nachziehen. */
 export function lacAdjust(
   weeks: Week[],
@@ -232,7 +245,7 @@ export function lacAdjust(
   if (!item || isSong(item)) return weeks
   const cur = itemMinutes(item)
   if (cur == null) return weeks
-  const target = Math.max(5, Math.min(45, cur + delta))
+  const target = Math.max(LAC_MIN_MINUTEN, Math.min(LAC_MAX_MINUTEN, cur + delta))
   if (target === cur) return weeks
   // Die Zahl ist die Wahrheit, die Meta-Zeile nur ihre Anzeige — beide müssen
   // mit, sonst widersprechen sich Knopf und Text. Ersetzt wird in der Schrift,
@@ -812,6 +825,24 @@ function replaceSongAtom(title: string, value: string): string {
  * „Lied 78" atomweise in die Versammlungssprache. Varianten tragen denselben
  * deutschen Vorlagen-Titel → gleiche Ersetzung.
  */
+/**
+ * **Gibt es in diesem Abschnitt überhaupt einen Platz für eine Liednummer?**
+ *
+ * Zwei Formen kommen vor: ein eigenes Lied-Item (so lagen Wochen von früher)
+ * und ein Lied-Atom im Sammeltitel (so legt der Import es heute an). Fehlt
+ * beides, hat `setSong` nichts, wohin es die Zahl schreiben könnte — und gab
+ * dann stumm dieselbe Woche zurück: Der Planer tippte eine Nummer ein und sah
+ * nichts (V7).
+ *
+ * Deshalb dieselbe Auskunft für beide Seiten: `setSong` unten steigt daran aus,
+ * und das Eingabefeld erscheint erst gar nicht. Was nicht wirken kann, wird
+ * nicht angeboten.
+ */
+export function hatLiedPlatz(meeting: Meeting, art: SectionKind): boolean {
+  const section = meeting.sections.find((s) => istArt(s, art))
+  return (section?.items ?? []).some((it) => isSong(it) || songAtomIndex(it.title) >= 0)
+}
+
 function setSong(weeks: Week[], wi: number, art: SectionKind, song: string): Week[] {
   const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
   const next = klonWoche(weeks, wi)
