@@ -73,8 +73,10 @@ const person: Person = {
   priv: { ...emptyQualifications(), vortrag: true },
 }
 
-const vortragsSlot = (w: Week) => (w.we.sections[1].items[0] as PartItem).names[0]
-const vorsitzSlot = (w: Week) => (w.we.sections[0].items[0] as PartItem).names[0]
+// Die Vorlage (`makeWeek`) hat beide Abschnitte und beide Plätze; der
+// Index-Zugriff sieht das nicht.
+const vortragsSlot = (w: Week) => (w.we.sections[1]!.items[0] as PartItem).names[0]!
+const vorsitzSlot = (w: Week) => (w.we.sections[0]!.items[0] as PartItem).names[0]!
 
 describe('Die Rollen sagen, wer den Vortrag hält', () => {
   it('„Redner" ist nicht extern — genau daran hängt alles Weitere', () => {
@@ -186,7 +188,7 @@ describe('Ein Gastredner heißt zufällig wie ein Bruder von uns', () => {
     // ohne Hinweis: der Platz sah einfach aus wie nicht besetzbar.
     const vorsitzender: Person = { ...person, priv: { ...emptyQualifications(), vorsitzWe: true } }
     const { weeks, unfilled } = autoAssignMeeting(gast(), 0, 'we', [vorsitzender], [])
-    expect(vorsitzSlot(weeks[0]).name).toBe('M. Hartmann')
+    expect(vorsitzSlot(weeks[0]!).name).toBe('M. Hartmann')
     expect(unfilled).toBe(0)
   })
 })

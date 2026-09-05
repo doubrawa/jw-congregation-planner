@@ -106,8 +106,8 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
       etwas — nur nicht überall.
     */
     const weeks = importierteWochen()
-    weeks[0].mid.date = 'Dienstag, 8. September · 19:45' // eigener Termin
-    weeks[0].we.date = 'Sonntag, 13. September · 10:30'
+    weeks[0]!.mid.date = 'Dienstag, 8. September · 19:45' // eigener Termin
+    weeks[0]!.we.date = 'Sonntag, 13. September · 10:30'
     const next = endenNachziehen(weeks, 'Di 19:00 · So 10:00', 'Di 18:30 · So 09:30')
     expect(next[0]).toBe(weeks[0]) // keine der beiden Zusammenkünfte betroffen
     expect(next[1]).not.toBe(weeks[1]) // diese schon

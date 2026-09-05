@@ -248,7 +248,9 @@ function tokenize(html: string): Token[] {
   const tokens: Token[] = []
   let m: RegExpExecArray | null
   while ((m = re.exec(body))) {
-    const [, tag, attrs, inner] = m
+    // Alle drei Gruppen sind im Ausdruck nicht optional — ein Treffer hat sie
+    // immer. Der Zugriff auf das Trefferfeld weiß das nicht.
+    const [, tag = '', attrs = '', inner = ''] = m
     const text = cleanText(inner)
     if (!text) continue
     tokens.push({
@@ -311,11 +313,14 @@ function stripParens(text: string): string {
 
 /** Quellenangabe: bevorzugt die letzte Klammer mit Publikations-Kürzel. */
 function sourceOf(text: string): string {
-  const parens = [...text.matchAll(PAREN_ALL)].map((m) => randTrim(m[1]))
+  const parens = [...text.matchAll(PAREN_ALL)].map((m) => randTrim(m[1] ?? ''))
   if (parens.length < 2) return ''
   const rest = parens.slice(1) // erste Klammer ist die Zeit
-  for (let i = rest.length - 1; i >= 0; i--) if (PUB_SYM.test(rest[i])) return rest[i]
-  return rest[rest.length - 1]
+  for (let i = rest.length - 1; i >= 0; i--) {
+    const klammer = rest[i]
+    if (klammer && PUB_SYM.test(klammer)) return klammer
+  }
+  return rest[rest.length - 1] ?? ''
 }
 
 /**
@@ -325,7 +330,8 @@ function sourceOf(text: string): string {
  */
 function settingOf(text: string): string {
   const after = randTrim(text.replace(PAREN_LEAD, ''))
-  const seg = randTrim(after.split(SATZENDE)[0])
+  // `split` gibt immer mindestens ein Stück zurück; der Index-Zugriff sieht das nicht.
+  const seg = randTrim(after.split(SATZENDE)[0] ?? '')
   return seg && seg.length <= 32 && !ZIFFER.test(seg) ? seg : ''
 }
 
@@ -430,7 +436,8 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
     if (tok.tag === 'h3' && curColor && (tok.color === 'teal' || tok.color === 'gold' || tok.color === 'maroon')) {
       const part: ImportedPart = { title: '', names: [] }
       const numMatch = NUMMER.exec(tok.text)
-      if (numMatch) part.num = zahl(numMatch[1])
+      // Die Ziffernfolge ist die einzige Gruppe des Ausdrucks und nicht optional.
+      if (numMatch) part.num = zahl(numMatch[1] ?? '')
       curRec = { part, color: curColor, raw: tok.text, time: '' }
       recs.push(curRec)
       sections[curColor].items.push(part)
@@ -512,7 +519,7 @@ export function applyGoldSlots(target: ImportedWeek, source: ImportedWeek): void
   for (let i = 0; i < tGold.items.length; i++) {
     const t = tGold.items[i]
     const s = sGold.items[i]
-    if (!s || !('names' in t) || !('names' in s)) continue
+    if (!t || !s || !('names' in t) || !('names' in s)) continue
     t.names = s.names.map((n) => ({ ...n }))
   }
 }

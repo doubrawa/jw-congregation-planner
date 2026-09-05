@@ -116,7 +116,7 @@ describe('Gesprächspartner richtet sich nach dem Führer DESSELBEN Raums', () =
       wird — hier stand eine vierte Fassung derselben Frage.
     */
     const w = wocheMitKlasse('Anton Alt', 'Clara Cohn')
-    const fuehrer = (w.mid.sections[0].items[0] as PartItem).names[0]!
+    const fuehrer = (w.mid.sections[0]!.items[0] as PartItem).names[0]!
     fuehrer.pid = BRUDER_A.id
     // Die Namensvetterin steht VOR ihm — `find` über den Namen träfe sie.
     const schwesterAlt = person('s9', 'Anton', 'Alt', true, 'schulung', 'schulungPartner')

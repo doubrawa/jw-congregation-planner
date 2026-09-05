@@ -331,11 +331,11 @@ describe('S-89-Nutzlast', () => {
   */
   it('ohne zugeteilten Schüler gibt es keinen Zettel für den Partner allein', () => {
     const w = buildDemoWeeks()
-    const uid = w[0].mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
-    const ii = w[0].mid.sections[uid].items.findIndex(
+    const uid = w[0]!.mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
+    const ii = w[0]!.mid.sections[uid]!.items.findIndex(
       (i) => !isSong(i) && (i as PartItem).names.some((n) => n.bereichsKey === 'schulungPartner'),
     )
-    const punkt = w[0].mid.sections[uid].items[ii] as PartItem
+    const punkt = w[0]!.mid.sections[uid]!.items[ii] as PartItem
     const fuehrer = punkt.names.find((n) => n.bereichsKey === 'schulung')!
     const partnerNi = punkt.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
     fuehrer.name = '' // nur der Partner steht da
@@ -353,11 +353,11 @@ describe('S-89-Nutzlast', () => {
     // Gegenprobe: Ohne sie wäre die Zeile oben auch dann grün, wenn gar kein
     // Zettel mehr entstünde.
     const w = buildDemoWeeks()
-    const uid = w[0].mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
-    const ii = w[0].mid.sections[uid].items.findIndex(
+    const uid = w[0]!.mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
+    const ii = w[0]!.mid.sections[uid]!.items.findIndex(
       (i) => !isSong(i) && (i as PartItem).names.some((n) => n.bereichsKey === 'schulungPartner'),
     )
-    const punkt = w[0].mid.sections[uid].items[ii] as PartItem
+    const punkt = w[0]!.mid.sections[uid]!.items[ii] as PartItem
     const partnerNi = punkt.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
     const zettel = buildS89ForSlot(w, {
       kind: 'part', wi: 0, tab: 'mid', si: uid, ii, ni: partnerNi,
@@ -462,7 +462,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     */
     const weeks = buildDemoWeeks()
     const ich = qualified('ton')
-    weeks[0].mid.helpers.ton = [{ name: displayName(ich), pid: 'p-namensvetter' }]
+    weeks[0]!.mid.helpers.ton = [{ name: displayName(ich), pid: 'p-namensvetter' }]
     const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
 
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich)

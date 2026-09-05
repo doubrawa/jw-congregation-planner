@@ -117,8 +117,8 @@ describe('renameInWeeks', () => {
     }
 
     const next = renameInWeeks([w], 'p1', 'M. Hartmann', 'Martin Hartmann')
-    const eigenNachher = (next[0].mid.sections[0].items[0] as PartItem).names[0]
-    const gastNachher = (next[0].we.sections[0].items[0] as PartItem).names[0]
+    const eigenNachher = (next[0]!.mid.sections[0]!.items[0] as PartItem).names[0]!
+    const gastNachher = (next[0]!.we.sections[0]!.items[0] as PartItem).names[0]!
 
     // Gegenprobe: Der eigene Bruder heißt jetzt anders.
     expect(eigenNachher.name).toBe('Martin Hartmann')
