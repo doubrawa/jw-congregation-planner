@@ -100,8 +100,20 @@ export function saveSnapshot(payload: HydratePayload): void {
 }
 
 /**
- * Momentaufnahme dieses Nutzers lesen (oder null). Eine Aufnahme eines anderen
- * Kontos oder einer älteren Fassung wird verworfen — nie fremde Daten zeigen.
+ * Momentaufnahme dieses Nutzers lesen (oder null).
+ *
+ * **Was hier nicht gilt, wird nicht nur verworfen, sondern gelöscht** (S6) —
+ * eine Aufnahme eines anderen Kontos, eine aus einer älteren Fassung, eine
+ * beschädigte, eine abgelaufene. Sie zu verwerfen genügte für die Anzeige, und
+ * genau darum geht es hier nicht: Die Aufnahme trägt Namen und Zuteilungen im
+ * Klartext, und sie überlebt die Sitzung, in der sie entstanden ist.
+ *
+ * Der Fall, um den es geht, steht im Kopf dieser Datei: das geteilte
+ * Saal-Tablet. Wer sich nicht abmeldet (`clearSnapshot` läuft dann nicht),
+ * hinterlässt seine Aufnahme; meldet sich danach jemand anders an und geht ein
+ * Ladevorgang schief, liest die App hier — und darf die fremde Aufnahme bei
+ * dieser Gelegenheit gleich wegräumen, statt sie bis zum Verfallsdatum liegen
+ * zu lassen.
  */
 export function readSnapshot(userId: string): { at: number; payload: HydratePayload } | null {
   let raw: string | null = null
@@ -111,18 +123,26 @@ export function readSnapshot(userId: string): { at: number; payload: HydratePayl
     return null
   }
   if (!raw) return null
+  const env = gelesen(raw)
+  const gueltig =
+    env !== null &&
+    env.v === VERSION &&
+    env.userId === userId &&
+    Boolean(env.payload) &&
+    Date.now() - env.at <= HOECHSTALTER_TAGE * 864e5
+  if (!env || !gueltig) {
+    clearSnapshot()
+    return null
+  }
+  return { at: env.at, payload: env.payload }
+}
+
+/** Beschädigtes bleibt `null` — die Aufnahme wird dann verworfen. */
+function gelesen(raw: string): Envelope | null {
   try {
-    const env = JSON.parse(raw) as Envelope
-    if (env.v !== VERSION || env.userId !== userId || !env.payload) return null
-    // Abgelaufen: verwerfen **und** wegräumen. Nur zu verwerfen ließe die Daten
-    // liegen — und genau darum geht es hier (S6).
-    if (Date.now() - env.at > HOECHSTALTER_TAGE * 864e5) {
-      clearSnapshot()
-      return null
-    }
-    return { at: env.at, payload: env.payload }
+    return JSON.parse(raw) as Envelope
   } catch {
-    return null // beschädigt
+    return null
   }
 }
 

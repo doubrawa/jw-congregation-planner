@@ -50,21 +50,31 @@ describe('saveSnapshot / readSnapshot', () => {
     expect(readSnapshot('u1')).toBeNull()
   })
 
-  it('gibt die Aufnahme NICHT an ein anderes Konto heraus', () => {
+  it('gibt die Aufnahme NICHT an ein anderes Konto heraus — und räumt sie weg', () => {
+    /*
+      **Verwerfen genügt nicht** (S6). Das geteilte Saal-Tablet aus dem Kopf von
+      `snapshot.ts`: Wer sich nicht abmeldet, hinterlässt seine Aufnahme —
+      Namen, Zuteilungen, Telefon, E-Mail im Klartext. Meldet sich danach
+      jemand anders an, ist dieser Griff die Gelegenheit, sie loszuwerden;
+      andernfalls läge sie bis zum Verfallsdatum weiter da.
+    */
     saveSnapshot(payload({ userId: 'u1' }))
     expect(readSnapshot('u2')).toBeNull()
+    expect(localStorage.getItem('snapshot'), 'die fremde Aufnahme liegt noch da').toBeNull()
   })
 
-  it('verwirft eine Aufnahme mit fremder Fassungsnummer', () => {
+  it('verwirft eine Aufnahme mit fremder Fassungsnummer — und räumt sie weg', () => {
     saveSnapshot(payload())
     const raw = JSON.parse(localStorage.getItem('snapshot') as string)
     localStorage.setItem('snapshot', JSON.stringify({ ...raw, v: 99 }))
     expect(readSnapshot('u1')).toBeNull()
+    expect(localStorage.getItem('snapshot')).toBeNull()
   })
 
-  it('verwirft beschädigten Inhalt statt zu werfen', () => {
+  it('verwirft beschädigten Inhalt statt zu werfen — und räumt ihn weg', () => {
     localStorage.setItem('snapshot', '{kein json')
     expect(readSnapshot('u1')).toBeNull()
+    expect(localStorage.getItem('snapshot')).toBeNull()
   })
 
   it('übersteht ein volles Kontingent und lässt keinen Rest zurück', () => {
