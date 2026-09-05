@@ -50,6 +50,14 @@ function PersonList() {
   const sorted = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
   const filtered = sorted.filter((p) => passtZumFilter(p, filter))
   const production = state.dataStatus !== 'demo'
+  /*
+   * **Einmal je Liste, nicht einmal je Zeile.** Die Marke „Ohne App-Konto"
+   * unten fragte `linkedMember` für jede Person einzeln, und das sucht linear
+   * über `state.members` — bei 300 Personen und 300 Konten sind das 90 000
+   * Vergleiche, und die Liste rendert bei jedem Tastendruck im Filterfeld neu.
+   * `OrphanAccounts` stellt für dieselbe Frage längst eine Menge auf.
+   */
+  const mitKonto = new Set(state.members.map((m) => m.personId))
   const dupes = duplicateDisplayNames(state.persons)
   const mehrfachRollen = doppelteFesteRollen(state.persons)
 
@@ -257,7 +265,7 @@ function PersonList() {
                   niemanden erreichbar. Genau diese Grenze zieht auch
                   `send-plan` für seine `ohneKonto`-Liste.
                 */}
-                {!linkedMember(state, person.id) && (
+                {!mitKonto.has(person.id) && (
                   <> · <span className="pers-ohne-konto">{t.keinKonto}</span></>
                 )}
               </span>
