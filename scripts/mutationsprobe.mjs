@@ -769,8 +769,8 @@ const KATALOG = [
     id: 'import-entity-numerisch',
     datei: 'supabase/functions/import-week/text.ts',
     regel: 'Numerische HTML-Entities werden dekodiert — sonst steht „Gespr&#228;che" im Programm.',
-    suchen: "    .replace(/&#(\\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))\n",
-    ersetzen: '',
+    suchen: "    if (kern[0] !== '#') return BENANNT[kern] ?? ganz\n",
+    ersetzen: '    return BENANNT[kern] ?? ganz\n',
   },
 
   // ── Provider-Effekte ──────────────────────────────────────────────────────

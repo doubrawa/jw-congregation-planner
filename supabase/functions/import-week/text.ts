@@ -11,30 +11,46 @@
 // derselben Woche nicht. Deshalb eine Stelle für beide.
 // =============================================================================
 
+/** Benannte Entities, die auf jw.org-Seiten vorkommen. */
+const BENANNT: Record<string, string> = {
+  nbsp: ' ',
+  shy: '', // Soft Hyphen als Entity
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  rsquo: '’',
+  lsquo: '‘',
+  ldquo: '„',
+  rdquo: '“',
+}
+
 /**
  * HTML-Entities in Zeichen zurückverwandeln (numerisch, hex und benannt).
  *
- * **`&amp;` steht zuletzt**, und das ist keine Kosmetik: Es stand einmal vor
- * `&lt;`, und damit lief `&amp;lt;` durch zwei Runden — erst zu `&lt;`, dann zu
- * `<`. Aus dem Text „&lt;" wurde so ein Zeichen, das keiner geschrieben hat.
- * Dieselbe Regel gilt in jedem Entity-Dekodierer: Das Und-Zeichen kommt
- * zurück, wenn alle anderen fertig sind, sonst dekodiert man sein Ergebnis
- * gleich noch einmal mit.
+ * **Ein einziger Durchlauf**, und das ist keine Kosmetik. Hier standen elf
+ * `replace` hintereinander, jedes über das Ergebnis des vorigen — und drei
+ * davon erzeugen ein Und-Zeichen: `&amp;`, `&#38;` und `&#x26;`. Was eines von
+ * ihnen hinterließ, las das nächste als Auftakt einer neuen Entity: Aus dem
+ * **Text** „&lt;" wurde ein `<`, das niemand geschrieben hat, aus „&#39;" ein
+ * Apostroph.
+ *
+ * Der letzte Anlauf schob nur `&amp;` ans Ende und ließ die beiden numerischen
+ * Zweige vorn stehen — `&#38;lt;` lief weiter durch zwei Runden. Ein Durchlauf
+ * kann die Falle gar nicht erst stellen: Was er einsetzt, sieht er nicht wieder
+ * an. Unbekanntes bleibt unverändert stehen, wie zuvor.
  */
 export function decodeEntities(s: string): string {
-  return s
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&shy;/g, '') // Soft Hyphen als Entity
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&rsquo;/g, '’')
-    .replace(/&lsquo;/g, '‘')
-    .replace(/&ldquo;/g, '„')
-    .replace(/&rdquo;/g, '“')
-    .replace(/&amp;/g, '&')
+  return s.replace(/&(#\d+|#[xX][0-9a-fA-F]+|[a-zA-Z]+);/g, (ganz, kern: string) => {
+    if (kern[0] !== '#') return BENANNT[kern] ?? ganz
+    const code = kern[1] === 'x' || kern[1] === 'X'
+      ? parseInt(kern.slice(2), 16)
+      : Number(kern.slice(1))
+    // Außerhalb des Unicode-Bereichs wirft `fromCodePoint`. Eine kaputte
+    // Zahlenangabe darf keinen Import zum Absturz bringen — sie bleibt stehen.
+    if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return ganz
+    return String.fromCodePoint(code)
+  })
 }
 
 /**

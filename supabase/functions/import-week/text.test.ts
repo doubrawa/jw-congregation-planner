@@ -129,6 +129,23 @@ describe('Entity-Reihenfolge', () => {
     expect(decodeEntities('&amp;amp;')).toBe('&amp;')
   })
 
+  it('auch nicht über die numerische Schreibweise', () => {
+    /*
+      Der erste Anlauf schob nur `&amp;` ans Ende — die beiden numerischen
+      Zweige standen weiter vorn und erzeugen dasselbe Zeichen. `&#38;` **ist**
+      `&amp;`, nur anders geschrieben.
+    */
+    expect(decodeEntities('&#38;lt;')).toBe('&lt;')
+    expect(decodeEntities('&#x26;lt;')).toBe('&lt;')
+    expect(decodeEntities('&#38;#39;')).toBe('&#39;')
+  })
+
+  it('was keine bekannte Entity ist, bleibt stehen', () => {
+    expect(decodeEntities('&unbekannt;')).toBe('&unbekannt;')
+    // Eine Zahl außerhalb von Unicode darf den Import nicht abbrechen.
+    expect(decodeEntities('&#999999999;')).toBe('&#999999999;')
+  })
+
   it('und die einfachen Fälle bleiben, wie sie waren', () => {
     expect(decodeEntities('R&amp;D')).toBe('R&D')
     expect(decodeEntities('&lt;b&gt;')).toBe('<b>')
