@@ -238,11 +238,15 @@ describe('Das Blatt zur eigenen Aufgabe — drei Zustände, drei Angebote', () =
     expect(container.querySelector('.mytask-hint')).toBeNull()
   })
 
-  it('das ✕ und der Hintergrund schließen', () => {
+  it('das ✕, der Hintergrund und Escape schließen alle drei', () => {
+    // Escape fehlte hier — ausgerechnet in einer der beiden Dateien, wegen
+    // derer `useEscape` überhaupt herausgelöst wurde. Am Schreibtisch ist die
+    // Taste der gewohnte Weg hinaus; das Blatt blieb stehen.
     const { container, dispatch } = mitAufgabe()
     fireEvent.click(knopf(container, '.mytask-close')!)
     fireEvent.click(container.querySelector('.confirm-backdrop')!)
-    expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeMyTask')).toHaveLength(2)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeMyTask')).toHaveLength(3)
   })
 
   it('zeigt gar nichts, wenn die Aufgabe inzwischen weg ist — statt abzustürzen', () => {

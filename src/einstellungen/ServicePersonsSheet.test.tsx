@@ -107,6 +107,17 @@ describe('T79 — Freigabe-Liste eines Hilfsdienstes', () => {
     expect(schalter(container)[0]?.getAttribute('aria-label')).toContain('Winkler')
   })
 
+  it('das ✕, der Hintergrund und Escape schließen alle drei', () => {
+    // Escape fehlte, während die Geschwister (Sprachauswahl, Zuteilungs-Sheet,
+    // S-89) sie längst hatten. Am Schreibtisch ist die Taste der gewohnte Weg
+    // hinaus — hier blieb das Blatt stehen.
+    const { container, dispatch } = zeige()
+    fireEvent.click(container.querySelector('.sheet-close')!)
+    fireEvent.click(container.querySelector('.sheet-backdrop')!)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeServiceSheet')).toHaveLength(3)
+  })
+
   it('zu einem gelöschten Dienst zeigt es nichts', () => {
     // Der Reducer schließt das Sheet beim Löschen; falls doch einmal ein
     // Schlüssel ohne Dienst hereinkommt, darf hier kein halbes Blatt stehen.

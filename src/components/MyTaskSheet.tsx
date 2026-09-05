@@ -4,13 +4,15 @@ import { useApp } from '../app/context'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
+import { useEscape } from './useEscape'
 import './overlays.css'
 
 /**
  * Aktions-Sheet für eine EIGENE Zuteilung (geöffnet aus „Meine Aufgaben" oder
  * dem Dashboard): bestätigen, absagen („ich kann doch nicht") oder eine bereits
  * gemeldete Verhinderung doch wieder bestätigen. Bei Hilfsdiensten löst das
- * Absagen automatisch die Ersatzsuche aus (Hinweis). Schließt per ✕/Backdrop.
+ * Absagen automatisch die Ersatzsuche aus (Hinweis). Schließt per ✕, Hintergrund,
+ * Zurück-Taste und Escape.
  */
 export function MyTaskSheet() {
   const { state, dispatch } = useApp()
@@ -21,6 +23,7 @@ export function MyTaskSheet() {
   const close = () => dispatch({ type: 'closeMyTask' })
   // Vor dem vorzeitigen return: Hooks müssen bei jedem Render laufen.
   useBackDismiss(true, close)
+  useEscape(close)
 
   const task = state.myTasks.find((x) => x.id === state.myTaskId)
   if (!task) return null

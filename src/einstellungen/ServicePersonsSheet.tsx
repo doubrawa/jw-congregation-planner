@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
+import { useEscape } from '../components/useEscape'
 import { useSwipeDown } from '../components/useSwipeDown'
 import { isQualified, listName, personCompare, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
@@ -34,6 +35,7 @@ export function ServicePersonsSheet({ svcKey }: { svcKey: string }) {
   const close = () => dispatch({ type: 'closeServiceSheet' })
   useDialogFocus(dlg)
   useBackDismiss(true, close)
+  useEscape(close)
   useSwipeDown(dlg, close)
 
   const service = state.services.find((s) => s.key === svcKey)
