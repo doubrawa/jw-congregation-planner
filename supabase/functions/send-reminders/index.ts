@@ -169,6 +169,33 @@ function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
   return days > frueh && days < spaet ? 'repeat' : null
 }
 
+/**
+ * **Welche Wochen dieser Lauf überhaupt ansehen muss.**
+ *
+ * `dueKind` schweigt für alles, was vorbei ist (`days < 0`), und für alles,
+ * was weiter weg liegt als die frühere der beiden Grenzen. Geholt wurde
+ * trotzdem **jede Woche der Versammlung** — `order=start.asc`, ohne Grenze,
+ * täglich, für jede Versammlung, mitsamt dem vollen JSONB-Blob. Nach ein paar
+ * Jahren sind das Hunderte Zeilen, um in dreien nachzusehen. Genau diese
+ * Rechnung steht schon bei `jeWoche` in `send-plan` — dort wurde sie gezogen,
+ * hier nicht.
+ *
+ * **Und es ist nicht nur Verschwendung.** Greift je eine Zeilengrenze
+ * (PostgREST kennt `max-rows`), schneidet `asc` die **jüngsten** Zeilen ab —
+ * also genau die, um die es geht. Die Erinnerungen blieben aus, und im
+ * Protokoll stünde ein erfolgreicher Lauf. Der Client bündelt dieselbe Abfrage
+ * seit je andersherum: absteigend mit `limit` (`WEEK_LIMIT` in `lib/data.ts`).
+ *
+ * Die Grenzen kommen aus derselben Arithmetik wie `daysUntil`: Der Termin
+ * liegt bei `start + offset` mit `offset` zwischen 0 und 6. Nach unten deshalb
+ * eine Woche Luft, nach oben die spätere der beiden Erinnerungsgrenzen.
+ */
+function wochenFenster(todayUTC: number, rem: Reminders): [string, string] {
+  const tag = (versatz: number): string =>
+    new Date(todayUTC + versatz * 864e5).toISOString().slice(0, 10)
+  return [tag(-7), tag(Math.max(rem.first, rem.last))]
+}
+
 /* ---- Versand ------------------------------------------------------------- */
 
 interface Push {
@@ -249,16 +276,19 @@ Deno.serve(async (req: Request) => {
       }
       const offsets = meetingDayOffsets(cong.meeting_times)
       const zeiten = meetingTimesOf(cong.meeting_times)
+      const [vonWoche, bisWoche] = wochenFenster(todayUTC, rem)
 
       const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
         // Die Kennung kommt aus der Spalte, nicht aus dem Blob: `data->>'start'`
         // fehlt bei Wochen, die vor migration-017 geschrieben wurden.
         klient.get<{ start: string; data: Week }[]>(
-          `weeks?select=start,data&congregation_id=eq.${wert(cong.id)}&order=start.asc`,
+          `weeks?select=start,data&congregation_id=eq.${wert(cong.id)}` +
+            `&start=gte.${wert(vonWoche)}&start=lte.${wert(bisWoche)}&order=start.asc`,
         ),
         // Treffpunkte: eigene Tabelle, dieselbe Kennung wie `weeks`.
         klient.get<{ start: string; data: FsInstance[] }[]>(
-          `fs_weeks?select=start,data&congregation_id=eq.${wert(cong.id)}&order=start.asc`,
+          `fs_weeks?select=start,data&congregation_id=eq.${wert(cong.id)}` +
+            `&start=gte.${wert(vonWoche)}&start=lte.${wert(bisWoche)}&order=start.asc`,
         ).catch((err) => {
           // Fehlt die Tabelle (Migration nicht eingespielt), lieber die
           // Zusammenkünfte erinnern als den ganzen Lauf verlieren.

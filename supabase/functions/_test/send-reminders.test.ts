@@ -157,6 +157,8 @@ interface Write {
 }
 
 let writes: Write[]
+/** Die gelesenen Pfade — für die Prüfung des Wochenfensters. */
+let leseWege: string[]
 /*
   Die Kennung steht als **Spalte** neben dem Blob, nicht darin (T66) — und in
   diesen Vorgaben absichtlich NUR dort. `data.start` gab es bis migration-017,
@@ -184,6 +186,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     writes.push({ method, path, body: init?.body ? JSON.parse(String(init.body)) : undefined })
     return new Response(null, { status: 204 })
   }
+  leseWege.push(path)
   if (path.startsWith('congregations')) {
     return jsonRes([
       { id: CONG, meeting_times: 'Di 19:00 · So 10:00', settings: { reminders } },
@@ -256,6 +259,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(TODAY))
   writes = []
+  leseWege = []
   weeks = [{ start: WEEK_START, data: { mid: midMeeting() } }]
   fsWeeks = []
   confirmations = []
@@ -1116,5 +1120,56 @@ describe('send-reminders: die Id entscheidet, nicht der Name', () => {
     ]
     const r = await run()
     expect(previewFor(r, U_MAX), 'Namensweg ohne Id verloren').toBeDefined()
+  })
+})
+
+/**
+ * **Der Lauf holt nur die Wochen, die er ansehen muss.**
+ *
+ * `dueKind` schweigt für alles, was vorbei ist, und für alles, was weiter weg
+ * liegt als die spätere Erinnerungsgrenze. Geholt wurde trotzdem **jede Woche
+ * der Versammlung** — täglich, fuer jede Versammlung, mitsamt dem vollen
+ * JSONB-Blob.
+ *
+ * Das ist nicht nur Verschwendung: Greift je eine Zeilengrenze, schneidet
+ * `order=start.asc` die **jüngsten** Zeilen ab — also genau die, um die es
+ * geht. Die Erinnerungen blieben aus, und im Protokoll stände ein
+ * erfolgreicher Lauf.
+ */
+describe('send-reminders: das Wochenfenster', () => {
+  /** Die Grenzen aus dem gelesenen Pfad — als echte Daten, nicht als Text. */
+  const fenster = (tabelle: string): { von: string; bis: string } => {
+    const weg = leseWege.find((w) => w.startsWith(`${tabelle}?`))
+    expect(weg, `keine Abfrage auf ${tabelle}`).toBeDefined()
+    const von = /start=gte\.([0-9-]+)/.exec(weg ?? '')?.[1]
+    const bis = /start=lte\.([0-9-]+)/.exec(weg ?? '')?.[1]
+    expect(von, `${tabelle} ohne untere Grenze`).toBeDefined()
+    expect(bis, `${tabelle} ohne obere Grenze`).toBeDefined()
+    return { von: von!, bis: bis! }
+  }
+
+  it('beide Wochen-Tabellen werden eingegrenzt', async () => {
+    await run()
+    for (const tabelle of ['weeks', 'fs_weeks']) {
+      const { von, bis } = fenster(tabelle)
+      expect(von < bis, `${tabelle}: Fenster verkehrt herum`).toBe(true)
+    }
+  })
+
+  it('die Woche, an die erinnert wird, liegt drin — eine ein Jahr alte nicht', async () => {
+    // `first` ist 7: Die Woche, die in sieben Tagen beginnt, muss geholt werden.
+    await run()
+    const { von, bis } = fenster('weeks')
+    expect(WEEK_START >= von && WEEK_START <= bis, 'die eigene Woche fällt heraus').toBe(true)
+    expect('2025-09-01' >= von, 'eine ein Jahr alte Woche wird noch geholt').toBe(false)
+  })
+
+  it('eine späte erste Erinnerung weitet das Fenster mit', async () => {
+    // Sonst schnitte die Grenze genau das weg, was die Einstellung verlangt.
+    reminders = { first: 21, last: 1, repeat: false }
+    await run()
+    const { bis } = fenster('weeks')
+    // Heute ist der 7.9.; 21 Tage weiter ist der 28.9.
+    expect(bis >= '2026-09-28', `obere Grenze ${bis} deckt „21 Tage vorher" nicht`).toBe(true)
   })
 })
