@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { APP_LANGS } from '../i18n/langs'
+import { ratgeberSlot } from '../data/aux-class'
 import { dict, loadOverlay, PRIV_KEY } from '../i18n/ui'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { privLabel } from './priv-label'
@@ -91,5 +92,43 @@ describe('Die Zusammensetzung selbst', () => {
     // im Personen-Detail stünde ein Schalter ohne Beschriftung.
     const ohne = ALLE.filter((key) => !(key in PRIV_KEY))
     expect(ohne).toEqual([])
+  })
+})
+
+/**
+ * **Jeder Bereich, den der Import vergibt, braucht einen Schalter.**
+ *
+ * `parse.ts` schreibt in jeden Platz einen `bereichsKey` — daran entscheidet
+ * die Auto-Zuteilung, wer infrage kommt (`isQualified`). Gibt es dazu keinen
+ * Schalter im Personen-Detail, kann ihn niemand setzen: Der Platz bleibt für
+ * immer offen, die Automatik übergeht ihn wortlos, und im Engpass-Banner steht
+ * „0 von 0 verfügbar". Ein Ausfall, der wie eine Einstellung aussieht.
+ *
+ * Gelesen wird der Quelltext des Imports, nicht eine Abschrift: Kommt dort ein
+ * Bereich hinzu, fällt es hier auf.
+ */
+/** Der Bereich des Ratgeber-Platzes — aus `ratgeberSlot`, nicht abgeschrieben. */
+const RATGEBER_SLOT_BEREICH = ratgeberSlot({ sections: [], helpers: {}, date: '', end: '' }).bereichsKey!
+
+describe('Bereiche des Imports haben einen Schalter', () => {
+  const PARSE = import.meta.glob('../../supabase/functions/import-week/parse.ts', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>
+
+  it('QUALIFICATION_ORDER kennt jeden bereichsKey aus parse.ts', () => {
+    const quelle = String(Object.values(PARSE)[0] ?? '')
+    const gefunden = [...new Set([...quelle.matchAll(/bereichsKey: '([^']+)'/g)].map((m) => m[1]!))]
+    // Gegenprobe: Ohne Treffer prüfte der Test nichts.
+    expect(gefunden.length, 'keine bereichsKeys im Import gefunden').toBeGreaterThan(5)
+
+    const ohne = gefunden.filter((key) => !(QUALIFICATION_ORDER as readonly string[]).includes(key))
+    expect(ohne, `ohne Schalter: ${ohne.join(', ')}`).toEqual([])
+  })
+
+  it('… und die Zusätzliche Klasse ebenso', () => {
+    // Der Ratgeber kommt nicht aus dem Import, sondern aus `ratgeberSlot`.
+    expect((QUALIFICATION_ORDER as readonly string[])).toContain(RATGEBER_SLOT_BEREICH)
   })
 })
