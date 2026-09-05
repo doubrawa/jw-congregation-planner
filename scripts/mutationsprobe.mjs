@@ -49,6 +49,24 @@ const hier = dirname(fileURLToPath(import.meta.url))
 const wurzel = join(hier, '..')
 
 /**
+ * Quelltext mit **einheitlichen Zeilenenden** lesen.
+ *
+ * `.gitattributes` legt LF fest, aber `core.autocrlf` checkt unter Windows CRLF
+ * aus — und dort wird dieses Projekt entwickelt. Die Muster im Katalog stehen
+ * in JavaScript-Zeichenketten und tragen deshalb `\n`. Von den 126 Einträgen
+ * sind 115 mehrzeilig: Sie konnten auf einem Windows-Arbeitsbaum **nie**
+ * treffen, und die Probe brach beim ersten von ihnen mit „Stelle hat sich
+ * verschoben" ab. Das Messgerät meldete Rost, wo keiner war.
+ *
+ * Gesucht und mutiert wird deshalb auf der LF-Fassung. Zurückgeschrieben wird
+ * am Ende der **rohe** Inhalt (siehe `zuruecksetzen`) — die Datei kommt Byte für
+ * Byte so zurück, wie sie war.
+ */
+function lies(pfad) {
+  return readFileSync(pfad, 'utf8').replace(/\r\n/g, '\n')
+}
+
+/**
  * Der Katalog.
  *
  * `regel` sagt, was gelten soll — in denselben Worten, in denen es im Quelltext
@@ -118,8 +136,8 @@ const KATALOG = [
     id: 'zuteilung-partner-raum',
     datei: 'src/data/planning.ts',
     regel: 'Der Gesprächspartner richtet sich nach dem Führer DESSELBEN Raums (T18).',
-    suchen: "const leadName = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')?.name ?? ''",
-    ersetzen: "const leadName = item.names.find((n) => n.bereichsKey === 'schulung')?.name ?? ''",
+    suchen: "const leadPlatz = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')",
+    ersetzen: "const leadPlatz = item.names.find((n) => n.bereichsKey === 'schulung')",
   },
   {
     id: 'zuteilung-partner-geschlecht',
@@ -694,10 +712,13 @@ const KATALOG = [
   },
   {
     id: 'wischen-eine-frist',
-    datei: 'src/components/useSwipeWeek.ts',
+    // Umgezogen: Die Frist lag in `useSwipeWeek`, der Zwilling `useSwipeDown`
+    // hatte danebengestanden und seine eigene, ungesicherte. Jetzt teilen sich
+    // beide diese eine Stelle.
+    datei: 'src/components/einZeitgeber.ts',
     regel: 'Es gibt immer nur einen Zeitgeber — eine abgebrochene Bewegung räumt nicht in die nächste hinein.',
-    suchen: '    const spaeter = (fn: () => void, ms: number): void => {\n      stoppen()',
-    ersetzen: '    const spaeter = (fn: () => void, ms: number): void => {',
+    suchen: '    spaeter: (fn, ms) => {\n      stoppen()',
+    ersetzen: '    spaeter: (fn, ms) => {',
   },
   {
     id: 'push-nie-von-allein',
@@ -1171,7 +1192,7 @@ for (const m of KATALOG) {
  * gemessen wird.
  */
 for (const m of KATALOG) {
-  const quelle = readFileSync(join(wurzel, m.datei), 'utf8')
+  const quelle = lies(join(wurzel, m.datei))
   const treffer = quelle.split(m.suchen).length - 1
   if (treffer !== 1) {
     console.error(
@@ -1238,12 +1259,12 @@ console.log(`Mutationsprobe: ${auswahl.length} Regeln, je ein voller Testlauf.\n
 
 for (const [i, m] of auswahl.entries()) {
   const pfad = join(wurzel, m.datei)
-  const original = readFileSync(pfad, 'utf8')
+  // Roh zum Zuruecklegen, mit LF zum Suchen — siehe `lies`.
   laufendeDatei = pfad
-  laufenderInhalt = original
+  laufenderInhalt = readFileSync(pfad, 'utf8')
 
   process.stdout.write(`[${i + 1}/${auswahl.length}] ${m.id} … `)
-  writeFileSync(pfad, original.replace(m.suchen, m.ersetzen))
+  writeFileSync(pfad, lies(pfad).replace(m.suchen, m.ersetzen))
   const start = Date.now()
   const { rot, ausgabe } = testlauf()
   zuruecksetzen()
