@@ -484,7 +484,7 @@ describe('Gesprächspartner: die Id des Führers entscheidet', () => {
                 title: 'Gespräche beginnen',
                 names: [
                   { ...fuehrer, bereichsKey: 'schulung' },
-                  { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                  { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
                 ],
               },
             ],

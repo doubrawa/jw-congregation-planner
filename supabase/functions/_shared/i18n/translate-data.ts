@@ -30,7 +30,7 @@ interface DateDict {
 
 const FRAG: Record<string, Record<string, string>> = {
   ar: {
-    "Gesprächspartner": "المساعِد", "Ratgeber": "المشير", "Kreisaufseher": "ناظر الدائرة",
+    "Schüler": "الطالب", "Partner": "المساعِد", "Ratgeber": "المشير", "Kreisaufseher": "ناظر الدائرة",
     "Treffpunkte": "خدمة الحقل",
     "ERÖFFNUNG": "الافتتاح",
     "ABSCHLUSS": "الختام",
@@ -74,7 +74,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "Dienstvortrag": "خطاب الخدمة", "Schlussvortrag": "خطاب", "DIENSTVORTRAG": "خطاب الخدمة", "GEDÄCHTNISMAHL": "ذكرى موت المسيح"
   },
   he: {
-    "Gesprächspartner": "עוזר", "Ratgeber": "מדריך", "Kreisaufseher": "משגיח נפה",
+    "Schüler": "תלמיד", "Partner": "עוזר", "Ratgeber": "מדריך", "Kreisaufseher": "משגיח נפה",
     "Treffpunkte": "שירות השדה",
     "ERÖFFNUNG": "פתיחה",
     "ABSCHLUSS": "סיום",
@@ -119,7 +119,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "Dienstvortrag": "הרצאת השירות", "Schlussvortrag": "הרצאה", "DIENSTVORTRAG": "הרצאת השירות", "GEDÄCHTNISMAHL": "ערב הזיכרון"
   },
   fa: {
-    "Gesprächspartner": "دستیار", "Ratgeber": "مشاور", "Kreisaufseher": "سرپرست حوزه",
+    "Schüler": "شاگرد", "Partner": "دستیار", "Ratgeber": "مشاور", "Kreisaufseher": "سرپرست حوزه",
     "Treffpunkte": "خدمت موعظه",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "پایان",
@@ -164,7 +164,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "Dienstvortrag": "سخنرانی خدمت", "Schlussvortrag": "سخنرانی", "DIENSTVORTRAG": "سخنرانی خدمت", "GEDÄCHTNISMAHL": "مراسم یادبود"
   },
   ur: {
-    "Gesprächspartner": "معاون", "Ratgeber": "مشیر", "Kreisaufseher": "حلقے کا نگہبان",
+    "Schüler": "طالبِ علم", "Partner": "معاون", "Ratgeber": "مشیر", "Kreisaufseher": "حلقے کا نگہبان",
     "Treffpunkte": "میدانی خدمت",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "اختتام",
@@ -209,7 +209,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "Dienstvortrag": "خدمتی تقریر", "Schlussvortrag": "تقریر", "DIENSTVORTRAG": "خدمتی تقریر", "GEDÄCHTNISMAHL": "یادگاری تقریب"
   },
   en: {
-    "Gesprächspartner": "Assistant", "Ratgeber": "Counselor",
+    "Schüler": "Student", "Partner": "Assistant", "Ratgeber": "Counselor",
     "Treffpunkte": "Field Service",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'TREASURES FROM GOD\u2019S WORD',
@@ -235,7 +235,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'ohne Zuteilungen': 'without assignments',
   },
   es: {
-    "Gesprächspartner": "Ayudante", "Ratgeber": "Consejero",
+    "Schüler": "Estudiante", "Partner": "Ayudante", "Ratgeber": "Consejero",
     "Treffpunkte": "Servicio del campo",
     'ERÖFFNUNG': 'APERTURA', 'ABSCHLUSS': 'CONCLUSIÓN',
     'SCHÄTZE AUS GOTTES WORT': 'TESOROS DE LA BIBLIA',
@@ -261,7 +261,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'ohne Zuteilungen': 'sin asignaciones',
   },
   fr: {
-    "Gesprächspartner": "Interlocuteur", "Ratgeber": "Conseiller",
+    "Schüler": "Élève", "Partner": "Interlocuteur", "Ratgeber": "Conseiller",
     "Treffpunkte": "Prédication",
     'ERÖFFNUNG': 'OUVERTURE', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'JOYAUX DE LA PAROLE DE DIEU',
@@ -287,7 +287,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'ohne Zuteilungen': 'sans attributions',
   },
   it: {
-    "Gesprächspartner": "Collaboratore", "Ratgeber": "Consigliere",
+    "Schüler": "Studente", "Partner": "Collaboratore", "Ratgeber": "Consigliere",
     "Treffpunkte": "Servizio di campo",
     'ERÖFFNUNG': 'INTRODUZIONE', 'ABSCHLUSS': 'CONCLUSIONE',
     'SCHÄTZE AUS GOTTES WORT': 'TESORI DELLA PAROLA DI DIO',
@@ -309,7 +309,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "senza incarichi", "Brot": "Pane", "Wein": "Vino", "nach Sonnenuntergang": "dopo il tramonto", "Montag": "Lunedì"
   },
   pt: {
-    "Gesprächspartner": "Ajudante", "Ratgeber": "Conselheiro",
+    "Schüler": "Estudante", "Partner": "Ajudante", "Ratgeber": "Conselheiro",
     "Treffpunkte": "Serviço de campo",
     'ERÖFFNUNG': 'INTRODUÇÃO', 'ABSCHLUSS': 'CONCLUSÃO',
     'SCHÄTZE AUS GOTTES WORT': 'TESOUROS DA PALAVRA DE DEUS',
@@ -331,7 +331,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "sem designações", "Brot": "Pão", "Wein": "Vinho", "nach Sonnenuntergang": "após o pôr do sol", "Montag": "Segunda-feira"
   },
   nl: {
-    "Gesprächspartner": "Assistent", "Ratgeber": "Raadgever",
+    "Schüler": "Student", "Partner": "Assistent", "Ratgeber": "Raadgever",
     "Treffpunkte": "Velddienst",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'AFSLUITING',
     'SCHÄTZE AUS GOTTES WORT': 'SCHATTEN UIT GODS WOORD',
@@ -353,7 +353,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "zonder toewijzingen", "Brot": "Brood", "Wein": "Wijn", "nach Sonnenuntergang": "na zonsondergang", "Montag": "Maandag"
   },
   pl: {
-    "Gesprächspartner": "Pomocnik", "Ratgeber": "Prowadzący",
+    "Schüler": "Uczeń", "Partner": "Pomocnik", "Ratgeber": "Prowadzący",
     "Treffpunkte": "Służba",
     'ERÖFFNUNG': 'ROZPOCZĘCIE', 'ABSCHLUSS': 'ZAKOŃCZENIE',
     'SCHÄTZE AUS GOTTES WORT': 'SKARBY ZE SŁOWA BOŻEGO',
@@ -375,7 +375,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "bez zadań", "Brot": "Chleb", "Wein": "Wino", "nach Sonnenuntergang": "po zachodzie słońca", "Montag": "Poniedziałek"
   },
   ru: {
-    "Gesprächspartner": "Собеседник", "Ratgeber": "Советник",
+    "Schüler": "Учащийся", "Partner": "Собеседник", "Ratgeber": "Советник",
     "Treffpunkte": "Служение",
     'ERÖFFNUNG': 'ВСТУПЛЕНИЕ', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СОКРОВИЩА ИЗ СЛОВА БОГА',
@@ -397,7 +397,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "без заданий", "Brot": "Хлеб", "Wein": "Вино", "nach Sonnenuntergang": "после захода солнца", "Montag": "Понедельник"
   },
   uk: {
-    "Gesprächspartner": "Співрозмовник", "Ratgeber": "Порадник",
+    "Schüler": "Учень", "Partner": "Співрозмовник", "Ratgeber": "Порадник",
     "Treffpunkte": "Служіння",
     'ERÖFFNUNG': 'ВСТУП', 'ABSCHLUSS': 'ЗАКЛЮЧНА ЧАСТИНА',
     'SCHÄTZE AUS GOTTES WORT': 'СКАРБИ БОЖОГО СЛОВА',
@@ -419,7 +419,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "без завдань", "Brot": "Хліб", "Wein": "Вино", "nach Sonnenuntergang": "після заходу сонця", "Montag": "Понеділок"
   },
   ro: {
-    "Gesprächspartner": "Interlocutor", "Ratgeber": "Consilier",
+    "Schüler": "Elev", "Partner": "Interlocutor", "Ratgeber": "Consilier",
     "Treffpunkte": "Serviciu",
     'ERÖFFNUNG': 'INTRODUCERE', 'ABSCHLUSS': 'ÎNCHEIERE',
     'SCHÄTZE AUS GOTTES WORT': 'COMORI DIN CUVÂNTUL LUI DUMNEZEU',
@@ -441,7 +441,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "fără însărcinări", "Brot": "Pâine", "Wein": "Vin", "nach Sonnenuntergang": "după apusul soarelui", "Montag": "Luni"
   },
   cs: {
-    "Gesprächspartner": "Pomocník", "Ratgeber": "Rádce",
+    "Schüler": "Student", "Partner": "Pomocník", "Ratgeber": "Rádce",
     "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'ÚVOD', 'ABSCHLUSS': 'ZÁVĚR',
     'SCHÄTZE AUS GOTTES WORT': 'POKLADY Z BOŽÍHO SLOVA',
@@ -463,7 +463,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "bez úkolů", "Brot": "Chléb", "Wein": "Víno", "nach Sonnenuntergang": "po západu slunce", "Montag": "Pondělí"
   },
   sk: {
-    "Gesprächspartner": "Pomocník", "Ratgeber": "Radca",
+    "Schüler": "Študent", "Partner": "Pomocník", "Ratgeber": "Radca",
     "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'ÚVOD', 'ABSCHLUSS': 'ZÁVER',
     'SCHÄTZE AUS GOTTES WORT': 'POKLADY Z BOŽIEHO SLOVA',
@@ -485,7 +485,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "bez úloh", "Brot": "Chlieb", "Wein": "Víno", "nach Sonnenuntergang": "po západe slnka", "Montag": "Pondelok"
   },
   hr: {
-    "Gesprächspartner": "Suradnik", "Ratgeber": "Savjetnik",
+    "Schüler": "Učenik", "Partner": "Suradnik", "Ratgeber": "Savjetnik",
     "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'UVOD', 'ABSCHLUSS': 'ZAKLJUČAK',
     'SCHÄTZE AUS GOTTES WORT': 'BLAGO IZ BOŽJE RIJEČI',
@@ -507,7 +507,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "bez zadataka", "Brot": "Kruh", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedjeljak"
   },
   sr: {
-    "Gesprächspartner": "Saradnik", "Ratgeber": "Savetnik",
+    "Schüler": "Učenik", "Partner": "Saradnik", "Ratgeber": "Savetnik",
     "Treffpunkte": "Служба",
     'ERÖFFNUNG': 'UVOD', 'ABSCHLUSS': 'ZAKLJUČAK',
     'SCHÄTZE AUS GOTTES WORT': 'BLAGO IZ BOŽJE REČI',
@@ -529,7 +529,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "bez zaduženja", "Brot": "Hleb", "Wein": "Vino", "nach Sonnenuntergang": "nakon zalaska sunca", "Montag": "Ponedeljak"
   },
   bg: {
-    "Gesprächspartner": "Помощник", "Ratgeber": "Съветник",
+    "Schüler": "Ученик", "Partner": "Помощник", "Ratgeber": "Съветник",
     "Treffpunkte": "Служба",
     'ERÖFFNUNG': 'УВОД', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СЪКРОВИЩА ОТ БОЖИЕТО СЛОВО',
@@ -551,7 +551,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "без назначения", "Brot": "Хляб", "Wein": "Вино", "nach Sonnenuntergang": "след залез слънце", "Montag": "Понеделник"
   },
   hu: {
-    "Gesprächspartner": "Segítő", "Ratgeber": "Tanácsadó",
+    "Schüler": "Tanuló", "Partner": "Segítő", "Ratgeber": "Tanácsadó",
     "Treffpunkte": "Szolgálat",
     'ERÖFFNUNG': 'BEVEZETŐ', 'ABSCHLUSS': 'BEFEJEZÉS',
     'SCHÄTZE AUS GOTTES WORT': 'KINCSEK ISTEN SZAVÁBÓL',
@@ -573,7 +573,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "feladatok nélkül", "Brot": "Kenyér", "Wein": "Bor", "nach Sonnenuntergang": "napnyugta után", "Montag": "Hétfő"
   },
   el: {
-    "Gesprächspartner": "Συνεργάτης", "Ratgeber": "Σύμβουλος",
+    "Schüler": "Μαθητής", "Partner": "Συνεργάτης", "Ratgeber": "Σύμβουλος",
     "Treffpunkte": "Υπηρεσία",
     'ERÖFFNUNG': 'ΕΙΣΑΓΩΓΗ', 'ABSCHLUSS': 'ΣΥΜΠΕΡΑΣΜΑ',
     'SCHÄTZE AUS GOTTES WORT': 'ΘΗΣΑΥΡΟΙ ΑΠΟ ΤΟΝ ΛΟΓΟ ΤΟΥ ΘΕΟΥ',
@@ -595,7 +595,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "χωρίς αναθέσεις", "Brot": "Ψωμί", "Wein": "Κρασί", "nach Sonnenuntergang": "μετά τη δύση του ηλίου", "Montag": "Δευτέρα"
   },
   tr: {
-    "Gesprächspartner": "Yardımcı", "Ratgeber": "Danışman",
+    "Schüler": "Öğrenci", "Partner": "Yardımcı", "Ratgeber": "Danışman",
     "Treffpunkte": "Tarla hizmeti",
     'ERÖFFNUNG': 'GİRİŞ', 'ABSCHLUSS': 'SONUÇ',
     'SCHÄTZE AUS GOTTES WORT': 'TANRI’NIN SÖZÜNDEKİ DEĞERLER',
@@ -617,7 +617,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "görev atanmadan", "Brot": "Ekmek", "Wein": "Şarap", "nach Sonnenuntergang": "gün batımından sonra", "Montag": "Pazartesi"
   },
   sv: {
-    "Gesprächspartner": "Medhjälpare", "Ratgeber": "Rådgivare",
+    "Schüler": "Elev", "Partner": "Medhjälpare", "Ratgeber": "Rådgivare",
     "Treffpunkte": "Tjänsten",
     'ERÖFFNUNG': 'INLEDNING', 'ABSCHLUSS': 'AVSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTER FRÅN GUDS ORD',
@@ -639,7 +639,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "utan uppgifter", "Brot": "Bröd", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgången", "Montag": "Måndag"
   },
   da: {
-    "Gesprächspartner": "Medhjælper", "Ratgeber": "Vejleder",
+    "Schüler": "Elev", "Partner": "Medhjælper", "Ratgeber": "Vejleder",
     "Treffpunkte": "Tjenesten",
     'ERÖFFNUNG': 'INDLEDNING', 'ABSCHLUSS': 'AFSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTE FRA GUDS ORD',
@@ -661,7 +661,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "uden opgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "efter solnedgang", "Montag": "Mandag"
   },
   fi: {
-    "Gesprächspartner": "Avustaja", "Ratgeber": "Neuvoja",
+    "Schüler": "Oppilas", "Partner": "Avustaja", "Ratgeber": "Neuvoja",
     "Treffpunkte": "Palvelus",
     'ERÖFFNUNG': 'JOHDANTO', 'ABSCHLUSS': 'LOPETUS',
     'SCHÄTZE AUS GOTTES WORT': 'AARTEITA JUMALAN SANASTA',
@@ -683,7 +683,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "ilman tehtäviä", "Brot": "Leipä", "Wein": "Viini", "nach Sonnenuntergang": "auringonlaskun jälkeen", "Montag": "Maanantai"
   },
   no: {
-    "Gesprächspartner": "Medhjelper", "Ratgeber": "Veileder",
+    "Schüler": "Elev", "Partner": "Medhjelper", "Ratgeber": "Veileder",
     "Treffpunkte": "Tjenesten",
     'ERÖFFNUNG': 'INNLEDNING', 'ABSCHLUSS': 'AVSLUTNING',
     'SCHÄTZE AUS GOTTES WORT': 'SKATTER FRA GUDS ORD',
@@ -705,7 +705,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "uten oppgaver", "Brot": "Brød", "Wein": "Vin", "nach Sonnenuntergang": "etter solnedgang", "Montag": "Mandag"
   },
   id: {
-    "Gesprächspartner": "Mitra", "Ratgeber": "Penasihat",
+    "Schüler": "Murid", "Partner": "Mitra", "Ratgeber": "Penasihat",
     "Treffpunkte": "Dinas",
     'ERÖFFNUNG': 'PEMBUKA', 'ABSCHLUSS': 'PENUTUP',
     'SCHÄTZE AUS GOTTES WORT': 'HARTA DARI FIRMAN ALLAH',
@@ -727,7 +727,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "tanpa tugas", "Brot": "Roti", "Wein": "Anggur", "nach Sonnenuntergang": "setelah matahari terbenam", "Montag": "Senin"
   },
   tl: {
-    "Gesprächspartner": "Katulong", "Ratgeber": "Tagapayo",
+    "Schüler": "Estudyante", "Partner": "Katulong", "Ratgeber": "Tagapayo",
     "Treffpunkte": "Paglilingkod",
     'ERÖFFNUNG': 'PAMBUNGAD', 'ABSCHLUSS': 'PANGWAKAS',
     'SCHÄTZE AUS GOTTES WORT': 'KAYAMANAN MULA SA SALITA NG DIYOS',
@@ -749,7 +749,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "walang atas", "Brot": "Tinapay", "Wein": "Alak", "nach Sonnenuntergang": "pagkalubog ng araw", "Montag": "Lunes"
   },
   vi: {
-    "Gesprächspartner": "Người phụ", "Ratgeber": "Người cố vấn",
+    "Schüler": "Học viên", "Partner": "Người phụ", "Ratgeber": "Người cố vấn",
     "Treffpunkte": "Rao giảng",
     'ERÖFFNUNG': 'MỞ ĐẦU', 'ABSCHLUSS': 'KẾT THÚC',
     'SCHÄTZE AUS GOTTES WORT': 'KHO BÁU TỪ LỜI ĐỨC CHÚA TRỜI',
@@ -771,7 +771,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "chưa phân công", "Brot": "Bánh", "Wein": "Rượu", "nach Sonnenuntergang": "sau khi mặt trời lặn", "Montag": "Thứ Hai"
   },
   sw: {
-    "Gesprächspartner": "Msaidizi", "Ratgeber": "Mshauri",
+    "Schüler": "Mwanafunzi", "Partner": "Msaidizi", "Ratgeber": "Mshauri",
     "Treffpunkte": "Utumishi",
     'ERÖFFNUNG': 'UTANGULIZI', 'ABSCHLUSS': 'HITIMISHO',
     'SCHÄTZE AUS GOTTES WORT': 'HAZINA ZA NENO LA MUNGU',
@@ -793,7 +793,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "bila migawo", "Brot": "Mkate", "Wein": "Divai", "nach Sonnenuntergang": "baada ya machweo", "Montag": "Jumatatu"
   },
   zh: {
-    "Gesprächspartner": "助手", "Ratgeber": "辅导员",
+    "Schüler": "学生", "Partner": "助手", "Ratgeber": "辅导员",
     "Treffpunkte": "传道",
     'ERÖFFNUNG': '开场', 'ABSCHLUSS': '结束',
     'SCHÄTZE AUS GOTTES WORT': '上帝话语的宝藏',
@@ -815,7 +815,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "尚未分配", "Brot": "饼", "Wein": "酒", "nach Sonnenuntergang": "日落之后", "Montag": "星期一"
   },
   ja: {
-    "Gesprächspartner": "補助", "Ratgeber": "助言者",
+    "Schüler": "生徒", "Partner": "補助", "Ratgeber": "助言者",
     "Treffpunkte": "野外奉仕",
     'ERÖFFNUNG': '開会', 'ABSCHLUSS': '結び',
     'SCHÄTZE AUS GOTTES WORT': '神の言葉の宝',
@@ -837,7 +837,7 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "割り当てなし", "Brot": "パン", "Wein": "ぶどう酒", "nach Sonnenuntergang": "日没後", "Montag": "月曜日"
   },
   ko: {
-    "Gesprächspartner": "보조자", "Ratgeber": "조언자",
+    "Schüler": "학생", "Partner": "보조자", "Ratgeber": "조언자",
     "Treffpunkte": "야외 봉사",
     'ERÖFFNUNG': '시작', 'ABSCHLUSS': '마침',
     'SCHÄTZE AUS GOTTES WORT': '하느님의 말씀에 담긴 보물',

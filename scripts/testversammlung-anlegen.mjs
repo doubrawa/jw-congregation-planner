@@ -279,7 +279,7 @@ export function fuelleZuteilungen(week, personen, dienste, gruppen, stand = { za
             gesetzt++
             return
           }
-          const fuehrend = slot.rolle === 'Gesprächspartner' ? item.names[i - 1] : null
+          const fuehrend = slot.rolle === 'Partner' ? item.names[i - 1] : null
           const p = waehle(personen, slot, imDienst, stand.zaehler, fuehrend)
           if (!p) return
           Object.assign(slot, nimm(p, imProgramm))

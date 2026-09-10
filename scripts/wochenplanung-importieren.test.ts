@@ -49,7 +49,7 @@ function mitteWoche() {
       { label: 'UNS IM DIENST', farbe: 'gold', items: [
         { title: 'Gespräche beginnen', names: [
           { name: '', bereichsKey: 'schulung' },
-          { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+          { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
         ] },
         { title: 'Schülervortrag', names: [{ name: '', bereichsKey: 'schulung', male: true }] },
       ] },
@@ -297,7 +297,7 @@ describe('verteileWoche', () => {
 
     const dienst = data.mid.sections[2].items
     expect(dienst[0].names[0]).toMatchObject({ name: 'P6' })
-    expect(dienst[0].names[1]).toMatchObject({ name: 'P7', rolle: 'Gesprächspartner' })
+    expect(dienst[0].names[1]).toMatchObject({ name: 'P7', rolle: 'Partner' })
     expect(dienst[1].names[0]).toMatchObject({ name: 'P8' })
     expect(dienst[1].names).toHaveLength(1) // Schülervortrag: kein Partner-Slot
 

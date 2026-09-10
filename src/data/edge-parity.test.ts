@@ -66,7 +66,7 @@ describe('Beschriftung einer Zuteilung', () => {
     ['ERÖFFNUNG', 'Lied 27 · Gebet · Einleitende Worte', 'Gebet'],
     ['ABSCHLUSS', 'Schlussworte · Lied 24 · Gebet', 'Gebet'],
     ['UNSER LEBEN ALS CHRIST', 'Versammlungsbibelstudium', 'Leiter'],
-    ['UNS IM DIENST VERBESSERN', 'Gespräche beginnen', 'Gesprächspartner'],
+    ['UNS IM DIENST VERBESSERN', 'Gespräche beginnen', 'Partner'],
     ['UNS IM DIENST VERBESSERN', 'Gespräche beginnen', 'mit A. Hoffmann'], // Begleiter
     ['SCHÄTZE AUS GOTTES WORT', 'Bibellesung · Jer 44:24-30', ''],
     ['SCHÄTZE AUS GOTTES WORT', 'Bibellesung · Jer 44:24-30', undefined],
@@ -220,7 +220,7 @@ describe('Externe Rollen', () => {
     'Gebet',
     'Leser',
     '',
-    'Gesprächspartner',
+    'Partner',
   ]
 
   it.each(rollen)('„%s" wird beidseitig gleich eingeordnet', (rolle) => {

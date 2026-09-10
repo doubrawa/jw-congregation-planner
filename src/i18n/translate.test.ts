@@ -148,8 +148,8 @@ describe('Rollen und Verweise — auch in den Zusatz-Sprachen', () => {
   // Diese Begriffe blieben früher deutsch stehen: die Rollen fehlten im
   // Wörterbuch, die Verweis-/Gruppen-Regeln gab es nur für en/es/fr.
   it('Gesprächspartner und Ratgeber sind überall übersetzt', () => {
-    expect(makeTr('ja')('Gesprächspartner')).toBe('補助')
-    expect(makeTr('pl')('Gesprächspartner')).toBe('Pomocnik')
+    expect(makeTr('ja')('Partner')).toBe('補助')
+    expect(makeTr('pl')('Partner')).toBe('Pomocnik')
     expect(makeTr('ru')('Ratgeber')).toBe('Советник')
     expect(makeTr('ar')('Ratgeber')).toBe('المشير')
   })

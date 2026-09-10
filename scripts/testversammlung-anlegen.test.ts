@@ -51,7 +51,7 @@ function slotWoche() {
         {
           label: 'UNS IM DIENST VERBESSERN', farbe: 'ocker',
           items: [
-            { title: 'Gespräche beginnen', names: [{ name: '', bereichsKey: 'schulung' }, { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' }] },
+            { title: 'Gespräche beginnen', names: [{ name: '', bereichsKey: 'schulung' }, { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' }] },
             { title: 'Schülervortrag', names: [{ name: '', bereichsKey: 'schulung', male: true }] },
           ],
         },
@@ -164,7 +164,7 @@ describe('Auswahlregel', () => {
     const fremde = person('fremde', q, true, 'haus-2')
     const ehefrau = person('ehefrau', q, true, 'haus-1')
     const fuehrend = { pid: 'bruder' }
-    const slot = { bereichsKey: 'schulungPartner', rolle: 'Gesprächspartner' }
+    const slot = { bereichsKey: 'schulungPartner', rolle: 'Partner' }
     expect(waehle([bruder, fremde], slot, new Set(['bruder']), new Map(), fuehrend)).toBeNull()
     expect(waehle([bruder, ehefrau], slot, new Set(['bruder']), new Map(), fuehrend)?.id).toBe('ehefrau')
   })
@@ -376,7 +376,7 @@ describe('Externe Rollen — dieselbe Aussage wie in der App', () => {
   })
 
   it('und normale Rollen sind für beide keine externen', () => {
-    for (const rolle of ['Vorsitz', 'Gebet', 'Leser', 'Redner', 'Gesprächspartner']) {
+    for (const rolle of ['Vorsitz', 'Gebet', 'Leser', 'Redner', 'Partner']) {
       expect(`${rolle}: ${EXTERNE_ROLLE.test(rolle)}`).toBe(`${rolle}: ${isGuestRole(rolle)}`)
     }
   })

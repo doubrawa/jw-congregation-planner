@@ -37,7 +37,7 @@ function wocheMitKlasse(fuehrerHaupt: string, fuehrerKlasse: string): Week {
     title: 'Gespräche beginnen',
     names: [
       { name: fuehrerHaupt, bereichsKey: 'schulung' },
-      { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+      { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
     ],
   }
   const w: Week = {

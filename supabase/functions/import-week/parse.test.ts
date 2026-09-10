@@ -38,7 +38,7 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     for (const title of ['Gespräche beginnen', 'Interesse fördern', 'Menschen zu Jüngern machen']) {
       const n = ministryNames(title, 'Von Haus zu Haus · 3 Min.')
       expect(n.map((s) => s.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
-      expect(n[1].rolle).toBe('Gesprächspartner')
+      expect(n[1].rolle).toBe('Partner')
     }
   })
 

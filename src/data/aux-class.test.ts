@@ -28,7 +28,7 @@ const teil = (bereichsKey: string, plaetze = 1): PartItem => ({
   title: 'Gespräche beginnen',
   names: Array.from({ length: plaetze }, (_, i) => ({
     name: '',
-    rolle: i === 0 ? undefined : 'Gesprächspartner',
+    rolle: i === 0 ? undefined : 'Partner',
     bereichsKey: i === 0 ? bereichsKey : 'schulungPartner',
   })),
 })

@@ -513,7 +513,9 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     // Über die zusammengefügte Form geprüft: Titel und Rolle stehen getrennt,
     // weil die Anzeige sie verschieden übersetzt (MyTask.rolle).
     expect(tasks.map(aufgabenBezeichnung)).toEqual([
-      'Gespräche beginnen',
+      // „· Schüler", seit der Gesprächsteil beide Seiten beschriftet — der
+      // Partner trug seine Rolle schon immer, der Schüler stand ohne da.
+      'Gespräche beginnen · Schüler',
       'Mikrofone',
       'Bibellesung · Jer 38:1-13',
       'Mikrofone',
@@ -630,7 +632,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
             items: [
               { num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.', names: [
                 { name: '', bereichsKey: 'schulung' },
-                { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
               ] },
               { num: 6, title: 'Vortrag', meta: '5 Min.', names: [{ name: '', bereichsKey: 'schulung', male: true }] },
             ],
@@ -699,7 +701,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
                   num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.',
                   names: [
                     { name: '', bereichsKey: 'schulung' },
-                    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                    { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
                   ],
                 },
               ],
@@ -760,11 +762,11 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
                   // Hauptsaal: Bruder führt. Klasse: Schwester führt.
                   names: [
                     { name: 'Mark T', pid: 'm', bereichsKey: 'schulung' },
-                    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                    { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
                   ],
                   aux: [
                     { name: 'Nora T', pid: 'n', bereichsKey: 'schulung' },
-                    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+                    { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
                   ],
                 },
               ],

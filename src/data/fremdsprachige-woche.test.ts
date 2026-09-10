@@ -123,7 +123,7 @@ function kanonisch(): Week {
             mins: 3,
             names: [
               platz('Lena Hoffmann', undefined, 'schulung'),
-              platz('A. Hoffmann', 'Gesprächspartner', 'schulungPartner'),
+              platz('A. Hoffmann', 'Partner', 'schulungPartner'),
             ],
           },
         ],

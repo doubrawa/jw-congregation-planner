@@ -383,9 +383,9 @@ export function buildDemoWeeks(): Week[] {
             part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['Niklas Feld', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Lena Hoffmann', '', 'schulung'], ['A. Hoffmann', 'Gesprächspartner', 'schulungPartner']]),
-            part(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['Simon Krüger', '', 'schulung'], ['M. Ernst', 'Gesprächspartner', 'schulungPartner']]),
-            part(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['Elke Brandt', '', 'schulung'], ['R. Brandt', 'Gesprächspartner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Lena Hoffmann', 'Schüler', 'schulung'], ['A. Hoffmann', 'Partner', 'schulungPartner']]),
+            part(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['Simon Krüger', 'Schüler', 'schulung'], ['M. Ernst', 'Partner', 'schulungPartner']]),
+            part(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['Elke Brandt', 'Schüler', 'schulung'], ['R. Brandt', 'Partner', 'schulungPartner']]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 128'),
@@ -422,8 +422,8 @@ export function buildDemoWeeks(): Week[] {
             part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['Paul Schröder', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', '', 'schulung'], ['Lena Hoffmann', 'Gesprächspartner', 'schulungPartner']]),
-            part(5, 'Interesse fördern', 'Informell · 4 Min.', [['R. Brandt', '', 'schulung'], ['Elke Brandt', 'Gesprächspartner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', 'Schüler', 'schulung'], ['Lena Hoffmann', 'Partner', 'schulungPartner']]),
+            part(5, 'Interesse fördern', 'Informell · 4 Min.', [['R. Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
             part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['Niklas Feld', '', 'schulung', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
@@ -461,8 +461,8 @@ export function buildDemoWeeks(): Week[] {
             part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['Simon Krüger', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Elke Brandt', '', 'schulung'], ['R. Brandt', 'Gesprächspartner', 'schulungPartner']]),
-            part(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['Lena Hoffmann', '', 'schulung'], ['A. Hoffmann', 'Gesprächspartner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Elke Brandt', 'Schüler', 'schulung'], ['R. Brandt', 'Partner', 'schulungPartner']]),
+            part(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['Lena Hoffmann', 'Schüler', 'schulung'], ['A. Hoffmann', 'Partner', 'schulungPartner']]),
             part(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['Jonas Berger', '', 'schulung', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
@@ -501,8 +501,8 @@ export function buildDemoWeeks(): Week[] {
             part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['Jörg Roth', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', '', 'schulung'], ['Elke Brandt', 'Gesprächspartner', 'schulungPartner']]),
-            part(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['Konrad Sommer', '', 'schulung'], ['Lena Hoffmann', 'Gesprächspartner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
+            part(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['Konrad Sommer', 'Schüler', 'schulung'], ['Lena Hoffmann', 'Partner', 'schulungPartner']]),
             part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['Paul Schröder', '', 'schulung', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
@@ -547,9 +547,9 @@ export function buildImportWeek(): Week {
           part(3, 'Bibellesung · Jer 44:24-30', '4 Min. · th Lektion 3', [['', '', 'bibellesung']]),
         ]),
         sec('UNS IM DIENST VERBESSERN', 'gold', [
-          part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['', '', 'schulung'], ['', 'Gesprächspartner', 'schulungPartner']]),
-          part(5, 'Interesse fördern', 'Informell · 4 Min.', [['', '', 'schulung'], ['', 'Gesprächspartner', 'schulungPartner']]),
-          part(6, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 11', [['', '', 'schulung'], ['', 'Gesprächspartner', 'schulungPartner']]),
+          part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['', 'Schüler', 'schulung'], ['', 'Partner', 'schulungPartner']]),
+          part(5, 'Interesse fördern', 'Informell · 4 Min.', [['', 'Schüler', 'schulung'], ['', 'Partner', 'schulungPartner']]),
+          part(6, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 11', [['', 'Schüler', 'schulung'], ['', 'Partner', 'schulungPartner']]),
         ]),
         sec('UNSER LEBEN ALS CHRIST', 'wein', [
           song('Lied 76'),

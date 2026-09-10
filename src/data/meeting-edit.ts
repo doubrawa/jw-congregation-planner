@@ -435,8 +435,17 @@ export function togglePartner(weeks: Week[], wi: number, tab: MeetingKey, si: nu
   const item = meeting?.sections[si]?.items[ii]
   if (!meeting || !item || isSong(item)) return weeks
   const idx = item.names.findIndex((n) => n.bereichsKey === 'schulungPartner')
-  if (idx >= 0) item.names.splice(idx, 1)
-  else item.names.push({ name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' })
+  // Die Beschriftung „Schüler" trägt nur, solange ihr jemand gegenübersteht:
+  // sie kommt mit dem Partner und geht mit ihm. Bliebe sie allein stehen,
+  // benennte sie eine Unterscheidung, die es auf dem Programm nicht gibt.
+  const schueler = item.names.find((n) => n.bereichsKey === 'schulung')
+  if (idx >= 0) {
+    item.names.splice(idx, 1)
+    if (schueler) delete schueler.rolle
+  } else {
+    item.names.push({ name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' })
+    if (schueler) schueler.rolle = 'Schüler'
+  }
   // Die Zusätzliche Klasse mitziehen: sonst hat der Hauptsaal zwei Plätze und
   // die Klasse einen — bis irgendwann setAuxClass erneut läuft. Bereits
   // vergebene Namen bleiben dabei stehen (angleichen ergänzt und kürzt nur).

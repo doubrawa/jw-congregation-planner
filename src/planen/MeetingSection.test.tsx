@@ -391,7 +391,7 @@ describe('Der Gesprächspartner-Platz lässt sich an- und abschalten', () => {
       num: 4, title: 'Gespräche beginnen', meta: '3 Min.',
       names: [
         { name: '', bereichsKey: 'schulung' },
-        ...(mitPartner ? [{ name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' }] : []),
+        ...(mitPartner ? [{ name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' }] : []),
       ],
     }],
   })

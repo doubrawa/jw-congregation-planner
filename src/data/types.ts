@@ -222,7 +222,7 @@ export interface SlotAssignment {
   name: string // Anzeigename (Cache); bei pid aus der Person abgeleitet/gepflegt
   pid?: string // Person-Id der Zuteilung — stabile Identität (statt Name-Match).
   //            Fehlt bei externen Rednern (Gastredner/Kreisaufseher) und Altdaten.
-  rolle?: string // Rollenlabel: Vorsitz, Gebet, Leiter, Leser, Gesprächspartner …
+  rolle?: string // Rollenlabel: Vorsitz, Gebet, Leiter, Leser, Partner …
   /**
    * Heimatversammlung eines auswärtigen Redners.
    *

@@ -52,7 +52,7 @@ describe('Rollen der App im Fragment-Übersetzer', () => {
       ROLE_GUEST_SPEAKER,
       ROLE_CIRCUIT,
       RATGEBER_ROLLE,
-      'Gesprächspartner',
+      'Partner',
       FS_LEITER,
       ...importRollen(),
     ]),

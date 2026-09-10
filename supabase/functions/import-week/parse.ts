@@ -488,7 +488,7 @@ const SETTING_RE = /Von Haus zu Haus|Informell|In der Öffentlichkeit/i
 
 /**
  * Personen-Slots eines Schülerteils (gold-Sektion): Gesprächsteile bekommen
- * Führer + Gesprächspartner (2), Vorträge/Ansprachen genau einen männlichen
+ * Schüler + Partner (2), Vorträge/Ansprachen genau einen männlichen
  * Teilnehmer. „Unsere Glaubensansichten erklären" ist je nach Format Ansprache
  * (1, männlich) oder gespielte Szene (2) — erkannt an einem Predigtdienst-Rahmen
  * im Meta. Unbekannt → 1 Slot (Partner ggf. manuell).
@@ -496,8 +496,8 @@ const SETTING_RE = /Von Haus zu Haus|Informell|In der Öffentlichkeit/i
 export function ministryNames(title: string, meta: string): ImportedSlot[] {
   const talk = { name: '', bereichsKey: 'schulung', male: true }
   const convo: ImportedSlot[] = [
-    { name: '', bereichsKey: 'schulung' },
-    { name: '', rolle: 'Gesprächspartner', bereichsKey: 'schulungPartner' },
+    { name: '', rolle: 'Schüler', bereichsKey: 'schulung' },
+    { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
   ]
   if (CONVO_RE.test(title)) return convo
   if (TALK_RE.test(title)) return [talk]
