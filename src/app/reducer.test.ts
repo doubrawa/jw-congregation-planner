@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isNameless, reducer } from './reducer'
 import { hatAuxKlasse } from '../data/aux-class'
 import type { AppAction, AppState } from './context'
@@ -1180,7 +1180,30 @@ describe('hydrate / setDataStatus', () => {
   })
 })
 
+/**
+ * **Abgeleitete Aufgaben — mit festem Standpunkt im Kalender.**
+ *
+ * Die Gruppe rechnet mit den Demo-Wochen, und die tragen feste Daten
+ * (7.–28. September 2026). Der Reducer wirft Vergangenes aus `myTasks`
+ * (`!istVorbei(task.at)`) — sobald der Dienstag der ersten Woche herum war,
+ * fiel sie aus der Ableitung. Vier Tests hier standen deshalb am 10.9.2026
+ * rot, ohne dass jemand etwas gebrochen hatte: sie erwarteten
+ * `Date.UTC(2026, 8, 8)` und `fs|2026-09-07|tp1` als Literal und waren am
+ * 8.9.2026 stillschweigend abgelaufen. Sie liefen nie wegen der Regel grün,
+ * sondern weil „heute" noch vor den Demo-Daten lag.
+ *
+ * Montag der ersten Woche: damit liegen alle vier Zusammenkünfte noch bevor,
+ * und `2026-01-05` (die Gegenprobe unten) bleibt Vergangenheit. Das
+ * Weglaufen selbst ist kein Nebeneffekt mehr, sondern eigens geprüft —
+ * siehe „dieselbe Aufgabe fällt weg, sobald ihr Termin herum ist".
+ */
 describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 10)) // Montag der ersten Demo-Woche
+  })
+  afterEach(() => vi.useRealTimers())
+
   it('eine geänderte Rechengrundlage berechnet myTasks/pendingIds neu', () => {
     const me = person('Simon Krüger')
     const s = makeState({ dataStatus: 'ready', personId: me.id, myTasks: [], pendingIds: [] })
@@ -1213,6 +1236,36 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const roh = deriveMyTasks(weeks, DEMO_SERVICES, displayName(me), {}, '', me.id)
     expect(roh.some((t) => t.at != null && t.at < heuteMs)).toBe(true)
     expect(next.myTasks.some((t) => t.at != null && t.at < heuteMs)).toBe(false)
+  })
+
+  it('dieselbe Aufgabe fällt weg, sobald ihr Termin herum ist', () => {
+    /*
+      Der Grenzfall, an dem die vier Tests dieser Gruppe zerbrochen sind: Es
+      ist nicht die **Woche**, die eine Aufgabe verschwinden lässt, sondern
+      ihr **Termin**. Am Dienstag steht die Zuteilung noch da, am Mittwoch
+      nicht mehr — mitten in derselben laufenden Woche. Der Test oben (T77)
+      prüft eine Woche, die ganz zurückliegt, und übersah diese Kante.
+
+      Ein einziger Datenstand, zwei Standpunkte: so kann der Unterschied nur
+      von der Uhr kommen und von nichts sonst.
+    */
+    const me = person('Simon Krüger')
+    const idsAm = (tag: number): string[] => {
+      vi.setSystemTime(new Date(2026, 8, tag, 10))
+      const s = makeState({ dataStatus: 'ready', personId: me.id, myTasks: [] })
+      return neuAbgeleitet(s).myTasks.map((t) => t.id)
+    }
+    const ersteWoche = (ids: string[]): string[] => ids.filter((id) => id.includes('2026-09-07'))
+
+    const dienstag = idsAm(8)
+    const mittwoch = idsAm(9)
+
+    // Gegenprobe, damit der Test nicht ins Leere prüft: am Tag selbst ist
+    // nichts vorbei — auch abends nicht (`istVorbei`, T77).
+    expect(ersteWoche(dienstag), 'keine Aufgabe der ersten Woche zu prüfen').not.toEqual([])
+    expect(ersteWoche(mittwoch), 'der Dienstag ist herum').toEqual([])
+    // Und es fällt **nur** weg, was vorbei ist — der Rest bleibt unangetastet.
+    expect(mittwoch).toEqual(dienstag.filter((id) => !id.includes('2026-09-07')))
   })
 
   it('geänderte Zusammenkunftszeit zieht die Termine meiner Aufgaben nach', () => {

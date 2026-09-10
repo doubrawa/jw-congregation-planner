@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import {
@@ -9,6 +9,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
+import type { Screen } from '../data/types'
 import { initialState } from '../app/init'
 import { reducer } from '../app/reducer'
 import { MeetingTabs } from '../components/MeetingTabs'
@@ -136,17 +137,77 @@ describe('Die Wochen-Ansicht', () => {
   })
 })
 
+/**
+ * **Der Reiter gilt nur im Planen — und wohin er fällt, sagt der Kalender.**
+ *
+ * Zwei Regeln greifen hier hintereinander: `navigate` setzt einen Reiter
+ * zurück, den es am Ziel nicht gibt, und danach zieht
+ * `zurNaechstenZusammenkunft` ihn auf die **nächste** Zusammenkunft. Bis zum
+ * 10.9.2026 stand hier nur `toBe('mid')` — richtig an einem Montag, falsch ab
+ * Mitte der Woche, wenn die nächste Zusammenkunft die am Wochenende ist. Der
+ * Test lief also nicht wegen der Regel grün, sondern wegen des Wochentags
+ * (dieselbe Uhr-Falle wie in `reducer.test.ts`).
+ *
+ * Deshalb jetzt dreigeteilt: die **kalenderunabhängige** Regel („Bearbeiten
+ * bleibt nie stehen"), und je ein Fall für die beiden Richtungen, in die der
+ * Reiter danach fällt.
+ */
 describe('Der Reiter gilt nur im Planen', () => {
-  it('ein Wechsel ins Programm setzt ihn zurück', () => {
+  /** Reiter nach einem Wechsel — von einem festen Tag im September aus gesehen. */
+  const nachWechsel = (tab: 'edit' | 'fs', ziel: Screen, tag: number): string => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, tag, 10))
+    try {
+      const stand = { ...basis(), screen: 'planen' as const, tab }
+      return reducer(stand, { type: 'navigate', screen: ziel }).tab
+    } finally {
+      vi.useRealTimers()
+    }
+  }
+  const nachProgramm = (tab: 'edit' | 'fs', tag: number): string =>
+    nachWechsel(tab, 'programm', tag)
+
+  it('„Bearbeiten" bleibt an keinem Tag der Woche stehen', () => {
     // Das Programm ist für alle nur lesend — dort gibt es nichts zu bearbeiten.
-    const stand = { ...basis(), screen: 'planen' as const, tab: 'edit' as const }
-    expect(reducer(stand, { type: 'navigate', screen: 'programm' }).tab).toBe('mid')
+    // Die Regel selbst, ohne Rücksicht darauf, welcher Tag gerade ist.
+    for (let tag = 7; tag <= 13; tag++) {
+      expect(nachProgramm('edit', tag), `9/${tag}`).not.toBe('edit')
+    }
+  })
+
+  it('vor der Zusammenkunft fällt er auf die unter der Woche', () => {
+    expect(nachProgramm('edit', 7)).toBe('mid') // Montag, der Dienstag steht bevor
+  })
+
+  it('nach ihr auf die am Wochenende — er folgt der nächsten Zusammenkunft', () => {
+    expect(nachProgramm('edit', 10)).toBe('we') // Donnerstag, der Dienstag ist herum
+  })
+
+  /*
+    **Wo die Rücksetzung überhaupt entscheidet.**
+
+    Beim Wechsel ins Programm ist sie nicht messbar: `navigate` setzt zwar
+    auf `mid`, doch gleich danach zieht `zurNaechstenZusammenkunft` den
+    Reiter ohnehin auf eine Zusammenkunft — nimmt man die Rücksetzung
+    heraus, bleiben alle Prüfungen oben trotzdem grün (nachgemessen am
+    10.9.2026). Sichtbar wird sie erst auf einem Bildschirm, der **keine**
+    Zusammenkunft zeigt: dort greift kein Nachrücken mehr, und ein Reiter,
+    den es nicht gibt, bliebe stehen.
+  */
+  it('auf einem Bildschirm ohne Zusammenkunft fällt er auf die unter der Woche', () => {
+    for (const ziel of ['einstellungen', 'personen', 'profil'] as const) {
+      expect(nachWechsel('edit', ziel, 7), ziel).toBe('mid')
+      // „Treffpunkte" gibt es in Programm und Planen — sonst nirgends.
+      expect(nachWechsel('fs', ziel, 7), ziel).toBe('mid')
+    }
   })
 
   it('der Treffpunkt-Reiter überlebt den Wechsel ins Programm dagegen', () => {
     // Gegenprobe zur Regel: „nicht überall erlaubt" heißt nicht „nirgends".
-    const stand = { ...basis(), screen: 'planen' as const, tab: 'fs' as const }
-    expect(reducer(stand, { type: 'navigate', screen: 'programm' }).tab).toBe('fs')
+    // Und er bleibt auch vom Nachrücken der Zusammenkunft unberührt: wer die
+    // Treffpunkte ansieht, meint sie und keine Zusammenkunft.
+    expect(nachProgramm('fs', 7)).toBe('fs')
+    expect(nachProgramm('fs', 10)).toBe('fs')
   })
 })
 

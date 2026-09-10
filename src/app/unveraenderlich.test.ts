@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reducer } from './reducer'
 import type { AppAction, AppState, HydratePayload } from './context'
 import { initialState } from './init'
@@ -193,6 +193,22 @@ function schreibfolge(s: AppState): AppAction[] {
 }
 
 describe('Der Zustand wird nie an Ort und Stelle geändert', () => {
+  /**
+   * **Ein fester Standpunkt im Kalender**, wie in `reducer.test.ts`.
+   *
+   * Die Nutzlast baut auf den Demo-Wochen auf, und die tragen feste Daten
+   * (7.–28. September 2026). Der Reducer wirft Vergangenes aus `myTasks`,
+   * also wäre die Liste ab dem 5.10.2026 leer — und der Test hätte nichts
+   * mehr zu frieren. Er hätte es selbst gemeldet ("keine eigenen Aufgaben —
+   * der Test prüfte nichts"), aber erst als roter Lauf ohne Anlass. Am
+   * 10.9.2026 mit verschobener Uhr gefunden, drei Wochen vor dem Termin.
+   */
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 10)) // Montag der ersten Demo-Woche
+  })
+  afterEach(() => vi.useRealTimers())
+
   it('die Schreib-Aktionen auf einem tiefgefrorenen Zustand', () => {
     let s = tiefFrieren(reducer(initialState(), { type: 'hydrate', payload: tiefFrieren(ladung()) }))
     const folge = schreibfolge(s)
