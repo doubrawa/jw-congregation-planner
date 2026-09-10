@@ -121,6 +121,29 @@ describe('Plätze als Chips', () => {
     expect(chips(container)[1]!.className).toContain('is-open')
   })
 
+  it('auch der offene Platz nennt seine Rolle', () => {
+    /*
+      Vorher stand dort nur „— zuteilen". Beim Versammlungsbibelstudium sah
+      der Planer damit zwei gleich aussehende Knöpfe und musste antippen, um
+      zu erfahren, welcher der Leiter und welcher der Leser ist. Beim
+      Schülerteil hängt daran mehr: Die Geschlechterregel gilt für den
+      Partner-Platz (`partnerGenderOk`), und welcher das ist, stand nirgends.
+    */
+    const s = mitPlaetzen()
+    ;(s.items[0] as PartItem).names[1]!.rolle = 'Leser'
+    const { container } = zeige(s)
+    expect(chipTexte(container)[1]).toBe(`Leser: ${t.zuteilenChip}`)
+    // Offen bleibt er trotzdem — die Beschriftung ist kein Name.
+    expect(chips(container)[1]!.className).toContain('is-open')
+  })
+
+  it('ohne Rolle bleibt der offene Platz bei der blanken Aufforderung', () => {
+    // Die Hilfsdienste tragen keine Rolle — ihr Dienstname steht in der
+    // Überschrift. Dort wäre ein Präfix ein leerer Doppelpunkt.
+    const { container } = zeige(mitPlaetzen())
+    expect(chipTexte(container)[1]).toBe(t.zuteilenChip)
+  })
+
   it('die Rolle steht vor dem Namen — in der Sprache des Lesers', () => {
     const s = mitPlaetzen()
     ;(s.items[0] as PartItem).names[0]!.rolle = 'Leser'

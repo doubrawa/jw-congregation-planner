@@ -93,12 +93,18 @@ export function MeetingSection({
   }
 
   const partChipText = (slot: SlotAssignment): string => {
-    if (!slot.name) return t.zuteilenChip
     // Die Rolle in der Sprache des Lesers (`tu`), nicht der Versammlung: sie
     // gehört zur Bedienung, nicht zum Programmtext. Über `tpw` stand sie in
     // einer anderen Sprache als dieselbe Rolle im Banner darüber.
     const rolle = eigeneRolle(rolleMitHerkunft(slot))
-    return rolle ? `${tu(rolle)}: ${slot.name}` : slot.name
+    // **Auch der leere Platz nennt seine Rolle.** Vorher stand hier nur
+    // „— zuteilen": Beim Versammlungsbibelstudium bekam der Planer zwei
+    // gleich aussehende Knöpfe zu sehen und musste antippen, um zu erfahren,
+    // welcher der Leiter und welcher der Leser ist. Beim Schülerteil hängt
+    // daran mehr als Bequemlichkeit: Die Geschlechterregel gilt für den
+    // Partner-Platz, und welcher das ist, stand nirgends.
+    const text = slot.name || t.zuteilenChip
+    return rolle ? `${tu(rolle)}: ${text}` : text
   }
 
   const openPartSlot = (

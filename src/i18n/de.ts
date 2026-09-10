@@ -114,8 +114,8 @@ export const DE = {
     // Sprache der dortige Satz, statt einer eigenen Umschreibung.
     familieHint: 'Der Gesprächspartner sollte dasselbe Geschlecht haben oder ein Familienangehöriger sein.',
     familieHinzu: '+ Familienmitglied hinzufügen',
-    partnerHinzu: '+ Gesprächspartner',
-    partnerEntfernen: '– Gesprächspartner',
+    partnerHinzu: '+ Partner',
+    partnerEntfernen: '– Partner',
     schriftgroesse: 'Schriftgröße',
     // Vorlesbare Beschriftungen für Icon-Schaltflächen (Screenreader)
     a11yClose: 'Schließen',
