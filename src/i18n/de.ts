@@ -208,7 +208,12 @@ export const DE = {
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',
     privWtLeiter: 'Wachtturm-Studium-Leiter', privWtVertreter: 'Vertreter (Wachtturm-Studium)',
     wtRollenLabel: 'FESTE ROLLEN', wtRollenHint: 'Fester Wachtturm-Studium-Leiter; der Vertreter springt bei Abwesenheit ein.',
-    s89Title: 'Aufgabe in der Leben-und-Dienst-Zusammenkunft', s89Name: 'Name', s89Partner: 'Gesprächspartner/in',
+    // `s89Partner` beschriftet drei Flächen: den Druckbogen, den einzelnen
+    // Zettel und — über `privLabel` — den Aufgabenbereich „nur Partner". Seit
+    // die Rolle im Programm „Partner" heißt, hieß das Feld daneben noch
+    // „Gesprächspartner/in". Nur Deutsch gekürzt; die anderen 33 Sprachen
+    // trugen dort ohnehin schon ein kurzes Einzelwort (Assistant, Ayudante, 補助).
+    s89Title: 'Aufgabe in der Leben-und-Dienst-Zusammenkunft', s89Name: 'Name', s89Partner: 'Partner',
     s89Datum: 'Datum', s89Aufgabe: 'Aufgabe', s89Punkt: 'Schulungspunkt', s89Ort: 'Durchzuführen im',
     s89Hauptsaal: 'Hauptsaal', s89Open: 'S-89 anzeigen',
     s89Note: 'Hinweis: Quelle und Schulungspunkt für deine Aufgabe findest du im Arbeitsheft.',
