@@ -42,7 +42,7 @@
  * ---------------------------------------------------------------- Aufruf ----
  *
  *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+ *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/abwesenheiten-importieren.mjs \
  *     [--daten C:\DATA\Claude\nws-export\MyData-decrypted] \
  *     [--cong <congregation-id>] [--ab 2026-08-22] [--auch-unverfuegbar] [--trocken]
@@ -56,7 +56,7 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { ladeTabellen } from './gemeinsam.mjs'
+import { authKopf, ladeTabellen, secretKey } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { argumente } from './wochenplanung-importieren.mjs'
 
@@ -204,12 +204,12 @@ export function heuteISO(jetzt = new Date()) {
 async function main() {
   const arg = argumente(process.argv.slice(2))
   const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const key = secretKey()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const ab = typeof arg.ab === 'string' ? arg.ab : heuteISO()
   const fehlt = []
   if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
   if (fehlt.length) {
     console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
     process.exit(2)
@@ -219,7 +219,7 @@ async function main() {
     const res = await fetch(`${url}/rest/v1/${pfad}`, {
       ...init,
       headers: {
-        apikey: key, Authorization: `Bearer ${key}`,
+        ...authKopf(key),
         'Content-Type': 'application/json', ...(init.headers || {}),
       },
     })

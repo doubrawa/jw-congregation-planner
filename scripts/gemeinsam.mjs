@@ -62,3 +62,38 @@ export function ladeTabellen(dir, tabellen) {
   }
   return t
 }
+
+/**
+ * Der Schlüssel, mit dem die Wartungsskripte schreiben.
+ *
+ * **Er heißt nicht mehr Service-Role.** Die Legacy-JWT-Schlüssel dieses
+ * Projekts (`anon`, `service_role`) sind seit 14.8.2026 deaktiviert; gültig ist
+ * der `sb_secret_…` aus dem Dashboard (Project Settings → API Keys → Secret
+ * keys). Weil die Umgebungsvariable in allen Skripten und Notizen
+ * `SUPABASE_SERVICE_ROLE_KEY` hieß, gilt der alte Name weiter — der neue
+ * `SUPABASE_SECRET_KEY` hat Vorrang. So muss niemand seine Gewohnheit ändern,
+ * und wer den treffenden Namen benutzt, wird nicht bestraft.
+ */
+export function secretKey() {
+  return process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+}
+
+/**
+ * Kopfzeilen zur Anmeldung — **die beiden Schlüsselarten wollen verschiedene.**
+ *
+ * Die Legacy-Schlüssel sind JWTs, und Supabase-Clients senden sie in `apikey`
+ * **und** `Authorization: Bearer`. Die neuen (`sb_secret_…`,
+ * `sb_publishable_…`) sind keine JWTs: Steht so einer in `Authorization`,
+ * versucht die Plattform ihn als JWT zu lesen und weist die Anfrage mit
+ * „Invalid JWT" ab. Die Doku sagt es ausdrücklich — „Send publishable and
+ * secret keys on the `apikey` header only".
+ *
+ * Bis dahin schickte jedes Skript blind beide Kopfzeilen. Das ging gut, solange
+ * PostgREST den Zusatz duldete — eine Duldung, auf die sich nichts stützen
+ * sollte. Beide Arten müssen weiter gehen: Legacy-Schlüssel gelten allgemein
+ * bis Ende 2026, und ein anderes Projekt kann noch welche haben.
+ */
+export function authKopf(key) {
+  const k = String(key ?? '').trim()
+  return k.startsWith('eyJ') ? { apikey: k, Authorization: `Bearer ${k}` } : { apikey: k }
+}

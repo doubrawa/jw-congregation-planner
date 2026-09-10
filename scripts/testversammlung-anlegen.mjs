@@ -42,7 +42,7 @@
  * ---------------------------------------------------------------- Aufruf ----
  *
  *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+ *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/testversammlung-anlegen.mjs \
  *     [--name "Probeversammlung Talheim"] [--wochen 2] \
  *     [--mail-planer planer@probe.invalid] [--mail-mitglied schwester@probe.invalid] \
@@ -68,7 +68,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, personDisplayName } from './gemeinsam.mjs'
+import { argumente, authKopf, personDisplayName, secretKey } from './gemeinsam.mjs'
 export { argumente }
 export { personDisplayName as displayName }
 
@@ -335,15 +335,15 @@ export function fuelleZuteilungen(week, personen, dienste, gruppen, stand = { za
 
 function zugang() {
   const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const key = secretKey()
   const fehlt = []
   if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
   if (fehlt.length) {
     console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
     process.exit(2)
   }
-  const kopf = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }
+  const kopf = { ...authKopf(key), 'Content-Type': 'application/json' }
 
   /** PostgREST. `body` weglassen = GET. */
   const rest = async (pfad, method = 'GET', body, prefer = 'return=representation') => {

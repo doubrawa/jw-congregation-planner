@@ -23,7 +23,7 @@
  * ---------------------------------------------------------------- Aufruf ----
  *
  *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+ *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/versammlung-anlegen.mjs \
  *     --name "Musterstadt" \
  *     --saal "Hauptstraße 12" \
@@ -35,7 +35,7 @@
  *
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  */
-import { argumente } from './gemeinsam.mjs'
+import { argumente, authKopf, secretKey } from './gemeinsam.mjs'
 export { argumente }
 
 /**
@@ -92,10 +92,10 @@ export function planerBereiche() {
 async function main() {
   const arg = argumente(process.argv.slice(2))
   const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const key = secretKey()
   const fehlt = []
   if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
   if (!arg.name) fehlt.push('--name')
   if (!arg.vorname) fehlt.push('--vorname')
   if (!arg.nachname) fehlt.push('--nachname')
@@ -129,8 +129,7 @@ async function main() {
     const res = await fetch(`${url}/rest/v1/${pfad}`, {
       method: 'POST',
       headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
+        ...authKopf(key),
         'Content-Type': 'application/json',
         Prefer: 'return=representation',
       },
