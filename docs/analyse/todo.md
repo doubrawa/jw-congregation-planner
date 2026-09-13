@@ -3984,12 +3984,15 @@ Variante gewählt: **„Plan senden" überspringt Vergangenes.**
     `istVorbei`, `naechsteZusammenkunft`, `tageZwischen`, Countdown,
     Datumswähler, Treffpunkt-Aufgaben und der Karte.
 
-> **Deploy nötig:** `npx supabase functions deploy send-plan
-> --project-ref izxrhrufdbpbuwbvxdqr`. Bis dahin zählt der Knopf schon ohne
-> Vergangenes, die alte Function schickt es aber noch mit. Die Reihenfolge ist
-> unkritisch: Die neue Function nimmt Aufrufe ohne `heute` weiter an (dann gilt
-> der UTC-Tag), die alte ignoriert das Feld. `send-reminders` ist nur umbenannt
-> und verhält sich gleich — ein Deploy dort ist nicht nötig.
+> ✅ **Deploy erledigt (13. September 2026):** `send-plan` steht als Version 6
+> seit 15:02 Uhr, `verify_jwt` weiter an. Rauchtest ohne Nebenwirkung
+> bestanden: Die CORS-Vorabanfrage beantwortet der Handler selbst („ok"), ohne
+> Kopfzeile und mit kaputtem Token weist die Plattform ab (401), mit dem
+> öffentlichen Schlüssel antwortet der Handler `401 unauthorized` — das Modul
+> samt der neuen Importe (`heuteUtc`, `offeneDerWoche`) kommt also hoch.
+> `send-reminders` bleibt auf v32 vom 10.9.: nur umbenannt, verhält sich gleich.
+> Gesendet wurde beim Prüfen nichts; ein echter Druck auf „Plan senden" steht
+> noch aus.
 
 ### T96 · Warnen, wenn Plätze gar nicht besetzbar sind 🔧 ✅ erledigt
 **Vorgabe des Betreibers am 23. August 2026**, an die Stelle der
