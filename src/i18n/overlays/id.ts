@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Tugasmu",
   "dashZuBest": "Untuk dikonfirmasi",
   "dashPlanung": "Perencanaan",
-  "dashKonflikteN": "{n} konflik",
   "dashAllesZugeteilt": "Semua telah ditugaskan",
   "tabFs": "Perhimpunan untuk dinas pengabaran",
   "fsShort": "Dinas",

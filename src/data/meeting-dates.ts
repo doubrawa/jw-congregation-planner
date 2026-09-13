@@ -220,10 +220,24 @@ export function weekEndMs(weekStartISO: string | undefined): number | null {
   return Number.isNaN(start) ? null : start + 6 * 864e5
 }
 
+/**
+ * **Der örtliche Kalendertag als Zahl** — UTC-Mitternacht des Tages, den `d`
+ * hier gerade zeigt.
+ *
+ * Die eine Kodierung, in der die App Tage vergleicht: `meetingDateMs` legt einen
+ * Termin darauf, `MyTask.at` trägt sie, `istVorbei` misst daran. Sie stand in
+ * fünf Abschriften da (Countdown, Datumswähler, Treffpunkt-Aufgaben, „vorbei",
+ * „nächste Zusammenkunft"), und zweimal lag eine davon schon daneben — in UTC
+ * statt aus den örtlichen Bestandteilen, eine Stunde nach Mitternacht einen Tag
+ * zu früh. Eine Stelle, damit „heute" überall am selben Moment umspringt.
+ */
+export function kalendertagMs(d: Date): number {
+  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
 /** Ganze Tage von `a` bis `b` (negativ, wenn `b` früher liegt). */
 export function tageZwischen(a: Date, b: Date): number {
-  const tag = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
-  return Math.round((tag(b) - tag(a)) / 864e5)
+  return Math.round((kalendertagMs(b) - kalendertagMs(a)) / 864e5)
 }
 
 /**
@@ -261,7 +275,7 @@ export function currentWeekIndex(weeks: readonly Week[], heute = new Date()): nu
  */
 export function istVorbei(at: number | null | undefined, heute = new Date()): boolean {
   if (at == null) return false
-  return at < Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate())
+  return at < kalendertagMs(heute)
 }
 
 /**
@@ -295,7 +309,7 @@ export function naechsteZusammenkunft(
   meetings: string,
   heute = new Date(),
 ): { wi: number; tab: MeetingKey } | null {
-  const heuteMs = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate())
+  const heuteMs = kalendertagMs(heute)
   let beste: { wi: number; tab: MeetingKey; ms: number } | null = null
   for (let wi = 0; wi < weeks.length; wi++) {
     const week = weeks[wi]

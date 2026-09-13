@@ -295,7 +295,6 @@ export default {
   "dashDeineAufgabe": "המשימה שלך",
   "dashZuBest": "לאישור",
   "dashPlanung": "תכנון",
-  "dashKonflikteN": "{n} התנגשויות",
   "dashAllesZugeteilt": "הכול שובץ",
   "tabFs": "אסיפות לשירות השדה",
   "fsShort": "שירות השדה",

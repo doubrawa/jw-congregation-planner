@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Atribuirea ta",
   "dashZuBest": "De confirmat",
   "dashPlanung": "Planificare",
-  "dashKonflikteN": "{n} conflicte",
   "dashAllesZugeteilt": "Totul atribuit",
   "tabFs": "Întruniri pentru serviciul de teren",
   "fsShort": "Serviciu",

@@ -390,6 +390,26 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         selectedPersonId: null,
         langSheetOpen: false,
       }
+      /*
+       * **Eine bestimmte Woche** (Planungs-Karte des Start-Bildschirms, T95).
+       *
+       * Nur, wenn das Ziel auch erreicht wird: Ein abgewiesener Sprung landet im
+       * Programm, und dort gilt die gewünschte Woche nicht — sie war für Planen
+       * gemeint. Die Ansicht wird wie oben geprüft; „Bearbeiten" gibt es im
+       * Programm nicht.
+       *
+       * Das ist eine Wahl wie das Blättern (`terminGewaehlt`): Wer auf eine Woche
+       * tippt, will sie sehen und nicht auf die nächste Zusammenkunft springen.
+       */
+      if (action.woche && !blocked) {
+        const wunsch = action.woche.tab
+        return {
+          ...nachher,
+          week: Math.min(Math.max(0, action.woche.wi), Math.max(0, state.weeks.length - 1)),
+          tab: (wunsch === 'fs' || wunsch === 'edit') && !erlaubt[wunsch] ? 'mid' : wunsch,
+          terminGewaehlt: true,
+        }
+      }
       // Programm und Planen öffnen mit der nächsten Zusammenkunft (T82) —
       // solange der Nutzer nicht selbst gewählt hat. Die Treffpunkte bleiben
       // unangetastet: Wer sie ansieht, meint sie und keine Zusammenkunft.

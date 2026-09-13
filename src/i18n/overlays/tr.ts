@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Görevin",
   "dashZuBest": "Onaylanacak",
   "dashPlanung": "Planlama",
-  "dashKonflikteN": "{n} çakışma",
   "dashAllesZugeteilt": "Her şey atandı",
   "tabFs": "Tarla hizmeti için ibadetler",
   "fsShort": "Tarla hizmeti",

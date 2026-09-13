@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Tvoja dodjela",
   "dashZuBest": "Za potvrdu",
   "dashPlanung": "Planiranje",
-  "dashKonflikteN": "Sukobi: {n}",
   "dashAllesZugeteilt": "Sve dodijeljeno",
   "tabFs": "Sastanci za službu propovijedanja",
   "fsShort": "Služba",

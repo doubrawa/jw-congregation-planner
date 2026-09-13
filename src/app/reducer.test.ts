@@ -160,6 +160,43 @@ describe('navigate (Rechteprüfung)', () => {
     expect(reducer(makeState({ tab: 'we' }), { type: 'navigate', screen: 'aufgaben' }).tab).toBe('we')
   })
 
+  /*
+   * **Vom Start-Bildschirm auf eine bestimmte Woche** (T95). Die Planungs-Karte
+   * nennt die Woche, in der etwas zu tun ist; ein Tipp muss genau dort landen,
+   * nicht bei der nächsten Zusammenkunft. Über dieselbe Aktion wie jede
+   * Navigation, damit die Rechteprüfung eine Stelle bleibt.
+   */
+  it('mit Zielwoche öffnet Planen genau diese Woche und diesen Reiter', () => {
+    const s = makeState({ planner: true, week: 0, tab: 'mid', terminGewaehlt: false })
+    const next = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 2, tab: 'fs' } })
+    expect(next).toMatchObject({ screen: 'planen', week: 2, tab: 'fs' })
+    // Eine Wahl wie das Blättern: Der nächste Wechsel springt nicht weg (T82).
+    expect(next.terminGewaehlt).toBe(true)
+  })
+
+  it('ohne Planer-Recht bleibt es beim Programm — und die Woche wird nicht umgestellt', () => {
+    // Die Karte steht nur beim Planer; ein veralteter Knopf oder ein
+    // Doppeltipp nach Rechteentzug darf trotzdem nirgends hinführen.
+    const s = makeState({ planner: false, personId: 'p9', groups: [], week: 1, tab: 'we' })
+    const next = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 3, tab: 'mid' } })
+    expect(next.screen).toBe('programm')
+    expect(next.week).not.toBe(3)
+  })
+
+  it('eine Zielwoche außerhalb des Bestands wird an seinen Rand gelegt', () => {
+    // Zwischen Rechnen und Tippen kann ein Nachladen die Wochen verkürzt haben.
+    const s = makeState({ planner: true })
+    const zuWeit = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 99, tab: 'mid' } })
+    expect(zuWeit.week).toBe(s.weeks.length - 1)
+    expect(reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: -1, tab: 'mid' } }).week).toBe(0)
+  })
+
+  it('„Bearbeiten" gibt es nur im Planen — im Programm wird daraus die Zusammenkunft', () => {
+    const s = makeState({ planner: true })
+    const next = reducer(s, { type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'edit' } })
+    expect(next).toMatchObject({ screen: 'programm', week: 1, tab: 'mid' })
+  })
+
   it('entfernt eine namenlose selektierte Person beim Navigieren', () => {
     const empty: Person = { id: 'pX', fn: '', ln: '', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null }
     const s = makeState({ persons: [...DEMO_PERSONS, empty], selectedPersonId: 'pX' })

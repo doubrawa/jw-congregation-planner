@@ -116,12 +116,19 @@ const PAIRS = [
   // goldenen Fläche. Bisher stand `mut` nur auf Seite, Karte und den beiden
   // neutralen Sektionen; auf einer getönten Fläche ist es eine eigene Paarung.
   ['mut', 'tGld', 4.5, 'Nebenangaben auf Sektion Gold'],
+  // Der Zeitraum unter „Alles zugeteilt" auf der Planungs-Karte (T95).
+  ['mut', 'tPet', 4.5, 'Nebenangaben auf Sektion Petrol'],
   ['wein', 'tGld', 4.5, 'Warnung „ohne Konto" auf Sektion Gold'],
   ['mut2', 'bg', 4.5, 'Sekundärtext 2 auf Seite'],
   ['acc', 'bg', 4.5, 'Akzenttext auf Seite'],
   ['acc', 'card', 4.5, 'Akzenttext auf Karte'],
   ['acc', 'tAcc', 4.5, 'Blätter-Pfeil auf Akzentfläche'],
   ['onAcc', 'acc', 4.5, 'Text auf gefülltem Button'],
+  // Die Zähler der Banner in Planen — und dieselben Zahlen auf der
+  // Planungs-Karte des Start-Bildschirms (T95). Sie standen seit T96/T99 auf
+  // Wein und Gold, ohne dass eine Paarung sie erfasste.
+  ['onAcc', 'wein', 4.5, 'Zähler auf Wein (Konflikte, nicht besetzbar)'],
+  ['onAcc', 'gld', 4.5, 'Zähler auf Gold (Plan senden)'],
   ['onAcc', 'accD', 4.5, 'Text auf Button (gedrückt)'],
   ['pet', 'tPet', 4.5, 'Sektionslabel Petrol'],
   ['gld', 'tGld', 4.5, 'Sektionslabel Gold'],

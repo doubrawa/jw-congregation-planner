@@ -143,6 +143,9 @@ describe('Was an der Kennung hängt', () => {
 })
 
 describe('„Plan senden" trifft denselben Schlüssel wie die Edge Function', () => {
+  /** Ein Tag vor der Woche — vergangene Treffpunkte fielen sonst aus der Rechnung. */
+  const VORHER = new Date(2026, 8, 20, 12, 0)
+
   /*
    * Die Function nimmt den Montag aus der Spalte `weeks.start`. Rechnete der
    * Client ihn aus der Ordnungszahl, schriebe sie ihre Tagebuch-Einträge unter
@@ -162,7 +165,7 @@ describe('„Plan senden" trifft denselben Schlüssel wie die Edge Function', ()
 
   it('offene Meldung: der Schlüssel trägt den Montag der Woche', () => {
     // Zweite geladene Woche (wi = 1), die in Wirklichkeit am 21. beginnt.
-    const offen = offeneMeldungen(woche('2026-09-21'), [leiter()], 1, BASIS, [], {}, {})
+    const offen = offeneMeldungen(woche('2026-09-21'), [leiter()], 1, BASIS, [], {}, {}, '', VORHER)
     expect(offen.map((o) => o.key)).toEqual(['fs|2026-09-21|r1'])
   })
 
@@ -178,6 +181,7 @@ describe('„Plan senden" trifft denselben Schlüssel wie die Edge Function', ()
       [],
       '',
       conf,
+      VORHER,
     )
     expect(raus).toHaveLength(1)
     expect(raus[0]!.key).toBe('fs|2026-09-21|r1')

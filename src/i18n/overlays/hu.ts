@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "A feladatod",
   "dashZuBest": "Megerősítendő",
   "dashPlanung": "Tervezés",
-  "dashKonflikteN": "{n} ütközés",
   "dashAllesZugeteilt": "Minden kiosztva",
   "tabFs": "Összejövetelek a szántóföldi szolgálathoz",
   "fsShort": "Szolgálat",

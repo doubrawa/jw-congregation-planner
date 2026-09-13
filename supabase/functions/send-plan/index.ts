@@ -3,11 +3,15 @@
 // =============================================================================
 // Zwei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
-//   { action: 'plan', weekStart }
+//   { action: 'plan', weekStart, heute? }
 //     Der Planer hat eine Woche fertig und gibt sie frei. Jede eingeteilte
 //     Person bekommt **eine** Nachricht mit allen ihren Aufgaben dieser Woche
 //     (Glocke + Web-Push). Verschickt wird nur, was noch nicht verschickt war —
-//     das Versand-Tagebuch `assignment_log` (migration-024) merkt sich das.
+//     das Versand-Tagebuch `assignment_log` (migration-024) merkt sich das —,
+//     und nur, was noch **ansteht**: Über eine Zusammenkunft, die gewesen ist,
+//     geht keine Nachricht mehr hinaus. `heute` ist der Kalendertag des
+//     Planers („YYYY-MM-DD"), damit Knopf und Versand denselben Tag meinen
+//     (`heuteUtc`, _shared/planung.ts).
 //
 //   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
 //     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
@@ -20,6 +24,12 @@
 //     Zusammenkunft neu besetzt, löste damit ein Dutzend voller Aufrufe aus.
 //     Die alte Einzelform (taskKey/name/… im Rumpf) wird weiter angenommen —
 //     ein Browser-Tab, der seit Tagen offen liegt, schickt noch sie.
+//
+//     **Vergangenes kommt hier gar nicht erst an.** Welche Plätze vorbei sind,
+//     weiß der Client, der den alten Stand der Woche in der Hand hat
+//     (`entzogeneZusagen`); die Function bekommt nur Schlüssel und fertige
+//     Texte. Sie prüft das deshalb nicht noch einmal — dieselbe Arbeitsteilung
+//     wie bei Bezeichnung und Termin, die ebenfalls vom Client kommen.
 //
 // WARUM ES DIESE FUNCTION GIBT. Bis hierher erfuhr die eingeteilte Person von
 // ihrer Zuteilung überhaupt nichts: die Mitteilung „Zuteilung gesendet" ging an
@@ -46,26 +56,17 @@
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
-import {
-  istAusgefallenFuer,
-  meetingDayOffsets,
-  meetingTimesOf,
-  personDisplayName,
-  versatzMitAbweichung,
-  zeitMitAbweichung,
-} from '../_shared/planung.ts'
+import { heuteUtc, personDisplayName } from '../_shared/planung.ts'
 import {
   type Eintrag,
   type FsInstance,
   kanonisch,
   nachSprache,
+  offeneDerWoche,
   type Pending,
-  pendingOfFsWeek,
-  pendingOfMeeting,
   type ServiceRow,
   type SubscriptionRow,
   tagebuchSchluessel,
-  terminText,
   uebersetzerFuer,
   uebersetzt,
   type Week,
@@ -202,7 +203,7 @@ Deno.serve(async (req: Request) => {
     if (!userId) return json({ error: 'unauthorized' }, 401)
 
     const payload = (await req.json().catch(() => null)) as
-      | ({ action?: string; weekStart?: string; entzuege?: EntzugRumpf[] } & EntzugRumpf)
+      | ({ action?: string; weekStart?: string; heute?: string; entzuege?: EntzugRumpf[] } & EntzugRumpf)
       | null
     if (payload?.action !== 'plan' && payload?.action !== 'entzug') {
       return json({ error: 'bad-request' }, 400)
@@ -402,36 +403,20 @@ Deno.serve(async (req: Request) => {
 
     const week = weekRows[0]?.data
     if (!week) return json({ error: 'no-week' }, 404)
-    const offsets = meetingDayOffsets(congRows[0]?.meeting_times ?? '')
-    const zeiten = meetingTimesOf(congRows[0]?.meeting_times ?? '')
     const conf = new Map(confs.map((c) => [c.task_key, c.status]))
     const schonGemeldet = new Set(log.map((r) => tagebuchSchluessel(r.task_key, r.name)))
 
-    // Alle offenen Plätze der Woche einsammeln — dieselbe Aufzählung, die auch
-    // die Erinnerungen benutzt (`_shared/zuteilungen.ts`).
-    const offen: Array<Pending & { eintrag: Eintrag }> = []
-    for (const tab of ['mid', 'we'] as const) {
-      const meeting = week[tab]
-      if (!meeting) continue
-      // Entfällt die Zusammenkunft, gibt es nichts mitzuteilen (T30).
-      if (istAusgefallenFuer(week.dev, tab)) continue
-      const offset = versatzMitAbweichung(week.dev, tab, meeting.date, offsets[tab])
-      const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
-      // Der Termin trägt die Verlegung bereits in sich: steht sie zur Planzeit
-      // fest, nennt die Nachricht von vornherein den richtigen Tag.
-      const datum = terminText(weekStart, offset, meeting.date, zeit, week.dev, tab)
-      for (const pend of pendingOfMeeting(weekStart, tab, meeting, services, conf)) {
-        offen.push({ ...pend, eintrag: { datum, label: pend.label } })
-      }
-    }
-    for (const pend of pendingOfFsWeek(weekStart, fsRows[0]?.data ?? [], conf)) {
-      offen.push({
-        ...pend,
-        // Termin und Bezeichnung stehen fertig in der Aufzählung — beim Treffpunkt
-        // trägt der Termin den Ort (siehe `FS_LEITER`).
-        eintrag: { datum: pend.datum, label: pend.label },
-      })
-    }
+    // Alle offenen, noch anstehenden Plätze der Woche — dieselbe Aufzählung, die
+    // auch die Erinnerungen benutzt, samt der Ausschlüsse (`offeneDerWoche`).
+    const offen: Array<Pending & { eintrag: Eintrag }> = offeneDerWoche(
+      weekStart,
+      week,
+      fsRows[0]?.data ?? [],
+      services,
+      conf,
+      congRows[0]?.meeting_times ?? '',
+      heuteUtc(payload.heute),
+    )
 
     // Was schon gemeldet wurde, bleibt liegen. Sonst schickte ein zweiter Druck
     // nach einer kleinen Nachbesserung allen dieselbe Nachricht erneut.

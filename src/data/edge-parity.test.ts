@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   deutschesDatum as edgeDeutschesDatum,
+  heuteUtc as edgeHeuteUtc,
   istAusgefallenFuer as edgeAusgefallen,
   meetingDayOffsets as edgeOffsets,
   meetingTimesOf as edgeTimes,
@@ -15,6 +16,7 @@ import {
   zuteilungsLabel as edgeLabel,
 } from '../../supabase/functions/_shared/planung.ts'
 import {
+  offeneDerWoche as edgeOffeneDerWoche,
   pendingOfFsWeek as edgeFsPending,
   pendingOfMeeting as edgePending,
   tagebuchSchluessel as edgeTagebuch,
@@ -40,6 +42,13 @@ import type { Abweichung, FsInstance, Meeting, Person, Section, Service, Week } 
  * Test bindet **beide** Seiten ein und vergleicht sie an denselben Eingaben.
  * Läuft eine davon weg, fällt es hier auf statt im Betrieb.
  */
+
+/**
+ * Ein Tag vor allen Wochen dieser Datei (September 2026). Die Vorschau lässt
+ * Vergangenes weg; ohne festen Tag hinge jede Menge hier davon ab, wann der Test
+ * läuft.
+ */
+const VOR_DER_WOCHE = new Date(2026, 8, 1, 9, 0)
 
 const person = (fn: string, ln: string, dn?: string): Person => ({
   id: 'p', fn, ln, dn, role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
@@ -421,7 +430,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
 
   it('derselbe Schlüssel für denselben Treffpunkt', () => {
     // Client: die Woche ist die zweite geladene (wi = 1).
-    const client = offeneMeldungen(woche, [inst as FsInstance], 1, BASIS, [], {}, {})
+    const client = offeneMeldungen(woche, [inst as FsInstance], 1, BASIS, [], {}, {}, '', VOR_DER_WOCHE)
     // Function: der Montag kommt aus der Datenbankzeile.
     const server = edgeFsPending(MONTAG, [inst as never], new Map())
     expect(client.map((o) => o.key)).toEqual(server.map((p) => p.key))
@@ -450,6 +459,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
       [],
       '',
       { [key]: 'bestätigt' },
+      VOR_DER_WOCHE,
     )
     const server = edgeFsPending(MONTAG, [inst as never], new Map())
     expect(client).toHaveLength(1)
@@ -473,7 +483,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
     // Der Kreisaufseher hat kein Konto — die Ausnahme muss beidseitig gelten,
     // sonst geht eine Nachricht ins Leere oder gar keine hinaus.
     const extern = { ...inst, lext: true }
-    expect(offeneMeldungen(woche, [extern as FsInstance], 1, BASIS, [], {}, {})).toEqual([])
+    expect(offeneMeldungen(woche, [extern as FsInstance], 1, BASIS, [], {}, {}, '', VOR_DER_WOCHE)).toEqual([])
     expect(edgeFsPending(MONTAG, [extern as never], new Map())).toEqual([])
   })
 })
@@ -600,7 +610,7 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
     svc: Service[] = dienste,
     conf: Record<string, 'bestätigt' | 'verhindert'> = {},
   ): [string[], string[]] => [
-    offeneMeldungen(wochePS(mid), [], 0, null, svc, conf, {})
+    offeneMeldungen(wochePS(mid), [], 0, null, svc, conf, {}, '', VOR_DER_WOCHE)
       .map((o) => `${o.key} | ${o.name}`)
       .sort(),
     edgePending(MONTAG_PS, 'mid', mid as never, svc as never, new Map(Object.entries(conf)))
@@ -653,5 +663,111 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
     const [client, server] = beideSeiten(zusammenkunft(), wenig)
     expect(client).toEqual(server)
     expect(client.join(' ')).not.toContain('Ida Idyll')
+  })
+})
+
+/**
+ * **„Plan senden" lässt auf beiden Seiten dasselbe weg, was vorbei ist** (T95).
+ *
+ * Die Vorschau am Knopf (`offeneMeldungen`) und der Versand der Function
+ * (`offeneDerWoche`) überspringen Vergangenes — tagesgenau, am Tag selbst zählt
+ * eine Zusammenkunft noch. Rechnet eine Seite den Tag anders (einen Tag zu früh,
+ * den Wochentag fest statt aus den Einstellungen, die Verlegung nicht mit), zeigt
+ * der Knopf eine Zahl, die nach dem Drücken nicht auf null geht — oder es geht
+ * eine Nachricht über einen Abend hinaus, der gewesen ist.
+ *
+ * Verglichen wird am **selben Kalendertag**: der Client mit dem örtlichen Datum,
+ * die Function mit dessen UTC-Mitternacht — so, wie der Client ihn mitschickt
+ * (`heuteUtc`).
+ */
+describe('Plan senden: Vorschau und Versand lassen dasselbe Vergangene weg', () => {
+  const MONTAG_V = '2026-09-07' // Di 8.9., So 13.9.
+  const MEETINGS_V = 'Di 19:00 · So 10:00'
+  const dienste: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
+
+  const woche = (over: Partial<Week> = {}): Week =>
+    ({
+      range: '', book: '', start: MONTAG_V, current: false,
+      mid: {
+        date: '7.–13. September', end: '',
+        sections: [{
+          label: 'SCHÄTZE AUS GOTTES WORT', kind: 'schatz', farbe: 'petrol',
+          items: [{ iid: 'b1', title: 'Bibellesung', meta: '', names: [{ name: 'Anna Alt', pid: 'p1' }] }],
+        }],
+        helpers: { mik: [{ name: 'Bernd Berg', pid: 'p2' }] },
+      },
+      we: { date: '7.–13. September', end: '', sections: [], helpers: { mik: [{ name: 'Clara Cord', pid: 'p3' }] } },
+      ...over,
+    }) as unknown as Week
+
+  const treffpunkte = [
+    { id: 'mo', ruleId: 'mo', grp: '', wd: 1, time: '14:00', place: 'Saal', leader: 'Dora Dill', lpid: 'p4' },
+    { id: 'sa', ruleId: 'sa', grp: '', wd: 6, time: '09:30', place: 'Saal', leader: 'Emil Erd', lpid: 'p5' },
+  ] as FsInstance[]
+
+  /** Beide Seiten am `tag`. September 2026, mittags örtlich bzw. als UTC-Mitternacht. */
+  const beideSeiten = (tag: number, w: Week = woche()): [string[], string[]] => [
+    offeneMeldungen(w, treffpunkte, 0, null, dienste, {}, {}, MEETINGS_V, new Date(2026, 8, tag, 12, 0))
+      .map((o) => o.name)
+      .sort(),
+    edgeOffeneDerWoche(MONTAG_V, w as never, treffpunkte as never, dienste as never, new Map(), MEETINGS_V, Date.UTC(2026, 8, tag))
+      .map((p) => p.name)
+      .sort(),
+  ]
+
+  it('am Montag steht alles an — dieselbe Menge auf beiden Seiten', () => {
+    const [client, server] = beideSeiten(7)
+    expect(client).toEqual(server)
+    expect(client).toEqual(['Anna Alt', 'Bernd Berg', 'Clara Cord', 'Dora Dill', 'Emil Erd'])
+  })
+
+  it('am Mittwoch sind der Dienstag und der Montags-Treffpunkt auf beiden Seiten weg', () => {
+    const [client, server] = beideSeiten(9)
+    expect(client).toEqual(server)
+    expect(client).toEqual(['Clara Cord', 'Emil Erd'])
+  })
+
+  it('am Sonntag zählt der Sonntag noch — beidseitig tagesgenau', () => {
+    const [client, server] = beideSeiten(13)
+    expect(client).toEqual(server)
+    expect(client).toEqual(['Clara Cord'])
+  })
+
+  it('eine verlegte Zusammenkunft zählt ab ihrem neuen Tag — auf beiden Seiten (T30)', () => {
+    // Die Wochenmitte ist auf Donnerstag verlegt: Am Mittwoch steht sie noch
+    // bevor, obwohl der reguläre Dienstag vorbei ist.
+    const verlegt = woche({ dev: { mid: { day: 'Donnerstag' } } } as Partial<Week>)
+    const [client, server] = beideSeiten(9, verlegt)
+    expect(client).toEqual(server)
+    expect(client).toEqual(['Anna Alt', 'Bernd Berg', 'Clara Cord', 'Emil Erd'])
+  })
+})
+
+/**
+ * **Welchen Tag die Function für „heute" hält.**
+ *
+ * Der Client schickt seinen örtlichen Kalendertag mit. In Mitteleuropa ist der
+ * UTC-Tag zwischen Mitternacht und 02:00 noch der gestrige — ohne den
+ * mitgeschickten Tag meinten Knopf und Versand in dieser Zeit verschiedene Tage.
+ */
+describe('Der Kalendertag, den die Function glaubt', () => {
+  // Dienstag, 23:30 UTC — in Mitteleuropa schon Mittwoch.
+  const jetzt = Date.UTC(2026, 8, 8, 23, 30)
+
+  it('der Tag des Planers gilt, auch wenn UTC noch beim Vortag ist', () => {
+    expect(edgeHeuteUtc('2026-09-09', jetzt)).toBe(Date.UTC(2026, 8, 9))
+  })
+
+  it('ohne Angabe — ein älterer Client — der UTC-Tag', () => {
+    expect(edgeHeuteUtc(undefined, jetzt)).toBe(Date.UTC(2026, 8, 8))
+  })
+
+  it('mehr als einen Tag daneben wird nicht geglaubt — eine falsch gestellte Uhr bestimmt nicht, was vorbei ist', () => {
+    expect(edgeHeuteUtc('2026-09-10', jetzt)).toBe(Date.UTC(2026, 8, 8))
+    expect(edgeHeuteUtc('2026-09-06', jetzt)).toBe(Date.UTC(2026, 8, 8))
+  })
+
+  it('und kein Datum schon gar nicht', () => {
+    expect(edgeHeuteUtc('morgen', jetzt)).toBe(Date.UTC(2026, 8, 8))
   })
 })

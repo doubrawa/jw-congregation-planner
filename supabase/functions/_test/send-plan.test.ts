@@ -20,7 +20,7 @@
  * Aufbau wie substitute.test.ts: die echte index.ts wird geladen (`Deno` als
  * Global, `fetch` simuliert Auth und REST, web-push per Stub).
  */
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { TITEL_ENTZUG, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
 import {
@@ -226,7 +226,18 @@ beforeAll(async () => {
   await import('../send-plan/index.ts')
 })
 
+/**
+ * Montag der Testwoche, 08:00 UTC — noch ist nichts davon vorbei.
+ *
+ * Die Function lässt Vergangenes weg und liest „heute" aus der Uhr des Servers.
+ * Ohne festen Tag hinge jede Zahl hier davon ab, wann der Test läuft: Ab dem
+ * 9. September 2026 fiele der Dienstag der Testwoche aus jeder Nachricht.
+ */
+const MONTAG_FRUEH = new Date('2026-09-07T08:00:00Z')
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(MONTAG_FRUEH)
   authUser = U_PLANER
   woche = frischeWoche()
   writes = []
@@ -235,6 +246,10 @@ beforeEach(() => {
   fsWoche = []
   gelesen = []
   resetPush()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 const ruf = async (body: unknown): Promise<Response> =>
@@ -700,5 +715,82 @@ describe('Das Versand-Tagebuch verträgt eine Dublette', () => {
     const zeile = writes.find((w) => w.method === 'POST' && w.path.startsWith('notifications'))
     expect(zeile, 'kein POST auf notifications').toBeTruthy()
     expect(String(zeile!.headers['Prefer'] ?? '')).not.toContain('ignore-duplicates')
+  })
+})
+
+/* ---- Vergangenes --------------------------------------------------------- */
+
+/**
+ * **Über einen Termin, der gewesen ist, geht keine Nachricht hinaus** (T95).
+ *
+ * Am Donnerstag schickte der Knopf auch die Plätze vom Dienstag — eine
+ * Nachricht über eine Zusammenkunft, die niemand mehr vorbereiten kann. Und er
+ * zählte sie vorher mit, während die Planungs-Karte des Start-Bildschirms sie
+ * wegließ: dieselbe Woche mit zwei Zahlen. Jetzt lassen alle drei Vergangenes
+ * weg, tagesgenau — am Tag der Zusammenkunft zählt sie noch.
+ *
+ * „Heute" ist der Kalendertag des Planers, den der Client mitschickt: Der Knopf
+ * rechnet in Ortszeit, der Server kennt nur UTC, und zwischen Mitternacht und
+ * 02:00 sind das in Mitteleuropa zwei verschiedene Tage.
+ */
+describe('Vergangenes wird nicht mehr gemeldet', () => {
+  /** Die Testwoche mit einem Platz am Sonntag dazu. */
+  function mitSonntag(): unknown {
+    const w = frischeWoche() as { we: { helpers: Record<string, unknown[]> } }
+    w.we.helpers[SVC] = [{ name: 'Mia Glied', pid: 'p-mit' }]
+    return w
+  }
+  const KEY_SONNTAG = `${WOCHE}|we|helper|${SVC}|0`
+
+  it('am Donnerstag geht nur noch der Sonntag hinaus — der Dienstag ist gewesen', async () => {
+    vi.setSystemTime(new Date('2026-09-10T08:00:00Z'))
+    woche = mitSonntag()
+    const res = (await (await plan()).json()) as { aufgaben: number; ohneKonto: string[] }
+    expect(res.aufgaben).toBe(1)
+    // Karl Onto hatte nur den Dienstag — er ist nicht mehr anzusprechen.
+    expect(res.ohneKonto).toEqual([])
+    expect(zeilenIn('notifications').map((z) => z.user_id)).toEqual([U_MITGLIED])
+    // Und ins Tagebuch kommt nur, was wirklich gemeldet wurde.
+    expect(zeilenIn('assignment_log').map((z) => z.task_key)).toEqual([KEY_SONNTAG])
+  })
+
+  it('am Dienstag selbst zählt der Dienstag noch', async () => {
+    vi.setSystemTime(new Date('2026-09-08T20:00:00Z'))
+    woche = mitSonntag()
+    const res = (await (await plan()).json()) as { aufgaben: number }
+    expect(res.aufgaben).toBe(4)
+  })
+
+  it('ein Treffpunkt ist an seinem eigenen Tag vorbei', async () => {
+    vi.setSystemTime(new Date('2026-09-09T08:00:00Z')) // Mittwoch
+    fsWoche = [
+      { id: 'mo', grp: '', wd: 1, time: '14:00', place: 'Saal', leader: 'Anna Berg', lpid: 'p-anna' },
+      { id: 'sa', grp: '', wd: 6, time: '09:30', place: 'Saal', leader: 'Bernd Cohn', lpid: 'p-bernd' },
+    ]
+    await plan()
+    const keys = zeilenIn('assignment_log').map((z) => z.task_key)
+    expect(keys).toContain(`fs|${WOCHE}|sa`)
+    expect(keys).not.toContain(`fs|${WOCHE}|mo`)
+  })
+
+  it('der Tag des Planers gilt — auch wenn der Server in UTC noch beim Vortag ist', async () => {
+    // Dienstag 23:30 UTC; beim Planer in Mitteleuropa ist schon Mittwoch.
+    vi.setSystemTime(new Date('2026-09-08T23:30:00Z'))
+    woche = mitSonntag()
+    const res = (await (await ruf({ action: 'plan', weekStart: WOCHE, heute: '2026-09-09' })).json()) as {
+      aufgaben: number
+    }
+    // Mit dem UTC-Tag wäre der Dienstag noch mitgegangen (4) — der Knopf hatte
+    // ihn aber schon nicht mehr gezählt.
+    expect(res.aufgaben).toBe(1)
+  })
+
+  it('ein Tag, der mehr als einen Tag neben der Serveruhr liegt, wird nicht geglaubt', async () => {
+    // Ein Gerät mit falsch gestellter Uhr hielte sonst die ganze Woche für vorbei.
+    woche = mitSonntag()
+    const res = (await (await ruf({ action: 'plan', weekStart: WOCHE, heute: '2026-12-24' })).json()) as {
+      aufgaben: number
+    }
+    expect(res.aufgaben).toBe(4)
   })
 })

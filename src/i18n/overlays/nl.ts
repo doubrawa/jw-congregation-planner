@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Jouw toewijzing",
   "dashZuBest": "Te bevestigen",
   "dashPlanung": "Planning",
-  "dashKonflikteN": "{n} conflicten",
   "dashAllesZugeteilt": "Alles toegewezen",
   "tabFs": "Vergaderingen voor de velddienst",
   "fsShort": "Velddienst",

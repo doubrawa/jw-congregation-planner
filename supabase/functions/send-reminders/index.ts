@@ -51,6 +51,7 @@ import {
   meetingDayOffsets,
   meetingTimesOf,
   personDisplayName,
+  tageBisTermin,
   versatzMitAbweichung,
   zeitMitAbweichung,
 } from '../_shared/planung.ts'
@@ -134,14 +135,11 @@ interface Reminders {
  * `_shared/planung.ts` (`versatzMitAbweichung`) — dieselbe Rangfolge wie
  * `meetingOffset` im Client, und seit T30 mit der Abweichung davor. Zwei
  * Fassungen einer Terminregel waren schon einmal die Ursache von B8.
+ *
+ * Ebenso die Tage bis zur Zusammenkunft (hier stand `daysUntil`): Seit „Plan
+ * senden" Vergangenes überspringt, fragt es dasselbe — die Rechnung heißt jetzt
+ * `tageBisTermin` und steht neben dem Versatz.
  */
-
-/** Ganze Tage bis zur Zusammenkunft (UTC-Datumsarithmetik; negativ = vorbei). */
-function daysUntil(startISO: string, dayOffset: number, todayUTC: number): number | null {
-  const start = Date.parse(startISO)
-  if (Number.isNaN(start)) return null
-  return Math.round((start + dayOffset * 864e5 - todayUTC) / 864e5)
-}
 
 /**
  * Fälligkeit laut Einstellungen: Haupttermin (first/last) oder Wiederholung.
@@ -186,7 +184,7 @@ function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
  * Protokoll stünde ein erfolgreicher Lauf. Der Client bündelt dieselbe Abfrage
  * seit je andersherum: absteigend mit `limit` (`WEEK_LIMIT` in `lib/data.ts`).
  *
- * Die Grenzen kommen aus derselben Arithmetik wie `daysUntil`: Der Termin
+ * Die Grenzen kommen aus derselben Arithmetik wie `tageBisTermin`: Der Termin
  * liegt bei `start + offset` mit `offset` zwischen 0 und 6. Nach unten deshalb
  * eine Woche Luft, nach oben die spätere der beiden Erinnerungsgrenzen.
  */
@@ -379,7 +377,7 @@ Deno.serve(async (req: Request) => {
           // Abwesenheitsprüfung den echten nennen.
           const offset = versatzMitAbweichung(week.dev, tab, meeting.date, offsets[tab])
           const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
-          const days = daysUntil(start, offset, todayUTC)
+          const days = tageBisTermin(start, offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
@@ -417,7 +415,7 @@ Deno.serve(async (req: Request) => {
         const start = row.start
         if (!start) continue
         for (const pend of pendingOfFsWeek(start, row.data ?? [], conf)) {
-          const days = daysUntil(start, pend.offset, todayUTC)
+          const days = tageBisTermin(start, pend.offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue

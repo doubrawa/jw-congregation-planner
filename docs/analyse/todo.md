@@ -3763,7 +3763,7 @@ behielten.
 > Abwesenheiten gerettet werden. Ohne das verlöre jeder Ohne-Konto-Admin sein
 > Recht bei jedem Personen-Import, still.
 
-### T95 · Start-Bildschirm: Ideen sammeln 🔧 ☐ offen
+### T95 · Start-Bildschirm: Ideen sammeln 🔧 ✅ erledigt
 Vom Betreiber am 23. August 2026 nebenbei aufgenommen: **Ideen für eine bessere
 Dashboard-Ansicht.** Ausdrücklich noch kein Auftrag zu bauen — erst sammeln.
 
@@ -3784,6 +3784,212 @@ Fragen, die eine Idee beantworten sollte, bevor sie hier steht:
 
 Die Reihenfolge ist die Lehre aus T72: erst der Zweck, dann der Zuschnitt.
 Ein Dashboard „schöner machen" ohne Frage dahinter wird eine Kachelwand.
+
+#### Gesammelt am 2. September 2026
+
+Nachgesehen wurde im Code, nicht geschätzt: Für jeden Kandidaten unten steht
+fest, ob die Daten heute schon im Zustand liegen und wer sie bisher zu sehen
+bekommt. Zwei der drei Kandidaten aus dem Betrieb (oben) haben das nicht
+überstanden — sie stehen weiter unten mit Begründung.
+
+**Der Befund, der über allen Kacheln steht.** `src/dashboard/DashboardScreen.tsx`
+baut in dieser Reihenfolge: Gruß → eigene nächste Aufgabe → diese Woche →
+Mitteilungen/zu bestätigen → und **ganz unten, nur für Planer**, ein Knopf mit
+„N offene Zuteilungen · M mögliche Konflikte". Der Planer sieht also zuerst sein
+eigenes Verkündiger-Leben und seine Arbeit als letzte Zeile. **Der Bildschirm
+ist nach Person sortiert, nicht nach Rolle.** Das ist die Antwort auf „für wen?"
+und fällt vor jede einzelne Kachelidee: Solange die Reihenfolge fest ist,
+schiebt jede neue Planer-Kachel den Planer-Teil nur weiter nach unten.
+
+**Vier Kandidaten, die die drei Fragen bestehen:**
+
+| Idee | Für wen | Handlung | Daten |
+| --- | --- | --- | --- |
+| **1 · Der Wochenvorrat läuft leer** | Planer | Sprung nach Einstellungen → Import | `loadedUntilMs(state.weeks)` — liegt fertig |
+| **2 · Geplant, aber nicht gesendet** | Planer | Sprung nach Planen → Plan senden | `zuletztGesendet` / `offeneMeldungen` — liegen fertig |
+| **3 · „3 offen, davon 1 gar nicht besetzbar"** | Planer | kein neues Element — ein besserer Satz auf der vorhandenen Kachel | `engpaesse` / `offenTrotzAllem` (T96) |
+| **4 · Treffpunkte fehlen in „Diese Woche"** | beide | dieselbe wie heute | `state.fsWeeks` — schon auf dem Bildschirm |
+
+**Zu 1:** Der Import holt **eine** Woche je Knopfdruck (`ImportPanel.tsx`) und
+läuft nicht von selbst. Wie weit die Programme reichen, sagt `loadedUntilMs` in
+`src/lib/import.ts` — und diese Funktion wird an **genau einer** Stelle benutzt:
+im Import-Panel selbst. Also dort, wo man nur hingeht, wenn man ohnehin
+importieren will. Wer zwei Wochen nicht daran denkt, plant ins Leere, und nichts
+sagt es ihm. Der Kandidat mit dem klarsten „ohne diesen Hinweis merkt es keiner".
+
+**Zu 2:** Seit T99 ist das Senden ein eigener Knopfdruck. Damit gibt es einen
+Zustand, den es vorher nicht gab: eine fertig geplante Woche, von der die
+Eingeteilten nichts wissen. `zuletztGesendet(sentLog, week.start)` und
+`offeneMeldungen(…)` stehen fertig in `src/data/plan-versand.ts` — heute liest
+sie nur das `PlanSendenPanel`, also erst, wenn man schon dort ist. Diese Lücke
+hat T99 selbst aufgemacht; der Start-Bildschirm ist der Ort, an dem sie auffiele.
+
+**Zu 3:** T96 hat `engpaesse` gebaut — was nicht besetzbar ist, weil zu wenige da
+sind. Das lebt heute in einem Banner **innerhalb** von Planen, je Reiter. Auf dem
+Start-Bildschirm steht daneben „N offene Zuteilungen", was etwas anderes meint
+(was der Planer noch nicht getan hat). Das ist keine neue Kachel wert — aber die
+vorhandene sagt heute die schwächere von zwei Aussagen. „3 offen, davon 1 gar
+nicht besetzbar" ist ein anderer Arbeitstag als „3 offen".
+
+**Zu 4:** Der Wochenblock läuft über `MEETING_TABS` — Wochenmitte und Wochenende,
+sonst nichts. Die Konfliktzahl desselben Bildschirms rechnet Treffpunkte aber
+**mit** (`fsWeekConflicts`). Ein Treffpunkt-Leiter sieht seine Einteilung in der
+Hero-Karte, sobald sie die nächste ist (über `deriveMyFsTasks` landet sie in
+`myTasks`) — im Wochenüberblick darunter nie. Zwei Zeilen auf einem Bildschirm,
+die verschieden viel von derselben Woche wissen.
+
+**Drei, die durchfallen — damit sie nicht wiederkommen:**
+
+- **„Wer diese Woche fehlt"** (stand oben als Kandidat): Die Daten gibt es
+  (`state.absences`, `useAbwesend`), aber die Handlung fehlt. Für den Verkündiger
+  ist es fremde Information. Für den Planer zählt eine Abwesenheit erst, wo sie
+  auf eine Zuteilung trifft — und **genau das** sagt die Konfliktzahl schon. Eine
+  rohe Abwesenheitsliste ist eine Zahl ohne Griff. Wörtlich die Lehre aus T72.
+- **„Ob Erinnerungen rausgegangen sind"** (stand oben als Kandidat): fällt an der
+  dritten Frage. `reminder_log` existiert serverseitig (migration-011), wird aber
+  **nicht** in den Client-Zustand geladen; im ganzen `src/` kommt der Name nicht
+  vor. Das wäre neue Verkabelung, nicht eine Kachel. Kandidat 2 beantwortet die
+  bessere Nachbarfrage mit Daten, die schon da sind.
+- **Ersatzgesuche auf den Start-Bildschirm:** stehen schon an zwei Stellen — im
+  Dialog beim Öffnen (T69, bewusst dort, weil zeitkritisch) und im
+  Aufgaben-Screen. Eine dritte Stelle ist Wiederholung, keine neue Auskunft.
+
+**Weiterhin `☐ offen`, und zwar richtig so:** Gesammelt ist, entschieden nicht.
+Die Rollenfrage aus dem Befund oben trennt sich im Text nicht mehr — ob geteilter
+Bildschirm, zwei Reiter oder eine nach Rolle umsortierte Spalte, das ist der
+Punkt, an dem ein Bild schneller ist als ein Absatz. Kandidat 1–3 sind alle
+Planer-Sachen und landen nach heutiger Reihenfolge alle unter dem persönlichen
+Teil; das ist die Entscheidung, die vor dem Bauen steht.
+
+#### Entschieden und gebaut am 13. September 2026
+
+> **Der Bauauftrag kam vom Betreiber** („das neue Dashboard machen"). Die
+> offene Zuschnitt-Frage ging als Skizze an ihn — eine nach Rolle sortierte
+> Spalte, zwei Reiter, ein geteilter Bildschirm — und ist entschieden: **eine
+> Spalte, nach Rolle sortiert.** Zwei Reiter verdecken immer eine Hälfte, und
+> ein Hinweis hinter einem Reiter wird nicht gesehen; der geteilte Bildschirm
+> löst die Frage nur am Schreibtisch, am Handy stünde die Planung wieder unten.
+> Dazu zwei Folgefragen: Die Karte schaut auf die **kommenden Wochen** statt auf
+> die laufende, und **Gruppenaufseher** bekommen vorerst keine eigene Karte
+> (stand nicht unter den Kandidaten und wurde im Betrieb nicht vermisst).
+
+**Was jetzt dasteht.** Beim Planer direkt unter dem Gruß die **Planungs-Karte**:
+eine Zeile je Woche, in der etwas zu tun ist — ab der laufenden
+Kalenderwoche, höchstens vier. Ihre Chips heißen wie die Banner in Planen
+(Mögliche Konflikte, Nicht besetzbar, Offene Zuteilungen, Plan senden), und
+die Zähler tragen deren Farbe. Ein Tipp öffnet Planen auf genau dieser Woche
+und dem Reiter, in dem etwas offen ist — über `navigate` mit Zielwoche, also
+durch dieselbe Rechteprüfung. Ist nichts zu tun, schrumpft die Karte auf
+„Alles zugeteilt"; Verkündiger und Gruppenaufseher sehen den Bildschirm wie
+bisher. Die eigenen unbestätigten Aufgaben verliert der Planer dabei nicht aus
+dem Blick — die legt ihm das Blatt beim Öffnen vor (T69).
+
+Alle vier Kandidaten sind damit umgesetzt:
+
+- **1 · Wochenvorrat** — als Hinweis **mit Handlung**: Reichen die Programme
+  weniger als drei Wochen voraus, steht der Import-Knopf gleich auf der Karte,
+  statt in die Einstellungen zu springen (dort ist das Panel das letzte von
+  sieben). Der Ablauf liegt dafür in `einstellungen/useWochenImport.ts` statt
+  im Panel — mit seinen Grenzen: offline wird gar nicht erst angefangen,
+  fehlende Sprachvarianten werden zuerst nachgeholt.
+- **2 · Geplant, nicht gesendet** und **3 · nicht besetzbar** — als Chips
+  derselben Zeile.
+- **4 · Treffpunkte in „Aktuelle Woche"** — die **eigenen**, in der Folge der
+  Woche einsortiert (der Montag vor dem Dienstag). Wem eine Leitung gehört,
+  entscheiden dieselben zwei Stellen wie beim DU-Chip im Programm:
+  `fsLeiterZuteilung` (Freitext gehört niemandem) und `gehoertZu` (Id vor
+  Name).
+
+**Was die alte Kachel falsch machte, und warum die Karte es nicht wiederholt.**
+Sie nannte die laufende Woche — am Sonntag eine abgelaufene. Und sie zählte,
+was vorbei ist: Am Donnerstag stand der offene Platz vom Dienstag bis zum
+Wochenende als Arbeit da, die niemand mehr erledigen kann. Die Karte zählt nur,
+was ansteht (T77), tagesgenau wie `istVorbei`. Neu gerechnet wird dabei
+nichts: Jede Zahl kommt aus der Funktion hinter dem gleichnamigen Banner
+(`src/data/planungsstand.ts`). Gezählt wird je Woche statt je Reiter; und was
+vorbei ist, lassen die Banner in Planen stehen — „Plan senden" dagegen lässt es
+seit der Durchsicht unten auf allen Seiten weg.
+
+**Kein neuer Wörterbuch-Schlüssel.** Alle Texte der Karte gab es schon in 34
+Sprachen (die Banner-Titel, „Geladen bis", der Import-Knopf). Die Form „Titel +
+Zahl" hat das Pluralproblem nicht, das T96 beim Übersetzen fand — die alte
+Kachel schrieb „1 Konflikte". Ihr Schlüssel `dashKonflikteN` ist aus allen 34
+Wörterbüchern entfernt. `npm run contrast` prüft jetzt auch die Zähler auf Wein
+und Gold, die seit T96/T99 in den Bannern stehen und nun auf der Karte (in allen
+elf Paletten über 4,5 : 1).
+
+**Geprüft:** `planungsstand.test.ts` (25 Fälle — vergangene Woche, Sonntag,
+Donnerstag, Lücke im Bestand, Kongress, Treffpunkte, offline, Vorrat an der
+Grenze), `DashboardScreen.test.tsx` (Rolle und Reihenfolge, Chips mit Titel und
+Zahl, Sprung auf die Woche, Import-Knopf gegen eine gestellte Function,
+Treffpunkt-Zeilen mit Freitext-Leiter und Namensvetter) und `reducer.test.ts`
+(Sprung nur mit Recht, Rand des Bestands). **16 neue Einträge in der
+Mutationsprobe**; im ersten Lauf war einer ungewacht: Der Test zur Startwoche
+hatte nur eine vergangene Woche vor der Lücke — die zählt ohnehin nichts und
+fällt heraus, egal wo die Karte beginnt. Schief geht der falsche Anfang erst
+mit einem ganzen Jahr Bestand, wie die App ihn lädt: Dann belegen vier
+vergangene Wochen die vier Zeilen, und die kommende fehlt. Mit diesem Bestand
+ist der Test jetzt rot, wenn man die Regel bricht — 16 von 16. Am laufenden
+Demo-Stand nachgesehen in Reinweiß, Graphit und Hoher Kontrast, auf Arabisch
+(Pfeile und Chips in Leserichtung) und bei größter Schrift; der Screenshot im
+Planer-Handbuch ist neu aufgenommen.
+
+#### Durchsicht am selben Tag — zwölf Befunde, alle behoben
+
+Eine Durchsicht des fertigen Stands (`/code-review max`) fand zwölf Punkte; der
+Betreiber hat alle zur Behebung gegeben und für den ersten die gründlichere
+Variante gewählt: **„Plan senden" überspringt Vergangenes.**
+
+1. **Die Karte kündigte eine andere Zahl an, als der Knopf verschickte.** Sie
+   ließ die Plätze vom Dienstag am Donnerstag weg, der Knopf in Planen zählte
+   sie mit, und `send-plan` schickte ihnen eine Nachricht über eine
+   Zusammenkunft, die gewesen ist. Jetzt lassen **alle drei** Vergangenes weg —
+   `offeneMeldungen` im Client, `offeneDerWoche` in `_shared/zuteilungen.ts`
+   für die Function (die Sammel-Schleife stand bis hierher unprüfbar im
+   Handler). Der Client schickt seinen Kalendertag mit (`heute`): Der Server
+   rechnet in UTC, und zwischen Mitternacht und 02:00 wären das in Mitteleuropa
+   zwei Tage. Geglaubt wird der Tag nur, wenn er höchstens einen Tag neben der
+   Serveruhr liegt (`heuteUtc`). Auch **Entzüge** für vergangene Plätze gehen
+   nicht mehr hinaus — gefiltert im Client, der den alten Stand der Woche kennt
+   (`entzogeneZusagen`). `daysUntil` aus `send-reminders` heißt jetzt
+   `tageBisTermin` und steht in `_shared/planung.ts`.
+2. **Eine Kongresswoche fiel samt ihren Treffpunkten aus der Karte.** Der
+   Horizont begann bei der nächsten *Zusammenkunft*, und die überspringt Wochen,
+   in denen alles entfällt — deren Treffpunkte aber nicht. Jetzt beginnt er bei
+   der laufenden Kalenderwoche; Vergangenes darin fällt ohnehin einzeln heraus.
+3. **Über Mitternacht blieb die Karte stehen.** Sie merkt sich ihre Rechnung,
+   das Datum war keine Abhängigkeit. `useKalendertag` meldet den Tag neu — um
+   Mitternacht und beim Zurückkehren aus dem Hintergrund, wo das Betriebssystem
+   Zeitgeber anhält. Genutzt von Karte, Start-Bildschirm und „Plan senden".
+4. **Nur ein ungesendeter Treffpunkt-Leiter öffnete die Wochenmitte.** Jetzt die
+   Treffpunkte (`zielReiter`).
+5. **„Alles zugeteilt" behauptete mehr, als geprüft war.** Darunter steht jetzt
+   der Zeitraum der angesehenen Wochen — über `formatRange`, ohne neues Wort.
+6. **Die Wochenspanne ignorierte die Sprachvariante**, die Planen zeigt. Die
+   Regel aus `useProgWeek` ist jetzt `useProgWeeks` und gilt für beide.
+7. **Die Eingaben der Karte waren ungeprüft** — Treffpunkte, Abwesenheiten,
+   Tagebuch. Bildschirm-Tests und drei Einträge in der Mutationsprobe.
+8. **`leitetTreffpunkt` war eine dritte Fassung** von `gehoertZu` +
+   `fsLeiterZuteilung`. Entfernt; Start und Programm fragen dieselben Stellen.
+9. **„nichtBesetzbar ist ein Teil von offen" stimmte nicht** — nach
+   nachträglichen Abwesenheiten steht der Engpass auch ohne offenen Platz.
+   Kommentar berichtigt, der Fall ist jetzt ein Test.
+10. **Das Datumsformat des Import-Hooks entstand bei jedem Render neu.** Gemerkt;
+    der Hook liefert auch das Ende des Vorrats, statt dass die Karte es zweimal
+    rechnet.
+11. **Die Konfliktprüfung lief je Zusammenkunft**; jetzt einmal je Woche, nach
+    Zusammenkunft verteilt.
+12. **Die Kodierung „Kalendertag als UTC-Mitternacht" stand in fünf
+    Abschriften** — jetzt `kalendertagMs` in `meeting-dates.ts`, genutzt von
+    `istVorbei`, `naechsteZusammenkunft`, `tageZwischen`, Countdown,
+    Datumswähler, Treffpunkt-Aufgaben und der Karte.
+
+> **Deploy nötig:** `npx supabase functions deploy send-plan
+> --project-ref izxrhrufdbpbuwbvxdqr`. Bis dahin zählt der Knopf schon ohne
+> Vergangenes, die alte Function schickt es aber noch mit. Die Reihenfolge ist
+> unkritisch: Die neue Function nimmt Aufrufe ohne `heute` weiter an (dann gilt
+> der UTC-Tag), die alte ignoriert das Feld. `send-reminders` ist nur umbenannt
+> und verhält sich gleich — ein Deploy dort ist nicht nötig.
 
 ### T96 · Warnen, wenn Plätze gar nicht besetzbar sind 🔧 ✅ erledigt
 **Vorgabe des Betreibers am 23. August 2026**, an die Stelle der
@@ -4324,22 +4530,24 @@ einmal gebrochen und der Lauf rot gesehen, beim Nachladen der Glocke in
 
 ## Fortschritt
 
-Stand 31. August 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 13. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑☑ ☐ · 28. August ☐ · 29. August ☑ · 30. August ☑☑ ·
+22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☐ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑
 
-**100 von 102 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. Offen sind zwei: **T95** (Ideen für den
-Start-Bildschirm), am 23. August nebenbei aufgenommen und ausdrücklich noch
-kein Bauauftrag, und **T98** (die Dokumentation auf den Stand des Codes
-bringen), am 28. August aufgenommen — die Handbücher stehen auf dem 25. August,
-seither sind neun Commits gelaufen, drei davon am Sprachverhalten der ganzen App.
-Zuletzt fiel **T99**: der Mitteilungs-Mechanismus, vom Betreiber am 29. August
+**101 von 102 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. Offen ist einer: **T98** (die Dokumentation auf
+den Stand des Codes bringen), am 28. August aufgenommen — die Handbücher stehen
+auf dem 25. August, seither sind neun Commits gelaufen, drei davon am
+Sprachverhalten der ganzen App. Zuletzt fiel am 13. September **T95**, der
+Start-Bildschirm: am 23. August als Ideensammlung aufgenommen, am 2. September
+gesammelt und geprüft, dann vom Betreiber als Bauauftrag gegeben — eine Spalte,
+nach Rolle sortiert, mit einer Planungs-Karte über die kommenden Wochen.
+Davor fiel **T99**: der Mitteilungs-Mechanismus, vom Betreiber am 29. August
 im Ganzen zur Durchsicht gegeben und danach umgebaut — die Nachricht geht jetzt
 an die eingeteilte Person statt an den Planer, auf dessen Knopfdruck. Und
 **T100**, die Gegenprobe dazu am 30. August: Der Umbau erkannte einen Entzug am

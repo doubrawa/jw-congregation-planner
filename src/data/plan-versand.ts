@@ -8,18 +8,27 @@
  * **Beide Seiten müssen dieselbe Menge treffen.** Weichen sie ab, zeigt der
  * Knopf eine Zahl an, die nach dem Drücken nicht auf null geht: der Planer
  * drückt, bekommt „0 gesendet", und die Zahl steht unverändert da. Deshalb
- * dieselben vier Ausschlüsse wie in `_shared/zuteilungen.ts`:
+ * dieselben fünf Ausschlüsse wie in `_shared/zuteilungen.ts` (`offeneDerWoche`):
  *
  *  1. eine ausgefallene Zusammenkunft trägt keine Aufgaben (T30),
  *  2. Gastredner und Kreisaufseher kommen von außen (`isGuestRole`),
  *  3. Dienste mit Gruppen-Rotation gehören keiner Person,
- *  4. wer bestätigt oder abgesagt hat, weiß Bescheid.
+ *  4. wer bestätigt oder abgesagt hat, weiß Bescheid,
+ *  5. **was vorbei ist, braucht keine Nachricht mehr** (T77) — tagesgenau, am
+ *     Tag der Zusammenkunft zählt sie noch.
  *
  * Die ersten drei erledigt `eachAssignedSlot` — dieselbe Aufzählung, die auch
  * die eigenen Aufgaben und die „…"-Markierung speist. Sie einzeln
  * nachzubauen wäre genau die Fehlerart, gegen die `alle-plaetze.test.ts`
  * steht: eine Platzsorte wird vergessen, und niemand merkt es, weil nichts
  * fehlschlägt — es geht nur eine Nachricht weniger hinaus.
+ *
+ * **Zum fünften.** Bis T95 zählte der Knopf am Donnerstag auch die Plätze vom
+ * Dienstag, und die Function schickte sie mit: eine Nachricht über eine
+ * Zusammenkunft, die gewesen ist. Die Planungs-Karte des Start-Bildschirms ließ
+ * sie weg — dieselbe Woche stand dort mit einer anderen Zahl als im Planen, und
+ * der Knopf verschickte mehr, als die Karte angekündigt hatte. Jetzt lassen alle
+ * drei es weg.
  */
 /*
  * **Kein zweites „Treffpunkt-Leiter".** Die Bezeichnung stand hier als eigene
@@ -31,8 +40,9 @@
  * gehört zum Termin (siehe dort).
  */
 import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
-import { fsKennung, fsTag, fsTaskKey, fsTerminText } from './fs'
-import { hatAuxKlasse, istAusgefallen } from './helpers'
+import { fsKennung, fsTag, fsTagVorbei, fsTaskKey, fsTerminText } from './fs'
+import { hatAuxKlasse, istAusgefallen, MEETING_TABS } from './helpers'
+import { istVorbei, meetingDateMs } from './meeting-dates'
 import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
 import type {
   ConfirmationMap,
@@ -57,6 +67,11 @@ export interface OffeneMeldung {
  * gesucht: die Aufgaben-Schlüssel hängen seit T66 an `week.start`, nicht an
  * der Ordnungszahl — die Aufzählung liefert also auch dann die richtigen
  * Schlüssel, wenn sie nur eine Woche zu sehen bekommt.
+ *
+ * `meetings` ist Pflicht, nicht vorbelegt: Ohne die Zusammenkunftszeiten der
+ * Versammlung fiele „vorbei" still auf Dienstag/Sonntag zurück, und bei einer
+ * Versammlung, die donnerstags zusammenkommt, stimmte die Zahl nur an manchen
+ * Tagen.
  */
 export function offeneMeldungen(
   week: Week | undefined,
@@ -66,6 +81,8 @@ export function offeneMeldungen(
   services: Service[],
   confirmations: ConfirmationMap,
   sentLog: SentLog,
+  meetings: string,
+  heute = new Date(),
 ): OffeneMeldung[] {
   const out: OffeneMeldung[] = []
   const nimm = (key: string, name: string): void => {
@@ -77,16 +94,35 @@ export function offeneMeldungen(
   }
 
   if (week) {
-    eachAssignedSlot([week], services, '', (name, key) => nimm(key, name))
+    // Vorbei ist eine Zusammenkunft als Ganzes — der Schlüssel jedes Platzes
+    // trägt sie an zweiter Stelle (`<Montag>|<tab>|…`).
+    const vorbei = vergangeneZusammenkuenfte(week, meetings, heute)
+    eachAssignedSlot([week], services, '', (name, key) => {
+      const wo = taskKeyWeek(key)
+      if (wo && vorbei.has(wo.tab)) return
+      nimm(key, name)
+    })
   }
 
   // Treffpunkte: zweite Datenquelle, eigener Schlüsselraum (`fs|…`). Ein
-  // Freitext-Leiter (auswärtig) gehört niemandem und bekommt nichts.
+  // Freitext-Leiter (auswärtig) gehört niemandem und bekommt nichts. Vorbei
+  // ist jeder Treffpunkt an seinem eigenen Tag.
   for (const inst of fsWeek ?? []) {
     if (!inst.leader || inst.lext) continue
+    if (fsTagVorbei(fsKennung(week, fsBase, wi), inst.wd, heute)) continue
     nimm(fsTaskKey(fsKennung(week, fsBase, wi), inst.id), inst.leader)
   }
   return out
+}
+
+/**
+ * Die Zusammenkünfte dieser Woche, deren Tag vorbei ist (T77).
+ *
+ * Ohne Startdatum (Demo, Vorlagen) liegt die Woche nirgends im Kalender — dann
+ * ist nichts vorbei, wie bei `istVorbei` selbst.
+ */
+function vergangeneZusammenkuenfte(week: Week, meetings: string, heute: Date): Set<string> {
+  return new Set(MEETING_TABS.filter((tab) => istVorbei(meetingDateMs(week, tab, meetings), heute)))
 }
 
 /** Eine Zusage, die jemandem wieder genommen wurde. */
@@ -139,6 +175,12 @@ export interface EntzogeneZusage {
  *
  * Unbestätigte Zuteilungen bleiben außen vor: Sie sind Entwurf. Der Planer darf
  * umsortieren, solange niemand zugesagt hat.
+ *
+ * **Und Vergangenes auch** — dieselbe Regel wie beim „Plan senden". Wer die
+ * Woche von gestern nachträgt (wer wirklich am Mikrofon stand), nimmt niemandem
+ * etwas, das er noch vorbereiten müsste. Eine Nachricht „Zuteilung
+ * zurückgezogen" über einen Termin, der gewesen ist, erschreckt nur. Gemessen
+ * wird am **alten** Stand: Es geht um den Termin, den die Person hatte.
  */
 export function entzogeneZusagen(
   vorher: Week | undefined,
@@ -150,6 +192,7 @@ export function entzogeneZusagen(
   services: Service[],
   meetings: string,
   confirmations: ConfirmationMap,
+  heute = new Date(),
 ): EntzogeneZusage[] {
   if (!vorher) return []
   // Gegen eine fehlende Map abgesichert: Diese Funktion läuft in der
@@ -165,12 +208,15 @@ export function entzogeneZusagen(
     beschreiben: () => { label: string; datum: string }
   }
   const alt = new Map<string, Vorher>()
+  const vorbei = vergangeneZusammenkuenfte(vorher, meetings, heute)
   eachAssignedSlot([vorher], services, meetings, (name, key, task, pid) => {
     // Unbestätigtes gar nicht erst aufnehmen — es fiele unten ohnehin heraus.
     // Von gut 35 Plätzen sind ein bis drei bestätigt, und diese Funktion läuft
     // bei jeder Wochenänderung; `fsRuleAdd` und `setAuxClass` setzen alle 52
     // Wochen auf einmal neu.
     if (conf[key] !== 'bestätigt') return
+    const wo = taskKeyWeek(key)
+    if (wo && vorbei.has(wo.tab)) return
     // `task()` bleibt ungerufen: Es baut den ganzen S-89-Bogen mit auf. Erst
     // unten, für die, die wirklich hinausgehen.
     alt.set(key, {
@@ -186,6 +232,7 @@ export function entzogeneZusagen(
     if (!inst.leader || inst.lext) continue
     const key = fsTaskKey(kennung, inst.id)
     if (conf[key] !== 'bestätigt') continue
+    if (fsTagVorbei(kennung, inst.wd, heute)) continue
     alt.set(key, {
       name: inst.leader,
       pid: inst.lpid,

@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Mgawo wako",
   "dashZuBest": "Za kuthibitisha",
   "dashPlanung": "Upangaji",
-  "dashKonflikteN": "Migogoro {n}",
   "dashAllesZugeteilt": "Yote yamegawiwa",
   "tabFs": "Mikutano ya utumishi wa shambani",
   "fsShort": "Utumishi",

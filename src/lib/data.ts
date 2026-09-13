@@ -1757,10 +1757,12 @@ export interface PlanVersand {
  * bewusst gedrückt und muss erfahren, was daraus wurde — vor allem, wen er
  * mangels Konto selbst ansprechen muss.
  */
-export async function sendPlan(weekStart: string): Promise<PlanVersand | null> {
+export async function sendPlan(weekStart: string, heute: string): Promise<PlanVersand | null> {
   if (!supabase) return null
   const { data, error } = await supabase.functions.invoke('send-plan', {
-    body: { action: 'plan', weekStart },
+    // `heute`: der Kalendertag, mit dem die Vorschau am Knopf gerechnet hat —
+    // die Function lässt Vergangenes weg und soll denselben Tag meinen.
+    body: { action: 'plan', weekStart, heute },
   })
   if (error) {
     console.error('[send-plan]', error.message)

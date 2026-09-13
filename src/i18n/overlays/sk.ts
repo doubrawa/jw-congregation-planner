@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Tvoja úloha",
   "dashZuBest": "Na potvrdenie",
   "dashPlanung": "Plánovanie",
-  "dashKonflikteN": "Konflikty: {n}",
   "dashAllesZugeteilt": "Všetko priradené",
   "tabFs": "Zhromaždenia na kazateľskú službu",
   "fsShort": "Služba",

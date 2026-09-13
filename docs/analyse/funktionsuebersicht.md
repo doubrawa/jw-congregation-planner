@@ -74,9 +74,9 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 17 | Tageszeit-Gruß + lokalisiertes Datum | Start | alle | `dashboard/DashboardScreen.tsx` |
 | 18 | Nächste eigene Aufgabe mit Live-Countdown | Start | alle | `relativeDayLabel`, `MyTask.at` |
 | 19 | Aufgabe direkt bestätigen / S-89 öffnen | Start | alle | `confirmTask`, `openS89` |
-| 20 | „Diese Woche": beide Zusammenkünfte, Chip „Deine Aufgabe" | Start | alle | `assignmentsInMeeting` |
+| 20 | „Aktuelle Woche": beide Zusammenkünfte und die eigenen Treffpunkte in Wochenfolge, Chip „Deine Aufgabe" | Start | alle | `assignmentsInMeeting`, `gehoertZu`, `fsLeiterZuteilung` |
 | 21 | Kacheln: ungelesene Mitteilungen, offene Bestätigungen | Start | alle | `DashboardScreen.tsx` |
-| 22 | Planungs-Kachel: offene Slots + Konflikte der laufenden Woche | Start | Planer | `countOpenSlots`, `weekConflicts` |
+| 22 | Planungs-Karte (T95), beim Planer zuerst: je kommende Woche mögliche Konflikte, nicht besetzbar, offene Zuteilungen, Plan senden — Tipp öffnet Planen auf der Woche; Import-Knopf, wenn die Programme knapp werden; eingeklappt „Alles zugeteilt" mit Zeitraum | Start | Planer | `data/planungsstand.ts`, `dashboard/PlanungsKarte.tsx`, `useWochenImport`, `useKalendertag` |
 
 ### 3.3 Programm (Anzeige)
 

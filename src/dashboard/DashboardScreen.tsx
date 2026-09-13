@@ -1,28 +1,63 @@
 import { useApp } from '../app/context'
-import { useAbwesend } from '../app/useAbwesend'
-import { fsKennung, fsWeekConflicts } from '../data/fs'
-import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
-import { istAusgefallen, MEETING_TABS } from '../data/helpers'
-import { assignmentsInMeeting, countOpenSlots, weekConflicts } from '../data/planning'
+import { useKalendertag } from '../app/useKalendertag'
+import { fsKennung, fsLeiterZuteilung, fsTag, fsTerminText } from '../data/fs'
+import {
+  currentWeekIndex,
+  fromIso,
+  meetingDateText,
+  meetingOffset,
+  meetingTime,
+} from '../data/meeting-dates'
+import { gehoertZu, MEETING_TABS } from '../data/helpers'
+import { assignmentsInMeeting } from '../data/planning'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenLabel, fill, useT } from '../i18n/useT'
+import { aufgabenLabel, useT } from '../i18n/useT'
 import type { MeetingKey } from '../data/types'
+import { PlanungsKarte } from './PlanungsKarte'
 import './dashboard.css'
+
+/** Eine Zeile im Block „Aktuelle Woche": eine Zusammenkunft oder ein eigener Treffpunkt. */
+interface WochenZeile {
+  key: string
+  name: string
+  datum: string
+  /** Bin ich hier eingeteilt? */
+  meins: boolean
+  /** Tage ab Montag — zum Sortieren. */
+  tag: number
+  /** Minuten ab Mitternacht — zum Sortieren am selben Tag. */
+  minute: number
+}
+
+/** „19:00" → 1140. Ohne lesbare Uhrzeit 0: dann zählt nur der Tag. */
+function minuteDesTages(zeit: string): number {
+  const [h, m] = zeit.split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
 
 /**
  * Start (Screen 1, Landeseite nach dem Login): bündelt das Wichtigste — Gruß,
  * die eigene nächste Aufgabe (mit Bestätigen/S-89), die aktuelle Woche im
- * Überblick, Mitteilungen und offene Bestätigungen. Planer sehen zusätzlich
- * eine Kachel mit offenen Zuteilungen und Konflikten der laufenden Woche.
+ * Überblick, Mitteilungen und offene Bestätigungen.
  * Ruhiger „Programmheft-Deckblatt"-Stil (Vorschlag 1a).
+ *
+ * **Nach Rolle sortiert, nicht nach Person** (T95). Bis dahin stand für alle
+ * dasselbe in derselben Reihenfolge, und die Arbeit des Planers kam als letzte
+ * Zeile — unter seinem eigenen Verkündiger-Teil. Jetzt steht für ihn die
+ * Planungs-Karte direkt unter dem Gruß. Seine eigenen unbestätigten Aufgaben
+ * verliert er dabei nicht aus dem Blick: Die legt ihm ohnehin das Blatt beim
+ * Öffnen vor (T69), und die Karte schrumpft auf eine Zeile, wenn nichts zu tun
+ * ist. Verkündiger und Gruppenaufseher sehen den Bildschirm wie bisher.
  */
 export function DashboardScreen() {
   const { state, dispatch } = useApp()
-  const abwesend = useAbwesend()
   const i18n = useT()
   const { t, tu, tp } = i18n
   const me = state.persons.find((p) => p.id === state.personId)
+  // Ein neuer Render, sobald der Tag wechselt — sonst stünde nach einer Nacht im
+  // Hintergrund noch der gestrige Gruß über der gestrigen Woche.
+  const tag = useKalendertag()
 
   // Tageszeit-Gruß + lokalisiertes Datum (Wochentag · Tag · Monat, Großbuchstaben).
   const hour = new Date().getHours()
@@ -41,11 +76,11 @@ export function DashboardScreen() {
   const unread = state.notifs.filter((n) => !n.read).length
   const toConfirm = state.myTasks.filter((task) => task.status === 'offen').length
 
-  // Aktuelle Woche für „Diese Woche" + Planer-Kachel; Fallback auf die gerade
-  // gewählte Woche, falls heute in keine geladene Woche fällt. Gerechnet, nicht
-  // aus `week.current` gelesen: das Flag setzt nur der Demo-Datensatz und wird
-  // nie nachgeführt — die Konfliktzahl stand deshalb dauerhaft auf 0.
-  const curIdx = currentWeekIndex(state.weeks)
+  // Aktuelle Woche für „Diese Woche"; Fallback auf die gerade gewählte Woche,
+  // falls heute in keine geladene Woche fällt. Gerechnet, nicht aus
+  // `week.current` gelesen: das Flag setzt nur der Demo-Datensatz und wird nie
+  // nachgeführt.
+  const curIdx = currentWeekIndex(state.weeks, fromIso(tag))
   // Der Index wird mitgeführt, nicht nur die Woche: `meetingDateText` rechnet
   // den Termin aus Startdatum und Wochentag und braucht dafür beides.
   const weekIdx = curIdx >= 0 ? curIdx : state.week
@@ -69,38 +104,56 @@ export function DashboardScreen() {
   const meetingDate = (tab: MeetingKey): string =>
     week ? shortDate(meetingDateText(week, weekIdx, tab, state.congregation.meetings)) : ''
 
-  // Entfallene Zusammenkünfte zählen nicht mit (T30): ihre Plätze sind nicht
-  // „offen", sie werden gar nicht gebraucht. Sonst stünde auf dem Start-Bildschirm
-  // eine Zahl, die niemand abarbeiten kann.
-  const openSlots = week
-    ? MEETING_TABS.reduce(
-        (n, tab) => n + (istAusgefallen(week, tab) ? 0 : countOpenSlots(week[tab], state.services)),
-        0,
-      )
-    : 0
-  // Treffpunkte zählen mit: für den Planer ist „3 mögliche Konflikte" eine
-  // Zahl über die ganze Woche, und ein abwesender Treffpunkt-Leiter ist genauso
-  // einer wie ein abwesender Redner. Die Prüfung selbst bleibt getrennt —
-  // andere Datenquelle, eigener Wochentag.
-  //
-  // **Über `weekIdx`, nicht über `curIdx`** — dieselbe Woche, aus der die
-  // offenen Zuteilungen darüber kommen. Hier stand `curIdx >= 0 ? … : 0`: Fiel
-  // heute in keine geladene Woche, nannte dieselbe Kachel die offenen Plätze
-  // der **gewählten** Woche und dazu null Konflikte. Eine Kachel, zwei Wochen.
-  //
-  // Der Fall ist kein Randfall: Eine frisch eingerichtete Versammlung holt mit
-  // „Programm importieren" die **nächste** Woche. Bis der Montag kommt, liegt
-  // heute in keiner geladenen — und genau in dieser Zeit plant der Koordinator.
-  const conflicts = week
-    ? weekConflicts(state.weeks, weekIdx, state.persons, state.services, undefined, abwesend).length +
-      fsWeekConflicts(
-        state.fsWeeks,
-        weekIdx,
-        state.persons,
-        state.absences,
-        fsKennung(week, state.fsBase, weekIdx),
-      ).length
-    : 0
+  /*
+   * **Die eigenen Treffpunkte dieser Woche** (T95).
+   *
+   * Der Wochenblock lief nur über die beiden Zusammenkünfte. Ein
+   * Treffpunkt-Leiter sah seine Einteilung in der Karte darüber, sobald sie die
+   * nächste war — im Wochenüberblick darunter nie: zwei Stellen auf einem
+   * Bildschirm, die verschieden viel von derselben Woche wussten.
+   *
+   * Nur die **eigenen**, nicht alle: Zu den Zusammenkünften geht jeder, eine
+   * Zeile „frei" sagt dort etwas. Treffpunkte gibt es mehrere am Tag, und eine
+   * Liste fremder Termine wäre Wand statt Auskunft — die steht im Programm.
+   * Wem eine Leitung gehört, entscheiden die beiden Stellen, die das für jeden
+   * Treffpunkt entscheiden — wie beim DU-Chip im Programm: `fsLeiterZuteilung`
+   * (ein Freitext-Leiter gehört niemandem) und `gehoertZu` (Id vor Name).
+   */
+  const kennung = week ? fsKennung(week, state.fsBase, weekIdx) : ''
+  const meineTreffpunkte =
+    me && week
+      ? (state.fsWeeks[weekIdx] ?? []).filter((inst) => gehoertZu(fsLeiterZuteilung(inst), me))
+      : []
+
+  /*
+   * Die Zeilen **in der Folge der Woche**: Ein Treffpunkt am Montag gehört vor
+   * die Zusammenkunft am Dienstag. Angehängt stünde er hinter dem Sonntag, und
+   * der Block läse sich nicht mehr als Woche. Tag und Uhrzeit der
+   * Zusammenkünfte kommen aus denselben Quellen wie ihr Termin darüber
+   * (Abweichung vor eigenem Termin vor Einstellungen).
+   */
+  const zeilen: WochenZeile[] = week
+    ? [
+        ...MEETING_TABS.map((tab) => ({
+          key: tab,
+          name: tab === 'mid' ? t.tabMid : t.tabWe,
+          datum: meetingDate(tab),
+          meins: me ? assignmentsInMeeting(week[tab], me, state.services).length > 0 : false,
+          tag: meetingOffset(week, tab, state.congregation.meetings),
+          minute: minuteDesTages(meetingTime(week, tab, state.congregation.meetings)),
+        })),
+        ...meineTreffpunkte.map((inst) => ({
+          key: `fs|${inst.id}`,
+          name: t.tabFs,
+          // Mit Ort: Anders als bei den Zusammenkünften sagt erst er, wohin
+          // man kommt.
+          datum: tp(fsTerminText(fsTag(kennung, inst.wd), inst)),
+          meins: true,
+          tag: (inst.wd + 6) % 7, // Versatz ab Montag
+          minute: minuteDesTages(inst.time),
+        })),
+      ].sort((a, b) => a.tag - b.tag || a.minute - b.minute)
+    : []
 
   return (
     <section className="screen dash">
@@ -109,6 +162,10 @@ export function DashboardScreen() {
         {gruss},<br />
         {me?.fn ?? ''}
       </h1>
+
+      {/* Der Planer sieht seine Arbeit zuerst (T95). Wer nicht plant, dürfte
+          den Screen dahinter gar nicht betreten. */}
+      {state.planner && <PlanungsKarte />}
 
       {nextTask ? (
         <div className="dash-hero">
@@ -161,23 +218,19 @@ export function DashboardScreen() {
       {week && (
         <div className="dash-week">
           <div className="dash-week-label">{t.aktuelleWoche}</div>
-          {MEETING_TABS.map((tab) => {
-            const meeting = week[tab]
-            const has = me ? assignmentsInMeeting(meeting, me, state.services).length > 0 : false
-            return (
-              <div key={tab} className="dash-week-row">
-                <div>
-                  <div className="dash-week-name">{tab === 'mid' ? t.tabMid : t.tabWe}</div>
-                  <div className="dash-week-date">{meetingDate(tab)}</div>
-                </div>
-                {has ? (
-                  <span className="dash-week-chip">{t.dashDeineAufgabe}</span>
-                ) : (
-                  <span className="dash-week-frei">{t.freiChip}</span>
-                )}
+          {zeilen.map((z) => (
+            <div key={z.key} className="dash-week-row" data-zeile={z.key}>
+              <div>
+                <div className="dash-week-name">{z.name}</div>
+                <div className="dash-week-date">{z.datum}</div>
               </div>
-            )
-          })}
+              {z.meins ? (
+                <span className="dash-week-chip">{t.dashDeineAufgabe}</span>
+              ) : (
+                <span className="dash-week-frei">{t.freiChip}</span>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -203,26 +256,6 @@ export function DashboardScreen() {
           </div>
         </button>
       </div>
-
-      {state.planner && week && (
-        <button
-          type="button"
-          className="dash-plan"
-          onClick={() => dispatch({ type: 'navigate', screen: 'planen' })}
-        >
-          <div>
-            <div className="dash-plan-label">
-              {t.dashPlanung} · {t.aktuelleWoche}
-            </div>
-            <div className="dash-plan-text">
-              {openSlots === 0 && conflicts === 0
-                ? t.dashAllesZugeteilt
-                : `${fill(t.offeneZut, { n: openSlots })}${conflicts > 0 ? ` · ${fill(t.dashKonflikteN, { n: conflicts })}` : ''}`}
-            </div>
-          </div>
-          <span className="dash-plan-arrow">›</span>
-        </button>
-      )}
     </section>
   )
 }

@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Nhiệm vụ của bạn",
   "dashZuBest": "Cần xác nhận",
   "dashPlanung": "Lập kế hoạch",
-  "dashKonflikteN": "{n} xung đột",
   "dashAllesZugeteilt": "Đã phân công tất cả",
   "tabFs": "Buổi họp rao giảng",
   "fsShort": "Rao giảng",

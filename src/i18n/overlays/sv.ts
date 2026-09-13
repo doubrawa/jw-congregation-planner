@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Din uppgift",
   "dashZuBest": "Att bekräfta",
   "dashPlanung": "Planering",
-  "dashKonflikteN": "{n} konflikter",
   "dashAllesZugeteilt": "Allt tilldelat",
   "tabFs": "Möten för tjänsten",
   "fsShort": "Tjänsten",

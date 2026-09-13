@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "내 배정",
   "dashZuBest": "확인 필요",
   "dashPlanung": "계획",
-  "dashKonflikteN": "충돌 {n}건",
   "dashAllesZugeteilt": "모두 배정됨",
   "tabFs": "야외 봉사를 위한 모임",
   "fsShort": "야외 봉사",

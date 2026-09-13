@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
+import { useKalendertag } from '../app/useKalendertag'
+import { fromIso } from '../data/meeting-dates'
 import { offeneMeldungen, zuletztGesendet } from '../data/plan-versand'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
@@ -56,6 +58,12 @@ export function PlanSendenPanel() {
   const [ohneKontoStand, setOhneKonto] = useState<{ woche: string; namen: string[] } | null>(null)
 
   const week = state.weeks[state.week]
+  /*
+   * Der Kalendertag, mit dem gezählt **und** gesendet wird: Vergangenes geht
+   * nicht mehr hinaus, und die Function soll denselben Tag meinen wie die Zahl
+   * am Knopf — sonst ginge sie nach dem Drücken nicht auf null.
+   */
+  const tag = useKalendertag()
 
   /*
    * **Vor** den Abbrüchen unten, weil Hooks nicht bedingt laufen dürfen —
@@ -78,9 +86,21 @@ export function PlanSendenPanel() {
             state.services,
             state.confirmations,
             state.sentLog,
+            state.congregation.meetings,
+            fromIso(tag),
           )
         : [],
-    [week, state.fsWeeks, state.week, state.fsBase, state.services, state.confirmations, state.sentLog],
+    [
+      week,
+      state.fsWeeks,
+      state.week,
+      state.fsBase,
+      state.services,
+      state.confirmations,
+      state.sentLog,
+      state.congregation.meetings,
+      tag,
+    ],
   )
   const zuletzt = useMemo(
     () => (week ? zuletztGesendet(state.sentLog, week.start) : null),
@@ -118,7 +138,7 @@ export function PlanSendenPanel() {
 
   const senden = async (): Promise<void> => {
     setLaeuft(true)
-    const res = await sendPlan(week.start)
+    const res = await sendPlan(week.start, tag)
     setLaeuft(false)
     if (!res) {
       dispatch({ type: 'showToast', text: t.toastSpeicherFehler })

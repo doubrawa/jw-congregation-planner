@@ -355,7 +355,6 @@ export default {
   "dashDeineAufgabe": "Your assignment",
   "dashZuBest": "To confirm",
   "dashPlanung": "Planning",
-  "dashKonflikteN": "{n} conflicts",
   "dashAllesZugeteilt": "Everything assigned",
   "tabFs": "Field service",
   "fsShort": "Field Service",

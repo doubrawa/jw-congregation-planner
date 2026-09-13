@@ -258,7 +258,6 @@ export default {
   "dashDeineAufgabe": "مهمتك",
   "dashZuBest": "بانتظار التأكيد",
   "dashPlanung": "التخطيط",
-  "dashKonflikteN": "{n} تعارضات",
   "dashAllesZugeteilt": "تم تعيين كل شيء",
   "tabFs": "اجتماعات لأجل خدمة الحقل",
   "fsShort": "خدمة الحقل",

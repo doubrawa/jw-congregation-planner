@@ -644,6 +644,17 @@ describe('Mitteilungs-Fanout', () => {
  */
 describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
   const MONTAG = '2026-09-07'
+
+  /*
+   * Montagmorgen der Testwoche: Der Dienstag steht noch bevor. Seit ein Entzug
+   * für Vergangenes schweigt, hinge jeder Fall hier sonst vom Tag des Testlaufs
+   * ab.
+   */
+  beforeEach(() => {
+    // Die Datei läuft ohnehin auf gestellten Zeitgebern (siehe oben) — die
+    // tragen das Datum mit.
+    vi.setSystemTime(new Date(2026, 8, 7, 8, 0))
+  })
   const SCHLUESSEL = `${MONTAG}|mid|part|i-lesung|0`
   const AUX_SCHLUESSEL = `${MONTAG}|mid|aux|i-lesung|0`
   const RATGEBER = `${MONTAG}|mid|ratgeber`
@@ -810,6 +821,24 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
       type: 'hydrate',
       payload: {} as never,
     })
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  it('ein vergangener Platz bleibt still — wer ihn nachträgt, nimmt niemandem etwas', () => {
+    /*
+     * Am Donnerstag trägt der Planer nach, wer am Dienstag wirklich gelesen hat.
+     * Eine Nachricht „Zuteilung zurückgezogen" über einen Abend, der gewesen
+     * ist, erschreckt nur — vorzubereiten gibt es nichts mehr. Die Gegenprobe ist
+     * der erste Fall dieses Blocks: derselbe Vorgang am Montag meldet.
+     */
+    vi.setSystemTime(new Date(2026, 8, 10, 9, 0))
+    const vorher = wocheMitKlasse()
+    const nachher = wocheMitKlasse()
+    const punkt = nachher.mid.sections[0]?.items[0] as { names: { name: string; pid?: string }[] }
+    punkt.names[0] = { name: 'B. Neu', pid: 'pB' }
+
+    persist(mitWoche(vorher), mitWoche(nachher), { type: 'assign', name: 'B. Neu' })
+
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
 

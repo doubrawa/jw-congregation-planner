@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "你的分配",
   "dashZuBest": "待确认",
   "dashPlanung": "排程",
-  "dashKonflikteN": "{n} 处冲突",
   "dashAllesZugeteilt": "全部已分配",
   "tabFs": "传道服务聚集",
   "fsShort": "传道",

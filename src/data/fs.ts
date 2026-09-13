@@ -21,7 +21,7 @@ import {
   overseerGroup,
   tieHash,
 } from './helpers'
-import { deutschesDatum, fromIso } from './meeting-dates'
+import { deutschesDatum, fromIso, istVorbei, kalendertagMs } from './meeting-dates'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
@@ -688,6 +688,21 @@ export function fsClear(
 }
 
 /**
+ * **Ist der Tag dieses Treffpunkts vorbei?** Tagesgenau wie `istVorbei` — vorbei
+ * ist er ab dem Tag danach.
+ *
+ * Gemessen in derselben Kodierung wie `MyTask.at` (`kalendertagMs`), damit
+ * „vorbei" für einen Treffpunkt überall am selben Tag umspringt: in „Meine
+ * Aufgaben", auf der Planungs-Karte und beim „Plan senden". Ohne brauchbare
+ * Wochenkennung (Vorlagen, Tests) gibt es keinen Tag — dann ist auch nichts
+ * vorbei.
+ */
+export function fsTagVorbei(wochenStart: string, wd: number, heute = new Date()): boolean {
+  const tag = fsTag(wochenStart, wd)
+  return tag ? istVorbei(kalendertagMs(tag), heute) : false
+}
+
+/**
  * Treffpunkt-Leitungen dieser Person als Aufgaben — das Gegenstück zu
  * `deriveMyTasks` für die zweite Datenquelle.
  *
@@ -699,7 +714,8 @@ export function fsClear(
  *
  * Zugeordnet über die Person-Id, mit Rückfall auf den Namen für Altdaten —
  * dieselbe Rangfolge wie bei den Zusammenkunfts-Aufgaben. Ohne das sahen
- * Namensgleiche gegenseitig ihre Treffpunkte.
+ * Namensgleiche gegenseitig ihre Treffpunkte. Dass ein Freitext-Leiter
+ * niemandem hier gehört, entscheidet `fsLeiterZuteilung`.
  */
 export function deriveMyFsTasks(
   fsWeeks: FsInstance[][],
@@ -714,8 +730,9 @@ export function deriveMyFsTasks(
   if (!personName && !personId) return tasks
   fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
-      if (!inst.leader || inst.lext) continue // Freitext: gehört niemandem hier
-      const meins = inst.lpid && personId ? inst.lpid === personId : inst.leader === personName
+      const leiter = fsLeiterZuteilung(inst)
+      if (!leiter) continue // offen oder Freitext: gehört niemandem hier
+      const meins = leiter.pid && personId ? leiter.pid === personId : leiter.name === personName
       if (!meins) continue
       const kennung = kennungen[wi] ?? ''
       const key = fsTaskKey(kennung, inst.id)
@@ -739,7 +756,7 @@ export function deriveMyFsTasks(
          * liest daraus den UTC-Tag, und Ortsmittag fällt östlich von UTC+12 auf
          * den Vortag. Zwei Quellen, eine Kodierung.
          */
-        at: tag ? Date.UTC(tag.getFullYear(), tag.getMonth(), tag.getDate()) : null,
+        at: tag ? kalendertagMs(tag) : null,
         status: confirmations[key] ?? 'offen',
         s89: null,
       })

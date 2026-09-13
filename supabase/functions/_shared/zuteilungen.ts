@@ -13,9 +13,15 @@
  * die Entscheidung der jeweiligen Function.
  */
 import {
+  istAusgefallenFuer,
+  meetingDayOffsets,
+  meetingTimesOf,
   rolleMitHerkunft,
   SKIP_ROLE,
   terminText,
+  terminVorbei,
+  versatzMitAbweichung,
+  zeitMitAbweichung,
   zuteilungsLabel,
   type Abweichungen,
 } from './planung.ts'
@@ -301,6 +307,60 @@ export function pendingOfMeeting(
     }
   }
   return out
+}
+
+/**
+ * **Was „Plan senden" für eine Woche verschickt** — die noch unbestätigten,
+ * noch anstehenden Plätze, jeder mit seiner fertigen Zeile.
+ *
+ * Stand bis T95 als Schleife im Handler von `send-plan` und war damit nur über
+ * einen ganzen Aufruf zu prüfen. Die Gegenprobe gegen die Vorschau des Clients
+ * (`offeneMeldungen`, `edge-parity.test.ts`) verglich deshalb nur die
+ * Aufzählung darunter — nicht die Ausschlüsse, die hier obendrauf kommen. Genau
+ * dort kam einer hinzu: **Was vorbei ist, geht nicht mehr hinaus.** Am
+ * Donnerstag eine Nachricht über den Dienstag zu schicken, hilft niemandem, und
+ * der Knopf zählte dann eine andere Menge als die Planungs-Karte daneben.
+ *
+ * Tagesgenau wie im Client: am Tag der Zusammenkunft zählt sie noch. `heuteUTC`
+ * liefert `heuteUtc` (planung.ts) — der Kalendertag des Planers, soweit er
+ * glaubhaft ist.
+ */
+export function offeneDerWoche(
+  weekStart: string,
+  week: Week,
+  fsInsts: FsInstance[],
+  services: ServiceRow[],
+  conf: Map<string, string>,
+  meetingTimes: string,
+  heuteUTC: number,
+): Array<Pending & { eintrag: Eintrag }> {
+  const offsets = meetingDayOffsets(meetingTimes)
+  const zeiten = meetingTimesOf(meetingTimes)
+  const offen: Array<Pending & { eintrag: Eintrag }> = []
+  for (const tab of ['mid', 'we'] as const) {
+    const meeting = week[tab]
+    if (!meeting) continue
+    // Entfällt die Zusammenkunft, gibt es nichts mitzuteilen (T30).
+    if (istAusgefallenFuer(week.dev, tab)) continue
+    const offset = versatzMitAbweichung(week.dev, tab, meeting.date, offsets[tab])
+    // Vorbei ist sie am Tag danach — und dann braucht es keine Nachricht mehr.
+    if (terminVorbei(weekStart, offset, heuteUTC)) continue
+    const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
+    // Der Termin trägt die Verlegung bereits in sich: steht sie zur Planzeit
+    // fest, nennt die Nachricht von vornherein den richtigen Tag.
+    const datum = terminText(weekStart, offset, meeting.date, zeit, week.dev, tab)
+    for (const pend of pendingOfMeeting(weekStart, tab, meeting, services, conf)) {
+      offen.push({ ...pend, eintrag: { datum, label: pend.label } })
+    }
+  }
+  for (const pend of pendingOfFsWeek(weekStart, fsInsts, conf)) {
+    // Jeder Treffpunkt hat seinen eigenen Tag.
+    if (terminVorbei(weekStart, pend.offset, heuteUTC)) continue
+    // Termin und Bezeichnung stehen fertig in der Aufzählung — beim Treffpunkt
+    // trägt der Termin den Ort (siehe `FS_LEITER`).
+    offen.push({ ...pend, eintrag: { datum: pend.datum, label: pend.label } })
+  }
+  return offen
 }
 
 /* ---- Texte --------------------------------------------------------------- */

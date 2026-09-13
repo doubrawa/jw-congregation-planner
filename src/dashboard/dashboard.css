@@ -232,7 +232,23 @@
   margin-top: 5px;
 }
 
-/* ---- Planer: offene Zuteilungen + Konflikte ---------------------------- */
+/* ---- Planer: die Planungs-Karte (T95) -----------------------------------
+   Steht beim Planer direkt unter dem Gruß, deshalb derselbe Abstand nach oben
+   wie sonst die Aufgaben-Karte; die rückt dann mit dem normalen Abstand nach.
+   Zwei Formen: eine Zeile („Alles zugeteilt", `.dash-plan`) oder die Liste der
+   Wochen, in denen etwas zu tun ist (`.dash-planung`). */
+
+.dash-plan,
+.dash-planung {
+  background: var(--tPet);
+  border-radius: 16px;
+  margin-top: 20px;
+}
+
+.dash-plan + .dash-hero,
+.dash-planung + .dash-hero {
+  margin-top: 12px;
+}
 
 .dash-plan {
   display: flex;
@@ -241,13 +257,16 @@
   gap: 12px;
   width: 100%;
   text-align: start;
-  background: var(--tPet);
-  border-radius: 14px;
   padding: 12px 14px;
-  margin-top: 12px;
+}
+
+.dash-plan-body {
+  display: block;
+  min-width: 0;
 }
 
 .dash-plan-label {
+  display: block;
   font-size: calc(10px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -256,10 +275,20 @@
 }
 
 .dash-plan-text {
+  display: block;
   font-size: calc(12.5px * var(--fs));
   font-weight: 600;
   color: var(--ink);
   margin-top: 4px;
+}
+
+/* Wofür „Alles zugeteilt" gilt — die angesehenen Wochen. Gedämpft: Es ist eine
+   Einschränkung der Aussage darüber, keine zweite. */
+.dash-plan-zeitraum {
+  display: block;
+  font-size: calc(11px * var(--fs));
+  color: var(--mut);
+  margin-top: 2px;
 }
 
 .dash-plan-arrow {
@@ -267,4 +296,123 @@
   color: var(--pet);
   font-size: calc(20px * var(--fs));
   font-weight: 600;
+  line-height: 1;
+}
+
+.dash-planung {
+  padding: 12px 14px 4px;
+}
+
+/* Eine Woche: Wochenspanne + Pfeil, darunter die Chips. Ganz antippbar. */
+.dash-plan-woche {
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--linePet);
+}
+
+.dash-plan-label + .dash-plan-woche {
+  margin-top: 8px;
+}
+
+.dash-plan-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-plan-range {
+  min-width: 0;
+  font-size: calc(13px * var(--fs));
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dash-plan-woche:hover .dash-plan-range {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dash-plan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 6px;
+}
+
+/* Ein Banner aus Planen im Kleinen: Titel in Tinte, die Zahl in der Farbe, die
+   derselbe Zähler dort trägt (Konflikte/Engpass wein, offen acc, senden gld). */
+.dash-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dash-chip-titel {
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.dash-chip-n {
+  flex: none;
+  min-width: 20px;
+  height: calc(18px * var(--fs));
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: var(--r-pill);
+  background: var(--wein);
+  color: var(--onAcc);
+  font-size: calc(10.5px * var(--fs));
+  font-weight: 700;
+  line-height: calc(18px * var(--fs));
+  text-align: center;
+}
+
+.dash-chip[data-art='offen'] .dash-chip-n {
+  background: var(--acc);
+}
+
+.dash-chip[data-art='senden'] .dash-chip-n {
+  background: var(--gld);
+}
+
+/* Die Programme reichen nicht mehr weit genug: Stand + derselbe Knopf wie in
+   den Einstellungen. Petrol statt des üblichen Akzents, weil er auf der
+   Petrol-Fläche steht. */
+.dash-plan-vorrat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--linePet);
+}
+
+.dash-plan-label + .dash-plan-vorrat {
+  margin-top: 8px;
+}
+
+.dash-plan-vorrat-text {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dash-plan-import.btn-outline {
+  display: inline-block;
+  width: auto;
+  padding: 7px 14px;
+  border-color: var(--pet);
+  color: var(--pet);
+  font-size: calc(11px * var(--fs));
+}
+
+.dash-plan-import.btn-outline:hover {
+  background: var(--bg);
 }

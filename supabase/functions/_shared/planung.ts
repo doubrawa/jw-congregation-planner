@@ -275,6 +275,56 @@ export function terminText(
   return zeit ? `${text} · ${zeit}` : text
 }
 
+/* ---- Heute und „vorbei" --------------------------------------------------- */
+
+/**
+ * Ganze Tage von heute bis zu einem Termin — negativ, wenn er vorbei ist; null
+ * bei unlesbarem Startdatum.
+ *
+ * `heuteUTC` ist der Kalendertag als UTC-Mitternacht, dieselbe Kodierung wie
+ * `kalendertagMs` im Client. Stand in `send-reminders` als eigene Fassung
+ * (`daysUntil`); seit „Plan senden" dieselbe Frage stellt, steht die Rechnung
+ * hier — zwei Fassungen einer Terminregel waren schon einmal die Ursache von B8.
+ */
+export function tageBisTermin(startISO: string, offset: number, heuteUTC: number): number | null {
+  const start = Date.parse(startISO)
+  if (Number.isNaN(start)) return null
+  return Math.round((start + offset * 864e5 - heuteUTC) / 864e5)
+}
+
+/**
+ * Ist dieser Termin vorbei? **Tagesgenau** wie `istVorbei` im Client: am Tag
+ * selbst zählt er noch. Ein unlesbares Datum ist nicht vorbei — wer nichts über
+ * den Termin weiß, hält ihn lieber für anstehend.
+ */
+export function terminVorbei(startISO: string, offset: number, heuteUTC: number): boolean {
+  const tage = tageBisTermin(startISO, offset, heuteUTC)
+  return tage !== null && tage < 0
+}
+
+/**
+ * **„Heute" für eine Function** — als UTC-Mitternacht des Kalendertags.
+ *
+ * Der Client schickt seinen **örtlichen** Tag mit. Der Server kennt nur UTC, und
+ * in Mitteleuropa ist zwischen Mitternacht und 02:00 der UTC-Tag noch der
+ * gestrige: Die Vorschau am Knopf („3 noch nicht gesendet") und der Versand
+ * meinten dann verschiedene Tage, und die Zahl ginge nach dem Drücken nicht auf
+ * null — genau der Fehler, gegen den `offeneMeldungen` gebaut ist.
+ *
+ * Geglaubt wird der mitgeschickte Tag nur, wenn er höchstens einen Tag neben dem
+ * des Servers liegt — so weit reichen die Zeitzonen der Erde auseinander. Ein
+ * Gerät mit falsch gestellter Uhr soll nicht bestimmen, was als vergangen gilt.
+ * Fehlt er (ein älterer Client), gilt der UTC-Tag.
+ */
+export function heuteUtc(clientTag: string | undefined, jetzt = Date.now()): number {
+  const d = new Date(jetzt)
+  const server = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  if (!clientTag || !/^\d{4}-\d{2}-\d{2}$/.test(clientTag)) return server
+  const client = Date.parse(clientTag)
+  if (Number.isNaN(client) || Math.abs(client - server) > 864e5) return server
+  return client
+}
+
 /** Uhrzeit mit Abweichung — gleiche Rangfolge wie beim Tag. */
 export function zeitMitAbweichung(
   dev: Abweichungen | undefined,

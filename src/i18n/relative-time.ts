@@ -5,6 +5,7 @@
  * App-Sprachen selbst — inkl. Grammatik-Sonderfälle (im Deutschen wäre
  * "in 1 Tagen" falsch) und "heute"/"morgen" (numeric: 'auto').
  */
+import { kalendertagMs } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
 import { LOCALES } from './langs'
 
@@ -27,8 +28,7 @@ function tagIndex(ms: number): number {
  * in dieser Stunde uneinig. Dieselbe Verwechslung wie im Datumswähler.
  */
 function heuteIndex(now: number): number {
-  const d = new Date(now)
-  return tagIndex(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  return tagIndex(kalendertagMs(new Date(now)))
 }
 
 /**

@@ -1167,6 +1167,260 @@ const KATALOG = [
     suchen: 'if (frisch.some((n) => !bekannt.current.has(n.id))) {',
     ersetzen: 'if (false) {',
   },
+
+  // ── Start-Bildschirm: die Planungs-Karte (T95) ────────────────────────────
+  {
+    id: 'planung-nur-beim-planer',
+    datei: 'src/dashboard/DashboardScreen.tsx',
+    regel: 'Die Planungs-Karte steht nur beim Planer — sie führt in einen Screen, den sonst niemand betreten darf.',
+    suchen: '{state.planner && <PlanungsKarte />}',
+    ersetzen: '{<PlanungsKarte />}',
+  },
+  {
+    id: 'planung-ab-laufender-woche',
+    datei: 'src/data/planungsstand.ts',
+    /*
+      Die Mutation lässt die Karte bei der ersten geladenen Woche beginnen. Mit
+      einer oder zwei Wochen davor bliebe das unbemerkt — vergangene Wochen
+      zählen nichts und fallen heraus. Mit einem ganzen Jahr Bestand, wie die
+      App ihn lädt, belegen sie die vier Zeilen, und die kommende fehlt.
+    */
+    regel:
+      'Die Karte beginnt bei der laufenden Kalenderwoche — nicht bei der ältesten geladenen (und nicht erst bei der nächsten Zusammenkunft, die Kongresswochen überspringt).',
+    suchen: '      return sonntag !== null && sonntag >= heuteMs',
+    ersetzen: '      return sonntag !== null',
+  },
+  {
+    id: 'planung-hoechstens-vier-zeilen',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Die Karte zeigt höchstens vier Wochen — acht frisch importierte wären acht Zeilen „offen".',
+    suchen: 'for (let wi = ab; wi < weeks.length && out.length < WOCHEN_VORAUS; wi++) {',
+    ersetzen: 'for (let wi = ab; wi < weeks.length; wi++) {',
+  },
+  {
+    id: 'planung-luecke-streckt-nicht',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Eine Lücke im Bestand streckt die Karte nicht über vier Kalenderwochen hinaus (T66).',
+    suchen: '    if (start && Date.parse(start) >= grenzeMs) break\n',
+    ersetzen: '',
+  },
+  {
+    id: 'planung-nur-mit-handlungsbedarf',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Eine fertig geplante und gesendete Woche steht nicht auf der Karte.',
+    suchen: 'if (stand.konflikte + stand.nichtBesetzbar + stand.offen + stand.nichtGesendet > 0) {',
+    ersetzen: 'if (true) {',
+  },
+  {
+    id: 'planung-vorbei-zaehlt-nicht',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Eine Zusammenkunft, die vorbei ist, zählt auf der Karte nicht mehr (T77).',
+    suchen: '(tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.meetings), heute),',
+    ersetzen: '(tab) => !istAusgefallen(week, tab),',
+  },
+  {
+    id: 'planung-entfallen-zaehlt-nicht',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Eine entfallene Zusammenkunft zählt auf der Karte nicht — ihre Plätze braucht niemand (T30).',
+    suchen: '(tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.meetings), heute),',
+    ersetzen: '(tab) => !istVorbei(meetingDateMs(week, tab, q.meetings), heute),',
+  },
+  {
+    id: 'planung-treffpunkt-vorbei',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Ein Treffpunkt, dessen Tag vorbei ist, zählt nicht mehr als offen.',
+    suchen: '  const fsOffen = (q.fsWeeks[wi] ?? []).filter((inst) => !inst.leader && fsAnstehend(inst.wd)).length',
+    ersetzen: '  const fsOffen = (q.fsWeeks[wi] ?? []).filter((inst) => !inst.leader).length',
+  },
+  {
+    id: 'plan-vorbei-nicht-mehr-zaehlen',
+    datei: 'src/data/plan-versand.ts',
+    /*
+      Seit der Durchsicht von T95 steht die Regel in der Vorschau selbst, nicht
+      mehr nur auf der Karte: Knopf, Karte und Function zählen dieselbe Menge.
+    */
+    regel: '„Plan senden" zählt keine Zuteilung, deren Zusammenkunft vorbei ist — am Knopf und auf der Karte.',
+    suchen: '      if (wo && vorbei.has(wo.tab)) return\n      nimm(key, name)',
+    ersetzen: '      nimm(key, name)',
+  },
+  {
+    id: 'plan-vorbei-treffpunkt-nicht-mehr-zaehlen',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Ebenso ein Treffpunkt, dessen eigener Tag vorbei ist.',
+    suchen: '    if (fsTagVorbei(fsKennung(week, fsBase, wi), inst.wd, heute)) continue\n',
+    ersetzen: '',
+  },
+  {
+    id: 'plan-vorbei-function-zusammenkunft',
+    datei: 'supabase/functions/_shared/zuteilungen.ts',
+    regel: 'Die Function schickt keine Nachricht über eine Zusammenkunft, die gewesen ist.',
+    suchen: '    if (terminVorbei(weekStart, offset, heuteUTC)) continue\n',
+    ersetzen: '',
+  },
+  {
+    id: 'plan-vorbei-function-treffpunkt',
+    datei: 'supabase/functions/_shared/zuteilungen.ts',
+    regel: 'Und keine über einen Treffpunkt, dessen Tag vorbei ist.',
+    suchen: '    if (terminVorbei(weekStart, pend.offset, heuteUTC)) continue\n',
+    ersetzen: '',
+  },
+  {
+    id: 'plan-heute-des-planers',
+    datei: 'supabase/functions/send-plan/index.ts',
+    /*
+      Ohne den mitgeschickten Tag rechnet der Server in UTC — zwischen
+      Mitternacht und 02:00 in Mitteleuropa ein anderer Tag als am Knopf, und
+      die Zahl ginge nach dem Drücken nicht auf null.
+    */
+    regel: 'Die Function meint denselben Kalendertag wie der Knopf, der gezählt hat.',
+    suchen: '      heuteUtc(payload.heute),',
+    ersetzen: '      heuteUtc(undefined),',
+  },
+  {
+    id: 'plan-heute-plausibel',
+    datei: 'supabase/functions/_shared/planung.ts',
+    regel: 'Ein mitgeschickter Tag, der mehr als einen Tag neben der Serveruhr liegt, wird nicht geglaubt.',
+    suchen: '  if (Number.isNaN(client) || Math.abs(client - server) > 864e5) return server',
+    ersetzen: '  if (Number.isNaN(client)) return server',
+  },
+  {
+    id: 'plan-knopf-schickt-seinen-tag',
+    datei: 'src/planen/PlanSendenPanel.tsx',
+    regel: 'Der Knopf schickt den Tag mit, mit dem er gezählt hat.',
+    suchen: '    const res = await sendPlan(week.start, tag)',
+    ersetzen: "    const res = await sendPlan(week.start, '')",
+  },
+  {
+    id: 'entzug-vorbei-schweigt',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Ein Entzug für einen vergangenen Platz meldet nichts — wer nachträgt, nimmt niemandem etwas.',
+    suchen: "    if (conf[key] !== 'bestätigt') return\n    const wo = taskKeyWeek(key)\n    if (wo && vorbei.has(wo.tab)) return\n",
+    ersetzen: "    if (conf[key] !== 'bestätigt') return\n",
+  },
+  {
+    id: 'entzug-vorbei-schweigt-treffpunkt',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Ebenso für einen Treffpunkt, dessen Tag vorbei ist.',
+    suchen: '    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n',
+    ersetzen: '',
+  },
+  {
+    id: 'planung-offline-kein-senden',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    /*
+      Die Regel steht in der reinen Funktion (`sendenMoeglich`) und ist dort
+      geprüft — gemessen wird hier der Aufrufer, der den Offline-Stand
+      hineingeben muss. Genau diese Hälfte ist die, die vergessen wird.
+    */
+    regel: 'Offline zeigt die Karte kein „Plan senden" — Planen blendet den Knopf dann auch aus.',
+    suchen: 'sendenMoeglich: state.staleAt === null,',
+    ersetzen: 'sendenMoeglich: true,',
+  },
+  {
+    id: 'planung-vorrat-ohne-wochen',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Ohne jede geladene Woche erinnert die Karte an den ersten Import.',
+    suchen: 'if (weeks.length === 0) return true',
+    ersetzen: 'if (weeks.length === 0) return false',
+  },
+  {
+    id: 'planung-vorrat-drei-wochen',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Reichen die Programme weniger als drei Wochen voraus, erinnert die Karte an den Import — nicht erst, wenn nichts mehr da ist.',
+    suchen: 'return geladenBisMs - kalendertagMs(heute) < VORRAT_TAGE * 864e5',
+    ersetzen: 'return geladenBisMs - kalendertagMs(heute) < 0',
+  },
+  {
+    id: 'planung-karte-folgt-dem-tag',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: 'Die gemerkte Karte rechnet neu, sobald der Kalendertag wechselt — nicht erst, wenn sich die Wochen ändern.',
+    suchen: '      state.staleAt,\n      tag,\n    ],',
+    ersetzen: '      state.staleAt,\n    ],',
+  },
+  {
+    id: 'kalendertag-beim-zurueckkehren',
+    datei: 'src/app/useKalendertag.ts',
+    regel: 'Kehrt die App aus dem Hintergrund zurück, wird der Tag neu gelesen — dort hält das Betriebssystem Zeitgeber an.',
+    suchen: "    document.addEventListener('visibilitychange', beimZurueckkehren)\n",
+    ersetzen: '',
+  },
+  {
+    id: 'planung-aufrufer-treffpunkte',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: 'Die Karte gibt die Treffpunkte der Wochen an die Rechnung weiter.',
+    suchen: '          fsWeeks: state.fsWeeks,',
+    ersetzen: '          fsWeeks: [],',
+  },
+  {
+    id: 'planung-aufrufer-abwesenheiten',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: 'Die Karte gibt die Abwesenheiten weiter — sonst fehlt der abwesende Treffpunkt-Leiter unter den Konflikten.',
+    suchen: '          absences: state.absences,',
+    ersetzen: '          absences: [],',
+  },
+  {
+    id: 'planung-aufrufer-tagebuch',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: 'Die Karte gibt das Versand-Tagebuch weiter — sonst stünde jede gesendete Woche wieder mit „Plan senden" da.',
+    suchen: '          sentLog: state.sentLog,',
+    ersetzen: '          sentLog: {},',
+  },
+  {
+    id: 'planung-reiter-treffpunkt-senden',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Ist nur ein Treffpunkt-Leiter noch nicht benachrichtigt, öffnet Planen bei den Treffpunkten.',
+    suchen: "  return ungesendet.some((m) => !m.key.startsWith('fs|')) ? (jeTab[0]?.tab ?? 'mid') : 'fs'",
+    ersetzen: "  return jeTab[0]?.tab ?? 'mid'",
+  },
+  {
+    id: 'planung-zeitraum-sichtbar',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: '„Alles zugeteilt" nennt den Zeitraum, für den es gilt.',
+    suchen: '          {zeitraum && <span className="dash-plan-zeitraum">{zeitraum}</span>}\n',
+    ersetzen: '',
+  },
+  {
+    id: 'planung-wochenspanne-variante',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: 'Die Wochenspanne steht in derselben Sprachvariante wie der Kopf in Planen.',
+    suchen: "        const p = week ? progWeek(week) : null\n        return { ...w, spanne: p ? p.tpw(p.week.range) : '' }",
+    ersetzen: "        return { ...w, spanne: week?.range ?? '' }",
+  },
+  {
+    id: 'planung-konflikte-je-zusammenkunft',
+    datei: 'src/data/planungsstand.ts',
+    regel: 'Die Konflikte einer vergangenen Zusammenkunft zählen nicht mit, auch wenn die Woche als Ganzes gerechnet wird.',
+    suchen: '    konflikte: alleKonflikte.filter((c) => c.tab === tab).length,',
+    ersetzen: '    konflikte: alleKonflikte.length,',
+  },
+  {
+    id: 'navigation-woche-nur-mit-recht',
+    datei: 'src/app/reducer.ts',
+    regel: 'Ein abgewiesener Sprung auf eine bestimmte Woche stellt die Woche nicht um.',
+    suchen: 'if (action.woche && !blocked) {',
+    ersetzen: 'if (action.woche) {',
+  },
+  {
+    id: 'start-nur-eigene-treffpunkte',
+    datei: 'src/dashboard/DashboardScreen.tsx',
+    regel: '„Aktuelle Woche" zeigt die eigenen Treffpunkte, keine fremden.',
+    suchen: '(state.fsWeeks[weekIdx] ?? []).filter((inst) => gehoertZu(fsLeiterZuteilung(inst), me))',
+    ersetzen: '(state.fsWeeks[weekIdx] ?? []).filter((inst) => Boolean(inst.leader))',
+  },
+  {
+    id: 'start-wochenfolge',
+    datei: 'src/dashboard/DashboardScreen.tsx',
+    regel: '„Aktuelle Woche" liest sich als Woche — ein Treffpunkt am Montag steht vor dem Dienstag.',
+    suchen: '].sort((a, b) => a.tag - b.tag || a.minute - b.minute)',
+    ersetzen: ']',
+  },
+  {
+    id: 'treffpunkt-freitext-gehoert-niemandem',
+    datei: 'src/data/fs.ts',
+    regel: 'Ein auswärtiger Treffpunkt-Leiter (Freitext) gehört niemandem hier, auch keinem Gleichnamigen.',
+    suchen: '  if (!inst.leader || inst.lext) return undefined',
+    ersetzen: '  if (!inst.leader) return undefined',
+  },
 ]
 
 // ── Lauf ────────────────────────────────────────────────────────────────────

@@ -48,8 +48,10 @@ Wichtigste zusammen.
 - **Deine nächste Aufgabe** – die anstehende Zuteilung mit Datum und einem
   Countdown‑Chip („in 4 Tagen"). Direkt hier kannst du **Bestätigen** oder das
   **S‑89**‑Formular ansehen.
-- **Aktuelle Woche** – die beiden Zusammenkünfte mit Datum und Uhrzeit; „Deine
-  Aufgabe" markiert eine Woche, in der du eingeteilt bist.
+- **Aktuelle Woche** – die beiden Zusammenkünfte mit Datum und Uhrzeit. Leitest
+  du in dieser Woche einen **Treffpunkt**, steht er mit Tag, Uhrzeit und Ort
+  dabei – alles in der Reihenfolge der Woche. „Deine Aufgabe" markiert, wo du
+  eingeteilt bist.
 - **Mitteilungen** und **Zu bestätigen** zeigen dir auf einen Blick, ob etwas
   Neues für dich da ist.
 

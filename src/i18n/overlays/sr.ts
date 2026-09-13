@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Твоја додела",
   "dashZuBest": "За потврду",
   "dashPlanung": "Планирање",
-  "dashKonflikteN": "Сукоби: {n}",
   "dashAllesZugeteilt": "Све додељено",
   "tabFs": "Састанци за проповедничку службу",
   "fsShort": "Служба",

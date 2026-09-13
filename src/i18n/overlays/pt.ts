@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Sua designação",
   "dashZuBest": "A confirmar",
   "dashPlanung": "Planejamento",
-  "dashKonflikteN": "{n} conflitos",
   "dashAllesZugeteilt": "Tudo designado",
   "tabFs": "Reuniões para o serviço de campo",
   "fsShort": "Serviço de campo",

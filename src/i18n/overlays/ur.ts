@@ -295,7 +295,6 @@ export default {
   "dashDeineAufgabe": "آپ کی تفویض",
   "dashZuBest": "تصدیق کے لیے",
   "dashPlanung": "منصوبہ بندی",
-  "dashKonflikteN": "{n} تنازعات",
   "dashAllesZugeteilt": "سب کچھ تفویض ہو گیا",
   "tabFs": "میدانی خدمت کے لیے اجتماعات",
   "fsShort": "میدانی خدمت",

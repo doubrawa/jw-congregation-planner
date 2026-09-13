@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Il tuo incarico",
   "dashZuBest": "Da confermare",
   "dashPlanung": "Pianificazione",
-  "dashKonflikteN": "{n} conflitti",
   "dashAllesZugeteilt": "Tutto assegnato",
   "tabFs": "Adunanze per il servizio di campo",
   "fsShort": "Servizio di campo",

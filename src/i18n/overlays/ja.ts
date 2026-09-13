@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "あなたの割り当て",
   "dashZuBest": "要確認",
   "dashPlanung": "計画",
-  "dashKonflikteN": "競合 {n} 件",
   "dashAllesZugeteilt": "すべて割り当て済み",
   "tabFs": "野外奉仕のための集まり",
   "fsShort": "野外奉仕",

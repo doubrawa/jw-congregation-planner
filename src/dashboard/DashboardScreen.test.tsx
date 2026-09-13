@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -9,26 +9,52 @@ import {
   useStaticStore,
 } from '../app/context'
 import { initialState } from '../app/init'
-import { emptyQualifications } from '../data/helpers'
+import { emptyQualifications, serviceQualKey } from '../data/helpers'
+import { helperTaskKey, partTaskKey, sentKey } from '../data/planning'
+import { APP_TO_JW } from '../i18n/langs'
 import { dict } from '../i18n/ui'
-import type { Absence, MyTask, PartItem, Person, S89Payload, Service, Week } from '../data/types'
+import type {
+  Absence,
+  ConfirmationMap,
+  FsInstance,
+  MyTask,
+  PartItem,
+  Person,
+  S89Payload,
+  Service,
+  Week,
+} from '../data/types'
 import { DashboardScreen } from './DashboardScreen'
 
 /**
  * **Der Start-Bildschirm — die Landeseite nach dem Anmelden.**
  *
  * Er ist für die meisten Nutzer die ganze App: die eigene nächste Aufgabe, die
- * laufende Woche, zwei Kacheln. Drei Zusicherungen tragen dabei Fachlogik:
+ * laufende Woche, zwei Kacheln. Vier Zusicherungen tragen dabei Fachlogik:
  *
  * - Die **laufende Woche wird gerechnet**, nicht aus `week.current` gelesen.
- *   Das Flag setzt nur der Demo-Bestand und wird nie nachgeführt — die
- *   Konfliktzahl stand deshalb in der Produktion dauerhaft auf 0.
- * - **Entfallene Zusammenkünfte zählen nicht mit** (T30). Ihre Plätze sind
- *   nicht „offen", sie werden gar nicht gebraucht. Sonst stünde auf dem Start
- *   eine Zahl, die niemand abarbeiten kann.
- * - Die **Planungs-Kachel** gehört dem Planer. Ein Verkündiger, der sie sähe,
- *   käme auf einen Screen, den er nicht betreten darf.
+ *   Das Flag setzt nur der Demo-Bestand und wird nie nachgeführt.
+ * - **Nach Rolle sortiert** (T95): Der Planer sieht seine Arbeit zuerst, direkt
+ *   unter dem Gruß. Ein Verkündiger sieht die Karte gar nicht — er käme über
+ *   sie auf einen Screen, den er nicht betreten darf.
+ * - Die **Planungs-Karte** nennt die kommenden Wochen, in denen etwas zu tun
+ *   ist, mit den Zahlen der Banner in Planen — und was vorbei ist, zählt nicht
+ *   (die Regeln selbst prüft `planungsstand.test.ts`; hier geht es darum, dass
+ *   der Bildschirm sie mit dem heutigen Tag und dem echten Zustand aufruft).
+ * - **„Aktuelle Woche" kennt die eigenen Treffpunkte** — bis T95 stand eine
+ *   Treffpunkt-Leitung nur in der Aufgaben-Karte darüber, im Wochenblock nie.
  */
+
+/*
+ * Der Import geht in der Produktion an eine Edge Function. Die Testumgebung hat
+ * Supabase konfiguriert — ein ungestellter Aufruf liefe gegen das Live-Projekt.
+ */
+const importNextWeek = vi.hoisted(() => vi.fn())
+vi.mock('../lib/import', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  importNextWeek: (...args: unknown[]) => importNextWeek(...args),
+  importWeekVariants: () => Promise.resolve({ ok: false, error: 'unbekannt' }),
+}))
 
 const t = dict('de')
 
@@ -322,80 +348,456 @@ describe('Die beiden Kacheln', () => {
   })
 })
 
-describe('Die Planungs-Kachel gehört dem Planer', () => {
-  it('ein Verkündiger sieht sie nicht — er dürfte den Screen gar nicht betreten', () => {
-    const { container } = zeige({ planner: false })
+/* ---- Die Planungs-Karte (T95) ---------------------------------------------- */
+
+/**
+ * Montag, 7. September 2026, 9 Uhr. Die Karte fragt, was **ansteht** — ohne
+ * festen Tag hinge jede Zahl davon ab, an welchem Wochentag der Test läuft.
+ */
+const MONTAG = new Date(2026, 8, 7, 9, 0)
+const WOCHEN = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28'] as const
+const [W1, W2] = WOCHEN
+
+/** Wer die Plätze der Testwochen übernehmen kann — genug, dass nichts „nicht besetzbar" ist. */
+const qualifiziert = (id: string, fn: string, ...bereiche: string[]): Person => {
+  const priv = emptyQualifications()
+  for (const b of bereiche) priv[b] = true
+  return { id, fn, ln: 'Test', role: 'verkuendiger', female: false, tel: '', mail: '', priv }
+}
+const LEUTE: Person[] = [
+  { ...ICH, priv: { ...emptyQualifications(), bibellesung: true, [serviceQualKey('mik')]: true } },
+  qualifiziert('p-b', 'Bruno', serviceQualKey('mik')),
+  qualifiziert('p-c', 'Carl', serviceQualKey('mik')),
+]
+
+/**
+ * Eine Woche, wie der Import sie ablegt: Wochenspanne statt Termin im
+ * `date`-Feld, der Tag kommt aus den Zusammenkunftszeiten (Di 19:00 · So 10:00).
+ * Offen: eine Bibellesung und zwei Mikrofone unter der Woche, zwei Mikrofone am
+ * Wochenende — fünf Plätze.
+ */
+function importiert(start: string): Week {
+  const range = `Woche ab ${start}`
+  return {
+    range, book: '', start, current: false,
+    mid: {
+      date: range, end: '',
+      sections: [{
+        label: 'X', farbe: 'petrol',
+        items: [{ num: 1, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
+      }],
+      helpers: { mik: [] },
+    },
+    we: { date: range, end: '', sections: [], helpers: { mik: [] } },
+  }
+}
+
+/** Dieselbe Woche, vollständig besetzt. */
+function besetzt(start: string): Week {
+  const w = importiert(start)
+  platz(w).name = 'Anton Alt'
+  platz(w).pid = 'p-a'
+  w.mid.helpers.mik = [{ name: 'Bruno Test', pid: 'p-b' }, { name: 'Carl Test', pid: 'p-c' }]
+  w.we.helpers.mik = [{ name: 'Bruno Test', pid: 'p-b' }, { name: 'Carl Test', pid: 'p-c' }]
+  return w
+}
+
+/** Alle Plätze dieser Wochen bestätigt — wer zugesagt hat, weiß Bescheid. */
+function allesBestaetigt(weeks: Week[]): ConfirmationMap {
+  const map: ConfirmationMap = {}
+  for (const w of weeks) {
+    const start = w.start
+    map[partTaskKey(start, 'mid', 0, 0, 0)] = 'bestätigt'
+    for (const tab of ['mid', 'we'] as const) {
+      for (const pos of [0, 1]) map[helperTaskKey(start, tab, 'mik', pos)] = 'bestätigt'
+    }
+  }
+  return map
+}
+
+/** Alle Plätze dieser Wochen als gesendet — über das Tagebuch, nicht über Zusagen. */
+function allesGesendet(weeks: Week[]): Record<string, string> {
+  const log: Record<string, string> = {}
+  const eintrag = (key: string, name: string) => (log[sentKey(key, name)] = '2026-09-01T08:00:00Z')
+  for (const w of weeks) {
+    eintrag(partTaskKey(w.start, 'mid', 0, 0, 0), 'Anton Alt')
+    for (const tab of ['mid', 'we'] as const) {
+      eintrag(helperTaskKey(w.start, tab, 'mik', 0), 'Bruno Test')
+      eintrag(helperTaskKey(w.start, tab, 'mik', 1), 'Carl Test')
+    }
+  }
+  return log
+}
+
+/** Ein Planer mit festem Tag, vier geladenen Wochen und genug Leuten. */
+function planer(over: Partial<AppState> = {}) {
+  return zeige({
+    planner: true,
+    persons: LEUTE,
+    fsWeeks: [],
+    ...over,
+  })
+}
+
+const chip = (root: Element, art: string) => {
+  const el = root.querySelector(`.dash-chip[data-art="${art}"]`)
+  return el
+    ? { titel: el.querySelector('.dash-chip-titel')?.textContent, n: el.querySelector('.dash-chip-n')?.textContent }
+    : null
+}
+
+describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm zuerst (T95)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(MONTAG)
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('ein Verkündiger sieht sie nicht — er dürfte den Screen dahinter gar nicht betreten', () => {
+    const { container } = zeige({ planner: false, weeks: [importiert(W1)] })
+    expect(container.querySelector('.dash-planung')).toBeNull()
     expect(container.querySelector('.dash-plan')).toBeNull()
   })
 
-  it('der Planer sieht offene Zuteilungen der laufenden Woche', () => {
-    const { container } = zeige({ planner: true })
-    // 1 Programmpunkt + 2 Mikrofone (unter der Woche) + 2 Mikrofone (Wochenende)
-    expect(container.querySelector('.dash-plan-text')?.textContent).toContain('5')
+  it('ein Gruppenaufseher auch nicht — seine Treffpunkte plant er in Planen', () => {
+    const { container } = zeige({
+      planner: false,
+      weeks: [importiert(W1)],
+      groups: [{ id: 'g1', name: 'Gruppe 1', ov: 'p-a', as: null }],
+    })
+    expect(container.querySelector('.dash-planung')).toBeNull()
   })
 
-  it('ist alles zugeteilt und konfliktfrei, sagt sie genau das', () => {
-    const w = laufendeWoche()
-    platz(w).name = 'Anton Alt'
-    w.mid.helpers.mik = [{ name: 'A' }, { name: 'B' }]
-    w.we.helpers.mik = [{ name: 'C' }, { name: 'D' }]
-    const { container } = zeige({ planner: true, weeks: [w] })
+  it('beim Planer steht sie direkt unter dem Gruß, vor der eigenen Aufgabe', () => {
+    // Bis T95 stand die Arbeit des Planers als letzte Zeile unter seinem
+    // eigenen Verkündiger-Teil.
+    const { container } = planer({ weeks: [importiert(W1)], myTasks: [task()] })
+    const reihenfolge = [...container.querySelector('.dash')!.children].map((el) => el.className)
+    const karte = reihenfolge.findIndex((c) => c.includes('dash-planung'))
+    expect(karte, reihenfolge.join(' | ')).toBe(2) // nach Datum und Gruß
+    expect(karte).toBeLessThan(reihenfolge.findIndex((c) => c.includes('dash-hero')))
+  })
+})
+
+describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(MONTAG)
+  })
+  afterEach(() => vi.useRealTimers())
+
+  /** Vier Wochen: die erste frisch importiert, die übrigen fertig und bestätigt. */
+  const ersteOffen = (): Week[] => [importiert(W1), ...WOCHEN.slice(1).map(besetzt)]
+
+  it('nennt die Woche und die offenen Zuteilungen — Titel und Zahl des Banners in Planen', () => {
+    const weeks = ersteOffen()
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    const zeilen = container.querySelectorAll('.dash-plan-woche')
+    expect(zeilen).toHaveLength(1)
+    expect(zeilen[0]!.querySelector('.dash-plan-range')?.textContent).toBe(`Woche ab ${W1}`)
+    expect(chip(zeilen[0]!, 'offen')).toEqual({ titel: t.offeneTitle, n: '5' })
+    // Nur, was zutrifft: keine Konflikte, nichts nicht besetzbar, nichts zu senden.
+    expect(chip(zeilen[0]!, 'konflikte')).toBeNull()
+    expect(chip(zeilen[0]!, 'engpass')).toBeNull()
+    expect(chip(zeilen[0]!, 'senden')).toBeNull()
+  })
+
+  it('ein Konflikt steht als Titel neben seiner Zahl — nicht mehr „1 Konflikte"', () => {
+    const weeks = WOCHEN.map(besetzt)
+    const absences: Absence[] = [
+      // Anton hält am Dienstag die Bibellesung und ist an dem Tag weg.
+      { id: 'a1', personId: 'p-a', userId: null, from: '2026-09-08', to: '2026-09-08', reason: '' },
+    ]
+    const { container } = planer({ weeks, absences, confirmations: allesBestaetigt(weeks) })
+    const karte = container.querySelector('.dash-planung')!
+    expect(chip(karte, 'konflikte')).toEqual({ titel: t.konflikteTitle, n: '1' })
+    expect(karte.textContent).not.toMatch(/1 Konflikte/)
+  })
+
+  it('nicht besetzbar: an einem Tag zu wenige Leute für die Plätze (T96)', () => {
+    // Nur Anton kann Mikrofone — zwei Plätze je Zusammenkunft, je einer bleibt offen.
+    const weeks = ersteOffen()
+    const { container } = planer({ weeks, persons: [LEUTE[0]!], confirmations: allesBestaetigt(weeks) })
+    const erste = container.querySelector('.dash-plan-woche')!
+    expect(chip(erste, 'engpass')).toEqual({ titel: t.engpassTitle, n: '2' })
+  })
+
+  it('eine fertig geplante Woche, von der noch niemand weiß, sagt „Plan senden" (T99)', () => {
+    const weeks = WOCHEN.map(besetzt)
+    // Nur die erste Woche ist noch nicht hinaus.
+    const confirmations = allesBestaetigt(weeks.slice(1))
+    const { container } = planer({ weeks, confirmations })
+    const zeilen = container.querySelectorAll('.dash-plan-woche')
+    expect(zeilen).toHaveLength(1)
+    expect(chip(zeilen[0]!, 'senden')).toEqual({ titel: t.planSendenTitle, n: '5' })
+  })
+
+  it('offline kein „Plan senden" — Planen blendet den Knopf dann auch aus', () => {
+    const weeks = WOCHEN.map(besetzt)
+    const { container } = planer({ weeks, confirmations: {}, staleAt: Date.now() })
+    expect(container.querySelector('.dash-chip[data-art="senden"]')).toBeNull()
+  })
+
+  it('ein Tipp öffnet Planen auf genau dieser Woche', () => {
+    const weeks = [...WOCHEN.slice(0, 2).map(besetzt), importiert(WOCHEN[2]), besetzt(WOCHEN[3])]
+    const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    fireEvent.click(container.querySelector('.dash-plan-woche')!)
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'navigate', screen: 'planen', woche: { wi: 2, tab: 'mid' },
+    })
+  })
+
+  it('am Donnerstag ist der Dienstag vorbei — es zählt nur noch das Wochenende', () => {
+    // Der Bildschirm fragt mit dem heutigen Tag, nicht mit dem Wochenanfang.
+    vi.setSystemTime(new Date(2026, 8, 10, 9, 0))
+    const weeks = ersteOffen()
+    const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    const erste = container.querySelector('.dash-plan-woche')!
+    expect(chip(erste, 'offen')?.n).toBe('2')
+    fireEvent.click(erste)
+    // Und Planen öffnet dort, wo noch etwas zu tun ist.
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'navigate', screen: 'planen', woche: { wi: 0, tab: 'we' },
+    })
+  })
+
+  it('ist nichts zu tun, schrumpft sie auf eine Zeile „Alles zugeteilt"', () => {
+    const weeks = WOCHEN.map(besetzt)
+    const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    expect(container.querySelector('.dash-planung')).toBeNull()
     expect(container.querySelector('.dash-plan-text')?.textContent).toBe(t.dashAllesZugeteilt)
-  })
-
-  it('eine entfallene Zusammenkunft zählt nicht mit (T30) — ihre Plätze braucht niemand', () => {
-    const w = laufendeWoche({ dev: { we: { cancelled: true, reason: 'Kongress' } } })
-    const { container } = zeige({ planner: true, weeks: [w] })
-    // Ohne die zwei Wochenend-Mikrofone bleiben 3.
-    expect(container.querySelector('.dash-plan-text')?.textContent).toContain('3')
-  })
-
-  it('Konflikte werden dazugezählt — auch die der Treffpunkte', () => {
-    const w = laufendeWoche()
-    platz(w).name = 'Anton Alt'
-    platz(w).pid = 'p-a'
-    const abwesend: Absence[] = [
-      { id: 'a1', personId: 'p-a', userId: null, from: w.start!, to: '2099-12-31', reason: '' },
-    ]
-    const { container } = zeige({ planner: true, weeks: [w], absences: abwesend })
-    expect(container.querySelector('.dash-plan-text')?.textContent).toContain(t.dashKonflikteN.replace('{n}', '1'))
-  })
-
-  it('zählt Konflikte auch, wenn heute in keine geladene Woche fällt', () => {
-    /*
-      **Beide Hälften der Kachel müssen dieselbe Woche meinen.**
-
-      „Offene Zuteilungen" fällt auf die gerade **gewählte** Woche zurück, wenn
-      heute in keine geladene fällt — die Konfliktzahl daneben tat das nicht und
-      blieb dann stumm auf 0. Eine Kachel, zwei Wochen.
-
-      Der Fall ist kein Randfall: Eine frisch eingerichtete Versammlung holt mit
-      „Programm importieren" die **nächste** Woche. Bis der Montag kommt, liegt
-      heute in keiner geladenen Woche — und genau in dieser Zeit plant der
-      Koordinator. Er sah offene Plätze, aber keinen einzigen Konflikt.
-    */
-    const zukunft = laufendeWoche()
-    const montag = new Date(`${zukunft.start}T12:00:00`)
-    montag.setDate(montag.getDate() + 21) // drei Wochen voraus
-    zukunft.start = `${montag.getFullYear()}-${String(montag.getMonth() + 1).padStart(2, '0')}-${String(montag.getDate()).padStart(2, '0')}`
-    platz(zukunft).name = 'Anton Alt'
-    platz(zukunft).pid = 'p-a'
-    const abwesend: Absence[] = [
-      { id: 'a1', personId: 'p-a', userId: null, from: zukunft.start, to: '2099-12-31', reason: '' },
-    ]
-    const { container } = zeige({ planner: true, weeks: [zukunft], week: 0, absences: abwesend })
-    const text = container.querySelector('.dash-plan-text')?.textContent ?? ''
-    expect(text, text).toContain(t.dashKonflikteN.replace('{n}', '1'))
-  })
-
-  it('sie führt ins Planen', () => {
-    const { container, dispatch } = zeige({ planner: true })
     fireEvent.click(container.querySelector('.dash-plan')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen' })
   })
+})
 
-  it('ohne geladene Woche steht sie nicht da — es gibt nichts zu planen', () => {
-    const { container } = zeige({ planner: true, weeks: [] })
-    expect(container.querySelector('.dash-plan')).toBeNull()
+describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Karte', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(MONTAG)
+    importNextWeek.mockReset()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('eine Woche Vorrat: der Stand und der Knopf', () => {
+    const weeks = [besetzt(W1)]
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    expect(container.querySelector('.dash-plan-vorrat-text')?.textContent).toMatch(/^Geladen bis 13\. Sept\. 2026$/)
+    expect(container.querySelector('.dash-plan-import')?.textContent).toBe(t.importBtn)
+  })
+
+  it('der Knopf holt die nächste Woche — derselbe Ablauf wie in den Einstellungen', async () => {
+    const neu = importiert(W2)
+    importNextWeek.mockResolvedValue({ ok: true, week: neu })
+    const weeks = [besetzt(W1)]
+    const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
+    fireEvent.click(container.querySelector('.dash-plan-import')!)
+    // Ab der zuletzt geladenen Woche, in der Versammlungssprache.
+    await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu }))
+    expect(importNextWeek).toHaveBeenCalledWith(W1, 'de', [])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'startImport' })
+  })
+
+  it('offline fängt er gar nicht erst an', () => {
+    const weeks = [besetzt(W1)]
+    const { container, dispatch } = planer({ weeks, staleAt: Date.now() })
+    fireEvent.click(container.querySelector('.dash-plan-import')!)
+    expect(importNextWeek).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly })
+  })
+
+  it('ohne jede Woche: „Noch keine Woche geladen" — der erste Import steht aus', () => {
+    const { container } = planer({ weeks: [] })
+    expect(container.querySelector('.dash-plan-vorrat-text')?.textContent).toBe(t.geladenNichts)
+    expect(container.querySelector('.dash-plan-import')).not.toBeNull()
+  })
+
+  it('reicht der Vorrat, steht nichts davon da', () => {
+    const weeks = WOCHEN.map(besetzt)
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    expect(container.querySelector('.dash-plan-vorrat')).toBeNull()
+  })
+})
+
+/* ---- „Aktuelle Woche" und die Treffpunkte (T95) ---------------------------- */
+
+describe('„Aktuelle Woche" kennt die eigenen Treffpunkte', () => {
+  const treffpunkt = (over: Partial<FsInstance> = {}): FsInstance => ({
+    id: 'r1', ruleId: 'r1', grp: '', wd: 3, time: '09:30', place: 'Bahnhof',
+    leader: 'Anton Alt', lpid: 'p-a', ...over,
+  })
+
+  const fsZeilen = (container: HTMLElement) =>
+    [...container.querySelectorAll('.dash-week-row')].filter((z) =>
+      z.getAttribute('data-zeile')?.startsWith('fs|'),
+    )
+
+  it('ein eigener Treffpunkt steht mit Tag, Uhrzeit und Ort — wie in „Meine Aufgaben"', () => {
+    const { container } = zeige({ fsWeeks: [[treffpunkt()]] })
+    const [zeile] = fsZeilen(container)
+    expect(zeile?.querySelector('.dash-week-name')?.textContent).toBe(t.tabFs)
+    expect(zeile?.querySelector('.dash-week-date')?.textContent).toMatch(/^Mittwoch, \d+\. \S+ · 09:30 · Bahnhof$/)
+    expect(zeile?.querySelector('.dash-week-chip')?.textContent).toBe(t.dashDeineAufgabe)
+  })
+
+  it('die Zeilen stehen in der Folge der Woche: Montag vor Dienstag, Mittwoch vor Sonntag', () => {
+    const { container } = zeige({
+      fsWeeks: [[treffpunkt({ id: 'mi', wd: 3 }), treffpunkt({ id: 'mo', wd: 1, time: '14:00' })]],
+    })
+    const folge = [...container.querySelectorAll('.dash-week-row')].map((z) => z.getAttribute('data-zeile'))
+    expect(folge).toEqual(['fs|mo', 'mid', 'fs|mi', 'we'])
+  })
+
+  it('fremde Treffpunkte stehen nicht da — die Liste aller steht im Programm', () => {
+    const { container } = zeige({ fsWeeks: [[treffpunkt({ leader: 'Wer Anders', lpid: 'p-x' })]] })
+    expect(fsZeilen(container)).toHaveLength(0)
+  })
+
+  it('ein auswärtiger Leiter gleichen Namens ist nicht man selbst', () => {
+    // Freitext (T63): der Kreisaufseher, der zufällig so heißt wie ein Bruder.
+    const { container } = zeige({
+      fsWeeks: [[treffpunkt({ lpid: undefined, lext: true })]],
+    })
+    expect(fsZeilen(container)).toHaveLength(0)
+  })
+
+  it('ein Namensvetter mit eigener Person-Id auch nicht — die Id entscheidet', () => {
+    const { container } = zeige({ fsWeeks: [[treffpunkt({ lpid: 'p-zwilling' })]] })
+    expect(fsZeilen(container)).toHaveLength(0)
+  })
+
+  it('ohne angemeldete Person gehört niemandem ein Treffpunkt', () => {
+    const { container } = zeige({ personId: null, fsWeeks: [[treffpunkt()]] })
+    expect(fsZeilen(container)).toHaveLength(0)
+  })
+})
+
+/* ---- Nachgezogen aus der Durchsicht (T95) ---------------------------------- */
+
+describe('Die Karte zeigt an, wofür „Alles zugeteilt" gilt', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(MONTAG)
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('mit dem Zeitraum der angesehenen Wochen — dahinter kann noch Arbeit liegen', () => {
+    /*
+     * Die eingeklappte Karte sagte „Alles zugeteilt", geprüft waren aber nur vier
+     * Wochen. Acht importierte Wochen, die ersten vier fertig: Der Satz las sich
+     * wie „nichts mehr zu tun", und dahinter lagen 140 offene Plätze.
+     */
+    const weeks = WOCHEN.map(besetzt)
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    expect(container.querySelector('.dash-plan-text')?.textContent).toBe(t.dashAllesZugeteilt)
+    expect(container.querySelector('.dash-plan-zeitraum')?.textContent).toMatch(/^7\.\sSept\.\s–\s4\.\sOkt\.\s2026$/) // formatRange setzt schmale Leerzeichen
+  })
+})
+
+describe('Die Karte rechnet mit dem Tag, der gerade ist', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('am Mittwochmorgen zählt sie den Dienstag nicht mehr — auch ohne dass sich an den Wochen etwas ändert', () => {
+    /*
+     * Die Karte merkt sich ihre Rechnung. Das Datum stand darin, war aber keine
+     * Abhängigkeit: Eine installierte App, die über Nacht im Hintergrund lag,
+     * zählte am Morgen noch den Dienstag — bis jemand etwas an den Wochen
+     * änderte. Jetzt liest sie den Tag beim Zurückkehren neu.
+     */
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 8, 21, 0)) // Dienstagabend
+    const weeks = [importiert(W1), ...WOCHEN.slice(1).map(besetzt)]
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    expect(chip(container.querySelector('.dash-plan-woche')!, 'offen')?.n).toBe('5')
+
+    vi.setSystemTime(new Date(2026, 8, 9, 7, 30)) // die Nacht vergeht im Hintergrund
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(chip(container.querySelector('.dash-plan-woche')!, 'offen')?.n).toBe('2')
+  })
+})
+
+describe('Die Wochenspanne steht in derselben Sprache wie in Planen', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(MONTAG)
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('mit Sprachvariante der App-Sprache die Spanne der Variante', () => {
+    /*
+     * Planen zeigt den Kopf der Woche aus der mitgeholten Sprachvariante
+     * (`useProgWeek`). Die Karte nahm die kanonische Spanne: Eine englische App
+     * mit deutscher Versammlung las auf dem Start „Woche ab …" und nach dem
+     * Tippen die englische Fassung.
+     */
+    const erste = importiert(W1)
+    const jw = APP_TO_JW.en!
+    erste.alt = { [jw]: { ...importiert(W1), range: 'Week of September 7' } }
+    const weeks = [erste, ...WOCHEN.slice(1).map(besetzt)]
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), lang: 'en', congLang: 'Deutsch' })
+    expect(container.querySelector('.dash-plan-range')?.textContent).toBe('Week of September 7')
+  })
+
+  it('Gegenprobe: ohne Variante bleibt es bei der Spanne der Versammlung', () => {
+    const weeks = [importiert(W1), ...WOCHEN.slice(1).map(besetzt)]
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), lang: 'en', congLang: 'Deutsch' })
+    expect(container.querySelector('.dash-plan-range')?.textContent).toBe(`Woche ab ${W1}`)
+  })
+})
+
+/**
+ * **Was die Karte aus dem Zustand übernimmt, muss auch ankommen.**
+ *
+ * Die Rechnung selbst prüft `planungsstand.test.ts`. Hier geht es um den
+ * Aufrufer: Gibt die Karte die Treffpunkte, die Abwesenheiten oder das
+ * Versand-Tagebuch nicht weiter, rechnet sie still mit leeren Listen — die
+ * häufigste Fehlerart dieses Projekts (Regel geprüft, Aufrufer nicht).
+ */
+describe('Die Karte gibt Treffpunkte, Abwesenheiten und Tagebuch weiter', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(MONTAG)
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const fertig = (): Week[] => WOCHEN.map(besetzt)
+
+  it('ein Treffpunkt ohne Leiter macht die Woche zu einer mit offener Zuteilung', () => {
+    const weeks = fertig()
+    const offen: FsInstance = { id: 'mi', ruleId: 'mi', grp: '', wd: 3, time: '09:30', place: 'Saal', leader: '' }
+    const { container, dispatch } = planer({
+      weeks,
+      confirmations: allesBestaetigt(weeks),
+      fsWeeks: [[offen], [], [], []],
+    })
+    const zeile = container.querySelector('.dash-plan-woche')!
+    expect(chip(zeile, 'offen')).toEqual({ titel: t.offeneTitle, n: '1' })
+    fireEvent.click(zeile)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 0, tab: 'fs' } })
+  })
+
+  it('ein abwesender Treffpunkt-Leiter ist ein Konflikt', () => {
+    const weeks = fertig()
+    const leitung: FsInstance = {
+      id: 'mi', ruleId: 'mi', grp: '', wd: 3, time: '09:30', place: 'Saal', leader: 'Anton Alt', lpid: 'p-a',
+    }
+    const confirmations: ConfirmationMap = { ...allesBestaetigt(weeks), [`fs|${W1}|mi`]: 'bestätigt' }
+    const absences: Absence[] = [
+      { id: 'a1', personId: 'p-a', userId: null, from: '2026-09-09', to: '2026-09-09', reason: '' },
+    ]
+    const { container } = planer({ weeks, confirmations, absences, fsWeeks: [[leitung], [], [], []] })
+    expect(chip(container.querySelector('.dash-plan-woche')!, 'konflikte')).toEqual({
+      titel: t.konflikteTitle,
+      n: '1',
+    })
+  })
+
+  it('was im Tagebuch steht, ist gesendet — die Woche verschwindet von der Karte', () => {
+    const weeks = fertig()
+    const { container } = planer({ weeks, confirmations: {}, sentLog: allesGesendet(weeks) })
+    expect(container.querySelector('.dash-planung')).toBeNull()
+    expect(container.querySelector('.dash-plan-text')?.textContent).toBe(t.dashAllesZugeteilt)
   })
 })

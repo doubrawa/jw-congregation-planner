@@ -98,15 +98,32 @@ export interface ProgWeek {
  * bleibt alles bei der Versammlungssprache (`tp`).
  */
 export function useProgWeek(week: Week | undefined): ProgWeek {
+  const progWeek = useProgWeeks()
+  const { tp } = useT()
+  return useMemo(() => (week ? progWeek(week) : { week, tpw: tp }), [week, progWeek, tp])
+}
+
+/**
+ * **Dieselbe Regel für mehrere Wochen** — für Listen wie die Planungs-Karte des
+ * Start-Bildschirms, die nicht je Woche einen Hook aufrufen können.
+ *
+ * Die Karte nahm die Wochenspanne dort über `tp` aus der kanonischen Woche,
+ * während Planen denselben Kopf aus der Sprachvariante zeigte: Eine englische
+ * App mit deutscher Versammlung las auf dem Start „14.–20. September" und nach
+ * dem Tippen „September 14-20". Eine Regel, zwei Aufrufer.
+ */
+export function useProgWeeks(): (week: Week) => { week: Week; tpw: (s: string) => string } {
   const lang = useAppSelector((s) => s.lang)
   const congLang = useAppSelector((s) => s.congLang)
-  const { tp } = useT()
+  const { tp, tu } = useT()
   return useMemo(() => {
-    if (!week) return { week, tpw: tp }
     const congCode = congAppCode(congLang)
     const jwCode = lang !== congCode ? APP_TO_JW[lang] : undefined
-    const merged = localizedWeek(week, jwCode)
-    if (merged === week) return { week, tpw: tp }
-    return { week: merged, tpw: lang === 'de' ? identity : makeTr(lang) }
-  }, [week, lang, congLang, tp])
+    return (week: Week) => {
+      const merged = localizedWeek(week, jwCode)
+      // Mit Variante stehen die Texte in der App-Sprache — ihr Übersetzer ist
+      // `tu`, derselbe, der auch Namen und Rollen übersetzt.
+      return merged === week ? { week, tpw: tp } : { week: merged, tpw: tu }
+    }
+  }, [lang, congLang, tp, tu])
 }

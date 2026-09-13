@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Ton affectation",
   "dashZuBest": "À confirmer",
   "dashPlanung": "Planification",
-  "dashKonflikteN": "{n} conflits",
   "dashAllesZugeteilt": "Tout est attribué",
   "tabFs": "Réunions pour la prédication",
   "fsShort": "Prédication",

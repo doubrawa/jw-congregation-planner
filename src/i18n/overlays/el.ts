@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Η ανάθεσή σου",
   "dashZuBest": "Προς επιβεβαίωση",
   "dashPlanung": "Προγραμματισμός",
-  "dashKonflikteN": "{n} συγκρούσεις",
   "dashAllesZugeteilt": "Όλα ανατέθηκαν",
   "tabFs": "Συναθροίσεις για υπηρεσία αγρού",
   "fsShort": "Υπηρεσία",

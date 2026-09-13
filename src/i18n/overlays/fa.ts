@@ -295,7 +295,6 @@ export default {
   "dashDeineAufgabe": "وظیفه شما",
   "dashZuBest": "در انتظار تأیید",
   "dashPlanung": "برنامه‌ریزی",
-  "dashKonflikteN": "{n} تداخل",
   "dashAllesZugeteilt": "همه‌چیز تخصیص یافت",
   "tabFs": "جلسات برای خدمت موعظه",
   "fsShort": "خدمت موعظه",

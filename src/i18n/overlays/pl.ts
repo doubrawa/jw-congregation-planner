@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Twoje zadanie",
   "dashZuBest": "Do potwierdzenia",
   "dashPlanung": "Planowanie",
-  "dashKonflikteN": "Konflikty: {n}",
   "dashAllesZugeteilt": "Wszystko przydzielone",
   "tabFs": "Zbiórki do służby kaznodziejskiej",
   "fsShort": "Służba",

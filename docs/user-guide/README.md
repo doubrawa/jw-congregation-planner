@@ -59,7 +59,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&p=p9` | verkuendiger |
 | `verkuendiger-profil.png` | `s=profil&pl=0&p=p9` | verkuendiger |
 | `verkuendiger-treffpunkte.png` | `s=programm&tab=fs&pl=0&me=p9` | verkuendiger |
-| `planer-start.png` | `s=start` | planer |
+| `planer-start.png` | `s=start&me=p9` (920×1300) | planer |
 | `planer-aufgaben.png` | `s=aufgaben` | (Reserve) |
 | `planer-planen-woche.png` | `s=planen&tab=mid` | planer |
 | `planer-planen-treffpunkte.png` | `s=planen&tab=fs` | (Reserve) |

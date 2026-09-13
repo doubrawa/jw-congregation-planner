@@ -36,7 +36,7 @@ const t = dict('de')
 /* Die Function wird nicht wirklich gerufen — geprüft wird, was die Oberfläche
    mit ihrer Antwort macht. */
 const sendPlan = vi.fn()
-vi.mock('../lib/data', () => ({ sendPlan: (w: string) => sendPlan(w) }))
+vi.mock('../lib/data', () => ({ sendPlan: (w: string, heute: string) => sendPlan(w, heute) }))
 /* Das stille Nachladen nach dem Senden braucht hier keine Datenbank. */
 vi.mock('../app/hydrate', () => ({ loadAndHydrate: vi.fn(() => Promise.resolve()) }))
 
@@ -111,11 +111,22 @@ function buehne(over: Partial<AppState> = {}) {
 
 const knopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.plan-senden .plan-auto-btn')
 
+/**
+ * Montagmorgen der Testwoche. Der Knopf lässt Vergangenes weg — ohne festen Tag
+ * hinge jede Zahl hier davon ab, wann der Test läuft.
+ */
+const MONTAG_FRUEH = new Date(2026, 8, 7, 8, 0)
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(MONTAG_FRUEH)
   sendPlan.mockReset()
   sendPlan.mockResolvedValue({ personen: 1, ohneKonto: [] })
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 describe('Wer den Knopf zu sehen bekommt', () => {
   it('ein Planer', () => {
@@ -174,11 +185,13 @@ describe('Was er über den Stand der Woche sagt', () => {
 })
 
 describe('Was beim Drücken geschieht', () => {
-  it('die Woche wird über ihre Kennung gesendet, nicht über ihren Index', () => {
-    // Der Index ordnet seit T66 nur noch; die Kennung ist der Montag.
+  it('die Woche wird über ihre Kennung gesendet, nicht über ihren Index — mit dem Tag, an dem gezählt wurde', () => {
+    // Der Index ordnet seit T66 nur noch; die Kennung ist der Montag. Der Tag
+    // geht mit, damit die Function Vergangenes an demselben Tag weglässt wie
+    // die Zahl am Knopf.
     const { container } = buehne()
     fireEvent.click(knopf(container)!)
-    expect(sendPlan).toHaveBeenCalledWith(MONTAG)
+    expect(sendPlan).toHaveBeenCalledWith(MONTAG, '2026-09-07')
   })
 
   it('danach steht im Toast, wie viele benachrichtigt wurden', async () => {
@@ -240,6 +253,40 @@ describe('Was beim Drücken geschieht', () => {
     // Und zurück: Es war nicht verworfen, nur der falschen Woche vorenthalten.
     wechsle({})
     expect(container.querySelector('.plan-senden-ohne')?.textContent).toContain('Karl Onto')
+  })
+})
+
+describe('Was vorbei ist, zählt der Knopf nicht mehr', () => {
+  /*
+   * Am Donnerstag zählte er noch die Plätze vom Dienstag, und die Function
+   * schickte ihnen eine Nachricht über eine Zusammenkunft, die gewesen ist —
+   * während die Planungs-Karte auf dem Start sie schon wegließ. Zwei Zahlen für
+   * dieselbe Woche, und ein Druck verschickte mehr, als angekündigt war.
+   */
+  const mitSonntag = (): Week => {
+    const w = woche(['A. Berg'])
+    ;(w.we as { helpers: Record<string, { name: string }[]> }).helpers = { mik: [{ name: 'S. Sonntag' }] }
+    return w
+  }
+
+  it('am Donnerstag nennt er nur noch das Wochenende', () => {
+    vi.setSystemTime(new Date(2026, 8, 10, 9, 0))
+    const { container } = buehne({ weeks: [mitSonntag()] })
+    expect(container.querySelector('.plan-banner-count')?.textContent).toBe('1')
+    expect(container.querySelector('.plan-senden-namen')?.textContent).toBe('S. Sonntag')
+  })
+
+  it('und schickt den Tag mit, an dem er gezählt hat', () => {
+    vi.setSystemTime(new Date(2026, 8, 10, 9, 0))
+    const { container } = buehne({ weeks: [mitSonntag()] })
+    fireEvent.click(knopf(container)!)
+    expect(sendPlan).toHaveBeenCalledWith(MONTAG, '2026-09-10')
+  })
+
+  it('ist nur Vergangenes ungesendet, gibt es nichts mehr freizugeben', () => {
+    vi.setSystemTime(new Date(2026, 8, 10, 9, 0))
+    const { container } = buehne({ weeks: [woche(['A. Berg'])] })
+    expect(container.querySelector('.plan-senden')).toBeNull()
   })
 })
 

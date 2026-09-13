@@ -29,16 +29,42 @@ Versammlungseinstellungen pflegen.
 
 ## 1. Dashboard für Planer
 
-Als Planer siehst du zusätzlich zur persönlichen Übersicht eine **Planungs‑Karte**
-für die aktuelle Woche.
+Als Planer steht für dich ganz oben, direkt unter dem Gruß, die
+**Planungs‑Karte**: was in den kommenden Wochen noch zu tun ist. Darunter folgt
+deine persönliche Übersicht wie bei jedem Verkündiger – deine unbestätigten
+Aufgaben legt dir die App ohnehin beim Öffnen vor.
 
 ![Planer‑Dashboard](screenshots/planer-start.png)
 
-- **Planung · Aktuelle Woche** („6 offene Zuteilungen · 1 Konflikte") führt dich
-  mit einem Tippen direkt in die Planung.
+- **Eine Zeile je Woche, in der etwas zu tun ist** – ab der laufenden Woche,
+  höchstens vier Wochen voraus. Fertig geplante und gesendete Wochen erscheinen
+  nicht. Auch eine Kongresswoche erscheint, wenn dort ein Treffpunkt noch einen
+  Leiter braucht.
+- Die Zeile nennt, was ansteht, mit denselben Begriffen und Farben wie die
+  Hinweise in **Planen** (Abschnitt 4):
+  - **Mögliche Konflikte** – z. B. jemand ist eingeteilt, aber abwesend,
+  - **Nicht besetzbar** – an dem Tag sind für einen Bereich zu wenige Leute da,
+  - **Offene Zuteilungen** – noch unbesetzte Plätze, auch Treffpunkte ohne Leiter,
+  - **Plan senden** – Zuteilungen, von denen die Eingeteilten noch nichts wissen.
+
+  Die Zahlen gelten für die **ganze Woche**; in Planen verteilen sie sich auf die
+  Reiter. Ein Tipp auf die Zeile öffnet **Planen** genau auf dieser Woche – und
+  auf dem Reiter, in dem etwas zu tun ist (ist nur noch ein Treffpunkt-Leiter
+  zu benachrichtigen, bei den Treffpunkten).
+- **Was vorbei ist, zählt nicht mehr.** Am Donnerstag nennt die Karte nur noch,
+  was am Wochenende offen ist; den Dienstag kann niemand mehr besetzen. Die
+  Karte merkt den Tageswechsel auch, wenn die App über Nacht offen war.
+- Reichen die geladenen Programme **weniger als drei Wochen** voraus, steht in
+  der Karte **„Geladen bis …"** mit dem Knopf **Nächste Woche importieren** –
+  derselbe wie in den Einstellungen (Abschnitt 8). Der Hinweis verschwindet,
+  sobald der Vorrat wieder reicht.
+- Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
+  darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
+  angesehen.
 - Die Navigation links enthält zusätzlich **Planen**, **Personen** und
   **Einstellungen** – diese Bereiche sehen nur Planer (und Gruppenaufseher einen
-  Teil davon).
+  Teil davon). Gruppenaufseher sehen die Startseite wie Verkündiger, ohne
+  Planungs‑Karte.
 
 ---
 
@@ -316,6 +342,10 @@ Drei Dinge, auf die du dich verlassen kannst:
   wechselst.
 - **Der Knopf gilt für die ganze Woche**, beide Zusammenkünfte und die
   Treffpunkte. Du musst ihn nicht in jedem Reiter drücken.
+- **Was vorbei ist, geht nicht mehr hinaus.** Am Donnerstag zählt der Knopf die
+  Plätze vom Dienstag nicht mehr mit, und niemand bekommt eine Nachricht über
+  eine Zusammenkunft, die gewesen ist. Am Tag der Zusammenkunft selbst zählt
+  sie noch.
 
 Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 
@@ -329,8 +359,10 @@ Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 > ausfallen lässt (in einer Kongress-Woche fallen alle aus) — die Zuteilungen
 > ruhen dann nur. Ebenso das Abschalten der Zusätzlichen Klasse: Ihre Namen
 > bleiben stehen und kommen beim Einschalten wieder. Und eine berichtigte
-> Schreibweise eines Namens ist ohnehin keine Änderung an der Zuteilung. In all
-> diesen Fällen geht keine Nachricht hinaus.
+> Schreibweise eines Namens ist ohnehin keine Änderung an der Zuteilung. Und ein
+> Platz, dessen Termin schon **vorbei** ist: Trägst du am Donnerstag nach, wer
+> am Dienstag wirklich gelesen hat, nimmst du niemandem etwas, das er noch
+> vorbereiten müsste. In all diesen Fällen geht keine Nachricht hinaus.
 
 ---
 
@@ -546,6 +578,10 @@ leer und werden anschließend unter **Planen** vergeben.
 Über dem Knopf steht, wie weit du schon bist: **„Geladen bis …"** nennt den
 letzten Tag, für den ein Programm vorliegt, daneben die Anzahl der geladenen
 Wochen. Jeder Druck auf den Knopf holt genau eine weitere Woche.
+
+Der Import läuft nicht von selbst. Damit er nicht in Vergessenheit gerät,
+erinnert dich die **Planungs‑Karte auf der Startseite**, sobald die Programme
+weniger als drei Wochen voraus reichen – mit demselben Knopf (Abschnitt 1).
 
 **Die App arbeitet mit den letzten 52 Wochen.** Ältere Wochen bleiben gespeichert
 und gehen nicht verloren, werden beim Start aber nicht mehr mitgeladen – ein Jahr

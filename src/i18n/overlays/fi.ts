@@ -296,7 +296,6 @@ export default {
   "dashDeineAufgabe": "Tehtäväsi",
   "dashZuBest": "Vahvistettavana",
   "dashPlanung": "Suunnittelu",
-  "dashKonflikteN": "{n} ristiriitaa",
   "dashAllesZugeteilt": "Kaikki jaettu",
   "tabFs": "Kokoukset kenttäpalvelusta varten",
   "fsShort": "Palvelus",

@@ -43,7 +43,10 @@ SHOTS=(
   # Angemeldet als p9 (Gruppe 1): zeigt die Treffpunkte der EIGENEN Gruppe —
   # fremde Gruppen stehen hier bewusst nicht (siehe fsVisible in src/data/fs.ts).
   "verkuendiger-treffpunkte|s=programm&tab=fs&pl=0&me=p9"
-  "planer-start|s=start"
+  # Angemeldet (me=), damit der Gruß einen Namen trägt; höher als der Rest, weil
+  # die Planungs-Karte (T95) über der eigenen Aufgabe steht und im Demo-Bestand
+  # vier Wochen nennt — nichts davon ist gesendet.
+  "planer-start|s=start&me=p9|920x1300"
   "planer-aufgaben|s=aufgaben"
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"

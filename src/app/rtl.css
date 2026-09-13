@@ -35,8 +35,15 @@
 .cand-today,
 .sheet-current,
 .sheet-sub,
-.sheet-title {
+.sheet-title,
+.dash-week-date,
+.dash-plan-range {
   unicode-bidi: plaintext;
+}
+
+/* Die Pfeile der Planungs-Karte (Start-Bildschirm) zeigen in Leserichtung. */
+[dir='rtl'] .dash-plan-arrow {
+  transform: scaleX(-1);
 }
 
 /* Wochen-Blätter-Pfeile in RTL: NUR die Glyphen kippen, damit beide nach außen

@@ -229,7 +229,12 @@ export type AppAction =
   | { type: 'login'; welcome?: boolean }
   | { type: 'welcomeShown' }
   | { type: 'logout' }
-  | { type: 'navigate'; screen: Screen }
+  /**
+   * `woche`: eine bestimmte Woche und Ansicht öffnen statt der nächsten
+   * Zusammenkunft — vom Start-Bildschirm aus die Woche, in der etwas zu tun ist.
+   * Über dieselbe Aktion, damit die Rechteprüfung eine Stelle bleibt.
+   */
+  | { type: 'navigate'; screen: Screen; woche?: { wi: number; tab: MeetingTab } }
   | { type: 'prevWeek' }
   | { type: 'nextWeek' }
   | { type: 'setTab'; tab: MeetingTab }

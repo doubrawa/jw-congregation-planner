@@ -46,7 +46,7 @@ export const DE = {
     grussMorgen: 'Guten Morgen', grussTag: 'Guten Tag', grussAbend: 'Guten Abend',
     dashNextTask: 'Deine nächste Aufgabe', dashKeineAufgabe: 'Keine anstehende Aufgabe',
     dashDeineAufgabe: 'Deine Aufgabe', dashZuBest: 'Zu bestätigen', dashPlanung: 'Planung',
-    dashKonflikteN: '{n} Konflikte', dashAllesZugeteilt: 'Alles zugeteilt',
+    dashAllesZugeteilt: 'Alles zugeteilt',
     naechsteAufgaben: 'NÄCHSTE AUFGABEN', abwesenheiten: 'ABWESENHEITEN',
     von: 'VON', bis: 'BIS', grundOpt: 'GRUND (OPTIONAL)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',
