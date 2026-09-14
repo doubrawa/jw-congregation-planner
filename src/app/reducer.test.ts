@@ -1105,14 +1105,25 @@ describe('hydrate / setDataStatus', () => {
     // init.ts, solange kein Debug-Hash einen Reiter vorgibt. Nur dann darf das
     // Laden die Woche bestimmen; hat der Planer selbst geblättert, bleibt sie
     // stehen (siehe „lässt eine selbst gewählte Woche stehen").
-    const next = reducer(makeState({ dataStatus: 'loading', week: 3, terminGewaehlt: false }), {
-      type: 'hydrate',
-      payload,
-    })
-    expect(next.dataStatus).toBe('ready')
-    expect(next.week).toBe(0)
-    expect(next.congregation.name).toBe('Krumbach')
-    expect(next.congregationId).toBe('c1')
+    //
+    // **Mit festem Tag.** Das Laden springt auf die laufende Woche, und „Woche 0"
+    // stimmte nur, solange der echte Kalender in der ersten Demo-Woche lag
+    // (7.–13.9.2026). Am 14.9. wurde der Test von selbst rot — ohne dass sich
+    // am Code etwas geändert hatte, und jeder Deploy mit ihm.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 9, 10)) // Mittwoch der ersten Woche
+    try {
+      const next = reducer(makeState({ dataStatus: 'loading', week: 3, terminGewaehlt: false }), {
+        type: 'hydrate',
+        payload,
+      })
+      expect(next.dataStatus).toBe('ready')
+      expect(next.week).toBe(0)
+      expect(next.congregation.name).toBe('Krumbach')
+      expect(next.congregationId).toBe('c1')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('springt auf die laufende Woche, nicht auf die älteste geladene', () => {
