@@ -46,6 +46,12 @@
   transform: scaleX(-1);
 }
 
+/* Ebenso der Pfeil des Hinweises „Ohne Predigtdienstgruppe" (Einstellungen) —
+   ein SVG, das sich anders als die Glyphe › nicht von selbst spiegelt. */
+[dir='rtl'] .grp-ohne .chev {
+  transform: scaleX(-1);
+}
+
 /* Wochen-Blätter-Pfeile in RTL: NUR die Glyphen kippen, damit beide nach außen
    zeigen. Die Buttons tauschen ihre Seiten schon von selbst — ein Flex-Container
    in `dir="rtl"` ordnet seine Kinder bereits von rechts nach links an. Das

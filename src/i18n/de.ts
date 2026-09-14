@@ -292,5 +292,11 @@ export const DE = {
     // Warnung doppelte Anzeigenamen (Personen)
     dublettenTitle: 'DOPPELTE ANZEIGENAMEN',
     dublettenHint: 'Gleiche Anzeigenamen führen zu falscher Aufgabenzuordnung. Vergib je Person einen eindeutigen Anzeigenamen.',
-    dublettenRow: '„{name}" · {n} Personen'
+    dublettenRow: '„{name}" · {n} Personen',
+    // Predigtdienstgruppe löschen (Zwei-Tipp-Bestätigung) und Warnung „ohne Gruppe"
+    loeschenSicher: 'Wirklich löschen?',
+    gruppeDelMitglieder: 'Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet.',
+    gruppeDelTreffpunkte: 'Die Treffpunkte dieser Gruppe entfallen.',
+    ohneGruppeTitle: 'OHNE PREDIGTDIENSTGRUPPE',
+    ohneGruppeHint: 'Jeder Verkündiger gehört zu einer Predigtdienstgruppe. Ohne Zuordnung sieht die Person im Programm keine Gruppentreffpunkte. Tippe auf einen Namen, um die Gruppe festzulegen.'
 }

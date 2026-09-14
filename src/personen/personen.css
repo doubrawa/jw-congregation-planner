@@ -554,3 +554,31 @@
   border-radius: 50%;
   background: var(--wein);
 }
+
+/* ---- Warnung: ohne Predigtdienstgruppe -----------------------------------
+ * Gleiche Banner-Optik wie oben; die Namen sind hier aber Knöpfe (ein Tipp
+ * öffnet das Detail) und stehen als Chips nebeneinander — nach dem Löschen
+ * einer großen Gruppe wären Zeilen eine Wand über der eigentlichen Liste. */
+.pers-ohne-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pers-ohne-chip {
+  padding-block: 5px;
+  padding-inline: 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--weinB);
+  background: var(--card);
+  color: var(--ink);
+  font-size: calc(12px * var(--fs));
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.pers-ohne-chip:hover {
+  border-color: var(--wein);
+  color: var(--wein);
+}

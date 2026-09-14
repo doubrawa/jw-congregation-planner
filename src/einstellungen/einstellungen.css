@@ -127,6 +127,96 @@
   margin-top: 14px;
 }
 
+/* Gruppe löschen, erster Tipp: Aus dem ✕ wird ein Knopf mit „Wirklich
+   löschen?", darunter steht, was verloren geht. Der Knopf wächst vom ✕ aus
+   nach innen — der zweite Tipp trifft dieselbe Stelle. Darf schrumpfen und
+   umbrechen, sonst schöbe ein langes Wort den Kopf über den Rand. */
+.grp-remove.is-armed {
+  flex: 0 1 auto;
+  width: auto;
+  height: auto;
+  min-height: 26px;
+  padding-block: 4px;
+  padding-inline: 12px;
+  border-radius: var(--r-pill);
+  border-color: var(--wein);
+  background: var(--tWein);
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.grp-del-warn {
+  margin: 8px 0 0;
+  padding-block: 8px;
+  padding-inline: 12px;
+  border-radius: 10px;
+  background: var(--tWein);
+  color: var(--ink);
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.45;
+}
+
+/* Hinweis „Ohne Predigtdienstgruppe": Wein-Optik der Warnungen, führt in die
+   Personenliste, wo die Namen stehen. */
+.grp-ohne {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 12px;
+  padding-block: 9px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--wein);
+  background: var(--tWein);
+  color: var(--wein);
+  text-align: start;
+}
+
+.grp-ohne-badge {
+  flex: none;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--wein);
+  color: var(--onAcc);
+  font-size: calc(13px * var(--fs));
+  font-weight: 700;
+  line-height: calc(21px * var(--fs));
+  text-align: center;
+}
+
+.grp-ohne-title {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.grp-ohne-count {
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  padding-inline: 7px;
+  box-sizing: border-box;
+  border-radius: var(--r-pill);
+  background: var(--wein);
+  color: var(--onAcc);
+  font-size: calc(12px * var(--fs));
+  font-weight: 700;
+  line-height: calc(22px * var(--fs));
+  text-align: center;
+}
+
+.grp-ohne .chev {
+  flex: none;
+  width: calc(14px * var(--fs));
+  height: calc(14px * var(--fs));
+}
+
 .mem-code {
   font-size: calc(13px * var(--fs));
   font-weight: 700;

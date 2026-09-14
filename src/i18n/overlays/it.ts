@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} persone avvisate",
   "toastPlanNichts": "Non c’era nulla da inviare",
   "notifUnerreichbar": "Incarichi non confermati (non raggiungibili)",
+  "loeschenSicher": "Eliminare davvero?",
+  "gruppeDelMitglieder": "I membri di questo gruppo non apparterranno più a nessun gruppo.",
+  "gruppeDelTreffpunkte": "Le adunanze di servizio di questo gruppo verranno eliminate.",
+  "ohneGruppeTitle": "SENZA GRUPPO DI SERVIZIO",
+  "ohneGruppeHint": "Ogni proclamatore appartiene a un gruppo di servizio. Senza assegnazione, la persona non vede nel programma le adunanze di servizio dei gruppi. Tocca un nome per impostare il gruppo.",
 } satisfies Partial<Dict>

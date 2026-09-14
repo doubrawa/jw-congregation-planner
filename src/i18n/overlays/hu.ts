@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} személy értesítve",
   "toastPlanNichts": "Nem volt mit elküldeni",
   "notifUnerreichbar": "Meg nem erősített feladatok (nem elérhető)",
+  "loeschenSicher": "Biztosan törlöd?",
+  "gruppeDelMitglieder": "A csoport tagjai ezután egyik csoporthoz sem tartoznak.",
+  "gruppeDelTreffpunkte": "A csoport szolgálati összejövetelei megszűnnek.",
+  "ohneGruppeTitle": "SZOLGÁLATI CSOPORT NÉLKÜL",
+  "ohneGruppeHint": "Minden hírnök egy szolgálati csoporthoz tartozik. Csoport nélkül a személy nem látja a programban a csoportok szolgálati összejöveteleit. Érints meg egy nevet a csoport beállításához.",
 } satisfies Partial<Dict>

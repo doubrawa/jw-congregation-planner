@@ -4508,6 +4508,80 @@ einmal gebrochen und der Lauf rot gesehen, beim Nachladen der Glocke in
 
 ---
 
+## Aufgenommen am 13. September 2026 — Predigtdienstgruppen (T103)
+
+### T103 · Eine Gruppe ließ sich ohne Rückfrage löschen — und niemand sah, wer ohne Gruppe dastand 🔧 ✅ erledigt
+**Meldung des Betreibers am 13. September 2026:** „ich konnte eine gruppe
+einfach so löschen, ohne dass ich gewarnt werde. die gruppenzuweisungen sind ja
+dann auch weg. für planer muss es auch eine warnmeldung generell geben, wenn
+personen keiner gruppe zugeordnet sind — das sollte nicht sein."
+
+**1. Löschen nur mit Rückfrage.** Das ✕ an einer Gruppe (Einstellungen →
+Predigtdienstgruppen) löschte beim ersten Tipp. Jetzt dieselbe
+Zwei-Tipp-Bestätigung wie beim Löschen einer Person und beim Leeren der
+Zuteilungen: Der erste Tipp macht aus dem ✕ „Wirklich löschen?" und nennt
+darunter die Folgen, erst der zweite löscht; verlässt der Fokus den Knopf,
+entschärft er sich. Genannt wird nur, was wirklich verloren geht — die
+Zuordnung der Mitglieder, die Treffpunkte der Gruppe —, und zwar aus
+**derselben** Funktion, die beim Löschen streicht (`fsGruppeEntfernen`). Eine
+leere Gruppe fragt nur.
+
+**2. Beim Nachsehen gefunden: Die Treffpunkte einer gelöschten Gruppe lebten
+weiter.** `removeGroup` räumte `persons.grp` ab, den Grundplan aber nicht. Die
+Regeln liegen als ein Blob ohne Fremdschlüssel in `fs_rules`, die Datenbank
+räumte also auch nichts. Weil die Einstellungen den Grundplan je **Gruppe**
+zeigen, stand keine dieser Regeln mehr irgendwo zum Löschen da — erzeugt wurden
+sie trotzdem Woche für Woche, und Programm und Planen betitelten sie mit der
+rohen Gruppen-Id. Jetzt gehen mit der Gruppe ihre Regeln **und** jeder ihrer
+Treffpunkte, auch die nur für eine Woche angelegten (die `regenFsWeeks`
+ausdrücklich festhält). Gespeichert wird über den gebündelten Grundplan-Writer:
+Ein eben noch getippter Ort desselben Treffpunkts hätte sonst 600 ms später den
+alten Grundplan samt der gelöschten Regeln zurückgeschrieben. Bestätigte Leiter
+künftiger Treffpunkte erfahren den Wegfall wie jeden Entzug (T99).
+
+**3. Die Warnung „Ohne Predigtdienstgruppe"** (`ohneGruppe` in `helpers.ts`)
+steht an zwei Stellen: als Banner in der Personenliste — mit den Namen als
+Knöpfen, ein Tipp öffnet das Detail, in dem die Gruppe gesetzt wird — und als
+Hinweiszeile mit Anzahl in der Gruppen-Karte der Einstellungen, dort, wo eine
+gelöschte Gruppe ihre Mitglieder zurücklässt. Die Folge, die das Banner nennt:
+Ohne Gruppe zeigt das Programm keine Gruppentreffpunkte (`fsVisible`).
+
+Bewusst **nicht** gewarnt wird bei der Rolle „Keine" (Schüler ohne
+Verkündiger-Status gehören zu keiner Gruppe — eine Warnung, die sich nicht
+beheben lässt, lernt man zu übersehen) und solange gar keine Gruppe angelegt
+ist. Ein Verweis auf eine Gruppe, die es nicht mehr gibt, zählt als keine.
+Nicht auf den Start-Bildschirm: Die Planungs-Karte dort gilt den kommenden
+Wochen (T95), das hier ist Stammdatenpflege — wie die Dubletten-Warnung.
+
+> **Bestand:** Was vor diesem Stand gelöscht wurde, ist nicht nachträglich
+> geheilt. Mitglieder ohne Gruppe nennt jetzt das Banner; hatte eine schon
+> gelöschte Gruppe Treffpunkt-Regeln, liegen die weiter im Grundplan — keine
+> Aufräum-Migration, weil der Bestand vor dem Start ohnehin zurückgesetzt wird.
+
+**Prüfen:** `src/app/gruppe-loeschen.test.ts` (neu: was das Löschen anrichtet,
+auch nach dem nächsten Laden, und wen die Warnung nennt), Rückfrage und Hinweis
+in `einstellungen/panels.test.tsx`, Banner in `personen/PersonenScreen.test.tsx`,
+Speichern samt Bündel-Wettlauf in `app/persist.test.ts`. Fünf neue Schlüssel in
+allen 34 Sprachen. 13 neue Einträge in `scripts/mutationsprobe.mjs` (173) —
+alle 13 bewacht. `npm test` (5185), `tsc -b`, `oxlint`, Sperrklinke unverändert.
+Im Browser nachgesehen: Rückfrage und Löschen in der Demo, Hinweis und Banner,
+Beheben über den Namen, keine verwaisten Treffpunkte im Programm; auf
+Handybreite in Griechisch und rechts-nach-links in Arabisch (Graphit).
+
+> **Nebenbei:** Am 14. September wurde `reducer.test.ts` („übernimmt die
+> Nutzdaten, setzt ready und Woche 0") von selbst rot — er rechnete mit dem
+> echten Kalender, und der lag ab da in der zweiten Demo-Woche. Der Test hat
+> jetzt einen festen Tag wie seine Nachbarn. **Gemessen, ob weitere Tests so am
+> Kalender hängen:** Der ganze Bestand lief unter verschobener Uhr an 18
+> Zeitpunkten — Wochenwechsel 21./28.9., letzter Demo-Abend 4.10. 23:30, 5.10.,
+> November, beide Zeitumstellungen, Jahreswechsel, Schalttag 2028, ein Jahr
+> später, dazu späte Abende in UTC wie in der CI. **Kein weiterer roter Test.**
+> Die Sonde (eine abgeleitete `Date`-Klasse in einer vorübergehenden
+> Setup-Datei) hat nachweislich Zähne: Die alte Fassung des Tests vom 14.9. war
+> mit ihr am 9.9. grün und am 15.9. rot.
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -4540,13 +4614,17 @@ Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☐ · 29. August ☑ · 30. August ☑☑ ·
-31. August ☑
+31. August ☑ · 13. September ☑
 
-**101 von 102 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
+**102 von 103 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. Offen ist einer: **T98** (die Dokumentation auf
 den Stand des Codes bringen), am 28. August aufgenommen — die Handbücher stehen
 auf dem 25. August, seither sind neun Commits gelaufen, drei davon am
-Sprachverhalten der ganzen App. Zuletzt fiel am 13. September **T95**, der
+Sprachverhalten der ganzen App. Zuletzt fiel am 13. September **T103**: Eine
+Predigtdienstgruppe ließ sich mit einem Tipp löschen, ihre Mitglieder standen
+still ohne Gruppe da, und ihre Treffpunkte lebten unlöschbar weiter — jetzt mit
+Rückfrage, die die Folgen nennt, und einer Warnung für alle ohne Gruppe. Am
+selben Tag davor **T95**, der
 Start-Bildschirm: am 23. August als Ideensammlung aufgenommen, am 2. September
 gesammelt und geprüft, dann vom Betreiber als Bauauftrag gegeben — eine Spalte,
 nach Rolle sortiert, mit einer Planungs-Karte über die kommenden Wochen.

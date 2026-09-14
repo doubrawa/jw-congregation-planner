@@ -219,6 +219,34 @@ export function doppelteFesteRollen(persons: Person[]): Array<{ key: Qualificati
 }
 
 /**
+ * Personen, die zu einer Predigtdienstgruppe gehören müssten, aber keiner
+ * zugeordnet sind.
+ *
+ * „Jeder Verkündiger gehört zu einer Gruppe" — und daran hängt mehr, als die
+ * Liste zeigt: Einen Gruppentreffpunkt zeigt das Programm nur den Mitgliedern
+ * seiner Gruppe (`fsVisible`). Wer ohne Gruppe dasteht, sieht keinen, und
+ * niemand merkt es. Genau so kam es nach dem Löschen einer Gruppe: Ihre
+ * Mitglieder verloren still die Zuordnung, ohne dass es irgendwo stand.
+ *
+ * - **Rolle „Keine" ausgenommen.** Sie ist für Schüler ohne Verkündiger-Status
+ *   gedacht (siehe `isPlainPublisher`), und die gehören zu keiner Gruppe. Eine
+ *   Warnung, die sich nicht beheben lässt, lernt man zu übersehen — dann auch
+ *   dort, wo sie stimmt.
+ * - **Ein Verweis ins Leere zählt als keine Gruppe.** Die Auswahl im
+ *   Personen-Detail zeigt dann ebenfalls „—".
+ * - **Ohne angelegte Gruppen gibt es nichts zu melden.** Dann arbeitet die
+ *   Versammlung (noch) nicht mit Gruppen, und zuordnen ließe sich ohnehin
+ *   nichts. Dieselbe Grenze zieht der Gruppen-Filter der Personenliste.
+ *
+ * Die Reihenfolge der Eingabe bleibt erhalten — sortiert übergibt der Aufrufer.
+ */
+export function ohneGruppe(persons: readonly Person[], groups: readonly Group[]): Person[] {
+  if (groups.length === 0) return []
+  const vorhanden = new Set(groups.map((g) => g.id))
+  return persons.filter((p) => p.role !== 'keine' && !(p.grp && vorhanden.has(p.grp)))
+}
+
+/**
  * Bereichs-Key eines Hilfsdienstes. Jeder Dienst hat genau einen Bereich, der
  * aus seinem Key abgeleitet wird — so entsteht mit jedem neuen Dienst
  * automatisch ein Schalter im Personen-Detail. Der Präfix hält die dynamischen

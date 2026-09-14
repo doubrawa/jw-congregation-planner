@@ -1421,6 +1421,103 @@ const KATALOG = [
     suchen: '  if (!inst.leader || inst.lext) return undefined',
     ersetzen: '  if (!inst.leader) return undefined',
   },
+
+  // ── Predigtdienstgruppe löschen · ohne Gruppe (13.9.2026) ────────────────
+  {
+    id: 'gruppe-loeschen-rueckfrage',
+    datei: 'src/einstellungen/GroupsPanel.tsx',
+    regel: 'Eine Predigtdienstgruppe wird erst mit dem zweiten Tipp gelöscht — der erste fragt nach.',
+    suchen:
+      '                  if (!armed) {\n                    setLoeschArmed(group.id)\n                    return\n                  }\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gruppe-loeschen-folgen-mitglieder',
+    datei: 'src/einstellungen/GroupsPanel.tsx',
+    regel: 'Die Rückfrage nennt, dass die Mitglieder der Gruppe danach ohne Gruppe dastehen.',
+    suchen: '    if (state.persons.some((p) => p.grp === group.id)) out.push(t.gruppeDelMitglieder)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gruppe-loeschen-folgen-treffpunkte',
+    datei: 'src/einstellungen/GroupsPanel.tsx',
+    regel: 'Die Rückfrage nennt die Treffpunkte, die mit der Gruppe gehen — auch die einmaligen.',
+    suchen:
+      '    const rest = fsGruppeEntfernen(state.fsRules, state.fsWeeks, group.id)\n    if (rest.fsRules !== state.fsRules || rest.fsWeeks !== state.fsWeeks) out.push(t.gruppeDelTreffpunkte)',
+    ersetzen: '    if (state.fsRules.some((r) => r.grp === group.id)) out.push(t.gruppeDelTreffpunkte)',
+  },
+  {
+    id: 'gruppe-loeschen-treffpunkte',
+    datei: 'src/app/reducer.ts',
+    regel: 'Mit einer Predigtdienstgruppe gehen ihre Treffpunkte — aus dem Grundplan und aus jeder Woche.',
+    suchen: '      const { fsRules, fsWeeks } = fsGruppeEntfernen(state.fsRules, state.fsWeeks, action.id)',
+    ersetzen: '      const { fsRules, fsWeeks } = { fsRules: state.fsRules, fsWeeks: state.fsWeeks }',
+  },
+  {
+    id: 'gruppe-loeschen-auch-einmalige',
+    datei: 'src/data/fs.ts',
+    regel: 'Auch die nur für eine Woche angelegten Treffpunkte einer gelöschten Gruppe gehen mit.',
+    suchen: '    return week.filter((inst) => inst.grp !== grp)\n  })\n  return { fsRules, fsWeeks: geaendert ? weeks : fsWeeks }',
+    ersetzen:
+      '    return week.filter((inst) => inst.grp !== grp || inst.manual)\n  })\n  return { fsRules, fsWeeks: geaendert ? weeks : fsWeeks }',
+  },
+  {
+    id: 'gruppe-loeschen-versammlung-bleibt',
+    datei: 'src/data/fs.ts',
+    regel: 'Die leere Gruppen-Kennung ist die Versammlung — für sie wird kein Treffpunkt gestrichen.',
+    suchen: '  if (!grp) return { fsRules: rules, fsWeeks }\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gruppe-loeschen-speichern',
+    datei: 'src/app/persist.ts',
+    regel: 'Das Löschen einer Gruppe schreibt Grundplan und Wochen ohne ihre Treffpunkte in die Datenbank.',
+    suchen: '      // von selbst, anders als bei `persons.grp` (on delete set null).\n      treffpunkteSpeichern(congId, prev, next)',
+    ersetzen: '      // von selbst, anders als bei `persons.grp` (on delete set null).',
+  },
+  {
+    id: 'gruppe-loeschen-gebuendelt',
+    datei: 'src/app/persist.ts',
+    regel: 'Ein gebündelt ausstehender Grundplan bringt die Regeln einer gelöschten Gruppe nicht zurück.',
+    suchen: '      // von selbst, anders als bei `persons.grp` (on delete set null).\n      treffpunkteSpeichern(congId, prev, next)',
+    ersetzen:
+      '      // von selbst, anders als bei `persons.grp` (on delete set null).\n      saveFsRules(congId, next.fsBase.toISOString().slice(0, 10), next.fsRules)',
+  },
+  {
+    id: 'ohne-gruppe-rolle-keine',
+    datei: 'src/data/helpers.ts',
+    regel: 'Die Rolle „Keine" (Schüler ohne Verkündiger-Status) braucht keine Predigtdienstgruppe.',
+    suchen: "  return persons.filter((p) => p.role !== 'keine' && !(p.grp && vorhanden.has(p.grp)))",
+    ersetzen: '  return persons.filter((p) => !(p.grp && vorhanden.has(p.grp)))',
+  },
+  {
+    id: 'ohne-gruppe-verwaist',
+    datei: 'src/data/helpers.ts',
+    regel: 'Ein Verweis auf eine Gruppe, die es nicht mehr gibt, zählt als keine Gruppe.',
+    suchen: "  return persons.filter((p) => p.role !== 'keine' && !(p.grp && vorhanden.has(p.grp)))",
+    ersetzen: "  return persons.filter((p) => p.role !== 'keine' && !p.grp)",
+  },
+  {
+    id: 'ohne-gruppe-ohne-gruppen',
+    datei: 'src/data/helpers.ts',
+    regel: 'Ohne angelegte Gruppen meldet die Warnung „ohne Gruppe" niemanden.',
+    suchen: '  if (groups.length === 0) return []\n  const vorhanden',
+    ersetzen: '  const vorhanden',
+  },
+  {
+    id: 'ohne-gruppe-warnung-personen',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Die Personenliste warnt vor Personen ohne Predigtdienstgruppe.',
+    suchen: '  const ohne = ohneGruppe(sorted, state.groups)',
+    ersetzen: '  const ohne: typeof sorted = []',
+  },
+  {
+    id: 'ohne-gruppe-hinweis-einstellungen',
+    datei: 'src/einstellungen/GroupsPanel.tsx',
+    regel: 'Die Gruppen-Karte der Einstellungen nennt, wie viele keiner Gruppe zugeordnet sind.',
+    suchen: '  const ohne = ohneGruppe(state.persons, state.groups)',
+    ersetzen: '  const ohne: Person[] = []',
+  },
 ]
 
 // ── Lauf ────────────────────────────────────────────────────────────────────

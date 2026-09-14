@@ -392,4 +392,9 @@ export default {
   "toastPlanGesendet": "{n} אנשים קיבלו הודעה",
   "toastPlanNichts": "לא היה מה לשלוח",
   "notifUnerreichbar": "מטלות שלא אושרו (לא ניתן ליצור קשר)",
+  "loeschenSicher": "למחוק באמת?",
+  "gruppeDelMitglieder": "חברי הקבוצה הזו לא ישויכו עוד לשום קבוצה.",
+  "gruppeDelTreffpunkte": "אסיפות השירות של הקבוצה הזו יבוטלו.",
+  "ohneGruppeTitle": "ללא קבוצת שירות השדה",
+  "ohneGruppeHint": "כל מבשר משתייך לקבוצת שירות השדה. בלי שיוך, האדם לא רואה בתוכנית את אסיפות השירות של הקבוצות. הקש על שם כדי לקבוע את הקבוצה.",
 } satisfies Partial<Dict>

@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "Informováno {n} osob",
   "toastPlanNichts": "Nebylo co odeslat",
   "notifUnerreichbar": "Nepotvrzené úkoly (nedostupní)",
+  "loeschenSicher": "Opravdu odstranit?",
+  "gruppeDelMitglieder": "Členové této skupiny pak nebudou přiřazeni k žádné skupině.",
+  "gruppeDelTreffpunkte": "Shromáždění ke službě této skupiny odpadnou.",
+  "ohneGruppeTitle": "BEZ SLUŽEBNÍ SKUPINY",
+  "ohneGruppeHint": "Každý zvěstovatel patří do služební skupiny. Bez přiřazení daná osoba v programu neuvidí shromáždění ke službě skupin. Klepnutím na jméno skupinu nastavíte.",
 } satisfies Partial<Dict>

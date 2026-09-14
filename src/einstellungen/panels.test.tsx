@@ -207,10 +207,126 @@ describe('Predigtdienstgruppen', () => {
     })
   })
 
-  it('eine Gruppe lässt sich löschen', () => {
-    const { container, dispatch } = zeige('groups')
-    fireEvent.click(container.querySelector('.svc-remove')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'removeGroup', id: 'g1' })
+  /*
+   * **Löschen nur mit Rückfrage** (gemeldet am 13.9.2026). Ein Tipp löschte die
+   * Gruppe sofort, und ihre Mitglieder standen still ohne Gruppe da. Jetzt wie
+   * beim Löschen einer Person: Der erste Tipp fragt und nennt die Folgen, erst
+   * der zweite löscht.
+   */
+  describe('Gruppe löschen', () => {
+    const loeschKnopf = (c: HTMLElement, i = 0) => c.querySelectorAll<HTMLButtonElement>('.grp-remove')[i]!
+    const geloescht = (d: ReturnType<typeof vi.fn>) => d.mock.calls.filter((c) => c[0].type === 'removeGroup')
+
+    it('der erste Tipp löscht nicht — er fragt „Wirklich löschen?"', () => {
+      const { container, dispatch } = zeige('groups')
+      fireEvent.click(loeschKnopf(container))
+      expect(geloescht(dispatch)).toEqual([])
+      expect(loeschKnopf(container).textContent).toBe(t.loeschenSicher)
+    })
+
+    it('erst der zweite Tipp löscht die Gruppe', () => {
+      const { container, dispatch } = zeige('groups')
+      fireEvent.click(loeschKnopf(container))
+      fireEvent.click(loeschKnopf(container))
+      expect(dispatch).toHaveBeenCalledWith({ type: 'removeGroup', id: 'g1' })
+      expect(geloescht(dispatch)).toHaveLength(1)
+    })
+
+    it('die Rückfrage nennt, was verloren geht: die Zuordnung der Mitglieder und die Treffpunkte', () => {
+      const { container } = zeige('groups', {
+        persons: [{ ...BRUDER, grp: 'g1' }, SCHWESTER],
+        fsRules: [{ id: 'r-g1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: true }],
+      })
+      fireEvent.click(loeschKnopf(container))
+      const warnung = container.querySelector('.grp-del-warn')
+      expect(warnung?.textContent).toBe(`${t.gruppeDelMitglieder} ${t.gruppeDelTreffpunkte}`)
+      // Der Screenreader hört die Folgen am Knopf selbst, nicht irgendwo daneben.
+      expect(loeschKnopf(container).getAttribute('aria-describedby')).toBe(warnung?.id)
+    })
+
+    it('auch ein nur für eine Woche angelegter Treffpunkt der Gruppe wird genannt', () => {
+      // Kein Grundplan, nur ein einmaliger Treffpunkt — er geht beim Löschen
+      // ebenso mit (`fsGruppeEntfernen`), also muss die Rückfrage ihn nennen.
+      const einmalig = {
+        id: 'x1', ruleId: null, manual: true, grp: 'g1', wd: 5, time: '09:00', place: 'Saal', leader: '',
+      }
+      const { container } = zeige('groups', { fsWeeks: [[], [einmalig]] })
+      fireEvent.click(loeschKnopf(container))
+      expect(container.querySelector('.grp-del-warn')?.textContent).toBe(t.gruppeDelTreffpunkte)
+    })
+
+    it('eine leere Gruppe ohne Treffpunkte: nur die Frage, keine erfundenen Folgen', () => {
+      // Vorgabe: Niemand ist in g1, und es gibt keine Treffpunkte.
+      const { container } = zeige('groups')
+      fireEvent.click(loeschKnopf(container))
+      expect(container.querySelector('.grp-del-warn')).toBeNull()
+      expect(loeschKnopf(container).hasAttribute('aria-describedby')).toBe(false)
+    })
+
+    it('die Mitglieder einer anderen Gruppe sind keine Folge dieser', () => {
+      const { container } = zeige('groups', {
+        groups: [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', ov: null, as: null }],
+        persons: [{ ...BRUDER, grp: 'g2' }],
+      })
+      fireEvent.click(loeschKnopf(container, 0))
+      expect(container.querySelector('.grp-del-warn')).toBeNull()
+    })
+
+    it('verlässt der Fokus den Knopf, entschärft er sich wieder', () => {
+      const { container, dispatch } = zeige('groups')
+      fireEvent.click(loeschKnopf(container))
+      fireEvent.blur(loeschKnopf(container))
+      expect(loeschKnopf(container).textContent).toBe('✕')
+      expect(loeschKnopf(container).getAttribute('aria-label')).toBe(t.a11yRemove)
+      // Der nächste Tipp fragt wieder, statt zu löschen.
+      fireEvent.click(loeschKnopf(container))
+      expect(geloescht(dispatch)).toEqual([])
+    })
+
+    it('wer die nächste Gruppe antippt, entschärft die vorige', () => {
+      const { container, dispatch } = zeige('groups', {
+        groups: [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', ov: null, as: null }],
+      })
+      fireEvent.click(loeschKnopf(container, 0))
+      fireEvent.click(loeschKnopf(container, 1))
+      expect(geloescht(dispatch)).toEqual([])
+      expect(loeschKnopf(container, 0).textContent).toBe('✕')
+      expect(loeschKnopf(container, 1).textContent).toBe(t.loeschenSicher)
+    })
+  })
+
+  /*
+   * **Wer keiner Gruppe zugeordnet ist, steht hier.** An dieser Stelle lässt eine
+   * gelöschte Gruppe ihre Mitglieder zurück; die Namen stehen in der
+   * Personenliste, wo die Gruppe gesetzt wird.
+   */
+  describe('Hinweis: ohne Predigtdienstgruppe', () => {
+    const hinweis = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.grp-ohne')
+
+    it('nennt, wie viele ohne Gruppe sind, und führt in die Personenliste', () => {
+      // Vorgabe: Nur Carlo ist in g1 — die drei anderen sind es nicht.
+      const { container, dispatch } = zeige('groups', {
+        persons: [AELTESTER, GEHILFE, { ...BRUDER, grp: 'g1' }, SCHWESTER],
+      })
+      expect(hinweis(container)?.querySelector('.grp-ohne-title')?.textContent).toBe(t.ohneGruppeTitle)
+      expect(hinweis(container)?.querySelector('.grp-ohne-count')?.textContent).toBe('3')
+      fireEvent.click(hinweis(container)!)
+      expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'personen' })
+    })
+
+    it('die Rolle „Keine" zählt nicht mit — sie braucht keine Gruppe', () => {
+      const { container } = zeige('groups', {
+        persons: [{ ...BRUDER, grp: 'g1' }, { ...SCHWESTER, role: 'keine' }],
+      })
+      expect(hinweis(container)).toBeNull()
+    })
+
+    it('sind alle zugeordnet, steht er nicht da', () => {
+      const { container } = zeige('groups', {
+        persons: PERSONEN.map((p) => ({ ...p, grp: 'g1' })),
+      })
+      expect(hinweis(container)).toBeNull()
+    })
   })
 
   it('eine neue Gruppe zählt weiter — nicht wieder bei 1', () => {

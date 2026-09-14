@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "Obavešteno {n} osoba",
   "toastPlanNichts": "Nije bilo ništa za slanje",
   "notifUnerreichbar": "Nepotvrđena zaduženja (nedostupni)",
+  "loeschenSicher": "Zaista obrisati?",
+  "gruppeDelMitglieder": "Članovi ove grupe tada više neće pripadati nijednoj grupi.",
+  "gruppeDelTreffpunkte": "Sastanci za službu ove grupe otpadaju.",
+  "ohneGruppeTitle": "BEZ PROPOVEDNIČKE GRUPE",
+  "ohneGruppeHint": "Svaki objavitelj pripada propovedničkoj grupi. Bez nje osoba u programu ne vidi sastanke za službu grupa. Dodirni ime da odrediš grupu.",
 } satisfies Partial<Dict>

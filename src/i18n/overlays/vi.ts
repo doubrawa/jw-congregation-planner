@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "Đã báo cho {n} người",
   "toastPlanNichts": "Không có gì để gửi",
   "notifUnerreichbar": "Nhiệm vụ chưa xác nhận (không liên lạc được)",
+  "loeschenSicher": "Thực sự xóa?",
+  "gruppeDelMitglieder": "Các thành viên của nhóm này sẽ không còn thuộc nhóm nào.",
+  "gruppeDelTreffpunkte": "Các buổi họp rao giảng của nhóm này sẽ bị xóa.",
+  "ohneGruppeTitle": "CHƯA CÓ NHÓM RAO GIẢNG",
+  "ohneGruppeHint": "Mỗi người công bố thuộc một nhóm rao giảng. Nếu chưa có nhóm, người đó sẽ không thấy các buổi họp rao giảng của nhóm trong chương trình. Chạm vào một tên để chọn nhóm.",
 } satisfies Partial<Dict>

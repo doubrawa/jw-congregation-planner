@@ -3,6 +3,7 @@ import { persist } from './persist'
 import type { AppAction, AppState } from './context'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from '../data/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
+import { fsGruppeEntfernen } from '../data/fs'
 import type { Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
@@ -479,6 +480,67 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     expect(data.saveService).toHaveBeenCalledTimes(2)
     expect(data.saveService).toHaveBeenCalledWith('c1', nachher[0], 0)
     expect(data.saveService).toHaveBeenCalledWith('c1', nachher[1], 1)
+  })
+
+  /*
+   * **Mit der Gruppe gehen ihre Treffpunkte — auch in der Datenbank.** Die
+   * Regeln liegen als ein Blob ohne Fremdschlüssel in `fs_rules`; anders als bei
+   * `persons.grp` räumt die Datenbank dort nichts von selbst. Bliebe das
+   * Schreiben aus, stünden die Treffpunkte der gelöschten Gruppe nach dem
+   * nächsten Laden wieder in jeder Woche.
+   */
+  describe('removeGroup und die Treffpunkte der Gruppe', () => {
+    const regelIds = (aufruf: unknown[] | undefined) =>
+      ((aufruf?.[2] ?? []) as Array<{ id: string }>).map((r) => r.id)
+
+    it('schreibt den Grundplan ohne ihre Regeln — und nur die Wochen, in denen sie stand', () => {
+      const prev = st()
+      const { fsRules, fsWeeks } = fsGruppeEntfernen(prev.fsRules, prev.fsWeeks, 'g1')
+      const next = { ...prev, fsRules, fsWeeks } as AppState
+
+      persist(prev, next, { type: 'removeGroup', id: 'g1' })
+      vi.advanceTimersByTime(600)
+
+      const regeln = vi.mocked(data.saveFsRules).mock.calls
+      expect(regeln).toHaveLength(1)
+      expect(regelIds(regeln[0])).toEqual(['r1', 'r2', 'r3', 'r5', 'r6', 'r7'])
+      // Woche 3 hat den ersten Samstag im Oktober — dort weichen alle
+      // Gruppentreffpunkte dem der Versammlung. Sie bleibt ungeschrieben.
+      const wochen = vi.mocked(data.saveFsWeek).mock.calls.map((c) => c[1])
+      expect(wochen).toEqual(prev.weeks.slice(0, 3).map((w) => w.start))
+    })
+
+    it('eine Gruppe ohne Treffpunkte schreibt weder Grundplan noch Wochen', () => {
+      const prev = st()
+      persist(prev, { ...prev } as AppState, { type: 'removeGroup', id: 'g-leer' })
+      vi.advanceTimersByTime(600)
+      expect(data.deleteGroupRow).toHaveBeenCalledWith('g-leer')
+      expect(data.saveFsRules).not.toHaveBeenCalled()
+      expect(data.saveFsWeek).not.toHaveBeenCalled()
+    })
+
+    it('ein eben noch getippter Ort bringt die Regeln der gelöschten Gruppe nicht zurück', () => {
+      /*
+        Der Planer ändert den Ort des Gruppentreffpunkts und löscht die Gruppe
+        gleich danach. Der Ort liegt noch im Bündel (600 ms). Schriebe das
+        Löschen am Bündel vorbei, ginge zuerst der neue Grundplan hinaus und
+        danach der gebündelte alte — mit den Regeln der gelöschten Gruppe.
+      */
+      const prev = st()
+      const getippt = {
+        ...prev,
+        fsRules: prev.fsRules.map((r) => (r.id === 'r4' ? { ...r, place: 'Neuer Ort' } : r)),
+      } as AppState
+      persist(prev, getippt, { type: 'fsRuleUpdate', id: 'r4', patch: { place: 'Neuer Ort' } })
+
+      const { fsRules, fsWeeks } = fsGruppeEntfernen(getippt.fsRules, getippt.fsWeeks, 'g1')
+      persist(getippt, { ...getippt, fsRules, fsWeeks } as AppState, { type: 'removeGroup', id: 'g1' })
+      vi.advanceTimersByTime(600)
+
+      expect(vi.mocked(data.saveFsRules).mock.calls.map(regelIds)).toEqual([
+        ['r1', 'r2', 'r3', 'r5', 'r6', 'r7'],
+      ])
+    })
   })
 })
 

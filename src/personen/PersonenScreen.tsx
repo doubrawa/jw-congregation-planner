@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, listName, personCompare, serviceQualKey } from '../data/helpers'
+import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, listName, ohneGruppe, personCompare, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { congAppCode, LOCALES } from '../i18n/langs'
@@ -60,6 +60,8 @@ function PersonList() {
   const mitKonto = new Set(state.members.map((m) => m.personId))
   const dupes = duplicateDisplayNames(state.persons)
   const mehrfachRollen = doppelteFesteRollen(state.persons)
+  // Aus der sortierten Liste — die Namen stehen dann in derselben Folge wie unten.
+  const ohne = ohneGruppe(sorted, state.groups)
 
   // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen. Mit
   // konfigurierter Domain gehen die Mails direkt raus (send-invite); die
@@ -168,6 +170,36 @@ function PersonList() {
               <span dir="auto">{fill(t.dublettenRow, { name: privLabel(t, r.key), n: r.count })}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Wer keiner Predigtdienstgruppe zugeordnet ist, sieht im Programm keine
+          Gruppentreffpunkte — und bisher stand das nirgends, auch nicht nach
+          dem Löschen einer Gruppe, das alle ihre Mitglieder so zurückließ. Die
+          Namen sind Knöpfe: Ein Tipp öffnet das Detail, in dem die Gruppe
+          gesetzt wird. Als Chips statt Zeilen, damit auch eine lange Liste die
+          Personenliste darunter nicht unter sich begräbt. */}
+      {ohne.length > 0 && (
+        <div className="pers-dupes" data-warnung="ohne-gruppe">
+          <div className="pers-dupes-head">
+            <span className="pers-dupes-badge">!</span>
+            <span className="pers-dupes-title">{t.ohneGruppeTitle}</span>
+            <span className="pers-dupes-count">{ohne.length}</span>
+          </div>
+          <div className="pers-dupes-hint">{t.ohneGruppeHint}</div>
+          <div className="pers-ohne-list">
+            {ohne.map((person) => (
+              <button
+                key={person.id}
+                type="button"
+                className="pers-ohne-chip"
+                dir="auto"
+                onClick={() => dispatch({ type: 'selectPerson', id: person.id })}
+              >
+                {listName(person)}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

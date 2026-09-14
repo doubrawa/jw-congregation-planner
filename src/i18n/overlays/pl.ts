@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "Powiadomiono {n} osób",
   "toastPlanNichts": "Nie było nic do wysłania",
   "notifUnerreichbar": "Niepotwierdzone zadania (brak kontaktu)",
+  "loeschenSicher": "Na pewno usunąć?",
+  "gruppeDelMitglieder": "Członkowie tej grupy nie będą już przypisani do żadnej grupy.",
+  "gruppeDelTreffpunkte": "Zbiórki do służby tej grupy zostaną usunięte.",
+  "ohneGruppeTitle": "BEZ GRUPY SŁUŻBY",
+  "ohneGruppeHint": "Każdy głosiciel należy do grupy służby. Bez przypisania dana osoba nie widzi w programie zbiórek grup. Dotknij imienia, aby ustawić grupę.",
 } satisfies Partial<Dict>

@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "已通知 {n} 人",
   "toastPlanNichts": "没有需要发送的内容",
   "notifUnerreichbar": "未确认的任务（无法联系）",
+  "loeschenSicher": "确定删除？",
+  "gruppeDelMitglieder": "这个小组的成员将不再属于任何小组。",
+  "gruppeDelTreffpunkte": "这个小组的传道聚集将被删除。",
+  "ohneGruppeTitle": "未分配传道小组",
+  "ohneGruppeHint": "每位传道员都属于一个传道小组。没有分配小组的人在节目表中看不到各小组的传道聚集。点按姓名即可设定小组。",
 } satisfies Partial<Dict>

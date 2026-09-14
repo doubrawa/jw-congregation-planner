@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} personen op de hoogte gebracht",
   "toastPlanNichts": "Er was niets te versturen",
   "notifUnerreichbar": "Onbevestigde toewijzingen (niet bereikbaar)",
+  "loeschenSicher": "Echt verwijderen?",
+  "gruppeDelMitglieder": "De leden van deze groep horen daarna bij geen enkele groep meer.",
+  "gruppeDelTreffpunkte": "De velddienstvergaderingen van deze groep vervallen.",
+  "ohneGruppeTitle": "ZONDER VELDDIENSTGROEP",
+  "ohneGruppeHint": "Elke verkondiger hoort bij een velddienstgroep. Zonder groep ziet de persoon in het programma geen velddienstvergaderingen van groepen. Tik op een naam om de groep in te stellen.",
 } satisfies Partial<Dict>

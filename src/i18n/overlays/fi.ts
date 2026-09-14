@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} henkilölle ilmoitettu",
   "toastPlanNichts": "Ei ollut mitään lähetettävää",
   "notifUnerreichbar": "Vahvistamattomat tehtävät (ei tavoiteta)",
+  "loeschenSicher": "Poistetaanko?",
+  "gruppeDelMitglieder": "Tämän ryhmän jäsenet eivät sen jälkeen kuulu mihinkään ryhmään.",
+  "gruppeDelTreffpunkte": "Tämän ryhmän palveluskokoukset poistuvat.",
+  "ohneGruppeTitle": "ILMAN PALVELUSRYHMÄÄ",
+  "ohneGruppeHint": "Jokainen julistaja kuuluu palvelusryhmään. Ilman ryhmää henkilö ei näe ohjelmassa ryhmien palveluskokouksia. Valitse ryhmä napauttamalla nimeä.",
 } satisfies Partial<Dict>

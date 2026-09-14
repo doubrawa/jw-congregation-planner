@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} tao ang napaalalahanan",
   "toastPlanNichts": "Walang maipapadala",
   "notifUnerreichbar": "Hindi pa nakumpirmang atas (hindi maabot)",
+  "loeschenSicher": "Sigurado bang tanggalin?",
+  "gruppeDelMitglieder": "Ang mga miyembro ng grupong ito ay hindi na kabilang sa anumang grupo.",
+  "gruppeDelTreffpunkte": "Aalisin ang mga pulong sa paglilingkod ng grupong ito.",
+  "ohneGruppeTitle": "WALANG GRUPO SA PAGLILINGKOD",
+  "ohneGruppeHint": "Ang bawat mamamahayag ay kabilang sa isang grupo sa paglilingkod. Kung walang grupo, hindi makikita ng tao sa programa ang mga pulong sa paglilingkod ng mga grupo. I-tap ang isang pangalan para itakda ang grupo.",
 } satisfies Partial<Dict>

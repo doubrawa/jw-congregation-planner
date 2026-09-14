@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "تم إبلاغ {n} أشخاص",
   "toastPlanNichts": "لم يكن هناك ما يُرسَل",
   "notifUnerreichbar": "تعيينات غير مؤكَّدة (تعذَّر الوصول)",
+  "loeschenSicher": "حذف فعلاً؟",
+  "gruppeDelMitglieder": "لن يعود أعضاء هذا الفريق منتمين إلى أي فريق.",
+  "gruppeDelTreffpunkte": "ستُلغى اجتماعات الخدمة الخاصة بهذا الفريق.",
+  "ohneGruppeTitle": "بلا فريق خدمة الحقل",
+  "ohneGruppeHint": "كل ناشر ينتمي إلى فريق خدمة الحقل. من دون ذلك لا يرى الشخص في البرنامج اجتماعات الخدمة الخاصة بالفرق. انقر على اسم لتحديد الفريق.",
 } satisfies Partial<Dict>

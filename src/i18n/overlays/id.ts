@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} orang diberi tahu",
   "toastPlanNichts": "Tidak ada yang perlu dikirim",
   "notifUnerreichbar": "Tugas belum dikonfirmasi (tidak terjangkau)",
+  "loeschenSicher": "Yakin hapus?",
+  "gruppeDelMitglieder": "Anggota kelompok ini tidak akan lagi termasuk dalam kelompok mana pun.",
+  "gruppeDelTreffpunkte": "Perhimpunan dinas kelompok ini akan dihapus.",
+  "ohneGruppeTitle": "TANPA KELOMPOK DINAS",
+  "ohneGruppeHint": "Setiap penyiar termasuk dalam kelompok dinas. Tanpa kelompok, orang itu tidak melihat perhimpunan dinas kelompok di program. Ketuk nama untuk menetapkan kelompok.",
 } satisfies Partial<Dict>

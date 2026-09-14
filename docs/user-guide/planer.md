@@ -457,8 +457,10 @@ zählt dabei der Wochentag des jeweiligen Treffpunkts, nicht die ganze Woche.
 Im Detail legst du fest:
 
 - **Stammdaten** – Name, Anzeigename, Telefon, E‑Mail, Geschlecht.
-- **Rolle** – Ältester, Dienstamtgehilfe oder Verkündiger.
-- **Predigtdienstgruppe** – Zuordnung zur Gruppe.
+- **Rolle** – Ältester, Dienstamtgehilfe, Verkündiger oder **Keine** (für
+  Schüler ohne Verkündiger‑Status).
+- **Predigtdienstgruppe** – Zuordnung zur Gruppe. Jeder Verkündiger braucht
+  eine; fehlt sie, warnt die Personenliste.
 - **Familie** – wer zur selben Familie gehört. Familienangehörige dürfen bei
   Schülerteilen auch geschlechtsübergreifend Gesprächspartner sein (z. B.
   Ehepaar, Vater/Tochter).
@@ -484,6 +486,26 @@ Bestätigungen und Erinnerungen.
 Abhilfe: Gib einer der beiden im Feld **Anzeigename** etwas Eindeutiges
 (z. B. „Josef Mayer (1)"). Der Anzeigename ersetzt überall den vollen Namen.
 
+### Warnung: ohne Predigtdienstgruppe
+
+Jeder Verkündiger gehört zu einer Predigtdienstgruppe. Ist jemand keiner
+zugeordnet, erscheint über der Liste das Warnbanner **OHNE
+PREDIGTDIENSTGRUPPE** mit allen betroffenen Namen. Das passiert zum Beispiel
+nach dem Löschen einer Gruppe: Ihre Mitglieder stehen danach ohne Gruppe da.
+
+Das hat eine sichtbare Folge: Ein Gruppentreffpunkt erscheint im Programm nur
+bei den Mitgliedern **dieser** Gruppe. Wer ohne Gruppe dasteht, sieht nur die
+Treffpunkte der Versammlung.
+
+Abhilfe: Tippe im Banner auf einen Namen. Es öffnet sich das Detail der Person,
+dort wählst du unter **Predigtdienstgruppe** die richtige Gruppe. Das Banner
+gilt für die ganze Versammlung, Suche und Filter blenden es nicht aus. Es
+verschwindet, sobald alle zugeordnet sind.
+
+Nicht gewarnt wird bei Personen mit der Rolle **Keine**, also Schülern ohne
+Verkündiger‑Status: Sie gehören zu keiner Gruppe. Solange noch gar keine Gruppe
+angelegt ist, bleibt das Banner ebenfalls aus.
+
 ### Konten ohne Person
 
 Ganz unten in der Personenliste steht der Abschnitt **KONTEN OHNE PERSON**:
@@ -506,6 +528,17 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
   Zusammenkünfte.
 - **Predigtdienstgruppen** – Gruppen mit **Aufseher** und **Gehilfe**. Die
   Reinigung rotiert automatisch über die Gruppen.
+
+  **Eine Gruppe löschen** geht nur mit Rückfrage: Der erste Tipp auf ✕ zeigt
+  **Wirklich löschen?** und darunter, was dabei verloren geht. Die Mitglieder
+  sind danach keiner Gruppe mehr zugeordnet, und die Treffpunkte der Gruppe
+  entfallen, im Grundplan wie in den geplanten Wochen. Erst der zweite Tipp
+  löscht. Tippst du woanders hin, bleibt die Gruppe bestehen.
+
+  Ist jemand keiner Gruppe zugeordnet, steht oben in der Karte der Hinweis
+  **OHNE PREDIGTDIENSTGRUPPE** mit der Anzahl. Ein Tipp darauf führt in die
+  Personenliste, wo die Namen stehen (siehe
+  [Warnung: ohne Predigtdienstgruppe](#warnung-ohne-predigtdienstgruppe)).
 - **Hilfsdienste** – welche Dienste es gibt und mit wie vielen Plätzen. Unter
   jedem Dienst steht, **für wie viele Personen er freigegeben ist**. Steht dort
   **0 Personen** (rot), kann die automatische Zuteilung diesen Dienst nie

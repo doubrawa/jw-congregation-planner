@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} 人に通知しました",
   "toastPlanNichts": "送るものはありませんでした",
   "notifUnerreichbar": "未確認の割り当て（連絡不可）",
+  "loeschenSicher": "本当に削除？",
+  "gruppeDelMitglieder": "このグループのメンバーはどのグループにも属さなくなります。",
+  "gruppeDelTreffpunkte": "このグループの奉仕の集まりはなくなります。",
+  "ohneGruppeTitle": "奉仕グループなし",
+  "ohneGruppeHint": "各伝道者は奉仕グループに属します。グループがないと、プログラムにグループの奉仕の集まりが表示されません。名前をタップしてグループを設定してください。",
 } satisfies Partial<Dict>

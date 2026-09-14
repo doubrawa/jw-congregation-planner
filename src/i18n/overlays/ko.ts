@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n}명에게 알렸습니다",
   "toastPlanNichts": "보낼 것이 없었습니다",
   "notifUnerreichbar": "확인되지 않은 임명 (연락 불가)",
+  "loeschenSicher": "정말 삭제할까요?",
+  "gruppeDelMitglieder": "이 그룹의 구성원은 더 이상 어느 그룹에도 속하지 않게 됩니다.",
+  "gruppeDelTreffpunkte": "이 그룹의 봉사 모임은 없어집니다.",
+  "ohneGruppeTitle": "봉사 그룹 없음",
+  "ohneGruppeHint": "각 전도인은 봉사 그룹에 속합니다. 그룹이 지정되지 않으면 프로그램에서 그룹 봉사 모임을 볼 수 없습니다. 이름을 눌러 그룹을 지정하십시오.",
 } satisfies Partial<Dict>

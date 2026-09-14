@@ -393,4 +393,9 @@ export default {
   "toastSpeicherFehler": "Change could not be saved — please reload",
   "notifErsatzGesucht": "Substitute needed",
   "notifErsatzGefunden": "Substitute found",
+  "loeschenSicher": "Really delete?",
+  "gruppeDelMitglieder": "The members of this group will no longer be assigned to any group.",
+  "gruppeDelTreffpunkte": "This group’s field service meetings will be removed.",
+  "ohneGruppeTitle": "NO FIELD SERVICE GROUP",
+  "ohneGruppeHint": "Every publisher belongs to a field service group. Without one, the person sees no group field service meetings in the program. Tap a name to set the group.",
 } satisfies Partial<Dict>

@@ -19,9 +19,10 @@ import type { Group, Invite, Member, Person, Qualifications, Service } from '../
  * `person-filter.ts` prüft die Filterregeln für sich; hier geht es um das, was
  * der Screen selbst zusagt und was nirgends sonst geprüft ist:
  *
- * - Zwei **Warnungen**, die stille Fehlzuordnungen verhindern: doppelte
- *   Anzeigenamen (die App ordnet Aufgaben dann dem Falschen zu) und doppelt
- *   vergebene feste Rollen (die Auto-Zuteilung greift sich irgendeine, F7).
+ * - Drei **Warnungen**, die stille Fehler sichtbar machen: doppelte
+ *   Anzeigenamen (die App ordnet Aufgaben dann dem Falschen zu), doppelt
+ *   vergebene feste Rollen (die Auto-Zuteilung greift sich irgendeine, F7) und
+ *   Personen ohne Predigtdienstgruppe (sie sehen keine Gruppentreffpunkte).
  * - Die **Sammel-Einladung**: sie erzeugt Codes für alle, die noch keinen
  *   haben — und zwar **nur** für die. Zweimal getippt dürfte sie nicht jedem
  *   einen zweiten Code geben.
@@ -101,6 +102,11 @@ const feld = (c: HTMLElement, label: string) =>
   [...c.querySelectorAll<HTMLSelectElement>('select')].find(
     (s) => s.previousElementSibling?.textContent === label,
   )!
+/** Eine der Warnungen oben in der Liste, erkannt an ihrem Titel — es gibt mehrere. */
+const warnung = (c: HTMLElement, titel: string) =>
+  [...c.querySelectorAll('.pers-dupes')].find(
+    (x) => x.querySelector('.pers-dupes-title')?.textContent === titel,
+  )
 
 beforeEach(() => {
   copyText.mockClear().mockResolvedValue(true)
@@ -299,11 +305,11 @@ describe('Warnung vor doppelten Anzeigenamen', () => {
   it('ein eigener Anzeigename hebt die Dublette auf', () => {
     const entwirrt = [{ ...ZWEI_MEIER[0]!, dn: 'Hans Meier jun.' }, ZWEI_MEIER[1]!, ZWEI_MEIER[2]!]
     const { container } = zeige({ persons: entwirrt })
-    expect(container.querySelector('.pers-dupes')).toBeNull()
+    expect(warnung(container, t.dublettenTitle)).toBeUndefined()
   })
 
   it('ohne Dubletten steht die Warnung nicht da', () => {
-    expect(zeige().container.querySelector('.pers-dupes')).toBeNull()
+    expect(warnung(zeige().container, t.dublettenTitle)).toBeUndefined()
   })
 })
 
@@ -315,18 +321,75 @@ describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
         person('p-2', 'Otto', 'Nord', { priv: priv('wtLeiter') }),
       ],
     })
-    const warnung = [...container.querySelectorAll('.pers-dupes')].find(
-      (x) => x.querySelector('.pers-dupes-title')?.textContent === t.wtRollenLabel,
-    )!
-    expect(warnung).toBeTruthy()
-    expect(warnung.querySelector('.pers-dupes-hint')?.textContent).toBe(t.wtRollenHint)
+    const rollen = warnung(container, t.wtRollenLabel)
+    expect(rollen).toBeTruthy()
+    expect(rollen?.querySelector('.pers-dupes-hint')?.textContent).toBe(t.wtRollenHint)
   })
 
   it('einer ist kein Problem', () => {
     const { container } = zeige({
       persons: [person('p-1', 'Hans', 'Meier', { priv: priv('wtLeiter') })],
     })
-    expect(container.querySelector('.pers-dupes')).toBeNull()
+    expect(warnung(container, t.wtRollenLabel)).toBeUndefined()
+  })
+})
+
+/**
+ * **Wer keiner Predigtdienstgruppe zugeordnet ist, steht oben in der Liste**
+ * (gemeldet am 13.9.2026).
+ *
+ * Ohne Gruppe zeigt das Programm keine Gruppentreffpunkte (`fsVisible`), und
+ * bis dahin stand das nirgends — auch nicht, nachdem eine gelöschte Gruppe
+ * alle ihre Mitglieder so zurückgelassen hatte. Die Namen sind Knöpfe: Der Weg
+ * zum Beheben ist ein Tipp.
+ *
+ * Vorgabe der Liste: Brand ist in g1, Alt und Cohn sind es nicht.
+ */
+describe('Warnung: ohne Predigtdienstgruppe', () => {
+  const ohne = (c: HTMLElement) => warnung(c, t.ohneGruppeTitle)
+  const chips = (c: HTMLElement) =>
+    [...(ohne(c)?.querySelectorAll<HTMLButtonElement>('.pers-ohne-chip') ?? [])]
+
+  it('nennt jeden ohne Gruppe mit Namen — in der Reihenfolge der Liste, mit Zahl und Grund', () => {
+    const { container } = zeige()
+    expect(chips(container).map((b) => b.textContent)).toEqual(['Alt, Anton', 'Cohn, Clara'])
+    expect(ohne(container)?.querySelector('.pers-dupes-count')?.textContent).toBe('2')
+    expect(ohne(container)?.querySelector('.pers-dupes-hint')?.textContent).toBe(t.ohneGruppeHint)
+  })
+
+  it('ein Tipp auf den Namen öffnet das Detail, in dem die Gruppe gesetzt wird', () => {
+    const { container, dispatch } = zeige()
+    fireEvent.click(chips(container)[1]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: 'p-c' })
+  })
+
+  it('die Rolle „Keine" braucht keine Gruppe und steht nicht darin', () => {
+    const schueler = person('p-k', 'Kai', 'Kurz', { role: 'keine' })
+    const { container } = zeige({ persons: [...PERSONEN, schueler] })
+    expect(chips(container).map((b) => b.textContent)).not.toContain('Kurz, Kai')
+    expect(chips(container)).toHaveLength(2)
+  })
+
+  it('wer auf eine gelöschte Gruppe verweist, steht ebenso darin', () => {
+    const verwaist = person('p-v', 'Vera', 'Voss', { grp: 'g-geloescht' })
+    const { container } = zeige({ persons: [BRAND, verwaist] })
+    expect(chips(container).map((b) => b.textContent)).toEqual(['Voss, Vera'])
+  })
+
+  it('die Suche engt die Liste ein, die Warnung nicht — sie gilt der ganzen Versammlung', () => {
+    const { container } = zeige()
+    fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'brand' } })
+    expect(namen(container)).toEqual(['Brand, Bernd'])
+    expect(chips(container)).toHaveLength(2)
+  })
+
+  it('ohne angelegte Gruppen gibt es nichts zu melden', () => {
+    expect(ohne(zeige({ groups: [] }).container)).toBeUndefined()
+  })
+
+  it('sind alle zugeordnet, steht die Warnung nicht da', () => {
+    const alle = PERSONEN.map((p) => ({ ...p, grp: 'g1' }))
+    expect(ohne(zeige({ persons: alle }).container)).toBeUndefined()
   })
 })
 

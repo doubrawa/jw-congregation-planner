@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} personer har informerats",
   "toastPlanNichts": "Det fanns inget att skicka",
   "notifUnerreichbar": "Obekräftade uppgifter (ej nåbara)",
+  "loeschenSicher": "Ta bort verkligen?",
+  "gruppeDelMitglieder": "Medlemmarna i den här gruppen tillhör sedan ingen grupp längre.",
+  "gruppeDelTreffpunkte": "Den här gruppens tjänstemöten tas bort.",
+  "ohneGruppeTitle": "UTAN TJÄNSTEGRUPP",
+  "ohneGruppeHint": "Varje förkunnare tillhör en tjänstegrupp. Utan grupp ser personen inga gruppers tjänstemöten i programmet. Tryck på ett namn för att välja grupp.",
 } satisfies Partial<Dict>

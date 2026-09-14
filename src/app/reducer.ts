@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsKennung, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsKennung, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -560,14 +560,22 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         groups: [...state.groups, action.group],
         toast: toastKey(state, 'toastGruppeNeu'),
       }
-    case 'removeGroup':
+    case 'removeGroup': {
+      // Ihre Treffpunkte gehen mit — sonst erzeugte der Grundplan sie weiter,
+      // ohne dass sie irgendwo noch zu löschen wären (`fsGruppeEntfernen`).
+      const { fsRules, fsWeeks } = fsGruppeEntfernen(state.fsRules, state.fsWeeks, action.id)
       return {
         ...state,
         groups: state.groups.filter((g) => g.id !== action.id),
-        // Mitglieder der gelöschten Gruppe verlieren ihre Zuordnung
+        // Mitglieder der gelöschten Gruppe verlieren ihre Zuordnung. Das nennt
+        // die Rückfrage vor dem Löschen, und danach die Warnung „Ohne
+        // Predigtdienstgruppe" (`ohneGruppe`).
         persons: state.persons.map((p) => (p.grp === action.id ? { ...p, grp: null } : p)),
+        fsRules,
+        fsWeeks,
         toast: toastKey(state, 'toastGruppeDel'),
       }
+    }
     case 'updateGroup':
       return {
         ...state,

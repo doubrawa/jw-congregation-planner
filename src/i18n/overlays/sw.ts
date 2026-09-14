@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "Watu {n} wamejulishwa",
   "toastPlanNichts": "Hakukuwa na chochote cha kutuma",
   "notifUnerreichbar": "Migawo isiyothibitishwa (hawapatikani)",
+  "loeschenSicher": "Futa kweli?",
+  "gruppeDelMitglieder": "Washiriki wa kikundi hiki hawatakuwa tena katika kikundi chochote.",
+  "gruppeDelTreffpunkte": "Mikutano ya utumishi ya kikundi hiki itaondolewa.",
+  "ohneGruppeTitle": "BILA KIKUNDI CHA UTUMISHI",
+  "ohneGruppeHint": "Kila mhubiri yuko katika kikundi cha utumishi. Bila kikundi, mtu huyo haoni katika programu mikutano ya utumishi ya vikundi. Gusa jina ili kuweka kikundi.",
 } satisfies Partial<Dict>

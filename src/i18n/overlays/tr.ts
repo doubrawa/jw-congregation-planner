@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} kişi bilgilendirildi",
   "toastPlanNichts": "Gönderilecek bir şey yoktu",
   "notifUnerreichbar": "Onaylanmamış görevler (ulaşılamıyor)",
+  "loeschenSicher": "Gerçekten silinsin mi?",
+  "gruppeDelMitglieder": "Bu grubun üyeleri artık hiçbir gruba bağlı olmayacak.",
+  "gruppeDelTreffpunkte": "Bu grubun tarla hizmeti ibadetleri kaldırılacak.",
+  "ohneGruppeTitle": "HİZMET GRUBU YOK",
+  "ohneGruppeHint": "Her müjdeci bir hizmet grubuna bağlıdır. Grubu olmayan kişi programda grupların tarla hizmeti ibadetlerini görmez. Grubu belirlemek için bir ada dokunun.",
 } satisfies Partial<Dict>

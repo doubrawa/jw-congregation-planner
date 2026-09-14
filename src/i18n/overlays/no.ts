@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} personer er informert",
   "toastPlanNichts": "Det var ingenting å sende",
   "notifUnerreichbar": "Ubekreftede oppgaver (ikke tilgjengelige)",
+  "loeschenSicher": "Slette virkelig?",
+  "gruppeDelMitglieder": "Medlemmene av denne gruppen hører deretter ikke lenger til noen gruppe.",
+  "gruppeDelTreffpunkte": "Denne gruppens tjenestemøter faller bort.",
+  "ohneGruppeTitle": "UTEN TJENESTEGRUPPE",
+  "ohneGruppeHint": "Hver forkynner hører til en tjenestegruppe. Uten tilknytning ser personen ingen gruppers tjenestemøter i programmet. Trykk på et navn for å velge gruppen.",
 } satisfies Partial<Dict>

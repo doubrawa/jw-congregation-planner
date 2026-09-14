@@ -409,6 +409,43 @@ export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance)
   return patchWeek(fsWeeks, wi, (week) => [...week, inst].sort(fsSort))
 }
 
+/**
+ * **Mit einer Gruppe gehen ihre Treffpunkte** — aus dem Grundplan und aus
+ * jeder Woche.
+ *
+ * Eine gelöschte Gruppe ließ ihre Regeln zurück. Die Einstellungen zeigen den
+ * Grundplan je Gruppe, also stand keine davon mehr irgendwo zum Löschen da;
+ * `genFsWeek` erzeugte sie trotzdem Woche für Woche weiter, und Programm und
+ * Planen betitelten sie mit der rohen Gruppen-Id. Sehen konnte sie außer dem
+ * Planer niemand mehr (`fsVisible`) — die Gruppe hat ja keine Mitglieder mehr.
+ *
+ * Gestrichen wird **jeder** Treffpunkt der Gruppe, auch die nur für eine Woche
+ * angelegten (`manual`): Die hält `regenFsWeeks` ausdrücklich fest, sie blieben
+ * sonst stehen. Deshalb auch kein `regenFsWeeks` hier — das setzte nebenbei
+ * Zeit und Ort jeder angepassten Woche auf den Grundplan zurück, und mit der
+ * Gruppe hat das nichts zu tun.
+ *
+ * `''` ist die Versammlung, keine Gruppe: Dafür wird nichts gestrichen.
+ * Unberührte Wochen und ein unberührter Grundplan behalten ihre Referenz —
+ * daran erkennt `persist.ts`, was zu schreiben ist, und die Rückfrage vor dem
+ * Löschen, ob es überhaupt Treffpunkte zu nennen gibt.
+ */
+export function fsGruppeEntfernen(
+  rules: FsRule[],
+  fsWeeks: FsInstance[][],
+  grp: string,
+): { fsRules: FsRule[]; fsWeeks: FsInstance[][] } {
+  if (!grp) return { fsRules: rules, fsWeeks }
+  const fsRules = rules.some((r) => r.grp === grp) ? rules.filter((r) => r.grp !== grp) : rules
+  let geaendert = false
+  const weeks = fsWeeks.map((week) => {
+    if (!week.some((inst) => inst.grp === grp)) return week
+    geaendert = true
+    return week.filter((inst) => inst.grp !== grp)
+  })
+  return { fsRules, fsWeeks: geaendert ? weeks : fsWeeks }
+}
+
 /* ---- Auto-Zuteilung / Leeren der Treffpunkt-Leiter ---- */
 
 /**

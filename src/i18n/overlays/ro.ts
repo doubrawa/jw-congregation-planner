@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} persoane anunțate",
   "toastPlanNichts": "Nu era nimic de trimis",
   "notifUnerreichbar": "Însărcinări neconfirmate (fără contact)",
+  "loeschenSicher": "Chiar ștergi?",
+  "gruppeDelMitglieder": "Membrii acestei grupe nu vor mai aparține niciunei grupe.",
+  "gruppeDelTreffpunkte": "Întrunirile pentru serviciu ale acestei grupe dispar.",
+  "ohneGruppeTitle": "FĂRĂ GRUPĂ DE PREDICARE",
+  "ohneGruppeHint": "Fiecare vestitor aparține unei grupe de predicare. Fără grupă, persoana nu vede în program întrunirile pentru serviciu ale grupelor. Atinge un nume pentru a stabili grupa.",
 } satisfies Partial<Dict>

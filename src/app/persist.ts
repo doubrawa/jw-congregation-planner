@@ -222,6 +222,33 @@ function fsWochePlanen(congId: string, weeks: Week[], fsWeeks: FsInstance[][], w
   if (week && fsWeek) fsWeekSaves.schedule(week.start, { congId, insts: fsWeek })
 }
 
+/**
+ * Grundplan-Blob und die Treffpunkt-Wochen, die sich dadurch geändert haben.
+ *
+ * Beides gebündelt: Der Ort einer Regel ist ein Freitextfeld, und ohne
+ * Bündelung ging je Tastenanschlag der Grundplan **und** jede Woche einzeln an
+ * die Datenbank. Geschrieben wird nur, was sich wirklich geändert hat —
+ * `regenFsWeeks` und `fsGruppeEntfernen` lassen Unberührtem seine Referenz.
+ *
+ * Auch das Löschen einer Gruppe geht hier durch, obwohl es kein Tastenanschlag
+ * ist: Steht vom Tippen davor noch ein gebündelter Grundplan aus, schriebe ein
+ * Schreiben am Bündel vorbei zuerst den neuen und 600 ms später den **alten**
+ * Stand — samt der Regeln der gerade gelöschten Gruppe. Über denselben Writer
+ * ersetzt der neue Stand den ausstehenden.
+ */
+function treffpunkteSpeichern(congId: string, prev: AppState, next: AppState): void {
+  if (next.fsRules !== prev.fsRules) {
+    fsRuleSaves.schedule('rules', {
+      congId,
+      base: next.fsBase.toISOString().slice(0, 10),
+      rules: next.fsRules,
+    })
+  }
+  for (let i = 0; i < next.fsWeeks.length; i++) {
+    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i)
+  }
+}
+
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -289,22 +316,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'fsRuleAdd':
     case 'fsRuleUpdate':
-    case 'fsRuleRemove': {
-      // Grundplan-Blob + die neu materialisierten Wochen. Beides gebündelt:
-      // der Ort ist ein Freitextfeld, und ohne Bündelung ging je Tastenanschlag
-      // der Grundplan **und** jede Woche einzeln an die Datenbank. Geschrieben
-      // wird zudem nur, was sich wirklich geändert hat — `regenFsWeeks` lässt
-      // unberührten Wochen ihre Referenz.
-      fsRuleSaves.schedule('rules', {
-        congId,
-        base: next.fsBase.toISOString().slice(0, 10),
-        rules: next.fsRules,
-      })
-      for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i)
-      }
+    case 'fsRuleRemove':
+      // Grundplan-Blob + die neu materialisierten Wochen (gebündelt).
+      treffpunkteSpeichern(congId, prev, next)
       break
-    }
     case 'lacMove': {
       if (next.weeks === prev.weeks) break // Rand: kein Tausch
       wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
@@ -478,6 +493,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       for (const p of next.persons) {
         if (prev.persons.find((q) => q.id === p.id)?.grp === action.id) savePersonGroup(p)
       }
+      // Ihre Treffpunkte sind mit ihr gegangen. Die Regeln liegen als ein Blob
+      // ohne Fremdschlüssel in `fs_rules` — die Datenbank räumt hier nichts
+      // von selbst, anders als bei `persons.grp` (on delete set null).
+      treffpunkteSpeichern(congId, prev, next)
       break
     case 'markAllRead':
       markNotificationsRead(congId, userId)

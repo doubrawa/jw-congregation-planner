@@ -392,4 +392,9 @@ export default {
   "toastPlanGesendet": "{n} نفر مطلع شدند",
   "toastPlanNichts": "چیزی برای ارسال نبود",
   "notifUnerreichbar": "وظایف تأییدنشده (در دسترس نیستند)",
+  "loeschenSicher": "واقعاً حذف شود؟",
+  "gruppeDelMitglieder": "اعضای این گروه دیگر به هیچ گروهی تعلق نخواهند داشت.",
+  "gruppeDelTreffpunkte": "جلسات خدمت این گروه حذف می‌شوند.",
+  "ohneGruppeTitle": "بدون گروه خدمت موعظه",
+  "ohneGruppeHint": "هر مبشّر به یک گروه خدمت موعظه تعلق دارد. بدون آن، فرد در برنامه جلسات خدمت گروه‌ها را نمی‌بیند. برای تعیین گروه روی یک نام ضربه بزنید.",
 } satisfies Partial<Dict>

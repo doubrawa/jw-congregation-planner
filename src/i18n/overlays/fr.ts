@@ -393,4 +393,9 @@ export default {
   "toastPlanGesendet": "{n} personnes averties",
   "toastPlanNichts": "Il n’y avait rien à envoyer",
   "notifUnerreichbar": "Attributions non confirmées (injoignables)",
+  "loeschenSicher": "Vraiment supprimer ?",
+  "gruppeDelMitglieder": "Les membres de ce groupe ne seront plus rattachés à aucun groupe.",
+  "gruppeDelTreffpunkte": "Les réunions pour la prédication de ce groupe sont supprimées.",
+  "ohneGruppeTitle": "SANS GROUPE DE PRÉDICATION",
+  "ohneGruppeHint": "Chaque proclamateur appartient à un groupe de prédication. Sans rattachement, la personne ne voit pas dans le programme les réunions pour la prédication des groupes. Touche un nom pour choisir le groupe.",
 } satisfies Partial<Dict>
