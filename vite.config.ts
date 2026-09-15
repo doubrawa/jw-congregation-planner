@@ -84,6 +84,11 @@ export default defineConfig(({ command }) => ({
   // Testlauf ein git-Prozess mit, obwohl die Kennung dort nichts aussagt.
   define: { __BUILD_ID__: JSON.stringify(command === 'build' ? buildId() : 'dev') },
   test: {
+    // Die CI hat keine Supabase-Variablen und testet deshalb im Demo-Modus.
+    // Lokal läse Vite `.env.local` mit und testete ohne Demo-Daten — ein Test,
+    // der auf `initialState()` baut, war dann lokal grün und in der CI rot
+    // (15.9.2026, der Deploy blieb stehen). Leer gilt hier dasselbe wie dort.
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
     alias: [
       // Die Edge-Functions holen web-push über den Deno-npm-Specifier, den Node
       // nicht auflösen kann. Im Test tritt ein Stub an seine Stelle, damit die

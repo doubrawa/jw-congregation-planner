@@ -2,7 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEMO_PERSONS, DEMO_PLANNER } from '../data/testdaten'
 
-// isSupabaseConfigured umschaltbar machen (real ist es im Testenv true).
+// isSupabaseConfigured umschaltbar machen (ungemockt ist es im Test false —
+// vite.config.ts leert die Supabase-Variablen wie in der CI).
 const cfg = vi.hoisted(() => ({ configured: false }))
 vi.mock('../lib/supabase', () => ({
   get isSupabaseConfigured() {

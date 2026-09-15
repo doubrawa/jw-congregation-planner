@@ -80,6 +80,9 @@ const stand = (over: Partial<AppState> = {}): AppState => ({
   dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
   persons: [person('p-a', 'Anna', 'Berg')], services: DIENSTE, groups: [], absences: [],
   weeks: [woche()], fsWeeks: [[]], week: 0,
+  // Die Demo bringt Zusagen für genau diese Woche mit, und wer zugesagt hat,
+  // zählt am Knopf nicht mehr. Hier gilt nur, was der Test selbst setzt.
+  confirmations: {},
   fsBase: new Date(2026, 8, 7, 12, 0),
   congregation: { name: 'Test', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
   ...over,
