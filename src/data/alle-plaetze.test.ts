@@ -41,10 +41,10 @@ import { emptyQualifications, partWorkload, workloadOf } from './helpers'
 import {
   assignmentsInMeeting,
   autoAssignMeeting,
+  changedSlotKeys,
   clearAssignments,
   countOpenSlots,
   deriveMyTasks,
-  derivePendingIds,
   openSlotLabels,
 } from './planning'
 import {
@@ -159,9 +159,13 @@ describe('Wer zählt eine Zuteilung mit?', () => {
     expect(deriveMyTasks([woche()], SERVICES, NAME, {}, '', ANNA.id)).toHaveLength(ALLE.length)
   })
 
-  it('derivePendingIds kennt die Person', () => {
-    expect(derivePendingIds([woche()], SERVICES, {})).toContain(ANNA.id)
-  })
+  /*
+   * Hier stand `derivePendingIds` — die Personen-Markierung „…" im Planen. Sie
+   * ist am 14. September 2026 dem Ampel-Punkt je Platz gewichen. Dessen
+   * Vollständigkeitsprobe rendert den Planen-Screen und steht deshalb in
+   * `src/planen/zusage-ampel.test.tsx`: Sie bestätigt jede Aufgabe, die
+   * `deriveMyTasks` hier liefert, und fragt dann alle vier Chips.
+   */
 })
 
 /**
@@ -286,6 +290,23 @@ describe('Wer weiß, dass die Person schon eingeteilt ist?', () => {
     const { weeks } = autoAssignMeeting([w], 0, 'mid', [bernd], SERVICES)
     const zweiter = weeks[0]!.mid.sections[0]!.items[1] as PartItem
     expect(zweiter.names[0]!.name).toBe('Bernd Anders')
+  })
+})
+
+describe('Wer merkt, dass jemand anderes auf dem Platz steht?', () => {
+  it('changedSlotKeys erkennt einen Namensvetter an allen vier Plätzen', () => {
+    // Eine zweite „Anna Beispiel" mit eigener Person-Id. Übersähe die Prüfung
+    // auch nur eine Sorte, erbte die neue Anna dort Annas Zusage.
+    const andere = (s: { name: string; pid?: string }): void => { s.pid = 'p-anna-2' }
+    const nachher = woche()
+    const item = nachher.mid.sections[0]!.items[0] as PartItem
+    item.names.forEach(andere)
+    ;(item.aux ?? []).forEach(andere)
+    if (nachher.mid.auxRatgeber) andere(nachher.mid.auxRatgeber)
+    nachher.mid.helpers.mik!.forEach(andere)
+
+    const keys = changedSlotKeys(woche().mid, nachher.mid, SERVICES, '2026-09-07', 'mid')
+    expect(keys.map((k) => k.split('|')[2]).sort()).toEqual(['aux', 'helper', 'part', 'ratgeber'])
   })
 })
 

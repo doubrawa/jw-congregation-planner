@@ -101,8 +101,20 @@ vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
   zählt der Wochentag des jeweiligen Treffpunkts.
 - Programmpunkte (Vorsitz, Gebet, Bibellesung, Schulungsaufgaben …) und
   **Hilfsdienste** (Mikrofone, Ton, Ordner, Reinigung …) werden getrennt geführt.
-- Die Legende „✓ bestätigt · … wartet auf Bestätigung" zeigt dir den
-  Bestätigungsstatus jeder Person direkt an der Zuteilung.
+- **Der farbige Punkt hinter jedem Namen** zeigt, ob die Person diese Zuteilung
+  zugesagt hat. Die Legende über dem Plan nennt die drei Stufen:
+  - **grün** – bestätigt
+  - **gelb** – wartet auf Bestätigung
+  - **rot** – abgesagt; hier musst du handeln (siehe „Wenn jemand absagt")
+
+  Der Punkt gilt dem **einzelnen Platz**, nicht der Person: Hat jemand den
+  Vorsitz bestätigt, das Gebet aber noch nicht, steht Grün neben Gelb. Teilst du
+  einen Platz um, steht er wieder auf Gelb – die Zusage gehört dem, der sie
+  gegeben hat. Wo niemand bestätigen kann (offener Platz, Gastredner,
+  Kreisaufseher, Reinigungsgruppe, Treffpunkt-Leiter von außerhalb, eine
+  ausgefallene Zusammenkunft), steht kein Punkt. Die Farben passen zu jedem Farbschema; die drei Stufen unterscheiden
+  sich zusätzlich in der Helligkeit, damit sie auch bei Rot-Grün-Schwäche
+  auseinanderzuhalten sind.
 
 **Schülerteile im Abschnitt „Uns im Dienst verbessern"** brauchen je nach Art
 ein oder zwei Personen. Gesprächsteile (Gespräche beginnen, Interesse fördern,
@@ -304,19 +316,19 @@ Durchgehen der Zusammenkunft fällt er von selbst auf.
 ### Wenn jemand absagt
 
 Verkündiger können eine Zuteilung in ihren Aufgaben absagen. Du bekommst dann
-eine Mitteilung („Verhinderung gemeldet") und die Zuteilung gilt wieder als
-offen.
+eine Mitteilung („Verhinderung gemeldet"), und der Punkt an der Zuteilung wird
+**rot**.
 
 Bei **Hilfsdiensten** übernimmt die App den ersten Schritt selbst: Sie
 benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
 abwesend sind, dass ein Ersatz gesucht wird. Springt jemand ein, trägt sich die
-Person selbst ein, die Bestätigung ist gleich gesetzt, und du bekommst die
-Mitteilung „Ersatz gefunden". Du musst dich nur kümmern, wenn sich niemand
-meldet.
+Person selbst ein, die Bestätigung ist gleich gesetzt (der Punkt wird grün), und
+du bekommst die Mitteilung „Ersatz gefunden". Du musst dich nur kümmern, wenn
+sich niemand meldet.
 
 Bei **Programmpunkten** gibt es keine automatische Suche — dort teilst du neu
-zu. Der Name des Absagenden bleibt im Slot stehen, damit du siehst, worum es
-geht.
+zu. Der Name des Absagenden bleibt mit rotem Punkt im Slot stehen, damit du
+siehst, worum es geht.
 
 ### Den Plan senden
 
@@ -396,7 +408,7 @@ weiterhin die Liste der eigenen Verkündiger, falls es doch jemand von euch
 sein soll. Beide Wege führen zurück, du kannst also jederzeit wechseln.
 
 > Ein Freitext-Leiter hat die App nicht: Er bekommt keine Aufgabe, keine
-> Erinnerung und keinen Bestätigungs-Haken, und er zählt bei niemandem auf die
+> Erinnerung und keinen farbigen Punkt, und er zählt bei niemandem auf die
 > Auslastung. Auch dann nicht, wenn er zufällig so heißt wie jemand bei euch.
 
 ---

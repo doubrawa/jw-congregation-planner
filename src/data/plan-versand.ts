@@ -41,7 +41,7 @@
  */
 import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { fsKennung, fsTag, fsTagVorbei, fsTaskKey, fsTerminText } from './fs'
-import { hatAuxKlasse, istAusgefallen, MEETING_TABS } from './helpers'
+import { dieselbePerson, hatAuxKlasse, istAusgefallen, MEETING_TABS } from './helpers'
 import { istVorbei, meetingDateMs } from './meeting-dates'
 import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
 import type {
@@ -271,17 +271,6 @@ export function entzogeneZusagen(
     out.push({ key, name: war.name, ...(war.pid ? { pid: war.pid } : {}), label, datum })
   }
   return out
-}
-
-/**
- * Zwei Besetzungen desselben Platzes — dieselbe Person?
- *
- * Die Id entscheidet, sobald **beide** Seiten eine tragen; sonst der Name. Ein
- * halbseitiger Vergleich (eine Seite mit Id, die andere ohne) fiele sonst auf
- * „ungleich" und meldete einen Entzug, wo nur eine Id nachgetragen wurde.
- */
-function dieselbePerson(a: { name: string; pid?: string }, b: { name: string; pid?: string }): boolean {
-  return a.pid && b.pid ? a.pid === b.pid : a.name === b.name
 }
 
 /**

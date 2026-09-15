@@ -196,7 +196,6 @@ function zustand(over: Partial<AppState> = {}): AppState {
     absences: [],
     notifs: [MITTEILUNG],
     myTasks: [AUFGABE],
-    pendingIds: [],
     substituteReqs: [],
     members: [],
     invites: [],

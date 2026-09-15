@@ -80,6 +80,27 @@
   --load-helper: #a99cf7;
 
   /*
+   * Ampel-Punkt an jedem besetzten Platz im Planen: bestätigt / wartet /
+   * abgesagt. Eigene Tokens statt der Sektionsfarben — `--pet` ist in Papaya
+   * ein Beerenton, `--gld` in Indigo ein Orange; die Ampel muss überall Ampel
+   * bleiben.
+   *
+   * Gerechnet, nicht geschätzt (`npm run contrast`), und zwar zweierlei:
+   *  - Jeder Punkt hebt sich mit mindestens 3:1 von Chip und Seite ab
+   *    (WCAG 1.4.11). Deshalb ist das Gelb hier ein dunkles Bernstein — ein
+   *    leuchtendes Ampelgelb verschwände auf Weiß (1,5:1).
+   *  - Die drei stehen in drei Helligkeitsstufen: gelb am hellsten, rot am
+   *    dunkelsten. Rot-Grün-Schwäche nimmt den Farbton, nicht die Helligkeit —
+   *    so bleiben die Stufen auch dann unterscheidbar. Unter den Planern, fast
+   *    alles Brüder, ist das jeder zwölfte.
+   * Eigene Fassungen haben die dunklen Paletten (Nachtrag am Dateiende),
+   * „Grau" (sehr gedämpft) und „Hoher Kontrast".
+   */
+  --zusage-bestaetigt: #1f8a4b;
+  --zusage-offen: #b98500;
+  --zusage-verhindert: #a8241c;
+
+  /*
    * Schriftgrößen-Faktor (Profil → Schriftgröße). Jede font-size im Projekt
    * steht als calc(<px> * var(--fs)) — siehe scripts/scale-font-sizes.mjs.
    * 1 = Auslieferungszustand; store.tsx setzt den gewählten Wert auf <html>,
@@ -306,7 +327,8 @@
 :root[data-theme='grau'] {
   /*
    * ---- Grau (hell) --------------------------------------------------------
-   * Ohne jeden Farbton: JEDER Wert hier ist ein echtes Grau (R = G = B).
+   * Ohne jeden Farbton: JEDER Wert hier ist ein echtes Grau (R = G = B) — bis
+   * auf die drei gedämpften Ampel-Punkte am Ende des Blocks.
    * Damit fällt die Unterscheidung der vier Programm-Sektionen allein auf die
    * Helligkeit — die Tonflächen sind deshalb in klaren Stufen gesetzt
    * (neutral → Petrol → Gold → Wein wird Schritt für Schritt dunkler) und die
@@ -389,6 +411,18 @@
   --load-free: #949494;
   --load-helper: #5e5e5e;
   --load-task: #2b2b2b;
+
+  /*
+   * Die einzige Farbe in „Grau" — mit Absicht (Entscheidung des Betreibers,
+   * 14. September 2026): Die Ampel-Punkte behalten ihren Farbton, stark
+   * entsättigt, damit sie im farblosen Bild nicht leuchten. Die Bedeutung
+   * tragen sie trotzdem nicht allein über die Farbe: Die drei Helligkeitsstufen
+   * der übrigen Paletten gelten auch hier. `check-contrast.mjs` nimmt genau
+   * diese drei Werte von der Farblos-Prüfung aus.
+   */
+  --zusage-bestaetigt: #64856e;
+  --zusage-offen: #a38f59;
+  --zusage-verhindert: #89534e;
 }
 
 :root[data-theme='kontrast'] {
@@ -455,6 +489,12 @@
   --load-free: #00661b;
   --load-task: #cc0000;
   --load-helper: #3d00b8;
+
+  /* Ampel-Punkte: Volltöne, die Helligkeitsstufen weiter auseinander als in
+     den gestalterischen Paletten. */
+  --zusage-bestaetigt: #007a29;
+  --zusage-offen: #c28a00;
+  --zusage-verhindert: #8f0000;
 }
 
 :root[data-theme='graphit'] {
@@ -660,6 +700,11 @@
   --load-free: #4e8f61;
   --load-task: #b8574b;
   --load-helper: #7a6fc4;
+  /* Ampel-Punkte auf dunklem Chip: hier darf das Gelb wieder gelb sein, es hat
+     Kontrast genug. Die Helligkeitsstufen bleiben: gelb, grün, rot. */
+  --zusage-bestaetigt: #5cb87a;
+  --zusage-offen: #e8bf48;
+  --zusage-verhindert: #c24f45;
   /* Schatten auf dunklem Grund sind schwarz, nicht warm. */
   --shade: 0, 0, 0;
 }

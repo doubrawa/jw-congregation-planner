@@ -12,8 +12,9 @@ import {
   TALK_PLACEHOLDER,
   themaVon,
 } from '../data/meeting-edit'
-import { isSpeakerRole, kennungVon } from '../data/planning'
+import { isSpeakerRole } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
+import { useZusage } from './useZusage'
 import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.ts'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
@@ -75,8 +76,8 @@ export function MeetingSection({
     (isOpening || isClosing) &&
     hatLiedPlatz(state.weeks[state.week]?.we, isOpening ? 'eroeffnung' : 'abschluss')
 
-  const isPending = (slot: SlotAssignment | undefined) =>
-    state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
+  // Ampel-Punkt je Platz — dieselben Schlüssel, unter denen bestätigt wird.
+  const zusage = useZusage()
 
   // Wer im Konflikt-Banner über dem Programm steht, wird hier hervorgehoben.
   const { betrifft } = useKonflikte(mtab(state.tab))
@@ -166,6 +167,8 @@ export function MeetingSection({
         // (`localizedWeek` prüft das); ohne kanonisches Gegenstück bleibt der
         // Punkt lesbar, aber nicht bearbeitbar.
         const rawItem = rawSection.items[ii] ?? item
+        // Der Schlüssel eines Platzes kommt aus der kanonischen Woche (`iid`).
+        const keyItem = isSong(rawItem) ? item : rawItem
         const rawTitle = isSong(rawItem) ? '' : rawItem.title
         // Punkt der Kreisaufseher-Woche? Sein fester Begriff ist das erste Atom
         // des kanonischen Titels; dahinter steht das Thema (T62).
@@ -274,20 +277,21 @@ export function MeetingSection({
                   <div className="plan-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>
                 )}
                 <div className="plan-slots">
-                  {/* Kein Bestätigungs-Zeichen, wo es nichts zu bestätigen
-                      gibt: „✓" heißt *bestätigt*, und wer in `SKIP_ROLE` steht
-                      (Gastredner, Kreisaufseher), hat weder Aufgabe noch
-                      Erinnerung noch die App. Der Haken behauptete dort etwas,
-                      das nie passiert ist. Dieselbe Regel führt `HelpersPanel`
-                      seit jeher für die Gruppen-Rotation („keine Person") und
+                  {/* Kein Ampel-Punkt, wo es nichts zu bestätigen gibt: Wer in
+                      `SKIP_ROLE` steht (Gastredner, Kreisaufseher), hat weder
+                      Aufgabe noch Erinnerung noch die App, und eine
+                      ausgefallene Zusammenkunft hat gar keine Aufgaben (T30).
+                      Ein Punkt behauptete dort eine Zusage oder ein Warten,
+                      das es nie gibt. Dieselbe Regel führt `HelpersPanel` seit
+                      jeher für die Gruppen-Rotation („keine Person") und
                       `FsPlan` seit T63 für den Freitext-Leiter. */}
                   {slots.map((slot, ni) => (
                     <SlotChip
                       key={ni}
                       text={partChipText(slot)}
                       open={!slot.name}
-                      showStatus={Boolean(slot.name) && !isGuestRole(slot.rolle)}
-                      pending={isPending(slot)}
+                      showStatus={Boolean(slot.name) && !isGuestRole(slot.rolle) && zusage.moeglich(mtab(state.tab))}
+                      status={zusage.teil(mtab(state.tab), keyItem, si, ii, ni, aux)}
                       konflikt={betrifft(slot)}
                       onClick={() => openPartSlot(ii, ni, item, slot, aux)}
                     />

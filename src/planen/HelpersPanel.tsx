@@ -1,19 +1,17 @@
 import { useApp } from '../app/context'
 import { mtab } from '../data/helpers'
-import { kennungVon } from '../data/planning'
 import { serviceQualKey } from '../data/helpers'
 import { useT } from '../i18n/useT'
-import type { Meeting, Service, SlotAssignment } from '../data/types'
+import type { Meeting, Service } from '../data/types'
 import { SlotChip } from './SlotChip'
 import { useKonflikte } from './useKonflikte'
+import { useZusage } from './useZusage'
 
 /** Hilfsdienste-Panel beim Planen: je konfiguriertem Dienst so viele Slot-Chips wie Plätze. */
 export function HelpersPanel({ meeting }: { meeting: Meeting }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-
-  const isPending = (slot: SlotAssignment | undefined) =>
-    state.pendingIds.includes(kennungVon(slot?.name ?? "", slot?.pid))
+  const zusage = useZusage()
 
   // Hilfsdienste sind die häufigste Hälfte der Konflikte („Hilfsdienst UND
   // Programmpunkt", „zweimal Hilfsdienst") — sie dürfen bei der Markierung
@@ -56,8 +54,8 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
                     key={pos}
                     text={name ? tu(name) : t.zuteilenChip}
                     open={!name}
-                    showStatus={Boolean(name) && !isGroup}
-                    pending={isPending(assigned[pos])}
+                    showStatus={Boolean(name) && !isGroup && zusage.moeglich(mtab(state.tab))}
+                    status={zusage.hilfsdienst(mtab(state.tab), service.key, pos)}
                     // Gruppen-Rotation ist keine Person und steht in keinem Konflikt.
                     konflikt={!isGroup && betrifft(assigned[pos])}
                     onClick={() => openHelperSlot(service, pos)}

@@ -67,7 +67,6 @@ function zustand(over: Partial<AppState> = {}): AppState {
     weeks: [],
     fsWeeks: [],
     myTasks: [],
-    pendingIds: [],
     substituteReqs: [],
     notifs: [],
     absences: [],

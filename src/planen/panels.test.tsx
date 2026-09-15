@@ -10,7 +10,9 @@ import {
 } from '../app/context'
 import { initialState } from '../app/init'
 import { syncAuxSlots } from '../data/aux-class'
+import { fsTaskKey } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
+import { ratgeberTaskKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { FsInstance, Group, Person, Week } from '../data/types'
 import { AutoAssignPanel } from './AutoAssignPanel'
@@ -55,7 +57,7 @@ function buehne(kind: 'auto' | 'aux' | 'fs', over: Partial<AppState> = {}, onlyG
   const state: AppState = {
     ...initialState(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
-    persons: [ANTON], services: [], groups: GRUPPEN, absences: [], pendingIds: [],
+    persons: [ANTON], services: [], groups: GRUPPEN, absences: [], confirmations: {},
     weeks: [woche()], fsWeeks: [[]], week: 0,
     fsBase: new Date(2026, 8, 7, 12, 0),
     congregation: { name: 'Test', hall: 'Königreichssaal', meetings: 'Di 19:00 · So 10:00' },
@@ -195,13 +197,18 @@ describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 26)', () => {
     })
   })
 
-  it('besetzt trägt sie den Namen und ein Bestätigungs-Zeichen', () => {
+  it('besetzt trägt sie den Namen und den Ampel-Punkt seiner Zusage', () => {
     const weeks = mitKlasse()
     weeks[0]!.mid.auxRatgeber = { name: 'Anton Alt', pid: 'p-a' }
-    const { container } = buehne('aux', { weeks, auxClass: true, pendingIds: ['p-a'] })
-    const chip = container.querySelector('.slot-chip')!
-    expect(chip.textContent).toContain('Anton Alt')
-    expect(chip.querySelector('.slot-status')?.textContent).toBe('…')
+    const offen = buehne('aux', { weeks, auxClass: true }).container.querySelector('.slot-chip')!
+    expect(offen.textContent).toContain('Anton Alt')
+    expect(offen.querySelector('.zusage-punkt')?.className).toContain('is-offen')
+    cleanup()
+
+    const zugesagt = buehne('aux', {
+      weeks, auxClass: true, confirmations: { [ratgeberTaskKey('2026-09-07', 'mid')]: 'bestätigt' },
+    }).container.querySelector('.slot-chip')!
+    expect(zugesagt.querySelector('.zusage-punkt')?.className).toContain('is-bestaetigt')
   })
 })
 
@@ -260,19 +267,36 @@ describe('Treffpunkte planen', () => {
     expect(container.querySelector('.plan-open')).toBeNull()
   })
 
-  it('ein Freitext-Leiter bekommt kein Bestätigungs-Zeichen — er hat die App nicht', () => {
+  it('ein Freitext-Leiter bekommt keinen Ampel-Punkt — er hat die App nicht', () => {
     const { container } = buehne('fs', {
       fsWeeks: [[inst({ leader: 'Kreisaufseher', lext: true })]],
     })
     expect(container.querySelector('.slot-chip')?.textContent).toContain('Kreisaufseher')
-    expect(container.querySelector('.slot-status')).toBeNull()
+    expect(container.querySelector('.slot-chip .zusage-punkt')).toBeNull()
   })
 
-  it('eine Person schon — für sie gibt es den Bestätigungs-Flow', () => {
+  it('eine Person schon — gelb, solange sie nicht zugesagt hat', () => {
     const { container } = buehne('fs', {
       fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' })]],
     })
-    expect(container.querySelector('.slot-status')).toBeTruthy()
+    expect(container.querySelector('.slot-chip .zusage-punkt')?.className).toContain('is-offen')
+  })
+
+  it('ihre Zusage steht am Treffpunkt — gesucht unter dem Montag der Woche', () => {
+    const { container } = buehne('fs', {
+      fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' }), inst({ id: 'f2', leader: 'Anton Alt', lpid: 'p-a' })]],
+      confirmations: { [fsTaskKey('2026-09-07', 'f1')]: 'bestätigt', [fsTaskKey('2026-09-07', 'f2')]: 'verhindert' },
+    })
+    const stufen = [...container.querySelectorAll('.slot-chip .zusage-punkt')].map((p) => p.className)
+    expect(stufen[0]).toContain('is-bestaetigt')
+    expect(stufen[1]).toContain('is-verhindert')
+  })
+
+  it('auch hier steht die Legende — die Leiter-Chips tragen dieselben Punkte', () => {
+    const { container } = buehne('fs', { fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' })]] })
+    expect([...container.querySelectorAll('.plan-legend-item')].map((x) => x.textContent)).toEqual([
+      t.zusageBestaetigt, t.zusageWartet, t.zusageAbgesagt,
+    ])
   })
 
   it('„Leeren" braucht auch hier zwei Tipps', () => {

@@ -14,12 +14,13 @@ import {
   FS_BASE,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
-  DEMO_PENDING_IDS,
   DEMO_GROUPS,
   DEMO_PERSONS,
   DEMO_PLANNER,
   DEMO_SERVICES,
+  DEMO_UNBESTAETIGT,
 } from '../data/testdaten'
+import { buildDemoConfirmations } from '../data/demo-zusagen'
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { asFontScale, DEFAULT_FONT_SCALE, THEME_LIST, type FontScale } from '../data/constants'
 import { APP_LANGS } from '../i18n/langs'
@@ -117,6 +118,9 @@ export function initialState(): AppState {
   // Screenshot-Modus (nur DEV): Spaltenschatten per Attribut abschalten, damit
   // die Doku-Screenshots randlos zugeschnitten werden können (siehe shell.css).
   if (debug?.shot) document.documentElement.dataset.shot = '1'
+  // Einmal gebaut: Die Demo-Zusagen hängen an genau diesen Wochen.
+  const weeks = demo ? buildDemoWeeks() : []
+  const fsWeeks = demo ? buildDemoFsWeeks() : []
   return {
     screen: debug?.screen ?? 'login',
     week: 0,
@@ -136,12 +140,12 @@ export function initialState(): AppState {
     members: [],
     invites: [],
     recovery: false,
-    weeks: demo ? buildDemoWeeks() : [],
+    weeks,
     persons: demo ? DEMO_PERSONS : [],
     services: demo ? DEMO_SERVICES : [],
     groups: demo ? DEMO_GROUPS : [],
     fsRules: demo ? DEMO_FS_RULES : [],
-    fsWeeks: demo ? buildDemoFsWeeks() : [],
+    fsWeeks,
     fsBase: demo ? FS_BASE : montagDieserWoche(new Date()),
     absences: demo ? DEMO_ABSENCES : [],
     notifs: demo ? DEMO_NOTIFICATIONS : [],
@@ -151,8 +155,7 @@ export function initialState(): AppState {
     importing: false,
     imported: false,
     myTasks: demo ? DEMO_MY_TASKS : [],
-    pendingIds: demo ? DEMO_PENDING_IDS : [],
-    confirmations: {},
+    confirmations: demo ? buildDemoConfirmations(weeks, DEMO_SERVICES, fsWeeks, FS_BASE, DEMO_UNBESTAETIGT) : {},
     sentLog: {},
     confirmOpen: false,
     myTaskId: null,

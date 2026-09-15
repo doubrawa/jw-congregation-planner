@@ -77,22 +77,45 @@ function contrast(fg, bg) {
 
 /* ---- Paletten einlesen --------------------------------------------------- */
 
-function block(selector) {
+/** Rumpf einer Regel als Text (ohne die Klammern), `null` wenn es sie nicht gibt. */
+function rumpf(selector) {
   const i = CSS.indexOf(selector)
   if (i < 0) return null
   const start = CSS.indexOf('{', i)
   const end = CSS.indexOf('\n}', start)
+  return CSS.slice(start, end)
+}
+
+function block(selector) {
+  const text = rumpf(selector)
+  if (text === null) return null
   const out = {}
-  for (const m of CSS.slice(start, end).matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)) {
+  for (const m of text.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)) {
     out[m[1]] = m[2].trim()
   }
   return out
 }
 
 const base = block(':root {')
+/*
+ * Der Nachtrag für die dunklen Paletten (`:root[data-dark]`, am Dateiende)
+ * gehört zu ihrer Palette dazu. Ohne ihn rechnete das Skript die dunklen
+ * Schemata mit den HELLEN Auslastungs- und Ampelfarben — und meldete Fehler,
+ * die es in der Oberfläche nicht gibt, oder übersah die, die es gibt.
+ *
+ * **Dunkel ist, was `THEME_LIST` so führt** (`dark: true` in constants.ts):
+ * Dasselbe Kennzeichen setzt zur Laufzeit `data-dark` (`isDarkTheme`). Am
+ * `color-scheme` im CSS abgelesen, rechnete ein Schema ohne diese Zeile mit
+ * Farben, die die App gar nicht zeigt. Ob beides zusammenpasst, prüft (3) unten.
+ */
+const DUNKEL = new Set(
+  [...CONSTANTS.matchAll(/\{\s*key:\s*'([\w-]+)',[^}]*?\bdark:\s*true\b/g)].map((m) => m[1]),
+)
+const dunkel = block(':root[data-dark] {') ?? {}
 const themes = { weiss: base }
 for (const m of CSS.matchAll(/:root\[data-theme='([\w-]+)'\]/g)) {
-  themes[m[1]] = { ...base, ...block(`:root[data-theme='${m[1]}']`) }
+  const selector = `:root[data-theme='${m[1]}']`
+  themes[m[1]] = { ...base, ...block(selector), ...(DUNKEL.has(m[1]) ? dunkel : {}) }
 }
 
 /* ---- Zu prüfende Paarungen ---------------------------------------------- */
@@ -142,6 +165,32 @@ const PAIRS = [
   ['bord4', 'bg', 3, 'Rahmen sehr kräftig'],
   ['dash', 'bg', 3, 'gestrichelter Rahmen'],
   ['acc', 'bg', 3, 'Bedienelement-Umriss'],
+  // Die Ampel-Punkte im Planen tragen eine Aussage, sie sind kein Schmuck —
+  // also gilt WCAG 1.4.11 für grafische Objekte: 3:1 gegen den Chip, auf dem
+  // sie sitzen, und gegen die Seite, auf der die Legende steht.
+  ['zusage-bestaetigt', 'card', 3, 'Ampel „bestätigt" am Chip'],
+  ['zusage-offen', 'card', 3, 'Ampel „wartet" am Chip'],
+  ['zusage-verhindert', 'card', 3, 'Ampel „abgesagt" am Chip'],
+  ['zusage-bestaetigt', 'bg', 3, 'Ampel „bestätigt" in der Legende'],
+  ['zusage-offen', 'bg', 3, 'Ampel „wartet" in der Legende'],
+  ['zusage-verhindert', 'bg', 3, 'Ampel „abgesagt" in der Legende'],
+]
+
+/*
+ * Die Ampel steht in drei Helligkeitsstufen: gelb über grün über rot.
+ *
+ * Rot-Grün-Schwäche nimmt den Farbton, nicht die Helligkeit. Liegen grün und
+ * rot gleich hell, sieht ein Betroffener zwei gleiche Punkte — unter den
+ * Planern, fast alles Brüder, ist das jeder zwölfte. Gemessen wird wie ein
+ * Kontrast, aber mit Richtung: die erste Farbe muss die hellere sein.
+ *
+ * Die Schwelle 1,25 ist an Simulationen (Machado 2009) abgelesen: Darunter
+ * rückten grün und rot bei Deuteranopie auf einen Farbabstand (ΔE2000) unter 9.
+ */
+// [heller, dunkler, Mindestabstand, Beschreibung]
+const STUFEN = [
+  ['zusage-offen', 'zusage-bestaetigt', 1.25, 'Ampel: gelb heller als grün'],
+  ['zusage-bestaetigt', 'zusage-verhindert', 1.25, 'Ampel: grün heller als rot'],
 ]
 
 // Nur für „Hoher Kontrast": die Auslastungs-Quadrate sollen sich auch vom
@@ -177,6 +226,17 @@ for (const [name, vars] of Object.entries(themes)) {
     rows.push({ ok, ratio, min, label, fgKey, bgKey })
   }
 
+  for (const [hellKey, dunkelKey, min, label] of STUFEN) {
+    const hell = parseColor(vars[hellKey] ?? '')
+    const dunk = parseColor(vars[dunkelKey] ?? '')
+    if (!hell || !dunk) continue
+    const ratio = (luminance(hell) + 0.05) / (luminance(dunk) + 0.05)
+    const ok = ratio >= min
+    if (!ok) worst = Math.min(worst, ratio)
+    if (!ok && strict) strictFailed++
+    rows.push({ ok, ratio, min, label, fgKey: hellKey, bgKey: dunkelKey })
+  }
+
   const bad = rows.filter((r) => !r.ok)
   const tag = strict ? ' (verbindlich)' : ''
   console.log(`\n${name}${tag}: ${rows.length - bad.length}/${rows.length} bestanden`)
@@ -202,10 +262,31 @@ for (const m of CONSTANTS.matchAll(/\{\s*key:\s*'([\w-]+)',\s*label:/g)) {
 // (2) „Grau" verspricht ausschließlich Grautöne. Ein einzelner farbiger Wert
 // (etwa aus einer anderen Palette übernommen) fällt kaum auf, hebt die Zusage
 // aber auf — und nur hier gibt es keinen Farbton, der ihn überdecken würde.
+//
+// Eine Ausnahme, benannt statt geduldet: die Ampel-Punkte. Der Betreiber hat am
+// 14. September 2026 entschieden, dass sie auch hier Farbe tragen — sehr
+// gedämpft. Jeder weitere farbige Wert schlägt weiterhin an.
+const FARBIG_IN_GRAU = new Set(['zusage-bestaetigt', 'zusage-offen', 'zusage-verhindert'])
 for (const [key, value] of Object.entries(block(`:root[data-theme='${GREYSCALE}']`) ?? {})) {
+  if (FARBIG_IN_GRAU.has(key)) continue
   const c = parseColor(value)
   if (c && !(c.r === c.g && c.g === c.b)) {
     fehler.push(`„${GREYSCALE}" ist nicht farblos: --${key}: ${value}`)
+  }
+}
+
+// (3) Dunkel heißt an zwei Stellen dasselbe. `THEME_LIST` setzt `data-dark` und
+// damit die dunklen Ampel- und Auslastungsfarben; `color-scheme: dark` in der
+// Palette lässt Eingabefelder und Bildlaufleisten dunkel zeichnen. Widerspricht
+// sich beides, sieht das Schema halb hell, halb dunkel aus — und dieses Skript
+// rechnete mit der Hälfte, die es nicht gibt.
+for (const name of Object.keys(themes)) {
+  if (name === 'weiss') continue
+  const imCss = /color-scheme:\s*dark/.test(rumpf(`:root[data-theme='${name}']`) ?? '')
+  if (imCss !== DUNKEL.has(name)) {
+    fehler.push(
+      `Farbschema „${name}": THEME_LIST sagt ${DUNKEL.has(name) ? 'dunkel' : 'hell'}, tokens.css ${imCss ? 'color-scheme: dark' : 'kein color-scheme: dark'}.`,
+    )
   }
 }
 
@@ -220,4 +301,4 @@ if (strictFailed > 0 || fehler.length > 0) {
   }
   process.exit(1)
 }
-console.log(`\nPalette „${STRICT}" erfüllt alle Vorgaben, „${GREYSCALE}" ist farblos.`)
+console.log(`\nPalette „${STRICT}" erfüllt alle Vorgaben, „${GREYSCALE}" ist farblos (bis auf die Ampel).`)

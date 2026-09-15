@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsKennung, fsPendingIds, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsKennung, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { displayName, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
@@ -21,12 +21,9 @@ import {
   clearAssignments,
   changedSlotKeys,
   deriveMyTasks,
-  derivePendingIds,
   deriveSubstituteReqs,
   helperKeyParts,
-  isGuestRole,
   shiftPartConfirmations,
-  slotRolle,
   swapPartConfirmations,
   wochenIndex,
 } from '../data/planning'
@@ -136,8 +133,8 @@ function pushNotif(
  * An ihre Stelle tritt „Plan senden" (`PlanSendenPanel` → Edge Function
  * `send-plan`): eine Nachricht je **eingeteilter Person**, wenn der Plan steht.
  * Was der Planer über den Stand seiner Woche wissen muss, steht ohnehin im
- * Planen-Screen — Konflikte, offene Plätze, Engpässe und das „…" an jedem
- * unbestätigten Platz. Dafür braucht es keine Nachricht.
+ * Planen-Screen — Konflikte, offene Plätze, Engpässe und der Ampel-Punkt an
+ * jedem besetzten Platz. Dafür braucht es keine Nachricht.
  *
  * Mit ihr entfiel der Schalter `reminders.onAssign`, der nichts anderes
  * steuerte.
@@ -176,7 +173,7 @@ function currentUserName(state: AppState): string {
 }
 
 /**
- * Produktionsmodus: myTasks/pendingIds aus Wochen + Bestätigungen ableiten
+ * Produktionsmodus: myTasks/Ersatzgesuche aus Wochen + Bestätigungen ableiten
  * (im Demo-Modus bleiben die Demo-Daten unangetastet). `openConfirm` öffnet
  * nach der Hydration das Bestätigungs-Modal, falls offene Aufgaben existieren.
  */
@@ -187,7 +184,6 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // der Wochen, falls vorhanden) — Slot-Pfade/Namen sind variantenunabhängig.
   const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
   const weeks = localizedWeeks(state.weeks, jwCode)
-  // Einmal für beide Ableitungen unten — dieselben Wochen, dieselbe Basis.
   const kennungen = fsWochenKennungen(weeks, state.fsBase)
   // Zusammenkunfts-Aufgaben und Treffpunkt-Leitungen kommen aus zwei getrennten
   // Quellen (`weeks` und `fsWeeks`) und bleiben es auch — sie zählen nicht in
@@ -213,9 +209,9 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
          * Vergangene steht also vorn) und zählte in „noch zu bestätigen" mit.
          * Bestätigen kann man nichts mehr, was vorbei ist.
          *
-         * Die „…"-Markierung im Planen bleibt davon unberührt: Sie ist die
-         * Auskunft des Planers darüber, wer nie zugesagt hat, und die gilt auch
-         * hinterher noch.
+         * Der Ampel-Punkt im Planen bleibt davon unberührt: Er liest die
+         * Zusagen selbst, nicht diese Liste, und gibt dem Planer auch hinterher
+         * noch Auskunft darüber, wer nie zugesagt hat.
          */
         .filter((task) => !istVorbei(task.at))
         .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
@@ -233,17 +229,6 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   return {
     ...state,
     myTasks,
-    // Beide Datenquellen, wie bei `myTasks` eine Zeile darüber: die
-    // „…"-Markierung im Plan gilt für Zusammenkünfte **und** Treffpunkte.
-    // Stand hier nur `derivePendingIds`, überschrieb diese Zeile die Kennung,
-    // die der Reducer beim Zuteilen eines Treffpunkt-Leiters gerade erst
-    // aufgebaut hatte (siehe `fsPendingIds`).
-    pendingIds: [
-      ...new Set([
-        ...derivePendingIds(weeks, state.services, state.confirmations),
-        ...fsPendingIds(state.fsWeeks, kennungen, state.confirmations),
-      ]),
-    ],
     substituteReqs,
     // Das Blatt beim Öffnen zeigt beides: unbestätigte Zuteilungen und offene
     // Ersatzgesuche (T69). Ein Gesuch erreichte bis dahin nur, wer von selbst
@@ -322,11 +307,31 @@ function quellenGeaendert(vorher: AppState, nachher: AppState): boolean {
 }
 
 export function reducer(state: AppState, action: AppAction): AppState {
-  const next = baseReducer(state, action)
-  // `hydrate` ist der einzige Sonderfall: Es legt zusätzlich das
-  // Bestätigungs-Blatt vor, wenn etwas offen ist.
-  if (action.type === 'hydrate') return withDerivedTasks(next, true)
+  // `hydrate` ist der einzige Sonderfall: Es ersetzt den ganzen Bestand — die
+  // Zusagen kommen passend mit — und legt zusätzlich das Bestätigungs-Blatt
+  // vor, wenn etwas offen ist.
+  if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), true)
+  const next = ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action))
   return quellenGeaendert(state, next) ? withDerivedTasks(next, false) : next
+}
+
+/**
+ * Zusagen abräumen, deren Treffpunkt jetzt jemand anderes leitet
+ * (`fsVerwaisteZusagen`).
+ *
+ * **An einer Stelle für alle Wege**, nicht in jeder Aktion: zuteilen,
+ * automatisch zuteilen, leeren, einen Treffpunkt löschen, eine Regel ändern,
+ * eine Gruppe entfernen — und was künftig dazukommt. Bei den Zusammenkünften
+ * räumt jede Aktion einzeln ab (`dropConfirmations`); bei den Treffpunkten
+ * hatte es jede vergessen. Die Frage ist nicht, welche Aktion lief, sondern ob
+ * ein Platz jetzt jemand anderem gehört — und das steht im Zustand selbst,
+ * wie bei `ableitungsQuellen`. `persist.ts` liest am Unterschied der Zusagen
+ * ab, was es in der Datenbank löschen muss — mit dem Schreiben der Woche.
+ */
+function ohneVerwaisteTreffpunktZusagen(vorher: AppState, nachher: AppState): AppState {
+  const keys = fsVerwaisteZusagenAller(vorher.weeks, vorher.fsBase, vorher.fsWeeks, nachher.fsWeeks)
+  const confirmations = dropConfirmations(nachher.confirmations, keys)
+  return confirmations === nachher.confirmations ? nachher : { ...nachher, confirmations }
 }
 
 function baseReducer(state: AppState, action: AppAction): AppState {
@@ -503,8 +508,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
       }
       // Namensänderung in bereits geplanten Wochen nachziehen — der
-      // Anzeigename ist der in den Wochen gespeicherte Text. Die
-      // „…"-Markierung braucht das nicht mehr: sie hängt an der Person-Id.
+      // Anzeigename ist der in den Wochen gespeicherte Text. Die Zusagen
+      // bleiben stehen: Sie hängen am Platz, und die Person darauf ist dieselbe.
       if (oldPerson && ('fn' in action.patch || 'ln' in action.patch || 'dn' in action.patch)) {
         const oldName = displayName(oldPerson)
         const newName = displayName({ ...oldPerson, ...action.patch })
@@ -699,7 +704,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Zuteilen bzw. Entfernen ("") + Mitteilung (Prototyp: assignTo)
       const sel = state.slotSel
       if (!sel) return state
-      // Treffpunkt-Leiter: eigene Datenquelle (fsWeeks), kein Bestätigungs-Slot.
+      // Treffpunkt-Leiter: eigene Datenquelle (fsWeeks). Die Zusage des
+      // Vorgängers räumt `ohneVerwaisteTreffpunktZusagen` ab.
       if (sel.kind === 'fs') {
         const fsWeeks = fsSetLeader(
           state.fsWeeks,
@@ -709,38 +715,17 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           action.pid,
           action.extern,
         )
-        // Neu zugeteilt heißt: noch nicht bestätigt. Über die Id geführt —
-        // ohne Id (Gast) gibt es nichts zu markieren.
-        const pendingIds =
-          action.pid && !state.pendingIds.includes(action.pid)
-            ? [...state.pendingIds, action.pid]
-            : state.pendingIds
         return {
           ...state,
           fsWeeks,
-          pendingIds,
           slotSel: null,
           toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
         }
       }
       const weeks = assignSlot(state.weeks, sel, action.name, action.rolle, action.pid, action.herkunft)
-      // Externe Redner (Gastredner/Kreisaufseher) haben keinen Bestätigungs-Flow.
-      //
-      // Entscheidend ist die Rolle, die gerade **geschrieben** wurde — nicht das
-      // Auswahl-Flag `sel.guest`. Das Flag sagt nur, dass es der Redner-Platz
-      // ist; ob dort ein eigener Bruder oder ein Auswärtiger steht, sagt erst
-      // die Rolle. Auf das Flag zu sehen war die zweite Hälfte von F1: der
-      // eigene Redner bekam `pid` und Rolle „Redner", blieb aber trotzdem vom
-      // Bestätigungs-Flow ausgenommen.
-      const isGuest = isGuestRole(slotRolle(weeks, sel))
-      const pendingIds =
-        action.pid && !isGuest && !state.pendingIds.includes(action.pid)
-          ? [...state.pendingIds, action.pid]
-          : state.pendingIds
       return {
         ...state,
         weeks,
-        pendingIds,
         // Geänderte Slots: alten Bestätigungs-Status abräumen (sonst erbt die
         // neue Person ein fremdes „bestätigt“/„verhindert“).
         //
@@ -757,7 +742,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'autoAssign': {
       if (!state.weeks[state.week]) return state // keine Wochen geladen
-      const { weeks, count, newlyIds, unfilled } = autoAssignMeeting(
+      const { weeks, count, unfilled } = autoAssignMeeting(
         state.weeks,
         state.week,
         mtab(state.tab),
@@ -773,12 +758,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         const key = unfilled > 0 ? 'toastKeinePassende' : 'toastKeineOffen'
         return { ...state, toast: toastKey(state, key) }
       }
-      const pending = new Set(state.pendingIds)
-      for (const id of newlyIds) pending.add(id)
       return {
         ...state,
         weeks,
-        pendingIds: [...pending],
         confirmations: dropConfirmations(
           state.confirmations,
           geaenderteSlots(state.weeks, weeks, state.week, mtab(state.tab), state.services),
@@ -801,7 +783,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'fsAutoAssign': {
-      const { fsWeeks, count, newlyIds } = fsAutoAssign(
+      const { fsWeeks, count } = fsAutoAssign(
         state.fsWeeks,
         state.week,
         state.persons,
@@ -811,9 +793,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.groups,
       )
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
-      const pending = new Set(state.pendingIds)
-      for (const id of newlyIds) pending.add(id)
-      return { ...state, fsWeeks, pendingIds: [...pending], toast: toastKey(state, 'toastAutoN', { n: count }) }
+      return { ...state, fsWeeks, toast: toastKey(state, 'toastAutoN', { n: count }) }
     }
     case 'fsClear': {
       const { fsWeeks, count } = fsClear(state.fsWeeks, state.week, action.onlyGroup)
@@ -875,8 +855,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'closeMyTask':
       return { ...state, myTaskId: null }
     case 'confirmTask': {
-      // Produktionsmodus: Status in die ConfirmationMap — myTasks/pending-
-      // Names/confirmOpen folgen aus der Ableitung (withDerivedTasks).
+      // Produktionsmodus: Status in die ConfirmationMap — myTasks und
+      // confirmOpen folgen aus der Ableitung (withDerivedTasks).
       if (state.dataStatus !== 'demo') {
         return {
           ...state,
@@ -888,20 +868,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const myTasks = state.myTasks.map((t) =>
         t.id === action.id ? { ...t, status: 'bestätigt' as const } : t,
       )
-      const stillOpen = myTasks.some((t) => t.status === 'offen')
-      // Ist nichts mehr offen, verschwindet das „…" der eigenen Person — über
-      // die Id, nicht über den Namen: bei Namensgleichheit verlor sonst auch
-      // die andere Person ihre Markierung.
-      const meineId = state.personId
-      const pendingIds = stillOpen
-        ? state.pendingIds
-        : state.pendingIds.filter((id) => id !== meineId)
       return {
         ...state,
         myTasks,
-        pendingIds,
         myTaskId: null,
-        // Nicht `stillOpen`: ein offenes Ersatzgesuch hält das Blatt ebenfalls
+        // Nicht „nichts mehr offen": ein offenes Ersatzgesuch hält das Blatt ebenfalls
         // (T69) — sonst verschwände es unter der Hand, sobald die letzte
         // Bestätigung gegeben ist.
         confirmOpen: state.confirmOpen && vorzulegen(myTasks, state.substituteReqs),
@@ -1073,7 +1044,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, weeks: setAnlassTermin(state.weeks, state.week, action.patch) }
     }
     // Weitere Termine der Woche (T63). Reine Ankündigung — kein `task_key`,
-    // keine Bestätigung, keine Mitteilung, kein `pendingIds`.
+    // keine Bestätigung, keine Mitteilung, kein Ampel-Punkt.
     case 'terminAdd': {
       if (!state.weeks[state.week]) return state
       return { ...state, weeks: terminAdd(state.weeks, state.week, `t${crypto.randomUUID()}`) }

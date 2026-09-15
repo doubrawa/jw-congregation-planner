@@ -14,6 +14,7 @@
 
 import { istAbwesendAm } from './absence'
 import {
+  dieselbePerson,
   displayName,
   eindeutigeNamen,
   idAufloeser,
@@ -26,7 +27,7 @@ import { deutschesDatum, fromIso, istVorbei, kalendertagMs } from './meeting-dat
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
 // unterschiedlich anfühlen.
-import { kennungVon } from './planning'
+import { kennungVon, zusageStatus } from './planning'
 import type { Conflict } from './planning'
 import type { Zuteilung } from './helpers'
 import type { Absence, ConfirmationMap, FsInstance, FsRule, Group, MyTask, Person } from './types'
@@ -244,14 +245,6 @@ export function buildFsWeeks(
 }
 
 /**
- * Erzeugt den Grundplan neu über alle Wochen, erhält aber bereits gesetzte Leiter
- * (per Instanz-Id) und für die jeweilige Woche manuell hinzugefügte Treffpunkte.
- *
- * `preserveEdits`: false (Grundplan-Änderung) übernimmt nur den Leiter und setzt
- * Zeit/Ort auf die Regelwerte zurück; true (Neu-Ausrichtung beim Laden) behält
- * auch Zeit/Ort, damit wochenspezifische Anpassungen nicht verloren gehen.
- */
-/**
  * Gleicher Inhalt? Treffpunkt-Instanzen sind flach — ein Feldvergleich genügt.
  */
 function gleicheInstanzen(a: FsInstance[], b: FsInstance[]): boolean {
@@ -265,6 +258,35 @@ function gleicheInstanzen(a: FsInstance[], b: FsInstance[]): boolean {
   })
 }
 
+/**
+ * Die Besetzung eines Treffpunkts: Name, Person und Freitext-Kennzeichen —
+ * nur die Felder, die gesetzt sind, damit gleicher Inhalt gleich vergleicht.
+ *
+ * **Alle drei gehören zusammen.** Bis zum 15. September 2026 übernahm
+ * `regenFsWeeks` nur den Namen. Weil es beim Laden und bei jeder Änderung am
+ * Grundplan läuft, verlor ein Freitext-Leiter danach sein `lext`: Der
+ * Kreisaufseher galt wieder als Person, trug einen Ampel-Punkt, und
+ * `fsMigrateLeaderPids` hängte ihm beim nächsten Laden den gleichnamigen
+ * Bruder an — mit Aufgabe und Erinnerungen. Die Person-Id ging ebenso
+ * verloren, und jede Woche mit zugeteiltem Leiter galt als geändert.
+ */
+function besetzungVon(inst: FsInstance): Pick<FsInstance, 'leader' | 'lpid' | 'lext'> {
+  return {
+    leader: inst.leader,
+    ...(inst.lpid ? { lpid: inst.lpid } : {}),
+    ...(inst.lext ? { lext: true } : {}),
+  }
+}
+
+/**
+ * Erzeugt den Grundplan neu über alle Wochen, erhält aber bereits gesetzte Leiter
+ * (per Instanz-Id, samt Person und Freitext-Kennzeichen) und für die jeweilige
+ * Woche manuell hinzugefügte Treffpunkte.
+ *
+ * `preserveEdits`: false (Grundplan-Änderung) übernimmt nur die Besetzung und
+ * setzt Zeit/Ort auf die Regelwerte zurück; true (Neu-Ausrichtung beim Laden)
+ * behält auch Zeit/Ort, damit wochenspezifische Anpassungen nicht verloren gehen.
+ */
 export function regenFsWeeks(
   kennungen: readonly string[],
   fsWeeks: FsInstance[][],
@@ -276,8 +298,8 @@ export function regenFsWeeks(
       const old = week.find((o) => o.id === inst.id)
       if (!old) return inst
       return preserveEdits
-        ? { ...inst, time: old.time, place: old.place, leader: old.leader }
-        : { ...inst, leader: old.leader }
+        ? { ...inst, time: old.time, place: old.place, ...besetzungVon(old) }
+        : { ...inst, ...besetzungVon(old) }
     })
     const all = gen.concat(week.filter((o) => o.manual))
     all.sort(fsSort)
@@ -477,6 +499,12 @@ export function fsTaskKey(woche: string, instId: string): string {
   return `fs|${woche}|${instId}`
 }
 
+/** Woche (Kennung) eines Treffpunkt-Schlüssels — `null`, wenn es keiner ist. */
+export function fsTaskKeyWoche(key: string): string | null {
+  const [art, woche] = key.split('|')
+  return art === 'fs' && woche !== undefined ? woche : null
+}
+
 /**
  * Wie weit die Treffpunkt-Strichliste zurückreicht.
  *
@@ -573,7 +601,7 @@ export function fsAutoAssign(
   /** Montag dieser Woche (siehe `fsWochenKennungen`); leer = keine Abwesenheitsprüfung. */
   wochenStart = '',
   groups: readonly Group[] = [],
-): { fsWeeks: FsInstance[][]; count: number; newlyIds: string[] } {
+): { fsWeeks: FsInstance[][]; count: number } {
   const qualifiziert = persons.filter((p) => isQualified(p, 'treffpunkt'))
   /**
    * Kandidaten für einen Wochentag. Die Abwesenheit wird am echten Tag des
@@ -634,8 +662,6 @@ export function fsAutoAssign(
   }
 
   const newly: string[] = []
-  /** Dieselben Leitungen als Person-Id — für die „…"-Markierung (pendingIds). */
-  const newlyIds: string[] = []
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
     const used = dayUsed.get(inst.wd) ?? new Set<string>()
@@ -697,11 +723,10 @@ export function fsAutoAssign(
     markDay(inst.wd, pick.p.id)
     inDerWoche.add(pick.p.id)
     newly.push(pick.name)
-    newlyIds.push(pick.p.id)
     return { ...inst, leader: pick.name, lpid: pick.p.id }
   })
-  if (newly.length === 0) return { fsWeeks, count: 0, newlyIds: [] }
-  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, newlyIds }
+  if (newly.length === 0) return { fsWeeks, count: 0 }
+  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length }
 }
 
 /** Leiter der Woche `wi` leeren (`onlyGroup` grenzt auf eine Gruppe ein). */
@@ -794,7 +819,7 @@ export function deriveMyFsTasks(
          * den Vortag. Zwei Quellen, eine Kodierung.
          */
         at: tag ? kalendertagMs(tag) : null,
-        status: confirmations[key] ?? 'offen',
+        status: zusageStatus(confirmations, key),
         s89: null,
       })
     }
@@ -803,42 +828,68 @@ export function deriveMyFsTasks(
 }
 
 /**
- * Kennungen mit mindestens einer **nicht bestätigten** Treffpunkt-Leitung —
- * das Gegenstück zu `derivePendingIds` (planning.ts) für die zweite
- * Datenquelle.
+ * Treffpunkt-Leitungen, deren Zusage im neuen Stand **niemandem mehr gehört** —
+ * das Gegenstück zu `changedSlotKeys` (planning.ts) für die zweite Datenquelle.
  *
- * Ohne sie war die „…"-Markierung im Treffpunkt-Plan blind für genau das, was
- * sie anzeigen soll: `derivePendingIds` läuft nur über die Zusammenkünfte, und
- * `withDerivedTasks` überschreibt damit die Liste vollständig. Ein frisch
- * zugeteilter Leiter trug daher ein „✓" — die Behauptung, er habe zugesagt,
- * obwohl ihn noch niemand gefragt hat. Umgekehrt bekam ein Leiter, der seinen
- * Treffpunkt längst bestätigt hatte, ein „…", sobald irgendeine
- * Zusammenkunfts-Aufgabe von ihm offen war. Beide Richtungen falsch, und beide
- * still: Der Reducer baute die Kennung beim Zuteilen sorgfältig auf
- * (`newlyIds`), nur um sie eine Zeile später wieder zu verlieren.
+ * Eine Zusage gibt eine Person, gespeichert wird sie aber unter dem Schlüssel
+ * des Platzes (`fsTaskKey`). Wechselt der Leiter, muss sie weg, sonst erbt der
+ * Nachfolger sie. Bei den Zusammenkünften räumt jede Zuteilung ihre Schlüssel
+ * ab (`dropConfirmations`); bei den Treffpunkten tat das bis zum 14. September
+ * 2026 nichts. Der neue Leiter stand als bestätigt da, ohne je gefragt worden
+ * zu sein, und bekam keine Erinnerung. Sagte er ab, verschwand die Absage unter
+ * der Zusage des Vorgängers — beim Laden gewinnt „bestätigt"
+ * (`confirmationMap`). Die Ampel am Chip hätte das grün angezeigt.
  *
- * Gleiche Regeln wie dort: „verhindert" zählt wie offen (bis der Planer neu
- * zuteilt), und die Kennung ist die Person-Id, sonst der Namensschlüssel
- * (`kennungVon`).
- *
- * **Freitext-Leiter bleiben draußen.** Der Kreisaufseher hat die App nicht; für
- * ihn zeigt `FsPlan` gar kein Zeichen (`showStatus`). Stünde er hier, gälte
- * sein Name als „offen" — und ein gleichnamiger Bruder bekäme dessen „…".
+ * Verglichen wird die **Person**, nicht der Name: Wer umbenannt wird, behält
+ * seine Zusage (`dieselbePerson`, dieselbe Regel wie beim Entzug und bei den
+ * Zusammenkünften). Nur wo keine Person-Id dasteht, entscheidet der Name — das bleiben nach
+ * `fsMigrateLeaderPids` die Namensgleichen, und vor denen warnt die App
+ * ohnehin. Ein Freitext-Leiter ist niemand von hier — der Wechsel zu ihm und
+ * von ihm weg ist ein Wechsel. Verschwindet der Treffpunkt, geht die Zusage mit.
  */
-export function fsPendingIds(
-  fsWeeks: FsInstance[][],
-  kennungen: readonly string[],
-  confirmations: ConfirmationMap,
+export function fsVerwaisteZusagen(
+  vorher: readonly FsInstance[] | undefined,
+  nachher: readonly FsInstance[] | undefined,
+  kennung: string,
 ): string[] {
-  const pending = new Set<string>()
-  fsWeeks.forEach((week, wi) => {
-    for (const inst of week) {
-      if (!inst.leader || inst.lext) continue
-      const key = fsTaskKey(kennungen[wi] ?? '', inst.id)
-      if (confirmations[key] !== 'bestätigt') pending.add(kennungVon(inst.leader, inst.lpid))
-    }
-  })
-  return [...pending]
+  const jetzt = new Map((nachher ?? []).map((inst) => [inst.id, inst]))
+  const out: string[] = []
+  for (const alt of vorher ?? []) {
+    if (!alt.leader) continue // kein Leiter, keine Zusage
+    const neu = jetzt.get(alt.id)
+    if (neu && dieselbeLeitung(alt, neu)) continue
+    out.push(fsTaskKey(kennung, alt.id))
+  }
+  return out
+}
+
+function dieselbeLeitung(a: FsInstance, b: FsInstance): boolean {
+  if (!b.leader || Boolean(a.lext) !== Boolean(b.lext)) return false
+  return dieselbePerson({ name: a.leader, pid: a.lpid }, { name: b.leader, pid: b.lpid })
+}
+
+/**
+ * `fsVerwaisteZusagen` über alle Wochen, die sich zwischen zwei Ständen
+ * geändert haben. Der Reducer räumt damit den Zustand ab; die Speicherschicht
+ * liest das Ergebnis am Unterschied der Zusagen ab, statt es neu zu rechnen.
+ *
+ * Die Kennung kommt aus den Wochen des **alten** Stands: Unter ihr steht die
+ * Zusage, um die es geht.
+ */
+export function fsVerwaisteZusagenAller(
+  weeks: ReadonlyArray<{ start?: string }>,
+  fsBase: Date | null,
+  vorher: readonly FsInstance[][],
+  nachher: readonly FsInstance[][],
+): string[] {
+  if (vorher === nachher) return []
+  const out: string[] = []
+  for (let wi = 0; wi < vorher.length; wi++) {
+    // Unberührte Wochen behalten ihre Referenz — der Vergleich kostet nichts.
+    if (vorher[wi] === nachher[wi]) continue
+    out.push(...fsVerwaisteZusagen(vorher[wi], nachher[wi], fsKennung(weeks[wi], fsBase, wi)))
+  }
+  return out
 }
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { reducer } from './reducer'
 import type { AppState } from './context'
-import { fsGruppeEntfernen, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { fsGruppeEntfernen, fsTaskKey, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { emptyQualifications, ohneGruppe } from '../data/helpers'
 import {
   buildDemoFsWeeks,
@@ -50,6 +50,8 @@ function stand(over: Partial<AppState> = {}): AppState {
     fsRules: [...DEMO_FS_RULES],
     fsWeeks: buildDemoFsWeeks(),
     fsBase: FS_BASE,
+    // Die Zusagen gehören dazu: Verschwindet ein Treffpunkt, verfällt seine.
+    confirmations: {},
     ...over,
   } as AppState
 }
@@ -91,6 +93,25 @@ describe('Eine Predigtdienstgruppe löschen', () => {
 
     expect(nachher.fsRules.map((r) => r.id)).toEqual(['r1', 'r2', 'r3', 'r5', 'r6', 'r7'])
     expect(treffpunkteVon(nachher.fsWeeks, 'g1')).toEqual([])
+  })
+
+  it('die Zusagen ihrer Treffpunkte verfallen mit — die der übrigen bleiben', () => {
+    // Blieben sie stehen, erbte sie ein Treffpunkt, der später unter derselben
+    // Kennung wieder entsteht, und die Datenbank trüge Zusagen zu nichts.
+    const vorher = stand()
+    const kennungen = fsWochenKennungen(vorher.weeks, vorher.fsBase)
+    const schluessel = (grp: string) =>
+      vorher.fsWeeks.flatMap((w, wi) =>
+        w.filter((inst) => inst.grp === grp && inst.leader).map((inst) => fsTaskKey(kennungen[wi] ?? '', inst.id)),
+      )
+    const g1 = schluessel('g1')
+    const g2 = schluessel('g2')
+    expect(g1.length, 'Vorgabe: g1 hat besetzte Treffpunkte').toBeGreaterThan(0)
+    const zusagen = Object.fromEntries([...g1, ...g2].map((k) => [k, 'bestätigt' as const]))
+
+    const nachher = loeschen(stand({ confirmations: zusagen }), 'g1')
+
+    expect(Object.keys(nachher.confirmations).sort()).toEqual([...g2].sort())
   })
 
   it('die übrigen Treffpunkte bleiben — samt ihren Leitern', () => {

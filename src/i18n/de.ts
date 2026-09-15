@@ -225,7 +225,13 @@ export const DE = {
     ersatzHint: 'Wenn du einen Hilfsdienst absagst, wird automatisch ein Ersatz aus dem Kreis der Qualifizierten gesucht.',
     einspringenTitle: 'EINSPRINGEN', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
     uebernehmen: 'Übernehmen',
-    planLegend: '✓ bestätigt · … wartet auf Bestätigung',
+    // Die drei Stufen des Ampel-Punkts im Planen — Legende und Screenreader
+    // („Gebet: Jörg Roth wartet auf Bestätigung"). Aus Sicht des Planers,
+    // deshalb nicht `verhindertChip`: Der steht beim Eingeteilten selbst und
+    // heißt in manchen Sprachen „ich kann nicht".
+    zusageBestaetigt: 'bestätigt',
+    zusageWartet: 'wartet auf Bestätigung',
+    zusageAbgesagt: 'abgesagt',
     // „Plan senden": der Planer gibt die fertige Woche frei, und erst dann
     // erfahren die Eingeteilten davon. Der Knopf spricht von der ganzen Woche,
     // nicht vom Reiter darüber — sonst hielte man ihn für dessen Aktion.

@@ -13,7 +13,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { emptyQualifications, ROLE_CIRCUIT } from '../data/helpers'
 import { TALK_PLACEHOLDER } from '../data/meeting-edit'
-import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/planning'
+import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, slotTaskKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { PartItem, Person, Section, Week } from '../data/types'
 import { MeetingSection } from './MeetingSection'
@@ -24,8 +24,9 @@ import { MeetingSection } from './MeetingSection'
  * Hier steht jeder Platz als Chip, und daran hängen mehrere Regeln, die sonst
  * nirgends geprüft sind:
  *
- * - Das **Bestätigungs-Zeichen** (✓ / …) darf nur stehen, wo jemand bestätigen
- *   kann. Beim Gastredner behauptete es sonst eine Zusage, die es nie gab
+ * - Der **Ampel-Punkt** (grün bestätigt, gelb wartet, rot abgesagt) gilt dem
+ *   einzelnen Platz und darf nur stehen, wo jemand bestätigen kann. Beim
+ *   Gastredner behauptete er sonst eine Zusage, die es nie gab
  *   (`slot-status-quelle.test.ts` prüft, dass genau vier Aufrufer die Regel
  *   führen — hier wird gemessen, dass dieser sie auch anwendet).
  * - Der **Redner-Platz** muss das Sheet im Freitext-Modus öffnen, und zwar auch
@@ -66,7 +67,7 @@ function zeige(
     ...initialState(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
     persons: PERSONEN, services: [], groups: [], absences: [],
-    pendingIds: [], weeks, fsWeeks: [[]],
+    confirmations: {}, weeks, fsWeeks: [[]],
     ...over,
     tab,
   }
@@ -171,53 +172,123 @@ describe('Plätze als Chips', () => {
   })
 })
 
-describe('Das Bestätigungs-Zeichen steht nur, wo jemand bestätigen kann', () => {
+/** Die Stufe des Ampel-Punkts an einem Chip — `null`, wenn er keinen trägt. */
+function stufe(chip: Element | undefined): string | null {
+  const punkt = chip?.querySelector('.zusage-punkt')
+  if (!punkt) return null
+  return ['is-bestaetigt', 'is-offen', 'is-verhindert'].find((k) => punkt.classList.contains(k)) ?? '?'
+}
+
+describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
+  /*
+   * Bis zum 14. September 2026 stand hier eine Personen-Markierung: „…" an
+   * jedem Platz einer Person, solange sie irgendwo etwas offen hatte. Robert
+   * sagt den Vorsitz zu, das Gebet noch nicht — und beide Chips standen auf
+   * „…". Der Planer las daraus, der Vorsitz sei unbestätigt.
+   */
+  const eroeffnung = (): Section => ({
+    label: LABEL_EROEFFNUNG, farbe: 'neutral',
+    items: [{
+      title: 'Lied 74 · Gebet · Einleitende Worte', meta: '1 Min.',
+      names: [
+        { name: 'Anton Alt', pid: 'p-a', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
+        { name: 'Anton Alt', pid: 'p-a', rolle: 'Gebet', bereichsKey: 'gebet' },
+      ],
+    }],
+  })
+  const schluessel = (s: Section, ni: number) =>
+    slotTaskKey(s.items[0] as PartItem, '2026-09-07', 'mid', 0, 0, ni)
+
+  it('Vorsitz bestätigt, Gebet noch offen: grün und gelb nebeneinander', () => {
+    const s = eroeffnung()
+    const { container } = zeige(s, { confirmations: { [schluessel(s, 0)]: 'bestätigt' } })
+    expect(chips(container).map(stufe)).toEqual(['is-bestaetigt', 'is-offen'])
+  })
+
+  it('eine Absage ist rot — nicht gelb wie eine ausstehende Antwort', () => {
+    const s = eroeffnung()
+    const { container } = zeige(s, { confirmations: { [schluessel(s, 1)]: 'verhindert' } })
+    expect(chips(container).map(stufe)).toEqual(['is-offen', 'is-verhindert'])
+  })
+
+  it('der Screenreader hört die Stufe als Wort, hinter einem geschützten Leerzeichen', () => {
+    // Die Farbe allein sagt einem blinden Planer nichts. Ohne Leerzeichen läse
+    // er „Anton Altbestätigt"; mit einem gewöhnlichen dürfte der Punkt in einem
+    // umbrechenden Chip allein in die nächste Zeile rutschen.
+    const s = eroeffnung()
+    const { container } = zeige(s, { confirmations: { [schluessel(s, 0)]: 'bestätigt' } })
+    expect(chipTexte(container)).toEqual([
+      `Vorsitz: Anton Alt\u00A0${t.zusageBestaetigt}`,
+      `Gebet: Anton Alt\u00A0${t.zusageWartet}`,
+    ])
+    expect(chips(container)[0]!.querySelector('.zusage-punkt')!.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('die Zusage einer anderen Woche färbt diesen Platz nicht', () => {
+    // Gegenprobe zum Schlüssel: dieselbe Position eine Woche später ist ein
+    // anderer Platz.
+    const s = eroeffnung()
+    const andereWoche = slotTaskKey(s.items[0] as PartItem, '2026-09-14', 'mid', 0, 0, 0)
+    const { container } = zeige(s, { confirmations: { [andereWoche]: 'bestätigt' } })
+    expect(chips(container).map(stufe)).toEqual(['is-offen', 'is-offen'])
+  })
+})
+
+describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
   const rednerAbschnitt = (rolle: string): Section => ({
     label: LABEL_VORTRAG, farbe: 'petrol',
     items: [{ num: 1, title: 'Öffentlicher Vortrag', meta: '', names: [{ name: 'Gustav Gast', rolle }] }],
   })
 
-  it('ein offener Platz trägt keines — es gibt noch nichts zu bestätigen', () => {
+  it('ein offener Platz trägt keinen — es gibt noch nichts zu bestätigen', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
       items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: '' }] }],
     }
-    expect(zeige(s).container.querySelector('.slot-status')).toBeNull()
+    expect(zeige(s).container.querySelector('.zusage-punkt')).toBeNull()
   })
 
-  it('eine offene Bestätigung zeigt „…"', () => {
-    const s: Section = {
-      label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
-    }
-    const { container } = zeige(s, { pendingIds: ['p-a'] })
-    const status = container.querySelector('.slot-status')!
-    expect(status.textContent).toBe('…')
-    expect(status.className).toContain('is-pending')
-  })
-
-  it('eine erfolgte Bestätigung zeigt „✓"', () => {
-    const s: Section = {
-      label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
-    }
-    const { container } = zeige(s, { pendingIds: [] })
-    expect(container.querySelector('.slot-status')?.textContent).toBe('✓')
-  })
-
-  it('ein Gastredner bekommt keines — er hat weder Aufgabe noch App', () => {
+  it('ein Gastredner bekommt keinen — er hat weder Aufgabe noch App', () => {
     const { container } = zeige(rednerAbschnitt(`${ROLE_GUEST_SPEAKER} · Nordheim`), { tab: 'we' })
-    expect(container.querySelector('.slot-status')).toBeNull()
+    expect(container.querySelector('.zusage-punkt')).toBeNull()
   })
 
   it('der Kreisaufseher ebenso wenig', () => {
     const { container } = zeige(rednerAbschnitt(ROLE_CIRCUIT), { tab: 'we' })
-    expect(container.querySelector('.slot-status')).toBeNull()
+    expect(container.querySelector('.zusage-punkt')).toBeNull()
   })
 
   it('ein eigener Redner dagegen schon — für ihn gibt es den Flow', () => {
     const { container } = zeige(rednerAbschnitt(ROLE_OWN_SPEAKER), { tab: 'we' })
-    expect(container.querySelector('.slot-status')).toBeTruthy()
+    expect(stufe(chips(container)[0])).toBe('is-offen')
+  })
+
+  it('eine ausgefallene Zusammenkunft trägt keinen — auch nicht mit einer Zusage von vorher (T30)', () => {
+    // Die Namen bleiben stehen, die Zusammenkunft findet nicht statt: keine
+    // Aufgabe, keine Erinnerung, nichts zu bestätigen. Ein gelber Punkt wartete
+    // dort für immer, ein grüner meldete eine Zusage für einen leeren Abend.
+    const s: Section = {
+      label: 'X', farbe: 'petrol',
+      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
+    }
+    const ausgefallen = woche([s])
+    ausgefallen.dev = { mid: { cancelled: true } }
+    const key = slotTaskKey(s.items[0] as PartItem, '2026-09-07', 'mid', 0, 0, 0)
+    const { container } = zeige(s, { weeks: [ausgefallen], confirmations: { [key]: 'bestätigt' } })
+    expect(chipTexte(container)[0]).toContain('Anton Alt')
+    expect(container.querySelector('.zusage-punkt')).toBeNull()
+  })
+
+  it('… die andere Zusammenkunft derselben Woche zeigt ihn weiter', () => {
+    // Gegenprobe: Der Ausfall gilt der einen Zusammenkunft, nicht der Woche.
+    const s: Section = {
+      label: 'X', farbe: 'petrol',
+      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
+    }
+    const nurMitteAus = woche([], [s])
+    nurMitteAus.dev = { mid: { cancelled: true } }
+    const { container } = zeige(s, { tab: 'we', weeks: [nurMitteAus] })
+    expect(stufe(chips(container)[0])).toBe('is-offen')
   })
 })
 

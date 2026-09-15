@@ -16,7 +16,8 @@ import {
   genFsWeek,
   regenFsWeeks,
   deriveMyFsTasks,
-  fsPendingIds,
+  fsVerwaisteZusagen,
+  fsVerwaisteZusagenAller,
   fsWeekConflicts,
 } from './fs'
 import { emptyQualifications } from './helpers'
@@ -205,6 +206,26 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
     const reset = regenFsWeeks(KENN, edited, RULE, false)
     expect(reset[0][0].place).toBe('Königreichssaal')
     expect(reset[0][0].leader).toBe('A. Leiter')
+  })
+
+  it('der Leiter bleibt mit seiner Person-Id — nicht nur mit dem Namen', () => {
+    // Ohne Id fiele jede spätere Zuordnung auf den Namen zurück: Umbenennen
+    // kostete die Zusage, und ein Namensvetter erbte sie (`dieselbePerson`).
+    const mitId = [[{ ...buildFsWeeks(BASE, 1, RULE)[0]![0]!, leader: 'Anton Muster', lpid: 'p1' }]]
+    for (const erhalten of [true, false]) {
+      const [woche] = regenFsWeeks(KENN, mitId, [{ ...RULE[0]!, place: 'Markt' }], erhalten)
+      expect(woche?.[0], `preserveEdits=${erhalten}`).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
+    }
+  })
+
+  it('eine Woche, die die Regeländerung nicht betrifft, bleibt dieselbe — auch mit zugeteilten Leitern', () => {
+    // An der Referenz erkennt `persist.ts`, was es schreiben muss. Ging die
+    // Person-Id beim Neuerzeugen verloren, galt jede besetzte Woche als
+    // geändert — und jeder Tastenanschlag im Ort einer Regel schrieb sie alle.
+    const regeln: FsRule[] = [...RULE, { id: 'r2', grp: '', wd: 3, time: '10:00', place: 'Saal', monthly: 0, skipCong: false }]
+    const wochen = regenFsWeeks(KENN, buildFsWeeks(BASE, 1, regeln), regeln)
+    const besetzt = [wochen[0]!.map((i) => ({ ...i, leader: 'Anton Muster', lpid: 'p1' }))]
+    expect(regenFsWeeks(KENN, besetzt, regeln)[0]).toBe(besetzt[0])
   })
 })
 
@@ -535,60 +556,78 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
 })
 
 /**
- * Das „…" am Treffpunkt-Chip: **noch nicht bestätigt**.
+ * **Leitet jemand anderes den Treffpunkt, gehört die Zusage niemandem mehr.**
  *
- * Es hing an `derivePendingIds`, und das läuft nur über die Zusammenkünfte —
- * die zweite Datenquelle war schlicht vergessen. Der Reducer baute die Kennung
- * beim Zuteilen sorgfältig auf, `withDerivedTasks` überschrieb die Liste eine
- * Zeile später vollständig. Sichtbar wurde das als Behauptung: ein frisch
- * zugeteilter Leiter trug ein „✓", obwohl ihn noch niemand gefragt hatte.
+ * Eine Zusage gibt eine Person, gespeichert wird sie unter dem Schlüssel des
+ * Platzes. Bis zum 14. September 2026 blieb sie beim Umteilen stehen: Bernd
+ * übernahm Antons Treffpunkt und stand sofort als bestätigt da — ohne gefragt
+ * worden zu sein, ohne Erinnerung. Sagte er ab, verdeckte Antons alte Zusage
+ * seine Absage. Mit dem Ampel-Punkt wäre das ein grüner Punkt an einem Platz,
+ * den niemand zugesagt hat.
  *
- * Geprüft wird deshalb hier die Ableitung selbst und in `reducer.test.ts` der
- * Weg durch den Zustand — die Lücke lag zwischen beiden.
+ * Geprüft wird hier, **welche** Schlüssel verwaisen; dass Reducer und
+ * Datenbank sie wirklich abräumen, in `reducer.test.ts` und `persist.test.ts`.
  */
-describe('fsPendingIds — wer noch nicht zugesagt hat', () => {
-  const wochen = (): FsInstance[][] => [
-    [inst({ id: 'a', wd: 1, leader: 'Anton Muster', lpid: 'p1' })],
-    [inst({ id: 'b', wd: 3, leader: 'Bernd Muster', lpid: 'p2' })],
-  ]
+describe('fsVerwaisteZusagen — wann eine Treffpunkt-Zusage verfällt', () => {
+  const MONTAG = '2026-09-07'
+  const SCHLUESSEL = 'fs|2026-09-07|a'
+  const anton = (over: Partial<FsInstance> = {}): FsInstance =>
+    inst({ id: 'a', wd: 6, leader: 'Anton Muster', lpid: 'p1', ...over })
 
-  it('nennt jede Leitung ohne „bestätigt"', () => {
-    expect(fsPendingIds(wochen(), KENN, {}).sort()).toEqual(['p1', 'p2'])
+  it('ein anderer Leiter: die Zusage des Vorgängers verfällt', () => {
+    const bernd = anton({ leader: 'Bernd Muster', lpid: 'p2' })
+    expect(fsVerwaisteZusagen([anton()], [bernd], MONTAG)).toEqual([SCHLUESSEL])
   })
 
-  it('eine Bestätigung nimmt genau diese Person heraus', () => {
-    expect(fsPendingIds(wochen(), KENN, { 'fs|2026-09-07|a': 'bestätigt' })).toEqual(['p2'])
+  it('ausgetragen: verfällt — der Platz ist wieder offen', () => {
+    expect(fsVerwaisteZusagen([anton()], [inst({ id: 'a', wd: 6, leader: '' })], MONTAG)).toEqual([SCHLUESSEL])
   })
 
-  it('„verhindert" zählt wie offen — der Platz ist erst wieder besetzt, wenn neu zugeteilt ist', () => {
-    // Dieselbe Regel wie bei `derivePendingIds`; ohne sie verschwände das
-    // Zeichen bei einer Absage, und der Platz sähe erledigt aus.
-    expect(fsPendingIds(wochen(), KENN, { 'fs|2026-09-07|a': 'verhindert' }).sort()).toEqual(['p1', 'p2'])
+  it('der Treffpunkt ist aus der Woche gelöscht: verfällt mit ihm', () => {
+    expect(fsVerwaisteZusagen([anton()], [], MONTAG)).toEqual([SCHLUESSEL])
   })
 
-  it('offene Plätze und Freitext-Leiter bleiben draußen', () => {
-    // Der Kreisaufseher hat die App nicht — `FsPlan` zeigt bei ihm gar kein
-    // Zeichen. Stünde er hier, bekäme ein gleichnamiger Bruder dessen „…".
-    const wochenMitGast: FsInstance[][] = [
-      [
-        inst({ id: 'a', leader: '' }),
-        inst({ id: 'b', leader: 'Kreisaufseher', lext: true }),
-      ],
-    ]
-    expect(fsPendingIds(wochenMitGast, KENN, {})).toEqual([])
+  it('zum Freitext-Leiter gewechselt: verfällt — der Kreisaufseher sagt in der App nichts zu', () => {
+    const gast = inst({ id: 'a', wd: 6, leader: 'Kreisaufseher', lext: true })
+    expect(fsVerwaisteZusagen([anton()], [gast], MONTAG)).toEqual([SCHLUESSEL])
   })
 
-  it('ohne Person-Id greift der Namensschlüssel (Altdaten)', () => {
-    // Dieselbe Kennung wie `derivePendingIds` sie bildet (`kennungVon`),
-    // sonst passte die Markierung im Plan nicht auf den Chip.
-    const alt = [[inst({ id: 'a', leader: 'Anton Muster' })]]
-    expect(fsPendingIds(alt, KENN, {})).toEqual(['name:Anton Muster'])
+  it('auch wenn der Gast so heißt wie der Bruder vorher — beim Freitext ist der Name kein Anhalt', () => {
+    // Dieselbe Falle wie beim Gastredner (T29): Ein Auswärtiger, der zufällig
+    // Anton Muster heißt, übernähme sonst Antons Zusage.
+    const namensvetter = inst({ id: 'a', wd: 6, leader: 'Anton Muster', lext: true })
+    expect(fsVerwaisteZusagen([anton()], [namensvetter], MONTAG)).toEqual([SCHLUESSEL])
   })
 
-  it('ohne Datumsbasis gibt es keinen Schlüssel — dann gilt alles als offen', () => {
-    // `fsWochenStart(null, …)` ist leer; eine Bestätigung kann dann nicht
-    // zugeordnet werden. Lieber ein „…" zu viel als ein „✓", das nie gegeben wurde.
-    expect(fsPendingIds(wochen(), [], { 'fs|2026-09-07|a': 'bestätigt' }).sort()).toEqual(['p1', 'p2'])
+  it('umbenannt: bleibt — es ist dieselbe Person', () => {
+    // Die Person-Id entscheidet. Am Namen gemessen, verlöre jeder seine Zusage,
+    // dessen Schreibweise der Planer berichtigt.
+    expect(fsVerwaisteZusagen([anton()], [anton({ leader: 'Anton Muster-Neu' })], MONTAG)).toEqual([])
+  })
+
+  it('Zeit oder Ort geändert: bleibt — der Leiter ist derselbe', () => {
+    expect(fsVerwaisteZusagen([anton()], [anton({ time: '10:00', place: 'Markt' })], MONTAG)).toEqual([])
+  })
+
+  it('Altdaten ohne Person-Id: der Name entscheidet', () => {
+    const alt = inst({ id: 'a', wd: 6, leader: 'Anton Muster' })
+    expect(fsVerwaisteZusagen([alt], [{ ...alt }], MONTAG)).toEqual([])
+    expect(fsVerwaisteZusagen([alt], [{ ...alt, leader: 'Bernd Muster' }], MONTAG)).toEqual([SCHLUESSEL])
+  })
+
+  it('war der Platz vorher offen, gibt es nichts abzuräumen', () => {
+    expect(fsVerwaisteZusagen([inst({ id: 'a', wd: 6, leader: '' })], [anton()], MONTAG)).toEqual([])
+  })
+
+  it('über mehrere Wochen: nur die geänderte, unter ihrem eigenen Montag', () => {
+    // Mit Lücke im Bestand (T100): Die zweite geladene Woche beginnt am 21.,
+    // nicht am 14. — dort steht die Zusage, also dort wird abgeräumt.
+    const weeks = [{ start: '2026-09-07' }, { start: '2026-09-21' }]
+    const ersteWoche = [anton()]
+    const vorher = [ersteWoche, [anton()]]
+    const nachher = [ersteWoche, [anton({ leader: 'Bernd Muster', lpid: 'p2' })]]
+    expect(fsVerwaisteZusagenAller(weeks, null, vorher, nachher)).toEqual(['fs|2026-09-21|a'])
+    expect(fsVerwaisteZusagenAller(weeks, null, vorher, vorher)).toEqual([])
   })
 })
 

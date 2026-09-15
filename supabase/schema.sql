@@ -617,10 +617,18 @@ create policy confirmations_write on public.confirmations
     and public.task_gehoert_mir(task_key)
   );
 
--- Admins räumen beim Neu-Zuteilen den Status eines Slots ab (alle Nutzer-Zeilen)
+-- Beim Neu-Zuteilen den Status eines Platzes abräumen (alle Nutzer-Zeilen):
+-- Planer überall, Gruppenaufseher bei den Treffpunkten, die sie selbst
+-- besetzen (migration-025).
 drop policy if exists confirmations_delete_planner on public.confirmations;
 create policy confirmations_delete_planner on public.confirmations
-  for delete using (congregation_id = public.my_congregation_id() and public.is_planner());
+  for delete using (
+    congregation_id = public.my_congregation_id()
+    and (
+      public.is_planner()
+      or (public.is_group_overseer() and task_key like 'fs|%')
+    )
+  );
 
 -- Einladungen: nur Planer der Versammlung (Einlösen läuft über redeem_invite).
 drop policy if exists invites_all on public.invites;

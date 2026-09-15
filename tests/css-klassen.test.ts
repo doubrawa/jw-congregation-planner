@@ -81,3 +81,43 @@ describe('Wochen-Streifen: Klassen und Regeln passen zusammen', () => {
     expect(tsx).toContain('week-page--nach')
   })
 })
+
+/*
+ * Der Ampel-Punkt im Planen ist ein leeres `<span>` — seine ganze Aussage steckt
+ * in der Farbe, und die kommt aus CSS. jsdom rechnet kein CSS: Fehlte die Regel
+ * einer Stufe oder zeigte sie auf das falsche Token, blieben alle Tests grün,
+ * und der Planer sähe einen unsichtbaren oder falsch gefärbten Punkt.
+ */
+describe('Ampel-Punkt: jede Stufe hat ihre Farbe', () => {
+  const tsx = ohneKommentare(lies('src/planen/useZusage.ts'))
+  const css = lies('src/planen/planen.css')
+  const tokens = lies('src/styles/tokens.css')
+
+  /** Stufe → Klasse, wie `ZUSAGE_KLASSE` sie vergibt. */
+  const klassen = Object.fromEntries(
+    [...tsx.matchAll(/(bestätigt|offen|verhindert): '(is-[a-z]+)'/g)].map((m) => [m[1], m[2]]),
+  )
+
+  it('die Komponente vergibt je Stufe genau eine Klasse', () => {
+    expect(klassen).toEqual({ bestätigt: 'is-bestaetigt', offen: 'is-offen', verhindert: 'is-verhindert' })
+  })
+
+  it('jede Klasse hat eine Regel mit dem Token ihrer Stufe', () => {
+    // Über Kreuz vertauscht (grün auf „offen") wäre ebenso falsch wie gar nicht.
+    for (const [stufe, token] of [
+      ['is-bestaetigt', '--zusage-bestaetigt'],
+      ['is-offen', '--zusage-offen'],
+      ['is-verhindert', '--zusage-verhindert'],
+    ] as const) {
+      const regel = new RegExp(String.raw`\.zusage-punkt\.${stufe}\s*\{[^}]*background:\s*var\(${token}\)`)
+      expect(css, stufe).toMatch(regel)
+    }
+  })
+
+  it('jedes Token ist in der hellen Grundpalette definiert', () => {
+    const basis = tokens.slice(tokens.indexOf(':root {'), tokens.indexOf('\n}', tokens.indexOf(':root {')))
+    for (const token of ['--zusage-bestaetigt', '--zusage-offen', '--zusage-verhindert']) {
+      expect(basis, token).toMatch(new RegExp(String.raw`${token}:\s*#[0-9a-f]{6};`))
+    }
+  })
+})

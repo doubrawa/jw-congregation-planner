@@ -3,7 +3,7 @@ import { persist } from './persist'
 import type { AppAction, AppState } from './context'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from '../data/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
-import { fsGruppeEntfernen } from '../data/fs'
+import { fsGruppeEntfernen, fsTaskKey } from '../data/fs'
 import type { Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
@@ -150,6 +150,90 @@ describe('Zuteilen', () => {
 })
 
 describe('Treffpunkte', () => {
+  /*
+   * Leitet jemand anderes den Treffpunkt, verschwindet die alte Zusage auch aus
+   * der Datenbank. Der Reducer räumt den Zustand ab; `persist` liest am
+   * Unterschied der Zusagen ab, was zu löschen ist — und löscht es **mit dem
+   * Schreiben der Woche**, nie davor. Sonst stünde nach einem abgebrochenen
+   * Speichern der alte Leiter ohne seine Zusage in der Datenbank.
+   */
+  const KEY = fsTaskKey('2026-09-07', 'tp1')
+  const mitLeiter = (leader: string, lpid: string, time = '14:00') => {
+    const fsWeeks = buildDemoFsWeeks()
+    fsWeeks[0] = [{ id: 'tp1', ruleId: null, grp: '', wd: 1, time, place: 'Saal', leader, lpid }]
+    return fsWeeks
+  }
+  const FS_SEL = { kind: 'fs', wi: 0, instId: 'tp1', label: '', priv: null, groups: false } as const
+  /** Welcher Aufruf kam zuerst? (Reihenfolge über die Mock-Aufrufnummern) */
+  const zuerst = (a: { mock: { invocationCallOrder: number[] } }, b: { mock: { invocationCallOrder: number[] } }) =>
+    (a.mock.invocationCallOrder[0] ?? Infinity) < (b.mock.invocationCallOrder[0] ?? Infinity)
+
+  it('ein Leiterwechsel löscht die Zusage des Vorgängers — gleich nach dem Schreiben der Woche', () => {
+    const prev = st({ slotSel: FS_SEL, fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
+    const next = st({ fsWeeks: mitLeiter('Bernd Brand', 'p-b'), confirmations: {} })
+    persist(prev, next, { type: 'assign', name: 'Bernd Brand', pid: 'p-b' })
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', next.fsWeeks[0])
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
+    expect(zuerst(vi.mocked(data.saveFsWeek), vi.mocked(data.deleteConfirmationRows))).toBe(true)
+  })
+
+  it('bei einer Grundplan-Änderung wartet das Löschen auf das gebündelte Schreiben der Woche', () => {
+    // Die Regel ist weg, mit ihr der Treffpunkt und seine Zusage. Geschrieben
+    // wird die Woche erst nach 600 ms Ruhe — bis dahin darf nichts gelöscht
+    // sein: Wird die App vorher geschlossen, bleibt die Datenbank beim alten
+    // Leiter, und dem gehört dann auch weiter seine Zusage.
+    const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
+    const ohneTreffpunkt = buildDemoFsWeeks()
+    ohneTreffpunkt[0] = []
+    const next = st({ fsWeeks: ohneTreffpunkt, fsRules: [], confirmations: {} })
+    persist(prev, next, { type: 'fsRuleRemove', id: 'r-weg' })
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(600)
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [])
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
+    expect(zuerst(vi.mocked(data.saveFsWeek), vi.mocked(data.deleteConfirmationRows))).toBe(true)
+  })
+
+  it('… und geht beim Verlassen der Ansicht gemeinsam mit der Woche hinaus', () => {
+    const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
+    const ohneTreffpunkt = buildDemoFsWeeks()
+    ohneTreffpunkt[0] = []
+    const next = st({ fsWeeks: ohneTreffpunkt, fsRules: [], confirmations: {} })
+    persist(prev, next, { type: 'fsRuleRemove', id: 'r-weg' })
+    persist(next, next, { type: 'navigate', screen: 'start' })
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [])
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
+  })
+
+  it('bleibt der Leiter derselbe, wird nichts gelöscht — auch nicht bei neuer Uhrzeit', () => {
+    const zusagen = { [KEY]: 'bestätigt' as const }
+    const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: zusagen })
+    const next = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a', '15:00'), confirmations: zusagen })
+    persist(prev, next, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
+    expect(data.saveFsWeek).toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+  })
+
+  it('das Laden löscht nichts — es schreibt keine Woche, also verfällt dabei auch nichts', () => {
+    const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
+    const next = st({ fsWeeks: mitLeiter('Bernd Brand', 'p-b'), confirmations: {} })
+    persist(prev, next, { type: 'hydrate', payload: {} } as unknown as AppAction)
+    vi.advanceTimersByTime(600)
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+  })
+
+  it('eine verschwundene Zusammenkunfts-Zusage löscht dieser Weg nicht — dafür haben die Zusammenkünfte ihren eigenen', () => {
+    // Dort werden Schlüssel auch umbenannt statt gelöscht (lacRemove); ein
+    // Löschen hier träfe die Zeile, bevor sie ihren neuen Namen bekommt.
+    const meeting = '2026-09-07|mid|part|1|1|0'
+    const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [meeting]: 'bestätigt' } })
+    const next = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a', '15:00'), confirmations: {} })
+    persist(prev, next, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+  })
+
   it('fsInstUpdate/Remove speichern die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'fsInstUpdate', wi: 2, id: 'x', patch: {} })

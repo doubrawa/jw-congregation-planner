@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { kennungVon } from '../data/planning'
 import { useApp, useAppDispatch } from '../app/context'
 import { FS_TIME_OPTIONS, fsKennung, fsLeiterZuteilung, fsTag, fsWeekConflicts } from '../data/fs'
 import { LOCALES } from '../i18n/langs'
@@ -8,6 +7,8 @@ import type { FsInstance } from '../data/types'
 import { SlotChip } from './SlotChip'
 import { machBetrifft } from './useKonflikte'
 import { wochentagName } from './wochentage'
+import { useZusage } from './useZusage'
+import { ZusageLegende } from './ZusageStatus'
 
 
 /**
@@ -64,6 +65,7 @@ function FsAutoAssign({ onlyGroup }: { onlyGroup: string | null }) {
 export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
+  const zusage = useZusage()
   const wi = state.week
   // Gruppenaufseher sehen/planen nur die Treffpunkte ihrer eigenen Gruppe.
   const insts = (state.fsWeeks[wi] ?? []).filter((i) => !onlyGroup || i.grp === onlyGroup)
@@ -145,6 +147,9 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
       <p className="plan-hint">{t.fsNurWoche}</p>
 
       <FsAutoAssign onlyGroup={onlyGroup} />
+      {/* Die Leiter-Chips tragen dieselben Punkte wie die Zusammenkünfte —
+          also steht auch hier, was sie bedeuten. */}
+      <ZusageLegende />
 
       {openLeaders.length > 0 && (
         <div className="plan-banner-box plan-open">
@@ -201,16 +206,15 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                 onChange={(e) => dispatch({ type: 'fsInstUpdate', wi, id: inst.id, patch: { place: e.target.value } })}
               />
               <div className="fs-edit-slot">
-                {/* Beim Freitext-Leiter bleibt das Bestätigungs-Zeichen ganz
-                    weg: „✓" heißt *bestätigt*, und der Kreisaufseher hat die
-                    App gar nicht — ein Haken behauptete dort etwas, das nie
-                    passiert ist. `konflikt` fragt aus demselben Grund
-                    `fsLeiterZuteilung`. */}
+                {/* Beim Freitext-Leiter bleibt der Ampel-Punkt ganz weg: Der
+                    Kreisaufseher hat die App gar nicht — ein Punkt behauptete
+                    dort eine Zusage oder ein Warten, das es nie gibt.
+                    `konflikt` fragt aus demselben Grund `fsLeiterZuteilung`. */}
                 <SlotChip
                   text={inst.leader ? `${tu('Leiter')}: ${inst.leader}` : t.zuteilenChip}
                   open={!inst.leader}
                   showStatus={Boolean(inst.leader) && !inst.lext}
-                  pending={state.pendingIds.includes(kennungVon(inst.leader, inst.lpid))}
+                  status={zusage.treffpunkt(inst)}
                   konflikt={betrifft(fsLeiterZuteilung(inst))}
                   onClick={() => openLeader(inst)}
                 />

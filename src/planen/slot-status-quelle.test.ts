@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
 /**
- * Kein Bestätigungs-Zeichen, wo es nichts zu bestätigen gibt.
+ * Kein Ampel-Punkt, wo es nichts zu bestätigen gibt.
  *
- * `SlotChip` hängt an einen belegten Platz ein `✓` (bestätigt) oder ein `…`
- * (ausstehend). Beides setzt voraus, dass überhaupt jemand bestätigen **kann** —
- * eine Person der Versammlung mit Konto. Genau das trifft auf drei Sorten
- * Platzhalter nicht zu:
+ * `SlotChip` hängt an einen belegten Platz den Ampel-Punkt seiner Zusage
+ * (grün bestätigt, gelb wartet, rot abgesagt). Das setzt voraus, dass überhaupt
+ * jemand bestätigen **kann** — eine Person der Versammlung mit Konto, für einen
+ * Termin, der stattfindet. Genau das trifft auf vier Fälle nicht zu:
  *
- * | Sorte | Warum kein Flow |
+ * | Fall | Warum kein Flow |
  * | --- | --- |
  * | Gruppen-Rotation („Gruppe 2") | keine Person |
  * | Gastredner, Kreisaufseher (`SKIP_ROLE`) | nicht in dieser Versammlung |
  * | Freitext-Treffpunktleiter (T63, `lext`) | dito |
+ * | ausgefallene Zusammenkunft (T30, `zusage.moeglich`) | keine Aufgabe, nichts zu bestätigen |
+ *
+ * Der vierte kam am 15. September 2026 dazu: Der Planen-Screen zeigt auch eine
+ * ausgefallene Zusammenkunft mit allen Namen, und dort stand jeder Punkt für
+ * immer auf Gelb.
  *
  * **Diese Regel ist zweimal vergessen worden**, und zwar nicht aus Nachlässig-
  * keit: `HelpersPanel` führt sie seit jeher richtig, aber sie steht dort als
@@ -49,15 +54,18 @@ const QUELLEN = new Map(
 /**
  * Erwartete `showStatus`-Angabe je Aufrufer — Leerraum normiert.
  *
- * Nur **ein** Eintrag darf unbedingt sein, und er ist begründet: Der Ratgeber
- * der Zusätzlichen Klasse ist immer ein Bruder der eigenen Versammlung. Es gibt
- * dort keinen Freitext und keine Gruppe, also auch nichts auszunehmen.
+ * Der Ratgeber der Zusätzlichen Klasse ist immer ein Bruder der eigenen
+ * Versammlung: Freitext und Gruppe gibt es dort nicht, nur den Ausfall.
+ * Treffpunkte hängen an keiner Zusammenkunft — deren Ausfall
+ * (`istAusgefallen`) betrifft sie im Datenmodell nicht, und `deriveMyFsTasks`
+ * fragt ihn ebenso wenig.
  */
 const ERWARTET: Record<string, string> = {
-  'planen/AuxCounselorPanel.tsx': 'Boolean(slot.name)',
+  'planen/AuxCounselorPanel.tsx': "Boolean(slot.name) && zusage.moeglich('mid')",
   'planen/FsPlan.tsx': 'Boolean(inst.leader) && !inst.lext',
-  'planen/HelpersPanel.tsx': 'Boolean(name) && !isGroup',
-  'planen/MeetingSection.tsx': 'Boolean(slot.name) && !isGuestRole(slot.rolle)',
+  'planen/HelpersPanel.tsx': 'Boolean(name) && !isGroup && zusage.moeglich(mtab(state.tab))',
+  'planen/MeetingSection.tsx':
+    'Boolean(slot.name) && !isGuestRole(slot.rolle) && zusage.moeglich(mtab(state.tab))',
 }
 
 /**

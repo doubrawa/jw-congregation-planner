@@ -1,10 +1,10 @@
 import { useApp } from '../app/context'
-import { kennungVon } from '../data/planning'
 import { hatAuxKlasse, ratgeberSlot } from '../data/aux-class'
 import { useT } from '../i18n/useT'
 import type { Meeting } from '../data/types'
 import { SlotChip } from './SlotChip'
 import { useKonflikte } from './useKonflikte'
+import { useZusage } from './useZusage'
 
 /**
  * Ratgeber der Zusätzlichen Klasse (jw.org S-38, Absatz 26: „Für jede
@@ -21,6 +21,7 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
   // Vor dem frühen Ausstieg: Haken laufen in jedem Durchgang, oder gar nicht.
   // Die Klasse gibt es nur unter der Woche — deshalb fest 'mid'.
   const { betrifft } = useKonflikte('mid')
+  const zusage = useZusage()
   if (!hatAuxKlasse(meeting)) return null
 
   const slot = ratgeberSlot(meeting)
@@ -46,8 +47,8 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
           <SlotChip
             text={slot.name || t.zuteilenChip}
             open={!slot.name}
-            showStatus={Boolean(slot.name)}
-            pending={state.pendingIds.includes(kennungVon(slot.name, slot.pid))}
+            showStatus={Boolean(slot.name) && zusage.moeglich('mid')}
+            status={zusage.ratgeber('mid')}
             konflikt={betrifft(slot)}
             onClick={open}
           />

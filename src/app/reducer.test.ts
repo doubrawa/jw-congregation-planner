@@ -12,7 +12,6 @@ import {
   DEMO_GROUPS,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
-  DEMO_PENDING_IDS,
   DEMO_PERSONS,
   DEMO_PLANNER,
   DEMO_REMINDERS,
@@ -20,8 +19,9 @@ import {
   FS_BASE,
 } from '../data/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
-import { displayName, emptyQualifications, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
-import { deriveMyTasks, derivePendingIds } from '../data/planning'
+import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { fsTaskKey } from '../data/fs'
+import { deriveMyTasks } from '../data/planning'
 import { alsFreitext } from '../i18n/translate'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 
@@ -60,7 +60,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     importing: false,
     imported: false,
     myTasks: [...DEMO_MY_TASKS],
-    pendingIds: [...DEMO_PENDING_IDS],
     confirmations: {},
     sentLog: {},
     confirmOpen: false,
@@ -113,7 +112,7 @@ function weeksContainName(weeks: Week[], name: string): boolean {
 const person = (name: string): Person => DEMO_PERSONS.find((p) => displayName(p) === name)!
 
 /**
- * Eine Neuableitung anstoßen (`myTasks`, `pendingIds`, `substituteReqs`).
+ * Eine Neuableitung anstoßen (`myTasks`, `substituteReqs`).
  *
  * Der Reducer rechnet nach, sobald sich eine seiner Rechengrundlagen geändert
  * hat; ein Sprachwechsel ist der billigste Anstoß dafür. Auf **dieselbe**
@@ -285,15 +284,17 @@ describe('Personen', () => {
     expect(next.selectedPersonId).toBe('p1')
   })
 
-  it('updatePerson zieht eine Namensänderung durch die Wochen', () => {
+  it('updatePerson zieht eine Namensänderung durch die Wochen — die Zusagen bleiben', () => {
     const target = person('Manfred Albrecht')
-    const s = makeState({ pendingIds: [target.id] })
+    const seine = deriveMyTasks(buildDemoWeeks(), DEMO_SERVICES, 'Manfred Albrecht', {})
+    const zusagen = Object.fromEntries(seine.map((t) => [t.id, 'bestätigt' as const]))
+    const s = makeState({ confirmations: zusagen })
     const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfredo' } })
     expect(weeksContainName(next.weeks, 'Manfredo Albrecht')).toBe(true)
     expect(weeksContainName(next.weeks, 'Manfred Albrecht')).toBe(false)
-    // Die „…"-Markierung hängt an der Id und überlebt die Umbenennung von
-    // selbst — früher musste sie eigens mitgepflegt werden.
-    expect(next.pendingIds).toContain(target.id)
+    // Wer umbenannt wird, hat nichts neu zuzusagen: Die Zusagen hängen am Platz,
+    // und darauf steht dieselbe Person.
+    expect(next.confirmations).toEqual(zusagen)
   })
 
   it('updatePerson zieht die Namensänderung auch durch die Treffpunkte', () => {
@@ -578,26 +579,43 @@ describe('assign (Zuteilen)', () => {
     expect(reducer(s, { type: 'assign', name: 'X' })).toBe(s)
   })
 
-  it('Programmpunkt: setzt Namen und ergänzt pendingIds', () => {
+  it('Programmpunkt: setzt Namen — und die Zusage des Vorgängers verfällt', () => {
     const s = makeState()
     const sel = firstPartSlot(s.weeks[0], 'mid')
-    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
+    const vorgaenger = (s.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name
+    const key = deriveMyTasks(s.weeks, s.services, vorgaenger, {})[0]!.id
+    const next = reducer(makeState({ slotSel: sel, confirmations: { [key]: 'bestätigt' } }), {
+      type: 'assign', name: 'Neue Person', pid: 'neu-1',
+    })
     expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('Neue Person')
-    expect(next.pendingIds).toContain('neu-1')
+    // Sonst stünde die neue Person grün da, ohne zugesagt zu haben.
+    expect(next.confirmations).toEqual({})
     // Eine Mitteilung entsteht dabei nicht mehr (T99) — dafür gibt es den
     // eigenen Fall weiter unten.
     expect(next.slotSel).toBeNull()
+  })
+
+  it('an einen Namensvetter umgeteilt: die Zusage verfällt trotzdem', () => {
+    // Zwei Brüder desselben Anzeigenamens, die Dubletten-Warnung übergangen.
+    // Am Namen gemessen sah das Umteilen nach nichts aus — der zweite stand
+    // mit der Zusage des ersten grün im Plan.
+    const weeks = buildDemoWeeks()
+    const sel = firstPartSlot(weeks[0]!, 'mid')
+    const platz = (weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!
+    platz.pid = 'p-erster'
+    const key = deriveMyTasks(weeks, DEMO_SERVICES, platz.name, {}, '', 'p-erster')[0]!.id
+    const next = reducer(makeState({ weeks, slotSel: sel, confirmations: { [key]: 'bestätigt' } }), {
+      type: 'assign', name: platz.name, pid: 'p-zweiter',
+    })
+    expect(next.confirmations).toEqual({})
   })
 
   /*
     Der Redner-Platz des öffentlichen Vortrags trägt beide Fälle, und **die
     geschriebene Rolle** entscheidet — nicht `sel.guest`. Das Flag sagt nur
     „das ist der Redner-Platz"; es steht bei beiden Fällen auf true, weil es
-    im Sheet die Freitext-Felder öffnet (T29).
-
-    Vorher las der Reducer das Flag. Dadurch blieb der eigene Redner trotz
-    `pid` und Rolle „Redner" vom Bestätigungs-Flow ausgenommen — die zweite
-    Hälfte von F1.
+    im Sheet die Freitext-Felder öffnet (T29). Ob es danach eine Aufgabe zu
+    bestätigen gibt, sagt `eachAssignedSlot` an der Rolle (t29.test.ts).
   */
   const rednerPlatz = (): PartSlotSelection => {
     const s = makeState()
@@ -605,30 +623,30 @@ describe('assign (Zuteilen)', () => {
     return { kind: 'part', wi: 0, tab: 'we', si, ii: 0, ni: 0, priv: 'vortrag', groups: false, label: 'Vortrag', guest: true }
   }
 
-  it('Gastredner landet nicht in pendingIds', () => {
+  it('ein Gastredner bekommt keine Zusage angelegt', () => {
     const sel = rednerPlatz()
     const next = reducer(makeState({ slotSel: sel }), {
       type: 'assign', name: 'Gast Redner', rolle: 'Gastredner · Vers. Nordheim',
     })
-    expect(next.pendingIds).not.toContain('gast-1')
     expect(next.confirmations).toEqual({})
   })
 
-  it('eigener Redner landet sehr wohl in pendingIds', () => {
-    const sel = rednerPlatz()
-    const next = reducer(makeState({ slotSel: sel }), {
-      type: 'assign', name: 'Neue Person', rolle: ROLE_OWN_SPEAKER, pid: 'eigen-1',
-    })
-    expect(next.pendingIds).toContain('eigen-1')
-  })
-
-  it('eine pid allein genügt nicht — auf einem Gastredner-Platz zählt die Rolle', () => {
-    // Gegenprobe zum Flag: dieselbe pid, nur die Rolle unterscheidet sich.
-    const sel = rednerPlatz()
-    const next = reducer(makeState({ slotSel: sel }), {
-      type: 'assign', name: 'Gast Redner', rolle: 'Gastredner', pid: 'gast-1',
-    })
-    expect(next.pendingIds).not.toContain('gast-1')
+  it('der eigene Redner steht danach unter „Meine Aufgaben" — der Gast mit derselben pid nicht', () => {
+    // Vor der Woche, sonst fiele die Aufgabe als vergangen heraus (T77).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 10))
+    try {
+      const sel = rednerPlatz()
+      const p = person('Simon Krüger')
+      const fall = (rolle: string) =>
+        reducer(makeState({ slotSel: sel, dataStatus: 'ready', personId: p.id, myTasks: [] }), {
+          type: 'assign', name: displayName(p), rolle, pid: p.id,
+        })
+      const amSonntag = (s: AppState) => s.myTasks.filter((t) => t.id.startsWith('2026-09-07|we|'))
+      expect(amSonntag(fall(ROLE_OWN_SPEAKER)).length - amSonntag(fall('Gastredner')).length).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('leerer Name entfernt (kein pending, kein Mitteilungs-Push)', () => {
@@ -644,9 +662,10 @@ describe('assign (Zuteilen)', () => {
     const s = makeState()
     const inst = s.fsWeeks[0][0]
     const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
-    const next = reducer(makeState({ slotSel: sel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
+    const vorher = makeState({ slotSel: sel })
+    const next = reducer(vorher, { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
     expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe('Fritz Leiter')
-    expect(next.pendingIds).toContain('fritz-1')
+    expect(next.weeks).toBe(vorher.weeks)
   })
 })
 
@@ -886,7 +905,7 @@ describe('Erinnerungen', () => {
  * sich nur an. Dieselbe Sorgfalt, die vorher der Schalter brauchte.
  *
  * Und zugleich, dass **nur** die Mitteilung wegfällt: zugeteilt wird weiter,
- * und die Aufgabe bleibt unbestätigt (`pendingIds`).
+ * und die Aufgabe bleibt unbestätigt (keine Zusage angelegt).
  */
 describe('Zuteilen meldet nichts mehr an die Planer (T99)', () => {
   /** Demo-Woche mit einem offenen Programmpunkt — sonst gibt es nichts zu tun. */
@@ -909,7 +928,7 @@ describe('Zuteilen meldet nichts mehr an die Planer (T99)', () => {
     const next = reducer(s, { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
     expect(next.notifs).toBe(s.notifs)
     expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('Neue Person')
-    expect(next.pendingIds).toContain('neu-1')
+    expect(next.confirmations).toEqual({})
   })
 
   it('Treffpunkt-Leiter: keine Mitteilung, Leiter trotzdem gesetzt', () => {
@@ -1100,6 +1119,26 @@ describe('hydrate / setDataStatus', () => {
     invites: [],
   }
 
+  it('eine anderswo umgeteilte Treffpunkt-Leitung behält beim Laden die Zusage des neuen Leiters', () => {
+    /*
+     * Ein anderer Planer hat den Treffpunkt an Jonas gegeben, und Jonas hat
+     * zugesagt. Auf diesem Gerät steht noch Simon. Beim Nachladen kommen Jonas
+     * und seine Zusage vom Server. Räumte der Reducer dabei „verwaiste" Zusagen
+     * ab, verlöre er genau diese — der Planer sähe Jonas gelb statt grün.
+     */
+    const mitLeiter = (p: Person) => {
+      const fsWeeks = buildDemoFsWeeks()
+      fsWeeks[0] = [{ id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(p), lpid: p.id }]
+      return fsWeeks
+    }
+    const key = fsTaskKey('2026-09-07', 'tp1')
+    const next = reducer(makeState({ dataStatus: 'ready', fsWeeks: mitLeiter(person('Simon Krüger')) }), {
+      type: 'hydrate',
+      payload: { ...payload, fsWeeks: mitLeiter(person('Jonas Berger')), confirmations: { [key]: 'bestätigt' } },
+    })
+    expect(next.confirmations).toEqual({ [key]: 'bestätigt' })
+  })
+
   it('übernimmt die Nutzdaten, setzt ready und Woche 0', () => {
     // `terminGewaehlt: false` ist die Lage beim **Start** — so steht es in
     // init.ts, solange kein Debug-Hash einen Reiter vorgibt. Nur dann darf das
@@ -1252,14 +1291,11 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
   })
   afterEach(() => vi.useRealTimers())
 
-  it('eine geänderte Rechengrundlage berechnet myTasks/pendingIds neu', () => {
+  it('eine geänderte Rechengrundlage berechnet myTasks neu', () => {
     const me = person('Simon Krüger')
-    const s = makeState({ dataStatus: 'ready', personId: me.id, myTasks: [], pendingIds: [] })
+    const s = makeState({ dataStatus: 'ready', personId: me.id, myTasks: [] })
     const next = neuAbgeleitet(s)
     expect(next.myTasks.length).toBeGreaterThan(0)
-    // Über die Kennung: die Demo-Wochen tragen teils noch keine pid, dann
-    // greift der Namensschlüssel.
-    expect(next.pendingIds.some((k) => k === me.id || k === `name:${displayName(me)}`)).toBe(true)
   })
 
   it('Vergangenes legt sich nicht mehr zum Bestätigen vor (T77)', () => {
@@ -1421,80 +1457,94 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     )
     const nachher = reducer(s, { type: 'setTheme', theme: 'indigo' })
     expect(nachher.myTasks).toBe(s.myTasks)
-    expect(nachher.pendingIds).toBe(s.pendingIds)
+    expect(nachher.confirmations).toBe(s.confirmations)
   })
 
-  /*
-   * Dieselbe Lücke, eine Zeile weiter: `pendingIds`.
-   *
-   * `withDerivedTasks` baut die Liste bei **jeder** Ableitungs-Aktion neu auf und
-   * überschreibt damit, was der Reducer beim Zuteilen gerade eingetragen hat.
-   * Solange dort nur `derivePendingIds` (Zusammenkünfte) stand, ging die
-   * Treffpunkt-Kennung jedes Mal verloren — der Chip im Treffpunkt-Plan trug ein
-   * „✓", also die Behauptung, der Leiter habe zugesagt, obwohl ihn noch niemand
-   * gefragt hatte. Und umgekehrt ein „…" für jemanden, der seinen Treffpunkt
-   * längst bestätigt hatte, sobald irgendeine Zusammenkunfts-Aufgabe von ihm
-   * offen war.
-   *
-   * Geprüft wird mit einer Person **ohne** Zusammenkunfts-Zuteilungen: sonst
-   * stünde ihre Kennung ohnehin schon in der Liste und der Test bewiese nichts.
-   */
-  describe('pendingIds kennt beide Datenquellen', () => {
-    /** Person, die in keiner Woche eingeteilt ist — sie darf nur über fs hereinkommen. */
-    const nurFs = (): Person => ({
-      id: 'p-nur-fs', fn: 'Timo', ln: 'Treffpunkt', role: 'verkuendiger',
-      tel: '', mail: '', priv: { ...emptyQualifications(), treffpunkt: true },
+  it('wer einen Treffpunkt übernimmt, wird gefragt — nicht als bestätigt geführt', () => {
+    // Die sichtbare Folge, wenn die Zusage des Vorgängers stehen bliebe: Der
+    // Nachfolger hätte nichts zu bestätigen, bekäme keine Erinnerung, und der
+    // Planer sähe einen grünen Punkt (Einzelheiten im Block darunter).
+    const vorgaenger = person('Simon Krüger')
+    const nachfolger = person('Jonas Berger')
+    const fsWeeks = buildDemoFsWeeks()
+    fsWeeks[0] = [
+      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(vorgaenger), lpid: vorgaenger.id },
+    ]
+    const sel = { kind: 'fs' as const, wi: 0, instId: 'tp1', label: 'Leiter', priv: 'treffpunkt', groups: false }
+    const s = makeState({
+      dataStatus: 'ready', personId: nachfolger.id, fsWeeks, slotSel: sel, myTasks: [],
+      confirmations: { 'fs|2026-09-07|tp1': 'bestätigt' },
     })
+    const next = reducer(s, { type: 'assign', name: displayName(nachfolger), pid: nachfolger.id })
+    expect(next.myTasks.find((t) => t.id === 'fs|2026-09-07|tp1')?.status).toBe('offen')
+  })
+})
 
-    const mitLeiter = (over: Partial<AppState> = {}): AppState => {
-      const p = nurFs()
-      const fsWeeks = buildDemoFsWeeks()
-      fsWeeks[0] = [
-        { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(p), lpid: p.id },
-      ]
-      return makeState({
-        dataStatus: 'ready',
-        persons: [...DEMO_PERSONS, p],
-        personId: p.id,
-        fsWeeks,
-        myTasks: [],
-        pendingIds: [],
-        ...over,
-      })
-    }
+/**
+ * **Leitet jemand anderes den Treffpunkt, verfällt die Zusage** — auf jedem Weg.
+ *
+ * Bis zum 14. September 2026 blieb sie stehen: Bei den Zusammenkünften räumt
+ * jede Zuteilung ihre Schlüssel ab, bei den Treffpunkten tat es keine. Der
+ * Nachfolger erbte „bestätigt" (oder „verhindert"), und der Ampel-Punkt im
+ * Planen hätte das angezeigt. Abgeräumt wird jetzt an **einer** Stelle für alle
+ * Aktionen (`ohneVerwaisteTreffpunktZusagen`) — geprüft wird deshalb jeder Weg,
+ * der einen Leiter ändert, und die Wege, die ihn **nicht** ändern.
+ */
+describe('Treffpunkt-Zusagen verfallen mit dem Leiter', () => {
+  const KEY = fsTaskKey('2026-09-07', 'tp1')
+  const ANDERER = fsTaskKey('2026-09-07', 'tp2')
+  const simon = person('Simon Krüger')
+  const sel = { kind: 'fs' as const, wi: 0, instId: 'tp1', label: 'Leiter', priv: 'treffpunkt', groups: false }
 
-    it('ein zugeteilter, nicht bestätigter Treffpunkt-Leiter trägt „…"', () => {
-      const s = mitLeiter()
-      // Gegenprobe: aus den Zusammenkünften käme diese Kennung nicht.
-      expect(derivePendingIds(s.weeks, s.services, s.confirmations)).not.toContain('p-nur-fs')
-      expect(neuAbgeleitet(s).pendingIds).toContain('p-nur-fs')
-    })
+  /** Zwei Treffpunkte, beide von Simon geleitet und zugesagt. */
+  const zugesagt = (status: 'bestätigt' | 'verhindert' = 'bestätigt', over: Partial<AppState> = {}) => {
+    const fsWeeks = buildDemoFsWeeks()
+    const leitung = { ruleId: null, grp: '', time: '14:00', place: 'Saal', leader: displayName(simon), lpid: simon.id }
+    fsWeeks[0] = [{ id: 'tp1', wd: 1, ...leitung }, { id: 'tp2', wd: 3, ...leitung }]
+    return makeState({ fsWeeks, week: 0, confirmations: { [KEY]: status, [ANDERER]: 'bestätigt' }, ...over })
+  }
 
-    it('nach seiner Bestätigung verschwindet das Zeichen', () => {
-      const s = mitLeiter({ confirmations: { 'fs|2026-09-07|tp1': 'bestätigt' } })
-      expect(neuAbgeleitet(s).pendingIds).not.toContain('p-nur-fs')
-    })
+  it('umgeteilt: der Nachfolger erbt die Zusage nicht — der andere Treffpunkt behält seine', () => {
+    const next = reducer(zugesagt('bestätigt', { slotSel: sel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
+    expect(next.confirmations).toEqual({ [ANDERER]: 'bestätigt' })
+  })
 
-    it('das Zuteilen selbst hält bis zur Ableitung durch', () => {
-      // Der Weg, auf dem es auffiel: zuteilen, und der Chip stand sofort auf „✓".
-      const p = nurFs()
-      const inst = buildDemoFsWeeks()[0]![0]!
-      const sel = {
-        kind: 'fs' as const, wi: 0, instId: inst.id,
-        label: 'Leiter', priv: 'treffpunkt', groups: false,
-      }
-      const s = makeState({
-        dataStatus: 'ready',
-        persons: [...DEMO_PERSONS, p],
-        personId: p.id,
-        slotSel: sel,
-        myTasks: [],
-        pendingIds: [],
-      })
-      const next = reducer(s, { type: 'assign', name: displayName(p), pid: p.id })
-      expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.leader).toBe(displayName(p))
-      expect(next.pendingIds).toContain(p.id)
-    })
+  it('auch eine Absage vererbt sich nicht — der Nachfolger hat nicht abgesagt', () => {
+    const next = reducer(zugesagt('verhindert', { slotSel: sel }), { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
+    expect(next.confirmations[KEY]).toBeUndefined()
+  })
+
+  it('ausgetragen', () => {
+    const next = reducer(zugesagt('bestätigt', { slotSel: sel }), { type: 'assign', name: '' })
+    expect(next.confirmations[KEY]).toBeUndefined()
+  })
+
+  it('an einen Freitext-Leiter gegeben', () => {
+    const next = reducer(zugesagt('bestätigt', { slotSel: sel }), { type: 'assign', name: 'Kreisaufseher', extern: true })
+    expect(next.confirmations[KEY]).toBeUndefined()
+  })
+
+  it('„Leeren" räumt alle Zusagen der Woche ab', () => {
+    const next = reducer(zugesagt(), { type: 'fsClear', onlyGroup: null })
+    expect(next.confirmations).toEqual({})
+  })
+
+  it('der Treffpunkt ist aus der Woche gelöscht', () => {
+    const next = reducer(zugesagt(), { type: 'fsInstRemove', wi: 0, id: 'tp1' })
+    expect(next.confirmations).toEqual({ [ANDERER]: 'bestätigt' })
+  })
+
+  it('Zeit oder Ort geändert: dieselbe Person, die Zusage bleibt', () => {
+    const s = zugesagt()
+    const next = reducer(s, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
+    expect(next.confirmations).toBe(s.confirmations)
+  })
+
+  it('der Leiter wird umbenannt: dieselbe Person, die Zusage bleibt', () => {
+    const s = zugesagt()
+    const next = reducer(s, { type: 'updatePerson', id: simon.id, patch: { fn: 'Simeon' } })
+    expect(next.fsWeeks[0]![0]!.leader).toBe('Simeon Krüger')
+    expect(next.confirmations).toBe(s.confirmations)
   })
 })
 

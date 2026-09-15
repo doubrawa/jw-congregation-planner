@@ -106,13 +106,13 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 39 | Abwesende ausgegraut ans Listenende | Zuteilungs-Sheet | Planer | `data/absence.ts` |
 | 40 | Hinweis „heute schon zugeteilt" (warnen statt blocken) | Zuteilungs-Sheet | Planer | `assignmentsInMeeting` |
 | 41 | Externe Redner als Freitext (Gastredner/Kreisaufseher) | Zuteilungs-Sheet | Planer | `PartSlotSelection.guest`, `isGuestRole` |
-| 41a | Öffentlicher Vortrag umschaltbar: Gastredner ↔ eigener Redner (T29) | Zuteilungs-Sheet | Planer | `isSpeakerRole`, `ROLE_OWN_SPEAKER`, `slotRolle` |
+| 41a | Öffentlicher Vortrag umschaltbar: Gastredner ↔ eigener Redner (T29) | Zuteilungs-Sheet | Planer | `isSpeakerRole`, `ROLE_OWN_SPEAKER` |
 | 41b | Sonderwoche: Tag/Uhrzeit verlegen, Zusammenkunft absagen, Grund (T30) | Planen | Planer | `Week.dev`, `SonderwochePanel`, `istAusgefallen` |
 | 42 | Auto-Zuteilung, getrennt nach Aufgaben / Hilfsdiensten | Planen | Planer | `planen/AutoAssignPanel.tsx`, `autoAssignMeeting` |
 | 43 | Leeren mit Zwei-Tipp-Bestätigung | Planen | Planer | `AutoAssignPanel.tsx` |
 | 44 | Konflikt-Banner: abwesend, Doppelbelegung, Hilfsdienst+Aufgabe (Serien seit T81 nicht mehr) | Planen | Planer | `planen/PlanBanners.tsx`, `weekConflicts` |
 | 45 | Banner der offenen Slots (ganze Woche) | Planen | Planer | `openSlotLabels` |
-| 46 | Status je Chip: ✓ bestätigt / … wartet | Planen | Planer | `pendingNames` |
+| 46 | Ampel-Punkt je Chip: grün bestätigt / gelb wartet / rot abgesagt — je Platz, nicht je Person | Planen | Planer | `zusageStatus`, `planen/useZusage.ts`, `ZusageStatus.tsx` |
 | 47 | „Unser Leben als Christ": Punkte hinzufügen, löschen, verschieben, Minuten ±, Endzeit zieht mit | Planen | Planer | `data/meeting-edit.ts` (`lacAdd/lacRemove/lacMove/lacAdjust`, `shiftEnd`) |
 | 48 | Gesprächspartner-Slot an/aus | Planen | Planer | `togglePartner` |
 | 49 | Vortragsthema (Freitext) am Wochenende | Planen | Planer | `editTalkTheme` |

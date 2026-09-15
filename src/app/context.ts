@@ -173,10 +173,10 @@ export interface AppState {
 
   /* ---- Abgeleitet: aus den Serverdaten gerechnet, nie gespeichert -------- */
   // Persönliche Aufgaben & Bestätigungs-Flow. Im Produktionsmodus werden
-  // myTasks/pendingIds aus weeks + confirmations abgeleitet (store.tsx).
+  // myTasks/substituteReqs aus weeks + confirmations abgeleitet (reducer.ts).
+  // Der Ampel-Punkt im Planen braucht keine eigene Ableitung: Er liest
+  // `confirmations` je Platz (`zusageStatus`).
   myTasks: MyTask[]
-  /** Kennungen (Person-Id, sonst `name:…`) mit noch offener Bestätigung — Planen: „…“ */
-  pendingIds: string[]
   substituteReqs: SubstituteReq[] // offene Ersatzgesuche für mich (Einspringen)
 
   /* ---- Ansichtszustand: was gerade offen ist ---------------------------- */

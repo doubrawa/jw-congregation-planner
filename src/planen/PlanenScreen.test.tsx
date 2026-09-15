@@ -73,7 +73,7 @@ function zeige(over: Partial<AppState> = {}) {
     screen: 'planen', tab: 'mid', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
     persons: [PLANER, AUFSEHER], groups: GRUPPEN, services: DIENSTE, absences: [],
-    weeks: [woche()], fsWeeks: [[]], fsRules: [], week: 0, pendingIds: [],
+    weeks: [woche()], fsWeeks: [[]], fsRules: [], week: 0,
     fsBase: new Date(2026, 8, 7, 12, 0),
     congregation: { name: 'Nordheim', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
     ...over,

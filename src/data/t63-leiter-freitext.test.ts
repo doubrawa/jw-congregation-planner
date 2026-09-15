@@ -9,6 +9,7 @@ import {
   fsSetLeader,
   fsWeekConflicts,
   fsWochenStart,
+  regenFsWeeks,
 } from './fs'
 import { emptyQualifications } from './helpers'
 import type { Absence, FsInstance, Person } from './types'
@@ -85,6 +86,31 @@ describe('T63 · Freitext-Leiter: setzen und zurücknehmen', () => {
 })
 
 describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
+  it('er übersteht das Laden: erst die Neu-Ausrichtung am Grundplan, dann der Backfill', () => {
+    /*
+     * Genau die Reihenfolge von `loadCongregationData`. Bis zum 15. September
+     * 2026 übernahm `regenFsWeeks` nur den Namen und warf `lext` weg — der
+     * Schutz im Backfill darunter kam also nie zum Zug: Nach jedem Laden war
+     * der Kreisaufseher wieder ein Name ohne Kennzeichen und wurde zum Bruder.
+     */
+    const regel = [{ id: 'r1', grp: '', wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
+    const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
+    const ausgerichtet = regenFsWeeks(KENN.slice(0, 1), gespeichert, regel, true)
+    const geladen = fsMigrateLeaderPids(ausgerichtet, [person()])
+    expect(geladen[0]?.[0]).toMatchObject({ leader: KS, lext: true })
+    expect(geladen[0]?.[0]?.lpid).toBeUndefined()
+    expect(deriveMyFsTasks(geladen, KENN, KS, {}, 'p1', 'T')).toHaveLength(0)
+  })
+
+  it('… und jede Änderung am Grundplan', () => {
+    // Derselbe Weg ohne `preserveEdits`: Der Ort der Regel wird geändert, die
+    // Woche neu erzeugt — der Freitext-Leiter bleibt Freitext.
+    const regel = [{ id: 'r1', grp: '', wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
+    const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
+    const [woche] = regenFsWeeks(KENN.slice(0, 1), gespeichert, [{ ...regel[0]!, place: 'Markt' }])
+    expect(woche?.[0]).toMatchObject({ leader: KS, lext: true, place: 'Markt' })
+  })
+
   it('der Backfill lässt ihn in Ruhe — sonst wäre der Fehler selbstheilend in die falsche Richtung', () => {
     const vorher = [[inst({ leader: KS, lext: true })]]
     const nachher = fsMigrateLeaderPids(vorher, [person()])

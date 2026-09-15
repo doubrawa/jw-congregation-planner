@@ -6,6 +6,7 @@
  */
 
 import { changedSlotKeys, partSwapKeyPairs, shiftPartConfirmations } from '../data/planning'
+import { fsTaskKeyWoche } from '../data/fs'
 import { itemNameCount, lacAddIndex, lacMoveTarget } from '../data/meeting-edit'
 import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
 import {
@@ -103,10 +104,29 @@ const congSaves = createDebouncedWriter<'info', { congId: string; info: AppState
   SAVE_DELAY,
   (_key, { congId, info }) => saveCongregationInfo(congId, info),
 )
+/*
+ * Treffpunkt-Zusagen, deren Löschen auf das gebündelte Schreiben ihrer Woche
+ * wartet — je Woche (Kennung).
+ *
+ * **Nie vor der Woche.** Eine Grundplan-Änderung entfernt oder besetzt
+ * Treffpunkte in vielen Wochen, geschrieben werden die Wochen aber erst nach
+ * kurzer Ruhe (`fsWeekSaves`). Bis zum 15. September 2026 ging das Löschen der
+ * alten Zusagen sofort hinaus. Wurde die App in diesen 600 ms geschlossen,
+ * stand in der Datenbank der alte Leiter — ohne seine Zusage: Er galt als
+ * unbestätigt und bekam erneut Erinnerungen. Jetzt geht beides gemeinsam oder
+ * gar nicht.
+ */
+const ausstehendeFsLoeschungen = new Map<string, Set<string>>()
+
 // Treffpunkte: derselbe Weg wie bei den Wochen — gebündelt je Kennung.
 const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsInstance[] }>(
   SAVE_DELAY,
-  (woche, { congId, insts }) => saveFsWeek(congId, woche, insts),
+  (woche, { congId, insts }) => {
+    saveFsWeek(congId, woche, insts)
+    const keys = ausstehendeFsLoeschungen.get(woche)
+    ausstehendeFsLoeschungen.delete(woche)
+    if (keys?.size) deleteConfirmationRows(congId, [...keys])
+  },
 )
 // Der Grundplan hängt an einem Freitextfeld (Ort) und änderte sich deshalb je
 // Tastenanschlag — mitsamt jeder daraus erzeugten Woche.
@@ -204,22 +224,81 @@ function wochePlanen(congId: string, weeks: Week[], wi: number): void {
 }
 
 /**
- * Treffpunkt-Woche an `wi` speichern, falls es sie gibt.
+ * Treffpunkt-Zusagen, die der Reducer bei dieser Aktion abgeräumt hat — je
+ * Woche (Kennung).
  *
- * Die Kennung steht bei der **Woche**, nicht bei den Treffpunkten — deshalb
- * liegen hier beide Listen. Fehlt die Woche, gibt es nichts zu bezeichnen.
+ * **Abgelesen, nicht nachgerechnet.** Welche Zusage mit ihrem Leiter verfällt,
+ * entscheidet der Reducer (`ohneVerwaisteTreffpunktZusagen`). Hier stand
+ * vorher dieselbe Rechnung ein zweites Mal; jetzt gilt, was im Zustand fehlt.
+ * Eine künftige Ausnahme im Reducer kommt so von selbst in der Datenbank an.
+ *
+ * Nur Treffpunkt-Schlüssel: Die Zusammenkünfte räumen ihre Zeilen in ihren
+ * eigenen Zweigen ab (`changedSlotKeys`), und dort werden Schlüssel auch
+ * umbenannt statt gelöscht (`shiftPartConfirmations`).
+ *
+ * **Gelöscht wird nur, was mit einer geschriebenen Woche verfällt.** Deshalb
+ * braucht `hydrate` keine Ausnahme: Es ersetzt die Zusagen im Ganzen, schreibt
+ * aber keine Woche — was dort fehlt, bleibt unberührt.
+ *
+ * Löschen dürfen Planer und — seit migration-025 — Gruppenaufseher, die ihre
+ * Treffpunkte selbst besetzen.
  */
-function fsWocheSpeichern(congId: string, weeks: Week[], fsWeeks: FsInstance[][], wi: number): void {
-  const week = weeks[wi]
-  const fsWeek = fsWeeks[wi]
-  if (week && fsWeek) saveFsWeek(congId, week.start, fsWeek)
+function verwaisteFsZusagen(prev: AppState, next: AppState): Map<string, string[]> {
+  const jeWoche = new Map<string, string[]>()
+  if (prev.confirmations === next.confirmations) return jeWoche
+  for (const key of Object.keys(prev.confirmations)) {
+    if (key in next.confirmations) continue
+    const woche = fsTaskKeyWoche(key)
+    if (woche !== null) jeWoche.set(woche, [...(jeWoche.get(woche) ?? []), key])
+  }
+  return jeWoche
 }
 
-/** Wie `fsWocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag. */
-function fsWochePlanen(congId: string, weeks: Week[], fsWeeks: FsInstance[][], wi: number): void {
+/**
+ * Treffpunkt-Woche an `wi` speichern, falls es sie gibt — und mit ihr die
+ * Zusagen löschen, die in dieser Woche verfallen sind (`verwaist`).
+ *
+ * Die Kennung steht bei der **Woche**, nicht bei den Treffpunkten — deshalb
+ * liegen hier beide Listen. Fehlt die Woche, gibt es nichts zu bezeichnen, und
+ * dann bleiben auch die Zusagen stehen: Die Datenbank behält den alten Leiter,
+ * also gehört ihm auch weiter seine Zusage.
+ */
+function fsWocheSpeichern(
+  congId: string,
+  weeks: Week[],
+  fsWeeks: FsInstance[][],
+  wi: number,
+  verwaist: ReadonlyMap<string, string[]>,
+): void {
   const week = weeks[wi]
   const fsWeek = fsWeeks[wi]
-  if (week && fsWeek) fsWeekSaves.schedule(week.start, { congId, insts: fsWeek })
+  if (!week || !fsWeek) return
+  saveFsWeek(congId, week.start, fsWeek)
+  const keys = verwaist.get(week.start)
+  if (keys) deleteConfirmationRows(congId, keys)
+}
+
+/**
+ * Wie `fsWocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag.
+ * Die verfallenen Zusagen warten mit der Woche (`ausstehendeFsLoeschungen`).
+ */
+function fsWochePlanen(
+  congId: string,
+  weeks: Week[],
+  fsWeeks: FsInstance[][],
+  wi: number,
+  verwaist: ReadonlyMap<string, string[]>,
+): void {
+  const week = weeks[wi]
+  const fsWeek = fsWeeks[wi]
+  if (!week || !fsWeek) return
+  const keys = verwaist.get(week.start)
+  if (keys) {
+    const warten = ausstehendeFsLoeschungen.get(week.start) ?? new Set<string>()
+    for (const key of keys) warten.add(key)
+    ausstehendeFsLoeschungen.set(week.start, warten)
+  }
+  fsWeekSaves.schedule(week.start, { congId, insts: fsWeek })
 }
 
 /**
@@ -236,7 +315,12 @@ function fsWochePlanen(congId: string, weeks: Week[], fsWeeks: FsInstance[][], w
  * Stand — samt der Regeln der gerade gelöschten Gruppe. Über denselben Writer
  * ersetzt der neue Stand den ausstehenden.
  */
-function treffpunkteSpeichern(congId: string, prev: AppState, next: AppState): void {
+function treffpunkteSpeichern(
+  congId: string,
+  prev: AppState,
+  next: AppState,
+  verwaist: ReadonlyMap<string, string[]>,
+): void {
   if (next.fsRules !== prev.fsRules) {
     fsRuleSaves.schedule('rules', {
       congId,
@@ -245,7 +329,7 @@ function treffpunkteSpeichern(congId: string, prev: AppState, next: AppState): v
     })
   }
   for (let i = 0; i < next.fsWeeks.length; i++) {
-    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i)
+    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, verwaist)
   }
 }
 
@@ -258,12 +342,16 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   // übersehener Pfad nicht in einen Schreibversuch auf veraltetem Stand läuft.
   if (next.staleAt) return
 
+  // Welche Treffpunkt-Zusagen mit dieser Aktion verfallen — gelöscht werden sie
+  // erst mit dem Schreiben ihrer Woche (`fsWocheSpeichern`, `fsWochePlanen`).
+  const fsVerwaist = verwaisteFsZusagen(prev, next)
+
   switch (action.type) {
     case 'assign': {
       const sel = prev.slotSel
       // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle.
       if (sel && sel.kind === 'fs') {
-        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, sel.wi)
+        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, sel.wi, fsVerwaist)
         break
       }
       if (sel) {
@@ -307,18 +395,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'fsInstUpdate':
     case 'fsInstRemove':
-      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, action.wi)
+      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, action.wi, fsVerwaist)
       break
     case 'fsInstAdd':
     case 'fsAutoAssign':
     case 'fsClear':
-      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, prev.week)
+      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, prev.week, fsVerwaist)
       break
     case 'fsRuleAdd':
     case 'fsRuleUpdate':
     case 'fsRuleRemove':
       // Grundplan-Blob + die neu materialisierten Wochen (gebündelt).
-      treffpunkteSpeichern(congId, prev, next)
+      treffpunkteSpeichern(congId, prev, next, fsVerwaist)
       break
     case 'lacMove': {
       if (next.weeks === prev.weeks) break // Rand: kein Tausch
@@ -397,7 +485,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Dasselbe für die Treffpunkte (fsRenameLeader) — eigene Tabelle, eigener
       // Schreibweg. Ohne dies hielte der neue Name nur bis zum nächsten Laden.
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i)
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
       // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
       if ('planner' in action.patch) {
@@ -441,7 +529,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
       }
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i)
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
       break
     }
@@ -496,7 +584,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Ihre Treffpunkte sind mit ihr gegangen. Die Regeln liegen als ein Blob
       // ohne Fremdschlüssel in `fs_rules` — die Datenbank räumt hier nichts
       // von selbst, anders als bei `persons.grp` (on delete set null).
-      treffpunkteSpeichern(congId, prev, next)
+      treffpunkteSpeichern(congId, prev, next, fsVerwaist)
       break
     case 'markAllRead':
       markNotificationsRead(congId, userId)

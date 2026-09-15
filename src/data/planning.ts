@@ -12,6 +12,7 @@
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
 import { programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
+  dieselbePerson,
   displayName,
   eigeneRolle,
   gehoertZu,
@@ -164,22 +165,6 @@ export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
   return meeting.helpers[sel.svc]?.[sel.pos]?.name ?? ''
 }
 
-/**
- * Aktuelle Rolle auf einem Slot ("" = keine). Nur Programmpunkte tragen eine;
- * Hilfsdienst-Plätze und der Ratgeber sind über ihren Ort bestimmt.
- *
- * Gebraucht, damit der Reducer beim Zuteilen die **tatsächlich geschriebene**
- * Rolle prüfen kann statt des Auswahl-Flags `sel.guest`. Das war die zweite
- * Hälfte von F1: selbst mit `rolle: 'Redner'` und `pid` unterblieb der
- * Bestätigungs-Flow, weil der Reducer noch auf das Flag sah.
- */
-export function slotRolle(weeks: Week[], sel: MeetingSlotSelection): string {
-  if (sel.kind !== 'part') return ''
-  const item = weeks[sel.wi]?.[sel.tab]?.sections[sel.si]?.items[sel.ii]
-  if (!item || isSong(item)) return ''
-  return slotsOf(item, sel.aux === true)[sel.ni]?.rolle ?? ''
-}
-
 /*
  * `MeetingAssignment` steht in `types.ts` — auch `SubstituteReq` trägt sie
  * inzwischen („an diesem Tag schon"), und types.ts darf planning.ts nicht
@@ -303,10 +288,30 @@ export function countOpenSlots(meeting: Meeting, services: Service[]): number {
 }
 
 /**
+ * Steht auf einem Platz noch dieselbe Besetzung? Leer bleibt leer; sonst
+ * entscheidet `dieselbePerson` — die Person-Id, wo beide Seiten eine tragen.
+ */
+function gleicheBesetzung(
+  a: { name: string; pid?: string } | undefined,
+  b: { name: string; pid?: string } | undefined,
+): boolean {
+  const vorher = { name: a?.name ?? '', pid: a?.pid }
+  const nachher = { name: b?.name ?? '', pid: b?.pid }
+  if (!vorher.name || !nachher.name) return vorher.name === nachher.name
+  return dieselbePerson(vorher, nachher)
+}
+
+/**
  * task_keys aller Slots, deren Besetzung sich zwischen zwei Ständen derselben
  * Zusammenkunft geändert hat (Zuteilen, Entfernen, Auto-Zuteilung). Für diese
  * Slots wird der Bestätigungs-Status abgeräumt — sonst erbt die neu
  * eingeteilte Person ein fremdes „bestätigt“/„verhindert“.
+ *
+ * **Verglichen wird die Person, nicht der Name** (15. September 2026). Am Namen
+ * gemessen erbte ein Namensvetter mit anderer Person-Id die Zusage seines
+ * Vorgängers — und die Ampel im Planen zeigte ihn grün, obwohl er nie gefragt
+ * worden war. Dieselbe Rangfolge wie bei den Treffpunkten
+ * (`fsVerwaisteZusagen`) und beim Entzug (`entzogeneZusagen`).
  */
 export function changedSlotKeys(
   prev: Meeting,
@@ -319,17 +324,16 @@ export function changedSlotKeys(
   for (const { slot, si, item, ii, ni, aux } of programmPlaetze(next)) {
     const prevItem = prev.sections[si]?.items[ii]
     const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
-    if ((vorher[ni]?.name ?? '') !== slot.name) keys.push(slotTaskKey(item, woche, tab, si, ii, ni, aux))
+    if (!gleicheBesetzung(vorher[ni], slot)) keys.push(slotTaskKey(item, woche, tab, si, ii, ni, aux))
   }
   for (const svc of services) {
     const prevArr = prev.helpers[svc.key] ?? []
     const nextArr = next.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if ((prevArr[pos]?.name ?? '') !== (nextArr[pos]?.name ?? ''))
-        keys.push(helperTaskKey(woche, tab, svc.key, pos))
+      if (!gleicheBesetzung(prevArr[pos], nextArr[pos])) keys.push(helperTaskKey(woche, tab, svc.key, pos))
     }
   }
-  if ((prev.auxRatgeber?.name ?? '') !== (next.auxRatgeber?.name ?? '')) {
+  if (!gleicheBesetzung(prev.auxRatgeber, next.auxRatgeber)) {
     keys.push(ratgeberTaskKey(woche, tab))
   }
   return keys
@@ -387,7 +391,6 @@ export interface AutoAssignResult {
   weeks: Week[]
   count: number // Anzahl vergebener Zuteilungen
   newly: string[] // neu vergebene Personennamen (Mitteilungstexte, Tests)
-  newlyIds: string[] // dieselben als Person-Id (→ pendingIds)
   unfilled: number // offen gebliebene Slots ohne passenden/freien Kandidaten
 }
 
@@ -423,14 +426,14 @@ export function autoAssignMeeting(
   abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): AutoAssignResult {
   const next = klonWoche(weeks, weekIndex)
-  if (!next) return { weeks, count: 0, newly: [], newlyIds: [], unfilled: 0 }
+  if (!next) return { weeks, count: 0, newly: [], unfilled: 0 }
   // Entfällt die Zusammenkunft, gibt es nichts zu besetzen (T30). Ohne diese
   // Zeile verteilte „Automatisch zuteilen" Aufgaben für einen Abend, an dem
   // niemand zusammenkommt — und benachteiligte die Gewählten anschließend bei
   // der nächsten echten Zusammenkunft, weil sie als ausgelastet gälten.
   const meeting = next[weekIndex]?.[tab]
   if (!meeting || istAusgefallen(next[weekIndex], tab)) {
-    return { weeks, count: 0, newly: [], newlyIds: [], unfilled: 0 }
+    return { weeks, count: 0, newly: [], unfilled: 0 }
   }
 
   // Reinigungs-Regel: Aufseher und Gehilfe der Gruppe, die in dieser Woche
@@ -521,8 +524,6 @@ export function autoAssignMeeting(
   let count = 0
   let unfilled = 0
   const newly: string[] = []
-  /** Dieselben Zuteilungen als Person-Id — für die „…"-Markierung (pendingIds). */
-  const newlyIds: string[] = []
 
   // Umfang: Programmpunkte (Aufgaben) und/oder Hilfsdienste getrennt zuteilbar.
   const doParts = scope !== 'helpers'
@@ -533,7 +534,6 @@ export function autoAssignMeeting(
     totalLoad.set(person.id, tl(person) + 1)
     if (kind === 'part') partLoad.set(person.id, pl(person) + 1)
     newly.push(displayName(person))
-    newlyIds.push(person.id)
     count++
   }
 
@@ -732,7 +732,7 @@ export function autoAssignMeeting(
   }
   } // Ende Hilfsdienste (doHelpers)
 
-  return { weeks: next, count, newly, newlyIds, unfilled }
+  return { weeks: next, count, newly, unfilled }
 }
 
 /**
@@ -1423,37 +1423,34 @@ export function deriveMyTasks(
     // Aufgaben sehen.
     const mine = pid && personId ? pid === personId : name === personName
     if (!mine) return
-    tasks.push({ ...task(), status: confirmations[key] ?? 'offen' })
+    tasks.push({ ...task(), status: zusageStatus(confirmations, key) })
   })
   return tasks
 }
 
 /**
- * Namen mit mindestens einer noch nicht bestätigten Zuteilung → im Planen
- * als „…“ markiert (verhindert zählt wie offen, bis der Planer neu zuteilt).
+ * Stand der Zusage **eines Platzes** — keine Zeile heißt „offen".
+ *
+ * Eine Stelle für beide Seiten: „Meine Aufgaben" des Eingeteilten und der
+ * Ampel-Punkt am Chip des Planers lesen hier. So sieht der Planer genau das,
+ * was der Verkündiger bei sich stehen hat.
+ *
+ * **Je Platz, nicht je Person.** Bis zum 14. September 2026 zeigte der Chip
+ * eine Personen-Markierung: „…" an *jedem* Platz einer Person, solange sie
+ * *irgendwo* noch etwas offen hatte — auch in einer anderen oder längst
+ * vergangenen Woche. Ein bestätigter Vorsitz stand deshalb als unbestätigt
+ * da, und eine Absage sah aus wie eine ausstehende Antwort.
  */
-export function derivePendingIds(
-  weeks: Week[],
-  services: Service[],
-  confirmations: ConfirmationMap,
-): string[] {
-  const pending = new Set<string>()
-  // meetings ist für die reine Mengenbildung irrelevant (kein Countdown nötig).
-  eachAssignedSlot(weeks, services, '', (name, key, _task, pid) => {
-    if (confirmations[key] !== 'bestätigt') pending.add(kennungVon(name, pid))
-  })
-  return [...pending]
+export function zusageStatus(confirmations: ConfirmationMap, key: string): TaskStatus {
+  return confirmations[key] ?? 'offen'
 }
 
 /**
- * Kennung einer Zuteilung für die „…"-Markierung im Planen.
+ * Kennung einer Person in einer Zuteilung — für die Konfliktprüfung.
  *
  * Die Person-Id, wo vorhanden — sonst der Anzeigename mit Präfix, damit ein
- * Name nie versehentlich wie eine Id aussieht. Vorher war das eine reine
- * Namensliste: zwei Personen desselben Namens bekamen gemeinsam das „…", auch
- * wenn nur eine von beiden noch nicht bestätigt hatte. Und weil Namen sich
- * ändern, musste die Liste beim Umbenennen mitgepflegt werden — mit Ids
- * entfällt das.
+ * Name nie versehentlich wie eine Id aussieht. Zwei Personen desselben Namens
+ * bleiben so auseinander, und ein Umbenennen ändert nichts.
  */
 export function kennungVon(name: string, pid?: string): string {
   return pid ?? `name:${name}`

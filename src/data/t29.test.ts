@@ -11,7 +11,6 @@ import {
   rolleBasis,
   ROLE_GUEST_SPEAKER,
   ROLE_OWN_SPEAKER,
-  slotRolle,
 } from './planning'
 import { migrateAssignmentNames, migrateAssignmentPids } from '../lib/data'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
@@ -125,13 +124,6 @@ describe('Der eigene Redner ist eine vollwertige Zuteilung', () => {
     expect(deriveMyTasks(mitEigenem(), [], 'M. Hartmann', {}, '', person.id)).toHaveLength(1)
     const gast = assignSlot([makeWeek()], REDNER, 'M. Hartmann', 'Gastredner · Vers. Nordheim')
     expect(deriveMyTasks(gast, [], 'M. Hartmann', {}, '', person.id)).toHaveLength(0)
-  })
-
-  it('slotRolle liest die geschriebene Rolle zurück', () => {
-    // Der Reducer entscheidet daran, ob es einen Bestätigungs-Flow gibt —
-    // nicht am Auswahl-Flag, das nur „ist der Redner-Platz" bedeutet.
-    expect(slotRolle(mitEigenem(), REDNER)).toBe(ROLE_OWN_SPEAKER)
-    expect(slotRolle([makeWeek()], REDNER)).toBe(ROLE_GUEST_SPEAKER)
   })
 })
 

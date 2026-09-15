@@ -23,7 +23,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   deriveMyFsTasks,
-  fsPendingIds,
   fsTag,
   fsTaskKey,
   fsWochenKennungen,
@@ -115,20 +114,14 @@ describe('Was an der Kennung hängt', () => {
     expect(tasks[1]?.date).toContain('26. September')
   })
 
-  it('die „…"-Markierung — eine Zusage unter dem echten Schlüssel zählt', () => {
-    const conf: ConfirmationMap = { 'fs|2026-09-21|r1': 'bestätigt' }
+  it('die Zusage — sie gilt der Woche, in der sie gegeben wurde', () => {
     // Alle drei Wochen tragen denselben Leiter; bestätigt ist die mittlere.
-    // Solange eine offen bleibt, steht er in der Liste — geprüft wird deshalb
-    // gegen den umgekehrten Fall: **alle** bestätigt heißt niemand offen.
-    const alle: ConfirmationMap = {
-      'fs|2026-09-07|r1': 'bestätigt',
-      'fs|2026-09-21|r1': 'bestätigt',
-      'fs|2026-09-28|r1': 'bestätigt',
-    }
-    expect(fsPendingIds(wochen, KENN, alle)).toEqual([])
+    // Dieselbe Karte liest der Ampel-Punkt im Planen (`zusageStatus`).
+    const conf: ConfirmationMap = { 'fs|2026-09-21|r1': 'bestätigt' }
+    const tasks = deriveMyFsTasks(wochen, KENN, 'T. Lindner', conf, 'p1', 'Treffpunkt-Leiter')
     // Mit der alten Rechnung hätte die mittlere Zusage unter `…09-14…`
     // gestanden und hier nichts bewirkt.
-    expect(fsPendingIds(wochen, KENN, conf)).toEqual(['p1'])
+    expect(tasks.map((t) => t.status)).toEqual(['offen', 'bestätigt', 'offen'])
   })
 
   it('die Monatsregel — „1. Samstag" greift in der Woche, in der er wirklich liegt', () => {

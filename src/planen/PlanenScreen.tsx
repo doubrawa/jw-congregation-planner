@@ -16,13 +16,15 @@ import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { WochePanel } from './WochePanel'
 import { HelpersPanel } from './HelpersPanel'
 import { MeetingSection } from './MeetingSection'
+import { ZusageLegende } from './ZusageStatus'
 import './planen.css'
 
 /**
  * Planen (Screen 3, nur Planer): alle Slots einer Woche als Chips —
- * Tippen öffnet das Zuteilungs-Sheet. Belegte Slots zeigen ✓ (bestätigt)
- * oder … (wartet). „Unser Leben als Christ" ist editierbar. Der Screen
- * orchestriert nur; Banner, Abschnitte und Hilfsdienste sind eigene Bausteine.
+ * Tippen öffnet das Zuteilungs-Sheet. Belegte Slots tragen den Ampel-Punkt
+ * ihrer Zusage (grün bestätigt, gelb wartet, rot abgesagt). „Unser Leben als
+ * Christ" ist editierbar. Der Screen orchestriert nur; Banner, Abschnitte und
+ * Hilfsdienste sind eigene Bausteine.
  */
 export function PlanenScreen() {
   // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
@@ -123,7 +125,7 @@ function PlanenBody() {
 
 
           <AutoAssignPanel />
-          <p className="plan-legend">{t.planLegend}</p>
+          <ZusageLegende />
 
           {/* Schulungsaufgaben gibt es nur unter der Woche — der Bogen steht
               deshalb nur dort und zeigt sich gar nicht, wenn keine da sind. */}

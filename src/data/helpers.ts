@@ -915,6 +915,23 @@ export function idAufloeser(persons: readonly Person[]): (z: Zuteilung | undefin
 }
 
 /**
+ * Zwei Besetzungen desselben Platzes — dieselbe Person?
+ *
+ * Die Id entscheidet, sobald **beide** Seiten eine tragen; sonst der Name. Ein
+ * halbseitiger Vergleich (eine Seite mit Id, die andere ohne) fiele sonst auf
+ * „ungleich" und meldete einen Wechsel, wo nur eine Id nachgetragen wurde.
+ *
+ * **Eine Regel für drei Fragen:** Wurde jemandem eine Zusage genommen
+ * (`entzogeneZusagen`)? Verfällt eine Zusage beim Umteilen
+ * (`changedSlotKeys`, `fsVerwaisteZusagen`)? Stand sie vorher an zwei
+ * Stellen, liefen die Antworten auseinander: Die Nachricht „Zuteilung
+ * zurückgezogen" ging hinaus, während die Zusage am Platz stehen blieb.
+ */
+export function dieselbePerson(a: { name: string; pid?: string }, b: { name: string; pid?: string }): boolean {
+  return a.pid && b.pid ? a.pid === b.pid : a.name === b.name
+}
+
+/**
  * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
  * Zählt wie der Prototyp auch Begleiter-Erwähnungen im Rollenlabel
  * ("mit A. Hoffmann") — wer begleitet, hat ebenfalls eine Aufgabe.

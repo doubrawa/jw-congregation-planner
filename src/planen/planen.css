@@ -90,10 +90,23 @@
   text-transform: none;
 }
 
+/* Legende der Ampel-Punkte. Bricht auf schmalen Bildschirmen zwischen den
+   Stufen um, nie mitten in einer. */
 .plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
   margin-top: 10px;
   font-size: calc(10.5px * var(--fs));
   color: var(--mut);
+}
+
+.plan-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  white-space: nowrap;
 }
 
 /* ---- Konflikt-Warnungen ------------------------------------------------- */
@@ -380,13 +393,37 @@
   vertical-align: middle;
 }
 
-.slot-status {
-  margin-inline-start: 5px;
-  color: var(--pet);
+/*
+ * Ampel-Punkt der Zusage: grün bestätigt, gelb wartet, rot abgesagt (vorher
+ * „✓" und „…"). Die Farben stehen je Palette in tokens.css (`--zusage-*`).
+ *
+ * Größe in em, damit er mit der Schrift wächst (`--fs`) — am Chip wie in der
+ * Legende. Der Konflikt-Punkt vor dem Namen bleibt mit 5px deutlich kleiner
+ * und steht auf der anderen Seite: zwei Punkte, zwei Bedeutungen.
+ */
+.zusage-punkt {
+  display: inline-block;
+  flex: none;
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 50%;
 }
 
-.slot-status.is-pending {
-  color: var(--mut2);
+.zusage-punkt.is-bestaetigt {
+  background: var(--zusage-bestaetigt);
+}
+
+.zusage-punkt.is-offen {
+  background: var(--zusage-offen);
+}
+
+.zusage-punkt.is-verhindert {
+  background: var(--zusage-verhindert);
+}
+
+/* Am Chip hinter dem Namen: das Leerzeichen davor plus ein wenig Luft. */
+.slot-chip .zusage-punkt {
+  margin-inline-start: 0.15em;
 }
 
 /* ---- „Unser Leben als Christ“ bearbeiten -------------------------------- */

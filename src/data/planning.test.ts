@@ -14,7 +14,6 @@ import {
   openSlotLabels,
   countOpenSlots,
   deriveMyTasks,
-  derivePendingIds,
   deriveSubstituteReqs,
   assignSlot,
   clearAssignments,
@@ -148,6 +147,33 @@ describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
   it('ohne Änderung keine Keys', () => {
     const weeks = buildDemoWeeks()
     expect(changedSlotKeys(weeks[0].mid, weeks[0].mid, DEMO_SERVICES, '2026-09-07', 'mid')).toHaveLength(0)
+  })
+
+  it('ein Namensvetter mit anderer Person-Id ist ein Wechsel — er erbt die Zusage nicht', () => {
+    // Am Namen gemessen sah das Umteilen von Josef Mayer (p1) auf Josef Mayer
+    // (p2) nach gar nichts aus. Die Zusage blieb stehen, und die Ampel zeigte
+    // den zweiten grün, obwohl ihn nie jemand gefragt hatte.
+    const weeks = buildDemoWeeks()
+    const before = structuredClone(weeks[0]!.mid)
+    const item = before.sections[0]!.items.find((i) => !isSong(i)) as PartItem
+    item.names[0] = { ...item.names[0]!, name: 'Josef Mayer', pid: 'p1' }
+    before.helpers.mik = [{ name: 'Josef Mayer', pid: 'p1' }, ...(before.helpers.mik ?? []).slice(1)]
+    const after = structuredClone(before)
+    ;(after.sections[0]!.items.find((i) => !isSong(i)) as PartItem).names[0]!.pid = 'p2'
+    after.helpers.mik![0]!.pid = 'p2'
+    expect(changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid').sort()).toEqual(
+      ['2026-09-07|mid|helper|mik|0', '2026-09-07|mid|part|0|0|0'].sort(),
+    )
+  })
+
+  it('dieselbe Person, deren Id erst jetzt dasteht, ist kein Wechsel', () => {
+    // Altdaten ohne Id, und beim erneuten Antippen kommt die Id dazu. Wer
+    // zugesagt hatte, soll deshalb nicht erneut gefragt werden.
+    const weeks = buildDemoWeeks()
+    const before = structuredClone(weeks[0]!.mid)
+    const after = structuredClone(before)
+    ;(after.sections[0]!.items.find((i) => !isSong(i)) as PartItem).names[0]!.pid = 'p-neu'
+    expect(changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid')).toEqual([])
   })
 })
 
@@ -582,28 +608,6 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     const conf = { [open[0].id]: 'bestätigt', [open[1].id]: 'verhindert' } as const
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', conf)
     expect(tasks.map((t) => t.status)).toEqual(['bestätigt', 'verhindert', 'offen', 'offen'])
-  })
-
-  it('pendingIds: ohne Bestätigung pending, Externe und Gruppen nie', () => {
-    // Geführt wird über die Kennung: Person-Id, wo der Slot eine trägt, sonst
-    // `name:…`. Die Demo-Wochen haben beides, deshalb hier über einen Helfer.
-    const pending = derivePendingIds(weeks, DEMO_SERVICES, {})
-    const drin = (name: string): boolean =>
-      pending.includes(`name:${name}`) ||
-      pending.includes(DEMO_PERSONS.find((p) => displayName(p) === name)?.id ?? '—')
-    expect(drin('Simon Krüger')).toBe(true)
-    expect(drin('K. Wagner')).toBe(false) // Kreisaufseher (extern)
-    expect(drin('M. Hartmann')).toBe(false) // Gastredner (extern)
-    expect(pending.some((k) => k.startsWith('name:Gruppe'))).toBe(false)
-  })
-
-  it('pendingIds: voll bestätigte Personen verschwinden', () => {
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
-    const conf = Object.fromEntries(tasks.map((t) => [t.id, 'bestätigt' as const]))
-    const pending = derivePendingIds(weeks, DEMO_SERVICES, conf)
-    const simon = DEMO_PERSONS.find((p) => displayName(p) === 'Simon Krüger')!
-    expect(pending).not.toContain(simon.id)
-    expect(pending).not.toContain('name:Simon Krüger')
   })
 })
 
@@ -1197,13 +1201,6 @@ describe('Zuordnung über die Person-Id statt über den Namen', () => {
       (c) => c.kind === 'absent',
     )
     expect(absent).toHaveLength(1)
-  })
-
-  it('derivePendingIds führt beide getrennt', () => {
-    const weeks = wocheMitBeiden()
-    const pending = derivePendingIds(weeks, DEMO_SERVICES, {})
-    expect(pending).toContain(a.id)
-    expect(pending).toContain(b.id)
   })
 })
 

@@ -57,7 +57,6 @@ function leereVersammlung(over: Partial<AppState> = {}): AppState {
       { id: 'p-planer', fn: 'Vor', ln: 'Name', role: 'aeltester', tel: '', mail: '', priv: {}, grp: null } as AppState['persons'][number],
     ],
     myTasks: [],
-    pendingIds: [],
     notifs: [],
     absences: [],
     groups: [],
