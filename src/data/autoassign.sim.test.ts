@@ -28,7 +28,7 @@ const TON = serviceQualKey('ton')
 const MIK = serviceQualKey('mik')
 const ZOOM = serviceQualKey('zoom')
 /** Die drei Ordner-Dienste sind eigene Bereiche — „Ordner“ heißt hier: alle drei. */
-const ORDNER = [serviceQualKey('ord'), serviceQualKey('saal'), serviceQualKey('rund')]
+const ORDNER = [serviceQualKey('eingang'), serviceQualKey('saal'), serviceQualKey('rund')]
 
 let counter = 0
 function priv(on: string[]): Qualifications {
@@ -304,7 +304,7 @@ function emptyMeeting(): Meeting {
 /** Meeting mit `n` Programmpunkten, die alle `name` zugeteilt sind (Historie). */
 function partHistoryMeeting(name: string, n: number): Meeting {
   const names = Array.from({ length: n }, () => ({ name, bereichsKey: 'vortrag' }))
-  return { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ title: 'T', names }] }], helpers: {} }
+  return { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ iid: 'i8', title: 'T', names }] }], helpers: {} }
 }
 function wk(mid: Meeting, we: Meeting): Week {
   return { range: '', book: '', start: '2026-09-07', current: false, mid, we }
@@ -358,7 +358,7 @@ describe('Asymmetrie Aufgaben ↔ Hilfsdienste', () => {
     // In einer Aufgaben-Auswahl ist Q gleichauf mit einem frischen vortrag-Leut:
     const fresh = named('Rolf', 'Rein', ['vortrag']) // "R. Rein"
     const plan: Week[] = [...weeks, wk(partHistoryMeeting('', 0), emptyMeeting())]
-    plan[3].mid = { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ title: 'T', names: [{ name: '', bereichsKey: 'vortrag' }] }] }], helpers: {} }
+    plan[3].mid = { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ iid: 'i7', title: 'T', names: [{ name: '', bereichsKey: 'vortrag' }] }] }], helpers: {} }
     const res = autoAssignMeeting(plan, 3, 'mid', [q, fresh], [])
     // Fenster für Woche 3 = [0..3]; Q hat partLoad 0 wie R → einer von beiden
     // bekommt die Aufgabe (nicht durch Hilfsdienste ausgeschlossen).
@@ -371,13 +371,13 @@ describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
   const oneWeek = (): Week[] => [wk(emptyMeeting(), emptyMeeting())]
 
   it('trennt Dienste, die früher einen Bereich teilten (Eingangs- vs. Saalordner)', () => {
-    const entranceOnly = named('Erik', 'Eingang', [serviceQualKey('ord')])
+    const entranceOnly = named('Erik', 'Eingang', [serviceQualKey('eingang')])
     const services: Service[] = [
-      { key: 'ord', name: 'Eingangsordner', count: 1, groups: false },
+      { key: 'eingang', name: 'Eingangsordner', count: 1, groups: false },
       { key: 'saal', name: 'Saalordner', count: 1, groups: false },
     ]
     const res = autoAssignMeeting(oneWeek(), 0, 'mid', [entranceOnly], services)
-    expect(res.weeks[0].mid.helpers.ord?.[0]?.name).toBe('Erik Eingang')
+    expect(res.weeks[0].mid.helpers.eingang?.[0]?.name).toBe('Erik Eingang')
     expect(res.weeks[0].mid.helpers.saal?.[0]?.name ?? '').toBe('') // eigener Bereich → offen
     expect(res.unfilled).toBe(1)
   })

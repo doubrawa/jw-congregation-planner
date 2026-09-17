@@ -129,7 +129,7 @@ describe('Es wird überhaupt übersetzt', () => {
     /**
      * **Bekannte Lücke, ausdrücklich benannt.** „Studienartikel 28" hat eine
      * Regel nur im Wörterbuch-Pfad (`makeTr` mit `D`, also en/es/fr); die
-     * übrigen ~30 Sprachen laufen über `Intl`, und dort gibt es sie nicht —
+     * übrigen 30 Sprachen laufen über `Intl`, und dort gibt es sie nicht —
      * siehe den Kommentar `FEHLT HIER` in `translate.ts`.
      *
      * Bewusst **nicht** mit einem englischen Rückfall geschlossen: Der

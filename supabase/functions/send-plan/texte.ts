@@ -13,7 +13,7 @@
  * (NOTIF_TITLE_KEY in src/i18n/ui.ts).
  *
  * Die Sprache steht am Push-Abo (push_subscriptions.lang), also je Gerät.
- * Fehlt sie (Abos von vor migration-014), gilt Deutsch.
+ * Fehlt sie, gilt Deutsch.
  *
  * Der **Rumpf** wird nicht hier übersetzt: er besteht aus ` · `-Atomen (Termin,
  * Aufgabe), die der Fragment-Übersetzer erledigt.

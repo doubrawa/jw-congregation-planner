@@ -238,7 +238,7 @@ describe('loadCongregationData', () => {
 
     /**
      * Die Kennung kommt aus der **Spalte**. `data->>'start'` gab es erst ab
-     * migration-017; bei älteren Zeilen steht im Blob nichts, und eine Woche
+     * der Spalte `weeks.start`; im Blob steht sie nicht, und eine Woche
      * ohne Kennung ließe sich weder speichern noch wiederfinden.
      */
     it('nimmt das Datum aus der Spalte, nicht aus dem Blob', async () => {

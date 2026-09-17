@@ -4,7 +4,7 @@ import {
   fsAutoAssign,
   fsClear,
   fsLeiterZuteilung,
-  fsMigrateLeaderPids,
+  fsLeiterBinden,
   fsRenameLeader,
   fsSetLeader,
   fsWeekConflicts,
@@ -25,7 +25,7 @@ import type { Absence, FsInstance, Person } from './types'
  * Freitext-Leiter in fast jedem Test hier wie ein Bruder der Versammlung:
  * *K. Steiner*. Die Abwesenheit der `lpid` taugt nämlich nicht als Kennzeichen
  * — sie heißt schon „Altdaten, Person noch nachzutragen", und
- * `fsMigrateLeaderPids` trägt sie bei **jedem Laden** nach. Ohne ein eigenes
+ * `fsLeiterBinden` trägt sie bei **jedem Laden** nach. Ohne ein eigenes
  * Flag würde der Kreisaufseher also stillschweigend zum gleichnamigen Bruder:
  * mit Auslastung, „Meine Aufgaben" und Erinnerungen.
  */
@@ -96,7 +96,7 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
     const regel = [{ id: 'r1', grp: '', wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
     const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
     const ausgerichtet = regenFsWeeks(KENN.slice(0, 1), gespeichert, regel, true)
-    const geladen = fsMigrateLeaderPids(ausgerichtet, [person()])
+    const geladen = fsLeiterBinden(ausgerichtet, [person()])
     expect(geladen[0]?.[0]).toMatchObject({ leader: KS, lext: true })
     expect(geladen[0]?.[0]?.lpid).toBeUndefined()
     expect(deriveMyFsTasks(geladen, KENN, KS, {}, 'p1', 'T')).toHaveLength(0)
@@ -113,11 +113,11 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
 
   it('der Backfill lässt ihn in Ruhe — sonst wäre der Fehler selbstheilend in die falsche Richtung', () => {
     const vorher = [[inst({ leader: KS, lext: true })]]
-    const nachher = fsMigrateLeaderPids(vorher, [person()])
+    const nachher = fsLeiterBinden(vorher, [person()])
     expect(nachher[0]?.[0]?.lpid).toBeUndefined()
     // Gegenprobe am selben Namen: ohne das Flag ist der Backfill richtig und
     // greift weiterhin — das Flag schaltet ihn nicht generell ab.
-    const alt = fsMigrateLeaderPids([[inst({ leader: KS })]], [person()])
+    const alt = fsLeiterBinden([[inst({ leader: KS })]], [person()])
     expect(alt[0]?.[0]?.lpid).toBe('p1')
   })
 

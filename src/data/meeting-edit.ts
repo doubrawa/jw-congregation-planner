@@ -24,27 +24,23 @@ import {
 } from './helpers'
 import { meetingDateParts, meetingTimesOf } from './meeting-dates'
 import type { Abweichung, Dienstwoche, Meeting, MeetingKey, PartItem, Week } from './types'
-import { ersteZahl, ersteZahlErsetzen, zahlErsetzen } from './ziffern'
+import { ersteZahlErsetzen, zahlErsetzen } from './ziffern'
 
 /**
- * Minuten eines Programmpunkts.
+ * Minuten eines Programmpunkts — `null`, wo keine angegeben sind (Lieder,
+ * Gebete, Eröffnung ohne Zeitklammer).
  *
- * Maßgeblich ist `item.mins`: der Import legt die Zahl dort ab, unabhängig
- * davon, wie die Wochenseite sie schreibt.
+ * Maßgeblich ist allein `item.mins`: die Zahl, unabhängig davon, wie die
+ * Wochenseite sie schreibt. Der Import legt sie dort ab (T32/T59).
  *
- * Der Rückfall ist für Wochen da, die vor dieser Änderung importiert wurden.
- * Er nimmt die **erste** Zahl der Meta-Zeile, und das ist keine Schätzung: der
- * Parser setzt sie aus Rahmen · Zeit · Quelle zusammen, der Rahmen enthält per
- * Konstruktion keine Ziffer, und ohne Zeitangabe entsteht gar keine Meta-Zeile.
- * Die erste Zahl ist deshalb immer die Dauer — auch im thailändischen
- * „3 นาที · lmd บทเรียน 1 ข้อ 5“, wo zwei weitere Zahlen folgen.
- *
- * Früher stand hier `/(\d+) Min\./`. Das traf in keiner der 19 gemessenen
- * Sprachen außer Deutsch (T32/T59).
+ * Hier stand ein Rückfall auf die erste Zahl der Meta-Zeile — für Wochen aus
+ * der Zeit davor. Die Meta-Zeile ist Anzeigetext in der Sprache der
+ * Wochenseite („3 Min.", „3 分", „٣ دق"); aus ihr zurückzurechnen war schon
+ * einmal der Fehler, und die Vorgängerfassung `/(\d+) Min\./` traf in keiner
+ * der 19 gemessenen Sprachen außer Deutsch.
  */
 export function itemMinutes(item: PartItem): number | null {
-  if (typeof item.mins === 'number') return item.mins
-  return ersteZahl(item.meta ?? '')
+  return typeof item.mins === 'number' ? item.mins : null
 }
 
 /**
@@ -408,7 +404,7 @@ export function lacAdd(
   // Vortrag — der Bereich blieb hier fälschlich auf 'vortrag' stehen (F6).
   // Die stabile Kennung (T37) macht die Bestätigungen unabhängig von der
   // Position: der neue Punkt schiebt die folgenden weiter, ihre Bestätigungen
-  // bleiben trotzdem bei ihnen.
+  // bleiben trotzdem bei ihnen — es gibt nichts umzubenennen.
   const newItem: PartItem = { iid: neueItemId(), title: trimmed, meta: '10 Min.', mins: 10, names: [{ name: '', bereichsKey: 'studium' }] }
   const at = lacAddIndex(items)
   items.splice(at, 0, newItem)
@@ -416,7 +412,9 @@ export function lacAdd(
   // Eigener Punkt ist lokaler Text — in allen Varianten identisch einfügen
   forEachAltMeeting(week, tab, (m) => {
     const arr = m.sections[si]?.items
-    if (arr) arr.splice(Math.min(at, arr.length), 0, { title: trimmed, meta: '10 Min.', mins: 10, names: [] })
+    // Die Variante trägt dieselbe Kennung wie die kanonische Woche: Sie ist
+    // derselbe Punkt, nur in einer anderen Sprache.
+    if (arr) arr.splice(Math.min(at, arr.length), 0, { iid: newItem.iid, title: trimmed, meta: '10 Min.', mins: 10, names: [] })
     m.end = shiftEnd(m.end, 10)
   })
   umbauMerken(week, tab)

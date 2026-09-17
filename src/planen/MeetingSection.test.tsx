@@ -13,7 +13,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { emptyQualifications, ROLE_CIRCUIT } from '../data/helpers'
 import { TALK_PLACEHOLDER } from '../data/meeting-edit'
-import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, slotTaskKey } from '../data/planning'
+import { itemTaskKey, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { PartItem, Person, Section, Week } from '../data/types'
 import { MeetingSection } from './MeetingSection'
@@ -104,7 +104,7 @@ afterEach(cleanup)
 describe('Plätze als Chips', () => {
   const mitPlaetzen = (): Section => ({
     label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol',
-    items: [{
+    items: [{ iid: 'i99',
       num: 1, title: 'Bibellesung', meta: '4 Min.',
       names: [{ name: 'Anton Alt', pid: 'p-a', bereichsKey: 'bibellesung' }, { name: '', bereichsKey: 'leser' }],
     }],
@@ -188,7 +188,7 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
    */
   const eroeffnung = (): Section => ({
     label: LABEL_EROEFFNUNG, farbe: 'neutral',
-    items: [{
+    items: [{ iid: 'i98',
       title: 'Lied 74 · Gebet · Einleitende Worte', meta: '1 Min.',
       names: [
         { name: 'Anton Alt', pid: 'p-a', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
@@ -197,7 +197,7 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
     }],
   })
   const schluessel = (s: Section, ni: number) =>
-    slotTaskKey(s.items[0] as PartItem, '2026-09-07', 'mid', 0, 0, ni)
+    itemTaskKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, ni)
 
   it('Vorsitz bestätigt, Gebet noch offen: grün und gelb nebeneinander', () => {
     const s = eroeffnung()
@@ -228,7 +228,7 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
     // Gegenprobe zum Schlüssel: dieselbe Position eine Woche später ist ein
     // anderer Platz.
     const s = eroeffnung()
-    const andereWoche = slotTaskKey(s.items[0] as PartItem, '2026-09-14', 'mid', 0, 0, 0)
+    const andereWoche = itemTaskKey('2026-09-14', 'mid', (s.items[0] as PartItem).iid, 0)
     const { container } = zeige(s, { confirmations: { [andereWoche]: 'bestätigt' } })
     expect(chips(container).map(stufe)).toEqual(['is-offen', 'is-offen'])
   })
@@ -237,13 +237,13 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
 describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
   const rednerAbschnitt = (rolle: string): Section => ({
     label: LABEL_VORTRAG, farbe: 'petrol',
-    items: [{ num: 1, title: 'Öffentlicher Vortrag', meta: '', names: [{ name: 'Gustav Gast', rolle }] }],
+    items: [{ iid: 'i97', num: 1, title: 'Öffentlicher Vortrag', meta: '', names: [{ name: 'Gustav Gast', rolle }] }],
   })
 
   it('ein offener Platz trägt keinen — es gibt noch nichts zu bestätigen', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: '' }] }],
+      items: [{ iid: 'i96', num: 1, title: 'Punkt', meta: '', names: [{ name: '' }] }],
     }
     expect(zeige(s).container.querySelector('.zusage-punkt')).toBeNull()
   })
@@ -269,11 +269,11 @@ describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
     // dort für immer, ein grüner meldete eine Zusage für einen leeren Abend.
     const s: Section = {
       label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
+      items: [{ iid: 'i95', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
     }
     const ausgefallen = woche([s])
     ausgefallen.dev = { mid: { cancelled: true } }
-    const key = slotTaskKey(s.items[0] as PartItem, '2026-09-07', 'mid', 0, 0, 0)
+    const key = itemTaskKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, 0)
     const { container } = zeige(s, { weeks: [ausgefallen], confirmations: { [key]: 'bestätigt' } })
     expect(chipTexte(container)[0]).toContain('Anton Alt')
     expect(container.querySelector('.zusage-punkt')).toBeNull()
@@ -283,7 +283,7 @@ describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
     // Gegenprobe: Der Ausfall gilt der einen Zusammenkunft, nicht der Woche.
     const s: Section = {
       label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
+      items: [{ iid: 'i94', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
     }
     const nurMitteAus = woche([], [s])
     nurMitteAus.dev = { mid: { cancelled: true } }
@@ -295,7 +295,7 @@ describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
 describe('Der Redner-Platz öffnet immer den Freitext-Weg (T29)', () => {
   const abschnitt = (rolle: string): Section => ({
     label: LABEL_VORTRAG, farbe: 'petrol',
-    items: [{ num: 1, title: 'Öffentlicher Vortrag', meta: '', names: [{ name: 'X', rolle }] }],
+    items: [{ iid: 'i93', num: 1, title: 'Öffentlicher Vortrag', meta: '', names: [{ name: 'X', rolle }] }],
   })
 
   it('beim Gastredner', () => {
@@ -313,7 +313,7 @@ describe('Der Redner-Platz öffnet immer den Freitext-Weg (T29)', () => {
   it('an einem gewöhnlichen Platz nicht', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: '', rolle: 'Leser' }] }],
+      items: [{ iid: 'i92', num: 1, title: 'Punkt', meta: '', names: [{ name: '', rolle: 'Leser' }] }],
     }
     const { container, dispatch } = zeige(s)
     fireEvent.click(chips(container)[0]!)
@@ -323,7 +323,7 @@ describe('Der Redner-Platz öffnet immer den Freitext-Weg (T29)', () => {
 
 describe('Die Zusätzliche Klasse als zweite Reihe', () => {
   const schuelerWoche = () => {
-    const item: PartItem = {
+    const item: PartItem = { iid: 'i91',
       num: 4, title: 'Gespräche beginnen', meta: '3 Min.',
       names: [{ name: 'Anton Alt', pid: 'p-a', bereichsKey: 'schulung' }],
     }
@@ -349,7 +349,7 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
   it('nur Schülerteile bekommen die zweite Reihe — Gebet und Vorsitz nicht', () => {
     const s: Section = {
       label: LABEL_EROEFFNUNG, farbe: 'neutral',
-      items: [{ title: 'Lied 12 · Gebet', meta: '', names: [{ name: '', rolle: 'Gebet' }] }],
+      items: [{ iid: 'i90', title: 'Lied 12 · Gebet', meta: '', names: [{ name: '', rolle: 'Gebet' }] }],
     }
     const { container } = zeige(s, { auxClass: true }, { mitAux: true })
     expect(container.querySelectorAll('.plan-slots')).toHaveLength(1)
@@ -381,8 +381,8 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
   const lac = (): Section => ({
     label: LABEL_LAC, farbe: 'wein',
     items: [
-      { num: 8, title: 'Örtliche Hinweise', meta: '5 Min.', mins: 5, names: [{ name: '' }] },
-      { num: 9, title: 'Versammlungsbibelstudium', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Leiter' }, { name: '', rolle: 'Leser' }] },
+      { iid: 'i89', num: 8, title: 'Örtliche Hinweise', meta: '5 Min.', mins: 5, names: [{ name: '' }] },
+      { iid: 'i88', num: 9, title: 'Versammlungsbibelstudium', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Leiter' }, { name: '', rolle: 'Leser' }] },
     ],
   })
 
@@ -410,8 +410,8 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
     const rand: Section = {
       label: LABEL_LAC, farbe: 'wein',
       items: [
-        { num: 8, title: 'Kurz', meta: '5 Min.', mins: 5, names: [{ name: '' }] },
-        { num: 9, title: 'Lang', meta: '45 Min.', mins: 45, names: [{ name: '' }] },
+        { iid: 'i87', num: 8, title: 'Kurz', meta: '5 Min.', mins: 5, names: [{ name: '' }] },
+        { iid: 'i86', num: 9, title: 'Lang', meta: '45 Min.', mins: 45, names: [{ name: '' }] },
       ],
     }
     const { container } = zeige(rand)
@@ -470,7 +470,7 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
   it('ein anderer Abschnitt hat weder Minuten noch Einfügefeld', () => {
     const s: Section = {
       label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '10 Min.', mins: 10, names: [{ name: '' }] }],
+      items: [{ iid: 'i85', num: 1, title: 'Punkt', meta: '10 Min.', mins: 10, names: [{ name: '' }] }],
     }
     const { container } = zeige(s)
     expect(container.querySelector('.lac-edit')).toBeNull()
@@ -481,7 +481,7 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
 describe('Der Gesprächspartner-Platz lässt sich an- und abschalten', () => {
   const gespraech = (mitPartner: boolean): Section => ({
     label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
-    items: [{
+    items: [{ iid: 'i84',
       num: 4, title: 'Gespräche beginnen', meta: '3 Min.',
       names: [
         { name: '', bereichsKey: 'schulung' },
@@ -505,7 +505,7 @@ describe('Der Gesprächspartner-Platz lässt sich an- und abschalten', () => {
   it('an einem Punkt ohne Schulungs-Platz gibt es den Schalter gar nicht', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: '', bereichsKey: 'leser' }] }],
+      items: [{ iid: 'i83', num: 1, title: 'Punkt', meta: '', names: [{ name: '', bereichsKey: 'leser' }] }],
     }
     const { container } = zeige(s)
     expect(container.querySelector('.partner-toggle')).toBeNull()
@@ -515,7 +515,7 @@ describe('Der Gesprächspartner-Platz lässt sich an- und abschalten', () => {
 describe('Am Wochenende: Vortragsthema und Lieder', () => {
   const vortrag = (titel: string): Section => ({
     label: LABEL_VORTRAG, farbe: 'petrol',
-    items: [{ num: 1, title: titel, meta: '', names: [{ name: '', rolle: ROLE_GUEST_SPEAKER }] }],
+    items: [{ iid: 'i82', num: 1, title: titel, meta: '', names: [{ name: '', rolle: ROLE_GUEST_SPEAKER }] }],
   })
 
   it('der Platzhalter erscheint als leeres Feld, nicht als Text', () => {
@@ -578,7 +578,7 @@ describe('Am Wochenende: Vortragsthema und Lieder', () => {
     */
     const ohneLied: Section = {
       label: LABEL_EROEFFNUNG, farbe: 'neutral',
-      items: [{ num: null as unknown as number, title: 'Gebet', meta: '', names: [{ name: '' }] }],
+      items: [{ iid: 'i81', num: null as unknown as number, title: 'Gebet', meta: '', names: [{ name: '' }] }],
     }
     const { container } = zeige(ohneLied, { tab: 'we', weeks: [woche([], [ohneLied])] })
     expect(container.querySelector('.talk-song-input')).toBeNull()
@@ -588,7 +588,7 @@ describe('Am Wochenende: Vortragsthema und Lieder', () => {
     // Gegenprobe: So legt der Import die Wochenend-Eröffnung an.
     const mitAtom: Section = {
       label: LABEL_EROEFFNUNG, farbe: 'neutral',
-      items: [{ title: 'Lied · Gebet', meta: '', names: [{ name: '' }] }],
+      items: [{ iid: 'i80', title: 'Lied · Gebet', meta: '', names: [{ name: '' }] }],
     }
     const { container } = zeige(mitAtom, { tab: 'we', weeks: [woche([], [mitAtom])] })
     expect(container.querySelector('.talk-song-input')).not.toBeNull()
@@ -598,7 +598,7 @@ describe('Am Wochenende: Vortragsthema und Lieder', () => {
 describe('Die Kreisaufseher-Woche: fester Begriff, freies Thema (T62)', () => {
   const coPunkt = (): Section => ({
     label: LABEL_LAC, farbe: 'wein',
-    items: [{
+    items: [{ iid: 'i79',
       num: 8, title: 'Dienstvortrag · Bleiben wir wachsam', meta: '30 Min.', mins: 30,
       names: [{ name: 'Kreisaufseher', rolle: ROLE_CIRCUIT }],
     }],
@@ -625,7 +625,7 @@ describe('Konflikte heben sich im Plan ab', () => {
   it('wer abwesend und trotzdem eingeteilt ist, bekommt den Punkt am Chip', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
+      items: [{ iid: 'i78', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
     }
     const { container } = zeige(s, {
       weeks: [woche([s])],
@@ -639,7 +639,7 @@ describe('Konflikte heben sich im Plan ab', () => {
   it('ohne Konflikt bleibt der Chip schlicht', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
-      items: [{ num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
+      items: [{ iid: 'i77', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
     }
     const { container } = zeige(s, { weeks: [woche([s])] })
     expect(chips(container)[0]!.className).not.toContain('is-konflikt')

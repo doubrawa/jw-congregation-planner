@@ -42,8 +42,6 @@ import {
   saveFsRules,
   saveFsWeek,
   saveGroupRow,
-  gruppenPositionenNachtragen,
-  type GroupRow,
   saveInvite,
   saveInvitePlanner,
   saveMemberRow,
@@ -56,7 +54,6 @@ import {
   setSchreibfehlerMelder,
   substituteSeek,
   substituteTake,
-  swapConfirmationKeys,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
 
@@ -129,44 +126,6 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.from).toHaveBeenCalledWith('confirmations')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ task_key: 'k1', status: 'bestätigt' }), { onConflict: 'congregation_id,task_key,user_id' })
   })
-  it('gruppenPositionenNachtragen: Bestand auf lauter Nullen wird durchnummeriert', () => {
-    /*
-      Der Bestand: `saveGroupRow` schrieb lange eine feste `0`. Dass es das
-      jetzt richtig macht, hilft diesen Zeilen nicht — die **eine** berichtigte
-      bekäme eine Zahl größer null und stünde bei `.order('position')` hinter
-      allen anderen. Genau die Verschiebung, gegen die der Fix gedacht war,
-      samt gedrehter Reinigungs-Rotation.
-    */
-    const zeilen: GroupRow[] = [
-      { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0 },
-      { id: 'g2', name: 'Gruppe 2', overseer_id: null, assistant_id: null, position: 0 },
-      { id: 'g3', name: 'Gruppe 3', overseer_id: null, assistant_id: null, position: 0 },
-    ]
-    gruppenPositionenNachtragen('c1', zeilen)
-    const geschrieben = (chain.upsert?.mock.calls ?? []).map(
-      ([zeile]) => zeile as { id: string; position: number },
-    )
-    expect(geschrieben.map((g) => [g.id, g.position])).toEqual([
-      ['g1', 0],
-      ['g2', 1],
-      ['g3', 2],
-    ])
-  })
-
-  it('… aber nur einmal: eine echte Position beendet die Umstellung', () => {
-    // Gegenprobe. Liefe es bei jedem Laden, würde jede Umsortierung, die der
-    // Planer je vornimmt, beim nächsten Start wieder eingeebnet.
-    const zeilen: GroupRow[] = [
-      { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0 },
-      { id: 'g2', name: 'Gruppe 2', overseer_id: null, assistant_id: null, position: 1 },
-    ]
-    gruppenPositionenNachtragen('c1', zeilen)
-    expect(chain.upsert).not.toHaveBeenCalled()
-    // Und eine einzelne Gruppe hat keine Reihenfolge, die verrutschen könnte.
-    gruppenPositionenNachtragen('c1', zeilen.slice(0, 1))
-    expect(chain.upsert).not.toHaveBeenCalled()
-  })
-
   it('savePushSubscription → push_subscriptions upsert (endpoint)', () => {
     savePushSubscription('c1', 'u1', { endpoint: 'e', p256dh: 'p', auth: 'a' }, 'fr')
     expect(chain.from).toHaveBeenCalledWith('push_subscriptions')
@@ -198,7 +157,7 @@ describe('Insert-Schreiber', () => {
   })
 
   it('saveAbsence → importierte Abwesenheit ohne Ersteller bleibt ohne', () => {
-    // `user_id` null = importiert (migration-021). Ein hier eingesetztes Konto
+    // `user_id` null = importiert. Ein hier eingesetztes Konto
     // trüge die Zeile in dessen „Deine Einträge".
     saveAbsence('c1', { id: 'a2', personId: 'p1', userId: null, from: '2026-02-01', to: '2026-02-02', reason: '' })
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'a2', user_id: null }))
@@ -281,11 +240,6 @@ describe('Delete-Schreiber', () => {
 })
 
 describe('RPC / Sonstiges', () => {
-  it('swapConfirmationKeys tauscht paarweise über einen Zwischenschlüssel', async () => {
-    await swapConfirmationKeys('c1', [['a', 'b']])
-    // 3 Updates je Paar (a→tmp, b→a, tmp→b)
-    expect(chain.update).toHaveBeenCalledTimes(3)
-  })
   it('redeemInvite ruft die RPC redeem_invite (Erfolg → null)', async () => {
     const res = await redeemInvite('CODE')
     expect(chain.rpc).toHaveBeenCalledWith('redeem_invite', { invite_code: 'CODE' })

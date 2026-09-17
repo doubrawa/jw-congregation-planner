@@ -64,7 +64,7 @@ afterEach(cleanup)
 describe('PersonDetail — Aufgaben und Hilfsdienste sind zwei Bereiche (T73)', () => {
   const dienste = [
     dienst('ton', 'Tonanlage'),
-    dienst('ord', 'Ordner'),
+    dienst('eingang', 'Ordner'),
     dienst('mik', 'Mikrofone'),
     dienst('rein', 'Reinigung', true), // Gruppen-Dienst: gehört keiner Person
   ]

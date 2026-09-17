@@ -225,9 +225,11 @@ describe('Treffpunkte', () => {
   })
 
   it('eine verschwundene Zusammenkunfts-Zusage löscht dieser Weg nicht — dafür haben die Zusammenkünfte ihren eigenen', () => {
-    // Dort werden Schlüssel auch umbenannt statt gelöscht (lacRemove); ein
-    // Löschen hier träfe die Zeile, bevor sie ihren neuen Namen bekommt.
-    const meeting = '2026-09-07|mid|part|1|1|0'
+    // Die Zusammenkünfte räumen in ihren eigenen Zweigen ab (`changedSlotKeys`
+    // beim Zuteilen, der Zustandsvergleich bei `lacRemove`). Dieser Weg hier
+    // gilt allein den Treffpunkten; griffe er weiter, löschte er Zeilen zu
+    // Aktionen, die er gar nicht beurteilt hat.
+    const meeting = '2026-09-07|mid|part|k3f9x|0'
     const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [meeting]: 'bestätigt' } })
     const next = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a', '15:00'), confirmations: {} })
     persist(prev, next, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
@@ -312,10 +314,42 @@ describe('Treffpunkte', () => {
 })
 
 describe('LAC / Import / Vortrag', () => {
-  it('lacMove tauscht nur bei geänderten Wochen (inkl. Bestätigungs-Tausch)', () => {
+  it('lacMove schreibt nur bei geänderter Woche', () => {
     const shared = buildDemoWeeks()
     persist(st({ weeks: shared }), st({ weeks: shared }), { type: 'lacMove', si: 0, ii: 1, dir: 1 })
     expect(data.saveWeek).not.toHaveBeenCalled()
+  })
+
+  /*
+    **Was lacRemove in der Datenbank anrichtet** — bis zum Code-Review vom
+    17. September 2026 ungeprüft.
+
+    Der Zweig rechnet nichts nach, er liest ab: Was zwischen `prev` und `next`
+    aus den Zusagen verschwunden ist, wird gelöscht. Diese Richtung ist der
+    Grund, warum der Reducer allein entscheidet, welche Zusage verfällt — und
+    warum hier kein zweiter Weg entstehen darf, der auseinanderlaufen kann
+    (dieselbe Begründung wie bei `verwaisteFsZusagen`).
+  */
+  it('lacRemove löscht genau die Zusagen, die im Zustand fehlen', () => {
+    const weeks = buildDemoWeeks()
+    const bleibt = '2026-09-07|mid|part|bleibt|0'
+    const weg = '2026-09-07|mid|part|weg|0'
+    const prev = st({ weeks, confirmations: { [bleibt]: 'bestätigt', [weg]: 'bestätigt' } })
+    const next = st({ weeks, confirmations: { [bleibt]: 'bestätigt' } })
+
+    persist(prev, next, { type: 'lacRemove', si: 0, ii: 1 })
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [weg])
+  })
+
+  it('lacRemove ohne verfallene Zusage löscht nichts', () => {
+    const weeks = buildDemoWeeks()
+    const map = { '2026-09-07|mid|part|bleibt|0': 'bestätigt' as const }
+    persist(st({ weeks, confirmations: map }), st({ weeks, confirmations: map }), {
+      type: 'lacRemove',
+      si: 0,
+      ii: 1,
+    })
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [])
   })
 
   it('lacAdd/talkEdit/openingSong → saveWeek der aktuellen Woche', () => {
@@ -386,12 +420,13 @@ describe('Index außerhalb des Fensters', () => {
     expect(() =>
       persist(st(), next, { type: 'lacMove', si: WEIT_DRAUSSEN, ii: 0, dir: 1 }),
     ).not.toThrow()
-    expect(data.swapConfirmationKeys).not.toHaveBeenCalled()
     vi.clearAllMocks()
     expect(() =>
       persist(st(), next, { type: 'lacAdd', si: WEIT_DRAUSSEN, title: 'T' }),
     ).not.toThrow()
-    expect(data.renameConfirmationKeys).not.toHaveBeenCalled()
+    // Weder Einfügen noch Verschieben rührt eine Bestätigung an: Der Schlüssel
+    // trägt die Kennung des Punkts, nicht seine Position.
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   it('finishImport ohne eine einzige Woche schreibt nichts', () => {

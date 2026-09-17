@@ -5,15 +5,12 @@
  * (Zustand vor/nach der Aktion) ausgewertet.
  */
 
-import { changedSlotKeys, partSwapKeyPairs, shiftPartConfirmations } from '../data/planning'
+import { changedSlotKeys } from '../data/planning'
 import { fsTaskKeyWoche } from '../data/fs'
-import { itemNameCount, lacAddIndex, lacMoveTarget } from '../data/meeting-edit'
 import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
-  renameConfirmationKeys,
-  swapConfirmationKeys,
   deleteGroupRow,
   deletePersonRow,
   deleteInviteRow,
@@ -240,7 +237,7 @@ function wochePlanen(congId: string, weeks: Week[], wi: number): void {
  * braucht `hydrate` keine Ausnahme: Es ersetzt die Zusagen im Ganzen, schreibt
  * aber keine Woche — was dort fehlt, bleibt unberührt.
  *
- * Löschen dürfen Planer und — seit migration-025 — Gruppenaufseher, die ihre
+ * Löschen dürfen Planer und Gruppenaufseher, die ihre
  * Treffpunkte selbst besetzen.
  */
 function verwaisteFsZusagen(prev: AppState, next: AppState): Map<string, string[]> {
@@ -356,7 +353,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       if (sel) {
         wocheSpeichern(congId, prev.weeks, next.weeks, sel.wi)
-        // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
+        // Bestätigungs-Einträge geänderter Slots abräumen
         const vorher = prev.weeks[sel.wi]?.[sel.tab]
         const nachher = next.weeks[sel.wi]?.[sel.tab]
         if (vorher && nachher) {
@@ -372,7 +369,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       const before = prev.weeks[prev.week]?.[mtab(prev.tab)]
       const after = next.weeks[prev.week]?.[mtab(prev.tab)]
       if (before && after) {
-        // Bestätigungs-Einträge geänderter Slots abräumen (migration-007)
+        // Bestätigungs-Einträge geänderter Slots abräumen
         deleteConfirmationRows(
           congId,
           changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
@@ -408,44 +405,21 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Grundplan-Blob + die neu materialisierten Wochen (gebündelt).
       treffpunkteSpeichern(congId, prev, next, fsVerwaist)
       break
-    case 'lacMove': {
+    case 'lacMove':
       if (next.weeks === prev.weeks) break // Rand: kein Tausch
       wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
-      // Bestätigungen der getauschten Positionen in der DB mittauschen
-      const items = prev.weeks[prev.week]?.[mtab(prev.tab)].sections[action.si]?.items
-      const b = items ? lacMoveTarget(items, action.ii, action.dir) : null
-      const a = items?.[action.ii]
-      const bItem = b == null ? undefined : items?.[b]
-      if (b != null && a && bItem) {
-        const count = Math.max(itemNameCount(a), itemNameCount(bItem))
-        void swapConfirmationKeys(
-          congId,
-          partSwapKeyPairs(prev.weeks[prev.week]?.start ?? '', mtab(prev.tab), action.si, action.ii, b, count),
-        )
-      }
       break
-    }
-    case 'lacRemove':
-    case 'lacAdd': {
+    case 'lacAdd':
       wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
-      // Die folgenden Punkte rutschen um eine Position; task_keys sind
-      // positionsbasiert, die Bestätigungen müssen also mit umbenannt werden.
-      // Dieselbe Rechnung wie im Reducer, damit beide Seiten übereinstimmen.
-      const tab = mtab(prev.tab)
-      const items = prev.weeks[prev.week]?.[tab].sections[action.si]?.items
-      if (!items) break
-      const ab = action.type === 'lacRemove' ? action.ii : lacAddIndex(items)
-      const delta = action.type === 'lacRemove' ? -1 : 1
-      const { renames, removed } = shiftPartConfirmations(
-        prev.confirmations,
-        prev.weeks[prev.week]?.start ?? '',
-        tab,
-        action.si,
-        ab,
-        delta,
-      )
-      deleteConfirmationRows(congId, removed)
-      void renameConfirmationKeys(congId, renames)
+      break
+    case 'lacRemove': {
+      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
+      // **Abgelesen, nicht nachgerechnet** — wie bei den Treffpunkten: Welche
+      // Zusage mit dem gelöschten Punkt verfällt, entscheidet der Reducer; hier
+      // gilt, was im Zustand fehlt. Verschoben und umbenannt wird nichts mehr:
+      // Der Schlüssel trägt die Kennung des Punkts, nicht seine Position.
+      const weg = Object.keys(prev.confirmations).filter((k) => !(k in next.confirmations))
+      deleteConfirmationRows(congId, weg)
       break
     }
     case 'lacAdjust':

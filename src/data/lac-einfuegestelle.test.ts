@@ -20,7 +20,7 @@ import type { Meeting, PartItem, ProgramItem, Week } from './types'
 
 /** Der letzte Unser-Leben-Punkt, wie ihn der Import anlegt: Leiter + Leser. */
 function bibelstudium(title: string): PartItem {
-  return {
+  return { iid: 'i25',
     num: 7,
     title,
     meta: '30 Min.',
@@ -34,7 +34,7 @@ function bibelstudium(title: string): PartItem {
 
 /** Ein gewöhnlicher Punkt unter „Unser Leben als Christ" — ohne Leser. */
 function punkt(num: number, title: string): PartItem {
-  return { num, title, meta: '15 Min.', mins: 15, names: [{ name: '', bereichsKey: 'studium' }] }
+  return { iid: `p${num}`, num, title, meta: '15 Min.', mins: 15, names: [{ name: '', bereichsKey: 'studium' }] }
 }
 
 /** Minimale Woche mit genau einem LAC-Abschnitt. KEIN übernommener jw.org-Inhalt. */

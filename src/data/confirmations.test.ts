@@ -1,13 +1,33 @@
 import { describe, expect, it } from 'vitest'
 import { itemNameCount, lacMove, lacMoveTarget, lacRemove } from './meeting-edit'
-import { partSwapKeyPairs, partTaskKey, shiftPartConfirmations, swapPartConfirmations } from './planning'
+import { itemTaskKey, itemZusagenKeys } from './planning'
 import type { ConfirmationMap, Meeting, PartItem, Week } from './types'
+
+/**
+ * **Was Einfügen, Löschen und Verschieben mit den Bestätigungen machen — und
+ * warum das heute fast nichts ist.**
+ *
+ * Hier standen drei Mechaniken: `swapPartConfirmations` beim Verschieben,
+ * `shiftPartConfirmations` beim Einfügen und Löschen, `partSwapKeyPairs` als
+ * Schlüsselrechnung dazu — dazu ihre Gegenstücke in der Datenbank
+ * (`renameConfirmationKeys`, `swapConfirmationKeys`). Alle nur deshalb, weil im
+ * Aufgaben-Schlüssel die **Position** des Punkts stand (T16).
+ *
+ * Seit der Punkt seine eigene Kennung trägt, verschiebt sich kein Schlüssel
+ * mehr. Übrig bleibt eine einzige Regel: Was verschwindet, verfällt.
+ */
+
+const A = 'aaa111'
+const B = 'bbb222'
+const C = 'ccc333'
 
 /** LAC-Sektion mit drei verschiebbaren Punkten (A/B/C) je einem Namens-Slot. */
 function lacMeeting(): Meeting {
-  const part = (title: string, name: string): PartItem => ({
+  const part = (iid: string, title: string, name: string): PartItem => ({
+    iid,
     title,
     meta: '10 Min.',
+    mins: 10,
     names: [{ name, bereichsKey: 'vortrag' }],
   })
   return {
@@ -17,7 +37,7 @@ function lacMeeting(): Meeting {
       {
         label: 'UNSER LEBEN ALS CHRIST',
         farbe: 'wein',
-        items: [part('Punkt A', 'Alice'), part('Punkt B', 'Bob'), part('Punkt C', 'Carol')],
+        items: [part(A, 'Punkt A', 'Alice'), part(B, 'Punkt B', 'Bob'), part(C, 'Punkt C', 'Carol')],
       },
     ],
     helpers: {},
@@ -29,8 +49,24 @@ function week(): Week {
   return { range: '', book: '', start: '2026-09-07', current: false, mid: lacMeeting(), we: empty }
 }
 
+const key = (iid: string, ni = 0, aux = false) => itemTaskKey('2026-09-07', 'mid', iid, ni, aux)
+
+/** Die Punkte des LAC-Abschnitts, mit Wächter statt `!` (T42). */
+function lacPunkte(w: Week | undefined): PartItem[] {
+  const items = w?.mid.sections[0]?.items
+  if (!items) throw new Error('Testaufbau: die Woche hat keinen LAC-Abschnitt')
+  return items as PartItem[]
+}
+
+/** Ein Punkt daraus. */
+function punkt(w: Week | undefined, ii: number): PartItem {
+  const p = lacPunkte(w)[ii]
+  if (!p) throw new Error(`Testaufbau: Punkt ${ii} fehlt`)
+  return p
+}
+
 describe('lacMoveTarget / itemNameCount', () => {
-  const items = week().mid.sections[0].items
+  const items = lacPunkte(week())
 
   it('liefert den Tausch-Partnerindex bzw. null am Rand', () => {
     expect(lacMoveTarget(items, 0, 1)).toBe(1) // A nach unten ↔ B
@@ -40,124 +76,73 @@ describe('lacMoveTarget / itemNameCount', () => {
   })
 
   it('zählt Namens-Slots (0 für Lieder)', () => {
-    expect(itemNameCount(items[0])).toBe(1)
+    expect(itemNameCount(punkt(week(), 0))).toBe(1)
     expect(itemNameCount({ song: 'Lied 1' })).toBe(0)
   })
 })
 
-describe('swapPartConfirmations (Bestätigungen folgen dem verschobenen Punkt)', () => {
-  const keyA = partTaskKey('2026-09-07', 'mid', 0, 0, 0)
-  const keyB = partTaskKey('2026-09-07', 'mid', 0, 1, 0)
+describe('Verschieben lässt die Bestätigungen in Ruhe', () => {
+  it('der Punkt nimmt seinen Schlüssel mit — es gibt nichts zu tauschen', () => {
+    // Alice (Punkt A, Position 0) hat bestätigt; A wird nach unten geschoben.
+    const map: ConfirmationMap = { [key(A)]: 'bestätigt' }
+    const moved = lacMove([week()], 0, 'mid', 0, 0, 1)
 
-  it('tauscht die Status der beiden Positionen', () => {
-    const map: ConfirmationMap = { [keyA]: 'bestätigt' } // nur A bestätigt
-    const next = swapPartConfirmations(map, '2026-09-07', 'mid', 0, 0, 1, 1)
-    expect(next[keyA]).toBeUndefined() // A ist jetzt frei (B war frei)
-    expect(next[keyB]).toBe('bestätigt') // Bestätigung bei B (folgt Punkt A)
-  })
-
-  it('vertauscht zwei belegte Status', () => {
-    const map: ConfirmationMap = { [keyA]: 'bestätigt', [keyB]: 'verhindert' }
-    const next = swapPartConfirmations(map, '2026-09-07', 'mid', 0, 0, 1, 1)
-    expect(next[keyA]).toBe('verhindert')
-    expect(next[keyB]).toBe('bestätigt')
-  })
-
-  it('ohne Statusänderung dieselbe Referenz (beide frei)', () => {
-    const map: ConfirmationMap = {}
-    expect(swapPartConfirmations(map, '2026-09-07', 'mid', 0, 0, 1, 1)).toBe(map)
-  })
-
-  it('partSwapKeyPairs bildet je Namens-Slot ein Schlüsselpaar', () => {
-    expect(partSwapKeyPairs('2026-09-07', 'mid', 0, 0, 1, 2)).toEqual([
-      [partTaskKey('2026-09-07', 'mid', 0, 0, 0), partTaskKey('2026-09-07', 'mid', 0, 1, 0)],
-      [partTaskKey('2026-09-07', 'mid', 0, 0, 1), partTaskKey('2026-09-07', 'mid', 0, 1, 1)],
-    ])
-  })
-
-  it('E2E: nach lacMove trägt der Punkt seine Bestätigung mit', () => {
-    // Alice (Punkt A, Pos 0) hat bestätigt; A wird nach unten geschoben (↔ B).
-    const weeks = [week()]
-    const keyBefore = partTaskKey('2026-09-07', 'mid', 0, 0, 0)
-    const map: ConfirmationMap = { [keyBefore]: 'bestätigt' }
-
-    const items = weeks[0].mid.sections[0].items
-    const b = lacMoveTarget(items, 0, 1)! // = 1
-    const moved = lacMove(weeks, 0, 'mid', 0, 0, 1)
-    const swapped = swapPartConfirmations(map, '2026-09-07', 'mid', 0, 0, b, 1)
-
-    // Punkt A steht jetzt an Position 1 und trägt dort die Bestätigung.
-    const itemAtPos1 = moved[0].mid.sections[0].items[1] as PartItem
-    expect(itemAtPos1.title).toBe('Punkt A')
-    expect(itemAtPos1.names[0].name).toBe('Alice')
-    expect(swapped[partTaskKey('2026-09-07', 'mid', 0, 1, 0)]).toBe('bestätigt')
-    expect(swapped[partTaskKey('2026-09-07', 'mid', 0, 0, 0)]).toBeUndefined()
+    const a = punkt(moved[0], 1)
+    expect(a.title).toBe('Punkt A')
+    expect(a.names?.[0]?.name).toBe('Alice')
+    // Derselbe Schlüssel wie vorher, ohne dass jemand etwas umgeschrieben hat.
+    expect(itemTaskKey('2026-09-07', 'mid', a.iid, 0)).toBe(key(A))
+    expect(map[key(A)]).toBe('bestätigt')
   })
 })
 
-describe('shiftPartConfirmations — Löschen und Einfügen (T16)', () => {
-  /** Alle drei Punkte bestätigt: A=Pos 0, B=Pos 1, C=Pos 2. */
-  const dreiBestaetigt = (): ConfirmationMap => ({
-    [partTaskKey('2026-09-07', 'mid', 0, 0, 0)]: 'bestätigt',
-    [partTaskKey('2026-09-07', 'mid', 0, 1, 0)]: 'verhindert',
-    [partTaskKey('2026-09-07', 'mid', 0, 2, 0)]: 'bestätigt',
+describe('itemZusagenKeys — was mit einem gelöschten Punkt verfällt', () => {
+  const alleDrei = (): ConfirmationMap => ({
+    [key(A)]: 'bestätigt',
+    [key(B)]: 'verhindert',
+    [key(C)]: 'bestätigt',
   })
 
-  it('Löschen: der gelöschte Status fällt weg, die dahinter rücken nach', () => {
-    // Vorher erbte der nachfolgende Punkt die fremde Bestätigung, und der
-    // eigentliche galt wieder als offen — und wurde erneut erinnert.
-    const { map, removed, renames } = shiftPartConfirmations(dreiBestaetigt(), '2026-09-07', 'mid', 0, 0, -1)
-    expect(removed).toEqual([partTaskKey('2026-09-07', 'mid', 0, 0, 0)])
-    expect(map[partTaskKey('2026-09-07', 'mid', 0, 0, 0)]).toBe('verhindert') // war B
-    expect(map[partTaskKey('2026-09-07', 'mid', 0, 1, 0)]).toBe('bestätigt') // war C
-    expect(map[partTaskKey('2026-09-07', 'mid', 0, 2, 0)]).toBeUndefined()
-    // Von vorn nach hinten umbenennen, sonst kollidiert es mit belegten Keys.
-    expect(renames.map(([von]) => von)).toEqual([
-      partTaskKey('2026-09-07', 'mid', 0, 1, 0),
-      partTaskKey('2026-09-07', 'mid', 0, 2, 0),
-    ])
+  it('findet genau die Schlüssel des einen Punkts', () => {
+    expect(itemZusagenKeys(alleDrei(), '2026-09-07', 'mid', B)).toEqual([key(B)])
   })
 
-  it('Einfügen: ab der Stelle rutscht alles eine Position weiter', () => {
-    const { map, removed, renames } = shiftPartConfirmations(dreiBestaetigt(), '2026-09-07', 'mid', 0, 1, 1)
-    expect(removed).toEqual([])
-    expect(map[partTaskKey('2026-09-07', 'mid', 0, 0, 0)]).toBe('bestätigt') // A bleibt
-    expect(map[partTaskKey('2026-09-07', 'mid', 0, 1, 0)]).toBeUndefined() // neuer Punkt: offen
-    expect(map[partTaskKey('2026-09-07', 'mid', 0, 2, 0)]).toBe('verhindert') // war B
-    expect(map[partTaskKey('2026-09-07', 'mid', 0, 3, 0)]).toBe('bestätigt') // war C
-    // Von hinten nach vorn, sonst überschreibt 1→2 den Status von C.
-    expect(renames.map(([von]) => von)).toEqual([
-      partTaskKey('2026-09-07', 'mid', 0, 2, 0),
-      partTaskKey('2026-09-07', 'mid', 0, 1, 0),
-    ])
-  })
-
-  it('lässt andere Wochen, Zusammenkünfte und Sektionen unangetastet', () => {
+  it('nimmt alle Plätze eines Punkts mit — beide Räume', () => {
     const map: ConfirmationMap = {
-      [partTaskKey('2026-09-14', 'mid', 0, 2, 0)]: 'bestätigt', // andere Woche
-      [partTaskKey('2026-09-07', 'we', 0, 2, 0)]: 'bestätigt', // andere Zusammenkunft
-      [partTaskKey('2026-09-07', 'mid', 1, 2, 0)]: 'bestätigt', // andere Sektion
-      '2026-09-07|mid|helper|mik|2': 'bestätigt', // Hilfsdienst
+      [key(B, 0)]: 'bestätigt',
+      [key(B, 1)]: 'bestätigt',
+      [key(B, 0, true)]: 'bestätigt', // Zusätzliche Klasse
+      [key(C, 0)]: 'bestätigt',
     }
-    expect(shiftPartConfirmations(map, '2026-09-07', 'mid', 0, 0, -1).map).toEqual(map)
+    expect(itemZusagenKeys(map, '2026-09-07', 'mid', B).sort()).toEqual(
+      [key(B, 0), key(B, 1), key(B, 0, true)].sort(),
+    )
   })
 
-  it('nimmt die Plätze der Zusätzlichen Klasse mit', () => {
-    const auxKey = (ii: number) => partTaskKey('2026-09-07', 'mid', 0, ii, 0, true)
-    const map: ConfirmationMap = { [auxKey(2)]: 'bestätigt' }
-    expect(shiftPartConfirmations(map, '2026-09-07', 'mid', 0, 0, -1).map[auxKey(1)]).toBe('bestätigt')
+  it('lässt andere Wochen und Zusammenkünfte unangetastet', () => {
+    const map: ConfirmationMap = {
+      [key(B)]: 'bestätigt',
+      [itemTaskKey('2026-09-14', 'mid', B, 0)]: 'bestätigt', // andere Woche
+      [itemTaskKey('2026-09-07', 'we', B, 0)]: 'bestätigt', // anderes Treffen
+    }
+    expect(itemZusagenKeys(map, '2026-09-07', 'mid', B)).toEqual([key(B)])
   })
 
-  it('E2E: nach lacRemove hängt keine Bestätigung am falschen Punkt', () => {
-    const weeks = [week()]
-    const map = dreiBestaetigt()
-    const gekuerzt = lacRemove(weeks, 0, 'mid', 0, 0)
-    const { map: neu } = shiftPartConfirmations(map, '2026-09-07', 'mid', 0, 0, -1)
+  it('ohne Bestätigung zu diesem Punkt: leere Liste', () => {
+    expect(itemZusagenKeys({}, '2026-09-07', 'mid', B)).toEqual([])
+  })
 
-    const items = gekuerzt[0].mid.sections[0].items
-    expect((items[0] as PartItem).title).toBe('Punkt B')
-    expect(neu[partTaskKey('2026-09-07', 'mid', 0, 0, 0)]).toBe('verhindert') // Bobs Status
-    expect((items[1] as PartItem).title).toBe('Punkt C')
-    expect(neu[partTaskKey('2026-09-07', 'mid', 0, 1, 0)]).toBe('bestätigt') // Carols Status
+  it('E2E: nach dem Löschen hängt keine Bestätigung am falschen Punkt', () => {
+    // Punkt B wird entfernt. Seine Bestätigung verfällt; A und C behalten ihre,
+    // obwohl C eine Position nach vorn rückt.
+    const map = alleDrei()
+    const weg = itemZusagenKeys(map, '2026-09-07', 'mid', B)
+    for (const k of weg) delete map[k]
+
+    const nachher = lacRemove([week()], 0, 'mid', 0, 1)[0]
+    expect(lacPunkte(nachher).map((i) => i.title)).toEqual(['Punkt A', 'Punkt C'])
+    expect(map[key(A)]).toBe('bestätigt')
+    expect(map[key(B)]).toBeUndefined()
+    expect(map[itemTaskKey('2026-09-07', 'mid', punkt(nachher, 1).iid, 0)]).toBe('bestätigt') // C
   })
 })

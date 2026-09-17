@@ -47,12 +47,12 @@ const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: 'p-ov', as: null }]
 const DIENSTE: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
 
 function abschnitte(): Section[] {
-  const schueler: PartItem = {
+  const schueler: PartItem = { iid: 'i103',
     num: 4, title: 'Gespräche beginnen', meta: '3 Min.',
     names: [{ name: '', bereichsKey: 'schulung' }],
   }
   return [
-    { label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol', items: [{ num: 1, title: 'Schätze', meta: '', names: [{ name: '' }] }] },
+    { label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol', items: [{ iid: 'i102', num: 1, title: 'Schätze', meta: '', names: [{ name: '' }] }] },
     { label: 'UNS IM DIENST VERBESSERN', farbe: 'gold', items: [schueler] },
   ]
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
 import { emptyQualifications, serviceQualKey } from './helpers'
 import { loadedUntilMs } from '../lib/import'
-import { helperTaskKey, partTaskKey, sentKey } from './planning'
+import { helperTaskKey, itemTaskKey, sentKey } from './planning'
 import { fsTaskKey } from './fs'
 import {
   planungsstand,
@@ -90,7 +90,7 @@ function woche(start: string, over: Partial<Week> = {}): Week {
         {
           label: 'SCHÄTZE AUS GOTTES WORT',
           farbe: 'petrol',
-          items: [{ num: 3, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
+          items: [{ iid: 'i49', num: 3, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
         },
       ],
       helpers: { mik: [] },
@@ -114,8 +114,7 @@ function gesendet(w: Week): SentLog {
   const log: SentLog = {}
   const k = (key: string, name: string) => (log[sentKey(key, name)] = '2026-09-01T08:00:00Z')
   const start = w.start
-  // Die Bibellesung trägt keine eigene Kennung — ihr Schlüssel ist die Position.
-  k(partTaskKey(start, 'mid', 0, 0, 0), 'p1 Test')
+  k(itemTaskKey(start, 'mid', (w.mid.sections[0]!.items[0] as PartItem).iid, 0), 'p1 Test')
   for (const tab of ['mid', 'we'] as const) {
     for (const [pos, slot] of (w[tab].helpers.mik ?? []).entries()) {
       k(helperTaskKey(start, tab, 'mik', pos), slot.name)

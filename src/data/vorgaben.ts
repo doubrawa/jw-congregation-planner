@@ -24,7 +24,7 @@ export const STANDARD_DIENSTE: Service[] = [
   { key: 'ton', name: 'Ton / Video', count: 1, groups: false },
   { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
   { key: 'zoom', name: 'Zoom-Ordner', count: 1, groups: false },
-  { key: 'ord', name: 'Eingangsordner', count: 1, groups: false },
+  { key: 'eingang', name: 'Eingangsordner', count: 1, groups: false },
   { key: 'saal', name: 'Saalordner', count: 1, groups: false },
   { key: 'rund', name: 'Rundgangsordner', count: 1, groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },

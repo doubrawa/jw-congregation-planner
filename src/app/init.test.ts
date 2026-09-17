@@ -49,13 +49,19 @@ describe('initialState – konfiguriert (leerer Start bis Hydration)', () => {
 })
 
 describe('Theme / Sprache aus localStorage', () => {
-  it('übernimmt ein gültiges Theme und mappt Alt-Werte', () => {
+  it('übernimmt ein gültiges Theme', () => {
     localStorage.setItem('theme', 'graphit')
     expect(initialState().theme).toBe('graphit')
-    localStorage.setItem('theme', 'dark') // Alt-Wert → graphit
-    expect(initialState().theme).toBe('graphit')
-    localStorage.setItem('theme', 'light') // Alt-Wert → weiss
-    expect(initialState().theme).toBe('weiss')
+  })
+
+  it('ein unbekannter Name gilt nicht — auch nicht „dark"/„light"', () => {
+    // Die beiden waren die gespeicherten Werte, bevor es die acht Farbschemata
+    // gab. Sie wurden beim Laden umgesetzt; der Griff ist mit den Altlasten
+    // weggefallen. Was jetzt in `localStorage` steht, muss ein Schema sein.
+    for (const alt of ['dark', 'light']) {
+      localStorage.setItem('theme', alt)
+      expect(initialState().theme).toBe('weiss') // Standard
+    }
   })
 
   it('ungültiges/fehlendes Theme → Reinweiß (Standard, unabhängig vom System)', () => {

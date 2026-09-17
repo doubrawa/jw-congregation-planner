@@ -567,13 +567,22 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
   sind die beiden Tage, an denen auf jeden Fall erinnert wird; **Täglich
   wiederholen** füllt die Tage **dazwischen** auf. Nach der letzten kommt nichts
   mehr – wer auch am Tag der Zusammenkunft selbst erinnern will, stellt „Letzte
-  Erinnerung" auf **0** („am Tag"). **Bei Zuteilung · Sofort** ist ein eigener
-  Schalter: Er bestimmt, ob beim Zuteilen sofort eine Mitteilung an die Planer
-  entsteht („Zuteilung gesendet"). Abgeschaltet bleibt die Glocke ruhig; die
-  zeitlichen Erinnerungen an die eingeteilten Personen laufen unabhängig davon
-  weiter.
+  Erinnerung" auf **0** („am Tag"). Drei Zeilen, mehr nicht: Wann die
+  eingeteilten Personen von ihrer Aufgabe **erfahren**, steht hier nicht — das
+  entscheidest du mit „Plan senden" (siehe [Den Plan senden](#den-plan-senden)).
 - **Sprachen** – Versammlungssprache und weitere Programmsprachen. Zusätzliche
   Sprachen werden beim Import als Varianten mitgeholt.
+
+  Die Versammlungssprache ist mehr als die Sprache der Programmtexte: In ihr
+  steht auch die **Einladungs-Mail** an ein neues Mitglied. Wer eingeladen wird,
+  hat noch kein Konto und damit keine eigene Spracheinstellung — die Mail kann
+  also nur in der Sprache der Versammlung kommen.
+
+  Die Sprache **jeder anderen** Nachricht ist dagegen die des Empfängers:
+  Push-Erinnerungen entstehen beim Verschicken in der Sprache, die auf seinem
+  Gerät eingestellt ist, die Glocken-Zeilen in der App in seiner App-Sprache.
+  Wer Englisch eingestellt hat, liest „Reminder: confirm assignment", auch wenn
+  eure Versammlung deutsch ist.
 - **Programm‑Import** – neue Wochen von jw.org laden (siehe unten).
 - **Treffpunkte‑Grundplan** – die regelmäßigen Versammlungs‑ und
   Gruppentreffpunkte (Wochentag, Uhrzeit, Ort, „N‑ter im Monat").

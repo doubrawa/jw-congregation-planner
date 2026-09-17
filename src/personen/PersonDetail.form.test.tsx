@@ -51,7 +51,7 @@ const COHN = person({ id: 'p-c', fn: 'Clara', ln: 'Cohn', female: true })
 const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: null, as: null }]
 const DIENSTE: Service[] = [
   { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
-  { key: 'ord', name: 'Ordner', count: 1, groups: false },
+  { key: 'eingang', name: 'Ordner', count: 1, groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
 

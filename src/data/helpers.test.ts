@@ -16,9 +16,7 @@ import {
   partWorkload,
   personCompare,
   personLabel,
-  rolleNennt,
   serviceQualKey,
-  shortDisplayName,
   tieHash,
   unlinkFamily,
   workloadOf,
@@ -153,10 +151,6 @@ describe('Anzeigenamen', () => {
     expect(displayName(person({ fn: '', ln: '' }))).toBe('')
   })
 
-  it('shortDisplayName ist die frühere Kurzform (nur Migration)', () => {
-    expect(shortDisplayName(person({}))).toBe('S. Krüger')
-  })
-
   it('initials aus Vor- und Nachname; leer → Platzhalter', () => {
     expect(initials(person({}))).toBe('SK')
     expect(initials(person({ fn: '', ln: '' }))).toBe('–')
@@ -287,48 +281,6 @@ describe('Rollen & Qualifikation', () => {
   })
 })
 
-describe('rolleNennt (Begleiter im Rollentext)', () => {
-  it('erkennt den Begleiter an der Wortgrenze', () => {
-    expect(rolleNennt('mit Anna Berg', 'Anna Berg')).toBe(true)
-    expect(rolleNennt('mit Anna Berg', 'Anna')).toBe(true)
-    expect(rolleNennt('Gesprächspartner · mit Anna Berg', 'Anna Berg')).toBe(true)
-  })
-
-  it('zählt keinen Namen mit, der nur zufällig darin steckt', () => {
-    // Der eigentliche Befund: `rolle.includes(name)` gab Anna eine Aufgabe, die
-    // Annalena gehört. Bei der Auto-Zuteilung genügt eine solche Phantom-Last,
-    // um jemanden dauerhaft hinten anzustellen.
-    expect(rolleNennt('mit Annalena Berg', 'Anna')).toBe(false)
-    expect(rolleNennt('mit Hanna Berg', 'Anna')).toBe(false)
-    expect(rolleNennt('mit Bergmann', 'Berg')).toBe(false)
-  })
-
-  it('kommt mit Sonderzeichen in Namen zurecht (kein Regex)', () => {
-    expect(rolleNennt("mit O'Brien", "O'Brien")).toBe(true)
-    expect(rolleNennt('mit Müller-Lüdenscheidt', 'Müller-Lüdenscheidt')).toBe(true)
-    // Als Muster gelesen würde „A.“ auf „Ax“ passen.
-    expect(rolleNennt('mit Ax Berg', 'A.')).toBe(false)
-  })
-
-  it('leerer Name oder leere Rolle zählt nie', () => {
-    expect(rolleNennt('mit Anna Berg', '')).toBe(false)
-    expect(rolleNennt(undefined, 'Anna Berg')).toBe(false)
-  })
-})
-
-describe('partWorkload zählt Begleiter nur bei echter Nennung', () => {
-  it('gibt die Aufgabe der genannten Person, nicht der namensähnlichen', () => {
-    const weeks = buildDemoWeeks()
-    const item = weeks[0].mid.sections[0].items.find((x) => !isSong(x)) as PartItem
-    // Alt-Daten tragen den Begleiter als „mit X" im Rollentext.
-    item.names[0] = { ...item.names[0], name: 'Rolf Klein', rolle: 'mit Annalena Berg' }
-    expect(partWorkload(weeks, alsPerson('Rolf Klein'))).toBe(1)
-    expect(partWorkload(weeks, alsPerson('Annalena Berg'))).toBe(1)
-    // „Anna" steckt in „Annalena" — mit `rolle.includes(name)` bekam sie hier
-    // eine Aufgabe, die einer anderen gehört.
-    expect(partWorkload(weeks, alsPerson('Anna'))).toBe(0)
-  })
-})
 
 describe('loadWindow hält sich an dieselbe Platzgrenze wie workloadOf', () => {
   // Der Fix an `helperWorkload` erreichte die Mini-Quadrate nicht: dieselbe

@@ -1588,7 +1588,7 @@ Migration einspielen, ohne auf einen Deploy warten zu müssen.
 | Was | Wo |
 | --- | --- |
 | `Week.start` ist **verpflichtend** | [data/types.ts](../../src/data/types.ts) |
-| Spalte `start date not null` + `unique (congregation_id, start)` | [migration-017](../../supabase/migration-017-wochen-startdatum.sql), [schema.sql](../../supabase/schema.sql) |
+| Spalte `start date not null` + `unique (congregation_id, start)` | `migration-017`, [schema.sql](../../supabase/schema.sql) |
 | `saveWeek` und die Erstbefüllung schreiben sie mit | [lib/data.ts](../../src/lib/data.ts) |
 | auch Platzhalter tragen ihr Datum (`montagAn`) | [lib/data.ts](../../src/lib/data.ts) |
 | 6 Tests auf die Form der Kennung | [data/wochenkennung.test.ts](../../src/data/wochenkennung.test.ts) |
@@ -1620,7 +1620,7 @@ Der `task_key` trägt vorn die Kennung: `"2026-09-07|mid|part|k3f9x|0"` statt
 | `istWochenKennung` / `wochenIndex` — hin und zurück | [data/planning.ts](../../src/data/planning.ts) |
 | `migrateTaskKeyWeeks` schreibt den Bestand beim Laden um | [lib/data.ts](../../src/lib/data.ts) |
 | `send-reminders` und `substitute` nachgezogen | [supabase/functions](../../supabase/functions) |
-| 10 Tests auf die Umschreibung | [lib/taskkey-migration.test.ts](../../src/lib/taskkey-migration.test.ts) |
+| 10 Tests auf die Umschreibung | `lib/taskkey-migration.test.ts` (mit der Umschreibung in Stufe 3 wieder entfallen) |
 
 **Keine SQL-Migration.** Umgeschrieben wird im Client beim Laden — dieselbe
 Bauart wie `migrateItemIds` (T37) und aus demselben Grund: Der Ladepfad kennt
@@ -1659,7 +1659,7 @@ Platzhalter sind weg, und die Spalte wird gelöscht.
 | `saveFsWeek` und die Bündelung je Woche statt je Index | [lib/data.ts](../../src/lib/data.ts), [app/persist.ts](../../src/app/persist.ts) |
 | Treffpunkte werden über das Datum zugeordnet, nicht über die Zeilenfolge | [lib/data.ts](../../src/lib/data.ts) |
 | `send-reminders` und `substitute` lesen `start`, nicht `position` | [supabase/functions](../../supabase/functions) |
-| Restliche Positions-Schlüssel umschreiben, dann Spalte löschen | [migration-018](../../supabase/migration-018-position-entfaellt.sql) |
+| Restliche Positions-Schlüssel umschreiben, dann Spalte löschen | `migration-018` |
 
 **Die Client-Migration aus Stufe 2 ist weg — und das war keine Aufräumarbeit,
 sondern zwingend.** `migrateTaskKeyWeeks` hob einen Schlüssel über `weeks[60]`
@@ -1859,7 +1859,7 @@ den Nutzer informieren.
 > **Umgesetzt am 8. August 2026** — genau so, mit drei Zusätzen, die sich beim
 > Bauen als nötig erwiesen.
 >
-> [migration-016](../../supabase/migration-016-wochen-stand.sql) ergänzt
+> `migration-016` ergänzt
 > `weeks.updated_at` und einen Trigger. **Der Trigger setzt den Stand, nicht der
 > Client** — sonst könnte ein veralteter Client ihn mitliefern und sich an der
 > Prüfung vorbeischreiben; die Sicherung säße auf der falschen Seite. Der Client
@@ -1896,7 +1896,7 @@ den Nutzer informieren.
 > Platzhalter, echter Schreibfehler). Gegenprobe: ohne die Stand-Bedingung
 > fallen 4.
 >
-> ✅ **[migration-016](../../supabase/migration-016-wochen-stand.sql) ist
+> ✅ **`migration-016` ist
 > eingespielt** (8.8.2026). `schema.sql` enthält sie für Neuinstallationen.
 >
 > ✅ **Im Betrieb nachgestellt** (8.8.2026): Speichern läuft durch. Damit greift
@@ -3337,7 +3337,7 @@ Server-Arbeit.
 
 **Geschrieben ist es, scharf noch nicht.** Fertig im Repo:
 
-1. **[migration-020](../../supabase/migration-020-mitteilung-task-key.sql)** —
+1. **`migration-020`** —
    `notifications.task_key` (NULL-bar, mit Index; Altbestand bleibt stehen und
    läuft über die 50er-Grenze aus). Auch in `schema.sql` nachgetragen, sonst
    schlägt die Schema-Probe an.
@@ -3482,7 +3482,7 @@ teuer macht. Der Zuschnitt gehört mit dem Betreiber besprochen, bevor jemand
 eine Migration schreibt.
 
 > **Geschlossen am 23. August 2026 —
-> [migration-022](../../supabase/migration-022-nur-eigene-aufgaben-bestaetigen.sql).**
+> `migration-022`.**
 > Der Betreiber hat den Zuschnitt entschieden („mach T89"), und die Prüfung ist
 > billiger als befürchtet: Der `task_key` **sagt selbst, wo die Zuteilung
 > steht** — Wochen-Kennung, Zusammenkunft und der Weg zum Platz. Nachgeschlagen
@@ -3552,7 +3552,7 @@ geschrieben. Umgekehrt schon: Der Personen-Neuaufbau
 — er löschte damit das einzige, was Verkündiger selbst erfassen, und baute es
 nicht wieder auf, weil Abwesenheiten gar nicht aus den Stammdaten kommen.
 
-Die Planung liest `absences` seit [migration-015](../../supabase/migration-015-abwesenheit-datum.sql)
+Die Planung liest `absences` seit `migration-015`
 versammlungsweit. Ohne Import plante die App also gegen einen leeren Kalender
 und teilte Verreiste ein, ohne dass es jemandem auffiel — dieselbe stille
 Fehlerart, die dieses Dokument von der ersten Seite an verfolgt.
@@ -3571,7 +3571,7 @@ Fehlerart, die dieses Dokument von der ersten Seite an verfolgt.
 > voll mit den Abwesenheiten der ganzen Versammlung —
 > [AufgabenScreen.tsx:38](../../src/aufgaben/AufgabenScreen.tsx:38) filtert auf
 > `userId === meiner || personId === meine`. Deshalb macht
-> [migration-021](../../supabase/migration-021-abwesenheit-import.sql)
+> `migration-021`
 > `user_id` NULL-bar. Das riss aber den Schreibschutz auf: Die alte Regel war
 > `user_id = auth.uid() or is_planner()`, und bei NULL hätte nicht einmal der
 > Betroffene seine eigene Abwesenheit löschen können. Also kam der Zweig über
@@ -4128,7 +4128,7 @@ hätte.
 
 ## Aufgenommen am 28. August 2026 — Dokumentation (T98)
 
-### T98 · Die Dokumentation auf den Stand des Codes bringen 🔧 ☐ offen
+### T98 · Die Dokumentation auf den Stand des Codes bringen 🔧 ✅ erledigt (17. September 2026)
 **Vorgabe des Betreibers am 28. August 2026.** Seit dem letzten Stand der
 Handbücher (25.8., `84dbe05`) sind neun Commits gelaufen, drei davon am
 Sprachverhalten der ganzen App. Die Handbücher beschreiben also eine App, die
@@ -4167,6 +4167,137 @@ als der letzte Commit, der ihren Bildschirm anfasst.
 **Nicht Teil der Aufgabe:** `docs/analyse/` rückwirkend umschreiben. Die
 Analysen sind datierte Protokolle; was dort steht, galt an seinem Tag. Zu
 ändern sind nur Angaben, die als Wegweiser gemeint sind.
+
+> **Umgesetzt am 17. September 2026**, im selben Zug wie T104 — die
+> Aufräumung hat die Handbücher ohnehin an mehreren Stellen berührt.
+>
+> - **Die Zahl steht jetzt richtig:** „34 Sprachen" im README (Deutsch plus 33
+>   Übersetzungen), und die Kommentare, die von „~30" sprachen, meinen die 30
+>   Sprachen ohne eigene Datumsregel — das ist die Zahl, die dort hingehört.
+> - **Die Wegweiser zeigen wieder irgendwohin:** Der Datei-Schnellindex in
+>   `befunde.md` nennt `testdaten.ts` statt `demo.ts`, die i18n-Dateien unter
+>   `supabase/functions/_shared/i18n/` und statt einer Migration die Richtlinie
+>   im Schema. Er trägt jetzt selbst den Hinweis, dass er ein Wegweiser ist und
+>   kein Protokoll — damit die Unterscheidung nicht wieder verlorengeht.
+> - **Ein echter Fehler im Handbuch:** `planer.md` beschrieb den Schalter „Bei
+>   Zuteilung · Sofort" in den Erinnerungen. Den gibt es seit T99 nicht mehr;
+>   an seiner Stelle steht „Plan senden". Wer danach suchte, fand nichts.
+> - **Das Sprachverhalten steht beschrieben**, in beiden Handbüchern und an der
+>   Stelle, an der man es sucht: Push in der Sprache des **Geräts** (zwei
+>   Geräte, zwei Sprachen), Glocken-Zeilen in der gerade eingestellten,
+>   Rechts-nach-links für ar/he/fa/ur, und die Einladungs-Mail als einzige
+>   Ausnahme in der Sprache der Versammlung — ihr Empfänger hat noch kein
+>   Konto und damit keine eigene.
+> - **Die Herkunft eines Redners** war schon beschrieben („Name und Versammlung
+>   in die Freitext-Felder"); die Art eines Abschnitts (`Section.kind`) ist
+>   nichts, was ein Leser je zu sehen bekommt.
+> - **Alle 17 Aufnahmen sind neu** (`capture-screenshots.sh` gegen den
+>   Dev-Server). Sieben haben sich geändert — die übrigen zeigen Bildschirme,
+>   an denen sich nichts bewegt hat.
+> - **Die Migrationsverweise sind weg**, alle 53 außerhalb von `docs/analyse/`.
+>   Sie zeigten nach T104 auf gelöschte Dateien; an ihrer Stelle steht jetzt
+>   die Sache selbst (`assignment_log`, `task_gehoert_mir`, `weeks.start`).
+
+---
+
+## Aufgenommen am 17. September 2026 — Altlasten (T104)
+
+### T104 · Es darf nichts mit „legacy" geben 🏗 ✅ erledigt
+**Vorgabe des Betreibers am 17. September 2026:** *„die software, die wir hier
+entwickeln, ist brand neu und noch nicht mal ausgerollt. es darf nichts mit
+legacy geben! wir räumen sowas auf und machen es richtig. ich kann alle daten
+löschen, wenn nötig — es sind nur testdaten."*
+
+Der Bestand war größer als erwartet: **zehn Lade-Migrationen**, die bei jedem
+Anmelden liefen, dazu die Mechanik, die ihr Ergebnis in die Datenbank
+zurückschrieb — mitten in die Arbeit des Planers hinein.
+
+**Was weggefallen ist**
+
+| Weg | Was es tat |
+| --- | --- |
+| `migrateItemIds` | trug Programmpunkten ihre Kennung nach |
+| `umstellungSchreiben` + `renameConfirmationKeys` + `swapConfirmationKeys` | schrieben das Ergebnis zurück |
+| `migrateAssignmentNames` + `mapMeetingNames` + `shortDisplayName` | hob „V. Nachname" auf den vollen Namen |
+| `migrateServicePrivs` + `Service.legacyPriv` + Spalte `services.priv` | alte gemeinsame Dienst-Bereiche |
+| `migrateFsTaskKeys`, `migrateFsWochenKeys`, `fsMigrateInstIds`, `stabileKennung` | Treffpunkt-Schlüssel ohne Ordnungszahl |
+| `normalizeWeekHelpers` + `HelperEntry` als String | Hilfsdienste als reine Namen |
+| `normalizePriv`: `lesen`, `vorsitz` | zusammengefasste Bereiche von früher |
+| `partTaskKey`, `slotTaskKey`, `shiftPartConfirmations`, `swapPartConfirmations`, `partSwapKeyPairs` | der positionsbasierte Aufgaben-Schlüssel und alles, was ihn verschieben musste |
+| `itemMinutes`-Rückfall auf die Meta-Zeile | Minuten aus Anzeigetext zurückrechnen |
+| `herkunftVon`-Rückfall auf den Rollentext | Heimatversammlung im Feld `rolle` |
+| `LEGACY_THEME`, `gruppenPositionenNachtragen`, `ohneFremdePid` | einmalige Umstellungen |
+| `rolleNennt`, `eigeneRolle` und der `„mit …“`-Zweig in `zuteilungsLabel` | der Gesprächspartner als Beschriftung **in** der Rolle des Schülers |
+| 25 Dateien `supabase/migration-0*.sql` | die Migrationskette |
+
+**Wodurch es ersetzt wurde — der Kern der Sache:** `PartItem.iid` ist
+**Pflichtfeld**. Die Kennung entsteht dort, wo der Punkt entsteht: beim Import
+(`parse.ts`, über `neueItemId` in `_shared/zuteilungen.ts`) und beim Einfügen
+von Hand (`meeting-edit.ts`). Der Compiler hält das durch — eine Stelle, die
+einen Punkt ohne Kennung baut, übersetzt nicht. Damit hat der Aufgaben-Schlüssel
+**eine** Form statt zweier, und Einfügen, Löschen und Verschieben lassen die
+Bestätigungen in Ruhe: Was bleibt, ist `itemZusagenKeys` — die Zusagen eines
+gelöschten Punkts verfallen, sonst nichts.
+
+**Geblieben, aber umbenannt:** `migrateAssignmentPids` → `pidsNachtragen`,
+`fsMigrateLeaderPids` → `fsLeiterBinden`. Beide sind **keine** Migrationen,
+sondern eine laufende Regel: Wird eine Person gelöscht, nimmt `dropPersonPid`
+ihre Id aus den Wochen und lässt den Namen stehen; legt der Planer sie neu an,
+finden die beiden sie wieder. Ohne sie bliebe ein Name ohne Person, und die
+Zuteilung zählte in keiner Auslastung, keinem Konflikt und keiner Aufgabenliste
+mehr.
+
+**Nebenbei gefallen:** Der Gesprächspartner stand einmal als Text in der Rolle
+des Schülers („mit A. Hoffmann“). Er hat längst einen eigenen Platz
+(`schulungPartner`); geblieben war nur die Mechanik, die seinen Namen aus dem
+Rollentext wieder herausklaubte — `rolleNennt` samt Wortgrenzen-Prüfung, weil
+„Anna“ auch in „Annalena“ steckt. Damit fällt zugleich der Grund weg, der in
+[[strukturumbauten-offen]] gegen eine geschlossene `RolleKey`-Union sprach.
+
+**Der Ladevorgang liest jetzt nur noch.** `loadCongregationData` schrieb bis
+hierher beim Laden zurück; das ist weg. Was bleibt, geschieht rein im Speicher.
+
+**Die Datenbank hat eine einzige Quelle:** `supabase/schema.sql`. Die 25
+Migrationen versicherten jede für sich „Neuinstallationen brauchen diese Datei
+nicht — schema.sql enthält alles"; niemand hielt das nach, und dreimal stimmte
+es nicht (fs_rules, fs_weeks, reminder_log). Zwei Quellen für dieselbe Sache
+laufen auseinander. `schema.test.ts` vergleicht deshalb nicht mehr zwei Seiten,
+sondern prüft die eine: RLS auf jeder Tabelle, vollständige Dollar-Rümpfe, jede
+Richtlinie und jede Funktion genau einmal, die drei Rechteprüfungen aus T89/T97
+im Wortlaut — und zwei neue Proben, dass der Altbestand wirklich weg ist.
+
+**Testdaten mit aufgeräumt:** Die Kurzform-Namen („A. Hoffmann", „R. Simon")
+waren die Schreibweise von früher; sie stehen jetzt voll da. Der
+`vorsitz`-Bereichsschlüssel in den Demo-Wochen ist `vorsitzMid`/`vorsitzWe`.
+Und die Kennungen der Testdaten werden **durchgezählt statt gewürfelt** — zwei
+Aufrufe von `buildDemoWeeks()` ergeben dieselben Wochen, sonst misst ein Test,
+der sie vergleicht, den Zufall.
+
+**Nachgereicht am selben Tag — der Dienst-Schlüssel `ord`.** Er hieß so „aus
+Rückwärtskompatibilität zur helpers-Struktur der Wochen", während der Dienst
+„Eingangsordner" heißt. Jetzt `eingang` — in `STANDARD_DIENSTE`, den Testdaten,
+den Anlege-Skripten, `DUTY_KEY` des NWS-Imports und im Personen-Generator
+(`nws-export/build-personen-sql.mjs`, samt seiner Vergleichsgrundlage, damit
+`--pruefen` weiter etwas aussagt).
+
+**Dabei aufgefallen:** `versammlung-zuruecksetzen.mjs` leerte `assignment_log`
+nicht. Die Tabelle kam mit T99 dazu und hätte sich in die handgepflegte Liste
+`LEEREN` selbst eintragen müssen — das Versand-Tagebuch überlebte damit jedes
+Zurücksetzen, mit Schlüsseln auf Wochen, die es nicht mehr gab. Behoben, und
+gegen die nächste Tabelle abgesichert: `versammlung-zuruecksetzen.test.ts` liest
+`schema.sql` und verlangt, dass **jede** Tabelle mit `congregation_id` entweder
+geleert wird oder mit Begründung in der neuen Liste `BEHALTEN` steht.
+
+**Stand danach:** 5166 Tests grün, `tsc -b` sauber, Lint ohne Meldung, und die
+Sperrklinke aus T42 fiel von 727 auf 658 Meldungen.
+
+**Was der Betreiber noch tun muss** (die App ist noch nicht ausgerollt, deshalb
+ist das der einfache Weg):
+
+1. Datenbank neu aufsetzen: `supabase/schema.sql` im SQL-Editor ausführen.
+2. Alle fünf Edge Functions neu deployen — `parse.ts` vergibt jetzt die
+   Kennungen, `_shared/zuteilungen.ts` kennt nur noch eine Schlüsselform.
+3. Stammdaten und Wochen nach dem Runbook neu einspielen.
 
 ---
 
@@ -4221,7 +4352,7 @@ ist eine Sitzung, kein Einzelakt.
    und als Push. Der Knopf gilt für die ganze Woche, beide Zusammenkünfte und
    die Treffpunkte, und steht deshalb in beiden Ansichten.
 2. **Versand-Tagebuch** `assignment_log`
-   ([migration-024](../../supabase/migration-024-zuteilungs-tagebuch.sql)) —
+   (`migration-024`) —
    dasselbe Muster wie `reminder_log`. Gesendet wird nur, was noch nicht
    gesendet war; ein zweiter Druck nach einer Nachbesserung erreicht nur die
    neue Person. Der Schlüssel führt **Platz und Name**, weil ein Platz die
@@ -4292,7 +4423,7 @@ aus.
 bewacht.
 
 **Vom Betreiber ausgeführt (29. August 2026):**
-[migration-024](../../supabase/migration-024-zuteilungs-tagebuch.sql)
+`migration-024`
 eingespielt, `send-plan` deployt, `send-reminders` neu deployt. Damit ist
 scharf, was hier steht — offen bleibt nur die Probe im Betrieb: eine Woche
 freigeben und nachsehen, ob die Nachricht ankommt.
@@ -4607,20 +4738,34 @@ Handybreite in Griechisch und rechts-nach-links in Arabisch (Graphit).
 
 ## Fortschritt
 
-Stand 13. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 17. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☐ · 29. August ☑ · 30. August ☑☑ ·
-31. August ☑ · 13. September ☑
+22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
+31. August ☑ · 13. September ☑ · 17. September ☑
 
-**102 von 103 Punkten sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. Offen ist einer: **T98** (die Dokumentation auf
-den Stand des Codes bringen), am 28. August aufgenommen — die Handbücher stehen
-auf dem 25. August, seither sind neun Commits gelaufen, drei davon am
-Sprachverhalten der ganzen App. Zuletzt fiel am 13. September **T103**: Eine
+**Alle 104 Punkte sind abgearbeitet** — erledigt oder mit Begründung als „kein
+Mangel" zurückgewiesen. Offen ist auf dieser Liste nichts mehr; was ohne
+Aufgabennummer aussteht, steht unter „Was bewusst offen bleibt".
+
+Am 17. September fielen die letzten beiden auf einen Streich, weil sie
+zusammengehören. **T104** hat die Altlasten geräumt: zehn Lade-Migrationen, die
+bei jeder Anmeldung liefen, samt der Mechanik, die ihr Ergebnis in die Datenbank
+zurückschrieb — mitten in die Arbeit des Planers hinein. An ihrer Stelle steht
+eine Zusicherung im Typ: Jeder Programmpunkt trägt seine Kennung vom Entstehen
+an (`PartItem.iid` ist Pflichtfeld), also gibt es den Aufgaben-Schlüssel nur
+noch in einer Form, und Einfügen, Löschen und Verschieben lassen die
+Bestätigungen in Ruhe. Die 25 SQL-Migrationen sind gestrichen; `schema.sql` ist
+die einzige Quelle der Datenbank. Und **T98** hat die Dokumentation
+nachgezogen, die dieselbe Aufräumung zuletzt ohnehin berührt hätte: die
+Sprachzahl, die Wegweiser, ein Handbuch-Abschnitt über einen Schalter, den es
+seit T99 nicht mehr gibt, das Sprachverhalten in beiden Handbüchern und alle
+17 Aufnahmen neu.
+
+Am 13. September fiel **T103**: Eine
 Predigtdienstgruppe ließ sich mit einem Tipp löschen, ihre Mitglieder standen
 still ohne Gruppe da, und ihre Treffpunkte lebten unlöschbar weiter — jetzt mit
 Rückfrage, die die Folgen nennt, und einer Warnung für alle ohne Gruppe. Am
@@ -4648,8 +4793,8 @@ Seiten im Termin. Eine Aufbewahrungsfrist für das Versand-Tagebuch hat der
 Betreiber dabei ausdrücklich verworfen. Davor fielen die beiden
 letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
 nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
-**T89** ist am 23. August mit migration-022 nicht nur gemessen, sondern
-geschlossen. Am selben Tag hat der Betreiber **B4** und **B6** gestrichen
+**T89** ist am 23. August mit der Richtlinie `task_gehoert_mir` nicht nur
+gemessen, sondern geschlossen. Am selben Tag hat der Betreiber **B4** und **B6** gestrichen
 (siehe „Was bewusst offen bleibt"). **T78** ist am 19. August gemessen und
 bestanden — mit einer zweiten Versammlung als Testbestand, in beide
 Richtungen, Tabelle für Tabelle (siehe dort). Sie brachte zugleich **zwei
@@ -4734,7 +4879,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > **Am 15. August 2026, Bestands-Review:** kein Punkt aus dieser Liste, sondern
 > eine eigene Runde über den gewachsenen Stand. Daraus entstanden: die Rolle
 > **„keine"** für Personen ohne Verkündiger-Status (samt
-> [migration-019](../../supabase/migration-019-rolle-keine.sql)), Skripte zum
+> `migration-019`), Skripte zum
 > **Zurücksetzen der Versammlung** und zum Einspielen der Wochenplanung, fünf
 > Befunde aus dem Review selbst (`fb29d3f`), an ihre Person gebundene
 > **Treffpunkt-Leitungen** — und die **Sprachhälften** durchgezogen: Rollen in
@@ -4760,7 +4905,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > ✅ **Beim Betreiber erledigt (29. August 2026)** — T99 ist damit vollständig
 > in Betrieb:
 >
-> 1. **[migration-024](../../supabase/migration-024-zuteilungs-tagebuch.sql) ist
+> 1. **`migration-024` ist
 >    eingespielt** → `assignment_log` steht, die Wiederholungssperre greift.
 > 2. **`send-plan` ist deployt** → der Knopf „Plan senden" hat seine
 >    Gegenstelle.
@@ -4784,7 +4929,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 | | Aufgabe | Warum offen |
 | --- | --- | --- |
-| **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber (alle 23 Dateien). Die restlichen 727 Meldungen stehen in 34 Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand. |
+| **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber. Die restlichen Meldungen stehen in Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand und lässt ihn nur fallen: 727 in 34 Dateien am 27.8., 661 in 32 nach T104. |
 | **Phase 6** | — | **T63** ist am 17. August geklärt und gebaut: eine allgemeine Terminart für die Woche, dazu der Treffpunkt-Leiter als Freitext. Die abweichenden Treffpunkt-Zeiten der Dienstwoche konnte die App schon. |
 | **15. August** | T72 | Nur noch das Vorhaben „Abwesenheiten" — es ist ausdrücklich erst zu überlegen. T67–T71 und T73–T81 sind erledigt. |
 | **19. August** | — | **T78** ist gemessen und bestanden: zweite Versammlung als Testbestand angelegt, Trennung in beide Richtungen und über alle 14 Tabellen mit RLS geprüft — mit dem anon-Key, nicht mit der Service-Role. Darauf **T89**: S2 und S3 gemessen, beide bestätigt. Nebenbei entstand der Wächter `no-undef` im Lint. |
@@ -4801,7 +4946,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 >    **Ratgeber der Zusätzlichen Klasse** in den Erinnerungen, die **Ausfälle in
 >    der Ersatzsuche** (`a915a0c`), die an ihre Person gebundenen
 >    **Treffpunkt-Leitungen** (`92b4a9e`) und die fünf Befunde aus `fb29d3f`.
-> 2. **[migration-019](../../supabase/migration-019-rolle-keine.sql) ist
+> 2. **`migration-019` ist
 >    eingespielt** → `persons.role` lässt „keine" zu. Damit nehmen das
 >    Rücksetz- und das Wochenplanungs-Skript auch Personen ohne
 >    Verkündiger-Status an; vorher hätte die Datenbank sie abgewiesen.
@@ -4828,7 +4973,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > ✅ **Beim Betreiber erledigt (13. August 2026)** — T64, T65 und T66 sind
 > vollständig scharf:
 >
-> 1. **[migration-018](../../supabase/migration-018-position-entfaellt.sql) ist
+> 1. **`migration-018` ist
 >    eingespielt** → `position` ist aus `weeks` und `fs_weeks` gelöscht, die
 >    verbliebenen Positions-`task_key` sind auf die Kennung gehoben. Damit gibt
 >    es die Ordnungszahl als Identität nirgends mehr (T66).
@@ -4843,7 +4988,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 > ✅ **Beim Betreiber erledigt (8. August 2026)** — damit ist alles aus dieser
 > Runde scharf:
 >
-> 1. **[migration-016](../../supabase/migration-016-wochen-stand.sql) ist
+> 1. **`migration-016` ist
 >    eingespielt** → `weeks.updated_at` samt Trigger steht, der Schutz gegen
 >    Schreibkonflikte greift (T39).
 > 2. **`send-reminders` und `substitute` sind neu deployt** → geteilte Regeln

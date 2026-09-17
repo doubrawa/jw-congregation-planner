@@ -253,17 +253,6 @@ describe('Zurücknehmen stellt alles wieder her', () => {
     expect(setDienstwoche(weeks, 0, false)).toBe(weeks)
   })
 
-  it('funktioniert auch ohne vorhandene Kennungen', () => {
-    // Demo- und Vorlagenwochen laufen nicht durch die Lade-Migration (T37).
-    // Ohne Kennung fände das Zurücknehmen den Punkt nicht wieder.
-    const ohne = makeWeek()
-    for (const it of lac(ohne)) delete it.iid
-    for (const it of wtParts(ohne)) delete it.iid
-    const zurueck = setDienstwoche(setDienstwoche([ohne], 0, true), 0, false)
-    expect(bei(lac(eine(zurueck)), 1).title).toBe('Versammlungsbibelstudium')
-    expect(wtParts(eine(zurueck))).toHaveLength(1)
-    expect(itemMinutes(bei(wtParts(eine(zurueck)), 0))).toBe(60)
-  })
 })
 
 describe('Das Thema steht hinter dem Begriff', () => {

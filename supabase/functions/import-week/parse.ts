@@ -20,6 +20,7 @@
 // Sprache gleich.
 // =============================================================================
 
+import { neueItemId } from '../_shared/zuteilungen.ts'
 import { cleanText } from './text.ts'
 
 export interface ImportedSlot {
@@ -29,6 +30,18 @@ export interface ImportedSlot {
   male?: boolean // nur männlich (Schülerteil-Vortrag)
 }
 export interface ImportedPart {
+  /**
+   * Stabile Kennung des Programmpunkts — Grundlage des Aufgaben-Schlüssels.
+   *
+   * **Pflichtfeld.** Sie wird hier vergeben, beim Entstehen des Punkts, und
+   * nicht später nachgetragen: Eine Bestätigung, die an der Position hängt,
+   * verrutscht, sobald jemand einen Punkt einfügt (T16) — und eine Woche ohne
+   * Kennungen zwänge den Client, beim Laden zurückzuschreiben.
+   *
+   * Der Compiler hält das durch: Jede Stelle, die einen Punkt baut, muss eine
+   * Kennung setzen, sonst übersetzt die Datei nicht.
+   */
+  iid: string
   num?: number
   title: string
   meta?: string
@@ -413,6 +426,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
         // vor der ersten Sektion → Eröffnung (Vorsitz + Anfangsgebet)
         const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
         opening = {
+          iid: neueItemId(),
           title,
           meta: joinMeta(zeit),
           mins: ersteZahl(zeit),
@@ -424,7 +438,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       } else if (hasPipe || hasTime) {
         // nach den Sektionen mit „|“/Zeit → Abschluss (Schlussgebet)
         const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
-        closing = { title, meta: joinMeta(zeit), mins: ersteZahl(zeit), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
+        closing = { iid: neueItemId(), title, meta: joinMeta(zeit), mins: ersteZahl(zeit), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
       } else {
         // schlichtes Lied innerhalb einer Sektion
         sections[curColor].items.push({ song: tok.text })
@@ -434,7 +448,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
     }
     // Nummerierter Programmpunkt (farbige h3) → Roh sichern, später finalisieren
     if (tok.tag === 'h3' && curColor && (tok.color === 'teal' || tok.color === 'gold' || tok.color === 'maroon')) {
-      const part: ImportedPart = { title: '', names: [] }
+      const part: ImportedPart = { iid: neueItemId(), title: '', names: [] }
       const numMatch = NUMMER.exec(tok.text)
       // Die Ziffernfolge ist die einzige Gruppe des Ausdrucks und nicht optional.
       if (numMatch) part.num = zahl(numMatch[1] ?? '')
@@ -465,7 +479,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       label: 'ABSCHLUSS',
       kind: 'abschluss',
       farbe: 'neutral',
-      items: [closing ?? { title: 'Schlussworte · Gebet', meta: '3 Min.', mins: 3, names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
+      items: [closing ?? { iid: neueItemId(), title: 'Schlussworte · Gebet', meta: '3 Min.', mins: 3, names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
     },
   ]
 
@@ -563,6 +577,7 @@ function finalizeParts(recs: PartRec[]): void {
 
 function fallbackOpening(): ImportedPart {
   return {
+    iid: neueItemId(),
     title: 'Lied · Gebet · Einleitende Worte',
     meta: '1 Min.',
     mins: 1,
@@ -585,10 +600,10 @@ export function weekendTemplate(range: string): ImportedMeeting {
     date: range,
     end: 'Ende ca. 11:45',
     sections: [
-      { label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
-      { label: 'ÖFFENTLICHER VORTRAG', kind: 'vortrag', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
-      { label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein', items: [{ song: 'Lied' }, { title: '(Studienartikel eintragen)', meta: '60 Min.', mins: 60, names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
-      { label: 'ABSCHLUSS', kind: 'abschluss', farbe: 'neutral', items: [{ title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
+      { label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral', items: [{ iid: neueItemId(), title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
+      { label: 'ÖFFENTLICHER VORTRAG', kind: 'vortrag', farbe: 'petrol', items: [{ iid: neueItemId(), title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
+      { label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein', items: [{ song: 'Lied' }, { iid: neueItemId(), title: '(Studienartikel eintragen)', meta: '60 Min.', mins: 60, names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] }] },
+      { label: 'ABSCHLUSS', kind: 'abschluss', farbe: 'neutral', items: [{ iid: neueItemId(), title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
     ],
     helpers: {},
   }

@@ -43,7 +43,7 @@
  * ---------------------------------------------------------------- Aufruf ----
  *
  *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+ *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/wochenplanung-importieren.mjs \
  *     [--daten C:\DATA\Claude\nws-export\MyData-decrypted] \
  *     [--cong <congregation-id>] [--nur-leere] [--trocken]
@@ -62,7 +62,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { argumente, ladeTabellen, personDisplayName } from './gemeinsam.mjs'
+import { argumente, authKopf, ladeTabellen, personDisplayName, secretKey } from './gemeinsam.mjs'
 export { argumente, personDisplayName }
 
 /* ===================== Stabile Identität (uuid5) ========================== */
@@ -105,7 +105,7 @@ export const ASG = {
  * NWS-Dienst (Duty1..6) → App-Dienstschlüssel. An diesem Datensatz verifiziert
  * (Audio/Video = Duty5, Zoomordner = Duty6). Duty7+ hat kein App-Pendant.
  */
-export const DUTY_KEY = { 1: 'saal', 2: 'ord', 3: 'rund', 4: 'mik', 5: 'ton', 6: 'zoom' }
+export const DUTY_KEY = { 1: 'saal', 2: 'eingang', 3: 'rund', 4: 'mik', 5: 'ton', 6: 'zoom' }
 
 /**
  * DutyType (Duty.c) → { key, pos } oder { skip }. Die Dienste liegen ab 28 in
@@ -139,7 +139,7 @@ export function meetingOfDuty(iso) {
 
 /** Anzeige-Name je Dienstschlüssel (für den Zuordnungs-Bericht). */
 export const DIENST_ANZEIGE = {
-  saal: 'Saalordner', ord: 'Türordner', rund: 'Rundgangsordner',
+  saal: 'Saalordner', eingang: 'Türordner', rund: 'Rundgangsordner',
   mik: 'Mikrofone', ton: 'Audio/Video', zoom: 'Zoomordner', rein: 'Reinigung',
 }
 /**
@@ -149,7 +149,7 @@ export const DIENST_ANZEIGE = {
  */
 const DIENST_MUSTER = {
   saal: /saalordner|\bsaal/i,
-  ord: /eingangsordner|türordner|\btür/i,
+  eingang: /eingangsordner|türordner|\btür/i,
   rund: /rundgang/i,
   mik: /mikrofon/i,
   ton: /\bton\b|audio|video/i,
@@ -579,12 +579,12 @@ export function gruppenNamensAufloeser(fieldServiceGroups) {
 async function main() {
   const arg = argumente(process.argv.slice(2))
   const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const key = secretKey()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const nurLeere = Boolean(arg['nur-leere'])
   const fehlt = []
   if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
   if (fehlt.length) {
     console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
     process.exit(2)
@@ -594,7 +594,7 @@ async function main() {
     const res = await fetch(`${url}/rest/v1/${pfad}`, {
       ...init,
       headers: {
-        apikey: key, Authorization: `Bearer ${key}`,
+        ...authKopf(key),
         'Content-Type': 'application/json', ...(init.headers || {}),
       },
     })

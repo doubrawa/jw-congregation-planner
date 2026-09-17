@@ -35,7 +35,7 @@ function makeWeek(): Week {
       {
         label: 'ERÖFFNUNG',
         farbe: 'neutral',
-        items: [{ title: 'Lied · Gebet', names: [{ name: 'A. Beispiel', pid: 'p1', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
+        items: [{ iid: 'i52', title: 'Lied · Gebet', names: [{ name: 'A. Beispiel', pid: 'p1', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
       },
     ],
     helpers: { mik: [{ name: 'A. Beispiel', pid: 'p1' }] },

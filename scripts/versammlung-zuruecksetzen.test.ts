@@ -1,7 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   argumente,
+  BEHALTEN,
   displayName,
+  LEEREN,
+  NEU_ANGELEGT,
   parseInsert,
   parseKuratiert,
   werteTokens,
@@ -96,5 +101,65 @@ describe('displayName', () => {
 describe('argumente', () => {
   it('liest --schlüssel Wert und --flagge', () => {
     expect(argumente(['--sql', 'x.sql', '--trocken'])).toEqual({ sql: 'x.sql', trocken: true })
+  })
+})
+
+/**
+ * **Die Liste, in die sich jede neue Tabelle selbst eintragen musste.**
+ *
+ * `LEEREN` zählt auf, was ein Zurücksetzen leert. Sie wuchs von Hand mit dem
+ * Schema mit — und blieb einmal zurück: `assignment_log` kam mit T99 dazu und
+ * fehlte hier. Das Versand-Tagebuch überlebte damit jedes Zurücksetzen, mit
+ * Schlüsseln auf Wochen, die es nicht mehr gab; „Plan senden" hätte Plätze für
+ * gemeldet gehalten, die es nicht mehr gibt.
+ *
+ * Diese Probe schließt die Lücke von der anderen Seite: Sie liest `schema.sql`
+ * und verlangt, dass **jede** Tabelle mit `congregation_id` in genau einer der
+ * drei Listen steht — geleert, gelöscht-und-neu-angelegt, oder behalten mit
+ * Begründung. Wer eine Tabelle anlegt, wird hierher geführt und muss sich
+ * entscheiden.
+ *
+ * **Und sie prüft das Skript, nicht nur seine Listen.** Eine Liste, die nur
+ * mit sich selbst verglichen wird, beweist nichts: `persons` stand erst bei den
+ * behaltenen, obwohl es gelöscht wird — fiele sein Löschschritt heraus, wäre
+ * die Probe grün geblieben. Deshalb wird unten am Quelltext nachgesehen, dass
+ * jede Tabelle aus `NEU_ANGELEGT` dort auch wirklich gelöscht wird.
+ */
+describe('Zurücksetzen lässt keine Tabelle aus', () => {
+  const dir = import.meta.dirname
+  const schema = readFileSync(join(dir, '..', 'supabase', 'schema.sql'), 'utf8')
+  const skript = readFileSync(join(dir, 'versammlung-zuruecksetzen.mjs'), 'utf8')
+
+  /** Jede Tabelle, deren create-table-Block eine `congregation_id` enthält. */
+  const TABELLE = /create table if not exists public\.(\w+)\s*\(([\s\S]*?)\n\);/g
+  const mitVersammlung = [...schema.matchAll(TABELLE)]
+    .filter(([, , block]) => /^\s*congregation_id\s/m.test(block ?? ''))
+    .map(([, name]) => name!)
+
+  it('die Probe greift überhaupt', () => {
+    expect(mitVersammlung.length).toBeGreaterThan(10)
+    expect(NEU_ANGELEGT.length).toBeGreaterThan(0)
+  })
+
+  it('jede Tabelle steht in genau einer der drei Listen', () => {
+    const behandelt = [...LEEREN, ...NEU_ANGELEGT, ...Object.keys(BEHALTEN)]
+    expect(mitVersammlung.filter((t) => !behandelt.includes(t))).toEqual([])
+    const mehrfach = behandelt.filter((t, i) => behandelt.indexOf(t) !== i)
+    expect(mehrfach, 'Tabelle steht auf mehreren Listen').toEqual([])
+  })
+
+  it('die Listen nennen nur Tabellen, die es gibt', () => {
+    const da = new Set(mitVersammlung)
+    const alle = [...LEEREN, ...NEU_ANGELEGT, ...Object.keys(BEHALTEN)]
+    expect(alle.filter((t) => !da.has(t))).toEqual([])
+  })
+
+  it('was neu angelegt wird, löscht das Skript auch wirklich', () => {
+    // Der eigene Löschschritt steht außerhalb der `LEEREN`-Schleife (die
+    // Reihenfolge zählt: erst persons, dann groups, wegen der Fremdschlüssel).
+    const fehlt = NEU_ANGELEGT.filter(
+      (t) => !new RegExp(`rest\\(\`${t}\\?congregation_id`).test(skript),
+    )
+    expect(fehlt, 'steht in NEU_ANGELEGT, wird aber nicht gelöscht').toEqual([])
   })
 })

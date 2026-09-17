@@ -56,8 +56,8 @@ const DIENSTE: Service[] = [
 ]
 
 /** Eine Woche mit Redner-Platz (Wochenende) und einem Schülerteil (Mitte). */
-function woche(start: string, rednerName = '', rednerRolle = ROLE_GUEST_SPEAKER): Week {
-  const schueler: PartItem = {
+function woche(start: string, rednerName = '', rednerRolle = ROLE_GUEST_SPEAKER, herkunft?: string): Week {
+  const schueler: PartItem = { iid: 'i73',
     num: 4, title: 'Gespräche beginnen', meta: '',
     names: [{ name: '', rolle: '', bereichsKey: 'schulung' }],
   }
@@ -72,9 +72,9 @@ function woche(start: string, rednerName = '', rednerRolle = ROLE_GUEST_SPEAKER)
       date: '', end: '',
       sections: [{
         label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol',
-        items: [{
+        items: [{ iid: 'i72',
           num: 1, title: 'Öffentlicher Vortrag', meta: '',
-          names: [{ name: rednerName, rolle: rednerRolle, bereichsKey: 'vorsitzWe' }],
+          names: [{ name: rednerName, rolle: rednerRolle, bereichsKey: 'vorsitzWe', ...(herkunft ? { herkunft } : {}) }],
         }],
       }],
       helpers: { mik: [], rein: [] },
@@ -326,7 +326,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
 
   it('steht ein Gastredner, sind sie vorbelegt — man will ihn korrigieren, nicht neu tippen', () => {
     const { container } = zeige(SEL_REDNER(), {
-      weeks: [woche('2026-09-07', 'Gustav Gast', `${ROLE_GUEST_SPEAKER} · Nordheim`)],
+      weeks: [woche('2026-09-07', 'Gustav Gast', ROLE_GUEST_SPEAKER, 'Nordheim')],
     })
     const felder = container.querySelectorAll<HTMLInputElement>('.sheet-guest .lac-add-input')
     expect(felder[0]!.value).toBe('Gustav Gast')

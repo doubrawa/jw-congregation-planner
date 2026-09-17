@@ -218,6 +218,8 @@ function ProgramMeeting({
               ist ein Programm-Fragment, das der Übersetzer sonst ein zweites Mal
               anfasst — bei deutscher App und englischer Versammlungssprache stand
               „Counselor" unter der deutschen Überschrift. */}
+          {/* Kein echter Programmpunkt, sondern eine Zeile für den Ratgeber.
+              Deshalb ohne Kennung: `ProgramRow` verlangt keine (siehe dort). */}
           <ProgramRow
             item={{ title: t.auxRatgeber, names: [rawMeeting.auxRatgeber] }}
             title={t.auxRatgeber}
@@ -278,7 +280,15 @@ function ProgramRow({
   me,
   tpw,
 }: {
-  item: PartItem
+  /**
+   * Der Programmpunkt — **ohne seine Kennung**, denn diese Zeile liest sie
+   * nicht. Ein echter `PartItem` passt unverändert hinein; zusätzlich kann so
+   * die Ratgeber-Zeile hier durch, die gar kein Programmpunkt ist. Sie mit
+   * einer erfundenen Kennung auszustatten hieße, die Zusicherung „jede `iid`
+   * ist die echte Kennung eines Punkts" an einer Stelle zu brechen, an der es
+   * niemandem auffällt.
+   */
+  item: Omit<PartItem, 'iid'>
   title?: string // überschriebener Titel (Lied bereits herausgezogen)
   mitAux: boolean // Zusammenkunft mit Zusätzlicher Klasse
   /** Die eigene Person — für den DU-Chip. Entschieden wird über `gehoertZu`. */

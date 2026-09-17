@@ -61,11 +61,11 @@ function midMeeting(): unknown {
       {
         items: [
           { song: 'Lied 1', title: 'LIED 1' }, // Lied → kein Slot
-          { title: 'Schatzgraben', names: [{ name: 'Max Mustermann', rolle: '' }] }, // si0 ii1 ni0
-          { title: 'Vortrag', names: [{ name: 'Fremder Bruder', rolle: 'Gastredner' }] }, // extern
-          { title: 'Bibellesung', names: [{ name: 'Nina Nolink' }] }, // si0 ii3 ni0
-          { title: 'Gespräch', names: [{ name: 'Otto Ohnekonto' }] }, // si0 ii4 ni0
-          { title: 'Leerer Teil', names: [{ name: '' }] }, // unbesetzt
+          { iid: 'schatz', title: 'Schatzgraben', names: [{ name: 'Max Mustermann', rolle: '' }] },
+          { iid: 'vortrag', title: 'Vortrag', names: [{ name: 'Fremder Bruder', rolle: 'Gastredner' }] }, // extern
+          { iid: 'bibel', title: 'Bibellesung', names: [{ name: 'Nina Nolink' }] },
+          { iid: 'gespraech', title: 'Gespräch', names: [{ name: 'Otto Ohnekonto' }] },
+          { iid: 'leer', title: 'Leerer Teil', names: [{ name: '' }] }, // unbesetzt
         ],
       },
     ],
@@ -92,6 +92,7 @@ function midMitRollen(): unknown {
         label: 'ERÖFFNUNG',
         items: [
           {
+            iid: 'eroeffnung',
             title: 'Lied 27 · Gebet · Einleitende Worte',
             names: [{ name: 'Max Mustermann', rolle: 'Vorsitz' }],
           },
@@ -101,6 +102,7 @@ function midMitRollen(): unknown {
         label: 'UNSER LEBEN ALS CHRIST',
         items: [
           {
+            iid: 'vbs',
             title: 'Versammlungsbibelstudium',
             names: [{ name: 'Max Mustermann', rolle: 'Leiter' }],
           },
@@ -123,7 +125,7 @@ function midMitSchriftstelle(): unknown {
       {
         label: 'SCHÄTZE AUS GOTTES WORT',
         items: [
-          { title: 'Bibellesung · Jer 38:1-13', names: [{ name: 'Max Mustermann' }] },
+          { iid: 'bibel-jer', title: 'Bibellesung · Jer 38:1-13', names: [{ name: 'Max Mustermann' }] },
         ],
       },
     ],
@@ -141,7 +143,7 @@ function midMitNamensvetter(): unknown {
     sections: [
       {
         label: 'SCHÄTZE AUS GOTTES WORT',
-        items: [{ title: 'Bibellesung', names: [{ name: 'Max Mustermann', pid: 'p-doppel' }] }],
+        items: [{ iid: 'bibel-id', title: 'Bibellesung', names: [{ name: 'Max Mustermann', pid: 'p-doppel' }] }],
       },
     ],
     helpers: {},
@@ -161,7 +163,7 @@ let writes: Write[]
 let leseWege: string[]
 /*
   Die Kennung steht als **Spalte** neben dem Blob, nicht darin (T66) — und in
-  diesen Vorgaben absichtlich NUR dort. `data.start` gab es bis migration-017,
+  diesen Vorgaben absichtlich NUR dort. Im Blob steht die Kennung nicht,
   bei alten Zeilen fehlt es; wer wieder danach greift, bekommt hier sofort eine
   Reihe roter Tests statt später einen stummen Ausfall des Versands.
 */
@@ -377,9 +379,9 @@ describe('send-reminders: wer NICHT erinnert wird', () => {
   it('bestätigte und verhinderte Zuteilungen lösen nichts aus', async () => {
     // Vorn steht die Kennung der Woche (T66), nicht mehr ihre Position.
     confirmations = [
-      { task_key: `${WEEK_START}|mid|part|0|1|0`, status: 'bestätigt' }, // Max, Schatzgraben
+      { task_key: `${WEEK_START}|mid|part|schatz|0`, status: 'bestätigt' }, // Max, Schatzgraben
       { task_key: `${WEEK_START}|mid|helper|mikro|0`, status: 'bestätigt' }, // Max, Mikrofone
-      { task_key: `${WEEK_START}|mid|part|0|3|0`, status: 'verhindert' }, // Nina
+      { task_key: `${WEEK_START}|mid|part|bibel|0`, status: 'verhindert' }, // Nina
     ]
     const r = await run()
     expect(previewFor(r, U_MAX)).toBeUndefined()
@@ -515,19 +517,31 @@ describe('send-reminders: Hilfsdienste erinnern (Slot-Objekte)', () => {
     expect(previewFor(r, U_MAX)?.body).toContain('Mikrofone')
   })
 
+  it('ein Punkt ohne Kennung erinnert gar nicht — statt endlos', async () => {
+    /*
+      `PartItem.iid` ist Pflichtfeld, aber hier kommt rohes JSON aus der
+      Datenbank: Ein Skript (`.mjs`, ungetypt) oder eine von Hand geschriebene
+      Zeile kann einen Punkt ohne Kennung enthalten. Ohne den Griff hieße der
+      Schlüssel `<woche>|mid|part|undefined|0` — die Bestätigung des
+      Eingeteilten stünde unter einem anderen, und er bekäme dieselbe
+      Erinnerung Tag für Tag. Eine fehlende Erinnerung merkt der Planer, eine
+      endlose merkt niemand.
+    */
+    const week = weeks[0].data as { mid: { sections: { items: Record<string, unknown>[] }[] } }
+    const punkt = week.mid.sections[0].items.find((i) => i.iid === 'schatz')!
+    delete punkt.iid
+    const r = await run()
+    const alle = (r.preview ?? []).map((p) => p.body).join(' | ')
+    expect(alle).not.toContain('Schatzgraben')
+    expect(alle).not.toContain('undefined')
+  })
+
   it('unbesetzter Platz erzeugt nichts', async () => {
     const all = (await run()).preview?.map((p) => p.body).join(' | ') ?? ''
     // Position 1 der Mikrofone ist { name: '' } → nur EIN Mikrofone-Eintrag
     expect(all.match(/Mikrofone/g)).toHaveLength(1)
   })
 
-  it('versteht auch das Alt-Format (reine Namens-Strings in der DB)', async () => {
-    const week = weeks[0].data as { mid: { helpers: Record<string, unknown[]> } }
-    week.mid.helpers.mikro = ['Max Mustermann', '']
-    const r = await run()
-    expect(previewFor(r, U_MAX)?.body).toContain('Mikrofone')
-    expect((r.preview ?? []).map((p) => p.body).join(' | ').match(/Mikrofone/g)).toHaveLength(1)
-  })
 })
 
 describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
@@ -580,7 +594,7 @@ describe('send-reminders: die ausgefallene Zusammenkunft erinnert nicht (T30)', 
           mid: midMeeting(),
           we: {
             date: 'Sonntag, 13. September · 10:00 · Königreichssaal',
-            sections: [{ items: [{ title: 'Öffentlicher Vortrag', names: [{ name: 'Max Mustermann' }] }] }],
+            sections: [{ items: [{ iid: 'vortrag', title: 'Öffentlicher Vortrag', names: [{ name: 'Max Mustermann' }] }] }],
             helpers: {},
           },
           dev: { mid: { cancelled: true, reason: 'Kongress in Nürnberg' } },
@@ -743,19 +757,8 @@ describe('send-reminders: Treffpunkte', () => {
     expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
   })
 
-  it('auch mit alter Kennung im Blob greift die Bestätigung (T87)', async () => {
-    // Der Client hebt beim Laden beides — Kennung und Schlüssel. Diese Zeile
-    // liest aber die Datenbank, und die trägt die alte Kennung so lange, bis
-    // ein Planer die Woche anfasst. Ohne den Griff nach der stabilen Kennung
-    // erinnerte der Versand in der Zwischenzeit einen Leiter, der längst
-    // bestätigt hat.
-    fsWeeks = [montag({ wd: 3, id: '0|i1' })]
-    confirmations = [{ task_key: `fs|${WEEK_START}|i1`, status: 'bestätigt' }]
-    expect(previewFor(await run(), U_MAX)?.body ?? '').not.toContain('Treffpunkt-Leiter')
-  })
-
   it('… und ohne Bestätigung wird weiter erinnert', async () => {
-    fsWeeks = [montag({ wd: 3, id: '0|i1' })]
+    fsWeeks = [montag({ wd: 3, id: 'i1' })]
     expect(previewFor(await run(), U_MAX)?.body ?? '').toContain('Treffpunkt-Leiter')
   })
 
@@ -843,7 +846,7 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
     expect(titel.sort()).toEqual([pushTexte('en').erinnerung, pushTexte('ko').erinnerung].sort())
   })
 
-  it('ein Abo ohne Sprache bekommt Deutsch (Abos von vor migration-014)', async () => {
+  it('ein Abo ohne Sprache bekommt Deutsch', async () => {
     subs = [abo('s-alt', null)]
     expect(previewFor(await run(), U_MAX)?.title).toBe(pushTexte('de').erinnerung)
   })
@@ -1110,7 +1113,7 @@ describe('send-reminders: die Id entscheidet, nicht der Name', () => {
             sections: [
               {
                 label: 'SCHÄTZE AUS GOTTES WORT',
-                items: [{ title: 'Bibellesung', names: [{ name: 'Max Mustermann' }] }],
+                items: [{ iid: 'bibel-name', title: 'Bibellesung', names: [{ name: 'Max Mustermann' }] }],
               },
             ],
             helpers: {},

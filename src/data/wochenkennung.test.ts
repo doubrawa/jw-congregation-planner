@@ -62,7 +62,7 @@ describe('Jede Woche trägt ihre Kennung', () => {
   })
 
   it('kein Datum kommt zweimal vor — die Kennung ist eindeutig', () => {
-    // Genau das hält seit migration-017 auch die Datenbank:
+    // Genau das hält auch die Datenbank:
     // unique (congregation_id, start).
     const starts = alle().map((w) => w.start)
     expect(new Set(starts).size).toBe(starts.length)

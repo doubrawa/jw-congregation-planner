@@ -61,7 +61,7 @@ function woche(start: string, besetzt: boolean): Week {
       sections: [
         {
           label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
-          items: [{
+          items: [{ iid: 'i104',
             num: 4, title: 'Gespräche beginnen', meta: '3 Min.',
             names: [{ ...wer, bereichsKey: 'schulung' }],
             aux: [{ ...wer, bereichsKey: 'schulung' }],

@@ -11,7 +11,7 @@
  * heraus, egal welche Sprache der Empfänger eingestellt hatte.
  *
  * Die Sprache steht am Push-Abo (push_subscriptions.lang), also je Gerät —
- * dort, wo sie gewählt wurde. Fehlt sie (Abos von vor migration-014), gilt
+ * dort, wo sie gewählt wurde. Fehlt sie, gilt
  * Deutsch wie bisher.
  */
 

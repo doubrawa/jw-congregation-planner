@@ -110,29 +110,28 @@ describe('Ziffern fremder Schriften', () => {
 
 describe('itemMinutes', () => {
   it('nimmt das Feld, wenn es da ist', () => {
-    expect(itemMinutes({ title: 'x', meta: '3 Min.', mins: 10, names: [] })).toBe(10)
+    expect(itemMinutes({ iid: 'i40', title: 'x', meta: '3 Min.', mins: 10, names: [] })).toBe(10)
   })
 
-  it.each(SPRACHEN)('%s: liest Altdaten ohne Feld aus der Meta-Zeile', (_lang, meta, wert) => {
-    // Wochen, die vor dieser Änderung importiert wurden, haben kein `mins`.
-    // Sie müssen ohne erneuten Import weiterfunktionieren — sonst stünden alle
-    // bestehenden fremdsprachigen Versammlungen weiter ohne Minuten da.
-    expect(itemMinutes({ title: 'x', meta, names: [] })).toBe(wert)
+  it.each(SPRACHEN)('%s: die Meta-Zeile wird nicht mehr zurückgerechnet', (_lang, meta, wert) => {
+    /*
+      Hier stand ein Rückfall: ohne `mins` las `itemMinutes` die erste Zahl der
+      Meta-Zeile. Er war für Wochen da, die vor T32 importiert wurden, und ist
+      mit ihnen weggefallen — die Meta-Zeile ist Anzeigetext in der Sprache der
+      Wochenseite, und aus Anzeigetext zurückzurechnen war schon einmal der
+      Fehler. Maßgeblich ist allein die Zahl, die der Import ablegt.
+
+      Dass sie in jeder Schrift richtig gelesen wird, prüft der Block darüber
+      an `ersteZahl` — dort, wo der Import sie gewinnt.
+    */
+    expect(itemMinutes({ iid: 'i39', title: 'x', meta, names: [] })).toBeNull()
+    expect(ersteZahl(meta)).toBe(wert) // beim Import gelesen, nicht beim Anzeigen
   })
 
-  it('nimmt die erste Zahl, nicht irgendeine', () => {
-    // Die Meta-Zeile ist „Rahmen · Zeit · Quelle“. Der Rahmen enthält per
-    // Konstruktion keine Ziffer (settingOf verwirft ziffernhaltige Segmente),
-    // und ohne Zeitangabe entsteht gar keine Meta-Zeile. Die erste Zahl ist
-    // deshalb immer die Dauer — auch wenn die Quelle weitere mitbringt.
-    expect(itemMinutes({ title: 'x', meta: '3 นาที · lmd บทเรียน 1 ข้อ 5', names: [] })).toBe(3)
-    expect(itemMinutes({ title: 'x', meta: 'VON HAUS ZU HAUS · 3 Min. · lmd Lektion 1', names: [] })).toBe(3)
-  })
-
-  it('ohne Meta und ohne Feld: keine Minuten', () => {
+  it('ohne Feld: keine Minuten', () => {
     // Eröffnungslied und Gebet haben keine Dauer — dort dürfen die
     // Minuten-Knöpfe auch nicht erscheinen.
-    expect(itemMinutes({ title: 'Lied · Gebet', names: [] })).toBeNull()
+    expect(itemMinutes({ iid: 'i36', title: 'Lied · Gebet', names: [] })).toBeNull()
   })
 
   it('der alte Ausdruck hätte in 9 von 11 Fassungen versagt', () => {
@@ -153,11 +152,12 @@ describe('lacAdjust in fremder Sprache', () => {
     expect(w[0].mid.end).toBe('Ende ca. 20:50')
   })
 
-  it('greift auch bei Altdaten ohne Feld', () => {
-    const w = lacAdjust([woche('10 分')], 0, 'mid', 0, 0, 5)
-    const item = w[0].mid.sections[0].items[0] as PartItem
-    expect(item.mins).toBe(15)
-    expect(item.meta).toBe('15 分')
+  it('ohne Minutenzahl bleibt alles, wie es ist', () => {
+    // Ein Punkt ohne `mins` hat keine Dauer (Lied, Gebet). Dort gibt es nichts
+    // zu verstellen — und nichts aus der Meta-Zeile zurückzurechnen: Die Zahl
+    // darin ist Anzeigetext, keine Angabe.
+    const wochen = [woche('10 分')]
+    expect(lacAdjust(wochen, 0, 'mid', 0, 0, 5)).toBe(wochen)
   })
 
   it('zieht die Sprachvarianten mit', () => {
@@ -185,7 +185,7 @@ function minutenNach(w0: Week, delta: number): number | null {
 
 /** Kleinste Woche, die `lacAdjust` braucht: ein Punkt, eine Endzeit. */
 function woche(meta: string, mins?: number): Week {
-  const item: PartItem = { title: 'Punkt', meta, names: [] }
+  const item: PartItem = { iid: 'i35', title: 'Punkt', meta, names: [] }
   if (mins != null) item.mins = mins
   const mid: Meeting = {
     date: '7.–13. September',

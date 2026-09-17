@@ -11,19 +11,14 @@
  */
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
-import { fsBaseFromWeeks, fsMigrateInstIds, fsMigrateLeaderPids, fsWochenKennungen, fsWochenStart, regenFsWeeks } from '../data/fs'
-import { itemTaskKey, partTaskKey, sentKey, taskKeyVorbei } from '../data/planning'
+import { fsBaseFromWeeks, fsLeiterBinden, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZusage } from '../data/plan-versand'
 import {
-  displayName,
   eindeutigeNamen,
   emptyQualifications,
   isGuestRole,
-  MEETING_TABS,
-  neueItemId,
   normalizeChairKeys,
-  serviceQualKey,
-  shortDisplayName,
 } from '../data/helpers'
 import type {
   Absence,
@@ -31,7 +26,6 @@ import type {
   FsInstance,
   FsRule,
   Group,
-  HelperSlot,
   Invite,
   Member,
   Notification,
@@ -69,13 +63,11 @@ interface ServiceRow {
   key: string
   name: string
   count: number
-  priv: string | null
   groups: boolean
   position: number
 }
 
-/** Eine Zeile aus `groups` — exportiert für `gruppenPositionenNachtragen`. */
-export interface GroupRow {
+interface GroupRow {
   id: string
   name: string
   overseer_id: string | null
@@ -94,7 +86,7 @@ interface WeekRow {
 interface AbsenceRow {
   id: string
   person_id: string | null
-  user_id: string | null // NULL = importiert (migration-021)
+  user_id: string | null // NULL = importiert (kein Konto dahinter)
   from_date: string
   to_date: string
   reason: string
@@ -107,7 +99,7 @@ interface NotificationRow {
   body: string
   read: boolean
   created_at: string
-  /** Aufgabe, um die es geht — seit migration-020; ältere Zeilen tragen null. */
+  /** Aufgabe, um die es geht; null bei Mitteilungen ohne Aufgabenbezug. */
   task_key?: string | null
 }
 
@@ -172,281 +164,15 @@ const asNotifType = (t: string): NotificationType =>
 /* ---- Mapper Row ↔ App ---------------------------------------------------- */
 
 /**
- * Migriert gespeicherte Qualifikationen auf das aktuelle Schema: die festen
- * Programm-Bereiche sind immer gesetzt, das frühere kombinierte `lesen` wird auf
- * `bibellesung`+`leser` gespiegelt. Alle übrigen gespeicherten Keys bleiben
- * erhalten — das sind die Hilfsdienst-Bereiche (`svc:<key>`) und die alten
- * festen Dienst-Bereiche, die `migrateServicePrivs` noch braucht.
+ * Gespeicherte Qualifikationen auf die feste Form bringen: die
+ * Programm-Bereiche sind immer gesetzt, alle übrigen gespeicherten Keys bleiben
+ * erhalten — das sind die Hilfsdienst-Bereiche (`svc:<key>`).
  */
 export function normalizePriv(raw: Qualifications | null | undefined): Qualifications {
   const r = (raw ?? {}) as unknown as Record<string, unknown>
   const priv = emptyQualifications()
   for (const [key, value] of Object.entries(r)) priv[key] = Boolean(value)
-  if (r.lesen) {
-    priv.bibellesung = true
-    priv.leser = true
-  }
-  // Früher gab es einen gemeinsamen `vorsitz`; heute getrennt nach
-  // Zusammenkunft. Bis der echte Split (NWS) gesetzt ist, beide gewähren —
-  // so verliert niemand das Vorsitz-Recht.
-  if (r.vorsitz) {
-    priv.vorsitzMid = true
-    priv.vorsitzWe = true
-  }
-  delete priv['vorsitz']
   return priv
-}
-
-/**
- * Hebt Alt-Datensätze auf die dienst-eigenen Bereiche: früher teilten sich
- * mehrere Hilfsdienste einen festen Bereich (Eingangs- und Saalordner beide
- * `ordner`), heute hat jeder Dienst seinen eigenen (`svc:<key>`). Fehlt der
- * neue Bereich bei einer Person, wird er aus dem alten Bereich des Dienstes
- * übernommen. Idempotent: bereits migrierte Bereiche bleiben unangetastet.
- */
-export function migrateServicePrivs(persons: Person[], services: Service[]): Person[] {
-  const legacy = services.flatMap((s) => (s.legacyPriv ? [[serviceQualKey(s.key), s.legacyPriv] as const] : []))
-  if (legacy.length === 0) return persons
-  return persons.map((p) => {
-    const priv = { ...p.priv }
-    for (const [key, old] of legacy) {
-      if (priv[key] === undefined) priv[key] = Boolean(priv[old])
-    }
-    return { ...p, priv }
-  })
-}
-
-/*
- * Die Umstellung der Bestätigungs-Schlüssel von der Wochen-**Position** auf die
- * Wochen-**Kennung** stand bis T66 Stufe 3 hier: `migrateTaskKeyWeeks` schrieb
- * `"60|mid|part|k3f9x|0"` beim Laden auf `"2026-09-07|mid|…"` um, so wie
- * `migrateItemIds` es darunter mit den Programmpunkten tut.
- *
- * Sie ist **weggefallen, nicht vergessen**: Ihre Brücke war `weeks[60]` — der
- * Array-Index als Datenbank-Position. Genau die gibt es seit Stufe 3 nicht mehr;
- * der Index sagt nur noch, was vor was kommt. Eine Migration, die trotzdem
- * hierbliebe, ordnete Bestätigungen der falschen Woche zu.
- *
- * Was übrig war, hebt **migration-018** in SQL — dort liegen `position` und
- * `start` ein letztes Mal nebeneinander, und zwar für alle Versammlungen, nicht
- * nur für die, deren Planer sich anmeldet.
- */
-
-/**
- * Migriert in den Wochen gespeicherte Zuteilungs-Namen von der früheren
- * Kurzform "V. Nachname" auf den heutigen Anzeigenamen (voller Name bzw.
- * `dn`). Nur eindeutige Treffer werden ersetzt; "Gruppe N" und externe Namen
- * (Gastredner) bleiben unangetastet. Idempotent — aktuelle Namen matchen die
- * Kurzform nicht mehr. Rein im Speicher; persistiert wird beim nächsten
- * Speichern der jeweiligen Woche.
- */
-export function migrateAssignmentNames(weeks: Week[], persons: Person[]): Week[] {
-  const map = new Map<string, string>()
-  const dupes = new Set<string>()
-  for (const p of persons) {
-    const short = shortDisplayName(p)
-    const full = displayName(p)
-    if (short === full) continue
-    if (map.has(short)) dupes.add(short)
-    map.set(short, full)
-  }
-  for (const d of dupes) map.delete(d) // mehrdeutig → nicht anfassen
-  if (map.size === 0) return weeks
-  const fix = (name: string): string => map.get(name) ?? name
-  return weeks.map((week) => ({
-    ...week,
-    mid: mapMeetingNames(week.mid, fix),
-    we: mapMeetingNames(week.we, fix),
-  }))
-}
-
-/**
- * Trägt jedem Programmpunkt eine **stabile Kennung** nach und benennt die
- * Bestätigungen einmalig mit (T37).
- *
- * Die Bestätigungen hingen an der Position (`"60|mid|part|2|1|0"`). Das ist die
- * Ursache von T16 (ein eingefügter LAC-Punkt verschiebt alle folgenden, die
- * Bestätigungen blieben an der alten Zahl kleben) und der Grund, warum der
- * Wochen-Index die Datenbank-Position sein *muss*.
- *
- * **Idempotent**: ein Punkt, der schon eine Kennung trägt, wird übersprungen.
- * Beim zweiten Laden gibt es also nichts mehr zu tun.
- *
- * **Verlustfrei**: umbenannt wird nur, was es gibt. Ein Punkt ohne Bestätigung
- * bekommt einfach seine Kennung; eine Bestätigung ohne passenden Punkt (Altlast
- * eines gelöschten Slots) bleibt liegen, wo sie ist, und stört niemanden.
- *
- * Beide Räume werden geprüft — Hauptsaal und Zusätzliche Klasse —, und zwar
- * unabhängig davon, ob die Klasse gerade besteht: ihre Bestätigungen bleiben
- * beim Abschalten bewusst stehen, damit ein Wiedereinschalten sie wiederfindet.
- */
-export function migrateItemIds(
-  weeks: Week[],
-  confirmations: ConfirmationMap,
-): { weeks: Week[]; confirmations: ConfirmationMap; renames: Array<[string, string]> } {
-  const renames: Array<[string, string]> = []
-  let anyChanged = false
-
-  const next = weeks.map((week) => {
-    let weekChanged = false
-    const kopie = { ...week }
-    for (const tab of MEETING_TABS) {
-      let meetingChanged = false
-      const sections = week[tab].sections.map((section, si) => ({
-        ...section,
-        items: section.items.map((item, ii) => {
-          if ('song' in item || item.iid) return item
-          meetingChanged = true
-          const iid = neueItemId()
-          // Positions-Schlüssel → Kennungs-Schlüssel, für beide Räume.
-          for (const [raum, slots] of [
-            [false, item.names] as const,
-            [true, item.aux ?? []] as const,
-          ]) {
-            slots.forEach((_slot, ni) => {
-              const alt = partTaskKey(week.start, tab, si, ii, ni, raum)
-              if (!(alt in confirmations)) return
-              renames.push([alt, itemTaskKey(week.start, tab, iid, ni, raum)])
-            })
-          }
-          return { ...item, iid }
-        }),
-      }))
-      if (!meetingChanged) continue
-      kopie[tab] = { ...week[tab], sections }
-      weekChanged = true
-    }
-    if (!weekChanged) return week
-    anyChanged = true
-    return kopie
-  })
-
-  if (renames.length === 0 && !anyChanged) return { weeks, confirmations, renames }
-
-  const nextConf = { ...confirmations }
-  for (const [alt, neu] of renames) {
-    const status = nextConf[alt]
-    if (status === undefined) continue // umbenannt wird nur, was es gibt
-    nextConf[neu] = status
-    delete nextConf[alt]
-  }
-  return { weeks: anyChanged ? next : weeks, confirmations: nextConf, renames }
-}
-
-/**
- * Alt-Schlüssel der Treffpunkte auf die stabile Kennung heben (T87):
- * `fs|2026-01-26|3|r1c8…` → `fs|2026-01-26|r1c8…`
- *
- * Die `3` war die **Position der Woche im Ladefenster** — die letzte
- * Ordnungszahl, die T66 übersehen hatte. Sie ändert sich, sobald das Fenster
- * weiterrutscht (es hält die jüngsten 52 Wochen), und nahm die Bestätigung
- * jedes Treffpunkts mit ins Leere.
- *
- * Rein und idempotent: Schlüssel ohne Zahl an dritter Stelle bleiben unberührt,
- * also auch die schon umgestellten und die von Hand angelegten Treffpunkte
- * (`x<uuid>`). Regel-Kennungen sind `r<uuid>` und damit nie eine Zahl — ein
- * Schlüssel kann also nicht versehentlich zweimal gekürzt werden.
- */
-export function migrateFsTaskKeys(confirmations: ConfirmationMap): {
-  confirmations: ConfirmationMap
-  renames: Array<[string, string]>
-} {
-  const ALT = /^fs\|(\d{4}-\d{2}-\d{2})\|\d+\|(.+)$/
-  const renames: Array<[string, string]> = []
-  for (const key of Object.keys(confirmations)) {
-    const treffer = ALT.exec(key)
-    if (treffer) renames.push([key, `fs|${treffer[1]}|${treffer[2]}`])
-  }
-  if (renames.length === 0) return { confirmations, renames }
-  const next = { ...confirmations }
-  for (const [alt, neu] of renames) {
-    const status = next[alt]
-    if (status === undefined) continue
-    next[neu] = status
-    delete next[alt]
-  }
-  return { confirmations: next, renames }
-}
-
-/**
- * **Treffpunkt-Schlüssel von der Ordnungszahl auf die Wochenkennung** (T100).
- *
- * Bis dahin baute der Client den Montag als `fsBase + wi·7`. Das stimmt nur bei
- * lückenlosem Bestand; fehlt eine Woche, liegt jede spätere sieben Tage daneben
- * — und die Edge Functions nehmen den Montag aus der Datenbankzeile, reden also
- * über eine andere Woche. Bestätigungen aus dieser Zeit tragen den alten
- * Schlüssel und fänden ihren Platz nicht wieder: Der Leiter stünde erneut als
- * unbestätigt da und bekäme Erinnerungen für etwas, das er längst zugesagt hat.
- *
- * Umbenannt wird nur, wo beide Kennungen wirklich auseinandergehen — bei
- * lückenlosem Bestand (der Normalfall) gibt es nichts zu tun.
- *
- * **In einem Zug aus dem Ausgangsstand**, nicht Schritt für Schritt: Bei einer
- * Lücke rutschen die Wochen um eine Stelle, und der alte Schlüssel der einen
- * Woche ist der neue der nächsten. Nacheinander angewandt überschriebe sich die
- * Kette selbst.
- *
- * Ein bereits belegter Zielschlüssel bleibt unangetastet — er ist der
- * authentische Eintrag, der alte daneben der Irrläufer.
- */
-export function migrateFsWochenKeys(
-  confirmations: ConfirmationMap,
-  weeks: ReadonlyArray<{ start?: string }>,
-  fsBase: Date | null,
-): { confirmations: ConfirmationMap; renames: Array<[string, string]> } {
-  /*
-   * **Einmal über die Schlüssel, nicht einmal je verschobener Woche.** Genau
-   * der Fall, für den diese Funktion geschrieben ist — eine Lücke im Bestand —
-   * macht *jede* spätere Woche verschoben: Bei einer Lücke in der Mitte sind
-   * das gut zwei Dutzend. Der verschachtelte Weg materialisierte für jede von
-   * ihnen die volle Schlüsselliste neu und verglich sie ganz. Das läuft im
-   * Ladepfad, blockierend, vor dem ersten Bild.
-   *
-   * Die Woche steht im Schlüssel an fester Stelle (`fs|<woche>|…`), lässt sich
-   * also herausschneiden und nachschlagen, statt jeden Kandidaten
-   * durchzuprobieren.
-   */
-  const ziele = new Map(verschobeneWochen(weeks, fsBase))
-  const gefunden: Array<[string, string]> = []
-  if (ziele.size > 0) {
-    for (const key of Object.keys(confirmations)) {
-      if (!key.startsWith('fs|')) continue
-      const ende = key.indexOf('|', 3)
-      if (ende < 0) continue
-      const neu = ziele.get(key.slice(3, ende))
-      if (neu === undefined) continue
-      gefunden.push([key, `fs|${neu}|${key.slice(ende + 1)}`])
-    }
-  }
-  // Ein besetztes Ziel bleibt stehen — **es sei denn**, es zieht selbst weiter.
-  // Bei einer Lücke rutscht die ganze Kette: Der alte Schlüssel der einen Woche
-  // ist der neue der nächsten, und ohne diese Ausnahme blockierte jedes Glied
-  // seinen Vorgänger. Die Prüfung braucht deshalb erst die volle Liste.
-  const zieht = new Set(gefunden.map(([alt]) => alt))
-  const renames = gefunden.filter(
-    ([, ziel]) => confirmations[ziel] === undefined || zieht.has(ziel),
-  )
-  if (renames.length === 0) return { confirmations, renames }
-  const next = { ...confirmations }
-  for (const [alt] of renames) delete next[alt]
-  for (const [alt, neu] of renames) {
-    const status = confirmations[alt]
-    if (status !== undefined) next[neu] = status
-  }
-  return { confirmations: next, renames }
-}
-
-/** Wochen, deren gerechnete Kennung nicht ihrer echten entspricht. */
-function verschobeneWochen(
-  weeks: ReadonlyArray<{ start?: string }>,
-  fsBase: Date | null,
-): Array<[string, string]> {
-  const out: Array<[string, string]> = []
-  weeks.forEach((w, wi) => {
-    const gerechnet = fsWochenStart(fsBase, wi)
-    if (w.start && gerechnet && gerechnet !== w.start) out.push([gerechnet, w.start])
-  })
-  return out
 }
 
 /**
@@ -477,9 +203,9 @@ export function renameInWeeks(weeks: Week[], id: string, oldName: string, newNam
  * Konflikten, nicht in den Aufgaben. Legt der Planer dieselbe Person neu an,
  * bekommt sie eine neue Id, und der alte Verweis passt nie wieder.
  *
- * Ohne `pid` greift wieder der Namensweg: die Zuteilung verhält sich wie ein
- * Altdatensatz und wird beim nächsten Laden erneut zugeordnet
- * (`migrateAssignmentPids`), sobald es wieder jemanden dieses Namens gibt.
+ * Ohne `pid` greift wieder der Namensweg, und beim nächsten Laden wird die
+ * Zuteilung erneut zugeordnet (`pidsNachtragen`), sobald es wieder jemanden
+ * dieses Namens gibt.
  */
 export function dropPersonPid(weeks: Week[], id: string): Week[] {
   return mapPersonSlots(weeks, id, null, (slot) => {
@@ -601,107 +327,46 @@ function mapPersonSlots(
 }
 
 /**
- * Bildet **alle** zugeteilten Namen einer Zusammenkunft über `fix` ab und
- * liefert eine neue Zusammenkunft. Lieder tragen keine Namen und bleiben
- * unangetastet. Basis der Lade-Migration (migrateAssignmentNames).
+ * **Namen wieder an ihre Person binden.**
  *
- * „Alle" heißt vier Sorten: Hauptsaal, Zusätzliche Klasse, Ratgeber und
- * Hilfsdienste. Die mittleren beiden fehlten hier — dieselbe Lücke wie
- * seinerzeit in `mapPersonSlots` (T38) und in `migrateAssignmentPids`.
- * `alle-plaetze.test.ts` fragt seither jede solche Funktion nach allen vieren.
+ * Trägt die `pid` an Programmpunkt- UND Hilfsdienst-Slots aus dem gespeicherten
+ * Anzeigenamen nach. Nur eindeutige Namen werden zugeordnet; mehrdeutige
+ * (Dubletten), externe Redner und die Reinigungs-Rotation („Gruppe N") bleiben
+ * unangetastet. Idempotent. Rein im Speicher; persistiert beim nächsten
+ * Speichern der Woche.
+ *
+ * **Keine Migration, sondern eine laufende Regel.** Wird eine Person gelöscht,
+ * nimmt `dropPersonPid` ihre Id aus den Wochen und lässt den Namen stehen.
+ * Legt der Planer sie wieder an, bekommt sie eine neue Id — und ohne diesen
+ * Durchlauf bliebe in den Wochen ein Name ohne Person: Die Zuteilung zählte in
+ * keiner Auslastung, in keinem Konflikt und in keiner Aufgabenliste mehr.
+ *
+ * „Alle Plätze" heißt vier Sorten: Hauptsaal, Zusätzliche Klasse, Ratgeber und
+ * Hilfsdienste. Die mittleren beiden fehlten hier einmal — dieselbe Lücke wie
+ * seinerzeit in `mapPersonSlots` (T38). `alle-plaetze.test.ts` fragt seither
+ * jede solche Funktion nach allen vieren.
  */
-function mapMeetingNames(meeting: Week['mid'], fix: (n: string) => string): Week['mid'] {
-  /**
-   * **Externe Redner bleiben, wie sie dastehen** (`isGuestRole`).
-   *
-   * Die Kurzform „M. Hartmann" war die Schreibweise, in der Zuteilungen
-   * einmal gespeichert wurden — und es ist zugleich die Form, in der ein
-   * Gastredner von Hand eingetragen wird. Ohne diese Grenze machte die
-   * Migration aus dem auswärtigen „M. Hartmann" den vollen Namen des
-   * gleichnamigen Bruders dieser Versammlung: Auf dem Programmblatt stand
-   * danach jemand anderes, als am Sonntag kommt.
-   *
-   * Hilfsdienst-Plätze tragen keine Rolle; für sie ändert die Prüfung nichts.
-   */
-  const platz = <T extends { name: string; rolle?: string }>(slot: T): T =>
-    isGuestRole(slot.rolle) ? slot : { ...slot, name: fix(slot.name) }
-  return {
-    ...meeting,
-    sections: meeting.sections.map((section) => ({
-      ...section,
-      items: section.items.map((item) =>
-        'song' in item
-          ? item
-          : {
-              ...item,
-              names: item.names.map(platz),
-              ...(item.aux ? { aux: item.aux.map(platz) } : {}),
-            },
-      ),
-    })),
-    ...(meeting.auxRatgeber ? { auxRatgeber: platz(meeting.auxRatgeber) } : {}),
-    helpers: Object.fromEntries(
-      Object.entries(meeting.helpers).map(([key, arr]) => [key, arr.map(platz)]),
-    ),
-  }
-}
-
-/**
- * Backfill der Person-Id (pid) an Programmpunkt- UND Hilfsdienst-Slots aus dem
- * gespeicherten Anzeigenamen — für Bestandsdaten ohne pid. Nur eindeutige Namen
- * werden zugeordnet; mehrdeutige (Dubletten), externe Redner und die
- * Reinigungs-Rotation („Gruppe N") bleiben unangetastet. Idempotent. Rein im
- * Speicher; persistiert beim nächsten Speichern der Woche.
- */
-/**
- * **Die Id eines externen Redners wieder abnehmen.**
- *
- * Ein Gastredner-Platz darf gar keine `pid` tragen: Er ist Freitext und meint
- * jemanden, den diese Versammlung nicht kennt. Die frühere Fassung von `mitPid`
- * gab ihm trotzdem die Id des gleichnamigen Bruders, und `loadCongregationData`
- * schrieb die geänderte Woche weg — die falsche Id **steht** also im Bestand.
- *
- * Der neue Wächter in `mitPid` verhindert nur neue Fälle; für die alten
- * entscheidet `gehoertZu` weiterhin über die Id, und der Vortrag des
- * Auswärtigen bliebe für immer die Aufgabe des Namensvetters: in seiner Liste,
- * mit Bestätigungspflicht, Erinnerung und Anrechnung auf die Auslastung.
- * Deshalb wird sie hier abgenommen — im selben Durchlauf, der die Woche ohnehin
- * prüft und bei Änderung speichert.
- *
- * Der **eigene** Redner (T29, `rolle: 'Redner'`) ist kein Gast und behält
- * seine Id; die Grenze zieht allein `isGuestRole`.
- */
-function ohneFremdePid<T extends { pid?: string }>(slot: T): T {
-  if (!slot.pid) return slot
-  const { pid: _weg, ...rest } = slot
-  return rest as T
-}
-
-export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] {
-  // Kein `return weeks` bei leerer Namensliste mehr: Der Durchlauf trägt nicht
-  // nur Ids nach, er nimmt auch falsch vergebene wieder ab (`ohneFremdePid`) —
-  // und das hängt an keiner Person.
+export function pidsNachtragen(weeks: Week[], persons: Person[]): Week[] {
   const byName = eindeutigeNamen(persons)
+  if (byName.size === 0) return weeks
   let anyChanged = false
   /**
    * Platz mit `pid` versehen, wenn der Name eindeutig eine Person meint.
    *
-   * **Externe Redner sind ausgenommen** (`isGuestRole`) — der Kommentar über
-   * dieser Funktion sagte das seit jeher, der Code tat es nicht. Ein
-   * Gastredner steht als Freitext im Slot; heißt er zufällig wie ein Bruder
-   * dieser Versammlung, bekam der Platz dessen Id — und damit gehörte er ihm
-   * wirklich: `gehoertZu` entscheidet über die Id, also erschien der Vortrag
-   * eines Auswärtigen unter „Meine Aufgaben" des Namensvetters, verlangte
-   * seine Bestätigung, löste Erinnerungen aus und zählte auf seine
-   * Auslastung. Und anders als beim bloßen Namens-Rückfall blieb es stehen:
-   * die Id wird beim nächsten Speichern der Woche mitgeschrieben.
+   * **Externe Redner sind ausgenommen** (`isGuestRole`). Ein Gastredner steht
+   * als Freitext im Slot; heißt er zufällig wie ein Bruder dieser Versammlung,
+   * bekäme der Platz dessen Id — und damit gehörte er ihm wirklich:
+   * `gehoertZu` entscheidet über die Id, also erschiene der Vortrag eines
+   * Auswärtigen unter „Meine Aufgaben" des Namensvetters, verlangte seine
+   * Bestätigung, löste Erinnerungen aus und zählte auf seine Auslastung. Und
+   * anders als beim bloßen Namens-Rückfall bliebe es stehen: die Id wird beim
+   * nächsten Speichern der Woche mitgeschrieben.
    *
    * Der **eigene** Redner (T29, `rolle: 'Redner'`) bekommt seine Id
    * unverändert — er ist eine Person dieser Versammlung.
    */
   const mitPid = <T extends { name: string; pid?: string; rolle?: string }>(slot: T): T => {
-    if (isGuestRole(slot.rolle)) return ohneFremdePid(slot)
-    if (slot.pid || !slot.name) return slot
+    if (isGuestRole(slot.rolle) || slot.pid || !slot.name) return slot
     const id = byName.get(slot.name)
     return id ? { ...slot, pid: id } : slot
   }
@@ -760,39 +425,6 @@ export function migrateAssignmentPids(weeks: Week[], persons: Person[]): Week[] 
   return anyChanged ? next : weeks
 }
 
-/**
- * Alt-Format der Hilfsdienste (reine Namens-Strings) auf das Slot-Objekt
- * { name, pid? } heben. Bestandsdaten in der DB haben helpers als string[];
- * muss vor allen weiteren Wochen-Transformationen laufen. Idempotent.
- */
-export function normalizeWeekHelpers(weeks: Week[]): Week[] {
-  const fix = (m: Week['mid']): Week['mid'] => {
-    let changed = false
-    const helpers = Object.fromEntries(
-      Object.entries(m.helpers).map(([key, arr]) => [
-        key,
-        (arr as unknown[]).map((e) => {
-          if (typeof e === 'string') {
-            changed = true
-            return { name: e }
-          }
-          return e as HelperSlot
-        }),
-      ]),
-    )
-    return changed ? { ...m, helpers } : m
-  }
-  let anyChanged = false
-  const next = weeks.map((week) => {
-    const mid = fix(week.mid)
-    const we = fix(week.we)
-    if (mid === week.mid && we === week.we) return week
-    anyChanged = true
-    return { ...week, mid, we }
-  })
-  return anyChanged ? next : weeks
-}
-
 function personFromRow(r: PersonRow): Person {
   return {
     id: r.id,
@@ -832,29 +464,6 @@ function groupFromRow(r: GroupRow): Group {
   return { id: r.id, name: r.name, ov: r.overseer_id, as: r.assistant_id }
 }
 
-/**
- * **Predigtdienstgruppen, die alle auf Position 0 stehen, einmalig durchnummerieren.**
- *
- * `saveGroupRow` schrieb lange eine feste `0`. Dass es das jetzt richtig macht,
- * hilft dem Bestand nicht: Dort steht überall die Null, und die **eine**
- * berichtigte Zeile bekommt eine Zahl größer als null — `.order('position')`
- * schiebt sie damit ans Ende. Wer den Aufseher von „Gruppe 2" ändert, sieht sie
- * danach hinter „Gruppe 4" stehen, genau wie vorher. Und mit der Reihenfolge
- * dreht sich die Reinigungs-Rotation (`groups[weekIndex % groups.length]`).
- *
- * Deshalb einmal die Reihenfolge festschreiben, in der die Datenbank sie gerade
- * ausliefert: Sie ist beliebig, aber sie ist die, die der Planer heute vor sich
- * hat — eine andere zu wählen hieße, ihm die Liste ohne Anlass umzustellen.
- *
- * Nur wenn **alle** auf null stehen und es mehr als eine gibt: Sobald eine
- * einzige Zeile eine echte Position trägt, ist die Umstellung gelaufen und
- * jeder weitere Eingriff verschöbe wieder etwas.
- */
-export function gruppenPositionenNachtragen(congregationId: string, rows: GroupRow[]): void {
-  if (rows.length < 2 || rows.some((r) => (r.position ?? 0) !== 0)) return
-  rows.forEach((r, i) => saveGroupRow(congregationId, groupFromRow(r), i))
-}
-
 function groupToRow(g: Group, congregationId: string, position: number) {
   return {
     id: g.id,
@@ -872,20 +481,15 @@ function serviceFromRow(r: ServiceRow): Service {
     name: r.name,
     count: r.count,
     groups: r.groups,
-    legacyPriv: r.priv,
   }
 }
 
-// Die Spalte `priv` ist Altbestand: neue Dienste leiten ihren Bereich aus dem
-// Key ab. Der gespeicherte Wert wird unverändert durchgereicht, damit
-// `migrateServicePrivs` bei jedem Laden dieselbe Zuordnung findet.
 function serviceToRow(s: Service, congregationId: string, position: number) {
   return {
     congregation_id: congregationId,
     key: s.key,
     name: s.name,
     count: s.count,
-    priv: s.legacyPriv ?? null,
     groups: Boolean(s.groups),
     position,
   }
@@ -939,7 +543,7 @@ const NOTIF_LIMIT = 50
  * nach einem Neustart, und niemand fände den Grund.
  *
  * Auf die eigene `user_id` filtert die Abfrage nicht: Der Feed ist seit
- * migration-009 personalisiert, und RLS lässt ohnehin nur die eigenen Zeilen
+ * Mitteilungen sind personalisiert, und RLS lässt ohnehin nur die eigenen Zeilen
  * durch.
  */
 function notifAbfrage(client: NonNullable<typeof supabase>, congregationId: string) {
@@ -956,9 +560,9 @@ function notifAbfrage(client: NonNullable<typeof supabase>, congregationId: stri
  *
  * Abgelaufenes fällt heraus (T77): Eine Mitteilung über einen Platz, dessen Tag
  * vorbei ist, interessiert niemanden mehr — „Ersatz gesucht" für letzten
- * Dienstag am wenigsten. Möglich erst, seit die Zeile weiß, worum es geht
- * (migration-020); ältere Zeilen tragen keinen Schlüssel und bleiben stehen,
- * sie laufen ohnehin über die Grenze aus.
+ * Dienstag am wenigsten. Möglich, weil die Zeile weiß, worum es geht; Zeilen
+ * ohne Aufgabenbezug tragen keinen Schlüssel und bleiben stehen, sie laufen
+ * ohnehin über die Grenze aus.
  */
 function notificationsAus(
   rows: NotificationRow[],
@@ -1050,7 +654,7 @@ export interface CongregationData {
   auxClass: boolean // Zusaetzliche Klasse eingerichtet
   members: Member[]
   invites: Invite[]
-  /** Wer wurde wann über welchen Platz benachrichtigt (migration-024). */
+  /** Wer wurde wann über welchen Platz benachrichtigt (`assignment_log`). */
   sentLog: SentLog
 }
 
@@ -1063,47 +667,6 @@ export type LoadResult =
  * `no-membership`, wenn das Konto keiner Versammlung zugeordnet ist,
  * und `empty`, wenn die Versammlung noch keine Personen/Wochen hat.
  */
-/**
- * **Die Umstellung ist fertig, bevor die App sie zu sehen bekommt.**
- *
- * Zwei Schritte gehören zusammen: die Bestätigungen auf die neuen Schlüssel
- * umbenennen und dann die Wochen mit ihren neuen Kennungen speichern. Die
- * Reihenfolge ist bindend — bricht das Umbenennen ab, bleiben die Wochen ohne
- * Kennung und der nächste Ladevorgang versucht es erneut; andersherum wären die
- * Bestätigungen verwaist.
- *
- * **Gewartet wird darauf, und das ist der Punkt.** Hier stand
- * `void rename(…).then(speichern)`: Der Ladevorgang lief weiter, die App
- * hydrierte, und irgendwann danach schrieb `speichern` die Wochen — mit dem
- * Stand vom **Ladezeitpunkt**. Was der Planer in der Zwischenzeit geändert
- * hatte, war überschrieben, und die Vergleiche-und-Tausche-Sperre (T39) half
- * dabei nicht: Sie vergleicht gegen den zuletzt selbst geschriebenen Stand, und
- * den hatte die eigene Änderung gerade gehoben.
- *
- * Das Fenster ist die Dauer der Umbenennungen — sie laufen nacheinander, je
- * Schlüssel eine Anweisung. Und es ist **keine Altlast**: Eine frisch
- * importierte Woche trägt keine Kennungen (`parse.ts` vergibt keine), ihre
- * Bestätigungen hängen also an der Position. Wird darin bestätigt, bevor die
- * App das nächste Mal lädt, geht genau dieser Weg auf.
- *
- * Der Preis ist eine kurze Wartezeit — aber nur auf dem Ladevorgang, der
- * ohnehin umstellt. Und die Daten, die die App danach zeigt, sind die, die auch
- * in der Datenbank stehen.
- *
- * **Ohne „ist das nötig?"-Schalter.** Hier stand ein dritter Parameter, mit dem
- * der Aufrufer die leere Umbenennungsliste selbst abfangen musste — dieselbe
- * Bedingung zweimal, an zwei Stellen, die auseinanderlaufen können.
- * `renameConfirmationKeys` läuft über die Paare und tut bei keinem nichts; die
- * Frage stellt sich also gar nicht.
- */
-export async function umstellungSchreiben(
-  umbenennen: () => Promise<void>,
-  speichern: () => void,
-): Promise<void> {
-  await umbenennen()
-  speichern()
-}
-
 export async function loadCongregationData(userId: string): Promise<LoadResult> {
   if (!supabase) return { ok: false, reason: 'error', message: 'kein Client' }
 
@@ -1158,7 +721,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
     supabase.from('fs_rules').select('base, rules').eq('congregation_id', congregationId).maybeSingle(),
     fsWochenAbfrage,
-    // Versand-Tagebuch: welcher Platz wurde wann gemeldet (migration-024). Der
+    // Versand-Tagebuch: welcher Platz wurde wann gemeldet. Der
     // Planen-Screen zeigt es an, und der „Plan senden"-Knopf zählt daraus, was
     // noch aussteht.
     //
@@ -1182,19 +745,16 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // leer an — genau der Fall bei einer Instanz ohne Migration 010.
   //
   // Das Versand-Tagebuch steht **nicht** in dieser Liste, und zwar mit Absicht:
-  // Wer migration-024 noch nicht eingespielt hat, soll die App weiter benutzen
-  // können. Fehlt die Tabelle, bleibt die Anzeige „benachrichtigt am" leer —
-  // das ist eine fehlende Auskunft, kein fehlender Datenbestand.
+  // Fehlt die Tabelle, bleibt die Anzeige „benachrichtigt am" leer — das ist
+  // eine fehlende Auskunft, kein fehlender Datenbestand, und die App bleibt
+  // benutzbar.
   const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
-  const personList = migrateServicePrivs(
-    (persons.data ?? []).map((r) => personFromRow(r as PersonRow)),
-    serviceList,
-  )
+  const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
   // Absteigend geholt, aufsteigend gebraucht (`CongregationData.weeks`).
   const wochenAbsteigend = (weeks.data ?? []) as WeekRow[]
   const ab = fensterAnfang(wochenAbsteigend[0]?.start)
@@ -1211,54 +771,27 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // beruht (T39). Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
   // Konflikt-Nachladen) darf keine Stände einer anderen Versammlung erben.
   staendeSetzen(weekRows.map((r) => [r.start, r.updated_at]))
-  // Die Kennung kommt aus der **Spalte**, nicht aus dem Blob: migration-017 hat
-  // sie dort nachgetragen, im JSONB kann sie bei Altbestand noch fehlen. Damit
-  // trägt jede geladene Woche ihr Datum, auch die älteste.
+  // Die Kennung kommt aus der **Spalte**, nicht aus dem Blob: sie ist der
+  // Primärschlüssel der Woche, der Blob trägt nur das Programm. Damit trägt
+  // jede geladene Woche ihr Datum, auch die älteste.
   //
   // Hier wurde bis T66 ein Array der Länge `höchstePosition + 1` aufgespannt
   // und jede Zeile an ihren Index gesetzt, mit Platzhaltern in den Lücken —
   // weil der Index die Position war und in jedem `task_key` steckte. Jetzt
   // reihen sich die Zeilen einfach nach Datum: eine fehlende Woche ist eine
   // fehlende Woche und verschiebt nichts.
+  //
+  // **Der Ladevorgang liest nur.** Er trug einmal Kennungen nach, hob
+  // Alt-Formate und schrieb das Ergebnis zurück — mitten in die Arbeit des
+  // Planers hinein. Seit jeder Punkt seine Kennung beim Entstehen bekommt
+  // (`PartItem.iid`) und jede Zuteilung ihre `pid`, bleibt nur noch das
+  // Binden loser Namen an ihre Person, und das geschieht rein im Speicher.
   const roh = weekRows.map((r) => ({ ...r.data, start: r.start }))
-  const gemigriert = normalizeChairKeys(
-    migrateAssignmentPids(migrateAssignmentNames(normalizeWeekHelpers(roh), personList), personList),
-  )
-
-  const rohConf = confirmationMap((confs.data ?? []) as ConfirmationRow[])
-
-  // Stabile Kennungen nachtragen und die Bestätigungen einmalig mit umbenennen
-  // (T37). Idempotent — beim zweiten Laden gibt es nichts mehr zu tun.
-  const umgestellt = migrateItemIds(gemigriert, rohConf)
-  const weekList = umgestellt.weeks
-  // Und dasselbe für die Treffpunkte (T87) — dieselbe Ursache, andere Tabelle.
-  const fsUmgestellt = migrateFsTaskKeys(umgestellt.confirmations)
-  // Die Datumsbasis steht schon hier, weil die Wochen-Migration darunter sie
-  // braucht: Sie rechnet aus, welche Kennung eine Woche **hatte**, solange sie
-  // aus der Ordnungszahl kam.
+  const weekList = normalizeChairKeys(pidsNachtragen(roh, personList))
+  const confirmations = confirmationMap((confs.data ?? []) as ConfirmationRow[])
   const fsBaseDate = fsBaseFromWeeks(weekList, new Date())
-  // Und die dritte aus derselben Wurzel (T100): Der Montag einer
-  // Treffpunkt-Woche kam aus `fsBase + wi·7` statt aus der Woche selbst.
-  const fsWochen = migrateFsWochenKeys(fsUmgestellt.confirmations, weekList, fsBaseDate)
-  const confirmations = fsWochen.confirmations
-  const alleRenames = [...umgestellt.renames, ...fsUmgestellt.renames, ...fsWochen.renames]
-  /** Nur die Wochen, die wirklich Kennungen bekommen haben. */
-  const speichereUmgestellte = (): void => {
-    for (let i = 0; i < weekList.length; i++) {
-      const woche = weekList[i]
-      if (woche && woche !== gemigriert[i]) saveWeek(congregationId, woche)
-    }
-  }
-  await umstellungSchreiben(
-    () => renameConfirmationKeys(congregationId, alleRenames),
-    speichereUmgestellte,
-  )
 
-  // Bestand der Predigtdienstgruppen: einmalig durchnummerieren, solange alle
-  // auf null stehen (siehe `gruppenPositionenNachtragen`).
-  const gruppenZeilen = (groups.data ?? []) as GroupRow[]
-  gruppenPositionenNachtragen(congregationId, gruppenZeilen)
-  const gruppenListe = gruppenZeilen.map(groupFromRow)
+  const gruppenListe = ((groups.data ?? []) as GroupRow[]).map(groupFromRow)
 
   const settings = ((cong.data?.settings as CongregationSettings | null) ?? {})
   const reminders: Reminders = {
@@ -1267,9 +800,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     repeat: settings.reminders?.repeat ?? STANDARD_ERINNERUNGEN.repeat,
     // `onAssign` stand hier bis T99. Der Schalter steuerte die Mitteilung
     // „Zuteilung gesendet" an die Planer, und die gibt es nicht mehr — an ihre
-    // Stelle ist „Plan senden" getreten. In `congregations.settings` bleibt das
-    // Feld bei bestehenden Versammlungen stehen; gelesen wird es nirgends, und
-    // eine Migration dafür wäre Aufwand ohne Wirkung.
+    // Stelle ist „Plan senden" getreten.
   }
 
   // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Kennung → Daten).
@@ -1288,20 +819,15 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   for (const row of imFenster((fsWeeksRows.data ?? []) as { start: string; data: FsInstance[] }[])) {
     fsNachWoche.set(row.start, row.data)
   }
-  // Erst die Kennungen heben (T87), dann ausrichten: `regenFsWeeks` findet die
-  // gespeicherte Leitung über die Kennung wieder — trüge sie noch die alte
-  // Wochennummer, ginge sie beim Ausrichten verloren.
-  const storedFsWeeks: FsInstance[][] = fsMigrateInstIds(
-    weekList.map((w) => fsNachWoche.get(w.start) ?? []),
-  )
+  const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
   const ausgerichtet = fsRules.length
     ? regenFsWeeks(fsWochenKennungen(weekList, fsBaseDate), storedFsWeeks, fsRules, true)
     : storedFsWeeks
-  // Leiter ohne `lpid` an ihre Person binden — dasselbe, was
-  // `migrateAssignmentPids` eine Bildschirmhöhe weiter oben für die
-  // Zusammenkünfte tut. Ohne das blieb eine gelöschte und neu angelegte Person
-  // in ihren Treffpunkten für immer ein bloßer Name.
-  const fsWeeks = fsMigrateLeaderPids(ausgerichtet, personList)
+  // Leiter ohne `lpid` an ihre Person binden — dasselbe, was `pidsNachtragen`
+  // eine Bildschirmhöhe weiter oben für die Zusammenkünfte tut. Ohne das bliebe
+  // eine gelöschte und neu angelegte Person in ihren Treffpunkten für immer ein
+  // bloßer Name.
+  const fsWeeks = fsLeiterBinden(ausgerichtet, personList)
 
   const data: CongregationData = {
     congregation: {
@@ -1885,7 +1411,7 @@ export function saveConfirmation(
 /**
  * Bestätigungs-Einträge (alle Nutzer) der angegebenen Slots löschen — beim
  * Neu-Zuteilen, damit kein fremder Status am Slot kleben bleibt
- * (RLS-Policy confirmations_delete_planner, migration-007).
+ * (RLS-Richtlinie `confirmations_delete_planner`).
  */
 export function deleteConfirmationRows(congregationId: string, taskKeys: string[]): void {
   if (!supabase || taskKeys.length === 0) return
@@ -1896,59 +1422,6 @@ export function deleteConfirmationRows(congregationId: string, taskKeys: string[
       .eq('congregation_id', congregationId)
       .in('task_key', taskKeys),
   )
-}
-
-/**
- * Vertauscht die task_keys von Bestätigungen paarweise — für das Verschieben
- * eines LAC-Punkts, damit die Bestätigung beim Programmpunkt bleibt statt an
- * der Position zu haften. Über einen Zwischenschlüssel, um die Eindeutigkeit
- * (congregation_id, task_key, user_id) beim Tausch nicht zu verletzen.
- */
-/**
- * Benennt task_keys der Reihe nach um — für das Einfügen/Löschen eines
- * Programmpunkts, nach dem alle folgenden Positionen um eine rutschen.
- *
- * Die Reihenfolge der Paare kommt aus `shiftPartConfirmations` und ist
- * bindend: falsch herum kollidiert eine Umbenennung mit einem noch belegten
- * Schlüssel (unique auf congregation_id, task_key, user_id). Deshalb hier —
- * anders als beim Tausch — kein Zwischenschlüssel: die Zielposition ist
- * garantiert frei.
- */
-export async function renameConfirmationKeys(
-  congregationId: string,
-  pairs: Array<[string, string]>,
-): Promise<void> {
-  if (!supabase) return
-  for (const [from, to] of pairs) {
-    await run(
-      supabase
-        .from('confirmations')
-        .update({ task_key: to })
-        .eq('congregation_id', congregationId)
-        .eq('task_key', from),
-    )
-  }
-}
-
-export async function swapConfirmationKeys(
-  congregationId: string,
-  pairs: Array<[string, string]>,
-): Promise<void> {
-  if (!supabase) return
-  const move = (from: string, to: string) =>
-    run(
-      supabase!
-        .from('confirmations')
-        .update({ task_key: to })
-        .eq('congregation_id', congregationId)
-        .eq('task_key', from),
-    )
-  for (const [a, b] of pairs) {
-    const tmp = `${a}~swap`
-    await move(a, tmp)
-    await move(b, a)
-    await move(tmp, b)
-  }
 }
 
 /* ---- Mitglieder & Einladungen (nur Planer, RLS-geschützt) ---------------- */

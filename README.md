@@ -97,8 +97,7 @@ komplette Woche als Upsert, ohne Sperre und ohne Versionskennzeichen. Zwei
 gleichzeitig planende Koordinatoren überschrieben sich vollständig und lautlos.
 
 Jede Zeile in `weeks` trägt jetzt einen Stand (`updated_at`, gesetzt von einem
-Trigger — nicht vom Client, sonst schriebe man sich daran vorbei,
-[migration-016](supabase/migration-016-wochen-stand.sql)):
+Trigger — nicht vom Client, sonst schriebe man sich daran vorbei):
 
 1. Beim Laden merkt sich der Client den Stand je Woche.
 2. Beim Speichern nennt er ihn als Bedingung. Trifft er noch zu, wird
@@ -360,17 +359,22 @@ Versammlung bietet Planern eine Erstbefüllung mit dem Demo-Datensatz an.
 verknüpften Person; Bestätigungen landen in `confirmations`, Erinnerungen und
 Versammlungssprache in `congregations.settings`. **Konten & Einladungen laufen
 personenzentriert im Personen-Screen:** Admin-Recht als feste Rolle im
-Personen-Detail (gespiegelt in `members.planner`, migration-006), KONTO-Karte
+Personen-Detail (gespiegelt in `members.planner`), KONTO-Karte
 mit Einladen-Aktion (E-Mail über die Edge Function `send-invite`/Resend, sobald
 Secret `INVITE_FROM` mit verifizierter eigener Domain gesetzt ist — sonst
 Fallback aufs eigene Mail-Programm per `mailto:`; ohne E-Mail-Adresse
 Teilen/Kopieren) und „Alle ohne Konto einladen" in der Liste. Neue Mitglieder
 registrieren sich in der App und lösen ihren Code ein (`redeem_invite`). Nur
 die allererste Versammlung + Koordinator-Mitgliedschaft entsteht per SQL
-(siehe Ende der `schema.sql`). Bereits eingerichtete Datenbanken einmalig mit
-den `supabase/migration-*.sql`-Dateien nachziehen (in Nummern-Reihenfolge).
-Nicht `migration-00*` — das Muster übergeht alles ab der zehnten, und darunter
-sind die Treffpunkte und sämtliche Rechteverschärfungen.
+(siehe Ende der `schema.sql`).
+
+**Das Schema hat genau eine Quelle: [`supabase/schema.sql`](supabase/schema.sql).**
+Daneben lag bis zum 17. September 2026 eine Kette von 25 Migrationen, und jede
+versicherte im Kopf „Neuinstallationen brauchen diese Datei nicht". Zwei Quellen
+für dieselbe Sache laufen auseinander — was sie auch taten. Die Kette ist
+gestrichen: Wer die Datenbank aufsetzt, führt `schema.sql` aus, sonst nichts.
+Änderungen am Schema kommen dort hinein, und die Datenbank wird neu aufgesetzt
+(die App ist noch nicht ausgerollt).
 
 ### Auto-Zuteilung (Regeln)
 
@@ -402,9 +406,10 @@ umgekehrt. Die Regeln sind in
    (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft, Wochen-Serie,
    sowie **Hilfsdienst + Programmpunkt am selben Tag**)
 
-## App-Sprachen (~30)
+## App-Sprachen (34)
 
-Die App-Oberfläche gibt es in ~30 Sprachen (Europa + Weltsprachen). Umschaltbar
+Die App-Oberfläche gibt es in 34 Sprachen (Europa + Weltsprachen) — Deutsch und
+33 Übersetzungen. Umschaltbar
 im Login und im Profil. DE ist die Basis; fehlt eine Übersetzung, greift
 Englisch als Fallback. Datums-/Wochentagsnamen der Zusatz-Sprachen kommen über
 `Intl` (keine handgepflegten Listen). Getrennt davon ist die
@@ -442,9 +447,7 @@ Und drei Takte:
    gibt sie frei ([`supabase/functions/send-plan/`](supabase/functions/send-plan/)).
    Jede eingeteilte Person bekommt **eine** Nachricht mit allen ihren Aufgaben
    dieser Woche. Verschickt wird nur, was noch nicht verschickt war — das
-   Versand-Tagebuch `assignment_log`
-   ([migration-024](supabase/migration-024-zuteilungs-tagebuch.sql)) merkt sich
-   Platz und Name. Das Panel zeigt dem Planer, wie viele noch nichts wissen,
+   Versand-Tagebuch `assignment_log` merkt sich Platz und Name. Das Panel zeigt dem Planer, wie viele noch nichts wissen,
    wann zuletzt etwas hinausging und wen er mangels App-Konto persönlich
    ansprechen muss. Gelesen werden Bestätigungen und Tagebuch nur für **diese**
    Woche — die steht im Aufgaben-Schlüssel selbst, in zwei Formen
@@ -486,7 +489,7 @@ Service-Role und wird täglich per Cron ausgelöst
 ([`supabase/cron-reminders.sql`](supabase/cron-reminders.sql)).
 
 Empfangen kann, wer im **Profil → Push-Mitteilungen** aktiviert hat (Abo je
-Gerät in `push_subscriptions`, [migration-005](supabase/migration-005-push.sql)).
+Gerät in `push_subscriptions`).
 Die App ist dafür eine PWA (`public/manifest.webmanifest` + `public/sw.js`);
 auf dem iPhone gibt es Push erst, nachdem die App über Teilen → „Zum
 Home-Bildschirm“ installiert wurde (iOS 16.4+).
@@ -522,7 +525,6 @@ Empfänger *heute* eingestellt hat.
   `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` (Schlüsselpaar; der öffentliche steht
   zusätzlich als Konstante in [src/lib/push.ts](src/lib/push.ts)),
   `VAPID_SUBJECT` (mailto-URI), optional `APP_URL`.
-- `migration-005-push.sql` im SQL-Editor ausführen (Tabelle + RLS).
 - Deploy: `npx supabase functions deploy send-reminders --no-verify-jwt`, dann
   `cron-reminders.sql` mit Projekt-Ref + `CRON_SECRET` im SQL-Editor ausführen.
 - Test: `curl -H "Authorization: Bearer <CRON_SECRET>" https://<ref>.supabase.co/functions/v1/send-reminders`

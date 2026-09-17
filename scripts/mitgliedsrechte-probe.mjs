@@ -13,7 +13,7 @@
  * | **S2** | `confirmations_write` prüft nur `user_id = auth.uid()`, **nicht**, ob der `task_key` zu einem Slot gehört, der dieser Person zugeteilt ist. Ein Mitglied könnte damit eine fremde Aufgabe als „bestätigt" markieren — der Planer sähe ✓, und die eigentlich zuständige Person würde nicht mehr erinnert. Über einen fremden **Hilfsdienst** als „verhindert" ließe sich sogar ein Ersatzgesuch auslösen. |
  * | **S3** | `notifications_insert` erlaubt jedem Mitglied Zeilen vom Typ `verhindert` — mit frei wählbarem `title`, `body` und **Empfänger**. Ein Mitglied könnte im Namen der App beliebige Mitteilungen verschicken. |
  *
- * **Seit migration-022 misst sie den geschlossenen Zustand** (23. August 2026).
+ * **Sie misst den geschlossenen Zustand** (seit dem 23. August 2026).
  * Beide Befunde sind behoben; die Probe belegt es jetzt in beide Richtungen —
  * denn eine Richtlinie, die *alles* abweist, bestünde jede Fremd-Probe glänzend
  * und bräche dabei die App:
@@ -74,19 +74,17 @@ import { pathToFileURL } from 'node:url'
 /* ===================== Schlüssel (Spiegel von planning.ts) ================ */
 
 /**
- * Stabiler Schlüssel eines Programmpunkt-Slots — dieselbe Entscheidung wie
- * `slotTaskKey` in `src/data/planning.ts`: Kennung, wenn der Punkt eine hat,
- * sonst die Position. Node lädt die TypeScript-Datei nicht, deshalb steht die
- * Regel hier ein zweites Mal; `mitgliedsrechte-probe.test.ts` hält beide
- * Fassungen aneinander.
+ * Stabiler Schlüssel eines Programmpunkt-Slots — dasselbe wie `itemTaskKey` in
+ * `src/data/planning.ts`: Woche, Zusammenkunft, Raum, Kennung des Punkts,
+ * Platz. Node lädt die TypeScript-Datei nicht, deshalb steht die Regel hier ein
+ * zweites Mal; `mitgliedsrechte-probe.test.ts` hält beide Fassungen aneinander.
  *
  * Ein falsch gebauter Schlüssel wäre hier besonders tückisch: Die Probe schriebe
  * ihn anstandslos und meldete „durchgelassen" — nur bezöge er sich auf gar
  * keinen Slot, und der Befund wäre nicht belegt, sondern bloß behauptet.
  */
-export function slotSchluessel(item, woche, tab, si, ii, ni, aux = false) {
-  const art = aux ? 'aux' : 'part'
-  return item.iid ? `${woche}|${tab}|${art}|${item.iid}|${ni}` : `${woche}|${tab}|${art}|${si}|${ii}|${ni}`
+export function slotSchluessel(item, woche, tab, ni, aux = false) {
+  return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${item.iid}|${ni}`
 }
 
 /** Stabiler Schlüssel eines Hilfsdienst-Slots (Spiegel von `helperTaskKey`). */
@@ -122,12 +120,12 @@ export function fremdeSlots(week, eigenePid) {
   for (const tab of ['mid', 'we']) {
     const meeting = week[tab]
     if (!meeting) continue
-    ;(meeting.sections ?? []).forEach((sec, si) => {
-      ;(sec.items ?? []).forEach((item, ii) => {
+    ;(meeting.sections ?? []).forEach((sec) => {
+      ;(sec.items ?? []).forEach((item) => {
         if (!Array.isArray(item.names)) return
         item.names.forEach((slot, ni) => {
           if (!slot.pid || slot.pid === eigenePid) return
-          out.push({ art: 'Programm', wer: slot.name, key: slotSchluessel(item, week.start, tab, si, ii, ni) })
+          out.push({ art: 'Programm', wer: slot.name, key: slotSchluessel(item, week.start, tab, ni) })
         })
       })
     })
@@ -145,8 +143,8 @@ export function fremdeSlots(week, eigenePid) {
  * Das Gegenstück: die Slots, die der Person **gehören**. Ohne einen davon misst
  * die Probe nur die halbe Wahrheit — dass die Richtlinie Fremdes abweist,
  * bewiese nichts, wenn sie alles abwiese. Genau das ist die Gefahr an
- * migration-022: Eine zu strenge Prüfung bräche das Bestätigen, und der Client
- * schreibt fire-and-forget.
+ * `task_gehoert_mir`: Eine zu strenge Prüfung bräche das Bestätigen, und der
+ * Client schreibt fire-and-forget.
  */
 export function eigeneSlots(week, eigenePid) {
   if (!eigenePid) return []
@@ -154,12 +152,12 @@ export function eigeneSlots(week, eigenePid) {
   for (const tab of ['mid', 'we']) {
     const meeting = week[tab]
     if (!meeting) continue
-    ;(meeting.sections ?? []).forEach((sec, si) => {
-      ;(sec.items ?? []).forEach((item, ii) => {
+    ;(meeting.sections ?? []).forEach((sec) => {
+      ;(sec.items ?? []).forEach((item) => {
         if (!Array.isArray(item.names)) return
         item.names.forEach((slot, ni) => {
           if (slot.pid !== eigenePid) return
-          out.push({ art: 'Programm', wer: slot.name, key: slotSchluessel(item, week.start, tab, si, ii, ni) })
+          out.push({ art: 'Programm', wer: slot.name, key: slotSchluessel(item, week.start, tab, ni) })
         })
       })
     })
@@ -310,9 +308,8 @@ async function main() {
     console.error('Keine Woche in dieser Versammlung — ohne Zuteilungen ist S2 nicht zu messen.')
     process.exit(1)
   }
-  // Die Kennung der Woche steht in der **Spalte**; im JSONB kann sie bei
-  // Altbestand fehlen (migration-017). Ohne sie hiesse der Schlüssel
-  // "undefined|mid|…" und träfe nichts.
+  // Die Kennung der Woche steht in der **Spalte**, nicht im JSONB. Ohne sie
+  // hiesse der Schlüssel "undefined|mid|…" und träfe nichts.
   const mitKennung = (z) => ({ ...z.data, start: z.start })
   const fremde = fremdeSlots(mitKennung(wochen[0]), mitglied.pid)
   const programm = fremde.find((s) => s.art === 'Programm')
@@ -351,7 +348,7 @@ async function main() {
   // etwas vorspiegeln würde.
   const { daten: sicht } = await planer.rest(`confirmations?select=status,user_id&task_key=eq.${schluessel}`)
   const e1 = bewerteVersuch(s2.status, Boolean(sicht?.length), false)
-  ergebnis(1, `Bestätigung auf eine fremde Aufgabe (${ziel.art}: ${ziel.wer})`, e1, e1.durch ? 'S2 STEHT NOCH OFFEN' : 'abgewiesen — migration-022 greift')
+  ergebnis(1, `Bestätigung auf eine fremde Aufgabe (${ziel.art}: ${ziel.wer})`, e1, e1.durch ? 'S2 STEHT NOCH OFFEN' : 'abgewiesen — task_gehoert_mir greift')
   if (e1.durch) {
     console.log(`      Der Planer sieht auf ${ziel.wer}s Platz: ${sicht.map((z) => z.status).join(', ')}`)
     console.log(`      — geschrieben hat sie ${sicht.some((z) => z.user_id === mitglied.uid) ? 'das Mitglied' : 'jemand anderes'}`)
@@ -392,7 +389,7 @@ async function main() {
   )
   const angekommen3 = await mitglied.rest(`notifications?select=id,type,title&title=like.${marke}*`)
   const e3 = bewerteVersuch(s3.status, Boolean(angekommen3.daten?.length), false)
-  ergebnis(3, 'Mitteilung mit freiem Text an einen Nicht-Planer', e3, e3.durch ? 'S3 STEHT NOCH OFFEN' : 'abgewiesen — migration-022 greift')
+  ergebnis(3, 'Mitteilung mit freiem Text an einen Nicht-Planer', e3, e3.durch ? 'S3 STEHT NOCH OFFEN' : 'abgewiesen — notifications_insert greift')
   for (const z of angekommen3.daten ?? []) {
     console.log(`      In der Glocke gelandet: „${z.title}" (${z.type})`)
     const weg = await mitglied.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
@@ -470,7 +467,7 @@ async function main() {
     // den Betroffenen aus der Zuteilung nimmt.
     const { daten: sicht7 } = await planer.rest(`absences?select=id,person_id&id=eq.${absId}`)
     const e7 = bewerteVersuch(s7.status, Boolean(sicht7?.length), false)
-    ergebnis(7, 'Abwesenheit auf eine fremde Person eintragen', e7, e7.durch ? 'S11 STEHT NOCH OFFEN' : 'abgewiesen — migration-023 greift')
+    ergebnis(7, 'Abwesenheit auf eine fremde Person eintragen', e7, e7.durch ? 'S11 STEHT NOCH OFFEN' : 'abgewiesen — absences_write greift')
     if (e7.durch) {
       const weg = await planer.rest(`absences?id=eq.${absId}`, 'DELETE', undefined, 'return=minimal')
       console.log(weg.status < 400 ? '      (Zeile wieder gelöscht)' : `      !! Zeile blieb stehen (${weg.status}) !!`)

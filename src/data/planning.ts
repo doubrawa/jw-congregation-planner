@@ -14,7 +14,6 @@ import { programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-cl
 import {
   dieselbePerson,
   displayName,
-  eigeneRolle,
   gehoertZu,
   isGuestRole,
   isPlainPublisher,
@@ -201,9 +200,8 @@ export function assignmentsInMeeting(
       continue
     }
     const rolle = slot.rolle ?? ''
-    // Rolle bevorzugen (Vorsitz/Gebet/Leiter/Leser …); Begleiter-Label
-    // ("mit …") ignorieren und stattdessen den Programmpunkt-Titel zeigen.
-    if (rolle && !rolle.startsWith('mit')) out.push({ text: rolle, lang: 'u' })
+    // Rolle bevorzugen (Vorsitz/Gebet/Leiter/Leser …), sonst den Titel.
+    if (rolle) out.push({ text: rolle, lang: 'u' })
     else out.push({ text: item.title, lang: 'p' })
   }
   // Ratgeber der Zusätzlichen Klasse — eine Zuteilung je Zusammenkunft.
@@ -312,6 +310,13 @@ function gleicheBesetzung(
  * Vorgängers — und die Ampel im Planen zeigte ihn grün, obwohl er nie gefragt
  * worden war. Dieselbe Rangfolge wie bei den Treffpunkten
  * (`fsVerwaisteZusagen`) und beim Entzug (`entzogeneZusagen`).
+ *
+ * **Der Punkt von vorher wird über seine Kennung gesucht, nicht über seine
+ * Stelle in der Liste.** Hier stand `prev.sections[si]?.items[ii]` — dieselbe
+ * Position, ein anderer Punkt, sobald eine Aktion umsortiert und zuteilt
+ * zugleich. Der Schlüssel wurde längst über die Kennung gebildet; nur diese
+ * Hälfte war noch positionsbasiert, und sie hätte die Zusage des falschen
+ * Punkts abgeräumt.
  */
 export function changedSlotKeys(
   prev: Meeting,
@@ -321,10 +326,14 @@ export function changedSlotKeys(
   tab: MeetingKey,
 ): string[] {
   const keys: string[] = []
-  for (const { slot, si, item, ii, ni, aux } of programmPlaetze(next)) {
-    const prevItem = prev.sections[si]?.items[ii]
-    const vorher = prevItem && !isSong(prevItem) ? slotsOf(prevItem, aux) : []
-    if (!gleicheBesetzung(vorher[ni], slot)) keys.push(slotTaskKey(item, woche, tab, si, ii, ni, aux))
+  const vorherNachKennung = new Map<string, PartItem>()
+  for (const section of prev.sections) {
+    for (const item of section.items) if (!isSong(item)) vorherNachKennung.set(item.iid, item)
+  }
+  for (const { slot, item, ni, aux } of programmPlaetze(next)) {
+    const prevItem = vorherNachKennung.get(item.iid)
+    const vorher = prevItem ? slotsOf(prevItem, aux) : []
+    if (!gleicheBesetzung(vorher[ni], slot)) keys.push(itemTaskKey(woche, tab, item.iid, ni, aux))
   }
   for (const svc of services) {
     const prevArr = prev.helpers[svc.key] ?? []
@@ -368,7 +377,7 @@ export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[
     // Dieselbe Regel wie in der Aufgabenliste (`zuteilungsLabel`), nur in zwei
     // Atomen statt einem — Titel und Rolle kommen aus verschiedenen Sprachen
     // (siehe OpenSlot.rolle).
-    const rolle = eigeneRolle(rolleMitHerkunft(slot))
+    const rolle = rolleMitHerkunft(slot) ?? ''
     out.push(
       rolle && istBlockSektion(section)
         ? { text: rolle, lang: 'u', n: 1 }
@@ -829,8 +838,7 @@ export function buildS89ForSlot(
     item.title.startsWith('Bibellesung')
   if (!isStudent) return null
   // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
-  // getrennte Slots im selben Punkt. Alt-Daten trugen den Partner als "mit X" im
-  // Rollentext — als Rückfall weiter unterstützt.
+  // getrennte Slots im selben Punkt.
   const schulungsPlatz = slotsOf(item, raum).find((n) => n.bereichsKey === 'schulung')
   /*
    * **Ohne Schüler kein Zettel.**
@@ -850,8 +858,6 @@ export function buildS89ForSlot(
   if (schulungsPlatz && !schulungsPlatz.name) return null
   const leadName = schulungsPlatz?.name ?? ''
   const partnerName = slotsOf(item, raum).find((n) => n.bereichsKey === 'schulungPartner')?.name ?? ''
-  const role = slot?.rolle ?? ''
-  const legacyPartner = role.startsWith('mit ') ? role.slice(4) : ''
   const metaFrags = (item.meta ?? '').split(' · ')
   // Der Rahmen („Von Haus zu Haus") — **an der Form erkannt, nicht am Wort**.
   //
@@ -884,7 +890,7 @@ export function buildS89ForSlot(
   const point = (zeitIdx >= 0 ? metaFrags[zeitIdx + 1] : undefined) ?? ''
   return {
     name: leadName || current, // Bibellesung hat keinen schulung-Slot → aktueller Name
-    partner: partnerName || legacyPartner,
+    partner: partnerName,
     date: meetingDateText(week, sel.wi, sel.tab, meetings),
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,
@@ -979,36 +985,17 @@ export function wochenIndex(weeks: readonly Week[], woche: string): number {
 }
 
 /**
- * Stabiler Schlüssel eines Programmpunkt-Slots (auch confirmations.task_key).
+ * Schlüssel eines Programmpunkt-Slots (auch `confirmations.task_key`) über die
+ * **stabile Kennung** des Punkts (T37) — `"2026-09-07|mid|part|k3f9x|0"`.
  *
- * Der Abschnitt „part" wird für die Zusätzliche Klasse zu „aux" — bewusst an
- * derselben Stelle statt als Anhang: der Schlüssel eines Hauptsaal-Platzes
- * bleibt dadurch Zeichen für Zeichen derselbe wie bisher, alle bestehenden
- * Bestätigungen behalten ihre Gültigkeit.
- */
-export function partTaskKey(
-  woche: string,
-  tab: MeetingKey,
-  si: number,
-  ii: number,
-  ni: number,
-  aux = false,
-): string {
-  return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${si}|${ii}|${ni}`
-}
-
-/**
- * Schlüssel eines Programmpunkt-Slots über die **stabile Kennung** des Punkts
- * (T37) — `"60|mid|part|k3f9x|0"` statt `"60|mid|part|2|1|0"`.
+ * Weder Abschnitt noch laufende Nummer stehen darin: Eine Bestätigung folgt
+ * damit dem Punkt, nicht seinem Platz in der Liste. Genau daran scheiterte T16
+ * — ein eingefügter LAC-Punkt verschob alle folgenden, und die Bestätigungen
+ * blieben an der alten Zahl kleben. Einfügen, Löschen und Verschieben lassen
+ * die Schlüssel seither in Ruhe.
  *
- * Der Unterschied ist der Abschnitt und die laufende Nummer: sie sind weg. Eine
- * Bestätigung folgt damit dem Punkt, nicht seinem Platz in der Liste. Genau
- * daran scheiterte T16 — ein eingefügter LAC-Punkt verschob alle folgenden, und
- * die Bestätigungen blieben an der alten Zahl kleben.
- *
- * **Beide Formen sind an ihrer Länge unterscheidbar**: fünf Felder hier, sechs
- * beim alten positionsbasierten Schlüssel. Das braucht die Lade-Migration, um
- * zu erkennen, was sie schon umgestellt hat.
+ * Der Abschnitt „part" wird für die Zusätzliche Klasse zu „aux" — an derselben
+ * Stelle statt als Anhang, damit beide Räume gleich aussehende Schlüssel haben.
  */
 export function itemTaskKey(
   woche: string,
@@ -1017,30 +1004,19 @@ export function itemTaskKey(
   ni: number,
   aux = false,
 ): string {
-  return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${iid}|${ni}`
+  return `${itemTaskStamm(woche, tab, iid, aux)}${ni}`
 }
 
 /**
- * Schlüssel eines Programmpunkt-Slots — die **eine** Stelle, an der zwischen
- * stabiler Kennung und altem Positions-Schlüssel entschieden wird.
+ * Der Schlüssel **aller** Plätze eines Punkts, ohne die Platznummer — die
+ * gemeinsame Wurzel von `itemTaskKey` und `itemZusagenKeys`.
  *
- * Alles andere ruft nur noch hier an. Solange eine Woche noch keine Kennungen
- * trägt (Demo-Daten, Vorlagen, noch nicht migrierte Datensätze), gilt weiterhin
- * die Position — dieselben Schlüssel wie bisher, also bleiben bestehende
- * Bestätigungen gültig.
+ * Damit steht der Aufbau des Schlüssels an genau einer Stelle. Er stand hier
+ * schon einmal zweimal untereinander; die zweite Abschrift wäre beim nächsten
+ * Umbau des Formats die eine, die man übersieht.
  */
-export function slotTaskKey(
-  item: PartItem,
-  woche: string,
-  tab: MeetingKey,
-  si: number,
-  ii: number,
-  ni: number,
-  aux = false,
-): string {
-  return item.iid
-    ? itemTaskKey(woche, tab, item.iid, ni, aux)
-    : partTaskKey(woche, tab, si, ii, ni, aux)
+function itemTaskStamm(woche: string, tab: MeetingKey, iid: string, aux: boolean): string {
+  return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${iid}|`
 }
 
 
@@ -1083,7 +1059,7 @@ export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | n
  *
  * Für Mitteilungen: „Ersatz gesucht", „Erinnerung" und dergleichen beziehen
  * sich auf einen Platz an einem bestimmten Tag — ist der herum, interessieren
- * sie niemanden mehr. Seit migration-020 trägt die Mitteilung den Schlüssel und
+ * sie niemanden mehr. Die Mitteilung trägt den Schlüssel ihrer Aufgabe und
  * damit die Antwort.
  *
  * Ohne erkennbaren Schlüssel: **false**. Wer nichts über den Termin weiß, lässt
@@ -1181,128 +1157,24 @@ export function deriveSubstituteReqs(
 }
 
 /**
- * task_key-Paare zweier getauschter Programmpunkt-Positionen (LAC verschieben).
- * Für ni = 0..count-1 wird `part|si|a|ni` mit `part|si|b|ni` vertauscht — so
- * folgt die Bestätigung dem Programmpunkt statt der Position.
+ * Bestätigungen eines gelöschten Programmpunkts — alle seine Plätze, beide
+ * Räume.
+ *
+ * **Das ist alles, was Einfügen, Löschen und Verschieben an Bestätigungen noch
+ * anfassen.** Hier standen drei Funktionen: Beim Einfügen und Löschen mussten
+ * die Schlüssel aller folgenden Punkte umbenannt, beim Verschieben zwei
+ * Schlüssel getauscht werden — alles nur, weil die Position im Schlüssel stand
+ * (T16). Seit der Punkt seine eigene Kennung trägt, verschiebt sich nichts
+ * mehr; verfallen kann nur, was wirklich verschwindet.
  */
-export function partSwapKeyPairs(
-  woche: string,
-  tab: MeetingKey,
-  si: number,
-  a: number,
-  b: number,
-  count: number,
-): Array<[string, string]> {
-  const pairs: Array<[string, string]> = []
-  for (let ni = 0; ni < count; ni++) {
-    pairs.push([partTaskKey(woche, tab, si, a, ni), partTaskKey(woche, tab, si, b, ni)])
-  }
-  return pairs
-}
-
-/**
- * Bestätigungen an eine eingefügte oder gelöschte Programmpunkt-Position
- * anpassen.
- *
- * **Betrifft seit T37 nur noch Wochen ohne stabile Kennungen** — Demo-Daten,
- * Vorlagen und Datensätze, die die Lade-Migration noch nicht erreicht hat.
- * Trägt ein Punkt eine `iid`, steht sie im Schlüssel statt seiner Position, und
- * es gibt schlicht nichts zu verschieben; diese Funktion findet dann keinen
- * passenden Schlüssel und tut nichts. Sie bleibt trotzdem stehen: solange es
- * Wochen der alten Form gibt, ist sie richtig, und ein leerer Lauf kostet nichts.
- *
- * Der alte `task_key` ist positionsbasiert (`wi|tab|part|si|ii|ni`). Beim
- * Verschieben eines LAC-Punkts tauscht `swapPartConfirmations` die Status
- * korrekt mit — beim **Löschen** und **Hinzufügen** rutschen aber alle
- * folgenden Punkte um eine Position, und die Bestätigungen blieben an der alten
- * Zahl kleben. Nach dem Löschen erbte der nachfolgende Punkt deshalb die fremde
- * Bestätigung, während der eigentliche wieder als offen galt — und erneut
- * erinnert wurde.
- *
- * `delta` = −1 beim Löschen von `ab`, +1 beim Einfügen an `ab`.
- *
- * Liefert neben der neuen Map die Umbenennungen für die Datenbank. Die
- * Reihenfolge ist bindend: beim Löschen von vorn nach hinten, beim Einfügen
- * von hinten nach vorn — sonst kollidiert eine Umbenennung mit einem noch
- * belegten Schlüssel.
- */
-export function shiftPartConfirmations(
+export function itemZusagenKeys(
   map: ConfirmationMap,
   woche: string,
   tab: MeetingKey,
-  si: number,
-  ab: number,
-  delta: -1 | 1,
-): { map: ConfirmationMap; renames: Array<[string, string]>; removed: string[] } {
-  const praefix = `${woche}|${tab}|`
-  const betroffen: Array<{ key: string; art: string; ii: number; ni: string; status: TaskStatus }> =
-    []
-  // Über die Einträge, nicht über die Schlüssel: der Status kommt so aus
-  // derselben Iteration mit, statt ihn unten am Index nachzuschlagen. Der
-  // Nachschlag dort war sicher (der Schlüssel stammt aus der Map), aber nur
-  // durch ein Argument — hier trägt ihn die Struktur (T42).
-  for (const [key, status] of Object.entries(map ?? {})) {
-    if (!key.startsWith(praefix)) continue
-    const teile = key.split('|')
-    if (teile.length !== 6) continue
-    const [, , art, sStr, iStr, ni] = teile
-    if ((art !== 'part' && art !== 'aux') || Number(sStr) !== si) continue
-    const ii = Number(iStr)
-    if (ii < ab) continue
-    betroffen.push({ key, art, ii, ni: ni ?? '', status })
-  }
-  if (betroffen.length === 0) return { map, renames: [], removed: [] }
-
-  // Löschen: von vorn nach hinten (die gelöschte Position ist frei).
-  // Einfügen: von hinten nach vorn (die höchste Position ist frei).
-  betroffen.sort((a, b) => (delta === -1 ? a.ii - b.ii : b.ii - a.ii))
-
-  const next = { ...map }
-  const renames: Array<[string, string]> = []
-  const removed: string[] = []
-  for (const eintrag of betroffen) {
-    if (delta === -1 && eintrag.ii === ab) {
-      delete next[eintrag.key]
-      removed.push(eintrag.key)
-      continue
-    }
-    const neu = `${praefix}${eintrag.art}|${si}|${eintrag.ii + delta}|${eintrag.ni}`
-    delete next[eintrag.key]
-    // Ohne Bedingung übernommen, damit Client und Datenbank dieselbe Menge an
-    // Schlüsseln behalten: `renames` geht so oder so an die Datenbank. Würde
-    // hier ein Status wegen Falsy-Prüfung wegfallen, benannte die Datenbank um,
-    // was der Client vergessen hat — und die Bestätigung wäre nur noch in
-    // einer der beiden Hälften vorhanden. `TaskStatus` kennt heute keinen
-    // falsy Wert; die Kopplung soll aber auch dann halten, wenn einer dazukommt.
-    next[neu] = eintrag.status
-    renames.push([eintrag.key, neu])
-  }
-  return { map: next, renames, removed }
-}
-
-/** Bestätigungs-Status zweier getauschter Positionen in der Map vertauschen. */
-export function swapPartConfirmations(
-  map: ConfirmationMap,
-  woche: string,
-  tab: MeetingKey,
-  si: number,
-  a: number,
-  b: number,
-  count: number,
-): ConfirmationMap {
-  const next = { ...map }
-  let changed = false
-  for (const [ka, kb] of partSwapKeyPairs(woche, tab, si, a, b, count)) {
-    const va = map[ka]
-    const vb = map[kb]
-    if (va === vb) continue
-    if (vb === undefined) delete next[ka]
-    else next[ka] = vb
-    if (va === undefined) delete next[kb]
-    else next[kb] = va
-    changed = true
-  }
-  return changed ? next : map
+  iid: string,
+): string[] {
+  const praefixe = [itemTaskStamm(woche, tab, iid, false), itemTaskStamm(woche, tab, iid, true)]
+  return Object.keys(map).filter((key) => praefixe.some((p) => key.startsWith(p)))
 }
 
 /** Besucht alle belegten Slots (Programmpunkte + Hilfsdienste) aller Wochen. */
@@ -1328,7 +1200,7 @@ export function eachAssignedSlot(
       for (const { slot, section, si, item, ii, ni, aux } of programmPlaetze(meeting)) {
         // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
         if (!slot.name || isGuestRole(slot.rolle)) continue
-        const key = slotTaskKey(item, week.start, tab, si, ii, ni, aux)
+        const key = itemTaskKey(week.start, tab, item.iid, ni, aux)
         visit(slot.name, key, () => {
           const rolle = rolleMitHerkunft(slot) ?? ''
           const sel: SlotSelection = {
@@ -1339,7 +1211,7 @@ export function eachAssignedSlot(
           // Versammlung, die Rolle in die des Lesers (siehe MyTask.rolle).
           // In Eröffnung/Abschluss trägt die Rolle allein — der Titel benennt
           // dort den ganzen Block (`istBlockAbschnitt`).
-          const eigen = eigeneRolle(rolle)
+          const eigen = rolle
           return {
             id: key,
             title: eigen && istBlockSektion(section) ? '' : item.title,

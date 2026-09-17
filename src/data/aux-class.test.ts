@@ -7,7 +7,7 @@ import {
   slotsOf,
   syncAuxSlots,
 } from './aux-class'
-import { assignmentsInMeeting, countOpenSlots, openSlotLabels, partTaskKey, ratgeberTaskKey } from './planning'
+import { assignmentsInMeeting, countOpenSlots, itemTaskKey, openSlotLabels, ratgeberTaskKey } from './planning'
 import { partWorkload } from './helpers'
 import { togglePartner } from './meeting-edit'
 import type { PartItem, Section, Week } from './types'
@@ -24,7 +24,7 @@ function alsPerson(name: string): Person {
 }
 
 
-const teil = (bereichsKey: string, plaetze = 1): PartItem => ({
+const teil = (bereichsKey: string, plaetze = 1): PartItem => ({ iid: 'i10',
   title: 'Gespräche beginnen',
   names: Array.from({ length: plaetze }, (_, i) => ({
     name: '',
@@ -59,7 +59,7 @@ describe('Was in der Zusätzlichen Klasse wiederholt wird', () => {
 
   it('erkennt am Bereich, nicht am Titel', () => {
     // Titel kommen in der Sprache der Versammlung aus dem Arbeitsheft.
-    const englisch: PartItem = { title: 'Starting a Conversation', names: [{ name: '', bereichsKey: 'schulung' }] }
+    const englisch: PartItem = { iid: 'i9', title: 'Starting a Conversation', names: [{ name: '', bereichsKey: 'schulung' }] }
     expect(istSchuelerteil(englisch)).toBe(true)
   })
 })
@@ -147,13 +147,12 @@ describe('Ausschalten beendet die Klasse überall', () => {
 })
 
 describe('Schlüssel', () => {
-  it('Hauptsaal-Schlüssel bleiben unverändert', () => {
-    // Entscheidend: bestehende Bestätigungen in der Datenbank hängen daran.
-    expect(partTaskKey('2026-09-07', 'mid', 1, 2, 0)).toBe('2026-09-07|mid|part|1|2|0')
+  it('der Hauptsaal-Schlüssel nennt den Raum „part"', () => {
+    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0)).toBe('2026-09-07|mid|part|k3f9x|0')
   })
 
   it('die Zusätzliche Klasse hat eigene Schlüssel', () => {
-    expect(partTaskKey('2026-09-07', 'mid', 1, 2, 0, true)).toBe('2026-09-07|mid|aux|1|2|0')
+    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0, true)).toBe('2026-09-07|mid|aux|k3f9x|0')
     expect(ratgeberTaskKey('2026-09-07', 'mid')).toBe('2026-09-07|mid|ratgeber')
   })
 })

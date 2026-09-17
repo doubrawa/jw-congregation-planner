@@ -10,7 +10,7 @@ import {
 } from '../app/context'
 import { initialState } from '../app/init'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
-import { helperTaskKey, partTaskKey, sentKey } from '../data/planning'
+import { helperTaskKey, itemTaskKey, sentKey } from '../data/planning'
 import { APP_TO_JW } from '../i18n/langs'
 import { dict } from '../i18n/ui'
 import type {
@@ -92,7 +92,7 @@ function laufendeWoche(over: Partial<Week> = {}): Week {
       date: 'Dienstag, 8. September · 19:00', end: '20:45',
       sections: [{
         label: 'X', farbe: 'petrol',
-        items: [{ num: 1, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
+        items: [{ iid: 'i2', num: 1, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
       }],
       helpers: { mik: [] },
     },
@@ -115,6 +115,9 @@ function importierteWoche(): Week {
 
 /** Der eine Programm-Platz der Wochenmitte — die Testwoche hat genau einen. */
 const platz = (w: Week) => (w.mid.sections[0]!.items[0] as PartItem).names[0]!
+
+/** Sein Aufgaben-Schlüssel — über die Kennung des Punkts. */
+const platzKey = (w: Week) => itemTaskKey(w.start, 'mid', (w.mid.sections[0]!.items[0] as PartItem).iid, 0)
 
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
@@ -384,7 +387,7 @@ function importiert(start: string): Week {
       date: range, end: '',
       sections: [{
         label: 'X', farbe: 'petrol',
-        items: [{ num: 1, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
+        items: [{ iid: 'i1', num: 1, title: 'Bibellesung', meta: '', names: [{ name: '', bereichsKey: 'bibellesung' }] }],
       }],
       helpers: { mik: [] },
     },
@@ -407,7 +410,7 @@ function allesBestaetigt(weeks: Week[]): ConfirmationMap {
   const map: ConfirmationMap = {}
   for (const w of weeks) {
     const start = w.start
-    map[partTaskKey(start, 'mid', 0, 0, 0)] = 'bestätigt'
+    map[platzKey(w)] = 'bestätigt'
     for (const tab of ['mid', 'we'] as const) {
       for (const pos of [0, 1]) map[helperTaskKey(start, tab, 'mik', pos)] = 'bestätigt'
     }
@@ -420,7 +423,7 @@ function allesGesendet(weeks: Week[]): Record<string, string> {
   const log: Record<string, string> = {}
   const eintrag = (key: string, name: string) => (log[sentKey(key, name)] = '2026-09-01T08:00:00Z')
   for (const w of weeks) {
-    eintrag(partTaskKey(w.start, 'mid', 0, 0, 0), 'Anton Alt')
+    eintrag(platzKey(w), 'Anton Alt')
     for (const tab of ['mid', 'we'] as const) {
       eintrag(helperTaskKey(w.start, tab, 'mik', 0), 'Bruno Test')
       eintrag(helperTaskKey(w.start, tab, 'mik', 1), 'Carl Test')

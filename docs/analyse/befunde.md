@@ -1115,6 +1115,10 @@ ruft `buildAbsences` erneut (Z. 539).
 
 ## H. Datei-Schnellindex
 
+**Wegweiser, kein Protokoll.** Anders als die Befunde oben zeigt diese Tabelle
+auf die Dateien, wie sie **heute** heißen — sie ist zum Nachschlagen da. Zuletzt
+nachgezogen am 17. September 2026.
+
 | Datei | Befunde |
 | --- | --- |
 | `src/app/reducer.ts` | B3, B13, U5, U6, U10, V14 |
@@ -1129,15 +1133,15 @@ ruft `buildAbsences` erneut (Z. 539).
 | `src/data/meeting-dates.ts` | U1 |
 | `src/data/fs.ts` | U3, U4, F8 |
 | `src/data/aux-class.ts` | (Bezug B9, B14) |
-| `src/data/demo.ts` | B2, F2 (einzige Quelle von `current`/`co`/`mem`) |
+| `src/data/testdaten.ts` | B2, F2 (einzige Quelle von `current`/`co`/`mem`) |
 | `src/lib/data.ts` | B1, B4, B11, S2, S5 |
-| `src/i18n/translate-data.ts` | D1, D2, D3 |
+| `supabase/functions/_shared/i18n/translate-data.ts` | D1, D2, D3 |
 | `src/planen/AssignSheet.tsx` | B5, B6, B15, U4 |
 | `src/dashboard/DashboardScreen.tsx` | B2 |
 | `src/personen/PersonDetail.tsx` | S9, F7 |
 | `src/personen/invite-helpers.ts` | (mailto-Kopfzeilen, siehe „Kleineres") |
 | `supabase/schema.sql` | S2, S3, S4, S11 |
-| `supabase/migration-021-abwesenheit-import.sql` | S11 |
+| `supabase/schema.sql` (Richtlinie `absences_write`) | S11 |
 | `supabase/config.toml` | S12 (was `verify_jwt` wirklich zusagt) |
 | `supabase/functions/send-reminders/index.ts` | B8, S1, U1, V3 |
 | `supabase/functions/substitute/index.ts` | B16, S7, S10, S13, D5 |

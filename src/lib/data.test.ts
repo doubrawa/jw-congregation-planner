@@ -48,7 +48,7 @@ function meeting(name: string): Meeting {
       {
         label: 'SCHÄTZE',
         farbe: 'petrol',
-        items: [{ song: 'Lied 1' }, { title: 'Bibellesung', names: [{ name }] }],
+        items: [{ song: 'Lied 1' }, { iid: 'i68', title: 'Bibellesung', names: [{ name }] }],
       },
     ],
     helpers: { ordner: [{ name }] },
@@ -102,7 +102,7 @@ describe('renameInWeeks', () => {
         date: '',
         end: '',
         sections: [
-          { label: 'SCHÄTZE', farbe: 'petrol', items: [{ title: 'Bibellesung', names: [eigen] }] },
+          { label: 'SCHÄTZE', farbe: 'petrol', items: [{ iid: 'i67', title: 'Bibellesung', names: [eigen] }] },
         ],
         helpers: {},
       },
@@ -110,7 +110,7 @@ describe('renameInWeeks', () => {
         date: '',
         end: '',
         sections: [
-          { label: 'VORTRAG', farbe: 'petrol', items: [{ title: 'Vortrag', names: [gast] }] },
+          { label: 'VORTRAG', farbe: 'petrol', items: [{ iid: 'i66', title: 'Vortrag', names: [gast] }] },
         ],
         helpers: {},
       },

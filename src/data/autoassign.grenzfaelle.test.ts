@@ -340,7 +340,7 @@ describe('Gleichmaß über lange Zeiträume', () => {
   it('Hilfsdienste: ein enger Kreis wird gleichmäßig durchgetauscht', () => {
     // Nur vier Personen für den Ton — die Strichliste muss sie durchrotieren.
     const ton = Array.from({ length: 4 }, () => mk(['svc:ton']))
-    const rest = Array.from({ length: 12 }, () => mk([...SCHUL, 'svc:mik', 'svc:ord']))
+    const rest = Array.from({ length: 12 }, () => mk([...SCHUL, 'svc:mik', 'svc:eingang']))
     const weeks = planeWochen(40, () => [...ton, ...rest])
     const zaehl = (name: string): number =>
       weeks.reduce(

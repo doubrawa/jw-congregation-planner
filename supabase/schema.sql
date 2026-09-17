@@ -3,6 +3,15 @@
 -- =============================================================================
 -- Ausführen im Supabase SQL-Editor (einmalig, idempotent formuliert).
 --
+-- **Diese Datei ist die einzige Quelle des Schemas.** Neben ihr stand bis zum
+-- 17. September 2026 eine Kette von 25 Migrationen, die jede für sich
+-- versicherte „Neuinstallationen brauchen diese Datei nicht — schema.sql
+-- enthält alles". Zwei Quellen für dieselbe Sache laufen auseinander, und das
+-- taten sie auch (fs_rules, fs_weeks, reminder_log fehlten hier monatelang).
+-- Die App ist noch nicht ausgerollt, also wurde die Kette gestrichen: Wer die
+-- Datenbank aufsetzt, führt diese Datei aus — mehr gibt es nicht. Änderungen am
+-- Schema kommen hier hinein.
+--
 -- Grundidee (siehe README "Hosting"):
 --   * Mandantenfähig über `congregations` — jede Zeile jeder Tabelle gehört
 --     zu genau einer Versammlung.
@@ -44,7 +53,7 @@ create table if not exists public.persons (
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   fn              text not null default '',
   ln              text not null default '',
-  dn              text not null default '', -- optionaler Anzeigename (Kurzform); leer = "V. Nachname"
+  dn              text not null default '', -- abweichender Anzeigename bei Namensgleichheit; leer = "Vorname Nachname"
   role            text not null default 'verkuendiger'
                   check (role in ('aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine')),
   female          boolean not null default false,   -- Schwester (Partner-Zuordnung, Brüder-Bereiche)
@@ -67,7 +76,6 @@ create table if not exists public.services (
   key             text not null,                    -- 'ton', 'mik', … / 'svc-<uuid>'
   name            text not null,
   count           integer not null default 1 check (count between 1 and 6),
-  priv            text,                             -- QualificationKey oder null
   groups          boolean not null default false,   -- Gruppen-Rotation (Reinigung)
   position        integer not null default 0,       -- Anzeigereihenfolge
   unique (congregation_id, key)
@@ -97,10 +105,10 @@ create table if not exists public.weeks (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   -- Kennung der Woche (T66): ihr Montag. Keine Ordnungszahl -- die stand hier
-  -- bis migration-018 als `position` daneben und war zugleich Kennung, mit
-  -- allem, was daran hing (`task_key`, Platzhalter, jede Einfuegung in der
-  -- Mitte). Immer Montag, weil jw.org die Programmwoche selbst so definiert
-  -- ("2.-8. Maerz 2026"). Sortiert wird danach.
+  -- einmal als `position` daneben und war zugleich Kennung, mit allem, was
+  -- daran hing (`task_key`, Platzhalter, jede Einfuegung in der Mitte). Immer
+  -- Montag, weil jw.org die Programmwoche selbst so definiert ("2.-8. Maerz
+  -- 2026"). Sortiert wird danach.
   start           date not null,
   data            jsonb not null,                   -- Week-Objekt aus src/data/types.ts
   -- Stand der Zeile. Wer schreibt, nennt den Stand, auf dem seine Fassung
@@ -133,7 +141,7 @@ create trigger weeks_touch_updated_at
 create table if not exists public.absences (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  -- Ersteller; NULL = importiert (migration-021), z. B. aus New World Scheduler.
+  -- Ersteller; NULL = importiert, z. B. aus New World Scheduler.
   -- Die Abwesenheit hängt fachlich an `person_id`, nicht am Konto: Die meisten
   -- Verkündiger haben gar keines.
   user_id         uuid references auth.users (id) on delete cascade,
@@ -153,7 +161,7 @@ create table if not exists public.notifications (
   title           text not null,
   body            text not null default '',
   read            boolean not null default false,
-  -- Aufgabe, um die es geht (migration-020): derselbe stabile Slot-Pfad wie in
+  -- Aufgabe, um die es geht: derselbe stabile Slot-Pfad wie in
   -- `confirmations`. Damit lässt sich eine erledigte Mitteilung wiederfinden
   -- („Ersatz gesucht", nachdem jemand eingesprungen ist) und eine abgelaufene
   -- erkennen. NULL bei Mitteilungen ohne Aufgabenbezug (Import, Einladung).
@@ -187,7 +195,7 @@ create table if not exists public.push_subscriptions (
   p256dh          text not null,
   auth            text not null,
   -- App-Sprache dieses Geräts: Push-Text entsteht beim Versand und kann später
-  -- nicht mehr übersetzt werden. null = Deutsch (Abos von vor migration-014).
+  -- nicht mehr übersetzt werden. null = Deutsch.
   lang            text,
   created_at      timestamptz not null default now()
 );
@@ -297,7 +305,7 @@ $$;
 -- Eigene Person des angemeldeten Kontos (members.person_id) — oder NULL, wenn
 -- das Konto noch keiner Person zugeordnet ist. Grundlage dafür, dass jemand
 -- seine eigenen Daten auch dann pflegen darf, wenn ein Import sie angelegt hat
--- (absences ohne user_id, migration-021).
+-- (absences ohne user_id).
 create or replace function public.my_person_id()
 returns uuid
 language sql stable security definer
@@ -325,8 +333,9 @@ as $$
 $$;
 
 -- Anzeigename der eigenen Person — wie `personDisplayName()` in der App:
--- eigener Kurzname, sonst Vor- und Nachname. Nötig für den Altbestand, in dem
--- ein Platz nur einen Namen trägt und keine Person-Id (migration-022).
+-- eigener Kurzname, sonst Vor- und Nachname. Gebraucht für Plätze, die nur
+-- einen Namen tragen und keine Person-Id: Ein Import ordnet einen mehrdeutigen
+-- Namen bewusst keiner Person zu, und von Hand eingetragener Text hat gar keine.
 create or replace function public.mein_anzeigename()
 returns text
 language sql stable security definer
@@ -338,13 +347,12 @@ as $$
 $$;
 
 -- Gehört die Aufgabe hinter diesem Schlüssel der angemeldeten Person?
--- (migration-022). Die Zuteilung steht im JSONB der Woche; der `task_key`
--- trägt den Weg dorthin — Wochen-Kennung, Zusammenkunft, Platz. Nachgeschlagen
--- wird die Speicherform, nicht die Fachregel.
+-- Die Zuteilung steht im JSONB der Woche; der `task_key` trägt den Weg dorthin
+-- — Wochen-Kennung, Zusammenkunft, Platz. Nachgeschlagen wird die
+-- Speicherform, nicht die Fachregel.
 --
 -- SCHLÜSSELFORMEN (src/data/planning.ts, src/data/fs.ts)
 --   <woche>|<mid|we>|part|<iid>|<ni>          Programmpunkt, stabile Kennung
---   <woche>|<mid|we>|part|<si>|<ii>|<ni>      Programmpunkt, alte Position
 --   <woche>|<mid|we>|aux|…                    dasselbe in der Zusätzlichen Klasse
 --   <woche>|<mid|we>|ratgeber                 Ratgeber der Zusätzlichen Klasse
 --   <woche>|<mid|we>|helper|<dienst>|<pos>    Hilfsdienst
@@ -412,11 +420,6 @@ begin
       from jsonb_array_elements(zk -> 'sections') s,
            jsonb_array_elements(s -> 'items') e
      where e->>'iid' = teile[4];
-
-  elsif art in ('part', 'aux') and n = 6
-        and teile[4] ~ '^\d+$' and teile[5] ~ '^\d+$' and teile[6] ~ '^\d+$' then
-    slot := zk -> 'sections' -> teile[4]::integer -> 'items' -> teile[5]::integer
-               -> feld -> teile[6]::integer;
 
   else
     return true; -- keine der bekannten Formen
@@ -525,7 +528,7 @@ create policy weeks_write on public.weeks
 -- Abwesenheiten: Versammlung liest; der Betroffene (auch bei importierten
 -- Einträgen ohne Ersteller) oder ein Planer schreiben.
 --
--- Entscheidend ist die **Person**, nicht der Ersteller (migration-023): Wer nur
+-- Entscheidend ist die **Person**, nicht der Ersteller: Wer nur
 -- die eigene `user_id` einträgt, kann damit keine fremde `person_id` daneben
 -- setzen. Der Zweig über die eigene Zeile bleibt für Konten ohne verknüpfte
 -- Person — deren Einträge tragen gar keine. Das `using` ist bewusst breiter als
@@ -557,7 +560,7 @@ create policy absences_write on public.absences
 -- Mitteilungen sind personalisiert (je Empfänger eine Zeile): jeder sieht/ändert/
 -- löscht nur die eigenen. Planer erzeugen Zeilen für beliebige Empfänger der
 -- Versammlung (Zuteilung/Import); Verhinderungs-Meldungen dürfen alle Mitglieder
--- erzeugen — aber nur an Planer (migration-022). Vorher ging freier Text an
+-- erzeugen — aber nur an Planer. Ohne diese Grenze ginge freier Text an
 -- jeden Empfänger der Versammlung.
 drop policy if exists notifications_select on public.notifications;
 create policy notifications_select on public.notifications
@@ -600,7 +603,7 @@ create policy notifications_delete on public.notifications
 
 -- Bestätigungen: Versammlung liest (Planer braucht den Überblick); jedes
 -- Mitglied schreibt nur seine eigenen Zeilen — und nur zu Aufgaben, die ihm
--- auch gehören (migration-022). Ohne den zweiten Teil konnte ein Mitglied eine
+-- auch gehören. Ohne den zweiten Teil konnte ein Mitglied eine
 -- **fremde** Aufgabe als bestätigt oder verhindert markieren: Der Planer sah
 -- es so, die Erinnerung verstummte, beim Hilfsdienst lief die Ersatzsuche an.
 drop policy if exists confirmations_select on public.confirmations;
@@ -619,7 +622,7 @@ create policy confirmations_write on public.confirmations
 
 -- Beim Neu-Zuteilen den Status eines Platzes abräumen (alle Nutzer-Zeilen):
 -- Planer überall, Gruppenaufseher bei den Treffpunkten, die sie selbst
--- besetzen (migration-025).
+-- besetzen.
 drop policy if exists confirmations_delete_planner on public.confirmations;
 create policy confirmations_delete_planner on public.confirmations
   for delete using (

@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { fsKennung, fsTaskKey } from '../data/fs'
 import { istAusgefallen } from '../data/helpers'
-import { helperTaskKey, ratgeberTaskKey, slotTaskKey, zusageStatus } from '../data/planning'
+import { helperTaskKey, itemTaskKey, ratgeberTaskKey, zusageStatus } from '../data/planning'
 import { useT } from '../i18n/useT'
 import type { Dict } from '../i18n/ui'
 import type { FsInstance, MeetingKey, PartItem, TaskStatus } from '../data/types'
@@ -75,8 +75,8 @@ export function useZusage() {
      * stattfindet. Eine Kongress-Woche lässt alle Zusammenkünfte ausfallen.
      */
     moeglich: (tab: MeetingKey): boolean => !istAusgefallen(week, tab),
-    teil: (tab: MeetingKey, item: PartItem, si: number, ii: number, ni: number, aux: boolean) =>
-      stand(slotTaskKey(item, woche, tab, si, ii, ni, aux)),
+    teil: (tab: MeetingKey, item: PartItem, ni: number, aux: boolean) =>
+      stand(itemTaskKey(woche, tab, item.iid, ni, aux)),
     hilfsdienst: (tab: MeetingKey, svc: string, pos: number) => stand(helperTaskKey(woche, tab, svc, pos)),
     ratgeber: (tab: MeetingKey) => stand(ratgeberTaskKey(woche, tab)),
     treffpunkt: (inst: FsInstance) =>

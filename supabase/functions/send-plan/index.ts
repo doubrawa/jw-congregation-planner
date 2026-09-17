@@ -7,7 +7,7 @@
 //     Der Planer hat eine Woche fertig und gibt sie frei. Jede eingeteilte
 //     Person bekommt **eine** Nachricht mit allen ihren Aufgaben dieser Woche
 //     (Glocke + Web-Push). Verschickt wird nur, was noch nicht verschickt war —
-//     das Versand-Tagebuch `assignment_log` (migration-024) merkt sich das —,
+//     das Versand-Tagebuch `assignment_log` merkt sich das —,
 //     und nur, was noch **ansteht**: Über eine Zusammenkunft, die gewesen ist,
 //     geht keine Nachricht mehr hinaus. `heute` ist der Kalendertag des
 //     Planers („YYYY-MM-DD"), damit Knopf und Versand denselben Tag meinen

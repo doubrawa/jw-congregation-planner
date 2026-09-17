@@ -16,9 +16,8 @@
  * mitten in einer fertigen Planung.
  */
 import { describe, expect, it } from 'vitest'
-import { buildFsWeeks, fsBaseFromWeeks, fsMigrateInstIds, fsTaskKey, fsWochenStart, regenFsWeeks } from './fs'
-import { migrateFsTaskKeys } from '../lib/data'
-import type { FsInstance, FsRule } from './types'
+import { buildFsWeeks, fsBaseFromWeeks, fsTaskKey, fsWochenStart, regenFsWeeks } from './fs'
+import type { FsRule } from './types'
 
 const RULES: FsRule[] = [
   { id: 'r-samstag', grp: '', wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
@@ -66,67 +65,5 @@ describe('Die Kennung eines Treffpunkts hängt nicht an der Wochennummer', () =>
     const woche = buildFsWeeks(basisAb(0), 1, RULES)[0]!
     expect(new Set(woche.map((i) => i.id)).size).toBe(2)
     expect(woche.map((i) => i.id).sort()).toEqual(['r-mittwoch', 'r-samstag'])
-  })
-})
-
-describe('Altbestand wird beim Laden gehoben', () => {
-  /** Eine gespeicherte Woche, wie sie vor der Umstellung im Blob stand. */
-  const altWoche = (wi: number, leader: string): FsInstance[] => [
-    { id: `${wi}|r-samstag`, ruleId: 'r-samstag', grp: '', wd: 6, time: '09:30', place: 'Saal', leader },
-  ]
-
-  it('die Wochennummer fällt vorn weg', () => {
-    const [woche] = fsMigrateInstIds([altWoche(7, 'Emil Ernst')])
-    expect(woche?.[0]?.id).toBe('r-samstag')
-    expect(woche?.[0]?.leader).toBe('Emil Ernst')
-  })
-
-  it('ein zweiter Lauf ändert nichts mehr (idempotent, gleiche Referenz)', () => {
-    const einmal = fsMigrateInstIds([altWoche(7, 'Emil Ernst')])
-    expect(fsMigrateInstIds(einmal)).toBe(einmal)
-  })
-
-  it('von Hand angelegte Treffpunkte bleiben unberührt', () => {
-    const manuell: FsInstance[] = [
-      { id: 'x9f3e-4a', ruleId: null, grp: '', wd: 2, time: '10:00', place: 'Halle', leader: '', manual: true },
-    ]
-    expect(fsMigrateInstIds([manuell])[0]?.[0]?.id).toBe('x9f3e-4a')
-  })
-
-  it('nach der Umstellung findet das Ausrichten die Leitung wieder', () => {
-    // Der ganze Weg, wie beim Laden: Blob heben → ausrichten.
-    const gehoben = fsMigrateInstIds([altWoche(7, 'Emil Ernst')])
-    const ausgerichtet = regenFsWeeks(kennAb(0), gehoben, RULES, true)
-    expect(ausgerichtet[0]?.find((i) => i.ruleId === 'r-samstag')?.leader).toBe('Emil Ernst')
-  })
-})
-
-describe('Die Bestätigungen wandern mit', () => {
-  it('der Schlüssel verliert die Wochennummer, der Status bleibt', () => {
-    const { confirmations, renames } = migrateFsTaskKeys({
-      'fs|2026-01-26|3|r-samstag': 'bestätigt',
-    })
-    expect(renames).toEqual([['fs|2026-01-26|3|r-samstag', 'fs|2026-01-26|r-samstag']])
-    expect(confirmations).toEqual({ 'fs|2026-01-26|r-samstag': 'bestätigt' })
-  })
-
-  it('und trifft genau den Schlüssel, den die Woche danach bildet', () => {
-    // Die Probe darauf, dass beide Seiten dieselbe Form meinen: hier der
-    // gehobene Alt-Schlüssel, dort der aus der Instanz gerechnete.
-    const { confirmations } = migrateFsTaskKeys({ 'fs|2026-01-26|3|r-samstag': 'bestätigt' })
-    const woche = regenFsWeeks(kennAb(0), fsMigrateInstIds([[]]), RULES, true)[0]!
-    const key = fsTaskKey('2026-01-26', woche.find((i) => i.ruleId === 'r-samstag')!.id)
-    expect(confirmations[key]).toBe('bestätigt')
-  })
-
-  it('schon umgestellte und fremde Schlüssel bleiben unberührt', () => {
-    const rein = {
-      'fs|2026-01-26|r-samstag': 'bestätigt' as const,
-      'fs|2026-01-26|x9f3e-4a': 'verhindert' as const,
-      '2026-01-26|mid|helper|ton|0': 'bestätigt' as const,
-    }
-    const { confirmations, renames } = migrateFsTaskKeys(rein)
-    expect(renames).toEqual([])
-    expect(confirmations).toBe(rein)
   })
 })

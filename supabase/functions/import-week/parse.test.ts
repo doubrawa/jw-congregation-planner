@@ -3,10 +3,13 @@ import {
   applyGoldSlots,
   ministryNames,
   parseWorkbookWeek,
+  weekendTemplate,
   type ImportedPart,
   type ImportedSong,
   type ImportedWeek,
 } from './parse'
+import { gedaechtnismahlWoche } from './gedaechtnismahl'
+import { neueItemId } from '../_shared/zuteilungen.ts'
 
 describe('applyGoldSlots – Schülerteil-Art aus der deutschen Fassung übertragen', () => {
   const emptyMeeting = () => ({ date: '', end: '', sections: [], helpers: {} })
@@ -246,5 +249,89 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
     const close = byLabel('ABSCHLUSS').items[0] as ImportedPart
     expect(close.title).toBe('Finvorbo · Xylo 61 qi Preku')
     expect(close.names[0].bereichsKey).toBe('gebet')
+  })
+})
+
+/**
+ * **Jeder importierte Punkt trägt eine eigene Kennung — daran hängt alles.**
+ *
+ * Seit dem 17. September 2026 ist `iid` Pflichtfeld, und der Aufgaben-Schlüssel
+ * hat nur noch eine Form: `<woche>|<mid|we>|part|<iid>|<platz>`. Damit fielen
+ * die Lade-Migration, die sie nachtrug, und die ganze Umbenennungs-Mechanik
+ * beim Einfügen und Verschieben weg (T104).
+ *
+ * Der Compiler hält das an den Objektliteralen fest — aber nur dort. Er sagt
+ * nichts über die Wege, die Punkte **nachträglich** anfassen (`applyGoldSlots`,
+ * `applyStudy` in index.ts, `stripVariant`), und nichts über Eindeutigkeit.
+ * Genau das prüft dieser Block, und zwar an jeder Stelle, an der eine Woche
+ * entsteht: die geparste Wochenseite, die Wochenend-Vorlage und die Woche des
+ * Gedächtnismahls.
+ *
+ * Bliebe eine Kennung aus, wäre der Schaden still: Der Schlüssel hieße
+ * `…|part|undefined|0`, die Bestätigung des Eingeteilten landete unter einem
+ * anderen, und `send-reminders` erinnerte ihn Tag für Tag an dieselbe Aufgabe.
+ */
+describe('Kennungen: jeder Punkt hat genau eine, und keine doppelt', () => {
+  /** Alle Programmpunkte beider Zusammenkünfte einer importierten Woche. */
+  const punkte = (w: ImportedWeek): ImportedPart[] =>
+    [w.mid, w.we].flatMap((m) => m.sections.flatMap((s) => s.items.filter((i) => 'names' in i) as ImportedPart[]))
+
+  const pruefe = (name: string, w: ImportedWeek) => {
+    const alle = punkte(w)
+    expect(alle.length, `${name}: gar keine Punkte — die Probe misst nichts`).toBeGreaterThan(3)
+    expect(
+      alle.filter((p) => !p.iid).map((p) => p.title),
+      `${name}: Punkt ohne Kennung`,
+    ).toEqual([])
+    const ids = alle.map((p) => p.iid)
+    expect(new Set(ids).size, `${name}: Kennung doppelt vergeben`).toBe(ids.length)
+  }
+
+  it('die deutsche Wochenseite', () => {
+    pruefe('FIXTURE_DE', parseWorkbookWeek(FIXTURE_DE))
+  })
+
+  it('eine fremdsprachige Wochenseite', () => {
+    pruefe('FIXTURE_XX', parseWorkbookWeek(FIXTURE_XX))
+  })
+
+  it('die Wochenend-Vorlage für sich', () => {
+    const vorlage = weekendTemplate('6.–12. Juli')
+    const teile = vorlage.sections.flatMap((s) => s.items.filter((i) => 'names' in i) as ImportedPart[])
+    expect(teile.filter((p) => !p.iid)).toEqual([])
+    expect(new Set(teile.map((p) => p.iid)).size).toBe(teile.length)
+  })
+
+  it('die Woche des Gedächtnismahls (ohne Arbeitsheft-Seite)', () => {
+    // Ihre Mitte bleibt leer — geprüft wird das Wochenende, das sie mitbringt.
+    pruefe('Gedächtnismahl', gedaechtnismahlWoche('2026-03-30', '2026-04-02') as ImportedWeek)
+  })
+
+  it('zwei Aufrufe vergeben verschiedene Kennungen', () => {
+    // Sonst trügen zwei nebeneinanderliegende Wochen dieselben Schlüssel, und
+    // eine Bestätigung der einen erschiene an der anderen.
+    const a = punkte(parseWorkbookWeek(FIXTURE_DE)).map((p) => p.iid)
+    const b = punkte(parseWorkbookWeek(FIXTURE_DE)).map((p) => p.iid)
+    expect(a.filter((id) => b.includes(id))).toEqual([])
+  })
+
+  it('applyGoldSlots lässt die Kennungen der Zielwoche unberührt', () => {
+    // Die Slot-Vorlagen kommen aus der deutschen Fassung, die Kennungen nicht:
+    // Gespeichert wird die lokalisierte Woche, und ihre Schlüssel sind die,
+    // unter denen bestätigt wird.
+    const ziel = parseWorkbookWeek(FIXTURE_XX)
+    const vorher = punkte(ziel).map((p) => p.iid)
+    applyGoldSlots(ziel, parseWorkbookWeek(FIXTURE_DE))
+    expect(punkte(ziel).map((p) => p.iid)).toEqual(vorher)
+  })
+
+  it('eine Kennung trägt kein Trennzeichen und hat volle Länge', () => {
+    // Der Schlüssel wird an `|` zerlegt; und `Math.random().toString(36)` allein
+    // liefert gelegentlich weniger als acht Zeichen, im Extremfall gar keins.
+    for (let i = 0; i < 2000; i++) {
+      const id = neueItemId()
+      expect(id).toHaveLength(8)
+      expect(id).not.toContain('|')
+    }
   })
 })

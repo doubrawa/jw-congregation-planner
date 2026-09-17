@@ -6,6 +6,7 @@
 
 import { buildFsWeeks } from './fs'
 import { normalizeChairKeys, serviceQualKey } from './helpers'
+import { ersteZahl } from './ziffern'
 import type {
   Absence,
   FsInstance,
@@ -27,8 +28,8 @@ import type {
   Week,
 } from './types'
 
-/** Bereich der Ordner, die beim Gedächtnismahl die Symbole herumreichen. */
-const ORD = serviceQualKey('ord')
+/** Bereich der Eingangsordner — sie reichen beim Gedächtnismahl die Symbole herum. */
+const EINGANG = serviceQualKey('eingang')
 
 /*
  * Hier stand `CURRENT_PERSON_ID = 'p9'` als „angemeldete Demo-Person". Der
@@ -50,10 +51,11 @@ export const CONGREGATION = {
 /* ---- Personen ---------------------------------------------------------- */
 
 /**
- * Kurzschreibweise für ein Bereichsprofil. Nimmt die sprechenden Alt-Namen
- * (`lesen`, `mikrofon`, `ordner` …) und bildet sie auf das aktuelle Schema ab:
- * feste Programm-Bereiche direkt, Hilfsdienste auf ihren Dienst-Bereich
- * (`ordner` deckt alle drei Ordner-Dienste ab).
+ * Kurzschreibweise für ein Bereichsprofil der Testdaten. Ein paar Sammelwörter
+ * stehen für mehrere Bereiche auf einmal — `lesen` für Bibellesung und Leser,
+ * `vorsitz` für beide Zusammenkünfte, `ordner` für alle drei Ordner-Dienste.
+ * Sie sind **Abkürzung, nicht Altbestand**: Was herauskommt, sind die
+ * Bereichs-Schlüssel, die die App auch sonst kennt.
  */
 const q = (
   on: ReadonlyArray<QualificationKey | 'vorsitz' | 'lesen' | 'mikrofon' | 'ton' | 'ordner' | 'zoomordner'>,
@@ -75,7 +77,7 @@ const q = (
     [serviceQualKey('ton')]: has('ton'),
     [serviceQualKey('mik')]: has('mikrofon'),
     [serviceQualKey('zoom')]: has('zoomordner'),
-    [serviceQualKey('ord')]: ordner,
+    [serviceQualKey('eingang')]: ordner,
     [serviceQualKey('saal')]: ordner,
     [serviceQualKey('rund')]: ordner,
   }
@@ -217,15 +219,16 @@ export function buildDemoFsWeeks(): FsInstance[][] {
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
 // Jeder Dienst hat seinen eigenen Aufgabenbereich (`svc:<key>`) — die drei
-// Ordner-Dienste sind also getrennt einstellbar. Der Eingangsordner nutzt den
-// Datenkey 'ord' (Rückwärtskompatibilität zur helpers-Struktur der Wochen).
+// Ordner-Dienste sind also getrennt einstellbar. Die Keys stehen gleichlautend
+// in `STANDARD_DIENSTE` (data/vorgaben.ts), im Anlege-Skript und in `DUTY_KEY`
+// des NWS-Imports; wer einen ändert, ändert ihn an allen vier Stellen.
 // Zoom-/Saal-/Rundgangsordner haben noch keine Namen in den Demo-Wochen →
 // erscheinen als "offen".
 export const DEMO_SERVICES: Service[] = [
   { key: 'ton', name: 'Ton / Video', count: 1, groups: false },
   { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
   { key: 'zoom', name: 'Zoom-Ordner', count: 1, groups: false },
-  { key: 'ord', name: 'Eingangsordner', count: 1, groups: false },
+  { key: 'eingang', name: 'Eingangsordner', count: 1, groups: false },
   { key: 'saal', name: 'Saalordner', count: 1, groups: false },
   { key: 'rund', name: 'Rundgangsordner', count: 1, groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
@@ -285,7 +288,7 @@ export const DEMO_MY_TASKS: MyTask[] = [
     date: 'Di, 8. September · ca. 19:35',
     chip: 'in 4 Tagen',
     status: 'offen',
-    s89: { name: 'Simon Krüger', partner: 'M. Ernst', date: 'Di, 8. September · 19:00', type: 'Gespräche beginnen · Informell', point: 'lmd Lektion 1' },
+    s89: { name: 'Simon Krüger', partner: 'Markus Ernst', date: 'Di, 8. September · 19:00', type: 'Gespräche beginnen · Informell', point: 'lmd Lektion 1' },
   },
   { id: 'a2', title: 'Mikrofone', date: 'So, 20. September · 10:00', chip: 'in 16 Tagen', status: 'offen', s89: null },
   {
@@ -324,30 +327,55 @@ const slots = (tuples: NameTuple[]): SlotAssignment[] =>
     return slot
   })
 
+/**
+ * Kennungen der Testdaten — **durchgezählt, nicht gewürfelt.**
+ *
+ * `neueItemId()` wäre für echte Programmpunkte richtig, hier nicht: Zwei
+ * Aufrufe von `buildDemoWeeks()` müssen dieselben Wochen ergeben, sonst zeigen
+ * zwei Läufe derselben Demo verschiedene Aufgaben-Schlüssel — und ein Test, der
+ * sie vergleicht, misst den Zufall. Jeder Bauer setzt den Zähler zurück und
+ * schreibt sein eigenes Kürzel davor, damit sich Demo-Wochen und die
+ * importierbare Woche nicht ins Gehege kommen.
+ */
+let kennungsZaehler = 0
+let kennungsKuerzel = 'd'
+const naechsteKennung = (): string => `${kennungsKuerzel}${++kennungsZaehler}`
+const kennungenAb = (kuerzel: string): void => {
+  kennungsKuerzel = kuerzel
+  kennungsZaehler = 0
+}
+
 const part = (
   num: number | null,
   title: string,
   meta: string | null,
   tuples: NameTuple[],
   /**
-   * Dauer in Minuten. Wo die Meta-Zeile mit der Dauer **beginnt**, leitet
-   * `itemMinutes` sie daraus ab und der Wert ist entbehrlich. Beim
+   * Dauer in Minuten. Ohne Angabe wird sie aus der Meta-Zeile gelesen — **hier
+   * beim Bauen der Testdaten**, nicht zur Laufzeit: Ein Programmpunkt trägt
+   * seine Minuten als Zahl, so wie der Import sie liefert (T32).
+   *
+   * Wo die Meta-Zeile nicht mit der Dauer beginnt, muss der Wert dastehen: Beim
    * Wachtturm-Studium steht dort zuerst die Nummer des Studienartikels
-   * („Studienartikel 28 · 60 Min.") — der Rückfall läse also 28. Deshalb dort
-   * ausdrücklich angeben; der Import tut es seit T32 ohnehin für jeden Punkt.
+   * („Studienartikel 28 · 60 Min."), gelesen würde also 28.
    */
   mins?: number,
 ): PartItem => {
-  const item: PartItem = { title, names: slots(tuples) }
+  const item: PartItem = { iid: naechsteKennung(), title, names: slots(tuples) }
   if (num != null) item.num = num
   if (meta) item.meta = meta
-  if (mins != null) item.mins = mins
+  const dauer = mins ?? (meta ? ersteZahl(meta) : null)
+  if (dauer != null) item.mins = dauer
   return item
 }
 
 const song = (title: string): SongItem => ({ song: title })
 
-/** Hilfsdienst-Namen → Slots (Demo trägt keine pid; Live-Migration ergänzt sie). */
+/**
+ * Hilfsdienst-Namen → Slots. Die Testdaten tragen keine `pid`: Sie beschreiben
+ * eine Versammlung, die nie gespeichert wird, und `gehoertZu` findet über den
+ * Namen dieselbe Person. Im Betrieb setzt jede Zuteilung ihre Id.
+ */
 const H = (m: Record<string, string[]>): Record<string, HelperSlot[]> =>
   Object.fromEntries(Object.entries(m).map(([k, arr]) => [k, arr.map((name) => ({ name }))]))
 
@@ -359,44 +387,45 @@ const sec = (
 
 /** Baut die 4 Demo-Wochen — je Aufruf frische Objekte (State wird mutiert kopiert). */
 export function buildDemoWeeks(): Week[] {
+  kennungenAb('dw')
   return normalizeChairKeys([
     {
       range: '7.–13. September', start: '2026-09-07', book: 'Jeremia 32–33', current: true,
       mid: {
         date: 'Dienstag, 8. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['Konrad Sommer', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitzMid'], ['Konrad Sommer', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 8', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Jonas Berger', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['Niklas Feld', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Lena Hoffmann', 'Schüler', 'schulung'], ['A. Hoffmann', 'Partner', 'schulungPartner']]),
-            part(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['Simon Krüger', 'Schüler', 'schulung'], ['M. Ernst', 'Partner', 'schulungPartner']]),
-            part(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['Elke Brandt', 'Schüler', 'schulung'], ['R. Brandt', 'Partner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Lena Hoffmann', 'Schüler', 'schulung'], ['Andrea Hoffmann', 'Partner', 'schulungPartner']]),
+            part(5, 'Gespräche beginnen', 'Informell · 4 Min.', [['Simon Krüger', 'Schüler', 'schulung'], ['Markus Ernst', 'Partner', 'schulungPartner']]),
+            part(6, 'Interesse fördern', 'Von Haus zu Haus · 5 Min.', [['Elke Brandt', 'Schüler', 'schulung'], ['Rita Brandt', 'Partner', 'schulungPartner']]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 128'),
-            part(7, 'Demoaufgabe 9', 'Besprechung · 15 Min.', [['D. Winkler', '', 'vortrag']]),
+            part(7, 'Demoaufgabe 9', 'Besprechung · 15 Min.', [['Dieter Winkler', '', 'vortrag']]),
             part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['Helmut Vogel', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['Claus Maier'], mik: ['Jörg Roth', 'Bernd Klein'], ord: ['Ulrich Lang', 'Georg Peters'], rein: ['Gruppe 2'] }),
+        helpers: H({ ton: ['Claus Maier'], mik: ['Jörg Roth', 'Bernd Klein'], eingang: ['Ulrich Lang', 'Georg Peters'], rein: ['Gruppe 2'] }),
       },
       we: {
         date: 'Sonntag, 13. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 138 · Gebet', null, [['A. Brenner', 'Vorsitz', 'vorsitz'], ['J. Winter', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 7', '30 Min.', [['M. Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 138 · Gebet', null, [['Konrad Sommer', 'Vorsitz', 'vorsitzWe'], ['Jörg Roth', 'Gebet', 'gebet']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 7', '30 Min.', [['Michael Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 20'),
             part(null, 'Demo-Studienartikel 6', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']], 60),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['W. Adam', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['Walter Adam', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['Georg Peters', 'M. Otto'], rein: ['Gruppe 3'] }),
+        helpers: H({ ton: ['Robert Simon'], mik: ['Tobias Falk', 'Dirk Kern'], eingang: ['Georg Peters', 'Martin Otto'], rein: ['Gruppe 3'] }),
       },
     },
     {
@@ -404,15 +433,15 @@ export function buildDemoWeeks(): Week[] {
       mid: {
         date: 'Dienstag, 15. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['Friedrich Neumann', 'Vorsitz', 'vorsitz'], ['Thomas Lindner', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['Friedrich Neumann', 'Vorsitz', 'vorsitzMid'], ['Thomas Lindner', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 1', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['Paul Schröder', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['A. Hoffmann', 'Schüler', 'schulung'], ['Lena Hoffmann', 'Partner', 'schulungPartner']]),
-            part(5, 'Interesse fördern', 'Informell · 4 Min.', [['R. Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['Andrea Hoffmann', 'Schüler', 'schulung'], ['Lena Hoffmann', 'Partner', 'schulungPartner']]),
+            part(5, 'Interesse fördern', 'Informell · 4 Min.', [['Rita Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
             part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['Niklas Feld', '', 'schulung', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
@@ -422,20 +451,20 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['Konrad Sommer', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['R. Simon'], mik: ['Bernd Klein', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 1'] }),
+        helpers: H({ ton: ['Robert Simon'], mik: ['Bernd Klein', 'Jörg Roth'], eingang: ['Martin Otto', 'Ulrich Lang'], rein: ['Gruppe 1'] }),
       },
       we: {
         date: 'Sonntag, 20. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 12 · Gebet', null, [['Helmut Vogel', 'Vorsitz', 'vorsitz'], ['Ulrich Lang', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Studienartikel 4', '30 Min.', [['R. Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 12 · Gebet', null, [['Helmut Vogel', 'Vorsitz', 'vorsitzWe'], ['Ulrich Lang', 'Gebet', 'gebet']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Studienartikel 4', '30 Min.', [['Rolf Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 49'),
             part(null, 'Demo-Studienartikel 5', 'Studienartikel 29 · 60 Min.', [['Manfred Albrecht', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']], 60),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 106 · Gebet', null, [['Georg Peters', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['Claus Maier'], mik: ['Simon Krüger', 'Niklas Feld'], ord: ['Ulrich Lang', 'M. Otto'], rein: ['Gruppe 1'] }),
+        helpers: H({ ton: ['Claus Maier'], mik: ['Simon Krüger', 'Niklas Feld'], eingang: ['Ulrich Lang', 'Martin Otto'], rein: ['Gruppe 1'] }),
       },
     },
     {
@@ -443,39 +472,39 @@ export function buildDemoWeeks(): Week[] {
       mid: {
         date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['Friedrich Neumann', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitzMid'], ['Friedrich Neumann', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 2', '10 Min.', [['Friedrich Neumann', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['Simon Krüger', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Elke Brandt', 'Schüler', 'schulung'], ['R. Brandt', 'Partner', 'schulungPartner']]),
-            part(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['Lena Hoffmann', 'Schüler', 'schulung'], ['A. Hoffmann', 'Partner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Elke Brandt', 'Schüler', 'schulung'], ['Rita Brandt', 'Partner', 'schulungPartner']]),
+            part(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['Lena Hoffmann', 'Schüler', 'schulung'], ['Andrea Hoffmann', 'Partner', 'schulungPartner']]),
             part(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['Jonas Berger', '', 'schulung', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 44'),
             part(7, 'Demoaufgabe 3', 'Besprechung · 15 Min.', [['Helmut Vogel', '', 'vortrag']]),
-            part(8, 'Demo-Studienartikel 2', 'Dienstvortrag · 30 Min.', [['K. Wagner', 'Kreisaufseher', '']]),
+            part(8, 'Demo-Studienartikel 2', 'Dienstvortrag · 30 Min.', [['Klaus Wagner', 'Kreisaufseher', '']]),
           ]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['D. Winkler', 'Gebet', 'gebet']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['Dieter Winkler', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['Claus Maier'], mik: ['Bernd Klein', 'Paul Schröder'], ord: ['Georg Peters', 'Ulrich Lang'], rein: ['Gruppe 3'] }),
+        helpers: H({ ton: ['Claus Maier'], mik: ['Bernd Klein', 'Paul Schröder'], eingang: ['Georg Peters', 'Ulrich Lang'], rein: ['Gruppe 3'] }),
       },
       we: {
         date: 'Sonntag, 27. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 25 · Gebet', null, [['Friedrich Neumann', 'Vorsitz', 'vorsitz'], ['Bernd Klein', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 1', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 25 · Gebet', null, [['Friedrich Neumann', 'Vorsitz', 'vorsitzWe'], ['Bernd Klein', 'Gebet', 'gebet']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 1', '30 Min.', [['Klaus Wagner', 'Kreisaufseher', '']])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 61'),
             part(null, 'Demo-Vortragsthema 2', 'Studienartikel 30 · 30 Min.', [['Helmut Vogel', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
           ]),
-          sec('DIENSTVORTRAG', 'gold', [part(null, 'Demo-Studienartikel 3', '30 Min.', [['K. Wagner', 'Kreisaufseher', '']])]),
-          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 141 · Gebet', null, [['J. Winter', 'Gebet', 'gebet']])]),
+          sec('DIENSTVORTRAG', 'gold', [part(null, 'Demo-Studienartikel 3', '30 Min.', [['Klaus Wagner', 'Kreisaufseher', '']])]),
+          sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 141 · Gebet', null, [['Jan Winter', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['R. Simon'], mik: ['T. Falk', 'D. Kern'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 2'] }),
+        helpers: H({ ton: ['Robert Simon'], mik: ['Tobias Falk', 'Dirk Kern'], eingang: ['Martin Otto', 'Georg Peters'], rein: ['Gruppe 2'] }),
       },
     },
     {
@@ -483,14 +512,14 @@ export function buildDemoWeeks(): Week[] {
       mid: {
         date: 'Dienstag, 29. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['Thomas Lindner', 'Vorsitz', 'vorsitz'], ['Manfred Albrecht', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['Thomas Lindner', 'Vorsitz', 'vorsitzMid'], ['Manfred Albrecht', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 4', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
             part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
             part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['Jörg Roth', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
-            part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['R. Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
+            part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['Rita Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
             part(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['Konrad Sommer', 'Schüler', 'schulung'], ['Lena Hoffmann', 'Partner', 'schulungPartner']]),
             part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['Paul Schröder', '', 'schulung', true]]),
           ]),
@@ -501,20 +530,20 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['Claus Maier', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['R. Simon'], mik: ['Niklas Feld', 'Jörg Roth'], ord: ['M. Otto', 'Ulrich Lang'], rein: ['Gruppe 2'] }),
+        helpers: H({ ton: ['Robert Simon'], mik: ['Niklas Feld', 'Jörg Roth'], eingang: ['Martin Otto', 'Ulrich Lang'], rein: ['Gruppe 2'] }),
       },
       // Gedächtnismahl statt Wochenend-Zusammenkunft (memCancel: 'we').
       we: {
         date: 'Samstag, 3. Oktober · 19:30 · Königreichssaal — nach Sonnenuntergang', end: 'Ende ca. 20:30',
         sections: [
-          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 18 · Gebet', null, [['Manfred Albrecht', 'Vorsitz', 'vorsitz'], ['D. Kern', 'Gebet', 'gebet']])]),
+          sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 18 · Gebet', null, [['Manfred Albrecht', 'Vorsitz', 'vorsitzWe'], ['Niklas Feld', 'Gebet', 'gebet']])]),
           sec('GEDÄCHTNISMAHL', 'wein', [
             part(null, 'Gedächtnismahl-Ansprache — Demo-Studienartikel 1', '30 Min.', [['Friedrich Neumann', 'Redner', 'vortrag']]),
-            part(null, 'Symbole herumreichen', 'Brot · Wein', [['Jonas Berger', '', ORD], ['Paul Schröder', '', ORD], ['Georg Peters', '', ORD], ['Ulrich Lang', '', ORD]]),
+            part(null, 'Symbole herumreichen', 'Brot · Wein', [['Jonas Berger', '', EINGANG], ['Paul Schröder', '', EINGANG], ['Georg Peters', '', EINGANG], ['Ulrich Lang', '', EINGANG]]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 149 · Gebet', null, [['Helmut Vogel', 'Gebet', 'gebet']])]),
         ],
-        helpers: H({ ton: ['Claus Maier'], mik: ['Simon Krüger', 'Bernd Klein'], ord: ['M. Otto', 'Georg Peters'], rein: ['Gruppe 1'] }),
+        helpers: H({ ton: ['Claus Maier'], mik: ['Simon Krüger', 'Bernd Klein'], eingang: ['Martin Otto', 'Georg Peters'], rein: ['Gruppe 1'] }),
       },
     },
   ])
@@ -524,12 +553,13 @@ export function buildDemoWeeks(): Week[] {
 export function buildImportWeek(): Week {
   // `normalizeChairKeys` gibt so viele Wochen zurück, wie es bekommt — hier
   // genau eine. Der Index-Zugriff sieht das nicht, deshalb der Nicht-Null-Zusatz.
+  kennungenAb('di')
   return normalizeChairKeys([{
     range: '5.–11. Oktober', start: '2026-10-05', book: 'Jeremia 43–45', current: false,
     mid: {
       date: 'Dienstag, 6. Oktober · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
       sections: [
-        sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 19 · Gebet · Einleitende Worte', '1 Min.', [['', 'Vorsitz', 'vorsitz'], ['', 'Gebet', 'gebet']])]),
+        sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 19 · Gebet · Einleitende Worte', '1 Min.', [['', 'Vorsitz', 'vorsitzMid'], ['', 'Gebet', 'gebet']])]),
         sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
           part(1, 'Demoaufgabe 6', '10 Min.', [['', '', 'vortrag']]),
           part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['', '', 'vortrag']]),
@@ -552,7 +582,7 @@ export function buildImportWeek(): Week {
     we: {
       date: 'Sonntag, 11. Oktober · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
       sections: [
-        sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 15 · Gebet', null, [['', 'Vorsitz', 'vorsitz'], ['', 'Gebet', 'gebet']])]),
+        sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 15 · Gebet', null, [['', 'Vorsitz', 'vorsitzWe'], ['', 'Gebet', 'gebet']])]),
         sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 5', '30 Min.', [['', 'Gastredner', 'vortrag']])]),
         sec('WACHTTURM-STUDIUM', 'wein', [
           song('Lied 123'),

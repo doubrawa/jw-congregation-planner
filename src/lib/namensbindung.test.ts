@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  migrateAssignmentNames,
-  migrateAssignmentPids,
-  migrateServicePrivs,
-  normalizePriv,
-  normalizeWeekHelpers,
-  renameInWeeks,
-} from './data'
-import type { Meeting, PartItem, Person, Qualifications, Service, Week } from '../data/types'
+import { normalizePriv, pidsNachtragen, renameInWeeks } from './data'
+import type { Meeting, PartItem, Person, Qualifications, Week } from '../data/types'
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {
@@ -25,20 +18,7 @@ function priv(overrides: Record<string, boolean> = {}): Qualifications {
   }
 }
 
-function person(patch: Partial<Person>): Person {
-  return {
-    id: crypto.randomUUID(),
-    fn: 'Simon',
-    ln: 'Krüger',
-    role: 'verkuendiger',
-    tel: '',
-    mail: '',
-    priv: priv(),
-    ...patch,
-  }
-}
-
-describe('normalizePriv (Lade-Migration der Qualifikationen)', () => {
+describe('normalizePriv (gespeicherte Qualifikationen)', () => {
   it('leerer/fehlender Bestand → alle festen Bereiche false', () => {
     const priv = normalizePriv(null)
     for (const key of ['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'studium']) {
@@ -46,95 +26,10 @@ describe('normalizePriv (Lade-Migration der Qualifikationen)', () => {
     }
   })
 
-  it('altes kombiniertes `lesen` wird auf bibellesung+leser gespiegelt', () => {
-    const priv = normalizePriv({ lesen: true } as never)
-    expect(priv.bibellesung).toBe(true)
-    expect(priv.leser).toBe(true)
-  })
-
-  it('altes kombiniertes `vorsitz` wird auf vorsitzMid+vorsitzWe gespiegelt', () => {
-    const priv = normalizePriv({ vorsitz: true } as never)
-    expect(priv.vorsitzMid).toBe(true)
-    expect(priv.vorsitzWe).toBe(true)
-    expect(priv['vorsitz']).toBeUndefined() // Alt-Schlüssel wird entfernt
-  })
-
   it('Dienst-Bereiche (svc:*) und Wahrheitswerte bleiben erhalten', () => {
     const priv = normalizePriv({ 'svc:ton': true, vortrag: 1 } as never)
     expect(priv['svc:ton']).toBe(true)
     expect(priv.vortrag).toBe(true)
-  })
-})
-
-describe('migrateServicePrivs (alte gemeinsame Dienst-Bereiche)', () => {
-  const services: Service[] = [
-    { key: 'saal', name: 'Saalordner', count: 1, legacyPriv: 'ordner' },
-    { key: 'ton', name: 'Ton', count: 1 }, // ohne Altbestand
-  ]
-
-  it('übernimmt den alten Bereich, wenn der dienst-eigene fehlt', () => {
-    const [p] = migrateServicePrivs([person({ priv: priv({ ordner: true }) })], services)
-    expect(p.priv['svc:saal']).toBe(true)
-  })
-
-  it('idempotent: bereits gesetzter dienst-eigener Bereich bleibt', () => {
-    const [p] = migrateServicePrivs(
-      [person({ priv: priv({ ordner: true, 'svc:saal': false }) })],
-      services,
-    )
-    expect(p.priv['svc:saal']).toBe(false)
-  })
-})
-
-describe('migrateAssignmentNames (Kurzform → voller Anzeigename)', () => {
-  const meeting = (): Meeting => ({
-    date: '',
-    end: '',
-    sections: [
-      {
-        label: 'X',
-        farbe: 'petrol',
-        items: [
-          { num: 1, title: 'Punkt', meta: '', names: [{ name: 'B. Mauz' }, { name: 'J. Mayer' }] },
-          { song: 'Lied 1' },
-        ],
-      },
-    ],
-    helpers: {
-      mik: [{ name: 'B. Mauz' }, { name: 'Gruppe 1' }, { name: 'S. Krüger' }, { name: 'Unbekannte Person' }],
-    },
-  })
-  const week = (): Week => ({ range: '', book: '', start: '2026-09-07', current: false, mid: meeting(), we: meeting() })
-
-  const persons = [
-    person({ fn: 'Bernhard', ln: 'Mauz' }),
-    person({ fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer 1' }), // dn-Override
-    person({ fn: 'Simon', ln: 'Krüger' }),
-    person({ fn: 'Sven', ln: 'Krüger' }), // macht "S. Krüger" mehrdeutig
-  ]
-
-  it('ersetzt eindeutige Kurzformen, lässt Mehrdeutiges/Fremdes stehen', () => {
-    const [w] = migrateAssignmentNames([week()], persons)
-    const item = w.mid.sections[0].items[0]
-    expect('names' in item && item.names[0].name).toBe('Bernhard Mauz')
-    expect('names' in item && item.names[1].name).toBe('Josef Mayer 1') // dn gewinnt
-    expect(w.mid.helpers.mik).toEqual([
-      { name: 'Bernhard Mauz' },
-      { name: 'Gruppe 1' }, // Gruppen-Rotation unangetastet
-      { name: 'S. Krüger' }, // mehrdeutig → nicht anfassen
-      { name: 'Unbekannte Person' }, // gehört keiner Person → unangetastet
-    ])
-  })
-
-  it('idempotent: volle Namen matchen die Kurzform nicht mehr', () => {
-    const once = migrateAssignmentNames([week()], persons)
-    const twice = migrateAssignmentNames(once, persons)
-    expect(twice).toEqual(once)
-  })
-
-  it('ohne betroffene Personen bleibt die Referenz identisch', () => {
-    const weeks = [week()]
-    expect(migrateAssignmentNames(weeks, [])).toBe(weeks)
   })
 })
 
@@ -147,7 +42,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
         label: 'X',
         farbe: 'petrol',
         items: [
-          { num: 1, title: 'Punkt', meta: '', names: [{ name: 'Simon Krüger' }, { name: 'Bernhard Mauz' }] },
+          { iid: 'i70', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Simon Krüger' }, { name: 'Bernhard Mauz' }] },
           { song: 'Lied 1' },
         ],
       },
@@ -186,7 +81,7 @@ describe('Personen-Id-Bindung (pid)', () => {
     range: '', book: '', start: '2026-09-07', current: false,
     mid: {
       date: '', end: '',
-      sections: [{ label: 'X', farbe: 'petrol', items: [{ num: 1, title: 'P', meta: '', names: slots }] }],
+      sections: [{ label: 'X', farbe: 'petrol', items: [{ iid: 'i69', num: 1, title: 'P', meta: '', names: slots }] }],
       helpers: {},
     },
     we: emptyMid(),
@@ -196,16 +91,16 @@ describe('Personen-Id-Bindung (pid)', () => {
   })
   const partNames = (w: Week): PartItem['names'] => (w.mid.sections[0].items[0] as PartItem).names
 
-  it('migrateAssignmentPids: eindeutige Namen bekommen pid, mehrdeutige nicht', () => {
+  it('pidsNachtragen: eindeutige Namen bekommen pid, mehrdeutige nicht', () => {
     const persons = [p('pA', 'Anna'), p('pM1', 'Max'), p('pM2', 'Max')] // "Max" mehrdeutig
-    const [w] = migrateAssignmentPids([wk([{ name: 'Anna' }, { name: 'Max' }])], persons)
+    const [w] = pidsNachtragen([wk([{ name: 'Anna' }, { name: 'Max' }])], persons)
     expect(partNames(w)[0].pid).toBe('pA') // eindeutig zugeordnet
     expect(partNames(w)[1].pid).toBeUndefined() // Dublette → keine Zuordnung
   })
 
-  it('migrateAssignmentPids lässt gesetzte pid unberührt (idempotent, Referenz stabil)', () => {
+  it('pidsNachtragen lässt gesetzte pid unberührt (idempotent, Referenz stabil)', () => {
     const weeks = [wk([{ name: 'Anna', pid: 'schon' }])]
-    expect(migrateAssignmentPids(weeks, [p('pA', 'Anna')])).toBe(weeks)
+    expect(pidsNachtragen(weeks, [p('pA', 'Anna')])).toBe(weeks)
   })
 
   /*
@@ -216,23 +111,23 @@ describe('Personen-Id-Bindung (pid)', () => {
    * der Hauptsaal. Der Platz der Klasse zählte danach in keiner Auslastung,
    * keiner Konfliktprüfung und keiner Aufgabenliste mehr.
    */
-  it('migrateAssignmentPids bindet auch Klasse und Ratgeber', () => {
+  it('pidsNachtragen bindet auch Klasse und Ratgeber', () => {
     const w = wk([{ name: 'Anna' }])
     const item = w.mid.sections[0]!.items[0] as PartItem
     item.aux = [{ name: 'Anna' }]
     w.mid.auxRatgeber = { name: 'Anna', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
 
-    const [next] = migrateAssignmentPids([w], [p('pA', 'Anna')])
+    const [next] = pidsNachtragen([w], [p('pA', 'Anna')])
     const nextItem = next!.mid.sections[0]!.items[0] as PartItem
     expect(nextItem.names[0]!.pid).toBe('pA')
     expect(nextItem.aux?.[0]!.pid).toBe('pA')
     expect(next!.mid.auxRatgeber?.pid).toBe('pA')
   })
 
-  it('migrateAssignmentPids erfindet keinen Ratgeber, wo keiner ist', () => {
+  it('pidsNachtragen erfindet keinen Ratgeber, wo keiner ist', () => {
     // Ohne Zusätzliche Klasse darf der Schlüssel nicht auftauchen: `hatAuxKlasse`
     // liest ihn als Marke „hier gibt es eine Klasse".
-    const [next] = migrateAssignmentPids([wk([{ name: 'Anna' }])], [p('pA', 'Anna')])
+    const [next] = pidsNachtragen([wk([{ name: 'Anna' }])], [p('pA', 'Anna')])
     expect('auxRatgeber' in next!.mid).toBe(false)
   })
 
@@ -245,23 +140,17 @@ describe('Personen-Id-Bindung (pid)', () => {
 
 describe('Hilfsdienst-Id-Bindung (helpers)', () => {
   const emptyMid = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
-  const wkH = (mik: Array<string | { name: string; pid?: string }>): Week => ({
+  const wkH = (mik: Array<{ name: string; pid?: string }>): Week => ({
     range: '', book: '', start: '2026-09-07', current: false,
-    // absichtlich als any, um das Alt-Format (Strings) zu simulieren
-    mid: { date: '', end: '', sections: [], helpers: { mik } } as unknown as Meeting,
+    mid: { date: '', end: '', sections: [], helpers: { mik } },
     we: emptyMid(),
   })
   const p = (id: string, fn: string): Person => ({
     id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: priv(),
   })
 
-  it('normalizeWeekHelpers hebt Alt-Strings auf { name }', () => {
-    const [w] = normalizeWeekHelpers([wkH(['Anna', 'Gruppe 1'])])
-    expect(w.mid.helpers.mik).toEqual([{ name: 'Anna' }, { name: 'Gruppe 1' }])
-  })
-
-  it('migrateAssignmentPids trägt pid an Hilfsdiensten nach (Gruppe bleibt ohne)', () => {
-    const [w] = migrateAssignmentPids([wkH([{ name: 'Anna' }, { name: 'Gruppe 1' }])], [p('pA', 'Anna')])
+  it('pidsNachtragen trägt pid an Hilfsdiensten nach (Gruppe bleibt ohne)', () => {
+    const [w] = pidsNachtragen([wkH([{ name: 'Anna' }, { name: 'Gruppe 1' }])], [p('pA', 'Anna')])
     expect(w.mid.helpers.mik[0]).toEqual({ name: 'Anna', pid: 'pA' })
     expect(w.mid.helpers.mik[1]).toEqual({ name: 'Gruppe 1' }) // Rotation → keine pid
   })

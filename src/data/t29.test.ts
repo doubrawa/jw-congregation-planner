@@ -12,7 +12,7 @@ import {
   ROLE_GUEST_SPEAKER,
   ROLE_OWN_SPEAKER,
 } from './planning'
-import { migrateAssignmentNames, migrateAssignmentPids } from '../lib/data'
+import { pidsNachtragen } from '../lib/data'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
 
 /**
@@ -52,8 +52,8 @@ function makeWeek(): Week {
     date: 'Sonntag, 13. September · 10:00',
     end: 'Ende ca. 11:45',
     sections: [
-      { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }] }] },
-      { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: ROLE_GUEST_SPEAKER, bereichsKey: 'vortrag' }] }] },
+      { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ iid: 'i51', title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }] }] },
+      { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ iid: 'i50', title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: ROLE_GUEST_SPEAKER, bereichsKey: 'vortrag' }] }] },
     ],
     helpers: {},
   }
@@ -212,23 +212,7 @@ describe('Ein Gastredner überlebt die Lade-Migrationen', () => {
     // sie. Der Vortrag eines Auswärtigen stünde damit unter „Meine Aufgaben"
     // des Bruders, verlangte seine Bestätigung, löste Erinnerungen aus und
     // zählte auf seine Auslastung.
-    const next = migrateAssignmentPids([gastWoche('M. Hartmann')], [person])
-    expect(vortragsSlot(next[0]!).pid).toBeUndefined()
-  })
-
-  it('und eine schon vergebene wird ihm wieder abgenommen', () => {
-    /*
-      Der Bestand. Die frühere Fassung gab dem Gastredner-Platz die Id des
-      Namensvetters, und `loadCongregationData` schrieb die geänderte Woche
-      weg — die falsche Id **steht** in der Datenbank. Ein Wächter, der nur
-      neue Fälle verhindert, ließe sie für immer liegen: `gehoertZu`
-      entscheidet über die Id, der Vortrag des Auswärtigen bliebe die Aufgabe
-      des Bruders.
-    */
-    const w = gastWoche('M. Hartmann')
-    vortragsSlot(w).pid = person.id // so kam sie aus der alten Migration
-    const next = migrateAssignmentPids([w], [person])
-    expect(next[0], 'die Woche muss sich ändern, sonst wird sie nicht gespeichert').not.toBe(w)
+    const next = pidsNachtragen([gastWoche('M. Hartmann')], [person])
     expect(vortragsSlot(next[0]!).pid).toBeUndefined()
   })
 
@@ -239,30 +223,7 @@ describe('Ein Gastredner überlebt die Lade-Migrationen', () => {
     const slot = vortragsSlot(w)
     slot.name = 'M. Hartmann'
     slot.rolle = ROLE_OWN_SPEAKER
-    expect(vortragsSlot(migrateAssignmentPids([w], [person])[0]!).pid).toBe(person.id)
-  })
-
-  it('behält seinen Namen, wenn er wie eine alte Kurzform aussieht', () => {
-    /*
-      „M. Hartmann" ist zweierlei: die Schreibweise, in der Zuteilungen einmal
-      gespeichert wurden — und die Form, in der ein Planer einen auswärtigen
-      Redner von Hand einträgt. Die Migration hob die erste auf den vollen
-      Namen und traf dabei die zweite mit: Auf dem Programmblatt stand danach
-      jemand anderes, als am Sonntag kommt.
-    */
-    const ohneDn: Person = { ...person, dn: undefined } // Kurzform ≠ voller Name
-    const next = migrateAssignmentNames([gastWoche('M. Hartmann')], [ohneDn])
-    expect(vortragsSlot(next[0]!).name).toBe('M. Hartmann')
-  })
-
-  it('eine echte Altzuteilung wird weiterhin gehoben', () => {
-    // Gegenprobe wie oben: derselbe Name, aber kein externer Redner.
-    const ohneDn: Person = { ...person, dn: undefined }
-    const w = makeWeek()
-    const slot = vortragsSlot(w)
-    slot.name = 'M. Hartmann'
-    delete slot.rolle
-    expect(vortragsSlot(migrateAssignmentNames([w], [ohneDn])[0]!).name).toBe('Martin Hartmann')
+    expect(vortragsSlot(pidsNachtragen([w], [person])[0]!).pid).toBe(person.id)
   })
 })
 

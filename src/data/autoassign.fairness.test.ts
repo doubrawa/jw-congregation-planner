@@ -144,7 +144,7 @@ function emptyMeeting(): Meeting {
 function einPlatz(bereich: string): Meeting {
   return {
     date: '', end: '',
-    sections: [{ label: 'X', farbe: 'neutral', items: [{ title: 'T', names: [{ name: '', bereichsKey: bereich }] }] }],
+    sections: [{ label: 'X', farbe: 'neutral', items: [{ iid: 'i6', title: 'T', names: [{ name: '', bereichsKey: bereich }] }] }],
     helpers: {},
   }
 }
@@ -242,16 +242,6 @@ describe('Zusätzliche Klasse zählt als Auslastung', () => {
     expect(partWorkload(weeks, alsPerson('Rolf Ratgeber'))).toBe(1) // zählte früher 0
   })
 
-  it('zählt eine Begleitung nicht doppelt, wenn die Klasse die Rolle erbt', () => {
-    // `angleichen` kopiert die Rollenbeschriftung in die Klasse — die
-    // Begleiter-Erwähnung darf deshalb nur im Hauptsaal zählen.
-    const meeting = einPlatz('schulung')
-    const item = meeting.sections[0].items[0] as { names: SlotAssignment[]; aux?: SlotAssignment[] }
-    item.names[0] = { name: 'Wer Auchimmer', rolle: 'mit Anna Beispiel', bereichsKey: 'schulung' }
-    item.aux = [{ name: '', rolle: 'mit Anna Beispiel', bereichsKey: 'schulung' }]
-    expect(partWorkload([wk(meeting)], alsPerson('Anna Beispiel'))).toBe(1)
-  })
-
   it('wer in der Klasse dran war, kommt nicht sofort wieder', () => {
     const a = mk(['schulung'], { female: true, ln: 'Klasse' })
     const b = mk(['schulung'], { female: true, ln: 'Frei' })
@@ -273,10 +263,10 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
    */
   const sisters = many(30, ['schulung', 'schulungPartner'], { female: true })
   /** Brüder, die Bibellesung UND Leser können — für die Bereichs-Verteilung. */
-  const brothers = many(20, ['bibellesung', 'leser', 'schulung', 'schulungPartner', serviceQualKey('ton'), serviceQualKey('mik'), serviceQualKey('ord')])
+  const brothers = many(20, ['bibellesung', 'leser', 'schulung', 'schulungPartner', serviceQualKey('ton'), serviceQualKey('mik'), serviceQualKey('eingang')])
   const persons: Person[] = [
     ...many(10, ['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung', 'schulungPartner', 'ratgeber'], { role: 'aeltester' }),
-    ...many(8, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'schulungPartner', serviceQualKey('mik'), serviceQualKey('ord')], { role: 'dienstamtgehilfe' }),
+    ...many(8, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'schulungPartner', serviceQualKey('mik'), serviceQualKey('eingang')], { role: 'dienstamtgehilfe' }),
     ...brothers,
     ...sisters,
   ]
@@ -456,9 +446,9 @@ describe('Bereichs-Wartezeit als zweiter Tie-Break', () => {
 
 describe('Verteilung der Hilfsdienste über ein halbes Jahr', () => {
   it('teilt einen reinen Ordner-Pool reihum ein', () => {
-    const ORD = serviceQualKey('ord')
-    const pool = many(14, [ORD])
-    const services: Service[] = [{ key: 'ord', name: 'Ordner', count: 2, groups: false }]
+    const EINGANG = serviceQualKey('eingang')
+    const pool = many(14, [EINGANG])
+    const services: Service[] = [{ key: 'eingang', name: 'Ordner', count: 2, groups: false }]
     // Mit fortlaufenden Montagen: das Auslastungs-Fenster rechnet in Wochen,
     // nicht in Einträgen (`lastFenster`). Trügen alle Wochen dasselbe Datum,
     // fiele das Fenster auf eine einzige zusammen.
@@ -473,7 +463,7 @@ describe('Verteilung der Hilfsdienste über ein halbes Jahr', () => {
     for (const p of pool) counts.set(displayName(p), 0)
     for (const week of weeks) {
       for (const meeting of [week.mid, week.we]) {
-        for (const slot of meeting.helpers.ord ?? []) {
+        for (const slot of meeting.helpers.eingang ?? []) {
           if (slot.name) counts.set(slot.name, (counts.get(slot.name) ?? 0) + 1)
         }
       }

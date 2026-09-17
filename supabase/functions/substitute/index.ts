@@ -149,7 +149,7 @@ interface Sub {
   endpoint: string
   p256dh: string
   auth: string
-  /** App-Sprache dieses Geraets (migration-014); null = Deutsch. */
+  /** App-Sprache dieses Geraets; null = Deutsch. */
   lang: string | null
 }
 
@@ -160,7 +160,7 @@ const displayName = (p: Person): string => personDisplayName(p.fn, p.ln, p.dn)
  *
  * Vorn steht seit T66 der **Montag der Woche** ("2026-09-07"). Die frueheren
  * Positions-Schluessel wurden eine Zeit lang mitgelesen; seit Stufe 3 nicht
- * mehr -- migration-018 hat sie umgeschrieben und `weeks.position` geloescht,
+ * mehr -- die Spalte `weeks.position` gibt es nicht,
  * die Spalte, ueber die sie ueberhaupt zu finden waren. Ein Schluessel ohne
  * Kennung bezeichnet damit keine Woche und wird abgewiesen.
  */
@@ -209,7 +209,7 @@ async function notifyUsers(
   body: string,
   url: string,
   /**
-   * Aufgabe, um die es geht (migration-020). Damit laesst sich die Zeile
+   * Aufgabe, um die es geht. Damit laesst sich die Zeile
    * spaeter wiederfinden — „Ersatz gesucht" blieb sonst in der Glocke aller
    * Qualifizierten stehen, auch wenn laengst jemand eingesprungen war (T86).
    */
@@ -483,9 +483,6 @@ Deno.serve(async (req: Request) => {
     // mehr zu übernehmen gab — und wer darauf tippte, fand nichts. Nur die
     // Mitteilungen zu genau diesem Platz; „Ersatz gefunden" entsteht erst
     // danach und bleibt.
-    // Vor migration-020 gibt es die Spalte nicht: Dann trifft der Filter keine
-    // Zeile und der Aufruf bleibt folgenlos (restSend meldet einen Fehler in
-    // die Logs, bricht die Übernahme aber nicht ab).
     await rest.send(
       'DELETE',
       `notifications?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}` +

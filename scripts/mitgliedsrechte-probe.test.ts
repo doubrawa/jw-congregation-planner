@@ -8,7 +8,7 @@ import {
   qualifiziertFuer,
   slotSchluessel,
 } from './mitgliedsrechte-probe.mjs'
-import { helperTaskKey, slotTaskKey } from '../src/data/planning'
+import { helperTaskKey, itemTaskKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import type { PartItem, Person } from '../src/data/types'
 
@@ -23,24 +23,18 @@ import type { PartItem, Person } from '../src/data/types'
  * hier abgeschriebene Erwartung.
  */
 
-const punkt = (iid?: string): PartItem => ({ title: 'Probe', names: [], ...(iid ? { iid } : {}) })
+const punkt = (iid = 'k3f9x'): PartItem => ({ iid, title: 'Probe', names: [] })
 
 describe('Der Schlüssel ist derselbe wie in der App', () => {
-  it('mit stabiler Kennung — fünf Felder', () => {
-    const item = punkt('k3f9x')
-    expect(slotSchluessel(item, '2026-08-17', 'mid', 2, 1, 0)).toBe(slotTaskKey(item, '2026-08-17', 'mid', 2, 1, 0))
-  })
-
-  it('ohne Kennung fällt er auf die Position zurück — sechs Felder', () => {
+  it('Programmpunkt: Woche, Zusammenkunft, Raum, Kennung, Platz', () => {
     const item = punkt()
-    expect(slotSchluessel(item, '2026-08-17', 'mid', 2, 1, 0)).toBe(slotTaskKey(item, '2026-08-17', 'mid', 2, 1, 0))
+    expect(slotSchluessel(item, '2026-08-17', 'mid', 0)).toBe(itemTaskKey('2026-08-17', 'mid', item.iid, 0))
   })
 
   it('und die Zusätzliche Klasse trägt „aux" statt „part"', () => {
-    for (const item of [punkt('k3f9x'), punkt()]) {
-      expect(slotSchluessel(item, '2026-08-17', 'we', 0, 0, 1, true)).toBe(slotTaskKey(item, '2026-08-17', 'we', 0, 0, 1, true))
-      expect(slotSchluessel(item, '2026-08-17', 'we', 0, 0, 1, true)).toContain('|aux|')
-    }
+    const item = punkt()
+    expect(slotSchluessel(item, '2026-08-17', 'we', 1, true)).toBe(itemTaskKey('2026-08-17', 'we', item.iid, 1, true))
+    expect(slotSchluessel(item, '2026-08-17', 'we', 1, true)).toContain('|aux|')
   })
 
   it('Hilfsdienste ebenso', () => {

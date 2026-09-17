@@ -24,7 +24,7 @@ describe('Push-Texte', () => {
     }
   })
 
-  it('unbekannt oder fehlend → Deutsch (Abos von vor migration-014)', () => {
+  it('unbekannt oder fehlend → Deutsch', () => {
     expect(pushTexte(null).erinnerung).toBe('Erinnerung: Zuteilung bestätigen')
     expect(pushTexte('kli').erinnerung).toBe('Erinnerung: Zuteilung bestätigen')
   })

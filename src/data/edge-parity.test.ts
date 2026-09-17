@@ -144,7 +144,6 @@ describe('Rolle mit Herkunft', () => {
   */
   const faelle: Array<[string, { rolle?: string; herkunft?: string }]> = [
     ['eigenes Feld', { rolle: 'Gastredner', herkunft: 'Vers. Nordheim' }],
-    ['Altdaten im Rollentext', { rolle: 'Gastredner · Vers. Nordheim' }],
     ['ohne Herkunft', { rolle: 'Gastredner' }],
     ['leere Herkunft', { rolle: 'Gastredner', herkunft: '' }],
     ['gewöhnliche Rolle', { rolle: 'Vorsitz' }],
@@ -157,11 +156,17 @@ describe('Rolle mit Herkunft', () => {
     expect(edgeHerkunft(slot)).toBe(rolleMitHerkunft(slot))
   })
 
-  it('beide Formen sind derselbe Text', () => {
-    const neu = rolleMitHerkunft({ rolle: 'Gastredner', herkunft: 'Vers. Nordheim' })
-    const alt = rolleMitHerkunft({ rolle: 'Gastredner · Vers. Nordheim' })
-    expect(neu).toBe('Gastredner · Vers. Nordheim')
-    expect(alt).toBe(neu)
+  it('Rolle und Herkunft ergeben zusammen den Anzeigetext', () => {
+    expect(rolleMitHerkunft({ rolle: 'Gastredner', herkunft: 'Vers. Nordheim' }))
+      .toBe('Gastredner · Vers. Nordheim')
+  })
+
+  it('eine Herkunft im Rollentext zählt nicht mehr', () => {
+    // Sie stand einmal als zweites Atom der Rolle. Ein Versammlungsname ist
+    // aber kein Teil einer Rolle — über die entscheiden `isGuestRole` und die
+    // Auto-Zuteilung. Beide Seiten lesen sie jetzt nur aus ihrem eigenen Feld.
+    expect(rolleMitHerkunft({ rolle: 'Gastredner · Vers. Nordheim' })).toBe('Gastredner')
+    expect(edgeHerkunft({ rolle: 'Gastredner · Vers. Nordheim' })).toBe('Gastredner')
   })
 
   it('ohne Herkunft steht kein Trenner ins Leere', () => {
@@ -574,8 +579,7 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
             { name: 'Emil Erd', pid: 'p5', bereichsKey: 'schulung' },
             { name: '', bereichsKey: 'schulungPartner' }, // offen → gehört niemandem
           ] },
-          // Punkt ohne stabile Kennung (Altbestand) → positionsbasierter Schlüssel
-          { title: 'Alter Punkt', meta: '', names: [{ name: 'Fritz Feld', pid: 'p6', bereichsKey: 'schulung' }] },
+          { iid: 'd1', title: 'Weiterer Punkt', meta: '', names: [{ name: 'Fritz Feld', pid: 'p6', bereichsKey: 'schulung' }] },
         ],
       },
       {
@@ -627,11 +631,11 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
       `${MONTAG_PS}|mid|aux|b1|0 | Emil Erd`,
       `${MONTAG_PS}|mid|helper|mik|0 | Hans Hell`,
       `${MONTAG_PS}|mid|helper|ton|0 | Jens Jung`,
-      `${MONTAG_PS}|mid|part|1|1|0 | Fritz Feld`, // ohne iid → Position
       `${MONTAG_PS}|mid|part|a1|0 | Anton Alt`,
       `${MONTAG_PS}|mid|part|a1|1 | Bernd Berg`,
       `${MONTAG_PS}|mid|part|b1|0 | Clara Cord`,
       `${MONTAG_PS}|mid|part|b1|1 | Dora Dill`,
+      `${MONTAG_PS}|mid|part|d1|0 | Fritz Feld`,
       `${MONTAG_PS}|mid|ratgeber | Karl Kern`,
     ])
   })

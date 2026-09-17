@@ -63,13 +63,13 @@ describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
         farbe: 'petrol',
         items: [
           { song: 'Lied 1' },
-          {
+          { iid: 'i48',
             num: 7,
             title: 'Versammlungsbibelstudium',
             meta: '',
             names: [{ name: 'Wer Da', rolle: 'Leiter' }, { name: '', rolle: 'Leser' }],
           },
-          { num: 4, title: 'Gespräche beginnen', meta: '', names: [{ name: '', rolle: 'mit Partner' }] },
+          { iid: 'i47', num: 4, title: 'Gespräche beginnen', meta: '', names: [{ name: '', rolle: 'Partner' }] },
         ],
       },
     ],
@@ -82,7 +82,7 @@ describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
     // kommt aus der Sprache der Versammlung, die Rolle aus der des Lesers.
     expect(open).toEqual([
       { text: 'Versammlungsbibelstudium', lang: 'p', rolle: 'Leser', n: 1 },
-      { text: 'Gespräche beginnen', lang: 'p', n: 1 }, // "mit …"-Rolle → nur Titel
+      { text: 'Gespräche beginnen', lang: 'p', rolle: 'Partner', n: 1 },
       { text: 'Mikrofone', lang: 'u', n: 2 },
       { text: 'Reinigung', lang: 'u', n: 1 },
     ])
@@ -96,7 +96,7 @@ describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
           label: 'ERÖFFNUNG',
           farbe: 'neutral',
           items: [
-            {
+            { iid: 'i46',
               title: 'Lied 27 · Gebet · Einleitende Worte',
               meta: '',
               names: [{ name: '', rolle: 'Vorsitz' }, { name: '', rolle: 'Gebet' }],
@@ -119,7 +119,7 @@ describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
         {
           label: 'X',
           farbe: 'petrol',
-          items: [{ num: 1, title: 'T', meta: '', names: [{ name: 'Wer Da' }] }],
+          items: [{ iid: 'i45', num: 1, title: 'T', meta: '', names: [{ name: 'Wer Da' }] }],
         },
       ],
       helpers: { mik: [{ name: 'A' }, { name: 'B' }], rein: [{ name: 'Gruppe 1' }] },
@@ -139,7 +139,7 @@ describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
     // ein Hilfsdienst-Platz leeren
     after.helpers.mik = [{ name: '' }, ...(after.helpers.mik ?? []).slice(1)]
     const keys = changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid')
-    expect(keys).toContain('2026-09-07|mid|part|0|0|0')
+    expect(keys).toContain(`2026-09-07|mid|part|${item.iid}|0`)
     expect(keys).toContain('2026-09-07|mid|helper|mik|0')
     expect(keys).toHaveLength(2)
   })
@@ -162,8 +162,42 @@ describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
     ;(after.sections[0]!.items.find((i) => !isSong(i)) as PartItem).names[0]!.pid = 'p2'
     after.helpers.mik![0]!.pid = 'p2'
     expect(changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid').sort()).toEqual(
-      ['2026-09-07|mid|helper|mik|0', '2026-09-07|mid|part|0|0|0'].sort(),
+      ['2026-09-07|mid|helper|mik|0', `2026-09-07|mid|part|${item.iid}|0`].sort(),
     )
+  })
+
+  /*
+    **Der Vorgänger wird über die Kennung gesucht, nicht über die Position.**
+
+    Hier stand `prev.sections[si]?.items[ii]` — dieselbe Stelle in der Liste.
+    Solange nur zugeteilt wurde, fiel das nicht auf; eine Aktion, die
+    umsortiert **und** zuteilt, verglich damit zwei verschiedene Punkte und
+    räumte die Zusage des falschen ab. Gefunden im Code-Review vom
+    17. September 2026, als der Schlüssel längst über die Kennung ging.
+  */
+  it('umsortiert und umgeteilt zugleich: es trifft den richtigen Punkt', () => {
+    const weeks = buildDemoWeeks()
+    const before = structuredClone(weeks[0]!.mid)
+    // Ein Abschnitt mit mindestens zwei Punkten — die ERÖFFNUNG hat nur einen.
+    const si = before.sections.findIndex((s) => s.items.filter((i) => !isSong(i)).length >= 2)
+    const punkte = before.sections[si]!.items.filter((i) => !isSong(i)) as PartItem[]
+    const [a, b] = [punkte[0]!, punkte[1]!]
+    a.names[0] = { ...a.names[0]!, name: 'Anna Alt', pid: 'pa' }
+    b.names[0] = { ...b.names[0]!, name: 'Bert Berg', pid: 'pb' }
+
+    // Die beiden Punkte tauschen die Plätze, und **nur** bei A wechselt die
+    // Person. Über die Position gemessen sähe es aus, als hätten beide
+    // gewechselt — und die Zusage von B verfiele ohne Grund.
+    const after = structuredClone(before)
+    const nach = after.sections[si]!.items as (PartItem | { song: string })[]
+    const iA = nach.findIndex((i) => !isSong(i) && (i as PartItem).iid === a.iid)
+    const iB = nach.findIndex((i) => !isSong(i) && (i as PartItem).iid === b.iid)
+    ;[nach[iA], nach[iB]] = [nach[iB]!, nach[iA]!]
+    ;(nach.find((i) => !isSong(i) && (i as PartItem).iid === a.iid) as PartItem).names[0]!.pid = 'pc'
+
+    expect(changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid')).toEqual([
+      `2026-09-07|mid|part|${a.iid}|0`,
+    ])
   })
 
   it('dieselbe Person, deren Id erst jetzt dasteht, ist kein Wechsel', () => {
@@ -327,7 +361,7 @@ describe('S-89-Nutzlast', () => {
     const s89 = buildS89ForSlot(weeks, {
       kind: 'part', wi: 0, tab: 'mid', si: uid, ii, ni: 0, priv: 'schulung', groups: false, label: '',
     })
-    expect(s89?.partner).toBe('M. Ernst')
+    expect(s89?.partner).toBe('Markus Ernst')
     expect(s89?.type).toBe('Gespräche beginnen · Informell')
   })
 
@@ -547,7 +581,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
       'Mikrofone',
     ])
     expect(tasks[0].date).toBe('Dienstag, 8. September · 19:00')
-    expect(tasks[0].s89?.partner).toBe('M. Ernst')
+    expect(tasks[0].s89?.partner).toBe('Markus Ernst')
     expect(tasks[1].s89).toBeNull()
     expect(tasks[2].s89?.point).toBe('th Lektion 10')
     expect(tasks.every((t) => t.status === 'offen')).toBe(true)
@@ -557,7 +591,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
   it('setzt at aus Wochenstart + Zusammenkunftstag (Countdown); ohne start null', () => {
     // Ohne Startdatum → kein Countdown. Seit T66 ist `start` verpflichtend;
     // der leere String ist die Form fuer „aus Altbestand, noch nicht
-    // nachgetragen" (migration-017 traegt es nach).
+    // nachgetragen" (die Spalte `weeks.start` traegt es).
     const leer = weeks.map((w) => ({ ...w, start: '' }))
     const ohne = deriveMyTasks(leer, DEMO_SERVICES, 'Simon Krüger', {}, 'Di 19:00 · So 10:00')
     expect(ohne[0].at).toBeNull()
@@ -634,11 +668,11 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
             label: 'UNS IM DIENST VERBESSERN',
             farbe: 'gold' as const,
             items: [
-              { num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.', names: [
+              { iid: 'g4', num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.', mins: 3, names: [
                 { name: '', bereichsKey: 'schulung' },
                 { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
               ] },
-              { num: 6, title: 'Vortrag', meta: '5 Min.', names: [{ name: '', bereichsKey: 'schulung', male: true }] },
+              { iid: 'g6', num: 6, title: 'Vortrag', meta: '5 Min.', mins: 5, names: [{ name: '', bereichsKey: 'schulung', male: true }] },
             ],
           },
         ],
@@ -701,7 +735,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
               label: 'UNS IM DIENST VERBESSERN',
               farbe: 'gold' as const,
               items: [
-                {
+                { iid: 'i44',
                   num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.',
                   names: [
                     { name: '', bereichsKey: 'schulung' },
@@ -761,7 +795,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
               label: 'UNS IM DIENST VERBESSERN',
               farbe: 'gold' as const,
               items: [
-                {
+                { iid: 'i43',
                   num: 4, title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.',
                   // Hauptsaal: Bruder führt. Klasse: Schwester führt.
                   names: [
@@ -1089,12 +1123,12 @@ describe('assignmentsInMeeting (Doppelbelegungs-Hinweis)', () => {
       {
         label: 'ERÖFFNUNG',
         farbe: 'neutral',
-        items: [{ title: 'Einleitende Worte', names: [{ name: 'A. Muster', rolle: 'Vorsitz' }] }],
+        items: [{ iid: 'i42', title: 'Einleitende Worte', names: [{ name: 'A. Muster', rolle: 'Vorsitz' }] }],
       },
       {
         label: 'SCHÄTZE',
         farbe: 'petrol',
-        items: [{ title: 'Nach geistigen Schätzen graben', names: [{ name: 'B. Test' }] }],
+        items: [{ iid: 'i41', title: 'Nach geistigen Schätzen graben', names: [{ name: 'B. Test' }] }],
       },
     ],
     helpers: { mik: [{ name: 'A. Muster' }, { name: '' }], rein: [{ name: 'Gruppe 1' }] },
@@ -1430,11 +1464,11 @@ describe('Herkunft eines auswaertigen Redners', () => {
     expect(isGuestRole(rednerPlatz(weeks)?.rolle)).toBe(true)
   })
 
-  it('Bestandsdaten mit der Herkunft im Rollentext ergeben denselben Text', () => {
+  it('eine Herkunft im Rollentext zaehlt nicht mehr — nur das eigene Feld', () => {
     const weeks = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner · Vers. Nordheim')
     const slot = rednerPlatz(weeks)
     expect(slot?.herkunft).toBeUndefined()
-    expect(rolleMitHerkunft(slot)).toBe('Gastredner · Vers. Nordheim')
-    expect(isGuestRole(slot?.rolle)).toBe(true)
+    expect(rolleMitHerkunft(slot)).toBe('Gastredner')
+    expect(isGuestRole(slot?.rolle)).toBe(true) // die Regel haengt an der Rolle
   })
 })

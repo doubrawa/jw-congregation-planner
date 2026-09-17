@@ -82,7 +82,7 @@ function kanonisch(): Week {
         kind: 'eroeffnung',
         farbe: 'neutral',
         items: [
-          {
+          { iid: 'i23',
             title: 'Lied 1 · Gebet · Einleitende Worte',
             meta: '1 Min.',
             mins: 1,
@@ -95,14 +95,14 @@ function kanonisch(): Week {
         kind: 'schaetze',
         farbe: 'petrol',
         items: [
-          {
+          { iid: 'i22',
             num: 1,
             title: 'Nach geistigen Schätzen graben',
             meta: '10 Min.',
             mins: 10,
             names: [platz('', undefined, 'vortrag')],
           },
-          {
+          { iid: 'i21',
             num: 3,
             title: 'Bibellesung',
             meta: '4 Min. · th Lektion 2',
@@ -116,7 +116,7 @@ function kanonisch(): Week {
         kind: 'dienst',
         farbe: 'gold',
         items: [
-          {
+          { iid: 'i20',
             num: 4,
             title: 'Gespräche beginnen',
             meta: 'Von Haus zu Haus · 3 Min. · lmd Lektion 1',
@@ -133,7 +133,7 @@ function kanonisch(): Week {
         kind: 'lac',
         farbe: 'wein',
         items: [
-          {
+          { iid: 'i19',
             num: 7,
             title: 'Versammlungsbibelstudium',
             meta: '30 Min. · wcg Kap. 7',
@@ -147,7 +147,7 @@ function kanonisch(): Week {
         kind: 'abschluss',
         farbe: 'neutral',
         items: [
-          {
+          { iid: 'i18',
             title: 'Schlussworte · Lied 143 · Gebet',
             meta: '3 Min.',
             mins: 3,
@@ -171,7 +171,7 @@ function kanonisch(): Week {
         kind: 'eroeffnung',
         farbe: 'neutral',
         items: [
-          {
+          { iid: 'i17',
             title: 'Lied · Gebet',
             names: [platz('', 'Vorsitz', 'vorsitzWe'), platz('', 'Gebet', 'gebet')],
           },
@@ -182,7 +182,7 @@ function kanonisch(): Week {
         kind: 'vortrag',
         farbe: 'petrol',
         items: [
-          {
+          { iid: 'i16',
             title: '(Vortragsthema eintragen)',
             meta: '30 Min.',
             mins: 30,
@@ -196,7 +196,7 @@ function kanonisch(): Week {
         farbe: 'wein',
         items: [
           { song: 'Lied' },
-          {
+          { iid: 'i15',
             title: '(Studienartikel eintragen)',
             meta: '60 Min.',
             mins: 60,
@@ -209,7 +209,7 @@ function kanonisch(): Week {
         kind: 'abschluss',
         farbe: 'neutral',
         items: [
-          { title: 'Schlussworte · Lied · Gebet', names: [platz('', 'Gebet', 'gebet')] },
+          { iid: 'i14', title: 'Schlussworte · Lied · Gebet', names: [platz('', 'Gebet', 'gebet')] },
         ],
       },
     ],
@@ -435,10 +435,12 @@ describe('Arbeitsheft mit eigenen Ziffern (ar/fa/hi)', () => {
     for (const section of w.mid.sections) {
       for (const item of section.items) {
         if ('song' in item) continue
-        // `mins` trägt die Zahl seit T32 selbst; `itemMinutes` muss sie auch
-        // ohne das Feld aus der Meta-Zeile zurückbekommen (Altbestand).
+        // `mins` trägt die Zahl seit T32 selbst — in jeder Schrift dieselbe.
+        // Aus der Meta-Zeile wird sie **nicht** zurückgerechnet: Die ist
+        // Anzeigetext, und genau dort lag der Fehler (T32/T59).
+        expect(itemMinutes(item), `${null_} · ${item.meta}`).toBe(item.mins ?? null)
         const ohneFeld: PartItem = { ...item, mins: undefined }
-        expect(itemMinutes(ohneFeld), `${null_} · ${item.meta}`).toBe(item.mins)
+        expect(itemMinutes(ohneFeld), `${null_} · ${item.meta}`).toBeNull()
       }
     }
   })

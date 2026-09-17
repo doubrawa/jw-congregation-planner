@@ -1019,44 +1019,20 @@ export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance
 }
 
 /**
- * Alt-Kennungen der Treffpunkte auf die Regel-Id heben (T87):
- * `"3|r1c8…"` → `"r1c8…"`.
+ * Leiter-Namen ohne `lpid` an ihre Person binden — das Gegenstück zu
+ * `pidsNachtragen` (lib/data.ts) für die zweite Datenquelle.
  *
- * Die führende Zahl war die Position der Woche im Ladefenster. Sie ändert
- * sich, sobald das Fenster weiterrutscht — und `regenFsWeeks` findet die
- * gespeicherte Leitung dann nicht wieder (siehe `instanzId`). Diese Umstellung
- * läuft beim Laden, **bevor** ausgerichtet wird, und macht die beiden Seiten
- * wieder gleich: hier die Kennung der Instanz, drüben die des `task_key`
- * (`migrateFsTaskKeys` in lib/data.ts).
- *
- * Von Hand angelegte Treffpunkte (`x<uuid>`) bleiben unberührt — sie tragen
- * keine Zahl vorn. Idempotent, und unveränderte Wochen behalten ihre Referenz.
- */
-export function fsMigrateInstIds(fsWeeks: FsInstance[][]): FsInstance[][] {
-  const ALT = /^\d+\|(.+)$/
-  return mapInsts(fsWeeks, (inst) => {
-    const treffer = ALT.exec(inst.id)
-    return treffer?.[1] ? { ...inst, id: treffer[1] } : inst
-  })
-}
-
-/**
- * Backfill der `lpid` aus dem gespeicherten Leiter-Namen — das Gegenstück zu
- * `migrateAssignmentPids` (lib/data.ts) für die zweite Datenquelle.
- *
- * Zwei Fälle brauchen es. Der erste sind **Bestandsdaten**: Treffpunkte, die
- * vor der `lpid` zugeteilt wurden, tragen nur einen Namen. Der zweite wiegt
- * schwerer und entsteht im laufenden Betrieb: Wird eine Person gelöscht,
- * nimmt `fsDropPersonPid` ihre Id aus den Treffpunkten und lässt den Namen
- * stehen. Legt der Planer sie neu an, fanden die Zusammenkünfte wieder
- * zusammen, die Treffpunkte nie — dort blieb ein Name ohne Person, und die
- * Leitung zählte in keiner Auslastung und in keiner Aufgabenliste mehr.
+ * Gebraucht wird es im laufenden Betrieb: Wird eine Person gelöscht, nimmt
+ * `fsDropPersonPid` ihre Id aus den Treffpunkten und lässt den Namen stehen.
+ * Legt der Planer sie neu an, fänden die Zusammenkünfte wieder zusammen, die
+ * Treffpunkte nie — dort bliebe ein Name ohne Person, und die Leitung zählte
+ * in keiner Auslastung und in keiner Aufgabenliste mehr.
  *
  * Nur **eindeutige** Namen werden zugeordnet; bei Dubletten bliebe es ein
  * Raten, und die App warnt davor ohnehin (`duplicateDisplayNames`).
  * Idempotent, und unveränderte Wochen behalten ihre Referenz.
  */
-export function fsMigrateLeaderPids(
+export function fsLeiterBinden(
   fsWeeks: FsInstance[][],
   persons: readonly Person[],
 ): FsInstance[][] {

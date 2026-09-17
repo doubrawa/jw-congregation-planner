@@ -99,7 +99,7 @@ function woche(): Week {
       sections: [
         {
           label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral',
-          items: [{
+          items: [{ iid: 'i63',
             title: 'Lied 1 · Gebet · Einleitende Worte', meta: '1 Min.', mins: 1,
             names: [
               { name: 'Xavo Quintus', pid: ICH.id, rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
@@ -109,14 +109,14 @@ function woche(): Week {
         },
         {
           label: 'SCHÄTZE AUS GOTTES WORT', kind: 'schaetze', farbe: 'petrol',
-          items: [{
+          items: [{ iid: 'i62',
             num: 3, title: 'Bibellesung', meta: '4 Min. · th Lektion 2', mins: 4,
             names: [{ name: 'Yvor Zeddix', pid: ANDER.id, bereichsKey: 'bibellesung' }],
           }],
         },
         {
           label: 'UNSER LEBEN ALS CHRIST', kind: 'lac', farbe: 'wein',
-          items: [{
+          items: [{ iid: 'i61',
             num: 7, title: 'Versammlungsbibelstudium', meta: '30 Min.', mins: 30,
             names: [
               { name: '', rolle: 'Leiter', bereichsKey: 'studium' },
@@ -133,7 +133,7 @@ function woche(): Week {
       sections: [
         {
           label: 'ÖFFENTLICHER VORTRAG', kind: 'vortrag', farbe: 'petrol',
-          items: [{
+          items: [{ iid: 'i60',
             title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30,
             names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }],
           }],

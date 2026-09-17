@@ -262,11 +262,25 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
 - **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Standard ist die
   bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
   Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.
-- **Sprache** – die Anzeigesprache der App. Ist das Programm in einer weiteren
-  Sprache verfügbar, werden Programmpunkte automatisch mit übersetzt. Bei
-  Arabisch, Hebräisch, Persisch und Urdu läuft die ganze Oberfläche von rechts
-  nach links – auch das Blättern zwischen den Wochen: Dort liegt die **vorige**
-  Woche rechts.
+- **Sprache** – die Anzeigesprache der App, in 34 Sprachen. Sie gilt nur für
+  dich: Deine Versammlung kann deutsch planen, während du alles auf Englisch
+  liest.
+  - **Das Programm wird mit übersetzt.** Die Titel der Programmpunkte, die
+    Bibelbücher und die Rollen erscheinen in deiner Sprache. Hat dein Planer
+    die Woche zusätzlich in deiner Sprache geholt, kommen die Texte wörtlich
+    von jw.org; sonst übersetzt die App, was sie belegen kann, und lässt den
+    Rest stehen.
+  - **Auch die Nachrichten.** Eine Push-Erinnerung entsteht in dem Moment, in
+    dem sie verschickt wird – in der Sprache, die auf **diesem Gerät**
+    eingestellt war. Hast du die App auf zwei Geräten mit verschiedenen
+    Sprachen, bekommt jedes seine eigene. Die Zeilen unter der Glocke folgen
+    dagegen immer der Sprache, die du gerade eingestellt hast.
+  - **Rechts nach links.** Bei Arabisch, Hebräisch, Persisch und Urdu läuft die
+    ganze Oberfläche von rechts nach links – auch das Blättern zwischen den
+    Wochen: Dort liegt die **vorige** Woche rechts.
+  - **Die Einladungs-Mail ist die Ausnahme**: Sie kommt in der Sprache der
+    Versammlung. Wer sie bekommt, hat noch kein Konto – und damit noch keine
+    eingestellte Sprache.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
   ausschalten (siehe [Abschnitt 7](#7-app-installieren--erinnerungen)).
 - **Abmelden** – meldet dich auf diesem Gerät ab.

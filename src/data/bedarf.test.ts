@@ -91,7 +91,7 @@ describe('Was gezählt wird und was nicht', () => {
   it('ein Platz ohne Bereich zählt nirgends mit', () => {
     const m = zusammenkunft()
     m.sections = [{ label: 'X', farbe: 'wein', items: [
-      { title: 'Etwas', meta: '', names: [{ name: '' }] },
+      { iid: 'i11', title: 'Etwas', meta: '', names: [{ name: '' }] },
     ] }]
     expect(bedarfJeBereich(m, []).size).toBe(0)
   })
@@ -171,20 +171,20 @@ describe('Was gezählt wird und was nicht', () => {
      */
     const dienste: Service[] = [
       { key: 'mik', name: 'Mikrofone', count: 1, groups: false },
-      { key: 'ord', name: 'Ordner', count: 1, groups: false },
+      { key: 'eingang', name: 'Ordner', count: 1, groups: false },
     ]
-    const einer = [person('a', 'svc:mik', 'svc:ord')]
+    const einer = [person('a', 'svc:mik', 'svc:eingang')]
     expect(engpaesse(zusammenkunft(), dienste, einer, set([]), 0, 'mid')).toEqual([])
   })
 
   it('sortiert die größte Lücke nach oben', () => {
     const dienste: Service[] = [
       { key: 'mik', name: 'Mikrofone', count: 3, groups: false },
-      { key: 'ord', name: 'Ordner', count: 2, groups: false },
+      { key: 'eingang', name: 'Ordner', count: 2, groups: false },
     ]
-    const leute = [person('a', 'svc:ord')]
+    const leute = [person('a', 'svc:eingang')]
     const treffer = engpaesse(zusammenkunft(), dienste, leute, set([]), 0, 'mid')
-    expect(treffer.map((e) => e.key)).toEqual(['svc:mik', 'svc:ord'])
+    expect(treffer.map((e) => e.key)).toEqual(['svc:mik', 'svc:eingang'])
     expect(offenTrotzAllem(treffer)).toBe(4) // 3 Mikrofone ohne jeden, 1 Ordner
   })
 })

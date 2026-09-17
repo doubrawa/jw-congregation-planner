@@ -14,7 +14,7 @@
  * derselbe Fehler viermal passiert: eine Funktion wurde erweitert, die nächste
  * nicht. `partWorkload` zählte die halbe Klasse nicht mit, `mapPersonSlots`
  * benannte sie nicht um (T38), die `used`-Menge der Auto-Zuteilung übersah
- * sie, und `migrateAssignmentPids` gab ihr die Person-Id nie zurück. Jedes
+ * sie, und `pidsNachtragen` gab ihr die Person-Id nie zurück. Jedes
  * Mal war die Wirkung dieselbe und still: der Platz zählte nirgends, und
  * niemand sah es — die Klasse steht in der Ansicht neben dem Hauptsaal, nicht
  * darin.
@@ -47,12 +47,7 @@ import {
   deriveMyTasks,
   openSlotLabels,
 } from './planning'
-import {
-  dropPersonPid,
-  migrateAssignmentNames,
-  migrateAssignmentPids,
-  renameInWeeks,
-} from '../lib/data'
+import { dropPersonPid, pidsNachtragen, renameInWeeks } from '../lib/data'
 import {
   pendingOfMeeting,
   type Meeting as EdgeMeeting,
@@ -85,7 +80,7 @@ function zusammenkunft(belegt: boolean): Meeting {
         label: 'UNS IM DIENST VERBESSERN',
         farbe: 'gold',
         items: [
-          {
+          { iid: 'i5',
             title: 'Gespräche beginnen',
             meta: '',
             names: [{ ...wer, bereichsKey: 'schulung' }],
@@ -203,28 +198,14 @@ describe('Wer schreibt eine Zuteilung um?', () => {
     expect(besetzt(next[0], (s) => s.name === 'Anna Neumann')).toEqual(ALLE)
   })
 
-  it('migrateAssignmentNames trifft alle vier', () => {
-    // Alt-Bestand in der früheren Kurzform „A. Beispiel".
-    const alt = woche()
-    const kurz = (s: { name: string }): void => { s.name = 'A. Beispiel' }
-    const item = alt.mid.sections[0]!.items[0] as PartItem
-    item.names.forEach(kurz)
-    ;(item.aux ?? []).forEach(kurz)
-    if (alt.mid.auxRatgeber) kurz(alt.mid.auxRatgeber)
-    alt.mid.helpers.mik!.forEach(kurz)
-
-    const next = migrateAssignmentNames([alt], [ANNA])
-    expect(besetzt(next[0], (s) => s.name === NAME)).toEqual(ALLE)
-  })
-
   it('dropPersonPid löst die Id an allen vier', () => {
     const next = dropPersonPid([woche()], ANNA.id)
     expect(besetzt(next[0], (s) => s.pid !== undefined)).toEqual([])
   })
 
-  it('migrateAssignmentPids bindet alle vier wieder', () => {
+  it('pidsNachtragen bindet alle vier wieder', () => {
     const ohne = dropPersonPid([woche()], ANNA.id)
-    const next = migrateAssignmentPids(ohne, [ANNA])
+    const next = pidsNachtragen(ohne, [ANNA])
     expect(besetzt(next[0], (s) => s.pid === ANNA.id)).toEqual(ALLE)
   })
 })
@@ -266,7 +247,7 @@ describe('Wer weiß, dass die Person schon eingeteilt ist?', () => {
       priv: { ...emptyQualifications(), schulung: true, vortrag: true },
     }
     const w = woche()
-    w.mid.sections[0]!.items.push({
+    w.mid.sections[0]!.items.push({ iid: 'i4',
       title: 'Noch ein Punkt', meta: '', names: [{ name: '', bereichsKey: 'vortrag' }],
     })
 
@@ -283,7 +264,7 @@ describe('Wer weiß, dass die Person schon eingeteilt ist?', () => {
       priv: { ...emptyQualifications(), vortrag: true },
     }
     const w = woche()
-    w.mid.sections[0]!.items.push({
+    w.mid.sections[0]!.items.push({ iid: 'i3',
       title: 'Noch ein Punkt', meta: '', names: [{ name: '', bereichsKey: 'vortrag' }],
     })
 

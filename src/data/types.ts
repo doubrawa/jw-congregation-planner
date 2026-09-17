@@ -14,8 +14,7 @@ import type { SectionKind } from './constants'
  * Paletten aus dem Design-Export „Farboptionen Programm" (inzwischen kräftiger
  * abgestimmt), dazu „pastell" (die ursprünglichen, weichen Töne), „grau"
  * (ganz ohne Farbton) und „kontrast" (Barrierefreiheit). Labels/Reihenfolge
- * in THEME_LIST (constants.ts), Paletten in styles/tokens.css. Alte Werte
- * 'light'/'dark' werden beim Laden auf weiss/graphit gemappt.
+ * in THEME_LIST (constants.ts), Paletten in styles/tokens.css.
  */
 export type Theme =
   | 'weiss'
@@ -87,7 +86,7 @@ export interface FsRule {
 
 /** Konkreter Treffpunkt einer Woche (aus einer Regel materialisiert oder manuell). */
 export interface FsInstance {
-  id: string // "wi|ruleId" (aus Regel) oder "x<zeit>" (manuell für diese Woche)
+  id: string // Regel-Id (aus dem Grundplan) oder "x<zeit>" (nur für diese Woche)
   ruleId: string | null
   grp: string // '' = Versammlung; sonst Group.id
   wd: number
@@ -95,17 +94,17 @@ export interface FsInstance {
   place: string
   leader: string // zugeteilter Leiter ("" = offen)
   lpid?: string // Person-Id des Leiters — stabile Identität statt Name-Match.
-  //             Wie `SlotAssignment.pid`; fehlt bei Altdaten.
+  //             Wie `SlotAssignment.pid`; fehlt bei Freitext und Gruppen.
   /**
    * Der Leiter ist **Freitext**: jemand außerhalb der Versammlung, in der Regel
    * der Kreisaufseher. Entspricht dem Gastredner aus T29.
    *
    * Warum ein eigenes Feld und nicht einfach „keine `lpid`": Die fehlende Id
-   * heißt schon etwas anderes — **Altdaten**, deren Person noch nachzutragen
-   * ist. `fsMigrateLeaderPids` hängt jedem eindeutig passenden Namen bei jedem
-   * Laden die Person an; ein Freitext-Leiter, der zufällig wie ein Bruder der
-   * Versammlung heißt, würde damit stillschweigend zu ihm — mit Auslastung,
-   * „Meine Aufgaben" und Erinnerungen. T29 hat denselben Fehler an der ersten
+   * heißt schon etwas anderes — ein Name, dessen Person noch zu finden ist.
+   * `fsLeiterBinden` hängt jedem eindeutig passenden Namen beim Laden die
+   * Person an; ein Freitext-Leiter, der zufällig wie ein Bruder der Versammlung
+   * heißt, würde damit stillschweigend zu ihm — mit Auslastung, „Meine
+   * Aufgaben" und Erinnerungen. T29 hat denselben Fehler an der ersten
    * Datenquelle behoben und dort die **Rolle** in den Platz geschrieben,
    * statt sich auf die fehlende `pid` zu verlassen; hier ist es dieses Flag.
    */
@@ -129,8 +128,8 @@ export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger' | 'keine'
  *    `svc:<dienstKey>` (siehe `serviceQualKey`). Ein neuer Hilfsdienst bringt so
  *    automatisch einen eigenen Schalter im Personen-Detail mit.
  *
- * Alle Felder sind optional lesbar (`boolean | undefined`), damit Alt-Datensätze
- * ohne die neueren Bereiche gültig bleiben.
+ * Alle Felder sind optional lesbar (`boolean | undefined`): Ein Bereich, den
+ * niemand angetippt hat, steht gar nicht im gespeicherten Objekt.
  */
 export interface Qualifications {
   vorsitzMid: boolean // Vorsitz unter der Woche
@@ -173,10 +172,9 @@ export interface Person {
   fn: string // Vorname
   ln: string // Nachname
   /**
-   * Optionaler Anzeigename (Kurzform). Überschreibt das automatische
-   * "V. Nachname" — nötig, wenn zwei Personen sonst denselben Anzeigenamen
-   * hätten (z. B. "Jörg Grünwald" statt "J. Grünwald" ×2), denn Zuteilungen
-   * hängen am Anzeigenamen.
+   * Abweichender Anzeigename. Überschreibt „Vorname Nachname" — nötig, wenn
+   * zwei Personen sonst denselben Anzeigenamen hätten (z. B. „Josef Mayer 1"),
+   * denn der Anzeigename steht in jeder Zuteilung neben der Person-Id.
    */
   dn?: string
   role: Role
@@ -221,18 +219,18 @@ export type SectionColor =
 export interface SlotAssignment {
   name: string // Anzeigename (Cache); bei pid aus der Person abgeleitet/gepflegt
   pid?: string // Person-Id der Zuteilung — stabile Identität (statt Name-Match).
-  //            Fehlt bei externen Rednern (Gastredner/Kreisaufseher) und Altdaten.
+  //            Fehlt bei externen Rednern (Gastredner/Kreisaufseher).
   rolle?: string // Rollenlabel: Vorsitz, Gebet, Leiter, Leser, Partner …
   /**
    * Heimatversammlung eines auswärtigen Redners.
    *
-   * Stand bis hierher als zweites Atom **in** `rolle`
+   * Stand einmal als zweites Atom **in** `rolle`
    * (`"Gastredner · Vers. Nordheim"`), also mitten in dem Feld, über das
    * `isGuestRole` und die Auto-Zuteilung entscheiden. Ein Versammlungsname ist
    * aber kein Teil einer Rolle: er trägt keine Regel, er wird nur angezeigt.
    *
-   * Altdaten tragen ihn weiter im Rollentext; `herkunftVon` liest beide Formen,
-   * `rolleMitHerkunft` setzt sie fürs Anzeigen wieder zusammen.
+   * `herkunftVon` liest sie, `rolleMitHerkunft` setzt beide fürs Anzeigen
+   * wieder zusammen.
    */
   herkunft?: string
   bereichsKey?: QualificationKey | string // nötige Qualifikation für den Slot
@@ -249,7 +247,7 @@ export interface PartItem {
   /**
    * Stabile Kennung dieses Programmpunkts (T37).
    *
-   * Die Bestätigungen hingen bis August 2026 an der **Position**:
+   * Die Bestätigungen hingen einmal an der **Position**:
    * `"60|mid|part|2|1|0"` — Woche, Zusammenkunft, Abschnitt, *laufende Nummer
    * im Abschnitt*, Platz. Das ist die Ursache einer ganzen Reihe von Problemen:
    *
@@ -265,10 +263,14 @@ export interface PartItem {
    * Mit einer eigenen Kennung folgt die Bestätigung dem **Punkt**, nicht seinem
    * Platz in der Liste. Verschieben, Einfügen und Löschen lassen sie in Ruhe.
    *
-   * Optional, weil Wochen aus der Zeit davor sie nicht haben; die Lade-Migration
-   * (`migrateItemIds`) trägt sie nach und benennt die Bestätigungen einmalig mit.
+   * **Pflichtfeld**, und deshalb gibt es den Aufgaben-Schlüssel nur in einer
+   * Form. Die Kennung entsteht dort, wo der Punkt entsteht: beim Import
+   * (`parse.ts`) und beim Einfügen von Hand (`meeting-edit.ts`). Sie war eine
+   * Zeit lang optional und wurde beim Laden nachgetragen — dafür musste der
+   * Ladevorgang in die Datenbank zurückschreiben, mitten in die Arbeit des
+   * Planers hinein.
    */
-  iid?: string
+  iid: string
   num?: number // laufende Nummer (kursiv, Bereichsfarbe)
   title: string
   meta?: string // Dauer / Quelle / Rahmen, z. B. "Von Haus zu Haus · 3 Min."
@@ -278,10 +280,10 @@ export interface PartItem {
    * `meta` ist Anzeigetext in der Sprache der Wochenseite: „3 Min.“, „3 分“,
    * „Dak. 3“, „٣ دق“. Die Minuten daraus zurückzulesen war der Fehler (T32) —
    * die Minuten-Knöpfe im Planen-Screen erschienen dadurch außerhalb des
-   * Deutschen gar nicht erst. Der Import legt die Zahl jetzt hier ab.
+   * Deutschen gar nicht erst. Der Import legt die Zahl hier ab.
    *
-   * Optional, weil Wochen aus der Zeit davor sie nicht haben; `itemMinutes`
-   * fällt für die auf `meta` zurück.
+   * Optional, weil nicht jeder Punkt eine Dauer hat: Lieder, Gebete und die
+   * Eröffnung ohne Zeitklammer tragen keine.
    */
   mins?: number
   names: SlotAssignment[] // Zuteilungen im Hauptsaal
@@ -304,8 +306,9 @@ export type ProgramItem = SongItem | PartItem
 
 /**
  * Ein Hilfsdienst-Platz (Mikrofon, Ton, Ordner …). Wie beim Programm-Slot ist
- * `pid` die stabile Identität; sie fehlt bei der Reinigungs-Rotation (dort steht
- * im Namen „Gruppe N") und bei Altdaten. `{ name: '' }` = offener Platz.
+ * `pid` die stabile Identität; sie fehlt bei der Reinigungs-Rotation (dort
+ * steht im Namen „Gruppe N") und bei Namen, die zu keiner eindeutigen Person
+ * gehören. `{ name: '' }` = offener Platz.
  */
 export interface HelperSlot {
   name: string
@@ -381,8 +384,8 @@ export interface Meeting {
  * Bewusst ein eigenes Feld statt eines Eintrags in `Meeting.date`: dort steht
  * **Anzeigetext** in der Sprache der Wochenseite. Aus Anzeigetext Werte
  * zurückzulesen war schon zweimal der Fehler (T32 die Minuten, T33 das Lied).
- * `Meeting.date` bleibt als Quelle bestehen — es trägt die Termine der
- * Alt-Datensätze —, hat aber den niedrigeren Rang.
+ * `Meeting.date` bleibt als Quelle bestehen — es trägt den Termin einer Woche
+ * mit eigenem Datum —, hat aber den niedrigeren Rang.
  */
 export interface Abweichung {
   /**
@@ -591,12 +594,6 @@ export interface Service {
   name: string
   count: number // 1..6
   groups?: boolean // Gruppen-Rotation (Reinigung: "Gruppe 1–3")
-  /**
-   * Nur Alt-Datensätze: der früher fest zugeordnete Bereichs-Key (z. B. teilten
-   * sich Eingangs- und Saalordner den Bereich `ordner`). Dient ausschließlich der
-   * Migration auf `svc:<key>` beim Laden — neue Dienste setzen das Feld nie.
-   */
-  legacyPriv?: string | null
 }
 
 /**
@@ -614,7 +611,7 @@ export interface Absence {
   id: string
   personId: string | null // verknüpfte Person — nur damit zählt sie für die Planung
   /**
-   * Ersteller — oder `null` bei importierten Einträgen (migration-021): Ein
+   * Ersteller — oder `null` bei importierten Einträgen: Ein
    * Import kennt die Person, nicht das Konto, und die meisten Verkündiger haben
    * gar keines. Für die Planung zählt ohnehin nur `personId`; `userId`
    * entscheidet allein, wessen „Deine Einträge" den Eintrag zeigt.
@@ -745,7 +742,7 @@ export type ConfirmationMap = Record<string, TaskStatus>
  *
  * Was hier steht, hat die eingeteilte Person schon erfahren — „Plan senden"
  * überspringt es. Geschrieben wird ausschließlich serverseitig
- * (`send-plan`, migration-024); der Client liest es nur zweierlei: ob ein Platz
+ * (`send-plan`); der Client liest es nur zweierlei: ob ein Platz
  * schon gemeldet wurde (`offeneMeldungen`, beschriftet den Knopf) und wann für
  * die Woche zuletzt etwas hinausging (`zuletztGesendet`).
  */
@@ -758,8 +755,7 @@ export interface Reminders {
   repeat: boolean // täglich wiederholen, bis bestätigt
   // Hier stand bis T99 `onAssign`: „beim Zuteilen sofort eine Mitteilung".
   // Sie ging an die **Planer**, nicht an den Zugeteilten — an ihre Stelle ist
-  // „Plan senden" getreten. Das Feld bleibt in `congregations.settings`
-  // bestehender Versammlungen stehen, gelesen wird es nirgends.
+  // „Plan senden" getreten.
 }
 
 /* ---- Zuteilungs-Sheet (Planen) ---- */

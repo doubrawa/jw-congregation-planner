@@ -13,7 +13,7 @@ function makeWeek(): Week {
         label: 'SCHÄTZE AUS GOTTES WORT',
         farbe: 'petrol',
         items: [
-          { num: 1, title: 'Über Jehovas Eigenschaften', meta: '10 Min.', names: [{ name: 'T. Lindner', bereichsKey: 'vortrag' }] },
+          { iid: 'i34', num: 1, title: 'Über Jehovas Eigenschaften', meta: '10 Min.', mins: 10, names: [{ name: 'Thomas Lindner', bereichsKey: 'vortrag' }] },
           { song: 'Lied 5' },
         ],
       },
@@ -21,15 +21,15 @@ function makeWeek(): Week {
         label: 'UNSER LEBEN ALS CHRIST',
         farbe: 'wein',
         items: [
-          { num: 6, title: 'Punkt A', meta: '15 Min.', names: [{ name: '', bereichsKey: 'vortrag' }] },
+          { iid: 'i33', num: 6, title: 'Punkt A', meta: '15 Min.', mins: 15, names: [{ name: '', bereichsKey: 'vortrag' }] },
           // Leiter **und** Leser — so legt `parse.ts` den letzten Unser-Leben-Punkt
           // immer an. Der Leser-Slot ist seit T61 die sprachunabhängige Marke, an
           // der `lacAddIndex` das Bibelstudium erkennt.
-          { num: 7, title: 'Versammlungsbibelstudium', meta: '30 Min.', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] },
+          { iid: 'i32', num: 7, title: 'Versammlungsbibelstudium', meta: '30 Min.', mins: 30, names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }] },
         ],
       },
     ],
-    helpers: { mik: [{ name: 'S. Krüger' }] },
+    helpers: { mik: [{ name: 'Simon Krüger' }] },
   }
   const altMid: Meeting = {
     date: 'Tuesday, September 8 · 19:00',
@@ -39,7 +39,7 @@ function makeWeek(): Week {
         label: 'TREASURES FROM GOD’S WORD',
         farbe: 'petrol',
         items: [
-          { num: 1, title: 'Jehovah’s Qualities', meta: '10 min.', names: [] },
+          { iid: 'i31', num: 1, title: 'Jehovah’s Qualities', meta: '10 min.', names: [] },
           { song: 'Song 5' },
         ],
       },
@@ -47,8 +47,8 @@ function makeWeek(): Week {
         label: 'LIVING AS CHRISTIANS',
         farbe: 'wein',
         items: [
-          { num: 6, title: 'Item A', meta: '15 min.', names: [] },
-          { num: 7, title: 'Congregation Bible Study', meta: '30 min.', names: [] },
+          { iid: 'i30', num: 6, title: 'Item A', meta: '15 min.', mins: 15, names: [] },
+          { iid: 'i29', num: 7, title: 'Congregation Bible Study', meta: '30 min.', names: [] },
         ],
       },
     ],
@@ -84,8 +84,8 @@ describe('localizedWeek (Sprachvarianten)', () => {
     expect(item.title).toBe('Jehovah’s Qualities')
     expect(item.meta).toBe('10 min.')
     // Zuteilungen bleiben kanonisch
-    expect(item.names[0].name).toBe('T. Lindner')
-    expect(en.mid.helpers.mik).toEqual([{ name: 'S. Krüger' }])
+    expect(item.names[0].name).toBe('Thomas Lindner')
+    expect(en.mid.helpers.mik).toEqual([{ name: 'Simon Krüger' }])
     // Lied aus der Variante
     expect(en.mid.sections[0].items[1]).toEqual({ song: 'Song 5' })
   })
@@ -222,7 +222,7 @@ describe('Sprachvarianten in fremden Schriften', () => {
           label: texte.label,
           farbe: 'petrol',
           items: [
-            { num: 1, title: texte.titel, meta: texte.meta, names: [] },
+            { iid: 'i28', num: 1, title: texte.titel, meta: texte.meta, mins: 10, names: [] },
             { song: texte.lied },
           ],
         },
@@ -230,8 +230,8 @@ describe('Sprachvarianten in fremden Schriften', () => {
           label: texte.lacTitel,
           farbe: 'wein',
           items: [
-            { num: 6, title: 'Punkt A', meta: '15 Min.', names: [] },
-            { num: 7, title: texte.vbsTitel, meta: '30 Min.', names: [] },
+            { iid: 'i27', num: 6, title: 'Punkt A', meta: '15 Min.', mins: 15, names: [] },
+            { iid: 'i26', num: 7, title: texte.vbsTitel, meta: '30 Min.', mins: 30, names: [] },
           ],
         },
       ],
@@ -307,16 +307,19 @@ describe('Sprachvarianten in fremden Schriften', () => {
       expect(ersterAbschnitt(lokal).items[1]).toEqual(ersterAbschnitt(quelle).items[1])
       // **Die Zuteilung bleibt kanonisch.** Die Variante trägt keine — würde
       // sie übernommen, stünde der Platz plötzlich leer da.
-      expect(punkt(lokal, 0).names[0]?.name).toBe('T. Lindner')
-      expect(lokal.mid.helpers.mik).toEqual([{ name: 'S. Krüger' }])
+      expect(punkt(lokal, 0).names[0]?.name).toBe('Thomas Lindner')
+      expect(lokal.mid.helpers.mik).toEqual([{ name: 'Simon Krüger' }])
     },
   )
 
-  it.each(['ar', 'ja'] as const)('%s: die Minuten bleiben lesbar', (code) => {
-    // Die Meta-Zeile kommt aus der Variante — in ihrer eigenen Schrift. Der
-    // Minuten-Rückfall muss sie trotzdem lesen können (T32).
+  it.each(['ar', 'ja'] as const)('%s: die Minuten bleiben die der kanonischen Woche', (code) => {
+    // Die Meta-Zeile kommt aus der Variante — in ihrer eigenen Schrift. Die
+    // **Zahl** kommt sie nicht: Sie steht als `mins` an der kanonischen Woche
+    // und ist in jeder Sprache dieselbe. Aus der Anzeige zurückzurechnen war
+    // der Fehler (T32).
     const lokal = localizedWeek(mitVarianten(), code)
-    expect(itemMinutes({ ...punkt(lokal, 0), mins: undefined })).toBe(10)
+    expect(itemMinutes(punkt(lokal, 0))).toBe(10)
+    expect(itemMinutes({ ...punkt(lokal, 0), mins: undefined })).toBeNull()
   })
 
   it.each(['ar', 'ja'] as const)('%s: abweichende Struktur → alles bleibt kanonisch', (code) => {

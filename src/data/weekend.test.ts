@@ -16,9 +16,9 @@ function weekendMeeting(): Meeting {
     date: 'Sonntag, 13. September · 10:00',
     end: 'Ende ca. 11:45',
     sections: [
-      { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
-      { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ title: TALK_PLACEHOLDER, meta: '30 Min.', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
-      { label: 'ABSCHLUSS', farbe: 'neutral', items: [{ title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
+      { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ iid: 'i59', title: 'Lied · Gebet', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' }, { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
+      { label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ iid: 'i58', title: TALK_PLACEHOLDER, meta: '30 Min.', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] },
+      { label: 'ABSCHLUSS', farbe: 'neutral', items: [{ iid: 'i57', title: 'Schlussworte · Lied · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] },
     ],
     helpers: {},
   }

@@ -25,7 +25,7 @@ function meeting(mitAufgabe: boolean): Meeting {
     date: '',
     end: '',
     sections: mitAufgabe
-      ? [{ label: 'SCHÄTZE', farbe: 'petrol', items: [{ title: 'Punkt', names: [{ name: 'A. B.', pid: 'p1', bereichsKey: 'bibellesung' }] }] }]
+      ? [{ label: 'SCHÄTZE', farbe: 'petrol', items: [{ iid: 'w1', title: 'Punkt', names: [{ name: 'Anna Beispiel', pid: 'p1', bereichsKey: 'bibellesung' }] }] }]
       : [],
     helpers: {},
   }

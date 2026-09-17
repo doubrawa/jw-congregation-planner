@@ -57,7 +57,7 @@ function zusammenkunft(namen: Array<{ name: string; pid?: string }>, helpers: Me
   return {
     date: '', end: '',
     sections: [
-      { label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol', items: [{ title: 'Punkt', meta: '', names: namen }] },
+      { label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol', items: [{ iid: 'i76', title: 'Punkt', meta: '', names: namen }] },
     ],
     helpers,
   }

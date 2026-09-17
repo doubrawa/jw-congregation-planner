@@ -48,15 +48,18 @@ export function overseerGroup(groups: readonly Group[], personId: string | null)
   return groups.find((g) => g.ov === personId || g.as === personId)?.id ?? null
 }
 
-/** Die Vorsitz-Bereiche (fest + Alt-Schlüssel), die je Zusammenkunft umzuschlüsseln sind. */
-const CHAIR_KEYS = new Set(['vorsitz', 'vorsitzMid', 'vorsitzWe'])
+/** Die beiden Vorsitz-Bereiche, die je Zusammenkunft umzuschlüsseln sind. */
+const CHAIR_KEYS = new Set(['vorsitzMid', 'vorsitzWe'])
 
 /**
  * Setzt den Bereichs-Schlüssel des Vorsitz-Slots je nach Zusammenkunft:
  * unter der Woche → `vorsitzMid`, Wochenende → `vorsitzWe`. So verlangt jeder
  * Slot genau die passende Qualifikation. Idempotent und referenz-erhaltend
- * (unveränderte Wochen behalten ihre Referenz). Deckt Alt-Daten mit dem
- * früheren gemeinsamen `vorsitz` beim Laden ab und normalisiert Demo/Vorlagen.
+ * (unveränderte Wochen behalten ihre Referenz).
+ *
+ * Gebraucht, weil eine Woche ihre Zusammenkunft wechseln kann: Eine verlegte
+ * Wochenend-Zusammenkunft bringt ihre Plätze mit, und der Vorsitz verlangt
+ * dann die andere Qualifikation.
  */
 export function normalizeChairKeys(weeks: Week[]): Week[] {
   let anyChanged = false
@@ -137,17 +140,11 @@ export function emptyQualifications(): Qualifications {
 /**
  * Anzeigename: voller Name ("Simon Krüger"); `dn` überschreibt ihn nur noch
  * bei echten Duplikaten (z. B. "Josef Mayer 1"). Zuteilungen in den Wochen
- * hängen an diesem String — Altbestände mit der früheren Kurzform
- * "V. Nachname" werden beim Laden migriert (migrateAssignmentNames in
- * lib/data.ts).
+ * tragen diesen String neben der `pid` — maßgeblich für die Zuordnung ist die
+ * Id (`gehoertZu`), der Name ist Anzeige und Rückfall.
  */
 export function displayName(p: Person): string {
   return p.dn || `${p.fn} ${p.ln}`.trim()
-}
-
-/** Frühere automatische Kurzform — nur noch für die Lade-Migration. */
-export function shortDisplayName(p: Person): string {
-  return `${(p.fn[0] ?? '') + '.'} ${p.ln}`.trim()
 }
 
 /** Initialen für Avatare: "SK"; leerer Datensatz → "–". */
@@ -420,39 +417,14 @@ export function* programmPlaetze(meeting: Meeting): Generator<ProgrammPlatz> {
 }
 
 /** Zeichen, das noch zu einem Namen gehört (Buchstabe oder Ziffer, jede Schrift). */
-const WORTZEICHEN = /[\p{L}\p{N}]/u
-
-/**
- * Steht `name` als eigenständiger Name im Rollentext („mit A. Hoffmann")?
- *
- * Bewusst kein blankes `rolle.includes(name)`: „Anna" steckt auch in „mit
- * Annalena Berg", und dann zählte Anna eine Aufgabe mit, die einer anderen
- * gehört — bei der Auto-Zuteilung genügt eine solche Phantom-Last, um jemanden
- * dauerhaft hinten anzustellen. Geprüft wird deshalb auf Wortgrenzen; ein
- * regulärer Ausdruck verbietet sich, weil Namen Sonderzeichen enthalten dürfen
- * („O'Brien", „Müller-Lüdenscheidt") und dann als Muster verstanden würden.
- */
-export function rolleNennt(rolle: string | undefined, name: string): boolean {
-  if (!rolle || !name) return false
-  for (let von = rolle.indexOf(name); von !== -1; von = rolle.indexOf(name, von + 1)) {
-    const davor = rolle[von - 1]
-    const danach = rolle[von + name.length]
-    if (!(davor && WORTZEICHEN.test(davor)) && !(danach && WORTZEICHEN.test(danach))) return true
-  }
-  return false
-}
-
 /**
  * Neue stabile Kennung für einen Programmpunkt (`PartItem.iid`, T37).
  *
- * Kurz und ohne `|`, weil der Aufgaben-Schlüssel daran zerlegt wird.
- * `crypto.randomUUID` gäbe es auch, wäre aber 36 Zeichen lang für eine Kennung,
- * die nur innerhalb **einer** Zusammenkunft eindeutig sein muss — Woche und
- * Zusammenkunft stehen im Schlüssel ohnehin davor.
+ * **Eine Definition für beide Seiten**: Der Import vergibt die Kennung in der
+ * Edge Function, das Einfügen von Hand im Browser. Sie liegt deshalb bei der
+ * geteilten Struktur und wird hier nur weitergereicht.
  */
-export function neueItemId(): string {
-  return Math.random().toString(36).slice(2, 10)
-}
+export { neueItemId } from '../../supabase/functions/_shared/zuteilungen.ts'
 
 /* ---- Sonderwochen: wenn eine Zusammenkunft von der Regel abweicht (T30) ---- */
 
@@ -509,11 +481,10 @@ export function aufseherGruppe(
  * Fremdschlüssel als ein falscher — der Name bleibt dann Text, und der Planer
  * entscheidet.
  *
- * Diese Regel stand in drei Fassungen nebeneinander (`migrateAssignmentPids`,
- * `fsMigrateLeaderPids` und, auf den Kurznamen bezogen,
- * `migrateAssignmentNames`). Sie entscheidet, wem eine Aufgabe gehört; eine
- * davon zu ändern und die anderen zu übersehen, hieße zwei Antworten auf
- * dieselbe Frage.
+ * Diese Regel stand einmal in mehreren Fassungen nebeneinander. Sie
+ * entscheidet, wem eine Aufgabe gehört; eine davon zu ändern und die anderen zu
+ * übersehen, hieße zwei Antworten auf dieselbe Frage. Heute fragen beide
+ * Datenquellen dieselbe Funktion (`pidsNachtragen`, `fsLeiterBinden`).
  */
 export function eindeutigeNamen(
   persons: readonly Person[],
@@ -699,12 +670,15 @@ export function rolleBasis(rolle: string | undefined): string {
 }
 
 /**
- * Heimatversammlung eines Redners — aus dem eigenen Feld, sonst aus dem
- * Rollentext (Altdaten: `"Gastredner · Vers. Nordheim"`).
+ * Heimatversammlung eines Redners — aus ihrem eigenen Feld.
+ *
+ * Sie stand einmal als zweites Atom **in** `rolle`
+ * (`"Gastredner · Vers. Nordheim"`), und `herkunftVon` las beide Formen. Ein
+ * Versammlungsname ist aber kein Teil einer Rolle: Über die Rolle entscheiden
+ * `isGuestRole` und die Auto-Zuteilung, die Herkunft wird nur angezeigt.
  */
 export function herkunftVon(slot: Zuteilung | undefined): string {
-  if (slot?.herkunft) return slot.herkunft
-  return (slot?.rolle ?? '').split(' · ').slice(1).join(' · ')
+  return slot?.herkunft ?? ''
 }
 
 /**
@@ -768,10 +742,6 @@ const BLOCK_ARTEN = new Set<SectionKind>(['eroeffnung', 'abschluss'])
  *    ganzen Block. Wer Vorsitz hat, las bisher „Lied 27 · Gebet · Einleitende
  *    Worte · Vorsitz" — drei Angaben, die ihn nichts angehen, und seine eigene
  *    ganz am Ende.
- *  - Begleiter-Rollen („mit A. Hoffmann") benennen keine eigene Aufgabe; dort
- *    trägt weiterhin der Titel. Geprüft wird mit Leerzeichen, wie es
- *    `buildS89ForSlot` beim Zerlegen derselben Form tut.
- *
  * Die Zusammenkunft ist der Zusammenhang: „Leiter" ist darin eindeutig, denn
  * Versammlungsbibelstudium und Wachtturm-Studium liegen in verschiedenen.
  *
@@ -785,7 +755,7 @@ export function zuteilungsLabel(
   title: string,
   rolle: string | undefined,
 ): string {
-  const r = eigeneRolle(rolle)
+  const r = rolle ?? ''
   if (!r) return title
   return istBlockAbschnitt(sectionLabel) ? r : `${title} · ${r}`
 }
@@ -825,15 +795,6 @@ export function istArt(section: Section, art: SectionKind): boolean {
 export function istBlockSektion(section: Section): boolean {
   const art = abschnittsArt(section)
   return art != null && BLOCK_ARTEN.has(art)
-}
-
-/**
- * Die Rolle, sofern sie eine eigene Aufgabe benennt — sonst "".
- * Begleiter-Rollen („mit A. Hoffmann") tun das nicht (siehe `zuteilungsLabel`).
- */
-export function eigeneRolle(rolle: string | undefined): string {
-  const r = rolle ?? ''
-  return r.startsWith('mit ') ? '' : r
 }
 
 /** Was eine Zuteilung über ihren Inhaber verrät — Slot, Ratgeber, Hilfsdienst. */
@@ -933,13 +894,12 @@ export function dieselbePerson(a: { name: string; pid?: string }, b: { name: str
 
 /**
  * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
- * Zählt wie der Prototyp auch Begleiter-Erwähnungen im Rollenlabel
- * ("mit A. Hoffmann") — wer begleitet, hat ebenfalls eine Aufgabe.
  *
- * Die Begleiter-Erwähnung ist die eine Stelle, die zwangsläufig über den Namen
- * geht: im Rollentext steht ein Name, keine Id. Namensgleiche sind dort nicht
- * unterscheidbar — deshalb warnt die App vor doppelten Anzeigenamen
- * (`duplicateDisplayNames`).
+ * Der Gesprächspartner eines Schülerteils zählt als eigene Aufgabe — er hat
+ * einen eigenen Platz (`schulungPartner`) und wird darüber mitgezählt. Er stand
+ * einmal als Beschriftung („mit A. Hoffmann") in der Rolle des Schülers, und
+ * die Auslastung suchte den Namen darin; das war die eine Stelle, an der die
+ * Zuordnung zwangsläufig über den Namen ging.
  *
  * Beide Räume zählen: ein Schülerteil in der Zusätzlichen Klasse (`item.aux`)
  * ist dieselbe Aufgabe wie im Hauptsaal, und der Ratgeber der Klasse ist
@@ -949,13 +909,8 @@ export function dieselbePerson(a: { name: string; pid?: string }, b: { name: str
  *
  * Beides aber nur, **solange die Klasse besteht**: beim Abschalten bleiben die
  * Namen absichtlich stehen, damit ein Wiedereinschalten sie wiederfindet.
- *
- * Die Begleiter-Erwähnung wird nur im Hauptsaal gezählt: `angleichen` kopiert
- * die Rollenbeschriftung in die Klasse ("Regeln folgen immer dem Hauptsaal"),
- * sie dort erneut zu zählen verdoppelte dieselbe Begleitung.
  */
 export function partWorkload(weeks: Week[], person: Person): number {
-  const name = displayName(person)
   let count = 0
   for (const week of weeks) {
     for (const tab of MEETING_TABS) {
@@ -971,12 +926,8 @@ export function partWorkload(weeks: Week[], person: Person): number {
       // Namen bewusst stehen (damit ein Wiedereinschalten sie hat), und ohne
       // diese Grenze schleppte die Auto-Zuteilung eine Last mit, die es gar
       // nicht mehr gibt.
-      for (const { slot, aux } of programmPlaetze(meeting)) {
+      for (const { slot } of programmPlaetze(meeting)) {
         if (gehoertZu(slot, person)) count++
-        // Die Begleiter-Erwähnung nur im Hauptsaal: `angleichen` kopiert die
-        // Rollenbeschriftung in die Klasse, sie dort erneut zu zählen
-        // verdoppelte dieselbe Begleitung.
-        if (!aux && rolleNennt(slot.rolle, name)) count++
       }
     }
   }

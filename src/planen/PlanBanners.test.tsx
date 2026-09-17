@@ -53,7 +53,7 @@ function abschnitt(): Section {
     label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol',
     items: [
       { song: 'Lied 12' },
-      {
+      { iid: 'i101',
         num: 7, title: 'Versammlungsbibelstudium', meta: '30 Min.',
         names: [
           { name: 'Max Alt', pid: 'p-a', rolle: 'Leiter', bereichsKey: 'vbsLeiter' },

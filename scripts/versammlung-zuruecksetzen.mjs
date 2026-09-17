@@ -25,7 +25,8 @@
  * (`build-personen-sql.mjs`) löscht sie dagegen **nicht** mehr.
  *
  * **Was gelöscht wird:** alle Wochen, Bestätigungen, Mitteilungen, Abwesenheiten,
- * Push-Abos, materialisierten Treffpunkte (`fs_weeks`), Erinnerungs-Logs — und
+ * Push-Abos, materialisierten Treffpunkte (`fs_weeks`), Erinnerungs-Logs, das
+ * Versand-Tagebuch (`assignment_log`) — und
  * die Personen und Gruppen, die anschließend aus dem Personen-Import-SQL mit
  * ihren festen IDs neu angelegt werden. Den SQL erzeugt
  * `nws-export/build-personen-sql.mjs` frisch aus den NWS-Daten (`--sql` unten).
@@ -135,11 +136,37 @@ export function parseKuratiert(sql) {
 
 /* ===================== Ausführung ======================================== */
 
-/** Tabellen mit `congregation_id`, die vollständig geleert werden (Reihenfolge egal). */
-const LEEREN = [
+/**
+ * Was ein Zurücksetzen mit welcher Tabelle macht — **drei** Listen, die
+ * zusammen jede Tabelle mit `congregation_id` aus `supabase/schema.sql`
+ * abdecken müssen. `versammlung-zuruecksetzen.test.ts` hält das nach.
+ *
+ * Ohne diese Probe muss sich jede neue Tabelle hier von selbst eintragen, und
+ * `assignment_log` hat das nicht getan: Das Versand-Tagebuch überlebte jedes
+ * Zurücksetzen mit Schlüsseln auf Wochen, die es nicht mehr gab.
+ *
+ * Die dritte Liste ist kein Formalismus. `persons` und `groups` standen erst
+ * bei den behaltenen, obwohl sie gelöscht werden — damit hätte die Probe genau
+ * die Lücke nicht mehr gesehen, gegen die sie geschrieben ist: Fiele ihr
+ * eigener Löschschritt heraus, wäre sie weiter grün.
+ */
+
+/** Tabellen, die dieses Skript vollständig leert (Reihenfolge egal). */
+export const LEEREN = [
   'confirmations', 'notifications', 'absences', 'weeks',
-  'push_subscriptions', 'fs_weeks', 'reminder_log',
+  'push_subscriptions', 'fs_weeks', 'reminder_log', 'assignment_log',
 ]
+
+/** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */
+export const NEU_ANGELEGT = ['persons', 'groups']
+
+/** Was stehen bleibt — je Tabelle mit Begründung. */
+export const BEHALTEN = {
+  members: 'die Konten samt Planer-Recht — der Sinn des Skripts',
+  invites: 'offene Einladungscodes bleiben gültig',
+  services: 'die Hilfsdienste der Versammlung (werden nur angelegt, wenn keine da sind)',
+  fs_rules: 'der Treffpunkt-Grundplan — er beschreibt die Versammlung, nicht eine Woche',
+}
 
 async function main() {
   const arg = argumente(process.argv.slice(2))

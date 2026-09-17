@@ -33,7 +33,7 @@ const DIENSTE: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: f
 
 /** Schülerteil mit Führer- und Partner-Platz, in beiden Räumen. */
 function wocheMitKlasse(fuehrerHaupt: string, fuehrerKlasse: string): Week {
-  const item: PartItem = {
+  const item: PartItem = { iid: 'i75',
     title: 'Gespräche beginnen',
     names: [
       { name: fuehrerHaupt, bereichsKey: 'schulung' },
@@ -329,7 +329,7 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
         sections: [
           {
             label: 'X', farbe: 'gold',
-            items: [{ title: 'Irgendetwas', names: [{ name: 'Emil Ernst', pid: 'l1' }] }],
+            items: [{ iid: 'i74', title: 'Irgendetwas', names: [{ name: 'Emil Ernst', pid: 'l1' }] }],
           },
         ],
         helpers: {},

@@ -169,7 +169,7 @@ describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 26)', () => {
     const w = woche()
     w.mid.sections = [{
       label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
-      items: [{ num: 4, title: 'Gespräche beginnen', meta: '', names: [{ name: '', bereichsKey: 'schulung' }] }],
+      items: [{ iid: 'i100', num: 4, title: 'Gespräche beginnen', meta: '', names: [{ name: '', bereichsKey: 'schulung' }] }],
     }]
     return syncAuxSlots([w], true)
   }

@@ -48,16 +48,16 @@ function abschnitte(): Section[] {
   return [
     {
       label: LABEL_EROEFFNUNG, farbe: 'neutral',
-      items: [{ title: 'Lied 12 · Gebet · Einleitende Worte', meta: '', names: [{ name: '', rolle: 'Vorsitz' }] }],
+      items: [{ iid: 'i108', title: 'Lied 12 · Gebet · Einleitende Worte', meta: '', names: [{ name: '', rolle: 'Vorsitz' }] }],
     },
     {
       label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol',
       items: [
-        { num: 1, title: 'Schätze', meta: '10 Min.', names: [{ name: 'Wer Anders', pid: 'p-x' }] },
-        { num: 3, title: 'Bibellesung', meta: '4 Min.', names: [{ name: '', bereichsKey: 'bibellesung' }] },
+        { iid: 'i107', num: 1, title: 'Schätze', meta: '10 Min.', names: [{ name: 'Wer Anders', pid: 'p-x' }] },
+        { iid: 'i106', num: 3, title: 'Bibellesung', meta: '4 Min.', names: [{ name: '', bereichsKey: 'bibellesung' }] },
       ],
     },
-    { label: LABEL_ABSCHLUSS, farbe: 'neutral', items: [{ title: 'Lied 99 · Gebet', meta: '', names: [{ name: '', rolle: 'Gebet' }] }] },
+    { label: LABEL_ABSCHLUSS, farbe: 'neutral', items: [{ iid: 'i105', title: 'Lied 99 · Gebet', meta: '', names: [{ name: '', rolle: 'Gebet' }] }] },
   ]
 }
 

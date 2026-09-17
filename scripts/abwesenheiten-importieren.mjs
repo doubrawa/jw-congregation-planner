@@ -5,9 +5,9 @@
  * **Warum es dieses Skript gibt.** Die Abwesenheiten standen bisher nur in NWS.
  * In die App kam nie eine — es gab schlicht keinen Weg dorthin —, und der
  * Personen-Neuaufbau (`build-personen-sql.mjs`) löschte die von Hand erfassten
- * obendrein mit. Die Planung liest `absences` aber versammlungsweit
- * (migration-015): Wer verreist ist, soll gar nicht erst eingeteilt werden.
- * Ohne diesen Import plant die App also gegen einen leeren Kalender.
+ * obendrein mit. Die Planung liest `absences` aber versammlungsweit: Wer
+ * verreist ist, soll gar nicht erst eingeteilt werden. Ohne diesen Import
+ * plant die App also gegen einen leeren Kalender.
  *
  * **Quelle.** `AwayPeriods` — NWS' „Abwesend"-Zeiträume (Person, von, bis).
  * Daneben führt NWS `UnavailablePeriods` („nicht verfügbar"): fachlich etwas
@@ -18,7 +18,8 @@
  *
  * **Person statt Konto.** Eine Abwesenheit gehört der Person; das Konto
  * (`user_id`) bleibt **leer** — der Import hat keinen Ersteller, und die
- * meisten Verkündiger haben gar kein Konto. Das setzt `migration-021` voraus
+ * meisten Verkündiger haben gar kein Konto. Das setzt eine `absences`-Tabelle
+ * mit `person_id` und nullbarer `user_id` voraus
  * (user_id NULL-bar + Schreibrecht über die eigene Person). Ohne sie weist die
  * Datenbank jede Zeile ab; das Skript sagt dann genau das.
  *
@@ -287,7 +288,7 @@ async function main() {
   }
 
   // In einem Rutsch — PostgREST nimmt ein Array. `user_id` bleibt leer: siehe
-  // Kopf dieser Datei (migration-021 muss gelaufen sein).
+  // Kopf dieser Datei (`absences.person_id` muss es geben).
   try {
     await rest('absences', {
       method: 'POST',
@@ -308,7 +309,7 @@ async function main() {
     if (/user_id/.test(text) && /null/i.test(text)) {
       console.error(
         '\nDie Datenbank verlangt noch einen Ersteller (user_id).\n' +
-        'Bitte zuerst supabase/migration-021-abwesenheit-import.sql ausführen.',
+        'Bitte zuerst supabase/schema.sql ausführen.',
       )
       process.exit(1)
     }

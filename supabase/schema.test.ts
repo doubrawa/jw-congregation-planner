@@ -1,37 +1,35 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * `schema.sql` ist der Einstieg für Neuinstallationen (README „Hosting"), und
- * jede Migration behauptet in ihrem Kopf „Neuinstallationen brauchen diese
- * Datei nicht — schema.sql enthält alles". Diese Zusage hielt niemand nach:
- * fs_rules, fs_weeks, is_group_overseer(), reminder_log und persons.fam waren
- * über Monate nur in den Migrationen zu finden. Wer der Anleitung folgte,
- * bekam eine Versammlung, in der die Treffpunkte tot waren und jedes Speichern
- * einer Person fehlschlug.
+ * `schema.sql` ist **die** Quelle des Datenbankschemas (README „Hosting").
  *
- * Der Test liest beide Seiten und vergleicht die erzeugten Objekte. Er kennt
- * kein SQL — er sucht die Muster, mit denen dieses Projekt Objekte anlegt.
+ * Bis zum 17. September 2026 lag daneben eine Kette von 25 Migrationen, und
+ * jede versicherte in ihrem Kopf „Neuinstallationen brauchen diese Datei nicht
+ * — schema.sql enthält alles". Niemand hielt das nach: fs_rules, fs_weeks,
+ * is_group_overseer(), reminder_log und persons.fam waren über Monate nur in
+ * den Migrationen zu finden. Wer der Anleitung folgte, bekam eine Versammlung,
+ * in der die Treffpunkte tot waren und jedes Speichern einer Person
+ * fehlschlug. Diese Suite verglich damals beide Seiten.
  *
- * ERWEITERT (T97), weil Namen zu prüfen nicht reicht: Am 23. August 2026 hat
- * ein Suchen-und-Ersetzen `schema.sql` zerrissen — `$$` fiel auf `$` zusammen
- * (die Datei ließ sich nicht mehr ausführen) und der Dateirest wurde sechsmal
- * eingespleißt. Von den sechs Fassungen jeder Richtlinie gewinnt beim Ausführen
- * die LETZTE, und das waren die alten, schwächeren von vor migration-022.
- * Diese Suite blieb dabei grün: `create function public.task_gehoert_mir`
- * stand ja weiterhin da — nur eben in einer Datei, die keine Datenbank je
- * angenommen hätte, und mit einem Rumpf, der die Rechteprüfung nicht enthielt.
+ * **Die Kette ist gestrichen** — die App war noch nicht ausgerollt, also war
+ * eine zweite Quelle nur Last. Damit entfällt der Vergleich; was bleibt, sind
+ * die Proben an der Datei selbst, und die sind der eigentliche Grund, warum es
+ * diese Suite gibt:
  *
- * Die drei Proben unten schließen genau das: vollständige Dollar-Rümpfe, jede
- * Richtlinie genau einmal, und jeder Rumpf so wie in der jüngsten Migration.
+ * Am 23. August 2026 hat ein Suchen-und-Ersetzen `schema.sql` zerrissen — `$$`
+ * fiel auf `$` zusammen (die Datei ließ sich nicht mehr ausführen) und der
+ * Dateirest wurde sechsmal eingespleißt. Von den sechs Fassungen jeder
+ * Richtlinie gewinnt beim Ausführen die LETZTE, und das waren die alten,
+ * schwächeren. Die Suite blieb dabei grün: `create function
+ * public.task_gehoert_mir` stand ja weiterhin da — nur eben in einer Datei,
+ * die keine Datenbank je angenommen hätte, und mit einem Rumpf, der die
+ * Rechteprüfung nicht enthielt.
  */
 
 const dir = import.meta.dirname
 const schema = readFileSync(join(dir, 'schema.sql'), 'utf8')
-const migrationen = readdirSync(dir)
-  .filter((f) => /^migration-\d+.*\.sql$/.test(f))
-  .sort()
 
 /** Alle Vorkommen der ersten Gruppe eines globalen Musters. */
 function treffer(sql: string, muster: RegExp): string[] {
@@ -40,7 +38,6 @@ function treffer(sql: string, muster: RegExp): string[] {
 
 const TABELLEN = /create table if not exists public\.(\w+)/g
 const FUNKTIONEN = /create (?:or replace )?function public\.(\w+)/g
-const SPALTEN = /alter table public\.(\w+)\s+add column if not exists (\w+)/g
 
 /**
  * Eine Richtlinie vom Namen bis zum abschließenden `;`. Trägt keine der
@@ -77,68 +74,16 @@ function funktionsRuempfe(sql: string): Map<string, string> {
   return m
 }
 
-/** Letzte Fassung je Name über die Migrationskette — die gilt beim Ausführen. */
-function juengste(lies: (sql: string) => Map<string, string>): Map<string, { datei: string; rumpf: string }> {
-  const out = new Map<string, { datei: string; rumpf: string }>()
-  for (const datei of migrationen) {
-    const sql = readFileSync(join(dir, datei), 'utf8')
-    for (const [name, rumpf] of lies(sql)) out.set(name, { datei, rumpf })
-  }
-  return out
-}
-
-describe('schema.sql deckt die Migrationskette ab', () => {
-  it('überhaupt Migrationen gefunden', () => {
-    // Sonst ginge der Test grün durch, ohne etwas zu prüfen.
-    expect(migrationen.length).toBeGreaterThan(10)
+describe('schema.sql ist vollständig, ausführbar und eindeutig', () => {
+  it('die Proben greifen überhaupt', () => {
+    // Gegenprobe zur Gegenprobe: Fänden die Muster nichts, gingen alle Fälle
+    // unten leer und damit grün durch — die Zusage wäre wertlos.
+    expect(treffer(schema, TABELLEN).length).toBeGreaterThan(10)
+    expect(richtlinien(schema).size).toBeGreaterThan(5)
+    expect(funktionsRuempfe(schema).size).toBeGreaterThan(3)
   })
 
-  it('jede in einer Migration angelegte Tabelle steht auch im Schema', () => {
-    const imSchema = new Set(treffer(schema, TABELLEN))
-    const fehlend: string[] = []
-    for (const datei of migrationen) {
-      const sql = readFileSync(join(dir, datei), 'utf8')
-      for (const tabelle of treffer(sql, TABELLEN)) {
-        if (!imSchema.has(tabelle)) fehlend.push(`${tabelle} (${datei})`)
-      }
-    }
-    expect(fehlend).toEqual([])
-  })
-
-  it('jede in einer Migration angelegte Funktion steht auch im Schema', () => {
-    const imSchema = new Set(treffer(schema, FUNKTIONEN))
-    const fehlend: string[] = []
-    for (const datei of migrationen) {
-      const sql = readFileSync(join(dir, datei), 'utf8')
-      for (const fn of treffer(sql, FUNKTIONEN)) {
-        if (!imSchema.has(fn)) fehlend.push(`${fn}() (${datei})`)
-      }
-    }
-    expect(fehlend).toEqual([])
-  })
-
-  it('jede nachträglich ergänzte Spalte steht im Schema — in der Tabelle oder als alter', () => {
-    const fehlend: string[] = []
-    for (const datei of migrationen) {
-      const sql = readFileSync(join(dir, datei), 'utf8')
-      for (const [, tabelle, spalte] of sql.matchAll(SPALTEN)) {
-        // Der Spaltenname muss im Schema vorkommen — entweder direkt in der
-        // create-table-Anweisung oder als gleichlautendes alter.
-        const block = schema.match(
-          new RegExp(`create table if not exists public\\.${tabelle}\\s*\\(([\\s\\S]*?)\\n\\);`, 'i'),
-        )
-        const alterDa = new RegExp(
-          `alter table public\\.${tabelle}[\\s\\S]{0,80}?add column if not exists ${spalte}\\b`,
-          'i',
-        ).test(schema)
-        const inTabelle = block ? new RegExp(`^\\s*${spalte}\\s`, 'im').test(block[1]) : false
-        if (!alterDa && !inTabelle) fehlend.push(`${tabelle}.${spalte} (${datei})`)
-      }
-    }
-    expect(fehlend).toEqual([])
-  })
-
-  it('jede Tabelle im Schema hat Row-Level-Security', () => {
+  it('jede Tabelle hat Row-Level-Security', () => {
     // Eine Tabelle ohne RLS wäre für jedes angemeldete Konto frei lesbar —
     // die Mandantentrennung hängt vollständig daran.
     const ohne = treffer(schema, TABELLEN).filter(
@@ -146,9 +91,7 @@ describe('schema.sql deckt die Migrationskette ab', () => {
     )
     expect(ohne).toEqual([])
   })
-})
 
-describe('schema.sql ist ausführbar und eindeutig', () => {
   it('jede Funktion hat einen vollständigen Dollar-Rumpf', () => {
     // `as $` statt `as $$` ist für PostgreSQL ein Syntaxfehler: Die ganze
     // Datei bricht ab, und zwar VOR jedem `enable row level security`. Eine
@@ -160,70 +103,31 @@ describe('schema.sql ist ausführbar und eindeutig', () => {
     expect(ohneRumpf, 'Funktion ohne geschlossenen $$-Rumpf').toEqual([])
   })
 
-  it('jede Richtlinie steht genau einmal im Schema', () => {
+  it('jede Richtlinie steht genau einmal', () => {
     // Beim Ausführen gewinnt die letzte Fassung: `drop policy if exists` +
     // `create policy` heißt, dass eine zweite Kopie die erste still ersetzt.
     // Zwei Fassungen derselben Richtlinie sind deshalb nie „doppelt gemoppelt",
     // sondern immer eine Frage danach, welche gilt.
     const mehrfach = [...schema.matchAll(/create policy (\w+) on/g)]
       .map((m) => m[1])
-      .reduce<Record<string, number>>((acc, n) => ({ ...acc, [n]: (acc[n] ?? 0) + 1 }), {})
-    expect(Object.entries(mehrfach).filter(([, n]) => n > 1)).toEqual([])
+      .filter((name, i, alle) => alle.indexOf(name) !== i)
+    expect([...new Set(mehrfach)], 'Richtlinie mehrfach angelegt').toEqual([])
   })
 
-  it('keine Richtlinie trägt ein Semikolon im Rumpf', () => {
-    // Sonst zerschneidet das Muster oben die Rümpfe an der falschen Stelle und
-    // die Vergleichsproben würden Unfug melden — oder, schlimmer, Unfug
-    // durchwinken. Trifft das eines Tages nicht mehr zu, ist dieser Fall der
-    // Ort, an dem es auffällt.
-    const bloecke = [...schema.matchAll(/create policy \w+ on public\.\w+([\s\S]*?);/g)]
-    expect(bloecke.length).toBeGreaterThan(20)
-    expect(bloecke.filter((b) => b[1].includes(';')).map((b) => b[0].slice(0, 60))).toEqual([])
-  })
-})
-
-describe('schema.sql trägt die jüngste Fassung jeder Regel', () => {
-  /**
-   * Die Namensproben oben sagen nur, DASS es etwas gibt. Hier geht es darum,
-   * WAS darin steht: Eine Migration, die eine Richtlinie verschärft, muss auch
-   * im Schema ankommen — sonst bekommt jede Neuinstallation die alte, laxe
-   * Fassung, und niemand merkt es, weil der Name ja stimmt.
-   */
-  it('jede Richtlinie aus der Kette steht im Schema — mit demselben Rumpf', () => {
-    const imSchema = richtlinien(schema)
-    const abweichend: string[] = []
-    for (const [name, { datei, rumpf }] of juengste(richtlinien)) {
-      const hier = imSchema.get(name)
-      if (hier === undefined) abweichend.push(`${name} fehlt im Schema (${datei})`)
-      else if (hier !== rumpf) abweichend.push(`${name} weicht von ${datei} ab`)
-    }
-    expect(abweichend).toEqual([])
-  })
-
-  it('jede Funktion aus der Kette steht im Schema — mit demselben Rumpf', () => {
-    const imSchema = funktionsRuempfe(schema)
-    const abweichend: string[] = []
-    for (const [name, { datei, rumpf }] of juengste(funktionsRuempfe)) {
-      const hier = imSchema.get(name)
-      if (hier === undefined) abweichend.push(`${name}() fehlt im Schema (${datei})`)
-      else if (hier !== rumpf) abweichend.push(`${name}() weicht von ${datei} ab`)
-    }
-    expect(abweichend).toEqual([])
-  })
-
-  it('die Proben greifen überhaupt', () => {
-    // Gegenprobe zur Gegenprobe: Fände `juengste()` nichts, gingen beide Fälle
-    // oben leer und damit grün durch — die Zusage wäre wertlos.
-    expect(juengste(richtlinien).size).toBeGreaterThan(5)
-    expect(juengste(funktionsRuempfe).size).toBeGreaterThan(3)
+  it('jede Funktion steht genau einmal', () => {
+    // Dasselbe eine Ebene tiefer: `create or replace` ersetzt still.
+    const mehrfach = treffer(schema, FUNKTIONEN).filter(
+      (name, i, alle) => alle.indexOf(name) !== i,
+    )
+    expect([...new Set(mehrfach)], 'Funktion mehrfach angelegt').toEqual([])
   })
 })
 
 describe('die Rechteprüfungen stehen im Schema', () => {
   /**
    * Drei Regeln, die je einen gemessenen Missbrauch abstellen. Sie stehen hier
-   * einzeln, weil die Vergleichsproben oben nur „Schema = jüngste Migration"
-   * sichern: Verschwände die Bedingung aus BEIDEN, bliebe das unbemerkt.
+   * einzeln und wörtlich, weil eine Datei, die nur mit sich selbst verglichen
+   * wird, jede Abschwächung mitmacht.
    */
   it('bestätigen darf nur, wem die Aufgabe gehört (T89)', () => {
     const rumpf = richtlinien(schema).get('confirmations_write') ?? ''
@@ -242,5 +146,25 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     const rumpf = richtlinien(schema).get('absences_write') ?? ''
     const check = rumpf.slice(rumpf.indexOf('with check'))
     expect(check).toContain('person_id is null or person_id = public.my_person_id()')
+  })
+})
+
+describe('kein Altbestand mehr im Schema', () => {
+  it('der Aufgaben-Schlüssel kennt nur noch die stabile Kennung', () => {
+    // Die positionsbasierte Form (`…|part|<si>|<ii>|<ni>`, sechs Felder) fiel
+    // mit der Altlasten-Räumung weg: Jeder Programmpunkt trägt seit dem Import
+    // seine `iid`. Bliebe der Zweig stehen, akzeptierte die Datenbank weiter
+    // Schlüssel, die der Client nie schreibt — eine offene Fläche ohne Nutzen.
+    const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
+    expect(fn).not.toContain('n = 6')
+  })
+
+  it('services trägt keine priv-Spalte mehr', () => {
+    // Jeder Dienst leitet seinen Bereich aus dem Key ab (`svc:<key>`); die
+    // Spalte hielt nur die frühere feste Zuordnung fest.
+    const block = schema.match(
+      /create table if not exists public\.services\s*\(([\s\S]*?)\n\);/i,
+    )
+    expect(block?.[1] ?? '').not.toMatch(/^\s*priv\s/m)
   })
 })

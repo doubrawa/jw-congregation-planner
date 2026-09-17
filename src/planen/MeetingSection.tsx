@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useApp } from '../app/context'
 import { istSchuelerteil } from '../data/aux-class'
-import { rolleMitHerkunft, istArt, eigeneRolle, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import {
   closingSongNr,
   hatLiedPlatz,
@@ -97,7 +97,7 @@ export function MeetingSection({
     // Die Rolle in der Sprache des Lesers (`tu`), nicht der Versammlung: sie
     // gehört zur Bedienung, nicht zum Programmtext. Über `tpw` stand sie in
     // einer anderen Sprache als dieselbe Rolle im Banner darüber.
-    const rolle = eigeneRolle(rolleMitHerkunft(slot))
+    const rolle = rolleMitHerkunft(slot) ?? ''
     // **Auch der leere Platz nennt seine Rolle.** Vorher stand hier nur
     // „— zuteilen": Beim Versammlungsbibelstudium bekam der Planer zwei
     // gleich aussehende Knöpfe zu sehen und musste antippen, um zu erfahren,
@@ -119,7 +119,7 @@ export function MeetingSection({
     // des Lesers, der Titel in die der Versammlung (siehe SlotSelection.label).
     // Im Sheet-Titel den Raum nennen — sonst sieht man beim Zuteilen nicht, ob
     // man gerade den Hauptsaal oder die Zusätzliche Klasse besetzt.
-    const rolle = eigeneRolle(rolleMitHerkunft(slot))
+    const rolle = rolleMitHerkunft(slot) ?? ''
     const raum = aux ? t.auxKlasse : ''
     dispatch({
       type: 'openSlot',
@@ -291,7 +291,7 @@ export function MeetingSection({
                       text={partChipText(slot)}
                       open={!slot.name}
                       showStatus={Boolean(slot.name) && !isGuestRole(slot.rolle) && zusage.moeglich(mtab(state.tab))}
-                      status={zusage.teil(mtab(state.tab), keyItem, si, ii, ni, aux)}
+                      status={zusage.teil(mtab(state.tab), keyItem, ni, aux)}
                       konflikt={betrifft(slot)}
                       onClick={() => openPartSlot(ii, ni, item, slot, aux)}
                     />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications, gehoertZu, partWorkload } from './helpers'
-import { fsDropPersonPid, fsMigrateLeaderPids, fsRenameLeader } from './fs'
+import { fsDropPersonPid, fsLeiterBinden, fsRenameLeader } from './fs'
 import { assignSlot } from './planning'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import type { FsInstance, Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
@@ -40,7 +40,7 @@ function makeWeek(): Week {
         label: 'UNS IM DIENST VERBESSERN',
         farbe: 'gold',
         items: [
-          {
+          { iid: 'i56',
             title: 'Gespräche beginnen',
             names: [{ name: 'Anna Beispiel', pid: ANNA.id, bereichsKey: 'schulung' }],
             aux: [{ name: 'Anna Beispiel', pid: ANNA.id, bereichsKey: 'schulung' }],
@@ -208,7 +208,7 @@ describe('Treffpunkte: dieselbe Regel', () => {
    */
   it('bindet Leiter ohne lpid beim Laden wieder an ihre Person', () => {
     const vorher = [[inst('a', 'Anna Beispiel'), inst('b', 'Gruppe 2')]]
-    const next = fsMigrateLeaderPids(vorher, [ANNA])
+    const next = fsLeiterBinden(vorher, [ANNA])
     expect(next[0]![0]!.lpid).toBe(ANNA.id)
     expect(next[0]![1]!.lpid).toBeUndefined() // Gruppenname meint keine Person
   })
@@ -216,10 +216,10 @@ describe('Treffpunkte: dieselbe Regel', () => {
   it('ordnet mehrdeutige Namen nicht zu und lässt gesetzte lpid in Ruhe', () => {
     const zwilling: Person = { ...ANNA, id: 'p-zwilling' }
     const doppelt = [[inst('a', 'Anna Beispiel')]]
-    expect(fsMigrateLeaderPids(doppelt, [ANNA, zwilling])).toBe(doppelt)
+    expect(fsLeiterBinden(doppelt, [ANNA, zwilling])).toBe(doppelt)
 
     const gesetzt = [[inst('a', 'Anna Beispiel', 'schon')]]
-    expect(fsMigrateLeaderPids(gesetzt, [ANNA])).toBe(gesetzt)
+    expect(fsLeiterBinden(gesetzt, [ANNA])).toBe(gesetzt)
   })
 })
 

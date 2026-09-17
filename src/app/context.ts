@@ -157,7 +157,7 @@ export interface AppState {
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   /**
    * Versand-Tagebuch: welcher Platz wurde mit welchem Namen schon gemeldet
-   * (migration-024). Nur zum Anzeigen im Planen — geschrieben wird es
+   * (`assignment_log`). Nur zum Anzeigen im Planen — geschrieben wird es
    * ausschließlich von der Edge Function `send-plan` mit der Service-Role.
    */
   sentLog: SentLog

@@ -27,11 +27,8 @@ import { APP_LANGS } from '../i18n/langs'
 import { isSupabaseConfigured } from '../lib/supabase'
 import type { Lang, MeetingTab, Screen, Theme } from '../data/types'
 import type { AppState } from './context'
-/** Alte gespeicherte Werte (vor den 8 Farbschemata) auf Paletten mappen. */
-const LEGACY_THEME: Record<string, Theme> = { light: 'weiss', dark: 'graphit' }
 function asTheme(value: string | null): Theme | null {
   if (!value) return null
-  if (LEGACY_THEME[value]) return LEGACY_THEME[value]
   return THEME_LIST.some((t) => t.key === value) ? (value as Theme) : null
 }
 function getInitialTheme(): Theme {

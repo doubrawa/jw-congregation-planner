@@ -23,7 +23,7 @@ describe('Ersatz-Texte', () => {
     }
   })
 
-  it('unbekannt oder fehlend → Deutsch (Abos von vor migration-014)', () => {
+  it('unbekannt oder fehlend → Deutsch', () => {
     for (const lang of [null, undefined, '', 'kli']) {
       expect(substituteTexte(lang).gesucht).toBe(TITEL_GESUCHT)
       expect(substituteTexte(lang).gefunden).toBe(TITEL_GEFUNDEN)

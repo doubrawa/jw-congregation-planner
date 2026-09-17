@@ -10,7 +10,7 @@
  * beide Meldungen fest auf Deutsch heraus, in allen 34 Sprachen.
  *
  * Die Sprache steht am Push-Abo (push_subscriptions.lang), also je Gerät.
- * Fehlt sie (Abos von vor migration-014), gilt Deutsch.
+ * Fehlt sie, gilt Deutsch.
  *
  * Der **Rumpf** wird bewusst nicht hier übersetzt: er besteht aus Dienstname,
  * Termin und Personenname, die als ` · `-getrennte Atome in die Glocke gehen

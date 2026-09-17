@@ -9,7 +9,7 @@ import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsKennung, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, fsWochenKennungen, regenFsWeeks } from '../data/fs'
-import { displayName, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
+import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
 import { localizedWeeks } from '../data/localize'
 import { alsFreitext } from '../i18n/translate'
@@ -23,18 +23,14 @@ import {
   deriveMyTasks,
   deriveSubstituteReqs,
   helperKeyParts,
-  shiftPartConfirmations,
-  swapPartConfirmations,
+  itemZusagenKeys,
   wochenIndex,
 } from '../data/planning'
 import {
   editTalkTheme,
-  itemNameCount,
   lacAdd,
-  lacAddIndex,
   lacAdjust,
   lacMove,
-  lacMoveTarget,
   lacRemove,
   endeAusStartzeit,
   endenNachziehen,
@@ -953,21 +949,24 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks: lacAdjust(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.delta),
       }
     case 'lacRemove': {
-      // Die folgenden Punkte rutschen eine Position nach vorn; task_keys sind
-      // positionsbasiert, also müssen die Bestätigungen mit. Sonst erbt der
-      // nachfolgende Punkt die fremde Bestätigung.
-      const verschoben = shiftPartConfirmations(
-        state.confirmations,
-        state.weeks[state.week]?.start ?? '',
-        mtab(state.tab),
-        action.si,
-        action.ii,
-        -1,
-      )
+      // Die Bestätigungen des gelöschten Punkts verfallen mit ihm. Die übrigen
+      // bleiben unberührt — ihr Schlüssel trägt die Kennung ihres Punkts, nicht
+      // dessen Position, also verschiebt ein Löschen daran nichts.
+      const geloescht = state.weeks[state.week]?.[mtab(state.tab)].sections[action.si]?.items[action.ii]
+      const verfallen =
+        geloescht && !isSong(geloescht)
+          ? itemZusagenKeys(
+              state.confirmations,
+              state.weeks[state.week]?.start ?? '',
+              mtab(state.tab),
+              geloescht.iid,
+            )
+          : []
+      const confirmations = dropConfirmations(state.confirmations, verfallen)
       return {
         ...state,
         weeks: lacRemove(state.weeks, state.week, mtab(state.tab), action.si, action.ii),
-        confirmations: verschoben.map,
+        confirmations,
         toast: toastKey(state, 'toastLacDel'),
       }
     }
@@ -984,48 +983,18 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           : unlinkFamily(state.persons, action.memberId),
       }
     case 'lacMove': {
+      // Die Bestätigungen bleiben, wo sie sind: Sie hängen an der Kennung des
+      // Punkts, und die nimmt er beim Verschieben mit.
       const weeks = lacMove(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.dir)
       if (weeks === state.weeks) return state // Rand: kein Tausch
-      // Bestätigungen der beiden getauschten Positionen mitnehmen (task_keys
-      // sind positionsbasiert) — sonst erbt der Nachbar den fremden Status.
-      const items = state.weeks[state.week]?.[mtab(state.tab)].sections[action.si]?.items ?? []
-      const b = lacMoveTarget(items, action.ii, action.dir)
-      const a = items[action.ii]
-      const bItem = b == null ? undefined : items[b]
-      const confirmations =
-        b == null || !a || !bItem
-          ? state.confirmations
-          : swapPartConfirmations(
-              state.confirmations,
-              state.weeks[state.week]?.start ?? '',
-              mtab(state.tab),
-              action.si,
-              action.ii,
-              b,
-              Math.max(itemNameCount(a), itemNameCount(bItem)),
-            )
-      return { ...state, weeks, confirmations }
+      return { ...state, weeks }
     }
     case 'lacAdd': {
       const weeks = lacAdd(state.weeks, state.week, mtab(state.tab), action.si, action.title)
       if (weeks === state.weeks) return state // leerer Titel
-      // Ab der Einfügestelle rutschen alle Punkte eine Position weiter — die
-      // Bestätigungen müssen mit, sonst hängen sie am falschen Punkt.
-      const at = lacAddIndex(state.weeks[state.week]?.[mtab(state.tab)].sections[action.si]?.items ?? [])
-      const verschoben = shiftPartConfirmations(
-        state.confirmations,
-        state.weeks[state.week]?.start ?? '',
-        mtab(state.tab),
-        action.si,
-        at,
-        1,
-      )
-      return {
-        ...state,
-        weeks,
-        confirmations: verschoben.map,
-        toast: toastKey(state, 'toastLacAdd'),
-      }
+      // Der neue Punkt bringt seine eigene Kennung mit und kann deshalb keine
+      // fremde Bestätigung erben; die bestehenden rühren sich nicht.
+      return { ...state, weeks, toast: toastKey(state, 'toastLacAdd') }
     }
     case 'setAbweichung': {
       if (!state.weeks[state.week]) return state

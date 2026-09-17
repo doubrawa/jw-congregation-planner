@@ -185,7 +185,7 @@ describe('sammleNwsWochen', () => {
   it('sammelt Hilfsdienste je Zusammenkunft, Dienst 7 bleibt aus', () => {
     const { mid, we } = sammleNwsWochen(nwsTabellen(), nameOf, groupOf).get('2026-08-17')!
     expect(mid.helpers).toEqual({
-      saal: ['P1'], ord: ['P2'], rund: ['P3'], mik: ['P4', 'P5', 'P6'], ton: ['P7'], zoom: ['P8'],
+      saal: ['P1'], eingang: ['P2'], rund: ['P3'], mik: ['P4', 'P5', 'P6'], ton: ['P7'], zoom: ['P8'],
     })
     expect(mid.helpers.rein).toBeUndefined() // Reinigung steht separat in `cleaning`
     expect(mid.cleaning).toBe('Gruppe 6') // NWS-Gruppe (Typ 15, d:1) → App-Gruppe
@@ -254,7 +254,7 @@ describe('gruppenNamensAufloeser', () => {
 describe('dutySlot / meetingOfDuty', () => {
   it('dekodiert Dienst und Position — Duty4 (Mikrofone) hat 4 Positionen', () => {
     expect(dutySlot(28)).toEqual({ key: 'saal', pos: 1 })
-    expect(dutySlot(30)).toEqual({ key: 'ord', pos: 1 })
+    expect(dutySlot(30)).toEqual({ key: 'eingang', pos: 1 })
     expect(dutySlot(32)).toEqual({ key: 'rund', pos: 1 })
     expect(dutySlot(34)).toEqual({ key: 'mik', pos: 1 })
     expect(dutySlot(35)).toEqual({ key: 'mik', pos: 2 })
@@ -313,7 +313,7 @@ describe('verteileWoche', () => {
   it('trägt die Hilfsdienste je Zusammenkunft in meeting.helpers ein (mit pid)', () => {
     const { data, z } = fuellen()
     expect(data.mid.helpers.saal).toEqual([{ name: 'P1', pid: 'id-P1' }])
-    expect(data.mid.helpers.ord).toEqual([{ name: 'P2', pid: 'id-P2' }])
+    expect(data.mid.helpers.eingang).toEqual([{ name: 'P2', pid: 'id-P2' }])
     expect(data.mid.helpers.rund).toEqual([{ name: 'P3', pid: 'id-P3' }])
     expect(data.mid.helpers.mik).toEqual([
       { name: 'P4', pid: 'id-P4' }, { name: 'P5', pid: 'id-P5' }, { name: 'P6', pid: 'id-P6' },

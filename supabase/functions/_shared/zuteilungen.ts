@@ -55,14 +55,54 @@ export interface FsInstance {
   lext?: boolean
 }
 
-export interface Item {
-  song?: string
+/** Lied zwischen Programmpunkten — traegt keine Zuteilung. */
+export interface SongItem {
+  song: string
+}
+
+export interface PartItem {
+  /**
+   * Stabile Kennung des Programmpunkts — Grundlage des Aufgaben-Schluessels.
+   *
+   * **Pflichtfeld, und das ist der Punkt.** Sie entsteht dort, wo der Punkt
+   * entsteht: beim Import (`parse.ts`) und beim Einfuegen von Hand
+   * (`meeting-edit.ts` im Client). Damit gibt es keinen Programmpunkt ohne
+   * Kennung, und der Aufgaben-Schluessel hat nur noch **eine** Form.
+   */
+  iid: string
   title?: string
-  /** Stabile Kennung des Programmpunkts (T37) — Grundlage des Aufgaben-Schluessels. */
-  iid?: string
   names?: Slot[]
   /** Zweite Platzreihe der Zusaetzlichen Klasse (jw.org S-38, Absatz 26). */
   aux?: Slot[]
+}
+
+export type Item = SongItem | PartItem
+
+/**
+ * Neue stabile Kennung fuer einen Programmpunkt — **genau acht Zeichen**.
+ *
+ * Kurz und ohne `|`, weil der Aufgaben-Schluessel daran zerlegt wird.
+ * `crypto.randomUUID` gaebe es auch, waere aber 36 Zeichen lang fuer eine
+ * Kennung, die nur innerhalb **einer** Zusammenkunft eindeutig sein muss —
+ * Woche und Zusammenkunft stehen im Schluessel ohnehin davor.
+ *
+ * **Die Schleife ist kein Zierrat.** `Math.random().toString(36).slice(2, 10)`
+ * allein hat keine Laengengarantie: Eine Zufallszahl mit wenigen signifikanten
+ * Stellen ergibt eine kuerzere Zeichenkette, bei `Math.random() === 0` sogar
+ * die leere. Gemessen an 3 Mio. Ziehungen: kuerzeste 6 Zeichen, 23 kuerzer als
+ * acht. Eine leere Kennung ergaebe den Schluessel `<woche>|mid|part||0`, und
+ * zwei solche Punkte derselben Zusammenkunft teilten sich eine Bestaetigung —
+ * wer fuer den einen zusagt, gaelte auch fuer den anderen als bestaetigt.
+ * Solange die Kennung ein Feld unter mehreren war, kostete das nichts; als
+ * alleiniger Schluessel traegt sie die ganze Zuordnung.
+ *
+ * Steht hier und nicht im Client, weil beide Seiten Punkte anlegen: der Import
+ * laeuft in der Edge Function, das Einfuegen von Hand im Browser.
+ */
+export function neueItemId(): string {
+  let id = ''
+  while (id.length < 8) id += Math.random().toString(36).slice(2)
+  return id.slice(0, 8)
 }
 
 export interface Section {
@@ -74,14 +114,8 @@ export interface Section {
   items?: Item[]
 }
 
-/**
- * Hilfsdienst-Platz. Aktuell ein Objekt { name, pid? }; Bestandsdaten in der DB
- * können noch reine Namens-Strings sein (siehe normalizeWeekHelpers in
- * src/lib/data.ts — der Client hebt sie beim Laden an, die DB behält das
- * Alt-Format aber, bis die Woche neu gespeichert wird). Beides muss hier
- * gelesen werden können.
- */
-export type HelperEntry = string | { name?: string; pid?: string } | null
+/** Hilfsdienst-Platz: `{ name, pid? }`, oder `null` fuer einen offenen Platz. */
+export type HelperEntry = { name?: string; pid?: string } | null
 
 export interface Meeting {
   date?: string
@@ -112,40 +146,20 @@ export interface SubscriptionRow {
   endpoint: string
   p256dh: string
   auth: string
-  /** App-Sprache des Geraets; null bei Abos von vor migration-014 → Deutsch. */
+  /** App-Sprache des Geraets; null → Deutsch. */
   lang: string | null
 }
 
 /* ---- Plätze lesen -------------------------------------------------------- */
 
-/** Name eines Hilfsdienst-Platzes; '' = unbesetzt (beide Datenformate). */
+/** Name eines Hilfsdienst-Platzes; '' = unbesetzt. */
 function helperName(entry: HelperEntry | undefined): string {
-  if (!entry) return ''
-  return typeof entry === 'string' ? entry : (entry.name ?? '')
+  return entry?.name ?? ''
 }
 
-/** Person-Id eines Hilfsdienst-Platzes; Alt-Format (reiner String) hat keine. */
+/** Person-Id eines Hilfsdienst-Platzes, wo eine Person dahintersteht. */
 function helperPid(entry: HelperEntry | undefined): string | undefined {
-  return entry && typeof entry !== 'string' ? entry.pid : undefined
-}
-
-/**
- * Kennung eines Treffpunkts ohne führende Wochennummer (T87).
- *
- * Der Client hebt beim Laden beides — die Kennungen im Blob und die
- * `task_key` der Bestätigungen. Der Versand liest den Blob aber **direkt aus
- * der Datenbank**, und der bleibt so lange auf dem alten Stand, bis ein Planer
- * die Woche das nächste Mal anfasst. Ohne diesen Griff rechnete er in der
- * Zwischenzeit mit `fs|<Montag>|3|r1`, während die Bestätigung längst
- * `fs|<Montag>|r1` heißt: Der Leiter hätte bestätigt und würde trotzdem weiter
- * erinnert.
- *
- * Regel-Kennungen sind `r<uuid>`, von Hand angelegte `x<uuid>` — eine Zahl
- * vorn hat nur der Altbestand.
- */
-function stabileKennung(instId: string): string {
-  const treffer = /^\d+\|(.+)$/.exec(instId)
-  return treffer?.[1] ?? instId
+  return entry?.pid
 }
 
 /**
@@ -209,7 +223,7 @@ export function pendingOfFsWeek(
   const out: Array<Pending & { offset: number; datum: string }> = []
   for (const inst of insts) {
     if (!inst?.leader || inst.lext) continue
-    const key = `fs|${woche}|${stabileKennung(inst.id)}`
+    const key = `fs|${woche}|${inst.id}`
     if (conf.has(key)) continue
     const offset = ((inst.wd ?? 1) + 6) % 7
     out.push({
@@ -225,13 +239,12 @@ export function pendingOfFsWeek(
 }
 
 /**
- * Unbestätigte Zuteilungen; task_key-Schema wie partTaskKey/helperTaskKey.
+ * Unbestätigte Zuteilungen; task_key-Schema wie itemTaskKey/helperTaskKey.
  *
- * Vorn steht seit T66 der **Montag der Woche** statt ihrer Position. Der
- * Positions-Schlüssel wurde eine Zeit lang mitgeprüft; seit Stufe 3 nicht mehr
- * — migration-018 hat den Rest umgeschrieben und die Spalte gelöscht, an der er
- * hing. Was jetzt noch positionsförmig wäre, zeigt auf eine Woche, die es nicht
- * gibt.
+ * Der Schlüssel hat **eine** Form: Montag der Woche, Zusammenkunft, Raum,
+ * Kennung des Punkts, Platz. Weder die Woche noch der Punkt werden über eine
+ * Ordnungszahl angesprochen — die Woche nicht mehr seit T66, der Punkt nicht
+ * mehr, seit der Import jedem Punkt seine Kennung mitgibt (`PartItem.iid`).
  */
 export function pendingOfMeeting(
   woche: string,
@@ -242,17 +255,25 @@ export function pendingOfMeeting(
 ): Pending[] {
   const out: Pending[] = []
   const sections = meeting.sections ?? []
-  /*
-   * Über `entries()` statt über Zählschleifen: Ein Index-Zugriff liefert unter
-   * `noUncheckedIndexedAccess` ein `| undefined`, und zwölf davon in einer
-   * Schleife wären zwölf Prüfungen, die alle nie zutreffen. Die Aufzählung
-   * gibt Nummer und Wert zusammen heraus — dieselbe Form, die `programmPlaetze`
-   * im Client benutzt. Die Nummern werden gebraucht: Sie bilden den
-   * positionsbasierten Aufgaben-Schlüssel für Punkte ohne `iid`.
-   */
-  for (const [si, section] of sections.entries()) {
-    for (const [ii, item] of (section.items ?? []).entries()) {
+  for (const section of sections) {
+    for (const item of section.items ?? []) {
       if ('song' in item) continue
+      /*
+       * **Ohne Kennung wird nicht erinnert.**
+       *
+       * `PartItem.iid` ist Pflichtfeld — aber hier kommt rohes JSON aus der
+       * Datenbank, und dort kann kein Typ etwas erzwingen. Fehlte die Kennung,
+       * lautete der Schlüssel `<woche>|mid|part|undefined|0`; die Bestätigung
+       * des Eingeteilten steht unter einem anderen, und er bekäme dieselbe
+       * Erinnerung Tag für Tag, ohne dass jemand die Ursache sähe.
+       *
+       * Lieber gar nicht erinnern und es in die Logs schreiben: Eine fehlende
+       * Erinnerung merkt der Planer, eine endlose merkt niemand.
+       */
+      if (!item.iid) {
+        console.error(`[zuteilungen] Punkt ohne Kennung (${woche}|${tab}): "${item.title ?? ''}"`)
+        continue
+      }
       // Hauptsaal ("part") und Zusätzliche Klasse ("aux") — gleichwertige
       // Zuteilungen mit eigenen Schlüsseln; ohne die zweite Runde bliebe die
       // halbe Klasse ohne Erinnerung. Ob es eine Klasse gibt, sagt der
@@ -263,22 +284,18 @@ export function pendingOfMeeting(
       for (const [abschnitt, names] of raeume) {
         for (const [ni, slot] of names.entries()) {
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-          // Schlüssel über die stabile Kennung des Punkts, sonst über seine
-          // Position **innerhalb** der Zusammenkunft (T37) — dieselbe Regel wie
-          // `slotTaskKey` im Client. Beide Formen werden geprüft, weil Punkte
-          // ohne `iid` erst beim nächsten Laden eine bekommen.
-          const posKey = `${woche}|${tab}|${abschnitt}|${si}|${ii}|${ni}`
-          const idKey = item.iid ? `${woche}|${tab}|${abschnitt}|${item.iid}|${ni}` : null
-          if (conf.has(posKey) || (idKey !== null && conf.has(idKey))) continue
+          // Schlüssel über die stabile Kennung des Punkts — dieselbe Regel wie
+          // `itemTaskKey` im Client.
+          const key = `${woche}|${tab}|${abschnitt}|${item.iid}|${ni}`
+          if (conf.has(key)) continue
           out.push({
             name: slot.name,
             pid: slot.pid,
             // Dieselbe Regel wie in der Aufgabenliste des Clients: in
             // ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein, sonst Titel · Rolle.
             label: zuteilungsLabel(section.label ?? '', item.title ?? 'Zuteilung', rolleMitHerkunft(slot)),
-            // Der stabile Schlüssel, wo es einen gibt — unter dem legt auch der
-            // Client die Bestätigung ab.
-            key: idKey ?? posKey,
+            // Derselbe Schlüssel, unter dem auch der Client die Bestätigung ablegt.
+            key,
           })
         }
       }

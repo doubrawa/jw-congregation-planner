@@ -686,7 +686,7 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
     expect(rows[0].title).toBe('Ersatz gesucht') // ohne Dienstnamen
     // Rumpf nur aus ' · '-Atomen, die der Fragment-Übersetzer erledigt.
     expect(rows[0].body).toBe(`Mikrofone · ${TERMIN} · ${alsFreitext('Otto Riginal')}`)
-    // Die Zeile weiß, worum es geht (migration-020) — sonst ließe sie sich
+    // Die Zeile weiß, worum es geht — sonst ließe sie sich
     // später weder aufräumen noch als abgelaufen erkennen.
     expect(rows[0].task_key).toBe(KEY)
   })

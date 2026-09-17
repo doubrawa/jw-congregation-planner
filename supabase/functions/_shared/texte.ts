@@ -26,7 +26,7 @@
  * Nachschlage-Funktion für eine Sprachtabelle.
  *
  * `lang` kommt aus `push_subscriptions.lang` (je Gerät) oder vom Client und
- * darf fehlen: Abos von vor migration-014 tragen keine Sprache. Unbekanntes
+ * darf fehlen: Ein Abo ohne gewählte Sprache trägt keine. Unbekanntes
  * und Fehlendes fällt auf `de` zurück — eine Nachricht in einer Sprache, die
  * niemand gewählt hat, wäre schlechter als die deutsche.
  *

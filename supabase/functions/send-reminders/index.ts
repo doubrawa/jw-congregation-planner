@@ -18,12 +18,12 @@
 //    sind (kein App-Konto ODER kein aktiviertes Push-Abo), werden den Planern
 //    als Sammel-Push gemeldet, damit sie persönlich erinnern können.
 //  - Empfangen kann nur, wer in der App (Profil) Push aktiviert hat
-//    (Tabelle push_subscriptions, migration-005). Abgelaufene Abos (404/410)
+//    (Tabelle push_subscriptions). Abgelaufene Abos (404/410)
 //    werden automatisch gelöscht.
 //  - Wartung: Glocken-Mitteilungen älter als 30 Tage werden im selben Lauf
 //    gelöscht (nur im Scharfbetrieb — der Dry-Run schreibt/löscht nichts).
 //  - Doppel-Versand-Sperre: pro Empfänger, Art und Tag höchstens eine Sendung
-//    (Tabelle reminder_log, migration-011). Ein zweiter Cron-Lauf am selben Tag
+//    (Tabelle reminder_log). Ein zweiter Cron-Lauf am selben Tag
 //    schickt nichts erneut; ein Neulauf nach Teilfehler holt nur Ausstehende.
 //
 // SICHERHEIT / STATUS:
@@ -277,8 +277,8 @@ Deno.serve(async (req: Request) => {
       const [vonWoche, bisWoche] = wochenFenster(todayUTC, rem)
 
       const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
-        // Die Kennung kommt aus der Spalte, nicht aus dem Blob: `data->>'start'`
-        // fehlt bei Wochen, die vor migration-017 geschrieben wurden.
+        // Die Kennung kommt aus der Spalte, nicht aus dem Blob: Sie ist der
+        // Primärschlüssel der Woche, der Blob trägt nur das Programm.
         klient.get<{ start: string; data: Week }[]>(
           `weeks?select=start,data&congregation_id=eq.${wert(cong.id)}` +
             `&start=gte.${wert(vonWoche)}&start=lte.${wert(bisWoche)}&order=start.asc`,

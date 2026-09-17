@@ -335,7 +335,7 @@ function makeTrIntl(code: string): (s: string) => string {
     /*
      * FEHLT HIER: „Studienartikel 28" — der Verweis in der Meta-Zeile des
      * Wachtturm-Studiums. Die Regel gibt es nur im Wörterbuch-Pfad
-     * (`makeTr`, also en/es/fr); über Intl laufen die übrigen ~30 Sprachen,
+     * (`makeTr`, also en/es/fr); über Intl laufen die übrigen 30 Sprachen,
      * und dort bleibt der Verweis deutsch stehen. Dieselbe Sorte Lücke, die
      * der Kommentar bei REF beschreibt („deshalb blieb ‚Gruppe 2‘ in 30
      * Sprachen deutsch").

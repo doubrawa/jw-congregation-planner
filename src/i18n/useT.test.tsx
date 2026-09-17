@@ -113,7 +113,7 @@ describe('useProgWeek', () => {
       end: 'Ende ca. 20:45',
       sections: [{
         label: 'SCHÄTZE AUS GOTTES WORT', kind: 'schaetze', farbe: 'petrol',
-        items: [{ num: 1, title: 'Nach geistigen Schätzen graben', meta: '10 Min.', mins: 10, names: [{ name: 'T. Lindner', bereichsKey: 'vortrag' }] }],
+        items: [{ iid: 'i65', num: 1, title: 'Nach geistigen Schätzen graben', meta: '10 Min.', mins: 10, names: [{ name: 'T. Lindner', bereichsKey: 'vortrag' }] }],
       }],
       helpers: {},
     }
@@ -122,7 +122,7 @@ describe('useProgWeek', () => {
       end: '約20:45終了',
       sections: [{
         label: '神の言葉の宝', kind: 'schaetze', farbe: 'petrol',
-        items: [{ num: 1, title: '霊的な宝を探る', meta: '10分', names: [] }],
+        items: [{ iid: 'i64', num: 1, title: '霊的な宝を探る', meta: '10分', names: [] }],
       }],
       helpers: {},
     }

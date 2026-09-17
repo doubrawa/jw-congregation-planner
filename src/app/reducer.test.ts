@@ -21,7 +21,7 @@ import {
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { fsTaskKey } from '../data/fs'
-import { deriveMyTasks } from '../data/planning'
+import { deriveMyTasks, itemTaskKey } from '../data/planning'
 import { alsFreitext } from '../i18n/translate'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 
@@ -837,18 +837,106 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     expect(next.toast?.text).toBeTruthy()
   })
 
+  /*
+    Was mit den **Zusagen** geschieht, ist der eigentliche Punkt an lacRemove —
+    und war bis zum Code-Review vom 17. September 2026 ungeprüft: Der Test
+    darüber zählt nur Zeilen und einen Toast.
+
+    Seit T104 hängt eine Zusage an der Kennung ihres Punkts, nicht an seiner
+    Stelle in der Liste. Beim Löschen heißt das: genau die Zusagen des
+    gelöschten Punkts verfallen — und die der anderen bleiben, auch wenn sie
+    dadurch eine Position nach vorn rücken. Vorher mussten dafür alle folgenden
+    Schlüssel umbenannt werden.
+  */
+  /** Die Programmpunkte des LAC-Abschnitts, mit Wächter statt `!` (T42). */
+  const lacPunkte = (s: AppState): PartItem[] => {
+    const items = s.weeks[0]?.mid.sections[lacSi(s)]?.items
+    if (!items) throw new Error('Testaufbau: kein LAC-Abschnitt')
+    return items.filter((i) => !isSong(i)) as PartItem[]
+  }
+  /** Ein Punkt daraus, über seine Kennung gesucht. */
+  const mitKennung = (s: AppState, iid: string): PartItem | undefined =>
+    lacPunkte(s).find((p) => p.iid === iid)
+  const wocheVon = (s: AppState): string => s.weeks[0]?.start ?? ''
+  const nimm = <T,>(wert: T | undefined, was: string): T => {
+    if (wert === undefined) throw new Error(`Testaufbau: ${was} fehlt`)
+    return wert
+  }
+
+  it('lacRemove: nur die Zusagen des gelöschten Punkts verfallen', () => {
+    const s0 = makeState({ week: 0, tab: 'mid' })
+    const si = lacSi(s0)
+    const ii = gehIdx(s0)
+    const punkte = lacPunkte(s0)
+    const weg = nimm(punkte.find((p) => p === s0.weeks[0]?.mid.sections[si]?.items[ii]), 'zu löschender Punkt')
+    const bleibt = nimm(punkte.find((p) => p !== weg), 'zweiter Punkt')
+    const woche = wocheVon(s0)
+
+    const s = {
+      ...s0,
+      confirmations: {
+        [itemTaskKey(woche, 'mid', weg.iid, 0)]: 'bestätigt' as const,
+        [itemTaskKey(woche, 'mid', bleibt.iid, 0)]: 'verhindert' as const,
+      },
+    }
+    const next = reducer(s, { type: 'lacRemove', si, ii })
+
+    expect(next.confirmations[itemTaskKey(woche, 'mid', weg.iid, 0)]).toBeUndefined()
+    expect(next.confirmations[itemTaskKey(woche, 'mid', bleibt.iid, 0)]).toBe('verhindert')
+    // Und der verbliebene Punkt trägt weiterhin dieselbe Kennung — daran hängt
+    // sein Schlüssel, ganz gleich, an welcher Stelle er jetzt steht.
+    expect(mitKennung(next, bleibt.iid)).toBeDefined()
+    expect(mitKennung(next, weg.iid)).toBeUndefined()
+  })
+
+  it('lacRemove ohne Zusage zu diesem Punkt lässt die Map, wie sie ist', () => {
+    const s0 = makeState({ week: 0, tab: 'mid' })
+    const andere = { 'fremde|woche|part|xyz|0': 'bestätigt' as const }
+    const next = reducer({ ...s0, confirmations: andere }, { type: 'lacRemove', si: lacSi(s0), ii: gehIdx(s0) })
+    expect(next.confirmations).toBe(andere) // gleiche Referenz → kein Schreibvorgang
+  })
+
   it('lacMove am Rand lässt den State unverändert', () => {
     const s = makeState({ week: 0, tab: 'mid' })
     const si = lacSi(s)
-    const firstReal = s.weeks[0].mid.sections[si].items.findIndex((i) => !isSong(i))
+    const items = nimm(s.weeks[0]?.mid.sections[si]?.items, 'LAC-Punkte')
+    const firstReal = items.findIndex((i) => !isSong(i))
     expect(reducer(s, { type: 'lacMove', si, ii: firstReal, dir: -1 })).toBe(s)
   })
 
-  it('lacMove tauscht einen Nicht-Rand-Punkt (inkl. Bestätigungs-Mitnahme)', () => {
-    const s = makeState({ week: 0, tab: 'mid' })
-    const si = lacSi(s)
-    const next = reducer(s, { type: 'lacMove', si, ii: gehIdx(s), dir: 1 })
-    expect(next.weeks).not.toBe(s.weeks) // getauscht → neuer Wochen-Baum
+  it('lacMove tauscht einen Nicht-Rand-Punkt — und rührt keine Zusage an', () => {
+    // Bis T104 mussten hier zwei Schlüssel getauscht werden. Heute nimmt der
+    // Punkt seinen Schlüssel beim Verschieben mit; zu tun ist nichts.
+    const s0 = makeState({ week: 0, tab: 'mid' })
+    const si = lacSi(s0)
+    const ii = gehIdx(s0)
+    const vorherIds = lacPunkte(s0).map((p) => p.iid)
+    const punkt = nimm(
+      lacPunkte(s0).find((p) => p === s0.weeks[0]?.mid.sections[si]?.items[ii]),
+      'zu verschiebender Punkt',
+    )
+    const map = { [itemTaskKey(wocheVon(s0), 'mid', punkt.iid, 0)]: 'bestätigt' as const }
+
+    const next = reducer({ ...s0, confirmations: map }, { type: 'lacMove', si, ii, dir: 1 })
+    expect(next.weeks).not.toBe(s0.weeks) // getauscht → neuer Wochen-Baum
+    expect(next.confirmations).toBe(map) // unberührt, gleiche Referenz
+    // Dieselben Punkte, andere Reihenfolge — und derselbe Punkt eine Stelle tiefer.
+    const nachherIds = lacPunkte(next).map((p) => p.iid)
+    expect([...nachherIds].sort()).toEqual([...vorherIds].sort())
+    expect(nachherIds.indexOf(punkt.iid)).toBe(vorherIds.indexOf(punkt.iid) + 1)
+  })
+
+  it('lacAdd: der neue Punkt erbt keine fremde Zusage', () => {
+    const s0 = makeState({ week: 0, tab: 'mid' })
+    const si = lacSi(s0)
+    const map = Object.fromEntries(
+      lacPunkte(s0).map((p) => [itemTaskKey(wocheVon(s0), 'mid', p.iid, 0), 'bestätigt' as const]),
+    )
+    const next = reducer({ ...s0, confirmations: map }, { type: 'lacAdd', si, title: 'Örtliche Hinweise' })
+
+    expect(next.confirmations).toBe(map) // eingefügt heißt nicht umbenannt
+    const neu = nimm(lacPunkte(next).find((p) => p.title === 'Örtliche Hinweise'), 'neuer Punkt')
+    expect(next.confirmations[itemTaskKey(wocheVon(s0), 'mid', neu.iid, 0)]).toBeUndefined()
   })
 
   it('talkEdit setzt das Vortragsthema (Wochenende)', () => {
