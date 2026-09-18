@@ -117,6 +117,21 @@ export const CONG_TO_JW: Readonly<Record<string, string>> = Object.fromEntries(
 )
 
 /**
+ * jw.org-Sprachcode -> deutscher Anzeigename — die Rueckrichtung.
+ *
+ * Gebraucht an der Grenze zur Datenbank: Dort steht seit dem Schema-Neuaufbau
+ * der **Code** (`congregations.cong_lang`), im Zustand der App dagegen der
+ * Anzeigename, an dem `CONG_TO_JW`, `congAppCode` und der Sprachen-Picker
+ * haengen. Ohne diese Umsetzung stand im Einstellungen-Bildschirm „de" statt
+ * „Deutsch" — und schlimmer: `CONG_TO_JW['de']` findet nichts, der Import fiel
+ * also stumm auf Deutsch zurueck, was eine englischsprachige Versammlung erst
+ * am falschen Arbeitsheft gemerkt haette.
+ */
+export const JW_TO_CONG: Readonly<Record<string, string>> = Object.fromEntries(
+  JW_LANGS.map((l) => [l.code, l.name]),
+)
+
+/**
  * jw.org-Sprachcode -> App-Uebersetzungscode (Lang), fuer die 30 Sprachen mit
  * Programmuebersetzung (FRAG/EXTRA in translate.ts). Damit werden auch bei
  * importierten Wochen unsere eigenen Vorlage-Strings (Wochenend-Sektionslabels,

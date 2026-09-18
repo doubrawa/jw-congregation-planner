@@ -219,14 +219,22 @@ describe('Update-Schreiber', () => {
       expect.objectContaining({ name: 'N', mid_wd: 2, mid_time: '19:00', we_wd: 0, we_time: '10:00' }),
     )
     vi.clearAllMocks()
-    // Einstellungen sind Spalten, kein JSONB-Beutel mehr.
-    saveSettings('c1', { reminders: { first: 7, last: 1, repeat: false }, congLang: 'de', progLangs: ['en'], auxClass: false })
+    // Einstellungen sind Spalten, kein JSONB-Beutel mehr. Der Zustand führt den
+    // Anzeigenamen, gespeichert wird der jw.org-Code — ein Name ist keine
+    // Kennung (Kopf von schema.sql), und die Liste der 482 Namen kann sich
+    // ändern, ohne dass eine Versammlung davon wüsste.
+    saveSettings('c1', {
+      reminders: { first: 7, last: 1, repeat: false },
+      congLang: 'Deutsch',
+      progLangs: ['Englisch', 'Spanisch'],
+      auxClass: false,
+    })
     expect(chain.update).toHaveBeenCalledWith({
       reminder_first: 7,
       reminder_last: 1,
       reminder_repeat: false,
       cong_lang: 'de',
-      prog_langs: ['en'],
+      prog_langs: ['en', 'es'],
       aux_class: false,
     })
   })

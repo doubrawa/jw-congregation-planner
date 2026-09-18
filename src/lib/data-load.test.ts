@@ -99,11 +99,37 @@ describe('loadCongregationData', () => {
     expect(res.data.persons.map((p) => p.fn)).toContain('Anna')
     expect(res.data.services[0].key).toBe('mik')
     expect(res.data.weeks).toHaveLength(1)
-    // Sprachen stehen als jw.org-Code, nicht als deutscher Anzeigename.
-    expect(res.data.congLang).toBe('de')
-    expect(res.data.progLangs).toEqual(['en'])
+    // In der Spalte steht der jw.org-Code, im Zustand der Anzeigename: Daran
+    // hängen der Sprachen-Picker, `CONG_TO_JW` beim Import und `congAppCode`.
+    // Blieb der Code stehen, zeigte der Einstellungen-Bildschirm „de" — und
+    // der Import fiel über `CONG_TO_JW['de'] ?? 'de'` stumm auf Deutsch zurück.
+    expect(res.data.congLang).toBe('Deutsch')
+    expect(res.data.progLangs).toEqual(['Englisch'])
     expect(res.data.confirmations['k1']).toBe('bestätigt')
     expect(res.empty).toBe(false)
+  })
+
+  it('lädt auch Zeilen aus der Zeit, als dort der Anzeigename stand', async () => {
+    // Vor dem Schema-Neuaufbau speicherte die App den deutschen Namen. Eine
+    // Umsetzung, die Unbekanntes verwirft, machte aus so einer Zeile eine
+    // Versammlung ohne Sprache — und der Import holte wortlos Deutsch.
+    seedResponses({
+      congregations: [
+        {
+          data: {
+            name: 'Krumbach', hall: 'H', mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00',
+            reminder_first: 7, reminder_last: 1, reminder_repeat: false,
+            cong_lang: 'Deutsch', prog_langs: ['Englisch'], aux_class: false,
+          },
+          error: null,
+        },
+      ],
+    })
+    const res = await loadCongregationData('u1')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.data.congLang).toBe('Deutsch')
+    expect(res.data.progLangs).toEqual(['Englisch'])
   })
 
   /**
