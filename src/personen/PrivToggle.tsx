@@ -74,7 +74,7 @@ export function PlannerToggle({ person, update }: { person: Person; update: Upda
   /**
    * Das Recht steht an **zwei** Stellen, und nur eine entscheidet.
    *
-   * `persons.planner` ist die Vormerkung: Sie wird beim Einladen in den Code
+   * `persons.planner_vorgemerkt` ist die Vormerkung: Sie wird beim Einladen in den Code
    * übernommen, damit jemand das Recht schon hat, wenn er sich anmeldet.
    * Sobald ein Konto verknüpft ist, zählt aber `members.planner` — daran hängt
    * `is_planner()` in der Datenbank und `state.planner` in der App.
