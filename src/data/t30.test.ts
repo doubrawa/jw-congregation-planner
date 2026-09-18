@@ -19,7 +19,7 @@ import type { Meeting, Person, Week } from './types'
  * diese Zusammenkunft weicht ab. Die bekannten Fälle sind Ausprägungen davon.
  */
 
-const ZEITEN = 'Di 19:00 · So 10:00'
+const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 const person: Person = {
   id: 'p1', fn: 'Anna', ln: 'Beispiel', dn: 'A. Beispiel',
@@ -50,7 +50,7 @@ const mitAbweichung = (w: Week, tab: 'mid' | 'we', dev: Week['dev'] extends unde
 
 describe('Verlegung: anderer Tag, andere Uhrzeit', () => {
   it('der verlegte Tag schlägt den Rhythmus aus den Einstellungen', () => {
-    const w = mitAbweichung(makeWeek(), 'mid', { day: 'Donnerstag', reason: 'Saal belegt' })
+    const w = mitAbweichung(makeWeek(), 'mid', { wd: 4, reason: 'Saal belegt' })
     expect(meetingOffset(w, 'mid', ZEITEN)).toBe(3) // Do statt Di
     expect(meetingOffset(w, 'we', ZEITEN)).toBe(6) // unberührt
   })
@@ -64,19 +64,19 @@ describe('Verlegung: anderer Tag, andere Uhrzeit', () => {
   it('der Termintext nennt den verlegten Tag, nicht den regulären', () => {
     // Hier fällt es dem Nutzer auf: „Meine Aufgaben", S-89 und der
     // Erinnerungstext leiten alle von hier ab.
-    const w = mitAbweichung(makeWeek(), 'mid', { day: 'Donnerstag', time: '18:00' })
+    const w = mitAbweichung(makeWeek(), 'mid', { wd: 4, time: '18:00' })
     expect(meetingDateText(w, 0, 'mid', ZEITEN)).toBe('Donnerstag, 10. September · 18:00')
     expect(meetingDateText(makeWeek(), 0, 'mid', ZEITEN)).toBe('Dienstag, 8. September · 19:00')
   })
 
-  it('eine Abweichung schlägt auch einen eigenen Termin im date-Feld', () => {
-    // Alt-Datensätze tragen den Termin im Anzeigetext. Verlegt der Planer die
-    // Woche, nennt dieses Feld noch den alten Tag — ohne Vorrang stünde in der
-    // Erinnerung der Abend, an dem niemand kommt.
+  it('eine Abweichung schlägt den Anzeigetext im date-Feld', () => {
+    // Das `date`-Feld ist Anzeigetext — Alt-Datensätze trugen dort ihren Termin,
+    // und bis T105 wurde er zurückgelesen. Jetzt sagt allein die Abweichung,
+    // wann die Zusammenkunft stattfindet.
     const alt = makeWeek()
     alt.mid.date = 'Samstag, 12. September · 19:30'
-    expect(meetingOffset(alt, 'mid', ZEITEN)).toBe(5)
-    const verlegt = mitAbweichung(alt, 'mid', { day: 'Montag', time: '20:00' })
+    expect(meetingOffset(alt, 'mid', ZEITEN)).toBe(1)
+    const verlegt = mitAbweichung(alt, 'mid', { wd: 1, time: '20:00' })
     expect(meetingOffset(verlegt, 'mid', ZEITEN)).toBe(0)
     expect(meetingTime(verlegt, 'mid', ZEITEN)).toBe('20:00')
     expect(meetingDateText(verlegt, 0, 'mid', ZEITEN)).toBe('Montag, 7. September · 20:00')
@@ -84,7 +84,7 @@ describe('Verlegung: anderer Tag, andere Uhrzeit', () => {
 
   it('weichtAb erkennt Tag, Uhrzeit und Ausfall — sonst nichts', () => {
     expect(weichtAb(makeWeek(), 'mid')).toBe(false)
-    expect(weichtAb(mitAbweichung(makeWeek(), 'mid', { day: 'Freitag' }), 'mid')).toBe(true)
+    expect(weichtAb(mitAbweichung(makeWeek(), 'mid', { wd: 5 }), 'mid')).toBe(true)
     expect(weichtAb(mitAbweichung(makeWeek(), 'mid', { time: '18:00' }), 'mid')).toBe(true)
     expect(weichtAb(mitAbweichung(makeWeek(), 'mid', { cancelled: true }), 'mid')).toBe(true)
     // Ein Grund allein ist keine Abweichung — er erklärt eine.
@@ -188,19 +188,19 @@ describe('Die Gedächtnismahl-Woche ist kein Ausfall', () => {
 
 describe('setAbweichung räumt hinter sich auf', () => {
   it('setzt, ergänzt und nimmt einzelne Felder zurück', () => {
-    const a = setAbweichung([makeWeek()], 0, 'mid', { day: 'Donnerstag' })
-    expect(a[0].dev).toEqual({ mid: { day: 'Donnerstag' } })
+    const a = setAbweichung([makeWeek()], 0, 'mid', { wd: 4 })
+    expect(a[0].dev).toEqual({ mid: { wd: 4 } })
     const b = setAbweichung(a, 0, 'mid', { time: '18:00' })
-    expect(b[0].dev).toEqual({ mid: { day: 'Donnerstag', time: '18:00' } })
-    const c = setAbweichung(b, 0, 'mid', { day: undefined })
+    expect(b[0].dev).toEqual({ mid: { wd: 4, time: '18:00' } })
+    const c = setAbweichung(b, 0, 'mid', { wd: undefined })
     expect(c[0].dev).toEqual({ mid: { time: '18:00' } })
   })
 
   it('entfernt die leere Abweichung ganz — sonst gälte die Woche als abweichend', () => {
-    // Bliebe `{ day: undefined }` stehen, erschienen Chip und Banner ohne
+    // Bliebe `{ wd: undefined }` stehen, erschienen Chip und Banner ohne
     // Anlass und `weichtAb` sagte die Unwahrheit.
-    const a = setAbweichung([makeWeek()], 0, 'mid', { day: 'Donnerstag' })
-    const b = setAbweichung(a, 0, 'mid', { day: undefined })
+    const a = setAbweichung([makeWeek()], 0, 'mid', { wd: 4 })
+    const b = setAbweichung(a, 0, 'mid', { wd: undefined })
     expect(b[0].dev).toBeUndefined()
     expect(weichtAb(b[0], 'mid')).toBe(false)
   })

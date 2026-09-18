@@ -2,7 +2,7 @@ import { fill, useT } from '../i18n/useT'
 import { useApp } from '../app/context'
 import { abweichungsGrund, istAusgefallen, MEETING_TABS, weichtAb } from '../data/helpers'
 import { anlassArt } from '../data/anlass'
-import { WEEKDAY_OFFSET } from '../data/meeting-dates'
+import { versatzAbMontag } from '../data/meeting-dates'
 import { termineVon } from '../data/termine'
 import type { MeetingKey, MeetingTab, Week } from '../data/types'
 import { wochentagName } from '../planen/wochentage'
@@ -121,9 +121,8 @@ export function TerminListe({ week }: { week: Week | undefined }) {
   return (
     <div className="termin-liste">
       {termine.map((termin) => {
-        const versatz = termin.day ? WEEKDAY_OFFSET[termin.day] : undefined
         const wann = [
-          versatz === undefined ? '' : wochentagName(versatz, state.lang),
+          termin.wd == null ? '' : wochentagName(versatzAbMontag(termin.wd), state.lang),
           termin.time ?? '',
         ]
           .filter(Boolean)

@@ -23,6 +23,8 @@ import {
 } from './planning'
 import { emptyQualifications } from './helpers'
 import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
+import { STANDARD_ZEITEN } from './vorgaben'
+import { privSetzen } from './helpers'
 
 /** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
 function alsPerson(name: string): Person {
@@ -258,7 +260,7 @@ describe('Auto-Zuteilung', () => {
     const closeSi = weeks[0].mid.sections.length - 1
     ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
     const before = weeks.map((w) => structuredClone(w))
-    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.meetings)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.times)
     const { weeks: next, newly } = autoAssignMeeting(
       weeks, 0, 'mid', DEMO_PERSONS, DEMO_SERVICES, [], 'all', abwesend,
     )
@@ -360,7 +362,7 @@ describe('S-89-Nutzlast', () => {
     )
     const s89 = buildS89ForSlot(weeks, {
       kind: 'part', wi: 0, tab: 'mid', si: uid, ii, ni: 0, priv: 'schulung', groups: false, label: '',
-    })
+    }, STANDARD_ZEITEN)
     expect(s89?.partner).toBe('Markus Ernst')
     expect(s89?.type).toBe('Gespräche beginnen · Informell')
   })
@@ -372,7 +374,7 @@ describe('S-89-Nutzlast', () => {
     )
     const s89 = buildS89ForSlot(weeks, {
       kind: 'part', wi: 0, tab: 'mid', si: pet, ii, ni: 0, priv: 'lesen', groups: false, label: '',
-    })
+    }, STANDARD_ZEITEN)
     expect(s89?.point).toBe('th Lektion 2')
   })
 
@@ -404,9 +406,9 @@ describe('S-89-Nutzlast', () => {
       kind: 'part' as const, wi: 0, tab: 'mid' as const, si: uid, ii, ni: partnerNi,
       priv: 'schulungPartner', groups: false, label: '',
     }
-    expect(buildS89ForSlot(w, sel)).toBeNull()
+    expect(buildS89ForSlot(w, sel, STANDARD_ZEITEN)).toBeNull()
     // Und der Druckbogen legt ihn erst recht nicht zweimal aus.
-    expect(alleS89DerWoche(w, 0).filter((z) => z.name === z.partner)).toEqual([])
+    expect(alleS89DerWoche(w, 0, STANDARD_ZEITEN).filter((z) => z.name === z.partner)).toEqual([])
   })
 
   it('mit Schüler steht der Zettel wieder da — und nennt beide', () => {
@@ -422,7 +424,7 @@ describe('S-89-Nutzlast', () => {
     const zettel = buildS89ForSlot(w, {
       kind: 'part', wi: 0, tab: 'mid', si: uid, ii, ni: partnerNi,
       priv: 'schulungPartner', groups: false, label: '',
-    })
+    }, STANDARD_ZEITEN)
     expect(zettel?.name).toBeTruthy()
     expect(zettel?.partner).toBeTruthy()
     expect(zettel?.name).not.toBe(zettel?.partner)
@@ -431,7 +433,7 @@ describe('S-89-Nutzlast', () => {
   it('liefert null für Nicht-Schulungsslots', () => {
     const s89 = buildS89ForSlot(weeks, {
       kind: 'part', wi: 0, tab: 'mid', si: 0, ii: 0, ni: 0, priv: 'vorsitzMid', groups: false, label: '',
-    })
+    }, STANDARD_ZEITEN)
     expect(s89).toBeNull()
   })
 })
@@ -469,7 +471,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)
     expect(reqs).toHaveLength(1)
     expect(reqs[0]).toMatchObject({ svc: 'ton', declinedBy: 'A. Absager', key: helperTaskKey('2026-09-07', 'mid', 'ton', 0) })
   })
@@ -478,14 +480,14 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'))).toHaveLength(0)
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'), STANDARD_ZEITEN)).toHaveLength(0)
   })
 
   it('nur „verhindert" zählt (bestätigt/offen nicht)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'bestätigt' as const }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))).toHaveLength(0)
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
   })
 
   it('nennt, was ich an dem Tag schon habe — vor dem Zusagen', () => {
@@ -500,7 +502,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     mid.helpers.ton = [{ name: 'A. Absager' }]
     mid.helpers.mik = [{ name: displayName(ich) }, { name: '' }] // ich habe schon Mikrofon
     const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich)
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN)
     expect(reqs).toHaveLength(1)
     expect(reqs[0]?.schonHeute.map((a) => a.text)).toContain('Mikrofone')
   })
@@ -510,7 +512,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, {
       [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const,
-    }, qualified('ton'))
+    }, qualified('ton'), STANDARD_ZEITEN)
     expect(reqs[0]?.schonHeute).toEqual([])
   })
 
@@ -525,7 +527,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     weeks[0]!.mid.helpers.ton = [{ name: displayName(ich), pid: 'p-namensvetter' }]
     const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
 
-    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich)
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN)
     expect(reqs, 'das Gesuch des Namensvetters galt als das eigene').toHaveLength(1)
     expect(reqs[0]?.declinedBy).toBe(displayName(ich))
   })
@@ -534,7 +536,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
     const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'))).toHaveLength(0)
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
   })
 })
 
@@ -567,7 +569,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
   const weeks = buildDemoWeeks()
 
   it('leitet die Aufgaben einer Person in Programmreihenfolge ab', () => {
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {}, STANDARD_ZEITEN)
     // Woche 0: Schulungsaufgabe · Woche 1: Mikrofone (We) ·
     // Woche 2: Bibellesung · Woche 3: Mikrofone (Gedächtnismahl)
     // Über die zusammengefügte Form geprüft: Titel und Rolle stehen getrennt,
@@ -585,7 +587,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     expect(tasks[1].s89).toBeNull()
     expect(tasks[2].s89?.point).toBe('th Lektion 10')
     expect(tasks.every((t) => t.status === 'offen')).toBe(true)
-    expect(deriveMyTasks(weeks, DEMO_SERVICES, '', {})).toEqual([])
+    expect(deriveMyTasks(weeks, DEMO_SERVICES, '', {}, STANDARD_ZEITEN)).toEqual([])
   })
 
   it('setzt at aus Wochenstart + Zusammenkunftstag (Countdown); ohne start null', () => {
@@ -593,12 +595,12 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     // der leere String ist die Form fuer „aus Altbestand, noch nicht
     // nachgetragen" (die Spalte `weeks.start` traegt es).
     const leer = weeks.map((w) => ({ ...w, start: '' }))
-    const ohne = deriveMyTasks(leer, DEMO_SERVICES, 'Simon Krüger', {}, 'Di 19:00 · So 10:00')
+    const ohne = deriveMyTasks(leer, DEMO_SERVICES, 'Simon Krüger', {}, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
     expect(ohne[0].at).toBeNull()
 
     // Mit ISO-Startdatum: Woche 0 Schulung liegt unter der Woche (Di = Mo + 1).
     const dated = weeks.map((w) => ({ ...w, start: '2026-09-07' })) // Montag
-    const mit = deriveMyTasks(dated, DEMO_SERVICES, 'Simon Krüger', {}, 'Di 19:00 · So 10:00')
+    const mit = deriveMyTasks(dated, DEMO_SERVICES, 'Simon Krüger', {}, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
     expect(mit[0].at).toBe(Date.parse('2026-09-08')) // Dienstag (mid = Mo + 1)
     // Aufgabe 1 ist Mikrofone am Wochenende → So = Mo + 6 (alle Wochen teilen
     // hier denselben Start, geprüft wird der Wochenend-Versatz).
@@ -609,7 +611,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     // Der Titel benennt dort den ganzen Block („Lied 1 · Gebet · Einleitende
     // Worte"). Wer Vorsitz hat, las bisher drei Angaben, die ihn nichts
     // angehen, und seine eigene ganz am Ende.
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Manfred Albrecht', {})
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Manfred Albrecht', {}, STANDARD_ZEITEN)
     expect(aufgabenBezeichnung(tasks[0]!)).toBe('Vorsitz')
     // Und zwar als Rolle, nicht als Titel — sie gehört in die Sprache des
     // Lesers, der Titel in die der Versammlung.
@@ -623,7 +625,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
       .find((it) => !isSong(it) && it.title.startsWith('Versammlungsbibelstudium')) as PartItem
     vbs.names[0]!.name = 'Manfred Albrecht'
     delete vbs.names[0]!.pid
-    const tasks = deriveMyTasks(w, DEMO_SERVICES, 'Manfred Albrecht', {})
+    const tasks = deriveMyTasks(w, DEMO_SERVICES, 'Manfred Albrecht', {}, STANDARD_ZEITEN)
     expect(tasks.map(aufgabenBezeichnung)).toContain('Versammlungsbibelstudium · Leiter')
   })
 
@@ -633,14 +635,14 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     part.names[0].name = 'Max Muster'
     part.names[0].pid = 'pMax'
     // Person mit passender pid sieht die Aufgabe; gleichnamige mit anderer pid nicht.
-    expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, '', 'pMax').length).toBeGreaterThan(0)
-    expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, '', 'pAndere')).toEqual([])
+    expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, STANDARD_ZEITEN, 'pMax').length).toBeGreaterThan(0)
+    expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, STANDARD_ZEITEN, 'pAndere')).toEqual([])
   })
 
   it('übernimmt den Status aus der ConfirmationMap', () => {
-    const open = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {})
+    const open = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {}, STANDARD_ZEITEN)
     const conf = { [open[0].id]: 'bestätigt', [open[1].id]: 'verhindert' } as const
-    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', conf)
+    const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', conf, STANDARD_ZEITEN)
     expect(tasks.map((t) => t.status)).toEqual(['bestätigt', 'verhindert', 'offen', 'offen'])
   })
 })
@@ -884,14 +886,14 @@ describe('Konfliktprüfungen (Planen)', () => {
     // und dort ist er Eingangsordner (mid). Prüft zugleich, dass aus dem
     // gespeicherten Datum wieder die richtige Woche wird.
     const weeks = buildDemoWeeks()
-    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.meetings)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.times)
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
     expect(conflicts).toContainEqual({ kind: 'absent', name: 'Ulrich Lang', kennung: kennungFuer('Ulrich Lang'), tab: 'mid' })
   })
 
   it('meldet niemanden abwesend, dessen Zeitraum die Woche nicht trifft', () => {
     const weeks = buildDemoWeeks()
-    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.meetings)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.times)
     // Woche 1 gehört Niklas Feld; Ulrich Lang darf dort nicht auftauchen.
     const conflicts = weekConflicts(weeks, 1, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
     expect(conflicts.some((c) => c.kind === 'absent' && c.name === 'Ulrich Lang')).toBe(false)
@@ -1308,7 +1310,7 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
 describe('Auto-Zuteilung: beide Räume teilen sich die belegten Personen', () => {
   const vielseitig = (id: string): Person => {
     const priv = { ...emptyQualifications() } as unknown as Record<string, boolean>
-    for (const k of Object.keys(priv)) priv[k] = true
+    for (const k of Object.keys(priv)) privSetzen(priv, k, true)
     priv.ratgeber = true
     return {
       id, fn: 'V' + id, ln: 'N' + id, role: 'verkuendiger', female: false, tel: '', mail: '',
@@ -1391,8 +1393,8 @@ describe('Auswahl, die ins Leere zeigt', () => {
 
   it('buildS89ForSlot liefert null statt zu werfen', () => {
     const weeks = buildDemoWeeks()
-    expect(buildS89ForSlot(weeks, teilAuswahl({ wi: WEIT_DRAUSSEN }))).toBeNull()
-    expect(buildS89ForSlot(weeks, teilAuswahl({ si: WEIT_DRAUSSEN }))).toBeNull()
+    expect(buildS89ForSlot(weeks, teilAuswahl({ wi: WEIT_DRAUSSEN }), STANDARD_ZEITEN)).toBeNull()
+    expect(buildS89ForSlot(weeks, teilAuswahl({ si: WEIT_DRAUSSEN }), STANDARD_ZEITEN)).toBeNull()
   })
 
   it('autoAssignMeeting und clearAssignments zählen null', () => {

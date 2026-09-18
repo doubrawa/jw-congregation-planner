@@ -1,19 +1,15 @@
 import { LOCALES } from '../i18n/langs'
 
 /**
- * Kanonisch deutsche Wochentage — dieselbe Schreibweise wie in den Wochendaten
- * (`WEEKDAY_OFFSET`), Index = Tage nach Montag. Gespeichert wird immer diese
- * Form; übersetzt wird erst bei der Anzeige.
+ * Die sieben Wochentage als **Versatz ab Montag** — die Reihenfolge, in der sie
+ * in einer Auswahl stehen.
+ *
+ * Hier stand dieselbe Liste mit deutschen Namen, denn genau die wurden
+ * gespeichert. Ein Wochentag ist jetzt überall eine Zahl (`Abweichung.wd`,
+ * `Termin.wd`, `FsRule.wd`, `MeetingTime.wd`), und sein Name entsteht erst beim
+ * Anzeigen — `wochentagName` darunter, in der Sprache des Lesers.
  */
-export const WOCHENTAGE = [
-  'Montag',
-  'Dienstag',
-  'Mittwoch',
-  'Donnerstag',
-  'Freitag',
-  'Samstag',
-  'Sonntag',
-]
+export const VERSAETZE: readonly number[] = [0, 1, 2, 3, 4, 5, 6]
 
 /**
  * Wochentagsname in der App-Sprache — aus `Intl`, nicht aus dem Wörterbuch.

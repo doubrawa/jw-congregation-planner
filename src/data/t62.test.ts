@@ -30,7 +30,7 @@ import type { Meeting, PartItem, Person, Week } from './types'
  * `week.coData` erhalten — samt Zuteilungen.
  */
 
-const ZEITEN = 'Di 19:00 · So 10:00'
+const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 const person = (id: string, dn: string): Person => ({
   id, fn: dn.split(' ')[0] ?? '', ln: dn.split(' ')[1] ?? '',

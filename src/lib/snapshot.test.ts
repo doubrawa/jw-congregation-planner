@@ -2,12 +2,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearSnapshot, readSnapshot, saveSnapshot } from './snapshot'
 import type { HydratePayload } from '../app/context'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 const payload = (over: Partial<HydratePayload> = {}): HydratePayload => ({
   congregationId: 'c1',
   userId: 'u1',
   empty: false,
-  congregation: { name: 'Musterstadt', hall: '', meetings: '' },
+  congregation: { name: 'Musterstadt', hall: '', times: STANDARD_ZEITEN },
   planner: true,
   personId: 'p1',
   persons: [],

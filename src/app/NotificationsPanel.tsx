@@ -56,7 +56,7 @@ export function NotificationsPanel() {
     // Ohne Konto und Versammlung (Demo-Modus) gibt es nichts nachzuladen.
     if (!userId || !congId) return
     void (async () => {
-      const frisch = await loadNotifications(congId, state.weeks, state.congregation.meetings)
+      const frisch = await loadNotifications(congId, state.weeks, state.congregation.times)
       // Nicht gelesen (kein Netz, Fehler) → der bisherige Stand bleibt stehen.
       if (!frisch) return
       if (frisch.some((n) => !bekannt.current.has(n.id))) {

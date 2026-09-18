@@ -7,6 +7,7 @@ import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } 
 
 /** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
 import { emptyQualifications } from './helpers'
+import { privSetzen } from './helpers'
 
 function alsPerson(name: string): Person {
   return {
@@ -36,7 +37,7 @@ function priv(on: string[]): Qualifications {
     vorsitzMid: false, vorsitzWe: false, vortrag: false, gebet: false, bibellesung: false, leser: false,
     schulung: false, schulungPartner: false, studium: false, treffpunkt: false,
   }
-  for (const key of on) base[key] = true
+  for (const key of on) privSetzen(base, key, true)
   return base
 }
 function mk(
@@ -408,8 +409,8 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
 
   it('Reinigung rotiert über die konfigurierten Gruppen (mod Anzahl)', () => {
     const groups: Group[] = [
-      { id: 'g1', name: 'Gruppe 1', ov: null, as: null },
-      { id: 'g2', name: 'Gruppe 2', ov: null, as: null },
+      { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+      { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
     ]
     const weeks: Week[] = Array.from({ length: 3 }, wk1)
     const w0 = autoAssignMeeting(weeks, 0, 'mid', [], REIN, groups).weeks
@@ -427,7 +428,7 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
       id: 'ov1', fn: 'Otto', ln: 'Overseer', role: 'aeltester', tel: '', mail: '', priv: priv([MIK]),
     }
     const free = named('Frank', 'Frei', [MIK])
-    const groups: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: 'ov1', as: null }]
+    const groups: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'ov1', assistantId: null }]
     const services: Service[] = [
       { key: 'mik', name: 'Mikrofone', count: 1, groups: false },
       { key: 'rein', name: 'Reinigung', count: 1, groups: true },

@@ -630,7 +630,7 @@ describe('Konflikte heben sich im Plan ab', () => {
     const { container } = zeige(s, {
       weeks: [woche([s])],
       absences: [{ id: 'a1', personId: 'p-a', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
-      congregation: { name: '', hall: '', meetings: 'Di 19:00 · So 10:00' },
+      congregation: { name: '', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     })
     expect(chips(container)[0]!.className).toContain('is-konflikt')
     expect(chips(container)[0]!.querySelector('.slot-konflikt-dot')).toBeTruthy()

@@ -11,6 +11,7 @@
  */
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
+import { zeitenAus } from '../../supabase/functions/_shared/planung.ts'
 import { fsBaseFromWeeks, fsLeiterBinden, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZusage } from '../data/plan-versand'
@@ -19,14 +20,17 @@ import {
   emptyQualifications,
   isGuestRole,
   normalizeChairKeys,
+  privSetzen,
 } from '../data/helpers'
 import type {
   Absence,
+  Congregation,
   ConfirmationMap,
   FsInstance,
   FsRule,
   Group,
   Invite,
+  MeetingTimes,
   Member,
   Notification,
   NotificationType,
@@ -49,7 +53,7 @@ interface PersonRow {
   fn: string
   ln: string
   dn: string
-  planner: boolean
+  planner_vorgemerkt: boolean
   role: string
   female: boolean
   tel: string
@@ -73,6 +77,36 @@ interface GroupRow {
   overseer_id: string | null
   assistant_id: string | null
   position: number
+}
+
+/** Eine Grundplan-Regel der Treffpunkte — seit T105 eine Zeile statt JSONB. */
+interface FsRuleRow {
+  id: string
+  grp: string | null
+  wd: number
+  time: string
+  place: string
+  monthly: number
+  skip_cong: boolean
+}
+
+/**
+ * Stammdaten und Einstellungen der Versammlung — je eine Spalte, kein
+ * `settings`-Beutel und kein Anzeigetext mehr (siehe schema.sql).
+ */
+interface CongregationRow {
+  name: string
+  hall: string
+  mid_wd: number
+  mid_time: string
+  we_wd: number
+  we_time: string
+  reminder_first: number
+  reminder_last: number
+  reminder_repeat: boolean
+  cong_lang: string
+  prog_langs: string[]
+  aux_class: boolean
 }
 
 interface WeekRow {
@@ -146,14 +180,6 @@ interface InviteRow {
   planner: boolean
 }
 
-/** congregations.settings (JSONB) — versammlungsweite Einstellungen. */
-interface CongregationSettings {
-  reminders?: Partial<Reminders>
-  congLang?: string
-  progLangs?: string[] // weitere Programmsprachen (deutsche Anzeigenamen)
-  auxClass?: boolean // Zusaetzliche Klasse eingerichtet (jw.org S-38, Absatz 26)
-}
-
 const ROLES: Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine']
 const asRole = (r: string): Role => (ROLES.includes(r as Role) ? (r as Role) : 'verkuendiger')
 
@@ -171,7 +197,7 @@ const asNotifType = (t: string): NotificationType =>
 export function normalizePriv(raw: Qualifications | null | undefined): Qualifications {
   const r = (raw ?? {}) as unknown as Record<string, unknown>
   const priv = emptyQualifications()
-  for (const [key, value] of Object.entries(r)) priv[key] = Boolean(value)
+  for (const [key, value] of Object.entries(r)) privSetzen(priv, key, Boolean(value))
   return priv
 }
 
@@ -431,7 +457,7 @@ function personFromRow(r: PersonRow): Person {
     fn: r.fn,
     ln: r.ln,
     dn: r.dn || undefined,
-    planner: r.planner || undefined,
+    plannerVorgemerkt: r.planner_vorgemerkt || undefined,
     role: asRole(r.role),
     female: r.female || undefined,
     tel: r.tel,
@@ -449,7 +475,7 @@ function personToRow(p: Person, congregationId: string) {
     fn: p.fn,
     ln: p.ln,
     dn: p.dn ?? '',
-    planner: Boolean(p.planner),
+    planner_vorgemerkt: Boolean(p.plannerVorgemerkt),
     role: p.role,
     female: Boolean(p.female),
     tel: p.tel,
@@ -461,7 +487,7 @@ function personToRow(p: Person, congregationId: string) {
 }
 
 function groupFromRow(r: GroupRow): Group {
-  return { id: r.id, name: r.name, ov: r.overseer_id, as: r.assistant_id }
+  return { id: r.id, name: r.name, overseerId: r.overseer_id, assistantId: r.assistant_id }
 }
 
 function groupToRow(g: Group, congregationId: string, position: number) {
@@ -469,9 +495,47 @@ function groupToRow(g: Group, congregationId: string, position: number) {
     id: g.id,
     congregation_id: congregationId,
     name: g.name,
-    overseer_id: g.ov,
-    assistant_id: g.as,
+    overseer_id: g.overseerId,
+    assistant_id: g.assistantId,
     position,
+  }
+}
+
+/**
+ * `time` kommt aus PostgreSQL als „19:00:00" zurück; die App führt Uhrzeiten
+ * durchgehend als „19:00" — so liefert und erwartet es `<input type="time">`.
+ */
+function kurzeZeit(zeit: string | undefined | null, vorgabe: string): string {
+  return (zeit ?? vorgabe).slice(0, 5)
+}
+
+/**
+ * Eine Grundplan-Regel: `grp` ist in der Datenbank `null` für den
+ * Versammlungstreffpunkt, und dieselbe Bedeutung trägt sie in der App — dort
+ * stand dafür lange der leere String.
+ */
+function fsRuleFromRow(r: FsRuleRow): FsRule {
+  return {
+    id: r.id,
+    grp: r.grp,
+    wd: r.wd,
+    time: kurzeZeit(r.time, '00:00'),
+    place: r.place,
+    monthly: r.monthly,
+    skipCong: r.skip_cong,
+  }
+}
+
+function fsRuleToRow(r: FsRule, congregationId: string) {
+  return {
+    id: r.id,
+    congregation_id: congregationId,
+    grp: r.grp,
+    wd: r.wd,
+    time: r.time,
+    place: r.place,
+    monthly: r.monthly,
+    skip_cong: r.skipCong,
   }
 }
 
@@ -567,11 +631,11 @@ function notifAbfrage(client: NonNullable<typeof supabase>, congregationId: stri
 function notificationsAus(
   rows: NotificationRow[],
   weeks: Week[],
-  meetings: string,
+  zeiten: MeetingTimes,
 ): Notification[] {
   return rows
     .map(notificationFromRow)
-    .filter((n) => !n.taskId || !taskKeyVorbei(n.taskId, weeks, meetings))
+    .filter((n) => !n.taskId || !taskKeyVorbei(n.taskId, weeks, zeiten))
 }
 
 /**
@@ -588,7 +652,7 @@ function notificationsAus(
 export async function loadNotifications(
   congregationId: string,
   weeks: Week[],
-  meetings: string,
+  zeiten: MeetingTimes,
 ): Promise<Notification[] | null> {
   if (!supabase) return null
   const { data, error } = await notifAbfrage(supabase, congregationId)
@@ -596,7 +660,7 @@ export async function loadNotifications(
     console.error('[notifications]', error.message)
     return null
   }
-  return notificationsAus((data ?? []) as NotificationRow[], weeks, meetings)
+  return notificationsAus((data ?? []) as NotificationRow[], weeks, zeiten)
 }
 
 /* ---- Laden --------------------------------------------------------------- */
@@ -634,7 +698,7 @@ function fensterAnfang(juengste: string | undefined): string {
 }
 
 export interface CongregationData {
-  congregation: { name: string; hall: string; meetings: string }
+  congregation: Congregation
   planner: boolean
   personId: string | null
   persons: Person[]
@@ -703,8 +767,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows, sentLogRows] = await Promise.all([
-    supabase.from('congregations').select('name, hall, meeting_times, settings').eq('id', congregationId).maybeSingle(),
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows] = await Promise.all([
+    supabase.from('congregations').select('*').eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
@@ -719,7 +783,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
     supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
-    supabase.from('fs_rules').select('base, rules').eq('congregation_id', congregationId).maybeSingle(),
+    supabase.from('fs_rules').select('*').eq('congregation_id', congregationId).order('created_at'),
     fsWochenAbfrage,
     // Versand-Tagebuch: welcher Platz wurde wann gemeldet. Der
     // Planen-Screen zeigt es an, und der „Plan senden"-Knopf zählt daraus, was
@@ -748,7 +812,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Fehlt die Tabelle, bleibt die Anzeige „benachrichtigt am" leer — das ist
   // eine fehlende Auskunft, kein fehlender Datenbestand, und die App bleibt
   // benutzbar.
-  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRow, fsWeeksRows]
+  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
@@ -793,11 +857,18 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const gruppenListe = ((groups.data ?? []) as GroupRow[]).map(groupFromRow)
 
-  const settings = ((cong.data?.settings as CongregationSettings | null) ?? {})
+  // Fehlt die Zeile (nur denkbar, wenn jemand sie zwischen zwei Abfragen
+  // löscht), gelten die Vorgaben einer frisch angelegten Versammlung.
+  const c = cong.data as CongregationRow | null
+  // **Dieselbe Umrechnung wie in den Edge Functions**, nicht eine zweite: Sie
+  // steht im geteilten Modul und damit unter der Gegenprobe in
+  // `edge-parity.test.ts`. Eine eigene Fassung hier liefe still auseinander —
+  // und dann zeigte die App einen anderen Termin, als die Erinnerung nennt.
+  const zeiten = zeitenAus(c ?? undefined)
   const reminders: Reminders = {
-    first: settings.reminders?.first ?? STANDARD_ERINNERUNGEN.first,
-    last: settings.reminders?.last ?? STANDARD_ERINNERUNGEN.last,
-    repeat: settings.reminders?.repeat ?? STANDARD_ERINNERUNGEN.repeat,
+    first: c?.reminder_first ?? STANDARD_ERINNERUNGEN.first,
+    last: c?.reminder_last ?? STANDARD_ERINNERUNGEN.last,
+    repeat: c?.reminder_repeat ?? STANDARD_ERINNERUNGEN.repeat,
     // `onAssign` stand hier bis T99. Der Schalter steuerte die Mitteilung
     // „Zuteilung gesendet" an die Planer, und die gibt es nicht mehr — an ihre
     // Stelle ist „Plan senden" getreten.
@@ -810,7 +881,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // ausgerichtet — Leiter und wochenspezifische Zeit/Ort bleiben erhalten, nur die
   // Regel→Woche-Zuordnung (z. B. „1. Samstag im Monat") wird anhand der korrekten
   // Datumsbasis neu bestimmt.
-  const fsRules = (fsRulesRow.data?.rules as FsRule[] | undefined) ?? []
+  const fsRules = ((fsRulesRows.data ?? []) as FsRuleRow[]).map(fsRuleFromRow)
   const fsBase = fsBaseDate.toISOString().slice(0, 10)
   // Zugeordnet wird über das Datum, nicht über die Zeilenfolge: beide Tabellen
   // führen dieselbe Kennung, und nur so bleiben Treffpunkte an ihrer Woche,
@@ -830,11 +901,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const fsWeeks = fsLeiterBinden(ausgerichtet, personList)
 
   const data: CongregationData = {
-    congregation: {
-      name: cong.data?.name ?? '',
-      hall: cong.data?.hall ?? '',
-      meetings: cong.data?.meeting_times ?? '',
-    },
+    congregation: { name: c?.name ?? '', hall: c?.hall ?? '', times: zeiten },
     planner: Boolean(member.planner),
     personId: (member.person_id as string | null) ?? null,
     persons: personList,
@@ -845,16 +912,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsWeeks,
     fsBase,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
-    notifications: notificationsAus(
-      (notifs.data ?? []) as NotificationRow[],
-      weekList,
-      cong.data?.meeting_times ?? '',
-    ),
+    notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
     reminders,
-    auxClass: settings.auxClass ?? false,
-    congLang: settings.congLang ?? 'Deutsch',
-    progLangs: settings.progLangs ?? [],
+    auxClass: c?.aux_class ?? false,
+    congLang: c?.cong_lang ?? 'de',
+    progLangs: c?.prog_langs ?? [],
     members: ((members.data ?? []) as MemberRow[]).map((r) => ({
       userId: r.user_id,
       email: r.email,
@@ -1064,13 +1127,37 @@ export function savePerson(congregationId: string, person: Person): void {
   void run(supabase.from('persons').upsert(personToRow(person, congregationId)))
 }
 
-/** Grundplan der Treffpunkte (ein Blob je Versammlung) + Basis-Datum. */
-export function saveFsRules(congregationId: string, base: string, rules: FsRule[]): void {
+/**
+ * Grundplan der Treffpunkte — eine Zeile je Regel.
+ *
+ * Bis zum 18. September 2026 ging der ganze Grundplan als **ein JSONB-Blob** in
+ * eine Zeile je Versammlung, samt einer Spalte `base`, die geschrieben und nie
+ * gelesen wurde. Eine Regel ist aber eine gewöhnliche Zeile mit einem Verweis
+ * auf eine Gruppe; im Blob konnte dieser Verweis kein Fremdschlüssel sein, und
+ * deshalb musste die App beim Löschen einer Gruppe selbst darin aufräumen.
+ *
+ * Geschrieben wird der **ganze** Bestand (die Liste ist kurz, und der Aufrufer
+ * hat sie ohnehin als Ganzes): erst weg, was nicht mehr dazugehört, dann der
+ * Rest per upsert. Nacheinander, nicht nebeneinander — sonst könnte das Löschen
+ * eine gerade erst geschriebene Zeile treffen.
+ */
+export function saveFsRules(congregationId: string, rules: FsRule[]): void {
   if (!supabase) return
+  const client = supabase
   void run(
-    supabase
-      .from('fs_rules')
-      .upsert({ congregation_id: congregationId, base, rules }, { onConflict: 'congregation_id' }),
+    (async () => {
+      const behalten = rules.map((r) => r.id)
+      const weg = client.from('fs_rules').delete().eq('congregation_id', congregationId)
+      // `not.in.()` mit leerer Liste ist ungültig — ohne Regeln fällt alles weg.
+      const { error } = behalten.length
+        ? await weg.not('id', 'in', `(${behalten.join(',')})`)
+        : await weg
+      if (error) return { error }
+      if (!rules.length) return { error: null }
+      return await client
+        .from('fs_rules')
+        .upsert(rules.map((r) => fsRuleToRow(r, congregationId)))
+    })(),
   )
 }
 
@@ -1139,6 +1226,41 @@ export function deleteGroupRow(id: string): void {
 export function savePersonGroup(person: Person): void {
   if (!supabase) return
   void run(supabase.from('persons').update({ grp: person.grp ?? null }).eq('id', person.id))
+}
+
+/**
+ * Haushalt anlegen (falls neu) und die beteiligten Personen darauf setzen.
+ *
+ * **Nacheinander, und das ist der Grund für diese Funktion.** Der Haushalt ist
+ * seit T105 eine eigene Zeile, auf die `persons.fam` per Fremdschlüssel zeigt;
+ * ginge die Person vor ihm hinaus, wiese die Datenbank sie ab. Alle übrigen
+ * Schreibwege hier sind bewusst „abschicken und weitergehen" — dieser eine hat
+ * eine Reihenfolge, also steht sie an einer Stelle.
+ */
+export function saveFamily(congregationId: string, haushalt: string, personen: Person[]): void {
+  if (!supabase) return
+  const client = supabase
+  void run(
+    (async () => {
+      const { error } = await client
+        .from('households')
+        .upsert({ id: haushalt, congregation_id: congregationId })
+      if (error) return { error }
+      return await client
+        .from('persons')
+        .upsert(personen.map((p) => personToRow(p, congregationId)))
+    })(),
+  )
+}
+
+/**
+ * Haushalt löschen — die Personen darin verlieren ihre `fam` über den
+ * Fremdschlüssel (`on delete set null`), ohne dass sie eigens geschrieben
+ * werden müssten.
+ */
+export function deleteHouseholdRow(id: string): void {
+  if (!supabase) return
+  void run(supabase.from('households').delete().eq('id', id))
 }
 
 /**
@@ -1370,26 +1492,48 @@ export function deleteNotifications(congregationId: string, userId: string): voi
   )
 }
 
-export function saveCongregationInfo(
-  congregationId: string,
-  info: { name: string; hall: string; meetings: string },
-): void {
+export function saveCongregationInfo(congregationId: string, info: Congregation): void {
   if (!supabase) return
   void run(
     supabase
       .from('congregations')
-      .update({ name: info.name, hall: info.hall, meeting_times: info.meetings })
+      .update({
+        name: info.name,
+        hall: info.hall,
+        mid_wd: info.times.mid.wd,
+        mid_time: info.times.mid.time,
+        we_wd: info.times.we.wd,
+        we_time: info.times.we.time,
+      })
       .eq('id', congregationId),
   )
 }
 
-/** Versammlungsweite Einstellungen (Erinnerungen, Versammlungssprache). */
+/**
+ * Versammlungsweite Einstellungen (Erinnerungen, Sprachen, Zusätzliche Klasse).
+ *
+ * Bis zum 17. September 2026 gingen sie als ein JSONB-Objekt `settings` in eine
+ * einzige Spalte. Jetzt sind es Spalten mit Typ und Grenzen — die Zusagen
+ * „1..21 Tage" und „0..7 Tage" standen vorher nur im Eingabefeld.
+ */
 export function saveSettings(
   congregationId: string,
   settings: { reminders: Reminders; congLang: string; progLangs: string[]; auxClass: boolean },
 ): void {
   if (!supabase) return
-  void run(supabase.from('congregations').update({ settings }).eq('id', congregationId))
+  void run(
+    supabase
+      .from('congregations')
+      .update({
+        reminder_first: settings.reminders.first,
+        reminder_last: settings.reminders.last,
+        reminder_repeat: settings.reminders.repeat,
+        cong_lang: settings.congLang,
+        prog_langs: settings.progLangs,
+        aux_class: settings.auxClass,
+      })
+      .eq('id', congregationId),
+  )
 }
 
 /** Bestätigung/Verhinderung einer Aufgabe (eigene Zeile je Nutzer+Slot). */

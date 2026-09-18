@@ -174,7 +174,7 @@ describe('Eine Predigtdienstgruppe löschen', () => {
   })
 
   it('eine Gruppe ohne Treffpunkte lässt Grundplan und Wochen unberührt', () => {
-    const neu: Group = { id: 'g-neu', name: 'Gruppe 5', ov: null, as: null }
+    const neu: Group = { id: 'g-neu', name: 'Gruppe 5', overseerId: null, assistantId: null }
     const vorher = stand({ groups: [...DEMO_GROUPS, neu] })
 
     const nachher = loeschen(vorher, 'g-neu')
@@ -184,7 +184,7 @@ describe('Eine Predigtdienstgruppe löschen', () => {
   })
 
   it('die leere Kennung ist die Versammlung, keine Gruppe — dafür wird nichts gestrichen', () => {
-    // Die Versammlungstreffpunkte tragen `grp: ''`. Ein Streichen „der Gruppe ''"
+    // Die Versammlungstreffpunkte tragen `grp: null`. Ein Streichen „der Gruppe ''"
     // nähme sie alle mit.
     const vorher = stand()
     const { fsRules, fsWeeks } = fsGruppeEntfernen(vorher.fsRules, vorher.fsWeeks, '')
@@ -194,7 +194,7 @@ describe('Eine Predigtdienstgruppe löschen', () => {
 })
 
 describe('Wer keiner Predigtdienstgruppe zugeordnet ist (ohneGruppe)', () => {
-  const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: null, as: null }]
+  const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
   const person = (id: string, over: Partial<Person> = {}): Person => ({
     id, fn: id, ln: id, role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(), ...over,
   })

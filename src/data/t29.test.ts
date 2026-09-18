@@ -14,6 +14,7 @@ import {
 } from './planning'
 import { pidsNachtragen } from '../lib/data'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
+import { STANDARD_ZEITEN } from './vorgaben'
 
 /**
  * T29 — der öffentliche Vortrag kann von einem eigenen Bruder gehalten werden.
@@ -121,9 +122,9 @@ describe('Der eigene Redner ist eine vollwertige Zuteilung', () => {
   })
 
   it('erscheint in „Meine Aufgaben" — der Gastredner nicht', () => {
-    expect(deriveMyTasks(mitEigenem(), [], 'M. Hartmann', {}, '', person.id)).toHaveLength(1)
+    expect(deriveMyTasks(mitEigenem(), [], 'M. Hartmann', {}, STANDARD_ZEITEN, person.id)).toHaveLength(1)
     const gast = assignSlot([makeWeek()], REDNER, 'M. Hartmann', 'Gastredner · Vers. Nordheim')
-    expect(deriveMyTasks(gast, [], 'M. Hartmann', {}, '', person.id)).toHaveLength(0)
+    expect(deriveMyTasks(gast, [], 'M. Hartmann', {}, STANDARD_ZEITEN, person.id)).toHaveLength(0)
   })
 })
 

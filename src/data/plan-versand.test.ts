@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { entzogeneZusagen, offeneMeldungen, zuletztGesendet } from './plan-versand'
 import { sentKey } from './planning'
 import type { ConfirmationMap, FsInstance, Meeting, PartItem, SentLog, Service, Week } from './types'
+import { STANDARD_ZEITEN } from './vorgaben'
 
 /**
  * **„Plan senden" — wer weiß noch nichts?**
@@ -21,7 +22,7 @@ import type { ConfirmationMap, FsInstance, Meeting, PartItem, SentLog, Service, 
 const MONTAG = '2026-09-07'
 
 /** Zusammenkunftszeiten der Testversammlung: Dienstag 8.9. und Sonntag 13.9. */
-const MEETINGS = 'Di 19:00 · So 10:00'
+const MEETINGS = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 /**
  * Montagmorgen der Testwoche — noch ist nichts davon vorbei. Ohne festen Tag
@@ -72,7 +73,7 @@ const KEY_ERSTER = `${MONTAG}|mid|part|i-Bibellesung|0`
 const treffpunkt = (over: Partial<FsInstance> = {}): FsInstance => ({
   id: 'r1',
   ruleId: 'r1',
-  grp: '',
+  grp: null,
   wd: 6,
   time: '09:30',
   place: 'Königreichssaal',
@@ -195,7 +196,7 @@ describe('Was vorbei ist, geht nicht mehr hinaus', () => {
   it('der Tag kommt aus den Zusammenkunftszeiten der Versammlung, nicht fest vom Dienstag', () => {
     // Donnerstags-Versammlung: Am Mittwoch steht ihre Wochenmitte noch bevor.
     // Mit einem Rückfall auf Dienstag wäre sie hier schon „vorbei".
-    const offen = offeneMeldungen(beide(), [], 0, null, DIENSTE, ohne, {}, 'Do 19:00 · So 10:00', new Date(2026, 8, 9, 9, 0))
+    const offen = offeneMeldungen(beide(), [], 0, null, DIENSTE, ohne, {}, { mid: { wd: 4, time: '19:00' }, we: { wd: 0, time: '10:00' } }, new Date(2026, 8, 9, 9, 0))
     expect(offen.map((o) => o.name).sort()).toEqual(['A. Berg', 'B. Cohn'])
   })
 
@@ -248,7 +249,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
   const bestaetigt: ConfirmationMap = { [KEY_ERSTER]: 'bestätigt' }
   const vorher = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
   const ruf = (v: Week | undefined, n: Week | undefined, conf = bestaetigt) =>
-    entzogeneZusagen(v, n, [], [], 0, null, DIENSTE, '', conf, MONTAG_FRUEH)
+    entzogeneZusagen(v, n, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH)
 
   it('umgeteilt: der bisherige Inhaber wird genannt, mit Platz und Termin', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
@@ -287,7 +288,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
       vorher, vorher,
       [treffpunkt()],
       [treffpunkt({ leader: 'M. Albrecht' })],
-      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, '', conf, MONTAG_FRUEH,
+      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH,
     )
     expect(raus.map((z) => z.name)).toEqual(['T. Lindner'])
   })
@@ -306,7 +307,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
       vorher, vorher,
       [treffpunkt()],
       [treffpunkt({ leader: 'M. Albrecht' })],
-      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, '', ohne, MONTAG_FRUEH,
+      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, STANDARD_ZEITEN, ohne, MONTAG_FRUEH,
     )
     expect(raus).toEqual([])
   })
@@ -360,7 +361,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
       vorher, vorher,
       [treffpunkt()],
       [treffpunkt({ leader: '' })],
-      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, '', { [key]: 'bestätigt' }, MONTAG_FRUEH,
+      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, STANDARD_ZEITEN, { [key]: 'bestätigt' }, MONTAG_FRUEH,
     )
     expect(raus).toHaveLength(1)
     expect(raus[0]!.datum).toMatch(/September/)
@@ -386,7 +387,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
     // eine verlorene Woche.
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     expect(() =>
-      entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, '', undefined as unknown as ConfirmationMap, MONTAG_FRUEH),
+      entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, undefined as unknown as ConfirmationMap, MONTAG_FRUEH),
     ).not.toThrow()
   })
 
@@ -399,13 +400,13 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
   it('ein vergangener Platz: keine Nachricht, wenn er nachträglich umgeteilt wird', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     const donnerstag = new Date(2026, 8, 10, 9, 0)
-    expect(entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, '', bestaetigt, donnerstag)).toEqual([])
+    expect(entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, bestaetigt, donnerstag)).toEqual([])
   })
 
   it('Gegenprobe: am Tag selbst geht die Nachricht noch hinaus', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     const dienstagMittag = new Date(2026, 8, 8, 12, 0)
-    const raus = entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, '', bestaetigt, dienstagMittag)
+    const raus = entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, bestaetigt, dienstagMittag)
     expect(raus.map((z) => z.name)).toEqual(['A. Berg'])
   })
 
@@ -414,7 +415,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
     const vorherFs = [treffpunkt({ id: 'mo', wd: 1 }), treffpunkt({ id: 'sa', wd: 6 })]
     const nachherFs = [treffpunkt({ id: 'mo', wd: 1, leader: '' }), treffpunkt({ id: 'sa', wd: 6, leader: '' })]
     const mittwoch = new Date(2026, 8, 9, 9, 0)
-    const raus = entzogeneZusagen(vorher, vorher, vorherFs, nachherFs, 0, BASIS, DIENSTE, '', conf, mittwoch)
+    const raus = entzogeneZusagen(vorher, vorher, vorherFs, nachherFs, 0, BASIS, DIENSTE, STANDARD_ZEITEN, conf, mittwoch)
     // Der Montag ist gewesen; der Samstag steht noch bevor.
     expect(raus.map((z) => z.key)).toEqual([`fs|${MONTAG}|sa`])
   })

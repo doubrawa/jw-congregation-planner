@@ -19,6 +19,7 @@ import type {
   AnlassArt,
   Abweichung,
   Absence,
+  Congregation,
   ConfirmationMap,
   FsInstance,
   FsRule,
@@ -41,6 +42,7 @@ import type {
   Termin,
   Theme,
   Week,
+  WeekVariant,
 } from '../data/types'
 
 export interface Toast {
@@ -48,11 +50,13 @@ export interface Toast {
   text: string
 }
 
-export interface Congregation {
-  name: string // "Musterstadt"
-  hall: string // "Hauptstraße 12"
-  meetings: string // "Di 19:00 · So 10:00"
-}
+/*
+ * `Congregation` stand hier mit einem Feld `meetings: string` („Di 19:00 · So
+ * 10:00"). Der Typ liegt jetzt in data/types.ts bei den übrigen Fachtypen und
+ * trägt die Termine als Werte (`times`); hier weiter ausgegeben, weil die
+ * Bildschirme ihn über den Kontext holen.
+ */
+export type { Congregation }
 
 /**
  * Datenquelle: `demo` = In-Memory (kein Supabase); `loading` = lädt aus der
@@ -165,11 +169,11 @@ export interface AppState {
   /**
    * Versammlung hat eine Zusätzliche Klasse eingerichtet (jw.org S-38,
    * Absatz 26). Steuert die zweite Platzreihe der Schülerteile und den
-   * Ratgeber — versammlungsweit, deshalb in congregations.settings.
+   * Ratgeber — versammlungsweit, deshalb in `congregations.aux_class`.
    */
   auxClass: boolean
-  congLang: string // Versammlungssprache (deutscher Name, z. B. "Deutsch")
-  progLangs: string[] // weitere Programmsprachen (deutsche Namen) — Import holt Varianten
+  congLang: string // Versammlungssprache als jw.org-Sprachcode („de")
+  progLangs: string[] // weitere Programmsprachen, ebenso als Code — Import holt Varianten
 
   /* ---- Abgeleitet: aus den Serverdaten gerechnet, nie gespeichert -------- */
   // Persönliche Aufgaben & Bestätigungs-Flow. Im Produktionsmodus werden
@@ -266,7 +270,7 @@ export type AppAction =
   // Predigtdienstgruppen (nur Planer)
   | { type: 'addGroup'; group: Group }
   | { type: 'removeGroup'; id: string }
-  | { type: 'updateGroup'; id: string; patch: Partial<Pick<Group, 'ov' | 'as'>> }
+  | { type: 'updateGroup'; id: string; patch: Partial<Pick<Group, 'overseerId' | 'assistantId'>> }
   | { type: 'updateCongregation'; patch: Partial<Congregation> } // speichert automatisch (debounced)
   // Mitglieder & Einladungen (nur Planer)
   | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner'>> }
@@ -278,7 +282,7 @@ export type AppAction =
   | { type: 'startImport' }
   | { type: 'finishImport' } // Demo: simulierter Import (buildImportWeek)
   | { type: 'addImportedWeek'; week: Week } // Produktion: echte jw.org-Woche
-  | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, Week> } // nachgeladene Sprachvarianten
+  | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, WeekVariant> } // nachgeladene Sprachvarianten
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string; pid?: string; rolle?: string; herkunft?: string; extern?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher)
   | { type: 'autoAssign'; scope?: 'parts' | 'helpers' | 'all' } // aktuelle Woche + Tab; Bereich (Default: alles)
@@ -290,7 +294,7 @@ export type AppAction =
   | { type: 'fsInstRemove'; wi: number; id: string }
   | { type: 'fsInstAdd'; inst: FsInstance }
   // Treffpunkte-Grundplan (Einstellungen)
-  | { type: 'fsRuleAdd'; grp: string }
+  | { type: 'fsRuleAdd'; grp: string | null }
   | { type: 'fsRuleUpdate'; id: string; patch: Partial<Pick<FsRule, 'wd' | 'monthly' | 'time' | 'place' | 'skipCong'>> }
   | { type: 'fsRuleRemove'; id: string }
   // Bestätigungs-Flow

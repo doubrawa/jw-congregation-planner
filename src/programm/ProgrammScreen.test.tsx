@@ -78,7 +78,7 @@ function zeige(over: Partial<AppState> = {}) {
     congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
     persons: [ICH, NAMENSVETTER], services: DIENSTE, groups: [], absences: [],
     weeks: [woche()], fsWeeks: [[]], fsRules: [], week: 0,
-    congregation: { name: 'Nordheim', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -147,28 +147,33 @@ describe('Der Termin wird gerechnet, nicht abgelesen', () => {
     expect(meta).toContain('19:00')
   })
 
-  it('ein eigener Termin der Woche schlägt den Rhythmus (Gedächtnismahl)', () => {
+  it('eine Abweichung der Woche schlägt den Rhythmus (Gedächtnismahl)', () => {
     const w = woche()
-    w.mid.date = 'Freitag, 11. September · 19:30'
+    w.dev = { mid: { wd: 5, time: '19:30' } } // Freitag, 11.9.
     const { container } = zeige({ weeks: [w] })
     const meta = seite(container).querySelector('.prog-meta')?.textContent ?? ''
     expect(meta).toContain('11. September')
     expect(meta).toContain('19:30')
   })
 
-  it('der Wochentag muss dabei ausgeschrieben sein — die Kurzform gilt nicht als Termin', () => {
-    // Der Formatvertrag der Wochendaten (`meetingDateParts`) kennt nur
-    // ausgeschriebene Tage. Stünde dort „Fr", übernähme die Anzeige die
-    // Uhrzeit, den Tag aber weiter aus dem Rhythmus — Dienstag, 19:30. Alles,
-    // was die App selbst schreibt, ist ausgeschrieben (`WOCHENTAGE`); der Fall
-    // steht hier, damit ein von Hand oder aus fremder Quelle gefülltes Feld
-    // nicht unbemerkt einen falschen Tag anzeigt.
+  it('aus dem Anzeigetext im date-Feld wird kein Termin mehr gelesen', () => {
+    /*
+      Hier stand die Gegenprobe zu einem Formatvertrag: Das `date`-Feld durfte
+      einen eigenen Termin tragen, aber nur mit **ausgeschriebenem** Wochentag
+      („Freitag"); eine Kurzform („Fr") ergab den Tag aus dem Rhythmus und die
+      Uhrzeit aus dem Feld — eine Mischung, die niemand eingetragen hatte.
+
+      Genau diese Rückleserei ist mit T105 weg. Das Feld ist Anzeigetext; was
+      abweicht, sagt die `Abweichung`. Der Fall bleibt als Probe stehen: Egal,
+      was im Feld steht, gerechnet wird der Rhythmus.
+    */
     const w = woche()
-    w.mid.date = 'Fr, 11. September · 19:30'
+    w.mid.date = 'Freitag, 11. September · 19:30'
     const { container } = zeige({ weeks: [w] })
     const meta = seite(container).querySelector('.prog-meta')?.textContent ?? ''
-    expect(meta).toContain('8. September') // Dienstag aus den Einstellungen
-    expect(meta).toContain('19:30') // die Uhrzeit wird sehr wohl übernommen
+    expect(meta).toContain('8. September') // Dienstag aus dem Rhythmus
+    expect(meta).toContain('19:00')
+    expect(meta).not.toContain('19:30')
   })
 
   it('am Wochenende gilt dessen Wochentag', () => {

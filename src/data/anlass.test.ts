@@ -147,10 +147,10 @@ describe('Kongress: beide Zusammenkünfte entfallen', () => {
 
   it('lässt Verlegung und Grund des Planers dabei stehen', () => {
     // Die hat er selbst gesetzt; sie gehören nicht dem Anlass.
-    let ws = setAbweichung([makeWeek()], 0, 'mid', { day: 'Mittwoch', reason: 'Saal belegt' })
+    let ws = setAbweichung([makeWeek()], 0, 'mid', { wd: 3, reason: 'Saal belegt' })
     ws = setAnlass(ws, 0, 'kongress')
     ws = setAnlass(ws, 0, null)
-    expect(abweichung(eine(ws), 'mid')?.day).toBe('Mittwoch')
+    expect(abweichung(eine(ws), 'mid')?.wd).toBe(3)
     expect(abweichung(eine(ws), 'mid')?.reason).toBe('Saal belegt')
   })
 

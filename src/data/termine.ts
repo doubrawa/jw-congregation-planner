@@ -13,7 +13,7 @@
  */
 
 import type { Termin, Week } from './types'
-import { WEEKDAY_OFFSET } from './meeting-dates'
+import { versatzAbMontag } from './meeting-dates'
 
 /** Nur die Woche `wi` ersetzen (die übrigen behalten ihre Referenz). */
 function patchWeek(weeks: Week[], wi: number, fn: (week: Week) => Week): Week[] {
@@ -33,10 +33,7 @@ function patchWeek(weeks: Week[], wi: number, fn: (week: Week) => Week): Week[] 
 export function termineVon(week: Week | undefined): Termin[] {
   const liste = week?.termine
   if (!liste || liste.length === 0) return []
-  const rang = (t: Termin): number => {
-    const versatz = t.day ? WEEKDAY_OFFSET[t.day] : undefined
-    return versatz ?? 99
-  }
+  const rang = (t: Termin): number => (t.wd == null ? 99 : versatzAbMontag(t.wd))
   return [...liste].sort((a, b) => rang(a) - rang(b) || (a.time ?? '').localeCompare(b.time ?? ''))
 }
 

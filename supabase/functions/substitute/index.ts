@@ -39,12 +39,12 @@ import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_sh
 import {
   type Abweichungen,
   istAusgefallenFuer,
-  meetingDayOffsets,
-  meetingTimesOf,
   personDisplayName,
   terminText,
   versatzMitAbweichung,
   zeitMitAbweichung,
+  zeitenAus,
+  type ZeitenRow,
 } from '../_shared/planung.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
@@ -301,9 +301,7 @@ Deno.serve(async (req: Request) => {
       rest.get<Sub[]>(
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
-      rest.get<{ meeting_times: string }[]>(
-        `congregations?select=meeting_times&id=eq.${wert(cong)}`,
-      ),
+      rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
       rest.get<Absence[]>(
         `absences?select=person_id,from_date,to_date&congregation_id=eq.${wert(cong)}`,
       ),
@@ -324,13 +322,8 @@ Deno.serve(async (req: Request) => {
     // Wochentag und Uhrzeit dieser einen Zusammenkunft — einmal gerechnet und
     // zweimal gebraucht: für die Abwesenheitsprüfung (welcher Kalendertag?)
     // und für den Termin im Nachrichtentext (welcher Tag steht da?).
-    const zusammenkunftszeiten = congRows[0]?.meeting_times ?? ''
-    const versatz = versatzMitAbweichung(
-      week.dev,
-      parts.tab,
-      meeting.date,
-      meetingDayOffsets(zusammenkunftszeiten)[parts.tab],
-    )
+    const zusammenkunftszeiten = zeitenAus(congRows[0])
+    const versatz = versatzMitAbweichung(week.dev, parts.tab, zusammenkunftszeiten[parts.tab].wd)
     /*
      * **Der Termin, nicht die Wochenspanne.**
      *
@@ -351,9 +344,7 @@ Deno.serve(async (req: Request) => {
       weekRows[0]?.start ?? '',
       versatz,
       meeting.date,
-      zeitMitAbweichung(week.dev, parts.tab, meeting.date, meetingTimesOf(zusammenkunftszeiten)[parts.tab]),
-      week.dev,
-      parts.tab,
+      zeitMitAbweichung(week.dev, parts.tab, zusammenkunftszeiten[parts.tab].time),
     )
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.

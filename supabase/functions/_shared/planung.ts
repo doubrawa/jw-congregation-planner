@@ -91,38 +91,64 @@ export function taskDateText(date: string | undefined): string {
   return (date ?? '').split(' · ').slice(0, 2).join(' · ')
 }
 
-/** Wochentags-Kürzel → Tage nach Montag. */
-export const DAY_OFFSET: Record<string, number> = {
-  Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6,
+/**
+ * Regeltermin einer Zusammenkunft, wie ihn die Versammlung führt: Wochentag als
+ * Zahl (0 = Sonntag … 6 = Samstag) und Uhrzeit. Spiegelbild von `MeetingTime`
+ * in `src/data/types.ts`.
+ */
+export interface MeetingTime {
+  wd: number
+  time: string
+}
+
+/** Beide Regeltermine — die Spalten `mid_wd/mid_time/we_wd/we_time`. */
+export type MeetingTimes = Record<'mid' | 'we', MeetingTime>
+
+/**
+ * Wochentag (0 = Sonntag … 6 = Samstag) → Tage nach Montag.
+ *
+ * Hier standen stattdessen zwei Leser für **einen Anzeigetext**: „Di 19:00 · So
+ * 10:00" wurde per regulärem Ausdruck in Tage und Uhrzeiten zerlegt, der erste
+ * Treffer war die Wochenmitte, der zweite das Wochenende — mit deutschen
+ * Kürzeln und einem stillen Rückfall auf Dienstag/Sonntag, wenn nichts passte.
+ * Die Versammlung führt beides seit dem 18. September 2026 als Werte.
+ */
+export function versatzAbMontag(wd: number): number {
+  return (wd + 6) % 7
 }
 
 /**
- * „Di 19:00 · So 10:00" → Tage nach Montag je Zusammenkunft.
+ * Regeltermine einer frisch angelegten Versammlung: Dienstag 19:00, Sonntag
+ * 10:00 — der verbreitetste Rhythmus.
  *
- * Ohne erkennbare Kürzel bleibt es bei Dienstag/Sonntag — dem verbreitetsten
- * Rhythmus. Ein Rückfall auf 0/0 hieße Montag, und das wäre stillschweigend
- * falsch statt stillschweigend üblich.
+ * Steht hier, weil **beide Seiten** denselben Rückfall brauchen: der Client für
+ * eine Versammlung, die noch keine eigenen Zeiten hat, und die Functions für
+ * eine Zeile, die zwischen zwei Abfragen verschwindet. Zwei Fassungen hießen:
+ * Die App zeigt einen Tag an, die Erinnerung nennt einen anderen.
  */
-export function meetingDayOffsets(meetingTimes: string): { mid: number; we: number } {
-  // Die Gruppe ist im Ausdruck nicht optional — ein Treffer hat sie immer.
-  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1] ?? ''])
-  return { mid: found[0] ?? 1, we: found[1] ?? 6 }
+export const STANDARD_ZEITEN: MeetingTimes = {
+  mid: { wd: 2, time: '19:00' },
+  we: { wd: 0, time: '10:00' },
+}
+
+/** Die vier Spalten der Regeltermine, wie PostgREST sie liefert. */
+export interface ZeitenRow {
+  mid_wd: number
+  mid_time: string
+  we_wd: number
+  we_time: string
 }
 
 /**
- * „Di 19:00 · So 10:00" → Uhrzeiten je Zusammenkunft.
- *
- * Die Tag-Hälfte derselben Zeichenkette liest `meetingDayOffsets` — die
- * Uhrzeit-Hälfte stand bis hierher nur in `send-reminders`, also gerade
- * **nicht** unter der Gegenprobe, die es für die Tag-Hälfte längst gab.
- * Ohne erkennbare Uhrzeit bleibt der jeweilige Wert leer; der Aufrufer lässt
- * ihn dann weg, statt eine Zeit zu erfinden.
+ * Zeile → Werte. `time` kommt aus PostgreSQL als „19:00:00"; geführt wird
+ * „19:00". Ohne Zeile gilt der übliche Rhythmus.
  */
-export function meetingTimesOf(meetingTimes: string): { mid: string; we: string } {
-  const found = [...meetingTimes.matchAll(/\b(\d{1,2})[:.](\d{2})\b/g)].map(
-    (m) => `${(m[1] ?? '').padStart(2, '0')}:${m[2] ?? ''}`,
-  )
-  return { mid: found[0] ?? '', we: found[1] ?? '' }
+export function zeitenAus(row: ZeitenRow | undefined): MeetingTimes {
+  if (!row) return STANDARD_ZEITEN
+  return {
+    mid: { wd: row.mid_wd, time: row.mid_time.slice(0, 5) },
+    we: { wd: row.we_wd, time: row.we_time.slice(0, 5) },
+  }
 }
 
 /**
@@ -149,17 +175,6 @@ export function deutschesDatum(d: Date, utc = false): string {
   return `${WOCHENTAGE[(tag + 6) % 7]}, ${datum}. ${MONATE[monat]}`
 }
 
-/**
- * Ausgeschriebener Wochentag → Tage nach Montag. Die Wochendaten sind
- * kanonisch deutsch, auch bei fremdsprachiger Versammlung (übersetzt wird
- * erst bei der Anzeige). „Sonnabend" steht mit drin, weil ältere Datensätze
- * ihn tragen.
- */
-export const WEEKDAY_OFFSET: Record<string, number> = {
-  Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
-  Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
-}
-
 /* ---- Sonderwochen (T30) --------------------------------------------------- */
 
 /**
@@ -173,7 +188,8 @@ export const WEEKDAY_OFFSET: Record<string, number> = {
  * Und eine ausgefallene Zusammenkunft darf gar nicht erst erinnern.
  */
 export interface Abweichung {
-  day?: string
+  /** Verlegter Wochentag als Zahl (0 = Sonntag … 6 = Samstag). */
+  wd?: number
   time?: string
   cancelled?: boolean
   reason?: string
@@ -204,22 +220,20 @@ export function istAusgefallenFuer(dev: Abweichungen | undefined, tab: 'mid' | '
 
 /**
  * Wochentag-Versatz mit Abweichung. Rangfolge wie im Client
- * (`meetingOffset`, src/data/meeting-dates.ts):
- * Abweichung → eigener Termin im `date`-Feld → Rhythmus aus den Einstellungen.
+ * (`meetingOffset`, src/data/meeting-dates.ts): Abweichung vor Rhythmus.
+ *
+ * Dazwischen stand eine dritte Quelle — der Wochentag, den das `date`-Feld der
+ * Zusammenkunft **anzeigt**. Sie galt Alt-Datensätzen; seit T30 sagt eine
+ * `Abweichung` dasselbe als Wert.
+ *
+ * `?? `, nicht `||`: der Sonntag ist die 0.
  */
 export function versatzMitAbweichung(
   dev: Abweichungen | undefined,
   tab: 'mid' | 'we',
-  dateFeld: string | undefined,
-  fallback: number,
+  regel: number,
 ): number {
-  const verlegt = abweichungFuer(dev, tab)?.day
-  const ausAbweichung = verlegt ? WEEKDAY_OFFSET[verlegt] : undefined
-  if (ausAbweichung !== undefined) return ausAbweichung
-  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(
-    dateFeld ?? '',
-  )
-  return (tag ? WEEKDAY_OFFSET[tag[1] ?? ''] : undefined) ?? fallback
+  return versatzAbMontag(abweichungFuer(dev, tab)?.wd ?? regel)
 }
 
 /**
@@ -252,20 +266,7 @@ export function terminText(
   offset: number,
   dateFeld: string | undefined,
   zeit: string,
-  dev?: Abweichungen,
-  tab?: 'mid' | 'we',
 ): string {
-  // Eine Abweichung schlägt auch den eigenen Termin im `date`-Feld: der Planer
-  // hat den Tag ausdrücklich verlegt, das `date`-Feld nennt noch den alten
-  // (gleiche Regel wie `meetingDateText` im Client).
-  const abw = tab ? dev?.[tab] : undefined
-  const verlegt = Boolean(abw?.day || abw?.time)
-  if (
-    !verlegt &&
-    /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.test(dateFeld ?? '')
-  ) {
-    return taskDateText(dateFeld)
-  }
   const ms = Date.parse(startISO)
   if (Number.isNaN(ms)) return taskDateText(dateFeld)
   const d = new Date(ms + offset * 864e5)
@@ -327,11 +328,7 @@ export function heuteUtc(clientTag: string | undefined, jetzt = Date.now()): num
 export function zeitMitAbweichung(
   dev: Abweichungen | undefined,
   tab: 'mid' | 'we',
-  dateFeld: string | undefined,
-  fallback: string,
+  regel: string,
 ): string {
-  const verlegt = abweichungFuer(dev, tab)?.time
-  if (verlegt) return verlegt
-  const zeit = /\b(\d{1,2})[:.](\d{2})\b/.exec(dateFeld ?? '')
-  return zeit ? `${(zeit[1] ?? '').padStart(2, '0')}:${zeit[2] ?? ''}` : fallback
+  return abweichungFuer(dev, tab)?.time ?? regel
 }

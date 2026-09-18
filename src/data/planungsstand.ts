@@ -41,6 +41,7 @@ import type {
   ConfirmationMap,
   FsInstance,
   MeetingKey,
+  MeetingTimes,
   MeetingTab,
   Person,
   SentLog,
@@ -122,8 +123,8 @@ export interface PlanungsQuellen {
   abwesend: AbsenceSet
   confirmations: ConfirmationMap
   sentLog: SentLog
-  /** Zusammenkunftszeiten der Versammlung („Di 19:00 · So 10:00"). */
-  meetings: string
+  /** Regeltermine der Versammlung (Wochentag + Uhrzeit je Zusammenkunft). */
+  zeiten: MeetingTimes
   /** Ende der spätesten geladenen Woche (`loadedUntilMs`). */
   geladenBisMs: number | null
   /**
@@ -198,7 +199,7 @@ function wochenstand(q: PlanungsQuellen, wi: number, heute: Date): Wochenstand {
 
   // Zusammenkünfte, die noch anstehen: nicht entfallen (T30), nicht vorbei (T77).
   const tabs = MEETING_TABS.filter(
-    (tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.meetings), heute),
+    (tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.zeiten), heute),
   )
   // Einmal je Woche gerechnet und nach Zusammenkunft verteilt — jeder Aufruf
   // baut die Personen-Tabellen neu auf.
@@ -219,7 +220,7 @@ function wochenstand(q: PlanungsQuellen, wi: number, heute: Date): Wochenstand {
 
   // Vergangenes lässt die Vorschau selbst weg — dieselbe Menge wie am Knopf.
   const ungesendet = q.sendenMoeglich
-    ? offeneMeldungen(week, q.fsWeeks[wi], wi, q.fsBase, q.services, q.confirmations, q.sentLog, q.meetings, heute)
+    ? offeneMeldungen(week, q.fsWeeks[wi], wi, q.fsBase, q.services, q.confirmations, q.sentLog, q.zeiten, heute)
     : []
 
   const summe = (feld: 'konflikte' | 'nichtBesetzbar' | 'offen'): number =>

@@ -46,6 +46,7 @@ import type {
   Meeting,
   MeetingAssignment,
   MeetingKey,
+  MeetingTimes,
   MeetingSlotSelection,
   MyTask,
   PartItem,
@@ -451,7 +452,7 @@ export function autoAssignMeeting(
   // Hilfsdienst-Auswahl — greift nur, solange genug andere Kandidaten da sind.
   const cleaningGroup = groups.length ? groups[weekIndex % groups.length] : null
   const cleaningLeaders = new Set<string>()
-  for (const pid of [cleaningGroup?.ov, cleaningGroup?.as]) {
+  for (const pid of [cleaningGroup?.overseerId, cleaningGroup?.assistantId]) {
     if (pid && persons.some((p) => p.id === pid)) cleaningLeaders.add(pid)
   }
   const HELPER_MALUS = 1e6
@@ -811,7 +812,7 @@ export function clearAssignments(
 export function buildS89ForSlot(
   weeks: Week[],
   sel: MeetingSlotSelection,
-  meetings = '',
+  zeiten: MeetingTimes,
 ): S89Payload | null {
   if (sel.kind !== 'part') return null
   const week = weeks[sel.wi]
@@ -891,7 +892,7 @@ export function buildS89ForSlot(
   return {
     name: leadName || current, // Bibellesung hat keinen schulung-Slot → aktueller Name
     partner: partnerName,
-    date: meetingDateText(week, sel.wi, sel.tab, meetings),
+    date: meetingDateText(week, sel.wi, sel.tab, zeiten),
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,
     // Der Ort stand hier frueher gar nicht im Modell — das Formular zeigte
@@ -920,7 +921,7 @@ export function buildS89ForSlot(
 export function alleS89DerWoche(
   weeks: Week[],
   wi: number,
-  meetings = '',
+  zeiten: MeetingTimes,
   /** Bei einem Gespräch zwei Zettel drucken — einen für den Partner. */
   partnerZweimal = true,
 ): S89Payload[] {
@@ -939,7 +940,7 @@ export function alleS89DerWoche(
       kind: 'part', wi, tab: 'mid', si, ii, ni,
       aux: aux || undefined,
       label: '', priv: slot.bereichsKey ?? null, groups: false,
-    }, meetings)
+    }, zeiten)
     if (zettel) {
       // Mit Gesprächspartner zweimal: beide bekommen einen in die Hand.
       out.push(zettel, ...(partnerZweimal && zettel.partner ? [zettel] : []))
@@ -1068,13 +1069,13 @@ export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | n
 export function taskKeyVorbei(
   key: string,
   weeks: Week[],
-  meetings: string,
+  zeiten: MeetingTimes,
   heute = new Date(),
 ): boolean {
   const teil = taskKeyWeek(key)
   if (!teil) return false
   const week = weeks[wochenIndex(weeks, teil.woche)]
-  if (week) return istVorbei(meetingDateMs(week, teil.tab, meetings), heute)
+  if (week) return istVorbei(meetingDateMs(week, teil.tab, zeiten), heute)
   // Woche nicht geladen (der Ladebereich deckt ein Jahr um heute ab, siehe
   // lib/data.ts). Auch dann nicht geraten, sondern gerechnet: Der Schlüssel
   // trägt den Montag, die Zusammenkunft liegt spätestens sechs Tage später.
@@ -1101,7 +1102,7 @@ export function deriveSubstituteReqs(
   services: Service[],
   confirmations: ConfirmationMap,
   me: Person,
-  meetings = '',
+  zeiten: MeetingTimes,
   abwesend: AbsenceSet = KEINE_ABWESENHEIT,
 ): SubstituteReq[] {
   const out: SubstituteReq[] = []
@@ -1142,8 +1143,8 @@ export function deriveSubstituteReqs(
       key,
       svc: parts.svc,
       title: svc.name,
-      date: meetingDateText(week, wi, parts.tab, meetings),
-      at: meetingDateMs(week, parts.tab, meetings),
+      date: meetingDateText(week, wi, parts.tab, zeiten),
+      at: meetingDateMs(week, parts.tab, zeiten),
       declinedBy: slot.name,
       // Was ich an dem Tag schon habe — vor dem Klick, nicht im Toast danach.
       // Der offene Platz selbst zählt nicht mit (`exclude`).
@@ -1181,7 +1182,7 @@ export function itemZusagenKeys(
 export function eachAssignedSlot(
   weeks: Week[],
   services: Service[],
-  meetings: string,
+  zeiten: MeetingTimes,
   visit: (name: string, key: string, task: () => MyTask, pid?: string) => void,
 ): void {
   weeks.forEach((week, wi) => {
@@ -1193,7 +1194,7 @@ export function eachAssignedSlot(
       if (istAusgefallen(week, tab)) continue
       const meeting = week[tab]
       // Echtes Datum der Zusammenkunft (nur bei importierten Wochen) → Countdown.
-      const at = meetingDateMs(week, tab, meetings)
+      const at = meetingDateMs(week, tab, zeiten)
       // Hauptsaal und Zusätzliche Klasse laufen durch dieselbe Schleife — die
       // Plätze der Klasse sind gleichwertige Aufgaben (bestätigen, erinnern,
       // S-89), nur mit eigenem Schlüssel und eigenem Ort.
@@ -1216,11 +1217,11 @@ export function eachAssignedSlot(
             id: key,
             title: eigen && istBlockSektion(section) ? '' : item.title,
             ...(eigen ? { rolle: eigen } : {}),
-            date: meetingDateText(week, wi, tab, meetings),
+            date: meetingDateText(week, wi, tab, zeiten),
             chip: '',
             at,
             status: 'offen',
-            s89: buildS89ForSlot(weeks, sel, meetings),
+            s89: buildS89ForSlot(weeks, sel, zeiten),
           }
         }, slot.pid)
       }
@@ -1232,7 +1233,7 @@ export function eachAssignedSlot(
           id: key,
           title: '', // die Bezeichnung ist die Rolle — App-Sprache
           rolle: RATGEBER_ROLLE,
-          date: meetingDateText(week, wi, tab, meetings),
+          date: meetingDateText(week, wi, tab, zeiten),
           chip: '',
           at,
           status: 'offen',
@@ -1252,7 +1253,7 @@ export function eachAssignedSlot(
             // auch `SubstituteReq.title` („Anzeige über tu").
             title: '',
             rolle: svc.name,
-            date: meetingDateText(week, wi, tab, meetings),
+            date: meetingDateText(week, wi, tab, zeiten),
             chip: '',
             at,
             status: 'offen',
@@ -1283,12 +1284,12 @@ export function deriveMyTasks(
   services: Service[],
   personName: string,
   confirmations: ConfirmationMap,
-  meetings = '',
+  zeiten: MeetingTimes,
   personId?: string,
 ): MyTask[] {
   const tasks: MyTask[] = []
   if (!personName && !personId) return tasks
-  eachAssignedSlot(weeks, services, meetings, (name, key, task, pid) => {
+  eachAssignedSlot(weeks, services, zeiten, (name, key, task, pid) => {
     // Stabile Zuordnung über die Person-Id, wenn der Slot eine trägt (und wir
     // die Id kennen). Sonst Rückfall auf den Anzeigenamen (Hilfsdienste,
     // externe Redner, Altdaten) — verhindert, dass Namensgleiche fremde

@@ -49,7 +49,7 @@ const BRUDER = person('p-v', 'Carlo', 'Cohn')
 const SCHWESTER = person('p-s', 'Dora', 'Dietz', { female: true })
 const PERSONEN = [AELTESTER, GEHILFE, BRUDER, SCHWESTER]
 
-const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: 'p-ae', as: null }]
+const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ae', assistantId: null }]
 
 function zeige(
   was: 'cong' | 'groups' | 'reminders' | 'lang' | 'screen',
@@ -62,7 +62,7 @@ function zeige(
     congregationId: 'c1', userId: 'u1', personId: 'p-ae', planner: true,
     persons: PERSONEN, groups: GRUPPEN, services: [],
     weeks: [], fsWeeks: [], fsRules: [], absences: [],
-    congregation: { name: 'Nordheim', hall: 'Königreichssaal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Nordheim', hall: 'Königreichssaal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -106,49 +106,54 @@ describe('Zusammenkunftszeiten', () => {
     const { container } = zeige('cong')
     const tage = [...container.querySelectorAll<HTMLSelectElement>('.cong-day')]
     const zeiten = [...container.querySelectorAll<HTMLSelectElement>('.cong-time')]
-    expect(tage.map((s) => s.value)).toEqual(['Di', 'So'])
+    // Die Auswahl steht in Tagen nach Montag: Dienstag = 1, Sonntag = 6.
+    expect(tage.map((s) => s.value)).toEqual(['1', '6'])
     expect(zeiten.map((s) => s.value)).toEqual(['19:00', '10:00'])
   })
 
-  it('die Wochentage stehen in der Sprache des Lesers, gespeichert wird das Kürzel', () => {
+  it('die Wochentage stehen in der Sprache des Lesers, gespeichert wird die Zahl', () => {
     const { container } = zeige('cong')
     const wahl = container.querySelector<HTMLSelectElement>('.cong-day')!
     const optionen = [...wahl.querySelectorAll('option')]
     expect(optionen[0]?.textContent).toBe('Montag')
-    expect(optionen[0]?.value).toBe('Mo')
+    // Der Wert ist der Versatz ab Montag; gespeichert wird daraus der Wochentag
+    // (`wd`, 0 = Sonntag). Hier stand das deutsche Kürzel „Mo" — es war der
+    // gespeicherte Wert, und damit hing die Regelzeit an einer Sprache.
+    expect(optionen[0]?.value).toBe('0')
     expect(optionen).toHaveLength(7)
   })
 
   it('ein neuer Tag der Wochenmitte lässt das Wochenende unangetastet', () => {
-    // Beides steht in EINEM String — wird der Rest nicht mitgeschrieben, ist er weg.
+    // Beide Termine stehen in EINEM Feld (`times`) — wird der Rest nicht
+    // mitgeschrieben, ist er weg.
     const { container, dispatch } = zeige('cong')
-    fireEvent.change(container.querySelectorAll('.cong-day')[0]!, { target: { value: 'Do' } })
-    expect(patches(dispatch)).toContainEqual({ meetings: 'Do 19:00 · So 10:00' })
+    fireEvent.change(container.querySelectorAll('.cong-day')[0]!, { target: { value: '3' } })
+    expect(patches(dispatch)).toContainEqual({ times: { mid: { wd: 4, time: '19:00' }, we: { wd: 0, time: '10:00' } } })
   })
 
   it('und eine neue Wochenend-Uhrzeit die Wochenmitte ebenso', () => {
     const { container, dispatch } = zeige('cong')
     fireEvent.change(container.querySelectorAll('.cong-time')[1]!, { target: { value: '09:30' } })
-    expect(patches(dispatch)).toContainEqual({ meetings: 'Di 19:00 · So 09:30' })
+    expect(patches(dispatch)).toContainEqual({ times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '09:30' } } })
   })
 
   it('eine krumme Bestandszeit bleibt wählbar — sonst spränge sie beim Öffnen um', () => {
     const { container } = zeige('cong', {
-      congregation: { name: 'N', hall: 'S', meetings: 'Di 19:20 · So 10:00' },
+      congregation: { name: 'N', hall: 'S', times: { mid: { wd: 2, time: '19:20' }, we: { wd: 0, time: '10:00' } } },
     })
     const wahl = container.querySelector<HTMLSelectElement>('.cong-time')!
     expect(wahl.value).toBe('19:20')
     expect([...wahl.querySelectorAll('option')].map((o) => o.value)).toContain('19:20')
   })
 
-  it('unlesbare Bestandsdaten fallen auf Di 19:00 / So 10:00 zurück, statt leer zu bleiben', () => {
-    const { container } = zeige('cong', {
-      congregation: { name: 'N', hall: 'S', meetings: 'völlig kaputt' },
-    })
-    expect([...container.querySelectorAll<HTMLSelectElement>('.cong-day')].map((s) => s.value)).toEqual([
-      'Di', 'So',
-    ])
-  })
+  /*
+   * Hier stand: „unlesbare Bestandsdaten fallen auf Di 19:00 / So 10:00 zurück"
+   * — mit der Versammlungszeit `'völlig kaputt'`. Beides, Tag und Uhrzeit,
+   * wurde aus einem Anzeigetext zurückgelesen, und ein Text, der nicht passte,
+   * fiel stumm auf den üblichen Rhythmus zurück. Der Fall ist mit den Werten
+   * (`Congregation.times`) verschwunden: Unlesbares lässt sich nicht mehr
+   * hinterlegen, die Grenzen stehen in der Datenbank (`mid_wd between 0 and 6`).
+   */
 })
 
 describe('Zusätzliche Klasse (S-38 Abs. 26)', () => {
@@ -203,7 +208,7 @@ describe('Predigtdienstgruppen', () => {
     const { container, dispatch } = zeige('groups')
     fireEvent.change(container.querySelectorAll('.mem-select')[0]!, { target: { value: '' } })
     expect(dispatch).toHaveBeenCalledWith({
-      type: 'updateGroup', id: 'g1', patch: { ov: null },
+      type: 'updateGroup', id: 'g1', patch: { overseerId: null },
     })
   })
 
@@ -265,7 +270,7 @@ describe('Predigtdienstgruppen', () => {
 
     it('die Mitglieder einer anderen Gruppe sind keine Folge dieser', () => {
       const { container } = zeige('groups', {
-        groups: [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', ov: null, as: null }],
+        groups: [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }],
         persons: [{ ...BRUDER, grp: 'g2' }],
       })
       fireEvent.click(loeschKnopf(container, 0))
@@ -285,7 +290,7 @@ describe('Predigtdienstgruppen', () => {
 
     it('wer die nächste Gruppe antippt, entschärft die vorige', () => {
       const { container, dispatch } = zeige('groups', {
-        groups: [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', ov: null, as: null }],
+        groups: [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }],
       })
       fireEvent.click(loeschKnopf(container, 0))
       fireEvent.click(loeschKnopf(container, 1))
@@ -332,8 +337,8 @@ describe('Predigtdienstgruppen', () => {
   it('eine neue Gruppe zählt weiter — nicht wieder bei 1', () => {
     const { container, dispatch } = zeige('groups', {
       groups: [
-        { id: 'g1', name: 'Gruppe 1', ov: null, as: null },
-        { id: 'g3', name: 'Gruppe 3', ov: null, as: null },
+        { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+        { id: 'g3', name: 'Gruppe 3', overseerId: null, assistantId: null },
       ],
     })
     fireEvent.click(container.querySelector('.grp-add')!)

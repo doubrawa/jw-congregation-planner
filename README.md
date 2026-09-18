@@ -267,6 +267,97 @@ Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
 Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
 Versammlung, schreiben dürfen im Wesentlichen nur Planer).
 
+### Neuaufbau: wenn sich das Schema ändert
+
+[`supabase/schema.sql`](supabase/schema.sql) ist mit `create table if not
+exists` formuliert und lässt eine bestehende Tabelle deshalb in Ruhe — eine
+geänderte Spaltendefinition erreicht eine laufende Datenbank also **nicht**.
+Solange die App nicht ausgerollt ist, wird neu aufgebaut statt migriert (eine
+Migrationskette daneben soll es nicht wieder geben, siehe Kopf der Datei):
+
+1. [`supabase/neuaufbau.sql`](supabase/neuaufbau.sql) im SQL-Editor ausführen —
+   **löscht alle Daten**, aber keine Konten (`auth.users` bleibt).
+2. `supabase/schema.sql` ausführen.
+3. Alle fünf Edge Functions deployen (`import-week`, `send-plan`,
+   `send-reminders`, `send-invite`, `substitute`).
+4. Versammlung und erstes Mitglied anlegen — `node
+   scripts/versammlung-anlegen.mjs` oder die `INSERT`-Beispiele am Ende der
+   `schema.sql`.
+
+Danach den Datenbestand füllen. **Alle fünf Schritte, in dieser Reihenfolge** —
+`versammlung-zuruecksetzen.mjs` leert `absences` und `fs_weeks` mit, und was es
+leert, holt niemand von selbst zurück:
+
+| # | Schritt | Was fehlt sonst |
+| --- | --- | --- |
+| 1 | `scripts/versammlung-zuruecksetzen.mjs --sql <personen.sql>` | Personen, Gruppen, Haushalte |
+| 2 | In der App: „Nächste Woche importieren" (so oft wie nötig) | die Programme |
+| 3 | `scripts/wochenplanung-importieren.mjs` | Zuteilungen, Hilfsdienste, Reinigung |
+| 4 | `scripts/abwesenheiten-importieren.mjs` | **die Abwesenheiten** — ohne sie plant die App gegen einen leeren Kalender |
+| 5 | `scripts/treffpunkte-importieren.mjs` | die Leiter der Treffpunkte |
+
+Jedes Skript zuerst mit `--trocken`. Das Zurücksetzen gibt dieselbe Liste am
+Ende noch einmal aus; sie stand dort bis zum 18. September 2026 unvollständig,
+und genau deshalb lief ein Neuaufbau ohne die Abwesenheiten durch.
+
+**Vorher ist nichts zu setzen.** Die Projekt-URL holen sich die Skripte aus
+`.env.local` (`VITE_SUPABASE_URL`), und nach dem Secret-Schlüssel fragen sie,
+wenn keiner dasteht — verdeckt, mit dem Link aufs Dashboard daneben. Wer nicht
+bei jedem Lauf tippen will, hinterlegt ihn **einmal**:
+
+```powershell
+node scripts/schluessel-setzen.mjs
+```
+
+Das fragt verdeckt, **prüft den Schlüssel am Projekt** (ein versehentlich
+eingefügter Publishable-Key fliegt damit sofort auf statt erst beim ersten
+Schreibversuch) und legt ihn als `SUPABASE_SECRET_KEY` in `.env.local` ab —
+gitignored wie der Rest der Datei, und die übrigen Zeilen bleiben unberührt.
+Danach findet ihn jedes Wartungsskript von selbst.
+
+**Eingefügt wird zeilenweise.** Die Abfrage liest über `readline`, nicht Taste
+für Taste — ein eingefügter Schlüssel kommt als **eine Zeile** an, auch in
+eingebetteten Terminals. Eine Zwischenfassung las am 18. September 2026
+Einzeltasten im Rohmodus: Im Terminal-Panel der Claude-Desktop-App kam davon
+nichts an, die Aufforderung stand da, und der Lauf hing, bis jemand den Prozess
+abschoss. Verdeckt bleibt die Eingabe, soweit die Konsole es zulässt; schreibt
+sie selbst mit, ist der Schlüssel im Rückblick zu sehen — lieber sichtbar als
+gar nicht. Wer nichts eingeben mag, schreibt die Zeile
+`SUPABASE_SECRET_KEY=sb_secret_…` von Hand in `.env.local` und startet das
+Skript danach: Es findet den Schlüssel dort und prüft ihn nur noch.
+
+**Wird der Befehl nicht selbst getippt, sondern eingespeist** — etwa über den
+Knopf „Ausführen" im Terminal der Claude-Desktop-App —, kehrt die Shell sofort
+zu ihrem Prompt zurück, und der Prozess wartet ohne Tastatur weiter: Die
+Aufforderung steht da, nichts kommt an. Gemessen am 18. September 2026 im
+selben Panel: derselbe Lauf, von Hand gestartet, empfing den eingefügten
+Schlüssel vollständig. Für den eingespeisten Fall gibt es zwei Wege ohne
+Eingabe — der erste braucht nur einen Klick:
+
+```powershell
+node scripts/schluessel-setzen.mjs --zwischenablage
+```
+
+Schlüssel im Dashboard kopieren, Befehl unverändert ausführen: Das Skript holt
+ihn aus der Zwischenablage, schält Zeilenumbruch, Anführungszeichen und ein
+vorangestelltes `SUPABASE_SECRET_KEY=` ab und gibt ihn nie aus. In der History
+landet dabei nichts. Der zweite Weg ist `--key sb_secret_…` in der
+Befehlszeile; der Schlüssel steht danach allerdings in der PowerShell-History
+(`(Get-PSReadLineOption).HistorySavePath`).
+
+Warum abgelegt und nicht gesetzt: Eine Umgebungsvariable lebt nur in dem
+Fenster, in dem sie gesetzt wurde, und ein Aufruf **ohne Terminal** (Cron, ein
+zweites Werkzeug, eine Sitzung, die jeden Befehl in einer frischen Shell
+startet) kann nicht einmal gefragt werden — er bräche mit „kein Terminal zum
+Fragen" ab. Eine gesetzte Umgebungsvariable schlägt weiterhin die Datei;
+`--neu` fragt nach dem Rotieren erneut, `--trocken` zeigt nur, was geschähe.
+Entfernen heißt: die Zeile aus `.env.local` löschen.
+
+Dass jedes Skript denselben Weg geht, hält `schluessel-einheitlich.test.ts`
+fest: Der Weg stand vorher nur in `rollen-nachtragen.mjs`, und die übrigen
+brachen mit „Invalid API key" ab — fünfmal hintereinander in einem einzigen
+Neuaufbau.
+
 ## Arbeitsheft-Import (Edge Function)
 
 Der Import „NÄCHSTE WOCHE IMPORTIEREN" (Einstellungen → Programm-Import) holt

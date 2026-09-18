@@ -41,7 +41,7 @@ export function S89Bogen() {
    * nur dem Schüler geben; eingeschaltet, weil das der übliche Fall ist.
    */
   const [mitPartner, setMitPartner] = useState(true)
-  const zettel = alleS89DerWoche(state.weeks, state.week, state.congregation.meetings, mitPartner)
+  const zettel = alleS89DerWoche(state.weeks, state.week, state.congregation.times, mitPartner)
 
   // Nach dem Druck das Kennzeichen wieder weg — sonst druckte der nächste
   // Ctrl+P-Versuch im Programm still die Zettel.

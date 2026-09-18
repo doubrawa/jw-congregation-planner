@@ -16,7 +16,7 @@ import type { Absence, Meeting, PartItem, Person, Service, Week } from './types'
  */
 
 const MONTAG = '2026-09-07' // Woche 0; Zusammenkünfte Di und So
-const ZEITEN = 'Di 19:00 · So 10:00'
+const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 const person = (id: string, ...bereiche: string[]): Person => ({
   id, fn: `P${id}`, ln: 'Beispiel', role: 'verkuendiger', tel: '', mail: '',

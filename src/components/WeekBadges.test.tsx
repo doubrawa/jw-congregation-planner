@@ -105,7 +105,7 @@ describe('Die Wochen-Chips', () => {
   })
 
   it('eine Verlegung sieht man schon in der Navigation — ohne den Tab zu wechseln', () => {
-    const verlegt = woche({ dev: { mid: { day: 'Donnerstag' } } })
+    const verlegt = woche({ dev: { mid: { wd: 4 } } })
     const { container } = buehne('chips', <WeekChips week={verlegt} showCurrent />)
     expect(chips(container)).toEqual([t.tabMid])
     expect(container.querySelector('.week-chip--dev s')).toBeNull() // verlegt, nicht gestrichen
@@ -173,7 +173,7 @@ describe('Das Ausfall-Banner (T30)', () => {
   })
 
   it('eine bloße Verlegung ist kein Ausfall', () => {
-    const verlegt = woche({ dev: { mid: { day: 'Donnerstag', time: '18:30' } } })
+    const verlegt = woche({ dev: { mid: { wd: 4, time: '18:30' } } })
     const { container } = buehne('aus', <AusfallBanner week={verlegt} tab="mid" />)
     expect(container.querySelector('.ausfall-banner')).toBeNull()
   })
@@ -194,8 +194,8 @@ describe('Weitere Termine der Woche (T63)', () => {
   const mitTerminen = (): Week =>
     woche({
       termine: [
-        { id: 'x2', title: 'Ältestenbesprechung', day: 'Donnerstag', time: '19:30', place: 'Saal' },
-        { id: 'x1', title: 'Pionierbesprechung', day: 'Montag', time: '18:00' },
+        { id: 'x2', title: 'Ältestenbesprechung', wd: 4, time: '19:30', place: 'Saal' },
+        { id: 'x1', title: 'Pionierbesprechung', wd: 1, time: '18:00' },
       ],
     } as Partial<Week>)
 
@@ -223,7 +223,7 @@ describe('Weitere Termine der Woche (T63)', () => {
     const w = woche({
       termine: [
         { id: 'x1', title: 'Ohne Tag' },
-        { id: 'x2', title: 'Mit Tag', day: 'Montag' },
+        { id: 'x2', title: 'Mit Tag', wd: 1 },
       ],
     } as Partial<Week>)
     const { container } = buehne('termine', <TerminListe week={w} />)

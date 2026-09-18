@@ -6,11 +6,13 @@
 
 import { buildFsWeeks } from './fs'
 import { normalizeChairKeys, serviceQualKey } from './helpers'
+import { STANDARD_ZEITEN } from './vorgaben'
 import { ersteZahl } from './ziffern'
 import type {
   Absence,
   FsInstance,
   FsRule,
+  Congregation,
   Group,
   HelperSlot,
   MyTask,
@@ -42,11 +44,11 @@ const EINGANG = serviceQualKey('eingang')
 /** Demo-Rechte: Prototyp zeigt Simon als Koordinator (volle Navigation). */
 export const DEMO_PLANNER = true
 
-export const CONGREGATION = {
+export const CONGREGATION: Congregation = {
   name: 'Musterstadt',
   hall: 'Hauptstraße 12',
-  meetings: 'Di 19:00 · So 10:00',
-} as const
+  times: STANDARD_ZEITEN,
+}
 
 /* ---- Personen ---------------------------------------------------------- */
 
@@ -172,12 +174,12 @@ export const DEMO_PERSONS: Person[] = CORE_PERSONS.map((p) =>
 )
 
 /* ---- Predigtdienstgruppen ---------------------------------------------- */
-// Aufseher (ov) = Älteste p1–p4; Gehilfen (as) = DAG/Verkündiger p6,p7,p8,p13.
+// Aufseher = Älteste p1–p4; Gehilfen = DAG/Verkündiger p6,p7,p8,p13.
 export const DEMO_GROUPS: Group[] = [
-  { id: 'g1', name: 'Gruppe 1', ov: 'p1', as: 'p6' },
-  { id: 'g2', name: 'Gruppe 2', ov: 'p2', as: 'p7' },
-  { id: 'g3', name: 'Gruppe 3', ov: 'p3', as: 'p8' },
-  { id: 'g4', name: 'Gruppe 4', ov: 'p4', as: 'p13' },
+  { id: 'g1', name: 'Gruppe 1', overseerId: 'p1', assistantId: 'p6' },
+  { id: 'g2', name: 'Gruppe 2', overseerId: 'p2', assistantId: 'p7' },
+  { id: 'g3', name: 'Gruppe 3', overseerId: 'p3', assistantId: 'p8' },
+  { id: 'g4', name: 'Gruppe 4', overseerId: 'p4', assistantId: 'p13' },
 ]
 
 /* ---- Zusammenkünfte für den Predigtdienst ("Treffpunkte") --------------- */
@@ -194,9 +196,9 @@ const DEMO_WEEK_COUNT = 4
  * (skipCong: entfällt, wenn am selben Tag ein Versammlungstreffpunkt liegt).
  */
 export const DEMO_FS_RULES: FsRule[] = [
-  { id: 'r1', grp: '', wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
-  { id: 'r2', grp: '', wd: 3, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
-  { id: 'r3', grp: '', wd: 6, time: '09:30', place: 'Königreichssaal', monthly: 1, skipCong: false },
+  { id: 'r1', grp: null, wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  { id: 'r2', grp: null, wd: 3, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  { id: 'r3', grp: null, wd: 6, time: '09:30', place: 'Königreichssaal', monthly: 1, skipCong: false },
   { id: 'r4', grp: 'g1', wd: 6, time: '09:30', place: 'Bei Familie Albrecht', monthly: 0, skipCong: true },
   { id: 'r5', grp: 'g2', wd: 6, time: '09:15', place: 'Königreichssaal, Nebenraum', monthly: 0, skipCong: true },
   { id: 'r6', grp: 'g3', wd: 6, time: '10:00', place: 'Per Videokonferenz', monthly: 0, skipCong: true },
@@ -509,6 +511,11 @@ export function buildDemoWeeks(): Week[] {
     },
     {
       range: '28. Sep – 4. Okt', start: '2026-09-28', book: 'Jeremia 40–42', current: false, mem: true, memCancel: 'we',
+      // Das Gedächtnismahl ist am Samstag nach Sonnenuntergang statt am Sonntag
+      // — und das steht hier als **Wert**. Bis zum 18. September 2026 stand es
+      // nur im Anzeigetext des `date`-Feldes daneben („Samstag, 3. Oktober ·
+      // 19:30"), aus dem der Termin zurückgelesen wurde.
+      dev: { we: { wd: 6, time: '19:30' } },
       mid: {
         date: 'Dienstag, 29. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [

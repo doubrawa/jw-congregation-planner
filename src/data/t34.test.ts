@@ -116,8 +116,8 @@ describe('F7 — feste Rollen doppelt vergeben', () => {
 /* ---- F8 ------------------------------------------------------------------ */
 
 const GRUPPEN: Group[] = [
-  { id: 'g1', name: 'Gruppe 1', ov: 'ov1', as: 'as1' },
-  { id: 'g2', name: 'Gruppe 2', ov: 'ov2', as: null },
+  { id: 'g1', name: 'Gruppe 1', overseerId: 'ov1', assistantId: '' },
+  { id: 'g2', name: 'Gruppe 2', overseerId: 'ov2', assistantId: null },
 ]
 
 /** Treffpunkt-qualifizierte Person in Gruppe `grp`. */
@@ -125,7 +125,7 @@ const leiter = (id: string, grp: string | null) =>
   person(id, { grp, priv: { ...KEINE, treffpunkt: true } })
 
 function tp(patch: Partial<FsInstance>): FsInstance {
-  return { id: 'i', ruleId: null, grp: '', wd: 6, time: '09:30', place: 'KH', leader: '', ...patch }
+  return { id: 'i', ruleId: null, grp: null, wd: 6, time: '09:30', place: 'KH', leader: '', ...patch }
 }
 
 describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
@@ -175,7 +175,7 @@ describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
   it('Treffpunkte ohne Gruppe bleiben unberührt', () => {
     // Regressionsprobe: ohne `grp` ist jeder Rang 0, die Reihenfolge muss
     // exakt die sein, die ohne Gruppen herauskäme.
-    const ohne = [[tp({ id: 'x', grp: '' })]]
+    const ohne = [[tp({ id: 'x', grp: null })]]
     const mitGruppen = fsAutoAssign(ohne, 0, pool, null, [], undefined, GRUPPEN).fsWeeks
     const ohneGruppen = fsAutoAssign(ohne, 0, pool).fsWeeks
     expect(mitGruppen[0][0].lpid).toBe(ohneGruppen[0][0].lpid)

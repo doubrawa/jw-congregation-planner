@@ -64,7 +64,7 @@ describe('Gespeichert ist, was auf dem Bildschirm steht', () => {
     // Die Kennung steckt in jeder Treffpunkt-Instanz und über sie im
     // Aufgaben-Schlüssel. Zwei Kennungen hießen: eine Regel, die der nächste
     // Ladevorgang nicht wiedererkennt.
-    const { gespeichert, gezeigt } = nachAktion({ type: 'fsRuleAdd', grp: '' })
+    const { gespeichert, gezeigt } = nachAktion({ type: 'fsRuleAdd', grp: null })
     expect(gezeigt.fsRules.map((r) => r.id)).toEqual(gespeichert.fsRules.map((r) => r.id))
     // Und die daraus erzeugten Wochen tragen dieselbe.
     const kennungen = (s: AppState) => s.fsWeeks.flat().map((i) => i.id).sort()

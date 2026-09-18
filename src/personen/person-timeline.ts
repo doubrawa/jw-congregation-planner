@@ -92,7 +92,7 @@ export function personTimeline(
     state.services,
     name,
     state.confirmations,
-    state.congregation.meetings,
+    state.congregation.times,
     person.id,
   )
   for (const task of tasks) {
@@ -103,7 +103,7 @@ export function personTimeline(
     // Tag und Uhrzeit kommen aus meeting-dates.ts — derselben Quelle wie
     // Countdown, Erinnerung und Abwesenheitsprüfung. Die Zeitleiste hatte
     // dafür eine eigene Rechnung, was bei abweichenden Terminen auseinanderlief.
-    const datum = meetingDate(week, wi, pos.tab, state.fsBase, state.congregation.meetings)
+    const datum = meetingDate(week, wi, pos.tab, state.fsBase, state.congregation.times)
     entries.push({
       kind: 'meeting',
       key: task.id,
@@ -111,7 +111,7 @@ export function personTimeline(
       // Zusammenkünfte und Treffpunkte ineinander einordnen.
       tag: tageZwischen(state.fsBase, datum),
       datum,
-      zeit: meetingTime(week, pos.tab, state.congregation.meetings),
+      zeit: meetingTime(week, pos.tab, state.congregation.times),
       vergangen: datum < grenze,
       // Beide Hälften getrennt weiterreichen: die Anzeige übersetzt den Titel
       // in die Sprache der Versammlung, die Rolle in die des Lesers.

@@ -3,16 +3,16 @@ import {
   deutschesDatum as edgeDeutschesDatum,
   heuteUtc as edgeHeuteUtc,
   istAusgefallenFuer as edgeAusgefallen,
-  meetingDayOffsets as edgeOffsets,
-  meetingTimesOf as edgeTimes,
   personDisplayName as edgeName,
   rolleMitHerkunft as edgeHerkunft,
   SKIP_ROLE as EDGE_SKIP,
   taskDateText as edgeDate,
   terminText as edgeTermin,
   versatzMitAbweichung as edgeVersatz,
-  WEEKDAY_OFFSET as EDGE_WEEKDAY,
+  zeitenAus as edgeZeitenAus,
   zeitMitAbweichung as edgeZeit,
+  versatzAbMontag as edgeVersatzAbMontag,
+  STANDARD_ZEITEN as EDGE_STANDARD_ZEITEN,
   zuteilungsLabel as edgeLabel,
 } from '../../supabase/functions/_shared/planung.ts'
 import {
@@ -23,11 +23,12 @@ import {
 } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { STANDARD_ERINNERUNGEN } from './vorgaben'
 import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
-import { deutschesDatum, meetingDateText, meetingDayOffsets, meetingOffset, meetingTime, meetingTimesOf } from './meeting-dates'
+import { deutschesDatum, meetingDateText, meetingOffset, meetingTime, versatzAbMontag } from './meeting-dates'
 import { isGuestRole, sentKey } from './planning'
 import { entzogeneZusagen, offeneMeldungen } from './plan-versand'
 import { emptyQualifications } from './helpers'
 import type { Abweichung, FsInstance, Meeting, Person, Section, Service, Week } from './types'
+import { STANDARD_ZEITEN } from './vorgaben'
 
 /**
  * Client und Edge Functions rechnen gleich — geprüft, nicht angenommen.
@@ -174,20 +175,42 @@ describe('Rolle mit Herkunft', () => {
   })
 })
 
-describe('Uhrzeiten der Zusammenkünfte', () => {
-  // Dieselbe Zeichenkette, die andere Hälfte: die Tag-Hälfte war längst
-  // geteilt und geprüft, die Uhrzeit-Hälfte lag nur in `send-reminders`.
-  const faelle = [
-    'Di 19:00 · So 10:00',
-    'Mi 19.30 · Sa 17.00', // Punkt statt Doppelpunkt
-    'Di 9:00 · So 10:00', // einstellige Stunde → beidseitig führende Null
-    '', // ohne Angabe → beidseitig leer, keine erfundene Zeit
-    'Di · So', // Kürzel ohne Zeiten
-    'Fr 19:00', // nur eine Angabe
-  ]
+describe('Regeltermine der Versammlung', () => {
+  /*
+    Hier standen zwei Blöcke — „Uhrzeiten der Zusammenkünfte" und „Wochentage
+    der Zusammenkünfte" — und beide verglichen zwei **Leser desselben
+    Anzeigetexts**: „Di 19:00 · So 10:00" wurde auf jeder Seite mit einem
+    eigenen regulären Ausdruck zerlegt. Genau das ist seit dem 18. September
+    2026 weg: Die Versammlung führt vier Spalten, und beide Seiten lesen
+    Werte.
 
-  it.each(faelle)('„%s" ergibt beidseitig dieselben Uhrzeiten', (zeiten) => {
-    expect(edgeTimes(zeiten)).toEqual(meetingTimesOf(zeiten))
+    Zu vergleichen bleibt, was beide noch selbst tun — und hier ist es
+    buchstäblich dasselbe Stück Code: `STANDARD_ZEITEN` liegt im geteilten
+    Modul, der Client gibt es nur weiter. Der Test hält fest, dass das so
+    bleibt: Zwei Vorgaben hießen, dass die App einen Tag anzeigt und die
+    Erinnerung einen anderen nennt.
+  */
+  it('die Vorgabe ist auf beiden Seiten dieselbe', () => {
+    expect(STANDARD_ZEITEN).toEqual(EDGE_STANDARD_ZEITEN)
+    expect(STANDARD_ZEITEN).toBe(EDGE_STANDARD_ZEITEN)
+  })
+
+  it('aus den vier Spalten wird beidseitig derselbe Wert', () => {
+    // `time` kommt aus PostgreSQL als „19:00:00"; geführt wird „19:00".
+    expect(edgeZeitenAus({ mid_wd: 3, mid_time: '19:30:00', we_wd: 6, we_time: '17:00:00' })).toEqual({
+      mid: { wd: 3, time: '19:30' },
+      we: { wd: 6, time: '17:00' },
+    })
+    expect(edgeZeitenAus(undefined)).toEqual(STANDARD_ZEITEN)
+  })
+
+  it('der Versatz ab Montag ist beidseitig derselbe', () => {
+    for (let wd = 0; wd < 7; wd++) {
+      expect(edgeVersatzAbMontag(wd), `wd ${wd}`).toBe(versatzAbMontag(wd))
+    }
+    // Und er stimmt: Sonntag (0) liegt hinten, Montag (1) vorn.
+    expect(versatzAbMontag(0)).toBe(6)
+    expect(versatzAbMontag(1)).toBe(0)
   })
 })
 
@@ -205,22 +228,6 @@ describe('Deutsches Datum', () => {
 
   it('nennt Wochentag, Tag und Monat — nicht die Wochenspanne', () => {
     expect(deutschesDatum(new Date('2026-09-08T12:00:00'))).toBe('Dienstag, 8. September')
-  })
-})
-
-describe('Wochentage der Zusammenkünfte', () => {
-  const faelle = [
-    'Di 19:00 · So 10:00',
-    'Mi 19:30 · Sa 17:00',
-    'Mo 18:00 · So 09:00',
-    '', // ohne Angabe → Di/So
-    '19:00 · 10:00', // Zeiten ohne Kürzel → Di/So
-    'Donnerstag 19:00 · Sonntag 10:00', // ausgeschrieben, kein Kürzel-Treffer
-    'Fr 19:00', // nur eine Angabe → zweite fällt zurück
-  ]
-
-  it.each(faelle)('„%s" ergibt beidseitig dieselben Versätze', (zeiten) => {
-    expect(edgeOffsets(zeiten)).toEqual(meetingDayOffsets(zeiten))
   })
 })
 
@@ -270,18 +277,23 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
     nicht erst erinnern.
 
     Beide Seiten müssen dieselbe Rangfolge anwenden:
-    Abweichung → eigener Termin im `date`-Feld → Einstellungen.
+    Abweichung → Rhythmus der Versammlung.
+
+    Dazwischen stand eine dritte Quelle — der Wochentag, den das `date`-Feld
+    **anzeigt**. Die Fälle „eigener Termin" von damals sind geblieben: Sie
+    zeigen jetzt, dass aus dem Anzeigetext nichts mehr abgeleitet wird.
   */
   const faelle: Array<[string, Abweichung | undefined, string, number, string]> = [
     ['ohne Abweichung, Wochenspanne', undefined, '7.–13. September', 1, '19:00'],
-    ['ohne Abweichung, eigener Termin', undefined, 'Samstag, 3. Oktober · 19:30', 5, '19:30'],
-    ['nur Tag verlegt', { day: 'Donnerstag' }, '7.–13. September', 3, '19:00'],
+    ['ohne Abweichung, Termin im Anzeigetext', undefined, 'Samstag, 3. Oktober · 19:30', 1, '19:00'],
+    ['nur Tag verlegt', { wd: 4 }, '7.–13. September', 3, '19:00'],
     ['nur Uhrzeit verlegt', { time: '18:30' }, '7.–13. September', 1, '18:30'],
-    ['Tag und Uhrzeit verlegt', { day: 'Freitag', time: '17:00' }, '7.–13. September', 4, '17:00'],
-    // Der wichtigste Fall: das `date`-Feld nennt noch den alten Termin.
-    ['Abweichung schlägt den eigenen Termin', { day: 'Montag', time: '20:00' }, 'Samstag, 3. Oktober · 19:30', 0, '20:00'],
+    ['Tag und Uhrzeit verlegt', { wd: 5, time: '17:00' }, '7.–13. September', 4, '17:00'],
+    ['Abweichung schlägt den Anzeigetext', { wd: 1, time: '20:00' }, 'Samstag, 3. Oktober · 19:30', 0, '20:00'],
     ['Ausfall ohne Verlegung ändert den Tag nicht', { cancelled: true }, '7.–13. September', 1, '19:00'],
-    ['unbekannter Wochentag fällt zurück', { day: 'Nichttag' }, '7.–13. September', 1, '19:00'],
+    // Der Sonntag ist die 0 — mit `||` statt `??` fiele er auf den Rhythmus
+    // zurück, und beide Seiten nennten den Dienstag.
+    ['auf Sonntag verlegt', { wd: 0 }, '7.–13. September', 6, '19:00'],
   ]
 
   const woche = (dev: Abweichung | undefined, date: string): Week => ({
@@ -293,13 +305,13 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
 
   it.each(faelle)('%s', (_name, dev, date, tag, zeit) => {
     const w = woche(dev, date)
-    const zeiten = 'Di 19:00 · So 10:00'
+    const zeiten = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
     // Client
     expect(meetingOffset(w, 'mid', zeiten)).toBe(tag)
     expect(meetingTime(w, 'mid', zeiten)).toBe(zeit)
     // Edge — dieselben Eingaben, eigene Fassung
-    expect(edgeVersatz(w.dev, 'mid', date, 1)).toBe(tag)
-    expect(edgeZeit(w.dev, 'mid', date, '19:00')).toBe(zeit)
+    expect(edgeVersatz(w.dev, 'mid', 2)).toBe(tag)
+    expect(edgeZeit(w.dev, 'mid', '19:00')).toBe(zeit)
   })
 
   /*
@@ -317,8 +329,8 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
   */
   it.each(faelle)('%s — derselbe Termin-Text', (_name, dev, date, tag, zeit) => {
     const w = woche(dev, date)
-    const zeiten = 'Di 19:00 · So 10:00'
-    expect(edgeTermin(w.start, tag, date, zeit, w.dev, 'mid')).toBe(
+    const zeiten = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
+    expect(edgeTermin(w.start, tag, date, zeit)).toBe(
       meetingDateText(w, 0, 'mid', zeiten),
     )
   })
@@ -328,7 +340,7 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
     // importierten Woche nennt keinen Tag — beide Seiten müssen ihn rechnen.
     const w = woche(undefined, '7.–13. September')
     expect(edgeDate(w.mid.date)).toBe('7.–13. September')
-    expect(meetingDateText(w, 0, 'mid', 'Di 19:00 · So 10:00')).toBe('Dienstag, 8. September · 19:00')
+    expect(meetingDateText(w, 0, 'mid', { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })).toBe('Dienstag, 8. September · 19:00')
   })
 
   it('„entfällt" heißt auf beiden Seiten dasselbe', () => {
@@ -347,20 +359,6 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
     const mahl: Week = { ...woche(undefined, '7.–13. September'), mem: true, memCancel: 'we' }
     expect(istAusgefallen(mahl, 'we')).toBe(false)
     expect(edgeAusgefallen(mahl.dev, 'we')).toBe(false)
-  })
-})
-
-describe('Ausgeschriebene Wochentage', () => {
-  it('deckt beide Schreibweisen des Samstags ab', () => {
-    // Ältere Datensätze tragen „Sonnabend"; fehlte er, fiele der Termin auf
-    // den Rhythmus aus den Einstellungen zurück — stumm und um Tage daneben.
-    expect(EDGE_WEEKDAY.Samstag).toBe(5)
-    expect(EDGE_WEEKDAY.Sonnabend).toBe(5)
-  })
-
-  it('Montag ist 0 und Sonntag 6 — die Woche beginnt am Montag', () => {
-    expect(EDGE_WEEKDAY.Montag).toBe(0)
-    expect(EDGE_WEEKDAY.Sonntag).toBe(6)
   })
 })
 
@@ -417,7 +415,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
   const inst = {
     id: 'r1',
     ruleId: 'r1',
-    grp: '',
+    grp: null,
     wd: 6,
     time: '09:30',
     place: 'Königreichssaal',
@@ -435,7 +433,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
 
   it('derselbe Schlüssel für denselben Treffpunkt', () => {
     // Client: die Woche ist die zweite geladene (wi = 1).
-    const client = offeneMeldungen(woche, [inst as FsInstance], 1, BASIS, [], {}, {}, '', VOR_DER_WOCHE)
+    const client = offeneMeldungen(woche, [inst as FsInstance], 1, BASIS, [], {}, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)
     // Function: der Montag kommt aus der Datenbankzeile.
     const server = edgeFsPending(MONTAG, [inst as never], new Map())
     expect(client.map((o) => o.key)).toEqual(server.map((p) => p.key))
@@ -462,7 +460,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
       1,
       BASIS,
       [],
-      '',
+      STANDARD_ZEITEN,
       { [key]: 'bestätigt' },
       VOR_DER_WOCHE,
     )
@@ -488,7 +486,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
     // Der Kreisaufseher hat kein Konto — die Ausnahme muss beidseitig gelten,
     // sonst geht eine Nachricht ins Leere oder gar keine hinaus.
     const extern = { ...inst, lext: true }
-    expect(offeneMeldungen(woche, [extern as FsInstance], 1, BASIS, [], {}, {}, '', VOR_DER_WOCHE)).toEqual([])
+    expect(offeneMeldungen(woche, [extern as FsInstance], 1, BASIS, [], {}, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)).toEqual([])
     expect(edgeFsPending(MONTAG, [extern as never], new Map())).toEqual([])
   })
 })
@@ -496,39 +494,42 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
 /**
  * **Der Erinnerungs-Rhythmus.**
  *
- * Die Voreinstellung steht an zwei Stellen: im Client (`STANDARD_ERINNERUNGEN`,
+ * Die Voreinstellung stand an zwei Stellen: im Client (`STANDARD_ERINNERUNGEN`,
  * gezeigt in den Einstellungen) und als Rückfall in `send-reminders`, wo eine
- * Versammlung nichts Eigenes gespeichert hat. Läuft das auseinander, zeigt die
- * App „Wiederholung aus" und der Versand erinnert trotzdem täglich — sichtbar
+ * Versammlung nichts Eigenes gespeichert hatte. Lief das auseinander, zeigte die
+ * App „Wiederholung aus" und der Versand erinnerte trotzdem täglich — sichtbar
  * nur für den Empfänger, der sich über sieben Push-Nachrichten wundert.
+ *
+ * Seit die Erinnerungen **Spalten** sind (T105), gibt es diesen Rückfall nicht
+ * mehr: Eine Versammlung hat immer Werte, und woher sie kommen, sagt das
+ * `default` in `schema.sql`. Verglichen wird deshalb der Client mit dem
+ * Schema — dieselbe Frage, eine Ebene tiefer.
  */
-describe('Voreinstellung der Erinnerungen: Client und Versand sind sich einig', () => {
-  // Über Vite eingelesen, nicht über `node:fs`: Diese Suite läuft in der
-  // Browser-Umgebung des Projekts, dieselbe Machart wie in
-  // `i18n/mitteilungs-titel.test.ts`.
-  const EDGE = import.meta.glob('../../supabase/functions/send-reminders/index.ts', {
+describe('Voreinstellung der Erinnerungen: Client und Datenbank sind sich einig', () => {
+  const SCHEMA = import.meta.glob('../../supabase/schema.sql', {
     query: '?raw',
     import: 'default',
     eager: true,
   }) as Record<string, string>
-  const quelle = Object.values(EDGE)[0] ?? ''
-  const rueckfall = (feld: string): string => {
-    // Gelesen wird der Quelltext, weil die Function nicht importierbar ist
-    // (sie ruft beim Laden `Deno.serve`). Findet das Muster seine Stelle nicht
-    // mehr, bricht die Probe laut ab, statt stillschweigend grün zu bleiben.
-    const muster = new RegExp(
-      `${feld}: cong\\.settings\\?\\.reminders\\?\\.${feld} \\?\\? ([^,\\n]+),`,
-    )
-    const m = muster.exec(quelle)
-    if (!m) throw new Error(`Rückfall für \`${feld}\` nicht gefunden — Stelle nachziehen`)
+  const schema = Object.values(SCHEMA)[0] ?? ''
+
+  /** Der Vorgabewert einer Spalte aus `schema.sql`. */
+  const vorgabe = (spalte: string): string => {
+    const m = new RegExp(`\\n  ${spalte}\\s+\\w+ not null default ([^\\s,]+)`).exec(schema)
+    if (!m) throw new Error(`Vorgabe für \`${spalte}\` nicht gefunden — Stelle nachziehen`)
     return m[1]!.trim()
   }
 
-  it.each([['first'], ['last'], ['repeat']])('%s', (feld) => {
-    expect(rueckfall(feld)).toBe(String(STANDARD_ERINNERUNGEN[feld as keyof typeof STANDARD_ERINNERUNGEN]))
+  it.each([
+    ['first', 'reminder_first'],
+    ['last', 'reminder_last'],
+    ['repeat', 'reminder_repeat'],
+  ])('%s', (feld, spalte) => {
+    expect(vorgabe(spalte)).toBe(
+      String(STANDARD_ERINNERUNGEN[feld as keyof typeof STANDARD_ERINNERUNGEN]),
+    )
   })
 })
-
 
 /**
  * **„Plan senden" trifft auf beiden Seiten dieselbe Menge** — auch bei den
@@ -614,7 +615,7 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
     svc: Service[] = dienste,
     conf: Record<string, 'bestätigt' | 'verhindert'> = {},
   ): [string[], string[]] => [
-    offeneMeldungen(wochePS(mid), [], 0, null, svc, conf, {}, '', VOR_DER_WOCHE)
+    offeneMeldungen(wochePS(mid), [], 0, null, svc, conf, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)
       .map((o) => `${o.key} | ${o.name}`)
       .sort(),
     edgePending(MONTAG_PS, 'mid', mid as never, svc as never, new Map(Object.entries(conf)))
@@ -686,7 +687,7 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
  */
 describe('Plan senden: Vorschau und Versand lassen dasselbe Vergangene weg', () => {
   const MONTAG_V = '2026-09-07' // Di 8.9., So 13.9.
-  const MEETINGS_V = 'Di 19:00 · So 10:00'
+  const MEETINGS_V = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
   const dienste: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
 
   const woche = (over: Partial<Week> = {}): Week =>
@@ -705,8 +706,8 @@ describe('Plan senden: Vorschau und Versand lassen dasselbe Vergangene weg', () 
     }) as unknown as Week
 
   const treffpunkte = [
-    { id: 'mo', ruleId: 'mo', grp: '', wd: 1, time: '14:00', place: 'Saal', leader: 'Dora Dill', lpid: 'p4' },
-    { id: 'sa', ruleId: 'sa', grp: '', wd: 6, time: '09:30', place: 'Saal', leader: 'Emil Erd', lpid: 'p5' },
+    { id: 'mo', ruleId: 'mo', grp: null, wd: 1, time: '14:00', place: 'Saal', leader: 'Dora Dill', lpid: 'p4' },
+    { id: 'sa', ruleId: 'sa', grp: null, wd: 6, time: '09:30', place: 'Saal', leader: 'Emil Erd', lpid: 'p5' },
   ] as FsInstance[]
 
   /** Beide Seiten am `tag`. September 2026, mittags örtlich bzw. als UTC-Mitternacht. */
@@ -740,7 +741,7 @@ describe('Plan senden: Vorschau und Versand lassen dasselbe Vergangene weg', () 
   it('eine verlegte Zusammenkunft zählt ab ihrem neuen Tag — auf beiden Seiten (T30)', () => {
     // Die Wochenmitte ist auf Donnerstag verlegt: Am Mittwoch steht sie noch
     // bevor, obwohl der reguläre Dienstag vorbei ist.
-    const verlegt = woche({ dev: { mid: { day: 'Donnerstag' } } } as Partial<Week>)
+    const verlegt = woche({ dev: { mid: { wd: 4 } } } as Partial<Week>)
     const [client, server] = beideSeiten(9, verlegt)
     expect(client).toEqual(server)
     expect(client).toEqual(['Anna Alt', 'Bernd Berg', 'Clara Cord', 'Emil Erd'])

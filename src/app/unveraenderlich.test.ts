@@ -137,7 +137,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'lacMove', si: p.si, ii: p.ii, dir: 1 },
     { type: 'lacRemove', si: p.si, ii: p.ii },
     // Wochen-Sonderfälle
-    { type: 'setAbweichung', tab: 'mid', patch: { day: 'Mittwoch', time: '19:30' } },
+    { type: 'setAbweichung', tab: 'mid', patch: { wd: 3, time: '19:30' } },
     { type: 'setAbweichung', tab: 'mid', patch: { cancelled: true, reason: 'Probe' } },
     { type: 'setDienstwoche', on: true },
     { type: 'setAnlass', art: 'co' },
@@ -154,11 +154,11 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'changeServiceCount', key: svc.key, delta: -1 },
     { type: 'addService', service: { key: 'probe', name: 'Probe', count: 2 } },
     { type: 'removeService', key: 'probe' },
-    { type: 'addGroup', group: { id: 'g-probe', name: 'Probe', ov: '', as: '' } },
-    { type: 'updateGroup', id: grp.id, patch: { ov: person.id } },
+    { type: 'addGroup', group: { id: 'g-probe', name: 'Probe', overseerId: '', assistantId: '' } },
+    { type: 'updateGroup', id: grp.id, patch: { overseerId: person.id } },
     { type: 'removeGroup', id: 'g-probe' },
     { type: 'updateCongregation', patch: { hall: 'Probesaal' } },
-    { type: 'updateCongregation', patch: { meetings: 'Mi 19:30 · So 09:30' } },
+    { type: 'updateCongregation', patch: { times: { mid: { wd: 3, time: '19:30' }, we: { wd: 0, time: '09:30' } } } },
     // Treffpunkte
     { type: 'fsAutoAssign', onlyGroup: null },
     { type: 'fsClear', onlyGroup: null },

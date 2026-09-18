@@ -191,7 +191,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   leseWege.push(path)
   if (path.startsWith('congregations')) {
     return jsonRes([
-      { id: CONG, meeting_times: 'Di 19:00 · So 10:00', settings: { reminders } },
+      { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat },
     ])
   }
   if (path.startsWith('reminder_log')) return jsonRes(reminderLog)
@@ -403,11 +403,7 @@ describe('send-reminders: wer NICHT erinnert wird', () => {
     ;(globalThis as Record<string, unknown>).fetch = async (i: unknown, init?: { method?: string }) => {
       if (String(i).includes('congregations')) {
         return jsonRes([
-          {
-            id: CONG,
-            meeting_times: 'Di 19:00 · So 10:00',
-            settings: { reminders: { first: 7, last: 1, repeat: false } },
-          },
+          { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: false },
         ])
       }
       return fakeFetch(i, init)
@@ -548,9 +544,11 @@ describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
   // Eine Gedächtnismahl-Woche trägt ihren echten Termin im date-Feld. Der
   // Versand rechnete stattdessen mit dem Rhythmus aus den Einstellungen und
   // erinnerte deshalb an einem anderen Tag als Anzeige und Zeitleiste.
+  // Verlegt wird über die Abweichung der Woche (T30) — bis zum 18.9.2026 stand
+  // der Termin als Text im Fri Sep 18 00:35:49     2026-Feld und wurde von dort zurückgelesen.
   const aufSamstag = () => {
-    const w = weeks[0].data as { mid: { date: string } }
-    w.mid.date = 'Samstag, 12. September · 19:30 · Königreichssaal'
+    const w = weeks[0].data as { dev?: Record<string, { wd: number; time: string }> }
+    w.dev = { mid: { wd: 6, time: '19:30' } }
   }
 
   // Unterschieden wird an der Glocke: die gibt es nur an den Haupttagen
@@ -648,9 +646,11 @@ describe('send-reminders: Termin statt Wochenspanne im Text', () => {
     expect(previewFor(r, U_MAX)?.body).not.toContain('7.–13.')
   })
 
-  it('ein eigener Termin bleibt unangetastet', async () => {
-    const w = weeks[0].data as { mid: { date: string } }
-    w.mid.date = 'Samstag, 12. September · 19:30 · Königreichssaal'
+  it('eine verlegte Zusammenkunft nennt den verlegten Termin', async () => {
+    // Der Termin stand bis zum 18.9.2026 als Text im `date`-Feld und wurde von
+    // dort zurückgelesen; jetzt sagt ihn die Abweichung der Woche (T30).
+    const w = weeks[0].data as { dev?: Record<string, { wd: number; time: string }> }
+    w.dev = { mid: { wd: 6, time: '19:30' } }
     vi.setSystemTime(new Date('2026-09-11T09:00:00Z'))
     expect(previewFor(await run(), U_MAX)?.body).toContain('Samstag, 12. September · 19:30')
   })

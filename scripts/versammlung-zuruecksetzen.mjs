@@ -35,11 +35,14 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/versammlung-zuruecksetzen.mjs \
  *     --sql C:\DATA\Claude\nws-export\import-live-personen.sql \
  *     [--cong <congregation-id>] [--trocken]
+ *
+ * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
+ * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
+ * keiner in der Umgebung steht — verdeckt, mit dem Link aufs Dashboard daneben.
+ * Wer `SUPABASE_SECRET_KEY` gesetzt hat, wird nicht gefragt.
  *
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts. **Immer zuerst so
  * ausführen.** Der Service-Role-Key umgeht RLS und darf nie ins Repo.
@@ -47,7 +50,7 @@
 
 import fs from 'node:fs'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, authKopf, personDisplayName, secretKey } from './gemeinsam.mjs'
+import { argumente, authKopf, personDisplayName, zugangsdaten } from './gemeinsam.mjs'
 export { argumente }
 export { personDisplayName as displayName }
 
@@ -158,7 +161,7 @@ export const LEEREN = [
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */
-export const NEU_ANGELEGT = ['persons', 'groups']
+export const NEU_ANGELEGT = ['persons', 'groups', 'households']
 
 /** Was stehen bleibt — je Tabelle mit Begründung. */
 export const BEHALTEN = {
@@ -170,17 +173,8 @@ export const BEHALTEN = {
 
 async function main() {
   const arg = argumente(process.argv.slice(2))
-  const url = process.env.SUPABASE_URL
-  const key = secretKey()
+  const { url, key } = await zugangsdaten()
   const sqlPfad = arg.sql || 'C:/DATA/Claude/nws-export/import-live-personen.sql'
-  const fehlt = []
-  if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
-  if (fehlt.length) {
-    console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
-    process.exit(2)
-  }
-
   const kuratiert = parseKuratiert(fs.readFileSync(sqlPfad, 'utf8'))
   if (kuratiert.persons.length === 0) {
     console.error(`Keine Personen im SQL gefunden (${sqlPfad}). Falscher Pfad?`)
@@ -247,17 +241,32 @@ async function main() {
   for (const t of LEEREN) {
     await rest(`${t}?congregation_id=eq.${cong}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
   }
-  // 2) Personen (nullt per FK groups.overseer/assistant und invites.person_id), dann Gruppen
+  // 2) Personen (nullt per FK groups.overseer/assistant und invites.person_id),
+  //    dann Gruppen und Haushalte — die Haushalte zuletzt, denn bis hierher
+  //    zeigt `persons.fam` noch auf sie.
   await rest(`persons?congregation_id=eq.${cong}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
   await rest(`groups?congregation_id=eq.${cong}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
+  await rest(`households?congregation_id=eq.${cong}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
 
-  // 3) Gruppen und Personen frisch anlegen (feste IDs aus dem SQL)
+  // 3) Gruppen, Haushalte und Personen frisch anlegen (feste IDs aus dem SQL)
   await rest('groups', {
     method: 'POST', headers: { Prefer: 'return=minimal' },
     body: JSON.stringify(kuratiert.groups.map((g) => ({
       id: g.id, congregation_id: cong, name: g.name, position: g.position,
     }))),
   })
+  // Die Haushalte stehen im Personen-SQL nicht als eigene Zeilen — dort ist ein
+  // Haushalt nur die gemeinsame Id in `fam`. Seit er eine eigene Tabelle hat
+  // (T105, mit Fremdschlüssel), muss er **vor** den Personen dastehen; sonst
+  // weist die Datenbank jede Person mit Familie ab. Abgeleitet wird er aus
+  // genau den Ids, die das SQL vergibt — erfunden wird nichts.
+  const haushalte = [...new Set(kuratiert.persons.map((p) => p.fam).filter(Boolean))]
+  if (haushalte.length) {
+    await rest('households', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify(haushalte.map((id) => ({ id, congregation_id: cong }))),
+    })
+  }
   await rest('persons', {
     method: 'POST', headers: { Prefer: 'return=minimal' },
     body: JSON.stringify(kuratiert.persons.map((p) => ({
@@ -299,12 +308,31 @@ async function main() {
 
   console.log(`\nFertig. ${kuratiert.persons.length} Personen, ${kuratiert.groups.length} Gruppen angelegt; ${verknuepft} Konto-Verknüpfung(en) erhalten.`)
   if (unverknuepft.length) console.log(`Unverknüpft (Name nicht im SQL): ${unverknuepft.join(', ')}`)
-  console.log('Nächste Schritte: jw.org-Wochen in der App importieren, dann wochenplanung-importieren.mjs.')
+  /*
+   * **Die Übergabeliste — vollständig.**
+   *
+   * Hier standen zwei der vier Schritte. Was dieses Skript leert, holt niemand
+   * von selbst zurück: Die Abwesenheiten (`absences`) und die Treffpunkt-Wochen
+   * (`fs_weeks`) stehen in `LEEREN`, ihre Importe aber in keiner Anleitung —
+   * und so lief der Neuaufbau vom 17. September 2026 ohne sie durch. Gemerkt
+   * hat es niemand: Die App plant dann gegen einen leeren Kalender und teilt
+   * Verreiste ein.
+   */
+  console.log('\nNächste Schritte — alle vier, sonst fehlt etwas:')
+  console.log('  1. jw.org-Wochen in der App importieren („Nächste Woche importieren")')
+  console.log('  2. node scripts/wochenplanung-importieren.mjs   (Zuteilungen, Hilfsdienste, Reinigung)')
+  console.log('  3. node scripts/abwesenheiten-importieren.mjs   (gelöscht, kommt aus denselben NWS-Daten)')
+  console.log('  4. node scripts/treffpunkte-importieren.mjs     (die Leiter der Treffpunkte, ebenso)')
+  console.log('Jeder zuerst mit --trocken.')
 }
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
   main().catch((err) => {
     console.error(String(err instanceof Error ? err.message : err))
-    process.exit(1)
+    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
+    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
+    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
+    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
+    process.exitCode = 1
   })
 }

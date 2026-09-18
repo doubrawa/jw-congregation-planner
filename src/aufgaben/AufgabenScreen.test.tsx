@@ -59,7 +59,7 @@ function zeige(over: Partial<AppState> = {}) {
     congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
     persons: [ICH], services: [], groups: [], absences: [],
     weeks: [], fsWeeks: [], myTasks: [], substituteReqs: [], notifs: [],
-    congregation: { name: 'Nordheim', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {

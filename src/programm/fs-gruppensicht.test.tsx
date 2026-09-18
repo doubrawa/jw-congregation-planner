@@ -43,8 +43,8 @@ function Buehne({ state, children }: { state: AppState; children: ReactNode }) {
 afterEach(cleanup)
 
 const GRUPPEN: Group[] = [
-  { id: 'g1', name: 'Gruppe 1', ov: 'p-ov1', as: null },
-  { id: 'g2', name: 'Gruppe 2', ov: 'p-ov2', as: null },
+  { id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov1', assistantId: null },
+  { id: 'g2', name: 'Gruppe 2', overseerId: 'p-ov2', assistantId: null },
 ]
 
 const person = (id: string, name: string, grp: string | null): Person => ({
@@ -59,11 +59,11 @@ const PERSONEN: Person[] = [
 ]
 
 /** Ein Treffpunkt je Sorte — Ort als Kennzeichen, danach sucht der DOM-Test. */
-const inst = (id: string, grp: string, place: string): FsInstance => ({
+const inst = (id: string, grp: string | null, place: string): FsInstance => ({
   id, ruleId: id, grp, wd: 3, time: '09:30', place, leader: '',
 })
 
-const VERS = inst('r0', '', 'Königreichssaal')
+const VERS = inst('r0', null, 'Königreichssaal')
 const G1 = inst('r1', 'g1', 'Bäckerei Eins')
 const G2 = inst('r2', 'g2', 'Marktplatz Zwei')
 const WOCHE: FsInstance[] = [VERS, G1, G2]
@@ -86,7 +86,7 @@ describe('fsVisible — die Regel', () => {
 
   it('der Gruppenaufseher sieht seine Gruppe, auch ohne selbst in ihr geführt zu sein', () => {
     /*
-     * `Person.grp` und `groups.ov` sind zwei Angaben. In der Regel decken sie
+     * `Person.grp` und `groups.overseerId` sind zwei Angaben. In der Regel decken sie
      * sich, aber der Aufseher, der (noch) keiner Gruppe zugeordnet ist, säße
      * sonst vor einem leeren Programm — und darf seine Treffpunkte planen.
      */

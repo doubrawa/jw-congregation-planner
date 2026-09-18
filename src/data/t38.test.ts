@@ -144,7 +144,7 @@ describe('Löschen löst den Fremdschlüssel', () => {
 
 describe('Treffpunkte: dieselbe Regel', () => {
   const inst = (id: string, leader: string, lpid?: string): FsInstance => ({
-    id, ruleId: null, grp: '', wd: 6, time: '09:30', place: 'Saal', leader, lpid,
+    id, ruleId: null, grp: null, wd: 6, time: '09:30', place: 'Saal', leader, lpid,
   })
 
   it('löst die lpid, lässt den Namen stehen', () => {

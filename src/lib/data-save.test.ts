@@ -11,7 +11,7 @@ const chain = vi.hoisted(() => {
     then: unknown
     functions: { invoke: ReturnType<typeof vi.fn> }
   } = {} as never
-  for (const m of ['from', 'select', 'insert', 'upsert', 'update', 'delete', 'eq', 'in', 'is', 'order', 'maybeSingle', 'rpc']) {
+  for (const m of ['from', 'select', 'insert', 'upsert', 'update', 'delete', 'eq', 'in', 'is', 'not', 'order', 'maybeSingle', 'rpc']) {
     c[m] = vi.fn(() => c)
   }
   c.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: null })
@@ -56,9 +56,10 @@ import {
   substituteTake,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null } as Person
-const group: Group = { id: 'g1', name: 'G', ov: null, as: null }
+const group: Group = { id: 'g1', name: 'G', overseerId: null, assistantId: null }
 const service: Service = { key: 'mik', name: 'Mikrofone', count: 2, groups: false }
 
 beforeEach(() => vi.clearAllMocks())
@@ -97,10 +98,29 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.from).toHaveBeenCalledWith('persons')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', congregation_id: 'c1' }))
   })
-  it('saveFsRules → fs_rules upsert je Versammlung', () => {
-    saveFsRules('c1', '2026-09-07', [])
+  it('saveFsRules → eine Zeile je Regel, Gestrichenes fällt weg', async () => {
+    // Der Grundplan war bis T105 ein JSONB-Blob je Versammlung (samt einer
+    // Spalte `base`, die nie gelesen wurde). Jetzt ist jede Regel eine Zeile —
+    // erst weg, was nicht mehr dazugehört, dann der Rest per upsert. Die beiden
+    // Schritte laufen **nacheinander**, der zweite also erst im nächsten Tick.
+    saveFsRules('c1', [
+      { id: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
+    ])
+    await geschrieben()
     expect(chain.from).toHaveBeenCalledWith('fs_rules')
-    expect(chain.upsert).toHaveBeenCalledWith({ congregation_id: 'c1', base: '2026-09-07', rules: [] }, { onConflict: 'congregation_id' })
+    expect(chain.delete).toHaveBeenCalled()
+    expect(chain.upsert).toHaveBeenCalledWith([
+      {
+        id: 'r1',
+        congregation_id: 'c1',
+        grp: null,
+        wd: 6,
+        time: '09:30',
+        place: 'Saal',
+        monthly: 0,
+        skip_cong: false,
+      },
+    ])
   })
   it('saveFsWeek → fs_weeks upsert je Wochen-Kennung', () => {
     saveFsWeek('c1', '2026-09-14', [])
@@ -193,12 +213,22 @@ describe('Update-Schreiber', () => {
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
   })
   it('saveCongregationInfo / saveSettings → congregations update', () => {
-    saveCongregationInfo('c1', { name: 'N', hall: 'H', meetings: 'M' })
+    saveCongregationInfo('c1', { name: 'N', hall: 'H', times: STANDARD_ZEITEN })
     expect(chain.from).toHaveBeenCalledWith('congregations')
-    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ name: 'N', meeting_times: 'M' }))
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'N', mid_wd: 2, mid_time: '19:00', we_wd: 0, we_time: '10:00' }),
+    )
     vi.clearAllMocks()
-    saveSettings('c1', { reminders: { first: 7, last: 1, repeat: false }, congLang: 'Deutsch', progLangs: [], auxClass: false })
-    expect(chain.update).toHaveBeenCalledWith({ settings: expect.objectContaining({ congLang: 'Deutsch' }) })
+    // Einstellungen sind Spalten, kein JSONB-Beutel mehr.
+    saveSettings('c1', { reminders: { first: 7, last: 1, repeat: false }, congLang: 'de', progLangs: ['en'], auxClass: false })
+    expect(chain.update).toHaveBeenCalledWith({
+      reminder_first: 7,
+      reminder_last: 1,
+      reminder_repeat: false,
+      cong_lang: 'de',
+      prog_langs: ['en'],
+      aux_class: false,
+    })
   })
   it('saveMemberRow / saveInvitePlanner', () => {
     saveMemberRow({ userId: 'u1', email: '', personId: 'p1', planner: true })

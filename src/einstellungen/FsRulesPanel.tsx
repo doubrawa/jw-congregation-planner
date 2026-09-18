@@ -24,9 +24,9 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
   ]
 
   // Gruppenaufseher: nur der Abschnitt der eigenen Gruppe.
-  const sections: ReadonlyArray<{ grp: string; title: string }> = onlyGroup
+  const sections: ReadonlyArray<{ grp: string | null; title: string }> = onlyGroup
     ? state.groups.filter((g) => g.id === onlyGroup).map((g) => ({ grp: g.id, title: tu(g.name) }))
-    : [{ grp: '', title: t.fsVersSection }, ...state.groups.map((g) => ({ grp: g.id, title: tu(g.name) }))]
+    : [{ grp: null, title: t.fsVersSection }, ...state.groups.map((g) => ({ grp: g.id, title: tu(g.name) }))]
 
   const upd = (id: string, patch: Partial<Pick<FsRule, 'wd' | 'monthly' | 'time' | 'place' | 'skipCong'>>) =>
     dispatch({ type: 'fsRuleUpdate', id, patch })
@@ -103,7 +103,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                   />
                 </div>
 
-                {sec.grp !== '' && (
+                {sec.grp != null && (
                   <div className="fsr-skip">
                     <button
                       type="button"

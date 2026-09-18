@@ -164,7 +164,12 @@ export function fsTerminText(tag: Date | null, inst: { time: string; place: stri
 
 /** Sortierung: Wochentag (Mo→So), dann Uhrzeit, dann Gruppe. */
 export function fsSort(a: FsInstance, b: FsInstance): number {
-  return ((a.wd + 6) % 7) - ((b.wd + 6) % 7) || a.time.localeCompare(b.time) || a.grp.localeCompare(b.grp)
+  // Ohne Gruppe (Versammlungstreffpunkt) zuerst — `null` sortiert vor jedem Namen.
+  return (
+    ((a.wd + 6) % 7) - ((b.wd + 6) % 7) ||
+    a.time.localeCompare(b.time) ||
+    (a.grp ?? '').localeCompare(b.grp ?? '')
+  )
 }
 
 /**
@@ -204,13 +209,13 @@ export function genFsWeek(wochenStart: string, rules: FsRule[]): FsInstance[] {
   }
 
   for (const r of rules) {
-    if (r.grp === '' && fits(r)) {
-      out.push({ id: instanzId(r), ruleId: r.id, grp: '', wd: r.wd, time: r.time, place: r.place, leader: '' })
+    if (r.grp == null && fits(r)) {
+      out.push({ id: instanzId(r), ruleId: r.id, grp: null, wd: r.wd, time: r.time, place: r.place, leader: '' })
       congDays.add(r.wd)
     }
   }
   for (const r of rules) {
-    if (r.grp !== '' && fits(r) && !(r.skipCong && congDays.has(r.wd))) {
+    if (r.grp != null && fits(r) && !(r.skipCong && congDays.has(r.wd))) {
       out.push({ id: instanzId(r), ruleId: r.id, grp: r.grp, wd: r.wd, time: r.time, place: r.place, leader: '' })
     }
   }
@@ -345,7 +350,7 @@ export function fsVisible(
   if (eigene) meine.add(eigene)
   const geleitet = overseerGroup(groups, personId)
   if (geleitet) meine.add(geleitet)
-  return insts.filter((inst) => inst.grp === '' || meine.has(inst.grp))
+  return insts.filter((inst) => inst.grp == null || meine.has(inst.grp))
 }
 
 /* ---- Wochen-Bearbeitung (Planen) ---- */

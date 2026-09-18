@@ -82,7 +82,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
     const g = state.groups.find((x) => x.id === grp)
     return g ? tu(g.name) : grp
   }
-  const title = (inst: FsInstance): string => (inst.grp === '' ? t.fsVers : groupName(inst.grp))
+  const title = (inst: FsInstance): string => (inst.grp == null ? t.fsVers : groupName(inst.grp))
   const dayLabel = (wd: number): string => {
     const tag = fsTag(kennung, wd)
     // Ohne brauchbare Kennung (Vorlagen, Demo) bleibt der Wochentag stehen —
@@ -123,7 +123,9 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
       id: `x${crypto.randomUUID()}`,
       ruleId: null,
       manual: true,
-      grp,
+      // Das Auswahlfeld kennt nur Zeichenketten; „keine Gruppe" ist dort der
+      // leere Wert und in den Daten `null` (wie `Person.grp`).
+      grp: grp || null,
       wd,
       time,
       // Vorgabe ist der Saal **dieser** Versammlung, nicht das deutsche Wort:

@@ -43,10 +43,8 @@
  * `--cong <id>` beschränkt auf eine Versammlung (sonst: alle).
  */
 
-import fs from 'node:fs'
-import readline from 'node:readline'
-
-import { argumente, authKopf, secretKey } from './gemeinsam.mjs'
+import { argumente, authKopf, istPlatzhalter, refAusUrl, urlAusEnvText, zugangsdaten } from './gemeinsam.mjs'
+export { istPlatzhalter, refAusUrl, urlAusEnvText }
 
 // Damit der Test die Helfer über dieses Skript erreicht, wie es die anderen
 // Wartungsskripte für ihre eigenen auch tun.
@@ -96,122 +94,22 @@ export function wocheNachtragen(data) {
   return geaendert
 }
 
-/**
- * Projekt-URL aus `.env.local` (bzw. `.env`) lesen — dieselbe, mit der die App
- * arbeitet. Von Hand geteilt statt per Regex: `trim()` erledigt das CR unter
- * Windows gleich mit, und ein Wert darf selbst `=` enthalten.
+/*
+ * Hier standen `urlAusEnvText`, `urlAusEnvDatei`, `istPlatzhalter`, `refAusUrl`
+ * und `schluesselErfragen` — der ganze Weg von „nichts gesetzt" zu „kann
+ * schreiben". Er stand **nur hier**, und genau das ist am 17. September 2026
+ * teuer geworden: Beim Neuaufbau meldeten fünf andere Skripte nacheinander
+ * „Invalid API key", weil sie ihn nicht hatten. Seit dem 18. September steht er
+ * in `gemeinsam.mjs` als `zugangsdaten()` und gilt für alle.
  */
-export function urlAusEnvText(inhalt) {
-  for (const roh of String(inhalt).split('\n')) {
-    const zeile = roh.trim()
-    if (!zeile || zeile.startsWith('#')) continue
-    const gleich = zeile.indexOf('=')
-    if (gleich < 0) continue
-    if (zeile.slice(0, gleich).trim() !== 'VITE_SUPABASE_URL') continue
-    const wert = zeile.slice(gleich + 1).trim()
-    return wert.replace(/^["']|["']$/g, '')
-  }
-  return ''
-}
-
-function urlAusEnvDatei() {
-  for (const datei of ['.env.local', '.env']) {
-    try {
-      const url = urlAusEnvText(fs.readFileSync(datei, 'utf8'))
-      if (url) return url
-    } catch {
-      continue // Datei gibt es nicht — die nächste versuchen.
-    }
-  }
-  return ''
-}
-
-/**
- * Steht dort ein unersetzter Platzhalter statt eines Schlüssels?
- *
- * Ohne diese Prüfung lief das Skript los und starb an einem nackten
- * „401: Invalid API key" samt Stapelabzug — eine Meldung, die die Ursache nicht
- * nennt. Ein aus einer Anleitung kopierter Aufruf trägt den Platzhalter aber
- * fast immer noch, und genau das ist hier passiert.
- */
-export function istPlatzhalter(key) {
-  // Erst trimmen, dann auf leer prüfen: Ein Schlüssel aus Leerzeichen ist
-  // genauso unbrauchbar wie keiner, kam aber als „gesetzt" durch (`'   '` ist
-  // truthy). Der Test hat es aufgedeckt, nicht der Server.
-  const k = String(key ?? '').trim()
-  if (!k) return true
-  if (k.startsWith('<') || k.startsWith('{')) return true
-  if (/^(dein|your|hier|xxx)/i.test(k)) return true
-  // **Ein Schlüssel ist ASCII.** Das fing „eyJ…" aus einer Anleitung nicht:
-  // Es beginnt wie ein JWT, trägt aber ein echtes Auslassungszeichen
-  // (U+2026). `fetch` scheiterte erst beim Header-Bauen mit „Cannot convert
-  // argument to a ByteString" — eine Meldung, die niemand mit einem
-  // vergessenen Platzhalter verbindet.
-  if (/[^\x20-\x7e]/.test(k)) return true
-  // Kein echter Schlüssel ist so kurz; ein abgeschnittenes Beispiel schon.
-  return k.length < 20
-}
-
-/** Projekt-Kennung aus der URL — nur für den Hinweis aufs Dashboard. */
-export function refAusUrl(url) {
-  const ohneSchema = String(url).replace('https://', '').replace('http://', '')
-  const wirt = ohneSchema.split('/')[0] ?? ''
-  const ref = wirt.split('.')[0] ?? ''
-  return ref || '<ref>'
-}
-
-/**
- * Schlüssel abfragen, wenn keiner in der Umgebung steht.
- *
- * **Das ist der eigentliche Fix.** Zwei Läufe scheiterten nicht am Server,
- * sondern an einem Platzhalter, der aus der Anleitung in die Kommandozeile
- * kopiert wurde — erst `<service-role-key>`, dann `eyJ…`. Solange der Aufruf
- * ein Muster zum Ersetzen enthält, wiederholt sich das. Fragt das Skript
- * selbst, gibt es nichts zu ersetzen.
- *
- * Nebenbei besser: Über die Eingabeaufforderung landet der Schlüssel **nicht**
- * in der PowerShell-History, anders als bei `$env:… = "…"`.
- *
- * Ohne Terminal (Pipe, CI) wird nicht gefragt — dort hinge der Lauf sonst.
- */
-async function schluesselErfragen() {
-  if (!process.stdin.isTTY) return ''
-  // Aufforderung auf stderr: so bleibt stdout für das Ergebnis frei.
-  const rl = readline.createInterface({ input: process.stdin, output: process.stderr })
-  try {
-    const eingabe = await new Promise((fertig) => rl.question('sb_secret_…: ', fertig))
-    return eingabe.trim()
-  } finally {
-    rl.close()
-  }
-}
 
 async function main() {
   const arg = argumente(process.argv.slice(2))
-  // Die Projekt-URL steht schon im Projekt (`.env.local`, für die App als
-  // `VITE_SUPABASE_URL`). Sie noch einmal von Hand zu setzen war eine Variable
-  // zu viel — und je mehr ein Aufruf verlangt, desto größer die Chance, dass
-  // ein kopierter Platzhalter unersetzt durchgeht.
-  const url = process.env.SUPABASE_URL || urlAusEnvDatei()
-  if (!url) {
-    console.error('Keine Projekt-URL: weder SUPABASE_URL gesetzt noch VITE_SUPABASE_URL in .env.local.')
-    process.exit(2)
-  }
-
-  const dashboard = `https://supabase.com/dashboard/project/${refAusUrl(url)}/settings/api-keys`
-  let key = secretKey()
-  if (istPlatzhalter(key)) {
-    if (key.trim()) {
-      console.error(`Der gesetzte Schlüssel taugt nicht ("${key.trim()}") — das sieht nach einem Platzhalter aus.\n`)
-    }
-    console.error(`Secret-Schlüssel (sb_secret_…): ${dashboard}`)
-    console.error('(Project Settings → API Keys → Secret keys, nicht Publishable)\n')
-    key = await schluesselErfragen()
-  }
-  if (istPlatzhalter(key)) {
-    console.error('\nOhne Schlüssel geht es nicht. Abgebrochen.')
-    process.exit(2)
-  }
+  // URL aus `.env.local`, Schlüssel notfalls erfragt — beides steht seit dem
+  // 18. September 2026 in `gemeinsam.mjs`, damit es **jedes** Skript kann.
+  // Dieses hier konnte es als einziges; dass die anderen es nicht konnten, hat
+  // einen ganzen Neuaufbau gekostet.
+  const { url, key } = await zugangsdaten()
 
   const rest = async (pfad, init = {}) => {
     const res = await fetch(`${url}/rest/v1/${pfad}`, {

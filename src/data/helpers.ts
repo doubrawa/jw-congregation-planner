@@ -45,7 +45,7 @@ export function splitOpeningSong(title: string): { song: string | null; rest: st
  */
 export function overseerGroup(groups: readonly Group[], personId: string | null): string | null {
   if (!personId) return null
-  return groups.find((g) => g.ov === personId || g.as === personId)?.id ?? null
+  return groups.find((g) => g.overseerId === personId || g.assistantId === personId)?.id ?? null
 }
 
 /** Die beiden Vorsitz-Bereiche, die je Zusammenkunft umzuschlüsseln sind. */
@@ -132,9 +132,29 @@ export function listName(p: Person): string {
  * Hilfsdienst-Bereiche (`svc:<key>`) kommen erst durch Zuweisung hinzu.
  */
 export function emptyQualifications(): Qualifications {
-  const priv = {} as Qualifications
+  const priv: Qualifications = {}
   for (const key of QUALIFICATION_ORDER) priv[key] = false
   return priv
+}
+
+/**
+ * Ein Bereich, dessen Schlüssel erst zur Laufzeit feststeht — ein
+ * Hilfsdienst-Bereich (`svc:<key>`) oder ein aus den Daten gelesener Name.
+ *
+ * **Die einzige Stelle, an der ein freier String auf `Qualifications` trifft.**
+ * Der Typ lässt neben den festen Feldern nur `svc:${string}` zu; vorher stand
+ * dort eine Indexsignatur über alle Zeichenketten, und die hob die Prüfung der
+ * festen Felder mit auf (`priv.vorsitzMitte = true` war gültig und wirkungslos).
+ * Die Umdeutung hier ist der Preis dafür — einmal, benannt, mit dem Wissen,
+ * dass ein unbekannter Schlüssel schlicht `false` ergibt.
+ */
+export function privWert(priv: Qualifications, key: string): boolean {
+  return Boolean((priv as unknown as Record<string, boolean | undefined>)[key])
+}
+
+/** Gegenstück zu `privWert`: setzt einen Bereich, dessen Schlüssel erst zur Laufzeit feststeht. */
+export function privSetzen(priv: Qualifications, key: string, on: boolean): void {
+  ;(priv as unknown as Record<string, boolean | undefined>)[key] = on
 }
 
 /**
@@ -263,7 +283,7 @@ export function isQualified(p: Person, priv: string): boolean {
   // Ein Gesprächsführer (schulung) darf auch als Partner einspringen — daher
   // deckt der Partner-Slot beide Bereiche ab.
   if (priv === 'schulungPartner') return Boolean(p.priv.schulungPartner || p.priv.schulung)
-  return Boolean(p.priv[priv])
+  return privWert(p.priv, priv)
 }
 
 /**
@@ -567,7 +587,8 @@ export function abweichungsGrund(week: Week | undefined, tab: MeetingKey): strin
 /** Weicht diese Zusammenkunft überhaupt ab — Tag, Uhrzeit oder Ausfall? */
 export function weichtAb(week: Week | undefined, tab: MeetingKey): boolean {
   const a = abweichung(week, tab)
-  return Boolean(a && (a.cancelled || a.day || a.time))
+  // `wd != null`: der Sonntag ist die 0 und darf nicht als „kein Tag" gelten.
+  return Boolean(a && (a.cancelled || a.wd != null || a.time))
 }
 
 /* ---- Wer den öffentlichen Vortrag hält (Rollen-Vokabular) ---- */

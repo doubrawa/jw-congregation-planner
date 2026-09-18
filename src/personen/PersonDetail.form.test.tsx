@@ -48,7 +48,7 @@ const person = (over: Partial<Person> = {}): Person => ({
 const BRAND = person({ id: 'p-b', fn: 'Bernd', ln: 'Brand' })
 const COHN = person({ id: 'p-c', fn: 'Clara', ln: 'Cohn', female: true })
 
-const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: null, as: null }]
+const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
 const DIENSTE: Service[] = [
   { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
   { key: 'eingang', name: 'Ordner', count: 1, groups: false },
@@ -63,7 +63,7 @@ function zeige(p: Person, over: Partial<AppState> = {}) {
     congregationId: 'c1', userId: 'u1', planner: true,
     persons: [p, BRAND, COHN], groups: GRUPPEN, services: DIENSTE,
     members: [], invites: [], weeks: [], fsWeeks: [], absences: [],
-    congregation: { name: 'Nordheim', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {

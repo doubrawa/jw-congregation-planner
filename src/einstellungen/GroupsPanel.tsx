@@ -66,7 +66,7 @@ export function GroupsPanel() {
     )
     dispatch({
       type: 'addGroup',
-      group: { id: crypto.randomUUID(), name: `Gruppe ${maxN + 1}`, ov: null, as: null },
+      group: { id: crypto.randomUUID(), name: `Gruppe ${maxN + 1}`, overseerId: null, assistantId: null },
     })
   }
 
@@ -130,9 +130,13 @@ export function GroupsPanel() {
                 <span className="field-label">{t.aufseherLbl}</span>
                 <select
                   className="mem-select"
-                  value={group.ov ?? ''}
+                  value={group.overseerId ?? ''}
                   onChange={(e) =>
-                    dispatch({ type: 'updateGroup', id: group.id, patch: { ov: e.target.value || null } })
+                    dispatch({
+                      type: 'updateGroup',
+                      id: group.id,
+                      patch: { overseerId: e.target.value || null },
+                    })
                   }
                 >
                   {ovOptions}
@@ -142,9 +146,13 @@ export function GroupsPanel() {
                 <span className="field-label">{t.gehilfeLbl}</span>
                 <select
                   className="mem-select"
-                  value={group.as ?? ''}
+                  value={group.assistantId ?? ''}
                   onChange={(e) =>
-                    dispatch({ type: 'updateGroup', id: group.id, patch: { as: e.target.value || null } })
+                    dispatch({
+                      type: 'updateGroup',
+                      id: group.id,
+                      patch: { assistantId: e.target.value || null },
+                    })
                   }
                 >
                   {asOptions}

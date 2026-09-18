@@ -48,7 +48,7 @@ function zeige(was: 'sonder' | 'termine', over: Partial<AppState> = {}, tab: 'mi
     screen: 'planen', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', planner: true,
     persons: [], services: [], groups: [], weeks: [woche()], fsWeeks: [], week: 0,
-    congregation: { name: 'Test', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Test', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -106,7 +106,7 @@ describe('Findet diese Zusammenkunft statt?', () => {
     const normal = zeige('sonder')
     expect(normal.container.querySelector('.sonder')?.className).not.toContain('is-abweichend')
     cleanup()
-    const abweichend = zeige('sonder', { weeks: [woche({ dev: { mid: { day: 'Donnerstag' } } })] })
+    const abweichend = zeige('sonder', { weeks: [woche({ dev: { mid: { wd: 4 } } })] })
     expect(abweichend.container.querySelector('.sonder')?.className).toContain('is-abweichend')
   })
 })
@@ -121,12 +121,12 @@ describe('Tag und Uhrzeit verlegen', () => {
   it('ein anderer Tag wird als Verlegung eingetragen — kanonisch deutsch', () => {
     const { container, dispatch } = zeige('sonder')
     fireEvent.change(container.querySelector('.sonder-select')!, { target: { value: '3' } })
-    expect(patches(dispatch, 'setAbweichung')).toContainEqual({ day: 'Donnerstag' })
+    expect(patches(dispatch, 'setAbweichung')).toContainEqual({ wd: 4 })
   })
 
   it('der reguläre Tag ist KEINE Verlegung — die Abweichung fällt weg', () => {
     const { container, dispatch } = zeige('sonder', {
-      weeks: [woche({ dev: { mid: { day: 'Donnerstag' } } })],
+      weeks: [woche({ dev: { mid: { wd: 4 } } })],
     })
     fireEvent.change(container.querySelector('.sonder-select')!, { target: { value: '1' } })
     expect(patches(dispatch, 'setAbweichung')).toContainEqual({ day: undefined })
@@ -148,7 +148,7 @@ describe('Tag und Uhrzeit verlegen', () => {
 
   it('eine bestehende Verlegung steht in den Feldern', () => {
     const { container } = zeige('sonder', {
-      weeks: [woche({ dev: { mid: { day: 'Mittwoch', time: '18:00' } } })],
+      weeks: [woche({ dev: { mid: { wd: 3, time: '18:00' } } })],
     })
     expect(container.querySelector<HTMLSelectElement>('.sonder-select')?.value).toBe('2')
     expect(container.querySelector<HTMLInputElement>('.sonder-time')?.value).toBe('18:00')
@@ -188,12 +188,13 @@ describe('Weitere Termine der Woche (T63)', () => {
 
   it('jeder Termin hat Bezeichnung, Tag, Uhrzeit und Ort', () => {
     const { container } = zeige('termine', {
-      weeks: [woche({ termine: [termin({ day: 'Donnerstag', time: '19:30', place: 'Saal' })] })],
+      weeks: [woche({ termine: [termin({ wd: 4, time: '19:30', place: 'Saal' })] })],
     })
     const felder = [...container.querySelectorAll<HTMLInputElement>('.sonder-grund')]
     expect(felder[0]!.value).toBe('Pionierbesprechung')
     expect(felder[1]!.value).toBe('Saal')
-    expect(container.querySelector<HTMLSelectElement>('.sonder-select')?.value).toBe('Donnerstag')
+    // Der Wert der Auswahl ist der Versatz ab Montag: Donnerstag = 3.
+    expect(container.querySelector<HTMLSelectElement>('.sonder-select')?.value).toBe('3')
     expect(container.querySelector<HTMLInputElement>('.sonder-time')?.value).toBe('19:30')
   })
 
@@ -201,8 +202,8 @@ describe('Weitere Termine der Woche (T63)', () => {
     const { container, dispatch } = zeige('termine', { weeks: [woche({ termine: [termin()] })] })
     fireEvent.change(container.querySelectorAll('.sonder-grund')[0]!, { target: { value: 'Neu' } })
     expect(patches(dispatch, 'terminUpdate')).toContainEqual({ title: 'Neu' })
-    fireEvent.change(container.querySelector('.sonder-select')!, { target: { value: 'Montag' } })
-    expect(patches(dispatch, 'terminUpdate')).toContainEqual({ day: 'Montag' })
+    fireEvent.change(container.querySelector('.sonder-select')!, { target: { value: '0' } }) // Montag
+    expect(patches(dispatch, 'terminUpdate')).toContainEqual({ wd: 1 })
     fireEvent.change(container.querySelector('.sonder-time')!, { target: { value: '18:00' } })
     expect(patches(dispatch, 'terminUpdate')).toContainEqual({ time: '18:00' })
     fireEvent.change(container.querySelectorAll('.sonder-grund')[1]!, { target: { value: 'Park' } })
@@ -212,7 +213,7 @@ describe('Weitere Termine der Woche (T63)', () => {
   it('ein geleertes Feld wird zu „nicht gesetzt" — nicht zu einem leeren String', () => {
     // Sonst gälte ein leerer Ort als Ort und stünde als Lücke in der Anzeige.
     const { container, dispatch } = zeige('termine', {
-      weeks: [woche({ termine: [termin({ day: 'Montag', place: 'Saal' })] })],
+      weeks: [woche({ termine: [termin({ wd: 1, place: 'Saal' })] })],
     })
     fireEvent.change(container.querySelector('.sonder-select')!, { target: { value: '' } })
     expect(patches(dispatch, 'terminUpdate')).toContainEqual({ day: undefined })
@@ -240,8 +241,8 @@ describe('Weitere Termine der Woche (T63)', () => {
     // weiter vor dem Montag, obwohl er später in der Woche liegt.
     const { container } = zeige('termine', {
       weeks: [woche({
-        termine: [termin({ id: 'x1', title: 'Donnerstag-Termin', day: 'Donnerstag' }),
-                  termin({ id: 'x2', title: 'Montag-Termin', day: 'Montag' })],
+        termine: [termin({ id: 'x1', title: 'Donnerstag-Termin', wd: 4 }),
+                  termin({ id: 'x2', title: 'Montag-Termin', wd: 1 })],
       })],
     })
     const titel = [...container.querySelectorAll<HTMLInputElement>('.sonder-grund')]
@@ -250,11 +251,13 @@ describe('Weitere Termine der Woche (T63)', () => {
     expect(titel).toEqual(['Donnerstag-Termin', 'Montag-Termin'])
   })
 
-  it('die Wochentage stehen in der Sprache des Lesers, gespeichert kanonisch deutsch', () => {
+  it('die Wochentage stehen in der Sprache des Lesers, gespeichert als Zahl', () => {
     const { container } = zeige('termine', { weeks: [woche({ termine: [termin()] })] })
     const optionen = [...container.querySelector('.sonder-select')!.querySelectorAll('option')]
     expect(optionen[0]?.value).toBe('') // „kein Tag"
-    expect(optionen[1]?.value).toBe('Montag')
+    // Der Wert ist der Versatz ab Montag; gespeichert wird daraus der Wochentag
+    // (`wd`). Hier stand der deutsche Name — er war der gespeicherte Wert.
+    expect(optionen[1]?.value).toBe('0')
     expect(optionen[1]?.textContent).toBe('Montag')
     expect(optionen).toHaveLength(8) // Gedankenstrich + 7 Tage
   })

@@ -86,7 +86,7 @@ export function PlanSendenPanel() {
             state.services,
             state.confirmations,
             state.sentLog,
-            state.congregation.meetings,
+            state.congregation.times,
             fromIso(tag),
           )
         : [],
@@ -98,7 +98,7 @@ export function PlanSendenPanel() {
       state.services,
       state.confirmations,
       state.sentLog,
-      state.congregation.meetings,
+      state.congregation.times,
       tag,
     ],
   )

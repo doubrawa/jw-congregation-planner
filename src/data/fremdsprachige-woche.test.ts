@@ -21,6 +21,7 @@ import {
 } from './planning'
 import { zahl, zahlWieVorlage } from './ziffern'
 import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
+import { STANDARD_ZEITEN } from './vorgaben'
 
 /**
  * **Eine Versammlung, die nicht auf Deutsch zusammenkommt.**
@@ -347,7 +348,7 @@ describe('S-89-Zettel in der Sprache der Versammlung', () => {
       priv: 'bibellesung',
       groups: false,
       label: '',
-    })
+    }, STANDARD_ZEITEN)
     expect(zettel, `${code}: kein S-89-Zettel für die Bibellesung`).not.toBeNull()
     expect(zettel?.name, code).toBe('Niklas Feld')
     // Der Schulungspunkt muss ankommen — und zwar so, wie er im Arbeitsheft
@@ -377,7 +378,7 @@ describe('S-89-Zettel in der Sprache der Versammlung', () => {
       priv: 'schulung',
       groups: false,
       label: '',
-    })
+    }, STANDARD_ZEITEN)
     const rahmen = makeTr(code)('Von Haus zu Haus')
     expect(zettel?.type, `${code}: Rahmen fehlt auf dem Zettel`).toBe(
       `${makeTr(code)('Gespräche beginnen')} · ${rahmen}`,
@@ -396,7 +397,7 @@ describe('S-89-Zettel in der Sprache der Versammlung', () => {
       buildS89ForSlot([w], {
         kind: 'part', wi: 0, tab: 'mid', si, ii: 0, ni: 0,
         priv: 'studium', groups: false, label: '',
-      }),
+      }, STANDARD_ZEITEN),
       code,
     ).toBeNull()
   })
@@ -409,7 +410,7 @@ describe('S-89-Zettel in der Sprache der Versammlung', () => {
     const zettel = buildS89ForSlot([w], {
       kind: 'part', wi: 0, tab: 'mid', si, ii: 1, ni: 0,
       priv: 'bibellesung', groups: false, label: '',
-    })
+    }, STANDARD_ZEITEN)
     expect(zettel?.type).toBe('Lectura de la Biblia')
   })
 })
@@ -454,7 +455,7 @@ describe('Arbeitsheft mit eigenen Ziffern (ar/fa/hi)', () => {
     const zettel = buildS89ForSlot([w], {
       kind: 'part', wi: 0, tab: 'mid', si, ii: 0, ni: 0,
       priv: 'schulung', groups: false, label: '',
-    })
+    }, STANDARD_ZEITEN)
     expect(zettel?.type).toBe(
       `${makeTr('ar')('Gespräche beginnen')} · ${makeTr('ar')('Von Haus zu Haus')}`,
     )
@@ -513,7 +514,7 @@ describe('Die Struktur trägt, nicht die Überschrift', () => {
 describe('Beschriftung einer Zuteilung', () => {
   it.each(FREMD)('%s: der Titel bleibt fremdsprachig, die Rolle deutsch-kanonisch', (code) => {
     const w = wocheIn(code)
-    const aufgaben = deriveMyTasks([w], DIENSTE, 'Lena Hoffmann', {})
+    const aufgaben = deriveMyTasks([w], DIENSTE, 'Lena Hoffmann', {}, STANDARD_ZEITEN)
     expect(aufgaben, code).toHaveLength(1)
     // `title` geht in die Anzeige durch `tpw` (Programmsprache), `rolle` durch
     // `tu` (Lesersprache) — zusammengesetzt wird erst in `aufgabenLabel`.
@@ -581,7 +582,7 @@ describe('Konflikte finden auch fremdsprachige Wochen', () => {
       [{ id: 'a1', personId: NIKLAS.id, userId: null, from: '2026-09-07', to: '2026-09-13', reason: '' }],
       [w],
       new Date(2026, 8, 7, 12),
-      'Di 19:00 · So 10:00',
+      { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } },
     )
     const konflikte = weekConflicts([w], 0, [NIKLAS], DIENSTE, 'mid', abwesend)
     expect(konflikte.map((k) => k.kind), code).toContain('absent')
@@ -600,7 +601,7 @@ describe('S-89-Bogen der ganzen Woche', () => {
    */
   it.each(FREMD)('%s: Bibellesung und Schülerteil stehen beide auf dem Bogen', (code) => {
     const w = wocheIn(code)
-    const bogen = alleS89DerWoche([w], 0, 'Di 19:00 · So 10:00', false)
+    const bogen = alleS89DerWoche([w], 0, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, false)
     const arten = bogen.map((z) => z.type)
     expect(arten, `${code}: ${arten.join(' | ')}`).toHaveLength(2)
     expect(arten[0], code).toBe(makeTr(code)('Bibellesung'))
@@ -610,16 +611,16 @@ describe('S-89-Bogen der ganzen Woche', () => {
   })
 
   it.each(FREMD)('%s: mit Gesprächspartner zwei Zettel für denselben Punkt', (code) => {
-    const bogen = alleS89DerWoche([wocheIn(code)], 0, '', true)
+    const bogen = alleS89DerWoche([wocheIn(code)], 0, STANDARD_ZEITEN, true)
     expect(bogen, code).toHaveLength(3) // Bibellesung + Schüler + Partner
   })
 
   it('auf Deutsch sind es dieselben Zettel — die Sprache ändert nur die Worte', () => {
     // Die Gegenprobe: Käme fremdsprachig ein Zettel weniger heraus, wäre der
     // Unterschied genau der Fehler, den diese Datei sucht.
-    const deutsch = alleS89DerWoche([kanonisch()], 0, '', false)
+    const deutsch = alleS89DerWoche([kanonisch()], 0, STANDARD_ZEITEN, false)
     for (const code of FREMD) {
-      expect(alleS89DerWoche([wocheIn(code)], 0, '', false), code).toHaveLength(deutsch.length)
+      expect(alleS89DerWoche([wocheIn(code)], 0, STANDARD_ZEITEN, false), code).toHaveLength(deutsch.length)
     }
   })
 })

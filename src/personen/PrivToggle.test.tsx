@@ -160,7 +160,7 @@ describe('PlannerToggle — welches der beiden Rechte gilt', () => {
   it('ohne Konto trägt die Vormerkung an der Person', () => {
     // Für Eingeladene, die sich noch nicht angemeldet haben — sie sollen das
     // Recht ab der ersten Anmeldung haben.
-    const { getByRole } = zeige({ members: [] }, { ...person(), planner: true })
+    const { getByRole } = zeige({ members: [] }, { ...person(), plannerVorgemerkt: true })
     expect(getByRole('switch').getAttribute('aria-checked')).toBe('true')
   })
 

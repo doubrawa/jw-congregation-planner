@@ -49,7 +49,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   // Treffpunkt-Leiter (fs) hat eine eigene Datenquelle und keine Meeting-Slots.
   const fsInst = sel.kind === 'fs' ? state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId) : undefined
   const current = sel.kind === 'fs' ? fsLeaderValue(state.fsWeeks, sel.wi, sel.instId) : slotValue(state.weeks, sel)
-  const s89 = sel.kind === 'fs' ? null : buildS89ForSlot(state.weeks, sel, state.congregation.meetings)
+  const s89 = sel.kind === 'fs' ? null : buildS89ForSlot(state.weeks, sel, state.congregation.times)
   // Titel in der Sprache der Versammlung, Rolle und Raum in der des Lesers.
   // Zusammengefügt war beides ein String und lief ganz durch `tp` — „Leser"
   // stand damit in der Versammlungssprache, „Zusätzliche Klasse" war schon

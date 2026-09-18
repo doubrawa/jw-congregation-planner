@@ -3,6 +3,7 @@ import { buildDemoConfirmations } from './demo-zusagen'
 import { deriveMyFsTasks, fsWochenKennungen } from './fs'
 import { deriveMyTasks, helperTaskKey } from './planning'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_SERVICES, DEMO_UNBESTAETIGT, FS_BASE } from './testdaten'
+import { STANDARD_ZEITEN } from './vorgaben'
 
 /**
  * **Die Demo zeigt, was die Ampel kann** — alle drei Stufen, in jeder Woche.
@@ -19,7 +20,7 @@ const fsWeeks = buildDemoFsWeeks()
 const zusagen = buildDemoConfirmations(weeks, DEMO_SERVICES, fsWeeks, FS_BASE, DEMO_UNBESTAETIGT)
 
 const aufgabenVon = (name: string) => [
-  ...deriveMyTasks(weeks, DEMO_SERVICES, name, {}),
+  ...deriveMyTasks(weeks, DEMO_SERVICES, name, {}, STANDARD_ZEITEN),
   ...deriveMyFsTasks(fsWeeks, fsWochenKennungen(weeks, FS_BASE), name, {}, undefined, 'Leiter'),
 ]
 

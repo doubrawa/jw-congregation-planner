@@ -9,7 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { initialState } from '../app/init'
-import { emptyQualifications, serviceQualKey } from '../data/helpers'
+import { privSetzen, emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Person, Qualifications, Service, Week } from '../data/types'
 
@@ -49,7 +49,7 @@ const t = dict('de')
 
 const priv = (...keys: string[]): Qualifications => {
   const q = emptyQualifications()
-  for (const k of keys) q[k] = true
+  for (const k of keys) privSetzen(q, k, true)
   return q
 }
 

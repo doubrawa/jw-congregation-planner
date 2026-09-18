@@ -40,8 +40,8 @@ const person = (id: string, fn: string, ln: string): Person => ({
 
 const ANTON = person('p-a', 'Anton', 'Alt')
 const GRUPPEN: Group[] = [
-  { id: 'g1', name: 'Gruppe 1', ov: null, as: null },
-  { id: 'g2', name: 'Gruppe 2', ov: null, as: null },
+  { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+  { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
 ]
 
 function woche(): Week {
@@ -60,7 +60,7 @@ function buehne(kind: 'auto' | 'aux' | 'fs', over: Partial<AppState> = {}, onlyG
     persons: [ANTON], services: [], groups: GRUPPEN, absences: [], confirmations: {},
     weeks: [woche()], fsWeeks: [[]], week: 0,
     fsBase: new Date(2026, 8, 7, 12, 0),
-    congregation: { name: 'Test', hall: 'Königreichssaal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Test', hall: 'Königreichssaal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -214,7 +214,7 @@ describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 26)', () => {
 
 describe('Treffpunkte planen', () => {
   const inst = (over: Partial<FsInstance> = {}): FsInstance =>
-    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: '', ...over }) as FsInstance
+    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
 
   it('nennt vorweg, dass Änderungen nur für diese Woche gelten', () => {
     const { container } = buehne('fs')
@@ -231,7 +231,7 @@ describe('Treffpunkte planen', () => {
 
   it('ein Versammlungstreffpunkt heißt so, ein Gruppentreffpunkt nach seiner Gruppe', () => {
     const { container } = buehne('fs', {
-      fsWeeks: [[inst({ grp: '' }), inst({ id: 'f2', grp: 'g1', time: '10:00' })]],
+      fsWeeks: [[inst({ grp: null }), inst({ id: 'f2', grp: 'g1', time: '10:00' })]],
     })
     expect([...container.querySelectorAll('.fs-edit-title')].map((x) => x.textContent)).toEqual([
       t.fsVers, 'Gruppe 1',
@@ -313,7 +313,7 @@ describe('Treffpunkte planen', () => {
     fireEvent.click(container.querySelector('.fs-add-btn')!)
     const aktion = dispatch.mock.calls.find((c) => c[0].type === 'fsInstAdd')![0]
     expect(aktion.inst).toMatchObject({
-      ruleId: null, manual: true, grp: '', wd: 6, time: '09:30',
+      ruleId: null, manual: true, grp: null, wd: 6, time: '09:30',
       place: 'Königreichssaal', leader: '',
     })
   })
@@ -339,12 +339,12 @@ describe('Treffpunkte planen', () => {
 
 describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
   const inst = (over: Partial<FsInstance> = {}): FsInstance =>
-    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: '', ...over }) as FsInstance
+    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
 
   const beide = [[
     inst({ id: 'f1', grp: 'g1' }),
     inst({ id: 'f2', grp: 'g2', time: '10:00' }),
-    inst({ id: 'f3', grp: '', time: '10:30' }),
+    inst({ id: 'f3', grp: null, time: '10:30' }),
   ]]
 
   it('sieht die fremde Gruppe und den Versammlungstreffpunkt gar nicht', () => {

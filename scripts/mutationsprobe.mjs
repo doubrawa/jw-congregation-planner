@@ -229,16 +229,23 @@ const KATALOG = [
   {
     id: 'termin-rangfolge',
     datei: 'src/data/meeting-dates.ts',
-    regel: 'Abweichung schlägt eigenen Termin schlägt Einstellungen (T30).',
-    suchen: 'return verlegt ?? meetingDateParts(week[tab].date).offset ?? meetingDayOffsets(meetings)[tab]',
-    ersetzen: 'return meetingDateParts(week[tab].date).offset ?? verlegt ?? meetingDayOffsets(meetings)[tab]',
+    regel: 'Eine Abweichung schlägt den Rhythmus der Versammlung (T30).',
+    suchen: 'return versatzAbMontag(abweichung(week, tab)?.wd ?? zeiten[tab].wd)',
+    ersetzen: 'return versatzAbMontag(zeiten[tab].wd)',
+  },
+  {
+    id: 'termin-sonntag-ist-null',
+    datei: 'src/data/meeting-dates.ts',
+    regel: 'Der Sonntag ist die 0 — eine auf ihn verlegte Zusammenkunft gilt trotzdem.',
+    suchen: 'return versatzAbMontag(abweichung(week, tab)?.wd ?? zeiten[tab].wd)',
+    ersetzen: 'return versatzAbMontag(abweichung(week, tab)?.wd || zeiten[tab].wd)',
   },
   {
     id: 'uhrzeit-rangfolge',
     datei: 'src/data/meeting-dates.ts',
     regel: 'Dieselbe Rangfolge gilt für die Uhrzeit wie für den Tag.',
-    suchen: '    abweichung(week, tab)?.time ??\n    meetingDateParts(week[tab].date).zeit ??',
-    ersetzen: '    meetingDateParts(week[tab].date).zeit ??\n    abweichung(week, tab)?.time ??',
+    suchen: 'return abweichung(week, tab)?.time ?? zeiten[tab].time',
+    ersetzen: 'return zeiten[tab].time',
   },
 
   // ── Bestätigungen und Ersatz ──────────────────────────────────────────────
@@ -268,9 +275,12 @@ const KATALOG = [
   {
     id: 'minuten-aus-feld',
     datei: 'src/data/meeting-edit.ts',
-    regel: 'Die Dauer kommt aus dem Feld, nicht aus dem Anzeigetext (T32).',
-    suchen: "  if (typeof item.mins === 'number') return item.mins\n  return ersteZahl(item.meta ?? '')",
-    ersetzen: "  return ersteZahl(item.meta ?? '')",
+    // Der Rückfall auf die erste Zahl der Meta-Zeile ist weg — die Regel kann
+    // hier nicht mehr verletzt werden. Gemessen wird deshalb, dass die Dauer
+    // überhaupt ankommt: Ohne sie zeigt der Planen-Screen keine Minuten-Knöpfe.
+    regel: 'Die Dauer kommt aus dem Feld `mins` (T32).',
+    suchen: "  return typeof item.mins === 'number' ? item.mins : null",
+    ersetzen: '  return null',
   },
   {
     id: 'ziffern-jeder-satz',
@@ -315,8 +325,8 @@ const KATALOG = [
     id: 'admin-schalter-zeigt-wirksames-recht',
     datei: 'src/personen/PrivToggle.tsx',
     regel: 'Der Admin-Schalter zeigt das Recht des Kontos, nicht die Vormerkung an der Person.',
-    suchen: 'const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.planner)',
-    ersetzen: 'const on = Boolean(person.planner)',
+    suchen: 'const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.plannerVorgemerkt)',
+    ersetzen: 'const on = Boolean(person.plannerVorgemerkt)',
   },
   {
     id: 'abwesenheit-person-aus-datensatz',
@@ -349,22 +359,26 @@ const KATALOG = [
     ersetzen: 'function instanzId(rule: FsRule): string {\n  return `1|${rule.id}`\n}',
   },
   {
-    id: 'fs-kennung-altbestand',
+    /*
+     * Hier stand `fs-kennung-altbestand`: „Gespeicherte Treffpunkte werden beim
+     * Laden auf die stabile Kennung gehoben." Die Hebung ist mit der
+     * Altlasten-Räumung (T104) weggefallen — es gibt keinen Altbestand mehr, den
+     * sie heben müsste. Der Eintrag zeigte danach ins Leere und fiel erst am
+     * 18. September 2026 auf: Diese Probe läuft nicht in der CI (siehe Kopf).
+     */
+    id: 'fs-gruppe-null-ist-versammlung',
     datei: 'src/data/fs.ts',
-    regel: 'Gespeicherte Treffpunkte werden beim Laden auf die stabile Kennung gehoben.',
-    // Seit 61c7629 („Abschriften zusammengeführt") ein Ausdruck statt zweier
-    // Zeilen; die Mutation lässt die Kennung, wie sie war.
-    suchen: "    return treffer?.[1] ? { ...inst, id: treffer[1] } : inst",
-    ersetzen: '    return inst',
+    regel: 'Ein Treffpunkt ohne Gruppe gehört der Versammlung — und den sieht jeder.',
+    suchen: '  return insts.filter((inst) => inst.grp == null || meine.has(inst.grp))',
+    ersetzen: '  return insts.filter((inst) => meine.has(inst.grp ?? ""))',
   },
   {
-    id: 'fs-schluessel-altbestand',
-    datei: 'src/lib/data.ts',
-    regel: 'Die Bestätigung eines Treffpunkts wandert auf den stabilen Schlüssel mit.',
-    suchen: '    if (treffer) renames.push([key, `fs|${treffer[1]}|${treffer[2]}`])',
-    ersetzen: '    if (false && treffer) renames.push([key, key])',
-  },
-  {
+    /*
+     * Hier stand `fs-schluessel-altbestand`: „Die Bestätigung eines Treffpunkts
+     * wandert auf den stabilen Schlüssel mit." Auch diese Umbenennung ist mit
+     * T104 weggefallen — es gibt nur noch eine Form des Schlüssels. Aufgefallen
+     * am 18. September 2026, aus demselben Grund wie der Eintrag darüber.
+     */
     id: 'fs-tagessperre',
     datei: 'src/data/fs.ts',
     regel: 'Wer an einem Wochentag schon leitet, leitet dort nicht ein zweites Mal.',
@@ -376,7 +390,7 @@ const KATALOG = [
     id: 'fs-fremde-gruppe',
     datei: 'src/data/fs.ts',
     regel: 'Einen Gruppentreffpunkt sieht nur, wer zu der Gruppe gehört oder sie leitet.',
-    suchen: "  return insts.filter((inst) => inst.grp === '' || meine.has(inst.grp))",
+    suchen: '  return insts.filter((inst) => inst.grp == null || meine.has(inst.grp))',
     ersetzen: '  return [...insts]',
   },
   {
@@ -647,14 +661,21 @@ const KATALOG = [
     ersetzen: 'if (false) continue',
   },
   {
-    id: 'erinnerung-fs-kennung',
+    /*
+     * Hier stand `erinnerung-fs-kennung`: „Der Versand greift nach der stabilen
+     * Treffpunkt-Kennung, **auch im Altbestand**." Das Heben aus dem Altbestand
+     * (`stabileKennung`) ist mit T104 weggefallen; der Schlüssel hat nur noch
+     * eine Form. Gemessen wird stattdessen, dass ein Freitext-Leiter keine
+     * Erinnerung bekommt — die Regel, die an derselben Aufzählung hängt (T63).
+     */
+    id: 'erinnerung-fs-freitext-leiter',
     // Seit T99 in `_shared/zuteilungen.ts`: `send-plan` zählt dieselben Plätze
     // auf wie `send-reminders`, und zwei Fassungen einer solchen Aufzählung
     // waren hier schon die Ursache eines Fehlers (B8/T40).
     datei: 'supabase/functions/_shared/zuteilungen.ts',
-    regel: 'Der Versand greift nach der stabilen Treffpunkt-Kennung, auch im Altbestand (T87).',
-    suchen: '    const key = `fs|${woche}|${stabileKennung(inst.id)}`',
-    ersetzen: '    const key = `fs|${woche}|${inst.id}`',
+    regel: 'Ein auswärtiger Leiter (Freitext) bekommt keine Erinnerung (T63).',
+    suchen: '    if (!inst?.leader || inst.lext) continue',
+    ersetzen: '    if (!inst?.leader) continue',
   },
   {
     id: 'erinnerung-letzte-ist-letzte',
@@ -765,7 +786,7 @@ const KATALOG = [
     id: 'start-termin-gerechnet',
     datei: 'src/dashboard/DashboardScreen.tsx',
     regel: 'Der Termin auf dem Start wird gerechnet — importierte Wochen tragen im date-Feld nur die Wochenspanne.',
-    suchen: 'shortDate(meetingDateText(week, weekIdx, tab, state.congregation.meetings))',
+    suchen: 'shortDate(meetingDateText(week, weekIdx, tab, state.congregation.times))',
     ersetzen: 'shortDate(week[tab].date)',
   },
   {
@@ -1182,19 +1203,13 @@ const KATALOG = [
     suchen: '    nimm(fsTaskKey(fsKennung(week, fsBase, wi), inst.id), inst.leader)',
     ersetzen: '    nimm(fsTaskKey(fsKennung(undefined, fsBase, wi), inst.id), inst.leader)',
   },
-  {
-    id: 'fs-kennung-migration-kette',
-    datei: 'src/lib/data.ts',
-    /*
-      Bei einer Lücke rutscht die ganze Kette: Der alte Schlüssel der einen
-      Woche ist der neue der nächsten. Ohne die Ausnahme blockierte jedes Glied
-      seinen Vorgänger, und die älteste Bestätigung bliebe liegen.
-    */
-    regel:
-      'Beim Umschreiben der Treffpunkt-Schlüssel blockiert ein besetztes Ziel nur dann, wenn es nicht selbst weiterzieht.',
-    suchen: '    ([, ziel]) => confirmations[ziel] === undefined || zieht.has(ziel),',
-    ersetzen: '    ([, ziel]) => confirmations[ziel] === undefined,',
-  },
+  /*
+   * Hier stand `fs-kennung-migration-kette`: „Beim Umschreiben der
+   * Treffpunkt-Schlüssel blockiert ein besetztes Ziel nur dann, wenn es nicht
+   * selbst weiterzieht." Das Umschreiben ist mit der Altlasten-Räumung (T104)
+   * weggefallen — es gibt nur noch eine Form des Schlüssels, und damit nichts
+   * mehr umzuschreiben.
+   */
 
   // ── Mitteilungen: Umfang und Bezeichnung (T102) ───────────────────────────
   {
@@ -1315,15 +1330,15 @@ const KATALOG = [
     id: 'planung-vorbei-zaehlt-nicht',
     datei: 'src/data/planungsstand.ts',
     regel: 'Eine Zusammenkunft, die vorbei ist, zählt auf der Karte nicht mehr (T77).',
-    suchen: '(tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.meetings), heute),',
+    suchen: '(tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.zeiten), heute),',
     ersetzen: '(tab) => !istAusgefallen(week, tab),',
   },
   {
     id: 'planung-entfallen-zaehlt-nicht',
     datei: 'src/data/planungsstand.ts',
     regel: 'Eine entfallene Zusammenkunft zählt auf der Karte nicht — ihre Plätze braucht niemand (T30).',
-    suchen: '(tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.meetings), heute),',
-    ersetzen: '(tab) => !istVorbei(meetingDateMs(week, tab, q.meetings), heute),',
+    suchen: '(tab) => !istAusgefallen(week, tab) && !istVorbei(meetingDateMs(week, tab, q.zeiten), heute),',
+    ersetzen: '(tab) => !istVorbei(meetingDateMs(week, tab, q.zeiten), heute),',
   },
   {
     id: 'planung-treffpunkt-vorbei',
@@ -1617,6 +1632,36 @@ const KATALOG = [
     regel: 'Die Gruppen-Karte der Einstellungen nennt, wie viele keiner Gruppe zugeordnet sind.',
     suchen: '  const ohne = ohneGruppe(state.persons, state.groups)',
     ersetzen: '  const ohne: Person[] = []',
+  },
+
+  // ── Ein gelöschter Dienst nimmt seine Spuren mit (T105) ───────────────────
+  {
+    id: 'dienst-bereich-bleibt',
+    datei: 'src/data/dienste.ts',
+    regel: 'Mit dem Dienst verschwindet sein Aufgabenbereich aus jeder Person.',
+    suchen: '    if (!(bereich in p.priv)) return p',
+    ersetzen: '    return p',
+  },
+  {
+    id: 'dienst-plaetze-bleiben',
+    datei: 'src/data/dienste.ts',
+    regel: 'Mit dem Dienst verschwindet seine Platzreihe aus den geladenen Wochen.',
+    suchen: '      if (!(key in week[tab].helpers)) continue',
+    ersetzen: '      continue',
+  },
+  {
+    id: 'dienst-zusagen-bleiben',
+    datei: 'src/data/dienste.ts',
+    regel: 'Mit dem Dienst verschwinden die Bestätigungen seiner Plätze.',
+    suchen: '      arr.forEach((_slot, pos) => out.push(helperTaskKey(week.start, tab, key, pos)))',
+    ersetzen: '      void arr',
+  },
+  {
+    id: 'haushalt-vor-person',
+    datei: 'src/app/persist.ts',
+    regel: 'Der Haushalt geht vor den Personen hinaus — sonst weist der Fremdschlüssel sie ab.',
+    suchen: '      if (haushalt) saveFamily(congId, haushalt, geaendert)\n      else for (const p of geaendert) savePerson(congId, p)',
+    ersetzen: '      for (const p of geaendert) savePerson(congId, p)',
   },
 ]
 

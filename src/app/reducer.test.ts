@@ -24,6 +24,7 @@ import { fsTaskKey } from '../data/fs'
 import { deriveMyTasks, itemTaskKey } from '../data/planning'
 import { alsFreitext } from '../i18n/translate'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
 function makeState(over: Partial<AppState> = {}): AppState {
@@ -286,7 +287,7 @@ describe('Personen', () => {
 
   it('updatePerson zieht eine Namensänderung durch die Wochen — die Zusagen bleiben', () => {
     const target = person('Manfred Albrecht')
-    const seine = deriveMyTasks(buildDemoWeeks(), DEMO_SERVICES, 'Manfred Albrecht', {})
+    const seine = deriveMyTasks(buildDemoWeeks(), DEMO_SERVICES, 'Manfred Albrecht', {}, STANDARD_ZEITEN)
     const zusagen = Object.fromEntries(seine.map((t) => [t.id, 'bestätigt' as const]))
     const s = makeState({ confirmations: zusagen })
     const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfredo' } })
@@ -304,9 +305,9 @@ describe('Personen', () => {
     const target = person('Manfred Albrecht')
     const s = makeState({
       fsWeeks: [[
-        { id: '0|r1', ruleId: 'r1', grp: '', wd: 6, time: '09:30', place: 'Saal',
+        { id: '0|r1', ruleId: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal',
           leader: 'Manfred Albrecht', lpid: target.id },
-        { id: '0|r2', ruleId: 'r2', grp: '', wd: 3, time: '09:30', place: 'Halle',
+        { id: '0|r2', ruleId: 'r2', grp: null, wd: 3, time: '09:30', place: 'Halle',
           leader: 'Jemand Anders', lpid: 'p-fremd' },
       ]],
     })
@@ -325,7 +326,7 @@ describe('Personen', () => {
       ],
       invites: [{ id: 'i1', code: 'ABC', personId: target.id, planner: false }],
     })
-    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { planner: true } })
+    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { plannerVorgemerkt: true } })
     expect(next.members.find((m) => m.userId === 'u1')!.planner).toBe(true)
     expect(next.members.find((m) => m.userId === 'me')!.planner).toBe(false)
     expect(next.invites[0].planner).toBe(true)
@@ -333,13 +334,13 @@ describe('Personen', () => {
 
   it('removePerson löst Gruppen-, Konto- und Code-Referenzen', () => {
     const s = makeState({
-      groups: [{ id: 'g1', name: 'G1', ov: 'p1', as: 'p6' }],
+      groups: [{ id: 'g1', name: 'G1', overseerId: 'p1', assistantId: 'p6' }],
       members: [{ userId: 'u1', email: 'u1@x', personId: 'p1', planner: true }],
       invites: [{ id: 'i1', code: 'ABC', personId: 'p1', planner: false }],
     })
     const next = reducer(s, { type: 'removePerson', id: 'p1' })
     expect(next.persons.some((p) => p.id === 'p1')).toBe(false)
-    expect(next.groups[0].ov).toBeNull()
+    expect(next.groups[0].overseerId).toBeNull()
     expect(next.members[0].personId).toBeNull()
     expect(next.invites[0].personId).toBeNull()
   })
@@ -396,15 +397,15 @@ describe('Dienste', () => {
 
 describe('Gruppen', () => {
   it('addGroup / updateGroup', () => {
-    const g = { id: 'gN', name: 'Neu', ov: null, as: null }
+    const g = { id: 'gN', name: 'Neu', overseerId: null, assistantId: null }
     expect(reducer(makeState(), { type: 'addGroup', group: g }).groups.at(-1)).toEqual(g)
-    const upd = reducer(makeState({ groups: [g] }), { type: 'updateGroup', id: 'gN', patch: { ov: 'p2' } })
-    expect(upd.groups[0].ov).toBe('p2')
+    const upd = reducer(makeState({ groups: [g] }), { type: 'updateGroup', id: 'gN', patch: { overseerId: 'p2' } })
+    expect(upd.groups[0].overseerId).toBe('p2')
   })
 
   it('removeGroup entfernt die Gruppe und löst die Mitglieder-Zuordnung', () => {
     const s = makeState({
-      groups: [{ id: 'gN', name: 'Neu', ov: null, as: null }],
+      groups: [{ id: 'gN', name: 'Neu', overseerId: null, assistantId: null }],
       persons: [{ ...person('Manfred Albrecht'), grp: 'gN' }],
     })
     const next = reducer(s, { type: 'removeGroup', id: 'gN' })
@@ -434,16 +435,16 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
       }
       return makeState({
         weeks,
-        congregation: { ...CONGREGATION, meetings: 'Di 19:00 · So 10:00' },
+        congregation: { ...CONGREGATION, times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
       })
     }
 
     it('verschiebt das Ende mit der Startzeit', () => {
       const next = reducer(importState(), {
         type: 'updateCongregation',
-        patch: { meetings: 'Di 18:30 · So 10:00' },
+        patch: { times: { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } } },
       })
-      expect(next.congregation.meetings).toBe('Di 18:30 · So 10:00')
+      expect(next.congregation.times).toEqual({ mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
       expect(next.weeks[0].mid.end).toBe('Ende ca. 20:15')
     })
 
@@ -459,7 +460,7 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
       const s = importState()
       const next = reducer(s, {
         type: 'updateCongregation',
-        patch: { meetings: 'Di 19:00 · So 10:00' },
+        patch: { times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
       })
       expect(next.weeks).toBe(s.weeks)
     })
@@ -583,7 +584,7 @@ describe('assign (Zuteilen)', () => {
     const s = makeState()
     const sel = firstPartSlot(s.weeks[0], 'mid')
     const vorgaenger = (s.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name
-    const key = deriveMyTasks(s.weeks, s.services, vorgaenger, {})[0]!.id
+    const key = deriveMyTasks(s.weeks, s.services, vorgaenger, {}, STANDARD_ZEITEN)[0]!.id
     const next = reducer(makeState({ slotSel: sel, confirmations: { [key]: 'bestätigt' } }), {
       type: 'assign', name: 'Neue Person', pid: 'neu-1',
     })
@@ -603,7 +604,7 @@ describe('assign (Zuteilen)', () => {
     const sel = firstPartSlot(weeks[0]!, 'mid')
     const platz = (weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!
     platz.pid = 'p-erster'
-    const key = deriveMyTasks(weeks, DEMO_SERVICES, platz.name, {}, '', 'p-erster')[0]!.id
+    const key = deriveMyTasks(weeks, DEMO_SERVICES, platz.name, {}, STANDARD_ZEITEN, 'p-erster')[0]!.id
     const next = reducer(makeState({ weeks, slotSel: sel, confirmations: { [key]: 'bestätigt' } }), {
       type: 'assign', name: platz.name, pid: 'p-zweiter',
     })
@@ -724,7 +725,7 @@ describe('Treffpunkte-Instanzen', () => {
   })
   it('fsInstAdd fügt in die aktuelle Woche ein', () => {
     const s = makeState({ week: 1 })
-    const inst = { id: 'xManual', ruleId: null, grp: '', wd: 4, time: '18:00', place: 'Ort', leader: '', manual: true }
+    const inst = { id: 'xManual', ruleId: null, grp: null, wd: 4, time: '18:00', place: 'Ort', leader: '', manual: true }
     const next = reducer(s, { type: 'fsInstAdd', inst })
     expect(next.fsWeeks[1].some((i) => i.id === 'xManual')).toBe(true)
   })
@@ -732,8 +733,8 @@ describe('Treffpunkte-Instanzen', () => {
 
 describe('Treffpunkte-Grundplan (Regeln)', () => {
   it('fsRuleAdd: Versammlungsregel ohne skipCong, Gruppenregel mit skipCong', () => {
-    const cong = reducer(makeState(), { type: 'fsRuleAdd', grp: '' })
-    expect(cong.fsRules.at(-1)).toMatchObject({ grp: '', wd: 6, skipCong: false })
+    const cong = reducer(makeState(), { type: 'fsRuleAdd', grp: null })
+    expect(cong.fsRules.at(-1)).toMatchObject({ grp: null, wd: 6, skipCong: false })
     const grp = reducer(makeState(), { type: 'fsRuleAdd', grp: 'g1' })
     expect(grp.fsRules.at(-1)).toMatchObject({ grp: 'g1', skipCong: true })
     expect(cong.fsWeeks.length).toBe(cong.weeks.length === 0 ? 0 : cong.fsWeeks.length) // regeneriert
@@ -743,8 +744,8 @@ describe('Treffpunkte-Grundplan (Regeln)', () => {
     // im Aufgaben-Schlüssel. `r${Date.now()}` gab zwei Regeln derselben
     // Millisekunde dieselbe — zwei Treffpunkte teilten sich dann eine
     // Bestätigung.
-    const eins = reducer(makeState(), { type: 'fsRuleAdd', grp: '' })
-    const zwei = reducer(eins, { type: 'fsRuleAdd', grp: '' })
+    const eins = reducer(makeState(), { type: 'fsRuleAdd', grp: null })
+    const zwei = reducer(eins, { type: 'fsRuleAdd', grp: null })
     const ids = zwei.fsRules.map((r) => r.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids.some((id) => id.includes('|'))).toBe(false) // sonst bräche der Schlüssel
@@ -1185,7 +1186,7 @@ describe('hydrate / setDataStatus', () => {
     congregationId: 'c1',
     userId: 'u1',
     empty: false,
-    congregation: { name: 'Krumbach', hall: 'H', meetings: 'M' },
+    congregation: { name: 'Krumbach', hall: 'H', times: STANDARD_ZEITEN },
     auxClass: false,
     planner: true,
     personId: 'p9',
@@ -1216,7 +1217,7 @@ describe('hydrate / setDataStatus', () => {
      */
     const mitLeiter = (p: Person) => {
       const fsWeeks = buildDemoFsWeeks()
-      fsWeeks[0] = [{ id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(p), lpid: p.id }]
+      fsWeeks[0] = [{ id: 'tp1', ruleId: null, grp: null, wd: 1, time: '14:00', place: 'Saal', leader: displayName(p), lpid: p.id }]
       return fsWeeks
     }
     const key = fsTaskKey('2026-09-07', 'tp1')
@@ -1405,7 +1406,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const heuteMs = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate())
     // Gegenprobe, damit der Test nicht ins Leere prüft: In der alten Woche
     // steckt sehr wohl eine Zuteilung für mich.
-    const roh = deriveMyTasks(weeks, DEMO_SERVICES, displayName(me), {}, '', me.id)
+    const roh = deriveMyTasks(weeks, DEMO_SERVICES, displayName(me), {}, STANDARD_ZEITEN, me.id)
     expect(roh.some((t) => t.at != null && t.at < heuteMs)).toBe(true)
     expect(next.myTasks.some((t) => t.at != null && t.at < heuteMs)).toBe(false)
   })
@@ -1443,7 +1444,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
   it('geänderte Zusammenkunftszeit zieht die Termine meiner Aufgaben nach', () => {
     /*
       Die Termine der Aufgaben stehen nirgends in den Wochendaten: sie werden
-      bei jeder Ableitung aus `congregation.meetings` gerechnet. Wird der Tag
+      bei jeder Ableitung aus `congregation.times` gerechnet. Wird der Tag
       der Zusammenkunft umgestellt, muss die Ableitung deshalb erneut laufen —
       sonst nennt „Meine Aufgaben" weiter den alten Tag, während das Programm
       daneben schon den neuen zeigt.
@@ -1457,7 +1458,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
       dataStatus: 'ready',
       personId: me.id,
       weeks,
-      congregation: { ...CONGREGATION, meetings: 'Di 19:00 · So 10:00' },
+      congregation: { ...CONGREGATION, times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
       myTasks: [],
     })
     const vorher = neuAbgeleitet(s)
@@ -1467,7 +1468,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
 
     const nachher = reducer(vorher, {
       type: 'updateCongregation',
-      patch: { meetings: 'Do 19:00 · So 10:00' },
+      patch: { times: { mid: { wd: 4, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     })
     const neuerTermin = nachher.myTasks.find((t) => t.id === midTask!.id)
     expect(neuerTermin, 'Aufgabe verschwunden').toBeDefined()
@@ -1487,7 +1488,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const me = person('Simon Krüger')
     const fsWeeks = buildDemoFsWeeks()
     fsWeeks[0] = [
-      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
+      { id: 'tp1', ruleId: null, grp: null, wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
     ]
     const s = makeState({ dataStatus: 'ready', personId: me.id, fsWeeks, myTasks: [] })
     const next = neuAbgeleitet(s)
@@ -1500,7 +1501,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const me = person('Simon Krüger')
     const fsWeeks = buildDemoFsWeeks()
     fsWeeks[0] = [
-      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
+      { id: 'tp1', ruleId: null, grp: null, wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
     ]
     const s = makeState({
       dataStatus: 'ready',
@@ -1524,7 +1525,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const me = person('Simon Krüger')
     const fsWeeks = buildDemoFsWeeks()
     fsWeeks[0] = [
-      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
+      { id: 'tp1', ruleId: null, grp: null, wd: 1, time: '14:00', place: 'Saal', leader: displayName(me), lpid: me.id },
     ]
     const s = neuAbgeleitet(makeState({ dataStatus: 'ready', personId: me.id, fsWeeks, myTasks: [] }))
     expect(s.myTasks.some((t) => t.id === 'fs|2026-09-07|tp1'), 'Aufgabe fehlt schon vorher').toBe(true)
@@ -1556,7 +1557,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const nachfolger = person('Jonas Berger')
     const fsWeeks = buildDemoFsWeeks()
     fsWeeks[0] = [
-      { id: 'tp1', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Saal', leader: displayName(vorgaenger), lpid: vorgaenger.id },
+      { id: 'tp1', ruleId: null, grp: null, wd: 1, time: '14:00', place: 'Saal', leader: displayName(vorgaenger), lpid: vorgaenger.id },
     ]
     const sel = { kind: 'fs' as const, wi: 0, instId: 'tp1', label: 'Leiter', priv: 'treffpunkt', groups: false }
     const s = makeState({
@@ -1587,7 +1588,7 @@ describe('Treffpunkt-Zusagen verfallen mit dem Leiter', () => {
   /** Zwei Treffpunkte, beide von Simon geleitet und zugesagt. */
   const zugesagt = (status: 'bestätigt' | 'verhindert' = 'bestätigt', over: Partial<AppState> = {}) => {
     const fsWeeks = buildDemoFsWeeks()
-    const leitung = { ruleId: null, grp: '', time: '14:00', place: 'Saal', leader: displayName(simon), lpid: simon.id }
+    const leitung = { ruleId: null, grp: null, time: '14:00', place: 'Saal', leader: displayName(simon), lpid: simon.id }
     fsWeeks[0] = [{ id: 'tp1', wd: 1, ...leitung }, { id: 'tp2', wd: 3, ...leitung }]
     return makeState({ fsWeeks, week: 0, confirmations: { [KEY]: status, [ANDERER]: 'bestätigt' }, ...over })
   }
@@ -1768,7 +1769,7 @@ describe('Toasts in der Sprache des Nutzers', () => {
   const AKTIONEN: Array<[string, AppAction, Partial<AppState>?]> = [
     ['Person angelegt', { type: 'addPerson', person: { id: 'pX', fn: 'Neu', ln: 'Person', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null } }],
     ['Abwesenheit angelegt', { type: 'addAbsence', absence: { id: 'aX', personId: 'p1', userId: 'u1', from: '2026-09-01', to: '2026-09-05', reason: '' } }],
-    ['Gruppe angelegt', { type: 'addGroup', group: { id: 'gX', name: 'Gruppe 9', ov: null, as: null } }],
+    ['Gruppe angelegt', { type: 'addGroup', group: { id: 'gX', name: 'Gruppe 9', overseerId: null, assistantId: null } }],
     ['Dienst angelegt', { type: 'addService', service: { key: 'svcX', name: 'Neuer Dienst', count: 1 } }],
     ['automatisch zugeteilt', { type: 'autoAssign', scope: 'all' }],
     ['geleert', { type: 'clearAssignments', scope: 'parts' }],

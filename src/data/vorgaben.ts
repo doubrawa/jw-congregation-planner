@@ -14,6 +14,17 @@
 import type { Reminders, Service } from './types'
 
 /**
+ * Regeltermine, mit denen eine Versammlung beginnt: Dienstag 19:00 und Sonntag
+ * 10:00 (Wochentag als Zahl, 0 = Sonntag … 6 = Samstag).
+ *
+ * **Aus dem geteilten Modul**, nicht hier noch einmal geschrieben: Dieselbe
+ * Vorgabe brauchen die Edge Functions, und zwei Fassungen hießen, dass die App
+ * einen Tag anzeigt und die Erinnerung einen anderen nennt. Dieselben Werte
+ * stehen als `default` in `congregations` (schema.sql).
+ */
+export { STANDARD_ZEITEN } from '../../supabase/functions/_shared/planung.ts'
+
+/**
  * Hilfsdienste, die jede Versammlung zunächst bekommt.
  *
  * `count` ist die Zahl der Plätze, `groups` bedeutet „reihum durch die
@@ -32,8 +43,8 @@ export const STANDARD_DIENSTE: Service[] = [
 
 /**
  * Erinnerungs-Vorgaben: erste Erinnerung sieben Tage vorher, letzte einen Tag
- * vorher — und **dazwischen nichts**. Sie greifen, solange eine Versammlung in
- * `congregations.settings` nichts Eigenes stehen hat.
+ * vorher — und **dazwischen nichts**. Dieselben Werte stehen als `default` in
+ * `congregations` (schema.sql); `edge-parity.test.ts` hält beide zusammen.
  *
  * `repeat` stand hier auf `true` und war damit die lauteste Voreinstellung der
  * App: Wer nicht bestätigte, bekam sieben Tage in Folge einen Push für dieselbe

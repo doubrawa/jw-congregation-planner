@@ -47,6 +47,7 @@ import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './p
 import type {
   ConfirmationMap,
   FsInstance,
+  MeetingTimes,
   SentLog,
   Service,
   Week,
@@ -68,7 +69,7 @@ export interface OffeneMeldung {
  * der Ordnungszahl — die Aufzählung liefert also auch dann die richtigen
  * Schlüssel, wenn sie nur eine Woche zu sehen bekommt.
  *
- * `meetings` ist Pflicht, nicht vorbelegt: Ohne die Zusammenkunftszeiten der
+ * `zeiten` ist Pflicht, nicht vorbelegt: Ohne die Zusammenkunftszeiten der
  * Versammlung fiele „vorbei" still auf Dienstag/Sonntag zurück, und bei einer
  * Versammlung, die donnerstags zusammenkommt, stimmte die Zahl nur an manchen
  * Tagen.
@@ -81,7 +82,7 @@ export function offeneMeldungen(
   services: Service[],
   confirmations: ConfirmationMap,
   sentLog: SentLog,
-  meetings: string,
+  zeiten: MeetingTimes,
   heute = new Date(),
 ): OffeneMeldung[] {
   const out: OffeneMeldung[] = []
@@ -96,8 +97,8 @@ export function offeneMeldungen(
   if (week) {
     // Vorbei ist eine Zusammenkunft als Ganzes — der Schlüssel jedes Platzes
     // trägt sie an zweiter Stelle (`<Montag>|<tab>|…`).
-    const vorbei = vergangeneZusammenkuenfte(week, meetings, heute)
-    eachAssignedSlot([week], services, '', (name, key) => {
+    const vorbei = vergangeneZusammenkuenfte(week, zeiten, heute)
+    eachAssignedSlot([week], services, zeiten, (name, key) => {
       const wo = taskKeyWeek(key)
       if (wo && vorbei.has(wo.tab)) return
       nimm(key, name)
@@ -121,8 +122,8 @@ export function offeneMeldungen(
  * Ohne Startdatum (Demo, Vorlagen) liegt die Woche nirgends im Kalender — dann
  * ist nichts vorbei, wie bei `istVorbei` selbst.
  */
-function vergangeneZusammenkuenfte(week: Week, meetings: string, heute: Date): Set<string> {
-  return new Set(MEETING_TABS.filter((tab) => istVorbei(meetingDateMs(week, tab, meetings), heute)))
+function vergangeneZusammenkuenfte(week: Week, zeiten: MeetingTimes, heute: Date): Set<string> {
+  return new Set(MEETING_TABS.filter((tab) => istVorbei(meetingDateMs(week, tab, zeiten), heute)))
 }
 
 /** Eine Zusage, die jemandem wieder genommen wurde. */
@@ -190,7 +191,7 @@ export function entzogeneZusagen(
   wi: number,
   fsBase: Date | null,
   services: Service[],
-  meetings: string,
+  zeiten: MeetingTimes,
   confirmations: ConfirmationMap,
   heute = new Date(),
 ): EntzogeneZusage[] {
@@ -208,8 +209,8 @@ export function entzogeneZusagen(
     beschreiben: () => { label: string; datum: string }
   }
   const alt = new Map<string, Vorher>()
-  const vorbei = vergangeneZusammenkuenfte(vorher, meetings, heute)
-  eachAssignedSlot([vorher], services, meetings, (name, key, task, pid) => {
+  const vorbei = vergangeneZusammenkuenfte(vorher, zeiten, heute)
+  eachAssignedSlot([vorher], services, zeiten, (name, key, task, pid) => {
     // Unbestätigtes gar nicht erst aufnehmen — es fiele unten ohnehin heraus.
     // Von gut 35 Plätzen sind ein bis drei bestätigt, und diese Funktion läuft
     // bei jeder Wochenänderung; `fsRuleAdd` und `setAuxClass` setzen alle 52
@@ -249,7 +250,7 @@ export function entzogeneZusagen(
 
   const neu = new Map<string, { name: string; pid?: string }>()
   if (nachher) {
-    eachAssignedSlot([nachher], services, meetings, (name, key, _task, pid) =>
+    eachAssignedSlot([nachher], services, zeiten, (name, key, _task, pid) =>
       neu.set(key, { name, pid }),
     )
   }

@@ -7,7 +7,8 @@
 import { syncAuxSlots } from '../data/aux-class'
 import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
-import { currentWeekIndex, istVorbei, meetingTimesOf, naechsteZusammenkunft } from '../data/meeting-dates'
+import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
+import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsKennung, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../lib/data'
@@ -188,7 +189,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // „Meine Aufgaben" noch konnte er sie bestätigen.
   const myTasks = me
     ? [
-        ...deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.meetings, me.id),
+        ...deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.times, me.id),
         ...deriveMyFsTasks(
           state.fsWeeks,
           kennungen,
@@ -218,8 +219,8 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         state.services,
         state.confirmations,
         me,
-        state.congregation.meetings,
-        buildAbsences(state.absences, weeks, state.fsBase, state.congregation.meetings),
+        state.congregation.times,
+        buildAbsences(state.absences, weeks, state.fsBase, state.congregation.times),
       ).filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
     : []
   return {
@@ -244,7 +245,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
  */
 function zurNaechstenZusammenkunft(state: AppState): AppState {
   if (state.terminGewaehlt) return state
-  const naechste = naechsteZusammenkunft(state.weeks, state.congregation.meetings)
+  const naechste = naechsteZusammenkunft(state.weeks, state.congregation.times)
   return naechste ? { ...state, week: naechste.wi, tab: naechste.tab } : state
 }
 
@@ -290,7 +291,7 @@ function ableitungsQuellen(s: AppState): readonly unknown[] {
     s.fsBase,
     s.services,
     s.confirmations,
-    s.congregation.meetings,
+    s.congregation.times,
     s.absences,
   ]
 }
@@ -477,8 +478,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         persons: state.persons.filter((p) => p.id !== action.id),
         groups: state.groups.map((g) => ({
           ...g,
-          ov: g.ov === action.id ? null : g.ov,
-          as: g.as === action.id ? null : g.as,
+          overseerId: g.overseerId === action.id ? null : g.overseerId,
+          assistantId: g.assistantId === action.id ? null : g.assistantId,
         })),
         members: state.members.map((m) =>
           m.personId === action.id ? { ...m, personId: null } : m,
@@ -520,8 +521,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Planer-Recht in verknüpfte Konten und offene Einladungscodes spiegeln
       // (members.planner = Quelle der Rechteprüfung); das eigene Konto ist per
       // UI-Sperre ausgenommen.
-      if ('planner' in action.patch) {
-        const on = Boolean(action.patch.planner)
+      if ('plannerVorgemerkt' in action.patch) {
+        const on = Boolean(action.patch.plannerVorgemerkt)
         next.members = state.members.map((m) =>
           m.personId === action.id && m.userId !== state.userId ? { ...m, planner: on } : m,
         )
@@ -540,15 +541,23 @@ function baseReducer(state: AppState, action: AppAction): AppState {
             : s,
         ),
       }
-    case 'removeService':
+    case 'removeService': {
+      // Ein Dienst hinterlässt drei Spuren, und keine räumt sich selbst auf:
+      // den Aufgabenbereich bei jeder Person, die Platzreihe in jeder Woche und
+      // die Bestätigungen dieser Plätze (siehe data/dienste.ts).
+      const keys = dienstZusagenKeys(state.weeks, action.key)
       return {
         ...state,
         services: state.services.filter((s) => s.key !== action.key),
+        persons: dienstBereichEntfernen(state.persons, action.key),
+        weeks: dienstAusWochenEntfernen(state.weeks, action.key),
+        confirmations: ohneDienstZusagen(state.confirmations, keys),
         // Die Freigabe-Liste des gelöschten Dienstes darf nicht offen bleiben —
         // sie zeigte sonst Schalter für einen Bereich, den es nicht mehr gibt.
         svcSheet: state.svcSheet === action.key ? null : state.svcSheet,
         toast: toastKey(state, 'toastDienstDel'),
       }
+    }
     case 'addService':
       return {
         ...state,
@@ -590,8 +599,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // hier stünde nach einer Umstellung auf jedem Programmblatt eine
       // Zusammenkunft, die 45 Minuten länger dauert als geplant.
       const weeks =
-        action.patch.meetings !== undefined && action.patch.meetings !== state.congregation.meetings
-          ? endenNachziehen(state.weeks, state.congregation.meetings, action.patch.meetings)
+        action.patch.times !== undefined && action.patch.times !== state.congregation.times
+          ? endenNachziehen(state.weeks, state.congregation.times, action.patch.times)
           : state.weeks
       return { ...state, congregation, weeks }
     }
@@ -653,11 +662,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Endzeiten aus den Zusammenkunftszeiten rechnen. Der Import kennt sie
       // nicht und trug feste Werte ein (20:45 / 11:45) — bei einem Beginn um
       // 18:30 stand damit auf jedem Programmblatt eine falsche Endzeit.
-      const zeiten = meetingTimesOf(state.congregation.meetings)
+      const zeiten = state.congregation.times
       const week: Week = {
         ...action.week,
-        mid: { ...action.week.mid, end: endeAusStartzeit(zeiten.mid, action.week.mid.end) },
-        we: { ...action.week.we, end: endeAusStartzeit(zeiten.we, action.week.we.end) },
+        mid: { ...action.week.mid, end: endeAusStartzeit(zeiten.mid.time, action.week.mid.end) },
+        we: { ...action.week.we, end: endeAusStartzeit(zeiten.we.time, action.week.we.end) },
       }
       // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
       // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
@@ -746,7 +755,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.services,
         state.groups,
         action.scope,
-        buildAbsences(state.absences, state.weeks, state.fsBase, state.congregation.meetings),
+        buildAbsences(state.absences, state.weeks, state.fsBase, state.congregation.times),
       )
       if (count === 0) {
         // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie
@@ -823,7 +832,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         time: '09:30',
         place: '',
         monthly: 0,
-        skipCong: action.grp !== '',
+        skipCong: action.grp != null,
       }
       const fsRules = [...state.fsRules, rule]
       return {

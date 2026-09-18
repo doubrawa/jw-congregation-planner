@@ -74,6 +74,39 @@ describe('Alle Skripte holen den Schlüssel über secretKey()', () => {
     expect(selbstgebaut, 'setzt den Authorization-Header ohne authKopf').toEqual([])
   })
 
+  it('keines holt sich URL und Schlüssel selbst zusammen', () => {
+    /*
+      **Der teuerste Fund des Neuaufbaus vom 17. September 2026.** Jedes Skript
+      las `process.env.SUPABASE_URL` und `secretKey()` selbst und brach ab, wenn
+      etwas fehlte — also musste vor jedem Lauf `$env:…` im **selben** Fenster
+      stehen. Genau daran starben fünf Läufe hintereinander mit „Invalid API
+      key", und die Meldung nennt die Ursache nicht.
+
+      `rollen-nachtragen.mjs` konnte es längst besser: URL aus `.env.local`,
+      Schlüssel notfalls erfragt. Es konnte es nur als **einziges**. Seit dem
+      18. September steht der Weg in `gemeinsam.mjs` (`zugangsdaten()`), und
+      diese Probe hält fest, dass ihn alle gehen.
+    */
+    const daneben = MIT_DATENBANK.filter((f) => {
+      if (f in AUSNAHMEN) return false
+      const quelle = readFileSync(join(dir, f), 'utf8')
+      const code = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/[^\n]*$/gm, '')
+      return /process\.env\.SUPABASE_URL/.test(code) || /\bsecretKey\(\)/.test(code)
+    })
+    expect(daneben, 'holt Zugangsdaten an zugangsdaten() vorbei').toEqual([])
+  })
+
+  it('jedes fragt nach dem Schlüssel, wenn keiner dasteht', () => {
+    // Die Gegenprobe zur Zeile darüber: Nicht nur „nicht selbst", sondern auch
+    // „überhaupt". Ein Skript, das gar keine Zugangsdaten holt, käme sonst
+    // durch — und stürbe erst beim ersten Aufruf.
+    const ohne = MIT_DATENBANK.filter((f) => {
+      if (f in AUSNAHMEN) return false
+      return !/zugangsdaten\(\)/.test(readFileSync(join(dir, f), 'utf8'))
+    })
+    expect(ohne, 'ruft zugangsdaten() nirgends').toEqual([])
+  })
+
   it('jede Ausnahme steht mit Begründung da', () => {
     const da = new Set(SKRIPTE)
     expect(Object.keys(AUSNAHMEN).filter((f) => !da.has(f))).toEqual([])

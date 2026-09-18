@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { normalizePriv, pidsNachtragen, renameInWeeks } from './data'
 import type { Meeting, PartItem, Person, Qualifications, Week } from '../data/types'
+import { privWert } from '../data/helpers'
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {
@@ -22,13 +23,13 @@ describe('normalizePriv (gespeicherte Qualifikationen)', () => {
   it('leerer/fehlender Bestand → alle festen Bereiche false', () => {
     const priv = normalizePriv(null)
     for (const key of ['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'bibellesung', 'leser', 'schulung', 'studium']) {
-      expect(priv[key], key).toBe(false)
+      expect(privWert(priv, key), key).toBe(false)
     }
   })
 
   it('Dienst-Bereiche (svc:*) und Wahrheitswerte bleiben erhalten', () => {
     const priv = normalizePriv({ 'svc:ton': true, vortrag: 1 } as never)
-    expect(priv['svc:ton']).toBe(true)
+    expect(privWert(priv, 'svc:ton')).toBe(true)
     expect(priv.vortrag).toBe(true)
   })
 })

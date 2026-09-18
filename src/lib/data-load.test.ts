@@ -63,7 +63,7 @@ function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error
       { data: { congregation_id: 'c1', person_id: 'p9', planner: true }, error: null },
       { data: [{ user_id: 'u1', person_id: 'p9', planner: true, email: 'a@b' }], error: null },
     ],
-    congregations: [{ data: { name: 'Krumbach', hall: 'H', meeting_times: 'M', settings: { congLang: 'Deutsch', progLangs: ['Englisch'] } }, error: null }],
+    congregations: [{ data: { name: 'Krumbach', hall: 'H', mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: false, cong_lang: 'de', prog_langs: ['en'], aux_class: false }, error: null }],
     persons: [{ data: [personRow], error: null }],
     services: [{ data: [serviceRow], error: null }],
     groups: [{ data: [groupRow], error: null }],
@@ -74,7 +74,7 @@ function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error
     notifications: [{ data: [], error: null }],
     confirmations: [{ data: [{ task_key: 'k1', status: 'bestätigt' }], error: null }],
     invites: [{ data: [], error: null }],
-    fs_rules: [{ data: { base: '2026-09-07', rules: [] }, error: null }],
+    fs_rules: [{ data: [], error: null }],
     fs_weeks: [{ data: [], error: null }],
     ...over,
   }
@@ -99,8 +99,9 @@ describe('loadCongregationData', () => {
     expect(res.data.persons.map((p) => p.fn)).toContain('Anna')
     expect(res.data.services[0].key).toBe('mik')
     expect(res.data.weeks).toHaveLength(1)
-    expect(res.data.congLang).toBe('Deutsch')
-    expect(res.data.progLangs).toEqual(['Englisch'])
+    // Sprachen stehen als jw.org-Code, nicht als deutscher Anzeigename.
+    expect(res.data.congLang).toBe('de')
+    expect(res.data.progLangs).toEqual(['en'])
     expect(res.data.confirmations['k1']).toBe('bestätigt')
     expect(res.empty).toBe(false)
   })
@@ -254,7 +255,7 @@ describe('loadCongregationData', () => {
 
     /** Treffpunkte hängen an der Kennung ihrer Woche, nicht an der Zeilenfolge. */
     it('ordnet die Treffpunkte über das Datum zu', async () => {
-      const inst = [{ id: 'i1', grp: '', wd: 3, time: '14:00', place: 'Saal', leader: 'Max' }]
+      const inst = [{ id: 'i1', grp: null, wd: 3, time: '14:00', place: 'Saal', leader: 'Max' }]
       mitWochen([montag(0), montag(1), montag(2)])
       store.responses.fs_weeks = [{ data: [{ start: montag(2), data: inst }], error: null }]
       const res = await loadCongregationData('u1')

@@ -27,7 +27,7 @@ export function makeInvite(person: Person): Invite {
     id: crypto.randomUUID(),
     code: generateInviteCode(),
     personId: person.id,
-    planner: Boolean(person.planner),
+    planner: Boolean(person.plannerVorgemerkt),
   }
 }
 

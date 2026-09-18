@@ -80,7 +80,7 @@ const person = (id: string, fn: string, ln: string, planner = false): Person => 
 
 const ICH = person('p-1', 'Xavo', 'Quintus', true)
 const ANDER = person('p-2', 'Yvor', 'Zeddix')
-const GRUPPEN: Group[] = [{ id: 'g1', name: 'Grupo Uno', ov: ICH.id, as: null }]
+const GRUPPEN: Group[] = [{ id: 'g1', name: 'Grupo Uno', overseerId: ICH.id, assistantId: null }]
 const DIENSTE: Service[] = [
   { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
@@ -159,10 +159,10 @@ const AUFGABE: MyTask = {
  * daneben kommt aus `Intl` und muss die Sprache wechseln.
  */
 const FS_REGEL: FsRule = {
-  id: 'r1', grp: '', wd: 6, time: '09:30', place: 'Zubo 3', monthly: 0, skipCong: false,
+  id: 'r1', grp: null, wd: 6, time: '09:30', place: 'Zubo 3', monthly: 0, skipCong: false,
 }
 const TREFFPUNKTE: FsInstance[] = [
-  { id: '0|r1', ruleId: 'r1', grp: '', wd: 6, time: '09:30', place: 'Zubo 3', leader: 'Xavo Quintus', lpid: ICH.id },
+  { id: '0|r1', ruleId: 'r1', grp: null, wd: 6, time: '09:30', place: 'Zubo 3', leader: 'Xavo Quintus', lpid: ICH.id },
   { id: '0|r2', ruleId: null, grp: 'g1', wd: 3, time: '18:00', place: 'Zubo 5', leader: '', manual: true },
 ]
 
@@ -186,7 +186,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     userId: 'u1',
     personId: ICH.id,
     planner: true,
-    congregation: { name: 'Vestavo', hall: 'Kalvo 12', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Vestavo', hall: 'Kalvo 12', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     persons: [ICH, ANDER],
     groups: GRUPPEN,
     services: DIENSTE,
@@ -426,11 +426,11 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     }],
     ['verlegte Zusammenkunft', {
       screen: 'programm',
-      weeks: [{ ...woche(), dev: { mid: { day: 'Donnerstag', time: '18:30' } } }],
+      weeks: [{ ...woche(), dev: { mid: { wd: 4, time: '18:30' } } }],
     }],
     ['weitere Termine der Woche', {
       screen: 'programm',
-      weeks: [{ ...woche(), termine: [{ id: 't1', title: 'Zubo', day: 'Freitag', time: '19:00', place: 'Kalvo' }] }],
+      weeks: [{ ...woche(), termine: [{ id: 't1', title: 'Zubo', wd: 5, time: '19:00', place: 'Kalvo' }] }],
     }],
     ['Ersatzgesuch offen', {
       screen: 'aufgaben',

@@ -35,8 +35,7 @@ function makeWeek(): Week {
     alt: {
       en: {
         range: 'September 7–13',
-        book: '', start: '2026-09-07',
-        current: false,
+        book: '',
         mid: structuredClone(emptyMid),
         we: weekendMeeting(), // Vorlage ist in jeder Sprachfassung deutsch
       },

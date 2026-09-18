@@ -13,6 +13,7 @@ import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Absence, FsInstance, Person, Qualifications, Section, Service, Week } from '../data/types'
 import { EngpassBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
+import { privSetzen } from '../data/helpers'
 
 /**
  * **Die Banner über dem Plan.** Das Konflikt-Banner ist in
@@ -34,7 +35,7 @@ const t = dict('de')
 
 const priv = (...keys: string[]): Qualifications => {
   const q = emptyQualifications()
-  for (const k of keys) q[k] = true
+  for (const k of keys) privSetzen(q, k, true)
   return q
 }
 
@@ -81,7 +82,7 @@ function zeige(kind: 'open' | 'engpass' | 'fs', over: Partial<AppState> = {}, on
     persons: [person('p-a', 'Alt', 'vbsLeiter'), person('p-b', 'Brand', 'leser', 'svc:mik')],
     services: DIENSTE, groups: [], absences: [],
     weeks: [woche()], fsWeeks: [[]], week: 0,
-    congregation: { name: 'Test', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Test', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {

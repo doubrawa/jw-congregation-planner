@@ -9,7 +9,7 @@ import type { Absence, Week } from './types'
 
 /** Montag der Woche 0 = 7.9.2026; Zusammenkünfte Di 19:00 und So 10:00. */
 const BASE = new Date(2026, 8, 7, 12)
-const MEETINGS = 'Di 19:00 · So 10:00'
+const MEETINGS = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 function woche(patch: Partial<Week> = {}): Week {
   const leer = { date: '', end: '', sections: [], helpers: {} }
@@ -81,9 +81,9 @@ describe('Abwesenheiten auf Wochen abbilden', () => {
     expect(istAbwesend(set, 'p1', 0, 'mid')).toBe(true)
   })
 
-  it('folgt einem eigenen Termin der Woche (Gedächtnismahl)', () => {
+  it('folgt der Abweichung der Woche (Gedächtnismahl)', () => {
     // Woche 0, Wochenende ausnahmsweise Samstag 12.9. statt Sonntag 13.9.
-    const sonder = [woche({ we: { date: 'Samstag, 12. September · 19:30', end: '', sections: [], helpers: {} } })]
+    const sonder = [woche({ dev: { we: { wd: 6, time: '19:30' } } })]
     const set = buildAbsences([abw({ from: '2026-09-12', to: '2026-09-12' })], sonder, BASE, MEETINGS)
     expect(istAbwesend(set, 'p1', 0, 'we')).toBe(true)
   })

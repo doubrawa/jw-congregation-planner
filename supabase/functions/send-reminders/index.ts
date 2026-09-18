@@ -6,14 +6,14 @@
 // In-App-Mitteilungen (Glocke) an. Läuft serverseitig mit Service-Role,
 // ausgelöst täglich per Cron (supabase/cron-reminders.sql).
 //
-// Logik (Einstellungen → ERINNERUNGEN, congregations.settings.reminders):
+// Logik (Einstellungen → ERINNERUNGEN, Spalten reminder_first/_last/_repeat):
 //  - `first` Tage vor der Zusammenkunft: erste Erinnerung (Push + Glocke)
 //  - `last` Tage vorher: letzte Erinnerung (Push + Glocke; 0 = am Tag selbst)
 //  - `repeat`: an allen Tagen dazwischen zusätzlich täglich per Push
 //  - bestätigte und verhinderte Zuteilungen lösen nichts aus; ebenso externe
 //    Slots (Gastredner/Kreisaufseher) und Gruppen-Rotationen (Reinigung).
-//  - Der Zusammenkunftstag wird aus congregations.meeting_times abgeleitet
-//    ("Di 19:00 · So 10:00"); ohne erkennbare Wochentage gilt Di (mid)/So (we).
+//  - Zusammenkunftstag und -zeit stehen als Werte in der Versammlung
+//    (mid_wd/mid_time/we_wd/we_time); eine Abweichung der Woche schlägt sie.
 //  - Personen mit fälliger letzter Erinnerung, die nicht per Push erreichbar
 //    sind (kein App-Konto ODER kein aktiviertes Push-Abo), werden den Planern
 //    als Sammel-Push gemeldet, damit sie persönlich erinnern können.
@@ -48,8 +48,7 @@ import { json, restKlient, wert } from '../_shared/rest.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
-  meetingDayOffsets,
-  meetingTimesOf,
+  type MeetingTimes,
   personDisplayName,
   tageBisTermin,
   versatzMitAbweichung,
@@ -229,10 +228,15 @@ Deno.serve(async (req: Request) => {
     const congs = await klient.get<
       {
         id: string
-        meeting_times: string
-        settings: { reminders?: Partial<Reminders> } | null
+        mid_wd: number
+        mid_time: string
+        we_wd: number
+        we_time: string
+        reminder_first: number
+        reminder_last: number
+        reminder_repeat: boolean
       }[]
-    >('congregations?select=id,meeting_times,settings')
+    >('congregations?select=id,mid_wd,mid_time,we_wd,we_time,reminder_first,reminder_last,reminder_repeat')
 
     let sent = 0
     let expired = 0
@@ -265,15 +269,19 @@ Deno.serve(async (req: Request) => {
 
     for (const cong of congs) {
       const rem: Reminders = {
-        first: cong.settings?.reminders?.first ?? 7,
-        last: cong.settings?.reminders?.last ?? 1,
+        first: cong.reminder_first,
+        last: cong.reminder_last,
         // Ohne eigene Einstellung: **keine** Wiederholung (T99). Der Rückfall
         // muss derselbe sein wie `STANDARD_ERINNERUNGEN` im Client — sonst
         // zeigt die App „aus" und der Versand erinnert trotzdem täglich.
-        repeat: cong.settings?.reminders?.repeat ?? false,
+        repeat: cong.reminder_repeat,
       }
-      const offsets = meetingDayOffsets(cong.meeting_times)
-      const zeiten = meetingTimesOf(cong.meeting_times)
+      // Die Regeltermine stehen als Werte in der Versammlung;  kommt als
+      // „19:00:00" zurück, angezeigt wird „19:00".
+      const zeiten: MeetingTimes = {
+        mid: { wd: cong.mid_wd, time: cong.mid_time.slice(0, 5) },
+        we: { wd: cong.we_wd, time: cong.we_time.slice(0, 5) },
+      }
       const [vonWoche, bisWoche] = wochenFenster(todayUTC, rem)
 
       const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
@@ -375,15 +383,15 @@ Deno.serve(async (req: Request) => {
           // Verlegter Tag/Uhrzeit schlagen den Rhythmus aus den Einstellungen:
           // sonst erinnert der Versand am regulären Abend, während Anzeige und
           // Abwesenheitsprüfung den echten nennen.
-          const offset = versatzMitAbweichung(week.dev, tab, meeting.date, offsets[tab])
-          const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
+          const offset = versatzMitAbweichung(week.dev, tab, zeiten[tab].wd)
+          const zeit = zeitMitAbweichung(week.dev, tab, zeiten[tab].time)
           const days = tageBisTermin(start, offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
           for (const pend of pendingOfMeeting(start, tab, meeting, services, conf)) {
             const entry: MitKey = {
-              datum: terminText(start, offset, meeting.date, zeit, week.dev, tab),
+              datum: terminText(start, offset, meeting.date, zeit),
               label: pend.label,
               key: pend.key,
             }

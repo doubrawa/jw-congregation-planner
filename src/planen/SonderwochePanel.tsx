@@ -1,9 +1,9 @@
 import { useApp } from '../app/context'
 import { abweichung, weichtAb } from '../data/helpers'
-import { meetingOffset, meetingTime } from '../data/meeting-dates'
+import { meetingOffset, meetingTime, wdAusVersatz } from '../data/meeting-dates'
 import type { MeetingKey } from '../data/types'
 import { useT } from '../i18n/useT'
-import { WOCHENTAGE, wochentagName } from './wochentage'
+import { VERSAETZE, wochentagName } from './wochentage'
 
 /**
  * Sonderwoche: diese Zusammenkunft weicht von der Regel ab (T30).
@@ -47,14 +47,14 @@ export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
   // Der gerade geltende Termin — aus Abweichung, eigenem Termin oder
   // Einstellungen. Er ist zugleich die Vorbelegung: wählt der Planer denselben
   // Tag noch einmal, ist das keine Verlegung und die Abweichung fällt weg.
-  const versatz = meetingOffset(week, tab, state.congregation.meetings)
-  const zeit = meetingTime(week, tab, state.congregation.meetings)
+  const versatz = meetingOffset(week, tab, state.congregation.times)
+  const zeit = meetingTime(week, tab, state.congregation.times)
   const regulaererVersatz = meetingOffset(
     { ...week, dev: undefined },
     tab,
-    state.congregation.meetings,
+    state.congregation.times,
   )
-  const regulaereZeit = meetingTime({ ...week, dev: undefined }, tab, state.congregation.meetings)
+  const regulaereZeit = meetingTime({ ...week, dev: undefined }, tab, state.congregation.times)
 
   const setzen = (patch: Partial<NonNullable<typeof abw>>) =>
     dispatch({ type: 'setAbweichung', tab, patch })
@@ -86,12 +86,12 @@ export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
                 const gewaehlt = Number(e.target.value)
                 setzen({
                   // Der reguläre Tag ist keine Verlegung — dann verschwindet sie.
-                  day: gewaehlt === regulaererVersatz ? undefined : WOCHENTAGE[gewaehlt],
+                  wd: gewaehlt === regulaererVersatz ? undefined : wdAusVersatz(gewaehlt),
                 })
               }}
             >
-              {WOCHENTAGE.map((tag, i) => (
-                <option key={tag} value={i}>
+              {VERSAETZE.map((i) => (
+                <option key={i} value={i}>
                   {wochentagName(i, state.lang)}
                 </option>
               ))}

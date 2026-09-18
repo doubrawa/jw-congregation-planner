@@ -25,6 +25,7 @@ import { fsAutoAssign, FS_LOAD_WEEKS, fsWochenStart } from './fs'
 import { displayName, emptyQualifications, idAufloeser, partWorkload, programmPlaetze } from './helpers'
 import { autoAssignMeeting } from './planning'
 import type { Absence, FsInstance, Person, Qualifications, Week } from './types'
+import { privSetzen } from './helpers'
 
 /* ---- Bausteine ----------------------------------------------------------- */
 
@@ -32,7 +33,7 @@ let lfd = 0
 function mk(quals: string[], patch: Partial<Person> = {}): Person {
   lfd++
   const priv = { ...emptyQualifications() } as unknown as Record<string, boolean>
-  for (const q of quals) priv[q] = true
+  for (const q of quals) privSetzen(priv, q, true)
   return {
     id: `p${lfd}`,
     fn: `V${lfd}`,
@@ -84,8 +85,8 @@ function planeWochen(
 /** Zwei Treffpunkte je Woche an verschiedenen Wochentagen. */
 function leereTreffpunkte(n: number): FsInstance[][] {
   return Array.from({ length: n }, (_unused, wi) => [
-    { id: `${wi}|a`, ruleId: 'a', grp: '', wd: 1, time: '09:30', place: 'Saal', leader: '' },
-    { id: `${wi}|b`, ruleId: 'b', grp: '', wd: 3, time: '09:30', place: 'Halle', leader: '' },
+    { id: `${wi}|a`, ruleId: 'a', grp: null, wd: 1, time: '09:30', place: 'Saal', leader: '' },
+    { id: `${wi}|b`, ruleId: 'b', grp: null, wd: 3, time: '09:30', place: 'Halle', leader: '' },
   ])
 }
 
@@ -138,9 +139,9 @@ describe('Wochen-Deckel: niemand häuft Leitungen in einer Woche', () => {
   /** Enger Kreis, drei Treffpunkte je Woche — hier beißt der Deckel wirklich. */
   function engerKreis(n: number): FsInstance[][] {
     return Array.from({ length: n }, (_unused, wi) => [
-      { id: `${wi}|a`, ruleId: 'a', grp: '', wd: 1, time: '09:00', place: 'A', leader: '' },
-      { id: `${wi}|b`, ruleId: 'b', grp: '', wd: 3, time: '09:00', place: 'B', leader: '' },
-      { id: `${wi}|c`, ruleId: 'c', grp: '', wd: 5, time: '09:00', place: 'C', leader: '' },
+      { id: `${wi}|a`, ruleId: 'a', grp: null, wd: 1, time: '09:00', place: 'A', leader: '' },
+      { id: `${wi}|b`, ruleId: 'b', grp: null, wd: 3, time: '09:00', place: 'B', leader: '' },
+      { id: `${wi}|c`, ruleId: 'c', grp: null, wd: 5, time: '09:00', place: 'C', leader: '' },
     ])
   }
 
@@ -386,7 +387,7 @@ describe('Kleine Kreise und Ausnahmezustände', () => {
     // bleibt offen — niemand kann an zwei Orten zugleich sein.
     let fsWeeks: FsInstance[][] = [
       [
-        { id: 'a', ruleId: null, grp: '', wd: 6, time: '09:00', place: 'A', leader: '' },
+        { id: 'a', ruleId: null, grp: null, wd: 6, time: '09:00', place: 'A', leader: '' },
         { id: 'b', ruleId: null, grp: 'g1', wd: 6, time: '09:00', place: 'B', leader: '' },
       ],
     ]

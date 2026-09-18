@@ -5,6 +5,7 @@ import { emptyQualifications } from '../data/helpers'
 import { DE } from '../i18n/de'
 import { kandidaten, type KandidatenDaten } from './kandidaten'
 import type { Absence, PartItem, Person, Qualifications, Service, SlotSelection, Week } from '../data/types'
+import { privSetzen } from '../data/helpers'
 
 /**
  * Die Auswahlliste des Zuteilungs-Sheets war der wichtigste ungetestete Code
@@ -15,7 +16,7 @@ import type { Absence, PartItem, Person, Qualifications, Service, SlotSelection,
 
 const priv = (...keys: string[]): Qualifications => {
   const q = emptyQualifications()
-  for (const k of keys) q[k] = true
+  for (const k of keys) privSetzen(q, k, true)
   return q
 }
 
@@ -151,7 +152,7 @@ describe('Kandidatenliste allgemein', () => {
       { id: 'a1', personId: BRUDER_A.id, userId: 'u', from: '2026-09-07', to: '2026-09-09', reason: '' },
     ]
     const s = daten(weeks, PERSONEN, abw)
-    const set = buildAbsences(abw, weeks, s.fsBase, 'Di 19:00 · So 10:00')
+    const set = buildAbsences(abw, weeks, s.fsBase, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
     const liste = kandidaten(s, { ...partnerSlot(false), priv: null } as SlotSelection, set, DE, (x) => x)
     expect(liste.map((c) => c.name).at(-1)).toBe('Anton Alt')
     expect(liste.find((c) => c.name === 'Anton Alt')?.absent).toBe(true)
@@ -217,9 +218,9 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
 
   /** Zwei Treffpunkte am Montag, einer am Mittwoch. */
   const TREFFPUNKTE = [
-    { id: 'a', ruleId: null, grp: '', wd: 1, time: '09:00', place: 'Saal', leader: '' },
-    { id: 'b', ruleId: null, grp: '', wd: 1, time: '14:00', place: 'Park', leader: '' },
-    { id: 'c', ruleId: null, grp: '', wd: 3, time: '09:00', place: 'Halle', leader: '' },
+    { id: 'a', ruleId: null, grp: null, wd: 1, time: '09:00', place: 'Saal', leader: '' },
+    { id: 'b', ruleId: null, grp: null, wd: 1, time: '14:00', place: 'Park', leader: '' },
+    { id: 'c', ruleId: null, grp: null, wd: 3, time: '09:00', place: 'Halle', leader: '' },
   ]
 
   function fsDaten(instanzen = TREFFPUNKTE, absences: Absence[] = []): KandidatenDaten {
@@ -367,7 +368,7 @@ describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
   it('Reinigung o. Ä.', () => {
     const state: KandidatenDaten = {
       ...daten([wocheMitKlasse('Anton Alt', 'Clara Cohn')]),
-      groups: [{ id: 'g1', name: 'Gruppe 1', ov: BRUDER_A.id, as: null }],
+      groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: BRUDER_A.id, assistantId: null }],
     }
     const sel: SlotSelection = {
       kind: 'helper',

@@ -53,6 +53,7 @@ import {
   type Meeting as EdgeMeeting,
 } from '../../supabase/functions/_shared/zuteilungen.ts'
 import type { Meeting, PartItem, Person, Service, Week } from './types'
+import { STANDARD_ZEITEN } from './vorgaben'
 
 /* ---- Die Person und die vier Plätze -------------------------------------- */
 
@@ -151,7 +152,7 @@ describe('Wer zählt eine Zuteilung mit?', () => {
   })
 
   it('deriveMyTasks liefert für jeden Platz eine Aufgabe', () => {
-    expect(deriveMyTasks([woche()], SERVICES, NAME, {}, '', ANNA.id)).toHaveLength(ALLE.length)
+    expect(deriveMyTasks([woche()], SERVICES, NAME, {}, STANDARD_ZEITEN, ANNA.id)).toHaveLength(ALLE.length)
   })
 
   /*

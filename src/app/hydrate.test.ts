@@ -3,6 +3,7 @@ import { loadAndHydrate } from './hydrate'
 import { loadCongregationData, type CongregationData } from '../lib/data'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction } from './context'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 vi.mock('../lib/data', () => ({ loadCongregationData: vi.fn() }))
 vi.mock('../lib/snapshot', () => ({
@@ -16,7 +17,7 @@ const mockRead = vi.mocked(readSnapshot)
 const mockClear = vi.mocked(clearSnapshot)
 
 const emptyData: CongregationData = {
-  congregation: { name: 'K', hall: '', meetings: '' },
+  congregation: { name: 'K', hall: '', times: STANDARD_ZEITEN },
   planner: true,
   personId: null,
   persons: [],

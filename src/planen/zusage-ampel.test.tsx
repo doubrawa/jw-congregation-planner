@@ -16,6 +16,7 @@ import { deriveMyTasks } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { FsInstance, Person, Service, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 /**
  * **Was die eingeteilte Person zusagt, sieht der Planer am Platz — an jedem.**
@@ -79,7 +80,7 @@ function woche(start: string, besetzt: boolean): Week {
 const WOCHEN = [woche('2026-09-07', false), woche('2026-09-21', true)]
 const TREFFPUNKTE: FsInstance[][] = [
   [],
-  [{ id: 'tp1', ruleId: null, grp: '', wd: 6, time: '09:30', place: 'Saal', leader: 'Anna Beispiel', lpid: ANNA.id }],
+  [{ id: 'tp1', ruleId: null, grp: null, wd: 6, time: '09:30', place: 'Saal', leader: 'Anna Beispiel', lpid: ANNA.id }],
 ]
 /** Der Montag der ERSTEN Woche — daraus plus Position käme für die zweite der 14. heraus. */
 const BASIS = new Date(2026, 8, 7, 12, 0)
@@ -92,7 +93,7 @@ function stand(over: Partial<AppState> = {}): AppState {
     persons: [ANNA, BERND], groups: [], services: DIENSTE, absences: [],
     weeks: WOCHEN, fsWeeks: TREFFPUNKTE, fsRules: [], fsBase: BASIS, week: 1,
     auxClass: true, confirmations: {},
-    congregation: { name: 'Nordheim', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
 }
@@ -100,7 +101,7 @@ function stand(over: Partial<AppState> = {}): AppState {
 /** Alles, was Anna in ihrer App vorgelegt bekommt — Zusammenkünfte und Treffpunkte. */
 function annasAufgaben(s: AppState): string[] {
   return [
-    ...deriveMyTasks(s.weeks, s.services, 'Anna Beispiel', {}, '', ANNA.id),
+    ...deriveMyTasks(s.weeks, s.services, 'Anna Beispiel', {}, STANDARD_ZEITEN, ANNA.id),
     ...deriveMyFsTasks(s.fsWeeks, fsWochenKennungen(s.weeks, s.fsBase), 'Anna Beispiel', {}, ANNA.id, 'Leiter'),
   ].map((task) => task.id)
 }

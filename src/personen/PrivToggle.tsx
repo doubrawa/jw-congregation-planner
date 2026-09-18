@@ -1,5 +1,5 @@
 import { useApp } from '../app/context'
-import { istBruderBereichBeiSchwester } from '../data/helpers'
+import { istBruderBereichBeiSchwester, privWert } from '../data/helpers'
 import { useT } from '../i18n/useT'
 import type { Person } from '../data/types'
 
@@ -27,7 +27,7 @@ export function PrivToggle({
 }) {
   // Keine Geschlechts-Sperre: übernehmen Schwestern Bereiche (z. B. weil
   // Brüder fehlen), steuern das allein diese Schalter.
-  const on = Boolean(person.priv[qkey])
+  const on = privWert(person.priv, qkey)
   // …aber ein Hinweis, wo der Schalter fachlich nicht passt. Ohne ihn blieb ein
   // versehentlicher Klick stumm: die Auto-Zuteilung nahm ihn ernst und teilte
   // zum Gebet oder Vorsitz ein (F4). Beschriftung aus vorhandenen Bausteinen —
@@ -88,7 +88,7 @@ export function PlannerToggle({ person, update }: { person: Person; update: Upda
    */
   const konten = state.members.filter((m) => m.personId === person.id)
   const self = konten.some((m) => m.userId === state.userId)
-  const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.planner)
+  const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.plannerVorgemerkt)
   return (
     <div className={self ? 'priv-row priv-row--locked' : 'priv-row'}>
       <span className="priv-label">{t.planerLbl}</span>
@@ -99,7 +99,7 @@ export function PlannerToggle({ person, update }: { person: Person; update: Upda
         aria-label={t.planerLbl}
         disabled={self}
         className={on ? 'switch is-on' : 'switch'}
-        onClick={() => update({ planner: !on })}
+        onClick={() => update({ plannerVorgemerkt: !on })}
       >
         <span className="switch-knob" />
       </button>

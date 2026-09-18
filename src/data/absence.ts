@@ -14,7 +14,7 @@
 
 import { MEETING_TABS } from './helpers'
 import { isoDay, meetingDate } from './meeting-dates'
-import type { Absence, MeetingKey, Week } from './types'
+import type { Absence, MeetingKey, MeetingTimes, Week } from './types'
 
 /** Schlüssel `<personId>|<wi>|<tab>` je Zusammenkunft, in der jemand fehlt. */
 export type AbsenceSet = ReadonlySet<string>
@@ -26,7 +26,7 @@ export const KEINE_ABWESENHEIT: AbsenceSet = new Set<string>()
 /**
  * Baut die Abwesenheits-Menge für die geladenen Wochen.
  *
- * `base` ist der Montag der Woche 0 (state.fsBase), `meetings` der eingestellte
+ * `base` ist der Montag der Woche 0 (state.fsBase), `zeiten` der eingestellte
  * Rhythmus („Di 19:00 · So 10:00") — beides nur nötig für Wochen ohne eigenes
  * Startdatum. Abwesenheiten ohne verknüpfte Person werden übergangen: sie
  * gehören zu einem Konto, das noch keiner Person zugeordnet ist, und lassen sich
@@ -36,14 +36,14 @@ export function buildAbsences(
   absences: readonly Absence[],
   weeks: readonly Week[],
   base: Date,
-  meetings: string,
+  zeiten: MeetingTimes,
 ): AbsenceSet {
   const out = new Set<string>()
   if (absences.length === 0) return out
   // Wochentermine einmal vorab — sonst rechnet jede Abwesenheit sie erneut.
   const tage = weeks.map((week, wi) => ({
-    mid: isoDay(meetingDate(week, wi, 'mid', base, meetings)),
-    we: isoDay(meetingDate(week, wi, 'we', base, meetings)),
+    mid: isoDay(meetingDate(week, wi, 'mid', base, zeiten)),
+    we: isoDay(meetingDate(week, wi, 'we', base, zeiten)),
   }))
   for (const abwesenheit of absences) {
     const { personId, from, to } = abwesenheit

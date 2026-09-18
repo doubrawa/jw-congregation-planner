@@ -15,6 +15,7 @@ import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { Absence, Group, PartItem, Person, Qualifications, Service, SlotSelection, Week } from '../data/types'
 import { AssignSheet } from './AssignSheet'
+import { privSetzen } from '../data/helpers'
 
 /**
  * **Das Zuteilungs-Sheet — der Ort, an dem der Planer wirklich arbeitet.**
@@ -38,7 +39,7 @@ const t = dict('de')
 
 const priv = (...keys: string[]): Qualifications => {
   const q = emptyQualifications()
-  for (const k of keys) q[k] = true
+  for (const k of keys) privSetzen(q, k, true)
   return q
 }
 
@@ -114,7 +115,7 @@ function zeige(sel: SlotSelection, over: Partial<AppState> = {}) {
     weeks: [woche('2026-09-07')],
     fsWeeks: [[]],
     absences: [],
-    congregation: { name: 'Test', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Test', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -413,8 +414,8 @@ describe('Ein Gruppen-Slot ohne angelegte Gruppen bleibt nicht wortlos', () => {
 
   it('mit Gruppen stehen die Gruppen zur Wahl — ohne Person-Id', () => {
     const gruppen: Group[] = [
-      { id: 'g1', name: 'Gruppe 1', ov: null, as: null },
-      { id: 'g2', name: 'Gruppe 2', ov: null, as: null },
+      { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+      { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
     ]
     const { container, dispatch } = zeige(SEL_GRUPPE, { groups: gruppen })
     expect(container.querySelector('.sheet-empty')).toBeNull()

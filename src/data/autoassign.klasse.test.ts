@@ -5,6 +5,7 @@ import {
   idAufloeser,
   MEETING_TABS,
   partnerGenderOk,
+  privSetzen,
   programmPlaetze,
 } from './helpers'
 import { autoAssignMeeting } from './planning'
@@ -37,7 +38,7 @@ import type { Person, Qualifications, Week } from './types'
 let n = 0
 const priv = (keys: string[]): Qualifications => {
   const q = emptyQualifications()
-  for (const k of keys) q[k] = true
+  for (const k of keys) privSetzen(q, k, true)
   return q
 }
 const mk = (quals: string[], female = false): Person => {

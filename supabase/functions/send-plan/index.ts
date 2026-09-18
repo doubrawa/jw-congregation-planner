@@ -56,7 +56,7 @@
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
-import { heuteUtc, personDisplayName } from '../_shared/planung.ts'
+import { heuteUtc, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import {
   type Eintrag,
   type FsInstance,
@@ -375,9 +375,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const [congRows, weekRows, fsRows, confs, services, log] = await Promise.all([
-      rest.get<{ meeting_times: string }[]>(
-        `congregations?select=meeting_times&id=eq.${wert(cong)}`,
-      ),
+      rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
       rest.get<{ start: string; data: Week }[]>(
         `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
       ),
@@ -414,7 +412,7 @@ Deno.serve(async (req: Request) => {
       fsRows[0]?.data ?? [],
       services,
       conf,
-      congRows[0]?.meeting_times ?? '',
+      zeitenAus(congRows[0]),
       heuteUtc(payload.heute),
     )
 

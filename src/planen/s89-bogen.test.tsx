@@ -15,6 +15,7 @@ import { buildDemoWeeks } from '../data/testdaten'
 import type { PartItem } from '../data/types'
 import { S89Bogen } from './S89Bogen'
 import { seiten } from './s89-seiten'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 /**
  * T71 — der Druckbogen der S-89-Zettel.
@@ -47,7 +48,7 @@ describe('alleS89DerWoche', () => {
      * daran, wie viele Plätze ein Programmpunkt zufällig hat.
      */
     const weeks = buildDemoWeeks()
-    const zettel = alleS89DerWoche(weeks, 0)
+    const zettel = alleS89DerWoche(weeks, 0, STANDARD_ZEITEN)
     expect(zettel.length).toBeGreaterThan(0)
     // Jeder Zettel trägt einen Namen — ein leerer Platz gibt keinen.
     expect(zettel.every((z) => z.name !== '')).toBe(true)
@@ -74,15 +75,15 @@ describe('alleS89DerWoche', () => {
     expect(punkt, 'Demo-Woche hat einen Klassen-Platz').toBeDefined()
     punkt!.aux![0]!.name = 'Klara Klasse'
 
-    const zettel = alleS89DerWoche(weeks, 0)
+    const zettel = alleS89DerWoche(weeks, 0, STANDARD_ZEITEN)
     const inKlasse = zettel.filter((z) => z.aux === true)
     expect(inKlasse.length).toBeGreaterThan(0)
     expect(zettel.some((z) => z.aux !== true), 'der Hauptsaal fehlt nicht').toBe(true)
   })
 
   it('ohne Woche kein Zettel', () => {
-    expect(alleS89DerWoche([], 0)).toEqual([])
-    expect(alleS89DerWoche(buildDemoWeeks(), 99)).toEqual([])
+    expect(alleS89DerWoche([], 0, STANDARD_ZEITEN)).toEqual([])
+    expect(alleS89DerWoche(buildDemoWeeks(), 99, STANDARD_ZEITEN)).toEqual([])
   })
 })
 
@@ -125,7 +126,7 @@ describe('S89Bogen (Bedienung)', () => {
   it('legt für jede Aufgabe eine Karte an', () => {
     const { container } = render(<Buehne state={state()} />)
     expect(container.querySelectorAll('.s89-zettel')).toHaveLength(
-      alleS89DerWoche(buildDemoWeeks(), 0).length,
+      alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN).length,
     )
   })
 
@@ -140,12 +141,12 @@ describe('S89Bogen (Bedienung)', () => {
     const ohne = container.querySelectorAll('.s89-zettel').length
     expect(ohne).toBeLessThan(mit)
     // Genau die Gespräche fallen weg — nicht mehr und nicht weniger.
-    expect(mit - ohne).toBe(alleS89DerWoche(buildDemoWeeks(), 0, '', false).filter((z) => z.partner).length)
+    expect(mit - ohne).toBe(alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN, false).filter((z) => z.partner).length)
   })
 
   it('ohne Partner-Zettel bleibt je Aufgabe einer', () => {
-    const einfach = alleS89DerWoche(buildDemoWeeks(), 0, '', false)
-    const doppelt = alleS89DerWoche(buildDemoWeeks(), 0)
+    const einfach = alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN, false)
+    const doppelt = alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN)
     expect(einfach.length).toBeLessThan(doppelt.length)
     const wieOft = (z: (typeof einfach)[number]) =>
       einfach.filter((a) => a.name === z.name && a.type === z.type && a.aux === z.aux).length
@@ -163,7 +164,7 @@ describe('S89Bogen (Bedienung)', () => {
     expect(container.querySelectorAll('.s89-druck-n')).toHaveLength(0)
     // Blätter = Zettel durch sechs, aufgerundet — nachgerechnet, nicht geraten:
     // Wie viele Zettel die Demo-Woche hat, hängt an ihren Gesprächen.
-    const anzahl = alleS89DerWoche(buildDemoWeeks(), 0).length
+    const anzahl = alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN).length
     expect(container.querySelectorAll('.s89-seite')).toHaveLength(Math.ceil(anzahl / 6))
   })
 

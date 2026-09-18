@@ -68,6 +68,36 @@ export type MeetingKey = 'mid' | 'we'
  */
 export type MeetingTab = MeetingKey | 'fs' | 'edit'
 
+/**
+ * Regeltermin **einer** Zusammenkunft: Wochentag als Zahl (0 = Sonntag …
+ * 6 = Samstag, wie `Date#getDay()` und `FsRule.wd`) und Uhrzeit als „19:00".
+ */
+export interface MeetingTime {
+  wd: number
+  time: string
+}
+
+/**
+ * Der Rhythmus der Versammlung — beide Zusammenkünfte, und damit die Grundlage
+ * jedes Datums in dieser App: Erinnerungen, Countdown, „Meine Aufgaben",
+ * S-89-Formular.
+ *
+ * Er stand bis zum 17. September 2026 als **ein Anzeigetext** in der Datenbank
+ * („Di 19:00 · So 10:00") und wurde an drei Stellen mit drei verschiedenen
+ * regulären Ausdrücken zurückgelesen — der erste Treffer war die Zusammenkunft
+ * unter der Woche, der zweite das Wochenende. Dass aus Anzeigetext keine Werte
+ * zurückgelesen werden, steht in dieser Datei dreimal (T30, T32, T33); an der
+ * eigenen Regelzeit galt es als einziges nicht.
+ */
+export type MeetingTimes = Record<MeetingKey, MeetingTime>
+
+/** Stammdaten der Versammlung (Einstellungen → VERSAMMLUNG). */
+export interface Congregation {
+  name: string
+  hall: string
+  times: MeetingTimes
+}
+
 /* ---- Zusammenkünfte für den Predigtdienst ("Treffpunkte") ---- */
 
 /**
@@ -76,7 +106,14 @@ export type MeetingTab = MeetingKey | 'fs' | 'edit'
  */
 export interface FsRule {
   id: string
-  grp: string // '' = Versammlungstreffpunkt (alle); sonst Group.id (Gruppentreffpunkt)
+  /**
+   * Gruppentreffpunkt (Group.id) oder **null** = Versammlungstreffpunkt (alle).
+   *
+   * Hier stand dafür der leere String. Eine zweite Art, „nichts" zu sagen —
+   * `Person.grp` sagt es seit jeher mit `null`, und die Datenbank kennt nur
+   * diese eine. Ein Verweis ohne Ziel ist `null`.
+   */
+  grp: string | null
   wd: number // JS-Wochentag 0=So … 6=Sa
   time: string // "09:30"
   place: string
@@ -88,7 +125,7 @@ export interface FsRule {
 export interface FsInstance {
   id: string // Regel-Id (aus dem Grundplan) oder "x<zeit>" (nur für diese Woche)
   ruleId: string | null
-  grp: string // '' = Versammlung; sonst Group.id
+  grp: string | null // null = Versammlungstreffpunkt; sonst Group.id — wie FsRule.grp
   wd: number
   time: string
   place: string
@@ -131,41 +168,49 @@ export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger' | 'keine'
  * Alle Felder sind optional lesbar (`boolean | undefined`): Ein Bereich, den
  * niemand angetippt hat, steht gar nicht im gespeicherten Objekt.
  */
-export interface Qualifications {
-  vorsitzMid: boolean // Vorsitz unter der Woche
-  vorsitzWe: boolean // Vorsitz am Wochenende
-  vortrag: boolean
-  gebet: boolean
-  bibellesung: boolean // Bibellesung (Schätze aus Gottes Wort)
-  leser: boolean // Leser (Versammlungsbibelstudium / Wachtturm-Studium)
-  schulung: boolean // Schulungsaufgaben (Gesprächsführer/Vortrag; auch Schwestern)
-  schulungPartner: boolean // nur als Gesprächspartner im Schülerteil (nicht Führer)
-  studium: boolean // Studium leiten
-  treffpunkt: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
-  ratgeber?: boolean // Ratgeber der Zusätzlichen Klasse (nur Brüder)
+export interface FesteBereiche {
+  vorsitzMid?: boolean // Vorsitz unter der Woche
+  vorsitzWe?: boolean // Vorsitz am Wochenende
+  vortrag?: boolean
+  gebet?: boolean
+  bibellesung?: boolean // Bibellesung (Schätze aus Gottes Wort)
+  leser?: boolean // Leser (Versammlungsbibelstudium / Wachtturm-Studium)
+  schulung?: boolean // Schulungsaufgaben (Gesprächsführer/Vortrag; auch Schwestern)
+  schulungPartner?: boolean // nur als Gesprächspartner im Schülerteil (nicht Führer)
+  studium?: boolean // Studium leiten
+  treffpunkt?: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
+  ratgeber?: boolean // Ratgeber der Zusätzlichen Klasse (Anweisungen S-38, Absatz 26)
   wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
   wtVertreter?: boolean // Vertreter, wenn der Leiter abwesend ist
-  [serviceKey: string]: boolean | undefined // `svc:<dienstKey>` je Hilfsdienst
 }
 
 /**
- * Die **festen** Bereichs-Keys. Hilfsdienst-Bereiche sind dynamisch und daher
- * nicht Teil dieser Union — sie werden als freie Strings (`svc:<key>`) geführt.
+ * Die **festen** Bereichs-Keys — abgeleitet, nicht abgeschrieben.
+ *
+ * Hier stand dieselbe Liste ein zweites Mal als Union daneben. Zwei Listen
+ * derselben Namen sind eine Verabredung, an die sich jede künftige Änderung
+ * erinnern muss; `keyof` macht daraus eine Ableitung, die nicht vergessen
+ * werden kann.
  */
-export type QualificationKey =
-  | 'vorsitzMid'
-  | 'vorsitzWe'
-  | 'vortrag'
-  | 'gebet'
-  | 'bibellesung'
-  | 'leser'
-  | 'schulung'
-  | 'schulungPartner'
-  | 'studium'
-  | 'treffpunkt'
-  | 'ratgeber' // Ratgeber der Zusätzlichen Klasse (Anweisungen S-38, Absatz 26)
-  | 'wtLeiter'
-  | 'wtVertreter'
+export type QualificationKey = keyof FesteBereiche
+
+/**
+ * Die gespeicherten Bereiche: die festen plus je Hilfsdienst einer.
+ *
+ * Die Schreibweise der dynamischen Hälfte ist Absicht. Hier stand
+ * `[serviceKey: string]: boolean | undefined` — eine Indexsignatur über
+ * **alle** Zeichenketten, und damit war die Prüfung der festen Felder
+ * aufgehoben: `priv.vorsitzMitte = true` war ein gültiger Ausdruck, der nie
+ * etwas bewirkt hätte. Das Muster `svc:${string}` lässt genau die Schlüssel zu,
+ * die `serviceQualKey` bildet.
+ *
+ * Steht der Schlüssel erst zur Laufzeit fest, führt der Weg über `privWert` /
+ * `privSetzen` (helpers.ts) — die einzige Stelle, an der ein freier String auf
+ * dieses Objekt trifft.
+ */
+export type Qualifications = FesteBereiche & {
+  [serviceKey: `svc:${string}`]: boolean | undefined
+}
 
 export interface Person {
   id: string
@@ -184,13 +229,33 @@ export interface Person {
   mail: string
   priv: Qualifications
   grp?: string | null // Predigtdienstgruppe (Group.id) oder null = keine
-  fam?: string | null // Haushalts-/Familien-Id — gleiche Id = Familienangehörige
   /**
-   * Planer-Recht (Feste Rollen im Personen-Detail): sieht Planen/Personen/
-   * Einstellungen. Wird beim Einladen in den Code übernommen und bei
-   * verknüpften Konten in members.planner gespiegelt (store.tsx).
+   * Haushalt (Familie): Personen mit derselben Id gehören zusammen, und daran
+   * hängt die Gesprächspartner-Regel im Schülerteil. null = keiner.
+   *
+   * Die Id gehört einer Zeile in `households` — sie war bis zum 17. September
+   * 2026 eine frei vergebene UUID in einer Textspalte **ohne Gegenstelle**. Ein
+   * Tippfehler ergab damit einen stillen Ein-Personen-Haushalt, und ausräumen
+   * konnte ihn niemand, weil es nichts gab, worauf man hätte zeigen können.
    */
-  planner?: boolean
+  fam?: string | null
+  /**
+   * **Vormerkung** des Planer-Rechts, nicht das Recht selbst.
+   *
+   * Sie wandert beim Einladen in den Code (`Invite.planner`) und von dort in
+   * das Konto (`Member.planner`), damit jemand das Recht schon bei der ersten
+   * Anmeldung hat. Wirksam ist allein `Member.planner` — daran hängt
+   * `is_planner()` in der Datenbank und `state.planner` in der App; der
+   * Schalter im Personen-Detail zeigt deshalb das Konto an, sobald es eines
+   * gibt (PlannerToggle).
+   *
+   * Das Feld hieß bis zum 17. September 2026 ebenfalls `planner`. Ein Name für
+   * zwei verschiedene Tatsachen — und genau daran ist es einmal verwechselt
+   * worden: Der Personen-Neuaufbau aus New World Scheduler schreibt die
+   * Vormerkung nicht mit, also stand sie bei allen auf `false`, und der
+   * Bildschirm zeigte dem Betreiber „Admin: aus", während er Admin war.
+   */
+  plannerVorgemerkt?: boolean
 }
 
 /**
@@ -203,8 +268,8 @@ export interface Person {
 export interface Group {
   id: string
   name: string // z. B. "Gruppe 1"
-  ov: string | null // Aufseher (Person.id)
-  as: string | null // Gehilfe (Person.id)
+  overseerId: string | null // Aufseher (Person.id)
+  assistantId: string | null // Gehilfe (Person.id)
 }
 
 /** Farb-/Bereichslogik der Panels (wie im Arbeitsheft). */
@@ -389,10 +454,19 @@ export interface Meeting {
  */
 export interface Abweichung {
   /**
-   * Ausgeschriebener Wochentag, kanonisch deutsch („Donnerstag") — wie überall
-   * in den Wochendaten; übersetzt wird erst bei der Anzeige.
+   * Verlegter Wochentag als Zahl (0 = Sonntag … 6 = Samstag), wie `FsRule.wd`
+   * und `Date#getDay()`. Fehlt = der Tag der Regel.
+   *
+   * Hier stand der ausgeschriebene deutsche Name („Donnerstag"), und daneben
+   * gab es die Zahl (`FsRule.wd`), das Kürzel („Do", in der Regelzeit der
+   * Versammlung) und den Versatz ab Montag — vier Schreibweisen für einen
+   * Wochentag, samt Tabellen, die zwischen ihnen übersetzten (eine davon
+   * musste „Sonnabend" kennen). Der Name gehört in die Anzeige, und dort
+   * entsteht er aus der Zahl in der Sprache des Lesers.
+   *
+   * **Nie auf Wahrheit prüfen**: der Sonntag ist die 0. `wd != null` fragen.
    */
-  day?: string
+  wd?: number
   /** Abweichende Uhrzeit, „19:00". */
   time?: string
   /** Die Zusammenkunft entfällt in dieser Woche. */
@@ -478,8 +552,8 @@ export interface Termin {
    * Bedienung ohne einen erfundenen Fachbegriff aus.
    */
   title: string
-  /** Ausgeschriebener Wochentag, kanonisch deutsch („Donnerstag") — wie `Abweichung.day`. */
-  day?: string
+  /** Wochentag als Zahl (0 = Sonntag … 6 = Samstag) — wie `Abweichung.wd`. */
+  wd?: number
   /** Uhrzeit, „19:00". */
   time?: string
   /** Ort, Freitext („Königreichssaal") — wie `FsInstance.place`. */
@@ -574,12 +648,35 @@ export interface Week {
   mid: Meeting // Unter der Woche
   we: Meeting // Wochenende
   /**
-   * Sprachvarianten derselben Woche (jw.org-Sprachcode → strukturgleiche Woche
-   * ohne Zuteilungen). Beim Import mitgeholt („Weitere Programmsprachen");
-   * die Anzeige übernimmt daraus nur die Texte — Zuteilungen, Flags und
-   * Struktur bleiben kanonisch (siehe localizedWeek in data/localize.ts).
+   * Sprachvarianten derselben Woche (jw.org-Sprachcode → Texte desselben
+   * Programms). Beim Import mitgeholt („Weitere Programmsprachen"); die Anzeige
+   * übernimmt daraus nur die Texte — Zuteilungen, Flags und Struktur bleiben
+   * kanonisch (siehe localizedWeek in data/localize.ts).
    */
-  alt?: Record<string, Week>
+  alt?: Record<string, WeekVariant>
+}
+
+/**
+ * Eine Sprachvariante — **kein** ganzer `Week`.
+ *
+ * Hier stand `Record<string, Week>`, und der Typ behauptete damit dreierlei,
+ * was nie galt: dass eine Variante ihre eigene Kennung, ihren eigenen Anlass
+ * und ihre eigenen Abweichungen haben kann, dass sie Zuteilungen trägt — und
+ * dass sie selbst wieder Varianten hat, beliebig tief. Was `localizedWeek`
+ * tatsächlich übernimmt, ist genau das hier: die beiden Überschriften und die
+ * Texte der Zusammenkünfte.
+ *
+ * Die Zusammenkunft bleibt eine ganze `Meeting`: Ihre Struktur muss der
+ * kanonischen gleichen, sonst legten sich fremde Titel über einen anderen
+ * Ablauf — und `umgebaut` gehört dazu, weil genau daran geprüft wird
+ * (`mergeMeeting`). Die Plätze darin sind leer; `stripVariant` im Import räumt
+ * sie ab.
+ */
+export interface WeekVariant {
+  range: string
+  book: string
+  mid: Meeting
+  we: Meeting
 }
 
 /**

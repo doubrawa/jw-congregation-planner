@@ -42,11 +42,14 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/wochenplanung-importieren.mjs \
  *     [--daten C:\DATA\Claude\nws-export\MyData-decrypted] \
  *     [--cong <congregation-id>] [--nur-leere] [--trocken]
+ *
+ * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
+ * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
+ * keiner in der Umgebung steht — verdeckt, mit dem Link aufs Dashboard daneben.
+ * Wer `SUPABASE_SECRET_KEY` gesetzt hat, wird nicht gefragt.
  *
  * `--trocken`  zeigt nur, was geschähe, und schreibt nichts.
  * `--nur-leere` füllt nur offene Plätze; ohne die Flagge gewinnt NWS auch über
@@ -62,7 +65,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { argumente, authKopf, ladeTabellen, personDisplayName, secretKey } from './gemeinsam.mjs'
+import { argumente, authKopf, ladeTabellen, personDisplayName, zugangsdaten } from './gemeinsam.mjs'
 export { argumente, personDisplayName }
 
 /* ===================== Stabile Identität (uuid5) ========================== */
@@ -578,18 +581,9 @@ export function gruppenNamensAufloeser(fieldServiceGroups) {
 
 async function main() {
   const arg = argumente(process.argv.slice(2))
-  const url = process.env.SUPABASE_URL
-  const key = secretKey()
+  const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const nurLeere = Boolean(arg['nur-leere'])
-  const fehlt = []
-  if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
-  if (fehlt.length) {
-    console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
-    process.exit(2)
-  }
-
   const rest = async (pfad, init = {}) => {
     const res = await fetch(`${url}/rest/v1/${pfad}`, {
       ...init,
@@ -729,6 +723,10 @@ async function main() {
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
   main().catch((err) => {
     console.error(String(err instanceof Error ? err.message : err))
-    process.exit(1)
+    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
+    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
+    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
+    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
+    process.exitCode = 1
   })
 }

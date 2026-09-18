@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import { DAY_KEYS, parseMeetingTimes, timeOptions, type MeetingTime } from './meeting-times'
+import { versatzAbMontag, wdAusVersatz } from '../data/meeting-dates'
+import type { MeetingKey, MeetingTime } from '../data/types'
+import { VERSAETZE, wochentagName } from '../planen/wochentage'
+import { timeOptions } from './meeting-times'
 
 /** Versammlung: Name, Saal und die beiden Zusammenkunfts-Zeiten (Tag + Uhrzeit). */
 export function CongregationPanel() {
@@ -14,18 +15,11 @@ export function CongregationPanel() {
     ['hall', t.saal],
   ]
 
-  const [midTime, weTime] = parseMeetingTimes(state.congregation.meetings)
-  // Lokalisierte Wochentagsnamen (Mo..So) — 1.1.2024 war ein Montag
-  const dayNames = useMemo(() => {
-    const fmt = new Intl.DateTimeFormat(LOCALES[state.lang], { weekday: 'long' })
-    return DAY_KEYS.map((_, i) => fmt.format(new Date(Date.UTC(2024, 0, 1 + i))))
-  }, [state.lang])
-  const setMeetingTime = (which: 0 | 1, patch: Partial<MeetingTime>) => {
-    const next: [MeetingTime, MeetingTime] = [midTime, weTime]
-    next[which] = { ...next[which], ...patch }
+  const zeiten = state.congregation.times
+  const setMeetingTime = (tab: MeetingKey, patch: Partial<MeetingTime>) => {
     dispatch({
       type: 'updateCongregation',
-      patch: { meetings: `${next[0].day} ${next[0].time} · ${next[1].day} ${next[1].time}` },
+      patch: { times: { ...zeiten, [tab]: { ...zeiten[tab], ...patch } } },
     })
   }
 
@@ -55,8 +49,8 @@ export function CongregationPanel() {
         </div>
       ))}
       {([
-        [0, t.tabMid, midTime],
-        [1, t.tabWe, weTime],
+        ['mid', t.tabMid, zeiten.mid],
+        ['we', t.tabWe, zeiten.we],
       ] as const).map(([which, label, mt]) => (
         <div key={which} className="cong-field">
           <span className="field-label">{label}</span>
@@ -64,12 +58,12 @@ export function CongregationPanel() {
             <select
               className="mem-select cong-day"
               aria-label={label}
-              value={mt.day}
-              onChange={(e) => setMeetingTime(which, { day: e.target.value })}
+              value={versatzAbMontag(mt.wd)}
+              onChange={(e) => setMeetingTime(which, { wd: wdAusVersatz(Number(e.target.value)) })}
             >
-              {DAY_KEYS.map((key, i) => (
-                <option key={key} value={key}>
-                  {dayNames[i]}
+              {VERSAETZE.map((i) => (
+                <option key={i} value={i}>
+                  {wochentagName(i, state.lang)}
                 </option>
               ))}
             </select>

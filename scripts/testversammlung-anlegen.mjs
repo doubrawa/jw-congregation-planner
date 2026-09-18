@@ -41,12 +41,15 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/testversammlung-anlegen.mjs \
  *     [--name "Probeversammlung Talheim"] [--wochen 2] \
  *     [--mail-planer planer@probe.invalid] [--mail-mitglied schwester@probe.invalid] \
  *     [--trocken]
+ *
+ * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
+ * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
+ * keiner in der Umgebung steht — verdeckt, mit dem Link aufs Dashboard daneben.
+ * Wer `SUPABASE_SECRET_KEY` gesetzt hat, wird nicht gefragt.
  *
  *   node scripts/testversammlung-anlegen.mjs --entfernen <id|name> --wirklich
  *
@@ -68,7 +71,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, authKopf, personDisplayName, secretKey } from './gemeinsam.mjs'
+import { argumente, authKopf, personDisplayName, zugangsdaten } from './gemeinsam.mjs'
 export { argumente }
 export { personDisplayName as displayName }
 
@@ -333,16 +336,9 @@ export function fuelleZuteilungen(week, personen, dienste, gruppen, stand = { za
 
 /* ===================== Ausführung ========================================= */
 
-function zugang() {
-  const url = process.env.SUPABASE_URL
-  const key = secretKey()
-  const fehlt = []
-  if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
-  if (fehlt.length) {
-    console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
-    process.exit(2)
-  }
+async function zugang() {
+  // URL aus `.env.local`, Schlüssel notfalls erfragt — siehe `zugangsdaten`.
+  const { url, key } = await zugangsdaten()
   const kopf = { ...authKopf(key), 'Content-Type': 'application/json' }
 
   /** PostgREST. `body` weglassen = GET. */
@@ -429,7 +425,7 @@ async function entfernen(arg) {
     console.error('--entfernen braucht die Id oder den Namen der Versammlung.')
     process.exit(2)
   }
-  const { rest, auth } = zugang()
+  const { rest, auth } = await zugang()
   const treffer = istUuid(wert)
     ? await rest(`congregations?id=eq.${wert}&select=id,name`)
     : await rest(`congregations?name=eq.${encodeURIComponent(wert)}&select=id,name`)
@@ -482,7 +478,7 @@ async function main() {
 
   // Zugang zuerst, auch für den Trockenlauf: Ein fehlender Schlüssel soll
   // auffallen, bevor man die Übersicht liest und „passt" denkt.
-  const { rest, auth, fn } = zugang()
+  const { rest, auth, fn } = await zugang()
 
   console.log(`Versammlung:  ${name}`)
   console.log(`Personen:     ${TEST_PERSONEN.length} (erfunden), ${TEST_GRUPPEN.length} Gruppen`)
@@ -499,11 +495,18 @@ async function main() {
   // 1) Versammlung, Gruppen, Personen. Reihenfolge zählt: Gruppen brauchen die
   //    Versammlung, Personen die Gruppe (`grp`), und die Gruppe ihren Aufseher
   //    erst danach — der Kreis wird per PATCH geschlossen.
+  // Wochentag als Zahl (3 = Mittwoch, 0 = Sonntag) und Uhrzeit als `time` —
+  // bis T105 stand hier ein Anzeigetext („Mi 19:00 · So 10:00") und die
+  // Sprache als deutscher Name in einem `settings`-Beutel; beide Spalten gibt
+  // es nicht mehr, das Skript lief danach in ein 400.
   const [cong] = await rest('congregations', 'POST', {
     name,
     hall: 'Talheimer Str. 4',
-    meeting_times: 'Mi 19:00 · So 10:00',
-    settings: { congLang: 'Deutsch' },
+    mid_wd: 3,
+    mid_time: '19:00',
+    we_wd: 0,
+    we_time: '10:00',
+    cong_lang: 'de',
   })
   // Ab hier steht etwas in der Datenbank. Jeder Schritt meldet sich, damit ein
   // Abbruch sagt, wie weit er kam — und was `--entfernen` wegzuräumen hat.
@@ -514,12 +517,24 @@ async function main() {
     TEST_GRUPPEN.map((n, i) => ({ congregation_id: cong.id, name: n, position: i })),
   )
 
+  // Haushalte **vor** den Personen: Seit T105 ist ein Haushalt eine eigene
+  // Zeile, auf die `persons.fam` per Fremdschlüssel zeigt. Ohne sie weist die
+  // Datenbank jede Person mit Familie ab.
   const haushalte = new Map()
+  for (const p of TEST_PERSONEN) {
+    if (p.haus && !haushalte.has(p.haus)) haushalte.set(p.haus, randomUUID())
+  }
+  if (haushalte.size) {
+    await rest(
+      'households',
+      'POST',
+      [...haushalte.values()].map((id) => ({ id, congregation_id: cong.id })),
+    )
+  }
   const personen = await rest(
     'persons',
     'POST',
     TEST_PERSONEN.map((p) => {
-      if (p.haus && !haushalte.has(p.haus)) haushalte.set(p.haus, randomUUID())
       return {
         congregation_id: cong.id,
         fn: p.fn,
@@ -621,7 +636,12 @@ async function main() {
       { user_id: user.id, congregation_id: cong.id, person_id: person.id, planner: planer, email: mail },
       'return=minimal',
     )
-    if (planer) await rest(`persons?id=eq.${person.id}`, 'PATCH', { planner: true }, 'return=minimal')
+    // `planner_vorgemerkt` ist die **Vormerkung** für die Einladung; wirksam
+    // ist `members.planner` eine Zeile darüber. Die Spalte hieß bis T105
+    // ebenfalls `planner` — ein Name für zwei verschiedene Tatsachen.
+    if (planer) {
+      await rest(`persons?id=eq.${person.id}`, 'PATCH', { planner_vorgemerkt: true }, 'return=minimal')
+    }
     konten.push({ mail, pw, person: personDisplayName(person.fn, person.ln, person.dn), planer })
     console.log(`  Konto ${mail}${user.uebernommen ? ' (vorhandenes übernommen, Kennwort neu gesetzt)' : ''}`)
   }

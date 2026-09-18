@@ -11,6 +11,7 @@ import {
   type PlanungsQuellen,
   type Wochenstand,
 } from './planungsstand'
+import { privSetzen } from './helpers'
 import type {
   Absence,
   ConfirmationMap,
@@ -46,7 +47,7 @@ import type {
  * Wochenspanne im `date`-Feld, der Tag wird gerechnet.
  */
 
-const MEETINGS = 'Di 19:00 · So 10:00'
+const MEETINGS = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 const DIENSTE: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
 
 /** Montage im September/Oktober 2026. */
@@ -62,7 +63,7 @@ const am = (tag: number, stunde = 9, monat = 8): Date => new Date(2026, monat, t
 
 const person = (id: string, ...bereiche: string[]): Person => {
   const priv = emptyQualifications()
-  for (const b of bereiche) priv[b] = true
+  for (const b of bereiche) privSetzen(priv, b, true)
   return { id, fn: id, ln: 'Test', role: 'verkuendiger', female: false, tel: '', mail: '', priv }
 }
 
@@ -124,7 +125,7 @@ function gesendet(w: Week): SentLog {
 }
 
 const treffpunkt = (id: string, wd: number, over: Partial<FsInstance> = {}): FsInstance => ({
-  id, ruleId: id, grp: '', wd, time: '09:30', place: 'Königreichssaal', leader: '', ...over,
+  id, ruleId: id, grp: null, wd, time: '09:30', place: 'Königreichssaal', leader: '', ...over,
 })
 
 /** Die Quellen, mit ruhigen Vorgaben: genug Leute, nichts abwesend, nichts gesendet. */
@@ -138,7 +139,7 @@ function quellen(over: Partial<PlanungsQuellen> & { weeks: Week[] }): PlanungsQu
     services: DIENSTE,
     confirmations: {},
     sentLog: {},
-    meetings: MEETINGS,
+    zeiten: MEETINGS,
     geladenBisMs: loadedUntilMs(over.weeks),
     sendenMoeglich: true,
     ...over,

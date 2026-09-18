@@ -35,7 +35,7 @@ function tpLeader(patch: Partial<Person>): Person {
 
 /** Minimaler Treffpunkt für die Auto-Zuteilungs-Tests. */
 function inst(patch: Partial<FsInstance>): FsInstance {
-  return { id: 'i', ruleId: null, grp: '', wd: 1, time: '09:30', place: 'KH', leader: '', ...patch }
+  return { id: 'i', ruleId: null, grp: null, wd: 1, time: '09:30', place: 'KH', leader: '', ...patch }
 }
 
 /** Montag der Woche 0 = 7. September 2026 (wie im Demo). */
@@ -48,9 +48,9 @@ const KENN = Array.from({ length: 8 }, (_unused, wi) => fsWochenStart(BASE, wi))
 
 /** Grundplan wie im Design-Seed: Versammlung Mo/Mi wöchentlich + 1. Sa im Monat; je Gruppe Sa. */
 const RULES: FsRule[] = [
-  { id: 'r1', grp: '', wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
-  { id: 'r2', grp: '', wd: 3, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
-  { id: 'r3', grp: '', wd: 6, time: '09:30', place: 'Königreichssaal', monthly: 1, skipCong: false },
+  { id: 'r1', grp: null, wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  { id: 'r2', grp: null, wd: 3, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  { id: 'r3', grp: null, wd: 6, time: '09:30', place: 'Königreichssaal', monthly: 1, skipCong: false },
   { id: 'r4', grp: 'g1', wd: 6, time: '09:30', place: 'Bei Familie Albrecht', monthly: 0, skipCong: true },
   { id: 'r5', grp: 'g2', wd: 6, time: '09:15', place: 'Nebenraum', monthly: 0, skipCong: true },
   { id: 'r6', grp: 'g3', wd: 6, time: '10:00', place: 'Videokonferenz', monthly: 0, skipCong: true },
@@ -190,7 +190,7 @@ describe('fsBaseFromWeeks', () => {
 
 describe('regenFsWeeks (Neu-Ausrichtung)', () => {
   const RULE: FsRule[] = [
-    { id: 'r1', grp: '', wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
+    { id: 'r1', grp: null, wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
   ]
   it('preserveEdits behält wochenspezifische Zeit/Ort + Leiter', () => {
     const built = buildFsWeeks(BASE, 1, RULE, { '0|r1': 'A. Leiter' })
@@ -222,7 +222,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
     // An der Referenz erkennt `persist.ts`, was es schreiben muss. Ging die
     // Person-Id beim Neuerzeugen verloren, galt jede besetzte Woche als
     // geändert — und jeder Tastenanschlag im Ort einer Regel schrieb sie alle.
-    const regeln: FsRule[] = [...RULE, { id: 'r2', grp: '', wd: 3, time: '10:00', place: 'Saal', monthly: 0, skipCong: false }]
+    const regeln: FsRule[] = [...RULE, { id: 'r2', grp: null, wd: 3, time: '10:00', place: 'Saal', monthly: 0, skipCong: false }]
     const wochen = regenFsWeeks(KENN, buildFsWeeks(BASE, 1, regeln), regeln)
     const besetzt = [wochen[0]!.map((i) => ({ ...i, leader: 'Anton Muster', lpid: 'p1' }))]
     expect(regenFsWeeks(KENN, besetzt, regeln)[0]).toBe(besetzt[0])
@@ -257,8 +257,8 @@ describe('fsSort', () => {
 
 describe('fs-Wochenbearbeitung (Planen)', () => {
   const RULE: FsRule[] = [
-    { id: 'r1', grp: '', wd: 1, time: '14:00', place: 'Saal', monthly: 0, skipCong: false },
-    { id: 'r2', grp: '', wd: 3, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
+    { id: 'r1', grp: null, wd: 1, time: '14:00', place: 'Saal', monthly: 0, skipCong: false },
+    { id: 'r2', grp: null, wd: 3, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
   ]
   const build = () => buildFsWeeks(BASE, 2, RULE)
 
@@ -296,7 +296,7 @@ describe('fs-Wochenbearbeitung (Planen)', () => {
 
   it('fsAddInst fügt eine manuelle Instanz ein und sortiert', () => {
     const w = build()
-    const manual: FsInstance = { id: 'xM', ruleId: null, grp: '', wd: 2, time: '07:00', place: 'X', leader: '', manual: true }
+    const manual: FsInstance = { id: 'xM', ruleId: null, grp: null, wd: 2, time: '07:00', place: 'X', leader: '', manual: true }
     const add = fsAddInst(w, 0, manual)
     expect(add[0].some((i) => i.id === 'xM')).toBe(true)
     // wd 2 (Di) liegt zwischen Mo(1) und Mi(3) → einsortiert
@@ -366,7 +366,7 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
   })
 
   it('setzt nicht dieselbe Person zweimal am selben Wochentag', () => {
-    const week = [inst({ id: 'a', grp: '', wd: 6 }), inst({ id: 'b', grp: 'g1', wd: 6 })]
+    const week = [inst({ id: 'a', grp: null, wd: 6 }), inst({ id: 'b', grp: 'g1', wd: 6 })]
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]
     const { fsWeeks } = fsAutoAssign([week], 0, persons)
     expect(new Set(fsWeeks[0].map((i) => i.leader)).size).toBe(2)
@@ -381,11 +381,11 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
   })
 
   it('onlyGroup besetzt nur Treffpunkte der Gruppe', () => {
-    const week = [inst({ id: 'a', grp: '', wd: 1 }), inst({ id: 'b', grp: 'g1', wd: 3 })]
+    const week = [inst({ id: 'a', grp: null, wd: 1 }), inst({ id: 'b', grp: 'g1', wd: 3 })]
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' })]
     const { fsWeeks, count } = fsAutoAssign([week], 0, persons, 'g1')
     expect(count).toBe(1)
-    expect(fsWeeks[0].find((i) => i.grp === '')?.leader).toBe('')
+    expect(fsWeeks[0].find((i) => i.grp == null)?.leader).toBe('')
     expect(fsWeeks[0].find((i) => i.grp === 'g1')?.leader).toBe('Anton Muster')
   })
 })
@@ -399,10 +399,10 @@ describe('fsClear (Treffpunkt-Leiter leeren)', () => {
   })
 
   it('onlyGroup leert nur die Gruppe', () => {
-    const week = [inst({ id: 'a', grp: '', leader: 'X' }), inst({ id: 'b', grp: 'g1', leader: 'Y' })]
+    const week = [inst({ id: 'a', grp: null, leader: 'X' }), inst({ id: 'b', grp: 'g1', leader: 'Y' })]
     const { fsWeeks, count } = fsClear([week], 0, 'g1')
     expect(count).toBe(1)
-    expect(fsWeeks[0].find((i) => i.grp === '')?.leader).toBe('X')
+    expect(fsWeeks[0].find((i) => i.grp == null)?.leader).toBe('X')
     expect(fsWeeks[0].find((i) => i.grp === 'g1')?.leader).toBe('')
   })
 })

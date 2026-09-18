@@ -29,6 +29,7 @@ vi.mock('../lib/data', async (importActual) => ({
   renameConfirmationKeys: vi.fn(),
   swapConfirmationKeys: vi.fn(),
   deleteGroupRow: vi.fn(),
+  deleteHouseholdRow: vi.fn(),
   deletePersonRow: vi.fn(),
   deleteInviteRow: vi.fn(),
   deleteMemberRow: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveAbsence: vi.fn(),
   saveConfirmation: vi.fn(),
   saveCongregationInfo: vi.fn(),
+  saveFamily: vi.fn(),
   saveFsRules: vi.fn(),
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
@@ -56,6 +58,7 @@ vi.mock('../lib/data', async (importActual) => ({
 }))
 
 import * as data from '../lib/data'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 function st(over: Partial<AppState> = {}): AppState {
   return {
@@ -76,7 +79,7 @@ function st(over: Partial<AppState> = {}): AppState {
     notifs: [],
     slotSel: null,
     selectedPersonId: null,
-    congregation: { name: 'K', hall: 'H', meetings: 'M' },
+    congregation: { name: 'K', hall: 'H', times: STANDARD_ZEITEN },
     // Ohne Bestätigungen kann nichts entzogen werden — die Prüfung auf
     // zurückgezogene Zusagen (T99) liest sie bei jeder Wochen-Änderung.
     confirmations: {},
@@ -160,7 +163,7 @@ describe('Treffpunkte', () => {
   const KEY = fsTaskKey('2026-09-07', 'tp1')
   const mitLeiter = (leader: string, lpid: string, time = '14:00') => {
     const fsWeeks = buildDemoFsWeeks()
-    fsWeeks[0] = [{ id: 'tp1', ruleId: null, grp: '', wd: 1, time, place: 'Saal', leader, lpid }]
+    fsWeeks[0] = [{ id: 'tp1', ruleId: null, grp: null, wd: 1, time, place: 'Saal', leader, lpid }]
     return fsWeeks
   }
   const FS_SEL = { kind: 'fs', wi: 0, instId: 'tp1', label: '', priv: null, groups: false } as const
@@ -255,10 +258,10 @@ describe('Treffpunkte', () => {
   // Tastenanschlag der Grundplan samt jeder erzeugten Woche an die Datenbank.
   it('fsRuleAdd speichert Grundplan + alle Wochen (gebündelt)', () => {
     const next = st()
-    persist(st(), next, { type: 'fsRuleAdd', grp: '' })
+    persist(st(), next, { type: 'fsRuleAdd', grp: null })
     expect(data.saveFsRules).not.toHaveBeenCalled() // erst nach der Bündelung
     vi.advanceTimersByTime(600)
-    expect(data.saveFsRules).toHaveBeenCalledWith('c1', FS_BASE.toISOString().slice(0, 10), next.fsRules)
+    expect(data.saveFsRules).toHaveBeenCalledWith('c1', next.fsRules)
     expect((data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.length).toBe(next.fsWeeks.length)
   })
 
@@ -271,7 +274,7 @@ describe('Treffpunkte', () => {
   */
   it('fsRuleAdd schreibt jede Woche unter ihre Kennung', () => {
     const next = st()
-    persist(st(), next, { type: 'fsRuleAdd', grp: '' })
+    persist(st(), next, { type: 'fsRuleAdd', grp: null })
     vi.advanceTimersByTime(600)
     const kennungen = (data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1])
     expect(kennungen).toEqual(next.weeks.map((w) => w.start))
@@ -307,7 +310,7 @@ describe('Treffpunkte', () => {
     // Die Kennung steht bei der Woche. Fehlt sie, gäbe es nichts zu bezeichnen
     // — und ein Schreibversuch träfe entweder nichts oder das Falsche.
     const next = st({ weeks: [] })
-    persist(st({ weeks: [] }), next, { type: 'fsRuleAdd', grp: '' })
+    persist(st({ weeks: [] }), next, { type: 'fsRuleAdd', grp: null })
     vi.advanceTimersByTime(600)
     expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
@@ -483,7 +486,7 @@ describe('Personen (inkl. Debounce)', () => {
       members: [{ userId: 'm1', email: '', personId: p.id, planner: true }, { userId: 'u1', email: '', personId: p.id, planner: true }],
       invites: [{ id: 'i1', code: 'A', personId: p.id, planner: true }],
     })
-    persist(st(), next, { type: 'updatePerson', id: p.id, patch: { planner: true } })
+    persist(st(), next, { type: 'updatePerson', id: p.id, patch: { plannerVorgemerkt: true } })
     expect(data.saveMemberRow).toHaveBeenCalledTimes(1) // eigenes Konto (u1) ausgenommen
     expect(data.saveInvitePlanner).toHaveBeenCalledWith('i1', true)
   })
@@ -502,7 +505,134 @@ describe('Personen (inkl. Debounce)', () => {
       { type: 'removePerson', id: 'p1' },
     )
     expect(data.deletePersonRow).toHaveBeenCalledWith('p1')
-    expect(data.saveMemberRow).toHaveBeenCalledWith(expect.objectContaining({ userId: 'm1', personId: null }))
+    // Die Mitgliedschaft räumt seit T105 der Fremdschlüssel (`on delete set
+    // null`) — hier stand dafür ein Schreibvorgang von Hand. Er war die einzige
+    // Personen-Beziehung ohne Fremdschlüssel, und wer per Skript löschte,
+    // hinterließ eine Zeile, deren `my_person_id()` ins Leere zeigt.
+    expect(data.saveMemberRow).not.toHaveBeenCalled()
+  })
+})
+
+describe('Die Mock-Liste deckt jeden Schreibweg ab', () => {
+  /*
+   * Der Kopf dieser Datei verspricht: „**Jede** Funktion, die `persist` aufruft,
+   * ist darunter überschrieben. Bliebe eine übrig, liefe sie gegen den leeren
+   * Supabase-Stub und flöge."
+   *
+   * Das war eine **handgepflegte Liste** — und die verlor am 18. September 2026
+   * prompt zwei Einträge (`saveFamily`, `deleteHouseholdRow`), ohne dass etwas
+   * rot wurde: Solange kein Test die Aktion auslöst, fällt die Lücke nicht auf.
+   * Sie fällt dem auf die Füße, der **den nächsten** Test schreibt.
+   *
+   * Statt der Liste steht hier jetzt die Frage selbst: Ist alles, was
+   * `persist.ts` aus `lib/data` holt, eine Attrappe?
+   */
+  const QUELLE = import.meta.glob('./persist.ts', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>
+
+  it('jeder Import aus lib/data ist eine Attrappe', () => {
+    const quelle = Object.values(QUELLE)[0] ?? ''
+    const block = /import \{([\s\S]*?)\} from '\.\.\/lib\/data'/.exec(quelle)?.[1]
+    expect(block, 'Import-Block aus lib/data nicht gefunden — Muster nachziehen').toBeDefined()
+    const namen = (block ?? '')
+      .split(',')
+      .map((n) => n.trim())
+      .filter((n) => /^[a-zA-Z]\w*$/.test(n))
+    expect(namen.length).toBeGreaterThan(20)
+    const echt = namen.filter((n) => {
+      const wert = (data as unknown as Record<string, unknown>)[n]
+      return typeof wert === 'function' && !vi.isMockFunction(wert)
+    })
+    expect(echt, 'nicht überschrieben — liefe gegen den leeren Supabase-Stub').toEqual([])
+  })
+})
+
+describe('Haushalte: erst die Zeile, dann die Person', () => {
+  /*
+   * Ein Haushalt ist seit T105 eine **eigene Zeile**, auf die `persons.fam` per
+   * Fremdschlüssel zeigt. Damit hat dieser eine Schreibweg eine Reihenfolge,
+   * die alle anderen hier nicht haben (sie sind „abschicken und weitergehen"):
+   * Ginge die Person zuerst hinaus, wiese die Datenbank sie ab — und weil
+   * nichts auf die Antwort wartet, bliebe davon nur ein Fehler-Toast.
+   *
+   * Deshalb `saveFamily` statt `savePerson`: Die Funktion hält die Reihenfolge
+   * ein, und dieser Test hält fest, dass sie gerufen wird.
+   */
+  const mitFam = (id: string, fam: string | null) => ({
+    ...DEMO_PERSONS.find((p) => p.id === id)!,
+    fam,
+  })
+
+  it('verbinden schreibt Haushalt und Personen gemeinsam', () => {
+    const prev = st()
+    const next = st({
+      persons: prev.persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p)),
+    })
+    persist(prev, next, { type: 'setFamily', id: 'p1', memberId: 'p2', add: true })
+    expect(data.saveFamily).toHaveBeenCalledWith('c1', 'h1', [mitFam('p1', 'h1'), mitFam('p2', 'h1')])
+    // Nicht einzeln: ein `savePerson` daneben liefe an der Reihenfolge vorbei.
+    expect(data.savePerson).not.toHaveBeenCalled()
+  })
+
+  it('der letzte Bewohner nimmt den Haushalt mit', () => {
+    const prev = st({ persons: st().persons.map((p) => (p.id === 'p1' ? { ...p, fam: 'h1' } : p)) })
+    const next = st()
+    persist(prev, next, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
+    expect(data.deleteHouseholdRow).toHaveBeenCalledWith('h1')
+  })
+
+  it('wohnt noch jemand darin, bleibt die Zeile stehen', () => {
+    const beide = st().persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p))
+    const prev = st({ persons: beide })
+    const next = st({ persons: beide.map((p) => (p.id === 'p1' ? { ...p, fam: null } : p)) })
+    persist(prev, next, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
+    expect(data.deleteHouseholdRow).not.toHaveBeenCalled()
+    expect(data.savePerson).toHaveBeenCalledWith('c1', mitFam('p1', null))
+  })
+})
+
+describe('Ein gelöschter Dienst nimmt seine drei Spuren mit', () => {
+  /*
+   * Bereich bei jeder Person, Platzreihe in jeder Woche, Bestätigungen der
+   * Plätze — alle drei liegen in JSONB, die Datenbank räumt hier also nichts.
+   * Bis T105 blieb alles stehen, und beim Wiederanlegen desselben Schlüssels
+   * kamen die alten Freigaben lautlos zurück (siehe `data/dienste.ts`).
+   */
+  const ohneTon = (s: AppState): AppState => ({
+    ...s,
+    services: s.services.filter((x) => x.key !== 'ton'),
+    persons: s.persons.map((p) => {
+      if (!('svc:ton' in p.priv)) return p
+      const { 'svc:ton': _weg, ...priv } = p.priv
+      return { ...p, priv }
+    }),
+    weeks: s.weeks.map((w) => {
+      const mid = { ...w.mid, helpers: { ...w.mid.helpers } }
+      const we = { ...w.we, helpers: { ...w.we.helpers } }
+      delete mid.helpers.ton
+      delete we.helpers.ton
+      return { ...w, mid, we }
+    }),
+  })
+
+  it('schreibt die geänderten Personen und Wochen und räumt die Zusagen ab', () => {
+    const prev = st()
+    persist(prev, ohneTon(prev), { type: 'removeService', key: 'ton' })
+    expect(data.deleteServiceRow).toHaveBeenCalledWith('c1', 'ton')
+    // Die Personen mit dem Bereich — und nur die.
+    const geschrieben = vi.mocked(data.savePerson).mock.calls.map((c) => c[1].id)
+    const erwartet = prev.persons.filter((p) => 'svc:ton' in p.priv).map((p) => p.id)
+    expect(geschrieben.sort()).toEqual(erwartet.sort())
+    expect(geschrieben.length).toBeGreaterThan(0)
+    // Die Wochen mit der Platzreihe — gebündelt wie jede Wochen-Änderung.
+    vi.advanceTimersByTime(600)
+    expect(vi.mocked(data.saveWeek).mock.calls.length).toBeGreaterThan(0)
+    // Und die Bestätigungen dieser Plätze.
+    const keys = vi.mocked(data.deleteConfirmationRows).mock.calls[0]?.[1] ?? []
+    expect(keys.some((k) => k.includes('|helper|ton|'))).toBe(true)
   })
 })
 
@@ -549,12 +679,12 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
       „Gruppe 4", und die Reinigung rotierte ab da in einer anderen Folge
       (`groups[weekIndex % groups.length]`).
     */
-    const g = { id: 'g9', name: 'G', ov: null, as: null }
-    const g0 = { id: 'g0', name: 'A', ov: null, as: null }
+    const g = { id: 'g9', name: 'G', overseerId: null, assistantId: null }
+    const g0 = { id: 'g0', name: 'A', overseerId: null, assistantId: null }
     persist(st({ groups: [g0] }), st({ groups: [g0, g] }), { type: 'addGroup', group: g })
     expect(data.saveGroupRow).toHaveBeenCalledWith('c1', g, 1) // hinten angehängt
-    persist(st({ groups: [g0, g] }), st({ groups: [g0, { ...g, ov: 'p1' }] }), { type: 'updateGroup', id: 'g9', patch: { ov: 'p1' } })
-    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...g, ov: 'p1' }, 1) // bleibt, wo sie war
+    persist(st({ groups: [g0, g] }), st({ groups: [g0, { ...g, overseerId: 'p1' }] }), { type: 'updateGroup', id: 'g9', patch: { overseerId: 'p1' } })
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...g, overseerId: 'p1' }, 1) // bleibt, wo sie war
     // removeGroup: ein Mitglied hatte grp='g9', jetzt null → savePersonGroup
     const before = { id: 'pm', grp: 'g9' } as never
     const after = { id: 'pm', grp: null } as never
@@ -575,7 +705,7 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
       Geschrieben wird nur, was wirklich verrutscht ist: Der Reducer filtert,
       unberührte Einträge behalten ihre Referenz.
     */
-    const grp = (id: string) => ({ id, name: id.toUpperCase(), ov: null, as: null })
+    const grp = (id: string) => ({ id, name: id.toUpperCase(), overseerId: null, assistantId: null })
     const vorher = [grp('a'), grp('b'), grp('c'), grp('d')]
     const nachher = vorher.filter((g) => g.id !== 'b')
 
@@ -610,7 +740,7 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
    */
   describe('removeGroup und die Treffpunkte der Gruppe', () => {
     const regelIds = (aufruf: unknown[] | undefined) =>
-      ((aufruf?.[2] ?? []) as Array<{ id: string }>).map((r) => r.id)
+      ((aufruf?.[1] ?? []) as Array<{ id: string }>).map((r) => r.id)
 
     it('schreibt den Grundplan ohne ihre Regeln — und nur die Wochen, in denen sie stand', () => {
       const prev = st()
@@ -693,10 +823,10 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
   })
 
   it('updateCongregation schreibt gebündelt (Debounce)', () => {
-    persist(st(), st({ congregation: { name: 'Neu', hall: '', meetings: '' } }), { type: 'updateCongregation', patch: { name: 'Neu' } })
+    persist(st(), st({ congregation: { name: 'Neu', hall: '', times: STANDARD_ZEITEN } }), { type: 'updateCongregation', patch: { name: 'Neu' } })
     expect(data.saveCongregationInfo).not.toHaveBeenCalled()
     vi.advanceTimersByTime(600)
-    expect(data.saveCongregationInfo).toHaveBeenCalledWith('c1', { name: 'Neu', hall: '', meetings: '' })
+    expect(data.saveCongregationInfo).toHaveBeenCalledWith('c1', { name: 'Neu', hall: '', times: STANDARD_ZEITEN })
   })
 
   it('updateCongregation speichert die Wochen, deren Endzeit mitgewandert ist', () => {
@@ -707,9 +837,9 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     // Wochen identisch zurück, und genau daran erkennt die Persistenz sie.
     const weeks = [...prev.weeks]
     weeks[1] = { ...weeks[1], mid: { ...weeks[1].mid, end: 'Ende ca. 20:15' } }
-    persist(prev, st({ weeks, congregation: { name: 'K', hall: 'H', meetings: 'Di 18:30 · So 10:00' } }), {
+    persist(prev, st({ weeks, congregation: { name: 'K', hall: 'H', times: { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } } } }), {
       type: 'updateCongregation',
-      patch: { meetings: 'Di 18:30 · So 10:00' },
+      patch: { times: { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } } },
     })
     expect(data.saveWeek).toHaveBeenCalledTimes(1) // nur die eine geänderte
     expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1])
@@ -717,7 +847,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
 
   it('updateCongregation ohne Zeitänderung schreibt keine Woche', () => {
     const prev = st()
-    persist(prev, st({ weeks: prev.weeks, congregation: { name: 'Neu', hall: 'H', meetings: 'M' } }), {
+    persist(prev, st({ weeks: prev.weeks, congregation: { name: 'Neu', hall: 'H', times: STANDARD_ZEITEN } }), {
       type: 'updateCongregation',
       patch: { name: 'Neu' },
     })

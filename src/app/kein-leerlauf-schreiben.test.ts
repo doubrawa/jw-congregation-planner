@@ -158,13 +158,13 @@ function folge(s: AppState): AppAction[] {
     { type: 'lacRemove', si: p.si, ii: 999 }, // Punkt gibt es nicht
     { type: 'lacMove', si: p.si, ii: 0, dir: -1 }, // schon ganz oben
     { type: 'lacAdjust', si: p.si, ii: p.ii, delta: 0 },
-    { type: 'setAbweichung', tab: 'mid', patch: { day: 'Mittwoch' } },
+    { type: 'setAbweichung', tab: 'mid', patch: { wd: 3 } },
     { type: 'setDienstwoche', on: false }, // ist ohnehin aus
     { type: 'setAnlass', art: null }, // ist ohnehin keiner gesetzt
     { type: 'updatePerson', id: person.id, patch: { tel: person.tel } },
     { type: 'updateCongregation', patch: { hall: CONGREGATION.hall } },
     { type: 'changeServiceCount', key: svc.key, delta: 1 },
-    { type: 'updateGroup', id: grp.id, patch: { ov: grp.ov } },
+    { type: 'updateGroup', id: grp.id, patch: { overseerId: grp.overseerId } },
     { type: 'fsRuleUpdate', id: regel.id, patch: { time: regel.time } },
     { type: 'fsClear', onlyGroup: null },
     { type: 'setCongLang', name: 'Deutsch' },

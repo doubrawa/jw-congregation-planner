@@ -34,12 +34,12 @@ import { LanguageSheet } from '../components/LanguageSheet'
 const t = dict('de')
 
 const GRUPPEN: Group[] = [
-  { id: 'g1', name: 'Gruppe 1', ov: null, as: null },
-  { id: 'g2', name: 'Gruppe 2', ov: null, as: null },
+  { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+  { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
 ]
 
 const regel = (over: Partial<FsRule> = {}): FsRule =>
-  ({ id: 'r1', grp: '', wd: 6, monthly: 0, time: '09:30', place: 'Saal', skipCong: false, ...over }) as FsRule
+  ({ id: 'r1', grp: null, wd: 6, monthly: 0, time: '09:30', place: 'Saal', skipCong: false, ...over }) as FsRule
 
 function zeige(
   was: 'rules' | 'lang',
@@ -102,12 +102,12 @@ describe('Der Grundplan gliedert nach Versammlung und Gruppen', () => {
   it('die Versammlungsregel wird mit leerem Gruppen-Schlüssel angelegt', () => {
     const { container, dispatch } = zeige('rules')
     fireEvent.click(container.querySelector('.fsr-add')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleAdd', grp: '' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleAdd', grp: null })
   })
 
   it('eine Regel steht nur in ihrem eigenen Abschnitt', () => {
     const { container } = zeige('rules', {
-      fsRules: [regel({ id: 'r1', grp: '' }), regel({ id: 'r2', grp: 'g2' })],
+      fsRules: [regel({ id: 'r1', grp: null }), regel({ id: 'r2', grp: 'g2' })],
     })
     const teile = [...container.querySelectorAll('.fsr-section')]
     expect(teile[0]!.querySelectorAll('.fsr-row')).toHaveLength(1) // Versammlung
@@ -169,7 +169,7 @@ describe('„Außer bei Versammlungstreffpunkt" gibt es nur bei Gruppen', () => 
   })
 
   it('an der Versammlungsregel nicht — sie wäre die Ausnahme von sich selbst', () => {
-    const { container } = zeige('rules', { fsRules: [regel({ grp: '' })] })
+    const { container } = zeige('rules', { fsRules: [regel({ grp: null })] })
     expect(container.querySelector('.fsr-skip')).toBeNull()
   })
 })

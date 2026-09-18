@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { localizedWeek, localizedWeeks, missingVariants } from './localize'
 import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove } from './meeting-edit'
-import type { Meeting, PartItem, Week } from './types'
+import type { Meeting, PartItem, Week, WeekVariant } from './types'
 
 /** Kanonische (deutsche) Beispielwoche mit englischer Sprachvariante. */
 function makeWeek(): Week {
@@ -64,8 +64,7 @@ function makeWeek(): Week {
     alt: {
       en: {
         range: 'September 7–13',
-        book: 'JEREMIAH 32–33', start: '2026-09-07',
-        current: false,
+        book: 'JEREMIAH 32–33',
         mid: altMid,
         we: structuredClone(emptyWe),
       },
@@ -285,7 +284,9 @@ describe('Sprachvarianten in fremden Schriften', () => {
    * Prüfungen fangen deshalb bei null an — auch in einer Datei, die noch
    * Altbestand trägt.
    */
-  const ersterAbschnitt = (w: Week) => {
+  // `Week | WeekVariant`: Beide tragen die beiden Zusammenkünfte, und genau
+  // darauf sieht diese Hilfe — eine Variante hat weder Kennung noch Anlass.
+  const ersterAbschnitt = (w: Week | WeekVariant) => {
     const s = w.mid.sections[0]
     if (!s) throw new Error('Testaufbau: die Woche hat keinen Abschnitt')
     return s

@@ -1,7 +1,8 @@
 import { useApp } from '../app/context'
 import type { Termin } from '../data/types'
 import { useT } from '../i18n/useT'
-import { WOCHENTAGE, wochentagName } from './wochentage'
+import { versatzAbMontag, wdAusVersatz } from '../data/meeting-dates'
+import { VERSAETZE, wochentagName } from './wochentage'
 
 /**
  * Weitere Termine der Woche (T63) — Pionierbesprechung, Ältestenbesprechung,
@@ -74,14 +75,20 @@ export function TerminePanel() {
               <span className="sonder-label">{t.a11yWeekday}</span>
               <select
                 className="sonder-select"
-                value={termin.day ?? ''}
-                onChange={(e) => setzen(termin.id, { day: e.target.value || undefined })}
+                value={termin.wd == null ? '' : versatzAbMontag(termin.wd)}
+                onChange={(e) =>
+                  setzen(termin.id, {
+                    // Leere Auswahl = kein Tag. `=== ''` statt `||`, denn der
+                    // Montag ist die 0 und wäre sonst dasselbe wie „keiner".
+                    wd: e.target.value === '' ? undefined : wdAusVersatz(Number(e.target.value)),
+                  })
+                }
               >
                 {/* Noch kein Tag gewählt. Ein Gedankenstrich braucht keine
                     Übersetzung — derselbe Griff wie beim Anlass darüber. */}
                 <option value="">—</option>
-                {WOCHENTAGE.map((tag, i) => (
-                  <option key={tag} value={tag}>
+                {VERSAETZE.map((i) => (
+                  <option key={i} value={i}>
                     {wochentagName(i, state.lang)}
                   </option>
                 ))}

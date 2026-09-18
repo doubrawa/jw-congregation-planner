@@ -50,7 +50,7 @@ const person = (id: string, fn: string, ln: string): Person => ({
 const PLANER = person('p-planer', 'Paula', 'Planer')
 const AUFSEHER = person('p-ov', 'Olaf', 'Overseer')
 const VERKUENDIGER = person('p-verk', 'Vera', 'Verkuendiger')
-const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: 'p-ov', as: null }]
+const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: null }]
 
 function zustand(over: Partial<AppState> = {}): AppState {
   return {
@@ -131,7 +131,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     const { container } = zeige({
       planner: false,
       personId: VERKUENDIGER.id,
-      groups: [{ id: 'g1', name: 'Gruppe 1', ov: 'p-ov', as: VERKUENDIGER.id }],
+      groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: VERKUENDIGER.id }],
     })
     expect(navPunkte(container)).toContain(t.navPlanen)
   })

@@ -57,14 +57,14 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
   }
 
   it('verschiebt beide Zusammenkünfte um ihre eigene Differenz', () => {
-    const next = endenNachziehen(importierteWochen(), 'Di 19:00 · So 10:00', 'Di 18:30 · So 09:30')
+    const next = endenNachziehen(importierteWochen(), { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '09:30' } })
     expect(next[0].mid.end).toBe('Ende ca. 20:15')
     expect(next[0].we.end).toBe('Ende ca. 11:15')
     expect(next[1].mid.end).toBe('Ende ca. 20:15') // alle geladenen Wochen
   })
 
   it('rührt die andere Zusammenkunft nicht an', () => {
-    const next = endenNachziehen(importierteWochen(), 'Di 19:00 · So 10:00', 'Di 18:30 · So 10:00')
+    const next = endenNachziehen(importierteWochen(), { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
     expect(next[0].mid.end).toBe('Ende ca. 20:15')
     expect(next[0].we.end).toBe('Ende ca. 11:45') // unverändert
   })
@@ -75,18 +75,21 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
     // Anpassung nicht verwerfen: 20:55 − 30 min = 20:25, nicht 18:30 + 105.
     const weeks = importierteWochen()
     weeks[0].mid.end = 'Ende ca. 20:55'
-    const next = endenNachziehen(weeks, 'Di 19:00 · So 10:00', 'Di 18:30 · So 10:00')
+    const next = endenNachziehen(weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
     expect(next[0].mid.end).toBe('Ende ca. 20:25')
   })
 
-  it('lässt Wochen mit eigener Uhrzeit im Termin unberührt', () => {
-    // Gedächtnismahl, Sondertermine — und ebenso Demo-/Altwochen: steht im
-    // `date`-Feld eine Uhrzeit, bestimmt sie auch den Anfang (meetingTime),
-    // die Einstellungen bleiben außen vor. Dann bewegt sich das Ende nicht.
+  it('lässt Zusammenkünfte mit eigener Uhrzeit unberührt', () => {
+    // Eine Abweichung (T30) bestimmt auch den Anfang (`meetingTime`), der
+    // Rhythmus bleibt außen vor. Dann bewegt sich das Ende nicht.
+    //
+    // Die eigene Uhrzeit stand bis zum 18.9.2026 als **Text** im `date`-Feld
+    // („Dienstag, 8. September · 19:45") und wurde von dort zurückgelesen; seit
+    // T30 sagt eine `Abweichung` dasselbe als Wert.
     const weeks = importierteWochen()
-    weeks[0].mid.date = 'Dienstag, 8. September · 19:45'
+    weeks[0].dev = { mid: { time: '19:45' } }
     weeks[0].mid.end = 'Ende ca. 21:30'
-    const next = endenNachziehen(weeks, 'Di 19:00 · So 10:00', 'Di 18:30 · So 10:00')
+    const next = endenNachziehen(weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
     expect(next[0].mid.end).toBe('Ende ca. 21:30') // unverändert
     expect(next[1].mid.end).toBe('Ende ca. 20:15') // mitgezogen
   })
@@ -106,9 +109,8 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
       etwas — nur nicht überall.
     */
     const weeks = importierteWochen()
-    weeks[0]!.mid.date = 'Dienstag, 8. September · 19:45' // eigener Termin
-    weeks[0]!.we.date = 'Sonntag, 13. September · 10:30'
-    const next = endenNachziehen(weeks, 'Di 19:00 · So 10:00', 'Di 18:30 · So 09:30')
+    weeks[0]!.dev = { mid: { time: '19:45' }, we: { time: '10:30' } } // eigene Termine
+    const next = endenNachziehen(weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '09:30' } })
     expect(next[0]).toBe(weeks[0]) // keine der beiden Zusammenkünfte betroffen
     expect(next[1]).not.toBe(weeks[1]) // diese schon
   })
@@ -117,15 +119,19 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
     // Identität, damit React nicht ohne Grund neu rendert und die Persistenz
     // nicht 52 unveränderte Wochen schreibt.
     const weeks = importierteWochen()
-    expect(endenNachziehen(weeks, 'Di 19:00 · So 10:00', 'Di 19:00 · So 10:00')).toBe(weeks)
+    expect(endenNachziehen(weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })).toBe(weeks)
     // Nur der Wochentag ändert sich — die Uhrzeit bleibt, das Ende auch.
-    expect(endenNachziehen(weeks, 'Di 19:00 · So 10:00', 'Mi 19:00 · So 10:00')).toBe(weeks)
+    expect(endenNachziehen(weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 3, time: '19:00' }, we: { wd: 0, time: '10:00' } })).toBe(weeks)
   })
 
-  it('ohne erkennbare Uhrzeit bleibt alles stehen', () => {
-    const weeks = importierteWochen()
-    expect(endenNachziehen(weeks, 'Di abends · So 10:00', 'Di 18:30 · So 10:00')).toBe(weeks)
-  })
+  /*
+   * Hier stand: „ohne erkennbare Uhrzeit bleibt alles stehen" — mit dem Eingang
+   * „Di abends · So 10:00". Beide Seiten waren Anzeigetexte, aus denen die
+   * Uhrzeiten der Stellung nach gelesen wurden; fehlte in einem eine, rutschte
+   * die Zuordnung, und die Verschiebung lag um Stunden daneben. Der Fall ist
+   * mit den Werten (`MeetingTimes`) verschwunden, nicht bloß abgestellt: Eine
+   * unlesbare Uhrzeit lässt sich nicht mehr übergeben.
+   */
 })
 
 /*

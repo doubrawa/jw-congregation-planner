@@ -21,7 +21,7 @@ import {
   DEMO_UNBESTAETIGT,
 } from '../data/testdaten'
 import { buildDemoConfirmations } from '../data/demo-zusagen'
-import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
+import { STANDARD_ERINNERUNGEN, STANDARD_ZEITEN } from '../data/vorgaben'
 import { asFontScale, DEFAULT_FONT_SCALE, THEME_LIST, type FontScale } from '../data/constants'
 import { APP_LANGS } from '../i18n/langs'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -125,7 +125,7 @@ export function initialState(): AppState {
     theme: debug?.theme ?? getInitialTheme(),
     fontScale: debug?.fontScale ?? getInitialFontScale(),
     planner: debug?.planner ?? (demo ? DEMO_PLANNER : false),
-    congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', meetings: '' },
+    congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', times: STANDARD_ZEITEN },
     congregationId: null,
     userId: null,
     // Im Demo-Modus gehört die App niemandem — außer der Debug-Hash meldet

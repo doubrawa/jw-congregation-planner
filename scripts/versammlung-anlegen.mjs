@@ -22,21 +22,41 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- *   SUPABASE_URL=https://<ref>.supabase.co \
- *   SUPABASE_SECRET_KEY=<sb_secret_… aus Project Settings -> API Keys> \
  *   node scripts/versammlung-anlegen.mjs \
  *     --name "Musterstadt" \
  *     --saal "Hauptstraße 12" \
- *     --zeiten "Di 19:00 · So 10:00" \
- *     --vorname "Anna" --nachname "Beispiel" [--sprache Deutsch] [--trocken]
+ *     --mid "2 19:00" --we "0 10:00" \
+ *     --vorname "Anna" --nachname "Beispiel" [--sprache de] [--trocken]
+ *
+ * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
+ * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
+ * keiner in der Umgebung steht — verdeckt, mit dem Link aufs Dashboard daneben.
+ * Wer `SUPABASE_SECRET_KEY` gesetzt hat, wird nicht gefragt.
+ *
+ * `--mid`/`--we` sind Wochentag und Uhrzeit der beiden Zusammenkünfte:
+ * `"<wd> <hh:mm>"` mit 0 = Sonntag … 6 = Samstag. Ohne sie gelten die Vorgaben
+ * der Datenbank (Dienstag 19:00, Sonntag 10:00). `--sprache` ist der
+ * **jw.org-Sprachcode** (`de`, `en`, `cmn-hant`), nicht der Anzeigename.
  *
  * Der **Service-Role-Key** umgeht RLS und darf niemals in die App oder ins
  * Repository. Er steht in Supabase unter Project Settings → API.
  *
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  */
-import { argumente, authKopf, secretKey } from './gemeinsam.mjs'
+import { argumente, authKopf, zugangsdaten } from './gemeinsam.mjs'
 export { argumente }
+
+/**
+ * `"2 19:00"` → `{ mid_wd: 2, mid_time: '19:00' }` für die genannte
+ * Zusammenkunft. Unbrauchbares bricht ab, statt eine Zeit zu erfinden: Eine
+ * Versammlung, die am falschen Tag zusammenkommt, merkt es erst an der ersten
+ * Erinnerung.
+ */
+export function zeitSpalten(tab, wert) {
+  const m = /^([0-6])\s+(\d{1,2}:\d{2})$/.exec(String(wert).trim())
+  if (!m) throw new Error(`--${tab} erwartet "<wd> <hh:mm>" (0 = Sonntag … 6 = Samstag), nicht "${wert}"`)
+  return { [`${tab}_wd`]: Number(m[1]), [`${tab}_time`]: m[2] }
+}
 
 /**
  * Hilfsdienste, die jede Versammlung zunächst bekommt.
@@ -91,11 +111,8 @@ export function planerBereiche() {
 
 async function main() {
   const arg = argumente(process.argv.slice(2))
-  const url = process.env.SUPABASE_URL
-  const key = secretKey()
+  const { url, key } = await zugangsdaten()
   const fehlt = []
-  if (!url) fehlt.push('SUPABASE_URL')
-  if (!key) fehlt.push('SUPABASE_SECRET_KEY')
   if (!arg.name) fehlt.push('--name')
   if (!arg.vorname) fehlt.push('--vorname')
   if (!arg.nachname) fehlt.push('--nachname')
@@ -104,17 +121,28 @@ async function main() {
     process.exit(2)
   }
 
+  /*
+   * Die Regeltermine stehen seit T105 als **Werte** in vier Spalten (Wochentag
+   * 0 = Sonntag … 6 = Samstag, Uhrzeit als `time`); hier stand vorher ein
+   * Anzeigetext („Di 19:00 · So 10:00") in einer Spalte `meeting_times`, und
+   * die Sprache als deutscher Name in einem `settings`-Beutel. Beides gibt es
+   * nicht mehr — das Skript lief danach in ein 400 und legte gar nichts an.
+   *
+   * Ohne `--mid`/`--we` gelten die Vorgaben der Datenbank (Di 19:00, So 10:00);
+   * die Spalten bleiben dann einfach ungenannt.
+   */
   const versammlung = {
     name: arg.name,
     hall: arg.saal ?? '',
-    meeting_times: arg.zeiten ?? '',
-    settings: arg.sprache ? { congLang: arg.sprache } : {},
+    ...(arg.mid ? zeitSpalten('mid', arg.mid) : {}),
+    ...(arg.we ? zeitSpalten('we', arg.we) : {}),
+    ...(arg.sprache ? { cong_lang: arg.sprache } : {}),
   }
   const code = einladungscode()
 
   console.log(`Versammlung:  ${versammlung.name}`)
   console.log(`Saal:         ${versammlung.hall || '—'}`)
-  console.log(`Zeiten:       ${versammlung.meeting_times || '—'}`)
+  console.log(`Zeiten:       ${arg.mid ?? 'Vorgabe (Di 19:00)'} · ${arg.we ?? 'Vorgabe (So 10:00)'}`)
   console.log(`Planer:       ${arg.vorname} ${arg.nachname}`)
   console.log(`Dienste:      ${STANDARD_DIENSTE.map((d) => d.name).join(', ')}`)
   console.log(`Wochen:       keine — die erste holt der Planer über den Import`)
@@ -147,7 +175,7 @@ async function main() {
     fn: arg.vorname,
     ln: arg.nachname,
     role: 'aeltester',
-    planner: true,
+    planner_vorgemerkt: true,
     priv: planerBereiche(),
   })
   await rest(
@@ -176,6 +204,10 @@ async function main() {
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
   main().catch((err) => {
     console.error(String(err instanceof Error ? err.message : err))
-    process.exit(1)
+    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
+    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
+    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
+    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
+    process.exitCode = 1
   })
 }

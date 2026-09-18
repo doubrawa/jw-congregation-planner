@@ -13,6 +13,7 @@ vi.mock('../lib/supabase', () => ({
 }))
 
 import { initialState } from './init'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 beforeEach(() => {
   cfg.configured = false
@@ -42,7 +43,7 @@ describe('initialState – konfiguriert (leerer Start bis Hydration)', () => {
     expect(s.persons).toEqual([])
     expect(s.weeks).toEqual([])
     expect(s.planner).toBe(false)
-    expect(s.congregation).toEqual({ name: '', hall: '', meetings: '' })
+    expect(s.congregation).toEqual({ name: '', hall: '', times: STANDARD_ZEITEN })
     expect(s.fsBase.getDay()).toBe(1) // Montag
     expect(s.fsBase.getHours()).toBe(12)
   })

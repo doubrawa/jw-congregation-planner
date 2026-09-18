@@ -8,65 +8,29 @@
  * gesetzt); Demo-/Vorlagen-Wochen haben keins → kein Countdown.
  */
 import { abweichung, istAusgefallen, MEETING_TABS } from './helpers'
-import type { MeetingKey, Week } from './types'
-
-/** Wochentags-Kürzel → Tage nach Montag. */
-const DAY_OFFSET: Record<string, number> = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 }
+import type { MeetingKey, MeetingTimes, Week } from './types'
 
 /**
- * "Di 19:00 · So 10:00" → { mid, we } (Tage nach Montag). Ohne erkennbare
- * Wochentage gilt Dienstag (mid) / Sonntag (we) — wie serverseitig.
- */
-export function meetingDayOffsets(meetingTimes: string): Record<MeetingKey, number> {
-  // Die Gruppe ist im Ausdruck nicht optional — ein Treffer hat sie immer.
-  const found = [...meetingTimes.matchAll(/\b(Mo|Di|Mi|Do|Fr|Sa|So)\b/g)].map((m) => DAY_OFFSET[m[1] ?? ''])
-  return { mid: found[0] ?? 1, we: found[1] ?? 6 }
-}
-
-/** Erste Uhrzeit in einem Text, auf "HH:MM" normiert. */
-function ersteZeit(text: string): string | undefined {
-  const m = /\b(\d{1,2})[:.](\d{2})\b/.exec(text)
-  return m ? `${(m[1] ?? '').padStart(2, '0')}:${m[2] ?? ''}` : undefined
-}
-
-/**
- * "Di 19:00 · So 10:00" → { mid: "19:00", we: "10:00" }. Ohne erkennbare
- * Uhrzeit bleibt der jeweilige Wert leer — der Aufrufer lässt sie dann weg.
- * Die Zusammenkunfts-Zeiten stehen nur hier (in den Einstellungen); die
- * importierten Wochen tragen im `date`-Feld die Wochenspanne, keinen Termin.
- */
-export function meetingTimesOf(meetingTimes: string): Record<MeetingKey, string> {
-  const found = [...meetingTimes.matchAll(/\b(\d{1,2})[:.](\d{2})\b/g)].map(
-    (m) => `${(m[1] ?? '').padStart(2, '0')}:${m[2] ?? ''}`,
-  )
-  return { mid: found[0] ?? '', we: found[1] ?? '' }
-}
-
-/**
- * Ausgeschriebener Wochentag (Wochendaten sind kanonisch deutsch) → Tage nach
- * Montag.
+ * Wochentag (0 = Sonntag … 6 = Samstag) → Tage nach Montag.
  *
- * Exportiert seit T63: Die Termine der Woche tragen denselben kanonischen Tag
- * und sortieren danach. Eine zweite Tabelle wäre eine zweite Gelegenheit,
- * „Sonnabend" zu vergessen.
+ * Die eine Umrechnung zwischen den beiden Zählungen, die es hier gibt: Ein
+ * Wochentag steht überall als Zahl (`FsRule.wd`, `Abweichung.wd`,
+ * `MeetingTime.wd`), gerechnet wird ab dem Montag der Woche (`Week.start`).
+ *
+ * Hier standen stattdessen vier Tabellen und drei reguläre Ausdrücke: Kürzel →
+ * Versatz, deutscher Name → Versatz (samt „Sonnabend"), die erste Uhrzeit in
+ * einem Text, der erste Wochentag in einem Text. Sie lasen Tag und Uhrzeit aus
+ * **Anzeigetexten** zurück — aus der Regelzeit der Versammlung („Di 19:00 · So
+ * 10:00") und aus dem `date`-Feld der Zusammenkunft. Beide Quellen tragen
+ * inzwischen Werte: die Versammlung vier Spalten, die Woche ihre `Abweichung`.
  */
-export const WEEKDAY_OFFSET: Record<string, number> = {
-  Montag: 0, Dienstag: 1, Mittwoch: 2, Donnerstag: 3,
-  Freitag: 4, Samstag: 5, Sonnabend: 5, Sonntag: 6,
+export function versatzAbMontag(wd: number): number {
+  return (wd + 6) % 7
 }
 
-/**
- * Termin aus dem `date`-Feld einer Zusammenkunft, soweit es einen trägt:
- * "Samstag, 3. Oktober · 19:30 · Königreichssaal" → { offset: 5, zeit: "19:30" }.
- *
- * Wichtig für Wochen, die vom Rhythmus abweichen (Gedächtnismahl, Kongress) —
- * dort steht der echte Termin nur hier. Importierte Wochen tragen dagegen die
- * Wochenspanne ("7.–13. September"): kein Wochentag, keine Zeit → beides
- * `undefined`, und der Aufrufer nimmt die Zeiten aus den Einstellungen.
- */
-export function meetingDateParts(date: string): { offset?: number; zeit?: string } {
-  const tag = /\b(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag)\b/.exec(date)
-  return { offset: tag ? WEEKDAY_OFFSET[tag[1] ?? ''] : undefined, zeit: ersteZeit(date) }
+/** Die Gegenrichtung: Tage nach Montag → Wochentag (0 = Sonntag … 6 = Samstag). */
+export function wdAusVersatz(versatz: number): number {
+  return (versatz + 1) % 7
 }
 
 /** Datum als lokales ISO („2026-09-08") — nicht über toISOString, das ist UTC. */
@@ -87,41 +51,39 @@ export function fromIso(iso: string): Date {
 /**
  * Wochentag-Versatz dieser einen Zusammenkunft: ab Montag gezählt.
  *
- * Drei Quellen, in dieser Rangfolge:
+ * Zwei Quellen, in dieser Rangfolge:
  *  1. eine **Abweichung** dieser Woche (`week.dev`, T30) — der Planer hat den
  *     Tag ausdrücklich verlegt, etwa weil sich mehrere Versammlungen einen
  *     Saal teilen und eine davon Dienstwoche hat;
- *  2. ein eigener Termin im `date`-Feld (so tragen Alt-Datensätze das
- *     Gedächtnismahl und die Kongresswoche);
- *  3. der Rhythmus aus den Einstellungen.
+ *  2. der Rhythmus der Versammlung (Einstellungen).
+ *
+ * Dazwischen stand eine dritte: der Wochentag, den das `date`-Feld der
+ * Zusammenkunft **anzeigt**. Sie galt Alt-Datensätzen, die das Gedächtnismahl
+ * und die Kongresswoche als Text trugen; seit T30 sagt eine `Abweichung`
+ * dasselbe als Wert, und importierte Wochen zeigen dort ohnehin nur die
+ * Wochenspanne.
  *
  * Diese Regel gehört an EINE Stelle: der Countdown rechnete sie früher nicht
  * mit, Zeitleiste und Abwesenheitsprüfung schon, und dann nannten Erinnerung
  * und Anzeige verschiedene Tage.
  */
-export function meetingOffset(week: Week, tab: MeetingKey, meetings: string): number {
-  const tag = abweichung(week, tab)?.day
-  const verlegt = tag ? WEEKDAY_OFFSET[tag] : undefined
-  return verlegt ?? meetingDateParts(week[tab].date).offset ?? meetingDayOffsets(meetings)[tab]
+export function meetingOffset(week: Week, tab: MeetingKey, zeiten: MeetingTimes): number {
+  // `?? `, nicht `||`: der Sonntag ist die 0.
+  return versatzAbMontag(abweichung(week, tab)?.wd ?? zeiten[tab].wd)
 }
 
 /**
- * Uhrzeit dieser einen Zusammenkunft — Abweichung vor eigenem Termin vor
- * Einstellungen, gleiche Rangfolge wie beim Tag. Leer, wenn nirgends eine steht.
+ * Uhrzeit dieser einen Zusammenkunft — Abweichung vor Rhythmus, gleiche
+ * Rangfolge wie beim Tag.
  */
-export function meetingTime(week: Week, tab: MeetingKey, meetings: string): string {
-  return (
-    abweichung(week, tab)?.time ??
-    meetingDateParts(week[tab].date).zeit ??
-    meetingTimesOf(meetings)[tab]
-  )
+export function meetingTime(week: Week, tab: MeetingKey, zeiten: MeetingTimes): string {
+  return abweichung(week, tab)?.time ?? zeiten[tab].time
 }
 
 /**
- * Kalendertag einer Zusammenkunft. Drei Quellen, in dieser Reihenfolge:
- *  1. ein eigener Termin im `date`-Feld der Woche (Gedächtnismahl, Kongress),
- *  2. das ISO-Startdatum der Woche (jw.org-Import) plus Wochentag-Versatz,
- *  3. der Montag der Woche 0 (`base`) plus `wi` Wochen plus Wochentag-Versatz —
+ * Kalendertag einer Zusammenkunft. Zwei Quellen, in dieser Reihenfolge:
+ *  1. das ISO-Startdatum der Woche (jw.org-Import) plus Wochentag-Versatz,
+ *  2. der Montag der Woche 0 (`base`) plus `wi` Wochen plus Wochentag-Versatz —
  *     für Demo- und Vorlagenwochen, die kein Startdatum tragen.
  *
  * Einzige Stelle, an der aus „Woche + Zusammenkunft" ein Datum wird —
@@ -132,11 +94,11 @@ export function meetingDate(
   wi: number,
   tab: MeetingKey,
   base: Date,
-  meetings: string,
+  zeiten: MeetingTimes,
 ): Date {
   const montag = week.start ? fromIso(week.start) : new Date(base)
   const tag = new Date(montag)
-  tag.setDate(tag.getDate() + (week.start ? 0 : wi * 7) + meetingOffset(week, tab, meetings))
+  tag.setDate(tag.getDate() + (week.start ? 0 : wi * 7) + meetingOffset(week, tab, zeiten))
   return tag
 }
 
@@ -148,11 +110,11 @@ export function meetingDate(
  * Ohne Startdatum bewusst null statt einer Schätzung aus `base`: Demo- und
  * Vorlagenwochen liegen nirgends im Kalender, ein Countdown darauf wäre erfunden.
  */
-export function meetingDateMs(week: Week, tab: MeetingKey, meetings: string): number | null {
+export function meetingDateMs(week: Week, tab: MeetingKey, zeiten: MeetingTimes): number | null {
   if (!week.start) return null
   const start = Date.parse(week.start)
   if (Number.isNaN(start)) return null
-  return start + meetingOffset(week, tab, meetings) * 864e5
+  return start + meetingOffset(week, tab, zeiten) * 864e5
 }
 
 /**
@@ -180,33 +142,26 @@ export function deutschesDatum(d: Date): string {
  * Aufgaben", im S-89-Formular und im Erinnerungstext: eine Woche statt eines
  * Termins.
  *
- * Rangfolge wie überall: ein eigener Termin im `date`-Feld gilt unverändert
- * (Gedächtnismahl); sonst wird aus Startdatum, Wochentag und Uhrzeit gerechnet.
- * Ohne Startdatum (Demo, Vorlagen) bleibt stehen, was dasteht.
+ * Gerechnet wird aus Startdatum, Wochentag und Uhrzeit. Ohne Startdatum (Demo,
+ * Vorlagen) bleibt stehen, was dasteht — dort gibt es keinen Kalendertag.
  */
 export function meetingDateText(
   week: Week,
   wi: number,
   tab: MeetingKey,
-  meetings: string,
+  zeiten: MeetingTimes,
 ): string {
   const roh = week[tab].date
   const kurz = roh.split(' · ').slice(0, 2).join(' · ')
-  // Eine Abweichung (T30) schlägt auch den eigenen Termin im `date`-Feld: der
-  // Planer hat den Tag ausdrücklich verlegt, das `date`-Feld nennt noch den
-  // alten. Ohne diese Zeile stünde in „Meine Aufgaben", im S-89-Formular und im
-  // Erinnerungstext weiter der Termin, an dem niemand kommt.
   const abw = abweichung(week, tab)
-  const verlegt = Boolean(abw?.day || abw?.time)
-  if (!verlegt && meetingDateParts(roh).offset !== undefined) return kurz
   if (!week.start) {
     // Ohne Startdatum (Demo, Vorlagen) lässt sich kein Kalendertag rechnen. Eine
     // verlegte Uhrzeit steht trotzdem fest und gehört dazu.
     if (abw?.time) return `${kurz.split(' · ')[0]} · ${abw.time}`
     return kurz
   }
-  const zeit = meetingTime(week, tab, meetings)
-  const tagText = deutschesDatum(meetingDate(week, wi, tab, new Date(), meetings))
+  const zeit = meetingTime(week, tab, zeiten)
+  const tagText = deutschesDatum(meetingDate(week, wi, tab, new Date(), zeiten))
   return zeit ? `${tagText} · ${zeit}` : tagText
 }
 
@@ -306,7 +261,7 @@ export function istVorbei(at: number | null | undefined, heute = new Date()): bo
  */
 export function naechsteZusammenkunft(
   weeks: readonly Week[],
-  meetings: string,
+  zeiten: MeetingTimes,
   heute = new Date(),
 ): { wi: number; tab: MeetingKey } | null {
   const heuteMs = kalendertagMs(heute)
@@ -316,7 +271,7 @@ export function naechsteZusammenkunft(
     if (!week) continue
     for (const tab of MEETING_TABS) {
       if (istAusgefallen(week, tab)) continue
-      const ms = meetingDateMs(week, tab, meetings)
+      const ms = meetingDateMs(week, tab, zeiten)
       if (ms === null || ms < heuteMs) continue
       if (!beste || ms < beste.ms) beste = { wi, tab, ms }
     }

@@ -102,7 +102,7 @@ export function DashboardScreen() {
    * Gedächtnismahl) sind unberührt — der gilt dort weiterhin.
    */
   const meetingDate = (tab: MeetingKey): string =>
-    week ? shortDate(meetingDateText(week, weekIdx, tab, state.congregation.meetings)) : ''
+    week ? shortDate(meetingDateText(week, weekIdx, tab, state.congregation.times)) : ''
 
   /*
    * **Die eigenen Treffpunkte dieser Woche** (T95).
@@ -139,8 +139,8 @@ export function DashboardScreen() {
           name: tab === 'mid' ? t.tabMid : t.tabWe,
           datum: meetingDate(tab),
           meins: me ? assignmentsInMeeting(week[tab], me, state.services).length > 0 : false,
-          tag: meetingOffset(week, tab, state.congregation.meetings),
-          minute: minuteDesTages(meetingTime(week, tab, state.congregation.meetings)),
+          tag: meetingOffset(week, tab, state.congregation.times),
+          minute: minuteDesTages(meetingTime(week, tab, state.congregation.times)),
         })),
         ...meineTreffpunkte.map((inst) => ({
           key: `fs|${inst.id}`,

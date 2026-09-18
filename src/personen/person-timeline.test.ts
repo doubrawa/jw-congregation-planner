@@ -48,10 +48,14 @@ describe('Zeitleiste einer Person', () => {
     expect(meeting.zeit).toBe('19:00')
   })
 
-  /** Wochen wie nach dem jw.org-Import: im Datumsfeld steht nur die Spanne. */
+  /**
+   * Wochen wie nach dem jw.org-Import: im Datumsfeld steht nur die Spanne, und
+   * keine weicht vom Rhythmus ab — der Import bringt keine Abweichung mit.
+   */
   const importierteWochen = () =>
     buildDemoWeeks().map((w) => ({
       ...w,
+      dev: undefined,
       mid: { ...w.mid, date: w.range },
       we: { ...w.we, date: w.range },
     }))
@@ -68,22 +72,22 @@ describe('Zeitleiste einer Person', () => {
     }
   })
 
-  it('ein eigener Termin der Woche hat Vorrang (Gedächtnismahl)', () => {
+  it('eine Abweichung der Woche hat Vorrang (Gedächtnismahl)', () => {
     // Demo-Woche 3: Gedächtnismahl am Samstag 19:30 statt Sonntag 10:00.
     const sonder = personTimeline(person, daten()).find((e) => e.zeit === '19:30')
     expect(sonder).toBeDefined()
     expect(sonder?.datum.getDay()).toBe(6) // Samstag
-    // Ohne eigenen Termin fiele derselbe Punkt auf den Sonntag zurück.
+    // Ohne Abweichung fiele derselbe Punkt auf den Sonntag zurück.
     const ohne = personTimeline(person, daten({ weeks: importierteWochen() }))
     expect(ohne.some((e) => e.zeit === '19:30')).toBe(false)
   })
 
-  it('ohne hinterlegte Uhrzeit bleibt das Feld leer, statt etwas zu erfinden', () => {
-    const congregation = { ...CONGREGATION, meetings: 'Di · So' }
-    const eintraege = personTimeline(person, daten({ weeks: importierteWochen(), congregation }))
-    const meeting = eintraege.find((e) => e.kind === 'meeting')
-    expect(meeting?.zeit).toBe('')
-  })
+  /*
+   * Hier stand: „ohne hinterlegte Uhrzeit bleibt das Feld leer, statt etwas zu
+   * erfinden" — mit der Versammlungszeit `'Di · So'`, also einem Anzeigetext
+   * ohne Uhrzeit. Seit die Versammlung ihre Termine als Werte führt, gibt es
+   * keine Zusammenkunft ohne Uhrzeit mehr; nichts zu erfinden, nichts zu prüfen.
+   */
 
   it('nimmt geleitete Treffpunkte mit auf', () => {
     const ohne = buildDemoFsWeeks().map((week) => week.map((inst) => ({ ...inst, leader: '' })))

@@ -14,7 +14,7 @@ export function useAbwesend(): AbsenceSet {
   const { state } = useApp()
   const { absences, weeks, fsBase, congregation } = state
   return useMemo(
-    () => buildAbsences(absences, weeks, fsBase, congregation.meetings),
-    [absences, weeks, fsBase, congregation.meetings],
+    () => buildAbsences(absences, weeks, fsBase, congregation.times),
+    [absences, weeks, fsBase, congregation.times],
   )
 }

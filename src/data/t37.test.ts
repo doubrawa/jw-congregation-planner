@@ -26,7 +26,7 @@ import type { ConfirmationMap, Meeting, PartItem, Person, Week } from './types'
  * fehlt.
  */
 
-const ZEITEN = 'Di 19:00 · So 10:00'
+const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 const person: Person = {
   id: 'p1', fn: 'Anna', ln: 'Beispiel', dn: 'A. Beispiel',

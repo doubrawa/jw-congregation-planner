@@ -12,6 +12,7 @@ import { initialState } from '../app/init'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Group, Invite, Member, Person, Qualifications, Service } from '../data/types'
+import { privSetzen } from '../data/helpers'
 
 /**
  * **Die Personenliste — der Arbeitsplatz des Koordinators.**
@@ -48,7 +49,7 @@ const t = dict('de')
 
 const priv = (...keys: string[]): Qualifications => {
   const q = emptyQualifications()
-  for (const k of keys) q[k] = true
+  for (const k of keys) privSetzen(q, k, true)
   return q
 }
 
@@ -62,7 +63,7 @@ const BRAND = person('p-b', 'Bernd', 'Brand', { role: 'aeltester', grp: 'g1' })
 const COHN = person('p-c', 'Clara', 'Cohn', { female: true, priv: priv('schulung') })
 const PERSONEN = [BRAND, COHN, ALT] // absichtlich unsortiert
 
-const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: null, as: null }]
+const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
 const DIENSTE: Service[] = [
   { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },

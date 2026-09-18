@@ -63,6 +63,7 @@ export const RLS_TABELLEN = [
   { name: 'congregations', spalte: 'id' },
   { name: 'members', spalte: 'congregation_id' },
   { name: 'persons', spalte: 'congregation_id' },
+  { name: 'households', spalte: 'congregation_id' },
   { name: 'groups', spalte: 'congregation_id' },
   { name: 'services', spalte: 'congregation_id' },
   { name: 'weeks', spalte: 'congregation_id' },

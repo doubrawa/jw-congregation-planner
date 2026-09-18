@@ -4,44 +4,23 @@ import {
   deutschesDatum,
   meetingDateMs,
   meetingDateText,
-  meetingDayOffsets,
   meetingOffset,
   meetingTime,
-  meetingTimesOf,
   tageZwischen,
   weekEndMs,
 } from './meeting-dates'
 import type { Week } from './types'
 
-describe('meetingDayOffsets', () => {
-  it('liest beide Wochentage aus "Di 19:00 · So 10:00"', () => {
-    expect(meetingDayOffsets('Di 19:00 · So 10:00')).toEqual({ mid: 1, we: 6 })
-  })
-
-  it('nimmt andere Wochentage', () => {
-    expect(meetingDayOffsets('Mi 19:30 · Sa 17:00')).toEqual({ mid: 2, we: 5 })
-  })
-
-  it('fällt ohne erkennbare Tage auf Di/So zurück', () => {
-    expect(meetingDayOffsets('')).toEqual({ mid: 1, we: 6 })
-    expect(meetingDayOffsets('19:00 · 10:00')).toEqual({ mid: 1, we: 6 })
-  })
-})
-
-describe('meetingTimesOf', () => {
-  it('liest beide Uhrzeiten aus "Di 19:00 · So 10:00"', () => {
-    expect(meetingTimesOf('Di 19:00 · So 10:00')).toEqual({ mid: '19:00', we: '10:00' })
-  })
-
-  it('füllt einstellige Stunden auf und nimmt auch den Punkt als Trenner', () => {
-    expect(meetingTimesOf('Mi 9.30 · Sa 17.00')).toEqual({ mid: '09:30', we: '17:00' })
-  })
-
-  it('lässt fehlende Zeiten leer, statt etwas zu erfinden', () => {
-    expect(meetingTimesOf('Di · So')).toEqual({ mid: '', we: '' })
-    expect(meetingTimesOf('Di 19:00')).toEqual({ mid: '19:00', we: '' })
-  })
-})
+/*
+ * Hier standen `meetingDayOffsets` und `meetingTimesOf`: zwei Leser für **einen
+ * Anzeigetext** („Di 19:00 · So 10:00"), aus dem Tag und Uhrzeit der Stellung
+ * nach zurückgelesen wurden — der erste Treffer war die Wochenmitte, der zweite
+ * das Wochenende, und was nicht passte, fiel stumm auf Dienstag/Sonntag zurück.
+ *
+ * Die Versammlung führt beides seit dem 18. September 2026 als Werte
+ * (`Congregation.times`, vier Spalten). Zu prüfen bleibt die Umrechnung in Tage
+ * ab Montag, und die steht in `planen/wochentage.test.ts`.
+ */
 
 /** Minimale Woche: nur, was die Datumsrechnung liest. */
 function woche(start = '', midDate = '', weDate = ''): Week {
@@ -56,7 +35,7 @@ function woche(start = '', midDate = '', weDate = ''): Week {
   }
 }
 
-const MEETINGS = 'Di 19:00 · So 10:00'
+const MEETINGS = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 const MONTAG = '2026-09-07' // ISO-Montag
 
 describe('meetingDateMs', () => {
@@ -72,30 +51,41 @@ describe('meetingDateMs', () => {
     expect(meetingDateMs(woche('kein-datum'), 'mid', MEETINGS)).toBeNull()
   })
 
-  it('folgt dem eigenen Termin der Woche statt dem Rhythmus', () => {
+  it('folgt der Abweichung der Woche statt dem Rhythmus', () => {
     // Der Countdown rechnete den Sondertermin früher NICHT mit: Zeitleiste und
     // Abwesenheitsprüfung nannten den Samstag, die Erinnerung den Dienstag.
-    const gedaechtnismahl = woche(MONTAG, 'Samstag, 12. September · 19:30')
+    const gedaechtnismahl = woche(MONTAG)
+    gedaechtnismahl.dev = { mid: { wd: 6, time: '19:30' } } // Samstag
     expect(meetingDateMs(gedaechtnismahl, 'mid', MEETINGS)).toBe(Date.parse('2026-09-12'))
   })
 })
 
 describe('meetingOffset / meetingTime — eine Rangfolge für Tag und Zeit', () => {
-  it('ohne eigenen Termin gelten die Einstellungen', () => {
+  it('ohne Abweichung gilt der Rhythmus der Versammlung', () => {
     expect(meetingOffset(woche(MONTAG), 'mid', MEETINGS)).toBe(1)
     expect(meetingTime(woche(MONTAG), 'we', MEETINGS)).toBe('10:00')
   })
 
-  it('mit eigenem Termin gilt dieser — für Tag UND Zeit', () => {
-    const w = woche(MONTAG, 'Samstag, 12. September · 19:30')
+  it('mit Abweichung gilt diese — für Tag UND Zeit', () => {
+    const w = woche(MONTAG)
+    w.dev = { mid: { wd: 6, time: '19:30' } }
     expect(meetingOffset(w, 'mid', MEETINGS)).toBe(5)
     expect(meetingTime(w, 'mid', MEETINGS)).toBe('19:30')
   })
 
-  it('die Wochenspanne im date-Feld ist kein eigener Termin', () => {
-    // Importierte Wochen tragen dort „7.–13. September" — kein Wochentag,
-    // keine Uhrzeit. Daraus darf nichts abgeleitet werden.
-    const w = woche(MONTAG, '7.–13. September')
+  it('der Sonntag ist die 0 und darf nicht als „kein Tag" gelten', () => {
+    // `?? ` statt `||`: Eine auf Sonntag verlegte Zusammenkunft unter der Woche
+    // fiele mit `||` auf den Rhythmus zurück — und niemand käme.
+    const w = woche(MONTAG)
+    w.dev = { mid: { wd: 0 } }
+    expect(meetingOffset(w, 'mid', MEETINGS)).toBe(6)
+  })
+
+  it('das date-Feld ist kein Termin mehr, sondern Anzeigetext', () => {
+    // Importierte Wochen tragen dort „7.–13. September". Aus dem Feld wurde bis
+    // T105 ein Wochentag zurückgelesen — jetzt sagt allein die Abweichung, ob
+    // eine Woche vom Rhythmus abweicht.
+    const w = woche(MONTAG, 'Samstag, 12. September · 19:30')
     expect(meetingOffset(w, 'mid', MEETINGS)).toBe(1)
     expect(meetingTime(w, 'mid', MEETINGS)).toBe('19:00')
   })
@@ -136,19 +126,15 @@ describe('meetingDateText — Termin statt Wochenspanne', () => {
     expect(meetingDateText(w, 0, 'we', MEETINGS)).toBe('Sonntag, 13. September · 10:00')
   })
 
-  it('lässt einen eigenen Termin stehen und kürzt nur den Ort weg', () => {
-    const w = woche(MONTAG, 'Samstag, 12. September · 19:30 · Königreichssaal')
+  it('eine verlegte Zusammenkunft nennt den verlegten Tag', () => {
+    const w = woche(MONTAG, '7.–13. September')
+    w.dev = { mid: { wd: 6, time: '19:30' } } // Samstag
     expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Samstag, 12. September · 19:30')
   })
 
   it('ohne Startdatum bleibt stehen, was dasteht (Demo, Vorlagen)', () => {
     const w = woche(undefined, '7.–13. September')
     expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('7.–13. September')
-  })
-
-  it('ohne hinterlegte Uhrzeit nur der Tag', () => {
-    const w = woche(MONTAG, '7.–13. September')
-    expect(meetingDateText(w, 0, 'mid', 'Di · So')).toBe('Dienstag, 8. September')
   })
 
   it('das Ergebnis ist kanonisch deutsch und damit übersetzbar', () => {
@@ -221,14 +207,15 @@ describe('meetingDateText bei fremdsprachiger Versammlung', () => {
     // T30: Der Planer verlegt die Zusammenkunft. Der fremdsprachige Kopf nennt
     // ohnehin keinen Tag — aber die Rangfolge muss dieselbe bleiben.
     const w = woche(MONTAG, '7-13 de septiembre')
-    w.dev = { mid: { day: 'Donnerstag', time: '18:30' } }
+    w.dev = { mid: { wd: 4, time: '18:30' } }
     expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Donnerstag, 10. September · 18:30')
   })
 
-  it('ein eigener Termin bleibt kanonisch deutsch, auch in einer spanischen Woche', () => {
-    // Den schreibt die App selbst (Gedächtnismahl, verlegte Woche) — deshalb
-    // deutsch, und deshalb greift der Ausdruck hier sehr wohl.
-    const w = woche(MONTAG, 'Samstag, 12. September · 19:30 · Königreichssaal')
+  it('ein verlegter Termin bleibt kanonisch deutsch, auch in einer spanischen Woche', () => {
+    // Den rechnet die App selbst aus Kennung, Wochentag und Uhrzeit — deshalb
+    // deutsch, ganz gleich, in welcher Sprache die Woche importiert wurde.
+    const w = woche(MONTAG, '7.–13. September')
+    w.dev = { mid: { wd: 6, time: '19:30' } }
     w.lang = 'es'
     expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Samstag, 12. September · 19:30')
   })

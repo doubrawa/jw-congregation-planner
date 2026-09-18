@@ -43,7 +43,7 @@ const person = (id: string, fn: string, ln: string): Person => ({
 
 const PLANER = person('p-planer', 'Paula', 'Planer')
 const AUFSEHER = person('p-ov', 'Olaf', 'Overseer')
-const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', ov: 'p-ov', as: null }]
+const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: null }]
 const DIENSTE: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
 
 function abschnitte(): Section[] {
@@ -75,7 +75,7 @@ function zeige(over: Partial<AppState> = {}) {
     persons: [PLANER, AUFSEHER], groups: GRUPPEN, services: DIENSTE, absences: [],
     weeks: [woche()], fsWeeks: [[]], fsRules: [], week: 0,
     fsBase: new Date(2026, 8, 7, 12, 0),
-    congregation: { name: 'Nordheim', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -143,7 +143,7 @@ describe('Die Reiter', () => {
   })
 
   it('eine verlegte Zusammenkunft trägt ihren echten Tag im Reiter (T30)', () => {
-    const { container } = zeige({ weeks: [woche({ dev: { mid: { day: 'Donnerstag' } } })] })
+    const { container } = zeige({ weeks: [woche({ dev: { mid: { wd: 4 } } })] })
     expect(reiter(container)[0]).toBe('Donnerstag')
   })
 })

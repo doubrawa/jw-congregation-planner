@@ -42,7 +42,7 @@ function person(patch: Partial<Person> = {}): Person {
 }
 
 function inst(patch: Partial<FsInstance> = {}): FsInstance {
-  return { id: 'i1', ruleId: null, grp: '', wd: 1, time: '09:30', place: 'KH', leader: '', ...patch }
+  return { id: 'i1', ruleId: null, grp: null, wd: 1, time: '09:30', place: 'KH', leader: '', ...patch }
 }
 
 /** Montag der Woche 0 = 7. September 2026 (wie in fs.test.ts). */
@@ -93,7 +93,7 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
      * Schutz im Backfill darunter kam also nie zum Zug: Nach jedem Laden war
      * der Kreisaufseher wieder ein Name ohne Kennzeichen und wurde zum Bruder.
      */
-    const regel = [{ id: 'r1', grp: '', wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
+    const regel = [{ id: 'r1', grp: null, wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
     const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
     const ausgerichtet = regenFsWeeks(KENN.slice(0, 1), gespeichert, regel, true)
     const geladen = fsLeiterBinden(ausgerichtet, [person()])
@@ -105,7 +105,7 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
   it('… und jede Änderung am Grundplan', () => {
     // Derselbe Weg ohne `preserveEdits`: Der Ort der Regel wird geändert, die
     // Woche neu erzeugt — der Freitext-Leiter bleibt Freitext.
-    const regel = [{ id: 'r1', grp: '', wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
+    const regel = [{ id: 'r1', grp: null, wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
     const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
     const [woche] = regenFsWeeks(KENN.slice(0, 1), gespeichert, [{ ...regel[0]!, place: 'Markt' }])
     expect(woche?.[0]).toMatchObject({ leader: KS, lext: true, place: 'Markt' })

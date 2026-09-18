@@ -155,7 +155,7 @@ function ProgramMeeting({
               rawWeek,
               state.week,
               mtab(tab),
-              state.congregation.meetings,
+              state.congregation.times,
             ),
           )}
         </p>

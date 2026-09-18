@@ -25,6 +25,8 @@ import type {
   Week,
 } from '../data/types'
 import { DashboardScreen } from './DashboardScreen'
+import { privSetzen } from '../data/helpers'
+import { deutschesDatum } from '../data/meeting-dates'
 
 /**
  * **Der Start-Bildschirm — die Landeseite nach dem Anmelden.**
@@ -84,11 +86,9 @@ function laufendeWoche(over: Partial<Week> = {}): Week {
   return {
     range: 'diese Woche', book: '', start: iso, current: false,
     mid: {
-      // Ausgeschriebener Wochentag — die Form, in der Wochen mit eigenem Termin
-      // ihn tragen (Demo-Bestand, Gedächtnismahl). Die Kurzform „Di," kommt in
-      // keiner Datenquelle vor und wird von `meetingDateParts` bewusst nicht
-      // erkannt; sie stand hier und ließ den Test etwas anderes prüfen als das,
-      // was der Bildschirm sieht.
+      // Anzeigetext, wie ihn der Demo-Bestand trägt. Gerechnet wird der Termin
+      // seit T105 aus Kennung, Wochentag und Uhrzeit — aus diesem Feld liest
+      // ihn niemand mehr zurück.
       date: 'Dienstag, 8. September · 19:00', end: '20:45',
       sections: [{
         label: 'X', farbe: 'petrol',
@@ -128,7 +128,7 @@ function zeige(over: Partial<AppState> = {}) {
     persons: [ICH], services: DIENSTE, groups: [], absences: [],
     weeks: [laufendeWoche()], fsWeeks: [[]], fsRules: [],
     myTasks: [], notifs: [], substituteReqs: [],
-    congregation: { name: 'Nordheim', hall: 'Saal', meetings: 'Di 19:00 · So 10:00' },
+    congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -255,18 +255,29 @@ describe('Die eigene nächste Aufgabe', () => {
 })
 
 describe('„Diese Woche"', () => {
+  /** Der Dienstag dieser Woche, so geschrieben wie die Wochendaten. */
+  const dienstagText = (): string => {
+    const heute = new Date()
+    const dienstag = new Date(heute)
+    dienstag.setDate(heute.getDate() - ((heute.getDay() + 6) % 7) + 1)
+    return `${deutschesDatum(dienstag)} · 19:00`
+  }
+
   it('nennt beide Zusammenkünfte mit Tag und Uhrzeit', () => {
     const { container } = zeige()
     const zeilen = [...container.querySelectorAll('.dash-week-row')]
     expect(zeilen.map((z) => z.querySelector('.dash-week-name')?.textContent)).toEqual([
       t.tabMid, t.tabWe,
     ])
-    expect(zeilen[0]!.querySelector('.dash-week-date')?.textContent).toBe('Dienstag, 8. September · 19:00')
+    // Gerechnet aus Kennung, Wochentag und Uhrzeit — nicht aus dem `date`-Feld.
+    expect(zeilen[0]!.querySelector('.dash-week-date')?.textContent).toBe(dienstagText())
   })
 
   it('ein angehängter Ort fällt weg — auf dem Start zählt der Termin, nicht der Saal', () => {
-    const w = laufendeWoche()
-    w.mid.date = 'Dienstag, 8. September · 19:00 · Königreichssaal Nord'
+    // Ohne Kennung (Demo, Vorlagen) bleibt stehen, was im Feld steht — dann
+    // aber ohne den angehängten Saal.
+    const w = { ...laufendeWoche(), start: '' }
+    w.mid = { ...w.mid, date: 'Dienstag, 8. September · 19:00 · Königreichssaal Nord' }
     const { container } = zeige({ weeks: [w] })
     expect(container.querySelector('.dash-week-date')?.textContent).toBe('Dienstag, 8. September · 19:00')
   })
@@ -296,7 +307,7 @@ describe('„Diese Woche"', () => {
     // Eine Abweichung (T30) schlägt den Rhythmus — sonst stünde auf dem
     // Start-Bildschirm ein Abend, an dem niemand kommt.
     const w = importierteWoche()
-    w.dev = { mid: { day: 'Donnerstag', time: '18:30' } }
+    w.dev = { mid: { wd: 4, time: '18:30' } }
     const { container } = zeige({ weeks: [w] })
     expect(container.querySelector('.dash-week-date')?.textContent).toMatch(
       /^Donnerstag, \d+\. \S+ · 18:30$/,
@@ -364,7 +375,7 @@ const [W1, W2] = WOCHEN
 /** Wer die Plätze der Testwochen übernehmen kann — genug, dass nichts „nicht besetzbar" ist. */
 const qualifiziert = (id: string, fn: string, ...bereiche: string[]): Person => {
   const priv = emptyQualifications()
-  for (const b of bereiche) priv[b] = true
+  for (const b of bereiche) privSetzen(priv, b, true)
   return { id, fn, ln: 'Test', role: 'verkuendiger', female: false, tel: '', mail: '', priv }
 }
 const LEUTE: Person[] = [
@@ -466,7 +477,7 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm zuerst (T9
     const { container } = zeige({
       planner: false,
       weeks: [importiert(W1)],
-      groups: [{ id: 'g1', name: 'Gruppe 1', ov: 'p-a', as: null }],
+      groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-a', assistantId: null }],
     })
     expect(container.querySelector('.dash-planung')).toBeNull()
   })
@@ -626,7 +637,7 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
 
 describe('„Aktuelle Woche" kennt die eigenen Treffpunkte', () => {
   const treffpunkt = (over: Partial<FsInstance> = {}): FsInstance => ({
-    id: 'r1', ruleId: 'r1', grp: '', wd: 3, time: '09:30', place: 'Bahnhof',
+    id: 'r1', ruleId: 'r1', grp: null, wd: 3, time: '09:30', place: 'Bahnhof',
     leader: 'Anton Alt', lpid: 'p-a', ...over,
   })
 
@@ -769,7 +780,7 @@ describe('Die Karte gibt Treffpunkte, Abwesenheiten und Tagebuch weiter', () => 
 
   it('ein Treffpunkt ohne Leiter macht die Woche zu einer mit offener Zuteilung', () => {
     const weeks = fertig()
-    const offen: FsInstance = { id: 'mi', ruleId: 'mi', grp: '', wd: 3, time: '09:30', place: 'Saal', leader: '' }
+    const offen: FsInstance = { id: 'mi', ruleId: 'mi', grp: null, wd: 3, time: '09:30', place: 'Saal', leader: '' }
     const { container, dispatch } = planer({
       weeks,
       confirmations: allesBestaetigt(weeks),
@@ -784,7 +795,7 @@ describe('Die Karte gibt Treffpunkte, Abwesenheiten und Tagebuch weiter', () => 
   it('ein abwesender Treffpunkt-Leiter ist ein Konflikt', () => {
     const weeks = fertig()
     const leitung: FsInstance = {
-      id: 'mi', ruleId: 'mi', grp: '', wd: 3, time: '09:30', place: 'Saal', leader: 'Anton Alt', lpid: 'p-a',
+      id: 'mi', ruleId: 'mi', grp: null, wd: 3, time: '09:30', place: 'Saal', leader: 'Anton Alt', lpid: 'p-a',
     }
     const confirmations: ConfirmationMap = { ...allesBestaetigt(weeks), [`fs|${W1}|mi`]: 'bestätigt' }
     const absences: Absence[] = [

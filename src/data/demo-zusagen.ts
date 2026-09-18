@@ -15,6 +15,7 @@
  */
 import { fsKennung, fsLeiterZuteilung, fsTaskKey } from './fs'
 import { eachAssignedSlot, helperTaskKey } from './planning'
+import { STANDARD_ZEITEN } from './vorgaben'
 import type { ConfirmationMap, FsInstance, Service, Week } from './types'
 
 export function buildDemoConfirmations(
@@ -30,7 +31,7 @@ export function buildDemoConfirmations(
   // unter der Woche. So ist sie in jeder Woche zu finden, die man aufschlägt.
   const absagen = new Set(weeks.map((w) => helperTaskKey(w.start, 'mid', 'mik', 1)))
   const out: ConfirmationMap = {}
-  eachAssignedSlot(weeks, services, '', (name, key) => {
+  eachAssignedSlot(weeks, services, STANDARD_ZEITEN, (name, key) => {
     if (absagen.has(key)) out[key] = 'verhindert'
     else if (!offen.has(name)) out[key] = 'bestätigt'
   })

@@ -279,7 +279,7 @@ describe('Die drei Konflikt-Sätze', () => {
     const { container } = zeigeKonflikt({
       weeks: [woche(0, zusammenkunft([{ name: 'Kai', pid: 'p-k' }]))],
       absences: [{ id: 'a1', personId: 'p-k', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
-      congregation: { name: '', hall: '', meetings: 'Di 19:00 · So 10:00' },
+      congregation: { name: '', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     })
     expect(zeilen(container)).toEqual(['Kai ist abwesend, aber eingeteilt · Zusammenkunft unter der Woche'])
     expect(arten(container)).toEqual(['absent'])
@@ -330,7 +330,7 @@ describe('Die drei Konflikt-Sätze', () => {
         ton: [{ name: 'Mia', pid: 'p-m' }],
       }))],
       absences: [{ id: 'a1', personId: 'p-k', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
-      congregation: { name: '', hall: '', meetings: 'Di 19:00 · So 10:00' },
+      congregation: { name: '', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     })
     expect(arten(container)).toEqual(['absent', 'double', 'helperTask'])
     expect(container.querySelector('.plan-banner-count')?.textContent).toBe('3')

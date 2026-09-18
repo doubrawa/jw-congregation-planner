@@ -75,7 +75,7 @@ const PERSONS = [
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone' }]
 
-const CONGREGATIONS = [{ meeting_times: 'Di 19:00 · So 10:00' }]
+const CONGREGATIONS = [{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }]
 
 /**
  * Abwesenheit als Zeitraum (nicht mehr als Wochenindex): die Zusammenkunft der
@@ -528,8 +528,8 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
   })
 
   it('rechnet mit dem verlegten Tag, nicht mit dem regulären', async () => {
-    const w = week as { dev?: Record<string, { day: string }> }
-    w.dev = { mid: { day: 'Freitag' } } // 11.9. — nach Annas Abwesenheit
+    const w = week as { dev?: Record<string, { wd: number }> }
+    w.dev = { mid: { wd: 5 } } // Freitag, 11.9. — nach Annas Abwesenheit
     const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
     expect(res.status).toBe(200)
     const rows = writesTo('notifications')[0]?.body as { user_id: string }[]

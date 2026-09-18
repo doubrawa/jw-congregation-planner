@@ -38,12 +38,12 @@ describe('T63 · Termine anlegen, ändern, entfernen', () => {
 
   it('Ändern trifft nur den gemeinten Termin', () => {
     let weeks = terminAdd(terminAdd([woche()], 0, 't1'), 0, 't2')
-    weeks = terminUpdate(weeks, 0, 't2', { title: 'Ältestenbesprechung', day: 'Donnerstag' })
+    weeks = terminUpdate(weeks, 0, 't2', { title: 'Ältestenbesprechung', wd: 4 })
     expect(weeks[0]?.termine?.[0]).toEqual({ id: 't1', title: '' })
     expect(weeks[0]?.termine?.[1]).toEqual({
       id: 't2',
       title: 'Ältestenbesprechung',
-      day: 'Donnerstag',
+      wd: 4,
     })
   })
 
@@ -74,9 +74,9 @@ describe('T63 · Reihenfolge entsteht beim Lesen', () => {
   it('nach Wochentag, dann Uhrzeit', () => {
     const w = woche({
       termine: [
-        { id: 'c', title: 'Sonntag früh', day: 'Sonntag', time: '08:00' },
-        { id: 'b', title: 'Dienstag spät', day: 'Dienstag', time: '19:30' },
-        { id: 'a', title: 'Dienstag früh', day: 'Dienstag', time: '09:00' },
+        { id: 'c', title: 'Sonntag früh', wd: 0, time: '08:00' },
+        { id: 'b', title: 'Dienstag spät', wd: 2, time: '19:30' },
+        { id: 'a', title: 'Dienstag früh', wd: 2, time: '09:00' },
       ],
     })
     expect(termineVon(w).map((t) => t.id)).toEqual(['a', 'b', 'c'])
@@ -86,7 +86,7 @@ describe('T63 · Reihenfolge entsteht beim Lesen', () => {
     const w = woche({
       termine: [
         { id: 'ohne', title: 'noch offen' },
-        { id: 'mit', title: 'Pionierbesprechung', day: 'Freitag' },
+        { id: 'mit', title: 'Pionierbesprechung', wd: 5 },
       ],
     })
     expect(termineVon(w).map((t) => t.id)).toEqual(['mit', 'ohne'])
@@ -94,8 +94,8 @@ describe('T63 · Reihenfolge entsteht beim Lesen', () => {
 
   it('sortiert wird eine Kopie — die gespeicherte Reihenfolge bleibt, damit beim Tippen nichts springt', () => {
     const liste = [
-      { id: 'b', title: 'zweiter', day: 'Sonntag' },
-      { id: 'a', title: 'erster', day: 'Montag' },
+      { id: 'b', title: 'zweiter', wd: 0 },
+      { id: 'a', title: 'erster', wd: 1 },
     ]
     const w = woche({ termine: liste })
     termineVon(w)
@@ -110,8 +110,8 @@ describe('T63 · Reihenfolge entsteht beim Lesen', () => {
   it('„Sonnabend" gilt wie „Samstag" — die Tabelle ist die der Wochendaten', () => {
     const w = woche({
       termine: [
-        { id: 'so', title: 'Sonntag', day: 'Sonntag' },
-        { id: 'sa', title: 'Sonnabend', day: 'Sonnabend' },
+        { id: 'so', title: 'Sonntag', wd: 0 },
+        { id: 'sa', title: 'Sonnabend', wd: 6 },
       ],
     })
     expect(termineVon(w).map((t) => t.id)).toEqual(['sa', 'so'])

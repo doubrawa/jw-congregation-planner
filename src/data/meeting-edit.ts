@@ -22,8 +22,8 @@ import {
   TITEL_DIENSTVORTRAG,
   TITEL_SCHLUSSVORTRAG,
 } from './helpers'
-import { meetingDateParts, meetingTimesOf } from './meeting-dates'
-import type { Abweichung, Dienstwoche, Meeting, MeetingKey, PartItem, Week } from './types'
+import { abweichung } from './helpers'
+import type { Abweichung, Dienstwoche, Meeting, MeetingKey, MeetingTimes, PartItem, Week } from './types'
 import { ersteZahlErsetzen, zahlErsetzen } from './ziffern'
 
 /**
@@ -91,27 +91,23 @@ function minuten(zeit: string): number | null {
  * um geänderte Programmminuten versetzt (`shiftEnd`), und diese Anpassung des
  * Planers darf eine Zeitumstellung nicht verwerfen.
  *
- * Übersprungen werden Wochen, die im `date`-Feld eine eigene Uhrzeit tragen —
+ * Übersprungen werden Zusammenkünfte mit eigener Uhrzeit (`Abweichung.time`) —
  * und zwar nach derselben Regel, nach der `meetingTime()` die **Start**zeit
- * bestimmt: steht dort eine, gilt sie und die Einstellungen bleiben außen vor.
- * Deren Anfang bewegt sich also nicht, folglich auch ihr Ende nicht. Das
- * betrifft Sondertermine (Gedächtnismahl) ebenso wie Demo- und Altwochen, die
- * ihren Termin ausgeschrieben mitbringen. Übrig bleiben die importierten
- * Wochen: die tragen die Überschrift der jw.org-Seite („7.–13. September"),
- * ihre Startzeit kommt aus den Einstellungen — und genau dort klaffte es.
+ * bestimmt: steht dort eine, gilt sie und der Rhythmus bleibt außen vor. Deren
+ * Anfang bewegt sich also nicht, folglich auch ihr Ende nicht. Übrig bleiben
+ * die Wochen, die dem Rhythmus folgen — und genau dort klaffte es.
  */
-export function endenNachziehen(weeks: Week[], alt: string, neu: string): Week[] {
-  const alteZeit = meetingTimesOf(alt)
-  const neueZeit = meetingTimesOf(neu)
-  // `meetingTimesOf` liest die Uhrzeiten der Stellung nach: die erste gehört
-  // zur Wochenmitte, die zweite zum Wochenende. Fehlt in einem der beiden
-  // Texte eine, rutscht die Zuordnung — aus „Di abends · So 10:00" würde für
-  // die Wochenmitte 10:00, und die Verschiebung wäre um Stunden daneben.
-  // Dann lieber gar nichts anfassen.
+export function endenNachziehen(weeks: Week[], alt: MeetingTimes, neu: MeetingTimes): Week[] {
+  // Eine unlesbare Uhrzeit gibt es hier nicht mehr — beide Seiten sind Werte.
+  // Bis hierher waren es zwei Anzeigetexte, aus denen die Uhrzeiten der
+  // Stellung nach gelesen wurden: die erste gehörte zur Wochenmitte, die zweite
+  // zum Wochenende. Fehlte in einem der Texte eine, rutschte die Zuordnung —
+  // aus „Di abends · So 10:00" wurde für die Wochenmitte 10:00, und die
+  // Verschiebung lag um Stunden daneben.
   const delta: Record<MeetingKey, number> = { mid: 0, we: 0 }
   for (const tab of MEETING_TABS) {
-    const a = minuten(alteZeit[tab])
-    const n = minuten(neueZeit[tab])
+    const a = minuten(alt[tab].time)
+    const n = minuten(neu[tab].time)
     if (a === null || n === null) return weeks
     delta[tab] = n - a
   }
@@ -130,7 +126,7 @@ export function endenNachziehen(weeks: Week[], alt: string, neu: string): Week[]
     let kopie: Week | null = null
     for (const tab of MEETING_TABS) {
       if (delta[tab] === 0) continue
-      if (meetingDateParts(week[tab].date).zeit !== undefined) continue
+      if (abweichung(week, tab)?.time) continue
       const ende = shiftEnd(week[tab].end, delta[tab])
       if (ende === week[tab].end) continue
       kopie = { ...(kopie ?? week), [tab]: { ...week[tab], end: ende } }
@@ -455,7 +451,9 @@ export function togglePartner(weeks: Week[], wi: number, tab: MeetingKey, si: nu
 
 /** Trägt diese Abweichung überhaupt noch etwas? */
 function abweichungLeer(a: Abweichung): boolean {
-  return !a.day && !a.time && !a.cancelled && !a.reason
+  // `wd == null`, nicht `!a.wd`: der Sonntag ist die 0, und ein auf Sonntag
+  // verlegter Termin ist eine Abweichung wie jede andere.
+  return a.wd == null && !a.time && !a.cancelled && !a.reason
 }
 
 /**
@@ -479,9 +477,9 @@ export function setAbweichung(
   const week = weeks[wi]
   if (!week) return weeks
   const zusammen: Abweichung = { ...week.dev?.[tab], ...patch }
-  // Leerwerte gar nicht erst behalten — sonst entstünde `{ day: '' }`.
+  // Leerwerte gar nicht erst behalten — sonst entstünde `{ time: '' }`.
   const bereinigt: Abweichung = {}
-  if (zusammen.day) bereinigt.day = zusammen.day
+  if (zusammen.wd != null) bereinigt.wd = zusammen.wd
   if (zusammen.time) bereinigt.time = zusammen.time
   if (zusammen.cancelled) bereinigt.cancelled = true
   if (zusammen.reason?.trim()) bereinigt.reason = zusammen.reason.trim()

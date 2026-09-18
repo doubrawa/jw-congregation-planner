@@ -76,7 +76,7 @@ const PERSONS = [
 ]
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone', count: 1, groups: false }]
-const CONGREGATIONS = [{ meeting_times: 'Di 19:00 · So 10:00' }]
+const CONGREGATIONS = [{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }]
 const SUBS = [
   { id: 's1', user_id: U_ANNA, endpoint: 'https://push.test/anna', p256dh: 'k', auth: 'a', lang: 'de' },
   { id: 's2', user_id: U_TIM_A, endpoint: 'https://push.test/tim-a', p256dh: 'k', auth: 'a', lang: 'de' },

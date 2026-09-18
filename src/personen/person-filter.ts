@@ -1,4 +1,4 @@
-import { fullName } from '../data/helpers'
+import { fullName, privWert } from '../data/helpers'
 import type { Person, Role } from '../data/types'
 
 /**
@@ -40,6 +40,6 @@ export function passtZumFilter(person: Person, f: PersonFilter): boolean {
   if (f.sex && (f.sex === 'w') !== Boolean(person.female)) return false
   if (f.role && person.role !== f.role) return false
   if (f.grp && (person.grp ?? '') !== f.grp) return false
-  if (f.priv && !person.priv[f.priv]) return false
+  if (f.priv && !privWert(person.priv, f.priv)) return false
   return true
 }

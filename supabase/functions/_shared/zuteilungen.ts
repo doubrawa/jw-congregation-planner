@@ -14,8 +14,7 @@
  */
 import {
   istAusgefallenFuer,
-  meetingDayOffsets,
-  meetingTimesOf,
+  type MeetingTimes,
   rolleMitHerkunft,
   SKIP_ROLE,
   terminText,
@@ -348,24 +347,22 @@ export function offeneDerWoche(
   fsInsts: FsInstance[],
   services: ServiceRow[],
   conf: Map<string, string>,
-  meetingTimes: string,
+  zeiten: MeetingTimes,
   heuteUTC: number,
 ): Array<Pending & { eintrag: Eintrag }> {
-  const offsets = meetingDayOffsets(meetingTimes)
-  const zeiten = meetingTimesOf(meetingTimes)
   const offen: Array<Pending & { eintrag: Eintrag }> = []
   for (const tab of ['mid', 'we'] as const) {
     const meeting = week[tab]
     if (!meeting) continue
     // Entfällt die Zusammenkunft, gibt es nichts mitzuteilen (T30).
     if (istAusgefallenFuer(week.dev, tab)) continue
-    const offset = versatzMitAbweichung(week.dev, tab, meeting.date, offsets[tab])
+    const offset = versatzMitAbweichung(week.dev, tab, zeiten[tab].wd)
     // Vorbei ist sie am Tag danach — und dann braucht es keine Nachricht mehr.
     if (terminVorbei(weekStart, offset, heuteUTC)) continue
-    const zeit = zeitMitAbweichung(week.dev, tab, meeting.date, zeiten[tab])
+    const zeit = zeitMitAbweichung(week.dev, tab, zeiten[tab].time)
     // Der Termin trägt die Verlegung bereits in sich: steht sie zur Planzeit
     // fest, nennt die Nachricht von vornherein den richtigen Tag.
-    const datum = terminText(weekStart, offset, meeting.date, zeit, week.dev, tab)
+    const datum = terminText(weekStart, offset, meeting.date, zeit)
     for (const pend of pendingOfMeeting(weekStart, tab, meeting, services, conf)) {
       offen.push({ ...pend, eintrag: { datum, label: pend.label } })
     }

@@ -58,6 +58,14 @@ function normiert(sql: string): string {
     .toLowerCase()
 }
 
+/** Der Rumpf einer `create table`-Anweisung (ohne Kopf und schließende Klammer). */
+function tabelle(name: string): string {
+  const block = schema.match(
+    new RegExp(`create table if not exists public\\.${name}\\s*\\(([\\s\\S]*?)\\n\\);`, 'i'),
+  )
+  return block?.[1] ?? ''
+}
+
 function richtlinien(sql: string): Map<string, string> {
   const m = new Map<string, string>()
   for (const [, name, tabelle, rumpf] of sql.matchAll(RICHTLINIE)) {
@@ -162,9 +170,105 @@ describe('kein Altbestand mehr im Schema', () => {
   it('services trägt keine priv-Spalte mehr', () => {
     // Jeder Dienst leitet seinen Bereich aus dem Key ab (`svc:<key>`); die
     // Spalte hielt nur die frühere feste Zuordnung fest.
-    const block = schema.match(
-      /create table if not exists public\.services\s*\(([\s\S]*?)\n\);/i,
+    expect(tabelle('services')).not.toMatch(/^\s*priv\s/m)
+  })
+
+  it('ein Hilfsdienst-Platz ist ein Objekt, keine Zeichenkette', () => {
+    // Der Zweig `jsonb_typeof(slot) = 'string'` bediente Plätze aus dem
+    // Altbestand. Seit der Räumung (T104) schreibt der Client ausschließlich
+    // `{ name, pid? }` — ein Zweig für eine Form, die es nicht mehr gibt, ist
+    // eine zweite Lesart derselben Daten und damit eine Fehlerquelle.
+    const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
+    expect(fn).not.toContain('jsonb_typeof')
+  })
+
+  it('kein Anzeigetext als Datenquelle: meeting_times ist weg', () => {
+    // Tag und Uhrzeit standen als „Di 19:00 · So 10:00" in einer Textspalte und
+    // wurden per regulärem Ausdruck zurückgelesen. Jetzt vier Spalten.
+    // Gemeint ist die **Spalte**; im Kommentar darüber steht der Name weiter,
+    // denn ohne ihn wüsste beim nächsten Mal niemand mehr, warum es vier sind.
+    expect(tabelle('congregations')).not.toMatch(/^\s*meeting_times\s/m)
+    expect(tabelle('congregations')).toMatch(/mid_wd\s+smallint/)
+    expect(tabelle('congregations')).toMatch(/we_time\s+time/)
+  })
+
+  it('kein Einstellungs-Beutel mehr in congregations', () => {
+    // `settings jsonb` trug Erinnerungsgrenzen, Sprachen und die Zusätzliche
+    // Klasse — ohne einen einzigen Typ und ohne eine einzige Zusicherung.
+    expect(tabelle('congregations')).not.toMatch(/^\s*settings\s/m)
+  })
+})
+
+/**
+ * Die Mandantentrennung hängt nicht nur an RLS, sondern auch daran, dass kein
+ * Verweis über die Versammlungsgrenze zeigen **kann**. Beides ist hier
+ * maschinell nachzuhalten, weil beim Anlegen einer neuen Tabelle genau das
+ * vergessen wird.
+ */
+describe('Fremdschlüssel tragen die Versammlung mit', () => {
+  /** Jedes `references public.<tabelle> (<spalten>)` im Schema. */
+  const verweise = [...schema.matchAll(/references\s+public\.(\w+)\s*\(([^)]*)\)/g)].map(
+    ([, ziel, spalten]) => ({
+      ziel: ziel ?? '',
+      spalten: (spalten ?? '').split(',').map((s) => s.trim()),
+    }),
+  )
+
+  it('die Proben greifen überhaupt', () => {
+    expect(verweise.length).toBeGreaterThan(10)
+  })
+
+  it('wer auf eine Person, Gruppe oder einen Haushalt zeigt, nennt beide Spalten', () => {
+    // Ein einspaltiger Verweis auf `persons (id)` erlaubt es einer Zeile der
+    // Versammlung A, auf eine Person der Versammlung B zu zeigen. RLS
+    // verhindert das Lesen, nicht das Schreiben.
+    const einspaltig = verweise.filter(
+      (v) => ['persons', 'groups', 'households'].includes(v.ziel) && v.spalten.length !== 2,
     )
-    expect(block?.[1] ?? '').not.toMatch(/^\s*priv\s/m)
+    expect(einspaltig, 'Verweis ohne congregation_id').toEqual([])
+  })
+
+  it('jeder zusammengesetzte Fremdschlüssel nennt beim Nullen seine Spalte', () => {
+    // `on delete set null` ohne Spaltenliste nullt ALLE Spalten des
+    // Fremdschlüssels — also auch `congregation_id`, die `not null` ist. Das
+    // Löschen einer Person schlüge damit fehl, und zwar erst im Betrieb.
+    const ohneListe = [...schema.matchAll(/foreign key\s*\([^)]*,[^)]*\)([\s\S]*?)(?=,\n|\n\);)/g)]
+      .map((m) => normiert(m[1] ?? ''))
+      .filter((rest) => rest.includes('on delete set null') && !/on delete set null \(/.test(rest))
+    expect(ohneListe, 'set null ohne Spaltenliste').toEqual([])
+  })
+})
+
+describe('keine Indizes, die schon dastehen', () => {
+  /**
+   * Eine `unique`-Bedingung legt ihren Index selbst an, und PostgreSQL nutzt
+   * dessen führende Spalten auch für kürzere Abfragen. Ein eigener Index auf
+   * denselben oder auf führenden Spalten kostet Schreiblast und bringt nichts —
+   * die Begründung steht wörtlich bei `assignment_log`, galt aber jahrelang
+   * nicht für `weeks` und `fs_weeks`, die je einen (fs_weeks: zwei) hatten.
+   */
+  const spaltenliste = (s: string): string[] => s.split(',').map((x) => x.trim().toLowerCase())
+
+  const uniques = new Map<string, string[][]>()
+  for (const [, name] of schema.matchAll(TABELLEN)) {
+    const block = tabelle(name ?? '')
+    uniques.set(
+      (name ?? '').toLowerCase(),
+      [...block.matchAll(/unique\s*\(([^)]*)\)/g)].map((m) => spaltenliste(m[1] ?? '')),
+    )
+  }
+
+  it('kein Index doppelt eine unique-Bedingung', () => {
+    const doppelt: string[] = []
+    for (const [, idx, tab, spalten] of schema.matchAll(
+      /create index if not exists (\w+)\s+on public\.(\w+)\s*\(([^)]*)\)/g,
+    )) {
+      const cols = spaltenliste(spalten ?? '')
+      const gedeckt = (uniques.get((tab ?? '').toLowerCase()) ?? []).some((u) =>
+        cols.every((c, i) => u[i] === c),
+      )
+      if (gedeckt) doppelt.push(`${idx} auf ${tab}`)
+    }
+    expect(doppelt, 'Index deckt sich mit einer unique-Bedingung').toEqual([])
   })
 })

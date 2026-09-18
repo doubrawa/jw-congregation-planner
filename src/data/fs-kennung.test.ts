@@ -20,8 +20,8 @@ import { buildFsWeeks, fsBaseFromWeeks, fsTaskKey, fsWochenStart, regenFsWeeks }
 import type { FsRule } from './types'
 
 const RULES: FsRule[] = [
-  { id: 'r-samstag', grp: '', wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
-  { id: 'r-mittwoch', grp: '', wd: 3, time: '18:00', place: 'Park', monthly: 0, skipCong: false },
+  { id: 'r-samstag', grp: null, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
+  { id: 'r-mittwoch', grp: null, wd: 3, time: '18:00', place: 'Park', monthly: 0, skipCong: false },
 ]
 
 /** Montag der Woche `i` ab dem 5.1.2026. */

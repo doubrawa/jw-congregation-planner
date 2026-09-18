@@ -109,7 +109,7 @@ function fsKandidaten(
       // `o.lext`: Ein Freitext-Leiter blockiert keinen Gleichnamigen — er ist
       // nicht diese Person, er heißt nur so.
       if (o.id === sel.instId || o.wd !== inst.wd || o.lext || o.leader !== name) continue
-      const ttl = o.grp === '' ? t.fsVers : (state.groups.find((g) => g.id === o.grp)?.name ?? o.grp)
+      const ttl = o.grp == null ? t.fsVers : (state.groups.find((g) => g.id === o.grp)?.name ?? o.grp)
       out.push({ text: `${o.time} · ${tu(ttl)}`, lang: 'u' })
     }
     return out
@@ -140,8 +140,8 @@ function gruppenKandidaten(
   t: Dict,
   tu: (s: string) => string,
 ): Candidate[] {
-  const sub = (id: string, ov: string | null): string => {
-    const aufseher = state.persons.find((p) => p.id === ov)
+  const sub = (id: string, overseerId: string | null): string => {
+    const aufseher = state.persons.find((p) => p.id === overseerId)
     const n = state.persons.filter((p) => p.grp === id).length
     const label = n === 1 ? t.mitglied1 : fill(t.mitgliederN, { n })
     return aufseher ? `${displayName(aufseher)} · ${label}` : label
@@ -153,7 +153,7 @@ function gruppenKandidaten(
       initials: num ? `G${num}` : 'G',
       name: tu(group.name),
       assignName: group.name,
-      sub: sub(group.id, group.ov),
+      sub: sub(group.id, group.overseerId),
       today: [],
       absent: false,
       free: false,

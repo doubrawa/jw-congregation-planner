@@ -10,7 +10,7 @@ import type { Meeting, Week } from './types'
  * *vorbei* ist, weiß niemand — ein Umspringen um 20:47 wäre geraten.
  */
 
-const MEETINGS = 'Di 19:00 · So 10:00'
+const MEETINGS = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 function meeting(over: Partial<Meeting> = {}): Meeting {
   return { date: '', end: '', sections: [], helpers: {}, ...over }
@@ -98,7 +98,7 @@ describe('naechsteZusammenkunft', () => {
 
   it('nimmt die Wochentage aus den Einstellungen, nicht aus der Annahme', () => {
     // Mittwoch/Samstag statt Dienstag/Sonntag: am Freitag steht der Samstag an.
-    const eigene = 'Mi 19:30 · Sa 17:00'
+    const eigene = { mid: { wd: 3, time: '19:30' }, we: { wd: 6, time: '17:00' } }
     expect(naechsteZusammenkunft(WOCHEN, eigene, am('2026-09-11'))).toEqual({ wi: 0, tab: 'we' })
     // Am Donnerstag ist die Wochenmitte schon vorbei.
     expect(naechsteZusammenkunft(WOCHEN, eigene, am('2026-09-10'))).toEqual({ wi: 0, tab: 'we' })

@@ -6,6 +6,7 @@ import { DE } from '../i18n/de'
 import { clearSnapshot } from '../lib/snapshot'
 import { useApp, type HydratePayload } from './context'
 import { AppProvider } from './store'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 // Ohne Supabase: initialState liefert die Demo-Daten, der Session-Effekt und
 // persist() steigen früh aus — getestet wird allein der dispatch-Wächter.
@@ -20,7 +21,7 @@ const payload: HydratePayload = {
   congregationId: 'c1',
   userId: 'u1',
   empty: false,
-  congregation: { name: 'Alt', hall: '', meetings: '' },
+  congregation: { name: 'Alt', hall: '', times: STANDARD_ZEITEN },
   planner: true,
   personId: null,
   persons: [],

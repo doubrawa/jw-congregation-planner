@@ -12,6 +12,7 @@ import {
   deleteAbsenceRow,
   deleteConfirmationRows,
   deleteGroupRow,
+  deleteHouseholdRow,
   deletePersonRow,
   deleteInviteRow,
   deleteMemberRow,
@@ -22,6 +23,7 @@ import {
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
+  saveFamily,
   saveFsRules,
   saveFsWeek,
   saveGroupRow,
@@ -39,6 +41,7 @@ import {
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
 import { mtab } from '../data/helpers'
+import { dienstZusagenKeys } from '../data/dienste'
 import { supabase } from '../lib/supabase'
 import type { FsInstance, Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
@@ -127,9 +130,9 @@ const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsIns
 )
 // Der Grundplan hängt an einem Freitextfeld (Ort) und änderte sich deshalb je
 // Tastenanschlag — mitsamt jeder daraus erzeugten Woche.
-const fsRuleSaves = createDebouncedWriter<'rules', { congId: string; base: string; rules: AppState['fsRules'] }>(
+const fsRuleSaves = createDebouncedWriter<'rules', { congId: string; rules: AppState['fsRules'] }>(
   SAVE_DELAY,
-  (_key, { congId, base, rules }) => saveFsRules(congId, base, rules),
+  (_key, { congId, rules }) => saveFsRules(congId, rules),
 )
 
 /*
@@ -319,11 +322,7 @@ function treffpunkteSpeichern(
   verwaist: ReadonlyMap<string, string[]>,
 ): void {
   if (next.fsRules !== prev.fsRules) {
-    fsRuleSaves.schedule('rules', {
-      congId,
-      base: next.fsBase.toISOString().slice(0, 10),
-      rules: next.fsRules,
-    })
+    fsRuleSaves.schedule('rules', { congId, rules: next.fsRules })
   }
   for (let i = 0; i < next.fsWeeks.length; i++) {
     if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, verwaist)
@@ -462,7 +461,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
       // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
-      if ('planner' in action.patch) {
+      if ('plannerVorgemerkt' in action.patch) {
         for (const m of next.members) {
           if (m.personId === action.id && m.userId !== next.userId) saveMemberRow(m)
         }
@@ -492,10 +491,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'removePerson': {
       personSaves.cancel(action.id)
-      deletePersonRow(action.id) // groups/invites-FKs räumt die DB (set null)
-      for (const m of prev.members) {
-        if (m.personId === action.id) saveMemberRow({ ...m, personId: null })
-      }
+      // Alle Verweise auf die Person räumt die Datenbank selbst
+      // (`on delete set null`): Gruppen, Einladungen, Abwesenheiten, das
+      // Versand-Tagebuch — und seit T105 auch `members.person_id`. Genau die
+      // stand hier bis dahin von Hand, weil sie als einzige ohne
+      // Fremdschlüssel auskommen musste; wer eine Person per Skript löschte,
+      // hinterließ eine Mitgliedschaft, deren `my_person_id()` ins Leere zeigt.
+      deletePersonRow(action.id)
+      // War sie die Letzte ihres Haushalts, geht der mit: Die Datenbank nullt
+      // zwar `persons.fam`, die leere Zeile bliebe aber stehen und käme beim
+      // nächsten Neuaufbau wieder mit.
+      const haus = prev.persons.find((p) => p.id === action.id)?.fam
+      if (haus && !next.persons.some((p) => p.fam === haus)) deleteHouseholdRow(haus)
       // Die gelösten Verweise (T38) müssen auch in der Datenbank landet sein —
       // sonst zeigt der Fremdschlüssel dort weiter ins Leere. Nur die wirklich
       // geänderten Wochen: unveränderte behalten ihre Referenz.
@@ -507,12 +514,30 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     }
-    case 'setFamily':
-      // Familien-Id wurde bei beiden (bzw. mehreren) Beteiligten geändert.
-      for (const p of next.persons) {
-        if (prev.persons.find((q) => q.id === p.id)?.fam !== p.fam) savePerson(congId, p)
+    case 'setFamily': {
+      // Die Haushalts-Id wurde bei beiden (bzw. mehreren) Beteiligten geändert.
+      const geaendert = next.persons.filter(
+        (p) => prev.persons.find((q) => q.id === p.id)?.fam !== p.fam,
+      )
+      if (geaendert.length === 0) break
+      // Der Haushalt ist eine eigene Zeile, auf die `persons.fam` zeigt — er
+      // muss also **vor** den Personen dastehen. `saveFamily` hält diese
+      // Reihenfolge ein; sie ist der einzige Grund, warum es die Funktion gibt.
+      const haushalt = geaendert.find((p) => p.fam)?.fam
+      if (haushalt) saveFamily(congId, haushalt, geaendert)
+      else for (const p of geaendert) savePerson(congId, p)
+      // Der letzte Haushalt, den niemand mehr trägt, verschwindet. Ohne das
+      // bliebe eine leere Zeile stehen, an der nie wieder jemand hängt.
+      const verwaist = new Set(
+        geaendert
+          .map((p) => prev.persons.find((q) => q.id === p.id)?.fam)
+          .filter((f): f is string => Boolean(f)),
+      )
+      for (const alt of verwaist) {
+        if (!next.persons.some((p) => p.fam === alt)) deleteHouseholdRow(alt)
       }
       break
+    }
     case 'addAbsence':
       // Person und Ersteller stehen im Datensatz — der Planer trägt hier auch
       // für andere ein, und `next.personId` wäre dann seine eigene Person.
@@ -532,10 +557,24 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (svc) saveService(congId, svc, idx)
       break
     }
-    case 'removeService':
+    case 'removeService': {
       deleteServiceRow(congId, action.key)
       positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
+      // Die drei Spuren des Dienstes (data/dienste.ts) hat der Reducer aus dem
+      // Zustand genommen — hier gehen sie an die Datenbank. Nur die wirklich
+      // geänderten Zeilen: unveränderte behalten ihre Referenz, und die Listen
+      // sind indexgleich (`dienstBereichEntfernen` bildet der Reihe nach ab).
+      for (let i = 0; i < next.persons.length; i++) {
+        const p = next.persons[i]
+        if (p && p !== prev.persons[i]) savePerson(congId, p)
+      }
+      for (let i = 0; i < next.weeks.length; i++) {
+        if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
+      }
+      const weg = dienstZusagenKeys(prev.weeks, action.key)
+      if (weg.length) deleteConfirmationRows(congId, weg)
       break
+    }
     case 'addGroup':
       // Die Position ist der Index in der Liste — sie hängt sich hinten an.
       // Ohne sie stünden alle Gruppen auf 0, und die Ladereihenfolge wäre die
@@ -696,7 +735,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           wi,
           prev.fsBase,
           prev.services,
-          prev.congregation.meetings,
+          prev.congregation.times,
           prev.confirmations,
         ),
       )
