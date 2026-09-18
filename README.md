@@ -322,10 +322,25 @@ nur Wochen nachzuholen:
 node scripts/wochen-importieren.mjs --anzahl 4
 ```
 
-**Zwei Dinge bleiben Handarbeit:** sich in der App mit dem ausgegebenen
-Einladungscode anmelden, und den Grundplan der Treffpunkte in den Einstellungen
-eintragen — `treffpunkte-importieren.mjs` schlägt ihn aus den NWS-Daten nur vor,
-trägt ihn aber nicht ein. Der Schlussbericht nennt beides.
+**Was bleibt:** sich in der App mit dem ausgegebenen Einladungscode anmelden,
+und der **Grundplan der Treffpunkte**. Den schlägt `treffpunkte-importieren.mjs`
+aus den NWS-Terminen nur vor — welche Regel dahintersteckt, ist eine
+Entscheidung und keine Zeile in den Daten. Getroffen wird sie in den
+Einstellungen (GRUNDPLAN TREFFPUNKTE) oder, wenn sie feststeht, damit:
+
+```powershell
+node scripts/treffpunkt-regeln-setzen.mjs --datei <regeln.json> --trocken
+```
+
+Die Datei ist eine Liste aus `wd` (0 = Sonntag), `time`, `place`, `monthly`
+(0 = jede Woche, 1..4 = N-ter im Monat) und `grp` (`null` =
+Versammlungstreffpunkt). Das Skript trägt die Regeln nicht nur ein, es **führt
+sie mit den schon importierten Terminen zusammen**: Eine gleichartige Zeile geht
+in der Regel auf und gibt ihren Leiter an sie ab, Einzeltermine ohne Regel
+bleiben stehen. Ohne das stünde jeder importierte Treffpunkt danach doppelt da —
+`regenFsWeeks` erzeugt die Regel-Treffpunkte und behält daneben jeden manuellen
+Eintrag. Dass beide Rechnungen dasselbe ergeben, hält
+`treffpunkt-regeln-setzen.test.ts` gegen `genFsWeek` aus der App fest.
 
 **Vorher ist nichts zu setzen.** Die Projekt-URL holen sich die Skripte aus
 `.env.local` (`VITE_SUPABASE_URL`), und nach dem Secret-Schlüssel fragen sie,
