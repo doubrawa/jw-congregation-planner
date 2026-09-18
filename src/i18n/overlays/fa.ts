@@ -353,6 +353,7 @@ export default {
   "a11yIncrease": "بزرگ‌تر",
   "a11yMoveUp": "انتقال به بالا",
   "a11yMoveDown": "انتقال به پایین",
+  "a11yMinuten": "دقیقه",
   "a11yPrevMonth": "ماه قبل",
   "a11yNextMonth": "ماه بعد",
   "a11yPrevWeek": "هفتهٔ قبل",

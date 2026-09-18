@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "크게",
   "a11yMoveUp": "위로",
   "a11yMoveDown": "아래로",
+  "a11yMinuten": "분",
   "a11yPrevMonth": "이전 달",
   "a11yNextMonth": "다음 달",
   "a11yPrevWeek": "이전 주",

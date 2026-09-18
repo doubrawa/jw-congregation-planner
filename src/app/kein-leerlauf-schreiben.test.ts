@@ -17,6 +17,7 @@ import {
 } from '../data/testdaten'
 import { isSong } from '../data/helpers'
 import { isoDay } from '../data/meeting-dates'
+import { itemMinutes } from '../data/meeting-edit'
 import type { PartItem, Week } from '../data/types'
 
 /**
@@ -117,13 +118,17 @@ function ladung(): HydratePayload {
 }
 
 /** Erster zuteilbarer Programmpunkt einer Zusammenkunft. */
-function ersterPunkt(week: Week, tab: 'mid' | 'we'): { si: number; ii: number } {
+function ersterPunkt(week: Week, tab: 'mid' | 'we'): { si: number; ii: number; mins: number } {
   const sections = week[tab].sections
   for (let si = 0; si < sections.length; si++) {
     const items = sections[si]!.items
     for (let ii = 0; ii < items.length; ii++) {
       const it = items[ii]!
-      if (!isSong(it) && (it as PartItem).names.length > 0) return { si, ii }
+      // Die Dauer kommt mit: Ein „auf denselben Wert gesetzt" lässt sich sonst
+      // nicht formulieren, und genau das ist hier der Leerlauf.
+      if (!isSong(it) && (it as PartItem).names.length > 0) {
+        return { si, ii, mins: itemMinutes(it as PartItem) ?? 0 }
+      }
     }
   }
   throw new Error('kein Programmpunkt gefunden')
@@ -157,7 +162,9 @@ function folge(s: AppState): AppAction[] {
     { type: 'lacAdd', si: p.si, title: '' }, // leerer Titel → legt nichts an
     { type: 'lacRemove', si: p.si, ii: 999 }, // Punkt gibt es nicht
     { type: 'lacMove', si: p.si, ii: 0, dir: -1 }, // schon ganz oben
-    { type: 'lacAdjust', si: p.si, ii: p.ii, delta: 0 },
+    // Dieselbe Dauer noch einmal gesetzt — das Feld gibt beim Verlassen auch
+    // dann einen Wert ab, wenn niemand etwas geändert hat.
+    { type: 'lacMinuten', si: p.si, ii: p.ii, mins: p.mins },
     { type: 'setAbweichung', tab: 'mid', patch: { wd: 3 } },
     { type: 'setDienstwoche', on: false }, // ist ohnehin aus
     { type: 'setAnlass', art: null }, // ist ohnehin keiner gesetzt

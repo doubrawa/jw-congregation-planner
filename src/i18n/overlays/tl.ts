@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Palakihin",
   "a11yMoveUp": "Ilipat pataas",
   "a11yMoveDown": "Ilipat pababa",
+  "a11yMinuten": "Minuto",
   "a11yPrevMonth": "Nakaraang buwan",
   "a11yNextMonth": "Susunod na buwan",
   "a11yPrevWeek": "Nakaraang linggo",

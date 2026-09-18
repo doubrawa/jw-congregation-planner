@@ -5,7 +5,7 @@ import {
   endeAusStartzeit,
   endenNachziehen,
   lacAdd,
-  lacAdjust,
+  lacMinuten,
   lacMove,
   lacRemove,
   MEETING_MINUTES,
@@ -146,11 +146,11 @@ describe('Bearbeitung mit einem Index, den es nicht gibt', () => {
   const WEIT_DRAUSSEN = 99
   const w = (): Week[] => buildDemoWeeks()
 
-  it('lacAdjust: fehlende Woche, fehlender Abschnitt, fehlender Punkt', () => {
+  it('lacMinuten: fehlende Woche, fehlender Abschnitt, fehlender Punkt', () => {
     const weeks = w()
-    expect(lacAdjust(weeks, WEIT_DRAUSSEN, 'mid', 0, 0, 5)).toBe(weeks)
-    expect(lacAdjust(weeks, 0, 'mid', WEIT_DRAUSSEN, 0, 5)).toBe(weeks)
-    expect(lacAdjust(weeks, 0, 'mid', 0, WEIT_DRAUSSEN, 5)).toBe(weeks)
+    expect(lacMinuten(weeks, WEIT_DRAUSSEN, 'mid', 0, 0, 20)).toBe(weeks)
+    expect(lacMinuten(weeks, 0, 'mid', WEIT_DRAUSSEN, 0, 20)).toBe(weeks)
+    expect(lacMinuten(weeks, 0, 'mid', 0, WEIT_DRAUSSEN, 20)).toBe(weeks)
   })
 
   it('lacRemove: fehlende Woche, fehlender Abschnitt, fehlender Punkt', () => {

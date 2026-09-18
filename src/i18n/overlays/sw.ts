@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Ongeza",
   "a11yMoveUp": "Sogeza juu",
   "a11yMoveDown": "Sogeza chini",
+  "a11yMinuten": "Dakika",
   "a11yPrevMonth": "Mwezi uliopita",
   "a11yNextMonth": "Mwezi ujao",
   "a11yPrevWeek": "Juma lililopita",

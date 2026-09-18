@@ -306,7 +306,7 @@ export type AppAction =
   | { type: 'openS89'; payload: S89Payload }
   | { type: 'closeS89' }
   // LAC-Bearbeitung (Planen, aktuelle Woche + Tab)
-  | { type: 'lacAdjust'; si: number; ii: number; delta: number }
+  | { type: 'lacMinuten'; si: number; ii: number; mins: number }
   | { type: 'lacRemove'; si: number; ii: number }
   | { type: 'lacMove'; si: number; ii: number; dir: LacDir }
   | { type: 'lacAdd'; si: number; title: string }

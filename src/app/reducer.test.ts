@@ -22,6 +22,7 @@ import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { fsTaskKey } from '../data/fs'
 import { deriveMyTasks, itemTaskKey } from '../data/planning'
+import { itemMinutes } from '../data/meeting-edit'
 import { alsFreitext } from '../i18n/translate'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
@@ -821,11 +822,16 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     expect(next.toast?.text).toBeTruthy()
   })
 
-  it('lacAdjust ändert die Minuten des Punkts', () => {
+  it('lacMinuten setzt die Dauer — auch auf eine ungerade Zahl', () => {
+    // Bis zum 18.9.2026 sprang die Dauer in Fünferschritten, weil die Aktion
+    // einen Versatz nahm und zwei Knöpfe ±5 schickten. „19" war nicht
+    // einstellbar; genau das misst diese Probe.
     const s = makeState({ week: 0, tab: 'mid' })
     const si = lacSi(s)
-    const next = reducer(s, { type: 'lacAdjust', si, ii: gehIdx(s), delta: 5 })
+    const ii = gehIdx(s)
+    const next = reducer(s, { type: 'lacMinuten', si, ii, mins: 19 })
     expect(next.weeks).not.toBe(s.weeks)
+    expect(itemMinutes(next.weeks[0].mid.sections[si].items[ii] as PartItem)).toBe(19)
     expect(next.weeks[0].mid.end).not.toBe(s.weeks[0].mid.end) // Endzeit nachgezogen
   })
 

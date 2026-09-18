@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Αύξηση",
   "a11yMoveUp": "Μετακίνηση επάνω",
   "a11yMoveDown": "Μετακίνηση κάτω",
+  "a11yMinuten": "Λεπτά",
   "a11yPrevMonth": "Προηγούμενος μήνας",
   "a11yNextMonth": "Επόμενος μήνας",
   "a11yPrevWeek": "Προηγούμενη εβδομάδα",

@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Perbesar",
   "a11yMoveUp": "Naikkan",
   "a11yMoveDown": "Turunkan",
+  "a11yMinuten": "Menit",
   "a11yPrevMonth": "Bulan sebelumnya",
   "a11yNextMonth": "Bulan berikutnya",
   "a11yPrevWeek": "Minggu sebelumnya",

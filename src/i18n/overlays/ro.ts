@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Mărește",
   "a11yMoveUp": "Mută în sus",
   "a11yMoveDown": "Mută în jos",
+  "a11yMinuten": "Minute",
   "a11yPrevMonth": "Luna anterioară",
   "a11yNextMonth": "Luna următoare",
   "a11yPrevWeek": "Săptămâna anterioară",

@@ -87,7 +87,7 @@ function minuten(zeit: string): number | null {
  * Programmkopf sofort 18:30 und die Fußzeile weiter „Ende ca. 20:45" — eine
  * Zusammenkunft von 2:15 auf dem Blatt.
  *
- * Verschoben statt neu gerechnet: `lacAdjust` hat die Endzeit womöglich schon
+ * Verschoben statt neu gerechnet: `lacMinuten` hat die Endzeit womöglich schon
  * um geänderte Programmminuten versetzt (`shiftEnd`), und diese Anpassung des
  * Planers darf eine Zeitumstellung nicht verwerfen.
  *
@@ -209,24 +209,31 @@ function stelle(
 /**
  * Grenzen der Punkt-Dauer.
  *
- * **Exportiert, weil die Knöpfe sie brauchen** (V7): Am Anschlag tut ein Tipp
- * nichts, und ohne Rückmeldung sieht das aus wie eine hängende App. Statt einen
- * Hinweis nachzuschieben, wird der Knopf gar nicht erst angeboten — dieselbe
- * Antwort, die das Verschieben daneben seit je gibt (dort sind die Pfeile am
- * Rand abgeschaltet). Zwei Zahlen an zwei Stellen wären genau die Sorte
- * Abschrift, die hier schon mehrfach auseinandergelaufen ist.
+ * **Exportiert, weil das Eingabefeld sie braucht**: Es trägt sie als `min`/`max`
+ * und klemmt beim Übernehmen darauf — hier wird ohnehin geklemmt, aber ein Feld,
+ * das eine Zahl annimmt und stumm eine andere speichert, sieht aus wie ein
+ * Fehler. Zwei Zahlen an zwei Stellen wären genau die Sorte Abschrift, die hier
+ * schon mehrfach auseinandergelaufen ist.
  */
 export const LAC_MIN_MINUTEN = 5
 export const LAC_MAX_MINUTEN = 45
 
-/** Minuten eines LAC-Punkts ändern (5..45) und Meeting-Ende nachziehen. */
-export function lacAdjust(
+/**
+ * Minuten eines LAC-Punkts **setzen** (auf 5..45 geklemmt) und das Ende der
+ * Zusammenkunft nachziehen.
+ *
+ * Bis zum 18. September 2026 nahm diese Funktion einen **Versatz** (`delta`),
+ * weil daneben zwei Knöpfe standen — und die sprangen in Fünferschritten. Für
+ * „19 Minuten" gab es damit keinen Weg. Die Zahl steht jetzt in einem Feld, und
+ * ein Feld nennt den Wert, nicht seine Änderung.
+ */
+export function lacMinuten(
   weeks: Week[],
   wi: number,
   tab: MeetingKey,
   si: number,
   ii: number,
-  delta: number,
+  minuten: number,
 ): Week[] {
   const next = klonWoche(weeks, wi)
   if (!next) return weeks
@@ -237,7 +244,8 @@ export function lacAdjust(
   if (!item || isSong(item)) return weeks
   const cur = itemMinutes(item)
   if (cur == null) return weeks
-  const target = Math.max(LAC_MIN_MINUTEN, Math.min(LAC_MAX_MINUTEN, cur + delta))
+  if (!Number.isFinite(minuten)) return weeks
+  const target = Math.max(LAC_MIN_MINUTEN, Math.min(LAC_MAX_MINUTEN, Math.round(minuten)))
   if (target === cur) return weeks
   // Die Zahl ist die Wahrheit, die Meta-Zeile nur ihre Anzeige — beide müssen
   // mit, sonst widersprechen sich Knopf und Text. Ersetzt wird in der Schrift,

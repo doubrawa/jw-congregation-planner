@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "调大",
   "a11yMoveUp": "上移",
   "a11yMoveDown": "下移",
+  "a11yMinuten": "分钟",
   "a11yPrevMonth": "上个月",
   "a11yNextMonth": "下个月",
   "a11yPrevWeek": "上一周",

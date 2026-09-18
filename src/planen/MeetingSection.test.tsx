@@ -12,7 +12,7 @@ import { initialState } from '../app/init'
 import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { emptyQualifications, ROLE_CIRCUIT } from '../data/helpers'
-import { TALK_PLACEHOLDER } from '../data/meeting-edit'
+import { LAC_MAX_MINUTEN, LAC_MIN_MINUTEN, TALK_PLACEHOLDER } from '../data/meeting-edit'
 import { itemTaskKey, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { PartItem, Person, Section, Week } from '../data/types'
@@ -386,40 +386,63 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
     ],
   })
 
-  it('jeder Punkt trägt seine Minuten und lässt sie in Fünferschritten ändern', () => {
-    const { container, dispatch } = zeige(lac())
-    expect([...container.querySelectorAll('.lac-mins')].map((x) => x.textContent)).toEqual([
-      '5 Min.', '30 Min.',
+  it('jeder Punkt trägt seine Minuten in einem Feld — samt Einheit', () => {
+    const { container } = zeige(lac())
+    const felder = [...container.querySelectorAll<HTMLInputElement>('.lac-mins-input')]
+    expect(felder.map((x) => x.value)).toEqual(['5', '30'])
+    expect([...container.querySelectorAll('.lac-mins-einheit')].map((x) => x.textContent)).toEqual([
+      ' Min.', ' Min.',
     ])
-    // Der **zweite** Punkt (30 Min.) liegt zwischen den Grenzen; beim ersten
-    // steht „–" am Anschlag und ist abgeschaltet (siehe unten).
-    const knopf = [...container.querySelectorAll('.lac-step-btn')]
-    fireEvent.click(knopf[3]!) // „+" beim zweiten Punkt
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdjust', si: 0, ii: 1, delta: 5 })
-    fireEvent.click(knopf[2]!) // „–" beim zweiten Punkt
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdjust', si: 0, ii: 1, delta: -5 })
+    // Die Schrittknöpfe sind weg — sie sprangen in Fünferschritten, und „19"
+    // war damit nicht einstellbar (18.9.2026).
+    expect(container.querySelectorAll('.lac-step-btn')).toHaveLength(0)
   })
 
-  it('am Anschlag ist der Schritt gesperrt — wie das Verschieben am Rand (V7)', () => {
-    /*
-      `lacAdjust` klemmt auf 5..45 und gab am Anschlag stumm dieselbe Woche
-      zurück: Der Planer tippte, und nichts geschah. Ein Hinweis wäre die
-      zweitbeste Antwort — was nicht wirken kann, wird gar nicht erst
-      angeboten. Genau so hält es das Verschieben daneben seit je.
-    */
-    const rand: Section = {
-      label: LABEL_LAC, farbe: 'wein',
-      items: [
-        { iid: 'i87', num: 8, title: 'Kurz', meta: '5 Min.', mins: 5, names: [{ name: '' }] },
-        { iid: 'i86', num: 9, title: 'Lang', meta: '45 Min.', mins: 45, names: [{ name: '' }] },
-      ],
-    }
-    const { container } = zeige(rand)
-    const knopf = [...container.querySelectorAll<HTMLButtonElement>('.lac-step-btn')]
-    expect(knopf[0]!.disabled, '„–" bei 5 Min. muss gesperrt sein').toBe(true)
-    expect(knopf[1]!.disabled, '„+" bei 5 Min. muss gehen').toBe(false)
-    expect(knopf[2]!.disabled, '„–" bei 45 Min. muss gehen').toBe(false)
-    expect(knopf[3]!.disabled, '„+" bei 45 Min. muss gesperrt sein').toBe(true)
+  it('eine getippte Zahl gilt beim Verlassen des Feldes — jede Minute, nicht jede fünfte', () => {
+    const { container, dispatch } = zeige(lac())
+    const feld = container.querySelectorAll<HTMLInputElement>('.lac-mins-input')[1]!
+
+    fireEvent.focus(feld)
+    fireEvent.change(feld, { target: { value: '19' } })
+    // Während des Tippens noch nichts: Die „1" von „19" wäre sonst ein eigener
+    // Wert, würde auf 5 geklemmt und zöge die Endzeit mit.
+    expect(dispatch).not.toHaveBeenCalled()
+
+    fireEvent.blur(feld)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'lacMinuten', si: 0, ii: 1, mins: 19 })
+  })
+
+  it('ein leeres Feld ändert nichts — und Escape nimmt den alten Wert zurück', () => {
+    const { container, dispatch } = zeige(lac())
+    const feld = container.querySelectorAll<HTMLInputElement>('.lac-mins-input')[1]!
+
+    // Wer alles löscht und weiterklickt, wollte nicht die kürzestmögliche Dauer.
+    fireEvent.focus(feld)
+    fireEvent.change(feld, { target: { value: '' } })
+    fireEvent.blur(feld)
+    expect(dispatch).not.toHaveBeenCalled()
+
+    fireEvent.focus(feld)
+    fireEvent.change(feld, { target: { value: '42' } })
+    fireEvent.keyDown(feld, { key: 'Escape' })
+    fireEvent.blur(feld)
+    // Abgebrochen heißt: gar nichts geschickt — und im Feld steht wieder das,
+    // was vorher dastand, nicht die 42.
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(container.querySelectorAll<HTMLInputElement>('.lac-mins-input')[1]!.value).toBe('30')
+  })
+
+  it('das Feld trägt die Grenzen 5..45 und zählt in Einerschritten', () => {
+    // Geklemmt wird in `lacMinuten`; die Grenzen stehen hier nur, damit die
+    // Tastatur des Telefons und die Pfeiltasten nicht daneben laufen. Zwei
+    // Zahlen an zwei Stellen wären eine Abschrift zu viel — sie kommen aus
+    // `meeting-edit.ts`.
+    const { container } = zeige(lac())
+    const feld = container.querySelector<HTMLInputElement>('.lac-mins-input')!
+    expect(feld.min).toBe(String(LAC_MIN_MINUTEN))
+    expect(feld.max).toBe(String(LAC_MAX_MINUTEN))
+    expect(feld.step).toBe('1')
+    expect(feld.type).toBe('number')
   })
 
   it('am Rand ist das Verschieben gesperrt — nach oben beim ersten, nach unten beim letzten', () => {

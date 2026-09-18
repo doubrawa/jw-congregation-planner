@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { localizedWeek, localizedWeeks, missingVariants } from './localize'
-import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove } from './meeting-edit'
+import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove } from './meeting-edit'
 import type { Meeting, PartItem, Week, WeekVariant } from './types'
 
 /** Kanonische (deutsche) Beispielwoche mit englischer Sprachvariante. */
@@ -164,9 +164,9 @@ describe('LAC-Edits halten Sprachvarianten aligned', () => {
     expect((en.mid.sections[LAC].items[1] as PartItem).title).toBe('Örtliche Bedürfnisse')
   })
 
-  it('lacAdjust zieht Minuten und Ende in der Variante nach', () => {
+  it('lacMinuten zieht Minuten und Ende in der Variante nach', () => {
     const weeks = [makeWeek()]
-    const next = lacAdjust(weeks, 0, 'mid', LAC, 0, 5)
+    const next = lacMinuten(weeks, 0, 'mid', LAC, 0, 20)
     expect((next[0].mid.sections[LAC].items[0] as PartItem).meta).toBe('20 Min.')
     expect((next[0].alt!.en.mid.sections[LAC].items[0] as PartItem).meta).toBe('20 min.')
     expect(next[0].alt!.en.mid.end).toBe('Ends approx. 20:50')

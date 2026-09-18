@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "大きくする",
   "a11yMoveUp": "上へ",
   "a11yMoveDown": "下へ",
+  "a11yMinuten": "分",
   "a11yPrevMonth": "前の月",
   "a11yNextMonth": "次の月",
   "a11yPrevWeek": "前の週",

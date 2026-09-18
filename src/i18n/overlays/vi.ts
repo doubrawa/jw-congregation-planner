@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Tăng",
   "a11yMoveUp": "Lên trên",
   "a11yMoveDown": "Xuống dưới",
+  "a11yMinuten": "Phút",
   "a11yPrevMonth": "Tháng trước",
   "a11yNextMonth": "Tháng sau",
   "a11yPrevWeek": "Tuần trước",

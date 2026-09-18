@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Vergroten",
   "a11yMoveUp": "Omhoog",
   "a11yMoveDown": "Omlaag",
+  "a11yMinuten": "Minuten",
   "a11yPrevMonth": "Vorige maand",
   "a11yNextMonth": "Volgende maand",
   "a11yPrevWeek": "Vorige week",

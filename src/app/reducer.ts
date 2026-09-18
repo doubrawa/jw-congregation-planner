@@ -30,7 +30,7 @@ import {
 import {
   editTalkTheme,
   lacAdd,
-  lacAdjust,
+  lacMinuten,
   lacMove,
   lacRemove,
   endeAusStartzeit,
@@ -952,10 +952,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, s89: action.payload }
     case 'closeS89':
       return { ...state, s89: null }
-    case 'lacAdjust':
+    case 'lacMinuten':
       return {
         ...state,
-        weeks: lacAdjust(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.delta),
+        weeks: lacMinuten(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.mins),
       }
     case 'lacRemove': {
       // Die Bestätigungen des gelöschten Punkts verfallen mit ihm. Die übrigen

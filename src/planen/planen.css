@@ -434,8 +434,7 @@
   flex: none;
 }
 
-.lac-move-btn,
-.lac-step-btn {
+.lac-move-btn {
   width: 24px;
   height: 24px;
   flex: none;
@@ -446,10 +445,6 @@
   justify-content: center;
   color: var(--mut);
   font-size: calc(10px * var(--fs));
-}
-
-.lac-step-btn {
-  font-size: calc(12px * var(--fs));
 }
 
 .lac-move-btn:disabled {
@@ -465,11 +460,53 @@
 }
 
 .lac-mins {
-  min-width: 48px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   font-size: calc(11px * var(--fs));
   font-weight: 600;
   color: var(--mut);
+}
+
+/*
+  Eingabefeld statt Schrittknöpfen: Die Dauer wird getippt, nicht erklickt.
+  Zwei Ziffern plus Rand — breiter braucht es nicht, die Grenze liegt bei 45.
+*/
+.lac-mins-input {
+  width: 38px;
+  padding: 2px 4px;
+  border: 1px solid var(--bord4);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--txt);
+  text-align: center;
+  font: inherit;
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+}
+
+.lac-mins-input:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 1px;
+}
+
+/*
+  **Ohne die kleinen Pfeile.** Ein `type="number"` blendet in Chrome und Safari
+  eigene Schrittknöpfe ein — genau das, was hier wegsollte. `type="text"` wäre
+  der falsche Weg zurück: Auf dem Telefon erschiene dann die Buchstaben-Tastatur.
+*/
+.lac-mins-input::-webkit-outer-spin-button,
+.lac-mins-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.lac-mins-input {
+  appearance: textfield;
+}
+
+.lac-mins-einheit {
+  white-space: nowrap;
 }
 
 .lac-spacer {

@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Povećaj",
   "a11yMoveUp": "Gore",
   "a11yMoveDown": "Dole",
+  "a11yMinuten": "Minuti",
   "a11yPrevMonth": "Prethodni mesec",
   "a11yNextMonth": "Sledeći mesec",
   "a11yPrevWeek": "Prethodna nedelja",

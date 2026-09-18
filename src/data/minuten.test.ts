@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { itemMinutes, lacAdjust } from './meeting-edit'
+import { itemMinutes, lacMinuten } from './meeting-edit'
 import type { Meeting, PartItem, Week } from './types'
 import { ersteZahl, ersteZahlErsetzen, zahl, zahlErsetzen, zahlWieVorlage } from './ziffern'
 
@@ -143,9 +143,9 @@ describe('itemMinutes', () => {
   })
 })
 
-describe('lacAdjust in fremder Sprache', () => {
+describe('lacMinuten in fremder Sprache', () => {
   it('ändert Zahl und Anzeigetext — und zwar in dessen eigener Schrift', () => {
-    const w = lacAdjust([woche('١٠ دق', 10)], 0, 'mid', 0, 0, 5)
+    const w = lacMinuten([woche('١٠ دق', 10)], 0, 'mid', 0, 0, 15)
     const item = w[0].mid.sections[0].items[0] as PartItem
     expect(item.mins).toBe(15)
     expect(item.meta).toBe('١٥ دق')
@@ -157,7 +157,7 @@ describe('lacAdjust in fremder Sprache', () => {
     // zu verstellen — und nichts aus der Meta-Zeile zurückzurechnen: Die Zahl
     // darin ist Anzeigetext, keine Angabe.
     const wochen = [woche('10 分')]
-    expect(lacAdjust(wochen, 0, 'mid', 0, 0, 5)).toBe(wochen)
+    expect(lacMinuten(wochen, 0, 'mid', 0, 0, 15)).toBe(wochen)
   })
 
   it('zieht die Sprachvarianten mit', () => {
@@ -165,7 +165,7 @@ describe('lacAdjust in fremder Sprache', () => {
     // Meta-Zeile stehen, zeigte ein Sprachwechsel die alte Dauer.
     const w0 = woche('10 Min.', 10)
     w0.alt = { ja: woche('10 分', 10) }
-    const w = lacAdjust([w0], 0, 'mid', 0, 0, 5)
+    const w = lacMinuten([w0], 0, 'mid', 0, 0, 15)
     const variante = w[0].alt!.ja.mid.sections[0].items[0] as PartItem
     expect(variante.mins).toBe(15)
     expect(variante.meta).toBe('15 分')
@@ -178,12 +178,12 @@ describe('lacAdjust in fremder Sprache', () => {
   })
 })
 
-function minutenNach(w0: Week, delta: number): number | null {
-  const w = lacAdjust([w0], 0, 'mid', 0, 0, delta)
+function minutenNach(w0: Week, minuten: number): number | null {
+  const w = lacMinuten([w0], 0, 'mid', 0, 0, minuten)
   return itemMinutes(w[0].mid.sections[0].items[0] as PartItem)
 }
 
-/** Kleinste Woche, die `lacAdjust` braucht: ein Punkt, eine Endzeit. */
+/** Kleinste Woche, die `lacMinuten` braucht: ein Punkt, eine Endzeit. */
 function woche(meta: string, mins?: number): Week {
   const item: PartItem = { iid: 'i35', title: 'Punkt', meta, names: [] }
   if (mins != null) item.mins = mins

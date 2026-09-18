@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Büyüt",
   "a11yMoveUp": "Yukarı taşı",
   "a11yMoveDown": "Aşağı taşı",
+  "a11yMinuten": "Dakika",
   "a11yPrevMonth": "Önceki ay",
   "a11yNextMonth": "Sonraki ay",
   "a11yPrevWeek": "Önceki hafta",

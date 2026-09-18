@@ -124,6 +124,7 @@ export const DE = {
     a11yIncrease: 'Erhöhen',
     a11yMoveUp: 'Nach oben',
     a11yMoveDown: 'Nach unten',
+    a11yMinuten: 'Minuten',
     a11yPrevMonth: 'Voriger Monat',
     a11yNextMonth: 'Nächster Monat',
     a11yPrevWeek: 'Vorherige Woche',

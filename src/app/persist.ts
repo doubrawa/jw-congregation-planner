@@ -421,7 +421,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       deleteConfirmationRows(congId, weg)
       break
     }
-    case 'lacAdjust':
+    case 'lacMinuten':
     case 'togglePartner':
     case 'talkEdit':
     case 'openingSong':

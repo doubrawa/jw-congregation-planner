@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { istSchuelerteil } from '../data/aux-class'
 import { rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
@@ -19,6 +19,91 @@ import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
 import { SlotChip } from './SlotChip'
+
+/**
+ * Die Minuten eines LAC-Punkts — **direkt eingeben**.
+ *
+ * Hier standen bis zum 18. September 2026 zwei Knöpfe, und die sprangen in
+ * Fünferschritten: „19 Minuten" war damit nicht einstellbar, „20" kostete vier
+ * Tipps. Ein Feld nennt den Wert selbst.
+ *
+ * **Gespeichert wird beim Verlassen, nicht bei jedem Tastendruck.** Sonst wäre
+ * die „1" von „19" schon ein eigener Wert — die Zahl würde auf das Minimum
+ * geklemmt, das Ende der Zusammenkunft nachgezogen und der Schreibvorgang
+ * angestoßen, bevor überhaupt zu Ende getippt ist. Solange das Feld den Fokus
+ * hat, gilt deshalb der Entwurf; danach wieder der Wert aus den Daten — der
+ * kann ein anderer sein, weil `lacMinuten` auf 5..45 klemmt.
+ */
+function MinutenFeld({
+  mins,
+  einheit,
+  label,
+  onSetzen,
+}: {
+  mins: number
+  einheit: string
+  label: string
+  onSetzen: (wert: number) => void
+}) {
+  const [entwurf, setEntwurf] = useState(String(mins))
+  const [tippt, setTippt] = useState(false)
+  const abbruch = useRef(false)
+
+  /**
+   * Übernehmen — **gelesen wird aus dem Feld, nicht aus dem Entwurf.**
+   *
+   * Das Feld trägt den Wert unabhängig davon, ob React den Entwurf schon
+   * übernommen hat; der Entwurf ist nur die Anzeige während des Tippens. Wer
+   * hier den Zustand läse, machte das Übernehmen von der Reihenfolge zweier
+   * Renderläufe abhängig — eine Abhängigkeit, die kein Nutzen rechtfertigt.
+   */
+  const beenden = (feld: HTMLInputElement) => {
+    setTippt(false)
+    if (abbruch.current) {
+      abbruch.current = false
+      setEntwurf(String(mins))
+      return
+    }
+    const roh = feld.value.trim()
+    const zahl = Number(roh)
+    // Ein leeres Feld ist keine Null: Wer alles löscht und weiterklickt,
+    // wollte die Dauer nicht auf das Minimum setzen.
+    if (roh && Number.isFinite(zahl)) onSetzen(zahl)
+    else setEntwurf(String(mins))
+  }
+
+  return (
+    <span className="lac-mins">
+      <input
+        className="lac-mins-input"
+        type="number"
+        inputMode="numeric"
+        min={LAC_MIN_MINUTEN}
+        max={LAC_MAX_MINUTEN}
+        step={1}
+        aria-label={label}
+        value={tippt ? entwurf : String(mins)}
+        onFocus={(e) => {
+          setEntwurf(String(mins))
+          setTippt(true)
+          e.currentTarget.select()
+        }}
+        onChange={(e) => setEntwurf(e.target.value)}
+        onBlur={(e) => beenden(e.currentTarget)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          // Abbrechen über ein Merkfähnchen statt über den Entwurf: Das
+          // Verlassen liest das Feld, und dort stünde die verworfene Zahl noch.
+          if (e.key === 'Escape') {
+            abbruch.current = true
+            e.currentTarget.blur()
+          }
+        }}
+      />
+      <span className="lac-mins-einheit">{einheit}</span>
+    </span>
+  )
+}
 
 /** Indizes der verschiebbaren (Nicht-Lied-)Items einer Sektion. */
 function movableIndices(section: Section): number[] {
@@ -311,31 +396,18 @@ export function MeetingSection({
             {editable && (
               <div className="lac-edit">
                 {/*
-                  Am Anschlag wird der Knopf abgeschaltet, statt ins Leere zu
-                  tippen (V7) — dieselbe Antwort, die die Pfeile daneben am Rand
-                  seit je geben. Die Grenzen kommen aus `meeting-edit.ts`, wo
-                  auch gerechnet wird; zwei Zahlen an zwei Stellen wären eine
-                  Abschrift zu viel.
+                  Die Einheit kommt aus dem Programm-Übersetzer, nicht aus der
+                  Oberfläche: Sie steht neben einer Zahl des Programms und folgt
+                  deshalb der Versammlungssprache („min.", „دقيقة", „分"). Geholt
+                  wird sie, indem eine Null übersetzt und wieder abgezogen wird —
+                  die Wörterbücher kennen nur die ganze Angabe „N Min.".
                 */}
-                <button
-                  type="button"
-                  className="lac-step-btn"
-                  aria-label={t.a11yDecrease}
-                  disabled={rawMins <= LAC_MIN_MINUTEN}
-                  onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: -5 })}
-                >
-                  –
-                </button>
-                <span className="lac-mins">{tpw(`${rawMins} Min.`)}</span>
-                <button
-                  type="button"
-                  className="lac-step-btn"
-                  aria-label={t.a11yIncrease}
-                  disabled={rawMins >= LAC_MAX_MINUTEN}
-                  onClick={() => dispatch({ type: 'lacAdjust', si, ii, delta: 5 })}
-                >
-                  +
-                </button>
+                <MinutenFeld
+                  mins={rawMins}
+                  einheit={tpw('0 Min.').replace(/^0/, '')}
+                  label={t.a11yMinuten}
+                  onSetzen={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
+                />
                 <span className="lac-spacer" />
                 <button
                   type="button"

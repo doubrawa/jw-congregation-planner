@@ -3,7 +3,7 @@ import { buildAbsences } from './absence'
 import { syncAuxSlots } from './aux-class'
 import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './testdaten'
 import { displayName, helperWorkload, isGuestRole, isSong, loadWindow, partWorkload, rolleMitHerkunft, workloadOf } from './helpers'
-import { itemMinutes, lacAdd, lacAdjust, lacMove, lacRemove, shiftEnd } from './meeting-edit'
+import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
   alleS89DerWoche,
   aufgabenBezeichnung,
@@ -315,12 +315,19 @@ describe('„Unser Leben als Christ" bearbeiten', () => {
     expect(shiftEnd('Ende ca. 20:45', -50)).toBe('Ende ca. 19:55')
   })
 
-  it('lacAdjust ändert Minuten (5..45) und zieht das Ende nach', () => {
-    const w = lacAdjust(weeks, 0, 'mid', si, gehIdx, 5)
-    expect(itemMinutes(w[0].mid.sections[si].items[gehIdx] as PartItem)).toBe(20)
+  it('lacMinuten setzt Minuten (5..45) und zieht das Ende nach', () => {
+    const minuten = (ws: Week[]) => itemMinutes(ws[0].mid.sections[si].items[gehIdx] as PartItem)
+    const w = lacMinuten(weeks, 0, 'mid', si, gehIdx, 20)
+    expect(minuten(w)).toBe(20)
     expect(w[0].mid.end).toBe('Ende ca. 20:50')
-    const max = lacAdjust(weeks, 0, 'mid', si, gehIdx, 100)
-    expect(itemMinutes(max[0].mid.sections[si].items[gehIdx] as PartItem)).toBe(45)
+    // Jede Minute ist einstellbar — bis zum 18.9.2026 ging nur jede fünfte.
+    expect(minuten(lacMinuten(weeks, 0, 'mid', si, gehIdx, 19))).toBe(19)
+    // Außerhalb der Grenzen wird geklemmt, statt abzulehnen: Das Eingabefeld
+    // trägt dieselben Grenzen, ein Wert daneben kommt also aus einer Tastatur.
+    expect(minuten(lacMinuten(weeks, 0, 'mid', si, gehIdx, 100))).toBe(45)
+    expect(minuten(lacMinuten(weeks, 0, 'mid', si, gehIdx, 1))).toBe(5)
+    // Unsinn lässt die Woche unangetastet, statt NaN zu speichern.
+    expect(lacMinuten(weeks, 0, 'mid', si, gehIdx, Number.NaN)).toBe(weeks)
   })
 
   it('lacRemove entfernt den Punkt und kürzt das Ende', () => {

@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Zwiększ",
   "a11yMoveUp": "W górę",
   "a11yMoveDown": "W dół",
+  "a11yMinuten": "Minuty",
   "a11yPrevMonth": "Poprzedni miesiąc",
   "a11yNextMonth": "Następny miesiąc",
   "a11yPrevWeek": "Poprzedni tydzień",

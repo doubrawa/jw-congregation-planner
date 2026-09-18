@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Forstør",
   "a11yMoveUp": "Flyt op",
   "a11yMoveDown": "Flyt ned",
+  "a11yMinuten": "Minutter",
   "a11yPrevMonth": "Forrige måned",
   "a11yNextMonth": "Næste måned",
   "a11yPrevWeek": "Forrige uge",

@@ -353,6 +353,7 @@ export default {
   "a11yIncrease": "הגדל",
   "a11yMoveUp": "העבר למעלה",
   "a11yMoveDown": "העבר למטה",
+  "a11yMinuten": "דקות",
   "a11yPrevMonth": "החודש הקודם",
   "a11yNextMonth": "החודש הבא",
   "a11yPrevWeek": "השבוע הקודם",

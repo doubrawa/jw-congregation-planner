@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Növelés",
   "a11yMoveUp": "Fel",
   "a11yMoveDown": "Le",
+  "a11yMinuten": "Perc",
   "a11yPrevMonth": "Előző hónap",
   "a11yNextMonth": "Következő hónap",
   "a11yPrevWeek": "Előző hét",

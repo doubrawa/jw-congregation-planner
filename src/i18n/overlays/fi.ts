@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Suurenna",
   "a11yMoveUp": "Siirrä ylös",
   "a11yMoveDown": "Siirrä alas",
+  "a11yMinuten": "Minuutit",
   "a11yPrevMonth": "Edellinen kuukausi",
   "a11yNextMonth": "Seuraava kuukausi",
   "a11yPrevWeek": "Edellinen viikko",

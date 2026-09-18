@@ -353,6 +353,7 @@ export default {
   "a11yIncrease": "بڑا کریں",
   "a11yMoveUp": "اوپر لے جائیں",
   "a11yMoveDown": "نیچے لے جائیں",
+  "a11yMinuten": "منٹ",
   "a11yPrevMonth": "پچھلا مہینہ",
   "a11yNextMonth": "اگلا مہینہ",
   "a11yPrevWeek": "پچھلا ہفتہ",

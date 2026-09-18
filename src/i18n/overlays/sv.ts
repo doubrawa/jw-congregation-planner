@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Öka",
   "a11yMoveUp": "Flytta upp",
   "a11yMoveDown": "Flytta ner",
+  "a11yMinuten": "Minuter",
   "a11yPrevMonth": "Föregående månad",
   "a11yNextMonth": "Nästa månad",
   "a11yPrevWeek": "Föregående vecka",

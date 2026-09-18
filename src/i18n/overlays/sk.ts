@@ -354,6 +354,7 @@ export default {
   "a11yIncrease": "Zväčšiť",
   "a11yMoveUp": "Nahor",
   "a11yMoveDown": "Nadol",
+  "a11yMinuten": "Minúty",
   "a11yPrevMonth": "Predchádzajúci mesiac",
   "a11yNextMonth": "Ďalší mesiac",
   "a11yPrevWeek": "Predchádzajúci týždeň",

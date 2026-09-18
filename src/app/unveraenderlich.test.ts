@@ -133,7 +133,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'setAuxClass', on: true },
     // Leben-und-Dienst-Punkte
     { type: 'lacAdd', si: p.si, title: 'Neuer Punkt' },
-    { type: 'lacAdjust', si: p.si, ii: p.ii, delta: 1 },
+    { type: 'lacMinuten', si: p.si, ii: p.ii, mins: 19 },
     { type: 'lacMove', si: p.si, ii: p.ii, dir: 1 },
     { type: 'lacRemove', si: p.si, ii: p.ii },
     // Wochen-Sonderfälle

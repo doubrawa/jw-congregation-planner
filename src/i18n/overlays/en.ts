@@ -126,6 +126,7 @@ export default {
   "a11yIncrease": "Increase",
   "a11yMoveUp": "Move up",
   "a11yMoveDown": "Move down",
+  "a11yMinuten": "Minutes",
   "a11yPrevMonth": "Previous month",
   "a11yNextMonth": "Next month",
   "a11yPrevWeek": "Previous week",

@@ -316,6 +316,7 @@ export default {
   "a11yIncrease": "تكبير",
   "a11yMoveUp": "نقل إلى أعلى",
   "a11yMoveDown": "نقل إلى أسفل",
+  "a11yMinuten": "دقائق",
   "a11yPrevMonth": "الشهر السابق",
   "a11yNextMonth": "الشهر التالي",
   "a11yPrevWeek": "الأسبوع السابق",
