@@ -4,6 +4,7 @@ import { versatzAbMontag, wdAusVersatz } from '../data/meeting-dates'
 import type { MeetingKey, MeetingTime } from '../data/types'
 import { VERSAETZE, wochentagName } from '../planen/wochentage'
 import { timeOptions } from './meeting-times'
+import { Switch } from '../components/Switch'
 
 /** Versammlung: Name, Saal und die beiden Zusammenkunfts-Zeiten (Tag + Uhrzeit). */
 export function CongregationPanel() {
@@ -89,16 +90,11 @@ export function CongregationPanel() {
       */}
       <div className="rem-toggle-row">
         <span className="rem-toggle-label">{t.auxKlasse}</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={state.auxClass}
-          aria-label={t.auxKlasse}
-          className={state.auxClass ? 'switch is-on' : 'switch'}
-          onClick={() => dispatch({ type: 'setAuxClass', on: !state.auxClass })}
-        >
-          <span className="switch-knob" />
-        </button>
+        <Switch
+          on={state.auxClass}
+          label={t.auxKlasse}
+          onToggle={() => dispatch({ type: 'setAuxClass', on: !state.auxClass })}
+        />
       </div>
       <p className="panel-hint">{t.auxDesc}</p>
     </div>

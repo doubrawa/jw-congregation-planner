@@ -355,3 +355,22 @@ export function funktionsKopf(key) {
   const k = String(key ?? '').trim()
   return { ...authKopf(k), Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' }
 }
+
+/**
+ * Reihenfolge der Treffpunkte einer Woche: Wochentag (ab Montag), dann
+ * Uhrzeit, dann Gruppe — **dieselbe wie in der App** (`fsSort` in
+ * `src/data/fs.ts`). Ohne Gruppe (der Versammlungstreffpunkt) steht vorn.
+ *
+ * Stand dreimal da, und die drei Abschriften behandelten eine fehlende Gruppe
+ * verschieden: Eine von ihnen rief `a.grp.localeCompare(b.grp)` — bei einem
+ * Versammlungstreffpunkt aus der Datenbank ist `grp` aber `null`, und dann
+ * warf der Sortierlauf. Jede der drei behauptete im Kommentar, „wie in der
+ * App" zu sortieren.
+ */
+export function fsSort(a, b) {
+  return (
+    ((a.wd + 6) % 7) - ((b.wd + 6) % 7) ||
+    String(a.time).localeCompare(String(b.time)) ||
+    String(a.grp ?? '').localeCompare(String(b.grp ?? ''))
+  )
+}

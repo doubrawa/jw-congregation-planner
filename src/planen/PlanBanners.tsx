@@ -4,6 +4,7 @@
  * State — kein eigener Zustand.
  */
 
+import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { engpaesse, offenTrotzAllem } from '../data/bedarf'
@@ -11,7 +12,7 @@ import { fsKennung, fsWeekConflicts } from '../data/fs'
 import { istAusgefallen, serviceQualKey } from '../data/helpers'
 import { openSlotLabels, type Conflict } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
-import { wochentagName } from './wochentage'
+import { wochentagNameAusWd } from './wochentage'
 import { privLabel } from '../personen/priv-label'
 import type { MeetingKey, MeetingTab, QualificationKey } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -88,7 +89,7 @@ export function FsConflictsBanner({ onlyGroup }: { onlyGroup: string | null }) {
   if (conflicts.length === 0) return null
 
   const wochentag = (wd: number | undefined): string =>
-    wd === undefined ? '' : wochentagName((wd + 6) % 7, state.lang)
+    wd === undefined ? '' : wochentagNameAusWd(wd, state.lang)
 
   const text = (c: Conflict): string => {
     if (c.kind === 'fsAbsent') {
@@ -123,11 +124,18 @@ export function OpenSlotsBanner({ tab, tpw }: { tab: MeetingKey; tpw: (s: string
   const { state } = useApp()
   const { t, tu } = useT()
   const rawWeek = state.weeks[state.week]
-  if (!rawWeek) return null
-
-  if (istAusgefallen(rawWeek, tab)) return null // entfällt → nichts offen (T30)
-
-  const openSlots = openSlotLabels(rawWeek[tab], state.services)
+  /*
+   * Gemerkt und **vor** den frühen Ausstiegen — der Wochenstreifen zeichnet
+   * drei Wochen (vorige, aktuelle, nächste), und jeder Dispatch rendert sie
+   * neu: ein Toast, der nach 2,4 Sekunden von selbst verschwindet, kostete
+   * sonst drei volle Durchläufe über alle Plätze der Zusammenkunft.
+   * Eine entfallende Woche hat nichts offen (T30).
+   */
+  const openSlots = useMemo(
+    () =>
+      rawWeek && !istAusgefallen(rawWeek, tab) ? openSlotLabels(rawWeek[tab], state.services) : [],
+    [rawWeek, tab, state.services],
+  )
   const openTotal = openSlots.reduce((sum, slot) => sum + slot.n, 0)
   if (openTotal === 0) return null
 
@@ -172,10 +180,19 @@ export function EngpassBanner({ tab }: { tab: MeetingKey }) {
   const { t, tu } = useT()
   const abwesend = useAbwesend()
   const rawWeek = state.weeks[state.week]
-  if (!rawWeek) return null
-  if (istAusgefallen(rawWeek, tab)) return null // entfällt → nichts zu besetzen (T30)
-
-  const treffer = engpaesse(rawWeek[tab], state.services, state.persons, abwesend, state.week, tab)
+  /*
+   * Wie oben gemerkt: `engpaesse` läuft je Bereich zweimal über alle Personen
+   * — bei 300 Personen und fünfzehn Bereichen rund 9 000 Schritte, mal drei
+   * für den Wochenstreifen, bei jedem Dispatch.
+   * Eine entfallende Woche hat nichts zu besetzen (T30).
+   */
+  const treffer = useMemo(
+    () =>
+      rawWeek && !istAusgefallen(rawWeek, tab)
+        ? engpaesse(rawWeek[tab], state.services, state.persons, abwesend, state.week, tab)
+        : [],
+    [rawWeek, tab, state.services, state.persons, abwesend, state.week],
+  )
   if (treffer.length === 0) return null
 
   /**

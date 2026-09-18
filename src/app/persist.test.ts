@@ -58,6 +58,8 @@ vi.mock('../lib/data', async (importActual) => ({
 }))
 
 import * as data from '../lib/data'
+import { reducerFaelle, setztFeld } from './quelltext-proben'
+import { renameInWeeks } from '../data/namensbindung'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 function st(over: Partial<AppState> = {}): AppState {
@@ -128,8 +130,12 @@ describe('Zuteilen', () => {
   })
 
   it('assign (Treffpunkt-Leiter) → saveFsWeek statt saveWeek', () => {
-    const prev = st({ slotSel: { kind: 'fs', wi: 0, instId: 'x', label: '', priv: null, groups: false } })
-    const next = st()
+    // Geteilte Wochen: Der Reducer gibt unberührte Wochen **identisch** zurück,
+    // und genau daran liest `persist` ab, was zu schreiben ist. Zwei frisch
+    // gebaute Bestände wären nirgends gleich — das gäbe es im Betrieb nicht.
+    const weeks = buildDemoWeeks()
+    const prev = st({ weeks, slotSel: { kind: 'fs', wi: 0, instId: 'x', label: '', priv: null, groups: false } })
+    const next = st({ weeks })
     persist(prev, next, { type: 'assign', name: 'A' })
     expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[0]?.start, next.fsWeeks[0])
     expect(data.saveWeek).not.toHaveBeenCalled()
@@ -393,8 +399,9 @@ describe('Index außerhalb des Fensters', () => {
 
   it('assign auf eine Woche, die es nicht gibt, schreibt nichts', () => {
     const sel = { kind: 'part', wi: WEIT_DRAUSSEN, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } as const
-    const prev = st({ slotSel: sel })
-    expect(() => persist(prev, st({ slotSel: sel }), { type: 'assign', name: 'A' })).not.toThrow()
+    const weeks = buildDemoWeeks() // geteilt: unberührte Wochen sind identisch
+    const prev = st({ weeks, slotSel: sel })
+    expect(() => persist(prev, st({ weeks, slotSel: sel }), { type: 'assign', name: 'A' })).not.toThrow()
     expect(data.saveWeek).not.toHaveBeenCalled()
     expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
@@ -406,7 +413,8 @@ describe('Index außerhalb des Fensters', () => {
   })
 
   it('mergeWeekAlt auf eine Woche, die es nicht gibt, schreibt nichts', () => {
-    persist(st(), st(), { type: 'mergeWeekAlt', wi: WEIT_DRAUSSEN, alt: {} })
+    const weeks = buildDemoWeeks() // geteilt: unberührte Wochen sind identisch
+    persist(st({ weeks }), st({ weeks }), { type: 'mergeWeekAlt', wi: WEIT_DRAUSSEN, alt: {} })
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
@@ -1079,7 +1087,7 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
      * bei der Person an, deren Namen man gerade berichtigte.
      */
     const vorher = wocheMitKlasse()
-    const umbenannt = data.renameInWeeks([vorher], 'pA', 'A. Berg', 'A. Bergh')[0] as Week
+    const umbenannt = renameInWeeks([vorher], 'pA', 'A. Berg', 'A. Bergh')[0] as Week
 
     persist(mitWoche(vorher), mitWoche(umbenannt), {
       type: 'updatePerson',
@@ -1186,11 +1194,23 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
   const REDUCER = import.meta.glob('./reducer.ts', { query: '?raw', import: 'default', eager: true })
   const PERSIST = import.meta.glob('./persist.ts', { query: '?raw', import: 'default', eager: true })
 
-  /** Zustandsteile, die in der Datenbank stehen. */
+  /**
+   * Zustandsteile, die in der Datenbank stehen und einen **eigenen** `case`
+   * brauchen.
+   *
+   * `weeks` steht bewusst nicht dabei: Sie haben seit dem Umbau einen
+   * allgemeinen Schreibweg — der Block unter dem Switch schreibt jede Woche,
+   * deren Referenz sich geändert hat, gleich welche Aktion sie angefasst hat.
+   * Dafür wacht die Probe darunter über die Ausnahmen.
+   *
+   * `notifs` fehlt aus demselben Grund: Eine hier entstandene Mitteilung geht
+   * am `local`-Kennzeichen hinaus, nicht an der auslösenden Aktion (siehe Ende
+   * von `persist.ts`).
+   */
   const DAUERHAFT = [
-    'weeks', 'fsWeeks', 'fsRules', 'fsBase', 'persons', 'services', 'groups',
+    'fsWeeks', 'fsRules', 'fsBase', 'persons', 'services', 'groups',
     'confirmations', 'absences', 'members', 'invites', 'congregation',
-    'reminders', 'congLang', 'progLangs', 'auxClass', 'notifs',
+    'reminders', 'congLang', 'progLangs', 'auxClass',
   ]
 
   /**
@@ -1200,36 +1220,7 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    */
   const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs'])
 
-  const WORTZEICHEN = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.'
-
-  /** Setzt dieser Fall das Feld — als eigene Eigenschaft, nicht als `x.feld:`? */
-  const setztFeld = (text: string, feld: string): boolean => {
-    for (let i = text.indexOf(feld + ':'); i >= 0; i = text.indexOf(feld + ':', i + 1)) {
-      if (i === 0 || !WORTZEICHEN.includes(text[i - 1]!)) return true
-    }
-    return false
-  }
-
-  /** Die `case`-Zweige von `baseReducer`, Durchreichen aufgelöst. */
-  const faelle = (): Array<[string, string]> => {
-    const quelle = roh(REDUCER)
-    const ab = quelle.indexOf('function baseReducer(')
-    if (ab < 0) throw new Error('baseReducer nicht gefunden')
-    const teile = quelle.slice(ab).split('\n    case ')
-    const roheFaelle: Array<[string, string]> = []
-    for (const teil of teile.slice(1)) {
-      const ende = teil.indexOf("':")
-      if (ende < 0 || teil[0] !== "'") continue
-      roheFaelle.push([teil.slice(1, ende), teil.slice(ende + 2)])
-    }
-    if (roheFaelle.length < 60) throw new Error(`Fälle nicht gefunden (${roheFaelle.length})`)
-    // `case 'a': case 'b': <Rumpf>` — der leere Zweig erbt den nächsten.
-    return roheFaelle.map(([name], i) => {
-      let j = i
-      while (roheFaelle[j]![1].trim() === '' && j + 1 < roheFaelle.length) j++
-      return [name, roheFaelle[j]![1]] as [string, string]
-    })
-  }
+  const faelle = (): Array<[string, string]> => reducerFaelle(roh(REDUCER))
 
   it('kein Fall ändert etwas Dauerhaftes ohne Schreibweg', () => {
     const persistQuelle = roh(PERSIST)
@@ -1241,6 +1232,20 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
       if (felder.length > 0) offen.push(`${name} → ${felder.join(', ')}`)
     }
     expect(offen, `ohne Schreibweg: ${offen.join(' | ')}`).toEqual([])
+  })
+
+  /**
+   * **Die Ausnahmeliste bleibt klein.**
+   *
+   * Der allgemeine Weg trägt die Wochen; wer ihn umgeht, umgeht ihn still —
+   * die Änderung steht auf dem Bildschirm und ist beim nächsten Laden weg.
+   * Beide Einträge haben in `persist.ts` einen Grund; ein dritter soll nicht
+   * nebenbei entstehen.
+   */
+  it('nur die zwei begründeten Aktionen umgehen den Wochen-Schreibweg', () => {
+    const liste = /const OHNE_WOCHENSCHREIBEN[^=]*=[^[]*\[([^\]]*)\]/.exec(roh(PERSIST))?.[1]
+    const namen = (liste ?? '').split(',').map((n) => n.trim().replace(/'/g, '')).filter(Boolean)
+    expect(namen).toEqual(['hydrate', 'takeSubstitute'])
   })
 
   it('und die Ausnahmen sind wirklich welche', () => {

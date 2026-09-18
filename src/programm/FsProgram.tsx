@@ -4,7 +4,7 @@ import { gehoertZu } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
-import { wochentagName } from '../planen/wochentage'
+import { wochentagNameAusWd } from '../planen/wochentage'
 
 /**
  * Treffpunkte-Anzeige (Programm-Tab „Zusammenkünfte für den Predigtdienst"):
@@ -45,7 +45,7 @@ export function FsProgram() {
       const tag = fsTag(fsKennung(state.weeks[state.week], state.fsBase, state.week), inst.wd)
       const label = tag
         ? tag.toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
-        : wochentagName((inst.wd + 6) % 7, state.lang)
+        : wochentagNameAusWd(inst.wd, state.lang)
       day = { wd: inst.wd, label, items: [] }
       days.push(day)
     }

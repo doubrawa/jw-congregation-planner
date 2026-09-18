@@ -16,6 +16,7 @@ import { aufgabenLabel, useT } from '../i18n/useT'
 import type { MeetingKey } from '../data/types'
 import { PlanungsKarte } from './PlanungsKarte'
 import './dashboard.css'
+import { versatzAbMontag } from '../data/meeting-dates'
 
 /** Eine Zeile im Block „Aktuelle Woche": eine Zusammenkunft oder ein eigener Treffpunkt. */
 interface WochenZeile {
@@ -149,7 +150,7 @@ export function DashboardScreen() {
           // man kommt.
           datum: tp(fsTerminText(fsTag(kennung, inst.wd), inst)),
           meins: true,
-          tag: (inst.wd + 6) % 7, // Versatz ab Montag
+          tag: versatzAbMontag(inst.wd),
           minute: minuteDesTages(inst.time),
         })),
       ].sort((a, b) => a.tag - b.tag || a.minute - b.minute)

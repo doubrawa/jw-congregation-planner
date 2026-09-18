@@ -6,7 +6,7 @@ import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
 import { SlotChip } from './SlotChip'
 import { machBetrifft } from './useKonflikte'
-import { wochentagName } from './wochentage'
+import { wochentagNameAusWd } from './wochentage'
 import { useZusage } from './useZusage'
 import { ZusageLegende } from './ZusageStatus'
 
@@ -89,7 +89,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
     // ein erfundenes Datum wäre schlimmer als ein fehlendes.
     return tag
       ? tag.toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
-      : wochentagName((wd + 6) % 7, state.lang)
+      : wochentagNameAusWd(wd, state.lang)
   }
 
   const openLeader = (inst: FsInstance) =>
@@ -138,7 +138,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   }
 
   const wdOptions = [1, 2, 3, 4, 5, 6, 0]
-  const wdName = (d: number): string => wochentagName((d + 6) % 7, state.lang)
+  const wdName = (d: number): string => wochentagNameAusWd(d, state.lang)
 
   // Treffpunkte dieser Woche ohne zugeteilten Leiter → Warn-Banner (analog zu
   // den offenen Zuteilungen der Zusammenkünfte). Konflikte gibt es hier nicht.

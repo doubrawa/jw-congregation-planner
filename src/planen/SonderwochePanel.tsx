@@ -4,6 +4,7 @@ import { meetingOffset, meetingTime, wdAusVersatz } from '../data/meeting-dates'
 import type { MeetingKey } from '../data/types'
 import { useT } from '../i18n/useT'
 import { VERSAETZE, wochentagName } from './wochentage'
+import { Switch } from '../components/Switch'
 
 /**
  * Sonderwoche: diese Zusammenkunft weicht von der Regel ab (T30).
@@ -63,16 +64,11 @@ export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
     <div className={`sonder${weichtAb(week, tab) ? ' is-abweichend' : ''}`}>
       <div className="sonder-row">
         <span className="sonder-name">{name}</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={findetStatt}
-          aria-label={name}
-          className={findetStatt ? 'switch is-on' : 'switch'}
-          onClick={() => setzen({ cancelled: findetStatt ? true : undefined })}
-        >
-          <span className="switch-knob" />
-        </button>
+        <Switch
+          on={findetStatt}
+          label={name}
+          onToggle={() => setzen({ cancelled: findetStatt ? true : undefined })}
+        />
       </div>
 
       {findetStatt && (

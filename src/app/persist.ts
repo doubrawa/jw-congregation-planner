@@ -174,22 +174,64 @@ function wocheSpeichern(congId: string, vorher: Week[], weeks: Week[], wi: numbe
 }
 
 /**
- * Jede Woche speichern, die sich zwischen zwei Ständen geändert hat.
+ * **Jede geänderte Woche wird geschrieben — abgelesen, nicht aufgezählt.**
  *
- * Zwei Einstellungen greifen in die Wochendaten selbst: die
- * Zusammenkunftszeit zieht die Endzeiten nach, und die Zusätzliche Klasse
- * setzt bzw. entfernt in jeder Woche die Marke `auxRatgeber` samt zweiter
- * Platzreihe. Beides steht in den Wochenzeilen, nicht in den Einstellungen.
+ * Nach demselben Grundsatz wie die Mitteilungen und die entzogenen Zusagen am
+ * Ende dieser Datei. Vorher stand hier eine Aufzählung der auslösenden
+ * Aktionen: siebzehn `case`-Marken, die nichts taten als „schreib die Woche".
+ * Wer eine neue wochenändernde Aktion baute und sich nicht eintrug, verlor die
+ * Änderung beim nächsten Laden — und **nichts schlug fehl**. Genau davor warnt
+ * `kein-leerlauf-schreiben.test.ts`.
+ *
+ * Der Vergleich trägt auch das, was keine Aktion je aufgezählt hätte: Eine
+ * geänderte Zusammenkunftszeit zieht die Endzeiten **aller** geladenen Wochen
+ * nach (`endenNachziehen`), und die Zusätzliche Klasse setzt bzw. entfernt in
+ * jeder Woche die Marke `auxRatgeber` samt zweiter Platzreihe (`syncAuxSlots`).
+ * Beides steht in den Wochenzeilen, nicht in den Einstellungen.
  *
  * Geschrieben wird nur, was sich wirklich geändert hat — der Reducer gibt
- * unberührte Wochen identisch zurück, und `syncAuxSlots` tut das ebenso.
+ * unberührte Wochen identisch zurück; darauf baut die ganze Persistenzschicht.
+ *
+ * `gebuendelt` verzögert das Schreiben (siehe `wochePlanen`). Diese Liste darf
+ * unvollständig sein: Wer dort fehlt, wird sofort geschrieben — mehr Anfragen,
+ * aber nichts geht verloren. Die Frage **ob** geschrieben wird, hängt dagegen
+ * an keiner Liste mehr.
  */
-function geaenderteWochenSpeichern(congId: string, vorher: Week[], nachher: Week[]): void {
+function geaenderteWochenSpeichern(
+  congId: string,
+  vorher: Week[],
+  nachher: Week[],
+  gebuendelt: boolean,
+): void {
   if (vorher === nachher) return
   for (let wi = 0; wi < nachher.length; wi++) {
-    if (nachher[wi] !== vorher[wi]) wocheSpeichern(congId, vorher, nachher, wi)
+    if (nachher[wi] === vorher[wi]) continue
+    if (gebuendelt) wochePlanen(congId, nachher, wi)
+    else wocheSpeichern(congId, vorher, nachher, wi)
   }
 }
+
+/**
+ * Aktionen, deren Wochen-Änderungen **gebündelt** hinausgehen: Das
+ * Personen-Formular löst je Tastenanschlag aus, und eine Umbenennung zieht
+ * durch jede geplante Woche (`renameInWeeks`) — einzeln geschrieben wären das
+ * Dutzende Anfragen je Buchstabe. `flush()` beim Verlassen der Ansicht holt sie
+ * ein (`selectPerson`/`navigate`/`logout`).
+ */
+const GEBUENDELT: readonly AppAction['type'][] = ['updatePerson', 'removePerson', 'removeService']
+
+/**
+ * Aktionen, deren geänderte Wochen **nicht** von hier geschrieben werden — je
+ * mit einem Grund, nicht als Buchhaltung:
+ *
+ * - `hydrate` ersetzt den ganzen Bestand. Geschrieben würde alles, was gerade
+ *   gelesen wurde — und weil Wochen mit Vergleiche-und-Tausche gespeichert
+ *   werden (T39), bekäme der nächste Planer Konflikte für Wochen, die niemand
+ *   angefasst hat.
+ * - `takeSubstitute` schreibt die Edge Function: Wochen und Bestätigungen sind
+ *   planer-only, der Einspringende dürfte es selbst gar nicht.
+ */
+const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubstitute']
 
 /**
  * Nach einem Löschen die **Nachrücker** neu nummerieren.
@@ -351,7 +393,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         break
       }
       if (sel) {
-        wocheSpeichern(congId, prev.weeks, next.weeks, sel.wi)
         // Bestätigungs-Einträge geänderter Slots abräumen
         const vorher = prev.weeks[sel.wi]?.[sel.tab]
         const nachher = next.weeks[sel.wi]?.[sel.tab]
@@ -373,7 +414,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           congId,
           changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
         )
-        wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       }
       break
     }
@@ -385,7 +425,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           congId,
           changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
         )
-        wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       }
       break
     }
@@ -404,15 +443,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Grundplan-Blob + die neu materialisierten Wochen (gebündelt).
       treffpunkteSpeichern(congId, prev, next, fsVerwaist)
       break
-    case 'lacMove':
-      if (next.weeks === prev.weeks) break // Rand: kein Tausch
-      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
-      break
-    case 'lacAdd':
-      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
-      break
     case 'lacRemove': {
-      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
       // **Abgelesen, nicht nachgerechnet** — wie bei den Treffpunkten: Welche
       // Zusage mit dem gelöschten Punkt verfällt, entscheidet der Reducer; hier
       // gilt, was im Zustand fehlt. Verschoben und umbenannt wird nichts mehr:
@@ -421,28 +452,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       deleteConfirmationRows(congId, weg)
       break
     }
-    case 'lacMinuten':
-    case 'togglePartner':
-    case 'talkEdit':
-    case 'openingSong':
-    case 'closingSong':
-    case 'setAbweichung': // Sonderwoche: Verlegung, Ausfall, Grund (T30)
-    case 'setDienstwoche': // Kreisaufseher-Woche: Ablauf umgebaut (T62)
-    case 'setAnlass': // Anlass der Woche samt seinen Wirkungen (T64)
-    case 'setAnlassTermin':
-    case 'terminAdd': // Weitere Termine der Woche (T63)
-    case 'terminUpdate':
-    case 'terminRemove':
-    case 'setPartThema': // Thema eines Vortragspunkts (T62)
-      wocheSpeichern(congId, prev.weeks, next.weeks, prev.week)
-      break
-    case 'finishImport':
-    case 'addImportedWeek':
-      wocheSpeichern(congId, prev.weeks, next.weeks, next.weeks.length - 1)
-      break
-    case 'mergeWeekAlt':
-      wocheSpeichern(congId, prev.weeks, next.weeks, action.wi)
-      break
     case 'addPerson':
       savePerson(congId, action.person)
       break
@@ -450,15 +459,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
       const p = next.persons.find((x) => x.id === action.id)
       if (p) personSaves.schedule(p.id, { congId, person: p })
-      // Namensänderung hat Wochen umgeschrieben (renameInWeeks) → betroffene
-      // Wochen ebenfalls (gebündelt) speichern; unveränderte behalten ihre Ref.
-      for (let i = 0; i < next.weeks.length; i++) {
-        if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
-      }
-      // Dasselbe für die Treffpunkte (fsRenameLeader) — eigene Tabelle, eigener
-      // Schreibweg. Ohne dies hielte der neue Name nur bis zum nächsten Laden.
+      // Die Namensänderung in den Wochen (renameInWeeks) schreibt der Block
+      // unter dem Switch — hier bleiben die Treffpunkte (fsRenameLeader):
+      // eigene Tabelle, eigener Schreibweg. Ohne dies hielte der neue Name nur
+      // bis zum nächsten Laden.
+      //
+      // **Gebündelt wie die Wochen daneben.** Ein Nachname mit zwölf Buchstaben
+      // schrieb sonst zwölfmal jede Woche, in der die Person einen Treffpunkt
+      // leitet — bei zwanzig geleiteten Wochen 240 Anfragen für eine
+      // berichtigte Schreibweise. `flush()` beim Verlassen der Ansicht holt sie
+      // ein (`selectPerson`/`navigate`/`logout`).
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
       // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
       if ('plannerVorgemerkt' in action.patch) {
@@ -503,12 +515,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // nächsten Neuaufbau wieder mit.
       const haus = prev.persons.find((p) => p.id === action.id)?.fam
       if (haus && !next.persons.some((p) => p.fam === haus)) deleteHouseholdRow(haus)
-      // Die gelösten Verweise (T38) müssen auch in der Datenbank landet sein —
-      // sonst zeigt der Fremdschlüssel dort weiter ins Leere. Nur die wirklich
-      // geänderten Wochen: unveränderte behalten ihre Referenz.
-      for (let i = 0; i < next.weeks.length; i++) {
-        if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
-      }
+      // Die gelösten Verweise (T38) müssen auch in der Datenbank landen —
+      // sonst zeigt der Fremdschlüssel dort weiter ins Leere. Die
+      // Zusammenkunfts-Wochen übernimmt der Block unter dem Switch.
       for (let i = 0; i < next.fsWeeks.length; i++) {
         if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
@@ -567,9 +576,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       for (let i = 0; i < next.persons.length; i++) {
         const p = next.persons[i]
         if (p && p !== prev.persons[i]) savePerson(congId, p)
-      }
-      for (let i = 0; i < next.weeks.length; i++) {
-        if (next.weeks[i] !== prev.weeks[i]) wochePlanen(congId, next.weeks, i)
       }
       const weg = dienstZusagenKeys(prev.weeks, action.key)
       if (weg.length) deleteConfirmationRows(congId, weg)
@@ -630,33 +636,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         progLangs: next.progLangs,
         auxClass: next.auxClass,
       })
-      /*
-       * **Der Schalter allein genügt nicht.** `setAuxClass` baut über
-       * `syncAuxSlots` jede geladene Woche um: Ein- und Ausschalten setzt bzw.
-       * entfernt dort die Marke `auxRatgeber` und die zweite Platzreihe.
-       *
-       * Genau an dieser Marke erkennen die Edge Functions, ob es die
-       * Zusätzliche Klasse gibt (`_shared/zuteilungen.ts`) — die Einstellung
-       * selbst lesen sie nicht. Blieb sie in der Datenbank stehen, hielten sie
-       * die Klasse für eingerichtet und schickten Erinnerungen und
-       * „Plan senden" weiter an einen Raum, den der Planer abgeschaltet hatte,
-       * und an einen Ratgeber, den die App nirgends mehr zeigte. Beim nächsten
-       * Laden war er dann auch wieder da.
-       *
-       * Die übrigen Aktionen dieser Gruppe fassen keine Woche an; für sie ist
-       * der Aufruf ein Nichts.
-       */
-      geaenderteWochenSpeichern(congId, prev.weeks, next.weeks)
       break
     case 'updateCongregation':
       congSaves.schedule('info', { congId, info: next.congregation })
-      // Eine geänderte Zusammenkunftszeit verschiebt die Endzeiten aller
-      // geladenen Wochen (siehe `endenNachziehen`). Die stehen in den
-      // Wochenzeilen, nicht in den Einstellungen — also müssen sie mit
-      // gespeichert werden, sonst steht die alte Endzeit nach dem nächsten
-      // Laden wieder da. Gespeichert wird nur, was sich wirklich geändert hat:
-      // der Reducer gibt unveränderte Wochen identisch zurück.
-      geaenderteWochenSpeichern(congId, prev.weeks, next.weeks)
       break
     case 'updateMember': {
       const member = next.members.find((m) => m.userId === action.userId)
@@ -672,6 +654,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'removeInvite':
       deleteInviteRow(action.id)
       break
+  }
+
+  // Jede Woche, die sich geändert hat — siehe `geaenderteWochenSpeichern`.
+  if (!OHNE_WOCHENSCHREIBEN.includes(action.type)) {
+    geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type))
   }
 
   /*

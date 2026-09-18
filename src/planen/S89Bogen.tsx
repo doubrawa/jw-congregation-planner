@@ -5,6 +5,7 @@ import { alleS89DerWoche } from '../data/planning'
 import { useT } from '../i18n/useT'
 import { seiten } from './s89-seiten'
 import './print-s89.css'
+import { Switch } from '../components/Switch'
 
 /**
  * Druckbogen der S-89-Zettel einer Woche — 4 oder 6 auf ein A4 (T71).
@@ -75,16 +76,7 @@ export function S89Bogen() {
         <h2 className="panel-label">S-89 {t.drucken}</h2>
         <div className="s89-druck-row">
           <span className="s89-druck-count">{t.s89Partner}</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={mitPartner}
-            aria-label={t.s89Partner}
-            className={mitPartner ? 'switch is-on' : 'switch'}
-            onClick={() => setMitPartner((v) => !v)}
-          >
-            <span className="switch-knob" />
-          </button>
+          <Switch on={mitPartner} label={t.s89Partner} onToggle={() => setMitPartner((v) => !v)} />
           <button type="button" className="s89-druck-btn" onClick={drucken}>
             {t.drucken}
           </button>

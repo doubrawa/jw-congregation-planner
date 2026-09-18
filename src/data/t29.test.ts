@@ -12,7 +12,7 @@ import {
   ROLE_GUEST_SPEAKER,
   ROLE_OWN_SPEAKER,
 } from './planning'
-import { pidsNachtragen } from '../lib/data'
+import { pidsNachtragen } from './namensbindung'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
 

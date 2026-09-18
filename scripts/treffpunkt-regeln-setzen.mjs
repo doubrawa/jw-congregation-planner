@@ -36,7 +36,7 @@
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
-import { argumente, authKopf, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, authKopf, fsSort, zugangsdaten } from './gemeinsam.mjs'
 
 const WD_NAME = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 
@@ -57,15 +57,6 @@ export function giltInWoche(regel, wochenStart) {
   if (!regel.monthly) return true
   const tag = tagDerWoche(wochenStart, regel.wd)
   return tag !== null && Math.ceil(tag.getDate() / 7) === regel.monthly
-}
-
-/** Reihenfolge wie `fsSort` in der App: Wochentag (ab Montag), Uhrzeit, Gruppe. */
-export function fsSort(a, b) {
-  return (
-    ((a.wd + 6) % 7) - ((b.wd + 6) % 7) ||
-    String(a.time).localeCompare(String(b.time)) ||
-    String(a.grp ?? '').localeCompare(String(b.grp ?? ''))
-  )
 }
 
 /**

@@ -129,7 +129,7 @@ const MONATE = [
 
 /** „Dienstag, 8. September" — die Schreibweise der Wochendaten. */
 export function deutschesDatum(d: Date): string {
-  return `${WOCHENTAGE[(d.getDay() + 6) % 7]}, ${d.getDate()}. ${MONATE[d.getMonth()]}`
+  return `${WOCHENTAGE[versatzAbMontag(d.getDay())]}, ${d.getDate()}. ${MONATE[d.getMonth()]}`
 }
 
 /**

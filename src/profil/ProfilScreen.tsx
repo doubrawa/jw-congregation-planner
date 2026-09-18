@@ -10,6 +10,7 @@ import { promptInstall } from '../lib/install'
 import { performLogout } from '../lib/supabase'
 import { Diagnose } from './Diagnose'
 import '../aufgaben/aufgaben.css'
+import { Switch } from '../components/Switch'
 
 /** Stufenname je FONT_SCALES-Position (gleiche Reihenfolge). */
 const FS_LABELS = [
@@ -69,16 +70,7 @@ export function ProfilScreen() {
         {production && supported && (
           <div className="kv-row">
             <span className="kv-key">{t.pushLbl}</span>
-            <button
-              type="button"
-              className={subscribed ? 'switch is-on' : 'switch'}
-              role="switch"
-              aria-checked={subscribed}
-              aria-label={t.pushLbl}
-              onClick={togglePush}
-            >
-              <span className="switch-knob" />
-            </button>
+            <Switch on={subscribed} label={t.pushLbl} onToggle={togglePush} />
           </div>
         )}
         {production && needsInstall && (

@@ -57,7 +57,7 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { authKopf, ladeTabellen, zugangsdaten } from './gemeinsam.mjs'
+import { authKopf, fsSort, ladeTabellen, zugangsdaten } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { argumente, mondayOf, personDisplayName, uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -230,11 +230,6 @@ export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
 
   next.sort(fsSort)
   return { insts: next, ...z }
-}
-
-/** Sortierung wie in der App (`fsSort` in src/data/fs.ts): Wochentag, Zeit, Gruppe. */
-export function fsSort(a, b) {
-  return ((a.wd + 6) % 7) - ((b.wd + 6) % 7) || a.time.localeCompare(b.time) || a.grp.localeCompare(b.grp)
 }
 
 /* ===================== Grundplan-Vorschlag ================================ */

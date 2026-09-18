@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { confirmationMap, generateInviteCode, renameInWeeks } from './data'
+import { confirmationMap, generateInviteCode } from './data'
+import { renameInWeeks } from '../data/namensbindung'
 import type { Meeting, PartItem, Week } from '../data/types'
 
 describe('confirmationMap: ein Platz, zwei Zeilen', () => {

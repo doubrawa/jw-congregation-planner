@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useBackDismiss } from '../components/useBackDismiss'
@@ -124,7 +124,18 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     dispatch({ type: 'assign', name, extern: true })
   }
 
-  const candidates = kandidaten(state, sel, abwesend, t, tu)
+  /*
+   * **Gemerkt, nicht bei jedem Render neu.** Die Liste sortiert erst alle
+   * Personen und rechnet dann je Kandidat Auslastung und Ladefenster über fünf
+   * Wochen — bei 300 Personen weit über hunderttausend Schritte. Gelaufen ist
+   * das bisher bei **jedem** Render des offenen Blatts: bei jedem Buchstaben in
+   * den Gastredner-Feldern und auch dann, wenn nur ein Hinweis-Streifen
+   * ausblendete.
+   */
+  const candidates = useMemo(
+    () => kandidaten(state, sel, abwesend, t, tu),
+    [state, sel, abwesend, t, tu],
+  )
 
   const pick = (cand: Candidate) => {
     if (cand.absent) {

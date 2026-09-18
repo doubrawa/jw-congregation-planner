@@ -2,7 +2,8 @@ import { useApp } from '../app/context'
 import { FS_TIME_OPTIONS } from '../data/fs'
 import { useT } from '../i18n/useT'
 import type { FsRule } from '../data/types'
-import { wochentagName } from '../planen/wochentage'
+import { wochentagNameAusWd } from '../planen/wochentage'
+import { Switch } from '../components/Switch'
 
 /**
  * Grundplan der Treffpunkte (Einstellungen): regelmäßige Zeiten/Orte je
@@ -14,7 +15,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
   const { t, tu } = useT()
 
   const wdOptions = [1, 2, 3, 4, 5, 6, 0]
-  const wdName = (d: number): string => wochentagName((d + 6) % 7, state.lang)
+  const wdName = (d: number): string => wochentagNameAusWd(d, state.lang)
   const freqOptions: ReadonlyArray<[number, string]> = [
     [0, t.fsFreqW],
     [1, t.fsFreqM1],
@@ -105,16 +106,11 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
 
                 {sec.grp != null && (
                   <div className="fsr-skip">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={rule.skipCong}
-                      aria-label={t.fsSkipCong}
-                      className={rule.skipCong ? 'switch is-on' : 'switch'}
-                      onClick={() => upd(rule.id, { skipCong: !rule.skipCong })}
-                    >
-                      <span className="switch-knob" />
-                    </button>
+                    <Switch
+                      on={rule.skipCong}
+                      label={t.fsSkipCong}
+                      onToggle={() => upd(rule.id, { skipCong: !rule.skipCong })}
+                    />
                     <span className="fsr-skip-label">{t.fsSkipCong}</span>
                   </div>
                 )}

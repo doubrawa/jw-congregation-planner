@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { isViewAction } from './readonly'
 import type { AppAction } from './context'
+import { reducerFaelle, setztFeld } from './quelltext-proben'
 
 describe('isViewAction', () => {
   const views: AppAction['type'][] = [
@@ -99,6 +100,7 @@ describe('Was nichts schreibt, darf offline laufen', () => {
   const roh = (glob: Record<string, unknown>): string => String(Object.values(glob)[0] ?? '')
   const CONTEXT = import.meta.glob('./context.ts', { query: '?raw', import: 'default', eager: true })
   const PERSIST = import.meta.glob('./persist.ts', { query: '?raw', import: 'default', eager: true })
+  const REDUCER = import.meta.glob('./reducer.ts', { query: '?raw', import: 'default', eager: true })
 
   /** Jede Aktionsart aus der Union in `context.ts`. */
   const alleArten = (): string[] => {
@@ -107,9 +109,23 @@ describe('Was nichts schreibt, darf offline laufen', () => {
     return [...new Set(arten)]
   }
 
-  /** Hat `persist.ts` einen Fall für diese Aktion? */
-  const schreibt = (art: string): boolean =>
-    new RegExp(`case '${art}':`).test(roh(PERSIST))
+  /**
+   * Aktionen, deren Reducer-Fall eine Woche setzt.
+   *
+   * Sie brauchen in `persist.ts` **keinen** eigenen Fall mehr: Der Block unter
+   * dem Switch schreibt jede Woche, deren Referenz sich geändert hat. Sie
+   * schreiben trotzdem — und dürfen deshalb offline nicht laufen.
+   */
+  const wochenSchreiber = (): Set<string> =>
+    new Set(
+      reducerFaelle(roh(REDUCER))
+        .filter(([, rumpf]) => setztFeld(rumpf, 'weeks'))
+        .map(([name]) => name),
+    )
+
+  /** Schreibt `persist.ts` für diese Aktion — eigener Fall oder Wochen-Weg? */
+  const schreibt = (art: string, wochen: ReadonlySet<string>): boolean =>
+    new RegExp(`case '${art}':`).test(roh(PERSIST)) || wochen.has(art)
 
   /**
    * Aktionen ohne Schreibfall, die trotzdem gesperrt bleiben sollen — mit Grund.
@@ -121,8 +137,12 @@ describe('Was nichts schreibt, darf offline laufen', () => {
   const ABSICHTLICH_GESPERRT = new Set(['startImport'])
 
   it('jede Aktion ohne Schreibfall ist eine Ansichts-Aktion', () => {
+    const wochen = wochenSchreiber()
     const vergessen = alleArten().filter(
-      (art) => !schreibt(art) && !isViewAction(art as AppAction['type']) && !ABSICHTLICH_GESPERRT.has(art),
+      (art) =>
+        !schreibt(art, wochen) &&
+        !isViewAction(art as AppAction['type']) &&
+        !ABSICHTLICH_GESPERRT.has(art),
     )
     expect(vergessen, `ohne Schreibfall, aber gesperrt: ${vergessen.join(', ')}`).toEqual([])
   })
@@ -133,8 +153,9 @@ describe('Was nichts schreibt, darf offline laufen', () => {
     // verloren. `hydrate` und `logout` sind die Ausnahme — sie tauschen den
     // Bestand aus bzw. räumen auf, statt eine Änderung zu schreiben.
     const erlaubt = new Set(['hydrate', 'logout', 'navigate', 'selectPerson'])
+    const wochen = wochenSchreiber()
     const heikel = alleArten().filter(
-      (art) => isViewAction(art as AppAction['type']) && schreibt(art) && !erlaubt.has(art),
+      (art) => isViewAction(art as AppAction['type']) && schreibt(art, wochen) && !erlaubt.has(art),
     )
     expect(heikel, `Ansichts-Aktion mit Schreibfall: ${heikel.join(', ')}`).toEqual([])
   })

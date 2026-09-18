@@ -21,6 +21,7 @@
 import { MEETING_TABS } from './helpers'
 import { setAbweichung, setDienstwoche } from './meeting-edit'
 import type { Anlass, AnlassArt, MeetingKey, Week } from './types'
+import { versatzAbMontag } from './meeting-dates'
 
 /**
  * Welcher Anlass gilt in dieser Woche?
@@ -147,7 +148,7 @@ function wochentagVersatz(iso: string): number | null {
   const j = monat < 3 ? jahr - 1 : jahr
   const sonntagBasiert =
     (j + Math.floor(j / 4) - Math.floor(j / 100) + Math.floor(j / 400) + (versatzImJahr[monat - 1] ?? 0) + tag) % 7
-  return (sonntagBasiert + 6) % 7 // 0 = Montag, wie WEEKDAY_OFFSET
+  return versatzAbMontag(sonntagBasiert) // 0 = Montag, wie WEEKDAY_OFFSET
 }
 
 /*

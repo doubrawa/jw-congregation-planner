@@ -648,7 +648,7 @@ const KATALOG = [
     id: 'datumswaehler-montag',
     datei: 'src/components/DatePicker.tsx',
     regel: 'Der Kalender beginnt in jeder Sprache am Montag — wie die Programmwoche selbst.',
-    suchen: 'const lead = (first.getUTCDay() + 6) % 7 // Montag = 0',
+    suchen: 'const lead = versatzAbMontag(first.getUTCDay()) // Montag = 0',
     ersetzen: 'const lead = first.getUTCDay()',
   },
 

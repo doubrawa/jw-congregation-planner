@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, aufseherGruppe } from '../data/helpers'
+import { erlaubteScreens } from '../data/rechte'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
@@ -40,20 +41,6 @@ import './rtl.css'
  * Mitteilungen-Overlay und Toast. Login rendert ohne App-Chrome.
  */
 
-const PLANNER_SCREENS: readonly Screen[] = [
-  'start',
-  'programm',
-  'aufgaben',
-  'planen',
-  'personen',
-  'einstellungen',
-  'profil',
-]
-const PUBLISHER_SCREENS: readonly Screen[] = ['start', 'programm', 'aufgaben', 'profil']
-// Gruppenaufseher (Aufseher/Gehilfe einer Gruppe, ohne volle Planer-Rechte):
-// planen + einstellungen, dort aber nur die Treffpunkte der eigenen Gruppe.
-const GROUP_OV_SCREENS: readonly Screen[] = PLANNER_SCREENS.filter((s) => s !== 'personen')
-
 // Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
 const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
@@ -87,11 +74,7 @@ export function AppShell() {
 
   const fsOverseer =
     aufseherGruppe(state.planner, state.groups, state.personId) !== null
-  const navScreens = state.planner
-    ? PLANNER_SCREENS
-    : fsOverseer
-      ? GROUP_OV_SCREENS
-      : PUBLISHER_SCREENS
+  const navScreens = erlaubteScreens(state.planner, fsOverseer)
 
   // Deep-Link-Hash beim Start entfernen (nur wenn es einer ist), damit ein
   // Reload nicht erneut springt — Debug-Hashes (#s=…) bleiben unberührt.

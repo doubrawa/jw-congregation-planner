@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyQualifications, gehoertZu, partWorkload } from './helpers'
 import { fsDropPersonPid, fsLeiterBinden, fsRenameLeader } from './fs'
 import { assignSlot } from './planning'
-import { dropPersonPid, renameInWeeks } from '../lib/data'
+import { dropPersonPid, renameInWeeks } from './namensbindung'
 import type { FsInstance, Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
 
 /**

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { kalendertagMs } from '../data/meeting-dates'
 import { Chevron } from './Chevron'
 import './datepicker.css'
+import { versatzAbMontag } from '../data/meeting-dates'
 
 /**
  * Eigener Datums-Popup-Kalender (statt des nicht stylebaren nativen
@@ -49,7 +50,7 @@ const monthStart = (v: string): { y: number; m: number } => {
 /** 6×7-Raster ab Montag für den angezeigten Monat (UTC, zeitzonenneutral). */
 function grid(y: number, m: number): Date[] {
   const first = new Date(Date.UTC(y, m, 1))
-  const lead = (first.getUTCDay() + 6) % 7 // Montag = 0
+  const lead = versatzAbMontag(first.getUTCDay()) // Montag = 0
   const start = Date.UTC(y, m, 1 - lead)
   return Array.from({ length: 42 }, (_, i) => new Date(start + i * DAY))
 }

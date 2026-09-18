@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { normalizePriv, pidsNachtragen, renameInWeeks } from './data'
-import type { Meeting, PartItem, Person, Qualifications, Week } from '../data/types'
-import { privWert } from '../data/helpers'
+import { normalizePriv, pidsNachtragen, renameInWeeks } from './namensbindung'
+import type { Meeting, PartItem, Person, Qualifications, Week } from './types'
+import { privWert } from './helpers'
 
 function priv(overrides: Record<string, boolean> = {}): Qualifications {
   return {

@@ -47,7 +47,7 @@ import {
   deriveMyTasks,
   openSlotLabels,
 } from './planning'
-import { dropPersonPid, pidsNachtragen, renameInWeeks } from '../lib/data'
+import { dropPersonPid, pidsNachtragen, renameInWeeks } from './namensbindung'
 import {
   pendingOfMeeting,
   type Meeting as EdgeMeeting,

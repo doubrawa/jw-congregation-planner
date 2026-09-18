@@ -2,6 +2,7 @@ import { useApp } from '../app/context'
 import { istBruderBereichBeiSchwester, privWert } from '../data/helpers'
 import { useT } from '../i18n/useT'
 import type { Person } from '../data/types'
+import { Switch } from '../components/Switch'
 
 
 type UpdatePerson = (patch: Partial<Person>) => void
@@ -43,22 +44,17 @@ export function PrivToggle({
           </span>
         )}
       </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        aria-label={label}
-        className={on ? 'switch is-on' : 'switch'}
-        onClick={() => {
+      <Switch
+        on={on}
+        label={label}
+        onToggle={() => {
           const priv = { ...person.priv, [qkey]: !on }
           // Wer Schulungsaufgaben übernimmt, ist standardmäßig auch
           // Gesprächspartner (lässt sich danach manuell wieder abschalten).
           if (qkey === 'schulung' && !on) priv.schulungPartner = true
           update({ priv })
         }}
-      >
-        <span className="switch-knob" />
-      </button>
+      />
     </div>
   )
 }
@@ -92,17 +88,12 @@ export function PlannerToggle({ person, update }: { person: Person; update: Upda
   return (
     <div className={self ? 'priv-row priv-row--locked' : 'priv-row'}>
       <span className="priv-label">{t.planerLbl}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        aria-label={t.planerLbl}
+      <Switch
+        on={on}
+        label={t.planerLbl}
         disabled={self}
-        className={on ? 'switch is-on' : 'switch'}
-        onClick={() => update({ plannerVorgemerkt: !on })}
-      >
-        <span className="switch-knob" />
-      </button>
+        onToggle={() => update({ plannerVorgemerkt: !on })}
+      />
     </div>
   )
 }

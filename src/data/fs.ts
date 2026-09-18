@@ -22,7 +22,7 @@ import {
   overseerGroup,
   tieHash,
 } from './helpers'
-import { deutschesDatum, fromIso, istVorbei, kalendertagMs } from './meeting-dates'
+import { deutschesDatum, fromIso, istVorbei, kalendertagMs, versatzAbMontag } from './meeting-dates'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
@@ -62,7 +62,7 @@ export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }
 export function montagDieserWoche(heute: Date): Date {
   const d = new Date(heute)
   d.setHours(12, 0, 0, 0)
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  d.setDate(d.getDate() - versatzAbMontag(d.getDay()))
   return d
 }
 
@@ -142,7 +142,7 @@ export function fsTag(wochenStart: string, wd: number): Date | null {
   // die Tage, um die es hier geht.
   const d = fromIso(wochenStart)
   if (Number.isNaN(d.getTime())) return null
-  d.setDate(d.getDate() + ((wd + 6) % 7)) // (wd+6)%7 = Offset ab Montag
+  d.setDate(d.getDate() + versatzAbMontag(wd))
   return d
 }
 
@@ -166,7 +166,7 @@ export function fsTerminText(tag: Date | null, inst: { time: string; place: stri
 export function fsSort(a: FsInstance, b: FsInstance): number {
   // Ohne Gruppe (Versammlungstreffpunkt) zuerst — `null` sortiert vor jedem Namen.
   return (
-    ((a.wd + 6) % 7) - ((b.wd + 6) % 7) ||
+    versatzAbMontag(a.wd) - versatzAbMontag(b.wd) ||
     a.time.localeCompare(b.time) ||
     (a.grp ?? '').localeCompare(b.grp ?? '')
   )

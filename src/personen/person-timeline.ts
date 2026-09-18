@@ -4,6 +4,7 @@ import { displayName } from '../data/helpers'
 import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
+import { versatzAbMontag } from '../data/meeting-dates'
 
 /**
  * Ein Eintrag der Zeitleiste im Personen-Detail — für beide Arten gleich
@@ -144,7 +145,7 @@ export function personTimeline(
        */
       const datum =
         fsTag(fsKennung(state.weeks[wi], state.fsBase, wi), inst.wd) ??
-        datumVon(wi * 7 + ((inst.wd + 6) % 7))
+        datumVon(wi * 7 + versatzAbMontag(inst.wd))
       entries.push({
         kind: 'fs',
         key: `fs|${wi}|${inst.id}`,

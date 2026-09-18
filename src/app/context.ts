@@ -172,8 +172,20 @@ export interface AppState {
    * Ratgeber — versammlungsweit, deshalb in `congregations.aux_class`.
    */
   auxClass: boolean
-  congLang: string // Versammlungssprache als jw.org-Sprachcode („de")
-  progLangs: string[] // weitere Programmsprachen, ebenso als Code — Import holt Varianten
+  /**
+   * Versammlungssprache als **deutscher Anzeigename** („Deutsch"), nicht als
+   * Code. Der jw.org-Code steht in der Datenbank (`congregations.cong_lang`);
+   * umgesetzt wird an der einen Grenze, an der beide Welten aufeinandertreffen
+   * (`spracheName`/`spracheCode` in `lib/data.ts`). Wer den Code braucht, holt
+   * ihn über `CONG_TO_JW` bzw. `congAppCode`.
+   *
+   * Hier stand „als jw.org-Sprachcode („de")" — das stimmte nicht, und wer
+   * sich darauf verließ, hätte beim Import still die falsche Sprache geholt:
+   * `CONG_TO_JW` fällt auf `'de'` zurück, wenn es den Wert nicht kennt.
+   */
+  congLang: string
+  /** Weitere Programmsprachen, ebenso als Anzeigename — Import holt Varianten. */
+  progLangs: string[]
 
   /* ---- Abgeleitet: aus den Serverdaten gerechnet, nie gespeichert -------- */
   // Persönliche Aufgaben & Bestätigungs-Flow. Im Produktionsmodus werden

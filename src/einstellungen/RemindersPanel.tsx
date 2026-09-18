@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
+import { Switch } from '../components/Switch'
 
 /** Erinnerungen: erste/letzte Erinnerung (Tage vorher) + tägliche Wiederholung. */
 export function RemindersPanel() {
@@ -62,16 +63,11 @@ export function RemindersPanel() {
       ))}
       <div className="svc-row svc-row--schluss">
         <span className="svc-name">{t.remRepeat}</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={state.reminders.repeat}
-          aria-label={t.remRepeat}
-          className={state.reminders.repeat ? 'switch is-on' : 'switch'}
-          onClick={() => dispatch({ type: 'toggleReminderRepeat' })}
-        >
-          <span className="switch-knob" />
-        </button>
+        <Switch
+          on={state.reminders.repeat}
+          label={t.remRepeat}
+          onToggle={() => dispatch({ type: 'toggleReminderRepeat' })}
+        />
       </div>
     </div>
   )

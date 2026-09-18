@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import type { Person } from '../data/types'
 import { LOCALES } from '../i18n/langs'
@@ -21,7 +22,16 @@ export function PersonTimeline({ person }: { person: Person }) {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const { t, tu } = i18n
-  const entries = personTimeline(person, state)
+  /*
+   * Gemerkt: `personTimeline` läuft über **alle** geladenen Wochen (bis zu 52,
+   * zwei Zusammenkünfte je Woche). Die Karte steht mitten im Personen-Formular,
+   * und das löst je Tastenanschlag aus — ein zwölfbuchstabiger Nachname kostete
+   * so zwölf volle Durchläufe.
+   */
+  const entries = useMemo(
+    () => personTimeline(person, state),
+    [person, state],
+  )
   if (entries.length === 0) return null
 
   // Entfernen darf, wen es betrifft, oder ein Planer — dieselbe Grenze wie im

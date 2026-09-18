@@ -11,7 +11,8 @@ import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, oh
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsKennung, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
-import { dropPersonPid, renameInWeeks } from '../lib/data'
+import { erlaubteScreens } from '../data/rechte'
+import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
 import { alsFreitext } from '../i18n/translate'
 import {
@@ -56,7 +57,6 @@ import type {
   Notification,
   NotificationType,
   Person,
-  Screen,
   SubstituteReq,
   Week,
 } from '../data/types'
@@ -283,7 +283,19 @@ function ableitungsQuellen(s: AppState): readonly unknown[] {
   return [
     s.dataStatus,
     s.personId,
-    s.persons,
+    /*
+     * Nicht die ganze Personenliste, sondern **die eigene Person**:
+     * `withDerivedTasks` liest aus `persons` nichts als `me`. Mit der Liste
+     * hing die Ableitung an jedem fremden Tastenanschlag im
+     * Personen-Formular — und die ist teuer: alle geladenen Wochen ablaufen,
+     * die Ersatzgesuche neu bilden, und bei abweichender Programmsprache je
+     * Woche ein `structuredClone`. Für eine Person, die mit der Aufgabe nichts
+     * zu tun hat.
+     *
+     * Wird jemand **umbenannt**, zieht der Reducer den neuen Namen durch die
+     * Wochen (`renameInWeeks`) — `s.weeks` steht darunter und löst dann aus.
+     */
+    s.persons.find((p) => p.id === s.personId),
     s.lang,
     s.congLang,
     s.weeks,
@@ -361,17 +373,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         welcomePending: false, // eine offene Begrüßung gilt nicht für die nächste Anmeldung
       }
     case 'navigate': {
-      // Rechteprüfung: Nicht-Planer landen im Programm. Gruppenaufseher dürfen
-      // zusätzlich Planen + Einstellungen (dort nur ihre Treffpunkte), aber nicht
-      // Personen.
-      const plannerOnly: Screen[] = ['planen', 'personen', 'einstellungen']
+      // Rechteprüfung: Wer den Bildschirm nicht sehen darf, landet im Programm.
+      // Dieselbe Liste bestückt die Navigation (AppShell) — eine Antwort, zwei
+      // Fragesteller.
       const fsOverseer =
         aufseherGruppe(state.planner, state.groups, state.personId) !== null
-      const blocked =
-        !state.planner &&
-        plannerOnly.includes(action.screen) &&
-        !(fsOverseer && action.screen !== 'personen')
-      const screen = blocked ? 'programm' : action.screen
+      const erlaubteZiele = erlaubteScreens(state.planner, fsOverseer)
+      const screen = erlaubteZiele.includes(action.screen) ? action.screen : 'programm'
       // Zwei Tabs sind keine Zusammenkunft und nicht überall erlaubt: „Treffpunkte"
       // gibt es in Programm und Planen, „Bearbeiten" (T64) **nur** im Planen —
       // das Programm ist für alle nur lesend. Beim Wechsel woandershin auf die
@@ -403,7 +411,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
        * Das ist eine Wahl wie das Blättern (`terminGewaehlt`): Wer auf eine Woche
        * tippt, will sie sehen und nicht auf die nächste Zusammenkunft springen.
        */
-      if (action.woche && !blocked) {
+      if (action.woche && screen === action.screen) {
         const wunsch = action.woche.tab
         return {
           ...nachher,

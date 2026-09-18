@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, listName, ohneGruppe, personCompare, serviceQualKey } from '../data/helpers'
@@ -47,21 +47,36 @@ function PersonList() {
   const setz = (patch: Partial<PersonFilter>) => setFilter((f) => ({ ...f, ...patch }))
   const locale = LOCALES[state.lang]
 
-  const sorted = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
+  /*
+   * **Einmal je Bestand, nicht einmal je Tastendruck.**
+   *
+   * Das Filterfeld ist örtlicher Zustand: Jeder Buchstabe rendert die Liste
+   * neu. Von allem hier hängt aber nur `filtered` am Filter — sortiert,
+   * gezählt und verglichen wird immer derselbe Bestand. Bei 300 Personen
+   * kostete ein Buchstabe rund 2 500 Namensvergleiche (`personCompare` ruft
+   * `localeCompare`) und dreimal einen Durchlauf über alle Personen.
+   *
+   * Die Marke „Ohne App-Konto" unten fragte einmal `linkedMember` je Person,
+   * und das sucht linear über `state.members` — bei 300 Konten 90 000
+   * Vergleiche. `OrphanAccounts` stellt für dieselbe Frage längst eine Menge
+   * auf.
+   */
+  const { sorted, mitKonto, dupes, mehrfachRollen, ohne } = useMemo(
+    () => {
+      const sortiert = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
+      return {
+        sorted: sortiert,
+        mitKonto: new Set(state.members.map((m) => m.personId)),
+        dupes: duplicateDisplayNames(state.persons),
+        mehrfachRollen: doppelteFesteRollen(state.persons),
+        // Aus der sortierten Liste — die Namen stehen dann in derselben Folge wie unten.
+        ohne: ohneGruppe(sortiert, state.groups),
+      }
+    },
+    [state.persons, state.lang, state.members, state.groups],
+  )
   const filtered = sorted.filter((p) => passtZumFilter(p, filter))
   const production = state.dataStatus !== 'demo'
-  /*
-   * **Einmal je Liste, nicht einmal je Zeile.** Die Marke „Ohne App-Konto"
-   * unten fragte `linkedMember` für jede Person einzeln, und das sucht linear
-   * über `state.members` — bei 300 Personen und 300 Konten sind das 90 000
-   * Vergleiche, und die Liste rendert bei jedem Tastendruck im Filterfeld neu.
-   * `OrphanAccounts` stellt für dieselbe Frage längst eine Menge auf.
-   */
-  const mitKonto = new Set(state.members.map((m) => m.personId))
-  const dupes = duplicateDisplayNames(state.persons)
-  const mehrfachRollen = doppelteFesteRollen(state.persons)
-  // Aus der sortierten Liste — die Namen stehen dann in derselben Folge wie unten.
-  const ohne = ohneGruppe(sorted, state.groups)
 
   // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen. Mit
   // konfigurierter Domain gehen die Mails direkt raus (send-invite); die
