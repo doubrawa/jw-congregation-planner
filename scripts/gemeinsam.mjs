@@ -338,3 +338,20 @@ export function authKopf(key) {
   const k = String(key ?? '').trim()
   return k.startsWith('eyJ') ? { apikey: k, Authorization: `Bearer ${k}` } : { apikey: k }
 }
+
+/**
+ * Kopfzeilen für den Aufruf einer **Edge Function** — dort gilt das Gegenteil.
+ *
+ * Das Function-Gateway prüft ein JWT (`verify_jwt` in `supabase/config.toml`)
+ * und liest es aus `Authorization`; der Secret-Schlüssel gilt ihm als eines.
+ * Ohne diese Kopfzeile antwortet es mit 401 — während PostgREST mit genau
+ * dieser Kopfzeile „Invalid JWT" meldet (siehe `authKopf`).
+ *
+ * Zwei Ziele, zwei Regeln, zwei Funktionen: Ein Schalter an einer einzigen
+ * Funktion würde an der Aufrufstelle entschieden, und das ist die Stelle, an
+ * der es zuletzt schiefging.
+ */
+export function funktionsKopf(key) {
+  const k = String(key ?? '').trim()
+  return { ...authKopf(k), Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' }
+}

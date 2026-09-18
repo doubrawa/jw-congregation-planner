@@ -218,6 +218,14 @@ async function main() {
     verknuepfungen = JSON.parse(fs.readFileSync(sidecar, 'utf8'))
     console.log(`(${verknuepfungen.length} Konto-Verknüpfung(en) aus vorherigem Lauf übernommen — DB war schon geleert.)`)
   }
+  // Dasselbe für offene Einladungen: Das Löschen der Personen nullt
+  // `invites.person_id` (Fremdschlüssel). Der Code bliebe gültig, führte aber
+  // zu einem Konto **ohne** Person — „Meine Aufgaben" bliebe leer, und niemand
+  // sähe die Ursache. Beim Neuaufbau am 18. September 2026 genau so passiert.
+  const einladungen = (await rest(`invites?select=code,person_id&congregation_id=eq.${cong}&redeemed_by=is.null`))
+    .filter((i) => i.person_id && nameNachId.has(i.person_id))
+    .map((i) => ({ code: i.code, personName: nameNachId.get(i.person_id) }))
+
   const services = await rest(`services?select=key&congregation_id=eq.${cong}`)
 
   console.log(`Versammlung:  ${cong}`)
@@ -225,6 +233,7 @@ async function main() {
   console.log(`Anlegen:      ${kuratiert.persons.length} Personen, ${kuratiert.groups.length} Gruppen`)
   console.log(`Konten:       ${members.length} (${verknuepfungen.length} Verknüpfung(en) über den Namen erhalten)`)
   for (const v of verknuepfungen) console.log(`              ${v.email} → ${v.personName}`)
+  if (einladungen.length) console.log(`Einladungen:  ${einladungen.length} offene, werden wieder verknüpft`)
   console.log(`Dienste:      ${services.length ? `${services.length} vorhanden, bleiben` : 'keine → Standard anlegen'}`)
 
   if (arg.trocken) {
@@ -296,6 +305,18 @@ async function main() {
     verknuepft++
   }
 
+  // Offene Einladungen zeigen wieder auf ihre Person (siehe oben).
+  let einladungenVerknuepft = 0
+  for (const e of einladungen) {
+    const pid = idNachName.get(e.personName)
+    if (!pid) continue
+    await rest(`invites?code=eq.${encodeURIComponent(e.code)}&congregation_id=eq.${cong}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ person_id: pid }),
+    })
+    einladungenVerknuepft++
+  }
+
   // 6) Hilfsdienste sicherstellen (nur, wenn gar keine da sind)
   if (services.length === 0) {
     await rest('services', {
@@ -306,7 +327,11 @@ async function main() {
     })
   }
 
-  console.log(`\nFertig. ${kuratiert.persons.length} Personen, ${kuratiert.groups.length} Gruppen angelegt; ${verknuepft} Konto-Verknüpfung(en) erhalten.`)
+  console.log(
+    `\nFertig. ${kuratiert.persons.length} Personen, ${kuratiert.groups.length} Gruppen angelegt; ` +
+      `${verknuepft} Konto-Verknüpfung(en) erhalten` +
+      `${einladungenVerknuepft ? `, ${einladungenVerknuepft} Einladung(en) wieder verknüpft` : ''}.`,
+  )
   if (unverknuepft.length) console.log(`Unverknüpft (Name nicht im SQL): ${unverknuepft.join(', ')}`)
   /*
    * **Die Übergabeliste — vollständig.**

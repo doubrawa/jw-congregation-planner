@@ -280,25 +280,52 @@ Migrationskette daneben soll es nicht wieder geben, siehe Kopf der Datei):
 2. `supabase/schema.sql` ausführen.
 3. Alle fünf Edge Functions deployen (`import-week`, `send-plan`,
    `send-reminders`, `send-invite`, `substitute`).
-4. Versammlung und erstes Mitglied anlegen — `node
-   scripts/versammlung-anlegen.mjs` oder die `INSERT`-Beispiele am Ende der
-   `schema.sql`.
+Den ganzen Rest — Versammlung, Personen, Wochen, Zuteilungen, Abwesenheiten,
+Treffpunkte — fährt **ein** Aufruf:
 
-Danach den Datenbestand füllen. **Alle fünf Schritte, in dieser Reihenfolge** —
-`versammlung-zuruecksetzen.mjs` leert `absences` und `fs_weeks` mit, und was es
-leert, holt niemand von selbst zurück:
+```powershell
+node scripts/neuaufbau-fahren.mjs `
+  --name "Musterstadt" --saal "Hauptstraße 12" `
+  --mid "2 19:00" --we "0 10:00" `
+  --vorname "Anna" --nachname "Beispiel" `
+  --sql C:\DATA\Claude\nws-export\import-live-personen.sql
+```
+
+Er ruft die sechs Einzelskripte in der Reihenfolge auf, die die Daten verlangen,
+und holt dabei **acht Wochenprogramme** von jw.org (`--wochen N` ändert das) —
+in der App wäre das achtmal „Nächste Woche importieren". Zuerst mit `--trocken`;
+steigt ein Schritt aus, nennt der Lauf die Nummer zum Fortsetzen
+(`--ab-schritt N`), damit Schritt 1 nicht eine zweite Versammlung anlegt.
+
+Was er nacheinander tut — und was fehlte, wenn man einen Schritt ausließe:
 
 | # | Schritt | Was fehlt sonst |
 | --- | --- | --- |
-| 1 | `scripts/versammlung-zuruecksetzen.mjs --sql <personen.sql>` | Personen, Gruppen, Haushalte |
-| 2 | In der App: „Nächste Woche importieren" (so oft wie nötig) | die Programme |
-| 3 | `scripts/wochenplanung-importieren.mjs` | Zuteilungen, Hilfsdienste, Reinigung |
-| 4 | `scripts/abwesenheiten-importieren.mjs` | **die Abwesenheiten** — ohne sie plant die App gegen einen leeren Kalender |
-| 5 | `scripts/treffpunkte-importieren.mjs` | die Leiter der Treffpunkte |
+| 1 | `scripts/versammlung-anlegen.mjs` | Versammlung, Planer-Person, Standard-Dienste, Einladungscode |
+| 2 | `scripts/versammlung-zuruecksetzen.mjs --sql <personen.sql>` | Personen, Gruppen, Haushalte |
+| 3 | `scripts/wochen-importieren.mjs --anzahl 8` | die Programme |
+| 4 | `scripts/wochenplanung-importieren.mjs` | Zuteilungen, Hilfsdienste, Reinigung |
+| 5 | `scripts/abwesenheiten-importieren.mjs` | **die Abwesenheiten** — ohne sie plant die App gegen einen leeren Kalender |
+| 6 | `scripts/treffpunkte-importieren.mjs` | die Leiter der Treffpunkte |
 
-Jedes Skript zuerst mit `--trocken`. Das Zurücksetzen gibt dieselbe Liste am
-Ende noch einmal aus; sie stand dort bis zum 18. September 2026 unvollständig,
-und genau deshalb lief ein Neuaufbau ohne die Abwesenheiten durch.
+**Die Reihenfolge ist nicht frei:** Schritt 2 leert `weeks`, `absences` und
+`fs_weeks` mit — die Wochen kommen deshalb danach, und die Zuteilungen brauchen
+beides. Diese Liste stand bis zum 18. September 2026 unvollständig im README,
+und genau deshalb lief ein Neuaufbau ohne die Abwesenheiten durch; seitdem hält
+`neuaufbau-fahren.test.ts` die Reihenfolge fest, statt sie dem Gedächtnis zu
+überlassen.
+
+Jeder Schritt bleibt einzeln aufrufbar (jeweils mit `--trocken`), etwa um später
+nur Wochen nachzuholen:
+
+```powershell
+node scripts/wochen-importieren.mjs --anzahl 4
+```
+
+**Zwei Dinge bleiben Handarbeit:** sich in der App mit dem ausgegebenen
+Einladungscode anmelden, und den Grundplan der Treffpunkte in den Einstellungen
+eintragen — `treffpunkte-importieren.mjs` schlägt ihn aus den NWS-Daten nur vor,
+trägt ihn aber nicht ein. Der Schlussbericht nennt beides.
 
 **Vorher ist nichts zu setzen.** Die Projekt-URL holen sich die Skripte aus
 `.env.local` (`VITE_SUPABASE_URL`), und nach dem Secret-Schlüssel fragen sie,
