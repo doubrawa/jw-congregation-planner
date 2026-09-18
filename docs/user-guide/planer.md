@@ -136,6 +136,13 @@ als Christ** kannst du Punkte hinzufügen, in der Länge (Minuten) anpassen,
 verschieben oder entfernen; beim Wochenende trägst du das **Vortragsthema** und
 die **Anfangslied‑Nummer** ein.
 
+**Die Dauer tippst du direkt ein.** Neben jedem Punkt steht ein Feld mit der
+Minutenzahl — hineinklicken, Zahl eintragen, fertig. Übernommen wird sie, sobald
+du das Feld verlässt (oder Enter drückst); **Esc** verwirft die Eingabe, und ein
+leer gelassenes Feld ändert nichts. Erlaubt sind **5 bis 45 Minuten**; wer mehr
+einträgt, bekommt 45. Die **Endzeit der Zusammenkunft** unten wandert
+automatisch mit.
+
 ---
 
 ## 3. Automatisch zuteilen & leeren
