@@ -20,6 +20,7 @@ die App auf deinem Gerät einrichtest.
 7. [Profil: Darstellung, Schriftgröße & Sprache](#7-profil-darstellung-schriftgröße--sprache)
 8. [App installieren & Erinnerungen](#8-app-installieren--erinnerungen)
 9. [Ohne Internet (offline)](#9-ohne-internet-offline)
+10. [Wenn du Gruppenaufseher bist](#10-wenn-du-gruppenaufseher-bist)
 
 ---
 
@@ -365,6 +366,37 @@ Zwei Dinge, die du wissen solltest:
   gestern", kann sich eine Zuteilung inzwischen geändert haben.
 - Warst du **lange** nicht mehr online, kann es passieren, dass die App dich
   wieder nach dem Passwort fragt. Das Anmelden selbst braucht Internet.
+
+---
+
+## 10. Wenn du Gruppenaufseher bist
+
+Bist du **Aufseher oder Gehilfe** einer Predigtdienstgruppe, kannst du die
+**Treffpunkte deiner Gruppe** selbst planen — ohne vollen Planer‑Zugang. Der
+Koordinator trägt das bei der Gruppe ein; danach stehen in der Navigation zwei
+Einträge mehr:
+
+| Eintrag | Was du dort siehst |
+| --- | --- |
+| **Planen** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: Leiter eintragen, **Automatisch zuteilen** und **Leeren** (beides wirkt nur auf deine Gruppe) und bei Bedarf ein zusätzlicher Treffpunkt für diese eine Woche. |
+| **Einstellungen** | Nur den **Grundplan deiner Gruppe** — die Regel, nach der ihr euch regelmäßig trefft: Wochentag, Uhrzeit, Ort und ob sie jede Woche gilt oder z. B. jeden ersten im Monat. |
+
+![Planen als Gruppenaufseher](screenshots/verkuendiger-gruppenaufseher.png)
+
+Der **Punkt hinter dem Namen** sagt dir, woran du bist: grün heißt **bestätigt**,
+gelb **wartet noch auf Bestätigung**, rot **abgesagt**. Teilst du einen
+Treffpunkt neu zu, steht er wieder auf Gelb — die Zusage gehört dem, der sie
+gegeben hat.
+
+Die **Personen** bleiben dem Koordinator vorbehalten, und die Zuteilungen der
+Zusammenkünfte ebenso — daran änderst du nichts. Alles Übrige siehst du wie jeder
+andere Verkündiger: eigene Aufgaben, Programm, Abwesenheiten, Profil.
+
+> **Wer sieht eure Gruppentreffpunkte?** Nur die Verkündiger deiner Gruppe — und
+> du. Versammlungstreffpunkte sehen alle.
+
+Wie das Planen der Treffpunkte im Einzelnen funktioniert, steht ausführlich im
+Handbuch für Planer unter [Treffpunkte planen](planer.md#5-treffpunkte-planen).
 
 ---
 

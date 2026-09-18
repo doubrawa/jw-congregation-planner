@@ -61,6 +61,10 @@ SHOTS=(
   # war mit der Abwesenheiten-Karte auf 2946px gewachsen.
   "planer-person-detail|s=personen&p=p1|920x3100"
   "planer-einstellungen|s=einstellungen"
+  # Gruppenaufseher: kein Planer (pl=0), aber Aufseher von Gruppe 1 (p1). Die
+  # Planen-Seite zeigt ihm ausschließlich die Treffpunkte SEINER Gruppe —
+  # deshalb hier und nicht im Planer-Kapitel.
+  "verkuendiger-gruppenaufseher|s=planen&pl=0&me=p1"
   "offline-stand|s=programm&tab=mid&stale=5"
 )
 
