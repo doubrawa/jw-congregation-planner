@@ -831,7 +831,7 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     const ii = gehIdx(s)
     const next = reducer(s, { type: 'lacMinuten', si, ii, mins: 19 })
     expect(next.weeks).not.toBe(s.weeks)
-    expect(itemMinutes(next.weeks[0].mid.sections[si].items[ii] as PartItem)).toBe(19)
+    expect(itemMinutes(next.weeks[0]!.mid.sections[si]!.items[ii] as PartItem)).toBe(19)
     expect(next.weeks[0].mid.end).not.toBe(s.weeks[0].mid.end) // Endzeit nachgezogen
   })
 
