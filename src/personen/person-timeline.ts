@@ -1,4 +1,5 @@
 import type { AppState } from '../app/context'
+import { abwesenheitsRaender, abwRang, markiereAbwesenheiten, type AbwRand } from '../components/zeitleiste'
 import { fsKennung, fsTag } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
@@ -50,7 +51,7 @@ export type TimelineEntry = {
        * Welches Ende des Zeitraums. `einzel` = ein einziger Tag; dann gibt es
        * nur einen Punkt und keine Strecke.
        */
-      rand: 'start' | 'ende' | 'einzel'
+      rand: AbwRand
     }
 )
 
@@ -177,9 +178,7 @@ export function personTimeline(
   const tagVon = (iso: string): Date => new Date(`${iso}T12:00:00`)
   for (const abw of state.absences) {
     if (abw.personId !== person.id) continue
-    const raender: Array<'start' | 'ende' | 'einzel'> =
-      abw.from === abw.to ? ['einzel'] : ['start', 'ende']
-    for (const rand of raender) {
+    for (const rand of abwesenheitsRaender(abw.from, abw.to)) {
       const datum = tagVon(rand === 'ende' ? abw.to : abw.from)
       entries.push({
         kind: 'abw',
@@ -201,31 +200,7 @@ export function personTimeline(
    * Zuteilungen dieses Tages, das Ende dahinter. Sonst liefe die Färbung an
    * einer Zuteilung vorbei, die sehr wohl in den Zeitraum fällt.
    */
-  const rang = (e: TimelineEntry): number =>
-    e.kind === 'abw' ? (e.rand === 'ende' ? 1 : -1) : 0
-  entries.sort((a, b) => a.tag - b.tag || rang(a) - rang(b))
-  return markiereAbwesenheiten(entries)
-}
-
-/**
- * Färbt die Strecken zwischen Beginn und Ende: Jeder Eintrag bekommt gesagt, ob
- * ober- bzw. unterhalb seines Punktes gerade eine Abwesenheit läuft.
- *
- * Ein Durchlauf mit Zähler statt eines Vergleichs je Paar — so tragen auch
- * **überlappende** Zeiträume (zwei offene gleichzeitig) durchgehend, statt sich
- * gegenseitig wieder auszuschalten. Verändert die Einträge an Ort und Stelle;
- * sie sind in dieser Funktion gerade erst entstanden.
- */
-function markiereAbwesenheiten(entries: TimelineEntry[]): TimelineEntry[] {
-  let offen = 0
-  for (const e of entries) {
-    const vorher = offen
-    if (e.kind === 'abw') {
-      if (e.rand === 'start') offen++
-      else if (e.rand === 'ende') offen--
-    }
-    e.abwOben = vorher > 0
-    e.abwUnten = offen > 0
-  }
-  return entries
+  const randVon = (e: TimelineEntry): AbwRand | null => (e.kind === 'abw' ? e.rand : null)
+  entries.sort((a, b) => a.tag - b.tag || abwRang(randVon(a)) - abwRang(randVon(b)))
+  return markiereAbwesenheiten(entries, randVon)
 }

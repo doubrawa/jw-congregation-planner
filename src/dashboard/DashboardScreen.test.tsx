@@ -343,20 +343,26 @@ describe('Die eigenen Abwesenheiten stehen in derselben Leiste', () => {
     expect(klassen[1]).toContain('zeit-row--abw-unten')
   })
 
-  it('ein Zeitraum, der vor heute beginnt, behält sein Band im Fenster', () => {
-    // Gefärbt wird über die ganze Liste und erst danach auf zwei Wochen
-    // beschnitten — sonst verlöre der Abschnitt seinen Anfang und mit ihm die
-    // Strecke.
+  it('ein Zeitraum, der vor heute beginnt, steht mit seinem echten Beginn da', () => {
+    // Das Fenster gilt den Aufgaben, nicht den Abwesenheiten: Der Beginn liegt
+    // zurück und steht blasser da, statt abgeschnitten zu werden.
     const { container } = zeige({
       absences: [abw({ from: isoIn(-3), to: isoIn(4) })],
       myTasks: [task({ at: inTagen(2) })],
     })
     const klassen = zeilen(container).map((z) => z.className)
-    expect(klassen).toHaveLength(2) // nur Aufgabe + Ende; der Beginn liegt zurück
-    // Am oberen Rand endet die Leiste ohnehin am Punkt — die Strecke läuft von
-    // der Aufgabe nach unten bis zum Ende-Punkt und ist damit durchgehend.
+    expect(klassen).toHaveLength(3)
+    expect(klassen[0]).toContain('is-past')
     expect(klassen[0]).toContain('zeit-row--abw-unten')
     expect(klassen[1]).toContain('zeit-row--abw-oben')
+    expect(klassen[1]).toContain('zeit-row--abw-unten')
+    expect(klassen[2]).toContain('zeit-row--abw-oben')
+  })
+
+  it('eine Abwesenheit über die ganzen zwei Wochen lässt den Start nicht leer aussehen', () => {
+    const { container } = zeige({ absences: [abw({ from: isoIn(-2), to: isoIn(20) })] })
+    expect(zeilen(container)).toHaveLength(2)
+    expect(container.querySelector('.dash-leer-text')).toBeNull()
   })
 })
 
