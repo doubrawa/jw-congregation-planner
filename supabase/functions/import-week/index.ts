@@ -384,24 +384,41 @@ Deno.serve(async (req: Request) => {
     // eine Sprache für diese Woche, wird sie still übersprungen. Maximal 4,
     // damit die Abrufe gegenüber jw.org überschaubar bleiben.
     const wanted = [...new Set(altLangs)].filter((c) => c && c !== lang).slice(0, 4)
-    for (const code of wanted) {
-      const loc = localizedUrl(germanHtml, code)
-      if (!loc) continue
-      try {
-        const altWeek = parseWorkbookWeek(await fetchText(loc))
-        // Kein `applyGoldSlots` hier: `stripVariant` unten leert alle `names`
-        // wieder, und `localizedWeek` (src/data/localize.ts) übernimmt aus einer
-        // Variante ohnehin nur Texte — die Slots bleiben kanonisch. Der Aufruf
-        // stand hier und tat nichts; er las sich nur so, als trüge die Variante
-        // eine eigene Slot-Struktur.
-        const altStudy = start ? await studyArticle(start, code) : null
-        // mirror immer setzen: die Variante folgt strukturell der Primärwoche
-        applyStudy(altWeek, altStudy, study ?? { title: null, songOpen: null, songClose: null })
-        week.alt = { ...week.alt, [code]: stripVariant(altWeek) }
-      } catch {
-        // Variante nicht verfügbar/fehlerhaft → Woche bleibt ohne diese Sprache
-      }
-    }
+    /*
+     * **Nebeneinander, nicht nacheinander.** Jede Variante braucht zwei
+     * Abrufe (Wochenseite und Studienartikel), und die vier Sprachen wissen
+     * nichts voneinander — streng hintereinander waren das acht Runden gegen
+     * jw.org statt zweier Wellen, jede rund eine halbe Sekunde, und sie liefen
+     * gegen das Zeitbudget dieser Function.
+     *
+     * Eingetragen wird danach in der Reihenfolge von `wanted`, damit das
+     * Ergebnis nicht davon abhängt, welche Antwort zuerst da war.
+     */
+    const varianten = await Promise.all(
+      wanted.map(async (code) => {
+        const loc = localizedUrl(germanHtml, code)
+        if (!loc) return null
+        try {
+          const altWeek = parseWorkbookWeek(await fetchText(loc))
+          // Kein `applyGoldSlots` hier: `stripVariant` unten leert alle `names`
+          // wieder, und `localizedWeek` (src/data/localize.ts) übernimmt aus einer
+          // Variante ohnehin nur Texte — die Slots bleiben kanonisch. Der Aufruf
+          // stand hier und tat nichts; er las sich nur so, als trüge die Variante
+          // eine eigene Slot-Struktur.
+          const altStudy = start ? await studyArticle(start, code) : null
+          // mirror immer setzen: die Variante folgt strukturell der Primärwoche
+          applyStudy(altWeek, altStudy, study ?? { title: null, songOpen: null, songClose: null })
+          return stripVariant(altWeek)
+        } catch {
+          // Variante nicht verfügbar/fehlerhaft → Woche bleibt ohne diese Sprache
+          return null
+        }
+      }),
+    )
+    wanted.forEach((code, i) => {
+      const variante = varianten[i]
+      if (variante) week.alt = { ...week.alt, [code]: variante }
+    })
 
     return json({ week })
   } catch (err) {

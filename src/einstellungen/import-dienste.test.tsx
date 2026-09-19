@@ -217,6 +217,47 @@ describe('Import in der Produktion', () => {
     )
   })
 
+  it('mehrere Lücken werden in Blöcken geholt, nicht eine nach der anderen', async () => {
+    /*
+     * Wird eine zweite Programmsprache nachträglich eingerichtet, fehlt sie in
+     * **jeder** geladenen Woche. Streng nacheinander lägen bei vollem
+     * Ladefenster Minuten hinter einem Knopfdruck: jeder Aufruf ist eine Edge
+     * Function, die rund zehn Seiten von jw.org holt.
+     *
+     * Gemessen wird, wie viele Aufrufe gleichzeitig offen sind — nicht die
+     * Zeit: Das eine ist die Eigenschaft, das andere wäre eine Wette auf den
+     * Testrechner.
+     */
+    let offen = 0
+    let hoechstens = 0
+    const warten: Array<() => void> = []
+    importWeekVariants.mockImplementation((start: string) => {
+      offen++
+      hoechstens = Math.max(hoechstens, offen)
+      return new Promise((fertig) => {
+        warten.push(() => {
+          offen--
+          const w = woche(start)
+          fertig({ ok: true, week: { ...w, alt: { en: w } } })
+        })
+      })
+    })
+
+    const wochen = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05'].map((s) => woche(s))
+    const { container } = zeige('import', { weeks: wochen, congLang: 'de', progLangs: ['en'] })
+    fireEvent.click(container.querySelector('.imp-btn')!)
+
+    // Erster Block: vier gleichzeitig, die fünfte wartet noch.
+    await waitFor(() => expect(importWeekVariants).toHaveBeenCalledTimes(4))
+    expect(hoechstens).toBe(4)
+    warten.splice(0).forEach((f) => f())
+    // Zweiter Block: die übrige Woche.
+    await waitFor(() => expect(importWeekVariants).toHaveBeenCalledTimes(5))
+    warten.splice(0).forEach((f) => f())
+    // Und nie mehr als ein Block auf einmal — sonst löge die Grenze.
+    expect(hoechstens).toBe(4)
+  })
+
   it('während eines laufenden Imports löst ein zweiter Tipp nichts aus', () => {
     const { container } = zeige('import', { importing: true })
     fireEvent.click(container.querySelector('.imp-btn')!)

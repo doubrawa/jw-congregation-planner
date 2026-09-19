@@ -572,6 +572,30 @@ describe('import-week: weitere Programmsprachen als Varianten', () => {
     expect(Object.keys(week?.alt ?? {})).toHaveLength(4)
   })
 
+  it('die Sprachen laufen nebeneinander, nicht hintereinander', async () => {
+    /*
+     * Jede Variante braucht zwei Abrufe: die Wochenseite und den
+     * Studienartikel. Nacheinander sind das bei vier Sprachen acht Runden
+     * gegen jw.org — jede rund eine halbe Sekunde, und alle gegen das
+     * Zeitbudget dieser Function.
+     *
+     * Messbar ist das an der **Reihenfolge** der Abrufe: Laufen die Sprachen
+     * nebeneinander, sind beide Wochenseiten draußen, bevor der erste
+     * Studienartikel drankommt. Nacheinander käme die zweite Wochenseite erst
+     * nach dem ersten Artikel.
+     */
+    seiten.studie = true
+    seiten.sprachen = ['en', 'fr']
+    await hole({ after: '2026-03-02', lang: 'de', altLangs: ['en', 'fr'] })
+
+    const stelle = (muster: RegExp): number => geholt.findIndex((u) => muster.test(u))
+    const frSeite = stelle(/\/fr\/bibliothek\/jw-arbeitsheft\//)
+    const enArtikel = stelle(/\/en\/artikel-es$/)
+    expect(frSeite, 'die französische Wochenseite wurde gar nicht geholt').toBeGreaterThan(-1)
+    expect(enArtikel, 'der englische Studienartikel wurde gar nicht geholt').toBeGreaterThan(-1)
+    expect(frSeite).toBeLessThan(enArtikel)
+  })
+
   it('ohne Zusatzsprachen entsteht gar kein `alt`-Feld', async () => {
     const { week } = await hole({ after: '2026-03-02', lang: 'de' })
     expect(week?.alt).toBeUndefined()

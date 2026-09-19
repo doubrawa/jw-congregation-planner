@@ -19,6 +19,15 @@ import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs 
  * Beispielwoche (Demo). Weitere Programmsprachen werden als Varianten
  * mitgeholt, fehlende Varianten bereits geladener Wochen nachgezogen.
  */
+/**
+ * Wie viele Wochen ihre Sprachvarianten gleichzeitig nachholen dürfen.
+ *
+ * Vier: genug, damit ein Nachzug über ein ganzes Ladefenster nicht mehr
+ * Minuten dauert, und wenig genug, dass weder jw.org noch die Laufzeit der
+ * Edge Function darunter leidet.
+ */
+const VARIANTEN_BLOCK = 4
+
 export function useWochenImport(): {
   /** Startet den Import (nichts, solange einer läuft). */
   importieren: () => Promise<void>
@@ -103,14 +112,35 @@ export function useWochenImport(): {
     const altCodes = [
       ...new Set(state.progLangs.filter((c) => JW_TO_CONG[c] && c !== langCode)),
     ]
-    // Erst fehlende Varianten bereits geladener Wochen nachholen (z. B. wenn
-    // eine Programmsprache nach deren Import hinzugefügt wurde). Fehler je
-    // Woche werden übersprungen — der nächste Import versucht es erneut.
-    for (const gap of missingVariants(state.weeks, altCodes, langCode)) {
-      const filled = await importWeekVariants(gap.start, gap.lang, gap.codes)
-      if (filled.ok && filled.week.alt) {
-        dispatch({ type: 'mergeWeekAlt', wi: gap.wi, alt: filled.week.alt })
-      }
+    /*
+     * Erst fehlende Varianten bereits geladener Wochen nachholen (z. B. wenn
+     * eine Programmsprache nach deren Import hinzugefügt wurde). Fehler je
+     * Woche werden übersprungen — der nächste Import versucht es erneut.
+     *
+     * **In Blöcken, nicht einzeln nacheinander.** Wird eine zweite
+     * Programmsprache nachträglich eingerichtet, sind das bei vollem
+     * Ladefenster bis zu 52 Lücken — und jede ist ein eigener Aufruf der Edge
+     * Function, die ihrerseits rund zehn Seiten von jw.org holt. Streng
+     * nacheinander lagen damit Minuten hinter einem einzigen Knopfdruck, ohne
+     * Fortschrittsanzeige außer „importiere …".
+     *
+     * Und nicht alle auf einmal: Die Blöcke begrenzen, was gleichzeitig gegen
+     * jw.org läuft und wie lange die Function rechnet.
+     */
+    const luecken = missingVariants(state.weeks, altCodes, langCode)
+    for (let i = 0; i < luecken.length; i += VARIANTEN_BLOCK) {
+      const block = luecken.slice(i, i + VARIANTEN_BLOCK)
+      const geholt = await Promise.all(
+        block.map((gap) => importWeekVariants(gap.start, gap.lang, gap.codes)),
+      )
+      // Eingetragen wird in Blockreihenfolge, damit der Ablauf nachvollziehbar
+      // bleibt — die Wochen sind voneinander unabhängig.
+      block.forEach((gap, j) => {
+        const filled = geholt[j]
+        if (filled?.ok && filled.week.alt) {
+          dispatch({ type: 'mergeWeekAlt', wi: gap.wi, alt: filled.week.alt })
+        }
+      })
     }
     const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
     if (!res.ok) {
