@@ -71,7 +71,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, authKopf, personDisplayName, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, authKopf, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
 export { argumente }
 export { personDisplayName as displayName }
 
@@ -342,16 +342,16 @@ async function zugang() {
   const kopf = { ...authKopf(key), 'Content-Type': 'application/json' }
 
   /** PostgREST. `body` weglassen = GET. */
-  const rest = async (pfad, method = 'GET', body, prefer = 'return=representation') => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, {
+  // Stellungs-Hülle über dem gemeinsamen Klienten: Dieses Skript ruft `rest`
+  // vierzig Mal auf, und `rest('persons', 'POST', zeilen)` liest sich dort
+  // besser als eine Init-Struktur.
+  const roh = restKlient(url, key)
+  const rest = (pfad, method = 'GET', body, prefer = 'return=representation') =>
+    roh(pfad, {
       method,
-      headers: { ...kopf, Prefer: prefer },
+      headers: { Prefer: prefer },
       body: body === undefined ? undefined : JSON.stringify(body),
     })
-    if (!res.ok) throw new Error(`${method} ${pfad} ${res.status}: ${await res.text()}`)
-    const text = await res.text()
-    return text ? JSON.parse(text) : null
-  }
 
   /** Auth-Admin-API (Konten anlegen/löschen). */
   const auth = async (pfad, method = 'POST', body) => {

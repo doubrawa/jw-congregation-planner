@@ -43,7 +43,7 @@
  *
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  */
-import { argumente, authKopf, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
 export { argumente }
 
 /**
@@ -153,19 +153,15 @@ async function main() {
     return
   }
 
-  const rest = async (pfad, koerper) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, {
+  // Dieses Skript legt nur an — deshalb eine POST-Hülle über dem gemeinsamen
+  // Klienten statt einer eigenen Closure.
+  const roh = restKlient(url, key)
+  const rest = (pfad, koerper) =>
+    roh(pfad, {
       method: 'POST',
-      headers: {
-        ...authKopf(key),
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
+      headers: { Prefer: 'return=representation' },
       body: JSON.stringify(koerper),
     })
-    if (!res.ok) throw new Error(`POST ${pfad} ${res.status}: ${await res.text()}`)
-    return res.json()
-  }
 
   // Reihenfolge zählt: Person und Dienste hängen per Fremdschlüssel an der
   // Versammlung, der Einladungscode zusätzlich an der Person.

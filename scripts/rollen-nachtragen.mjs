@@ -43,7 +43,7 @@
  * `--cong <id>` beschränkt auf eine Versammlung (sonst: alle).
  */
 
-import { argumente, authKopf, istPlatzhalter, refAusUrl, urlAusEnvText, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, istPlatzhalter, refAusUrl, restKlient, urlAusEnvText, zugangsdaten } from './gemeinsam.mjs'
 export { istPlatzhalter, refAusUrl, urlAusEnvText }
 
 // Damit der Test die Helfer über dieses Skript erreicht, wie es die anderen
@@ -111,30 +111,7 @@ async function main() {
   // einen ganzen Neuaufbau gekostet.
   const { url, key } = await zugangsdaten()
 
-  const rest = async (pfad, init = {}) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, {
-      ...init,
-      headers: {
-        ...authKopf(key),
-        'Content-Type': 'application/json', ...(init.headers || {}),
-      },
-    })
-    if (!res.ok) {
-      const text = await res.text()
-      // 401 heißt hier fast immer: der Publishable- statt des
-      // Secret-Schlüssels. Das dazuzusagen erspart die Suche im Dashboard.
-      // Zweite Möglichkeit (siehe `authKopf`): PostgREST nimmt den
-      // Secret-Schlüssel im `Authorization`-Header nicht an — dann stünde dort
-      // „Invalid JWT", und der Kopf müsste auf `apikey` allein zurückfallen.
-      const hinweis =
-        res.status === 401
-          ? ' — ist das der sb_secret_…-Schlüssel? Der Publishable-Schlüssel darf die Wochen nicht ändern.'
-          : ''
-      throw new Error(`${init.method || 'GET'} ${pfad} ${res.status}: ${text}${hinweis}`)
-    }
-    const text = await res.text()
-    return text ? JSON.parse(text) : null
-  }
+  const rest = restKlient(url, key)
 
   const filter = arg.cong ? `&congregation_id=eq.${arg.cong}` : ''
   const rows = await rest(`weeks?select=congregation_id,start,data&order=start.asc${filter}`)

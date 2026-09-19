@@ -32,10 +32,18 @@ import { describe, expect, it } from 'vitest'
 const dir = import.meta.dirname
 const SKRIPTE = readdirSync(dir).filter((f) => f.endsWith('.mjs') && f !== 'gemeinsam.mjs')
 
-/** Nur die Skripte, die wirklich mit der Datenbank reden. */
-const MIT_DATENBANK = SKRIPTE.filter((f) =>
-  /rest\/v1|supabase\.co/.test(readFileSync(join(dir, f), 'utf8')),
-)
+/**
+ * Nur die Skripte, die wirklich mit der Datenbank reden.
+ *
+ * Erkannt an ihrer **Abhängigkeit**, nicht mehr an der Zeichenkette
+ * `rest/v1`: Seit der Zugriff auf PostgREST in `gemeinsam.mjs` steht
+ * (`restKlient`/`pruefKlient`), kommt die Adresse in den Skripten gar nicht
+ * mehr vor — und die Probe, die sie danach suchte, sah plötzlich nur noch
+ * vier von elf. Genau die Sorte Probe, die still aufhört zu messen.
+ */
+const REDET_MIT_DB =
+  /rest\/v1|supabase\.co|\brestKlient\(|\bpruefKlient\(|\bzugangsdaten\(/
+const MIT_DATENBANK = SKRIPTE.filter((f) => REDET_MIT_DB.test(readFileSync(join(dir, f), 'utf8')))
 
 /**
  * Skripte, die den Schlüssel **absichtlich** nicht über `secretKey()` holen —
@@ -51,7 +59,24 @@ const AUSNAHMEN: Record<string, string> = {
 
 describe('Alle Skripte holen den Schlüssel über secretKey()', () => {
   it('die Probe greift überhaupt', () => {
-    expect(MIT_DATENBANK.length).toBeGreaterThan(5)
+    // Elf Skripte reden mit der Datenbank; fällt die Zahl deutlich darunter,
+    // misst die Erkennung nicht mehr, was sie soll.
+    expect(MIT_DATENBANK.length).toBeGreaterThan(9)
+  })
+
+  it('keines baut den Zugriff auf PostgREST selbst', () => {
+    /*
+      Elf Skripte trugen dafür je eine eigene Closure — normalisiert vier
+      verschiedene Fassungen, die also längst auseinandergelaufen waren: Nur
+      eine erklärte den 401, zwei nannten im Fehlertext nicht einmal die
+      Methode. Seit dem 19. September 2026 steht der Zugriff in `gemeinsam.mjs`.
+    */
+    const selbstgebaut = MIT_DATENBANK.filter((f) => {
+      const quelle = readFileSync(join(dir, f), 'utf8')
+      const code = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/[^\n]*$/gm, '')
+      return /fetch\(`\$\{url\}\/rest\/v1\//.test(code)
+    })
+    expect(selbstgebaut, 'ruft PostgREST an restKlient/pruefKlient vorbei').toEqual([])
   })
 
   it('keines liest SUPABASE_SERVICE_ROLE_KEY aus der Umgebung', () => {

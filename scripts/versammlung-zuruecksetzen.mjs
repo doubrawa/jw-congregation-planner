@@ -50,7 +50,7 @@
 
 import fs from 'node:fs'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, authKopf, personDisplayName, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
 export { argumente }
 export { personDisplayName as displayName }
 
@@ -181,21 +181,7 @@ async function main() {
     process.exit(1)
   }
 
-  const rest = async (pfad, init = {}) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, {
-      ...init,
-      headers: {
-        ...authKopf(key),
-        'Content-Type': 'application/json', ...(init.headers || {}),
-      },
-    })
-    if (!res.ok) throw new Error(`${init.method || 'GET'} ${pfad} ${res.status}: ${await res.text()}`)
-    // Leerer Body bei jedem Erfolgsstatus (nicht nur 204): `Prefer: return=minimal`
-    // liefert auch bei POST ein 201 **ohne** Inhalt — `res.json()` darauf wirft
-    // „Unexpected end of JSON input".
-    const text = await res.text()
-    return text ? JSON.parse(text) : null
-  }
+  const rest = restKlient(url, key)
 
   const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
   if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }

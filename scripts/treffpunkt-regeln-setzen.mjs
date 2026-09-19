@@ -36,7 +36,7 @@
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
-import { argumente, authKopf, fsSort, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, fsSort, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 const WD_NAME = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 
@@ -132,13 +132,7 @@ async function main() {
   }
 
   const { url, key } = await zugangsdaten()
-  const kopf = authKopf(key)
-  const rest = async (pfad, opts = {}) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, { ...opts, headers: { ...kopf, 'Content-Type': 'application/json', ...opts.headers } })
-    if (!res.ok) throw new Error(`${pfad}: ${res.status} ${await res.text()}`)
-    const text = await res.text()
-    return text ? JSON.parse(text) : null
-  }
+  const rest = restKlient(url, key)
 
   const cong = (arg.cong
     ? await rest(`congregations?select=id,name&id=eq.${arg.cong}`)

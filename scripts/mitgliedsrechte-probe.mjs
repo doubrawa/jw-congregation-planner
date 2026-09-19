@@ -70,6 +70,7 @@
  */
 
 import { pathToFileURL } from 'node:url'
+import { pruefKlient } from './gemeinsam.mjs'
 
 /* ===================== Schlüssel (Spiegel von planning.ts) ================ */
 
@@ -224,21 +225,7 @@ async function anmelden(url, anon, mail, pass) {
   if (!res.ok) throw new Error(`Anmeldung ${mail} fehlgeschlagen (${res.status}): ${await res.text()}`)
   const { access_token: token, user } = await res.json()
 
-  const rest = async (pfad, method = 'GET', body, prefer = 'return=representation') => {
-    const antwort = await fetch(`${url}/rest/v1/${pfad}`, {
-      method,
-      headers: { apikey: anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: prefer },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-    const text = await antwort.text()
-    let daten = null
-    try {
-      daten = text ? JSON.parse(text) : null
-    } catch {
-      daten = text
-    }
-    return { status: antwort.status, daten }
-  }
+  const rest = pruefKlient(url, anon, token)
 
   /**
    * Eine Edge Function aufrufen — mit dem **Nutzer-Token**, wie die App es tut.

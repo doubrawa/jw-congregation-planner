@@ -65,7 +65,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { argumente, authKopf, ladeTabellen, personDisplayName, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, ladeTabellen, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
 export { argumente, personDisplayName }
 
 /* ===================== Stabile Identität (uuid5) ========================== */
@@ -584,20 +584,7 @@ async function main() {
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const nurLeere = Boolean(arg['nur-leere'])
-  const rest = async (pfad, init = {}) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, {
-      ...init,
-      headers: {
-        ...authKopf(key),
-        'Content-Type': 'application/json', ...(init.headers || {}),
-      },
-    })
-    if (!res.ok) throw new Error(`${init.method || 'GET'} ${pfad} ${res.status}: ${await res.text()}`)
-    // Leerer Body bei jedem Erfolgsstatus (PATCH/return=minimal → 204, aber auch
-    // ein leeres 200/201 darf `res.json()` nicht zum Werfen bringen).
-    const text = await res.text()
-    return text ? JSON.parse(text) : null
-  }
+  const rest = restKlient(url, key)
 
   // 1) Versammlung + App-Personen ZUERST — die NWS→App-Namensauflösung braucht
   //    sie, um Dubletten über die stabile id aufzulösen (siehe unten).

@@ -37,7 +37,7 @@
  * dem, was da war — das ist kein Fehler, sondern der Kalender.
  */
 
-import { argumente, authKopf, funktionsKopf, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, funktionsKopf, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /**
  * Wochen der Reihe nach holen. Jede Antwort nennt ihren Montag, und der ist
@@ -90,13 +90,7 @@ async function main() {
     process.exit(2)
   }
   const { url, key } = await zugangsdaten()
-  const kopf = authKopf(key)
-  const rest = async (pfad, opts = {}) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, { ...opts, headers: { ...kopf, 'Content-Type': 'application/json', ...opts.headers } })
-    if (!res.ok) throw new Error(`${pfad}: ${res.status} ${await res.text()}`)
-    const text = await res.text()
-    return text ? JSON.parse(text) : null
-  }
+  const rest = restKlient(url, key)
 
   const cong = arg.cong
     ? (await rest(`congregations?select=id,name,cong_lang,prog_langs&id=eq.${arg.cong}`))[0]

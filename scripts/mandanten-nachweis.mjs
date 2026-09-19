@@ -48,6 +48,7 @@
  */
 
 import { pathToFileURL } from 'node:url'
+import { pruefKlient } from './gemeinsam.mjs'
 
 /* ===================== Was geprüft wird =================================== */
 
@@ -148,21 +149,7 @@ async function anmelden(url, anon, mail, pass) {
   const { access_token: token } = await res.json()
 
   /** PostgREST **als dieser Nutzer** — RLS greift. */
-  const rest = async (pfad, method = 'GET', body, prefer = 'return=representation') => {
-    const antwort = await fetch(`${url}/rest/v1/${pfad}`, {
-      method,
-      headers: { apikey: anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: prefer },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-    const text = await antwort.text()
-    let daten = null
-    try {
-      daten = text ? JSON.parse(text) : null
-    } catch {
-      daten = text
-    }
-    return { status: antwort.status, daten }
-  }
+  const rest = pruefKlient(url, anon, token)
 
   const { daten: mitglied } = await rest('members?select=congregation_id,planner')
   const eigene = mitglied?.[0]?.congregation_id
@@ -213,12 +200,12 @@ async function main() {
   // demselben öffentlichen Schlüssel, den jeder Besucher im Bundle findet.
   console.log('Was der anon-Key ohne Anmeldung sieht (muss überall null sein):')
   let anonZeilen = 0
+  // Derselbe Klient wie unten, nur ohne Nutzer-Token: Der anon-Schlüssel weist
+  // sich selbst aus — genau das, was ein Besucher in der Hand hat.
+  const ohneAnmeldung = pruefKlient(url, anon, anon)
   for (const t of RLS_TABELLEN) {
-    const res = await fetch(`${url}/rest/v1/${t.name}?select=${t.spalte}&limit=1000`, {
-      headers: { apikey: anon, Authorization: `Bearer ${anon}` },
-    })
-    const daten = res.status < 400 ? await res.json() : []
-    anonZeilen += Array.isArray(daten) ? daten.length : 0
+    const { status, daten } = await ohneAnmeldung(`${t.name}?select=${t.spalte}&limit=1000`)
+    anonZeilen += status < 400 && Array.isArray(daten) ? daten.length : 0
   }
   zeile(anonZeilen === 0, `${String(RLS_TABELLEN.length).padStart(2)} Tabellen → ${anonZeilen} Zeilen`)
   console.log()

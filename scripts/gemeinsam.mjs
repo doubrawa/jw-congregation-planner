@@ -374,3 +374,85 @@ export function fsSort(a, b) {
     String(a.grp ?? '').localeCompare(String(b.grp ?? ''))
   )
 }
+
+/**
+ * **Der Zugriff auf PostgREST — einmal für alle Wartungsskripte.**
+ *
+ * Elf Skripte trugen dafür je eine eigene Closure: derselbe `fetch` auf
+ * `${url}/rest/v1/${pfad}`, dieselben Kopfzeilen, dieselbe Fehlerprüfung,
+ * dasselbe „leerer Body ist kein Fehler". Normalisiert waren es **vier**
+ * verschiedene Fassungen — die Abschriften waren also längst auseinandergelaufen:
+ * Nur eine erklärte den 401, zwei nannten im Fehlertext nicht einmal die
+ * Methode, und beim `Prefer`-Kopf war jede anders.
+ *
+ * Dasselbe hat die Edge-Seite längst gelöst (`_shared/rest.ts`, dort aus
+ * demselben Grund). Hier ist es dieselbe Abstraktion für Node.
+ *
+ * `rest(pfad, init)` nimmt eine `fetch`-Init entgegen (`method`, `body`,
+ * zusätzliche `headers`) und gibt den geparsten Körper zurück — oder `null`,
+ * wenn keiner kam. **Fehler werfen**: Ein Wartungsskript, das weiterläuft,
+ * nachdem eine Zeile nicht geschrieben wurde, hinterlässt einen halben Bestand.
+ * (Die RLS-Proben messen dagegen Statuscodes und brauchen deshalb `pruefKlient`.)
+ */
+export function restKlient(url, key) {
+  return async (pfad, init = {}) => {
+    const res = await fetch(`${url}/rest/v1/${pfad}`, {
+      ...init,
+      headers: { ...authKopf(key), 'Content-Type': 'application/json', ...(init.headers || {}) },
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      // 401 heißt hier fast immer: der Publishable- statt des
+      // Secret-Schlüssels. Das dazuzusagen erspart die Suche im Dashboard.
+      // Zweite Möglichkeit (siehe `authKopf`): PostgREST nimmt den
+      // Secret-Schlüssel im `Authorization`-Header nicht an — dann stünde dort
+      // „Invalid JWT", und der Kopf müsste auf `apikey` allein zurückfallen.
+      const hinweis =
+        res.status === 401
+          ? ' — ist das der sb_secret_…-Schlüssel? Der Publishable-Schlüssel darf die Wochen nicht ändern.'
+          : ''
+      throw new Error(`${init.method || 'GET'} ${pfad} ${res.status}: ${text}${hinweis}`)
+    }
+    // Leerer Body bei **jedem** Erfolgsstatus, nicht nur 204: `Prefer:
+    // return=minimal` liefert auch bei POST ein 201 ohne Inhalt, und
+    // `res.json()` darauf wirft „Unexpected end of JSON input".
+    const text = await res.text()
+    return text ? JSON.parse(text) : null
+  }
+}
+
+/**
+ * **Der Zugriff aus der Sicht eines angemeldeten Mitglieds** — für die beiden
+ * RLS-Proben (`mandanten-nachweis`, `mitgliedsrechte-probe`).
+ *
+ * Zwei Unterschiede zu `restKlient`, und beide sind der ganze Zweck:
+ *
+ *  - Es geht der **anon**-Schlüssel mit dem Nutzer-Token, nicht der
+ *    Service-Role-Schlüssel. Nur so greifen die RLS-Richtlinien überhaupt.
+ *  - Ein Fehler **wirft nicht**. Der Statuscode ist hier der Messwert: Eine
+ *    abgewiesene Abfrage ist der Beweis, nicht der Abbruch.
+ */
+export function pruefKlient(url, anon, token) {
+  return async (pfad, method = 'GET', body, prefer = 'return=representation') => {
+    const antwort = await fetch(`${url}/rest/v1/${pfad}`, {
+      method,
+      headers: {
+        apikey: anon,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: prefer,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+    const text = await antwort.text()
+    let daten = null
+    try {
+      daten = text ? JSON.parse(text) : null
+    } catch {
+      // Kein JSON — dann ist der rohe Text die Auskunft (PostgREST antwortet
+      // bei manchen Fehlern in Klartext).
+      daten = text
+    }
+    return { status: antwort.status, daten }
+  }
+}

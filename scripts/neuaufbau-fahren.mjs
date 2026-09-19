@@ -39,7 +39,7 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { argumente, authKopf, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /** Ohne diese Angaben kann Schritt 1 nicht laufen. */
 export const PFLICHT = ['name', 'vorname', 'nachname', 'sql']
@@ -104,11 +104,18 @@ export function schritte(arg) {
 }
 
 async function bestand(url, key) {
-  const kopf = authKopf(key)
+  const rest = restKlient(url, key)
+  /**
+   * Lesen für den **Abschlussbericht**: Ein Fehler ist hier kein Abbruch,
+   * sondern eine leere Zeile. Der Lauf ist an dieser Stelle vorbei — eine
+   * Tabelle, die sich nicht zählen lässt, soll den Bericht nicht verschlucken.
+   */
   const hole = async (pfad) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, { headers: kopf })
-    const text = await res.text()
-    return res.ok && text ? JSON.parse(text) : []
+    try {
+      return (await rest(pfad)) ?? []
+    } catch {
+      return []
+    }
   }
   const cong = (await hole('congregations?select=id,name'))[0]
   if (!cong) return { cong: null }

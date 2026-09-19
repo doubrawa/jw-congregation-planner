@@ -57,7 +57,7 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { authKopf, fsSort, ladeTabellen, zugangsdaten } from './gemeinsam.mjs'
+import { fsSort, ladeTabellen, restKlient, zugangsdaten } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { argumente, mondayOf, personDisplayName, uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -285,18 +285,7 @@ async function main() {
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const nurLeere = Boolean(arg['nur-leere'])
-  const rest = async (pfad, init = {}) => {
-    const res = await fetch(`${url}/rest/v1/${pfad}`, {
-      ...init,
-      headers: {
-        ...authKopf(key),
-        'Content-Type': 'application/json', ...(init.headers || {}),
-      },
-    })
-    if (!res.ok) throw new Error(`${init.method || 'GET'} ${pfad} ${res.status}: ${await res.text()}`)
-    const text = await res.text()
-    return text ? JSON.parse(text) : null
-  }
+  const rest = restKlient(url, key)
 
   const tabellen = ladeTabellen(datenDir, TABELLEN)
   const congRow = arg.cong
