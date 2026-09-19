@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
+import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste'
 import { fromIso } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
@@ -54,72 +55,72 @@ export function DashboardScreen() {
   const unread = state.notifs.filter((n) => !n.read).length
   const toConfirm = state.myTasks.filter((task) => task.status === 'offen').length
 
-  // Gemerkt am Tag, nicht an der Uhrzeit: Das Fenster verschiebt sich um
-  // Mitternacht, und `useKalendertag` stößt dann den Render an.
-  const eintraege = useMemo(
-    () => dashTimeline(state.myTasks, state.absences, state.personId, fromIso(tag)),
-    [state.myTasks, state.absences, state.personId, tag],
-  )
-
-  const zeilen: ZeitZeile[] = eintraege.map((e) => {
-    if (e.kind === 'abw') {
-      return {
-        key: e.key,
-        wann: e.datum.toLocaleDateString(LOCALES[state.lang], {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        }),
-        // Auch der letzte Tag zählt noch als abwesend — deshalb tragen beide
-        // Ränder dieselbe Beschriftung, und erst die Strecke dazwischen macht
-        // daraus einen Zeitraum.
-        art: e.grund ? `${t.abwesendChip} · ${e.grund}` : t.abwesendChip,
-        abw: true,
+  /*
+   * Fenster **und** Zeilen in einem Zug gemerkt: Die Leiste baut je Aufgabe
+   * Knöpfe, und die entstünden sonst bei jedem Render neu — gerechnet war dann
+   * nur die Auswahl, nicht das, was daraus wird.
+   *
+   * Gemerkt am Tag, nicht an der Uhrzeit: Das Fenster verschiebt sich um
+   * Mitternacht, und `useKalendertag` stößt dann den Render an.
+   */
+  const zeilen: ZeitZeile[] = useMemo(() => {
+    const eintraege = dashTimeline(state.myTasks, state.absences, state.personId, fromIso(tag))
+    return eintraege.map((e) => {
+      const band = {
         ...(e.abwOben ? { abwOben: true } : {}),
         ...(e.abwUnten ? { abwUnten: true } : {}),
+        ...(e.vergangen ? { vergangen: true } : {}),
       }
-    }
-    const { task } = e
-    // Live-Countdown aus dem echten Datum (Intl); im Demo-Modus der feste Chip-Text.
-    const countdown = task.at != null ? relativeDayLabel(task.at, state.lang) : tu(task.chip)
-    return {
-      key: e.key,
-      wann: tp(task.date),
-      art: <span className="dash-zeit-titel">{aufgabenLabel(task, i18n)}</span>,
-      ...(e.abwOben ? { abwOben: true } : {}),
-      ...(e.abwUnten ? { abwUnten: true } : {}),
-      oeffnen: () => dispatch({ type: 'openMyTask', id: task.id }),
-      aktionen: (
-        <>
-          {task.status === 'offen' && (
-            <button
-              type="button"
-              className="dash-confirm"
-              onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
-            >
-              ✓ {t.bestaetigen}
-            </button>
-          )}
-          {task.status === 'bestätigt' && (
-            <span className="dash-badge dash-badge--best">✓ {t.bestaetigt}</span>
-          )}
-          {task.status === 'verhindert' && (
-            <span className="dash-badge dash-badge--verh">{t.verhindertChip}</span>
-          )}
-          {task.s89 && (
-            <button
-              type="button"
-              className="dash-s89"
-              onClick={() => task.s89 && dispatch({ type: 'openS89', payload: task.s89 })}
-            >
-              {t.s89Open} ›
-            </button>
-          )}
-        </>
-      ),
-      ...(countdown ? { ende: <span className="dash-zeit-chip">{countdown}</span> } : {}),
-    }
-  })
+      if (e.kind === 'abw') {
+        return {
+          key: e.key,
+          wann: zeitleisteDatum(e.datum, state.lang),
+          art: abwesenheitsArt(e.grund, t.abwesendChip),
+          abw: true,
+          ...band,
+        }
+      }
+      const { task } = e
+      // Live-Countdown aus dem echten Datum (Intl); im Demo der feste Chip-Text.
+      const countdown = task.at != null ? relativeDayLabel(task.at, state.lang) : tu(task.chip)
+      return {
+        key: e.key,
+        wann: tp(task.date),
+        art: <span className="dash-zeit-titel">{aufgabenLabel(task, i18n)}</span>,
+        ...band,
+        oeffnen: () => dispatch({ type: 'openMyTask', id: task.id }),
+        aktionen: (
+          <>
+            {task.status === 'offen' && (
+              <button
+                type="button"
+                className="dash-confirm"
+                onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
+              >
+                ✓ {t.bestaetigen}
+              </button>
+            )}
+            {task.status === 'bestätigt' && (
+              <span className="dash-badge dash-badge--best">✓ {t.bestaetigt}</span>
+            )}
+            {task.status === 'verhindert' && (
+              <span className="dash-badge dash-badge--verh">{t.verhindertChip}</span>
+            )}
+            {task.s89 && (
+              <button
+                type="button"
+                className="dash-s89"
+                onClick={() => task.s89 && dispatch({ type: 'openS89', payload: task.s89 })}
+              >
+                {t.s89Open} ›
+              </button>
+            )}
+          </>
+        ),
+        ...(countdown ? { ende: <span className="dash-zeit-chip">{countdown}</span> } : {}),
+      }
+    })
+  }, [state.myTasks, state.absences, state.personId, state.lang, tag, dispatch, i18n, t, tp, tu])
 
   return (
     <section className="screen dash">
@@ -133,16 +134,16 @@ export function DashboardScreen() {
           den Screen dahinter gar nicht betreten. */}
       {state.planner && <PlanungsKarte />}
 
-      {zeilen.length > 0 ? (
-        <Zeitleiste label={t.naechsteAufgaben} farbe="acc" lead zeilen={zeilen} />
-      ) : (
-        // Wirklich nichts geplant — nicht „nichts in den nächsten zwei Wochen":
-        // Steht etwas dahinter, nennt die Leiste es (siehe `dashTimeline`).
-        <div className="panel panel--lead panel--pb14 dash-leer" data-farbe="acc">
-          <div className="panel-label zeit-label">{t.naechsteAufgaben}</div>
-          <div className="dash-leer-text">{t.dashKeineAufgabe}</div>
-        </div>
-      )}
+      {/* Der Leerzustand heißt: wirklich nichts geplant — nicht „nichts in den
+          nächsten zwei Wochen". Steht etwas dahinter, nennt die Leiste es
+          (siehe `dashTimeline`). */}
+      <Zeitleiste
+        label={t.naechsteAufgaben}
+        farbe="acc"
+        lead
+        zeilen={zeilen}
+        leer={<div className="dash-leer-text">{t.dashKeineAufgabe}</div>}
+      />
 
       <div className="dash-tiles">
         <button

@@ -16,23 +16,9 @@
 }
 
 .zeit {
-  position: relative;
   margin: 2px 0 4px;
   padding-inline-start: 20px;
   list-style: none; /* die Markierung ist der Punkt der Zeitleiste */
-}
-
-/* Senkrechte Linie von der ersten bis zur letzten Markierung. Sie trägt die
-   Gliederung — deshalb keine zusätzlichen Trennlinien zwischen den Zeilen. */
-.zeit::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: 4px;
-  top: 16px;
-  bottom: 16px;
-  width: 2px;
-  background: var(--panel-accent);
-  opacity: 0.4;
 }
 
 .zeit-row {
@@ -49,8 +35,51 @@
   opacity: 0.55;
 }
 
-/* Datum, Art und Aktionen — die Spalte neben dem Punkt. */
+/*
+ * Die senkrechte Linie zieht **jede Zeile selbst** — von ihrem oberen Rand zur
+ * Mitte ihres Punktes und von dort zum unteren Rand. Zusammengesetzt ergibt das
+ * eine durchgehende Linie vom ersten bis zum letzten Punkt.
+ *
+ * Sie hing vorher am <ol> und endete 16px über dessen Unterkante. Bei den
+ * gleich hohen Zeilen des Personen-Details war das die Mitte des letzten
+ * Punktes; auf dem Start, wo unter der Aufgabe noch Knöpfe stehen, hing sie
+ * rund 40px darunter ins Leere. Zeilenweise gezogen stimmt sie bei jeder
+ * Zeilenhöhe.
+ */
+.zeit-row::before,
+.zeit-row::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: -16px;
+  width: 2px;
+  background: var(--panel-accent);
+  opacity: 0.4;
+}
+
+.zeit-row::before {
+  top: 0;
+  height: 17px; /* bis zur Mitte des Punktes (top 12px + 9px/2) */
+}
+
+.zeit-row::after {
+  top: 16px;
+  bottom: 0;
+}
+
+/* Am ersten und am letzten Punkt hört die Leiste auf. Nur die **Grundlinie**:
+   Ein Abwesenheits-Band, das über den Rand hinausläuft, wird weiter unten
+   wieder eingeschaltet — dass es läuft, entscheidet `markiereAbwesenheiten`. */
+.zeit-row:first-child::before,
+.zeit-row:last-child::after {
+  background: none;
+}
+
+/* Datum, Art und Aktionen — die Spalte neben dem Punkt. Sie nimmt den Platz,
+   den das Zeilenende übrig lässt: Auf dem Start ist die ganze Spalte der Knopf,
+   der das Aufgaben-Blatt öffnet, und ein Knopf, der nur so breit ist wie sein
+   Text, ist auf dem Handy schwer zu treffen. */
 .zeit-body {
+  flex: 1;
   min-width: 0;
 }
 
@@ -117,14 +146,18 @@
   background: var(--wein);
 }
 
-/* Die Strecke wird je Zeile gezeichnet, oberhalb und unterhalb des Punktes
-   getrennt: Der Punkt ist die Grenze des Zeitraums, nicht seine Mitte. Sie
-   liegt genau auf der Grundlinie (`.zeit::before`, dort 4px vom Rand des
-   ol = -16px vom Rand der Zeile) und deckt sie ab. */
-.zeit-row--abw-oben::before,
-.zeit-row--abw-unten::after {
-  content: '';
-  position: absolute;
+/*
+ * Die Strecke liegt auf der Grundlinie und deckt sie ab — dieselben beiden
+ * Stellen, oberhalb und unterhalb des Punktes getrennt: Der Punkt ist die
+ * Grenze des Zeitraums, nicht seine Mitte.
+ *
+ * Doppelt benannt (`.zeit-row.zeit-row--abw-…`), damit die Regel so schwer
+ * wiegt wie die Rand-Regel darüber und, weil sie später steht, gewinnt: Läuft
+ * das Band über den Anfang oder das Ende des Ausschnitts hinaus, gehört es
+ * gezeichnet — anders als die Grundlinie, die dort aufhört.
+ */
+.zeit-row.zeit-row--abw-oben::before,
+.zeit-row.zeit-row--abw-unten::after {
   /* Ein Stück breiter als die Grundlinie (2px) und um ihre halbe Mehrbreite
      nach außen gerückt, damit beide auf derselben Achse liegen. Die Breite
      trägt hier mit: In Gold getönt sind zwei warme Farben nebeneinander schwer
@@ -137,16 +170,6 @@
      man erst beim Hinsehen unterscheidet. Der Punkt bleibt die volle Farbe und
      damit die dunklere Marke. */
   opacity: 0.85;
-}
-
-.zeit-row--abw-oben::before {
-  top: 0;
-  height: 17px; /* bis zur Mitte des Punktes (top 12px + 9px/2) */
-}
-
-.zeit-row--abw-unten::after {
-  top: 16px;
-  bottom: 0;
 }
 
 /* Eine Abwesenheit entfernen — im Personen-Detail und unter „Aufgaben". */

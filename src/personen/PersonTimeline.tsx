@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
+import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste'
 import type { Person } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { personTimeline, type TimelineEntry } from './person-timeline'
 
@@ -37,35 +37,20 @@ export function PersonTimeline({ person }: { person: Person }) {
     () => personTimeline(person, state),
     [person, state],
   )
-  if (entries.length === 0) return null
 
   // Entfernen darf, wen es betrifft, oder ein Planer — dieselbe Grenze wie im
   // Eingabe-Formular (`AbsencePanel`) und in der Datenbank (`absences_write`).
   const darfBearbeiten = state.planner || person.id === state.personId
 
-  // Einheitlich für alle Arten: Wochentag, Datum und — sofern hinterlegt —
-  // die Uhrzeit („Dienstag, 8. September · 19:00"). Eine Abwesenheit hat keine.
-  const wann = (e: TimelineEntry): string => {
-    const tag = e.datum.toLocaleDateString(LOCALES[state.lang], {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    })
-    return e.zeit ? `${tag} · ${e.zeit}` : tag
-  }
-
   const beschriftung = (e: TimelineEntry): string => {
     if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)
     if (e.kind === 'fs') return `${t.privTreffpunkt} · ${tu(e.ort)}`
-    // Auch der letzte Tag zählt noch als abwesend (`von <= tag <= bis`) —
-    // deshalb tragen beide Ränder dieselbe Beschriftung, und erst die Strecke
-    // dazwischen macht daraus einen Zeitraum.
-    return e.grund ? `${t.abwesendChip} · ${e.grund}` : t.abwesendChip
+    return abwesenheitsArt(e.grund, t.abwesendChip)
   }
 
   const zeilen: ZeitZeile[] = entries.map((e) => ({
     key: e.key,
-    wann: wann(e),
+    wann: zeitleisteDatum(e.datum, state.lang, e.zeit),
     art: beschriftung(e),
     abw: e.kind === 'abw',
     ...(e.abwOben ? { abwOben: true } : {}),

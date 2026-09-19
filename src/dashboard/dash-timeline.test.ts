@@ -12,10 +12,13 @@ import { DASH_TAGE, dashTimeline } from './dash-timeline'
  *
  * - Zwei Wochen, **heute mitgezählt** — der laufende Tag gehört dazu, wer am
  *   Sonntagvormittag hereinschaut, will den Sonntag sehen.
- * - Ist darin nichts, steht die **nächste Aufgabe dahinter** da. „Keine
- *   anstehende Aufgabe" wäre falsch, sobald eine in drei Wochen liegt.
- * - Abwesenheiten werden über die **ganze** Liste eingefärbt und erst danach
- *   beschnitten, sonst verliert ein Zeitraum, der vor heute beginnt, sein Band.
+ * - Ist darin **keine Aufgabe**, steht die nächste dahinter da. „Keine
+ *   anstehende Aufgabe" wäre falsch, sobald eine in drei Wochen liegt — und
+ *   eine Abwesenheit im Fenster darf sie nicht verdecken.
+ * - Das Fenster gilt den **Aufgaben**. Eine Abwesenheit, die hineinreicht,
+ *   behält beide echten Ränder, auch wenn einer davor oder dahinter liegt:
+ *   Abgeschnitten verlor ein laufender Zeitraum seinen Beginn, und einer über
+ *   die ganzen zwei Wochen verschwand ganz.
  */
 
 const HEUTE = new Date(2026, 8, 7, 9, 0) // Montag, 7. September 2026
@@ -84,6 +87,23 @@ describe('Liegt im Fenster nichts, steht die nächste Aufgabe dahinter da', () =
     // sagt, warum keine da ist.
     expect(keys([], [abw('a1', 2, 2)])).toEqual(['abw|a1|einzel'])
   })
+
+  it('eine Abwesenheit im Fenster verdeckt die nächste Aufgabe dahinter nicht', () => {
+    // Der Rückfall hing daran, dass das Fenster **ganz** leer ist. Eine
+    // eingetragene Abwesenheit reichte, und die Zuteilung in drei Wochen stand
+    // nicht mehr da — unter der Überschrift „Nächste Aufgaben".
+    expect(keys([task('in drei Wochen', 21)], [abw('a1', 2, 3)])).toEqual([
+      'abw|a1|start', 'abw|a1|ende', 'in drei Wochen',
+    ])
+  })
+
+  it('die nächste Aufgabe dahinter steht an ihrem Platz, nicht hinten angehängt', () => {
+    // Eine Abwesenheit reicht über den Fensterrand hinaus und kann später enden
+    // als die Aufgabe, die den Rückfall füllt.
+    expect(keys([task('in 16 Tagen', 16)], [abw('a1', 12, 20)])).toEqual([
+      'abw|a1|start', 'in 16 Tagen', 'abw|a1|ende',
+    ])
+  })
 })
 
 describe('Abwesenheiten stehen in derselben Leiste', () => {
@@ -121,12 +141,26 @@ describe('Abwesenheiten stehen in derselben Leiste', () => {
     expect([danach.abwOben, danach.abwUnten]).toEqual([false, false])
   })
 
-  it('ein Zeitraum, der vor heute beginnt, behält sein Band', () => {
-    // Gefärbt wird über die ganze Liste, beschnitten erst danach: Der Beginn
-    // liegt zurück und fällt heraus, die Strecke bis zum Ende bleibt.
+  it('ein Zeitraum, der vor heute beginnt, behält seinen Beginn — blasser', () => {
+    // Der Rand am echten Tag, nicht am Fensterrand: „seit Montag" ist die
+    // Auskunft, ein erfundenes „seit heute" wäre eine falsche.
     const zeilen = leiste([task('drin', 1)], [abw('a1', -3, 4)])
-    expect(zeilen.map((z) => z.key)).toEqual(['drin', 'abw|a1|ende'])
-    expect(zeilen[0]!.abwOben).toBe(true)
+    expect(zeilen.map((z) => z.key)).toEqual(['abw|a1|start', 'drin', 'abw|a1|ende'])
+    expect(zeilen[0]!.vergangen).toBe(true)
+    expect(zeilen[1]!.abwOben).toBe(true)
+  })
+
+  it('ein Zeitraum über die ganzen zwei Wochen verschwindet nicht', () => {
+    // Beide Ränder lagen außerhalb des Fensters: Die Abwesenheit fiel ganz
+    // heraus, und der Start behauptete „Keine anstehende Aufgabe" über einer
+    // Zeit, in der man gar nicht da ist.
+    const zeilen = leiste([], [abw('a1', -2, DASH_TAGE + 5)])
+    expect(zeilen.map((z) => z.key)).toEqual(['abw|a1|start', 'abw|a1|ende'])
+    expect(zeilen[0]!.abwUnten).toBe(true)
+  })
+
+  it('was ganz außerhalb liegt, bleibt weg — das steht im Personen-Detail', () => {
+    expect(keys([], [abw('davor', -9, -3), abw('dahinter', DASH_TAGE + 1, DASH_TAGE + 4)])).toEqual([])
   })
 
   it('überlappende Zeiträume schalten sich nicht gegenseitig aus', () => {
