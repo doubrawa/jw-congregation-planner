@@ -35,6 +35,7 @@
 // =============================================================================
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
+import { schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   type Abweichungen,
@@ -156,22 +157,23 @@ interface Sub {
 const displayName = (p: Person): string => personDisplayName(p.fn, p.ln, p.dn)
 
 /**
- * Zerlegt einen Hilfsdienst-Schluessel.
+ * Zerlegt einen Hilfsdienst-Schluessel — null bei allem anderen.
  *
  * Vorn steht seit T66 der **Montag der Woche** ("2026-09-07"). Die frueheren
  * Positions-Schluessel wurden eine Zeit lang mitgelesen; seit Stufe 3 nicht
- * mehr -- die Spalte `weeks.position` gibt es nicht,
- * die Spalte, ueber die sie ueberhaupt zu finden waren. Ein Schluessel ohne
- * Kennung bezeichnet damit keine Woche und wird abgewiesen.
+ * mehr -- es gibt die Spalte `weeks.position` nicht mehr, ueber die sie
+ * ueberhaupt zu finden waren. Ein Schluessel ohne Kennung bezeichnet damit
+ * keine Woche und wird abgewiesen.
+ *
+ * Hier stand dafuer ein eigener Zerleger; er ist der gemeinsamen Fassung
+ * gewichen (`_shared/aufgaben-schluessel.ts`), damit ein Formatwechsel nicht
+ * wieder an sechs Stellen nachgezogen werden muss.
  */
 function parseKey(
   key: string,
 ): { woche: string; tab: 'mid' | 'we'; svc: string; pos: number } | null {
-  const p = key.split('|')
-  if (p.length !== 5 || p[2] !== 'helper' || (p[1] !== 'mid' && p[1] !== 'we')) return null
-  const woche = p[0]
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(woche)) return null
-  return { woche, tab: p[1], svc: p[3], pos: Number(p[4]) }
+  const teile = schluesselTeile(key)
+  return teile?.art === 'helper' ? teile : null
 }
 
 /**

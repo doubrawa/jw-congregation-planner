@@ -55,6 +55,7 @@
 // =============================================================================
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
+import { wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import { heuteUtc, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import {
@@ -364,10 +365,10 @@ Deno.serve(async (req: Request) => {
      */
     const jeWoche = async <T>(tabelle: string, spalten: string): Promise<T[]> => {
       const teile = await Promise.all(
-        [`${weekStart}|*`, `fs|${weekStart}|*`].map((muster) =>
+        wochenPraefixe(weekStart).map((praefix) =>
           rest.get<T[]>(
             `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` +
-              `&task_key=like.${wert(muster)}`,
+              `&task_key=like.${wert(`${praefix}*`)}`,
           ),
         ),
       )

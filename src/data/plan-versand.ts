@@ -40,6 +40,7 @@
  * gehört zum Termin (siehe dort).
  */
 import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { schluesselTeile, wochenPraefixe } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { fsKennung, fsTag, fsTagVorbei, fsTaskKey, fsTerminText } from './fs'
 import { dieselbePerson, hatAuxKlasse, istAusgefallen, MEETING_TABS } from './helpers'
 import { istVorbei, meetingDateMs } from './meeting-dates'
@@ -288,18 +289,17 @@ export function entzogeneZusagen(
  * das im Ganzen leer wird, gilt als Strukturwechsel und schweigt.
  */
 function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): boolean {
-  if (key.startsWith('fs|')) return !fsLeer
-  const wo = taskKeyWeek(key)
+  const teile = schluesselTeile(key)
   // Fremdformat: nicht wegfiltern. Wer den Schlüssel nicht deuten kann, hält
   // die Nachricht lieber zurück als sie fälschlich zu unterdrücken.
-  if (!wo) return true
+  if (!teile) return true
+  if (teile.art === 'fs') return !fsLeer
   if (!nachher) return false
-  if (istAusgefallen(nachher, wo.tab)) return false
-  const abschnitt = key.split('|')[2]
+  if (istAusgefallen(nachher, teile.tab)) return false
   // Zusätzliche Klasse: die Plätze der zweiten Reihe und ihr Ratgeber hängen
   // beide an `auxRatgeber` — ist die Marke weg, zählt `raeume()` den Raum nicht
   // mehr auf. Die Namen bleiben dabei absichtlich in den Daten stehen.
-  if (abschnitt === 'aux' || abschnitt === 'ratgeber') return hatAuxKlasse(nachher[wo.tab])
+  if (teile.art === 'aux' || teile.art === 'ratgeber') return hatAuxKlasse(nachher[teile.tab])
   return true
 }
 
@@ -319,8 +319,7 @@ export function zuletztGesendet(sentLog: SentLog, weekStart: string): string | n
     // Der Tagebuch-Schlüssel beginnt mit dem Aufgaben-Schlüssel; ein Präfix-
     // Vergleich genügt und kommt ohne Zerlegen aus (Namen dürfen Leerzeichen
     // enthalten, ein Aufgaben-Schlüssel theoretisch auch).
-    const gehoert =
-      schluessel.startsWith(`${weekStart}|`) || schluessel.startsWith(`fs|${weekStart}|`)
+    const gehoert = wochenPraefixe(weekStart).some((p) => schluessel.startsWith(p))
     if (!gehoert) continue
     if (neuster === null || wann > neuster) neuster = wann
   }

@@ -39,6 +39,13 @@ import {
   type Zuteilung,
 } from './helpers'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
+import {
+  helferKey,
+  punktKey,
+  punktStamm,
+  ratgeberKey,
+  schluesselTeile,
+} from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { ersteZahl } from './ziffern'
 import type {
   ConfirmationMap,
@@ -334,17 +341,17 @@ export function changedSlotKeys(
   for (const { slot, item, ni, aux } of programmPlaetze(next)) {
     const prevItem = vorherNachKennung.get(item.iid)
     const vorher = prevItem ? slotsOf(prevItem, aux) : []
-    if (!gleicheBesetzung(vorher[ni], slot)) keys.push(itemTaskKey(woche, tab, item.iid, ni, aux))
+    if (!gleicheBesetzung(vorher[ni], slot)) keys.push(punktKey(woche, tab, item.iid, ni, aux))
   }
   for (const svc of services) {
     const prevArr = prev.helpers[svc.key] ?? []
     const nextArr = next.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
-      if (!gleicheBesetzung(prevArr[pos], nextArr[pos])) keys.push(helperTaskKey(woche, tab, svc.key, pos))
+      if (!gleicheBesetzung(prevArr[pos], nextArr[pos])) keys.push(helferKey(woche, tab, svc.key, pos))
     }
   }
   if (!gleicheBesetzung(prev.auxRatgeber, next.auxRatgeber)) {
-    keys.push(ratgeberTaskKey(woche, tab))
+    keys.push(ratgeberKey(woche, tab))
   }
   return keys
 }
@@ -959,21 +966,6 @@ export function alleS89DerWoche(
 
 
 /**
- * Ist das vorderste Feld eines `task_key` eine Wochen-Kennung (T66)?
- *
- * Seit T66 steht dort das **Startdatum** der Woche („2026-09-07"), vorher ihre
- * **Position** („60"). Beide sind auf einen Blick unterscheidbar, und genau das
- * braucht die Lade-Migration: Sie erkennt daran, was sie schon umgestellt hat.
- *
- * Geprüft wird nur die Form, nicht die Gültigkeit des Datums — ein „2026-13-45"
- * käme aus keiner Quelle, die wir schreiben, und ein zu strenger Test hier
- * verwürfe im Zweifel echte Schlüssel.
- */
-function istWochenKennung(feld: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(feld)
-}
-
-/**
  * Index der Woche mit dieser Kennung — `-1`, wenn sie nicht geladen ist.
  *
  * Das Gegenstück zum Umbau: Wer aus einem Schlüssel wieder eine Woche braucht,
@@ -985,51 +977,13 @@ export function wochenIndex(weeks: readonly Week[], woche: string): number {
   return woche ? weeks.findIndex((w) => w.start === woche) : -1
 }
 
-/**
- * Schlüssel eines Programmpunkt-Slots (auch `confirmations.task_key`) über die
- * **stabile Kennung** des Punkts (T37) — `"2026-09-07|mid|part|k3f9x|0"`.
- *
- * Weder Abschnitt noch laufende Nummer stehen darin: Eine Bestätigung folgt
- * damit dem Punkt, nicht seinem Platz in der Liste. Genau daran scheiterte T16
- * — ein eingefügter LAC-Punkt verschob alle folgenden, und die Bestätigungen
- * blieben an der alten Zahl kleben. Einfügen, Löschen und Verschieben lassen
- * die Schlüssel seither in Ruhe.
- *
- * Der Abschnitt „part" wird für die Zusätzliche Klasse zu „aux" — an derselben
- * Stelle statt als Anhang, damit beide Räume gleich aussehende Schlüssel haben.
+/*
+ * Die Erzeuger der `task_key` stehen im geteilten Modul (siehe den Kopf von
+ * `aufgaben-schluessel.ts`): Die Edge Functions bauen dieselben Schlüssel und
+ * können nicht aus `src/` lesen. Hier laufen sie unter ihren gewohnten Namen
+ * weiter.
  */
-export function itemTaskKey(
-  woche: string,
-  tab: MeetingKey,
-  iid: string,
-  ni: number,
-  aux = false,
-): string {
-  return `${itemTaskStamm(woche, tab, iid, aux)}${ni}`
-}
-
-/**
- * Der Schlüssel **aller** Plätze eines Punkts, ohne die Platznummer — die
- * gemeinsame Wurzel von `itemTaskKey` und `itemZusagenKeys`.
- *
- * Damit steht der Aufbau des Schlüssels an genau einer Stelle. Er stand hier
- * schon einmal zweimal untereinander; die zweite Abschrift wäre beim nächsten
- * Umbau des Formats die eine, die man übersieht.
- */
-function itemTaskStamm(woche: string, tab: MeetingKey, iid: string, aux: boolean): string {
-  return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${iid}|`
-}
-
-
-/** Stabiler Schlüssel des Ratgebers einer Zusammenkunft. */
-export function ratgeberTaskKey(woche: string, tab: MeetingKey): string {
-  return `${woche}|${tab}|ratgeber`
-}
-
-/** Stabiler Schlüssel eines Hilfsdienst-Slots. */
-export function helperTaskKey(woche: string, tab: MeetingKey, svc: string, pos: number): string {
-  return `${woche}|${tab}|helper|${svc}|${pos}`
-}
+export { punktKey as itemTaskKey, ratgeberKey as ratgeberTaskKey, helferKey as helperTaskKey }
 
 /**
  * Schlüssel im Versand-Tagebuch: Platz **und** Name.
@@ -1050,9 +1004,8 @@ export function sentKey(taskKey: string, name: string): string {
  * gleich ob Programmpunkt, Ratgeber oder Hilfsdienst. null bei Fremdformaten.
  */
 export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | null {
-  const [woche, tab] = key.split('|')
-  if (!woche || !istWochenKennung(woche)) return null
-  return tab === 'mid' || tab === 'we' ? { woche, tab } : null
+  const teile = schluesselTeile(key)
+  return teile && teile.art !== 'fs' ? { woche: teile.woche, tab: teile.tab } : null
 }
 
 /**
@@ -1087,9 +1040,8 @@ export function taskKeyVorbei(
 export function helperKeyParts(
   key: string,
 ): { woche: string; tab: MeetingKey; svc: string; pos: number } | null {
-  const p = key.split('|')
-  if (p.length !== 5 || p[2] !== 'helper') return null
-  return { woche: p[0] ?? '', tab: p[1] as MeetingKey, svc: p[3] ?? '', pos: Number(p[4]) }
+  const teile = schluesselTeile(key)
+  return teile?.art === 'helper' ? teile : null
 }
 
 /**
@@ -1174,7 +1126,7 @@ export function itemZusagenKeys(
   tab: MeetingKey,
   iid: string,
 ): string[] {
-  const praefixe = [itemTaskStamm(woche, tab, iid, false), itemTaskStamm(woche, tab, iid, true)]
+  const praefixe = [punktStamm(woche, tab, iid, false), punktStamm(woche, tab, iid, true)]
   return Object.keys(map).filter((key) => praefixe.some((p) => key.startsWith(p)))
 }
 
@@ -1201,7 +1153,7 @@ export function eachAssignedSlot(
       for (const { slot, section, si, item, ii, ni, aux } of programmPlaetze(meeting)) {
         // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
         if (!slot.name || isGuestRole(slot.rolle)) continue
-        const key = itemTaskKey(week.start, tab, item.iid, ni, aux)
+        const key = punktKey(week.start, tab, item.iid, ni, aux)
         visit(slot.name, key, () => {
           const rolle = rolleMitHerkunft(slot) ?? ''
           const sel: SlotSelection = {
@@ -1228,7 +1180,7 @@ export function eachAssignedSlot(
       // Ratgeber der Zusätzlichen Klasse: eine Aufgabe je Zusammenkunft.
       const ratgeber = meeting.auxRatgeber
       if (ratgeber?.name) {
-        const key = ratgeberTaskKey(week.start, tab)
+        const key = ratgeberKey(week.start, tab)
         visit(ratgeber.name, key, () => ({
           id: key,
           title: '', // die Bezeichnung ist die Rolle — App-Sprache
@@ -1246,7 +1198,7 @@ export function eachAssignedSlot(
         for (let pos = 0; pos < svc.count; pos++) {
           const slot = arr[pos]
           if (!slot?.name) continue
-          const key = helperTaskKey(week.start, tab, svc.key, pos)
+          const key = helferKey(week.start, tab, svc.key, pos)
           visit(slot.name, key, () => ({
             id: key,
             // Dienstnamen zeigt die App in der Sprache des Lesers — so hält es

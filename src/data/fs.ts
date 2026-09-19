@@ -23,6 +23,7 @@ import {
   tieHash,
 } from './helpers'
 import { deutschesDatum, fromIso, istVorbei, kalendertagMs, versatzAbMontag } from './meeting-dates'
+import { fsKey, schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
@@ -500,14 +501,17 @@ export function fsWochenStart(fsBase: Date | null, wi: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export function fsTaskKey(woche: string, instId: string): string {
-  return `fs|${woche}|${instId}`
-}
+/*
+ * Aufbau und Zerlegung des Treffpunkt-Schlüssels stehen im geteilten Modul
+ * (siehe den Kopf von `aufgaben-schluessel.ts`) — `send-reminders` und
+ * `send-plan` bauen denselben und können nicht aus `src/` lesen.
+ */
+export { fsKey as fsTaskKey }
 
 /** Woche (Kennung) eines Treffpunkt-Schlüssels — `null`, wenn es keiner ist. */
 export function fsTaskKeyWoche(key: string): string | null {
-  const [art, woche] = key.split('|')
-  return art === 'fs' && woche !== undefined ? woche : null
+  const teile = schluesselTeile(key)
+  return teile?.art === 'fs' ? teile.woche : null
 }
 
 /**
@@ -802,7 +806,7 @@ export function deriveMyFsTasks(
       const meins = leiter.pid && personId ? leiter.pid === personId : leiter.name === personName
       if (!meins) continue
       const kennung = kennungen[wi] ?? ''
-      const key = fsTaskKey(kennung, inst.id)
+      const key = fsKey(kennung, inst.id)
       // Ohne brauchbare Kennung (Vorlagen, Tests) gibt es keinen echten Termin —
       // dann bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
       const tag = fsTag(kennung, inst.wd)
@@ -863,7 +867,7 @@ export function fsVerwaisteZusagen(
     if (!alt.leader) continue // kein Leiter, keine Zusage
     const neu = jetzt.get(alt.id)
     if (neu && dieselbeLeitung(alt, neu)) continue
-    out.push(fsTaskKey(kennung, alt.id))
+    out.push(fsKey(kennung, alt.id))
   }
   return out
 }

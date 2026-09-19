@@ -25,6 +25,7 @@ import {
   type Abweichungen,
 } from './planung.ts'
 import { makeTr } from './i18n/translate.ts'
+import { fsKey, helferKey, punktKey, ratgeberKey } from './aufgaben-schluessel.ts'
 
 /* ---- Datenmodell (Teilmengen der Client-Typen aus src/data/types.ts) ---- */
 
@@ -222,7 +223,7 @@ export function pendingOfFsWeek(
   const out: Array<Pending & { offset: number; datum: string }> = []
   for (const inst of insts) {
     if (!inst?.leader || inst.lext) continue
-    const key = `fs|${woche}|${inst.id}`
+    const key = fsKey(woche, inst.id)
     if (conf.has(key)) continue
     const offset = ((inst.wd ?? 1) + 6) % 7
     out.push({
@@ -283,9 +284,9 @@ export function pendingOfMeeting(
       for (const [abschnitt, names] of raeume) {
         for (const [ni, slot] of names.entries()) {
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
-          // Schlüssel über die stabile Kennung des Punkts — dieselbe Regel wie
-          // `itemTaskKey` im Client.
-          const key = `${woche}|${tab}|${abschnitt}|${item.iid}|${ni}`
+          // Schlüssel über die stabile Kennung des Punkts — derselbe Erzeuger,
+          // den der Client unter dem Namen `itemTaskKey` kennt.
+          const key = punktKey(woche, tab, item.iid, ni, abschnitt === 'aux')
           if (conf.has(key)) continue
           out.push({
             name: slot.name,
@@ -302,13 +303,13 @@ export function pendingOfMeeting(
   }
   // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
   const ratgeber = meeting.auxRatgeber
-  const ratgeberKey = `${woche}|${tab}|ratgeber`
-  if (ratgeber?.name && !conf.has(ratgeberKey)) {
+  const ratKey = ratgeberKey(woche, tab)
+  if (ratgeber?.name && !conf.has(ratKey)) {
     out.push({
       name: ratgeber.name,
       pid: ratgeber.pid,
       label: ratgeber.rolle ?? 'Ratgeber',
-      key: ratgeberKey,
+      key: ratKey,
     })
   }
   for (const svc of services) {
@@ -317,7 +318,7 @@ export function pendingOfMeeting(
     for (let pos = 0; pos < svc.count; pos++) {
       const name = helperName(arr[pos])
       if (!name) continue // unbesetzter Platz
-      const key = `${woche}|${tab}|helper|${svc.key}|${pos}`
+      const key = helferKey(woche, tab, svc.key, pos)
       if (conf.has(key)) continue
       out.push({ name, pid: helperPid(arr[pos]), label: svc.name, key })
     }
