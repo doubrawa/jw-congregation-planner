@@ -60,21 +60,26 @@ Ende automatisch auf; du musst nichts extra tun.
 | `verkuendiger-profil.png` | `s=profil&pl=0&p=p9` | verkuendiger |
 | `verkuendiger-treffpunkte.png` | `s=programm&tab=fs&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-gruppenaufseher.png` | `s=planen&pl=0&me=p1` | verkuendiger |
-| `planer-start.png` | `s=start&me=p9` (920×1300) | planer |
+| `planer-start.png` | `s=start&me=p9` (Höhe 1300) | planer |
 | `planer-aufgaben.png` | `s=aufgaben` | (Reserve) |
 | `planer-planen-woche.png` | `s=planen&tab=mid` | planer |
 | `planer-planen-treffpunkte.png` | `s=planen&tab=fs` | (Reserve) |
-| `planer-plan-senden.png` | `s=planen&tab=fs` (920×2100) | planer |
+| `planer-plan-senden.png` | `s=planen&tab=fs` (Höhe 2100) | planer |
 | `planer-personen.png` | `s=personen` | planer |
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |
 | `offline-stand.png` | `s=programm&tab=mid&stale=5` | beide |
 
-Alle Screenshots werden im hellen Theme (`t=weiss`) und im Screenshot‑Modus
-(`shot=1`) am Desktop‑Breakpoint **920px** aufgenommen und anschließend seitlich auf
-den Inhalt zugeschnitten: App‑Screens → **892px** (Sidebar 232 + Inhalt 660), der
-Login → **430px** (nur die App‑Spalte). Über das dritte Feld im `SHOTS`‑Eintrag
-(`BxH`) lässt sich die Aufnahmegröße je Shot überschreiben (Login: `920×780`).
+Alle Screenshots entstehen im hellen Theme (`t=weiss`) und im Screenshot‑Modus
+(`shot=1`) und werden anschließend seitlich auf den Inhalt zugeschnitten:
+App‑Screens → **662px** (Sidebar 232 + App‑Spalte 430), der Login → **430px**
+(nur die App‑Spalte). Das Fenster ist 920px breit, der Sichtbereich unter
+Windows aber etwas schmaler — deshalb greift der 920er‑Umbruch auf die breite
+Spalte (660px) nicht, und der ganze Bestand steht in der schmalen. Wer mit einem
+Chromium aufnimmt, für das `--window-size` den Sichtbereich meint (Linux,
+`--headless=new`), setzt im Skript `W=900` und `H=931`; sonst kommen breitere
+Bilder heraus als die abgelegten. Über das dritte Feld im `SHOTS`‑Eintrag
+(`${W}xH`) lässt sich die Höhe je Shot überschreiben (Login: 780).
 
 ---
 
