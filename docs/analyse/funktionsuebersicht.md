@@ -72,9 +72,9 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | # | Funktion | Wo | Wer | Umsetzung |
 | --- | --- | --- | --- | --- |
 | 17 | Tageszeit-Gruß + lokalisiertes Datum | Start | alle | `dashboard/DashboardScreen.tsx` |
-| 18 | Nächste eigene Aufgabe mit Live-Countdown | Start | alle | `relativeDayLabel`, `MyTask.at` |
-| 19 | Aufgabe direkt bestätigen / S-89 öffnen | Start | alle | `confirmTask`, `openS89` |
-| 20 | „Aktuelle Woche": beide Zusammenkünfte und die eigenen Treffpunkte in Wochenfolge, Chip „Deine Aufgabe" | Start | alle | `assignmentsInMeeting`, `gehoertZu`, `fsLeiterZuteilung` |
+| 18 | Zeitleiste der eigenen Aufgaben der nächsten zwei Wochen (Zusammenkünfte und Treffpunkte), mit Live-Countdown; liegt darin nichts, die nächste dahinter | Start | alle | `dashboard/dash-timeline.ts`, `components/Zeitleiste.tsx`, `relativeDayLabel`, `MyTask.at` |
+| 19 | Jede Zeile direkt bestätigen / S-89 öffnen, Tipp öffnet das Aufgaben-Blatt | Start | alle | `confirmTask`, `openS89`, `openMyTask` |
+| 20 | Eigene Abwesenheiten in derselben Leiste — Beginn und Ende als Punkte, die Strecke dazwischen eingefärbt | Start | alle | `dashTimeline`, `Absence` |
 | 21 | Kacheln: ungelesene Mitteilungen, offene Bestätigungen | Start | alle | `DashboardScreen.tsx` |
 | 22 | Planungs-Karte (T95), beim Planer zuerst: je kommende Woche mögliche Konflikte, nicht besetzbar, offene Zuteilungen, Plan senden — Tipp öffnet Planen auf der Woche; Import-Knopf, wenn die Programme knapp werden; eingeklappt „Alles zugeteilt" mit Zeitraum | Start | Planer | `data/planungsstand.ts`, `dashboard/PlanungsKarte.tsx`, `useWochenImport`, `useKalendertag` |
 
@@ -166,7 +166,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 74a | Freigabe je Hilfsdienst: alle Personen mit Schalter, Zahl am Dienst | Einstellungen | Planer | `einstellungen/ServicePersonsSheet.tsx` |
 | 74b | S-89-Druckbogen der Woche, 6 je A4, Partner-Zettel schaltbar | Planen | Planer | `planen/S89Bogen.tsx`, `alleS89DerWoche`, `planen/print-s89.css` |
 | 75 | Feste Wachtturm-Rollen (Leiter, Vertreter) | Detail | Planer | `WT_ROLE_ORDER` |
-| 76 | Zeitleiste der Zuteilungen (Datum + Art, Vergangenes blasser) | Detail | Planer | `personen/PersonTimeline.tsx`, `person-timeline.ts` |
+| 76 | Zeitleiste der Zuteilungen (Datum + Art, Vergangenes blasser) — dieselbe Leiste wie auf dem Start | Detail | Planer | `personen/PersonTimeline.tsx`, `person-timeline.ts`, `components/Zeitleiste.tsx` |
 | 77 | Konto-Karte (Status App-Zugang, einladen) | Detail | Planer | `personen/KontoCard.tsx` |
 | 78 | Auto-Speichern (debounced), leere Neuanlagen fallen weg | Detail | Planer | `persist.ts`, `isNameless` |
 

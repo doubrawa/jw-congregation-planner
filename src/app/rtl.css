@@ -36,7 +36,8 @@
 .sheet-current,
 .sheet-sub,
 .sheet-title,
-.dash-week-date,
+.zeit-datum,
+.zeit-art,
 .dash-plan-range {
   unicode-bidi: plaintext;
 }

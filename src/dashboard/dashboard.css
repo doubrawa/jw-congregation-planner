@@ -16,31 +16,19 @@
   margin: 6px 0 0;
 }
 
-/* ---- Hero: nächste Aufgabe --------------------------------------------- */
+/* ---- Zeitleiste: die eigenen Aufgaben der nächsten zwei Wochen ----------
+   Gezeichnet wird sie von `components/Zeitleiste.tsx` (dieselbe Leiste wie im
+   Personen-Detail); hier steht nur, was der Start ihr mitgibt. */
 
-.dash-hero {
-  background: var(--tAcc);
-  border-radius: 18px;
-  padding: 16px 16px 15px;
-  margin-top: 20px;
-}
-
-.dash-hero-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.dash-hero-label {
-  font-size: calc(10px * var(--fs));
+/* Die Aufgabe selbst — kräftiger als im Personen-Detail: Auf der Landeseite ist
+   sie der Inhalt, dort eine Zeile der Geschichte einer Person. */
+.dash-zeit-titel {
   font-weight: 600;
-  letter-spacing: 0.16em;
-  color: var(--acc);
 }
 
-.dash-hero-chip {
-  flex: none;
+/* Countdown am Zeilenende („morgen", „in 4 Tagen"). */
+.dash-zeit-chip {
+  display: inline-block;
   background: var(--gld);
   color: var(--onAcc);
   border-radius: var(--r-pill);
@@ -50,45 +38,13 @@
   white-space: nowrap;
 }
 
-/* Titel+Datum der nächsten Aufgabe sind anklickbar → Aktions-Sheet. */
-.dash-hero-open {
-  display: block;
-  width: 100%;
-  text-align: start;
-}
-
-.dash-hero-open:hover .dash-hero-title {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.dash-hero-title {
-  font-family: var(--font-serif);
-  font-size: calc(22px * var(--fs));
-  font-weight: 500;
-  line-height: 1.2;
-  margin-top: 10px;
-}
-
-.dash-hero-date {
-  font-size: calc(12.5px * var(--fs));
-  color: var(--mut);
-  margin-top: 5px;
-}
-
-.dash-hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-}
-
+/* Bestätigen / S-89 / Zustand — unter der Aufgabe (`.zeit-aktionen`). */
 .dash-confirm {
   border: 1px solid var(--pet);
   color: var(--pet);
   border-radius: var(--r-pill);
-  padding: 7px 15px;
-  font-size: calc(11.5px * var(--fs));
+  padding: 6px 13px;
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
 }
 
@@ -98,12 +54,12 @@
 
 .dash-s89 {
   color: var(--acc);
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
 }
 
 .dash-badge {
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
 }
 
@@ -115,74 +71,13 @@
   color: var(--wein);
 }
 
-.dash-hero--empty {
-  padding-bottom: 18px;
-}
-
-.dash-hero-empty-text {
+/* Gar keine Aufgabe geplant — dann statt der Leeren Leiste der ruhige Satz. */
+.dash-leer-text {
   font-family: var(--font-serif);
   font-size: calc(18px * var(--fs));
   font-weight: 500;
   color: var(--mut);
-  margin-top: 10px;
-}
-
-/* ---- Diese Woche -------------------------------------------------------- */
-
-.dash-week {
-  background: var(--tNeu);
-  border-radius: 16px;
-  padding: 6px 14px 10px;
-  margin-top: 12px;
-}
-
-.dash-week-label {
-  padding: 10px 0 2px;
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  color: var(--mut);
-}
-
-.dash-week-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--lineNeu);
-}
-
-.dash-week-row:last-child {
-  border-bottom-color: transparent;
-}
-
-.dash-week-name {
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-}
-
-.dash-week-date {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  margin-top: 2px;
-}
-
-.dash-week-chip {
-  flex: none;
-  background: var(--tPet);
-  color: var(--pet);
-  border-radius: var(--r-pill);
-  padding: 3px 10px;
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.dash-week-frei {
-  flex: none;
-  font-size: calc(11px * var(--fs));
-  color: var(--mut2);
+  margin-top: 8px;
 }
 
 /* ---- Kacheln: Mitteilungen · Zu bestätigen ------------------------------ */
@@ -245,8 +140,8 @@
   margin-top: 20px;
 }
 
-.dash-plan + .dash-hero,
-.dash-planung + .dash-hero {
+.dash-plan + .panel,
+.dash-planung + .panel {
   margin-top: 12px;
 }
 

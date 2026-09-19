@@ -91,7 +91,7 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
     const beschriftet = [...QUELLEN]
       .filter(([pfad]) => pfad.endsWith('.tsx') && !/\.test\.tsx$/.test(pfad))
       .filter(([, text]) => /\bmyTasks\b/.test(text))
-      .filter(([, text]) => /confirm-task-title|auf-title|dash-hero-title/.test(text))
+      .filter(([, text]) => /confirm-task-title|auf-title|dash-zeit-titel/.test(text))
       .map(([pfad]) => pfad)
       .sort()
 

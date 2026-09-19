@@ -1,0 +1,169 @@
+/* ---- Zeitleiste ----------------------------------------------------------
+ * Eine Darstellung für beide Leisten: das Personen-Detail (Zuteilungen und
+ * Abwesenheiten einer Person) und den Start-Bildschirm (die eigenen Aufgaben
+ * der nächsten zwei Wochen). Sie lagen zuerst nur bei den Personen; als der
+ * Start dieselbe Form bekam, wäre sie sonst ein zweites Mal entstanden — und
+ * zwei Leisten, die gleich aussehen sollen, laufen im Kleinen auseinander.
+ *
+ * Die Farbe kommt vom Panel (`data-farbe`), nicht von hier: Gold bei den
+ * Personen, Akzent auf dem Start.
+ */
+
+/* Groß geschrieben wie jede Panel-Beschriftung; das Wörterbuch liefert sie in
+   manchen Sprachen gemischt. */
+.zeit-label {
+  text-transform: uppercase;
+}
+
+.zeit {
+  position: relative;
+  margin: 2px 0 4px;
+  padding-inline-start: 20px;
+  list-style: none; /* die Markierung ist der Punkt der Zeitleiste */
+}
+
+/* Senkrechte Linie von der ersten bis zur letzten Markierung. Sie trägt die
+   Gliederung — deshalb keine zusätzlichen Trennlinien zwischen den Zeilen. */
+.zeit::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 16px;
+  bottom: 16px;
+  width: 2px;
+  background: var(--panel-accent);
+  opacity: 0.4;
+}
+
+.zeit-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+}
+
+/* Vergangenes bleibt lesbar, tritt aber hinter das Kommende zurück. */
+.zeit-row.is-past {
+  opacity: 0.55;
+}
+
+/* Datum, Art und Aktionen — die Spalte neben dem Punkt. */
+.zeit-body {
+  min-width: 0;
+}
+
+/* Am Zeilenende: der Countdown-Chip (Start) oder das ✕ (Personen). Die
+   Mindestbreite steht auch dort, wo nichts ist: Sonst hätten die Zeilen einer
+   Leiste verschiedene Textbreiten, und der Umbruch spränge von Zeile zu Zeile. */
+.zeit-ende {
+  flex: none;
+  min-width: 24px;
+}
+
+.zeit-dot {
+  position: absolute;
+  inset-inline-start: -20px;
+  top: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--panel-accent);
+}
+
+/* Ganz antippbar, wo die Zeile zu einem Blatt führt (Start). */
+.zeit-open {
+  display: block;
+  width: 100%;
+  text-align: start;
+}
+
+.zeit-open:hover .zeit-art {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.zeit-datum {
+  display: block;
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+  color: var(--panel-accent);
+}
+
+.zeit-art {
+  display: block;
+  margin-top: 1px;
+  font-size: calc(12.5px * var(--fs));
+  color: var(--ink);
+}
+
+/* Knöpfe und Zustände unter der Art (bestätigen, S-89, „Bestätigt"). */
+.zeit-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 8px;
+}
+
+/* ---- Abwesenheiten in der Zeitleiste ----------------------------------- */
+
+/* Beginn und Ende einer Abwesenheit. Der Punkt trägt die kräftige Farbe, die
+   Strecke dazwischen die gedämpfte — sonst verschwände der Rand in der Linie,
+   und man sähe nicht mehr, WO der Zeitraum anfängt. Beide aus der
+   „wein"-Familie, die in jedem Farbschema definiert ist. */
+.zeit-dot--abw {
+  background: var(--wein);
+}
+
+/* Die Strecke wird je Zeile gezeichnet, oberhalb und unterhalb des Punktes
+   getrennt: Der Punkt ist die Grenze des Zeitraums, nicht seine Mitte. Sie
+   liegt genau auf der Grundlinie (`.zeit::before`, dort 4px vom Rand des
+   ol = -16px vom Rand der Zeile) und deckt sie ab. */
+.zeit-row--abw-oben::before,
+.zeit-row--abw-unten::after {
+  content: '';
+  position: absolute;
+  /* Ein Stück breiter als die Grundlinie (2px) und um ihre halbe Mehrbreite
+     nach außen gerückt, damit beide auf derselben Achse liegen. Die Breite
+     trägt hier mit: In Gold getönt sind zwei warme Farben nebeneinander schwer
+     zu unterscheiden — als Band ist der Zeitraum auf einen Blick zu sehen. */
+  inset-inline-start: -16.5px;
+  width: 3px;
+  background: var(--wein);
+  /* Kaum gedämpft: Über den gold getönten Grund gemischt wandert Rot sonst
+     nach Braun und steht neben der goldenen Grundlinie — zwei warme Töne, die
+     man erst beim Hinsehen unterscheidet. Der Punkt bleibt die volle Farbe und
+     damit die dunklere Marke. */
+  opacity: 0.85;
+}
+
+.zeit-row--abw-oben::before {
+  top: 0;
+  height: 17px; /* bis zur Mitte des Punktes (top 12px + 9px/2) */
+}
+
+.zeit-row--abw-unten::after {
+  top: 16px;
+  bottom: 0;
+}
+
+/* Eine Abwesenheit entfernen — im Personen-Detail und unter „Aufgaben". */
+.zeit-remove {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  /* Auf die Höhe der Datumszeile, nicht auf die Mitte der Zeile: Der Punkt
+     links markiert denselben Rand. */
+  margin-top: 3px;
+  border-radius: 50%;
+  color: var(--mut);
+  font-size: calc(12px * var(--fs));
+  line-height: 1;
+}
+
+.zeit-remove:hover {
+  background: var(--hov);
+  color: var(--ink);
+}
