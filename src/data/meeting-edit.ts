@@ -525,15 +525,199 @@ export function themaVon(titel: string, begriff: string): string {
 }
 
 /**
+ * Einschalten, unter der Woche: Das Versammlungsbibelstudium wird zum
+ * Dienstvortrag — 30 Minuten, ein Platz als Freitext, kein Leser.
+ */
+function midDienstvortrag(w: Week): Pick<Dienstwoche, 'midOrig' | 'midOrigAlt'> {
+  const lacIdx = abschnitt(w.mid, 'lac')
+  const lacItems = lacIdx >= 0 ? w.mid.sections[lacIdx]?.items : undefined
+  const vbsIdx = lacItems ? mitLeser(lacItems) : -1
+  if (!lacItems || vbsIdx < 0) return {}
+  const vbs = lacItems[vbsIdx]
+  if (!vbs || isSong(vbs)) return {}
+  // Ohne Kennung fände das Zurücknehmen den Punkt nicht wieder — es
+  // suchte nach `iid === undefined` und träfe irgendeinen. Demo- und
+  // Vorlagenwochen laufen nicht durch die Lade-Migration (T37), tragen
+  // also keine; hier wird sie nachgeholt.
+  vbs.iid ??= neueItemId()
+  const midOrig = structuredClone(vbs)
+  lacItems[vbsIdx] = {
+    ...vbs,
+    title: TITEL_DIENSTVORTRAG,
+    meta: '30 Min.',
+    mins: 30,
+    names: [{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }],
+  }
+  // Die Varianten tragen ihre eigenen Titel; `localizedWeek` übernimmt
+  // sie bei der Anzeige. Bliebe dort „Congregation Bible Study" stehen,
+  // stünde das über dem Dienstvortrag. Der alte Titel wird gemerkt,
+  // sonst käme er beim Zurücknehmen nur kanonisch-deutsch wieder.
+  const midOrigAlt: Record<string, string> = {}
+  for (const [code, variant] of Object.entries(w.alt ?? {})) {
+    const it = variant.mid?.sections[lacIdx]?.items[vbsIdx]
+    if (!it || isSong(it)) continue
+    midOrigAlt[code] = it.title
+    it.title = TITEL_DIENSTVORTRAG
+  }
+  return { midOrig, midOrigAlt }
+}
+
+/**
+ * Einschalten, Wochenende (1 von 2): Das Wachtturm-Studium wird auf 30 Minuten
+ * verkürzt und verliert seinen Leser — die Absätze werden dann nicht gelesen,
+ * es werden nur die Fragen des Artikels besprochen.
+ */
+function weStudiumKuerzen(w: Week, wtIdx: number): Pick<Dienstwoche, 'weOrig' | 'weOrigAlt'> {
+  const wtItems = wtIdx >= 0 ? w.we.sections[wtIdx]?.items : undefined
+  const studIdx = wtItems ? mitLeser(wtItems) : -1
+  if (!wtItems || studIdx < 0) return {}
+  const stud = wtItems[studIdx]
+  if (!stud || isSong(stud)) return {}
+  stud.iid ??= neueItemId() // wie beim Bibelstudium: sonst kein Rückweg
+  const weOrig = structuredClone(stud)
+  // **Nicht** die erste Zahl ersetzen: die Meta-Zeile des
+  // Wachtturm-Studiums beginnt mit der Nummer des Studienartikels
+  // („Studienartikel 28 · 60 Min."). Ersetzt wird die alte Dauer selbst —
+  // die steht in `mins` (T32) und muss nicht aus dem Text gelesen werden.
+  // **Nur `mins`, nicht `itemMinutes`.** Dessen Rückfall nimmt die erste
+  // Zahl der Meta-Zeile — bei einem LAC-Punkt ist das die Dauer, beim
+  // Wachtturm-Studium aber die Nummer des Studienartikels. Mit dem Rückfall
+  // wurde aus 28 eine 30 und die Dauer blieb stehen; im Browser sofort zu
+  // sehen. Fehlt `mins`, wissen wir die Dauer nicht — dann bleibt der
+  // Anzeigetext, wie er ist, statt geraten zu werden.
+  const alt = typeof stud.mins === 'number' ? stud.mins : null
+  if (alt != null) stud.meta = zahlErsetzen(stud.meta ?? '', alt, 30)
+  stud.mins = 30
+  // Der Leser fällt weg; der Leiter bleibt.
+  stud.names = stud.names.filter((n) => n.bereichsKey !== 'leser')
+  // Auch die Varianten zeigen ihre eigene Meta-Zeile — dort stünde sonst
+  // weiter „60 Min." über einem Studium, das 30 dauert.
+  const weOrigAlt: Record<string, string> = {}
+  for (const [code, variant] of Object.entries(w.alt ?? {})) {
+    const it = variant.we?.sections[wtIdx]?.items[studIdx]
+    if (!it || isSong(it) || it.meta === undefined) continue
+    weOrigAlt[code] = it.meta
+    if (alt != null) it.meta = zahlErsetzen(it.meta, alt, 30)
+  }
+  return { weOrig, weOrigAlt }
+}
+
+/**
+ * Einschalten, Wochenende (2 von 2): Der Schlussvortrag kommt hinter das
+ * Studium — 30 Minuten, Freitext.
+ *
+ * **Eine eigene Sektion, kein Anhängsel des Studiums** (T64). Vorher stand der
+ * Vortrag unter der Überschrift WACHTTURM-STUDIUM — ein zweiter Punkt dort, der
+ * keiner ist. Sie kommt direkt hinter das Studium und vor den ABSCHLUSS, in
+ * Gold (siehe LABEL_DIENSTVORTRAG).
+ */
+function weSchlussvortragEinsetzen(w: Week, wtIdx: number): Pick<Dienstwoche, 'weVortragIid'> {
+  if (wtIdx < 0) return {}
+  const iid = neueItemId()
+  const vortrag: PartItem = {
+    iid,
+    title: TITEL_SCHLUSSVORTRAG,
+    meta: '30 Min.',
+    mins: 30,
+    names: [{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }],
+  }
+  w.we.sections.splice(wtIdx + 1, 0, {
+    label: LABEL_DIENSTVORTRAG,
+    kind: 'dienstvortrag',
+    farbe: 'gold',
+    items: [vortrag],
+  })
+  // Die Varianten brauchen dieselbe Sektion an derselben Stelle: fehlt sie,
+  // ist die Woche nicht mehr strukturgleich und `localizedWeek` fällt stumm
+  // aufs Deutsche zurück — die ganze Woche, nicht nur dieser Punkt.
+  forEachAltMeeting(w, 'we', (m) => {
+    m.sections.splice(wtIdx + 1, 0, {
+      label: LABEL_DIENSTVORTRAG,
+      kind: 'dienstvortrag',
+      farbe: 'gold',
+      items: [{ iid, title: TITEL_SCHLUSSVORTRAG, meta: '30 Min.', mins: 30, names: [] }],
+    })
+  })
+  return { weVortragIid: iid }
+}
+
+/** Zurücknehmen, unter der Woche: das Versammlungsbibelstudium wieder an seine Stelle. */
+function midBibelstudiumZurueck(w: Week, coData: Dienstwoche): void {
+  const lacIdx = abschnitt(w.mid, 'lac')
+  const lacItems = lacIdx >= 0 ? w.mid.sections[lacIdx]?.items : undefined
+  const orig = coData.midOrig
+  if (!lacItems || !orig) return
+  let idx = lacItems.findIndex((x) => !isSong(x) && x.iid === orig.iid)
+  if (idx < 0) {
+    // Der Planer hat den Dienstvortrag zwischendurch gelöscht. Das
+    // Bibelstudium deshalb zu verlieren wäre die böseste Überraschung von
+    // allen — es kommt ans Ende des Abschnitts zurück.
+    lacItems.push(structuredClone(orig))
+    idx = lacItems.length - 1
+  }
+  lacItems[idx] = structuredClone(orig)
+  // Jede Variante bekommt ihren eigenen Titel zurück; fehlt einer (Variante
+  // erst später dazugeholt), bleibt der kanonische — besser als
+  // „Dienstvortrag" in einer Woche ohne Kreisaufseher.
+  for (const [code, variant] of Object.entries(w.alt ?? {})) {
+    const it = variant.mid?.sections[lacIdx]?.items[idx]
+    if (!it || isSong(it)) continue
+    it.title = coData.midOrigAlt?.[code] ?? orig.title
+  }
+}
+
+/** Zurücknehmen, Wochenende (1 von 2): das Wachtturm-Studium in voller Länge. */
+function weStudiumZurueck(w: Week, coData: Dienstwoche): void {
+  const wtIdx = abschnitt(w.we, 'wtStudium')
+  const wtSection = wtIdx >= 0 ? w.we.sections[wtIdx] : undefined
+  const orig = coData.weOrig
+  if (!wtSection || !orig) return
+  const idx = wtSection.items.findIndex((x) => !isSong(x) && x.iid === orig.iid)
+  if (idx < 0) return
+  wtSection.items[idx] = structuredClone(orig)
+  // Und die Meta-Zeile jeder Variante ebenso — sonst zeigte die
+  // englische Fassung weiter 30 Minuten für ein Studium mit 60.
+  for (const [code, variant] of Object.entries(w.alt ?? {})) {
+    const it = variant.we?.sections[wtIdx]?.items[idx]
+    const alt = coData.weOrigAlt?.[code]
+    if (it && !isSong(it) && alt !== undefined) it.meta = alt
+  }
+}
+
+/**
+ * Zurücknehmen, Wochenende (2 von 2): der Schlussvortrag verschwindet.
+ *
+ * Seit T64 ist er eine **eigene Sektion** — zurückgenommen wird sie als Ganzes.
+ * Gesucht wird trotzdem über die Kennung des Punktes, nicht über die
+ * Überschrift: Wochen, die vor T64 eingeschaltet wurden, tragen ihn noch im
+ * Wachtturm-Abschnitt, und auch die müssen sauber zurückkommen.
+ */
+function weSchlussvortragEntfernen(w: Week, coData: Dienstwoche): void {
+  const iid = coData.weVortragIid
+  if (!iid) return
+  const weg = (m: Meeting): void => {
+    const si = m.sections.findIndex((s) => s.items.some((x) => !isSong(x) && x.iid === iid))
+    const section = m.sections[si]
+    if (!section) return
+    if (istArt(section, 'dienstvortrag')) m.sections.splice(si, 1)
+    else {
+      const idx = section.items.findIndex((x) => !isSong(x) && x.iid === iid)
+      if (idx >= 0) section.items.splice(idx, 1)
+    }
+  }
+  weg(w.we)
+  forEachAltMeeting(w, 'we', weg)
+}
+
+/**
  * Besuch des Kreisaufsehers ein- oder ausschalten (T62).
  *
  * **Unter der Woche** wird das Versammlungsbibelstudium zum Dienstvortrag:
  * 30 Minuten, ein Platz als Freitext, kein Leser.
  *
  * **Am Wochenende** wird das Wachtturm-Studium auf 30 Minuten verkürzt und
- * verliert seinen Leser — die Absätze werden dann nicht gelesen, es werden nur
- * die Fragen des Artikels besprochen —, und dahinter kommt der Schlussvortrag,
- * ebenfalls 30 Minuten und Freitext.
+ * verliert seinen Leser, und dahinter kommt der Schlussvortrag, ebenfalls 30
+ * Minuten und Freitext.
  *
  * **Die Endzeiten bleiben, wie sie sind**: unter der Woche 30 gegen 30, am
  * Wochenende −30 (Studium) +30 (Schlussvortrag). `shiftEnd` bleibt außen vor.
@@ -545,6 +729,11 @@ export function themaVon(titel: string, begriff: string): string {
  * Die Sprachvarianten (`Week.alt`) werden mitgeführt: `localizedWeek` gleicht
  * die Struktur ab und ließe die Woche sonst stumm auf die kanonische Sprache
  * zurückfallen.
+ *
+ * Ein- und Zurücknehmen stehen in je drei benannten Schritten darüber. Sie
+ * teilen sich nichts außer der geklonten Woche — hier standen sie als zwei
+ * Hälften einer Funktion von 199 Zeilen untereinander, und dieselben drei Orte
+ * kamen darin sechsmal vor.
  */
 export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
   const week = weeks[wi]
@@ -553,196 +742,38 @@ export function setDienstwoche(weeks: Week[], wi: number, on: boolean): Week[] {
   if (!next) return weeks
   const w = next[wi]
   if (!w) return weeks
+  w.co = on
 
   if (on) {
-    const coData: Dienstwoche = {}
-
-    // --- unter der Woche: Dienstvortrag statt Bibelstudium ---
-    const lacIdx = abschnitt(w.mid, 'lac')
-    const lacItems = lacIdx >= 0 ? w.mid.sections[lacIdx]?.items : undefined
-    const vbsIdx = lacItems ? mitLeser(lacItems) : -1
-    if (lacItems && vbsIdx >= 0) {
-      const vbs = lacItems[vbsIdx]
-      if (vbs && !isSong(vbs)) {
-        // Ohne Kennung fände das Zurücknehmen den Punkt nicht wieder — es
-        // suchte nach `iid === undefined` und träfe irgendeinen. Demo- und
-        // Vorlagenwochen laufen nicht durch die Lade-Migration (T37), tragen
-        // also keine; hier wird sie nachgeholt.
-        vbs.iid ??= neueItemId()
-        coData.midOrig = structuredClone(vbs)
-        lacItems[vbsIdx] = {
-          ...vbs,
-          title: TITEL_DIENSTVORTRAG,
-          meta: '30 Min.',
-          mins: 30,
-          names: [{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }],
-        }
-        // Die Varianten tragen ihre eigenen Titel; `localizedWeek` übernimmt
-        // sie bei der Anzeige. Bliebe dort „Congregation Bible Study" stehen,
-        // stünde das über dem Dienstvortrag. Der alte Titel wird gemerkt,
-        // sonst käme er beim Zurücknehmen nur kanonisch-deutsch wieder.
-        coData.midOrigAlt = {}
-        for (const [code, variant] of Object.entries(w.alt ?? {})) {
-          const it = variant.mid?.sections[lacIdx]?.items[vbsIdx]
-          if (!it || isSong(it)) continue
-          coData.midOrigAlt[code] = it.title
-          it.title = TITEL_DIENSTVORTRAG
-        }
-      }
-    }
-
-    // --- Wochenende: Studium verkürzt, Schlussvortrag dahinter ---
     const wtIdx = abschnitt(w.we, 'wtStudium')
-    const wtItems = wtIdx >= 0 ? w.we.sections[wtIdx]?.items : undefined
-    const studIdx = wtItems ? mitLeser(wtItems) : -1
-    if (wtItems && studIdx >= 0) {
-      const stud = wtItems[studIdx]
-      if (stud && !isSong(stud)) {
-        stud.iid ??= neueItemId() // wie beim Bibelstudium: sonst kein Rückweg
-        coData.weOrig = structuredClone(stud)
-        // **Nicht** die erste Zahl ersetzen: die Meta-Zeile des
-        // Wachtturm-Studiums beginnt mit der Nummer des Studienartikels
-        // („Studienartikel 28 · 60 Min."). Ersetzt wird die alte Dauer selbst —
-        // die steht in `mins` (T32) und muss nicht aus dem Text gelesen werden.
-        // **Nur `mins`, nicht `itemMinutes`.** Dessen Rückfall nimmt die erste
-        // Zahl der Meta-Zeile — bei einem LAC-Punkt ist das die Dauer, beim
-        // Wachtturm-Studium aber die Nummer des Studienartikels
-        // („Studienartikel 28 · 60 Min."). Mit dem Rückfall wurde aus 28 eine
-        // 30 und die Dauer blieb stehen; im Browser sofort zu sehen. Fehlt
-        // `mins`, wissen wir die Dauer nicht — dann bleibt der Anzeigetext, wie
-        // er ist, statt geraten zu werden.
-        const alt = typeof stud.mins === 'number' ? stud.mins : null
-        if (alt != null) stud.meta = zahlErsetzen(stud.meta ?? '', alt, 30)
-        stud.mins = 30
-        // Der Leser fällt weg; der Leiter bleibt.
-        stud.names = stud.names.filter((n) => n.bereichsKey !== 'leser')
-        // Auch die Varianten zeigen ihre eigene Meta-Zeile — dort stünde sonst
-        // weiter „60 Min." über einem Studium, das 30 dauert.
-        coData.weOrigAlt = {}
-        for (const [code, variant] of Object.entries(w.alt ?? {})) {
-          const it = variant.we?.sections[wtIdx]?.items[studIdx]
-          if (!it || isSong(it) || it.meta === undefined) continue
-          coData.weOrigAlt[code] = it.meta
-          if (alt != null) it.meta = zahlErsetzen(it.meta, alt, 30)
-        }
-      }
+    w.coData = {
+      ...midDienstvortrag(w),
+      ...weStudiumKuerzen(w, wtIdx),
+      ...weSchlussvortragEinsetzen(w, wtIdx),
     }
-    if (wtIdx >= 0) {
-      const iid = neueItemId()
-      coData.weVortragIid = iid
-      const vortrag: PartItem = {
-        iid,
-        title: TITEL_SCHLUSSVORTRAG,
-        meta: '30 Min.',
-        mins: 30,
-        names: [{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }],
-      }
-      // **Eine eigene Sektion, kein Anhängsel des Studiums** (T64). Vorher stand
-      // der Vortrag unter der Überschrift WACHTTURM-STUDIUM — ein zweiter Punkt
-      // dort, der keiner ist. Sie kommt direkt hinter das Studium und vor den
-      // ABSCHLUSS, in Gold (siehe LABEL_DIENSTVORTRAG).
-      w.we.sections.splice(wtIdx + 1, 0, {
-        label: LABEL_DIENSTVORTRAG,
-        kind: 'dienstvortrag',
-        farbe: 'gold',
-        items: [vortrag],
-      })
-      // Die Varianten brauchen dieselbe Sektion an derselben Stelle: fehlt sie,
-      // ist die Woche nicht mehr strukturgleich und `localizedWeek` fällt stumm
-      // aufs Deutsche zurück — die ganze Woche, nicht nur dieser Punkt.
-      forEachAltMeeting(w, 'we', (m) => {
-        m.sections.splice(wtIdx + 1, 0, {
-          label: LABEL_DIENSTVORTRAG,
-          kind: 'dienstvortrag',
-          farbe: 'gold',
-          items: [{ iid, title: TITEL_SCHLUSSVORTRAG, meta: '30 Min.', mins: 30, names: [] }],
-        })
-      })
-    }
-
-    // Beide Zusammenkünfte tragen jetzt einen Ablauf, den es auf jw.org nicht
-    // gibt: unter der Woche steht der Dienstvortrag an der Stelle des
-    // Bibelstudiums (gleiche Anzahl, anderer Punkt!), am Wochenende kommt eine
-    // ganze Sektion hinzu.
-    umbauMerken(w, 'mid')
-    umbauMerken(w, 'we')
-    w.co = true
-    w.coData = coData
-    return next
+  } else {
+    const coData = w.coData ?? {}
+    midBibelstudiumZurueck(w, coData)
+    weStudiumZurueck(w, coData)
+    weSchlussvortragEntfernen(w, coData)
+    delete w.coData
   }
 
-  // --- zurücknehmen ---
-  const coData = w.coData ?? {}
-  const lacIdx = abschnitt(w.mid, 'lac')
-  const lacItems = lacIdx >= 0 ? w.mid.sections[lacIdx]?.items : undefined
-  if (lacItems && coData.midOrig) {
-    let idx = lacItems.findIndex((x) => !isSong(x) && x.iid === coData.midOrig?.iid)
-    if (idx < 0) {
-      // Der Planer hat den Dienstvortrag zwischendurch gelöscht. Das
-      // Bibelstudium deshalb zu verlieren wäre die böseste Überraschung von
-      // allen — es kommt ans Ende des Abschnitts zurück.
-      lacItems.push(structuredClone(coData.midOrig))
-      idx = lacItems.length - 1
-    }
-    if (idx >= 0) {
-      lacItems[idx] = structuredClone(coData.midOrig)
-      // Jede Variante bekommt ihren eigenen Titel zurück; fehlt einer (Variante
-      // erst später dazugeholt), bleibt der kanonische — besser als
-      // „Dienstvortrag" in einer Woche ohne Kreisaufseher.
-      const titel = coData.midOrig.title
-      for (const [code, variant] of Object.entries(w.alt ?? {})) {
-        const it = variant.mid?.sections[lacIdx]?.items[idx]
-        if (!it || isSong(it)) continue
-        it.title = coData.midOrigAlt?.[code] ?? titel
-      }
-    }
-  }
-  const wtIdx = abschnitt(w.we, 'wtStudium')
-  const wtSection = wtIdx >= 0 ? w.we.sections[wtIdx] : undefined
-  if (wtSection) {
-    if (coData.weOrig) {
-      const idx = wtSection.items.findIndex((x) => !isSong(x) && x.iid === coData.weOrig?.iid)
-      if (idx >= 0) {
-        wtSection.items[idx] = structuredClone(coData.weOrig)
-        // Und die Meta-Zeile jeder Variante ebenso — sonst zeigte die
-        // englische Fassung weiter 30 Minuten für ein Studium mit 60.
-        for (const [code, variant] of Object.entries(w.alt ?? {})) {
-          const it = variant.we?.sections[wtIdx]?.items[idx]
-          const alt = coData.weOrigAlt?.[code]
-          if (it && !isSong(it) && alt !== undefined) it.meta = alt
-        }
-      }
-    }
-  }
-  if (coData.weVortragIid) {
-    // Seit T64 ist der Schlussvortrag eine **eigene Sektion** — zurückgenommen
-    // wird sie als Ganzes. Gesucht wird trotzdem über die Kennung des Punktes,
-    // nicht über die Überschrift: Wochen, die vor T64 eingeschaltet wurden,
-    // tragen ihn noch im Wachtturm-Abschnitt, und auch die müssen sauber
-    // zurückkommen.
-    const weg = (m: Meeting) => {
-      const si = m.sections.findIndex((s) =>
-        s.items.some((x) => !isSong(x) && x.iid === coData.weVortragIid),
-      )
-      const section = m.sections[si]
-      if (!section) return
-      if (istArt(section, 'dienstvortrag')) m.sections.splice(si, 1)
-      else {
-        const idx = section.items.findIndex((x) => !isSong(x) && x.iid === coData.weVortragIid)
-        if (idx >= 0) section.items.splice(idx, 1)
-      }
-    }
-    weg(w.we)
-    forEachAltMeeting(w, 'we', weg)
-  }
-  // Auch das Zurücknehmen ist ein Umbau: Es stellt zwar den ursprünglichen
-  // Ablauf wieder her, aber nur so weit, wie `coData` reicht — und was eine
-  // nachgeholte Variante angeht, ist eine zweimal umgebaute Woche keinen Deut
-  // sicherer als eine einmal umgebaute (siehe `Meeting.umgebaut`).
+  /*
+   * Beide Wege sind ein Umbau.
+   *
+   * Einschalten trägt in beide Zusammenkünfte einen Ablauf ein, den es auf
+   * jw.org nicht gibt: unter der Woche steht der Dienstvortrag an der Stelle
+   * des Bibelstudiums (gleiche Anzahl, anderer Punkt!), am Wochenende kommt
+   * eine ganze Sektion hinzu.
+   *
+   * Und das Zurücknehmen ebenso: Es stellt zwar den ursprünglichen Ablauf
+   * wieder her, aber nur so weit, wie `coData` reicht — und was eine
+   * nachgeholte Variante angeht, ist eine zweimal umgebaute Woche keinen Deut
+   * sicherer als eine einmal umgebaute (siehe `Meeting.umgebaut`).
+   */
   umbauMerken(w, 'mid')
   umbauMerken(w, 'we')
-  w.co = false
-  delete w.coData
   return next
 }
 

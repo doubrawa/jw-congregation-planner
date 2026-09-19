@@ -180,6 +180,13 @@ describe('Ein ausgetauschter Titel zählt ebenfalls als Umbau', () => {
  * Ausgenommen ist allein `setSong` — Liednummern stehen an derselben Stelle wie
  * vorher, eine nachgeholte Variante passt dort weiterhin (siehe den Kopf von
  * `umbauMerken`). Steht hier je eine zweite Ausnahme, gehört sie begründet.
+ *
+ * **Die Marke darf auch der Aufrufer setzen.** Seit `setDienstwoche` in sechs
+ * benannte Schritte zerlegt ist, baut jeder Schritt am Ablauf und die Marke
+ * fällt einmal am Ende — das ist richtig so und soll nicht dazu verleiten,
+ * `umbauMerken` sechsmal hinzuschreiben. Die Probe verfolgt deshalb eine Ebene
+ * nach oben: Wer den Ablauf ändert, muss die Marke setzen **oder** aus einer
+ * Funktion gerufen werden, die es tut.
  */
 describe('Jede Ablauf-Änderung merkt den Umbau', () => {
   const QUELLE = import.meta.glob('./meeting-edit.ts', {
@@ -197,13 +204,24 @@ describe('Jede Ablauf-Änderung merkt den Umbau', () => {
     const stuecke = quelle.split(/\n(?=(?:export )?function )/)
     expect(stuecke.length, 'keine Funktionen gefunden — der Test misst nichts').toBeGreaterThan(10)
 
+    /** Ruft irgendeine Funktion mit `umbauMerken` diese hier? */
+    const merktEinAufrufer = (name: string): boolean =>
+      stuecke.some(
+        (s) =>
+          s.includes('umbauMerken(') &&
+          new RegExp(String.raw`\b${name}\(`).test(s) &&
+          !new RegExp(String.raw`function ${name}\(`).test(s),
+      )
+
     const fehlend: string[] = []
     for (const stueck of stuecke) {
       const name = /^(?:export )?function (\w+)/.exec(stueck)?.[1]
       if (!name || AUSGENOMMEN.has(name)) continue
       const aendertAblauf =
         /\.title = /.test(stueck) || /\.items\.splice\(/.test(stueck) || /swapKeepNums\(/.test(stueck)
-      if (aendertAblauf && !stueck.includes('umbauMerken(')) fehlend.push(name)
+      if (aendertAblauf && !stueck.includes('umbauMerken(') && !merktEinAufrufer(name)) {
+        fehlend.push(name)
+      }
     }
     // `swapKeepNums` selbst ist die Hilfsfunktion, nicht ihr Aufrufer.
     expect(fehlend.filter((n) => n !== 'swapKeepNums'), 'ohne umbauMerken').toEqual([])

@@ -416,49 +416,58 @@ export interface AutoAssignResult {
 export type AssignScope = 'all' | 'parts' | 'helpers'
 
 /**
- * Auto-Zuteilung für eine Woche+Meeting. Regeln (siehe README/Design):
- *  - Kandidaten: qualifiziert, in dieser Woche anwesend, noch nicht in diesem
- *    Meeting eingeteilt. Niemand bekommt Hilfsdienst UND Programmpunkt am
- *    selben Tag (gemeinsame `used`-Menge; Ausnahme Vorsitz+Gebet).
- *  - Ausgeglichene Verteilung über zwei mitlaufende „Strichlisten“ innerhalb
- *    eines gleitenden Fensters (±LOAD_RADIUS Wochen um die geplante Woche):
- *      • Aufgaben (Programmpunkte) werden nach der reinen **Aufgaben**-Last
- *        verteilt — unabhängig von Hilfsdiensten, damit sie regelmäßig bleiben.
- *      • Hilfsdienste nach der **Gesamt**-Last — wer viele Aufgaben hat, bekommt
- *        weniger Hilfsdienste (aber nicht umgekehrt).
- *    Bei Gleichstand fairer, deterministischer Tie-Break.
- *  - Vorsitz betet zu Beginn: Anfangsgebet wird als Standard an die
- *    Vorsitz-Person gekoppelt (die einzige erlaubte Doppel-Aufgabe).
- *  - Fester Wachtturm-Studium-Leiter (bzw. Vertreter bei Abwesenheit) wird
- *    zuerst reserviert, damit ihn kein anderer Slot „wegnimmt“.
- *  - Nicht besetzbare Slots bleiben offen (kein Kandidat verfügbar).
+ * **Wer kommt in Frage, und wie ausgelastet ist er?**
+ *
+ * Die eine Hälfte der Auto-Zuteilung. Sie kennt die Kandidaten, führt die
+ * Strichlisten und entscheidet die Reihenfolge — sie weiß aber nichts davon,
+ * welche Plätze es gibt. Die andere Hälfte (die fünf Schritte darunter) weiß
+ * das und fragt hier nur „wer?".
+ *
+ * Bis September 2026 stand beides in **einer** Funktion von 319 Zeilen, mit
+ * fünf durchnummerierten Abschnitten und einer `if (doParts) {`-Klammer, deren
+ * Rumpf nicht eingerückt war. Wer die Reinigungsrotation ändern wollte, las
+ * vorher zweihundert Zeilen Strichlisten, Tie-Break und Schülerteil-Regeln.
  */
-export function autoAssignMeeting(
+interface Waehler {
+  /** Beste noch freie Person für einen Platz — `null`, wenn niemand passt. */
+  pick(
+    kind: 'part' | 'helper',
+    priv: string | null | undefined,
+    opts?: { extra?: (p: Person) => boolean; byTotal?: boolean; malus?: (p: Person) => boolean },
+  ): Person | null
+  /** Fester Wachtturm-Studium-Leiter, sonst Vertreter, sonst normale Auswahl. */
+  pickConductor(): Person | null
+  /** Person auf den Platz setzen: eintragen, sperren, Strichlisten fortschreiben. */
+  vergeben(kind: 'part' | 'helper', person: Person, slot: SlotAssignment): void
+  /**
+   * Eine Zuteilung, die keine Auswahl war — das Anfangsgebet folgt dem Vorsitz,
+   * die Reinigung der Gruppe. Gezählt wird sie trotzdem; die Strichlisten
+   * wachsen nur mit, wenn eine Person dahintersteht.
+   */
+  mitzaehlen(person?: Person): void
+  /** Auflöser Zuteilung → Person-Id (nach Id, nicht nach Name). */
+  werIst: (slot: Zuteilung | undefined) => string | undefined
+  /** Gruppe, die in dieser Woche reinigt — `null` ohne konfigurierte Gruppen. */
+  cleaningGroup: Group | null
+  /** Was dieser Lauf vergeben hat. */
+  readonly ergebnis: { count: number; newly: string[] }
+}
+
+function waehler(
   weeks: Week[],
   weekIndex: number,
   tab: MeetingKey,
+  meeting: Meeting,
   persons: Person[],
   services: Service[],
-  groups: Group[] = [],
-  scope: AssignScope = 'all',
-  abwesend: AbsenceSet = KEINE_ABWESENHEIT,
-): AutoAssignResult {
-  const next = klonWoche(weeks, weekIndex)
-  if (!next) return { weeks, count: 0, newly: [], unfilled: 0 }
-  // Entfällt die Zusammenkunft, gibt es nichts zu besetzen (T30). Ohne diese
-  // Zeile verteilte „Automatisch zuteilen" Aufgaben für einen Abend, an dem
-  // niemand zusammenkommt — und benachteiligte die Gewählten anschließend bei
-  // der nächsten echten Zusammenkunft, weil sie als ausgelastet gälten.
-  const meeting = next[weekIndex]?.[tab]
-  if (!meeting || istAusgefallen(next[weekIndex], tab)) {
-    return { weeks, count: 0, newly: [], unfilled: 0 }
-  }
-
+  groups: Group[],
+  abwesend: AbsenceSet,
+): Waehler {
   // Reinigungs-Regel: Aufseher und Gehilfe der Gruppe, die in dieser Woche
   // reinigt, sollen möglichst keinen weiteren Hilfsdienst bekommen (sie sind mit
   // der Reinigung beschäftigt). Umgesetzt als weicher Malus bei der
   // Hilfsdienst-Auswahl — greift nur, solange genug andere Kandidaten da sind.
-  const cleaningGroup = groups.length ? groups[weekIndex % groups.length] : null
+  const cleaningGroup = groups.length ? (groups[weekIndex % groups.length] ?? null) : null
   const cleaningLeaders = new Set<string>()
   for (const pid of [cleaningGroup?.overseerId, cleaningGroup?.assistantId]) {
     if (pid && persons.some((p) => p.id === pid)) cleaningLeaders.add(pid)
@@ -472,13 +481,12 @@ export function autoAssignMeeting(
   // Wer in dieser Zusammenkunft schon eingeteilt ist. Nach Id: zwei Personen
   // desselben Namens sperrten sich sonst gegenseitig, obwohl nur eine dran ist.
   //
-  // Über **beide Räume** und den Ratgeber, genau wie `partWorkload` zählt und
-  // `assignmentsInMeeting` anzeigt: die Plätze der Zusätzlichen Klasse sind
-  // gleichwertige Zuteilungen. Gelesen wurde hier lange nur `item.names` —
-  // wer von Hand in die Klasse eingeteilt war, fehlte in dieser Menge und
-  // bekam vom nächsten Lauf zusätzlich einen Platz im Hauptsaal. Dieselbe
-  // Person zur selben Zeit in zwei Räumen, und niemand sah es: die Klasse
-  // steht in der Ansicht daneben, nicht darin.
+  // Über **alle vier Platzsorten**: die Plätze der Zusätzlichen Klasse sind
+  // gleichwertige Zuteilungen. Gelesen wurde hier lange nur `item.names` — wer
+  // von Hand in die Klasse eingeteilt war, fehlte in dieser Menge und bekam vom
+  // nächsten Lauf zusätzlich einen Platz im Hauptsaal. Dieselbe Person zur
+  // selben Zeit in zwei Räumen, und niemand sah es: die Klasse steht in der
+  // Ansicht daneben, nicht darin.
   const used = new Set<string>()
   const merken = (slot: Zuteilung | undefined): void => {
     const id = werIst(slot)
@@ -512,15 +520,11 @@ export function autoAssignMeeting(
    * Mit der Ablage sind es 21 ms. Am Ergebnis ändert sich nichts: `windowWeeks`
    * steht vor dem Lauf fest und wird nicht mitgeschrieben (`klonWoche` gibt
    * eine eigene Kopie zurück), die Zahl kann sich also gar nicht ändern —
-   * fortgeschrieben wird sie ausschließlich in `claim`.
+   * fortgeschrieben wird sie ausschließlich in `vergeben`.
    */
   const partLoad = new Map<string, number>()
   const totalLoad = new Map<string, number>()
-  const gemerkt = (
-    liste: Map<string, number>,
-    p: Person,
-    zaehle: () => number,
-  ): number => {
+  const gemerkt = (liste: Map<string, number>, p: Person, zaehle: () => number): number => {
     const fertig = liste.get(p.id)
     if (fertig !== undefined) return fertig
     const wert = zaehle()
@@ -541,27 +545,9 @@ export function autoAssignMeeting(
   const tie = (p: Person): number =>
     gemerkt(tieWerte, p, () => tieHash(`${displayName(p)}|${weekIndex}|${tab}`))
 
-  let count = 0
-  let unfilled = 0
-  const newly: string[] = []
+  const ergebnis = { count: 0, newly: [] as string[] }
 
-  // Umfang: Programmpunkte (Aufgaben) und/oder Hilfsdienste getrennt zuteilbar.
-  const doParts = scope !== 'helpers'
-  const doHelpers = scope !== 'parts'
-
-  const claim = (kind: 'part' | 'helper', person: Person): void => {
-    used.add(person.id)
-    totalLoad.set(person.id, tl(person) + 1)
-    if (kind === 'part') partLoad.set(person.id, pl(person) + 1)
-    newly.push(displayName(person))
-    count++
-  }
-
-  const pick = (
-    kind: 'part' | 'helper',
-    priv: string | null | undefined,
-    opts: { extra?: (p: Person) => boolean; byTotal?: boolean; malus?: (p: Person) => boolean } = {},
-  ): Person | null => {
+  const pick: Waehler['pick'] = (kind, priv, opts = {}) => {
     // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast. byTotal erzwingt
     // die Gesamtlast auch für Aufgaben — für Schülerteile, damit Schwestern (die
     // sonst wenig Last tragen) automatisch häufiger drankommen, Brüder aber nicht.
@@ -604,155 +590,243 @@ export function autoAssignMeeting(
     return candidates[0] ?? null
   }
 
-  /**
-   * Auswahl-Optionen für einen Schülerteil-Slot (gold): Vortrag → männlich;
-   * Gesprächsführer/-partner → Gesamtlast (Schwestern zuerst), Älteste/DAG nur
-   * als letzte Wahl (Malus); Partner zusätzlich gleiches Geschlecht wie der Führer.
-   */
-  const ministryOpts = (item: PartItem, slot: SlotAssignment, aux = false) => {
-    if (slot.male) return { extra: (p: Person) => !p.female }
-    if (slot.bereichsKey === 'schulung') {
-      return { byTotal: true, malus: (p: Person) => !isPlainPublisher(p) }
-    }
-    if (slot.bereichsKey === 'schulungPartner') {
-      // Der Gesprächspartner muss zum Führer DESSELBEN Raums passen — sonst
-      // richtete sich die Zusätzliche Klasse nach dem Hauptsaal.
-      const leadPlatz = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')
-      // Über `gehoertZu`, nicht über den Namen: Trägt der Führer-Platz eine
-      // `pid` — und das tut er, sobald ihn jemand zugeteilt hat —, ist sie der
-      // Anhalt. Am Namen allein entschied die Reihenfolge der Personenliste,
-      // wer als Führer gilt; bei zwei Gleichnamigen verschiedenen Geschlechts
-      // richtete sich die Partnerwahl danach nach dem Falschen.
-      const lead = leadPlatz?.name ? persons.find((p) => gehoertZu(leadPlatz, p)) : undefined
-      return {
-        byTotal: true,
-        malus: (p: Person) => !isPlainPublisher(p),
-        extra: (p: Person) => partnerGenderOk(lead, p),
+  return {
+    werIst,
+    cleaningGroup,
+    ergebnis,
+    pick,
+
+    pickConductor() {
+      const designated = (flag: 'wtLeiter' | 'wtVertreter'): Person | undefined =>
+        persons.find(
+          (p) => p.priv[flag] && !istAbwesend(abwesend, p.id, weekIndex, tab) && !used.has(p.id),
+        )
+      return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
+    },
+
+    vergeben(kind, person, slot) {
+      slot.name = displayName(person)
+      slot.pid = person.id
+      used.add(person.id)
+      totalLoad.set(person.id, tl(person) + 1)
+      if (kind === 'part') partLoad.set(person.id, pl(person) + 1)
+      ergebnis.newly.push(displayName(person))
+      ergebnis.count++
+    },
+
+    mitzaehlen(person) {
+      // Die Strichliste nur führen, wenn die Person auflösbar ist: bei einem
+      // externen Vorsitz (kein Eintrag in `persons`) gibt es keine Auslastung
+      // zu erhöhen — vorher landete dort der blanke Name als eigener Schlüssel.
+      if (person) {
+        totalLoad.set(person.id, tl(person) + 1)
+        partLoad.set(person.id, pl(person) + 1)
       }
+      ergebnis.count++
+    },
+  }
+}
+
+/**
+ * Auswahl-Optionen für einen Schülerteil-Slot (gold): Vortrag → männlich;
+ * Gesprächsführer/-partner → Gesamtlast (Schwestern zuerst), Älteste/DAG nur
+ * als letzte Wahl (Malus); Partner zusätzlich gleiches Geschlecht wie der Führer.
+ */
+function schuelerteilOpts(
+  item: PartItem,
+  slot: SlotAssignment,
+  aux: boolean,
+  persons: Person[],
+): { extra?: (p: Person) => boolean; byTotal?: boolean; malus?: (p: Person) => boolean } {
+  if (slot.male) return { extra: (p: Person) => !p.female }
+  if (slot.bereichsKey === 'schulung') {
+    return { byTotal: true, malus: (p: Person) => !isPlainPublisher(p) }
+  }
+  if (slot.bereichsKey === 'schulungPartner') {
+    // Der Gesprächspartner muss zum Führer DESSELBEN Raums passen — sonst
+    // richtete sich die Zusätzliche Klasse nach dem Hauptsaal.
+    const leadPlatz = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')
+    // Über `gehoertZu`, nicht über den Namen: Trägt der Führer-Platz eine
+    // `pid` — und das tut er, sobald ihn jemand zugeteilt hat —, ist sie der
+    // Anhalt. Am Namen allein entschied die Reihenfolge der Personenliste,
+    // wer als Führer gilt; bei zwei Gleichnamigen verschiedenen Geschlechts
+    // richtete sich die Partnerwahl danach nach dem Falschen.
+    const lead = leadPlatz?.name ? persons.find((p) => gehoertZu(leadPlatz, p)) : undefined
+    return {
+      byTotal: true,
+      malus: (p: Person) => !isPlainPublisher(p),
+      extra: (p: Person) => partnerGenderOk(lead, p),
     }
-    return {}
   }
+  return {}
+}
 
-  // Fester Wachtturm-Studium-Leiter, sonst Vertreter (beide anwesend + frei),
-  // sonst normale Auswahl unter allen „studium“-Qualifizierten.
-  const pickConductor = (): Person | null => {
-    const designated = (flag: 'wtLeiter' | 'wtVertreter'): Person | undefined =>
-      persons.find(
-        (p) =>
-          p.priv[flag] &&
-          !istAbwesend(abwesend, p.id, weekIndex, tab) &&
-          !used.has(p.id),
-      )
-    return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
-  }
-
-  if (doParts) {
-  // 1) WT-Studium-Leiter zuerst reservieren (nur Wochenende hat diese Sektion).
+/**
+ * 1) Den Wachtturm-Studium-Leiter zuerst reservieren, damit ihn kein anderer
+ *    Platz wegnimmt. Nur das Wochenende hat diesen Abschnitt.
+ *
+ * Alle fünf Schritte geben zurück, wie viele Plätze sie offen lassen mussten.
+ */
+function wtLeiterZuerst(meeting: Meeting, w: Waehler): number {
+  let unfilled = 0
   for (const section of meeting.sections) {
     if (!istArt(section, 'wtStudium')) continue
     for (const item of section.items) {
       if (isSong(item)) continue
       for (const slot of item.names) {
-        if (slot.rolle === 'Leiter' && !slot.name) {
-          const person = pickConductor()
-          if (person) {
-            slot.name = displayName(person)
-            slot.pid = person.id
-            claim('part', person)
-          } else {
-            unfilled++
-          }
-        }
+        if (slot.rolle !== 'Leiter' || slot.name) continue
+        const person = w.pickConductor()
+        if (person) w.vergeben('part', person, slot)
+        else unfilled++
       }
     }
   }
+  return unfilled
+}
 
-  // 2) Übrige Programmpunkte. Das Anfangsgebet (Eröffnung) wird übersprungen
-  //    und unten an den Vorsitz gekoppelt.
-  //
-  //    Die Zusätzliche Klasse läuft in derselben Schleife mit: ihre Plätze
-  //    sind gleichwertige Aufgaben und teilen sich die `used`-Menge mit dem
-  //    Hauptsaal — niemand kann zur selben Zeit in beiden Räumen sein.
+/**
+ * 2) Die übrigen Programmpunkte — beide Räume in derselben Schleife: Ihre
+ *    Plätze sind gleichwertige Aufgaben und teilen sich die Sperrliste mit dem
+ *    Hauptsaal; niemand kann zur selben Zeit in beiden Räumen sein.
+ *
+ * Das Anfangsgebet bleibt aus und wird in Schritt 4 an den Vorsitz gekoppelt.
+ */
+function programmpunkteBesetzen(meeting: Meeting, w: Waehler, persons: Person[]): number {
+  let unfilled = 0
   for (const { slot, section, item, aux } of programmPlaetze(meeting)) {
     if (slot.name || isGuestRole(slot.rolle)) continue
     if (istArt(section, 'eroeffnung') && slot.rolle === 'Gebet') continue
     // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
-    const person = pick('part', slot.bereichsKey, ministryOpts(item, slot, aux))
-    if (person) {
-      slot.name = displayName(person)
-      slot.pid = person.id
-      claim('part', person)
-    } else {
-      unfilled++
-    }
+    const person = w.pick('part', slot.bereichsKey, schuelerteilOpts(item, slot, aux, persons))
+    if (person) w.vergeben('part', person, slot)
+    else unfilled++
   }
+  return unfilled
+}
 
-  // 2b) Ratgeber der Zusätzlichen Klasse — eigener Bereich, eine Person je
-  //     Zusammenkunft. Nur besetzen, wenn die Woche überhaupt eine Klasse hat.
-  if (meeting.auxRatgeber && !meeting.auxRatgeber.name) {
-    const person = pick('part', 'ratgeber')
-    if (person) {
-      meeting.auxRatgeber.name = displayName(person)
-      meeting.auxRatgeber.pid = person.id
-      claim('part', person)
-    } else {
-      unfilled++
-    }
-  }
+/**
+ * 3) Der Ratgeber der Zusätzlichen Klasse — eigener Bereich, eine Person je
+ *    Zusammenkunft, und nur, wenn die Woche überhaupt eine Klasse hat.
+ */
+function ratgeberBesetzen(meeting: Meeting, w: Waehler): number {
+  const ratgeber = meeting.auxRatgeber
+  if (!ratgeber || ratgeber.name) return 0
+  const person = w.pick('part', 'ratgeber')
+  if (!person) return 1
+  w.vergeben('part', person, ratgeber)
+  return 0
+}
 
-  // 3) Vorsitz betet zu Beginn (Standard, manuell änderbar): Anfangsgebet =
-  //    Vorsitz-Person, sofern das Gebet noch offen ist.
+/**
+ * 4) Der Vorsitz betet zu Beginn (Standard, von Hand änderbar) — die einzige
+ *    erlaubte Doppel-Aufgabe. Gekoppelt wird nur, solange das Gebet offen ist.
+ */
+function gebetAnVorsitz(meeting: Meeting, w: Waehler, persons: Person[]): void {
   const opening = meeting.sections.find((s) => istArt(s, 'eroeffnung'))
-  if (opening) {
-    const openingSlots = opening.items.flatMap((i) => (isSong(i) ? [] : i.names))
-    const vorsitzSlot = openingSlots.find((s) => s.rolle === 'Vorsitz')
-    const vorsitz = vorsitzSlot?.name
-    const gebet = openingSlots.find((s) => s.rolle === 'Gebet')
-    if (vorsitz && gebet && !gebet.name) {
-      gebet.name = vorsitz
-      if (vorsitzSlot?.pid) gebet.pid = vorsitzSlot.pid // dieselbe Person betet
-      // Die Strichliste nur führen, wenn die Person auflösbar ist: bei einem
-      // externen Vorsitz (kein Eintrag in `persons`) gibt es keine Auslastung
-      // zu erhöhen — vorher landete dort der blanke Name als eigener Schlüssel.
-      const vorsitzPerson = persons.find((p) => p.id === werIst(vorsitzSlot))
-      if (vorsitzPerson) {
-        totalLoad.set(vorsitzPerson.id, tl(vorsitzPerson) + 1)
-        partLoad.set(vorsitzPerson.id, pl(vorsitzPerson) + 1)
-      }
-      count++
-    }
-  }
+  if (!opening) return
+  const openingSlots = opening.items.flatMap((i) => (isSong(i) ? [] : i.names))
+  const vorsitzSlot = openingSlots.find((s) => s.rolle === 'Vorsitz')
+  const gebet = openingSlots.find((s) => s.rolle === 'Gebet')
+  if (!vorsitzSlot?.name || !gebet || gebet.name) return
+  gebet.name = vorsitzSlot.name
+  if (vorsitzSlot.pid) gebet.pid = vorsitzSlot.pid // dieselbe Person betet
+  w.mitzaehlen(persons.find((p) => p.id === w.werIst(vorsitzSlot)))
+}
 
-  } // Ende Programmpunkte (doParts)
-
-  if (doHelpers) {
-  // 4) Hilfsdienste (nach den Programmpunkten → Helfer und Aufgaben schließen
-  //    sich über `used` gegenseitig aus; Auswahl nach Gesamtlast).
+/**
+ * 5) Die Hilfsdienste — zuletzt, damit Helfer und Aufgaben sich über die
+ *    Sperrliste gegenseitig ausschließen; ausgewählt wird nach Gesamtlast.
+ */
+function hilfsdiensteBesetzen(
+  meeting: Meeting,
+  services: Service[],
+  w: Waehler,
+  weekIndex: number,
+): number {
+  let unfilled = 0
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     for (let pos = 0; pos < svc.count; pos++) {
       if (arr[pos]?.name) continue
       while (arr.length <= pos) arr.push({ name: '' })
+      // Auch eine Lücke in der Reihe bekommt einen Platz — sonst bliebe sie
+      // `undefined` und die Zuteilung liefe ins Leere.
+      const platz = arr[pos] ?? { name: '' }
+      arr[pos] = platz
       if (svc.groups) {
         // Reinigung rotiert über die echten Predigtdienstgruppen (keine Person,
         // daher keine pid); ohne konfigurierte Gruppen Fallback auf 1–3.
-        arr[pos] = { name: cleaningGroup ? cleaningGroup.name : `Gruppe ${1 + (weekIndex % 3)}` }
-        count++
-      } else {
-        const person = pick('helper', serviceQualKey(svc.key))
-        if (person) {
-          arr[pos] = { name: displayName(person), pid: person.id }
-          claim('helper', person)
-        } else {
-          unfilled++
-        }
+        platz.name = w.cleaningGroup ? w.cleaningGroup.name : `Gruppe ${1 + (weekIndex % 3)}`
+        delete platz.pid
+        w.mitzaehlen()
+        continue
       }
+      const person = w.pick('helper', serviceQualKey(svc.key))
+      if (person) w.vergeben('helper', person, platz)
+      else unfilled++
     }
     meeting.helpers[svc.key] = arr
   }
-  } // Ende Hilfsdienste (doHelpers)
+  return unfilled
+}
 
-  return { weeks: next, count, newly, unfilled }
+/**
+ * Auto-Zuteilung für eine Woche+Meeting. Regeln (siehe README/Design):
+ *  - Kandidaten: qualifiziert, in dieser Woche anwesend, noch nicht in diesem
+ *    Meeting eingeteilt. Niemand bekommt Hilfsdienst UND Programmpunkt am
+ *    selben Tag (gemeinsame Sperrliste; Ausnahme Vorsitz+Gebet).
+ *  - Ausgeglichene Verteilung über zwei mitlaufende „Strichlisten“ innerhalb
+ *    eines gleitenden Fensters (±LOAD_RADIUS Wochen um die geplante Woche):
+ *      • Aufgaben (Programmpunkte) werden nach der reinen **Aufgaben**-Last
+ *        verteilt — unabhängig von Hilfsdiensten, damit sie regelmäßig bleiben.
+ *      • Hilfsdienste nach der **Gesamt**-Last — wer viele Aufgaben hat, bekommt
+ *        weniger Hilfsdienste (aber nicht umgekehrt).
+ *    Bei Gleichstand fairer, deterministischer Tie-Break.
+ *  - Vorsitz betet zu Beginn: Anfangsgebet wird als Standard an die
+ *    Vorsitz-Person gekoppelt (die einzige erlaubte Doppel-Aufgabe).
+ *  - Fester Wachtturm-Studium-Leiter (bzw. Vertreter bei Abwesenheit) wird
+ *    zuerst reserviert, damit ihn kein anderer Slot „wegnimmt“.
+ *  - Nicht besetzbare Slots bleiben offen (kein Kandidat verfügbar).
+ *
+ * Die Reihenfolge der fünf Schritte ist bedeutungstragend: Jeder verkleinert
+ * das Feld für den nächsten.
+ */
+export function autoAssignMeeting(
+  weeks: Week[],
+  weekIndex: number,
+  tab: MeetingKey,
+  persons: Person[],
+  services: Service[],
+  groups: Group[] = [],
+  scope: AssignScope = 'all',
+  abwesend: AbsenceSet = KEINE_ABWESENHEIT,
+): AutoAssignResult {
+  const next = klonWoche(weeks, weekIndex)
+  if (!next) return { weeks, count: 0, newly: [], unfilled: 0 }
+  // Entfällt die Zusammenkunft, gibt es nichts zu besetzen (T30). Ohne diese
+  // Zeile verteilte „Automatisch zuteilen" Aufgaben für einen Abend, an dem
+  // niemand zusammenkommt — und benachteiligte die Gewählten anschließend bei
+  // der nächsten echten Zusammenkunft, weil sie als ausgelastet gälten.
+  const meeting = next[weekIndex]?.[tab]
+  if (!meeting || istAusgefallen(next[weekIndex], tab)) {
+    return { weeks, count: 0, newly: [], unfilled: 0 }
+  }
+
+  const w = waehler(weeks, weekIndex, tab, meeting, persons, services, groups, abwesend)
+  let unfilled = 0
+
+  // Umfang: Programmpunkte (Aufgaben) und/oder Hilfsdienste getrennt zuteilbar.
+  if (scope !== 'helpers') {
+    unfilled += wtLeiterZuerst(meeting, w)
+    unfilled += programmpunkteBesetzen(meeting, w, persons)
+    unfilled += ratgeberBesetzen(meeting, w)
+    gebetAnVorsitz(meeting, w, persons)
+  }
+  if (scope !== 'parts') {
+    unfilled += hilfsdiensteBesetzen(meeting, services, w, weekIndex)
+  }
+
+  return { weeks: next, count: w.ergebnis.count, newly: w.ergebnis.newly, unfilled }
 }
 
 /**
