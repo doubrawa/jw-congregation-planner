@@ -74,7 +74,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     langSheetFor: 'cong',
     svcSheet: null,
     terminGewaehlt: true, // Tests wählen Woche/Reiter selbst — kein Springen (T82)
-    congLang: 'Deutsch',
+    congLang: 'de',
     progLangs: [],
     langSearch: '',
     toast: null,
@@ -1070,7 +1070,7 @@ describe('Sprache', () => {
     expect(reducer(makeState(), { type: 'openLangSheet' }).langSheetFor).toBe('cong')
     expect(reducer(makeState({ langSheetOpen: true, langSearch: 'x' }), { type: 'closeLangSheet' })).toMatchObject({ langSheetOpen: false, langSearch: '' })
     expect(reducer(makeState(), { type: 'setLangSearch', text: 'fr' }).langSearch).toBe('fr')
-    expect(reducer(makeState({ langSheetOpen: true }), { type: 'setCongLang', name: 'Englisch' })).toMatchObject({ congLang: 'Englisch', langSheetOpen: false })
+    expect(reducer(makeState({ langSheetOpen: true }), { type: 'setCongLang', code: 'en' })).toMatchObject({ congLang: 'en', langSheetOpen: false })
   })
 
   it('Programm und Planen öffnen mit der nächsten Zusammenkunft (T82)', () => {
@@ -1133,18 +1133,18 @@ describe('Sprache', () => {
   })
 
   it('addProgLang überspringt Versammlungssprache und Duplikate', () => {
-    const self = reducer(makeState({ congLang: 'Deutsch' }), { type: 'addProgLang', name: 'Deutsch' })
+    const self = reducer(makeState({ congLang: 'de' }), { type: 'addProgLang', code: 'de' })
     expect(self.progLangs).toEqual([])
-    const dup = reducer(makeState({ progLangs: ['Englisch'] }), { type: 'addProgLang', name: 'Englisch' })
-    expect(dup.progLangs).toEqual(['Englisch'])
-    const add = reducer(makeState({ progLangs: [] }), { type: 'addProgLang', name: 'Französisch' })
-    expect(add.progLangs).toEqual(['Französisch'])
+    const dup = reducer(makeState({ progLangs: ['en'] }), { type: 'addProgLang', code: 'en' })
+    expect(dup.progLangs).toEqual(['en'])
+    const add = reducer(makeState({ progLangs: [] }), { type: 'addProgLang', code: 'fr' })
+    expect(add.progLangs).toEqual(['fr'])
     expect(add.toast?.text).toBeTruthy()
   })
 
   it('removeProgLang entfernt eine Programmsprache', () => {
-    const next = reducer(makeState({ progLangs: ['Englisch', 'Französisch'] }), { type: 'removeProgLang', name: 'Englisch' })
-    expect(next.progLangs).toEqual(['Französisch'])
+    const next = reducer(makeState({ progLangs: ['en', 'fr'] }), { type: 'removeProgLang', code: 'en' })
+    expect(next.progLangs).toEqual(['fr'])
   })
 })
 
@@ -1208,7 +1208,7 @@ describe('hydrate / setDataStatus', () => {
     confirmations: {},
     sentLog: {},
     reminders: DEMO_REMINDERS,
-    congLang: 'Deutsch',
+    congLang: 'de',
     progLangs: [],
     members: [],
     invites: [],

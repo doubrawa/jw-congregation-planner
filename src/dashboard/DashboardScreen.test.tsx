@@ -750,13 +750,13 @@ describe('Die Wochenspanne steht in derselben Sprache wie in Planen', () => {
     const jw = APP_TO_JW.en!
     erste.alt = { [jw]: { ...importiert(W1), range: 'Week of September 7' } }
     const weeks = [erste, ...WOCHEN.slice(1).map(besetzt)]
-    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), lang: 'en', congLang: 'Deutsch' })
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), lang: 'en', congLang: 'de' })
     expect(container.querySelector('.dash-plan-range')?.textContent).toBe('Week of September 7')
   })
 
   it('Gegenprobe: ohne Variante bleibt es bei der Spanne der Versammlung', () => {
     const weeks = [importiert(W1), ...WOCHEN.slice(1).map(besetzt)]
-    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), lang: 'en', congLang: 'Deutsch' })
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), lang: 'en', congLang: 'de' })
     expect(container.querySelector('.dash-plan-range')?.textContent).toBe(`Woche ab ${W1}`)
   })
 })

@@ -99,12 +99,10 @@ describe('loadCongregationData', () => {
     expect(res.data.persons.map((p) => p.fn)).toContain('Anna')
     expect(res.data.services[0].key).toBe('mik')
     expect(res.data.weeks).toHaveLength(1)
-    // In der Spalte steht der jw.org-Code, im Zustand der Anzeigename: Daran
-    // hängen der Sprachen-Picker, `CONG_TO_JW` beim Import und `congAppCode`.
-    // Blieb der Code stehen, zeigte der Einstellungen-Bildschirm „de" — und
-    // der Import fiel über `CONG_TO_JW['de'] ?? 'de'` stumm auf Deutsch zurück.
-    expect(res.data.congLang).toBe('Deutsch')
-    expect(res.data.progLangs).toEqual(['Englisch'])
+    // Spalte und Zustand führen denselben Wert: den jw.org-Code. Angezeigt
+    // wird der Name erst beim Rendern (`langLabel`), in der Bediensprache.
+    expect(res.data.congLang).toBe('de')
+    expect(res.data.progLangs).toEqual(['en'])
     expect(res.data.confirmations['k1']).toBe('bestätigt')
     expect(res.empty).toBe(false)
   })
@@ -128,8 +126,8 @@ describe('loadCongregationData', () => {
     const res = await loadCongregationData('u1')
     expect(res.ok).toBe(true)
     if (!res.ok) return
-    expect(res.data.congLang).toBe('Deutsch')
-    expect(res.data.progLangs).toEqual(['Englisch'])
+    expect(res.data.congLang).toBe('de')
+    expect(res.data.progLangs).toEqual(['en'])
   })
 
   /**

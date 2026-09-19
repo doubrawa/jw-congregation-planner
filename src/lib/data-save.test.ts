@@ -225,8 +225,8 @@ describe('Update-Schreiber', () => {
     // ändern, ohne dass eine Versammlung davon wüsste.
     saveSettings('c1', {
       reminders: { first: 7, last: 1, repeat: false },
-      congLang: 'Deutsch',
-      progLangs: ['Englisch', 'Spanisch'],
+      congLang: 'de',
+      progLangs: ['en', 'es'],
       auxClass: false,
     })
     expect(chain.update).toHaveBeenCalledWith({

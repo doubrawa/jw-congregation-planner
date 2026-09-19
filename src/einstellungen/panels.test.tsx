@@ -402,18 +402,18 @@ describe('Erinnerungen', () => {
 
 describe('Sprache', () => {
   it('nennt die Versammlungssprache und führt ins Sheet', () => {
-    const { container, dispatch } = zeige('lang', { congLang: 'Deutsch' })
+    const { container, dispatch } = zeige('lang', { congLang: 'de' })
     expect(container.querySelector('.lang-card-val')?.textContent).toContain('Deutsch')
     fireEvent.click(container.querySelector('.lang-card-row')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'openLangSheet' })
   })
 
   it('weitere Programmsprachen stehen als Chips und lassen sich entfernen', () => {
-    const { container, dispatch } = zeige('lang', { progLangs: ['Englisch', 'Spanisch'] })
+    const { container, dispatch } = zeige('lang', { progLangs: ['en', 'es'] })
     const chips = [...container.querySelectorAll('.proglang-chip')]
     expect(chips).toHaveLength(2)
     fireEvent.click(chips[0]!.querySelector('.proglang-chip-x')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'removeProgLang', name: 'Englisch' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'removeProgLang', code: 'en' })
   })
 
   it('„hinzufügen" öffnet dasselbe Sheet im anderen Modus — sonst überschriebe es die Hauptsprache', () => {

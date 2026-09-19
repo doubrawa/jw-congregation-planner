@@ -54,7 +54,7 @@ function zeige(
     groups: GRUPPEN, persons: [], services: [], weeks: [], fsWeeks: [],
     fsRules: [regel()],
     fsBase: new Date(2026, 8, 7, 12, 0),
-    congLang: 'Deutsch', progLangs: [], langSearch: '',
+    congLang: 'de', progLangs: [], langSearch: '',
     ...over,
   }
   function Buehne() {
@@ -195,7 +195,7 @@ describe('Das Sprach-Sheet', () => {
   })
 
   it('die eingestellte Sprache ist mit einem Haken markiert', () => {
-    const { container } = zeige('lang', { langSheetOpen: true, congLang: 'Deutsch' })
+    const { container } = zeige('lang', { langSheetOpen: true, congLang: 'de' })
     const aktiv = zeilen(container).filter((r) => r.className.includes('is-active'))
     expect(aktiv).toHaveLength(1)
     expect(aktiv[0]!.querySelector('.lang-check')?.textContent).toBe('✓')
@@ -203,7 +203,7 @@ describe('Das Sprach-Sheet', () => {
 
   it('im Zusatz-Modus sind ALLE gewählten markiert — es sind mehrere möglich', () => {
     const { container } = zeige('lang', {
-      langSheetOpen: true, langSheetFor: 'alt', progLangs: ['Englisch', 'Spanisch'],
+      langSheetOpen: true, langSheetFor: 'alt', progLangs: ['en', 'es'],
     })
     expect(zeilen(container).filter((r) => r.className.includes('is-active'))).toHaveLength(2)
   })
@@ -228,18 +228,18 @@ describe('Das Sprach-Sheet', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'setLangSearch', text: 'span' })
   })
 
-  it('eine Auswahl setzt die Versammlungssprache — als deutscher Schlüssel', () => {
+  it('eine Auswahl setzt die Versammlungssprache — als jw.org-Code', () => {
     const { container, dispatch } = zeige('lang', { langSheetOpen: true, langSheetFor: 'cong' })
     const deutsch = zeilen(container).find((r) => r.textContent?.startsWith('Deutsch'))!
     fireEvent.click(deutsch)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'setCongLang', name: 'Deutsch' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setCongLang', code: 'de' })
   })
 
   it('im Zusatz-Modus wird sie stattdessen hinzugefügt', () => {
     const { container, dispatch } = zeige('lang', { langSheetOpen: true, langSheetFor: 'alt' })
     const deutsch = zeilen(container).find((r) => r.textContent?.startsWith('Deutsch'))!
     fireEvent.click(deutsch)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'addProgLang', name: 'Deutsch' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'addProgLang', code: 'de' })
   })
 
   it('✕, Hintergrund und Escape schließen', () => {

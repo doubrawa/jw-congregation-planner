@@ -87,7 +87,7 @@ function st(over: Partial<AppState> = {}): AppState {
     confirmations: {},
     sentLog: {},
     reminders: { first: 7, last: 1, repeat: false },
-    congLang: 'Deutsch',
+    congLang: 'de',
     progLangs: [],
     ...over,
   } as unknown as AppState
@@ -826,7 +826,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     ] as AppAction[]) {
       vi.clearAllMocks()
       persist(st(), st(), action)
-      expect(data.saveSettings).toHaveBeenCalledWith('c1', { reminders: expect.anything(), congLang: 'Deutsch', progLangs: [] })
+      expect(data.saveSettings).toHaveBeenCalledWith('c1', { reminders: expect.anything(), congLang: 'de', progLangs: [] })
     }
   })
 

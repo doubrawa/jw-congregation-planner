@@ -338,7 +338,9 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
    * das 34-Fache. Englisch ist dabei die schärfste Probe — es steht als
    * Rückfallschicht unter allen anderen, ein Loch dort fällt sonst nirgends auf.
    */
-  it.each([['en', 'Englisch'], ['ko', 'Koreanisch'], ['ar', 'Arabisch']] as const)('%s', (code, versammlung) => {
+  // Die Versammlungssprache ist der jw.org-Code — für diese drei derselbe
+  // Text wie der App-Code, seit der Zustand nicht mehr den Namen führt.
+  it.each(['en', 'ko', 'ar'] as const)('%s', (code) => {
     const gefunden: string[] = []
     for (const screen of SCREENS) {
       // Die Versammlung läuft in derselben Sprache: Dann steht auch der
@@ -346,7 +348,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
       // ein Befund. Bliebe hier „Deutsch", wäre der Titel „Bibellesung" zu
       // Recht deutsch — und die Prüfung müsste ihn ausnehmen, obwohl sie
       // genau solche Wörter sucht.
-      const { container } = zeige({ screen, lang: code, congLang: versammlung })
+      const { container } = zeige({ screen, lang: code, congLang: code })
       const text = sichtbarerText(container)
       for (const [key, wert] of deutscheWerte(code)) {
         if (stehtDrin(text, wert)) gefunden.push(`${screen}: ${key} = „${wert}"`)
@@ -361,7 +363,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     // Versammlungssprache wie oben mitgezogen: Sonst stünde der Programmtext
     // („Bibellesung") zu Recht deutsch da und wäre nicht von einem Befund zu
     // unterscheiden.
-    const { container } = zeige({ ...over, lang: 'en', congLang: 'Englisch' })
+    const { container } = zeige({ ...over, lang: 'en', congLang: 'en' })
     const text = sichtbarerText(container)
     for (const [key, wert] of deutscheWerte('en')) {
       if (stehtDrin(text, wert)) gefunden.push(`${key} = „${wert}"`)
@@ -376,14 +378,14 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
       — und „kein deutsches Wort gefunden" wäre dann eine leere Behauptung.
       Genau so prüfen sich Oberflächen-Tests gern selbst ins Nichts.
     */
-    const { container } = zeige({ ...over, lang: 'en', congLang: 'Englisch' })
+    const { container } = zeige({ ...over, lang: 'en', congLang: 'en' })
     const dialoge = container.querySelectorAll('[role="dialog"], .sheet, .notif-panel')
     expect(dialoge.length, `${name}: nichts aufgegangen`).toBeGreaterThan(0)
     expect(sichtbarerText(container).length, name).toBeGreaterThan(40)
   })
 
   it.each(UNTERANSICHTEN)('%s steht ebenfalls nicht deutsch da', (name, over, marke) => {
-    const { container } = zeige({ ...over, lang: 'en', congLang: 'Englisch' })
+    const { container } = zeige({ ...over, lang: 'en', congLang: 'en' })
     expect(container.querySelector(marke), `${name}: nicht geöffnet`).not.toBeNull()
     const text = sichtbarerText(container)
     const gefunden = deutscheWerte('en')
@@ -463,7 +465,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
   ]
 
   it.each(ZUSTAENDE)('%s steht nicht deutsch da', (name, over) => {
-    const { container } = zeige({ ...over, lang: 'en', congLang: 'Englisch' })
+    const { container } = zeige({ ...over, lang: 'en', congLang: 'en' })
     const text = sichtbarerText(container)
     // Erst der Beleg, dass der Zustand überhaupt etwas zeigt — sonst prüfte
     // die Zeile darunter ein leeres Fenster.
@@ -486,7 +488,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
       Zustand ist (die Anmeldung), gibt es keinen Normalfall zum Vergleichen —
       dort nennt der Eintrag stattdessen eine Marke im DOM.
     */
-    const { container: geaendert } = zeige({ ...over, lang: 'en', congLang: 'Englisch' })
+    const { container: geaendert } = zeige({ ...over, lang: 'en', congLang: 'en' })
     const mit = sichtbarerText(geaendert)
     if (marke) {
       expect(geaendert.querySelector(marke), `${name}: ${marke} fehlt`).not.toBeNull()
@@ -494,7 +496,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     }
     cleanup()
     const { container: normal } = zeige({
-      screen: over.screen, lang: 'en', congLang: 'Englisch',
+      screen: over.screen, lang: 'en', congLang: 'en',
     })
     expect(mit, `${name}: ändert nichts am Bildschirm`).not.toBe(sichtbarerText(normal))
   })
@@ -525,17 +527,16 @@ describe('Kanonisch deutsche Datenwerte erscheinen übersetzt', () => {
    * Die Versammlungssprache läuft mit: Eine Vorlagenwoche steht kanonisch
    * deutsch in den Daten (Wochenend-Vorlage, Eröffnung, Abschluss), und ihre
    * Titel gehen durch `tp` — also durch die Sprache der **Versammlung**, nicht
-   * die des Lesers. Bliebe hier „Deutsch" stehen, wäre „Lied 1 · Gebet ·
+   * die des Lesers. Bliebe hier Deutsch stehen, wäre „Lied 1 · Gebet ·
    * Einleitende Worte" zu Recht deutsch, und die Prüfung schlüge fälschlich an.
+   *
+   * Hier stand eine Tabelle App-Code → deutscher Name; für diese drei ist der
+   * jw.org-Code derselbe Text wie der App-Code.
    */
-  const VERSAMMLUNG: Record<string, string> = {
-    en: 'Englisch', es: 'Spanisch', ja: 'Japanisch',
-  }
-
   it.each(['en', 'es', 'ja'] as const)('%s: Rollen und Dienste stehen nicht deutsch da', (code) => {
     const gefunden: string[] = []
     for (const screen of ['start', 'programm', 'aufgaben', 'planen', 'personen'] as Screen[]) {
-      const { container } = zeige({ screen, lang: code, congLang: VERSAMMLUNG[code]! })
+      const { container } = zeige({ screen, lang: code, congLang: code })
       const text = sichtbarerText(container)
       for (const wort of KANONISCH) {
         if (stehtDrin(text, wort)) gefunden.push(`${screen}: ${wort}`)
@@ -549,7 +550,7 @@ describe('Kanonisch deutsche Datenwerte erscheinen übersetzt', () => {
     // Der Beleg, dass die Prüfung oben etwas gesehen hat: Auf Deutsch **muss**
     // „Vorsitz" im Planen-Screen vorkommen. Fände die Suche generell nichts,
     // wäre sie oben wertlos.
-    const { container } = zeige({ screen: 'planen', lang: 'de', congLang: 'Deutsch' })
+    const { container } = zeige({ screen: 'planen', lang: 'de', congLang: 'de' })
     const text = sichtbarerText(container)
     expect(KANONISCH.filter((w) => stehtDrin(text, w)).length).toBeGreaterThan(0)
   })
@@ -567,7 +568,7 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
    */
   it.each(CODES)('%s', (code) => {
     for (const screen of SCREENS) {
-      const { container } = zeige({ screen, lang: code, congLang: 'Deutsch' })
+      const { container } = zeige({ screen, lang: code, congLang: 'de' })
       const text = sichtbarerText(container)
       expect(text.length, `${code}/${screen} ist leer`).toBeGreaterThan(20)
       expect(text, `${code}/${screen}`).not.toMatch(/undefined|NaN|Invalid Date|\[object /)
@@ -584,7 +585,7 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
     */
     for (const screen of ['programm', 'planen'] as Screen[]) {
       for (const tab of ['mid', 'we', 'fs'] as const) {
-        const { container } = zeige({ screen, tab, lang: code, congLang: 'Deutsch' })
+        const { container } = zeige({ screen, tab, lang: code, congLang: 'de' })
         const text = sichtbarerText(container)
         expect(text.length, `${code}/${screen}/${tab} ist leer`).toBeGreaterThan(20)
         expect(text, `${code}/${screen}/${tab}`).not.toMatch(/undefined|NaN|Invalid Date/)
@@ -613,13 +614,13 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
 
   it.each(INTL_STELLEN)('%s steht in der Sprache des Lesers', (name, over, marke) => {
     const deutsch = (() => {
-      const { container } = zeige({ ...over, lang: 'de', congLang: 'Deutsch' })
+      const { container } = zeige({ ...over, lang: 'de', congLang: 'de' })
       const el = container.querySelector(marke)
       expect(el, `${name}: ${marke} fehlt schon auf Deutsch`).not.toBeNull()
       return el?.textContent ?? ''
     })()
     cleanup()
-    const { container } = zeige({ ...over, lang: 'ko', congLang: 'Deutsch' })
+    const { container } = zeige({ ...over, lang: 'ko', congLang: 'de' })
     const koreanisch = container.querySelector(marke)?.textContent ?? ''
     expect(koreanisch, `${name}: leer`).toBeTruthy()
     expect(koreanisch, `${name}: blieb „${deutsch}"`).not.toBe(deutsch)
@@ -629,10 +630,10 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
     // Die Gegenprobe zum Durchgang darüber: Er prüft nur, dass etwas dasteht.
     // Hier steht, **was** dasteht — der Wochentag muss die Sprache wechseln,
     // der Ort (Freitext des Planers) nicht.
-    const { container: de } = zeige({ screen: 'programm', tab: 'fs', lang: 'de', congLang: 'Deutsch' })
+    const { container: de } = zeige({ screen: 'programm', tab: 'fs', lang: 'de', congLang: 'de' })
     const deutsch = sichtbarerText(de)
     cleanup()
-    const { container: ko } = zeige({ screen: 'programm', tab: 'fs', lang: 'ko', congLang: 'Deutsch' })
+    const { container: ko } = zeige({ screen: 'programm', tab: 'fs', lang: 'ko', congLang: 'de' })
     const koreanisch = sichtbarerText(ko)
     expect(deutsch).toMatch(/Samstag/)
     expect(koreanisch).not.toMatch(/Samstag/)
@@ -647,7 +648,7 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
     // Griechisch. Genau dieser Fall unterscheidet `tu` von `tp` — und genau
     // hier stünde ein einzelner Übersetzer für beide Hälften falsch.
     for (const screen of ['programm', 'planen', 'aufgaben'] as Screen[]) {
-      const { container } = zeige({ screen, lang: code, congLang: 'Griechisch' })
+      const { container } = zeige({ screen, lang: code, congLang: 'el' })
       const text = sichtbarerText(container)
       expect(text.length, `${code}/${screen} ist leer`).toBeGreaterThan(20)
       expect(text, `${code}/${screen}`).not.toMatch(/undefined|NaN|Invalid Date/)
@@ -660,7 +661,7 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
     // (`congAppCode` liefert undefined, `progFallback` wird wahr). Das Programm
     // bleibt dann kanonisch deutsch stehen — das ist der vorgesehene Rückfall
     // und darf nichts sprengen.
-    const { container } = zeige({ screen: 'programm', lang: code, congLang: 'Cebuano' })
+    const { container } = zeige({ screen: 'programm', lang: code, congLang: 'ceb' })
     expect(sichtbarerText(container), code).not.toMatch(/undefined|NaN|Invalid Date/)
   })
 })
@@ -677,7 +678,7 @@ describe('Rechts-nach-links', () => {
     // Kein Layout-Test — jsdom rechnet nichts. Geprüft wird, dass die Inhalte
     // ankommen: In diesen vier Sprachen laufen zusätzlich eigene Ziffern und
     // Zweirichtungs-Marken durch die Textfunktionen.
-    const { container } = zeige({ screen: 'planen', lang: code, congLang: 'Arabisch' })
+    const { container } = zeige({ screen: 'planen', lang: code, congLang: 'ar' })
     const text = sichtbarerText(container)
     expect(text.length, code).toBeGreaterThan(20)
     expect(text, code).not.toMatch(/undefined|NaN/)
@@ -704,7 +705,7 @@ describe('Rechts-nach-links', () => {
     ['Personen-Detail', { screen: 'personen', selectedPersonId: ICH.id } as Partial<AppState>],
     ['Versammlungs-Angaben', { screen: 'einstellungen' } as Partial<AppState>],
   ])('%s: jedes Textfeld trägt dir="auto"', (name, over) => {
-    const { container } = zeige({ ...over, lang: 'ar', congLang: 'Arabisch' })
+    const { container } = zeige({ ...over, lang: 'ar', congLang: 'ar' })
     const felder = [...container.querySelectorAll<HTMLInputElement>('input.field-input')]
     expect(felder.length, `${name}: keine Felder gefunden`).toBeGreaterThan(1)
     const ohne = felder.filter((e) => e.getAttribute('dir') !== 'auto')
@@ -745,7 +746,7 @@ describe('Rechts-nach-links', () => {
   ]
 
   it.each(EIGENER_TEXT)('%s trägt seine eigene Richtung', (name, over, marke) => {
-    const { container } = zeige({ ...over, lang: 'ar', congLang: 'Arabisch' })
+    const { container } = zeige({ ...over, lang: 'ar', congLang: 'ar' })
     const el = container.querySelector(marke)
     expect(el, `${name}: ${marke} nicht gefunden`).not.toBeNull()
     expect(el?.getAttribute('dir'), name).toBe('auto')

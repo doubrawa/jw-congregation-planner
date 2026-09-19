@@ -13,9 +13,9 @@ import './overlays.css'
  * (state.langSheetFor): Versammlungssprache wählen ('cong') oder eine weitere
  * Programmsprache für den Import hinzufügen ('alt').
  *
- * Die Namen stehen in der Bediensprache (`langChoices`), gespeichert wird
- * weiterhin der deutsche Name — er ist der Schlüssel in der Datenbank. Bis die
- * nachgeladene Liste da ist, sind Anzeige und Schlüssel schlicht dasselbe.
+ * Die Namen stehen in der Bediensprache (`langChoices`), gespeichert wird der
+ * jw.org-Sprachcode — derselbe Wert, den die Datenbank führt und den der
+ * Import braucht. Ein Name ist keine Kennung.
  */
 export function LanguageSheet() {
   const { state, dispatch } = useApp()
@@ -29,10 +29,10 @@ export function LanguageSheet() {
   useDialogFocus(dlg)
   useBackDismiss(true, close)
   useSwipeDown(dlg, close)
-  const pick = (name: string) =>
-    dispatch(altMode ? { type: 'addProgLang', name } : { type: 'setCongLang', name })
-  const isActive = (name: string) =>
-    altMode ? state.progLangs.includes(name) : state.congLang === name
+  const pick = (code: string) =>
+    dispatch(altMode ? { type: 'addProgLang', code } : { type: 'setCongLang', code })
+  const isActive = (code: string) =>
+    altMode ? state.progLangs.includes(code) : state.congLang === code
 
   useEscape(() => dispatch({ type: 'closeLangSheet' }))
 
@@ -41,7 +41,7 @@ export function LanguageSheet() {
   // den einen von beiden.
   const query = state.langSearch.trim().toLowerCase()
   const filtered = alle.filter(
-    (l) => !query || l.label.toLowerCase().includes(query) || l.key.toLowerCase().includes(query),
+    (l) => !query || l.label.toLowerCase().includes(query) || l.deutsch.toLowerCase().includes(query),
   )
 
   return (

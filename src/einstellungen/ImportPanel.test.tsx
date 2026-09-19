@@ -63,7 +63,7 @@ describe('ImportPanel — „Geladen bis"', () => {
 
   it('der Klartext-Bereich wird in die Versammlungssprache übersetzt', () => {
     // Ohne tp() bliebe hier deutscher Programmtext in einer englischen App.
-    const { getByText } = zeige([woche({ range: '7.–13. September' })], { congLang: 'Englisch' })
+    const { getByText } = zeige([woche({ range: '7.–13. September' })], { congLang: 'en' })
     expect(getByText(/September 7–13/)).toBeTruthy()
   })
 

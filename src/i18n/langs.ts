@@ -154,12 +154,15 @@ export const JW_TO_APP: Readonly<Record<string, Lang>> = {
 }
 
 /**
- * Versammlungssprache (deutscher Anzeigename) -> App-Uebersetzungscode, falls
+ * Versammlungssprache (jw.org-Code) -> App-Uebersetzungscode, falls
  * unterstuetzt (sonst undefined = keine Programmuebersetzung / Rueckfall DE).
+ *
+ * Nahm bis September 2026 den **deutschen Anzeigenamen** entgegen und schlug
+ * ihn erst in `CONG_TO_JW` nach. Seither fuehrt der Zustand selbst den Code;
+ * die Umsetzung entfaellt (siehe `AppState.congLang`).
  */
-export function congAppCode(congLang: string): Lang | undefined {
-  const jw = CONG_TO_JW[congLang]
-  return jw ? JW_TO_APP[jw] : undefined
+export function congAppCode(code: string): Lang | undefined {
+  return JW_TO_APP[code]
 }
 
 /**

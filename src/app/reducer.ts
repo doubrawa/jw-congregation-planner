@@ -1100,13 +1100,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, action.on ? 'toastAuxAn' : 'toastAuxAus'),
       }
     case 'setCongLang':
-      return { ...state, congLang: action.name, langSheetOpen: false, langSearch: '' }
+      return { ...state, congLang: action.code, langSheetOpen: false, langSearch: '' }
     case 'addProgLang': {
       // Versammlungssprache selbst und Duplikate ergeben keine Variante
-      const skip = action.name === state.congLang || state.progLangs.includes(action.name)
+      const skip = action.code === state.congLang || state.progLangs.includes(action.code)
       return {
         ...state,
-        progLangs: skip ? state.progLangs : [...state.progLangs, action.name],
+        progLangs: skip ? state.progLangs : [...state.progLangs, action.code],
         langSheetOpen: false,
         langSearch: '',
         toast: skip ? state.toast : toastKey(state, 'toastProgLangAdd'),
@@ -1115,7 +1115,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'removeProgLang':
       return {
         ...state,
-        progLangs: state.progLangs.filter((n) => n !== action.name),
+        progLangs: state.progLangs.filter((c) => c !== action.code),
         toast: toastKey(state, 'toastProgLangDel'),
       }
     case 'hydrate': {

@@ -231,7 +231,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // übersetzen ist. Deutsche App mit deutscher Versammlungssprache holt die
   // rund 16 kB nie.
   useEffect(() => {
-    if (state.lang === 'de' && state.congLang === 'Deutsch') return
+    if (state.lang === 'de' && state.congLang === 'de') return
     void bibelbuecherLaden()
       .then((geladen) => {
         if (geladen) dispatch({ type: 'setLang', lang: stateRef.current.lang })

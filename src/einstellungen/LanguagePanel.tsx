@@ -6,9 +6,9 @@ import { useT } from '../i18n/useT'
 export function LanguagePanel() {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  // Gespeichert ist der deutsche Name; angezeigt wird er in der Bediensprache.
+  // Gespeichert ist der jw.org-Code; angezeigt wird der Name in der Bediensprache.
   useLangNames(state.lang)
-  const label = (name: string) => langLabel(name, state.lang)
+  const label = (code: string) => langLabel(code, state.lang)
 
   return (
     <div className="panel panel--pb14" data-farbe="acc">
@@ -28,14 +28,14 @@ export function LanguagePanel() {
 
       <div className="lang-card-key proglang-label">{t.progLangsLbl}</div>
       <div className="proglang-chips">
-        {state.progLangs.map((name) => (
-          <span key={name} className="proglang-chip">
-            {label(name)}
+        {state.progLangs.map((code) => (
+          <span key={code} className="proglang-chip">
+            {label(code)}
             <button
               type="button"
               className="proglang-chip-x"
               aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'removeProgLang', name })}
+              onClick={() => dispatch({ type: 'removeProgLang', code })}
             >
               ✕
             </button>

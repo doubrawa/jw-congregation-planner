@@ -173,18 +173,23 @@ export interface AppState {
    */
   auxClass: boolean
   /**
-   * Versammlungssprache als **deutscher Anzeigename** („Deutsch"), nicht als
-   * Code. Der jw.org-Code steht in der Datenbank (`congregations.cong_lang`);
-   * umgesetzt wird an der einen Grenze, an der beide Welten aufeinandertreffen
-   * (`spracheName`/`spracheCode` in `lib/data.ts`). Wer den Code braucht, holt
-   * ihn über `CONG_TO_JW` bzw. `congAppCode`.
+   * Versammlungssprache als **jw.org-Sprachcode** („de"), so wie sie auch in
+   * der Datenbank steht (`congregations.cong_lang`) und wie der Import sie
+   * braucht.
    *
-   * Hier stand „als jw.org-Sprachcode („de")" — das stimmte nicht, und wer
-   * sich darauf verließ, hätte beim Import still die falsche Sprache geholt:
-   * `CONG_TO_JW` fällt auf `'de'` zurück, wenn es den Wert nicht kennt.
+   * Hier stand bis September 2026 der **deutsche Anzeigename**. Ein Name ist
+   * keine Kennung: Wer ihn in `JW_LANG_DATA` berichtigte, machte damit still
+   * jeden gespeicherten Zustand ungültig, und `CONG_TO_JW` fällt bei einem
+   * unbekannten Wert auf `'de'` zurück — eine englischsprachige Versammlung
+   * hätte das erst am falschen Arbeitsheft gemerkt. Umgesetzt wurde an vier
+   * Stellen hin und zurück, und ein Vergleich stand als deutsches Wort im Code
+   * (`congLang === 'Deutsch'`).
+   *
+   * Angezeigt wird der Name in der **Bediensprache** (`langLabel`), nicht auf
+   * Deutsch.
    */
   congLang: string
-  /** Weitere Programmsprachen, ebenso als Anzeigename — Import holt Varianten. */
+  /** Weitere Programmsprachen, ebenso als Code — Import holt Varianten. */
   progLangs: string[]
 
   /* ---- Abgeleitet: aus den Serverdaten gerechnet, nie gespeichert -------- */
@@ -360,9 +365,9 @@ export type AppAction =
   | { type: 'closeConfirm' }
   | { type: 'setLangSearch'; text: string }
   | { type: 'setAuxClass'; on: boolean }
-  | { type: 'setCongLang'; name: string }
-  | { type: 'addProgLang'; name: string }
-  | { type: 'removeProgLang'; name: string }
+  | { type: 'setCongLang'; code: string }
+  | { type: 'addProgLang'; code: string }
+  | { type: 'removeProgLang'; code: string }
   // Persistenz / Hydration
   // staleAt: gesetzt, wenn die Payload aus der Offline-Momentaufnahme kommt
   | { type: 'hydrate'; payload: HydratePayload; staleAt?: number }

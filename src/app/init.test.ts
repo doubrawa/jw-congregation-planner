@@ -95,12 +95,13 @@ describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
   it('liest s/l/c/t/p aus dem Hash', () => {
     vi.stubEnv('DEV', true)
     cfg.configured = true // trotz Konfiguration erzwingt der Hash den Demo-Modus
+    // `c=` darf den deutschen Namen tragen — geführt wird der jw.org-Code.
     location.hash = '#s=programm&l=en&c=Englisch&t=graphit&p=p9'
     const s = initialState()
     expect(s.dataStatus).toBe('demo')
     expect(s.screen).toBe('programm')
     expect(s.lang).toBe('en')
-    expect(s.congLang).toBe('Englisch')
+    expect(s.congLang).toBe('en')
     expect(s.theme).toBe('graphit')
     expect(s.selectedPersonId).toBe('p9')
   })

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { JW_LANGS } from './langs'
-import { APP_LANGS } from './langs'
+import { APP_LANGS, APP_TO_JW, JW_LANGS } from './langs'
 import { langChoices, langLabel, loadLangNames } from './langnames'
 
 /**
@@ -44,8 +43,10 @@ describe('Sprachnamen je Bediensprache', () => {
 
   it.each(EIGENE_SCHRIFT)('%s benennt sich selbst in eigener Schrift', (code, schrift) => {
     // Die eigene Sprache ist der Eintrag, den ein Nutzer garantiert ansieht.
-    const eigen = JW_LANGS.find((l) => l.name === deutschNameVon(code))!
-    const name = langLabel(eigen.name, code as (typeof CODES)[number])
+    // Hier stand dafür eine handgepflegte Tabelle App-Code → deutscher Name;
+    // seit der Schlüssel der jw.org-Code ist, genügt `APP_TO_JW`.
+    const eigen = APP_TO_JW[code as (typeof CODES)[number]]!
+    const name = langLabel(eigen, code as (typeof CODES)[number])
     expect(name, `${code}: „${name}"`).toMatch(schrift)
   })
 
@@ -58,14 +59,14 @@ describe('Sprachnamen je Bediensprache', () => {
   it('ohne geladene Liste bleibt der deutsche Name stehen', () => {
     // Der Rückfall muss lesbar sein, nicht leer: bis zum Nachladen — und nach
     // einem Deployment, wenn der alte Chunk fehlt — steht schlicht Deutsch da.
-    expect(langLabel('Hebräisch', 'de')).toBe('Hebräisch')
-    expect(langLabel('gibt es nicht', 'he')).toBe('gibt es nicht')
+    expect(langLabel('he', 'de')).toBe('Hebräisch')
+    expect(langLabel('gibt-es-nicht', 'he')).toBe('gibt-es-nicht')
   })
 
   it('Deutsch braucht keine eigene Liste', () => {
     const alle = langChoices('de')
     expect(alle).toHaveLength(JW_LANGS.length)
-    expect(alle.find((l) => l.key === 'Hebräisch')?.label).toBe('Hebräisch')
+    expect(alle.find((l) => l.key === 'he')?.label).toBe('Hebräisch')
   })
 
   it('die Liste ist in der Bediensprache sortiert', () => {
@@ -75,26 +76,18 @@ describe('Sprachnamen je Bediensprache', () => {
     expect(el).toEqual(sortiert)
   })
 
-  it('der gespeicherte Schlüssel bleibt der deutsche Name', () => {
-    // Er steht so in der Datenbank — eine Umstellung der Anzeige darf ihn nicht
-    // mitnehmen, sonst findet keine bestehende Versammlung ihre Sprache wieder.
-    expect(langChoices('he').every((l) => JW_LANGS.some((j) => j.name === l.key))).toBe(true)
+  it('der gespeicherte Schlüssel ist der jw.org-Code', () => {
+    // Er steht so in der Datenbank und so im Zustand — eine Umstellung der
+    // Anzeige darf ihn nicht mitnehmen, sonst findet keine bestehende
+    // Versammlung ihre Sprache wieder. Bis September 2026 war es der deutsche
+    // Name; ein Name ist keine Kennung.
+    expect(langChoices('he').every((l) => JW_LANGS.some((j) => j.code === l.key))).toBe(true)
+  })
+
+  it('der deutsche Name bleibt für die Suche dabei', () => {
+    // Wer nach einem Sprachwechsel nur noch „Hebräisch" weiß, soll עברית finden.
+    const he = langChoices('he').find((l) => l.key === 'he')!
+    expect(he.deutsch).toBe('Hebräisch')
+    expect(he.label).not.toBe('Hebräisch')
   })
 })
-
-/** App-Sprachcode → deutscher jw.org-Name (nur für die Selbstbenennungs-Probe). */
-function deutschNameVon(code: string): string {
-  const tabelle: Record<string, string> = {
-    en: 'Englisch', es: 'Spanisch', fr: 'Französisch', it: 'Italienisch',
-    pt: 'Portugiesisch (Brasilien)', nl: 'Niederländisch', pl: 'Polnisch',
-    ru: 'Russisch', uk: 'Ukrainisch', ro: 'Rumänisch', el: 'Griechisch',
-    cs: 'Tschechisch', sk: 'Slowakisch', hu: 'Ungarisch', hr: 'Kroatisch',
-    sr: 'Serbisch (lateinische Schrift)', bg: 'Bulgarisch', sv: 'Schwedisch',
-    da: 'Dänisch', fi: 'Finnisch', no: 'Norwegisch', tr: 'Türkisch',
-    zh: 'Chinesisch (Hochchinesisch, vereinfachte Schriftzeichen)',
-    ja: 'Japanisch', ko: 'Koreanisch', id: 'Indonesisch', tl: 'Tagalog',
-    vi: 'Vietnamesisch', sw: 'Swahili', ar: 'Arabisch', he: 'Hebräisch',
-    fa: 'Persisch', ur: 'Urdu',
-  }
-  return tabelle[code] ?? ''
-}

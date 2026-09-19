@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { missingVariants } from '../data/localize'
-import { CONG_TO_JW, LOCALES } from '../i18n/langs'
+import { JW_TO_CONG, LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from '../lib/import'
 
@@ -94,14 +94,14 @@ export function useWochenImport(): {
     // Produktion: echter Abruf der nächsten Woche von jw.org (Edge Function),
     // direkt in der Versammlungssprache (jw.org-Code, sonst Deutsch).
     dispatch({ type: 'startImport' })
-    const langCode = CONG_TO_JW[state.congLang] ?? 'de'
+    // **Nur bekannte Codes.** Zustand und Datenbank führen den jw.org-Code;
+    // steht dort etwas, das die Tabelle nicht kennt (eine Zeile aus der Zeit
+    // der Anzeigenamen, ein Tippfehler im Debug-Hash), holt der Import lieber
+    // Deutsch als eine Adresse, die es nicht gibt.
+    const langCode = JW_TO_CONG[state.congLang] ? state.congLang : 'de'
     // Weitere Programmsprachen als Varianten mitholen (ohne die Primärsprache)
     const altCodes = [
-      ...new Set(
-        state.progLangs
-          .map((name) => CONG_TO_JW[name])
-          .filter((c): c is string => Boolean(c) && c !== langCode),
-      ),
+      ...new Set(state.progLangs.filter((c) => JW_TO_CONG[c] && c !== langCode)),
     ]
     // Erst fehlende Varianten bereits geladener Wochen nachholen (z. B. wenn
     // eine Programmsprache nach deren Import hinzugefügt wurde). Fehler je

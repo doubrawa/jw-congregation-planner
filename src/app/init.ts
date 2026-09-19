@@ -23,7 +23,7 @@ import {
 import { buildDemoConfirmations } from '../data/demo-zusagen'
 import { STANDARD_ERINNERUNGEN, STANDARD_ZEITEN } from '../data/vorgaben'
 import { asFontScale, DEFAULT_FONT_SCALE, THEME_LIST, type FontScale } from '../data/constants'
-import { APP_LANGS } from '../i18n/langs'
+import { APP_LANGS, CONG_TO_JW } from '../i18n/langs'
 import { isSupabaseConfigured } from '../lib/supabase'
 import type { Lang, MeetingTab, Screen, Theme } from '../data/types'
 import type { AppState } from './context'
@@ -81,7 +81,9 @@ function parseDebugHash(): DebugHash | null {
   const l = p.get('l')
   if (l) out.lang = l as Lang
   const c = p.get('c')
-  if (c) out.congLang = c
+  // Der Hash darf den deutschen Namen tragen („c=Englisch") — getippt wird er
+  // von Hand, und der Code ist nicht jedem geläufig. Geführt wird der Code.
+  if (c) out.congLang = CONG_TO_JW[c] ?? c
   const th = asTheme(p.get('t'))
   if (th) out.theme = th
   const fs = asFontScale(p.get('fs'))
@@ -167,7 +169,7 @@ export function initialState(): AppState {
     // ersten Navigieren weg und die Doku-Screenshots zeigten das Falsche.
     terminGewaehlt: debug?.tab != null,
     auxClass: false,
-    congLang: debug?.congLang ?? 'Deutsch',
+    congLang: debug?.congLang ?? 'de',
     progLangs: [],
     langSearch: '',
     toast: null,

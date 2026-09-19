@@ -76,7 +76,7 @@ function zeige(was: 'import' | 'dienste', over: Partial<AppState> = {}) {
     ...initialState(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
     persons: [], services: DIENSTE, groups: [], weeks: [], fsWeeks: [],
-    congLang: 'Deutsch', progLangs: [],
+    congLang: 'de', progLangs: [],
     ...over,
   }
   function Buehne() {
@@ -145,21 +145,21 @@ describe('Import im Demo-Modus', () => {
 describe('Import in der Produktion', () => {
   it('holt die nächste Woche in der Versammlungssprache', async () => {
     const { container } = zeige('import', {
-      weeks: [woche('2026-09-07')], congLang: 'Englisch',
+      weeks: [woche('2026-09-07')], congLang: 'en',
     })
     fireEvent.click(container.querySelector('.imp-btn')!)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-09-07', 'en', []))
   })
 
   it('unbekannte Versammlungssprache fällt auf Deutsch zurück statt leer zu bleiben', async () => {
-    const { container } = zeige('import', { congLang: 'Erfundisch' })
+    const { container } = zeige('import', { congLang: 'xx-erfunden' })
     fireEvent.click(container.querySelector('.imp-btn')!)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith(undefined, 'de', []))
   })
 
   it('weitere Programmsprachen kommen als Varianten mit — ohne die Hauptsprache doppelt', async () => {
     const { container } = zeige('import', {
-      congLang: 'Deutsch', progLangs: ['Englisch', 'Deutsch'],
+      congLang: 'de', progLangs: ['en', 'de'],
     })
     fireEvent.click(container.querySelector('.imp-btn')!)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith(undefined, 'de', ['en']))
@@ -208,7 +208,7 @@ describe('Import in der Produktion', () => {
     const alt = woche('2026-09-14')
     importWeekVariants.mockResolvedValue({ ok: true, week: { ...alt, alt: { en: alt } } })
     const { container, dispatch } = zeige('import', {
-      weeks: [woche('2026-09-07')], congLang: 'Deutsch', progLangs: ['Englisch'],
+      weeks: [woche('2026-09-07')], congLang: 'de', progLangs: ['en'],
     })
     fireEvent.click(container.querySelector('.imp-btn')!)
     await waitFor(() => expect(importWeekVariants).toHaveBeenCalledWith('2026-09-07', 'de', ['en']))

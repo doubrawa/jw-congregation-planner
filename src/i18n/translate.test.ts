@@ -86,13 +86,13 @@ describe('makeTr — Programm-Inhalts-Übersetzer', () => {
 
 describe('congAppCode — Versammlungssprache → App-Übersetzungscode', () => {
   it('mappt unterstützte Sprachen', () => {
-    expect(congAppCode('Griechisch')).toBe('el')
-    expect(congAppCode('Italienisch')).toBe('it')
-    expect(congAppCode('Chinesisch (Hochchinesisch, vereinfachte Schriftzeichen)')).toBe('zh')
+    expect(congAppCode('el')).toBe('el')
+    expect(congAppCode('it')).toBe('it')
+    expect(congAppCode('cmn-hans')).toBe('zh')
   })
   it('gibt undefined für nicht unterstützte Sprachen (Rückfall auf Deutsch)', () => {
-    expect(congAppCode('Cebuano')).toBeUndefined()
-    expect(congAppCode('Irgendwas')).toBeUndefined()
+    expect(congAppCode('ceb')).toBeUndefined()
+    expect(congAppCode('irgendwas')).toBeUndefined()
   })
 })
 

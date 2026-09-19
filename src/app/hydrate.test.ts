@@ -32,7 +32,7 @@ const emptyData: CongregationData = {
   confirmations: {},
   sentLog: {},
   reminders: { first: 7, last: 1, repeat: false },
-  congLang: 'Deutsch',
+  congLang: 'de',
   progLangs: [],
   members: [],
   invites: [],

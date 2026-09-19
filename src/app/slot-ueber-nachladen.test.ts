@@ -61,7 +61,7 @@ function ladung(weeks: Week[]): HydratePayload {
     confirmations: {},
     sentLog: {},
     reminders: { first: 7, last: 1, repeat: false },
-    congLang: 'Deutsch',
+    congLang: 'de',
     progLangs: [],
     auxClass: false,
     members: [],

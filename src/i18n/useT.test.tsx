@@ -57,7 +57,7 @@ describe('useApp', () => {
 
 describe('useT', () => {
   it('Deutsch: tu/tp sind Identität, kein Programm-Fallback', () => {
-    const { result } = renderHook(() => useT(), { wrapper: wrapper({ lang: 'de', congLang: 'Deutsch' }) })
+    const { result } = renderHook(() => useT(), { wrapper: wrapper({ lang: 'de', congLang: 'de' }) })
     expect(result.current.tu('Lied 5')).toBe('Lied 5')
     expect(result.current.tp('Lied 5')).toBe('Lied 5')
     expect(result.current.progFallback).toBe(false)
@@ -65,14 +65,14 @@ describe('useT', () => {
   })
 
   it('Englisch (App + Versammlung): tu/tp übersetzen Programm-Inhalte', () => {
-    const { result } = renderHook(() => useT(), { wrapper: wrapper({ lang: 'en', congLang: 'Englisch' }) })
+    const { result } = renderHook(() => useT(), { wrapper: wrapper({ lang: 'en', congLang: 'en' }) })
     expect(result.current.tu('Lied 5')).toBe('Song 5')
     expect(result.current.tp('Lied 5')).toBe('Song 5')
     expect(result.current.progFallback).toBe(false)
   })
 
   it('nicht unterstützte Versammlungssprache → progFallback, tp Identität', () => {
-    const { result } = renderHook(() => useT(), { wrapper: wrapper({ lang: 'de', congLang: 'Cebuano' }) })
+    const { result } = renderHook(() => useT(), { wrapper: wrapper({ lang: 'de', congLang: 'ceb' }) })
     expect(result.current.progFallback).toBe(true)
     expect(result.current.tp('Lied 5')).toBe('Lied 5')
   })
@@ -80,14 +80,14 @@ describe('useT', () => {
 
 describe('useProgWeek', () => {
   it('ohne Woche → tpw fällt auf tp zurück', () => {
-    const { result } = renderHook(() => useProgWeek(undefined), { wrapper: wrapper({ lang: 'de', congLang: 'Deutsch' }) })
+    const { result } = renderHook(() => useProgWeek(undefined), { wrapper: wrapper({ lang: 'de', congLang: 'de' }) })
     expect(result.current.week).toBeUndefined()
     expect(result.current.tpw('Lied 5')).toBe('Lied 5')
   })
 
   it('Woche ohne passende Sprachvariante → dieselbe Woche, tpw = tp', () => {
     const week = buildDemoWeeks()[0]
-    const { result } = renderHook(() => useProgWeek(week), { wrapper: wrapper({ lang: 'de', congLang: 'Deutsch' }) })
+    const { result } = renderHook(() => useProgWeek(week), { wrapper: wrapper({ lang: 'de', congLang: 'de' }) })
     expect(result.current.week).toBe(week)
     expect(result.current.tpw('Lied 5')).toBe('Lied 5')
   })
@@ -138,7 +138,7 @@ describe('useProgWeek', () => {
   it('App-Sprache mit eigener Variante: die Woche wechselt die Sprache', () => {
     const week = wocheMitVariante()
     const { result } = renderHook(() => useProgWeek(week), {
-      wrapper: wrapper({ lang: 'ja', congLang: 'Spanisch' }),
+      wrapper: wrapper({ lang: 'ja', congLang: 'es' }),
     })
     expect(result.current.week).not.toBe(week)
     const gezeigt = result.current.week!
@@ -156,7 +156,7 @@ describe('useProgWeek', () => {
     // Lesers), nicht spanisch (Sprache der Versammlung) — sonst stünde mitten
     // im japanischen Programm ein spanisches Lied.
     const { result } = renderHook(() => useProgWeek(wocheMitVariante()), {
-      wrapper: wrapper({ lang: 'ja', congLang: 'Spanisch' }),
+      wrapper: wrapper({ lang: 'ja', congLang: 'es' }),
     })
     expect(result.current.tpw('Lied 5')).toBe(makeTr('ja')('Lied 5'))
     expect(result.current.tpw('Lied 5')).not.toBe(makeTr('es')('Lied 5'))
@@ -167,7 +167,7 @@ describe('useProgWeek', () => {
     // mitgeholt. Dann zeigt die App das spanische Programm, und `tpw` ist `tp`.
     const week = wocheMitVariante()
     const { result } = renderHook(() => useProgWeek(week), {
-      wrapper: wrapper({ lang: 'ko', congLang: 'Spanisch' }),
+      wrapper: wrapper({ lang: 'ko', congLang: 'es' }),
     })
     expect(result.current.week).toBe(week)
     expect(result.current.tpw('Lied 5')).toBe(makeTr('es')('Lied 5'))
@@ -178,7 +178,7 @@ describe('useProgWeek', () => {
     // Sprachen dieselben sind: Das Programm steht schon in der richtigen.
     const week = wocheMitVariante()
     const { result } = renderHook(() => useProgWeek(week), {
-      wrapper: wrapper({ lang: 'ja', congLang: 'Japanisch' }),
+      wrapper: wrapper({ lang: 'ja', congLang: 'ja' }),
     })
     expect(result.current.week).toBe(week)
   })

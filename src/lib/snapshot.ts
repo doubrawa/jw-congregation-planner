@@ -44,7 +44,17 @@ import type { HydratePayload } from '../app/context'
 import type { Absence } from '../data/types'
 
 const KEY = 'snapshot'
-const VERSION = 1
+/**
+ * Fassung der Aufnahme. Passt die Form der Nutzlast nicht mehr, wird eine
+ * ältere beim Lesen verworfen **und gelöscht** — sie ist ein Zwischenspeicher,
+ * kein Bestand, und der nächste erfolgreiche Ladevorgang legt sie neu an.
+ *
+ * 2 (September 2026): `congLang`/`progLangs` tragen den jw.org-Sprachcode statt
+ * des deutschen Anzeigenamens. Eine alte Aufnahme hätte „Deutsch" in ein Feld
+ * gelegt, in dem „de" stehen muss — mit ihr hätte der Import still das
+ * deutsche Arbeitsheft geholt.
+ */
+const VERSION = 2
 
 /**
  * Wie lange eine Aufnahme gilt.

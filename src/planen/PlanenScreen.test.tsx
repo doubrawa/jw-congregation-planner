@@ -224,7 +224,7 @@ describe('Das Programm der Zusammenkunft', () => {
       ...kanonisch,
       mid: { ...kanonisch.mid, sections: [...abschnitte(), { label: 'ZUVIEL', farbe: 'wein', items: [] }] },
     }
-    expect(() => zeige({ weeks: [{ ...kanonisch, alt: { en: kurz } }], lang: 'en', congLang: 'Englisch' }))
+    expect(() => zeige({ weeks: [{ ...kanonisch, alt: { en: kurz } }], lang: 'en', congLang: 'en' }))
       .not.toThrow()
   })
 

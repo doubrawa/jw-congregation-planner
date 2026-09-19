@@ -72,7 +72,7 @@ function ladung(): HydratePayload {
     confirmations: {},
     sentLog: {},
     reminders: { ...DEMO_REMINDERS },
-    congLang: 'Deutsch',
+    congLang: 'de',
     progLangs: [],
     auxClass: true,
     members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, email: 'a@b.c' }],
@@ -172,9 +172,9 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'changeReminder', key: 'first', delta: 1 },
     { type: 'toggleReminderRepeat' },
     // Sprachen
-    { type: 'setCongLang', name: 'Englisch' },
-    { type: 'addProgLang', name: 'Französisch' },
-    { type: 'removeProgLang', name: 'Französisch' },
+    { type: 'setCongLang', code: 'Englisch' },
+    { type: 'addProgLang', code: 'Französisch' },
+    { type: 'removeProgLang', code: 'Französisch' },
     { type: 'setLang', lang: 'en' },
     { type: 'setLang', lang: 'de' },
     // Konten

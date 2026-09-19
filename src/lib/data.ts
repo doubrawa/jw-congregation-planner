@@ -10,7 +10,7 @@
  * geräteweise in localStorage): App-Sprache und Darstellung.
  */
 
-import { CONG_TO_JW, JW_TO_CONG } from '../i18n/langs'
+import { CONG_TO_JW } from '../i18n/langs'
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { zeitenAus } from '../../supabase/functions/_shared/planung.ts'
 import { fsBaseFromWeeks, fsLeiterBinden, fsWochenKennungen, regenFsWeeks } from '../data/fs'
@@ -243,25 +243,17 @@ function kurzeZeit(zeit: string | undefined | null, vorgabe: string): string {
 }
 
 /**
- * **Sprachen: Code in der Datenbank, Anzeigename im Zustand.**
+ * **Eine Sprache ist ein Code**, in der Datenbank wie im Zustand — seit
+ * September 2026 auf beiden Seiten derselbe Wert, und damit keine Umsetzung
+ * mehr an dieser Grenze.
  *
- * `congregations.cong_lang`/`prog_langs` tragen den jw.org-Sprachcode — ein
- * Name ist keine Kennung (siehe Kopf von `supabase/schema.sql`). Der Zustand
- * der App führt dagegen den deutschen Anzeigenamen: Daran hängen der
- * Sprachen-Picker, `CONG_TO_JW` beim Import und `congAppCode` für die
- * Vorlagen-Texte. Umgesetzt wird deshalb hier, an der einen Stelle, an der
- * beide Welten aufeinandertreffen.
- *
- * **Beide Richtungen vertragen Unbekanntes**: Findet die Tabelle nichts, bleibt
- * der Wert stehen. So laden Zeilen aus der Zeit vor dem Schema-Neuaufbau
- * weiter, in denen der Anzeigename gespeichert ist — und beim nächsten
- * Speichern steht dort der Code.
+ * Geblieben ist die **Nachsicht nach hinten**: Zeilen aus der Zeit davor tragen
+ * den deutschen Anzeigenamen („Deutsch" statt „de"). Sie werden beim Laden
+ * umgesetzt; beim nächsten Speichern steht dort der Code. Was die Tabelle
+ * nicht kennt, bleibt unverändert stehen — lieber ein unbekannter Code als
+ * eine stille Verwechslung mit Deutsch.
  */
-function spracheName(wert: string): string {
-  return JW_TO_CONG[wert] ?? wert
-}
-
-function spracheCode(wert: string): string {
+function zuCode(wert: string): string {
   return CONG_TO_JW[wert] ?? wert
 }
 
@@ -470,7 +462,7 @@ export interface CongregationData {
   confirmations: ConfirmationMap
   reminders: Reminders
   congLang: string
-  progLangs: string[] // weitere Programmsprachen (deutsche Anzeigenamen)
+  progLangs: string[] // weitere Programmsprachen (jw.org-Codes)
   auxClass: boolean // Zusaetzliche Klasse eingerichtet
   members: Member[]
   invites: Invite[]
@@ -672,8 +664,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     confirmations,
     reminders,
     auxClass: c?.aux_class ?? false,
-    congLang: spracheName(c?.cong_lang ?? 'de'),
-    progLangs: (c?.prog_langs ?? []).map(spracheName),
+    congLang: zuCode(c?.cong_lang ?? 'de'),
+    progLangs: (c?.prog_langs ?? []).map(zuCode),
     members: ((members.data ?? []) as MemberRow[]).map((r) => ({
       userId: r.user_id,
       email: r.email,
@@ -1284,8 +1276,8 @@ export function saveSettings(
         reminder_first: settings.reminders.first,
         reminder_last: settings.reminders.last,
         reminder_repeat: settings.reminders.repeat,
-        cong_lang: spracheCode(settings.congLang),
-        prog_langs: settings.progLangs.map(spracheCode),
+        cong_lang: settings.congLang,
+        prog_langs: settings.progLangs,
         aux_class: settings.auxClass,
       })
       .eq('id', congregationId),

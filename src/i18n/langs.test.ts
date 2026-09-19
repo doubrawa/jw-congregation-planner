@@ -31,9 +31,13 @@ describe('Sprachcode-Zuordnungen (jw.org ↔ App)', () => {
     expect(APP_TO_JW.sr).toBe('sr-latn')
   })
 
-  it('congAppCode: deutscher Versammlungssprach-Name → App-Code', () => {
-    expect(congAppCode('Deutsch')).toBe('de')
+  it('congAppCode: jw.org-Code der Versammlungssprache → App-Code', () => {
+    expect(congAppCode('de')).toBe('de')
     expect(congAppCode('gibt-es-nicht')).toBeUndefined()
+    // Der deutsche Anzeigename taugt seit September 2026 nicht mehr als
+    // Eingabe — er stand bis dahin im Zustand und wäre hier stillschweigend
+    // durchgefallen.
+    expect(congAppCode('Deutsch')).toBeUndefined()
   })
 
   it('jede App-Sprache taugt auch als Versammlungssprache', () => {

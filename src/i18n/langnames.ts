@@ -23,7 +23,7 @@
 
 import { useEffect, useState } from 'react'
 import type { Lang } from '../data/types'
-import { CONG_TO_JW, JW_LANGS } from './langs'
+import { JW_LANGS, JW_TO_CONG } from './langs'
 
 const MODULE = import.meta.glob<{ default: string }>('./langnames/*.ts')
 
@@ -98,20 +98,31 @@ export function loadLangNames(lang: Lang): Promise<boolean> {
  * eine griechische oder hebräische Liste in deutscher Buchstabenfolge da.
  */
 export interface LangChoice {
-  /** Deutscher Name — der gespeicherte Wert (`state.congLang`). */
+  /** jw.org-Sprachcode — der gespeicherte Wert (`state.congLang`). */
   key: string
   /** Name in der Bediensprache; ohne geladene Liste der deutsche. */
   label: string
+  /**
+   * Der deutsche Name, zusaetzlich zum uebersetzten.
+   *
+   * Er steht hier fuer die **Suche**: Wer nach einem Sprachwechsel nur noch
+   * „Hebraeisch" weiss, soll עברית trotzdem finden. Solange die nachgeladene
+   * Liste fehlt, ist er derselbe Text wie `label`.
+   */
+  deutsch: string
 }
 
 export function langChoices(lang: Lang): LangChoice[] {
   const namen = GELADEN.get(lang)
-  const liste = JW_LANGS.map((l) => ({ key: l.name, label: namen?.get(l.code) ?? l.name }))
+  const liste = JW_LANGS.map((l) => ({
+    key: l.code,
+    label: namen?.get(l.code) ?? l.name,
+    deutsch: l.name,
+  }))
   return namen ? liste.sort((a, b) => a.label.localeCompare(b.label, lang)) : liste
 }
 
-/** Ein einzelner Name: deutscher Anzeigename → Name in der Bediensprache. */
-export function langLabel(deutscherName: string, lang: Lang): string {
-  const code = CONG_TO_JW[deutscherName]
-  return (code && GELADEN.get(lang)?.get(code)) || deutscherName
+/** Ein einzelner Name: jw.org-Sprachcode → Name in der Bediensprache. */
+export function langLabel(code: string, lang: Lang): string {
+  return GELADEN.get(lang)?.get(code) || JW_TO_CONG[code] || code
 }
