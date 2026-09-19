@@ -121,3 +121,68 @@ describe('Ampel-Punkt: jede Stufe hat ihre Farbe', () => {
     }
   })
 })
+
+/*
+ * Die Treffpunkt-Zeile lief auf dem Handy über den Namen: „Versammlungstreff-
+ * punkt" ist breiter als die halbe Karte, und eine Flex-Zeile mit
+ * `justify-content: space-between` lässt einen Titel, der nicht schrumpfen
+ * darf, einfach über den Nachbarn hinausragen. Titel und Name lagen sichtbar
+ * übereinander.
+ *
+ * Genau dieser Fehler war in den Programmpunkt-Zeilen (`.prog-row`) schon
+ * einmal behoben — mit `minmax(0, 1fr)` und `min-width: 0`. Die
+ * Treffpunkt-Zeile hatte die Absicherung nie bekommen. Der Wächter prüft sie
+ * an beiden Zeilen, damit die nächste Umstellung nicht wieder nur die eine
+ * Hälfte mitnimmt.
+ *
+ * jsdom rechnet kein Layout, ein DOM-Test kann den Überlapp also nicht sehen.
+ * Diese Prüfung beweist kein Layout — sie hält die drei Bestandteile fest, ohne
+ * die es rechnerisch gar nicht aufgehen kann: eine schrumpffähige Spalte, ein
+ * schrumpffähiges Element darin und ein Titel, der umbrechen darf.
+ */
+describe('Programm-Zeilen: der lange Titel darf schrumpfen und umbrechen', () => {
+  const css = lies('src/programm/programm.css')
+  const tsx = ohneKommentare(lies('src/programm/FsProgram.tsx'))
+
+  /** Der Rumpf einer Regel, ohne die Kommentare davor. */
+  function regel(name: string): string {
+    const treffer = css.match(new RegExp(String.raw`^\.${name}\s*\{([^}]*)\}`, 'm'))
+    expect(treffer, `Regel .${name} fehlt`).not.toBeNull()
+    return treffer![1]!
+  }
+
+  it.each([
+    ['fs-row', 'Treffpunkte'],
+    ['prog-row', 'Programmpunkte'],
+  ])('%s teilt die Karte in eine schrumpffähige und eine feste Spalte (%s)', (name) => {
+    // `1fr` allein genügt nicht: eine Gitterspalte hat sonst min-width:auto und
+    // bleibt so breit wie ihr längstes Wort. Genau das drückte den Namen weg.
+    expect(regel(name)).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/)
+  })
+
+  it.each([
+    ['fs-row-text', 'fs-title'],
+    ['prog-row-text', 'prog-title'],
+  ])('%s darf unter seine Inhaltsbreite, %s darf umbrechen', (spalte, titel) => {
+    expect(regel(spalte)).toMatch(/min-width:\s*0/)
+    const t = regel(titel)
+    expect(t, 'ohne Silbentrennung bricht das Wort hart oder gar nicht').toMatch(/hyphens:\s*auto/)
+    expect(t, 'Notbremse für Wörter, die der Browser nicht trennen kann').toMatch(
+      /overflow-wrap:\s*break-word/,
+    )
+  })
+
+  it('auch die Namensspalte gibt nach, statt die Karte zu sprengen', () => {
+    for (const name of ['fs-leader', 'prog-names']) {
+      expect(regel(name), name).toMatch(/min-width:\s*0/)
+      expect(regel(name), name).toMatch(/overflow-wrap:\s*break-word/)
+    }
+  })
+
+  it('die Treffpunkt-Zeile vergibt die beiden Klassen, an denen das hängt', () => {
+    // Die Regeln greifen nur, wenn die Komponente die Klassen auch setzt —
+    // vor der Behebung war die Titelspalte ein <div> ganz ohne Klasse.
+    expect(tsx).toContain('className="fs-row-text"')
+    expect(tsx).toContain('fs-leader-person')
+  })
+})

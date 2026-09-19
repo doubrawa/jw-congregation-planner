@@ -66,7 +66,7 @@ export function FsProgram() {
             <div key={inst.id} className="fs-row">
               <div className="fs-row-main">
                 <span className="fs-time">{inst.time}</span>
-                <div>
+                <div className="fs-row-text">
                   <div className="fs-title">{inst.grp == null ? t.fsVers : groupName(inst.grp)}</div>
                   {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")
                       steht im Wörterbuch — ohne tu bliebe er als einziges Feld
@@ -87,7 +87,7 @@ export function FsProgram() {
                   {me && gehoertZu(fsLeiterZuteilung(inst), me) && (
                     <span className="chip-du">DU</span>
                   )}
-                  <span className={inst.leader ? '' : 'fs-leader-open'}>
+                  <span className={inst.leader ? 'fs-leader-person' : 'fs-leader-person fs-leader-open'}>
                     {inst.leader || t.offenDash}
                   </span>
                 </div>
