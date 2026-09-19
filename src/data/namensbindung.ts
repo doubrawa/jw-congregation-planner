@@ -68,50 +68,31 @@ export function dropPersonPid(weeks: Week[], id: string): Week[] {
 }
 
 /**
- * Bildet jeden Slot einer Person über `fix` ab — Programmpunkte (Hauptsaal
+ * **Der eine Durchlauf über alle Plätze — schreibend.**
+ *
+ * Bildet jeden Platz ab, auf den `passt` zutrifft: Programmpunkte (Hauptsaal
  * **und** Zusätzliche Klasse), den Ratgeber der Klasse und die Hilfsdienste.
  *
- * Ein Slot gehört zur Person, wenn seine `pid` passt (stabil) — oder, ohne
- * `pid` (Altdaten, Hilfsdienste), sein Name dem angegebenen entspricht.
- * Externe Redner sind vom Namensweg ausgenommen (siehe `meins`).
- * `oldName: null` schaltet den Namensweg ganz ab: beim Lösen einer Id ist nur
- * sie gemeint, nicht jeder Gleichnamige.
+ * Lesend tut das `allePlaetze` (plaetze.ts); hier geht es um die andere
+ * Richtung, und die braucht eine eigene Fassung: Es entstehen **neue** Wochen,
+ * und unberührte Teile müssen ihre Referenz behalten — daran erkennt die
+ * Persistenz, welche Woche sie schreiben muss. Ein Generator über die alten
+ * Plätze hilft dabei nicht.
  *
- * **Klasse und Ratgeber waren hier lange nicht dabei** (bei T38 aufgefallen).
- * Beide tragen `pid`, funktional stimmte also alles — aber der Anzeigename
- * blieb nach einer Umbenennung der alte. Auf dem Programmblatt der Klasse stand
- * dann ein Name, den es nicht mehr gibt.
+ * Hier standen zwei fast gleiche Traversierungen untereinander, je rund 75
+ * Zeilen, mit derselben `changed`-Buchführung und demselben Aufbau. Wie teuer
+ * das war, steht in beiden Kommentaren: Die Zusätzliche Klasse und ihr Ratgeber
+ * fehlten **jeder** von ihnen einmal — erst der einen (T38), dann der anderen.
+ * `alle-plaetze.test.ts` hat beide Lücken gefunden, nacheinander.
  *
- * Unveränderte Wochen behalten ihre Referenz; daran erkennt der Aufrufer, welche
- * er speichern muss. Sprachvarianten (`Week.alt`) tragen keine Namen.
+ * Unveränderte Wochen behalten ihre Referenz. Sprachvarianten (`Week.alt`)
+ * tragen keine Namen und werden deshalb nicht angefasst.
  */
-function mapPersonSlots(
+function plaetzeMappen(
   weeks: Week[],
-  id: string,
-  oldName: string | null,
+  passt: (slot: SlotAssignment) => boolean,
   fix: (slot: SlotAssignment) => SlotAssignment,
 ): Week[] {
-  const meins = (slot: { pid?: string; name: string; rolle?: string }): boolean => {
-    if (slot.pid) return slot.pid === id
-    /*
-     * **Externe Redner sind vom Namensweg ausgenommen** (`isGuestRole`) — die
-     * dritte Sorte Platz ohne `pid`, die der Kommentar über dieser Funktion
-     * nicht nannte.
-     *
-     * Ein Gastredner steht als Freitext im Slot, häufig in der Kurzform
-     * „M. Hartmann" — und genau das ist auch die Schreibweise, in der
-     * Zuteilungen einmal gespeichert wurden. Berichtigte der Planer den Namen
-     * des gleichnamigen Bruders dieser Versammlung, wurde der Auswärtige mit
-     * umbenannt: Auf dem Programmblatt stand danach jemand anderes, als am
-     * Sonntag kommt.
-     *
-     * Dieselbe Grenze zieht `gehoertZu` (die Stelle, an der „gehört dieser
-     * Platz dieser Person?" entschieden wird), und seither auch
-     * `migrateAssignmentPids` und `mapMeetingNames`.
-     */
-    return oldName !== null && !isGuestRole(slot.rolle) && slot.name === oldName
-  }
-
   let anyChanged = false
   const mapMeeting = (m: Week['mid']): Week['mid'] => {
     let changed = false
@@ -120,7 +101,7 @@ function mapPersonSlots(
       if (!arr) return arr
       let reiheChanged = false
       const next = arr.map((slot) => {
-        if (!meins(slot)) return slot
+        if (!passt(slot)) return slot
         const neu = fix(slot) as T
         if (neu !== slot) reiheChanged = true
         return neu
@@ -143,7 +124,7 @@ function mapPersonSlots(
 
     // Ratgeber der Zusätzlichen Klasse: eine Zuteilung je Zusammenkunft.
     let ratgeber = m.auxRatgeber
-    if (ratgeber && meins(ratgeber)) {
+    if (ratgeber && passt(ratgeber)) {
       const neu = fix(ratgeber)
       if (neu !== ratgeber) {
         ratgeber = neu
@@ -158,7 +139,7 @@ function mapPersonSlots(
       Object.entries(m.helpers).map(([key, arr]) => [
         key,
         arr.map((slot) => {
-          if (!meins(slot)) return slot
+          if (!passt(slot)) return slot
           const neu = fix(slot)
           if (neu !== slot) helpersChanged = true
           return { name: neu.name, ...(neu.pid ? { pid: neu.pid } : {}) }
@@ -167,6 +148,8 @@ function mapPersonSlots(
     )
     if (!changed && !helpersChanged) return m
     anyChanged = true
+    // `auxRatgeber` nur setzen, wenn es die Zusammenkunft hat — sonst stünde
+    // der Schlüssel mit `undefined` da, wo vorher gar keiner war.
     return { ...m, sections, helpers, ...(ratgeber ? { auxRatgeber: ratgeber } : {}) }
   }
 
@@ -179,29 +162,57 @@ function mapPersonSlots(
 }
 
 /**
+ * Wie `plaetzeMappen`, nur auf die Plätze **einer Person** beschränkt.
+ *
+ * Ein Platz gehört zur Person, wenn seine `pid` passt (stabil) — oder, ohne
+ * `pid` (Altdaten, Hilfsdienste), sein Name dem angegebenen entspricht.
+ * `oldName: null` schaltet den Namensweg ganz ab: beim Lösen einer Id ist nur
+ * sie gemeint, nicht jeder Gleichnamige.
+ */
+function mapPersonSlots(
+  weeks: Week[],
+  id: string,
+  oldName: string | null,
+  fix: (slot: SlotAssignment) => SlotAssignment,
+): Week[] {
+  const meins = (slot: { pid?: string; name: string; rolle?: string }): boolean => {
+    if (slot.pid) return slot.pid === id
+    /*
+     * **Externe Redner sind vom Namensweg ausgenommen** (`isGuestRole`) — die
+     * dritte Sorte Platz ohne `pid`.
+     *
+     * Ein Gastredner steht als Freitext im Slot, häufig in der Kurzform
+     * „M. Hartmann" — und genau das ist auch die Schreibweise, in der
+     * Zuteilungen einmal gespeichert wurden. Berichtigte der Planer den Namen
+     * des gleichnamigen Bruders dieser Versammlung, wurde der Auswärtige mit
+     * umbenannt: Auf dem Programmblatt stand danach jemand anderes, als am
+     * Sonntag kommt.
+     *
+     * Dieselbe Grenze zieht `gehoertZu` (die Stelle, an der „gehört dieser
+     * Platz dieser Person?" entschieden wird).
+     */
+    return oldName !== null && !isGuestRole(slot.rolle) && slot.name === oldName
+  }
+  return plaetzeMappen(weeks, meins, fix)
+}
+
+/**
  * **Namen wieder an ihre Person binden.**
  *
- * Trägt die `pid` an Programmpunkt- UND Hilfsdienst-Slots aus dem gespeicherten
- * Anzeigenamen nach. Nur eindeutige Namen werden zugeordnet; mehrdeutige
- * (Dubletten), externe Redner und die Reinigungs-Rotation („Gruppe N") bleiben
- * unangetastet. Idempotent. Rein im Speicher; persistiert beim nächsten
- * Speichern der Woche.
+ * Trägt die `pid` an allen Plätzen aus dem gespeicherten Anzeigenamen nach.
+ * Nur eindeutige Namen werden zugeordnet; mehrdeutige (Dubletten), externe
+ * Redner und die Reinigungs-Rotation („Gruppe N") bleiben unangetastet.
+ * Idempotent. Rein im Speicher; persistiert beim nächsten Speichern der Woche.
  *
  * **Keine Migration, sondern eine laufende Regel.** Wird eine Person gelöscht,
  * nimmt `dropPersonPid` ihre Id aus den Wochen und lässt den Namen stehen.
  * Legt der Planer sie wieder an, bekommt sie eine neue Id — und ohne diesen
  * Durchlauf bliebe in den Wochen ein Name ohne Person: Die Zuteilung zählte in
  * keiner Auslastung, in keinem Konflikt und in keiner Aufgabenliste mehr.
- *
- * „Alle Plätze" heißt vier Sorten: Hauptsaal, Zusätzliche Klasse, Ratgeber und
- * Hilfsdienste. Die mittleren beiden fehlten hier einmal — dieselbe Lücke wie
- * seinerzeit in `mapPersonSlots` (T38). `alle-plaetze.test.ts` fragt seither
- * jede solche Funktion nach allen vieren.
  */
 export function pidsNachtragen(weeks: Week[], persons: Person[]): Week[] {
   const byName = eindeutigeNamen(persons)
   if (byName.size === 0) return weeks
-  let anyChanged = false
   /**
    * Platz mit `pid` versehen, wenn der Name eindeutig eine Person meint.
    *
@@ -217,62 +228,12 @@ export function pidsNachtragen(weeks: Week[], persons: Person[]): Week[] {
    * Der **eigene** Redner (T29, `rolle: 'Redner'`) bekommt seine Id
    * unverändert — er ist eine Person dieser Versammlung.
    */
-  const mitPid = <T extends { name: string; pid?: string; rolle?: string }>(slot: T): T => {
+  const mitPid = (slot: SlotAssignment): SlotAssignment => {
     if (isGuestRole(slot.rolle) || slot.pid || !slot.name) return slot
     const id = byName.get(slot.name)
     return id ? { ...slot, pid: id } : slot
   }
-  const fixMeeting = (m: Week['mid']): Week['mid'] => {
-    let changed = false
-    const sections = m.sections.map((section) => ({
-      ...section,
-      items: section.items.map((item) => {
-        if ('song' in item) return item
-        let itemChanged = false
-        const names = item.names.map((slot) => {
-          const neu = mitPid(slot)
-          if (neu !== slot) itemChanged = true
-          return neu
-        })
-        // Die Zusätzliche Klasse gehört dazu — dieselbe Lücke, die T38 an
-        // `mapPersonSlots` geschlossen hat. Ohne sie bekam ein Platz der Klasse
-        // seine Id nie zurück: beim Löschen einer Person wird sie überall
-        // entfernt (`dropPersonPid`), beim Wiederanlegen aber nur im Hauptsaal
-        // wiederhergestellt. Der Platz zählte dann nirgends mehr.
-        const aux = item.aux?.map((slot) => {
-          const neu = mitPid(slot)
-          if (neu !== slot) itemChanged = true
-          return neu
-        })
-        if (!itemChanged) return item
-        changed = true
-        return aux ? { ...item, names, aux } : { ...item, names }
-      }),
-    }))
-    // Der Ratgeber der Klasse, aus demselben Grund.
-    const auxRatgeber = m.auxRatgeber ? mitPid(m.auxRatgeber) : m.auxRatgeber
-    if (auxRatgeber !== m.auxRatgeber) changed = true
-    // Hilfsdienste ebenso (Gruppen-Namen matchen keine Person → bleiben ohne pid).
-    const helpers = Object.fromEntries(
-      Object.entries(m.helpers).map(([key, arr]) => [
-        key,
-        arr.map((slot) => {
-          const neu = mitPid(slot)
-          if (neu !== slot) changed = true
-          return neu
-        }),
-      ]),
-    )
-    if (!changed) return m
-    anyChanged = true
-    // `auxRatgeber` nur setzen, wenn es die Zusammenkunft hat — sonst stünde
-    // der Schlüssel mit `undefined` da, wo vorher gar keiner war.
-    return auxRatgeber ? { ...m, sections, helpers, auxRatgeber } : { ...m, sections, helpers }
-  }
-  const next = weeks.map((week) => {
-    const mid = fixMeeting(week.mid)
-    const we = fixMeeting(week.we)
-    return mid === week.mid && we === week.we ? week : { ...week, mid, we }
-  })
-  return anyChanged ? next : weeks
+  // Jeder Platz kommt in Frage — welcher wirklich eine Id bekommt, entscheidet
+  // `mitPid` selbst.
+  return plaetzeMappen(weeks, () => true, mitPid)
 }

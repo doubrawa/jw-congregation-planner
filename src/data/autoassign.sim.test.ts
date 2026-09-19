@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildImportWeek, DEMO_SERVICES } from './testdaten'
-import { displayName, isSong, partWorkload, serviceQualKey, workloadOf } from './helpers'
+import { displayName, isSong, serviceQualKey } from './helpers'
+import { partWorkload, workloadOf } from './auslastung'
 import type { AbsenceSet } from './absence'
 import { autoAssignMeeting, clearAssignments } from './planning'
 import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } from './types'

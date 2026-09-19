@@ -25,6 +25,14 @@
  * Funktion, ob sie alle vier sieht. Kommt eine fünfte Platzsorte dazu, gehört
  * sie hier hinein — dann fallen alle Aufrufer auf einmal auf.
  *
+ * **Seit September 2026 steht die Aufzählung an einer Stelle** (`plaetze.ts`,
+ * lesend als `allePlaetze`, schreibend als `plaetzeMappen`). Damit hat sich die
+ * Rolle dieser Datei verschoben: Sie war das Gegenmittel gegen vierzehn
+ * Abschriften — sie **entdeckte** eine vergessene Sorte, verhindern konnte sie
+ * nichts. Jetzt prüft sie zuerst den Durchlauf selbst und danach, dass die
+ * Aufrufer ihn auch benutzen. Eine fünfte Platzsorte ist seither eine Änderung
+ * an einer Funktion statt an vierzehn.
+ *
  * Beim Anlegen hat die Probe gleich die fünfte Fundstelle geliefert:
  * `migrateAssignmentNames` erreichte nur Hauptsaal und Hilfsdienste.
  *
@@ -37,7 +45,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { bedarfJeBereich } from './bedarf'
-import { emptyQualifications, partWorkload, workloadOf } from './helpers'
+import { emptyQualifications } from './helpers'
+import { partWorkload, workloadOf } from './auslastung'
 import {
   assignmentsInMeeting,
   autoAssignMeeting,
@@ -48,6 +57,7 @@ import {
   openSlotLabels,
 } from './planning'
 import { dropPersonPid, pidsNachtragen, renameInWeeks } from './namensbindung'
+import { allePlaetze, gespeicherteHelfer, platzKey } from './plaetze'
 import {
   pendingOfMeeting,
   type Meeting as EdgeMeeting,
@@ -135,6 +145,61 @@ describe('Vollständigkeitsprobe: die Vorgabe selbst', () => {
   it('die Beispielwoche belegt wirklich alle vier Plätze', () => {
     // Ohne diese Zeile prüften alle folgenden Tests womöglich nichts.
     expect(besetzt(woche(), istAnna)).toEqual(ALLE)
+  })
+})
+
+/*
+ * **Der Durchlauf selbst.**
+ *
+ * Seit die Aufzählung an einer Stelle steht (`plaetze.ts`), ist sie das
+ * Fundament aller Proben darunter: Gäbe `allePlaetze` eine Sorte nicht heraus,
+ * fühlten sich die folgenden Tests trotzdem grün an, solange die geprüfte
+ * Funktion überall dieselbe Lücke hat. Deshalb steht er hier zuerst und wird
+ * gegen die vier Sorten gehalten, nicht gegen sich selbst.
+ */
+describe('allePlaetze: der eine Durchlauf', () => {
+  const arten = (platz: { art: string; aux?: boolean }): string =>
+    platz.art === 'programm' ? (platz.aux ? 'klasse' : 'hauptsaal') : platz.art
+
+  it('gibt alle vier Sorten heraus — und zwar in dieser Reihenfolge', () => {
+    const gefunden = [...allePlaetze(zusammenkunft(true), SERVICES)].map(arten)
+    expect(gefunden).toEqual(['hauptsaal', 'klasse', 'ratgeber', 'helper'])
+  })
+
+  it('ohne Dienste bleibt die Programmseite übrig', () => {
+    const gefunden = [...allePlaetze(zusammenkunft(true))].map(arten)
+    expect(gefunden).toEqual(['hauptsaal', 'klasse', 'ratgeber'])
+  })
+
+  it('ohne Zusätzliche Klasse fällt der Ratgeber weg — und die zweite Reihe', () => {
+    const ohne = zusammenkunft(true)
+    delete ohne.auxRatgeber
+    expect([...allePlaetze(ohne, SERVICES)].map(arten)).toEqual(['hauptsaal', 'helper'])
+  })
+
+  it('jeder Platz kennt seinen eigenen Schlüssel', () => {
+    const keys = [...allePlaetze(zusammenkunft(true), SERVICES)].map((p) =>
+      platzKey(p, '2026-09-07', 'mid'),
+    )
+    expect(keys).toEqual([
+      '2026-09-07|mid|part|i5|0',
+      '2026-09-07|mid|aux|i5|0',
+      '2026-09-07|mid|ratgeber',
+      '2026-09-07|mid|helper|mik|0',
+    ])
+  })
+
+  /*
+   * Zwei Fragen, zwei Durchläufe: `allePlaetze` sagt, was laut Einrichtung zu
+   * besetzen ist, `gespeicherteHelfer` sagt, was in den Daten steht.
+   * Verkleinert der Planer einen Dienst, bleiben die Namen dahinter erhalten —
+   * „leeren" muss sie erreichen, „offen?" darf sie nicht mitzählen.
+   */
+  it('gespeicherteHelfer sieht auch, was hinter der Platzzahl steht', () => {
+    const m = zusammenkunft(true)
+    m.helpers.mik = [{ name: NAME, pid: ANNA.id }, { name: 'Zweiter', pid: 'p-zwei' }]
+    expect([...allePlaetze(m, SERVICES)].filter((p) => p.art === 'helper')).toHaveLength(1)
+    expect([...gespeicherteHelfer(m)].map((h) => h.slot.name)).toEqual([NAME, 'Zweiter'])
   })
 })
 

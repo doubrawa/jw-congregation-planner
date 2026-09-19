@@ -10,10 +10,20 @@ import {
 } from '../app/context'
 import { initialState } from '../app/init'
 import { syncAuxSlots } from '../data/aux-class'
-import { emptyQualifications, LOAD_RADIUS } from '../data/helpers'
+import { emptyQualifications } from '../data/helpers'
+import { LOAD_RADIUS } from '../data/auslastung'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/planning'
 import { dict } from '../i18n/ui'
-import type { Absence, Group, PartItem, Person, Qualifications, Service, SlotSelection, Week } from '../data/types'
+import type {
+  Absence,
+  Group,
+  PartItem,
+  Person,
+  Qualifications,
+  Service,
+  SlotSelection,
+  Week,
+} from '../data/types'
 import { AssignSheet } from './AssignSheet'
 import { privSetzen } from '../data/helpers'
 

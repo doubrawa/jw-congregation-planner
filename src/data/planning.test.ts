@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
 import { syncAuxSlots } from './aux-class'
-import { buildDemoWeeks, buildImportWeek, CONGREGATION, DEMO_ABSENCES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from './testdaten'
-import { displayName, helperWorkload, isGuestRole, isSong, loadWindow, partWorkload, rolleMitHerkunft, workloadOf } from './helpers'
+import {
+  buildDemoWeeks,
+  buildImportWeek,
+  CONGREGATION,
+  DEMO_ABSENCES,
+  DEMO_PERSONS,
+  DEMO_SERVICES,
+  FS_BASE,
+} from './testdaten'
+import { displayName, isGuestRole, isSong, rolleMitHerkunft } from './helpers'
+import { helperWorkload, loadWindow, partWorkload, workloadOf } from './auslastung'
 import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
   alleS89DerWoche,

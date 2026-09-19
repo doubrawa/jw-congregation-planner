@@ -5,11 +5,11 @@ import {
   isSong,
   LABEL_DIENSTVORTRAG,
   isGuestRole,
-  partWorkload,
   ROLE_CIRCUIT,
   TITEL_DIENSTVORTRAG,
   TITEL_SCHLUSSVORTRAG,
 } from './helpers'
+import { partWorkload } from './auslastung'
 import { itemMinutes, setDienstwoche, setPartThema, themaVon } from './meeting-edit'
 import { localizedWeek } from './localize'
 import { countOpenSlots, deriveMyTasks } from './planning'

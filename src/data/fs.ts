@@ -20,8 +20,8 @@ import {
   idAufloeser,
   isQualified,
   overseerGroup,
-  tieHash,
 } from './helpers'
+import { tieHash } from './auslastung'
 import { deutschesDatum, fromIso, istVorbei, kalendertagMs, versatzAbMontag } from './meeting-dates'
 import { fsKey, schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.

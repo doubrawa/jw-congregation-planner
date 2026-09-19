@@ -7,8 +7,14 @@ import {
   slotsOf,
   syncAuxSlots,
 } from './aux-class'
-import { assignmentsInMeeting, countOpenSlots, itemTaskKey, openSlotLabels, ratgeberTaskKey } from './planning'
-import { partWorkload } from './helpers'
+import {
+  assignmentsInMeeting,
+  countOpenSlots,
+  itemTaskKey,
+  openSlotLabels,
+  ratgeberTaskKey,
+} from './planning'
+import { partWorkload } from './auslastung'
 import { togglePartner } from './meeting-edit'
 import type { PartItem, Section, Week } from './types'
 

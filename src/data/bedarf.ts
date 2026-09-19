@@ -1,4 +1,4 @@
-import { programmPlaetze, ratgeberSlot } from './aux-class'
+import { allePlaetze } from './plaetze'
 import { isGuestRole, isQualified, serviceQualKey } from './helpers'
 import { istAbwesend, type AbsenceSet } from './absence'
 import type { MeetingKey, Meeting, Person, Service } from './types'
@@ -73,17 +73,17 @@ export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]):
     out.set(key, (out.get(key) ?? 0) + 1)
   }
 
-  for (const { slot } of programmPlaetze(meeting)) {
-    if (isGuestRole(slot.rolle)) continue
-    zaehl(slot.bereichsKey)
-  }
-  // Der Ratgeber ist ein eigener Platz je Zusammenkunft — aber nur, wenn die
-  // Zusätzliche Klasse überhaupt läuft (wie `countOpenSlots` es prüft).
-  if (meeting.auxRatgeber) zaehl(ratgeberSlot(meeting).bereichsKey)
-
-  for (const svc of services) {
-    if (svc.groups) continue
-    for (let i = 0; i < svc.count; i++) zaehl(serviceQualKey(svc.key))
+  // Ein Durchlauf über alle vier Platzsorten. Der Ratgeber fällt dabei von
+  // selbst mit heraus — er ist ein Platz mit Bereich wie jeder andere, und den
+  // gibt es nur, solange die Zusätzliche Klasse läuft.
+  for (const platz of allePlaetze(meeting, services)) {
+    if (platz.art === 'helper') {
+      if (platz.svc.groups) continue
+      zaehl(serviceQualKey(platz.svc.key))
+      continue
+    }
+    if (isGuestRole(platz.slot.rolle)) continue
+    zaehl(platz.slot.bereichsKey)
   }
   return out
 }

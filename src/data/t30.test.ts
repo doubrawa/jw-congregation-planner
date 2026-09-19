@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { buildImportWeek } from './testdaten'
-import { emptyQualifications, helperWorkload, istAusgefallen, partWorkload, serviceQualKey, weichtAb } from './helpers'
+import { emptyQualifications, istAusgefallen, serviceQualKey, weichtAb } from './helpers'
+import { helperWorkload, partWorkload } from './auslastung'
 import { setAbweichung } from './meeting-edit'
 import { meetingDateText, meetingOffset, meetingTime } from './meeting-dates'
-import { autoAssignMeeting, deriveMyTasks, deriveSubstituteReqs, helperTaskKey, weekConflicts } from './planning'
+import {
+  autoAssignMeeting,
+  deriveMyTasks,
+  deriveSubstituteReqs,
+  helperTaskKey,
+  weekConflicts,
+} from './planning'
 import type { Meeting, Person, Week } from './types'
 
 /**

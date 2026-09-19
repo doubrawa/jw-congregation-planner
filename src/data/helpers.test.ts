@@ -11,16 +11,13 @@ import {
   isSong,
   linkFamily,
   listName,
-  loadWindow,
   partnerGenderOk,
-  partWorkload,
   personCompare,
   personLabel,
   serviceQualKey,
-  tieHash,
   unlinkFamily,
-  workloadOf,
 } from './helpers'
+import { loadWindow, partWorkload, tieHash, workloadOf } from './auslastung'
 import { buildDemoWeeks } from './testdaten'
 import type { PartItem, Person, Qualifications } from './types'
 

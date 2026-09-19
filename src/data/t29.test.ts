@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { emptyQualifications, idAufloeser, partWorkload } from './helpers'
+import { emptyQualifications, idAufloeser } from './helpers'
+import { partWorkload } from './auslastung'
 import {
   assignmentsInMeeting,
   assignSlot,

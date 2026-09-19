@@ -23,14 +23,10 @@ import {
   initials,
   isQualified,
   isSong,
-  lastFenster,
-  LOAD_WEEKS,
-  loadWindow,
   partnerGenderOk,
   personCompare,
-  workloadOf,
-  type WeekLoad,
 } from '../data/helpers'
+import { lastFenster, LOAD_WEEKS, loadWindow, workloadOf, type WeekLoad } from '../data/auslastung'
 import { assignmentsInMeeting, type MeetingAssignment } from '../data/planning'
 import type { Person, SlotSelection } from '../data/types'
 import { ROLE_KEY, type Dict } from '../i18n/ui'

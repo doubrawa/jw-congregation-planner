@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { emptyQualifications, gehoertZu, partWorkload } from './helpers'
+import { emptyQualifications, gehoertZu } from './helpers'
+import { partWorkload } from './auslastung'
 import { fsDropPersonPid, fsLeiterBinden, fsRenameLeader } from './fs'
 import { assignSlot } from './planning'
 import { dropPersonPid, renameInWeeks } from './namensbindung'

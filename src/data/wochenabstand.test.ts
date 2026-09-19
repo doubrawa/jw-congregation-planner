@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { emptyQualifications, lastFenster, loadWindow, wochenAbstand } from './helpers'
+import { emptyQualifications } from './helpers'
+import { lastFenster, loadWindow, wochenAbstand } from './auslastung'
 import type { Meeting, Person, Week } from './types'
 
 /**

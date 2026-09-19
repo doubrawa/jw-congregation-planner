@@ -10,6 +10,7 @@
  */
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
+import { allePlaetze, gespeicherteHelfer, platzKey } from './plaetze'
 import { programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
   dieselbePerson,
@@ -23,21 +24,17 @@ import {
   isQualified,
   isSong,
   istAusgefallen,
-  lastFenster,
   MEETING_TABS,
   partnerGenderOk,
-  partWorkload,
   idAufloeser,
   ROLE_GUEST_SPEAKER,
   ROLE_OWN_SPEAKER,
   rolleBasis,
   rolleMitHerkunft,
   serviceQualKey,
-  tieHash,
-  wochenAbstand,
-  workloadOf,
   type Zuteilung,
 } from './helpers'
+import { lastFenster, partWorkload, tieHash, wochenAbstand, workloadOf } from './auslastung'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
 import {
   helferKey,
@@ -192,12 +189,18 @@ export function assignmentsInMeeting(
   exclude?: SlotSelection,
 ): MeetingAssignment[] {
   const out: MeetingAssignment[] = []
-  // Über beide Räume: die Plätze der Zusätzlichen Klasse sind gleichwertige
-  // Zuteilungen. Ohne sie blieb der Hinweis „heute schon zugeteilt" aus, das
-  // Dashboard zeigte „frei" für jemanden, der in der Klasse eingeteilt war, und
-  // takeSubstitute übersah den Konflikt.
-  for (const { slot, si, item, ii, ni, aux } of programmPlaetze(meeting)) {
-    if (!gehoertZu(slot, person)) continue
+  // Programm (beide Räume) und Ratgeber in einem Durchlauf: die Plätze der
+  // Zusätzlichen Klasse sind gleichwertige Zuteilungen. Ohne sie blieb der
+  // Hinweis „heute schon zugeteilt" aus, das Dashboard zeigte „frei" für
+  // jemanden, der in der Klasse eingeteilt war, und takeSubstitute übersah den
+  // Konflikt.
+  for (const platz of allePlaetze(meeting)) {
+    if (!gehoertZu(platz.slot, person)) continue
+    if (platz.art === 'ratgeber') {
+      out.push({ text: RATGEBER_ROLLE, lang: 'u' })
+      continue
+    }
+    const { slot, si, item, ii, ni, aux } = platz
     if (
       exclude?.kind === 'part' &&
       exclude.si === si &&
@@ -212,8 +215,9 @@ export function assignmentsInMeeting(
     if (rolle) out.push({ text: rolle, lang: 'u' })
     else out.push({ text: item.title, lang: 'p' })
   }
-  // Ratgeber der Zusätzlichen Klasse — eine Zuteilung je Zusammenkunft.
-  if (gehoertZu(meeting.auxRatgeber, person)) out.push({ text: RATGEBER_ROLLE, lang: 'u' })
+  // Hilfsdienste über **alles Gespeicherte**, nicht nur bis `svc.count`: Wer
+  // hinter einer nachträglich verkleinerten Platzzahl steht, ist an diesem Tag
+  // trotzdem eingeteilt (siehe `gespeicherteHelfer`).
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
     arr.forEach((slot, pos) => {
@@ -284,12 +288,7 @@ export function assignSlot(
  */
 export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   let count = 0
-  for (const { slot } of programmPlaetze(meeting)) if (!slot.name) count++
-  if (meeting.auxRatgeber && !meeting.auxRatgeber.name) count++
-  for (const svc of services) {
-    const arr = meeting.helpers[svc.key] ?? []
-    for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]?.name) count++
-  }
+  for (const platz of allePlaetze(meeting, services)) if (!platz.slot?.name) count++
   return count
 }
 
@@ -338,17 +337,17 @@ export function changedSlotKeys(
   for (const section of prev.sections) {
     for (const item of section.items) if (!isSong(item)) vorherNachKennung.set(item.iid, item)
   }
-  for (const { slot, item, ni, aux } of programmPlaetze(next)) {
-    const prevItem = vorherNachKennung.get(item.iid)
-    const vorher = prevItem ? slotsOf(prevItem, aux) : []
-    if (!gleicheBesetzung(vorher[ni], slot)) keys.push(punktKey(woche, tab, item.iid, ni, aux))
-  }
-  for (const svc of services) {
-    const prevArr = prev.helpers[svc.key] ?? []
-    const nextArr = next.helpers[svc.key] ?? []
-    for (let pos = 0; pos < svc.count; pos++) {
-      if (!gleicheBesetzung(prevArr[pos], nextArr[pos])) keys.push(helferKey(woche, tab, svc.key, pos))
+  for (const platz of allePlaetze(next, services)) {
+    if (platz.art === 'programm') {
+      const prevItem = vorherNachKennung.get(platz.item.iid)
+      const vorher = prevItem ? slotsOf(prevItem, platz.aux) : []
+      if (!gleicheBesetzung(vorher[platz.ni], platz.slot)) keys.push(platzKey(platz, woche, tab))
+    } else if (platz.art === 'helper') {
+      const prevArr = prev.helpers[platz.svc.key] ?? []
+      if (!gleicheBesetzung(prevArr[platz.pos], platz.slot)) keys.push(platzKey(platz, woche, tab))
     }
+    // Der Ratgeber steht darunter, nicht hier: Ein Durchlauf über **eine**
+    // Seite sähe nicht, dass es ihn vorher gab und jetzt nicht mehr.
   }
   if (!gleicheBesetzung(prev.auxRatgeber, next.auxRatgeber)) {
     keys.push(ratgeberKey(woche, tab))
@@ -378,29 +377,31 @@ export interface OpenSlot {
  */
 export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[] {
   const out: OpenSlot[] = []
-  // Beide Räume und der Ratgeber, genau wie countOpenSlots zählt. Vorher nannte
-  // der Planen-Kopf eine höhere Zahl, als das Banner darunter auflistete.
-  for (const { slot, section, item } of programmPlaetze(meeting)) {
-    if (slot.name) continue
+  // Derselbe Durchlauf, den `countOpenSlots` zählt — vorher nannte der
+  // Planen-Kopf eine höhere Zahl, als das Banner darunter auflistete.
+  // Hilfsdienste werden gebündelt: ein Eintrag je Dienst mit seiner Anzahl.
+  const offenJeDienst = new Map<Service, number>()
+  for (const platz of allePlaetze(meeting, services)) {
+    if (platz.slot?.name) continue
+    if (platz.art === 'helper') {
+      offenJeDienst.set(platz.svc, (offenJeDienst.get(platz.svc) ?? 0) + 1)
+      continue
+    }
+    if (platz.art === 'ratgeber') {
+      out.push({ text: RATGEBER_ROLLE, lang: 'u', n: 1 })
+      continue
+    }
     // Dieselbe Regel wie in der Aufgabenliste (`zuteilungsLabel`), nur in zwei
     // Atomen statt einem — Titel und Rolle kommen aus verschiedenen Sprachen
     // (siehe OpenSlot.rolle).
-    const rolle = rolleMitHerkunft(slot) ?? ''
+    const rolle = rolleMitHerkunft(platz.slot) ?? ''
     out.push(
-      rolle && istBlockSektion(section)
+      rolle && istBlockSektion(platz.section)
         ? { text: rolle, lang: 'u', n: 1 }
-        : { text: item.title, lang: 'p', rolle: rolle || undefined, n: 1 },
+        : { text: platz.item.title, lang: 'p', rolle: rolle || undefined, n: 1 },
     )
   }
-  if (meeting.auxRatgeber && !meeting.auxRatgeber.name) {
-    out.push({ text: RATGEBER_ROLLE, lang: 'u', n: 1 })
-  }
-  for (const svc of services) {
-    const arr = meeting.helpers[svc.key] ?? []
-    let n = 0
-    for (let pos = 0; pos < svc.count; pos++) if (!arr[pos]?.name) n++
-    if (n > 0) out.push({ text: svc.name, lang: 'u', n })
-  }
+  for (const [svc, n] of offenJeDienst) out.push({ text: svc.name, lang: 'u', n })
   return out
 }
 
@@ -483,9 +484,11 @@ export function autoAssignMeeting(
     const id = werIst(slot)
     if (id) used.add(id)
   }
-  merken(meeting.auxRatgeber)
-  for (const { slot } of programmPlaetze(meeting)) merken(slot)
-  for (const arr of Object.values(meeting.helpers)) for (const slot of arr) merken(slot)
+  for (const platz of allePlaetze(meeting)) merken(platz.slot)
+  // Hilfsdienste über **alles Gespeicherte**: Wer hinter einer nachträglich
+  // verkleinerten Platzzahl steht, ist trotzdem eingeteilt und darf nicht
+  // zusätzlich drankommen.
+  for (const { slot } of gespeicherteHelfer(meeting)) merken(slot)
 
   // Gleitendes Fenster: nur ±LOAD_RADIUS Wochen um die geplante Woche zählen,
   // damit uralte Einteilungen die aktuelle Verteilung nicht verzerren. Dasselbe
@@ -774,37 +777,34 @@ export function clearAssignments(
   if (!meeting) return { weeks, count: 0 }
   let count = 0
   if (scope === 'parts') {
-    // Beide Räume leeren: „Leeren" meint die Aufgaben dieser Ansicht, und die
-    // Zusätzliche Klasse gehört dazu.
-    for (const { slot } of programmPlaetze(meeting)) {
+    // Programm (beide Räume) und Ratgeber: „Leeren" meint die Aufgaben dieser
+    // Ansicht, und die Zusätzliche Klasse gehört dazu. Ohne `services`, denn
+    // die Hilfsdienste sind der andere Umfang.
+    //
+    // Geändert wird an Ort und Stelle: `klonWoche` hat die Woche tief kopiert,
+    // die Plätze aus dem Durchlauf gehören also schon zur neuen Fassung.
+    for (const platz of allePlaetze(meeting)) {
+      const slot = platz.slot
       if (isGuestRole(slot.rolle)) continue // externer Redner bleibt
-      if (slot.name) {
-        slot.name = ''
-        delete slot.pid
-        // Ein geleerter Redner-Platz fällt auf „Gastredner" zurück — den
-        // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen, wäre er
-        // ein offener Slot, den die Auto-Zuteilung besetzt; den Redner des
-        // öffentlichen Vortrags vereinbart man aber, man verlost ihn nicht.
-        // Derselbe Rückfall wie beim „Entfernen".
-        if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) slot.rolle = ROLE_GUEST_SPEAKER
-        count++
-      }
-    }
-    if (meeting.auxRatgeber?.name) {
-      meeting.auxRatgeber = { ...meeting.auxRatgeber, name: '' }
-      delete meeting.auxRatgeber.pid
+      if (!slot.name) continue
+      slot.name = ''
+      delete slot.pid
+      // Ein geleerter Redner-Platz fällt auf „Gastredner" zurück — den
+      // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen, wäre er
+      // ein offener Slot, den die Auto-Zuteilung besetzt; den Redner des
+      // öffentlichen Vortrags vereinbart man aber, man verlost ihn nicht.
+      // Derselbe Rückfall wie beim „Entfernen".
+      if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) slot.rolle = ROLE_GUEST_SPEAKER
       count++
     }
   } else {
-    for (const key of Object.keys(meeting.helpers)) {
-      const arr = meeting.helpers[key] ?? []
-      for (let i = 0; i < arr.length; i++) {
-        if (arr[i]?.name) {
-          arr[i] = { name: '' }
-          count++
-        }
-      }
-      meeting.helpers[key] = arr
+    // Über alles Gespeicherte — auch hinter einer verkleinerten Platzzahl und
+    // zu Diensten, die es nicht mehr gibt: „leeren" heißt leeren.
+    for (const { slot } of gespeicherteHelfer(meeting)) {
+      if (!slot.name) continue
+      slot.name = ''
+      delete slot.pid
+      count++
     }
   }
   return { weeks: next, count }
@@ -1147,14 +1147,31 @@ export function eachAssignedSlot(
       const meeting = week[tab]
       // Echtes Datum der Zusammenkunft (nur bei importierten Wochen) → Countdown.
       const at = meetingDateMs(week, tab, zeiten)
-      // Hauptsaal und Zusätzliche Klasse laufen durch dieselbe Schleife — die
-      // Plätze der Klasse sind gleichwertige Aufgaben (bestätigen, erinnern,
-      // S-89), nur mit eigenem Schlüssel und eigenem Ort.
-      for (const { slot, section, si, item, ii, ni, aux } of programmPlaetze(meeting)) {
-        // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow
-        if (!slot.name || isGuestRole(slot.rolle)) continue
-        const key = punktKey(week.start, tab, item.iid, ni, aux)
+      // **Ein Durchlauf für alle vier Platzsorten.** Die Plätze der Zusätzlichen
+      // Klasse sind gleichwertige Aufgaben (bestätigen, erinnern, S-89), nur mit
+      // eigenem Schlüssel und eigenem Ort; der Ratgeber und die Hilfsdienste
+      // ebenso. Hier standen dafür drei Schleifen untereinander.
+      for (const platz of allePlaetze(meeting, services)) {
+        const slot = platz.slot
+        if (!slot?.name) continue
+        // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow.
+        if (isGuestRole(slot.rolle)) continue
+        // Die Reinigungs-Rotation ist keine persönliche Aufgabe, sondern eine
+        // Gruppe.
+        if (platz.art === 'helper' && platz.svc.groups) continue
+        const key = platzKey(platz, week.start, tab)
         visit(slot.name, key, () => {
+          const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), chip: '', at, status: 'offen' as const }
+          if (platz.art === 'ratgeber') {
+            // Die Bezeichnung **ist** die Rolle — App-Sprache, kein Titel.
+            return { ...gemeinsam, title: '', rolle: RATGEBER_ROLLE, s89: null }
+          }
+          if (platz.art === 'helper') {
+            // Dienstnamen zeigt die App in der Sprache des Lesers — so hält es
+            // auch `SubstituteReq.title` („Anzeige über tu").
+            return { ...gemeinsam, title: '', rolle: platz.svc.name, s89: null }
+          }
+          const { section, si, item, ii, ni, aux } = platz
           const rolle = rolleMitHerkunft(slot) ?? ''
           const sel: SlotSelection = {
             kind: 'part', wi, tab, si, ii, ni, aux: aux || undefined,
@@ -1164,54 +1181,13 @@ export function eachAssignedSlot(
           // Versammlung, die Rolle in die des Lesers (siehe MyTask.rolle).
           // In Eröffnung/Abschluss trägt die Rolle allein — der Titel benennt
           // dort den ganzen Block (`istBlockAbschnitt`).
-          const eigen = rolle
           return {
-            id: key,
-            title: eigen && istBlockSektion(section) ? '' : item.title,
-            ...(eigen ? { rolle: eigen } : {}),
-            date: meetingDateText(week, wi, tab, zeiten),
-            chip: '',
-            at,
-            status: 'offen',
+            ...gemeinsam,
+            title: rolle && istBlockSektion(section) ? '' : item.title,
+            ...(rolle ? { rolle } : {}),
             s89: buildS89ForSlot(weeks, sel, zeiten),
           }
         }, slot.pid)
-      }
-      // Ratgeber der Zusätzlichen Klasse: eine Aufgabe je Zusammenkunft.
-      const ratgeber = meeting.auxRatgeber
-      if (ratgeber?.name) {
-        const key = ratgeberKey(week.start, tab)
-        visit(ratgeber.name, key, () => ({
-          id: key,
-          title: '', // die Bezeichnung ist die Rolle — App-Sprache
-          rolle: RATGEBER_ROLLE,
-          date: meetingDateText(week, wi, tab, zeiten),
-          chip: '',
-          at,
-          status: 'offen',
-          s89: null,
-        }), ratgeber.pid)
-      }
-      for (const svc of services) {
-        if (svc.groups) continue // Gruppen-Rotation hat keine persönliche Aufgabe
-        const arr = meeting.helpers[svc.key] ?? []
-        for (let pos = 0; pos < svc.count; pos++) {
-          const slot = arr[pos]
-          if (!slot?.name) continue
-          const key = helferKey(week.start, tab, svc.key, pos)
-          visit(slot.name, key, () => ({
-            id: key,
-            // Dienstnamen zeigt die App in der Sprache des Lesers — so hält es
-            // auch `SubstituteReq.title` („Anzeige über tu").
-            title: '',
-            rolle: svc.name,
-            date: meetingDateText(week, wi, tab, zeiten),
-            chip: '',
-            at,
-            status: 'offen',
-            s89: null,
-          }), slot.pid)
-        }
       }
     }
   })
