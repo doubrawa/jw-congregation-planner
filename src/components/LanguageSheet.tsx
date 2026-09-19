@@ -1,12 +1,8 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { langChoices, useLangNames } from '../i18n/langnames'
 import { fill, useT } from '../i18n/useT'
-import { useBackDismiss } from './useBackDismiss'
-import { useEscape } from './useEscape'
-import { useDialogFocus } from './useDialogFocus'
-import { useSwipeDown } from './useSwipeDown'
-import './overlays.css'
+import { Sheet } from './Sheet'
 
 /**
  * Sprach-Sheet: durchsuchbare vollständige jw.org-Liste. Zwei Modi
@@ -25,16 +21,10 @@ export function LanguageSheet() {
   const alle = useMemo(() => langChoices(state.lang), [state.lang, gen])
   const altMode = state.langSheetFor === 'alt'
   const close = () => dispatch({ type: 'closeLangSheet' })
-  const dlg = useRef<HTMLDivElement>(null)
-  useDialogFocus(dlg)
-  useBackDismiss(true, close)
-  useSwipeDown(dlg, close)
   const pick = (code: string) =>
     dispatch(altMode ? { type: 'addProgLang', code } : { type: 'setCongLang', code })
   const isActive = (code: string) =>
     altMode ? state.progLangs.includes(code) : state.congLang === code
-
-  useEscape(() => dispatch({ type: 'closeLangSheet' }))
 
   // Gesucht wird über beide Namen: wer „Hebräisch" tippt, findet עברית, und wer
   // עברית tippt, findet es auch. Nach einem Sprachwechsel weiß man oft nur noch
@@ -45,47 +35,38 @@ export function LanguageSheet() {
   )
 
   return (
-    <>
-      <div className="sheet-backdrop" onClick={close} />
-      <div className="sheet sheet--lang" role="dialog" aria-modal="true" aria-label={t.a11yCongLang} ref={dlg}>
-        <span className="sheet-grip" aria-hidden="true" />
-        <div className="sheet-head">
-          <div>
-            <div className="sheet-title">{altMode ? t.progLangsLbl : t.versSprache}</div>
-            <div className="sheet-sub">
-              {fill(t.langCount, { n: filtered.length })} · {t.langListNote}
-            </div>
-          </div>
-          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={close}>
-            ✕
-          </button>
-        </div>
-        <input
-          type="text"
-          dir="auto"
-          className="lang-search"
-          placeholder={t.langSearchPh}
-          aria-label={t.langSearchPh}
-          value={state.langSearch}
-          onChange={(e) => dispatch({ type: 'setLangSearch', text: e.target.value })}
-        />
-        <div className="lang-list">
-          {filtered.map((l) => {
-            const active = isActive(l.key)
-            return (
-              <button
-                key={l.key}
-                type="button"
-                className={active ? 'lang-row is-active' : 'lang-row'}
-                onClick={() => pick(l.key)}
-              >
-                <span>{l.label}</span>
-                {active && <span className="lang-check">✓</span>}
-              </button>
-            )
-          })}
-        </div>
+    <Sheet
+      variante="lang"
+      label={t.a11yCongLang}
+      title={altMode ? t.progLangsLbl : t.versSprache}
+      sub={`${fill(t.langCount, { n: filtered.length })} · ${t.langListNote}`}
+      onClose={close}
+    >
+      <input
+        type="text"
+        dir="auto"
+        className="lang-search"
+        placeholder={t.langSearchPh}
+        aria-label={t.langSearchPh}
+        value={state.langSearch}
+        onChange={(e) => dispatch({ type: 'setLangSearch', text: e.target.value })}
+      />
+      <div className="lang-list">
+        {filtered.map((l) => {
+          const active = isActive(l.key)
+          return (
+            <button
+              key={l.key}
+              type="button"
+              className={active ? 'lang-row is-active' : 'lang-row'}
+              onClick={() => pick(l.key)}
+            >
+              <span>{l.label}</span>
+              {active && <span className="lang-check">✓</span>}
+            </button>
+          )
+        })}
       </div>
-    </>
+    </Sheet>
   )
 }

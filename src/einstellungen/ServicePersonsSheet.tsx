@@ -1,13 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
-import { useBackDismiss } from '../components/useBackDismiss'
-import { useDialogFocus } from '../components/useDialogFocus'
-import { useEscape } from '../components/useEscape'
-import { useSwipeDown } from '../components/useSwipeDown'
+import { Sheet } from '../components/Sheet'
 import { isQualified, listName, personCompare, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { PrivToggle } from '../personen/PrivToggle'
-import '../components/overlays.css'
 
 /**
  * Freigabe-Liste eines Hilfsdienstes: alle Personen, je eine mit Schalter.
@@ -31,12 +27,7 @@ export function ServicePersonsSheet({ svcKey }: { svcKey: string }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const [suche, setSuche] = useState('')
-  const dlg = useRef<HTMLDivElement>(null)
   const close = () => dispatch({ type: 'closeServiceSheet' })
-  useDialogFocus(dlg)
-  useBackDismiss(true, close)
-  useEscape(close)
-  useSwipeDown(dlg, close)
 
   const service = state.services.find((s) => s.key === svcKey)
   const qkey = serviceQualKey(svcKey)
@@ -53,48 +44,33 @@ export function ServicePersonsSheet({ svcKey }: { svcKey: string }) {
   const frei = state.persons.filter((p) => isQualified(p, qkey)).length
 
   return (
-    <>
-      <div className="sheet-backdrop" onClick={close} />
-      <div
-        className="sheet sheet--lang"
-        role="dialog"
-        aria-modal="true"
-        aria-label={tu(service.name)}
-        ref={dlg}
-      >
-        <span className="sheet-grip" aria-hidden="true" />
-        <div className="sheet-head">
-          <div>
-            <div className="sheet-title">{tu(service.name)}</div>
-            <div className="sheet-sub">
-              {t.eigenerBereich} · {fill(t.personenCount, { n: frei })}
-            </div>
-          </div>
-          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={close}>
-            ✕
-          </button>
-        </div>
-        <input
-          type="text"
-          dir="auto"
-          className="lang-search"
-          placeholder={t.suchen}
-          aria-label={t.suchen}
-          value={suche}
-          onChange={(e) => setSuche(e.target.value)}
-        />
-        <div className="lang-list svc-persons">
-          {gefiltert.map((person) => (
-            <PrivToggle
-              key={person.id}
-              qkey={qkey}
-              label={listName(person)}
-              person={person}
-              update={(patch) => dispatch({ type: 'updatePerson', id: person.id, patch })}
-            />
-          ))}
-        </div>
+    <Sheet
+      variante="lang"
+      label={tu(service.name)}
+      title={tu(service.name)}
+      sub={`${t.eigenerBereich} · ${fill(t.personenCount, { n: frei })}`}
+      onClose={close}
+    >
+      <input
+        type="text"
+        dir="auto"
+        className="lang-search"
+        placeholder={t.suchen}
+        aria-label={t.suchen}
+        value={suche}
+        onChange={(e) => setSuche(e.target.value)}
+      />
+      <div className="lang-list svc-persons">
+        {gefiltert.map((person) => (
+          <PrivToggle
+            key={person.id}
+            qkey={qkey}
+            label={listName(person)}
+            person={person}
+            update={(patch) => dispatch({ type: 'updatePerson', id: person.id, patch })}
+          />
+        ))}
       </div>
-    </>
+    </Sheet>
   )
 }

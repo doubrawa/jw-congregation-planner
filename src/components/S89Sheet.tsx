@@ -1,13 +1,8 @@
-import { useRef } from 'react'
 import { useAppDispatch } from '../app/context'
 import { S89Karte } from './S89Karte'
+import { Sheet } from './Sheet'
 import { useT } from '../i18n/useT'
-import { useBackDismiss } from './useBackDismiss'
-import { useEscape } from './useEscape'
-import { useDialogFocus } from './useDialogFocus'
-import { useSwipeDown } from './useSwipeDown'
 import type { S89Payload } from '../data/types'
-import './overlays.css'
 
 /**
  * Digitales S-89-Formular („Aufgabe in der Leben-und-Dienst-Zusammenkunft“).
@@ -17,30 +12,15 @@ import './overlays.css'
 export function S89Sheet({ payload }: { payload: S89Payload }) {
   const dispatch = useAppDispatch()
   const { t } = useT()
-  const close = () => dispatch({ type: 'closeS89' })
-  const dlg = useRef<HTMLDivElement>(null)
-  useDialogFocus(dlg)
-  useBackDismiss(true, close)
-  useSwipeDown(dlg, close)
-
-  useEscape(() => dispatch({ type: 'closeS89' }))
-
   return (
-    <>
-      <div className="sheet-backdrop sheet-backdrop--s89" onClick={close} />
-      <div className="sheet sheet--s89" role="dialog" aria-modal="true" aria-label={t.s89Title} ref={dlg}>
-        <span className="sheet-grip" aria-hidden="true" />
-        <div className="sheet-head">
-          <div>
-            <div className="s89-eyebrow">S-89</div>
-            <div className="sheet-title">{t.s89Title}</div>
-          </div>
-          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={close}>
-            ✕
-          </button>
-        </div>
-        <S89Karte payload={payload} />
-      </div>
-    </>
+    <Sheet
+      variante="s89"
+      label={t.s89Title}
+      title={t.s89Title}
+      eyebrow={<div className="s89-eyebrow">S-89</div>}
+      onClose={() => dispatch({ type: 'closeS89' })}
+    >
+      <S89Karte payload={payload} />
+    </Sheet>
   )
 }

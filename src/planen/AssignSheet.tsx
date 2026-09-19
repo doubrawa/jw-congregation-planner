@@ -1,10 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
-import { useBackDismiss } from '../components/useBackDismiss'
-import { useEscape } from '../components/useEscape'
-import { useDialogFocus } from '../components/useDialogFocus'
-import { useSwipeDown } from '../components/useSwipeDown'
+import { Sheet } from '../components/Sheet'
 import { herkunftVon, isSong, slotsOf } from '../data/helpers'
 import { LOAD_RADIUS, type WeekLoad } from '../data/auslastung'
 import { fsLeaderValue } from '../data/fs'
@@ -40,12 +37,6 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const abwesend = useAbwesend()
   const { t, tu, tp } = useT()
   const close = () => dispatch({ type: 'closeSlot' })
-  const dlg = useRef<HTMLDivElement>(null)
-  useDialogFocus(dlg)
-  useBackDismiss(true, close)
-  useSwipeDown(dlg, close)
-
-  useEscape(() => dispatch({ type: 'closeSlot' }))
 
   // Treffpunkt-Leiter (fs) hat eine eigene Datenquelle und keine Meeting-Slots.
   const fsInst = sel.kind === 'fs' ? state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId) : undefined
@@ -158,179 +149,165 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   }
 
   return (
-    <>
-      <div className="sheet-backdrop" onClick={close} />
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={dlg}>
-        <span className="sheet-grip" aria-hidden="true" />
-        <div className="sheet-head">
-          <div>
-            <div className="sheet-title">{title}</div>
-            <div className="sheet-sub">{sub}</div>
-          </div>
-          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={close}>
-            ✕
-          </button>
-        </div>
-
-        {current && (
-          <div className="sheet-current">
-            <span>
-              {t.aktuellLbl} <strong>{tu(current)}</strong>
-            </span>
-            <div className="sheet-current-actions">
-              {s89 && (
-                <button
-                  type="button"
-                  className="sheet-s89-link"
-                  onClick={() => dispatch({ type: 'openS89', payload: s89 })}
-                >
-                  {t.s89Open}
-                </button>
-              )}
-              {/* Entfernen setzt den Redner-Platz auf seinen Ausgangszustand
-                  zurück (`guestBase` ist beim eigenen Redner „Gastredner").
-                  Der leere Platz ist damit wieder auswärtig — so kommt er aus
-                  dem Import, und so bleibt er von der Auto-Zuteilung
-                  unberührt: den Redner vereinbart man, man verlost ihn nicht. */}
+    <Sheet label={title} title={title} sub={sub} onClose={close}>
+      {current && (
+        <div className="sheet-current">
+          <span>
+            {t.aktuellLbl} <strong>{tu(current)}</strong>
+          </span>
+          <div className="sheet-current-actions">
+            {s89 && (
               <button
                 type="button"
-                className="sheet-remove"
-                onClick={() =>
-                  dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' })
-                }
+                className="sheet-s89-link"
+                onClick={() => dispatch({ type: 'openS89', payload: s89 })}
               >
-                {t.entfernen}
+                {t.s89Open}
               </button>
-            </div>
-          </div>
-        )}
-
-        {guest && (
-          <div className="sheet-guest">
-            <input
-              type="text"
-              dir="auto"
-              className="lac-add-input"
-              placeholder={t.rednerNamePh}
-              aria-label={t.rednerNamePh}
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-            />
-            <input
-              type="text"
-              dir="auto"
-              className="lac-add-input"
-              placeholder={t.rednerVersPh}
-              aria-label={t.rednerVersPh}
-              value={guestCong}
-              onChange={(e) => setGuestCong(e.target.value)}
-            />
-            <button type="button" className="lac-add-btn" onClick={applyGuest}>
-              {t.uebernehmenBtn}
-            </button>
-            <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
-          </div>
-        )}
-
-        {fsFrei && (
-          <div className="sheet-guest">
-            <input
-              type="text"
-              dir="auto"
-              className="lac-add-input"
-              placeholder={t.nameLbl}
-              aria-label={t.nameLbl}
-              value={externName}
-              onChange={(e) => setExternName(e.target.value)}
-            />
-            <button type="button" className="lac-add-btn" onClick={applyExtern}>
-              {t.uebernehmenBtn}
-            </button>
-            <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
-          </div>
-        )}
-
-        <div className="sheet-list">
-          {/*
-            Gruppen-Slot ohne angelegte Gruppen: die Liste blieb wortlos leer,
-            während die Auto-Zuteilung trotzdem „Gruppe 1…3" einträgt (feste
-            Dreizahl in planning.ts). Der Planer sah eine Zuteilung, die er
-            nicht ändern konnte, und nirgends einen Grund dafür.
-
-            Der Hinweis kommt ohne neuen Wörterbuch-Schlüssel aus: er benennt
-            mit `gruppenCard`, was fehlt, und führt mit `navEinstellungen`
-            dorthin, wo es angelegt wird — beide Texte gibt es in allen 34
-            Sprachen. Ein eigener Satz hieße 34 Übersetzungen, und eine
-            erfundene ist schlimmer als eine zusammengesetzte aus geprüften
-            Bausteinen.
-          */}
-          {sel.groups && candidates.length === 0 && (
-            <div className="sheet-empty">
-              <div className="sheet-empty-label">{t.gruppenCard}</div>
-              <button
-                type="button"
-                className="sheet-empty-action"
-                onClick={() => {
-                  close()
-                  dispatch({ type: 'navigate', screen: 'einstellungen' })
-                }}
-              >
-                {t.navEinstellungen} ›
-              </button>
-            </div>
-          )}
-          {candidates.map((cand) => (
+            )}
+            {/* Entfernen setzt den Redner-Platz auf seinen Ausgangszustand
+                zurück (`guestBase` ist beim eigenen Redner „Gastredner").
+                Der leere Platz ist damit wieder auswärtig — so kommt er aus
+                dem Import, und so bleibt er von der Auto-Zuteilung
+                unberührt: den Redner vereinbart man, man verlost ihn nicht. */}
             <button
-              key={cand.key}
               type="button"
-              className={[
-                'cand-row',
-                cand.absent ? 'is-absent' : '',
-                cand.today.length > 0 ? 'is-busy' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => pick(cand)}
+              className="sheet-remove"
+              onClick={() =>
+                dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' })
+              }
             >
-              <span className="avatar avatar--tint avatar--36">{cand.initials}</span>
-              <span>
-                <span className="cand-name">{cand.name}</span>
-                <span className="cand-sub">{cand.sub}</span>
-                {cand.today.length > 0 && (
-                  <span className="cand-today">
-                    {t.sheetSchonHeute}:{' '}
-                    {cand.today.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
-                  </span>
-                )}
-              </span>
-              {/* Status-Chip und Quadrate in einer Zelle: die Quadrate stehen
-                  darin ganz rechts und fluchten so über alle Zeilen — egal ob
-                  ein Chip davor steht und wie breit er ist. */}
-              <span className="cand-meta">
-                {cand.absent ? (
-                  <span className="cand-chip cand-chip--absent">{t.abwesendChip}</span>
-                ) : cand.free ? (
-                  <span className="cand-chip cand-chip--frei">{t.freiChip}</span>
-                ) : null}
-                <span className="cand-load">
-                  {(cand.load ?? []).map((l, i) => (
-                    <span
-                      key={i}
-                      className="cand-load-cell"
-                      data-load={l}
-                      // Die geplante Woche selbst wird umrandet. Als Attribut,
-                      // nicht per :nth-child — sonst zeigt die Umrandung auf das
-                      // falsche Quadrat, sobald sich LOAD_RADIUS ändert.
-                      data-jetzt={i === LOAD_RADIUS ? '' : undefined}
-                      title={loadTitle(t, l, i - LOAD_RADIUS, state.lang)}
-                    />
-                  ))}
-                </span>
-              </span>
+              {t.entfernen}
             </button>
-          ))}
+          </div>
         </div>
+      )}
+
+      {guest && (
+        <div className="sheet-guest">
+          <input
+            type="text"
+            dir="auto"
+            className="lac-add-input"
+            placeholder={t.rednerNamePh}
+            aria-label={t.rednerNamePh}
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+          />
+          <input
+            type="text"
+            dir="auto"
+            className="lac-add-input"
+            placeholder={t.rednerVersPh}
+            aria-label={t.rednerVersPh}
+            value={guestCong}
+            onChange={(e) => setGuestCong(e.target.value)}
+          />
+          <button type="button" className="lac-add-btn" onClick={applyGuest}>
+            {t.uebernehmenBtn}
+          </button>
+          <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
+        </div>
+      )}
+
+      {fsFrei && (
+        <div className="sheet-guest">
+          <input
+            type="text"
+            dir="auto"
+            className="lac-add-input"
+            placeholder={t.nameLbl}
+            aria-label={t.nameLbl}
+            value={externName}
+            onChange={(e) => setExternName(e.target.value)}
+          />
+          <button type="button" className="lac-add-btn" onClick={applyExtern}>
+            {t.uebernehmenBtn}
+          </button>
+          <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
+        </div>
+      )}
+
+      <div className="sheet-list">
+        {/*
+          Gruppen-Slot ohne angelegte Gruppen: die Liste blieb wortlos leer,
+          während die Auto-Zuteilung trotzdem „Gruppe 1…3" einträgt (feste
+          Dreizahl in planning.ts). Der Planer sah eine Zuteilung, die er
+          nicht ändern konnte, und nirgends einen Grund dafür.
+
+          Der Hinweis kommt ohne neuen Wörterbuch-Schlüssel aus: er benennt
+          mit `gruppenCard`, was fehlt, und führt mit `navEinstellungen`
+          dorthin, wo es angelegt wird — beide Texte gibt es in allen 34
+          Sprachen. Ein eigener Satz hieße 34 Übersetzungen, und eine
+          erfundene ist schlimmer als eine zusammengesetzte aus geprüften
+          Bausteinen.
+        */}
+        {sel.groups && candidates.length === 0 && (
+          <div className="sheet-empty">
+            <div className="sheet-empty-label">{t.gruppenCard}</div>
+            <button
+              type="button"
+              className="sheet-empty-action"
+              onClick={() => {
+                close()
+                dispatch({ type: 'navigate', screen: 'einstellungen' })
+              }}
+            >
+              {t.navEinstellungen} ›
+            </button>
+          </div>
+        )}
+        {candidates.map((cand) => (
+          <button
+            key={cand.key}
+            type="button"
+            className={[
+              'cand-row',
+              cand.absent ? 'is-absent' : '',
+              cand.today.length > 0 ? 'is-busy' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => pick(cand)}
+          >
+            <span className="avatar avatar--tint avatar--36">{cand.initials}</span>
+            <span>
+              <span className="cand-name">{cand.name}</span>
+              <span className="cand-sub">{cand.sub}</span>
+              {cand.today.length > 0 && (
+                <span className="cand-today">
+                  {t.sheetSchonHeute}:{' '}
+                  {cand.today.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
+                </span>
+              )}
+            </span>
+            {/* Status-Chip und Quadrate in einer Zelle: die Quadrate stehen
+                darin ganz rechts und fluchten so über alle Zeilen — egal ob
+                ein Chip davor steht und wie breit er ist. */}
+            <span className="cand-meta">
+              {cand.absent ? (
+                <span className="cand-chip cand-chip--absent">{t.abwesendChip}</span>
+              ) : cand.free ? (
+                <span className="cand-chip cand-chip--frei">{t.freiChip}</span>
+              ) : null}
+              <span className="cand-load">
+                {(cand.load ?? []).map((l, i) => (
+                  <span
+                    key={i}
+                    className="cand-load-cell"
+                    data-load={l}
+                    // Die geplante Woche selbst wird umrandet. Als Attribut,
+                    // nicht per :nth-child — sonst zeigt die Umrandung auf das
+                    // falsche Quadrat, sobald sich LOAD_RADIUS ändert.
+                    data-jetzt={i === LOAD_RADIUS ? '' : undefined}
+                    title={loadTitle(t, l, i - LOAD_RADIUS, state.lang)}
+                  />
+                ))}
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
-    </>
+    </Sheet>
   )
 }

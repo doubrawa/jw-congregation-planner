@@ -110,9 +110,14 @@ function fsKandidaten(
     }
     return out
   }
-  return [...state.persons]
-    .sort((a, b) => personCompare(a, b, state.lang))
+  // **Erst filtern, dann sortieren.** Umgekehrt vergleicht `personCompare` —
+  // und mit ihm `localeCompare` — auch alle, die gleich wegfallen; bei 300
+  // Personen und einer Handvoll Treffpunkt-Leitern ist das die überwiegende
+  // Mehrzahl der Vergleiche. Die Reihenfolge ist dieselbe: Sortieren einer
+  // Teilmenge ist das Sortieren der ganzen Menge ohne die Weggelassenen.
+  return state.persons
     .filter((p) => isQualified(p, 'treffpunkt'))
+    .sort((a, b) => personCompare(a, b, state.lang))
     .map((p) => {
       const name = displayName(p)
       return {
@@ -171,9 +176,12 @@ function personenKandidaten(
   // Die Woche gibt es, sonst wäre das Sheet nicht offen; ohne sie bleibt der
   // Hinweis „heute schon zugeteilt" einfach aus.
   const meeting = state.weeks[sel.wi]?.[sel.tab]
-  return [...state.persons]
-    .sort((a, b) => personCompare(a, b, state.lang)) // alphabetisch; Abwesende wandern stabil ans Ende
+  // Erst filtern, dann sortieren (siehe `fsKandidaten`): Sortiert werden
+  // müssen nur die Qualifizierten. Alphabetisch; Abwesende wandern danach
+  // stabil ans Ende.
+  return state.persons
     .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && geschlechtOk(p))
+    .sort((a, b) => personCompare(a, b, state.lang))
     .map((p) => {
       const name = displayName(p)
       const last = workloadOf(fenster, p, state.services)
