@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
+import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import type { Person } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { aufgabenLabel, useT } from '../i18n/useT'
@@ -15,6 +16,10 @@ import { personTimeline, type TimelineEntry } from './person-timeline'
  * war nicht zu sehen, dass eine Zuteilung mitten in einen Zeitraum fällt. Jetzt
  * markieren zwei Punkte Beginn und Ende, und die Strecke dazwischen ist
  * eingefärbt: Was in diesen Abschnitt fällt, liegt sichtbar darin.
+ *
+ * Gezeichnet wird sie von `Zeitleiste` — derselben Leiste, die auf dem Start
+ * die eigenen Aufgaben der nächsten zwei Wochen zeigt. Hier steht, **was**
+ * daraufsteht: alle Einträge dieser Person, ohne Zeitfenster.
  *
  * Ohne jeden Eintrag bleibt die Karte ganz weg.
  */
@@ -58,44 +63,31 @@ export function PersonTimeline({ person }: { person: Person }) {
     return e.grund ? `${t.abwesendChip} · ${e.grund}` : t.abwesendChip
   }
 
-  /** Ganze Namen, nie zusammengesetzt (siehe styles/klassennamen.test.ts). */
-  const zeilenKlassen = (e: TimelineEntry, i: number): string => {
-    const namen = ['pers-zeit-row']
-    if (e.vergangen) namen.push('is-past')
-    // Am oberen und unteren Rand gibt es keine Nachbarzeile — dort endet die
-    // Leiste ohnehin am Punkt, eine Strecke ins Leere wäre ein Strich zu viel.
-    if (e.abwOben && i > 0) namen.push('pers-zeit-row--abw-oben')
-    if (e.abwUnten && i < entries.length - 1) namen.push('pers-zeit-row--abw-unten')
-    return namen.join(' ')
-  }
+  const zeilen: ZeitZeile[] = entries.map((e) => ({
+    key: e.key,
+    wann: wann(e),
+    art: beschriftung(e),
+    abw: e.kind === 'abw',
+    ...(e.abwOben ? { abwOben: true } : {}),
+    ...(e.abwUnten ? { abwUnten: true } : {}),
+    vergangen: e.vergangen,
+    // Entfernt wird am Beginn, nicht an beiden Rändern: Es ist ein Eintrag,
+    // kein zweiter.
+    ...(e.kind === 'abw' && e.rand !== 'ende' && darfBearbeiten
+      ? {
+          ende: (
+            <button
+              type="button"
+              className="zeit-remove"
+              aria-label={t.a11yRemove}
+              onClick={() => dispatch({ type: 'removeAbsence', id: e.abwId })}
+            >
+              ✕
+            </button>
+          ),
+        }
+      : {}),
+  }))
 
-  return (
-    <div className="panel panel--pb10" data-farbe="gold">
-      <div className="panel-label pers-zeit-label">{t.zeitleiste}</div>
-      <ol className="pers-zeit">
-        {entries.map((e, i) => (
-          <li key={e.key} className={zeilenKlassen(e, i)}>
-            <span
-              className={e.kind === 'abw' ? 'pers-zeit-dot pers-zeit-dot--abw' : 'pers-zeit-dot'}
-              aria-hidden="true"
-            />
-            <div className="pers-zeit-datum">{wann(e)}</div>
-            <div className="pers-zeit-art">{beschriftung(e)}</div>
-            {/* Entfernt wird am Beginn, nicht an beiden Rändern: Es ist ein
-                Eintrag, kein zweiter. */}
-            {e.kind === 'abw' && e.rand !== 'ende' && darfBearbeiten && (
-              <button
-                type="button"
-                className="pers-zeit-remove"
-                aria-label={t.a11yRemove}
-                onClick={() => dispatch({ type: 'removeAbsence', id: e.abwId })}
-              >
-                ✕
-              </button>
-            )}
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
+  return <Zeitleiste label={t.zeitleiste} farbe="gold" zeilen={zeilen} />
 }

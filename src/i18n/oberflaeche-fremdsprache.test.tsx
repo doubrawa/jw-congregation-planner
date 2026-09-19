@@ -609,7 +609,7 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
   const INTL_STELLEN: Array<[string, Partial<AppState>, string]> = [
     ['Reiter der Zusammenkünfte', { screen: 'programm' }, '.meeting-tab'],
     ['Datumszeile auf dem Start', { screen: 'start' }, '.dash-eyebrow'],
-    ['Zeitleiste im Personen-Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.pers-zeit-datum'],
+    ['Zeitleiste im Personen-Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.zeit-datum'],
   ]
 
   it.each(INTL_STELLEN)('%s steht in der Sprache des Lesers', (name, over, marke) => {

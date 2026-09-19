@@ -26,16 +26,18 @@ import type {
 } from '../data/types'
 import { DashboardScreen } from './DashboardScreen'
 import { privSetzen } from '../data/helpers'
-import { deutschesDatum } from '../data/meeting-dates'
+import { isoDay } from '../data/meeting-dates'
 
 /**
  * **Der Start-Bildschirm — die Landeseite nach dem Anmelden.**
  *
- * Er ist für die meisten Nutzer die ganze App: die eigene nächste Aufgabe, die
- * laufende Woche, zwei Kacheln. Vier Zusicherungen tragen dabei Fachlogik:
+ * Er ist für die meisten Nutzer die ganze App: Gruß, die eigene Zeitleiste der
+ * nächsten zwei Wochen, zwei Kacheln. Vier Zusicherungen tragen dabei Fachlogik:
  *
- * - Die **laufende Woche wird gerechnet**, nicht aus `week.current` gelesen.
- *   Das Flag setzt nur der Demo-Bestand und wird nie nachgeführt.
+ * - Die **Leiste zeigt ein Fenster**, nicht alles Geplante — und wenn darin
+ *   nichts liegt, die nächste Aufgabe dahinter, statt „keine anstehende
+ *   Aufgabe" zu behaupten (das Fenster selbst prüft `dash-timeline.test.ts`;
+ *   hier geht es darum, dass der Bildschirm es mit dem heutigen Tag aufruft).
  * - **Nach Rolle sortiert** (T95): Der Planer sieht seine Arbeit zuerst, direkt
  *   unter dem Gruß. Ein Verkündiger sieht die Karte gar nicht — er käme über
  *   sie auf einen Screen, den er nicht betreten darf.
@@ -43,8 +45,8 @@ import { deutschesDatum } from '../data/meeting-dates'
  *   ist, mit den Zahlen der Banner in Planen — und was vorbei ist, zählt nicht
  *   (die Regeln selbst prüft `planungsstand.test.ts`; hier geht es darum, dass
  *   der Bildschirm sie mit dem heutigen Tag und dem echten Zustand aufruft).
- * - **„Aktuelle Woche" kennt die eigenen Treffpunkte** — bis T95 stand eine
- *   Treffpunkt-Leitung nur in der Aufgaben-Karte darüber, im Wochenblock nie.
+ * - **Treffpunkt-Leitungen und Abwesenheiten stehen mit darin** — die Leiste
+ *   liest `state.myTasks`, wo beide Quellen längst zusammenkommen.
  */
 
 /*
@@ -99,18 +101,6 @@ function laufendeWoche(over: Partial<Week> = {}): Week {
     we: { date: 'Sonntag, 13. September · 10:00', end: '11:45', sections: [], helpers: { mik: [] } },
     ...over,
   }
-}
-
-/**
- * Woche, wie sie der jw.org-Import ablegt: im `date`-Feld steht die
- * **Wochenspanne**, kein Termin (die Überschrift der Wochenseite nennt weder
- * Wochentag noch Uhrzeit). Der Tag muss daraus gerechnet werden.
- */
-function importierteWoche(): Week {
-  const w = laufendeWoche()
-  w.mid = { ...w.mid, date: w.range }
-  w.we = { ...w.we, date: w.range }
-  return w
 }
 
 /** Der eine Programm-Platz der Wochenmitte — die Testwoche hat genau einen. */
@@ -180,28 +170,73 @@ describe('Gruß und Datum', () => {
   })
 })
 
-describe('Die eigene nächste Aufgabe', () => {
-  it('ohne Aufgabe steht dort der ruhige Satz statt einer leeren Karte', () => {
+/* ---- Die Zeitleiste: die eigenen Aufgaben der nächsten zwei Wochen -------- */
+
+/** Der Kalendertag in `n` Tagen als UTC-Mitternacht — die Form von `MyTask.at`. */
+const inTagen = (n: number): number => {
+  const h = new Date()
+  return Date.UTC(h.getFullYear(), h.getMonth(), h.getDate() + n)
+}
+
+/** Derselbe Tag als ISO-Datum — die Form, in der eine Abwesenheit steht. */
+const isoIn = (n: number): string => {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return isoDay(d)
+}
+
+const zeilen = (container: HTMLElement) => [...container.querySelectorAll('.zeit-row')]
+const titel = (container: HTMLElement) =>
+  [...container.querySelectorAll('.dash-zeit-titel')].map((x) => x.textContent)
+
+describe('Die Zeitleiste der nächsten zwei Wochen', () => {
+  it('ohne jede Aufgabe steht der ruhige Satz statt einer leeren Leiste', () => {
     const { container } = zeige({ myTasks: [] })
-    expect(container.querySelector('.dash-hero-empty-text')?.textContent).toBe(t.dashKeineAufgabe)
+    expect(container.querySelector('.zeit')).toBeNull()
+    expect(container.querySelector('.dash-leer-text')?.textContent).toBe(t.dashKeineAufgabe)
   })
 
-  it('mit Aufgabe stehen Bezeichnung und Termin da', () => {
-    const { container } = zeige({ myTasks: [task()] })
-    expect(container.querySelector('.dash-hero-title')?.textContent).toContain('Bibellesung')
-    expect(container.querySelector('.dash-hero-date')?.textContent).toContain('8. September')
+  it('mit Bezeichnung und Termin', () => {
+    const { container } = zeige({ myTasks: [task({ at: inTagen(1) })] })
+    expect(container.querySelector('.dash-zeit-titel')?.textContent).toContain('Bibellesung')
+    expect(container.querySelector('.zeit-datum')?.textContent).toContain('8. September')
   })
 
-  it('es ist die ERSTE der Liste — sie steht in Programmreihenfolge', () => {
+  /*
+   * Der Grund für den Umbau: Vorher stand hier **eine** Aufgabe groß, und
+   * darunter die laufende Woche mit „frei". Die zweite Aufgabe stand nirgends,
+   * und was nach Sonntag kam, erst recht nicht.
+   */
+  it('jede Aufgabe des Fensters steht da — nicht nur die nächste', () => {
     const { container } = zeige({
-      myTasks: [task({ id: 'T1', title: 'Erste' }), task({ id: 'T2', title: 'Zweite' })],
+      myTasks: [
+        task({ id: 'T1', title: 'Erste', at: inTagen(1) }),
+        task({ id: 'T2', title: 'Zweite', at: inTagen(8) }),
+      ],
     })
-    expect(container.querySelector('.dash-hero-title')?.textContent).toContain('Erste')
+    expect(titel(container)).toEqual(['Erste', 'Zweite'])
   })
 
-  it('ein Tipp öffnet das Aufgaben-Blatt', () => {
+  it('was weiter weg liegt als zwei Wochen, bleibt weg', () => {
+    const { container } = zeige({
+      myTasks: [
+        task({ id: 'T1', title: 'Bald', at: inTagen(3) }),
+        task({ id: 'T2', title: 'Später', at: inTagen(20) }),
+      ],
+    })
+    expect(titel(container)).toEqual(['Bald'])
+  })
+
+  it('… es sei denn, im Fenster liegt nichts — dann steht die nächste dahinter da', () => {
+    // „Keine anstehende Aufgabe" wäre schlicht falsch: Es steht eine an, nur
+    // später. In einer gut geplanten Versammlung ist das der Normalfall.
+    const { container } = zeige({ myTasks: [task({ id: 'T2', title: 'Später', at: inTagen(20) })] })
+    expect(titel(container)).toEqual(['Später'])
+  })
+
+  it('ein Tipp auf die Zeile öffnet das Aufgaben-Blatt', () => {
     const { container, dispatch } = zeige({ myTasks: [task()] })
-    fireEvent.click(container.querySelector('.dash-hero-open')!)
+    fireEvent.click(container.querySelector('.zeit-open')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'openMyTask', id: 'T1' })
   })
 
@@ -234,6 +269,18 @@ describe('Die eigene nächste Aufgabe', () => {
     expect(container.querySelector('.dash-s89')).toBeNull()
   })
 
+  it('jede Zeile trägt ihre eigenen Knöpfe, nicht nur die erste', () => {
+    // Die alte Karte konnte nur die nächste Aufgabe bestätigen; für die zweite
+    // musste man auf „Meine Aufgaben".
+    const { container } = zeige({
+      myTasks: [
+        task({ id: 'T1', at: inTagen(1), status: 'offen' }),
+        task({ id: 'T2', at: inTagen(8), status: 'offen' }),
+      ],
+    })
+    expect(container.querySelectorAll('.dash-confirm')).toHaveLength(2)
+  })
+
   it('der Countdown rechnet aus dem echten Termin — nicht aus einem gespeicherten Satz', () => {
     /*
       `MyTask.at` ist ein **Kalendertag** als UTC-Mitternacht, kein Zeitpunkt
@@ -242,99 +289,74 @@ describe('Die eigene nächste Aufgabe', () => {
       Mitternacht liegt ihr UTC-Tag noch auf heute, und der Test hing damit an
       der Uhrzeit des Testlaufs.
     */
-    const heute = new Date()
-    const morgen = Date.UTC(heute.getFullYear(), heute.getMonth(), heute.getDate() + 1)
-    const { container } = zeige({ myTasks: [task({ at: morgen })] })
-    expect(container.querySelector('.dash-hero-chip')?.textContent).toBe('morgen')
+    const { container } = zeige({ myTasks: [task({ at: inTagen(1) })] })
+    expect(container.querySelector('.dash-zeit-chip')?.textContent).toBe('morgen')
   })
 
   it('ohne echten Termin (Demo) steht der mitgelieferte Text', () => {
     const { container } = zeige({ myTasks: [task({ at: null, chip: 'in 4 Tagen' })] })
-    expect(container.querySelector('.dash-hero-chip')?.textContent).toBe('in 4 Tagen')
+    expect(container.querySelector('.dash-zeit-chip')?.textContent).toBe('in 4 Tagen')
   })
 })
 
-describe('„Diese Woche"', () => {
-  /** Der Dienstag dieser Woche, so geschrieben wie die Wochendaten. */
-  const dienstagText = (): string => {
-    const heute = new Date()
-    const dienstag = new Date(heute)
-    dienstag.setDate(heute.getDate() - ((heute.getDay() + 6) % 7) + 1)
-    return `${deutschesDatum(dienstag)} · 19:00`
-  }
-
-  it('nennt beide Zusammenkünfte mit Tag und Uhrzeit', () => {
-    const { container } = zeige()
-    const zeilen = [...container.querySelectorAll('.dash-week-row')]
-    expect(zeilen.map((z) => z.querySelector('.dash-week-name')?.textContent)).toEqual([
-      t.tabMid, t.tabWe,
-    ])
-    // Gerechnet aus Kennung, Wochentag und Uhrzeit — nicht aus dem `date`-Feld.
-    expect(zeilen[0]!.querySelector('.dash-week-date')?.textContent).toBe(dienstagText())
+/**
+ * **Die Gegenrichtung gehört dazu** — wie im Personen-Detail.
+ *
+ * Eine Abwesenheit ist keine Aufgabe, erklärt aber eine leere Strecke: Ohne sie
+ * stünde da nur „keine Aufgabe" und nicht, warum. Beginn und Ende sind zwei
+ * Punkte, die Strecke dazwischen ist eingefärbt.
+ */
+describe('Die eigenen Abwesenheiten stehen in derselben Leiste', () => {
+  const abw = (over: Partial<Absence> = {}): Absence => ({
+    id: 'a1', personId: 'p-a', userId: null, from: isoIn(2), to: isoIn(2), reason: 'Urlaub', ...over,
   })
 
-  it('ein angehängter Ort fällt weg — auf dem Start zählt der Termin, nicht der Saal', () => {
-    // Ohne Kennung (Demo, Vorlagen) bleibt stehen, was im Feld steht — dann
-    // aber ohne den angehängten Saal.
-    const w = { ...laufendeWoche(), start: '' }
-    w.mid = { ...w.mid, date: 'Dienstag, 8. September · 19:00 · Königreichssaal Nord' }
-    const { container } = zeige({ weeks: [w] })
-    expect(container.querySelector('.dash-week-date')?.textContent).toBe('Dienstag, 8. September · 19:00')
+  it('ein einzelner Tag mit Grund, am Punkt in der Warnfarbe', () => {
+    const { container } = zeige({ absences: [abw()] })
+    const [zeile] = zeilen(container)
+    expect(zeile?.querySelector('.zeit-dot--abw')).not.toBeNull()
+    expect(zeile?.querySelector('.zeit-art')?.textContent).toBe(`${t.abwesendChip} · Urlaub`)
   })
 
-  /*
-   * Der wichtigste Fall und der einzige, den es in der Produktion überhaupt
-   * gibt: eine **importierte** Woche. Ihr `date`-Feld trägt die Wochenspanne,
-   * keinen Termin. Roh angezeigt las „Diese Woche" deshalb zweimal dieselbe
-   * Zeile — „unter der Woche · 7.–13. September" und darunter „Wochenende ·
-   * 7.–13. September" —, also gerade nicht das, wonach gefragt ist. Gerechnet
-   * wird aus Startdatum und Wochentag, wie in „Meine Aufgaben", im Programm und
-   * in den Erinnerungen (`meetingDateText`).
-   */
-  it('importierte Woche: der Termin wird gerechnet, nicht die Wochenspanne gezeigt', () => {
-    const { container } = zeige({ weeks: [importierteWoche()] })
-    const zeilen = [...container.querySelectorAll('.dash-week-row')]
-    const daten = zeilen.map((z) => z.querySelector('.dash-week-date')?.textContent ?? '')
-    for (const d of daten) expect(d).not.toContain('diese Woche')
-    // Dienstag/Sonntag aus den Zusammenkunftszeiten der Versammlung, samt Uhrzeit.
-    expect(daten[0]).toMatch(/^Dienstag, \d+\. \S+ · 19:00$/)
-    expect(daten[1]).toMatch(/^Sonntag, \d+\. \S+ · 10:00$/)
-    // Und vor allem: zwei verschiedene Tage, nicht zweimal derselbe Text.
-    expect(daten[0]).not.toBe(daten[1])
+  it('ohne Grund bleibt es beim Wort', () => {
+    const { container } = zeige({ absences: [abw({ reason: '' })] })
+    expect(container.querySelector('.zeit-art')?.textContent).toBe(t.abwesendChip)
   })
 
-  it('verlegte Zusammenkunft: der Start zeigt den neuen Tag, nicht den geplanten', () => {
-    // Eine Abweichung (T30) schlägt den Rhythmus — sonst stünde auf dem
-    // Start-Bildschirm ein Abend, an dem niemand kommt.
-    const w = importierteWoche()
-    w.dev = { mid: { wd: 4, time: '18:30' } }
-    const { container } = zeige({ weeks: [w] })
-    expect(container.querySelector('.dash-week-date')?.textContent).toMatch(
-      /^Donnerstag, \d+\. \S+ · 18:30$/,
-    )
+  it('fremde stehen nicht da — es ist die eigene Leiste', () => {
+    const { container } = zeige({ absences: [abw({ personId: 'p-x' })] })
+    expect(zeilen(container)).toHaveLength(0)
   })
 
-  it('markiert die Zusammenkunft, in der ich selbst dran bin', () => {
-    const w = laufendeWoche()
-    platz(w).name = 'Anton Alt'
-    platz(w).pid = 'p-a'
-    const { container } = zeige({ weeks: [w] })
-    const zeilen = [...container.querySelectorAll('.dash-week-row')]
-    expect(zeilen[0]!.querySelector('.dash-week-chip')?.textContent).toBe(t.dashDeineAufgabe)
-    expect(zeilen[1]!.querySelector('.dash-week-frei')?.textContent).toBe(t.freiChip)
+  it('ein Zeitraum gibt zwei Punkte, und was dazwischen liegt, liegt sichtbar darin', () => {
+    const { container } = zeige({
+      absences: [abw({ from: isoIn(1), to: isoIn(5) })],
+      myTasks: [task({ at: inTagen(3) })],
+    })
+    const klassen = zeilen(container).map((z) => z.className)
+    expect(klassen).toHaveLength(3)
+    // Der Beginn steht vor der Aufgabe dieses Zeitraums, das Ende dahinter …
+    expect(klassen[0]).toContain('zeit-row--abw-unten')
+    expect(klassen[2]).toContain('zeit-row--abw-oben')
+    // … und die Aufgabe in der Mitte trägt die Strecke auf beiden Seiten.
+    expect(klassen[1]).toContain('zeit-row--abw-oben')
+    expect(klassen[1]).toContain('zeit-row--abw-unten')
   })
 
-  it('eine fremde Zuteilung markiert nichts — es geht um die eigene', () => {
-    const w = laufendeWoche()
-    platz(w).name = 'Wer Anders'
-    platz(w).pid = 'p-x'
-    const { container } = zeige({ weeks: [w] })
-    expect(container.querySelector('.dash-week-chip')).toBeNull()
-  })
-
-  it('ohne geladene Woche steht der ganze Block nicht da', () => {
-    const { container } = zeige({ weeks: [] })
-    expect(container.querySelector('.dash-week')).toBeNull()
+  it('ein Zeitraum, der vor heute beginnt, behält sein Band im Fenster', () => {
+    // Gefärbt wird über die ganze Liste und erst danach auf zwei Wochen
+    // beschnitten — sonst verlöre der Abschnitt seinen Anfang und mit ihm die
+    // Strecke.
+    const { container } = zeige({
+      absences: [abw({ from: isoIn(-3), to: isoIn(4) })],
+      myTasks: [task({ at: inTagen(2) })],
+    })
+    const klassen = zeilen(container).map((z) => z.className)
+    expect(klassen).toHaveLength(2) // nur Aufgabe + Ende; der Beginn liegt zurück
+    // Am oberen Rand endet die Leiste ohnehin am Punkt — die Strecke läuft von
+    // der Aufgabe nach unten bis zum Ende-Punkt und ist damit durchgehend.
+    expect(klassen[0]).toContain('zeit-row--abw-unten')
+    expect(klassen[1]).toContain('zeit-row--abw-oben')
   })
 })
 
@@ -482,14 +504,14 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm zuerst (T9
     expect(container.querySelector('.dash-planung')).toBeNull()
   })
 
-  it('beim Planer steht sie direkt unter dem Gruß, vor der eigenen Aufgabe', () => {
+  it('beim Planer steht sie direkt unter dem Gruß, vor der eigenen Leiste', () => {
     // Bis T95 stand die Arbeit des Planers als letzte Zeile unter seinem
     // eigenen Verkündiger-Teil.
     const { container } = planer({ weeks: [importiert(W1)], myTasks: [task()] })
     const reihenfolge = [...container.querySelector('.dash')!.children].map((el) => el.className)
     const karte = reihenfolge.findIndex((c) => c.includes('dash-planung'))
     expect(karte, reihenfolge.join(' | ')).toBe(2) // nach Datum und Gruß
-    expect(karte).toBeLessThan(reihenfolge.findIndex((c) => c.includes('dash-hero')))
+    expect(karte).toBeLessThan(reihenfolge.findIndex((c) => c.includes('panel')))
   })
 })
 
@@ -633,56 +655,53 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
   })
 })
 
-/* ---- „Aktuelle Woche" und die Treffpunkte (T95) ---------------------------- */
+/* ---- Treffpunkt-Leitungen (T95) -------------------------------------------- */
 
-describe('„Aktuelle Woche" kennt die eigenen Treffpunkte', () => {
-  const treffpunkt = (over: Partial<FsInstance> = {}): FsInstance => ({
-    id: 'r1', ruleId: 'r1', grp: null, wd: 3, time: '09:30', place: 'Bahnhof',
-    leader: 'Anton Alt', lpid: 'p-a', ...over,
-  })
+/**
+ * **Eine Treffpunkt-Leitung ist eine Aufgabe wie jede andere.**
+ *
+ * Bis T95 stand sie nur in der Karte „Deine nächste Aufgabe", sobald sie die
+ * nächste war — im Wochenüberblick darunter nie: zwei Stellen auf einem
+ * Bildschirm, die verschieden viel von derselben Woche wussten. Beide sind der
+ * Leiste gewichen, und die liest `state.myTasks`, wo der Reducer
+ * Zusammenkünfte und Treffpunkte längst zusammenführt (`reducer.test.ts`:
+ * „Treffpunkt fehlt in myTasks"). Hier geht es darum, dass der Start sie nicht
+ * anders behandelt als eine Zuteilung.
+ */
+describe('Eine Treffpunkt-Leitung steht mit in der Leiste', () => {
+  const leitung = (over: Partial<MyTask> = {}): MyTask =>
+    task({
+      id: `fs|${W1}|r1`,
+      title: '',
+      rolle: t.fsLeiterLbl,
+      date: 'Mittwoch, 9. September · 09:30 · Bahnhof',
+      at: inTagen(2),
+      ...over,
+    })
 
-  const fsZeilen = (container: HTMLElement) =>
-    [...container.querySelectorAll('.dash-week-row')].filter((z) =>
-      z.getAttribute('data-zeile')?.startsWith('fs|'),
+  it('mit Rolle, Tag, Uhrzeit und Ort — der Ort sagt erst, wohin man kommt', () => {
+    const { container } = zeige({ myTasks: [leitung()] })
+    expect(container.querySelector('.dash-zeit-titel')?.textContent).toBe(t.fsLeiterLbl)
+    expect(container.querySelector('.zeit-datum')?.textContent).toBe(
+      'Mittwoch, 9. September · 09:30 · Bahnhof',
     )
-
-  it('ein eigener Treffpunkt steht mit Tag, Uhrzeit und Ort — wie in „Meine Aufgaben"', () => {
-    const { container } = zeige({ fsWeeks: [[treffpunkt()]] })
-    const [zeile] = fsZeilen(container)
-    expect(zeile?.querySelector('.dash-week-name')?.textContent).toBe(t.tabFs)
-    expect(zeile?.querySelector('.dash-week-date')?.textContent).toMatch(/^Mittwoch, \d+\. \S+ · 09:30 · Bahnhof$/)
-    expect(zeile?.querySelector('.dash-week-chip')?.textContent).toBe(t.dashDeineAufgabe)
   })
 
-  it('die Zeilen stehen in der Folge der Woche: Montag vor Dienstag, Mittwoch vor Sonntag', () => {
+  it('und lässt sich von hier aus bestätigen', () => {
+    const { container, dispatch } = zeige({ myTasks: [leitung({ status: 'offen' })] })
+    fireEvent.click(container.querySelector('.dash-confirm')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: `fs|${W1}|r1` })
+  })
+
+  it('in der Folge der Termine, zwischen den Zusammenkünften', () => {
     const { container } = zeige({
-      fsWeeks: [[treffpunkt({ id: 'mi', wd: 3 }), treffpunkt({ id: 'mo', wd: 1, time: '14:00' })]],
+      myTasks: [
+        task({ id: 'T1', title: 'Dienstag', at: inTagen(1) }),
+        leitung({ at: inTagen(2) }),
+        task({ id: 'T2', title: 'Sonntag', at: inTagen(6) }),
+      ],
     })
-    const folge = [...container.querySelectorAll('.dash-week-row')].map((z) => z.getAttribute('data-zeile'))
-    expect(folge).toEqual(['fs|mo', 'mid', 'fs|mi', 'we'])
-  })
-
-  it('fremde Treffpunkte stehen nicht da — die Liste aller steht im Programm', () => {
-    const { container } = zeige({ fsWeeks: [[treffpunkt({ leader: 'Wer Anders', lpid: 'p-x' })]] })
-    expect(fsZeilen(container)).toHaveLength(0)
-  })
-
-  it('ein auswärtiger Leiter gleichen Namens ist nicht man selbst', () => {
-    // Freitext (T63): der Kreisaufseher, der zufällig so heißt wie ein Bruder.
-    const { container } = zeige({
-      fsWeeks: [[treffpunkt({ lpid: undefined, lext: true })]],
-    })
-    expect(fsZeilen(container)).toHaveLength(0)
-  })
-
-  it('ein Namensvetter mit eigener Person-Id auch nicht — die Id entscheidet', () => {
-    const { container } = zeige({ fsWeeks: [[treffpunkt({ lpid: 'p-zwilling' })]] })
-    expect(fsZeilen(container)).toHaveLength(0)
-  })
-
-  it('ohne angemeldete Person gehört niemandem ein Treffpunkt', () => {
-    const { container } = zeige({ personId: null, fsWeeks: [[treffpunkt()]] })
-    expect(fsZeilen(container)).toHaveLength(0)
+    expect(titel(container)).toEqual(['Dienstag', t.fsLeiterLbl, 'Sonntag'])
   })
 })
 

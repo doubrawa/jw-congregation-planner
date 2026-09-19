@@ -46,13 +46,15 @@ Wichtigste zusammen.
 
 ![Startseite eines Verkündigers](screenshots/verkuendiger-start.png)
 
-- **Deine nächste Aufgabe** – die anstehende Zuteilung mit Datum und einem
-  Countdown‑Chip („in 4 Tagen"). Direkt hier kannst du **Bestätigen** oder das
-  **S‑89**‑Formular ansehen.
-- **Aktuelle Woche** – die beiden Zusammenkünfte mit Datum und Uhrzeit. Leitest
-  du in dieser Woche einen **Treffpunkt**, steht er mit Tag, Uhrzeit und Ort
-  dabei – alles in der Reihenfolge der Woche. „Deine Aufgabe" markiert, wo du
-  eingeteilt bist.
+- **Nächste Aufgaben** – deine Zeitleiste der kommenden **zwei Wochen**: jede
+  Zuteilung mit Datum, Uhrzeit und einem Countdown‑Chip („in 4 Tagen"), dazu
+  die **Treffpunkte**, die du leitest, mit Tag, Uhrzeit und Ort. Bei jeder Zeile
+  kannst du gleich **Bestätigen** oder das **S‑89**‑Formular ansehen; ein Tipp
+  auf die Zeile öffnet das Aufgaben‑Blatt. Liegt in den zwei Wochen nichts,
+  steht die nächste Aufgabe dahinter da.
+- Deine eigenen **Abwesenheiten** stehen in derselben Leiste – Beginn und Ende
+  als zwei Punkte, die Strecke dazwischen eingefärbt. So siehst du sofort, ob
+  eine Zuteilung mitten in einen Zeitraum fällt.
 - **Mitteilungen** und **Zu bestätigen** zeigen dir auf einen Blick, ob etwas
   Neues für dich da ist.
 

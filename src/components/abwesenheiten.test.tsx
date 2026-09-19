@@ -73,9 +73,9 @@ const gruende = (el: HTMLElement): string[] =>
 
 /** Die Beschriftungen der Abwesenheits-Punkte in der Zeitleiste. */
 const zeitleiste = (container: HTMLElement): string[] =>
-  [...container.querySelectorAll('.pers-zeit-row')]
-    .filter((r) => r.querySelector('.pers-zeit-dot--abw'))
-    .map((r) => r.querySelector('.pers-zeit-art')?.textContent ?? '')
+  [...container.querySelectorAll('.zeit-row')]
+    .filter((r) => r.querySelector('.zeit-dot--abw'))
+    .map((r) => r.querySelector('.zeit-art')?.textContent ?? '')
 
 const basis = (over: Partial<AppState>): AppState => ({
   ...initialState(),
@@ -111,7 +111,7 @@ describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
     // sich ein Eintrag nur noch anlegen, nie wieder entfernen.
     const dispatch = vi.fn()
     const { container } = zeigen({ absences: [abw('a1', 'p-andere', null, '2026-09-01')] }, dispatch)
-    const knopf = container.querySelector('.pers-zeit-remove')
+    const knopf = container.querySelector('.zeit-remove')
     if (!knopf) throw new Error('kein Entfernen-Knopf in der Zeitleiste')
     fireEvent.click(knopf)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
@@ -145,7 +145,7 @@ describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
     // wäre beim nächsten Laden weg.
     const { container } = zeigen({ planner: false, absences: [abw('a1', 'p-andere', null, '2026-09-01')] })
     expect(within(karte(container)).queryByText('ABWESENHEIT EINTRAGEN')).toBeNull()
-    expect(container.querySelector('.pers-zeit-remove')).toBeNull()
+    expect(container.querySelector('.zeit-remove')).toBeNull()
     expect(zeitleiste(container)).toEqual(['Abwesend · Grund a1']) // lesen darf er
   })
 })
