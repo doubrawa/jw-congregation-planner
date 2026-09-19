@@ -18,22 +18,33 @@ CHROME="/c/Program Files/Google/Chrome/Application/chrome.exe"
 BASE="http://localhost:5173"
 OUT_DIR="$(cd "$(dirname "$0")" && pwd)/screenshots"
 PROFILE="${TEMP:-/tmp}/jw-doc-chrome"
-# Standardbreite = Desktop-Breakpoint (920): Sidebar 232 + Inhalt max. 660 = 892,
-# füllt das Bild fast randlos. Einzelne Shots (Login ohne Sidebar) überschreiben
-# die Größe über ein drittes Feld `BxH`.
+# `--window-size` meint hier das FENSTER, nicht den Sichtbereich: Chrome unter
+# Windows zieht den Rahmen ab, aus 920 werden rund 904 px Sichtbereich. Der
+# ganze Bestand ist deshalb in der schmalen Spalte aufgenommen — Sidebar 232 +
+# App-Spalte 430 = 662 px breit, der 920er-Umbruch auf 660 px greift nicht.
+# Wer mit einem Chromium aufnimmt, das --window-size als Sichtbereich nimmt
+# (Linux, headless=new), setzt W auf 900 und H auf 931; sonst kommen breitere
+# Bilder heraus als die abgelegten. Einzelne Shots (Login ohne Sidebar)
+# überschreiben die Größe über ein drittes Feld `BxH`.
 W=920
 H=940
 
 mkdir -p "$OUT_DIR"
+
+# Aufgenommen wird zuerst daneben; abgelegt wird nur, was wirklich entstanden
+# ist (siehe unten).
+ROH="$(mktemp -d)"
+trap 'rm -rf "$ROH"' EXIT
 
 if ! curl -s -o /dev/null "$BASE/"; then
   echo "FEHLER: Dev-Server läuft nicht auf $BASE — bitte 'npm run dev' starten." >&2
   exit 1
 fi
 
-# name|hash[|BxH]  (hash ohne führendes #; optionale Größe überschreibt W×H)
+# name|hash[|BxH]  (hash ohne führendes #; optionale Größe überschreibt W×H —
+# die Breite bleibt dabei ${W}, damit ein geändertes W wirklich für alle gilt)
 SHOTS=(
-  "login|s=login|920x780"
+  "login|s=login|${W}x780"
   "programm-woche|s=programm&tab=mid"
   "programm-wochenende|s=programm&tab=we"
   "programm-treffpunkte|s=programm&tab=fs"
@@ -44,22 +55,22 @@ SHOTS=(
   # fremde Gruppen stehen hier bewusst nicht (siehe fsVisible in src/data/fs.ts).
   "verkuendiger-treffpunkte|s=programm&tab=fs&pl=0&me=p9"
   # Angemeldet (me=), damit der Gruß einen Namen trägt; höher als der Rest, weil
-  # die Planungs-Karte (T95) über der eigenen Aufgabe steht und im Demo-Bestand
+  # die Planungs-Karte (T95) über der Zeitleiste steht und im Demo-Bestand
   # vier Wochen nennt — nichts davon ist gesendet.
-  "planer-start|s=start&me=p9|920x1300"
+  "planer-start|s=start&me=p9|${W}x1300"
   "planer-aufgaben|s=aufgaben"
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"
   # „Plan senden" (T99) steht am Ende der Woche. Aufgenommen im
   # Treffpunkt-Reiter, weil der kurz genug ist, dass die Karte mit ins Bild
   # passt — sie gilt ohnehin für die ganze Woche, nicht für den Reiter.
-  "planer-plan-senden|s=planen&tab=fs|920x2100"
+  "planer-plan-senden|s=planen&tab=fs|${W}x2100"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
   # Zuteilungen, die Abwesenheiten und die beiden Bereichs-Karten (Aufgaben,
   # Hilfsdienste). Reicht die Höhe nicht, schneidet Chrome unten ab — die Seite
   # war mit der Abwesenheiten-Karte auf 2946px gewachsen.
-  "planer-person-detail|s=personen&p=p1|920x3100"
+  "planer-person-detail|s=personen&p=p1|${W}x3100"
   "planer-einstellungen|s=einstellungen"
   # Gruppenaufseher: kein Planer (pl=0), aber Aufseher von Gruppe 1 (p1). Die
   # Planen-Seite zeigt ihm ausschließlich die Treffpunkte SEINER Gruppe —
@@ -68,22 +79,39 @@ SHOTS=(
   "offline-stand|s=programm&tab=mid&stale=5"
 )
 
+# Zugeschnitten wird nur, was eben aufgenommen wurde. Schneidet man den ganzen
+# Ordner, trifft es auch die abgelegten Bilder, die gar nicht neu entstanden
+# sind (Chrome gescheitert) — und ein zweiter Schnitt frisst jedes Mal ein
+# Stück Rand weg.
+FRISCH=()
+
 for entry in "${SHOTS[@]}"; do
   IFS='|' read -r name hash size <<< "$entry"
   w="$W"; h="$H"
   if [ -n "${size:-}" ]; then w="${size%x*}"; h="${size#*x}"; fi
   hash="$hash&t=weiss&shot=1" # helles Theme + Screenshot-Modus (Spaltenschatten aus)
-  out="$OUT_DIR/$name.png"
+  roh="$ROH/$name.png"
   # Windows-Pfad für Chrome (Vorwärts-Slashes funktionieren)
   "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
     --user-data-dir="$PROFILE" --window-size="$w,$h" --force-device-scale-factor=1 \
     --hide-scrollbars --virtual-time-budget=8000 \
-    --screenshot="$out" "$BASE/#$hash" >/dev/null 2>&1 || true
-  if [ -f "$out" ]; then echo "  ✓ $name.png"; else echo "  ✗ $name.png (nicht erzeugt)" >&2; fi
+    --screenshot="$roh" "$BASE/#$hash" >/dev/null 2>&1 || true
+  if [ -f "$roh" ]; then
+    mv "$roh" "$OUT_DIR/$name.png"
+    echo "  ✓ $name.png"
+    FRISCH+=("$OUT_DIR/$name.png")
+  else
+    echo "  ✗ $name.png (nicht erzeugt — das abgelegte Bild bleibt stehen)" >&2
+  fi
 done
+
+if [ "${#FRISCH[@]}" -eq 0 ]; then
+  echo "FEHLER: kein einziges Bild entstanden — nichts zugeschnitten." >&2
+  exit 1
+fi
 
 # Auf den Inhalt zuschneiden (entfernt die einfarbige Zentrier-Lücke rundherum).
 echo "Zuschneiden ..."
-node "$(dirname "$0")/trim.mjs" "$OUT_DIR"/*.png
+node "$(dirname "$0")/trim.mjs" "${FRISCH[@]}"
 
-echo "Fertig — $(ls -1 "$OUT_DIR"/*.png 2>/dev/null | wc -l) Screenshots in $OUT_DIR"
+echo "Fertig — ${#FRISCH[@]} Screenshots in $OUT_DIR"
