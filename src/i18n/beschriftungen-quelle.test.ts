@@ -56,7 +56,7 @@ const QUELLEN = new Map(
 
 type Grund =
   /**
-   * **Eigenname des Programms.** „Congregation Planner" steht in jeder Sprache
+   * **Eigenname des Programms.** „Versammlung.app" steht in jeder Sprache
    * gleich da — wie „Jasmin" oder „Matcha" bei den Farbschemata. Ihn zu
    * übersetzen hieße, in 34 Sprachen einen zweiten Produktnamen zu erfinden.
    */
@@ -100,10 +100,10 @@ function festeTexte(quelltext: string): string[] {
 
 /** Die einzigen Texte, die fest im JSX stehen dürfen — mit Grund. */
 const ERLAUBTER_TEXT: Record<string, Grund> = {
-  'CONGREGATION PLANNER': 'produktname',
-  'C. PLANNER': 'produktname',
-  Congregation: 'produktname',
-  Planner: 'produktname',
+  'VERSAMMLUNG.APP': 'produktname',
+  VERSAMMLUNG: 'produktname',
+  Versammlung: 'produktname',
+  '.app': 'produktname',
   Aktualisieren: 'diagnose',
   Leeren: 'diagnose',
 }

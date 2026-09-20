@@ -38,10 +38,12 @@ export function RecoveryScreen() {
     <div className="login">
       <header className="login-head">
         <p className="login-eyebrow">JW</p>
+        {/* `wbr` statt festem Umbruch: der Name steht auf einer Zeile und
+            bricht erst, wenn schmales Gerät oder große Schrift ihn drängen. */}
         <h1 className="login-wordmark">
-          Congregation
-          <br />
-          Planner
+          Versammlung
+          <wbr />
+          .app
         </h1>
         <p className="login-sub">{t.recoveryTitle}</p>
       </header>

@@ -1,5 +1,5 @@
 -- =============================================================================
--- JW Congregation Planner — Datenbankschema (v1)
+-- Versammlung.app — Datenbankschema (v1)
 -- =============================================================================
 -- Ausführen im Supabase SQL-Editor (einmalig, idempotent formuliert).
 --

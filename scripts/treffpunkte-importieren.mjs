@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Treffpunkte aus New World Scheduler → JW Congregation Planner.
+ * Treffpunkte aus New World Scheduler → Versammlung.app.
  *
  * **Was dieses Skript tut — und was nicht.** Der **Grundplan** (welche
  * Treffpunkte es regelmäßig gibt: Wochentag, Zeit, Ort, Gruppe) bleibt Sache

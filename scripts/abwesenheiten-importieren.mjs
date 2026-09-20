@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Abwesenheiten aus New World Scheduler → JW Congregation Planner.
+ * Abwesenheiten aus New World Scheduler → Versammlung.app.
  *
  * **Warum es dieses Skript gibt.** Die Abwesenheiten standen bisher nur in NWS.
  * In die App kam nie eine — es gab schlicht keinen Weg dorthin —, und der

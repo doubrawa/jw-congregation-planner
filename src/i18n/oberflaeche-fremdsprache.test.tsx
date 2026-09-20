@@ -308,10 +308,22 @@ function deutscheWerte(ziel: Lang): Array<[string, string]> {
  *
  * `aria-label` und `title` kommen mit: Sie sind für Screenreader das, was der
  * Text für die Augen ist, und sind hier schon einmal deutsch stehen geblieben.
+ *
+ * Die Wortmarke bleibt draußen: „Versammlung.app" ist der Eigenname des
+ * Programms und steht in jeder Sprache gleich da (derselbe Grund
+ * `produktname` wie in `beschriftungen-quelle.test.ts`). Sie enthält aber das
+ * deutsche Wort „Versammlung" und träfe damit `versammlungLbl` — auf jedem
+ * Bildschirm, in jeder Sprache. Ausgenommen ist nur der Name selbst, nicht der
+ * Versammlungsname darunter (`.sidebar-sub`).
  */
+const WORTMARKE = '.sidebar-wordmark, .login-wordmark, .mobile-header-name'
+
 function sichtbarerText(container: HTMLElement): string {
   const stuecke: string[] = []
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) =>
+      n.parentElement?.closest(WORTMARKE) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  })
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const text = n.nodeValue?.trim()
     if (text) stuecke.push(text)

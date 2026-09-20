@@ -197,12 +197,12 @@ export function AppShell() {
                 </button>
                 <div className="mobile-header-brand">
                   <img className="mobile-header-logo" src={LOGO} alt="" width={22} height={22} />
-                  {/* Auf schmalen Geräten die Kurzform: der volle Name passt neben
-                      „Mitteilungen“ + Avatar erst ab ca. 430 px und würde sonst
-                      mitten im Wort abgeschnitten. */}
+                  {/* Auf schmalen Geräten die Kurzform ohne Endung: der volle
+                      Name passt neben „Mitteilungen“ + Avatar erst ab ca. 390 px
+                      und würde sonst mitten im Wort abgeschnitten. */}
                   <span className="mobile-header-name">
-                    <span className="brand-long">CONGREGATION PLANNER</span>
-                    <span className="brand-short">C. PLANNER</span>
+                    <span className="brand-long">VERSAMMLUNG.APP</span>
+                    <span className="brand-short">VERSAMMLUNG</span>
                   </span>
                 </div>
               </div>

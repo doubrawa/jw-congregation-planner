@@ -18,10 +18,12 @@ export function SidebarBrand({ congSub }: { congSub: string }) {
   return (
     <div className="sidebar-brand">
       <img className="sidebar-logo" src={LOGO} alt="" width={40} height={40} />
+      {/* Ein Wort, das nur bei großer Schrift umbrechen muss: `wbr` gibt die
+          Stelle vor der Endung vor — sonst risse der Browser mitten im Wort. */}
       <div className="sidebar-wordmark">
-        Congregation
-        <br />
-        Planner
+        Versammlung
+        <wbr />
+        .app
       </div>
       <div className="sidebar-sub">{congSub}</div>
     </div>

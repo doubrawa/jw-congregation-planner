@@ -21,6 +21,9 @@
 }
 
 .login-wordmark {
+  /* Notbremse: bricht erst, wenn schon das Stück vor der `wbr`-Stelle
+     überliefe (320 px auf der größten Schriftstufe). */
+  overflow-wrap: anywhere;
   font-family: var(--font-serif);
   font-size: calc(34px * var(--fs));
   font-weight: 500;
