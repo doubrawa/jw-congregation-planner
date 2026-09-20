@@ -208,8 +208,18 @@ hosten. `deploy.yml` ist bereits für **GitHub Pages** eingerichtet — nach dem
 ersten Push nur noch **Settings → Pages → Source: „GitHub Actions"** wählen.
 Solange die App mit lokalem State / `localStorage` läuft, reicht das komplett.
 
-- URL wäre `https://doubrawa.github.io/jw-congregation-planner/` — der
-  `base`-Pfad in `vite.config.ts` ist darauf eingestellt.
+- Die App läuft unter der eigenen Domain **`https://versammlung.app/`** (bei
+  IONOS registriert, DNS zeigt auf GitHub Pages). Deshalb steht `base` in
+  `vite.config.ts` auf `/`, und `public/CNAME` trägt die Domain in jeden Build.
+  In **Settings → Pages → Custom domain** muss `versammlung.app` eingetragen
+  und **Enforce HTTPS** gesetzt sein; `.app` ist HSTS-vorgeladen und
+  funktioniert ausschließlich über HTTPS.
+- DNS-Einträge bei IONOS für den nackten Namen: vier `A`-Records auf
+  `185.199.108.153`–`185.199.111.153`, vier `AAAA`-Records auf
+  `2606:50c0:8000::153`–`2606:50c0:8003::153`, dazu `CNAME www` →
+  `doubrawa.github.io`. Der alte Pfad
+  `https://doubrawa.github.io/jw-congregation-planner/` leitet auf die Domain
+  weiter.
 - **SPA-Hinweis:** Sobald clientseitiges Routing dazukommt, braucht GitHub Pages
   einen 404-Fallback (`public/404.html`), sonst geben tiefe URLs beim Reload 404.
 - Alternative statische Hosts (auch kostenlos, mit angenehmeren SPA-Defaults):
@@ -257,9 +267,9 @@ in-memory). Für echtes Login mit geschützten Daten:
    (Settings → Secrets and variables → Actions); `deploy.yml` reicht sie an
    den Build durch.
 7. **Authentication → URL Configuration** (wichtig für Mail-Links): **Site URL**
-   auf die App-Adresse setzen (z. B. `https://<user>.github.io/<repo>/`) statt
+   auf die App-Adresse setzen (`https://versammlung.app/`) statt
    des Standardwerts `http://localhost:3000`, und unter **Redirect URLs** die
-   App-Adressen erlauben (`https://<user>.github.io/<repo>/**` sowie für lokale
+   App-Adressen erlauben (`https://versammlung.app/**` sowie für lokale
    Entwicklung `http://localhost:5173/**`). Sonst führen Bestätigungs- und
    Passwort-Reset-Links ins Leere (localhost:3000).
 
