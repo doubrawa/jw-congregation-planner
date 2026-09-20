@@ -25,7 +25,7 @@ const CACHE = 'shell-__BUILD_ID__'
 const DEV = new URL(self.location.href).searchParams.has('dev')
 
 // Relative URLs lösen gegen den SW-Pfad auf, also den App-Basispfad
-// (/jw-congregation-planner/ auf GitHub Pages, / im Dev).
+// (unter versammlung.app und im Dev gleichermaßen /).
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.svg', 'icon-192.png']
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com']
 

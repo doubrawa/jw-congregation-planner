@@ -73,12 +73,14 @@ function serviceWorkerKennung(): Plugin {
 
 // https://vite.dev/config/
 //
-// GitHub Pages (Projekt-Site) liefert die App unter /<repo>/ aus — deshalb
-// braucht der Production-Build diesen base-Pfad. Im Dev-Server bleibt es "/".
-// Bei eigener Domain oder User-Page (doubrawa.github.io) auf "/" ändern
-// bzw. beim Build via `vite build --base=/` überschreiben.
+// Die App läuft unter der eigenen Domain https://versammlung.app/ und liegt
+// dort in der Wurzel — der base-Pfad ist deshalb überall "/". Vorher stand hier
+// '/jw-congregation-planner/', weil GitHub Pages eine Projekt-Site unter
+// /<repo>/ ausliefert; mit eigener Domain entfällt dieser Pfad. Wer die App
+// wieder unter dem github.io-Pfad ausliefern will, baut mit
+// `vite build --base=/jw-congregation-planner/`.
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/jw-congregation-planner/' : '/',
+  base: '/',
   plugins: [react(), serviceWorkerKennung()],
   // Nur beim Build ermitteln: sonst liefe bei jedem Dev-Start und jedem
   // Testlauf ein git-Prozess mit, obwohl die Kennung dort nichts aussagt.

@@ -83,7 +83,7 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@example.org'
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://doubrawa.github.io/jw-congregation-planner/'
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://versammlung.app/'
 const SEND_PUSH = Deno.env.get('SEND_PUSH') === 'true'
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
