@@ -4713,6 +4713,172 @@ Handybreite in Griechisch und rechts-nach-links in Arabisch (Graphit).
 
 ---
 
+## Aufgenommen am 20. September 2026 — Vorhaben des Betreibers (T105–T109)
+
+Fünf Punkte aus einer Nachricht des Betreibers vom 20. September 2026, in seiner
+Reihenfolge. **Festgehalten, nicht umgesetzt** — der Aufwand ist geschätzt und
+nicht gemessen. Wo die Stelle im Code schon feststeht, steht sie dabei;
+nachgesehen ist damit **wo** etwas liegt, nicht wie es zu lösen wäre.
+
+### T105 · Pläne drucken 🔧 ☐ offen
+**Wortlaut:** *„setze das drucken von plänen auf die TODO liste."*
+
+**Was es schon gibt:** zwei Ausdrucke, beide eng zugeschnitten. Das **Programm**
+druckt die gerade sichtbare Woche und den gerade sichtbaren Reiter — ohne
+App-Chrome, ohne Hilfsdienste (Knopf `.prog-print-btn` in
+`src/programm/ProgrammScreen.tsx:162`, Regeln in `src/programm/print.css`, Kopf
+des Blattes `.prog-print-head` mit Versammlungsname und Reiter). Und der
+**S89-Bogen** aus dem Planen-Tab (`src/planen/S89Bogen.tsx`,
+`print-s89.css`).
+
+**Was fehlt:** Der Planer selbst hat nichts zum Ausdrucken. Zuteilungen einer
+Woche oder eines Monats, die Hilfsdienste, der Treffpunkt-Plan (`FsPlan`,
+`FsProgram`), Gruppenlisten — alles nur am Bildschirm. Für den Aushang am
+schwarzen Brett und für jeden, der kein Konto in der App hat, gibt es damit
+keinen Weg aufs Papier.
+
+**Vor dem Anfangen zu klären:** welche Pläne (Zuteilungen, Hilfsdienste,
+Treffpunkte, Gruppenlisten), welcher Zeitraum (nur die sichtbare Woche wie beim
+Programm, oder ein Monat am Stück) und für wen (Aushang für alle oder Zettel
+für den Einzelnen). Zwei Vorgaben stehen fest, weil die bestehenden Ausdrucke
+sie schon tragen: **keine Tonflächen** — Browser drucken Hintergründe
+standardmäßig nicht, die Struktur muss über Überschriften und Haarlinien tragen
+(`print.css`) —, und ein drittes Regelwerk braucht dieselbe Weiche wie die
+beiden vorhandenen (`data-print` am Wurzelelement, gesetzt beim Klick, abgeräumt
+bei `afterprint`), sonst drucken sie übereinander.
+
+**Prüfen:** Druckvorschau des Browsers je Plan, mit und ohne
+„Hintergrundgrafiken drucken", auf A4 und Letter; und der jeweils andere
+Ausdruck danach noch einmal, damit die Weiche wirklich trennt.
+
+### T106 · Bei der Inbetriebnahme alle auf einmal benachrichtigen — vielleicht per WhatsApp 🔧 ☐ offen
+**Wortlaut:** *„auch wie man beim initialen inbetriebnahme der app alle user
+benachrichtigt - vielleicht am einfachsten per whatsapp."*
+
+**Was es schon gibt:** „Alle einladen" in der Personenliste
+(`src/personen/PersonenScreen.tsx`) legt für jeden ohne Konto und ohne offenen
+Code eine Einladung an, schickt Mails an alle mit Adresse (Edge Function
+`send-invite`, aber nur, wenn dort eine Absender-Domain konfiguriert ist) und
+legt eine Liste „Name: Code" in die Zwischenablage. Einzeln geht es an der
+Konto-Karte (`src/personen/KontoCard.tsx`): Mail-Programm, Teilen
+(`navigator.share`) oder Kopieren.
+
+**Der Haken beim Ausrollen:** Jeder Code gehört zu **genau einer Person**
+(`makeInvite`, serverseitig `redeem_invite`). Eine Nachricht an die Gruppe kann
+ihn also nicht tragen. Die Liste in der Zwischenablage ist eine Hilfe für den
+Planer, keine Nachricht für den Verkündiger — jede Zeile müsste von Hand
+herausgesucht und einzeln verschickt werden. Bei einer ganzen Versammlung auf
+einmal ist genau das die Arbeit, die niemand machen will.
+
+**Warum WhatsApp naheliegt:** Es braucht keinen Server und keine
+Absender-Domain. `https://wa.me/<nummer>?text=<text>` öffnet den Chat mit
+fertigem Text, und die Nummer steht schon an der Person (`Person.tel`).
+
+**Zu klären:** Die Nummern sind Freitext und müssten für `wa.me` in die
+internationale Form gebracht werden (ohne `+`, ohne Leerzeichen) — was tun,
+wenn das nicht geht oder keine Nummer da ist. Ob der Planer eine Liste
+abarbeitet (je Person ein Tipp, der Stand sichtbar: verschickt / offen), weil
+die App immer nur einen Chat nach dem anderen öffnen kann. Ob daneben ein
+allgemeiner Text für die Gruppe gehört, der nur ankündigt, dass es die App gibt
+und dass jeder seinen persönlichen Code einzeln bekommt. Und ob dieselbe
+Mechanik auch für SMS taugen soll (`sms:`), damit niemand ausgeschlossen ist,
+der kein WhatsApp hat.
+
+**Prüfen:** Auf einem echten Handy, nicht im Simulator — ob `wa.me` den Chat
+öffnet und der Text vollständig ankommt. Dazu der Offline-Stand: Wer Codes
+erzeugt, muss sie speichern können, sonst geht eine Einladung hinaus, die
+`redeem_invite` nicht kennt (die Wache dafür steht in `PersonenScreen` und
+`KontoCard` und darf nicht umgangen werden).
+
+### T107 · Auf dem Handy gehört der Name der Versammlung in die Kopfzeile ⚡ ☐ offen
+**Wortlaut:** *„auch auf todo: Überschrift auf handy soll nicht ,versammlung'
+sein sondern name der versammlung."*
+
+**Gemeint ist die mobile Kopfzeile** (`src/app/AppShell.tsx`, `.mobile-header`):
+Logo, daneben die Wortmarke — ab 400 px „VERSAMMLUNG.APP", darunter die Kurzform
+**„VERSAMMLUNG"** ohne Endung (`.brand-long`/`.brand-short`,
+`src/app/shell.css`). Genau diese Kurzform ist gemeint: Sie sieht auf dem Handy
+aus wie eine Überschrift, sagt aber nichts, weil „Versammlung" in dieser App
+ohnehin überall steht.
+
+**Was stattdessen dort stehen soll:** der Name der Versammlung. Den gibt es im
+Zustand (`state.congregation.name`); die Seitenleiste zeigt ihn schon unter der
+Wortmarke (`congSub` = „Versammlung {name}", `SidebarBrand` in
+`src/app/Sidebar.tsx`).
+
+**Zu bedenken:** Der Platz ist der Grund für die Kurzform — neben Menü, Logo,
+Mitteilungen und Avatar passt der volle Produktname erst ab 400 px.
+Versammlungsnamen sind beliebig lang; die Kopfzeile kürzt bereits mit „…"
+(`.mobile-header-name`), das trägt auch hier. Zu entscheiden ist, ob das Wort
+„Versammlung" davor bleibt oder nur der Name steht (kürzer und sagt dasselbe),
+und ob der Produktname auf dem Handy ganz aus dem Kopf verschwinden darf — im
+Drawer steht er weiter, und einen anderen Ort hat er auf dem Handy nicht.
+
+**Prüfen:** Demo-Modus bei 360 px mit einem langen Versammlungsnamen, auf der
+größten Schriftstufe und rechts-nach-links. Zwei Tests kennen die Wortmarke und
+müssen mitgezogen werden: `src/i18n/beschriftungen-quelle.test.ts` (fester
+JSX-Text, Grund `produktname`) und `src/i18n/oberflaeche-fremdsprache.test.tsx`
+(`.mobile-header-name` ist dort vom sichtbaren Text ausgenommen — steht künftig
+ein übersetzbares Wort darin, gilt die Ausnahme so nicht mehr).
+
+### T108 · Treffpunkte: man sieht nicht, für welche Gruppe man gerade etwas einstellt 🔧 ☐ offen
+**Wortlaut:** *„auch muss die einstellung der treffpunkte der versammlung und
+der gruppen nochmal leicht angepasst werden, da man schwer sieht, für welche
+gruppe man gerade den treffpunkt einstellt, weil es keine visuelle trennung gibt
+zwischen den gruppen. vielleicht einzelne bereiche draus machen, die alle die
+gleiche hintergrundfarbe haben."*
+
+**Die Stelle:** Einstellungen → „Grundplan der Treffpunkte"
+(`src/einstellungen/FsRulesPanel.tsx`). **Ein** Panel, darin nacheinander die
+Versammlung und jede Gruppe. Getrennt wird nur durch eine kleine graue
+Kapitälchen-Zeile (`.fsr-section-title`) und 14 px Abstand (`.fsr-section`,
+`src/einstellungen/einstellungen.css`); die Zeilen darunter sehen überall gleich
+aus und sind untereinander mit derselben Haarlinie abgesetzt wie die Abschnitte
+(`.fsr-row`). Beim Scrollen ist die Überschrift schnell aus dem Bild, und der
+„+"-Knopf am Ende eines Abschnitts steht unmittelbar über der Überschrift des
+nächsten — man tippt leicht in die falsche Gruppe.
+
+**Vorschlag des Betreibers:** je Abschnitt ein eigener Bereich, alle mit
+derselben Hintergrundfarbe. Das Bauteil dafür gibt es schon: `panel` mit
+`data-farbe` wie bei den übrigen Einstellungs-Panels.
+
+**Zu entscheiden:** ein eigenes Panel je Gruppe (dann trägt die Gruppe die
+Panel-Überschrift, und „Grundplan der Treffpunkte" samt Erklärtext steht
+darüber) oder getönte Blöcke innerhalb des einen Panels. Und: Der
+Gruppenaufseher sieht ohnehin nur seinen einen Abschnitt (`onlyGroup`) — für ihn
+darf daraus kein leerer Rahmen und keine doppelte Überschrift werden.
+
+**Prüfen:** `src/einstellungen/FsRulesPanel.test.tsx` und
+`panels.test.tsx`; im Browser auf Handybreite mit drei Gruppen, im dunklen
+Farbschema und rechts-nach-links, dazu die Sicht des Gruppenaufsehers.
+
+### T109 · Eine eigene Seite fürs Einspringen? 🔧 ☐ offen — erst entscheiden
+**Wortlaut:** *„und todo: sollte man eine extra ,einspringen' page haben"*
+
+**Wo es heute steht:** an zwei Stellen. Als goldener Bereich unten auf „Meine
+Aufgaben" (`src/aufgaben/AufgabenScreen.tsx`), sichtbar nur, wenn es offene
+Gesuche für mich gibt — und als Vorlage beim Öffnen der App zusammen mit den
+Bestätigungen (`ConfirmDialog`, T69). Ein Push-Klick landet auf „Aufgaben"
+(`AppShell`), nicht auf einer eigenen Seite.
+
+**Was heute überhaupt ein Gesuch ist:** nur ein Hilfsdienst, den jemand
+abgesagt hat, gefiltert auf das, wofür ich qualifiziert und an dem Tag nicht
+abwesend bin (`deriveSubstituteReqs`, `src/data/planning.ts`). Gruppengebundene
+Dienste und Schulungsaufgaben erzeugen gar keins.
+
+**Die Frage ist offen und keine reine Umbauaufgabe.** Gegen eine eigene Seite:
+Sie hätte einen festen Platz in der Navigation, auch wenn nichts offen ist —
+eine Seite, die meistens leer ist, lernt man zu übersehen; und das Einspringen
+gehört inhaltlich in dieselbe Frage wie die Aufgaben („was habe ich zu tun").
+Dafür: wenn mehr daraus werden soll als heute — Gesuche der ganzen Versammlung
+statt nur der zu mir passenden, ein Verlauf, wer schon eingesprungen ist, ein
+eigener Einstieg aus dem Push heraus.
+
+**Zu entscheiden, bevor etwas gebaut wird:** Der Betreiber hat die Frage
+gestellt, nicht die Antwort gegeben.
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -4738,21 +4904,23 @@ Handybreite in Griechisch und rechts-nach-links in Arabisch (Graphit).
 
 ## Fortschritt
 
-Stand 17. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 20. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
-31. August ☑ · 13. September ☑ · 17. September ☑
+31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☐☐☐☐☐
 
-**Alle 104 Punkte sind abgearbeitet** — erledigt oder mit Begründung als „kein
-Mangel" zurückgewiesen. Offen ist auf dieser Liste nichts mehr; was ohne
-Aufgabennummer aussteht, steht unter „Was bewusst offen bleibt".
+**104 der 109 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind die fünf Vorhaben vom 20. September
+(T105–T109)**, aufgenommen und noch nicht angefangen; T109 ist zuerst eine
+Entscheidung, keine Aufgabe. Was ohne Aufgabennummer aussteht, steht unter
+„Was bewusst offen bleibt".
 
-Am 17. September fielen die letzten beiden auf einen Streich, weil sie
-zusammengehören. **T104** hat die Altlasten geräumt: zehn Lade-Migrationen, die
+Am 17. September fielen die letzten beiden der Analyse-Liste auf einen Streich,
+weil sie zusammengehören. **T104** hat die Altlasten geräumt: zehn Lade-Migrationen, die
 bei jeder Anmeldung liefen, samt der Mechanik, die ihr Ergebnis in die Datenbank
 zurückschrieb — mitten in die Arbeit des Planers hinein. An ihrer Stelle steht
 eine Zusicherung im Typ: Jeder Programmpunkt trägt seine Kennung vom Entstehen
