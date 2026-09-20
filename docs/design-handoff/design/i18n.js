@@ -1,4 +1,4 @@
-// i18n für JW Congregation Planner
+// i18n für Versammlung.app
 // Offizielle Begriffe aus S-38 (jw.org, Stand 9/25):
 //  DE: Einleitende Worte · Schätze aus Gottes Wort (Vortrag, Nach geistigen Schätzen graben, Bibellesung)
 //      · Uns im Dienst verbessern (Gespräche beginnen, Interesse fördern, Menschen zu Jüngern machen,

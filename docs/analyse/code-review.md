@@ -1,4 +1,4 @@
-# Code-Review — Congregation Planner
+# Code-Review — Versammlung.app
 
 Stand: 7. August 2026, Commit `e2cdb41`. Reine Analyse-Session, **keine
 Code-Änderungen**. Schwester-Dokumente: [befunde.md](befunde.md) (konkrete Fehler),

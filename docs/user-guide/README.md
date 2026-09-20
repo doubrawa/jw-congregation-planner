@@ -1,6 +1,6 @@
 # Benutzerdokumentation
 
-Anwender‑Handbücher für den Congregation Planner, getrennt nach Rolle:
+Anwender‑Handbücher für den Versammlung.app, getrennt nach Rolle:
 
 - **[verkuendiger.md](verkuendiger.md)** – für alle Verkündiger (Programm ansehen,
   Aufgaben bestätigen, Abwesenheiten, Profil).

@@ -1,4 +1,4 @@
-# Funktionsübersicht — Congregation Planner
+# Funktionsübersicht — Versammlung.app
 
 Bestandsaufnahme des Ist-Zustands (Stand: 7. August 2026, Commit `e2cdb41`).
 Erstellt durch eine reine Analyse-Session — **keine Code-Änderungen**.

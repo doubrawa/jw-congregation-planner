@@ -1,4 +1,4 @@
-# JW Congregation Planner — Projektnotizen
+# Versammlung.app — Projektnotizen
 
 ## Zweck
 Webseite (Handy + Desktop) zur Organisation der Zusammenkünfte einer Versammlung der Zeugen Jehovas: Programme anzeigen, Rollen/Aufgaben zuteilen, Personen verwalten, persönliche Abwesenheiten. Sprache: Deutsch.

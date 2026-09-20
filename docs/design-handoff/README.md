@@ -1,4 +1,4 @@
-# Handoff: JW Congregation Planner — Zusammenkunfts-Planer
+# Handoff: Versammlung.app — Zusammenkunfts-Planer
 
 ## Überblick
 Web-App (Deutsch, Mobile-first + Desktop) zur Organisation der Zusammenkünfte einer Versammlung der Zeugen Jehovas:
@@ -24,7 +24,7 @@ Bereiche (Navigation): **Programm** · **Aufgaben** (persönlich) · **Planen** 
 ## Screens
 
 ### 1. Login
-- Zentriert: Eyebrow „JW“ (10 px, 600, letter-spacing 0.22em, Akzentfarbe), Wortmarke „Congregation Planner“ (Newsreader 34 px, 500, zweizeilig), kursiver Untertitel „Versammlung Musterstadt“.
+- Zentriert: Eyebrow „JW“ (10 px, 600, letter-spacing 0.22em, Akzentfarbe), Wortmarke „Versammlung.app“ (Newsreader 34 px, 500, einzeilig; bricht per `wbr` vor der Endung, wenn der Platz nicht reicht), kursiver Untertitel „Versammlung Musterstadt“.
 - Felder E-Mail/Passwort: Label 10 px caps (letter-spacing 0.14em, muted), Input 14 px, padding 12/14, radius 10, border 1 px `--bord`, bg `--card`.
 - Primärbutton „ANMELDEN“: Vollbreite Pille (radius 999), bg `--acc`, Text `--onAcc` 12.5 px 600 ls 0.08em, hover bg `--accD`.
 - Im Prototyp ohne echte Auth — Produktion: echtes Login (E-Mail+Passwort, Passwort-Reset), Daten versammlungsintern geschützt.
