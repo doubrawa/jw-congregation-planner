@@ -31,127 +31,127 @@ export interface InviteTexte {
 
 const TEXTE: Record<string, InviteTexte> = {
   de: {
-    subject: "Einladung: Congregation Planner",
+    subject: "Einladung: Versammlung.app",
     body: "Hallo {name},\n\nbitte registriere dich in unserer Versammlungs-App:\n{url}\n\nLöse nach der Registrierung diesen Einladungscode ein:\n{code}",
   },
   en: {
-    subject: "Invitation: Congregation Planner",
+    subject: "Invitation: Versammlung.app",
     body: "Hello {name},\n\nplease register in our congregation app:\n{url}\n\nAfter registering, redeem this invitation code:\n{code}",
   },
   es: {
-    subject: "Invitación: Congregation Planner",
+    subject: "Invitación: Versammlung.app",
     body: "Hola {name}:\n\nregístrate en la aplicación de nuestra congregación:\n{url}\n\nDespués de registrarte, canjea este código de invitación:\n{code}",
   },
   fr: {
-    subject: "Invitation : Congregation Planner",
+    subject: "Invitation : Versammlung.app",
     body: "Bonjour {name},\n\ninscris-toi dans l’application de notre assemblée :\n{url}\n\nAprès l’inscription, utilise ce code d’invitation :\n{code}",
   },
   it: {
-    subject: "Invito: Congregation Planner",
+    subject: "Invito: Versammlung.app",
     body: "Ciao {name},\n\nregistrati nell’app della nostra congregazione:\n{url}\n\nDopo la registrazione, usa questo codice d’invito:\n{code}",
   },
   pt: {
-    subject: "Convite: Congregation Planner",
+    subject: "Convite: Versammlung.app",
     body: "Olá {name},\n\nregistre-se no aplicativo da nossa congregação:\n{url}\n\nApós o registro, use este código de convite:\n{code}",
   },
   nl: {
-    subject: "Uitnodiging: Congregation Planner",
+    subject: "Uitnodiging: Versammlung.app",
     body: "Hallo {name},\n\nregistreer je in de app van onze gemeente:\n{url}\n\nGebruik na de registratie deze uitnodigingscode:\n{code}",
   },
   pl: {
-    subject: "Zaproszenie: Congregation Planner",
+    subject: "Zaproszenie: Versammlung.app",
     body: "Cześć {name},\n\nzarejestruj się w aplikacji naszego zboru:\n{url}\n\nPo rejestracji użyj tego kodu zaproszenia:\n{code}",
   },
   ru: {
-    subject: "Приглашение: Congregation Planner",
+    subject: "Приглашение: Versammlung.app",
     body: "Здравствуйте, {name}!\n\nЗарегистрируйтесь в приложении нашего собрания:\n{url}\n\nПосле регистрации используйте этот код приглашения:\n{code}",
   },
   uk: {
-    subject: "Запрошення: Congregation Planner",
+    subject: "Запрошення: Versammlung.app",
     body: "Вітаємо, {name}!\n\nЗареєструйтеся в застосунку нашого збору:\n{url}\n\nПісля реєстрації використайте цей код запрошення:\n{code}",
   },
   ro: {
-    subject: "Invitație: Congregation Planner",
+    subject: "Invitație: Versammlung.app",
     body: "Bună, {name},\n\nînregistrează-te în aplicația congregației noastre:\n{url}\n\nDupă înregistrare, folosește acest cod de invitație:\n{code}",
   },
   el: {
-    subject: "Πρόσκληση: Congregation Planner",
+    subject: "Πρόσκληση: Versammlung.app",
     body: "Γεια σου {name},\n\nκάνε εγγραφή στην εφαρμογή της εκκλησίας μας:\n{url}\n\nΜετά την εγγραφή, χρησιμοποίησε αυτόν τον κωδικό πρόσκλησης:\n{code}",
   },
   cs: {
-    subject: "Pozvánka: Congregation Planner",
+    subject: "Pozvánka: Versammlung.app",
     body: "Ahoj {name},\n\nzaregistruj se v aplikaci našeho sboru:\n{url}\n\nPo registraci použij tento kód pozvánky:\n{code}",
   },
   sk: {
-    subject: "Pozvánka: Congregation Planner",
+    subject: "Pozvánka: Versammlung.app",
     body: "Ahoj {name},\n\nzaregistruj sa v aplikácii nášho zboru:\n{url}\n\nPo registrácii použi tento kód pozvánky:\n{code}",
   },
   hu: {
-    subject: "Meghívó: Congregation Planner",
+    subject: "Meghívó: Versammlung.app",
     body: "Szia {name}!\n\nRegisztrálj a gyülekezetünk alkalmazásában:\n{url}\n\nA regisztráció után használd ezt a meghívókódot:\n{code}",
   },
   hr: {
-    subject: "Poziv: Congregation Planner",
+    subject: "Poziv: Versammlung.app",
     body: "Bok {name},\n\nregistriraj se u aplikaciji naše skupštine:\n{url}\n\nNakon registracije upotrijebi ovaj pozivni kôd:\n{code}",
   },
   sr: {
-    subject: "Poziv: Congregation Planner",
+    subject: "Poziv: Versammlung.app",
     body: "Zdravo {name},\n\nregistruj se u aplikaciji naše skupštine:\n{url}\n\nNakon registracije upotrebi ovaj pozivni kôd:\n{code}",
   },
   bg: {
-    subject: "Покана: Congregation Planner",
+    subject: "Покана: Versammlung.app",
     body: "Здравей, {name},\n\nрегистрирай се в приложението на нашия сбор:\n{url}\n\nСлед регистрацията използвай този код за покана:\n{code}",
   },
   sv: {
-    subject: "Inbjudan: Congregation Planner",
+    subject: "Inbjudan: Versammlung.app",
     body: "Hej {name},\n\nregistrera dig i vår församlings app:\n{url}\n\nEfter registreringen, använd denna inbjudningskod:\n{code}",
   },
   da: {
-    subject: "Invitation: Congregation Planner",
+    subject: "Invitation: Versammlung.app",
     body: "Hej {name}\n\nregistrér dig i vores menigheds app:\n{url}\n\nBrug denne invitationskode efter registreringen:\n{code}",
   },
   fi: {
-    subject: "Kutsu: Congregation Planner",
+    subject: "Kutsu: Versammlung.app",
     body: "Hei {name},\n\nrekisteröidy seurakuntamme sovellukseen:\n{url}\n\nKäytä rekisteröitymisen jälkeen tätä kutsukoodia:\n{code}",
   },
   no: {
-    subject: "Invitasjon: Congregation Planner",
+    subject: "Invitasjon: Versammlung.app",
     body: "Hei {name},\n\nregistrer deg i menighetens app:\n{url}\n\nBruk denne invitasjonskoden etter registreringen:\n{code}",
   },
   tr: {
-    subject: "Davet: Congregation Planner",
+    subject: "Davet: Versammlung.app",
     body: "Merhaba {name},\n\ncemaatimizin uygulamasına kaydol:\n{url}\n\nKayıttan sonra bu davet kodunu kullan:\n{code}",
   },
   zh: {
-    subject: "邀请：Congregation Planner",
+    subject: "邀请：Versammlung.app",
     body: "你好 {name}：\n\n请在我们会众的应用中注册：\n{url}\n\n注册后使用此邀请码：\n{code}",
   },
   ja: {
-    subject: "招待：Congregation Planner",
+    subject: "招待：Versammlung.app",
     body: "{name} さん、\n\n私たちの会衆アプリに登録してください：\n{url}\n\n登録後、この招待コードを使用してください：\n{code}",
   },
   ko: {
-    subject: "초대: Congregation Planner",
+    subject: "초대: Versammlung.app",
     body: "{name} 님,\n\n우리 회중 앱에 등록해 주세요:\n{url}\n\n등록 후 이 초대 코드를 사용하세요:\n{code}",
   },
   id: {
-    subject: "Undangan: Congregation Planner",
+    subject: "Undangan: Versammlung.app",
     body: "Halo {name},\n\nsilakan daftar di aplikasi sidang kita:\n{url}\n\nSetelah mendaftar, gunakan kode undangan ini:\n{code}",
   },
   tl: {
-    subject: "Imbitasyon: Congregation Planner",
+    subject: "Imbitasyon: Versammlung.app",
     body: "Kumusta {name},\n\nmagrehistro sa app ng ating kongregasyon:\n{url}\n\nPagkatapos magrehistro, gamitin ang invitation code na ito:\n{code}",
   },
   vi: {
-    subject: "Lời mời: Congregation Planner",
+    subject: "Lời mời: Versammlung.app",
     body: "Chào {name},\n\nvui lòng đăng ký trong ứng dụng của hội thánh chúng ta:\n{url}\n\nSau khi đăng ký, hãy dùng mã mời này:\n{code}",
   },
   sw: {
-    subject: "Mwaliko: Congregation Planner",
+    subject: "Mwaliko: Versammlung.app",
     body: "Habari {name},\n\ntafadhali jisajili katika programu ya kutaniko letu:\n{url}\n\nBaada ya kujisajili, tumia msimbo huu wa mwaliko:\n{code}",
   },
   ar: {
-    subject: "دعوة: Congregation Planner",
+    subject: "دعوة: Versammlung.app",
     body: "مرحبًا {name}،\n\nيرجى التسجيل في تطبيق جماعتنا:\n{url}\n\nبعد التسجيل، استخدم رمز الدعوة هذا:\n{code}",
   },
   he: {
@@ -175,7 +175,7 @@ const TEXTE: Record<string, InviteTexte> = {
  * die Tabelle umbaut. Ein `TEXTE.de!` behauptete dasselbe, ohne es zu sichern.
  */
 const DE: InviteTexte = {
-  subject: 'Einladung: Congregation Planner',
+  subject: 'Einladung: Versammlung.app',
   body:
     'Hallo {name},\n\nbitte registriere dich in unserer Versammlungs-App:\n{url}\n\n' +
     'Löse nach der Registrierung diesen Einladungscode ein:\n{code}',

@@ -183,6 +183,9 @@
 }
 
 .sidebar-wordmark {
+  /* Notbremse: bricht erst, wenn schon das Stück vor der `wbr`-Stelle
+     überliefe (320 px auf der größten Schriftstufe). */
+  overflow-wrap: anywhere;
   font-family: var(--font-serif);
   font-size: calc(21px * var(--fs));
   font-weight: 500;
@@ -324,12 +327,17 @@
   white-space: nowrap;
 }
 
-/* Kurzform als Standard; der volle Name erst, wenn er sicher danebenpasst. */
+/*
+ * Kurzform als Standard; der volle Name erst, wenn er sicher danebenpasst.
+ * 400 px, nicht 390: „VERSAMMLUNG.APP" misst auf der größten Schriftstufe
+ * 180 px, und so viel Platz lässt der Kopf (Menü, Logo, Mitteilungen, Avatar)
+ * erst ab 400 px. Bei 390 px stünde dort sonst „VERSAMMLUNG.A…".
+ */
 .brand-long {
   display: none;
 }
 
-@media (min-width: 430px) {
+@media (min-width: 400px) {
   .brand-long {
     display: inline;
   }

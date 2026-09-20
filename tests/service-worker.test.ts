@@ -157,7 +157,7 @@ describe('Service Worker: Benachrichtigungen (V10)', () => {
   it('ohne Nutzlast bleibt es bei den Standardtexten', async () => {
     const sw = ladeServiceWorker()
     await sw.feuere('push', { data: null })
-    expect(sw.meldungen[0]?.[0]).toBe('Congregation Planner')
+    expect(sw.meldungen[0]?.[0]).toBe('Versammlung.app')
   })
 })
 

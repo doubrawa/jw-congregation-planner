@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Wochenplanung aus New World Scheduler → JW Congregation Planner.
+ * Wochenplanung aus New World Scheduler → Versammlung.app.
  *
  * **Was dieses Skript tut — und was nicht.** Das Programm einer Woche
  * (Abschnitte, Lieder, Titel, Zeitrahmen, Schriftstellen, Übersetzungen) kommt

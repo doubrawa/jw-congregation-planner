@@ -75,10 +75,12 @@ export function LoginScreen() {
     <div className="login">
       <header className="login-head">
         <img className="login-logo" src={LOGO} alt="" width={72} height={72} />
+        {/* `wbr` statt festem Umbruch: der Name steht auf einer Zeile und
+            bricht erst, wenn schmales Gerät oder große Schrift ihn drängen. */}
         <h1 className="login-wordmark">
-          Congregation
-          <br />
-          Planner
+          Versammlung
+          <wbr />
+          .app
         </h1>
       </header>
 

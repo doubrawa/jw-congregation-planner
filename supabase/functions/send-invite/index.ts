@@ -19,7 +19,7 @@
 // Benötigte Secrets:
 //  - RESEND_API_KEY   Resend-API-Key (bereits gesetzt)
 //  - INVITE_FROM      Absender mit VERIFIZIERTER Domain, z. B.
-//                     "Congregation Planner <einladung@deine-domain.de>"
+//                     "Versammlung.app <einladung@deine-domain.de>"
 //                     → solange nicht gesetzt, antwortet die Function mit
 //                     'not-configured' und die App fällt auf mailto zurück.
 //  - APP_URL          optional; Link in der Mail
