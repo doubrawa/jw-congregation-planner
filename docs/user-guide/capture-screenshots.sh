@@ -22,9 +22,14 @@ PROFILE="${TEMP:-/tmp}/jw-doc-chrome"
 # Windows zieht den Rahmen ab, aus 920 werden rund 904 px Sichtbereich. Der
 # ganze Bestand ist deshalb in der schmalen Spalte aufgenommen — Sidebar 232 +
 # App-Spalte 430 = 662 px breit, der 920er-Umbruch auf 660 px greift nicht.
-# Wer mit einem Chromium aufnimmt, das --window-size als Sichtbereich nimmt
-# (Linux, headless=new), setzt W auf 900 und H auf 931; sonst kommen breitere
-# Bilder heraus als die abgelegten. Einzelne Shots (Login ohne Sidebar)
+# Ein Chromium unter Linux (headless=new) zieht anders ab: die Breite bleibt,
+# von der Höhe gehen 87 px weg, und --screenshot nimmt nur den Sichtbereich auf
+# statt der ganzen Seite. Damit fallen die Bilder kürzer aus als die abgelegten.
+# Wer dort aufnimmt, stellt deshalb nicht das Fenster ein, sondern steuert den
+# Browser fern: Sichtbereich (W-16)x(H-95), Aufnahme der ganzen Seite,
+# zugeschnitten auf WxH. Das ist genau das, was Chrome unter Windows von selbst
+# tut, und trifft den abgelegten Bestand auf ein paar Pixel genau (die
+# Schriftmetrik unterscheidet sich). Einzelne Shots (Login ohne Sidebar)
 # überschreiben die Größe über ein drittes Feld `BxH`.
 W=920
 H=940

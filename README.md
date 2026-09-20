@@ -1,4 +1,4 @@
-# Congregation Planner
+# Versammlung.app
 
 Web-App (Deutsch, Mobile-first + Desktop) zur Organisation der Zusammenkünfte
 einer Versammlung: Wochenprogramme anzeigen, Aufgaben/Rollen zuteilen (mit

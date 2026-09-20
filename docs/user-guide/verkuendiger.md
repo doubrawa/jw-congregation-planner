@@ -292,7 +292,7 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
 
 ## 8. App installieren & Erinnerungen
 
-Der Congregation Planner ist eine **Web‑App (PWA)** – du brauchst nichts aus einem
+Der Versammlung.app ist eine **Web‑App (PWA)** – du brauchst nichts aus einem
 Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
 
 ### Android (Chrome)

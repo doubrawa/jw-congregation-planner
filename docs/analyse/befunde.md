@@ -1,4 +1,4 @@
-# Befunde — Tiefenanalyse Congregation Planner
+# Befunde — Tiefenanalyse Versammlung.app
 
 Stand: 7. August 2026, Commit `e2cdb41`. Erstellt in einer reinen Analyse-Session
 (**keine Code-Änderungen**). Ergänzt [funktionsuebersicht.md](funktionsuebersicht.md).
