@@ -37,7 +37,7 @@
  * dem, was da war — das ist kein Fehler, sondern der Kalender.
  */
 
-import { argumente, funktionsKopf, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, funktionsKopf, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 
 /**
  * Wochen der Reihe nach holen. Jede Antwort nennt ihren Montag, und der ist
@@ -92,13 +92,7 @@ async function main() {
   const { url, key } = await zugangsdaten()
   const rest = restKlient(url, key)
 
-  const cong = arg.cong
-    ? (await rest(`congregations?select=id,name,cong_lang,prog_langs&id=eq.${arg.cong}`))[0]
-    : (await rest('congregations?select=id,name,cong_lang,prog_langs&limit=1'))[0]
-  if (!cong) {
-    console.error('Keine Versammlung gefunden — erst scripts/versammlung-anlegen.mjs.')
-    process.exit(1)
-  }
+  const cong = await versammlungHolen(rest, arg, 'id,name,cong_lang,prog_langs')
 
   const vorhandene = (await rest(`weeks?select=start&congregation_id=eq.${cong.id}&order=start`)).map((w) => w.start)
   const ab = arg.ab || vorhandene[vorhandene.length - 1]

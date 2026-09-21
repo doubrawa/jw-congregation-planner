@@ -36,7 +36,7 @@
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
-import { argumente, fsSort, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, fsSort, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 
 const WD_NAME = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 
@@ -134,13 +134,7 @@ async function main() {
   const { url, key } = await zugangsdaten()
   const rest = restKlient(url, key)
 
-  const cong = (arg.cong
-    ? await rest(`congregations?select=id,name&id=eq.${arg.cong}`)
-    : await rest('congregations?select=id,name&limit=1'))[0]
-  if (!cong) {
-    console.error('Keine Versammlung gefunden.')
-    process.exit(1)
-  }
+  const cong = await versammlungHolen(rest, arg, 'id,name')
   const gruppen = await rest(`groups?select=id,name&congregation_id=eq.${cong.id}`)
   const vorhandene = await rest(`fs_rules?select=id&congregation_id=eq.${cong.id}`)
 

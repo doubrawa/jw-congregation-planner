@@ -50,7 +50,7 @@
 
 import fs from 'node:fs'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, gleichnamige, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, gleichnamige, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 export { argumente, gleichnamige }
 export { personDisplayName as displayName }
 
@@ -263,17 +263,32 @@ async function main() {
 
   const rest = restKlient(url, key)
 
-  const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
-  if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
+  const cong = (await versammlungHolen(rest, arg)).id
+
+  /*
+   * **Erst alles lesen, dann etwas löschen** — und zwar nebeneinander.
+   *
+   * Die fünf Abfragen hängen nicht voneinander ab; nacheinander waren es fünf
+   * Umläufe, bevor der erste Löschbefehl überhaupt hinausging. Als ein Block
+   * gelesen steht auch beieinander, was dieses Skript über das Löschen hinweg
+   * retten muss: die Konto-Verknüpfungen, die offenen Einladungen und der
+   * Grundplan der Gruppen.
+   */
+  const [dbPersonen, members, dbEinladungen, services, dbGruppen, alleRegeln] = await Promise.all([
+    rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`),
+    rest(`members?select=email,person_id&congregation_id=eq.${cong}`),
+    rest(`invites?select=code,person_id&congregation_id=eq.${cong}&redeemed_by=is.null`),
+    rest(`services?select=key&congregation_id=eq.${cong}`),
+    rest(`groups?select=id,name&congregation_id=eq.${cong}`),
+    rest(`fs_rules?select=*&congregation_id=eq.${cong}`),
+  ])
 
   // Konto→Person-Verknüpfung über den Personennamen sichern (vor dem Löschen).
   // Robust gegen Teilabbrüche: die Zuordnung (E-Mail → Personenname) wird in einer
   // Sidecar-Datei gehalten. Läuft das Skript nach einem Abbruch erneut (persons
   // bereits gelöscht, also aus der DB nicht mehr ableitbar), kommt sie von dort —
   // sonst ginge die Anmeldung des Planers verloren.
-  const dbPersonen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
   const nameNachId = new Map(dbPersonen.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
-  const members = await rest(`members?select=email,person_id&congregation_id=eq.${cong}`)
   const sidecar = `${sqlPfad}.members.json`
   let verknuepfungen = members
     .filter((m) => m.person_id && nameNachId.has(m.person_id))
@@ -288,11 +303,9 @@ async function main() {
   // `invites.person_id` (Fremdschlüssel). Der Code bliebe gültig, führte aber
   // zu einem Konto **ohne** Person — „Meine Aufgaben" bliebe leer, und niemand
   // sähe die Ursache. Beim Neuaufbau am 18. September 2026 genau so passiert.
-  const einladungen = (await rest(`invites?select=code,person_id&congregation_id=eq.${cong}&redeemed_by=is.null`))
+  const einladungen = dbEinladungen
     .filter((i) => i.person_id && nameNachId.has(i.person_id))
     .map((i) => ({ code: i.code, personName: nameNachId.get(i.person_id) }))
-
-  const services = await rest(`services?select=key&congregation_id=eq.${cong}`)
 
   /*
    * **Den Grundplan der Gruppen über das Löschen retten** (siehe `KASKADIERT`).
@@ -303,9 +316,7 @@ async function main() {
    * und dem Zurückschreiben ab, sind die Regeln aus der Datenbank nicht mehr zu
    * holen — dann kommen sie beim nächsten Lauf von dort.
    */
-  const dbGruppen = await rest(`groups?select=id,name&congregation_id=eq.${cong}`)
   const gruppenNachId = new Map(dbGruppen.map((g) => [g.id, g.name]))
-  const alleRegeln = await rest(`fs_rules?select=*&congregation_id=eq.${cong}`)
   const regelSidecar = `${sqlPfad}.fsrules.json`
   let gruppenRegeln = regelnAufNamen(alleRegeln, gruppenNachId)
   if (gruppenRegeln.length) {

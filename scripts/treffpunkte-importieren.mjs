@@ -57,7 +57,7 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { fsSort, ladeTabellen, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { fsSort, ladeTabellen, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { argumente, mondayOf, personDisplayName, uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -288,10 +288,7 @@ async function main() {
   const rest = restKlient(url, key)
 
   const tabellen = ladeTabellen(datenDir, TABELLEN)
-  const congRow = arg.cong
-    ? (await rest(`congregations?select=id,hall&id=eq.${arg.cong}`))[0]
-    : (await rest('congregations?select=id,hall&limit=1'))[0]
-  if (!congRow?.id) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
+  const congRow = await versammlungHolen(rest, arg, 'id,hall')
   const cong = congRow.id
   // Ort eines selbst angelegten Treffpunkts, wenn NWS keinen führt — wie in der
   // App die Vorgabe „Saal dieser Versammlung", nicht das deutsche Wort.

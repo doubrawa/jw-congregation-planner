@@ -138,3 +138,53 @@ describe('Alle Skripte holen den Schlüssel über secretKey()', () => {
     expect(Object.values(AUSNAHMEN).filter((g) => g.length < 20)).toEqual([])
   })
 })
+
+/**
+ * **Und jedes fragt gleich, welche Versammlung gemeint ist.**
+ *
+ * Dieselbe Fehlerfamilie eine Etage tiefer: Sechs Skripte beantworteten
+ * „`--cong` oder die erste Zeile?" je selbst, in fünf Fassungen — und drei
+ * davon nahmen `--cong` auf Treu und Glauben, fragten die Datenbank also gar
+ * nicht erst. Eine vertippte Id lief anstandslos durch: Jede folgende Abfrage
+ * traf null Zeilen, jedes Schreiben ging ins Leere, und das Skript meldete am
+ * Ende zufrieden, was es alles getan habe.
+ *
+ * Seit `versammlungHolen()` in `gemeinsam.mjs` steht, hält diese Probe die
+ * Abschriften fern — sonst wüchse die nächste Fassung einfach nach.
+ */
+describe('Die Versammlung kommt aus versammlungHolen()', () => {
+  /**
+   * Wer die Tabelle selbst abfragt, mit Begründung.
+   *
+   * Die beiden RLS-Proben messen **Statuscodes** und dürfen deshalb nicht
+   * werfen; `versammlungHolen` tut genau das. `neuaufbau-fahren` nimmt nur
+   * Bestand auf und muss eine leere Datenbank aushalten, statt abzubrechen —
+   * das ist der Normalfall vor Schritt 1.
+   */
+  const AUSNAHMEN: Record<string, string> = {
+    'mandanten-nachweis.mjs': 'RLS-Probe: der Statuscode ist der Messwert, ein Wurf wäre der Abbruch',
+    'mitgliedsrechte-probe.mjs': 'RLS-Probe: derselbe Grund',
+    'neuaufbau-fahren.mjs': 'Bestandsaufnahme vor Schritt 1 — die leere Datenbank ist hier kein Fehler',
+  }
+
+  it('niemand baut die Abfrage selbst', () => {
+    const selbst = SKRIPTE.filter((f) => {
+      if (f in AUSNAHMEN) return false
+      return /congregations\?select/.test(readFileSync(join(dir, f), 'utf8'))
+    })
+    expect(selbst, 'fragt congregations selbst ab statt über versammlungHolen()').toEqual([])
+  })
+
+  it('die Probe greift überhaupt — es gibt Aufrufer', () => {
+    // Ohne diese Zeile wäre „niemand baut sie selbst" auch dann grün, wenn
+    // kein Skript die Versammlung mehr ermittelte.
+    const nutzer = SKRIPTE.filter((f) => /versammlungHolen\(/.test(readFileSync(join(dir, f), 'utf8')))
+    expect(nutzer.length).toBeGreaterThanOrEqual(6)
+  })
+
+  it('jede Ausnahme steht mit Begründung da', () => {
+    const da = new Set(SKRIPTE)
+    expect(Object.keys(AUSNAHMEN).filter((f) => !da.has(f))).toEqual([])
+    expect(Object.values(AUSNAHMEN).filter((g) => g.length < 20)).toEqual([])
+  })
+})

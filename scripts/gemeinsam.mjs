@@ -403,6 +403,37 @@ export function fsSort(a, b) {
 }
 
 /**
+ * **Welche Versammlung ist gemeint?** — einmal für alle Wartungsskripte.
+ *
+ * Sechs Skripte beantworteten das je selbst, in fünf Fassungen: `--cong` oder
+ * die erste Zeile, dazu die Spalten, die das jeweilige Skript braucht, und
+ * eine Fehlermeldung. Die Abschriften waren auseinandergelaufen, und zwar
+ * nicht nur im Wortlaut: **Drei nahmen `--cong` auf Treu und Glauben** und
+ * fragten die Datenbank gar nicht erst. Eine vertippte Id lief damit
+ * anstandslos durch — jede folgende Abfrage traf null Zeilen, jedes Schreiben
+ * ging ins Leere, und das Skript meldete am Ende zufrieden, was es alles
+ * getan habe.
+ *
+ * Hier wird **immer** gefragt. `spalten` nennt, was der Aufrufer braucht;
+ * `id` ist immer dabei. Geworfen statt `process.exit`: Jedes dieser Skripte
+ * hat ein `main().catch`, das die Meldung ohnehin ausgibt — und geworfen
+ * lässt sich die Regel prüfen.
+ */
+export async function versammlungHolen(rest, arg, spalten = 'id') {
+  const felder = spalten.split(',').includes('id') ? spalten : `id,${spalten}`
+  const filter = arg.cong ? `id=eq.${arg.cong}` : 'limit=1'
+  const row = (await rest(`congregations?select=${felder}&${filter}`))[0]
+  if (!row) {
+    throw new Error(
+      arg.cong
+        ? `Keine Versammlung mit der Id ${arg.cong}.`
+        : 'Keine Versammlung gefunden — erst scripts/versammlung-anlegen.mjs.',
+    )
+  }
+  return row
+}
+
+/**
  * **Der Zugriff auf PostgREST — einmal für alle Wartungsskripte.**
  *
  * Elf Skripte trugen dafür je eine eigene Closure: derselbe `fetch` auf

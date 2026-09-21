@@ -12,7 +12,7 @@
 
 import { CONG_TO_JW } from '../i18n/langs'
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
-import { zeitenAus } from '../../supabase/functions/_shared/planung.ts'
+import { kurzeZeit, zeitenAus } from '../../supabase/functions/_shared/planung.ts'
 import { fsBaseFromWeeks, fsLeiterBinden, fsWochenKennungen, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZusage } from '../data/plan-versand'
@@ -249,14 +249,6 @@ function groupToRow(g: Group, congregationId: string, position: number) {
     assistant_id: g.assistantId,
     position,
   }
-}
-
-/**
- * `time` kommt aus PostgreSQL als „19:00:00" zurück; die App führt Uhrzeiten
- * durchgehend als „19:00" — so liefert und erwartet es `<input type="time">`.
- */
-function kurzeZeit(zeit: string | undefined | null, vorgabe: string): string {
-  return (zeit ?? vorgabe).slice(0, 5)
 }
 
 /**

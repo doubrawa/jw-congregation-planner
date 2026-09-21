@@ -168,20 +168,35 @@ export interface ZeitenRow {
  */
 export function zeitenAus(row: ZeitenRow | undefined): MeetingTimes {
   if (!row) return STANDARD_ZEITEN
-  const zeit = (wert: string | undefined, vorgabe: string): string =>
-    typeof wert === 'string' && wert ? wert.slice(0, 5) : vorgabe
-  const tag = (wert: number | undefined, vorgabe: number): number =>
-    typeof wert === 'number' && Number.isFinite(wert) ? wert : vorgabe
   return {
     mid: {
-      wd: tag(row.mid_wd, STANDARD_ZEITEN.mid.wd),
-      time: zeit(row.mid_time, STANDARD_ZEITEN.mid.time),
+      wd: kurzerTag(row.mid_wd, STANDARD_ZEITEN.mid.wd),
+      time: kurzeZeit(row.mid_time, STANDARD_ZEITEN.mid.time),
     },
     we: {
-      wd: tag(row.we_wd, STANDARD_ZEITEN.we.wd),
-      time: zeit(row.we_time, STANDARD_ZEITEN.we.time),
+      wd: kurzerTag(row.we_wd, STANDARD_ZEITEN.we.wd),
+      time: kurzeZeit(row.we_time, STANDARD_ZEITEN.we.time),
     },
   }
+}
+
+/**
+ * Eine `time`-Spalte als „19:00" — die Schreibweise, die die App führt und die
+ * `<input type="time">` liefert und erwartet.
+ *
+ * **Die eine Stelle dafür.** Sie stand zweimal da: hier und als `kurzeZeit` in
+ * `src/lib/data.ts` für `fs_rules.time` — und die beiden waren sich über den
+ * leeren String uneins. Die eine gab ihn durch (`('' ?? vorgabe).slice(0, 5)`
+ * ist `''`), die andere nahm die Vorgabe. Aus einer leeren Uhrzeit wurde so
+ * je nach Tabelle ein leeres Feld oder ein Termin.
+ */
+export function kurzeZeit(wert: string | undefined | null, vorgabe: string): string {
+  return typeof wert === 'string' && wert ? wert.slice(0, 5) : vorgabe
+}
+
+/** Gegenstück für die Wochentag-Spalte: eine Zahl oder die Vorgabe. */
+function kurzerTag(wert: number | undefined, vorgabe: number): number {
+  return typeof wert === 'number' && Number.isFinite(wert) ? wert : vorgabe
 }
 
 /**

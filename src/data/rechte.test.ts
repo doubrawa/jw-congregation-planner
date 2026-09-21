@@ -19,17 +19,27 @@ import type { Screen } from './types'
  * noch vollständig ist.
  */
 
-/** Jeder Bildschirm, den es gibt — aus dem Typ, nicht aus dem Gedächtnis. */
-const ALLE_SCREENS: Screen[] = [
-  'login',
-  'start',
-  'programm',
-  'aufgaben',
-  'planen',
-  'personen',
-  'einstellungen',
-  'profil',
-]
+/**
+ * Jeder Bildschirm, den es gibt — **vom Compiler erzwungen**, nicht aus dem
+ * Gedächtnis.
+ *
+ * Ein Union-Typ hat keine Laufzeitform, also braucht es eine Aufzählung. Als
+ * schlichtes Array wäre sie dieselbe handgepflegte Liste wie `ALLE` in
+ * `rechte.ts` — und eine Probe, die eine Liste gegen ihre Abschrift hält,
+ * prüft nichts. Über `satisfies Record<Screen, true>` verlangt TypeScript
+ * jeden Schlüssel: Ein neuer Bildschirm lässt diese Datei **nicht mehr
+ * übersetzen**, und das fällt vor jedem Testlauf auf.
+ */
+const ALLE_SCREENS = Object.keys({
+  login: true,
+  start: true,
+  programm: true,
+  aufgaben: true,
+  planen: true,
+  personen: true,
+  einstellungen: true,
+  profil: true,
+} satisfies Record<Screen, true>) as Screen[]
 
 /**
  * Der eine Bildschirm, der nicht angesteuert wird: Auf die Anmeldung kommt man
@@ -108,17 +118,9 @@ describe('Die Liste dahinter bleibt vollständig', () => {
     expect(vergessen, 'fehlt in ALLE (rechte.ts) — für niemanden erreichbar').toEqual([])
   })
 
-  it('und die Aufzählung hier ist selbst vollständig', () => {
-    // Sonst verschöbe sich die Lücke nur von `rechte.ts` in diese Datei. Der
-    // Typ hat keine Laufzeit-Form, also wird er hier gegen die Vereinigung
-    // aller Mengen gehalten — jeder Screen, den irgendwer sehen darf, muss
-    // oben stehen.
-    const bekannt = new Set(ALLE_SCREENS)
-    const fremd = [
-      ...erlaubteScreens(true, false),
-      ...erlaubteScreens(false, true),
-      ...erlaubteScreens(false, false),
-    ].filter((s) => !bekannt.has(s))
-    expect(fremd, 'steht in rechte.ts, aber nicht in ALLE_SCREENS').toEqual([])
-  })
+  // Dass die Aufzählung oben selbst vollständig ist, stand hier einmal als
+  // eigene Prüfung — sie ist entfallen, seit `satisfies Record<Screen, true>`
+  // es dem Compiler überträgt. Eine Zusicherung, die beim Übersetzen greift,
+  // ist die bessere: Sie kann nicht übersehen werden, weil ohne sie gar nichts
+  // mehr läuft.
 })

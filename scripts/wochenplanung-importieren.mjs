@@ -65,7 +65,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { argumente, ladeTabellen, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { argumente, ladeTabellen, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 export { argumente, personDisplayName }
 
 /* ===================== Stabile Identität (uuid5) ========================== */
@@ -589,8 +589,7 @@ async function main() {
   // 1) Versammlung + App-Personen ZUERST — die NWS→App-Namensauflösung braucht
   //    sie, um Dubletten über die stabile id aufzulösen (siehe unten).
   const tabellen = ladeTabellen(datenDir, TABELLEN)
-  const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
-  if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
+  const cong = (await versammlungHolen(rest, arg)).id
   const personen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
   const nachName = new Map()
   const appById = new Map() // id → Anzeigename, für die id-basierte Auflösung

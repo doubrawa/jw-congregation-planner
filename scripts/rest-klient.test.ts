@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 // @ts-expect-error — JS-Modul ohne Typen (Wartungsskripte laufen unter Node)
-import { pruefKlient, restKlient } from './gemeinsam.mjs'
+import { pruefKlient, restKlient, versammlungHolen } from './gemeinsam.mjs'
 
 /**
  * **Der eine Zugriff auf PostgREST, den alle Wartungsskripte nehmen.**
@@ -151,5 +151,65 @@ describe('pruefKlient — die Sicht eines angemeldeten Mitglieds', () => {
     await pruefKlient(URL_, 'anon-key', 'token')('weeks?select=start')
     expect(aufrufe[0]!.init.body).toBeUndefined()
     expect(aufrufe[0]!.init.method).toBe('GET')
+  })
+})
+
+/**
+ * **Welche Versammlung ist gemeint?**
+ *
+ * Sechs Skripte beantworteten das je selbst, und drei davon nahmen `--cong`
+ * auf Treu und Glauben — sie fragten die Datenbank gar nicht erst. Eine
+ * vertippte Id lief damit anstandslos durch: Jede folgende Abfrage traf null
+ * Zeilen, jedes Schreiben ging ins Leere, und am Ende meldete das Skript
+ * zufrieden, was es alles getan habe.
+ */
+describe('versammlungHolen', () => {
+  /** Ein `rest`, das eine feste Antwort gibt und den Pfad festhält. */
+  function fakeRest(zeilen: unknown[]) {
+    const pfade: string[] = []
+    const rest = async (pfad: string) => {
+      pfade.push(pfad)
+      return zeilen
+    }
+    return { rest, pfade }
+  }
+
+  it('ohne --cong die erste Zeile', async () => {
+    const { rest, pfade } = fakeRest([{ id: 'c1' }])
+    expect(await versammlungHolen(rest, {})).toEqual({ id: 'c1' })
+    expect(pfade[0]).toBe('congregations?select=id&limit=1')
+  })
+
+  it('mit --cong genau diese — und die Datenbank wird wirklich gefragt', async () => {
+    const { rest, pfade } = fakeRest([{ id: 'c9' }])
+    await versammlungHolen(rest, { cong: 'c9' })
+    expect(pfade[0]).toBe('congregations?select=id&id=eq.c9')
+  })
+
+  it('eine vertippte --cong bricht ab, statt ins Leere zu schreiben', async () => {
+    const { rest } = fakeRest([])
+    await expect(versammlungHolen(rest, { cong: 'gibt-es-nicht' })).rejects.toThrow(
+      /Keine Versammlung mit der Id gibt-es-nicht/,
+    )
+  })
+
+  it('eine leere Datenbank sagt, was zu tun ist', async () => {
+    const { rest } = fakeRest([])
+    await expect(versammlungHolen(rest, {})).rejects.toThrow(/versammlung-anlegen/)
+  })
+
+  it('die Spalten kommen vom Aufrufer, `id` ist immer dabei', async () => {
+    const { rest, pfade } = fakeRest([{ id: 'c1', hall: 'Saal' }])
+    await versammlungHolen(rest, {}, 'id,hall')
+    await versammlungHolen(rest, {}, 'hall')
+    expect(pfade[0]).toBe('congregations?select=id,hall&limit=1')
+    expect(pfade[1]).toBe('congregations?select=id,hall&limit=1')
+  })
+
+  it('ein Spaltenname, der `id` enthält, wird nicht dafür gehalten', async () => {
+    // `'person_id'.includes('id')` wäre wahr — verglichen wird deshalb je Feld.
+    const { rest, pfade } = fakeRest([{ id: 'c1' }])
+    await versammlungHolen(rest, {}, 'cong_lang')
+    expect(pfade[0]).toBe('congregations?select=id,cong_lang&limit=1')
   })
 })

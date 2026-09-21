@@ -60,7 +60,7 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { ladeTabellen, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { ladeTabellen, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { argumente } from './wochenplanung-importieren.mjs'
 
@@ -213,8 +213,7 @@ async function main() {
   const rest = restKlient(url, key)
 
   const tabellen = ladeTabellen(datenDir, TABELLEN)
-  const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
-  if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
+  const cong = (await versammlungHolen(rest, arg)).id
 
   const personen = await rest(`persons?select=id&congregation_id=eq.${cong}`)
   const appIds = new Set(personen.map((p) => p.id))
