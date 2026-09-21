@@ -319,32 +319,18 @@
 
 /* Eigenes Element für den Namen: „…“ greift nur in einem Textcontainer — direkt
    in .mobile-header-brand (Flexbox) bliebe der Name ohne Auslassungspunkte
-   mitten im Wort stehen. So kürzt er bei sehr großer Schrift sauber ab. */
+   mitten im Wort stehen. So kürzt ein langer Versammlungsname sauber ab, statt
+   Mitteilungen und Avatar aus dem Kopf zu schieben.
+
+   Großbuchstaben per CSS, nicht im Text: Der Name steht in der Datenbank so,
+   wie ihn der Planer eingibt, und der Kopf behält die Gestalt der Wortmarke,
+   die vorher hier stand. Schriften ohne Großbuchstaben bleiben unberührt. */
 .mobile-header-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/*
- * Kurzform als Standard; der volle Name erst, wenn er sicher danebenpasst.
- * 400 px, nicht 390: „VERSAMMLUNG.APP" misst auf der größten Schriftstufe
- * 180 px, und so viel Platz lässt der Kopf (Menü, Logo, Mitteilungen, Avatar)
- * erst ab 400 px. Bei 390 px stünde dort sonst „VERSAMMLUNG.A…".
- */
-.brand-long {
-  display: none;
-}
-
-@media (min-width: 400px) {
-  .brand-long {
-    display: inline;
-  }
-
-  .brand-short {
-    display: none;
-  }
+  text-transform: uppercase;
 }
 
 .mobile-header-logo {

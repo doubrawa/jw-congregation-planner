@@ -197,12 +197,16 @@ export function AppShell() {
                 </button>
                 <div className="mobile-header-brand">
                   <img className="mobile-header-logo" src={LOGO} alt="" width={22} height={22} />
-                  {/* Auf schmalen Geräten die Kurzform ohne Endung: der volle
-                      Name passt neben „Mitteilungen“ + Avatar erst ab ca. 390 px
-                      und würde sonst mitten im Wort abgeschnitten. */}
-                  <span className="mobile-header-name">
-                    <span className="brand-long">VERSAMMLUNG.APP</span>
-                    <span className="brand-short">VERSAMMLUNG</span>
+                  {/* Der Name der Versammlung, nicht die Wortmarke (T107): Die
+                      Kurzform „VERSAMMLUNG" sah auf dem Handy aus wie eine
+                      Überschrift und sagte nichts, weil „Versammlung" in dieser
+                      App ohnehin überall steht. Der Produktname bleibt im Menü
+                      und auf der Anmeldung — und hier, solange noch keine
+                      Versammlung geladen ist (Laden, Konto ohne Versammlung),
+                      damit der Kopf nicht leer dasteht. `dir="auto"`: Der Name
+                      kann in einer anderen Schrift stehen als die Oberfläche. */}
+                  <span className="mobile-header-name" dir="auto">
+                    {state.congregation.name.trim() || 'Versammlung.app'}
                   </span>
                 </div>
               </div>

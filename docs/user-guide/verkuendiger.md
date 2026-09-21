@@ -240,6 +240,11 @@ alles geht auch weiterhin über Knöpfe und Pfeile.
 Auf einem Tablet im Querformat – und auf allen Bildschirmen ab etwa Tablet‑Breite –
 steht das Menü dauerhaft links, statt sich hinter dem Menüknopf zu verbergen.
 
+Auf dem Handy steht oben in der Kopfzeile der **Name deiner Versammlung**,
+rechts daneben die **Mitteilungen** und deine Initialen, die ins **Profil**
+führen. Ein sehr langer Versammlungsname wird dort mit „…“ gekürzt; ganz steht
+er im Menü.
+
 ## 7. Profil: Darstellung, Schriftgröße & Sprache
 
 Unter **Profil** stellst du persönliche Vorlieben ein.

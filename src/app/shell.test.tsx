@@ -410,6 +410,68 @@ describe('Das mobile Seitenmenü', () => {
   })
 })
 
+/**
+ * Die Kopfzeile auf dem Handy nennt die Versammlung (T107). Vorher stand dort
+ * die Kurzform der Wortmarke, „VERSAMMLUNG" — sie sah aus wie eine Überschrift
+ * und sagte nichts, weil das Wort in dieser App ohnehin überall steht.
+ */
+describe('Die Kopfzeile auf dem Handy nennt die Versammlung', () => {
+  const kopfName = (c: HTMLElement) => c.querySelector('.mobile-header .mobile-header-name')
+  const krumbach = { name: 'Krumbach', hall: '', times: initialState().congregation.times }
+
+  it('steht der Name der Versammlung — nicht die Wortmarke', () => {
+    const { container } = zeige({ congregation: krumbach })
+    expect(kopfName(container)?.textContent).toBe('Krumbach')
+    expect(container.querySelector('.mobile-header')?.textContent).not.toMatch(/versammlung/i)
+  })
+
+  it('der Name steht so da, wie ihn der Planer eingegeben hat — die Großschreibung macht das CSS', () => {
+    // Stünde „KRUMBACH" im Text, läse ein Screenreader den Namen als Abkürzung
+    // Buchstabe für Buchstabe vor.
+    const { container } = zeige({ congregation: { ...krumbach, name: 'Ichenhausen-Nord' } })
+    expect(kopfName(container)?.textContent).toBe('Ichenhausen-Nord')
+  })
+
+  it('ein langer Name wird nicht abgeschnitten, bevor er ankommt — kürzen darf nur die Anzeige', () => {
+    const lang = 'Neu-Ulm Ludwigsfeld Spanischsprachige Versammlung'
+    const { container } = zeige({ congregation: { ...krumbach, name: lang } })
+    expect(kopfName(container)?.textContent).toBe(lang)
+  })
+
+  it('der Name in anderer Schrift bestimmt seine Leserichtung selbst', () => {
+    const { container } = zeige({ congregation: { ...krumbach, name: 'جماعة الرياض' } })
+    expect(kopfName(container)?.getAttribute('dir')).toBe('auto')
+    expect(kopfName(container)?.textContent).toBe('جماعة الرياض')
+  })
+
+  it('solange keine Versammlung geladen ist, steht der Produktname da — kein leerer Kopf', () => {
+    // Beim Laden und für ein Konto, das noch keinen Code eingelöst hat, gibt es
+    // keinen Versammlungsnamen. Ein Kopf mit Logo und nichts daneben sähe aus
+    // wie ein Ladefehler.
+    for (const over of [
+      { dataStatus: 'loading' as const },
+      { dataStatus: 'no-membership' as const },
+    ]) {
+      const { container } = zeige({ ...over, congregation: { ...krumbach, name: '' } })
+      expect(kopfName(container)?.textContent).toBe('Versammlung.app')
+      cleanup()
+    }
+  })
+
+  it('ein Name aus lauter Leerzeichen zählt als leer', () => {
+    const { container } = zeige({ congregation: { ...krumbach, name: '   ' } })
+    expect(kopfName(container)?.textContent).toBe('Versammlung.app')
+  })
+
+  it('das Menü führt den Produktnamen weiter — dort bleibt er, wenn er den Kopf räumt', () => {
+    const { container } = zeige({ congregation: krumbach })
+    fireEvent.click(container.querySelector('.menu-btn')!)
+    const drawer = container.querySelector('.drawer')!
+    expect(drawer.querySelector('.sidebar-wordmark')?.textContent).toBe('Versammlung.app')
+    expect(drawer.querySelector('.sidebar-sub')?.textContent).toBe('Versammlung Krumbach')
+  })
+})
+
 describe('Abmelden und Rollenanzeige', () => {
   it('der Fuß nennt Namen und Rolle', () => {
     const { container } = zeige()

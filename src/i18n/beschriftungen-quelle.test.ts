@@ -100,8 +100,6 @@ function festeTexte(quelltext: string): string[] {
 
 /** Die einzigen Texte, die fest im JSX stehen dürfen — mit Grund. */
 const ERLAUBTER_TEXT: Record<string, Grund> = {
-  'VERSAMMLUNG.APP': 'produktname',
-  VERSAMMLUNG: 'produktname',
   Versammlung: 'produktname',
   '.app': 'produktname',
   Aktualisieren: 'diagnose',

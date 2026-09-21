@@ -315,8 +315,13 @@ function deutscheWerte(ziel: Lang): Array<[string, string]> {
  * deutsche Wort „Versammlung" und träfe damit `versammlungLbl` — auf jedem
  * Bildschirm, in jeder Sprache. Ausgenommen ist nur der Name selbst, nicht der
  * Versammlungsname darunter (`.sidebar-sub`).
+ *
+ * Der Kopf auf dem Handy (`.mobile-header-name`) war bis zum 21.9.2026 hier
+ * ebenfalls ausgenommen — dort stand die Kurzform der Wortmarke. Seit T107
+ * steht darin der Name der Versammlung, und der wird mitgeprüft wie jeder
+ * andere Text: Sonst könnte dort unbemerkt wieder ein deutsches Wort landen.
  */
-const WORTMARKE = '.sidebar-wordmark, .login-wordmark, .mobile-header-name'
+const WORTMARKE = '.sidebar-wordmark, .login-wordmark'
 
 function sichtbarerText(container: HTMLElement): string {
   const stuecke: string[] = []

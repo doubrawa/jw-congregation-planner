@@ -4790,7 +4790,26 @@ erzeugt, muss sie speichern können, sonst geht eine Einladung hinaus, die
 `redeem_invite` nicht kennt (die Wache dafür steht in `PersonenScreen` und
 `KontoCard` und darf nicht umgangen werden).
 
-### T107 · Auf dem Handy gehört der Name der Versammlung in die Kopfzeile ⚡ ☐ offen
+### T107 · Auf dem Handy gehört der Name der Versammlung in die Kopfzeile ⚡ ✅ erledigt (21. September 2026)
+
+> **Umgesetzt:** Im Kopf steht **nur der Name** („MUSTERSTADT"), auf allen
+> Handybreiten — ohne das Wort „Versammlung" davor, denn das sagte der
+> Wortlaut des Betreibers („nicht ,versammlung' sondern name der versammlung")
+> und es spart genau den Platz, der hier knapp ist. Großgeschrieben wird per
+> CSS, im Text steht der Name, wie der Planer ihn eingibt (ein Screenreader
+> läse „KRUMBACH" sonst als Abkürzung). Der Produktname räumt den Kopf; er
+> steht weiter im Menü und auf der Anmeldung — und im Kopf nur noch, solange
+> keine Versammlung geladen ist (Laden, Konto ohne Versammlung), damit dort
+> nichts leer bleibt. Die Weiche `.brand-long`/`.brand-short` bei 400 px ist
+> entfallen. **Gemessen** per DevTools-Protokoll auf 320, 360 und 412 px, je
+> in Schriftstufe 1 und 1,45, mit „Musterstadt" und einem 49 Zeichen langen
+> Namen: Mitteilungen und Avatar enden immer 20 px vor dem Rand, der Kopf
+> scrollt nie, gekürzt wird mit „…". Kürzung schon bei „Musterstadt" nur auf
+> 320 px in der größten Stufe — dieselbe Ecke, in der vorher die Wortmarke
+> abgeschnitten wurde. `oberflaeche-fremdsprache` prüft den Kopf jetzt mit
+> (die Ausnahme galt der Wortmarke), `beschriftungen-quelle` hat die zwei
+> Ausnahmen `VERSAMMLUNG.APP`/`VERSAMMLUNG` verloren. Sieben Fälle in
+> `shell.test.tsx`, sechs davon werden mit der alten Kurzform rot.
 **Wortlaut:** *„auch auf todo: Überschrift auf handy soll nicht ,versammlung'
 sein sondern name der versammlung."*
 
