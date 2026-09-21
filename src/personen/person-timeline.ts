@@ -1,5 +1,5 @@
 import type { AppState } from '../app/context'
-import { abwesenheitsRaender, abwRang, markiereAbwesenheiten, type AbwRand } from '../components/zeitleiste'
+import { abwesenheitsRaender, abwRang, markiereAbwesenheiten, type AbwRand } from '../components/zeitleiste-gemeinsam'
 import { fsKennung, fsTag } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'

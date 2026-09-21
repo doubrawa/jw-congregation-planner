@@ -3,7 +3,7 @@ import {
   abwRang,
   markiereAbwesenheiten,
   type AbwRand,
-} from '../components/zeitleiste'
+} from '../components/zeitleiste-gemeinsam'
 import { fromIso, kalendertagMs } from '../data/meeting-dates'
 import type { Absence, MyTask } from '../data/types'
 

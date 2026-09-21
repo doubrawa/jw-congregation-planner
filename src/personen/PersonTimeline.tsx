@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
-import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste'
+import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import type { Person } from '../data/types'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { personTimeline, type TimelineEntry } from './person-timeline'
