@@ -99,6 +99,14 @@ Schulungsaufgabe zurück.
 Bist **du** eingeteilt, siehst du am Block, in welchem Raum – und auf deinem
 **S‑89‑Zettel** steht es ebenfalls.
 
+### Ausdrucken
+
+Über jeder Zusammenkunft und über den Treffpunkten steht ein
+**Drucken**‑Knopf. Er fragt, ob du **diese Woche** oder den **ganzen Monat**
+willst – gedruckt wird jeweils der Reiter, in dem du gerade stehst, ohne die
+Bedienelemente der App. Nötig ist das nicht: Deine eigenen Aufgaben stehen
+unter **Meine Aufgaben**, und das Programm ist hier immer aktuell.
+
 ---
 
 ## 4. Meine Aufgaben

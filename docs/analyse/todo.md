@@ -4720,7 +4720,46 @@ Reihenfolge. **Festgehalten, nicht umgesetzt** — der Aufwand ist geschätzt un
 nicht gemessen. Wo die Stelle im Code schon feststeht, steht sie dabei;
 nachgesehen ist damit **wo** etwas liegt, nicht wie es zu lösen wäre.
 
-### T105 · Pläne drucken 🔧 ☐ offen
+### T105 · Pläne drucken 🔧 ⚠ teilweise (21. September 2026)
+
+> **Gebaut ist der Zeitraum, nicht der Umfang.** Von den drei Fragen oben ist
+> eine beantwortet: **welcher Zeitraum** — der Druckknopf klappt jetzt eine
+> Wahl auf, „Diese Woche" oder „Ganzer Monat · September 2026", statt sofort
+> die angezeigte Woche zu drucken. Der Reiter **Predigtdienst** hat überhaupt
+> erst einen Knopf bekommen, auch über einer Woche ohne Treffpunkte (der Monat
+> hat vielleicht welche).
+>
+> **Zum Monat gehört jede Woche, deren Montag in ihm liegt** (`druck.ts`) — so
+> hängt die Woche vom 28. September bis 4. Oktober an genau einem Aushang.
+> Nicht aus der Position im Bestand und nicht aus der Überschrift, die in der
+> Sprache der Versammlung steht, sondern aus `week.start` (T66). Gedruckt wird
+> jede Woche mit **demselben Baustein wie die einzelne** (`MitWoche`, aus dem
+> Wochenstreifen herausgezogen) — ein eigenes Monatsblatt liefe mit der Zeit
+> vom Wochen-Ausdruck weg. Nur was geladen ist: fehlende Wochen werden nicht
+> erfunden.
+>
+> Die Weiche, die der Punkt oben verlangt, steht als drittes Kennzeichen
+> `data-print="monat"` an einer Stelle (`druckKennzeichen`, nicht an jedem
+> Knopf von Hand) — ein stehengebliebenes Kennzeichen ließe sonst den nächsten
+> Wochen-Ausdruck still als Monat herauskommen. Der Block entsteht erst beim
+> Klick (`flushSync`, kein Effekt — StrictMode öffnete sonst zwei
+> Druckdialoge) und verschwindet nach `afterprint`. Unter der Woche je Woche
+> eine Seite, am Wochenende und bei den Treffpunkten mehrere untereinander;
+> eine Woche wird nie zerteilt. Die Treffpunkte drucken jetzt in festen Größen
+> wie das Programm.
+>
+> **Offen bleibt, welche Pläne** — die beiden anderen Fragen sind nicht
+> entschieden: **Hilfsdienste** stehen weiterhin auf keinem Ausdruck, und
+> **Gruppenlisten** gibt es nicht. Wer ohne Konto in der App den Zettel für
+> den Einzelnen braucht, hat weiter nur den S-89-Bogen.
+>
+> **Nachgezogen (nach dem Commit):** Handbuch `planer.md` § 9, jetzt
+> „Pläne drucken" statt „Programm drucken", samt der Monatsregel und dem
+> Hinweis auf den geladenen Bestand; `verkuendiger.md` § 3 hat einen kurzen
+> Abschnitt „Ausdrucken" bekommen, denn der Knopf steht bei jedem — dort stand
+> bisher gar nichts davon. Screenshots neu erzeugt: die Treffpunkte tragen
+> jetzt eine Druckzeile.
+
 **Wortlaut:** *„setze das drucken von plänen auf die TODO liste."*
 
 **Was es schon gibt:** zwei Ausdrucke, beide eng zugeschnitten. Das **Programm**
@@ -5095,22 +5134,38 @@ dieser Umbauten am selben Tag angehalten.
 
 ## Fortschritt
 
-Stand 20. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 21. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
-31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☐☐☐☐☐ ·
-21. September ☐
+31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ⚠☐☑☑☑ ·
+21. September ☐☑☐
 
-**104 der 110 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind die fünf Vorhaben vom 20. September
-(T105–T109)**, aufgenommen und noch nicht angefangen; T109 ist zuerst eine
-Entscheidung, keine Aufgabe. Dazu **T110** vom 21. September: der Anzeigename
-soll weg, Vor- und Nachname werden eindeutig. Was ohne Aufgabennummer aussteht,
-steht unter „Was bewusst offen bleibt".
+**108 der 112 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind vier:**
+
+| | Aufgabe | Stand |
+| --- | --- | --- |
+| **T105** | Pläne drucken | ⚠ der Zeitraum ist gebaut (Woche oder Monat, auch über den Treffpunkten), **welche Pläne** ist offen: Hilfsdienste und Gruppenlisten stehen auf keinem Ausdruck |
+| **T106** | Alle auf einmal benachrichtigen | ☐ nicht angefangen — zuerst zu klären, was mit Nummern geschieht, die `wa.me` nicht annimmt |
+| **T110** | Anzeigename raus, Namen eindeutig | ☐ nur festgehalten; 🏗 und rührt an Schema, Functions und Skripte |
+| **T112** | Die Mutationsprobe prüft nichts mehr | ☐ 14 Einträge finden ihre Stelle nicht — bis dahin ist **keine** der 192 Regeln gemessen |
+
+Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
+**T107** (der Name der Versammlung im Handy-Kopf statt der Wortmarke),
+**T108** (eine Karte je Treffpunkt-Abschnitt, aus zwei Entwürfen gewählt),
+**T109** (keine eigene Seite fürs Einspringen — der Push springt stattdessen
+hin) und von **T105** den Monatsdruck. Beim Nachsehen von T108 fiel **T111**
+an, das Zickzack in den dunklen Auswahlfeldern; beim Eintragen der Regeln aus
+T109 fiel **T112** auf.
+
+**Zwei Dinge liegen beim Betreiber**, nicht im Code: `substitute` muss neu
+deployt werden, sonst kommt der Push aus T109 weiter ohne den Zusatz und
+landet oben auf den Aufgaben. Und was ohne Aufgabennummer aussteht, steht
+unter „Was bewusst offen bleibt".
 
 Am 17. September fielen die letzten beiden der Analyse-Liste auf einen Streich,
 weil sie zusammengehören. **T104** hat die Altlasten geräumt: zehn Lade-Migrationen, die

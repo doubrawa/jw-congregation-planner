@@ -22,7 +22,7 @@ Versammlungseinstellungen pflegen.
 7. [Einstellungen](#7-einstellungen)
    – [Zusätzliche Klasse](#7a-zusätzliche-klasse)
 8. [Programm importieren](#8-programm-importieren)
-9. [Programm drucken](#9-programm-drucken)
+9. [Pläne drucken](#9-pläne-drucken)
 10. [Ohne Internet (offline)](#10-ohne-internet-offline)
 
 ---
@@ -655,13 +655,45 @@ Blättern kommst du deshalb nur bis zur ältesten geladenen Woche zurück.
 
 ---
 
-## 9. Programm drucken
+## 9. Pläne drucken
 
-Auf der **Programm**‑Seite gibt es eine **Drucken**‑Funktion. Sie druckt die
-aktuell gewählte Woche und Zusammenkunft sauber auf eine Seite – **ohne die
-Hilfsdienste** und ohne die Bedienelemente der App. Der Ausdruck füllt die Seite
-in der Breite und passt sich dem im Druckdialog eingestellten Papierformat an
-(z. B. A4).
+Auf der **Programm**‑Seite steht über jeder Zusammenkunft ein
+**Drucken**‑Knopf – und über den **Treffpunkten** genauso. Ein Tipp darauf
+klappt die Wahl auf:
+
+- **Diese Woche** – die Woche und der Reiter, die gerade zu sehen sind.
+- **Ganzer Monat · September 2026** – alle Wochen dieses Monats hintereinander,
+  für den Aushang am schwarzen Brett.
+
+Gedruckt wird immer nur der Reiter, in dem du gerade stehst. Für alle drei –
+unter der Woche, Wochenende, Treffpunkte – druckst du dreimal.
+
+### Was auf dem Blatt steht
+
+Der Ausdruck zeigt das Programm sauber ohne die Bedienelemente der App und
+**ohne die Hilfsdienste**. Er füllt die Seite in der Breite und passt sich dem
+im Druckdialog eingestellten Papierformat an (z. B. A4). Tonflächen gibt es
+nicht: Browser drucken Hintergründe standardmäßig nicht, deshalb trägt der
+Ausdruck über Überschriften und feine Linien.
+
+Beim Monat steht der Kopf **einmal** über dem ganzen Blatt – Versammlung,
+Reiter und Monat – statt über jeder Woche. Die Zusammenkunft **unter der
+Woche** füllt allein etwa eine Seite, deshalb bekommt dort jede Woche ihre
+eigene; beim **Wochenende** und bei den **Treffpunkten** passen mehrere
+untereinander, getrennt durch eine Linie. Eine Woche wird nie mitten auf der
+Seite zerteilt.
+
+### Welche Wochen zum Monat gehören
+
+**Zum Monat gehört jede Woche, deren Montag in ihm liegt.** Die Woche vom
+28. September bis 4. Oktober steht also auf dem September‑Blatt, die vom
+5. Oktober auf dem Oktober‑Blatt – so hängt jede Woche an genau einem Aushang.
+
+Gedruckt wird nur, was **geladen** ist. Wochen, die noch nicht importiert sind
+oder außerhalb der geladenen 52 Wochen liegen (siehe
+[Abschnitt 8](#8-programm-importieren)), fehlen auf dem Blatt. Wenn ein Monat
+unvollständig herauskommt, lohnt vorher ein Blick, ob die Wochen überhaupt
+schon da sind.
 
 ### S‑89: die Aufgabenzuteilung
 
