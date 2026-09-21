@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
 import { initialState } from './init'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
@@ -561,6 +561,41 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
     history.replaceState(null, '', '/#s=planen')
     zeige()
     expect(location.hash).toBe('#s=planen')
+  })
+
+  /*
+   * „Ersatz gesucht" nennt zusätzlich den Bereich (T109). Die Navigation nimmt
+   * ihn mit; springen tut dann „Meine Aufgaben", sobald das Gesuch dasteht.
+   */
+  it('„Ersatz gesucht" nimmt den Bereich Einspringen mit', () => {
+    history.replaceState(null, '', '/#go=aufgaben&abschnitt=einspringen')
+    const { dispatch } = zeige({ planner: false, personId: VERKUENDIGER.id })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' })
+    expect(location.hash).toBe('')
+  })
+
+  it('auch bei schon offenem Fenster — dort kommt das Ziel als Hash-Wechsel', () => {
+    const { dispatch } = zeige({ planner: false, personId: VERKUENDIGER.id })
+    dispatch.mockClear()
+    act(() => {
+      history.replaceState(null, '', '/#go=aufgaben&abschnitt=einspringen')
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+    })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' })
+  })
+
+  it('ein Link ohne Bereich springt nirgendwohin — wie alle Pushes bisher', () => {
+    history.replaceState(null, '', '/#go=aufgaben')
+    const { dispatch } = zeige()
+    const navigiert = dispatch.mock.calls.map(([a]) => a).filter((a) => a.type === 'navigate')
+    expect(navigiert).toEqual([{ type: 'navigate', screen: 'aufgaben' }])
+  })
+
+  it('ein Bereich, der nicht zum Screen gehört, wird nicht mitgenommen', () => {
+    history.replaceState(null, '', '/#go=planen&abschnitt=einspringen')
+    const { dispatch } = zeige({ planner: true })
+    const navigiert = dispatch.mock.calls.map(([a]) => a).filter((a) => a.type === 'navigate')
+    expect(navigiert).toEqual([{ type: 'navigate', screen: 'planen' }])
   })
 })
 

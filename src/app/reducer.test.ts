@@ -74,6 +74,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     langSheetFor: 'cong',
     svcSheet: null,
     terminGewaehlt: true, // Tests wählen Woche/Reiter selbst — kein Springen (T82)
+    sprungZiel: null,
     congLang: 'de',
     progLangs: [],
     langSearch: '',
@@ -204,6 +205,50 @@ describe('navigate (Rechteprüfung)', () => {
     const next = reducer(s, { type: 'navigate', screen: 'programm' })
     expect(next.persons.some((p) => p.id === 'pX')).toBe(false)
     expect(next.selectedPersonId).toBeNull()
+  })
+})
+
+/*
+ * **Ein Klick auf „Ersatz gesucht" landet beim Einspringen** (T109). Die
+ * Navigation merkt sich den Bereich; „Meine Aufgaben" springt hin, sobald er
+ * steht, und meldet sich zurück. Hier die Hälfte im Reducer: wann das Ziel
+ * gilt und wann es verfällt.
+ */
+describe('navigate mit Bereich (Sprung aus dem Push)', () => {
+  it('merkt sich den Bereich, wenn der Screen erreicht wird', () => {
+    const s = makeState({ planner: false, personId: 'p9', groups: [] })
+    const next = reducer(s, { type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' })
+    expect(next.screen).toBe('aufgaben')
+    expect(next.sprungZiel).toBe('einspringen')
+  })
+
+  it('wird der Screen abgewiesen, gilt auch der Bereich nicht', () => {
+    // Der Bereich gehört zu seinem Screen. Landet die Navigation woanders,
+    // gäbe es dort nichts, wohin gesprungen werden könnte.
+    const s = makeState({ planner: false, personId: 'p9', groups: [] })
+    const next = reducer(s, { type: 'navigate', screen: 'planen', abschnitt: 'einspringen' })
+    expect(next.screen).toBe('programm')
+    expect(next.sprungZiel).toBeNull()
+  })
+
+  it('jede andere Navigation räumt ein altes Ziel ab', () => {
+    // Sonst verschöbe ein später eintreffendes Gesuch die Seite, lange nachdem
+    // der Push vergessen ist.
+    const s = makeState({ screen: 'aufgaben', sprungZiel: 'einspringen' })
+    expect(reducer(s, { type: 'navigate', screen: 'programm' }).sprungZiel).toBeNull()
+    expect(reducer(s, { type: 'navigate', screen: 'aufgaben' }).sprungZiel).toBeNull()
+  })
+
+  it('„angekommen" räumt das Ziel ab — und ist ohne Ziel wirkungslos', () => {
+    const s = makeState({ screen: 'aufgaben', sprungZiel: 'einspringen' })
+    expect(reducer(s, { type: 'sprungZielErreicht' }).sprungZiel).toBeNull()
+    const ohne = makeState({ sprungZiel: null })
+    expect(reducer(ohne, { type: 'sprungZielErreicht' })).toBe(ohne)
+  })
+
+  it('das Abmelden nimmt ein offenes Ziel nicht in die nächste Sitzung mit', () => {
+    const s = makeState({ screen: 'aufgaben', sprungZiel: 'einspringen' })
+    expect(reducer(s, { type: 'logout' }).sprungZiel).toBeNull()
   })
 })
 

@@ -418,7 +418,10 @@ Deno.serve(async (req: Request) => {
         // Der Name geht als gekennzeichneter Freitext hinaus: Er ist das eine
         // Atom, das kein Übersetzer anfassen darf (`_shared/i18n/freitext.ts`).
         [svcName, date, alsFreitext(declinedBy)].filter(Boolean).join(' · '),
-        `${APP_URL}#go=aufgaben`,
+        // Direkt zum Bereich Einspringen, nicht an den Anfang von „Meine
+        // Aufgaben" (T109). Der Client liest den Zusatz in `src/app/deeplink.ts`;
+        // eine ältere App kennt ihn nicht und öffnet die Seite wie bisher.
+        `${APP_URL}#go=aufgaben&abschnitt=einspringen`,
         payload.taskKey,
         payload.taskKey, // je Gesuch eine eigene Meldung, siehe `pushTag`
       )

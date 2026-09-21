@@ -168,6 +168,7 @@ export function initialState(): AppState {
     // Ein Debug-Hash mit `tab=` ist eine Wahl — sonst spränge der Reiter beim
     // ersten Navigieren weg und die Doku-Screenshots zeigten das Falsche.
     terminGewaehlt: debug?.tab != null,
+    sprungZiel: null,
     auxClass: false,
     congLang: debug?.congLang ?? 'de',
     progLangs: [],

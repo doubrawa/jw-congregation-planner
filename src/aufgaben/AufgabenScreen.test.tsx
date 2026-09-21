@@ -1,10 +1,11 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import {
   AppDispatchContext,
   AppStateContext,
   AppStoreContext,
+  type AppAction,
   type AppState,
   useStaticStore,
 } from '../app/context'
@@ -194,6 +195,103 @@ describe('Einspringen', () => {
   it('die Karte erklärt, worum es geht — sie erscheint unangekündigt', () => {
     const { container } = zeige({ substituteReqs: [gesuch()] })
     expect(container.querySelector('.auf-sub .panel-hint')?.textContent).toBe(t.einspringenHint)
+  })
+})
+
+/**
+ * **Ein Klick auf „Ersatz gesucht" landet beim Einspringen, nicht oben** (T109).
+ *
+ * Eine eigene Seite dafür hat der Betreiber verworfen — sie wäre fast immer
+ * leer. Stattdessen springt „Meine Aufgaben" zum Bereich, wenn die Navigation
+ * ihn vorgemerkt hat (`sprungZiel`). Der Haken: Beim Push-Klick kommen die Daten
+ * still hinterher, das Gesuch steht also womöglich erst nach dem Nachladen da.
+ */
+describe('Der Sprung aus „Ersatz gesucht"', () => {
+  let gescrollt: Element[] = []
+  const vorher = Element.prototype.scrollIntoView
+  beforeEach(() => {
+    gescrollt = []
+    // jsdom rechnet kein Layout und kennt scrollIntoView nicht.
+    Element.prototype.scrollIntoView = function (this: Element) {
+      gescrollt.push(this)
+    }
+  })
+  afterEach(() => {
+    Element.prototype.scrollIntoView = vorher
+  })
+
+  /** Bühne, die einen neuen Zustand annimmt — wie nach dem stillen Nachladen. */
+  function buehne(state: AppState, dispatch: (action: AppAction) => void) {
+    function Buehne({ s }: { s: AppState }) {
+      const store = useStaticStore(s)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={s}>
+              <AufgabenScreen />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const r = render(<Buehne s={state} />)
+    return { ...r, neu: (s: AppState) => r.rerender(<Buehne s={s} />) }
+  }
+
+  const basis = (over: Partial<AppState>): AppState => ({
+    ...initialState(),
+    screen: 'aufgaben', dataStatus: 'ready',
+    congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
+    persons: [ICH], services: [], groups: [], absences: [],
+    weeks: [], fsWeeks: [], myTasks: [], substituteReqs: [], notifs: [],
+    ...over,
+  })
+
+  it('steht das Gesuch schon da, springt die Seite hin und meldet sich zurück', () => {
+    const dispatch = vi.fn()
+    const { container } = buehne(basis({ sprungZiel: 'einspringen', substituteReqs: [gesuch()] }), dispatch)
+    const bereich = container.querySelector('.auf-sub')!
+    expect(gescrollt).toEqual([bereich])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'sprungZielErreicht' })
+  })
+
+  it('die Überschrift bekommt den Fokus — ein Screenreader liest dort weiter, nicht oben', () => {
+    const { container } = buehne(basis({ sprungZiel: 'einspringen', substituteReqs: [gesuch()] }), vi.fn())
+    const ueberschrift = container.querySelector<HTMLElement>('.auf-sub .panel-label')!
+    expect(document.activeElement).toBe(ueberschrift)
+    // Fokussierbar für den Sprung, aber nicht in der Tab-Reihenfolge.
+    expect(ueberschrift.tabIndex).toBe(-1)
+  })
+
+  it('kommt das Gesuch erst mit dem Nachladen, wird gesprungen, sobald es steht', () => {
+    const dispatch = vi.fn()
+    const { container, neu } = buehne(basis({ sprungZiel: 'einspringen', substituteReqs: [] }), dispatch)
+    // Noch nichts da: nicht springen, das Ziel aber auch nicht aufgeben.
+    expect(gescrollt).toEqual([])
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'sprungZielErreicht' })
+
+    neu(basis({ sprungZiel: 'einspringen', substituteReqs: [gesuch()] }))
+    expect(gescrollt).toEqual([container.querySelector('.auf-sub')])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'sprungZielErreicht' })
+  })
+
+  it('ohne vorgemerkten Sprung verschiebt ein Gesuch die Seite nicht', () => {
+    // Wer „Meine Aufgaben" selbst öffnet, liest von oben. Ein Gesuch, das beim
+    // Nachladen hinzukommt, darf ihm die Seite nicht unter den Augen wegziehen.
+    const dispatch = vi.fn()
+    const { neu } = buehne(basis({ sprungZiel: null, substituteReqs: [] }), dispatch)
+    neu(basis({ sprungZiel: null, substituteReqs: [gesuch()] }))
+    expect(gescrollt).toEqual([])
+    expect(document.activeElement).toBe(document.body)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('nach dem Sprung wird nicht noch einmal gesprungen', () => {
+    const dispatch = vi.fn()
+    const { neu } = buehne(basis({ sprungZiel: 'einspringen', substituteReqs: [gesuch()] }), dispatch)
+    // Der Reducer hat das Ziel abgeräumt; ein zweites Gesuch kommt hinzu.
+    neu(basis({ sprungZiel: null, substituteReqs: [gesuch(), gesuch({ key: '2026-09-07|we|helper|mik|0' })] }))
+    expect(gescrollt).toHaveLength(1)
   })
 })
 

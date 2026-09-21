@@ -88,14 +88,16 @@ const KATALOG = [
     datei: 'src/data/planning.ts',
     regel: 'Niemand ist zur selben Zeit im Hauptsaal und in der Zusätzlichen Klasse.',
     /*
-      Die Stelle ist seit 244e1a0 („Ein Durchlauf statt elf") ein Aufruf von
-      `programmPlaetze` — der Generator liefert beide Räume. Die Mutation nimmt
-      ihm den zweiten wieder weg, indem sie nur `item.names` (Hauptsaal) liest;
-      das ist genau die Fassung, mit der der Fehler entstanden ist.
+      Die Stelle ist seit 5b9e724 („Vierzehn Funktionen zählten die vier
+      Platzsorten je für sich auf", 19.9.2026) ein Aufruf von `allePlaetze` —
+      davor `programmPlaetze` (244e1a0), und bis 21.9. suchte dieser Eintrag
+      noch die alte Zeile: Die ganze Probe brach deshalb ab, ohne eine Regel zu
+      prüfen. Die Mutation nimmt dem Durchlauf die Plätze der Zusätzlichen
+      Klasse wieder weg und lässt nur den Hauptsaal übrig — genau die Fassung,
+      mit der der Fehler entstanden ist.
     */
-    suchen: 'for (const { slot } of programmPlaetze(meeting)) merken(slot)',
-    ersetzen:
-      'for (const s of meeting.sections) for (const it of s.items) if (!isSong(it)) for (const slot of it.names) merken(slot)',
+    suchen: 'for (const platz of allePlaetze(meeting)) merken(platz.slot)',
+    ersetzen: "for (const platz of allePlaetze(meeting)) if (platz.art !== 'programm' || !platz.aux) merken(platz.slot)",
   },
   {
     id: 'zuteilung-reinigungs-malus',
@@ -779,8 +781,9 @@ const KATALOG = [
     id: 'nav-deeplink-rechte',
     datei: 'src/app/AppShell.tsx',
     regel: 'Ein Push-Deep-Link führt nur in einen Bereich, den man betreten darf.',
-    suchen: "const target = navScreens.includes(pendingNav) ? pendingNav : 'aufgaben'",
-    ersetzen: 'const target = pendingNav',
+    // Seit T109 trägt der vorgemerkte Sprung Screen und Bereich (`Sprung`).
+    suchen: "const target = navScreens.includes(pendingNav.screen) ? pendingNav.screen : 'aufgaben'",
+    ersetzen: 'const target = pendingNav.screen',
   },
   {
     id: 'start-termin-gerechnet',
@@ -1662,6 +1665,20 @@ const KATALOG = [
     regel: 'Der Haushalt geht vor den Personen hinaus — sonst weist der Fremdschlüssel sie ab.',
     suchen: '      if (haushalt) saveFamily(congId, haushalt, geaendert)\n      else for (const p of geaendert) savePerson(congId, p)',
     ersetzen: '      for (const p of geaendert) savePerson(congId, p)',
+  },
+  {
+    id: 'push-gesucht-einspringen',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Ein Klick auf „Ersatz gesucht" führt zum Bereich Einspringen, nicht an den Anfang der Aufgaben (T109).',
+    suchen: '`${APP_URL}#go=aufgaben&abschnitt=einspringen`',
+    ersetzen: '`${APP_URL}#go=aufgaben`',
+  },
+  {
+    id: 'sprung-wartet-auf-bereich',
+    datei: 'src/aufgaben/AufgabenScreen.tsx',
+    regel: 'Der Sprung zum Einspringen wartet, bis das Gesuch nach dem Nachladen dasteht (T109).',
+    suchen: '  }, [state.sprungZiel, gesucheOffen, dispatch])',
+    ersetzen: '  }, [state.sprungZiel, dispatch])',
   },
 ]
 

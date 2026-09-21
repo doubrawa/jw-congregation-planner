@@ -366,6 +366,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Neue Sitzung: Programm und Planen öffnen wieder mit der nächsten
         // Zusammenkunft, nicht mit dem Reiter des Vorgängers am selben Gerät.
         terminGewaehlt: false,
+        sprungZiel: null, // ein Sprung aus einem Push gehört zur Sitzung, die ihn bekam
         s89: null,
         confirmOpen: false,
         recovery: false,
@@ -399,6 +400,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         slotSel: null,
         selectedPersonId: null,
         langSheetOpen: false,
+        // Ein Bereich zum Hinspringen (T109) gilt nur, wenn der Screen auch
+        // erreicht wird; jede Navigation ohne einen räumt den alten ab.
+        sprungZiel: action.abschnitt && screen === action.screen ? action.abschnitt : null,
       }
       /*
        * **Eine bestimmte Woche** (Planungs-Karte des Start-Bildschirms, T95).
@@ -426,6 +430,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const zeigtZusammenkunft = screen === 'programm' || screen === 'planen'
       return zeigtZusammenkunft && tab !== 'fs' ? zurNaechstenZusammenkunft(nachher) : nachher
     }
+    case 'sprungZielErreicht':
+      return state.sprungZiel === null ? state : { ...state, sprungZiel: null }
     case 'prevWeek':
       return { ...state, week: Math.max(0, state.week - 1), terminGewaehlt: true }
     case 'nextWeek':

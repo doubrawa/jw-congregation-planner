@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
 import { AbsencePanel } from '../components/AbsencePanel'
 import { PushPrompt } from '../components/PushPrompt'
@@ -36,6 +37,26 @@ export function AufgabenScreen() {
       )
     : state.absences
 
+  /*
+   * **Ein Klick auf „Ersatz gesucht" landet hier beim Einspringen** (T109).
+   *
+   * Der Bereich steht unten und erst, wenn das Gesuch geladen ist — beim
+   * Push-Klick kommen die Daten still hinterher. Deshalb wartet der Sprung auf
+   * den Bereich statt auf den Screen: Steht er, wird hingescrollt und die
+   * Überschrift fokussiert (ein Screenreader liest dort weiter, nicht oben),
+   * und das Ziel ist erledigt. Kommt er nicht — das Gesuch war schon vergeben —,
+   * bleibt die Seite oben; die nächste Navigation räumt das Ziel ab.
+   */
+  const einspringenRef = useRef<HTMLDivElement>(null)
+  const gesucheOffen = state.substituteReqs.length > 0
+  useEffect(() => {
+    if (state.sprungZiel !== 'einspringen' || !gesucheOffen) return
+    const bereich = einspringenRef.current
+    if (!bereich) return
+    bereich.scrollIntoView({ block: 'start' })
+    bereich.querySelector<HTMLElement>('.panel-label')?.focus({ preventScroll: true })
+    dispatch({ type: 'sprungZielErreicht' })
+  }, [state.sprungZiel, gesucheOffen, dispatch])
 
   return (
     <section className="screen">
@@ -95,9 +116,12 @@ export function AufgabenScreen() {
         ))}
       </div>
 
-      {state.substituteReqs.length > 0 && (
-        <div className="panel panel--pb14 auf-sub" data-farbe="gold">
-          <h2 className="panel-label">{t.einspringenTitle}</h2>
+      {gesucheOffen && (
+        <div ref={einspringenRef} className="panel panel--pb14 auf-sub" data-farbe="gold">
+          {/* tabIndex -1: fokussierbar für den Sprung aus dem Push, ohne in die Tab-Reihenfolge zu geraten. */}
+          <h2 className="panel-label" tabIndex={-1}>
+            {t.einspringenTitle}
+          </h2>
           <p className="panel-hint">{t.einspringenHint}</p>
           {state.substituteReqs.map((req) => (
             <div key={req.key} className="auf-sub-row">

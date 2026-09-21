@@ -157,20 +157,24 @@ Koordinator neu zu.
 
 ### Einspringen für jemand anderen
 
-Sagt jemand einen Hilfsdienst ab, für den **du** eingetragen bist, bekommst du
+Sagt jemand einen Hilfsdienst ab, den **du** übernehmen könntest, bekommst du
 eine Mitteilung („Ersatz gesucht") und – falls aktiviert – eine Push-Nachricht.
 Die Anfrage geht **nur an die, die für diesen Dienst freigegeben und an dem Tag
 nicht abwesend sind** – du bekommst also nichts angeboten, was nicht zu dir
 passt.
 
-Du bekommst es auf zwei Wegen zu sehen, und dafür musst du nichts suchen:
+Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
 
+- **Über die Push-Nachricht** – ein Tipp darauf öffnet **Meine Aufgaben** und
+  springt direkt zum Bereich **EINSPRINGEN**, statt oben auf der Seite zu
+  landen.
 - **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
   Zuteilungen erinnert, zeigt darunter den Bereich **EINSPRINGEN**. Hast du
   nichts zu bestätigen, steht dort nur die Anfrage, und du kannst das Blatt mit
   **✕** weglegen: Einspringen kannst du, müssen tust du es nicht.
 - Unter **Meine Aufgaben** – dort steht der Bereich **EINSPRINGEN** dauerhaft,
-  solange die Anfrage offen ist.
+  solange die Anfrage offen ist. Eine eigene Seite dafür gibt es bewusst nicht:
+  Sie wäre fast immer leer.
 
 Beide zeigen dasselbe: den gesuchten Dienst, den Termin und den Namen dessen,
 der abgesagt hat. Hast du an dem Tag **schon etwas anderes**, steht es rot

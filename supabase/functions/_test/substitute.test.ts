@@ -13,13 +13,14 @@
  * zusätzlich schreibfrei bleiben — ein 403 nützt nichts, wenn vorher schon
  * gespeichert wurde.
  */
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
 import { dict, NOTIF_TITLE_KEY, loadOverlay } from '../../../src/i18n/ui'
 import { filterWert, jsonRes, ohneFragment, schreibZugriff } from './attrappe.ts'
+import { parseGoAbschnitt, parseGoTarget } from '../../../src/app/deeplink'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -212,14 +213,19 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   return jsonRes([])
 }
 
+/**
+ * Umgebung der Function. VAPID bewusst leer: pushTo() steigt dann früh aus, es
+ * geht in den meisten Blöcken um Autorisierung, nicht um den Versand. Auf
+ * Modulebene, damit der Block zum Push-Ziel (T109) die Function einmal mit
+ * Schlüsseln neu laden kann.
+ */
+const env: Record<string, string> = {
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: 'service-key',
+}
+
 beforeAll(async () => {
   const g = globalThis as Record<string, unknown>
-  const env: Record<string, string> = {
-    SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: 'service-key',
-    // VAPID bewusst leer: pushTo() steigt dann früh aus, es geht hier um
-    // Autorisierung, nicht um den Versand.
-  }
   g.Deno = {
     env: { get: (k: string) => env[k] },
     serve: (h: (req: Request) => Promise<Response>) => {
@@ -766,4 +772,60 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
       expect(text, `${code}/${key} blieb deutsch`).not.toBe(dict('de')[key as keyof ReturnType<typeof dict>])
     },
   )
+})
+
+/*
+ * **Wohin ein Klick auf die Meldung führt** (T109).
+ *
+ * „Ersatz gesucht" soll beim Bereich Einspringen landen — dort steht das
+ * Gesuch, und nur dort lässt es sich übernehmen. „Ersatz gefunden" dagegen
+ * führt zu den Aufgaben wie bisher: Es gibt nichts mehr zu übernehmen.
+ *
+ * Gelesen wird der Link mit dem Parser der App (`src/app/deeplink.ts`) — das
+ * ist der Gleichlauf: Die Function baut genau den Link, den der Client
+ * versteht. Ein Tippfehler im Zusatz fiele sonst nirgends auf, der Klick
+ * öffnete die Seite einfach oben.
+ */
+describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen', () => {
+  const ABO_ORIG = { user_id: U_ORIG, endpoint: 'https://push.test/orig', p256dh: 'k', auth: 'a' }
+  const ziele = () => sentPush.map((p) => (JSON.parse(p.payload) as { url: string }).url)
+
+  async function neuLaden(): Promise<void> {
+    vi.resetModules()
+    await import('../substitute/index.ts') // ruft Deno.serve → setzt handler neu
+  }
+
+  beforeAll(async () => {
+    // Nur hier mit Schlüsseln: pushTo() stellt dann wirklich zu (an den Stub).
+    env.VAPID_PUBLIC_KEY = 'pub'
+    env.VAPID_PRIVATE_KEY = 'priv'
+    // Otto bekommt ein Abo, damit auch „Ersatz gefunden" einen Push erzeugt.
+    SUBS.push(ABO_ORIG)
+    await neuLaden()
+  })
+
+  afterAll(async () => {
+    delete env.VAPID_PUBLIC_KEY
+    delete env.VAPID_PRIVATE_KEY
+    SUBS.splice(SUBS.indexOf(ABO_ORIG), 1)
+    await neuLaden()
+  })
+
+  it('„Ersatz gesucht" führt zum Bereich Einspringen auf „Meine Aufgaben"', async () => {
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    expect(ziele()).toHaveLength(1) // nur ich habe ein Abo unter den Gefragten
+    const [ziel] = ziele()
+    expect(parseGoTarget(ziel!)).toBe('aufgaben')
+    expect(parseGoAbschnitt(ziel!)).toBe('einspringen')
+  })
+
+  it('„Ersatz gefunden" führt zu den Aufgaben, ohne Sprung — zu übernehmen gibt es nichts mehr', async () => {
+    const res = await call(take())
+    expect(res.status).toBe(200)
+    expect(ziele()).toHaveLength(1) // Otto; der Planer hat kein Abo
+    const [ziel] = ziele()
+    expect(parseGoTarget(ziel!)).toBe('aufgaben')
+    expect(parseGoAbschnitt(ziel!)).toBeNull()
+  })
 })

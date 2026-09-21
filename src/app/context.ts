@@ -14,6 +14,7 @@ import {
   type Dispatch,
 } from 'react'
 import type { FontScale } from '../data/constants'
+import type { Abschnitt } from './deeplink'
 import type {
   Anlass,
   AnlassArt,
@@ -230,6 +231,18 @@ export interface AppState {
    * eine eigene Wahl schlägt den Sprung, bis die App neu geladen wird.
    */
   terminGewaehlt: boolean
+  /**
+   * Bereich, zu dem der Screen nach einer Navigation noch springen soll (T109),
+   * sonst null.
+   *
+   * Ein Klick auf „Ersatz gesucht" soll beim Einspringen landen, nicht oben auf
+   * „Meine Aufgaben". Der Bereich steht dort aber erst, wenn das Gesuch geladen
+   * ist — und der Push-Klick lädt die Daten eben erst still nach. Deshalb wird
+   * das Ziel hier vorgemerkt; der Screen springt, sobald der Bereich da ist, und
+   * räumt es dann ab (`sprungZielErreicht`). Jede andere Navigation räumt es
+   * ebenfalls ab, damit nicht Minuten später ein Gesuch die Seite verschiebt.
+   */
+  sprungZiel: Abschnitt | null
   toast: Toast | null
   /**
    * Es wurde sich gerade angemeldet und die Begrüßung steht noch aus.
@@ -255,7 +268,9 @@ export type AppAction =
    * Zusammenkunft — vom Start-Bildschirm aus die Woche, in der etwas zu tun ist.
    * Über dieselbe Aktion, damit die Rechteprüfung eine Stelle bleibt.
    */
-  | { type: 'navigate'; screen: Screen; woche?: { wi: number; tab: MeetingTab } }
+  | { type: 'navigate'; screen: Screen; woche?: { wi: number; tab: MeetingTab }; abschnitt?: Abschnitt }
+  // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).
+  | { type: 'sprungZielErreicht' }
   | { type: 'prevWeek' }
   | { type: 'nextWeek' }
   | { type: 'setTab'; tab: MeetingTab }

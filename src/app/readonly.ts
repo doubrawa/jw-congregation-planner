@@ -72,6 +72,10 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   // Vermerk, dass die Begrüßung gezeigt wurde. Rein lokal; fehlte sie hier,
   // begrüßte der Offline-Start mit einem „nur lesend"-Hinweis.
   'welcomeShown',
+  // Nur die Vormerkung „hierhin scrollen" abräumen (T109) — gelesen, nicht
+  // geschrieben. Gesperrt, bliebe offline das Ziel stehen und die Seite
+  // spränge beim nächsten Nachladen noch einmal.
+  'sprungZielErreicht',
   // Rein lokale Vorlieben (localStorage, keine Versammlungsdaten)
   'setTheme',
   'setFontScale',

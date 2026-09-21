@@ -128,6 +128,20 @@
 }
 
 /* Einspringen: offene Ersatzgesuche (Hilfsdienste) zum Übernehmen. */
+/* Ziel des Sprungs aus „Ersatz gesucht" (T109). Auf dem Handy klebt die
+   Kopfzeile oben; ohne den Abstand läge die Überschrift des Bereichs nach dem
+   Hinscrollen genau darunter. */
+.auf-sub {
+  scroll-margin-top: calc(72px + env(safe-area-inset-top));
+}
+
+/* Die Überschrift wird beim Sprung fokussiert, damit ein Screenreader dort
+   weiterliest. Sie ist kein Bedienelement — ein Fokusrahmen um sie sähe aus,
+   als ließe sie sich anklicken. */
+.auf-sub .panel-label:focus {
+  outline: none;
+}
+
 .auf-sub-row {
   display: flex;
   justify-content: space-between;

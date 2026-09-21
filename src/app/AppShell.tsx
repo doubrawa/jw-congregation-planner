@@ -26,7 +26,7 @@ import { PlanenScreen } from '../planen/PlanenScreen'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
-import { parseGoTarget } from './deeplink'
+import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { NotificationsPanel } from './NotificationsPanel'
 import { SidebarBrand, SidebarFooter, SidebarNav, type NavItem } from './Sidebar'
@@ -44,6 +44,14 @@ import './rtl.css'
 // Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
 const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
+/** Ziel eines Push-Klicks: der Screen und, wenn der Link einen nennt, ein Bereich darin. */
+type Sprung = { screen: Screen; abschnitt: Abschnitt | null }
+
+function sprungAus(input: string): Sprung | null {
+  const screen = parseGoTarget(input)
+  return screen ? { screen, abschnitt: parseGoAbschnitt(input) } : null
+}
+
 export function AppShell() {
   const { state, dispatch } = useApp()
   const { t } = useT()
@@ -54,7 +62,7 @@ export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   // Deep-Link aus einem Push-Klick (#go=<screen>): beim Start aus dem Hash, bei
   // schon offenem Fenster per Service-Worker-Nachricht. Angewandt erst nach Login.
-  const [pendingNav, setPendingNav] = useState<Screen | null>(() => parseGoTarget(location.hash))
+  const [pendingNav, setPendingNav] = useState<Sprung | null>(() => sprungAus(location.hash))
   const drawerRef = useRef<HTMLElement>(null)
   useDialogFocus(drawerRef, menuOpen)
   useBackDismiss(menuOpen, () => setMenuOpen(false))
@@ -87,7 +95,7 @@ export function AppShell() {
   // client.navigate, das nur den #go=-Hash setzt und hier als hashchange ankommt.
   useEffect(() => {
     const applyFrom = (input: string) => {
-      const target = parseGoTarget(input)
+      const target = sprungAus(input)
       if (target) {
         setPendingNav(target)
         // #go= wieder aus der URL nehmen, damit ein Reload nicht erneut springt.
@@ -118,11 +126,13 @@ export function AppShell() {
   // Nicht erreichbare Ziele (z. B. „planen" für Nicht-Planer) → „aufgaben".
   // Ein Deep-Link kommt aus einem Push-Klick → serverseitig hat sich etwas
   // geändert (Absage/Ersatz), also die Daten still nachladen, damit z. B. der
-  // „Einspringen"-Bereich die neue Anfrage sofort zeigt.
+  // „Einspringen"-Bereich die neue Anfrage sofort zeigt. Nennt der Link einen
+  // Bereich, springt der Screen dorthin, sobald er steht (T109).
   useEffect(() => {
     if (isLogin || !pendingNav) return
-    const target = navScreens.includes(pendingNav) ? pendingNav : 'aufgaben'
-    dispatch({ type: 'navigate', screen: target })
+    const target = navScreens.includes(pendingNav.screen) ? pendingNav.screen : 'aufgaben'
+    const abschnitt = target === pendingNav.screen ? pendingNav.abschnitt : null
+    dispatch({ type: 'navigate', screen: target, ...(abschnitt ? { abschnitt } : {}) })
     setPendingNav(null)
     if (state.userId) void loadAndHydrate(dispatch, state.userId, { silent: true })
   }, [isLogin, pendingNav, navScreens, dispatch, state.userId])

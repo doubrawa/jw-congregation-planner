@@ -4892,7 +4892,30 @@ darf daraus kein leerer Rahmen und keine doppelte Überschrift werden.
 `panels.test.tsx`; im Browser auf Handybreite mit drei Gruppen, im dunklen
 Farbschema und rechts-nach-links, dazu die Sicht des Gruppenaufsehers.
 
-### T109 · Eine eigene Seite fürs Einspringen? 🔧 ☐ offen — erst entscheiden
+### T109 · Eine eigene Seite fürs Einspringen? 🔧 ✅ entschieden und erledigt (21. September 2026)
+
+> **Entscheidung des Betreibers (21.9.2026): keine eigene Seite** — sie wäre
+> fast immer leer. Stattdessen **springt ein Klick auf „Ersatz gesucht" direkt
+> zum Bereich Einspringen**, statt oben auf „Meine Aufgaben" zu landen.
+>
+> **Umgesetzt:** Der Push-Link trägt einen Zusatz,
+> `#go=aufgaben&abschnitt=einspringen` (nur „Ersatz gesucht"; „Ersatz
+> gefunden" führt weiter ohne Sprung — dort ist nichts mehr zu übernehmen).
+> `parseGoAbschnitt` (`src/app/deeplink.ts`) liest ihn und nimmt ihn nur, wenn
+> er zum Screen des Links gehört; alte Links ohne Zusatz öffnen die Seite wie
+> bisher. Die Navigation merkt sich den Bereich (`sprungZiel`), und „Meine
+> Aufgaben" springt hin, **sobald das Gesuch dasteht** — beim Push-Klick kommen
+> die Daten still hinterher, deshalb wartet der Sprung auf den Bereich, nicht
+> auf den Screen. Dort wird hingescrollt (mit Abstand zur klebenden
+> Kopfzeile) und die Überschrift fokussiert, damit ein Screenreader dort
+> weiterliest; jede andere Navigation und das Abmelden räumen das Ziel ab.
+> **Gleichlauf geprüft:** Der Function-Test liest die gesendeten Links mit dem
+> Parser der App. 23 neue Fälle in fünf Dateien; zwei Einträge in der
+> Mutationsprobe (`push-gesucht-einspringen`, `sprung-wartet-auf-bereich`),
+> von Hand sabotiert, beide bewacht.
+>
+> **Braucht einen Deploy von `substitute`** — bis dahin kommt der Push weiter
+> ohne Zusatz, und die App öffnet die Seite oben wie bisher.
 **Wortlaut:** *„und todo: sollte man eine extra ,einspringen' page haben"*
 
 **Wo es heute steht:** an zwei Stellen. Als goldener Bereich unten auf „Meine
@@ -5011,6 +5034,39 @@ war vorher schon da. **Wache:** `tests/auswahlfeld-chevron.test.ts` liest,
 welche Klassen an einem `<select>` hängen, und weist für sie die
 Kurzschreibweise ab sowie ein `padding:` ohne zurückgegebenen Endabstand; mit
 dem alten CSS meldet sie genau die vier Stellen.
+
+### T112 · Die Mutationsprobe prüft seit Tagen nichts mehr 🔧 ☐ offen
+**Gefunden am 21. September 2026** beim Eintragen der zwei Regeln aus T109:
+`npm run mutationsprobe` bricht ab, bevor sie eine einzige Regel prüft. Von
+192 Einträgen fanden **16 ihre Stelle nicht mehr** — die Probe verlangt je
+Eintrag genau einen Treffer und steigt beim ersten fehlenden aus, und zwar
+absichtlich („nicht stillschweigend überspringen"). Das heißt aber auch: Seit
+dem ersten verrutschten Eintrag ist keine der 192 Regeln mehr gemessen worden.
+Der älteste Bruch liegt in `supabase/functions/import-week/text.ts` (zuletzt
+geändert am 5.9.), die meisten stammen aus den Umbauten vom 18. bis 20.9.
+(`planning.ts`, `helpers.ts`, `plan-versand.ts`, `DashboardScreen.tsx`,
+`reducer.ts`, `PersonenScreen.tsx`, `send-plan`).
+
+**Schon nachgezogen:** `zuteilung-beide-raeume` (jetzt über `allePlaetze`) und
+`nav-deeplink-rechte` (die Zeile hatte T109 geändert). **Offen, 14 Einträge:**
+`zuteilung-gruppen-rotation`, `zuteilung-vorsitz-betet`,
+`last-hilfsdienst-platzzahl`, `last-ausfall`, `last-fenster-nach-datum`,
+`nav-gruppenaufseher-ohne-personen`, `start-termin-gerechnet`,
+`import-entity-numerisch`, `plan-entzug-ausfall-schweigt`,
+`plan-entzug-klasse-schweigt`, `plan-liest-nur-die-woche`,
+`navigation-woche-nur-mit-recht`, `start-nur-eigene-treffpunkte`,
+`start-wochenfolge`, `ohne-gruppe-warnung-personen` — je die Regel an ihrer
+neuen Stelle suchen und die Mutation so fassen, dass sie wieder genau den
+alten Fehler herstellt. Wo es die Regel nicht mehr gibt (der Start-Bildschirm
+hat seine Karten am 19.9. gegen die Zeitleiste getauscht), den Eintrag mit
+Begründung streichen. Danach **einmal ganz durchlaufen lassen** (im
+Hintergrund, weit über zehn Minuten) und jede „ungewacht"-Meldung ernst
+nehmen.
+
+**Und damit es nicht wieder still passiert:** Eine schnelle Prüfung gehört in
+den normalen Testlauf — dass jeder Eintrag seine Stelle genau einmal findet.
+Das kostet Millisekunden (nur Dateien lesen, nichts mutieren) und hätte jeden
+dieser Umbauten am selben Tag angehalten.
 
 ---
 
