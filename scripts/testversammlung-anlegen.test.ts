@@ -31,7 +31,7 @@ import { STANDARD_DIENSTE } from '../src/data/vorgaben'
 
 /** Minimale Testperson, wie sie nach dem Anlegen aus der Datenbank käme. */
 function person(id: string, priv: Record<string, boolean>, female = false, fam?: string) {
-  return { id, fn: id, ln: 'Test', dn: '', female, fam, priv }
+  return { id, fn: id, ln: 'Test', female, fam, priv }
 }
 
 function slotWoche() {

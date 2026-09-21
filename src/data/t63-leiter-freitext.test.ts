@@ -30,11 +30,11 @@ import type { Absence, FsInstance, Person } from './types'
  * mit Auslastung, „Meine Aufgaben" und Erinnerungen.
  */
 
-const KS = 'K. Steiner' // Anzeigename des Bruders — und Name des Kreisaufsehers
+const KS = 'K. Steiner' // Name des Bruders — und Name des Kreisaufsehers
 
 function person(patch: Partial<Person> = {}): Person {
   return {
-    id: 'p1', fn: 'Klaus', ln: 'Steiner', dn: KS, role: 'aeltester', female: false,
+    id: 'p1', fn: 'K.', ln: 'Steiner', role: 'aeltester', female: false,
     tel: '', mail: '',
     priv: { ...emptyQualifications(), treffpunkt: true },
     ...patch,
@@ -166,8 +166,8 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
     //
     //   mit Wache:  Bruder 0 · Berg 1  → der Bruder ist dran
     //   ohne Wache: Bruder 2 · Berg 1  → Berg ist dran
-    const bruder = person({ id: 'p1', dn: KS })
-    const andere = person({ id: 'p2', fn: 'Uwe', ln: 'Berg', dn: 'U. Berg' })
+    const bruder = person({ id: 'p1' })
+    const andere = person({ id: 'p2', fn: 'U.', ln: 'Berg' })
     const wochen = [
       [
         inst({ id: 'i1', leader: KS, lext: true }),

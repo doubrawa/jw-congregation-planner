@@ -21,8 +21,8 @@ import type { FsInstance, Meeting, PartItem, PartSlotSelection, Person, Week } f
  *     bekam eine neue Id und passte nie wieder dazu.
  */
 
-const person = (id: string, dn: string): Person => ({
-  id, fn: dn.split(' ')[0] ?? '', ln: dn.split(' ')[1] ?? '', dn,
+const person = (id: string, name: string): Person => ({
+  id, fn: name.split(' ')[0] ?? '', ln: name.split(' ')[1] ?? '',
   role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
 })
 

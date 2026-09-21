@@ -29,7 +29,7 @@ import type { Meeting, Person, Week } from './types'
 const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 const person: Person = {
-  id: 'p1', fn: 'Anna', ln: 'Beispiel', dn: 'A. Beispiel',
+  id: 'p1', fn: 'A.', ln: 'Beispiel',
   role: 'verkuendiger', tel: '', mail: '', priv: { ...emptyQualifications(), gebet: true },
 }
 

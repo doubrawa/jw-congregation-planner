@@ -60,19 +60,33 @@ const MEMBERS = [
 ]
 
 const PERSONS = [
-  { id: 'p-planer', fn: 'Paul', ln: 'Aner', dn: 'Paul Aner' },
-  { id: 'p-anna', fn: 'Anna', ln: 'Berg', dn: 'Anna Berg' },
-  { id: 'p-bernd', fn: 'Bernd', ln: 'Cohn', dn: 'Bernd Cohn' },
-  { id: 'p-mit', fn: 'Mia', ln: 'Glied', dn: 'Mia Glied' },
+  { id: 'p-planer', fn: 'Paul', ln: 'Aner' },
+  { id: 'p-anna', fn: 'Anna', ln: 'Berg' },
+  { id: 'p-bernd', fn: 'Bernd', ln: 'Cohn' },
+  { id: 'p-mit', fn: 'Mia', ln: 'Glied' },
   // Eingeteilt, aber ohne App-Konto — muss persönlich angesprochen werden.
-  { id: 'p-ohne', fn: 'Karl', ln: 'Onto', dn: 'Karl Onto' },
-  // Zwei Brüder mit demselben Anzeigenamen. Die App warnt den Planer davor,
-  // verbietet es aber nicht.
-  { id: 'p-tim-a', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
-  { id: 'p-tim-b', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
+  { id: 'p-ohne', fn: 'Karl', ln: 'Onto' },
+  /*
+   * **Drei Brüder mit demselben Namen.**
+   *
+   * Seit T110 kann die Datenbank das nicht mehr halten: Vor- und Nachname sind
+   * je Versammlung eindeutig (`persons_name_eindeutig`). Der Function nützt
+   * das trotzdem nichts, und die Fälle darunter bleiben deshalb stehen — der
+   * Name, über den sie zuordnet, steht nicht in `persons`, sondern **als Text
+   * in der Woche**. Der ist eine Momentaufnahme: Wird jemand umbenannt,
+   * tragen ältere Wochen weiter den alten Namen, und der kann heute einem
+   * anderen gehören. Hilfsdienste und importierte Plätze tragen ohnehin
+   * Freitext.
+   *
+   * Die Regel „Id zuerst, Name nur als Rückfall" ist also keine Antwort auf
+   * doppelte Personen, sondern auf mehrdeutige Namen — und die gibt es
+   * weiterhin.
+   */
+  { id: 'p-tim-a', fn: 'Tim', ln: 'Zwill' },
+  { id: 'p-tim-b', fn: 'Tim', ln: 'Zwill' },
   // Der dritte trägt denselben Namen und hat **kein** Konto. An ihm hängt die
   // Frage, was gilt, wenn die Id zu niemandem führt.
-  { id: 'p-tim-c', fn: 'Tim', ln: 'Zwill', dn: 'Tim Zwill' },
+  { id: 'p-tim-c', fn: 'Tim', ln: 'Zwill' },
 ]
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone', count: 1, groups: false }]

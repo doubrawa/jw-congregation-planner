@@ -32,9 +32,9 @@ import type { Meeting, PartItem, Person, Week } from './types'
 
 const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
-const person = (id: string, dn: string): Person => ({
-  id, fn: dn.split(' ')[0] ?? '', ln: dn.split(' ')[1] ?? '',
-  dn, role: 'aeltester', tel: '', mail: '', priv: emptyQualifications(),
+const person = (id: string, name: string): Person => ({
+  id, fn: name.split(' ')[0] ?? '', ln: name.split(' ')[1] ?? '',
+  role: 'aeltester', tel: '', mail: '', priv: emptyQualifications(),
 })
 
 const LEITER = person('p1', 'A. Leiter')

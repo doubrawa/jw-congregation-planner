@@ -51,22 +51,22 @@ import { STANDARD_ZEITEN } from './vorgaben'
  */
 const VOR_DER_WOCHE = new Date(2026, 8, 1, 9, 0)
 
-const person = (fn: string, ln: string, dn?: string): Person => ({
-  id: 'p', fn, ln, dn, role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
+const person = (fn: string, ln: string): Person => ({
+  id: 'p', fn, ln, role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
 })
 
-describe('Anzeigename', () => {
-  const faelle: Array<[string, string, string | undefined]> = [
-    ['Anna', 'Beispiel', undefined],
-    ['Anna', 'Beispiel', 'A. Beispiel'],
-    ['', 'Beispiel', undefined], // nur Nachname → kein führendes Leerzeichen
-    ['Anna', '', undefined],
-    ['', '', undefined], // gar nichts → leer, nicht " "
-    ['Jörg', 'Grünwald', ''], // leerer dn zählt nicht als gesetzt
+describe('Name einer Person', () => {
+  const faelle: Array<[string, string]> = [
+    ['Anna', 'Beispiel'],
+    ['', 'Beispiel'], // nur Nachname → kein führendes Leerzeichen
+    ['Anna', ''],
+    ['', ''], // gar nichts → leer, nicht " "
+    ['Jörg', 'Grünwald'],
+    ['Josef sen.', 'Mayer'], // der Zusatz gegen Namensgleichheit (T110)
   ]
 
-  it.each(faelle)('„%s %s" (dn: %s) gleich auf beiden Seiten', (fn, ln, dn) => {
-    expect(edgeName(fn, ln, dn)).toBe(displayName(person(fn, ln, dn)))
+  it.each(faelle)('„%s %s" gleich auf beiden Seiten', (fn, ln) => {
+    expect(edgeName(fn, ln)).toBe(displayName(person(fn, ln)))
   })
 })
 

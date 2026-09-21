@@ -52,7 +52,7 @@ const grenze = (table: string): unknown =>
 const fenster = (table: string): unknown =>
   store.filter.find(([t, m]) => t === table && m === 'gte')?.[3]
 
-const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', dn: '', planner: false, role: 'verkuendiger', female: true, tel: '', mail: '', priv: {}, grp: null }
+const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', planner: false, role: 'verkuendiger', female: true, tel: '', mail: '', priv: {}, grp: null }
 const serviceRow = { key: 'mik', name: 'Mikrofone', count: 2, priv: null, groups: false, position: 0 }
 const groupRow = { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0 }
 

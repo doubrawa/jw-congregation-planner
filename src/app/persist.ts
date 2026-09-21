@@ -40,7 +40,7 @@ import {
   sendPlanEntzug,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
-import { mtab } from '../data/helpers'
+import { mtab, namensDublette } from '../data/helpers'
 import { dienstZusagenKeys } from '../data/dienste'
 import { supabase } from '../lib/supabase'
 import type { FsInstance, Person, Week } from '../data/types'
@@ -384,6 +384,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   // erst mit dem Schreiben ihrer Woche (`fsWocheSpeichern`, `fsWochePlanen`).
   const fsVerwaist = verwaisteFsZusagen(prev, next)
 
+  /*
+   * Steht der Name der gerade bearbeiteten Person vorübergehend doppelt da
+   * (T110)? Dann geht **nichts** hinaus, was an ihm hängt — die Personenzeile,
+   * die Treffpunkte und die Wochen, in denen er als Text steht. Gesetzt wird
+   * das im Fall `updatePerson`, gelesen auch noch unter dem Switch: Der
+   * Reducer hat den neuen Namen längst in die Wochen gezogen
+   * (`renameInWeeks`), und schriebe man sie, trüge die Datenbank den Namen
+   * zweimal — einmal bei A und einmal bei B, während `persons` noch den alten
+   * Stand hält.
+   */
+  let nameUneindeutig = false
+
   switch (action.type) {
     case 'assign': {
       const sel = prev.slotSel
@@ -458,7 +470,29 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'updatePerson': {
       // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
       const p = next.persons.find((x) => x.id === action.id)
-      if (p) personSaves.schedule(p.id, { congId, person: p })
+      /*
+       * **Einen doppelten Namen schreibt die App gar nicht erst** (T110).
+       *
+       * Vor- und Nachname sind je Versammlung eindeutig, und der Index
+       * `persons_name_eindeutig` setzt das durch. Beim Tippen entstehen aber
+       * zwangsläufig Zwischenstände: Wer „Josef Mayer" zu „Josef Mayer sen."
+       * ergänzt, ist nach dem letzten Buchstaben von „Mayer" für einen
+       * Wimpernschlag die Dublette des anderen Josef Mayer. Ginge der Stand
+       * hinaus, käme er als Schreibfehler zurück — eine rote Meldung für eine
+       * Eingabe, die gerade erst halb fertig ist.
+       *
+       * Angehalten wird deshalb hier, nicht in der Eingabe: Der Zustand nimmt
+       * jeden Tastendruck an, das Feld meldet die Dublette (`PersonDetail`),
+       * und geschrieben wird erst wieder, sobald der Name eindeutig ist.
+       *
+       * Angehalten wird alles, was **am Namen hängt** — die Personenzeile und
+       * die Treffpunkte, in denen er als Text steht (die Wochen weiter unten
+       * ebenso). Nicht angehalten wird das **Planer-Recht**: Es liegt in
+       * `members`, hat mit dem Namen nichts zu tun, und ein halb getippter
+       * Name soll einen Rechte-Schalter nicht verschlucken.
+       */
+      nameUneindeutig = Boolean(p && namensDublette(next.persons, p))
+      if (p && !nameUneindeutig) personSaves.schedule(p.id, { congId, person: p })
       // Die Namensänderung in den Wochen (renameInWeeks) schreibt der Block
       // unter dem Switch — hier bleiben die Treffpunkte (fsRenameLeader):
       // eigene Tabelle, eigener Schreibweg. Ohne dies hielte der neue Name nur
@@ -469,7 +503,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // leitet — bei zwanzig geleiteten Wochen 240 Anfragen für eine
       // berichtigte Schreibweise. `flush()` beim Verlassen der Ansicht holt sie
       // ein (`selectPerson`/`navigate`/`logout`).
-      for (let i = 0; i < next.fsWeeks.length; i++) {
+      for (let i = 0; i < next.fsWeeks.length && !nameUneindeutig; i++) {
         if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
       // Planer-Recht sofort in gespiegelte Konten und offene Codes schreiben
@@ -657,7 +691,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   }
 
   // Jede Woche, die sich geändert hat — siehe `geaenderteWochenSpeichern`.
-  if (!OHNE_WOCHENSCHREIBEN.includes(action.type)) {
+  if (!OHNE_WOCHENSCHREIBEN.includes(action.type) && !nameUneindeutig) {
     geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type))
   }
 

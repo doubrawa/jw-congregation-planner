@@ -41,13 +41,40 @@ export function argumente(argv) {
 }
 
 /**
- * Anzeigename wie in der App (`_shared/planung.ts`, `src/data/helpers.ts`).
+ * Name einer Person wie in der App (`_shared/planung.ts`, `src/data/helpers.ts`):
+ * Vor- und Nachname, getrimmt — damit ein fehlender Teil kein führendes oder
+ * doppeltes Leerzeichen hinterlässt.
  *
- * Ein gesetzter Anzeigename gilt; sonst Vor- und Nachname, getrimmt — damit
- * ein fehlender Teil kein führendes oder doppeltes Leerzeichen hinterlässt.
+ * Bis T110 konnte ein Feld `dn` ihn überschreiben; es ist entfallen, weil
+ * Vor- und Nachname je Versammlung eindeutig sind.
  */
-export function personDisplayName(fn, ln, dn) {
-  return (dn && dn.trim()) || `${fn ?? ''} ${ln ?? ''}`.trim()
+export function personDisplayName(fn, ln) {
+  return `${fn ?? ''} ${ln ?? ''}`.trim()
+}
+
+/**
+ * **Gleichnamige im einzuspielenden Bestand** — je Name die betroffenen
+ * Personen, in der Reihenfolge ihres Auftretens.
+ *
+ * Verglichen wird wie in der App (`namensSchluessel`, `src/data/helpers.ts`)
+ * und wie im Index `persons_name_eindeutig`: mehrfache Leerzeichen
+ * zusammengezogen, ohne Rand, klein geschrieben; Akzente bleiben
+ * unterschieden. Namenlose zählen nicht mit.
+ *
+ * Wer das übergeht, bekommt die Auskunft von PostgreSQL — einen abgelehnten
+ * Sammel-`insert` ohne Namen darin, mitten im Zurücksetzen, wenn die alten
+ * Personen bereits gelöscht sind (T110).
+ */
+export function gleichnamige(persons) {
+  const nach = new Map()
+  for (const p of persons) {
+    const key = personDisplayName(p.fn, p.ln).replace(/\s+/g, ' ').toLowerCase()
+    if (!key) continue
+    const liste = nach.get(key)
+    if (liste) liste.push(p)
+    else nach.set(key, [p])
+  }
+  return [...nach.values()].filter((liste) => liste.length > 1)
 }
 
 /**

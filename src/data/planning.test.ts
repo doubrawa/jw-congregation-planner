@@ -35,10 +35,10 @@ import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
 import { privSetzen } from './helpers'
 
-/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
+/** Person, die nur über ihren Namen zugeordnet wird (Slots ohne pid). */
 function alsPerson(name: string): Person {
   return {
-    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
     tel: '', mail: '', priv: emptyQualifications(),
   }
 }

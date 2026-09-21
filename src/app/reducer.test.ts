@@ -127,10 +127,10 @@ const neuAbgeleitet = (s: AppState): AppState =>
 
 describe('isNameless', () => {
   it('true nur ohne jeglichen Namen', () => {
-    expect(isNameless({ fn: '', ln: '', dn: '' } as Person)).toBe(true)
-    expect(isNameless({ fn: '  ', ln: '', dn: undefined } as Person)).toBe(true)
-    expect(isNameless({ fn: 'A', ln: '', dn: '' } as Person)).toBe(false)
-    expect(isNameless({ fn: '', ln: '', dn: 'Josef 1' } as Person)).toBe(false)
+    expect(isNameless({ fn: '', ln: '' } as Person)).toBe(true)
+    expect(isNameless({ fn: '  ', ln: '' } as Person)).toBe(true)
+    expect(isNameless({ fn: 'A', ln: '' } as Person)).toBe(false)
+    expect(isNameless({ fn: '', ln: 'Mayer' } as Person)).toBe(false)
   })
 })
 
@@ -324,7 +324,7 @@ describe('Personen', () => {
   })
 
   it('selectPerson verwirft eine zuvor namenlose Person', () => {
-    const empty: Person = { ...fresh, id: 'pLeer', fn: '', ln: '', dn: '' }
+    const empty: Person = { ...fresh, id: 'pLeer', fn: '', ln: '' }
     const s = makeState({ persons: [...DEMO_PERSONS, empty], selectedPersonId: 'pLeer' })
     const next = reducer(s, { type: 'selectPerson', id: 'p1' })
     expect(next.persons.some((p) => p.id === 'pLeer')).toBe(false)

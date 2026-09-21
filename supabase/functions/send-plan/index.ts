@@ -98,7 +98,6 @@ interface PersonRow {
   id: string
   fn: string
   ln: string
-  dn: string
 }
 
 /**
@@ -223,7 +222,7 @@ Deno.serve(async (req: Request) => {
 
     const [members, persons, subs] = await Promise.all([
       rest.get<MemberRow[]>(`members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`),
-      rest.get<PersonRow[]>(`persons?select=id,fn,ln,dn&congregation_id=eq.${wert(cong)}`),
+      rest.get<PersonRow[]>(`persons?select=id,fn,ln&congregation_id=eq.${wert(cong)}`),
       rest.get<SubscriptionRow[]>(
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
@@ -241,9 +240,9 @@ Deno.serve(async (req: Request) => {
       const p = m.person_id ? personById.get(m.person_id) : undefined
       if (!p) continue
       userByPerson.set(p.id, m.user_id)
-      userByName.set(personDisplayName(p.fn, p.ln, p.dn), m.user_id)
+      userByName.set(personDisplayName(p.fn, p.ln), m.user_id)
     }
-    for (const p of persons) personByName.set(personDisplayName(p.fn, p.ln, p.dn), p.id)
+    for (const p of persons) personByName.set(personDisplayName(p.fn, p.ln), p.id)
     const subsByUser = new Map<string, SubscriptionRow[]>()
     for (const s of subs) subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
     const empfaengerFuer = (uid: string): Empfaenger => ({

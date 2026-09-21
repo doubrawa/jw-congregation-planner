@@ -41,9 +41,9 @@ const MEMBERS = [
 ]
 
 const PERSONS = [
-  { id: 'p-max', fn: 'Max', ln: 'Mustermann', dn: 'Max Mustermann' },
-  { id: 'p-nina', fn: 'Nina', ln: 'Nolink', dn: 'Nina Nolink' },
-  { id: 'p-planer', fn: 'Paula', ln: 'Planer', dn: 'Paula Planer' },
+  { id: 'p-max', fn: 'Max', ln: 'Mustermann' },
+  { id: 'p-nina', fn: 'Nina', ln: 'Nolink' },
+  { id: 'p-planer', fn: 'Paula', ln: 'Planer' },
 ]
 
 const SERVICES = [
@@ -1079,7 +1079,7 @@ describe('send-reminders: der Bericht sagt, was nicht ankam', () => {
 describe('send-reminders: die Id entscheidet, nicht der Name', () => {
   beforeEach(() => {
     // Zwei Brüder desselben Namens: einer mit Konto (p-max), einer ohne.
-    persons = [...PERSONS, { id: 'p-doppel', fn: 'Max', ln: 'Mustermann', dn: 'Max Mustermann' }]
+    persons = [...PERSONS, { id: 'p-doppel', fn: 'Max', ln: 'Mustermann' }]
     weeks = [{ start: WEEK_START, data: { mid: midMitNamensvetter() } }]
   })
 

@@ -45,9 +45,11 @@ describe('Volltextsuche', () => {
     expect(passtZumFilter(person({ tel: '0555 999' }), filter({ q: '7' }))).toBe(false)
   })
 
-  it('findet auch über den abweichenden Anzeigenamen', () => {
-    expect(passtZumFilter(person({ dn: 'Simon K.' }), filter({ q: 'simon k.' }))).toBe(true)
-  })
+  /*
+   * Hier stand „findet auch über den abweichenden Anzeigenamen". Den gibt es
+   * seit T110 nicht mehr — gesucht wird über Vor- und Nachname, und die sind
+   * je Versammlung eindeutig.
+   */
 })
 
 describe('Filterfelder', () => {

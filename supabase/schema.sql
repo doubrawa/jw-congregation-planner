@@ -121,9 +121,12 @@ create index if not exists households_congregation_idx
 create table if not exists public.persons (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
+  -- Vor- und Nachname. Zusammen eindeutig je Versammlung — siehe den Index
+  -- `persons_name_eindeutig` unter dieser Tabelle. Bis T110 stand daneben ein
+  -- Feld `dn` für einen abweichenden Anzeigenamen; es ist entfallen, weil es
+  -- nur nötig war, solange zwei Personen gleich heißen konnten.
   fn              text not null default '',
   ln              text not null default '',
-  dn              text not null default '', -- abweichender Anzeigename bei Namensgleichheit; leer = "Vorname Nachname"
   role            text not null default 'verkuendiger'
                   check (role in ('aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine')),
   female          boolean not null default false,   -- Schwester (Partner-Zuordnung, Brüder-Bereiche)
@@ -159,6 +162,27 @@ create index if not exists persons_congregation_idx
   on public.persons (congregation_id);
 create index if not exists persons_fam_idx
   on public.persons (fam) where fam is not null;
+
+-- Vor- und Nachname sind je Versammlung EINDEUTIG (T110).
+--
+-- Warum in der Datenbank und nicht nur in der App: Der Name steht in jeder
+-- Zuteilung neben der Person-Id, und an jedem Platz OHNE Id (Hilfsdienste,
+-- Freitext, Import, `mein_anzeigename()` weiter unten) ordnet er allein zu.
+-- Zwei Gleichnamige teilten sich dort still ihre Aufgaben. Die Prüfung in der
+-- App ist die freundliche Auskunft am Feld; sie hält aber weder einen zweiten
+-- Planer auf, der zeitgleich tippt, noch einen offenen alten Tab, noch die
+-- Wartungsskripte. Der Index hält alle drei.
+--
+-- Verglichen wird der ANGEZEIGTE Name, wie ihn `namensSchluessel()` in der App
+-- rechnet: Vor- und Nachname mit einem Leerzeichen verbunden, mehrfache
+-- Leerzeichen zusammengezogen, ohne Rand, klein geschrieben. Akzente bleiben
+-- unterschieden — Müller und Muller dürfen zwei Menschen sein.
+--
+-- Namenlose bleiben draußen: Eine frisch angelegte Person hat noch keinen
+-- Namen, und zwei davon nebeneinander sind keine Dublette.
+create unique index if not exists persons_name_eindeutig
+  on public.persons (congregation_id, lower(btrim(regexp_replace(fn || ' ' || ln, '\s+', ' ', 'g'))))
+  where btrim(fn || ' ' || ln) <> '';
 
 create table if not exists public.services (
   id              uuid primary key default gen_random_uuid(),
@@ -517,16 +541,21 @@ as $$
   )
 $$;
 
--- Anzeigename der eigenen Person — wie `personDisplayName()` in der App:
--- eigener Kurzname, sonst Vor- und Nachname. Gebraucht für Plätze, die nur
--- einen Namen tragen und keine Person-Id: Ein Import ordnet einen mehrdeutigen
--- Namen bewusst keiner Person zu, und von Hand eingetragener Text hat gar keine.
+-- Name der eigenen Person — wie `displayName()` in der App: Vor- und Nachname.
+-- Gebraucht für Plätze, die nur einen Namen tragen und keine Person-Id: Ein
+-- Import ordnet einen mehrdeutigen Namen bewusst keiner Person zu, und von
+-- Hand eingetragener Text hat gar keine.
+--
+-- **Seit T110 ist dieser Rückfall eindeutig.** Solange zwei Personen gleich
+-- heißen konnten, war genau er die Lücke in der Bestätigungs-Richtlinie: Wer
+-- „Josef Mayer" hieß, durfte die namenlosen Plätze des anderen Josef Mayer
+-- bestätigen. `persons_name_eindeutig` schließt sie.
 create or replace function public.mein_anzeigename()
 returns text
 language sql stable security definer
 set search_path = public
 as $$
-  select coalesce(nullif(btrim(p.dn), ''), btrim(p.fn || ' ' || p.ln))
+  select btrim(p.fn || ' ' || p.ln)
     from public.persons p
    where p.id = public.my_person_id()
 $$;

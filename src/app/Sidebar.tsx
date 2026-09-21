@@ -4,7 +4,7 @@
  * Reine Präsentation: State und Handler kommen aus AppShell.
  */
 
-import { fullName, initials } from '../data/helpers'
+import { displayName, initials } from '../data/helpers'
 import { useT } from '../i18n/useT'
 import type { Person, Screen } from '../data/types'
 
@@ -76,7 +76,7 @@ export function SidebarFooter({
       <div className="sidebar-profile">
         <div className="avatar avatar--ink avatar--32">{me ? initials(me) : '–'}</div>
         <div>
-          <div className="sidebar-profile-name" dir="auto">{me ? fullName(me) : ''}</div>
+          <div className="sidebar-profile-name" dir="auto">{me ? displayName(me) : ''}</div>
           <div className="sidebar-profile-role">{roleLabel}</div>
         </div>
       </div>

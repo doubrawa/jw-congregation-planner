@@ -72,7 +72,6 @@ export const DE = {
     neuePerson: '+ NEUE PERSON ANLEGEN', aufgabenbereicheN: '{n} Aufgabenbereiche',
     allePersonen: '‹ Alle Personen', stammdaten: 'STAMMDATEN',
     vorname: 'VORNAME', nachname: 'NACHNAME', telefon: 'TELEFON', emailLbl: 'E-MAIL',
-    anzeigename: 'ANZEIGENAME (OPTIONAL)',
     kontoCard: 'KONTO',
     persLoeschen: 'PERSON LÖSCHEN',
     offeneTitle: 'OFFENE ZUTEILUNGEN',
@@ -298,10 +297,12 @@ export const DE = {
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
     konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',
-    // Warnung doppelte Anzeigenamen (Personen)
-    dublettenTitle: 'DOPPELTE ANZEIGENAMEN',
-    dublettenHint: 'Gleiche Anzeigenamen führen zu falscher Aufgabenzuordnung. Vergib je Person einen eindeutigen Anzeigenamen.',
+    // Zählzeile der Warnung „mehrfach vergebene feste Rollen" (Personen).
+    // Hier stand daneben die Warnung vor doppelten Anzeigenamen — mit T110
+    // entfallen, weil ein doppelter Name sich nicht mehr speichern lässt.
     dublettenRow: '„{name}" · {n} Personen',
+    // Meldung am Namensfeld, wenn den Namen schon jemand trägt (T110).
+    nameDoppelt: 'Diesen Namen trägt bereits {name}. Ergänze den Vornamen, damit beide unterscheidbar sind.',
     // Predigtdienstgruppe löschen (Zwei-Tipp-Bestätigung) und Warnung „ohne Gruppe"
     loeschenSicher: 'Wirklich löschen?',
     gruppeDelMitglieder: 'Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet.',

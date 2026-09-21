@@ -65,9 +65,8 @@ function makeWeek(): Week {
 
 const person: Person = {
   id: 'p-hartmann',
-  fn: 'Martin',
+  fn: 'M.',
   ln: 'Hartmann',
-  dn: 'M. Hartmann',
   role: 'aeltester',
   tel: '',
   mail: '',

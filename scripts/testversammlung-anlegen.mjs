@@ -254,7 +254,7 @@ export function fuelleZuteilungen(week, personen, dienste, gruppen, stand = { za
     wohin.add(p.id)
     stand.zaehler.set(p.id, (stand.zaehler.get(p.id) ?? 0) + 1)
     gesetzt++
-    return { name: personDisplayName(p.fn, p.ln, p.dn), pid: p.id }
+    return { name: personDisplayName(p.fn, p.ln), pid: p.id }
   }
 
   for (const mk of ['mid', 'we']) {
@@ -642,7 +642,7 @@ async function main() {
     if (planer) {
       await rest(`persons?id=eq.${person.id}`, 'PATCH', { planner_vorgemerkt: true }, 'return=minimal')
     }
-    konten.push({ mail, pw, person: personDisplayName(person.fn, person.ln, person.dn), planer })
+    konten.push({ mail, pw, person: personDisplayName(person.fn, person.ln), planer })
     console.log(`  Konto ${mail}${user.uebernommen ? ' (vorhandenes übernommen, Kennwort neu gesetzt)' : ''}`)
   }
 

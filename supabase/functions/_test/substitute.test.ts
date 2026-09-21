@@ -64,14 +64,14 @@ const PERSONS = [
 
     Kein Push-Abo, damit die Zustell-Prüfungen ihre Endpunkte behalten.
   */
-  { id: 'p-orig-zwill', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: QUAL },
-  { id: 'p-me', fn: 'Ich', ln: 'Selbst', dn: 'Ich Selbst', priv: QUAL },
-  { id: 'p-orig', fn: 'Otto', ln: 'Riginal', dn: 'Otto Riginal', priv: QUAL },
-  { id: 'p-unqual', fn: 'Uwe', ln: 'Nqual', dn: 'Uwe Nqual', priv: {} },
-  { id: 'p-absent', fn: 'Anna', ln: 'Bwesend', dn: 'Anna Bwesend', priv: QUAL },
-  { id: 'p-planner', fn: 'Paul', ln: 'Aner', dn: 'Paul Aner', priv: {} },
+  { id: 'p-orig-zwill', fn: 'Otto', ln: 'Riginal', priv: QUAL },
+  { id: 'p-me', fn: 'Ich', ln: 'Selbst', priv: QUAL },
+  { id: 'p-orig', fn: 'Otto', ln: 'Riginal', priv: QUAL },
+  { id: 'p-unqual', fn: 'Uwe', ln: 'Nqual', priv: {} },
+  { id: 'p-absent', fn: 'Anna', ln: 'Bwesend', priv: QUAL },
+  { id: 'p-planner', fn: 'Paul', ln: 'Aner', priv: {} },
   // qualifiziert, hat aber gar kein Konto → kann nicht benachrichtigt werden
-  { id: 'p-noacct', fn: 'Karl', ln: 'Onto', dn: 'Karl Onto', priv: QUAL },
+  { id: 'p-noacct', fn: 'Karl', ln: 'Onto', priv: QUAL },
 ]
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone' }]

@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { useInstallAvailable, usePush } from '../components/usePush'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
-import { fullName } from '../data/helpers'
+import { displayName } from '../data/helpers'
 
 import type { Lang, Theme } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
@@ -53,7 +53,7 @@ export function ProfilScreen() {
         <h2 className="panel-label">{t.profil}</h2>
         <div className="kv-row">
           <span className="kv-key">{t.nameLbl}</span>
-          <span className="kv-val" dir="auto">{me ? fullName(me) : ''}</span>
+          <span className="kv-val" dir="auto">{me ? displayName(me) : ''}</span>
         </div>
         {myEmail && (
           <div className="kv-row">

@@ -47,7 +47,6 @@ interface PersonRow {
   id: string
   fn: string
   ln: string
-  dn: string
   planner_vorgemerkt: boolean
   role: string
   female: boolean
@@ -189,7 +188,6 @@ function personFromRow(r: PersonRow): Person {
     id: r.id,
     fn: r.fn,
     ln: r.ln,
-    dn: r.dn || undefined,
     plannerVorgemerkt: r.planner_vorgemerkt || undefined,
     role: asRole(r.role),
     female: r.female || undefined,
@@ -207,7 +205,6 @@ function personToRow(p: Person, congregationId: string) {
     congregation_id: congregationId,
     fn: p.fn,
     ln: p.ln,
-    dn: p.dn ?? '',
     planner_vorgemerkt: Boolean(p.plannerVorgemerkt),
     role: p.role,
     female: Boolean(p.female),

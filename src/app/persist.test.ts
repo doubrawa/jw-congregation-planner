@@ -488,6 +488,66 @@ describe('Personen (inkl. Debounce)', () => {
     expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2)
   })
 
+  /*
+   * **Ein doppelter Name geht gar nicht erst hinaus** (T110).
+   *
+   * Vor- und Nachname sind je Versammlung eindeutig; der Index
+   * `persons_name_eindeutig` weist eine Dublette ab. Beim Tippen entsteht sie
+   * aber zwangsläufig — wer „Anna Berg" zu „Anna Berg jun." ergänzt, ist
+   * unterwegs für einen Moment die Dublette der echten Anna Berg. Ginge der
+   * Stand hinaus, bekäme der Planer eine Schreibfehler-Meldung für eine
+   * halb fertige Eingabe.
+   */
+  describe('Namensgleichheit hält das Schreiben an', () => {
+    /** Person 0 bekommt den Namen von Person 1 — die Dublette. */
+    const mitDublette = () => {
+      const [a, b] = [DEMO_PERSONS[0]!, DEMO_PERSONS[1]!]
+      const kollidiert = { ...a, fn: b.fn, ln: b.ln }
+      return { a, kollidiert, next: st({ persons: [kollidiert, ...DEMO_PERSONS.slice(1)] }) }
+    }
+
+    it('die Personenzeile bleibt liegen, solange der Name doppelt ist', () => {
+      const { a, kollidiert, next } = mitDublette()
+      persist(st(), next, { type: 'updatePerson', id: a.id, patch: { ln: kollidiert.ln } })
+      vi.advanceTimersByTime(600)
+      expect(data.savePerson).not.toHaveBeenCalled()
+    })
+
+    it('auch die Wochen bleiben liegen — sie tragen den Namen als Text', () => {
+      const { a, next } = mitDublette()
+      const geaendert = { ...buildDemoWeeks()[0]!, book: 'anders' }
+      persist(st(), st({ ...next, weeks: [geaendert] }), {
+        type: 'updatePerson',
+        id: a.id,
+        patch: { ln: DEMO_PERSONS[1]!.ln },
+      })
+      vi.advanceTimersByTime(600)
+      expect(data.saveWeek).not.toHaveBeenCalled()
+    })
+
+    it('sobald der Name eindeutig ist, geht er hinaus', () => {
+      const a = DEMO_PERSONS[0]!
+      const eindeutig = { ...a, fn: `${DEMO_PERSONS[1]!.fn} jun.`, ln: DEMO_PERSONS[1]!.ln }
+      persist(st(), st({ persons: [eindeutig, ...DEMO_PERSONS.slice(1)] }), {
+        type: 'updatePerson',
+        id: a.id,
+        patch: { fn: eindeutig.fn },
+      })
+      vi.advanceTimersByTime(600)
+      expect(data.savePerson).toHaveBeenCalledWith('c1', eindeutig)
+    })
+
+    it('das Planer-Recht geht trotzdem hinaus — es hängt nicht am Namen', () => {
+      const { a, next } = mitDublette()
+      persist(
+        st(),
+        { ...next, members: [{ userId: 'm1', email: '', personId: a.id, planner: true }] },
+        { type: 'updatePerson', id: a.id, patch: { plannerVorgemerkt: true } },
+      )
+      expect(data.saveMemberRow).toHaveBeenCalledTimes(1)
+    })
+  })
+
   it('updatePerson mit Planer-Recht spiegelt Konten/Codes sofort', () => {
     const p = DEMO_PERSONS[0]
     const next = st({

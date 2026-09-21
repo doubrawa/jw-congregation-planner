@@ -5,6 +5,7 @@ import {
   argumente,
   BEHALTEN,
   displayName,
+  gleichnamige,
   LEEREN,
   NEU_ANGELEGT,
   parseInsert,
@@ -92,9 +93,46 @@ describe('parseKuratiert', () => {
 })
 
 describe('displayName', () => {
-  it('nimmt den Kurznamen, sonst Vor- und Nachname', () => {
-    expect(displayName('Jörg', 'Grünwald', '')).toBe('Jörg Grünwald')
-    expect(displayName('Josef', 'Mayer', 'Josef Mayer 1')).toBe('Josef Mayer 1')
+  it('ist Vor- und Nachname, getrimmt', () => {
+    expect(displayName('Jörg', 'Grünwald')).toBe('Jörg Grünwald')
+    // Namensgleiche trennt seit T110 ein Zusatz am Vornamen, kein zweites Feld.
+    expect(displayName('Josef sen.', 'Mayer')).toBe('Josef sen. Mayer')
+    expect(displayName('', 'Mayer')).toBe('Mayer')
+  })
+})
+
+/**
+ * **Gleichnamige im SQL halten das Zurücksetzen an** (T110), bevor der erste
+ * Löschbefehl hinausgeht: Der Index `persons_name_eindeutig` würde den
+ * Sammel-`insert` ohnehin abweisen — nur wären die alten Personen dann schon
+ * weg, und in der Meldung von PostgreSQL stünde kein Name.
+ */
+describe('gleichnamige', () => {
+  const p = (id: string, fn: string, ln: string) => ({ id, fn, ln })
+
+  it('meldet je Namen die betroffenen Personen', () => {
+    const doppelt = gleichnamige([
+      p('a', 'Josef', 'Mayer'),
+      p('b', 'Josef', 'Mayer'),
+      p('c', 'Anna', 'Berg'),
+    ])
+    expect(doppelt.map((liste) => liste.map((x) => x.id))).toEqual([['a', 'b']])
+  })
+
+  it('vergleicht wie die App: Schreibweise und Leerzeichen zählen nicht', () => {
+    expect(gleichnamige([p('a', 'Josef', 'Mayer'), p('b', 'josef  ', ' MAYER')])).toHaveLength(1)
+  })
+
+  it('Akzente unterscheiden — Müller und Muller dürfen zwei Menschen sein', () => {
+    expect(gleichnamige([p('a', 'Anna', 'Müller'), p('b', 'Anna', 'Muller')])).toEqual([])
+  })
+
+  it('Namenlose zählen nicht mit', () => {
+    expect(gleichnamige([p('a', '', ''), p('b', '', ' ')])).toEqual([])
+  })
+
+  it('ein eindeutiger Bestand meldet nichts', () => {
+    expect(gleichnamige([p('a', 'Josef', 'Mayer'), p('b', 'Josef sen.', 'Mayer')])).toEqual([])
   })
 })
 

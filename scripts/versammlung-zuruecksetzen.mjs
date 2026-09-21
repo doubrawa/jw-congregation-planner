@@ -50,8 +50,8 @@
 
 import fs from 'node:fs'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
-export { argumente }
+import { argumente, gleichnamige, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
+export { argumente, gleichnamige }
 export { personDisplayName as displayName }
 
 /* ===================== Kuratierte Daten aus dem SQL lesen ================= */
@@ -124,7 +124,7 @@ export function parseKuratiert(sql) {
     } else if (ins?.tabelle === 'persons') {
       const o = ins.obj
       persons.push({
-        id: o.id, fn: o.fn, ln: o.ln, dn: o.dn, role: o.role, female: o.female,
+        id: o.id, fn: o.fn, ln: o.ln, role: o.role, female: o.female,
         tel: o.tel, mail: o.mail, priv: JSON.parse(o.priv), grp: o.grp ?? null, fam: o.fam ?? null,
       })
     } else {
@@ -181,6 +181,34 @@ async function main() {
     process.exit(1)
   }
 
+  /*
+   * **Gleichnamige abweisen, bevor irgendetwas gelöscht ist** (T110).
+   *
+   * Vor- und Nachname sind je Versammlung eindeutig (`persons_name_eindeutig`).
+   * Ein SQL mit zwei „Josef Mayer" darin ließe sich also gar nicht einspielen
+   * — nur merkt man das erst beim Sammel-`insert`, und da sind die alten
+   * Personen schon gelöscht. Was dann dasteht, ist eine leere Versammlung und
+   * eine Fehlermeldung von PostgreSQL, in der die Namen nicht vorkommen.
+   *
+   * Deshalb hier, vor dem ersten Schreibzugriff, und mit den Namen. Behoben
+   * wird es in der Quelle: NWS-Vornamen ergänzen („Josef sen."), dann
+   * `build-personen-sql.mjs` neu laufen lassen.
+   */
+  const doppelt = gleichnamige(kuratiert.persons)
+  if (doppelt.length > 0) {
+    console.error(`\n${doppelt.length}× derselbe Name im SQL (${sqlPfad}):\n`)
+    for (const liste of doppelt) {
+      const namen = liste[0] ? personDisplayName(liste[0].fn, liste[0].ln) : ''
+      console.error(`  ${namen} — ${liste.length} Personen: ${liste.map((p) => p.id).join(', ')}`)
+    }
+    console.error(
+      '\nVor- und Nachname müssen je Versammlung eindeutig sein. In NWS den Vornamen\n' +
+        'ergänzen (z. B. „Josef sen.") und build-personen-sql.mjs neu laufen lassen.\n' +
+        'Es wurde nichts gelöscht und nichts geschrieben.\n',
+    )
+    process.exit(1)
+  }
+
   const rest = restKlient(url, key)
 
   const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
@@ -191,8 +219,8 @@ async function main() {
   // Sidecar-Datei gehalten. Läuft das Skript nach einem Abbruch erneut (persons
   // bereits gelöscht, also aus der DB nicht mehr ableitbar), kommt sie von dort —
   // sonst ginge die Anmeldung des Planers verloren.
-  const dbPersonen = await rest(`persons?select=id,fn,ln,dn&congregation_id=eq.${cong}`)
-  const nameNachId = new Map(dbPersonen.map((p) => [p.id, personDisplayName(p.fn, p.ln, p.dn)]))
+  const dbPersonen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
+  const nameNachId = new Map(dbPersonen.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
   const members = await rest(`members?select=email,person_id&congregation_id=eq.${cong}`)
   const sidecar = `${sqlPfad}.members.json`
   let verknuepfungen = members
@@ -224,7 +252,7 @@ async function main() {
 
   if (arg.trocken) {
     // Prüfen, ob jede erhaltene Verknüpfung im kuratierten Bestand landet.
-    const namen = new Set(kuratiert.persons.map((p) => personDisplayName(p.fn, p.ln, p.dn)))
+    const namen = new Set(kuratiert.persons.map((p) => personDisplayName(p.fn, p.ln)))
     for (const v of verknuepfungen) {
       if (!namen.has(v.personName)) console.log(`  ! ${v.personName} fehlt im SQL — Konto bliebe unverknüpft.`)
     }
@@ -265,7 +293,7 @@ async function main() {
   await rest('persons', {
     method: 'POST', headers: { Prefer: 'return=minimal' },
     body: JSON.stringify(kuratiert.persons.map((p) => ({
-      id: p.id, congregation_id: cong, fn: p.fn, ln: p.ln, dn: p.dn, role: p.role,
+      id: p.id, congregation_id: cong, fn: p.fn, ln: p.ln, role: p.role,
       female: p.female, tel: p.tel, mail: p.mail, priv: p.priv, grp: p.grp, fam: p.fam,
     }))),
   })
@@ -278,7 +306,7 @@ async function main() {
   }
 
   // 5) Konto→Person-Verknüpfung über den Namen wiederherstellen (per E-Mail des Kontos)
-  const idNachName = new Map(kuratiert.persons.map((p) => [personDisplayName(p.fn, p.ln, p.dn), p.id]))
+  const idNachName = new Map(kuratiert.persons.map((p) => [personDisplayName(p.fn, p.ln), p.id]))
   let verknuepft = 0
   const unverknuepft = []
   for (const v of verknuepfungen) {

@@ -42,9 +42,19 @@ export function isGuestRole(rolle: string | undefined): boolean {
   return Boolean(rolle && SKIP_ROLE.test(rolle))
 }
 
-/** Anzeigename: eigener Kurzname, sonst voller Name. */
-export function personDisplayName(fn: string, ln: string, dn?: string | null): string {
-  return dn || `${fn} ${ln}`.trim()
+/**
+ * Der Name einer Person: „Vorname Nachname" — dieselbe Rechnung wie
+ * `displayName()` in der App.
+ *
+ * Bis T110 konnte ein Feld `dn` ihn überschreiben. Es gibt ihn nicht mehr:
+ * Vor- und Nachname sind je Versammlung eindeutig (Index
+ * `persons_name_eindeutig`), also braucht es keinen zweiten Namen, um zwei
+ * Menschen auseinanderzuhalten. Hier zählt das doppelt — die Functions ordnen
+ * Konten und Personen **über diesen String** zu, wo ein Platz keine `pid`
+ * trägt.
+ */
+export function personDisplayName(fn: string, ln: string): string {
+  return `${fn} ${ln}`.trim()
 }
 
 /**

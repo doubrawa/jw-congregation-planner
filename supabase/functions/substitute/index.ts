@@ -87,7 +87,6 @@ interface Person {
   id: string
   fn: string
   ln: string
-  dn: string
   priv: Record<string, boolean>
 }
 interface Absence {
@@ -154,7 +153,7 @@ interface Sub {
   lang: string | null
 }
 
-const displayName = (p: Person): string => personDisplayName(p.fn, p.ln, p.dn)
+const displayName = (p: Person): string => personDisplayName(p.fn, p.ln)
 
 /**
  * Zerlegt einen Hilfsdienst-Schluessel — null bei allem anderen.
@@ -299,7 +298,7 @@ Deno.serve(async (req: Request) => {
       rest.get<{ key: string; name: string }[]>(
         `services?select=key,name&congregation_id=eq.${wert(cong)}`,
       ),
-      rest.get<Person[]>(`persons?select=id,fn,ln,dn,priv&congregation_id=eq.${wert(cong)}`),
+      rest.get<Person[]>(`persons?select=id,fn,ln,priv&congregation_id=eq.${wert(cong)}`),
       rest.get<Sub[]>(
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),

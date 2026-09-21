@@ -283,36 +283,14 @@ describe('Die Filterfelder', () => {
   })
 })
 
-describe('Warnung vor doppelten Anzeigenamen', () => {
-  const ZWEI_MEIER = [
-    person('p-1', 'Hans', 'Meier'),
-    person('p-2', 'Hans', 'Meier'),
-    person('p-3', 'Otto', 'Nord'),
-  ]
-
-  it('nennt den Namen und wie viele ihn tragen', () => {
-    const { container } = zeige({ persons: ZWEI_MEIER })
-    expect(container.querySelector('.pers-dupes-title')?.textContent).toBe(t.dublettenTitle)
-    expect(container.querySelector('.pers-dupes-count')?.textContent).toBe('1')
-    expect(container.querySelector('.pers-dupes-row')?.textContent).toContain('Hans Meier')
-    expect(container.querySelector('.pers-dupes-row')?.textContent).toContain('2')
-  })
-
-  it('erklärt, warum das ein Problem ist — sonst wirkt sie schikanös', () => {
-    const { container } = zeige({ persons: ZWEI_MEIER })
-    expect(container.querySelector('.pers-dupes-hint')?.textContent).toBe(t.dublettenHint)
-  })
-
-  it('ein eigener Anzeigename hebt die Dublette auf', () => {
-    const entwirrt = [{ ...ZWEI_MEIER[0]!, dn: 'Hans Meier jun.' }, ZWEI_MEIER[1]!, ZWEI_MEIER[2]!]
-    const { container } = zeige({ persons: entwirrt })
-    expect(warnung(container, t.dublettenTitle)).toBeUndefined()
-  })
-
-  it('ohne Dubletten steht die Warnung nicht da', () => {
-    expect(warnung(zeige().container, t.dublettenTitle)).toBeUndefined()
-  })
-})
+/*
+ * Hier stand „Warnung vor doppelten Anzeigenamen". Sie ist mit T110 entfallen
+ * — ein doppelter Name lässt sich nicht mehr speichern, also gibt es nichts
+ * mehr zu melden. Die Meldung steht jetzt am Feld im Personen-Detail
+ * (`PersonDetail.form.test.tsx`), die Regel dahinter in
+ * `helpers.test.ts > namensDublette`, und die Zusicherung im Index
+ * `persons_name_eindeutig` (`schema.test.ts`).
+ */
 
 describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
   it('zwei Wachtturm-Leiter werden gemeldet — die Auto-Zuteilung nähme sonst irgendeinen', () => {

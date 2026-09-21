@@ -177,7 +177,7 @@ describe('Zeitleiste einer Person', () => {
   })
 
   it('ohne Zuteilungen bleibt die Leiste leer', () => {
-    const fremd = { ...person, id: 'gibt-es-nicht', fn: 'Niemand', ln: 'Ohnenamen', dn: undefined }
+    const fremd = { ...person, id: 'gibt-es-nicht', fn: 'Niemand', ln: 'Ohnenamen' }
     expect(personTimeline(fremd, daten())).toEqual([])
   })
 })

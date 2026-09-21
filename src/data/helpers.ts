@@ -97,14 +97,9 @@ function chairMeeting(meeting: Meeting, key: 'vorsitzMid' | 'vorsitzWe'): Meetin
   return changed ? { ...meeting, sections } : meeting
 }
 
-/** Voller Name „Vorname Nachname" (getrimmt); leer, wenn beide Felder leer sind. */
-export function fullName(p: Person): string {
-  return `${p.fn} ${p.ln}`.trim()
-}
-
 /** Listen-/Kopf-Label: voller Name, sonst Em-Dash-Platzhalter für Namenlose. */
 export function personLabel(p: Person): string {
-  return fullName(p) || '—'
+  return displayName(p) || '—'
 }
 
 /**
@@ -114,15 +109,10 @@ export function personLabel(p: Person): string {
  * willkürlich, weil der sichtbare erste Buchstabe nichts mit der Sortierung zu
  * tun hatte.
  *
- * Ein gesetzter Anzeigename gewinnt unverändert: er ist die einzige
- * Unterscheidung zwischen zwei Personen gleichen Namens („Josef Mayer (1)")
- * und ließe sich nicht umstellen, ohne ihn zu zerlegen.
- *
  * Nur für Listen. Überall sonst bleibt der volle Name in Leserichtung — dort
  * ist er Anrede, nicht Sortierschlüssel.
  */
 export function listName(p: Person): string {
-  if (p.dn) return p.dn
   return [p.ln, p.fn].filter(Boolean).join(', ') || personLabel(p)
 }
 
@@ -158,13 +148,67 @@ export function privSetzen(priv: Qualifications, key: string, on: boolean): void
 }
 
 /**
- * Anzeigename: voller Name ("Simon Krüger"); `dn` überschreibt ihn nur noch
- * bei echten Duplikaten (z. B. "Josef Mayer 1"). Zuteilungen in den Wochen
- * tragen diesen String neben der `pid` — maßgeblich für die Zuordnung ist die
- * Id (`gehoertZu`), der Name ist Anzeige und Rückfall.
+ * Der Name einer Person: „Vorname Nachname" (getrimmt), leer bei Namenlosen.
+ *
+ * **Es gibt keinen zweiten.** Bis zum 21. September 2026 konnte ein Feld `dn`
+ * ihn überschreiben — nötig, weil zwei Personen denselben Namen tragen
+ * konnten und der Name in jeder Zuteilung neben der `pid` steht. Seit T110
+ * sind Vor- und Nachname **je Versammlung eindeutig** (`namensSchluessel`, in
+ * der App geprüft und in der Datenbank per Index erzwungen); wer zweimal
+ * gleich heißt, bekommt einen Zusatz am Vornamen („Josef sen."). Damit ist der
+ * Umweg überflüssig, und der Name hat wieder genau eine Form.
+ *
+ * Zuteilungen in den Wochen tragen diesen String neben der `pid` —
+ * maßgeblich für die Zuordnung ist die Id (`gehoertZu`), der Name ist Anzeige
+ * und Rückfall für Plätze ohne Id (Hilfsdienste, Freitext, Import).
  */
-export function displayName(p: Person): string {
-  return p.dn || `${p.fn} ${p.ln}`.trim()
+export function displayName(p: Pick<Person, 'fn' | 'ln'>): string {
+  return `${p.fn} ${p.ln}`.trim()
+}
+
+/**
+ * **Wann zwei Namen derselbe sind** — der Vergleichsschlüssel hinter der
+ * Eindeutigkeit (T110). Leer heißt „zählt nicht mit": Eine frisch angelegte
+ * Person hat noch keinen Namen, und zwei Namenlose sind keine Dublette.
+ *
+ * Verglichen wird der **angezeigte** Name, nicht das Feldpaar. „Anna Lisa" +
+ * „Meier" und „Anna" + „Lisa Meier" stehen überall als dieselbe Zeichenkette
+ * und ordnen an jedem Platz ohne `pid` derselben Person zu — genau das soll
+ * die Regel verhindern, also sind sie hier gleich.
+ *
+ * Nicht beachtet werden **Groß-/Kleinschreibung** und **mehrfache
+ * Leerzeichen**: „josef  mayer" ist derselbe Mensch wie „Josef Mayer", und ein
+ * verrutschter Doppelklick auf die Leertaste darf keine zweite Person
+ * rechtfertigen. **Akzente sehr wohl:** Müller und Muller können zwei
+ * verschiedene Menschen sein, und wer sie zusammenwürfe, verböte einen
+ * zulässigen Namen.
+ *
+ * Dieselbe Rechnung steht als Ausdruck im eindeutigen Index
+ * (`persons_name_eindeutig` in `schema.sql`) — die Prüfung hier ist die
+ * freundliche Auskunft am Feld, der Index die Zusicherung. Sie können in
+ * Randfällen auseinanderliegen (`lower()` folgt der Sortierung der Datenbank,
+ * `toLowerCase()` der von JavaScript); dann weist die Datenbank den Schreib-
+ * vorgang ab, und das meldet die App als Schreibfehler.
+ */
+export function namensSchluessel(p: Pick<Person, 'fn' | 'ln'>): string {
+  return displayName(p).replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * Trägt eine **andere** Person in dieser Versammlung schon denselben Namen?
+ *
+ * Gibt sie zurück, nicht bloß `true`: Die Meldung am Feld soll sagen, wen es
+ * schon gibt — sonst sucht der Planer in einer Liste von dreihundert Namen.
+ * Die Person selbst ist nie ihre eigene Dublette (sonst ließe sich eine
+ * gespeicherte Person nicht mehr bearbeiten).
+ */
+export function namensDublette(
+  persons: readonly Person[],
+  person: Pick<Person, 'id' | 'fn' | 'ln'>,
+): Person | undefined {
+  const schluessel = namensSchluessel(person)
+  if (!schluessel) return undefined
+  return persons.find((p) => p.id !== person.id && namensSchluessel(p) === schluessel)
 }
 
 /** Initialen für Avatare: "SK"; leerer Datensatz → "–". */
@@ -198,26 +242,15 @@ export function personCompare(a: Person, b: Person, lang: string): number {
   )
 }
 
-/**
- * Anzeigenamen, die sich zwei oder mehr Personen teilen. Solche Dubletten sind
- * ein Datenproblem für den Planer: wo ein Slot keine Person-Id trägt
- * (Hilfsdienste, externe Beteiligte, Altdaten) ordnen deriveMyTasks/
- * derivePendingNames/Konfliktprüfung über den Anzeigenamen zu — Namensgleiche
- * teilen sich dann fälschlich Aufgaben. Abhilfe: je Person einen eindeutigen
- * Anzeigenamen (dn) vergeben. Liefert je betroffenem Namen die Personenzahl,
- * alphabetisch sortiert.
+/*
+ * Hier stand `duplicateDisplayNames` — die Warnung „DOPPELTE ANZEIGENAMEN"
+ * oben in der Personenliste. Sie ist mit T110 entfallen, weil es nichts mehr
+ * zu warnen gibt: Ein doppelter Name lässt sich seither gar nicht mehr
+ * speichern (`namensDublette` am Feld, `persons_name_eindeutig` in der
+ * Datenbank). Eine Warnung vor einem Zustand, den das Schema ausschließt,
+ * wäre toter Text — und Zustände, die die Datenbank verbietet, meldet man
+ * nicht, man verhindert sie.
  */
-export function duplicateDisplayNames(persons: Person[]): Array<{ name: string; count: number }> {
-  const counts = new Map<string, number>()
-  for (const p of persons) {
-    const name = displayName(p)
-    if (name) counts.set(name, (counts.get(name) ?? 0) + 1)
-  }
-  return [...counts.entries()]
-    .filter(([, n]) => n >= 2)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
-}
 
 /**
  * Feste Rollen, die mehr als eine Person trägt.

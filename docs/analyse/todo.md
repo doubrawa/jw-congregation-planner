@@ -4981,7 +4981,88 @@ gestellt, nicht die Antwort gegeben.
 
 ## Aufgenommen am 21. September 2026 — Personennamen (T110)
 
-### T110 · Der Anzeigename fällt weg — Vor- und Nachname sind eindeutig 🏗 ☐ offen
+### T110 · Der Anzeigename fällt weg — Vor- und Nachname sind eindeutig 🏗 ✅ erledigt (21. September 2026)
+
+> **Alle drei Punkte gebaut.** `dn` ist aus Typ, Eingabefeld, Schema, den drei
+> Edge Functions, sechs Wartungsskripten und allen 34 Wörterbüchern
+> verschwunden; Vor- und Nachname sind je Versammlung eindeutig, geprüft an
+> drei Stellen; Namensgleichheit löst ein Zusatz am Vornamen („Josef sen.").
+>
+> **Die Regel steht einmal und heißt `namensSchluessel`** (`data/helpers.ts`).
+> Entschieden wie oben vorgeschlagen: Groß-/Kleinschreibung und mehrfache
+> Leerzeichen zählen nicht, **Akzente sehr wohl** — Müller und Muller dürfen
+> zwei Menschen sein, und wer sie zusammenwürfe, verböte einen zulässigen
+> Namen. Verglichen wird der **angezeigte** Name, nicht das Feldpaar:
+> „Anna Lisa"+„Meier" und „Anna"+„Lisa Meier" stehen überall als dieselbe
+> Zeichenkette und ordnen an jedem Platz ohne `pid` derselben Person zu —
+> genau das soll die Regel verhindern. Namenlose zählen nicht mit.
+>
+> **Drei Stellen, drei Aufgaben:**
+>
+> | Wo | Was sie leistet |
+> | --- | --- |
+> | Feld im Personen-Detail | nennt die andere Person beim Namen; markiert **beide** Namensfelder, denn die Regel gilt dem Paar |
+> | `persist.ts` | hält das **Schreiben** an, nicht die Eingabe |
+> | Index `persons_name_eindeutig` | die eigentliche Zusicherung — sie hält auch einen zweiten Planer, einen offenen alten Tab und die Wartungsskripte |
+>
+> **Der Zwischenstand beim Tippen war der interessante Teil.** Von „Josef
+> Mayer" zu „Josef Mayer sen." führt kein Weg, der nicht durch die Dublette
+> ginge. Angehalten wird deshalb das Speichern: Der Zustand nimmt jeden
+> Tastendruck an, das Feld meldet, und geschrieben wird erst wieder, sobald
+> der Name eindeutig ist. Angehalten wird dabei **alles, was am Namen hängt**
+> — die Personenzeile, die Treffpunkte und die Wochen, in denen er als Text
+> steht (`renameInWeeks` hat ihn im Zustand längst nachgezogen; schriebe man
+> sie, stünde er zweimal in der Datenbank). Das **Planer-Recht** geht weiter
+> hinaus: Es liegt in `members` und hat mit dem Namen nichts zu tun.
+>
+> **Dabei entfallen, weil ihr Gegenstand weg ist:** die Warnung „DOPPELTE
+> ANZEIGENAMEN" in der Personenliste samt `duplicateDisplayNames` und den
+> Schlüsseln `dublettenTitle`/`dublettenHint` — man meldet keinen Zustand, den
+> das Schema ausschließt. Ebenso `fullName`, das nach dem Wegfall von `dn`
+> Zeichen für Zeichen dasselbe lieferte wie `displayName` (sieben Aufrufer
+> umgestellt, statt 91 in die andere Richtung).
+>
+> **Der Gewinn für die Rechte, wie vorhergesagt:** `mein_anzeigename()` ordnet
+> Plätze ohne `pid` über den Namen zu. Solange er doppelt sein konnte, war
+> genau das die Lücke in der Bestätigungs-Richtlinie — wer „Josef Mayer" hieß,
+> durfte die namenlosen Plätze des anderen bestätigen. Jetzt ist der Rückfall
+> eindeutig.
+>
+> **Geprüft:** `namensSchluessel` und `namensDublette` als reine Funktionen
+> (Schreibweise, Leerzeichen, Akzente, leere Namen, der eigene Name, der
+> Zusatz am Vornamen); sechs Fälle am Feld; vier in `persist.ts` (Zeile,
+> Wochen, das Planer-Recht daneben, und dass es nach der Auflösung hinausgeht);
+> fünf am Index in `schema.test.ts`, den Ausdruck wörtlich, damit App und
+> Datenbank nicht auseinanderlaufen; fünf an `gleichnamige` im Reset-Skript.
+> Dazu **`tests/kein-anzeigename.test.ts`**, eine Vollständigkeitsprobe über
+> alle vier Dateiarten: Der Compiler deckt `src/` ab, aber nicht die Spalte im
+> `select=`-String, nicht die Skripte ohne Typen und nicht `schema.sql` — und
+> genau dort saß sie. Testbestand 5403 → 5430, alles grün.
+>
+> **Sechs neue Einträge in der Mutationsprobe, samt dem nachgezogenen
+> `schema-dollar-rumpf` gemessen: 7 von 7 bewacht** — der Vergleich ohne
+> Rücksicht auf die Schreibweise, dass niemand seine eigene Dublette ist, dass
+> Namenlose nicht mitzählen, die Schreibsperre für Zeile und Wochen, und die
+> Meldung am Feld. Die Wächter sind drei verschiedene Dateien, jede zur Sache
+> passend.
+>
+> **Zwei Dinge liegen beim Betreiber:**
+>
+> 1. **`build-personen-sql.mjs` in `nws-export` zieht noch nicht mit.** Es
+>    erzeugt `dn` für Gleichnamige (`Josef Mayer (M)`), schreibt die Spalte in
+>    den `insert` **und legt sie mit einem `alter table … add column if not
+>    exists dn` wieder an**. Die App liest sie nicht mehr, und die beiden
+>    Josef Mayer scheitern am Index. Das Reset-Skript fängt das jetzt vorher
+>    ab (`gleichnamige`, Abbruch mit Namen, bevor irgendetwas gelöscht ist) —
+>    richtig behoben ist es aber erst, wenn der Generator den **Vornamen**
+>    eindeutig macht statt eines zweiten Feldes. Eigenes Verzeichnis, eigene
+>    Aufgabe.
+> 2. **Neu aufsetzen und deployen:** `schema.sql` ausführen (der Index kommt
+>    nur so in die Datenbank) und `send-plan`, `send-reminders` und
+>    `substitute` neu deployen — sie fragen `persons` sonst weiter nach einer
+>    Spalte, die es nicht mehr gibt, und PostgREST beantwortet das mit 400,
+>    also mit gar keinen Personen.
+
 **Wortlaut:** *„anzeigename raus - vor- und nachname sollte reichen. wenn
 jemand gleich heißt, dann muss man eben etwas an den vornamen anhängen. es muss
 auch auf unique geprüft werden bei den personen vor- und nachname, damit sicher
@@ -5210,16 +5291,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ⚠☐☑☑☑ ·
-21. September ☐☑☑
+21. September ☑☑☑
 
-**109 der 112 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei:**
+**110 der 112 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T105** | Pläne drucken | ⚠ der Zeitraum ist gebaut (Woche oder Monat, auch über den Treffpunkten), **welche Pläne** ist offen: Hilfsdienste und Gruppenlisten stehen auf keinem Ausdruck |
 | **T106** | Alle auf einmal benachrichtigen | ☐ nicht angefangen — zuerst zu klären, was mit Nummern geschieht, die `wa.me` nicht annimmt |
-| **T110** | Anzeigename raus, Namen eindeutig | ☐ nur festgehalten; 🏗 und rührt an Schema, Functions und Skripte |
 
 Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
 **T107** (der Name der Versammlung im Handy-Kopf statt der Wortmarke),
@@ -5229,9 +5309,20 @@ hin) und von **T105** den Monatsdruck. Beim Nachsehen von T108 fiel **T111**
 an, das Zickzack in den dunklen Auswahlfeldern; beim Eintragen der Regeln aus
 T109 fiel **T112** auf, und der ist am selben Tag geschlossen: alle 14
 verrutschten Einträge nachgezogen, die Ankerprüfung fährt jetzt im normalen
-Testlauf mit. **Ein voller Durchgang der Probe steht aus** — er kostet gut
-eine Stunde und sperrt so lange den Arbeitsbaum; gemessen sind bisher die 14
-nachgezogenen, alle bewacht.
+Testlauf mit. Am selben Tag fiel auch **T110**, der größte der Reihe: Der
+Anzeigename ist aus vierzehn Dateien, drei Edge Functions und 34
+Wörterbüchern verschwunden, und Vor- und Nachname sind seither je Versammlung
+eindeutig — am Feld gemeldet, beim Schreiben angehalten, von einem Index
+erzwungen.
+
+**Ein voller Durchgang der Mutationsprobe steht aus** — er kostet gut eine
+Stunde und sperrt so lange den Arbeitsbaum. Gemessen sind bisher die 14
+nachgezogenen und die 7 aus T110, alle 21 bewacht.
+
+**Beim Betreiber liegen drei Dinge:** `substitute` neu deployen (sonst springt
+der Push aus T109 nicht), `schema.sql` ausführen und alle betroffenen
+Functions neu deployen (T110), und `build-personen-sql.mjs` in `nws-export`
+nachziehen, das den Anzeigenamen noch erzeugt.
 
 **Zwei Dinge liegen beim Betreiber**, nicht im Code: `substitute` muss neu
 deployt werden, sonst kommt der Push aus T109 weiter ohne den Zusatz und

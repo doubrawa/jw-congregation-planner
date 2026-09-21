@@ -298,8 +298,8 @@ async function main() {
   const standardOrt = congRow.hall ?? ''
 
   // Personen: Anzeigename wie in der App, gefunden über die stabile Id.
-  const personen = await rest(`persons?select=id,fn,ln,dn&congregation_id=eq.${cong}`)
-  const appById = new Map(personen.map((p) => [p.id, personDisplayName(p.fn, p.ln, p.dn)]))
+  const personen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
+  const appById = new Map(personen.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
   const personIdOf = personIdAufloeser(tabellen.persons)
   const nwsNameOf = nameAufloeser(tabellen.persons)
   const fehlendePersonen = new Set()

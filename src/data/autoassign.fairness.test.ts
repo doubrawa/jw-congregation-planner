@@ -6,13 +6,13 @@ import { LOAD_RADIUS, LOAD_WEEKS, loadWindow, partWorkload } from './auslastung'
 import { autoAssignMeeting } from './planning'
 import type { Meeting, Person, Qualifications, Service, SlotAssignment, Week } from './types'
 
-/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
+/** Person, die nur über ihren Namen zugeordnet wird (Slots ohne pid). */
 import { emptyQualifications } from './helpers'
 import { privSetzen } from './helpers'
 
 function alsPerson(name: string): Person {
   return {
-    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
     tel: '', mail: '', priv: emptyQualifications(),
   }
 }

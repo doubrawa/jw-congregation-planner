@@ -307,8 +307,8 @@ Deno.serve(async (req: Request) => {
         klient.get<{ user_id: string; person_id: string | null; planner: boolean }[]>(
           `members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong.id)}`,
         ),
-        klient.get<{ id: string; fn: string; ln: string; dn: string }[]>(
-          `persons?select=id,fn,ln,dn&congregation_id=eq.${wert(cong.id)}`,
+        klient.get<{ id: string; fn: string; ln: string }[]>(
+          `persons?select=id,fn,ln&congregation_id=eq.${wert(cong.id)}`,
         ),
         klient.get<ServiceRow[]>(
           `services?select=key,name,count,groups&congregation_id=eq.${wert(cong.id)}&order=position.asc`,
@@ -328,7 +328,7 @@ Deno.serve(async (req: Request) => {
       for (const m of members) {
         const p = m.person_id ? personById.get(m.person_id) : undefined
         if (!p) continue
-        userByName.set(personDisplayName(p.fn, p.ln, p.dn), m.user_id)
+        userByName.set(personDisplayName(p.fn, p.ln), m.user_id)
         userByPerson.set(p.id, m.user_id)
       }
       /*

@@ -143,7 +143,7 @@ function pushNotif(
  * Auto-Speichern leere Einträge in der Liste stehen.
  */
 export function isNameless(p: Person): boolean {
-  return !`${p.fn}${p.ln}${p.dn ?? ''}`.trim()
+  return !`${p.fn}${p.ln}`.trim()
 }
 
 function dropNamelessSelected(state: AppState): AppState {
@@ -521,7 +521,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Namensänderung in bereits geplanten Wochen nachziehen — der
       // Anzeigename ist der in den Wochen gespeicherte Text. Die Zusagen
       // bleiben stehen: Sie hängen am Platz, und die Person darauf ist dieselbe.
-      if (oldPerson && ('fn' in action.patch || 'ln' in action.patch || 'dn' in action.patch)) {
+      if (oldPerson && ('fn' in action.patch || 'ln' in action.patch)) {
         const oldName = displayName(oldPerson)
         const newName = displayName({ ...oldPerson, ...action.patch })
         if (oldName !== newName) {

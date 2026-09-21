@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import { AbsencePanel } from '../components/AbsencePanel'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { familyMembers, initials, personCompare, personLabel, serviceQualKey } from '../data/helpers'
+import { familyMembers, initials, namensDublette, personCompare, personLabel, serviceQualKey } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { ROLE_KEY } from '../i18n/ui'
@@ -54,13 +54,27 @@ export function PersonDetail({ person }: { person: Person }) {
     .map((service) => ({ key: serviceQualKey(service.key), label: tu(service.name) }))
     .sort(nachLabel)
 
-  const fields: Array<[keyof Person & ('fn' | 'ln' | 'dn' | 'tel' | 'mail'), string]> = [
+  const fields: Array<[keyof Person & ('fn' | 'ln' | 'tel' | 'mail'), string]> = [
     ['fn', t.vorname],
     ['ln', t.nachname],
-    ['dn', t.anzeigename],
     ['tel', t.telefon],
     ['mail', t.emailLbl],
   ]
+
+  /*
+   * **Trägt schon jemand diesen Namen?** (T110)
+   *
+   * Die Meldung hängt an beiden Namensfeldern, denn die Regel gilt dem Paar —
+   * wer sie nur an den Nachnamen schriebe, ließe den Planer am Vornamen
+   * suchen, was falsch ist. Sie nennt die andere Person beim Namen; in einer
+   * Liste von dreihundert bringt „gibt es schon" allein niemanden weiter.
+   *
+   * Getippt werden darf trotzdem weiter: Auf dem Weg von „Josef May" zu
+   * „Josef Mayer sen." kommt man zwangsläufig durch „Josef Mayer". Angehalten
+   * wird deshalb nicht die Eingabe, sondern das **Speichern** (`persist.ts`) —
+   * sonst ginge der Zwischenstand hinaus und käme als Schreibfehler zurück.
+   */
+  const dublette = namensDublette(state.persons, person)
 
   return (
     <section className="screen">
@@ -113,9 +127,21 @@ export function PersonDetail({ person }: { person: Person }) {
               dir="auto"
               value={person[key] ?? ''}
               onChange={(e) => update({ [key]: e.target.value })}
+              aria-invalid={dublette && (key === 'fn' || key === 'ln') ? true : undefined}
+              aria-describedby={
+                dublette && (key === 'fn' || key === 'ln') ? 'pers-name-dublette' : undefined
+              }
             />
           </div>
         ))}
+        {dublette && (
+          /* `role="alert"` liest ein Screenreader vor, sobald die Meldung
+             erscheint — ohne sie bliebe der Hinweis für ihn unsichtbar, und
+             gespeichert wird ja nichts mehr. */
+          <p className="pers-field-fehler" id="pers-name-dublette" role="alert" dir="auto">
+            {fill(t.nameDoppelt, { name: personLabel(dublette) })}
+          </p>
+        )}
         <div className="pers-role-block">
           <div className="field-label">{t.geschlecht}</div>
           <div className="role-chips">

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
 import { AbsencePanel } from '../components/AbsencePanel'
 import { PushPrompt } from '../components/PushPrompt'
-import { fullName } from '../data/helpers'
+import { displayName } from '../data/helpers'
 import { relativeDayLabel } from '../i18n/relative-time'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
 import './aufgaben.css'
@@ -62,7 +62,7 @@ export function AufgabenScreen() {
     <section className="screen">
       <h1 className="screen-title">{t.navAufgabenLong}</h1>
       <p className="screen-subtitle">
-        {me ? fullName(me) : ''} · {fill(t.congLabel, { name: state.congregation.name })}
+        {me ? displayName(me) : ''} · {fill(t.congLabel, { name: state.congregation.name })}
       </p>
 
       <PushPrompt />

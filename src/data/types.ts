@@ -214,14 +214,20 @@ export type Qualifications = FesteBereiche & {
 
 export interface Person {
   id: string
+  /**
+   * Vor- und Nachname. **Zusammen eindeutig je Versammlung** (T110) — geprüft
+   * am Feld (`namensDublette`) und erzwungen vom Index
+   * `persons_name_eindeutig`. Wer zweimal gleich heißt, bekommt einen Zusatz
+   * am Vornamen („Josef sen."), statt wie früher einen abweichenden
+   * Anzeigenamen daneben.
+   *
+   * Der Grund für die Härte: Der Name steht in jeder Zuteilung neben der
+   * `pid`, und an jedem Platz **ohne** Id (Hilfsdienste, Freitext, Import,
+   * `mein_anzeigename()` in den Rechten) ordnet er allein zu. Solange er
+   * doppelt sein konnte, war genau das die Lücke.
+   */
   fn: string // Vorname
   ln: string // Nachname
-  /**
-   * Abweichender Anzeigename. Überschreibt „Vorname Nachname" — nötig, wenn
-   * zwei Personen sonst denselben Anzeigenamen hätten (z. B. „Josef Mayer 1"),
-   * denn der Anzeigename steht in jeder Zuteilung neben der Person-Id.
-   */
-  dn?: string
   role: Role
   female?: boolean // Schwester — steuert Partner-Zuordnung im Schülerteil und
   //                  die Brüder-Bereiche (Vorsitz, Gebet, Vortrag …)

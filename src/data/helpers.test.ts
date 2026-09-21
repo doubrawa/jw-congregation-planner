@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   displayName,
-  duplicateDisplayNames,
+  namensDublette,
+  namensSchluessel,
   familyMembers,
   gehoertZu,
   splitOpeningSong,
@@ -21,12 +22,12 @@ import { loadWindow, partWorkload, tieHash, workloadOf } from './auslastung'
 import { buildDemoWeeks } from './testdaten'
 import type { PartItem, Person, Qualifications } from './types'
 
-/** Person, die nur über ihren Anzeigenamen zugeordnet wird (Altdaten-Slots ohne pid). */
 import { emptyQualifications } from './helpers'
 
+/** Person, die nur über ihren Namen zugeordnet wird (Slots ohne pid). */
 function alsPerson(name: string): Person {
   return {
-    id: `test-${name}`, fn: '', ln: '', dn: name, role: 'verkuendiger', female: false,
+    id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
     tel: '', mail: '', priv: emptyQualifications(),
   }
 }
@@ -133,15 +134,14 @@ describe('Familien-/Haushaltszugehörigkeit', () => {
   })
 })
 
-describe('Anzeigenamen', () => {
+describe('Name einer Person', () => {
   it('displayName ist der volle Name', () => {
     expect(displayName(person({}))).toBe('Simon Krüger')
   })
 
-  it('dn überschreibt den automatischen Namen (echte Duplikate)', () => {
-    expect(displayName(person({ fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer 1' }))).toBe(
-      'Josef Mayer 1',
-    )
+  it('Namensgleiche unterscheidet ein Zusatz am Vornamen, kein zweites Feld', () => {
+    // Bis T110 stand dafür ein eigener Anzeigename daneben („Josef Mayer 1").
+    expect(displayName(person({ fn: 'Josef sen.', ln: 'Mayer' }))).toBe('Josef sen. Mayer')
   })
 
   it('leere Felder ergeben keinen Leerzeichen-Rest', () => {
@@ -181,42 +181,64 @@ describe('splitOpeningSong', () => {
   })
 })
 
-describe('duplicateDisplayNames', () => {
-  it('meldet einen von zwei Personen geteilten Anzeigenamen mit Anzahl', () => {
+/**
+ * **Wann zwei Namen derselbe sind** (T110) — die Regel, an der die
+ * Eindeutigkeit hängt. Sie steht so auch im Index `persons_name_eindeutig`;
+ * geht eine der beiden Seiten auseinander, weist die Datenbank einen Namen ab,
+ * den die App durchgelassen hat.
+ */
+describe('namensSchluessel', () => {
+  const key = (fn: string, ln: string): string => namensSchluessel({ fn, ln })
+
+  it('ist derselbe ungeachtet der Groß-/Kleinschreibung', () => {
+    expect(key('josef', 'MAYER')).toBe(key('Josef', 'Mayer'))
+  })
+
+  it('zieht mehrfache Leerzeichen zusammen und schneidet den Rand ab', () => {
+    expect(key('  Josef ', ' Mayer  ')).toBe(key('Josef', 'Mayer'))
+    expect(key('Josef  ', '  Mayer')).toBe('josef mayer')
+  })
+
+  it('unterscheidet Akzente — Müller und Muller dürfen zwei Menschen sein', () => {
+    expect(key('Anna', 'Müller')).not.toBe(key('Anna', 'Muller'))
+  })
+
+  it('ist leer, solange gar kein Name dasteht', () => {
+    expect(key('', '')).toBe('')
+    expect(key('   ', '  ')).toBe('')
+  })
+
+  it('richtet sich nach dem angezeigten Namen, nicht nach dem Feldpaar', () => {
+    // Beide stehen überall als „Anna Lisa Meier" und ordneten an jedem Platz
+    // ohne pid derselben Person zu — also sind sie hier dieselbe.
+    expect(key('Anna Lisa', 'Meier')).toBe(key('Anna', 'Lisa Meier'))
+  })
+})
+
+describe('namensDublette', () => {
+  it('findet die andere Person, die schon so heißt', () => {
     const list = [
       person({ id: 'a', fn: 'Josef', ln: 'Mayer' }),
-      person({ id: 'b', fn: 'Josef', ln: 'Mayer' }),
       person({ id: 'c', fn: 'Simon', ln: 'Krüger' }),
     ]
-    expect(duplicateDisplayNames(list)).toEqual([{ name: 'Josef Mayer', count: 2 }])
+    expect(namensDublette(list, { id: 'b', fn: 'josef', ln: 'Mayer  ' })?.id).toBe('a')
   })
 
-  it('zählt drei Gleichnamige und sortiert Namen alphabetisch', () => {
-    const list = [
-      person({ id: 'a', fn: 'Josef', ln: 'Mayer' }),
-      person({ id: 'b', fn: 'Josef', ln: 'Mayer' }),
-      person({ id: 'c', fn: 'Josef', ln: 'Mayer' }),
-      person({ id: 'd', fn: 'Anna', ln: 'Berg' }),
-      person({ id: 'e', fn: 'Anna', ln: 'Berg' }),
-    ]
-    expect(duplicateDisplayNames(list)).toEqual([
-      { name: 'Anna Berg', count: 2 },
-      { name: 'Josef Mayer', count: 3 },
-    ])
+  it('niemand ist seine eigene Dublette — sonst ließe sich niemand bearbeiten', () => {
+    const list = [person({ id: 'a', fn: 'Josef', ln: 'Mayer' })]
+    expect(namensDublette(list, { id: 'a', fn: 'Josef', ln: 'Mayer' })).toBeUndefined()
   })
 
-  it('ein per dn eindeutig gemachter Name ist keine Dublette mehr', () => {
-    const list = [
-      person({ id: 'a', fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer 1' }),
-      person({ id: 'b', fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer 2' }),
-    ]
-    expect(duplicateDisplayNames(list)).toEqual([])
+  it('der Zusatz am Vornamen löst die Namensgleichheit auf', () => {
+    const list = [person({ id: 'a', fn: 'Josef', ln: 'Mayer' })]
+    expect(namensDublette(list, { id: 'b', fn: 'Josef sen.', ln: 'Mayer' })).toBeUndefined()
   })
 
-  it('leere Namen zählen nicht als Dublette', () => {
-    const list = [person({ id: 'a', fn: '', ln: '' }), person({ id: 'b', fn: '', ln: '' })]
-    expect(duplicateDisplayNames(list)).toEqual([])
+  it('zwei Namenlose sind keine Dublette', () => {
+    const list = [person({ id: 'a', fn: '', ln: '' })]
+    expect(namensDublette(list, { id: 'b', fn: '', ln: '' })).toBeUndefined()
   })
+
 })
 
 describe('personCompare (alphabetisch: Nachname, dann Vorname)', () => {
@@ -248,8 +270,8 @@ describe('listName (Anzeige in der Personenliste)', () => {
     expect(gezeigt.map((n) => n[0])).toEqual(['A', 'Z']) // aufsteigend, wie gelesen
   })
 
-  it('ein gesetzter Anzeigename gewinnt — er unterscheidet Namensgleiche', () => {
-    expect(listName(person({ fn: 'Josef', ln: 'Mayer', dn: 'Josef Mayer (2)' }))).toBe('Josef Mayer (2)')
+  it('der Zusatz gegen Namensgleichheit steht beim Vornamen, also hinten', () => {
+    expect(listName(person({ fn: 'Josef sen.', ln: 'Mayer' }))).toBe('Mayer, Josef sen.')
   })
 
   it('halbe und leere Datensätze fallen nicht auseinander', () => {

@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { doppelteFesteRollen, duplicateDisplayNames, emptyQualifications, fullName, initials, listName, ohneGruppe, personCompare, serviceQualKey } from '../data/helpers'
+import { displayName, doppelteFesteRollen, emptyQualifications, initials, listName, ohneGruppe, personCompare, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { congAppCode, LOCALES } from '../i18n/langs'
@@ -61,13 +61,12 @@ function PersonList() {
    * Vergleiche. `OrphanAccounts` stellt für dieselbe Frage längst eine Menge
    * auf.
    */
-  const { sorted, mitKonto, dupes, mehrfachRollen, ohne } = useMemo(
+  const { sorted, mitKonto, mehrfachRollen, ohne } = useMemo(
     () => {
       const sortiert = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
       return {
         sorted: sortiert,
         mitKonto: new Set(state.members.map((m) => m.personId)),
-        dupes: duplicateDisplayNames(state.persons),
         mehrfachRollen: doppelteFesteRollen(state.persons),
         // Aus der sortierten Liste — die Namen stehen dann in derselben Folge wie unten.
         ohne: ohneGruppe(sortiert, state.groups),
@@ -110,7 +109,7 @@ function PersonList() {
     for (const person of candidates) {
       const invite = makeInvite(person)
       dispatch({ type: 'addInvite', invite })
-      lines.push(`${fullName(person)}: ${invite.code}`)
+      lines.push(`${displayName(person)}: ${invite.code}`)
       if (person.mail) mailable.push({ personId: person.id, code: invite.code })
     }
     const text = `${fill(t.inviteListeTitel, { url: appUrl() })}\n\n${lines.join('\n')}`
@@ -152,26 +151,16 @@ function PersonList() {
         <span className="screen-head-note">{fill(t.personenCount, { n: filtered.length })}</span>
       </div>
 
-      {dupes.length > 0 && (
-        <div className="pers-dupes">
-          <div className="pers-dupes-head">
-            <span className="pers-dupes-badge">!</span>
-            <span className="pers-dupes-title">{t.dublettenTitle}</span>
-            <span className="pers-dupes-count">{dupes.length}</span>
-          </div>
-          <div className="pers-dupes-hint">{t.dublettenHint}</div>
-          {dupes.map((d) => (
-            <div key={d.name} className="pers-dupes-row">
-              <span dir="auto">{fill(t.dublettenRow, { name: d.name, n: d.count })}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Hier stand die Warnung „DOPPELTE ANZEIGENAMEN". Sie ist mit T110
+          entfallen: Ein doppelter Name lässt sich nicht mehr speichern, also
+          gibt es nichts mehr zu melden. Die Meldung steht jetzt dort, wo der
+          Name entsteht — am Feld im Personen-Detail. */}
 
       {/* Feste Rollen sind der Sache nach je EINE Person. Sind zwei Schalter
           gesetzt, greift sich die Auto-Zuteilung irgendeinen — bisher ohne
-          jeden Hinweis (F7). Gleiche Optik wie die Dubletten-Warnung; alle
-          Texte sind vorhandene Bausteine, damit sie in jeder Sprache stimmen. */}
+          jeden Hinweis (F7). Gleiche Optik wie die frühere Dubletten-Warnung;
+          alle Texte sind vorhandene Bausteine, damit sie in jeder Sprache
+          stimmen. */}
       {mehrfachRollen.length > 0 && (
         <div className="pers-dupes">
           <div className="pers-dupes-head">

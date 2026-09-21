@@ -591,11 +591,11 @@ async function main() {
   const tabellen = ladeTabellen(datenDir, TABELLEN)
   const cong = arg.cong || (await rest('congregations?select=id&limit=1'))[0]?.id
   if (!cong) { console.error('Keine Versammlung gefunden.'); process.exit(1) }
-  const personen = await rest(`persons?select=id,fn,ln,dn&congregation_id=eq.${cong}`)
+  const personen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
   const nachName = new Map()
   const appById = new Map() // id → Anzeigename, für die id-basierte Auflösung
   for (const p of personen) {
-    const n = personDisplayName(p.fn, p.ln, p.dn)
+    const n = personDisplayName(p.fn, p.ln)
     if (!nachName.has(n)) nachName.set(n, [])
     nachName.get(n).push({ id: p.id, name: n })
     appById.set(p.id, n)

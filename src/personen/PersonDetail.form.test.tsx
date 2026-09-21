@@ -101,13 +101,17 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Stammdaten', () => {
-  it('alle fünf Felder stehen da und tragen ihren Wert', () => {
-    const { container } = zeige(person({ dn: 'Anton A.' }))
+  it('alle vier Felder stehen da und tragen ihren Wert', () => {
+    const { container } = zeige(person())
     expect(container.querySelector<HTMLInputElement>('#pers-fn')?.value).toBe('Anton')
     expect(container.querySelector<HTMLInputElement>('#pers-ln')?.value).toBe('Alt')
-    expect(container.querySelector<HTMLInputElement>('#pers-dn')?.value).toBe('Anton A.')
     expect(container.querySelector<HTMLInputElement>('#pers-tel')?.value).toBe('0123')
     expect(container.querySelector<HTMLInputElement>('#pers-mail')?.value).toBe('anton@example.org')
+  })
+
+  it('das Feld für den Anzeigenamen gibt es nicht mehr (T110)', () => {
+    const { container } = zeige(person())
+    expect(container.querySelector('#pers-dn')).toBeNull()
   })
 
   it('jedes Feld schreibt nur sein eigenes', () => {
@@ -118,9 +122,58 @@ describe('Stammdaten', () => {
     expect(patches(dispatch)).toContainEqual({ mail: 'neu@x.de' })
   })
 
-  it('ein fehlender Anzeigename ergibt ein leeres Feld, kein „undefined"', () => {
-    const { container } = zeige(person({ dn: undefined }))
-    expect(container.querySelector<HTMLInputElement>('#pers-dn')?.value).toBe('')
+  it('ein fehlender Wert ergibt ein leeres Feld, kein „undefined"', () => {
+    const { container } = zeige(person({ tel: '' }))
+    expect(container.querySelector<HTMLInputElement>('#pers-tel')?.value).toBe('')
+  })
+})
+
+/**
+ * **Trägt schon jemand diesen Namen?** (T110)
+ *
+ * Vor- und Nachname sind je Versammlung eindeutig. Die Datenbank erzwingt das
+ * (`persons_name_eindeutig`), aber eine abgewiesene Zeile ist keine Auskunft:
+ * Der Planer sähe eine Schreibfehler-Meldung und wüsste nicht, wem der Name
+ * schon gehört. Deshalb steht die Meldung am Feld — und sie nennt die andere
+ * Person.
+ */
+describe('Namensgleichheit', () => {
+  const fehler = (c: HTMLElement) => c.querySelector('#pers-name-dublette')?.textContent ?? ''
+
+  it('meldet, wer den Namen schon trägt', () => {
+    const { container } = zeige(person({ fn: 'Bernd', ln: 'Brand' }))
+    expect(fehler(container)).toContain('Bernd Brand')
+  })
+
+  it('vergleicht ohne Rücksicht auf Schreibweise und Leerzeichen', () => {
+    const { container } = zeige(person({ fn: 'bernd  ', ln: ' BRAND' }))
+    expect(fehler(container)).toContain('Bernd Brand')
+  })
+
+  it('markiert beide Namensfelder, nicht nur eines — die Regel gilt dem Paar', () => {
+    const { container } = zeige(person({ fn: 'Bernd', ln: 'Brand' }))
+    expect(container.querySelector('#pers-fn')?.getAttribute('aria-invalid')).toBe('true')
+    expect(container.querySelector('#pers-ln')?.getAttribute('aria-invalid')).toBe('true')
+    // Telefon und E-Mail sind unbeteiligt.
+    expect(container.querySelector('#pers-tel')?.getAttribute('aria-invalid')).toBeNull()
+  })
+
+  it('der Zusatz am Vornamen räumt die Meldung ab', () => {
+    const { container } = zeige(person({ fn: 'Bernd jun.', ln: 'Brand' }))
+    expect(container.querySelector('#pers-name-dublette')).toBeNull()
+  })
+
+  it('der eigene Name ist keine Dublette — sonst ließe sich niemand bearbeiten', () => {
+    const { container } = zeige(person())
+    expect(container.querySelector('#pers-name-dublette')).toBeNull()
+  })
+
+  it('getippt werden darf weiter — angehalten wird das Speichern, nicht die Eingabe', () => {
+    // Von „Bernd" zu „Bernd jun." führt kein Weg, der nicht durch die Dublette
+    // ginge. Das Feld nimmt den Tastendruck also an.
+    const { container, dispatch } = zeige(person({ fn: 'Bernd', ln: 'Brand' }))
+    fireEvent.change(container.querySelector('#pers-fn')!, { target: { value: 'Bernd j' } })
+    expect(patches(dispatch)).toContainEqual({ fn: 'Bernd j' })
   })
 })
 

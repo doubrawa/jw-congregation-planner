@@ -197,6 +197,59 @@ describe('kein Altbestand mehr im Schema', () => {
     // Klasse — ohne einen einzigen Typ und ohne eine einzige Zusicherung.
     expect(tabelle('congregations')).not.toMatch(/^\s*settings\s/m)
   })
+
+  it('kein zweiter Name an der Person: die Spalte dn ist weg', () => {
+    // Sie war nur nötig, solange zwei Personen gleich heißen konnten (T110).
+    expect(tabelle('persons')).not.toMatch(/^\s*dn\s/m)
+  })
+
+  it('mein_anzeigename nimmt schlicht Vor- und Nachname', () => {
+    // Vorher schob ein `coalesce` einen Kurznamen davor. Der Rückfall über den
+    // Namen war die Lücke in der Bestätigungs-Richtlinie, solange Namen
+    // doppelt sein konnten; jetzt ist er eindeutig.
+    const fn = funktionsRuempfe(schema).get('mein_anzeigename') ?? ''
+    expect(fn).toContain("btrim(p.fn || ' ' || p.ln)")
+    expect(fn).not.toContain('coalesce')
+  })
+})
+
+/**
+ * **Vor- und Nachname sind je Versammlung eindeutig** (T110).
+ *
+ * Die Zusicherung, auf der der Namens-Rückfall überall sonst beruht: an jedem
+ * Platz ohne `pid` ordnet allein der Name zu — in den Wochen, in den
+ * Functions und in `mein_anzeigename()` der Bestätigungs-Richtlinie. Die
+ * Prüfung in der App hält weder einen zweiten Planer auf noch ein Skript;
+ * dieser Index hält beide.
+ *
+ * Geprüft wird der Ausdruck **wörtlich**, denn er muss mit
+ * `namensSchluessel()` in `src/data/helpers.ts` übereinstimmen. Liefe eine der
+ * beiden Seiten weg, wiese die Datenbank Namen ab, die die App durchgelassen
+ * hat — ein Schreibfehler ohne erkennbaren Anlass.
+ */
+describe('Personennamen sind eindeutig', () => {
+  const idx = /create unique index if not exists persons_name_eindeutig\s+on public\.persons \(([^;]*?)\)\s*\n\s*where ([^;]+);/.exec(schema)
+
+  it('der eindeutige Index steht da', () => {
+    expect(idx, 'persons_name_eindeutig fehlt in schema.sql').not.toBeNull()
+  })
+
+  it('er gilt je Versammlung', () => {
+    expect(idx?.[1]).toContain('congregation_id')
+  })
+
+  it('er vergleicht klein geschrieben, ohne Rand und ohne mehrfache Leerzeichen', () => {
+    const ausdruck = idx?.[1] ?? ''
+    expect(ausdruck).toContain('lower(')
+    expect(ausdruck).toContain('btrim(')
+    expect(ausdruck).toContain("regexp_replace(fn || ' ' || ln")
+    // Akzente bleiben unterschieden — kein `unaccent` und kein „base"-Vergleich.
+    expect(ausdruck).not.toContain('unaccent')
+  })
+
+  it('Namenlose bleiben draußen — zwei frisch angelegte sind keine Dublette', () => {
+    expect(idx?.[2] ?? '').toContain("btrim(fn || ' ' || ln) <> ''")
+  })
 })
 
 /**

@@ -1,4 +1,4 @@
-import { fullName, privWert } from '../data/helpers'
+import { displayName, privWert } from '../data/helpers'
 import type { Person, Role } from '../data/types'
 
 /**
@@ -21,12 +21,12 @@ const NUR_TELEFON = /^[\d\s+()./-]+$/
 const ziffern = (s: string) => s.replace(/\D+/g, '')
 
 /**
- * Volltext über Name, Anzeigename, Telefon und E-Mail. Sieht die Eingabe nach
+ * Volltext über Name, Telefon und E-Mail. Sieht die Eingabe nach
  * einer Telefonnummer aus, wird zusätzlich ziffernweise verglichen — sonst
  * fände „01701234" die gespeicherte „0170 1234" nicht (und umgekehrt).
  */
 function passtZuText(person: Person, q: string): boolean {
-  const heu = [fullName(person), person.dn ?? '', person.tel, person.mail].join('\n').toLowerCase()
+  const heu = [displayName(person), person.tel, person.mail].join('\n').toLowerCase()
   if (heu.includes(q)) return true
   if (!NUR_TELEFON.test(q)) return false
   const nur = ziffern(q)
