@@ -5,6 +5,7 @@ import {
   einladungscode,
   planerBereiche,
   STANDARD_DIENSTE as SKRIPT_DIENSTE,
+  zeitSpalten,
 } from './versammlung-anlegen.mjs'
 import { STANDARD_DIENSTE } from '../src/data/vorgaben'
 
@@ -106,5 +107,46 @@ describe('Argumente', () => {
 
   it('freistehende Wörter ohne `--` werden übergangen', () => {
     expect(argumente(['abc', '--name', 'X'])).toEqual({ name: 'X' })
+  })
+})
+
+/**
+ * **Der Regeltermin — abgewiesen, bevor er in die Datenbank geht.**
+ *
+ * Eine Versammlung, die am falschen Tag zusammenkommt, merkt es erst an der
+ * ersten Erinnerung. Deshalb bricht das Skript lieber ab, als eine Zeit zu
+ * erfinden — nur prüfte es bis dahin allein die Ziffernform: `25:99` kam
+ * durch, und der Abbruch kam dann aus PostgreSQL, in einer Meldung, in der der
+ * Schalter gar nicht vorkommt.
+ */
+describe('zeitSpalten', () => {
+  it('macht aus „2 19:00" die beiden Spalten', () => {
+    expect(zeitSpalten('mid', '2 19:00')).toEqual({ mid_wd: 2, mid_time: '19:00' })
+    expect(zeitSpalten('we', '0 10:00')).toEqual({ we_wd: 0, we_time: '10:00' })
+  })
+
+  it('füllt die Stunde auf zwei Stellen — „0 9:30" ist 09:30', () => {
+    expect(zeitSpalten('we', '0 9:30')).toEqual({ we_wd: 0, we_time: '09:30' })
+  })
+
+  it.each([
+    ['Stunde zu groß', '2 25:00'],
+    ['Minute zu groß', '2 19:99'],
+    ['beides', '2 25:99'],
+  ])('%s wird abgewiesen, statt an die Datenbank zu gehen', (_name, wert) => {
+    expect(() => zeitSpalten('mid', wert)).toThrow(/keine Uhrzeit/)
+  })
+
+  it.each([
+    ['Wochentag zu groß', '7 19:00'],
+    ['kein Wochentag', 'Di 19:00'],
+    ['ohne Uhrzeit', '2'],
+    ['leer', ''],
+  ])('%s wird ebenfalls abgewiesen', (_name, wert) => {
+    expect(() => zeitSpalten('mid', wert)).toThrow(/erwartet/)
+  })
+
+  it('die Meldung nennt den Schalter, um den es geht', () => {
+    expect(() => zeitSpalten('we', '2 25:00')).toThrow(/--we/)
   })
 })

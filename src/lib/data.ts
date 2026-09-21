@@ -88,6 +88,26 @@ interface FsRuleRow {
  * Stammdaten und Einstellungen der Versammlung — je eine Spalte, kein
  * `settings`-Beutel und kein Anzeigetext mehr (siehe schema.sql).
  */
+/**
+ * Die Spalten, die `loadCongregationData` von `congregations` holt — aus dem
+ * Typ abgeleitet, damit Abfrage und Zusicherung nicht auseinanderlaufen.
+ *
+ * **Ausgeschrieben statt `select('*')`**, und das ist der Punkt: Eine Abfrage
+ * nach einer Spalte, die es nicht gibt, beantwortet PostgREST mit 400. Der
+ * Ladevorgang meldet dann `{ ok: false, reason: 'error' }`, und `hydrate` zeigt
+ * den letzten Stand oder eine Fehlermeldung. Mit `*` käme die Zeile dagegen
+ * **ohne** die fehlenden Felder zurück, und der erste Zugriff darauf risse den
+ * Ladevorgang mit einem TypeError ab — an `void loadAndHydrate(…)` vorbei, das
+ * keinen `catch` hat. Die App bliebe auf „lädt…" stehen, ohne Fehler und ohne
+ * Offline-Stand.
+ */
+const CONG_SPALTEN = [
+  'name', 'hall',
+  'mid_wd', 'mid_time', 'we_wd', 'we_time',
+  'reminder_first', 'reminder_last', 'reminder_repeat',
+  'cong_lang', 'prog_langs', 'aux_class',
+] as const satisfies ReadonlyArray<keyof CongregationRow>
+
 interface CongregationRow {
   name: string
   hall: string
@@ -513,7 +533,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .limit(WEEK_LIMIT)
 
   const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows] = await Promise.all([
-    supabase.from('congregations').select('*').eq('id', congregationId).maybeSingle(),
+    supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
@@ -881,23 +901,31 @@ export function savePerson(congregationId: string, person: Person): void {
  * auf eine Gruppe; im Blob konnte dieser Verweis kein Fremdschlüssel sein, und
  * deshalb musste die App beim Löschen einer Gruppe selbst darin aufräumen.
  *
- * Geschrieben wird der **ganze** Bestand (die Liste ist kurz, und der Aufrufer
- * hat sie ohnehin als Ganzes): erst weg, was nicht mehr dazugehört, dann der
- * Rest per upsert. Nacheinander, nicht nebeneinander — sonst könnte das Löschen
- * eine gerade erst geschriebene Zeile treffen.
+ * **Gelöscht wird, was dieser Planer entfernt hat** (`entfernt`) — nicht alles,
+ * was nicht in seiner Liste steht. Der Unterschied zählt, sobald zwei Planer
+ * zugleich arbeiten: Hier stand `delete … where id not in (<meine Regeln>)`,
+ * und damit räumte jedes Speichern die Regel weg, die der andere gerade
+ * angelegt hatte — ohne Fehler, ohne Konflikt, auf beiden Bildschirmen
+ * unbemerkt. Die Wochen sind gegen genau das durch Vergleiche-und-Tausche
+ * geschützt (T39); der Grundplan hat keine solche Sperre, also darf er auch
+ * nichts anfassen, wovon er nichts weiß.
+ *
+ * Nacheinander, nicht nebeneinander — sonst könnte das Löschen eine gerade
+ * erst geschriebene Zeile treffen.
  */
-export function saveFsRules(congregationId: string, rules: FsRule[]): void {
+export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: string[] = []): void {
   if (!supabase) return
   const client = supabase
   void run(
     (async () => {
-      const behalten = rules.map((r) => r.id)
-      const weg = client.from('fs_rules').delete().eq('congregation_id', congregationId)
-      // `not.in.()` mit leerer Liste ist ungültig — ohne Regeln fällt alles weg.
-      const { error } = behalten.length
-        ? await weg.not('id', 'in', `(${behalten.join(',')})`)
-        : await weg
-      if (error) return { error }
+      if (entfernt.length) {
+        const { error } = await client
+          .from('fs_rules')
+          .delete()
+          .eq('congregation_id', congregationId)
+          .in('id', entfernt)
+        if (error) return { error }
+      }
       if (!rules.length) return { error: null }
       return await client
         .from('fs_rules')

@@ -183,13 +183,28 @@ describe('Eine Predigtdienstgruppe löschen', () => {
     expect(nachher.fsWeeks).toBe(vorher.fsWeeks)
   })
 
-  it('die leere Kennung ist die Versammlung, keine Gruppe — dafür wird nichts gestrichen', () => {
-    // Die Versammlungstreffpunkte tragen `grp: null`. Ein Streichen „der Gruppe ''"
-    // nähme sie alle mit.
+  it('die Versammlungs-Kennung ist keine Gruppe — für sie wird nichts gestrichen', () => {
+    /*
+      **Mit `null` geprüft, nicht mit `''`.** Bis zum 18.9.2026 stand für den
+      Versammlungstreffpunkt der leere String, und diese Probe übergab ihn.
+      Seither trägt er `grp: null` — und damit passte auf `''` keine einzige
+      Regel mehr: Die Probe lief durch, ob es den Wächter gab oder nicht
+      (`mutationsprobe.mjs` meldete sie deshalb als unbewacht).
+
+      `null` ist die Kennung, die wirklich trifft. Ohne den Wächter filterte
+      die Funktion `grp !== null` — und nähme damit **alle**
+      Versammlungstreffpunkte mit, weil irgendeine Gruppe gelöscht wurde.
+    */
     const vorher = stand()
-    const { fsRules, fsWeeks } = fsGruppeEntfernen(vorher.fsRules, vorher.fsWeeks, '')
+    expect(vorher.fsRules.some((r) => r.grp === null), 'Vorbedingung').toBe(true)
+
+    const { fsRules, fsWeeks } = fsGruppeEntfernen(vorher.fsRules, vorher.fsWeeks, null)
     expect(fsRules).toBe(vorher.fsRules)
     expect(fsWeeks).toBe(vorher.fsWeeks)
+
+    // Der leere String bleibt gutmütig behandelt (Altbestand), sagt über den
+    // Wächter aber nichts mehr aus — deshalb steht er nur daneben.
+    expect(fsGruppeEntfernen(vorher.fsRules, vorher.fsWeeks, '').fsRules).toBe(vorher.fsRules)
   })
 })
 

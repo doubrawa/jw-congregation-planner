@@ -784,10 +784,15 @@ const BLOCK_ARTEN = new Set<SectionKind>(['eroeffnung', 'abschluss'])
  * Text geht kanonisch deutsch hinaus und wird beim Anzeigen übersetzt. Die
  * Oberfläche dagegen zeigt die beiden Hälften getrennt — der Titel gehört in
  * die Sprache der Versammlung, die Rolle in die des Lesers (`MyTask.rolle`,
- * `OpenSlot.rolle`, zusammengesetzt in `aufgabenLabel`). Sie baut sie deshalb
- * aus denselben Bausteinen selbst zusammen: `istBlockAbschnitt` und
- * `eigeneRolle`. Diese Funktion hält die Regel in der Form fest, die die Edge
- * Function braucht, und `edge-parity.test.ts` hält beide Fassungen zusammen.
+ * `OpenSlot.rolle`, zusammengesetzt in `aufgabenLabel`). Sie entscheidet
+ * deshalb mit `istBlockSektion` selbst, ob der Titel danebengehört, und fügt
+ * die Hälften erst beim Anzeigen zusammen. Diese Funktion hält dieselbe Regel
+ * in der Form fest, die die Edge Function braucht, und `edge-parity.test.ts`
+ * hält beide Fassungen zusammen.
+ *
+ * Ein zweiter Baustein stand hier bis T104: `eigeneRolle` unterdrückte die
+ * Begleiter-Beschriftung „mit A. Hoffmann". Die gibt es nicht mehr — der
+ * Gesprächspartner hat seinen eigenen Platz und darauf die Rolle „Partner".
  *
  * Regel:
  *  - Ohne Rolle trägt der Titel des Programmpunkts („Bibellesung · Jer 44:24-30").

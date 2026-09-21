@@ -98,17 +98,14 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.from).toHaveBeenCalledWith('persons')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', congregation_id: 'c1' }))
   })
-  it('saveFsRules → eine Zeile je Regel, Gestrichenes fällt weg', async () => {
+  it('saveFsRules → eine Zeile je Regel', async () => {
     // Der Grundplan war bis T105 ein JSONB-Blob je Versammlung (samt einer
-    // Spalte `base`, die nie gelesen wurde). Jetzt ist jede Regel eine Zeile —
-    // erst weg, was nicht mehr dazugehört, dann der Rest per upsert. Die beiden
-    // Schritte laufen **nacheinander**, der zweite also erst im nächsten Tick.
+    // Spalte `base`, die nie gelesen wurde). Jetzt ist jede Regel eine Zeile.
     saveFsRules('c1', [
       { id: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
     ])
     await geschrieben()
     expect(chain.from).toHaveBeenCalledWith('fs_rules')
-    expect(chain.delete).toHaveBeenCalled()
     expect(chain.upsert).toHaveBeenCalledWith([
       {
         id: 'r1',
@@ -121,6 +118,36 @@ describe('Upsert-Schreiber (onConflict)', () => {
         skip_cong: false,
       },
     ])
+  })
+
+  it('saveFsRules ohne Streichungen löscht nichts — auch nicht die Regel eines anderen', async () => {
+    /*
+      Hier stand `delete … where id not in (<meine Regeln>)`. Das räumte jede
+      Zeile weg, die der Aufrufer nicht kannte — also auch die Regel, die ein
+      zweiter Planer gerade angelegt hatte. Ohne Fehler und auf beiden
+      Bildschirmen unbemerkt: Der Grundplan hat keine Vergleiche-und-Tausche-
+      Sperre wie die Wochen (T39), darf also nichts anfassen, wovon er nichts
+      weiß. Gelöscht wird jetzt nur, was **dieser** Planer entfernt hat.
+    */
+    saveFsRules('c1', [
+      { id: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
+    ])
+    await geschrieben()
+    expect(chain.delete).not.toHaveBeenCalled()
+  })
+
+  it('saveFsRules löscht die gestrichenen Regeln — über ihre Kennung', async () => {
+    // Erst weg, dann der Rest per upsert. Die beiden Schritte laufen
+    // **nacheinander**, der zweite also erst im nächsten Tick.
+    saveFsRules(
+      'c1',
+      [{ id: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false }],
+      ['r7', 'r8'],
+    )
+    await geschrieben()
+    expect(chain.delete).toHaveBeenCalled()
+    expect(chain.in).toHaveBeenCalledWith('id', ['r7', 'r8'])
+    expect(chain.upsert).toHaveBeenCalled()
   })
   it('saveFsWeek → fs_weeks upsert je Wochen-Kennung', () => {
     saveFsWeek('c1', '2026-09-14', [])

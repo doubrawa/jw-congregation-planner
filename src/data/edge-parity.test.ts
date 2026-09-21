@@ -148,7 +148,13 @@ describe('Rolle mit Herkunft', () => {
     ['ohne Herkunft', { rolle: 'Gastredner' }],
     ['leere Herkunft', { rolle: 'Gastredner', herkunft: '' }],
     ['gewöhnliche Rolle', { rolle: 'Vorsitz' }],
-    ['Begleiter-Beschriftung', { rolle: 'mit A. Hoffmann' }],
+    // Hier stand die Begleiter-Beschriftung „mit A. Hoffmann". Die gibt es
+    // nicht mehr (T104): Der Gesprächspartner hat seinen eigenen Platz, und
+    // `togglePartner` schreibt beiden Seiten eine echte Rolle. Der Fall pinnte
+    // also das Verhalten für eine Eingabe, die keine Stelle mehr erzeugt —
+    // geprüft gehört das Paar, das wirklich entsteht.
+    ['Schülerteil, Führer', { rolle: 'Schüler' }],
+    ['Schülerteil, Gesprächspartner', { rolle: 'Partner' }],
     ['gar keine Rolle', {}],
     ['Versammlungsname mit Trenner', { rolle: 'Gastredner', herkunft: 'Nord · Süd' }],
   ]
@@ -202,6 +208,25 @@ describe('Regeltermine der Versammlung', () => {
       we: { wd: 6, time: '17:00' },
     })
     expect(edgeZeitenAus(undefined)).toEqual(STANDARD_ZEITEN)
+  })
+
+  it('eine Zeile ohne die Zeit-Spalten fällt auf die Vorgabe zurück, statt zu werfen', () => {
+    /*
+      Der Rückfall galt nur der **fehlenden Zeile** (`if (!row)`); eine Zeile,
+      der die Spalten fehlen, lief in `row.mid_time.slice(0, 5)` und warf. Das
+      passiert im Ladepfad, und der hängt an einem `void loadAndHydrate(…)`
+      ohne `catch` — die App bliebe auf „lädt…" stehen, ohne Fehlermeldung und
+      ohne den Offline-Stand. Eine angezeigte Vorgabezeit ist die bei Weitem
+      bessere der beiden Auskünfte.
+    */
+    const halb = { mid_wd: 3, we_time: '17:00:00' } as unknown as Parameters<typeof edgeZeitenAus>[0]
+    expect(() => edgeZeitenAus(halb)).not.toThrow()
+    expect(edgeZeitenAus(halb)).toEqual({
+      mid: { wd: 3, time: STANDARD_ZEITEN.mid.time },
+      we: { wd: STANDARD_ZEITEN.we.wd, time: '17:00' },
+    })
+    // Auch eine leere Zeile ist eine Zeile — und damit kein Sonderfall mehr.
+    expect(edgeZeitenAus({} as unknown as Parameters<typeof edgeZeitenAus>[0])).toEqual(STANDARD_ZEITEN)
   })
 
   it('der Versatz ab Montag ist beidseitig derselbe', () => {
@@ -573,9 +598,14 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
         items: [
           // Schülerteil in beiden Räumen — die zweite Reihe ist die Platzsorte,
           // die am häufigsten übersehen wurde.
+          // Die Rollen sind die, die `togglePartner` wirklich schreibt
+          // („Schüler"/„Partner"). Hier stand am Partner-Platz die alte
+          // Begleiter-Beschriftung „mit Clara Cord" — eine Form, die es seit
+          // T104 nicht mehr gibt und die der Führer-Platz zudem ohne eigene
+          // Rolle dastehen ließ.
           { iid: 'b1', title: 'Gespräche beginnen', meta: 'Von Haus zu Haus · 3 Min.', names: [
-            { name: 'Clara Cord', pid: 'p3', bereichsKey: 'schulung' },
-            { name: 'Dora Dill', pid: 'p4', rolle: 'mit Clara Cord', bereichsKey: 'schulungPartner' },
+            { name: 'Clara Cord', pid: 'p3', rolle: 'Schüler', bereichsKey: 'schulung' },
+            { name: 'Dora Dill', pid: 'p4', rolle: 'Partner', bereichsKey: 'schulungPartner' },
           ], aux: [
             { name: 'Emil Erd', pid: 'p5', bereichsKey: 'schulung' },
             { name: '', bereichsKey: 'schulungPartner' }, // offen → gehört niemandem

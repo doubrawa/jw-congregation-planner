@@ -267,8 +267,35 @@ describe('Treffpunkte', () => {
     persist(st(), next, { type: 'fsRuleAdd', grp: null })
     expect(data.saveFsRules).not.toHaveBeenCalled() // erst nach der Bündelung
     vi.advanceTimersByTime(600)
-    expect(data.saveFsRules).toHaveBeenCalledWith('c1', next.fsRules)
+    // Nichts zu streichen beim Anlegen — die dritte Stelle ist leer.
+    expect(data.saveFsRules).toHaveBeenCalledWith('c1', next.fsRules, [])
     expect((data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.length).toBe(next.fsWeeks.length)
+  })
+
+  it('zwei Streichungen in einer Bündelung gehen beide hinaus', () => {
+    /*
+      Der Bündler hält je Schlüssel **einen** Wert, und der neuere gewinnt. Für
+      den Regelstand ist das richtig; für die Streichungen wäre es falsch — die
+      stehen im neueren Wert nicht mehr drin. „Regel A löschen, dann Regel B
+      löschen" hätte A verloren, und A bliebe für immer in der Datenbank
+      stehen: Beim nächsten Laden käme sie zurück, und der Planer löschte sie
+      erneut. Deshalb fallen die Werte über `merge` zusammen, nicht einfach
+      übereinander.
+    */
+    const start = st()
+    const [a, b] = start.fsRules
+    if (!a || !b) throw new Error('Vorbedingung: mindestens zwei Regeln')
+    const ohneA = { ...start, fsRules: start.fsRules.filter((r) => r.id !== a.id) }
+    const ohneAB = { ...ohneA, fsRules: ohneA.fsRules.filter((r) => r.id !== b.id) }
+
+    persist(start, ohneA, { type: 'fsRuleRemove', id: a.id })
+    persist(ohneA, ohneAB, { type: 'fsRuleRemove', id: b.id })
+    vi.advanceTimersByTime(600)
+
+    expect(data.saveFsRules).toHaveBeenCalledTimes(1)
+    const [, regeln, entfernt] = vi.mocked(data.saveFsRules).mock.calls[0]!
+    expect(regeln).toEqual(ohneAB.fsRules)
+    expect([...(entfernt ?? [])].sort()).toEqual([a.id, b.id].sort())
   })
 
   /*
@@ -800,11 +827,14 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
   })
 
   /*
-   * **Mit der Gruppe gehen ihre Treffpunkte — auch in der Datenbank.** Die
-   * Regeln liegen als ein Blob ohne Fremdschlüssel in `fs_rules`; anders als bei
-   * `persons.grp` räumt die Datenbank dort nichts von selbst. Bliebe das
-   * Schreiben aus, stünden die Treffpunkte der gelöschten Gruppe nach dem
-   * nächsten Laden wieder in jeder Woche.
+   * **Mit der Gruppe gehen ihre Treffpunkte — auch in der Datenbank.**
+   *
+   * Die Regeln räumt seit T105 der Fremdschlüssel weg (`fs_rules.grp` →
+   * `groups`, `on delete cascade`). Die daraus **erzeugten Wochen**
+   * (`fs_weeks`) hängen an keinem: Bliebe ihr Schreiben aus, stünden die
+   * Treffpunkte der gelöschten Gruppe nach dem nächsten Laden wieder in jeder
+   * Woche. Geprüft wird deshalb beides — der Grundplan ohne ihre Regeln und
+   * genau die Wochen, in denen sie stand.
    */
   describe('removeGroup und die Treffpunkte der Gruppe', () => {
     const regelIds = (aufruf: unknown[] | undefined) =>

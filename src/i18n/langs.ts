@@ -119,13 +119,19 @@ export const CONG_TO_JW: Readonly<Record<string, string>> = Object.fromEntries(
 /**
  * jw.org-Sprachcode -> deutscher Anzeigename — die Rueckrichtung.
  *
- * Gebraucht an der Grenze zur Datenbank: Dort steht seit dem Schema-Neuaufbau
- * der **Code** (`congregations.cong_lang`), im Zustand der App dagegen der
- * Anzeigename, an dem `CONG_TO_JW`, `congAppCode` und der Sprachen-Picker
- * haengen. Ohne diese Umsetzung stand im Einstellungen-Bildschirm „de" statt
- * „Deutsch" — und schlimmer: `CONG_TO_JW['de']` findet nichts, der Import fiel
- * also stumm auf Deutsch zurueck, was eine englischsprachige Versammlung erst
- * am falschen Arbeitsheft gemerkt haette.
+ * **Zum Anzeigen und zum Pruefen, nicht mehr zum Umsetzen.** Die Sprache ist
+ * inzwischen auf beiden Seiten ein Code: in der Datenbank
+ * (`congregations.cong_lang`) wie im Zustand der App. An der Grenze wird
+ * deshalb nichts mehr uebersetzt — nur Zeilen aus der Zeit davor, die noch den
+ * deutschen Namen tragen, hebt `zuCode` in `src/lib/data.ts` beim Laden.
+ *
+ * Geblieben sind zwei Aufgaben: der Rueckfall-Anzeigename in `langnames.ts`,
+ * wenn die Sprachliste des Lesers den Code nicht kennt — und die Frage „gibt
+ * es diesen Code ueberhaupt?" (`useWochenImport`), denn ein unbekannter liesse
+ * den Import stumm auf Deutsch zurueckfallen. Genau das war der Fehler, gegen
+ * den diese Tabelle einmal angelegt wurde: Damals stand im Zustand der
+ * Anzeigename, `CONG_TO_JW['de']` fand nichts, und eine englischsprachige
+ * Versammlung haette es erst am falschen Arbeitsheft gemerkt.
  */
 export const JW_TO_CONG: Readonly<Record<string, string>> = Object.fromEntries(
   JW_LANGS.map((l) => [l.code, l.name]),

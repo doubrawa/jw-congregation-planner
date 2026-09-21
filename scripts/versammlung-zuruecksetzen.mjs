@@ -171,6 +171,58 @@ export const BEHALTEN = {
   fs_rules: 'der Treffpunkt-Grundplan — er beschreibt die Versammlung, nicht eine Woche',
 }
 
+/**
+ * Tabellen, die eine **Kaskade** leert, obwohl sie unter `BEHALTEN` stehen —
+ * je mit der Stelle, die sie über das Löschen hinüberrettet.
+ *
+ * `fs_rules.grp` zeigt per Fremdschlüssel auf `groups` und ist `on delete
+ * cascade` (schema.sql). Dieses Skript löscht alle Gruppen und legt sie aus
+ * dem SQL neu an — dazwischen nimmt die Datenbank jede Gruppen-Regel mit.
+ * „Behalten" stimmte damit nur für den Versammlungstreffpunkt (`grp is null`),
+ * und gemerkt hätte es niemand: Der Grundplan steht in den Einstellungen, und
+ * dort fehlt danach schlicht etwas.
+ *
+ * Die Probe in `versammlung-zuruecksetzen.test.ts` liest diese Liste gegen
+ * `schema.sql`: Jede Kaskade auf eine Tabelle aus `NEU_ANGELEGT` muss hier
+ * stehen oder in `LEEREN` — sonst verschwindet beim nächsten Fremdschlüssel
+ * wieder etwas stillschweigend.
+ */
+export const KASKADIERT = {
+  fs_rules: 'Gruppen-Treffpunkte hängen an groups — gesichert und wieder eingespielt',
+}
+
+/**
+ * Die Gruppen-Regeln auf die **Gruppennamen** umschreiben, bevor die Gruppen
+ * gelöscht werden — und hinterher zurück auf die neuen Ids.
+ *
+ * Über den Namen, nicht über die Id: Dieselbe Entscheidung wie bei den
+ * Konto-Verknüpfungen eine Bildschirmhöhe weiter oben. Die Ids kommen frisch
+ * aus dem SQL und sind zwar meist dieselben, aber das ist eine Eigenschaft des
+ * Erzeugers, keine Zusage. Der Name ist das, was der Planer wiedererkennt.
+ *
+ * Eine Regel, deren Gruppe es im neuen Bestand nicht mehr gibt, kommt **nicht**
+ * zurück — sie hätte niemanden mehr, für den sie gilt. Der Aufrufer bekommt sie
+ * getrennt und nennt sie.
+ */
+export function regelnAufNamen(regeln, gruppenNachId) {
+  return regeln
+    .filter((r) => r.grp != null)
+    .map(({ grp, ...rest }) => ({ ...rest, gruppenName: gruppenNachId.get(grp) ?? null }))
+    .filter((r) => r.gruppenName !== null)
+}
+
+/** Umkehrung: Gruppennamen → neue Ids. Ohne Gruppe bleibt die Regel zurück. */
+export function regelnAufIds(gesichert, idNachGruppenName) {
+  const wieder = []
+  const verloren = []
+  for (const { gruppenName, ...rest } of gesichert) {
+    const grp = idNachGruppenName.get(gruppenName)
+    if (grp) wieder.push({ ...rest, grp })
+    else verloren.push(gruppenName)
+  }
+  return { wieder, verloren: [...new Set(verloren)] }
+}
+
 async function main() {
   const arg = argumente(process.argv.slice(2))
   const { url, key } = await zugangsdaten()
@@ -242,6 +294,27 @@ async function main() {
 
   const services = await rest(`services?select=key&congregation_id=eq.${cong}`)
 
+  /*
+   * **Den Grundplan der Gruppen über das Löschen retten** (siehe `KASKADIERT`).
+   *
+   * Auf denselben Weg gebracht wie die Konto-Verknüpfungen darüber: auf den
+   * Gruppennamen umgeschrieben und in eine Sidecar-Datei gelegt, bevor
+   * irgendetwas gelöscht ist. Bricht der Lauf zwischen dem Löschen der Gruppen
+   * und dem Zurückschreiben ab, sind die Regeln aus der Datenbank nicht mehr zu
+   * holen — dann kommen sie beim nächsten Lauf von dort.
+   */
+  const dbGruppen = await rest(`groups?select=id,name&congregation_id=eq.${cong}`)
+  const gruppenNachId = new Map(dbGruppen.map((g) => [g.id, g.name]))
+  const alleRegeln = await rest(`fs_rules?select=*&congregation_id=eq.${cong}`)
+  const regelSidecar = `${sqlPfad}.fsrules.json`
+  let gruppenRegeln = regelnAufNamen(alleRegeln, gruppenNachId)
+  if (gruppenRegeln.length) {
+    fs.writeFileSync(regelSidecar, JSON.stringify(gruppenRegeln, null, 2))
+  } else if (fs.existsSync(regelSidecar)) {
+    gruppenRegeln = JSON.parse(fs.readFileSync(regelSidecar, 'utf8'))
+    console.log(`(${gruppenRegeln.length} Gruppen-Treffpunkt(e) aus vorherigem Lauf übernommen — DB war schon geleert.)`)
+  }
+
   console.log(`Versammlung:  ${cong}`)
   console.log(`Löschen:      ${LEEREN.join(', ')}, groups, persons`)
   console.log(`Anlegen:      ${kuratiert.persons.length} Personen, ${kuratiert.groups.length} Gruppen`)
@@ -249,12 +322,21 @@ async function main() {
   for (const v of verknuepfungen) console.log(`              ${v.email} → ${v.personName}`)
   if (einladungen.length) console.log(`Einladungen:  ${einladungen.length} offene, werden wieder verknüpft`)
   console.log(`Dienste:      ${services.length ? `${services.length} vorhanden, bleiben` : 'keine → Standard anlegen'}`)
+  if (gruppenRegeln.length) {
+    console.log(`Treffpunkte:  ${gruppenRegeln.length} Gruppen-Regel(n) gesichert, werden wieder eingespielt`)
+  }
 
   if (arg.trocken) {
     // Prüfen, ob jede erhaltene Verknüpfung im kuratierten Bestand landet.
     const namen = new Set(kuratiert.persons.map((p) => personDisplayName(p.fn, p.ln)))
     for (const v of verknuepfungen) {
       if (!namen.has(v.personName)) console.log(`  ! ${v.personName} fehlt im SQL — Konto bliebe unverknüpft.`)
+    }
+    // Dasselbe für die Gruppen-Treffpunkte: Eine Gruppe, die es im SQL nicht
+    // mehr gibt, nimmt ihre Regel mit — das soll man vorher sehen.
+    const { verloren } = regelnAufIds(gruppenRegeln, new Map(kuratiert.groups.map((g) => [g.name, g.id])))
+    for (const name of verloren) {
+      console.log(`  ! Gruppe „${name}" fehlt im SQL — ihr Treffpunkt ginge verloren.`)
     }
     console.log('\n--trocken: nichts geschrieben.')
     return
@@ -278,6 +360,29 @@ async function main() {
       id: g.id, congregation_id: cong, name: g.name, position: g.position,
     }))),
   })
+  /*
+   * Die Gruppen-Treffpunkte zurück — sofort nach den Gruppen, an denen sie
+   * hängen (siehe `KASKADIERT`). Vorher als Zeile unmöglich: Der
+   * Fremdschlüssel `fs_rules.grp` zeigt auf eine Gruppe, die es noch nicht
+   * gibt.
+   *
+   * `upsert` statt `insert`: Der Versammlungstreffpunkt (`grp is null`) hat die
+   * Kaskade überlebt und steht noch da. Träfe ein Lauf nach einem Teilabbruch
+   * auf eine Regel, die schon zurückgeschrieben ist, wiese ein reines `insert`
+   * den ganzen Sammelaufruf wegen des Primärschlüssels ab.
+   */
+  const { wieder, verloren } = regelnAufIds(
+    gruppenRegeln,
+    new Map(kuratiert.groups.map((g) => [g.name, g.id])),
+  )
+  if (wieder.length) {
+    await rest('fs_rules', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal,resolution=merge-duplicates' },
+      body: JSON.stringify(wieder.map((r) => ({ ...r, congregation_id: cong }))),
+    })
+  }
+
   // Die Haushalte stehen im Personen-SQL nicht als eigene Zeilen — dort ist ein
   // Haushalt nur die gemeinsame Id in `fam`. Seit er eine eigene Tabelle hat
   // (T105, mit Fremdschlüssel), muss er **vor** den Personen dastehen; sonst
@@ -347,6 +452,12 @@ async function main() {
       `${einladungenVerknuepft ? `, ${einladungenVerknuepft} Einladung(en) wieder verknüpft` : ''}.`,
   )
   if (unverknuepft.length) console.log(`Unverknüpft (Name nicht im SQL): ${unverknuepft.join(', ')}`)
+  if (wieder.length) console.log(`${wieder.length} Gruppen-Treffpunkt(e) wieder eingespielt.`)
+  if (verloren.length) {
+    console.log(`Treffpunkt verloren — Gruppe nicht mehr im SQL: ${verloren.join(', ')}`)
+  }
+  // Erst jetzt weg: Bis hierher war die Datei die einzige Kopie der Regeln.
+  if (gruppenRegeln.length && fs.existsSync(regelSidecar)) fs.unlinkSync(regelSidecar)
   /*
    * **Die Übergabeliste — vollständig.**
    *

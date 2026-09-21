@@ -6,10 +6,13 @@ import {
   BEHALTEN,
   displayName,
   gleichnamige,
+  KASKADIERT,
   LEEREN,
   NEU_ANGELEGT,
   parseInsert,
   parseKuratiert,
+  regelnAufIds,
+  regelnAufNamen,
   werteTokens,
 } from './versammlung-zuruecksetzen.mjs'
 
@@ -199,5 +202,111 @@ describe('Zurücksetzen lässt keine Tabelle aus', () => {
       (t) => !new RegExp(`rest\\(\`${t}\\?congregation_id`).test(skript),
     )
     expect(fehlt, 'steht in NEU_ANGELEGT, wird aber nicht gelöscht').toEqual([])
+  })
+
+  /**
+   * **Was eine Kaskade mitnimmt, steht auf keiner der drei Listen.**
+   *
+   * Die Proben darüber lesen die Listen und das Skript — beide sagen nichts
+   * darüber, was die **Datenbank** beim Löschen von sich aus mitlöscht.
+   * `fs_rules` stand unter `BEHALTEN` („der Grundplan beschreibt die
+   * Versammlung"), und das stimmte auch, solange es ein JSONB-Blob ohne
+   * Fremdschlüssel war. Seit die Regel eine Zeile mit `grp → groups (on delete
+   * cascade)` ist, nahm das Löschen der Gruppen jeden Gruppen-Treffpunkt mit:
+   * „behalten" galt nur noch für `grp is null`, und gemerkt hätte es niemand.
+   *
+   * Diese Probe schließt die Lücke von der Datenbank her: Zeigt eine Tabelle
+   * per `on delete cascade` auf eine, die dieses Skript **löscht**, dann muss
+   * sie entweder selbst geleert werden (`LEEREN`/`NEU_ANGELEGT`) oder in
+   * `KASKADIERT` stehen — also jemanden haben, der sie hinüberrettet.
+   */
+  it('jede Kaskade auf eine gelöschte Tabelle ist bedacht', () => {
+    // `constraint … foreign key (spalte, congregation_id) references
+    // public.<ziel> (…) on delete cascade` — je Treffer die Quelltabelle aus
+    // dem umgebenden create-table-Block und das Ziel.
+    const betroffen = new Set<string>()
+    for (const [, quelle, block] of schema.matchAll(TABELLE)) {
+      for (const [, ziel] of (block ?? '').matchAll(
+        /references\s+public\.(\w+)\s*\([^)]*\)\s*on delete cascade/g,
+      )) {
+        if (quelle && ziel && NEU_ANGELEGT.includes(ziel) && quelle !== ziel) betroffen.add(quelle)
+      }
+    }
+
+    // Ohne Treffer prüfte die Probe nichts — fs_rules → groups muss sie finden.
+    expect([...betroffen], 'keine Kaskade erkannt').toContain('fs_rules')
+
+    const ungedeckt = [...betroffen].filter(
+      (t) => !LEEREN.includes(t) && !NEU_ANGELEGT.includes(t) && !(t in KASKADIERT),
+    )
+    expect(
+      ungedeckt,
+      'wird von einer Kaskade geleert, steht aber unter BEHALTEN ohne Rettung',
+    ).toEqual([])
+  })
+
+  it('was gerettet wird, spielt das Skript auch wirklich zurück', () => {
+    // Dieselbe Strenge wie bei NEU_ANGELEGT: Eine Liste, die nur mit sich
+    // selbst verglichen wird, beweist nichts. Fiele der POST heraus, bliebe
+    // die Probe oben grün und die Regeln wären trotzdem weg.
+    const fehlt = Object.keys(KASKADIERT).filter((t) => !skript.includes(`rest('${t}'`))
+    expect(fehlt, 'steht in KASKADIERT, wird aber nie zurückgeschrieben').toEqual([])
+  })
+})
+
+/**
+ * Das Sichern und Zurückholen selbst — über den **Gruppennamen**, weil die Ids
+ * frisch aus dem SQL kommen (dieselbe Entscheidung wie bei den Konten).
+ */
+describe('Gruppen-Treffpunkte über das Zurücksetzen retten', () => {
+  const GRUPPEN = new Map([
+    ['g1', 'Gruppe 1'],
+    ['g2', 'Gruppe 2'],
+  ])
+  const REGELN = [
+    { id: 'r1', grp: null, wd: 6, time: '09:00', place: 'Saal', monthly: 0, skip_cong: false },
+    { id: 'r2', grp: 'g1', wd: 6, time: '09:30', place: 'Markt', monthly: 0, skip_cong: true },
+    { id: 'r3', grp: 'g2', wd: 3, time: '18:00', place: 'Park', monthly: 1, skip_cong: false },
+  ]
+
+  it('der Versammlungstreffpunkt wird nicht gesichert — ihn trifft die Kaskade nicht', () => {
+    // `grp is null`: Der zusammengesetzte Fremdschlüssel greift dort gar nicht,
+    // die Zeile überlebt das Löschen der Gruppen von selbst. Sie mitzusichern
+    // hieße, sie hinterher ein zweites Mal zu schreiben.
+    expect(regelnAufNamen(REGELN, GRUPPEN).map((r) => r.id)).toEqual(['r2', 'r3'])
+  })
+
+  it('die Regel trägt statt der Id den Namen ihrer Gruppe', () => {
+    const gesichert = regelnAufNamen(REGELN, GRUPPEN)
+    expect(gesichert[0]).toEqual({
+      id: 'r2', wd: 6, time: '09:30', place: 'Markt', monthly: 0, skip_cong: true,
+      gruppenName: 'Gruppe 1',
+    })
+    expect(gesichert[0]).not.toHaveProperty('grp')
+  })
+
+  it('zurück auf die neuen Ids — auch wenn das SQL andere vergibt', () => {
+    const gesichert = regelnAufNamen(REGELN, GRUPPEN)
+    const neu = new Map([['Gruppe 1', 'neu-1'], ['Gruppe 2', 'neu-2']])
+    const { wieder, verloren } = regelnAufIds(gesichert, neu)
+    expect(wieder.map((r) => [r.id, r.grp])).toEqual([['r2', 'neu-1'], ['r3', 'neu-2']])
+    expect(wieder[0]).not.toHaveProperty('gruppenName')
+    expect(verloren).toEqual([])
+  })
+
+  it('eine Gruppe, die es nicht mehr gibt, nimmt ihren Treffpunkt mit — und wird genannt', () => {
+    // Nicht stillschweigend: Die Regel hätte niemanden mehr, für den sie gilt,
+    // aber der Betreiber soll erfahren, dass da etwas war.
+    const gesichert = regelnAufNamen(REGELN, GRUPPEN)
+    const { wieder, verloren } = regelnAufIds(gesichert, new Map([['Gruppe 1', 'neu-1']]))
+    expect(wieder.map((r) => r.id)).toEqual(['r2'])
+    expect(verloren).toEqual(['Gruppe 2'])
+  })
+
+  it('eine Regel ohne auffindbare Gruppe fällt schon beim Sichern heraus', () => {
+    // Verwaiste Zeile (theoretisch unmöglich, der Fremdschlüssel verhindert
+    // sie) — sie darf keinen `gruppenName: null` in die Sidecar-Datei tragen.
+    const verwaist = [{ id: 'r9', grp: 'weg', wd: 1, time: '19:00', place: '', monthly: 0, skip_cong: false }]
+    expect(regelnAufNamen(verwaist, GRUPPEN)).toEqual([])
   })
 })

@@ -453,7 +453,23 @@ export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance)
  * Zeit und Ort jeder angepassten Woche auf den Grundplan zurück, und mit der
  * Gruppe hat das nichts zu tun.
  *
- * `''` ist die Versammlung, keine Gruppe: Dafür wird nichts gestrichen.
+ * **`null` ist die Versammlung, keine Gruppe: Dafür wird nichts gestrichen.**
+ * Der Wächter unten ist kein Formalismus, sondern die schärfste Zeile hier —
+ * `grp: null` ist genau die Kennung des **Versammlungs**treffpunkts, und ohne
+ * ihn nähme ein `fsGruppeEntfernen(…, null)` sie alle mit: Die Treffpunkte,
+ * die jeden angehen, wären weg, weil eine Gruppe gelöscht wurde.
+ *
+ * Der Parameter lässt `null` deshalb ausdrücklich zu, statt es über den Typ zu
+ * verbieten. Verboten wäre es nur hier; die Kennung **ist** `string | null`
+ * (so steht sie in `FsRule.grp` und `FsInstance.grp`), und wer sie
+ * durchreicht, käme sonst nur mit einem Cast vorbei — der prüft nichts und
+ * fiele beim Lesen nicht auf.
+ *
+ * Bis zum 18. September 2026 stand für die Versammlung der leere String; der
+ * Wächter (`!grp`) fängt beide. Eine Probe mit `''` prüft ihn seither aber
+ * nicht mehr: Auf `''` passt keine Regel, die Funktion gäbe auch ohne ihn
+ * dieselben Referenzen zurück.
+ *
  * Unberührte Wochen und ein unberührter Grundplan behalten ihre Referenz —
  * daran erkennt `persist.ts`, was zu schreiben ist, und die Rückfrage vor dem
  * Löschen, ob es überhaupt Treffpunkte zu nennen gibt.
@@ -461,7 +477,7 @@ export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance)
 export function fsGruppeEntfernen(
   rules: FsRule[],
   fsWeeks: FsInstance[][],
-  grp: string,
+  grp: string | null,
 ): { fsRules: FsRule[]; fsWeeks: FsInstance[][] } {
   if (!grp) return { fsRules: rules, fsWeeks }
   const fsRules = rules.some((r) => r.grp === grp) ? rules.filter((r) => r.grp !== grp) : rules

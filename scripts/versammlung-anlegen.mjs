@@ -53,9 +53,16 @@ export { argumente }
  * Erinnerung.
  */
 export function zeitSpalten(tab, wert) {
-  const m = /^([0-6])\s+(\d{1,2}:\d{2})$/.exec(String(wert).trim())
-  if (!m) throw new Error(`--${tab} erwartet "<wd> <hh:mm>" (0 = Sonntag … 6 = Samstag), nicht "${wert}"`)
-  return { [`${tab}_wd`]: Number(m[1]), [`${tab}_time`]: m[2] }
+  const erwartet = `--${tab} erwartet "<wd> <hh:mm>" (0 = Sonntag … 6 = Samstag)`
+  const m = /^([0-6])\s+(\d{1,2}):(\d{2})$/.exec(String(wert).trim())
+  if (!m) throw new Error(`${erwartet}, nicht "${wert}"`)
+  // Die Ziffernform allein reicht nicht: `25:99` passte auf das Muster und ging
+  // bis in den POST, wo PostgreSQL es abwies — der Betreiber bekam dann einen
+  // rohen REST-Fehler, in dem der Schalter gar nicht vorkommt. Hier steht, was
+  // der Kommentar oben verspricht.
+  const [std, min] = [Number(m[2]), Number(m[3])]
+  if (std > 23 || min > 59) throw new Error(`${erwartet} — "${m[2]}:${m[3]}" ist keine Uhrzeit`)
+  return { [`${tab}_wd`]: Number(m[1]), [`${tab}_time`]: `${String(std).padStart(2, '0')}:${m[3]}` }
 }
 
 /**

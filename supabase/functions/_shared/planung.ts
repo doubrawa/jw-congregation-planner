@@ -152,12 +152,35 @@ export interface ZeitenRow {
 /**
  * Zeile → Werte. `time` kommt aus PostgreSQL als „19:00:00"; geführt wird
  * „19:00". Ohne Zeile gilt der übliche Rhythmus.
+ *
+ * **Auch je Feld, nicht nur für die ganze Zeile.** Hier stand
+ * `row.mid_time.slice(0, 5)` hinter einem bloßen `if (!row)`: Eine Zeile, die
+ * es gibt, deren Zeit-Spalten aber fehlen, warf einen TypeError mitten im
+ * Ladevorgang — und der läuft an einem `void loadAndHydrate(…)` ohne `catch`
+ * hoch, die App blieb also auf „lädt…" stehen. Denkbar ist das an jeder
+ * Abfrage, die die Spalten nicht ausdrücklich nennt; `CONG_SPALTEN` in
+ * `src/lib/data.ts` verhindert genau das auf der Client-Seite, und hier steht
+ * der Gürtel dazu.
+ *
+ * Der Rückfall ist derselbe wie ohne Zeile: lieber der übliche Rhythmus als
+ * ein Absturz. Falsch angezeigt wäre er nur in dem Fall, in dem sonst gar
+ * nichts angezeigt würde.
  */
 export function zeitenAus(row: ZeitenRow | undefined): MeetingTimes {
   if (!row) return STANDARD_ZEITEN
+  const zeit = (wert: string | undefined, vorgabe: string): string =>
+    typeof wert === 'string' && wert ? wert.slice(0, 5) : vorgabe
+  const tag = (wert: number | undefined, vorgabe: number): number =>
+    typeof wert === 'number' && Number.isFinite(wert) ? wert : vorgabe
   return {
-    mid: { wd: row.mid_wd, time: row.mid_time.slice(0, 5) },
-    we: { wd: row.we_wd, time: row.we_time.slice(0, 5) },
+    mid: {
+      wd: tag(row.mid_wd, STANDARD_ZEITEN.mid.wd),
+      time: zeit(row.mid_time, STANDARD_ZEITEN.mid.time),
+    },
+    we: {
+      wd: tag(row.we_wd, STANDARD_ZEITEN.we.wd),
+      time: zeit(row.we_time, STANDARD_ZEITEN.we.time),
+    },
   }
 }
 

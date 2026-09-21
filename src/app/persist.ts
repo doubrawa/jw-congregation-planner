@@ -61,9 +61,17 @@ interface DebouncedWriter<K, V> {
   flush: () => void
 }
 
+/**
+ * @param merge Wie zwei Fassungen desselben Schlüssels zusammenfallen. Ohne
+ *   sie gewinnt die neuere — richtig für alles, was den **Zustand** schreibt
+ *   (eine Person, eine Woche). Wer im Wert auch eine **Absicht** mitführt (was
+ *   ist zu löschen), braucht sie: Diese Absicht steht nicht mehr im neueren
+ *   Wert, und einfach zu überschreiben verlöre sie.
+ */
 function createDebouncedWriter<K, V>(
   delayMs: number,
   write: (key: K, value: V) => void,
+  merge?: (alt: V, neu: V) => V,
 ): DebouncedWriter<K, V> {
   const pending = new Map<K, V>()
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -77,7 +85,8 @@ function createDebouncedWriter<K, V>(
   }
   return {
     schedule(key, value) {
-      pending.set(key, value)
+      const alt = pending.get(key)
+      pending.set(key, alt !== undefined && merge ? merge(alt, value) : value)
       if (timer) clearTimeout(timer)
       timer = setTimeout(flush, delayMs)
     },
@@ -130,9 +139,20 @@ const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsIns
 )
 // Der Grundplan hängt an einem Freitextfeld (Ort) und änderte sich deshalb je
 // Tastenanschlag — mitsamt jeder daraus erzeugten Woche.
-const fsRuleSaves = createDebouncedWriter<'rules', { congId: string; rules: AppState['fsRules'] }>(
+//
+// Mitgeführt wird, **welche Regeln dieser Planer entfernt hat**: Der Schreiber
+// löscht genau die, statt alles wegzuräumen, was nicht in seiner Liste steht
+// (siehe `saveFsRules`). Und weil mehrere Änderungen zu einem Schreibvorgang
+// zusammenfallen, sammeln sich die Löschungen, während der Regelstand selbst
+// vom neuesten gewinnt — sonst verlöre „Regel A löschen, dann Regel B löschen"
+// das A.
+const fsRuleSaves = createDebouncedWriter<
+  'rules',
+  { congId: string; rules: AppState['fsRules']; entfernt: string[] }
+>(
   SAVE_DELAY,
-  (_key, { congId, rules }) => saveFsRules(congId, rules),
+  (_key, { congId, rules, entfernt }) => saveFsRules(congId, rules, entfernt),
+  (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
 )
 
 /*
@@ -364,7 +384,10 @@ function treffpunkteSpeichern(
   verwaist: ReadonlyMap<string, string[]>,
 ): void {
   if (next.fsRules !== prev.fsRules) {
-    fsRuleSaves.schedule('rules', { congId, rules: next.fsRules })
+    // Was dieser Planer entfernt hat — nicht „alles, was ich nicht kenne".
+    const bleibt = new Set(next.fsRules.map((r) => r.id))
+    const entfernt = prev.fsRules.filter((r) => !bleibt.has(r.id)).map((r) => r.id)
+    fsRuleSaves.schedule('rules', { congId, rules: next.fsRules, entfernt })
   }
   for (let i = 0; i < next.fsWeeks.length; i++) {
     if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, verwaist)
@@ -634,9 +657,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       for (const p of next.persons) {
         if (prev.persons.find((q) => q.id === p.id)?.grp === action.id) savePersonGroup(p)
       }
-      // Ihre Treffpunkte sind mit ihr gegangen. Die Regeln liegen als ein Blob
-      // ohne Fremdschlüssel in `fs_rules` — die Datenbank räumt hier nichts
-      // von selbst, anders als bei `persons.grp` (on delete set null).
+      // Ihre Treffpunkte sind mit ihr gegangen. Die Datenbank räumt das seit
+      // T105 selbst — `fs_rules.grp` zeigt per Fremdschlüssel auf `groups` und
+      // ist `on delete cascade`. Geschrieben wird trotzdem: Die Regeln stehen
+      // auch im Zustand, die daraus erzeugten Wochen (`fs_weeks`) hängen an
+      // keinem Fremdschlüssel, und der Löschauftrag über die Kennung ist
+      // gegenüber der Kaskade nur eine Wiederholung, keine zweite Wahrheit.
       treffpunkteSpeichern(congId, prev, next, fsVerwaist)
       break
     case 'markAllRead':

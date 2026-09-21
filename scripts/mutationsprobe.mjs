@@ -1610,7 +1610,7 @@ export const KATALOG = [
   {
     id: 'gruppe-loeschen-versammlung-bleibt',
     datei: 'src/data/fs.ts',
-    regel: 'Die leere Gruppen-Kennung ist die Versammlung — für sie wird kein Treffpunkt gestrichen.',
+    regel: 'Die Kennung `null` ist die Versammlung — für sie wird kein Treffpunkt gestrichen.',
     suchen: '  if (!grp) return { fsRules: rules, fsWeeks }\n',
     ersetzen: '',
   },
@@ -1618,16 +1618,18 @@ export const KATALOG = [
     id: 'gruppe-loeschen-speichern',
     datei: 'src/app/persist.ts',
     regel: 'Das Löschen einer Gruppe schreibt Grundplan und Wochen ohne ihre Treffpunkte in die Datenbank.',
-    suchen: '      // von selbst, anders als bei `persons.grp` (on delete set null).\n      treffpunkteSpeichern(congId, prev, next, fsVerwaist)',
-    ersetzen: '      // von selbst, anders als bei `persons.grp` (on delete set null).',
+    suchen: '      // gegenüber der Kaskade nur eine Wiederholung, keine zweite Wahrheit.\n      treffpunkteSpeichern(congId, prev, next, fsVerwaist)',
+    ersetzen: '      // gegenüber der Kaskade nur eine Wiederholung, keine zweite Wahrheit.',
   },
   {
     id: 'gruppe-loeschen-gebuendelt',
     datei: 'src/app/persist.ts',
     regel: 'Ein gebündelt ausstehender Grundplan bringt die Regeln einer gelöschten Gruppe nicht zurück.',
-    suchen: '      // von selbst, anders als bei `persons.grp` (on delete set null).\n      treffpunkteSpeichern(congId, prev, next, fsVerwaist)',
+    suchen: '      // gegenüber der Kaskade nur eine Wiederholung, keine zweite Wahrheit.\n      treffpunkteSpeichern(congId, prev, next, fsVerwaist)',
+    // Am Bündler vorbei **und** ohne die Streichungen — genau der Stand, den
+    // `saveFsRules` vor dem 21.9.2026 hatte.
     ersetzen:
-      '      // von selbst, anders als bei `persons.grp` (on delete set null).\n      saveFsRules(congId, next.fsBase.toISOString().slice(0, 10), next.fsRules)',
+      '      // gegenüber der Kaskade nur eine Wiederholung, keine zweite Wahrheit.\n      saveFsRules(congId, next.fsRules)',
   },
   {
     id: 'ohne-gruppe-rolle-keine',
