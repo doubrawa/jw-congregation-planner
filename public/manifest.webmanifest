@@ -1,7 +1,7 @@
 {
   "name": "Versammlung.app",
   "short_name": "Versammlung.app",
-  "description": "Zusammenkunfts-Planer für eine Versammlung — Programme, Zuteilungen, Personen.",
+  "description": "Zusammenkünfte planen, Aufgaben verteilen, die Versammlung verwalten.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

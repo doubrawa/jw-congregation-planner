@@ -5283,7 +5283,53 @@ dieser Umbauten am selben Tag angehalten.
 
 ## Aufgenommen am 21. September 2026 — Anmeldeseite und Registrieren (T113, T114)
 
-### T113 · Die Anmeldeseite sagt nicht, wofür die App da ist — und nicht, wo man eine Versammlung anfragt 🔧 ☐ offen
+### T113 · Die Anmeldeseite sagt nicht, wofür die App da ist — und nicht, wo man eine Versammlung anfragt 🔧 ✅ erledigt (21. September 2026)
+
+> **Umgesetzt.** Unter dem Namen steht jetzt „Zusammenkünfte planen, Aufgaben
+> verteilen, die Versammlung verwalten.", ganz unten „Neue Versammlung
+> anfragen: doubrawa@gmx.de" — die Adresse sichtbar zum Abschreiben und als
+> `mailto:`-Verweis mit vorbelegtem Betreff, auch in der Demo. Beides in allen
+> 34 Sprachen, mit den Wörtern, die das jeweilige Wörterbuch für Versammlung,
+> Zusammenkunft und Aufgaben schon führt.
+>
+> **Die Fragen von unten, so entschieden:**
+>
+> | Frage | Entscheidung |
+> | --- | --- |
+> | Wortlaut | drei Tätigkeiten statt der vorgeschlagenen Aufzählung von Bereichen: „Treffpunkte" führen die Wörterbücher uneinheitlich (meist als „Predigtdienst"), und ein „du planst" stimmte für Verkündiger nicht |
+> | Adresse | einmal, als Konstante in `login/kontakt.ts`, im Klartext — als Commit-Autor steht sie ohnehin öffentlich; `kontakt.test.ts` hält fest, dass sie im Quelltext nur dort steht |
+> | Betreff | ja, in der Sprache des Lesers, aber in jeder Sprache mit dem Namen der App („新会众：Versammlung.app"), damit der Betreiber die Anfrage auch in fremder Schrift erkennt |
+> | Demo | ja |
+> | Meta-Beschreibung | mitgezogen, ebenso die Beschreibung im Manifest |
+>
+> **Dabei:** Die Adresse bleibt in Rechts-nach-links-Sprachen
+> links-nach-rechts (`dir="ltr"`). Bezeichnung und Adresse stehen als
+> Flex-Elemente nebeneinander statt durch ein Leerzeichen getrennt — sie
+> brechen je als Ganzes um, und der Abstand gilt auch hinter dem breiten
+> Doppelpunkt von Chinesisch und Japanisch. Trefferfläche 24 px wie in T43.
+> Der Satz bricht ausgeglichen um (`text-wrap: balance`), und
+> `font-synthesis-style: none` verhindert, dass Arabisch, Hebräisch,
+> Chinesisch und Japanisch künstlich schräg gestellt werden; Latein bleibt
+> echt kursiv. **Gemessen** per DevTools-Protokoll auf 320 und 360 px bis
+> Schriftstufe 1,45, hell und dunkel, auf Deutsch, Arabisch, Japanisch,
+> Rumänisch und Französisch: nirgends ein Überlauf.
+>
+> **Geprüft:** sechs Fälle am gerenderten Login (Satz, sichtbare Adresse,
+> Mail-Verweis, Demo, Japanisch mit kodiertem Betreff, Arabisch mit
+> LTR-Adresse) und sieben in `kontakt.test.ts` (Betreff in allen 34 Sprachen
+> unversehrt und nur kodiert, `&` und `#`, App-Name in jedem Betreff, die
+> Adresse an genau einer Stelle). Sabotage: sieben Regeln einzeln gebrochen,
+> alle rot — eine Lücke dabei gefunden und geschlossen: Die Demo prüfte nur
+> den Text der Adresse, nicht, dass sie auch eine Mail öffnet. Drei neue
+> Einträge in der Mutationsprobe, 3 von 3 bewacht. Testbestand 5430 → 5443.
+> Handbuch `verkuendiger.md` § 1 und die Aufnahme `login.png` nachgezogen;
+> deren Aufnahmehöhe steht jetzt auf 860 statt 780.
+>
+> **Nebenbei gefunden, nicht hier behoben:** In Persisch, Hebräisch und Urdu
+> tragen Betreff und Teilen-Text der Einladung noch den alten App-Namen, in
+> den Wörterbüchern wie in `send-invite/texte.ts` — als eigene Aufgabe
+> vorgeschlagen.
+
 **Wortlaut:** *„auf der login seite muss es einen satz geben, was die app macht:
 planen/verwalten der versammlung. und es muss eine kontakt email geben, wo man
 hinschreiben kann, wenn man eine neue versammlung anfragen möchte an mich.
@@ -5414,21 +5460,22 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☐☐
+21. September ☑☑☑☑☐
 
-**111 der 114 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei, einer davon zurückgestellt:**
+**112 der 114 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei, einer davon zurückgestellt:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
-| **T113** | Anmeldeseite: was die App macht, Kontakt für neue Versammlungen | ☐ aufgenommen am 21. September, nicht angefangen — Wortlaut und Spam-Frage klären |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
 Am Abend des 21. September entschieden: **T105** ist mit dem Zeitraum fertig —
 Hilfsdienste und Gruppenlisten druckt die App vorerst nicht —, **T106** ist
 zurückgestellt, neu aufgenommen sind **T113** (Anmeldeseite) und **T114**
-(Registrieren bei mehreren Versammlungen).
+(Registrieren bei mehreren Versammlungen). **T113** ist am selben Abend
+gebaut: Die Anmeldeseite sagt jetzt in 34 Sprachen, wofür die App da ist,
+und nennt die Adresse für eine neue Versammlung.
 
 Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
 **T107** (der Name der Versammlung im Handy-Kopf statt der Wortmarke),

@@ -37,6 +37,13 @@
   font-size: calc(15px * var(--fs));
   color: var(--mut);
   margin-top: 10px;
+  /* Zweizeilig gleich lang statt einer vollen Zeile mit einem Rest darunter
+     („… die / Versammlung verwalten."). */
+  text-wrap: balance;
+  /* Arabisch, Hebräisch, Chinesisch, Japanisch … kennen keine Kursive; ohne
+     diese Zeile stellte der Browser ihre Zeichen künstlich schräg. Die
+     lateinische Kursive bleibt — Newsreader bringt eine echte mit. */
+  font-synthesis-style: none;
 }
 
 .login-form {
@@ -100,4 +107,29 @@
   font-size: calc(11px * var(--fs));
   color: var(--mut2);
   margin-top: 20px;
+}
+
+/* Kontakt für eine neue Versammlung (T113). Flex statt Leerzeichen:
+   Bezeichnung und Adresse brechen je als Ganzes um, der Abstand gilt auch
+   hinter dem breiten Doppelpunkt von Chinesisch und Japanisch, und in
+   Rechts-nach-links-Sprachen dreht sich die Reihenfolge von selbst. */
+.login-kontakt {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  column-gap: 0.35em;
+  text-align: center;
+  font-size: calc(11px * var(--fs));
+  color: var(--mut2);
+  margin-top: 4px;
+}
+
+.login-kontakt a {
+  /* Trefferfläche mindestens 24 px hoch (T43), auch bei kleiner Schrift. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

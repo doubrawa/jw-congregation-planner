@@ -5,6 +5,7 @@ import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
 import { authFehlerText } from './auth-text'
+import { KONTAKT_MAIL, kontaktVerweis } from './kontakt'
 import './login.css'
 
 const LOGO = `${import.meta.env.BASE_URL}logo.svg`
@@ -14,6 +15,8 @@ const LOGO = `${import.meta.env.BASE_URL}logo.svg`
  * (inkl. Registrieren und Reset-Mail), sonst Demo-Modus wie im Prototyp:
  * beliebige Zugangsdaten, Anmelden wechselt zum Programm. Sprachauswahl hier.
  * Neue Konten treten anschließend per Einladungscode einer Versammlung bei.
+ * Unter dem Namen steht, wofür die App da ist, ganz unten der Kontakt für eine
+ * neue Versammlung (T113).
  */
 export function LoginScreen() {
   const { state, dispatch } = useApp()
@@ -82,6 +85,9 @@ export function LoginScreen() {
           <wbr />
           .app
         </h1>
+        {/* Wer ohne Einladung hierher kommt, erfährt sonst nicht, wofür die
+            App da ist (T113). */}
+        <p className="login-sub">{t.appZweck}</p>
       </header>
 
       <form className="login-form" onSubmit={submit}>
@@ -140,6 +146,17 @@ export function LoginScreen() {
       </div>
 
       <p className="login-note">{isSupabaseConfigured ? t.nurMitglieder : t.demoHinweis}</p>
+      {/* Der Weg zum Betreiber für eine neue Versammlung (T113) — auch in der
+          Demo: Wer sie ansieht, ist genau der, der fragen würde. Die Adresse
+          steht sichtbar da, zum Abschreiben, falls kein Mail-Programm
+          eingerichtet ist, und bleibt in jeder Schreibrichtung
+          links-nach-rechts lesbar. */}
+      <p className="login-kontakt">
+        <span>{t.versammlungAnfragen}</span>
+        <a href={kontaktVerweis(t.anfrageBetreff)} dir="ltr">
+          {KONTAKT_MAIL}
+        </a>
+      </p>
     </div>
   )
 }

@@ -17,6 +17,10 @@ export const DE = {
     email: 'E-MAIL', emailPh: 'name@beispiel.de', passwort: 'PASSWORT', anmelden: 'ANMELDEN',
     pwVergessen: 'Passwort vergessen?', demoHinweis: 'Demo-Prototyp · Zugangsdaten beliebig',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
+    // Anmeldeseite (T113): wofür die App da ist, und der Weg zum Betreiber für
+    // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.
+    appZweck: 'Zusammenkünfte planen, Aufgaben verteilen, die Versammlung verwalten.',
+    versammlungAnfragen: 'Neue Versammlung anfragen:', anfrageBetreff: 'Neue Versammlung: Versammlung.app',
     mitteilungen: 'Mitteilungen', neuSuffix: 'neu', alleGelesen: 'Alle gelesen', alleLoeschen: 'Alle löschen',
     aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
     // Kurzlabel der Programm-/Planen-Reiter: „Versammlung <Wochentag>"

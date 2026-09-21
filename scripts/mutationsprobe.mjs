@@ -1751,6 +1751,27 @@ export const KATALOG = [
     suchen: '  }, [state.sprungZiel, gesucheOffen, dispatch])',
     ersetzen: '  }, [state.sprungZiel, dispatch])',
   },
+  {
+    id: 'kontakt-betreff-kodiert',
+    datei: 'src/login/kontakt.ts',
+    regel: 'Der Betreff der Anfrage an den Betreiber steht kodiert im mailto-Verweis — sonst zerbricht er an Leerzeichen, fremder Schrift und einem & (T113).',
+    suchen: '?subject=${encodeURIComponent(betreff)}',
+    ersetzen: '?subject=${betreff}',
+  },
+  {
+    id: 'kontakt-adresse-ltr',
+    datei: 'src/login/LoginScreen.tsx',
+    regel: 'Die Kontaktadresse bleibt auf Arabisch, Hebräisch, Persisch und Urdu links-nach-rechts lesbar (T113).',
+    suchen: 'href={kontaktVerweis(t.anfrageBetreff)} dir="ltr"',
+    ersetzen: 'href={kontaktVerweis(t.anfrageBetreff)}',
+  },
+  {
+    id: 'kontakt-auch-in-der-demo',
+    datei: 'src/login/LoginScreen.tsx',
+    regel: 'Der Kontakt für eine neue Versammlung öffnet auch in der Demo eine Mail — wer sie ansieht, ist genau der, der fragen würde (T113).',
+    suchen: 'href={kontaktVerweis(t.anfrageBetreff)}',
+    ersetzen: 'href={isSupabaseConfigured ? kontaktVerweis(t.anfrageBetreff) : undefined}',
+  },
 ]
 
 /**

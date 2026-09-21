@@ -79,7 +79,7 @@ Spalte (660px) nicht, und der ganze Bestand steht in der schmalen. Wer mit einem
 Chromium aufnimmt, für das `--window-size` den Sichtbereich meint (Linux,
 `--headless=new`), setzt im Skript `W=900` und `H=931`; sonst kommen breitere
 Bilder heraus als die abgelegten. Über das dritte Feld im `SHOTS`‑Eintrag
-(`${W}xH`) lässt sich die Höhe je Shot überschreiben (Login: 780).
+(`${W}xH`) lässt sich die Höhe je Shot überschreiben (Login: 860).
 
 ---
 

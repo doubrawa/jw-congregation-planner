@@ -49,7 +49,9 @@ fi
 # name|hash[|BxH]  (hash ohne führendes #; optionale Größe überschreibt W×H —
 # die Breite bleibt dabei ${W}, damit ein geändertes W wirklich für alle gilt)
 SHOTS=(
-  "login|s=login|${W}x780"
+  # 860 statt 780, seit Zweck-Satz und Kontaktzeile dazukamen (T113): Der
+  # Inhalt ist rund 756 px hoch, bei 780 blieben nur 24 px Luft.
+  "login|s=login|${W}x860"
   "programm-woche|s=programm&tab=mid"
   "programm-wochenende|s=programm&tab=we"
   "programm-treffpunkte|s=programm&tab=fs"

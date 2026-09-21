@@ -27,7 +27,8 @@ die App auf deinem Gerät einrichtest.
 ## 1. Anmelden
 
 Du meldest dich mit der E‑Mail‑Adresse an, für die du eine Einladung von deinem
-Koordinator erhalten hast, und dem selbst gewählten Passwort.
+Koordinator erhalten hast, und dem selbst gewählten Passwort. Unter dem Namen
+der App steht in einem Satz, wofür sie da ist.
 
 ![Anmeldebildschirm](screenshots/login.png)
 
@@ -36,6 +37,9 @@ Koordinator erhalten hast, und dem selbst gewählten Passwort.
 - **Konto erstellen** brauchst du nur beim ersten Mal, wenn dein Koordinator dir
   einen Einladungscode gegeben hat.
 - Unten kannst du die **Sprache der App** wählen.
+- Ganz unten steht die Adresse, an die man schreibt, wenn eine **neue
+  Versammlung** die App nutzen möchte. Ein Tipp darauf öffnet eine fertige
+  E‑Mail; die Adresse lässt sich aber auch abschreiben.
 
 ---
 

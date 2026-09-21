@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import {
   AppDispatchContext,
@@ -9,7 +9,8 @@ import {
   useStaticStore,
 } from '../app/context'
 import { initialState } from '../app/init'
-import { dict } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
+import { KONTAKT_MAIL } from './kontakt'
 
 /**
  * **Der Login — die einzige Tür der App.**
@@ -283,6 +284,74 @@ describe('Die Sprache lässt sich schon vor dem Anmelden wählen', () => {
     const { container, dispatch } = zeige('login')
     fireEvent.change(container.querySelector('.login-lang-select')!, { target: { value: 'en' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'setLang', lang: 'en' })
+  })
+})
+
+/*
+ * **Wofür die App da ist — und an wen man sich für eine neue Versammlung
+ * wendet (T113).** Wer ohne Einladung hierher kommt, kennt die App nicht: Er
+ * soll lesen können, was sie tut, und eine Adresse finden, unter der er seine
+ * Versammlung anfragen kann. Beides in seiner Sprache — ein deutscher Satz auf
+ * einer japanischen Anmeldeseite wäre für genau diesen Besucher keine
+ * Auskunft. Was der Betreff in allen 34 Sprachen aushalten muss, prüft
+ * `kontakt.test.ts`; hier geht es darum, dass es auf der Seite ankommt.
+ */
+describe('Wofür die App da ist und wo man eine Versammlung anfragt', () => {
+  beforeAll(async () => {
+    await Promise.all([loadOverlay('ja'), loadOverlay('ar')])
+  })
+
+  const zweck = (c: HTMLElement) => c.querySelector('.login-head .login-sub')?.textContent
+  const bezeichnung = (c: HTMLElement) => c.querySelector('.login-kontakt span')?.textContent
+  const verweis = (c: HTMLElement) => c.querySelector<HTMLAnchorElement>('.login-kontakt a')!
+  const betreff = (a: HTMLAnchorElement) => new URL(a.getAttribute('href')!).searchParams.get('subject')
+
+  it('unter dem Namen steht in einem Satz, wofür die App da ist', () => {
+    const { container } = zeige('login')
+    expect(zweck(container)).toBe(t.appZweck)
+  })
+
+  it('die Adresse steht sichtbar da — zum Abschreiben, falls kein Mail-Programm eingerichtet ist', () => {
+    const { container } = zeige('login')
+    expect(bezeichnung(container)).toBe(t.versammlungAnfragen)
+    expect(verweis(container).textContent).toBe(KONTAKT_MAIL)
+  })
+
+  it('ein Tipp auf die Adresse öffnet eine Mail an den Betreiber, der Betreff sagt, worum es geht', () => {
+    const { container } = zeige('login')
+    const url = new URL(verweis(container).getAttribute('href')!)
+    expect(url.protocol).toBe('mailto:')
+    expect(url.pathname).toBe(KONTAKT_MAIL)
+    expect(betreff(verweis(container))).toBe(t.anfrageBetreff)
+  })
+
+  it('beides steht auch in der Demo, und die Adresse öffnet dort genauso eine Mail — wer die Demo ansieht, ist genau der, der fragen würde', () => {
+    konfiguriert.wert = false
+    const { container } = zeige('login')
+    expect(zweck(container)).toBe(t.appZweck)
+    expect(verweis(container).textContent).toBe(KONTAKT_MAIL)
+    expect(new URL(verweis(container).getAttribute('href')!).pathname).toBe(KONTAKT_MAIL)
+    expect(betreff(verweis(container))).toBe(t.anfrageBetreff)
+  })
+
+  it('auf Japanisch kommt alles japanisch an, auch der Betreff — kodiert, damit der Verweis hält', () => {
+    const ja = dict('ja')
+    // Sonst verglichen beide Seiten bloß den englischen Rückfall miteinander.
+    expect(ja.appZweck).not.toBe(dict('en').appZweck)
+    const { container } = zeige('login', { lang: 'ja' })
+    expect(zweck(container)).toBe(ja.appZweck)
+    expect(bezeichnung(container)).toBe(ja.versammlungAnfragen)
+    expect(verweis(container).getAttribute('href')).toMatch(/^[\x21-\x7e]+$/)
+    expect(betreff(verweis(container))).toBe(ja.anfrageBetreff)
+  })
+
+  it('auf Arabisch bleibt die Adresse links-nach-rechts — sonst stellt der Bidi-Algorithmus @ und Punkt um', () => {
+    const ar = dict('ar')
+    expect(ar.versammlungAnfragen).not.toBe(dict('en').versammlungAnfragen)
+    const { container } = zeige('login', { lang: 'ar' })
+    expect(bezeichnung(container)).toBe(ar.versammlungAnfragen)
+    expect(verweis(container).getAttribute('dir')).toBe('ltr')
+    expect(verweis(container).textContent).toBe(KONTAKT_MAIL)
   })
 })
 
