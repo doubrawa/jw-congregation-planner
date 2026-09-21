@@ -72,8 +72,9 @@ function zeige(
   return { dispatch, ...render(<Buehne />) }
 }
 
-const abschnitte = (c: HTMLElement) =>
-  [...c.querySelectorAll('.fsr-section-title')].map((x) => x.textContent ?? '')
+/** Die Karten des Grundplans — das Panel rendert nichts anderes. */
+const karten = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.panel')]
+const ueberschriften = (c: HTMLElement) => karten(c).map((k) => k.querySelector('.panel-label')?.textContent ?? '')
 
 beforeEach(() => {
   window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
@@ -83,12 +84,16 @@ afterEach(cleanup)
 describe('Der Grundplan gliedert nach Versammlung und Gruppen', () => {
   it('der Planer sieht alle Abschnitte — die Versammlung zuerst', () => {
     const { container } = zeige('rules')
-    expect(abschnitte(container)).toEqual([t.fsVersSection, 'Gruppe 1', 'Gruppe 2'])
+    expect(ueberschriften(container)).toEqual([
+      `${t.fsShort} · ${t.versammlungCard}`,
+      `${t.fsShort} · Gruppe 1`,
+      `${t.fsShort} · Gruppe 2`,
+    ])
   })
 
   it('der Gruppenaufseher nur seinen eigenen', () => {
     const { container } = zeige('rules', {}, 'g1')
-    expect(abschnitte(container)).toEqual(['Gruppe 1'])
+    expect(ueberschriften(container)).toEqual([`${t.fsShort} · Gruppe 1`])
   })
 
   it('jeder Abschnitt bietet an, eine Regel für sich anzulegen', () => {
@@ -109,10 +114,80 @@ describe('Der Grundplan gliedert nach Versammlung und Gruppen', () => {
     const { container } = zeige('rules', {
       fsRules: [regel({ id: 'r1', grp: null }), regel({ id: 'r2', grp: 'g2' })],
     })
-    const teile = [...container.querySelectorAll('.fsr-section')]
-    expect(teile[0]!.querySelectorAll('.fsr-row')).toHaveLength(1) // Versammlung
-    expect(teile[1]!.querySelectorAll('.fsr-row')).toHaveLength(0) // Gruppe 1
-    expect(teile[2]!.querySelectorAll('.fsr-row')).toHaveLength(1) // Gruppe 2
+    const [versammlung, gruppe1, gruppe2] = karten(container)
+    expect(versammlung!.querySelectorAll('.fsr-row')).toHaveLength(1)
+    expect(gruppe1!.querySelectorAll('.fsr-row')).toHaveLength(0)
+    expect(gruppe2!.querySelectorAll('.fsr-row')).toHaveLength(1)
+  })
+
+  it('ohne Predigtdienstgruppen bleibt die Karte der Versammlung allein', () => {
+    const { container } = zeige('rules', { groups: [] })
+    expect(ueberschriften(container)).toEqual([`${t.fsShort} · ${t.versammlungCard}`])
+  })
+})
+
+/**
+ * **Man sieht, für welche Gruppe man gerade einstellt** (T108). Bis zum
+ * 21.9.2026 stand alles in einer Karte, getrennt nur von einer kleinen grauen
+ * Zeile; der „+"-Knopf eines Abschnitts stand direkt über der Überschrift des
+ * nächsten, und man tippte leicht in die falsche Gruppe. Vorschlag des
+ * Betreibers: eigene Bereiche, alle mit derselben Hintergrundfarbe.
+ */
+describe('Jeder Abschnitt ist eine eigene Karte', () => {
+  it('eine Karte je Abschnitt, jede mit eigener Überschrift', () => {
+    const { container } = zeige('rules')
+    expect(karten(container)).toHaveLength(3)
+    for (const karte of karten(container)) {
+      expect(karte.querySelectorAll('h2.panel-label')).toHaveLength(1)
+    }
+  })
+
+  it('alle Karten tragen dieselbe Farbe — sie gehören zusammen', () => {
+    const { container } = zeige('rules')
+    expect(karten(container).map((k) => k.dataset.farbe)).toEqual(['neutral', 'neutral', 'neutral'])
+  })
+
+  it('der Knopf einer Karte legt die Regel für genau diese Karte an', () => {
+    // Die alte Falle: Der Knopf stand am Ende eines Abschnitts und damit direkt
+    // über dem nächsten. Jetzt gehört er in seine Karte — und legt für sie an.
+    const { container, dispatch } = zeige('rules')
+    const erwartet = [null, 'g1', 'g2']
+    karten(container).forEach((karte, i) => {
+      const knoepfe = karte.querySelectorAll('.fsr-add')
+      expect(knoepfe).toHaveLength(1)
+      fireEvent.click(knoepfe[0]!)
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'fsRuleAdd', grp: erwartet[i] })
+    })
+  })
+
+  it('der Erklärtext steht einmal, in der ersten Karte', () => {
+    const { container } = zeige('rules')
+    const hinweise = [...container.querySelectorAll('.panel-hint')]
+    expect(hinweise).toHaveLength(1)
+    expect(hinweise[0]!.textContent).toBe(t.fsGrundDesc)
+    expect(karten(container)[0]!.contains(hinweise[0]!)).toBe(true)
+  })
+
+  it('der Gruppenaufseher bekommt genau eine Karte — samt Erklärtext, ohne leeren Rahmen', () => {
+    const { container } = zeige('rules', {}, 'g2')
+    expect(karten(container)).toHaveLength(1)
+    expect(container.querySelectorAll('h2')).toHaveLength(1)
+    expect(karten(container)[0]!.querySelector('.panel-hint')?.textContent).toBe(t.fsGrundDesc)
+  })
+
+  it('eine Gruppe, die es nicht mehr gibt, ergibt keine leere Karte', () => {
+    // Der Aufseher einer gerade gelöschten Gruppe — bis der Zustand nachzieht,
+    // steht hier lieber nichts als ein Rahmen ohne Inhalt.
+    const { container } = zeige('rules', {}, 'g-weg')
+    expect(karten(container)).toHaveLength(0)
+    expect(container.textContent).toBe('')
+  })
+
+  it('die Überschrift folgt der Sprache des Lesers', () => {
+    const en = dict('en')
+    const { container } = zeige('rules', { lang: 'en' })
+    expect(ueberschriften(container)[0]).toBe(`${en.fsShort} · ${en.versammlungCard}`)
+    expect(ueberschriften(container)[0]).not.toContain(t.fsShort)
   })
 })
 

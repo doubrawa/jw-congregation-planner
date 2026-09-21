@@ -9,6 +9,15 @@ import { Switch } from '../components/Switch'
  * Grundplan der Treffpunkte (Einstellungen): regelmäßige Zeiten/Orte je
  * Versammlung und Gruppe. Regeln anlegen/ändern/löschen; jede Änderung setzt
  * die Wochenpläne neu auf (einzelne Wochen bleiben im Planen-Tab anpassbar).
+ *
+ * **Eine Karte je Abschnitt, alle in derselben Farbe** (T108, Vorschlag des
+ * Betreibers). Bis zum 21.9.2026 stand alles in einer Karte, getrennt nur von
+ * einer kleinen grauen Zeile: Beim Scrollen war die Überschrift schnell aus dem
+ * Bild, die Zeilen sahen überall gleich aus, und der „+"-Knopf eines Abschnitts
+ * stand unmittelbar über der Überschrift des nächsten — man tippte leicht in
+ * die falsche Gruppe. Jetzt trägt jede Karte ihren Abschnitt in der Überschrift,
+ * und der Knopf steht sichtbar in seiner Karte. Die gemeinsame Farbe hält die
+ * Karten als eine Sache zusammen; der Erklärtext steht einmal, in der ersten.
  */
 export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const { state, dispatch } = useApp()
@@ -24,22 +33,23 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
     [4, t.fsFreqM4],
   ]
 
-  // Gruppenaufseher: nur der Abschnitt der eigenen Gruppe.
+  // Gruppenaufseher: nur der Abschnitt der eigenen Gruppe — eine Karte, kein
+  // leerer Rahmen um sie herum.
   const sections: ReadonlyArray<{ grp: string | null; title: string }> = onlyGroup
     ? state.groups.filter((g) => g.id === onlyGroup).map((g) => ({ grp: g.id, title: tu(g.name) }))
-    : [{ grp: null, title: t.fsVersSection }, ...state.groups.map((g) => ({ grp: g.id, title: tu(g.name) }))]
+    : [{ grp: null, title: t.versammlungCard }, ...state.groups.map((g) => ({ grp: g.id, title: tu(g.name) }))]
 
   const upd = (id: string, patch: Partial<Pick<FsRule, 'wd' | 'monthly' | 'time' | 'place' | 'skipCong'>>) =>
     dispatch({ type: 'fsRuleUpdate', id, patch })
 
   return (
-    <div className="panel panel--pb16" data-farbe="neutral">
-      <h2 className="panel-label">{t.fsGrundplan}</h2>
-      <p className="panel-hint">{t.fsGrundDesc}</p>
-
-      {sections.map((sec) => (
-        <div key={sec.grp || 'vers'} className="fsr-section">
-          <div className="fsr-section-title">{sec.title}</div>
+    <>
+      {sections.map((sec, i) => (
+        <div key={sec.grp || 'vers'} className="panel panel--pb16" data-farbe="neutral">
+          {/* Zwei übersetzte Bausteine statt eines neuen Satzes je Sprache —
+              wie „Vorsitz · Unter der Woche" im Personen-Detail. */}
+          <h2 className="panel-label fsr-label">{`${t.fsShort} · ${sec.title}`}</h2>
+          {i === 0 && <p className="panel-hint">{t.fsGrundDesc}</p>}
 
           {state.fsRules
             .filter((r) => r.grp === sec.grp)
@@ -126,6 +136,6 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
           </button>
         </div>
       ))}
-    </div>
+    </>
   )
 }

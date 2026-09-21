@@ -4840,7 +4840,28 @@ JSX-Text, Grund `produktname`) und `src/i18n/oberflaeche-fremdsprache.test.tsx`
 (`.mobile-header-name` ist dort vom sichtbaren Text ausgenommen — steht künftig
 ein übersetzbares Wort darin, gilt die Ausnahme so nicht mehr).
 
-### T108 · Treffpunkte: man sieht nicht, für welche Gruppe man gerade etwas einstellt 🔧 ☐ offen
+### T108 · Treffpunkte: man sieht nicht, für welche Gruppe man gerade etwas einstellt 🔧 ✅ erledigt (21. September 2026)
+
+> **Entschieden und umgesetzt:** eine **eigene Karte je Abschnitt**, alle in
+> derselben Farbe (`neutral`) — die Wahl des Betreibers aus zwei Entwürfen
+> (die andere waren getönte Blöcke in einer Karte). Die Überschrift setzt sich
+> aus zwei übersetzten Bausteinen zusammen, „Treffpunkte · Versammlung" bzw.
+> „Treffpunkte · Gruppe 1" (`fsShort` · `versammlungCard` bzw. Gruppenname),
+> großgeschrieben per CSS nach der Seitensprache. Der Erklärtext steht einmal,
+> in der ersten Karte; der Gruppenaufseher bekommt genau eine Karte samt
+> Erklärtext, und eine Gruppe, die es nicht mehr gibt, ergibt gar keine. Die
+> beiden Schlüssel `fsGrundplan` und `fsVersSection` las danach niemand mehr —
+> aus allen 34 Wörterbüchern entfernt, `.fsr-section*` aus dem CSS. **Im
+> Browser nachgesehen** auf 360 px: hell, dunkel (Matcha), Arabisch (der
+> Gruppenname wird mit übersetzt) und als Aufseher von Gruppe 2 — fünf Karten
+> bzw. eine, kein seitlicher Überlauf; die Karten heben sich von
+> „Predigtdienstgruppen" (neutral2) davor und „Hilfsdienste" (petrol) danach
+> ab. 13 Fälle in `FsRulesPanel.test.tsx` und `panels.test.tsx`, elf werden mit
+> der alten Ein-Karten-Fassung rot.
+>
+> **Dabei gefunden, eigener Commit:** Im dunklen Schema kachelten die
+> Auswahlfelder dieser Karten ein Zickzack-Muster (siehe den Eintrag nach
+> T110).
 **Wortlaut:** *„auch muss die einstellung der treffpunkte der versammlung und
 der gruppen nochmal leicht angepasst werden, da man schwer sieht, für welche
 gruppe man gerade den treffpunkt einstellt, weil es keine visuelle trennung gibt

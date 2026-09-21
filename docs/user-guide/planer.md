@@ -592,7 +592,11 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
   eure Versammlung deutsch ist.
 - **Programm‑Import** – neue Wochen von jw.org laden (siehe unten).
 - **Treffpunkte‑Grundplan** – die regelmäßigen Versammlungs‑ und
-  Gruppentreffpunkte (Wochentag, Uhrzeit, Ort, „N‑ter im Monat").
+  Gruppentreffpunkte (Wochentag, Uhrzeit, Ort, „N‑ter im Monat"). Jede Gruppe
+  hat dafür eine **eigene Karte** („Treffpunkte · Gruppe 1"), die Versammlung
+  ebenso („Treffpunkte · Versammlung"); alle Karten tragen dieselbe Farbe.
+  „+ Treffpunkt hinzufügen" legt den Treffpunkt für die Karte an, in der der
+  Knopf steht. Ein Gruppenaufseher sieht hier nur die Karte seiner Gruppe.
 
 ---
 

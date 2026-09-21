@@ -518,18 +518,16 @@
   margin-top: 14px;
 }
 
-/* ---- Grundplan Treffpunkte ------------------------------------------------ */
+/* ---- Grundplan Treffpunkte ------------------------------------------------
+   Eine Karte je Abschnitt (Versammlung, jede Gruppe), alle in derselben Farbe
+   (T108). Die Überschrift setzt sich aus zwei übersetzten Bausteinen zusammen
+   („Treffpunkte" · Gruppenname) — beide stehen im Wörterbuch bzw. in den Daten
+   nicht großgeschrieben; die Großschreibung der übrigen Kartenüberschriften
+   holt hier das CSS nach, nach den Regeln der Seitensprache (`lang` am
+   `<html>`, z. B. das türkische İ). */
 
-.fsr-section {
-  margin-top: 14px;
-}
-
-.fsr-section-title {
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--mut);
-  margin-bottom: 4px;
+.fsr-label {
+  text-transform: uppercase;
 }
 
 .fsr-row {

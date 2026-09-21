@@ -429,13 +429,16 @@ describe('Sprache', () => {
 })
 
 describe('Wer welche Einstellungen sieht', () => {
-  it('der Planer bekommt alle sieben Panels', () => {
+  it('der Planer bekommt alle Panels — die Treffpunkte als eine Karte je Abschnitt', () => {
     const { container } = zeige('screen')
     const ueberschriften = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
     expect(ueberschriften).toContain(t.versammlungCard)
     expect(ueberschriften).toContain(t.gruppenCard)
     expect(ueberschriften).toContain(t.spracheCard)
     expect(ueberschriften).toContain(t.erinnerungenCard)
+    // Versammlung und die eine Gruppe der Vorgabe — direkt hintereinander.
+    const treffpunkte = ueberschriften.filter((u) => u?.startsWith(`${t.fsShort} · `))
+    expect(treffpunkte).toEqual([`${t.fsShort} · ${t.versammlungCard}`, `${t.fsShort} · Gruppe 1`])
   })
 
   it('der Gruppenaufseher nur den Grundplan — Versammlungsdaten gehen ihn nichts an', () => {
@@ -447,6 +450,9 @@ describe('Wer welche Einstellungen sieht', () => {
     expect(ueberschriften).not.toContain(t.versammlungCard)
     expect(ueberschriften).not.toContain(t.gruppenCard)
     expect(ueberschriften).not.toContain(t.erinnerungenCard)
+    // Genau eine Karte: die Treffpunkte seiner Gruppe. Auch die Karte der
+    // Versammlungstreffpunkte gehört nicht zu ihm.
+    expect(ueberschriften).toEqual([`${t.fsShort} · Gruppe 1`])
   })
 
   it('der Kopf nennt die Versammlung — man sieht, worauf man gerade schreibt', () => {
