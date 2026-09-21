@@ -5074,7 +5074,75 @@ welche Klassen an einem `<select>` hängen, und weist für sie die
 Kurzschreibweise ab sowie ein `padding:` ohne zurückgegebenen Endabstand; mit
 dem alten CSS meldet sie genau die vier Stellen.
 
-### T112 · Die Mutationsprobe prüft seit Tagen nichts mehr 🔧 ☐ offen
+### T112 · Die Mutationsprobe prüft seit Tagen nichts mehr 🔧 ✅ erledigt (21. September 2026)
+
+> **Alle 14 nachgezogen, keiner gestrichen.** Die Regeln waren nicht
+> weggefallen, sie waren umgezogen — und zwar in Gruppen:
+>
+> | Wohin | Einträge |
+> | --- | --- |
+> | `helpers.ts` → `auslastung.ts` (eigene Datei für die Auslastungs-Rechnung) | `last-hilfsdienst-platzzahl`, `last-ausfall`, `last-fenster-nach-datum` |
+> | `AppShell.tsx` → `rechte.ts` (wer welchen Bildschirm betreten darf) | `nav-gruppenaufseher-ohne-personen` |
+> | `send-plan` → `_shared/aufgaben-schluessel.ts` (`wochenPraefixe`) | `plan-liest-nur-die-woche` |
+> | Start-Karten → Zeitleiste bzw. Ableitung | `start-termin-gerechnet`, `start-nur-eigene-treffpunkte`, `start-wochenfolge` |
+> | nur umbenannt/umformuliert an Ort und Stelle | die übrigen sechs |
+>
+> **Die drei `start-*` sind der interessante Fall.** Der Punkt oben schlug vor,
+> sie zu streichen, weil der Start-Bildschirm seine Karten am 19.9. gegen die
+> Zeitleiste getauscht hat. Beim Nachsehen gilt das nur für die *Stelle*, nicht
+> für die *Regel*: Der Termin wird weiterhin gerechnet — jetzt eine Ebene
+> tiefer, in `deriveMyTasks`, und damit für alle, die ihn lesen. „Nur die
+> eigenen Treffpunkte" entscheidet jetzt `deriveMyFsTasks` über die Person-Id
+> (ohne die Zeile sähen Namensgleiche gegenseitig ihre Treffpunkte — überall,
+> nicht nur auf dem Start). Und die Terminfolge sortiert `dashTimeline`.
+> Gestrichen hätte drei Regeln unbewacht zurückgelassen, die es sehr wohl noch
+> gibt. `import-entity-numerisch`, oben als 15. Name genannt, saß bereits
+> wieder — die Zählung „14" stimmte, die Namensliste hatte einen zu viel.
+>
+> **Damit es nicht wieder still passiert**, wie der Punkt verlangt:
+> `scripts/mutationsprobe.test.ts` prüft im **normalen Testlauf**, dass jeder
+> Eintrag seine Stelle genau einmal findet und keine Kennung doppelt vorkommt —
+> 218 ms, nur Dateien lesen. Beide Fälle von Hand sabotiert, beide rot, mit
+> der Meldung, welcher Eintrag wohin zeigte.
+>
+> Dafür war zweierlei nötig: `ankerFehler()` ist exportiert, und der Lauf liegt
+> hinter `selbstGestartet()` — **ein Import der Datei hätte sonst die ganze
+> Probe ausgelöst**, mitten im Testlauf, Quelldateien umschreibend, mit einem
+> zweiten vitest darin. Pfadvergleich statt `import.meta.main`: Das gibt es
+> erst ab Node 24.2, und wo es fehlt, täte die Probe beim Aufruf
+> stillschweigend nichts — genau der Fehler, um den es hier geht.
+>
+> **Und die Wache hätte beinahe die Probe erschlagen.** Beim ersten Messlauf
+> standen 14 von 14 Regeln als „bewacht" da — Wächter jedes Mal
+> `mutationsprobe.test.ts`. Kein Wunder: Die Mutation räumt ja gerade die
+> Stelle weg, deren Vorhandensein die Ankerprüfung verlangt. Sie war damit bei
+> **jeder** Mutation der erste rote Test, `--bail=1` brach dort ab, und die
+> Probe hätte allen 192 Regeln ein Häkchen gegeben, ohne eine einzige gemessen
+> zu haben. Dieselbe Falle wie am 5.9.2026 mit dem wackligen Test, nur diesmal
+> systematisch. **Behoben:** Der Probelauf setzt `MUTATIONSPROBE=1`, und nur
+> die Ankerprüfung tritt dann zurück. Ungeprüft bleibt dabei nichts — die
+> Probe fährt dieselbe Prüfung selbst, bevor sie die erste Mutation setzt.
+>
+> Die Lehre der Memory hat sich damit ein zweites Mal bewährt: **Passt der
+> genannte Wächter fachlich zur Regel?** Steht überall dieselbe Datei, ist
+> nicht der Testbestand gut, sondern die Messung kaputt.
+>
+> **Gemessen, danach: 14 von 14 bewacht**, und diesmal von vierzehn Läufen mit
+> acht verschiedenen Wächtern, die alle zur Sache passen — `last-ausfall` von
+> `t30.test.ts` (dem Ausfall-Prüfstand selbst), `last-fenster-nach-datum` von
+> `wochenabstand.test.ts`, `start-wochenfolge` von `dash-timeline.test.ts`,
+> `ohne-gruppe-warnung-personen` von `PersonenScreen.test.tsx`. Die drei
+> `start-*`, die zur Streichung vorgeschlagen waren, sind darunter: Sie werden
+> an ihrer neuen Stelle sehr wohl verteidigt.
+>
+> **Nicht gemessen ist der Rest.** Die übrigen 178 Einträge liefen seit dem
+> 5. September nicht mehr; ein voller Durchgang kostet bei 32 s je Testlauf
+> gut eine Stunde und sperrt so lange den Arbeitsbaum. Er steht aus.
+>
+> **Nebenbei:** Die Vorprüfung meldet jetzt **alle** verrutschten Einträge auf
+> einmal statt nur des ersten. Nach einem Umbau sind es selten einzelne, und
+> wer sie nacheinander erfährt, sucht sie nacheinander.
+
 **Gefunden am 21. September 2026** beim Eintragen der zwei Regeln aus T109:
 `npm run mutationsprobe` bricht ab, bevor sie eine einzige Regel prüft. Von
 192 Einträgen fanden **16 ihre Stelle nicht mehr** — die Probe verlangt je
@@ -5142,17 +5210,16 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ⚠☐☑☑☑ ·
-21. September ☐☑☐
+21. September ☐☑☑
 
-**108 der 112 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind vier:**
+**109 der 112 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T105** | Pläne drucken | ⚠ der Zeitraum ist gebaut (Woche oder Monat, auch über den Treffpunkten), **welche Pläne** ist offen: Hilfsdienste und Gruppenlisten stehen auf keinem Ausdruck |
 | **T106** | Alle auf einmal benachrichtigen | ☐ nicht angefangen — zuerst zu klären, was mit Nummern geschieht, die `wa.me` nicht annimmt |
 | **T110** | Anzeigename raus, Namen eindeutig | ☐ nur festgehalten; 🏗 und rührt an Schema, Functions und Skripte |
-| **T112** | Die Mutationsprobe prüft nichts mehr | ☐ 14 Einträge finden ihre Stelle nicht — bis dahin ist **keine** der 192 Regeln gemessen |
 
 Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
 **T107** (der Name der Versammlung im Handy-Kopf statt der Wortmarke),
@@ -5160,7 +5227,11 @@ Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
 **T109** (keine eigene Seite fürs Einspringen — der Push springt stattdessen
 hin) und von **T105** den Monatsdruck. Beim Nachsehen von T108 fiel **T111**
 an, das Zickzack in den dunklen Auswahlfeldern; beim Eintragen der Regeln aus
-T109 fiel **T112** auf.
+T109 fiel **T112** auf, und der ist am selben Tag geschlossen: alle 14
+verrutschten Einträge nachgezogen, die Ankerprüfung fährt jetzt im normalen
+Testlauf mit. **Ein voller Durchgang der Probe steht aus** — er kostet gut
+eine Stunde und sperrt so lange den Arbeitsbaum; gemessen sind bisher die 14
+nachgezogenen, alle bewacht.
 
 **Zwei Dinge liegen beim Betreiber**, nicht im Code: `substitute` muss neu
 deployt werden, sonst kommt der Push aus T109 weiter ohne den Zusatz und

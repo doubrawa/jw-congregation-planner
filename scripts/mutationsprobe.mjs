@@ -42,7 +42,7 @@
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const hier = dirname(fileURLToPath(import.meta.url))
@@ -74,7 +74,7 @@ function lies(pfad) {
  * in der Datei stehen; wo eine Zeile mehrfach vorkommt, steht die Nachbarzeile
  * mit dabei.
  */
-const KATALOG = [
+export const KATALOG = [
   // ── Auto-Zuteilung ────────────────────────────────────────────────────────
   {
     id: 'zuteilung-ausfall',
@@ -124,8 +124,8 @@ const KATALOG = [
     id: 'zuteilung-gruppen-rotation',
     datei: 'src/data/planning.ts',
     regel: 'Die Reinigung rotiert über die Gruppen, sie bleibt nicht bei der ersten.',
-    suchen: 'const cleaningGroup = groups.length ? groups[weekIndex % groups.length] : null',
-    ersetzen: 'const cleaningGroup = groups.length ? groups[0] : null',
+    suchen: 'const cleaningGroup = groups.length ? (groups[weekIndex % groups.length] ?? null) : null',
+    ersetzen: 'const cleaningGroup = groups.length ? (groups[0] ?? null) : null',
   },
   {
     id: 'zuteilung-platzzahl',
@@ -152,8 +152,10 @@ const KATALOG = [
     id: 'zuteilung-vorsitz-betet',
     datei: 'src/data/planning.ts',
     regel: 'Der Vorsitz spricht das Anfangsgebet (einzige erlaubte Doppel-Aufgabe).',
-    suchen: 'if (vorsitz && gebet && !gebet.name) {',
-    ersetzen: 'if (false && vorsitz && gebet && !gebet.name) {',
+    // Die Kopplung steht inzwischen in `gebetAnVorsitz`; die Mutation lässt
+    // die Funktion sofort zurückkehren — das Gebet bleibt offen wie vorher.
+    suchen: '  if (!vorsitzSlot?.name || !gebet || gebet.name) return',
+    ersetzen: '  return',
   },
   {
     id: 'zuteilung-abwesend',
@@ -190,24 +192,26 @@ const KATALOG = [
   },
   {
     id: 'last-hilfsdienst-platzzahl',
-    datei: 'src/data/helpers.ts',
+    // Die Auslastungs-Rechnung ist aus `helpers.ts` in eine eigene Datei
+    // gezogen; die Regeln selbst stehen unverändert da.
+    datei: 'src/data/auslastung.ts',
     regel: 'Hilfsdienst-Last zählt nur bis zur eingestellten Platzzahl (T21).',
     suchen: 'const bis = grenze ? (grenze.get(key) ?? 0) : assigned.length',
     ersetzen: 'const bis = assigned.length',
   },
   {
     id: 'last-ausfall',
-    datei: 'src/data/helpers.ts',
+    datei: 'src/data/auslastung.ts',
     regel: 'Eine ausgefallene Zusammenkunft erzeugt keine Auslastung (T30).',
-    // Die Zeile steht in `partWorkload` **und** in `helperWorkload`; die
-    // Nachbarzeile darunter macht sie eindeutig (Ratgeber statt Hilfsdienst).
-    suchen:
-      '      if (istAusgefallen(week, tab)) continue\n      const meeting = week[tab]\n      if (hatAuxKlasse(meeting)',
-    ersetzen: '      const meeting = week[tab]\n      if (hatAuxKlasse(meeting)',
+    // Die Zeile steht in `partWorkload` **und** in `helperWorkload`. Eindeutig
+    // wird sie durch das, was NICHT dahinter steht: in `helperWorkload` trägt
+    // sie einen Zeilenkommentar, hier folgt gleich die nächste Zeile.
+    suchen: '      if (istAusgefallen(week, tab)) continue\n      const meeting = week[tab]',
+    ersetzen: '      const meeting = week[tab]',
   },
   {
     id: 'last-fenster-nach-datum',
-    datei: 'src/data/helpers.ts',
+    datei: 'src/data/auslastung.ts',
     regel: 'Das Auslastungs-Fenster misst in Wochen (Datum), nicht in Listenplätzen (T36).',
     suchen: 'return weeks.find((w) => w?.start === ziel)',
     ersetzen: 'return weeks[wi + versatz]',
@@ -770,12 +774,13 @@ const KATALOG = [
   // überhaupt dasteht. Der Wächter war bewacht, die Liste bis dahin nicht.
   {
     id: 'nav-gruppenaufseher-ohne-personen',
-    datei: 'src/app/AppShell.tsx',
+    // Wer welchen Bildschirm betreten darf, entscheidet inzwischen
+    // `erlaubteScreens` in `data/rechte.ts` — der Shell blieb nur das Zeichnen.
+    datei: 'src/data/rechte.ts',
     regel: 'Der Gruppenaufseher sieht Planen und Einstellungen, aber nicht Personen.',
-    // Die Liste wird inzwischen aus der des Planers abgeleitet; die Mutation
-    // nimmt den Abzug weg und gibt dem Gruppenaufseher die Personen mit dazu.
-    suchen: "const GROUP_OV_SCREENS: readonly Screen[] = PLANNER_SCREENS.filter((s) => s !== 'personen')",
-    ersetzen: 'const GROUP_OV_SCREENS: readonly Screen[] = PLANNER_SCREENS',
+    // Die Mutation nimmt den Abzug weg und gibt ihm die Personen mit dazu.
+    suchen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen')",
+    ersetzen: '  if (fsAufseher) return ALLE',
   },
   {
     id: 'nav-deeplink-rechte',
@@ -787,10 +792,19 @@ const KATALOG = [
   },
   {
     id: 'start-termin-gerechnet',
-    datei: 'src/dashboard/DashboardScreen.tsx',
-    regel: 'Der Termin auf dem Start wird gerechnet — importierte Wochen tragen im date-Feld nur die Wochenspanne.',
-    suchen: 'shortDate(meetingDateText(week, weekIdx, tab, state.congregation.times))',
-    ersetzen: 'shortDate(week[tab].date)',
+    /*
+      Der Start-Bildschirm hat seine Wochen-Karten am 19.9.2026 gegen die
+      Zeitleiste getauscht und rechnet den Termin nicht mehr selbst — er zeigt
+      `MyTask.date`. Die Regel ist damit nicht weg, sie ist einen Schritt nach
+      hinten gewandert: in die Ableitung, die den Text erzeugt. Dort steht sie
+      jetzt unter Beobachtung, und zwar für alle, die ihn lesen (Start,
+      „Meine Aufgaben", Erinnerungen).
+    */
+    datei: 'src/data/planning.ts',
+    regel: 'Der Termin einer Aufgabe wird gerechnet — importierte Wochen tragen im date-Feld nur die Wochenspanne.',
+    suchen:
+      "const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), chip: '', at, status: 'offen' as const }",
+    ersetzen: "const gemeinsam = { id: key, date: week[tab].date, chip: '', at, status: 'offen' as const }",
   },
   {
     id: 'leeren-zwei-tipp',
@@ -1094,7 +1108,7 @@ const KATALOG = [
     id: 'plan-entzug-ausfall-schweigt',
     datei: 'src/data/plan-versand.ts',
     regel: 'Fällt die Zusammenkunft aus, ruhen ihre Zuteilungen — sie sind nicht verwaist (T30).',
-    suchen: '  if (istAusgefallen(nachher, wo.tab)) return false',
+    suchen: '  if (istAusgefallen(nachher, teile.tab)) return false',
     ersetzen: '  if (false) return false',
   },
   {
@@ -1102,7 +1116,7 @@ const KATALOG = [
     datei: 'src/data/plan-versand.ts',
     regel:
       'Wird die Zusätzliche Klasse abgeschaltet, bleiben ihre Namen absichtlich stehen — der Raum ist abwesend, nicht geleert.',
-    suchen: "  if (abschnitt === 'aux' || abschnitt === 'ratgeber') return hatAuxKlasse(nachher[wo.tab])",
+    suchen: "  if (teile.art === 'aux' || teile.art === 'ratgeber') return hatAuxKlasse(nachher[teile.tab])",
     ersetzen: '  if (false) return false',
   },
   {
@@ -1217,7 +1231,9 @@ const KATALOG = [
   // ── Mitteilungen: Umfang und Bezeichnung (T102) ───────────────────────────
   {
     id: 'plan-liest-nur-die-woche',
-    datei: 'supabase/functions/send-plan/index.ts',
+    // Die beiden Präfixe kommen inzwischen aus `wochenPraefixe` — eine Stelle
+    // für `send-plan` und den Präfix-Vergleich im Client statt zweier.
+    datei: 'supabase/functions/_shared/aufgaben-schluessel.ts',
     /*
       Der Filter darf nach beiden Seiten nicht danebenliegen. Die Mutation
       lässt die zweite Schlüsselform weg — die der Treffpunkte, als einzige
@@ -1227,8 +1243,8 @@ const KATALOG = [
     */
     regel:
       'Der Wochenfilter deckt BEIDE Schlüsselformen ab — `<Montag>|…` und `fs|<Montag>|…`.',
-    suchen: '[`${weekStart}|*`, `fs|${weekStart}|*`]',
-    ersetzen: '[`${weekStart}|*`]',
+    suchen: '  return [`${woche}|`, `fs|${woche}|`]',
+    ersetzen: '  return [`${woche}|`, `${woche}|`]',
   },
   {
     id: 'entzug-loescht-jeden-eintrag',
@@ -1515,22 +1531,34 @@ const KATALOG = [
     id: 'navigation-woche-nur-mit-recht',
     datei: 'src/app/reducer.ts',
     regel: 'Ein abgewiesener Sprung auf eine bestimmte Woche stellt die Woche nicht um.',
-    suchen: 'if (action.woche && !blocked) {',
-    ersetzen: 'if (action.woche) {',
+    // Ob das Ziel erreicht wurde, steht inzwischen am Screen selbst: `screen`
+    // ist nach einer Abweisung ein anderer als der gewünschte.
+    suchen: '      if (action.woche && screen === action.screen) {',
+    ersetzen: '      if (action.woche) {',
   },
   {
     id: 'start-nur-eigene-treffpunkte',
-    datei: 'src/dashboard/DashboardScreen.tsx',
-    regel: '„Aktuelle Woche" zeigt die eigenen Treffpunkte, keine fremden.',
-    suchen: '(state.fsWeeks[weekIdx] ?? []).filter((inst) => gehoertZu(fsLeiterZuteilung(inst), me))',
-    ersetzen: '(state.fsWeeks[weekIdx] ?? []).filter((inst) => Boolean(inst.leader))',
+    /*
+      Die Karte „Aktuelle Woche", die das selbst filterte, gibt es seit dem
+      19.9.2026 nicht mehr — der Start liest `state.myTasks`. Damit ist die
+      Regel dorthin gewandert, wo diese Liste entsteht: `deriveMyFsTasks`
+      ordnet über die Person-Id zu, mit Rückfall auf den Namen. Ohne sie sähen
+      Namensgleiche gegenseitig ihre Treffpunkte — und zwar überall, nicht nur
+      auf dem Start.
+    */
+    datei: 'src/data/fs.ts',
+    regel: 'Eine Treffpunkt-Leitung gehört in die Aufgaben ihres Leiters, nicht in fremde.',
+    suchen: '      if (!meins) continue',
+    ersetzen: '',
   },
   {
     id: 'start-wochenfolge',
-    datei: 'src/dashboard/DashboardScreen.tsx',
-    regel: '„Aktuelle Woche" liest sich als Woche — ein Treffpunkt am Montag steht vor dem Dienstag.',
-    suchen: '].sort((a, b) => a.tag - b.tag || a.minute - b.minute)',
-    ersetzen: ']',
+    // Aus der Karte ist die Zeitleiste geworden (19.9.2026); die Regel ist
+    // dieselbe geblieben, nur gilt sie jetzt für Aufgaben UND Abwesenheiten.
+    datei: 'src/dashboard/dash-timeline.ts',
+    regel: 'Die Start-Leiste steht in Terminfolge — was früher dran ist, steht oben.',
+    suchen: '    (a, b) => (a.at ?? Infinity) - (b.at ?? Infinity) || abwRang(randVon(a)) - abwRang(randVon(b)),',
+    ersetzen: '    (a, b) => abwRang(randVon(a)) - abwRang(randVon(b)),',
   },
   {
     id: 'treffpunkt-freitext-gehoert-niemandem',
@@ -1626,8 +1654,8 @@ const KATALOG = [
     id: 'ohne-gruppe-warnung-personen',
     datei: 'src/personen/PersonenScreen.tsx',
     regel: 'Die Personenliste warnt vor Personen ohne Predigtdienstgruppe.',
-    suchen: '  const ohne = ohneGruppe(sorted, state.groups)',
-    ersetzen: '  const ohne: typeof sorted = []',
+    suchen: '        ohne: ohneGruppe(sortiert, state.groups),',
+    ersetzen: '        ohne: [],',
   },
   {
     id: 'ohne-gruppe-hinweis-einstellungen',
@@ -1682,53 +1710,26 @@ const KATALOG = [
   },
 ]
 
-// ── Lauf ────────────────────────────────────────────────────────────────────
-
-const argumente = process.argv.slice(2)
-const nurListe = argumente.includes('--liste')
-const filter = argumente.filter((a) => !a.startsWith('--'))
-const auswahl = filter.length
-  ? KATALOG.filter((m) => filter.some((f) => m.id.includes(f) || m.datei.includes(f)))
-  : KATALOG
-
-if (auswahl.length === 0) {
-  console.error(`Keine Mutation passt auf ${filter.join(' ')}.`)
-  process.exit(2)
-}
-
-/** Doppelte Kennungen fielen sonst als „schon gemessen" durch. */
-const kennungen = new Set()
-for (const m of KATALOG) {
-  if (kennungen.has(m.id)) {
-    console.error(`Doppelte Kennung im Katalog: ${m.id}`)
-    process.exit(2)
-  }
-  kennungen.add(m.id)
-}
-
 /**
- * Vorprüfung über den GANZEN Katalog, nicht nur die Auswahl: Ein Eintrag, der
- * seine Stelle verloren hat, soll auch dann auffallen, wenn gerade ein anderer
- * gemessen wird.
+ * **Sitzt noch jeder Anker?** — die billige Vorprüfung, ohne einen einzigen
+ * Test: je Eintrag die Datei lesen und zählen, wie oft `suchen` darin steht.
+ *
+ * Rückgabe: die Einträge, bei denen es **nicht** genau einmal ist, je mit der
+ * gezählten Zahl. Leer heißt: Der Katalog zeigt überall noch dorthin, wo er
+ * hinzeigen soll. Dieselbe Prüfung fährt `scripts/mutationsprobe.test.ts` im
+ * normalen Testlauf — dort kostet sie Millisekunden und hält einen Umbau am
+ * selben Tag an, statt erst beim nächsten Durchgang Wochen später.
  */
-for (const m of KATALOG) {
-  const quelle = lies(join(wurzel, m.datei))
-  const treffer = quelle.split(m.suchen).length - 1
-  if (treffer !== 1) {
-    console.error(
-      `\n${m.id}: „suchen" steht ${treffer}× in ${m.datei} — erwartet genau 1×.\n` +
-        `Die Stelle hat sich verschoben. Eintrag nachziehen (oder streichen, wenn die\n` +
-        `Regel weggefallen ist) — nicht stillschweigend überspringen.\n`,
-    )
-    process.exit(2)
+export function ankerFehler() {
+  const fehler = []
+  for (const m of KATALOG) {
+    const treffer = lies(join(wurzel, m.datei)).split(m.suchen).length - 1
+    if (treffer !== 1) fehler.push({ id: m.id, datei: m.datei, treffer })
   }
+  return fehler
 }
 
-if (nurListe) {
-  for (const m of auswahl) console.log(`${m.id.padEnd(32)} ${m.regel}`)
-  console.log(`\n${auswahl.length} Einträge.`)
-  process.exit(0)
-}
+// ── Lauf ────────────────────────────────────────────────────────────────────
 
 const vitest = join(wurzel, 'node_modules', 'vitest', 'vitest.mjs')
 
@@ -1737,7 +1738,16 @@ function testlauf() {
   const lauf = spawnSync(process.execPath, [vitest, 'run', '--reporter=dot', '--bail=1'], {
     cwd: wurzel,
     encoding: 'utf8',
-    env: { ...process.env, CI: 'true' },
+    /*
+     * `MUTATIONSPROBE` sagt dem Testlauf, dass er gerade **innerhalb** der
+     * Probe läuft. Nur die Ankerprüfung (`mutationsprobe.test.ts`) tritt dann
+     * zurück: Sie verlangt, dass jedes `suchen` genau einmal dasteht — und
+     * genau das macht die Mutation ja zunichte. Ohne diese Weiche wäre sie bei
+     * **jeder** Mutation der erste rote Test, `--bail=1` bräche dort ab, und
+     * die Probe schriebe allen 192 Regeln „bewacht" gut, ohne eine einzige
+     * gemessen zu haben (am 21.9.2026 genau so passiert, 14 von 14).
+     */
+    env: { ...process.env, CI: 'true', MUTATIONSPROBE: '1' },
     maxBuffer: 64 * 1024 * 1024,
   })
   if (lauf.error) {
@@ -1753,7 +1763,6 @@ function ersterWaechter(ausgabe) {
   return treffer?.[1] ?? 'unbekannt'
 }
 
-const ergebnisse = []
 let laufendeDatei = null
 let laufenderInhalt = null
 
@@ -1765,41 +1774,122 @@ function zuruecksetzen() {
     laufenderInhalt = null
   }
 }
-process.on('SIGINT', () => {
-  zuruecksetzen()
-  console.error('\nAbgebrochen — Quelltext wiederhergestellt.')
-  process.exit(130)
-})
-process.on('uncaughtException', (fehler) => {
-  zuruecksetzen()
-  throw fehler
-})
 
-console.log(`Mutationsprobe: ${auswahl.length} Regeln, je ein voller Testlauf.\n`)
+function main() {
+  const argumente = process.argv.slice(2)
+  const nurListe = argumente.includes('--liste')
+  const filter = argumente.filter((a) => !a.startsWith('--'))
+  const auswahl = filter.length
+    ? KATALOG.filter((m) => filter.some((f) => m.id.includes(f) || m.datei.includes(f)))
+    : KATALOG
 
-for (const [i, m] of auswahl.entries()) {
-  const pfad = join(wurzel, m.datei)
-  // Roh zum Zuruecklegen, mit LF zum Suchen — siehe `lies`.
-  laufendeDatei = pfad
-  laufenderInhalt = readFileSync(pfad, 'utf8')
+  if (auswahl.length === 0) {
+    console.error(`Keine Mutation passt auf ${filter.join(' ')}.`)
+    process.exit(2)
+  }
 
-  process.stdout.write(`[${i + 1}/${auswahl.length}] ${m.id} … `)
-  writeFileSync(pfad, lies(pfad).replace(m.suchen, m.ersetzen))
-  const start = Date.now()
-  const { rot, ausgabe } = testlauf()
-  zuruecksetzen()
+  /** Doppelte Kennungen fielen sonst als „schon gemessen" durch. */
+  const kennungen = new Set()
+  for (const m of KATALOG) {
+    if (kennungen.has(m.id)) {
+      console.error(`Doppelte Kennung im Katalog: ${m.id}`)
+      process.exit(2)
+    }
+    kennungen.add(m.id)
+  }
 
-  const sekunden = Math.round((Date.now() - start) / 1000)
-  const waechter = rot ? ersterWaechter(ausgabe) : null
-  ergebnisse.push({ ...m, rot, waechter })
-  console.log(rot ? `bewacht (${waechter}, ${sekunden}s)` : `UNBEWACHT (${sekunden}s)`)
+  /*
+   * Vorprüfung über den GANZEN Katalog, nicht nur die Auswahl: Ein Eintrag, der
+   * seine Stelle verloren hat, soll auch dann auffallen, wenn gerade ein anderer
+   * gemessen wird.
+   *
+   * Gemeldet werden **alle** verrutschten Einträge auf einmal, nicht nur der
+   * erste. Nach einem Umbau sind es selten einzelne — am 21.9.2026 waren es 16
+   * (T112) —, und wer sie einen nach dem anderen erfährt, sucht sie einen nach
+   * dem anderen.
+   */
+  const verrutscht = ankerFehler()
+  if (verrutscht.length > 0) {
+    console.error(
+      `\n${verrutscht.length} von ${KATALOG.length} Einträgen finden ihre Stelle nicht mehr:\n`,
+    )
+    for (const f of verrutscht) {
+      console.error(`  ${f.id.padEnd(34)} ${f.treffer}× in ${f.datei}`)
+    }
+    console.error(
+      `\nErwartet ist genau 1×. Die Stellen haben sich verschoben. Einträge nachziehen\n` +
+        `(oder streichen, wenn die Regel weggefallen ist) — nicht stillschweigend\n` +
+        `überspringen: Solange einer bricht, misst die Probe gar nichts.\n`,
+    )
+    process.exit(2)
+  }
+
+  if (nurListe) {
+    for (const m of auswahl) console.log(`${m.id.padEnd(32)} ${m.regel}`)
+    console.log(`\n${auswahl.length} Einträge.`)
+    process.exit(0)
+  }
+
+  process.on('SIGINT', () => {
+    zuruecksetzen()
+    console.error('\nAbgebrochen — Quelltext wiederhergestellt.')
+    process.exit(130)
+  })
+  process.on('uncaughtException', (fehler) => {
+    zuruecksetzen()
+    throw fehler
+  })
+
+  console.log(`Mutationsprobe: ${auswahl.length} Regeln, je ein voller Testlauf.\n`)
+
+  const ergebnisse = []
+  for (const [i, m] of auswahl.entries()) {
+    const pfad = join(wurzel, m.datei)
+    // Roh zum Zuruecklegen, mit LF zum Suchen — siehe `lies`.
+    laufendeDatei = pfad
+    laufenderInhalt = readFileSync(pfad, 'utf8')
+
+    process.stdout.write(`[${i + 1}/${auswahl.length}] ${m.id} … `)
+    writeFileSync(pfad, lies(pfad).replace(m.suchen, m.ersetzen))
+    const start = Date.now()
+    const { rot, ausgabe } = testlauf()
+    zuruecksetzen()
+
+    const sekunden = Math.round((Date.now() - start) / 1000)
+    const waechter = rot ? ersterWaechter(ausgabe) : null
+    ergebnisse.push({ ...m, rot, waechter })
+    console.log(rot ? `bewacht (${waechter}, ${sekunden}s)` : `UNBEWACHT (${sekunden}s)`)
+  }
+
+  const offen = ergebnisse.filter((e) => !e.rot)
+  console.log(`\n${ergebnisse.length - offen.length}/${ergebnisse.length} Regeln bewacht.`)
+
+  if (offen.length > 0) {
+    console.log('\nUnbewacht — diese Regeln kann man entfernen, ohne dass ein Test es merkt:\n')
+    for (const e of offen) console.log(`  ${e.id.padEnd(32)} ${e.datei}\n${' '.repeat(36)}${e.regel}`)
+    process.exit(1)
+  }
 }
 
-const offen = ergebnisse.filter((e) => !e.rot)
-console.log(`\n${ergebnisse.length - offen.length}/${ergebnisse.length} Regeln bewacht.`)
-
-if (offen.length > 0) {
-  console.log('\nUnbewacht — diese Regeln kann man entfernen, ohne dass ein Test es merkt:\n')
-  for (const e of offen) console.log(`  ${e.id.padEnd(32)} ${e.datei}\n${' '.repeat(36)}${e.regel}`)
-  process.exit(1)
+/**
+ * **Nur losmessen, wenn jemand das Skript wirklich gestartet hat.**
+ *
+ * `scripts/mutationsprobe.test.ts` importiert diese Datei wegen `ankerFehler`.
+ * Ohne diese Weiche liefe beim Import die ganze Probe an — mitten im Testlauf,
+ * Quelldateien umschreibend, mit einem zweiten vitest darin.
+ *
+ * Der Pfadvergleich statt `import.meta.main`: Das gibt es erst ab Node 24.2,
+ * und wo es fehlt, wäre es `undefined` — die Probe täte dann beim Aufruf
+ * stillschweigend nichts. Unter Windows wird die Groß-/Kleinschreibung
+ * ignoriert, sonst entschiede die Schreibweise des Aufrufs darüber, ob
+ * gemessen wird.
+ */
+function selbstGestartet() {
+  const eintrag = process.argv[1]
+  if (!eintrag) return false
+  const a = resolve(eintrag)
+  const b = fileURLToPath(import.meta.url)
+  return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b
 }
+
+if (selbstGestartet()) main()
