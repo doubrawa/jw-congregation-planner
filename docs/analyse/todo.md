@@ -5420,6 +5420,14 @@ wenn es mehrere versammlungen gibt."*
   soll es auch nicht ohne Weiteres — das wäre eine Auskunft über eine fremde
   Versammlung).
 
+### T115 · Persisch, Hebräisch und Urdu laden noch unter dem alten Namen ein 🔧 ☐ offen
+Beim Bau von T113 gefunden: `inviteMailSubject` und `inviteShareText` in
+`src/i18n/overlays/{fa,he,ur}.ts` und die drei Betreffe in
+`supabase/functions/send-invite/texte.ts` nennen noch den alten App-Namen
+statt „Versammlung.app". Beide Seiten gemeinsam ändern (ein Test hält sie
+zeichengenau zusammen), eine Prüfung gegen den alten Namen anlegen, danach
+`send-invite` deployen.
+
 **Prüfen, sobald entschieden:** den Ablauf mit zwei Versammlungen einmal ganz
 durchspielen — am Testbestand „Probeversammlung Talheim" aus T78 neben der
 echten Versammlung: Konto anlegen, Code aus der einen einlösen, Code aus der
