@@ -5425,13 +5425,60 @@ durchspielen — am Testbestand „Probeversammlung Talheim" aus T78 neben der
 echten Versammlung: Konto anlegen, Code aus der einen einlösen, Code aus der
 anderen versuchen, Konto entfernen, erneut einlösen.
 
-### T115 · Persisch, Hebräisch und Urdu laden noch unter dem alten Namen ein 🔧 ☐ offen
-Beim Bau von T113 gefunden: `inviteMailSubject` und `inviteShareText` in
-`src/i18n/overlays/{fa,he,ur}.ts` und die drei Betreffe in
-`supabase/functions/send-invite/texte.ts` nennen noch den alten App-Namen
-statt „Versammlung.app". Beide Seiten gemeinsam ändern (ein Test hält sie
-zeichengenau zusammen), eine Prüfung gegen den alten Namen anlegen, danach
-`send-invite` deployen.
+### T115 · Persisch, Hebräisch und Urdu laden noch unter dem alten Namen ein 🔧 ✅ erledigt (21. September 2026) · ⚠ Deploy steht aus
+
+> **Umgesetzt.** Sechs Zeichenketten im Wörterbuch und drei Betreffe in
+> `send-invite/texte.ts` tragen jetzt „Versammlung.app" — damit nennen alle 34
+> Sprachen die App gleich. Der Name bleibt in allen drei Schriften lateinisch,
+> wie ihn Arabisch und Türkisch seit dem 20.9. schon tragen und wie es die
+> Farbschema-Namen halten.
+>
+> | | vorher | jetzt |
+> | --- | --- | --- |
+> | he Betreff | הזמנה: מתכנן הקהילה JW | הזמנה: Versammlung.app |
+> | he Teilen | הזמנה למתכנן הקהילה JW: … | הזמנה ל-Versammlung.app: … |
+> | fa Betreff | دعوت: برنامه‌ریز جماعت JW | دعوت: Versammlung.app |
+> | fa Teilen | دعوت به برنامه‌ریز جماعت JW: … | دعوت به Versammlung.app: … |
+> | ur Betreff | دعوت: JW کلیسیا پلانر | دعوت: Versammlung.app |
+> | ur Teilen | JW کلیسیا پلانر کی دعوت: … | Versammlung.app کی دعوت: … |
+>
+> Hebräisch hängt das `ל` mit Maqaf an den lateinischen Namen (`ל-`), wie es
+> die Sprache mit Fremdwörtern hält; Urdu behält sein „کی دعوت" und stellt den
+> Namen voran, wie Türkisch es tut. Persisch und Urdu haben seither denselben
+> Betreff — „دعوت" ist in beiden Sprachen dasselbe Wort, das ist kein Versehen.
+
+**Wie es entstand — und warum eine Suche nach dem alten Namen es nicht
+gefunden hätte.** Die Umbenennung vom 20.9. (`b370710`) war eine
+Textersetzung „Congregation Planner" → „Versammlung.app" über 34 Wörterbücher.
+An `fa`, `he` und `ur` hat sie **keine einzige Zeile** angefasst (`ar` und `tr`
+je zwei) — die drei hatten den alten Namen seinerzeit nicht stehen lassen,
+sondern *übersetzt*. Wonach ersetzt wurde, stand dort gar nicht. Eine
+Umbenennung per Textersetzung ist für jede Sprache blind, die den Namen
+übersetzt hat.
+
+**Die Prüfung ist deshalb positiv gedreht** (`src/i18n/produktname.test.ts`):
+Welche Schlüssel den Namen tragen, wird aus dem **deutschen** Wörterbuch
+abgeleitet — wer dort den Namen nennt, muss ihn in allen 34 Sprachen nennen.
+Keine gepflegte Liste, und unabhängig davon, wie der alte Name lautete. Die
+Serverseite braucht keine eigene Zeile: `send-invite.test.ts` hält Wörterbuch
+und `texte.ts` zeichengenau zusammen, `ui.test.ts` schließt den stillen
+Rückfall aufs Deutsche aus. Daneben steht die wörtliche Suche nach dem alten
+Namen (`tests/kein-alter-app-name.test.ts`, Bauart von T110) samt der
+Gegenprobe, dass `index.html` und das Manifest den Namen tragen — die Stellen,
+die keine Sprache kennt. **Gegengeprüft:** beide Proben laufen rot, wenn man
+die Änderung zurücknimmt.
+
+**Nachgesehen, was Tests nicht sehen:** die drei Wortlaute mit `dir="rtl"`
+gesetzt, neben dem schon ausgelieferten Arabisch. Alle vier brechen gleich um;
+der lateinische Name steht dort, wo er hingehört.
+
+> **⚠ Offen, und nur beim Betreiber:** `send-invite` ist **noch nicht
+> deployt**. Bis dahin gehen Mails in diesen drei Sprachen weiter unter dem
+> alten Namen hinaus — der Client-Rückfall (mailto/Teilen) trägt den neuen
+> Namen sofort. Nach dem Deploy gilt die Regel vom 15. August: mit
+> `git log <letzter Deploy>..HEAD -- supabase/functions` belegen, was sonst
+> noch mit hinausgeht, und mit `functions list` nachsehen, ob der Stand
+> hochgekommen ist.
 
 ---
 
@@ -5468,9 +5515,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐
+21. September ☑☑☑☑☐☑
 
-**112 der 114 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+**113 der 115 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen sind zwei, einer davon zurückgestellt:**
 
 | | Aufgabe | Stand |
@@ -5478,12 +5525,20 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
+Dazu **eine Handreichung beim Betreiber**: `send-invite` muss neu deployt
+werden, damit die Einladungs-Mail auf Persisch, Hebräisch und Urdu den neuen
+Namen trägt (T115).
+
 Am Abend des 21. September entschieden: **T105** ist mit dem Zeitraum fertig —
 Hilfsdienste und Gruppenlisten druckt die App vorerst nicht —, **T106** ist
 zurückgestellt, neu aufgenommen sind **T113** (Anmeldeseite) und **T114**
 (Registrieren bei mehreren Versammlungen). **T113** ist am selben Abend
 gebaut: Die Anmeldeseite sagt jetzt in 34 Sprachen, wofür die App da ist,
-und nennt die Adresse für eine neue Versammlung.
+und nennt die Adresse für eine neue Versammlung. Beim Bauen fiel **T115** auf
+und ist gleich mit geschlossen: Persisch, Hebräisch und Urdu luden noch unter
+dem alten Namen ein, weil die Umbenennung vom Vortag nur die lateinische
+Zeichenkette suchte und diese drei den Namen übersetzt hatten. Die Mail
+braucht dafür noch einen Deploy.
 
 Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
 **T107** (der Name der Versammlung im Handy-Kopf statt der Wortmarke),
@@ -5526,6 +5581,13 @@ nachgezogenen und die 7 aus T110, alle 21 bewacht.
    ab. Bis zum Neuaufbau heißen die beiden in der App gleich — einen davon
    dort umbenennen.
 3. **Einladungs-Mail** (`INVITE_FROM`) ist mit T106 zurückgestellt.
+4. ⚠ **`send-invite` noch einmal deployen** (T115, am Abend des
+   21. September). Der Lauf um 15:07 brachte v9 mit dem neuen Namen in 31
+   Sprachen — Persisch, Hebräisch und Urdu hatten ihn übersetzt und blieben
+   deshalb außen vor. Der Client-Rückfall (mailto/Teilen) trägt den neuen
+   Namen mit dem nächsten Seiten-Deploy sofort; die **Mail** in diesen drei
+   Sprachen erst nach diesem Deploy. Nichts Dringendes: `INVITE_FROM` ist
+   ohnehin nicht gesetzt, es geht heute keine Mail hinaus.
 
 Was ohne Aufgabennummer aussteht, steht unter „Was bewusst offen bleibt".
 

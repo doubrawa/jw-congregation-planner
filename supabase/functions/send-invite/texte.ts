@@ -155,15 +155,15 @@ const TEXTE: Record<string, InviteTexte> = {
     body: "مرحبًا {name}،\n\nيرجى التسجيل في تطبيق جماعتنا:\n{url}\n\nبعد التسجيل، استخدم رمز الدعوة هذا:\n{code}",
   },
   he: {
-    subject: "הזמנה: מתכנן הקהילה JW",
+    subject: "הזמנה: Versammlung.app",
     body: "שלום {name},\n\nנא להירשם ביישום הקהילה שלנו:\n{url}\n\nלאחר ההרשמה, מַמֵּש את קוד ההזמנה הזה:\n{code}",
   },
   fa: {
-    subject: "دعوت: برنامه‌ریز جماعت JW",
+    subject: "دعوت: Versammlung.app",
     body: "سلام {name}،\n\nلطفاً در برنامهٔ جماعت ما ثبت‌نام کنید:\n{url}\n\nپس از ثبت‌نام، این کد دعوت را وارد کنید:\n{code}",
   },
   ur: {
-    subject: "دعوت: JW کلیسیا پلانر",
+    subject: "دعوت: Versammlung.app",
     body: "السلام علیکم {name}،\n\nبراہِ کرم ہماری کلیسیا کی ایپ میں رجسٹر کریں:\n{url}\n\nرجسٹریشن کے بعد یہ دعوتی کوڈ درج کریں:\n{code}",
   },
 }
