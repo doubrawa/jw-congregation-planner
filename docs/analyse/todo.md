@@ -4720,7 +4720,7 @@ Reihenfolge. **Festgehalten, nicht umgesetzt** — der Aufwand ist geschätzt un
 nicht gemessen. Wo die Stelle im Code schon feststeht, steht sie dabei;
 nachgesehen ist damit **wo** etwas liegt, nicht wie es zu lösen wäre.
 
-### T105 · Pläne drucken 🔧 ⚠ teilweise (21. September 2026)
+### T105 · Pläne drucken 🔧 ✅ erledigt (21. September 2026)
 
 > **Gebaut ist der Zeitraum, nicht der Umfang.** Von den drei Fragen oben ist
 > eine beantwortet: **welcher Zeitraum** — der Druckknopf klappt jetzt eine
@@ -4760,6 +4760,13 @@ nachgesehen ist damit **wo** etwas liegt, nicht wie es zu lösen wäre.
 > bisher gar nichts davon. Screenshots neu erzeugt: die Treffpunkte tragen
 > jetzt eine Druckzeile.
 
+> **Vom Betreiber am 21. September 2026 entschieden — damit erledigt:**
+> „vorerst keine Ausdrucke für Hilfsdienste und Gruppenlisten." Die offene
+> Frage nach dem Umfang ist beantwortet: Es bleibt bei Programm, Treffpunkten
+> und S-89-Bogen, je Woche oder Monat. Wird ein weiterer Ausdruck im Betrieb
+> vermisst, kommt er als eigener Punkt wieder — die Weiche `data-print` nimmt
+> ein weiteres Regelwerk ohne Umbau auf.
+
 **Wortlaut:** *„setze das drucken von plänen auf die TODO liste."*
 
 **Was es schon gibt:** zwei Ausdrucke, beide eng zugeschnitten. Das **Programm**
@@ -4790,7 +4797,16 @@ bei `afterprint`), sonst drucken sie übereinander.
 „Hintergrundgrafiken drucken", auf A4 und Letter; und der jeweils andere
 Ausdruck danach noch einmal, damit die Weiche wirklich trennt.
 
-### T106 · Bei der Inbetriebnahme alle auf einmal benachrichtigen — vielleicht per WhatsApp 🔧 ☐ offen
+### T106 · Bei der Inbetriebnahme alle auf einmal benachrichtigen — vielleicht per WhatsApp 🔧 ⏸ zurückgestellt (21. September 2026)
+
+> **Vom Betreiber am 21. September 2026 zurückgestellt** („erstmal
+> zurückstellen"). Nichts daran gebaut. Stand beim Zurückstellen, damit die
+> Suche beim Wiederaufnehmen nicht von vorn beginnt: In der Datenbank und im
+> NWS-Export steht **keine einzige Telefonnummer** — `wa.me` hätte heute
+> nichts zu öffnen. Der Mail-Weg über `send-invite` ist gebaut, läuft aber im
+> Rückfall (Mail-Programm/Teilen/Kopieren), weil das Secret `INVITE_FROM` nicht
+> gesetzt ist; die Domain versammlung.app gibt es inzwischen.
+
 **Wortlaut:** *„auch wie man beim initialen inbetriebnahme der app alle user
 benachrichtigt - vielleicht am einfachsten per whatsapp."*
 
@@ -5256,6 +5272,104 @@ den normalen Testlauf — dass jeder Eintrag seine Stelle genau einmal findet.
 Das kostet Millisekunden (nur Dateien lesen, nichts mutieren) und hätte jeden
 dieser Umbauten am selben Tag angehalten.
 
+## Aufgenommen am 21. September 2026 — Anmeldeseite und Registrieren (T113, T114)
+
+### T113 · Die Anmeldeseite sagt nicht, wofür die App da ist — und nicht, wo man eine Versammlung anfragt 🔧 ☐ offen
+**Wortlaut:** *„auf der login seite muss es einen satz geben, was die app macht:
+planen/verwalten der versammlung. und es muss eine kontakt email geben, wo man
+hinschreiben kann, wenn man eine neue versammlung anfragen möchte an mich.
+email ist: doubrawa@gmx.de"*
+
+**Was es heute gibt:** Die Anmeldeseite (`src/login/LoginScreen.tsx`) zeigt
+Logo und Wortmarke „Versammlung.app", das Formular, die Sprachwahl und darunter
+einen einzigen Hinweis: `nurMitglieder` („Zugang nur für Mitglieder der
+Versammlung", im Demo `demoHinweis`). Wer die Adresse ohne Einladung aufruft,
+erfährt weder, wofür die App da ist, noch, an wen er sich wenden kann. Eine
+Beschreibung steht nur unsichtbar in `<meta name="description">` (`index.html`,
+nur deutsch). Eine neue Versammlung legt allein der Betreiber an
+(`scripts/versammlung-anlegen.mjs`) — einen Weg zu ihm nennt die App nirgends.
+
+**Was werden soll:**
+
+1. Unter der Wortmarke **ein Satz, was die App macht:** die Zusammenkünfte
+   einer Versammlung planen und die Versammlung verwalten.
+2. **Eine Kontaktzeile:** Wer eine neue Versammlung anfragen möchte, schreibt
+   an **doubrawa@gmx.de**, als `mailto:`-Link.
+
+**Vor dem Anfangen zu klären:**
+
+- **Wortlaut.** Vorschlag in der Du-Form der übrigen Oberfläche: „Plant die
+  Zusammenkünfte deiner Versammlung und verwaltet Aufgaben, Personen und
+  Treffpunkte." und „Neue Versammlung anfragen: doubrawa@gmx.de".
+- **Übersetzt wie jeder Text:** beide Sätze in `de.ts` und allen 33 Overlays,
+  sonst fällt die Seite in 33 Sprachen still auf Englisch zurück. Die Adresse
+  selbst gehört **nicht** in die Wörterbücher, sondern einmal als Konstante —
+  34 Abschriften liefen beim nächsten Wechsel auseinander.
+- **Auch im Demo-Modus?** Vorschlag: ja — wer die Demo ansieht, ist genau der,
+  der eine Versammlung anfragen würde.
+- **Betreff vorbelegen?** `mailto:…?subject=…` in der Sprache der Oberfläche,
+  damit die Anfrage im Posteingang als solche erkennbar ist.
+- **Spam:** Die Adresse steht dann öffentlich auf der Seite und im Bundle. Ob
+  sie im Klartext stehen darf oder erst beim Anzeigen zusammengesetzt wird,
+  entscheidet der Betreiber.
+- **`<meta name="description">`** gleich mitziehen, damit Suchmaschine und
+  Seite dasselbe sagen.
+
+**Prüfen:** `src/login/login.test.tsx` — Satz und Link sichtbar, in Produktion
+und im Demo, `href` mit `mailto:doubrawa@gmx.de`; beide Schlüssel in allen 34
+Sprachen. Schriftgrößen wie überall als `calc(px * var(--fs))`. Aufnahme auf
+320 px in der größten Schriftstufe und in einer RTL-Sprache: Die Adresse muss
+dort links-nach-rechts stehen bleiben (`dir="ltr"` bzw. `<bdi>` am Link), sonst
+stellt der Bidi-Algorithmus `@` und Punkt um. Danach die Aufnahme der
+Anmeldeseite in `docs/user-guide/` neu erzeugen.
+
+### T114 · Registrieren, wenn es mehrere Versammlungen gibt — erst zu klären 🏗 ☐ offen
+**Wortlaut:** *„es muss noch geklärt werden, wie das mit den registrieren läuft
+wenn es mehrere versammlungen gibt."*
+
+**Was es heute gibt:**
+
+- **Registrieren kann jeder**, ohne Code („Konto erstellen" auf der
+  Anmeldeseite, `signUp` in `src/lib/supabase.ts`). Das Konto gehört danach zu
+  keiner Versammlung und bleibt auf „Code einlösen" stehen (`AppShell.tsx`).
+- **Welche Versammlung, entscheidet allein der Einladungscode:**
+  `redeem_invite` (`supabase/schema.sql`) legt die Mitgliedschaft in der
+  Versammlung des Codes an und verknüpft die Person, für die er erzeugt wurde.
+- **Ein Konto, eine Versammlung:** `members.user_id` ist Primärschlüssel, und
+  `redeem_invite` antwortet mit `already-member`, sobald das Konto irgendwo
+  Mitglied ist. Alle Richtlinien fragen `my_congregation_id()` — ein Wert,
+  keine Liste.
+- **Eine neue Versammlung legt nur der Betreiber an**
+  (`scripts/versammlung-anlegen.mjs`: Versammlung, Planer-Person,
+  Standard-Dienste, erster Einladungscode). Wie man ihn erreicht, ist T113.
+- **Die Trennung selbst ist nachgewiesen** (T78: zweite Versammlung, alle
+  RLS-Tabellen, beide Richtungen). Offen ist nicht die Sicherheit, sondern der
+  Ablauf.
+
+**Zu klären:**
+
+- **Der erste Planer einer neuen Versammlung:** bleibt es bei Anfrage →
+  Skript → Code an den Koordinator, oder soll eine Versammlung sich selbst
+  anlegen können?
+- **Registrieren ohne Code:** Soll „Konto erstellen" überhaupt ohne Code gehen?
+  Heute entstehen Konten ohne Versammlung, die kein Planer sieht und niemand
+  aufräumt — bei mehreren Versammlungen werden es mehr.
+- **Wechsel und Doppelmitgliedschaft:** Wer umzieht, braucht heute zuerst das
+  Entfernen durch den Planer der alten Versammlung, sonst scheitert der neue
+  Code an `already-member`. Soll ein Konto in **zwei** Versammlungen sein
+  dürfen (etwa bei Aushilfe in einer fremdsprachigen Versammlung)? Das hieße
+  Umschalter in der App und einen anderen Schlüssel in `members` samt aller
+  Richtlinien — der größte der möglichen Wege.
+- **Was sieht, wer `already-member` bekommt?** Heute nur die Fehlermeldung;
+  weder er noch der einladende Planer erfährt, wo das Konto schon hängt (und
+  soll es auch nicht ohne Weiteres — das wäre eine Auskunft über eine fremde
+  Versammlung).
+
+**Prüfen, sobald entschieden:** den Ablauf mit zwei Versammlungen einmal ganz
+durchspielen — am Testbestand „Probeversammlung Talheim" aus T78 neben der
+echten Versammlung: Konto anlegen, Code aus der einen einlösen, Code aus der
+anderen versuchen, Konto entfernen, erneut einlösen.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -5283,23 +5397,29 @@ dieser Umbauten am selben Tag angehalten.
 
 ## Fortschritt
 
-Stand 21. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ☐ offen
+Stand 21. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
-31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ⚠☐☑☑☑ ·
-21. September ☑☑☑
+31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
+21. September ☑☑☑☐☐
 
-**110 der 112 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**111 der 114 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei, einer davon zurückgestellt:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T105** | Pläne drucken | ⚠ der Zeitraum ist gebaut (Woche oder Monat, auch über den Treffpunkten), **welche Pläne** ist offen: Hilfsdienste und Gruppenlisten stehen auf keinem Ausdruck |
-| **T106** | Alle auf einmal benachrichtigen | ☐ nicht angefangen — zuerst zu klären, was mit Nummern geschieht, die `wa.me` nicht annimmt |
+| **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
+| **T113** | Anmeldeseite: was die App macht, Kontakt für neue Versammlungen | ☐ aufgenommen am 21. September, nicht angefangen — Wortlaut und Spam-Frage klären |
+| **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
+
+Am Abend des 21. September entschieden: **T105** ist mit dem Zeitraum fertig —
+Hilfsdienste und Gruppenlisten druckt die App vorerst nicht —, **T106** ist
+zurückgestellt, neu aufgenommen sind **T113** (Anmeldeseite) und **T114**
+(Registrieren bei mehreren Versammlungen).
 
 Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
 **T107** (der Name der Versammlung im Handy-Kopf statt der Wortmarke),
@@ -5319,15 +5439,28 @@ erzwungen.
 Stunde und sperrt so lange den Arbeitsbaum. Gemessen sind bisher die 14
 nachgezogenen und die 7 aus T110, alle 21 bewacht.
 
-**Beim Betreiber liegen drei Dinge:** `substitute` neu deployen (sonst springt
-der Push aus T109 nicht), `schema.sql` ausführen und alle betroffenen
-Functions neu deployen (T110), und `build-personen-sql.mjs` in `nws-export`
-nachziehen, das den Anzeigenamen noch erzeugt.
+**Beim Betreiber, Stand 21. September abends:**
 
-**Zwei Dinge liegen beim Betreiber**, nicht im Code: `substitute` muss neu
-deployt werden, sonst kommt der Push aus T109 weiter ohne den Zusatz und
-landet oben auf den Aufgaben. Und was ohne Aufgabennummer aussteht, steht
-unter „Was bewusst offen bleibt".
+1. **Alle fünf Functions deployen.** Live läuft der Stand von `cefd413`
+   (18. September, mit `functions download` gegen die Commits verglichen).
+   Dort fehlen seither der Sprung aus T109, die Adresse versammlung.app, der
+   neue Name in den Einladungstexten, der gebündelte Varianten-Import und
+   T110. Der Deploy hängt nicht am Neuaufbau: Die einzige geänderte Abfrage
+   lässt `dn` weg, und die Spalte steht noch. **Vorher ein Test:**
+   `substitute` läuft live mit `verify_jwt=false`, `config.toml` sagt `true`.
+   Wahrscheinlich eine Umgehung, weil das Tor ES256-Tokens abwies
+   (supabase/supabase#42244) — das Projekt signiert mit ES256. Ein Aufruf von
+   `send-plan` mit echtem Token und ungültiger Aktion zeigt ohne
+   Nebenwirkung, ob es das heute noch tut.
+2. **Neuaufbau erst zum echten Start** (entschieden am 21. September), dann
+   kommt der Index aus T110 mit. `build-personen-sql.mjs` in `nws-export` ist
+   schon nachgezogen: kein `dn` mehr, Gleichnamige behalten den Zähler aus
+   NWS im Nachnamen („Josef Mayer 2"), eine echte Dublette bricht mit Namen
+   ab. Bis zum Neuaufbau heißen die beiden in der App gleich — einen davon
+   dort umbenennen.
+3. **Einladungs-Mail** (`INVITE_FROM`) ist mit T106 zurückgestellt.
+
+Was ohne Aufgabennummer aussteht, steht unter „Was bewusst offen bleibt".
 
 Am 17. September fielen die letzten beiden der Analyse-Liste auf einen Streich,
 weil sie zusammengehören. **T104** hat die Altlasten geräumt: zehn Lade-Migrationen, die
