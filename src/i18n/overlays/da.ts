@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Ryd virkelig?",
   "toastGeleertN": "{n} tildelinger ryddet",
   "drucken": "Udskriv",
+  "druckWoche": "Denne uge",
+  "druckMonat": "Hele måneden · {monat}",
   "navStart": "Start",
   "grussMorgen": "Godmorgen",
   "grussTag": "Goddag",

@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "本当にクリア？",
   "toastGeleertN": "{n}件の割り当てをクリア",
   "drucken": "印刷",
+  "druckWoche": "この週",
+  "druckMonat": "1か月分 · {monat}",
   "navStart": "ホーム",
   "grussMorgen": "おはようございます",
   "grussTag": "こんにちは",

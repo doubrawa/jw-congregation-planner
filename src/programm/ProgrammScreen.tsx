@@ -1,4 +1,5 @@
-import { Fragment } from 'react'
+import { Fragment, useCallback, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { istBlockSektion, mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
@@ -11,7 +12,10 @@ import { gehoertZu, isSong, splitOpeningSong } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import type { Lang, Meeting, MeetingTab, PartItem, Person, Week } from '../data/types'
+import { druckKennzeichen } from './druck'
+import { DruckWahl } from './DruckWahl'
 import { FsProgram } from './FsProgram'
+import { MonatDruckenContext, MonatsDruck } from './MonatsDruck'
 import './programm.css'
 import './print.css'
 
@@ -27,12 +31,40 @@ function heute(lang: Lang): string {
  * mitgeholt (useProgWeek) — sonst die Versammlungssprache.
  */
 export function ProgrammScreen() {
+  // Der Monat, der gerade gedruckt wird (T105) — sonst null.
+  const [druckMonat, setDruckMonat] = useState<string | null>(null)
+
+  /*
+   * Erst zeichnen, dann drucken — im selben Klick. `flushSync` legt den Monat
+   * sofort ins DOM, bevor der Druckdialog das Blatt aufnimmt. Kein Effekt nach
+   * dem Rendern: Den ließe StrictMode in der Entwicklung zweimal laufen, und
+   * es gingen zwei Druckdialoge auf. Abgeräumt wird, wenn der Dialog durch ist.
+   */
+  const monatDrucken = useCallback((monat: string) => {
+    flushSync(() => setDruckMonat(monat))
+    druckKennzeichen('monat')
+    const fertig = () => {
+      window.removeEventListener('afterprint', fertig)
+      druckKennzeichen(null)
+      setDruckMonat(null)
+    }
+    window.addEventListener('afterprint', fertig)
+    window.print()
+  }, [])
+
   // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
   // naechste Woche — und uebernimmt das Wischen.
   return (
-    <WeekStrip>
-      <ProgrammBody />
-    </WeekStrip>
+    <MonatDruckenContext.Provider value={monatDrucken}>
+      <WeekStrip>
+        <ProgrammBody />
+      </WeekStrip>
+      {druckMonat && (
+        <MonatsDruck monat={druckMonat}>
+          <ProgrammBody />
+        </MonatsDruck>
+      )}
+    </MonatDruckenContext.Provider>
   )
 }
 
@@ -159,9 +191,7 @@ function ProgramMeeting({
             ),
           )}
         </p>
-        <button type="button" className="prog-print-btn" onClick={() => window.print()}>
-          {t.drucken}
-        </button>
+        <DruckWahl />
       </div>
 
       {meeting.sections.map((section, si) => {

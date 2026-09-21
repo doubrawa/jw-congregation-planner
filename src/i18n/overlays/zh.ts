@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "确定清空？",
   "toastGeleertN": "已清空 {n} 项分配",
   "drucken": "打印",
+  "druckWoche": "本周",
+  "druckMonat": "整月 · {monat}",
   "navStart": "首页",
   "grussMorgen": "早上好",
   "grussTag": "下午好",

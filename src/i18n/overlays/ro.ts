@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Chiar golești?",
   "toastGeleertN": "{n} atribuiri golite",
   "drucken": "Tipărește",
+  "druckWoche": "Săptămâna aceasta",
+  "druckMonat": "Toată luna · {monat}",
   "navStart": "Acasă",
   "grussMorgen": "Bună dimineața",
   "grussTag": "Bună ziua",

@@ -71,7 +71,9 @@
   .week-chips,
   .prog-lang-hint,
   .prog-helpers,
-  .prog-print-btn {
+  .prog-print-btn,
+  .druck-menue,
+  .fs-druck-row {
     display: none !important;
   }
 
@@ -200,6 +202,37 @@
   .prog-raum {
     margin-top: 1mm;
     font-size: 7.5pt;
+  }
+
+  /* Treffpunkte (Reiter Predigtdienst, T105) — wie die Programmzeilen in
+     festen Größen: Auf dem Papier gilt nicht die Schriftstufe des Geräts, von
+     dem aus gedruckt wird. Vorher wuchsen sie mit (`--fs`), und derselbe Plan
+     kam von zwei Handys verschieden groß heraus. */
+  .fs-row {
+    gap: 5mm;
+    padding: 1.6mm 0;
+  }
+
+  .fs-time {
+    font-size: 9.5pt;
+  }
+
+  .fs-title {
+    font-size: 10pt;
+    line-height: 1.25;
+  }
+
+  .fs-place {
+    margin-top: 0.3mm;
+    font-size: 8.5pt;
+  }
+
+  .fs-leader-name {
+    font-size: 9.5pt;
+  }
+
+  .fs-leader-role {
+    font-size: 8.5pt;
   }
 
   /* „DU“ ist eine Bildschirm-Markierung für den angemeldeten Nutzer. */

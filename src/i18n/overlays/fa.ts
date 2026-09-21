@@ -288,6 +288,8 @@ export default {
   "leerenSicher": "واقعاً پاک شود؟",
   "toastGeleertN": "{n} تخصیص پاک شد",
   "drucken": "چاپ",
+  "druckWoche": "این هفته",
+  "druckMonat": "کل ماه · {monat}",
   "navStart": "خانه",
   "grussMorgen": "صبح بخیر",
   "grussTag": "روز بخیر",

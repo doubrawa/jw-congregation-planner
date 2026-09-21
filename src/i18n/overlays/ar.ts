@@ -251,6 +251,8 @@ export default {
   "leerenSicher": "مسح فعلاً؟",
   "toastGeleertN": "تم مسح {n} تعيينات",
   "drucken": "طباعة",
+  "druckWoche": "هذا الأسبوع",
+  "druckMonat": "الشهر كاملًا · {monat}",
   "navStart": "الرئيسية",
   "grussMorgen": "صباح الخير",
   "grussTag": "مرحبًا",

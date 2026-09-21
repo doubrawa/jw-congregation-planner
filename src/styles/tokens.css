@@ -718,6 +718,7 @@
 
    Je Ebene deckt der Wert den Schleier ab, `calc(… + 1)` den Inhalt darauf. */
 :root {
+  --z-menue: 10; /* Auswahl am Druckknopf — unter der klebenden Kopfzeile */
   --z-nav: 20; /* Kopfzeile mobil */
   --z-panel: 30; /* Mitteilungen */
   --z-sheet: 34; /* Zuteilungs-Sheet, Seitenmenü */

@@ -349,6 +349,8 @@ export default {
   "leerenSicher": "Really clear?",
   "toastGeleertN": "{n} assignments cleared",
   "drucken": "Print",
+  "druckWoche": "This week",
+  "druckMonat": "Whole month · {monat}",
   "navStart": "Home",
   "grussMorgen": "Good morning",
   "grussTag": "Good afternoon",

@@ -36,6 +36,8 @@ export const DE = {
     fsSkipCong: 'Außer bei Versammlungstreffpunkt',
     toastFsRuleAdd: 'Zum Grundplan hinzugefügt', toastFsRuleDel: 'Aus dem Grundplan entfernt',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: {datum}', drucken: 'Drucken',
+    // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
+    druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',
     planen: 'Planen', offeneZut: '{n} offene Zuteilungen',
     planHint: 'Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.',
     autoZuteilen: 'AUTOMATISCH ZUTEILEN', leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',

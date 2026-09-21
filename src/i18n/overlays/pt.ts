@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Limpar mesmo?",
   "toastGeleertN": "{n} designações limpas",
   "drucken": "Imprimir",
+  "druckWoche": "Esta semana",
+  "druckMonat": "O mês inteiro · {monat}",
   "navStart": "Início",
   "grussMorgen": "Bom dia",
   "grussTag": "Boa tarde",

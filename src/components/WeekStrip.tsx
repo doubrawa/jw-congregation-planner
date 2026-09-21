@@ -77,26 +77,42 @@ const SEITE = {
 /** Dieselben Inhalte, nur für eine benachbarte Woche und ohne Bedienbarkeit. */
 function Vorschau({ offset, children }: { offset: -1 | 1; children: ReactNode }) {
   const state = useAppState()
+  return (
+    <div className={SEITE[offset]} aria-hidden="true" inert>
+      <MitWoche week={state.week + offset}>{children}</MitWoche>
+    </div>
+  )
+}
+
+/**
+ * Zeichnet `children` so, als stünde die App auf Woche `week` — **nur zum
+ * Ansehen**, ohne dass etwas ausgelöst werden kann.
+ *
+ * Zweimal gebraucht: für die Nachbarwochen im Streifen und für den Ausdruck
+ * eines ganzen Monats (`programm/MonatsDruck.tsx`, T105), der jede Woche des
+ * Monats mit demselben Baustein zeichnet wie den Ausdruck einer einzelnen.
+ */
+export function MitWoche({ week, children }: { week: number; children: ReactNode }) {
+  const state = useAppState()
   // Kein useMemo: `state` ist nach jeder Aktion ein neues Objekt, der Vergleich
   // ginge also ohnehin daneben — und `children` ist bei jedem Render neu, der
   // Teilbaum liefe so oder so durch. Der Spread ist billiger als der Anschein
   // von Abschirmung.
-  const wert = { ...state, week: state.week + offset }
+  const wert = { ...state, week }
   // Der Speicher muss mit überschrieben werden, nicht nur der Kontext: sonst
-  // läse ein Baustein der Vorschau den abgewandelten Zustand über `useAppState`
-  // und den echten über `useAppSelector` — zwei Wochen gleichzeitig in einer
-  // Ansicht (T41).
+  // läse ein Baustein den abgewandelten Zustand über `useAppState` und den
+  // echten über `useAppSelector` — zwei Wochen gleichzeitig in einer Ansicht
+  // (T41).
   const store = useStaticStore(wert)
+  // Überschrieben werden Zustand und Speicher; der Versand-Kontext bleibt der
+  // äußere und wird hier durch `keinDispatch` ersetzt — wer nur ansieht, darf
+  // nichts auslösen (die Vorschau ist zusätzlich `inert`, ein Klick kommt gar
+  // nicht erst an).
   return (
-    <div className={SEITE[offset]} aria-hidden="true" inert>
-      {/* Überschrieben werden Zustand und Speicher; der Versand-Kontext bleibt
-          der äußere und wird hier durch `keinDispatch` ersetzt — die Vorschau
-          ist `inert`, ein Klick kommt gar nicht erst an. */}
-      <AppDispatchContext.Provider value={keinDispatch}>
-        <AppStoreContext.Provider value={store}>
-          <AppStateContext.Provider value={wert}>{children}</AppStateContext.Provider>
-        </AppStoreContext.Provider>
-      </AppDispatchContext.Provider>
-    </div>
+    <AppDispatchContext.Provider value={keinDispatch}>
+      <AppStoreContext.Provider value={store}>
+        <AppStateContext.Provider value={wert}>{children}</AppStateContext.Provider>
+      </AppStoreContext.Provider>
+    </AppDispatchContext.Provider>
   )
 }

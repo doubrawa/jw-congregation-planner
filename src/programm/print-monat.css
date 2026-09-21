@@ -1,0 +1,68 @@
+/* Ausdruck eines ganzen Monats (T105): jede Woche des Monats hintereinander,
+ * mit denselben Bausteinen und denselben Druckregeln (print.css) wie der
+ * Ausdruck einer einzelnen Woche.
+ *
+ * Am Bildschirm nie sichtbar. Im Druck nur unter dem Kennzeichen
+ * `data-print="monat"` am Wurzelelement (gesetzt beim Klick, abgeräumt nach
+ * dem Druckdialog, siehe programm/druck.ts) — ohne Kennzeichen druckt die
+ * Woche, wie bisher. Dieselbe Weiche wie beim S-89-Bogen (planen/print-s89.css):
+ * Zwei Regelwerke, die beide „alles außer mir" sagen, hebeln sich sonst aus.
+ */
+
+.monat-druck {
+  display: none;
+}
+
+@media print {
+  /* Die Woche am Bildschirm (samt Nachbarwochen im Streifen) weicht dem Monat. */
+  :root[data-print='monat'] .week-viewport {
+    display: none !important;
+  }
+
+  :root[data-print='monat'] .monat-druck {
+    display: block;
+  }
+
+  /* Ein Kopf für das ganze Blatt — Versammlung, Reiter, Monat — statt des
+     Kopfs jeder einzelnen Woche. Gestaltet wie der Wochen-Kopf (print.css). */
+  :root[data-print='monat'] .monat-kopf {
+    display: flex;
+    justify-content: space-between;
+    gap: 6mm;
+    padding-bottom: 2.5mm;
+    margin-bottom: 4mm;
+    border-bottom: 1px solid #999;
+    font-size: 8.5pt;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mut);
+  }
+
+  :root[data-print='monat'] .monat-woche .prog-print-head {
+    display: none !important;
+  }
+
+  /* Eine Woche bleibt beisammen. Zwischen zwei Wochen Luft und eine Linie —
+     beim Wochenende und bei den Treffpunkten passen mehrere auf ein Blatt. */
+  :root[data-print='monat'] .monat-woche {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  :root[data-print='monat'] .monat-woche + .monat-woche {
+    margin-top: 6mm;
+    padding-top: 4mm;
+    border-top: 1px solid #999;
+  }
+
+  /* Die Zusammenkunft unter der Woche füllt allein etwa ein Blatt: je Woche
+     eine Seite, statt eine Woche mitten auf der Seite zu zerteilen. */
+  :root[data-print='monat'] .monat-druck--seitenweise .monat-woche + .monat-woche {
+    break-before: page;
+    page-break-before: always;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+}

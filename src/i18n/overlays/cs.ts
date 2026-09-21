@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Opravdu vymazat?",
   "toastGeleertN": "Vymazáno přiřazení: {n}",
   "drucken": "Tisk",
+  "druckWoche": "Tento týden",
+  "druckMonat": "Celý měsíc · {monat}",
   "navStart": "Domů",
   "grussMorgen": "Dobré ráno",
   "grussTag": "Dobrý den",

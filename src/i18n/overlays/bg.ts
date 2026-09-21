@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Наистина ли да се изчисти?",
   "toastGeleertN": "Изчистени назначения: {n}",
   "drucken": "Печат",
+  "druckWoche": "Тази седмица",
+  "druckMonat": "Целият месец · {monat}",
   "navStart": "Начало",
   "grussMorgen": "Добро утро",
   "grussTag": "Добър ден",

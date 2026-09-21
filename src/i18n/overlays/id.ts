@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Yakin kosongkan?",
   "toastGeleertN": "{n} penugasan dikosongkan",
   "drucken": "Cetak",
+  "druckWoche": "Minggu ini",
+  "druckMonat": "Sebulan penuh · {monat}",
   "navStart": "Beranda",
   "grussMorgen": "Selamat pagi",
   "grussTag": "Selamat siang",

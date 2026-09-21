@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Vraiment vider ?",
   "toastGeleertN": "{n} affectations vidées",
   "drucken": "Imprimer",
+  "druckWoche": "Cette semaine",
+  "druckMonat": "Tout le mois · {monat}",
   "navStart": "Accueil",
   "grussMorgen": "Bonjour",
   "grussTag": "Bonjour",

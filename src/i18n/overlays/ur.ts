@@ -288,6 +288,8 @@ export default {
   "leerenSicher": "واقعی صاف کریں؟",
   "toastGeleertN": "{n} تفویضات صاف کر دیے گئے",
   "drucken": "پرنٹ کریں",
+  "druckWoche": "یہ ہفتہ",
+  "druckMonat": "پورا مہینہ · {monat}",
   "navStart": "ہوم",
   "grussMorgen": "صبح بخیر",
   "grussTag": "اچھا دن",

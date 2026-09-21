@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Tyhjennetäänkö?",
   "toastGeleertN": "{n} tehtävää tyhjennetty",
   "drucken": "Tulosta",
+  "druckWoche": "Tämä viikko",
+  "druckMonat": "Koko kuukausi · {monat}",
   "navStart": "Etusivu",
   "grussMorgen": "Hyvää huomenta",
   "grussTag": "Hyvää päivää",

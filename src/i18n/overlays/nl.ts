@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Echt wissen?",
   "toastGeleertN": "{n} toewijzingen gewist",
   "drucken": "Afdrukken",
+  "druckWoche": "Deze week",
+  "druckMonat": "Hele maand · {monat}",
   "navStart": "Start",
   "grussMorgen": "Goedemorgen",
   "grussTag": "Goedemiddag",

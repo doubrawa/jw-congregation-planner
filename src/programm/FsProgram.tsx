@@ -5,6 +5,20 @@ import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
 import { wochentagNameAusWd } from '../planen/wochentage'
+import { DruckWahl } from './DruckWahl'
+
+/**
+ * Der Druckknopf über den Treffpunkten (T105) — dieselbe Auswahl wie bei den
+ * Zusammenkünften: diese Woche oder der ganze Monat. Er steht auch über einer
+ * Woche ohne Treffpunkte: Der Monat hat vielleicht welche.
+ */
+function FsDruck() {
+  return (
+    <div className="prog-meta-row fs-druck-row">
+      <DruckWahl />
+    </div>
+  )
+}
 
 /**
  * Treffpunkte-Anzeige (Programm-Tab „Zusammenkünfte für den Predigtdienst"):
@@ -29,9 +43,12 @@ export function FsProgram() {
 
   if (insts.length === 0) {
     return (
-      <div className="panel panel--lead panel--pb16" data-farbe="gold">
-        <p className="prog-meta">{t.fsKeine}</p>
-      </div>
+      <>
+        <FsDruck />
+        <div className="panel panel--lead panel--pb16" data-farbe="gold">
+          <p className="prog-meta">{t.fsKeine}</p>
+        </div>
+      </>
     )
   }
 
@@ -59,6 +76,7 @@ export function FsProgram() {
 
   return (
     <>
+      <FsDruck />
       {days.map((day) => (
         <div key={day.wd} className="panel" data-farbe="gold">
           <h2 className="panel-label">{day.label}</h2>

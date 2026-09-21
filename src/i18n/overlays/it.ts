@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Svuotare davvero?",
   "toastGeleertN": "{n} assegnazioni svuotate",
   "drucken": "Stampa",
+  "druckWoche": "Questa settimana",
+  "druckMonat": "Tutto il mese · {monat}",
   "navStart": "Home",
   "grussMorgen": "Buongiorno",
   "grussTag": "Buon pomeriggio",

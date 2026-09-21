@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Gerçekten temizle?",
   "toastGeleertN": "{n} atama temizlendi",
   "drucken": "Yazdır",
+  "druckWoche": "Bu hafta",
+  "druckMonat": "Tüm ay · {monat}",
   "navStart": "Ana sayfa",
   "grussMorgen": "Günaydın",
   "grussTag": "İyi günler",

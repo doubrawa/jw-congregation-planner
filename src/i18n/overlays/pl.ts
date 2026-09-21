@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Na pewno wyczyścić?",
   "toastGeleertN": "Wyczyszczono przydziały: {n}",
   "drucken": "Drukuj",
+  "druckWoche": "Ten tydzień",
+  "druckMonat": "Cały miesiąc · {monat}",
   "navStart": "Start",
   "grussMorgen": "Dzień dobry",
   "grussTag": "Dzień dobry",

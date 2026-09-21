@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Biztosan üríted?",
   "toastGeleertN": "{n} kiosztás ürítve",
   "drucken": "Nyomtatás",
+  "druckWoche": "Ez a hét",
+  "druckMonat": "Az egész hónap · {monat}",
   "navStart": "Kezdőlap",
   "grussMorgen": "Jó reggelt",
   "grussTag": "Jó napot",

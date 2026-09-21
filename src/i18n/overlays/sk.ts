@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Naozaj vymazať?",
   "toastGeleertN": "Vymazané priradenia: {n}",
   "drucken": "Tlač",
+  "druckWoche": "Tento týždeň",
+  "druckMonat": "Celý mesiac · {monat}",
   "navStart": "Domov",
   "grussMorgen": "Dobré ráno",
   "grussTag": "Dobrý deň",

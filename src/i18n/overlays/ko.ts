@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "정말 지울까요?",
   "toastGeleertN": "배정 {n}건 지움",
   "drucken": "인쇄",
+  "druckWoche": "이번 주",
+  "druckMonat": "한 달 전체 · {monat}",
   "navStart": "홈",
   "grussMorgen": "좋은 아침이에요",
   "grussTag": "안녕하세요",

@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Zaista očistiti?",
   "toastGeleertN": "Očišćeno dodjela: {n}",
   "drucken": "Ispis",
+  "druckWoche": "Ovaj tjedan",
+  "druckMonat": "Cijeli mjesec · {monat}",
   "navStart": "Početna",
   "grussMorgen": "Dobro jutro",
   "grussTag": "Dobar dan",

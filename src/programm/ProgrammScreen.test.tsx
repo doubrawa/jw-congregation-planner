@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -13,7 +13,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
-import type { PartItem, Person, Section, Service, Week } from '../data/types'
+import type { FsInstance, PartItem, Person, Section, Service, Week } from '../data/types'
 import { ProgrammScreen } from './ProgrammScreen'
 
 /**
@@ -96,10 +96,17 @@ function zeige(over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne />) }
 }
 
-/** Nur die mittlere (aktuelle) Woche des Streifens — die Nachbarn zeigen dasselbe. */
-const seite = (c: HTMLElement): HTMLElement =>
-  (c.querySelector('.week-page:not(.week-page--vor):not(.week-page--nach)') as HTMLElement) ?? c
+/**
+ * Nur die mittlere (aktuelle) Woche des Streifens. Die Nachbarn sind Vorschau
+ * (`inert`) und stehen im DOM **vor** ihr — wer einfach den ersten Knopf nimmt,
+ * klickt in die vorige Woche. Hier stand bis zum 21.9.2026 ein Selektor auf
+ * `.week-page`, den die mittlere Woche gar nicht trägt: Er fiel still auf den
+ * ganzen Streifen zurück und ging nur gut, solange kein Test eine Vorwoche hatte.
+ */
+const seite = (c: HTMLElement): HTMLElement => (c.querySelector('.week-strip > .screen') as HTMLElement) ?? c
 const texte = (c: HTMLElement, sel: string) => [...seite(c).querySelectorAll(sel)].map((x) => x.textContent ?? '')
+/** Die Einträge der aufgeklappten Druck-Auswahl (T105). */
+const optionen = (c: HTMLElement) => [...seite(c).querySelectorAll<HTMLButtonElement>('.druck-menue .druck-option')]
 
 afterEach(cleanup)
 
@@ -223,11 +230,12 @@ describe('Das Programm selbst', () => {
     expect(fuss[1]).toContain('Stand:')
   })
 
-  it('„Drucken" ruft den Druck des Browsers', () => {
+  it('„Drucken" → „Diese Woche" ruft den Druck des Browsers', () => {
     const print = vi.fn()
     window.print = print
     const { container } = zeige()
     fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    fireEvent.click(optionen(container)[0]!)
     expect(print).toHaveBeenCalled()
   })
 
@@ -374,5 +382,211 @@ describe('Ohne geladene Woche', () => {
     const { container } = zeige({ weeks: [] })
     expect(container.textContent).toContain(t.keineWochenTitel)
     expect(container.textContent).toContain(t.keineWochenHinweis)
+  })
+})
+
+/**
+ * **Drucken: die angezeigte Woche oder der ganze Monat** (T105).
+ *
+ * Für den Aushang will der Planer den Monat am Stück — wahlweise, nicht statt
+ * der Woche. Zum Monat gehört jede Woche, deren **Montag** in ihm liegt (die
+ * Woche vom 28. September hängt auf dem September-Blatt, die vom 5. Oktober
+ * nicht). Gedruckt wird jede Woche mit demselben Baustein wie die einzelne;
+ * welches Regelwerk im Druck gilt, sagt das Kennzeichen `data-print`.
+ */
+describe('Drucken: diese Woche oder der ganze Monat', () => {
+  /** Sechs Wochen um den September 2026: je eine im August und im Oktober. */
+  const MONTAGE = ['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05']
+  const wochen = () => MONTAGE.map((start) => woche({ start, range: `Woche ab ${start}` }))
+  const leer = () => MONTAGE.map((): FsInstance[] => [])
+
+  let print = vi.fn()
+  beforeEach(() => {
+    print = vi.fn()
+    window.print = print
+  })
+  afterEach(() => {
+    delete document.documentElement.dataset.print
+  })
+
+  type ImDruck = { kennzeichen?: string; wochen: string[]; kopf: string; seitenweise: boolean }
+
+  /** Druckt den Monat und hält fest, was im Moment des Druckens im DOM stand. */
+  function monatDrucken(container: HTMLElement): ImDruck {
+    const imDruck: ImDruck = { wochen: [], kopf: '', seitenweise: false }
+    print.mockImplementation(() => {
+      imDruck.kennzeichen = document.documentElement.dataset.print
+      imDruck.wochen = [...container.querySelectorAll('.monat-woche .prog-week-range')].map((e) => e.textContent ?? '')
+      imDruck.kopf = container.querySelector('.monat-kopf')?.textContent ?? ''
+      imDruck.seitenweise = container.querySelector('.monat-druck')?.classList.contains('monat-druck--seitenweise') ?? false
+    })
+    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    fireEvent.click(optionen(container)[1]!)
+    return imDruck
+  }
+
+  it('der Knopf klappt die Wahl auf, statt gleich zu drucken', () => {
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    const knopf = seite(container).querySelector<HTMLButtonElement>('.prog-print-btn')!
+    fireEvent.click(knopf)
+    expect(print).not.toHaveBeenCalled()
+    expect(knopf.getAttribute('aria-expanded')).toBe('true')
+    expect(optionen(container).map((o) => o.textContent)).toEqual([
+      t.druckWoche,
+      t.druckMonat.replace('{monat}', 'September 2026'),
+    ])
+  })
+
+  it('„Diese Woche" druckt ohne Kennzeichen — auch wenn eins stehen geblieben ist', () => {
+    // Ein abgebrochener Druck vorher (kein `afterprint`) ließe sonst den
+    // Wochen-Ausdruck still als Monat oder Zettelbogen herauskommen.
+    document.documentElement.dataset.print = 'monat'
+    let kennzeichen: string | undefined = 'nicht gedruckt'
+    print.mockImplementation(() => {
+      kennzeichen = document.documentElement.dataset.print
+    })
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    fireEvent.click(optionen(container)[0]!)
+    expect(print).toHaveBeenCalledTimes(1)
+    expect(kennzeichen).toBeUndefined()
+    expect(container.querySelector('.monat-druck')).toBeNull()
+  })
+
+  it('„Ganzer Monat" druckt jede Woche, deren Montag im Monat liegt — und nur die', () => {
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    const imDruck = monatDrucken(container)
+    expect(print).toHaveBeenCalledTimes(1)
+    expect(imDruck.kennzeichen).toBe('monat')
+    expect(imDruck.wochen).toEqual([
+      'Woche ab 2026-09-07', 'Woche ab 2026-09-14', 'Woche ab 2026-09-21', 'Woche ab 2026-09-28',
+    ])
+  })
+
+  it('der Monat ist der der angezeigten Woche — auch wenn sie ins nächste hineinreicht', () => {
+    // Die Woche vom 28. September endet am 4. Oktober; gedruckt wird der September.
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 4 })
+    expect(monatDrucken(container).wochen).toHaveLength(4)
+    cleanup()
+    const { container: okt } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 5 })
+    expect(monatDrucken(okt).wochen).toEqual(['Woche ab 2026-10-05'])
+  })
+
+  it('das Blatt trägt einen Kopf mit Versammlung, Reiter und Monat', () => {
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    const { kopf } = monatDrucken(container)
+    expect(kopf).toContain('Nordheim')
+    expect(kopf).toContain(t.tabMid)
+    expect(kopf).toContain('September 2026')
+  })
+
+  it('unter der Woche kommt jede Woche auf ein eigenes Blatt, am Wochenende nicht', () => {
+    // Die Zusammenkunft unter der Woche füllt allein etwa eine Seite; die vom
+    // Wochenende ist kurz, dort passen mehrere Wochen auf ein Blatt.
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, tab: 'mid' })
+    expect(monatDrucken(container).seitenweise).toBe(true)
+    cleanup()
+    const { container: we } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, tab: 'we' })
+    expect(monatDrucken(we).seitenweise).toBe(false)
+  })
+
+  it('nach dem Druckdialog räumt der Monat sich wieder ab', () => {
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    monatDrucken(container)
+    expect(container.querySelector('.monat-druck')).not.toBeNull()
+    act(() => {
+      window.dispatchEvent(new Event('afterprint'))
+    })
+    expect(container.querySelector('.monat-druck')).toBeNull()
+    expect(document.documentElement.dataset.print).toBeUndefined()
+  })
+
+  it('der Monat ist am Bildschirm aus dem Weg: nicht bedienbar, nicht vorgelesen', () => {
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    monatDrucken(container)
+    const monat = container.querySelector('.monat-druck')!
+    expect(monat.getAttribute('aria-hidden')).toBe('true')
+    expect(monat.hasAttribute('inert')).toBe(true)
+  })
+
+  it('Escape schließt die Wahl, der Fokus geht zurück auf den Knopf', () => {
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    const knopf = seite(container).querySelector<HTMLButtonElement>('.prog-print-btn')!
+    fireEvent.click(knopf)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(optionen(container)).toHaveLength(0)
+    expect(document.activeElement).toBe(knopf)
+    expect(print).not.toHaveBeenCalled()
+  })
+
+  it('ein Tipp daneben schließt die Wahl, ohne zu drucken', () => {
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    fireEvent.pointerDown(document.body)
+    expect(optionen(container)).toHaveLength(0)
+    expect(print).not.toHaveBeenCalled()
+  })
+
+  it('eine Woche ohne gültiges Datum druckt gleich — eine Wahl mit einem Eintrag wäre ein Klick zu viel', () => {
+    const { container } = zeige({ weeks: [woche({ start: '' })], week: 0 })
+    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    expect(print).toHaveBeenCalledTimes(1)
+    expect(optionen(container)).toHaveLength(0)
+  })
+
+  it('der Monat steht in der Sprache des Lesers', () => {
+    const en = dict('en')
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, lang: 'en' })
+    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    expect(optionen(container).map((o) => o.textContent)).toEqual([
+      en.druckWoche,
+      en.druckMonat.replace('{monat}', 'September 2026'),
+    ])
+  })
+})
+
+/**
+ * **Auch die Treffpunkte lassen sich drucken** (T105) — dieselbe Wahl wie bei
+ * den Zusammenkünften. Vorher hatte der Reiter Predigtdienst gar keinen Knopf.
+ */
+describe('Drucken im Reiter Predigtdienst', () => {
+  const MONTAGE = ['2026-09-07', '2026-09-14', '2026-10-05']
+  const treff = (id: string, place: string): FsInstance => ({
+    id, ruleId: null, grp: null, wd: 6, time: '09:30', place, leader: 'Anton Alt', lpid: 'p-a',
+  })
+
+  let print = vi.fn()
+  beforeEach(() => {
+    print = vi.fn()
+    window.print = print
+  })
+  afterEach(() => {
+    delete document.documentElement.dataset.print
+  })
+
+  it('der Knopf steht da — auch in einer Woche ohne Treffpunkte, der Monat hat vielleicht welche', () => {
+    const { container } = zeige({
+      tab: 'fs', week: 0,
+      weeks: MONTAGE.map((start) => woche({ start })),
+      fsWeeks: [[], [treff('a', 'Marktplatz')], []],
+    })
+    expect(seite(container).textContent).toContain(t.fsKeine)
+    expect(seite(container).querySelector('.prog-print-btn')).not.toBeNull()
+  })
+
+  it('„Ganzer Monat" druckt die Treffpunkte aller Wochen des Monats — und nur die', () => {
+    let orte: string[] = []
+    print.mockImplementation(() => {
+      orte = [...document.querySelectorAll('.monat-woche .fs-place')].map((e) => e.textContent ?? '')
+    })
+    const { container } = zeige({
+      tab: 'fs', week: 0,
+      weeks: MONTAGE.map((start) => woche({ start })),
+      fsWeeks: [[treff('a', 'Saal')], [treff('b', 'Marktplatz')], [treff('c', 'Oktoberort')]],
+    })
+    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    fireEvent.click(optionen(container)[1]!)
+    expect(print).toHaveBeenCalledTimes(1)
+    expect(orte).toEqual(['Saal', 'Marktplatz'])
   })
 })

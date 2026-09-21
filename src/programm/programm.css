@@ -60,6 +60,49 @@
   color: var(--acc);
 }
 
+/* Druck-Auswahl (T105): diese Woche oder der ganze Monat. Klappt unter dem
+   Knopf auf, bündig mit seinem Ende — liegt über dem Programm darunter, aber
+   unter der klebenden Kopfzeile. */
+.druck-wahl {
+  position: relative;
+  flex: none;
+}
+
+.druck-menue {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: var(--z-menue);
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid var(--bord);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.druck-option {
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: start;
+  font-size: calc(13px * var(--fs));
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.druck-option:hover,
+.druck-option:focus-visible {
+  background: var(--hov);
+}
+
+/* Über den Treffpunkten steht nur der Knopf — ans Ende der Zeile. */
+.fs-druck-row {
+  justify-content: flex-end;
+}
+
 /* ---- Programmpunkt-Zeilen ------------------------------------------------ */
 
 /*

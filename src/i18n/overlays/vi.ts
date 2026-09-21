@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Thực sự xóa?",
   "toastGeleertN": "Đã xóa {n} phân công",
   "drucken": "In",
+  "druckWoche": "Tuần này",
+  "druckMonat": "Cả tháng · {monat}",
   "navStart": "Trang chính",
   "grussMorgen": "Chào buổi sáng",
   "grussTag": "Chào buổi chiều",

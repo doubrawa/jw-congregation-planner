@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Заиста очистити?",
   "toastGeleertN": "Очишћено додела: {n}",
   "drucken": "Штампај",
+  "druckWoche": "Ova nedelja",
+  "druckMonat": "Ceo mesec · {monat}",
   "navStart": "Почетна",
   "grussMorgen": "Добро јутро",
   "grussTag": "Добар дан",

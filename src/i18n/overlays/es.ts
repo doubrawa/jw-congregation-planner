@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "¿Vaciar de verdad?",
   "toastGeleertN": "{n} asignaciones vaciadas",
   "drucken": "Imprimir",
+  "druckWoche": "Esta semana",
+  "druckMonat": "Todo el mes · {monat}",
   "navStart": "Inicio",
   "grussMorgen": "Buenos días",
   "grussTag": "Buenas tardes",

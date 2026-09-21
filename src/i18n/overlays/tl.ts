@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Sigurado bang alisin?",
   "toastGeleertN": "{n} atas na inalis",
   "drucken": "I-print",
+  "druckWoche": "Ang linggong ito",
+  "druckMonat": "Buong buwan · {monat}",
   "navStart": "Home",
   "grussMorgen": "Magandang umaga",
   "grussTag": "Magandang hapon",

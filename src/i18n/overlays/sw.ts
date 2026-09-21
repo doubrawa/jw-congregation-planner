@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Futa kweli?",
   "toastGeleertN": "Migawo {n} imefutwa",
   "drucken": "Chapisha",
+  "druckWoche": "Wiki hii",
+  "druckMonat": "Mwezi mzima · {monat}",
   "navStart": "Mwanzo",
   "grussMorgen": "Habari ya asubuhi",
   "grussTag": "Habari ya mchana",

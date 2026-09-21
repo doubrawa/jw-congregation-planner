@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Rensa verkligen?",
   "toastGeleertN": "{n} tilldelningar rensade",
   "drucken": "Skriv ut",
+  "druckWoche": "Den här veckan",
+  "druckMonat": "Hela månaden · {monat}",
   "navStart": "Start",
   "grussMorgen": "God morgon",
   "grussTag": "God dag",

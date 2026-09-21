@@ -289,6 +289,8 @@ export default {
   "leerenSicher": "Σίγουρα εκκαθάριση;",
   "toastGeleertN": "{n} αναθέσεις εκκαθαρίστηκαν",
   "drucken": "Εκτύπωση",
+  "druckWoche": "Αυτή η εβδομάδα",
+  "druckMonat": "Όλος ο μήνας · {monat}",
   "navStart": "Αρχική",
   "grussMorgen": "Καλημέρα",
   "grussTag": "Καλό μεσημέρι",

@@ -288,6 +288,8 @@ export default {
   "leerenSicher": "לנקות באמת?",
   "toastGeleertN": "{n} שיבוצים נוקו",
   "drucken": "הדפסה",
+  "druckWoche": "השבוע הזה",
+  "druckMonat": "כל החודש · {monat}",
   "navStart": "בית",
   "grussMorgen": "בוקר טוב",
   "grussTag": "צהריים טובים",
