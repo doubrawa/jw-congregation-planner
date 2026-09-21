@@ -5241,9 +5241,10 @@ dem alten CSS meldet sie genau die vier Stellen.
 > `start-*`, die zur Streichung vorgeschlagen waren, sind darunter: Sie werden
 > an ihrer neuen Stelle sehr wohl verteidigt.
 >
-> **Nicht gemessen ist der Rest.** Die übrigen 178 Einträge liefen seit dem
-> 5. September nicht mehr; ein voller Durchgang kostet bei 32 s je Testlauf
-> gut eine Stunde und sperrt so lange den Arbeitsbaum. Er steht aus.
+> **Nicht gemessen war der Rest** — die übrigen 178 Einträge liefen seit dem
+> 5. September nicht mehr. ✅ **Am Abend des 21. September nachgeholt:** der
+> volle Durchgang über alle 201 Regeln, 61 Minuten, **201 bewacht, keine
+> ungewacht.** Die Schätzung stimmte auf die Minute.
 >
 > **Nebenbei:** Die Vorprüfung meldet jetzt **alle** verrutschten Einträge auf
 > einmal statt nur des ersten. Nach einem Umbau sind es selten einzelne, und
@@ -5630,9 +5631,24 @@ Wörterbüchern verschwunden, und Vor- und Nachname sind seither je Versammlung
 eindeutig — am Feld gemeldet, beim Schreiben angehalten, von einem Index
 erzwungen.
 
-**Ein voller Durchgang der Mutationsprobe steht aus** — er kostet gut eine
-Stunde und sperrt so lange den Arbeitsbaum. Gemessen sind bisher die 14
-nachgezogenen und die 7 aus T110, alle 21 bewacht.
+✅ **Der volle Durchgang der Mutationsprobe ist gelaufen** (21. September
+2026, abends): **201 von 201 Regeln bewacht**, keine einzige ungewacht. 61
+Minuten, je Regel ein vollständiger Testlauf. Vorher waren nur die 14
+nachgezogenen und die 7 aus T110 gemessen — jetzt der ganze Katalog, samt der
+Einträge, die seit T67 nie wieder angefasst worden sind.
+
+Damit steht zum ersten Mal für **jede** verzeichnete Regel fest, dass ihr
+Entfernen wirklich einen Test rot färbt. Das ist die Aussage, die die
+Testzahl (5487) und die Abdeckung (95 %) beide nicht treffen: Sie sagen, dass
+Code ausgeführt wird, nicht, dass jemand hinsieht.
+
+> **Zur Ausgabe:** Der Lauf nennt je Regel **eine** Datei, die rot geworden
+> ist — nicht zwingend die naheliegendste. Bei
+> `kontakt-betreff-kodiert` stand dort `tests/kein-anzeigename.test.ts`;
+> nachgestellt fallen in Wahrheit `src/login/kontakt.test.ts` (zwei Tests)
+> und `src/login/login.test.tsx`. Die Bewachung stimmt also, der Fingerzeig
+> ist nur ungenau. Wer einer gemeldeten Datei nachgeht und dort nichts
+> Passendes findet, sucht deshalb besser mit dem Regel-Text weiter.
 
 **Beim Betreiber, Stand 21. September abends:**
 
