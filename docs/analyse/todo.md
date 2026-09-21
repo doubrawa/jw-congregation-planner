@@ -4877,6 +4877,72 @@ eigener Einstieg aus dem Push heraus.
 **Zu entscheiden, bevor etwas gebaut wird:** Der Betreiber hat die Frage
 gestellt, nicht die Antwort gegeben.
 
+## Aufgenommen am 21. September 2026 — Personennamen (T110)
+
+### T110 · Der Anzeigename fällt weg — Vor- und Nachname sind eindeutig 🏗 ☐ offen
+**Wortlaut:** *„anzeigename raus - vor- und nachname sollte reichen. wenn
+jemand gleich heißt, dann muss man eben etwas an den vornamen anhängen. es muss
+auch auf unique geprüft werden bei den personen vor- und nachname, damit sicher
+keine doppelten vorkommen."*
+
+**Was es heute gibt:** `Person.dn` (Spalte `persons.dn`, Feld „ANZEIGENAME
+(OPTIONAL)" im Personen-Detail) ersetzt den vollen Namen überall, wo er steht
+oder als Rückfall zuordnet: `displayName`/`listName` (`src/data/helpers.ts`),
+`personDisplayName` (`supabase/functions/_shared/planung.ts` — benutzt von
+`send-plan`, `send-reminders`, `substitute` und fünf Wartungsskripten),
+`mein_anzeigename()` in `schema.sql` (der Namensrückfall der
+Bestätigungs-Richtlinie aus migration-022 für Plätze ohne `pid`), die Suche
+(`person-filter.ts`) und `isNameless` im Reducer. **Doppelte Namen sind heute
+nur eine Warnung:** das Banner „DOPPELTE ANZEIGENAMEN" oben in der
+Personenliste (`duplicateDisplayNames`); speichern lässt sich eine Dublette
+trotzdem. In der Live-Versammlung gibt es genau einen Fall — zweimal Josef
+Mayer, unterschieden über `dn` „(1)"/„(2)".
+
+**Was werden soll:**
+
+1. `dn` verschwindet — aus Typ, Eingabefeld, Wörterbüchern (`anzeigename` in
+   34 Sprachen), Schema und allen Aufrufern. Der Name ist immer „Vorname
+   Nachname".
+2. Vor- und Nachname sind zusammen **eindeutig je Versammlung**, geprüft an
+   zwei Stellen: in der App (Personen-Detail und „Person hinzufügen" nehmen
+   einen Namen, den es schon gibt, nicht an und sagen es am Feld) und in der
+   Datenbank (eindeutiger Index über `congregation_id` und den bereinigten
+   Namen). Erst der Index hält auch einen zweiten Planer, einen offenen alten
+   Tab und die Wartungsskripte auf.
+3. Heißen zwei gleich, hängt der Planer etwas an den Vornamen an („Josef sen.").
+
+**Vor dem Anfangen zu klären:**
+
+- **Was „gleich" heißt:** Groß-/Kleinschreibung und doppelte Leerzeichen
+  ignorieren (Vorschlag: ja — „josef mayer" und „Josef  Mayer" sind derselbe
+  Name); Akzente nicht (Müller und Muller können zwei Menschen sein).
+- **Leere Namen:** Eine frisch angelegte Person hat zunächst weder Vor- noch
+  Nachnamen; zwei davon dürfen nicht am Index scheitern (Index nur über
+  nicht leere Namen).
+- **Tippen erzeugt Zwischenstände:** Das Personen-Detail speichert je
+  Tastendruck (gebündelt). Ein Zwischenstand, der kurz einem anderen Namen
+  gleicht, darf nicht in die Datenbank gehen und dort als Schreibfehler
+  zurückkommen — die App hält ihn vorher an und speichert erst den eindeutigen
+  Stand.
+- **Bestand:** Die beiden Josef Mayer müssen **vor** dem Index umbenannt sein,
+  sonst scheitert die Migration. Da vor dem Produktivstart ohnehin neu
+  importiert wird, gehört dieselbe Regel auch in den NWS-Import
+  (`versammlung-zuruecksetzen.mjs`): Dublette → Abbruch mit Namen, statt still
+  ein `dn` zu setzen.
+- **Namen in den Wochen:** Zuteilungen tragen `name` neben `pid`. Fällt `dn`
+  weg, ändert sich der angezeigte Name der beiden — `renameInWeeks` zieht ihn
+  beim Umbenennen im Client nach, ein Neuimport erzeugt ihn ohnehin neu.
+- **Der Gewinn für die Rechte:** `mein_anzeigename()` ordnet Plätze ohne `pid`
+  über den Namen zu. Solange Namen doppelt sein konnten, war genau das die
+  Lücke darin; mit dem Index ist der Rückfall eindeutig.
+
+**Prüfen:** Regel als reine Funktion (Groß/Klein, Leerzeichen, leere Namen,
+Umbenennen auf den eigenen Namen ist keine Dublette); das Personen-Detail weist
+eine Dublette ab und nennt sie; `schema.test.ts` kennt den Index; eine
+Vollständigkeitsprobe, dass `dn` nirgends mehr gelesen wird; der
+Mutationsprobe-Eintrag zu `mein_anzeigename` (sucht heute `btrim(p.dn)`) zieht
+mit; alle drei Functions, die `dn` lesen, neu deployen.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -4911,13 +4977,15 @@ Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
-31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☐☐☐☐☐
+31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☐☐☐☐☐ ·
+21. September ☐
 
-**104 der 109 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+**104 der 110 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen sind die fünf Vorhaben vom 20. September
 (T105–T109)**, aufgenommen und noch nicht angefangen; T109 ist zuerst eine
-Entscheidung, keine Aufgabe. Was ohne Aufgabennummer aussteht, steht unter
-„Was bewusst offen bleibt".
+Entscheidung, keine Aufgabe. Dazu **T110** vom 21. September: der Anzeigename
+soll weg, Vor- und Nachname werden eindeutig. Was ohne Aufgabennummer aussteht,
+steht unter „Was bewusst offen bleibt".
 
 Am 17. September fielen die letzten beiden der Analyse-Liste auf einen Streich,
 weil sie zusammengehören. **T104** hat die Altlasten geräumt: zehn Lade-Migrationen, die
