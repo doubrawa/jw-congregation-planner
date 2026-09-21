@@ -4970,7 +4970,9 @@ Farbschema und rechts-nach-links, dazu die Sicht des Gruppenaufsehers.
 > von Hand sabotiert, beide bewacht.
 >
 > **Braucht einen Deploy von `substitute`** — bis dahin kommt der Push weiter
-> ohne Zusatz, und die App öffnet die Seite oben wie bisher.
+> ohne Zusatz, und die App öffnet die Seite oben wie bisher. ✅ **Deployt am
+> 21. September 2026, 15:07** (`substitute` v20, mit den übrigen vier).
+
 **Wortlaut:** *„und todo: sollte man eine extra ,einspringen' page haben"*
 
 **Wo es heute steht:** an zwei Stellen. Als goldener Bereich unten auf „Meine
@@ -5078,6 +5080,13 @@ gestellt, nicht die Antwort gegeben.
 >    `substitute` neu deployen — sie fragen `persons` sonst weiter nach einer
 >    Spalte, die es nicht mehr gibt, und PostgREST beantwortet das mit 400,
 >    also mit gar keinen Personen.
+>
+> **Stand 21. September abends:** Punkt 1 ist erledigt — der Generator
+> behält bei Gleichnamigen den Zähler aus NWS im Nachnamen („Josef Mayer 2")
+> und bricht bei einer echten Dublette mit Namen ab. Von Punkt 2 ist der
+> **Deploy erledigt** (alle fünf, 15:07); er durfte vorgehen, weil die neuen
+> Functions `dn` nur nicht mehr lesen. `schema.sql` kommt mit dem Neuaufbau
+> **zum echten Start**, so der Betreiber — bis dahin fehlt nur der Index.
 
 **Wortlaut:** *„anzeigename raus - vor- und nachname sollte reichen. wenn
 jemand gleich heißt, dann muss man eben etwas an den vornamen anhängen. es muss
@@ -5441,17 +5450,20 @@ nachgezogenen und die 7 aus T110, alle 21 bewacht.
 
 **Beim Betreiber, Stand 21. September abends:**
 
-1. **Alle fünf Functions deployen.** Live läuft der Stand von `cefd413`
-   (18. September, mit `functions download` gegen die Commits verglichen).
-   Dort fehlen seither der Sprung aus T109, die Adresse versammlung.app, der
-   neue Name in den Einladungstexten, der gebündelte Varianten-Import und
-   T110. Der Deploy hängt nicht am Neuaufbau: Die einzige geänderte Abfrage
-   lässt `dn` weg, und die Spalte steht noch. **Vorher ein Test:**
-   `substitute` läuft live mit `verify_jwt=false`, `config.toml` sagt `true`.
-   Wahrscheinlich eine Umgehung, weil das Tor ES256-Tokens abwies
-   (supabase/supabase#42244) — das Projekt signiert mit ES256. Ein Aufruf von
-   `send-plan` mit echtem Token und ungültiger Aktion zeigt ohne
-   Nebenwirkung, ob es das heute noch tut.
+1. ✅ **Alle fünf Functions sind deployt** (21. September, 15:07 —
+   `send-plan` v10, `send-reminders` v36, `substitute` v20, `send-invite` v9,
+   `import-week` v27). Bis dahin lief der Stand von `cefd413` vom
+   18. September (mit `functions download` gegen die Commits verglichen);
+   jetzt sind der Sprung aus T109, die Adresse versammlung.app, der neue Name
+   in den Einladungstexten, der gebündelte Varianten-Import und T110 live.
+   **Vorher geprüft,** ob das Tor die ES256-Tokens des Projekts annimmt, denn
+   `substitute` lief mit `verify_jwt=false` — vermutlich die Umgehung aus
+   supabase/supabase#42244. `send-plan` mit echtem Nutzer-Token und
+   ungültiger Aktion antwortete `400 bad-request` aus dem Handler: Das Tor
+   lässt durch. `substitute` steht damit wieder auf `true` wie in
+   `config.toml`. Rauchtest danach: alle fünf kommen hoch (OPTIONS vom
+   Handler), ohne Nutzer-Token 401 aus dem Handler, `send-reminders` mit
+   falschem Geheimnis 401, `send-invite` meldet `not-configured`.
 2. **Neuaufbau erst zum echten Start** (entschieden am 21. September), dann
    kommt der Index aus T110 mit. `build-personen-sql.mjs` in `nws-export` ist
    schon nachgezogen: kein `dn` mehr, Gleichnamige behalten den Zähler aus
