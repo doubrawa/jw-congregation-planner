@@ -5425,7 +5425,7 @@ durchspielen — am Testbestand „Probeversammlung Talheim" aus T78 neben der
 echten Versammlung: Konto anlegen, Code aus der einen einlösen, Code aus der
 anderen versuchen, Konto entfernen, erneut einlösen.
 
-### T115 · Persisch, Hebräisch und Urdu laden noch unter dem alten Namen ein 🔧 ✅ erledigt (21. September 2026) · ⚠ Deploy steht aus
+### T115 · Persisch, Hebräisch und Urdu laden noch unter dem alten Namen ein 🔧 ✅ erledigt und deployt (21. September 2026)
 
 > **Umgesetzt.** Sechs Zeichenketten im Wörterbuch und drei Betreffe in
 > `send-invite/texte.ts` tragen jetzt „Versammlung.app" — damit nennen alle 34
@@ -5472,13 +5472,18 @@ die Änderung zurücknimmt.
 gesetzt, neben dem schon ausgelieferten Arabisch. Alle vier brechen gleich um;
 der lateinische Name steht dort, wo er hingehört.
 
-> **⚠ Offen, und nur beim Betreiber:** `send-invite` ist **noch nicht
-> deployt**. Bis dahin gehen Mails in diesen drei Sprachen weiter unter dem
-> alten Namen hinaus — der Client-Rückfall (mailto/Teilen) trägt den neuen
-> Namen sofort. Nach dem Deploy gilt die Regel vom 15. August: mit
-> `git log <letzter Deploy>..HEAD -- supabase/functions` belegen, was sonst
-> noch mit hinausgeht, und mit `functions list` nachsehen, ob der Stand
-> hochgekommen ist.
+> ✅ **Deployt am 21. September, 17:12** — `send-invite` v10. **Nachgewiesen,
+> nicht angenommen:** Der laufende Stand wurde mit `functions download` in ein
+> Wegwerf-Verzeichnis geholt und gegen das Repo gehalten — `index.ts`,
+> `texte.ts`, `_shared/rest.ts` und `_shared/texte.ts` sind zeichengenau
+> gleich, und keiner der drei Betreffe trägt noch den alten Namen. Mails gehen
+> in allen 34 Sprachen unter „Versammlung.app" hinaus.
+>
+> **Nebenbei gelernt:** Die CLI bündelt nicht `_shared/` als Ganzes, sondern
+> nur, was wirklich importiert wird — `send-invite` lädt weder `planung.ts`
+> noch `zuteilungen.ts` herunter. Das beantwortet die Frage, die bei jedem
+> Deploy aufkam: Eine Änderung an einem geteilten Modul betrifft genau die
+> Functions, die es einbinden, und keine weiteren.
 
 ## Aufgenommen am 21. September 2026 — Code-Review der Umbau-Woche (T116)
 
@@ -5589,9 +5594,11 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
-Dazu **eine Handreichung beim Betreiber**: `send-invite` muss neu deployt
-werden, damit die Einladungs-Mail auf Persisch, Hebräisch und Urdu den neuen
-Namen trägt (T115).
+**Beim Betreiber steht nichts mehr aus:** Alle fünf Edge Functions laufen seit
+dem Abend des 21. September auf dem Stand des Repos — `send-invite` mit den
+drei nachgezogenen Sprachen (T115), die übrigen vier mit dem geteilten
+`planung.ts`. Nachgesehen mit `functions list`, `functions download` und einem
+Rauchtest.
 
 Am Abend des 21. September entschieden: **T105** ist mit dem Zeitraum fertig —
 Hilfsdienste und Gruppenlisten druckt die App vorerst nicht —, **T106** ist
@@ -5650,13 +5657,28 @@ nachgezogenen und die 7 aus T110, alle 21 bewacht.
    ab. Bis zum Neuaufbau heißen die beiden in der App gleich — einen davon
    dort umbenennen.
 3. **Einladungs-Mail** (`INVITE_FROM`) ist mit T106 zurückgestellt.
-4. ⚠ **`send-invite` noch einmal deployen** (T115, am Abend des
-   21. September). Der Lauf um 15:07 brachte v9 mit dem neuen Namen in 31
-   Sprachen — Persisch, Hebräisch und Urdu hatten ihn übersetzt und blieben
-   deshalb außen vor. Der Client-Rückfall (mailto/Teilen) trägt den neuen
-   Namen mit dem nächsten Seiten-Deploy sofort; die **Mail** in diesen drei
-   Sprachen erst nach diesem Deploy. Nichts Dringendes: `INVITE_FROM` ist
-   ohnehin nicht gesetzt, es geht heute keine Mail hinaus.
+4. ✅ **`send-invite` v10** (21. September, 17:12) — T115, die drei
+   übersetzten Namen. Der Lauf um 15:07 hatte v9 gebracht, mit dem neuen
+   Namen in 31 Sprachen; Persisch, Hebräisch und Urdu waren außen vor
+   geblieben, weil sie ihn übersetzt hatten.
+5. ✅ **Die übrigen vier neu deployt** (21. September, 18:26 —
+   `import-week` v28, `send-plan` v11, `send-reminders` v37, `substitute`
+   v21). Anlass war nicht ein Fehler, sondern der **gleiche Stand**:
+   `_shared/planung.ts` hatte sich um 17:54 und 18:12 geändert (Härtung von
+   `zeitenAus`, ein herausgezogener Export), und die vier binden es ein —
+   `send-invite` als einzige nicht. Verhaltensneutral für einen wohlgeformten
+   Datensatz; hinausgegangen ist es trotzdem, damit nicht wieder die Frage
+   im Raum steht, welche Function welches `_shared` trägt. Genau daran hing
+   der Ausfall vom 13./15. August.
+
+   **Nachgesehen, nicht angenommen:** `functions list` zeigt alle fünf ACTIVE
+   mit neuer Versionsnummer. Rauchtest danach — `import-week`, `send-plan`,
+   `substitute` und `send-invite` beantworten OPTIONS mit dem `ok` **ihres
+   eigenen Handlers** (200), `send-reminders` (verify_jwt=false) antwortet
+   ohne Geheimnis mit einem schlichten `Unauthorized` als Text. Beides heißt:
+   Das Modul ist samt seiner Importe hochgekommen. Wäre eine Function gar
+   nicht gestartet, käme die Plattform-Meldung als JSON — die Unterscheidung
+   stammt vom 8. August.
 
 Was ohne Aufgabennummer aussteht, steht unter „Was bewusst offen bleibt".
 
