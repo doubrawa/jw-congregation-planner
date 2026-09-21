@@ -649,17 +649,35 @@
 
 .fs-select {
   border: 1px solid var(--bord2);
-  background: var(--card);
+  /* background-color, nicht die Kurzschreibweise: `background:` setzt auch Bild,
+     Wiederholung und Lage zurück und hebelt das app-weite Chevron aus
+     (components.css). Hell verschwand es, dunkel kachelte es als Zickzack über
+     das ganze Feld — `:root[data-dark] select` setzt das Bild mit höherer
+     Spezifität wieder ein, die Wiederholung aber blieb zurückgesetzt. Wache:
+     tests/auswahlfeld-chevron.test.ts. */
+  background-color: var(--card);
   color: var(--ink);
   border-radius: 10px;
   padding: 7px 10px;
+  /* Kompaktes Chevron: näher am Rand als app-weit (14 px / 40 px). Die Felder
+     stehen zu zweit oder dritt in einer Zeile; mit dem vollen Abstand schnitte
+     „Jeden 1. im Monat" auf einem 360-px-Handy schon in der Standardschrift ab. */
+  padding-inline-end: 26px;
+  background-position: right 8px center;
   font-size: calc(12px * var(--fs));
   font-weight: 600;
 }
 
+[dir='rtl'] .fs-select {
+  background-position: left 8px center;
+}
+
+/* So breit wie der Inhalt: Uhrzeit plus Chevron. Fest 78 px reichten nur,
+   solange das Chevron fehlte — mit ihm schnitte „09:30" schon in der
+   Standard-Schriftstufe ab, und die Uhrzeit ist das einzige, was hier steht. */
 .fs-select--time {
   flex: none;
-  width: 78px;
+  width: auto;
 }
 
 .fs-remove {
@@ -1102,13 +1120,21 @@
 .sonder-grund {
   border: 1px solid var(--bord3);
   border-radius: 8px;
-  background: transparent;
+  /* background-color, nicht `background:` — dieselbe Falle wie bei .fs-select:
+     die Kurzschreibweise löschte das Chevron (hell) bzw. ließ es kacheln
+     (dunkel). */
+  background-color: transparent;
   color: inherit;
   font: inherit;
   font-size: calc(13px * var(--fs));
   padding: 8px 10px;
   /* WCAG 2.5.8: mindestens 24 px Zielgröße (T43). */
   min-height: 24px;
+}
+
+/* Nur das Auswahlfeld trägt ein Chevron; die beiden Eingabefelder nicht. */
+.sonder-select {
+  padding-inline-end: 40px;
 }
 
 .sonder-grund {

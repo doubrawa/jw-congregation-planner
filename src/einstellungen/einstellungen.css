@@ -545,8 +545,22 @@
   margin-top: 8px;
 }
 
-.fsr-grow {
+/* Wochentag und Häufigkeit: nebeneinander, solange beide ganz lesbar sind.
+   Die Grundbreite jedes Felds ist sein längster Eintrag (`flex-basis: auto`),
+   also bricht die Häufigkeit in eine zweite Reihe um, sobald die Zeile dafür
+   nicht reicht — große Schrift, schmales Handy. Kürzen soll hier nichts:
+   „Jeden 1. im Monat" und „Jede Woche" sähen abgeschnitten gleich aus. Das ✕
+   steht außerhalb und bleibt deshalb rechts neben beiden Reihen. */
+.fsr-wahl {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fsr-wahl > .fs-select {
+  flex: 1 1 auto;
   min-width: 0;
 }
 

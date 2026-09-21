@@ -4860,8 +4860,8 @@ ein übersetzbares Wort darin, gilt die Ausnahme so nicht mehr).
 > der alten Ein-Karten-Fassung rot.
 >
 > **Dabei gefunden, eigener Commit:** Im dunklen Schema kachelten die
-> Auswahlfelder dieser Karten ein Zickzack-Muster (siehe den Eintrag nach
-> T110).
+> Auswahlfelder dieser Karten ein Zickzack-Muster — **T111**, direkt
+> nach T110.
 **Wortlaut:** *„auch muss die einstellung der treffpunkte der versammlung und
 der gruppen nochmal leicht angepasst werden, da man schwer sieht, für welche
 gruppe man gerade den treffpunkt einstellt, weil es keine visuelle trennung gibt
@@ -4982,6 +4982,35 @@ eine Dublette ab und nennt sie; `schema.test.ts` kennt den Index; eine
 Vollständigkeitsprobe, dass `dn` nirgends mehr gelesen wird; der
 Mutationsprobe-Eintrag zu `mein_anzeigename` (sucht heute `btrim(p.dn)`) zieht
 mit; alle drei Functions, die `dn` lesen, neu deployen.
+
+### T111 · Im dunklen Schema kachelten Auswahlfelder ein Zickzack-Muster 🔧 ✅ erledigt (21. September 2026)
+**Gefunden beim Nachsehen von T108**, nicht gemeldet: In allen vier dunklen
+Farbschemata waren die Auswahlfelder der Treffpunkte (Einstellungen und
+Planen → Predigtdienst) und des Wochen-Reiters im Planen (Anlass der Woche,
+Wochentag der Zusammenkünfte) von einem Zickzack überzogen — das Anlass-Feld
+war kaum noch lesbar.
+
+**Ursache:** `.fs-select` und `.sonder-select` setzten `background:` als
+Kurzschreibweise. Die setzt Bild, Wiederholung und Lage des app-weiten
+Chevrons (`components.css`) mit zurück. Hell verschwand es still — deshalb fiel
+es nie auf —, dunkel setzte `:root[data-dark] select` das Bild mit höherer
+Spezifität wieder ein, aber mit `repeat` aus der Kurzschreibweise. Bei
+`.mem-select` war genau das schon einmal behoben worden; die Falle stand dort
+als Kommentar, nicht als Prüfung.
+
+**Behoben:** `background-color` statt `background`, dazu der Platz für das
+Chevron am Zeilenende. In den dichten Treffpunkt-Zeilen sitzt es kompakter
+(8 px vom Rand, 26 px Endabstand), das Uhrzeit-Feld ist so breit wie sein
+Inhalt statt fest 78 px, und Wochentag und Häufigkeit brechen um, wenn beide
+nicht mehr ganz in eine Reihe passen — das ✕ bleibt daneben. **Gemessen** per
+DevTools-Protokoll auf 320, 360 und 412 px in allen vier Schriftstufen:
+kein Treffpunkt-Feld wird gekürzt (vorher schnitt „Jeden 1. im Monat" ab
+Stufe 1,15 ab), die Zeile läuft nie über, das ✕ steht nie allein. Einzige
+Kürzung bleibt „Versammlungstreffpunkt" im Hinzufügen-Raster des Planens — die
+war vorher schon da. **Wache:** `tests/auswahlfeld-chevron.test.ts` liest,
+welche Klassen an einem `<select>` hängen, und weist für sie die
+Kurzschreibweise ab sowie ein `padding:` ohne zurückgegebenen Endabstand; mit
+dem alten CSS meldet sie genau die vier Stellen.
 
 ---
 

@@ -56,30 +56,35 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
             .map((rule) => (
               <div key={rule.id} className="fsr-row">
                 <div className="fsr-line">
-                  <select
-                    className="fs-select fsr-grow"
-                    value={rule.wd}
-                    aria-label={t.a11yWeekday}
-                    onChange={(e) => upd(rule.id, { wd: Number(e.target.value) })}
-                  >
-                    {wdOptions.map((d) => (
-                      <option key={d} value={d}>
-                        {wdName(d)}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="fs-select fsr-grow"
-                    value={rule.monthly}
-                    aria-label={t.fsFreqW}
-                    onChange={(e) => upd(rule.id, { monthly: Number(e.target.value) })}
-                  >
-                    {freqOptions.map(([v, l]) => (
-                      <option key={v} value={v}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Wochentag und Häufigkeit nebeneinander, solange beide ganz
+                      lesbar sind — sonst bricht die Häufigkeit in eine zweite
+                      Reihe um, und das ✕ bleibt rechts daneben (einstellungen.css). */}
+                  <div className="fsr-wahl">
+                    <select
+                      className="fs-select"
+                      value={rule.wd}
+                      aria-label={t.a11yWeekday}
+                      onChange={(e) => upd(rule.id, { wd: Number(e.target.value) })}
+                    >
+                      {wdOptions.map((d) => (
+                        <option key={d} value={d}>
+                          {wdName(d)}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      className="fs-select"
+                      value={rule.monthly}
+                      aria-label={t.fsFreqW}
+                      onChange={(e) => upd(rule.id, { monthly: Number(e.target.value) })}
+                    >
+                      {freqOptions.map(([v, l]) => (
+                        <option key={v} value={v}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <button
                     type="button"
                     className="fs-remove"
