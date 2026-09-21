@@ -5480,6 +5480,70 @@ der lateinische Name steht dort, wo er hingehört.
 > noch mit hinausgeht, und mit `functions list` nachsehen, ob der Stand
 > hochgekommen ist.
 
+## Aufgenommen am 21. September 2026 — Code-Review der Umbau-Woche (T116)
+
+### T116 · Das Zurücksetzen nahm die Gruppen-Treffpunkte mit 🔧 ✅ erledigt (21. September 2026)
+
+> **Ein Review über die 45 Commits vom 17. bis 21. September** (356 Dateien,
+> +15.500/−9.000) — die Woche, in der Datenmodell, Schema und Schreibschicht
+> zugleich umgebaut wurden. Zehn Befunde, alle behoben.
+
+**Der eine, der vor dem Produktivgang zählte.** Das Reset-Skript führt
+`fs_rules` unter `BEHALTEN` — „der Grundplan beschreibt die Versammlung, nicht
+eine Woche". Das stimmte, solange er ein JSONB-Blob war. Seit T105 ist er eine
+Zeile je Regel, `fs_rules.grp` zeigt per Fremdschlüssel auf `groups` und ist
+`on delete cascade`: Das Skript löscht alle Gruppen und legt sie neu an, und
+dazwischen nimmt die Datenbank **jeden Gruppen-Treffpunkt** mit. Übrig blieb
+nur der Versammlungstreffpunkt (`grp is null` — dort greift der
+zusammengesetzte Fremdschlüssel nicht). `treffpunkte-importieren.mjs` schreibt
+den Grundplan ausdrücklich nicht, gemerkt hätte es also niemand: Im nächsten
+Reset des Runbooks wären die Treffpunkte aller Gruppen still verschwunden.
+
+*Behoben (Variante 2, vom Betreiber gewählt):* Die Regeln werden auf den
+**Gruppennamen** umgeschrieben und gesichert, bevor etwas gelöscht ist —
+denselben Weg gehen die Konto-Verknüpfungen seit jeher, samt Sidecar-Datei für
+den Teilabbruch. Danach zurück auf die neuen Ids. Eine Gruppe, die es im SQL
+nicht mehr gibt, nimmt ihre Regel mit, wird aber genannt.
+
+**Warum der Wächter es nicht sah — und was er jetzt tut.** Er prüft, dass jede
+Tabelle in genau einer der drei Listen steht. Eine Kaskade steht in keiner:
+Sie leert eine Tabelle, ohne dass das Skript sie anfasst. Er liest jetzt die
+Fremdschlüssel aus `schema.sql` und verlangt für jede Kaskade auf eine
+gelöschte Tabelle einen Eintrag in `LEEREN`, `NEU_ANGELEGT` oder der neuen
+Liste `KASKADIERT` — und dass das Skript zurückschreibt, was dort steht.
+
+**Die übrigen neun:**
+
+| | Befund | Behoben durch |
+| --- | --- | --- |
+| `data.ts` | `select('*')` hatte die Schema-Prüfung verloren: Fehlt eine Spalte, kam die Zeile ohne sie zurück, und `zeitenAus` warf beim `.slice()` auf `undefined` — an `void loadAndHydrate(…)` vorbei, das keinen `catch` hat. Die App blieb auf „lädt…" stehen, ohne Fehler und ohne Offline-Stand. | Spalten wieder ausgeschrieben (aus dem Typ abgeleitet); `zeitenAus` fällt je Feld auf die Vorgabe zurück |
+| `data.ts` | `saveFsRules` löschte alles, was nicht in der eigenen Liste stand — also auch die Regel, die ein zweiter Planer gerade angelegt hatte. Ohne Fehler, auf beiden Bildschirmen unbemerkt. | löscht nur noch, was **dieser** Planer entfernt hat; der Bündler sammelt die Streichungen über ein `merge` |
+| `rechte.ts` | Kein einziger Test, obwohl die Funktion entscheidet, wer die Personenliste öffnet — und `ALLE` ist eine Abschrift des Typs `Screen`, bei der ein vergessener Eintrag den Bildschirm für **alle** unerreichbar macht | `rechte.test.ts`, zweimal mutationsgeprüft |
+| `fs.ts` | Beim Prüfen aufgefallen: Die Mutationsprobe meldete den Wächter in `fsGruppeEntfernen` als unbewacht. Der Test übergab `''`, und darauf passt seit dem Wechsel auf `grp: null` keine Regel mehr — er lief mit und ohne Wächter durch | geprüft wird `null`, und das ist der Fall, der zählt: ohne den Wächter verschwänden **alle** Versammlungstreffpunkte, weil eine Gruppe gelöscht wurde |
+| `versammlung-anlegen.mjs` | `zeitSpalten` nahm `„2 25:99"` an; der Abbruch kam erst aus PostgreSQL, in einer Meldung ohne den Schalter | Bereichsprüfung, Stunde wird aufgefüllt |
+| `persist.ts` (+ Test) | Kommentar: `fs_rules` sei ein Blob ohne Fremdschlüssel, die Datenbank räume nichts | richtiggestellt |
+| `helpers.ts` | `zuteilungsLabel` nannte `eigeneRolle` als Baustein — seit T104 gelöscht | richtiggestellt, mit dem Warum |
+| `langs.ts` | `JW_TO_CONG` als Umsetzung an der Datenbankgrenze beschrieben — die Sprache ist auf beiden Seiten ein Code | richtiggestellt |
+| `edge-parity.test.ts` | prüfte noch die Begleiter-Beschriftung „mit X" und kombinierte sie im Fixture mit `bereichsKey: 'schulungPartner'` — eine Form, die keine Stelle mehr erzeugt | geprüft wird das Paar Schüler/Partner |
+
+**Zwei Dinge, die das Review über sich selbst gelernt hat.** Erstens: Fünf der
+zehn Befunde sind veraltete Kommentare aus dem Speicher-Umbau, und das ist
+kein Kosmetikum — der in `persist.ts` hat beim Lesen den Blick von der Kaskade
+weggeführt. Zweitens: Das Umhängen dieses Kommentars ließ zwei Anker der
+Mutationsprobe verrosten, und die Ankerprüfung aus T112 hat es sofort
+gemeldet. Beide neu verankert und nachgemessen — alle acht Regeln um das
+Löschen einer Gruppe sind bewacht.
+
+**Nicht beanstandet, obwohl verdächtig** (damit die Nullbefunde nicht als
+Lücke durchgehen): die RLS-Abdeckung aller 16 Tabellen (der erste Eindruck
+täuschte, `schema.test.ts` erzwingt sie), die Übereinstimmung von
+`persons_name_eindeutig` mit `namensSchluessel` bis in den Leerraum, die
+ersatzlose Entfernung von `eigeneRolle` (in `7a5d9f5` begründet), die
+Erinnerungs-Grenzen (Reducer und Datenbank klemmen gleich, `send-reminders`
+nimmt sie sortiert), `erlaubteScreens` gegen die alte Bedingung
+(wahrheitswertgleich), sowie `MinutenFeld`, `dashTimeline`, `changedSlotKeys`,
+`allePlaetze`, `schluesselTeile` und `gemeinsam.mjs`.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -5515,9 +5579,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐☑
+21. September ☑☑☑☑☐☑☑
 
-**113 der 115 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+**114 der 116 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen sind zwei, einer davon zurückgestellt:**
 
 | | Aufgabe | Stand |
@@ -5539,6 +5603,11 @@ und ist gleich mit geschlossen: Persisch, Hebräisch und Urdu luden noch unter
 dem alten Namen ein, weil die Umbenennung vom Vortag nur die lateinische
 Zeichenkette suchte und diese drei den Namen übersetzt hatten. Die Mail
 braucht dafür noch einen Deploy.
+
+Zum Schluss desselben Tages ein **Code-Review über die ganze Umbau-Woche**
+(**T116**): zehn Befunde, alle behoben. Der schwerste hätte beim Produktivgang
+zugeschlagen — das Reset-Skript versprach, den Treffpunkt-Grundplan zu
+behalten, und eine Kaskade nahm ihm alle Gruppen-Treffpunkte weg.
 
 Der **21. September** hat die vier kleinen Punkte des Vortags abgeräumt:
 **T107** (der Name der Versammlung im Handy-Kopf statt der Wortmarke),
