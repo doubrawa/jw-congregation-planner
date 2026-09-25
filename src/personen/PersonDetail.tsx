@@ -132,16 +132,18 @@ export function PersonDetail({ person }: { person: Person }) {
                 dublette && (key === 'fn' || key === 'ln') ? 'pers-name-dublette' : undefined
               }
             />
+            {key === 'ln' && dublette && (
+              /* Direkt unter dem Nachnamen, auf den sie sich bezieht — nicht
+                 erst hinter Telefon und E-Mail, wo sie bis zum 24.9.2026 stand.
+                 `role="alert"` liest ein Screenreader vor, sobald die Meldung
+                 erscheint — ohne sie bliebe der Hinweis für ihn unsichtbar, und
+                 gespeichert wird ja nichts mehr. */
+              <p className="pers-field-fehler" id="pers-name-dublette" role="alert" dir="auto">
+                {fill(t.nameDoppelt, { name: personLabel(dublette) })}
+              </p>
+            )}
           </div>
         ))}
-        {dublette && (
-          /* `role="alert"` liest ein Screenreader vor, sobald die Meldung
-             erscheint — ohne sie bliebe der Hinweis für ihn unsichtbar, und
-             gespeichert wird ja nichts mehr. */
-          <p className="pers-field-fehler" id="pers-name-dublette" role="alert" dir="auto">
-            {fill(t.nameDoppelt, { name: personLabel(dublette) })}
-          </p>
-        )}
         <div className="pers-role-block">
           <div className="field-label">{t.geschlecht}</div>
           <div className="role-chips">

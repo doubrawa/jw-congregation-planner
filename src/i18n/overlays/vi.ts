@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} nhiệm vụ trong {w} tuần",
   "aufgabeInW": "1 nhiệm vụ trong {w} tuần",
   "toastWillkommen": "Chào mừng, {name}!",
-  "toastZugeteilt": "Đã phân công · đã gửi thông báo",
+  "toastZugeteilt": "Đã phân công · chưa gửi",
   "toastEntfernt": "Đã xóa phân công",
   "toastKeineOffen": "Không có nhiệm vụ trống trong chế độ xem này",
   "toastAutoN": "Đã tự động phân công {n} nhiệm vụ",

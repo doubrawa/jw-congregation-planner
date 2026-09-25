@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} attributions sur {w} semaines",
   "aufgabeInW": "1 attribution sur {w} semaines",
   "toastWillkommen": "Bienvenue, {name} !",
-  "toastZugeteilt": "Attribué · notification envoyée",
+  "toastZugeteilt": "Attribué · pas encore envoyé",
   "toastEntfernt": "Attribution retirée",
   "toastKeineOffen": "Aucune attribution ouverte dans cette vue",
   "toastAutoN": "{n} attributions faites automatiquement",

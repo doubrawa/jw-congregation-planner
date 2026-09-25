@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} tugas dalam {w} pekan",
   "aufgabeInW": "1 tugas dalam {w} pekan",
   "toastWillkommen": "Selamat datang, {name}!",
-  "toastZugeteilt": "Ditetapkan · notifikasi terkirim",
+  "toastZugeteilt": "Ditetapkan · belum dikirim",
   "toastEntfernt": "Penetapan dihapus",
   "toastKeineOffen": "Tidak ada tugas kosong di tampilan ini",
   "toastAutoN": "{n} tugas ditetapkan otomatis",

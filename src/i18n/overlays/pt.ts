@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} designações em {w} semanas",
   "aufgabeInW": "1 designação em {w} semanas",
   "toastWillkommen": "Bem-vindo, {name}!",
-  "toastZugeteilt": "Atribuído · notificação enviada",
+  "toastZugeteilt": "Atribuído · ainda não enviado",
   "toastEntfernt": "Designação removida",
   "toastKeineOffen": "Nenhuma designação em aberto nesta vista",
   "toastAutoN": "{n} designações atribuídas automaticamente",

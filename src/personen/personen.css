@@ -141,6 +141,17 @@
   margin-top: 10px;
 }
 
+/* Meldung unter den Namensfeldern, wenn der Name schon vergeben ist (T110):
+   in der Weinfarbe der Fehlerkästen, damit sie als Fehler zu erkennen ist.
+   Bis zum 24.9.2026 gab es zu der Klasse keine Regel — die Meldung stand als
+   schlichter Absatz da, in derselben Farbe wie alles andere. */
+.pers-field-fehler {
+  margin-top: 6px;
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.4;
+  color: var(--wein);
+}
+
 .pers-role-block {
   margin-top: 14px;
 }

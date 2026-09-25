@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} incarichi in {w} settimane",
   "aufgabeInW": "1 incarico in {w} settimane",
   "toastWillkommen": "Benvenuto, {name}!",
-  "toastZugeteilt": "Assegnato · notifica inviata",
+  "toastZugeteilt": "Assegnato · non ancora inviato",
   "toastEntfernt": "Incarico rimosso",
   "toastKeineOffen": "Nessun incarico aperto in questa vista",
   "toastAutoN": "{n} incarichi assegnati automaticamente",

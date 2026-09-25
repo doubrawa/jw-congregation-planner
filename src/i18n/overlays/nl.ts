@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} toewijzingen in {w} weken",
   "aufgabeInW": "1 toewijzing in {w} weken",
   "toastWillkommen": "Welkom, {name}!",
-  "toastZugeteilt": "Toegewezen · melding verzonden",
+  "toastZugeteilt": "Toegewezen · nog niet verstuurd",
   "toastEntfernt": "Toewijzing verwijderd",
   "toastKeineOffen": "Geen openstaande toewijzingen in deze weergave",
   "toastAutoN": "{n} toewijzingen automatisch gedaan",

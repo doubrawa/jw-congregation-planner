@@ -130,7 +130,7 @@ export interface AppState {
   userId: string | null
   personId: string | null // eigene Person (aus members.person_id); Demo: null
   dataStatus: DataStatus
-  dataEmpty: boolean // geladen, aber Versammlung noch leer → Erstbefüllung anbieten
+  dataEmpty: boolean // geladen, aber Versammlung noch leer → Verkündiger sehen den Hinweis, Planer ihre Bildschirme
   // Daten kommen aus der Offline-Momentaufnahme (lib/snapshot.ts): Zeitpunkt der
   // Aufnahme in ms, sonst null. Solange gesetzt, ist die App nur lesend.
   staleAt: number | null

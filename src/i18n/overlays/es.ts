@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} asignaciones en {w} semanas",
   "aufgabeInW": "1 asignación en {w} semanas",
   "toastWillkommen": "¡Bienvenido, {name}!",
-  "toastZugeteilt": "Asignado · notificación enviada",
+  "toastZugeteilt": "Asignado · aún no enviado",
   "toastEntfernt": "Asignación eliminada",
   "toastKeineOffen": "No hay asignaciones abiertas en esta vista",
   "toastAutoN": "{n} asignaciones hechas automáticamente",

@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} feladat {w} hét alatt",
   "aufgabeInW": "1 feladat {w} hét alatt",
   "toastWillkommen": "Üdv, {name}!",
-  "toastZugeteilt": "Kiosztva · értesítés elküldve",
+  "toastZugeteilt": "Kiosztva · még nincs elküldve",
   "toastEntfernt": "Kiosztás eltávolítva",
   "toastKeineOffen": "Nincs szabad kiosztás ebben a nézetben",
   "toastAutoN": "{n} feladat automatikusan kiosztva",

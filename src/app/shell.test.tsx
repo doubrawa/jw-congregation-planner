@@ -278,11 +278,19 @@ describe('Die vier Status-Ansichten der Datenanbindung', () => {
     expect(loadAndHydrate).toHaveBeenCalled()
   })
 
-  it('die leere Versammlung verweist an den Koordinator — ohne Knopf, der Demo-Daten einfüllt', () => {
-    const { getByText, container } = zeige({ dataEmpty: true })
+  it('die leere Versammlung verweist den Verkündiger an den Koordinator — ohne Knopf, der Demo-Daten einfüllt', () => {
+    const { getByText, container } = zeige({ dataEmpty: true, planner: false })
     expect(getByText(t.stLeer)).toBeTruthy()
     expect(getByText(t.stLeerText)).toBeTruthy()
     expect(container.querySelector('.status-btn')).toBeNull()
+  })
+
+  it('dem Planer steht die leere Versammlung offen — er ist der Koordinator, an den der Hinweis verwiese', () => {
+    // Personen anlegen und „Nächste Woche importieren" sind sein Weg hinein;
+    // hinter dem Hinweis waren beide unerreichbar (bis zum 24.9.2026).
+    const { container, queryByText } = zeige({ dataEmpty: true, planner: true })
+    expect(container.querySelector('.status-view')).toBeNull()
+    expect(queryByText(t.stLeer)).toBeNull()
   })
 
   it('der Status geht dem Screen vor — auch mit gesetztem screen', () => {

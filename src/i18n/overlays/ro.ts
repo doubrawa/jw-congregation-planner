@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} însărcinări în {w} săptămâni",
   "aufgabeInW": "1 însărcinare în {w} săptămâni",
   "toastWillkommen": "Bun venit, {name}!",
-  "toastZugeteilt": "Atribuit · notificare trimisă",
+  "toastZugeteilt": "Atribuit · încă netrimis",
   "toastEntfernt": "Însărcinare eliminată",
   "toastKeineOffen": "Nicio însărcinare liberă în această vizualizare",
   "toastAutoN": "{n} însărcinări atribuite automat",

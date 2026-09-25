@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "Zadataka za {w} tjedana: {n}",
   "aufgabeInW": "1 zadatak za {w} tjedana",
   "toastWillkommen": "Dobro došao, {name}!",
-  "toastZugeteilt": "Dodijeljeno · obavijest poslana",
+  "toastZugeteilt": "Dodijeljeno · još nije poslano",
   "toastEntfernt": "Dodjela uklonjena",
   "toastKeineOffen": "Nema slobodnih dodjela u ovom prikazu",
   "toastAutoN": "Automatski dodijeljeno: {n}",

@@ -101,7 +101,7 @@ export const DE = {
     toastAlleHabenKonto: 'Alle Personen haben ein Konto oder einen offenen Code',
     inviteMailSubject: 'Einladung: Versammlung.app',
     inviteMailBody: 'Hallo {name},\n\nbitte registriere dich in unserer Versammlungs-App:\n{url}\n\nLöse nach der Registrierung diesen Einladungscode ein:\n{code}',
-    inviteShareText: 'Einladung zum Versammlung.app: {url} — Einladungscode: {code}',
+    inviteShareText: 'Einladung zu Versammlung.app: {url} — Einladungscode: {code}',
     inviteListeTitel: 'Einladungscodes — App: {url}',
     kontenOhnePerson: 'KONTEN OHNE PERSON',
     kontenOhnePersonHint: 'Diese Konten sind noch keiner Person zugeordnet.',
@@ -173,7 +173,7 @@ export const DE = {
     // bei der alten Zahl stehen, ohne dass es jemandem auffiel.
     aufgabenInW: '{n} Aufgaben in {w} Wochen', aufgabeInW: '1 Aufgabe in {w} Wochen',
     loadFrei: 'frei', loadAufgabe: 'Aufgabe', loadHilfsdienst: 'Hilfsdienst',
-    toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · Mitteilung gesendet',
+    toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · noch nicht gesendet',
     toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Zuteilungen in dieser Ansicht',
     toastKeinePassende: 'Keine passende Person für die offenen Slots frei',
     toastAutoN: '{n} Zuteilungen automatisch vergeben', toastGeleertN: '{n} Zuteilungen geleert',

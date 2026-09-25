@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} atas sa {w} na linggo",
   "aufgabeInW": "1 atas sa {w} na linggo",
   "toastWillkommen": "Maligayang pagdating, {name}!",
-  "toastZugeteilt": "Naitalaga · naipadala ang abiso",
+  "toastZugeteilt": "Naitalaga · hindi pa naipapadala",
   "toastEntfernt": "Inalis ang atas",
   "toastKeineOffen": "Walang bakanteng atas sa view na ito",
   "toastAutoN": "{n} atas ang awtomatikong naitalaga",

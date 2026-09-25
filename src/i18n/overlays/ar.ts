@@ -154,7 +154,7 @@ export default {
   "aufgabenInW": "{n} تعيينات خلال {w} أسابيع",
   "aufgabeInW": "تعيين واحد خلال {w} أسابيع",
   "toastWillkommen": "أهلاً، {name}!",
-  "toastZugeteilt": "تم التعيين · أُرسل الإشعار",
+  "toastZugeteilt": "تم التعيين · لم يُرسَل بعد",
   "toastEntfernt": "أُزيل التعيين",
   "toastKeineOffen": "لا توجد تعيينات مفتوحة في هذا العرض",
   "toastKeinePassende": "لا يوجد شخص مؤهّل ومتفرّغ للخانات المفتوحة",

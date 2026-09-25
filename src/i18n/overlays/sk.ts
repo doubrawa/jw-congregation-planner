@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "Úloh za {w} týždňoverseerId: {n}",
   "aufgabeInW": "1 úloha za {w} týždňov",
   "toastWillkommen": "Vitaj, {name}!",
-  "toastZugeteilt": "Pridelené · oznámenie odoslané",
+  "toastZugeteilt": "Pridelené · zatiaľ neodoslané",
   "toastEntfernt": "Pridelenie odstránené",
   "toastKeineOffen": "V tomto zobrazení nie sú voľné pridelenia",
   "toastAutoN": "Automaticky pridelené: {n}",

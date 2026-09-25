@@ -142,7 +142,7 @@ src/
   data/
     types.ts        Datenmodell aus dem Handoff (Week, Person, Service, …)
     constants.ts    Labels (Rollen, Aufgabenbereiche) + Bereichsfarben-Zuordnung
-    demo.ts         Demo-Daten, 1:1 aus dem Prototyp portiert
+    testdaten.ts    Demo-Daten, 1:1 aus dem Prototyp portiert (Platzhalter)
     helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
     planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
   i18n/
@@ -497,10 +497,13 @@ weiterverbreitet. Beachte die Nutzungsbedingungen von jw.org.
 „Neues Passwort setzen") sind verdrahtet; eine bestehende Session überspringt
 den Login. Nach dem Login werden alle Versammlungsdaten geladen (Rolle/
 Versammlung aus `members`), Änderungen sofort zurückgeschrieben; eine leere
-Versammlung bietet Planern eine Erstbefüllung mit dem Demo-Datensatz an.
-„Meine Aufgaben" entstehen aus den Zuteilungen der über `members.person_id`
-verknüpften Person; Bestätigungen landen in `confirmations`, Erinnerungen und
-Versammlungssprache in `congregations.settings`. **Konten & Einladungen laufen
+Versammlung zeigt Verkündigern den Hinweis auf den Koordinator, Planer füllen
+sie über Personen und „Nächste Woche importieren" (angelegt wird sie mit
+`scripts/versammlung-anlegen.mjs`, Demo-Daten gibt es dort seit dem 13.8.2026
+nicht mehr). „Meine Aufgaben" entstehen aus den Zuteilungen der über
+`members.person_id` verknüpften Person; Bestätigungen landen in
+`confirmations`, Erinnerungen und Versammlungssprache in eigenen Spalten von
+`congregations`. **Konten & Einladungen laufen
 personenzentriert im Personen-Screen:** Admin-Recht als feste Rolle im
 Personen-Detail (gespiegelt in `members.planner`), KONTO-Karte
 mit Einladen-Aktion (E-Mail über die Edge Function `send-invite`/Resend, sobald

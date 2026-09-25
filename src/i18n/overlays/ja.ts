@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{w}週間で {n} 件の割り当て",
   "aufgabeInW": "{w}週間で1件の割り当て",
   "toastWillkommen": "ようこそ、{name} さん！",
-  "toastZugeteilt": "割り当て済み · 通知を送信",
+  "toastZugeteilt": "割り当て済み · 未送信",
   "toastEntfernt": "割り当てを削除",
   "toastKeineOffen": "このビューに未割り当てはありません",
   "toastAutoN": "{n} 件を自動で割り当て",

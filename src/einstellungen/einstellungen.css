@@ -58,24 +58,8 @@
   margin-top: 0;
 }
 
-.mem-planner-lbl {
-  font-size: calc(10.5px * var(--fs));
-  color: var(--mut);
-  flex: none;
-}
-
 .mem-line .switch:disabled {
   opacity: 0.45;
-}
-
-/* Eigenes Konto: unsichtbarer ✕-Platzhalter, damit die Switches aller Zeilen
-   vertikal fluchten (statt das ✕ wegzulassen). */
-.mem-remove--ph {
-  visibility: hidden;
-}
-
-.mem-inv-label {
-  margin-top: 16px;
 }
 
 /* ---- Predigtdienstgruppen ---------------------------------------------- */
@@ -221,25 +205,6 @@
   font-size: calc(13px * var(--fs));
   font-weight: 700;
   letter-spacing: 0.18em;
-}
-
-.mem-inv-form {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.mem-inv-form .mem-select {
-  flex: 1;
-  min-width: 0;
-  width: auto;
-  margin-top: 0;
-}
-
-.mem-inv-form .svc-add-btn,
-.mem-inv-form .role-chip {
-  flex: none;
 }
 
 /* ---- Hilfsdienste ------------------------------------------------------------ */

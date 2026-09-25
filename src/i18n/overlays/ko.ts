@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{w}주간 임명 {n}건",
   "aufgabeInW": "{w}주간 임명 1건",
   "toastWillkommen": "환영합니다, {name} 님!",
-  "toastZugeteilt": "배정됨 · 알림 전송",
+  "toastZugeteilt": "배정됨 · 아직 발송되지 않음",
   "toastEntfernt": "임명 제거됨",
   "toastKeineOffen": "이 보기에 미배정 임명이 없습니다",
   "toastAutoN": "{n}건이 자동 배정됨",

@@ -7,6 +7,7 @@ import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite } from '../lib/data'
+import { LOGO } from '../lib/logo'
 import { performLogout } from '../lib/supabase'
 import type { Screen } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -40,9 +41,6 @@ import './rtl.css'
  * Desktop ≥ 920 px mit Sidebar 232 px + Inhalt ≤ 660 px), Navigation,
  * Mitteilungen-Overlay und Toast. Login rendert ohne App-Chrome.
  */
-
-// Logo aus public/ — via BASE_URL, damit es auch unter dem GitHub-Pages-Pfad lädt.
-const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
 /** Ziel eines Push-Klicks: der Screen und, wenn der Link einen nennt, ein Bereich darin. */
 type Sprung = { screen: Screen; abschnitt: Abschnitt | null }
@@ -368,7 +366,10 @@ function Content() {
   if (state.dataStatus === 'loading') return <StatusView kind="loading" />
   if (state.dataStatus === 'no-membership') return <StatusView kind="no-membership" />
   if (state.dataStatus === 'error') return <StatusView kind="error" />
-  if (state.dataEmpty) return <StatusView kind="empty" />
+  // Die leere Versammlung ist für den Verkündiger eine Sackgasse, für den
+  // Planer der Anfang: Er füllt sie über Personen und „Nächste Woche
+  // importieren" — und der Hinweis „wende dich an einen Koordinator" meinte ihn.
+  if (state.dataEmpty && !state.planner) return <StatusView kind="empty" />
 
   return <ActiveScreen screen={state.screen} />
 }

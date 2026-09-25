@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{w} haftada {n} görev",
   "aufgabeInW": "{w} haftada 1 görev",
   "toastWillkommen": "Hoş geldin, {name}!",
-  "toastZugeteilt": "Atandı · bildirim gönderildi",
+  "toastZugeteilt": "Atandı · henüz gönderilmedi",
   "toastEntfernt": "Görev kaldırıldı",
   "toastKeineOffen": "Bu görünümde boş görev yok",
   "toastAutoN": "{n} görev otomatik atandı",

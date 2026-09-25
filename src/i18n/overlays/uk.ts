@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "Завдань за {w} тижнів: {n}",
   "aufgabeInW": "1 завдання за {w} тижнів",
   "toastWillkommen": "Ласкаво просимо, {name}!",
-  "toastZugeteilt": "Призначено · сповіщення надіслано",
+  "toastZugeteilt": "Призначено · ще не надіслано",
   "toastEntfernt": "Призначення видалено",
   "toastKeineOffen": "Немає вільних призначень у цьому вигляді",
   "toastAutoN": "Автоматично призначено: {n}",

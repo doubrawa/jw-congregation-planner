@@ -3,6 +3,7 @@ import { useAppDispatch } from '../app/context'
 import { useT } from '../i18n/useT'
 import { updatePassword } from '../lib/supabase'
 import { authFehlerText } from './auth-text'
+import { LOGO } from '../lib/logo'
 import './login.css'
 
 /**
@@ -37,7 +38,7 @@ export function RecoveryScreen() {
   return (
     <div className="login">
       <header className="login-head">
-        <p className="login-eyebrow">JW</p>
+        <img className="login-logo" src={LOGO} alt="" width={72} height={72} />
         {/* `wbr` statt festem Umbruch: der Name steht auf einer Zeile und
             bricht erst, wenn schmales Gerät oder große Schrift ihn drängen. */}
         <h1 className="login-wordmark">

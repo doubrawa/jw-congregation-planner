@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} uppgifter på {w} veckor",
   "aufgabeInW": "1 uppgift på {w} veckor",
   "toastWillkommen": "Välkommen, {name}!",
-  "toastZugeteilt": "Tilldelad · avisering skickad",
+  "toastZugeteilt": "Tilldelad · inte skickat ännu",
   "toastEntfernt": "Tilldelning borttagen",
   "toastKeineOffen": "Inga lediga tilldelningar i denna vy",
   "toastAutoN": "{n} uppgifter tilldelade automatiskt",

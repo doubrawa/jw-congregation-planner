@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "Назначения за {w} седмици: {n}",
   "aufgabeInW": "1 назначение за {w} седмици",
   "toastWillkommen": "Добре дошъл, {name}!",
-  "toastZugeteilt": "Назначено · известието изпратено",
+  "toastZugeteilt": "Назначено · още не е изпратено",
   "toastEntfernt": "Назначението премахнато",
   "toastKeineOffen": "Няма свободни назначения в този изглед",
   "toastAutoN": "Автоматично назначени: {n}",

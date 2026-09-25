@@ -49,14 +49,6 @@
   white-space: nowrap;
 }
 
-.auf-empty {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: calc(13px * var(--fs));
-  color: var(--mut);
-  padding: 10px 0 2px;
-}
-
 /* Aktionszeile je Aufgabe: bestätigen / Status / S-89 */
 .auf-actions {
   display: flex;

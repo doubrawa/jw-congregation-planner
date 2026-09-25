@@ -192,7 +192,7 @@ export default {
   "loadAufgabe": "Assignment",
   "loadHilfsdienst": "Support duty",
   "toastWillkommen": "Welcome, {name}!",
-  "toastZugeteilt": "Assigned · notification sent",
+  "toastZugeteilt": "Assigned · not sent yet",
   "toastEntfernt": "Assignment removed",
   "toastKeineOffen": "No open assignments in this view",
   "toastKeinePassende": "No available qualified person for the open slots",

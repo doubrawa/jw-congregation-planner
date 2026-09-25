@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{w}周内 {n} 项任务",
   "aufgabeInW": "{w}周内1项任务",
   "toastWillkommen": "欢迎，{name}！",
-  "toastZugeteilt": "已分配 · 已发送通知",
+  "toastZugeteilt": "已分配 · 尚未发送",
   "toastEntfernt": "已移除分配",
   "toastKeineOffen": "此视图中没有未分配任务",
   "toastAutoN": "已自动分配 {n} 项任务",

@@ -469,7 +469,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
       })()],
     }],
     ['nur lesend (Momentaufnahme)', { screen: 'start', staleAt: Date.now() - 3600_000 }],
-    ['Versammlung noch leer', { screen: 'start', dataEmpty: true }],
+    ['Versammlung noch leer', { screen: 'start', dataEmpty: true, planner: false }],
     ['keine Wochen geladen', { screen: 'programm', weeks: [], fsWeeks: [] }],
     ['Daten laden', { screen: 'start', dataStatus: 'loading' }],
     ['kein Mitglied', { screen: 'start', dataStatus: 'no-membership' }],
@@ -478,7 +478,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     ['alles importiert', { screen: 'einstellungen', imported: true }],
     ['Verkündiger ohne Planungsrecht', { screen: 'start', planner: false }],
     ['Anmeldung', { screen: 'login', congregationId: null, userId: null }, '.login'],
-    ['neues Passwort setzen', { screen: 'login', recovery: true, congregationId: null, userId: null }, '.login-eyebrow'],
+    ['neues Passwort setzen', { screen: 'login', recovery: true, congregationId: null, userId: null }, '.login-logo'],
   ]
 
   it.each(ZUSTAENDE)('%s steht nicht deutsch da', (name, over) => {

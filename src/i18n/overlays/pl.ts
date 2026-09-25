@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} zadań w {w} tygodniach",
   "aufgabeInW": "1 zadanie w {w} tygodniach",
   "toastWillkommen": "Witaj, {name}!",
-  "toastZugeteilt": "Przydzielono · wysłano powiadomienie",
+  "toastZugeteilt": "Przydzielono · jeszcze nie wysłano",
   "toastEntfernt": "Usunięto przydział",
   "toastKeineOffen": "Brak wolnych przydziałów w tym widoku",
   "toastAutoN": "Przydzielono automatycznie {n} zadań",

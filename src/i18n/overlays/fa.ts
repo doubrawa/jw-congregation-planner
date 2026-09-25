@@ -154,7 +154,7 @@ export default {
   "aufgabenInW": "{n} وظیفه در {w} هفته",
   "aufgabeInW": "۱ وظیفه در {w} هفته",
   "toastWillkommen": "خوش آمدید، {name}!",
-  "toastZugeteilt": "تعیین شد · اعلان ارسال شد",
+  "toastZugeteilt": "تعیین شد · هنوز ارسال نشده",
   "toastEntfernt": "وظیفه حذف شد",
   "toastKeineOffen": "در این نما وظیفهٔ بازی نیست",
   "toastKeinePassende": "فرد واجد شرایط و آزادی برای جای‌های باز نیست",

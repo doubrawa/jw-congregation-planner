@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} tehtävää {w} viikossa",
   "aufgabeInW": "1 tehtävä {w} viikossa",
   "toastWillkommen": "Tervetuloa, {name}!",
-  "toastZugeteilt": "Jaettu · ilmoitus lähetetty",
+  "toastZugeteilt": "Jaettu · ei vielä lähetetty",
   "toastEntfernt": "Tehtäväjako poistettu",
   "toastKeineOffen": "Ei vapaita tehtäviä tässä näkymässä",
   "toastAutoN": "{n} tehtävää jaettu automaattisesti",

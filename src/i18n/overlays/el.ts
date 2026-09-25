@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} αναθέσεις σε {w} εβδομάδες",
   "aufgabeInW": "1 ανάθεση σε {w} εβδομάδες",
   "toastWillkommen": "Καλώς ήρθες, {name}!",
-  "toastZugeteilt": "Ανατέθηκε · ειδοποίηση στάλθηκε",
+  "toastZugeteilt": "Ανατέθηκε · δεν έχει σταλεί ακόμη",
   "toastEntfernt": "Η ανάθεση αφαιρέθηκε",
   "toastKeineOffen": "Δεν υπάρχουν ελεύθερες αναθέσεις σε αυτήν την προβολή",
   "toastAutoN": "{n} αναθέσεις έγιναν αυτόματα",

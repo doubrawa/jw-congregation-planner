@@ -154,7 +154,7 @@ export default {
   "aufgabenInW": "{w} ہفتوں میں {n} ذمہ داریاں",
   "aufgabeInW": "{w} ہفتوں میں ۱ ذمہ داری",
   "toastWillkommen": "خوش آمدید، {name}!",
-  "toastZugeteilt": "تفویض ہو گیا · اطلاع بھیجی گئی",
+  "toastZugeteilt": "تفویض ہو گیا · ابھی نہیں بھیجا گیا",
   "toastEntfernt": "ذمہ داری ہٹا دی گئی",
   "toastKeineOffen": "اس منظر میں کوئی کھلی ذمہ داری نہیں",
   "toastKeinePassende": "کھلی جگہوں کے لیے کوئی موزوں اور فارغ فرد نہیں",

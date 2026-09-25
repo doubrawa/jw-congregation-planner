@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "{n} opgaver på {w} uger",
   "aufgabeInW": "1 opgave på {w} uger",
   "toastWillkommen": "Velkommen, {name}!",
-  "toastZugeteilt": "Tildelt · notifikation sendt",
+  "toastZugeteilt": "Tildelt · ikke sendt endnu",
   "toastEntfernt": "Tildeling fjernet",
   "toastKeineOffen": "Ingen ledige tildelinger i denne visning",
   "toastAutoN": "{n} opgaver tildelt automatisk",

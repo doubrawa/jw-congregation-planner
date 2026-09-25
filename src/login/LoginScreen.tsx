@@ -3,12 +3,11 @@ import { useApp } from '../app/context'
 import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
+import { LOGO } from '../lib/logo'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
 import { authFehlerText } from './auth-text'
 import { KONTAKT_MAIL, kontaktVerweis } from './kontakt'
 import './login.css'
-
-const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
 /**
  * Login (Screen 1). Mit konfiguriertem Supabase echtes E-Mail+Passwort-Login

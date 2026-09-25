@@ -154,7 +154,7 @@ export default {
   "aufgabenInW": "{n} מטלות ב־{w} שבועות",
   "aufgabeInW": "מטלה אחת ב־{w} שבועות",
   "toastWillkommen": "ברוך הבא, {name}!",
-  "toastZugeteilt": "שובץ · נשלחה התראה",
+  "toastZugeteilt": "שובץ · טרם נשלח",
   "toastEntfernt": "השיבוץ הוסר",
   "toastKeineOffen": "אין מטלות פתוחות בתצוגה זו",
   "toastKeinePassende": "אין אדם מתאים ופנוי למשבצות הפתוחות",

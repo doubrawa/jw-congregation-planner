@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "Úkolů za {w} týdnů: {n}",
   "aufgabeInW": "1 úkol za {w} týdnů",
   "toastWillkommen": "Vítej, {name}!",
-  "toastZugeteilt": "Přiděleno · oznámení odesláno",
+  "toastZugeteilt": "Přiděleno · zatím neodesláno",
   "toastEntfernt": "Přidělení odebráno",
   "toastKeineOffen": "V tomto zobrazení nejsou volná přidělení",
   "toastAutoN": "Automaticky přiděleno: {n}",

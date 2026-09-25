@@ -255,13 +255,6 @@
   line-height: 1.4;
 }
 
-.plan-open-prefix {
-  flex: none;
-  color: var(--acc);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 .plan-open-label {
   color: var(--ink);
   overflow-wrap: anywhere;

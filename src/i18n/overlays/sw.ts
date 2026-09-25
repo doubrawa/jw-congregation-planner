@@ -105,7 +105,7 @@ export default {
   "aufgabenInW": "Migawo {n} katika wiki {w}",
   "aufgabeInW": "Mgawo 1 katika wiki {w}",
   "toastWillkommen": "Karibu, {name}!",
-  "toastZugeteilt": "Umegawiwa · arifa imetumwa",
+  "toastZugeteilt": "Umegawiwa · bado haijatumwa",
   "toastEntfernt": "Mgawo umeondolewa",
   "toastKeineOffen": "Hakuna migawo wazi katika mwonekano huu",
   "toastAutoN": "Migawo {n} imegawiwa kiotomatiki",
