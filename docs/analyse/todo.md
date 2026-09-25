@@ -5610,7 +5610,7 @@ Betreibers: „mach die acht Punkte auch noch"):
 
 | | Befund | Behoben durch |
 | --- | --- | --- |
-| `persist.ts` (`confirmTask`) | Sagt jemand einen Hilfsdienst ab und bestätigt später doch, blieben die „Ersatz gesucht"-Zeilen in den Glocken der Angepingten stehen; nur `take` räumte sie ab | dritte Aktion `withdraw` in `substitute` (dieselbe Grenze wie `seek`: der Eingeteilte oder wer abgesagt hat), Client `substituteWithdraw()` beim „Doch bestätigen" nach einer Absage; vier Function-Tests, zwei Anker der Mutationsprobe. **Die Function ist neu zu deployen.** |
+| `persist.ts` (`confirmTask`) | Sagt jemand einen Hilfsdienst ab und bestätigt später doch, blieben die „Ersatz gesucht"-Zeilen in den Glocken der Angepingten stehen; nur `take` räumte sie ab | dritte Aktion `withdraw` in `substitute` (dieselbe Grenze wie `seek`: der Eingeteilte oder wer abgesagt hat), Client `substituteWithdraw()` beim „Doch bestätigen" nach einer Absage; vier Function-Tests, zwei Anker der Mutationsprobe. Die Function ist am 25. September neu deployt. |
 | `persist.ts` (`updateCongregation`) | Eine Zeitänderung schrieb die Endzeit aller geladenen Wochen sofort, ungebündelt — Stunde und Minute sind zwei Felder, also zweimal bis zu 52 Anfragen | `updateCongregation` in `GEBUENDELT`: jede Woche geht einmal hinaus, mit dem letzten Stand |
 | `reducer.ts` (`removePerson`) | Abwesenheiten der gelöschten Person blieben mit toter `personId` im Zustand — und in der Datenbank, die nur die Person nullt | der Reducer nimmt sie mit, `persist.ts` löscht die Zeilen; zwei Anker |
 | `LoginScreen.tsx` | „Passwort vergessen" ohne Adresse zeigte nur den Toast „E-MAIL" | `resetMailFehlt` („Bitte zuerst deine E-Mail-Adresse eintragen") in 34 Sprachen |
@@ -5666,11 +5666,11 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
-**Beim Betreiber steht seit dem 25. September eines aus:** die Function
-`substitute` neu deployen — sie kennt seit T118 die Aktion `withdraw`
-(`npx supabase functions deploy substitute`). ✅ `notify_planners` und die
-verengte Richtlinie `notifications_insert` aus T117 sind am 25. September im
-SQL-Editor angelegt worden.
+**Beim Betreiber steht nichts aus (Stand 25. September):** ✅ `notify_planners`
+und die verengte Richtlinie `notifications_insert` aus T117 sind im SQL-Editor
+angelegt, ✅ `substitute` ist mit der Aktion `withdraw` aus T118 neu deployt.
+Rauchtest danach: OPTIONS mit dem `ok` des Handlers, ohne Nutzer-Token
+`401 unauthorized` aus dem Handler — das Modul ist samt Importen hochgekommen.
 
 **Am 21. September stand beim Betreiber nichts mehr aus:** Alle fünf Edge Functions laufen seit
 dem Abend des 21. September auf dem Stand des Repos — `send-invite` mit den
