@@ -283,7 +283,7 @@ export function MeetingSection({
                   Erkannt am Rollen-Platz, nicht am Titeltext: der Titel ist in
                   der Anzeigesprache, die Rolle ist kanonisch.
                 */
-                <div className="plan-item-title plan-item-title--thema">
+                <div className="plan-item-title">
                   <span className="co-begriff">{tpw(coBegriff)}</span>
                   <input
                     key={`thema-${state.week}-${si}-${ii}`}

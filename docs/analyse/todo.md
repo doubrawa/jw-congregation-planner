@@ -5552,6 +5552,77 @@ nimmt sie sortiert), `erlaubteScreens` gegen die alte Bedingung
 
 ---
 
+## Aufgenommen am 25. September 2026 — Durchsicht des ganzen Repos (T117, T118)
+
+### T117 · Eine Verhinderung erreichte nie einen Planer 🔧 ✅ erledigt (25. September 2026)
+
+> **Eine Durchsicht des ganzen Repos am 24. und 25. September**, Vorgabe des
+> Betreibers: „such und fixe fehler, finde fehler in der ui oder lücken in der
+> bedienung, prüfe die texte und übersetzung und finde lücken in den tests".
+> Gelesen wurde der gesamte Produktivcode, das Schema, die fünf Functions und
+> die Handbücher; dazu eine Klickprobe im Dev-Server als Planer und als
+> Verkündiger. Acht Befunde behoben, acht offen gehalten (T118).
+
+**Der eine, der zählte.** „Ich kann nicht" in den Aufgaben versprach im Toast
+„der Koordinator wird informiert" — und kein Koordinator hat je etwas erfahren.
+`persist.ts` suchte die Empfänger im Client: `next.members.filter((m) =>
+m.planner)`. Ein Verkündiger sieht in `members` aber nur die eigene Zeile
+(`members_select`), die Liste war leer, und `insertNotifications` brach über
+einer leeren Liste still ab. Der Test blieb grün, weil dem Fixture ein Planer
+beilag — der Stand des Planers, nicht der des Verkündigers. Der Zweig in
+`notifications_insert`, der jedem Mitglied das Schreiben von `verhindert` an
+Planer erlaubte, war damit seit T89 nie erreichbar.
+
+*Behoben:* Die Empfänger bestimmt die Datenbank. `notify_planners(kind,
+subject, message)` (security definer) legt je Planer der eigenen Versammlung
+eine Zeile an; ein Nicht-Planer darf darüber nur eine Verhinderung melden,
+Import und „Plan gesendet" bleiben Planern. Jede lokal entstandene Mitteilung
+läuft seither über `notifyPlanners()`, der Verkündiger-Zweig der Richtlinie ist
+gestrichen. Der Fanout-Test läuft ohne Mitglieder, `schema.test.ts` bewacht die
+Function, zwei Anker der Mutationsprobe zeigen auf sie (beide gemessen).
+
+**Nachzuziehen beim Betreiber:** Die Function und die Richtlinie stehen nur in
+`schema.sql`. Bis sie im SQL-Editor angelegt sind, schlägt jede lokale
+Mitteilung mit dem Speicherfehler-Toast fehl — `schema.sql` erneut ausführen
+(idempotent) oder nur den Block `notify_planners` samt `notifications_insert`.
+
+**Die übrigen sieben:**
+
+| | Befund | Behoben durch |
+| --- | --- | --- |
+| `AppShell.tsx` | Ein Planer in einer Versammlung ohne Personen und Wochen hing auf „Versammlung ist noch leer, wende dich an einen Koordinator" — er war der Koordinator, und Import wie Personen lagen hinter dem Hinweis | der Hinweis gilt nur Verkündigern; Test in `shell.test.tsx` |
+| `PersonDetail.tsx` / `personen.css` | Die Meldung „Diesen Namen trägt bereits …" hatte keine einzige CSS-Regel und stand als schlichter Absatz hinter dem E-Mail-Feld | Regel in der Weinfarbe der Fehlerkästen, Meldung direkt unter dem Nachnamen |
+| `RecoveryScreen.tsx` | „Neues Passwort setzen" zeigte eine ungestaltete Zeile „JW" statt des Logos (Rest des Prototyps) | Logo; der Pfad steht einmal in `lib/logo.ts` statt in drei Kopien |
+| `de.ts` + 33 Overlays | Toast „Zugeteilt · Mitteilung gesendet", obwohl Zuteilen seit T99 nichts sendet | „Zugeteilt · noch nicht gesendet" in 34 Sprachen, das Verb je Sprache wie in „Zuletzt gesendet" |
+| `de.ts` | „Einladung zum Versammlung.app" | „zu" |
+| `README.md` | versprach eine Erstbefüllung mit Demo-Daten (weg seit dem 13. August) und `congregations.settings` (weg seit dem 17. September); `demo.ts` heißt `testdaten.ts` | richtiggestellt |
+| fünf Stylesheets | sieben Regeln für Klassen, die kein Bildschirm mehr setzt (`mem-inv-form`, `prog-lang-hint`, …) | gestrichen — und `tests/css-klassen.test.ts` hält seither beide Richtungen über den ganzen Bestand: jede `className`-Literal hat eine Regel, jede Regel einen Leser (fünf Marken für Tests stehen in einer Liste, die sich selbst prüft) |
+
+**Geprüft, kein Mangel:** der Absage-Ablauf, Arabisch mit dunklem Schema,
+alle Bildschirme der Klickprobe ohne Konsolenfehler; `s89Hauptsaal` ist der
+einzige tote Wörterbuch-Schlüssel (siehe T118).
+
+### T118 · Offene Befunde der Durchsicht 🔧 ☐ offen
+
+Acht kleine Punkte, keiner blockiert etwas:
+
+| | Befund |
+| --- | --- |
+| `persist.ts` (`confirmTask`) | Sagt jemand einen Hilfsdienst ab und bestätigt später doch, bleiben die „Ersatz gesucht"-Zeilen in den Glocken der Angepingten stehen; nur `take` räumt sie ab |
+| `persist.ts` (`updateCongregation`) | Eine Änderung der Zusammenkunftszeiten zieht die Endzeiten aller geladenen Wochen nach und schreibt sie sofort, ungebündelt (bis zu 52 Schreibvorgänge) |
+| `reducer.ts` (`removePerson`) | Abwesenheiten der gelöschten Person bleiben mit toter `personId` im Zustand |
+| `LoginScreen.tsx` | „Passwort vergessen" ohne Adresse zeigt nur den Toast „E-MAIL" |
+| `KontoCard.tsx` | Der Einladen-Hinweis beschreibt nur den mailto-Weg, nicht den Versand über `send-invite` |
+| `public/sw.js` | `FONT_HOSTS` wird nirgends ausgewertet |
+| `de.ts` | `s89Hauptsaal` ist tot (nur ein Test vergleicht ihn mit `auxHauptsaal`); Streichen kostet 34 Dateien |
+| `testdaten.ts` | Demo-Aufgaben tragen festes Datum und festen Chip „in 4 Tagen", die zusammen nie stimmen — betrifft Demo und Doku-Screenshots |
+
+Dazu eine Idee ohne Befund: Absagen sieht ein Planer nur in der Glocke; eine
+Karte „N Verhinderungen diese Woche" auf dem Start wäre der Ort, an dem sie
+auffielen.
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -5577,7 +5648,7 @@ nimmt sie sortiert), `erlaubteScreens` gegen die alte Bedingung
 
 ## Fortschritt
 
-Stand 21. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 25. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -5585,17 +5656,23 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐☑☑
+21. September ☑☑☑☑☐☑☑ · 25. September ☑☐
 
-**114 der 116 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei, einer davon zurückgestellt:**
+**116 der 118 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei, einer davon zurückgestellt:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
+| **T118** | Offene Befunde der Durchsicht vom 24./25. September | ☐ acht kleine Punkte, keiner blockiert |
 
-**Beim Betreiber steht nichts mehr aus:** Alle fünf Edge Functions laufen seit
+**Beim Betreiber steht seit dem 25. September eines aus:** die Function
+`notify_planners` und die verengte Richtlinie `notifications_insert` aus T117
+im SQL-Editor anlegen — bis dahin scheitert jede lokale Mitteilung (Import,
+„Plan gesendet", Verhinderung) mit dem Speicherfehler-Toast.
+
+**Am 21. September stand beim Betreiber nichts mehr aus:** Alle fünf Edge Functions laufen seit
 dem Abend des 21. September auf dem Stand des Repos — `send-invite` mit den
 drei nachgezogenen Sprachen (T115), die übrigen vier mit dem geteilten
 `planung.ts`. Nachgesehen mit `functions list`, `functions download` und einem

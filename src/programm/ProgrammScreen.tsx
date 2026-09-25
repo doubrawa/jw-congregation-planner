@@ -97,7 +97,7 @@ function ProgrammBody() {
   const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
 
   return (
-    <section className="screen prog-screen">
+    <section className="screen">
       <h1 className="sr-only">{t.navProgramm}</h1>
       {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
       <div className="prog-print-head">
