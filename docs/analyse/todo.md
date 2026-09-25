@@ -5585,6 +5585,7 @@ Function, zwei Anker der Mutationsprobe zeigen auf sie (beide gemessen).
 `schema.sql`. Bis sie im SQL-Editor angelegt sind, schlägt jede lokale
 Mitteilung mit dem Speicherfehler-Toast fehl — `schema.sql` erneut ausführen
 (idempotent) oder nur den Block `notify_planners` samt `notifications_insert`.
+✅ Am 25. September erledigt: `schema.sql` neu ausgeführt.
 
 **Die übrigen sieben:**
 
@@ -5602,24 +5603,23 @@ Mitteilung mit dem Speicherfehler-Toast fehl — `schema.sql` erneut ausführen
 alle Bildschirme der Klickprobe ohne Konsolenfehler; `s89Hauptsaal` ist der
 einzige tote Wörterbuch-Schlüssel (siehe T118).
 
-### T118 · Offene Befunde der Durchsicht 🔧 ☐ offen
+### T118 · Offene Befunde der Durchsicht 🔧 ✅ erledigt (25. September 2026)
 
-Acht kleine Punkte, keiner blockiert etwas:
+Acht kleine Punkte aus T117, am selben Tag abgearbeitet (Vorgabe des
+Betreibers: „mach die acht Punkte auch noch"):
 
-| | Befund |
-| --- | --- |
-| `persist.ts` (`confirmTask`) | Sagt jemand einen Hilfsdienst ab und bestätigt später doch, bleiben die „Ersatz gesucht"-Zeilen in den Glocken der Angepingten stehen; nur `take` räumt sie ab |
-| `persist.ts` (`updateCongregation`) | Eine Änderung der Zusammenkunftszeiten zieht die Endzeiten aller geladenen Wochen nach und schreibt sie sofort, ungebündelt (bis zu 52 Schreibvorgänge) |
-| `reducer.ts` (`removePerson`) | Abwesenheiten der gelöschten Person bleiben mit toter `personId` im Zustand |
-| `LoginScreen.tsx` | „Passwort vergessen" ohne Adresse zeigt nur den Toast „E-MAIL" |
-| `KontoCard.tsx` | Der Einladen-Hinweis beschreibt nur den mailto-Weg, nicht den Versand über `send-invite` |
-| `public/sw.js` | `FONT_HOSTS` wird nirgends ausgewertet |
-| `de.ts` | `s89Hauptsaal` ist tot (nur ein Test vergleicht ihn mit `auxHauptsaal`); Streichen kostet 34 Dateien |
-| `testdaten.ts` | Demo-Aufgaben tragen festes Datum und festen Chip „in 4 Tagen", die zusammen nie stimmen — betrifft Demo und Doku-Screenshots |
+| | Befund | Behoben durch |
+| --- | --- | --- |
+| `persist.ts` (`confirmTask`) | Sagt jemand einen Hilfsdienst ab und bestätigt später doch, blieben die „Ersatz gesucht"-Zeilen in den Glocken der Angepingten stehen; nur `take` räumte sie ab | dritte Aktion `withdraw` in `substitute` (dieselbe Grenze wie `seek`: der Eingeteilte oder wer abgesagt hat), Client `substituteWithdraw()` beim „Doch bestätigen" nach einer Absage; vier Function-Tests, zwei Anker der Mutationsprobe. **Die Function ist neu zu deployen.** |
+| `persist.ts` (`updateCongregation`) | Eine Zeitänderung schrieb die Endzeit aller geladenen Wochen sofort, ungebündelt — Stunde und Minute sind zwei Felder, also zweimal bis zu 52 Anfragen | `updateCongregation` in `GEBUENDELT`: jede Woche geht einmal hinaus, mit dem letzten Stand |
+| `reducer.ts` (`removePerson`) | Abwesenheiten der gelöschten Person blieben mit toter `personId` im Zustand — und in der Datenbank, die nur die Person nullt | der Reducer nimmt sie mit, `persist.ts` löscht die Zeilen; zwei Anker |
+| `LoginScreen.tsx` | „Passwort vergessen" ohne Adresse zeigte nur den Toast „E-MAIL" | `resetMailFehlt` („Bitte zuerst deine E-Mail-Adresse eintragen") in 34 Sprachen |
+| `KontoCard.tsx` | Der Einladen-Hinweis beschrieb nur den mailto-Weg | `einladenHintMail` nennt beide Wege (Versand über `send-invite`, sonst das Mail-Programm), 34 Sprachen |
+| `public/sw.js` | `FONT_HOSTS` und der Google-Fonts-Zweig, der seit den eigenen Schriften nie mehr traf | gestrichen; `service-worker.test.ts` hält fremde Schrift-Hosts draußen |
+| `de.ts` | `s89Hauptsaal`, toter Schlüssel in 34 Sprachen | gestrichen; `bible-books.test.ts` hält fest, dass es nur noch `auxHauptsaal` gibt |
+| `testdaten.ts` | Demo-Aufgaben mit festem Chip „in 4 Tagen" neben festem Datum | `at` aus dem Demo-Datum, der Countdown rechnet gegen das echte Heute; das Feld `MyTask.chip` (nur Demo) ist weg |
 
-Dazu eine Idee ohne Befund: Absagen sieht ein Planer nur in der Glocke; eine
-Karte „N Verhinderungen diese Woche" auf dem Start wäre der Ort, an dem sie
-auffielen.
+Die Idee einer Start-Karte „N Verhinderungen diese Woche" bleibt eine Idee.
 
 ---
 
@@ -5656,21 +5656,21 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐☑☑ · 25. September ☑☐
+21. September ☑☑☑☑☐☑☑ · 25. September ☑☑
 
-**116 der 118 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei, einer davon zurückgestellt:**
+**117 der 118 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei, einer davon zurückgestellt:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
-| **T118** | Offene Befunde der Durchsicht vom 24./25. September | ☐ acht kleine Punkte, keiner blockiert |
 
 **Beim Betreiber steht seit dem 25. September eines aus:** die Function
-`notify_planners` und die verengte Richtlinie `notifications_insert` aus T117
-im SQL-Editor anlegen — bis dahin scheitert jede lokale Mitteilung (Import,
-„Plan gesendet", Verhinderung) mit dem Speicherfehler-Toast.
+`substitute` neu deployen — sie kennt seit T118 die Aktion `withdraw`
+(`npx supabase functions deploy substitute`). ✅ `notify_planners` und die
+verengte Richtlinie `notifications_insert` aus T117 sind am 25. September im
+SQL-Editor angelegt worden.
 
 **Am 21. September stand beim Betreiber nichts mehr aus:** Alle fünf Edge Functions laufen seit
 dem Abend des 21. September auf dem Stand des Repos — `send-invite` mit den

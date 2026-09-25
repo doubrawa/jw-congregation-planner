@@ -73,7 +73,7 @@ const { PushPrompt } = await import('./PushPrompt')
 const t = dict('de')
 
 const task = (id: string): MyTask => ({
-  id, title: 'Bibellesung', rolle: '', date: '', chip: '', at: null, status: 'offen', s89: null,
+  id, title: 'Bibellesung', rolle: '', date: '', at: null, status: 'offen', s89: null,
 })
 
 function huelle(state: AppState, dispatch: Dispatch<AppAction>) {

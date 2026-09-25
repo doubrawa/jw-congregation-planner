@@ -147,7 +147,7 @@ function woche(): Week {
 const AUFGABE: MyTask = {
   id: '2026-09-07|mid|part|0|0|0',
   title: '', rolle: 'Vorsitz',
-  date: 'Dienstag, 8. September · 19:00', chip: '', s89: null,
+  date: 'Dienstag, 8. September · 19:00', s89: null,
   status: 'offen', at: Date.parse('2026-09-08T17:00:00Z'),
 }
 

@@ -37,6 +37,7 @@ import {
   saveWeek,
   substituteSeek,
   substituteTake,
+  substituteWithdraw,
   sendPlanEntzug,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
@@ -237,8 +238,19 @@ function geaenderteWochenSpeichern(
  * durch jede geplante Woche (`renameInWeeks`) — einzeln geschrieben wären das
  * Dutzende Anfragen je Buchstabe. `flush()` beim Verlassen der Ansicht holt sie
  * ein (`selectPerson`/`navigate`/`logout`).
+ *
+ * `updateCongregation` gehört dazu, seit die Zusammenkunftszeit die Endzeit
+ * **jeder** geladenen Woche nachzieht (`endenNachziehen`): Stunde und Minute
+ * sind zwei Auswahlfelder, also zwei Aktionen kurz nacheinander — sofort
+ * geschrieben wären das zweimal bis zu 52 Anfragen, gebündelt geht jede Woche
+ * einmal hinaus, mit dem letzten Stand (T118).
  */
-const GEBUENDELT: readonly AppAction['type'][] = ['updatePerson', 'removePerson', 'removeService']
+const GEBUENDELT: readonly AppAction['type'][] = [
+  'updatePerson',
+  'removePerson',
+  'removeService',
+  'updateCongregation',
+]
 
 /**
  * Aktionen, deren geänderte Wochen **nicht** von hier geschrieben werden — je
@@ -560,13 +572,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'removePerson': {
       personSaves.cancel(action.id)
-      // Alle Verweise auf die Person räumt die Datenbank selbst
-      // (`on delete set null`): Gruppen, Einladungen, Abwesenheiten, das
-      // Versand-Tagebuch — und seit T105 auch `members.person_id`. Genau die
-      // stand hier bis dahin von Hand, weil sie als einzige ohne
-      // Fremdschlüssel auskommen musste; wer eine Person per Skript löschte,
-      // hinterließ eine Mitgliedschaft, deren `my_person_id()` ins Leere zeigt.
+      // Die Verweise auf die Person räumt die Datenbank selbst
+      // (`on delete set null`): Gruppen, Einladungen, das Versand-Tagebuch —
+      // und seit T105 auch `members.person_id`. Genau die stand hier bis dahin
+      // von Hand, weil sie als einzige ohne Fremdschlüssel auskommen musste;
+      // wer eine Person per Skript löschte, hinterließ eine Mitgliedschaft,
+      // deren `my_person_id()` ins Leere zeigt.
       deletePersonRow(action.id)
+      // Ihre Abwesenheiten gehen mit. Auch dort nullt die Datenbank nur die
+      // Person (`absences_person_fk`): Die Zeilen blieben liegen, gehörten
+      // niemandem mehr und kamen bei jedem Laden wieder mit — der Zustand hielt
+      // sie bis zum 25.9.2026 sogar mit toter `personId` (T118).
+      for (const a of prev.absences) if (a.personId === action.id) deleteAbsenceRow(a.id)
       // War sie die Letzte ihres Haushalts, geht der mit: Die Datenbank nullt
       // zwar `persons.fam`, die leere Zeile bliebe aber stehen und käme beim
       // nächsten Neuaufbau wieder mit.
@@ -673,6 +690,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'confirmTask':
       saveConfirmation(congId, userId, action.id, 'bestätigt')
+      // „Doch bestätigen" nach der Absage eines Hilfsdienstes: Das Gesuch ist
+      // erledigt, die Zeilen „Ersatz gesucht" bei den Angepingten müssen weg —
+      // fremde Glocken, das kann nur der Server. Bis zum 25.9.2026 räumte sie
+      // allein das Einspringen (T86); der Absagende ließ sie stehen (T118).
+      if (helperKeyParts(action.id) && prev.confirmations[action.id] === 'verhindert') {
+        substituteWithdraw(action.id)
+      }
       break
     case 'declineTask':
       saveConfirmation(congId, userId, action.id, 'verhindert')

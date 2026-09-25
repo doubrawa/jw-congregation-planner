@@ -331,7 +331,8 @@ benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
 abwesend sind, dass ein Ersatz gesucht wird. Springt jemand ein, trägt sich die
 Person selbst ein, die Bestätigung ist gleich gesetzt (der Punkt wird grün), und
 du bekommst die Mitteilung „Ersatz gefunden". Du musst dich nur kümmern, wenn
-sich niemand meldet.
+sich niemand meldet. Nimmt der Absagende die Absage zurück („Doch
+bestätigen"), verschwindet das Gesuch bei allen wieder.
 
 Bei **Programmpunkten** gibt es keine automatische Suche — dort teilst du neu
 zu. Der Name des Absagenden bleibt mit rotem Punkt im Slot stehen, damit du

@@ -490,6 +490,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks: dropPersonPid(state.weeks, action.id),
         fsWeeks: fsDropPersonPid(state.fsWeeks, action.id),
         persons: state.persons.filter((p) => p.id !== action.id),
+        // Ihre Abwesenheiten gehen mit: Eine Abwesenheit ohne Person gehört
+        // niemandem (`absence.ts`), und mit toter Id stünde sie hier bis zum
+        // nächsten Laden herum (T118). Die Datenbank räumt `persist.ts`.
+        absences: state.absences.filter((a) => a.personId !== action.id),
         groups: state.groups.map((g) => ({
           ...g,
           overseerId: g.overseerId === action.id ? null : g.overseerId,

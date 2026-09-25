@@ -282,22 +282,27 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
  * Dem Nutzer (Simon Krüger) zugeteilte Aufgaben mit Bestätigungs-Status.
  * a1/a2 offen, a3 bereits bestätigt (wie im v3-Prototyp). Schulungsaufgaben
  * und Bibellesung tragen eine S-89-Nutzlast zum Anzeigen des Formulars.
+ *
+ * `at` ist der Kalendertag der Demo-Woche (UTC-Mitternacht, wie
+ * `meetingDateMs` ihn liefert): Der Countdown rechnet damit gegen das echte
+ * Heute. Bis zum 25.9.2026 stand hier ein fester Chip-Text („in 4 Tagen")
+ * neben einem festen Datum — die beiden stimmten nie überein (T118).
  */
 export const DEMO_MY_TASKS: MyTask[] = [
   {
     id: 'a1',
     title: 'Demoaufgabe 10',
     date: 'Di, 8. September · ca. 19:35',
-    chip: 'in 4 Tagen',
+    at: Date.UTC(2026, 8, 8),
     status: 'offen',
     s89: { name: 'Simon Krüger', partner: 'Markus Ernst', date: 'Di, 8. September · 19:00', type: 'Gespräche beginnen · Informell', point: 'lmd Lektion 1' },
   },
-  { id: 'a2', title: 'Mikrofone', date: 'So, 20. September · 10:00', chip: 'in 16 Tagen', status: 'offen', s89: null },
+  { id: 'a2', title: 'Mikrofone', date: 'So, 20. September · 10:00', at: Date.UTC(2026, 8, 20), status: 'offen', s89: null },
   {
     id: 'a3',
     title: 'Bibellesung · Jer 38:1-13',
     date: 'Di, 22. September · 19:00',
-    chip: '',
+    at: Date.UTC(2026, 8, 22),
     status: 'bestätigt',
     s89: { name: 'Simon Krüger', partner: '', date: 'Di, 22. September · 19:00', type: 'Bibellesung · Jer 38:1-13', point: 'th Lektion 10' },
   },

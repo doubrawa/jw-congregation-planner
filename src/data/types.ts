@@ -781,7 +781,6 @@ export interface MyTask {
    */
   rolle?: string
   date: string // "Di, 8. September · ca. 19:35"
-  chip: string // Countdown-Text NUR im Demo-Modus (z. B. "in 4 Tagen")
   /**
    * Der Tag der Aufgabe als **UTC-Mitternacht** — ein Kalendertag, keine
    * Uhrzeit. `null`, wo es keinen gibt (Demo- und Vorlagenwochen).

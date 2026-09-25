@@ -21,6 +21,7 @@ import { makeTr } from '../../../src/i18n/translate'
 import { dict, NOTIF_TITLE_KEY, loadOverlay } from '../../../src/i18n/ui'
 import { filterWert, jsonRes, ohneFragment, schreibZugriff } from './attrappe.ts'
 import { parseGoAbschnitt, parseGoTarget } from '../../../src/app/deeplink'
+import { TITEL_GESUCHT } from '../substitute/texte.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -605,6 +606,51 @@ describe('substitute: seek darf nur auslösen, wen es angeht', () => {
     }
     const res = await call(seek, { auth: U_ORIG })
     expect(res.status).toBe(200)
+  })
+})
+
+describe('substitute: „Doch bestätigen" zieht das Gesuch zurück (withdraw)', () => {
+  const withdraw = { action: 'withdraw', taskKey: KEY }
+
+  it('der Eingeteilte räumt „Ersatz gesucht" aus allen Glocken — und sonst nichts', async () => {
+    /*
+      Bis zum 25.9.2026 räumte nur `take` diese Zeilen (T86). Wer abgesagt
+      hatte und doch konnte, ließ das Gesuch bei allen Angepingten stehen: Wer
+      darauf tippte, fand einen Platz, der längst wieder besetzt war (T118).
+    */
+    const res = await call(withdraw, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ ok: true, withdrawn: true })
+    expect(writes.map((w) => [w.method, w.path.split('?')[0]])).toEqual([['DELETE', 'notifications']])
+    const pfad = writes[0]!.path
+    expect(filterWert(pfad, 'congregation_id')).toBe(CONG)
+    expect(filterWert(pfad, 'task_key')).toBe(KEY)
+    expect(filterWert(pfad, 'title')).toBe(TITEL_GESUCHT)
+    expect(sentPush).toEqual([])
+  })
+
+  it('die Bestätigungen und die Woche bleiben unangetastet', async () => {
+    // Das „bestätigt" schreibt der Client selbst (RLS erlaubt die eigene
+    // Zeile); die Function nimmt nur die Gesuche in fremden Glocken zurück.
+    await call(withdraw, { auth: U_ORIG })
+    expect(writesTo('confirmations')).toEqual([])
+    expect(writesTo('weeks')).toEqual([])
+  })
+
+  it('ein Fremder ohne eigene Absage → 403, nichts gelöscht', async () => {
+    // Sonst könnte jedes Mitglied ein fremdes Gesuch beenden — und der Platz
+    // bliebe unbesetzt, ohne dass es noch jemand sähe.
+    const res = await call(withdraw, { auth: U_UNQUAL })
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({ error: 'forbidden' })
+    expect(writes).toEqual([])
+  })
+
+  it('wer für genau diesen Platz abgesagt hat, darf auch zurückziehen', async () => {
+    absagen = [{ user_id: U_UNQUAL, task_key: KEY }]
+    const res = await call(withdraw, { auth: U_UNQUAL })
+    expect(res.status).toBe(200)
+    expect(writesTo('notifications').length).toBe(1)
   })
 })
 

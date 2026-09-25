@@ -169,10 +169,11 @@ describe('Begriffe der Zusätzlichen Klasse', () => {
     }
   })
 
-  it('„Hauptsaal" ist derselbe Begriff wie im S-89-Formular', () => {
-    // Zwei Wörter für denselben Raum wären in derselben App verwirrend.
-    for (const { code } of APP_LANGS) {
-      expect(dict(code).auxHauptsaal, code).toBe(dict(code).s89Hauptsaal)
-    }
+  it('„Hauptsaal" hat nur noch einen Schlüssel — auch der S-89-Zettel nimmt auxHauptsaal', () => {
+    // Zwei Wörter für denselben Raum wären in derselben App verwirrend, und
+    // ein zweiter Schlüssel ist der Weg dorthin. `s89Hauptsaal` stand bis zum
+    // 25.9.2026 gleichlautend in 34 Sprachen da und wurde von keinem
+    // Bildschirm gelesen — nur dieser Test verglich ihn mit `auxHauptsaal`.
+    expect(Object.keys(dict('de'))).not.toContain('s89Hauptsaal')
   })
 })

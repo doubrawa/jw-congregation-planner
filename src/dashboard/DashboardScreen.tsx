@@ -39,7 +39,7 @@ import './dashboard.css'
 export function DashboardScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
-  const { t, tu, tp } = i18n
+  const { t, tp } = i18n
   const me = state.persons.find((p) => p.id === state.personId)
   // Ein neuer Render, sobald der Tag wechselt — sonst stünde nach einer Nacht im
   // Hintergrund noch der gestrige Gruß über dem gestrigen Zeitfenster.
@@ -81,8 +81,8 @@ export function DashboardScreen() {
         }
       }
       const { task } = e
-      // Live-Countdown aus dem echten Datum (Intl); im Demo der feste Chip-Text.
-      const countdown = task.at != null ? relativeDayLabel(task.at, state.lang) : tu(task.chip)
+      // Live-Countdown aus dem Datum (Intl); ohne Datum kein Chip.
+      const countdown = relativeDayLabel(task.at, state.lang)
       return {
         key: e.key,
         wann: tp(task.date),
@@ -120,7 +120,7 @@ export function DashboardScreen() {
         ...(countdown ? { ende: <span className="dash-zeit-chip">{countdown}</span> } : {}),
       }
     })
-  }, [state.myTasks, state.absences, state.personId, state.lang, tag, dispatch, i18n, t, tp, tu])
+  }, [state.myTasks, state.absences, state.personId, state.lang, tag, dispatch, i18n, t, tp])
 
   return (
     <section className="screen dash">

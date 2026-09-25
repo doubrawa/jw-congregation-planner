@@ -87,7 +87,7 @@ export const DE = {
     // Erfindung, sondern die erste Hälfte des dortigen Satzes.
     keinKonto: 'Ohne App-Konto',
     einladenBtn: '+ EINLADEN',
-    einladenHintMail: 'Erstellt einen Einladungscode und öffnet eine fertige E-Mail in deinem Mail-Programm.',
+    einladenHintMail: 'Erstellt einen Einladungscode und schickt die Einladung per E-Mail. Ist kein Versand eingerichtet, öffnet sich stattdessen eine fertige E-Mail in deinem Mail-Programm.',
     einladenHintOhneMail: 'Keine E-Mail-Adresse hinterlegt — Code erstellen und per Teilen oder Kopieren persönlich weitergeben.',
     codeOffenHint: 'Offener Einladungscode — wird beim Registrieren in der App eingelöst.',
     mailBtn: 'E-Mail',
@@ -220,7 +220,7 @@ export const DE = {
     // trugen dort ohnehin schon ein kurzes Einzelwort (Assistant, Ayudante, 補助).
     s89Title: 'Aufgabe in der Leben-und-Dienst-Zusammenkunft', s89Name: 'Name', s89Partner: 'Partner',
     s89Datum: 'Datum', s89Aufgabe: 'Aufgabe', s89Punkt: 'Schulungspunkt', s89Ort: 'Durchzuführen im',
-    s89Hauptsaal: 'Hauptsaal', s89Open: 'S-89 anzeigen',
+    s89Open: 'S-89 anzeigen',
     s89Note: 'Hinweis: Quelle und Schulungspunkt für deine Aufgabe findest du im Arbeitsheft.',
     erinnerungCap: 'ERINNERUNG', confirmTitle: 'Bitte bestätige deine Zuteilungen',
     confirmIntro: 'Du hast Zuteilungen, die noch nicht bestätigt sind. Bitte bestätige sie, damit sich der Koordinator darauf verlassen kann.',
@@ -271,6 +271,7 @@ export const DE = {
     kontoErstellen: 'Konto erstellen', registrieren: 'REGISTRIEREN', zurAnmeldung: '‹ Zurück zur Anmeldung',
     regMailHinweis: 'Bestätigungs-Mail gesendet — danach hier anmelden',
     resetMailHinweis: 'Reset-Mail gesendet — bitte Posteingang prüfen',
+    resetMailFehlt: 'Bitte zuerst deine E-Mail-Adresse eintragen',
     // Anmeldefehler — die Anbindung ordnet nur ein (lib/supabase.ts), die
     // Worte stehen hier, damit sie der Sprachwahl folgen.
     authFalsch: 'E-Mail oder Passwort falsch',

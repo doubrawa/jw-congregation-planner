@@ -1,7 +1,7 @@
 // =============================================================================
 // Supabase Edge Function: substitute — Ersatz für Hilfsdienste
 // =============================================================================
-// Zwei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
+// Drei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
 //   { action: 'seek', congregationId, taskKey }
 //     Nach „Ich kann nicht" bei einem Hilfsdienst: benachrichtigt alle
@@ -16,7 +16,12 @@
 //     Läuft mit Service-Role, weil Wochen/Bestätigungen nur der Planer schreibt.
 //     Der Slot wird bedingt geschrieben (409, wenn jemand schneller war).
 //
-// Beide Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
+//   { action: 'withdraw', taskKey }
+//     „Doch bestätigen" nach einer Absage: Das Gesuch ist erledigt, bevor
+//     jemand eingesprungen ist. Entfernt die Zeilen „Ersatz gesucht" aus den
+//     Glocken aller Angepingten. Auslösen darf, wer auch suchen darf.
+//
+// Alle drei Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
 // 'meeting-cancelled'): dort ist nichts zu vertreten. Die App zeigt solche
 // Aufgaben gar nicht erst an — hier landet nur, wer den Ausfall noch nicht
 // gesehen hat.
@@ -275,7 +280,10 @@ Deno.serve(async (req: Request) => {
       taskKey?: string
     } | null
     const parts = parseKey(payload?.taskKey ?? '')
-    if (!parts || (payload?.action !== 'seek' && payload?.action !== 'take')) {
+    if (
+      !parts ||
+      (payload?.action !== 'seek' && payload?.action !== 'take' && payload?.action !== 'withdraw')
+    ) {
       return json({ error: 'bad-request' }, 400)
     }
 
@@ -360,30 +368,65 @@ Deno.serve(async (req: Request) => {
     const callerPerson = caller.person_id ? personById.get(caller.person_id) : undefined
     const taskKeyEnc = wert(payload.taskKey!)
 
+    // Eine Ersatzsuche verschickt an alle Qualifizierten die Aussage
+    // „<Name> kann nicht". Bisher genügte dafür die blosse Mitgliedschaft —
+    // jedes Konto konnte das für jeden beliebigen Slot auslösen. Erlaubt ist
+    // es dem, der eingeteilt ist, oder wer für genau diesen Slot bereits
+    // abgesagt hat (der Slot behält den Namen, kann aber inzwischen neu
+    // besetzt sein).
+    //
+    // **Id vor Name** — dieselbe Rangfolge wie in `gehoertZu` (helpers.ts)
+    // und wie in `istAbsager` ein paar Zeilen tiefer. Hier stand ein Oder,
+    // und damit kam der Namensvetter durch: Er konnte für einen fremden Platz
+    // an alle Qualifizierten schicken lassen, „<Name> kann nicht". Trägt der
+    // Platz eine Id, ist entschieden, wem er gehört; der Name ist nur dort
+    // ein Anhalt, wo es keine Id gibt (Altbestand).
+    //
+    // Dieselbe Grenze gilt fürs **Zurückziehen** ('withdraw'): Wer das Gesuch
+    // nicht auslösen dürfte, darf es auch nicht beenden.
+    const istEingeteilt =
+      callerPerson !== undefined &&
+      (slot.pid ? slot.pid === callerPerson.id : slot.name === displayName(callerPerson))
+    const darfGesuchFuehren = async (): Promise<boolean> => {
+      if (istEingeteilt) return true
+      const eigeneAbsage = await rest.get<{ user_id: string }[]>(
+        `confirmations?select=user_id&congregation_id=eq.${wert(cong)}` +
+          `&task_key=eq.${taskKeyEnc}&status=eq.verhindert&user_id=eq.${wert(userId)}`,
+      )
+      return eigeneAbsage.length > 0
+    }
+    /**
+     * Die Zeilen „Ersatz gesucht" zu genau diesem Platz aus den Glocken ALLER
+     * Qualifizierten (T86) — beim Einspringen wie beim Zurückziehen. Nur die
+     * Mitteilungen zu diesem Platz; „Ersatz gefunden" entsteht erst danach und
+     * bleibt.
+     */
+    const gesuchZeilenLoeschen = async (): Promise<void> => {
+      await rest.send(
+        'DELETE',
+        `notifications?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}` +
+          `&title=eq.${wert(TITEL_GESUCHT)}`,
+      )
+    }
+
+    if (payload.action === 'withdraw') {
+      /*
+       * „Doch bestätigen" nach einer Absage: Das Gesuch ist erledigt, bevor
+       * jemand eingesprungen ist. Bis zum 25.9.2026 räumte nur `take` die
+       * Zeilen — wer abgesagt hatte und doch konnte, ließ „Ersatz gesucht" bei
+       * allen Angepingten stehen, und wer darauf tippte, fand einen Platz, der
+       * längst wieder besetzt war (T118). Den Push auf dem Sperrbildschirm
+       * holt das nicht zurück; die App zeigt beim nächsten Öffnen nichts mehr.
+       * Die eigene Bestätigung schreibt der Client selbst (RLS erlaubt ihm die
+       * eigene Zeile); hier geht es nur um die fremden Glocken.
+       */
+      if (!(await darfGesuchFuehren())) return json({ error: 'forbidden' }, 403)
+      await gesuchZeilenLoeschen()
+      return json({ ok: true, withdrawn: true })
+    }
+
     if (payload.action === 'seek') {
-      // Eine Ersatzsuche verschickt an alle Qualifizierten die Aussage
-      // „<Name> kann nicht". Bisher genügte dafür die blosse Mitgliedschaft —
-      // jedes Konto konnte das für jeden beliebigen Slot auslösen. Erlaubt ist
-      // es dem, der eingeteilt ist, oder wer für genau diesen Slot bereits
-      // abgesagt hat (der Slot behält den Namen, kann aber inzwischen neu
-      // besetzt sein).
-      //
-      // **Id vor Name** — dieselbe Rangfolge wie in `gehoertZu` (helpers.ts)
-      // und wie in `istAbsager` ein paar Zeilen tiefer. Hier stand ein Oder,
-      // und damit kam der Namensvetter durch: Er konnte für einen fremden Platz
-      // an alle Qualifizierten schicken lassen, „<Name> kann nicht". Trägt der
-      // Platz eine Id, ist entschieden, wem er gehört; der Name ist nur dort
-      // ein Anhalt, wo es keine Id gibt (Altbestand).
-      const istEingeteilt =
-        callerPerson !== undefined &&
-        (slot.pid ? slot.pid === callerPerson.id : slot.name === displayName(callerPerson))
-      if (!istEingeteilt) {
-        const eigeneAbsage = await rest.get<{ user_id: string }[]>(
-          `confirmations?select=user_id&congregation_id=eq.${wert(cong)}` +
-            `&task_key=eq.${taskKeyEnc}&status=eq.verhindert&user_id=eq.${wert(userId)}`,
-        )
-        if (eigeneAbsage.length === 0) return json({ error: 'forbidden' }, 403)
-      }
+      if (!(await darfGesuchFuehren())) return json({ error: 'forbidden' }, 403)
 
       const declinedBy = slot.name ?? ''
       const abwesende = abwesendeAm(absences, tagISO)
@@ -475,14 +518,8 @@ Deno.serve(async (req: Request) => {
 
     // Die Suche ist beendet: Die Zeilen „Ersatz gesucht" in den Glocken ALLER
     // Qualifizierten weg (T86). Sie standen dort sonst weiter, obwohl es nichts
-    // mehr zu übernehmen gab — und wer darauf tippte, fand nichts. Nur die
-    // Mitteilungen zu genau diesem Platz; „Ersatz gefunden" entsteht erst
-    // danach und bleibt.
-    await rest.send(
-      'DELETE',
-      `notifications?congregation_id=eq.${wert(cong)}&task_key=eq.${taskKeyEnc}` +
-        `&title=eq.${wert(TITEL_GESUCHT)}`,
-    )
+    // mehr zu übernehmen gab — und wer darauf tippte, fand nichts.
+    await gesuchZeilenLoeschen()
 
     // Alte Bestätigung(en) dieses Slots weg, eigene „bestätigt" setzen.
     // Ungefährlich, weil oben nur ein einziger Aufruf durchkommt.

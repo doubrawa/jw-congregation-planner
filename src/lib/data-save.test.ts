@@ -54,6 +54,7 @@ import {
   setSchreibfehlerMelder,
   substituteSeek,
   substituteTake,
+  substituteWithdraw,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
@@ -381,6 +382,7 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
   it.each([
     ['Einspringen', () => substituteTake('k1'), 'take'],
     ['Ersatzsuche', () => substituteSeek('k1'), 'seek'],
+    ['Zurückziehen', () => substituteWithdraw('k1'), 'withdraw'],
   ])('%s schickt keine Versammlung mit — die liest der Server selbst (S10)', async (_name, ruf, action) => {
     // Der Server nahm die Versammlung früher aus diesem Rumpf. Ein angehängtes
     // `#` schnitt dort die folgenden Filter ab, und ein einfaches Mitglied

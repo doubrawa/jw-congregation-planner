@@ -37,7 +37,7 @@ const notif = (over: Partial<Notification> = {}): Notification => ({
 
 const task = (over: Partial<MyTask> = {}): MyTask => ({
   id: '2026-09-07|mid|part|0|1|0', title: 'Bibellesung', rolle: 'Leser',
-  date: 'Dienstag, 8. September · 19:00', chip: '', s89: null,
+  date: 'Dienstag, 8. September · 19:00', s89: null,
   status: 'offen', at: Date.now() + 86_400_000, ...over,
 })
 

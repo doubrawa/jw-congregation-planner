@@ -834,7 +834,6 @@ export function deriveMyFsTasks(
         title: '',
         rolle: titel,
         date: fsTerminText(tag, inst),
-        chip: '',
         /*
          * **Der Kalendertag, nicht der Zeitpunkt** — als UTC-Mitternacht, wie
          * `meetingDateMs` ihn für die Zusammenkünfte liefert (siehe

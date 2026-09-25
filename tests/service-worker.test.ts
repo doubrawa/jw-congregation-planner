@@ -218,6 +218,12 @@ describe('Service Worker: Assets', () => {
     const abgelegt = [...sw.speicher.values()].flatMap((c) => [...c.eintraege.keys()])
     expect(abgelegt).toEqual([])
   })
+
+  it('kennt keine fremden Schrift-Hosts mehr — die Schriften liegen unter /assets/', () => {
+    // Bis August 2026 kamen sie von Google; der Zweig dafür stand noch bis zum
+    // 25.9.2026 da, obwohl `src/styles/fonts.css` sie längst selbst auslieferte.
+    expect(swQuelle()).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com|FONT_HOSTS/)
+  })
 })
 
 describe('… und der Absender nutzt das auch (Ersatzgesuche)', () => {

@@ -22,7 +22,7 @@ import { ConfirmDialog } from './ConfirmDialog'
  */
 
 const aufgabe = (id: string): MyTask => ({
-  id, title: 'Bibellesung', rolle: '', date: 'Di, 8. September', chip: '',
+  id, title: 'Bibellesung', rolle: '', date: 'Di, 8. September',
   status: 'offen', s89: null,
 })
 

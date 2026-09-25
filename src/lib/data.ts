@@ -1147,6 +1147,17 @@ export function substituteTake(taskKey: string): void {
   void run(supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }))
 }
 
+/**
+ * Ersatzgesuch zurückziehen: „Doch bestätigen" nach einer Absage. Die Zeilen
+ * „Ersatz gesucht" stehen in den Glocken der Angepingten — fremde Zeilen, die
+ * nur der Server entfernen kann (RLS). Die eigene Bestätigung schreibt
+ * `saveConfirmation` unabhängig davon. Fire-and-forget.
+ */
+export function substituteWithdraw(taskKey: string): void {
+  if (!supabase) return
+  void run(supabase.functions.invoke('substitute', { body: { action: 'withdraw', taskKey } }))
+}
+
 /** Ergebnis eines „Plan senden"-Laufs (Edge Function `send-plan`). */
 export interface PlanVersand {
   /** Wie viele Personen eine Nachricht bekommen haben. */

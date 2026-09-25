@@ -705,6 +705,34 @@ export const KATALOG = [
     ersetzen: '(slot.pid === callerPerson.id || slot.name === displayName(callerPerson))',
   },
   {
+    id: 'ersatz-doch-bestaetigen-zieht-zurueck',
+    datei: 'src/app/persist.ts',
+    regel: '„Doch bestätigen" nach der Absage eines Hilfsdienstes nimmt das Ersatzgesuch zurück — sonst steht es bei allen Angepingten weiter (T118).',
+    suchen: "      if (helperKeyParts(action.id) && prev.confirmations[action.id] === 'verhindert') {\n        substituteWithdraw(action.id)\n      }\n",
+    ersetzen: '',
+  },
+  {
+    id: 'ersatz-zurueckziehen-raeumt-glocken',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Das Zurückziehen entfernt die Zeilen „Ersatz gesucht" aus allen Glocken — nicht nur die Antwort ok (T118).',
+    suchen: '      await gesuchZeilenLoeschen()\n      return json({ ok: true, withdrawn: true })',
+    ersetzen: '      return json({ ok: true, withdrawn: true })',
+  },
+  {
+    id: 'person-loeschen-nimmt-abwesenheiten-mit',
+    datei: 'src/app/reducer.ts',
+    regel: 'Mit der Person gehen ihre Abwesenheiten — sonst stehen sie mit toter Id im Zustand (T118).',
+    suchen: '        absences: state.absences.filter((a) => a.personId !== action.id),\n',
+    ersetzen: '',
+  },
+  {
+    id: 'person-loeschen-abwesenheiten-datenbank',
+    datei: 'src/app/persist.ts',
+    regel: 'Die Abwesenheiten einer gelöschten Person verschwinden auch aus der Datenbank — die nullt nur die Person (T118).',
+    suchen: '      for (const a of prev.absences) if (a.personId === action.id) deleteAbsenceRow(a.id)\n',
+    ersetzen: '',
+  },
+  {
     id: 'einladung-nur-planer',
     datei: 'supabase/functions/send-invite/index.ts',
     regel: 'Einladungen verschicken darf nur ein Planer.',
@@ -803,8 +831,8 @@ export const KATALOG = [
     datei: 'src/data/planning.ts',
     regel: 'Der Termin einer Aufgabe wird gerechnet — importierte Wochen tragen im date-Feld nur die Wochenspanne.',
     suchen:
-      "const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), chip: '', at, status: 'offen' as const }",
-    ersetzen: "const gemeinsam = { id: key, date: week[tab].date, chip: '', at, status: 'offen' as const }",
+      "const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), at, status: 'offen' as const }",
+    ersetzen: "const gemeinsam = { id: key, date: week[tab].date, at, status: 'offen' as const }",
   },
   {
     id: 'leeren-zwei-tipp',

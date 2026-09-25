@@ -9,8 +9,11 @@ import type { Person } from '../data/types'
 /**
  * Konto-Karte (nur Produktionsmodus): Status des App-Zugangs der Person —
  * verknüpftes Konto, offener Einladungscode oder Einladen-Aktion. Mit
- * E-Mail-Adresse öffnet Einladen das eigene Mail-Programm (mailto:), ohne
- * werden Code + Teilen/Kopieren angeboten. Die App verschickt selbst nichts.
+ * E-Mail-Adresse schickt Einladen die Mail über die Edge Function
+ * `send-invite`; antwortet die mit `not-configured` (kein `INVITE_FROM`),
+ * öffnet sich stattdessen das eigene Mail-Programm (mailto:). Ohne Adresse
+ * werden Code + Teilen/Kopieren angeboten. Der Hinweis über dem Knopf
+ * (`einladenHintMail`) nennt beide Wege.
  */
 export function KontoCard({ person }: { person: Person }) {
   const { state, dispatch } = useApp()

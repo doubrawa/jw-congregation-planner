@@ -29,7 +29,7 @@ const at = (n: number): number => Date.UTC(2026, 8, 7 + n)
 const iso = (n: number): string => isoDay(new Date(2026, 8, 7 + n))
 
 const task = (id: string, tage: number | null): MyTask => ({
-  id, title: id, date: id, chip: '', at: tage == null ? null : at(tage),
+  id, title: id, date: id, at: tage == null ? null : at(tage),
   status: 'offen', s89: null,
 })
 

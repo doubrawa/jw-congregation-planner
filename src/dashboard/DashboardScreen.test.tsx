@@ -74,7 +74,7 @@ const S89: S89Payload = {
 
 const task = (over: Partial<MyTask> = {}): MyTask => ({
   id: 'T1', title: 'Bibellesung', rolle: '', date: 'Di, 8. September · ca. 19:35',
-  chip: '', at: null, status: 'offen', s89: null, ...over,
+  at: null, status: 'offen', s89: null, ...over,
 })
 
 const DIENSTE: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
@@ -293,9 +293,12 @@ describe('Die Zeitleiste der nächsten zwei Wochen', () => {
     expect(container.querySelector('.dash-zeit-chip')?.textContent).toBe('morgen')
   })
 
-  it('ohne echten Termin (Demo) steht der mitgelieferte Text', () => {
-    const { container } = zeige({ myTasks: [task({ at: null, chip: 'in 4 Tagen' })] })
-    expect(container.querySelector('.dash-zeit-chip')?.textContent).toBe('in 4 Tagen')
+  it('ohne Termin steht kein Chip da', () => {
+    // Bis zum 25.9.2026 trug eine Aufgabe ohne Termin einen festen Chip-Text
+    // (nur in der Demo, „in 4 Tagen") — neben einem festen Datum, zu dem er
+    // nie passte. Jetzt gibt es den Countdown nur aus dem Datum.
+    const { container } = zeige({ myTasks: [task({ at: null })] })
+    expect(container.querySelector('.dash-zeit-chip')).toBeNull()
   })
 })
 

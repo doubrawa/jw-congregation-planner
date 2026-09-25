@@ -64,7 +64,8 @@ export function LoginScreen() {
       return
     }
     if (!email.trim()) {
-      dispatch({ type: 'showToast', text: t.email })
+      // Ein ganzer Satz, nicht die Feldbeschriftung „E-MAIL" (bis zum 25.9.2026).
+      dispatch({ type: 'showToast', text: t.resetMailFehlt })
       return
     }
     const error = await requestPasswordReset(email.trim())

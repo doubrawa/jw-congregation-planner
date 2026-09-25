@@ -191,6 +191,7 @@ describe('Direkte Function-Aufrufe prüfen den Offline-Stand', () => {
     'importWeekVariants(',
     'substituteSeek(',
     'substituteTake(',
+    'substituteWithdraw(',
   ]
 
   const bausteine = (): Array<[string, string]> =>

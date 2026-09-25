@@ -108,8 +108,8 @@ export function AufgabenScreen() {
               </div>
             </div>
             {(() => {
-              // Live-Countdown aus dem echten Datum (Intl); im Demo der Chip-Text.
-              const label = task.at != null ? relativeDayLabel(task.at, state.lang) : tu(task.chip)
+              // Live-Countdown aus dem Datum (Intl); ohne Datum kein Chip.
+              const label = relativeDayLabel(task.at, state.lang)
               return label && <span className="auf-chip">{label}</span>
             })()}
           </div>

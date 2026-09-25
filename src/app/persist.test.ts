@@ -54,6 +54,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveWeek: vi.fn(),
   substituteSeek: vi.fn(),
   substituteTake: vi.fn(),
+  substituteWithdraw: vi.fn(),
   sendPlanEntzug: vi.fn(),
 }))
 
@@ -79,6 +80,7 @@ function st(over: Partial<AppState> = {}): AppState {
     members: [],
     invites: [],
     notifs: [],
+    absences: [],
     slotSel: null,
     selectedPersonId: null,
     congregation: { name: 'K', hall: 'H', times: STANDARD_ZEITEN },
@@ -939,8 +941,29 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
       type: 'updateCongregation',
       patch: { times: { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } } },
     })
+    // Gebündelt (T118): Eine Zeitänderung zieht die Endzeit **jeder** geladenen
+    // Woche nach, und Stunde und Minute sind zwei Auswahlfelder — sofort
+    // geschrieben wären das zweimal bis zu 52 Anfragen.
+    expect(data.saveWeek).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1) // nur die eine geänderte
     expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1])
+  })
+
+  it('zwei Zeitänderungen kurz nacheinander schreiben jede Woche einmal — mit dem letzten Stand (T118)', () => {
+    const prev = st()
+    const zeiten = (time: string) => ({ mid: { wd: 2, time }, we: { wd: 0, time: '10:00' } })
+    const w1 = [...prev.weeks]
+    w1[1] = { ...w1[1]!, mid: { ...w1[1]!.mid, end: 'Ende ca. 20:15' } }
+    const w2 = [...w1]
+    w2[1] = { ...w2[1]!, mid: { ...w2[1]!.mid, end: 'Ende ca. 20:00' } }
+    const mit = (weeks: typeof prev.weeks, time: string) =>
+      st({ weeks, congregation: { name: 'K', hall: 'H', times: zeiten(time) } })
+    persist(prev, mit(w1, '18:30'), { type: 'updateCongregation', patch: { times: zeiten('18:30') } })
+    persist(mit(w1, '18:30'), mit(w2, '18:15'), { type: 'updateCongregation', patch: { times: zeiten('18:15') } })
+    vi.advanceTimersByTime(600)
+    expect(data.saveWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', w2[1])
   })
 
   it('updateCongregation ohne Zeitänderung schreibt keine Woche', () => {
@@ -992,6 +1015,45 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.saveInvite).toHaveBeenCalledWith('c1', inv)
     persist(st(), st(), { type: 'removeInvite', id: 'i1' })
     expect(data.deleteInviteRow).toHaveBeenCalledWith('i1')
+  })
+})
+
+describe('T118: „Doch bestätigen" und die Abwesenheiten einer gelöschten Person', () => {
+  const key = '2026-09-07|mid|helper|mik|0'
+
+  it('„Doch bestätigen" nach der Absage eines Hilfsdienstes zieht das Gesuch zurück', () => {
+    // Die Zeilen „Ersatz gesucht" stehen in fremden Glocken — nur der Server
+    // kann sie entfernen. Bis zum 25.9.2026 tat das allein das Einspringen.
+    persist(st({ confirmations: { [key]: 'verhindert' } }), st({ confirmations: { [key]: 'bestätigt' } }), {
+      type: 'confirmTask',
+      id: key,
+    })
+    expect(data.saveConfirmation).toHaveBeenCalledWith('c1', 'u1', key, 'bestätigt')
+    expect(data.substituteWithdraw).toHaveBeenCalledWith(key)
+  })
+
+  it('eine erste Bestätigung und ein Programmpunkt ziehen nichts zurück', () => {
+    persist(st(), st({ confirmations: { [key]: 'bestätigt' } }), { type: 'confirmTask', id: key })
+    persist(st({ confirmations: { k1: 'verhindert' } }), st({ confirmations: { k1: 'bestätigt' } }), {
+      type: 'confirmTask',
+      id: 'k1',
+    })
+    expect(data.substituteWithdraw).not.toHaveBeenCalled()
+  })
+
+  it('removePerson löscht die Abwesenheiten der Person — die Datenbank nullt nur die Person', () => {
+    const abw = (id: string, personId: string) =>
+      ({ id, personId, userId: null, from: '2026-10-01', to: '2026-10-02', reason: '' }) as const
+    const prev = st({ absences: [abw('a1', 'p1'), abw('a2', 'p2')] })
+    const next = st({
+      weeks: prev.weeks,
+      fsWeeks: prev.fsWeeks,
+      absences: [abw('a2', 'p2')],
+      persons: prev.persons.filter((p) => p.id !== 'p1'),
+    })
+    persist(prev, next, { type: 'removePerson', id: 'p1' })
+    expect(data.deleteAbsenceRow).toHaveBeenCalledTimes(1)
+    expect(data.deleteAbsenceRow).toHaveBeenCalledWith('a1')
   })
 })
 

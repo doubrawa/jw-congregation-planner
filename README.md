@@ -601,7 +601,8 @@ Und drei Takte:
    in jeden Knopfdruck hinein.
 2. **Sofort.** Was eine Zusage bricht oder Eile hat: eine bestätigte Zuteilung
    wird zurückgezogen (`send-plan`, Aktion `entzug`), ein Hilfsdienst wird
-   abgesagt und ein Ersatz gesucht, jemand springt ein
+   abgesagt und ein Ersatz gesucht, jemand springt ein — oder der Absagende
+   kann doch, dann verschwindet das Gesuch wieder aus allen Glocken
    ([`substitute`](supabase/functions/substitute/)), eine Verhinderung wird an
    die Planer gemeldet.
 

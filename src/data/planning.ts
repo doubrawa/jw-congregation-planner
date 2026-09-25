@@ -1235,7 +1235,7 @@ export function eachAssignedSlot(
         if (platz.art === 'helper' && platz.svc.groups) continue
         const key = platzKey(platz, week.start, tab)
         visit(slot.name, key, () => {
-          const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), chip: '', at, status: 'offen' as const }
+          const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), at, status: 'offen' as const }
           if (platz.art === 'ratgeber') {
             // Die Bezeichnung **ist** die Rolle — App-Sprache, kein Titel.
             return { ...gemeinsam, title: '', rolle: RATGEBER_ROLLE, s89: null }

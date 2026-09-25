@@ -44,7 +44,7 @@ const S89: S89Payload = {
 
 const task = (over: Partial<MyTask> = {}): MyTask => ({
   id: 'T1', title: 'Bibellesung', rolle: '', date: 'Di, 8. September · ca. 19:35',
-  chip: '', at: null, status: 'offen', s89: null, ...over,
+  at: null, status: 'offen', s89: null, ...over,
 })
 
 const gesuch = (over: Partial<SubstituteReq> = {}): SubstituteReq => ({
@@ -149,8 +149,8 @@ describe('Die Aufgabenliste', () => {
     expect(container.querySelector('.auf-chip')?.textContent).toBe('morgen')
   })
 
-  it('ohne Termin und ohne Chip-Text steht kein leerer Chip da', () => {
-    const { container } = zeige({ myTasks: [task({ at: null, chip: '' })] })
+  it('ohne Termin steht kein leerer Chip da', () => {
+    const { container } = zeige({ myTasks: [task({ at: null })] })
     expect(container.querySelector('.auf-chip')).toBeNull()
   })
 })

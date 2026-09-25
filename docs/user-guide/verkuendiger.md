@@ -157,7 +157,9 @@ Für jede Aufgabe gilt:
 
 Tippe die Aufgabe an und wähle **„Ich kann nicht"**. Dein Koordinator bekommt
 eine Mitteilung und kann rechtzeitig neu einteilen. Hast du dich vertan, öffne
-die Aufgabe erneut und wähle **„Doch bestätigen"**.
+die Aufgabe erneut und wähle **„Doch bestätigen"**. Bei einem Hilfsdienst endet
+damit auch die Ersatzsuche: Die Mitteilung „Ersatz gesucht" verschwindet bei
+den anderen wieder.
 
 Bei einem **Hilfsdienst** (Mikrofone, Ton, Ordner …) passiert zusätzlich etwas:
 Die App sucht sofort selbst einen Ersatz und benachrichtigt alle, die für

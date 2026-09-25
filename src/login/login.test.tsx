@@ -222,7 +222,8 @@ describe('Passwort vergessen', () => {
     const { container, dispatch } = zeige('login')
     fireEvent.click(knopf(container, t.pwVergessen)!)
     expect(requestPasswordReset).not.toHaveBeenCalled()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.email })
+    // Als Satz, nicht als Feldbeschriftung „E-MAIL" — die sagte nicht, was zu tun ist.
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.resetMailFehlt })
   })
 
   it('ein Fehler beim Versand wird gemeldet, nicht als Erfolg ausgegeben', async () => {

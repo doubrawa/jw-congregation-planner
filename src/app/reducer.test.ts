@@ -391,6 +391,17 @@ describe('Personen', () => {
     expect(next.invites[0].personId).toBeNull()
   })
 
+  it('removePerson nimmt die Abwesenheiten der Person mit (T118)', () => {
+    // Mit toter `personId` gehörte die Abwesenheit niemandem mehr, stand aber
+    // bis zum nächsten Laden im Zustand — und in der Datenbank bleibt die Zeile
+    // ohnehin liegen (`set null`), dafür sorgt persist.ts.
+    const abw = (id: string, personId: string) =>
+      ({ id, personId, userId: null, from: '2026-10-01', to: '2026-10-02', reason: '' }) as const
+    const s = makeState({ absences: [abw('a1', 'p1'), abw('a2', 'p2')] })
+    const next = reducer(s, { type: 'removePerson', id: 'p1' })
+    expect(next.absences.map((a) => a.id)).toEqual(['a2'])
+  })
+
   it('removePerson löst auch die pid aus Wochen und Treffpunkten (T38)', () => {
     // Der Name bleibt als Text stehen — so war es immer dokumentiert. Die Id
     // aber muss weg: ohne Ziel ist sie ein Fremdschlüssel ins Leere, der Slot
@@ -1158,7 +1169,7 @@ describe('Sprache', () => {
     const mitAufgabe = makeState({
       confirmOpen: true,
       substituteReqs: [gesuch],
-      myTasks: [{ id: 't1', title: 'X', date: 'Di', chip: '', status: 'offen', s89: null }],
+      myTasks: [{ id: 't1', title: 'X', date: 'Di', status: 'offen', s89: null }],
     })
     expect(reducer(mitAufgabe, { type: 'closeConfirm' }).confirmOpen).toBe(true)
     // Und ohne beides gibt es nichts vorzulegen.

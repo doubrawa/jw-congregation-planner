@@ -27,7 +27,6 @@ const DEV = new URL(self.location.href).searchParams.has('dev')
 // Relative URLs lösen gegen den SW-Pfad auf, also den App-Basispfad
 // (unter versammlung.app und im Dev gleichermaßen /).
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.svg', 'icon-192.png']
-const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com']
 
 self.addEventListener('install', (event) => {
   // Neue SW-Fassung sofort aktiv werden lassen (statt bis zum Schließen aller
@@ -111,10 +110,10 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Schriften (Google Fonts) offline verfügbar halten; ohne sie fällt die
-  // Typografie auf System-Schriften zurück. Alles andere (Supabase!) läuft
-  // ungefiltert durch — kein respondWith.
-  if (FONT_HOSTS.includes(url.hostname)) event.respondWith(cacheFirst(request))
+  // Alles Fremde (Supabase!) läuft ungefiltert durch — kein respondWith. Die
+  // Schriften kommen seit August 2026 aus dem Paket (`src/styles/fonts.css`)
+  // und damit über `/assets/` oben; der Google-Fonts-Zweig, der hier stand,
+  // traf seither nie mehr.
 })
 
 self.addEventListener('push', (event) => {
