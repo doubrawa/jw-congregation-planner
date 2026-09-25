@@ -786,10 +786,11 @@ create policy absences_write on public.absences
   );
 
 -- Mitteilungen sind personalisiert (je Empfänger eine Zeile): jeder sieht/ändert/
--- löscht nur die eigenen. Planer erzeugen Zeilen für beliebige Empfänger der
--- Versammlung (Zuteilung/Import); Verhinderungs-Meldungen dürfen alle Mitglieder
--- erzeugen — aber nur an Planer. Ohne diese Grenze ginge freier Text an
--- jeden Empfänger der Versammlung.
+-- löscht nur die eigenen. Unmittelbar schreiben nur Planer; was ein Verkündiger
+-- meldet (seine Verhinderung), geht über `notify_planners` weiter unten — er
+-- sieht die Planer nicht (members_select) und könnte sie nicht adressieren. Der
+-- frühere Zweig „jedes Mitglied darf 'verhindert' an Planer schreiben" war
+-- deshalb nie erreichbar: Die App fand keinen Empfänger und schrieb nichts.
 drop policy if exists notifications_select on public.notifications;
 create policy notifications_select on public.notifications
   for select using (
@@ -801,18 +802,7 @@ drop policy if exists notifications_insert on public.notifications;
 create policy notifications_insert on public.notifications
   for insert with check (
     congregation_id = public.my_congregation_id()
-    and (
-      public.is_planner()
-      or (
-        type = 'verhindert'
-        and exists (
-          select 1 from public.members m
-           where m.user_id = notifications.user_id
-             and m.congregation_id = notifications.congregation_id
-             and m.planner
-        )
-      )
-    )
+    and public.is_planner()
   );
 
 drop policy if exists notifications_update on public.notifications;
@@ -959,6 +949,42 @@ $$;
 revoke all on function public.redeem_invite(text) from public;
 revoke all on function public.redeem_invite(text) from anon;
 grant execute on function public.redeem_invite(text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Mitteilung an die Planer der eigenen Versammlung — je Planer eine Zeile mit
+-- eigenem Gelesen-/Lösch-Status.
+--
+-- Security definer, weil die **Empfänger** nur die Datenbank kennt: Ein
+-- Verkündiger sieht in `members` allein die eigene Zeile (members_select). Bis
+-- zum 24.9.2026 suchte die App die Planer im Client — für jede Verhinderung
+-- eine leere Empfängerliste, und der Schreiber brach still ab. Kein Planer hat
+-- je eine Verhinderung erhalten, obwohl der Toast es versprach.
+--
+-- Melden darf jedes Mitglied nur eine Verhinderung; Import und „Plan gesendet"
+-- bleiben Planern vorbehalten (S3/T89). Die Art prüft zusätzlich die
+-- check-Bedingung der Tabelle.
+-- ---------------------------------------------------------------------------
+
+create or replace function public.notify_planners(kind text, subject text, message text)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if kind <> 'verhindert' and not public.is_planner() then
+    raise exception 'nur eine Verhinderung darf jedes Mitglied melden';
+  end if;
+  insert into public.notifications (congregation_id, user_id, type, title, body)
+  select m.congregation_id, m.user_id, kind, subject, message
+    from public.members m
+   where m.congregation_id = public.my_congregation_id()
+     and m.planner;
+end;
+$$;
+
+revoke all on function public.notify_planners(text, text, text) from public;
+revoke all on function public.notify_planners(text, text, text) from anon;
+grant execute on function public.notify_planners(text, text, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Erste Einrichtung (Beispiel — Werte anpassen und einmalig ausführen)

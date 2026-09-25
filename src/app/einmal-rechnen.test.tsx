@@ -93,7 +93,7 @@ describe('Gespeichert ist, was auf dem Bildschirm steht', () => {
   })
 
   it('Mitteilung: dieselbe Kennung und derselbe Zeitpunkt in beiden Ständen', () => {
-    // Hier fiel es bisher nicht auf: `insertNotifications` schickt weder Id
+    // Hier fiel es bisher nicht auf: `notifyPlanners` schickt weder Id
     // noch Zeitstempel mit. Die Ungleichheit war trotzdem da — und die nächste
     // Mitteilung, die eine davon braucht, hätte sie geerbt.
     const { gespeichert, gezeigt } = nachAktion({ type: 'declineTask', id: 'a1' })

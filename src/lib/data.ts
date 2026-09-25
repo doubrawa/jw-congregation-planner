@@ -1102,21 +1102,19 @@ export function deleteAbsenceRow(id: string): void {
 }
 
 /**
- * Mitteilung an bestimmte Empfänger (je user_id eine eigene Zeile → eigener
- * Gelesen-/Lösch-Status). Leere Empfängerliste = kein Schreiben. Erinnerungen
- * erzeugt die Edge Function selbst; Client-Mitteilungen (Zuteilung, Import,
- * Verhinderung) richten sich an die Planer der Versammlung.
+ * Mitteilung an die Planer der Versammlung (`notify_planners`, security
+ * definer): je Planer eine eigene Zeile → eigener Gelesen-/Lösch-Status.
+ * Erinnerungen erzeugt die Edge Function selbst; Client-Mitteilungen sind
+ * Import, „Plan gesendet" und Verhinderung.
+ *
+ * Die Empfänger bestimmt die Datenbank, nicht der Client. Ein Verkündiger
+ * sieht in `members` nur die eigene Zeile (`members_select`) — wer die Planer
+ * aus `state.members` herausfilterte, bekam für jede Verhinderung eine leere
+ * Liste und schrieb still nichts (so bis zum 24.9.2026).
  */
-export function insertNotifications(
-  congregationId: string,
-  userIds: string[],
-  type: NotificationType,
-  title: string,
-  body: string,
-): void {
-  if (!supabase || userIds.length === 0) return
-  const rows = userIds.map((user_id) => ({ congregation_id: congregationId, user_id, type, title, body }))
-  void run(supabase.from('notifications').insert(rows))
+export function notifyPlanners(type: NotificationType, title: string, body: string): void {
+  if (!supabase) return
+  void run(supabase.rpc('notify_planners', { kind: type, subject: title, message: body }))
 }
 
 /**

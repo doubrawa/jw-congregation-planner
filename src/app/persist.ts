@@ -18,8 +18,8 @@ import {
   deleteMemberRow,
   deleteNotifications,
   deleteServiceRow,
-  insertNotifications,
   markNotificationsRead,
+  notifyPlanners,
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
@@ -722,8 +722,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   }
 
   /*
-   * Eine hier entstandene Mitteilung (Zuteilung, Import, Verhinderung) an die
-   * Planer der Versammlung schicken — je Empfänger eine eigene Zeile mit
+   * Eine hier entstandene Mitteilung (Import, „Plan gesendet", Verhinderung)
+   * an die Planer der Versammlung schicken — je Empfänger eine eigene Zeile mit
    * eigenem Gelesen-/Lösch-Status. Erinnerungen erzeugt die Edge Function
    * selbst (adressiert an die betroffene Person).
    *
@@ -733,12 +733,17 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * wurde so eine neue, die beim nächsten Laden wieder mitkam. Eine Aufzählung
    * der auslösenden Aktionen wäre die zweite Buchführung gewesen — wer eine
    * vergisst, merkt es nie, weil nichts fehlschlägt.
+   *
+   * **Die Empfänger sucht die Datenbank** (`notify_planners`), nicht der
+   * Client. Ein Verkündiger sieht in `members` nur die eigene Zeile (RLS);
+   * `next.members` enthält für ihn keinen einzigen Planer. Bis zum 24.9.2026
+   * stand hier `members.filter((m) => m.planner)` — für jede Verhinderung eine
+   * leere Empfängerliste, und der Schreiber brach über ihr still ab. Kein
+   * Planer hat je eine Verhinderung erhalten; dem Test-Fixture lag ein Planer
+   * bei, deshalb blieb es grün.
    */
   const neu = next.notifs[0]
-  if (neu?.local && neu !== prev.notifs[0]) {
-    const planners = next.members.filter((m) => m.planner).map((m) => m.userId)
-    insertNotifications(congId, planners, neu.type, neu.title, neu.text)
-  }
+  if (neu?.local && neu !== prev.notifs[0]) notifyPlanners(neu.type, neu.title, neu.text)
 
   /*
    * **Wem eine bestätigte Zusage genommen wurde, erfährt es sofort** (T99).

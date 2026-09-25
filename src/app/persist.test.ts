@@ -35,8 +35,8 @@ vi.mock('../lib/data', async (importActual) => ({
   deleteMemberRow: vi.fn(),
   deleteNotifications: vi.fn(),
   deleteServiceRow: vi.fn(),
-  insertNotifications: vi.fn(),
   markNotificationsRead: vi.fn(),
+  notifyPlanners: vi.fn(),
   saveAbsence: vi.fn(),
   saveConfirmation: vi.fn(),
   saveCongregationInfo: vi.fn(),
@@ -997,14 +997,20 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
 
 describe('Mitteilungs-Fanout', () => {
   /** Wie der Reducer sie erzeugt: mit `local`-Kennzeichen. */
-  const hier = { id: 'n1', type: 'gesendet' as const, title: 'T', text: 'B', at: '2026-09-14T10:00:00Z', read: false, local: true as const }
+  const hier = { id: 'n1', type: 'verhindert' as const, title: 'Verhinderung gemeldet', text: 'B', at: '2026-09-14T10:00:00Z', read: false, local: true as const }
   /** Wie sie aus der Datenbank kommt: ohne Kennzeichen. */
-  const geladen = { id: 'n2', type: 'gesendet' as const, title: 'T', text: 'B', at: '2026-09-14T10:00:00Z', read: false }
-  const planer = [{ userId: 'm1', email: '', personId: null, planner: true }]
+  const geladen = { id: 'n2', type: 'verhindert' as const, title: 'Verhinderung gemeldet', text: 'B', at: '2026-09-14T10:00:00Z', read: false }
 
-  it('eine hier entstandene Mitteilung geht an die Planer', () => {
-    persist(st({ notifs: [] }), st({ notifs: [hier], members: planer }), { type: 'declineTask', id: 'x' })
-    expect(data.insertNotifications).toHaveBeenCalledWith('c1', ['m1'], 'gesendet', 'T', 'B')
+  it('eine hier entstandene Mitteilung geht an die Planer — die Empfänger sucht die Datenbank', () => {
+    /*
+      Bis zum 24.9.2026 filterte persist die Planer aus `next.members`, und dem
+      Fixture lag ein Planer bei. In Wirklichkeit sieht ein Verkündiger per RLS
+      nur die eigene Zeile: Die Liste war leer, und keine Verhinderung hat je
+      einen Planer erreicht. Deshalb hier ausdrücklich **ohne** Mitglieder —
+      genau der Stand, den ein Verkündiger hat.
+    */
+    persist(st({ notifs: [] }), st({ notifs: [hier], members: [] }), { type: 'declineTask', id: 'x' })
+    expect(data.notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'B')
   })
 
   it('Laden aus der Datenbank verteilt NICHTS', () => {
@@ -1013,27 +1019,27 @@ describe('Mitteilungs-Fanout', () => {
     // gespeicherten Mitteilungen mit. Aus jedem Laden wurde so eine neue, die
     // beim naechsten Laden wieder mitkam; der Zaehler wuchs bei jeder
     // Aktualisierung um eins.
-    persist(st({ notifs: [] }), st({ notifs: [geladen], members: planer }), {
+    persist(st({ notifs: [] }), st({ notifs: [geladen] }), {
       type: 'hydrate',
       payload: {} as never,
     })
-    expect(data.insertNotifications).not.toHaveBeenCalled()
+    expect(data.notifyPlanners).not.toHaveBeenCalled()
   })
 
   it('dieselbe Mitteilung wird nicht zweimal verteilt', () => {
     // Jede Aktion laeuft durch persist; nur das ERSTE Auftreten zaehlt.
-    persist(st({ notifs: [hier], members: planer }), st({ notifs: [hier], members: planer }), {
+    persist(st({ notifs: [hier] }), st({ notifs: [hier] }), {
       type: 'showToast',
       text: 'x',
     })
-    expect(data.insertNotifications).not.toHaveBeenCalled()
+    expect(data.notifyPlanners).not.toHaveBeenCalled()
   })
 
   it('unabhaengig von der Aktion — das Kennzeichen entscheidet', () => {
     // Genau das ist der Gewinn: wer kuenftig eine Aktion mit Mitteilung
     // ergaenzt, muss an keiner zweiten Stelle etwas eintragen.
-    persist(st({ notifs: [] }), st({ notifs: [hier], members: planer }), { type: 'autoAssign' })
-    expect(data.insertNotifications).toHaveBeenCalledTimes(1)
+    persist(st({ notifs: [] }), st({ notifs: [hier] }), { type: 'autoAssign' })
+    expect(data.notifyPlanners).toHaveBeenCalledTimes(1)
   })
 })
 

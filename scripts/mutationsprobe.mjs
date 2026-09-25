@@ -1057,8 +1057,16 @@ export const KATALOG = [
     id: 'schema-verhindert-nur-an-planer',
     datei: 'supabase/schema.sql',
     regel: 'Eine Verhinderungs-Meldung geht nur an Planer (S3) — nicht an jeden Empfänger der Versammlung.',
-    suchen: '             and m.planner',
-    ersetzen: '             and true',
+    // Seit dem 24.9.2026 in `notify_planners`, nicht mehr in der Richtlinie.
+    suchen: '     and m.planner;',
+    ersetzen: '     and true;',
+  },
+  {
+    id: 'schema-nur-verhinderung-fuer-jeden',
+    datei: 'supabase/schema.sql',
+    regel: 'Über notify_planners meldet ein Verkündiger nur eine Verhinderung — Import und „Plan gesendet" bleiben Planern.',
+    suchen: "  if kind <> 'verhindert' and not public.is_planner() then",
+    ersetzen: '  if false then',
   },
 
   // ── „Plan senden" (T99) ───────────────────────────────────────────────────

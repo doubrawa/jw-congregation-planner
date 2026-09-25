@@ -143,8 +143,21 @@ describe('die Rechteprüfungen stehen im Schema', () => {
   })
 
   it('eine Verhinderungs-Meldung geht nur an Planer (T89)', () => {
+    // Seit dem 24.9.2026 legt `notify_planners` die Zeilen an: Ein Verkündiger
+    // sieht in `members` nur sich selbst und kann die Planer nicht adressieren.
+    const fn = funktionsRuempfe(schema).get('notify_planners') ?? ''
+    expect(fn).toContain('security definer')
+    expect(fn).toContain('and m.planner')
+    // Alles außer der Verhinderung bleibt Planern vorbehalten.
+    expect(fn).toContain("kind <> 'verhindert' and not public.is_planner()")
+  })
+
+  it('unmittelbar in notifications schreiben nur Planer — der Verkündiger-Zweig ist weg', () => {
+    // Er war nie erreichbar (die App fand keinen Empfänger) und hielte eine
+    // zweite Lesart derselben Regel offen.
     const rumpf = richtlinien(schema).get('notifications_insert') ?? ''
-    expect(rumpf).toContain('m.planner')
+    expect(rumpf).toContain('public.is_planner()')
+    expect(rumpf).not.toContain('verhindert')
   })
 
   it('eine Abwesenheit gilt nur der eigenen Person (T97)', () => {

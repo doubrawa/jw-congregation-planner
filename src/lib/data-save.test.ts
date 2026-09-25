@@ -33,8 +33,8 @@ import {
   deletePushSubscription,
   deleteServiceRow,
   generateInviteCode,
-  insertNotifications,
   markNotificationsRead,
+  notifyPlanners,
   redeemInvite,
   saveAbsence,
   saveConfirmation,
@@ -214,14 +214,13 @@ describe('Insert-Schreiber', () => {
     expect(chain.from).toHaveBeenCalledWith('invites')
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'i1', code: 'ABC' }))
   })
-  it('insertNotifications → eine Zeile je Empfänger; leere Liste = kein Schreiben', () => {
-    insertNotifications('c1', ['u1', 'u2'], 'gesendet', 'T', 'B')
-    expect(chain.insert).toHaveBeenCalledWith([
-      expect.objectContaining({ user_id: 'u1', type: 'gesendet' }),
-      expect.objectContaining({ user_id: 'u2' }),
-    ])
-    vi.clearAllMocks()
-    insertNotifications('c1', [], 'gesendet', 'T', 'B')
+  it('notifyPlanners → rpc notify_planners; die Empfänger sucht die Datenbank', () => {
+    notifyPlanners('verhindert', 'Verhinderung gemeldet', 'B')
+    expect(chain.rpc).toHaveBeenCalledWith('notify_planners', {
+      kind: 'verhindert', subject: 'Verhinderung gemeldet', message: 'B',
+    })
+    // Keine Empfängerliste und kein eigener Insert aus dem Client: Ein
+    // Verkündiger kennt die Planer nicht (RLS zeigt ihm nur die eigene Zeile).
     expect(chain.from).not.toHaveBeenCalled()
   })
 })
