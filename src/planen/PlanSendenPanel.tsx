@@ -81,8 +81,6 @@ export function PlanSendenPanel() {
         ? offeneMeldungen(
             week,
             state.fsWeeks[state.week],
-            state.week,
-            state.fsBase,
             state.services,
             state.confirmations,
             state.sentLog,
@@ -94,7 +92,6 @@ export function PlanSendenPanel() {
       week,
       state.fsWeeks,
       state.week,
-      state.fsBase,
       state.services,
       state.confirmations,
       state.sentLog,

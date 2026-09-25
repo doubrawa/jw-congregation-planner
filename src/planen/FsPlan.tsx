@@ -1,60 +1,16 @@
 import { useState } from 'react'
-import { useApp, useAppDispatch } from '../app/context'
-import { FS_TIME_OPTIONS, fsKennung, fsLeiterZuteilung, fsTag, fsWeekConflicts } from '../data/fs'
-import { LOCALES } from '../i18n/langs'
+import { useApp } from '../app/context'
+import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
+import { FS_TIME_OPTIONS, fsLeiterZuteilung, fsWeekConflicts, nachWochentag } from '../data/fs'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
+import { AutoAssignRow } from './AutoAssignPanel'
+import { BannerKopf } from './PlanBanners'
 import { SlotChip } from './SlotChip'
 import { machBetrifft } from './useKonflikte'
-import { wochentagNameAusWd } from './wochentage'
+import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
 import { useZusage } from './useZusage'
 import { ZusageLegende } from './ZusageStatus'
-
-
-/**
- * Automatisch zuteilen / Leeren der Treffpunkt-Leiter (wie beim Meeting-Panel,
- * aber eine Zeile). „Leeren" ist mit Zwei-Tipp-Bestätigung abgesichert.
- * `onlyGroup` grenzt bei Gruppenaufsehern auf die eigene Gruppe ein.
- */
-function FsAutoAssign({ onlyGroup }: { onlyGroup: string | null }) {
-  const dispatch = useAppDispatch()
-  const { t } = useT()
-  const [armed, setArmed] = useState(false)
-  return (
-    <div className="plan-auto">
-      <div className="plan-auto-row">
-        <div className="plan-auto-label">{t.fsLeiterLbl}</div>
-        <div className="plan-auto-actions">
-          <button
-            type="button"
-            className="plan-auto-btn plan-auto-btn--primary"
-            onClick={() => {
-              setArmed(false)
-              dispatch({ type: 'fsAutoAssign', onlyGroup })
-            }}
-          >
-            {t.autoZuteilen}
-          </button>
-          <button
-            type="button"
-            className={`plan-auto-btn plan-auto-btn--clear${armed ? ' is-armed' : ''}`}
-            onClick={() => {
-              if (armed) {
-                setArmed(false)
-                dispatch({ type: 'fsClear', onlyGroup })
-              } else {
-                setArmed(true)
-              }
-            }}
-            onBlur={() => setArmed(false)}
-          >
-            {armed ? t.leerenSicher : t.leeren}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 /**
  * Treffpunkte planen (Planen-Tab): je Tag eine Karte mit editierbaren Zeilen
@@ -64,7 +20,8 @@ function FsAutoAssign({ onlyGroup }: { onlyGroup: string | null }) {
  */
 export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const i18n = useT()
+  const { t, tu } = i18n
   const zusage = useZusage()
   const wi = state.week
   // Gruppenaufseher sehen/planen nur die Treffpunkte ihrer eigenen Gruppe.
@@ -72,25 +29,14 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
 
   // Wie bei den Zusammenkünften: wen das Banner darüber nennt, den hebt der
   // Plan hervor. Eigene Quelle, weil Treffpunkte eine eigene haben.
-  const kennung = fsKennung(state.weeks[wi], state.fsBase, wi)
+  const kennung = state.weeks[wi]?.start ?? ''
   const betrifft = machBetrifft(
     state.persons,
     fsWeekConflicts(state.fsWeeks, wi, state.persons, state.absences, kennung, onlyGroup),
   )
 
-  const groupName = (grp: string): string => {
-    const g = state.groups.find((x) => x.id === grp)
-    return g ? tu(g.name) : grp
-  }
-  const title = (inst: FsInstance): string => (inst.grp == null ? t.fsVers : groupName(inst.grp))
-  const dayLabel = (wd: number): string => {
-    const tag = fsTag(kennung, wd)
-    // Ohne brauchbare Kennung (Vorlagen, Demo) bleibt der Wochentag stehen —
-    // ein erfundenes Datum wäre schlimmer als ein fehlendes.
-    return tag
-      ? tag.toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
-      : wochentagNameAusWd(wd, state.lang)
-  }
+  const title = (inst: FsInstance): string => treffpunktTitel(inst, state.groups, i18n)
+  const dayLabel = (wd: number): string => treffpunktTagLabel(kennung, wd, state.lang)
 
   const openLeader = (inst: FsInstance) =>
     dispatch({
@@ -98,16 +44,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
       sel: { kind: 'fs', wi, instId: inst.id, label: title(inst), priv: 'treffpunkt', groups: false },
     })
 
-  // Nach Wochentag gruppieren (fsWeeks ist bereits sortiert).
-  const days: { wd: number; items: FsInstance[] }[] = []
-  for (const inst of insts) {
-    let day = days.find((d) => d.wd === inst.wd)
-    if (!day) {
-      day = { wd: inst.wd, items: [] }
-      days.push(day)
-    }
-    day.items.push(inst)
-  }
+  const days = nachWochentag(insts)
 
   // „Für diese Woche hinzufügen"-Formular (Gruppenaufseher: Ziel = eigene Gruppe).
   const [grp, setGrp] = useState(onlyGroup ?? '')
@@ -137,7 +74,6 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
     setPlace('')
   }
 
-  const wdOptions = [1, 2, 3, 4, 5, 6, 0]
   const wdName = (d: number): string => wochentagNameAusWd(d, state.lang)
 
   // Treffpunkte dieser Woche ohne zugeteilten Leiter → Warn-Banner (analog zu
@@ -148,18 +84,21 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
     <>
       <p className="plan-hint">{t.fsNurWoche}</p>
 
-      <FsAutoAssign onlyGroup={onlyGroup} />
+      {/* `onlyGroup` grenzt bei Gruppenaufsehern auf die eigene Gruppe ein. */}
+      <div className="plan-auto">
+        <AutoAssignRow
+          label={t.fsLeiterLbl}
+          automatisch={() => dispatch({ type: 'fsAutoAssign', onlyGroup })}
+          leeren={() => dispatch({ type: 'fsClear', onlyGroup })}
+        />
+      </div>
       {/* Die Leiter-Chips tragen dieselben Punkte wie die Zusammenkünfte —
           also steht auch hier, was sie bedeuten. */}
       <ZusageLegende />
 
       {openLeaders.length > 0 && (
         <div className="plan-banner-box plan-open">
-          <div className="plan-banner-head">
-            <span className="plan-banner-badge">?</span>
-            <span className="plan-banner-title">{t.offeneTitle}</span>
-            <span className="plan-banner-count">{openLeaders.length}</span>
-          </div>
+          <BannerKopf zeichen="?" titel={t.offeneTitle} anzahl={openLeaders.length} />
           {openLeaders.map((inst) => (
             <div key={inst.id} className="plan-open-row">
               <span className="plan-open-label" dir="auto">
@@ -240,7 +179,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
             </select>
           )}
           <select className="fs-select" value={wd} aria-label={t.a11yWeekday} onChange={(e) => setWd(Number(e.target.value))}>
-            {wdOptions.map((d) => (
+            {WOCHENTAGE_AB_MONTAG.map((d) => (
               <option key={d} value={d}>
                 {wdName(d)}
               </option>

@@ -347,8 +347,8 @@ create index if not exists notifications_task_key_idx
 create index if not exists notifications_feed_idx
   on public.notifications (congregation_id, user_id, created_at desc);
 
--- Aufgaben-Bestätigungen: task_key = stabiler Slot-Pfad einer Zuteilung
--- (siehe partTaskKey/helperTaskKey in src/data/planning.ts). Jedes Mitglied
+-- Aufgaben-Bestätigungen: task_key = stabiler Schlüssel einer Zuteilung
+-- (gebaut in supabase/functions/_shared/aufgaben-schluessel.ts). Jedes Mitglied
 -- schreibt seinen eigenen Status; „offen“ = keine Zeile vorhanden.
 create table if not exists public.confirmations (
   id              uuid primary key default gen_random_uuid(),
@@ -389,9 +389,10 @@ create index if not exists push_subscriptions_congregation_idx
 -- eine Handarbeit, die ein Fremdschlüssel erledigt.
 --
 -- Daneben stand eine Spalte `base` (Montag der Woche 0). Sie wurde bei jedem
--- Speichern mitgeschrieben und **nie gelesen**: Der Ladevorgang leitet die
--- Basis aus den Wochen selbst ab (`fsBaseFromWeeks`), ausdrücklich „unabhängig
--- von der gespeicherten Basis". Sie ist weg.
+-- Speichern mitgeschrieben und **nie gelesen**: Der Client leitete die Basis
+-- aus den Wochen selbst ab, ausdrücklich „unabhängig von der gespeicherten
+-- Basis". Sie ist weg — und seit dem 25.9.2026 auch die Basis im Client:
+-- Jede Treffpunkt-Woche hängt an `weeks.start` der Woche daneben.
 create table if not exists public.fs_rules (
   -- **`text`, nicht `uuid`** — und das ist kein Versehen: Die Kennung vergibt
   -- der Client (`r<uuid>`, siehe `fsRuleAdd` im Reducer), das führende `r`

@@ -52,6 +52,7 @@ import {
   zeitenAus,
   type ZeitenRow,
 } from '../_shared/planung.ts'
+import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 
@@ -360,10 +361,8 @@ Deno.serve(async (req: Request) => {
     const tagISO = meetingISO(weekRows[0]?.start, versatz)
     const qualKey = `svc:${parts.svc}`
     const personById = new Map(persons.map((p) => [p.id, p]))
-    const userByPerson = new Map<string, string>()
-    for (const m of members) if (m.person_id) userByPerson.set(m.person_id, m.user_id)
-    const subsByUser = new Map<string, Sub[]>()
-    for (const s of subsRows) subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
+    const kontoFuer = kontoAufloeser(members, persons)
+    const subsByUser = abosJeKonto(subsRows)
 
     const callerPerson = caller.person_id ? personById.get(caller.person_id) : undefined
     const taskKeyEnc = wert(payload.taskKey!)
@@ -444,7 +443,7 @@ Deno.serve(async (req: Request) => {
         slot.pid ? p.id === slot.pid : displayName(p) === declinedBy
       const peers = persons
         .filter((p) => p.priv?.[qualKey] && !abwesende.has(p.id) && !istAbsager(p))
-        .map((p) => userByPerson.get(p.id))
+        .map((p) => kontoFuer(p.id, displayName(p)))
         .filter((u): u is string => Boolean(u) && u !== userId)
       await notifyUsers(
         cong,
@@ -549,7 +548,7 @@ Deno.serve(async (req: Request) => {
       ? personById.get(originalPid)
       : persons.find((p) => displayName(p) === originalName)
     const recipients = [
-      ...(originalPerson ? [userByPerson.get(originalPerson.id)].filter(Boolean) as string[] : []),
+      ...(originalPerson ? [kontoFuer(originalPerson.id, displayName(originalPerson))].filter(Boolean) as string[] : []),
       ...members.filter((m) => m.planner).map((m) => m.user_id),
     ]
     await notifyUsers(

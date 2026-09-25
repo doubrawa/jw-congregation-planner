@@ -21,7 +21,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AbsenceSet } from './absence'
 import { buildImportWeek, DEMO_SERVICES } from './testdaten'
-import { fsAutoAssign, FS_LOAD_WEEKS, fsWochenStart } from './fs'
+import { fsAutoAssign, FS_LOAD_WEEKS } from './fs'
 import { displayName, emptyQualifications, idAufloeser, programmPlaetze } from './helpers'
 import { partWorkload } from './auslastung'
 import { autoAssignMeeting } from './planning'
@@ -91,15 +91,19 @@ function leereTreffpunkte(n: number): FsInstance[][] {
   ])
 }
 
+/**
+ * `mitKennung`: die Wochen tragen ihren Montag (ab 5.10.2026, wie `montag`) —
+ * nur dann prüft die Auto-Zuteilung Abwesenheiten am Tag des Treffpunkts.
+ */
 function planeTreffpunkte(
   n: number,
   poolAb: (wi: number) => Person[],
   absences: readonly Absence[] = [],
-  base?: Date,
+  mitKennung = false,
 ): FsInstance[][] {
   let fsWeeks = leereTreffpunkte(n)
   for (let wi = 0; wi < n; wi++) {
-    fsWeeks = fsAutoAssign(fsWeeks, wi, poolAb(wi), null, absences, fsWochenStart(base ?? null, wi)).fsWeeks
+    fsWeeks = fsAutoAssign(fsWeeks, wi, poolAb(wi), null, absences, mitKennung ? montag(wi) : '').fsWeeks
   }
   return fsWeeks
 }
@@ -121,17 +125,10 @@ const summe = (a: number[], von: number, bis: number): number =>
   a.slice(von, bis).reduce((x, y) => x + y, 0)
 
 /** Montag der Woche 0 — für die Datums-Abwesenheiten der Treffpunkte. */
-const BASE = new Date(2026, 8, 7, 12)
-const iso = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
-/** Abwesenheit über die Wochen [von, bis) als Datumsspanne. */
+/** Abwesenheit über die Wochen [von, bis) als Datumsspanne — im Raster von `montag`. */
 function urlaub(personId: string, von: number, bis: number): Absence[] {
-  const a = new Date(BASE.getTime())
-  a.setDate(a.getDate() + von * 7)
-  const b = new Date(BASE.getTime())
-  b.setDate(b.getDate() + bis * 7 - 1)
-  return [{ id: 'u', personId, userId: '', from: iso(a), to: iso(b), reason: '' }]
+  const sonntagVorBis = new Date(Date.parse(montag(bis)) - 864e5).toISOString().slice(0, 10)
+  return [{ id: 'u', personId, userId: '', from: montag(von), to: sonntagVorBis, reason: '' }]
 }
 
 /* ---- Wochen-Deckel ------------------------------------------------------- */
@@ -256,7 +253,7 @@ describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => 
     const weg = alle[0]
     const VON = 30
     const BIS = 42
-    const fsWeeks = planeTreffpunkte(60, () => alle, urlaub(weg.id, VON, BIS), BASE)
+    const fsWeeks = planeTreffpunkte(60, () => alle, urlaub(weg.id, VON, BIS), true)
     const r = leitungenJeWoche(fsWeeks, displayName(weg))
 
     expect(summe(r, VON, BIS), 'während des Urlaubs eingeteilt').toBe(0)
@@ -267,7 +264,7 @@ describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => 
   it('Treffpunkte: der Rückkehrer verschwindet aber nicht dauerhaft', () => {
     const alle = Array.from({ length: 9 }, () => mk(['treffpunkt']))
     const weg = alle[0]
-    const fsWeeks = planeTreffpunkte(60, () => alle, urlaub(weg.id, 30, 42), BASE)
+    const fsWeeks = planeTreffpunkte(60, () => alle, urlaub(weg.id, 30, 42), true)
     const r = leitungenJeWoche(fsWeeks, displayName(weg))
     expect(summe(r, 42, 60), 'nach der Rückkehr nie wieder dran').toBeGreaterThan(0)
   })
@@ -379,7 +376,7 @@ describe('Kleine Kreise und Ausnahmezustände', () => {
   it('Treffpunkte: sind alle abwesend, bleibt der Platz offen', () => {
     const alle = Array.from({ length: 3 }, () => mk(['treffpunkt']))
     const abw = alle.flatMap((p) => urlaub(p.id, 0, 4))
-    const fsWeeks = planeTreffpunkte(3, () => alle, abw, BASE)
+    const fsWeeks = planeTreffpunkte(3, () => alle, abw, true)
     expect(fsWeeks[0].every((i) => i.leader === '')).toBe(true)
   })
 
@@ -472,7 +469,7 @@ describe('Gesprächspartner: die Id des Führers entscheidet', () => {
       range: '',
       book: '',
       start: montag(0),
-      current: false,
+      
       mid: {
         date: '',
         end: '',

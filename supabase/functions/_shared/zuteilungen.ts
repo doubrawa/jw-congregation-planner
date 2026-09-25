@@ -239,7 +239,7 @@ export function pendingOfFsWeek(
 }
 
 /**
- * Unbestätigte Zuteilungen; task_key-Schema wie itemTaskKey/helperTaskKey.
+ * Unbestätigte Zuteilungen; task_key-Schema wie punktKey/helferKey.
  *
  * Der Schlüssel hat **eine** Form: Montag der Woche, Zusammenkunft, Raum,
  * Kennung des Punkts, Platz. Weder die Woche noch der Punkt werden über eine
@@ -285,7 +285,7 @@ export function pendingOfMeeting(
         for (const [ni, slot] of names.entries()) {
           if (!slot.name || SKIP_ROLE.test(slot.rolle ?? '')) continue
           // Schlüssel über die stabile Kennung des Punkts — derselbe Erzeuger,
-          // den der Client unter dem Namen `itemTaskKey` kennt.
+          // den der Client unter dem Namen `punktKey` kennt.
           const key = punktKey(woche, tab, item.iid, ni, abschnitt === 'aux')
           if (conf.has(key)) continue
           out.push({
@@ -435,14 +435,6 @@ export function uebersetzerFuer(): (lang: string | null) => (s: string) => strin
     return tr
   }
 }
-
-/*
- * `terminText` steht in `_shared/planung.ts` — die Regel „Termin einer
- * Zusammenkunft" gehört in die untere, abhängigkeitsfreie Schicht, damit auch
- * `substitute` sie benutzen kann, ohne den Fragment-Übersetzer mitzuladen.
- * Hier nur weitergereicht, damit die bestehenden Import-Wege gültig bleiben.
- */
-export { terminText }
 
 /**
  * „Treffpunkt-Leiter" — die Bezeichnung eines Treffpunkt-Platzes, kanonisch

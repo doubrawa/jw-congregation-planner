@@ -15,10 +15,8 @@ import {
   DEMO_PERSONS,
   DEMO_REMINDERS,
   DEMO_SERVICES,
-  FS_BASE,
 } from '../data/testdaten'
 import { isSong } from '../data/helpers'
-import { isoDay } from '../data/meeting-dates'
 import type { PartItem, Week } from '../data/types'
 
 /**
@@ -66,7 +64,6 @@ function ladung(): HydratePayload {
     weeks: buildDemoWeeks(),
     fsRules: DEMO_FS_RULES.map((r) => ({ ...r })),
     fsWeeks: buildDemoFsWeeks(),
-    fsBase: isoDay(FS_BASE),
     absences: DEMO_ABSENCES.map((a) => ({ ...a })),
     notifications: DEMO_NOTIFICATIONS.map((n) => ({ ...n })),
     confirmations: {},
@@ -139,7 +136,6 @@ function schreibfolge(s: AppState): AppAction[] {
     // Wochen-Sonderfälle
     { type: 'setAbweichung', tab: 'mid', patch: { wd: 3, time: '19:30' } },
     { type: 'setAbweichung', tab: 'mid', patch: { cancelled: true, reason: 'Probe' } },
-    { type: 'setDienstwoche', on: true },
     { type: 'setAnlass', art: 'co' },
     { type: 'setAnlassTermin', patch: { von: '2026-09-12', bis: '2026-09-13' } },
     { type: 'setAnlass', art: null },

@@ -8,10 +8,10 @@ import {
   fsRenameLeader,
   fsSetLeader,
   fsWeekConflicts,
-  fsWochenStart,
   regenFsWeeks,
 } from './fs'
 import { emptyQualifications } from './helpers'
+import { montagNach } from './meeting-dates'
 import type { Absence, FsInstance, Person } from './types'
 
 /**
@@ -45,10 +45,8 @@ function inst(patch: Partial<FsInstance> = {}): FsInstance {
   return { id: 'i1', ruleId: null, grp: null, wd: 1, time: '09:30', place: 'KH', leader: '', ...patch }
 }
 
-/** Montag der Woche 0 = 7. September 2026 (wie in fs.test.ts). */
-const BASE = new Date(2026, 8, 7, 12)
-/** Wochenkennungen zu BASE — Schlüssel und Datum hängen seit T100 daran. */
-const KENN = Array.from({ length: 6 }, (_unused, wi) => fsWochenStart(BASE, wi))
+/** Wochenkennungen ab Montag, 7. September 2026 (wie in fs.test.ts) — Schlüssel und Datum hängen seit T100 daran. */
+const KENN = Array.from({ length: 6 }, (_unused, wi) => montagNach('2026-09-07', wi))
 
 describe('T63 · Freitext-Leiter: setzen und zurücknehmen', () => {
   it('Freitext setzt `lext` und lässt keine Person-Id stehen', () => {

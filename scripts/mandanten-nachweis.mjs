@@ -47,8 +47,7 @@
  * Rückgabewert 0 = alle Proben bestanden, 1 = mindestens eine nicht.
  */
 
-import { pathToFileURL } from 'node:url'
-import { pruefKlient } from './gemeinsam.mjs'
+import { alsSkript, pruefKlient } from './gemeinsam.mjs'
 
 /* ===================== Was geprüft wird =================================== */
 
@@ -309,9 +308,4 @@ async function main() {
   process.exitCode = 1
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    process.exit(1)
-  })
-}
+alsSkript(import.meta.url, main)

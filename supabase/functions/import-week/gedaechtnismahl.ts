@@ -135,7 +135,7 @@ export function gedaechtnismahlWoche(montagISO: string, memISO: string): MemWoch
   return {
     range,
     book: '', // kein Bibellese-Kapitel: es gibt keine Wochenseite
-    current: false,
+    
     mid: { date: range, end: '', sections: [], helpers: {} },
     we: weekendTemplate(range),
     start: montagISO,

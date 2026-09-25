@@ -92,7 +92,7 @@ function makeWeek(): Week {
     ],
     helpers: {},
   }
-  return { range: '7.–13. September', book: '', start: '2026-09-07', current: false, mid, we }
+  return { range: '7.–13. September', book: '', start: '2026-09-07', mid, we }
 }
 
 /**

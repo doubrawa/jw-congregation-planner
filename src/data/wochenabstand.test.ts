@@ -33,29 +33,23 @@ function meeting(mitAufgabe: boolean): Meeting {
 }
 
 function woche(start: string, mitAufgabe: boolean): Week {
-  return { range: start, book: '', start, current: false, mid: meeting(mitAufgabe), we: meeting(false) }
+  return { range: start, book: '', start, mid: meeting(mitAufgabe), we: meeting(false) }
 }
 
 describe('wochenAbstand', () => {
-  it('misst in Wochen, wenn beide ein Startdatum haben', () => {
-    expect(wochenAbstand(woche('2026-06-01', false), woche('2026-06-08', false), 0, 1)).toBe(1)
+  it('misst in Wochen am Startdatum, nicht an der Position', () => {
+    expect(wochenAbstand(woche('2026-06-01', false), woche('2026-06-08', false))).toBe(1)
     // Zwei Einträge nebeneinander, aber zwei Wochen auseinander.
-    expect(wochenAbstand(woche('2026-06-08', false), woche('2026-06-22', false), 1, 2)).toBe(2)
-  })
-
-  it('fällt ohne Startdatum auf den Indexabstand zurück', () => {
-    // Demo-Daten und von Hand angelegte Wochen haben kein `start`. Die alte
-    // Näherung ist dort besser als gar keine Ordnung.
-    const ohne: Week = { range: '', book: '', start: '', current: false, mid: meeting(false), we: meeting(false) }
-    expect(wochenAbstand(ohne, woche('2026-06-08', false), 0, 3)).toBe(3)
-    expect(wochenAbstand(undefined, undefined, 2, 5)).toBe(3)
+    expect(wochenAbstand(woche('2026-06-08', false), woche('2026-06-22', false))).toBe(2)
+    // Der Betrag: Wochen lassen sich in beliebiger Reihenfolge planen.
+    expect(wochenAbstand(woche('2026-06-22', false), woche('2026-06-08', false))).toBe(2)
   })
 
   it('überbrückt den Jahreswechsel und die Sommerzeit', () => {
-    expect(wochenAbstand(woche('2026-12-28', false), woche('2027-01-04', false), 0, 1)).toBe(1)
+    expect(wochenAbstand(woche('2026-12-28', false), woche('2027-01-04', false))).toBe(1)
     // Ende März springt die Uhr — die Differenz ist dann keine glatte Woche
     // mehr in Millisekunden, gerundet aber sehr wohl.
-    expect(wochenAbstand(woche('2026-03-23', false), woche('2026-03-30', false), 0, 1)).toBe(1)
+    expect(wochenAbstand(woche('2026-03-23', false), woche('2026-03-30', false))).toBe(1)
   })
 })
 

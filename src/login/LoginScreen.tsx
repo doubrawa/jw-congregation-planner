@@ -3,10 +3,10 @@ import { useApp } from '../app/context'
 import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import { LOGO } from '../lib/logo'
 import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
 import { authFehlerText } from './auth-text'
 import { KONTAKT_MAIL, kontaktVerweis } from './kontakt'
+import { LoginKopf } from './LoginKopf'
 import './login.css'
 
 /**
@@ -76,19 +76,9 @@ export function LoginScreen() {
 
   return (
     <div className="login">
-      <header className="login-head">
-        <img className="login-logo" src={LOGO} alt="" width={72} height={72} />
-        {/* `wbr` statt festem Umbruch: der Name steht auf einer Zeile und
-            bricht erst, wenn schmales Gerät oder große Schrift ihn drängen. */}
-        <h1 className="login-wordmark">
-          Versammlung
-          <wbr />
-          .app
-        </h1>
-        {/* Wer ohne Einladung hierher kommt, erfährt sonst nicht, wofür die
-            App da ist (T113). */}
-        <p className="login-sub">{t.appZweck}</p>
-      </header>
+      {/* Wer ohne Einladung hierher kommt, erfährt sonst nicht, wofür die App
+          da ist (T113). */}
+      <LoginKopf untertitel={t.appZweck} />
 
       <form className="login-form" onSubmit={submit}>
         <label className="login-label" htmlFor="login-mail">

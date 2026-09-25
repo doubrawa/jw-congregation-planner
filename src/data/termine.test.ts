@@ -17,7 +17,7 @@ function woche(patch: Partial<Week> = {}): Week {
   return {
     range: '7.–13. September',
     book: '',
-    current: false,
+    
     mid: { date: '', sections: [] },
     we: { date: '', sections: [] },
     ...patch,

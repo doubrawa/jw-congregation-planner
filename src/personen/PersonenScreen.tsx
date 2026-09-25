@@ -251,7 +251,7 @@ function PersonList() {
         {/* Ohne angelegte Gruppen hätte die Auswahl nur den Platzhalter. */}
         {state.groups.length > 0 && (
           <FilterSelect
-          locale={locale}
+            locale={locale}
             label={t.gruppeLbl}
             value={filter.grp}
             onChange={(v) => setz({ grp: v })}

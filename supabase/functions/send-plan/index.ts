@@ -58,6 +58,7 @@ import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
 import { wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import { heuteUtc, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
+import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import {
   type Eintrag,
   type FsInstance,
@@ -228,53 +229,15 @@ Deno.serve(async (req: Request) => {
       ),
     ])
 
-    const personById = new Map(persons.map((p) => [p.id, p]))
-    // Zuordnung bevorzugt über die Person-Id; der Namensweg bleibt als Rückfall
-    // für Plätze ohne `pid` (Altdaten, Hilfsdienste als reine Zeichenkette).
-    // Zwei Personen desselben Namens bekämen sonst gegenseitig die Nachrichten
-    // des anderen — dagegen warnt die App den Planer eigens (T-Dubletten).
-    const userByPerson = new Map<string, string>()
-    const userByName = new Map<string, string>()
-    const personByName = new Map<string, string>()
-    for (const m of members) {
-      const p = m.person_id ? personById.get(m.person_id) : undefined
-      if (!p) continue
-      userByPerson.set(p.id, m.user_id)
-      userByName.set(personDisplayName(p.fn, p.ln), m.user_id)
-    }
-    for (const p of persons) personByName.set(personDisplayName(p.fn, p.ln), p.id)
-    const subsByUser = new Map<string, SubscriptionRow[]>()
-    for (const s of subs) subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
+    // Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (siehe
+    // `_shared/konten.ts`).
+    const kontoFuer = kontoAufloeser(members, persons)
+    const personByName = new Map(persons.map((p) => [personDisplayName(p.fn, p.ln), p.id]))
+    const subsByUser = abosJeKonto(subs)
     const empfaengerFuer = (uid: string): Empfaenger => ({
       userId: uid,
       subs: subsByUser.get(uid) ?? [],
     })
-    /**
-     * Konto einer eingeteilten Person: **Id zuerst, Name als Rückfall.**
-     *
-     * Am Namen allein bekämen zwei Gleichnamige gegenseitig die Nachricht des
-     * anderen — der eine übt weiter für einen Platz, den er nicht mehr hat,
-     * und der andere erschrickt über einen Entzug, den es nie gab. Die Regel
-     * stand hier dreimal wörtlich; `send-reminders` trägt ihre eigene vierte
-     * Abschrift.
-     *
-     * **Der Namensweg gilt nur, wo es keine Id gibt.** Hier stand ein `??`, das
-     * ihn auch dann noch nachschob, wenn der Platz eine `pid` trug und die
-     * gemeinte Person kein Konto hat. Getroffen wurde damit zwangsläufig ein
-     * **anderer**: Wer kein Konto hat, steht in keiner der beiden Tabellen —
-     * ein Treffer über den Namen kann also nur von einem Namensvetter kommen.
-     *
-     * Der Preis war doppelt. Der Namensvetter bekam eine Nachricht, die ihn
-     * nichts angeht (in seiner Aufgabenliste steht sie nicht, der Client
-     * entscheidet über die Id). Und der Gemeinte galt als erreicht — er fiel
-     * damit aus der Liste, mit der die Planer erfahren, wen sie persönlich
-     * ansprechen müssen.
-     *
-     * `idAufloeser` im Client zieht dieselbe Grenze ausdrücklich: Eine
-     * unbekannte Id ergibt `undefined`, nie einen Namenstreffer.
-     */
-    const kontoFuer = (pid: string | undefined, name: string): string | undefined =>
-      pid ? userByPerson.get(pid) : userByName.get(name)
 
     /* ---- Aktion: bestätigte Zuteilungen wurden zurückgezogen ---- */
     if (payload.action === 'entzug') {

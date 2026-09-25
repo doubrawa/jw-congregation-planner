@@ -220,7 +220,7 @@ function kanonisch(): Week {
     range: '7.–13. September',
     book: 'JEREMIA 32–33',
     start: '2026-09-07',
-    current: false,
+    
     mid,
     we,
   }
@@ -581,7 +581,6 @@ describe('Konflikte finden auch fremdsprachige Wochen', () => {
     const abwesend = buildAbsences(
       [{ id: 'a1', personId: NIKLAS.id, userId: null, from: '2026-09-07', to: '2026-09-13', reason: '' }],
       [w],
-      new Date(2026, 8, 7, 12),
       { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } },
     )
     const konflikte = weekConflicts([w], 0, [NIKLAS], DIENSTE, 'mid', abwesend)

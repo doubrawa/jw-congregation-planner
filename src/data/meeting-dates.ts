@@ -81,37 +81,36 @@ export function meetingTime(week: Week, tab: MeetingKey, zeiten: MeetingTimes): 
 }
 
 /**
- * Kalendertag einer Zusammenkunft. Zwei Quellen, in dieser Reihenfolge:
- *  1. das ISO-Startdatum der Woche (jw.org-Import) plus Wochentag-Versatz,
- *  2. der Montag der Woche 0 (`base`) plus `wi` Wochen plus Wochentag-Versatz —
- *     für Demo- und Vorlagenwochen, die kein Startdatum tragen.
+ * Kalendertag einer Zusammenkunft: der Montag der Woche (`Week.start`, T66)
+ * plus Wochentag-Versatz.
  *
  * Einzige Stelle, an der aus „Woche + Zusammenkunft" ein Datum wird —
  * Zeitleiste, Abwesenheiten, Countdown und Anzeige leiten alle hierher ab.
+ * Bis zum 25.9.2026 gab es daneben einen Rückfall „Montag der Woche 0 plus
+ * `wi` Wochen" für Wochen ohne Startdatum; die gibt es nicht, jede Woche ist
+ * ihre Kalenderwoche.
  */
-export function meetingDate(
-  week: Week,
-  wi: number,
-  tab: MeetingKey,
-  base: Date,
-  zeiten: MeetingTimes,
-): Date {
-  const montag = week.start ? fromIso(week.start) : new Date(base)
-  const tag = new Date(montag)
-  tag.setDate(tag.getDate() + (week.start ? 0 : wi * 7) + meetingOffset(week, tab, zeiten))
+export function meetingDate(week: Week, tab: MeetingKey, zeiten: MeetingTimes): Date {
+  const tag = fromIso(week.start)
+  tag.setDate(tag.getDate() + meetingOffset(week, tab, zeiten))
   return tag
 }
 
 /**
- * UTC-Zeitstempel (ms) des Zusammenkunftstags oder null, wenn die Woche kein
- * ISO-Startdatum hat. Auf Mitternacht UTC normalisiert — der Countdown zählt
- * ganze Kalendertage, keine Uhrzeiten.
- *
- * Ohne Startdatum bewusst null statt einer Schätzung aus `base`: Demo- und
- * Vorlagenwochen liegen nirgends im Kalender, ein Countdown darauf wäre erfunden.
+ * Der Montag `wochen` Wochen nach `start` — als ISO-Datum, über UTC gerechnet:
+ * Ein Montag plus sieben Tage ist wieder ein Montag, gleich in welcher
+ * Zeitzone. Das Fenster der Auslastung und die Proben bauen daraus Kennungen.
+ */
+export function montagNach(start: string, wochen: number): string {
+  return new Date(Date.parse(start) + wochen * 7 * 864e5).toISOString().slice(0, 10)
+}
+
+/**
+ * UTC-Zeitstempel (ms) des Zusammenkunftstags — `null`, wenn die Kennung der
+ * Woche kein Datum ist (Proben). Auf Mitternacht UTC normalisiert — der
+ * Countdown zählt ganze Kalendertage, keine Uhrzeiten.
  */
 export function meetingDateMs(week: Week, tab: MeetingKey, zeiten: MeetingTimes): number | null {
-  if (!week.start) return null
   const start = Date.parse(week.start)
   if (Number.isNaN(start)) return null
   return start + meetingOffset(week, tab, zeiten) * 864e5
@@ -142,26 +141,11 @@ export function deutschesDatum(d: Date): string {
  * Aufgaben", im S-89-Formular und im Erinnerungstext: eine Woche statt eines
  * Termins.
  *
- * Gerechnet wird aus Startdatum, Wochentag und Uhrzeit. Ohne Startdatum (Demo,
- * Vorlagen) bleibt stehen, was dasteht — dort gibt es keinen Kalendertag.
+ * Gerechnet wird aus Startdatum, Wochentag und Uhrzeit.
  */
-export function meetingDateText(
-  week: Week,
-  wi: number,
-  tab: MeetingKey,
-  zeiten: MeetingTimes,
-): string {
-  const roh = week[tab].date
-  const kurz = roh.split(' · ').slice(0, 2).join(' · ')
-  const abw = abweichung(week, tab)
-  if (!week.start) {
-    // Ohne Startdatum (Demo, Vorlagen) lässt sich kein Kalendertag rechnen. Eine
-    // verlegte Uhrzeit steht trotzdem fest und gehört dazu.
-    if (abw?.time) return `${kurz.split(' · ')[0]} · ${abw.time}`
-    return kurz
-  }
+export function meetingDateText(week: Week, tab: MeetingKey, zeiten: MeetingTimes): string {
   const zeit = meetingTime(week, tab, zeiten)
-  const tagText = deutschesDatum(meetingDate(week, wi, tab, new Date(), zeiten))
+  const tagText = deutschesDatum(meetingDate(week, tab, zeiten))
   return zeit ? `${tagText} · ${zeit}` : tagText
 }
 
@@ -198,15 +182,12 @@ export function tageZwischen(a: Date, b: Date): number {
 /**
  * Index der Woche, in die `heute` fällt — oder −1.
  *
- * `week.current` kommt aus den Demo-Daten und wird nie nachgeführt: nach dem
- * Login stand die Anwendung deshalb auf der ältesten geladenen Woche, das
- * Dashboard meldete dauerhaft „0 Konflikte" und der Chip „AKTUELLE WOCHE"
- * erschien nie. Maßgeblich ist das Startdatum; nur wo keine Woche eines hat
- * (Demo, Vorlagen), zählt weiterhin das Flag.
+ * Maßgeblich ist das Startdatum der Woche. Ein gespeichertes Kennzeichen
+ * (`current`, bis zum 25.9.2026) setzte nur der Demo-Datensatz, und es wurde
+ * nie nachgeführt: Nach dem Login stand die Anwendung deshalb auf der
+ * ältesten geladenen Woche, und der Chip „AKTUELLE WOCHE" erschien nie.
  */
 export function currentWeekIndex(weeks: readonly Week[], heute = new Date()): number {
-  const mitStart = weeks.findIndex((w) => w.start)
-  if (mitStart === -1) return weeks.findIndex((w) => w.current)
   for (let i = 0; i < weeks.length; i++) {
     const iso = weeks[i]?.start
     if (!iso) continue
@@ -225,8 +206,8 @@ export function currentWeekIndex(weeks: readonly Week[], heute = new Date()): nu
  * ist, weiß niemand. Eine Aufgabe, die um 20:47 aus der Liste fällt, wäre
  * geraten — am Tag danach ist sie unstrittig vorbei.
  *
- * `at` fehlt bei Wochen ohne Startdatum (Demo, Vorlagen): Die liegen nirgends im
- * Kalender, also ist dort nichts vorbei.
+ * `at` fehlt bei einem Treffpunkt ohne brauchbare Wochen-Kennung (Proben): Der
+ * liegt nirgends im Kalender, also ist dort nichts vorbei.
  */
 export function istVorbei(at: number | null | undefined, heute = new Date()): boolean {
   if (at == null) return false

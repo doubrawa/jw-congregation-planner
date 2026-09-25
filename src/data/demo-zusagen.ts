@@ -13,8 +13,8 @@
  * Die Demo-Daten selbst bekommt die Funktion übergeben: `testdaten.ts` darf nur
  * die Entwickler-Ansicht importieren (`testdaten-grenze.test.ts`).
  */
-import { fsKennung, fsLeiterZuteilung, fsTaskKey } from './fs'
-import { eachAssignedSlot, helperTaskKey } from './planning'
+import { fsLeiterZuteilung, fsTaskKey } from './fs'
+import { eachAssignedSlot, helferKey } from './planning'
 import { STANDARD_ZEITEN } from './vorgaben'
 import type { ConfirmationMap, FsInstance, Service, Week } from './types'
 
@@ -22,24 +22,23 @@ export function buildDemoConfirmations(
   weeks: Week[],
   services: Service[],
   fsWeeks: FsInstance[][],
-  fsBase: Date | null,
   /** Wer noch nicht zugesagt hat (Anzeigenamen) — alle übrigen haben. */
   unbestaetigt: readonly string[],
 ): ConfirmationMap {
   const offen = new Set(unbestaetigt)
   // Eine Absage je Woche, immer am selben Ort: der zweite Platz am Mikrofon
   // unter der Woche. So ist sie in jeder Woche zu finden, die man aufschlägt.
-  const absagen = new Set(weeks.map((w) => helperTaskKey(w.start, 'mid', 'mik', 1)))
+  const absagen = new Set(weeks.map((w) => helferKey(w.start, 'mid', 'mik', 1)))
   const out: ConfirmationMap = {}
-  eachAssignedSlot(weeks, services, STANDARD_ZEITEN, (name, key) => {
+  eachAssignedSlot(weeks, services, STANDARD_ZEITEN, (slot, key) => {
     if (absagen.has(key)) out[key] = 'verhindert'
-    else if (!offen.has(name)) out[key] = 'bestätigt'
+    else if (!offen.has(slot.name)) out[key] = 'bestätigt'
   })
   fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
       // Offen oder Freitext-Leiter: keine Person von hier, also keine Zusage.
       if (!fsLeiterZuteilung(inst) || offen.has(inst.leader)) continue
-      out[fsTaskKey(fsKennung(weeks[wi], fsBase, wi), inst.id)] = 'bestätigt'
+      out[fsTaskKey(weeks[wi]?.start ?? '', inst.id)] = 'bestätigt'
     }
   })
   return out

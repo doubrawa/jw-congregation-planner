@@ -5,7 +5,6 @@
  * (Zustand vor/nach der Aktion) ausgewertet.
  */
 
-import { changedSlotKeys } from '../data/planning'
 import { fsTaskKeyWoche } from '../data/fs'
 import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
 import {
@@ -41,8 +40,7 @@ import {
   sendPlanEntzug,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
-import { mtab, namensDublette } from '../data/helpers'
-import { dienstZusagenKeys } from '../data/dienste'
+import { namensDublette } from '../data/helpers'
 import { supabase } from '../lib/supabase'
 import type { FsInstance, Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
@@ -253,13 +251,14 @@ const GEBUENDELT: readonly AppAction['type'][] = [
 ]
 
 /**
- * Aktionen, deren geänderte Wochen **nicht** von hier geschrieben werden — je
- * mit einem Grund, nicht als Buchhaltung:
+ * Aktionen, deren geänderte Wochen und verfallene Zusagen **nicht** von hier
+ * geschrieben werden — je mit einem Grund, nicht als Buchhaltung:
  *
  * - `hydrate` ersetzt den ganzen Bestand. Geschrieben würde alles, was gerade
  *   gelesen wurde — und weil Wochen mit Vergleiche-und-Tausche gespeichert
  *   werden (T39), bekäme der nächste Planer Konflikte für Wochen, die niemand
- *   angefasst hat.
+ *   angefasst hat; und jede Zusage, die der frische Bestand nicht mehr kennt,
+ *   würde gelöscht.
  * - `takeSubstitute` schreibt die Edge Function: Wochen und Bestätigungen sind
  *   planer-only, der Einspringende dürfte es selbst gar nicht.
  */
@@ -298,34 +297,36 @@ function wochePlanen(congId: string, weeks: Week[], wi: number): void {
 }
 
 /**
- * Treffpunkt-Zusagen, die der Reducer bei dieser Aktion abgeräumt hat — je
- * Woche (Kennung).
+ * Zusagen, die der Reducer bei dieser Aktion abgeräumt hat — die der
+ * Zusammenkünfte als Liste, die der Treffpunkte je Woche (Kennung).
  *
- * **Abgelesen, nicht nachgerechnet.** Welche Zusage mit ihrem Leiter verfällt,
- * entscheidet der Reducer (`ohneVerwaisteTreffpunktZusagen`). Hier stand
- * vorher dieselbe Rechnung ein zweites Mal; jetzt gilt, was im Zustand fehlt.
- * Eine künftige Ausnahme im Reducer kommt so von selbst in der Datenbank an.
+ * **Abgelesen, nicht nachgerechnet.** Welche Zusage verfällt, entscheidet der
+ * Reducer (`dropConfirmations`, `ohneVerwaisteTreffpunktZusagen`); hier gilt,
+ * was im Zustand fehlt. Bis zum 25. September 2026 rechneten vier Zweige die
+ * Zusammenkunfts-Schlüssel ein zweites Mal nach (`changedSlotKeys` bei
+ * assign, autoAssign und clearAssignments, `dienstZusagenKeys` bei
+ * removeService), nur `lacRemove` las ab. Eine künftige Ausnahme im Reducer
+ * kommt so von selbst in der Datenbank an.
  *
- * Nur Treffpunkt-Schlüssel: Die Zusammenkünfte räumen ihre Zeilen in ihren
- * eigenen Zweigen ab (`changedSlotKeys`), und dort werden Schlüssel auch
- * umbenannt statt gelöscht (`shiftPartConfirmations`).
+ * Die Zusammenkunfts-Schlüssel gehen sofort hinaus (Block unter dem Switch);
+ * die Treffpunkt-Schlüssel **erst mit dem Schreiben ihrer Woche**
+ * (`fsWocheSpeichern`, `fsWochePlanen`): Fehlt die Woche, behält die
+ * Datenbank den alten Leiter, also gehört ihm auch weiter seine Zusage.
  *
- * **Gelöscht wird nur, was mit einer geschriebenen Woche verfällt.** Deshalb
- * braucht `hydrate` keine Ausnahme: Es ersetzt die Zusagen im Ganzen, schreibt
- * aber keine Woche — was dort fehlt, bleibt unberührt.
- *
- * Löschen dürfen Planer und Gruppenaufseher, die ihre
- * Treffpunkte selbst besetzen.
+ * Löschen dürfen Planer und Gruppenaufseher, die ihre Treffpunkte selbst
+ * besetzen.
  */
-function verwaisteFsZusagen(prev: AppState, next: AppState): Map<string, string[]> {
-  const jeWoche = new Map<string, string[]>()
-  if (prev.confirmations === next.confirmations) return jeWoche
+function verfalleneZusagen(prev: AppState, next: AppState): { meeting: string[]; fs: Map<string, string[]> } {
+  const meeting: string[] = []
+  const fs = new Map<string, string[]>()
+  if (prev.confirmations === next.confirmations) return { meeting, fs }
   for (const key of Object.keys(prev.confirmations)) {
     if (key in next.confirmations) continue
     const woche = fsTaskKeyWoche(key)
-    if (woche !== null) jeWoche.set(woche, [...(jeWoche.get(woche) ?? []), key])
+    if (woche === null) meeting.push(key)
+    else fs.set(woche, [...(fs.get(woche) ?? []), key])
   }
-  return jeWoche
+  return { meeting, fs }
 }
 
 /**
@@ -415,9 +416,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   // übersehener Pfad nicht in einen Schreibversuch auf veraltetem Stand läuft.
   if (next.staleAt) return
 
-  // Welche Treffpunkt-Zusagen mit dieser Aktion verfallen — gelöscht werden sie
-  // erst mit dem Schreiben ihrer Woche (`fsWocheSpeichern`, `fsWochePlanen`).
-  const fsVerwaist = verwaisteFsZusagen(prev, next)
+  // Welche Zusagen mit dieser Aktion verfallen. Die der Treffpunkte werden
+  // erst mit dem Schreiben ihrer Woche gelöscht (`fsWocheSpeichern`,
+  // `fsWochePlanen`), die der Zusammenkünfte unter dem Switch.
+  const verfallen = verfalleneZusagen(prev, next)
+  const fsVerwaist = verfallen.fs
 
   /*
    * Steht der Name der gerade bearbeiteten Person vorübergehend doppelt da
@@ -433,46 +436,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
 
   switch (action.type) {
     case 'assign': {
+      // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle. Die Zusammenkunfts-Woche
+      // und ihre verfallenen Zusagen schreibt der Block unter dem Switch.
       const sel = prev.slotSel
-      // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle.
-      if (sel && sel.kind === 'fs') {
-        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, sel.wi, fsVerwaist)
-        break
-      }
-      if (sel) {
-        // Bestätigungs-Einträge geänderter Slots abräumen
-        const vorher = prev.weeks[sel.wi]?.[sel.tab]
-        const nachher = next.weeks[sel.wi]?.[sel.tab]
-        if (vorher && nachher) {
-          deleteConfirmationRows(
-            congId,
-            changedSlotKeys(vorher, nachher, prev.services, next.weeks[sel.wi]?.start ?? '', sel.tab),
-          )
-        }
-      }
-      break
-    }
-    case 'autoAssign': {
-      const before = prev.weeks[prev.week]?.[mtab(prev.tab)]
-      const after = next.weeks[prev.week]?.[mtab(prev.tab)]
-      if (before && after) {
-        // Bestätigungs-Einträge geänderter Slots abräumen
-        deleteConfirmationRows(
-          congId,
-          changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
-        )
-      }
-      break
-    }
-    case 'clearAssignments': {
-      const before = prev.weeks[prev.week]?.[mtab(prev.tab)]
-      const after = next.weeks[prev.week]?.[mtab(prev.tab)]
-      if (before && after && next.weeks !== prev.weeks) {
-        deleteConfirmationRows(
-          congId,
-          changedSlotKeys(before, after, prev.services, next.weeks[prev.week]?.start ?? '', mtab(prev.tab)),
-        )
-      }
+      if (sel && sel.kind === 'fs') fsWocheSpeichern(congId, next.weeks, next.fsWeeks, sel.wi, fsVerwaist)
       break
     }
     case 'fsInstUpdate':
@@ -490,15 +457,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Grundplan-Blob + die neu materialisierten Wochen (gebündelt).
       treffpunkteSpeichern(congId, prev, next, fsVerwaist)
       break
-    case 'lacRemove': {
-      // **Abgelesen, nicht nachgerechnet** — wie bei den Treffpunkten: Welche
-      // Zusage mit dem gelöschten Punkt verfällt, entscheidet der Reducer; hier
-      // gilt, was im Zustand fehlt. Verschoben und umbenannt wird nichts mehr:
-      // Der Schlüssel trägt die Kennung des Punkts, nicht seine Position.
-      const weg = Object.keys(prev.confirmations).filter((k) => !(k in next.confirmations))
-      deleteConfirmationRows(congId, weg)
-      break
-    }
     case 'addPerson':
       savePerson(congId, action.person)
       break
@@ -644,15 +602,15 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       deleteServiceRow(congId, action.key)
       positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
       // Die drei Spuren des Dienstes (data/dienste.ts) hat der Reducer aus dem
-      // Zustand genommen — hier gehen sie an die Datenbank. Nur die wirklich
-      // geänderten Zeilen: unveränderte behalten ihre Referenz, und die Listen
-      // sind indexgleich (`dienstBereichEntfernen` bildet der Reihe nach ab).
+      // Zustand genommen — die Bereiche gehen hier an die Datenbank, die
+      // Platzreihen und Zusagen im Block unter dem Switch. Nur die wirklich
+      // geänderten Personen: unveränderte behalten ihre Referenz, und die
+      // Listen sind indexgleich (`dienstBereichEntfernen` bildet der Reihe
+      // nach ab).
       for (let i = 0; i < next.persons.length; i++) {
         const p = next.persons[i]
         if (p && p !== prev.persons[i]) savePerson(congId, p)
       }
-      const weg = dienstZusagenKeys(prev.weeks, action.key)
-      if (weg.length) deleteConfirmationRows(congId, weg)
       break
     }
     case 'addGroup':
@@ -744,6 +702,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   if (!OHNE_WOCHENSCHREIBEN.includes(action.type) && !nameUneindeutig) {
     geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type))
   }
+  // Jede Zusammenkunfts-Zusage, die verfallen ist — siehe `verfalleneZusagen`.
+  if (!OHNE_WOCHENSCHREIBEN.includes(action.type) && verfallen.meeting.length > 0) {
+    deleteConfirmationRows(congId, verfallen.meeting)
+  }
 
   /*
    * Eine hier entstandene Mitteilung (Import, „Plan gesendet", Verhinderung)
@@ -808,8 +770,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
           next.weeks[wi],
           prev.fsWeeks[wi],
           next.fsWeeks[wi],
-          wi,
-          prev.fsBase,
           prev.services,
           prev.congregation.times,
           prev.confirmations,

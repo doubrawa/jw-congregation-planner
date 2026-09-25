@@ -1,10 +1,9 @@
 import { useApp } from '../app/context'
-import { fsKennung, fsLeiterZuteilung, fsTag, fsVisible } from '../data/fs'
+import { eigenePerson } from '../app/eigene-person'
+import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
+import { fsLeiterZuteilung, fsVisible, nachWochentag } from '../data/fs'
 import { gehoertZu } from '../data/helpers'
-import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import type { FsInstance } from '../data/types'
-import { wochentagNameAusWd } from '../planen/wochentage'
 import { DruckWahl } from './DruckWahl'
 
 /**
@@ -31,8 +30,9 @@ function FsDruck() {
  */
 export function FsProgram() {
   const { state } = useApp()
-  const { t, tu } = useT()
-  const me = state.persons.find((p) => p.id === state.personId)
+  const i18n = useT()
+  const { t, tu } = i18n
+  const me = eigenePerson(state)
   const insts = fsVisible(
     state.fsWeeks[state.week] ?? [],
     state.persons,
@@ -52,40 +52,23 @@ export function FsProgram() {
     )
   }
 
-  // Nach Wochentag gruppieren (fsWeeks ist bereits sortiert: Mo→So, Zeit, Gruppe).
-  const days: { wd: number; label: string; items: FsInstance[] }[] = []
-  for (const inst of insts) {
-    let day = days.find((d) => d.wd === inst.wd)
-    if (!day) {
-      // Montag aus der Woche selbst (siehe `fsKennung`) — `fsBase + wi·7`
-      // nennt bei einer Lücke im Bestand ab dort den falschen Tag.
-      const tag = fsTag(fsKennung(state.weeks[state.week], state.fsBase, state.week), inst.wd)
-      const label = tag
-        ? tag.toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
-        : wochentagNameAusWd(inst.wd, state.lang)
-      day = { wd: inst.wd, label, items: [] }
-      days.push(day)
-    }
-    day.items.push(inst)
-  }
-
-  const groupName = (grp: string): string => {
-    const g = state.groups.find((x) => x.id === grp)
-    return g ? tu(g.name) : grp
-  }
+  // Der Montag der Woche selbst (T66) — eine Rechnung aus der Ordnungszahl
+  // nannte bei einer Lücke im Bestand ab dort den falschen Tag.
+  const kennung = state.weeks[state.week]?.start ?? ''
+  const days = nachWochentag(insts)
 
   return (
     <>
       <FsDruck />
       {days.map((day) => (
         <div key={day.wd} className="panel" data-farbe="gold">
-          <h2 className="panel-label">{day.label}</h2>
+          <h2 className="panel-label">{treffpunktTagLabel(kennung, day.wd, state.lang)}</h2>
           {day.items.map((inst) => (
             <div key={inst.id} className="fs-row">
               <div className="fs-row-main">
                 <span className="fs-time">{inst.time}</span>
                 <div className="fs-row-text">
-                  <div className="fs-title">{inst.grp == null ? t.fsVers : groupName(inst.grp)}</div>
+                  <div className="fs-title">{treffpunktTitel(inst, state.groups, i18n)}</div>
                   {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")
                       steht im Wörterbuch — ohne tu bliebe er als einziges Feld
                       dieser Karte deutsch. */}

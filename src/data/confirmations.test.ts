@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { itemNameCount, lacMove, lacMoveTarget, lacRemove } from './meeting-edit'
-import { itemTaskKey, itemZusagenKeys } from './planning'
+import { punktKey, itemZusagenKeys } from './planning'
 import type { ConfirmationMap, Meeting, PartItem, Week } from './types'
 
 /**
@@ -46,10 +46,10 @@ function lacMeeting(): Meeting {
 
 function week(): Week {
   const empty: Meeting = { date: '', end: '', sections: [], helpers: {} }
-  return { range: '', book: '', start: '2026-09-07', current: false, mid: lacMeeting(), we: empty }
+  return { range: '', book: '', start: '2026-09-07', mid: lacMeeting(), we: empty }
 }
 
-const key = (iid: string, ni = 0, aux = false) => itemTaskKey('2026-09-07', 'mid', iid, ni, aux)
+const key = (iid: string, ni = 0, aux = false) => punktKey('2026-09-07', 'mid', iid, ni, aux)
 
 /** Die Punkte des LAC-Abschnitts, mit Wächter statt `!` (T42). */
 function lacPunkte(w: Week | undefined): PartItem[] {
@@ -91,7 +91,7 @@ describe('Verschieben lässt die Bestätigungen in Ruhe', () => {
     expect(a.title).toBe('Punkt A')
     expect(a.names?.[0]?.name).toBe('Alice')
     // Derselbe Schlüssel wie vorher, ohne dass jemand etwas umgeschrieben hat.
-    expect(itemTaskKey('2026-09-07', 'mid', a.iid, 0)).toBe(key(A))
+    expect(punktKey('2026-09-07', 'mid', a.iid, 0)).toBe(key(A))
     expect(map[key(A)]).toBe('bestätigt')
   })
 })
@@ -122,8 +122,8 @@ describe('itemZusagenKeys — was mit einem gelöschten Punkt verfällt', () => 
   it('lässt andere Wochen und Zusammenkünfte unangetastet', () => {
     const map: ConfirmationMap = {
       [key(B)]: 'bestätigt',
-      [itemTaskKey('2026-09-14', 'mid', B, 0)]: 'bestätigt', // andere Woche
-      [itemTaskKey('2026-09-07', 'we', B, 0)]: 'bestätigt', // anderes Treffen
+      [punktKey('2026-09-14', 'mid', B, 0)]: 'bestätigt', // andere Woche
+      [punktKey('2026-09-07', 'we', B, 0)]: 'bestätigt', // anderes Treffen
     }
     expect(itemZusagenKeys(map, '2026-09-07', 'mid', B)).toEqual([key(B)])
   })
@@ -143,6 +143,6 @@ describe('itemZusagenKeys — was mit einem gelöschten Punkt verfällt', () => 
     expect(lacPunkte(nachher).map((i) => i.title)).toEqual(['Punkt A', 'Punkt C'])
     expect(map[key(A)]).toBe('bestätigt')
     expect(map[key(B)]).toBeUndefined()
-    expect(map[itemTaskKey('2026-09-07', 'mid', punkt(nachher, 1).iid, 0)]).toBe('bestätigt') // C
+    expect(map[punktKey('2026-09-07', 'mid', punkt(nachher, 1).iid, 0)]).toBe('bestätigt') // C
   })
 })

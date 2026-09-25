@@ -15,7 +15,7 @@ describe('applyGoldSlots – Schülerteil-Art aus der deutschen Fassung übertra
   const emptyMeeting = () => ({ date: '', end: '', sections: [], helpers: {} })
   const withGold = (items: unknown[]): ImportedWeek =>
     ({
-      range: '', book: '', current: false, we: emptyMeeting(),
+      range: '', book: '', we: emptyMeeting(),
       mid: { date: '', end: '', helpers: {}, sections: [{ label: '', farbe: 'gold', items }] },
     }) as ImportedWeek
 

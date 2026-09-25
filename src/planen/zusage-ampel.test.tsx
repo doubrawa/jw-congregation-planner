@@ -10,7 +10,7 @@ import {
 } from '../app/context'
 import { initialState } from '../app/init'
 import { reducer } from '../app/reducer'
-import { deriveMyFsTasks, fsWochenKennungen } from '../data/fs'
+import { deriveMyFsTasks } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
 import { deriveMyTasks } from '../data/planning'
 import { dict } from '../i18n/ui'
@@ -56,7 +56,7 @@ const bernd = { name: 'Bernd Anders', pid: BERND.id }
 function woche(start: string, besetzt: boolean): Week {
   const wer = besetzt ? anna : { name: '' }
   return {
-    range: '', book: '', start, current: false,
+    range: '', book: '', start, 
     mid: {
       date: '', end: '20:45',
       sections: [
@@ -82,16 +82,13 @@ const TREFFPUNKTE: FsInstance[][] = [
   [],
   [{ id: 'tp1', ruleId: null, grp: null, wd: 6, time: '09:30', place: 'Saal', leader: 'Anna Beispiel', lpid: ANNA.id }],
 ]
-/** Der Montag der ERSTEN Woche — daraus plus Position käme für die zweite der 14. heraus. */
-const BASIS = new Date(2026, 8, 7, 12, 0)
-
 function stand(over: Partial<AppState> = {}): AppState {
   return {
     ...initialState(),
     screen: 'planen', tab: 'mid', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: null, planner: true,
     persons: [ANNA, BERND], groups: [], services: DIENSTE, absences: [],
-    weeks: WOCHEN, fsWeeks: TREFFPUNKTE, fsRules: [], fsBase: BASIS, week: 1,
+    weeks: WOCHEN, fsWeeks: TREFFPUNKTE, fsRules: [], week: 1,
     auxClass: true, confirmations: {},
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
@@ -102,7 +99,7 @@ function stand(over: Partial<AppState> = {}): AppState {
 function annasAufgaben(s: AppState): string[] {
   return [
     ...deriveMyTasks(s.weeks, s.services, 'Anna Beispiel', {}, STANDARD_ZEITEN, ANNA.id),
-    ...deriveMyFsTasks(s.fsWeeks, fsWochenKennungen(s.weeks, s.fsBase), 'Anna Beispiel', {}, ANNA.id, 'Leiter'),
+    ...deriveMyFsTasks(s.fsWeeks, s.weeks.map((w) => w.start), 'Anna Beispiel', {}, ANNA.id, 'Leiter'),
   ].map((task) => task.id)
 }
 

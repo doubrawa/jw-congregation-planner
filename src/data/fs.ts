@@ -2,14 +2,17 @@
  * Zusammenkünfte für den Predigtdienst ("Treffpunkte") — reine Logik.
  *
  * Aus dem Grundplan (FsRule[]) werden pro Woche die konkreten Treffpunkte
- * (FsInstance[]) materialisiert: Versammlungstreffpunkte (grp '') gelten für
+ * (FsInstance[]) materialisiert: Versammlungstreffpunkte (grp null) gelten für
  * alle, Gruppentreffpunkte (grp = Group.id) nur für ihre Gruppe. Eine
  * Gruppen-Regel mit `skipCong` entfällt, wenn am selben Wochentag bereits ein
  * Versammlungstreffpunkt liegt. `monthly` (1..4) begrenzt eine Regel auf den
  * N-ten betreffenden Wochentag im Monat.
  *
- * Alle Funktionen sind pur — Woche 0 wird durch das Basis-Datum (Montag der
- * ersten Woche) bestimmt; spätere Wochen sind wi × 7 Tage später.
+ * Alle Funktionen sind pur. Die Treffpunkt-Wochen liegen parallel zu den
+ * Programmwochen (`fsWeeks[wi]` gehört zu `weeks[wi]`) und werden über deren
+ * Montag angesprochen — `Week.start`, die Kennung im `task_key` (T66). Eine
+ * eigene Datumsbasis („Montag der Woche 0 plus wi·7") gab es bis zum
+ * 25.9.2026 als Rückfall; sie lag bei jeder Lücke im Bestand daneben.
  */
 
 import { istAbwesendAm } from './absence'
@@ -17,6 +20,7 @@ import {
   dieselbePerson,
   displayName,
   eindeutigeNamen,
+  gehoertZuKennung,
   idAufloeser,
   isQualified,
   overseerGroup,
@@ -39,96 +43,6 @@ export const FS_TIME_OPTIONS: string[] = Array.from({ length: (22 - 6) * 4 + 1 }
   const m = (i % 4) * 15
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 })
-
-/**
- * Montag der Woche 0. Bevorzugt das echte ISO-Startdatum der Wochen: beim
- * jw.org-Import trägt jede Woche `start` = Montag der jeweiligen Woche. Von der
- * ersten Woche mit Startdatum aus liegt Woche 0 `i` Wochen davor. Das ist
- * unabhängig von `today` und vom gespeicherten `current`-Flag — beide veralten
- * (das `current`-Flag wird nicht gegen das echte Datum nachgeführt), was den
- * Treffpunkt-Wochenversatz verursacht hat.
- *
- * Nur wenn keine Woche ein Startdatum hat (Demo/Vorlagen), wird ersatzweise an
- * der als `current` markierten Woche relativ zu `today` verankert.
- */
-/**
- * Montag der Woche, in der `heute` liegt — auf **lokalem Mittag** verankert.
- *
- * Der Mittag ist kein Schmuck: Um Mitternacht kippt die Zeitzone den Tag, und
- * genau daraus entstand der Treffpunkt-Wochenversatz. Deshalb steht die
- * Rechnung hier und nicht ein zweites Mal beim Anfangszustand — beide füllen
- * dasselbe Feld (`state.fsBase`), und die Abschrift trug die Begründung nicht
- * mit sich.
- */
-export function montagDieserWoche(heute: Date): Date {
-  const d = new Date(heute)
-  d.setHours(12, 0, 0, 0)
-  d.setDate(d.getDate() - versatzAbMontag(d.getDay()))
-  return d
-}
-
-export function fsBaseFromWeeks(
-  weeks: ReadonlyArray<{ current: boolean; start?: string }>,
-  today: Date,
-): Date {
-  const i = weeks.findIndex((w) => w.start)
-  const iso = weeks[i]?.start // findIndex -1 → weeks[-1] undefined → iso undefined
-  // Ein ISO-Datum hat drei Teile. Fehlt einer, ist das Datum unbrauchbar und
-  // es bleibt beim Rückfall unten — besser als ein `NaN`-Datum, das sich erst
-  // Wochen später als verschobene Zeitleiste zeigt.
-  const [jahr, monat, tag] = (iso ?? '').split('-').map(Number)
-  if (iso && jahr !== undefined && monat !== undefined && tag !== undefined) {
-    const base = new Date(jahr, monat - 1, tag, 12, 0, 0, 0) // lokaler Mittag: kein UTC-Tagesversatz
-    base.setDate(base.getDate() - i * 7) // Montag der Woche 0 (i Wochen vor der ersten mit start)
-    return base
-  }
-  const curIdx = Math.max(0, weeks.findIndex((w) => w.current))
-  const d = montagDieserWoche(today)
-  d.setDate(d.getDate() - curIdx * 7) // von diesem Montag curIdx Wochen zurück
-  return d
-}
-
-/**
- * **Der Montag einer Treffpunkt-Woche** — die eine Auskunft, an der Schlüssel
- * und Datum hängen.
- *
- * Bis T100 rechnete jede Stelle für sich `fsBase + wi·7`. Das gilt nur, solange
- * die geladenen Wochen lückenlos aufeinanderfolgen — und seit T66 tun sie das
- * nicht mehr: „eine fehlende Woche ist eine fehlende Woche und verschiebt
- * nichts" (`lib/data.ts`). Fehlt eine Zeile, liegt jede spätere Woche um sieben
- * Tage daneben, und zwar gleich dreifach:
- *
- *  - der Aufgaben-Schlüssel (`fs|<montag>|<id>`) trifft die Bestätigung nicht
- *    mehr, und die Edge Functions — die den Montag aus der **Datenbankzeile**
- *    nehmen — reden über eine andere Woche als der Client,
- *  - das angezeigte Datum eines Treffpunkts nennt den falschen Tag,
- *  - die Monatsregel („1. Samstag") greift in der falschen Woche.
- *
- * Deshalb kommt der Montag jetzt aus der Woche selbst. `fsBase + wi·7` bleibt
- * der Rückfall für Wochen ohne Kennung (Vorlagen, Demo, Tests) — dort gibt es
- * keine Datenbankzeile, mit der man sich uneinig werden könnte.
- *
- * **Die Einzahl ist die Grundform.** Fast jeder Aufrufer hält genau eine Woche
- * in der Hand. Gäbe es nur die Liste, müsste er 52 Kennungen abbilden, um eine
- * zu behalten — oder die Regel wie `plan-versand.ts` ein zweites Mal
- * hinschreiben. Dann stünde sie wieder an zwei Orten, und der nächste Rückfall
- * käme nur an einem davon an.
- */
-export function fsKennung(
-  week: { start?: string } | undefined,
-  fsBase: Date | null,
-  wi: number,
-): string {
-  return week?.start || fsWochenStart(fsBase, wi)
-}
-
-/** Alle Kennungen der geladenen Wochen — `fsKennung` über die ganze Liste. */
-export function fsWochenKennungen(
-  weeks: ReadonlyArray<{ start?: string }>,
-  fsBase: Date | null,
-): string[] {
-  return weeks.map((w, wi) => fsKennung(w, fsBase, wi))
-}
 
 /**
  * Datum eines Treffpunkts: Montag der Woche plus Wochentagsversatz.
@@ -196,8 +110,8 @@ function instanzId(rule: FsRule): string {
 /**
  * Materialisiert alle Treffpunkte einer Woche aus dem Grundplan.
  *
- * `wochenStart` ist der Montag dieser Woche (siehe `fsWochenKennungen`) — an
- * ihm hängt die Monatsregel. Ist er unbrauchbar, greift sie nicht: Lieber eine
+ * `wochenStart` ist der Montag dieser Woche (`Week.start`) — an ihm hängt die
+ * Monatsregel. Ist er unbrauchbar, greift sie nicht: Lieber eine
  * Regel, die nicht auslöst, als eine, die in der falschen Woche auslöst.
  */
 export function genFsWeek(wochenStart: string, rules: FsRule[]): FsInstance[] {
@@ -235,15 +149,12 @@ export function genFsWeek(wochenStart: string, rules: FsRule[]): FsInstance[] {
  * in allen vier Demo-Wochen.
  */
 export function buildFsWeeks(
-  base: Date,
-  weekCount: number,
+  kennungen: readonly string[],
   rules: FsRule[],
   seedLeaders: Record<string, string> = {},
 ): FsInstance[][] {
-  // Der Demo-Bestand hat keine Datenbankzeilen und damit keine Lücken — hier
-  // ist `base + wi·7` die Kennung, nicht bloß ein Rückfall.
-  return Array.from({ length: weekCount }, (_unused, wi) =>
-    genFsWeek(fsWochenStart(base, wi), rules).map((inst) => ({
+  return kennungen.map((kennung, wi) =>
+    genFsWeek(kennung, rules).map((inst) => ({
       ...inst,
       leader: seedLeaders[`${wi}|${inst.id}`] ?? '',
     })),
@@ -272,7 +183,7 @@ function gleicheInstanzen(a: FsInstance[], b: FsInstance[]): boolean {
  * `regenFsWeeks` nur den Namen. Weil es beim Laden und bei jeder Änderung am
  * Grundplan läuft, verlor ein Freitext-Leiter danach sein `lext`: Der
  * Kreisaufseher galt wieder als Person, trug einen Ampel-Punkt, und
- * `fsMigrateLeaderPids` hängte ihm beim nächsten Laden den gleichnamigen
+ * `fsLeiterBinden` hängte ihm beim nächsten Laden den gleichnamigen
  * Bruder an — mit Aufgabe und Erinnerungen. Die Person-Id ging ebenso
  * verloren, und jede Woche mit zugeteiltem Leiter galt als geändert.
  */
@@ -374,6 +285,24 @@ function patchWeek(fsWeeks: FsInstance[][], wi: number, fn: (week: FsInstance[])
 export function fsLeiterZuteilung(inst: FsInstance): Zuteilung | undefined {
   if (!inst.leader || inst.lext) return undefined
   return { name: inst.leader, pid: inst.lpid }
+}
+
+/**
+ * Die Treffpunkte einer Woche nach Wochentag gruppiert — in der Reihenfolge,
+ * in der sie kommen (`fsSort` hat sie schon Mo→So, Zeit, Gruppe sortiert).
+ * Programm und Planen bauen daraus je Tag eine Karte.
+ */
+export function nachWochentag(insts: readonly FsInstance[]): { wd: number; items: FsInstance[] }[] {
+  const tage: { wd: number; items: FsInstance[] }[] = []
+  for (const inst of insts) {
+    let tag = tage.find((d) => d.wd === inst.wd)
+    if (!tag) {
+      tag = { wd: inst.wd, items: [] }
+      tage.push(tag)
+    }
+    tag.items.push(inst)
+  }
+  return tage
 }
 
 /** Aktueller Leiter eines Treffpunkts ("" = offen / nicht gefunden). */
@@ -492,31 +421,6 @@ export function fsGruppeEntfernen(
 
 /* ---- Auto-Zuteilung / Leeren der Treffpunkt-Leiter ---- */
 
-/**
- * task_key einer Treffpunkt-Leitung.
- *
- * Bewusst mit `fs` vorn statt hinten: jeder Zusammenkunfts-Schlüssel beginnt
- * mit `<wi>|<tab>|…`, und `taskKeyWeek` liest genau daraus Woche und
- * Zusammenkunft. Ein Treffpunkt hat kein mid/we, sondern einen eigenen
- * Wochentag — stünde die Wochennummer vorn, liefe er dort als kaputter
- * Zusammenkunfts-Schlüssel mit statt als eigene Art.
- *
- * Dieselbe Form benutzt die Personen-Zeitleiste seit je (`fs|wi|instId`).
- */
-/**
- * Montag der Woche `wi` als Kennung (T66) — aus der Datumsbasis gerechnet.
- *
- * Treffpunkt-Wochen liegen parallel zu den Programmwochen und tragen selbst
- * kein Datum; `fsBase` ist der Montag der Woche 0, und Wochen liegen genau
- * sieben Tage auseinander. Ohne Basis (Vorlagen, Tests) bleibt es leer — dann
- * gibt es auch keinen Termin zu zeigen.
- */
-export function fsWochenStart(fsBase: Date | null, wi: number): string {
-  if (!fsBase) return ''
-  const d = new Date(Date.UTC(fsBase.getFullYear(), fsBase.getMonth(), fsBase.getDate() + wi * 7))
-  return d.toISOString().slice(0, 10)
-}
-
 /*
  * Aufbau und Zerlegung des Treffpunkt-Schlüssels stehen im geteilten Modul
  * (siehe den Kopf von `aufgaben-schluessel.ts`) — `send-reminders` und
@@ -623,7 +527,7 @@ export function fsAutoAssign(
   persons: Person[],
   onlyGroup: string | null = null,
   absences: readonly Absence[] = [],
-  /** Montag dieser Woche (siehe `fsWochenKennungen`); leer = keine Abwesenheitsprüfung. */
+  /** Montag dieser Woche (`Week.start`); leer = keine Abwesenheitsprüfung. */
   wochenStart = '',
   groups: readonly Group[] = [],
 ): { fsWeeks: FsInstance[][]; count: number } {
@@ -632,7 +536,7 @@ export function fsAutoAssign(
    * Kandidaten für einen Wochentag. Die Abwesenheit wird am echten Tag des
    * Treffpunkts geprüft, nicht an der Woche: ein Treffpunkt hat seinen eigenen
    * Wochentag, wer nur übers Wochenende weg ist, kann montags leiten. Ohne
-   * Datumsbasis (Tests, Vorlagen) bleibt die Prüfung aus.
+   * Kennung (Proben) bleibt die Prüfung aus.
    */
   const poolAm = new Map<number, Person[]>()
   const poolFor = (wd: number): Person[] => {
@@ -795,7 +699,7 @@ export function fsTagVorbei(wochenStart: string, wd: number, heute = new Date())
  *
  * Eigene Ableitung statt eines Zweigs in `deriveMyTasks`: Treffpunkte bleiben
  * eine getrennte Größe (sie zählen nicht in `workloadOf` und haben ihre eigene
- * Strichliste), sie hängen an `fsWeeks`/`fsBase` statt an `weeks`, und ihr
+ * Strichliste), sie hängen an `fsWeeks` statt an `weeks`, und ihr
  * Termin kommt aus Wochentag und eigener Uhrzeit statt aus den
  * Zusammenkunftszeiten. Zusammengeführt wird erst in `state.myTasks`.
  *
@@ -806,7 +710,7 @@ export function fsTagVorbei(wochenStart: string, wd: number, heute = new Date())
  */
 export function deriveMyFsTasks(
   fsWeeks: FsInstance[][],
-  /** Montag je Woche (siehe `fsWochenKennungen`) — Schlüssel und Termin hängen daran. */
+  /** Montag je Woche (`Week.start`) — Schlüssel und Termin hängen daran. */
   kennungen: readonly string[],
   personName: string,
   confirmations: ConfirmationMap,
@@ -817,10 +721,8 @@ export function deriveMyFsTasks(
   if (!personName && !personId) return tasks
   fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
-      const leiter = fsLeiterZuteilung(inst)
-      if (!leiter) continue // offen oder Freitext: gehört niemandem hier
-      const meins = leiter.pid && personId ? leiter.pid === personId : leiter.name === personName
-      if (!meins) continue
+      // Offen oder Freitext: gehört niemandem hier (`fsLeiterZuteilung`).
+      if (!gehoertZuKennung(fsLeiterZuteilung(inst), personId, personName)) continue
       const kennung = kennungen[wi] ?? ''
       const key = fsKey(kennung, inst.id)
       // Ohne brauchbare Kennung (Vorlagen, Tests) gibt es keinen echten Termin —
@@ -866,9 +768,9 @@ export function deriveMyFsTasks(
  *
  * Verglichen wird die **Person**, nicht der Name: Wer umbenannt wird, behält
  * seine Zusage (`dieselbePerson`, dieselbe Regel wie beim Entzug und bei den
- * Zusammenkünften). Nur wo keine Person-Id dasteht, entscheidet der Name — das bleiben nach
- * `fsMigrateLeaderPids` die Namensgleichen, und vor denen warnt die App
- * ohnehin. Ein Freitext-Leiter ist niemand von hier — der Wechsel zu ihm und
+ * Zusammenkünften). Nur wo keine Person-Id dasteht, entscheidet der Name
+ * (`fsLeiterBinden` trägt sie nach, sobald es die Person gibt). Ein
+ * Freitext-Leiter ist niemand von hier — der Wechsel zu ihm und
  * von ihm weg ist ein Wechsel. Verschwindet der Treffpunkt, geht die Zusage mit.
  */
 export function fsVerwaisteZusagen(
@@ -901,8 +803,7 @@ function dieselbeLeitung(a: FsInstance, b: FsInstance): boolean {
  * Zusage, um die es geht.
  */
 export function fsVerwaisteZusagenAller(
-  weeks: ReadonlyArray<{ start?: string }>,
-  fsBase: Date | null,
+  weeks: ReadonlyArray<{ start: string }>,
   vorher: readonly FsInstance[][],
   nachher: readonly FsInstance[][],
 ): string[] {
@@ -911,7 +812,7 @@ export function fsVerwaisteZusagenAller(
   for (let wi = 0; wi < vorher.length; wi++) {
     // Unberührte Wochen behalten ihre Referenz — der Vergleich kostet nichts.
     if (vorher[wi] === nachher[wi]) continue
-    out.push(...fsVerwaisteZusagen(vorher[wi], nachher[wi], fsKennung(weeks[wi], fsBase, wi)))
+    out.push(...fsVerwaisteZusagen(vorher[wi], nachher[wi], weeks[wi]?.start ?? ''))
   }
   return out
 }
@@ -932,9 +833,8 @@ export function fsVerwaisteZusagenAller(
  *    weiter möglich.
  *
  * Geprüft wird am **echten Tag** des Treffpunkts, nicht an der Woche: wer nur
- * übers Wochenende weg ist, kann montags leiten. Ohne Datumsbasis (Vorlagen,
- * Tests) entfällt die Abwesenheitsprüfung — dieselbe Linie wie in
- * `fsAutoAssign`.
+ * übers Wochenende weg ist, kann montags leiten. Ohne Kennung (Proben)
+ * entfällt die Abwesenheitsprüfung — dieselbe Linie wie in `fsAutoAssign`.
  */
 export function fsWeekConflicts(
   fsWeeks: FsInstance[][],
@@ -948,7 +848,7 @@ export function fsWeekConflicts(
   const week = fsWeeks[wi]
   if (!week) return []
   const conflicts: Conflict[] = []
-  const nachName = new Map(persons.map((p) => [displayName(p), p]))
+  const werIst = idAufloeser(persons)
   // Gezählt wird über die Kennung, angezeigt der Name — wie bei den
   // Zusammenkünften (`weekConflicts`). Über den Namen zu zählen legte zwei
   // Gleichnamige zusammen, und die Markierung im Plan träfe danach beide.
@@ -959,26 +859,22 @@ export function fsWeekConflicts(
     if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) continue
     const kennung = kennungVon(inst.leader, inst.lpid)
     namen.set(kennung, inst.leader)
-    // Zählung je Wochentag für `fsDouble` — auch ohne Datumsbasis prüfbar.
+    // Zählung je Wochentag für `fsDouble` — auch ohne Kennung prüfbar.
     const tag = proTag.get(inst.wd) ?? new Map<string, number>()
     tag.set(kennung, (tag.get(kennung) ?? 0) + 1)
     proTag.set(inst.wd, tag)
 
     if (!wochenStart) continue
-    // Über die Id, mit Rückfall auf den Namen für Altdaten — beim Freitext
-    // aber gar nicht: Von jemandem außerhalb der Versammlung kennt die App
-    // keine Abwesenheiten, und der Namensweg träfe einen Gleichnamigen.
-    // Die Doppelbelegung oben zählt ihn weiter mit: zweimal am selben Tag ist
+    // Wer der Leiter ist, sagt `idAufloeser` (Id vor Name) — beim Freitext
+    // niemand: Von jemandem außerhalb der Versammlung kennt die App keine
+    // Abwesenheiten, und der Namensweg träfe einen Gleichnamigen. Die
+    // Doppelbelegung oben zählt ihn weiter mit: zweimal am selben Tag ist
     // auch beim Kreisaufseher ein Planungsfehler.
-    const person = inst.lext
-      ? undefined
-      : inst.lpid
-        ? persons.find((p) => p.id === inst.lpid)
-        : nachName.get(inst.leader)
+    const personId = werIst(fsLeiterZuteilung(inst))
     // Nicht `tag` genannt: Der Name ist oben schon für die Zählung je
     // Wochentag vergeben.
     const datum = fsTag(wochenStart, inst.wd)
-    if (person && datum && istAbwesendAm(absences, person.id, datum)) {
+    if (personId && datum && istAbwesendAm(absences, personId, datum)) {
       conflicts.push({ kind: 'fsAbsent', name: inst.leader, kennung, wd: inst.wd, ort: inst.place })
     }
   }
@@ -993,18 +889,6 @@ export function fsWeekConflicts(
   return conflicts
 }
 
-/**
- * Löst die Verweise auf eine gelöschte Person aus den Treffpunkt-Wochen: die
- * `lpid` verschwindet, **der Name bleibt als Text stehen** — genau wie bei den
- * Zusammenkünften (`dropPersonPid` in lib/data.ts).
- *
- * Ohne das zeigte der Fremdschlüssel ins Leere: `deriveMyFsTasks` und die
- * Konfliktprüfung entscheiden über die Id und fänden niemanden mehr, während
- * der Name weiter dastünde. Ohne `lpid` greift wieder der Namensweg.
- *
- * Unveränderte Wochen behalten ihre Referenz — daran erkennt der Aufrufer,
- * welche er speichern muss.
- */
 /**
  * Jede Treffpunkt-Instanz durch `fn` schicken — unter Erhalt der Referenzen.
  *
@@ -1034,6 +918,18 @@ function mapInsts(fsWeeks: FsInstance[][], fn: (inst: FsInstance) => FsInstance)
   return anyChanged ? next : fsWeeks
 }
 
+/**
+ * Löst die Verweise auf eine gelöschte Person aus den Treffpunkt-Wochen: die
+ * `lpid` verschwindet, **der Name bleibt als Text stehen** — genau wie bei den
+ * Zusammenkünften (`dropPersonPid` in lib/data.ts).
+ *
+ * Ohne das zeigte der Fremdschlüssel ins Leere: `deriveMyFsTasks` und die
+ * Konfliktprüfung entscheiden über die Id und fänden niemanden mehr, während
+ * der Name weiter dastünde. Ohne `lpid` greift wieder der Namensweg.
+ *
+ * Unveränderte Wochen behalten ihre Referenz — daran erkennt der Aufrufer,
+ * welche er speichern muss.
+ */
 export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance[][] {
   return mapInsts(fsWeeks, (inst) => {
     if (inst.lpid !== id) return inst
@@ -1052,9 +948,9 @@ export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance
  * Treffpunkte nie — dort bliebe ein Name ohne Person, und die Leitung zählte
  * in keiner Auslastung und in keiner Aufgabenliste mehr.
  *
- * Nur **eindeutige** Namen werden zugeordnet; bei Dubletten bliebe es ein
- * Raten, und die App warnt davor ohnehin (`duplicateDisplayNames`).
- * Idempotent, und unveränderte Wochen behalten ihre Referenz.
+ * Nur **eindeutige** Namen werden zugeordnet (`eindeutigeNamen`) — seit T110
+ * sind sie das je Versammlung ohnehin. Idempotent, und unveränderte Wochen
+ * behalten ihre Referenz.
  */
 export function fsLeiterBinden(
   fsWeeks: FsInstance[][],

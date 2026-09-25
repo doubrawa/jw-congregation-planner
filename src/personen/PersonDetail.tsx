@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { useApp } from '../app/context'
 import { AbsencePanel } from '../components/AbsencePanel'
+import { useZweiTipp } from '../components/useZweiTipp'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { familyMembers, initials, namensDublette, personCompare, personLabel, serviceQualKey } from '../data/helpers'
 import { LOCALES } from '../i18n/langs'
@@ -20,8 +20,8 @@ import { PlannerToggle, PrivToggle } from './PrivToggle'
 export function PersonDetail({ person }: { person: Person }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  // Zwei-Tipp-Bestaetigung des Loeschens (siehe unten).
-  const [loeschArmed, setLoeschArmed] = useState(false)
+  // Zwei-Tipp-Bestätigung des Löschens (siehe unten).
+  const loeschen = useZweiTipp(() => dispatch({ type: 'removePerson', id: person.id }))
   const update = (patch: Partial<Person>) =>
     dispatch({ type: 'updatePerson', id: person.id, patch })
 
@@ -276,25 +276,16 @@ export function PersonDetail({ person }: { person: Person }) {
 
       {state.dataStatus !== 'demo' && <KontoCard person={person} />}
 
-      {/* Zwei-Tipp-Bestätigung wie beim Leeren der Zuteilungen (AutoAssignPanel):
-          der erste Tipp bewaffnet den Button und nennt die Folge, erst der
-          zweite löscht. Der native window.confirm war der einzige im Projekt —
-          er sieht auf jedem Gerät anders aus, ignoriert Theme und Schriftgröße
-          und lässt sich nicht übersetzen, wo der Browser es nicht tut. */}
+      {/* Zwei-Tipp-Bestätigung wie beim Leeren der Zuteilungen (`useZweiTipp`):
+          der erste Tipp bewaffnet den Knopf und nennt die Folge, erst der
+          zweite löscht. */}
       <button
         type="button"
-        className={`pers-delete${loeschArmed ? ' is-armed' : ''}`}
-        onClick={() => {
-          if (!loeschArmed) {
-            setLoeschArmed(true)
-            return
-          }
-          setLoeschArmed(false)
-          dispatch({ type: 'removePerson', id: person.id })
-        }}
-        onBlur={() => setLoeschArmed(false)}
+        className={`pers-delete${loeschen.armed ? ' is-armed' : ''}`}
+        onClick={loeschen.onClick}
+        onBlur={loeschen.onBlur}
       >
-        {loeschArmed ? fill(t.confirmPersonDel, { name: personLabel(person) }) : t.persLoeschen}
+        {loeschen.armed ? fill(t.confirmPersonDel, { name: personLabel(person) }) : t.persLoeschen}
       </button>
     </section>
   )

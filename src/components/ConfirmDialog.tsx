@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useApp } from '../app/context'
-import { aufgabenLabel, useT } from '../i18n/useT'
+import { aufgabenLabel, useT, zuteilungenText } from '../i18n/useT'
 import { useDialogFocus } from './useDialogFocus'
 import './overlays.css'
 
@@ -94,8 +94,7 @@ export function ConfirmDialog() {
                     Toast danach. Wortlaut wie im Zuteilungs-Sheet des Planers. */}
                 {req.schonHeute.length > 0 && (
                   <div className="confirm-task-warn">
-                    {t.sheetSchonHeute}:{' '}
-                    {req.schonHeute.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
+                    {t.sheetSchonHeute}: {zuteilungenText(req.schonHeute, i18n)}
                   </div>
                 )}
                 <div className="confirm-actions">

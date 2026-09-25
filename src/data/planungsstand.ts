@@ -31,9 +31,9 @@
 
 import { engpaesse, offenTrotzAllem } from './bedarf'
 import type { AbsenceSet } from './absence'
-import { fsKennung, fsTagVorbei, fsWeekConflicts } from './fs'
+import { fsTagVorbei, fsWeekConflicts } from './fs'
 import { istAusgefallen, MEETING_TABS } from './helpers'
-import { currentWeekIndex, istVorbei, kalendertagMs, meetingDateMs, weekEndMs } from './meeting-dates'
+import { istVorbei, kalendertagMs, meetingDateMs, weekEndMs } from './meeting-dates'
 import { offeneMeldungen, type OffeneMeldung } from './plan-versand'
 import { countOpenSlots, taskKeyWeek, weekConflicts } from './planning'
 import type {
@@ -115,7 +115,6 @@ export interface Planungsstand {
 export interface PlanungsQuellen {
   weeks: Week[]
   fsWeeks: FsInstance[][]
-  fsBase: Date | null
   persons: Person[]
   services: Service[]
   absences: readonly Absence[]
@@ -167,20 +166,13 @@ export function planungsstand(q: PlanungsQuellen, heute = new Date()): Planungss
  */
 function horizont(weeks: readonly Week[], heute: Date): number[] {
   const heuteMs = kalendertagMs(heute)
-  let ab: number
-  if (weeks.some((w) => w.start)) {
-    ab = weeks.findIndex((w) => {
-      const sonntag = weekEndMs(w.start)
-      return sonntag !== null && sonntag >= heuteMs
-    })
-    // Tragen die Wochen Kalenderdaten und liegt keine vor uns, ist alles vorbei:
-    // nichts mehr zu planen. Es bleibt der Hinweis auf den Import.
-    if (ab === -1) return []
-  } else {
-    // Ohne jedes Datum (Demo, Vorlagen) gibt es kein „kommend" — dann gilt die
-    // als laufend markierte Woche, wie überall sonst in diesem Fall.
-    ab = Math.max(0, currentWeekIndex(weeks, heute))
-  }
+  const ab = weeks.findIndex((w) => {
+    const sonntag = weekEndMs(w.start)
+    return sonntag !== null && sonntag >= heuteMs
+  })
+  // Liegt keine Woche vor uns, ist alles vorbei: nichts mehr zu planen. Es
+  // bleibt der Hinweis auf den Import.
+  if (ab === -1) return []
 
   const grenzeMs = heuteMs + WOCHEN_VORAUS * 7 * 864e5
   const out: number[] = []
@@ -195,7 +187,7 @@ function horizont(weeks: readonly Week[], heute: Date): number[] {
 function wochenstand(q: PlanungsQuellen, wi: number, heute: Date): Wochenstand {
   const week = q.weeks[wi]
   if (!week) return { wi, tab: 'mid', konflikte: 0, nichtBesetzbar: 0, offen: 0, nichtGesendet: 0 }
-  const kennung = fsKennung(week, q.fsBase, wi)
+  const kennung = week.start
 
   // Zusammenkünfte, die noch anstehen: nicht entfallen (T30), nicht vorbei (T77).
   const tabs = MEETING_TABS.filter(
@@ -220,7 +212,7 @@ function wochenstand(q: PlanungsQuellen, wi: number, heute: Date): Wochenstand {
 
   // Vergangenes lässt die Vorschau selbst weg — dieselbe Menge wie am Knopf.
   const ungesendet = q.sendenMoeglich
-    ? offeneMeldungen(week, q.fsWeeks[wi], wi, q.fsBase, q.services, q.confirmations, q.sentLog, q.zeiten, heute)
+    ? offeneMeldungen(week, q.fsWeeks[wi], q.services, q.confirmations, q.sentLog, q.zeiten, heute)
     : []
 
   const summe = (feld: 'konflikte' | 'nichtBesetzbar' | 'offen'): number =>

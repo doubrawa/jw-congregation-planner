@@ -14,6 +14,7 @@
  */
 
 import { gehoertZu, istAusgefallen, MEETING_TABS } from './helpers'
+import { montagNach } from './meeting-dates'
 import { allePlaetze } from './plaetze'
 import type { Person, Service, Week } from './types'
 
@@ -129,26 +130,20 @@ export const LOAD_WEEKS = LOAD_RADIUS * 2 + 1
  * anderen Zeitraum als den, den das Sheet daneben behauptet („2 Aufgaben in
  * 5 Wochen").
  *
- * Grundlage ist `week.start`, das ISO-Datum aus dem jw.org-Import. Fehlt es
- * bei einer der beiden — Demo-Daten, Platzhalter, von Hand angelegte Wochen —,
- * bleibt es beim Indexabstand: die alte Näherung ist besser als gar keine
- * Ordnung.
+ * Grundlage ist `week.start`, der Montag der Woche (T66).
  */
-export function wochenAbstand(a: Week | undefined, b: Week | undefined, ia: number, ib: number): number {
-  const ta = a?.start ? Date.parse(a.start) : NaN
-  const tb = b?.start ? Date.parse(b.start) : NaN
-  if (Number.isNaN(ta) || Number.isNaN(tb)) return Math.abs(ia - ib)
-  return Math.round(Math.abs(ta - tb) / WOCHE_MS)
+export function wochenAbstand(a: Week, b: Week): number {
+  return Math.round(Math.abs(Date.parse(a.start) - Date.parse(b.start)) / WOCHE_MS)
 }
 
 /**
  * Die Woche, die `versatz` Wochen von `weeks[wi]` entfernt liegt — nach Datum,
- * nicht nach Index. Ohne Datum (Demo, Platzhalter) der schlichte Nachbar.
+ * nicht nach Index (fehlt sie im Bestand, gibt es keine).
  */
 function wocheBeiVersatz(weeks: Week[], wi: number, versatz: number): Week | undefined {
   const hier = weeks[wi]
-  if (!hier?.start) return weeks[wi + versatz]
-  const ziel = new Date(Date.parse(hier.start) + versatz * WOCHE_MS).toISOString().slice(0, 10)
+  if (!hier) return undefined
+  const ziel = montagNach(hier.start, versatz)
   return weeks.find((w) => w?.start === ziel)
 }
 

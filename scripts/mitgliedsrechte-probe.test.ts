@@ -8,7 +8,7 @@ import {
   qualifiziertFuer,
   slotSchluessel,
 } from './mitgliedsrechte-probe.mjs'
-import { helperTaskKey, itemTaskKey } from '../src/data/planning'
+import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import type { PartItem, Person } from '../src/data/types'
 
@@ -28,17 +28,17 @@ const punkt = (iid = 'k3f9x'): PartItem => ({ iid, title: 'Probe', names: [] })
 describe('Der Schlüssel ist derselbe wie in der App', () => {
   it('Programmpunkt: Woche, Zusammenkunft, Raum, Kennung, Platz', () => {
     const item = punkt()
-    expect(slotSchluessel(item, '2026-08-17', 'mid', 0)).toBe(itemTaskKey('2026-08-17', 'mid', item.iid, 0))
+    expect(slotSchluessel(item, '2026-08-17', 'mid', 0)).toBe(punktKey('2026-08-17', 'mid', item.iid, 0))
   })
 
   it('und die Zusätzliche Klasse trägt „aux" statt „part"', () => {
     const item = punkt()
-    expect(slotSchluessel(item, '2026-08-17', 'we', 1, true)).toBe(itemTaskKey('2026-08-17', 'we', item.iid, 1, true))
+    expect(slotSchluessel(item, '2026-08-17', 'we', 1, true)).toBe(punktKey('2026-08-17', 'we', item.iid, 1, true))
     expect(slotSchluessel(item, '2026-08-17', 'we', 1, true)).toContain('|aux|')
   })
 
   it('Hilfsdienste ebenso', () => {
-    expect(helferSchluessel('2026-08-17', 'mid', 'mik', 1)).toBe(helperTaskKey('2026-08-17', 'mid', 'mik', 1))
+    expect(helferSchluessel('2026-08-17', 'mid', 'mik', 1)).toBe(helferKey('2026-08-17', 'mid', 'mik', 1))
   })
 })
 
@@ -143,7 +143,7 @@ describe('Ist das Mitglied für den Platz überhaupt qualifiziert? (Fall 9)', ()
     zu sein.
   */
   it('liest den Dienst aus einem Hilfsdienst-Schlüssel', () => {
-    expect(dienstAusSchluessel(helperTaskKey('2026-08-17', 'mid', 'mik', 1))).toBe('mik')
+    expect(dienstAusSchluessel(helferKey('2026-08-17', 'mid', 'mik', 1))).toBe('mik')
   })
 
   it.each([

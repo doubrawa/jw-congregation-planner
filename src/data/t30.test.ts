@@ -8,7 +8,7 @@ import {
   autoAssignMeeting,
   deriveMyTasks,
   deriveSubstituteReqs,
-  helperTaskKey,
+  helferKey,
   weekConflicts,
 } from './planning'
 import type { Meeting, Person, Week } from './types'
@@ -47,7 +47,7 @@ function makeWeek(): Week {
     ],
     helpers: { mik: [{ name: 'A. Beispiel', pid: 'p1' }] },
   })
-  return { range: '7.–13. September', book: '', start: '2026-09-07', current: false, mid: meeting(), we: meeting() }
+  return { range: '7.–13. September', book: '', start: '2026-09-07', mid: meeting(), we: meeting() }
 }
 
 const mitAbweichung = (w: Week, tab: 'mid' | 'we', dev: Week['dev'] extends undefined ? never : NonNullable<Week['dev']>['mid']): Week => ({
@@ -72,8 +72,8 @@ describe('Verlegung: anderer Tag, andere Uhrzeit', () => {
     // Hier fällt es dem Nutzer auf: „Meine Aufgaben", S-89 und der
     // Erinnerungstext leiten alle von hier ab.
     const w = mitAbweichung(makeWeek(), 'mid', { wd: 4, time: '18:00' })
-    expect(meetingDateText(w, 0, 'mid', ZEITEN)).toBe('Donnerstag, 10. September · 18:00')
-    expect(meetingDateText(makeWeek(), 0, 'mid', ZEITEN)).toBe('Dienstag, 8. September · 19:00')
+    expect(meetingDateText(w, 'mid', ZEITEN)).toBe('Donnerstag, 10. September · 18:00')
+    expect(meetingDateText(makeWeek(), 'mid', ZEITEN)).toBe('Dienstag, 8. September · 19:00')
   })
 
   it('eine Abweichung schlägt den Anzeigetext im date-Feld', () => {
@@ -86,7 +86,7 @@ describe('Verlegung: anderer Tag, andere Uhrzeit', () => {
     const verlegt = mitAbweichung(alt, 'mid', { wd: 1, time: '20:00' })
     expect(meetingOffset(verlegt, 'mid', ZEITEN)).toBe(0)
     expect(meetingTime(verlegt, 'mid', ZEITEN)).toBe('20:00')
-    expect(meetingDateText(verlegt, 0, 'mid', ZEITEN)).toBe('Montag, 7. September · 20:00')
+    expect(meetingDateText(verlegt, 'mid', ZEITEN)).toBe('Montag, 7. September · 20:00')
   })
 
   it('weichtAb erkennt Tag, Uhrzeit und Ausfall — sonst nichts', () => {
@@ -163,7 +163,7 @@ describe('Ausfall: es kommt niemand zusammen', () => {
       id: 'p2', fn: 'Bernd', ln: 'Bereit', role: 'verkuendiger', tel: '', mail: '',
       priv: { ...emptyQualifications(), [serviceQualKey('mik')]: true },
     }
-    const abgesagt = { [helperTaskKey('2026-09-07', 'mid', 'mik', 0)]: 'verhindert' as const }
+    const abgesagt = { [helferKey('2026-09-07', 'mid', 'mik', 0)]: 'verhindert' as const }
 
     // Gegenprobe zuerst: findet die Zusammenkunft statt, gibt es das Gesuch.
     expect(deriveSubstituteReqs([makeWeek()], dienste, abgesagt, einspringer, ZEITEN)).toHaveLength(1)

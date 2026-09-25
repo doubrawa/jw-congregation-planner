@@ -78,7 +78,6 @@ export interface ImportedMeeting {
 export interface ImportedWeek {
   range: string
   book: string
-  current: boolean
   mid: ImportedMeeting
   we: ImportedMeeting
 }
@@ -484,7 +483,7 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   ]
 
   const mid: ImportedMeeting = { date: range, end: 'Ende ca. 20:45', sections: midSections, helpers: {} }
-  return { range, book, current: false, mid, we: weekendTemplate(range) }
+  return { range, book, mid, we: weekendTemplate(range) }
 }
 
 // Schülerteil-Typen — die Heuristik liest **deutschen** Titel und Meta.

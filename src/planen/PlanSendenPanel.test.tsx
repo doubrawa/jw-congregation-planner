@@ -56,7 +56,7 @@ function woche(namen: string[] = ['A. Berg']): Week {
     range: '7.–13. September',
     book: '',
     start: MONTAG,
-    current: true,
+    
     mid: {
       date: '',
       end: '',
@@ -83,7 +83,6 @@ const stand = (over: Partial<AppState> = {}): AppState => ({
   // Die Demo bringt Zusagen für genau diese Woche mit, und wer zugesagt hat,
   // zählt am Knopf nicht mehr. Hier gilt nur, was der Test selbst setzt.
   confirmations: {},
-  fsBase: new Date(2026, 8, 7, 12, 0),
   congregation: { name: 'Test', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
   ...over,
 })

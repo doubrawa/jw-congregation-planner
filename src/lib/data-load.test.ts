@@ -107,29 +107,6 @@ describe('loadCongregationData', () => {
     expect(res.empty).toBe(false)
   })
 
-  it('lädt auch Zeilen aus der Zeit, als dort der Anzeigename stand', async () => {
-    // Vor dem Schema-Neuaufbau speicherte die App den deutschen Namen. Eine
-    // Umsetzung, die Unbekanntes verwirft, machte aus so einer Zeile eine
-    // Versammlung ohne Sprache — und der Import holte wortlos Deutsch.
-    seedResponses({
-      congregations: [
-        {
-          data: {
-            name: 'Krumbach', hall: 'H', mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00',
-            reminder_first: 7, reminder_last: 1, reminder_repeat: false,
-            cong_lang: 'Deutsch', prog_langs: ['Englisch'], aux_class: false,
-          },
-          error: null,
-        },
-      ],
-    })
-    const res = await loadCongregationData('u1')
-    expect(res.ok).toBe(true)
-    if (!res.ok) return
-    expect(res.data.congLang).toBe('de')
-    expect(res.data.progLangs).toEqual(['en'])
-  })
-
   /**
    * Ladefenster: nur die jüngsten WEEK_LIMIT Wochen kommen aus der Datenbank.
    *

@@ -60,9 +60,8 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { ladeTabellen, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import { alsSkript, argumente, ladeTabellen, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
-import { argumente } from './wochenplanung-importieren.mjs'
 
 /* ===================== NWS lesen ========================================== */
 
@@ -300,14 +299,4 @@ async function main() {
   console.log(`\nGeschrieben: ${plan.neu.length} Abwesenheiten eingefügt.`)
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
-    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
-    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
-    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

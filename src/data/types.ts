@@ -41,7 +41,7 @@ export type Lang =
   | 'fi' | 'no' | 'tr' | 'zh' | 'ja' | 'ko' | 'id' | 'tl' | 'vi' | 'sw'
   | 'ar' | 'he' | 'fa' | 'ur' // RTL-Sprachen (Rechts-nach-links)
 
-/** Sichtbare Bereiche. Die letzten drei nur für Planer/Koordinatoren. */
+/** Sichtbare Bereiche. `planen`, `personen` und `einstellungen` nur für Planer (und Gruppenaufseher, eingeschränkt). */
 export type Screen =
   | 'login'
   | 'start'
@@ -523,14 +523,6 @@ export interface Dienstwoche {
 }
 
 /**
- * Anlässe, die eine ganze Woche prägen (T64).
- *
- * Alle drei sind Aussagen über die **Woche**, nicht über eine Zusammenkunft —
- * das ist das Aufnahmekriterium. „Saal belegt", „Kongress der
- * Nachbarversammlung" und alles Übrige sind keine Anlässe, sondern Gründe: sie
- * stehen als Freitext bei der betroffenen Zusammenkunft (`Abweichung.reason`).
- */
-/**
  * Ein weiterer Termin der Woche (T63) — **eine allgemeine Art, keine Sammlung
  * Sonderfälle.**
  *
@@ -566,6 +558,14 @@ export interface Termin {
   place?: string
 }
 
+/**
+ * Anlässe, die eine ganze Woche prägen (T64).
+ *
+ * Alle drei sind Aussagen über die **Woche**, nicht über eine Zusammenkunft —
+ * das ist das Aufnahmekriterium. „Saal belegt", „Kongress der
+ * Nachbarversammlung" und alles Übrige sind keine Anlässe, sondern Gründe: sie
+ * stehen als Freitext bei der betroffenen Zusammenkunft (`Abweichung.reason`).
+ */
 export type AnlassArt = 'co' | 'mem' | 'kongress'
 
 /** Anlass der Woche samt Termin (T64). */
@@ -606,7 +606,6 @@ export interface Week {
    */
   start: string
   lang?: string // jw.org-Sprachcode, in dem der Import geholt wurde (Herkunft)
-  current: boolean // aktuelle Woche (Chip "AKTUELLE WOCHE")
   co?: boolean // Besuch des Kreisaufsehers (Chip, Dienstvortrag statt VBS)
   /**
    * Was der Kreisaufseher-Besuch am Programm verändert hat (T62) — nur
@@ -799,11 +798,6 @@ export interface MyTask {
 }
 
 /**
- * Offenes Ersatzgesuch für einen Hilfsdienst: Der Bearbeiter hat „verhindert"
- * gemeldet; qualifizierte Personen (gleicher Dienst) können einspringen. Rein
- * abgeleitet (planning.ts deriveSubstituteReqs), nicht gespeichert.
- */
-/**
  * Eine bereits bestehende Zuteilung einer Person in einer Zusammenkunft — für
  * den Doppelbelegungs-Hinweis im Zuteilungs-Sheet und im Ersatzgesuch.
  * `lang` steuert die Übersetzung bei der Anzeige: 'u' = App-Sprache
@@ -814,6 +808,11 @@ export interface MeetingAssignment {
   lang: 'u' | 'p'
 }
 
+/**
+ * Offenes Ersatzgesuch für einen Hilfsdienst: Der Bearbeiter hat „verhindert"
+ * gemeldet; qualifizierte Personen (gleicher Dienst) können einspringen. Rein
+ * abgeleitet (planning.ts deriveSubstituteReqs), nicht gespeichert.
+ */
 export interface SubstituteReq {
   key: string // Hilfsdienst-task_key
   svc: string // Dienst-Key

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
+import { fromIso } from '../data/meeting-dates'
 import { DatePicker } from './DatePicker'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -47,12 +48,8 @@ export function AbsencePanel({
   const [to, setTo] = useState('')
   const [reason, setReason] = useState('')
 
-  const fmtDate = (iso: string): string => {
-    if (!iso) return ''
-    // Mittag, nicht Mitternacht: sonst schiebt die Zeitzone das Datum um einen Tag.
-    const date = new Date(`${iso}T12:00:00`)
-    return date.toLocaleDateString(LOCALES[state.lang], { day: 'numeric', month: 'long' })
-  }
+  const fmtDate = (iso: string): string =>
+    iso ? fromIso(iso).toLocaleDateString(LOCALES[state.lang], { day: 'numeric', month: 'long' }) : ''
 
   /**
    * Eintragen darf, wen es selbst betrifft — oder ein Planer. Dieselbe Grenze

@@ -43,12 +43,7 @@
  * `--cong <id>` beschränkt auf eine Versammlung (sonst: alle).
  */
 
-import { argumente, istPlatzhalter, refAusUrl, restKlient, urlAusEnvText, zugangsdaten } from './gemeinsam.mjs'
-export { istPlatzhalter, refAusUrl, urlAusEnvText }
-
-// Damit der Test die Helfer über dieses Skript erreicht, wie es die anderen
-// Wartungsskripte für ihre eigenen auch tun.
-export { authKopf } from './gemeinsam.mjs'
+import { alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 export const SCHUELER = 'Schüler'
 export const PARTNER = 'Partner'
@@ -142,19 +137,4 @@ async function main() {
   console.log(`\n${zuSchreiben.length} Wochen geschrieben.`)
 }
 
-// Nur beim direkten Aufruf laufen — der Test importiert die Helfer.
-if (process.argv[1]?.endsWith('rollen-nachtragen.mjs')) {
-  // `main().catch(…)` wie in den übrigen Wartungsskripten: ein unbehandelter
-  // Fehlschlag riss Node mit einem `Assertion failed` aus libuv hinaus, und
-  // daneben war die eigentliche Meldung nicht mehr zu finden.
-  //
-  // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
-  // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
-  // im Schließen weg — dann kam dieselbe libuv-Assertion zurück und stand
-  // wieder über der Meldung, die sie erklären sollte. So läuft Node aus und
-  // liefert den Code trotzdem.
-  main().catch((err) => {
-    console.error(`\nAbgebrochen: ${err instanceof Error ? err.message : err}`)
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

@@ -108,7 +108,7 @@ function zusammenkunft(belegt: boolean): Meeting {
 
 function woche(belegt = true): Week {
   return {
-    range: '', book: '', start: '2026-09-07', current: false,
+    range: '', book: '', start: '2026-09-07', 
     mid: zusammenkunft(belegt),
     we: { date: '', end: '', sections: [], helpers: {} },
   }

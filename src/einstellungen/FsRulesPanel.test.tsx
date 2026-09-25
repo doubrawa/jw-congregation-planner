@@ -53,7 +53,6 @@ function zeige(
     congregationId: 'c1', userId: 'u1', planner: true,
     groups: GRUPPEN, persons: [], services: [], weeks: [], fsWeeks: [],
     fsRules: [regel()],
-    fsBase: new Date(2026, 8, 7, 12, 0),
     congLang: 'de', progLangs: [], langSearch: '',
     ...over,
   }

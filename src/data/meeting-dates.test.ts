@@ -6,6 +6,7 @@ import {
   meetingDateText,
   meetingOffset,
   meetingTime,
+  montagNach,
   tageZwischen,
   weekEndMs,
 } from './meeting-dates'
@@ -28,7 +29,7 @@ function woche(start = '', midDate = '', weDate = ''): Week {
   return {
     range: '',
     book: '',
-    current: false,
+    
     start,
     mid: { ...leer, date: midDate },
     we: { ...leer, date: weDate },
@@ -109,11 +110,6 @@ describe('currentWeekIndex', () => {
     const mitLuecke = [woche(undefined), woche(undefined), ...wochen]
     expect(currentWeekIndex(mitLuecke, new Date(2026, 8, 15))).toBe(3)
   })
-
-  it('fällt ohne jedes Startdatum auf das current-Flag zurück (Demo)', () => {
-    const demo = [woche(undefined), { ...woche(undefined), current: true }, woche(undefined)]
-    expect(currentWeekIndex(demo, new Date(2026, 8, 15))).toBe(1)
-  })
 })
 
 describe('meetingDateText — Termin statt Wochenspanne', () => {
@@ -122,19 +118,14 @@ describe('meetingDateText — Termin statt Wochenspanne', () => {
     // Wochentag, keine Uhrzeit. Genau das stand in „Meine Aufgaben", im
     // S-89-Formular und im Erinnerungstext.
     const w = woche(MONTAG, '7.–13. September', '7.–13. September')
-    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Dienstag, 8. September · 19:00')
-    expect(meetingDateText(w, 0, 'we', MEETINGS)).toBe('Sonntag, 13. September · 10:00')
+    expect(meetingDateText(w, 'mid', MEETINGS)).toBe('Dienstag, 8. September · 19:00')
+    expect(meetingDateText(w, 'we', MEETINGS)).toBe('Sonntag, 13. September · 10:00')
   })
 
   it('eine verlegte Zusammenkunft nennt den verlegten Tag', () => {
     const w = woche(MONTAG, '7.–13. September')
     w.dev = { mid: { wd: 6, time: '19:30' } } // Samstag
-    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Samstag, 12. September · 19:30')
-  })
-
-  it('ohne Startdatum bleibt stehen, was dasteht (Demo, Vorlagen)', () => {
-    const w = woche(undefined, '7.–13. September')
-    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('7.–13. September')
+    expect(meetingDateText(w, 'mid', MEETINGS)).toBe('Samstag, 12. September · 19:30')
   })
 
   it('das Ergebnis ist kanonisch deutsch und damit übersetzbar', () => {
@@ -159,6 +150,20 @@ describe('tageZwischen', () => {
     expect(tageZwischen(new Date(2026, 8, 7, 23, 59), new Date(2026, 8, 8, 0, 1))).toBe(1)
     expect(tageZwischen(new Date(2026, 8, 8), new Date(2026, 8, 7))).toBe(-1)
     expect(tageZwischen(new Date(2026, 8, 7, 6), new Date(2026, 8, 7, 20))).toBe(0)
+  })
+})
+
+describe('montagNach', () => {
+  it('zählt Wochen ab einem Montag — als ISO-Kennung', () => {
+    expect(montagNach(MONTAG, 0)).toBe(MONTAG)
+    expect(montagNach(MONTAG, 1)).toBe('2026-09-14')
+    expect(montagNach(MONTAG, -1)).toBe('2026-08-31')
+  })
+
+  it('bleibt über Jahreswechsel und Sommerzeit ein Montag', () => {
+    expect(montagNach('2026-12-28', 1)).toBe('2027-01-04')
+    expect(montagNach('2026-03-23', 1)).toBe('2026-03-30')
+    expect(montagNach('2026-10-19', 1)).toBe('2026-10-26')
   })
 })
 
@@ -193,8 +198,8 @@ describe('meetingDateText bei fremdsprachiger Versammlung', () => {
 
   it.each(KOEPFE)('%s: der Termin wird gerechnet, nicht aus dem Kopf gelesen', (_name, kopf) => {
     const w = woche(MONTAG, kopf, kopf)
-    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Dienstag, 8. September · 19:00')
-    expect(meetingDateText(w, 0, 'we', MEETINGS)).toBe('Sonntag, 13. September · 10:00')
+    expect(meetingDateText(w, 'mid', MEETINGS)).toBe('Dienstag, 8. September · 19:00')
+    expect(meetingDateText(w, 'we', MEETINGS)).toBe('Sonntag, 13. September · 10:00')
   })
 
   it.each(KOEPFE)('%s: und der Versatz kommt aus den Einstellungen', (_name, kopf) => {
@@ -208,7 +213,7 @@ describe('meetingDateText bei fremdsprachiger Versammlung', () => {
     // ohnehin keinen Tag — aber die Rangfolge muss dieselbe bleiben.
     const w = woche(MONTAG, '7-13 de septiembre')
     w.dev = { mid: { wd: 4, time: '18:30' } }
-    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Donnerstag, 10. September · 18:30')
+    expect(meetingDateText(w, 'mid', MEETINGS)).toBe('Donnerstag, 10. September · 18:30')
   })
 
   it('ein verlegter Termin bleibt kanonisch deutsch, auch in einer spanischen Woche', () => {
@@ -217,6 +222,6 @@ describe('meetingDateText bei fremdsprachiger Versammlung', () => {
     const w = woche(MONTAG, '7.–13. September')
     w.dev = { mid: { wd: 6, time: '19:30' } }
     w.lang = 'es'
-    expect(meetingDateText(w, 0, 'mid', MEETINGS)).toBe('Samstag, 12. September · 19:30')
+    expect(meetingDateText(w, 'mid', MEETINGS)).toBe('Samstag, 12. September · 19:30')
   })
 })

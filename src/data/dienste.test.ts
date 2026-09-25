@@ -6,7 +6,7 @@ import {
   ohneDienstZusagen,
 } from './dienste'
 import { emptyQualifications, privWert, serviceQualKey } from './helpers'
-import { helperTaskKey } from './planning'
+import { helferKey } from './planning'
 import type { Person, Week } from './types'
 
 /**
@@ -46,7 +46,7 @@ function woche(start = '2026-09-07'): Week {
     range: '',
     book: '',
     start,
-    current: false,
+    
     mid: { ...leer, helpers: { ton: [{ name: 'A. Berg' }], mik: [{ name: 'B. Kern' }] } },
     we: { ...leer, helpers: { ton: [{ name: 'C. Wald' }] } },
   }
@@ -109,14 +109,14 @@ describe('Die Bestätigungen der Plätze gehen mit', () => {
     // ihn zurücklesen wollte, käme bei einem Dienstnamen mit `|` durcheinander.
     const keys = dienstZusagenKeys([woche()], 'ton')
     expect(keys).toEqual([
-      helperTaskKey('2026-09-07', 'mid', 'ton', 0),
-      helperTaskKey('2026-09-07', 'we', 'ton', 0),
+      helferKey('2026-09-07', 'mid', 'ton', 0),
+      helferKey('2026-09-07', 'we', 'ton', 0),
     ])
   })
 
   it('nimmt genau diese aus der Karte — und lässt die übrigen stehen', () => {
-    const key = helperTaskKey('2026-09-07', 'mid', 'ton', 0)
-    const fremd = helperTaskKey('2026-09-07', 'mid', 'mik', 0)
+    const key = helferKey('2026-09-07', 'mid', 'ton', 0)
+    const fremd = helferKey('2026-09-07', 'mid', 'mik', 0)
     const map = { [key]: 'bestätigt' as const, [fremd]: 'verhindert' as const }
     const next = ohneDienstZusagen(map, [key])
     expect(next[key]).toBeUndefined()

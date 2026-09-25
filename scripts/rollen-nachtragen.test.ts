@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  authKopf,
-  istPlatzhalter,
-  PARTNER,
-  refAusUrl,
-  reiheNachtragen,
-  SCHUELER,
-  urlAusEnvText,
-  wocheNachtragen,
-} from './rollen-nachtragen.mjs'
+import { authKopf, istPlatzhalter, refAusUrl, urlAusEnvText } from './gemeinsam.mjs'
+import { PARTNER, reiheNachtragen, SCHUELER, wocheNachtragen } from './rollen-nachtragen.mjs'
 
 /**
  * Das Nachtrag-Skript fasst **Produktivdaten** an und ist der einzige Weg, die

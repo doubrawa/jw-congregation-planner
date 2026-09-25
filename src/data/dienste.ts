@@ -25,7 +25,7 @@
  */
 
 import { MEETING_TABS } from './helpers'
-import { helperTaskKey } from './planning'
+import { helferKey } from './planning'
 import type { ConfirmationMap, Person, Week } from './types'
 
 /** Den Aufgabenbereich eines gelöschten Dienstes aus allen Personen nehmen. */
@@ -81,7 +81,7 @@ export function dienstZusagenKeys(weeks: Week[], key: string): string[] {
     for (const tab of MEETING_TABS) {
       const arr = week[tab].helpers[key]
       if (!arr) continue
-      arr.forEach((_slot, pos) => out.push(helperTaskKey(week.start, tab, key, pos)))
+      arr.forEach((_slot, pos) => out.push(helferKey(week.start, tab, key, pos)))
     }
   }
   return out

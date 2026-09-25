@@ -59,6 +59,7 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import {
+  alsSkript,
   argumente,
   authKopf,
   ENV_DATEIEN,
@@ -237,10 +238,4 @@ async function main() {
   console.log('Ab jetzt findet ihn jedes Wartungsskript von selbst — auch ohne Terminal.')
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

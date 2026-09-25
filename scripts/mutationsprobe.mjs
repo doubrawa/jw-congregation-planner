@@ -220,8 +220,10 @@ export const KATALOG = [
     id: 'gast-ohne-namens-rueckfall',
     datei: 'src/data/helpers.ts',
     regel: 'Ein externer Redner zählt nie auf eine gleichnamige eigene Person (T29).',
-    suchen: 'return !isGuestRole(zuteilung.rolle) && zuteilung.name === displayName(person)',
-    ersetzen: 'return zuteilung.name === displayName(person)',
+    // Seit dem 25.9.2026 steht die Regel in `gehoertZuKennung`; `gehoertZu`
+    // reicht nur noch Id und Anzeigenamen der Person durch.
+    suchen: 'return !isGuestRole(zuteilung.rolle) && zuteilung.name === personName',
+    ersetzen: 'return zuteilung.name === personName',
   },
   {
     id: 'partner-familie',
@@ -485,14 +487,14 @@ export const KATALOG = [
     datei: 'src/planen/useZusage.ts',
     regel: 'Der Ampel-Punkt sucht die Zusage unter der Wochen-Kennung, nicht unter der Position.',
     suchen: "const woche = week?.start ?? ''",
-    ersetzen: 'const woche = fsKennung(undefined, state.fsBase, state.week)',
+    ersetzen: 'const woche = String(state.week)',
   },
   {
     id: 'ampel-treffpunkt-woche',
     datei: 'src/planen/useZusage.ts',
-    regel: 'Auch am Treffpunkt: Zusage unter dem Montag der Woche, nicht unter Basis plus Position.',
-    suchen: 'stand(fsTaskKey(fsKennung(week, state.fsBase, state.week), inst.id)),',
-    ersetzen: 'stand(fsTaskKey(fsKennung(undefined, state.fsBase, state.week), inst.id)),',
+    regel: 'Auch am Treffpunkt: Zusage unter dem Montag der Woche, nicht unter der Position.',
+    suchen: 'stand(fsTaskKey(woche, inst.id)),',
+    ersetzen: 'stand(fsTaskKey(String(state.week), inst.id)),',
   },
   {
     id: 'ampel-ausgefallen',
@@ -598,8 +600,11 @@ export const KATALOG = [
     id: 's89-bibellesung-am-bereich',
     datei: 'src/data/planning.ts',
     regel: 'Die Bibellesung wird am Bereich erkannt, nicht am deutschen Titel — sonst fehlt der S-89-Zettel in jeder anderen Sprache.',
-    suchen: "    sel.priv === 'bibellesung' ||\n",
-    ersetzen: '',
+    // Der Titel-Rückfall (`item.title.startsWith('Bibellesung')`) ist am
+    // 25.9.2026 entfallen — er stand nur für Bestandswochen ohne Bereich, die
+    // es seit dem Neuaufbau (T105) nicht mehr gibt.
+    suchen: "const isStudent = sel.priv === 'schulung' || sel.priv === 'schulungPartner' || sel.priv === 'bibellesung'",
+    ersetzen: "const isStudent = sel.priv === 'schulung' || sel.priv === 'schulungPartner'",
   },
   {
     id: 's89-rahmen-an-der-form',
@@ -831,22 +836,31 @@ export const KATALOG = [
     datei: 'src/data/planning.ts',
     regel: 'Der Termin einer Aufgabe wird gerechnet — importierte Wochen tragen im date-Feld nur die Wochenspanne.',
     suchen:
-      "const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), at, status: 'offen' as const }",
+      "const gemeinsam = { id: key, date: meetingDateText(week, tab, zeiten), at, status: 'offen' as const }",
     ersetzen: "const gemeinsam = { id: key, date: week[tab].date, at, status: 'offen' as const }",
+  },
+  {
+    id: 'zwei-tipp-bewaffnet-erst',
+    datei: 'src/components/useZweiTipp.ts',
+    regel: 'Ein zerstörender Knopf führt beim ersten Tipp nichts aus — er bewaffnet sich nur.',
+    // Seit dem 25.9.2026 steht das Muster einmal im Hook; die drei Aufrufer
+    // darunter prüfen, dass jeder Knopf ihn auch wirklich benutzt.
+    suchen: '      if (!armed) {\n        setArmed(true)\n        return\n      }\n',
+    ersetzen: '',
   },
   {
     id: 'leeren-zwei-tipp',
     datei: 'src/planen/AutoAssignPanel.tsx',
     regel: '„Leeren" verlangt zwei Tipps — es macht eine Woche Arbeit zunichte.',
-    suchen: "            if (armed) {\n              setArmed(false)\n              dispatch({ type: 'clearAssignments', scope })\n            } else {\n              setArmed(true)\n            }",
-    ersetzen: "            dispatch({ type: 'clearAssignments', scope })",
+    suchen: '          onClick={bestaetigung.onClick}\n          onBlur={bestaetigung.onBlur}\n',
+    ersetzen: '          onClick={leeren}\n',
   },
   {
     id: 'person-loeschen-zwei-tipp',
     datei: 'src/personen/PersonDetail.tsx',
     regel: '„Person löschen" verlangt zwei Tipps — es löst Gruppen-, Konto- und Code-Bezüge.',
-    suchen: '          if (!loeschArmed) {\n            setLoeschArmed(true)\n            return\n          }\n',
-    ersetzen: '',
+    suchen: '        onClick={loeschen.onClick}\n        onBlur={loeschen.onBlur}\n',
+    ersetzen: "        onClick={() => dispatch({ type: 'removePerson', id: person.id })}\n",
   },
   {
     id: 'sheet-abwesende-gesperrt',
@@ -859,8 +873,8 @@ export const KATALOG = [
     id: 'sheet-redner-rueckweg',
     datei: 'src/planen/AssignSheet.tsx',
     regel: 'Über einem eigenen Redner führt der Freitext zurück zum Gastredner (T29).',
-    suchen: 'const guestBase = !rolleAtoms[0] || eigenerRedner ? ROLE_GUEST_SPEAKER : rolleAtoms[0]',
-    ersetzen: 'const guestBase = rolleAtoms[0] || ROLE_GUEST_SPEAKER',
+    suchen: 'const guestBase = !rolleJetzt || eigenerRedner ? ROLE_GUEST_SPEAKER : rolleJetzt',
+    ersetzen: 'const guestBase = rolleJetzt || ROLE_GUEST_SPEAKER',
   },
   {
     id: 'sheet-gruppe-ohne-pid',
@@ -1208,53 +1222,55 @@ export const KATALOG = [
   },
 
   // ── Treffpunkt-Wochenkennung (T100) ───────────────────────────────────────
-  {
-    id: 'fs-woche-aus-der-woche',
-    datei: 'src/data/fs.ts',
-    /*
-      Die Mutation stellt die alte Rechnung wieder her. Ohne Lücke im Bestand
-      ist sie identisch — jeder Test mit lückenlosen Wochen bleibt grün. Nur
-      wer eine Lücke prüft, merkt etwas.
-    */
-    regel:
-      'Der Montag einer Treffpunkt-Woche kommt aus der Woche selbst, nicht aus der Ordnungszahl — sonst verschiebt eine fehlende Woche Schlüssel, Datum und Monatsregel um sieben Tage.',
-    suchen: '  return week?.start || fsWochenStart(fsBase, wi)',
-    ersetzen: '  return fsWochenStart(fsBase, wi)',
-  },
+  /*
+   * Hier stand `fs-woche-aus-der-woche`: „Der Montag einer Treffpunkt-Woche
+   * kommt aus der Woche selbst, nicht aus der Ordnungszahl." Die Mutation
+   * stellte in `fsKennung` den Rückfall `fsBase + wi·7` wieder her. Seit dem
+   * 25.9.2026 gibt es weder `fsKennung` noch eine Datumsbasis: Jede Stelle
+   * liest `Week.start` unmittelbar, und `Week.start` ist Pflicht. Die Regel
+   * ist damit Struktur — es gibt keine zweite Rechnung mehr, auf die eine
+   * Mutation zurückfallen könnte. Was bleibt, prüfen die drei Anker darunter
+   * je Leser: Sie nehmen ihm die Woche aus der Hand.
+   */
   {
     id: 'fs-woche-im-kandidatenblatt',
     datei: 'src/planen/kandidaten.ts',
     regel:
       'Das Kandidatenblatt prüft die Abwesenheit am Tag DIESER Woche — sonst widerspricht es dem Konfliktbanner daneben um sieben Tage.',
     /*
-      Die Mutation nimmt dem Blatt die Woche aus der Hand, sodass nur noch der
-      Rückfall `fsBase + wi·7` greift — dieselbe alte Rechnung, ohne dafür
-      einen Import einzuschleppen, den der Quelltext sonst nicht braucht.
+      Die Mutation nimmt dem Blatt die Woche aus der Hand: Ohne Kennung bleibt
+      die Abwesenheitsprüfung aus, und der Abwesende steht wieder vorn.
     */
-    suchen: 'fsTag(fsKennung(state.weeks[sel.wi], state.fsBase, sel.wi), inst.wd)',
-    ersetzen: 'fsTag(fsKennung(undefined, state.fsBase, sel.wi), inst.wd)',
+    suchen: "fsTag(state.weeks[sel.wi]?.start ?? '', inst.wd)",
+    ersetzen: "fsTag('', inst.wd)",
   },
   {
     id: 'fs-woche-in-der-zeitleiste',
     datei: 'src/personen/person-timeline.ts',
     regel:
       'Auch die Zeitleiste nimmt den Montag aus der Woche — sonst nennt sie bei einer Lücke im Bestand zwei Termine derselben Woche eine Woche auseinander.',
-    suchen: "        fsTag(fsKennung(state.weeks[wi], state.fsBase, wi), inst.wd) ??\n",
-    ersetzen: '',
+    /*
+      Die Mutation rechnet wieder aus der Ordnungszahl: Montag der Woche 0 plus
+      `wi` Wochen. Ohne Lücke im Bestand ist das dasselbe — nur die Probe mit
+      der herausgenommenen Woche merkt etwas.
+    */
+    suchen: "      const datum = fsTag(state.weeks[wi]?.start ?? '', inst.wd)\n",
+    ersetzen:
+      "      const datum = fsTag(state.weeks[0]?.start ?? '', inst.wd)\n" +
+      '      if (datum) datum.setDate(datum.getDate() + wi * 7)\n',
   },
   {
     id: 'fs-woche-im-versand',
     datei: 'src/data/plan-versand.ts',
     /*
-      Seit T101 rechnet der Versand nicht mehr selbst — er ruft `fsKennung`.
-      Die Mutation nimmt ihm die Woche aus der Hand, sodass nur noch der
-      Rückfall `fsBase + wi·7` greift: dieselbe alte Rechnung wie vorher, nur
-      eine Ebene höher erzwungen.
+      Die Mutation nimmt dem Versand die Woche aus der Hand: Der Schlüssel
+      trägt dann keinen Montag mehr — und die Edge Function, die ihn aus der
+      Datenbankzeile nimmt, meint eine andere Menge.
     */
     regel:
       'Auch „Plan senden" nimmt den Montag aus der Woche — die Edge Function nimmt ihn aus der Datenbankzeile, und beide müssen dieselbe Woche meinen.',
-    suchen: '    nimm(fsTaskKey(fsKennung(week, fsBase, wi), inst.id), inst.leader)',
-    ersetzen: '    nimm(fsTaskKey(fsKennung(undefined, fsBase, wi), inst.id), inst.leader)',
+    suchen: '    nimm(fsTaskKey(kennung, inst.id), inst.leader)',
+    ersetzen: "    nimm(fsTaskKey('', inst.id), inst.leader)",
   },
   /*
    * Hier stand `fs-kennung-migration-kette`: „Beim Umschreiben der
@@ -1357,8 +1373,8 @@ export const KATALOG = [
     */
     regel:
       'Die Karte beginnt bei der laufenden Kalenderwoche — nicht bei der ältesten geladenen (und nicht erst bei der nächsten Zusammenkunft, die Kongresswochen überspringt).',
-    suchen: '      return sonntag !== null && sonntag >= heuteMs',
-    ersetzen: '      return sonntag !== null',
+    suchen: '    return sonntag !== null && sonntag >= heuteMs',
+    ersetzen: '    return sonntag !== null',
   },
   {
     id: 'planung-hoechstens-vier-zeilen',
@@ -1410,15 +1426,15 @@ export const KATALOG = [
       mehr nur auf der Karte: Knopf, Karte und Function zählen dieselbe Menge.
     */
     regel: '„Plan senden" zählt keine Zuteilung, deren Zusammenkunft vorbei ist — am Knopf und auf der Karte.',
-    suchen: '      if (wo && vorbei.has(wo.tab)) return\n      nimm(key, name)',
-    ersetzen: '      nimm(key, name)',
+    suchen: '      if (wo && vorbei.has(wo.tab)) return\n      nimm(key, slot.name)',
+    ersetzen: '      nimm(key, slot.name)',
   },
   {
     id: 'plan-vorbei-treffpunkt-nicht-mehr-zaehlen',
     datei: 'src/data/plan-versand.ts',
     regel: 'Ebenso ein Treffpunkt, dessen eigener Tag vorbei ist.',
-    suchen: '    if (fsTagVorbei(fsKennung(week, fsBase, wi), inst.wd, heute)) continue\n',
-    ersetzen: '',
+    suchen: '    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n    nimm(fsTaskKey(kennung, inst.id), inst.leader)',
+    ersetzen: '    nimm(fsTaskKey(kennung, inst.id), inst.leader)',
   },
   {
     id: 'plan-vorbei-function-zusammenkunft',
@@ -1471,8 +1487,8 @@ export const KATALOG = [
     id: 'entzug-vorbei-schweigt-treffpunkt',
     datei: 'src/data/plan-versand.ts',
     regel: 'Ebenso für einen Treffpunkt, dessen Tag vorbei ist.',
-    suchen: '    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n',
-    ersetzen: '',
+    suchen: "    if (conf[key] !== 'bestätigt') continue\n    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n",
+    ersetzen: "    if (conf[key] !== 'bestätigt') continue\n",
   },
   {
     id: 'planung-offline-kein-senden',
@@ -1584,8 +1600,10 @@ export const KATALOG = [
     */
     datei: 'src/data/fs.ts',
     regel: 'Eine Treffpunkt-Leitung gehört in die Aufgaben ihres Leiters, nicht in fremde.',
-    suchen: '      if (!meins) continue',
-    ersetzen: '',
+    // Seit dem 25.9.2026 fragt die Ableitung `gehoertZuKennung` — die Mutation
+    // lässt jede besetzte Leitung durch, gleich wem sie gehört.
+    suchen: '      if (!gehoertZuKennung(fsLeiterZuteilung(inst), personId, personName)) continue',
+    ersetzen: '      if (!fsLeiterZuteilung(inst)) continue',
   },
   {
     id: 'start-wochenfolge',
@@ -1609,8 +1627,7 @@ export const KATALOG = [
     id: 'gruppe-loeschen-rueckfrage',
     datei: 'src/einstellungen/GroupsPanel.tsx',
     regel: 'Eine Predigtdienstgruppe wird erst mit dem zweiten Tipp gelöscht — der erste fragt nach.',
-    suchen:
-      '                  if (!armed) {\n                    setLoeschArmed(group.id)\n                    return\n                  }\n',
+    suchen: '            if (!armed) {\n              bewaffnen()\n              return\n            }\n',
     ersetzen: '',
   },
   {
@@ -1765,7 +1782,7 @@ export const KATALOG = [
     id: 'dienst-zusagen-bleiben',
     datei: 'src/data/dienste.ts',
     regel: 'Mit dem Dienst verschwinden die Bestätigungen seiner Plätze.',
-    suchen: '      arr.forEach((_slot, pos) => out.push(helperTaskKey(week.start, tab, key, pos)))',
+    suchen: '      arr.forEach((_slot, pos) => out.push(helferKey(week.start, tab, key, pos)))',
     ersetzen: '      void arr',
   },
   {

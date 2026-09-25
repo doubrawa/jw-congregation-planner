@@ -50,7 +50,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
     ],
     helpers: { mik: [{ name: 'Simon Krüger' }, { name: 'Gruppe 1' }] },
   })
-  const week = (): Week => ({ range: '', book: '', start: '2026-09-07', current: false, mid: meeting(), we: meeting() })
+  const week = (): Week => ({ range: '', book: '', start: '2026-09-07', mid: meeting(), we: meeting() })
 
   it('ersetzt exakt den alten Anzeigenamen in Programmpunkten und Hilfsdiensten', () => {
     const [w] = renameInWeeks([week()], 'p1', 'Simon Krüger', 'Simon Müller')
@@ -69,7 +69,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
 
   it('rührt nur die betroffene Woche an (unbetroffene behalten ihre Referenz)', () => {
     const w0 = week() // enthält Simon Krüger
-    const w1: Week = { range: 'leer', book: '', start: '2026-09-07', current: false, mid: emptyMeeting(), we: emptyMeeting() }
+    const w1: Week = { range: 'leer', book: '', start: '2026-09-07', mid: emptyMeeting(), we: emptyMeeting() }
     const next = renameInWeeks([w0, w1], 'p1', 'Simon Krüger', 'Simon Müller')
     expect(next[0]).not.toBe(w0)
     expect(next[1]).toBe(w1) // unverändert → gleiche Referenz (kein DB-Write)
@@ -79,7 +79,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
 describe('Personen-Id-Bindung (pid)', () => {
   const emptyMid = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
   const wk = (slots: Array<{ name: string; pid?: string }>): Week => ({
-    range: '', book: '', start: '2026-09-07', current: false,
+    range: '', book: '', start: '2026-09-07', 
     mid: {
       date: '', end: '',
       sections: [{ label: 'X', farbe: 'petrol', items: [{ iid: 'i69', num: 1, title: 'P', meta: '', names: slots }] }],
@@ -142,7 +142,7 @@ describe('Personen-Id-Bindung (pid)', () => {
 describe('Hilfsdienst-Id-Bindung (helpers)', () => {
   const emptyMid = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
   const wkH = (mik: Array<{ name: string; pid?: string }>): Week => ({
-    range: '', book: '', start: '2026-09-07', current: false,
+    range: '', book: '', start: '2026-09-07', 
     mid: { date: '', end: '', sections: [], helpers: { mik } },
     we: emptyMid(),
   })

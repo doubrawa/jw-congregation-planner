@@ -9,7 +9,8 @@ import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsKennung, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { eigenePerson } from './eigene-person'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { erlaubteScreens } from '../data/rechte'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
@@ -38,7 +39,6 @@ import {
   endenNachziehen,
   togglePartner,
   setAbweichung,
-  setDienstwoche,
   setPartThema,
   setClosingSong,
   setOpeningSong,
@@ -162,10 +162,17 @@ function dropConfirmations(map: ConfirmationMap, keys: string[]): ConfirmationMa
   return next
 }
 
+/**
+ * Die Kennungen der geladenen Wochen (ihre Montage, T66) — die Treffpunkt-
+ * Wochen liegen parallel dazu und werden darüber materialisiert.
+ */
+function wochenKennungen(state: Pick<AppState, 'weeks'>): string[] {
+  return state.weeks.map((w) => w.start)
+}
+
 /** Anzeigename des eingeloggten Nutzers. */
 function currentUserName(state: AppState): string {
-  const id = state.personId
-  const me = state.persons.find((p) => p.id === id)
+  const me = eigenePerson(state)
   return me ? displayName(me) : ''
 }
 
@@ -176,12 +183,12 @@ function currentUserName(state: AppState): string {
  */
 function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   if (state.dataStatus === 'demo') return state
-  const me = state.persons.find((p) => p.id === state.personId)
+  const me = eigenePerson(state)
   // Aufgaben-Titel in der Programmsprache des Nutzers ableiten (Sprachvariante
   // der Wochen, falls vorhanden) — Slot-Pfade/Namen sind variantenunabhängig.
   const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
   const weeks = localizedWeeks(state.weeks, jwCode)
-  const kennungen = fsWochenKennungen(weeks, state.fsBase)
+  const kennungen = weeks.map((w) => w.start)
   // Zusammenkunfts-Aufgaben und Treffpunkt-Leitungen kommen aus zwei getrennten
   // Quellen (`weeks` und `fsWeeks`) und bleiben es auch — sie zählen nicht in
   // dieselbe Auslastung. Für den Nutzer sind es aber beides Aufgaben: ein
@@ -220,7 +227,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         state.confirmations,
         me,
         state.congregation.times,
-        buildAbsences(state.absences, weeks, state.fsBase, state.congregation.times),
+        buildAbsences(state.absences, weeks, state.congregation.times),
       ).filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
     : []
   return {
@@ -295,12 +302,11 @@ function ableitungsQuellen(s: AppState): readonly unknown[] {
      * Wird jemand **umbenannt**, zieht der Reducer den neuen Namen durch die
      * Wochen (`renameInWeeks`) — `s.weeks` steht darunter und löst dann aus.
      */
-    s.persons.find((p) => p.id === s.personId),
+    eigenePerson(s),
     s.lang,
     s.congLang,
     s.weeks,
     s.fsWeeks,
-    s.fsBase,
     s.services,
     s.confirmations,
     s.congregation.times,
@@ -338,7 +344,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
  * ab, was es in der Datenbank löschen muss — mit dem Schreiben der Woche.
  */
 function ohneVerwaisteTreffpunktZusagen(vorher: AppState, nachher: AppState): AppState {
-  const keys = fsVerwaisteZusagenAller(vorher.weeks, vorher.fsBase, vorher.fsWeeks, nachher.fsWeeks)
+  const keys = fsVerwaisteZusagenAller(vorher.weeks, vorher.fsWeeks, nachher.fsWeeks)
   const confirmations = dropConfirmations(nachher.confirmations, keys)
   return confirmations === nachher.confirmations ? nachher : { ...nachher, confirmations }
 }
@@ -484,7 +490,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // fände niemanden mehr, und der Slot zählte nirgends — weder in der
       // Auslastung noch in den Konflikten noch in den Aufgaben. Ohne Id greift
       // wieder der Namensweg; legt der Planer dieselbe Person neu an, findet
-      // `migrateAssignmentPids` sie beim nächsten Laden wieder.
+      // `pidsNachtragen` sie beim nächsten Laden wieder.
       return {
         ...state,
         weeks: dropPersonPid(state.weeks, action.id),
@@ -773,7 +779,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.services,
         state.groups,
         action.scope,
-        buildAbsences(state.absences, state.weeks, state.fsBase, state.congregation.times),
+        buildAbsences(state.absences, state.weeks, state.congregation.times),
       )
       if (count === 0) {
         // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie
@@ -812,7 +818,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.persons,
         action.onlyGroup,
         state.absences,
-        fsKennung(state.weeks[state.week], state.fsBase, state.week),
+        state.weeks[state.week]?.start ?? '',
         state.groups,
       )
       if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
@@ -856,20 +862,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(fsWochenKennungen(state.weeks, state.fsBase), state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules),
         toast: toastKey(state, 'toastFsRuleAdd'),
       }
     }
     case 'fsRuleUpdate': {
       const fsRules = state.fsRules.map((r) => (r.id === action.id ? { ...r, ...action.patch } : r))
-      return { ...state, fsRules, fsWeeks: regenFsWeeks(fsWochenKennungen(state.weeks, state.fsBase), state.fsWeeks, fsRules) }
+      return { ...state, fsRules, fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules) }
     }
     case 'fsRuleRemove': {
       const fsRules = state.fsRules.filter((r) => r.id !== action.id)
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(fsWochenKennungen(state.weeks, state.fsBase), state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules),
         toast: toastKey(state, 'toastFsRuleDel'),
       }
     }
@@ -945,7 +951,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'takeSubstitute': {
       const parts = helperKeyParts(action.key)
-      const me = state.persons.find((p) => p.id === state.personId)
+      const me = eigenePerson(state)
       if (!parts || !me) return state
       const name = displayName(me)
       const wi = wochenIndex(state.weeks, parts.woche)
@@ -1026,10 +1032,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setAbweichung': {
       if (!state.weeks[state.week]) return state
       return { ...state, weeks: setAbweichung(state.weeks, state.week, action.tab, action.patch) }
-    }
-    case 'setDienstwoche': {
-      if (!state.weeks[state.week]) return state
-      return { ...state, weeks: setDienstwoche(state.weeks, state.week, action.on) }
     }
     case 'setAnlass': {
       if (!state.weeks[state.week]) return state
@@ -1188,9 +1190,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks,
         fsRules: p.fsRules,
         fsWeeks: p.fsWeeks,
-        // ISO-Datum als 12:00 Ortszeit lesen (nicht UTC-Mitternacht) — sonst
-        // rutscht die Basis in westlichen Zeitzonen auf den Vortag.
-        fsBase: p.fsBase ? new Date(`${p.fsBase}T12:00:00`) : state.fsBase,
         absences: p.absences,
         notifs: p.notifications,
         confirmations: p.confirmations,

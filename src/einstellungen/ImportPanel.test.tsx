@@ -19,7 +19,7 @@ import { ImportPanel } from './ImportPanel'
  * Fälle ohne ISO-Datum, die sich am Bildschirm kaum herstellen lassen.
  */
 const woche = (patch: Partial<Week> = {}): Week =>
-  ({ range: '7.–13. September', book: 'Jeremia', current: false, ...patch }) as Week
+  ({ range: '7.–13. September', book: 'Jeremia', ...patch }) as Week
 
 /**
  * Bühne mit allen drei Kontexten. Der Speicher gehört seit T41 dazu: `useT`

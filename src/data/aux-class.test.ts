@@ -10,9 +10,9 @@ import {
 import {
   assignmentsInMeeting,
   countOpenSlots,
-  itemTaskKey,
+  punktKey,
   openSlotLabels,
-  ratgeberTaskKey,
+  ratgeberKey,
 } from './planning'
 import { partWorkload } from './auslastung'
 import { togglePartner } from './meeting-edit'
@@ -43,7 +43,7 @@ const woche = (items: PartItem[]): Week =>
   ({
     range: '7.–13. September',
     book: 'Jeremia', start: '2026-09-07',
-    current: false,
+    
     mid: { date: 'Dienstag', end: '', sections: [{ label: 'X', farbe: 'gold', items } as Section], helpers: {} },
     we: { date: 'Sonntag', end: '', sections: [], helpers: {} },
   }) as Week
@@ -154,12 +154,12 @@ describe('Ausschalten beendet die Klasse überall', () => {
 
 describe('Schlüssel', () => {
   it('der Hauptsaal-Schlüssel nennt den Raum „part"', () => {
-    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0)).toBe('2026-09-07|mid|part|k3f9x|0')
+    expect(punktKey('2026-09-07', 'mid', 'k3f9x', 0)).toBe('2026-09-07|mid|part|k3f9x|0')
   })
 
   it('die Zusätzliche Klasse hat eigene Schlüssel', () => {
-    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0, true)).toBe('2026-09-07|mid|aux|k3f9x|0')
-    expect(ratgeberTaskKey('2026-09-07', 'mid')).toBe('2026-09-07|mid|ratgeber')
+    expect(punktKey('2026-09-07', 'mid', 'k3f9x', 0, true)).toBe('2026-09-07|mid|aux|k3f9x|0')
+    expect(ratgeberKey('2026-09-07', 'mid')).toBe('2026-09-07|mid|ratgeber')
   })
 })
 

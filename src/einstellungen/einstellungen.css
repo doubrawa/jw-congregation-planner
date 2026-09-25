@@ -30,8 +30,10 @@
   font-weight: 400;
 }
 
-/* Zeile 2: alle Controls (Dropdown · Planer · Switch · ✕) auf einer Mittellinie. */
-.mem-line {
+/* Zeile 2: alle Controls (Dropdown · Planer · Switch · ✕) auf einer Mittellinie —
+   dieselbe Zeile wie der Kopf einer Gruppe. */
+.mem-line,
+.grp-head {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -67,12 +69,6 @@
 .grp-block {
   padding: 12px 0;
   border-bottom: 1px solid var(--panel-hair);
-}
-
-.grp-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .grp-name {
@@ -278,7 +274,9 @@
   --panel-hair: var(--line);
 }
 
-.svc-controls {
+/* Die Bedienzeile eines Dienstes und die einer Treffpunkt-Regel. */
+.svc-controls,
+.fsr-line {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -498,12 +496,6 @@
 .fsr-row {
   padding: 10px 0;
   border-bottom: 1px solid var(--lineNeu);
-}
-
-.fsr-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .fsr-line + .fsr-line {

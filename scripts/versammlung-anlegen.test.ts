@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { argumente } from './gemeinsam.mjs'
 import {
-  argumente,
   CODE_ALPHABET,
   einladungscode,
   planerBereiche,

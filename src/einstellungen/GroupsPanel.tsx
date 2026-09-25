@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { Chevron } from '../components/Chevron'
 import { fsGruppeEntfernen } from '../data/fs'
@@ -6,22 +6,117 @@ import { displayName, ohneGruppe, personCompare } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import type { Group, Person } from '../data/types'
 
+/**
+ * Eine Gruppe: Name, Mitgliederzahl, Aufseher und Gehilfe — und das Löschen.
+ *
+ * **Löschen mit Rückfrage.** Ein Tipp löschte bis dahin sofort, und mit der
+ * Gruppe verloren ihre Mitglieder still die Zuordnung. Jetzt wie beim Löschen
+ * einer Person und beim Leeren der Zuteilungen: Der erste Tipp bewaffnet den
+ * Knopf und nennt, was verloren geht; erst der zweite löscht. Verlässt der
+ * Fokus den Knopf, entschärft er sich wieder.
+ *
+ * Nicht über `useZweiTipp`, sondern mit dem Zustand des Elternteils: Es ist
+ * **eine** Gruppe zur Zeit bewaffnet — wer die nächste antippt, entschärft
+ * die vorige, auch wenn der Fokus die erste nie verlassen hat.
+ */
+function GruppenZeile({
+  group,
+  mitglieder,
+  armed,
+  bewaffnen,
+  entschaerfen,
+  folgen,
+  ovOptions,
+  asOptions,
+}: {
+  group: Group
+  mitglieder: string
+  armed: boolean
+  bewaffnen: () => void
+  entschaerfen: () => void
+  /** Was mit der Gruppe verloren geht — nur gefragt, wenn der Knopf bewaffnet ist. */
+  folgen: (group: Group) => string[]
+  ovOptions: ReactNode
+  asOptions: ReactNode
+}) {
+  const { dispatch } = useApp()
+  const { t, tu } = useT()
+  const warnung = armed ? folgen(group) : []
+  const warnId = useId()
+  return (
+    <div className="grp-block">
+      <div className="grp-head">
+        <div className="grp-name">{tu(group.name)}</div>
+        <div className="grp-count">{mitglieder}</div>
+        <button
+          type="button"
+          className={armed ? 'svc-remove grp-remove is-armed' : 'svc-remove grp-remove'}
+          // Bewaffnet trägt der Knopf seinen Text selbst; das ✕ davor
+          // braucht die Beschriftung für den Screenreader.
+          aria-label={armed ? undefined : t.a11yRemove}
+          aria-describedby={warnung.length > 0 ? warnId : undefined}
+          onClick={() => {
+            if (!armed) {
+              bewaffnen()
+              return
+            }
+            entschaerfen()
+            dispatch({ type: 'removeGroup', id: group.id })
+          }}
+          onBlur={entschaerfen}
+        >
+          {armed ? t.loeschenSicher : '✕'}
+        </button>
+      </div>
+      {warnung.length > 0 && (
+        <p id={warnId} className="grp-del-warn">
+          {warnung.join(' ')}
+        </p>
+      )}
+      <div className="grp-selects">
+        <label className="grp-field">
+          <span className="field-label">{t.aufseherLbl}</span>
+          <select
+            className="mem-select"
+            value={group.overseerId ?? ''}
+            onChange={(e) =>
+              dispatch({
+                type: 'updateGroup',
+                id: group.id,
+                patch: { overseerId: e.target.value || null },
+              })
+            }
+          >
+            {ovOptions}
+          </select>
+        </label>
+        <label className="grp-field">
+          <span className="field-label">{t.gehilfeLbl}</span>
+          <select
+            className="mem-select"
+            value={group.assistantId ?? ''}
+            onChange={(e) =>
+              dispatch({
+                type: 'updateGroup',
+                id: group.id,
+                patch: { assistantId: e.target.value || null },
+              })
+            }
+          >
+            {asOptions}
+          </select>
+        </label>
+      </div>
+    </div>
+  )
+}
+
 /** Predigtdienstgruppen: Aufseher/Gehilfe je Gruppe, Mitgliederzahl, hinzufügen/löschen. */
 export function GroupsPanel() {
   const { state, dispatch } = useApp()
-  const { t, tu } = useT()
-  /*
-   * **Löschen mit Rückfrage** — die Gruppe, deren ✕ gerade bewaffnet ist.
-   *
-   * Ein Tipp löschte bis dahin sofort, und mit der Gruppe verloren ihre
-   * Mitglieder still die Zuordnung. Jetzt wie beim Löschen einer Person und
-   * beim Leeren der Zuteilungen: Der erste Tipp bewaffnet den Knopf und nennt,
-   * was verloren geht; erst der zweite löscht. Verlässt der Fokus den Knopf,
-   * entschärft er sich wieder. Eine Gruppe zur Zeit — wer die nächste antippt,
-   * entschärft die vorige.
-   */
+  const { t } = useT()
+  /** Die Gruppe, deren ✕ gerade bewaffnet ist (siehe `GruppenZeile`). */
   const [loeschArmed, setLoeschArmed] = useState<string | null>(null)
-  const warnIdBasis = useId()
 
   const sortedPersons = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
   const ohne = ohneGruppe(state.persons, state.groups)
@@ -91,77 +186,19 @@ export function GroupsPanel() {
           <Chevron dir="next" />
         </button>
       )}
-      {state.groups.map((group) => {
-        const armed = loeschArmed === group.id
-        const warnung = armed ? folgen(group) : []
-        const warnId = `${warnIdBasis}-${group.id}`
-        return (
-          <div key={group.id} className="grp-block">
-            <div className="grp-head">
-              <div className="grp-name">{tu(group.name)}</div>
-              <div className="grp-count">{groupMemberLabel(group.id)}</div>
-              <button
-                type="button"
-                className={armed ? 'svc-remove grp-remove is-armed' : 'svc-remove grp-remove'}
-                // Bewaffnet trägt der Knopf seinen Text selbst; das ✕ davor
-                // braucht die Beschriftung für den Screenreader.
-                aria-label={armed ? undefined : t.a11yRemove}
-                aria-describedby={warnung.length > 0 ? warnId : undefined}
-                onClick={() => {
-                  if (!armed) {
-                    setLoeschArmed(group.id)
-                    return
-                  }
-                  setLoeschArmed(null)
-                  dispatch({ type: 'removeGroup', id: group.id })
-                }}
-                onBlur={() => setLoeschArmed(null)}
-              >
-                {armed ? t.loeschenSicher : '✕'}
-              </button>
-            </div>
-            {warnung.length > 0 && (
-              <p id={warnId} className="grp-del-warn">
-                {warnung.join(' ')}
-              </p>
-            )}
-            <div className="grp-selects">
-              <label className="grp-field">
-                <span className="field-label">{t.aufseherLbl}</span>
-                <select
-                  className="mem-select"
-                  value={group.overseerId ?? ''}
-                  onChange={(e) =>
-                    dispatch({
-                      type: 'updateGroup',
-                      id: group.id,
-                      patch: { overseerId: e.target.value || null },
-                    })
-                  }
-                >
-                  {ovOptions}
-                </select>
-              </label>
-              <label className="grp-field">
-                <span className="field-label">{t.gehilfeLbl}</span>
-                <select
-                  className="mem-select"
-                  value={group.assistantId ?? ''}
-                  onChange={(e) =>
-                    dispatch({
-                      type: 'updateGroup',
-                      id: group.id,
-                      patch: { assistantId: e.target.value || null },
-                    })
-                  }
-                >
-                  {asOptions}
-                </select>
-              </label>
-            </div>
-          </div>
-        )
-      })}
+      {state.groups.map((group) => (
+        <GruppenZeile
+          key={group.id}
+          group={group}
+          mitglieder={groupMemberLabel(group.id)}
+          armed={loeschArmed === group.id}
+          bewaffnen={() => setLoeschArmed(group.id)}
+          entschaerfen={() => setLoeschArmed(null)}
+          folgen={folgen}
+          ovOptions={ovOptions}
+          asOptions={asOptions}
+        />
+      ))}
       <button type="button" className="btn-outline grp-add" onClick={addGroup}>
         {t.gruppeHinzu}
       </button>

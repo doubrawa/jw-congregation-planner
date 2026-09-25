@@ -65,8 +65,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { argumente, ladeTabellen, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
-export { argumente, personDisplayName }
+import { alsSkript, argumente, ladeTabellen, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 
 /* ===================== Stabile Identität (uuid5) ========================== */
 
@@ -648,11 +647,10 @@ async function main() {
     // Wochen mit Anlass bleiben dem Planer überlassen: Beim Kreisaufseher ist
     // das Programm umgebaut (Dienstvortrag statt VBS) — Plätze verschieben sich,
     // NWS trägt sie anders —, beim Gedächtnismahl entfällt eine Zusammenkunft,
-    // beim Kongress die ganze Woche. Geprüft wird wie `anlassArt()` in der App:
-    // das neue Feld, sonst die alten Flags. Alle drei Arten sind Aussagen über
-    // die Woche, deshalb genügt „hat einen Anlass".
-    const anlass = zeile.data.anlass?.art ?? (zeile.data.co ? 'co' : zeile.data.mem ? 'mem' : undefined)
-    if (anlass) { sonder++; continue }
+    // beim Kongress die ganze Woche. Geprüft wird wie `anlassArt()` in der App.
+    // Alle drei Arten sind Aussagen über die Woche, deshalb genügt „hat einen
+    // Anlass".
+    if (zeile.data.anlass?.art) { sonder++; continue }
     getroffen++
     const gebunden = loeseWoche(roh, bind)
     const z = verteileWoche(zeile.data, gebunden, nurLeere, keyMap)
@@ -705,14 +703,4 @@ async function main() {
   console.log(`\nGeschrieben: ${geschrieben.length} Wochen aktualisiert.`)
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
-    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
-    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
-    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

@@ -122,8 +122,7 @@ export const CONG_TO_JW: Readonly<Record<string, string>> = Object.fromEntries(
  * **Zum Anzeigen und zum Pruefen, nicht mehr zum Umsetzen.** Die Sprache ist
  * inzwischen auf beiden Seiten ein Code: in der Datenbank
  * (`congregations.cong_lang`) wie im Zustand der App. An der Grenze wird
- * deshalb nichts mehr uebersetzt — nur Zeilen aus der Zeit davor, die noch den
- * deutschen Namen tragen, hebt `zuCode` in `src/lib/data.ts` beim Laden.
+ * deshalb nichts mehr uebersetzt.
  *
  * Geblieben sind zwei Aufgaben: der Rueckfall-Anzeigename in `langnames.ts`,
  * wenn die Sprachliste des Lesers den Code nicht kennt — und die Frage „gibt

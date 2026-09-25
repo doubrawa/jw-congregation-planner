@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { reducer } from './reducer'
 import type { AppState } from './context'
-import { fsGruppeEntfernen, fsTaskKey, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { fsGruppeEntfernen, fsTaskKey, regenFsWeeks } from '../data/fs'
 import { emptyQualifications, ohneGruppe } from '../data/helpers'
 import {
   buildDemoFsWeeks,
@@ -10,7 +10,6 @@ import {
   DEMO_FS_RULES,
   DEMO_GROUPS,
   DEMO_PERSONS,
-  FS_BASE,
 } from '../data/testdaten'
 import type { FsInstance, Group, Person } from '../data/types'
 
@@ -49,7 +48,6 @@ function stand(over: Partial<AppState> = {}): AppState {
     groups: [...DEMO_GROUPS],
     fsRules: [...DEMO_FS_RULES],
     fsWeeks: buildDemoFsWeeks(),
-    fsBase: FS_BASE,
     // Die Zusagen gehören dazu: Verschwindet ein Treffpunkt, verfällt seine.
     confirmations: {},
     ...over,
@@ -99,7 +97,7 @@ describe('Eine Predigtdienstgruppe löschen', () => {
     // Blieben sie stehen, erbte sie ein Treffpunkt, der später unter derselben
     // Kennung wieder entsteht, und die Datenbank trüge Zusagen zu nichts.
     const vorher = stand()
-    const kennungen = fsWochenKennungen(vorher.weeks, vorher.fsBase)
+    const kennungen = vorher.weeks.map((w) => w.start)
     const schluessel = (grp: string) =>
       vorher.fsWeeks.flatMap((w, wi) =>
         w.filter((inst) => inst.grp === grp && inst.leader).map((inst) => fsTaskKey(kennungen[wi] ?? '', inst.id)),
@@ -150,7 +148,7 @@ describe('Eine Predigtdienstgruppe löschen', () => {
       Gruppe liegen, stünden ihre Treffpunkte danach wieder in jeder Woche.
     */
     const nachher = loeschen(stand(), 'g1')
-    const kennungen = fsWochenKennungen(nachher.weeks, nachher.fsBase)
+    const kennungen = nachher.weeks.map((w) => w.start)
 
     const neuGeladen = regenFsWeeks(kennungen, nachher.fsWeeks, nachher.fsRules, true)
 

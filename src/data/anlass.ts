@@ -26,16 +26,13 @@ import { versatzAbMontag } from './meeting-dates'
 /**
  * Welcher Anlass gilt in dieser Woche?
  *
- * Liest das neue Feld, fällt aber auf die alten Flags zurück. Wochen, die vor
- * T64 gespeichert wurden, tragen `anlass` nicht — sie liefern hier trotzdem das
- * richtige Ergebnis, und genau deshalb braucht es keine Datenwanderung.
+ * `co` und `mem` sind die **Wirkungen** eines Anlasses (umgebauter Ablauf,
+ * Programm des Mahls), nicht der Anlass selbst — den trägt nur `anlass`. Beide
+ * Felder setzt, wer den Anlass setzt (`setAnlass`, der Import), und niemand
+ * sonst.
  */
 export function anlassArt(week: Week | undefined): AnlassArt | undefined {
-  if (!week) return undefined
-  if (week.anlass) return week.anlass.art
-  if (week.co) return 'co'
-  if (week.mem) return 'mem'
-  return undefined
+  return week?.anlass?.art
 }
 
 /**

@@ -63,7 +63,7 @@ function abschnitte(): Section[] {
 
 function woche(over: Partial<Week> = {}): Week {
   return {
-    range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07', current: false,
+    range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07', 
     mid: { date: '7.–13. September', end: '20:45', sections: abschnitte(), helpers: { mik: [] } },
     we: { date: '7.–13. September', end: '11:45', sections: [], helpers: { mik: [] } },
     ...over,

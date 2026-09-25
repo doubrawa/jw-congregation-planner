@@ -12,7 +12,7 @@ import { initialState } from '../app/init'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsTaskKey } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
-import { ratgeberTaskKey } from '../data/planning'
+import { ratgeberKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { FsInstance, Group, Person, Week } from '../data/types'
 import { AutoAssignPanel } from './AutoAssignPanel'
@@ -46,7 +46,7 @@ const GRUPPEN: Group[] = [
 
 function woche(): Week {
   return {
-    range: '1.–7. September', book: '', start: '2026-09-07', current: false,
+    range: '1.–7. September', book: '', start: '2026-09-07', 
     mid: { date: '', end: '20:45', sections: [], helpers: {} },
     we: { date: '', end: '11:45', sections: [], helpers: {} },
   }
@@ -59,7 +59,6 @@ function buehne(kind: 'auto' | 'aux' | 'fs', over: Partial<AppState> = {}, onlyG
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
     persons: [ANTON], services: [], groups: GRUPPEN, absences: [], confirmations: {},
     weeks: [woche()], fsWeeks: [[]], week: 0,
-    fsBase: new Date(2026, 8, 7, 12, 0),
     congregation: { name: 'Test', hall: 'Königreichssaal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
@@ -206,7 +205,7 @@ describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 26)', () => {
     cleanup()
 
     const zugesagt = buehne('aux', {
-      weeks, auxClass: true, confirmations: { [ratgeberTaskKey('2026-09-07', 'mid')]: 'bestätigt' },
+      weeks, auxClass: true, confirmations: { [ratgeberKey('2026-09-07', 'mid')]: 'bestätigt' },
     }).container.querySelector('.slot-chip')!
     expect(zugesagt.querySelector('.zusage-punkt')?.className).toContain('is-bestaetigt')
   })

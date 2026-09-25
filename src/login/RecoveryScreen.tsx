@@ -3,7 +3,7 @@ import { useAppDispatch } from '../app/context'
 import { useT } from '../i18n/useT'
 import { updatePassword } from '../lib/supabase'
 import { authFehlerText } from './auth-text'
-import { LOGO } from '../lib/logo'
+import { LoginKopf } from './LoginKopf'
 import './login.css'
 
 /**
@@ -37,17 +37,7 @@ export function RecoveryScreen() {
 
   return (
     <div className="login">
-      <header className="login-head">
-        <img className="login-logo" src={LOGO} alt="" width={72} height={72} />
-        {/* `wbr` statt festem Umbruch: der Name steht auf einer Zeile und
-            bricht erst, wenn schmales Gerät oder große Schrift ihn drängen. */}
-        <h1 className="login-wordmark">
-          Versammlung
-          <wbr />
-          .app
-        </h1>
-        <p className="login-sub">{t.recoveryTitle}</p>
-      </header>
+      <LoginKopf untertitel={t.recoveryTitle} />
 
       <form className="login-form" onSubmit={submit}>
         <label className="login-label" htmlFor="rec-pass">

@@ -12,7 +12,7 @@ import { initialState } from '../app/init'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications } from '../data/helpers'
 import { LOAD_RADIUS } from '../data/auslastung'
-import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/planning'
+import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type {
   Absence,
@@ -73,7 +73,7 @@ function woche(start: string, rednerName = '', rednerRolle = ROLE_GUEST_SPEAKER,
     names: [{ name: '', rolle: '', bereichsKey: 'schulung' }],
   }
   return {
-    range: '1.–7. September', book: '', start, current: false,
+    range: '1.–7. September', book: '', start, 
     mid: {
       date: '', end: '',
       sections: [{ label: 'UNS IM DIENST VERBESSERN', farbe: 'gold', items: [schueler] }],

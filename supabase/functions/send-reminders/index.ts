@@ -48,12 +48,13 @@ import { json, restKlient, wert } from '../_shared/rest.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
-  type MeetingTimes,
-  personDisplayName,
   tageBisTermin,
+  terminText,
   versatzMitAbweichung,
+  zeitenAus,
   zeitMitAbweichung,
 } from '../_shared/planung.ts'
+import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import {
   type Eintrag,
   type FsInstance,
@@ -64,7 +65,6 @@ import {
   type Pending,
   type ServiceRow,
   type SubscriptionRow,
-  terminText,
   uebersetzerFuer,
   uebersetzt,
   type Week,
@@ -276,12 +276,9 @@ Deno.serve(async (req: Request) => {
         // zeigt die App „aus" und der Versand erinnert trotzdem täglich.
         repeat: cong.reminder_repeat,
       }
-      // Die Regeltermine stehen als Werte in der Versammlung;  kommt als
-      // „19:00:00" zurück, angezeigt wird „19:00".
-      const zeiten: MeetingTimes = {
-        mid: { wd: cong.mid_wd, time: cong.mid_time.slice(0, 5) },
-        we: { wd: cong.we_wd, time: cong.we_time.slice(0, 5) },
-      }
+      // Die Regeltermine stehen als Werte in der Versammlung — dieselbe
+      // Umrechnung wie in `substitute`, `send-plan` und im Client.
+      const zeiten = zeitenAus(cong)
       const [vonWoche, bisWoche] = wochenFenster(todayUTC, rem)
 
       const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
@@ -319,42 +316,11 @@ Deno.serve(async (req: Request) => {
       ])
 
       const conf = new Map(confs.map((c) => [c.task_key, c.status]))
-      const personById = new Map(persons.map((p) => [p.id, p]))
-      const userByName = new Map<string, string>()
-      // Zuordnung bevorzugt über die Person-Id: zwei Personen desselben Namens
-      // bekamen über `userByName` gegenseitig die Erinnerungen des anderen.
-      // Der Namensweg bleibt als Rückfall für Altdaten ohne Id.
-      const userByPerson = new Map<string, string>()
-      for (const m of members) {
-        const p = m.person_id ? personById.get(m.person_id) : undefined
-        if (!p) continue
-        userByName.set(personDisplayName(p.fn, p.ln), m.user_id)
-        userByPerson.set(p.id, m.user_id)
-      }
-      /*
-       * Konto einer eingeteilten Person: **Id zuerst — und sonst gar nicht.**
-       *
-       * **Der Namensweg gilt nur, wo es keine Id gibt.** Hier stand ein `??`, das
-       * ihn auch dann noch nachschob, wenn der Platz eine `pid` trug und die
-       * gemeinte Person kein Konto hat. Getroffen wurde damit zwangsläufig ein
-       * **anderer**: Wer kein Konto hat, steht in keiner der beiden Tabellen —
-       * ein Treffer über den Namen kann also nur von einem Namensvetter kommen.
-       *
-       * Der Preis war doppelt. Der Namensvetter bekam eine Nachricht, die ihn
-       * nichts angeht (in seiner Aufgabenliste steht sie nicht, der Client
-       * entscheidet über die Id). Und der Gemeinte galt als erreicht — er fiel
-       * damit aus der Liste, mit der die Planer erfahren, wen sie persönlich
-       * ansprechen müssen.
-       *
-       * `idAufloeser` im Client zieht dieselbe Grenze ausdrücklich: Eine
-       * unbekannte Id ergibt `undefined`, nie einen Namenstreffer.
-       */
-      const userOf = (pend: Pending): string | undefined =>
-        pend.pid ? userByPerson.get(pend.pid) : userByName.get(pend.name)
-      const subsByUser = new Map<string, SubscriptionRow[]>()
-      for (const s of subs) {
-        subsByUser.set(s.user_id, [...(subsByUser.get(s.user_id) ?? []), s])
-      }
+      // Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (siehe
+      // `_shared/konten.ts`).
+      const kontoFuer = kontoAufloeser(members, persons)
+      const userOf = (pend: Pending): string | undefined => kontoFuer(pend.pid, pend.name)
+      const subsByUser = abosJeKonto(subs)
 
       /*
        * Der Aufgaben-Schlüssel reist mit. Er wird für die Glocke gebraucht:

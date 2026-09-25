@@ -20,7 +20,6 @@ import {
   DEMO_NOTIFICATIONS,
   DEMO_PERSONS,
   DEMO_SERVICES,
-  FS_BASE,
 } from '../data/testdaten'
 import type { S89Payload, Screen } from '../data/types'
 
@@ -75,7 +74,6 @@ function zeige(over: Partial<AppState> = {}) {
     weeks: buildDemoWeeks(),
     fsWeeks: buildDemoFsWeeks(),
     fsRules: [...DEMO_FS_RULES],
-    fsBase: FS_BASE,
     absences: [...DEMO_ABSENCES],
     notifs: [...DEMO_NOTIFICATIONS],
     myTasks: [...DEMO_MY_TASKS],

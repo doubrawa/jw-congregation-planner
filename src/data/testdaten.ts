@@ -5,7 +5,7 @@
  */
 
 import { buildFsWeeks } from './fs'
-import { normalizeChairKeys, serviceQualKey } from './helpers'
+import { normalizeChairKeys, ROLE_GUEST_SPEAKER, serviceQualKey } from './helpers'
 import { STANDARD_ZEITEN } from './vorgaben'
 import { ersteZahl } from './ziffern'
 import type {
@@ -184,12 +184,6 @@ export const DEMO_GROUPS: Group[] = [
 
 /* ---- Zusammenkünfte für den Predigtdienst ("Treffpunkte") --------------- */
 
-/** Montag der Woche 0 (7. September 2026) — Basis der Treffpunkt-Datumsberechnung. */
-export const FS_BASE = new Date(2026, 8, 7, 12)
-
-/** Anzahl der Demo-Wochen (buildDemoWeeks) — für die Treffpunkt-Materialisierung. */
-const DEMO_WEEK_COUNT = 4
-
 /**
  * Grundplan der Treffpunkte: Versammlungstreffpunkte (grp '') Mo 14:00 + Mi 9:30
  * wöchentlich + jeden 1. Samstag im Monat 9:30; je Gruppe ein Samstagstreffpunkt
@@ -214,9 +208,12 @@ const DEMO_FS_SEED: Record<string, string> = {
   '3|r1': 'Jonas Berger', '3|r3': 'Simon Krüger',
 }
 
-/** Baut die Treffpunkte der Demo-Wochen aus Grundplan + Seed-Leitern. */
+/**
+ * Baut die Treffpunkte der Demo-Wochen aus Grundplan + Seed-Leitern — je Woche
+ * eine, unter dem Montag der Demo-Woche daneben.
+ */
 export function buildDemoFsWeeks(): FsInstance[][] {
-  return buildFsWeeks(FS_BASE, DEMO_WEEK_COUNT, DEMO_FS_RULES, DEMO_FS_SEED)
+  return buildFsWeeks(buildDemoWeeks().map((w) => w.start), DEMO_FS_RULES, DEMO_FS_SEED)
 }
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
@@ -241,8 +238,8 @@ export const DEMO_SERVICES: Service[] = [
 /**
  * Abwesenheiten der Demo. `a1` ist die eigene (ohne Person, wie im Demo-Modus
  * ohne Konto); die übrigen ersetzen die früheren Wochenindizes an den Personen
- * und decken je eine Demo-Woche ab — Woche 0 beginnt am Montag, 7.9.2026
- * (FS_BASE), Zusammenkünfte Di und So.
+ * und decken je eine Demo-Woche ab — Woche 0 beginnt am Montag, 7.9.2026,
+ * Zusammenkünfte Di und So.
  */
 export const DEMO_ABSENCES: Absence[] = [
   { id: 'a1', personId: null, userId: '', from: '2026-10-12', to: '2026-10-18', reason: 'Urlaub' },
@@ -323,16 +320,29 @@ export const DEMO_REMINDERS: Reminders = { first: 7, last: 1, repeat: true }
  * Bereichs-Key] ("" = offener Slot / ohne Rollenlabel).
  */
 
-type NameTuple = [name: string, rolle: string, bereichsKey: string, male?: boolean]
+type NameTuple = [name: string, rolle: string, bereichsKey: string, male?: boolean] | SlotAssignment
 
 const slots = (tuples: NameTuple[]): SlotAssignment[] =>
-  tuples.map(([name, rolle, bereichsKey, male]) => {
+  tuples.map((tuple) => {
+    if (!Array.isArray(tuple)) return tuple
+    const [name, rolle, bereichsKey, male] = tuple
     const slot: SlotAssignment = { name }
     if (rolle) slot.rolle = rolle
     if (bereichsKey) slot.bereichsKey = bereichsKey
     if (male) slot.male = true
     return slot
   })
+
+/**
+ * Auswärtiger Redner: Freitext ohne `pid`, die Herkunftsversammlung in ihrem
+ * eigenen Feld — so trägt ihn auch `AssignSheet` ein.
+ */
+const gastredner = (name: string, herkunft: string): SlotAssignment => ({
+  name,
+  rolle: ROLE_GUEST_SPEAKER,
+  bereichsKey: 'vortrag',
+  herkunft,
+})
 
 /**
  * Kennungen der Testdaten — **durchgezählt, nicht gewürfelt.**
@@ -397,7 +407,7 @@ export function buildDemoWeeks(): Week[] {
   kennungenAb('dw')
   return normalizeChairKeys([
     {
-      range: '7.–13. September', start: '2026-09-07', book: 'Jeremia 32–33', current: true,
+      range: '7.–13. September', start: '2026-09-07', book: 'Jeremia 32–33', 
       mid: {
         date: 'Dienstag, 8. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -425,7 +435,7 @@ export function buildDemoWeeks(): Week[] {
         date: 'Sonntag, 13. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 138 · Gebet', null, [['Konrad Sommer', 'Vorsitz', 'vorsitzWe'], ['Jörg Roth', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 7', '30 Min.', [['Michael Hartmann', 'Gastredner · Vers. Nordheim', 'vortrag']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 7', '30 Min.', [gastredner('Michael Hartmann', 'Vers. Nordheim')])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 20'),
             part(null, 'Demo-Studienartikel 6', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']], 60),
@@ -436,7 +446,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '14.–20. September', start: '2026-09-14', book: 'Jeremia 34–36', current: false,
+      range: '14.–20. September', start: '2026-09-14', book: 'Jeremia 34–36', 
       mid: {
         date: 'Dienstag, 15. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -464,7 +474,7 @@ export function buildDemoWeeks(): Week[] {
         date: 'Sonntag, 20. September · 10:00 · Königreichssaal', end: 'Ende ca. 11:45',
         sections: [
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 12 · Gebet', null, [['Helmut Vogel', 'Vorsitz', 'vorsitzWe'], ['Ulrich Lang', 'Gebet', 'gebet']])]),
-          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Studienartikel 4', '30 Min.', [['Rolf Otte', 'Gastredner · Vers. Südfeld', 'vortrag']])]),
+          sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Studienartikel 4', '30 Min.', [gastredner('Rolf Otte', 'Vers. Südfeld')])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
             song('Lied 49'),
             part(null, 'Demo-Studienartikel 5', 'Studienartikel 29 · 60 Min.', [['Manfred Albrecht', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']], 60),
@@ -475,7 +485,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '21.–27. September', start: '2026-09-21', book: 'Jeremia 37–39', current: false, co: true,
+      range: '21.–27. September', start: '2026-09-21', book: 'Jeremia 37–39', co: true,
       mid: {
         date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -515,7 +525,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '28. Sep – 4. Okt', start: '2026-09-28', book: 'Jeremia 40–42', current: false, mem: true, memCancel: 'we',
+      range: '28. Sep – 4. Okt', start: '2026-09-28', book: 'Jeremia 40–42', mem: true, memCancel: 'we',
       // Das Gedächtnismahl ist am Samstag nach Sonnenuntergang statt am Sonntag
       // — und das steht hier als **Wert**. Bis zum 18. September 2026 stand es
       // nur im Anzeigetext des `date`-Feldes daneben („Samstag, 3. Oktober ·
@@ -567,7 +577,7 @@ export function buildImportWeek(): Week {
   // genau eine. Der Index-Zugriff sieht das nicht, deshalb der Nicht-Null-Zusatz.
   kennungenAb('di')
   return normalizeChairKeys([{
-    range: '5.–11. Oktober', start: '2026-10-05', book: 'Jeremia 43–45', current: false,
+    range: '5.–11. Oktober', start: '2026-10-05', book: 'Jeremia 43–45', 
     mid: {
       date: 'Dienstag, 6. Oktober · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
       sections: [

@@ -25,9 +25,9 @@ import { WeekNav } from './WeekNav'
  *
  * - Der **Kongress** hat kein eigenes Flag: er wirkt als Ausfall *beider*
  *   Zusammenkünfte und wird über `anlassArt` erkannt (T64).
- * - Der Chip **AKTUELLE WOCHE** hängt an der gerechneten laufenden Woche, nicht
- *   am `current`-Flag der Daten — das setzt nur der Demo-Bestand und wird nie
- *   nachgeführt; in der Produktion erschien der Chip deshalb nie.
+ * - Der Chip **AKTUELLE WOCHE** hängt an der gerechneten laufenden Woche
+ *   (`currentWeekIndex`), die der Aufrufer hereinreicht — nicht an einem
+ *   gespeicherten Kennzeichen, das nie nachgeführt würde.
  * - Der **Grund eines Ausfalls** sind die Worte des Planers und bleiben
  *   unübersetzt. Für „entfällt" gibt es kein gemessenes Wort in 33 Sprachen;
  *   der durchgestrichene Name der Zusammenkunft trägt die Aussage allein.
@@ -37,7 +37,7 @@ const t = dict('de')
 
 function woche(over: Partial<Week> = {}): Week {
   return {
-    range: '1.–7. September', book: '', start: '2026-09-07', current: false,
+    range: '1.–7. September', book: '', start: '2026-09-07', 
     mid: { date: 'Di, 8. September · 19:00', end: '20:45', sections: [], helpers: {} },
     we: { date: 'So, 13. September · 10:00', end: '11:45', sections: [], helpers: {} },
     ...over,
@@ -76,22 +76,16 @@ describe('Die Wochen-Chips', () => {
     expect(chips(container)).toEqual([t.aktuelleWoche])
   })
 
-  it('das `current`-Flag der Daten entscheidet das NICHT — es wird nie nachgeführt', () => {
-    // In der Produktion setzt es niemand; der Chip erschien deshalb nie.
-    const { container } = buehne('chips', <WeekChips week={woche({ current: true })} showCurrent />)
-    expect(container.querySelector('.week-chips')).toBeNull()
-  })
-
   it('im Planen wird die laufende Woche nicht gekennzeichnet — dort plant man voraus', () => {
     const { container } = buehne('chips', <WeekChips week={woche()} showCurrent={false} istAktuell />)
     expect(container.querySelector('.week-chips')).toBeNull()
   })
 
   it('Kreisaufseher-Woche und Gedächtnismahl bekommen ihren Chip', () => {
-    const co = buehne('chips', <WeekChips week={woche({ co: true })} showCurrent />)
+    const co = buehne('chips', <WeekChips week={woche({ anlass: { art: 'co' }, co: true })} showCurrent />)
     expect(chips(co.container)).toEqual([t.coWoche])
     cleanup()
-    const mem = buehne('chips', <WeekChips week={woche({ mem: true })} showCurrent />)
+    const mem = buehne('chips', <WeekChips week={woche({ anlass: { art: 'mem' }, mem: true })} showCurrent />)
     expect(chips(mem.container)).toEqual([t.memWoche])
   })
 

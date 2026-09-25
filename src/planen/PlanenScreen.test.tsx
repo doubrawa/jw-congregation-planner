@@ -59,7 +59,7 @@ function abschnitte(): Section[] {
 
 function woche(over: Partial<Week> = {}): Week {
   return {
-    range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07', current: false,
+    range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07', 
     mid: { date: '', end: '20:45', sections: abschnitte(), helpers: { mik: [] } },
     we: { date: '', end: '11:45', sections: [], helpers: { mik: [] } },
     ...over,
@@ -74,7 +74,6 @@ function zeige(over: Partial<AppState> = {}) {
     congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
     persons: [PLANER, AUFSEHER], groups: GRUPPEN, services: DIENSTE, absences: [],
     weeks: [woche()], fsWeeks: [[]], fsRules: [], week: 0,
-    fsBase: new Date(2026, 8, 7, 12, 0),
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }

@@ -5,9 +5,9 @@ import {
   CONGREGATION,
   DEMO_PERSONS,
   DEMO_SERVICES,
-  FS_BASE,
 } from '../data/testdaten'
 import { displayName } from '../data/helpers'
+import { fromIso, tageZwischen } from '../data/meeting-dates'
 import type { Absence } from '../data/types'
 import { personTimeline, type TimelineDaten } from './person-timeline'
 
@@ -18,11 +18,15 @@ function daten(patch: Partial<TimelineDaten> = {}): TimelineDaten {
     confirmations: {},
     congregation: CONGREGATION,
     fsWeeks: buildDemoFsWeeks(),
-    fsBase: FS_BASE,
     absences: [],
     ...patch,
   }
 }
+
+/** Montag der Demo-Woche 0 — 7. September 2026; die Leiste wird daran in Tagen gemessen. */
+const MONTAG_0 = fromIso(buildDemoWeeks()[0]!.start)
+/** Tage seit dem Montag der Woche 0 — so lesen sich die Positionen in der Leiste. */
+const tag = (e: { datum: Date }): number => tageZwischen(MONTAG_0, e.datum)
 
 /** Abwesenheit dieser Person, so wie sie aus der Datenbank käme. */
 const abwesenheit = (id: string, from: string, to: string, reason = ''): Absence => ({
@@ -134,7 +138,7 @@ describe('Zeitleiste einer Person', () => {
     expect(fs[0]!.datum.getDate()).toBe(erwartet.getDate())
     expect(fs[0]!.datum.getMonth()).toBe(erwartet.getMonth())
     // Und die Sortierung zieht mit: 14 Tage nach dem Montag der Woche 0, nicht 7.
-    expect(fs[0]!.tag).toBe(14 + versatz)
+    expect(tag(fs[0]!)).toBe(14 + versatz)
   })
 
   it('ordnet Zusammenkünfte und Treffpunkte chronologisch ineinander', () => {
@@ -142,11 +146,11 @@ describe('Zeitleiste einer Person', () => {
       week.map((inst) => (wi === 0 ? { ...inst, leader: displayName(person) } : inst)),
     )
     const eintraege = personTimeline(person, daten({ fsWeeks }))
-    const tage = eintraege.map((e) => e.tag)
+    const tage = eintraege.map(tag)
     expect([...tage].sort((a, b) => a - b)).toEqual(tage)
     // Treffpunkte der Woche 0 dürfen nicht hinter Zusammenkünfte späterer
-    // Wochen rutschen — genau das ginge ohne gemeinsame Tageszählung schief.
-    expect(eintraege.filter((e) => e.tag < 7).some((e) => e.kind === 'fs')).toBe(true)
+    // Wochen rutschen — genau das ginge ohne gemeinsamen Kalendertag schief.
+    expect(eintraege.filter((e) => tag(e) < 7).some((e) => e.kind === 'fs')).toBe(true)
   })
 
   it('ordnet auch innerhalb einer Woche nach Wochentag', () => {
@@ -155,23 +159,23 @@ describe('Zeitleiste einer Person', () => {
     // die Woche und nicht den Tag, stünde der Samstag vor dem Dienstag.
     const anfang = personTimeline(person, daten()).slice(0, 3)
     expect(anfang.map((e) => e.kind)).toEqual(['meeting', 'fs', 'fs'])
-    expect(anfang.map((e) => e.tag)).toEqual([1, 5, 7])
+    expect(anfang.map(tag)).toEqual([1, 5, 7])
   })
 
   it('markiert am echten Kalendertag, was schon vorbei ist', () => {
     // Woche 0 beginnt am 7.9.; „heute" liegt in Woche 2 → Woche 0 und 1 sind
     // vorbei, der laufende Tag selbst zählt noch nicht als vergangen.
-    const heute = new Date(FS_BASE)
+    const heute = new Date(MONTAG_0)
     heute.setDate(heute.getDate() + 14)
     const eintraege = personTimeline(person, daten(), heute)
     expect(eintraege.some((e) => e.vergangen)).toBe(true)
     for (const e of eintraege) {
-      expect(e.vergangen).toBe(e.tag < 14)
+      expect(e.vergangen).toBe(tag(e) < 14)
     }
   })
 
   it('ohne Zeitbezug (alles in der Zukunft) ist nichts vergangen', () => {
-    const frueher = new Date(FS_BASE)
+    const frueher = new Date(MONTAG_0)
     frueher.setDate(frueher.getDate() - 1)
     expect(personTimeline(person, daten(), frueher).every((e) => !e.vergangen)).toBe(true)
   })

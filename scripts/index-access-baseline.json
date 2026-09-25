@@ -20,7 +20,7 @@
   "src/data/t34.test.ts": 17,
   "src/data/t37.test.ts": 11,
   "src/data/t38.test.ts": 20,
-  "src/data/weekend.test.ts": 48,
+  "src/data/weekend.test.ts": 42,
   "src/i18n/langs.test.ts": 2,
   "src/i18n/translate-data.test.ts": 2,
   "src/i18n/ui.test.ts": 5,

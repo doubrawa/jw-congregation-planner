@@ -15,7 +15,7 @@
 import type { AppState } from '../app/context'
 import { istAbwesend, istAbwesendAm, type AbsenceSet } from '../data/absence'
 import { slotsOf } from '../data/aux-class'
-import { fsKennung, fsLast, fsTag } from '../data/fs'
+import { fsLast, fsTag } from '../data/fs'
 import {
   displayName,
   gehoertZu,
@@ -27,8 +27,8 @@ import {
   personCompare,
 } from '../data/helpers'
 import { lastFenster, LOAD_WEEKS, loadWindow, workloadOf, type WeekLoad } from '../data/auslastung'
-import { assignmentsInMeeting, type MeetingAssignment } from '../data/planning'
-import type { Person, SlotSelection } from '../data/types'
+import { assignmentsInMeeting } from '../data/planning'
+import type { MeetingAssignment, Person, SlotSelection } from '../data/types'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 
@@ -63,7 +63,7 @@ export type KandidatenDaten = Pick<
   AppState,
   // `lang` gehört dazu, seit die Liste in der Sprache des Lesers sortiert
   // (`personCompare`) — sie steht im Zuteilungs-Sheet und wird dort gesucht.
-  'weeks' | 'persons' | 'groups' | 'services' | 'fsWeeks' | 'fsBase' | 'absences' | 'lang'
+  'weeks' | 'persons' | 'groups' | 'services' | 'fsWeeks' | 'absences' | 'lang'
 >
 
 export function kandidaten(
@@ -94,10 +94,10 @@ function fsKandidaten(
   // `workloadOf` über alle geladenen Wochen, also die Zusammenkunfts-Last: die
   // falsche Größe und der falsche Zeitraum (siehe `fsLast`).
   const fsLastFenster = fsLast(state.fsWeeks, sel.wi, idAufloeser(state.persons))
-  // Derselbe Montag, mit dem `fsWeekConflicts` rechnet. Über `fsBase + wi·7`
-  // widersprachen sich Konfliktbanner und Kandidatenblatt bei einer Lücke im
-  // Bestand um sieben Tage — bei derselben Frage, am selben Treffpunkt.
-  const tag = inst ? fsTag(fsKennung(state.weeks[sel.wi], state.fsBase, sel.wi), inst.wd) : null
+  // Derselbe Montag, mit dem `fsWeekConflicts` rechnet: der der Woche selbst.
+  // Über eine Rechnung aus der Ordnungszahl widersprachen sich Konfliktbanner
+  // und Kandidatenblatt bei einer Lücke im Bestand um sieben Tage.
+  const tag = inst ? fsTag(state.weeks[sel.wi]?.start ?? '', inst.wd) : null
   const schonHeute = (name: string): MeetingAssignment[] => {
     if (!inst) return []
     const out: MeetingAssignment[] = []

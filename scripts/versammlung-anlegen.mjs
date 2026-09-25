@@ -43,8 +43,7 @@
  *
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  */
-import { argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
-export { argumente }
+import { alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /**
  * `"2 19:00"` → `{ mid_wd: 2, mid_time: '19:00' }` für die genannte
@@ -203,14 +202,4 @@ async function main() {
   console.log(`Der Planer meldet sich an und gibt den Code ${code} ein.`)
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
-    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
-    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
-    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

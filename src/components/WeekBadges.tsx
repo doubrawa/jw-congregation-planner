@@ -20,20 +20,15 @@ export function WeekChips({
 }: {
   week: Week
   showCurrent: boolean
-  /**
-   * Ob dies die laufende Woche ist. Kommt von außen (currentWeekIndex), nicht
-   * aus `week.current`: das Flag setzt nur der Demo-Datensatz und wird nie
-   * nachgeführt — der Chip erschien in der Produktion deshalb nie.
-   */
+  /** Ob dies die laufende Woche ist — kommt von außen (`currentWeekIndex`). */
   istAktuell?: boolean
 }) {
   const { t } = useT()
   const chips: Array<{ key: string; label: string; cls: string }> = []
   if (showCurrent && istAktuell)
     chips.push({ key: 'cur', label: t.aktuelleWoche, cls: 'week-chip--current' })
-  // Gefragt wird über `anlassArt`, nicht über die Flags: der Kongress hat
-  // keines (er wirkt als Ausfall beider Zusammenkünfte), und alte Wochen ohne
-  // `anlass` liefern dort trotzdem ihr `co`/`mem` (T64).
+  // Gefragt wird über `anlassArt`, nicht über die Wirkungen (`co`/`mem`): der
+  // Kongress hat keine — er wirkt als Ausfall beider Zusammenkünfte (T64).
   const art = anlassArt(week)
   if (art === 'co') chips.push({ key: 'co', label: t.coWoche, cls: 'week-chip--co' })
   if (art === 'mem') chips.push({ key: 'mem', label: t.memWoche, cls: 'week-chip--mem' })

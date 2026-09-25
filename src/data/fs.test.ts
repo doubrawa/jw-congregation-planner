@@ -3,14 +3,12 @@ import {
   buildFsWeeks,
   fsAddInst,
   fsAutoAssign,
-  fsBaseFromWeeks,
   fsClear,
   fsLeaderValue,
   fsRemoveInst,
   fsSetLeader,
   fsSort,
   fsTag,
-  fsWochenStart,
   fsUpdateInst,
   FS_LOAD_WEEKS,
   genFsWeek,
@@ -21,6 +19,7 @@ import {
   fsWeekConflicts,
 } from './fs'
 import { emptyQualifications } from './helpers'
+import { montagNach } from './meeting-dates'
 import type { Absence, FsInstance, FsRule, Person } from './types'
 
 /** Treffpunkt-qualifizierte Person (priv.treffpunkt gesetzt). */
@@ -39,12 +38,13 @@ function inst(patch: Partial<FsInstance>): FsInstance {
 }
 
 /** Montag der Woche 0 = 7. September 2026 (wie im Demo). */
-const BASE = new Date(2026, 8, 7, 12)
+const MONTAG_0 = '2026-09-07'
 /**
- * Die Wochenkennungen zu BASE — seit T100 hängen Schlüssel und Datum daran und
- * nicht mehr an der Ordnungszahl. Hier lückenlos, also genau `BASE + wi·7`.
+ * Die Wochenkennungen ab MONTAG_0 — seit T100 hängen Schlüssel und Datum daran
+ * und nicht mehr an der Ordnungszahl. Hier lückenlos, also genau `wi` Wochen
+ * nach dem ersten Montag.
  */
-const KENN = Array.from({ length: 8 }, (_unused, wi) => fsWochenStart(BASE, wi))
+const KENN = Array.from({ length: 8 }, (_unused, wi) => montagNach(MONTAG_0, wi))
 
 /** Grundplan wie im Design-Seed: Versammlung Mo/Mi wöchentlich + 1. Sa im Monat; je Gruppe Sa. */
 const RULES: FsRule[] = [
@@ -63,19 +63,19 @@ const ids = (insts: { ruleId: string | null }[]) => insts.map((i) => i.ruleId)
  * Wochentag `wd` in Woche `wi` bei lückenlosem Bestand.
  *
  * Bis T101 gab es dafür `fsDate(base, wi, wd)`. Die Rechnung ist jetzt zerlegt:
- * `fsWochenStart` liefert den Montag, `fsTag` den Versatz darin — damit die
- * Wochen ihren Montag auch dann aus der eigenen Zeile nehmen können, wenn im
+ * die Woche bringt ihren Montag mit (`Week.start`), `fsTag` den Versatz darin —
+ * damit die Wochen ihren Montag auch dann aus der eigenen Zeile nehmen, wenn im
  * Bestand eine fehlt. Ohne Lücke kommt hier dasselbe heraus wie vorher.
  */
-const tagIn = (base: Date, wi: number, wd: number): Date => fsTag(fsWochenStart(base, wi), wd)!
+const tagIn = (wi: number, wd: number): Date => fsTag(KENN[wi]!, wd)!
 
 describe('Wochentag im Wochenraster', () => {
   it('bildet Wochentage ab dem Montag der Woche ab', () => {
-    expect(tagIn(BASE, 0, 1).getDate()).toBe(7) // Mo 7. Sep
-    expect(tagIn(BASE, 0, 3).getDate()).toBe(9) // Mi 9. Sep
-    expect(tagIn(BASE, 0, 6).getDate()).toBe(12) // Sa 12. Sep
-    expect(tagIn(BASE, 0, 0).getDate()).toBe(13) // So 13. Sep (Ende der Woche)
-    expect(tagIn(BASE, 1, 1).getDate()).toBe(14) // Mo der Folgewoche
+    expect(tagIn(0, 1).getDate()).toBe(7) // Mo 7. Sep
+    expect(tagIn(0, 3).getDate()).toBe(9) // Mi 9. Sep
+    expect(tagIn(0, 6).getDate()).toBe(12) // Sa 12. Sep
+    expect(tagIn(0, 0).getDate()).toBe(13) // So 13. Sep (Ende der Woche)
+    expect(tagIn(1, 1).getDate()).toBe(14) // Mo der Folgewoche
   })
 })
 
@@ -90,7 +90,7 @@ describe('genFsWeek', () => {
 
   it('Woche 3: 1. Samstag im Monat (3.10.) → Versammlungstreffpunkt, Gruppen-Samstage entfallen (skipCong)', () => {
     const w3 = genFsWeek(KENN[3]!, RULES)
-    expect(tagIn(BASE, 3, 6).getDate()).toBe(3) // Sa 3. Oktober = 1. Samstag
+    expect(tagIn(3, 6).getDate()).toBe(3) // Sa 3. Oktober = 1. Samstag
     expect(ids(w3)).toContain('r3')
     for (const g of ['r4', 'r5', 'r6', 'r7']) expect(ids(w3)).not.toContain(g)
     expect(ids(w3)).toContain('r1') // wöchentliche bleiben
@@ -110,90 +110,20 @@ describe('genFsWeek', () => {
   })
 })
 
-describe('fsBaseFromWeeks', () => {
-  const friday = new Date(2026, 6, 24, 15) // Fr 24. Juli 2026 (Woche Mo 20. – So 26.)
-
-  // Regelfall: die Wochen tragen ihr echtes ISO-Startdatum (jw.org-Import). Die
-  // Basis MUSS allein daraus kommen — unabhängig von `today` UND vom
-  // gespeicherten `current`-Flag. Genau hier lag der Wochenversatz-Bug: die alte
-  // Logik verankerte an `current`+`today` und driftete bei veraltetem Flag.
-  // Diese Fälle sind bewusst so gewählt, dass die alte Logik ein ANDERES
-  // (falsches) Ergebnis liefern würde — sonst würden sie den Bug nicht abfangen.
-  describe('aus dem echten week.start', () => {
-    it('ignoriert `today` vollständig (Basis rein aus start)', () => {
-      // today absichtlich weit weg + inkonsistent: hinge die Basis daran, käme
-      // der Versatz zurück. Die alte Logik hätte hier ein 2029/2030-Datum ergeben.
-      const base = fsBaseFromWeeks(
-        [{ current: false, start: '2026-07-20' }, { current: false, start: '2026-07-27' }],
-        new Date(2030, 0, 1, 12),
-      )
-      expect(base.getFullYear()).toBe(2026)
-      expect(base.getMonth()).toBe(6) // Juli
-      expect(base.getDate()).toBe(20) // Mo 20. Juli
-    })
-
-    it('ignoriert ein veraltetes current-Flag (der eigentliche Bug)', () => {
-      // Produktionsfall: today (Fr 24.7.) liegt in der Woche 20.–26.7., aber das
-      // gespeicherte current-Flag steht noch auf der Vorwoche (13.–19.7.). Die
-      // alte Logik nahm die current-Woche als „heute" → Basis 20.7. statt 13.7.,
-      // alles eine Woche zu spät.
-      const base = fsBaseFromWeeks(
-        [
-          { current: true, start: '2026-07-13' }, // veraltet – NICHT die Woche von today
-          { current: false, start: '2026-07-20' }, // enthält today
-          { current: false, start: '2026-07-27' },
-        ],
-        friday,
-      )
-      expect(base.getMonth()).toBe(6)
-      expect(base.getDate()).toBe(13) // Montag der Woche 0 = start[0], nicht 20.
-      // Die Woche, die today enthält (Index 1), zeigt korrekt IHREN Samstag:
-      expect(tagIn(base, 1, 6).getDate()).toBe(25) // Sa 25.7., nicht 1.8.
-    })
-
-    it('rechnet vom ersten vorhandenen start auf Woche 0 zurück', () => {
-      // Führende Wochen ohne start (Index 0/1), erst Index 2 hat eins (3.8.).
-      const base = fsBaseFromWeeks(
-        [{ current: false }, { current: true }, { current: false, start: '2026-08-03' }],
-        new Date(2030, 0, 1, 12), // today irrelevant, sobald ein start existiert
-      )
-      expect(base.getMonth()).toBe(6) // Juli
-      expect(base.getDate()).toBe(20) // 3.8. − 14 Tage = Mo 20.7.
-    })
-  })
-
-  // Fallback nur für Wochen OHNE Startdatum (Demo/Vorlagen): dann bleibt als
-  // einziger Anhalt das current-Flag relativ zu `today`.
-  describe('Fallback ohne week.start (Demo/Vorlagen)', () => {
-    it('current-Woche bei Index 0 → Montag dieser Woche', () => {
-      const base = fsBaseFromWeeks([{ current: true }, { current: false }], friday)
-      expect(base.getMonth()).toBe(6)
-      expect(base.getDate()).toBe(20) // Mo 20. Juli
-    })
-
-    it('current-Woche bei Index 2 → zwei Wochen davor', () => {
-      const base = fsBaseFromWeeks(
-        [{ current: false }, { current: false }, { current: true }, { current: false }],
-        friday,
-      )
-      expect(base.getMonth()).toBe(6)
-      expect(base.getDate()).toBe(6) // Mo 6. Juli (20. − 14 Tage)
-    })
-
-    it('Datum der current-Woche stimmt mit der realen Woche überein', () => {
-      // current bei Index 1 → der Samstag der Woche 1 muss der dieser Woche sein.
-      const base = fsBaseFromWeeks([{ current: false }, { current: true }], friday)
-      expect(tagIn(base, 1, 6).getDate()).toBe(25) // Sa 25. Juli
-    })
-  })
-})
+/*
+ * Hier stand bis zum 25.9.2026 `fsBaseFromWeeks`: der Montag der Woche 0,
+ * zurückgerechnet aus der ersten Woche mit Startdatum, mit `heute` als Rückfall
+ * für Wochen ohne. Seit `Week.start` Pflicht ist, gibt es keine Woche ohne
+ * Montag — und damit weder Basis noch Rückfall. Jede Woche nennt ihren Montag
+ * selbst; was daran hängt, prüfen `genFsWeek` darüber und `fs-kennung.test.ts`.
+ */
 
 describe('regenFsWeeks (Neu-Ausrichtung)', () => {
   const RULE: FsRule[] = [
     { id: 'r1', grp: null, wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
   ]
   it('preserveEdits behält wochenspezifische Zeit/Ort + Leiter', () => {
-    const built = buildFsWeeks(BASE, 1, RULE, { '0|r1': 'A. Leiter' })
+    const built = buildFsWeeks(KENN.slice(0, 1), RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo', time: '15:30' })))
     const keep = regenFsWeeks(KENN, edited, RULE, true)
     expect(keep[0][0].place).toBe('Anderswo')
@@ -201,7 +131,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
     expect(keep[0][0].leader).toBe('A. Leiter')
   })
   it('ohne preserveEdits: Zeit/Ort auf Regelwerte zurück, Leiter bleibt', () => {
-    const built = buildFsWeeks(BASE, 1, RULE, { '0|r1': 'A. Leiter' })
+    const built = buildFsWeeks(KENN.slice(0, 1), RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
     const reset = regenFsWeeks(KENN, edited, RULE, false)
     expect(reset[0][0].place).toBe('Königreichssaal')
@@ -211,7 +141,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
   it('der Leiter bleibt mit seiner Person-Id — nicht nur mit dem Namen', () => {
     // Ohne Id fiele jede spätere Zuordnung auf den Namen zurück: Umbenennen
     // kostete die Zusage, und ein Namensvetter erbte sie (`dieselbePerson`).
-    const mitId = [[{ ...buildFsWeeks(BASE, 1, RULE)[0]![0]!, leader: 'Anton Muster', lpid: 'p1' }]]
+    const mitId = [[{ ...buildFsWeeks(KENN.slice(0, 1), RULE)[0]![0]!, leader: 'Anton Muster', lpid: 'p1' }]]
     for (const erhalten of [true, false]) {
       const [woche] = regenFsWeeks(KENN, mitId, [{ ...RULE[0]!, place: 'Markt' }], erhalten)
       expect(woche?.[0], `preserveEdits=${erhalten}`).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
@@ -223,7 +153,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
     // Person-Id beim Neuerzeugen verloren, galt jede besetzte Woche als
     // geändert — und jeder Tastenanschlag im Ort einer Regel schrieb sie alle.
     const regeln: FsRule[] = [...RULE, { id: 'r2', grp: null, wd: 3, time: '10:00', place: 'Saal', monthly: 0, skipCong: false }]
-    const wochen = regenFsWeeks(KENN, buildFsWeeks(BASE, 1, regeln), regeln)
+    const wochen = regenFsWeeks(KENN, buildFsWeeks(KENN.slice(0, 1), regeln), regeln)
     const besetzt = [wochen[0]!.map((i) => ({ ...i, leader: 'Anton Muster', lpid: 'p1' }))]
     expect(regenFsWeeks(KENN, besetzt, regeln)[0]).toBe(besetzt[0])
   })
@@ -232,7 +162,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
 describe('buildFsWeeks', () => {
   it('materialisiert alle Wochen und belegt Seed-Leiter', () => {
     const seed = { '0|r1': 'Thomas Lindner', '3|r3': 'Simon Krüger' }
-    const weeks = buildFsWeeks(BASE, 4, RULES, seed)
+    const weeks = buildFsWeeks(KENN.slice(0, 4), RULES, seed)
     expect(weeks).toHaveLength(4)
     expect(weeks[0].find((i) => i.id === 'r1')?.leader).toBe('Thomas Lindner')
     expect(weeks[3].find((i) => i.id === 'r3')?.leader).toBe('Simon Krüger')
@@ -260,7 +190,7 @@ describe('fs-Wochenbearbeitung (Planen)', () => {
     { id: 'r1', grp: null, wd: 1, time: '14:00', place: 'Saal', monthly: 0, skipCong: false },
     { id: 'r2', grp: null, wd: 3, time: '09:30', place: 'Saal', monthly: 0, skipCong: false },
   ]
-  const build = () => buildFsWeeks(BASE, 2, RULE)
+  const build = () => buildFsWeeks(KENN.slice(0, 2), RULE)
 
   it('fsLeaderValue liest den Leiter ("" wenn offen/unbekannt)', () => {
     const w = build()
@@ -520,7 +450,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
       zweite Kodierung derselben Angabe, und der Countdown las daraus östlich
       von UTC+12 den Vortag.
     */
-    const tag = tagIn(BASE, 0, 1)
+    const tag = tagIn(0, 1)
     expect(tasks[0].at).toBe(Date.UTC(tag.getFullYear(), tag.getMonth(), tag.getDate()))
   })
 
@@ -536,7 +466,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
     expect(tasks[0]!.date).toBe('Montag, 7. September · 14:00')
   })
 
-  it('ohne Datumsbasis kein erfundener Termin', () => {
+  it('ohne Kennung kein erfundener Termin', () => {
     const tasks = deriveMyFsTasks(wochen(), [], 'Anton Muster', {}, 'p1', 'Leiter')
     expect(tasks[0].at).toBeNull()
     expect(tasks[0].date).toBe('14:00 · Königreichssaal')
@@ -626,8 +556,8 @@ describe('fsVerwaisteZusagen — wann eine Treffpunkt-Zusage verfällt', () => {
     const ersteWoche = [anton()]
     const vorher = [ersteWoche, [anton()]]
     const nachher = [ersteWoche, [anton({ leader: 'Bernd Muster', lpid: 'p2' })]]
-    expect(fsVerwaisteZusagenAller(weeks, null, vorher, nachher)).toEqual(['fs|2026-09-21|a'])
-    expect(fsVerwaisteZusagenAller(weeks, null, vorher, vorher)).toEqual([])
+    expect(fsVerwaisteZusagenAller(weeks, vorher, nachher)).toEqual(['fs|2026-09-21|a'])
+    expect(fsVerwaisteZusagenAller(weeks, vorher, vorher)).toEqual([])
   })
 })
 

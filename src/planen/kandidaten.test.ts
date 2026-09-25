@@ -44,7 +44,7 @@ function wocheMitKlasse(fuehrerHaupt: string, fuehrerKlasse: string): Week {
   const w: Week = {
     range: '',
     book: '', start: '2026-09-07',
-    current: false,
+    
     mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
     we: { date: '', end: '', sections: [], helpers: {} },
   }
@@ -62,7 +62,6 @@ function daten(weeks: Week[], persons = PERSONEN, absences: Absence[] = []): Kan
     groups: [],
     services: DIENSTE,
     fsWeeks: [],
-    fsBase: new Date(2026, 8, 7, 12),
     absences,
   }
 }
@@ -152,7 +151,7 @@ describe('Kandidatenliste allgemein', () => {
       { id: 'a1', personId: BRUDER_A.id, userId: 'u', from: '2026-09-07', to: '2026-09-09', reason: '' },
     ]
     const s = daten(weeks, PERSONEN, abw)
-    const set = buildAbsences(abw, weeks, s.fsBase, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
+    const set = buildAbsences(abw, weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
     const liste = kandidaten(s, { ...partnerSlot(false), priv: null } as SlotSelection, set, DE, (x) => x)
     expect(liste.map((c) => c.name).at(-1)).toBe('Anton Alt')
     expect(liste.find((c) => c.name === 'Anton Alt')?.absent).toBe(true)
@@ -223,8 +222,17 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     { id: 'c', ruleId: null, grp: null, wd: 3, time: '09:00', place: 'Halle', leader: '' },
   ]
 
+  /** Eine Woche ohne Programm — nur ihr Montag zählt, daran hängt der Tag des Treffpunkts. */
+  const leer = (start: string) =>
+    ({
+      range: '', start, book: '',
+      mid: { date: '', end: '', sections: [], helpers: {} },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    }) as unknown as Week
+
+  /** Die Treffpunkte liegen in der Woche ab Montag, 7.9.2026. */
   function fsDaten(instanzen = TREFFPUNKTE, absences: Absence[] = []): KandidatenDaten {
-    return { ...daten([], [LEITER_E, LEITER_F, OHNE], absences), fsWeeks: [instanzen] }
+    return { ...daten([leer('2026-09-07')], [LEITER_E, LEITER_F, OHNE], absences), fsWeeks: [instanzen] }
   }
 
   const fsSlot = (instId: string): SlotSelection => ({
@@ -258,7 +266,7 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
   })
 
   it('abwesend am Tag DIESES Treffpunkts, nicht irgendwann in der Woche', () => {
-    // Montag, 7.9.2026 ist die Basis; der Mittwochs-Treffpunkt liegt am 9.9.
+    // Die Woche beginnt Montag, 7.9.2026; der Mittwochs-Treffpunkt liegt am 9.9.
     const nurMittwoch: Absence[] = [
       { id: 'u', personId: 'l1', userId: '', from: '2026-09-09', to: '2026-09-09', reason: '' },
     ]
@@ -267,24 +275,18 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     expect(liste('c', state).find((c) => c.key === 'l1')?.absent, 'Mittwoch').toBe(true)
   })
 
-  it('bei einer Lücke im Bestand zählt der Tag DIESER Woche, nicht fsBase + wi·7', () => {
+  it('bei einer Lücke im Bestand zählt der Tag DIESER Woche, nicht der aus der Position', () => {
     /*
      * **Zwei Antworten auf dieselbe Frage.** „Ist die Person am Tag dieses
      * Treffpunkts abwesend?" beantwortete das Konfliktbanner über den Montag
-     * der Woche (`fsWeekConflicts`), das Kandidatenblatt aber über
-     * `fsBase + wi·7`. Ohne Lücke im Bestand ist das dasselbe — fehlt eine
-     * Woche, liegen beide sieben Tage auseinander, und der Planer sah im Banner
-     * eine Abwesenheit, die die Liste daneben nicht kannte.
+     * der Woche (`fsWeekConflicts`), das Kandidatenblatt aber über „Montag der
+     * Woche 0 plus wi Wochen". Ohne Lücke im Bestand ist das dasselbe — fehlt
+     * eine Woche, liegen beide sieben Tage auseinander, und der Planer sah im
+     * Banner eine Abwesenheit, die die Liste daneben nicht kannte.
      *
      * Hier steht in Position 1 der 21.9. (der 14. fehlt). Der Montags-
      * Treffpunkt liegt also am 21., nicht am 14.
      */
-    const leer = (start: string) =>
-      ({
-        range: '', start, book: '', current: false,
-        mid: { date: '', end: '', sections: [], helpers: {} },
-        we: { date: '', end: '', sections: [], helpers: {} },
-      }) as unknown as Week
     const state: KandidatenDaten = {
       ...daten([], [LEITER_E, LEITER_F, OHNE]),
       weeks: [leer('2026-09-07'), leer('2026-09-21')],
@@ -324,7 +326,7 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     // Die Gegenprobe: Emil hat keine Treffpunkt-Leitung, aber eine Aufgabe in
     // der Zusammenkunft. Für dieses Blatt ist er frei.
     const mitAufgabe: Week = {
-      range: '', book: '', start: '2026-09-07', current: false,
+      range: '', book: '', start: '2026-09-07', 
       mid: {
         date: '', end: '',
         sections: [

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { emptyQualifications, idAufloeser } from './helpers'
+import {
+  emptyQualifications,
+  idAufloeser,
+  isGuestRole,
+  isSpeakerRole,
+  ROLE_GUEST_SPEAKER,
+  ROLE_OWN_SPEAKER,
+  rolleBasis,
+} from './helpers'
 import { partWorkload } from './auslastung'
 import {
   assignmentsInMeeting,
@@ -7,11 +15,6 @@ import {
   autoAssignMeeting,
   clearAssignments,
   deriveMyTasks,
-  isGuestRole,
-  isSpeakerRole,
-  rolleBasis,
-  ROLE_GUEST_SPEAKER,
-  ROLE_OWN_SPEAKER,
 } from './planning'
 import { pidsNachtragen } from './namensbindung'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
@@ -60,7 +63,7 @@ function makeWeek(): Week {
     helpers: {},
   }
   const mid: Meeting = { date: '', end: '', sections: [], helpers: {} }
-  return { range: '7.–13. September', book: '', start: '2026-09-07', current: false, mid, we }
+  return { range: '7.–13. September', book: '', start: '2026-09-07', mid, we }
 }
 
 const person: Person = {

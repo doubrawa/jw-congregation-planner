@@ -24,7 +24,8 @@ import {
 import { STANDARD_ERINNERUNGEN } from './vorgaben'
 import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
 import { deutschesDatum, meetingDateText, meetingOffset, meetingTime, versatzAbMontag } from './meeting-dates'
-import { isGuestRole, sentKey } from './planning'
+import { isGuestRole } from './helpers'
+import { sentKey } from './planning'
 import { entzogeneZusagen, offeneMeldungen } from './plan-versand'
 import { emptyQualifications } from './helpers'
 import type { Abweichung, FsInstance, Meeting, Person, Section, Service, Week } from './types'
@@ -322,7 +323,7 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
   ]
 
   const woche = (dev: Abweichung | undefined, date: string): Week => ({
-    range: '', book: '', start: '2026-09-07', current: false,
+    range: '', book: '', start: '2026-09-07', 
     mid: { date, end: '', sections: [], helpers: {} },
     we: { date: '', end: '', sections: [], helpers: {} },
     dev: dev ? { mid: dev } : undefined,
@@ -355,9 +356,7 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
   it.each(faelle)('%s — derselbe Termin-Text', (_name, dev, date, tag, zeit) => {
     const w = woche(dev, date)
     const zeiten = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
-    expect(edgeTermin(w.start, tag, date, zeit)).toBe(
-      meetingDateText(w, 0, 'mid', zeiten),
-    )
+    expect(edgeTermin(w.start, tag, date, zeit)).toBe(meetingDateText(w, 'mid', zeiten))
   })
 
   it('die Wochenspanne allein ist kein Termin', () => {
@@ -365,7 +364,7 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
     // importierten Woche nennt keinen Tag — beide Seiten müssen ihn rechnen.
     const w = woche(undefined, '7.–13. September')
     expect(edgeDate(w.mid.date)).toBe('7.–13. September')
-    expect(meetingDateText(w, 0, 'mid', { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })).toBe('Dienstag, 8. September · 19:00')
+    expect(meetingDateText(w, 'mid', { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })).toBe('Dienstag, 8. September · 19:00')
   })
 
   it('„entfällt" heißt auf beiden Seiten dasselbe', () => {
@@ -426,17 +425,16 @@ describe('Versand-Tagebuch: Client und Function bilden denselben Schlüssel', ()
  * Bis dahin verglich diese Datei nur die *Form* der Schlüssel, nie die
  * *Menge* — und genau dazwischen lag der Fehler: Die Function nimmt den Montag
  * aus der Spalte `weeks.start`, der Client rechnete ihn aus der Ordnungszahl
- * (`fsBase + wi·7`). Ohne Lücke im Bestand ist das dasselbe, mit Lücke nicht.
- * Beide Seiten liefen dann sauber durch und redeten über verschiedene Wochen:
- * Der Knopf zeigte „1 noch nicht gesendet", der Druck meldete „0 gesendet",
- * und die Zahl blieb stehen.
+ * (Montag der Woche 0 plus `wi` Wochen). Ohne Lücke im Bestand ist das
+ * dasselbe, mit Lücke nicht. Beide Seiten liefen dann sauber durch und redeten
+ * über verschiedene Wochen: Der Knopf zeigte „1 noch nicht gesendet", der Druck
+ * meldete „0 gesendet", und die Zahl blieb stehen.
  *
- * Geprüft wird deshalb an einem Bestand **mit** Lücke — ohne sie könnte auch
- * die alte Rechnung bestehen.
+ * Geprüft wird deshalb an einer Woche, die **nicht** die erste des Bestands
+ * ist — an der ersten könnte auch die alte Rechnung bestehen.
  */
 describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', () => {
   const MONTAG = '2026-09-21' // zweite geladene Woche; die vom 14. fehlt
-  const BASIS = new Date(2026, 8, 7, 12)
   const inst = {
     id: 'r1',
     ruleId: 'r1',
@@ -451,14 +449,14 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
     range: '',
     book: '',
     start: MONTAG,
-    current: false,
+    
     mid: { date: '', end: '', sections: [], helpers: {} },
     we: { date: '', end: '', sections: [], helpers: {} },
   } as unknown as Week
 
   it('derselbe Schlüssel für denselben Treffpunkt', () => {
-    // Client: die Woche ist die zweite geladene (wi = 1).
-    const client = offeneMeldungen(woche, [inst as FsInstance], 1, BASIS, [], {}, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)
+    // Client: der Montag kommt aus der Woche selbst.
+    const client = offeneMeldungen(woche, [inst as FsInstance], [], {}, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)
     // Function: der Montag kommt aus der Datenbankzeile.
     const server = edgeFsPending(MONTAG, [inst as never], new Map())
     expect(client.map((o) => o.key)).toEqual(server.map((p) => p.key))
@@ -482,8 +480,6 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
       woche,
       [inst as FsInstance],
       [nachher as FsInstance],
-      1,
-      BASIS,
       [],
       STANDARD_ZEITEN,
       { [key]: 'bestätigt' },
@@ -511,7 +507,7 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
     // Der Kreisaufseher hat kein Konto — die Ausnahme muss beidseitig gelten,
     // sonst geht eine Nachricht ins Leere oder gar keine hinaus.
     const extern = { ...inst, lext: true }
-    expect(offeneMeldungen(woche, [extern as FsInstance], 1, BASIS, [], {}, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)).toEqual([])
+    expect(offeneMeldungen(woche, [extern as FsInstance], [], {}, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)).toEqual([])
     expect(edgeFsPending(MONTAG, [extern as never], new Map())).toEqual([])
   })
 })
@@ -635,7 +631,7 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
   }
 
   const wochePS = (mid: Meeting): Week => ({
-    range: '', book: '', start: MONTAG_PS, current: false,
+    range: '', book: '', start: MONTAG_PS, 
     mid,
     we: { date: '', end: '', sections: [], helpers: {} },
   } as unknown as Week)
@@ -645,7 +641,7 @@ describe('Plan senden: Vorschau und Versand treffen dieselbe Menge (Zusammenkunf
     svc: Service[] = dienste,
     conf: Record<string, 'bestätigt' | 'verhindert'> = {},
   ): [string[], string[]] => [
-    offeneMeldungen(wochePS(mid), [], 0, null, svc, conf, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)
+    offeneMeldungen(wochePS(mid), [], svc, conf, {}, STANDARD_ZEITEN, VOR_DER_WOCHE)
       .map((o) => `${o.key} | ${o.name}`)
       .sort(),
     edgePending(MONTAG_PS, 'mid', mid as never, svc as never, new Map(Object.entries(conf)))
@@ -722,7 +718,7 @@ describe('Plan senden: Vorschau und Versand lassen dasselbe Vergangene weg', () 
 
   const woche = (over: Partial<Week> = {}): Week =>
     ({
-      range: '', book: '', start: MONTAG_V, current: false,
+      range: '', book: '', start: MONTAG_V, 
       mid: {
         date: '7.–13. September', end: '',
         sections: [{
@@ -742,7 +738,7 @@ describe('Plan senden: Vorschau und Versand lassen dasselbe Vergangene weg', () 
 
   /** Beide Seiten am `tag`. September 2026, mittags örtlich bzw. als UTC-Mitternacht. */
   const beideSeiten = (tag: number, w: Week = woche()): [string[], string[]] => [
-    offeneMeldungen(w, treffpunkte, 0, null, dienste, {}, {}, MEETINGS_V, new Date(2026, 8, tag, 12, 0))
+    offeneMeldungen(w, treffpunkte, dienste, {}, {}, MEETINGS_V, new Date(2026, 8, tag, 12, 0))
       .map((o) => o.name)
       .sort(),
     edgeOffeneDerWoche(MONTAG_V, w as never, treffpunkte as never, dienste as never, new Map(), MEETINGS_V, Date.UTC(2026, 8, tag))

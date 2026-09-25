@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
-import { fsKennung, fsTaskKey } from '../data/fs'
+import { fsTaskKey } from '../data/fs'
 import { istAusgefallen } from '../data/helpers'
-import { helperTaskKey, itemTaskKey, ratgeberTaskKey, zusageStatus } from '../data/planning'
+import { helferKey, punktKey, ratgeberKey, zusageStatus } from '../data/planning'
 import { useT } from '../i18n/useT'
 import type { Dict } from '../i18n/ui'
 import type { FsInstance, MeetingKey, PartItem, TaskStatus } from '../data/types'
@@ -48,9 +48,9 @@ export interface ZusageStand {
  *
  * Die Schlüssel entstehen genau so wie dort, wo die eingeteilte Person
  * bestätigt: `eachAssignedSlot` und `deriveMyFsTasks`. Also aus der
- * Wochen-Kennung (`week.start`, bei Treffpunkten `fsKennung`), nicht aus der
- * Position in der Liste — ein Index läge nach einer Lücke im Bestand eine
- * Woche daneben (T66, T100), und jeder Punkt stünde still auf Gelb.
+ * Wochen-Kennung (`week.start`, für Zusammenkünfte wie für Treffpunkte), nicht
+ * aus der Position in der Liste — ein Index läge nach einer Lücke im Bestand
+ * eine Woche daneben (T66, T100), und jeder Punkt stünde still auf Gelb.
  *
  * Alle vier Platzsorten und die Treffpunkte fragen hier; eine eigene
  * Schlüsselrechnung in einer Komponente wäre die nächste, die man vergisst.
@@ -76,10 +76,9 @@ export function useZusage() {
      */
     moeglich: (tab: MeetingKey): boolean => !istAusgefallen(week, tab),
     teil: (tab: MeetingKey, item: PartItem, ni: number, aux: boolean) =>
-      stand(itemTaskKey(woche, tab, item.iid, ni, aux)),
-    hilfsdienst: (tab: MeetingKey, svc: string, pos: number) => stand(helperTaskKey(woche, tab, svc, pos)),
-    ratgeber: (tab: MeetingKey) => stand(ratgeberTaskKey(woche, tab)),
-    treffpunkt: (inst: FsInstance) =>
-      stand(fsTaskKey(fsKennung(week, state.fsBase, state.week), inst.id)),
+      stand(punktKey(woche, tab, item.iid, ni, aux)),
+    hilfsdienst: (tab: MeetingKey, svc: string, pos: number) => stand(helferKey(woche, tab, svc, pos)),
+    ratgeber: (tab: MeetingKey) => stand(ratgeberKey(woche, tab)),
+    treffpunkt: (inst: FsInstance) => stand(fsTaskKey(woche, inst.id)),
   }
 }

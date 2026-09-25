@@ -10,9 +10,7 @@ import {
   DEMO_GROUPS,
   DEMO_PERSONS,
   DEMO_SERVICES,
-  FS_BASE,
 } from '../data/testdaten'
-import { isoDay } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 
 /**
@@ -55,7 +53,6 @@ function ladung(weeks: Week[]): HydratePayload {
     weeks,
     fsRules: [],
     fsWeeks: buildDemoFsWeeks(),
-    fsBase: isoDay(FS_BASE),
     absences: [],
     notifications: [],
     confirmations: {},

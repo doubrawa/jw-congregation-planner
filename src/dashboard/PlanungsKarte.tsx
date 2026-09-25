@@ -52,7 +52,6 @@ export function PlanungsKarte() {
         {
           weeks: state.weeks,
           fsWeeks: state.fsWeeks,
-          fsBase: state.fsBase,
           persons: state.persons,
           services: state.services,
           absences: state.absences,
@@ -68,7 +67,6 @@ export function PlanungsKarte() {
     [
       state.weeks,
       state.fsWeeks,
-      state.fsBase,
       state.persons,
       state.services,
       state.absences,

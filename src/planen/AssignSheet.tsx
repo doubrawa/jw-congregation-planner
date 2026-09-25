@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { Sheet } from '../components/Sheet'
-import { herkunftVon, isSong, slotsOf } from '../data/helpers'
+import { herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
 import { LOAD_RADIUS, type WeekLoad } from '../data/auslastung'
 import { fsLeaderValue } from '../data/fs'
-import { buildS89ForSlot, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, slotValue } from '../data/planning'
+import { buildS89ForSlot, slotValue } from '../data/planning'
 import type { Dict } from '../i18n/ui'
-import { fill, useT } from '../i18n/useT'
+import { fill, useT, zuteilungenText } from '../i18n/useT'
 import { relativeWeekLabel } from '../i18n/relative-time'
 import type { Lang, SlotAssignment, SlotSelection } from '../data/types'
 import { kandidaten, type Candidate } from './kandidaten'
@@ -35,7 +35,8 @@ function loadTitle(t: Dict, l: WeekLoad, offset: number, lang: Lang): string {
 export function AssignSheet({ sel }: { sel: SlotSelection }) {
   const { state, dispatch } = useApp()
   const abwesend = useAbwesend()
-  const { t, tu, tp } = useT()
+  const i18n = useT()
+  const { t, tu, tp } = i18n
   const close = () => dispatch({ type: 'closeSlot' })
 
   // Treffpunkt-Leiter (fs) hat eine eigene Datenquelle und keine Meeting-Slots.
@@ -73,13 +74,12 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
     return !item || isSong(item) ? undefined : slotsOf(item, sel.aux === true)[sel.ni]
   }
-  const rolleJetzt = (): string => slotJetzt()?.rolle ?? ''
-  const rolleAtoms = rolleJetzt().split(' · ')
-  const eigenerRedner = rolleAtoms[0] === ROLE_OWN_SPEAKER
+  const rolleJetzt = rolleBasis(slotJetzt()?.rolle)
+  const eigenerRedner = rolleJetzt === ROLE_OWN_SPEAKER
   // Basis-Rolle für den Freitext-Weg. Steht dort gerade ein eigener Redner,
   // führt der Freitext zurück zum Gastredner — „Redner" mit Freitext wäre ein
   // Widerspruch: eine Person der eigenen Versammlung ohne pid.
-  const guestBase = !rolleAtoms[0] || eigenerRedner ? ROLE_GUEST_SPEAKER : rolleAtoms[0]
+  const guestBase = !rolleJetzt || eigenerRedner ? ROLE_GUEST_SPEAKER : rolleJetzt
   // Beim eigenen Redner bleiben die Freitext-Felder leer: der Name gehört einer
   // Person, nicht einem Gast. Vorbelegt wäre er ein Angebot, ihn zu verdoppeln.
   const [guestName, setGuestName] = useState(guest && !eigenerRedner ? current : '')
@@ -276,8 +276,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               <span className="cand-sub">{cand.sub}</span>
               {cand.today.length > 0 && (
                 <span className="cand-today">
-                  {t.sheetSchonHeute}:{' '}
-                  {cand.today.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
+                  {t.sheetSchonHeute}: {zuteilungenText(cand.today, i18n)}
                 </span>
               )}
             </span>

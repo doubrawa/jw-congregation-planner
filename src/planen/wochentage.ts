@@ -13,6 +13,13 @@ import { versatzAbMontag } from '../data/meeting-dates'
 export const VERSAETZE: readonly number[] = [0, 1, 2, 3, 4, 5, 6]
 
 /**
+ * Dieselbe Reihenfolge in der **gespeicherten** Zählung (0 = Sonntag …
+ * 6 = Samstag, wie `FsRule.wd`): Montag zuerst, der Sonntag am Ende — für
+ * Auswahlfelder, die den gespeicherten Wert tragen.
+ */
+export const WOCHENTAGE_AB_MONTAG: readonly number[] = [1, 2, 3, 4, 5, 6, 0]
+
+/**
  * Wochentagsname in der App-Sprache — aus `Intl`, nicht aus dem Wörterbuch.
  *
  * Derselbe Weg wie im Treffpunkt-Konfliktbanner: die Namen der Wochentage sind

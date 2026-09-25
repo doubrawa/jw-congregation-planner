@@ -162,7 +162,7 @@ function montag(i: number): string {
   return d.toISOString().slice(0, 10)
 }
 function wk(mid: Meeting, we: Meeting = emptyMeeting(), i = 0): Week {
-  return { range: '', book: '', start: montag(i), current: false, mid, we }
+  return { range: '', book: '', start: montag(i), mid, we }
 }
 /** Name auf dem einen Platz der geplanten Woche. */
 function gewaehlt(weeks: Week[], wi: number, persons: Person[]): string {

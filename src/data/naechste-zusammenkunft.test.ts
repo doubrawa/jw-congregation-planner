@@ -17,7 +17,7 @@ function meeting(over: Partial<Meeting> = {}): Meeting {
 }
 
 function woche(start: string, over: Partial<Week> = {}): Week {
-  return { range: '', book: '', start, current: false, mid: meeting(), we: meeting(), ...over }
+  return { range: '', book: '', start, mid: meeting(), we: meeting(), ...over }
 }
 
 /** Zwei aufeinanderfolgende Wochen ab Montag, 7. September 2026. */

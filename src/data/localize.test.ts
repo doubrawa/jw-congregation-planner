@@ -58,7 +58,7 @@ function makeWeek(): Week {
   return {
     range: '7.–13. September',
     book: 'JEREMIA 32–33', start: '2026-09-07',
-    current: false,
+    
     mid,
     we: structuredClone(emptyWe),
     alt: {
@@ -238,7 +238,7 @@ describe('Sprachvarianten in fremden Schriften', () => {
     }
     return {
       range: texte.range,
-      book: 'x', start: '2026-09-07', current: false,
+      book: 'x', start: '2026-09-07', 
       mid: meeting,
       we: { date: '', end: '', sections: [], helpers: {} },
     }

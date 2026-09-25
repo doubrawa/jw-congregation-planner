@@ -100,7 +100,7 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
   // darüber: `iso(new Date())` nimmt den UTC-Tag, und der ist in Mitteleuropa
   // zwischen Mitternacht und 01:00 bzw. 02:00 noch der gestrige — die
   // Markierung saß dann einen Tag daneben. Aus den örtlichen Bestandteilen
-  // gebaut, wie es `fsWochenStart` in data/fs.ts vormacht.
+  // gebaut (`kalendertagMs`).
   const todayIso = iso(new Date(kalendertagMs(new Date())))
   const shift = (delta: number) => {
     const d = new Date(Date.UTC(view.y, view.m + delta, 1))

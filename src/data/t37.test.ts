@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications, neueItemId } from './helpers'
 import { lacAdd, lacRemove } from './meeting-edit'
-import { deriveMyTasks, itemTaskKey } from './planning'
+import { deriveMyTasks, punktKey } from './planning'
 import type { ConfirmationMap, Meeting, PartItem, Person, Week } from './types'
 
 /**
@@ -64,7 +64,7 @@ function makeWeek(): Week {
     helpers: {},
   }
   const we: Meeting = { date: '', end: '', sections: [], helpers: {} }
-  return { range: '7.–13. September', book: '', start: '2026-09-07', current: false, mid, we }
+  return { range: '7.–13. September', book: '', start: '2026-09-07', mid, we }
 }
 
 const lacItems = (w: Week) => w.mid.sections[0].items as PartItem[]
@@ -73,18 +73,18 @@ const lacItems = (w: Week) => w.mid.sections[0].items as PartItem[]
 function vorbereitet(): { weeks: Week[]; conf: ConfirmationMap } {
   return {
     weeks: [makeWeek()],
-    conf: { [itemTaskKey('2026-09-07', 'mid', VBS, 0)]: 'bestätigt' },
+    conf: { [punktKey('2026-09-07', 'mid', VBS, 0)]: 'bestätigt' },
   }
 }
 
 describe('Der Schlüssel hat nur eine Form', () => {
   it('fünf Felder: Woche, Zusammenkunft, Raum, Kennung, Platz', () => {
-    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0)).toBe('2026-09-07|mid|part|k3f9x|0')
-    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0).split('|')).toHaveLength(5)
+    expect(punktKey('2026-09-07', 'mid', 'k3f9x', 0)).toBe('2026-09-07|mid|part|k3f9x|0')
+    expect(punktKey('2026-09-07', 'mid', 'k3f9x', 0).split('|')).toHaveLength(5)
   })
 
   it('die Zusätzliche Klasse bekommt einen eigenen Schlüssel', () => {
-    expect(itemTaskKey('2026-09-07', 'mid', 'k3f9x', 0, true)).toBe('2026-09-07|mid|aux|k3f9x|0')
+    expect(punktKey('2026-09-07', 'mid', 'k3f9x', 0, true)).toBe('2026-09-07|mid|aux|k3f9x|0')
   })
 
   it('Kennungen enthalten kein Trennzeichen', () => {
@@ -108,7 +108,7 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     // Vorher: der neue Punkt landet auf Position 1, das Bibelstudium rutscht
     // auf 2 — und `"2026-09-07|mid|part|0|1|0"` zeigte plötzlich auf den neuen.
     const { weeks, conf } = vorbereitet()
-    const schluessel = itemTaskKey('2026-09-07', 'mid', VBS, 0)
+    const schluessel = punktKey('2026-09-07', 'mid', VBS, 0)
 
     const nachher = lacAdd(weeks, 0, 'mid', 0, 'Örtliche Hinweise')
     const items = lacItems(nachher[0])
@@ -135,7 +135,7 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     const items = lacItems(nachher[0])
     expect(items).toHaveLength(1)
     expect(items[0].iid).toBe(VBS)
-    expect(conf[itemTaskKey('2026-09-07', 'mid', VBS, 0)]).toBe('bestätigt')
+    expect(conf[punktKey('2026-09-07', 'mid', VBS, 0)]).toBe('bestätigt')
   })
 
   it('die abgeleitete Aufgabe trägt denselben Schlüssel', () => {

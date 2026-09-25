@@ -2,7 +2,7 @@ import { useApp } from '../app/context'
 import { FS_TIME_OPTIONS } from '../data/fs'
 import { useT } from '../i18n/useT'
 import type { FsRule } from '../data/types'
-import { wochentagNameAusWd } from '../planen/wochentage'
+import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from '../planen/wochentage'
 import { Switch } from '../components/Switch'
 
 /**
@@ -23,7 +23,6 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
 
-  const wdOptions = [1, 2, 3, 4, 5, 6, 0]
   const wdName = (d: number): string => wochentagNameAusWd(d, state.lang)
   const freqOptions: ReadonlyArray<[number, string]> = [
     [0, t.fsFreqW],
@@ -66,7 +65,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                       aria-label={t.a11yWeekday}
                       onChange={(e) => upd(rule.id, { wd: Number(e.target.value) })}
                     >
-                      {wdOptions.map((d) => (
+                      {WOCHENTAGE_AB_MONTAG.map((d) => (
                         <option key={d} value={d}>
                           {wdName(d)}
                         </option>

@@ -16,12 +16,11 @@ import {
   DEMO_PLANNER,
   DEMO_REMINDERS,
   DEMO_SERVICES,
-  FS_BASE,
 } from '../data/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { fsTaskKey } from '../data/fs'
-import { deriveMyTasks, itemTaskKey } from '../data/planning'
+import { deriveMyTasks, punktKey } from '../data/planning'
 import { itemMinutes } from '../data/meeting-edit'
 import { alsFreitext } from '../i18n/translate'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
@@ -53,7 +52,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     groups: [...DEMO_GROUPS],
     fsRules: [...DEMO_FS_RULES],
     fsWeeks: buildDemoFsWeeks(),
-    fsBase: FS_BASE,
     absences: [...DEMO_ABSENCES],
     notifs: [...DEMO_NOTIFICATIONS],
     notifOpen: false,
@@ -938,14 +936,14 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     const s = {
       ...s0,
       confirmations: {
-        [itemTaskKey(woche, 'mid', weg.iid, 0)]: 'bestätigt' as const,
-        [itemTaskKey(woche, 'mid', bleibt.iid, 0)]: 'verhindert' as const,
+        [punktKey(woche, 'mid', weg.iid, 0)]: 'bestätigt' as const,
+        [punktKey(woche, 'mid', bleibt.iid, 0)]: 'verhindert' as const,
       },
     }
     const next = reducer(s, { type: 'lacRemove', si, ii })
 
-    expect(next.confirmations[itemTaskKey(woche, 'mid', weg.iid, 0)]).toBeUndefined()
-    expect(next.confirmations[itemTaskKey(woche, 'mid', bleibt.iid, 0)]).toBe('verhindert')
+    expect(next.confirmations[punktKey(woche, 'mid', weg.iid, 0)]).toBeUndefined()
+    expect(next.confirmations[punktKey(woche, 'mid', bleibt.iid, 0)]).toBe('verhindert')
     // Und der verbliebene Punkt trägt weiterhin dieselbe Kennung — daran hängt
     // sein Schlüssel, ganz gleich, an welcher Stelle er jetzt steht.
     expect(mitKennung(next, bleibt.iid)).toBeDefined()
@@ -978,7 +976,7 @@ describe('LAC / Vortrag (über den Reducer)', () => {
       lacPunkte(s0).find((p) => p === s0.weeks[0]?.mid.sections[si]?.items[ii]),
       'zu verschiebender Punkt',
     )
-    const map = { [itemTaskKey(wocheVon(s0), 'mid', punkt.iid, 0)]: 'bestätigt' as const }
+    const map = { [punktKey(wocheVon(s0), 'mid', punkt.iid, 0)]: 'bestätigt' as const }
 
     const next = reducer({ ...s0, confirmations: map }, { type: 'lacMove', si, ii, dir: 1 })
     expect(next.weeks).not.toBe(s0.weeks) // getauscht → neuer Wochen-Baum
@@ -993,13 +991,13 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     const s0 = makeState({ week: 0, tab: 'mid' })
     const si = lacSi(s0)
     const map = Object.fromEntries(
-      lacPunkte(s0).map((p) => [itemTaskKey(wocheVon(s0), 'mid', p.iid, 0), 'bestätigt' as const]),
+      lacPunkte(s0).map((p) => [punktKey(wocheVon(s0), 'mid', p.iid, 0), 'bestätigt' as const]),
     )
     const next = reducer({ ...s0, confirmations: map }, { type: 'lacAdd', si, title: 'Örtliche Hinweise' })
 
     expect(next.confirmations).toBe(map) // eingefügt heißt nicht umbenannt
     const neu = nimm(lacPunkte(next).find((p) => p.title === 'Örtliche Hinweise'), 'neuer Punkt')
-    expect(next.confirmations[itemTaskKey(wocheVon(s0), 'mid', neu.iid, 0)]).toBeUndefined()
+    expect(next.confirmations[punktKey(wocheVon(s0), 'mid', neu.iid, 0)]).toBeUndefined()
   })
 
   it('talkEdit setzt das Vortragsthema (Wochenende)', () => {
@@ -1258,7 +1256,6 @@ describe('hydrate / setDataStatus', () => {
     weeks: buildDemoWeeks(),
     fsRules: DEMO_FS_RULES,
     fsWeeks: buildDemoFsWeeks(),
-    fsBase: '2026-09-07',
     absences: [],
     notifications: [],
     confirmations: {},
@@ -1321,7 +1318,7 @@ describe('hydrate / setDataStatus', () => {
     // geladene Woche — bei 52 geladenen Wochen ein Jahr altes Programm.
     // Die Startdaten kommen aus den Demo-Wochen selbst: seit T66 trägt jede
     // Woche ihre Kennung, eine zweite Liste daneben wäre eine Quelle zu viel.
-    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w, current: false }))
+    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w }))
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 16, 10)) // Mittwoch der zweiten Woche
     try {
@@ -1343,7 +1340,7 @@ describe('hydrate / setDataStatus', () => {
    * und stand danach vor einer anderen — mit deren Zahlen und deren Namen.
    */
   it('lässt eine selbst gewählte Woche stehen und findet sie über ihre Kennung wieder', () => {
-    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w, current: false }))
+    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w }))
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 16, 10)) // Mittwoch der zweiten Woche
     try {
@@ -1357,7 +1354,7 @@ describe('hydrate / setDataStatus', () => {
 
       // Eine Woche ist **vorn** dazugekommen — die Ordnungszahl zeigt jetzt
       // woandershin, die Kennung nicht. Genau dafür wird über sie gesucht.
-      const davor = { ...(buildDemoWeeks()[0] as (typeof wochen)[number]), start: '2026-08-24', current: false }
+      const davor = { ...(buildDemoWeeks()[0] as (typeof wochen)[number]), start: '2026-08-24' }
       const laenger = [davor, ...wochen]
       const verschoben = reducer(gewaehlt, {
         type: 'hydrate',
@@ -1378,7 +1375,7 @@ describe('hydrate / setDataStatus', () => {
   })
 
   it('bleibt beim Anfang, wenn heute in keine geladene Woche fällt', () => {
-    const wochen = buildDemoWeeks().slice(0, 2).map((w) => ({ ...w, current: false }))
+    const wochen = buildDemoWeeks().slice(0, 2).map((w) => ({ ...w }))
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2027, 0, 5))
     try {
@@ -1392,24 +1389,11 @@ describe('hydrate / setDataStatus', () => {
     }
   })
 
-  it('liest fsBase als 12:00 Ortszeit (kein UTC-Tagesversatz)', () => {
-    const next = reducer(makeState(), { type: 'hydrate', payload })
-    expect(next.fsBase.getFullYear()).toBe(2026)
-    expect(next.fsBase.getMonth()).toBe(8) // September
-    expect(next.fsBase.getDate()).toBe(7)
-  })
-
   it('ohne staleAt ist der Stand aktuell, mit staleAt der Offline-Stand', () => {
     // Frisch geladen: staleAt null — auch wenn vorher ein Offline-Stand lief.
     expect(reducer(makeState({ staleAt: 123 }), { type: 'hydrate', payload }).staleAt).toBeNull()
     // Aus der Momentaufnahme: Zeitpunkt übernehmen (schaltet auf „nur lesen").
     expect(reducer(makeState(), { type: 'hydrate', payload, staleAt: 456 }).staleAt).toBe(456)
-  })
-
-  it('fsBase null behält die bisherige Basis', () => {
-    const keep = makeState().fsBase
-    const next = reducer(makeState({ fsBase: keep }), { type: 'hydrate', payload: { ...payload, fsBase: null } })
-    expect(next.fsBase).toBe(keep)
   })
 
   it('setDataStatus übernimmt Status und optional userId', () => {
@@ -1734,8 +1718,16 @@ describe('ableitungsQuellen deckt ab, was withDerivedTasks liest', () => {
   }
 
   /** Die ersten Glieder aller `<praefix>.<feld>`-Zugriffe. */
-  const felder = (text: string, praefix: string): Set<string> =>
-    new Set([...text.matchAll(new RegExp(`\\b${praefix}\\.([a-zA-Z]+)`, 'g'))].map((m) => m[1]!))
+  const felder = (text: string, praefix: string): Set<string> => {
+    const out = new Set([...text.matchAll(new RegExp(`\\b${praefix}\\.([a-zA-Z]+)`, 'g'))].map((m) => m[1]!))
+    // `eigenePerson(x)` liest `persons` und `personId` — die Suche steht in
+    // `eigene-person.ts`, nicht mehr ausgeschrieben an jeder Stelle.
+    if (new RegExp(`\\beigenePerson\\(${praefix}\\)`).test(text)) {
+      out.add('persons')
+      out.add('personId')
+    }
+    return out
+  }
 
   const gelesen = () => felder(rumpf('function withDerivedTasks('), 'state')
   const quellen = () => felder(rumpf('function ableitungsQuellen('), 's')

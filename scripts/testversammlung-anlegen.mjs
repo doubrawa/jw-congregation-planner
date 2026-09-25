@@ -69,11 +69,8 @@
  */
 
 import { randomBytes, randomUUID } from 'node:crypto'
-import { pathToFileURL } from 'node:url'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, authKopf, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
-export { argumente }
-export { personDisplayName as displayName }
+import { alsSkript, argumente, authKopf, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /* ===================== Der erfundene Bestand ============================== */
 
@@ -157,8 +154,8 @@ export const TEST_FS_REGELN = [
 /**
  * Auswärtige Redner für die Wochenend-Vorträge. Sie stehen als **Freitext** im
  * Platz, ohne `pid` — genau wie in der App, wenn der Planer einen Gastredner
- * einträgt. Die Herkunftsversammlung hängt an der Rolle, sie hat kein eigenes
- * Feld (siehe `helpers.ts` → „Basis-Rolle ohne angehängte Herkunft").
+ * einträgt. Die Herkunftsversammlung steht in ihrem eigenen Feld (`herkunft`),
+ * wie die App sie seit T105 schreibt.
  */
 export const TEST_GASTREDNER = [
   { name: 'H. Brügger', herkunft: 'Vers. Ringheim' },
@@ -278,7 +275,7 @@ export function fuelleZuteilungen(week, personen, dienste, gruppen, stand = { za
           if (EXTERNE_ROLLE.test(slot.rolle ?? '')) {
             const g = TEST_GASTREDNER[(stand.gast = (stand.gast ?? 0) + 1) % TEST_GASTREDNER.length]
             slot.name = g.name
-            slot.rolle = `${slot.rolle} · ${g.herkunft}`
+            slot.herkunft = g.herkunft
             gesetzt++
             return
           }
@@ -653,12 +650,4 @@ async function main() {
   console.log(`\nWieder weg mit:\n  node scripts/testversammlung-anlegen.mjs --entfernen ${cong.id} --wirklich`)
 }
 
-// Nur ausführen, wenn direkt aufgerufen. Genau verglichen statt über den
-// Dateinamen: `testversammlung-anlegen.mjs` endet auf `versammlung-anlegen.mjs`
-// — die lose Prüfung der Nachbarskripte würde hier danebengreifen.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    process.exit(1)
-  })
-}
+alsSkript(import.meta.url, main)

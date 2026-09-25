@@ -13,10 +13,8 @@ import {
   DEMO_PERSONS,
   DEMO_REMINDERS,
   DEMO_SERVICES,
-  FS_BASE,
 } from '../data/testdaten'
 import { isSong } from '../data/helpers'
-import { isoDay } from '../data/meeting-dates'
 import { itemMinutes } from '../data/meeting-edit'
 import type { PartItem, Week } from '../data/types'
 
@@ -104,7 +102,6 @@ function ladung(): HydratePayload {
     weeks: buildDemoWeeks(),
     fsRules: DEMO_FS_RULES.map((r) => ({ ...r })),
     fsWeeks: buildDemoFsWeeks(),
-    fsBase: isoDay(FS_BASE),
     absences: DEMO_ABSENCES.map((a) => ({ ...a })),
     notifications: DEMO_NOTIFICATIONS.map((n) => ({ ...n })),
     confirmations: {},
@@ -167,7 +164,6 @@ function folge(s: AppState): AppAction[] {
     // dann einen Wert ab, wenn niemand etwas geändert hat.
     { type: 'lacMinuten', si: p.si, ii: p.ii, mins: p.mins },
     { type: 'setAbweichung', tab: 'mid', patch: { wd: 3 } },
-    { type: 'setDienstwoche', on: false }, // ist ohnehin aus
     { type: 'setAnlass', art: null }, // ist ohnehin keiner gesetzt
     { type: 'updatePerson', id: person.id, patch: { tel: person.tel } },
     { type: 'updateCongregation', patch: { hall: CONGREGATION.hall } },

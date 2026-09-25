@@ -16,6 +16,7 @@ import {
   dieselbePerson,
   displayName,
   gehoertZu,
+  gehoertZuKennung,
   isGuestRole,
   isPlainPublisher,
   klonWoche,
@@ -69,22 +70,10 @@ import type {
  *
  * Das Vokabular selbst steht in `helpers.ts` — dort, wo `gehoertZu` entscheidet,
  * wem eine Zuteilung gehört, und wo es deshalb gebraucht wird (`helpers.ts` ist
- * die untere Schicht und darf nicht auf `planning.ts` zugreifen). Hier nur der
- * Weiterreichen der Begriffe, damit die bestehenden Import-Wege gültig
- * bleiben. Gefragt wird über `isGuestRole` — eine zweite Abschrift des
- * Ausdrucks wäre eine zweite Gelegenheit, das Vokabular zu ändern und hier zu
- * vergessen.
+ * die untere Schicht und darf nicht auf `planning.ts` zugreifen). Gefragt wird
+ * über `isGuestRole` — eine zweite Abschrift des Ausdrucks wäre eine zweite
+ * Gelegenheit, das Vokabular zu ändern und hier zu vergessen.
  */
-
-export {
-  isGuestRole,
-  isSpeakerRole,
-  rolleBasis,
-  ROLE_GUEST_SPEAKER,
-  ROLE_OWN_SPEAKER,
-} from './helpers'
-
-
 
 /**
  * Abstand (in Wochen) zur nächstgelegenen Einteilung je Person, gemessen über
@@ -125,10 +114,12 @@ function assignmentDistance(
     if (!map) { map = new Map(); je.set(bereich, map) }
     if ((map.get(id) ?? Infinity) > d) map.set(id, d)
   }
-  weeks.forEach((week, wi) => {
+  const ziel = weeks[weekIndex]
+  if (!ziel) return { part, any, je }
+  for (const week of weeks) {
     // In Wochen gemessen, nicht in Einträgen (T36) — sonst zählt eine fehlende
     // Woche als Nachbarwoche.
-    const d = wochenAbstand(week, weeks[weekIndex], wi, weekIndex)
+    const d = wochenAbstand(week, ziel)
     const merken = (map: Map<string, number>, id: string | undefined): void => {
       if (id && (map.get(id) ?? Infinity) > d) map.set(id, d)
     }
@@ -153,7 +144,7 @@ function assignmentDistance(
         }
       }
     }
-  })
+  }
   return { part, any, je }
 }
 
@@ -168,14 +159,6 @@ export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
   }
   return meeting.helpers[sel.svc]?.[sel.pos]?.name ?? ''
 }
-
-/*
- * `MeetingAssignment` steht in `types.ts` — auch `SubstituteReq` trägt sie
- * inzwischen („an diesem Tag schon"), und types.ts darf planning.ts nicht
- * kennen (Ringschluss). Hier nur weitergereicht, damit die bisherigen Importe
- * bleiben, wo sie sind.
- */
-export type { MeetingAssignment }
 
 /**
  * Alle Zuteilungen, die `name` in dieser Zusammenkunft schon hat (Programmpunkte
@@ -910,14 +893,7 @@ export function buildS89ForSlot(
   // dort **keinen S-89-Zettel**, ohne Fehler und ohne Hinweis; dieselbe Familie
   // wie T61 (Bibelstudium am deutschen Titel gesucht). Den Bereich vergibt der
   // Import in jeder Sprache (`bereichsKey: 'bibellesung'`, parse.ts).
-  //
-  // Der Titelvergleich bleibt als Rückfall für Bestandswochen, deren
-  // Bibellesungs-Platz noch keinen Bereich trägt — die sind kanonisch deutsch.
-  const isStudent =
-    sel.priv === 'schulung' ||
-    sel.priv === 'schulungPartner' ||
-    sel.priv === 'bibellesung' ||
-    item.title.startsWith('Bibellesung')
+  const isStudent = sel.priv === 'schulung' || sel.priv === 'schulungPartner' || sel.priv === 'bibellesung'
   if (!isStudent) return null
   // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
   // getrennte Slots im selben Punkt.
@@ -973,7 +949,7 @@ export function buildS89ForSlot(
   return {
     name: leadName || current, // Bibellesung hat keinen schulung-Slot → aktueller Name
     partner: partnerName,
-    date: meetingDateText(week, sel.wi, sel.tab, zeiten),
+    date: meetingDateText(week, sel.tab, zeiten),
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,
     // Der Ort stand hier frueher gar nicht im Modell — das Formular zeigte
@@ -1031,13 +1007,11 @@ export function alleS89DerWoche(
   return out
 }
 
-/* ---- Aufgaben-Ableitung (Produktionsmodus) -------------------------------
- * Im Demo-Modus sind "Meine Aufgaben" feste Demo-Daten; mit Persistenz werden
- * sie aus den Wochen-Zuteilungen berechnet. Der Bestätigungs-Status hängt am
- * stabilen Slot-Pfad (taskKey) — verschieben Planer Programmpunkte, wandert
- * der Status bewusst nicht mit (v1-Kompromiss, Status gilt dann als offen).
+/* ---- Aufgaben-Ableitung ---------------------------------------------------
+ * „Meine Aufgaben" werden aus den Wochen-Zuteilungen berechnet. Der
+ * Bestätigungs-Status hängt am stabilen `task_key` (Kennung des Punkts, T37):
+ * Einfügen, Löschen und Verschieben von Programmpunkten lassen ihn in Ruhe.
  */
-
 
 /**
  * Index der Woche mit dieser Kennung — `-1`, wenn sie nicht geladen ist.
@@ -1054,10 +1028,10 @@ export function wochenIndex(weeks: readonly Week[], woche: string): number {
 /*
  * Die Erzeuger der `task_key` stehen im geteilten Modul (siehe den Kopf von
  * `aufgaben-schluessel.ts`): Die Edge Functions bauen dieselben Schlüssel und
- * können nicht aus `src/` lesen. Hier laufen sie unter ihren gewohnten Namen
- * weiter.
+ * können nicht aus `src/` lesen. Die App erreicht sie von hier — unter
+ * denselben Namen.
  */
-export { punktKey as itemTaskKey, ratgeberKey as ratgeberTaskKey, helferKey as helperTaskKey }
+export { punktKey, ratgeberKey, helferKey }
 
 /**
  * Schlüssel im Versand-Tagebuch: Platz **und** Name.
@@ -1169,7 +1143,7 @@ export function deriveSubstituteReqs(
       key,
       svc: parts.svc,
       title: svc.name,
-      date: meetingDateText(week, wi, parts.tab, zeiten),
+      date: meetingDateText(week, parts.tab, zeiten),
       at: meetingDateMs(week, parts.tab, zeiten),
       declinedBy: slot.name,
       // Was ich an dem Tag schon habe — vor dem Klick, nicht im Toast danach.
@@ -1204,12 +1178,18 @@ export function itemZusagenKeys(
   return Object.keys(map).filter((key) => praefixe.some((p) => key.startsWith(p)))
 }
 
-/** Besucht alle belegten Slots (Programmpunkte + Hilfsdienste) aller Wochen. */
+/**
+ * Besucht alle belegten Slots (Programmpunkte + Hilfsdienste) aller Wochen.
+ *
+ * `visit` bekommt den Platz selbst (Name, Id, Rolle): Wem er gehört,
+ * entscheidet der Aufrufer mit `gehoertZuKennung` — nicht aus Name und Id
+ * einzeln nachgebaut.
+ */
 export function eachAssignedSlot(
   weeks: Week[],
   services: Service[],
   zeiten: MeetingTimes,
-  visit: (name: string, key: string, task: () => MyTask, pid?: string) => void,
+  visit: (slot: SlotAssignment, key: string, task: () => MyTask) => void,
 ): void {
   weeks.forEach((week, wi) => {
     for (const tab of MEETING_TABS) {
@@ -1234,8 +1214,8 @@ export function eachAssignedSlot(
         // Gruppe.
         if (platz.art === 'helper' && platz.svc.groups) continue
         const key = platzKey(platz, week.start, tab)
-        visit(slot.name, key, () => {
-          const gemeinsam = { id: key, date: meetingDateText(week, wi, tab, zeiten), at, status: 'offen' as const }
+        visit(slot, key, () => {
+          const gemeinsam = { id: key, date: meetingDateText(week, tab, zeiten), at, status: 'offen' as const }
           if (platz.art === 'ratgeber') {
             // Die Bezeichnung **ist** die Rolle — App-Sprache, kein Titel.
             return { ...gemeinsam, title: '', rolle: RATGEBER_ROLLE, s89: null }
@@ -1261,7 +1241,7 @@ export function eachAssignedSlot(
             ...(rolle ? { rolle } : {}),
             s89: buildS89ForSlot(weeks, sel, zeiten),
           }
-        }, slot.pid)
+        })
       }
     }
   })
@@ -1291,13 +1271,8 @@ export function deriveMyTasks(
 ): MyTask[] {
   const tasks: MyTask[] = []
   if (!personName && !personId) return tasks
-  eachAssignedSlot(weeks, services, zeiten, (name, key, task, pid) => {
-    // Stabile Zuordnung über die Person-Id, wenn der Slot eine trägt (und wir
-    // die Id kennen). Sonst Rückfall auf den Anzeigenamen (Hilfsdienste,
-    // externe Redner, Altdaten) — verhindert, dass Namensgleiche fremde
-    // Aufgaben sehen.
-    const mine = pid && personId ? pid === personId : name === personName
-    if (!mine) return
+  eachAssignedSlot(weeks, services, zeiten, (slot, key, task) => {
+    if (!gehoertZuKennung(slot, personId, personName)) return
     tasks.push({ ...task(), status: zusageStatus(confirmations, key) })
   })
   return tasks
@@ -1370,68 +1345,51 @@ export interface Conflict {
 }
 
 /**
- * Belegte Personen-Namen einer Zusammenkunft (mit Duplikaten). Ohne Lieder,
- * ohne externe Slots (Gastredner/Kreisaufseher) und ohne Gruppen-Rotation —
- * die sind keine zuteilbaren Personen.
+ * Die belegten Plätze einer Zusammenkunft, nach Art getrennt — **ein**
+ * Durchlauf über `allePlaetze` für alle Fragen der Konfliktprüfung. Vier
+ * Funktionen liefen hier je für sich über dieselben Plätze.
+ *
+ * Ohne Lieder, ohne externe Slots (Gastredner/Kreisaufseher) und ohne die
+ * Gruppen-Rotation — die sind keine zuteilbaren Personen.
  */
-/** Belegte Namen der Programmpunkte (ohne Lieder, ohne externe Slots). */
-function meetingPartNames(meeting: Meeting, wer: IdVon): Belegung[] {
-  const names: Belegung[] = []
-  // Beide Räume: wer im Hauptsaal UND in der Zusätzlichen Klasse steht, ist zur
-  // selben Zeit an zwei Orten — genau das soll die Prüfung finden.
-  for (const { slot } of programmPlaetze(meeting)) {
-    if (!slot.name || isGuestRole(slot.rolle)) continue
-    names.push(belegung(slot, wer))
-  }
-  if (meeting.auxRatgeber?.name) names.push(belegung(meeting.auxRatgeber, wer))
-  return names
+interface Belegungen {
+  /** Programmpunkte beider Räume samt Ratgeber (mit Duplikaten). Wer im
+   * Hauptsaal UND in der Zusätzlichen Klasse steht, ist zur selben Zeit an zwei
+   * Orten — genau das soll die Prüfung finden. */
+  programm: Belegung[]
+  /** Hilfsdienste. */
+  helper: Belegung[]
+  /**
+   * Belegte Kennungen **je Raum** — Hauptsaal, Zusätzliche Klasse und der
+   * Ratgeber-Platz getrennt, für die Doppelungen unter den Programmpunkten,
+   * die wirklich unmöglich sind. Zwei Punkte **im selben** Raum sind es nicht
+   * (Vorsitz und Anfangsgebet) — deshalb reicht eine einzige Menge nicht aus.
+   *
+   * Der Ratgeber steht für sich, obwohl er in der Klasse sitzt: Er begleitet
+   * **die ganze Reihe**, ist also die einzige Zuteilung, die jede andere im
+   * selben Raum ausschließt. Ein Schüler seiner Klasse kann nicht zugleich
+   * sein eigener Ratgeber sein.
+   */
+  haupt: Map<string, string>
+  klasse: Map<string, string>
+  ratgeber: Belegung | null
 }
 
-/**
- * Belegte Kennungen **je Raum** — Hauptsaal, Zusätzliche Klasse und der
- * Ratgeber-Platz getrennt.
- *
- * Gebraucht für die Doppelungen unter den Programmpunkten, die wirklich
- * unmöglich sind. Zwei Punkte **im selben** Raum sind es nicht (Vorsitz und
- * Anfangsgebet) — deshalb reicht eine einzige Menge nicht aus.
- *
- * Der Ratgeber steht für sich, obwohl er in der Klasse sitzt: Er begleitet
- * **die ganze Reihe**, ist also die einzige Zuteilung, die jede andere im
- * selben Raum ausschließt. Ein Schüler seiner Klasse kann nicht zugleich sein
- * eigener Ratgeber sein.
- */
-function raumBelegung(
-  meeting: Meeting,
-  wer: IdVon,
-): { haupt: Map<string, string>; klasse: Map<string, string>; ratgeber: Belegung | null } {
-  const haupt = new Map<string, string>()
-  const klasse = new Map<string, string>()
-  for (const { slot, aux } of programmPlaetze(meeting)) {
-    if (!slot.name || isGuestRole(slot.rolle)) continue
-    const b = belegung(slot, wer)
-    ;(aux ? klasse : haupt).set(b.kennung, b.name)
-  }
-  const platz = meeting.auxRatgeber
-  const ratgeber = platz?.name ? belegung(platz, wer) : null
-  return { haupt, klasse, ratgeber }
-}
-
-/** Belegte Namen der Hilfsdienste (ohne Gruppen-Rotation). */
-function meetingHelperNames(meeting: Meeting, services: Service[], wer: IdVon): Belegung[] {
-  const names: Belegung[] = []
-  for (const svc of services) {
-    if (svc.groups) continue
-    const arr = meeting.helpers[svc.key] ?? []
-    for (let pos = 0; pos < svc.count; pos++) {
-      const slot = arr[pos]
-      if (slot?.name) names.push(belegung(slot, wer))
+function belegungen(meeting: Meeting, services: Service[], wer: IdVon): Belegungen {
+  const out: Belegungen = { programm: [], helper: [], haupt: new Map(), klasse: new Map(), ratgeber: null }
+  for (const platz of allePlaetze(meeting, services)) {
+    const slot = platz.slot
+    if (!slot?.name || isGuestRole(slot.rolle)) continue
+    if (platz.art === 'helper') {
+      if (!platz.svc.groups) out.helper.push(belegung(slot, wer))
+      continue
     }
+    const b = belegung(slot, wer)
+    out.programm.push(b)
+    if (platz.art === 'ratgeber') out.ratgeber = b
+    else (platz.aux ? out.klasse : out.haupt).set(b.kennung, b.name)
   }
-  return names
-}
-
-function meetingAssignedNames(meeting: Meeting, services: Service[], wer: IdVon): Belegung[] {
-  return [...meetingPartNames(meeting, wer), ...meetingHelperNames(meeting, services, wer)]
+  return out
 }
 
 /**
@@ -1474,21 +1432,21 @@ export function weekConflicts(
   if (!week) return []
   const conflicts: Conflict[] = []
   const werIst = idAufloeser(persons)
-  const nachId = new Map(persons.map((p) => [p.id, p]))
+  const nachId = new Set(persons.map((p) => p.id))
   // Entfallene Zusammenkünfte fallen heraus (T30): wer an einem Tag nicht
   // drankommt, ist dort weder doppelt eingeteilt noch abwesend-und-eingeteilt.
   // Ein Warnbanner über eine Zusammenkunft, die gar nicht stattfindet, wäre
   // Lärm — und verdeckt die echten Konflikte daneben.
   const tabs = (tab ? [tab] : MEETING_TABS).filter((tb) => !istAusgefallen(week, tb))
+  const belegt = new Map(tabs.map((tb) => [tb, belegungen(week[tb], services, werIst)] as const))
 
   // absent: in dieser Woche abwesend, aber eingeteilt
-  for (const tb of tabs) {
+  for (const [tb, { programm, helper }] of belegt) {
     const gesehen = new Set<string>()
-    for (const b of meetingAssignedNames(week[tb], services, werIst)) {
+    for (const b of [...programm, ...helper]) {
       if (gesehen.has(b.kennung)) continue
       gesehen.add(b.kennung)
-      const person = nachId.get(b.kennung)
-      if (person && istAbwesend(abwesend, person.id, wi, tb)) {
+      if (nachId.has(b.kennung) && istAbwesend(abwesend, b.kennung, wi, tb)) {
         conflicts.push({ kind: 'absent', name: b.name, kennung: b.kennung, tab: tb })
       }
     }
@@ -1499,7 +1457,7 @@ export function weekConflicts(
   // vorgegebene Regel — bei manueller Zuteilung nicht automatisch verhindert);
   // double = mehrere Hilfsdienste am selben Tag. Zwei Programmpunkte (z. B.
   // Vorsitz + Anfangsgebet) sind bewusst KEIN Konflikt.
-  for (const tb of tabs) {
+  for (const [tb, { programm, helper, haupt, klasse, ratgeber }] of belegt) {
     // Gezählt wird über die Kennung, angezeigt der Name — zwei Personen
     // desselben Namens sind zwei Einträge, nicht einer mit doppelter Zahl.
     const namen = new Map<string, string>()
@@ -1511,16 +1469,15 @@ export function weekConflicts(
       }
       return m
     }
-    const partCounts = zaehle(meetingPartNames(week[tb], werIst))
-    const helperCounts = zaehle(meetingHelperNames(week[tb], services, werIst))
+    const partCounts = zaehle(programm)
+    const helperCounts = zaehle(helper)
     /*
      * **Zwei Räume zur selben Zeit.**
      *
-     * `meetingPartNames` zählt Hauptsaal und Klasse zusammen — der Kommentar
-     * dort nennt genau diesen Fall als den, den die Prüfung finden soll. Sie
-     * fand ihn nicht: Zwei Programmpunkte sind bewusst kein Konflikt (Vorsitz
-     * und Anfangsgebet), und damit fiel auch der Mensch durch, der zugleich im
-     * Hauptsaal und in der Zusätzlichen Klasse stand.
+     * `programm` zählt Hauptsaal und Klasse zusammen — genau der Fall, den die
+     * Prüfung finden soll. Sie fand ihn nicht: Zwei Programmpunkte sind bewusst
+     * kein Konflikt (Vorsitz und Anfangsgebet), und damit fiel auch der Mensch
+     * durch, der zugleich im Hauptsaal und in der Zusätzlichen Klasse stand.
      *
      * Die Automatik verhindert es seit je (`autoassign.klasse.test.ts`:
      * „Niemand steht zur selben Zeit in zwei Räumen"); von Hand blieb es
@@ -1531,7 +1488,6 @@ export function weekConflicts(
      * Zusammenkunft" — trifft es, und ein eigener Schlüssel hieße 34
      * Übersetzungen für eine Aussage, die schon dasteht.
      */
-    const { haupt, klasse, ratgeber } = raumBelegung(week[tb], werIst)
     /**
      * Zwei Plätze, die einander ausschließen?
      *

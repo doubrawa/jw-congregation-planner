@@ -77,7 +77,7 @@ const woche = (range: string, start: string): Week => ({
   range,
   book: '',
   start,
-  current: false,
+  
   mid: { date: '', end: '', sections: [], helpers: {} },
   we: { date: '', end: '', sections: [], helpers: {} },
 })

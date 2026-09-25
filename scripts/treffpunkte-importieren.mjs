@@ -57,9 +57,19 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { fsSort, ladeTabellen, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alsSkript,
+  argumente,
+  fsSort,
+  ladeTabellen,
+  personDisplayName,
+  restKlient,
+  versammlungHolen,
+  WOCHENTAG_NAMEN,
+  zugangsdaten,
+} from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
-import { argumente, mondayOf, personDisplayName, uuid5 } from './wochenplanung-importieren.mjs'
+import { mondayOf, uuid5 } from './wochenplanung-importieren.mjs'
 
 /* ===================== NWS lesen ========================================== */
 
@@ -124,8 +134,8 @@ export function nachWoche(treffpunkte) {
  *
  * Die App vergibt hier `x${crypto.randomUUID()}` (FsPlan). Für einen Import
  * wäre das falsch: Beim zweiten Lauf stünde derselbe Termin ein zweites Mal da.
- * Das `x` vorn ist Absicht — daran erkennt `fsMigrateInstIds` beim Laden einen
- * von Hand angelegten Treffpunkt und lässt die Kennung in Ruhe.
+ * Das `x` vorn folgt der Form der App — ein Regel-Treffpunkt trägt `r…`, ein
+ * von Hand angelegter `x…`.
  */
 export function manuelleKennung(nwsId) {
   return `x${uuid5(`fs-meeting:${nwsId}`)}`
@@ -234,8 +244,6 @@ export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
 
 /* ===================== Grundplan-Vorschlag ================================ */
 
-const WD_NAME = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
-
 /**
  * Aus den NWS-Terminen ablesen, welche **Regeln** dahinterstecken könnten:
  * gleicher Wochentag + gleiche Uhrzeit + gleicher Ort. Kommt ein Muster in
@@ -263,10 +271,10 @@ export function grundplanVorschlag(treffpunkte) {
         monatlich,
         woechentlich: wochen > 0 && m.tage.length >= wochen * 0.75,
         text:
-          `${WD_NAME[m.wd]} ${m.zeit}` +
+          `${WOCHENTAG_NAMEN[m.wd]} ${m.zeit}` +
           (m.ort ? ` · ${m.ort}` : '') +
           ` — ${m.tage.length}×` +
-          (monatlich ? ` (immer ${monatlich}. ${WD_NAME[m.wd]} im Monat)` : ''),
+          (monatlich ? ` (immer ${monatlich}. ${WOCHENTAG_NAMEN[m.wd]} im Monat)` : ''),
       }
     })
     .sort((a, b) => b.anzahl - a.anzahl)
@@ -307,7 +315,7 @@ async function main() {
     if (name) return { name, pid: id }
     // Kein App-Treffer: Der Leiter steht in NWS, aber (noch) nicht in der App.
     // Dann nur der Name — die App bindet ihn beim Laden an eine eindeutig
-    // passende Person (`fsMigrateLeaderPids`), sobald es sie gibt.
+    // passende Person (`fsLeiterBinden`), sobald es sie gibt.
     const roh = nwsNameOf(ref)
     if (roh) fehlendePersonen.add(roh)
     return { name: roh ?? '' }
@@ -381,14 +389,4 @@ async function main() {
   console.log(`\nGeschrieben: ${geschrieben.length} Treffpunkt-Wochen aktualisiert.`)
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
-    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
-    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
-    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

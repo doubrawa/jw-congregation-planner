@@ -30,7 +30,7 @@ function zusammenkunft(): Meeting {
 }
 
 function woche(): Week {
-  return { range: '', book: '', start: MONTAG, current: true, mid: zusammenkunft(), we: zusammenkunft() }
+  return { range: '', book: '', start: MONTAG, mid: zusammenkunft(), we: zusammenkunft() }
 }
 
 /** Abwesenheit über den ganzen Zeitraum, damit beide Zusammenkünfte betroffen sind. */
@@ -39,7 +39,7 @@ const abw = (personId: string, von = '2026-09-07', bis = '2026-09-13'): Absence 
 
 /** Der `AbsenceSet`, wie ihn die App baut (`useAbwesend`). */
 const set = (absences: Absence[]) =>
-  buildAbsences(absences, [woche()], new Date(`${MONTAG}T12:00:00`), ZEITEN)
+  buildAbsences(absences, [woche()], ZEITEN)
 
 describe('Der Fall aus der Praxis: zehn können Mikrofone, acht fehlen', () => {
   const zehn = Array.from({ length: 10 }, (_unused, i) => person(`m${i}`, 'svc:mik'))

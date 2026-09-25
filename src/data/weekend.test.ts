@@ -7,7 +7,8 @@ import {
   setOpeningSong,
   TALK_PLACEHOLDER,
 } from './meeting-edit'
-import { assignSlot, isGuestRole } from './planning'
+import { isGuestRole } from './helpers'
+import { assignSlot } from './planning'
 import type { Meeting, PartItem, PartSlotSelection, Week } from './types'
 
 /** Wochenend-Vorlage wie aus parse.ts (kanonisch + strukturgleiche en-Variante). */
@@ -29,7 +30,7 @@ function makeWeek(): Week {
   return {
     range: '7.–13. September',
     book: '', start: '2026-09-07',
-    current: false,
+    
     mid: structuredClone(emptyMid),
     we: weekendMeeting(),
     alt: {
@@ -154,20 +155,6 @@ describe('setClosingSong (Schlusslied Wochenende)', () => {
   it('nimmt nur Ziffern entgegen', () => {
     const next = setClosingSong([makeWeek()], 0, ' Lied 151! ')
     expect(closingTitle(next[0])).toBe('Schlussworte · Lied 151 · Gebet')
-  })
-
-  it('schreibt bei Alt-Wochen in das eigenständige Lied-Item', () => {
-    // So hat der Import das Schlusslied früher eingefügt: als eigenes Item vor
-    // dem Abschluss — wodurch „Lied“ doppelt dastand. Diese Wochen liegen in
-    // der Datenbank und werden nicht nachträglich umgebaut. Die Nummer gehört
-    // dort in das vorhandene Item; käme sie zusätzlich in den Titel, stünde das
-    // Lied zum dritten Mal da.
-    const alt = makeWeek()
-    alt.we.sections[2].items.unshift({ song: 'Lied 44' })
-    const next = setClosingSong([alt], 0, '151')
-    expect(next[0].we.sections[2].items[0]).toEqual({ song: 'Lied 151' })
-    expect((next[0].we.sections[2].items[1] as PartItem).title).toBe('Schlussworte · Lied · Gebet')
-    expect(closingSongNr(next[0].we)).toBe('151')
   })
 })
 

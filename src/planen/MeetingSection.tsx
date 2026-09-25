@@ -1,5 +1,6 @@
 import { Fragment, useRef, useState } from 'react'
 import { useApp } from '../app/context'
+import { movableIndices } from '../data/meeting-edit'
 import { istSchuelerteil } from '../data/aux-class'
 import { rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import {
@@ -12,7 +13,7 @@ import {
   TALK_PLACEHOLDER,
   themaVon,
 } from '../data/meeting-edit'
-import { isSpeakerRole } from '../data/planning'
+import { isSpeakerRole } from '../data/helpers'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
 import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.ts'
@@ -105,11 +106,6 @@ function MinutenFeld({
   )
 }
 
-/** Indizes der verschiebbaren (Nicht-Lied-)Items einer Sektion. */
-function movableIndices(section: Section): number[] {
-  return section.items.map((x, i) => (isSong(x) ? -1 : i)).filter((i) => i >= 0)
-}
-
 /**
  * Ein Programm-Abschnitt (Panel) beim Planen: Programmpunkte als Slot-Chips,
  * bei „Unser Leben als Christ" mit Minuten-/Verschieben-/Löschen-Steuerung und
@@ -154,7 +150,7 @@ export function MeetingSection({
   const splitSong =
     (istArt(rawSection, 'eroeffnung') && !isOpening) ||
     (istArt(rawSection, 'abschluss') && !isClosing)
-  const movables = movableIndices(rawSection)
+  const movables = movableIndices(rawSection.items)
   // Gefragt wird an der **kanonischen** Woche: Das Lied-Atom heißt dort
   // „Lied", in der Anzeigesprache steht womöglich „Song" oder „سرود".
   const liedPlatzDa =

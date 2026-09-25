@@ -13,7 +13,8 @@ import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { emptyQualifications, ROLE_CIRCUIT } from '../data/helpers'
 import { LAC_MAX_MINUTEN, LAC_MIN_MINUTEN, TALK_PLACEHOLDER } from '../data/meeting-edit'
-import { itemTaskKey, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/planning'
+import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { punktKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { PartItem, Person, Section, Week } from '../data/types'
 import { MeetingSection } from './MeetingSection'
@@ -49,7 +50,7 @@ const PERSONEN = [person('p-a', 'Anton', 'Alt'), person('p-b', 'Bernd', 'Brand')
 
 function woche(mid: Section[], we: Section[] = []): Week {
   return {
-    range: '1.–7. September', book: '', start: '2026-09-07', current: false,
+    range: '1.–7. September', book: '', start: '2026-09-07', 
     mid: { date: '', end: '20:45', sections: mid, helpers: {} },
     we: { date: '', end: '11:45', sections: we, helpers: {} },
   }
@@ -197,7 +198,7 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
     }],
   })
   const schluessel = (s: Section, ni: number) =>
-    itemTaskKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, ni)
+    punktKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, ni)
 
   it('Vorsitz bestätigt, Gebet noch offen: grün und gelb nebeneinander', () => {
     const s = eroeffnung()
@@ -228,7 +229,7 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
     // Gegenprobe zum Schlüssel: dieselbe Position eine Woche später ist ein
     // anderer Platz.
     const s = eroeffnung()
-    const andereWoche = itemTaskKey('2026-09-14', 'mid', (s.items[0] as PartItem).iid, 0)
+    const andereWoche = punktKey('2026-09-14', 'mid', (s.items[0] as PartItem).iid, 0)
     const { container } = zeige(s, { confirmations: { [andereWoche]: 'bestätigt' } })
     expect(chips(container).map(stufe)).toEqual(['is-offen', 'is-offen'])
   })
@@ -273,7 +274,7 @@ describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
     }
     const ausgefallen = woche([s])
     ausgefallen.dev = { mid: { cancelled: true } }
-    const key = itemTaskKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, 0)
+    const key = punktKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, 0)
     const { container } = zeige(s, { weeks: [ausgefallen], confirmations: { [key]: 'bestätigt' } })
     expect(chipTexte(container)[0]).toContain('Anton Alt')
     expect(container.querySelector('.zusage-punkt')).toBeNull()
@@ -566,8 +567,14 @@ describe('Am Wochenende: Vortragsthema und Lieder', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'talkEdit', si: 0, ii: 0, title: 'Neu' })
   })
 
+  /** Eröffnung/Abschluss, wie der Import sie anlegt: das Lied als Atom im Sammeltitel. */
+  const liedBlock = (label: string, title: string): Section => ({
+    label, farbe: 'neutral',
+    items: [{ iid: 'i90', title, names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }],
+  })
+
   it('das Anfangslied ist ein Nummernfeld — Buchstaben kommen nicht hinein', () => {
-    const s: Section = { label: LABEL_EROEFFNUNG, farbe: 'neutral', items: [{ song: 'Lied 44' }] }
+    const s = liedBlock(LABEL_EROEFFNUNG, 'Lied 44 · Gebet')
     const { container, dispatch } = zeige(s, { tab: 'we', weeks: [woche([], [s])] })
     const feld = container.querySelector<HTMLInputElement>('.talk-song-input')!
     expect(container.querySelector('.plan-helper-label')?.textContent).toBe(t.anfangsliedLbl)
@@ -579,25 +586,24 @@ describe('Am Wochenende: Vortragsthema und Lieder', () => {
   })
 
   it('das Schlusslied schreibt in seine eigene Aktion', () => {
-    const s: Section = { label: LABEL_ABSCHLUSS, farbe: 'neutral', items: [{ song: 'Lied 100' }] }
+    const s = liedBlock(LABEL_ABSCHLUSS, 'Schlussworte · Lied 100 · Gebet')
     const { container, dispatch } = zeige(s, { tab: 'we', weeks: [woche([], [s])] })
     fireEvent.blur(container.querySelector('.talk-song-input')!, { target: { value: '100' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'closingSong', song: '100' })
   })
 
   it('unter der Woche gibt es die Lied-Nummernfelder nicht — sie stehen im Arbeitsheft', () => {
-    const s: Section = { label: LABEL_EROEFFNUNG, farbe: 'neutral', items: [{ song: 'Lied 44' }] }
+    const s = liedBlock(LABEL_EROEFFNUNG, 'Lied 44 · Gebet · Einleitende Worte')
     const { container } = zeige(s, { tab: 'mid' })
     expect(container.querySelector('.talk-song-input')).toBeNull()
   })
 
   it('ohne Platz für die Nummer steht auch kein Feld da (V7)', () => {
     /*
-      `setSong` schreibt die Zahl entweder in ein Lied-Item oder in das
-      Lied-Atom eines Sammeltitels. Trägt der Abschnitt keins von beidem, hätte
-      es nichts, wohin — und gab stumm dieselbe Woche zurück: Der Planer tippte
-      eine Nummer ein und sah nichts. Was nicht wirken kann, wird nicht
-      angeboten.
+      `setSong` schreibt die Zahl in das Lied-Atom des Sammeltitels. Trägt der
+      Abschnitt keins, hätte es nichts, wohin — und gab stumm dieselbe Woche
+      zurück: Der Planer tippte eine Nummer ein und sah nichts. Was nicht
+      wirken kann, wird nicht angeboten.
     */
     const ohneLied: Section = {
       label: LABEL_EROEFFNUNG, farbe: 'neutral',

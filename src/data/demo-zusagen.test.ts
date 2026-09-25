@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoConfirmations } from './demo-zusagen'
-import { deriveMyFsTasks, fsWochenKennungen } from './fs'
-import { deriveMyTasks, helperTaskKey } from './planning'
-import { buildDemoFsWeeks, buildDemoWeeks, DEMO_SERVICES, DEMO_UNBESTAETIGT, FS_BASE } from './testdaten'
+import { deriveMyFsTasks } from './fs'
+import { deriveMyTasks, helferKey } from './planning'
+import { buildDemoFsWeeks, buildDemoWeeks, DEMO_SERVICES, DEMO_UNBESTAETIGT } from './testdaten'
 import { STANDARD_ZEITEN } from './vorgaben'
 
 /**
@@ -17,11 +17,11 @@ import { STANDARD_ZEITEN } from './vorgaben'
 
 const weeks = buildDemoWeeks()
 const fsWeeks = buildDemoFsWeeks()
-const zusagen = buildDemoConfirmations(weeks, DEMO_SERVICES, fsWeeks, FS_BASE, DEMO_UNBESTAETIGT)
+const zusagen = buildDemoConfirmations(weeks, DEMO_SERVICES, fsWeeks, DEMO_UNBESTAETIGT)
 
 const aufgabenVon = (name: string) => [
   ...deriveMyTasks(weeks, DEMO_SERVICES, name, {}, STANDARD_ZEITEN),
-  ...deriveMyFsTasks(fsWeeks, fsWochenKennungen(weeks, FS_BASE), name, {}, undefined, 'Leiter'),
+  ...deriveMyFsTasks(fsWeeks, weeks.map((w) => w.start), name, {}, undefined, 'Leiter'),
 ]
 
 describe('Zusagen im Demo-Modus', () => {
@@ -42,7 +42,7 @@ describe('Zusagen im Demo-Modus', () => {
 
   it('jede Woche hat eine Absage — am zweiten Mikrofon unter der Woche', () => {
     for (const w of weeks) {
-      expect(zusagen[helperTaskKey(w.start, 'mid', 'mik', 1)], w.range).toBe('verhindert')
+      expect(zusagen[helferKey(w.start, 'mid', 'mik', 1)], w.range).toBe('verhindert')
     }
   })
 

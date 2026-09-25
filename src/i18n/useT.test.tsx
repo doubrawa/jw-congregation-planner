@@ -127,7 +127,7 @@ describe('useProgWeek', () => {
       helpers: {},
     }
     return {
-      range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07', current: false,
+      range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07', 
       mid, we: structuredClone(leer),
       alt: {
         ja: { range: '9月7–13日', book: 'エレミヤ 32', mid: jaMid, we: structuredClone(leer) },

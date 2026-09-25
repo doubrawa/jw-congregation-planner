@@ -4,14 +4,12 @@
  * Dazu die localStorage-Wiederherstellung (Theme, Sprache) und der
  * Dev-Debug-Hash für Headless-Screenshots.
  */
-import { montagDieserWoche } from '../data/fs'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
   CONGREGATION,
   DEMO_ABSENCES,
   DEMO_FS_RULES,
-  FS_BASE,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
   DEMO_GROUPS,
@@ -145,7 +143,6 @@ export function initialState(): AppState {
     groups: demo ? DEMO_GROUPS : [],
     fsRules: demo ? DEMO_FS_RULES : [],
     fsWeeks,
-    fsBase: demo ? FS_BASE : montagDieserWoche(new Date()),
     absences: demo ? DEMO_ABSENCES : [],
     notifs: demo ? DEMO_NOTIFICATIONS : [],
     notifOpen: false,
@@ -154,7 +151,7 @@ export function initialState(): AppState {
     importing: false,
     imported: false,
     myTasks: demo ? DEMO_MY_TASKS : [],
-    confirmations: demo ? buildDemoConfirmations(weeks, DEMO_SERVICES, fsWeeks, FS_BASE, DEMO_UNBESTAETIGT) : {},
+    confirmations: demo ? buildDemoConfirmations(weeks, DEMO_SERVICES, fsWeeks, DEMO_UNBESTAETIGT) : {},
     sentLog: {},
     confirmOpen: false,
     myTaskId: null,

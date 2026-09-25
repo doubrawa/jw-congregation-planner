@@ -149,7 +149,7 @@ export function shiftEnd(endStr: string, delta: number): string {
 }
 
 /** Indizes der verschiebbaren (Nicht-Lied-)Items einer Sektion. */
-function movableIndices(items: Meeting['sections'][number]['items']): number[] {
+export function movableIndices(items: Meeting['sections'][number]['items']): number[] {
   return items.map((x, i) => (isSong(x) ? -1 : i)).filter((i) => i >= 0)
 }
 
@@ -292,9 +292,7 @@ export function lacRemove(
 
 /**
  * Item-Index, mit dem der LAC-Punkt `ii` beim Verschieben in Richtung `dir`
- * tauscht — oder null, wenn kein Tausch möglich ist (Rand). Der Reducer nutzt
- * das, um die Bestätigungen der beiden Positionen mitzutauschen (task_keys sind
- * positionsbasiert), damit der Status beim Programmpunkt bleibt.
+ * tauscht — oder null, wenn kein Tausch möglich ist (Rand).
  */
 export function lacMoveTarget(
   items: Meeting['sections'][number]['items'],
@@ -364,9 +362,7 @@ function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b:
 
 /**
  * Position, an der ein neuer LAC-Punkt landet: vor dem
- * Versammlungsbibelstudium, sonst am Ende. Getrennt exportiert, weil der
- * Reducer sie kennen muss — ab dort rutschen alle Bestätigungen eine Position
- * weiter (task_keys sind positionsbasiert).
+ * Versammlungsbibelstudium, sonst am Ende.
  *
  * **Erkannt wird das Bibelstudium an seinem Leser-Slot, nicht am Titel** (T61):
  * `startsWith('Versammlungsbibelstudium')` traf bei fremdsprachiger
@@ -535,11 +531,6 @@ function midDienstvortrag(w: Week): Pick<Dienstwoche, 'midOrig' | 'midOrigAlt'> 
   if (!lacItems || vbsIdx < 0) return {}
   const vbs = lacItems[vbsIdx]
   if (!vbs || isSong(vbs)) return {}
-  // Ohne Kennung fände das Zurücknehmen den Punkt nicht wieder — es
-  // suchte nach `iid === undefined` und träfe irgendeinen. Demo- und
-  // Vorlagenwochen laufen nicht durch die Lade-Migration (T37), tragen
-  // also keine; hier wird sie nachgeholt.
-  vbs.iid ??= neueItemId()
   const midOrig = structuredClone(vbs)
   lacItems[vbsIdx] = {
     ...vbs,
@@ -573,7 +564,6 @@ function weStudiumKuerzen(w: Week, wtIdx: number): Pick<Dienstwoche, 'weOrig' | 
   if (!wtItems || studIdx < 0) return {}
   const stud = wtItems[studIdx]
   if (!stud || isSong(stud)) return {}
-  stud.iid ??= neueItemId() // wie beim Bibelstudium: sonst kein Rückweg
   const weOrig = structuredClone(stud)
   // **Nicht** die erste Zahl ersetzen: die Meta-Zeile des
   // Wachtturm-Studiums beginnt mit der Nummer des Studienartikels
@@ -687,23 +677,16 @@ function weStudiumZurueck(w: Week, coData: Dienstwoche): void {
 /**
  * Zurücknehmen, Wochenende (2 von 2): der Schlussvortrag verschwindet.
  *
- * Seit T64 ist er eine **eigene Sektion** — zurückgenommen wird sie als Ganzes.
- * Gesucht wird trotzdem über die Kennung des Punktes, nicht über die
- * Überschrift: Wochen, die vor T64 eingeschaltet wurden, tragen ihn noch im
- * Wachtturm-Abschnitt, und auch die müssen sauber zurückkommen.
+ * Er ist eine **eigene Sektion** (T64) — zurückgenommen wird sie als Ganzes.
+ * Gefunden wird sie über die Kennung des Punktes, die das Einschalten gemerkt
+ * hat (`weVortragIid`), nicht über die Überschrift.
  */
 function weSchlussvortragEntfernen(w: Week, coData: Dienstwoche): void {
   const iid = coData.weVortragIid
   if (!iid) return
   const weg = (m: Meeting): void => {
     const si = m.sections.findIndex((s) => s.items.some((x) => !isSong(x) && x.iid === iid))
-    const section = m.sections[si]
-    if (!section) return
-    if (istArt(section, 'dienstvortrag')) m.sections.splice(si, 1)
-    else {
-      const idx = section.items.findIndex((x) => !isSong(x) && x.iid === iid)
-      if (idx >= 0) section.items.splice(idx, 1)
-    }
+    if (si >= 0) m.sections.splice(si, 1)
   }
   weg(w.we)
   forEachAltMeeting(w, 'we', weg)
@@ -873,19 +856,12 @@ function replaceSongAtom(title: string, value: string): string {
 }
 
 /**
- * Lied eines Wochenend-Abschnitts setzen: „Lied · Gebet" → „Lied 78 · Gebet"
- * (leere Nummer entfernt sie wieder). Kanonisch deutsch — die Anzeige übersetzt
- * „Lied 78" atomweise in die Versammlungssprache. Varianten tragen denselben
- * deutschen Vorlagen-Titel → gleiche Ersetzung.
- */
-/**
  * **Gibt es in diesem Abschnitt überhaupt einen Platz für eine Liednummer?**
  *
- * Zwei Formen kommen vor: ein eigenes Lied-Item (so lagen Wochen von früher)
- * und ein Lied-Atom im Sammeltitel (so legt der Import es heute an). Fehlt
- * beides, hat `setSong` nichts, wohin es die Zahl schreiben könnte — und gab
- * dann stumm dieselbe Woche zurück: Der Planer tippte eine Nummer ein und sah
- * nichts (V7).
+ * Das Lied steht in Eröffnung und Abschluss als Atom im Sammeltitel („Lied ·
+ * Gebet"). Fehlt es, hat `setSong` nichts, wohin es die Zahl schreiben könnte
+ * — und gab dann stumm dieselbe Woche zurück: Der Planer tippte eine Nummer
+ * ein und sah nichts (V7).
  *
  * Deshalb dieselbe Auskunft für beide Seiten: `setSong` unten steigt daran aus,
  * und das Eingabefeld erscheint erst gar nicht. Was nicht wirken kann, wird
@@ -898,9 +874,15 @@ function replaceSongAtom(title: string, value: string): string {
  */
 export function hatLiedPlatz(meeting: Meeting | undefined, art: SectionKind): boolean {
   const section = meeting?.sections.find((s) => istArt(s, art))
-  return (section?.items ?? []).some((it) => isSong(it) || songAtomIndex(it.title) >= 0)
+  return (section?.items ?? []).some((it) => !isSong(it) && songAtomIndex(it.title) >= 0)
 }
 
+/**
+ * Lied eines Wochenend-Abschnitts setzen: „Lied · Gebet" → „Lied 78 · Gebet"
+ * (leere Nummer entfernt sie wieder). Kanonisch deutsch — die Anzeige übersetzt
+ * „Lied 78" atomweise in die Versammlungssprache. Varianten tragen denselben
+ * deutschen Vorlagen-Titel → gleiche Ersetzung.
+ */
 function setSong(weeks: Week[], wi: number, art: SectionKind, song: string): Week[] {
   const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
   const next = klonWoche(weeks, wi)
@@ -910,21 +892,6 @@ function setSong(weeks: Week[], wi: number, art: SectionKind, song: string): Wee
   const items = week?.we.sections[si]?.items
   if (!week || !items) return weeks
   const value = nr ? `Lied ${nr}` : 'Lied'
-
-  // Wochen, die vor dieser Änderung importiert wurden, tragen das Schlusslied
-  // als eigenes Item vor dem Abschluss. Dann gehört die Nummer dorthin — würde
-  // sie stattdessen in den Titel geschrieben, stünde das Lied zweimal da.
-  const altItem = items.findIndex(isSong)
-  if (altItem >= 0) {
-    const s = items[altItem]
-    if (!s || !isSong(s) || s.song === value) return weeks
-    s.song = value
-    forEachAltMeeting(week, 'we', (m) => {
-      const vi = m.sections[si]?.items[altItem]
-      if (vi && isSong(vi)) vi.song = value
-    })
-    return next
-  }
 
   const ii = items.findIndex((x) => !isSong(x) && songAtomIndex(x.title) >= 0)
   const item = items[ii]
@@ -949,20 +916,11 @@ export function setClosingSong(weeks: Week[], wi: number, song: string): Week[] 
   return setSong(weeks, wi, 'abschluss', song)
 }
 
-/**
- * Lied-Nummer eines Wochenend-Abschnitts ("" = keine).
- *
- * Liest beide Formen: das Atom im Titel (so legt der Import es heute an) und
- * das eigenständige Lied-Item (so lag es in Wochen von früher).
- */
+/** Lied-Nummer eines Wochenend-Abschnitts ("" = keine) — aus dem Atom im Titel. */
 function songNr(meeting: Meeting, art: SectionKind): string {
   const section = meeting.sections.find((s) => istArt(s, art))
   for (const item of section?.items ?? []) {
-    if (isSong(item)) {
-      const match = /(\d+)/.exec(item.song)
-      if (match?.[1]) return match[1]
-      continue
-    }
+    if (isSong(item)) continue
     const i = songAtomIndex(item.title)
     if (i < 0) continue
     return /(\d+)/.exec(item.title.split(' · ')[i] ?? '')?.[1] ?? ''

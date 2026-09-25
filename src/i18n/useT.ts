@@ -12,7 +12,7 @@
 import { useMemo } from 'react'
 import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
-import type { Week } from '../data/types'
+import type { MeetingAssignment, Week } from '../data/types'
 import { APP_TO_JW, congAppCode } from './langs'
 import { makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
@@ -42,6 +42,20 @@ export function aufgabenLabel(
   const links = task.title ? i18n.tp(task.title) : ''
   const rechts = task.rolle ? i18n.tu(task.rolle) : ''
   return links && rechts ? `${links} · ${rechts}` : links || rechts
+}
+
+/**
+ * Zuteilungen „schon an diesem Tag" als **ein** Satzstück — jede in der
+ * Sprache, die ihr Text verlangt (`MeetingAssignment.lang`): Rollen und
+ * Dienstnamen in der des Lesers, Programmpunkt-Titel in der der Versammlung.
+ * Stand im Zuteilungs-Sheet, im Bestätigen-Dialog und unter „Meine Aufgaben"
+ * je einmal ausgeschrieben.
+ */
+export function zuteilungenText(
+  liste: readonly MeetingAssignment[],
+  i18n: Pick<I18n, 'tp' | 'tu'>,
+): string {
+  return liste.map((a) => (a.lang === 'u' ? i18n.tu(a.text) : i18n.tp(a.text))).join(', ')
 }
 
 /** Platzhalter {n}, {name}, {m} … in einer Übersetzung ersetzen. */

@@ -59,7 +59,7 @@ const person = (id: string, ln: string, ...q: string[]): Person => ({
 
 function woche(start: string | undefined, range = '7.–13. September'): Week {
   return {
-    range, book: '', start, current: false,
+    range, book: '', start, 
     mid: { date: '', end: '', sections: [], helpers: {} },
     we: { date: '', end: '', sections: [], helpers: {} },
   } as Week

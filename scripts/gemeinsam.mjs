@@ -8,15 +8,20 @@
  *
  * Der Weg dahin war längst gebahnt: `treffpunkte-importieren.mjs` holt sich
  * seine Helfer seit jeher aus einem anderen Skript. Hier stehen sie nun ohne
- * Umweg über einen Importeur, der sie zufällig zuerst hatte.
- *
- * Die bisherigen Fundstellen bleiben gültig: Die Skripte reichen die Namen
- * weiter (`export { ... } from`), damit Aufrufer und Tests unverändert bleiben.
+ * Umweg über einen Importeur, der sie zufällig zuerst hatte — und **nur**
+ * hier: Bis zum 25. September 2026 reichten fünf Skripte die Namen noch
+ * weiter (`export { … }`), damit Tests ihre alten Import-Wege behielten. Zwei
+ * Wege zu einem Helfer sind zwei Gelegenheiten, ihn an einem davon zu
+ * vergessen; Aufrufer und Tests holen ihn seither von hier.
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline'
+import { fileURLToPath } from 'node:url'
+
+/** Wochentag-Namen für Berichte — Index wie `Date.getDay()` (0 = Sonntag). */
+export const WOCHENTAG_NAMEN = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 
 /**
  * Argumente der Form `--name Wert` einlesen; `--flagge` wird `true`.
@@ -513,4 +518,39 @@ export function pruefKlient(url, anon, token) {
     }
     return { status: antwort.status, daten }
   }
+}
+
+/**
+ * Läuft dieses Modul als Skript (`node scripts/x.mjs`) — oder wurde es
+ * importiert, etwa von einem Test?
+ *
+ * Genau verglichen, nicht über das Ende des Dateinamens: Die lose Prüfung
+ * (`import.meta.url.endsWith(basename)`) stand in elf Skripten und griff bei
+ * `testversammlung-anlegen.mjs` daneben, das auf `versammlung-anlegen.mjs`
+ * endet. Unter Windows kann sich der Laufwerksbuchstabe in der Schreibweise
+ * unterscheiden, deshalb dort ohne Rücksicht auf Groß und Klein.
+ */
+export function direktAufgerufen(metaUrl) {
+  const skript = process.argv[1]
+  if (!skript) return false
+  const a = path.resolve(skript)
+  const b = fileURLToPath(metaUrl)
+  return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b
+}
+
+/**
+ * `main()` laufen lassen, wenn das Modul direkt aufgerufen wurde — mit der
+ * Fehlerbehandlung, die alle Wartungsskripte teilen.
+ *
+ * `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
+ * seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
+ * im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
+ * sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
+ */
+export function alsSkript(metaUrl, main) {
+  if (!direktAufgerufen(metaUrl)) return
+  main().catch((err) => {
+    console.error(String(err instanceof Error ? err.message : err))
+    process.exitCode = 1
+  })
 }

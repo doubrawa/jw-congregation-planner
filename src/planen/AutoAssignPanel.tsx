@@ -1,18 +1,27 @@
-import { useState } from 'react'
 import { useAppDispatch } from '../app/context'
+import { useZweiTipp } from '../components/useZweiTipp'
 import { useT } from '../i18n/useT'
 
 /**
- * Eine Bereichszeile: Label (Aufgaben / Hilfsdienste) und darunter zwei Aktionen
- * auf einer Linie — „Automatisch" (primär, füllt) und „Leeren" (sekundär, leert).
- * „Leeren" ist destruktiv und deshalb mit Zwei-Tipp-Bestätigung: der erste Tipp
- * bewaffnet den Button („Wirklich leeren?"), erst der zweite leert wirklich.
- * Verlässt der Fokus den Button, entschärft er sich wieder.
+ * Eine Bereichszeile: Label (Aufgaben / Hilfsdienste / Treffpunkt-Leiter) und
+ * darunter zwei Aktionen auf einer Linie — „Automatisch" (primär, füllt) und
+ * „Leeren" (sekundär, leert). „Leeren" ist destruktiv und deshalb mit
+ * Zwei-Tipp-Bestätigung (`useZweiTipp`).
+ *
+ * Was die beiden Aktionen tun, sagt der Aufrufer: Die Zusammenkünfte und die
+ * Treffpunkte haben eigene Aktionen, aber dieselbe Zeile — sie stand zweimal da.
  */
-function AutoAssignRow({ label, scope }: { label: string; scope: 'parts' | 'helpers' }) {
-  const dispatch = useAppDispatch()
+export function AutoAssignRow({
+  label,
+  automatisch,
+  leeren,
+}: {
+  label: string
+  automatisch: () => void
+  leeren: () => void
+}) {
   const { t } = useT()
-  const [armed, setArmed] = useState(false)
+  const bestaetigung = useZweiTipp(leeren)
 
   return (
     <div className="plan-auto-row">
@@ -22,26 +31,19 @@ function AutoAssignRow({ label, scope }: { label: string; scope: 'parts' | 'help
           type="button"
           className="plan-auto-btn plan-auto-btn--primary"
           onClick={() => {
-            setArmed(false)
-            dispatch({ type: 'autoAssign', scope })
+            bestaetigung.entschaerfen()
+            automatisch()
           }}
         >
           {t.autoZuteilen}
         </button>
         <button
           type="button"
-          className={`plan-auto-btn plan-auto-btn--clear${armed ? ' is-armed' : ''}`}
-          onClick={() => {
-            if (armed) {
-              setArmed(false)
-              dispatch({ type: 'clearAssignments', scope })
-            } else {
-              setArmed(true)
-            }
-          }}
-          onBlur={() => setArmed(false)}
+          className={`plan-auto-btn plan-auto-btn--clear${bestaetigung.armed ? ' is-armed' : ''}`}
+          onClick={bestaetigung.onClick}
+          onBlur={bestaetigung.onBlur}
         >
-          {armed ? t.leerenSicher : t.leeren}
+          {bestaetigung.armed ? t.leerenSicher : t.leeren}
         </button>
       </div>
     </div>
@@ -53,11 +55,20 @@ function AutoAssignRow({ label, scope }: { label: string; scope: 'parts' | 'help
  * Zeile. Wirkt auf die aktuell im Planen-Screen gewählte Woche und Zusammenkunft.
  */
 export function AutoAssignPanel() {
+  const dispatch = useAppDispatch()
   const { t } = useT()
   return (
     <div className="plan-auto">
-      <AutoAssignRow label={t.navAufgaben} scope="parts" />
-      <AutoAssignRow label={t.hilfsdienste} scope="helpers" />
+      <AutoAssignRow
+        label={t.navAufgaben}
+        automatisch={() => dispatch({ type: 'autoAssign', scope: 'parts' })}
+        leeren={() => dispatch({ type: 'clearAssignments', scope: 'parts' })}
+      />
+      <AutoAssignRow
+        label={t.hilfsdienste}
+        automatisch={() => dispatch({ type: 'autoAssign', scope: 'helpers' })}
+        leeren={() => dispatch({ type: 'clearAssignments', scope: 'helpers' })}
+      />
     </div>
   )
 }

@@ -20,7 +20,6 @@ import {
   DEMO_NOTIFICATIONS,
   DEMO_PERSONS,
   DEMO_SERVICES,
-  FS_BASE,
 } from '../data/testdaten'
 import { setAbweichung } from '../data/meeting-edit'
 import { setAnlass } from '../data/anlass'
@@ -82,7 +81,6 @@ function zustand(over: Partial<AppState> = {}): AppState {
     weeks: buildDemoWeeks(),
     fsWeeks: buildDemoFsWeeks(),
     fsRules: [...DEMO_FS_RULES],
-    fsBase: FS_BASE,
     absences: [...DEMO_ABSENCES],
     notifs: [...DEMO_NOTIFICATIONS],
     myTasks: [...DEMO_MY_TASKS],

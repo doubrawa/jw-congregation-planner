@@ -42,8 +42,20 @@ export function KontoCard({ person }: { person: Person }) {
     await copyCode(code)
   }
 
-  // Einladen: Code anlegen; mit E-Mail zuerst Server-Versand (eigene Domain
-  // via send-invite) versuchen, sonst/als Fallback das Mail-Programm öffnen.
+  /**
+   * Die Einladungs-Mail hinausschicken: zuerst über den Server (eigene Domain
+   * via `send-invite`), und wenn der nicht kann, über das Mail-Programm.
+   */
+  const einladungSenden = async (code: string) => {
+    const res = await sendInviteMails([{ personId: person.id, code }], congAppCode(state.congLang))
+    if (res.ok && res.sent > 0) {
+      dispatch({ type: 'showToast', text: t.toastInviteMail })
+      return
+    }
+    window.location.href = inviteMailHref(person, code, t.inviteMailSubject, t.inviteMailBody)
+  }
+
+  // Einladen: Code anlegen und, wenn eine Adresse dasteht, gleich verschicken.
   const invitePerson = async () => {
     /*
      * **Offline-Stand: gar nicht erst anfangen.**
@@ -64,29 +76,7 @@ export function KontoCard({ person }: { person: Person }) {
     }
     const created = makeInvite(person)
     dispatch({ type: 'addInvite', invite: created })
-    if (!person.mail) return
-    const res = await sendInviteMails([{ personId: person.id, code: created.code }], congAppCode(state.congLang))
-    if (res.ok && res.sent > 0) {
-      dispatch({ type: 'showToast', text: t.toastInviteMail })
-      return
-    }
-    window.location.href = inviteMailHref(person, created.code, t.inviteMailSubject, t.inviteMailBody)
-  }
-
-  /*
-   * **Ohne Offline-Wache, und das mit Absicht:** Hier geht ein Code hinaus, den
-   * es in der Datenbank schon gibt (die Karte zeigt diesen Knopf nur bei einem
-   * offenen Code). Nichts wird erzeugt, nichts geht verloren — und wenn das
-   * Netz inzwischen wieder da ist, ist das Verschicken genau das Richtige.
-   * Anders als beim „Einladen" oben, wo der Code erst hier entsteht.
-   */
-  const mailInvite = async (code: string) => {
-    const res = await sendInviteMails([{ personId: person.id, code }], congAppCode(state.congLang))
-    if (res.ok && res.sent > 0) {
-      dispatch({ type: 'showToast', text: t.toastInviteMail })
-      return
-    }
-    window.location.href = inviteMailHref(person, code, t.inviteMailSubject, t.inviteMailBody)
+    if (person.mail) await einladungSenden(created.code)
   }
 
   return (
@@ -115,11 +105,17 @@ export function KontoCard({ person }: { person: Person }) {
           <div className="konto-row">
             <span className="mem-code">{invite.code}</span>
             <div className="konto-actions">
+              {/* Ohne Offline-Wache, und das mit Absicht: Der Code steht schon
+                  in der Datenbank (die Karte zeigt diesen Knopf nur bei einem
+                  offenen). Nichts wird erzeugt, nichts geht verloren — und wenn
+                  das Netz inzwischen wieder da ist, ist das Verschicken genau
+                  das Richtige. Anders als beim Einladen, wo der Code erst
+                  entsteht. */}
               {person.mail && (
                 <button
                   type="button"
                   className="konto-link"
-                  onClick={() => void mailInvite(invite.code)}
+                  onClick={() => void einladungSenden(invite.code)}
                 >
                   {t.mailBtn}
                 </button>

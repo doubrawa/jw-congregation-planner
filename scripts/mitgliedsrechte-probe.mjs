@@ -69,16 +69,16 @@
  * Versammlung tun, weil jemand versehentlich sein eigenes Konto einträgt.
  */
 
-import { pathToFileURL } from 'node:url'
-import { pruefKlient } from './gemeinsam.mjs'
+import { alsSkript, pruefKlient } from './gemeinsam.mjs'
 
 /* ===================== Schlüssel (Spiegel von planning.ts) ================ */
 
 /**
- * Stabiler Schlüssel eines Programmpunkt-Slots — dasselbe wie `itemTaskKey` in
- * `src/data/planning.ts`: Woche, Zusammenkunft, Raum, Kennung des Punkts,
- * Platz. Node lädt die TypeScript-Datei nicht, deshalb steht die Regel hier ein
- * zweites Mal; `mitgliedsrechte-probe.test.ts` hält beide Fassungen aneinander.
+ * Stabiler Schlüssel eines Programmpunkt-Slots — dasselbe wie `punktKey` in
+ * `supabase/functions/_shared/aufgaben-schluessel.ts`: Woche, Zusammenkunft,
+ * Raum, Kennung des Punkts, Platz. Node lädt die TypeScript-Datei nicht,
+ * deshalb steht die Regel hier ein zweites Mal;
+ * `mitgliedsrechte-probe.test.ts` hält beide Fassungen aneinander.
  *
  * Ein falsch gebauter Schlüssel wäre hier besonders tückisch: Die Probe schriebe
  * ihn anstandslos und meldete „durchgelassen" — nur bezöge er sich auf gar
@@ -88,7 +88,7 @@ export function slotSchluessel(item, woche, tab, ni, aux = false) {
   return `${woche}|${tab}|${aux ? 'aux' : 'part'}|${item.iid}|${ni}`
 }
 
-/** Stabiler Schlüssel eines Hilfsdienst-Slots (Spiegel von `helperTaskKey`). */
+/** Stabiler Schlüssel eines Hilfsdienst-Slots (Spiegel von `helferKey`). */
 export function helferSchluessel(woche, tab, svc, pos) {
   return `${woche}|${tab}|helper|${svc}|${pos}`
 }
@@ -534,9 +534,4 @@ async function main() {
   process.exitCode = 1
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    process.exit(1)
-  })
-}
+alsSkript(import.meta.url, main)

@@ -15,8 +15,8 @@ import type { Meeting, PartItem, Week } from './types'
  * Zwei Eigenschaften sind dabei die eigentliche Substanz und stehen deshalb
  * jeweils in einem eigenen Block:
  *
- * 1. **Keine Datenwanderung.** Wochen, die vor T64 gespeichert wurden, tragen
- *    `anlass` nicht — `anlassArt` liest dann `co`/`mem`.
+ * 1. **Der Anlass steht in einem Feld.** `co`/`mem` sind seine Wirkungen und
+ *    machen für sich allein keinen Anlass aus.
  * 2. **Der Anlass schlägt vor, die Zusammenkunft entscheidet.** Seine Wirkungen
  *    bleiben eigene Felder und danach bedienbar.
  */
@@ -67,7 +67,7 @@ function makeWeek(): Week {
     ],
     helpers: {},
   }
-  return { range: '7.–13. September', book: '', start: '2026-09-07', current: false, mid, we }
+  return { range: '7.–13. September', book: '', start: '2026-09-07', mid, we }
 }
 
 /** Element an einer Position — mit Ansage statt Nicht-Null-Zusatz (T42). */
@@ -78,22 +78,20 @@ function bei<T>(arr: readonly T[] | undefined, i: number): T {
 }
 const eine = (ws: Week[]): Week => bei(ws, 0)
 
-describe('anlassArt: alte Wochen brauchen keine Datenwanderung', () => {
-  it('liest das neue Feld', () => {
+describe('anlassArt: der Anlass steht in seinem Feld', () => {
+  it('liest das Feld', () => {
     const w: Week = { ...makeWeek(), anlass: { art: 'kongress', von: '2026-10-16', bis: '2026-10-18' } }
     expect(anlassArt(w)).toBe('kongress')
   })
 
-  it('fällt auf `co` zurück, wenn `anlass` fehlt', () => {
-    // Genau der Bestand, der heute in der Datenbank liegt.
-    expect(anlassArt({ ...makeWeek(), co: true })).toBe('co')
+  it('die Wirkungen allein (`co`, `mem`) sind kein Anlass', () => {
+    // Sie entstehen nur zusammen mit `anlass` (`setAnlass`, Import) — für sich
+    // genommen sagen sie nichts über die Woche.
+    expect(anlassArt({ ...makeWeek(), co: true })).toBeUndefined()
+    expect(anlassArt({ ...makeWeek(), mem: true, memCancel: 'we' })).toBeUndefined()
   })
 
-  it('fällt auf `mem` zurück, wenn `anlass` fehlt', () => {
-    expect(anlassArt({ ...makeWeek(), mem: true, memCancel: 'we' })).toBe('mem')
-  })
-
-  it('ohne beides: kein Anlass', () => {
+  it('ohne Feld: kein Anlass', () => {
     expect(anlassArt(makeWeek())).toBeUndefined()
     expect(anlassArt(undefined)).toBeUndefined()
   })

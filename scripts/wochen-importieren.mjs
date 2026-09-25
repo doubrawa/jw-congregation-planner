@@ -37,7 +37,7 @@
  * dem, was da war — das ist kein Fehler, sondern der Kalender.
  */
 
-import { argumente, funktionsKopf, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import { alsSkript, argumente, funktionsKopf, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 
 /**
  * Wochen der Reihe nach holen. Jede Antwort nennt ihren Montag, und der ist
@@ -127,10 +127,4 @@ async function main() {
   console.log(`\nGeschrieben: ${neue.length} Woche(n).`)
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

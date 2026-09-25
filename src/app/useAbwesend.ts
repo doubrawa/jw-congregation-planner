@@ -12,9 +12,9 @@ import { buildAbsences, type AbsenceSet } from '../data/absence'
  */
 export function useAbwesend(): AbsenceSet {
   const { state } = useApp()
-  const { absences, weeks, fsBase, congregation } = state
+  const { absences, weeks, congregation } = state
   return useMemo(
-    () => buildAbsences(absences, weeks, fsBase, congregation.times),
-    [absences, weeks, fsBase, congregation.times],
+    () => buildAbsences(absences, weeks, congregation.times),
+    [absences, weeks, congregation.times],
   )
 }

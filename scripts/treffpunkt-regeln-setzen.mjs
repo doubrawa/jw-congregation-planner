@@ -36,9 +36,7 @@
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
-import { argumente, fsSort, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
-
-const WD_NAME = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+import { alsSkript, argumente, fsSort, restKlient, versammlungHolen, WOCHENTAG_NAMEN, zugangsdaten } from './gemeinsam.mjs'
 
 /**
  * Datum dieses Wochentags in dieser Woche — wie `fsTag` in `src/data/fs.ts`.
@@ -106,7 +104,7 @@ export function regelFehler(r, gruppenIds = []) {
 /** Lesbare Zeile für die Ausgabe. */
 export function regelText(r) {
   return (
-    `${WD_NAME[r.wd]} ${r.time}` +
+    `${WOCHENTAG_NAMEN[r.wd]} ${r.time}` +
     (r.place ? ` · ${r.place}` : '') +
     ` — ${r.monthly ? `jeden ${r.monthly}. im Monat` : 'jede Woche'}` +
     (r.grp ? ' (Gruppe)' : '')
@@ -212,10 +210,4 @@ async function main() {
   console.log(`\nGeschrieben: ${regeln.length} Regel(n), ${plan.length} Woche(n) neu zusammengesetzt.`)
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

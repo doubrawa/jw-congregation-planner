@@ -8,7 +8,6 @@ import {
   DEMO_ABSENCES,
   DEMO_PERSONS,
   DEMO_SERVICES,
-  FS_BASE,
 } from './testdaten'
 import { displayName, isGuestRole, isSong, rolleMitHerkunft } from './helpers'
 import { helperWorkload, loadWindow, partWorkload, workloadOf } from './auslastung'
@@ -26,7 +25,7 @@ import {
   deriveSubstituteReqs,
   assignSlot,
   clearAssignments,
-  helperTaskKey,
+  helferKey,
   slotValue,
   weekConflicts,
 } from './planning'
@@ -269,7 +268,7 @@ describe('Auto-Zuteilung', () => {
     const closeSi = weeks[0].mid.sections.length - 1
     ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
     const before = weeks.map((w) => structuredClone(w))
-    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.times)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, CONGREGATION.times)
     const { weeks: next, newly } = autoAssignMeeting(
       weeks, 0, 'mid', DEMO_PERSONS, DEMO_SERVICES, [], 'all', abwesend,
     )
@@ -388,8 +387,9 @@ describe('S-89-Nutzlast', () => {
     const ii = weeks[0].mid.sections[pet].items.findIndex(
       (i) => !isSong(i) && (i as PartItem).title.startsWith('Bibellesung'),
     )
+    // Erkannt am Bereich des Platzes, nicht am Titel — `priv` trägt ihn.
     const s89 = buildS89ForSlot(weeks, {
-      kind: 'part', wi: 0, tab: 'mid', si: pet, ii, ni: 0, priv: 'lesen', groups: false, label: '',
+      kind: 'part', wi: 0, tab: 'mid', si: pet, ii, ni: 0, priv: 'bibellesung', groups: false, label: '',
     }, STANDARD_ZEITEN)
     expect(s89?.point).toBe('th Lektion 2')
   })
@@ -486,23 +486,23 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
   it('listet einen verhinderten Hilfsdienst, für den ich qualifiziert bin', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
-    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)
     expect(reqs).toHaveLength(1)
-    expect(reqs[0]).toMatchObject({ svc: 'ton', declinedBy: 'A. Absager', key: helperTaskKey('2026-09-07', 'mid', 'ton', 0) })
+    expect(reqs[0]).toMatchObject({ svc: 'ton', declinedBy: 'A. Absager', key: helferKey('2026-09-07', 'mid', 'ton', 0) })
   })
 
   it('nicht qualifiziert → kein Gesuch', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
-    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'), STANDARD_ZEITEN)).toHaveLength(0)
   })
 
   it('nur „verhindert" zählt (bestätigt/offen nicht)', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
-    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'bestätigt' as const }
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'bestätigt' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
   })
 
@@ -517,7 +517,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const mid = weeks[0]!.mid
     mid.helpers.ton = [{ name: 'A. Absager' }]
     mid.helpers.mik = [{ name: displayName(ich) }, { name: '' }] // ich habe schon Mikrofon
-    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN)
     expect(reqs).toHaveLength(1)
     expect(reqs[0]?.schonHeute.map((a) => a.text)).toContain('Mikrofone')
@@ -527,7 +527,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, {
-      [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const,
+      [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const,
     }, qualified('ton'), STANDARD_ZEITEN)
     expect(reqs[0]?.schonHeute).toEqual([])
   })
@@ -541,7 +541,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     const ich = qualified('ton')
     weeks[0]!.mid.helpers.ton = [{ name: displayName(ich), pid: 'p-namensvetter' }]
-    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
 
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN)
     expect(reqs, 'das Gesuch des Namensvetters galt als das eigene').toHaveLength(1)
@@ -551,7 +551,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
   it('eigener verhinderter Slot erscheint nicht als Einspringen-Gesuch', () => {
     const weeks = buildDemoWeeks()
     weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
-    const conf = { [helperTaskKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
   })
 })
@@ -902,14 +902,14 @@ describe('Konfliktprüfungen (Planen)', () => {
     // und dort ist er Eingangsordner (mid). Prüft zugleich, dass aus dem
     // gespeicherten Datum wieder die richtige Woche wird.
     const weeks = buildDemoWeeks()
-    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.times)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, CONGREGATION.times)
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
     expect(conflicts).toContainEqual({ kind: 'absent', name: 'Ulrich Lang', kennung: kennungFuer('Ulrich Lang'), tab: 'mid' })
   })
 
   it('meldet niemanden abwesend, dessen Zeitraum die Woche nicht trifft', () => {
     const weeks = buildDemoWeeks()
-    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, FS_BASE, CONGREGATION.times)
+    const abwesend = buildAbsences(DEMO_ABSENCES, weeks, CONGREGATION.times)
     // Woche 1 gehört Niklas Feld; Ulrich Lang darf dort nicht auftauchen.
     const conflicts = weekConflicts(weeks, 1, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
     expect(conflicts.some((c) => c.kind === 'absent' && c.name === 'Ulrich Lang')).toBe(false)
@@ -939,7 +939,7 @@ describe('Konfliktprüfungen (Planen)', () => {
       names: [{ name: 'Kim Sommer', pid: 'p-zwei', bereichsKey: 'schulung' }],
     } as unknown as PartItem
     const roh = {
-      range: '', book: '', start: '2026-09-07', current: false,
+      range: '', book: '', start: '2026-09-07', 
       mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
       we: { date: '', end: '', sections: [], helpers: {} },
     } as unknown as Week
@@ -975,7 +975,7 @@ describe('Konfliktprüfungen (Planen)', () => {
       names: [{ name: '', bereichsKey: 'schulung' }],
     } as unknown as PartItem
     const roh = {
-      range: '', book: '', start: '2026-09-07', current: false,
+      range: '', book: '', start: '2026-09-07', 
       mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
       we: { date: '', end: '', sections: [], helpers: {} },
     } as unknown as Week
@@ -1002,7 +1002,7 @@ describe('Konfliktprüfungen (Planen)', () => {
       names: [{ name: 'Rat Geber', pid: 'p-rat', bereichsKey: 'schulung' }],
     } as unknown as PartItem
     const roh = {
-      range: '', book: '', start: '2026-09-07', current: false,
+      range: '', book: '', start: '2026-09-07', 
       mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
       we: { date: '', end: '', sections: [], helpers: {} },
     } as unknown as Week
@@ -1029,7 +1029,7 @@ describe('Konfliktprüfungen (Planen)', () => {
       names: [{ name: 'Kim Sommer', pid: 'p-zwei', bereichsKey: 'schulung' }],
     } as unknown as PartItem
     const roh = {
-      range: '', book: '', start: '2026-09-07', current: false,
+      range: '', book: '', start: '2026-09-07', 
       mid: {
         date: '', end: '',
         sections: [{ label: 'X', farbe: 'gold', items: [item] }],
@@ -1064,7 +1064,7 @@ describe('Konfliktprüfungen (Planen)', () => {
       ],
     } as unknown as PartItem
     const week = {
-      range: '', book: '', start: '2026-09-07', current: false,
+      range: '', book: '', start: '2026-09-07', 
       mid: { date: '', end: '', sections: [{ label: 'ERÖFFNUNG', farbe: 'neutral', items: [item] }], helpers: {} },
       we: { date: '', end: '', sections: [], helpers: {} },
     } as unknown as Week
@@ -1190,7 +1190,7 @@ describe('helperWorkload zählt nur bis zur eingestellten Platzzahl (T21)', () =
   const woche = (): Week => ({
     range: '',
     book: '', start: '2026-09-07',
-    current: false,
+    
     mid: { date: '', end: '', sections: [], helpers: { mik: [{ name: 'Anna' }, { name: 'Bert' }] } },
     we: { date: '', end: '', sections: [], helpers: {} },
   })
@@ -1483,7 +1483,10 @@ describe('Herkunft eines auswaertigen Redners', () => {
   })
 
   it('eine Herkunft im Rollentext zaehlt nicht mehr — nur das eigene Feld', () => {
-    const weeks = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner · Vers. Nordheim')
+    // Die Demo-Woche trägt bereits eine Herkunft; erst leeren, dann den
+    // zusammengesetzten Rollentext setzen — er darf keine daraus machen.
+    const ohne = assignSlot(buildDemoWeeks(), auswahl, 'Gustav Gast', 'Gastredner', undefined, '')
+    const weeks = assignSlot(ohne, auswahl, 'Gustav Gast', 'Gastredner · Vers. Nordheim')
     const slot = rednerPlatz(weeks)
     expect(slot?.herkunft).toBeUndefined()
     expect(rolleMitHerkunft(slot)).toBe('Gastredner')

@@ -36,7 +36,7 @@ describe('initialState – Demo-Modus (ohne Supabase)', () => {
 })
 
 describe('initialState – konfiguriert (leerer Start bis Hydration)', () => {
-  it('startet leer, dataStatus ready, fsBase = Montag dieser Woche (12:00)', () => {
+  it('startet leer, dataStatus ready', () => {
     cfg.configured = true
     const s = initialState()
     expect(s.dataStatus).toBe('ready')
@@ -44,8 +44,6 @@ describe('initialState – konfiguriert (leerer Start bis Hydration)', () => {
     expect(s.weeks).toEqual([])
     expect(s.planner).toBe(false)
     expect(s.congregation).toEqual({ name: '', hall: '', times: STANDARD_ZEITEN })
-    expect(s.fsBase.getDay()).toBe(1) // Montag
-    expect(s.fsBase.getHours()).toBe(12)
   })
 })
 

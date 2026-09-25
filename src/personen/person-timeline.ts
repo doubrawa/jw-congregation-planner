@@ -1,11 +1,10 @@
 import type { AppState } from '../app/context'
 import { abwesenheitsRaender, abwRang, markiereAbwesenheiten, type AbwRand } from '../components/zeitleiste-gemeinsam'
-import { fsKennung, fsTag } from '../data/fs'
-import { displayName } from '../data/helpers'
-import { meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
+import { fsLeiterZuteilung, fsTag } from '../data/fs'
+import { displayName, gehoertZu } from '../data/helpers'
+import { fromIso, kalendertagMs, meetingDate, meetingTime } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
-import { versatzAbMontag } from '../data/meeting-dates'
 
 /**
  * Ein Eintrag der Zeitleiste im Personen-Detail — für beide Arten gleich
@@ -14,12 +13,7 @@ import { versatzAbMontag } from '../data/meeting-dates'
  */
 export type TimelineEntry = {
   key: string
-  /**
-   * Tage seit dem Montag der Woche 0. Ordnet Zusammenkünfte und Treffpunkte
-   * ineinander — auch bei Demo-/Vorlagenwochen, die kein echtes Datum tragen.
-   */
-  tag: number
-  /** Kalendertag der Aufgabe. */
+  /** Kalendertag der Aufgabe — ordnet Zusammenkünfte, Treffpunkte und Abwesenheiten ineinander. */
   datum: Date
   /** "19:00"; leer, wenn die Versammlung keine Zeit hinterlegt hat. */
   zeit: string
@@ -58,7 +52,7 @@ export type TimelineEntry = {
 /** Was die Zeitleiste aus dem Zustand braucht (erleichtert das Testen). */
 export type TimelineDaten = Pick<
   AppState,
-  'weeks' | 'services' | 'confirmations' | 'congregation' | 'fsWeeks' | 'fsBase' | 'absences'
+  'weeks' | 'services' | 'confirmations' | 'congregation' | 'fsWeeks' | 'absences'
 >
 
 /**
@@ -77,16 +71,9 @@ export function personTimeline(
   heute = new Date(),
 ): TimelineEntry[] {
   const name = displayName(person)
-  // Vergangen wird am echten Kalendertag entschieden, nicht am `current`-Flag
-  // der Woche — das wird nicht nachgeführt und veraltet (siehe fsBaseFromWeeks).
+  // Vergangen wird am echten Kalendertag entschieden.
   const grenze = new Date(heute)
   grenze.setHours(0, 0, 0, 0)
-  /** Kalendertag zu „Tage nach dem Montag der Woche 0". */
-  const datumVon = (tag: number) => {
-    const d = new Date(state.fsBase)
-    d.setDate(d.getDate() + tag)
-    return d
-  }
   const entries: TimelineEntry[] = []
 
   const tasks = deriveMyTasks(
@@ -105,13 +92,10 @@ export function personTimeline(
     // Tag und Uhrzeit kommen aus meeting-dates.ts — derselben Quelle wie
     // Countdown, Erinnerung und Abwesenheitsprüfung. Die Zeitleiste hatte
     // dafür eine eigene Rechnung, was bei abweichenden Terminen auseinanderlief.
-    const datum = meetingDate(week, wi, pos.tab, state.fsBase, state.congregation.times)
+    const datum = meetingDate(week, pos.tab, state.congregation.times)
     entries.push({
       kind: 'meeting',
       key: task.id,
-      // Sortierschlüssel bleibt „Tage seit dem Montag der Woche 0", damit sich
-      // Zusammenkünfte und Treffpunkte ineinander einordnen.
-      tag: tageZwischen(state.fsBase, datum),
       datum,
       zeit: meetingTime(week, pos.tab, state.congregation.times),
       vergangen: datum < grenze,
@@ -122,37 +106,25 @@ export function personTimeline(
     })
   }
 
-  // Über die Person-Id, mit Rückfall auf den Namen für Altdaten — dieselbe
-  // Rangfolge wie bei den Zusammenkunfts-Aufgaben. Vorher trug ein Treffpunkt
-  // nur den Namen; Namensgleiche sahen dadurch gegenseitig ihre Leitungen.
+  // Wem ein Treffpunkt gehört, sagt `gehoertZu` — Id vor Name, Freitext
+  // (Kreisaufseher) niemandem: dieselbe Regel wie bei den
+  // Zusammenkunfts-Aufgaben und in `deriveMyFsTasks`.
   state.fsWeeks.forEach((week, wi) => {
     for (const inst of week) {
-      // Freitext (Kreisaufseher) fällt hier heraus: Er gehört keiner Person,
-      // und der Namensweg träfe einen Gleichnamigen — dieselbe Regel wie in
-      // `fsLeiterZuteilung`, nur mit eigener Rangfolge.
-      if (!inst.leader || inst.lext) continue
-      if (!(inst.lpid ? inst.lpid === person.id : inst.leader === name)) continue
+      if (!gehoertZu(fsLeiterZuteilung(inst), person)) continue
       /*
-       * **Der Tag kommt aus dem Montag DIESER Woche**, nicht aus `fsBase +
-       * wi·7` (T101). Seit T66 stehen die Wochen nach Datum nebeneinander, ohne
-       * Platzhalter: Fehlt eine im geladenen Bestand, nannte die alte Rechnung
-       * ab dort jeden Treffpunkt sieben Tage zu früh — und zwar nur hier, denn
-       * der Zusammenkunfts-Zweig oben rechnet längst über `meetingDate`.
-       * Dieselbe Leiste zeigte damit zwei Termine derselben Woche eine Woche
-       * auseinander.
-       *
-       * Ohne brauchbare Kennung (Demo, Vorlagen) bleibt es beim alten Weg —
-       * dort gibt es keine Wochenzeile, mit der man sich uneinig werden könnte.
+       * **Der Tag kommt aus dem Montag DIESER Woche** (T101). Seit T66 stehen
+       * die Wochen nach Datum nebeneinander, ohne Platzhalter: Fehlt eine im
+       * geladenen Bestand, nannte die alte Rechnung `fsBase + wi·7` ab dort
+       * jeden Treffpunkt sieben Tage zu früh — und zwar nur hier, denn der
+       * Zusammenkunfts-Zweig oben rechnet längst über `meetingDate`. Dieselbe
+       * Leiste zeigte damit zwei Termine derselben Woche eine Woche auseinander.
        */
-      const datum =
-        fsTag(fsKennung(state.weeks[wi], state.fsBase, wi), inst.wd) ??
-        datumVon(wi * 7 + versatzAbMontag(inst.wd))
+      const datum = fsTag(state.weeks[wi]?.start ?? '', inst.wd)
+      if (!datum) continue
       entries.push({
         kind: 'fs',
         key: `fs|${wi}|${inst.id}`,
-        // Sortierschlüssel bleibt „Tage seit dem Montag der Woche 0" — wie im
-        // Zweig darüber, damit sich beide Arten ineinander einordnen.
-        tag: tageZwischen(state.fsBase, datum),
         datum,
         zeit: inst.time,
         vergangen: datum < grenze,
@@ -175,15 +147,13 @@ export function personTimeline(
    * gebunden — eine im übernächsten Monat gehört hierher, auch wenn so weit
    * noch kein Programm reicht.
    */
-  const tagVon = (iso: string): Date => new Date(`${iso}T12:00:00`)
   for (const abw of state.absences) {
     if (abw.personId !== person.id) continue
     for (const rand of abwesenheitsRaender(abw.from, abw.to)) {
-      const datum = tagVon(rand === 'ende' ? abw.to : abw.from)
+      const datum = fromIso(rand === 'ende' ? abw.to : abw.from)
       entries.push({
         kind: 'abw',
         key: `abw|${abw.id}|${rand}`,
-        tag: tageZwischen(state.fsBase, datum),
         datum,
         zeit: '',
         vergangen: datum < grenze,
@@ -201,6 +171,8 @@ export function personTimeline(
    * einer Zuteilung vorbei, die sehr wohl in den Zeitraum fällt.
    */
   const randVon = (e: TimelineEntry): AbwRand | null => (e.kind === 'abw' ? e.rand : null)
-  entries.sort((a, b) => a.tag - b.tag || abwRang(randVon(a)) - abwRang(randVon(b)))
+  entries.sort(
+    (a, b) => kalendertagMs(a.datum) - kalendertagMs(b.datum) || abwRang(randVon(a)) - abwRang(randVon(b)),
+  )
   return markiereAbwesenheiten(entries, randVon)
 }

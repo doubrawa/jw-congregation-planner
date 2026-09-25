@@ -61,7 +61,7 @@ function woche(mid: Meeting, we?: Meeting): Week {
     range: '7.–13. September',
     book: '',
     start: MONTAG,
-    current: true,
+    
     mid,
     we: we ?? zusammenkunft([]),
   } as unknown as Week
@@ -84,7 +84,7 @@ const treffpunkt = (over: Partial<FsInstance> = {}): FsInstance => ({
 const ohne: ConfirmationMap = {}
 
 /**
- * `offeneMeldungen` mit neun Argumenten, von denen jeder Fall eines
+ * `offeneMeldungen` mit sieben Argumenten, von denen jeder Fall eines
  * abwandelt. Ausgeschrieben stand hier zehnmal dieselbe Zeile, und welches
  * Argument der Fall variiert, musste man aus dem Stellungsvergleich lesen —
  * derselbe Griff wie `ruf` im Abschnitt darunter.
@@ -95,13 +95,9 @@ const offeneVon = (
     fs = [] as FsInstance[],
     conf = ohne,
     log = {} as SentLog,
-    base = null as Date | null,
     heute = MONTAG_FRUEH,
   } = {},
-) => offeneMeldungen(w, fs, 0, base, DIENSTE, conf, log, MEETINGS, heute)
-
-/** Der Montag als Datumsbasis — für die Fälle mit Treffpunkten. */
-const BASIS = new Date(`${MONTAG}T12:00:00`)
+) => offeneMeldungen(w, fs, DIENSTE, conf, log, MEETINGS, heute)
 
 describe('Wer von seiner Zuteilung noch nichts weiß', () => {
   it('eine frisch geplante Woche: jeder Platz steht auf der Liste', () => {
@@ -153,14 +149,14 @@ describe('Wer von seiner Zuteilung noch nichts weiß', () => {
 
   it('Treffpunkt-Leiter zählen mit — sie sind die zweite Datenquelle', () => {
     const w = woche(zusammenkunft([]))
-    const offen = offeneVon(w, { fs: [treffpunkt()], base: BASIS })
+    const offen = offeneVon(w, { fs: [treffpunkt()] })
     expect(offen.map((o) => o.name)).toEqual(['T. Lindner'])
   })
 
   it('ein auswärtiger Leiter (Freitext) nicht — er hat kein Konto', () => {
     const w = woche(zusammenkunft([]))
     const extern = [treffpunkt({ leader: 'Kreisaufseher', lext: true })]
-    expect(offeneVon(w, { fs: extern, base: BASIS })).toEqual([])
+    expect(offeneVon(w, { fs: extern })).toEqual([])
   })
 })
 
@@ -196,7 +192,7 @@ describe('Was vorbei ist, geht nicht mehr hinaus', () => {
   it('der Tag kommt aus den Zusammenkunftszeiten der Versammlung, nicht fest vom Dienstag', () => {
     // Donnerstags-Versammlung: Am Mittwoch steht ihre Wochenmitte noch bevor.
     // Mit einem Rückfall auf Dienstag wäre sie hier schon „vorbei".
-    const offen = offeneMeldungen(beide(), [], 0, null, DIENSTE, ohne, {}, { mid: { wd: 4, time: '19:00' }, we: { wd: 0, time: '10:00' } }, new Date(2026, 8, 9, 9, 0))
+    const offen = offeneMeldungen(beide(), [], DIENSTE, ohne, {}, { mid: { wd: 4, time: '19:00' }, we: { wd: 0, time: '10:00' } }, new Date(2026, 8, 9, 9, 0))
     expect(offen.map((o) => o.name).sort()).toEqual(['A. Berg', 'B. Cohn'])
   })
 
@@ -205,13 +201,8 @@ describe('Was vorbei ist, geht nicht mehr hinaus', () => {
       treffpunkt({ id: 'mo', wd: 1, leader: 'M. Montag' }),
       treffpunkt({ id: 'sa', wd: 6, leader: 'S. Samstag' }),
     ]
-    const offen = offeneVon(woche(zusammenkunft([])), { fs, base: BASIS, heute: new Date(2026, 8, 9, 9, 0) })
+    const offen = offeneVon(woche(zusammenkunft([])), { fs, heute: new Date(2026, 8, 9, 9, 0) })
     expect(offen.map((o) => o.name)).toEqual(['S. Samstag'])
-  })
-
-  it('eine Woche ohne Datum (Vorlage) liegt nirgends im Kalender — dort ist nichts vorbei', () => {
-    const ohneDatum = { ...beide(), start: '' } as Week
-    expect(offeneVon(ohneDatum, { heute: new Date(2030, 0, 1) })).toHaveLength(2)
   })
 })
 
@@ -249,7 +240,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
   const bestaetigt: ConfirmationMap = { [KEY_ERSTER]: 'bestätigt' }
   const vorher = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
   const ruf = (v: Week | undefined, n: Week | undefined, conf = bestaetigt) =>
-    entzogeneZusagen(v, n, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH)
+    entzogeneZusagen(v, n, [], [], DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH)
 
   it('umgeteilt: der bisherige Inhaber wird genannt, mit Platz und Termin', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
@@ -288,7 +279,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
       vorher, vorher,
       [treffpunkt()],
       [treffpunkt({ leader: 'M. Albrecht' })],
-      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH,
+      DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH,
     )
     expect(raus.map((z) => z.name)).toEqual(['T. Lindner'])
   })
@@ -307,7 +298,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
       vorher, vorher,
       [treffpunkt()],
       [treffpunkt({ leader: 'M. Albrecht' })],
-      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, STANDARD_ZEITEN, ohne, MONTAG_FRUEH,
+      DIENSTE, STANDARD_ZEITEN, ohne, MONTAG_FRUEH,
     )
     expect(raus).toEqual([])
   })
@@ -361,7 +352,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
       vorher, vorher,
       [treffpunkt()],
       [treffpunkt({ leader: '' })],
-      0, new Date(`${MONTAG}T12:00:00`), DIENSTE, STANDARD_ZEITEN, { [key]: 'bestätigt' }, MONTAG_FRUEH,
+      DIENSTE, STANDARD_ZEITEN, { [key]: 'bestätigt' }, MONTAG_FRUEH,
     )
     expect(raus).toHaveLength(1)
     expect(raus[0]!.datum).toMatch(/September/)
@@ -387,7 +378,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
     // eine verlorene Woche.
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     expect(() =>
-      entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, undefined as unknown as ConfirmationMap, MONTAG_FRUEH),
+      entzogeneZusagen(vorher, nachher, [], [], DIENSTE, STANDARD_ZEITEN, undefined as unknown as ConfirmationMap, MONTAG_FRUEH),
     ).not.toThrow()
   })
 
@@ -400,13 +391,13 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
   it('ein vergangener Platz: keine Nachricht, wenn er nachträglich umgeteilt wird', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     const donnerstag = new Date(2026, 8, 10, 9, 0)
-    expect(entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, bestaetigt, donnerstag)).toEqual([])
+    expect(entzogeneZusagen(vorher, nachher, [], [], DIENSTE, STANDARD_ZEITEN, bestaetigt, donnerstag)).toEqual([])
   })
 
   it('Gegenprobe: am Tag selbst geht die Nachricht noch hinaus', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     const dienstagMittag = new Date(2026, 8, 8, 12, 0)
-    const raus = entzogeneZusagen(vorher, nachher, [], [], 0, null, DIENSTE, STANDARD_ZEITEN, bestaetigt, dienstagMittag)
+    const raus = entzogeneZusagen(vorher, nachher, [], [], DIENSTE, STANDARD_ZEITEN, bestaetigt, dienstagMittag)
     expect(raus.map((z) => z.name)).toEqual(['A. Berg'])
   })
 
@@ -415,7 +406,7 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
     const vorherFs = [treffpunkt({ id: 'mo', wd: 1 }), treffpunkt({ id: 'sa', wd: 6 })]
     const nachherFs = [treffpunkt({ id: 'mo', wd: 1, leader: '' }), treffpunkt({ id: 'sa', wd: 6, leader: '' })]
     const mittwoch = new Date(2026, 8, 9, 9, 0)
-    const raus = entzogeneZusagen(vorher, vorher, vorherFs, nachherFs, 0, BASIS, DIENSTE, STANDARD_ZEITEN, conf, mittwoch)
+    const raus = entzogeneZusagen(vorher, vorher, vorherFs, nachherFs, DIENSTE, STANDARD_ZEITEN, conf, mittwoch)
     // Der Montag ist gewesen; der Samstag steht noch bevor.
     expect(raus.map((z) => z.key)).toEqual([`fs|${MONTAG}|sa`])
   })

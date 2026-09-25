@@ -16,7 +16,8 @@
  * mitten in einer fertigen Planung.
  */
 import { describe, expect, it } from 'vitest'
-import { buildFsWeeks, fsBaseFromWeeks, fsTaskKey, fsWochenStart, regenFsWeeks } from './fs'
+import { buildFsWeeks, fsTaskKey, regenFsWeeks } from './fs'
+import { montagNach } from './meeting-dates'
 import type { FsRule } from './types'
 
 const RULES: FsRule[] = [
@@ -25,36 +26,30 @@ const RULES: FsRule[] = [
 ]
 
 /** Montag der Woche `i` ab dem 5.1.2026. */
-const montag = (i: number): string =>
-  new Date(Date.UTC(2026, 0, 5) + i * 7 * 864e5).toISOString().slice(0, 10)
+const montag = (i: number): string => montagNach('2026-01-05', i)
 
-/** Wochenkennungen ab Basis `i` — so viele, wie ein Aufruf braucht. */
+/** Wochenkennungen ab Woche `i` — so viele, wie ein Aufruf braucht. */
 const kennAb = (i: number, n = 8): string[] =>
-  Array.from({ length: n }, (_unused, wi) => fsWochenStart(basisAb(i), wi))
-
-const basisAb = (i: number): Date =>
-  fsBaseFromWeeks([{ current: false, start: montag(i) }], new Date())
+  Array.from({ length: n }, (_unused, wi) => montag(i + wi))
 
 describe('Die Kennung eines Treffpunkts hängt nicht an der Wochennummer', () => {
   it('dieselbe Kalenderwoche hat dieselbe Kennung, egal wo im Fenster sie steht', () => {
-    const alsDritte = buildFsWeeks(basisAb(0), 6, RULES)[3]!
-    const alsZweite = buildFsWeeks(basisAb(1), 5, RULES)[2]!
+    const alsDritte = buildFsWeeks(kennAb(0, 6), RULES)[3]!
+    const alsZweite = buildFsWeeks(kennAb(1, 5), RULES)[2]!
     // Beide beschreiben den 26. Januar 2026 — die Kennungen müssen gleich sein.
-    expect(fsWochenStart(basisAb(0), 3)).toBe(fsWochenStart(basisAb(1), 2))
+    expect(kennAb(0)[3]).toBe(kennAb(1)[2])
     expect(alsZweite.map((i) => i.id)).toEqual(alsDritte.map((i) => i.id))
   })
 
   it('und damit auch derselbe task_key', () => {
-    const dritte = buildFsWeeks(basisAb(0), 6, RULES)[3]!
-    const zweite = buildFsWeeks(basisAb(1), 5, RULES)[2]!
-    expect(fsTaskKey(fsWochenStart(basisAb(1), 2), zweite[0]!.id)).toBe(
-      fsTaskKey(fsWochenStart(basisAb(0), 3), dritte[0]!.id),
-    )
+    const dritte = buildFsWeeks(kennAb(0, 6), RULES)[3]!
+    const zweite = buildFsWeeks(kennAb(1, 5), RULES)[2]!
+    expect(fsTaskKey(kennAb(1)[2]!, zweite[0]!.id)).toBe(fsTaskKey(kennAb(0)[3]!, dritte[0]!.id))
   })
 
   it('der zugeteilte Leiter überlebt das Weiterrutschen des Fensters', () => {
     // Genau der gemessene Ausfall: vorher „Emil Ernst", nachher "".
-    const vorher = buildFsWeeks(basisAb(0), 6, RULES)
+    const vorher = buildFsWeeks(kennAb(0, 6), RULES)
     vorher[3]![0]!.leader = 'Emil Ernst'
     const gespeichert = vorher.slice(1) // Woche 0 fällt aus dem Fenster
     const nachher = regenFsWeeks(kennAb(1), gespeichert, RULES, true)
@@ -62,7 +57,7 @@ describe('Die Kennung eines Treffpunkts hängt nicht an der Wochennummer', () =>
   })
 
   it('zwei Regeln bleiben unterscheidbar — die Kennung ist die Regel', () => {
-    const woche = buildFsWeeks(basisAb(0), 1, RULES)[0]!
+    const woche = buildFsWeeks(kennAb(0, 1), RULES)[0]!
     expect(new Set(woche.map((i) => i.id)).size).toBe(2)
     expect(woche.map((i) => i.id).sort()).toEqual(['r-mittwoch', 'r-samstag'])
   })

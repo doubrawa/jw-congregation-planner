@@ -27,6 +27,7 @@ import { PlanenScreen } from '../planen/PlanenScreen'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
+import { eigenePerson } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { NotificationsPanel } from './NotificationsPanel'
@@ -55,7 +56,7 @@ export function AppShell() {
   const { t } = useT()
   // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
   const isLogin = state.screen === 'login' || state.recovery
-  const me = state.persons.find((p) => p.id === state.personId)
+  const me = eigenePerson(state)
   // Mobiles Seitenmenü (Drawer) — Desktop hat die feste Sidebar
   const [menuOpen, setMenuOpen] = useState(false)
   // Deep-Link aus einem Push-Klick (#go=<screen>): beim Start aus dem Hash, bei

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { argumente } from './gemeinsam.mjs'
 import {
-  argumente,
   bereiche,
   EXTERNE_ROLLE,
   fuelleZuteilungen,
@@ -245,14 +245,16 @@ describe('Eine Woche besetzen', () => {
     }
   })
 
-  it('der Gastredner bleibt Freitext — ohne pid, mit Herkunft an der Rolle', () => {
+  it('der Gastredner bleibt Freitext — ohne pid, die Herkunft in ihrem eigenen Feld', () => {
     const week = slotWoche()
     fuelleZuteilungen(week, personen, dienste, gruppen)
-    const slot = (week.we.sections[0]!.items[0] as { names: { name: string; pid?: string; rolle?: string }[] }).names[0]!
+    const slot = (
+      week.we.sections[0]!.items[0] as { names: { name: string; pid?: string; rolle?: string; herkunft?: string }[] }
+    ).names[0]!
     expect(slot.name).toBeTruthy()
     expect(slot.pid).toBeUndefined()
-    expect(slot.rolle).toMatch(/^Gastredner · /)
-    expect(TEST_GASTREDNER.some((g) => g.name === slot.name)).toBe(true)
+    expect(slot.rolle).toBe('Gastredner')
+    expect(TEST_GASTREDNER.some((g) => g.name === slot.name && g.herkunft === slot.herkunft)).toBe(true)
   })
 
   it('zwei Programmpunkte für dieselbe Person sind erlaubt — sonst bliebe der Platz leer', () => {

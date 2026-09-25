@@ -80,7 +80,6 @@ export interface HydratePayload {
   weeks: Week[]
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
-  fsBase: string | null // ISO-Datum (Montag der Woche 0)
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -156,7 +155,6 @@ export interface AppState {
   // pro Woche daraus materialisierten Instanzen (parallel zu weeks indiziert).
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
-  fsBase: Date // Montag der Woche 0 (Bezug für Treffpunkt-Datumsberechnung)
   absences: Absence[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
@@ -346,8 +344,6 @@ export type AppAction =
   // aktuellen Woche. `patch` überschreibt nur die genannten Felder; ein Feld
   // auf `undefined` nimmt die Abweichung dort zurück.
   | { type: 'setAbweichung'; tab: MeetingKey; patch: Partial<Abweichung> }
-  // Kreisaufseher-Woche (T62): baut den Ablauf um und wieder zurueck.
-  | { type: 'setDienstwoche'; on: boolean }
   // Anlass der Woche (T64): Kreisaufseher, Gedächtnismahl oder Kongress —
   // `null` hebt ihn auf. Setzt zugleich die Wirkungen (Umbau bzw. Ausfall).
   | { type: 'setAnlass'; art: AnlassArt | null }

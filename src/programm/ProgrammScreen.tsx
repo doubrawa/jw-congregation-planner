@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
+import { eigenePerson } from '../app/eigene-person'
 import { istBlockSektion, mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { WeekStrip } from '../components/WeekStrip'
@@ -93,7 +94,7 @@ function ProgrammBody() {
   // Kanonische Fassung (deutsche Sektions-Labels) zum Erkennen von ERÖFFNUNG/
   // ABSCHLUSS — dort wird das Lied aus dem Sammeltitel mittig+kursiv gezogen.
   const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
-  const me = state.persons.find((p) => p.id === state.personId)
+  const me = eigenePerson(state)
   const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
 
   return (
@@ -182,14 +183,7 @@ function ProgramMeeting({
         {/* Gerechneter Termin statt des rohen date-Felds: importierte Wochen
             tragen dort nur die Wochenspanne („7.–13. September"). */}
         <p className="prog-meta">
-          {tpw(
-            meetingDateText(
-              rawWeek,
-              state.week,
-              mtab(tab),
-              state.congregation.times,
-            ),
-          )}
+          {tpw(meetingDateText(rawWeek, mtab(tab), state.congregation.times))}
         </p>
         <DruckWahl />
       </div>

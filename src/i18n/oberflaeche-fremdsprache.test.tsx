@@ -92,7 +92,7 @@ function woche(): Week {
     range: '7.–13. September',
     book: 'JEREMIA 32–33',
     start: '2026-09-07',
-    current: true,
+    
     mid: {
       date: 'Dienstag, 8. September · 19:00',
       end: 'Ende ca. 20:45',
@@ -202,7 +202,6 @@ function zustand(over: Partial<AppState> = {}): AppState {
     week: 0,
     tab: 'mid',
     terminGewaehlt: true,
-    fsBase: new Date(2026, 8, 7, 12),
     ...over,
   }
 }
@@ -436,9 +435,9 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     }],
     ['Gedächtnismahl-Woche', {
       screen: 'programm',
-      weeks: [{ ...woche(), mem: true, memCancel: 'mid' }],
+      weeks: [{ ...woche(), anlass: { art: 'mem' }, mem: true, memCancel: 'mid' }],
     }],
-    ['Kreisaufseher-Woche', { screen: 'programm', weeks: [{ ...woche(), co: true }] }],
+    ['Kreisaufseher-Woche', { screen: 'programm', weeks: [{ ...woche(), anlass: { art: 'co' }, co: true }] }],
     ['ausgefallene Zusammenkunft', {
       screen: 'programm',
       weeks: [{ ...woche(), dev: { mid: { cancelled: true, reason: 'Kalvo Zubo' } } }],

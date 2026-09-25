@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
 import { emptyQualifications, serviceQualKey } from './helpers'
 import { loadedUntilMs } from '../lib/import'
-import { helperTaskKey, itemTaskKey, sentKey } from './planning'
+import { helferKey, punktKey, sentKey } from './planning'
 import { fsTaskKey } from './fs'
 import {
   planungsstand,
@@ -83,7 +83,7 @@ function woche(start: string, over: Partial<Week> = {}): Week {
     range: `Woche ${start}`,
     book: '',
     start,
-    current: false,
+    
     mid: {
       date: '7.–13. September',
       end: '',
@@ -115,10 +115,10 @@ function gesendet(w: Week): SentLog {
   const log: SentLog = {}
   const k = (key: string, name: string) => (log[sentKey(key, name)] = '2026-09-01T08:00:00Z')
   const start = w.start
-  k(itemTaskKey(start, 'mid', (w.mid.sections[0]!.items[0] as PartItem).iid, 0), 'p1 Test')
+  k(punktKey(start, 'mid', (w.mid.sections[0]!.items[0] as PartItem).iid, 0), 'p1 Test')
   for (const tab of ['mid', 'we'] as const) {
     for (const [pos, slot] of (w[tab].helpers.mik ?? []).entries()) {
-      k(helperTaskKey(start, tab, 'mik', pos), slot.name)
+      k(helferKey(start, tab, 'mik', pos), slot.name)
     }
   }
   return log
@@ -131,10 +131,8 @@ const treffpunkt = (id: string, wd: number, over: Partial<FsInstance> = {}): FsI
 /** Die Quellen, mit ruhigen Vorgaben: genug Leute, nichts abwesend, nichts gesendet. */
 function quellen(over: Partial<PlanungsQuellen> & { weeks: Week[] }): PlanungsQuellen {
   const absences: readonly Absence[] = over.absences ?? []
-  const fsBase = new Date(2026, 8, 7, 12)
   return {
     fsWeeks: [],
-    fsBase,
     persons: GENUG,
     services: DIENSTE,
     confirmations: {},
@@ -144,7 +142,7 @@ function quellen(over: Partial<PlanungsQuellen> & { weeks: Week[] }): PlanungsQu
     sendenMoeglich: true,
     ...over,
     absences,
-    abwesend: over.abwesend ?? buildAbsences(absences, over.weeks, fsBase, MEETINGS),
+    abwesend: over.abwesend ?? buildAbsences(absences, over.weeks, MEETINGS),
   }
 }
 
@@ -223,13 +221,6 @@ describe('Die Karte schaut auf die kommenden Wochen, nicht auf die laufende', ()
     expect(stand.vorratKnapp).toBe(true)
   })
 
-  it('ohne Kalenderdaten (Demo, Vorlagen) gilt die als laufend markierte Woche', () => {
-    // Eine Woche ohne Kennung trägt ein leeres `start` (T66).
-    const ohne = (current: boolean): Week => woche('', { current })
-    const weeks = [ohne(false), ohne(true), ohne(false)]
-    const { wochen } = planungsstand(quellen({ weeks, geladenBisMs: null }), am(7))
-    expect(wochen.map((w) => w.wi)).toEqual([1, 2])
-  })
 })
 
 /* ---- 2. Was vorbei ist, zählt nicht --------------------------------------- */
@@ -355,9 +346,9 @@ describe('Jede Zahl ist die des gleichnamigen Banners in Planen', () => {
     const log = gesendet(w)
     // Zwei zurück ins Ungesendete: der eine hat inzwischen bestätigt (weiß also
     // Bescheid), der andere nicht.
-    delete log[sentKey(helperTaskKey(A, 'we', 'mik', 0), 'p2 Test')]
-    delete log[sentKey(helperTaskKey(A, 'we', 'mik', 1), 'p4 Test')]
-    const confirmations: ConfirmationMap = { [helperTaskKey(A, 'we', 'mik', 0)]: 'bestätigt' }
+    delete log[sentKey(helferKey(A, 'we', 'mik', 0), 'p2 Test')]
+    delete log[sentKey(helferKey(A, 'we', 'mik', 1), 'p4 Test')]
+    const confirmations: ConfirmationMap = { [helferKey(A, 'we', 'mik', 0)]: 'bestätigt' }
     const [a] = planungsstand(quellen({ weeks: [w], sentLog: log, confirmations }), am(7)).wochen
     expect(a?.nichtGesendet).toBe(1)
   })
@@ -424,7 +415,7 @@ describe('Eine Woche ohne Zusammenkunft bleibt sichtbar, wenn ihre Treffpunkte e
   it('Gegenprobe: ist ein Platz der Zusammenkunft ungesendet, öffnet Planen dort', () => {
     const w = fertigeWoche(A)
     const log = gesendet(w)
-    delete log[sentKey(helperTaskKey(A, 'we', 'mik', 1), 'p4 Test')]
+    delete log[sentKey(helferKey(A, 'we', 'mik', 1), 'p4 Test')]
     const [a] = planungsstand(quellen({ weeks: [w], sentLog: log }), am(7)).wochen
     expect(a).toMatchObject({ nichtGesendet: 1, tab: 'we' })
   })
@@ -444,7 +435,7 @@ describe('Die Karte nennt den Zeitraum, den sie angesehen hat', () => {
   })
 
   it('ohne Kalenderdaten gibt es keinen Zeitraum — dann wird auch keiner behauptet', () => {
-    expect(planungsstand(quellen({ weeks: [woche('', { current: true })] }), am(7)).zeitraum).toBeNull()
+    expect(planungsstand(quellen({ weeks: [woche('')] }), am(7)).zeitraum).toBeNull()
   })
 
   it('liegt nichts mehr vor uns, auch nicht', () => {

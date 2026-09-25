@@ -506,7 +506,9 @@
   flex: 1;
 }
 
-.lac-remove {
+/* Der runde ✕-Knopf am Programmpunkt und am Treffpunkt — dieselbe Form. */
+.lac-remove,
+.fs-remove {
   width: 24px;
   height: 24px;
   flex: none;
@@ -671,19 +673,6 @@
 .fs-select--time {
   flex: none;
   width: auto;
-}
-
-.fs-remove {
-  width: 24px;
-  height: 24px;
-  flex: none;
-  border-radius: 50%;
-  border: 1px solid var(--weinB);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--wein);
-  font-size: calc(10px * var(--fs));
 }
 
 .fs-input {

@@ -34,7 +34,7 @@ const t = dict('de')
 
 function woche(over: Partial<Week> = {}): Week {
   return {
-    range: '7.–13. September', book: '', start: '2026-09-07', current: false,
+    range: '7.–13. September', book: '', start: '2026-09-07', 
     mid: { date: '', end: '20:45', sections: [], helpers: {} },
     we: { date: '', end: '11:45', sections: [], helpers: {} },
     ...over,

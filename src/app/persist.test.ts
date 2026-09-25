@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persist } from './persist'
 import type { AppAction, AppState } from './context'
-import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES, FS_BASE } from '../data/testdaten'
+import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../data/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey } from '../data/fs'
 import type { Week } from '../data/types'
@@ -73,7 +73,6 @@ function st(over: Partial<AppState> = {}): AppState {
     weeks: buildDemoWeeks(),
     fsWeeks: buildDemoFsWeeks(),
     fsRules: [...DEMO_FS_RULES],
-    fsBase: FS_BASE,
     services: [...DEMO_SERVICES],
     persons: [...DEMO_PERSONS],
     groups: [],
@@ -123,12 +122,19 @@ describe('Guard', () => {
 })
 
 describe('Zuteilen', () => {
-  it('assign (Programmpunkt) → saveWeek + Bestätigungen abräumen', () => {
-    const prev = st({ slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } })
+  // Welche Zusage mit einer Zuteilung verfällt, entscheidet der Reducer —
+  // `persist` liest nur ab, was im neuen Zustand fehlt (`verfalleneZusagen`).
+  const VERFALLEN = '2026-09-07|mid|part|dw3|0'
+
+  it('assign (Programmpunkt) → saveWeek + verfallene Bestätigung abräumen', () => {
+    const prev = st({
+      slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' },
+      confirmations: { [VERFALLEN]: 'bestätigt' },
+    })
     const next = st()
     persist(prev, next, { type: 'assign', name: 'A' })
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
-    expect(data.deleteConfirmationRows).toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
   it('assign (Treffpunkt-Leiter) → saveFsWeek statt saveWeek', () => {
@@ -143,12 +149,18 @@ describe('Zuteilen', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
-  it('autoAssign → saveWeek + Bestätigungen abräumen', () => {
-    const prev = st()
+  it('autoAssign → saveWeek + verfallene Bestätigungen abräumen', () => {
+    const prev = st({ confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st()
     persist(prev, next, { type: 'autoAssign' })
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
-    expect(data.deleteConfirmationRows).toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
+  })
+
+  it('hydrate löscht nichts — ein frischer Bestand ist kein Entzug', () => {
+    const prev = st({ confirmations: { [VERFALLEN]: 'bestätigt' } })
+    persist(prev, st(), { type: 'hydrate', payload: {} as never })
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   it('clearAssignments schreibt nur bei geänderten Wochen', () => {
@@ -235,16 +247,15 @@ describe('Treffpunkte', () => {
     expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
-  it('eine verschwundene Zusammenkunfts-Zusage löscht dieser Weg nicht — dafür haben die Zusammenkünfte ihren eigenen', () => {
-    // Die Zusammenkünfte räumen in ihren eigenen Zweigen ab (`changedSlotKeys`
-    // beim Zuteilen, der Zustandsvergleich bei `lacRemove`). Dieser Weg hier
-    // gilt allein den Treffpunkten; griffe er weiter, löschte er Zeilen zu
-    // Aktionen, die er gar nicht beurteilt hat.
+  it('eine verschwundene Zusammenkunfts-Zusage geht sofort hinaus — nicht erst mit der Treffpunkt-Woche', () => {
+    // Beide Sorten liest derselbe Vergleich ab (`verfalleneZusagen`); nur der
+    // Zeitpunkt unterscheidet sich: Treffpunkt-Zusagen warten auf das Schreiben
+    // ihrer Woche, Zusammenkunfts-Zusagen nicht.
     const meeting = '2026-09-07|mid|part|k3f9x|0'
     const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [meeting]: 'bestätigt' } })
     const next = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a', '15:00'), confirmations: {} })
     persist(prev, next, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
-    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [meeting])
   })
 
   it('fsInstUpdate/Remove speichern die betroffene Woche', () => {
@@ -387,7 +398,7 @@ describe('LAC / Import / Vortrag', () => {
       si: 0,
       ii: 1,
     })
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [])
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   it('lacAdd/talkEdit/openingSong → saveWeek der aktuellen Woche', () => {
@@ -701,6 +712,9 @@ describe('Ein gelöschter Dienst nimmt seine drei Spuren mit', () => {
   const ohneTon = (s: AppState): AppState => ({
     ...s,
     services: s.services.filter((x) => x.key !== 'ton'),
+    confirmations: Object.fromEntries(
+      Object.entries(s.confirmations).filter(([k]) => !k.includes('|helper|ton|')),
+    ),
     persons: s.persons.map((p) => {
       if (!('svc:ton' in p.priv)) return p
       const { 'svc:ton': _weg, ...priv } = p.priv
@@ -716,7 +730,7 @@ describe('Ein gelöschter Dienst nimmt seine drei Spuren mit', () => {
   })
 
   it('schreibt die geänderten Personen und Wochen und räumt die Zusagen ab', () => {
-    const prev = st()
+    const prev = st({ confirmations: { '2026-09-07|mid|helper|ton|0': 'bestätigt' } })
     persist(prev, ohneTon(prev), { type: 'removeService', key: 'ton' })
     expect(data.deleteServiceRow).toHaveBeenCalledWith('c1', 'ton')
     // Die Personen mit dem Bereich — und nur die.
@@ -1142,7 +1156,7 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
       range: '7.–13. September',
       book: '',
       start: MONTAG,
-      current: true,
+      
       mid: {
         date: '',
         end: '',
@@ -1364,10 +1378,16 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    * `notifs` fehlt aus demselben Grund: Eine hier entstandene Mitteilung geht
    * am `local`-Kennzeichen hinaus, nicht an der auslösenden Aktion (siehe Ende
    * von `persist.ts`).
+   *
+   * `confirmations` fehlen seit dem 25. September 2026 ebenso: Was der Reducer
+   * an Zusagen abräumt, liest `verfalleneZusagen` am Unterschied der Zustände
+   * ab — für jede Aktion. Was er **setzt** (`confirmTask`, `declineTask`,
+   * `takeSubstitute`), hat weiterhin seinen eigenen Fall; die Probe darunter
+   * hält das fest.
    */
   const DAUERHAFT = [
-    'fsWeeks', 'fsRules', 'fsBase', 'persons', 'services', 'groups',
-    'confirmations', 'absences', 'members', 'invites', 'congregation',
+    'fsWeeks', 'fsRules', 'persons', 'services', 'groups',
+    'absences', 'members', 'invites', 'congregation',
     'reminders', 'congLang', 'progLangs', 'auxClass',
   ]
 
@@ -1390,6 +1410,18 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
       if (felder.length > 0) offen.push(`${name} → ${felder.join(', ')}`)
     }
     expect(offen, `ohne Schreibweg: ${offen.join(' | ')}`).toEqual([])
+  })
+
+  it('wer eine Zusage setzt, schreibt sie selbst — nur das Abräumen ist allgemein', () => {
+    // `verfalleneZusagen` sieht nur, was **fehlt**. Ein Fall, der eine Zusage
+    // neu setzt oder umsetzt, braucht deshalb weiter seinen eigenen Zweig.
+    const persistQuelle = roh(PERSIST)
+    const setzer = faelle()
+      .filter(([name, text]) => !AUS_DER_DATENBANK.has(name) && /confirmations: \{ \.\.\.state\.confirmations/.test(text))
+      .map(([name]) => name)
+    expect(setzer.length, 'keine setzende Aktion gefunden').toBeGreaterThan(1)
+    const offen = setzer.filter((name) => !persistQuelle.includes(`case '${name}':`))
+    expect(offen, `setzt eine Zusage ohne Schreibweg: ${offen.join(', ')}`).toEqual([])
   })
 
   /**

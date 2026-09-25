@@ -50,9 +50,7 @@
 
 import fs from 'node:fs'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { argumente, gleichnamige, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
-export { argumente, gleichnamige }
-export { personDisplayName as displayName }
+import { alsSkript, argumente, gleichnamige, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
 
 /* ===================== Kuratierte Daten aus dem SQL lesen ================= */
 
@@ -134,8 +132,6 @@ export function parseKuratiert(sql) {
   }
   return { groups, persons, ovas }
 }
-
-/* ===================== Argumente ========================================= */
 
 /* ===================== Ausführung ======================================== */
 
@@ -487,13 +483,4 @@ async function main() {
   console.log('Jeder zuerst mit --trocken.')
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    // `exitCode` statt `exit()`: Nach einem gescheiterten `fetch` hält undici
-    // seinen Verbindungspool noch kurz offen. `process.exit()` reißt ihn mitten
-    // im Schließen weg — dann steht eine libuv-Assertion über der Meldung, die
-    // sie erklären sollte. So läuft Node aus und liefert den Code trotzdem.
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

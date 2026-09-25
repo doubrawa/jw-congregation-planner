@@ -1,11 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { argumente, gleichnamige, personDisplayName as displayName } from './gemeinsam.mjs'
 import {
-  argumente,
   BEHALTEN,
-  displayName,
-  gleichnamige,
   KASKADIERT,
   LEEREN,
   NEU_ANGELEGT,

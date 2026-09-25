@@ -1,11 +1,21 @@
 import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
+import { eigenePerson } from '../app/eigene-person'
 import { AbsencePanel } from '../components/AbsencePanel'
+import { AufgabenAktionen } from '../components/AufgabenAktionen'
 import { PushPrompt } from '../components/PushPrompt'
 import { displayName } from '../data/helpers'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenLabel, fill, useT } from '../i18n/useT'
+import { aufgabenLabel, fill, useT, zuteilungenText } from '../i18n/useT'
 import './aufgaben.css'
+
+/** Die Aktionen einer Aufgabe als Pillen — der Start zeigt sie kompakter. */
+const AUF_KLASSEN = {
+  bestaetigen: 'auf-confirm',
+  bestaetigt: 'auf-badge auf-badge--best',
+  verhindert: 'auf-badge auf-badge--verh',
+  s89: 'auf-s89',
+}
 
 /**
  * Meine Aufgaben (Screen 4): nächste Aufgaben mit Bestätigungs-Status
@@ -16,7 +26,7 @@ export function AufgabenScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const { t, tu, tp } = i18n
-  const me = state.persons.find((p) => p.id === state.personId)
+  const me = eigenePerson(state)
 
   /**
    * „Deine Einträge": seit die Abwesenheiten versammlungsweit geladen werden
@@ -81,30 +91,7 @@ export function AufgabenScreen() {
                 <div className="auf-date">{tp(task.date)}</div>
               </button>
               <div className="auf-actions">
-                {task.status === 'offen' && (
-                  <button
-                    type="button"
-                    className="auf-confirm"
-                    onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
-                  >
-                    ✓ {t.bestaetigen}
-                  </button>
-                )}
-                {task.status === 'bestätigt' && (
-                  <span className="auf-badge auf-badge--best">✓ {t.bestaetigt}</span>
-                )}
-                {task.status === 'verhindert' && (
-                  <span className="auf-badge auf-badge--verh">{t.verhindertChip}</span>
-                )}
-                {task.s89 && (
-                  <button
-                    type="button"
-                    className="auf-s89"
-                    onClick={() => task.s89 && dispatch({ type: 'openS89', payload: task.s89 })}
-                  >
-                    {t.s89Open} ›
-                  </button>
-                )}
+                <AufgabenAktionen task={task} klassen={AUF_KLASSEN} />
               </div>
             </div>
             {(() => {
@@ -133,8 +120,7 @@ export function AufgabenScreen() {
                 {/* Was ich an dem Tag schon habe — vor dem Zusagen. */}
                 {req.schonHeute.length > 0 && (
                   <div className="auf-sub-warn">
-                    {t.sheetSchonHeute}:{' '}
-                    {req.schonHeute.map((a) => (a.lang === 'u' ? tu(a.text) : tp(a.text))).join(', ')}
+                    {t.sheetSchonHeute}: {zuteilungenText(req.schonHeute, i18n)}
                   </div>
                 )}
               </div>

@@ -469,7 +469,6 @@ export function* programmPlaetze(meeting: Meeting): Generator<ProgrammPlatz> {
   }
 }
 
-/** Zeichen, das noch zu einem Namen gehört (Buchstabe oder Ziffer, jede Schrift). */
 /**
  * Neue stabile Kennung für einen Programmpunkt (`PartItem.iid`, T37).
  *
@@ -491,22 +490,6 @@ export { neueItemId } from '../../supabase/functions/_shared/zuteilungen.ts'
  */
 export const MEETING_TABS: readonly MeetingKey[] = ['mid', 'we']
 
-/**
- * Nur die Woche `wi` tief kopieren — die übrigen behalten ihre Referenz.
- *
- * Bis hierher klonte jede einzelne Änderung (ein Name, fünf Minuten, ein Lied)
- * den **ganzen** geladenen Jahrgang: bis zu 52 Wochen, jede mitsamt ihren
- * Sprachvarianten (`Week.alt`). Bezahlt wurde das bei jedem Tippen im
- * Zuteilungs-Blatt.
- *
- * Der zweite Gewinn wiegt schwerer als der erste: Weil die unberührten Wochen
- * ihre Referenz behalten, erkennt `persist.ts` an genau dieser Referenz, welche
- * Woche wirklich zu schreiben ist — vorher sahen alle 52 verändert aus.
- *
- * `null`, wenn es die Woche nicht gibt; der Aufrufer gibt dann seine Eingabe
- * unverändert zurück. Das Gegenstück für die Treffpunkte heißt `patchWeek`
- * (`fs.ts`) und tut dasselbe.
- */
 /**
  * Die Gruppe, die jemand als **Gruppenaufseher** betreut — `null`, wenn keine.
  *
@@ -554,6 +537,22 @@ export function eindeutigeNamen(
   return nachName
 }
 
+/**
+ * Nur die Woche `wi` tief kopieren — die übrigen behalten ihre Referenz.
+ *
+ * Bis hierher klonte jede einzelne Änderung (ein Name, fünf Minuten, ein Lied)
+ * den **ganzen** geladenen Jahrgang: bis zu 52 Wochen, jede mitsamt ihren
+ * Sprachvarianten (`Week.alt`). Bezahlt wurde das bei jedem Tippen im
+ * Zuteilungs-Blatt.
+ *
+ * Der zweite Gewinn wiegt schwerer als der erste: Weil die unberührten Wochen
+ * ihre Referenz behalten, erkennt `persist.ts` an genau dieser Referenz, welche
+ * Woche wirklich zu schreiben ist — vorher sahen alle 52 verändert aus.
+ *
+ * `null`, wenn es die Woche nicht gibt; der Aufrufer gibt dann seine Eingabe
+ * unverändert zurück. Das Gegenstück für die Treffpunkte heißt `patchWeek`
+ * (`fs.ts`) und tut dasselbe.
+ */
 export function klonWoche(weeks: Week[], wi: number): Week[] | null {
   const woche = weeks[wi]
   if (!woche) return null
@@ -714,9 +713,13 @@ export const TITEL_SCHLUSSVORTRAG = 'Schlussvortrag'
 export { LABEL_DIENSTVORTRAG }
 
 /**
- * Basis-Rolle ohne angehängte Herkunft: `"Gastredner · Vers. Nordheim"` →
- * `"Gastredner"`. Die Herkunftsversammlung hat kein eigenes Feld und wird als
- * weiteres Atom der Rolle geführt (siehe `AssignSheet`).
+ * Basis-Rolle: das erste Atom — `"Gastredner · Vers. Nordheim"` → `"Gastredner"`.
+ *
+ * Die Herkunft steht seit T105 in ihrem eigenen Feld (`herkunft`); über die
+ * Rolle entscheiden nur noch Regeln. Dass hier trotzdem am Mittelpunkt geteilt
+ * wird, ist die **eine** nachsichtige Stelle für eine Rolle mit angehängtem
+ * Atom — dieselbe Regel führt `_shared/planung.ts` für die Edge Functions, und
+ * `edge-parity.test.ts` hält beide zusammen.
  */
 export function rolleBasis(rolle: string | undefined): string {
   // `split` liefert immer mindestens ein Element; der Index-Zugriff weiß das nicht.
@@ -763,17 +766,10 @@ export function isSpeakerRole(rolle: string | undefined): boolean {
 }
 
 /**
- * Abschnitte, deren Titel den **Block** benennen und nicht die Aufgabe.
- *
- * ERÖFFNUNG heißt „Lied 27 · Gebet · Einleitende Worte", ABSCHLUSS
- * „Schlussworte · Lied 24 · Gebet" — drei Atome, von denen keines jemandem
- * zugeteilt ist. Lied und Einleitende Worte gehören zur Programmstruktur; wer
- * hier eingeteilt ist, hat Vorsitz oder Gebet.
- */
-/**
  * Block-Abschnitte: Eröffnung und Abschluss. Dort benennt der Titel den ganzen
- * Block („Lied · Gebet · Einleitende Worte"), nicht die einzelne Aufgabe —
- * deshalb trägt dort die Rolle allein.
+ * Block („Lied 27 · Gebet · Einleitende Worte"), nicht die einzelne Aufgabe —
+ * Lied und Einleitende Worte gehören zur Programmstruktur; wer hier eingeteilt
+ * ist, hat Vorsitz oder Gebet. Deshalb trägt dort die Rolle allein.
  */
 const BLOCK_ARTEN = new Set<SectionKind>(['eroeffnung', 'abschluss'])
 
@@ -892,9 +888,24 @@ export interface Zuteilung {
  * keiner — er meint jemanden, den diese Versammlung nicht kennt.
  */
 export function gehoertZu(zuteilung: Zuteilung | undefined, person: Person): boolean {
+  return gehoertZuKennung(zuteilung, person.id, displayName(person))
+}
+
+/**
+ * Dieselbe Regel für Aufrufer, die die Person nur als Id und Anzeigename
+ * kennen (`deriveMyTasks`, `deriveMyFsTasks`). Die Regel steht damit an
+ * **einer** Stelle — davor trug jede dieser Ableitungen ihre eigene Abschrift,
+ * und die wichen ab (eine Zuteilung mit Id, deren Person unbekannt ist, fiel
+ * dort auf den Namen zurück).
+ */
+export function gehoertZuKennung(
+  zuteilung: Zuteilung | undefined,
+  personId: string | undefined,
+  personName: string,
+): boolean {
   if (!zuteilung?.name) return false
-  if (zuteilung.pid) return zuteilung.pid === person.id
-  return !isGuestRole(zuteilung.rolle) && zuteilung.name === displayName(person)
+  if (zuteilung.pid) return zuteilung.pid === personId
+  return !isGuestRole(zuteilung.rolle) && zuteilung.name === personName
 }
 
 /**
@@ -920,9 +931,8 @@ export function gehoertZu(zuteilung: Zuteilung | undefined, person: Person): boo
  * Anhalt, sondern gar keiner: er meint jemanden, den diese Versammlung nicht
  * kennt.
  *
- * Bei doppelten Anzeigenamen und Altdaten ohne Id bleibt eine Zweideutigkeit,
- * die keine Auflösung beheben kann; deshalb warnt die App vor Dubletten
- * (`duplicateDisplayNames`).
+ * Der Namensweg ist eindeutig, weil Vor- und Nachname je Versammlung
+ * eindeutig sind (`persons_name_eindeutig`, T110).
  */
 export function idAufloeser(persons: readonly Person[]): (z: Zuteilung | undefined) => string | undefined {
   const nachId = new Set(persons.map((p) => p.id))

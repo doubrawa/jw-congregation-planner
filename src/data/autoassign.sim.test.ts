@@ -309,7 +309,7 @@ function partHistoryMeeting(name: string, n: number): Meeting {
   return { date: '', end: '', sections: [{ label: 'X', farbe: 'neutral', items: [{ iid: 'i8', title: 'T', names }] }], helpers: {} }
 }
 function wk(mid: Meeting, we: Meeting): Week {
-  return { range: '', book: '', start: '2026-09-07', current: false, mid, we }
+  return { range: '', book: '', start: '2026-09-07', mid, we }
 }
 const MIK1: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
 
@@ -405,7 +405,7 @@ describe('Hilfsdienst-Bereiche (1:1 zum Dienst)', () => {
 
 describe('Predigtdienstgruppen (Reinigung)', () => {
   const emptyMeeting = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
-  const wk1 = (): Week => ({ range: '', book: '', start: '2026-09-07', current: false, mid: emptyMeeting(), we: emptyMeeting() })
+  const wk1 = (): Week => ({ range: '', book: '', start: '2026-09-07', mid: emptyMeeting(), we: emptyMeeting() })
   const REIN: Service[] = [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }]
 
   it('Reinigung rotiert über die konfigurierten Gruppen (mod Anzahl)', () => {

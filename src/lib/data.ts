@@ -10,10 +10,10 @@
  * geräteweise in localStorage): App-Sprache und Darstellung.
  */
 
-import { CONG_TO_JW } from '../i18n/langs'
+import { ROLE_ORDER } from '../data/constants'
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { kurzeZeit, zeitenAus } from '../../supabase/functions/_shared/planung.ts'
-import { fsBaseFromWeeks, fsLeiterBinden, fsWochenKennungen, regenFsWeeks } from '../data/fs'
+import { fsLeiterBinden, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZusage } from '../data/plan-versand'
 import { normalizePriv, pidsNachtragen } from '../data/namensbindung'
@@ -194,8 +194,7 @@ interface InviteRow {
   planner: boolean
 }
 
-const ROLES: Role[] = ['aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine']
-const asRole = (r: string): Role => (ROLES.includes(r as Role) ? (r as Role) : 'verkuendiger')
+const asRole = (r: string): Role => (ROLE_ORDER.includes(r as Role) ? (r as Role) : 'verkuendiger')
 
 const NOTIF_TYPES: NotificationType[] = ['zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert']
 const asNotifType = (t: string): NotificationType =>
@@ -249,21 +248,6 @@ function groupToRow(g: Group, congregationId: string, position: number) {
     assistant_id: g.assistantId,
     position,
   }
-}
-
-/**
- * **Eine Sprache ist ein Code**, in der Datenbank wie im Zustand — seit
- * September 2026 auf beiden Seiten derselbe Wert, und damit keine Umsetzung
- * mehr an dieser Grenze.
- *
- * Geblieben ist die **Nachsicht nach hinten**: Zeilen aus der Zeit davor tragen
- * den deutschen Anzeigenamen („Deutsch" statt „de"). Sie werden beim Laden
- * umgesetzt; beim nächsten Speichern steht dort der Code. Was die Tabelle
- * nicht kennt, bleibt unverändert stehen — lieber ein unbekannter Code als
- * eine stille Verwechslung mit Deutsch.
- */
-function zuCode(wert: string): string {
-  return CONG_TO_JW[wert] ?? wert
 }
 
 /**
@@ -465,7 +449,6 @@ export interface CongregationData {
   weeks: Week[]
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
-  fsBase: string | null // ISO-Datum (Montag der Woche 0) oder null
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -610,7 +593,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const roh = weekRows.map((r) => ({ ...r.data, start: r.start }))
   const weekList = normalizeChairKeys(pidsNachtragen(roh, personList))
   const confirmations = confirmationMap((confs.data ?? []) as ConfirmationRow[])
-  const fsBaseDate = fsBaseFromWeeks(weekList, new Date())
 
   const gruppenListe = ((groups.data ?? []) as GroupRow[]).map(groupFromRow)
 
@@ -632,14 +614,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   }
 
   // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Kennung → Daten).
-  // Die Basis wird aus dem echten ISO-Startdatum der Wochen (`week.start`,
-  // jw.org-Import) abgeleitet — unabhängig von der gespeicherten Basis und vom
-  // `current`-Flag, die beide veralten können; anschließend werden die Wochen neu
-  // ausgerichtet — Leiter und wochenspezifische Zeit/Ort bleiben erhalten, nur die
-  // Regel→Woche-Zuordnung (z. B. „1. Samstag im Monat") wird anhand der korrekten
-  // Datumsbasis neu bestimmt.
+  // Die Wochen werden am Montag der Programmwoche (`week.start`) neu
+  // ausgerichtet — Leiter und wochenspezifische Zeit/Ort bleiben erhalten, nur
+  // die Regel→Woche-Zuordnung (z. B. „1. Samstag im Monat") wird anhand des
+  // Datums neu bestimmt.
   const fsRules = ((fsRulesRows.data ?? []) as FsRuleRow[]).map(fsRuleFromRow)
-  const fsBase = fsBaseDate.toISOString().slice(0, 10)
   // Zugeordnet wird über das Datum, nicht über die Zeilenfolge: beide Tabellen
   // führen dieselbe Kennung, und nur so bleiben Treffpunkte an ihrer Woche,
   // wenn im Bestand eine fehlt.
@@ -649,7 +628,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   }
   const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
   const ausgerichtet = fsRules.length
-    ? regenFsWeeks(fsWochenKennungen(weekList, fsBaseDate), storedFsWeeks, fsRules, true)
+    ? regenFsWeeks(weekList.map((w) => w.start), storedFsWeeks, fsRules, true)
     : storedFsWeeks
   // Leiter ohne `lpid` an ihre Person binden — dasselbe, was `pidsNachtragen`
   // eine Bildschirmhöhe weiter oben für die Zusammenkünfte tut. Ohne das bliebe
@@ -667,14 +646,15 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     weeks: weekList,
     fsRules,
     fsWeeks,
-    fsBase,
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
     reminders,
     auxClass: c?.aux_class ?? false,
-    congLang: zuCode(c?.cong_lang ?? 'de'),
-    progLangs: (c?.prog_langs ?? []).map(zuCode),
+    // **Eine Sprache ist ein Code**, in der Datenbank wie im Zustand (T105) —
+    // an dieser Grenze wird nichts umgesetzt.
+    congLang: c?.cong_lang ?? 'de',
+    progLangs: c?.prog_langs ?? [],
     members: ((members.data ?? []) as MemberRow[]).map((r) => ({
       userId: r.user_id,
       email: r.email,
@@ -719,11 +699,15 @@ export function setSchreibfehlerMelder(fn: Fehlermelder | null): void {
   melder = fn
 }
 
-async function run(promise: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
-  const { error } = await promise
-  if (!error) return
+/** Einen Schreib- oder Lesefehler melden: Konsole für die Ursache, Melder für den Nutzer. */
+function schreibfehler(error: { message: string }): void {
   console.error('[persistenz]', error.message)
   melder?.()
+}
+
+async function run(promise: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
+  const { error } = await promise
+  if (error) schreibfehler(error)
 }
 
 /* ---- Schreibkonflikte zwischen Planern (T39) ----------------------------- */
@@ -800,10 +784,7 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week):
       // Verstoß gegen unique(congregation_id, start): die Zeile existiert
       // längst, wir kannten sie nur nicht — also hat sie ein anderer angelegt.
       if (error.code === '23505') konfliktMelder?.()
-      else {
-        console.error('[persistenz]', error.message)
-        melder?.()
-      }
+      else schreibfehler(error)
       return
     }
     if (data) wochenStand.set(woche, data.updated_at as string)
@@ -819,8 +800,7 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week):
     .select('updated_at')
     .maybeSingle()
   if (error) {
-    console.error('[persistenz]', error.message)
-    melder?.()
+    schreibfehler(error)
     return
   }
   if (data) {
@@ -835,8 +815,7 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week):
     .eq('start', woche)
     .maybeSingle()
   if (leseFehler) {
-    console.error('[persistenz]', leseFehler.message)
-    melder?.()
+    schreibfehler(leseFehler)
     return
   }
   if (jetzt && jetzt.updated_at === stand) {
@@ -851,8 +830,7 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week):
       .select('updated_at')
       .maybeSingle()
     if (schreibFehler) {
-      console.error('[persistenz]', schreibFehler.message)
-      melder?.()
+      schreibfehler(schreibFehler)
       return
     }
     if (erneut) wochenStand.set(woche, erneut.updated_at as string)

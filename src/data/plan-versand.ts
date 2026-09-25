@@ -41,7 +41,7 @@
  */
 import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { schluesselTeile, wochenPraefixe } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
-import { fsKennung, fsTag, fsTagVorbei, fsTaskKey, fsTerminText } from './fs'
+import { fsTag, fsTagVorbei, fsTaskKey, fsTerminText } from './fs'
 import { dieselbePerson, hatAuxKlasse, istAusgefallen, MEETING_TABS } from './helpers'
 import { istVorbei, meetingDateMs } from './meeting-dates'
 import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
@@ -78,8 +78,6 @@ export interface OffeneMeldung {
 export function offeneMeldungen(
   week: Week | undefined,
   fsWeek: FsInstance[] | undefined,
-  wi: number,
-  fsBase: Date | null,
   services: Service[],
   confirmations: ConfirmationMap,
   sentLog: SentLog,
@@ -99,20 +97,22 @@ export function offeneMeldungen(
     // Vorbei ist eine Zusammenkunft als Ganzes — der Schlüssel jedes Platzes
     // trägt sie an zweiter Stelle (`<Montag>|<tab>|…`).
     const vorbei = vergangeneZusammenkuenfte(week, zeiten, heute)
-    eachAssignedSlot([week], services, zeiten, (name, key) => {
+    eachAssignedSlot([week], services, zeiten, (slot, key) => {
       const wo = taskKeyWeek(key)
       if (wo && vorbei.has(wo.tab)) return
-      nimm(key, name)
+      nimm(key, slot.name)
     })
   }
 
-  // Treffpunkte: zweite Datenquelle, eigener Schlüsselraum (`fs|…`). Ein
-  // Freitext-Leiter (auswärtig) gehört niemandem und bekommt nichts. Vorbei
-  // ist jeder Treffpunkt an seinem eigenen Tag.
+  // Treffpunkte: zweite Datenquelle, eigener Schlüsselraum (`fs|…`), die
+  // Kennung ist der Montag der Programmwoche daneben. Ein Freitext-Leiter
+  // (auswärtig) gehört niemandem und bekommt nichts. Vorbei ist jeder
+  // Treffpunkt an seinem eigenen Tag.
+  const kennung = week?.start ?? ''
   for (const inst of fsWeek ?? []) {
     if (!inst.leader || inst.lext) continue
-    if (fsTagVorbei(fsKennung(week, fsBase, wi), inst.wd, heute)) continue
-    nimm(fsTaskKey(fsKennung(week, fsBase, wi), inst.id), inst.leader)
+    if (fsTagVorbei(kennung, inst.wd, heute)) continue
+    nimm(fsTaskKey(kennung, inst.id), inst.leader)
   }
   return out
 }
@@ -189,8 +189,6 @@ export function entzogeneZusagen(
   nachher: Week | undefined,
   vorherFs: FsInstance[] | undefined,
   nachherFs: FsInstance[] | undefined,
-  wi: number,
-  fsBase: Date | null,
   services: Service[],
   zeiten: MeetingTimes,
   confirmations: ConfirmationMap,
@@ -201,7 +199,7 @@ export function entzogeneZusagen(
   // Nebeneffekt-Schicht (`persist.ts`), und ein Fehler dort risse das
   // **Speichern** mit. Lieber keine Nachricht als eine verlorene Woche.
   const conf = confirmations ?? {}
-  const kennung = fsKennung(vorher, fsBase, wi)
+  const kennung = vorher.start
 
   /** Wer den Platz vorher hatte — die Bezeichnung erst, wenn sie gebraucht wird. */
   interface Vorher {
@@ -211,7 +209,7 @@ export function entzogeneZusagen(
   }
   const alt = new Map<string, Vorher>()
   const vorbei = vergangeneZusammenkuenfte(vorher, zeiten, heute)
-  eachAssignedSlot([vorher], services, zeiten, (name, key, task, pid) => {
+  eachAssignedSlot([vorher], services, zeiten, (slot, key, task) => {
     // Unbestätigtes gar nicht erst aufnehmen — es fiele unten ohnehin heraus.
     // Von gut 35 Plätzen sind ein bis drei bestätigt, und diese Funktion läuft
     // bei jeder Wochenänderung; `fsRuleAdd` und `setAuxClass` setzen alle 52
@@ -222,8 +220,8 @@ export function entzogeneZusagen(
     // `task()` bleibt ungerufen: Es baut den ganzen S-89-Bogen mit auf. Erst
     // unten, für die, die wirklich hinausgehen.
     alt.set(key, {
-      name,
-      pid,
+      name: slot.name,
+      pid: slot.pid,
       beschreiben: () => {
         const t = task()
         return { label: aufgabenBezeichnung(t), datum: t.date }
@@ -251,8 +249,8 @@ export function entzogeneZusagen(
 
   const neu = new Map<string, { name: string; pid?: string }>()
   if (nachher) {
-    eachAssignedSlot([nachher], services, zeiten, (name, key, _task, pid) =>
-      neu.set(key, { name, pid }),
+    eachAssignedSlot([nachher], services, zeiten, (slot, key) =>
+      neu.set(key, { name: slot.name, pid: slot.pid }),
     )
   }
   for (const inst of nachherFs ?? []) {

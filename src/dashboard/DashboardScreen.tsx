@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
+import { eigenePerson } from '../app/eigene-person'
+import { AufgabenAktionen } from '../components/AufgabenAktionen'
 import { useKalendertag } from '../app/useKalendertag'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
@@ -36,11 +38,19 @@ import './dashboard.css'
  * in denen man frei ist, stehen nicht mehr auf dem Start: Wann sie sind, sagt
  * das Programm; hier geht es um das, was einen selbst angeht.
  */
+/** Die Aktionen einer Aufgabe in der Zeitleiste — kompakter als in „Meine Aufgaben". */
+const DASH_KLASSEN = {
+  bestaetigen: 'dash-confirm',
+  bestaetigt: 'dash-badge dash-badge--best',
+  verhindert: 'dash-badge dash-badge--verh',
+  s89: 'dash-s89',
+}
+
 export function DashboardScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const { t, tp } = i18n
-  const me = state.persons.find((p) => p.id === state.personId)
+  const me = eigenePerson(state)
   // Ein neuer Render, sobald der Tag wechselt — sonst stünde nach einer Nacht im
   // Hintergrund noch der gestrige Gruß über dem gestrigen Zeitfenster.
   const tag = useKalendertag()
@@ -89,34 +99,7 @@ export function DashboardScreen() {
         art: <span className="dash-zeit-titel">{aufgabenLabel(task, i18n)}</span>,
         ...band,
         oeffnen: () => dispatch({ type: 'openMyTask', id: task.id }),
-        aktionen: (
-          <>
-            {task.status === 'offen' && (
-              <button
-                type="button"
-                className="dash-confirm"
-                onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
-              >
-                ✓ {t.bestaetigen}
-              </button>
-            )}
-            {task.status === 'bestätigt' && (
-              <span className="dash-badge dash-badge--best">✓ {t.bestaetigt}</span>
-            )}
-            {task.status === 'verhindert' && (
-              <span className="dash-badge dash-badge--verh">{t.verhindertChip}</span>
-            )}
-            {task.s89 && (
-              <button
-                type="button"
-                className="dash-s89"
-                onClick={() => task.s89 && dispatch({ type: 'openS89', payload: task.s89 })}
-              >
-                {t.s89Open} ›
-              </button>
-            )}
-          </>
-        ),
+        aktionen: <AufgabenAktionen task={task} klassen={DASH_KLASSEN} />,
         ...(countdown ? { ende: <span className="dash-zeit-chip">{countdown}</span> } : {}),
       }
     })

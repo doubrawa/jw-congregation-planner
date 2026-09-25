@@ -39,7 +39,8 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { fileURLToPath } from 'node:url'
+import { alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /** Ohne diese Angaben kann Schritt 1 nicht laufen. */
 export const PFLICHT = ['name', 'vorname', 'nachname', 'sql']
@@ -157,7 +158,7 @@ async function main() {
   }
 
   const liste = schritte(arg)
-  const hier = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'))
+  const hier = path.dirname(fileURLToPath(import.meta.url))
   for (const s of liste) {
     console.log(`\n${'='.repeat(72)}\nSchritt ${s.nr}/6 — ${s.titel}\n${'='.repeat(72)}`)
     const lauf = spawnSync(process.execPath, [path.join(hier, s.skript), ...s.argv], { stdio: 'inherit' })
@@ -188,10 +189,4 @@ async function main() {
   }
 }
 
-// Nur ausführen, wenn direkt aufgerufen — beim Import aus dem Test nicht.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
-  main().catch((err) => {
-    console.error(String(err instanceof Error ? err.message : err))
-    process.exitCode = 1
-  })
-}
+alsSkript(import.meta.url, main)

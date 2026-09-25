@@ -67,7 +67,7 @@ function abschnitt(): Section {
 
 function woche(over: Partial<Week> = {}): Week {
   return {
-    range: '1.–7. September', book: '', start: '2026-09-07', current: false,
+    range: '1.–7. September', book: '', start: '2026-09-07', 
     mid: { date: '', end: '20:45', sections: [abschnitt()], helpers: { mik: [], rein: [] } },
     we: { date: '', end: '11:45', sections: [], helpers: {} },
     ...over,
@@ -234,12 +234,9 @@ describe('Treffpunkt-Konflikte sind ein eigenes Banner', () => {
   const inst = (over: Partial<FsInstance> = {}): FsInstance =>
     ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
 
-  const basis = new Date(2026, 8, 7, 12, 0) // Montag der Woche
-
   it('meldet, wer am Tag seines Treffpunkts abwesend ist — mit Tag und Ort', () => {
     const { container } = zeige('fs', {
       fsWeeks: [[inst({ leader: 'Max Brand', lpid: 'p-b' })]],
-      fsBase: basis,
       absences: [{ id: 'a1', personId: 'p-b', userId: null, from: '2026-09-12', to: '2026-09-13', reason: '' }],
     })
     const zeile = container.querySelector('.plan-conflict-text')?.textContent ?? ''
@@ -254,7 +251,6 @@ describe('Treffpunkt-Konflikte sind ein eigenes Banner', () => {
         inst({ id: 'f1', leader: 'Max Brand', lpid: 'p-b' }),
         inst({ id: 'f2', leader: 'Max Brand', lpid: 'p-b', place: 'Park' }),
       ]],
-      fsBase: basis,
     })
     expect(zahl(container)).toBe('1')
     expect(container.querySelector('.plan-conflict-text')?.textContent).toContain(t.sheetSchonHeute)
@@ -263,7 +259,6 @@ describe('Treffpunkt-Konflikte sind ein eigenes Banner', () => {
   it('ohne Konflikt steht das Banner nicht da', () => {
     const { container } = zeige('fs', {
       fsWeeks: [[inst({ leader: 'Max Brand', lpid: 'p-b' })]],
-      fsBase: basis,
     })
     expect(container.querySelector('.plan-conflicts')).toBeNull()
   })
@@ -276,7 +271,6 @@ describe('Treffpunkt-Konflikte sind ein eigenes Banner', () => {
           inst({ id: 'f1', leader: 'Max Brand', lpid: 'p-b', grp: 'g1' }),
           inst({ id: 'f2', leader: 'Max Brand', lpid: 'p-b', grp: 'g2', place: 'Park' }),
         ]],
-        fsBase: basis,
         absences: [{ id: 'a1', personId: 'p-b', userId: null, from: '2026-09-12', to: '2026-09-13', reason: '' }],
       },
       'g1',

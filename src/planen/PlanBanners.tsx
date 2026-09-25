@@ -8,7 +8,7 @@ import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { engpaesse, offenTrotzAllem } from '../data/bedarf'
-import { fsKennung, fsWeekConflicts } from '../data/fs'
+import { fsWeekConflicts } from '../data/fs'
 import { istAusgefallen, serviceQualKey } from '../data/helpers'
 import { openSlotLabels, type Conflict } from '../data/planning'
 import { useKonflikte } from './useKonflikte'
@@ -21,6 +21,20 @@ import { fill, useT } from '../i18n/useT'
 /** "Wochenende"/"unter der Woche" für die Banner-Zeilen. */
 function tabName(t: Dict, tab: MeetingTab | undefined): string {
   return tab === 'we' ? t.tabWe : t.tabMid
+}
+
+/**
+ * Kopfzeile eines Banners: Zeichen (`!` Konflikt, `?` offen), Titel und Zahl.
+ * Fünf Banner trugen dieselben drei Zeilen — hier stehen sie einmal.
+ */
+export function BannerKopf({ zeichen, titel, anzahl }: { zeichen: '!' | '?'; titel: string; anzahl: number }) {
+  return (
+    <div className="plan-banner-head">
+      <span className="plan-banner-badge">{zeichen}</span>
+      <span className="plan-banner-title">{titel}</span>
+      <span className="plan-banner-count">{anzahl}</span>
+    </div>
+  )
 }
 
 /** Konflikt-Banner der aktuellen Zusammenkunft (Abwesende, Doppelbelegung). */
@@ -49,11 +63,7 @@ export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
 
   return (
     <div className="plan-banner-box plan-conflicts">
-      <div className="plan-banner-head">
-        <span className="plan-banner-badge">!</span>
-        <span className="plan-banner-title">{t.konflikteTitle}</span>
-        <span className="plan-banner-count">{conflicts.length}</span>
-      </div>
+      <BannerKopf zeichen="!" titel={t.konflikteTitle} anzahl={conflicts.length} />
       {shownConflicts.map((c, i) => (
         <div key={i} className="plan-conflict-row">
           <span className="plan-conflict-dot" data-kind={c.kind} />
@@ -83,7 +93,7 @@ export function FsConflictsBanner({ onlyGroup }: { onlyGroup: string | null }) {
     state.week,
     state.persons,
     state.absences,
-    fsKennung(state.weeks[state.week], state.fsBase, state.week),
+    state.weeks[state.week]?.start ?? '',
     onlyGroup,
   )
   if (conflicts.length === 0) return null
@@ -101,11 +111,7 @@ export function FsConflictsBanner({ onlyGroup }: { onlyGroup: string | null }) {
 
   return (
     <div className="plan-banner-box plan-conflicts">
-      <div className="plan-banner-head">
-        <span className="plan-banner-badge">!</span>
-        <span className="plan-banner-title">{t.konflikteTitle}</span>
-        <span className="plan-banner-count">{conflicts.length}</span>
-      </div>
+      <BannerKopf zeichen="!" titel={t.konflikteTitle} anzahl={conflicts.length} />
       {conflicts.map((c, i) => (
         <div key={i} className="plan-conflict-row">
           <span className="plan-conflict-dot" data-kind={c.kind} />
@@ -141,11 +147,7 @@ export function OpenSlotsBanner({ tab, tpw }: { tab: MeetingKey; tpw: (s: string
 
   return (
     <div className="plan-banner-box plan-open">
-      <div className="plan-banner-head">
-        <span className="plan-banner-badge">?</span>
-        <span className="plan-banner-title">{t.offeneTitle}</span>
-        <span className="plan-banner-count">{openTotal}</span>
-      </div>
+      <BannerKopf zeichen="?" titel={t.offeneTitle} anzahl={openTotal} />
       {openSlots.map((slot, i) => (
         <div key={i} className="plan-open-row">
           <span className="plan-open-label" dir="auto">
@@ -208,11 +210,7 @@ export function EngpassBanner({ tab }: { tab: MeetingKey }) {
 
   return (
     <div className="plan-banner-box plan-engpass">
-      <div className="plan-banner-head">
-        <span className="plan-banner-badge">!</span>
-        <span className="plan-banner-title">{t.engpassTitle}</span>
-        <span className="plan-banner-count">{offenTrotzAllem(treffer)}</span>
-      </div>
+      <BannerKopf zeichen="!" titel={t.engpassTitle} anzahl={offenTrotzAllem(treffer)} />
       {treffer.map((e) => (
         <div key={e.key} className="plan-conflict-row">
           <span className="plan-conflict-dot" data-kind="engpass" />

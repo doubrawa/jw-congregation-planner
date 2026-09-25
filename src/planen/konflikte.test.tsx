@@ -68,7 +68,7 @@ const MONTAGE = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28']
 
 function woche(i: number, mid: Meeting): Week {
   return {
-    range: '', book: '', start: MONTAGE[i]!, current: false,
+    range: '', book: '', start: MONTAGE[i]!, 
     mid,
     we: { date: '', end: '', sections: [], helpers: {} },
   }
