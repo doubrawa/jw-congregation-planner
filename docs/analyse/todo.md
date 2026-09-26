@@ -5621,6 +5621,64 @@ Betreibers: „mach die acht Punkte auch noch"):
 
 Die Idee einer Start-Karte „N Verhinderungen diese Woche" bleibt eine Idee.
 
+## Aufgenommen am 26. September 2026 — Sperrklinke (T119)
+
+### T119 · Die Sperrklinke meldete „aufgeräumt", ohne gemessen zu haben 🔧 ✅ erledigt (26. September 2026)
+
+> **Behoben, samt einer zweiten Lücke derselben Sorte.**
+> `scripts/check-index-access.mjs` sucht tsc jetzt so, wie Node Pakete sucht
+> (`tscPfad()`: von `scripts/` aus aufwärts bis zum ersten `node_modules` mit
+> TypeScript), und zählt nur Meldungen eines tsc, das auch geprüft hat
+> (`tscBefund()`). Verworfen wird ein Lauf, wenn tsc nicht startet oder
+> abgebrochen wird, wenn Node auf stderr „Cannot find module" meldet, wenn tsc
+> mit einem Wert ≠ 0 endet, ohne eine einzige Meldung zu einer Datei — und
+> wenn irgendwo ein Syntaxfehler steht. Der Lauf endet dann mit 2 statt 1, sagt
+> „Nichts gemessen — die Grundlinie bleibt, wie sie ist." und schreibt auch mit
+> `--update` nichts.
+>
+> **Die zweite Lücke:** Ein Syntaxfehler in einer einzigen Datei lässt tsc die
+> Typprüfung im **ganzen** Projekt auslassen. Gemessen: `const = 1` an
+> `hydrate.test.ts` gehängt ergab „Aufgeräumt — 4 → 2, alle anderen → 0" und
+> die Bitte, `--update` zu fahren. In der CI fängt `npm run lint` das vorher
+> ab, ein Lauf von Hand nicht. Welche Codes als Syntaxfehler gelten, ist an
+> Parser und Scanner von TypeScript 6.0 gemessen: 1000–1999, 17000–17999 und
+> 17 Einzelgänger. Einen ganzen 18000er-Block darf die Liste nicht nehmen —
+> TS18048 („possibly 'undefined'") ist genau die Meldung, die die Sperrklinke
+> zählt. Zwei der Einzelgänger kommen allein vor: Ein nicht geschlossener
+> JSX-Tag meldet nur TS17008, zwei JSX-Wurzeln nebeneinander nur TS2657.
+>
+> **Damit es nicht wieder still passiert:** `scripts/check-index-access.test.ts`
+> stellt jeden Fall mit gemessenen Ausgaben nach, ohne tsc zu starten, und hält
+> die Liste der Syntax-Codes gegen das installierte TypeScript — bringt ein
+> Update einen neuen Parserfehler, wird die Probe rot. Jede Wache ist per
+> Gegenprobe geprüft (alte Entscheidung, alter fester Pfad, Syntax-Wache aus,
+> nur TS1xxx, ein ganzer 18000er-Block): Jedes Mal werden genau die passenden
+> Fälle rot.
+
+**Gefunden am 26. September 2026** in einem Worktree der Desktop-App
+(`.claude/worktrees/<name>`): `npm run typecheck:index` meldete für alle 32
+Dateien der Grundlinie „Aufgeräumt — bitte die Grundlinie nachziehen", jede
+„N → 0". Gemessen hatte es nichts. Das Skript startete tsc über den festen Pfad
+`<wurzel>/node_modules/typescript/bin/tsc`, und ein Worktree hat kein eigenes
+`node_modules` mit Paketen: `npx` findet sie durch Hochwandern im
+Hauptcheckout, der feste Pfad nicht. Node starb an „Cannot find module" mit
+Rückgabewert 1, das Skript sah nur nach, ob der Prozess **startete**, und null
+gezählte Meldungen hießen „aufgeräumt". Ein `--update` darauf hätte die
+Grundlinie geleert; im Hauptcheckout wären danach alle 32 Dateien „neu"
+gewesen, die CI rot, und kein Deploy wäre mehr durchgegangen.
+
+**Prüfen:** `npm run typecheck:index` im Worktree → „noUncheckedIndexedAccess:
+642 Meldungen in 32 Dateien — unverändert." Einen Syntaxfehler in eine Datei
+der Grundlinie setzen → Abbruch mit 2 samt der Zeile des Fehlers, die
+Grundlinie bleibt unverändert.
+
+**Dieselbe Sorte in der Mutationsprobe:** Sie startet vitest über einen ebenso
+festen Pfad und wertet jeden Rückgabewert ≠ 0 als „rot" — im Worktree bekam
+so jede Regel ihr Häkchen. Das behebt eine eigene Sitzung im Branch
+`claude/intelligent-herschel-fda09f`, die dabei auch diese Sperrklinke
+angefasst hat (gemeinsame Pfadsuche `werkzeugPfad()` in `gemeinsam.mjs`). Wer
+als Zweiter nach `main` kommt, führt die beiden Fassungen zusammen.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -5648,7 +5706,7 @@ Die Idee einer Start-Karte „N Verhinderungen diese Woche" bleibt eine Idee.
 
 ## Fortschritt
 
-Stand 25. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 26. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -5656,9 +5714,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐☑☑ · 25. September ☑☑
+21. September ☑☑☑☑☐☑☑ · 25. September ☑☑ · 26. September ☑
 
-**117 der 118 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
+**118 der 119 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen sind zwei, einer davon zurückgestellt:**
 
 | | Aufgabe | Stand |
@@ -5681,6 +5739,7 @@ eingebundenen Übersetzer —, `send-reminders` ohne `CRON_SECRET` mit `401`,
 `import-week` braucht keinen Deploy: Aus dem geteilten Code nutzt es nur die
 Vergabe der Punkt-Kennungen. Die Commits danach (`6f8b8b5`, `395f95e`,
 `c7b8d27`) ändern nur Texte der App; der Client ist über Pages mitgelaufen.
+T119 braucht nichts: Es ändert nur ein Prüfskript der CI.
 
 **Am Morgen des 26. September stand beim Betreiber nichts mehr aus:** Die
 Durchsicht vom 25./26. September (Commit `71e4539`) brauchte drei Schritte, alle erledigt:

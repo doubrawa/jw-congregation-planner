@@ -22,9 +22,10 @@
  * So kann die Zahl nur fallen. Neue Dateien starten bei null und müssen die
  * Regel von Anfang an einhalten.
  *
- * **Kommt tsc gar nicht zum Prüfen**, bricht der Lauf mit Rückgabewert 2 ab
- * und rührt die Grundlinie nicht an — auch nicht mit `--update`. Null
- * Meldungen von einem tsc, das nicht gelaufen ist, sind kein Aufräumen
+ * **Kommt tsc gar nicht zum Prüfen** — nicht gefunden, abgestürzt, oder wegen
+ * eines Syntaxfehlers ohne Typprüfung —, bricht der Lauf mit Rückgabewert 2 ab
+ * und rührt die Grundlinie nicht an, auch nicht mit `--update`. Null
+ * Meldungen von einem tsc, das nicht geprüft hat, sind kein Aufräumen
  * (`tscBefund`).
  *
  * **Warum keine zweite tsconfig mit `exclude`:** TypeScript zieht
@@ -56,6 +57,33 @@ function zaehle(ausgabe) {
 }
 
 /**
+ * Codes, die Parser und Scanner von TypeScript melden. Steht einer davon in
+ * der Ausgabe, hat tsc die Typprüfung ausgelassen, und zwar für das **ganze**
+ * Projekt, nicht nur für die Datei mit dem Fehler: `emitFilesAndReportErrors`
+ * holt die semantischen Meldungen nur, wenn es keine syntaktischen gab.
+ *
+ * Gemessen am 26.9.2026 an TypeScript 6.0, in den Abschnitten
+ * `src/compiler/parser.ts` und `scanner.ts` des Bündels: Fast alles liegt in
+ * 1000–1999 oder 17000–17999, dazu kommen diese Einzelgänger. Einen ganzen
+ * 18000er-Block darf die Liste nicht nehmen — TS18048 („… is possibly
+ * 'undefined'") ist genau die Meldung, die die Sperrklinke zählt. Die Probe
+ * hält die Liste gegen das installierte TypeScript, damit ein Update sie nicht
+ * still veralten lässt.
+ *
+ * Manche 1000er meldet auch die Typprüfung selbst (etwa TS1308 zu `await`).
+ * Die kommen nur vor, wenn auch `tsc -b` rot ist — und dann taugt die Zählung
+ * ohnehin nichts.
+ */
+const SYNTAX_EINZELN = new Set([
+  2427, 2457, 2458, 2657, 2754, 2809, 2819, 6188, 6189, 8033, 8034, 8039, 18009, 18016, 18026, 18029, 18030,
+])
+
+/** Lässt tsc bei diesem Code die Typprüfung aus? */
+export function istSyntaxfehler(code) {
+  return (code >= 1000 && code < 2000) || (code >= 17000 && code < 18000) || SYNTAX_EINZELN.has(code)
+}
+
+/**
  * **Hat tsc überhaupt geprüft?** Nur dann zählen seine Meldungen.
  *
  * Null Meldungen heißen entweder „alles sauber" oder „tsc lief gar nicht" —
@@ -72,6 +100,12 @@ function zaehle(ausgabe) {
  * Datei** — mit solchen endet tsc mit 2. Ohne sie enden Node, wenn es
  * abstürzt, und tsc selbst, wenn es gar nicht erst zum Prüfen kam (fehlende
  * tsconfig: `error TS5058` ohne Datei), beide mit 1.
+ *
+ * **Und ein Syntaxfehler irgendwo** lässt tsc die Typprüfung im ganzen Projekt
+ * auslassen (`istSyntaxfehler`). Gezählt würden dann nur die Syntaxfehler —
+ * gemessen am 26.9.2026: `const = 1` an `hydrate.test.ts` gehängt ergab
+ * „Aufgeräumt: 4 → 2, alle anderen → 0" samt der Bitte, `--update` zu fahren.
+ * Die CI fängt das mit `npm run lint` vorher ab, ein Lauf von Hand nicht.
  *
  * `lauf` ist, was `spawnSync` zurückgibt. Rein, damit die Probe jeden dieser
  * Fälle nachstellen kann, ohne tsc zu starten. Ergebnis: `{ je }` mit den
@@ -90,6 +124,18 @@ export function tscBefund(lauf) {
   if (fehlt) return { fehler: `tsc ist nicht gelaufen — Node fand ein Modul nicht:\n  ${fehlt.trim()}` }
 
   const ausgabe = `${stdout}${stderr}`
+  const syntax = ausgabe.split(/\r?\n/).filter((z) => {
+    const t = /\berror TS(\d+):/.exec(z)
+    return t !== null && istSyntaxfehler(Number(t[1]))
+  })
+  if (syntax.length > 0) {
+    return {
+      fehler:
+        'tsc hat die Typen nicht geprüft — bei einem Syntaxfehler lässt es die Typprüfung im ganzen Projekt aus:\n' +
+        `${auszug(syntax.join('\n'))}\nErst den Syntaxfehler beheben, dann messen.`,
+    }
+  }
+
   const je = zaehle(ausgabe)
   if (lauf.status !== 0 && Object.keys(je).length === 0) {
     return {
