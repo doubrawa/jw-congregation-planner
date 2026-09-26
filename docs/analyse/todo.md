@@ -5743,12 +5743,18 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
-**Beim Betreiber steht aus (Stand 26. September, abends):** ☐ `import-week`
-erneut deployen (Commit `8b13548`, der Schlusspunkt hinter einer Ziffer) —
-sonst zeigt das französische Bibelstudium weiter „wcg chap. 9." statt
-„wcg chap. 9".
+**Beim Betreiber steht nichts aus (Stand 26. September, spätabends):**
+✅ `import-week` ist erneut deployt (21:21 Uhr, Version 35), Datei für Datei
+gleich dem Stand von `main` bis `a8ea233` — also mit `8b13548`, dem
+Schlusspunkt hinter einer Ziffer. Nachgesehen mit `functions list`,
+`functions download` und einem Rauchtest, der nur liest: OPTIONS mit dem `ok`
+des Handlers; die französischen Wochen vom 21. September und 5. Oktober
+bringen das Bibelstudium als „wcg chap. 9" bzw. „wcg chap. 11" ohne
+Schlusspunkt, „Que diriez-vous ?" als `vortrag`-Platz und „Explique tes
+croyances" (Démonstration) mit Schüler und Partner; die deutsche vom
+28. September ist unverändert.
 
-✅ Oben läuft Version 34 (16:15 Uhr), Datei für Datei gleich dem Stand von
+✅ Davor lief Version 34 (16:15 Uhr), Datei für Datei gleich dem Stand von
 `main` bis `784aed8` (nachgesehen mit `functions download`). Sie trägt zwei
 Änderungen am Parser: `41d0e05` gibt ukrainischen und anderen Schülerteilen
 ihren Rahmen und nimmt den verirrten Punkt vor der Schriftstelle weg; mit
