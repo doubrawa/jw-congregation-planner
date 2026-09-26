@@ -5420,6 +5420,16 @@ wenn es mehrere versammlungen gibt."*
   weder er noch der einladende Planer erfährt, wo das Konto schon hängt (und
   soll es auch nicht ohne Weiteres — das wäre eine Auskunft über eine fremde
   Versammlung).
+- **Ist die E-Mail-Bestätigung überhaupt eingeschaltet?** Das entscheidet eine
+  Einstellung im Supabase-Projekt (Authentication → Sign In / Providers →
+  „Confirm email"), nicht der Quelltext: `signUp` meldet beide Fälle zurück
+  (`needsConfirm`), und die App zeigt je nachdem den Hinweis auf die Mail oder
+  meldet sofort an. Welcher Fall gilt, steht nirgends — im README stehen bei
+  der Einrichtung nur Site URL und Redirect URLs. Ist sie aus, entsteht ein
+  Konto mit jeder fremden Adresse, die jemand einträgt; ist sie an, hängt der
+  Beitritt an einer Mail, die ankommen muss. Bei mehreren Versammlungen
+  betrifft das jeden Neuzugang, also gehört die Antwort ins README, wo die
+  übrigen Auth-Einstellungen stehen.
 
 **Prüfen, sobald entschieden:** den Ablauf mit zwei Versammlungen einmal ganz
 durchspielen — am Testbestand „Probeversammlung Talheim" aus T78 neben der
