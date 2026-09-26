@@ -460,13 +460,13 @@ export function istUuid(s) {
  * `--wirklich` ist Absicht: Eine vertippte Id löscht sonst die echte
  * Versammlung, und da hilft kein Zurück.
  */
-async function entfernen(arg) {
+async function entfernen(arg, holeZugang = zugang) {
   const wert = arg.entfernen
   if (wert === true) {
     console.error('--entfernen braucht die Id oder den Namen der Versammlung.')
     process.exit(2)
   }
-  const { rest, auth } = await zugang()
+  const { rest, auth } = await holeZugang()
   const treffer = istUuid(wert)
     ? await rest(`congregations?id=eq.${wert}&select=id,name`)
     : await rest(`congregations?name=eq.${encodeURIComponent(wert)}&select=id,name`)
@@ -508,9 +508,15 @@ async function entfernen(arg) {
   console.log('\nEntfernt.')
 }
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
-  if (arg.entfernen) return entfernen(arg)
+/**
+ * Aufrufzeile und Zugang sind Parameter, damit die Probe das ganze Skript
+ * gegen ein nachgebautes Backend fahren kann — ohne Netz und ohne Schlüssel.
+ * Sie schreibt dabei jeden REST-Aufruf mit und hält ihn an `schema.sql`
+ * (seit dem 26.9.2026; vorher stand nur der Grundplan unter Probe).
+ */
+export async function main(argv = process.argv.slice(2), holeZugang = zugang) {
+  const arg = argumente(argv)
+  if (arg.entfernen) return entfernen(arg, holeZugang)
 
   const name = arg.name || 'Probeversammlung Talheim'
   const wochenAnzahl = Number(arg.wochen ?? 2)
@@ -519,7 +525,7 @@ async function main() {
 
   // Zugang zuerst, auch für den Trockenlauf: Ein fehlender Schlüssel soll
   // auffallen, bevor man die Übersicht liest und „passt" denkt.
-  const { rest, auth, fn } = await zugang()
+  const { rest, auth, fn } = await holeZugang()
 
   console.log(`Versammlung:  ${name}`)
   console.log(`Personen:     ${TEST_PERSONEN.length} (erfunden), ${TEST_GRUPPEN.length} Gruppen`)
