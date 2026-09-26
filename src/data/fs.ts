@@ -237,7 +237,7 @@ export function regenFsWeeks(
 /**
  * Die Treffpunkte, die jemand **sehen** darf.
  *
- * Ein Versammlungstreffpunkt (`grp ''`) gilt allen und wird allen gezeigt. Ein
+ * Ein Versammlungstreffpunkt (`grp: null`) gilt allen und wird allen gezeigt. Ein
  * Gruppentreffpunkt ist die Sache seiner Gruppe: ihn sieht, wer zu ihr gehört
  * (`Person.grp`) oder sie leitet (Aufseher/Gehilfe — er muss nicht in ihr
  * geführt sein). Der Planer sieht alles; er plant alle Gruppen.

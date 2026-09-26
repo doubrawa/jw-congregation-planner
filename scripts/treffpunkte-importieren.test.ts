@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   grundplanVorschlag,
+  istVersammlungstreffpunkt,
   manuelleKennung,
   nachWoche,
   passenderPlatz,
@@ -9,6 +10,12 @@ import {
   wochentag,
 } from './treffpunkte-importieren.mjs'
 import { mondayOf } from './wochenplanung-importieren.mjs'
+import { treffpunktTitel } from '../src/components/treffpunkt-beschriftung'
+import { fsVisible } from '../src/data/fs'
+import { emptyQualifications } from '../src/data/helpers'
+import type { FsInstance, Person } from '../src/data/types'
+import { makeTr } from '../src/i18n/translate'
+import { dict } from '../src/i18n/ui'
 
 /**
  * Der Treffpunkt-Import schreibt in die zweite Datenquelle der App (`fs_weeks`)
@@ -36,10 +43,28 @@ const bind = (ref: number | null) =>
   : ref === 4712 ? { name: 'Bernd Ohnekonto' } // in NWS, aber nicht in der App
   : { name: '' }
 
-/** Treffpunkt aus dem Grundplan, wie ihn `genFsWeek` materialisiert. */
-const ausRegel = (id: string, wd: number, time: string, grp = '', leader = '') => ({
+/**
+ * Treffpunkt aus dem Grundplan, wie ihn `genFsWeek` materialisiert — der
+ * Versammlungstreffpunkt also mit `grp: null`.
+ *
+ * Hier stand bis zum 26.9.2026 `grp = ''`, die Kennung von vor dem
+ * Datenmodell-Umbau. Das Fixture beschrieb damit eine Form, die die App nicht
+ * mehr erzeugt, und verdeckte, dass der Import den Versammlungstreffpunkt des
+ * Grundplans nicht mehr fand.
+ */
+const ausRegel = (id: string, wd: number, time: string, grp: string | null = null, leader = '') => ({
   id, ruleId: id, grp, wd, time, place: 'Königreichssaal', leader,
 })
+
+/** Ein Verkündiger ohne Gruppe — sieht nur, was der ganzen Versammlung gilt. */
+const VERKUENDIGER: Person = {
+  id: 'p-verk', fn: 'Vera', ln: 'Beispiel', role: 'verkuendiger', tel: '', mail: '',
+  priv: emptyQualifications(), grp: null,
+}
+
+/** Der Titel, unter dem die App einen Treffpunkt zeigt (deutsche Oberfläche). */
+const titel = (inst: { grp: string | null }) =>
+  treffpunktTitel(inst, [], { t: dict('de'), tu: makeTr('de') })
 
 describe('wochentag', () => {
   it('zählt wie die App (0 = Sonntag) und kippt nicht über die Zeitzone', () => {
@@ -115,9 +140,17 @@ describe('passenderPlatz', () => {
 
   it('nimmt den Versammlungstreffpunkt, nicht den einer Gruppe', () => {
     // NWS kennt keine Gruppen — ein Gruppentreffpunkt darf nie fremdbesetzt
-    // werden, auch wenn Tag und Zeit zufällig passen.
+    // werden, auch wenn Tag und Zeit zufällig passen. Der Versammlungstreffpunkt
+    // steht so da, wie die App ihn baut (`grp: null`); mit der alten Kennung
+    // `''` im Import kam hier „mehrdeutig" heraus.
     const insts = [ausRegel('r-grp', 3, '09:30', 'g1'), ausRegel('r-vers', 3, '09:30')]
     expect(passenderPlatz(insts, tp)).toMatchObject({ id: 'r-vers' })
+  })
+
+  it('erkennt den Versammlungstreffpunkt an null — und an der Altform früherer Läufe', () => {
+    expect(istVersammlungstreffpunkt({ grp: null })).toBe(true)
+    expect(istVersammlungstreffpunkt({ grp: '' })).toBe(true)
+    expect(istVersammlungstreffpunkt({ grp: 'g1' })).toBe(false)
   })
 
   it('meldet mehrere Gruppentreffpunkte als mehrdeutig, statt zu raten', () => {
@@ -133,6 +166,7 @@ describe('passenderPlatz', () => {
   })
 
   it('findet denselben Termin aus einem früheren Lauf über seine Kennung wieder', () => {
+    // In der Form, in der frühere Läufe ihn angelegt haben (`grp: ''`).
     const alt = { id: manuelleKennung(9), ruleId: null, grp: '', wd: 5, time: '18:00', place: '', leader: '', manual: true }
     expect(passenderPlatz([alt], tp)).toMatchObject({ id: manuelleKennung(9) })
   })
@@ -162,9 +196,47 @@ describe('verteileFsWoche', () => {
     expect(z.angelegt).toBe(1)
     const neu = z.insts.find((i) => i.manual)
     expect(neu).toMatchObject({
-      grp: '', wd: 3, time: '13:30', place: 'Treffpunkt Nord · Pioniertag', leader: 'Anna Beispiel',
+      grp: null, wd: 3, time: '13:30', place: 'Treffpunkt Nord · Pioniertag', leader: 'Anna Beispiel',
     })
     expect(neu?.ruleId).toBeNull()
+  })
+
+  it('ein angelegter Treffpunkt ist in der App ein Versammlungstreffpunkt', () => {
+    /*
+     * Gemessen an der App, nicht am Feld: Mit `grp: ''` stand der Treffpunkt
+     * ohne Titel da (`treffpunktTitel` fand keine Gruppe namens „") und fehlte
+     * bei jedem Verkündiger (`fsVisible` zeigt ihm nur `grp == null` und die
+     * eigene Gruppe).
+     */
+    const z = verteileFsWoche([], [{ ...mittwoch(20, 4711), zeit: '13:30' }], bind)
+    const neu = z.insts[0] as FsInstance
+    expect(titel(neu)).toBe('Versammlungstreffpunkt')
+    expect(fsVisible([neu], [VERKUENDIGER], [], VERKUENDIGER.id, false)).toEqual([neu])
+  })
+
+  it('führt einen Treffpunkt aus einem früheren Lauf zum Versammlungstreffpunkt nach', () => {
+    // So hat ihn der Import bis zum 26.9.2026 angelegt: gleicher Termin, gleicher
+    // Leiter — nur die Art in der alten Kennung.
+    const alt = {
+      id: manuelleKennung(21), ruleId: null, grp: '', wd: 3, time: '09:30',
+      place: 'Treffpunkt Nord', leader: 'Anna Beispiel', lpid: 'p-anna', manual: true,
+    }
+    const z = verteileFsWoche([alt], [mittwoch(21, 4711)], bind)
+    expect(z.insts).toHaveLength(1)
+    expect(z.insts[0]).toMatchObject({ id: alt.id, grp: null, leader: 'Anna Beispiel' })
+    expect(titel(z.insts[0] as FsInstance)).toBe('Versammlungstreffpunkt')
+    // Am Leiter hat sich nichts getan — geschrieben werden muss die Woche trotzdem.
+    expect(z.gesetzt).toBe(0)
+    expect(z.nachgefuehrt).toBe(1)
+    expect(z.geaendert).toBe(true)
+    // Beim nächsten Lauf ist nichts mehr zu tun.
+    const wieder = verteileFsWoche(z.insts, [mittwoch(21, 4711)], bind)
+    expect(wieder.geaendert).toBe(false)
+  })
+
+  it('schreibt eine Woche nicht neu, an der sich nichts geändert hat', () => {
+    const besetzt = [{ ...ausRegel('r1', 3, '09:30', null, 'Anna Beispiel'), lpid: 'p-anna' }]
+    expect(verteileFsWoche(besetzt, [mittwoch(22, 4711)], bind).geaendert).toBe(false)
   })
 
   it('nimmt den Saal der Versammlung, wenn NWS keinen Ort führt', () => {
@@ -228,6 +300,10 @@ describe('verteileFsWoche', () => {
     )
     expect(zweit.insts).toHaveLength(1)
     expect(zweit.insts[0]).toMatchObject({ wd: 6, time: '10:00' })
+    // Derselbe Leiter wie vorher: Die Woche wurde bis zum 26.9.2026 gar nicht
+    // geschrieben, die Verschiebung stand nur in dieser Liste.
+    expect(zweit.nachgefuehrt).toBe(1)
+    expect(zweit.geaendert).toBe(true)
   })
 
   it('gibt zwei Termine derselben Zeit nicht demselben Platz', () => {

@@ -52,15 +52,65 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
   })
 
   it('Unsere Glaubensansichten: mit Predigtdienst-Rahmen → 2 (Szene), sonst 1 (Ansprache, männlich)', () => {
+    // Der Rückfall, wenn kein Beschreiber dasteht — gemessen kam das nie vor.
     expect(ministryNames('Unsere Glaubensansichten erklären', 'Informell · 4 Min.')).toHaveLength(2)
     const talk = ministryNames('Unsere Glaubensansichten erklären', '5 Min.')
     expect(talk).toHaveLength(1)
     expect(talk[0].male).toBe(true)
   })
 
+  it('Unsere Glaubensansichten als gespielte Szene → Schüler + Partner, auch für Schwestern', () => {
+    // S-38-X 8/26, Abs. 11. Die Szene trägt keinen Rahmen, nur ihren
+    // Beschreiber — und kam deshalb als männliche Ansprache mit einem Platz an.
+    expect(ministryNames('Unsere Glaubensansichten erklären', 'Gespielte Szene · 5 Min. · th Lektion 17')).toEqual([
+      { name: '', rolle: 'Schüler', bereichsKey: 'schulung' },
+      { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
+    ])
+  })
+
+  it('… als Vortrag → ein männlicher Teilnehmer', () => {
+    expect(ministryNames('Unsere Glaubensansichten erklären', 'Vortrag · 4 Min. · th Lektion 7')).toEqual([
+      { name: '', bereichsKey: 'schulung', male: true },
+    ])
+  })
+
+  it('ein Beschreiber zählt nur als ganzes Atom', () => {
+    // „Vortrag des Dienstaufsehers" steht unter „Unser Leben als Christ" und ist
+    // die Aufgabe eines Ältesten. Käme er hier vor, fiele er auf die Regel für
+    // Unbekanntes zurück — ein Vortrag eines Teilnehmers wird er nicht.
+    expect(ministryNames('Etwas ganz Neues', 'Vortrag des Dienstaufsehers · 5 Min.')).toEqual([
+      { name: '', bereichsKey: 'schulung' },
+    ])
+  })
+
   it('unbekannter Titel → 1 Slot schulung (Partner ggf. manuell)', () => {
     const n = ministryNames('Etwas ganz Neues', '5 Min.')
     expect(n).toEqual([{ name: '', bereichsKey: 'schulung' }])
+  })
+
+  it('Besprechung → ein Platz für einen Bruder, kein Schülerteil', () => {
+    // S-38-X 8/26, Abs. 9: „Was würdest du sagen?" leitet der Vorsitzende, ein
+    // anderer Ältester oder ein geeigneter Dienstamtgehilfe. Derselbe Platz wie
+    // die Punkte unter „Unser Leben als Christ" — ohne Rolle, ohne `male`.
+    expect(ministryNames('Was würdest du sagen?', 'Besprechung · 6 Min.')).toEqual([
+      { name: '', bereichsKey: 'vortrag' },
+    ])
+  })
+
+  it('die Form entscheidet vor dem Titel', () => {
+    // Abs. 6 gilt für jede Besprechung des Programmteils. Trüge eine einmal den
+    // Titel eines Schülerteils, bliebe sie trotzdem keine gespielte Szene.
+    expect(ministryNames('Gespräche beginnen', 'Besprechung · 5 Min.')).toEqual([
+      { name: '', bereichsKey: 'vortrag' },
+    ])
+    // Gegenprobe: Der Rahmen an derselben Stelle macht es nicht dazu.
+    expect(ministryNames('Gespräche beginnen', 'VON HAUS ZU HAUS · 5 Min.')).toHaveLength(2)
+    // Ebenso der Vortrag: Ihn hält ein Bruder (Abs. 11 und 12), auch unter dem
+    // Titel eines Gesprächsteils. Bei „Unsere Glaubensansichten erklären" fiele
+    // das nicht auf — dort käme über den Titel dasselbe heraus.
+    expect(ministryNames('Menschen zu Jüngern machen', 'Vortrag · 5 Min.')).toEqual([
+      { name: '', bereichsKey: 'schulung', male: true },
+    ])
   })
 })
 
@@ -249,6 +299,200 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
     const close = byLabel('ABSCHLUSS').items[0] as ImportedPart
     expect(close.title).toBe('Finvorbo · Xylo 61 qi Preku')
     expect(close.names[0].bereichsKey).toBe('gebet')
+  })
+})
+
+/*
+ * Bausteine einer Wochenseite in der **Form** der echten (gemessen am
+ * 26.9.2026): der Programmteil „Uns im Dienst verbessern", eingebettet in die
+ * übrigen Abschnitte. Der Text ist Platzhalter; echt sind nur die Wörter, an
+ * denen der Import entscheidet.
+ */
+
+/** Wochenseite um einen Programmteil „Uns im Dienst verbessern". */
+const seite = (dienstteil: string) => `
+<article>
+  <h1 data-pid="1" class="du-color--textSubdued">1.-7. Juli</h1>
+  <h2 data-pid="2" class="du-fontSize--base">MUSTERBUCH 1-3</h2>
+  <h3 data-pid="3" class="x"><span class="dc-icon--music"></span> Lied 1 und Gebet | Einleitende Worte (1 Min.)</h3>
+  <h2 data-pid="4" class="du-color--teal-700">SCHÄTZE AUS GOTTES WORT</h2>
+  <h3 data-pid="5" class="du-color--teal-700">1. Erster Vortrag</h3>
+  <p data-pid="6">(10 Min.)</p>
+  <h3 data-pid="7" class="du-color--teal-700">3. Bibellesung</h3>
+  <p data-pid="8">(4 Min.) Mus 1:1-9 ( th Lektion 2 )</p>
+${dienstteil}
+  <h2 data-pid="40" class="du-color--maroon-600">UNSER LEBEN ALS CHRIST</h2>
+  <h3 data-pid="41" class="du-color--maroon-600">7. Örtliche Besprechung</h3>
+  <p data-pid="42">(15 Min.) Besprechung.</p>
+  <h3 data-pid="43" class="du-color--maroon-600">8. Versammlungsbibelstudium</h3>
+  <p data-pid="44">(30 Min.) lfb Geschichte 1</p>
+  <h3 data-pid="45" class="x"><span class="dc-icon--music"></span> Schlussworte (3 Min.) | Lied 2 und Gebet</h3>
+</article>`
+
+/** Ein Schülerteil in der Form der echten Seite: Zeitzeile ein `div` tief. */
+const schuelerteil = (pid: number, titel: string, zeit: string) => `
+  <h3 class="du-fontSize--base du-color--gold-700 du-margin-top--8 du-margin-bottom--0" id="p${pid}" data-pid="${pid}">${titel}</h3>
+  <div class="du-margin-inlineStart--5 du-color--textSubdued du-margin-top--1 du-margin-children-vertical--0">
+    <p id="p${pid + 1}" data-pid="${pid + 1}" class="p${pid + 1}">${zeit}</p>
+  </div>`
+
+/** Verweis auf eine Publikation, wie jw.org ihn setzt: das Kürzel kursiv im Link. */
+const pub = (kuerzel: string, text: string) => `<a class="pub-${kuerzel}" href="#"><em>${kuerzel}</em> ${text}</a>`
+const lmd = (text: string) => pub('lmd', text)
+
+/** Die Programmpunkte eines Abschnitts, ohne Lieder. */
+const teile = (w: ImportedWeek, farbe: string) =>
+  w.mid.sections.find((s) => s.farbe === farbe)!.items.filter((i) => 'names' in i) as ImportedPart[]
+
+/**
+ * **Eine Besprechung unter „Uns im Dienst verbessern" ist keine Schulungsaufgabe.**
+ *
+ * „Was würdest du sagen?" steht seit den Arbeitsheften 2026 regelmäßig als
+ * letzter Punkt dieses Programmteils; die S-38 lässt ihn vom Vorsitzenden,
+ * einem anderen Ältesten oder einem geeigneten Dienstamtgehilfen leiten
+ * (S-38-X 8/26, Abs. 9). Der Import gab ihm einen Schüler-Platz.
+ *
+ * Die Form der echten Seite (21.–27.9.2026): Die Zeitzeile steckt zwei `div`
+ * tief, der Beschreiber steht vor dem Rahmen, der Verweis auf die Broschüre
+ * steht im Satz statt in Klammern, und darunter folgen Fragen samt Antwortfeld
+ * — Absätze mit `data-pid`, die kein Programmpunkt sind.
+ */
+describe('Besprechung unter „Uns im Dienst verbessern" (Was würdest du sagen?)', () => {
+  /** Die Besprechung: Zeitzeile zwei `div` tief, darunter die Fragen mit Antwortfeld. */
+  const besprechung = (titel: string, zeit: string, fragen: [string, string], antwort: string) => `
+  <h3 class="du-fontSize--base du-color--gold-700 du-margin-top--8 du-margin-bottom--0" id="p24" data-pid="24">${titel}</h3>
+  <div class="du-margin-inlineStart--5 du-margin-inlineStart-desktopOnly--6">
+    <div class="du-color--textSubdued du-margin-top--1 du-margin-children-vertical--0">
+      <p id="p25" data-pid="25" class="p25">${zeit}</p>
+    </div>
+    <ul class="du-listStyleType--none du-padding-inlineStart--0">
+      <li>
+        <p id="p26" data-pid="26" class="p26">${fragen[0]}</p>
+        <div class="gen-field" id="p27" data-pid="27"><label for="tt43" class="dc-screenReaderText">${antwort}</label><textarea id="tt43"></textarea></div>
+      </li>
+      <li class="du-margin-top--8">
+        <p id="p28" data-pid="28" class="p28">${fragen[1]}</p>
+        <div class="gen-field" id="p29" data-pid="29"><label for="tt48" class="dc-screenReaderText">${antwort}</label><textarea id="tt48"></textarea></div>
+      </li>
+    </ul>
+  </div>`
+
+  const DEUTSCH = seite(`
+  <h2 data-pid="18" class="du-color--gold-700">UNS IM DIENST VERBESSERN</h2>
+${schuelerteil(19, '4. Gespräche beginnen', `(3 Min.) IN DER ÖFFENTLICHKEIT. Irgendein Satz. (${lmd('Lektion 5 Punkt 5')})`)}
+${schuelerteil(21, '5. Interesse fördern', `(4 Min.) VON HAUS ZU HAUS. Irgendein Satz. (${lmd('Lektion 9 Punkt 4')})`)}
+${besprechung(
+  '6. Was würdest du sagen?',
+  `(6 Min.) Besprechung. VON HAUS ZU HAUS. Irgendein Satz mit ${lmd('Lektion 2 Punkt 5')}. Noch ein Satz:`,
+  ['Erste Frage?', 'Zweite Frage?'],
+  'Deine Antwort',
+)}`)
+
+  // Derselbe Programmteil in einer erfundenen Sprache — ohne ein Wort, an dem
+  // die Heuristik etwas erkennen könnte. Das Gerüst drumherum darf deutsch
+  // bleiben: `applyGoldSlots` sieht nur auf „Uns im Dienst verbessern".
+  const FREMD = seite(`
+  <h2 data-pid="18" class="du-color--gold-700">SERVO XI</h2>
+${schuelerteil(19, '4. Konvo Beg', `(3 vim) PUBLIKO. Bla bla. (${lmd('plek 5 puno 5')})`)}
+${schuelerteil(21, '5. Sekvo', `(4 vim) DOMO XI DOMO. Bla bla. (${lmd('plek 9 puno 4')})`)}
+${besprechung(
+  '6. Kion vi dirus?',
+  `(6 vim) Diskuto. DOMO XI DOMO. Bla ${lmd('plek 2 puno 5')}. Frob:`,
+  ['Unua demando?', 'Dua demando?'],
+  'Via respondo',
+)}`)
+
+  const de = parseWorkbookWeek(DEUTSCH)
+  const punkt = teile(de, 'gold').at(-1)!
+
+  it('liest Nummer, Titel, Dauer und Meta wie jeden Punkt — der Beschreiber steht vorn', () => {
+    expect(punkt).toMatchObject({ num: 6, title: 'Was würdest du sagen?', meta: 'Besprechung · 6 Min.', mins: 6 })
+  })
+
+  it('bekommt den Platz eines Bruders, keinen Schüler-Platz', () => {
+    expect(punkt.names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
+  })
+
+  it('… denselben wie die Besprechung unter „Unser Leben als Christ"', () => {
+    expect(punkt.names).toEqual(teile(de, 'wein')[0]!.names)
+  })
+
+  it('die Fragen darunter sind kein Programmpunkt, die Schülerteile davor bleiben', () => {
+    expect(teile(de, 'gold').map((p) => p.title)).toEqual([
+      'Gespräche beginnen',
+      'Interesse fördern',
+      'Was würdest du sagen?',
+    ])
+    for (const p of teile(de, 'gold').slice(0, 2)) {
+      expect(p.names.map((n) => n.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
+    }
+  })
+
+  it('eine fremdsprachige Woche bekommt den Platz aus der deutschen Fassung', () => {
+    const fremd = parseWorkbookWeek(FREMD)
+    const fremderPunkt = () => teile(fremd, 'gold').at(-1)!
+    // Gegenprobe: Für sich allein erkennt der Import die Besprechung nicht —
+    // die Heuristik liest nur Deutsch.
+    expect(fremderPunkt().names).toEqual([{ name: '', bereichsKey: 'schulung' }])
+    applyGoldSlots(fremd, de)
+    expect(fremderPunkt().names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
+    // Der Text bleibt der der Zielsprache; übertragen wird nur der Platz.
+    expect(fremderPunkt()).toMatchObject({ title: 'Kion vi dirus?', meta: 'Diskuto · 6 vim' })
+  })
+})
+
+/**
+ * **„Unsere Glaubensansichten erklären": gespielte Szene oder Vortrag.**
+ *
+ * Der Punkt wechselt von Woche zu Woche die Form, und die S-38 teilt nach ihr
+ * zu (S-38-X 8/26, Abs. 11): Den Vortrag hält ein Bruder, die gespielte Szene
+ * übernimmt ein Teilnehmer oder eine Teilnehmerin mit Gesprächspartner. Die
+ * Szene kam als Vortrag an — ein Platz, nur für Brüder.
+ *
+ * Die Form der echten Seite (5.–11.10. und 20.–26.7.2026): Der Beschreiber
+ * steht, wo sonst der Rahmen steht — einen Rahmen trägt der Punkt nie —, und im
+ * Titel steckt ein Weichtrennzeichen.
+ */
+describe('Unsere Glaubensansichten erklären: gespielte Szene oder Vortrag', () => {
+  const woche = (dienstteil: string) => parseWorkbookWeek(seite(dienstteil))
+  const mitPunkt = (zeit: string) => woche(`
+  <h2 data-pid="18" class="du-color--gold-700">UNS IM DIENST VERBESSERN</h2>
+${schuelerteil(19, '4. Gespräche beginnen', `(3 Min.) INFORMELL. Irgendein Satz. (${lmd('Lektion 1 Punkt 5')})`)}
+${schuelerteil(26, '7. Unsere Glaubens­ansichten erklären', zeit)}`)
+
+  const SZENE = mitPunkt(`(3 Min.) Gespielte Szene. ${pub('ijwbq', 'Artikel 1')} – Thema: Irgendeine Frage? (${pub('th', 'Lektion 17')})`)
+  const VORTRAG = mitPunkt(`(4 Min.) Vortrag. ${pub('ijwbq', 'Artikel 2')} – Thema: Irgendeine Frage? (${pub('th', 'Lektion 20')})`)
+  const punkt = (w: ImportedWeek) => teile(w, 'gold').at(-1)!
+
+  it('liest Titel und Meta — der Beschreiber steht, wo sonst der Rahmen steht', () => {
+    expect(punkt(SZENE)).toMatchObject({
+      num: 7,
+      title: 'Unsere Glaubensansichten erklären',
+      meta: 'Gespielte Szene · 3 Min. · th Lektion 17',
+    })
+    expect(punkt(VORTRAG)).toMatchObject({ meta: 'Vortrag · 4 Min. · th Lektion 20' })
+  })
+
+  it('die gespielte Szene bekommt Schüler und Partner — nicht nur Brüder', () => {
+    expect(punkt(SZENE).names).toEqual([
+      { name: '', rolle: 'Schüler', bereichsKey: 'schulung' },
+      { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
+    ])
+  })
+
+  it('der Vortrag bleibt ein Platz für einen Bruder', () => {
+    expect(punkt(VORTRAG).names).toEqual([{ name: '', bereichsKey: 'schulung', male: true }])
+  })
+
+  it('eine fremdsprachige Woche bekommt die Plätze aus der deutschen Fassung', () => {
+    const fremd = woche(`
+  <h2 data-pid="18" class="du-color--gold-700">SERVO XI</h2>
+${schuelerteil(19, '4. Konvo Beg', `(3 vim) NEFORMALE. Bla bla. (${lmd('plek 1 puno 5')})`)}
+${schuelerteil(26, '7. Klarigi niajn kredojn', `(3 vim) Ludita sceno. ${pub('ijwbq', 'artikolo 1')} – Temo: Frob? (${pub('th', 'plek 17')})`)}`)
+    // Gegenprobe: Für sich allein wird daraus nur ein unbekannter Punkt.
+    expect(punkt(fremd).names).toEqual([{ name: '', bereichsKey: 'schulung' }])
+    applyGoldSlots(fremd, SZENE)
+    expect(punkt(fremd).names.map((n) => n.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
   })
 })
 

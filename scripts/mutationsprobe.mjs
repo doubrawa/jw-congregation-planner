@@ -802,6 +802,27 @@ export const KATALOG = [
     suchen: "if (color === 'teal' && rec === lastOf.teal) {",
     ersetzen: "if (color === 'teal' && rec === recs[0]) {",
   },
+  {
+    id: 'import-besprechung-kein-schuelerteil',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Eine Besprechung unter „Uns im Dienst verbessern" ist keine Schulungsaufgabe — sie bekommt den Platz eines Bruders.',
+    suchen: '  if (BESPRECHUNG_RE.test(form)) return bruderPlatz()\n',
+    ersetzen: '',
+  },
+  {
+    id: 'import-szene-mit-partner',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Eine gespielte Szene bekommt Schüler und Partner — sie ist kein Vortrag nur für Brüder.',
+    suchen: '  if (SZENE_RE.test(form)) return convo\n',
+    ersetzen: '',
+  },
+  {
+    id: 'import-vortrag-nur-brueder',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Einen Vortrag hält ein Bruder — die Form gilt vor dem Titel.',
+    suchen: '  if (VORTRAG_RE.test(form)) return [talk]\n',
+    ersetzen: '',
+  },
 
   // ── Rechte und Bedienung ──────────────────────────────────────────────────
   // Die Rechteprüfung steht an zwei Stellen: der Wächter im Reducer weist eine
