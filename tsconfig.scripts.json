@@ -1,0 +1,38 @@
+/*
+ * Die TypeScript-Dateien in `scripts/` typprüfen — sie standen in keinem Projekt.
+ *
+ * Dieselbe Lücke wie bei den Edge Functions (5.9.2026) und `tests/`: vitest
+ * führt die Dateien aus und wirft die Typen dabei weg, `tsc -b` sah sie nicht.
+ * Am 26.9.2026 kamen hier rund 1100 Zeilen dazu, darunter mit
+ * `schema-attrappe.ts` ein Werkzeug, auf dem die Schema- und die RLS-Proben
+ * ruhen — ein Typfehler darin fiele sonst nirgends auf.
+ *
+ * Die Skripte selbst sind JavaScript (`.mjs`): `allowJs` lässt sie mitlaufen,
+ * damit die Tests ihre Typen daraus ableiten, `checkJs` prüft sie nicht.
+ *
+ * **Die Ausnahmen sind eine Liste, die nur schrumpfen darf.** Diese älteren
+ * Tests hatten am 26.9.2026 zusammen 83 Meldungen, meist `never[]` aus einem
+ * leeren Array im Skript. Wer eine davon aufräumt, nimmt sie hier heraus; eine
+ * neue Datei kommt nicht hinzu.
+ */
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.scripts.tsbuildinfo",
+    "types": ["vite/client", "node"],
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["scripts/**/*.ts"],
+  "exclude": [
+    "scripts/rest-klient.test.ts",
+    "scripts/rollen-nachtragen.test.ts",
+    "scripts/schluessel-setzen.test.ts",
+    "scripts/testversammlung-anlegen.test.ts",
+    "scripts/treffpunkte-importieren.test.ts",
+    "scripts/versammlung-anlegen.test.ts",
+    "scripts/versammlung-zuruecksetzen.test.ts",
+    "scripts/wochen-importieren.test.ts",
+    "scripts/wochenplanung-importieren.test.ts"
+  ]
+}
