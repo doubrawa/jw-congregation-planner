@@ -5626,9 +5626,10 @@ Die Idee einer Start-Karte „N Verhinderungen diese Woche" bleibt eine Idee.
 ### T119 · Die Sperrklinke meldete „aufgeräumt", ohne gemessen zu haben 🔧 ✅ erledigt (26. September 2026)
 
 > **Behoben, samt einer zweiten Lücke derselben Sorte.**
-> `scripts/check-index-access.mjs` sucht tsc jetzt so, wie Node Pakete sucht
-> (`tscPfad()`: von `scripts/` aus aufwärts bis zum ersten `node_modules` mit
-> TypeScript), und zählt nur Meldungen eines tsc, das auch geprüft hat
+> `scripts/check-index-access.mjs` sucht tsc jetzt so, wie `npx` es sucht
+> (`werkzeugPfad()` in `gemeinsam.mjs`: von der Wurzel aus aufwärts bis zum
+> ersten `node_modules` mit TypeScript, dann dessen `bin`), und zählt nur
+> Meldungen eines tsc, das auch geprüft hat
 > (`tscBefund()`). Verworfen wird ein Lauf, wenn tsc nicht startet oder
 > abgebrochen wird, wenn Node auf stderr „Cannot find module" meldet, wenn tsc
 > mit einem Wert ≠ 0 endet, ohne eine einzige Meldung zu einer Datei — und
@@ -5653,7 +5654,9 @@ Die Idee einer Start-Karte „N Verhinderungen diese Woche" bleibt eine Idee.
 > Update einen neuen Parserfehler, wird die Probe rot. Jede Wache ist per
 > Gegenprobe geprüft (alte Entscheidung, alter fester Pfad, Syntax-Wache aus,
 > nur TS1xxx, ein ganzer 18000er-Block): Jedes Mal werden genau die passenden
-> Fälle rot.
+> Fälle rot. Die Pfadsuche prüft seit der Zusammenführung
+> `scripts/werkzeug-pfad.test.ts` — mit dem alten festen Pfad werden dort 4
+> von 7 Fällen rot.
 
 **Gefunden am 26. September 2026** in einem Worktree der Desktop-App
 (`.claude/worktrees/<name>`): `npm run typecheck:index` meldete für alle 32
@@ -5672,12 +5675,15 @@ gewesen, die CI rot, und kein Deploy wäre mehr durchgegangen.
 der Grundlinie setzen → Abbruch mit 2 samt der Zeile des Fehlers, die
 Grundlinie bleibt unverändert.
 
-**Dieselbe Sorte in der Mutationsprobe:** Sie startet vitest über einen ebenso
-festen Pfad und wertet jeden Rückgabewert ≠ 0 als „rot" — im Worktree bekam
-so jede Regel ihr Häkchen. Das behebt eine eigene Sitzung im Branch
-`claude/intelligent-herschel-fda09f`, die dabei auch diese Sperrklinke
-angefasst hat (gemeinsame Pfadsuche `werkzeugPfad()` in `gemeinsam.mjs`). Wer
-als Zweiter nach `main` kommt, führt die beiden Fassungen zusammen.
+**Dieselbe Sorte in der Mutationsprobe:** Sie startete vitest über einen ebenso
+festen Pfad und wertete jeden Rückgabewert ≠ 0 als „rot" — im Worktree bekam
+so jede Regel „bewacht (unbekannt, 0s)". Behoben im Branch
+`claude/intelligent-herschel-fda09f`: vitest über dieselbe Pfadsuche
+`werkzeugPfad()`, und ein Lauf ohne vitest-Zusammenfassung („Test Files")
+heißt „NICHT GEMESSEN", Abbruch mit 2 — erst **nachdem** die Mutation
+zurückgeschrieben ist; bis dahin ließ ein Startfehler sie im Quelltext stehen.
+Dort sind am 26. September 2026 auch die beiden Fassungen dieser Sperrklinke
+zusammengeführt worden.
 
 ---
 
