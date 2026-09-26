@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { tabellenRuempfe } from '../scripts/schema-attrappe'
 
 /**
  * `schema.sql` ist **die** Quelle des Datenbankschemas (README „Hosting").
@@ -60,10 +61,7 @@ function normiert(sql: string): string {
 
 /** Der Rumpf einer `create table`-Anweisung (ohne Kopf und schließende Klammer). */
 function tabelle(name: string): string {
-  const block = schema.match(
-    new RegExp(`create table if not exists public\\.${name}\\s*\\(([\\s\\S]*?)\\n\\);`, 'i'),
-  )
-  return block?.[1] ?? ''
+  return tabellenRuempfe(schema).get(name) ?? ''
 }
 
 function richtlinien(sql: string): Map<string, string> {

@@ -41,6 +41,23 @@ export const REDET_MIT_DB = /rest\/v1|supabase\.co|\brestKlient\(|\bpruefKlient\
 
 /* ===================== Das Schema lesen =================================== */
 
+/**
+ * Die `create table`-Blöcke von `schema.sql`: Tabellenname → Rumpf, ohne Kopf
+ * und schließende Klammer.
+ *
+ * Die eine Stelle, die sie ausschneidet — auch für `supabase/schema.test.ts`
+ * und `versammlung-zuruecksetzen.test.ts`. Dort stand derselbe Ausdruck je
+ * einmal abgeschrieben; eine andere Schreibweise in `schema.sql` (etwa ohne
+ * `if not exists`) hätte an drei Stellen nachgezogen werden müssen.
+ */
+export function tabellenRuempfe(schema = SCHEMA_SQL): Map<string, string> {
+  const ruempfe = new Map<string, string>()
+  for (const [, name, rumpf] of schema.matchAll(/create table if not exists public\.(\w+)\s*\(([\s\S]*?)\n\);/gi)) {
+    ruempfe.set(name!, rumpf!)
+  }
+  return ruempfe
+}
+
 export interface Spalte {
   typ: string
   nullbar: boolean
@@ -68,8 +85,7 @@ export function schemaSpalten(tabelle: string, schema = SCHEMA_SQL): Map<string,
     const nullbar = !/\bnot null\b|\bprimary key\b/.test(rest)
     spalten.set(m[1]!, { typ: m[2]!.toLowerCase(), nullbar, pflicht: !nullbar && !/\bdefault\b/.test(rest) })
   }
-  const block = new RegExp(`create table if not exists public\\.${tabelle}\\s*\\(([\\s\\S]*?)\\n\\);`).exec(schema)
-  for (const zeile of (block?.[1] ?? '').split(/\r?\n/)) aufnehmen(zeile)
+  for (const zeile of (tabellenRuempfe(schema).get(tabelle) ?? '').split(/\r?\n/)) aufnehmen(zeile)
   const spaeter = new RegExp(`alter table public\\.${tabelle}\\s+add column if not exists ([^;]+);`, 'g')
   for (const [, definition] of schema.matchAll(spaeter)) aufnehmen(definition!)
   return spalten

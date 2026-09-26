@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { argumente, gleichnamige, personDisplayName as displayName } from './gemeinsam.mjs'
+import { tabellenRuempfe } from './schema-attrappe'
 import {
   BEHALTEN,
   KASKADIERT,
@@ -170,10 +171,9 @@ describe('Zurücksetzen lässt keine Tabelle aus', () => {
   const skript = readFileSync(join(dir, 'versammlung-zuruecksetzen.mjs'), 'utf8')
 
   /** Jede Tabelle, deren create-table-Block eine `congregation_id` enthält. */
-  const TABELLE = /create table if not exists public\.(\w+)\s*\(([\s\S]*?)\n\);/g
-  const mitVersammlung = [...schema.matchAll(TABELLE)]
-    .filter(([, , block]) => /^\s*congregation_id\s/m.test(block ?? ''))
-    .map(([, name]) => name!)
+  const mitVersammlung = [...tabellenRuempfe(schema)]
+    .filter(([, block]) => /^\s*congregation_id\s/m.test(block))
+    .map(([name]) => name)
 
   it('die Probe greift überhaupt', () => {
     expect(mitVersammlung.length).toBeGreaterThan(10)
@@ -223,8 +223,8 @@ describe('Zurücksetzen lässt keine Tabelle aus', () => {
     // public.<ziel> (…) on delete cascade` — je Treffer die Quelltabelle aus
     // dem umgebenden create-table-Block und das Ziel.
     const betroffen = new Set<string>()
-    for (const [, quelle, block] of schema.matchAll(TABELLE)) {
-      for (const [, ziel] of (block ?? '').matchAll(
+    for (const [quelle, block] of tabellenRuempfe(schema)) {
+      for (const [, ziel] of block.matchAll(
         /references\s+public\.(\w+)\s*\([^)]*\)\s*on delete cascade/g,
       )) {
         if (quelle && ziel && NEU_ANGELEGT.includes(ziel) && quelle !== ziel) betroffen.add(quelle)
