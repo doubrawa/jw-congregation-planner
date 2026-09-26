@@ -320,8 +320,9 @@ const TABELLEN = {
   locations: 'FieldServiceLocations_7.5.json',
 }
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const nurLeere = Boolean(arg['nur-leere'])

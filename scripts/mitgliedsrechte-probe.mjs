@@ -256,8 +256,8 @@ async function anmelden(url, anon, mail, pass) {
 
 /* ===================== Ausführung ========================================= */
 
-async function main() {
-  const arg = process.argv.slice(2)
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(arg = process.argv.slice(2)) {
   const versammlung = arg[arg.indexOf('--versammlung') + 1]
   if (!arg.includes('--versammlung') || !versammlung || versammlung.startsWith('--')) {
     console.error('--versammlung <congregation-id> ist Pflicht. Aufruf siehe Kopf dieser Datei.')

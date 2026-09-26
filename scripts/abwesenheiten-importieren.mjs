@@ -204,8 +204,9 @@ export function heuteISO(jetzt = new Date()) {
   return `${j}-${m}-${t}`
 }
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const ab = typeof arg.ab === 'string' ? arg.ab : heuteISO()

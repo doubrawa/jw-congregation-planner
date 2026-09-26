@@ -161,8 +161,8 @@ async function anmelden(url, anon, mail, pass) {
 
 const HAKEN = (ok) => (ok ? '✓' : '✗')
 
-async function main() {
-  const arg = process.argv.slice(2)
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(arg = process.argv.slice(2)) {
   const schreibproben = !arg.includes('--ohne-schreibproben')
   const { url, anon } = umgebung()
 

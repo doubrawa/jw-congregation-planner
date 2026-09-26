@@ -104,7 +104,13 @@ export function schritte(arg) {
   return alle.map((s, i) => ({ ...s, nr: i + 1 })).filter((s) => s.nr >= ab)
 }
 
-async function bestand(url, key) {
+/**
+ * Exportiert für `schema-probe.test.ts`: `main` startet die Schritte als eigene
+ * Prozesse, geprüft wird deshalb nur, was dieses Skript selbst abfragt. Das
+ * lohnt gerade hier — ein Fehler wird unten zur leeren Zeile, eine vertippte
+ * Spalte stünde im Abschlussbericht also still als „0".
+ */
+export async function bestand(url, key) {
   const rest = restKlient(url, key)
   /**
    * Lesen für den **Abschlussbericht**: Ein Fehler ist hier kein Abbruch,

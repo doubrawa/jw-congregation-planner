@@ -82,8 +82,9 @@ export function nurNeue(vorhandeneStarts, wochen) {
   return wochen.filter((w) => w.start && !da.has(w.start))
 }
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   const anzahl = Number(arg.anzahl ?? 8)
   if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 52) {
     console.error('--anzahl braucht eine ganze Zahl zwischen 1 und 52.')

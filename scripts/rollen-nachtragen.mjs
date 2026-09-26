@@ -98,8 +98,9 @@ export function wocheNachtragen(data) {
  * in `gemeinsam.mjs` als `zugangsdaten()` und gilt für alle.
  */
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   // URL aus `.env.local`, Schlüssel notfalls erfragt — beides steht seit dem
   // 18. September 2026 in `gemeinsam.mjs`, damit es **jedes** Skript kann.
   // Dieses hier konnte es als einziges; dass die anderen es nicht konnten, hat

@@ -1,6 +1,5 @@
-import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { argumente } from './gemeinsam.mjs'
 import {
   bereiche,
@@ -9,7 +8,6 @@ import {
   fuelleZuteilungen,
   istUuid,
   kontoAnlegenOderUebernehmen,
-  main,
   passwort,
   TEST_FS_REGELN,
   TEST_GASTREDNER,
@@ -31,9 +29,9 @@ import { STANDARD_DIENSTE } from '../src/data/vorgaben'
  *
  * Geprüft ist alles, was **entscheidet**: der Bestand selbst, die
  * Bereichs-Ableitung, die Auswahlregel, das Füllen einer Woche und die Form
- * der Treffpunkt-Regeln. Der Netzteil (`main`) läuft einmal gegen ein
- * nachgebautes Backend — nicht, um das Netz zu prüfen, sondern damit jeder
- * Aufruf, den das Skript schickt, an `schema.sql` gehalten werden kann.
+ * der Treffpunkt-Regeln. Ob jeder Aufruf, den das Skript schickt, zu
+ * `schema.sql` passt, fragt `schema-probe.test.ts` — dort fährt das ganze
+ * Skript gegen die Attrappe, zusammen mit den anderen Wartungsskripten.
  */
 
 /** Minimale Testperson, wie sie nach dem Anlegen aus der Datenbank käme. */
@@ -133,9 +131,9 @@ describe('Der Treffpunkt-Grundplan: eine Zeile je Regel, wie die App sie schreib
     `{ congregation_id, base, rules: [...] }` mit `grp: ''` — die Form von vor
     dem Umbau vom 18.9.2026 (T105). Der Umbau hatte die anderen Tabellen dieses
     Skripts nachgezogen, diese nicht; ein `.mjs` hat keinen Compiler, der die
-    Spalten kennt. Ob die Zeilen in `fs_rules` passen, fragt die Probe über das
-    ganze Skript weiter unten; hier steht, was eine Regel darüber hinaus
-    ausmacht.
+    Spalten kennt. Ob die Zeilen in `fs_rules` passen, fragt
+    `schema-probe.test.ts` über das ganze Skript; hier steht, was eine Regel
+    darüber hinaus ausmacht.
   */
   const CONG = '3f2a9c1e-0b7d-4e55-9a31-8c6d5e4f7a20'
   const zeilen = fsRegelZeilen(CONG)
@@ -162,184 +160,6 @@ describe('Der Treffpunkt-Grundplan: eine Zeile je Regel, wie die App sie schreib
       expect(istUuid(z.id.slice(1)), z.id).toBe(true)
     }
     expect(new Set(zeilen.map((z) => z.id)).size).toBe(zeilen.length)
-  })
-})
-
-/**
- * Die Spalten einer Tabelle, wie `schema.sql` sie anlegt: Name → Typ, ob `null`
- * erlaubt ist, und ob die Zeile sie **mitbringen muss** (`not null` oder
- * Primärschlüssel, ohne `default`).
- *
- * Gelesen wird der `create table`-Block Zeile für Zeile, dazu jedes spätere
- * `alter table … add column` — im Schema allein `persons.grp`, der Kreis
- * zwischen Personen und Gruppen; ohne diesen Zweig wäre jede Person „fremd".
- * Tabellenweite Zeilen (`constraint`, `unique`, die Fortsetzung eines
- * Fremdschlüssels oder einer Prüfung) beginnen mit einem Schlüsselwort und
- * fallen heraus.
- */
-function schemaSpalten(schema: string, tabelle: string) {
-  const spalten = new Map<string, { typ: string; nullbar: boolean; pflicht: boolean }>()
-  const aufnehmen = (zeile: string): void => {
-    const m = /^\s*(\w+)\s+(\w+(?:\[\])?)(.*)$/.exec(zeile.replace(/--.*$/, ''))
-    if (!m || /^(constraint|unique|primary|foreign|check|references|exclude)$/i.test(m[1]!)) return
-    const rest = m[3]!.toLowerCase()
-    const nullbar = !/\bnot null\b|\bprimary key\b/.test(rest)
-    spalten.set(m[1]!, { typ: m[2]!.toLowerCase(), nullbar, pflicht: !nullbar && !/\bdefault\b/.test(rest) })
-  }
-  const block = new RegExp(`create table if not exists public\\.${tabelle}\\s*\\(([\\s\\S]*?)\\n\\);`).exec(schema)
-  for (const zeile of (block?.[1] ?? '').split(/\r?\n/)) aufnehmen(zeile)
-  const spaeter = new RegExp(`alter table public\\.${tabelle}\\s+add column if not exists ([^;]+);`, 'g')
-  for (const [, definition] of schema.matchAll(spaeter)) aufnehmen(definition!)
-  return spalten
-}
-
-/**
- * Passt ein Wert in eine Spalte dieses Typs? Nur die Typen, die das Skript
- * schreibt — kommt eine Spalte anderen Typs dazu, meldet die Probe das, statt
- * sie stillschweigend durchzuwinken.
- */
-const PASST: Record<string, (wert: unknown) => boolean> = {
-  text: (w) => typeof w === 'string',
-  uuid: (w) => typeof w === 'string' && istUuid(w),
-  smallint: (w) => Number.isInteger(w),
-  integer: (w) => Number.isInteger(w),
-  boolean: (w) => typeof w === 'boolean',
-  time: (w) => typeof w === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(w),
-  date: (w) => typeof w === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w),
-  // Ein Objekt, kein vorab serialisierter Text: `JSON.stringify(week)` stünde
-  // in `jsonb` als String da und wäre für die App keine Woche mehr.
-  jsonb: (w) => typeof w === 'object',
-}
-
-/** Ein REST-Aufruf, wie das Skript ihn an PostgREST schickt. */
-interface Aufruf {
-  pfad: string
-  method: string
-  body?: unknown
-}
-
-/** Parameter in der Adresse, die keine Spalte nennen. */
-const KEINE_SPALTE = new Set(['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'])
-
-/**
- * Was an einem Aufruf nicht zu `schema.sql` passt — leer heißt: in Ordnung.
- *
- * Gefragt werden die Tabelle aus dem Pfad, jede Spalte in Filter und
- * `select`, und bei jeder mitgeschickten Zeile Feld, Typ und `null` — beim
- * Anlegen (POST) dazu die Pflichtspalten. Eine Änderung (PATCH) bringt nur
- * mit, was sie ändert.
- */
-function schemaFehler(schema: string, { pfad, method, body }: Aufruf): string[] {
-  const [tabelle = '', abfrage = ''] = pfad.split('?')
-  const spalten = schemaSpalten(schema, tabelle)
-  if (!spalten.size) return [`${method} ${tabelle}: keine Tabelle in schema.sql`]
-  const fehler: string[] = []
-  const nenne = (spalte: string, was: string): void => {
-    fehler.push(`${method} ${tabelle}.${spalte}: ${was}`)
-  }
-  for (const [k, v] of new URLSearchParams(abfrage)) {
-    const genannt = k === 'select' ? v.split(',').filter((s) => s !== '*') : KEINE_SPALTE.has(k) ? [] : [k]
-    for (const s of genannt) if (!spalten.has(s)) nenne(s, 'gibt es nicht')
-  }
-  const zeilen = (body === undefined ? [] : Array.isArray(body) ? body : [body]) as Record<string, unknown>[]
-  for (const zeile of zeilen) {
-    for (const [k, wert] of Object.entries(zeile)) {
-      const s = spalten.get(k)
-      const passt = s && PASST[s.typ]
-      if (!s) nenne(k, 'gibt es nicht')
-      else if (wert === null) {
-        if (!s.nullbar) nenne(k, 'null in einer not-null-Spalte')
-      } else if (!passt) nenne(k, `Typ ${s.typ} kennt die Probe nicht — PASST ergänzen`)
-      else if (!passt(wert)) nenne(k, `${String(JSON.stringify(wert)).slice(0, 60)} ist kein ${s.typ}`)
-    }
-    if (method !== 'POST') continue
-    for (const [name, s] of spalten) if (s.pflicht && !(name in zeile)) nenne(name, 'Pflichtspalte fehlt')
-  }
-  return fehler
-}
-
-/** Jeder Befund einmal: Eine Spalte, die 30 Zeilen verfehlen, ist ein Fehler, nicht dreißig. */
-function befunde(schema: string, aufrufe: Aufruf[]): string[] {
-  return [...new Set(aufrufe.flatMap((a) => schemaFehler(schema, a)))]
-}
-
-/**
- * Ein nachgebautes Backend, gerade so weit, dass das Skript durchläuft:
- * PostgREST gibt angelegte Zeilen samt Kennung zurück (wie bei
- * `return=representation`) und findet beim Entfernen die Versammlung, die
- * Auth-API legt Konten an, `import-week` liefert eine Woche. Mitgeschrieben
- * wird jeder REST-Aufruf — gefragt wird danach nicht, was das Skript schreiben
- * *wollte*, sondern was es geschickt hat.
- */
-function attrappe() {
-  const aufrufe: Aufruf[] = []
-  const rest = async (pfad: string, method = 'GET', body?: unknown) => {
-    aufrufe.push({ pfad, method, body })
-    if (method === 'GET') {
-      return pfad.startsWith('congregations?') ? [{ id: randomUUID(), name: 'Probeversammlung Talheim' }] : []
-    }
-    if (method !== 'POST') return null
-    return (Array.isArray(body) ? body : [body]).map((z) => ({ id: randomUUID(), ...(z as object) }))
-  }
-  const auth = async (_pfad: string, method = 'POST', body?: { email?: string }) =>
-    method === 'GET' ? { users: [] } : { id: randomUUID(), email: body?.email }
-  const fn = async () => ({ week: slotWoche() })
-  return { aufrufe, zugang: async () => ({ rest, auth, fn }) }
-}
-
-/** Das Skript einmal ganz durchfahren — stumm, gegen die Attrappe. */
-async function fahre(...argv: string[]): Promise<Aufruf[]> {
-  const { aufrufe, zugang } = attrappe()
-  const stumm = vi.spyOn(console, 'log').mockImplementation(() => {})
-  try {
-    await main(argv, zugang)
-  } finally {
-    stumm.mockRestore()
-  }
-  return aufrufe
-}
-
-describe('Jeder Aufruf des Skripts passt zu schema.sql', () => {
-  /*
-    Zuerst stand nur der Grundplan unter Probe, über die Funktion, die seine
-    Zeilen baut. Für die übrigen Tabellen hätte das je eine weitere solche
-    Funktion geheißen — und damit eine Liste, in die sich jeder neue
-    Schreibaufruf selbst eintragen muss; wer es vergisst, merkt nichts.
-    Deshalb läuft hier das ganze Skript, einmal zum Anlegen und einmal zum
-    Entfernen, und die Attrappe schreibt mit: Ein Aufruf, der dazukommt, steht
-    ohne Zutun unter derselben Probe.
-
-    Gefragt wird das Schema selbst, keine Spaltenliste hier: Benennt es eine
-    Spalte um, streicht es eine oder kommt eine Pflichtspalte dazu, wird diese
-    Probe rot — nicht erst der nächste Lauf gegen die Datenbank. Nicht gefragt
-    sind `check`-Bedingungen, Fremdschlüssel und die Auth-API, die nicht in
-    `schema.sql` steht.
-  */
-  const schema = fs.readFileSync(new URL('../supabase/schema.sql', import.meta.url), 'utf8')
-
-  it('die Probe greift überhaupt', async () => {
-    // Fände das Muster die Blöcke nicht, gingen die Fälle unten leer und grün
-    // durch. Deshalb an drei Stellen, dass es Spalten samt ihrer Art erkennt:
-    // Pflicht, `null`, und eine Spalte, die erst per `alter table` dazukommt.
-    expect(schemaSpalten(schema, 'fs_rules').get('id')).toMatchObject({ typ: 'text', nullbar: false, pflicht: true })
-    expect(schemaSpalten(schema, 'fs_rules').get('grp')).toMatchObject({ typ: 'uuid', nullbar: true, pflicht: false })
-    expect(schemaSpalten(schema, 'persons').get('grp')).toMatchObject({ typ: 'uuid', nullbar: true })
-    // Und die Attrappe trägt das Skript bis ans Ende: Jeder Schritt hat geschrieben.
-    const aufrufe = await fahre('--wochen', '1')
-    const geschrieben = new Set(aufrufe.filter((a) => a.method !== 'GET').map((a) => a.pfad.split('?')[0]))
-    expect([...geschrieben]).toEqual(
-      expect.arrayContaining(['congregations', 'groups', 'households', 'persons', 'services', 'fs_rules', 'weeks', 'members']),
-    )
-  })
-
-  it('beim Anlegen passt jede Zeile und jede Änderung zu ihrer Tabelle', async () => {
-    expect(befunde(schema, await fahre('--wochen', '1'))).toEqual([])
-  })
-
-  it('beim Entfernen nennt jede Abfrage nur Spalten, die es gibt', async () => {
-    const aufrufe = await fahre('--entfernen', 'Probeversammlung Talheim', '--wirklich')
-    expect(aufrufe.map((a) => a.method)).toContain('DELETE')
-    expect(befunde(schema, aufrufe)).toEqual([])
   })
 })
 

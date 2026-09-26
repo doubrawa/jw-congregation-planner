@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { REDET_MIT_DB } from './schema-attrappe'
 
 /**
  * **Jedes Skript holt den Schlüssel gleich — und schickt ihn gleich.**
@@ -32,17 +33,9 @@ import { describe, expect, it } from 'vitest'
 const dir = import.meta.dirname
 const SKRIPTE = readdirSync(dir).filter((f) => f.endsWith('.mjs') && f !== 'gemeinsam.mjs')
 
-/**
- * Nur die Skripte, die wirklich mit der Datenbank reden.
- *
- * Erkannt an ihrer **Abhängigkeit**, nicht mehr an der Zeichenkette
- * `rest/v1`: Seit der Zugriff auf PostgREST in `gemeinsam.mjs` steht
- * (`restKlient`/`pruefKlient`), kommt die Adresse in den Skripten gar nicht
- * mehr vor — und die Probe, die sie danach suchte, sah plötzlich nur noch
- * vier von elf. Genau die Sorte Probe, die still aufhört zu messen.
- */
-const REDET_MIT_DB =
-  /rest\/v1|supabase\.co|\brestKlient\(|\bpruefKlient\(|\bzugangsdaten\(/
+// Welche Skripte mit der Datenbank reden, entscheidet `REDET_MIT_DB` in
+// `schema-attrappe.ts` — dort, weil auch `schema-probe.test.ts` danach fragt,
+// und zwei Abschriften derselben Erkennung auseinanderliefen.
 const MIT_DATENBANK = SKRIPTE.filter((f) => REDET_MIT_DB.test(readFileSync(join(dir, f), 'utf8')))
 
 /**

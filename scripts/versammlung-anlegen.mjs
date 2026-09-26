@@ -115,8 +115,9 @@ export function planerBereiche() {
 
 /* ---- Ab hier nur noch Ausführung ---------------------------------------- */
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   const { url, key } = await zugangsdaten()
   const fehlt = []
   if (!arg.name) fehlt.push('--name')

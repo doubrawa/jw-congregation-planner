@@ -111,8 +111,9 @@ export function regelText(r) {
   )
 }
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   if (typeof arg.datei !== 'string' || !fs.existsSync(arg.datei)) {
     console.error('--datei <regeln.json> fehlt oder zeigt ins Leere.')
     process.exit(2)

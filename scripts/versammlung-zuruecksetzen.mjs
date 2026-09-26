@@ -219,8 +219,9 @@ export function regelnAufIds(gesichert, idNachGruppenName) {
   return { wieder, verloren: [...new Set(verloren)] }
 }
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   const { url, key } = await zugangsdaten()
   const sqlPfad = arg.sql || 'C:/DATA/Claude/nws-export/import-live-personen.sql'
   const kuratiert = parseKuratiert(fs.readFileSync(sqlPfad, 'utf8'))
