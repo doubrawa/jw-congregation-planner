@@ -311,11 +311,13 @@ const SATZENDE = /[.。．।۔։።]/
  * Punkt, den die ukrainische Ausgabe gleich hinter die Zeitklammer setzt
  * („(4 хв). Єр 40:1—10 (th урок 2)“ ergab „. Єр 40:1—10“), hinten der hinter
  * der Quellenklammer („(4 min) Jr 40:1-10 (th leçon 2).“ ergab „Jr 40:1-10 .“,
- * ebenso es und ru). Hinten nur mit Leerraum davor: Ein Punkt, der am Wort
- * hängt („wcg chap. 11.“), gehört zum Text.
+ * ebenso es und ru). Hinten mit Leerraum davor oder direkt hinter einer Ziffer:
+ * Das französische Bibelstudium schließt „(30 min) wcg chap. 11.“, wo pl
+ * „wcg rozdz. 11“ schreibt. Ein Punkt, der an einem Wort hängt („chap.“), gehört
+ * zum Text.
  */
 const SATZENDE_VORN = new RegExp(`^(?:${RAND}|${SATZENDE.source})+`, 'u')
-const SATZENDE_HINTEN = new RegExp(`${RAND}+(?:${SATZENDE.source})+${RAND}*$`, 'u')
+const SATZENDE_HINTEN = new RegExp(`(?:${RAND}+|(?<=\\p{Nd}))(?:${SATZENDE.source})+${RAND}*$`, 'u')
 /**
  * Nummer eines Programmpunkts: „1.“, aber auch „1．“ (chinesisch, vollbreiter
  * Punkt) und „١-‏“ (arabisch, Bindestrich statt Punkt). Ohne die Varianten blieb

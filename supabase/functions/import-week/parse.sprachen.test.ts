@@ -344,6 +344,20 @@ describe('Französisch — Punkt hinter der Quellenklammer', () => {
   it('lässt den Punkt nicht hinter der Schriftstelle stehen', () => {
     expect(teil(html, 'petrol').title).toBe('Premier titre · Jr 1:1-5')
   })
+
+  it('lässt auch den Punkt hinter der Kapitelzahl des Bibelstudiums nicht stehen', () => {
+    // Gemessen: „(30 min) wcg chap. 9.“ — der Punkt hängt an der Ziffer, ohne
+    // Leerraum davor. pl schreibt „wcg rozdz. 9“ ohne, uk setzt ihn vor den
+    // Verweis. Der Punkt in „chap.“ gehört zum Text und bleibt.
+    const mitStudium = html.replace(
+      '<h3 data-pid="47">',
+      '<h2 data-pid="30" class="du-color--maroon-600">ABSCHNITT C</h2>\n' +
+        '  <h3 data-pid="31" class="du-color--maroon-600">7. Étude</h3>\n' +
+        '  <p data-pid="32">(30 min) wcg chap. 9.</p>\n' +
+        '  <h3 data-pid="47">',
+    )
+    expect(teil(mitStudium, 'wein').meta).toBe('30 min · wcg chap. 9')
+  })
 })
 
 /* ---- Thai: kein Satzende — bewusst leerer Rahmen ----------------------- */
