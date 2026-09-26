@@ -106,6 +106,8 @@ export interface Aufruf {
   pfad: string
   method: string
   body?: unknown
+  /** Der `Prefer`-Kopf, etwa `return=minimal` — ob mit oder ohne `RETURNING` geschrieben wurde. */
+  prefer?: string
 }
 
 /** Parameter in der Adresse, die keine Spalte nennen. */
@@ -269,8 +271,9 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       return zeigen ? antwort(200, getroffen) : antwort(204)
     }
     if (method === 'DELETE') {
+      const weg = zeilen.filter(trifft)
       tabellen[tabelle] = zeilen.filter((z) => !trifft(z))
-      return antwort(204)
+      return zeigen ? antwort(200, weg) : antwort(204)
     }
     throw new Error(`Attrappe: Methode ${method} kennt sie nicht`)
   }
@@ -283,7 +286,7 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
 
     if (url.pathname.startsWith('/rest/v1/')) {
       const tabelle = decodeURIComponent(url.pathname.slice('/rest/v1/'.length))
-      const aufruf = { pfad: `${tabelle}${url.search}`, method, body: rumpf }
+      const aufruf = { pfad: `${tabelle}${url.search}`, method, body: rumpf, prefer: kopf.get('Prefer') ?? undefined }
       aufrufe.push(aufruf)
       const gestoert = stoerung?.(aufruf)
       if (gestoert) return antwort(gestoert.status ?? 400, gestoert.json ?? {})

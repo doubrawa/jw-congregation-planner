@@ -476,6 +476,32 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(text).not.toMatch(/abgewiesen \(400\)/)
   })
 
+  it('mandanten-nachweis: der Einfügeversuch schreibt ohne RETURNING und sieht beim Ziel nach', async () => {
+    // Die Attrappe kennt keine Richtlinien — der Versuch kommt also durch, und
+    // genau das soll die Probe dann sagen und wieder wegräumen.
+    const { ausgabe, aufrufe, tabellen } = await fahreGestoert('mandanten-nachweis.mjs', () => undefined)
+    const einfuegen = aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'persons')
+    expect(einfuegen.length).toBe(2) // A → B und B → A
+    for (const a of einfuegen) {
+      expect(a.prefer, 'mit RETURNING geschrieben').toBe('return=minimal')
+      const id = (a.body as { id?: string }).id
+      expect(aufrufe.some((x) => x.method === 'GET' && x.pfad.startsWith(`persons?select=id&id=eq.${id}`))).toBe(true)
+    }
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/persons einfügen +→ DURCHGELASSEN — die Zeile liegt in der anderen Versammlung/)
+    expect(text).toMatch(/\(die eingefügte Zeile .+ wurde sofort wieder gelöscht\)/)
+    expect((tabellen.persons ?? []).filter((p) => p.fn === 'NACHWEIS'), 'Probezeile blieb liegen').toEqual([])
+  })
+
+  it('mandanten-nachweis: ein 403 heißt abgewiesen, und nichts bleibt liegen', async () => {
+    const { ausgabe, aufrufe, tabellen } = await fahreGestoert('mandanten-nachweis.mjs', (a) =>
+      a.method === 'POST' && tabelleVon(a) === 'persons' ? { status: 403, json: { code: '42501' } } : undefined,
+    )
+    expect(ausgabe.join('\n')).toMatch(/persons einfügen +→ abgewiesen \(403\)/)
+    expect(aufrufe.filter((a) => a.method === 'DELETE')).toEqual([])
+    expect((tabellen.persons ?? []).filter((p) => p.fn === 'NACHWEIS')).toEqual([])
+  })
+
   it('mandanten-nachweis: ist der vorhandene Wert nicht lesbar, wird nichts geändert', async () => {
     const { ausgabe, aufrufe } = await fahreGestoert('mandanten-nachweis.mjs', (a) =>
       a.method === 'GET' && a.pfad.startsWith('persons?select=tel') ? kaputt : undefined,

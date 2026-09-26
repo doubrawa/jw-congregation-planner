@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { bewerteListe, bewerteSchreiben, LANDMARKEN, RLS_TABELLEN } from './mandanten-nachweis.mjs'
+import { bewerteEinfuegen, bewerteListe, bewerteSchreiben, LANDMARKEN, RLS_TABELLEN } from './mandanten-nachweis.mjs'
 
 /**
  * Der Nachweis selbst kann nur gegen eine echte Datenbank laufen — was hier
@@ -100,5 +100,37 @@ describe('Eine Schreibprobe bewerten', () => {
 
   it('und eine einzelne Zeile ohne Array zählt auch', () => {
     expect(bewerteSchreiben(200, { id: 'x' }).ok).toBe(false)
+  })
+})
+
+describe('Einen Einfügeversuch bewerten — ohne RETURNING, am Ziel nachgesehen', () => {
+  /*
+    Bis zum 26.9.2026 schrieb die Probe mit `return=representation` und
+    urteilte nach dem Status. Ein 403 konnte dann aus der SELECT-Richtlinie auf
+    `RETURNING` stammen — der Einfügende darf eine Zeile der fremden
+    Versammlung nicht zurücklesen —, auch wenn die INSERT-Richtlinie ein Loch
+    gehabt hätte. Die App fügt ohne `RETURNING` ein und käme durch.
+  */
+  const leer = { status: 200, daten: [] }
+  const gefunden = { status: 200, daten: [{ id: 'x' }] }
+
+  it('abgewiesen heißt: ein Urteil der Richtlinien, und am Ziel liegt nichts', () => {
+    expect(bewerteEinfuegen(403, leer)).toMatchObject({ ok: true, wie: 'abgewiesen (403)' })
+  })
+
+  it('liegt die Zeile am Ziel, ist sie durchgelassen — auch bei einem 403', () => {
+    expect(bewerteEinfuegen(403, gefunden)).toMatchObject({ ok: false, angekommen: true })
+    expect(bewerteEinfuegen(201, gefunden).wie).toMatch(/DURCHGELASSEN — die Zeile liegt/)
+  })
+
+  it('ein bestätigtes Einfügen ist durchgelassen, auch wenn das Ziel es nicht findet', () => {
+    const e = bewerteEinfuegen(201, leer)
+    expect(e).toMatchObject({ ok: false, angekommen: false })
+    expect(e.wie).toMatch(/eingefügt \(HTTP 201\), am Ziel aber nicht zu sehen/)
+  })
+
+  it('ohne Urteil ist nichts gemessen — weder beim Schreiben noch beim Nachsehen', () => {
+    expect(bewerteEinfuegen(400, leer)).toMatchObject({ ok: false, kaputt: true })
+    expect(bewerteEinfuegen(403, { status: 400, daten: { code: 'PGRST204' } })).toMatchObject({ ok: false, kaputt: true })
   })
 })

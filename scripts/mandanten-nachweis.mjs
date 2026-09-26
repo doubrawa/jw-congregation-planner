@@ -27,8 +27,10 @@
  * möglich: Das Ändern schreibt den **vorhandenen** Wert zurück (`tel` auf sich
  * selbst), ist also auch bei kaputter Richtlinie folgenlos. Gelöscht wird
  * nichts: Ein erfolgreiches Löschen wäre nicht rückgängig zu machen, und
- * Einfügen und Ändern zeigen den Zugriff bereits. Rutscht das Einfügen doch
- * durch, räumt das Skript die Zeile sofort wieder weg und sagt es laut.
+ * Einfügen und Ändern zeigen den Zugriff bereits. Eingefügt wird wie in der
+ * App **ohne** `RETURNING`, und ob etwas ankam, sieht die Zielseite nach
+ * (`bewerteEinfuegen`). Rutscht das Einfügen doch durch, räumt das Konto der
+ * Zielversammlung die Zeile sofort wieder weg, und das Skript sagt es laut.
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
@@ -124,6 +126,36 @@ export function bewerteSchreiben(status, zeilen) {
   return getroffen === 0
     ? { ok: true, wie: 'null Zeilen getroffen' }
     : { ok: false, wie: `DURCHGELASSEN — ${getroffen} Zeile(n)` }
+}
+
+/**
+ * Einen **Einfügeversuch** bewerten — geschrieben ohne `RETURNING`
+ * (`return=minimal`), nachgesehen mit dem Konto der Zielversammlung
+ * (`nachsehen` = dessen Antwort).
+ *
+ * Bis zum 26.9.2026 schrieb die Probe mit `return=representation` und urteilte
+ * nach dem Status. PostgreSQL wendet die SELECT-Richtlinie aber auch auf die
+ * `RETURNING`-Zeilen an: Eine Zeile in der fremden Versammlung darf der
+ * Einfügende nicht zurücklesen, also kam 403 — auch dann, wenn die
+ * INSERT-Richtlinie ein Loch gehabt hätte. Die App fügt ohne `RETURNING` ein
+ * und käme durch dieses Loch; die Probe hätte „abgewiesen" gemeldet.
+ * `mitgliedsrechte-probe` hat dieselbe Lektion schon gelernt (`bewerteVersuch`).
+ *
+ * Durchgelassen ist, was am Ziel **angekommen** ist — und ebenso ein Erfolg
+ * (2xx), den das Ziel nicht findet: Ein bestätigtes Einfügen in die fremde
+ * Versammlung ist das Loch selbst, wo auch immer die Zeile liegt.
+ */
+export function bewerteEinfuegen(status, nachsehen) {
+  if (anfrageKaputt(status)) {
+    return { ok: false, kaputt: true, wie: `PROBE KAPUTT (${status}) — die Anfrage scheiterte selbst, kein Urteil über die Trennung` }
+  }
+  if (nachsehen.status >= 400) {
+    return { ok: false, kaputt: true, wie: `PROBE KAPUTT — Nachsehen scheiterte (${nachsehen.status}), kein Urteil über die Trennung` }
+  }
+  const angekommen = Array.isArray(nachsehen.daten) && nachsehen.daten.length > 0
+  if (angekommen) return { ok: false, angekommen, wie: `DURCHGELASSEN — die Zeile liegt in der anderen Versammlung (HTTP ${status})` }
+  if (status < 400) return { ok: false, angekommen, wie: `DURCHGELASSEN — eingefügt (HTTP ${status}), am Ziel aber nicht zu sehen` }
+  return { ok: true, angekommen, wie: `abgewiesen (${status})` }
 }
 
 /* ===================== Zugang ============================================= */
@@ -280,29 +312,37 @@ export async function main(arg = process.argv.slice(2)) {
 
   // ---- 3) Schreiben -------------------------------------------------------
   if (a && schreibproben) {
+    const lauf = Date.now()
     for (const [seite, ziel] of [
       [a, b],
       [b, a],
     ]) {
       console.log(`Kann „${seite.name}" in „${ziel.name}" schreiben?`)
 
-      // a) Einfügen. Der Name ist absichtlich unübersehbar — falls doch eine
-      //    Zeile entsteht und das Aufräumen scheitert, sieht man sofort, was
-      //    sie ist und woher sie kommt.
-      const probe = { congregation_id: ziel.eigene, fn: 'NACHWEIS', ln: 'BITTE-LOESCHEN', role: 'verkuendiger' }
-      const ein = await seite.rest('persons', 'POST', probe)
-      const e1 = bewerteSchreiben(ein.status, ein.daten)
+      // a) Einfügen — wie die App **ohne** `RETURNING`, nachgesehen wird beim
+      //    Ziel (siehe `bewerteEinfuegen`). Die Kennung vergibt die Probe
+      //    selbst, damit das Ziel die Zeile findet. Der Name ist absichtlich
+      //    unübersehbar und je Lauf eindeutig: Entsteht doch eine Zeile und
+      //    scheitert das Aufräumen, sieht man sofort, was sie ist — und ein Rest
+      //    aus einem früheren Lauf stößt nicht an `persons_name_eindeutig`.
+      const probeId = crypto.randomUUID()
+      const probe = { id: probeId, congregation_id: ziel.eigene, fn: 'NACHWEIS', ln: `BITTE-LOESCHEN-${lauf}`, role: 'verkuendiger' }
+      const ein = await seite.rest('persons', 'POST', probe, 'return=minimal')
+      const nachsehen = await ziel.rest(`persons?select=id&id=eq.${probeId}`)
+      const e1 = bewerteEinfuegen(ein.status, nachsehen)
       zeile(e1.ok, `persons einfügen      → ${e1.wie}`)
-      // Aufräumen nur, wo eine Zeile entstanden ist — eine kaputte Probe hat
-      // keine hinterlassen, und `id=eq.undefined` meldete eine, die es nicht gibt.
-      const id = Array.isArray(ein.daten) ? ein.daten[0]?.id : undefined
-      if (!e1.ok && id) {
-        const weg = await seite.rest(`persons?id=eq.${id}`, 'DELETE', undefined, 'return=minimal')
-        console.log(
-          weg.status < 400
-            ? `    (die eingefügte Zeile ${id} wurde sofort wieder gelöscht)`
-            : `    !! Zeile ${id} steht noch in „${ziel.name}" — bitte mit dem Service-Key löschen !!`,
-        )
+      // Aufgeräumt wird vom Ziel: Es sieht die Zeile und darf sie als Planer
+      // löschen. Auch nach einer kaputten Probe — scheiterte nur das
+      // Nachsehen, kann sie trotzdem angekommen sein. Mit `RETURNING`, damit
+      // „gelöscht" heißt, dass wirklich eine Zeile weg ist.
+      if (!e1.ok) {
+        const weg = await ziel.rest(`persons?id=eq.${probeId}`, 'DELETE', undefined, 'return=representation')
+        const geloescht = weg.status < 400 && Array.isArray(weg.daten) && weg.daten.length > 0
+        if (geloescht) {
+          console.log(`    (die eingefügte Zeile ${probeId} wurde sofort wieder gelöscht)`)
+        } else if (e1.angekommen || ein.status < 400 || weg.status >= 400) {
+          console.log(`    !! Zeile ${probeId} steht womöglich noch in „${ziel.name}" — bitte mit dem Service-Key löschen !!`)
+        }
       }
 
       // b) Ändern — und zwar auf den **vorhandenen** Wert. Selbst wenn die
