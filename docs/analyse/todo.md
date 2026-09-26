@@ -5666,7 +5666,20 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
-**Beim Betreiber steht nichts aus (Stand 25. September):** ✅ `notify_planners`
+**Beim Betreiber steht nichts aus (Stand 26. September):** Die Durchsicht vom
+25./26. September (Commit `71e4539`) brauchte drei Schritte, alle erledigt:
+✅ die Spalte `fs_rules.aus` ist angelegt (Wochen, in denen eine
+Grundplan-Regel ausgesetzt ist), ✅ `task_gehoert_mir` ist im SQL-Editor neu
+eingespielt (eine bekannte Art in fremder Schreibweise wird abgewiesen),
+✅ `import-week`, `send-plan`, `send-reminders` und `substitute` sind neu
+deployt. Rauchtest danach: `import-week` mit `after: 2099-01-05` antwortet
+`404` mit `ende: true` — das gibt es erst in der neuen Fassung, die alte
+lieferte die letzte Woche erneut; `send-plan` und `substitute` antworten auf
+OPTIONS mit dem `ok` des Handlers und ohne Nutzer-Token mit
+`401 unauthorized`, `send-reminders` ohne `CRON_SECRET` mit `401`. Der Client
+ist über Pages mitgelaufen.
+
+**Am 25. September stand beim Betreiber nichts mehr aus:** ✅ `notify_planners`
 und die verengte Richtlinie `notifications_insert` aus T117 sind im SQL-Editor
 angelegt, ✅ `substitute` ist mit der Aktion `withdraw` aus T118 neu deployt.
 Rauchtest danach: OPTIONS mit dem `ok` des Handlers, ohne Nutzer-Token
