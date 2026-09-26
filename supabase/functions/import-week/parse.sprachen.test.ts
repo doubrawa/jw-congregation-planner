@@ -199,6 +199,22 @@ describe('Chinesisch — vollbreite Klammern und Pinyin-Lesehilfe', () => {
     expect(schluss(html).title).not.toContain('Schlussworte')
     expect(schluss(html).meta).toBe('3分钟')
   })
+
+  it('macht auch ohne Großbuchstaben keine lange Anweisung zum Rahmen', () => {
+    // Chinesisch kennt keine Großbuchstaben, also gilt die Grenze für
+    // gewöhnlichen Text. Gemessen fasst das Heft eine ganze Anweisung in 33
+    // Zeichen — die Grenze von 48 darf deshalb nicht für jede Schrift gelten.
+    const lang = seite({
+      h1: '7月6–12日',
+      buch: '书卷13－15章',
+      punkt1: '1．第一标题',
+      punkt2: '4．第二标题',
+      zeit1: '（10 分钟）',
+      zeit2: '（3 分钟）这只是一句为了测试而特意写得很长很长的普通句子而已它并不是任何场景的名称。（lmd 第1课）',
+      schluss: '结语（3 分钟）| 唱诗 61',
+    })
+    expect(teil(lang, 'gold').meta).toBe('3分钟 · lmd 第1课')
+  })
 })
 
 /* ---- Japanisch: Ruby mit <rb>, westliche Nummerierung ------------------- */
@@ -243,6 +259,90 @@ describe('Hindi — Danda als Satzende', () => {
 
   it('liest den Rahmen bis zum Danda', () => {
     expect(teil(html, 'gold').meta).toBe('घर-घर का प्रचार · 3 मि. · lmd पाठ 1 मुद्दा 5')
+  })
+})
+
+/* ---- Ukrainisch: das Satzende steht vor dem Rahmen ---------------------- */
+
+/** Gerüst einer ukrainischen Wochenseite — die Tests tauschen einzelne Zeilen. */
+const ukrainisch = {
+  h1: '21–27 вересня',
+  buch: 'КНИГА 13–15',
+  punkt1: '1. Перший заголовок',
+  punkt2: '4. Другий заголовок',
+  zeit1: '(10 хв)',
+  zeit2: '(3 хв). ВІД ДОМУ ДО ДОМУ. Ще одне речення (lmd урок 1, пункт 5)',
+  schluss: 'Заключні слова (3 хв) | Пісня 61',
+}
+
+describe('Ukrainisch — Punkt gleich hinter der Zeitklammer', () => {
+  // Gemessen: „(3 хв). ВІД ДОМУ ДО ДОМУ. …“ — ein Punkt steht schon gleich
+  // hinter der Klammer, vor dem Rahmen. Der erste Satz war damit leer, und
+  // jeder ukrainische Schülerteil kam ohne Rahmen an; der S-89 nannte ihn
+  // deshalb auch nicht. Französisch schreibt die Besprechungen genauso
+  // („(15 min). Discussion.“).
+  it('liest den Rahmen hinter dem Punkt', () => {
+    expect(teil(seite(ukrainisch), 'gold').meta).toBe('ВІД ДОМУ ДО ДОМУ · 3 хв · lmd урок 1, пункт 5')
+  })
+
+  it('lässt den Punkt nicht vor der Schriftstelle der Bibellesung stehen', () => {
+    // Die Bibellesung — hier der einzige Schätze-Punkt — bekommt die
+    // Schriftstelle aus der Zeitzeile in den Titel. Dort stand in jeder
+    // ukrainischen Woche „· . Єр …“, und mit dem Titel auch auf ihrem S-89.
+    const html = seite({ ...ukrainisch, zeit1: '(4 хв). Єр 1:1—5 (th урок 2)' })
+    expect(teil(html, 'petrol').title).toBe('Перший заголовок · Єр 1:1—5')
+    expect(teil(html, 'petrol').meta).toBe('4 хв · th урок 2')
+  })
+})
+
+describe('Ukrainisch — Rahmen in Großbuchstaben', () => {
+  // Zwei Fälle, in denen der Rahmen trotz des Punkts noch fehlte, beide
+  // gemessen: „ПРОПОВІДУВАННЯ В ГРОМАДСЬКИХ МІСЦЯХ“ hat 35 Zeichen (Grenze
+  // 32), und ohne Satz zwischen Rahmen und Quelle folgt die Klammer ohne
+  // Punkt. Erkannt wird der Rahmen an der Großschreibung; die beiden
+  // Gegenproben halten fest, dass eine gewöhnlich geschriebene Anweisung
+  // weiter draußen bleibt.
+  const gold = (zeit2: string) => teil(seite({ ...ukrainisch, zeit2 }), 'gold').meta
+
+  it('nimmt einen ganz groß geschriebenen Rahmen auch über 32 Zeichen', () => {
+    expect(gold('(3 хв). ПРОПОВІДУВАННЯ В ГРОМАДСЬКИХ МІСЦЯХ. Ще одне речення (lmd урок 5, пункт 5)')).toBe(
+      'ПРОПОВІДУВАННЯ В ГРОМАДСЬКИХ МІСЦЯХ · 3 хв · lmd урок 5, пункт 5',
+    )
+  })
+
+  it('beendet einen groß geschriebenen Rahmen an der Quellenklammer', () => {
+    expect(gold('(2 хв). ВІД ДОМУ ДО ДОМУ (lmd урок 2, пункт 3)')).toBe('ВІД ДОМУ ДО ДОМУ · 2 хв · lmd урок 2, пункт 3')
+  })
+
+  it('macht aus einem gewöhnlichen Satz vor der Klammer keinen Rahmen', () => {
+    expect(gold('(5 хв). Ще одне речення (th урок 12)')).toBe('5 хв · th урок 12')
+  })
+
+  it('lässt gewöhnlich geschriebene Sätze über 32 Zeichen weiter draußen', () => {
+    // 45 Zeichen: unter der Grenze für Großbuchstaben, über der gewöhnlichen.
+    expect(gold('(3 хв). Звичайне речення, довше за тридцять два знаки. (lmd урок 1)')).toBe('3 хв · lmd урок 1')
+  })
+})
+
+/* ---- Französisch: das Satzende hinter der Quellenklammer ---------------- */
+
+describe('Französisch — Punkt hinter der Quellenklammer', () => {
+  // Gemessen: Die Zeitzeile der Bibellesung schließt nach der Quellenklammer
+  // mit einem Punkt, „(4 min) Jr 40:1-10 (th leçon 2).“. Nach dem Entfernen der
+  // Klammern blieb er allein zurück: „Lecture de la Bible · Jr 40:1-10 .“ — in
+  // jeder französischen Woche, ebenso auf Spanisch und Russisch.
+  const html = seite({
+    h1: '6-12 juillet',
+    buch: 'LIVRE 13-15',
+    punkt1: '1. Premier titre',
+    punkt2: '4. Deuxième titre',
+    zeit1: '(4 min) Jr 1:1-5 (th leçon 2).',
+    zeit2: '(3 min)',
+    schluss: 'Paroles de conclusion (3 min) | Cantique 61',
+  })
+
+  it('lässt den Punkt nicht hinter der Schriftstelle stehen', () => {
+    expect(teil(html, 'petrol').title).toBe('Premier titre · Jr 1:1-5')
   })
 })
 

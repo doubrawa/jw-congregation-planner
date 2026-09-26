@@ -296,6 +296,8 @@ const TIME_ANY = new RegExp(`[${AUF}][^${ZU}]*\\p{Nd}`, 'u')
 const PAREN_ONE = new RegExp(`[${AUF}]([^${ZU}]*)[${ZU}]`, 'u')
 const PAREN_ALL = new RegExp(`[${AUF}]([^${ZU}]*)[${ZU}]`, 'gu')
 const PAREN_LEAD = new RegExp(`^${RAND}*[${AUF}][^${ZU}]*[${ZU}]`, 'u')
+/** Eine öffnende Klammer, westlich oder vollbreit. */
+const KLAMMER_AUF = new RegExp(`[${AUF}]`, 'u')
 /**
  * Satzende — der Rahmen endet daran. Neben dem westlichen Punkt und den
  * vollbreiten Formen auch Danda (Hindi/Bengali), das arabische Satzende (Urdu),
@@ -304,6 +306,16 @@ const PAREN_LEAD = new RegExp(`^${RAND}*[${AUF}][^${ZU}]*[${ZU}]`, 'u')
  * hatte deshalb bei jedem Schülerteil einen leeren Rahmen.
  */
 const SATZENDE = /[.。．।۔։።]/
+/**
+ * Satzenden, die beim Entfernen der Klammern allein zurückbleiben. Vorn der
+ * Punkt, den die ukrainische Ausgabe gleich hinter die Zeitklammer setzt
+ * („(4 хв). Єр 40:1—10 (th урок 2)“ ergab „. Єр 40:1—10“), hinten der hinter
+ * der Quellenklammer („(4 min) Jr 40:1-10 (th leçon 2).“ ergab „Jr 40:1-10 .“,
+ * ebenso es und ru). Hinten nur mit Leerraum davor: Ein Punkt, der am Wort
+ * hängt („wcg chap. 11.“), gehört zum Text.
+ */
+const SATZENDE_VORN = new RegExp(`^(?:${RAND}|${SATZENDE.source})+`, 'u')
+const SATZENDE_HINTEN = new RegExp(`${RAND}+(?:${SATZENDE.source})+${RAND}*$`, 'u')
 /**
  * Nummer eines Programmpunkts: „1.“, aber auch „1．“ (chinesisch, vollbreiter
  * Punkt) und „١-‏“ (arabisch, Bindestrich statt Punkt). Ohne die Varianten blieb
@@ -320,7 +332,8 @@ function firstParen(text: string): string {
 
 /** Text ohne jegliche Klammern (Schriftstelle bzw. klammerlose Quelle). */
 function stripParens(text: string): string {
-  return randTrim(text.replace(PAREN_ALL, ' ').replace(/\s+/g, ' '))
+  const ohneKlammern = text.replace(PAREN_ALL, ' ').replace(/\s+/g, ' ')
+  return randTrim(ohneKlammern.replace(SATZENDE_VORN, '').replace(SATZENDE_HINTEN, ''))
 }
 
 /** Quellenangabe: bevorzugt die letzte Klammer mit Publikations-Kürzel. */
@@ -336,15 +349,62 @@ function sourceOf(text: string): string {
 }
 
 /**
+ * Längster Rahmen: 32 Zeichen in gewöhnlicher Schreibung, 48 ganz in
+ * Großbuchstaben.
+ *
+ * Die Grenze trennt den Rahmen von der Anweisung, die dort steht, wo eine
+ * Ausgabe keinen Rahmen nennt. Für gewöhnlichen Text darf sie nicht höher
+ * liegen: Chinesisch und Japanisch fassen eine ganze Anweisung in 33 Zeichen,
+ * das Deutsche kennt „Ermutige deinen Bibelschüler, öfter zu beten“ (44).
+ * Die Predigtdienst-Rahmen stehen aber ganz groß, und manche sind länger:
+ * ukrainisch „ПРОПОВІДУВАННЯ В ГРОМАДСЬКИХ МІСЦЯХ“ (35), bulgarisch (34) —
+ * an der alten Grenze fehlte der Rahmen bei jeder dieser Aufgaben.
+ *
+ * Gemessen am Arbeitsheft September bis Dezember 2026, 36 Sprachen: In den 29
+ * mit Groß- und Kleinbuchstaben standen 317 von 319 Predigtdienst-Rahmen ganz
+ * groß — die zwei übrigen sind vietnamesische Punkte ohne eigenen Rahmen —,
+ * und kein anderer Satz.
+ */
+const RAHMEN_LAENGE = 32
+const RAHMEN_LAENGE_GROSS = 48
+
+const GROSSBUCHSTABE = /\p{Lu}/u
+const KLEINBUCHSTABE = /\p{Ll}/u
+
+/**
+ * Ganz in Großbuchstaben — in einer Schrift, die Groß und Klein unterscheidet.
+ * Chinesisch oder Arabisch kennen keine Großbuchstaben und fallen nie darunter;
+ * dort gilt weiter die Grenze für gewöhnlichen Text.
+ */
+function ganzGross(s: string): boolean {
+  return GROSSBUCHSTABE.test(s) && !KLEINBUCHSTABE.test(s)
+}
+
+/**
  * Rahmen der Zeit-Zeile (z. B. „VON HAUS ZU HAUS“, „HOUSE TO HOUSE“). Der Rahmen
- * ist der kurze Satz direkt nach der Zeitklammer bis zum ersten Punkt — ohne
- * Ziffern (schließt Quellen/Lektionen aus), sprachunabhängig übernommen.
+ * ist der kurze Satz direkt nach der Zeitklammer bis zum nächsten Satzende —
+ * ohne Ziffern (schließt Quellen/Lektionen aus), sprachunabhängig übernommen.
+ *
+ * **Der erste Satz, der nicht leer ist** — nicht einfach der erste. Die
+ * ukrainische Ausgabe setzt den Punkt gleich hinter die Klammer, bei jedem
+ * Punkt mit Text dahinter („(3 хв). ВІД ДОМУ ДО ДОМУ.“), die französische bei
+ * den Besprechungen („(15 min). Discussion.“). Der erste Satz war dort leer:
+ * Jeder ukrainische Schülerteil kam ohne Rahmen an, und sein S-89 nannte
+ * keinen. Gemessen am Arbeitsheft September bis Dezember 2026.
+ *
+ * **Ein ganz groß geschriebener Rahmen endet auch an der Quellenklammer.**
+ * Nennt das Heft zwischen Rahmen und Quelle keinen weiteren Satz, folgt die
+ * Klammer ohne Satzende („(2 хв). ВІД ДОМУ ДО ДОМУ (lmd урок 2, пункт 3)“,
+ * ebenso fr, pl, hr, tr). Der Satz trug dann die Ziffern der Quelle und fiel
+ * durch. Nur groß geschrieben, weil vor der Klammer ebenso eine Anweisung
+ * stehen kann („Заохоть учня частіше молитися (th урок 12)“).
  */
 function settingOf(text: string): string {
-  const after = randTrim(text.replace(PAREN_LEAD, ''))
-  // `split` gibt immer mindestens ein Stück zurück; der Index-Zugriff sieht das nicht.
-  const seg = randTrim(after.split(SATZENDE)[0] ?? '')
-  return seg && seg.length <= 32 && !ZIFFER.test(seg) ? seg : ''
+  const satz = text.replace(PAREN_LEAD, '').split(SATZENDE).map(randTrim).find(Boolean) ?? ''
+  const [vorKlammer = ''] = satz.split(KLAMMER_AUF)
+  const seg = ganzGross(vorKlammer) ? randTrim(vorKlammer) : satz
+  const grenze = ganzGross(seg) ? RAHMEN_LAENGE_GROSS : RAHMEN_LAENGE
+  return seg && seg.length <= grenze && !ZIFFER.test(seg) ? seg : ''
 }
 
 /** Meta-Zeile „[Rahmen ·] Zeit [· Quelle]“ zusammensetzen. */
