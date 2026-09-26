@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, type Plugin } from 'vitest/config'
+import { configDefaults, defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { alsCacheName, SW_PLATZHALTER, swMitKennung } from './scripts/sw-kennung.mjs'
 
@@ -86,6 +86,17 @@ export default defineConfig(({ command }) => ({
   // Testlauf ein git-Prozess mit, obwohl die Kennung dort nichts aussagt.
   define: { __BUILD_ID__: JSON.stringify(command === 'build' ? buildId() : 'dev') },
   test: {
+    // Unter `.claude/worktrees/<name>/` liegt je Worktree eine volle Kopie des
+    // Repos auf eigenem Commit. vitest sammelt mit `dot: true`, beachtet
+    // `.gitignore` nicht, und sein Standard-`exclude` nimmt in vitest 4 nur
+    // `node_modules` und `.git` aus. Im Hauptcheckout zählte
+    // `vitest list --filesOnly` deshalb 1557 Testdateien statt 195, 1362 davon
+    // aus sieben Worktrees (26.9.2026): Die Suite lief einmal je Kopie, ein
+    // roter Test in irgendeinem Worktree machte den Lauf rot, und die
+    // Mutationsprobe konnte einer Regel einen fremden Wächter gutschreiben.
+    // Das Muster gilt relativ zur Wurzel, trifft im Worktree selbst also
+    // nichts — und sonst liegt unter `.claude/` kein Test.
+    exclude: [...configDefaults.exclude, '.claude/**'],
     // Die CI hat keine Supabase-Variablen und testet deshalb im Demo-Modus.
     // Lokal läse Vite `.env.local` mit und testete ohne Demo-Daten — ein Test,
     // der auf `initialState()` baut, war dann lokal grün und in der CI rot
