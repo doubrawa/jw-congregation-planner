@@ -5743,17 +5743,25 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
-**Beim Betreiber steht nichts aus (Stand 26. September, abends):**
-✅ `import-week` ist neu deployt (15:14 Uhr, Version 33). Mit Commit `e6388f7`
-liest der Import unter „Uns im Dienst verbessern" die Form eines Punkts am
-Beschreiber der Zeitzeile: „Was würdest du sagen?" bekommt den Platz eines
-Bruders statt eines Schülers, und „Unsere Glaubensansichten erklären" als
+**Beim Betreiber steht aus (Stand 26. September, abends):** ☐ `import-week`
+erneut deployen (Commit `8b13548`, der Schlusspunkt hinter einer Ziffer) —
+sonst zeigt das französische Bibelstudium weiter „wcg chap. 9." statt
+„wcg chap. 9".
+
+✅ Oben läuft Version 34 (16:15 Uhr), Datei für Datei gleich dem Stand von
+`main` bis `784aed8` (nachgesehen mit `functions download`). Sie trägt zwei
+Änderungen am Parser: `41d0e05` gibt ukrainischen und anderen Schülerteilen
+ihren Rahmen und nimmt den verirrten Punkt vor der Schriftstelle weg; mit
+`e6388f7` liest der Import unter „Uns im Dienst verbessern" die Form eines
+Punkts am Beschreiber der Zeitzeile: „Was würdest du sagen?" bekommt den Platz
+eines Bruders statt eines Schülers, und „Unsere Glaubensansichten erklären" als
 gespielte Szene Schüler und Partner statt einer Ansprache für Brüder
-(S-38-X 8/26, Abs. 6, 9 und 11). Nachgesehen mit `functions list`,
-`functions download` — alle 14 Dateien gleich dem Stand von `f9eb2ea` — und
-einem Rauchtest: OPTIONS mit dem `ok` des Handlers; die Woche vom
-28. September kommt mit „Was würdest du sagen?" als `vortrag`-Platz, die vom
-5. Oktober mit der gespielten Szene als Schüler und Partner. Schon importierte
+(S-38-X 8/26, Abs. 6, 9 und 11). Version 33 (15:14 Uhr) trug nur `e6388f7` —
+nachgesehen mit `functions list`, `functions download` (alle 14 Dateien gleich
+dem Stand von `f9eb2ea`) und einem Rauchtest: OPTIONS mit dem `ok` des
+Handlers; die Woche vom 28. September kommt mit „Was würdest du sagen?" als
+`vortrag`-Platz, die vom 5. Oktober mit der gespielten Szene als Schüler und
+Partner. Schon importierte
 Wochen frischt der Import nicht auf, sie kommen erst mit dem Neuaufbau neu.
 `treffpunkte-importieren.mjs` (Commit `6a251db`, NWS-Treffpunkte als
 Versammlungstreffpunkt) braucht keinen Deploy — es läuft lokal und braucht nur
