@@ -254,7 +254,7 @@ export default {
   "eigenerBereich": "Bidang tugas sendiri",
   "gruppenCard": "KELOMPOK DINAS LAPANGAN",
   "gruppenDesc": "Setiap penyiar termasuk dalam kelompok dengan pengawas dan asisten. Kelompok-kelompok bergiliran membersihkan.",
-  "aufseherLbl": "PENGAWAS KELOMPOK",
+  "aufseherLbl": "PENGAWAS KDL",
   "gehilfeLbl": "ASISTEN",
   "gruppeLbl": "Kelompok dinas lapangan",
   "familieLabel": "Keluarga",
