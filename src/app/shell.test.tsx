@@ -278,14 +278,14 @@ describe('Die vier Status-Ansichten der Datenanbindung', () => {
     expect(loadAndHydrate).toHaveBeenCalled()
   })
 
-  it('die leere Versammlung verweist den Verkündiger an den Koordinator — ohne Knopf, der Demo-Daten einfüllt', () => {
+  it('die leere Versammlung verweist den Verkündiger an einen Admin — ohne Knopf, der Demo-Daten einfüllt', () => {
     const { getByText, container } = zeige({ dataEmpty: true, planner: false })
     expect(getByText(t.stLeer)).toBeTruthy()
     expect(getByText(t.stLeerText)).toBeTruthy()
     expect(container.querySelector('.status-btn')).toBeNull()
   })
 
-  it('dem Planer steht die leere Versammlung offen — er ist der Koordinator, an den der Hinweis verwiese', () => {
+  it('dem Planer steht die leere Versammlung offen — er ist der Admin, an den der Hinweis verwiese', () => {
     // Personen anlegen und „Nächste Woche importieren" sind sein Weg hinein;
     // hinter dem Hinweis waren beide unerreichbar (bis zum 24.9.2026).
     const { container, queryByText } = zeige({ dataEmpty: true, planner: true })
