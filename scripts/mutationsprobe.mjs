@@ -44,6 +44,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { auszug, werkzeugPfad } from './gemeinsam.mjs'
 
 const hier = dirname(fileURLToPath(import.meta.url))
 const wurzel = join(hier, '..')
@@ -1850,10 +1851,37 @@ export function ankerFehler() {
 
 // ── Lauf ────────────────────────────────────────────────────────────────────
 
-const vitest = join(wurzel, 'node_modules', 'vitest', 'vitest.mjs')
+/**
+ * Den vitest des Projekts finden (siehe `werkzeugPfad`) — oder abbrechen,
+ * bevor die erste Datei angefasst ist. Bis zum 26.9.2026 stand hier ein fester
+ * Pfad in `<wurzel>/node_modules`; im Worktree zeigte er ins Leere.
+ */
+function vitestPfad() {
+  try {
+    return werkzeugPfad(wurzel, 'vitest')
+  } catch (err) {
+    console.error(`\n${err.message}\n`)
+    process.exit(2)
+  }
+}
 
-/** Einen vollen Testlauf machen. Rückgabe: `{ rot, ausgabe }`. */
-function testlauf() {
+/**
+ * Einen vollen Testlauf machen. Rückgabe: `{ rot, ausgabe }` — oder
+ * `{ zweifel }` mit dem Grund, wenn der Lauf über die Regel nichts aussagt.
+ *
+ * **Rot heißt nur „bewacht", wenn vitest selbst rot gesagt hat.** Bis zum
+ * 26.9.2026 zählte jeder Rückgabewert ≠ 0. Im Worktree zeigte der Pfad zu
+ * vitest ins Leere, Node endete an „Cannot find module" mit 1 — und die Probe
+ * schrieb jeder Regel „bewacht (unbekannt, 0s)" gut, ohne dass ein einziger
+ * Test gelaufen war. Seither muss die Ausgabe die Zusammenfassung tragen, die
+ * vitest am Ende jedes Laufs schreibt („Test Files …", auch nach `--bail=1`).
+ * Fehlt sie, hat nicht vitest gesprochen, sondern etwas davor.
+ *
+ * **Kein `process.exit()` hier drin:** Während des Laufs steht die Mutation im
+ * Quelltext. Abbrechen darf erst `main()`, wenn sie zurückgenommen ist — bis
+ * zum 26.9.2026 brach ein Startfehler hier ab und ließ sie stehen.
+ */
+function testlauf(vitest) {
   const lauf = spawnSync(process.execPath, [vitest, 'run', '--reporter=dot', '--bail=1'], {
     cwd: wurzel,
     encoding: 'utf8',
@@ -1869,11 +1897,28 @@ function testlauf() {
     env: { ...process.env, CI: 'true', MUTATIONSPROBE: '1' },
     maxBuffer: 64 * 1024 * 1024,
   })
-  if (lauf.error) {
-    console.error(`vitest konnte nicht gestartet werden: ${lauf.error.message}`)
-    process.exit(2)
+  if (lauf.error) return { zweifel: `vitest konnte nicht gestartet werden: ${lauf.error.message}` }
+  const ausgabe = `${lauf.stdout ?? ''}${lauf.stderr ?? ''}`
+  if (!ausgabe.includes('Test Files')) {
+    return {
+      zweifel:
+        `vitest endete mit ${lauf.status ?? lauf.signal}, aber ohne Zusammenfassung („Test Files") — ` +
+        `getestet hat es nicht:\n${auszug(ausgabe)}`,
+    }
   }
-  return { rot: lauf.status !== 0, ausgabe: `${lauf.stdout ?? ''}${lauf.stderr ?? ''}` }
+  return { rot: lauf.status !== 0, ausgabe }
+}
+
+/**
+ * **Ein Lauf, der nichts gemessen hat, beendet die Probe** — mit 2 wie jeder
+ * andere Fall, in dem sie nicht messen kann. Weiterzumachen hieße, die
+ * nächsten Regeln genauso zu „messen".
+ */
+function nichtGemessen(zweifel, sekunden) {
+  console.log(`NICHT GEMESSEN (${sekunden}s)`)
+  console.error(`\n${zweifel}\n`)
+  console.error('Die Mutation ist zurückgenommen. Abbruch, statt der Regel ein Ergebnis gutzuschreiben.')
+  process.exit(2)
 }
 
 /** Aus der Ausgabe die erste rote Testdatei ziehen — als Beleg, WER bewacht. */
@@ -1949,6 +1994,9 @@ function main() {
     process.exit(0)
   }
 
+  // Nach `--liste`, das ohne vitest auskommt — und vor der ersten Mutation.
+  const vitest = vitestPfad()
+
   process.on('SIGINT', () => {
     zuruecksetzen()
     console.error('\nAbgebrochen — Quelltext wiederhergestellt.')
@@ -1971,10 +2019,11 @@ function main() {
     process.stdout.write(`[${i + 1}/${auswahl.length}] ${m.id} … `)
     writeFileSync(pfad, lies(pfad).replace(m.suchen, m.ersetzen))
     const start = Date.now()
-    const { rot, ausgabe } = testlauf()
+    const { rot, ausgabe, zweifel } = testlauf(vitest)
     zuruecksetzen()
 
     const sekunden = Math.round((Date.now() - start) / 1000)
+    if (zweifel) nichtGemessen(zweifel, sekunden)
     const waechter = rot ? ersterWaechter(ausgabe) : null
     ergebnisse.push({ ...m, rot, waechter })
     console.log(rot ? `bewacht (${waechter}, ${sekunden}s)` : `UNBEWACHT (${sekunden}s)`)

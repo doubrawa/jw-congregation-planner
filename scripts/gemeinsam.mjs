@@ -16,6 +16,7 @@
  */
 
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import readline from 'node:readline'
 import { fileURLToPath } from 'node:url'
@@ -553,4 +554,63 @@ export function alsSkript(metaUrl, main) {
     console.error(String(err instanceof Error ? err.message : err))
     process.exitCode = 1
   })
+}
+
+/**
+ * **Wo liegt der Befehl eines Pakets?** — so gesucht, wie Node und `npx` ihn
+ * suchen: von `wurzel` aus durch jedes `node_modules` hinauf bis zum Paket,
+ * dann dessen Eintrag unter `bin` in der `package.json`.
+ *
+ * Bis zum 26.9.2026 bauten `check-index-access.mjs` und `mutationsprobe.mjs`
+ * den Pfad fest zusammen: `<wurzel>/node_modules/<paket>/…`. Ein Worktree der
+ * Desktop-App (`.claude/worktrees/<name>`) hat aber kein eigenes
+ * `node_modules` — `npx` findet die Pakete durch Hochwandern im
+ * Hauptcheckout, der feste Pfad nicht. Node starb an „Cannot find module",
+ * und beide Skripte hielten den Startfehler für ein Messergebnis: Die
+ * Sperrklinke meldete alle 32 Dateien „aufgeräumt" (ein `--update` darauf
+ * hätte die Grundlinie geleert), die Mutationsprobe jede Regel „bewacht
+ * (unbekannt, 0s)".
+ *
+ * Wirft, wenn sich nichts findet. Was dann geschieht, entscheidet der
+ * Aufrufer; die beiden Prüfungen brechen mit 2 ab.
+ */
+export function werkzeugPfad(wurzel, paket, befehl = paket) {
+  const vonWurzel = createRequire(path.join(wurzel, 'package.json'))
+  let manifest
+  try {
+    manifest = vonWurzel.resolve(`${paket}/package.json`)
+  } catch (err) {
+    // Anderes als „nicht da" (etwa ein Paket, das seine package.json nicht
+    // mehr exportiert) sagt Nodes eigene Meldung genauer.
+    if (err.code !== 'MODULE_NOT_FOUND') throw err
+    throw new Error(
+      `${paket} ist von ${wurzel} aus nicht zu finden — weder dort noch in einem Ordner ` +
+        `darüber liegt node_modules/${paket}.\n` +
+        'Einmal `npm ci` fahren; in einem Worktree genügt es im Hauptcheckout.',
+    )
+  }
+  const ordner = path.dirname(manifest)
+  const { bin } = JSON.parse(fs.readFileSync(manifest, 'utf8'))
+  // `bin` ist ein Objekt (Befehl → Datei) — oder eine bloße Zeichenkette, wenn
+  // das Paket nur einen Befehl mitbringt, und der heißt dann wie das Paket.
+  const datei = typeof bin === 'string' ? (befehl === paket ? bin : undefined) : bin?.[befehl]
+  if (!datei) throw new Error(`${paket} (${ordner}) bringt keinen Befehl ${befehl} mit.`)
+  const pfad = path.join(ordner, datei)
+  if (!fs.existsSync(pfad)) {
+    throw new Error(`${pfad} fehlt, obwohl ${paket} es als Befehl ${befehl} nennt — \`npm ci\` fahren.`)
+  }
+  return pfad
+}
+
+/**
+ * Die ersten Zeilen einer Ausgabe, eingerückt — genug, um den Grund zu sehen.
+ *
+ * Der **Anfang**, nicht das Ende: Node wie vitest schreiben den Grund vor die
+ * Aufrufkette. Gemessen am 26.9.2026 an vitest mit fehlender Config: 22
+ * Zeilen, der Grund in den ersten vier, danach nur noch Stack.
+ */
+export function auszug(ausgabe) {
+  const zeilen = ausgabe.split(/\r?\n/).filter((z) => z.trim() !== '')
+  if (zeilen.length === 0) return '  (keine Ausgabe)'
+  return zeilen.slice(0, 10).map((z) => `  ${z}`).join('\n')
 }
