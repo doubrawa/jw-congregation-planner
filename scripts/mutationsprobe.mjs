@@ -44,6 +44,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { stripVTControlCharacters } from 'node:util'
 import { auszug, werkzeugPfad } from './gemeinsam.mjs'
 
 const hier = dirname(fileURLToPath(import.meta.url))
@@ -1898,7 +1899,15 @@ function testlauf(vitest) {
     maxBuffer: 64 * 1024 * 1024,
   })
   if (lauf.error) return { zweifel: `vitest konnte nicht gestartet werden: ${lauf.error.message}` }
-  const ausgabe = `${lauf.stdout ?? ''}${lauf.stderr ?? ''}`
+  /*
+   * **Entfärbt.** vitest färbt seine Ausgabe unter Windows auch in eine Pipe —
+   * nur nicht, wenn `NO_COLOR` gesetzt ist oder ein Agent sie liest
+   * (`CLAUDECODE`, `AI_AGENT`). Farbig fand `ersterWaechter` keinen Wächter:
+   * Gemessen am 26.9.2026 ohne diese drei Variablen, also wie im eigenen
+   * Terminal, `import-bibellesung` → „bewacht (unbekannt, 31s)"; unter dem
+   * Agenten stand an derselben Stelle `parse.test.ts`.
+   */
+  const ausgabe = stripVTControlCharacters(`${lauf.stdout ?? ''}${lauf.stderr ?? ''}`)
   if (!ausgabe.includes('Test Files')) {
     return {
       zweifel:
