@@ -54,6 +54,7 @@ import {
 } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
+import { uebersetzerFuer } from '../_shared/zuteilungen.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 
 declare const Deno: {
@@ -182,9 +183,16 @@ function parseKey(
 }
 
 /**
- * Push an eine Menge von Abos — Titel je **Gerätesprache**, nicht je Nutzer:
- * Die Sprache hängt am Abo. Der Anfragende wartet auf diesen Versand, deshalb
- * gebündelt statt nacheinander (das übernimmt `zustellen`).
+ * Push an eine Menge von Abos — Titel **und Rumpf** je **Gerätesprache**, nicht
+ * je Nutzer: Die Sprache hängt am Abo. Der Anfragende wartet auf diesen
+ * Versand, deshalb gebündelt statt nacheinander (das übernimmt `zustellen`).
+ *
+ * **Der Rumpf ging bis zum 26.9.2026 kanonisch deutsch hinaus** — in jeder
+ * Sprache „Mikrofone · Dienstag, 8. September · 19:00 · Name" unter einem
+ * übersetzten Titel. Gebaut war er längst für den Fragment-Übersetzer (Atome,
+ * Name als Freitext markiert); nur übersetzte ihn hier niemand, anders als in
+ * `send-reminders` und `send-plan`. Die Glocke fiel nicht auf: Sie übersetzt
+ * beim Anzeigen.
  */
 async function pushTo(
   subs: Sub[],
@@ -194,10 +202,11 @@ async function pushTo(
   tag?: string,
 ): Promise<void> {
   if (!vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)) return
+  const trFuer = uebersetzerFuer()
   const zustellungen: Zustellung[] = subs.map((s) => ({
     abo: s,
     titel: titel(s.lang),
-    body,
+    body: trFuer(s.lang)(body),
     url,
     ...(tag ? { tag } : {}),
   }))

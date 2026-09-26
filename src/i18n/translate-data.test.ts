@@ -157,14 +157,19 @@ describe('REF — Verweis-Vorlagen', () => {
    *   „th Lektion 11"  ·  „lmd Lektion 4 Punkt 3"  ·  „lff Lektion 20 Punkt 4"
    * — `th` ohne Punktnummer, `lmd`/`lff` immer mit.
    */
-  const AKTUELL: Array<keyof RefDict> = ['thLek', 'lmdLekP', 'lffLekP', 'wcgKap', 'gruppe', 'vers']
+  /**
+   * `lmdAnh` gehört dazu: Hier stand es bis zum 26.9.2026 unter Altbestand
+   * („wird inzwischen als lmd Lektion 1 Punkt 5 zitiert"). Die Wochen 27 und
+   * 32/2026 zitieren aber wieder „lmd Anhang A Punkt 17/19" — in allen 34
+   * Sprachen nachgemessen, die vier fehlenden Vorlagen (sr/tr/fa/ur) sind seither
+   * eingetragen.
+   */
+  const AKTUELL: Array<keyof RefDict> = ['thLek', 'lmdLekP', 'lffLekP', 'wcgKap', 'lmdAnh', 'gruppe', 'vers']
 
   /**
    * Vorlagen für Formen, die **nur in älteren Arbeitsheften** vorkommen:
-   * `lmd Lektion 3` und `lff Lektion 20` ohne Punktnummer sowie
-   * `lmd Anhang A Punkt 21`. An denselben zwei Ausgaben geprüft — keine davon
-   * kommt heute noch vor; die Anhang-A-Stelle wird inzwischen als
-   * „lmd Lektion 1 Punkt 5" zitiert.
+   * `lmd Lektion 3` und `lff Lektion 20` ohne Punktnummer. In den zwölf
+   * gemessenen Wochen von Juli bis Dezember 2026 kommt keine davon vor.
    *
    * Sie bleiben im Wörterbuch, weil die App bis zu 52 Wochen zurück lädt und
    * Altbestände sie noch enthalten (auch der Demo-Datensatz). Fehlt eine, wird
@@ -172,7 +177,7 @@ describe('REF — Verweis-Vorlagen', () => {
    * dann einfach aus. Deshalb hier keine Pflicht, sondern nur die Buchführung
    * darüber, wo sie fehlt.
    */
-  const ALTBESTAND: Array<keyof RefDict> = ['lmdLek', 'lffLek', 'lmdAnh']
+  const ALTBESTAND: Array<keyof RefDict> = ['lmdLek', 'lffLek']
 
   /**
    * Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation —
@@ -206,13 +211,10 @@ describe('REF — Verweis-Vorlagen', () => {
     expect(luecken.sort()).toEqual(
       [
         'cs.lffLek', 'cs.lmdLek',
-        'fa.lmdAnh',
         'hu.lffLek', 'hu.lmdLek',
         'ko.lffLek', 'ko.lmdLek',
         'sk.lffLek', 'sk.lmdLek',
-        'sr.lmdAnh',
-        'tr.lffLek', 'tr.lmdAnh', 'tr.lmdLek',
-        'ur.lmdAnh',
+        'tr.lffLek', 'tr.lmdLek',
         'zh.lffLek', 'zh.lmdLek',
       ].sort(),
     )

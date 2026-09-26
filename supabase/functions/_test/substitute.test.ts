@@ -866,6 +866,31 @@ describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen',
     expect(parseGoAbschnitt(ziel!)).toBe('einspringen')
   })
 
+  it('der Rumpf kommt in der Sprache des Geräts an, nicht kanonisch deutsch', async () => {
+    // Bis zum 26.9.2026 übersetzte pushTo() nur den Titel: Unter „Substitute
+    // needed" stand „Mikrofone · Dienstag, 8. September · 19:00". Die Glocke
+    // übersetzt beim Anzeigen, der Push nicht mehr — dort zählt, was ankommt.
+    const ABO_EN = { user_id: U_ME, endpoint: 'https://push.test/me-en', p256dh: 'k', auth: 'a', lang: 'en' }
+    SUBS.push(ABO_EN)
+    try {
+      const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+      expect(res.status).toBe(200)
+      const zustellung = (endpoint: string) => {
+        const p = sentPush.find((s) => s.endpoint === endpoint)
+        return p ? (JSON.parse(p.payload) as { title: string; body: string }) : undefined
+      }
+      expect(zustellung(ABO_EN.endpoint)).toMatchObject({
+        title: 'Substitute needed',
+        body: 'Microphones · Tuesday, September 8 · 19:00 · Otto Riginal',
+      })
+      // Das Abo ohne Sprache bleibt deutsch — aber ohne die unsichtbaren
+      // Freitext-Marken um den Namen.
+      expect(zustellung('https://push.test/me')?.body).toBe(`Mikrofone · ${TERMIN} · Otto Riginal`)
+    } finally {
+      SUBS.splice(SUBS.indexOf(ABO_EN), 1)
+    }
+  })
+
   it('„Ersatz gefunden" führt zu den Aufgaben, ohne Sprung — zu übernehmen gibt es nichts mehr', async () => {
     const res = await call(take())
     expect(res.status).toBe(200)

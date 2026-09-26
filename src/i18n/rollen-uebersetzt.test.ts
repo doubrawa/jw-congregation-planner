@@ -60,11 +60,20 @@ describe('Rollen der App im Fragment-Übersetzer', () => {
 
   const fremdsprachen = APP_LANGS.filter(({ code }) => code !== 'de')
 
+  /**
+   * Wo die Übersetzung **gleich lautet**, ist Gleichheit kein Zeichen einer
+   * Lücke: cs/sk nennen den Gesprächspartner in der S-38 (p40–p44) „Partner".
+   * Die Liste bleibt gemessen, nicht geraten — jeder Eintrag braucht einen Beleg.
+   */
+  const GLEICHLAUTEND: Record<string, readonly string[]> = { cs: ['Partner'], sk: ['Partner'] }
+
   it('jede Sprache übersetzt jede von ihnen', () => {
     const luecken: string[] = []
     for (const { code } of fremdsprachen) {
       const tr = makeTr(code)
-      for (const rolle of ROLLEN) if (tr(rolle) === rolle) luecken.push(`${code}: ${rolle}`)
+      for (const rolle of ROLLEN) {
+        if (tr(rolle) === rolle && !GLEICHLAUTEND[code]?.includes(rolle)) luecken.push(`${code}: ${rolle}`)
+      }
     }
     expect(luecken, luecken.slice(0, 8).join(' | ')).toEqual([])
   })

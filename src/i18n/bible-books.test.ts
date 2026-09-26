@@ -24,13 +24,24 @@ describe('Bibelbücher', () => {
     }
   })
 
-  it('deckt alle 66 Bücher ab (Urdu 57 — dort ist die Übersetzung Teilausgabe)', () => {
+  it('deckt alle 66 Bücher ab — auch Urdu', () => {
+    // Urdu stand bis zum 26.9.2026 bei 57: Die Übersetzung ist dort noch
+    // Teilausgabe. WOL führt die Namen der übrigen neun inzwischen trotzdem.
     for (const { code: lang } of APP_LANGS) {
       if (lang === 'de') continue
-      const erwartet = lang === 'ur' ? 57 : 66
-      expect(buchTabelle(lang).voll.size, lang).toBe(erwartet)
-      expect(buchTabelle(lang).kurz.size, lang).toBe(erwartet)
+      expect(buchTabelle(lang).voll.size, lang).toBe(66)
+      expect(buchTabelle(lang).kurz.size, lang).toBe(66)
     }
+  })
+
+  it('schreibt die Bibellesung so, wie das Heft der Sprache sie schreibt', () => {
+    // Gemessen an der Zeile „(4 Min.) Jer 36:1-13" der Woche 21.–27.9.2026:
+    // die Kurzform ist je Sprache eine andere WOL-Form, Persisch kürzt gar nicht.
+    expect(makeTr('pt')('Jer 36:1-13')).toBe('Jer. 36:1-13')
+    expect(makeTr('ur')('Jer 36:1-13')).toBe('یرم 36:1-13')
+    expect(makeTr('fa')('Jer 36:1-13')).toBe('اِرْمیا 36:1-13')
+    expect(makeTr('ja')('1Pe 5:2')).toBe('ペテ一 5:2')
+    expect(makeTr('en')('Jer 36:1-13')).toBe('Jer 36:1-13')
   })
 
   it('übersetzt Buch samt Kapitelangabe', () => {

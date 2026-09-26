@@ -43,8 +43,8 @@ const TEXTE: Record<string, InviteTexte> = {
     body: "Hola {name}:\n\nregístrate en la aplicación de nuestra congregación:\n{url}\n\nDespués de registrarte, canjea este código de invitación:\n{code}",
   },
   fr: {
-    subject: "Invitation : Versammlung.app",
-    body: "Bonjour {name},\n\ninscris-toi dans l’application de notre assemblée :\n{url}\n\nAprès l’inscription, utilise ce code d’invitation :\n{code}",
+    subject: "Invitation\u00a0: Versammlung.app",
+    body: "Bonjour {name},\n\ninscris-toi dans l’application de notre assemblée\u00a0:\n{url}\n\nAprès l’inscription, utilise ce code d’invitation\u00a0:\n{code}",
   },
   it: {
     subject: "Invito: Versammlung.app",
@@ -76,7 +76,7 @@ const TEXTE: Record<string, InviteTexte> = {
   },
   el: {
     subject: "Πρόσκληση: Versammlung.app",
-    body: "Γεια σου {name},\n\nκάνε εγγραφή στην εφαρμογή της εκκλησίας μας:\n{url}\n\nΜετά την εγγραφή, χρησιμοποίησε αυτόν τον κωδικό πρόσκλησης:\n{code}",
+    body: "Γεια σας {name},\n\nκάντε εγγραφή στην εφαρμογή της εκκλησίας μας:\n{url}\n\nΜετά την εγγραφή, χρησιμοποιήστε αυτόν τον κωδικό πρόσκλησης:\n{code}",
   },
   cs: {
     subject: "Pozvánka: Versammlung.app",
@@ -156,7 +156,7 @@ const TEXTE: Record<string, InviteTexte> = {
   },
   he: {
     subject: "הזמנה: Versammlung.app",
-    body: "שלום {name},\n\nנא להירשם ביישום הקהילה שלנו:\n{url}\n\nלאחר ההרשמה, מַמֵּש את קוד ההזמנה הזה:\n{code}",
+    body: "שלום {name},\n\nנא להירשם ביישום הקהילה שלנו:\n{url}\n\nלאחר ההרשמה יש להזין את קוד ההזמנה הזה:\n{code}",
   },
   fa: {
     subject: "دعوت: Versammlung.app",
@@ -164,7 +164,7 @@ const TEXTE: Record<string, InviteTexte> = {
   },
   ur: {
     subject: "دعوت: Versammlung.app",
-    body: "السلام علیکم {name}،\n\nبراہِ کرم ہماری کلیسیا کی ایپ میں رجسٹر کریں:\n{url}\n\nرجسٹریشن کے بعد یہ دعوتی کوڈ درج کریں:\n{code}",
+    body: "سلام {name}،\n\nبراہِ کرم ہماری کلیسیا کی ایپ میں رجسٹر کریں:\n{url}\n\nرجسٹریشن کے بعد یہ دعوتی کوڈ درج کریں:\n{code}",
   },
 }
 

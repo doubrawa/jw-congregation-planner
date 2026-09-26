@@ -36,7 +36,9 @@ describe('makeTr — Programm-Inhalts-Übersetzer', () => {
   })
 
   it('übersetzt Rahmen, Begleiter und Countdown', () => {
-    expect(es('Interesse fördern')).toBe('Haga revisitas')
+    // Wortlaut des Arbeitshefts, nicht übersetzt: seit der Ausgabe Nov./Dez.
+    // 2026 in der Wir-Form (vorher „Haga revisitas").
+    expect(es('Interesse fördern')).toBe('Hagamos revisitas')
     expect(fr('mit A. Hoffmann')).toBe('avec A. Hoffmann')
     expect(en('in 4 Tagen')).toBe('in 4 days')
   })
@@ -67,7 +69,8 @@ describe('makeTr — Programm-Inhalts-Übersetzer', () => {
   it('übersetzt zusammengesetzte Wochenend-Titel inkl. „Lied“-Atom', () => {
     const it = makeTr('it')
     expect(it('Lied · Gebet')).toBe('Cantico · Preghiera')
-    expect(it('Schlussworte · Lied · Gebet')).toBe('Parole di conclusione · Cantico · Preghiera')
+    // „Commenti conclusivi" wie im italienischen Arbeitsheft („Commenti conclusivi (3 min)")
+    expect(it('Schlussworte · Lied · Gebet')).toBe('Commenti conclusivi · Cantico · Preghiera')
     expect(it('Lied')).toBe('Cantico')
     expect(it('(Vortragsthema eintragen)')).toBe('(inserire il tema del discorso)')
   })
@@ -147,11 +150,12 @@ describe('makeTr(en) — jede Wörterbuch-Regel', () => {
 describe('Rollen und Verweise — auch in den Zusatz-Sprachen', () => {
   // Diese Begriffe blieben früher deutsch stehen: die Rollen fehlten im
   // Wörterbuch, die Verweis-/Gruppen-Regeln gab es nur für en/es/fr.
+  // Die Wörter der S-38 (1201038, p40/p74): ja 相手役, ar الناصح.
   it('Gesprächspartner und Ratgeber sind überall übersetzt', () => {
-    expect(makeTr('ja')('Partner')).toBe('補助')
+    expect(makeTr('ja')('Partner')).toBe('相手役')
     expect(makeTr('pl')('Partner')).toBe('Pomocnik')
     expect(makeTr('ru')('Ratgeber')).toBe('Советник')
-    expect(makeTr('ar')('Ratgeber')).toBe('المشير')
+    expect(makeTr('ar')('Ratgeber')).toBe('الناصح')
   })
 
   it('Kreisaufseher auch in den zuletzt ergänzten Sprachen', () => {

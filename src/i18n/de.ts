@@ -112,10 +112,10 @@ export const DE = {
     pushLbl: 'Push-Mitteilungen',
     pushPromptTitle: 'Keine Zuteilung verpassen',
     pushPromptText: 'Aktiviere Benachrichtigungen und werde rechtzeitig an deine Zuteilungen erinnert.',
-    pushPromptIos: 'Auf dem iPhone zuerst installieren: Teilen-Symbol → „Zum Home-Bildschirm". Danach kannst du im Profil Benachrichtigungen aktivieren.',
+    pushPromptIos: 'Auf dem iPhone zuerst installieren: Teilen-Symbol → „Zum Home-Bildschirm“. Danach kannst du im Profil Benachrichtigungen aktivieren.',
     pushAktivieren: 'Aktivieren',
     appInstallieren: 'App installieren',
-    pushIosHint: 'Für Benachrichtigungen die App installieren: Teilen → „Zum Home-Bildschirm".',
+    pushIosHint: 'Für Benachrichtigungen die App installieren: Teilen → „Zum Home-Bildschirm“.',
     familieLabel: 'Familie',
     // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
     // Sprache der dortige Satz, statt einer eigenen Umschreibung.
@@ -182,7 +182,7 @@ export const DE = {
     toastKeinePassende: 'Keine passende Person für die offenen Slots frei',
     toastAutoN: 'Automatisch vergebene Zuteilungen: {n}', toastGeleertN: 'Geleerte Zuteilungen: {n}',
     toastAbsentP: '{name} ist in dieser Woche abwesend',
-    toastVonBis: 'Bitte Von und Bis angeben', toastVonNachBis: '„Von" darf nicht nach „Bis" liegen',
+    toastVonBis: 'Bitte Von und Bis angeben', toastVonNachBis: '„Von“ darf nicht nach „Bis“ liegen',
     toastAbwAdd: 'Abwesenheit eingetragen', toastAbwDel: 'Abwesenheit entfernt',
     toastPersonNeu: 'Neue Person angelegt',
     toastDienstDel: 'Dienst entfernt', toastDienstAdd: 'Dienst hinzugefügt', toastNameEingeben: 'Bitte einen Namen eingeben',
@@ -259,7 +259,7 @@ export const DE = {
     coWoche: 'BESUCH DES KREISAUFSEHERS',
     memWoche: 'GEDÄCHTNISMAHL',
     kongress: 'KONGRESS',
-    memAusfall: 'Die Zusammenkunft „{m}“ entfällt in dieser Woche — stattdessen findet das Gedächtnismahl statt:',
+    memAusfall: '„{m}“ entfällt in dieser Woche — stattdessen findet das Gedächtnismahl statt:',
     lacPh: 'Neuer Programmpunkt, z. B. Örtliche Hinweise', lacAdd: '+ EINFÜGEN',
     vortragThemaPh: 'Vortragsthema eintragen', anfangsliedLbl: 'ANFANGSLIED', liedNrPh: 'Nr.',
     rednerNamePh: 'Name des Redners', rednerVersPh: 'Versammlung des Redners',
@@ -309,7 +309,7 @@ export const DE = {
     // Zählzeile der Warnung „mehrfach vergebene feste Rollen" (Personen).
     // Hier stand daneben die Warnung vor doppelten Anzeigenamen — mit T110
     // entfallen, weil ein doppelter Name sich nicht mehr speichern lässt.
-    dublettenRow: '„{name}" · {n} Personen',
+    dublettenRow: '„{name}“ · {n} Personen',
     // Meldung am Namensfeld, wenn den Namen schon jemand trägt (T110).
     nameDoppelt: 'Diesen Namen trägt bereits {name}. Ergänze den Vornamen, damit beide unterscheidbar sind.',
     // Predigtdienstgruppe löschen (Zwei-Tipp-Bestätigung) und Warnung „ohne Gruppe"
