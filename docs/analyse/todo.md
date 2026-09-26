@@ -5666,8 +5666,24 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
-**Beim Betreiber steht nichts aus (Stand 26. September):** Die Durchsicht vom
-25./26. September (Commit `71e4539`) brauchte drei Schritte, alle erledigt:
+**Beim Betreiber steht nichts aus (Stand 26. September, nachmittags):** Die
+Übersetzungs-Durchsicht (Commit `0819591`) brauchte vier Deploys, alle
+erledigt: ✅ `send-plan`, `send-reminders`, `substitute` und `send-invite` sind
+neu deployt (13:43–13:44 Uhr, Versionen 16, 42, 27 und 12). `send-plan` und
+`send-reminders` bringen den Push-Rumpf mit der neu gemessenen
+Programm-Übersetzung hinaus, `substitute` übersetzt ihn überhaupt erst jetzt je
+Gerätesprache — vorher ging er in jeder Sprache deutsch hinaus —, `send-invite`
+trägt die angeglichenen Einladungstexte. Rauchtest danach: `send-plan` und
+`substitute` antworten auf OPTIONS mit dem `ok` des Handlers und ohne
+Nutzer-Token mit `401 unauthorized` — `substitute` also samt dem neu
+eingebundenen Übersetzer —, `send-reminders` ohne `CRON_SECRET` mit `401`,
+`send-invite` mit `not-configured`, weil `INVITE_FROM` fehlt (T106).
+`import-week` braucht keinen Deploy: Aus dem geteilten Code nutzt es nur die
+Vergabe der Punkt-Kennungen. Die Commits danach (`6f8b8b5`, `395f95e`,
+`c7b8d27`) ändern nur Texte der App; der Client ist über Pages mitgelaufen.
+
+**Am Morgen des 26. September stand beim Betreiber nichts mehr aus:** Die
+Durchsicht vom 25./26. September (Commit `71e4539`) brauchte drei Schritte, alle erledigt:
 ✅ die Spalte `fs_rules.aus` ist angelegt (Wochen, in denen eine
 Grundplan-Regel ausgesetzt ist), ✅ `task_gehoert_mir` ist im SQL-Editor neu
 eingespielt (eine bekannte Art in fremder Schreibweise wird abgewiesen),
