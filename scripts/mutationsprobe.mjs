@@ -31,6 +31,12 @@
  * stillschweigend zu überspringen. Sonst stünde eines Tages ein Katalog voller
  * Einträge da, die nichts mehr messen, und meldete lauter grüne Häkchen.
  *
+ * **Gewertet wird nur ein Lauf, der getestet hat.** Findet Node vitest nicht,
+ * stirbt der Lauf oder endet er ohne ein einziges Testergebnis, bricht die
+ * Probe mit Rückgabewert 2 ab, statt der Regel ein Häkchen zu geben
+ * (`testlaufBefund`). Bis zum 26.9.2026 zählte jeder Rückgabewert ≠ 0 als
+ * „bewacht" — in einem Worktree bekam so jede Regel eines.
+ *
  *     node scripts/mutationsprobe.mjs            # alle
  *     node scripts/mutationsprobe.mjs zuteilung  # nur passende Kennungen
  *     node scripts/mutationsprobe.mjs --liste     # nur auflisten, nichts laufen lassen
@@ -1888,23 +1894,24 @@ function vitestPfad() {
 }
 
 /**
- * Einen vollen Testlauf machen. Rückgabe: `{ rot, ausgabe }` — oder
- * `{ zweifel }` mit dem Grund, wenn der Lauf über die Regel nichts aussagt.
- *
- * **Rot heißt nur „bewacht", wenn vitest selbst rot gesagt hat.** Bis zum
- * 26.9.2026 zählte jeder Rückgabewert ≠ 0. Im Worktree zeigte der Pfad zu
- * vitest ins Leere, Node endete an „Cannot find module" mit 1 — und die Probe
- * schrieb jeder Regel „bewacht (unbekannt, 0s)" gut, ohne dass ein einziger
- * Test gelaufen war. Seither muss die Ausgabe die Zusammenfassung tragen, die
- * vitest am Ende jedes Laufs schreibt („Test Files …", auch nach `--bail=1`).
- * Fehlt sie, hat nicht vitest gesprochen, sondern etwas davor.
+ * Einen vollen Testlauf machen. Rückgabe: was `spawnSync` liefert — gewertet
+ * wird es in `testlaufBefund`.
  *
  * **Kein `process.exit()` hier drin:** Während des Laufs steht die Mutation im
  * Quelltext. Abbrechen darf erst `main()`, wenn sie zurückgenommen ist — bis
  * zum 26.9.2026 brach ein Startfehler hier ab und ließ sie stehen.
+ *
+ * **Eine Minute Frist je Test statt der fünf Sekunden von vitest.** Unter Last
+ * — auf diesem Rechner fahren oft mehrere Sitzungen gleichzeitig volle Suiten —
+ * brauchen die Proben, die den Quelltext von der Platte lesen, ein Vielfaches
+ * (gemessen bis 50 s). Sie reißen die Frist, und `--bail=1` schreibt ihnen die
+ * gerade gebrochene Regel gut. Gemessen am 26.9.2026 bei 87–100 % CPU:
+ * `kontakt-betreff-kodiert` ergab „bewacht (tests/kein-alter-app-name.test.ts,
+ * 50s)", mit einer Minute Frist `src/login/kontakt.test.ts`. Kosten hat die
+ * Frist nur, wo ein Test wirklich hängt.
  */
 function testlauf(vitest) {
-  const lauf = spawnSync(process.execPath, [vitest, 'run', '--reporter=dot', '--bail=1'], {
+  return spawnSync(process.execPath, [vitest, 'run', '--reporter=dot', '--bail=1', '--testTimeout=60000'], {
     cwd: wurzel,
     encoding: 'utf8',
     /*
@@ -1919,24 +1926,71 @@ function testlauf(vitest) {
     env: { ...process.env, CI: 'true', MUTATIONSPROBE: '1' },
     maxBuffer: 64 * 1024 * 1024,
   })
-  if (lauf.error) return { zweifel: `vitest konnte nicht gestartet werden: ${lauf.error.message}` }
-  /*
-   * **Entfärbt.** vitest färbt seine Ausgabe unter Windows auch in eine Pipe —
-   * nur nicht, wenn `NO_COLOR` gesetzt ist oder ein Agent sie liest
-   * (`CLAUDECODE`, `AI_AGENT`). Farbig fand `ersterWaechter` keinen Wächter:
-   * Gemessen am 26.9.2026 ohne diese drei Variablen, also wie im eigenen
-   * Terminal, `import-bibellesung` → „bewacht (unbekannt, 31s)"; unter dem
-   * Agenten stand an derselben Stelle `parse.test.ts`.
-   */
-  const ausgabe = stripVTControlCharacters(`${lauf.stdout ?? ''}${lauf.stderr ?? ''}`)
-  if (!ausgabe.includes('Test Files')) {
+}
+
+/**
+ * Die Summenzeilen, die vitest ans Ende jedes Laufs schreibt, der Tests
+ * gesammelt hat — auch nach einem Abbruch durch `--bail=1`:
+ *
+ *      Test Files  1 failed | 31 passed | 5 skipped (194)
+ *           Tests  1 failed | 2272 passed | 25 skipped (2401)
+ *
+ * In Klammern steht die Gesamtzahl. Wo vitest keinen einzigen Test gesehen
+ * hat, steht dort „no tests" — ohne Zahl.
+ */
+const TESTERGEBNIS = /^\s*(?:Test Files|Tests)\s+.*\(\d+\)\s*$/m
+
+/**
+ * **Hat vitest überhaupt getestet?** Nur dann sagt sein Rot etwas über die
+ * Regel.
+ *
+ * Bis zum 26.9.2026 galt jeder Rückgabewert ≠ 0 als rot, also als „bewacht".
+ * Im Worktree zeigte der Pfad zu vitest ins Leere, Node endete an „Cannot find
+ * module" mit 1 — und die Probe schrieb jeder Regel „bewacht (unbekannt, 0s)"
+ * gut, ohne dass ein einziger Test gelaufen war.
+ *
+ * Seither zählt ein Lauf nur, wenn vitest bis zu seinen Summenzeilen kam
+ * (`TESTERGEBNIS`), gleich mit welchem Rückgabewert: Fehlen sie, hat nicht
+ * vitest gesprochen, sondern etwas davor. Ebenso wenig zählt ein Lauf, der
+ * nicht zu starten war (`error`, auch ein zu voller Puffer) oder abgeschossen
+ * wurde (Signal).
+ *
+ * **„Cannot find module" auf stderr beweist hier allein nichts.** Anders als
+ * tsc schreibt vitest seinen Fehlerbericht selbst nach stderr — `FAIL`-Zeilen,
+ * Meldungen, Quelltextauszüge —, dazu die Konsolenausgaben der Tests. Ein
+ * Test, der an einem fehlenden Modul scheitert, trägt die Wendung also auch
+ * (gemessen am 26.9.2026) und ist ein gewöhnliches Rot. Sie nennt den Grund
+ * nur, wo keine Summenzeile dasteht.
+ *
+ * **Entfärbt.** vitest färbt seine Ausgabe unter Windows auch in eine Pipe —
+ * nur nicht, wenn `NO_COLOR` gesetzt ist oder ein Agent sie liest
+ * (`CLAUDECODE`, `AI_AGENT`). Farbig fand `ersterWaechter` keinen Wächter, und
+ * die Summenzeilen begännen mit Farbcodes statt mit „Test Files": Gemessen am
+ * 26.9.2026 ohne diese drei Variablen, also wie im eigenen Terminal,
+ * `import-bibellesung` → „bewacht (unbekannt, 31s)"; unter dem Agenten stand
+ * an derselben Stelle `parse.test.ts`.
+ *
+ * `lauf` ist, was `spawnSync` zurückgibt. Rein, damit `mutationsprobe.test.ts`
+ * jeden dieser Fälle nachstellen kann, ohne vitest zu starten. Ergebnis:
+ * `{ rot, waechter }` — oder `{ fehler }` mit dem Grund, warum der Lauf nichts
+ * aussagt.
+ */
+export function testlaufBefund(lauf) {
+  if (lauf.error) return { fehler: `Der Testlauf scheiterte: ${lauf.error.message}` }
+  if (lauf.status === null) return { fehler: `Der Testlauf wurde abgebrochen (${lauf.signal}).` }
+
+  const stderr = stripVTControlCharacters(lauf.stderr ?? '')
+  const ausgabe = `${stripVTControlCharacters(lauf.stdout ?? '')}${stderr}`
+  if (!TESTERGEBNIS.test(ausgabe)) {
+    const fehlt = stderr.split(/\r?\n/).find((z) => z.includes('Cannot find module'))
+    if (fehlt) return { fehler: `vitest ist nicht gelaufen — Node fand ein Modul nicht:\n  ${fehlt.trim()}` }
     return {
-      zweifel:
-        `vitest endete mit ${lauf.status ?? lauf.signal}, aber ohne Zusammenfassung („Test Files") — ` +
-        `getestet hat es nicht:\n${auszug(ausgabe)}`,
+      fehler: `vitest endete mit ${lauf.status}, aber ohne ein einziges Testergebnis — getestet hat es nicht:\n${auszug(ausgabe)}`,
     }
   }
-  return { rot: lauf.status !== 0, ausgabe }
+
+  const rot = lauf.status !== 0
+  return { rot, waechter: rot ? ersterWaechter(ausgabe) : null }
 }
 
 /**
@@ -1951,7 +2005,7 @@ function nichtGemessen(zweifel, sekunden) {
   process.exit(2)
 }
 
-/** Aus der Ausgabe die erste rote Testdatei ziehen — als Beleg, WER bewacht. */
+/** Aus der Ausgabe (ohne Farbcodes) die erste rote Testdatei ziehen — als Beleg, WER bewacht. */
 function ersterWaechter(ausgabe) {
   const treffer = /(?:FAIL|❯|×)\s+([\w./-]+\.test\.tsx?)/.exec(ausgabe)
   return treffer?.[1] ?? 'unbekannt'
@@ -2049,12 +2103,13 @@ function main() {
     process.stdout.write(`[${i + 1}/${auswahl.length}] ${m.id} … `)
     writeFileSync(pfad, lies(pfad).replace(m.suchen, m.ersetzen))
     const start = Date.now()
-    const { rot, ausgabe, zweifel } = testlauf(vitest)
+    const lauf = testlauf(vitest)
     zuruecksetzen()
 
     const sekunden = Math.round((Date.now() - start) / 1000)
-    if (zweifel) nichtGemessen(zweifel, sekunden)
-    const waechter = rot ? ersterWaechter(ausgabe) : null
+    const befund = testlaufBefund(lauf)
+    if (befund.fehler) nichtGemessen(befund.fehler, sekunden)
+    const { rot, waechter } = befund
     ergebnisse.push({ ...m, rot, waechter })
     console.log(rot ? `bewacht (${waechter}, ${sekunden}s)` : `UNBEWACHT (${sekunden}s)`)
   }

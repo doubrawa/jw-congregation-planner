@@ -5685,6 +5685,19 @@ zurückgeschrieben ist; bis dahin ließ ein Startfehler sie im Quelltext stehen.
 Dort sind am 26. September 2026 auch die beiden Fassungen dieser Sperrklinke
 zusammengeführt worden.
 
+**Nachgeschärft im Branch `claude/ecstatic-hamilton-300d3d`:** Die
+Entscheidung steht jetzt in der reinen `testlaufBefund(lauf)`, und
+`scripts/mutationsprobe.test.ts` stellt jeden Fall mit gemessenen Ausgaben
+nach, ohne vitest zu starten — auch farbig, wie im eigenen Terminal. Gewertet
+wird nur, wo die Summenzeilen samt Gesamtzahl dastehen; „Cannot find module"
+nennt den Grund nur ohne sie, denn vitest schreibt seinen Fehlerbericht selbst
+nach stderr, und ein Test, der an einem fehlenden Modul scheitert, ist ein
+gewöhnliches Rot. Dazu **eine Minute Frist je Test**: Unter Last rissen die
+Proben, die den Quelltext lesen, die fünf Sekunden von vitest, und `--bail=1`
+schrieb ihnen die gerade gebrochene Regel gut — `kontakt-betreff-kodiert` galt
+als bewacht von `tests/kein-alter-app-name.test.ts`, mit der Frist ist es
+`src/login/kontakt.test.ts`.
+
 ---
 
 ## Was bewusst offen bleibt
