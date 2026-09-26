@@ -5666,16 +5666,21 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
 
-**Beim Betreiber steht aus (Stand 26. September, abends):** ☐ `import-week`
-neu deployen (Commit `e6388f7`). Der Import liest unter „Uns im Dienst
-verbessern" jetzt die Form eines Punkts am Beschreiber der Zeitzeile: „Was
-würdest du sagen?" bekommt den Platz eines Bruders statt eines Schülers, und
-„Unsere Glaubensansichten erklären" als gespielte Szene Schüler und Partner
-statt einer Ansprache für Brüder (S-38-X 8/26, Abs. 6, 9 und 11). Erst danach
-die Wochen neu holen — schon importierte Wochen frischt der Import nicht auf.
+**Beim Betreiber steht nichts aus (Stand 26. September, abends):**
+✅ `import-week` ist neu deployt (15:14 Uhr, Version 33). Mit Commit `e6388f7`
+liest der Import unter „Uns im Dienst verbessern" die Form eines Punkts am
+Beschreiber der Zeitzeile: „Was würdest du sagen?" bekommt den Platz eines
+Bruders statt eines Schülers, und „Unsere Glaubensansichten erklären" als
+gespielte Szene Schüler und Partner statt einer Ansprache für Brüder
+(S-38-X 8/26, Abs. 6, 9 und 11). Nachgesehen mit `functions list`,
+`functions download` — alle 14 Dateien gleich dem Stand von `f9eb2ea` — und
+einem Rauchtest: OPTIONS mit dem `ok` des Handlers; die Woche vom
+28. September kommt mit „Was würdest du sagen?" als `vortrag`-Platz, die vom
+5. Oktober mit der gespielten Szene als Schüler und Partner. Schon importierte
+Wochen frischt der Import nicht auf, sie kommen erst mit dem Neuaufbau neu.
 `treffpunkte-importieren.mjs` (Commit `6a251db`, NWS-Treffpunkte als
-Versammlungstreffpunkt) braucht keinen Deploy, es läuft lokal: aus dem
-Hauptcheckout auf dem Stand von `main`.
+Versammlungstreffpunkt) braucht keinen Deploy — es läuft lokal und braucht nur
+den Stand von `main`.
 
 **Am Nachmittag des 26. September stand beim Betreiber nichts mehr aus:** Die
 Übersetzungs-Durchsicht (Commit `0819591`) brauchte vier Deploys, alle
