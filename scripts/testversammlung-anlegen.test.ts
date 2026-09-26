@@ -4,15 +4,18 @@ import { argumente } from './gemeinsam.mjs'
 import {
   bereiche,
   EXTERNE_ROLLE,
+  fsRegelZeilen,
   fuelleZuteilungen,
   istUuid,
   kontoAnlegenOderUebernehmen,
   passwort,
+  TEST_FS_REGELN,
   TEST_GASTREDNER,
   TEST_GRUPPEN,
   TEST_PERSONEN,
   waehle,
 } from './testversammlung-anlegen.mjs'
+import { regelFehler } from './treffpunkt-regeln-setzen.mjs'
 import { isGuestRole } from '../src/data/helpers'
 import { weekConflicts } from '../src/data/planning'
 import type { Person, Service, Week } from '../src/data/types'
@@ -25,8 +28,8 @@ import { STANDARD_DIENSTE } from '../src/data/vorgaben'
  * man den Fehler in den Richtlinien statt im Fixture.
  *
  * Der Netzteil (`main`) bleibt ungeprüft. Geprüft ist alles, was **entscheidet**:
- * der Bestand selbst, die Bereichs-Ableitung, die Auswahlregel und das Füllen
- * einer Woche.
+ * der Bestand selbst, die Bereichs-Ableitung, die Auswahlregel, das Füllen
+ * einer Woche und die Form der Treffpunkt-Regeln.
  */
 
 /** Minimale Testperson, wie sie nach dem Anlegen aus der Datenbank käme. */
@@ -117,6 +120,126 @@ describe('Vollständigkeitsprobe: der Bestand kann jeden Platz besetzen', () => 
       const passend = TEST_PERSONEN.filter((p) => bereiche(p)[key])
       expect(`${key}: ${passend.length > 0}`).toBe(`${key}: true`)
     }
+  })
+})
+
+/**
+ * Die Spalten einer Tabelle, wie `schema.sql` sie anlegt: Name → Typ, ob `null`
+ * erlaubt ist, und ob die Zeile sie **mitbringen muss** (`not null` oder
+ * Primärschlüssel, ohne `default`).
+ *
+ * Gelesen wird der `create table`-Block Zeile für Zeile. Tabellenweite Zeilen —
+ * `constraint`, `unique`, die Fortsetzung eines Fremdschlüssels oder einer
+ * Prüfung — beginnen mit einem Schlüsselwort und fallen heraus. Was erst
+ * später per `alter table … add column` dazukommt, sieht der Helfer nicht; im
+ * Schema ist das allein `persons.grp` (der Kreis zwischen Personen und
+ * Gruppen), `fs_rules` steht ganz im Block.
+ */
+function schemaSpalten(schema: string, tabelle: string) {
+  const spalten = new Map<string, { typ: string; nullbar: boolean; pflicht: boolean }>()
+  const block = new RegExp(`create table if not exists public\\.${tabelle}\\s*\\(([\\s\\S]*?)\\n\\);`).exec(schema)
+  for (const zeile of (block?.[1] ?? '').split(/\r?\n/)) {
+    const m = /^\s*(\w+)\s+(\w+(?:\[\])?)(.*)$/.exec(zeile.replace(/--.*$/, ''))
+    if (!m || /^(constraint|unique|primary|foreign|check|references|exclude)$/i.test(m[1]!)) continue
+    const rest = m[3]!.toLowerCase()
+    const nullbar = !/\bnot null\b|\bprimary key\b/.test(rest)
+    spalten.set(m[1]!, { typ: m[2]!.toLowerCase(), nullbar, pflicht: !nullbar && !/\bdefault\b/.test(rest) })
+  }
+  return spalten
+}
+
+/**
+ * Passt ein Wert in eine Spalte dieses Typs? Nur die Typen, die eine Regel
+ * trägt — schreibt das Skript einmal eine Spalte anderen Typs, meldet die
+ * Probe das, statt sie stillschweigend durchzuwinken.
+ */
+const PASST: Record<string, (wert: unknown) => boolean> = {
+  text: (w) => typeof w === 'string',
+  uuid: (w) => typeof w === 'string' && istUuid(w),
+  smallint: (w) => Number.isInteger(w),
+  boolean: (w) => typeof w === 'boolean',
+  time: (w) => typeof w === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(w),
+}
+
+describe('Der Treffpunkt-Grundplan passt in fs_rules, wie schema.sql die Tabelle anlegt', () => {
+  /*
+    Bis zum 26.9.2026 schrieb das Skript den Grundplan als **ein** Objekt
+    `{ congregation_id, base, rules: [...] }` mit `grp: ''` — die Form von vor
+    dem Umbau vom 18.9.2026 (T105). Der Umbau hatte die anderen Tabellen dieses
+    Skripts nachgezogen, diese nicht; ein `.mjs` hat keinen Compiler, der die
+    Spalten kennt, und die Tests hier sahen den Netzteil nicht.
+
+    Gefragt wird deshalb das Schema selbst, keine Spaltenliste hier: Benennt es
+    eine Spalte um, streicht es eine oder kommt eine Pflichtspalte dazu, wird
+    diese Probe rot — nicht erst der nächste Lauf gegen die Datenbank.
+  */
+  const schema = fs.readFileSync(new URL('../supabase/schema.sql', import.meta.url), 'utf8')
+  const spalten = schemaSpalten(schema, 'fs_rules')
+  const CONG = '3f2a9c1e-0b7d-4e55-9a31-8c6d5e4f7a20'
+  const zeilen = fsRegelZeilen(CONG)
+
+  it('die Probe greift überhaupt', () => {
+    // Fände das Muster den Block nicht, gingen die Fälle unten leer und grün
+    // durch. Geprüft wird deshalb, dass es Spalten findet und beide Arten
+    // erkennt — nicht, wie sie heißen: Eine Umbenennung soll die Fälle unten
+    // rot machen, nicht diesen.
+    expect(spalten.size).toBeGreaterThan(5)
+    expect(spalten.get('id')).toMatchObject({ typ: 'text', nullbar: false, pflicht: true })
+    expect(spalten.get('grp')).toMatchObject({ typ: 'uuid', nullbar: true, pflicht: false })
+    expect(zeilen.length).toBeGreaterThan(0)
+  })
+
+  it('eine Zeile je Regel, mit deren Inhalt — und jede gehört der neuen Versammlung', () => {
+    // Rückwärts gelesen wie `fsRuleFromRow` in der App: Was hier hineingeht,
+    // muss dort als dieselbe Regel wieder herauskommen.
+    const zurueck = zeilen.map((z) => ({
+      grp: z.grp, wd: z.wd, time: z.time, place: z.place, monthly: z.monthly, skipCong: z.skip_cong,
+    }))
+    expect(zurueck).toEqual(TEST_FS_REGELN)
+    expect(zeilen.map((z) => z.congregation_id)).toEqual(TEST_FS_REGELN.map(() => CONG))
+  })
+
+  it('jedes Feld ist eine Spalte — kein base, kein rules, kein skipCong', () => {
+    const fremd = zeilen.flatMap((z) => Object.keys(z).filter((k) => !spalten.has(k)))
+    expect(fremd, 'gibt es in fs_rules nicht').toEqual([])
+  })
+
+  it('jede Pflichtspalte ist gesetzt', () => {
+    const pflicht = [...spalten].filter(([, s]) => s.pflicht).map(([name]) => name)
+    const fehlt = zeilen.flatMap((z) => pflicht.filter((p) => !(p in z)))
+    expect(fehlt, 'not null ohne default, fehlt in der Zeile').toEqual([])
+  })
+
+  it('jeder Wert passt zu seiner Spalte — grp ist null oder eine uuid, nie der leere String', () => {
+    const falsch: string[] = []
+    for (const z of zeilen) {
+      for (const [k, wert] of Object.entries(z)) {
+        const s = spalten.get(k)
+        if (!s) continue // meldet „jedes Feld ist eine Spalte"
+        if (wert === null) {
+          if (!s.nullbar) falsch.push(`${k}: null in einer not-null-Spalte`)
+          continue
+        }
+        const passt = PASST[s.typ]
+        if (!passt) falsch.push(`${k}: Typ ${s.typ} kennt die Probe nicht — PASST ergänzen`)
+        else if (!passt(wert)) falsch.push(`${k}: ${JSON.stringify(wert)} ist kein ${s.typ}`)
+      }
+    }
+    expect(falsch).toEqual([])
+  })
+
+  it('und jede Regel besteht die Prüfung, mit der treffpunkt-regeln-setzen.mjs einträgt', () => {
+    // Wochentag 0..6, „HH:MM", Monatsregel 0..4 — und keine Gruppen-Ids: Beide
+    // Regeln sind Versammlungstreffpunkte, jede Gruppe wäre hier eine fremde.
+    expect(zeilen.flatMap((z) => regelFehler(z, []))).toEqual([])
+  })
+
+  it('die Kennung hat die Form der App: r<uuid>, je Regel eine eigene', () => {
+    for (const z of zeilen) {
+      expect(z.id[0], z.id).toBe('r')
+      expect(istUuid(z.id.slice(1)), z.id).toBe(true)
+    }
+    expect(new Set(zeilen.map((z) => z.id)).size).toBe(zeilen.length)
   })
 })
 

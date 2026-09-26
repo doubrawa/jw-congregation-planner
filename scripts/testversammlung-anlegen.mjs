@@ -70,7 +70,7 @@
 
 import { randomBytes, randomUUID } from 'node:crypto'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { alsSkript, argumente, authKopf, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { alsSkript, argumente, authKopf, funktionsKopf, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /* ===================== Der erfundene Bestand ============================== */
 
@@ -145,11 +145,48 @@ export function bereiche(p) {
  * Treffpunkt-Grundplan. Nur die **Regeln** werden geschrieben; die Wochen
  * (`fs_weeks`) baut die App beim Laden daraus (`regenFsWeeks`) — sie hier
  * vorzuberechnen hieße, dieselbe Ableitung ein zweites Mal zu führen.
+ *
+ * `grp: null` ist der Versammlungstreffpunkt, wie `FsRule.grp` in der App.
+ * Bis zum 26. September 2026 stand hier `''`, die Form von vor T105: Seitdem
+ * ist `fs_rules.grp` eine `uuid` mit Fremdschlüssel auf `groups`, und ein
+ * leerer String heißt dort nicht „keine Gruppe", sondern ist kein gültiger Wert.
  */
 export const TEST_FS_REGELN = [
-  { grp: '', wd: 6, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
-  { grp: '', wd: 2, time: '18:00', place: 'Marktplatz', monthly: 0, skipCong: false },
+  { grp: null, wd: 6, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
+  { grp: null, wd: 2, time: '18:00', place: 'Marktplatz', monthly: 0, skipCong: false },
 ]
+
+/**
+ * Die Zeilen für `fs_rules` — **eine je Regel**, mit den Spalten aus
+ * `schema.sql`, wie die App (`fsRuleToRow` in `src/lib/data.ts`) und
+ * `treffpunkt-regeln-setzen.mjs` sie schreiben.
+ *
+ * Bis zum 26. September 2026 ging hier der ganze Grundplan als **ein** Objekt
+ * `{ congregation_id, base, rules: [...] }` in einen einzigen POST — der
+ * JSONB-Blob von vor dem Umbau vom 18. September 2026 (T105), bei dem jede
+ * Regel eine Zeile wurde und `base` wegfiel. Der Umbau hatte in diesem Skript
+ * Versammlung, Haushalte und Planer-Vormerkung nachgezogen, den Grundplan
+ * nicht: Ein `.mjs` hat keinen Compiler, der die Spalten kennt. Einen Rumpf mit
+ * Spalten, die es nicht gibt, weist PostgREST ab (400) — hier erst nach den
+ * Wochen, also mitten in einem halb angelegten Bestand. Deshalb steht die
+ * Abbildung jetzt als reine Funktion da, und die Probe hält sie an `schema.sql`.
+ *
+ * Die Kennung ist `r<uuid>` wie in der App (`fsRuleAdd` im Reducer):
+ * `fs_rules.id` ist `text`, und das führende `r` hält den Aufgaben-Schlüssel
+ * `fs|<montag>|<instanzId>` lesbar.
+ */
+export function fsRegelZeilen(congregationId, regeln = TEST_FS_REGELN) {
+  return regeln.map((r) => ({
+    id: `r${randomUUID()}`,
+    congregation_id: congregationId,
+    grp: r.grp ?? null,
+    wd: r.wd,
+    time: r.time,
+    place: r.place,
+    monthly: r.monthly,
+    skip_cong: r.skipCong,
+  }))
+}
 
 /**
  * Auswärtige Redner für die Wochenend-Vorträge. Sie stehen als **Freitext** im
@@ -362,9 +399,16 @@ async function zugang() {
     return text ? JSON.parse(text) : null
   }
 
-  /** Edge Function. Der Service-Role-Key ist ein gültiges JWT — `verify_jwt` lässt ihn durch. */
+  /**
+   * Edge Function — mit `funktionsKopf`, nicht mit `kopf`. Das Gateway prüft
+   * ein JWT (`verify_jwt`) und liest es aus `Authorization`; genau diese
+   * Kopfzeile lässt `authKopf` bei einem `sb_secret_…` weg, weil PostgREST sie
+   * dort mit „Invalid JWT" abweist. Bis zum 26.9.2026 ging hier `kopf` mit:
+   * richtig, solange der Schlüssel ein Legacy-JWT war (`eyJ…`), mit dem neuen
+   * fehlte die Anmeldung — laut `funktionsKopf` ein 401.
+   */
   const fn = async (name, body) => {
-    const res = await fetch(`${url}/functions/v1/${name}`, { method: 'POST', headers: kopf, body: JSON.stringify(body) })
+    const res = await fetch(`${url}/functions/v1/${name}`, { method: 'POST', headers: funktionsKopf(key), body: JSON.stringify(body) })
     if (!res.ok) throw new Error(`POST ${name} ${res.status}: ${await res.text()}`)
     return res.json()
   }
@@ -563,7 +607,9 @@ async function main() {
 
   console.log(`  ${personen.length} Personen, ${gruppen.length} Gruppen`)
 
-  // 2) Dienste und Treffpunkt-Regeln.
+  // 2) Dienste und Treffpunkt-Regeln. Die Regeln kamen bis zum 26.9.2026 erst
+  //    nach den Wochen, weil der Blob deren ersten Montag als `base`
+  //    mitschrieb — eine Spalte, die es seit T105 nicht mehr gibt.
   await rest(
     'services',
     'POST',
@@ -577,6 +623,9 @@ async function main() {
     })),
     'return=minimal',
   )
+  const regeln = fsRegelZeilen(cong.id)
+  await rest('fs_rules', 'POST', regeln, 'return=minimal')
+  console.log(`  ${STANDARD_DIENSTE.length} Dienste, ${regeln.length} Treffpunkt-Regeln`)
 
   // 3) Wochen holen und besetzen. `after` hangelt sich weiter: erst die
   //    kommende, dann die danach — dieselbe Kette wie „Nächste Woche
@@ -596,19 +645,6 @@ async function main() {
     wochen.push({ start: week.start, range: week.range, gesetzt })
     console.log(`  Woche ${week.start} (${week.range}) — ${gesetzt} Plätze besetzt`)
     after = week.start
-  }
-
-  if (wochen.length) {
-    await rest(
-      'fs_rules',
-      'POST',
-      {
-        congregation_id: cong.id,
-        base: wochen[0].start,
-        rules: TEST_FS_REGELN.map((r) => ({ id: randomUUID(), ...r })),
-      },
-      'return=minimal',
-    )
   }
 
   // 4) Konten. `email_confirm` setzt die Adresse als bestätigt — dadurch

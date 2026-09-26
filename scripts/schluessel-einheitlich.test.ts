@@ -99,6 +99,31 @@ describe('Alle Skripte holen den Schlüssel über secretKey()', () => {
     expect(selbstgebaut, 'setzt den Authorization-Header ohne authKopf').toEqual([])
   })
 
+  it('wer eine Edge Function ruft, schickt funktionsKopf mit', () => {
+    /*
+      Die Probe darüber verbietet nur das **Selberbauen**. Durch sie kam
+      `testversammlung-anlegen.mjs`, das bis zum 26.9.2026 den PostgREST-Kopf
+      (`authKopf`) an `import-week` schickte — geschrieben, als der Schlüssel
+      ein JWT war. Mit einem `sb_secret_…` fehlt darin `Authorization`, und
+      genau daraus liest das Function-Gateway die Anmeldung. Zwei Ziele, zwei
+      Regeln: Deshalb wird hier jede Aufrufstelle gefragt, was sie schickt.
+    */
+    const aufrufe: string[] = []
+    for (const f of MIT_DATENBANK.filter((x) => !(x in AUSNAHMEN))) {
+      const quelle = readFileSync(join(dir, f), 'utf8')
+      const code = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/[^\n]*$/gm, '')
+      // Je Aufruf die Adresse, dann das Init-Objekt bis zu seiner ersten `}`.
+      const erkannt = [...code.matchAll(/\/functions\/v1\/[^`]*`\s*,\s*(\{[^}]*)/g)]
+      for (const [, init] of erkannt) aufrufe.push(`${f}: ${/headers:\s*(\w+)/.exec(init ?? '')?.[1] ?? 'ohne headers'}`)
+      // Eine Adresse, die das Muster nicht als Aufruf erkennt, fiele sonst still heraus.
+      const stellen = code.match(/\/functions\/v1\//g)?.length ?? 0
+      for (let i = erkannt.length; i < stellen; i++) aufrufe.push(`${f}: Aufruf nicht erkannt`)
+    }
+    // Ohne Treffer prüfte die Probe nichts — `import-week` rufen zwei Skripte.
+    expect(aufrufe.length).toBeGreaterThanOrEqual(2)
+    expect(aufrufe.filter((a) => !a.endsWith(': funktionsKopf')), 'Edge Function ohne funktionsKopf').toEqual([])
+  })
+
   it('keines holt sich URL und Schlüssel selbst zusammen', () => {
     /*
       **Der teuerste Fund des Neuaufbaus vom 17. September 2026.** Jedes Skript
