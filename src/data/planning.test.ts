@@ -280,11 +280,15 @@ describe('Auto-Zuteilung', () => {
     expect(weeks).toEqual(before)
   })
 
-  it('Reinigung rotiert mit dem Wochenindex (mod 3)', () => {
+  it('Reinigung rotiert mit der Kalenderwoche (mod 3), nicht mit der Position im Fenster', () => {
     const weeks = buildDemoWeeks()
     for (const w of weeks) w.mid.helpers.rein = []
-    const { weeks: next } = autoAssignMeeting(weeks, 4 % 3, 'mid', DEMO_PERSONS, DEMO_SERVICES)
-    expect(next[1].mid.helpers.rein[0].name).toBe('Gruppe 2')
+    const gruppe = (ws: Week[], wi: number): string =>
+      autoAssignMeeting(ws, wi, 'mid', DEMO_PERSONS, DEMO_SERVICES).weeks[wi]!.mid.helpers.rein![0]!.name
+    // Drei aufeinanderfolgende Wochen, drei verschiedene Gruppen …
+    expect(new Set([0, 1, 2].map((wi) => gruppe(weeks, wi))).size).toBe(3)
+    // … und rutscht das Fenster weiter, bleibt die Woche bei ihrer Gruppe.
+    expect(gruppe(weeks.slice(1), 0)).toBe(gruppe(weeks, 1))
   })
 
   it('zählt offen gebliebene, nicht besetzbare Slots als unfilled (≠ „keine offen“)', () => {

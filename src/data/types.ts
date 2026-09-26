@@ -119,6 +119,13 @@ export interface FsRule {
   place: string
   monthly: number // 0 = jede Woche; 1..4 = N-ter Wochentag im Monat
   skipCong: boolean // Gruppen-Regel entfällt, wenn am selben Tag ein Versammlungstreffpunkt ist
+  /**
+   * Wochen (Montage, `Week.start`), in denen die Regel **ausgesetzt** ist — der
+   * Planer hat ihren Treffpunkt dort entfernt. In der Woche allein hielt das
+   * nicht: `regenFsWeeks` baut die Wochen beim Laden und bei jeder
+   * Grundplan-Änderung aus den Regeln neu.
+   */
+  aus?: string[]
 }
 
 /** Konkreter Treffpunkt einer Woche (aus einer Regel materialisiert oder manuell). */
@@ -795,6 +802,13 @@ export interface MyTask {
   at?: number | null
   status: TaskStatus
   s89: S89Payload | null // Schulungsaufgabe → S-89 anzeigbar
+  /**
+   * Die Woche liegt als Variante in der Sprache des Lesers vor (`Week.alt`):
+   * Titel und Datum gehören dann in **seine** Sprache, wie im Programm
+   * (`useProgWeeks`), nicht in die der Versammlung. Gesetzt von
+   * `withDerivedTasks`, gelesen über `aufgabenTp`.
+   */
+  lesersprache?: true
 }
 
 /**
@@ -829,6 +843,8 @@ export interface SubstituteReq {
    * Planer schon lange neben jedem Namen (`sheetSchonHeute`).
    */
   schonHeute: MeetingAssignment[]
+  /** Wie `MyTask.lesersprache`: das Datum in der Sprache des Lesers. */
+  lesersprache?: true
 }
 
 /**

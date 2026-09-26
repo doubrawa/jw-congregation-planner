@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useApp } from '../app/context'
 import { abweichung, weichtAb } from '../data/helpers'
 import { meetingOffset, meetingTime, wdAusVersatz } from '../data/meeting-dates'
@@ -38,6 +39,13 @@ import { Switch } from '../components/Switch'
 export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  /*
+   * Der Grund, wie er gerade getippt wird. `setAbweichung` trimmt ihn — allein
+   * aus dem Zustand gespeist, verlor das Feld jedes Leerzeichen am Ende sofort
+   * wieder, und aus „Kongress in Nürnberg" wurde „KongressinNürnberg". Beim
+   * Verlassen gilt wieder der gespeicherte Text.
+   */
+  const [grundEntwurf, setGrundEntwurf] = useState<string | null>(null)
   const week = state.weeks[state.week]
   if (!week) return null
 
@@ -113,8 +121,12 @@ export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
           type="text"
           className="sonder-grund"
           dir="auto"
-          value={abw?.reason ?? ''}
-          onChange={(e) => setzen({ reason: e.target.value })}
+          value={grundEntwurf ?? abw?.reason ?? ''}
+          onChange={(e) => {
+            setGrundEntwurf(e.target.value)
+            setzen({ reason: e.target.value })
+          }}
+          onBlur={() => setGrundEntwurf(null)}
         />
       </label>
 

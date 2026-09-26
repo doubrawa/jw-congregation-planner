@@ -8,10 +8,9 @@ export function RemindersPanel() {
   const { state, dispatch } = useApp()
   const { t } = useT()
 
-  const reminderSub = (n: number): string => {
-    if (n === 0) return t.remAmTag
-    return n === 1 ? t.remTagVorher : fill(t.remTageVorher, { n })
-  }
+  // Ohne Sonderfall für die 1: „Tage vorher: {n}" stimmt für jede Zahl, auch in
+  // Sprachen mit eigener Form für 2–4. Das eigene „1 Tag vorher" half nur dort.
+  const reminderSub = (n: number): string => (n === 0 ? t.remAmTag : fill(t.remTageVorher, { n }))
 
   /*
    * Hier stand der Schalter „Bei Zuteilung · Sofort" (T74). Er steuerte eine

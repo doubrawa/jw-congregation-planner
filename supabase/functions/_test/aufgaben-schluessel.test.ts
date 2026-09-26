@@ -95,6 +95,9 @@ describe('was kein Schlüssel ist, wird nicht geraten', () => {
     ['Treffpunkt ohne Instanz', `fs|${WOCHE}`],
     ['Treffpunkt ohne Woche', 'fs||i7'],
     ['Tagebuch-Schlüssel (Platz + Name)', `${ratgeberKey(WOCHE, 'mid')} Max Muster`],
+    // Platz 0 in Verkleidung: `Number()` las beides als 0, die Datenbank ließ es durch.
+    ['Platznummer als Kommazahl', `${WOCHE}|mid|helper|mik|0.0`],
+    ['Platznummer mit Vorzeichen', `${WOCHE}|mid|part|k3f9x|+0`],
   ])('%s', (_was, key) => {
     expect(schluesselTeile(key)).toBeNull()
   })

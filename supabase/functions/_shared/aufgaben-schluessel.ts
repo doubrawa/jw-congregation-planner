@@ -123,6 +123,12 @@ export function wochenPraefixe(woche: string): [string, string] {
  * geschah das früher nicht; einen Schlüssel mit leerer Woche (`fs||x`) gibt es
  * nur, wenn gar keine Treffpunkt-Wochen bestehen, und schon damals lief er ins
  * Leere.
+ *
+ * **Die Platznummer ist eine Ziffernfolge, nichts sonst** — genau wie in der
+ * SQL-Fassung. Früher las `Number()` auch „0.0" oder „+0" als Platz 0, während
+ * die Datenbank dieselbe Schreibweise als unbekannte Form durchließ: So ließ
+ * sich eine Absage für einen fremden Platz anlegen, die `substitute` dann für
+ * echt hielt.
  */
 export function schluesselTeile(key: string): SchluesselTeile | null {
   const p = String(key ?? '').split('|')
@@ -136,7 +142,7 @@ export function schluesselTeile(key: string): SchluesselTeile | null {
   const tab = p[1]
   if (!istWochenKennung(woche) || (tab !== 'mid' && tab !== 'we')) return null
   if (p.length === 3 && p[2] === 'ratgeber') return { art: 'ratgeber', woche, tab }
-  if (p.length !== 5) return null
+  if (p.length !== 5 || !/^\d+$/.test(p[4] ?? '')) return null
   if (p[2] === 'helper') return { art: 'helper', woche, tab, svc: p[3] ?? '', pos: Number(p[4]) }
   if (p[2] === 'part' || p[2] === 'aux') {
     return { art: p[2], woche, tab, iid: p[3] ?? '', ni: Number(p[4]) }

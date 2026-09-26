@@ -105,14 +105,14 @@ describe('Der Kopf', () => {
     // 2 Programmplätze + 2 Mikrofone
     const { container } = zeige()
     expect(seite(container).querySelector('.screen-head-note')?.textContent).toBe(
-      '4 offene Zuteilungen',
+      'Offene Zuteilungen: 4',
     )
   })
 
   it('eine ausgefallene Zusammenkunft hat nichts offen (T30)', () => {
     const { container } = zeige({ weeks: [woche({ dev: { mid: { cancelled: true } } })] })
     expect(seite(container).querySelector('.screen-head-note')?.textContent).toBe(
-      '0 offene Zuteilungen',
+      'Offene Zuteilungen: 0',
     )
   })
 

@@ -1,7 +1,7 @@
 /**
  * **Auslastung: wer war in letzter Zeit wie oft dran?**
  *
- * Die Zahl hinter jedem Namen im Zuteilungs-Blatt („2 Aufgaben in 5 Wochen"),
+ * Die Zahl hinter jedem Namen im Zuteilungs-Blatt („Aufgaben in 5 Wochen: 2"),
  * die Mini-Quadrate daneben und die Reihenfolge, in der die Auto-Zuteilung
  * wählt — alles dasselbe Fenster, alles hier.
  *
@@ -137,6 +137,21 @@ export function wochenAbstand(a: Week, b: Week): number {
 }
 
 /**
+ * Laufende Nummer der Woche `weeks[wi]` im Kalender: ganze Wochen seit Montag,
+ * dem 5. Januar 1970, gerechnet aus `week.start`. Ohne brauchbares Datum
+ * (Vorlagen) die Position `wi`.
+ *
+ * Für alles, was Woche für Woche weiterrücken soll — die Reinigung, den
+ * Gleichstand-Hash. Die Position im Ladefenster taugt dafür nicht: Das Fenster
+ * hält die jüngsten 52 Wochen und rutscht mit jedem Import. Ab dem 53. lag jede
+ * neue Woche an derselben Stelle, und Woche für Woche reinigte dieselbe Gruppe.
+ */
+export function laufendeWoche(weeks: readonly Week[], wi: number): number {
+  const ms = Date.parse(weeks[wi]?.start ?? '')
+  return Number.isNaN(ms) ? wi : Math.round((ms - Date.UTC(1970, 0, 5)) / WOCHE_MS)
+}
+
+/**
  * Die Woche, die `versatz` Wochen von `weeks[wi]` entfernt liegt — nach Datum,
  * nicht nach Index (fehlt sie im Bestand, gibt es keine).
  */
@@ -152,7 +167,7 @@ function wocheBeiVersatz(weeks: Week[], wi: number, versatz: number): Week | und
  * Position (T36), und damit genau die, die `loadWindow` als Quadrate zeigt.
  *
  * Es gab die Rechnung zweimal: die Quadrate liefen über `wocheBeiVersatz`, die
- * Zahl daneben („2 Aufgaben in 5 Wochen") und die Auto-Zuteilung schnitten mit
+ * Zahl daneben („Aufgaben in 5 Wochen: 2") und die Auto-Zuteilung schnitten mit
  * `slice` nach Position. Solange die Wochen lückenlos folgen, ist das
  * dasselbe; fehlt eine — eine nie importierte Woche —, beschreiben Quadrat und
  * Zahl verschiedene Zeiträume, und sortiert wird nach einem dritten. Genau
@@ -178,7 +193,7 @@ export function lastFenster(weeks: Week[], wi: number, radius = LOAD_RADIUS): We
  * derselben Woche).
  *
  * `services` gehört hierher, obwohl die Quadrate nur eine Farbe zeigen: die
- * Zahl daneben („2 Aufgaben in 5 Wochen") kommt aus `workloadOf` und zählt
+ * Zahl daneben („Aufgaben in 5 Wochen: 2") kommt aus `workloadOf` und zählt
  * Hilfsdienste nur bis `svc.count`. Ohne dieselbe Grenze zeigte dieselbe Zeile
  * „frei" und daneben ein belegtes Quadrat — die Platzzahl war reduziert, der
  * Name stand aber noch dahinter in den Wochendaten.

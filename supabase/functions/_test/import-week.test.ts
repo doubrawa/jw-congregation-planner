@@ -294,6 +294,14 @@ describe('import-week: die gewöhnliche Woche', () => {
     expect(error).toContain('2026-04-21')
   })
 
+  it('nach der letzten Woche des Hefts kommt keine — nicht die letzte noch einmal', async () => {
+    // Die zweite Lieferung überschrieb im Client die schon geplante Woche.
+    const res = await hole({ after: '2099-01-05' }) as Antwort & { ende?: boolean }
+    expect(res.week).toBeUndefined()
+    expect(res.status).toBe(404)
+    expect(res.ende).toBe(true)
+  })
+
   it('trägt weder Anlass noch Gedächtnismahl-Marke', async () => {
     const { week } = await hole({ after: '2026-03-02' })
     expect(week?.anlass).toBeUndefined()

@@ -129,7 +129,9 @@ describe('Die Liste', () => {
     }))
     const { container } = zeige({ members: alleMitKonto })
     expect(zeilen(container)[2]!.querySelector('.pers-sub')?.textContent).toBe(
-      'Verkündiger · 1 Aufgabenbereiche',
+      // Nicht „1 Aufgabenbereiche": Die Form „Bezeichnung: {n}" stimmt für jede
+      // Zahl, auch in Sprachen mit eigener Form für 2–4.
+      'Verkündiger · Aufgabenbereiche: 1',
     )
     expect(zeilen(container)[1]!.querySelector('.pers-sub')?.textContent).toContain('Ältester')
   })
@@ -203,14 +205,14 @@ describe('Die Liste', () => {
 describe('Der Zähler nennt die sichtbaren, nicht alle', () => {
   it('ohne Einschränkung alle', () => {
     const { container } = zeige()
-    expect(container.querySelector('.screen-head-note')?.textContent).toBe('3 Personen')
+    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 3')
   })
 
   it('mit Suche nur die Treffer — so sieht man, wie stark sie einschränkt', () => {
     const { container } = zeige()
     fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'alt' } })
     expect(namen(container)).toEqual(['Alt, Anton'])
-    expect(container.querySelector('.screen-head-note')?.textContent).toBe('1 Personen')
+    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 1')
   })
 
   it('die Suche findet auch über die E-Mail-Adresse', () => {
@@ -223,7 +225,7 @@ describe('Der Zähler nennt die sichtbaren, nicht alle', () => {
     const { container } = zeige()
     fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'zzz' } })
     expect(zeilen(container)).toHaveLength(0)
-    expect(container.querySelector('.screen-head-note')?.textContent).toBe('0 Personen')
+    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 0')
   })
 })
 
@@ -415,7 +417,7 @@ describe('Alle ohne Konto einladen', () => {
     fireEvent.click(knopf(container, t.alleEinladen))
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({
-        type: 'showToast', text: '1 Codes erstellt · 1 per E-Mail verschickt',
+        type: 'showToast', text: 'Codes erstellt: 1 · per E-Mail verschickt: 1',
       }),
     )
   })
@@ -426,7 +428,7 @@ describe('Alle ohne Konto einladen', () => {
     fireEvent.click(knopf(container, t.alleEinladen))
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({
-        type: 'showToast', text: '1 Einladungscodes erstellt und als Liste kopiert',
+        type: 'showToast', text: 'Einladungscodes erstellt: 1 — als Liste kopiert',
       }),
     )
   })

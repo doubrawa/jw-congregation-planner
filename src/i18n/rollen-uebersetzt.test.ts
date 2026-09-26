@@ -74,8 +74,10 @@ describe('Rollen der App im Fragment-Übersetzer', () => {
     // und `FS_LEADER_WORD` in `translate-data.ts` (Mitteilung, Push). Die
     // Edge-Laufzeit kommt nicht an `src/` heran, also ist die zweite Ablage
     // unvermeidlich — auseinanderlaufen darf sie trotzdem nicht.
+    // Verglichen wird mit der **Rolle** (Singular), nicht mit der Beschriftung
+    // der Zuteilen-Zeile: Eine Mitteilung nennt genau eine Aufgabe.
     for (const { code } of APP_LANGS) {
-      expect(makeTr(code)(FS_LEITER), code).toBe(dict(code).fsLeiterLbl)
+      expect(makeTr(code)(FS_LEITER), code).toBe(dict(code).fsLeiterRolle)
     }
   })
 })

@@ -108,6 +108,15 @@ export function zahl(ziffern: string): number {
   return wert
 }
 
+/**
+ * Nur die Ziffern eines Textes, in ihrer eigenen Schrift: „Lied ٢٥" → „٢٥".
+ * `replace(/\D/g, '')` warf genau sie weg — eine arabische oder persische
+ * Zifferntastatur tippte damit gar nichts.
+ */
+export function nurZiffern(text: string): string {
+  return text.replace(/\P{Nd}/gu, '')
+}
+
 /** Erste Zahl in einem Text — `null`, wenn keine darin steht. */
 export function ersteZahl(text: string): number | null {
   const treffer = ZIFFERNFOLGE.exec(text)

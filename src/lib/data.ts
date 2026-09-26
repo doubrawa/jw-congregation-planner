@@ -82,6 +82,7 @@ interface FsRuleRow {
   place: string
   monthly: number
   skip_cong: boolean
+  aus: string[] | null
 }
 
 /**
@@ -264,6 +265,7 @@ function fsRuleFromRow(r: FsRuleRow): FsRule {
     place: r.place,
     monthly: r.monthly,
     skipCong: r.skip_cong,
+    ...(r.aus?.length ? { aus: r.aus } : {}),
   }
 }
 
@@ -277,6 +279,7 @@ function fsRuleToRow(r: FsRule, congregationId: string) {
     place: r.place,
     monthly: r.monthly,
     skip_cong: r.skipCong,
+    aus: r.aus ?? [],
   }
 }
 

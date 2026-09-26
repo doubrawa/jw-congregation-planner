@@ -8,7 +8,7 @@ import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemei
 import { fromIso } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenLabel, useT } from '../i18n/useT'
+import { aufgabenLabel, aufgabenTp, fill, useT } from '../i18n/useT'
 import { dashTimeline } from './dash-timeline'
 import { PlanungsKarte } from './PlanungsKarte'
 import './dashboard.css'
@@ -49,7 +49,7 @@ const DASH_KLASSEN = {
 export function DashboardScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
-  const { t, tp } = i18n
+  const { t } = i18n
   const me = eigenePerson(state)
   // Ein neuer Render, sobald der Tag wechselt — sonst stünde nach einer Nacht im
   // Hintergrund noch der gestrige Gruß über dem gestrigen Zeitfenster.
@@ -95,7 +95,7 @@ export function DashboardScreen() {
       const countdown = relativeDayLabel(task.at, state.lang)
       return {
         key: e.key,
-        wann: tp(task.date),
+        wann: aufgabenTp(task, i18n)(task.date),
         art: <span className="dash-zeit-titel">{aufgabenLabel(task, i18n)}</span>,
         ...band,
         oeffnen: () => dispatch({ type: 'openMyTask', id: task.id }),
@@ -103,7 +103,7 @@ export function DashboardScreen() {
         ...(countdown ? { ende: <span className="dash-zeit-chip">{countdown}</span> } : {}),
       }
     })
-  }, [state.myTasks, state.absences, state.personId, state.lang, tag, dispatch, i18n, t, tp])
+  }, [state.myTasks, state.absences, state.personId, state.lang, tag, dispatch, i18n, t])
 
   return (
     <section className="screen dash">
@@ -135,9 +135,7 @@ export function DashboardScreen() {
           onClick={() => dispatch({ type: 'openNotifs' })}
         >
           <div className="dash-tile-label">{t.mitteilungen}</div>
-          <div className="dash-tile-value">
-            {unread} {t.neuSuffix}
-          </div>
+          <div className="dash-tile-value">{fill(t.neuN, { n: unread })}</div>
         </button>
         <button
           type="button"
@@ -145,9 +143,7 @@ export function DashboardScreen() {
           onClick={() => dispatch({ type: 'navigate', screen: 'aufgaben' })}
         >
           <div className="dash-tile-label">{t.dashZuBest}</div>
-          <div className="dash-tile-value">
-            {toConfirm} {t.navAufgaben}
-          </div>
+          <div className="dash-tile-value">{fill(t.aufgabenN, { n: toConfirm })}</div>
         </button>
       </div>
     </section>

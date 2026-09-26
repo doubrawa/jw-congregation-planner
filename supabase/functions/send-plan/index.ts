@@ -43,7 +43,8 @@
 // jedes Umsortieren eine Nachricht hinaus. Der Planer entscheidet, wann der
 // Plan steht.
 //
-// Sicherheit: Aufrufer muss per JWT eingeloggter **Planer** sein. Die
+// Sicherheit: Aufrufer muss per JWT eingeloggter **Planer** sein — oder, nur für
+// den Entzug einer Treffpunkt-Leitung seiner Gruppe, deren Aufseher. Die
 // Versammlung kommt aus seiner Mitgliedszeile, nie aus dem Rumpf; jeder Wert
 // geht durch `wert()` in den Pfad (sonst beendet ein `#` die Abfrage still).
 //
@@ -55,7 +56,7 @@
 // =============================================================================
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
-import { wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
+import { schluesselTeile, wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import { heuteUtc, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
@@ -195,6 +196,63 @@ async function verschicken(
   return { personen: notifRows.length, push: gesendet }
 }
 
+/* ---- Wer einen Entzug melden darf --------------------------------------- */
+
+/**
+ * Die Gruppen, die diese Person leitet — als Aufseher oder Gehilfe, dieselbe
+ * Regel wie `is_group_overseer` in `schema.sql`.
+ */
+async function geleiteteGruppen(cong: string, personId: string | null): Promise<Set<string>> {
+  if (!personId) return new Set()
+  const gruppen = await rest.get<{ id: string; overseer_id: string | null; assistant_id: string | null }[]>(
+    `groups?select=id,overseer_id,assistant_id&congregation_id=eq.${wert(cong)}`,
+  )
+  return new Set(
+    gruppen.filter((g) => g.overseer_id === personId || g.assistant_id === personId).map((g) => g.id),
+  )
+}
+
+/**
+ * Die Entzüge, die ein Gruppenaufseher melden darf: Treffpunkt-Leitungen
+ * **seiner** Gruppe. Umbesetzen darf er sie (RLS, `FsPlan` mit `onlyGroup`),
+ * und ohne die Meldung erfuhr der verdrängte Leiter nichts.
+ *
+ * Die Gruppe steht am Treffpunkt der Woche, und ist er gestrichen, an seiner
+ * Regel im Grundplan. Was sich keiner seiner Gruppen zuordnen lässt, fällt
+ * heraus.
+ */
+async function nurEigeneTreffpunkte<T extends { taskKey: string }>(
+  cong: string,
+  entzuege: T[],
+  gruppen: ReadonlySet<string>,
+): Promise<T[]> {
+  const treffpunkte = entzuege.flatMap((e) => {
+    const teile = schluesselTeile(e.taskKey)
+    return teile?.art === 'fs' ? [{ e, woche: teile.woche, instId: teile.instId }] : []
+  })
+  if (treffpunkte.length === 0) return []
+  const wochen = [...new Set(treffpunkte.map((x) => x.woche))]
+  const [fsRows, regeln] = await Promise.all([
+    Promise.all(
+      wochen.map((w) =>
+        rest.get<{ start: string; data: FsInstance[] }[]>(
+          `fs_weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(w)}`,
+        ),
+      ),
+    ).then((r) => r.flat()),
+    rest.get<{ id: string; grp: string | null }[]>(`fs_rules?select=id,grp&congregation_id=eq.${wert(cong)}`),
+  ])
+  const gruppeVon = (woche: string, instId: string): string | null | undefined =>
+    fsRows.find((r) => r.start === woche)?.data?.find((i) => i.id === instId)?.grp ??
+    regeln.find((r) => r.id === instId)?.grp
+  return treffpunkte
+    .filter(({ woche, instId }) => {
+      const grp = gruppeVon(woche, instId)
+      return grp != null && gruppen.has(grp)
+    })
+    .map((x) => x.e)
+}
+
 /* ---- Handler ------------------------------------------------------------- */
 
 Deno.serve(async (req: Request) => {
@@ -212,14 +270,19 @@ Deno.serve(async (req: Request) => {
 
     // Die Versammlung stammt aus der Mitgliedszeile des Aufrufers, nie aus dem
     // Rumpf — sonst schickte ein beliebiges Konto Nachrichten in fremde
-    // Versammlungen. Und schreiben darf hier nur ein Planer.
+    // Versammlungen. Und schreiben darf hier nur ein Planer — bis auf den
+    // Entzug einer Treffpunkt-Leitung, den auch der Aufseher ihrer Gruppe
+    // auslöst (`nurEigeneTreffpunkte`).
     const eigene = await rest.get<MemberRow[]>(
       `members?select=user_id,person_id,planner,congregation_id&user_id=eq.${wert(userId)}`,
     )
     const mich = eigene[0] as (MemberRow & { congregation_id?: string }) | undefined
     const cong = mich?.congregation_id
     if (!cong) return json({ error: 'no-congregation' }, 403)
-    if (!mich?.planner) return json({ error: 'forbidden' }, 403)
+    const aufseherVon = mich?.planner ? null : await geleiteteGruppen(cong, mich?.person_id ?? null)
+    if (aufseherVon && (payload.action !== 'entzug' || aufseherVon.size === 0)) {
+      return json({ error: 'forbidden' }, 403)
+    }
 
     const [members, persons, subs] = await Promise.all([
       rest.get<MemberRow[]>(`members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`),
@@ -248,10 +311,12 @@ Deno.serve(async (req: Request) => {
        * zweite Bearbeitung daneben wäre die zweite Buchführung.
        */
       const roh = Array.isArray(payload.entzuege) ? payload.entzuege : [payload]
-      const entzuege = roh.filter(
+      const gueltig = roh.filter(
         (e): e is EntzugRumpf & { taskKey: string; name: string } => Boolean(e?.taskKey && e?.name),
       )
-      if (entzuege.length === 0) return json({ error: 'bad-request' }, 400)
+      if (gueltig.length === 0) return json({ error: 'bad-request' }, 400)
+      const entzuege = aufseherVon ? await nurEigeneTreffpunkte(cong, gueltig, aufseherVon) : gueltig
+      if (entzuege.length === 0) return json({ error: 'forbidden' }, 403)
 
       /*
        * Die Einträge im Tagebuch müssen weg, **bevor** irgendetwas anderes

@@ -44,6 +44,7 @@ const U_ANNA = 'user-anna'
 const U_BERND = 'user-bernd'
 const U_FREMD = 'user-fremd' // Planer einer ANDEREN Versammlung
 const U_MITGLIED = 'user-mitglied' // Mitglied ohne Planer-Recht
+const U_AUFSEHER = 'user-aufseher' // leitet Gruppe g1, kein Planer
 const U_TIM_A = 'user-tim-a' // zwei Konten, ein Anzeigename
 const U_TIM_B = 'user-tim-b'
 
@@ -52,6 +53,7 @@ const MEMBERS = [
   { user_id: U_ANNA, person_id: 'p-anna', planner: false, congregation_id: CONG },
   { user_id: U_BERND, person_id: 'p-bernd', planner: false, congregation_id: CONG },
   { user_id: U_MITGLIED, person_id: 'p-mit', planner: false, congregation_id: CONG },
+  { user_id: U_AUFSEHER, person_id: 'p-aufseher', planner: false, congregation_id: CONG },
   { user_id: U_FREMD, person_id: 'p-fremd', planner: true, congregation_id: 'cong-2' },
   { user_id: U_TIM_A, person_id: 'p-tim-a', planner: false, congregation_id: CONG },
   // ZULETZT: Über den Namen gewinnt der letzte Eintrag. Am Namen allein landete
@@ -90,6 +92,10 @@ const PERSONS = [
 ]
 
 const SERVICES = [{ key: SVC, name: 'Mikrofone', count: 1, groups: false }]
+const GROUPS = [
+  { id: 'g1', overseer_id: 'p-aufseher', assistant_id: null },
+  { id: 'g2', overseer_id: 'p-planer', assistant_id: null },
+]
 const CONGREGATIONS = [{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }]
 const SUBS = [
   { id: 's1', user_id: U_ANNA, endpoint: 'https://push.test/anna', p256dh: 'k', auth: 'a', lang: 'de' },
@@ -188,6 +194,7 @@ const fakeFetch = async (
   if (path.startsWith('persons')) return jsonRes(fremd ? [] : PERSONS)
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
   if (path.startsWith('services')) return jsonRes(fremd ? [] : SERVICES)
+  if (path.startsWith('groups')) return jsonRes(fremd ? [] : GROUPS)
   if (path.startsWith('congregations')) return jsonRes(fremd ? [] : CONGREGATIONS)
   /*
    * **Die Wochen-Filter werden ausgewertet, nicht überlesen.**
@@ -543,6 +550,44 @@ describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
     authUser = U_MITGLIED
     expect((await entzug()).status).toBe(403)
     expect(writes).toEqual([])
+  })
+
+  /*
+   * **Bis auf den Aufseher einer Gruppe.** Er darf ihre Treffpunkte umbesetzen
+   * (RLS, `FsPlan` mit `onlyGroup`); schickte `send-plan` ihm ein 403, erfuhr
+   * der verdrängte Leiter nichts und kam trotzdem.
+   */
+  describe('der Aufseher einer Gruppe', () => {
+    const fsEntzug = (instId: string) =>
+      ruf({
+        action: 'entzug',
+        entzuege: [{
+          taskKey: `fs|${WOCHE}|${instId}`, name: 'Anna Berg', pid: 'p-anna',
+          label: 'Treffpunkt-Leiter', datum: 'Samstag, 12. September · 09:30',
+        }],
+      })
+
+    beforeEach(() => {
+      authUser = U_AUFSEHER
+      fsWoche = [
+        { id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', leader: 'Bernd Cohn', lpid: 'p-bernd' },
+        { id: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Park', leader: 'Bernd Cohn', lpid: 'p-bernd' },
+      ]
+    })
+
+    it('meldet den Entzug einer Treffpunkt-Leitung seiner Gruppe', async () => {
+      expect((await fsEntzug('r1')).status).toBe(200)
+      const zeilen = zeilenIn('notifications')
+      expect(zeilen).toHaveLength(1)
+      expect(zeilen[0]).toMatchObject({ user_id: U_ANNA, title: TITEL_ENTZUG })
+    })
+
+    it('nicht für eine fremde Gruppe, nicht für eine Zusammenkunft — und keinen Plan', async () => {
+      expect((await fsEntzug('r2')).status).toBe(403)
+      expect((await entzug()).status).toBe(403)
+      expect((await plan()).status).toBe(403)
+      expect(writes).toEqual([])
+    })
   })
 
   /*

@@ -149,7 +149,13 @@ export function useWochenImport(): {
       // möglich. Hier stand früher t.demoHinweis — der redet vom Anmelden
       // („Zugangsdaten beliebig") und passte an dieser Stelle nicht.
       const text =
-        res.error === 'demo' ? t.importOhneDb : res.error === 'unbekannt' ? t.importFehler : res.error
+        res.error === 'demo'
+          ? t.importOhneDb
+          : res.error === 'unbekannt'
+            ? t.importFehler
+            : res.error === 'ende'
+              ? t.toastAlleWochen
+              : res.error
       dispatch({ type: 'showToast', text })
       return
     }

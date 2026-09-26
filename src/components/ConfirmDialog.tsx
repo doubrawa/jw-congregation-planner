@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useApp } from '../app/context'
-import { aufgabenLabel, useT, zuteilungenText } from '../i18n/useT'
+import { aufgabenLabel, aufgabenTp, useT, zuteilungenText } from '../i18n/useT'
 import { useDialogFocus } from './useDialogFocus'
 import './overlays.css'
 
@@ -23,7 +23,7 @@ import './overlays.css'
 export function ConfirmDialog() {
   const { state, dispatch } = useApp()
   const i18n = useT()
-  const { t, tp, tu } = i18n
+  const { t, tu } = i18n
   const openTasks = state.myTasks.filter((task) => task.status === 'offen')
   const gesuche = state.substituteReqs
   const pflicht = openTasks.length > 0
@@ -49,7 +49,7 @@ export function ConfirmDialog() {
             {openTasks.map((task) => (
               <div key={task.id} className="confirm-task">
                 <div className="confirm-task-title">{aufgabenLabel(task, i18n)}</div>
-                <div className="confirm-task-date">{tp(task.date)}</div>
+                <div className="confirm-task-date">{aufgabenTp(task, i18n)(task.date)}</div>
                 <div className="confirm-actions">
                   <button
                     type="button"
@@ -88,7 +88,7 @@ export function ConfirmDialog() {
               <div key={req.key} className="confirm-task">
                 <div className="confirm-task-title">{tu(req.title)}</div>
                 <div className="confirm-task-date">
-                  {tp(req.date)} · {tu(req.declinedBy)}
+                  {aufgabenTp(req, i18n)(req.date)} · {tu(req.declinedBy)}
                 </div>
                 {/* Was ich an dem Tag schon habe — vor dem Zusagen, nicht als
                     Toast danach. Wortlaut wie im Zuteilungs-Sheet des Planers. */}

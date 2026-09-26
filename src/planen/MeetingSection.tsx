@@ -14,6 +14,7 @@ import {
   themaVon,
 } from '../data/meeting-edit'
 import { isSpeakerRole } from '../data/helpers'
+import { nurZiffern } from '../data/ziffern'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
 import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.ts'
@@ -461,9 +462,9 @@ export function MeetingSection({
               return isOpening ? openingSongNr(we) : closingSongNr(we)
             })()}
             onInput={(e) => {
-              // Nur Ziffern zulassen (Liederbuch-Nummer)
+              // Nur Ziffern zulassen (Liederbuch-Nummer) — jeder Schrift.
               const el = e.currentTarget
-              const digits = el.value.replace(/\D/g, '')
+              const digits = nurZiffern(el.value)
               if (el.value !== digits) el.value = digits
             }}
             onBlur={(e) =>

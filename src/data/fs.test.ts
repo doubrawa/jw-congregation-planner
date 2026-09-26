@@ -108,6 +108,21 @@ describe('genFsWeek', () => {
     const wds = w0.map((i) => (i.wd + 6) % 7)
     expect([...wds]).toEqual([...wds].sort((a, b) => a - b))
   })
+
+  it('eine ausgesetzte Regel fehlt nur in ihrer Woche', () => {
+    const ausgesetzt = RULES.map((r) => (r.id === 'r1' ? { ...r, aus: [KENN[0]!] } : r))
+    expect(ids(genFsWeek(KENN[0]!, ausgesetzt))).not.toContain('r1')
+    expect(ids(genFsWeek(KENN[1]!, ausgesetzt))).toContain('r1')
+  })
+
+  it('ein ausgesetzter Versammlungstreffpunkt holt keine Gruppen an seinen Tag', () => {
+    // Gestrichen hat der Planer diesen einen Treffpunkt — nicht die Gruppen-
+    // Samstage herbeigerufen, die `skipCong` an diesem Tag ausschließt.
+    const ausgesetzt = RULES.map((r) => (r.id === 'r3' ? { ...r, aus: [KENN[3]!] } : r))
+    const w3 = genFsWeek(KENN[3]!, ausgesetzt)
+    expect(ids(w3)).not.toContain('r3')
+    for (const g of ['r4', 'r5', 'r6', 'r7']) expect(ids(w3)).not.toContain(g)
+  })
 })
 
 /*

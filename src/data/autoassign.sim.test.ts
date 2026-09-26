@@ -413,13 +413,29 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
       { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
       { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
     ]
-    const weeks: Week[] = Array.from({ length: 3 }, wk1)
-    const w0 = autoAssignMeeting(weeks, 0, 'mid', [], REIN, groups).weeks
-    const w1 = autoAssignMeeting(weeks, 1, 'mid', [], REIN, groups).weeks
-    const w2 = autoAssignMeeting(weeks, 2, 'mid', [], REIN, groups).weeks
-    expect(w0[0].mid.helpers.rein?.[0]?.name).toBe('Gruppe 1')
-    expect(w1[1].mid.helpers.rein?.[0]?.name).toBe('Gruppe 2')
-    expect(w2[2].mid.helpers.rein?.[0]?.name).toBe('Gruppe 1') // 2 % 2 = 0
+    const montage = ['2026-09-07', '2026-09-14', '2026-09-21']
+    const weeks: Week[] = montage.map((start) => ({ ...wk1(), start }))
+    const gruppe = (ws: Week[], wi: number): string | undefined =>
+      autoAssignMeeting(ws, wi, 'mid', [], REIN, groups).weeks[wi]?.mid.helpers.rein?.[0]?.name
+    expect(gruppe(weeks, 0)).not.toBe(gruppe(weeks, 1))
+    expect(gruppe(weeks, 2)).toBe(gruppe(weeks, 0))
+  })
+
+  it('die Reinigung hängt am Montag der Woche, nicht an ihrer Position im Ladefenster', () => {
+    // Das Fenster hält die jüngsten 52 Wochen und rutscht mit jedem Import. Ab
+    // dann lag jede neue Woche an derselben Stelle — und nach dem Index
+    // gerechnet reinigte Woche für Woche dieselbe Gruppe.
+    const groups: Group[] = ['g1', 'g2', 'g3'].map((id, i) => ({
+      id, name: `Gruppe ${i + 1}`, overseerId: null, assistantId: null,
+    }))
+    const fenster = (ab: number): Week[] =>
+      Array.from({ length: 52 }, (_unused, i) => ({
+        ...wk1(),
+        start: new Date(Date.UTC(2026, 8, 7) + (ab + i) * 7 * 864e5).toISOString().slice(0, 10),
+      }))
+    const neueste = (ab: number): string | undefined =>
+      autoAssignMeeting(fenster(ab), 51, 'mid', [], REIN, groups).weeks[51]?.mid.helpers.rein?.[0]?.name
+    expect(new Set([0, 1, 2].map(neueste)).size).toBe(3)
   })
 
   it('Aufseher/Gehilfe der reinigenden Gruppe bekommen möglichst keinen weiteren Hilfsdienst', () => {

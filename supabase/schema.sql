@@ -408,6 +408,10 @@ create table if not exists public.fs_rules (
   place           text not null default '',
   monthly         smallint not null default 0 check (monthly between 0 and 4), -- 0 = jede Woche
   skip_cong       boolean not null default false,   -- entfällt, wenn am selben Tag ein Versammlungstreffpunkt ist
+  -- Montage, in denen die Regel ausgesetzt ist: Der Planer hat ihren Treffpunkt
+  -- dort entfernt. In `fs_weeks` allein hielt das nicht — die App baut die
+  -- Wochen beim Laden aus den Regeln neu.
+  aus             date[] not null default '{}',
   created_at      timestamptz not null default now(),
 
   constraint fs_rules_grp_fk foreign key (grp, congregation_id)
@@ -576,6 +580,12 @@ $$;
 -- **Unbekannte Formen bleiben erlaubt.** Eine zu strenge Richtlinie bricht das
 -- Bestätigen fast lautlos (der Client schreibt fire-and-forget); eine erfundene
 -- Form trifft dagegen keinen Platz und bleibt wirkungslos.
+--
+-- **Eine bekannte Art in fremder Schreibweise nicht.** „…|helper|mik|0.0" ist
+-- keine erfundene Form, sondern Platz 0 in Verkleidung: Durchgelassen, stand
+-- damit eine Absage für einen fremden Platz in `confirmations`, und die Edge
+-- Functions lasen die Nummer früher mit `Number()` als 0. Die Platznummer ist
+-- deshalb hier wie in `schluesselTeile` eine reine Ziffernfolge.
 create or replace function public.task_gehoert_mir(schluessel text)
 returns boolean
 language plpgsql
@@ -629,15 +639,18 @@ begin
   if art = 'ratgeber' and n = 3 then
     slot := zk -> 'auxRatgeber';
 
-  elsif art = 'helper' and n = 5 and teile[5] ~ '^\d+$' then
+  elsif art = 'helper' and n = 5 and teile[5] ~ '^[0-9]+$' then
     slot := zk -> 'helpers' -> teile[4] -> teile[5]::integer;
 
-  elsif art in ('part', 'aux') and n = 5 and teile[5] ~ '^\d+$' then
+  elsif art in ('part', 'aux') and n = 5 and teile[5] ~ '^[0-9]+$' then
     -- Stabile Kennung: der Punkt wird gesucht, nicht seine Position.
     select e -> feld -> teile[5]::integer into slot
       from jsonb_array_elements(zk -> 'sections') s,
            jsonb_array_elements(s -> 'items') e
      where e->>'iid' = teile[4];
+
+  elsif art in ('ratgeber', 'helper', 'part', 'aux') then
+    return false; -- bekannte Art, fremde Schreibweise — siehe Kopf
 
   else
     return true; -- keine der bekannten Formen

@@ -508,7 +508,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   sr: {
     "Schüler": "Učenik", "Partner": "Saradnik", "Ratgeber": "Savetnik",
-    "Treffpunkte": "Служба",
+    "Treffpunkte": "Služba",
     'ERÖFFNUNG': 'UVOD', 'ABSCHLUSS': 'ZAKLJUČAK',
     'SCHÄTZE AUS GOTTES WORT': 'BLAGO IZ BOŽJE REČI',
     'UNS IM DIENST VERBESSERN': 'NAPREDUJMO U SLUŽBI', 'UNSER LEBEN ALS CHRIST': 'HRIŠĆANSKI ŽIVOT',
@@ -932,17 +932,22 @@ const STUDY_PLACEHOLDER: Record<string, string> = {
  * Leiter“ auf Deutsch, während „Meine Aufgaben“ daneben seine Sprache zeigte.
  *
  * Keine zweite Übersetzung, nur eine zweite Ablage derselben —
- * `fs-leiter-wort.test.ts` hält beide Seiten Zeichen für Zeichen zusammen.
+ * `rollen-uebersetzt.test.ts` hält beide Seiten Zeichen für Zeichen zusammen.
+ *
+ * **Im Singular**, wie `fsLeiterRolle`: Eine Mitteilung nennt die Rolle
+ * **einer** Aufgabe. Hier stand bis zum 25.9.2026 der Plural von `fsLeiterLbl`
+ * („Meeting-point leaders", „Ведущие…"), der die Zuteilen-Zeile beschriftet —
+ * im Deutschen fiel es nicht auf, „Leiter" ist beides.
  */
 const FS_LEADER_WORD: Record<string, string> = {
-  ar: "مشرفو اجتماعات الخدمة", bg: "Водещи на сбирките за проповядване", cs: "Vedoucí skupinek ke službě", da: "Ledere af møderne for tjenesten",
-  el: "Υπεύθυνοι των συγκεντρώσεων για υπηρεσία", en: "Meeting-point leaders", es: "Conductores de las salidas", fa: "مسئولان جلسات خدمت موعظه",
-  fi: "Kenttäpalvelustilaisuuksien johtajat", fr: "Responsables des points de rencontre", he: "מנחי המפגשים לשירות", hr: "Voditelji sastanaka za službu",
-  hu: "A szolgálati összejövetelek vezetői", id: "Pemimpin perhimpunan untuk dinas", it: "Conduttori dei gruppi di servizio", ja: "野外奉仕の集まりの司会者",
-  ko: "야외 봉사 모임 사회자", nl: "Leiders van de samenkomsten voor de velddienst", no: "Ledere for møtene for tjenesten", pl: "Prowadzący zbiórki do służby",
-  pt: "Dirigentes das saídas de campo", ro: "Conducătorii întrunirilor pentru predicare", ru: "Ведущие встреч для проповеди", sk: "Vedúci skupiniek do služby",
-  sr: "Voditelji sastanaka za službu", sv: "Ledare för mötena för tjänsten", sw: "Waongozaji wa mikutano ya utumishi", tl: "Mga tagapangasiwa ng mga pagpupulong para sa paglilingkod",
-  tr: "Hizmet buluşmalarının sorumluları", uk: "Ведучі зібрань для проповідування", ur: "مُنادی کے اِجتماعات کے نگران", vi: "Người điều khiển buổi nhóm rao giảng",
+  ar: "مشرف اجتماع الخدمة", bg: "Водещ на сбирката за проповядване", cs: "Vedoucí skupinky ke službě", da: "Leder af mødet for tjenesten",
+  el: "Υπεύθυνος της συγκέντρωσης για υπηρεσία", en: "Field service meeting conductor", es: "Conductor de la salida", fa: "مسئول جلسهٔ خدمت موعظه",
+  fi: "Kenttäpalvelustilaisuuden johtaja", fr: "Responsable du point de rencontre", he: "מנחה המפגש לשירות", hr: "Voditelj sastanka za službu",
+  hu: "A szolgálati összejövetel vezetője", id: "Pemimpin perhimpunan untuk dinas", it: "Conduttore del gruppo di servizio", ja: "野外奉仕の集まりの司会者",
+  ko: "야외 봉사 모임 사회자", nl: "Leider van de samenkomst voor de velddienst", no: "Leder for møtet for tjenesten", pl: "Prowadzący zbiórkę do służby",
+  pt: "Dirigente da saída de campo", ro: "Conducătorul întrunirii pentru predicare", ru: "Ведущий встречи для проповеди", sk: "Vedúci skupinky do služby",
+  sr: "Voditelj sastanka za službu", sv: "Ledare för mötet för tjänsten", sw: "Mwongozaji wa mkutano wa utumishi", tl: "Tagapangasiwa ng pagpupulong para sa paglilingkod",
+  tr: "Hizmet buluşmasının sorumlusu", uk: "Ведучий зібрання для проповідування", ur: "مُنادی کے اِجتماع کا نگران", vi: "Người điều khiển buổi nhóm rao giảng",
   zh: "传道聚集的主持人",
 }
 for (const code of Object.keys(FRAG)) {

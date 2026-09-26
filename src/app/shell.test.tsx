@@ -192,7 +192,7 @@ describe('Der Mitteilungs-Chip zählt nur das Ungelesene', () => {
   it('mit Ungelesenem nennt er die Zahl — und hebt sich ab', () => {
     const { container } = zeige({ notifs: [notif('n1', false), notif('n2', false), notif('n3', true)] })
     const chip = container.querySelector('.notif-chip')!
-    expect(chip.textContent).toBe(`2 ${t.neuSuffix}`)
+    expect(chip.textContent).toBe('Neu: 2')
     expect(chip.className).toContain('has-unread')
   })
 

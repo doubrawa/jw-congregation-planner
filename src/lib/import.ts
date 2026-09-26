@@ -9,12 +9,25 @@ import type { Week } from '../data/types'
 import { supabase } from './supabase'
 
 /**
- * Fehlerfall des Imports. `'demo'` und `'unbekannt'` sind Schlüssel, die der
- * Aufrufer in der Sprache des Nutzers ausgibt — hier stand früher ein fester
- * deutscher Satz, den auch ein englischer Planer zu sehen bekam. Alles andere
- * ist die Meldung des Servers und wird unverändert durchgereicht.
+ * Fehlerfall des Imports. `'demo'`, `'unbekannt'` und `'ende'` (das Heft hat
+ * keine weitere Woche) sind Schlüssel, die der Aufrufer in der Sprache des
+ * Nutzers ausgibt — hier stand früher ein fester deutscher Satz, den auch ein
+ * englischer Planer zu sehen bekam. Alles andere ist die Meldung des Servers
+ * und wird unverändert durchgereicht.
  */
-export type ImportFehler = 'demo' | 'unbekannt' | (string & {})
+export type ImportFehler = 'demo' | 'unbekannt' | 'ende' | (string & {})
+
+/**
+ * Was der Server zu einer Antwort mit Status ≠ 2xx sagt. `functions.invoke`
+ * meldet dann selbst nur einen festen englischen Satz und legt die Antwort
+ * hinter `error.context`.
+ */
+async function serverFehler(error: { message: string; context?: unknown }): Promise<ImportFehler> {
+  const antwort = error.context as { json?: () => Promise<unknown> } | undefined
+  const body = (await antwort?.json?.().catch(() => null)) as { error?: string; ende?: boolean } | null
+  if (body?.ende) return 'ende'
+  return body?.error ?? error.message
+}
 
 export type ImportResult = { ok: true; week: Week } | { ok: false; error: ImportFehler }
 
@@ -51,7 +64,7 @@ export async function importNextWeek(
   const { data, error } = await supabase.functions.invoke('import-week', {
     body: { after: afterISO, lang: langCode, altLangs },
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: await serverFehler(error) }
   const payload = data as { week?: Week; error?: string } | null
   if (!payload?.week) return { ok: false, error: payload?.error ?? 'unbekannt' }
   return { ok: true, week: payload.week }

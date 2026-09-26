@@ -108,7 +108,7 @@ describe('„Geladen bis" beantwortet die häufigste Frage', () => {
     const { container } = zeige('import', { weeks: [woche('2026-09-07'), woche('2026-09-14')] })
     const status = container.querySelector('.imp-status')?.textContent ?? ''
     expect(status).toContain('20') // Sonntag der zweiten Woche, 20. September
-    expect(container.querySelector('.imp-count')?.textContent).toBe('2 Wochen geladen')
+    expect(container.querySelector('.imp-count')?.textContent).toBe('Geladene Wochen: 2')
   })
 
   it('ohne ISO-Datum (Demo, Vorlagen) den Wochenbereich im Klartext', () => {
@@ -191,6 +191,15 @@ describe('Import in der Produktion', () => {
     fireEvent.click(container.querySelector('.imp-btn')!)
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.importOhneDb }),
+    )
+  })
+
+  it('hat das Heft keine weitere Woche, sagt der Import das — in der Sprache des Nutzers', async () => {
+    importNextWeek.mockResolvedValue({ ok: false, error: 'ende' })
+    const { container, dispatch } = zeige('import')
+    fireEvent.click(container.querySelector('.imp-btn')!)
+    await waitFor(() =>
+      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastAlleWochen }),
     )
   })
 
@@ -333,7 +342,7 @@ describe('Für wie viele der Dienst freigegeben ist (T79)', () => {
     const { container } = zeige('dienste', {
       persons: [person('p1', 'Alt', serviceQualKey('mik')), person('p2', 'Brand'), person('p3', 'Cohn', serviceQualKey('mik'))],
     })
-    expect(zeilen(container)[0]!.querySelector('.svc-sub')?.textContent).toBe('2 Personen')
+    expect(zeilen(container)[0]!.querySelector('.svc-sub')?.textContent).toBe('Personen: 2')
   })
 
   it('hebt hervor, wenn niemand freigegeben ist — der Fall des neuen Dienstes', () => {

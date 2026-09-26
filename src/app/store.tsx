@@ -160,18 +160,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Supabase-Session spiegeln (nur wenn konfiguriert): bestehende Session
   // überspringt den Login-Screen und lädt die Daten; SIGNED_IN (nach Login)
   // lädt ebenfalls; SIGNED_OUT wirft zurück zum Login.
+  //
+  // **Geladen wird je Konto einmal.** auth-js meldet `SIGNED_IN` nicht nur beim
+  // Anmelden, sondern bei jedem Zurückwechseln in den Tab (gemessen an 2.110.2:
+  // `_onVisibilityChanged` → `_recoverAndRefresh`). Darauf voll neu zu laden
+  // hieß bei jedem Fokus „Lädt …", eine neu aufgebaute Ansicht und ein erneut
+  // vorgelegtes Bestätigungsblatt.
   useEffect(() => {
     if (!supabase) return
+    let geladenFuer: string | null = null
+    const laden = (userId: string): void => {
+      if (userId === geladenFuer) return
+      geladenFuer = userId
+      void loadAndHydrate(dispatch, userId)
+    }
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         dispatch({ type: 'login' })
-        void loadAndHydrate(dispatch, data.session.user.id)
+        laden(data.session.user.id)
       }
     })
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') dispatch({ type: 'logout' })
-      else if (event === 'PASSWORD_RECOVERY') dispatch({ type: 'setRecovery', on: true })
-      else if (event === 'SIGNED_IN' && session) void loadAndHydrate(dispatch, session.user.id)
+      if (event === 'SIGNED_OUT') {
+        geladenFuer = null
+        dispatch({ type: 'logout' })
+      } else if (event === 'PASSWORD_RECOVERY') dispatch({ type: 'setRecovery', on: true })
+      else if (event === 'SIGNED_IN' && session) laden(session.user.id)
     })
     return () => data.subscription.unsubscribe()
   }, [dispatch])

@@ -138,7 +138,7 @@ export function GroupsPanel() {
 
   const groupMemberLabel = (id: string): string => {
     const n = state.persons.filter((p) => p.grp === id).length
-    return n === 1 ? t.mitglied1 : fill(t.mitgliederN, { n })
+    return fill(t.mitgliederN, { n })
   }
 
   /**

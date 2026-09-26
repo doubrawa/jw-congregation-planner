@@ -379,8 +379,8 @@ describe('Die beiden Kacheln', () => {
       myTasks: [task({ id: 'T1', status: 'offen' }), task({ id: 'T2', status: 'bestätigt' })],
     })
     const werte = [...container.querySelectorAll('.dash-tile-value')].map((x) => x.textContent)
-    expect(werte[0]).toContain('1')
-    expect(werte[1]).toContain('1')
+    // Genau der Fall, an dem `{n} {t.navAufgaben}` scheiterte: „1 Aufgaben".
+    expect(werte).toEqual(['Neu: 1', 'Aufgaben: 1'])
   })
 
   it('führen dorthin, wo man sie abarbeitet', () => {

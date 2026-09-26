@@ -124,7 +124,7 @@ export const KATALOG = [
     id: 'zuteilung-gruppen-rotation',
     datei: 'src/data/planning.ts',
     regel: 'Die Reinigung rotiert über die Gruppen, sie bleibt nicht bei der ersten.',
-    suchen: 'const cleaningGroup = groups.length ? (groups[weekIndex % groups.length] ?? null) : null',
+    suchen: 'const cleaningGroup = groups.length ? (groups[woche % groups.length] ?? null) : null',
     ersetzen: 'const cleaningGroup = groups.length ? (groups[0] ?? null) : null',
   },
   {
@@ -1196,8 +1196,8 @@ export const KATALOG = [
     id: 'plan-nur-planer',
     datei: 'supabase/functions/send-plan/index.ts',
     regel: 'Nachrichten an die ganze Versammlung darf nur ein Planer auslösen.',
-    suchen: "    if (!mich?.planner) return json({ error: 'forbidden' }, 403)",
-    ersetzen: "    if (false) return json({ error: 'forbidden' }, 403)",
+    suchen: "    if (aufseherVon && (payload.action !== 'entzug' || aufseherVon.size === 0)) {",
+    ersetzen: '    if (false) {',
   },
   {
     id: 'plan-nicht-zweimal',

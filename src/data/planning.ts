@@ -35,7 +35,7 @@ import {
   serviceQualKey,
   type Zuteilung,
 } from './helpers'
-import { lastFenster, partWorkload, tieHash, wochenAbstand, workloadOf } from './auslastung'
+import { lastFenster, laufendeWoche, partWorkload, tieHash, wochenAbstand, workloadOf } from './auslastung'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
 import {
   helferKey,
@@ -450,7 +450,11 @@ function waehler(
   // reinigt, sollen möglichst keinen weiteren Hilfsdienst bekommen (sie sind mit
   // der Reinigung beschäftigt). Umgesetzt als weicher Malus bei der
   // Hilfsdienst-Auswahl — greift nur, solange genug andere Kandidaten da sind.
-  const cleaningGroup = groups.length ? (groups[weekIndex % groups.length] ?? null) : null
+  //
+  // Gezählt wird im Kalender, nicht im Ladefenster (`laufendeWoche`): Das rutscht
+  // mit jedem Import, und ab 52 Wochen reinigte sonst jede Woche dieselbe Gruppe.
+  const woche = laufendeWoche(weeks, weekIndex)
+  const cleaningGroup = groups.length ? (groups[woche % groups.length] ?? null) : null
   const cleaningLeaders = new Set<string>()
   for (const pid of [cleaningGroup?.overseerId, cleaningGroup?.assistantId]) {
     if (pid && persons.some((p) => p.id === pid)) cleaningLeaders.add(pid)
@@ -526,7 +530,7 @@ function waehler(
   /** Tie-Break-Wert je Person — für diesen Lauf konstant (siehe `sort` unten). */
   const tieWerte = new Map<string, number>()
   const tie = (p: Person): number =>
-    gemerkt(tieWerte, p, () => tieHash(`${displayName(p)}|${weekIndex}|${tab}`))
+    gemerkt(tieWerte, p, () => tieHash(`${displayName(p)}|${woche}|${tab}`))
 
   const ergebnis = { count: 0, newly: [] as string[] }
 
@@ -724,7 +728,8 @@ function hilfsdiensteBesetzen(
   meeting: Meeting,
   services: Service[],
   w: Waehler,
-  weekIndex: number,
+  /** Laufende Kalenderwoche (`laufendeWoche`), nicht die Position im Fenster. */
+  woche: number,
 ): number {
   let unfilled = 0
   for (const svc of services) {
@@ -739,7 +744,7 @@ function hilfsdiensteBesetzen(
       if (svc.groups) {
         // Reinigung rotiert über die echten Predigtdienstgruppen (keine Person,
         // daher keine pid); ohne konfigurierte Gruppen Fallback auf 1–3.
-        platz.name = w.cleaningGroup ? w.cleaningGroup.name : `Gruppe ${1 + (weekIndex % 3)}`
+        platz.name = w.cleaningGroup ? w.cleaningGroup.name : `Gruppe ${1 + (woche % 3)}`
         delete platz.pid
         w.mitzaehlen()
         continue
@@ -806,7 +811,7 @@ export function autoAssignMeeting(
     gebetAnVorsitz(meeting, w, persons)
   }
   if (scope !== 'parts') {
-    unfilled += hilfsdiensteBesetzen(meeting, services, w, weekIndex)
+    unfilled += hilfsdiensteBesetzen(meeting, services, w, laufendeWoche(weeks, weekIndex))
   }
 
   return { weeks: next, count: w.ergebnis.count, newly: w.ergebnis.newly, unfilled }

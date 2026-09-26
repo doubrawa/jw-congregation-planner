@@ -173,6 +173,11 @@ describe('splitOpeningSong', () => {
     expect(splitOpeningSong('Song 138 · Prayer')).toEqual({ song: 'Song 138', rest: 'Prayer' })
   })
 
+  it('auch mit den Ziffern einer anderen Schrift', () => {
+    // `/\d/` kennt nur westliche Ziffern — das Lied blieb im Sammeltitel stehen.
+    expect(splitOpeningSong('الترنيمة ٢٥ · صلاة')).toEqual({ song: 'الترنيمة ٢٥', rest: 'صلاة' })
+  })
+
   it('ohne Nummern-Atom bleibt der Titel unverändert', () => {
     expect(splitOpeningSong('Schlussworte · Gebet')).toEqual({
       song: null,

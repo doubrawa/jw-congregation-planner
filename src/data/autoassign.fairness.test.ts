@@ -378,7 +378,7 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
 
 describe('Anzeige und Entscheidung nutzen dasselbe Fenster', () => {
   /**
-   * Der Planer liest im Zuteilungs-Sheet „2 Aufgaben in 5 Wochen" und daneben
+   * Der Planer liest im Zuteilungs-Sheet „Aufgaben in 5 Wochen: 2" und daneben
    * fünf Mini-Quadrate. Sortiert wurde lange nach einem anderen, breiteren
    * Fenster — die Zahl unter dem Namen erklärte die Reihenfolge also nicht.
    * Beides hängt jetzt an LOAD_RADIUS; dieser Test hält das zusammen.

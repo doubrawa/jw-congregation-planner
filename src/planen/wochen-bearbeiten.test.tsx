@@ -168,6 +168,18 @@ describe('Tag und Uhrzeit verlegen', () => {
     fireEvent.change(feld, { target: { value: 'Kongress in Nürnberg' } })
     expect(patches(dispatch, 'setAbweichung')).toContainEqual({ reason: 'Kongress in Nürnberg' })
   })
+
+  it('ein getipptes Leerzeichen bleibt im Feld stehen, obwohl der Zustand trimmt', () => {
+    // Der Zustand hält „Kongress" (getrimmt); gesteuert allein über ihn,
+    // verschluckte das Feld die Leertaste, und heraus kam „KongressinNürnberg".
+    const { container } = zeige('sonder', { weeks: [woche({ dev: { mid: { reason: 'Kongress' } } })] })
+    const feld = container.querySelector<HTMLInputElement>('.sonder-grund')!
+    fireEvent.change(feld, { target: { value: 'Kongress ' } })
+    expect(feld.value).toBe('Kongress ')
+    // Beim Verlassen gilt wieder der gespeicherte Text.
+    fireEvent.blur(feld)
+    expect(feld.value).toBe('Kongress')
+  })
 })
 
 describe('Weitere Termine der Woche (T63)', () => {

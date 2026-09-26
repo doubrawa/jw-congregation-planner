@@ -122,15 +122,20 @@ export function genFsWeek(wochenStart: string, rules: FsRule[]): FsInstance[] {
     const tag = fsTag(wochenStart, r.wd)
     return tag !== null && Math.ceil(tag.getDate() / 7) === r.monthly
   }
+  const ausgesetzt = (r: FsRule): boolean => Boolean(r.aus?.includes(wochenStart))
 
   for (const r of rules) {
     if (r.grp == null && fits(r)) {
-      out.push({ id: instanzId(r), ruleId: r.id, grp: null, wd: r.wd, time: r.time, place: r.place, leader: '' })
+      // Ein ausgesetzter Versammlungstreffpunkt belegt seinen Tag weiter: Wer ihn
+      // für eine Woche streicht, holt damit nicht die Gruppen an seine Stelle.
+      if (!ausgesetzt(r)) {
+        out.push({ id: instanzId(r), ruleId: r.id, grp: null, wd: r.wd, time: r.time, place: r.place, leader: '' })
+      }
       congDays.add(r.wd)
     }
   }
   for (const r of rules) {
-    if (r.grp != null && fits(r) && !(r.skipCong && congDays.has(r.wd))) {
+    if (r.grp != null && fits(r) && !ausgesetzt(r) && !(r.skipCong && congDays.has(r.wd))) {
       out.push({ id: instanzId(r), ruleId: r.id, grp: r.grp, wd: r.wd, time: r.time, place: r.place, leader: '' })
     }
   }
@@ -359,6 +364,21 @@ export function fsUpdateInst(
 /** Treffpunkt aus dieser Woche entfernen. */
 export function fsRemoveInst(fsWeeks: FsInstance[][], wi: number, instId: string): FsInstance[][] {
   return patchWeek(fsWeeks, wi, (week) => week.filter((inst) => inst.id !== instId))
+}
+
+/**
+ * Eine Grundplan-Regel für **eine** Woche aussetzen (`FsRule.aus`) — das
+ * Gegenstück zu `fsRemoveInst` für Treffpunkte aus dem Grundplan.
+ *
+ * Ohne diese Marke kam ein entfernter Treffpunkt wieder: `regenFsWeeks` baute
+ * ihn beim nächsten Laden und bei jeder Änderung am Grundplan aus seiner Regel
+ * neu, ohne Leiter und als offene Zuteilung. Unverändert (dieselbe Referenz),
+ * wenn es die Regel nicht gibt oder sie dort schon ausgesetzt ist.
+ */
+export function fsRegelAussetzen(rules: FsRule[], ruleId: string, woche: string): FsRule[] {
+  const regel = rules.find((r) => r.id === ruleId)
+  if (!regel || regel.aus?.includes(woche)) return rules
+  return rules.map((r) => (r === regel ? { ...r, aus: [...(r.aus ?? []), woche] } : r))
 }
 
 /** Manuellen Treffpunkt zu dieser Woche hinzufügen (neu sortiert). */
@@ -598,7 +618,9 @@ export function fsAutoAssign(
     // frühere eigene Fassung ohne Avalanche ergab in jeder Woche dieselbe feste
     // Rangliste nach Namen — wer darin hinten stand, leitete nie (siehe
     // tieHash in helpers.ts). Der Schlüssel wird getrennt gefügt: „Ann"+„a12"
-    // und „Anna"+„12" wären sonst derselbe.
+    // und „Anna"+„12" wären sonst derselbe. Die Woche geht mit ihrem Montag
+    // ein, nicht mit `wi`: Ab 52 Wochen liegt jede neue am selben Index, und der
+    // Gleichstand fiele Woche für Woche gleich aus.
     const alle = poolFor(inst.wd)
       .map((p) => ({ p, name: displayName(p) }))
       .filter((k) => !used.has(k.p.id))
@@ -640,7 +662,7 @@ export function fsAutoAssign(
         (load.get(a.p.id) ?? 0) - (load.get(b.p.id) ?? 0) ||
         wartezeit(b.p.id) - wartezeit(a.p.id) ||
         aufseherRang(a.p) - aufseherRang(b.p) ||
-        tieHash(`${a.name}|${wi}|${inst.wd}`) - tieHash(`${b.name}|${wi}|${inst.wd}`),
+        tieHash(`${a.name}|${wochenStart || wi}|${inst.wd}`) - tieHash(`${b.name}|${wochenStart || wi}|${inst.wd}`),
     )
     const pick = cand[0]
     if (!pick) return inst

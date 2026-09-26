@@ -52,7 +52,7 @@ describe('ImportPanel — „Geladen bis"', () => {
 
   it('zählt daneben die geladenen Wochen', () => {
     const { getByText } = zeige([woche({ start: '2026-09-07' }), woche({ start: '2026-09-14' })])
-    expect(getByText('2 Wochen geladen')).toBeTruthy()
+    expect(getByText('Geladene Wochen: 2')).toBeTruthy()
   })
 
   it('ohne ISO-Datum den Wochenbereich im Klartext (Demo- und Vorlagenwochen)', () => {

@@ -201,7 +201,7 @@ describe('Was beim Drücken geschieht', () => {
     const { container, dispatch } = buehne()
     fireEvent.click(knopf(container)!)
     await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: '3 Personen benachrichtigt' }),
+      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: 'Benachrichtigte Personen: 3' }),
     )
   })
 

@@ -142,6 +142,14 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(rumpf).toContain('task_gehoert_mir(task_key)')
   })
 
+  it('eine bekannte Art in fremder Schreibweise fällt nicht in den Durchlass', () => {
+    // „…|helper|mik|0.0" war Platz 0 in Verkleidung: Die Datenbank hielt es
+    // für eine unbekannte Form und ließ die Absage für einen fremden Platz zu.
+    const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
+    expect(fn).toContain("elsif art in ('ratgeber', 'helper', 'part', 'aux') then return false;")
+    expect(fn).not.toContain("'^\\d+$'")
+  })
+
   it('eine Verhinderungs-Meldung geht nur an Planer (T89)', () => {
     // Seit dem 24.9.2026 legt `notify_planners` die Zeilen an: Ein Verkündiger
     // sieht in `members` nur sich selbst und kann die Planer nicht adressieren.

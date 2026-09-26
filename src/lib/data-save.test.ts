@@ -117,6 +117,7 @@ describe('Upsert-Schreiber (onConflict)', () => {
         place: 'Saal',
         monthly: 0,
         skip_cong: false,
+        aus: [],
       },
     ])
   })

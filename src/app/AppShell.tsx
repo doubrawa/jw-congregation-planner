@@ -292,7 +292,7 @@ export function AppShell() {
   )
 }
 
-/** Kopf-Chip Mitteilungen: „N neu“ (getönt) bzw. „Mitteilungen“ (Outline). */
+/** Kopf-Chip Mitteilungen: „Neu: N“ (getönt) bzw. „Mitteilungen“ (Outline). */
 function NotifChip() {
   const { state, dispatch } = useApp()
   const { t } = useT()
@@ -303,7 +303,7 @@ function NotifChip() {
       className={unread > 0 ? 'notif-chip has-unread' : 'notif-chip'}
       onClick={() => dispatch({ type: 'openNotifs' })}
     >
-      {unread > 0 ? `${unread} ${t.neuSuffix}` : t.mitteilungen}
+      {unread > 0 ? fill(t.neuN, { n: unread }) : t.mitteilungen}
     </button>
   )
 }

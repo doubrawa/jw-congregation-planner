@@ -9,7 +9,7 @@ import type { Meeting, Person, Week } from './types'
  * `LOAD_RADIUS = 2` hieß „±2 **Einträge**". Solange die Wochen lückenlos
  * aufeinanderfolgen, ist das dasselbe. Fehlt eine — Kongresswoche, eine nie
  * importierte Woche —, rechnet die Fairness-Logik über einen anderen Zeitraum
- * als den, den das Sheet daneben behauptet („2 Aufgaben in 5 Wochen").
+ * als den, den das Sheet daneben behauptet („Aufgaben in 5 Wochen: 2").
  *
  * Die Wochen hier stehen bewusst mit **Lücke**: Positionen 0,1,2 tragen die
  * Startdaten 1., 8. und **22.** Juni — zwischen den beiden letzten fehlt eine
@@ -69,7 +69,7 @@ describe('loadWindow zählt Wochen, keine Einträge', () => {
 })
 
 /*
- * Die Zahl unter dem Namen („2 Aufgaben in 5 Wochen") und die Quadrate daneben
+ * Die Zahl unter dem Namen („Aufgaben in 5 Wochen: 2") und die Quadrate daneben
  * beschreiben dasselbe Fenster — sie wurden aber verschieden gerechnet: die
  * Quadrate nach Datum, die Zahl und die Auto-Zuteilung mit `slice` nach
  * Position. Bei lückenlosen Wochen ist das dasselbe; fehlt eine, las der

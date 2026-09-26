@@ -181,12 +181,14 @@ describe('Predigtdienstgruppen', () => {
       persons: [{ ...AELTESTER, grp: 'g1' }, { ...BRUDER, grp: 'g1' }, SCHWESTER],
     })
     expect(container.querySelector('.grp-name')?.textContent).toBe('Gruppe 1')
-    expect(container.querySelector('.grp-count')?.textContent).toBe('2 Mitglieder')
+    expect(container.querySelector('.grp-count')?.textContent).toBe('Mitglieder: 2')
   })
 
-  it('bei genau einem Mitglied die Einzahl — nicht „1 Mitglieder"', () => {
+  it('bei genau einem Mitglied kein „1 Mitglieder" — die Form stimmt für jede Zahl', () => {
+    // Hier stand ein eigener Schlüssel für die 1. Er half nur dort: Slawische
+    // Sprachen haben eine eigene Form für 2–4, Arabisch den Dual.
     const { container } = zeige('groups', { persons: [{ ...AELTESTER, grp: 'g1' }] })
-    expect(container.querySelector('.grp-count')?.textContent).toBe(t.mitglied1)
+    expect(container.querySelector('.grp-count')?.textContent).toBe('Mitglieder: 1')
   })
 
   it('als Aufseher stehen nur Älteste und Dienstamtgehilfen zur Wahl', () => {
@@ -382,11 +384,11 @@ describe('Erinnerungen', () => {
     const { container } = zeige('reminders', {
       reminders: { first: 7, last: 1, repeat: false },
     })
-    expect(zeilen(container)[0]!.querySelector('.svc-sub')?.textContent).toBe('7 Tage vorher')
-    expect(zeilen(container)[1]!.querySelector('.svc-sub')?.textContent).toBe(t.remTagVorher)
+    expect(zeilen(container)[0]!.querySelector('.svc-sub')?.textContent).toBe('Tage vorher: 7')
+    expect(zeilen(container)[1]!.querySelector('.svc-sub')?.textContent).toBe('Tage vorher: 1')
   })
 
-  it('null Tage heißt „am Tag der Aufgabe", nicht „0 Tage vorher"', () => {
+  it('null Tage heißt „am Tag der Aufgabe", nicht „Tage vorher: 0"', () => {
     const { container } = zeige('reminders', {
       reminders: { first: 7, last: 0, repeat: false },
     })

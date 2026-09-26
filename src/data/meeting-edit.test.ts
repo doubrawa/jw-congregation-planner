@@ -187,4 +187,14 @@ describe('Bearbeitung mit einem Index, den es nicht gibt', () => {
     expect(setOpeningSong(weeks, 0, '78')).not.toBe(weeks)
     expect(togglePartner(weeks, 0, 'mid', 1, 1)).not.toBe(weeks)
   })
+
+  it('eine Liednummer in fremden Ziffern wird gespeichert, nicht verworfen', () => {
+    // Eine arabische oder persische Zifferntastatur liefert „٢٥" bzw. „۲۵".
+    // Gespeichert wird westlich, wie der ganze kanonische Titel.
+    const weeks = w()
+    const westlich = setOpeningSong(weeks, 0, '25')[0]!.we
+    expect(westlich).not.toEqual(weeks[0]!.we)
+    expect(setOpeningSong(weeks, 0, '٢٥')[0]!.we).toEqual(westlich)
+    expect(setOpeningSong(weeks, 0, '۲۵')[0]!.we).toEqual(westlich)
+  })
 })

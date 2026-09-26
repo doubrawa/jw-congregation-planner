@@ -24,7 +24,7 @@ import {
 } from './helpers'
 import { abweichung } from './helpers'
 import type { Abweichung, Dienstwoche, Meeting, MeetingKey, MeetingTimes, PartItem, Week } from './types'
-import { ersteZahlErsetzen, zahlErsetzen } from './ziffern'
+import { ersteZahlErsetzen, nurZiffern, zahl, zahlErsetzen } from './ziffern'
 
 /**
  * Minuten eines Programmpunkts — `null`, wo keine angegeben sind (Lieder,
@@ -884,7 +884,11 @@ export function hatLiedPlatz(meeting: Meeting | undefined, art: SectionKind): bo
  * deutschen Vorlagen-Titel → gleiche Ersetzung.
  */
 function setSong(weeks: Week[], wi: number, art: SectionKind, song: string): Week[] {
-  const nr = song.replace(/\D/g, '') // nur Ziffern — zweite Verteidigungslinie zum Eingabefeld
+  // Nur Ziffern — zweite Verteidigungslinie zum Eingabefeld. Gespeichert wird
+  // westlich („Lied 25"), wie der ganze kanonische Titel; auch „٢٥" von einer
+  // arabischen Tastatur ist das Lied 25.
+  const ziffern = nurZiffern(song)
+  const nr = ziffern ? String(zahl(ziffern)) : ''
   const next = klonWoche(weeks, wi)
   if (!next) return weeks
   const week = next[wi]

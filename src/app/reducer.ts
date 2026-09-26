@@ -10,7 +10,7 @@ import { buildAbsences } from '../data/absence'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, genFsWeek, regenFsWeeks } from '../data/fs'
 import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { erlaubteScreens } from '../data/rechte'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
@@ -44,6 +44,8 @@ import {
   setOpeningSong,
 } from '../data/meeting-edit'
 import { setAnlass, setAnlassTermin } from '../data/anlass'
+import { entzogeneZusagen } from '../data/plan-versand'
+import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { terminAdd, terminRemove, terminUpdate } from '../data/termine'
 import { dict, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
@@ -189,6 +191,15 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   const jwCode = state.lang !== congAppCode(state.congLang) ? APP_TO_JW[state.lang] : undefined
   const weeks = localizedWeeks(state.weeks, jwCode)
   const kennungen = weeks.map((w) => w.start)
+  // Wochen, die als Variante in der Sprache des Lesers vorliegen: Deren Titel
+  // und Datum gehören in seine Sprache (`aufgabenTp`), wie im Programm.
+  const inLesersprache = new Set(weeks.filter((w, i) => w !== state.weeks[i]).map((w) => w.start))
+  const markieren = <T extends object>(eintrag: T, key: string): T => {
+    const teile = schluesselTeile(key)
+    return teile && teile.art !== 'fs' && inLesersprache.has(teile.woche)
+      ? { ...eintrag, lesersprache: true as const }
+      : eintrag
+  }
   // Zusammenkunfts-Aufgaben und Treffpunkt-Leitungen kommen aus zwei getrennten
   // Quellen (`weeks` und `fsWeeks`) und bleiben es auch — sie zählen nicht in
   // dieselbe Auslastung. Für den Nutzer sind es aber beides Aufgaben: ein
@@ -203,7 +214,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
           displayName(me),
           state.confirmations,
           me.id,
-          dict(state.lang).fsLeiterLbl,
+          dict(state.lang).fsLeiterRolle,
         ),
       ]
         /*
@@ -219,6 +230,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
          */
         .filter((task) => !istVorbei(task.at))
         .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
+        .map((task) => markieren(task, task.id))
     : []
   const substituteReqs = me
     ? deriveSubstituteReqs(
@@ -228,7 +240,9 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         me,
         state.congregation.times,
         buildAbsences(state.absences, weeks, state.congregation.times),
-      ).filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
+      )
+        .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
+        .map((req) => markieren(req, req.key))
     : []
   return {
     ...state,
@@ -671,6 +685,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
         // ohne Ratgeber — die Klasse würde ab dem nächsten Import verschwinden.
         weeks: syncAuxSlots([...state.weeks, week], state.auxClass),
+        fsWeeks: [...state.fsWeeks, genFsWeek(week.start, state.fsRules)],
         importing: false,
         imported: true,
         notifs: pushNotif(
@@ -683,6 +698,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'addImportedWeek': {
+      // Dieselbe Woche ein zweites Mal: nichts anhängen. Gespeichert überschrieb
+      // sie die schon geplante Woche gleichen Montags mit einer leeren — so kam
+      // sie, solange `import-week` mangels neuerer Woche die letzte erneut schickte.
+      if (state.weeks.some((w) => w.start === action.week.start)) {
+        return { ...state, importing: false, toast: toastKey(state, 'toastAlleWochen') }
+      }
       // Endzeiten aus den Zusammenkunftszeiten rechnen. Der Import kennt sie
       // nicht und trug feste Werte ein (20:45 / 11:45) — bei einem Beginn um
       // 18:30 stand damit auf jedem Programmblatt eine falsche Endzeit.
@@ -706,6 +727,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         weeks,
+        // Die Treffpunkte laufen parallel (`fsWeeks[wi]` gehört zu `weeks[wi]`).
+        // Ohne diese Zeile hatte die neue Woche bis zum Neuladen keine, und was
+        // man dort hinzufügte, fand seine Woche nicht und ging verloren.
+        fsWeeks: [...state.fsWeeks, genFsWeek(week.start, state.fsRules)],
         importing: false,
         notifs: pushNotif(
           state.notifs,
@@ -830,12 +855,18 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'fsInstUpdate':
       return { ...state, fsWeeks: fsUpdateInst(state.fsWeeks, action.wi, action.id, action.patch) }
-    case 'fsInstRemove':
+    case 'fsInstRemove': {
+      // Ein Treffpunkt aus dem Grundplan wird in seiner Regel für diese Woche
+      // ausgesetzt — sonst baute `regenFsWeeks` ihn beim nächsten Laden neu.
+      const ruleId = state.fsWeeks[action.wi]?.find((i) => i.id === action.id)?.ruleId
+      const woche = state.weeks[action.wi]?.start
       return {
         ...state,
+        fsRules: ruleId && woche ? fsRegelAussetzen(state.fsRules, ruleId, woche) : state.fsRules,
         fsWeeks: fsRemoveInst(state.fsWeeks, action.wi, action.id),
         toast: toastKey(state, 'toastFsDel'),
       }
+    }
     case 'fsInstAdd':
       return {
         ...state,
@@ -1034,8 +1065,24 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, weeks: setAbweichung(state.weeks, state.week, action.tab, action.patch) }
     }
     case 'setAnlass': {
-      if (!state.weeks[state.week]) return state
-      return { ...state, weeks: setAnlass(state.weeks, state.week, action.art) }
+      const vorher = state.weeks[state.week]
+      if (!vorher) return state
+      const weeks = setAnlass(state.weeks, state.week, action.art)
+      // Was der Anlass einer schon zugesagten Person nimmt — der Dienstvortrag an
+      // der Stelle des Bibelstudiums —, meldet `persist` ihr als Entzug. Die
+      // Zusage verfällt mit: Holt das Zurücknehmen den Punkt samt Besetzung
+      // zurück, stünde sie sonst still wieder bestätigt da, und weder „Plan
+      // senden" noch die Erinnerungen erreichten sie je wieder.
+      const verfallen = entzogeneZusagen(
+        vorher,
+        weeks[state.week],
+        undefined,
+        undefined,
+        state.services,
+        state.congregation.times,
+        state.confirmations,
+      ).map((z) => z.key)
+      return { ...state, weeks, confirmations: dropConfirmations(state.confirmations, verfallen) }
     }
     case 'setAnlassTermin': {
       if (!state.weeks[state.week]) return state

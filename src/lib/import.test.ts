@@ -65,6 +65,22 @@ describe('importNextWeek', () => {
     expect(await importNextWeek()).toEqual({ ok: false, error: 'HTTP 500' })
   })
 
+  it('Status ≠ 2xx: die Meldung des Servers, und „keine weitere Woche" als eigener Schlüssel', async () => {
+    // `functions.invoke` legt die Antwort hinter `context` und meldet selbst
+    // nur „Edge Function returned a non-2xx status code".
+    const antwort = (body: unknown) => ({
+      data: null,
+      error: { message: 'Edge Function returned a non-2xx status code', context: { json: async () => body } },
+    })
+    invoke.mockResolvedValue(antwort({ error: 'Keine kommende Woche gefunden.', ende: true }))
+    expect(await importNextWeek('2026-10-05')).toEqual({ ok: false, error: 'ende' })
+    invoke.mockResolvedValue(antwort({ error: 'Diese Woche ist in der gewählten Sprache (X) noch nicht verfügbar.' }))
+    expect(await importNextWeek('2026-10-05')).toEqual({
+      ok: false,
+      error: 'Diese Woche ist in der gewählten Sprache (X) noch nicht verfügbar.',
+    })
+  })
+
   it('fachlicher Fehler / keine Woche → Fehlertext', async () => {
     invoke.mockResolvedValue({ data: { error: 'Keine kommende Woche gefunden.' }, error: null })
     expect(await importNextWeek()).toEqual({ ok: false, error: 'Keine kommende Woche gefunden.' })

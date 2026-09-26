@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { helperKeyParts } from '../data/planning'
 import { useApp } from '../app/context'
-import { aufgabenLabel, useT } from '../i18n/useT'
+import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
 import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
 import { useEscape } from './useEscape'
@@ -17,7 +17,7 @@ import './overlays.css'
 export function MyTaskSheet() {
   const { state, dispatch } = useApp()
   const i18n = useT()
-  const { t, tp } = i18n
+  const { t } = i18n
   const dlg = useRef<HTMLDivElement>(null)
   useDialogFocus(dlg)
   const close = () => dispatch({ type: 'closeMyTask' })
@@ -46,7 +46,7 @@ export function MyTaskSheet() {
           ✕
         </button>
         <div className="confirm-task-title">{label}</div>
-        <div className="confirm-task-date">{tp(task.date)}</div>
+        <div className="confirm-task-date">{aufgabenTp(task, i18n)(task.date)}</div>
 
         {task.status === 'bestätigt' && <div className="mytask-status">✓ {t.bestaetigt}</div>}
         {task.status === 'verhindert' && (

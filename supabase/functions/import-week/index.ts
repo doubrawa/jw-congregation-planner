@@ -320,8 +320,12 @@ Deno.serve(async (req: Request) => {
       const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
       // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück).
       const cutoff = after ? new Date(after) : new Date(todayUtc - 6 * 864e5)
-      const next = weeks.find((w) => w.start > cutoff) ?? weeks[weeks.length - 1]
-      if (!next) return json({ error: 'Keine kommende Woche gefunden.' }, 404)
+      // Auf die letzte Woche des Hefts zurückfallen darf nur der erste Import.
+      // Mit `after` ist sie schon da, und ein zweites Mal geliefert überschrieb
+      // sie im Client die bereits geplante Woche. `ende` sagt dem Client, dass
+      // das kein Fehler ist, sondern der Kalender.
+      const next = weeks.find((w) => w.start > cutoff) ?? (after ? undefined : weeks[weeks.length - 1])
+      if (!next) return json({ error: 'Keine kommende Woche gefunden.', ende: true }, 404)
       weekUrl = next.url ?? undefined
       start = next.start
       mem = next.mem

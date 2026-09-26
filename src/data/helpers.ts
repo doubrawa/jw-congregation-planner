@@ -14,6 +14,7 @@ import {
 // Dieselbe Tabelle, die `i18n/langs.ts` weiterreicht — direkt aus der unteren
 // Schicht geholt, damit das Datenmodell nicht an der Oberfläche hängt.
 import { LOCALES } from '../../supabase/functions/_shared/i18n/locales.ts'
+import { ersteZahl } from './ziffern'
 import type { Abweichung, Group, Meeting, MeetingKey,
   MeetingTab, PartItem, Person, ProgramItem, QualificationKey, Qualifications, Section,
   SlotAssignment, SongItem, Week } from './types'
@@ -33,7 +34,8 @@ export function isSong(item: ProgramItem): item is SongItem {
  */
 export function splitOpeningSong(title: string): { song: string | null; rest: string } {
   const atoms = title.split(' · ')
-  const idx = atoms.findIndex((a) => /\d/.test(a))
+  // Ziffern jeder Schrift: „الترنيمة ٢٥" ist ebenso das Lied wie „Lied 25".
+  const idx = atoms.findIndex((a) => ersteZahl(a) !== null)
   const treffer = idx < 0 ? undefined : atoms[idx]
   if (treffer === undefined) return { song: null, rest: title }
   return { song: treffer.trim(), rest: atoms.filter((_, i) => i !== idx).join(' · ') }

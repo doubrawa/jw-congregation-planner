@@ -245,6 +245,27 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
     expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u9')
   })
 
+  it('ein erneutes SIGNED_IN desselben Kontos lädt nicht noch einmal', async () => {
+    // auth-js meldet es bei jedem Zurückwechseln in den Tab. Ein volles Neuladen
+    // darauf hieß bei jedem Fokus „Lädt …" und ein neu aufgebauter Bildschirm.
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u7' } } } })
+    starte()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    loadAndHydrate.mockClear()
+    await act(async () => {
+      authListener.fn?.('SIGNED_IN', { user: { id: 'u7' } })
+    })
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+    // Nach dem Abmelden ist dasselbe Konto wieder ein neues Anmelden.
+    await act(async () => {
+      authListener.fn?.('SIGNED_OUT', null)
+      authListener.fn?.('SIGNED_IN', { user: { id: 'u7' } })
+    })
+    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+  })
+
   it('ein SIGNED_IN ohne Sitzung lädt nichts — es gäbe kein Konto dazu', async () => {
     starte()
     await act(async () => {

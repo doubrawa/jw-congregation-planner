@@ -19,12 +19,16 @@ import {
 } from '../data/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
-import { fsTaskKey } from '../data/fs'
+import { fsTaskKey, genFsWeek } from '../data/fs'
 import { deriveMyTasks, punktKey } from '../data/planning'
 import { itemMinutes } from '../data/meeting-edit'
+import { DE as t } from '../i18n/de'
 import { alsFreitext } from '../i18n/translate'
 import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
+
+/** Ein Montag, den die Demo-Wochen nicht haben — für frisch importierte Wochen. */
+const NEUER_MONTAG = '2026-10-12'
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
 function makeState(over: Partial<AppState> = {}): AppState {
@@ -555,17 +559,38 @@ describe('Import (Demo)', () => {
 
   it('addImportedWeek hängt die übergebene Woche an', () => {
     const s = makeState()
-    const week = { ...s.weeks[0], range: 'Testwoche' }
+    const week = { ...s.weeks[0], range: 'Testwoche', start: NEUER_MONTAG }
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(next.weeks.at(-1)!.range).toBe('Testwoche')
     expect(next.notifs[0].type).toBe('import')
+  })
+
+  it('eine schon geladene Woche wird nicht ein zweites Mal angehängt', () => {
+    // Gespeichert überschrieb die Dublette die geplante Woche gleichen Montags
+    // mit einer leeren — so kam sie, solange `import-week` mangels neuerer
+    // Woche die letzte noch einmal schickte.
+    const s = makeState({ importing: true })
+    const next = reducer(s, { type: 'addImportedWeek', week: { ...s.weeks.at(-1)!, range: 'Dublette' } })
+    expect(next.weeks).toBe(s.weeks)
+    expect(next.importing).toBe(false)
+    expect(next.toast?.text).toBe(t.toastAlleWochen)
+  })
+
+  it('eine importierte Woche bekommt ihre Treffpunkte aus dem Grundplan', () => {
+    // `fsWeeks[wi]` gehört zu `weeks[wi]`. Ohne die neue Treffpunkt-Woche stand
+    // die importierte bis zum Neuladen ohne da, und Hinzugefügtes ging verloren.
+    const s = makeState()
+    const next = reducer(s, { type: 'addImportedWeek', week: { ...s.weeks[0]!, start: NEUER_MONTAG } })
+    expect(next.fsWeeks).toHaveLength(next.weeks.length)
+    expect(next.fsWeeks.at(-1)).toEqual(genFsWeek(NEUER_MONTAG, s.fsRules))
+    expect(next.fsWeeks.at(-1)!.length).toBeGreaterThan(0)
   })
 
   it('eine importierte Woche bekommt die Zusätzliche Klasse mit', () => {
     // Ohne dieses Angleichen stünde die neue Woche ohne zweite Platzreihe und
     // ohne Ratgeber da — die Klasse verschwände ab dem nächsten Import.
     const s = makeState({ auxClass: true })
-    const week = { ...s.weeks[0], range: 'Testwoche' }
+    const week = { ...s.weeks[0], range: 'Testwoche', start: NEUER_MONTAG }
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(hatAuxKlasse(next.weeks.at(-1)!.mid)).toBe(true)
   })
@@ -607,7 +632,7 @@ describe('Import (Demo)', () => {
 
   it('eine gewöhnliche Woche bleibt ungestrichen', () => {
     const s = makeState()
-    const neu = reducer(s, { type: 'addImportedWeek', week: { ...s.weeks[0]!, range: 'X' } }).weeks.at(-1)!
+    const neu = reducer(s, { type: 'addImportedWeek', week: { ...s.weeks[0]!, range: 'X', start: NEUER_MONTAG } }).weeks.at(-1)!
     expect(istAusgefallen(neu, 'mid')).toBe(false)
     expect(istAusgefallen(neu, 'we')).toBe(false)
   })
@@ -615,7 +640,7 @@ describe('Import (Demo)', () => {
   it('ohne Bibellese-Kapitel bleibt kein leeres Atom in der Meldung stehen', () => {
     // Die Gedächtnismahl-Woche hat keins — sie hat gar keine Arbeitsheft-Seite.
     const s = makeState()
-    const week: Week = { ...s.weeks[0]!, range: '30. März–5. April', book: '' }
+    const week: Week = { ...s.weeks[0]!, range: '30. März–5. April', book: '', start: '2026-03-30' }
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(next.notifs[0]!.text).toBe('30. März–5. April — ohne Zuteilungen')
   })
@@ -725,6 +750,64 @@ describe('assign (Zuteilen)', () => {
   })
 })
 
+describe('Aufgaben aus einer Sprachvariante', () => {
+  it('liegt die Woche in der Sprache des Lesers vor, sind ihre Aufgaben markiert — die anderen nicht', () => {
+    // Der Titel kommt dann aus der Variante; das Datum muss mit (`aufgabenTp`),
+    // sonst stand „Congregation Bible Study" über „Dienstag, 8. September".
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 1, 10)) // vor allen Demo-Wochen
+    try {
+      const weeks = buildDemoWeeks()
+      const englisch = structuredClone(weeks[0]!)
+      delete englisch.alt
+      weeks[0] = { ...weeks[0]!, alt: { en: englisch } }
+      const sel = firstPartSlot(weeks[0]!, 'mid')
+      const name = (weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name
+      const ich = DEMO_PERSONS.find((p) => displayName(p) === name)!
+      const s = reducer(makeState({ weeks, personId: ich.id, lang: 'en', congLang: 'de', myTasks: [] }), {
+        type: 'setDataStatus', status: 'ready',
+      })
+      const erste = s.myTasks.filter((task) => task.id.startsWith(`${weeks[0]!.start}|`))
+      expect(erste.length).toBeGreaterThan(0)
+      expect(erste.every((task) => task.lesersprache)).toBe(true)
+      expect(s.myTasks.filter((task) => !task.id.startsWith(`${weeks[0]!.start}|`)).some((task) => task.lesersprache)).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('Anlass: Kreisaufseher-Woche', () => {
+  it('der Dienstvortrag nimmt dem VBS-Leiter die Zusage — und das Zurücknehmen gibt sie nicht still zurück', () => {
+    // Beim Einschalten geht an ihn „Zuteilung zurückgezogen". Stand die Zusage
+    // danach noch da, kam er beim Zurücknehmen samt Haken wieder — „Plan
+    // senden" und die Erinnerungen übergingen ihn, und er hielt sich für frei.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 1, 10)) // vor der Woche
+    try {
+      const vbsIn = (w: Week): PartItem | undefined =>
+        w.mid.sections
+          .flatMap((sec) => sec.items)
+          .find((it): it is PartItem => !isSong(it) && it.names.some((n) => n.bereichsKey === 'leser'))
+      const w0 = makeState().weeks[0]!
+      const vbs = vbsIn(w0)!
+      const leiter = vbs.names[0]!.name
+      expect(leiter).not.toBe('')
+      const key = punktKey(w0.start, 'mid', vbs.iid, 0)
+      const s = makeState({ confirmations: { [key]: 'bestätigt' } })
+
+      const co = reducer(s, { type: 'setAnlass', art: 'co' })
+      expect(co.confirmations[key]).toBeUndefined()
+
+      const zurueck = reducer(co, { type: 'setAnlass', art: null })
+      expect(vbsIn(zurueck.weeks[0]!)?.names[0]?.name).toBe(leiter)
+      expect(zurueck.confirmations[key]).toBeUndefined()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('autoAssign / clearAssignments', () => {
   it('autoAssign füllt offene Slots (Toast mit Anzahl)', () => {
     const weeks = buildDemoWeeks()
@@ -777,6 +860,23 @@ describe('Treffpunkte-Instanzen', () => {
     const next = reducer(s, { type: 'fsInstRemove', wi: 0, id: inst.id })
     expect(next.fsWeeks[0].some((i) => i.id === inst.id)).toBe(false)
     expect(next.toast?.text).toBeTruthy()
+  })
+  it('ein entfernter Grundplan-Treffpunkt kommt nicht wieder', () => {
+    // Aus der Woche allein genommen, baute `regenFsWeeks` ihn beim Laden und
+    // bei jeder Grundplan-Änderung neu — ohne Leiter, als offene Zuteilung.
+    const s = makeState()
+    const weg = reducer(s, { type: 'fsInstRemove', wi: 0, id: 'r1' })
+    expect(weg.fsRules.find((r) => r.id === 'r1')!.aus).toEqual([s.weeks[0]!.start])
+    const danach = reducer(weg, { type: 'fsRuleUpdate', id: 'r1', patch: { place: 'Neu' } })
+    expect(danach.fsWeeks[0]!.some((i) => i.id === 'r1')).toBe(false)
+    // In den übrigen Wochen gilt die Regel weiter.
+    expect(danach.fsWeeks[1]!.find((i) => i.id === 'r1')?.place).toBe('Neu')
+  })
+  it('ein nur für diese Woche angelegter Treffpunkt lässt den Grundplan in Ruhe', () => {
+    const s = makeState({ week: 1 })
+    const inst = { id: 'xManual', ruleId: null, grp: null, wd: 4, time: '18:00', place: 'Ort', leader: '', manual: true }
+    const mit = reducer(s, { type: 'fsInstAdd', inst })
+    expect(reducer(mit, { type: 'fsInstRemove', wi: 1, id: 'xManual' }).fsRules).toBe(mit.fsRules)
   })
   it('fsInstAdd fügt in die aktuelle Woche ein', () => {
     const s = makeState({ week: 1 })

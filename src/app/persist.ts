@@ -444,12 +444,23 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'fsInstUpdate':
     case 'fsInstRemove':
+      // Ein gestrichener Grundplan-Treffpunkt ist in seiner Regel vermerkt
+      // (`FsRule.aus`) — ohne sie käme er beim nächsten Laden wieder.
+      if (next.fsRules !== prev.fsRules) fsRuleSaves.schedule('rules', { congId, rules: next.fsRules, entfernt: [] })
       fsWocheSpeichern(congId, next.weeks, next.fsWeeks, action.wi, fsVerwaist)
       break
     case 'fsInstAdd':
     case 'fsAutoAssign':
     case 'fsClear':
       fsWocheSpeichern(congId, next.weeks, next.fsWeeks, prev.week, fsVerwaist)
+      break
+    case 'finishImport':
+    case 'addImportedWeek':
+      // Die neue Woche bringt ihre Treffpunkte aus dem Grundplan mit; die Woche
+      // selbst schreibt der Block unter dem Switch.
+      if (next.fsWeeks !== prev.fsWeeks) {
+        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, next.weeks.length - 1, fsVerwaist)
+      }
       break
     case 'fsRuleAdd':
     case 'fsRuleUpdate':

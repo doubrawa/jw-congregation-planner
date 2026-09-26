@@ -38,6 +38,39 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
     expect(fehlend).toEqual([])
   })
 
+  it('kein Wörterbuch mischt Kyrillisch, Griechisch, Hebräisch oder Arabisch hinein, wo es nicht hingehört', () => {
+    /*
+     * Serbisch läuft lateinisch (`sr-Latn-RS`, der Programm-Übersetzer ebenso),
+     * im Overlay standen aber 35 Einträge in Kyrillisch: die Reiter der
+     * Zusammenkünfte, „Start", die Grüße und der ganze Treffpunkt-Bereich —
+     * neben „Program" und „Profil" auf demselben Bildschirm. Die Prüfungen
+     * darüber sehen Schlüssel und Platzhalter, keine Schrift.
+     */
+    const FREMD = /[Ͱ-ϿЀ-ӿ֐-׿؀-ۿ]/
+    const EIGENE_SCHRIFT = new Set(['ru', 'uk', 'bg', 'el', 'he', 'ar', 'fa', 'ur'])
+    const falsch: string[] = []
+    for (const { code } of APP_LANGS) {
+      if (EIGENE_SCHRIFT.has(code)) continue
+      const d = dict(code) as unknown as Record<string, string>
+      for (const key of deKeys) if (FREMD.test(d[key] ?? '')) falsch.push(`${code}.${key}`)
+    }
+    expect(falsch).toEqual([])
+  })
+
+  it('ein deutscher Zahltext stellt {n} nicht vor ein Wort', () => {
+    /*
+     * „{n} Personen" ergab „1 Personen", und ein Paar `…N`/`…1` half nur für die
+     * 1: Slawische Sprachen haben eine eigene Form für 2–4, Arabisch den Dual.
+     * Die Form „Bezeichnung: {n}" stimmt für jede Zahl, und die Übersetzungen
+     * folgen dem Deutschen.
+     */
+    const MINDESTENS_ZWEI = new Set(['dublettenRow']) // zählt Dubletten, also nie 1
+    const falsch = Object.entries(DE as Record<string, string>)
+      .filter(([key, text]) => /\{n\} \p{L}/u.test(text) && !MINDESTENS_ZWEI.has(key))
+      .map(([key]) => key)
+    expect(falsch).toEqual([])
+  })
+
   it('Platzhalter ({n}, {name}, …) stimmen in jeder Sprache mit DE überein', () => {
     const placeholders = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(',')
     const broken: string[] = []

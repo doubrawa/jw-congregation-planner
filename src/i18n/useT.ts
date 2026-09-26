@@ -36,12 +36,28 @@ export interface I18n {
  * („Lied 27 · Gebet · Einleitende Worte").
  */
 export function aufgabenLabel(
-  task: { title: string; rolle?: string },
+  task: { title: string; rolle?: string; lesersprache?: boolean },
   i18n: Pick<I18n, 'tp' | 'tu'>,
 ): string {
-  const links = task.title ? i18n.tp(task.title) : ''
+  const links = task.title ? aufgabenTp(task, i18n)(task.title) : ''
   const rechts = task.rolle ? i18n.tu(task.rolle) : ''
   return links && rechts ? `${links} · ${rechts}` : links || rechts
+}
+
+/**
+ * Übersetzer für den Programmtext einer Aufgabe — Titel und Datum.
+ *
+ * Gewöhnlich `tp`, die Versammlungssprache. Liegt die Woche aber als Variante in
+ * der Sprache des Lesers vor (`lesersprache`), steht der Titel schon in seiner,
+ * und das Datum muss mit: Sonst las eine englische App „Congregation Bible
+ * Study" über „Dienstag, 8. September", während das Programm derselben Woche
+ * „Tuesday, September 8" zeigte. Dieselbe Regel wie `useProgWeeks`.
+ */
+export function aufgabenTp(
+  task: { lesersprache?: boolean },
+  i18n: Pick<I18n, 'tp' | 'tu'>,
+): (s: string) => string {
+  return task.lesersprache ? i18n.tu : i18n.tp
 }
 
 /**

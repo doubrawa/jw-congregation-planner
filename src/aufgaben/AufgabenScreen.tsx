@@ -6,7 +6,7 @@ import { AufgabenAktionen } from '../components/AufgabenAktionen'
 import { PushPrompt } from '../components/PushPrompt'
 import { displayName } from '../data/helpers'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenLabel, fill, useT, zuteilungenText } from '../i18n/useT'
+import { aufgabenLabel, aufgabenTp, fill, useT, zuteilungenText } from '../i18n/useT'
 import './aufgaben.css'
 
 /** Die Aktionen einer Aufgabe als Pillen — der Start zeigt sie kompakter. */
@@ -25,7 +25,7 @@ const AUF_KLASSEN = {
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
-  const { t, tu, tp } = i18n
+  const { t, tu } = i18n
   const me = eigenePerson(state)
 
   /**
@@ -88,7 +88,7 @@ export function AufgabenScreen() {
                 onClick={() => dispatch({ type: 'openMyTask', id: task.id })}
               >
                 <div className="auf-title">{aufgabenLabel(task, i18n)}</div>
-                <div className="auf-date">{tp(task.date)}</div>
+                <div className="auf-date">{aufgabenTp(task, i18n)(task.date)}</div>
               </button>
               <div className="auf-actions">
                 <AufgabenAktionen task={task} klassen={AUF_KLASSEN} />
@@ -115,7 +115,7 @@ export function AufgabenScreen() {
               <div>
                 <div className="auf-sub-title">{tu(req.title)}</div>
                 <div className="auf-sub-meta">
-                  {tp(req.date)} · {tu(req.declinedBy)}
+                  {aufgabenTp(req, i18n)(req.date)} · {tu(req.declinedBy)}
                 </div>
                 {/* Was ich an dem Tag schon habe — vor dem Zusagen. */}
                 {req.schonHeute.length > 0 && (

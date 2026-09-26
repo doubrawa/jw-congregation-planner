@@ -144,7 +144,7 @@ function gruppenKandidaten(
   const sub = (id: string, overseerId: string | null): string => {
     const aufseher = state.persons.find((p) => p.id === overseerId)
     const n = state.persons.filter((p) => p.grp === id).length
-    const label = n === 1 ? t.mitglied1 : fill(t.mitgliederN, { n })
+    const label = fill(t.mitgliederN, { n })
     return aufseher ? `${displayName(aufseher)} · ${label}` : label
   }
   return state.groups.map((group) => {
@@ -185,10 +185,7 @@ function personenKandidaten(
     .map((p) => {
       const name = displayName(p)
       const last = workloadOf(fenster, p, state.services)
-      const lastLabel =
-        last === 1
-          ? fill(t.aufgabeInW, { w: LOAD_WEEKS })
-          : fill(t.aufgabenInW, { n: last, w: LOAD_WEEKS })
+      const lastLabel = fill(t.aufgabenInW, { n: last, w: LOAD_WEEKS })
       return {
         key: p.id,
         initials: initials(p),
