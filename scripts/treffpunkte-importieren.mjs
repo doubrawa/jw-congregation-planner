@@ -23,10 +23,19 @@
  *
  * **Gruppen kennt NWS nicht.** Ein NWS-Termin trägt Ort und Leiter, aber keine
  * Predigtdienstgruppe. Alles Importierte ist deshalb ein
- * **Versammlungstreffpunkt** (`grp ''`). Gruppentreffpunkte legt die Gruppe
- * selbst an — ihr Aufseher darf das in der App —, und der Import lässt sie in
- * Ruhe: Er schreibt nur in Plätze, deren Wochentag und Uhrzeit er trifft, und
- * bevorzugt dabei immer den Versammlungstreffpunkt.
+ * **Versammlungstreffpunkt** (`grp: null`, wie in der App). Gruppentreffpunkte
+ * legt die Gruppe selbst an — ihr Aufseher darf das in der App —, und der Import
+ * lässt sie in Ruhe: Er schreibt nur in Plätze, deren Wochentag und Uhrzeit er
+ * trifft, und bevorzugt dabei immer den Versammlungstreffpunkt.
+ *
+ * Bis zum 26.9.2026 schrieb er dafür `grp: ''` — die Kennung von vor dem
+ * Datenmodell-Umbau (18.9.2026). Seither erkennt die App den
+ * Versammlungstreffpunkt nur an `null` (`fsVisible`, `treffpunktTitel`): Ein
+ * importierter Treffpunkt stand ohne Titel da, und Verkündiger bekamen ihn gar
+ * nicht zu sehen. Umgekehrt fand der Import den Versammlungstreffpunkt des
+ * Grundplans nicht mehr, sobald zur selben Zeit ein Gruppentreffpunkt lag — er
+ * meldete „mehrdeutig". Was frühere Läufe so angelegt haben, führt der nächste
+ * Lauf nach.
  *
  * **Der Leiter** wird über die stabile Id an die App-Person gebunden
  * (`uuid5("person:<NWS-ID>")`), nicht über den Namen — siehe `nws-personen.mjs`.
@@ -142,6 +151,16 @@ export function manuelleKennung(nwsId) {
 }
 
 /**
+ * Gilt dieser Treffpunkt der ganzen Versammlung? In der App heißt das
+ * `grp: null`; `''` steht noch in dem, was frühere Läufe dieses Skripts angelegt
+ * haben (siehe Kopf). Eine Gruppe ist es in keinem der beiden Fälle — deren
+ * Kennung ist eine uuid.
+ */
+export function istVersammlungstreffpunkt(inst) {
+  return !inst.grp
+}
+
+/**
  * Der Platz, in den ein NWS-Termin gehört — oder `null` (keiner) bzw.
  * `'mehrdeutig'`.
  *
@@ -163,7 +182,7 @@ export function passenderPlatz(insts, tp, belegt = new Set()) {
   const passend = insts.filter(
     (i) => i.wd === tp.wd && i.time === tp.zeit && !belegt.has(i.id) && i.id !== kennung,
   )
-  const vers = passend.filter((i) => i.grp === '')
+  const vers = passend.filter(istVersammlungstreffpunkt)
   const ausRegel = vers.find((i) => i.ruleId)
   if (ausRegel) return ausRegel
   if (vers[0]) return vers[0]
@@ -178,12 +197,20 @@ export function passenderPlatz(insts, tp, belegt = new Set()) {
  * `bind(ref)` löst eine Personen-Referenz zu `{ name, pid? }` auf (leerer Name =
  * offen). `standardOrt` steht in einem selbst angelegten Treffpunkt, wenn NWS
  * keinen Ort führt — wie in der App der Saal der Versammlung.
+ *
+ * `geaendert` sagt, ob die Woche geschrieben werden muss. Die Antwort gehört
+ * hierher und nicht zum Aufrufer: Dort stand „Leiter gesetzt oder angelegt",
+ * und ein nachgeführter Treffpunkt mit demselben Leiter ging verloren — die
+ * Liste war richtig, geschrieben wurde sie nie.
  */
 export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
   const { nurLeere = false, standardOrt = '' } = opt
   const next = insts.map((i) => ({ ...i }))
-  const z = { gesetzt: 0, angelegt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
+  const z = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
   const belegt = new Set()
+  // Der Zusatz aus NWS („Pioniertag") steht mit im Ort — die App hat kein
+  // eigenes Feld dafür, und ohne ihn sähe der Termin aus wie jeder andere.
+  const ortVon = (tp) => [tp.ort, tp.etikett].filter(Boolean).join(' · ') || standardOrt
 
   for (const tp of treffpunkte) {
     const { name, pid } = bind(tp.leiterRef)
@@ -191,17 +218,14 @@ export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
     if (platz === 'mehrdeutig') { z.mehrdeutig++; continue }
 
     if (!platz) {
-      // Ein Termin, den der Grundplan nicht kennt: nur für diese Woche. Der
-      // Zusatz aus NWS („Pioniertag") steht mit im Ort — die App hat kein
-      // eigenes Feld dafür, und ohne ihn sähe der Termin aus wie jeder andere.
-      const ort = [tp.ort, tp.etikett].filter(Boolean).join(' · ') || standardOrt
+      // Ein Termin, den der Grundplan nicht kennt: nur für diese Woche.
       const neu = {
         id: manuelleKennung(tp.nwsId),
         ruleId: null,
-        grp: '',
+        grp: null,
         wd: tp.wd,
         time: tp.zeit,
-        place: ort,
+        place: ortVon(tp),
         leader: name,
         manual: true,
       }
@@ -219,10 +243,18 @@ export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
     // nach: Verschiebt NWS ihn auf einen anderen Tag oder eine andere Zeit,
     // stünde sonst beim nächsten Lauf der alte Termin daneben. Was aus dem
     // Grundplan kommt, bleibt unberührt — dort entscheidet der Planer.
+    //
+    // Dazu gehört die Art: Frühere Läufe schrieben `grp: ''`, die App erkennt
+    // den Versammlungstreffpunkt nur an `null` (siehe Kopf).
     if (platz.manual && platz.id === manuelleKennung(tp.nwsId)) {
-      platz.wd = tp.wd
-      platz.time = tp.zeit
-      platz.place = [tp.ort, tp.etikett].filter(Boolean).join(' · ') || standardOrt
+      const ort = ortVon(tp)
+      if (platz.wd !== tp.wd || platz.time !== tp.zeit || platz.place !== ort || platz.grp !== null) {
+        platz.wd = tp.wd
+        platz.time = tp.zeit
+        platz.place = ort
+        platz.grp = null
+        z.nachgefuehrt++
+      }
     }
     // Ein leerer NWS-Leiter ist keine Aussage — er löscht nichts.
     if (!name) { z.offen++; continue }
@@ -239,7 +271,7 @@ export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
   }
 
   next.sort(fsSort)
-  return { insts: next, ...z }
+  return { insts: next, ...z, geaendert: z.gesetzt + z.angelegt + z.nachgefuehrt > 0 }
 }
 
 /* ===================== Grundplan-Vorschlag ================================ */
@@ -331,7 +363,7 @@ async function main() {
   const fsNachStart = new Map(fsRows.map((r) => [r.start, r.data ?? []]))
   console.log(`App: ${personen.length} Personen, ${wochen.length} Programmwochen, ${fsRows.length} Treffpunkt-Wochen.`)
 
-  const summe = { gesetzt: 0, angelegt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
+  const summe = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
   const geschrieben = []
   let ohneWoche = 0
   for (const [montag, tps] of [...jeWoche].sort((a, b) => a[0].localeCompare(b[0]))) {
@@ -339,7 +371,7 @@ async function main() {
     const vorher = fsNachStart.get(montag) ?? []
     const z = verteileFsWoche(vorher, tps, bind, { nurLeere, standardOrt })
     for (const k of Object.keys(summe)) summe[k] += z[k]
-    if (z.gesetzt + z.angelegt > 0) {
+    if (z.geaendert) {
       geschrieben.push({ montag, insts: z.insts, neu: !fsNachStart.has(montag), z })
     }
   }
@@ -347,6 +379,7 @@ async function main() {
   console.log(
     `\nLeiter gesetzt: ${summe.gesetzt}` +
     ` · Treffpunkte angelegt: ${summe.angelegt}` +
+    ` · nachgeführt: ${summe.nachgefuehrt}` +
     ` · in NWS offen: ${summe.offen}`,
   )
   if (summe.geschuetzt) console.log(`--nur-leere hat ${summe.geschuetzt} besetzte Treffpunkte geschützt.`)
@@ -366,7 +399,7 @@ async function main() {
   if (arg.trocken) {
     console.log(`\n--trocken: nichts geschrieben (${geschrieben.length} Wochen wären betroffen).`)
     for (const g of geschrieben.slice(0, 5)) {
-      console.log(`  ${g.montag}: ${g.z.gesetzt} Leiter, ${g.z.angelegt} angelegt`)
+      console.log(`  ${g.montag}: ${g.z.gesetzt} Leiter, ${g.z.angelegt} angelegt, ${g.z.nachgefuehrt} nachgeführt`)
     }
     return
   }
