@@ -486,7 +486,8 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   return { range, book, mid, we: weekendTemplate(range) }
 }
 
-// Schülerteil-Typen — die Heuristik liest **deutschen** Titel und Meta.
+// Punkte unter „Uns im Dienst verbessern" — die Heuristik liest **deutschen**
+// Titel und Meta.
 //
 // Das ist keine Einschränkung mehr: Die deutsche Wochenseite wird beim Import
 // ohnehin geladen, und `applyGoldSlots` überträgt die Slot-Vorlagen von dort
@@ -500,18 +501,89 @@ const BELIEF_RE = /Glaubensansichten erklären/i
 const SETTING_RE = /Von Haus zu Haus|Informell|In der Öffentlichkeit/i
 
 /**
- * Personen-Slots eines Schülerteils (gold-Sektion): Gesprächsteile bekommen
- * Schüler + Partner (2), Vorträge/Ansprachen genau einen männlichen
- * Teilnehmer. „Unsere Glaubensansichten erklären" ist je nach Format Ansprache
- * (1, männlich) oder gespielte Szene (2) — erkannt an einem Predigtdienst-Rahmen
- * im Meta. Unbekannt → 1 Slot (Partner ggf. manuell).
+ * Eine **Besprechung** — erkannt am Beschreiber, der in der Zeitzeile vor dem
+ * Rahmen steht: „(6 Min.) Besprechung. VON HAUS ZU HAUS. …". `settingOf` legt
+ * ihn als erstes Atom in die Meta-Zeile („Besprechung · 6 Min."), genau wie bei
+ * den Besprechungen unter „Unser Leben als Christ".
+ *
+ * Eine Besprechung ist **keine Schulungsaufgabe**, gleich unter welchem Titel:
+ * Die S-38 lässt Besprechungen in diesem Programmteil von einem Ältesten oder
+ * geeigneten Dienstamtgehilfen durchführen (S-38-X 8/26, Abs. 6). Regelmäßig
+ * kommt seit den Arbeitsheften 2026 „Was würdest du sagen?" vor — geleitet vom
+ * Vorsitzenden, einem anderen Ältesten oder einem geeigneten Dienstamtgehilfen
+ * (Abs. 9). Der Import gab dem Punkt einen Schüler-Platz, und damit bekam er
+ * alles, was an einem hängt: Die Auto-Zuteilung suchte bevorzugt Schwestern aus
+ * und Älteste zuletzt, es gab einen S-89-Zettel und eine zweite Reihe in der
+ * Zusätzlichen Klasse.
+ *
+ * Erkannt wird die **Form**, nicht der Titel — so steht auch die Regel in der
+ * S-38. Gemessen an allen Wochenseiten von September 2025 bis Dezember 2026
+ * (69 Wochen, am 26.9.2026): Der Beschreiber steht fünfmal in diesem
+ * Programmteil, jedes Mal bei „Was würdest du sagen?" und jedes Mal vor dem
+ * Rahmen; kein Schülerteil trägt ihn.
+ */
+const BESPRECHUNG_RE = /^Besprechung\b/i
+
+/**
+ * Die beiden Formen, zwischen denen „Unsere Glaubensansichten erklären" von
+ * Woche zu Woche wechselt — und nach denen die S-38 ihn zuteilt (S-38-X 8/26,
+ * Abs. 11): Einen **Vortrag** hält ein Bruder, eine **gespielte Szene**
+ * übernimmt ein Teilnehmer oder eine Teilnehmerin mit Gesprächspartner.
+ *
+ * Die gespielte Szene kam bis zum 26.9.2026 als Vortrag an — ein Platz, nur für
+ * Brüder. Erkannt werden sollte sie an einem Predigtdienst-Rahmen im Meta
+ * (`SETTING_RE`), und den trägt dieser Punkt nie. Gemessen an denselben 69
+ * Wochen wie `BESPRECHUNG_RE`: 16-mal „Unsere Glaubensansichten erklären",
+ * davon 11-mal „Gespielte Szene.", 5-mal „Vortrag.", kein einziges Mal mit
+ * Rahmen.
+ *
+ * Verglichen wird das **ganze** erste Atom, nicht sein Anfang: Unter „Unser
+ * Leben als Christ" steht auch „Vortrag des Dienstaufsehers" — die Aufgabe
+ * eines Ältesten, kein Vortrag eines Teilnehmers.
+ */
+const SZENE_RE = /^Gespielte Szene$/i
+const VORTRAG_RE = /^Vortrag$/i
+
+/**
+ * Der Platz eines Programmpunkts, den ein Bruder übernimmt — ein Ältester
+ * oder geeigneter Dienstamtgehilfe, kein Teilnehmer der Schulung: Vortrag und
+ * „Nach geistigen Schätzen graben" (S-38-X 8/26, Abs. 3 und 4), die Punkte unter
+ * „Unser Leben als Christ" (Abs. 16) und die Besprechungen unter „Uns im Dienst
+ * verbessern" (Abs. 6).
+ *
+ * Eine Stelle für alle, damit sie dieselbe Antwort geben. Am Bereich des
+ * Platzes hängt alles, was einen Schülerteil ausmacht — Zusätzliche Klasse
+ * (`istSchuelerteil`), S-89-Zettel, Partner-Knopf, Kandidaten und Engpass.
+ */
+function bruderPlatz(): ImportedSlot[] {
+  return [{ name: '', bereichsKey: 'vortrag' }]
+}
+
+/**
+ * Personen-Slots eines Punkts unter „Uns im Dienst verbessern" (gold-Sektion).
+ *
+ * Zuerst die **Form**, die der Beschreiber der Zeitzeile nennt — das erste
+ * Atom der Meta-Zeile. Sie gilt vor dem Titel, so regelt es auch die S-38:
+ * Eine Besprechung übernimmt ein Bruder (`BESPRECHUNG_RE`), eine gespielte
+ * Szene bekommt Schüler + Partner, ein Vortrag genau einen männlichen
+ * Teilnehmer (`SZENE_RE`, `VORTRAG_RE`).
+ *
+ * Dann das Thema: Gesprächsteile bekommen Schüler + Partner (2),
+ * Vorträge/Ansprachen genau einen männlichen Teilnehmer. „Unsere
+ * Glaubensansichten erklären" **ohne** Beschreiber — gemessen nie — deutet
+ * weiter ein Predigtdienst-Rahmen im Meta als Szene. Unbekannt → 1 Slot
+ * (Partner ggf. manuell).
  */
 export function ministryNames(title: string, meta: string): ImportedSlot[] {
+  const form = meta.split(' · ')[0] ?? ''
+  if (BESPRECHUNG_RE.test(form)) return bruderPlatz()
   const talk = { name: '', bereichsKey: 'schulung', male: true }
   const convo: ImportedSlot[] = [
     { name: '', rolle: 'Schüler', bereichsKey: 'schulung' },
     { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
   ]
+  if (SZENE_RE.test(form)) return convo
+  if (VORTRAG_RE.test(form)) return [talk]
   if (CONVO_RE.test(title)) return convo
   if (TALK_RE.test(title)) return [talk]
   if (BELIEF_RE.test(title)) return SETTING_RE.test(meta) ? convo : [talk]
@@ -521,9 +593,10 @@ export function ministryNames(title: string, meta: string): ImportedSlot[] {
 /**
  * Aufgabenart der Schülerteile von einer Referenzwoche (immer die deutsche — das
  * Arbeitsheft-Programm ist weltweit strukturgleich) auf eine lokalisierte Woche
- * übertragen: die Slot-Vorlagen der gold-Sektion (Führer/Partner/männlich)
- * werden positionsgenau übernommen. So bekommen auch nicht-deutsche Importe die
- * richtige Personenzahl, obwohl die Titel-Heuristik nur Deutsch versteht.
+ * übertragen: die Slot-Vorlagen der gold-Sektion (Führer/Partner/männlich,
+ * bei einer Besprechung der Platz eines Bruders) werden positionsgenau
+ * übernommen. So bekommen auch nicht-deutsche Importe die richtige
+ * Personenzahl, obwohl die Titel-Heuristik nur Deutsch versteht.
  */
 export function applyGoldSlots(target: ImportedWeek, source: ImportedWeek): void {
   const tGold = target.mid.sections.find((s) => s.farbe === 'gold')
@@ -566,10 +639,7 @@ function finalizeParts(recs: PartRec[]): void {
     } else {
       part.title = title
       part.meta = joinMeta(settingOf(time), min, sourceOf(time))
-      part.names =
-        color === 'gold'
-          ? ministryNames(title, part.meta)
-          : [{ name: '', bereichsKey: 'vortrag' }]
+      part.names = color === 'gold' ? ministryNames(title, part.meta) : bruderPlatz()
     }
   }
 }
