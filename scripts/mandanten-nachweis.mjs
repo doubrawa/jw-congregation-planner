@@ -47,7 +47,7 @@
  * Rückgabewert 0 = alle Proben bestanden, 1 = mindestens eine nicht.
  */
 
-import { alsSkript, pruefKlient } from './gemeinsam.mjs'
+import { alsSkript, anfrageKaputt, pruefKlient } from './gemeinsam.mjs'
 
 /* ===================== Was geprüft wird =================================== */
 
@@ -104,11 +104,21 @@ export function bewerteListe(zeilen, spalte, eigeneId, keineZeilen = false) {
 }
 
 /**
- * Eine Schreibprobe bewerten. Abgewiesen ist alles, was **nicht** durchkommt:
- * PostgREST meldet einen RLS-Verstoß beim Einfügen als 403/42501, ein Ändern
- * ohne passende Zeile trifft schlicht nichts (leere Antwort).
+ * Eine Schreibprobe bewerten. Abgewiesen ist, was die **Richtlinien** abweisen:
+ * PostgREST meldet einen RLS-Verstoß beim Einfügen als 403/42501 (401 ohne
+ * gültige Anmeldung), ein Ändern ohne passende Zeile trifft schlicht nichts
+ * (leere Antwort).
+ *
+ * Jeder andere Fehlerstatus ist **kein** Urteil, sondern eine gescheiterte
+ * Probe (`anfrageKaputt` in `gemeinsam.mjs`). Bis zum 26.9.2026 stand hier
+ * `status >= 400` für „abgewiesen" — ein Einfügeversuch mit einer vertippten
+ * Spalte bekam 400 und damit ein ✓ für die Mandantentrennung, ohne sie je
+ * berührt zu haben.
  */
 export function bewerteSchreiben(status, zeilen) {
+  if (anfrageKaputt(status)) {
+    return { ok: false, wie: `PROBE KAPUTT (${status}) — die Anfrage scheiterte selbst, kein Urteil über die Trennung` }
+  }
   if (status >= 400) return { ok: true, wie: `abgewiesen (${status})` }
   const getroffen = Array.isArray(zeilen) ? zeilen.length : zeilen ? 1 : 0
   return getroffen === 0
@@ -150,7 +160,9 @@ async function anmelden(url, anon, mail, pass) {
   /** PostgREST **als dieser Nutzer** — RLS greift. */
   const rest = pruefKlient(url, anon, token)
 
-  const { daten: mitglied } = await rest('members?select=congregation_id,planner')
+  const { status, daten: mitglied } = await rest('members?select=congregation_id,planner')
+  // Ein Fehler hier hieße sonst „in keiner Versammlung" — die falsche Spur.
+  if (status >= 400) throw new Error(`${mail}: members nicht lesbar (${status}): ${JSON.stringify(mitglied)}`)
   const eigene = mitglied?.[0]?.congregation_id
   if (!eigene) throw new Error(`${mail} ist in keiner Versammlung (members leer).`)
   const { daten: cong } = await rest(`congregations?select=name&id=eq.${eigene}`)
@@ -199,14 +211,22 @@ export async function main(arg = process.argv.slice(2)) {
   // demselben öffentlichen Schlüssel, den jeder Besucher im Bundle findet.
   console.log('Was der anon-Key ohne Anmeldung sieht (muss überall null sein):')
   let anonZeilen = 0
+  // Eine gescheiterte Abfrage zählt nicht als „null Zeilen": Sie hat nichts
+  // gesehen, weil sie gar nicht gefragt hat. 401/403 dagegen sind die Sperre.
+  const nichtGemessen = []
   // Derselbe Klient wie unten, nur ohne Nutzer-Token: Der anon-Schlüssel weist
   // sich selbst aus — genau das, was ein Besucher in der Hand hat.
   const ohneAnmeldung = pruefKlient(url, anon, anon)
   for (const t of RLS_TABELLEN) {
     const { status, daten } = await ohneAnmeldung(`${t.name}?select=${t.spalte}&limit=1000`)
+    if (anfrageKaputt(status)) nichtGemessen.push(`${t.name} (${status})`)
     anonZeilen += status < 400 && Array.isArray(daten) ? daten.length : 0
   }
-  zeile(anonZeilen === 0, `${String(RLS_TABELLEN.length).padStart(2)} Tabellen → ${anonZeilen} Zeilen`)
+  zeile(
+    anonZeilen === 0 && nichtGemessen.length === 0,
+    `${String(RLS_TABELLEN.length).padStart(2)} Tabellen → ${anonZeilen} Zeilen` +
+      (nichtGemessen.length ? ` — PROBE KAPUTT, nicht gemessen: ${nichtGemessen.join(', ')}` : ''),
+  )
   console.log()
 
   // ---- 1) Lesen, Liste ----------------------------------------------------
@@ -230,7 +250,12 @@ export async function main(arg = process.argv.slice(2)) {
   const landmarken = async (seite) => {
     const out = []
     for (const name of LANDMARKEN) {
-      const { daten } = await seite.rest(`${name}?select=id&limit=1`)
+      const { status, daten } = await seite.rest(`${name}?select=id&limit=1`)
+      // Still übergangen, fiele mit der Landmarke die ganze Kreuzprobe weg.
+      if (status >= 400) {
+        zeile(false, `${name.padEnd(19)} Landmarke von „${seite.name}" nicht lesbar (${status}) — PROBE KAPUTT`)
+        continue
+      }
       if (daten?.[0]?.id) out.push({ name, id: daten[0].id })
     }
     return out
@@ -268,8 +293,10 @@ export async function main(arg = process.argv.slice(2)) {
       const ein = await seite.rest('persons', 'POST', probe)
       const e1 = bewerteSchreiben(ein.status, ein.daten)
       zeile(e1.ok, `persons einfügen      → ${e1.wie}`)
-      if (!e1.ok) {
-        const id = ein.daten?.[0]?.id
+      // Aufräumen nur, wo eine Zeile entstanden ist — eine kaputte Probe hat
+      // keine hinterlassen, und `id=eq.undefined` meldete eine, die es nicht gibt.
+      const id = Array.isArray(ein.daten) ? ein.daten[0]?.id : undefined
+      if (!e1.ok && id) {
         const weg = await seite.rest(`persons?id=eq.${id}`, 'DELETE', undefined, 'return=minimal')
         console.log(
           weg.status < 400
@@ -282,11 +309,18 @@ export async function main(arg = process.argv.slice(2)) {
       //    Richtlinie nachgibt, ändert sich dadurch nichts an echten Daten.
       const marke = (ziel === b ? marken.b : marken.a).find((m) => m.name === 'persons')
       if (marke) {
-        const { daten: istWert } = await ziel.rest(`persons?select=tel&id=eq.${marke.id}`)
-        const tel = istWert?.[0]?.tel ?? ''
-        const aend = await seite.rest(`persons?id=eq.${marke.id}`, 'PATCH', { tel })
-        const e2 = bewerteSchreiben(aend.status, aend.daten)
-        zeile(e2.ok, `persons ändern        → ${e2.wie}`)
+        // Den vorhandenen Wert **sicher** kennen, bevor geschrieben wird. Hier
+        // stand `?? ''`: Scheiterte das Lesen, ging ein leerer Wert hinaus — und
+        // hätte die Richtlinie ein Loch, wäre die echte Nummer weg gewesen.
+        const ist = await ziel.rest(`persons?select=tel&id=eq.${marke.id}`)
+        const vorhanden = Array.isArray(ist.daten) ? ist.daten[0] : undefined
+        if (ist.status >= 400 || !vorhanden) {
+          zeile(false, `persons ändern        → nicht versucht: vorhandener Wert nicht lesbar (${ist.status}) — PROBE KAPUTT`)
+        } else {
+          const aend = await seite.rest(`persons?id=eq.${marke.id}`, 'PATCH', { tel: vorhanden.tel ?? '' })
+          const e2 = bewerteSchreiben(aend.status, aend.daten)
+          zeile(e2.ok, `persons ändern        → ${e2.wie}`)
+        }
       }
       console.log()
     }

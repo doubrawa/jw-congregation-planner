@@ -132,6 +132,32 @@ describe('Einen Schreibversuch bewerten', () => {
     expect(e).toMatchObject({ durch: true, wieErwartet: true })
     expect(e.text).toBe('ANGEKOMMEN (HTTP 403)')
   })
+
+  /*
+    „Nicht angekommen" ist nur ein Urteil, wenn gemessen wurde. Bis zum
+    26.9.2026 hieß ein Schreibversuch mit vertippter Spalte (400) bei jedem
+    verbotenen Fall „abgewiesen" — nichts war angekommen, weil nichts
+    gefragt wurde. Ebenso ein Nachsehen, das selbst scheiterte.
+  */
+  it('ein 400 beim Schreiben ist kein Urteil — auch wenn nichts ankam', () => {
+    const e = bewerteVersuch(400, false, false)
+    expect(e).toMatchObject({ durch: false, wieErwartet: false, kaputt: true })
+    expect(e.text).toMatch(/PROBE KAPUTT — Schreiben scheiterte \(HTTP 400\)/)
+  })
+
+  it('scheitert das Nachsehen, ist ebenso nichts gemessen', () => {
+    const e = bewerteVersuch(201, false, false, { leseStatus: 400 })
+    expect(e).toMatchObject({ wieErwartet: false, kaputt: true })
+    expect(e.text).toMatch(/Nachsehen scheiterte \(HTTP 400\)/)
+  })
+
+  it('bei einer Edge Function sagt der Aufrufer, welcher Fehler ein Urteil ist', () => {
+    // `substitute` meldet mit 409 sowohl „not-sought" (das Urteil über S13)
+    // als auch „slot-taken" (keins); am Status allein ist das nicht zu sehen.
+    expect(bewerteVersuch(409, false, false, { urteil: true })).toMatchObject({ wieErwartet: true })
+    expect(bewerteVersuch(409, false, false, { urteil: false })).toMatchObject({ kaputt: true })
+    expect(bewerteVersuch(403, false, false, { urteil: false })).toMatchObject({ kaputt: true })
+  })
 })
 
 describe('Ist das Mitglied für den Platz überhaupt qualifiziert? (Fall 9)', () => {

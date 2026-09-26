@@ -185,6 +185,11 @@ export interface Umgebung {
   funktionen?: Record<string, (rumpf: Record<string, unknown>) => FunktionsAntwort>
   /** Weitere Umgebungsvariablen (die RLS-Proben lesen ihre Konten daraus). */
   env?: Record<string, string>
+  /**
+   * Eine Antwort, die PostgREST statt der normalen gibt — um einen Fehler der
+   * Datenbank nachzustellen (etwa den 400 auf eine vertippte Spalte).
+   */
+  stoerung?: (aufruf: Aufruf) => FunktionsAntwort | undefined
 }
 
 /** Ein Filter aus der Adresse: `eq.x`, `neq.x`, `is.null`, `in.(a,b)`, `like.a*`. */
@@ -214,7 +219,7 @@ function passtFilter(wert: unknown, ausdruck: string): boolean {
  * sind. Alles andere sieht jeder — die Proben laufen damit auch in ihre
  * Aufräum-Zweige, und deren Aufrufe stehen dann ebenfalls unter Prüfung.
  */
-export function attrappe({ bestand = {}, konten = [], funktionen = {} }: Umgebung = {}) {
+export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung }: Umgebung = {}) {
   const tabellen: Bestand = structuredClone(bestand)
   const alleKonten = [...konten]
   const aufrufe: Aufruf[] = []
@@ -278,7 +283,10 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {} }: Umgebun
 
     if (url.pathname.startsWith('/rest/v1/')) {
       const tabelle = decodeURIComponent(url.pathname.slice('/rest/v1/'.length))
-      aufrufe.push({ pfad: `${tabelle}${url.search}`, method, body: rumpf })
+      const aufruf = { pfad: `${tabelle}${url.search}`, method, body: rumpf }
+      aufrufe.push(aufruf)
+      const gestoert = stoerung?.(aufruf)
+      if (gestoert) return antwort(gestoert.status ?? 400, gestoert.json ?? {})
       return postgrest(tabelle, url.searchParams, method, rumpf, kopf)
     }
     if (url.pathname === '/auth/v1/token') {
@@ -326,12 +334,15 @@ export const ATTRAPPE_SCHLUESSEL = 'sb_secret_attrappe_ohne_netz_000000'
  */
 export async function fahre(lauf: () => Promise<unknown>, umgebung: Umgebung = {}) {
   const a = attrappe(umgebung)
+  const ausgabe: string[] = []
   const meldungen: string[] = []
   vi.stubGlobal('fetch', a.holen)
   vi.stubEnv('SUPABASE_URL', ATTRAPPE_URL)
   vi.stubEnv('SUPABASE_SECRET_KEY', ATTRAPPE_SCHLUESSEL)
   for (const [k, v] of Object.entries(umgebung.env ?? {})) vi.stubEnv(k, v)
-  const still = vi.spyOn(console, 'log').mockImplementation(() => {})
+  const still = vi.spyOn(console, 'log').mockImplementation((...teile: unknown[]) => {
+    ausgabe.push(teile.map(String).join(' '))
+  })
   const fehler = vi.spyOn(console, 'error').mockImplementation((...teile: unknown[]) => {
     meldungen.push(teile.map(String).join(' '))
   })
@@ -349,5 +360,5 @@ export async function fahre(lauf: () => Promise<unknown>, umgebung: Umgebung = {
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
   }
-  return { aufrufe: a.aufrufe, tabellen: a.tabellen, meldungen }
+  return { aufrufe: a.aufrufe, tabellen: a.tabellen, ausgabe, meldungen }
 }

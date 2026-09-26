@@ -69,7 +69,7 @@
  * Versammlung tun, weil jemand versehentlich sein eigenes Konto einträgt.
  */
 
-import { alsSkript, pruefKlient } from './gemeinsam.mjs'
+import { alsSkript, anfrageKaputt, pruefKlient } from './gemeinsam.mjs'
 
 /* ===================== Schlüssel (Spiegel von planning.ts) ================ */
 
@@ -191,14 +191,34 @@ export function eigeneSlots(week, eigenePid) {
  * `RETURNING`. Genau das ahmt die Probe seither nach — geschrieben wird mit
  * `return=minimal`, und ob etwas ankam, wird **am Ziel** nachgesehen, mit einem
  * Konto, das dort lesen darf.
+ *
+ * **Und nur, wenn überhaupt gemessen wurde** (seit dem 26.9.2026). „Nicht
+ * angekommen" ist ein Urteil nur, wenn das Schreiben an der Regel scheiterte
+ * und das Nachsehen gelang. Scheiterte das Schreiben an etwas anderem — ein
+ * 400 für eine vertippte Spalte, ein 5xx —, oder scheiterte das Nachsehen
+ * selbst, dann kam nichts an, weil nichts gefragt wurde; vorher hieß das bei
+ * jedem verbotenen Fall „abgewiesen". `urteil` sagt, ob der Schreibstatus ein
+ * Urteil ist: bei PostgREST 401/403 (`anfrageKaputt`), bei einer Edge Function
+ * ihr Fehlercode, den nur der Aufrufer kennt.
  */
-export function bewerteVersuch(status, angekommen, erwartetDurch) {
+export function bewerteVersuch(status, angekommen, erwartetDurch, { leseStatus = 200, urteil = !anfrageKaputt(status) } = {}) {
+  if (!urteil || leseStatus >= 400) {
+    return {
+      durch: false,
+      wieErwartet: false,
+      kaputt: true,
+      text: `PROBE KAPUTT — ${urteil ? `Nachsehen scheiterte (HTTP ${leseStatus})` : `Schreiben scheiterte (HTTP ${status})`}, kein Urteil über die Regel`,
+    }
+  }
   return {
     durch: angekommen,
     wieErwartet: angekommen === erwartetDurch,
     text: `${angekommen ? 'ANGEKOMMEN' : 'nicht angekommen'} (HTTP ${status})`,
   }
 }
+
+/** Die Zeilen einer Antwort — bei einem Fehler keine, statt eines Fehlerobjekts, das `for … of` sprengt. */
+const zeilenVon = (antwort) => (Array.isArray(antwort?.daten) ? antwort.daten : [])
 
 /* ===================== Zugang ============================================= */
 
@@ -249,7 +269,9 @@ async function anmelden(url, anon, mail, pass) {
     return { status: antwort.status, daten }
   }
 
-  const { daten: mitglied } = await rest('members?select=congregation_id,person_id,planner')
+  const { status, daten: mitglied } = await rest('members?select=congregation_id,person_id,planner')
+  // Ein Fehler hier hieße sonst „in keiner Versammlung" — die falsche Spur.
+  if (status >= 400) throw new Error(`${mail}: members nicht lesbar (${status}): ${JSON.stringify(mitglied)}`)
   if (!mitglied?.[0]) throw new Error(`${mail} ist in keiner Versammlung.`)
   return { mail, rest, funktion, uid: user.id, cong: mitglied[0].congregation_id, pid: mitglied[0].person_id, planer: Boolean(mitglied[0].planner) }
 }
@@ -289,7 +311,11 @@ export async function main(arg = process.argv.slice(2)) {
   console.log(`Mitglied:    ${mitglied.mail} (Person ${mitglied.pid ?? '—'})\n`)
 
   // Eine fremde Aufgabe suchen — aus der Sicht des Planers, der alle Wochen sieht.
-  const { daten: wochen } = await planer.rest('weeks?select=start,data&order=start&limit=12')
+  const { status: wochenStatus, daten: wochen } = await planer.rest('weeks?select=start,data&order=start&limit=12')
+  if (wochenStatus >= 400) {
+    console.error(`Die Wochen sind nicht lesbar (${wochenStatus}): ${JSON.stringify(wochen)}`)
+    process.exit(1)
+  }
   const week = wochen?.[0]?.data
   if (!week) {
     console.error('Keine Woche in dieser Versammlung — ohne Zuteilungen ist S2 nicht zu messen.')
@@ -312,15 +338,34 @@ export async function main(arg = process.argv.slice(2)) {
 
   const befunde = []
   const ergebnis = (nr, was, e, folge) => {
-    befunde.push({ nr, durch: e.durch, wieErwartet: e.wieErwartet })
+    befunde.push({ nr, durch: e.durch, wieErwartet: e.wieErwartet, kaputt: Boolean(e.kaputt) })
     console.log(`  ${e.wieErwartet ? '·' : '!'} (${nr}) ${was}`)
-    console.log(`      ${e.text}${folge ? ` — ${folge}` : ''}`)
+    // Bei einer kaputten Probe kein Nachsatz: „abgewiesen — … greift" wäre
+    // genau die Behauptung, die sie nicht belegt hat.
+    console.log(`      ${e.text}${folge && !e.kaputt ? ` — ${folge}` : ''}`)
   }
 
   // Ein Kennzeichen je Lauf: Damit findet der Empfänger genau die Zeilen dieser
   // Probe wieder — auch die, die gar nicht ankommen sollten.
   const marke = `PROBE-${Date.now()}`
   console.log(`Was das Mitglied schreiben kann (Kennzeichen ${marke}):`)
+
+  // Aufgeräumt wird auch nach einer kaputten Probe: Scheiterte nur das
+  // Nachsehen, kann die Zeile trotzdem angekommen sein.
+  const aufraeumen = async (e, loeschen) => {
+    if (!e.durch && !e.kaputt) return
+    const weg = await loeschen()
+    console.log(
+      weg.status < 400
+        ? `      (${e.durch ? 'Zeile wieder gelöscht' : 'vorsorglich aufgeräumt'})`
+        : `      !! Zeile blieb stehen (${weg.status}) !!`,
+    )
+  }
+  // Mitteilungen findet das Aufräumen nur über das Nachsehen — scheiterte das,
+  // bleibt allein der Hinweis auf das Kennzeichen.
+  const unaufgeraeumt = (antwort) => {
+    if (antwort.status >= 400) console.log(`      !! nicht nachprüfbar — Mitteilungen „${marke} …" ggf. von Hand löschen`)
+  }
 
   // ---- 1) S2: fremder task_key, eigene user_id ----------------------------
   const ziel = dienst ?? programm
@@ -333,15 +378,16 @@ export async function main(arg = process.argv.slice(2)) {
   )
   // Nachgesehen wird beim **Planer**: Er ist der, dem die falsche Bestätigung
   // etwas vorspiegeln würde.
-  const { daten: sicht } = await planer.rest(`confirmations?select=status,user_id&task_key=eq.${schluessel}`)
-  const e1 = bewerteVersuch(s2.status, Boolean(sicht?.length), false)
+  const { status: l1, daten: sicht } = await planer.rest(`confirmations?select=status,user_id&task_key=eq.${schluessel}`)
+  const e1 = bewerteVersuch(s2.status, Boolean(sicht?.length), false, { leseStatus: l1 })
   ergebnis(1, `Bestätigung auf eine fremde Aufgabe (${ziel.art}: ${ziel.wer})`, e1, e1.durch ? 'S2 STEHT NOCH OFFEN' : 'abgewiesen — task_gehoert_mir greift')
   if (e1.durch) {
     console.log(`      Der Planer sieht auf ${ziel.wer}s Platz: ${sicht.map((z) => z.status).join(', ')}`)
     console.log(`      — geschrieben hat sie ${sicht.some((z) => z.user_id === mitglied.uid) ? 'das Mitglied' : 'jemand anderes'}`)
-    const weg = await mitglied.rest(`confirmations?task_key=eq.${schluessel}&user_id=eq.${mitglied.uid}`, 'DELETE', undefined, 'return=minimal')
-    console.log(weg.status < 400 ? '      (Zeile wieder gelöscht)' : `      !! Zeile blieb stehen (${weg.status}) !!`)
   }
+  await aufraeumen(e1, () =>
+    mitglied.rest(`confirmations?task_key=eq.${schluessel}&user_id=eq.${mitglied.uid}`, 'DELETE', undefined, 'return=minimal'),
+  )
 
   // ---- 2) Gegenprobe: fremde user_id --------------------------------------
   const s2b = await mitglied.rest(
@@ -350,12 +396,12 @@ export async function main(arg = process.argv.slice(2)) {
     { congregation_id: versammlung, user_id: planer.uid, task_key: programm.key, status: 'bestätigt' },
     'return=minimal',
   )
-  const { daten: sicht2 } = await planer.rest(`confirmations?select=user_id&task_key=eq.${encodeURIComponent(programm.key)}&user_id=eq.${planer.uid}`)
-  const e2 = bewerteVersuch(s2b.status, Boolean(sicht2?.length), false)
+  const { status: l2, daten: sicht2 } = await planer.rest(`confirmations?select=user_id&task_key=eq.${encodeURIComponent(programm.key)}&user_id=eq.${planer.uid}`)
+  const e2 = bewerteVersuch(s2b.status, Boolean(sicht2?.length), false, { leseStatus: l2 })
   ergebnis(2, 'dieselbe Zeile im Namen des Planers (fremde user_id)', e2, e2.durch ? 'AUCH DAS!' : 'die Grenze greift hier')
-  if (e2.durch) {
-    await planer.rest(`confirmations?task_key=eq.${encodeURIComponent(programm.key)}&user_id=eq.${planer.uid}`, 'DELETE', undefined, 'return=minimal')
-  }
+  await aufraeumen(e2, () =>
+    planer.rest(`confirmations?task_key=eq.${encodeURIComponent(programm.key)}&user_id=eq.${planer.uid}`, 'DELETE', undefined, 'return=minimal'),
+  )
 
   // ---- 3) S3: freier Text an einen Empfaenger, der KEIN Planer ist ---------
   // Empfänger ist hier das Mitglied selbst — nicht aus Bequemlichkeit, sondern
@@ -375,13 +421,14 @@ export async function main(arg = process.argv.slice(2)) {
     'return=minimal',
   )
   const angekommen3 = await mitglied.rest(`notifications?select=id,type,title&title=like.${marke}*`)
-  const e3 = bewerteVersuch(s3.status, Boolean(angekommen3.daten?.length), false)
+  const e3 = bewerteVersuch(s3.status, zeilenVon(angekommen3).length > 0, false, { leseStatus: angekommen3.status })
   ergebnis(3, 'Mitteilung mit freiem Text an einen Nicht-Planer', e3, e3.durch ? 'S3 STEHT NOCH OFFEN' : 'abgewiesen — notifications_insert greift')
-  for (const z of angekommen3.daten ?? []) {
+  for (const z of zeilenVon(angekommen3)) {
     console.log(`      In der Glocke gelandet: „${z.title}" (${z.type})`)
     const weg = await mitglied.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
     console.log(weg.status < 400 ? '      (wieder gelöscht)' : `      !! Mitteilung ${z.id} blieb stehen (${weg.status}) !!`)
   }
+  unaufgeraeumt(angekommen3)
 
   // ---- 4) Gegenprobe: Mitteilungstyp, den nur Planer setzen dürfen ---------
   const s3b = await mitglied.rest(
@@ -391,11 +438,12 @@ export async function main(arg = process.argv.slice(2)) {
     'return=minimal',
   )
   const angekommen4 = await planer.rest(`notifications?select=id&title=like.${marke}*`)
-  const e4 = bewerteVersuch(s3b.status, Boolean(angekommen4.daten?.length), false)
+  const e4 = bewerteVersuch(s3b.status, zeilenVon(angekommen4).length > 0, false, { leseStatus: angekommen4.status })
   ergebnis(4, 'dieselbe Mitteilung als Typ „zuteilung" (nur Planer)', e4, e4.durch ? 'AUCH DAS!' : 'die Grenze greift hier')
-  for (const z of angekommen4.daten ?? []) {
+  for (const z of zeilenVon(angekommen4)) {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
   }
+  unaufgeraeumt(angekommen4)
 
   // ---- 5) Der Beweis, dass die Richtlinie nicht zu streng ist --------------
   // Ohne diesen Fall bewiese die Probe nichts: Eine Richtlinie, die ALLES
@@ -413,12 +461,12 @@ export async function main(arg = process.argv.slice(2)) {
       { congregation_id: versammlung, user_id: mitglied.uid, task_key: eigen.key, status: 'bestätigt' },
       'return=minimal',
     )
-    const { daten: sicht5 } = await mitglied.rest(`confirmations?select=status&task_key=eq.${eigenKey}&user_id=eq.${mitglied.uid}`)
-    const e5 = bewerteVersuch(s5.status, Boolean(sicht5?.length), true)
+    const { status: l5, daten: sicht5 } = await mitglied.rest(`confirmations?select=status&task_key=eq.${eigenKey}&user_id=eq.${mitglied.uid}`)
+    const e5 = bewerteVersuch(s5.status, Boolean(sicht5?.length), true, { leseStatus: l5 })
     ergebnis(5, `eigene Aufgabe bestätigen (${eigen.art}: ${eigen.wer})`, e5, e5.durch ? 'der Weg steht offen' : 'ZU STRENG — die App kann nicht mehr bestätigen')
-    if (e5.durch) {
-      await mitglied.rest(`confirmations?task_key=eq.${eigenKey}&user_id=eq.${mitglied.uid}`, 'DELETE', undefined, 'return=minimal')
-    }
+    await aufraeumen(e5, () =>
+      mitglied.rest(`confirmations?task_key=eq.${eigenKey}&user_id=eq.${mitglied.uid}`, 'DELETE', undefined, 'return=minimal'),
+    )
   }
 
   // ---- 6) und dass der legitime Meldeweg offen bleibt ----------------------
@@ -429,11 +477,12 @@ export async function main(arg = process.argv.slice(2)) {
     'return=minimal',
   )
   const angekommen6 = await planer.rest(`notifications?select=id&title=like.${marke}*`)
-  const e6 = bewerteVersuch(s6.status, Boolean(angekommen6.daten?.length), true)
+  const e6 = bewerteVersuch(s6.status, zeilenVon(angekommen6).length > 0, true, { leseStatus: angekommen6.status })
   ergebnis(6, 'Absage-Mitteilung an den Planer (der legitime Weg)', e6, e6.durch ? 'kommt an' : 'ZU STRENG — Absagen erreichen den Planer nicht mehr')
-  for (const z of angekommen6.daten ?? []) {
+  for (const z of zeilenVon(angekommen6)) {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
   }
+  unaufgeraeumt(angekommen6)
 
   // ---- 7) S11: Abwesenheit auf eine FREMDE Person -------------------------
   // Der Zweig „die Zeile gehört mir" (`user_id = auth.uid()`) sagte nichts über
@@ -452,13 +501,10 @@ export async function main(arg = process.argv.slice(2)) {
     )
     // Nachgesehen wird beim Planer: Er ist der, dem die erfundene Abwesenheit
     // den Betroffenen aus der Zuteilung nimmt.
-    const { daten: sicht7 } = await planer.rest(`absences?select=id,person_id&id=eq.${absId}`)
-    const e7 = bewerteVersuch(s7.status, Boolean(sicht7?.length), false)
+    const { status: l7, daten: sicht7 } = await planer.rest(`absences?select=id,person_id&id=eq.${absId}`)
+    const e7 = bewerteVersuch(s7.status, Boolean(sicht7?.length), false, { leseStatus: l7 })
     ergebnis(7, 'Abwesenheit auf eine fremde Person eintragen', e7, e7.durch ? 'S11 STEHT NOCH OFFEN' : 'abgewiesen — absences_write greift')
-    if (e7.durch) {
-      const weg = await planer.rest(`absences?id=eq.${absId}`, 'DELETE', undefined, 'return=minimal')
-      console.log(weg.status < 400 ? '      (Zeile wieder gelöscht)' : `      !! Zeile blieb stehen (${weg.status}) !!`)
-    }
+    await aufraeumen(e7, () => planer.rest(`absences?id=eq.${absId}`, 'DELETE', undefined, 'return=minimal'))
   }
 
   // ---- 8) Gegenprobe: die eigene Abwesenheit -----------------------------
@@ -471,10 +517,10 @@ export async function main(arg = process.argv.slice(2)) {
     { id: eigeneAbsId, congregation_id: versammlung, user_id: mitglied.uid, person_id: mitglied.pid, from_date: '2099-01-01', to_date: '2099-01-02', reason: marke },
     'return=minimal',
   )
-  const { daten: sicht8 } = await mitglied.rest(`absences?select=id&id=eq.${eigeneAbsId}`)
-  const e8 = bewerteVersuch(s8.status, Boolean(sicht8?.length), true)
+  const { status: l8, daten: sicht8 } = await mitglied.rest(`absences?select=id&id=eq.${eigeneAbsId}`)
+  const e8 = bewerteVersuch(s8.status, Boolean(sicht8?.length), true, { leseStatus: l8 })
   ergebnis(8, `eigene Abwesenheit eintragen (Person ${mitglied.pid ?? 'keine'})`, e8, e8.durch ? 'der Weg steht offen' : 'ZU STRENG — niemand kann sich mehr abmelden')
-  if (e8.durch) await mitglied.rest(`absences?id=eq.${eigeneAbsId}`, 'DELETE', undefined, 'return=minimal')
+  await aufraeumen(e8, () => mitglied.rest(`absences?id=eq.${eigeneAbsId}`, 'DELETE', undefined, 'return=minimal'))
 
   // ---- 9) S13: einen fremden Platz übernehmen, ohne dass Ersatz gesucht ist
   // `take` verlangte Mitgliedschaft und Qualifikation — nicht, dass jemand
@@ -494,10 +540,17 @@ export async function main(arg = process.argv.slice(2)) {
     // Nachgesehen wird an der Woche selbst: Der Statuscode allein genügt nicht,
     // denn geschrieben wird mit Service-Role — ein Fehlschlag danach sähe wie
     // eine Ablehnung aus, während der Platz längst umgeschrieben wäre.
-    const { daten: w9 } = await planer.rest(`weeks?select=data&start=eq.${wochen[0].start}`)
+    const { status: l9, daten: w9 } = await planer.rest(`weeks?select=data&start=eq.${wochen[0].start}`)
     const jetzt = fremdeSlots({ ...w9?.[0]?.data, start: wochen[0].start }, mitglied.pid).find((s) => s.key === dienst.key)
-    const e9 = bewerteVersuch(a9.status, jetzt?.wer !== vorher, false)
+    // Ein Urteil über S13 ist allein „not-sought" — abgewiesen, weil niemand
+    // abgesagt hat. `forbidden`, `not-qualified`, `slot-taken` oder
+    // `bad-request` sagen darüber nichts, auch wenn sie ebenfalls abweisen.
+    const e9 = bewerteVersuch(a9.status, jetzt?.wer !== vorher, false, {
+      leseStatus: l9,
+      urteil: a9.status < 400 || a9.daten?.error === 'not-sought',
+    })
     ergebnis(9, `fremden Platz übernehmen, ohne dass Ersatz gesucht ist (${dienst.wer})`, e9, e9.durch ? 'S13 STEHT NOCH OFFEN' : `abgewiesen (${a9.daten?.error ?? '—'})`)
+    if (e9.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a9.daten)}`)
     if (e9.durch) console.log(`      Auf dem Platz steht jetzt: ${jetzt?.wer ?? '(leer)'} statt ${vorher}`)
   }
 
@@ -511,26 +564,40 @@ export async function main(arg = process.argv.slice(2)) {
     taskKey: ziel.key,
   })
   const nachher10 = await mitglied.rest(`notifications?select=id&title=eq.${encodeURIComponent('Ersatz gesucht')}&user_id=eq.${mitglied.uid}`)
-  const e10 = bewerteVersuch(a10.status, a10.status < 400, false)
+  // Ein Urteil über S10 ist „forbidden": Für diesen Platz darf das Mitglied kein
+  // Gesuch führen. `bad-request` hieße dagegen, dass der Schlüssel gar nicht
+  // verstanden wurde — so geschah es, wenn die Woche keinen fremden Hilfsdienst
+  // hatte und hier ein Programmpunkt ankam; das galt bis zum 26.9.2026 als
+  // abgewiesen.
+  const e10 = bewerteVersuch(a10.status, a10.status < 400, false, {
+    urteil: a10.status < 400 || a10.daten?.error === 'forbidden',
+  })
   ergebnis(10, 'Ersatzsuche für einen fremden Platz, Versammlung mit „#" gefälscht', e10, e10.durch ? 'S10 STEHT NOCH OFFEN' : `abgewiesen (${a10.daten?.error ?? '—'})`)
+  if (e10.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a10.daten)}`)
   if (e10.durch) {
     console.log(`      Die Function hat gearbeitet: ${JSON.stringify(a10.daten)}`)
-    for (const z of nachher10.daten ?? []) {
+    for (const z of zeilenVon(nachher10)) {
       await mitglied.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
     }
   }
 
   const verboten = befunde.filter((b) => b.nr !== 5 && b.nr !== 6 && b.nr !== 8)
   const durch = verboten.filter((b) => b.durch).length
-  const ueberraschungen = befunde.filter((b) => !b.wieErwartet)
+  const kaputt = befunde.filter((b) => b.kaputt)
+  const ueberraschungen = befunde.filter((b) => !b.wieErwartet && !b.kaputt)
   console.log(`\n${durch} von ${verboten.length} verbotenen Schreibversuchen kamen durch.`)
-  if (ueberraschungen.length === 0) {
+  if (ueberraschungen.length === 0 && kaputt.length === 0) {
     console.log('Genau die erwarteten: S2, S3, S10, S11 und S13 sind damit nicht mehr gelesen,')
     console.log('sondern gemessen — und die drei Gegenproben zeigen, dass die Regeln nicht zu')
     console.log('streng geraten sind: Bestätigen, Abmelden und Absagen gehen weiter.')
     return
   }
-  console.log(`Abweichend von der Erwartung: ${ueberraschungen.map((b) => `(${b.nr})`).join(', ')} — das ist der Blick wert.`)
+  if (kaputt.length) {
+    console.log(`Nicht gemessen — die Probe selbst scheiterte: ${kaputt.map((b) => `(${b.nr})`).join(', ')}. Erst reparieren, dann urteilen.`)
+  }
+  if (ueberraschungen.length) {
+    console.log(`Abweichend von der Erwartung: ${ueberraschungen.map((b) => `(${b.nr})`).join(', ')} — das ist der Blick wert.`)
+  }
   process.exitCode = 1
 }
 

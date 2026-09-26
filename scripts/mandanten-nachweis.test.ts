@@ -65,9 +65,27 @@ describe('Eine Liste bewerten', () => {
 })
 
 describe('Eine Schreibprobe bewerten', () => {
-  it('ein Fehlerstatus heißt abgewiesen', () => {
+  it('ein Urteil der Richtlinien heißt abgewiesen: 403 beim RLS-Verstoß, 401 ohne Anmeldung', () => {
     expect(bewerteSchreiben(403, { message: 'row-level security' }).ok).toBe(true)
     expect(bewerteSchreiben(401, null).ok).toBe(true)
+  })
+
+  /*
+    Bis zum 26.9.2026 galt hier jeder Status ab 400 als „abgewiesen". Ein
+    Einfügeversuch mit einer vertippten Spalte bekommt aber 400 (PGRST204) —
+    er hat die Trennung nie berührt und bestand trotzdem. Ein 409 (verletzte
+    Bedingung) oder ein 5xx sagt ebenso wenig über die Richtlinien.
+  */
+  it('ein 400 ist kein Urteil — die Probe ist kaputt, nicht bestanden', () => {
+    const e = bewerteSchreiben(400, { code: 'PGRST204', message: "Could not find the 'rolle' column" })
+    expect(e.ok).toBe(false)
+    expect(e.wie).toMatch(/PROBE KAPUTT \(400\)/)
+  })
+
+  it('ebenso jeder andere Fehlerstatus außerhalb von 401 und 403', () => {
+    for (const status of [404, 409, 500, 503]) {
+      expect(`${status}: ${bewerteSchreiben(status, null).ok}`).toBe(`${status}: false`)
+    }
   })
 
   it('null getroffene Zeilen heißen ebenfalls abgewiesen', () => {

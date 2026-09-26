@@ -486,6 +486,29 @@ export function restKlient(url, key) {
 }
 
 /**
+ * **Ein Urteil der Richtlinien — oder nur eine kaputte Anfrage?** Für die
+ * beiden RLS-Proben (`mandanten-nachweis`, `mitgliedsrechte-probe`).
+ *
+ * Beide zählen eine Abweisung als bestanden. Ein Urteil der Richtlinien sind
+ * bei PostgREST aber nur 401 (keine gültige Anmeldung) und 403 (42501, ein
+ * RLS-Verstoß). Ein 400 heißt, die Anfrage selbst war kaputt — eine Spalte, die
+ * es nicht gibt, ein Wert, den die Spalte nicht nimmt —, ein 409 eine verletzte
+ * Bedingung, ein 5xx ein Fehler des Servers. Bis zum 26.9.2026 zählte das alles
+ * als „abgewiesen": Eine vertippte Spalte bestand damit jede Fremd-Probe, sie
+ * hatte nur nichts gemessen.
+ *
+ * Eine Edge Function vergibt ihre Status selbst (`substitute` meldet mit 409
+ * sowohl das Urteil „not-sought" als auch „slot-taken"); dort entscheidet der
+ * Aufrufer am Fehlercode, was ein Urteil ist.
+ */
+export const RLS_URTEILE = [401, 403]
+
+/** Ein Fehlerstatus, der **kein** Urteil der Richtlinien ist — die Probe hat nichts gemessen. */
+export function anfrageKaputt(status) {
+  return status >= 400 && !RLS_URTEILE.includes(status)
+}
+
+/**
  * **Der Zugriff aus der Sicht eines angemeldeten Mitglieds** — für die beiden
  * RLS-Proben (`mandanten-nachweis`, `mitgliedsrechte-probe`).
  *

@@ -430,3 +430,59 @@ describe('Jeder REST-Aufruf der Wartungsskripte passt zu schema.sql', () => {
     }
   })
 })
+
+describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () => {
+  /*
+    Bis zum 26.9.2026 hieß bei beiden jeder Fehlerstatus „abgewiesen" — der
+    400 auf eine vertippte Spalte bestand jede Fremd-Probe. Die Regel steht
+    jetzt in `anfrageKaputt` (gemeinsam.mjs) und ist dort und in den
+    Bewertungsfunktionen geprüft; hier geht es um den **Weg** durch die Probe:
+    was sie ausgibt, und was sie danach noch schreibt. Dieselben Läufe wie
+    oben, nur mit einer gestörten Antwort.
+  */
+  const lauf = (skript: string): Lauf => LAEUFE[skript]![0]!
+  const kaputt = { status: 400, json: { code: 'PGRST204', message: 'Could not find the column' } }
+  const fahreGestoert = async (skript: string, stoerung: NonNullable<Umgebung['stoerung']>) => {
+    const modul = (await MODULE[`./${skript}`]!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const l = lauf(skript)
+    return fahre(() => l.fahren(modul, ''), { ...l.umgebung, stoerung })
+  }
+
+  it('mitgliedsrechte-probe: ein 400 auf den Schreibversuch heißt „PROBE KAPUTT", nicht „greift"', async () => {
+    const { ausgabe } = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) =>
+      a.method === 'POST' && tabelleVon(a) === 'confirmations' ? kaputt : undefined,
+    )
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(1\) Bestätigung auf eine fremde Aufgabe.*\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 400\)/)
+    expect(text).not.toMatch(/task_gehoert_mir greift/)
+    expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: \(1\), \(2\), \(5\)/)
+  })
+
+  it('mitgliedsrechte-probe: scheitert nur das Nachsehen, wird trotzdem aufgeräumt', async () => {
+    const { ausgabe, aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) =>
+      a.method === 'GET' && a.pfad.startsWith('absences?select=id,person_id') ? kaputt : undefined,
+    )
+    expect(ausgabe.join('\n')).toMatch(/\(7\) Abwesenheit auf eine fremde Person.*\n.*Nachsehen scheiterte \(HTTP 400\)/)
+    // Die Zeile kann angekommen sein, obwohl niemand nachsehen konnte.
+    expect(aufrufe.filter((a) => a.method === 'DELETE' && tabelleVon(a) === 'absences').length).toBeGreaterThan(1)
+  })
+
+  it('mandanten-nachweis: ein 400 auf den Einfügeversuch heißt „PROBE KAPUTT", nicht „abgewiesen"', async () => {
+    const { ausgabe } = await fahreGestoert('mandanten-nachweis.mjs', (a) =>
+      a.method === 'POST' && tabelleVon(a) === 'persons' ? kaputt : undefined,
+    )
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/persons einfügen +→ PROBE KAPUTT \(400\)/)
+    expect(text).not.toMatch(/abgewiesen \(400\)/)
+  })
+
+  it('mandanten-nachweis: ist der vorhandene Wert nicht lesbar, wird nichts geändert', async () => {
+    const { ausgabe, aufrufe } = await fahreGestoert('mandanten-nachweis.mjs', (a) =>
+      a.method === 'GET' && a.pfad.startsWith('persons?select=tel') ? kaputt : undefined,
+    )
+    expect(ausgabe.join('\n')).toMatch(/persons ändern +→ nicht versucht: vorhandener Wert nicht lesbar \(400\)/)
+    // Hier ging vorher `tel: ''` hinaus — bei einem Loch in der Richtlinie
+    // wäre die echte Nummer einer Person der anderen Versammlung weg gewesen.
+    expect(aufrufe.filter((a) => a.method === 'PATCH')).toEqual([])
+  })
+})
