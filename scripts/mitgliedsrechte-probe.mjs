@@ -200,6 +200,9 @@ export function eigeneSlots(week, eigenePid) {
  * jedem verbotenen Fall „abgewiesen". `urteil` sagt, ob der Schreibstatus ein
  * Urteil ist: bei PostgREST 401/403 (`anfrageKaputt`), bei einer Edge Function
  * ihr Fehlercode, den nur der Aufrufer kennt.
+ *
+ * `vielleichtDurch`: Das Schreiben kam durch, nur das Nachsehen scheiterte —
+ * die Zeile kann also dastehen. Allein dann räumt die Probe vorsorglich auf.
  */
 export function bewerteVersuch(status, angekommen, erwartetDurch, { leseStatus = 200, urteil = !anfrageKaputt(status) } = {}) {
   if (!urteil || leseStatus >= 400) {
@@ -207,6 +210,7 @@ export function bewerteVersuch(status, angekommen, erwartetDurch, { leseStatus =
       durch: false,
       wieErwartet: false,
       kaputt: true,
+      vielleichtDurch: urteil && status < 400,
       text: `PROBE KAPUTT — ${urteil ? `Nachsehen scheiterte (HTTP ${leseStatus})` : `Schreiben scheiterte (HTTP ${status})`}, kein Urteil über die Regel`,
     }
   }
@@ -350,10 +354,12 @@ export async function main(arg = process.argv.slice(2)) {
   const marke = `PROBE-${Date.now()}`
   console.log(`Was das Mitglied schreiben kann (Kennzeichen ${marke}):`)
 
-  // Aufgeräumt wird auch nach einer kaputten Probe: Scheiterte nur das
-  // Nachsehen, kann die Zeile trotzdem angekommen sein.
+  // Aufgeräumt wird auch, wenn nur das Nachsehen scheiterte: Dann kann die
+  // Zeile trotzdem angekommen sein. Scheiterte schon das Schreiben, bleibt alles
+  // stehen — Bestätigungen löscht die Probe über `task_key` und `user_id`, und
+  // das träfe eine Zusage, die jemand in der App gegeben hat (bei (5) ein 409).
   const aufraeumen = async (e, loeschen) => {
-    if (!e.durch && !e.kaputt) return
+    if (!e.durch && !e.vielleichtDurch) return
     const weg = await loeschen()
     console.log(
       weg.status < 400
@@ -377,13 +383,13 @@ export async function main(arg = process.argv.slice(2)) {
     'return=minimal',
   )
   // Nachgesehen wird beim **Planer**: Er ist der, dem die falsche Bestätigung
-  // etwas vorspiegeln würde.
-  const { status: l1, daten: sicht } = await planer.rest(`confirmations?select=status,user_id&task_key=eq.${schluessel}`)
+  // etwas vorspiegeln würde — und nur nach Zeilen **des Mitglieds**. Die echte
+  // Zusage des Zuständigen stünde sonst als Loch da.
+  const { status: l1, daten: sicht } = await planer.rest(`confirmations?select=status&task_key=eq.${schluessel}&user_id=eq.${mitglied.uid}`)
   const e1 = bewerteVersuch(s2.status, Boolean(sicht?.length), false, { leseStatus: l1 })
   ergebnis(1, `Bestätigung auf eine fremde Aufgabe (${ziel.art}: ${ziel.wer})`, e1, e1.durch ? 'S2 STEHT NOCH OFFEN' : 'abgewiesen — task_gehoert_mir greift')
   if (e1.durch) {
-    console.log(`      Der Planer sieht auf ${ziel.wer}s Platz: ${sicht.map((z) => z.status).join(', ')}`)
-    console.log(`      — geschrieben hat sie ${sicht.some((z) => z.user_id === mitglied.uid) ? 'das Mitglied' : 'jemand anderes'}`)
+    console.log(`      Der Planer sieht auf ${ziel.wer}s Platz, geschrieben vom Mitglied: ${sicht.map((z) => z.status).join(', ')}`)
   }
   await aufraeumen(e1, () =>
     mitglied.rest(`confirmations?task_key=eq.${schluessel}&user_id=eq.${mitglied.uid}`, 'DELETE', undefined, 'return=minimal'),

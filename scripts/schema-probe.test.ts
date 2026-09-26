@@ -12,6 +12,7 @@ import {
   tabelleVon,
   type Umgebung,
 } from './schema-attrappe'
+import { eigeneSlots, fremdeSlots } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 
 /**
@@ -465,6 +466,48 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(ausgabe.join('\n')).toMatch(/\(7\) Abwesenheit auf eine fremde Person.*\n.*Nachsehen scheiterte \(HTTP 400\)/)
     // Die Zeile kann angekommen sein, obwohl niemand nachsehen konnte.
     expect(aufrufe.filter((a) => a.method === 'DELETE' && tabelleVon(a) === 'absences').length).toBeGreaterThan(1)
+  })
+
+  /** Die Probe mit einer Zusage, die schon vor ihr in der App stand. */
+  const mitZusage = async (zusage: Record<string, unknown>, stoerung: NonNullable<Umgebung['stoerung']>) => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const bestand = { ...l.umgebung!.bestand, confirmations: [zusage] }
+    return fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand, stoerung })
+  }
+  const probewoche = () => {
+    const w = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.weeks![0]!
+    return { ...(w.data as Record<string, unknown>), start: w.start }
+  }
+
+  it('mitgliedsrechte-probe: steht die eigene Zusage schon in der App, bleibt sie stehen', async () => {
+    // (5) schreibt dieselbe Zeile noch einmal und bekommt 409. Die Zusage ist
+    // echt, nicht von der Probe — bis zum 26.9.2026 räumte sie sie trotzdem als
+    // „vorsorglich" weg.
+    const eigen = eigeneSlots(probewoche(), P2)[0]!
+    const zusage = { id: k(81), congregation_id: C, user_id: U2, task_key: eigen.key, status: 'bestätigt' }
+    const { ausgabe, tabellen } = await mitZusage(zusage, (a) =>
+      a.method === 'POST' && tabelleVon(a) === 'confirmations' && (a.body as { task_key?: string }).task_key === eigen.key
+        ? { status: 409, json: { code: '23505' } }
+        : undefined,
+    )
+    expect(ausgabe.join('\n')).toMatch(/\(5\) eigene Aufgabe bestätigen.*\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 409\)/)
+    expect(tabellen.confirmations).toContainEqual(zusage)
+  })
+
+  it('mitgliedsrechte-probe: die echte Zusage des Zuständigen ist kein Loch', async () => {
+    // Fall (1): Der Planer hat seinen Hilfsdienst in der App bestätigt, das
+    // Mitglied wird abgewiesen. Gezählt wurde bis zum 26.9.2026 jede Zeile auf
+    // der Aufgabe — und die Probe meldete „S2 STEHT NOCH OFFEN".
+    const dienst = fremdeSlots(probewoche(), P2).find((s: { art: string }) => s.art.startsWith('Hilfsdienst'))!
+    const zusage = { id: k(82), congregation_id: C, user_id: U1, task_key: dienst.key, status: 'bestätigt' }
+    const { ausgabe, tabellen } = await mitZusage(zusage, (a) =>
+      a.method === 'POST' && tabelleVon(a) === 'confirmations' ? { status: 403, json: { code: '42501' } } : undefined,
+    )
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(1\) Bestätigung auf eine fremde Aufgabe.*\n.*abgewiesen — task_gehoert_mir greift/)
+    expect(text).not.toMatch(/S2 STEHT NOCH OFFEN/)
+    expect(tabellen.confirmations).toContainEqual(zusage)
   })
 
   it('mandanten-nachweis: ein 400 auf den Einfügeversuch heißt „PROBE KAPUTT", nicht „abgewiesen"', async () => {

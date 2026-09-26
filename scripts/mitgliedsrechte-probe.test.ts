@@ -151,6 +151,16 @@ describe('Einen Schreibversuch bewerten', () => {
     expect(e.text).toMatch(/Nachsehen scheiterte \(HTTP 400\)/)
   })
 
+  it('aufräumen darf nur, wo die Zeile angekommen sein kann', () => {
+    // Durchgekommen, nur nicht nachprüfbar: vorsorglich aufräumen.
+    expect(bewerteVersuch(201, false, false, { leseStatus: 400 }).vielleichtDurch).toBe(true)
+    // Schon das Schreiben scheiterte — etwa 409, weil die Zusage längst in der
+    // App steht. Gelöscht würde dann genau die, nicht eine Zeile der Probe.
+    expect(bewerteVersuch(409, true, true).vielleichtDurch).toBe(false)
+    // Von der Regel abgewiesen, und das Nachsehen scheiterte: ebenso nichts da.
+    expect(bewerteVersuch(403, false, false, { leseStatus: 500 }).vielleichtDurch).toBe(false)
+  })
+
   it('bei einer Edge Function sagt der Aufrufer, welcher Fehler ein Urteil ist', () => {
     // `substitute` meldet mit 409 sowohl „not-sought" (das Urteil über S13)
     // als auch „slot-taken" (keins); am Status allein ist das nicht zu sehen.
