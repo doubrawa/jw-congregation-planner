@@ -161,7 +161,7 @@ describe('Mitteilungstext „Treffpunkte"', () => {
 })
 
 /**
- * Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Abschnittsüberschrift kommt
+ * Zusätzliche Klasse (jw.org S-38, Absatz 27). Die Abschnittsüberschrift kommt
  * aus dem Artikel selbst, „Hauptsaal" aus dem schon vorhandenen Schlüssel des
  * S-89-Formulars — beides also nicht neu übersetzt, sondern übernommen.
  */

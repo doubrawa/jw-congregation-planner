@@ -119,7 +119,7 @@ export const DE = {
     familieLabel: 'Familie',
     // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
     // Sprache der dortige Satz, statt einer eigenen Umschreibung.
-    familieHint: 'Der Gesprächspartner sollte dasselbe Geschlecht haben oder ein Familienangehöriger sein.',
+    familieHint: 'Der Gesprächspartner soll dasselbe Geschlecht haben oder ein Familienangehöriger sein.',
     familieHinzu: '+ Familienmitglied hinzufügen',
     partnerHinzu: '+ Partner',
     partnerEntfernen: '– Partner',
@@ -200,17 +200,17 @@ export const DE = {
     notifErsatzGesucht: 'Ersatz gesucht', notifErsatzGefunden: 'Ersatz gefunden',
     notifZutGesendet: 'Zuteilung gesendet', notifZutsGesendet: 'Zuteilungen gesendet', notifProgImportiert: 'Programm importiert',
     rolleAeltester: 'Ältester', rolleDag: 'Dienstamtgehilfe', rolleVerk: 'Verkündiger', rolleKeine: 'Keine',
-    // Zusätzliche Klasse (jw.org S-38, Absatz 26). Die Begriffe stammen aus
+    // Zusätzliche Klasse (jw.org S-38, Absatz 27). Die Begriffe stammen aus
     // dem Artikel „Anweisungen für die Leben-und-Dienst-Zusammenkunft" in der
     // jeweiligen Sprache — auxKlassen ist dort die Abschnittsüberschrift.
-    // auxDesc ist der erste Satz von Absatz 26, in den Singular gesetzt: die
+    // auxDesc ist der erste Satz von Absatz 27, in den Singular gesetzt: die
     // Anweisungen sprechen von „zusätzlichen Klassen", die App kennt eine.
     auxKlassen: 'Zusätzliche Klassen',
     auxKlasse: 'Zusätzliche Klasse',
     auxHauptsaal: 'Hauptsaal',
     auxRatgeber: 'Ratgeber',
     auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
-    auxRatgeberHint: 'Für jede zusätzliche Klasse muss ein befähigter Ratgeber da sein, vorzugsweise ein Ältester.',
+    auxRatgeberHint: 'Für jede zusätzliche Klasse soll ein befähigter Ratgeber da sein, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete',
     privSchulung: 'Schulungsaufgaben', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',

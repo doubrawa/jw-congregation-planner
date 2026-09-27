@@ -6,7 +6,7 @@
  * Datei:
  *
  *   1. `item.names`      — Hauptsaal
- *   2. `item.aux`        — Zusätzliche Klasse (S-38, Absatz 26)
+ *   2. `item.aux`        — Zusätzliche Klasse (S-38, Absatz 27)
  *   3. `meeting.auxRatgeber` — Ratgeber der Klasse, einer je Zusammenkunft
  *   4. `meeting.helpers` — Hilfsdienste
  *

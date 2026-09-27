@@ -395,11 +395,11 @@ export function isPlainPublisher(p: Person): boolean {
 /**
  * Hat diese Zusammenkunft eine Zusätzliche Klasse?
  *
- * Erkennungsmerkmal ist der Ratgeber-Platz: „Für jede zusätzliche Klasse muss
- * ein befähigter Ratgeber zur Verfügung stehen" (S-38, Absatz 26) — ohne
- * Ratgeber keine Klasse. Damit steht die Antwort in den Wochendaten selbst,
- * und jeder Leser (Planen, Programm, Ausdruck, Zählung, Auto-Zuteilung,
- * Erinnerungen) kommt zum selben Ergebnis.
+ * Erkennungsmerkmal ist der Ratgeber-Platz: „Für jede zusätzliche Klasse soll
+ * ein befähigter Ratgeber zur Verfügung stehen" (S-38, Absatz 27) — die App
+ * gibt jeder Klasse diesen Platz, und ohne ihn gibt es keine. Damit steht die
+ * Antwort in den Wochendaten selbst, und jeder Leser (Planen, Programm,
+ * Ausdruck, Zählung, Auto-Zuteilung, Erinnerungen) kommt zum selben Ergebnis.
  *
  * Der Versammlungsschalter `state.auxClass` ist die Eingabe, nicht die
  * Wahrheit: er schreibt diese Marke über `syncAuxSlots` in die Wochen. Wer ihn

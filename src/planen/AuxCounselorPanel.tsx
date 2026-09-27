@@ -7,8 +7,8 @@ import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
 
 /**
- * Ratgeber der Zusätzlichen Klasse (jw.org S-38, Absatz 26: „Für jede
- * zusätzliche Klasse muss ein befähigter Ratgeber zur Verfügung stehen,
+ * Ratgeber der Zusätzlichen Klasse (jw.org S-38, Absatz 27: „Für jede
+ * zusätzliche Klasse soll ein befähigter Ratgeber zur Verfügung stehen,
  * vorzugsweise ein Ältester.").
  *
  * Eigene Karte statt einer Zeile an einem Programmpunkt: er begleitet die

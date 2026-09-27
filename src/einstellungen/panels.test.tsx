@@ -156,7 +156,7 @@ describe('Zusammenkunftszeiten', () => {
    */
 })
 
-describe('Zusätzliche Klasse (S-38 Abs. 26)', () => {
+describe('Zusätzliche Klasse (S-38 Abs. 27)', () => {
   it('ist ein Schalter der Versammlung, nicht des Geräts — mit der Begründung darunter', () => {
     const { container } = zeige('cong')
     const schalter = container.querySelector('.rem-toggle-row [role="switch"]')!

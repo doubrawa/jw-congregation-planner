@@ -28,7 +28,7 @@ import { FsPlan } from './FsPlan'
  * abgesichert — und das ist eine Zusicherung, die man messen muss, nicht eine,
  * die man sieht: Ein Fehler daran fällt erst auf, wenn die Planung weg ist.
  *
- * Dazu der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 26) und die
+ * Dazu der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 27) und die
  * Wochen-Bearbeitung der Treffpunkte samt Gruppenaufseher-Beschränkung.
  */
 
@@ -163,7 +163,7 @@ describe('„Leeren" braucht zwei Tipps — es macht eine Woche Arbeit zunichte'
   })
 })
 
-describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 26)', () => {
+describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 27)', () => {
   const mitKlasse = () => {
     const w = woche()
     w.mid.sections = [{

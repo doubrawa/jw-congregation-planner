@@ -95,7 +95,7 @@ create table if not exists public.congregations (
   cong_lang     text not null default 'de' check (cong_lang <> ''),
   prog_langs    text[] not null default '{}',
 
-  -- Zusätzliche Klasse eingerichtet (jw.org S-38, Absatz 26).
+  -- Zusätzliche Klasse eingerichtet (jw.org S-38, Absatz 27).
   aux_class     boolean not null default false,
 
   created_at    timestamptz not null default now()

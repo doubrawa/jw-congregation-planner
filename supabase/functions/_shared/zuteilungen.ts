@@ -72,7 +72,7 @@ export interface PartItem {
   iid: string
   title?: string
   names?: Slot[]
-  /** Zweite Platzreihe der Zusaetzlichen Klasse (jw.org S-38, Absatz 26). */
+  /** Zweite Platzreihe der Zusaetzlichen Klasse (jw.org S-38, Absatz 27). */
   aux?: Slot[]
 }
 

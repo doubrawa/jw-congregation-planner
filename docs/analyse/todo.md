@@ -5754,6 +5754,12 @@ Schlusspunkt, „Que diriez-vous ?" als `vortrag`-Platz und „Explique tes
 croyances" (Démonstration) mit Schüler und Partner; die deutsche vom
 28. September ist unverändert.
 
+Seit dem 27. September weicht `_shared/zuteilungen.ts` oben **nur in einem
+Kommentar** von `main` ab (S-38-Verweis Absatz 26 → 27, die Ausgabe 8/26 hat
+einen Absatz eingeschoben). Das betrifft `import-week`, `send-plan`,
+`send-reminders` und `substitute` beim Datei-für-Datei-Vergleich — ein Deploy
+ist dafür nicht nötig.
+
 ✅ Davor lief Version 34 (16:15 Uhr), Datei für Datei gleich dem Stand von
 `main` bis `784aed8` (nachgesehen mit `functions download`). Sie trägt zwei
 Änderungen am Parser: `41d0e05` gibt ukrainischen und anderen Schülerteilen

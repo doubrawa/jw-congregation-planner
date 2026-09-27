@@ -84,7 +84,7 @@ export function CongregationPanel() {
         </div>
       ))}
       {/*
-        Zusätzliche Klasse (jw.org S-38, Absatz 26). Gehört zur Versammlung,
+        Zusätzliche Klasse (jw.org S-38, Absatz 27). Gehört zur Versammlung,
         nicht zum Gerät: bei vielen Verkündigern laufen die Schulungsaufgaben
         parallel in einem zweiten Raum, damit jeder öfter drankommt.
       */}

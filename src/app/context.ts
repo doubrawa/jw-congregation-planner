@@ -167,7 +167,7 @@ export interface AppState {
   reminders: Reminders
   /**
    * Versammlung hat eine Zusätzliche Klasse eingerichtet (jw.org S-38,
-   * Absatz 26). Steuert die zweite Platzreihe der Schülerteile und den
+   * Absatz 27). Steuert die zweite Platzreihe der Schülerteile und den
    * Ratgeber — versammlungsweit, deshalb in `congregations.aux_class`.
    */
   auxClass: boolean

@@ -1,6 +1,6 @@
 /**
  * Zusätzliche Klasse (jw.org, „Anweisungen für die Leben-und-Dienst-
- * Zusammenkunft", Absatz 26).
+ * Zusammenkunft", Absatz 27).
  *
  * Hat eine Versammlung viele Verkündiger, kann sie die Schulungsaufgaben
  * parallel in einem zweiten Raum durchführen, damit jeder öfter drankommt.
@@ -9,7 +9,7 @@
  * zurück. Betroffen sind damit genau die Schülerteile: die Bibellesung und
  * alles unter „Uns im Dienst verbessern".
  *
- * Für jede Zusätzliche Klasse muss ein befähigter Ratgeber da sein
+ * Für jede Zusätzliche Klasse soll ein befähigter Ratgeber da sein
  * (Aufgabenbereich `ratgeber`) — einer je Zusammenkunft, nicht je Punkt.
  */
 

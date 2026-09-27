@@ -176,7 +176,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | --- | --- | --- | --- | --- |
 | 79 | Versammlungsname + Saal | Einstellungen | Planer | `einstellungen/CongregationPanel.tsx` |
 | 80 | Zusammenkunftszeiten (Wochentag + Uhrzeit je Zusammenkunft) | Einstellungen | Planer | `einstellungen/meeting-times.ts` |
-| 80a | Zusätzliche Klasse an/aus (versammlungsweit, S-38 Abs. 26) | Einstellungen → Versammlung | Planer | `CongregationPanel.tsx:88-101`, `setAuxClass`, `syncAuxSlots` |
+| 80a | Zusätzliche Klasse an/aus (versammlungsweit, S-38 Abs. 27) | Einstellungen → Versammlung | Planer | `CongregationPanel.tsx:88-101`, `setAuxClass`, `syncAuxSlots` |
 | 81 | Predigtdienstgruppen: anlegen, löschen, Aufseher/Gehilfe, Mitgliederzahl | Einstellungen | Planer | `einstellungen/GroupsPanel.tsx` |
 | 82 | Treffpunkt-Grundplan: Regeln je Versammlung/Gruppe (Wochentag, Zeit, Ort, monatlich N-ter, „entfällt bei Versammlungstreffpunkt") | Einstellungen | Planer, Gruppenaufseher (eigene) | `einstellungen/FsRulesPanel.tsx`, `data/fs.ts` |
 | 83 | Hilfsdienste anlegen/löschen, Platzanzahl 1–6 | Einstellungen | Planer | `einstellungen/ServicesPanel.tsx` |

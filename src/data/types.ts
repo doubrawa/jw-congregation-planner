@@ -186,7 +186,7 @@ export interface FesteBereiche {
   schulungPartner?: boolean // nur als Gesprächspartner im Schülerteil (nicht Führer)
   studium?: boolean // Studium leiten
   treffpunkt?: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
-  ratgeber?: boolean // Ratgeber der Zusätzlichen Klasse (Anweisungen S-38, Absatz 26)
+  ratgeber?: boolean // Ratgeber der Zusätzlichen Klasse (Anweisungen S-38, Absatz 27)
   wtLeiter?: boolean // fester Wachtturm-Studium-Leiter
   wtVertreter?: boolean // Vertreter, wenn der Leiter abwesend ist
 }
@@ -418,7 +418,8 @@ export interface Meeting {
    * Klasse.
    *
    * Dieses Feld ist zugleich die Marke „hier gibt es eine Zusätzliche Klasse"
-   * — ohne Ratgeber keine Klasse (S-38, Absatz 26). Siehe `hatAuxKlasse`.
+   * — für jede soll ein Ratgeber da sein (S-38, Absatz 27), also trägt jede
+   * diesen Platz, und ohne ihn gibt es keine. Siehe `hatAuxKlasse`.
    */
   auxRatgeber?: SlotAssignment
   /**
