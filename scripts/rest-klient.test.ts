@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-// @ts-expect-error — JS-Modul ohne Typen (Wartungsskripte laufen unter Node)
 import { pruefKlient, restKlient, versammlungHolen } from './gemeinsam.mjs'
 
 /**

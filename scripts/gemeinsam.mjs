@@ -277,6 +277,8 @@ export function refAusUrl(url) {
  * eingegeben. Lieber sichtbar als gar nicht.
  *
  * `ein`/`aus` sind Parameter, damit die Probe ohne Terminal messen kann.
+ *
+ * @param {{ ein?: NodeJS.ReadableStream & { isTTY?: boolean }, aus?: NodeJS.WritableStream }} [stroeme]
  */
 export function verdecktLesen({ ein = process.stdin, aus = process.stderr } = {}) {
   return new Promise((fertig) => {

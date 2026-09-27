@@ -163,6 +163,8 @@ const DIENST_MUSTER = {
  * Kanonischer Dienstschlüssel (saal/ord/…) → tatsächlicher `services.key` der
  * Versammlung. Bevorzugt den festen Schlüssel; sonst über den Namen (App-Dienste
  * mit `svc-<uuid>`). Ein Dienst wird höchstens einmal vergeben. Reine Funktion.
+ *
+ * @returns {Record<string, string>}
  */
 export function dienstZuordnung(services) {
   const map = {}
@@ -194,6 +196,8 @@ const lebend = (arr) => arr.filter((x) => !x.Deleted)
  * `nwsNameOf(ref)` löst eine Personen-Referenz (mid **oder** volle ID) zum
  * NWS-Anzeigenamen auf. Ergebnis: Map Montag → { mid, we }; jeder Platz ist ein
  * Name (String) oder `null` (keine Zuteilung). Reine Funktion.
+ *
+ * @param {(id: number) => string | null} [groupNameOf]
  */
 export function sammleNwsWochen(t, nwsNameOf, groupNameOf = () => null) {
   const wochen = new Map()
@@ -546,6 +550,8 @@ const TABELLEN = {
  *
  * Getrimmt: NWS-Anzeigenamen tragen vereinzelt ein Leerzeichen am Ende, das
  * sonst den Abgleich mit der App-Person verfehlt („Charlette Born “).
+ *
+ * @param {Map<string, string> | null} [appById]
  */
 export function nwsNamensAufloeser(persons, appById = null) {
   const m = new Map()

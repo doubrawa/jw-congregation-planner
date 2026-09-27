@@ -95,7 +95,7 @@ describe('wocheNachtragen', () => {
     const w = woche()
     expect(wocheNachtragen(w)).toBe(4) // 2 Hauptsaal + 2 Klasse
     const item = w.mid.sections[0]!.items[0]!
-    expect(item.names.map((s) => s.rolle)).toEqual([SCHUELER, PARTNER])
+    expect(item.names.map((s: { rolle?: string }) => s.rolle)).toEqual([SCHUELER, PARTNER])
     expect(item.aux!.map((s) => s.rolle)).toEqual([SCHUELER, PARTNER])
   })
 

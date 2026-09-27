@@ -96,7 +96,11 @@ export function einladungscode(zufall = () => Math.random()) {
   return s
 }
 
-/** Bereichsprofil eines Planers: er ist Ältester und darf alles Feste. */
+/**
+ * Bereichsprofil eines Planers: er ist Ältester und darf alles Feste.
+ *
+ * @returns {Record<string, boolean>}
+ */
 export function planerBereiche() {
   return {
     vorsitzMid: true,

@@ -95,7 +95,11 @@ export function werteTokens(s) {
   return out
 }
 
-/** Eine `insert into public.<tabelle> (cols) values (vals);`-Zeile parsen. */
+/**
+ * Eine `insert into public.<tabelle> (cols) values (vals);`-Zeile parsen.
+ *
+ * @returns {{ tabelle: string, obj: Record<string, unknown> } | null}
+ */
 export function parseInsert(zeile) {
   const m = /^insert into public\.(\w+) \(([^)]+)\) values \((.+)\);\s*$/.exec(zeile.trim())
   if (!m) return null

@@ -10,10 +10,13 @@
  * Die Skripte selbst sind JavaScript (`.mjs`): `allowJs` lässt sie mitlaufen,
  * damit die Tests ihre Typen daraus ableiten, `checkJs` prüft sie nicht.
  *
- * **Die Ausnahmen sind eine Liste, die nur schrumpfen darf.** Diese älteren
- * Tests hatten am 26.9.2026 zusammen 83 Meldungen, meist `never[]` aus einem
- * leeren Array im Skript. Wer eine davon aufräumt, nimmt sie hier heraus; eine
- * neue Datei kommt nicht hinzu.
+ * **Abgeleitet wird aus dem Vorgabewert** — und der sagt oft das Falsche:
+ * `holen = fetch` verlangt vom Ersatz im Test ein ganzes `fetch`, `altLangs = []`
+ * ergibt `never[]`, `appById = null` lässt nur `null` zu, `const map = {}`
+ * liefert `{}`. Dort steht im Skript eine JSDoc-Angabe (`@param`, `@returns`,
+ * `@type`); sie wird nicht gegen den Rumpf geprüft, nur gegen die Aufrufer.
+ * Neun ältere Tests waren deshalb bis zum 27.9.2026 ausgenommen, mit 83
+ * Meldungen. Jetzt läuft jede Datei mit.
  */
 {
   "extends": "./tsconfig.app.json",
@@ -23,16 +26,5 @@
     "allowJs": true,
     "checkJs": false
   },
-  "include": ["scripts/**/*.ts"],
-  "exclude": [
-    "scripts/rest-klient.test.ts",
-    "scripts/rollen-nachtragen.test.ts",
-    "scripts/schluessel-setzen.test.ts",
-    "scripts/testversammlung-anlegen.test.ts",
-    "scripts/treffpunkte-importieren.test.ts",
-    "scripts/versammlung-anlegen.test.ts",
-    "scripts/versammlung-zuruecksetzen.test.ts",
-    "scripts/wochen-importieren.test.ts",
-    "scripts/wochenplanung-importieren.test.ts"
-  ]
+  "include": ["scripts/**/*.ts"]
 }

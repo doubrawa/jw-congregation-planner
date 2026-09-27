@@ -45,6 +45,11 @@ import { alsSkript, argumente, funktionsKopf, restKlient, versammlungHolen, zuga
  * (`latestImportedStart` → `importNextWeek`).
  *
  * `holen` ist ein Parameter, damit die Probe ohne Netz messen kann.
+ *
+ * @param {{
+ *   url: string, key: string, lang?: string, altLangs?: string[], ab?: string, anzahl: number,
+ *   holen?: (adresse: string, init: { method: string, headers: Record<string, string>, body: string }) => Promise<{ status: number, text: () => Promise<string> }>
+ * }} auftrag
  */
 export async function wochenHolen({ url, key, lang = 'de', altLangs = [], ab, anzahl, holen = fetch }) {
   const wochen = []

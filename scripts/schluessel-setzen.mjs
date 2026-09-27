@@ -90,6 +90,10 @@ export const KOMMENTAR = [
  * ersten `schema.sql` gibt es nicht einmal eine Tabelle.
  *
  * `holen` ist ein Parameter, damit die Probe ohne Netz messen kann.
+ *
+ * @param {string} url
+ * @param {string} key
+ * @param {(adresse: string, init: { headers: Record<string, string> }) => Promise<{ status: number, text: () => Promise<string> }>} [holen]
  */
 export async function pruefen(url, key, holen = fetch) {
   let antwort
@@ -145,6 +149,8 @@ export function schluesselAusText(roh) {
  * Die Zwischenablage des Systems lesen. Windows über PowerShell, macOS über
  * `pbpaste`, sonst über `xclip` — schlägt der Aufruf fehl, bleibt es leer, und
  * der Aufrufer sagt, was stattdessen zu tun ist.
+ *
+ * @param {(befehl: string, argv: string[], optionen: object) => { status: number | null, stdout?: unknown }} [starte]
  */
 export function zwischenablage(starte = spawnSync) {
   const [befehl, argv] =

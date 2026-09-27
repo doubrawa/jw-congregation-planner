@@ -100,6 +100,8 @@ const SCHWESTER = ['schulung', 'schulungPartner']
  * `g` = Gruppenindex · `w` = Schwester · `av` = Aufseher / `ag` = Gehilfe seiner
  * Gruppe · `haus` = Haushalt (Ehepaare; steuert die Partner-Regel im
  * Schülerteil) · `d` = Hilfsdienste, für die die Person freigegeben ist.
+ *
+ * @type {Array<{ fn: string, ln: string, rolle: string, g: number, w?: boolean, av?: boolean, ag?: boolean, haus?: string, plus?: string[], d: string[] }>}
  */
 export const TEST_PERSONEN = [
   { fn: 'Martin', ln: 'Aichinger', rolle: 'aeltester', g: 0, av: true, haus: 'aichinger', plus: ['wtLeiter'], d: [] },
@@ -249,6 +251,8 @@ export function vielseitigkeit(p) {
  *
  * Bei Gleichstand gewinnt der Erste der Liste — damit ist der Lauf
  * **wiederholbar** und nicht zufällig.
+ *
+ * @param {{ pid?: string } | null} [fuehrend] der Platz, zu dem dieser der Partner ist
  */
 export function waehle(personen, slot, gesperrt, zaehler, fuehrend = null) {
   const key = slot.bereichsKey

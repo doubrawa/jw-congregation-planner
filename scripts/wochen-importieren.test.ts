@@ -91,12 +91,12 @@ describe('wochenHolen', () => {
 describe('nurNeue', () => {
   it('lässt weg, was schon gespeichert ist', () => {
     const geholt = [{ start: '2026-09-07' }, { start: '2026-09-14' }]
-    expect(nurNeue(['2026-09-07'], geholt).map((w) => w.start)).toEqual(['2026-09-14'])
+    expect(nurNeue(['2026-09-07'], geholt).map((w: { start?: string }) => w.start)).toEqual(['2026-09-14'])
   })
 
   it('wirft Wochen ohne Montag weg, statt sie zu schreiben', () => {
     // `weeks.start` ist `not null` mit Montags-Bedingung — eine Woche ohne
     // Startdatum brächte den ganzen Lauf zum Abbruch.
-    expect(nurNeue([], [{ range: 'kaputt' }, { start: '2026-09-14' }]).map((w) => w.start)).toEqual(['2026-09-14'])
+    expect(nurNeue([], [{ range: 'kaputt' }, { start: '2026-09-14' }]).map((w: { start?: string }) => w.start)).toEqual(['2026-09-14'])
   })
 })

@@ -194,7 +194,7 @@ describe('verteileFsWoche', () => {
       bind,
     )
     expect(z.angelegt).toBe(1)
-    const neu = z.insts.find((i) => i.manual)
+    const neu = z.insts.find((i: FsInstance) => i.manual)
     expect(neu).toMatchObject({
       grp: null, wd: 3, time: '13:30', place: 'Treffpunkt Nord · Pioniertag', leader: 'Anna Beispiel',
     })
@@ -317,7 +317,7 @@ describe('verteileFsWoche', () => {
     const so = { ...mittwoch(12, null), wd: 0, zeit: '12:00', datum: '2026-08-23' }
     const mo = { ...mittwoch(13, null), wd: 1, zeit: '14:30', datum: '2026-08-17' }
     const z = verteileFsWoche([], [so, mo], bind)
-    expect(z.insts.map((i) => i.wd)).toEqual([1, 0])
+    expect(z.insts.map((i: FsInstance) => i.wd)).toEqual([1, 0])
   })
 })
 

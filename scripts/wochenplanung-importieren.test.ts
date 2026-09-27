@@ -15,6 +15,7 @@ import {
   uuid5,
   verteileWoche,
 } from './wochenplanung-importieren.mjs'
+import type { HelperSlot, SlotAssignment } from '../src/data/types'
 
 /**
  * Der Importer läuft außerhalb der App, mit dem Service-Role-Key, selten und
@@ -29,8 +30,21 @@ import {
  * einmal anders, muss dieser Test mitgezogen werden; er ist die Gegenprobe.
  */
 
+/**
+ * Die Form der Fixtures — so weit, wie der Importer sie liest. Nicht `Meeting`
+ * aus der App: Das verlangt je Punkt eine `iid`, die hier nichts entscheidet.
+ * Ein Lied hat keine `names`; genau daran erkennt `partItems` es.
+ */
+type Punkt = { song?: string; title?: string; meta?: string; names?: SlotAssignment[] }
+type Zusammenkunft = {
+  date: string
+  end: string
+  helpers: Record<string, HelperSlot[]>
+  sections: { label: string; farbe: string; items: Punkt[] }[]
+}
+
 /** Eine Zusammenkunft-unter-der-Woche wie aus dem jw.org-Import. */
-function mitteWoche() {
+function mitteWoche(): Zusammenkunft & { auxRatgeber: SlotAssignment } {
   return {
     date: '',
     end: 'Ende ca. 20:45',
@@ -69,7 +83,7 @@ function mitteWoche() {
 }
 
 /** Wochenend-Vorlage wie `weekendTemplate`. */
-function wochenendWoche() {
+function wochenendWoche(): Zusammenkunft {
   return {
     date: '',
     end: 'Ende ca. 11:45',
@@ -291,20 +305,20 @@ describe('verteileWoche', () => {
     expect(eroeffnung[1]).toMatchObject({ name: 'P1', pid: 'id-P1', rolle: 'Gebet' })
 
     const schaetze = data.mid.sections[1].items
-    expect(schaetze[0].names[0]).toMatchObject({ name: 'P3', pid: 'id-P3' }) // Vortrag
-    expect(schaetze[1].names[0]).toMatchObject({ name: 'P4' }) // Geistige Schätze
-    expect(schaetze[2].names[0]).toMatchObject({ name: 'P5' }) // Bibellesung
+    expect(schaetze[0].names![0]).toMatchObject({ name: 'P3', pid: 'id-P3' }) // Vortrag
+    expect(schaetze[1].names![0]).toMatchObject({ name: 'P4' }) // Geistige Schätze
+    expect(schaetze[2].names![0]).toMatchObject({ name: 'P5' }) // Bibellesung
 
     const dienst = data.mid.sections[2].items
-    expect(dienst[0].names[0]).toMatchObject({ name: 'P6' })
-    expect(dienst[0].names[1]).toMatchObject({ name: 'P7', rolle: 'Partner' })
-    expect(dienst[1].names[0]).toMatchObject({ name: 'P8' })
+    expect(dienst[0].names![0]).toMatchObject({ name: 'P6' })
+    expect(dienst[0].names![1]).toMatchObject({ name: 'P7', rolle: 'Partner' })
+    expect(dienst[1].names![0]).toMatchObject({ name: 'P8' })
     expect(dienst[1].names).toHaveLength(1) // Schülervortrag: kein Partner-Slot
 
     const leben = data.mid.sections[3].items
-    expect(leben[1].names[0]).toMatchObject({ name: 'P9' }) // Bedürfnisse (Lied davor)
-    expect(leben[2].names[0]).toMatchObject({ name: 'P10', rolle: 'Leiter' })
-    expect(leben[2].names[1]).toMatchObject({ name: 'P11', rolle: 'Leser' })
+    expect(leben[1].names![0]).toMatchObject({ name: 'P9' }) // Bedürfnisse (Lied davor)
+    expect(leben[2].names![0]).toMatchObject({ name: 'P10', rolle: 'Leiter' })
+    expect(leben[2].names![1]).toMatchObject({ name: 'P11', rolle: 'Leser' })
 
     expect(partItems(data.mid.sections[4])[0].names[0]).toMatchObject({ name: 'P2' }) // Schlussgebet
     expect(data.mid.auxRatgeber).toMatchObject({ name: 'P12', pid: 'id-P12' })
@@ -357,13 +371,13 @@ describe('verteileWoche', () => {
     expect(data.we.sections[0].items[0].title).toBe('Lied 5 · Gebet')
 
     const vortrag = data.we.sections[1].items[0]
-    expect(vortrag.names[0]).toEqual({ name: 'Gustav Gast', rolle: 'Gastredner', bereichsKey: 'vortrag' })
-    expect(vortrag.names[0].pid).toBeUndefined() // externer Redner
+    expect(vortrag.names![0]).toEqual({ name: 'Gustav Gast', rolle: 'Gastredner', bereichsKey: 'vortrag' })
+    expect(vortrag.names![0].pid).toBeUndefined() // externer Redner
     expect(vortrag.title).toBe('Ein Thema')
 
     const wt = data.we.sections[2].items
-    expect(wt[1].names[1]).toMatchObject({ name: 'P2', rolle: 'Leser' }) // WT-Leser
-    expect(wt[1].names[0].name).toBe('') // Leiter kennt NWS nicht → offen
+    expect(wt[1].names![1]).toMatchObject({ name: 'P2', rolle: 'Leser' }) // WT-Leser
+    expect(wt[1].names![0].name).toBe('') // Leiter kennt NWS nicht → offen
 
     expect(data.we.sections[3].items[0].title).toBe('Schlussworte · Lied 151 · Gebet')
   })
@@ -373,12 +387,12 @@ describe('verteileWoche', () => {
     const gebunden = loeseWoche(roh, bind)
     const data = { mid: mitteWoche(), we: wochenendWoche() }
     // Vorsitz vorbesetzen
-    data.mid.sections[0].items[0].names[0].name = 'Schon da'
-    data.mid.sections[0].items[0].names[0].pid = 'alt'
+    data.mid.sections[0].items[0].names![0].name = 'Schon da'
+    data.mid.sections[0].items[0].names![0].pid = 'alt'
     verteileWoche(data, gebunden, true)
-    expect(data.mid.sections[0].items[0].names[0]).toMatchObject({ name: 'Schon da', pid: 'alt' })
+    expect(data.mid.sections[0].items[0].names![0]).toMatchObject({ name: 'Schon da', pid: 'alt' })
     // ein leerer Platz wird trotzdem gefüllt
-    expect(data.mid.sections[0].items[0].names[1]).toMatchObject({ name: 'P1' })
+    expect(data.mid.sections[0].items[0].names![1]).toMatchObject({ name: 'P1' })
   })
 
   it('--nur-leere schützt auch den Ratgeber und das Vortragsthema, nicht aber die Lieder', () => {
@@ -389,12 +403,12 @@ describe('verteileWoche', () => {
     data.mid.auxRatgeber.name = 'Schon da'
     data.mid.auxRatgeber.pid = 'alt'
     const vortrag = data.we.sections[1].items[0]
-    vortrag.names[0].name = 'Max Muster'
-    vortrag.names[0].pid = 'alt-we'
+    vortrag.names![0].name = 'Max Muster'
+    vortrag.names![0].pid = 'alt-we'
     vortrag.title = 'Handverlesenes Thema'
     verteileWoche(data, gebunden, true)
     expect(data.mid.auxRatgeber).toMatchObject({ name: 'Schon da', pid: 'alt' })
-    expect(vortrag.names[0]).toMatchObject({ name: 'Max Muster', pid: 'alt-we' })
+    expect(vortrag.names![0]).toMatchObject({ name: 'Max Muster', pid: 'alt-we' })
     // Das Thema gehört zum Redner — bleibt der stehen, bleibt auch sein Thema
     expect(vortrag.title).toBe('Handverlesenes Thema')
     // Liednummern sind Programmstruktur, keine Zuteilung: sie folgen immer NWS

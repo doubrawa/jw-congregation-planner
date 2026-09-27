@@ -118,7 +118,7 @@ describe('gleichnamige', () => {
       p('b', 'Josef', 'Mayer'),
       p('c', 'Anna', 'Berg'),
     ])
-    expect(doppelt.map((liste) => liste.map((x) => x.id))).toEqual([['a', 'b']])
+    expect(doppelt.map((liste) => liste.map((x: { id: string }) => x.id))).toEqual([['a', 'b']])
   })
 
   it('vergleicht wie die App: Schreibweise und Leerzeichen zählen nicht', () => {
@@ -271,7 +271,7 @@ describe('Gruppen-Treffpunkte über das Zurücksetzen retten', () => {
     // `grp is null`: Der zusammengesetzte Fremdschlüssel greift dort gar nicht,
     // die Zeile überlebt das Löschen der Gruppen von selbst. Sie mitzusichern
     // hieße, sie hinterher ein zweites Mal zu schreiben.
-    expect(regelnAufNamen(REGELN, GRUPPEN).map((r) => r.id)).toEqual(['r2', 'r3'])
+    expect(regelnAufNamen(REGELN, GRUPPEN).map((r: { id: string }) => r.id)).toEqual(['r2', 'r3'])
   })
 
   it('die Regel trägt statt der Id den Namen ihrer Gruppe', () => {
