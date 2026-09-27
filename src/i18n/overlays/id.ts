@@ -306,7 +306,7 @@ export default {
   "auxHauptsaal": "Ruang utama",
   "auxRatgeber": "Penasihat",
   "auxDesc": "Bergantung jumlah siswa, sidang dapat mengadakan kelas tambahan untuk tugas siswa.",
-  "auxRatgeberHint": "Setiap kelas tambahan harus punya penasihat yang cakap, sebaiknya seorang penatua.",
+  "auxRatgeberHint": "Untuk setiap kelas tambahan, hendaknya ada seseorang yang memenuhi syarat sebagai penasihat, sebaiknya seorang penatua.",
   "toastAuxAn": "Kelas tambahan diaktifkan",
   "toastAuxAus": "Kelas tambahan dinonaktifkan",
   "fsVers": "Pertemuan dinas lapangan seluruh sidang",

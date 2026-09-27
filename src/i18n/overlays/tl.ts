@@ -306,7 +306,7 @@ export default {
   "auxHauptsaal": "Pangunahing hall",
   "auxRatgeber": "Tagapayo",
   "auxDesc": "Depende sa dami ng estudyante, puwedeng magkaroon ng karagdagang klase para sa mga bahagi ng estudyante.",
-  "auxRatgeberHint": "Dapat na may kuwalipikadong tagapayo sa bawat karagdagang klase, hangga’t maaari ay elder.",
+  "auxRatgeberHint": "Dapat na may kuwalipikadong tagapayo na mangangasiwa sa bawat karagdagang klase, hangga’t maaari ay elder.",
   "toastAuxAn": "Naka-set up ang karagdagang klase",
   "toastAuxAus": "Na-off ang karagdagang klase",
   "fsVers": "Pagtitipon ng buong kongregasyon",

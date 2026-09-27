@@ -118,7 +118,8 @@ export const DE = {
     pushIosHint: 'Für Benachrichtigungen die App installieren: Teilen → „Zum Home-Bildschirm“.',
     familieLabel: 'Familie',
     // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
-    // Sprache der dortige Satz, statt einer eigenen Umschreibung.
+    // Sprache der dortige Satz, statt einer eigenen Umschreibung. Zuletzt
+    // in allen 34 Sprachen gegen WOL 1201038 gehalten am 27.9.2026.
     familieHint: 'Der Gesprächspartner soll dasselbe Geschlecht haben oder ein Familienangehöriger sein.',
     familieHinzu: '+ Familienmitglied hinzufügen',
     partnerHinzu: '+ Partner',
@@ -205,6 +206,10 @@ export const DE = {
     // jeweiligen Sprache — auxKlassen ist dort die Abschnittsüberschrift.
     // auxDesc ist der erste Satz von Absatz 27, in den Singular gesetzt: die
     // Anweisungen sprechen von „zusätzlichen Klassen", die App kennt eine.
+    // auxRatgeberHint ist der Satz zum Ratgeber — wo er allein nicht lesbar
+    // ist („Cada una …"), mit der Klasse ausgeschrieben. Die Stärke des Verbs
+    // folgt der S-38 der jeweiligen Sprache („soll", nicht „muss"). Beides
+    // gegen WOL 1201038 in allen 34 Sprachen gehalten am 27.9.2026.
     auxKlassen: 'Zusätzliche Klassen',
     auxKlasse: 'Zusätzliche Klasse',
     auxHauptsaal: 'Hauptsaal',

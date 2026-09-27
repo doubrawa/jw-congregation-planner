@@ -306,7 +306,7 @@ export default {
   "auxHauptsaal": "Salão principal",
   "auxRatgeber": "Dirigente",
   "auxDesc": "Dependendo do número de estudantes, a congregação pode ter uma sala adicional para as designações de estudante.",
-  "auxRatgeberHint": "Cada sala adicional deve ter um dirigente capacitado, de preferência um ancião.",
+  "auxRatgeberHint": "Cada sala adicional deve ter um dirigente capacitado, de preferência ancião.",
   "toastAuxAn": "Sala adicional ativada",
   "toastAuxAus": "Sala adicional desativada",
   "fsVers": "Reunião para o serviço de campo da congregação",

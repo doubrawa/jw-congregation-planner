@@ -306,7 +306,7 @@ export default {
   "auxHauptsaal": "Sala principală",
   "auxRatgeber": "Consilier",
   "auxDesc": "În funcție de numărul de cursanți, congregația poate avea o clasă suplimentară.",
-  "auxRatgeberHint": "Fiecare clasă suplimentară trebuie să aibă un consilier calificat, de preferat un bătrân.",
+  "auxRatgeberHint": "Fiecare clasă suplimentară trebuie să aibă un consilier calificat, de preferat un bătrân de congregație.",
   "toastAuxAn": "Clasă suplimentară activată",
   "toastAuxAus": "Clasă suplimentară dezactivată",
   "fsVers": "Întrunirea congregației pentru serviciu",
