@@ -19,7 +19,7 @@
  * und bräche dabei die App:
  *
  *   1. fremder `task_key`, eigene `user_id`   → muss **abgewiesen** werden (S2)
- *   2. fremde `user_id`                       → muss **abgewiesen** werden
+ *   2. fremde `user_id`, eigene Aufgabe       → muss **abgewiesen** werden
  *   3. `verhindert` an einen Nicht-Planer      → muss **abgewiesen** werden (S3)
  *   4. Mitteilung `zuteilung` (nur Planer)     → muss **abgewiesen** werden
  *   5. **eigene** Aufgabe bestätigen           → muss **durchkommen**
@@ -331,10 +331,11 @@ export async function main(arg = process.argv.slice(2)) {
   const fremde = fremdeSlots(mitKennung(wochen[0]), mitglied.pid)
   const programm = fremde.find((s) => s.art === 'Programm')
   const dienst = fremde.find((s) => s.art.startsWith('Hilfsdienst'))
-  // Eine EIGENE Aufgabe — über alle geladenen Wochen gesucht: In einer
-  // einzelnen ist nicht jeder eingeteilt, und ohne sie fehlt der Probe der
-  // Beweis, dass die Richtlinie nicht zu streng ist (Fall 5).
-  const eigen = (wochen ?? []).flatMap((z) => eigeneSlots(mitKennung(z), mitglied.pid))[0]
+  // EIGENE Aufgaben — über alle geladenen Wochen gesucht: In einer einzelnen
+  // ist nicht jeder eingeteilt, und ohne sie fehlt der Probe der Beweis, dass
+  // die Richtlinie nicht zu streng ist (Fall 5), und die Gegenprobe (2).
+  const eigene = (wochen ?? []).flatMap((z) => eigeneSlots(mitKennung(z), mitglied.pid))
+  const eigen = eigene[0]
   if (!programm) {
     console.error('Kein fremder Programmplatz gefunden.')
     process.exit(1)
@@ -396,18 +397,37 @@ export async function main(arg = process.argv.slice(2)) {
   )
 
   // ---- 2) Gegenprobe: fremde user_id --------------------------------------
-  const s2b = await mitglied.rest(
-    'confirmations',
-    'POST',
-    { congregation_id: versammlung, user_id: planer.uid, task_key: programm.key, status: 'bestätigt' },
-    'return=minimal',
-  )
-  const { status: l2, daten: sicht2 } = await planer.rest(`confirmations?select=user_id&task_key=eq.${encodeURIComponent(programm.key)}&user_id=eq.${planer.uid}`)
-  const e2 = bewerteVersuch(s2b.status, Boolean(sicht2?.length), false, { leseStatus: l2 })
-  ergebnis(2, 'dieselbe Zeile im Namen des Planers (fremde user_id)', e2, e2.durch ? 'AUCH DAS!' : 'die Grenze greift hier')
-  await aufraeumen(e2, () =>
-    planer.rest(`confirmations?task_key=eq.${encodeURIComponent(programm.key)}&user_id=eq.${planer.uid}`, 'DELETE', undefined, 'return=minimal'),
-  )
+  // Auf eine EIGENE Aufgabe des Mitglieds: Die besteht `task_gehoert_mir`,
+  // abweisen kann also nur noch `user_id = auth.uid()`. Auf der fremden Aufgabe
+  // aus (1) wiese schon deren Regel ab, und (2) bewiese nichts.
+  //
+  // Und nur auf eine, auf der noch keine Zeile des Planers steht: Nachsehen fände
+  // sie und meldete „AUCH DAS!", das Aufräumen löschte sie. Bis zum 27.9.2026
+  // schrieb (2) auf den fremden Programmplatz — hatte der Planer ihn selbst
+  // zugesagt, geschah genau das.
+  const was2 = 'eine eigene Aufgabe im Namen des Planers'
+  const vorher2 = await planer.rest(`confirmations?select=task_key&user_id=eq.${planer.uid}`)
+  const belegt = new Set(zeilenVon(vorher2).map((z) => z.task_key))
+  const ziel2 = eigene.find((s) => !belegt.has(s.key))
+  if (vorher2.status >= 400) {
+    ergebnis(2, was2, { durch: false, wieErwartet: false, kaputt: true, text: `PROBE KAPUTT — Nachsehen vorab scheiterte (HTTP ${vorher2.status}), kein Urteil über die Regel` })
+  } else if (!ziel2) {
+    console.log(`  ? (2) ${was2} — ${eigene.length ? 'auf jeder steht schon eine Zeile des Planers' : 'KEINE gefunden'}, nicht gemessen`)
+  } else {
+    const schluessel2 = encodeURIComponent(ziel2.key)
+    const s2b = await mitglied.rest(
+      'confirmations',
+      'POST',
+      { congregation_id: versammlung, user_id: planer.uid, task_key: ziel2.key, status: 'bestätigt' },
+      'return=minimal',
+    )
+    const { status: l2, daten: sicht2 } = await planer.rest(`confirmations?select=user_id&task_key=eq.${schluessel2}&user_id=eq.${planer.uid}`)
+    const e2 = bewerteVersuch(s2b.status, Boolean(sicht2?.length), false, { leseStatus: l2 })
+    ergebnis(2, `${was2} (${ziel2.art}: ${ziel2.wer})`, e2, e2.durch ? 'AUCH DAS!' : 'die Grenze greift hier')
+    await aufraeumen(e2, () =>
+      planer.rest(`confirmations?task_key=eq.${schluessel2}&user_id=eq.${planer.uid}`, 'DELETE', undefined, 'return=minimal'),
+    )
+  }
 
   // ---- 3) S3: freier Text an einen Empfaenger, der KEIN Planer ist ---------
   // Empfänger ist hier das Mitglied selbst — nicht aus Bequemlichkeit, sondern

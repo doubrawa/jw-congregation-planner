@@ -510,6 +510,37 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(tabellen.confirmations).toContainEqual(zusage)
   })
 
+  it('mitgliedsrechte-probe: (2) hält die Zusage des Planers nicht für den eigenen Versuch', async () => {
+    // Der Planer hat seinen Vorsitz in der App zugesagt. Bis zum 27.9.2026
+    // schrieb (2) genau auf diesen Platz, fand die echte Zeile, meldete
+    // „AUCH DAS!" und löschte sie beim Aufräumen.
+    const vorsitz = fremdeSlots(probewoche(), P2).find((s: { art: string }) => s.art === 'Programm')!
+    const zusage = { id: k(83), congregation_id: C, user_id: U1, task_key: vorsitz.key, status: 'bestätigt' }
+    const { ausgabe, tabellen, aufrufe } = await mitZusage(zusage, (a) =>
+      a.method === 'POST' && tabelleVon(a) === 'confirmations' ? { status: 403, json: { code: '42501' } } : undefined,
+    )
+    // Nur die Zeile nach (2): „AUCH DAS!" meldet in der Attrappe auch (4), sie
+    // kennt keine Richtlinien.
+    expect(ausgabe.join('\n')).toMatch(/\(2\) eine eigene Aufgabe im Namen des Planers.*\n.*nicht angekommen \(HTTP 403\) — die Grenze greift hier/)
+    expect(tabellen.confirmations).toContainEqual(zusage)
+    // Geschrieben wird auf die eigene Aufgabe des Mitglieds: Die besteht
+    // `task_gehoert_mir`, abweisen kann nur noch `user_id = auth.uid()`.
+    const versuch = aufrufe.find((a) => a.method === 'POST' && tabelleVon(a) === 'confirmations' && (a.body as { user_id?: string }).user_id === U1)
+    expect(versuch?.body).toMatchObject({ task_key: eigeneSlots(probewoche(), P2)[0]!.key })
+  })
+
+  it('mitgliedsrechte-probe: steht der Planer schon auf jeder eigenen Aufgabe, misst (2) nicht', async () => {
+    // Eine alte Zeile des Planers auf der Aufgabe des Mitglieds, etwa von einem
+    // früheren Zuständigen. Nachsehen fände sie, Aufräumen löschte sie — also
+    // schreibt (2) gar nicht erst.
+    const eigen = eigeneSlots(probewoche(), P2)[0]!
+    const zusage = { id: k(84), congregation_id: C, user_id: U1, task_key: eigen.key, status: 'bestätigt' }
+    const { ausgabe, tabellen, aufrufe } = await mitZusage(zusage, () => undefined)
+    expect(ausgabe.join('\n')).toMatch(/\? \(2\) eine eigene Aufgabe im Namen des Planers — auf jeder steht schon eine Zeile des Planers, nicht gemessen/)
+    expect(tabellen.confirmations).toContainEqual(zusage)
+    expect(aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'confirmations' && (a.body as { user_id?: string }).user_id === U1)).toEqual([])
+  })
+
   it('mandanten-nachweis: ein 400 auf den Einfügeversuch heißt „PROBE KAPUTT", nicht „abgewiesen"', async () => {
     const { ausgabe } = await fahreGestoert('mandanten-nachweis.mjs', (a) =>
       a.method === 'POST' && tabelleVon(a) === 'persons' ? kaputt : undefined,
