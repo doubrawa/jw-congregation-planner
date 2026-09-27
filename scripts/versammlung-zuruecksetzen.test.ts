@@ -25,8 +25,8 @@ import {
 
 const PERSON_ZEILE =
   "insert into public.persons (id, congregation_id, fn, ln, dn, role, female, tel, mail, absent, priv, grp, fam) values " +
-  "('70add09f-c724-459f-9b7e-0148f51359a2', (select id from public.congregations limit 1), 'Martin', 'Keller', '', " +
-  "'aeltester', false, '', 'kellerkrumbach@freenet.de', '{}', '{\"vortrag\":true,\"svc:mik\":true}'::jsonb, " +
+  "('70add09f-c724-459f-9b7e-0148f51359a2', (select id from public.congregations limit 1), 'Max', 'Mustermann', '', " +
+  "'aeltester', false, '', 'max.mustermann@example.org', '{}', '{\"vortrag\":true,\"svc:mik\":true}'::jsonb, " +
   "'dfab64ae-4dad-42c3-96b3-5ff664447db9', 'f9834992-aa33-4a43-a7bc-f3b7dcbff419');"
 
 const GRUPPE_ZEILE =
@@ -54,8 +54,8 @@ describe('parseInsert', () => {
   it('liest eine Personenzeile spaltengenau', () => {
     const ins = parseInsert(PERSON_ZEILE)
     expect(ins!.tabelle).toBe('persons')
-    expect(ins!.obj.fn).toBe('Martin')
-    expect(ins!.obj.ln).toBe('Keller')
+    expect(ins!.obj.fn).toBe('Max')
+    expect(ins!.obj.ln).toBe('Mustermann')
     expect(ins!.obj.role).toBe('aeltester')
     expect(ins!.obj.female).toBe(false)
     expect(ins!.obj.grp).toBe('dfab64ae-4dad-42c3-96b3-5ff664447db9')
@@ -73,8 +73,8 @@ describe('parseKuratiert', () => {
     GRUPPE_ZEILE,
     PERSON_ZEILE,
     "insert into public.persons (id, congregation_id, fn, ln, dn, role, female, tel, mail, absent, priv, grp, fam) values " +
-      "('0279161b-80c9-4d0f-8500-f54c8dd62a9a', (select id from public.congregations limit 1), 'Jörg', 'Grünwald', '', " +
-      "'dienstamtgehilfe', false, '', 'pweissbrodt@web.de', '{}', '{\"gebet\":true}'::jsonb, '7e11d338-7108-4114-94ab-b5dd413c0217', null);",
+      "('0279161b-80c9-4d0f-8500-f54c8dd62a9a', (select id from public.congregations limit 1), 'Björn', 'Grünbeispiel', '', " +
+      "'dienstamtgehilfe', false, '', 'b.gruenbeispiel@example.org', '{}', '{\"gebet\":true}'::jsonb, '7e11d338-7108-4114-94ab-b5dd413c0217', null);",
     "update public.groups set overseer_id = 'fffabbc7-a7c4-41d4-a116-e1ef8a5c338f', assistant_id = '01b5d280-c831-4b67-8bae-00e88d775441' where id = '74af963f-fb80-4604-b776-0da94c213311';",
     'commit;',
   ].join('\n')
@@ -85,7 +85,7 @@ describe('parseKuratiert', () => {
     expect(k.persons).toHaveLength(2)
     expect(k.persons[0].priv).toEqual({ vortrag: true, 'svc:mik': true }) // JSON geparst
     expect(k.persons[1].fam).toBeNull() // null-Feld bleibt null, nicht "null"
-    expect(k.persons[1].ln).toBe('Grünwald') // Umlaut unversehrt
+    expect(k.persons[1].ln).toBe('Grünbeispiel') // Umlaut unversehrt
     expect(k.ovas).toEqual([{
       groupId: '74af963f-fb80-4604-b776-0da94c213311',
       overseer_id: 'fffabbc7-a7c4-41d4-a116-e1ef8a5c338f',
@@ -96,10 +96,10 @@ describe('parseKuratiert', () => {
 
 describe('displayName', () => {
   it('ist Vor- und Nachname, getrimmt', () => {
-    expect(displayName('Jörg', 'Grünwald')).toBe('Jörg Grünwald')
+    expect(displayName('Björn', 'Grünbeispiel')).toBe('Björn Grünbeispiel')
     // Namensgleiche trennt seit T110 ein Zusatz am Vornamen, kein zweites Feld.
-    expect(displayName('Josef sen.', 'Mayer')).toBe('Josef sen. Mayer')
-    expect(displayName('', 'Mayer')).toBe('Mayer')
+    expect(displayName('Paul sen.', 'Beispiel')).toBe('Paul sen. Beispiel')
+    expect(displayName('', 'Beispiel')).toBe('Beispiel')
   })
 })
 
@@ -114,15 +114,15 @@ describe('gleichnamige', () => {
 
   it('meldet je Namen die betroffenen Personen', () => {
     const doppelt = gleichnamige([
-      p('a', 'Josef', 'Mayer'),
-      p('b', 'Josef', 'Mayer'),
+      p('a', 'Paul', 'Beispiel'),
+      p('b', 'Paul', 'Beispiel'),
       p('c', 'Anna', 'Berg'),
     ])
     expect(doppelt.map((liste) => liste.map((x: { id: string }) => x.id))).toEqual([['a', 'b']])
   })
 
   it('vergleicht wie die App: Schreibweise und Leerzeichen zählen nicht', () => {
-    expect(gleichnamige([p('a', 'Josef', 'Mayer'), p('b', 'josef  ', ' MAYER')])).toHaveLength(1)
+    expect(gleichnamige([p('a', 'Paul', 'Beispiel'), p('b', 'paul  ', ' BEISPIEL')])).toHaveLength(1)
   })
 
   it('Akzente unterscheiden — Müller und Muller dürfen zwei Menschen sein', () => {
@@ -134,7 +134,7 @@ describe('gleichnamige', () => {
   })
 
   it('ein eindeutiger Bestand meldet nichts', () => {
-    expect(gleichnamige([p('a', 'Josef', 'Mayer'), p('b', 'Josef sen.', 'Mayer')])).toEqual([])
+    expect(gleichnamige([p('a', 'Paul', 'Beispiel'), p('b', 'Paul sen.', 'Beispiel')])).toEqual([])
   })
 })
 

@@ -69,8 +69,8 @@ export function PersonDetail({ person }: { person: Person }) {
    * suchen, was falsch ist. Sie nennt die andere Person beim Namen; in einer
    * Liste von dreihundert bringt „gibt es schon" allein niemanden weiter.
    *
-   * Getippt werden darf trotzdem weiter: Auf dem Weg von „Josef May" zu
-   * „Josef Mayer sen." kommt man zwangsläufig durch „Josef Mayer". Angehalten
+   * Getippt werden darf trotzdem weiter: Auf dem Weg von „Paul Beisp" zu
+   * „Paul Beispiel sen." kommt man zwangsläufig durch „Paul Beispiel". Angehalten
    * wird deshalb nicht die Eingabe, sondern das **Speichern** (`persist.ts`) —
    * sonst ginge der Zwischenstand hinaus und käme als Schreibfehler zurück.
    */

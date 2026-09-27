@@ -12,7 +12,7 @@
  * Vorname — Daniel, Markus, Ruth, Titus, Judas, Hiob. Die Buch-Regel verlangt
  * seit T103 eine Ziffer hinter dem Namen, was Schriftstellen von Namen trennt
  * — bis auf die Schreibweise, mit der diese App **Doppelnamen** unterscheidet
- * (`displayName`: „Josef Mayer 1“). Aus „Markus 2“ wurde in englischer
+ * (`displayName`: „Paul Beispiel 1“). Aus „Markus 2“ wurde in englischer
  * Oberfläche „Mark 2“, in koreanischer „마가복음 2“. Und die Wörterbuch-Treffer
  * davor greifen genauso: Wer „Ton“ heißt, hieße dort „Sound“.
  *

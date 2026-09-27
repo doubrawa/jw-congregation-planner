@@ -553,7 +553,7 @@ $$;
 --
 -- **Seit T110 ist dieser Rückfall eindeutig.** Solange zwei Personen gleich
 -- heißen konnten, war genau er die Lücke in der Bestätigungs-Richtlinie: Wer
--- „Josef Mayer" hieß, durfte die namenlosen Plätze des anderen Josef Mayer
+-- „Paul Beispiel" hieß, durfte die namenlosen Plätze des anderen Paul Beispiel
 -- bestätigen. `persons_name_eindeutig` schließt sie.
 create or replace function public.mein_anzeigename()
 returns text

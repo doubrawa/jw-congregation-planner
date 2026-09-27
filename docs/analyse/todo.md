@@ -5004,7 +5004,7 @@ gestellt, nicht die Antwort gegeben.
 > **Alle drei Punkte gebaut.** `dn` ist aus Typ, Eingabefeld, Schema, den drei
 > Edge Functions, sechs Wartungsskripten und allen 34 Wörterbüchern
 > verschwunden; Vor- und Nachname sind je Versammlung eindeutig, geprüft an
-> drei Stellen; Namensgleichheit löst ein Zusatz am Vornamen („Josef sen.").
+> drei Stellen; Namensgleichheit löst ein Zusatz am Vornamen („Paul sen.").
 >
 > **Die Regel steht einmal und heißt `namensSchluessel`** (`data/helpers.ts`).
 > Entschieden wie oben vorgeschlagen: Groß-/Kleinschreibung und mehrfache
@@ -5023,8 +5023,8 @@ gestellt, nicht die Antwort gegeben.
 > | `persist.ts` | hält das **Schreiben** an, nicht die Eingabe |
 > | Index `persons_name_eindeutig` | die eigentliche Zusicherung — sie hält auch einen zweiten Planer, einen offenen alten Tab und die Wartungsskripte |
 >
-> **Der Zwischenstand beim Tippen war der interessante Teil.** Von „Josef
-> Mayer" zu „Josef Mayer sen." führt kein Weg, der nicht durch die Dublette
+> **Der Zwischenstand beim Tippen war der interessante Teil.** Von „Paul
+> Beispiel" zu „Paul Beispiel sen." führt kein Weg, der nicht durch die Dublette
 > ginge. Angehalten wird deshalb das Speichern: Der Zustand nimmt jeden
 > Tastendruck an, das Feld meldet, und geschrieben wird erst wieder, sobald
 > der Name eindeutig ist. Angehalten wird dabei **alles, was am Namen hängt**
@@ -5042,7 +5042,7 @@ gestellt, nicht die Antwort gegeben.
 >
 > **Der Gewinn für die Rechte, wie vorhergesagt:** `mein_anzeigename()` ordnet
 > Plätze ohne `pid` über den Namen zu. Solange er doppelt sein konnte, war
-> genau das die Lücke in der Bestätigungs-Richtlinie — wer „Josef Mayer" hieß,
+> genau das die Lücke in der Bestätigungs-Richtlinie — wer „Paul Beispiel" hieß,
 > durfte die namenlosen Plätze des anderen bestätigen. Jetzt ist der Rückfall
 > eindeutig.
 >
@@ -5067,10 +5067,10 @@ gestellt, nicht die Antwort gegeben.
 > **Zwei Dinge liegen beim Betreiber:**
 >
 > 1. **`build-personen-sql.mjs` in `nws-export` zieht noch nicht mit.** Es
->    erzeugt `dn` für Gleichnamige (`Josef Mayer (M)`), schreibt die Spalte in
+>    erzeugt `dn` für Gleichnamige (`Paul Beispiel (M)`), schreibt die Spalte in
 >    den `insert` **und legt sie mit einem `alter table … add column if not
 >    exists dn` wieder an**. Die App liest sie nicht mehr, und die beiden
->    Josef Mayer scheitern am Index. Das Reset-Skript fängt das jetzt vorher
+>    Paul Beispiel scheitern am Index. Das Reset-Skript fängt das jetzt vorher
 >    ab (`gleichnamige`, Abbruch mit Namen, bevor irgendetwas gelöscht ist) —
 >    richtig behoben ist es aber erst, wenn der Generator den **Vornamen**
 >    eindeutig macht statt eines zweiten Feldes. Eigenes Verzeichnis, eigene
@@ -5082,7 +5082,7 @@ gestellt, nicht die Antwort gegeben.
 >    also mit gar keinen Personen.
 >
 > **Stand 21. September abends:** Punkt 1 ist erledigt — der Generator
-> behält bei Gleichnamigen den Zähler aus NWS im Nachnamen („Josef Mayer 2")
+> behält bei Gleichnamigen den Zähler aus NWS im Nachnamen („Paul Beispiel 2")
 > und bricht bei einer echten Dublette mit Namen ab. Von Punkt 2 ist der
 > **Deploy erledigt** (alle fünf, 15:07); er durfte vorgehen, weil die neuen
 > Functions `dn` nur nicht mehr lesen. `schema.sql` kommt mit dem Neuaufbau
@@ -5103,8 +5103,8 @@ Bestätigungs-Richtlinie aus migration-022 für Plätze ohne `pid`), die Suche
 (`person-filter.ts`) und `isNameless` im Reducer. **Doppelte Namen sind heute
 nur eine Warnung:** das Banner „DOPPELTE ANZEIGENAMEN" oben in der
 Personenliste (`duplicateDisplayNames`); speichern lässt sich eine Dublette
-trotzdem. In der Live-Versammlung gibt es genau einen Fall — zweimal Josef
-Mayer, unterschieden über `dn` „(1)"/„(2)".
+trotzdem. In der Live-Versammlung gibt es genau einen Fall — zwei
+Gleichnamige, unterschieden über `dn` „(1)"/„(2)".
 
 **Was werden soll:**
 
@@ -5117,12 +5117,12 @@ Mayer, unterschieden über `dn` „(1)"/„(2)".
    Datenbank (eindeutiger Index über `congregation_id` und den bereinigten
    Namen). Erst der Index hält auch einen zweiten Planer, einen offenen alten
    Tab und die Wartungsskripte auf.
-3. Heißen zwei gleich, hängt der Planer etwas an den Vornamen an („Josef sen.").
+3. Heißen zwei gleich, hängt der Planer etwas an den Vornamen an („Paul sen.").
 
 **Vor dem Anfangen zu klären:**
 
 - **Was „gleich" heißt:** Groß-/Kleinschreibung und doppelte Leerzeichen
-  ignorieren (Vorschlag: ja — „josef mayer" und „Josef  Mayer" sind derselbe
+  ignorieren (Vorschlag: ja — „paul beispiel" und „Paul  Beispiel" sind derselbe
   Name); Akzente nicht (Müller und Muller können zwei Menschen sein).
 - **Leere Namen:** Eine frisch angelegte Person hat zunächst weder Vor- noch
   Nachnamen; zwei davon dürfen nicht am Index scheitern (Index nur über
@@ -5132,7 +5132,7 @@ Mayer, unterschieden über `dn` „(1)"/„(2)".
   gleicht, darf nicht in die Datenbank gehen und dort als Schreibfehler
   zurückkommen — die App hält ihn vorher an und speichert erst den eindeutigen
   Stand.
-- **Bestand:** Die beiden Josef Mayer müssen **vor** dem Index umbenannt sein,
+- **Bestand:** Die beiden Paul Beispiel müssen **vor** dem Index umbenannt sein,
   sonst scheitert die Migration. Da vor dem Produktivstart ohnehin neu
   importiert wird, gehört dieselbe Regel auch in den NWS-Import
   (`versammlung-zuruecksetzen.mjs`): Dublette → Abbruch mit Namen, statt still
@@ -5754,11 +5754,12 @@ Schlusspunkt, „Que diriez-vous ?" als `vortrag`-Platz und „Explique tes
 croyances" (Démonstration) mit Schüler und Partner; die deutsche vom
 28. September ist unverändert.
 
-Seit dem 27. September weicht `_shared/zuteilungen.ts` oben **nur in einem
-Kommentar** von `main` ab (S-38-Verweis Absatz 26 → 27, die Ausgabe 8/26 hat
-einen Absatz eingeschoben). Das betrifft `import-week`, `send-plan`,
-`send-reminders` und `substitute` beim Datei-für-Datei-Vergleich — ein Deploy
-ist dafür nicht nötig.
+Seit dem 27. September weichen `_shared/zuteilungen.ts` und
+`_shared/i18n/freitext.ts` oben **nur in Kommentaren** von `main` ab
+(S-38-Verweis Absatz 26 → 27, die Ausgabe 8/26 hat einen Absatz eingeschoben;
+ein Platzhalter statt eines echten Namens im Beispiel). Das betrifft
+`import-week`, `send-plan`, `send-reminders` und `substitute` beim
+Datei-für-Datei-Vergleich — ein Deploy ist dafür nicht nötig.
 
 ✅ Davor lief Version 34 (16:15 Uhr), Datei für Datei gleich dem Stand von
 `main` bis `784aed8` (nachgesehen mit `functions download`). Sie trägt zwei
@@ -5889,7 +5890,7 @@ Code ausgeführt wird, nicht, dass jemand hinsieht.
 2. **Neuaufbau erst zum echten Start** (entschieden am 21. September), dann
    kommt der Index aus T110 mit. `build-personen-sql.mjs` in `nws-export` ist
    schon nachgezogen: kein `dn` mehr, Gleichnamige behalten den Zähler aus
-   NWS im Nachnamen („Josef Mayer 2"), eine echte Dublette bricht mit Namen
+   NWS im Nachnamen („Paul Beispiel 2"), eine echte Dublette bricht mit Namen
    ab. Bis zum Neuaufbau heißen die beiden in der App gleich — einen davon
    dort umbenennen.
 3. **Einladungs-Mail** (`INVITE_FROM`) ist mit T106 zurückgestellt.

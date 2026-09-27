@@ -160,14 +160,14 @@ describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
   })
 
   it('ein Namensvetter mit anderer Person-Id ist ein Wechsel — er erbt die Zusage nicht', () => {
-    // Am Namen gemessen sah das Umteilen von Josef Mayer (p1) auf Josef Mayer
+    // Am Namen gemessen sah das Umteilen von Paul Beispiel (p1) auf Paul Beispiel
     // (p2) nach gar nichts aus. Die Zusage blieb stehen, und die Ampel zeigte
     // den zweiten grün, obwohl ihn nie jemand gefragt hatte.
     const weeks = buildDemoWeeks()
     const before = structuredClone(weeks[0]!.mid)
     const item = before.sections[0]!.items.find((i) => !isSong(i)) as PartItem
-    item.names[0] = { ...item.names[0]!, name: 'Josef Mayer', pid: 'p1' }
-    before.helpers.mik = [{ name: 'Josef Mayer', pid: 'p1' }, ...(before.helpers.mik ?? []).slice(1)]
+    item.names[0] = { ...item.names[0]!, name: 'Paul Beispiel', pid: 'p1' }
+    before.helpers.mik = [{ name: 'Paul Beispiel', pid: 'p1' }, ...(before.helpers.mik ?? []).slice(1)]
     const after = structuredClone(before)
     ;(after.sections[0]!.items.find((i) => !isSong(i)) as PartItem).names[0]!.pid = 'p2'
     after.helpers.mik![0]!.pid = 'p2'

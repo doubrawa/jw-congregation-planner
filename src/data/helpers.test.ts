@@ -140,8 +140,8 @@ describe('Name einer Person', () => {
   })
 
   it('Namensgleiche unterscheidet ein Zusatz am Vornamen, kein zweites Feld', () => {
-    // Bis T110 stand dafür ein eigener Anzeigename daneben („Josef Mayer 1").
-    expect(displayName(person({ fn: 'Josef sen.', ln: 'Mayer' }))).toBe('Josef sen. Mayer')
+    // Bis T110 stand dafür ein eigener Anzeigename daneben („Paul Beispiel 1").
+    expect(displayName(person({ fn: 'Paul sen.', ln: 'Beispiel' }))).toBe('Paul sen. Beispiel')
   })
 
   it('leere Felder ergeben keinen Leerzeichen-Rest', () => {
@@ -196,12 +196,12 @@ describe('namensSchluessel', () => {
   const key = (fn: string, ln: string): string => namensSchluessel({ fn, ln })
 
   it('ist derselbe ungeachtet der Groß-/Kleinschreibung', () => {
-    expect(key('josef', 'MAYER')).toBe(key('Josef', 'Mayer'))
+    expect(key('paul', 'BEISPIEL')).toBe(key('Paul', 'Beispiel'))
   })
 
   it('zieht mehrfache Leerzeichen zusammen und schneidet den Rand ab', () => {
-    expect(key('  Josef ', ' Mayer  ')).toBe(key('Josef', 'Mayer'))
-    expect(key('Josef  ', '  Mayer')).toBe('josef mayer')
+    expect(key('  Paul ', ' Beispiel  ')).toBe(key('Paul', 'Beispiel'))
+    expect(key('Paul  ', '  Beispiel')).toBe('paul beispiel')
   })
 
   it('unterscheidet Akzente — Müller und Muller dürfen zwei Menschen sein', () => {
@@ -223,20 +223,20 @@ describe('namensSchluessel', () => {
 describe('namensDublette', () => {
   it('findet die andere Person, die schon so heißt', () => {
     const list = [
-      person({ id: 'a', fn: 'Josef', ln: 'Mayer' }),
+      person({ id: 'a', fn: 'Paul', ln: 'Beispiel' }),
       person({ id: 'c', fn: 'Simon', ln: 'Krüger' }),
     ]
-    expect(namensDublette(list, { id: 'b', fn: 'josef', ln: 'Mayer  ' })?.id).toBe('a')
+    expect(namensDublette(list, { id: 'b', fn: 'paul', ln: 'Beispiel  ' })?.id).toBe('a')
   })
 
   it('niemand ist seine eigene Dublette — sonst ließe sich niemand bearbeiten', () => {
-    const list = [person({ id: 'a', fn: 'Josef', ln: 'Mayer' })]
-    expect(namensDublette(list, { id: 'a', fn: 'Josef', ln: 'Mayer' })).toBeUndefined()
+    const list = [person({ id: 'a', fn: 'Paul', ln: 'Beispiel' })]
+    expect(namensDublette(list, { id: 'a', fn: 'Paul', ln: 'Beispiel' })).toBeUndefined()
   })
 
   it('der Zusatz am Vornamen löst die Namensgleichheit auf', () => {
-    const list = [person({ id: 'a', fn: 'Josef', ln: 'Mayer' })]
-    expect(namensDublette(list, { id: 'b', fn: 'Josef sen.', ln: 'Mayer' })).toBeUndefined()
+    const list = [person({ id: 'a', fn: 'Paul', ln: 'Beispiel' })]
+    expect(namensDublette(list, { id: 'b', fn: 'Paul sen.', ln: 'Beispiel' })).toBeUndefined()
   })
 
   it('zwei Namenlose sind keine Dublette', () => {
@@ -276,7 +276,7 @@ describe('listName (Anzeige in der Personenliste)', () => {
   })
 
   it('der Zusatz gegen Namensgleichheit steht beim Vornamen, also hinten', () => {
-    expect(listName(person({ fn: 'Josef sen.', ln: 'Mayer' }))).toBe('Mayer, Josef sen.')
+    expect(listName(person({ fn: 'Paul sen.', ln: 'Beispiel' }))).toBe('Beispiel, Paul sen.')
   })
 
   it('halbe und leere Datensätze fallen nicht auseinander', () => {

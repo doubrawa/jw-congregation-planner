@@ -14,10 +14,10 @@
  * Planer-Recht, die Hilfsdienste (`services`), die Einladungscodes — und, das ist
  * der Kern, **die Verknüpfung deines Kontos mit deiner Person**. Der bisherige
  * Personen-Import stellte sie per E-Mail-Abgleich wieder her; das scheitert,
- * sobald die Anmelde-Adresse (doubrawa@eevolution.de) von der Personen-Mail
- * (juergen@doubrawa.com) abweicht. Dieses Skript merkt die Verknüpfung stattdessen
- * über den **Personennamen** und stellt sie danach wieder her — unabhängig von
- * der Adresse.
+ * sobald die Anmelde-Adresse (dienstlich, `anna@example.com`) von der
+ * Personen-Mail (privat, `anna.beispiel@example.org`) abweicht. Dieses Skript
+ * merkt die Verknüpfung stattdessen über den **Personennamen** und stellt sie
+ * danach wieder her — unabhängig von der Adresse.
  *
  * Die **Abwesenheiten** sind hier bewusst dabei (ein Zurücksetzen setzt zurück),
  * lassen sich danach aber wiederholen: `abwesenheiten-importieren.mjs` holt sie
@@ -238,13 +238,13 @@ export async function main(argv = process.argv.slice(2)) {
    * **Gleichnamige abweisen, bevor irgendetwas gelöscht ist** (T110).
    *
    * Vor- und Nachname sind je Versammlung eindeutig (`persons_name_eindeutig`).
-   * Ein SQL mit zwei „Josef Mayer" darin ließe sich also gar nicht einspielen
+   * Ein SQL mit zwei „Paul Beispiel" darin ließe sich also gar nicht einspielen
    * — nur merkt man das erst beim Sammel-`insert`, und da sind die alten
    * Personen schon gelöscht. Was dann dasteht, ist eine leere Versammlung und
    * eine Fehlermeldung von PostgreSQL, in der die Namen nicht vorkommen.
    *
    * Deshalb hier, vor dem ersten Schreibzugriff, und mit den Namen. Behoben
-   * wird es in der Quelle: NWS-Vornamen ergänzen („Josef sen."), dann
+   * wird es in der Quelle: NWS-Vornamen ergänzen („Paul sen."), dann
    * `build-personen-sql.mjs` neu laufen lassen.
    */
   const doppelt = gleichnamige(kuratiert.persons)
@@ -256,7 +256,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
     console.error(
       '\nVor- und Nachname müssen je Versammlung eindeutig sein. In NWS den Vornamen\n' +
-        'ergänzen (z. B. „Josef sen.") und build-personen-sql.mjs neu laufen lassen.\n' +
+        'ergänzen (z. B. „Paul sen.") und build-personen-sql.mjs neu laufen lassen.\n' +
         'Es wurde nichts gelöscht und nichts geschrieben.\n',
     )
     process.exit(1)

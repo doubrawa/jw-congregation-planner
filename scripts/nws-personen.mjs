@@ -10,7 +10,7 @@
  *
  * **Die Zuordnung geht über die Id, nicht über den Namen.** Die App-Person
  * trägt `uuid5("person:<NWS-ID>")` — so vergibt sie `build-personen-sql.mjs`.
- * Damit trifft auch eine Namensdublette („Josef Mayer" zweimal) die richtige
+ * Damit trifft auch eine Namensdublette („Paul Beispiel" zweimal) die richtige
  * Person; über den Anzeigenamen wäre sie nicht zu unterscheiden.
  */
 

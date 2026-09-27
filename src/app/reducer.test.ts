@@ -132,7 +132,7 @@ describe('isNameless', () => {
     expect(isNameless({ fn: '', ln: '' } as Person)).toBe(true)
     expect(isNameless({ fn: '  ', ln: '' } as Person)).toBe(true)
     expect(isNameless({ fn: 'A', ln: '' } as Person)).toBe(false)
-    expect(isNameless({ fn: '', ln: 'Mayer' } as Person)).toBe(false)
+    expect(isNameless({ fn: '', ln: 'Beispiel' } as Person)).toBe(false)
   })
 })
 

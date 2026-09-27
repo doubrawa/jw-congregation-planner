@@ -208,31 +208,31 @@ describe('sammleNwsWochen', () => {
 })
 
 describe('nwsNamensAufloeser (Dubletten über die stabile id)', () => {
-  // Zwei „Josef Mayer" in NWS: Nachname „Mayer 1"/„Mayer 2", Anzeigename gleich.
+  // Zwei „Paul Beispiel" in NWS: Nachname „Beispiel 1"/„Beispiel 2", Anzeigename gleich.
   // Nur die volle ID (bzw. mid) unterscheidet sie — der Name allein nicht.
   const persons = [
-    { mid: 1, ID: 1001, a: 'Josef', b: 'Mayer 1', d: 'Josef Mayer' },
-    { mid: 2, ID: 1002, a: 'Josef', b: 'Mayer 2', d: 'Josef Mayer' },
+    { mid: 1, ID: 1001, a: 'Paul', b: 'Beispiel 1', d: 'Paul Beispiel' },
+    { mid: 2, ID: 1002, a: 'Paul', b: 'Beispiel 2', d: 'Paul Beispiel' },
     { mid: 3, ID: 1003, a: 'Anna', b: 'Klar', d: 'Anna Klar' },
   ]
 
   it('bindet die Dublette über uuid5(person:<ID>) an den App-Anzeigenamen', () => {
     // App-Personen tragen uuid5("person:<ID>") als id (wie der Generator sie vergibt).
     const appById = new Map([
-      [uuid5('person:1001'), 'Josef Mayer (1)'],
-      [uuid5('person:1002'), 'Josef Mayer (2)'],
+      [uuid5('person:1001'), 'Paul Beispiel (1)'],
+      [uuid5('person:1002'), 'Paul Beispiel (2)'],
     ])
     const auf = nwsNamensAufloeser(persons, appById)
-    expect(auf(2)).toBe('Josef Mayer (2)') // über mid aufgelöst
-    expect(auf(1002)).toBe('Josef Mayer (2)') // über die volle ID
-    expect(auf(1)).toBe('Josef Mayer (1)')
+    expect(auf(2)).toBe('Paul Beispiel (2)') // über mid aufgelöst
+    expect(auf(1002)).toBe('Paul Beispiel (2)') // über die volle ID
+    expect(auf(1)).toBe('Paul Beispiel (1)')
     expect(auf(3)).toBe('Anna Klar') // nicht in appById → roher NWS-Name
   })
 
   it('ohne appById bleibt der rohe NWS-Name (Rückwärtskompatibilität)', () => {
     const auf = nwsNamensAufloeser(persons)
-    expect(auf(1)).toBe('Josef Mayer')
-    expect(auf(2)).toBe('Josef Mayer')
+    expect(auf(1)).toBe('Paul Beispiel')
+    expect(auf(2)).toBe('Paul Beispiel')
   })
 })
 
@@ -256,8 +256,8 @@ describe('dienstZuordnung', () => {
 describe('gruppenNamensAufloeser', () => {
   it('bildet PDG-N auf „Gruppe N" ab', () => {
     const auf = gruppenNamensAufloeser([
-      { ID: 31606, a: 'PDG-3 Matthias Thoma' },
-      { ID: 64095, a: 'PDG-6 Jörg Grünwald' },
+      { ID: 31606, a: 'PDG-3 Anna Beispiel' },
+      { ID: 64095, a: 'PDG-6 Björn Grünbeispiel' },
     ])
     expect(auf(31606)).toBe('Gruppe 3')
     expect(auf(64095)).toBe('Gruppe 6')

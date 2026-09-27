@@ -504,7 +504,7 @@ ordnet die App über den Namen zu — Namensgleiche teilen sich dann Aufgaben,
 Bestätigungen und Erinnerungen.
 
 Abhilfe: Gib einer der beiden im Feld **Anzeigename** etwas Eindeutiges
-(z. B. „Josef Mayer (1)"). Der Anzeigename ersetzt überall den vollen Namen.
+(z. B. „Paul Beispiel (1)"). Der Anzeigename ersetzt überall den vollen Namen.
 
 ### Warnung: ohne Predigtdienstgruppe
 

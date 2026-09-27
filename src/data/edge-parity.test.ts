@@ -62,8 +62,8 @@ describe('Name einer Person', () => {
     ['', 'Beispiel'], // nur Nachname → kein führendes Leerzeichen
     ['Anna', ''],
     ['', ''], // gar nichts → leer, nicht " "
-    ['Jörg', 'Grünwald'],
-    ['Josef sen.', 'Mayer'], // der Zusatz gegen Namensgleichheit (T110)
+    ['Björn', 'Grünbeispiel'],
+    ['Paul sen.', 'Beispiel'], // der Zusatz gegen Namensgleichheit (T110)
   ]
 
   it.each(faelle)('„%s %s" gleich auf beiden Seiten', (fn, ln) => {

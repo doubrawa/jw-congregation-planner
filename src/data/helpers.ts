@@ -157,7 +157,7 @@ export function privSetzen(priv: Qualifications, key: string, on: boolean): void
  * konnten und der Name in jeder Zuteilung neben der `pid` steht. Seit T110
  * sind Vor- und Nachname **je Versammlung eindeutig** (`namensSchluessel`, in
  * der App geprüft und in der Datenbank per Index erzwungen); wer zweimal
- * gleich heißt, bekommt einen Zusatz am Vornamen („Josef sen."). Damit ist der
+ * gleich heißt, bekommt einen Zusatz am Vornamen („Paul sen."). Damit ist der
  * Umweg überflüssig, und der Name hat wieder genau eine Form.
  *
  * Zuteilungen in den Wochen tragen diesen String neben der `pid` —
@@ -179,7 +179,7 @@ export function displayName(p: Pick<Person, 'fn' | 'ln'>): string {
  * die Regel verhindern, also sind sie hier gleich.
  *
  * Nicht beachtet werden **Groß-/Kleinschreibung** und **mehrfache
- * Leerzeichen**: „josef  mayer" ist derselbe Mensch wie „Josef Mayer", und ein
+ * Leerzeichen**: „paul  mayer" ist derselbe Mensch wie „Paul Beispiel", und ein
  * verrutschter Doppelklick auf die Leertaste darf keine zweite Person
  * rechtfertigen. **Akzente sehr wohl:** Müller und Muller können zwei
  * verschiedene Menschen sein, und wer sie zusammenwürfe, verböte einen

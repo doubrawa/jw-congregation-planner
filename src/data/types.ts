@@ -225,7 +225,7 @@ export interface Person {
    * Vor- und Nachname. **Zusammen eindeutig je Versammlung** (T110) — geprüft
    * am Feld (`namensDublette`) und erzwungen vom Index
    * `persons_name_eindeutig`. Wer zweimal gleich heißt, bekommt einen Zusatz
-   * am Vornamen („Josef sen."), statt wie früher einen abweichenden
+   * am Vornamen („Paul sen."), statt wie früher einen abweichenden
    * Anzeigenamen daneben.
    *
    * Der Grund für die Härte: Der Name steht in jeder Zuteilung neben der

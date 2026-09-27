@@ -479,9 +479,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
        *
        * Vor- und Nachname sind je Versammlung eindeutig, und der Index
        * `persons_name_eindeutig` setzt das durch. Beim Tippen entstehen aber
-       * zwangsläufig Zwischenstände: Wer „Josef Mayer" zu „Josef Mayer sen."
-       * ergänzt, ist nach dem letzten Buchstaben von „Mayer" für einen
-       * Wimpernschlag die Dublette des anderen Josef Mayer. Ginge der Stand
+       * zwangsläufig Zwischenstände: Wer „Paul Beispiel" zu „Paul Beispiel sen."
+       * ergänzt, ist nach dem letzten Buchstaben von „Beispiel" für einen
+       * Wimpernschlag die Dublette des anderen Paul Beispiel. Ginge der Stand
        * hinaus, käme er als Schreibfehler zurück — eine rote Meldung für eine
        * Eingabe, die gerade erst halb fertig ist.
        *

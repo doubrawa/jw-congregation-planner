@@ -74,7 +74,7 @@ import { alsSkript, argumente, ladeTabellen, personDisplayName, restKlient, vers
  * Personen-Generator** (`build-personen-sql.mjs`): die App-Person trägt
  * `uuid5("person:<NWS-ID>")` als `id`. Darüber lässt sich eine NWS-Person
  * eindeutig ihrer App-Person zuordnen, auch wenn zwei denselben Anzeigenamen
- * tragen (Dublette „Josef Mayer"). Namespace und Eingabeform müssen exakt zum
+ * tragen (Dublette „Paul Beispiel"). Namespace und Eingabeform müssen exakt zum
  * Generator passen, sonst stimmt die id nicht.
  */
 const UUID_NS = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'
@@ -543,13 +543,13 @@ const TABELLEN = {
  * Ist `appById` (App-Person-`id` → Anzeigename) gegeben, wird die Person zuerst
  * über ihre **stabile id** gesucht (`uuid5("person:<NWS-ID>")`, wie sie der
  * Generator vergibt) und deren App-Anzeigename genommen. Das löst
- * Namensdubletten, die der bloße NWS-Name nicht eindeutig träfe: „Josef Mayer"
- * steht in der App als „Josef Mayer (2)" — über den Namen allein findet der
+ * Namensdubletten, die der bloße NWS-Name nicht eindeutig träfe: „Paul Beispiel"
+ * steht in der App als „Paul Beispiel (2)" — über den Namen allein findet der
  * Import keinen Treffer, über die id schon. Ohne `appById` (Tests, kein
  * App-Kontext) bleibt der rohe NWS-Name.
  *
  * Getrimmt: NWS-Anzeigenamen tragen vereinzelt ein Leerzeichen am Ende, das
- * sonst den Abgleich mit der App-Person verfehlt („Charlette Born “).
+ * sonst den Abgleich mit der App-Person verfehlt („Anna Beispiel “).
  *
  * @param {Map<string, string> | null} [appById]
  */
@@ -572,7 +572,7 @@ export function nwsPersonenNamen(persons) {
 
 /**
  * NWS-Felddienstgruppe (ID) → App-Gruppenname „Gruppe N". Die NWS-Gruppen heißen
- * „PDG-N …" (z. B. „PDG-3 Matthias Thoma"); N ist die App-Gruppennummer (mit dem
+ * „PDG-N …" (z. B. „PDG-3 Anna Beispiel"); N ist die App-Gruppennummer (mit dem
  * Betreiber bestätigt: PDG-1…6 = Gruppe 1…6).
  */
 export function gruppenNamensAufloeser(fieldServiceGroups) {

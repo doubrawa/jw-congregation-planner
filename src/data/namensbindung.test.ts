@@ -43,7 +43,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
         label: 'X',
         farbe: 'petrol',
         items: [
-          { iid: 'i70', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Simon Krüger' }, { name: 'Bernhard Mauz' }] },
+          { iid: 'i70', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Simon Krüger' }, { name: 'Bernd Muster' }] },
           { song: 'Lied 1' },
         ],
       },
@@ -56,7 +56,7 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
     const [w] = renameInWeeks([week()], 'p1', 'Simon Krüger', 'Simon Müller')
     const item = w.mid.sections[0].items[0]
     expect('names' in item && item.names[0].name).toBe('Simon Müller')
-    expect('names' in item && item.names[1].name).toBe('Bernhard Mauz') // andere unberührt
+    expect('names' in item && item.names[1].name).toBe('Bernd Muster') // andere unberührt
     expect(w.mid.helpers.mik).toEqual([{ name: 'Simon Müller' }, { name: 'Gruppe 1' }])
     expect(w.we.helpers.mik[0].name).toBe('Simon Müller') // beide Zusammenkünfte
   })
