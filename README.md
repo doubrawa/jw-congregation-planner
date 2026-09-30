@@ -6,11 +6,14 @@ Qualifikations-, Abwesenheits- und Auslastungsprüfung inkl. Auto-Zuteilung),
 Personenverwaltung, persönlicher Bereich (eigene Aufgaben/Abwesenheiten),
 Mitteilungen und Einstellungen.
 
-> **© Alle Rechte vorbehalten — keine Lizenz zur Nachnutzung.**
-> Dieses Repository ist nur zur Einsicht öffentlich. Der Quellcode ist **nicht**
-> unter einer Open-Source-Lizenz freigegeben: Kopieren, Weiterverwenden,
-> Verändern oder Betreiben durch Dritte ist nicht gestattet. „Öffentlich
-> sichtbar" bedeutet nicht „frei nutzbar".
+> **© 2026 Jürgen Doubrawa — alle Rechte vorbehalten, keine Lizenz zur Nachnutzung.**
+> Dieses Repository ist öffentlich einsehbar, der Quellcode aber **nicht** unter
+> einer Open-Source-Lizenz freigegeben: Kopieren, Weiterverwenden, Verändern oder
+> Betreiben durch Dritte ist nicht gestattet. Erlaubt ist nur, was die
+> Nutzungsbedingungen von GitHub für öffentliche Repositories vorsehen — ansehen
+> und auf GitHub forken. „Öffentlich sichtbar" bedeutet nicht „frei nutzbar".
+> Texte von jw.org und andere fremde Bestandteile gehören ihren Inhabern.
+> Einzelheiten: [LICENSE](LICENSE).
 
 > **Status: Alle Screens + v3-Funktionen gebaut.** Shell, Login, Programm,
 > Planen (Zuteilungs-Sheet, Auto-Zuteilung, LAC-Bearbeitung), Aufgaben,
