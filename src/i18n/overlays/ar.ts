@@ -28,7 +28,7 @@ export default {
   "authSchonRegistriert": "البريد الإلكتروني مسجَّل مسبقًا",
   "authPwKurz": "كلمة المرور قصيرة جدًا (٦ أحرف على الأقل)",
   "authZuVieleVersuche": "محاولات كثيرة جدًا — انتظر قليلًا",
-  "demoHinweis": "نموذج تجريبي · أي بيانات دخول تصلح",
+  "anmeldungOhneDb": "بدون قاعدة بيانات · أي بيانات دخول تصلح",
   "mitteilungen": "الإشعارات",
   "keineMitteilungen": "لا توجد إشعارات",
   "neuN": "جديد: {n}",

@@ -22,7 +22,7 @@ export default {
   "passwort": "PASSWORD",
   "anmelden": "MAG-LOG IN",
   "pwVergessen": "Nakalimutan ang password?",
-  "demoHinweis": "Demo prototype · kahit anong detalye",
+  "anmeldungOhneDb": "Walang database · kahit anong detalye",
   "nurMitglieder": "Para lang sa mga miyembro ng kongregasyon",
   "appZweck": "Pagpaplano ng mga pulong, pagbibigay ng mga atas, pamamahala ng kongregasyon.",
   "versammlungAnfragen": "Humiling ng bagong kongregasyon:",

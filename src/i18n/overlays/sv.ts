@@ -22,7 +22,7 @@ export default {
   "passwort": "LÖSENORD",
   "anmelden": "LOGGA IN",
   "pwVergessen": "Glömt lösenord?",
-  "demoHinweis": "Demoprototyp · valfria uppgifter",
+  "anmeldungOhneDb": "Utan databas · valfria uppgifter",
   "nurMitglieder": "Åtkomst endast för församlingens medlemmar",
   "appZweck": "Planera möten, fördela uppgifter, administrera församlingen.",
   "versammlungAnfragen": "Förfrågan om ny församling:",

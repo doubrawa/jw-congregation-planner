@@ -22,7 +22,7 @@ export default {
   "passwort": "CONTRASEÑA",
   "anmelden": "INICIAR SESIÓN",
   "pwVergessen": "¿Olvidaste tu contraseña?",
-  "demoHinweis": "Prototipo demo · cualquier dato sirve",
+  "anmeldungOhneDb": "Sin base de datos · cualquier dato sirve",
   "nurMitglieder": "Acceso solo para miembros de la congregación",
   "appZweck": "Planificar reuniones, repartir asignaciones, administrar la congregación.",
   "versammlungAnfragen": "Solicitar una nueva congregación:",

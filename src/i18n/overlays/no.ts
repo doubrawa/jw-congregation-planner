@@ -22,7 +22,7 @@ export default {
   "passwort": "PASSORD",
   "anmelden": "LOGG INN",
   "pwVergessen": "Glemt passord?",
-  "demoHinweis": "Demoprototype · vilkårlige opplysninger",
+  "anmeldungOhneDb": "Uten database · vilkårlige opplysninger",
   "nurMitglieder": "Tilgang bare for menighetens medlemmer",
   "appZweck": "Planlegg møter, fordel oppgaver, administrer menigheten.",
   "versammlungAnfragen": "Forespørsel om ny menighet:",

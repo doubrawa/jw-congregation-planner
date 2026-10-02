@@ -22,7 +22,7 @@ export default {
   "passwort": "MOT DE PASSE",
   "anmelden": "SE CONNECTER",
   "pwVergessen": "Mot de passe oublié\u00a0?",
-  "demoHinweis": "Prototype démo · identifiants libres",
+  "anmeldungOhneDb": "Sans base de données · identifiants libres",
   "nurMitglieder": "Accès réservé aux membres de l’assemblée",
   "appZweck": "Planifier les réunions, répartir les attributions, gérer l’assemblée.",
   "versammlungAnfragen": "Demander une nouvelle assemblée\u00a0:",

@@ -22,7 +22,7 @@ export default {
   "passwort": "MẬT KHẨU",
   "anmelden": "ĐĂNG NHẬP",
   "pwVergessen": "Quên mật khẩu?",
-  "demoHinweis": "Bản demo · thông tin bất kỳ",
+  "anmeldungOhneDb": "Không có cơ sở dữ liệu · thông tin bất kỳ",
   "nurMitglieder": "Chỉ dành cho thành viên hội thánh",
   "appZweck": "Lập kế hoạch các buổi họp, phân công nhiệm vụ, quản lý hội thánh.",
   "versammlungAnfragen": "Yêu cầu thêm hội thánh mới:",

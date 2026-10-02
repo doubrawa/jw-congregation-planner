@@ -22,7 +22,7 @@ export default {
   "passwort": "HESLO",
   "anmelden": "PŘIHLÁSIT SE",
   "pwVergessen": "Zapomenuté heslo?",
-  "demoHinweis": "Demo prototyp · libovolné údaje",
+  "anmeldungOhneDb": "Bez databáze · libovolné údaje",
   "nurMitglieder": "Přístup jen pro členy sboru",
   "appZweck": "Plánování shromáždění, přidělování úkolů, správa sboru.",
   "versammlungAnfragen": "Žádost o nový sbor:",

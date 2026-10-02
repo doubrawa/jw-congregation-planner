@@ -22,7 +22,7 @@ export default {
   "passwort": "PAROLĂ",
   "anmelden": "AUTENTIFICARE",
   "pwVergessen": "Ai uitat parola?",
-  "demoHinweis": "Prototip demo · orice date",
+  "anmeldungOhneDb": "Fără bază de date · orice date",
   "nurMitglieder": "Acces doar pentru membrii congregației",
   "appZweck": "Planificarea întrunirilor, repartizarea însărcinărilor, administrarea congregației.",
   "versammlungAnfragen": "Cerere pentru o congregație nouă:",

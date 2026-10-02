@@ -271,9 +271,13 @@ describe('Ohne Datenbank: Anmeldung nachgestellt', () => {
     konfiguriert.wert = false
   })
 
-  it('sagt es unten deutlich', () => {
+  it('sagt es unten deutlich — und verspricht keine Demo', () => {
+    // Bis zum 2.10.2026 stand hier „Demo-Prototyp · Zugangsdaten beliebig".
+    // Einen Demo-Bestand gibt es nicht mehr: Nach dieser Anmeldung ist die App
+    // leer, erfundene Daten zeigt allein die Entwicklerseite.
     const { container } = zeige('login')
-    expect(container.querySelector('.login-note')?.textContent).toBe(t.demoHinweis)
+    expect(container.querySelector('.login-note')?.textContent).toBe(t.anmeldungOhneDb)
+    expect(t.anmeldungOhneDb).not.toMatch(/demo/i)
   })
 
   it('mit Supabase steht dort dagegen der Hinweis auf die Mitgliedschaft', () => {
@@ -298,7 +302,7 @@ describe('Ohne Datenbank: Anmeldung nachgestellt', () => {
     const { container, dispatch } = zeige('login')
     fireEvent.click(knopf(container, t.pwVergessen)!)
     expect(requestPasswordReset).not.toHaveBeenCalled()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.demoHinweis })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.anmeldungOhneDb })
   })
 })
 
@@ -324,7 +328,7 @@ describe('Entwicklerseite: aussehen wie im Betrieb, handeln ohne Datenbank', () 
     eingeben(container, 'wer@example.org')
     fireEvent.click(knopf(container, t.pwVergessen)!)
     expect(requestPasswordReset).not.toHaveBeenCalled()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.demoHinweis })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.anmeldungOhneDb })
   })
 
   it('Anmelden und Konto erstellen melden an, ohne Netzaufruf', () => {

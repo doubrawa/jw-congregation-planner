@@ -22,7 +22,7 @@ export default {
   "passwort": "SALASANA",
   "anmelden": "KIRJAUDU",
   "pwVergessen": "Unohtuiko salasana?",
-  "demoHinweis": "Demoprototyyppi · mitkä tahansa tiedot",
+  "anmeldungOhneDb": "Ei tietokantaa · mitkä tahansa tiedot",
   "nurMitglieder": "Pääsy vain seurakunnan jäsenille",
   "appZweck": "Kokousten suunnittelu, tehtävien jakaminen, seurakunnan hallinta.",
   "versammlungAnfragen": "Pyyntö uudesta seurakunnasta:",

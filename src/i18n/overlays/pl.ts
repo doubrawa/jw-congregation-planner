@@ -22,7 +22,7 @@ export default {
   "passwort": "HASŁO",
   "anmelden": "ZALOGUJ",
   "pwVergessen": "Nie pamiętasz hasła?",
-  "demoHinweis": "Prototyp demo · dowolne dane",
+  "anmeldungOhneDb": "Bez bazy danych · dowolne dane",
   "nurMitglieder": "Dostęp tylko dla członków zboru",
   "appZweck": "Planowanie zebrań, przydzielanie zadań, zarządzanie zborem.",
   "versammlungAnfragen": "Zgłoś nowy zbór:",

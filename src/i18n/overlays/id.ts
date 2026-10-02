@@ -22,7 +22,7 @@ export default {
   "passwort": "KATA SANDI",
   "anmelden": "MASUK",
   "pwVergessen": "Lupa kata sandi?",
-  "demoHinweis": "Prototipe demo · data apa saja",
+  "anmeldungOhneDb": "Tanpa basis data · data apa saja",
   "nurMitglieder": "Akses hanya untuk anggota sidang",
   "appZweck": "Perencanaan perhimpunan, pembagian tugas, pengelolaan sidang.",
   "versammlungAnfragen": "Ajukan sidang baru:",

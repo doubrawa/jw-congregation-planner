@@ -22,7 +22,7 @@ export default {
   "passwort": "LOZINKA",
   "anmelden": "PRIJAVA",
   "pwVergessen": "Zaboravljena lozinka?",
-  "demoHinweis": "Demo prototip · bilo koji podaci",
+  "anmeldungOhneDb": "Bez baze podataka · bilo koji podaci",
   "nurMitglieder": "Pristup samo za članove skupštine",
   "appZweck": "Planiranje sastanaka, raspodela zaduženja, upravljanje skupštinom.",
   "versammlungAnfragen": "Zahtev za novu skupštinu:",

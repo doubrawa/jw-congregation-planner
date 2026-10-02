@@ -22,7 +22,7 @@ export default {
   "passwort": "ПАРОЛЬ",
   "anmelden": "УВІЙТИ",
   "pwVergessen": "Забули пароль?",
-  "demoHinweis": "Демо-прототип · будь-які дані",
+  "anmeldungOhneDb": "Без бази даних · будь-які дані",
   "nurMitglieder": "Доступ лише для членів збору",
   "appZweck": "Планування зібрань, розподіл завдань, керування збором.",
   "versammlungAnfragen": "Заявка на новий збір:",

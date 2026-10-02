@@ -22,7 +22,7 @@ export default {
   "passwort": "ADGANGSKODE",
   "anmelden": "LOG IND",
   "pwVergessen": "Glemt adgangskode?",
-  "demoHinweis": "Demoprototype · vilkårlige oplysninger",
+  "anmeldungOhneDb": "Uden database · vilkårlige oplysninger",
   "nurMitglieder": "Adgang kun for menighedens medlemmer",
   "appZweck": "Planlæg møder, fordel opgaver, administrer menigheden.",
   "versammlungAnfragen": "Anmodning om en ny menighed:",

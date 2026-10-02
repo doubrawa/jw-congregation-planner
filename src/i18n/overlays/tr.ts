@@ -22,7 +22,7 @@ export default {
   "passwort": "ŞİFRE",
   "anmelden": "GİRİŞ",
   "pwVergessen": "Şifreni mi unuttun?",
-  "demoHinweis": "Demo prototip · herhangi bir bilgi",
+  "anmeldungOhneDb": "Veritabanı yok · herhangi bir bilgi",
   "nurMitglieder": "Erişim yalnızca cemaat üyelerine",
   "appZweck": "İbadet planlaması, görev dağıtımı, cemaat yönetimi.",
   "versammlungAnfragen": "Yeni cemaat talebi:",

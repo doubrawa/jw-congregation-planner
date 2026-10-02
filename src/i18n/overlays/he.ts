@@ -23,7 +23,7 @@ export default {
   "passwort": "סיסמה",
   "anmelden": "כניסה",
   "pwVergessen": "שכחת סיסמה?",
-  "demoHinweis": "אב־טיפוס להדגמה · כל פרטי כניסה יתקבלו",
+  "anmeldungOhneDb": "ללא מסד נתונים · כל פרטי כניסה יתקבלו",
   "nurMitglieder": "גישה לחברי הקהילה בלבד",
   "appZweck": "תכנון אסיפות, חלוקת מטלות, ניהול הקהילה.",
   "versammlungAnfragen": "בקשה להוספת קהילה חדשה:",

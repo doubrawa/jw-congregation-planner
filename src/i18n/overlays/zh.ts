@@ -22,7 +22,7 @@ export default {
   "passwort": "密码",
   "anmelden": "登录",
   "pwVergessen": "忘记密码？",
-  "demoHinweis": "演示原型 · 任意凭据",
+  "anmeldungOhneDb": "无数据库 · 任意凭据",
   "nurMitglieder": "仅限会众成员访问",
   "appZweck": "安排聚会、分配任务、管理会众。",
   "versammlungAnfragen": "申请添加新会众：",

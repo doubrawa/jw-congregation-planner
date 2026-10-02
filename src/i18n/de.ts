@@ -15,7 +15,7 @@ export const DE = {
     offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',
     offlineRetry: 'Neu laden',
     email: 'E-MAIL', emailPh: 'name@beispiel.de', passwort: 'PASSWORT', anmelden: 'ANMELDEN',
-    pwVergessen: 'Passwort vergessen?', demoHinweis: 'Demo-Prototyp · Zugangsdaten beliebig',
+    pwVergessen: 'Passwort vergessen?', anmeldungOhneDb: 'Ohne Datenbank · Zugangsdaten beliebig',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     // Anmeldeseite (T113): wofür die App da ist, und der Weg zum Betreiber für
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.

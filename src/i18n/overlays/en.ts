@@ -28,7 +28,7 @@ export default {
   "passwort": "PASSWORD",
   "anmelden": "LOG IN",
   "pwVergessen": "Forgot password?",
-  "demoHinweis": "Demo prototype · any credentials work",
+  "anmeldungOhneDb": "No database · any credentials work",
   "nurMitglieder": "Access for congregation members only",
   "appZweck": "Plan meetings, hand out assignments, manage the congregation.",
   "versammlungAnfragen": "Request a new congregation:",

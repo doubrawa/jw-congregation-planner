@@ -22,7 +22,7 @@ export default {
   "passwort": "NENOSIRI",
   "anmelden": "INGIA",
   "pwVergessen": "Umesahau nenosiri?",
-  "demoHinweis": "Mfano wa demo · taarifa yoyote",
+  "anmeldungOhneDb": "Bila hifadhidata · taarifa yoyote",
   "nurMitglieder": "Ufikiaji kwa wanakutaniko pekee",
   "appZweck": "Kupanga mikutano, kugawa migawo, kusimamia kutaniko.",
   "versammlungAnfragen": "Omba kutaniko jipya:",

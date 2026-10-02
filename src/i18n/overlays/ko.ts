@@ -22,7 +22,7 @@ export default {
   "passwort": "비밀번호",
   "anmelden": "로그인",
   "pwVergessen": "비밀번호를 잊으셨나요?",
-  "demoHinweis": "데모 시제품 · 아무 정보나 가능",
+  "anmeldungOhneDb": "데이터베이스 없음 · 아무 정보나 가능",
   "nurMitglieder": "회중 성원만 이용 가능",
   "appZweck": "집회 계획, 임명 배정, 회중 관리.",
   "versammlungAnfragen": "새 회중 신청:",

@@ -79,7 +79,7 @@ export function LoginScreen() {
 
   const forgotPassword = async () => {
     if (!supabase) {
-      dispatch({ type: 'showToast', text: t.demoHinweis })
+      dispatch({ type: 'showToast', text: t.anmeldungOhneDb })
       return
     }
     if (!email.trim()) {
@@ -154,7 +154,7 @@ export function LoginScreen() {
         </select>
       </div>
 
-      <p className="login-note">{isSupabaseConfigured ? t.nurMitglieder : t.demoHinweis}</p>
+      <p className="login-note">{isSupabaseConfigured ? t.nurMitglieder : t.anmeldungOhneDb}</p>
       {/* Der Weg zum Betreiber für eine neue Versammlung (T113) — auch in der
           Demo: Wer sie ansieht, ist genau der, der fragen würde. Die Adresse
           steht sichtbar da, zum Abschreiben, falls kein Mail-Programm

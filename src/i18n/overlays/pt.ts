@@ -22,7 +22,7 @@ export default {
   "passwort": "SENHA",
   "anmelden": "ENTRAR",
   "pwVergessen": "Esqueceu a senha?",
-  "demoHinweis": "Protótipo demo · credenciais livres",
+  "anmeldungOhneDb": "Sem banco de dados · credenciais livres",
   "nurMitglieder": "Acesso apenas para membros da congregação",
   "appZweck": "Planejar as reuniões, distribuir as designações, gerenciar a congregação.",
   "versammlungAnfragen": "Pedir uma nova congregação:",

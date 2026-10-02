@@ -22,7 +22,7 @@ export default {
   "passwort": "WACHTWOORD",
   "anmelden": "INLOGGEN",
   "pwVergessen": "Wachtwoord vergeten?",
-  "demoHinweis": "Demo-prototype · inloggegevens vrij",
+  "anmeldungOhneDb": "Zonder database · inloggegevens vrij",
   "nurMitglieder": "Toegang alleen voor gemeenteleden",
   "appZweck": "Vergaderingen plannen, toewijzingen verdelen, de gemeente beheren.",
   "versammlungAnfragen": "Nieuwe gemeente aanvragen:",

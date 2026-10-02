@@ -22,7 +22,7 @@ export default {
   "passwort": "パスワード",
   "anmelden": "ログイン",
   "pwVergessen": "パスワードをお忘れですか？",
-  "demoHinweis": "デモ試作 · 任意の情報",
+  "anmeldungOhneDb": "データベースなし · 任意の情報",
   "nurMitglieder": "会衆の成員のみアクセス可能",
   "appZweck": "集会の計画、割り当ての調整、会衆の管理。",
   "versammlungAnfragen": "新しい会衆の登録申請：",

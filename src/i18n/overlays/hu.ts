@@ -22,7 +22,7 @@ export default {
   "passwort": "JELSZÓ",
   "anmelden": "BEJELENTKEZÉS",
   "pwVergessen": "Elfelejtett jelszó?",
-  "demoHinweis": "Demó prototípus · bármilyen adat",
+  "anmeldungOhneDb": "Adatbázis nélkül · bármilyen adat",
   "nurMitglieder": "Hozzáférés csak a gyülekezet tagjainak",
   "appZweck": "Összejövetelek tervezése, feladatok kiosztása, a gyülekezet kezelése.",
   "versammlungAnfragen": "Új gyülekezet igénylése:",

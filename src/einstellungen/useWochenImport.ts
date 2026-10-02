@@ -139,8 +139,9 @@ export function useWochenImport(): {
     if (!res.ok) {
       dispatch({ type: 'stopImport' })
       // Keine Datenbank angebunden (auch: Entwicklerseite), der Abruf ist gar
-      // nicht möglich. Hier stand früher t.demoHinweis — der redet vom
-      // Anmelden („Zugangsdaten beliebig") und passte nicht.
+      // nicht möglich. Hier stand früher der Anmeldehinweis (heute
+      // anmeldungOhneDb) — der redet vom Anmelden („Zugangsdaten beliebig")
+      // und passte nicht.
       const text =
         res.error === 'ohne-datenbank'
           ? t.importOhneDb
