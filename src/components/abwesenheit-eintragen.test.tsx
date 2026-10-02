@@ -344,6 +344,28 @@ describe('Die Liste darunter', () => {
     expect(container.querySelector('.abs-reason-text')?.textContent).toBe('Urlaub')
   })
 
+  it('ein einzelner Tag steht einmal da — nicht „1. November – 1. November"', () => {
+    const { container } = zeigePanel({ entries: [abw({ from: '2026-11-01', to: '2026-11-01' })] })
+    expect(container.querySelector('.abs-range')?.textContent).toBe('1. November')
+  })
+
+  it('geordnet nach Beginn — auch ein eben eingetragener Eintrag steht an seinem Datum', () => {
+    // Der Zustand hängt Neues hinten an; geladen wird nach Datum. Ohne Ordnung
+    // stand ein frischer Eintrag bis zum nächsten Laden am Ende.
+    const { container } = zeigePanel({
+      entries: [
+        abw({ id: 'nov', from: '2026-11-02', to: '2026-11-06' }),
+        abw({ id: 'sep', from: '2026-09-07', to: '2026-09-13' }),
+        abw({ id: 'okt', from: '2026-10-19', to: '2026-10-25' }),
+      ],
+    })
+    expect([...container.querySelectorAll('.abs-range')].map((e) => e.textContent)).toEqual([
+      '7. September – 13. September',
+      '19. Oktober – 25. Oktober',
+      '2. November – 6. November',
+    ])
+  })
+
   it('ohne Grund steht der Ersatztext — nicht eine leere Zeile', () => {
     const { container } = zeigePanel({ entries: [abw({ reason: '' })] })
     expect(container.querySelector('.abs-reason-text')?.textContent).toBe(t.ohneAngabe)

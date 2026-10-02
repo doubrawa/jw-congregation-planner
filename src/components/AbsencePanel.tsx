@@ -51,6 +51,17 @@ export function AbsencePanel({
   const fmtDate = (iso: string): string =>
     iso ? fromIso(iso).toLocaleDateString(LOCALES[state.lang], { day: 'numeric', month: 'long' }) : ''
 
+  /** Ein einzelner Tag steht einmal da — nicht „1. November – 1. November". */
+  const zeitraum = (a: Absence): string =>
+    a.from === a.to ? fmtDate(a.from) : `${fmtDate(a.from)} – ${fmtDate(a.to)}`
+
+  /*
+   * Nach Beginn geordnet. Geladen wird nach `from_date`, der Zustand hängt
+   * Neues aber hinten an — ein gerade eingetragener Eintrag stand deshalb bis
+   * zum nächsten Laden am Ende der Liste statt an seinem Datum.
+   */
+  const liste = [...entries].sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
+
   /**
    * Eintragen darf, wen es selbst betrifft — oder ein Planer. Dieselbe Grenze
    * zieht die Datenbank (`absences_write`: eigener Eintrag, eigene Person oder
@@ -144,12 +155,10 @@ export function AbsencePanel({
       )}
 
       {showList && <div className="panel-label auf-entries-label">{listLabel}</div>}
-      {showList && entries.map((absence) => (
+      {showList && liste.map((absence) => (
         <div key={absence.id} className="abs-row">
           <div>
-            <div className="abs-range">
-              {fmtDate(absence.from)} – {fmtDate(absence.to)}
-            </div>
+            <div className="abs-range">{zeitraum(absence)}</div>
             <div className="abs-reason-text" dir="auto">{absence.reason || t.ohneAngabe}</div>
           </div>
           {darfBearbeiten && (
