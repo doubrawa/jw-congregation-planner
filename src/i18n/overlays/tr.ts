@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "{n} hafta yüklendi",
   "importBtn": "SONRAKİ HAFTAYI İÇE AKTAR",
   "importiere": "İÇE AKTARILIYOR …",
-  "alleImportiert": "TÜM HAFTALAR İÇE AKTARILDI",
   "aktuellLbl": "Şu anki:",
   "entfernen": "Kaldır",
   "abwesendChip": "Yok",

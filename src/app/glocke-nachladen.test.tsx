@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { NotificationsPanel } from './NotificationsPanel'
 import type { Notification } from '../data/types'
 
@@ -57,7 +57,7 @@ const notif = (id: string, over: Partial<Notification> = {}): Notification => ({
 function oeffneGlocke(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',

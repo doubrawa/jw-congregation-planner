@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "{n} hét betöltve",
   "importBtn": "KÖVETKEZŐ HÉT IMPORTÁLÁSA",
   "importiere": "IMPORTÁLÁS …",
-  "alleImportiert": "MINDEN HÉT IMPORTÁLVA",
   "aktuellLbl": "Jelenlegi:",
   "entfernen": "Eltávolítás",
   "abwesendChip": "Távol",

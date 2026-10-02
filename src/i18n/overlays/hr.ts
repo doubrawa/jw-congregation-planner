@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Učitano tjedana: {n}",
   "importBtn": "UVEZI SLJEDEĆI TJEDAN",
   "importiere": "UVOZ …",
-  "alleImportiert": "SVI TJEDNI UVEZENI",
   "aktuellLbl": "Trenutačno:",
   "entfernen": "Ukloni",
   "abwesendChip": "Odsutnost",

@@ -14,8 +14,9 @@ erzeugt – nie von Hand.
 
 ## Screenshots neu erzeugen
 
-Die App wird im **Demo‑Modus** über den DEV‑Debug‑Hash direkt in den jeweiligen
-Zustand versetzt (kein Login/Netz nötig). Ablauf:
+Aufgenommen wird die **Entwicklerseite** `/demo.html`: die App mit den
+erfundenen Daten aus `tests/testdaten/`, ohne Login und ohne Datenbank. Ihr Hash
+versetzt sie direkt in den jeweiligen Zustand. Ablauf:
 
 ```bash
 npm run dev                               # Dev-Server auf Port 5173 starten
@@ -24,9 +25,10 @@ bash docs/user-guide/capture-screenshots.sh
 
 Das Skript fährt per **Chrome (headless)** jeden dokumentierten Zustand an und legt
 die PNGs in `screenshots/` ab. Es ist die *einzige* Quelle der Screenshots –
-dadurch bleiben Bilder und App immer konsistent.
+dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
+(`… capture-screenshots.sh planer-person-detail`) entstehen nur diese Bilder neu.
 
-### Debug‑Hash (nur DEV, siehe `src/app/init.ts` → `parseDebugHash`)
+### Hash der Entwicklerseite (siehe `tests/testdaten/demo-start.ts` → `parseDebugHash`)
 
 `#s=<screen>&tab=<mid|we|fs>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
 
@@ -49,7 +51,7 @@ Ende automatisch auf; du musst nichts extra tun.
 
 ## Screenshot‑Manifest
 
-| Datei | Debug‑Hash | verwendet in |
+| Datei | Hash | verwendet in |
 | --- | --- | --- |
 | `login.png` | `s=login` | beide |
 | `programm-woche.png` | `s=programm&tab=mid` | (Reserve) |
@@ -91,10 +93,11 @@ einem sichtbaren Feature** diese Reihenfolge:
 1. **Text** im betroffenen Handbuch (`verkuendiger.md` / `planer.md`) anpassen.
 2. **Screenshot‑Zustand** prüfen: Ist ein neuer Screen/Reiter dazugekommen, eine
    Zeile im `SHOTS`‑Array von `capture-screenshots.sh` ergänzen (und das
-   Manifest oben aktualisieren). Reicht der Debug‑Hash nicht aus, um den Zustand
-   anzufahren, `parseDebugHash` in `src/app/init.ts` um einen Parameter erweitern.
+   Manifest oben aktualisieren). Reicht der Hash nicht aus, um den Zustand
+   anzufahren, `parseDebugHash` in `tests/testdaten/demo-start.ts` um einen
+   Parameter erweitern.
 3. **Neu erzeugen:** Dev‑Server starten und `capture-screenshots.sh` ausführen –
-   das aktualisiert alle Bilder, nicht nur das geänderte.
+   ohne Argumente aktualisiert das alle Bilder, mit Namen nur diese.
 4. Änderungen committen (Handbücher + Screenshots gemeinsam).
 
 So bleibt die Dokumentation ohne manuelles Abtippen der Screenshots aktuell.

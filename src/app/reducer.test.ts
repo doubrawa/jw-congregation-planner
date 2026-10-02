@@ -16,7 +16,7 @@ import {
   DEMO_PLANNER,
   DEMO_REMINDERS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { fsTaskKey, genFsWeek } from '../data/fs'
@@ -62,7 +62,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     slotSel: null,
     selectedPersonId: null,
     importing: false,
-    imported: false,
     myTasks: [...DEMO_MY_TASKS],
     confirmations: {},
     sentLog: {},
@@ -536,25 +535,11 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
   })
 })
 
-describe('Import (Demo)', () => {
-  it('startImport setzt importing, ist aber gesperrt wenn schon importiert', () => {
+describe('Import', () => {
+  it('startImport setzt importing, ein zweiter Start während des Laufs ändert nichts', () => {
     expect(reducer(makeState(), { type: 'startImport' }).importing).toBe(true)
-    const done = makeState({ imported: true })
-    expect(reducer(done, { type: 'startImport' })).toBe(done)
     const busy = makeState({ importing: true })
     expect(reducer(busy, { type: 'startImport' })).toBe(busy)
-  })
-
-  it('finishImport fügt eine Woche + Mitteilung hinzu (einmalig)', () => {
-    const s = makeState({ importing: true })
-    const before = s.weeks.length
-    const next = reducer(s, { type: 'finishImport' })
-    expect(next.weeks.length).toBe(before + 1)
-    expect(next.imported).toBe(true)
-    expect(next.importing).toBe(false)
-    expect(next.notifs[0].type).toBe('import')
-    // zweiter Aufruf ändert nichts
-    expect(reducer(next, { type: 'finishImport' })).toBe(next)
   })
 
   it('addImportedWeek hängt die übergebene Woche an', () => {
@@ -1389,7 +1374,7 @@ describe('hydrate / setDataStatus', () => {
 
   it('übernimmt die Nutzdaten, setzt ready und Woche 0', () => {
     // `terminGewaehlt: false` ist die Lage beim **Start** — so steht es in
-    // init.ts, solange kein Debug-Hash einen Reiter vorgibt. Nur dann darf das
+    // init.ts (nur die Entwicklerseite gibt per Hash einen Reiter vor). Nur dann darf das
     // Laden die Woche bestimmen; hat der Planer selbst geblättert, bleibt sie
     // stehen (siehe „lässt eine selbst gewählte Woche stehen").
     //

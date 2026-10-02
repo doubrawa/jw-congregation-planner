@@ -114,11 +114,11 @@ export function PersonDetail({ person }: { person: Person }) {
 
               Der letzte Fall ist der, der wirklich falsch aussah: In einer
               rechts-nach-links-Oberfläche zerlegt der Bidi-Algorithmus
-              „+49 159 774 21 08" an den Leerzeichen und dreht die Blöcke um —
-              angezeigt stand „08 21 774 159 49+". Keine falsche Zeichenkette,
-              aber eine falsche Nummer. `auto` nimmt das erste Zeichen mit
-              starker Richtung; die Nummer hat keines und läuft deshalb links
-              nach rechts.
+              eine Nummer wie „+49 30 23125 009" an den Leerzeichen und dreht
+              die Blöcke um — angezeigt stand „009 23125 30 49+". Keine
+              falsche Zeichenkette, aber eine falsche Nummer. `auto` nimmt das
+              erste Zeichen mit starker Richtung; die Nummer hat keines und
+              läuft deshalb links nach rechts.
             */}
             <input
               id={`pers-${key}`}

@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Săptămâni încărcate: {n}",
   "importBtn": "IMPORTĂ SĂPTĂMÂNA URMĂTOARE",
   "importiere": "SE IMPORTĂ …",
-  "alleImportiert": "TOATE SĂPTĂMÂNILE IMPORTATE",
   "aktuellLbl": "Curent:",
   "entfernen": "Elimină",
   "abwesendChip": "Absență",

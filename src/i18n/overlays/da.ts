@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Indlæste uger: {n}",
   "importBtn": "IMPORTÉR NÆSTE UGE",
   "importiere": "IMPORTERER …",
-  "alleImportiert": "ALLE UGER IMPORTERET",
   "aktuellLbl": "Aktuel:",
   "entfernen": "Fjern",
   "abwesendChip": "Fraværende",

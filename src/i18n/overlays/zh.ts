@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "已加载 {n} 周",
   "importBtn": "导入下一周",
   "importiere": "导入中 …",
-  "alleImportiert": "已导入所有周",
   "aktuellLbl": "当前：",
   "entfernen": "移除",
   "abwesendChip": "缺席",

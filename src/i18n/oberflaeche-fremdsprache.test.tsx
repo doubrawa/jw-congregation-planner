@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { APP_LANGS, isRTL } from './langs'
 import { DE, dict, loadOverlay } from './ui'
@@ -179,7 +179,7 @@ const MITTEILUNG: Notification = {
 
 function zustand(over: Partial<AppState> = {}): AppState {
   return {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready',
     dataEmpty: false,
     congregationId: 'c1',
@@ -474,7 +474,6 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     ['kein Mitglied', { screen: 'start', dataStatus: 'no-membership' }],
     ['Ladefehler', { screen: 'start', dataStatus: 'error' }],
     ['Import läuft', { screen: 'einstellungen', importing: true }],
-    ['alles importiert', { screen: 'einstellungen', imported: true }],
     ['Verkündiger ohne Planungsrecht', { screen: 'start', planner: false }],
     ['Anmeldung', { screen: 'login', congregationId: null, userId: null }, '.login'],
     ['neues Passwort setzen', { screen: 'login', recovery: true, congregationId: null, userId: null }, '.login-logo'],
@@ -709,7 +708,8 @@ describe('Rechts-nach-links', () => {
    * Bidi-Algorithmus, was zusammengehört.
    *
    * **Gemessen an der Telefonnummer**, dem Fall, der wirklich falsch aussah: In
-   * der arabischen Fassung stand „+49 159 774 21 08" als „08 21 774 159 49+" —
+   * der arabischen Fassung stand eine Nummer wie „+49 30 23125 009" als
+   * „009 23125 30 49+" —
    * die Ziffernblöcke sind für den Algorithmus einzelne Läufe, und die neutralen
    * Leerzeichen dazwischen ordnen sie in Richtung des Absatzes. Keine falsche
    * Zeichenkette, aber eine falsche Nummer.

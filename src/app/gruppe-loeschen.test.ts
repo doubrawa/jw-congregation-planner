@@ -10,7 +10,7 @@ import {
   DEMO_FS_RULES,
   DEMO_GROUPS,
   DEMO_PERSONS,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import type { FsInstance, Group, Person } from '../data/types'
 
 /**

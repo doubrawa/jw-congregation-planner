@@ -15,9 +15,9 @@ import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs 
  * angefangen, und fehlende Sprachvarianten werden vor der neuen Woche
  * nachgeholt.
  *
- * Holt die nächste Woche von jw.org (Produktion) bzw. simuliert eine
- * Beispielwoche (Demo). Weitere Programmsprachen werden als Varianten
- * mitgeholt, fehlende Varianten bereits geladener Wochen nachgezogen.
+ * Holt die nächste Woche von jw.org. Weitere Programmsprachen werden als
+ * Varianten mitgeholt, fehlende Varianten bereits geladener Wochen
+ * nachgezogen.
  */
 /**
  * Wie viele Wochen ihre Sprachvarianten gleichzeitig nachholen dürfen.
@@ -31,7 +31,7 @@ const VARIANTEN_BLOCK = 4
 export function useWochenImport(): {
   /** Startet den Import (nichts, solange einer läuft). */
   importieren: () => Promise<void>
-  /** Beschriftung des Knopfs: bereit, läuft oder fertig. */
+  /** Beschriftung des Knopfs: bereit oder läuft. */
   knopf: string
   /** Bis wann Programme vorliegen, als Text — `null`, wenn keine Woche geladen ist. */
   geladenBis: string | null
@@ -90,23 +90,16 @@ export function useWochenImport(): {
       dispatch({ type: 'showToast', text: t.offlineReadOnly })
       return
     }
-    // Demo-Modus: simulierter Abruf (eine Beispielwoche) wie bisher
-    if (state.dataStatus === 'demo') {
-      if (state.imported) {
-        dispatch({ type: 'showToast', text: t.toastAlleWochen })
-        return
-      }
-      dispatch({ type: 'startImport' })
-      setTimeout(() => dispatch({ type: 'finishImport' }), 900)
-      return
-    }
-    // Produktion: echter Abruf der nächsten Woche von jw.org (Edge Function),
-    // direkt in der Versammlungssprache (jw.org-Code, sonst Deutsch).
+    // Abruf der nächsten Woche von jw.org (Edge Function), direkt in der
+    // Versammlungssprache (jw.org-Code, sonst Deutsch). Einen eigenen Zweig
+    // für die Entwicklerseite gibt es nicht mehr: Bis zum 2.10.2026 hängte er
+    // eine erfundene Woche aus den Testdaten an und zog sie damit in die App.
+    // Die Seite hat keinen Client, also endet der Abruf wie ohne Datenbank.
     dispatch({ type: 'startImport' })
     // **Nur bekannte Codes.** Zustand und Datenbank führen den jw.org-Code;
     // steht dort etwas, das die Tabelle nicht kennt (eine Zeile aus der Zeit
-    // der Anzeigenamen, ein Tippfehler im Debug-Hash), holt der Import lieber
-    // Deutsch als eine Adresse, die es nicht gibt.
+    // der Anzeigenamen), holt der Import lieber Deutsch als eine Adresse, die
+    // es nicht gibt.
     const langCode = JW_TO_CONG[state.congLang] ? state.congLang : 'de'
     // Weitere Programmsprachen als Varianten mitholen (ohne die Primärsprache)
     const altCodes = [
@@ -145,9 +138,9 @@ export function useWochenImport(): {
     const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
     if (!res.ok) {
       dispatch({ type: 'stopImport' })
-      // 'demo' heißt: keine Datenbank angebunden, der Abruf ist gar nicht
-      // möglich. Hier stand früher t.demoHinweis — der redet vom Anmelden
-      // („Zugangsdaten beliebig") und passte an dieser Stelle nicht.
+      // 'demo' heißt: keine Datenbank angebunden (auch: Entwicklerseite), der
+      // Abruf ist gar nicht möglich. Hier stand früher t.demoHinweis — der
+      // redet vom Anmelden („Zugangsdaten beliebig") und passte nicht.
       const text =
         res.error === 'demo'
           ? t.importOhneDb
@@ -162,7 +155,7 @@ export function useWochenImport(): {
     dispatch({ type: 'addImportedWeek', week: res.week })
   }
 
-  const knopf = state.importing ? t.importiere : state.imported ? t.alleImportiert : t.importBtn
+  const knopf = state.importing ? t.importiere : t.importBtn
 
   return { importieren, knopf, geladenBis, geladenBisMs }
 }

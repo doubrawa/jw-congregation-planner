@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { APP_LANGS } from './langs'
 import { dict, loadOverlay, NOTIF_TITLE_KEY, type Dict } from './ui'
-import { DEMO_NOTIFICATIONS } from '../data/testdaten'
+import { DEMO_NOTIFICATIONS } from '../../tests/testdaten/testdaten'
 
 /**
  * **Der Titel jeder Mitteilung ist ein Schlüssel — sonst bleibt er deutsch.**
@@ -13,7 +13,7 @@ import { DEMO_NOTIFICATIONS } from '../data/testdaten'
  * ausgegeben — auf Deutsch, in allen 33 Fremdsprachen, ohne Fehler und ohne
  * dass irgendwo etwas rot würde.
  *
- * Die Titel entstehen an **fünf** Stellen, drei davon außerhalb der App:
+ * Die Titel entstehen an **fünf** Stellen, vier davon außerhalb der App:
  *
  *  - `src/app/reducer.ts` — Import und Verhinderung,
  *  - `supabase/functions/send-reminders/texte.ts` — die Erinnerung und die
@@ -21,8 +21,8 @@ import { DEMO_NOTIFICATIONS } from '../data/testdaten'
  *  - `supabase/functions/substitute/texte.ts` — Ersatz gesucht/gefunden,
  *  - `supabase/functions/send-plan/texte.ts` — „Plan senden" und der Entzug
  *    einer bestätigten Zuteilung (T99),
- *  - `src/data/testdaten.ts` — der Demo-Bestand (er sieht aus wie echte Daten
- *    und wird auch so angezeigt).
+ *  - `tests/testdaten/testdaten.ts` — der Bestand der Entwicklerseite (er
+ *    sieht aus wie echte Daten und wird auch so angezeigt).
  *
  * Vier Quellen, eine Tabelle, und niemand, der sie zusammenhält: Genau diese
  * Bauart hat hier schon zweimal zu einem stillen Auseinanderlaufen geführt

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reducer } from './reducer'
 import type { AppAction, AppState, HydratePayload } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
@@ -15,7 +15,7 @@ import {
   DEMO_PERSONS,
   DEMO_REMINDERS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import { isSong } from '../data/helpers'
 import type { PartItem, Week } from '../data/types'
 
@@ -206,7 +206,7 @@ describe('Der Zustand wird nie an Ort und Stelle geändert', () => {
   afterEach(() => vi.useRealTimers())
 
   it('die Schreib-Aktionen auf einem tiefgefrorenen Zustand', () => {
-    let s = tiefFrieren(reducer(initialState(), { type: 'hydrate', payload: tiefFrieren(ladung()) }))
+    let s = tiefFrieren(reducer(demoZustand(), { type: 'hydrate', payload: tiefFrieren(ladung()) }))
     const folge = schreibfolge(s)
     // Gegenprobe: Eine leere Folge prüfte nichts.
     expect(folge.length).toBeGreaterThan(50)
@@ -238,7 +238,7 @@ describe('Der Zustand wird nie an Ort und Stelle geändert', () => {
   })
 
   it('… auch die eigenen Aufgaben (bestätigen, absagen, einspringen)', () => {
-    let s = tiefFrieren(reducer(initialState(), { type: 'hydrate', payload: tiefFrieren(ladung()) }))
+    let s = tiefFrieren(reducer(demoZustand(), { type: 'hydrate', payload: tiefFrieren(ladung()) }))
     const ids = s.myTasks.map((x) => x.id)
     expect(ids.length, 'keine eigenen Aufgaben — der Test prüfte nichts').toBeGreaterThan(0)
     for (const id of ids) {

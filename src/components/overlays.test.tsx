@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { MyTask, Notification, S89Payload } from '../data/types'
 import { NotificationsPanel } from '../app/NotificationsPanel'
@@ -48,7 +48,7 @@ function zeige(
 ) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: false,
     notifs: [], myTasks: [], persons: [], weeks: [], fsWeeks: [],
     ...over,

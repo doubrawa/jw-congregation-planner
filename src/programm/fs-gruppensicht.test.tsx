@@ -9,7 +9,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { fsVisible } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
 import type { FsInstance, Group, Person } from '../data/types'
@@ -109,7 +109,7 @@ describe('FsProgram — der Aufrufer', () => {
     render(
       <Buehne
         state={{
-          ...initialState(),
+          ...demoZustand(),
           planner,
           personId,
           persons: PERSONEN,
@@ -143,7 +143,7 @@ describe('FsProgram — der Aufrufer', () => {
     render(
       <Buehne
         state={{
-          ...initialState(),
+          ...demoZustand(),
           planner: false, personId: 'p-g1', persons: PERSONEN, groups: GRUPPEN,
           week: 0, fsWeeks: [[G2]],
         }}

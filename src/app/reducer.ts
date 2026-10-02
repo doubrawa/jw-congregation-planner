@@ -5,7 +5,6 @@
  */
 
 import { syncAuxSlots } from '../data/aux-class'
-import { buildImportWeek } from '../data/testdaten'
 import { buildAbsences } from '../data/absence'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
@@ -670,33 +669,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setRecovery':
       return { ...state, recovery: action.on }
     case 'startImport':
-      return state.importing || state.imported ? state : { ...state, importing: true }
-    case 'finishImport': {
-      // Der simulierte Import gehört zur Entwickler-Ansicht: Er baut eine
-      // **erfundene** Woche und wird nur aus dem Demo-Zweig des ImportPanels
-      // ausgelöst. Ohne diese Grenze zieht `buildImportWeek` die Testdaten ins
-      // ausgelieferte Bündel — nachgemessen am 13.8.2026, siehe bundle.test.ts.
-      if (!import.meta.env.DEV) return state
-      if (state.imported) return state
-      const week = buildImportWeek()
-      return {
-        ...state,
-        // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
-        // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
-        // ohne Ratgeber — die Klasse würde ab dem nächsten Import verschwinden.
-        weeks: syncAuxSlots([...state.weeks, week], state.auxClass),
-        fsWeeks: [...state.fsWeeks, genFsWeek(week.start, state.fsRules)],
-        importing: false,
-        imported: true,
-        notifs: pushNotif(
-          state.notifs,
-          'import',
-          'Programm importiert',
-          `${week.range} · ${week.book} — ohne Zuteilungen`,
-        ),
-        toast: toastKey(state, 'toastImportiert'),
-      }
-    }
+      return state.importing ? state : { ...state, importing: true }
     case 'addImportedWeek': {
       // Dieselbe Woche ein zweites Mal: nichts anhängen. Gespeichert überschrieb
       // sie die schon geplante Woche gleichen Montags mit einer leeren — so kam

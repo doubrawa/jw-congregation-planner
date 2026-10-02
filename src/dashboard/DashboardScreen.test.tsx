@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { helferKey, punktKey, sentKey } from '../data/planning'
 import { APP_TO_JW } from '../i18n/langs'
@@ -112,7 +112,7 @@ const platzKey = (w: Week) => punktKey(w.start, 'mid', (w.mid.sections[0]!.items
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'start', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
     persons: [ICH], services: DIENSTE, groups: [], absences: [],

@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Εβδομάδες που φορτώθηκαν: {n}",
   "importBtn": "ΕΙΣΑΓΩΓΗ ΕΠΟΜΕΝΗΣ ΕΒΔΟΜΑΔΑΣ",
   "importiere": "ΕΙΣΑΓΩΓΗ …",
-  "alleImportiert": "ΟΛΕΣ ΟΙ ΕΒΔΟΜΑΔΕΣ ΕΙΣΗΧΘΗΣΑΝ",
   "aktuellLbl": "Τρέχον:",
   "entfernen": "Αφαίρεση",
   "abwesendChip": "Απουσία",

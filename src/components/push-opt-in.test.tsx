@@ -10,7 +10,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Dispatch } from 'react'
 import type { MyTask } from '../data/types'
@@ -91,7 +91,7 @@ function huelle(state: AppState, dispatch: Dispatch<AppAction>) {
 
 function baseState(over: Partial<AppState> = {}): AppState {
   return {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', personId: 'p-a',
     myTasks: [], persons: [], weeks: [], fsWeeks: [],
     ...over,

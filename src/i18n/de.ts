@@ -171,7 +171,7 @@ export const DE = {
     importDesc: 'Die Wochenprogramme stammen aus dem Arbeitsheft auf jw.org und werden ohne Zuteilungen importiert.',
     geladenBis: 'Geladen bis {datum}', geladenNichts: 'Noch keine Woche geladen',
     wochenGeladen: 'Geladene Wochen: {n}',
-    importBtn: 'NÄCHSTE WOCHE IMPORTIEREN', importiere: 'IMPORTIERE …', alleImportiert: 'ALLE WOCHEN IMPORTIERT',
+    importBtn: 'NÄCHSTE WOCHE IMPORTIEREN', importiere: 'IMPORTIERE …',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend', freiChip: 'frei',
     sheetSchonHeute: 'An diesem Tag schon',
     // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/helpers.ts).

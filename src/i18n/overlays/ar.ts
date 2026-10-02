@@ -145,7 +145,6 @@ export default {
   "wochenGeladen": "الأسابيع المحمَّلة: {n}",
   "importBtn": "استيراد الأسبوع التالي",
   "importiere": "جارٍ الاستيراد …",
-  "alleImportiert": "تم استيراد كل الأسابيع",
   "aktuellLbl": "حالياً:",
   "entfernen": "إزالة",
   "sheetSchonHeute": "في هذا اليوم بالفعل",

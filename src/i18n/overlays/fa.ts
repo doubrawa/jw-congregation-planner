@@ -145,7 +145,6 @@ export default {
   "wochenGeladen": "{n} هفته بارگذاری شد",
   "importBtn": "واردکردن هفتهٔ بعد",
   "importiere": "در حال واردکردن …",
-  "alleImportiert": "همهٔ هفته‌ها وارد شد",
   "aktuellLbl": "فعلی:",
   "entfernen": "حذف",
   "abwesendChip": "غایب",

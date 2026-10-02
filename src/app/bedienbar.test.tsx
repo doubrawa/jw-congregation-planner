@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
@@ -20,7 +20,7 @@ import {
   DEMO_NOTIFICATIONS,
   DEMO_PERSONS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import type { S89Payload, Screen } from '../data/types'
 
 /**
@@ -60,7 +60,7 @@ const S89: S89Payload = {
 
 function zeige(over: Partial<AppState> = {}) {
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',

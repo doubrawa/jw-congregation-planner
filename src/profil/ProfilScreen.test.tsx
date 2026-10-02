@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
@@ -62,7 +62,7 @@ const MITGLIED: Member[] = [{ userId: 'u1', personId: 'p-a', email: 'anton@examp
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'profil', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: 'p-a',
     persons: [ICH], members: MITGLIED,

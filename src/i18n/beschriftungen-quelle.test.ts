@@ -212,7 +212,8 @@ const ERLAUBTES_ATTRIBUT: Record<string, Grund> = {
  * Vortragsthema, der Name eines auswärtigen Redners und seine Versammlung. Die
  * Richtung der Oberfläche gilt dafür nicht — sonst zerlegt der Bidi-Algorithmus,
  * was zusammengehört. Gemessen wurde es an einer Telefonnummer: In der
- * arabischen Fassung stand „+49 159 774 21 08" als „08 21 774 159 49+".
+ * arabischen Fassung stand eine Nummer wie „+49 30 23125 009" als
+ * „009 23125 30 49+".
  *
  * `oberflaeche-fremdsprache.test.tsx` prüft das am gerenderten DOM — aber nur
  * für die Felder, die sein Bestand erreicht (Personen-Detail und

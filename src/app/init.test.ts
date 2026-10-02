@@ -1,49 +1,43 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEMO_PERSONS, DEMO_PLANNER } from '../data/testdaten'
-
-// isSupabaseConfigured umschaltbar machen (ungemockt ist es im Test false —
-// vite.config.ts leert die Supabase-Variablen wie in der CI).
-const cfg = vi.hoisted(() => ({ configured: false }))
-vi.mock('../lib/supabase', () => ({
-  get isSupabaseConfigured() {
-    return cfg.configured
-  },
-  supabase: null,
-}))
-
 import { initialState } from './init'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 beforeEach(() => {
-  cfg.configured = false
   localStorage.clear()
   location.hash = ''
   document.documentElement.removeAttribute('data-theme')
-  document.documentElement.removeAttribute('data-shot')
 })
 afterEach(() => vi.unstubAllEnvs())
 
-describe('initialState – Demo-Modus (ohne Supabase)', () => {
-  it('liefert die In-Memory-Demo-Daten', () => {
-    const s = initialState()
-    expect(s.dataStatus).toBe('demo')
-    expect(s.screen).toBe('login')
-    expect(s.persons).toBe(DEMO_PERSONS)
-    expect(s.weeks.length).toBeGreaterThan(0)
-    expect(s.planner).toBe(DEMO_PLANNER)
-  })
-})
-
-describe('initialState – konfiguriert (leerer Start bis Hydration)', () => {
+describe('initialState – leer bis zur Hydration', () => {
   it('startet leer, dataStatus ready', () => {
-    cfg.configured = true
     const s = initialState()
     expect(s.dataStatus).toBe('ready')
+    expect(s.screen).toBe('login')
     expect(s.persons).toEqual([])
     expect(s.weeks).toEqual([])
     expect(s.planner).toBe(false)
     expect(s.congregation).toEqual({ name: '', hall: '', times: STANDARD_ZEITEN })
+  })
+
+  it('auch im Dev-Build mit dem Hash von früher: keine Testdaten, kein Sprung', () => {
+    /*
+     * Bis zum 2.10.2026 erzwang ein Hash wie dieser im Dev-Build den
+     * Demo-Modus — mit erfundenen Personen und Wochen. Das gibt es in der App
+     * nicht mehr; die erfundenen Daten zeigt allein die Entwicklerseite
+     * (`/demo.html`, `tests/testdaten/demo-start.ts`).
+     */
+    vi.stubEnv('DEV', true)
+    location.hash = '#s=programm&p=p9&me=p9&pl=1'
+    const s = initialState()
+    expect(s.dataStatus).toBe('ready')
+    expect(s.screen).toBe('login')
+    expect(s.persons).toEqual([])
+    expect(s.weeks).toEqual([])
+    expect(s.personId).toBeNull()
+    expect(s.selectedPersonId).toBeNull()
+    expect(s.planner).toBe(false)
   })
 })
 
@@ -86,97 +80,5 @@ describe('Theme / Sprache aus localStorage', () => {
     expect(initialState().fontScale).toBe(1)
     localStorage.removeItem('fontScale')
     expect(initialState().fontScale).toBe(1)
-  })
-})
-
-describe('Debug-Hash (nur DEV) erzwingt Demo + springt einen Screen an', () => {
-  it('liest s/l/c/t/p aus dem Hash', () => {
-    vi.stubEnv('DEV', true)
-    cfg.configured = true // trotz Konfiguration erzwingt der Hash den Demo-Modus
-    // `c=` darf den deutschen Namen tragen — geführt wird der jw.org-Code.
-    location.hash = '#s=programm&l=en&c=Englisch&t=graphit&p=p9'
-    const s = initialState()
-    expect(s.dataStatus).toBe('demo')
-    expect(s.screen).toBe('programm')
-    expect(s.lang).toBe('en')
-    expect(s.congLang).toBe('en')
-    expect(s.theme).toBe('graphit')
-    expect(s.selectedPersonId).toBe('p9')
-  })
-
-  it('me=<Person> meldet jemanden an — p= wählt nur aus', () => {
-    /*
-     * Zwei verschiedene Dinge, die sich leicht verwechseln: `p` ist die im
-     * Personen-Screen **ausgewählte** Person, `me` die **angemeldete**. Nur an
-     * `me` hängt, was persönlich ist — der DU-Chip, „Deine Einträge" und die
-     * Treffpunkte der eigenen Predigtdienstgruppe. Ohne `me` gehört die
-     * Demo-App niemandem; genau deshalb war die Verkündiger-Ansicht der
-     * Gruppentreffpunkte vorher nicht anzusehen.
-     */
-    vi.stubEnv('DEV', true)
-    cfg.configured = true
-    location.hash = '#s=programm&p=p1&me=p9'
-    const s = initialState()
-    expect(s.personId).toBe('p9')
-    expect(s.selectedPersonId).toBe('p1')
-    location.hash = '#s=programm&p=p1'
-    expect(initialState().personId).toBeNull()
-  })
-
-  it('tab und pl (Rechte) steuern Reiter und Rolle für Doku-Screenshots', () => {
-    vi.stubEnv('DEV', true)
-    cfg.configured = true
-    location.hash = '#s=planen&tab=fs&pl=0'
-    const s = initialState()
-    expect(s.tab).toBe('fs')
-    expect(s.planner).toBe(false) // pl=0 → Verkündiger-Ansicht
-    location.hash = '#s=planen&pl=1'
-    expect(initialState().planner).toBe(true)
-  })
-
-  it('fs=<Faktor> setzt die Schriftgröße (Doku-Screenshots)', () => {
-    vi.stubEnv('DEV', true)
-    location.hash = '#s=profil&fs=1.45'
-    expect(initialState().fontScale).toBe(1.45)
-    location.hash = '#s=profil&fs=1.1' // nicht auf der Skala → ignoriert (Standard)
-    expect(initialState().fontScale).toBe(1)
-  })
-
-  it('shot=1 aktiviert den Screenshot-Modus (data-shot am <html>)', () => {
-    vi.stubEnv('DEV', true)
-    cfg.configured = true
-    location.hash = '#s=start&shot=1'
-    initialState()
-    expect(document.documentElement.dataset.shot).toBe('1')
-  })
-
-  it('stale=<Stunden> täuscht den Offline-Stand vor (staleAt entsprechend alt)', () => {
-    vi.stubEnv('DEV', true)
-    location.hash = '#s=programm&stale=5'
-    // staleAt = Date.now()(innerhalb) - 5h. Der reale Aufruf-Zeitpunkt liegt
-    // zwischen before und after, deshalb das Alter einklammern statt gegen einen
-    // einzelnen Zeitpunkt zu prüfen (sonst Sub-ms-Race → ageHours knapp < 5).
-    const before = Date.now()
-    const s = initialState()
-    const after = Date.now()
-    expect(s.staleAt).not.toBeNull()
-    const staleAt = s.staleAt as number
-    expect((after - staleAt) / 3600_000).toBeGreaterThanOrEqual(5)
-    expect((before - staleAt) / 3600_000).toBeLessThanOrEqual(5)
-    expect((after - staleAt) / 3600_000).toBeLessThan(5.01)
-  })
-
-  it('ohne stale bleibt der Stand aktuell', () => {
-    vi.stubEnv('DEV', true)
-    location.hash = '#s=programm'
-    expect(initialState().staleAt).toBeNull()
-  })
-
-  it('ohne Hash bleibt es (bei DEV) beim konfigurierten Leerstart', () => {
-    vi.stubEnv('DEV', true)
-    cfg.configured = true
-    const s = initialState()
-    expect(s.dataStatus).toBe('ready')
-    expect(s.screen).toBe('login')
   })
 })

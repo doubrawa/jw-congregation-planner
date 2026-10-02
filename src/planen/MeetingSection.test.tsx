@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { emptyQualifications, ROLE_CIRCUIT } from '../data/helpers'
@@ -65,7 +65,7 @@ function zeige(
   const tab = over.tab ?? 'mid'
   const weeks = over.weeks ?? [tab === 'we' ? woche([], [section]) : woche([section])]
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
     persons: PERSONEN, services: [], groups: [], absences: [],
     confirmations: {}, weeks, fsWeeks: [[]],

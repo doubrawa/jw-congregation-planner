@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
 import { dict } from '../i18n/ui'
 import { emptyQualifications } from '../data/helpers'
@@ -54,7 +54,7 @@ const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assi
 
 function zustand(over: Partial<AppState> = {}): AppState {
   return {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'start',
     dataStatus: 'ready',
     dataEmpty: false,
@@ -425,7 +425,7 @@ describe('Das mobile Seitenmenü', () => {
  */
 describe('Die Kopfzeile auf dem Handy nennt die Versammlung', () => {
   const kopfName = (c: HTMLElement) => c.querySelector('.mobile-header .mobile-header-name')
-  const krumbach = { name: 'Krumbach', hall: '', times: initialState().congregation.times }
+  const krumbach = { name: 'Krumbach', hall: '', times: demoZustand().congregation.times }
 
   it('steht der Name der Versammlung — nicht die Wortmarke', () => {
     const { container } = zeige({ congregation: krumbach })

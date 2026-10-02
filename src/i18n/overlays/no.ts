@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Lastede uker: {n}",
   "importBtn": "IMPORTER NESTE UKE",
   "importiere": "IMPORTERER …",
-  "alleImportiert": "ALLE UKER IMPORTERT",
   "aktuellLbl": "Nåværende:",
   "entfernen": "Fjern",
   "abwesendChip": "Fraværende",

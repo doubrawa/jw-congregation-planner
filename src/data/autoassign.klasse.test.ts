@@ -9,7 +9,7 @@ import {
   programmPlaetze,
 } from './helpers'
 import { autoAssignMeeting } from './planning'
-import { buildImportWeek, DEMO_SERVICES } from './testdaten'
+import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import type { Person, Qualifications, Week } from './types'
 
 /**

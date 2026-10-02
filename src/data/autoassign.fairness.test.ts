@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { syncAuxSlots } from './aux-class'
-import { buildImportWeek, DEMO_SERVICES } from './testdaten'
+import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { displayName, isSong, serviceQualKey } from './helpers'
 import { LOAD_RADIUS, LOAD_WEEKS, loadWindow, partWorkload } from './auslastung'
 import { autoAssignMeeting } from './planning'

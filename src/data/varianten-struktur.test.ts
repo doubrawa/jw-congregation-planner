@@ -8,7 +8,7 @@ import {
   setPartThema,
 } from './meeting-edit'
 import { localizedWeek } from './localize'
-import { buildImportWeek } from './testdaten'
+import { buildImportWeek } from '../../tests/testdaten/testdaten'
 import { isSong, istArt } from './helpers'
 import type { Meeting, PartItem, Week } from './types'
 

@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "{n} pekan dimuat",
   "importBtn": "IMPOR PEKAN BERIKUTNYA",
   "importiere": "MENGIMPOR …",
-  "alleImportiert": "SEMUA PEKAN DIIMPOR",
   "aktuellLbl": "Saat ini:",
   "entfernen": "Hapus",
   "abwesendChip": "Absen",

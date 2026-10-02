@@ -9,7 +9,7 @@ import {
   type AppState,
   useStaticStore,
 } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { PlanenScreen } from '../planen/PlanenScreen'
@@ -45,7 +45,7 @@ function Buehne({ state, children }: { state: AppState; children: ReactNode }) {
 /** Zustand wie nach dem Anmelden in einer frisch angelegten Versammlung. */
 function leereVersammlung(over: Partial<AppState> = {}): AppState {
   return {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',

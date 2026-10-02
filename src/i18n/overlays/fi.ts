@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Ladatut viikot: {n}",
   "importBtn": "TUO SEURAAVA VIIKKO",
   "importiere": "TUODAAN …",
-  "alleImportiert": "KAIKKI VIIKOT TUOTU",
   "aktuellLbl": "Nykyinen:",
   "entfernen": "Poista",
   "abwesendChip": "Poissa",

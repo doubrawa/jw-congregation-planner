@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Заредени седмици: {n}",
   "importBtn": "ВНЕСИ СЛЕДВАЩАТА СЕДМИЦА",
   "importiere": "ВНАСЯНЕ …",
-  "alleImportiert": "ВСИЧКИ СЕДМИЦИ ВНЕСЕНИ",
   "aktuellLbl": "Текущо:",
   "entfernen": "Премахни",
   "abwesendChip": "Отсъствие",

@@ -11,7 +11,7 @@ import type { Member, Person } from '../data/types'
   type AppState,
   useStaticStore,
 } from '../app/context'
- import { initialState } from '../app/init'
+ import { demoZustand } from '../../tests/testdaten/demo-start'
  import type { ReactNode } from 'react'
 
  function Buehne({ state, children }: { state: AppState; children: ReactNode }) {
@@ -145,7 +145,7 @@ describe('PlannerToggle — welches der beiden Rechte gilt', () => {
 
   const zeige = (over: Partial<AppState>, p: Person = person()) =>
     render(
-      <Buehne state={{ ...initialState(), userId: 'u-ich', ...over }}>
+      <Buehne state={{ ...demoZustand(), userId: 'u-ich', ...over }}>
         <PlannerToggle person={p} update={() => {}} />
       </Buehne>,
     )

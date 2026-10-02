@@ -114,6 +114,12 @@ export function isDarkTheme(theme: Theme): boolean {
   return THEME_LIST.some((t) => t.key === theme && t.dark)
 }
 
+/** Gespeicherten/übergebenen Namen auf ein bekanntes Farbschema eingrenzen. */
+export function asTheme(value: string | null): Theme | null {
+  if (!value) return null
+  return THEME_LIST.some((t) => t.key === value) ? (value as Theme) : null
+}
+
 /**
  * Schriftgrößen-Stufen (Profil → Schriftgröße). Der Faktor landet als --fs auf
  * <html>; jede font-size im CSS ist calc(<px> * var(--fs)). 1 = unveränderter

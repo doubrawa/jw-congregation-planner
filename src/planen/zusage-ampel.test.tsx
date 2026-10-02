@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { reducer } from '../app/reducer'
 import { deriveMyFsTasks } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
@@ -84,7 +84,7 @@ const TREFFPUNKTE: FsInstance[][] = [
 ]
 function stand(over: Partial<AppState> = {}): AppState {
   return {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'planen', tab: 'mid', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: null, planner: true,
     persons: [ANNA, BERND], groups: [], services: DIENSTE, absences: [],

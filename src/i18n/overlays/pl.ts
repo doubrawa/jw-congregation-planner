@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Wczytane tygodnie: {n}",
   "importBtn": "IMPORTUJ NASTĘPNY TYDZIEŃ",
   "importiere": "IMPORTOWANIE …",
-  "alleImportiert": "ZAIMPORTOWANO WSZYSTKIE TYGODNIE",
   "aktuellLbl": "Aktualnie:",
   "entfernen": "Usuń",
   "abwesendChip": "Nieobecność",

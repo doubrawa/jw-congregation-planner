@@ -57,8 +57,15 @@ import { reducer } from './reducer'
  */
 const uebernehmen = (_bisher: AppState, neu: AppState): AppState => neu
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, rawDispatch] = useReducer(uebernehmen, undefined, initialState)
+export function AppProvider({
+  children,
+  start = initialState,
+}: {
+  children: ReactNode
+  /** Woher der erste Zustand kommt — die App startet leer, die Entwicklerseite mit Testdaten. */
+  start?: () => AppState
+}) {
+  const [state, rawDispatch] = useReducer(uebernehmen, undefined, start)
 
   // Persistenz-Wrapper: berechnet den Folgezustand (Reducer ist rein),
   // schreibt die Änderung nach Supabase und aktualisiert dann React.

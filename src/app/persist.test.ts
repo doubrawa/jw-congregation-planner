@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persist } from './persist'
 import type { AppAction, AppState } from './context'
-import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../data/testdaten'
+import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey } from '../data/fs'
 import type { Week } from '../data/types'
@@ -414,9 +414,10 @@ describe('LAC / Import / Vortrag', () => {
     }
   })
 
-  it('finishImport/addImportedWeek speichern die letzte Woche', () => {
-    const next = st({ weeks: [...buildDemoWeeks(), { range: 'Neu' } as Week] })
-    persist(st(), next, { type: 'finishImport' })
+  it('addImportedWeek speichert die letzte Woche', () => {
+    const neu = { range: 'Neu' } as Week
+    const next = st({ weeks: [...buildDemoWeeks(), neu] })
+    persist(st(), next, { type: 'addImportedWeek', week: neu })
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1))
   })
 
@@ -480,8 +481,9 @@ describe('Index außerhalb des Fensters', () => {
     expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
-  it('finishImport ohne eine einzige Woche schreibt nichts', () => {
-    persist(st({ weeks: [] }), st({ weeks: [] }), { type: 'finishImport' })
+  it('addImportedWeek ohne eine einzige Woche schreibt nichts', () => {
+    const neu = { range: 'Neu' } as Week
+    persist(st({ weeks: [] }), st({ weeks: [] }), { type: 'addImportedWeek', week: neu })
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 })

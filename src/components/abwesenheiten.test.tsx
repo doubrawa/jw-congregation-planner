@@ -9,7 +9,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import type { Absence, Person } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -78,7 +78,7 @@ const zeitleiste = (container: HTMLElement): string[] =>
     .map((r) => r.querySelector('.zeit-art')?.textContent ?? '')
 
 const basis = (over: Partial<AppState>): AppState => ({
-  ...initialState(),
+  ...demoZustand(),
   userId: 'u-ich',
   personId: 'p-ich',
   persons: [ICH, ANDERE],

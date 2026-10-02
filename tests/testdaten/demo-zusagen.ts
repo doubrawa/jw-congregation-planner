@@ -1,22 +1,22 @@
 /**
- * Zusagen für den Demo-Modus — damit der Plan alle drei Ampel-Stufen zeigt.
+ * Zusagen für die Entwicklerseite — damit der Plan alle drei Ampel-Stufen zeigt.
  *
- * Im Betrieb kommen die Zusagen aus der Tabelle `confirmations`; die Demo hat
- * keine. Ohne diese Datei stünde jeder besetzte Platz gelb da, und weder die
- * Handbuch-Aufnahmen noch ein Blick auf die Demo verrieten, wie ein bestätigter
- * oder abgesagter Platz aussieht.
+ * Im Betrieb kommen die Zusagen aus der Tabelle `confirmations`; die
+ * Entwicklerseite hat keine Datenbank. Ohne diese Datei stünde jeder besetzte
+ * Platz gelb da, und weder die Handbuch-Aufnahmen noch ein Blick auf die Seite
+ * verrieten, wie ein bestätigter oder abgesagter Platz aussieht.
  *
  * Gebaut wird mit denselben Schlüsseln wie im Betrieb (`eachAssignedSlot`,
  * `fsTaskKey`) — eine Liste fester Schlüssel würde beim nächsten Umbau der
  * Demo-Wochen still ins Leere zeigen.
  *
- * Die Demo-Daten selbst bekommt die Funktion übergeben: `testdaten.ts` darf nur
- * die Entwickler-Ansicht importieren (`testdaten-grenze.test.ts`).
+ * Die Wochen bekommt die Funktion übergeben, statt sie aus `testdaten.ts` zu
+ * holen: So rechnet sie auf genau den Wochen, die der Start schon gebunden hat.
  */
-import { fsLeiterZuteilung, fsTaskKey } from './fs'
-import { eachAssignedSlot, helferKey } from './planning'
-import { STANDARD_ZEITEN } from './vorgaben'
-import type { ConfirmationMap, FsInstance, Service, Week } from './types'
+import { fsLeiterZuteilung, fsTaskKey } from '../../src/data/fs'
+import { eachAssignedSlot, helferKey } from '../../src/data/planning'
+import { STANDARD_ZEITEN } from '../../src/data/vorgaben'
+import type { ConfirmationMap, FsInstance, Service, Week } from '../../src/data/types'
 
 export function buildDemoConfirmations(
   weeks: Week[],

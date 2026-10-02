@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "{n} 週読み込み済み",
   "importBtn": "次の週をインポート",
   "importiere": "インポート中 …",
-  "alleImportiert": "すべての週をインポート済み",
   "aktuellLbl": "現在：",
   "entfernen": "削除",
   "abwesendChip": "欠席",

@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Settimane caricate: {n}",
   "importBtn": "IMPORTA PROSSIMA SETTIMANA",
   "importiere": "IMPORTAZIONE …",
-  "alleImportiert": "TUTTE LE SETTIMANE IMPORTATE",
   "aktuellLbl": "Attuale:",
   "entfernen": "Rimuovi",
   "abwesendChip": "Assente",

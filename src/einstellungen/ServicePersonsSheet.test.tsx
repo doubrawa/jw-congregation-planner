@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import type { Person, Service } from '../data/types'
 import { ServicePersonsSheet } from './ServicePersonsSheet'
@@ -34,7 +34,7 @@ const PERSONEN = [person('Berger', ['rund']), person('Albrecht'), person('Winkle
 
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
-  const state: AppState = { ...initialState(), services: DIENSTE, persons: PERSONEN, ...over }
+  const state: AppState = { ...demoZustand(), services: DIENSTE, persons: PERSONEN, ...over }
   function Buehne() {
     const store = useStaticStore(state)
     return (

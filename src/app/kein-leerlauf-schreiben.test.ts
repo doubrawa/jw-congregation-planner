@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppAction, AppState, HydratePayload } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
@@ -13,7 +13,7 @@ import {
   DEMO_PERSONS,
   DEMO_REMINDERS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import { isSong } from '../data/helpers'
 import { itemMinutes } from '../data/meeting-edit'
 import type { PartItem, Week } from '../data/types'
@@ -206,7 +206,7 @@ describe('Ein Leerlauf schreibt keine Woche', () => {
   afterEach(() => vi.clearAllMocks())
 
   it('jede geschriebene Woche hat sich wirklich geändert', () => {
-    const basis = reducer(initialState(), { type: 'hydrate', payload: ladung() })
+    const basis = reducer(demoZustand(), { type: 'hydrate', payload: ladung() })
     let s = basis
     let geschrieben = 0
     const verstoesse: string[] = []

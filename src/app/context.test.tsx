@@ -13,7 +13,7 @@ import {
   useAppState,
 } from './context'
 import type { AppAction, AppState, AppStore } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { AppProvider } from './store'
 
 /**
@@ -31,7 +31,7 @@ import { AppProvider } from './store'
 
 /** Provider, der seinen Zustand auf Zuruf ändert. */
 function Buehne({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(() => initialState())
+  const [state, setState] = useState<AppState>(() => demoZustand())
   // Stabil wie im echten Provider (dort ein `useCallback([])`). Ein bei jedem
   // Render neu erzeugtes `vi.fn()` wäre ein anderer Kontextwert und würde die
   // Trennung genau um das bringen, was sie leisten soll — der erste Testlauf
@@ -102,7 +102,7 @@ describe('Zustand und Versand sind getrennt', () => {
         <Beides />
       </Buehne>,
     )
-    expect(gesehen).toEqual({ week: initialState().week, hatDispatch: true })
+    expect(gesehen).toEqual({ week: demoZustand().week, hatDispatch: true })
   })
 })
 
@@ -141,7 +141,7 @@ describe('Ohne Provider ist es ein Fehler, kein stiller Rückfall', () => {
 function SpeicherBuehne({ children }: { children: ReactNode }) {
   const [, neuRendern] = useState(0)
   const zustand = useRef<AppState | null>(null)
-  zustand.current ??= initialState()
+  zustand.current ??= demoZustand()
   const abonnenten = useRef<Set<() => void> | null>(null)
   abonnenten.current ??= new Set()
   const [store] = useState<AppStore>(() => ({
@@ -188,7 +188,7 @@ describe('useAppSelector — nur der eigene Ausschnitt weckt', () => {
     expect(renders).toBe(1)
     fireEvent.click(getByText('woche')) // das schon
     expect(renders).toBe(2)
-    expect(gesehen).toBe(initialState().week + 1)
+    expect(gesehen).toBe(demoZustand().week + 1)
   })
 
   it('gebündelte Felder brauchen `flachGleich` — und dann stimmt es auch', () => {
@@ -211,7 +211,7 @@ describe('useAppSelector — nur der eigene Ausschnitt weckt', () => {
     expect(renders).toBe(1)
     fireEvent.click(getByText('woche'))
     expect(renders).toBe(2)
-    expect(getByText(`${initialState().week + 1}|${initialState().tab}`)).toBeTruthy()
+    expect(getByText(`${demoZustand().week + 1}|${demoZustand().tab}`)).toBeTruthy()
   })
 
   it('der Selektor sieht immer den aktuellen Zustand, nie einen alten', () => {
@@ -228,13 +228,13 @@ describe('useAppSelector — nur der eigene Ausschnitt weckt', () => {
         <MitAufschlag plus={10} />
       </SpeicherBuehne>,
     )
-    expect(gesehen).toBe(initialState().week + 10)
+    expect(gesehen).toBe(demoZustand().week + 10)
     rerender(
       <SpeicherBuehne>
         <MitAufschlag plus={100} />
       </SpeicherBuehne>,
     )
-    expect(gesehen).toBe(initialState().week + 100)
+    expect(gesehen).toBe(demoZustand().week + 100)
   })
 
   it('mehrere Selektoren im selben Baustein arbeiten unabhängig', () => {
@@ -252,7 +252,7 @@ describe('useAppSelector — nur der eigene Ausschnitt weckt', () => {
     )
     fireEvent.click(getByText('thema'))
     expect(renders).toBe(2)
-    expect(getByText(`${initialState().week}|indigo`)).toBeTruthy()
+    expect(getByText(`${demoZustand().week}|indigo`)).toBeTruthy()
   })
 
   it('beim Abbauen wird abgemeldet — kein Aufruf ins Leere', () => {
@@ -356,7 +356,7 @@ describe('Am echten Provider', () => {
         <Ausloeser beschriftung="wochenende" action={{ type: 'setTab', tab: 'we' }} />
       </AppProvider>,
     )
-    expect(getByText(`${initialState().tab}|${initialState().tab}`)).toBeTruthy()
+    expect(getByText(`${demoZustand().tab}|${demoZustand().tab}`)).toBeTruthy()
     fireEvent.click(getByText('wochenende'))
     expect(getByText('we|we')).toBeTruthy()
   })

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { reducer } from './reducer'
 import type { AppAction, AppState, HydratePayload } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import {
   buildDemoFsWeeks,
   buildImportWeek,
@@ -10,7 +10,7 @@ import {
   DEMO_GROUPS,
   DEMO_PERSONS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import type { Week } from '../data/types'
 
 /**
@@ -70,7 +70,7 @@ const MONTAGE = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-1
 
 /** Zustand mit den Wochen `starts` und offenem Blatt auf `wi`. */
 function mitOffenemBlatt(starts: string[], wi: number): AppState {
-  const geladen = reducer(initialState(), {
+  const geladen = reducer(demoZustand(), {
     type: 'hydrate',
     payload: ladung(starts.map(woche)),
   })

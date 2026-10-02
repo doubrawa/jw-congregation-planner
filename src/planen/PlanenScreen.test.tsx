@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
@@ -69,7 +69,7 @@ function woche(over: Partial<Week> = {}): Week {
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'planen', tab: 'mid', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
     persons: [PLANER, AUFSEHER], groups: GRUPPEN, services: DIENSTE, absences: [],

@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from './context'
-import { initialState } from './init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
@@ -20,7 +20,7 @@ import {
   DEMO_NOTIFICATIONS,
   DEMO_PERSONS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import { setAbweichung } from '../data/meeting-edit'
 import { setAnlass } from '../data/anlass'
 import { syncAuxSlots } from '../data/aux-class'
@@ -67,7 +67,7 @@ const S89: S89Payload = {
 
 function zustand(over: Partial<AppState> = {}): AppState {
   return {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready',
     dataEmpty: false,
     congregationId: 'c1',

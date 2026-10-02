@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Načítaných týždňov: {n}",
   "importBtn": "IMPORTOVAŤ ĎALŠÍ TÝŽDEŇ",
   "importiere": "IMPORTUJEM …",
-  "alleImportiert": "VŠETKY TÝŽDNE IMPORTOVANÉ",
   "aktuellLbl": "Aktuálne:",
   "entfernen": "Odstrániť",
   "abwesendChip": "Neprítomnosť",

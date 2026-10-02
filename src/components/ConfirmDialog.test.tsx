@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { MyTask, SubstituteReq } from '../data/types'
 import { ConfirmDialog } from './ConfirmDialog'
 
@@ -32,7 +32,7 @@ const gesuch = (key: string, title = 'Mikrofone'): SubstituteReq => ({
 
 function zeige(over: Partial<AppState>) {
   const dispatch = vi.fn()
-  const state: AppState = { ...initialState(), ...over }
+  const state: AppState = { ...demoZustand(), ...over }
   function Buehne() {
     const store = useStaticStore(state)
     return (

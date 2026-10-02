@@ -639,8 +639,12 @@ export interface Week {
    *    `AnlassArt`): solche Gründe stehen als Freitext bei der betroffenen
    *    Zusammenkunft. Ohne eigenes `cancelled` wäre der Fall nicht abbildbar.
    *
-   * Alte Wochen tragen das Feld nicht: `anlassArt()` liest dann `co`/`mem` und
-   * liefert dasselbe Ergebnis. Es braucht deshalb **keine Datenwanderung**.
+   * **Es gibt keinen Rückfall auf `co`/`mem`.** `anlassArt()` liest allein dieses
+   * Feld; bis zum 25.9.2026 (`030012b`) las es die Wirkungen mit. Beide setzt nur,
+   * wer auch den Anlass setzt — `setAnlass` und der Import —, eine Woche mit
+   * `co`/`mem` ohne `anlass` ist also kein Altbestand, sondern ein Fehler. Hier
+   * stand bis zum 1.10.2026 noch das Gegenteil, und die Demo-Daten trugen genau
+   * diesen Fehler: Ihrer Gedächtnismahl- und Kreisaufseher-Woche fehlte der Chip.
    */
   anlass?: Anlass
   /**

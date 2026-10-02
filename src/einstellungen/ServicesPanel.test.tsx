@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import type { Person, Service } from '../data/types'
 import { ServicesPanel } from './ServicesPanel'
@@ -50,7 +50,7 @@ const person = (id: string, dienste: string[]): Person => ({
 })
 
 const zeigeMit = (persons: Person[]) =>
-  render(<Buehne state={{ ...initialState(), services: DIENSTE, persons }} />)
+  render(<Buehne state={{ ...demoZustand(), services: DIENSTE, persons }} />)
 
 /** Die Unterzeile des Dienstes mit diesem Namen. */
 function unterzeile(c: HTMLElement, name: string): HTMLElement | null | undefined {
@@ -77,7 +77,7 @@ describe('T79 — Hilfsdienste zeigen, für wie viele Personen sie freigegeben s
 
   it('die Zeile öffnet die Freigabe-Liste des Dienstes', () => {
     const dispatch = vi.fn()
-    const state = { ...initialState(), services: DIENSTE, persons: [person('a', ['ton'])] }
+    const state = { ...demoZustand(), services: DIENSTE, persons: [person('a', ['ton'])] }
     const { container } = render(<Buehne state={state} dispatch={dispatch} />)
     const zeile = [...container.querySelectorAll('.svc-row')].find(
       (el) => el.querySelector('.svc-name')?.textContent === 'Parkplatz',

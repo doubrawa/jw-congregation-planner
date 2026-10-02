@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Termin, Week } from '../data/types'
 import { SonderwochePanel } from './SonderwochePanel'
@@ -44,7 +44,7 @@ function woche(over: Partial<Week> = {}): Week {
 function zeige(was: 'sonder' | 'termine', over: Partial<AppState> = {}, tab: 'mid' | 'we' = 'mid') {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'planen', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', planner: true,
     persons: [], services: [], groups: [], weeks: [woche()], fsWeeks: [], week: 0,

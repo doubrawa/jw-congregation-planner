@@ -8,7 +8,7 @@ import {
   DEMO_ABSENCES,
   DEMO_PERSONS,
   DEMO_SERVICES,
-} from './testdaten'
+} from '../../tests/testdaten/testdaten'
 import { displayName, isGuestRole, isSong, rolleMitHerkunft } from './helpers'
 import { helperWorkload, loadWindow, partWorkload, workloadOf } from './auslastung'
 import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove, shiftEnd } from './meeting-edit'

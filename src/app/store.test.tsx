@@ -8,8 +8,8 @@ import { useApp, type HydratePayload } from './context'
 import { AppProvider } from './store'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
-// Ohne Supabase: initialState liefert die Demo-Daten, der Session-Effekt und
-// persist() steigen früh aus — getestet wird allein der dispatch-Wächter.
+// Ohne Supabase: Der Session-Effekt und persist() steigen früh aus — getestet
+// wird allein der dispatch-Wächter, auf dem Stand aus der eigenen Ladung.
 vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
 vi.mock('../lib/snapshot', () => ({
   saveSnapshot: vi.fn(),

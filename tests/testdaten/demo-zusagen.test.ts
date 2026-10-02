@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoConfirmations } from './demo-zusagen'
-import { deriveMyFsTasks } from './fs'
-import { deriveMyTasks, helferKey } from './planning'
+import { deriveMyFsTasks } from '../../src/data/fs'
+import { deriveMyTasks, helferKey } from '../../src/data/planning'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_SERVICES, DEMO_UNBESTAETIGT } from './testdaten'
-import { STANDARD_ZEITEN } from './vorgaben'
+import { STANDARD_ZEITEN } from '../../src/data/vorgaben'
 
 /**
  * **Die Demo zeigt, was die Ampel kann** — alle drei Stufen, in jeder Woche.

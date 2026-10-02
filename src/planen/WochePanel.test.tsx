@@ -10,10 +10,10 @@ import {
   useStaticStore,
 } from '../app/context'
 import type { Screen } from '../data/types'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { reducer } from '../app/reducer'
 import { MeetingTabs } from '../components/MeetingTabs'
-import { buildDemoWeeks } from '../data/testdaten'
+import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import { anlassArt } from '../data/anlass'
 import { dict } from '../i18n/ui'
 import { WochePanel } from './WochePanel'
@@ -42,7 +42,7 @@ function Buehne({ state, children }: { state: AppState; children: ReactNode }) {
 afterEach(cleanup)
 
 const t = dict('de')
-const basis = (): AppState => ({ ...initialState(), weeks: buildDemoWeeks(), week: 0, planner: true })
+const basis = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week: 0, planner: true })
 
 describe('Der Bearbeiten-Reiter', () => {
   it('erscheint nur, wenn er angefordert wird', () => {

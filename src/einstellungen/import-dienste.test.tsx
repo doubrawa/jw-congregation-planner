@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { privSetzen, emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Person, Qualifications, Service, Week } from '../data/types'
@@ -17,9 +17,9 @@ import type { Person, Qualifications, Service, Week } from '../data/types'
  * **Programm-Import und Hilfsdienste — die beiden Einstellungen, die den Plan
  * überhaupt erst möglich machen.**
  *
- * Der Import ist der einzige Weg, an ein Wochenprogramm zu kommen, und er
- * verhält sich in Demo und Produktion völlig verschieden. Beide Wege müssen
- * hinter demselben Knopf stecken.
+ * Der Import ist der einzige Weg, an ein Wochenprogramm zu kommen. Auf der
+ * Entwicklerseite ohne Datenbank sagt derselbe Knopf, dass er nichts holen
+ * kann — vorgetäuscht wird dort kein Abruf mehr.
  *
  * Bei den Hilfsdiensten geht es um einen Fall, der sonst unsichtbar bleibt
  * (T79): Ein **neu angelegter** Dienst bringt einen Aufgabenbereich mit, den
@@ -73,7 +73,7 @@ const DIENSTE: Service[] = [
 function zeige(was: 'import' | 'dienste', over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
     persons: [], services: DIENSTE, groups: [], weeks: [], fsWeeks: [],
     congLang: 'de', progLangs: [],
@@ -123,25 +123,6 @@ describe('„Geladen bis" beantwortet die häufigste Frage', () => {
   })
 })
 
-describe('Import im Demo-Modus', () => {
-  it('simuliert einen Abruf statt jw.org anzurufen', async () => {
-    vi.useFakeTimers()
-    const { container, dispatch } = zeige('import', { dataStatus: 'demo', imported: false })
-    fireEvent.click(container.querySelector('.imp-btn')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'startImport' })
-    expect(importNextWeek).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'finishImport' })
-  })
-
-  it('ein zweites Mal geht nicht — es gibt nur die eine Beispielwoche', () => {
-    const { container, dispatch } = zeige('import', { dataStatus: 'demo', imported: true })
-    fireEvent.click(container.querySelector('.imp-btn')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastAlleWochen })
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'startImport')).toBe(false)
-  })
-})
-
 describe('Import in der Produktion', () => {
   it('holt die nächste Woche in der Versammlungssprache', async () => {
     const { container } = zeige('import', {
@@ -186,6 +167,8 @@ describe('Import in der Produktion', () => {
   })
 
   it('ohne angebundene Datenbank steht der passende Satz — nicht der vom Anmelden', async () => {
+    // So endet der Knopf auch auf der Entwicklerseite: Sie hat keinen Client.
+    // Bis zum 2.10.2026 hängte er dort eine erfundene Woche an (`finishImport`).
     importNextWeek.mockResolvedValue({ ok: false, error: 'demo' })
     const { container, dispatch } = zeige('import')
     fireEvent.click(container.querySelector('.imp-btn')!)
@@ -278,9 +261,6 @@ describe('Import in der Produktion', () => {
     cleanup()
     expect(zeige('import', { importing: true }).container.querySelector('.imp-btn')?.textContent)
       .toBe(t.importiere)
-    cleanup()
-    expect(zeige('import', { imported: true }).container.querySelector('.imp-btn')?.textContent)
-      .toBe(t.alleImportiert)
   })
 })
 

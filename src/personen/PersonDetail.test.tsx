@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import type { Person, Service } from '../data/types'
 import { PersonDetail } from './PersonDetail'
@@ -46,7 +46,7 @@ function Buehne({ state }: { state: AppState }) {
 }
 
 function zeige(services: Service[]) {
-  const state: AppState = { ...initialState(), persons: [person()], services }
+  const state: AppState = { ...demoZustand(), persons: [person()], services }
   return render(<Buehne state={state} />)
 }
 

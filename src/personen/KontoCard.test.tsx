@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Invite, Member, Person } from '../data/types'
@@ -50,7 +50,7 @@ const person = (over: Partial<Person> = {}): Person => ({
 function zeige(p: Person, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
     persons: [p], members: [], invites: [],
     ...over,

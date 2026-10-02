@@ -1,9 +1,10 @@
 /**
- * Supabase-Anbindung (Auth + später Persistenz, siehe README "Hosting").
+ * Supabase-Anbindung (Auth + Persistenz, siehe README "Hosting").
  *
- * Die App läuft ohne konfigurierte Env-Variablen im **Demo-Modus** (In-Memory,
- * Login simuliert) — mit `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
- * übernimmt Supabase Auth das Login. Schema: supabase/schema.sql.
+ * Mit `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` übernimmt Supabase Auth
+ * das Login. Ohne sie gibt es keine Datenbank: Die Anmeldung wird nur
+ * nachgestellt, und die App bleibt leer — erfundene Daten zeigt allein die
+ * Entwicklerseite. Schema: supabase/schema.sql.
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -13,11 +14,28 @@ import type { Dispatch } from 'react'
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-/** null = Demo-Modus (keine Env-Konfiguration vorhanden). */
-export const supabase: SupabaseClient | null =
-  url && anonKey ? createClient(url, anonKey) : null
+/** Nennt die Umgebung eine Datenbank? Steuert, wie die Anmeldemaske aussieht. */
+export const isSupabaseConfigured = Boolean(url && anonKey)
 
-export const isSupabaseConfigured = supabase !== null
+/**
+ * **Die Entwicklerseite bekommt keinen Client** — auch wenn `.env.local` eine
+ * Datenbank nennt. Sie zeigt erfundene Daten, und mit Client liefe jeder Knopf
+ * gegen die echte Versammlung dessen, der im selben Browser angemeldet ist:
+ * „Plan senden" verschickte deren Woche, das Speichern schriebe hinein. Ohne
+ * Client steigt jeder Weg vorher aus (`if (!supabase)`).
+ *
+ * Die Anmeldemaske folgt trotzdem `isSupabaseConfigured` und sieht damit aus
+ * wie im Betrieb — die Handbuch-Aufnahme entsteht auf dieser Seite. Der Pfad
+ * steht gleichlautend in `scripts/testdaten-grenze.mjs`, der die Seite
+ * ausliefert; im Production-Build fällt die Abfrage mit `import.meta.env.DEV`
+ * ganz weg.
+ */
+const aufEntwicklerseite =
+  import.meta.env.DEV && globalThis.location?.pathname.endsWith('/demo.html') === true
+
+/** null = keine Datenbank (keine Env-Konfiguration, oder die Entwicklerseite). */
+export const supabase: SupabaseClient | null =
+  url && anonKey && !aufEntwicklerseite ? createClient(url, anonKey) : null
 
 /**
  * Adresse, auf die Auth-Mail-Links (Bestätigung, Passwort-Reset) zurückführen:
@@ -53,7 +71,7 @@ function authFehler(message: string): AuthFehler {
 
 /** Anmelden; liefert null bei Erfolg, sonst eine anzeigbare Fehlermeldung. */
 export async function signIn(email: string, password: string): Promise<AuthFehler | null> {
-  if (!supabase) return null // Demo-Modus: immer "erfolgreich"
+  if (!supabase) return null // ohne Datenbank: immer „erfolgreich"
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   return error ? authFehler(error.message) : null
 }

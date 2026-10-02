@@ -9,7 +9,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Week } from '../data/types'
 import { AusfallBanner, MemorialBanner, TerminListe, WeekChips } from './WeekBadges'
@@ -46,7 +46,7 @@ function woche(over: Partial<Week> = {}): Week {
 
 function buehne(kind: string, inhalt: ReactNode, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
-  const state: AppState = { ...initialState(), dataStatus: 'ready', ...over }
+  const state: AppState = { ...demoZustand(), dataStatus: 'ready', ...over }
   function Buehne() {
     const store = useStaticStore(state)
     return (

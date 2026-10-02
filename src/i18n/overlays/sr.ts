@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Učitano sedmica: {n}",
   "importBtn": "UVEZI SLEDEĆU SEDMICU",
   "importiere": "UVOZ …",
-  "alleImportiert": "SVE SEDMICE UVEZENE",
   "aktuellLbl": "Trenutno:",
   "entfernen": "Ukloni",
   "abwesendChip": "Odsustvo",

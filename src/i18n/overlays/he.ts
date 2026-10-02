@@ -145,7 +145,6 @@ export default {
   "wochenGeladen": "שבועות שנטענו: {n}",
   "importBtn": "ייבא את השבוע הבא",
   "importiere": "מייבא …",
-  "alleImportiert": "כל השבועות יובאו",
   "aktuellLbl": "נוכחי:",
   "entfernen": "הסר",
   "abwesendChip": "היעדרות",

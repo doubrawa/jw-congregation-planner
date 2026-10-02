@@ -3,19 +3,27 @@ import { useApp } from '../app/context'
 import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import { isSupabaseConfigured, requestPasswordReset, signIn, signUp } from '../lib/supabase'
+import { isSupabaseConfigured, requestPasswordReset, signIn, signUp, supabase } from '../lib/supabase'
 import { authFehlerText } from './auth-text'
 import { KONTAKT_MAIL, kontaktVerweis } from './kontakt'
 import { LoginKopf } from './LoginKopf'
 import './login.css'
 
 /**
- * Login (Screen 1). Mit konfiguriertem Supabase echtes E-Mail+Passwort-Login
- * (inkl. Registrieren und Reset-Mail), sonst Demo-Modus wie im Prototyp:
- * beliebige Zugangsdaten, Anmelden wechselt zum Programm. Sprachauswahl hier.
- * Neue Konten treten anschließend per Einladungscode einer Versammlung bei.
- * Unter dem Namen steht, wofür die App da ist, ganz unten der Kontakt für eine
- * neue Versammlung (T113).
+ * Login (Screen 1). Mit Datenbank echtes E-Mail+Passwort-Login (inkl.
+ * Registrieren und Reset-Mail), sonst nachgestellt wie im Prototyp: beliebige
+ * Zugangsdaten, Anmelden wechselt zum Programm. Sprachauswahl hier. Neue Konten
+ * treten anschließend per Einladungscode einer Versammlung bei. Unter dem Namen
+ * steht, wofür die App da ist, ganz unten der Kontakt für eine neue
+ * Versammlung (T113).
+ *
+ * **Aussehen und Handeln folgen zwei verschiedenen Schaltern.** Wie die Maske
+ * aussieht, sagt `isSupabaseConfigured` (nennt die Umgebung eine Datenbank?);
+ * was sie tut, sagt der Client. Auf der Entwicklerseite gehen die beiden
+ * auseinander: Die Maske sieht aus wie im Betrieb — dort entsteht die
+ * Handbuch-Aufnahme —, einen Client gibt es aber nicht. Fragte das Handeln die
+ * Konfiguration, versprach „Passwort vergessen?" dort eine Mail, die niemand
+ * schickt, und „Konto erstellen" tat gar nichts.
  */
 export function LoginScreen() {
   const { state, dispatch } = useApp()
@@ -27,7 +35,7 @@ export function LoginScreen() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!isSupabaseConfigured) {
+    if (!supabase) {
       // Begrüßt wird erst, wenn der Name feststeht (AppShell) — hier ist nur
       // bekannt, DASS jemand sich angemeldet hat, nicht wer.
       dispatch({ type: 'login', welcome: true })
@@ -70,7 +78,7 @@ export function LoginScreen() {
   }
 
   const forgotPassword = async () => {
-    if (!isSupabaseConfigured) {
+    if (!supabase) {
       dispatch({ type: 'showToast', text: t.demoHinweis })
       return
     }

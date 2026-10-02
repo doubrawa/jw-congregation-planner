@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "{n} linggo na-load",
   "importBtn": "I-IMPORT ANG SUSUNOD NA LINGGO",
   "importiere": "INI-IMPORT …",
-  "alleImportiert": "LAHAT NG LINGGO NA-IMPORT",
   "aktuellLbl": "Kasalukuyan:",
   "entfernen": "Alisin",
   "abwesendChip": "Wala",

@@ -2,15 +2,17 @@
 #
 # Erzeugt alle Screenshots der Benutzerdokumentation neu.
 #
-# Voraussetzung: der Dev-Server läuft (`npm run dev`, Port 5173). Die App wird
-# über den DEV-Debug-Hash direkt in den jeweiligen Zustand versetzt
-# (Demo-Modus, kein Login/Netz):
+# Voraussetzung: der Dev-Server läuft (`npm run dev`, Port 5173). Aufgenommen
+# wird die Entwicklerseite `/demo.html`: die App mit den Testdaten, ohne Login
+# und ohne Datenbank. Ihr Hash versetzt sie direkt in den jeweiligen Zustand:
 #   #s=<screen>&tab=<mid|we|fs>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>
 # (`p=` waehlt eine Person im Personen-Screen aus, `me=` meldet sie an — davon
 #  haengt ab, was jemand von seiner eigenen Gruppe sieht.)
-# Details siehe src/app/init.ts (parseDebugHash).
+# Details siehe tests/testdaten/demo-start.ts (parseDebugHash).
 #
-# Aufruf:  bash docs/user-guide/capture-screenshots.sh
+# Aufruf:  bash docs/user-guide/capture-screenshots.sh [name …]
+# Ohne Namen entstehen alle Aufnahmen neu, mit Namen nur diese — etwa nach
+# einer Änderung, die ein einzelnes Bild betrifft.
 #
 set -euo pipefail
 
@@ -43,6 +45,15 @@ trap 'rm -rf "$ROH"' EXIT
 
 if ! curl -s -o /dev/null "$BASE/"; then
   echo "FEHLER: Dev-Server läuft nicht auf $BASE — bitte 'npm run dev' starten." >&2
+  exit 1
+fi
+# Ein Dev-Server von vor der Entwicklerseite lieferte unter /demo.html die
+# leere App aus — aufgenommen würde dann achtzehnmal die Anmeldemaske.
+# Erst ganz holen, dann vergleichen: `curl | grep -q` endet unter `pipefail`
+# als Fehler, wenn grep beim Treffer aussteigt, während curl noch schreibt.
+seite="$(curl -s "$BASE/demo.html" || true)"
+if [[ "$seite" != *tests/testdaten/demo.tsx* ]]; then
+  echo "FEHLER: $BASE/demo.html ist nicht die Entwicklerseite — Dev-Server neu starten." >&2
   exit 1
 fi
 
@@ -86,6 +97,20 @@ SHOTS=(
   "offline-stand|s=programm&tab=mid&stale=5"
 )
 
+# Ein vertippter Name nähme sonst still gar nichts auf. Verglichen wird in der
+# Shell selbst, ohne Pipe — siehe die Prüfung der Entwicklerseite oben.
+for wunsch in "$@"; do
+  bekannt=false
+  for entry in "${SHOTS[@]}"; do
+    if [ "${entry%%|*}" = "$wunsch" ]; then bekannt=true; fi
+  done
+  if [ "$bekannt" != true ]; then
+    echo "FEHLER: keine Aufnahme namens „$wunsch“." >&2
+    exit 1
+  fi
+done
+NUR=" $* "
+
 # Zugeschnitten wird nur, was eben aufgenommen wurde. Schneidet man den ganzen
 # Ordner, trifft es auch die abgelegten Bilder, die gar nicht neu entstanden
 # sind (Chrome gescheitert) — und ein zweiter Schnitt frisst jedes Mal ein
@@ -94,6 +119,7 @@ FRISCH=()
 
 for entry in "${SHOTS[@]}"; do
   IFS='|' read -r name hash size <<< "$entry"
+  if [ $# -gt 0 ] && [[ "$NUR" != *" $name "* ]]; then continue; fi
   w="$W"; h="$H"
   if [ -n "${size:-}" ]; then w="${size%x*}"; h="${size#*x}"; fi
   hash="$hash&t=weiss&shot=1" # helles Theme + Screenshot-Modus (Spaltenschatten aus)
@@ -102,7 +128,7 @@ for entry in "${SHOTS[@]}"; do
   "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
     --user-data-dir="$PROFILE" --window-size="$w,$h" --force-device-scale-factor=1 \
     --hide-scrollbars --virtual-time-budget=8000 \
-    --screenshot="$roh" "$BASE/#$hash" >/dev/null 2>&1 || true
+    --screenshot="$roh" "$BASE/demo.html#$hash" >/dev/null 2>&1 || true
   if [ -f "$roh" ]; then
     mv "$roh" "$OUT_DIR/$name.png"
     echo "  ✓ $name.png"

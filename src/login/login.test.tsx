@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict, loadOverlay } from '../i18n/ui'
 import { KONTAKT_MAIL } from './kontakt'
 
@@ -38,9 +38,16 @@ const signUp = vi.fn((_mail: string, _pw: string) =>
 const requestPasswordReset = vi.fn((_mail: string) => Promise.resolve<AuthFehler | null>(null))
 const updatePassword = vi.fn((_pw: string) => Promise.resolve<AuthFehler | null>(null))
 const konfiguriert = { wert: true }
+/**
+ * Getrennt von `konfiguriert`, weil die Entwicklerseite genau dazwischen liegt:
+ * Die Umgebung nennt eine Datenbank, einen Client gibt es trotzdem nicht.
+ */
+const mitClient = { wert: true }
 
 vi.mock('../lib/supabase', () => ({
-  supabase: null,
+  get supabase() {
+    return konfiguriert.wert && mitClient.wert ? {} : null
+  },
   get isSupabaseConfigured() {
     return konfiguriert.wert
   },
@@ -58,7 +65,7 @@ const t = dict('de')
 
 function zeige(was: 'login' | 'recovery', over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
-  const state: AppState = { ...initialState(), screen: 'login', ...over }
+  const state: AppState = { ...demoZustand(), screen: 'login', ...over }
   function Buehne() {
     const store = useStaticStore(state)
     return (
@@ -84,6 +91,7 @@ const knopf = (c: HTMLElement, text: string) =>
 
 beforeEach(() => {
   konfiguriert.wert = true
+  mitClient.wert = true
   signIn.mockClear().mockResolvedValue(null)
   signUp.mockClear().mockResolvedValue({ ok: true, needsConfirm: false })
   requestPasswordReset.mockClear().mockResolvedValue(null)
@@ -291,6 +299,44 @@ describe('Ohne Supabase: Demo-Modus', () => {
     fireEvent.click(knopf(container, t.pwVergessen)!)
     expect(requestPasswordReset).not.toHaveBeenCalled()
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.demoHinweis })
+  })
+})
+
+describe('Entwicklerseite: aussehen wie im Betrieb, handeln ohne Datenbank', () => {
+  /*
+   * Die Umgebung nennt eine Datenbank (`.env.local`), die Seite hat trotzdem
+   * keinen Client (`lib/supabase.ts`). Bis zur Trennung von Aussehen und
+   * Handeln versprach „Passwort vergessen?" dort eine Reset-Mail, die nie
+   * hinausging, und „Konto erstellen" tat gar nichts (2.10.2026).
+   */
+  beforeEach(() => {
+    mitClient.wert = false
+  })
+
+  it('die Maske sieht aus wie im Betrieb — dort entsteht die Handbuch-Aufnahme', () => {
+    const { container } = zeige('login')
+    expect(container.querySelector('.login-note')?.textContent).toBe(t.nurMitglieder)
+    expect(knopf(container, t.kontoErstellen)).toBeDefined()
+  })
+
+  it('„Passwort vergessen" verspricht auch hier keine Mail', () => {
+    const { container, dispatch } = zeige('login')
+    eingeben(container, 'wer@example.org')
+    fireEvent.click(knopf(container, t.pwVergessen)!)
+    expect(requestPasswordReset).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.demoHinweis })
+  })
+
+  it('Anmelden und Konto erstellen melden an, ohne Netzaufruf', () => {
+    const { container, dispatch } = zeige('login')
+    absenden(container)
+    expect(signIn).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true })
+    dispatch.mockClear()
+    fireEvent.click(knopf(container, t.kontoErstellen)!)
+    absenden(container)
+    expect(signUp).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true })
   })
 })
 

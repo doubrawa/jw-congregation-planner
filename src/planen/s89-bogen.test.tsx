@@ -8,10 +8,10 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { alleS89DerWoche } from '../data/planning'
-import { buildDemoWeeks } from '../data/testdaten'
+import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import type { PartItem } from '../data/types'
 import { S89Bogen } from './S89Bogen'
 import { seiten } from './s89-seiten'
@@ -121,7 +121,7 @@ describe('seiten: die Aufteilung steht im Bauplan', () => {
 })
 
 describe('S89Bogen (Bedienung)', () => {
-  const state = (): AppState => ({ ...initialState(), weeks: buildDemoWeeks(), week: 0 })
+  const state = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week: 0 })
 
   it('legt für jede Aufgabe eine Karte an', () => {
     const { container } = render(<Buehne state={state()} />)
@@ -190,7 +190,7 @@ describe('S89Bogen (Bedienung)', () => {
         for (const slot of (item as PartItem).aux ?? []) slot.name = ''
       }
     }
-    const { container } = render(<Buehne state={{ ...initialState(), weeks, week: 0 }} />)
+    const { container } = render(<Buehne state={{ ...demoZustand(), weeks, week: 0 }} />)
     expect(container.querySelector('.s89-druck')).toBeNull()
     expect(container.querySelector('.s89-bogen')).toBeNull()
   })

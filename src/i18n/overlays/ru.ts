@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Загружено недель: {n}",
   "importBtn": "ИМПОРТИРОВАТЬ СЛЕДУЮЩУЮ НЕДЕЛЮ",
   "importiere": "ИМПОРТ …",
-  "alleImportiert": "ВСЕ НЕДЕЛИ ИМПОРТИРОВАНЫ",
   "aktuellLbl": "Текущее:",
   "entfernen": "Удалить",
   "abwesendChip": "Отсутствует",

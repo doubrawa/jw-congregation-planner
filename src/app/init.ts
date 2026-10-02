@@ -1,34 +1,22 @@
 /**
- * Startzustand der App: Demo-Modus (ohne Supabase-Konfiguration) mit den
- * festen Demo-Daten, sonst leerer Zustand bis zur Hydration nach dem Login.
- * Dazu die localStorage-Wiederherstellung (Theme, Sprache) und der
- * Dev-Debug-Hash für Headless-Screenshots.
+ * Startzustand der App: leer bis zur Hydration nach dem Login, dazu die
+ * localStorage-Wiederherstellung (Theme, Schriftgröße, Sprache).
+ *
+ * **Keine Testdaten, in keinem Build.** Bis zum 2.10.2026 startete hier im
+ * Dev-Build der Demo-Modus mit den erfundenen Daten aus `testdaten.ts`, samt
+ * Debug-Hash für die Handbuch-Aufnahmen. Hinter `import.meta.env.DEV` sollten
+ * die Daten beim Bauen wegfallen — die Personenliste rechnete aber schon beim
+ * Laden ihres Moduls und stand deshalb im ausgelieferten Bündel. Beides lebt
+ * jetzt auf der Entwicklerseite (`tests/testdaten/demo-start.ts`, im
+ * Dev-Server unter `/demo.html`), die die App mit eigenem Startzustand
+ * aufruft (`<App start={…} />`).
  */
-import {
-  buildDemoFsWeeks,
-  buildDemoWeeks,
-  CONGREGATION,
-  DEMO_ABSENCES,
-  DEMO_FS_RULES,
-  DEMO_MY_TASKS,
-  DEMO_NOTIFICATIONS,
-  DEMO_GROUPS,
-  DEMO_PERSONS,
-  DEMO_PLANNER,
-  DEMO_SERVICES,
-  DEMO_UNBESTAETIGT,
-} from '../data/testdaten'
-import { buildDemoConfirmations } from '../data/demo-zusagen'
 import { STANDARD_ERINNERUNGEN, STANDARD_ZEITEN } from '../data/vorgaben'
-import { asFontScale, DEFAULT_FONT_SCALE, THEME_LIST, type FontScale } from '../data/constants'
-import { APP_LANGS, CONG_TO_JW } from '../i18n/langs'
-import { isSupabaseConfigured } from '../lib/supabase'
-import type { Lang, MeetingTab, Screen, Theme } from '../data/types'
+import { asFontScale, asTheme, DEFAULT_FONT_SCALE, type FontScale } from '../data/constants'
+import { APP_LANGS } from '../i18n/langs'
+import type { Lang, Theme } from '../data/types'
 import type { AppState } from './context'
-function asTheme(value: string | null): Theme | null {
-  if (!value) return null
-  return THEME_LIST.some((t) => t.key === value) ? (value as Theme) : null
-}
+
 function getInitialTheme(): Theme {
   // Standard ist Reinweiß, unabhängig von der System-Einstellung (dunkler
   // Modus). Ein anderes Design wählt man im Profil; die Wahl wird gespeichert.
@@ -41,133 +29,53 @@ function getInitialLang(): Lang {
   const stored = localStorage.getItem('lang')
   return APP_LANGS.some((l) => l.code === stored) ? (stored as Lang) : 'de'
 }
-/**
- * Nur im Dev-Build: erlaubt das direkte Anspringen eines Screens/einer Sprache
- * über den URL-Hash `#s=<screen>&l=<lang>&c=<congLang>` — für Headless-
- * Screenshots (überspringt den Login im Demo-Modus). Im Production-Build wird
- * dieser Zweig via `import.meta.env.DEV` entfernt.
- */
-interface DebugHash {
-  screen?: Screen
-  lang?: Lang
-  congLang?: string
-  theme?: Theme
-  fontScale?: FontScale // fs=<Faktor> — Schriftgrößen-Stufe für Doku-Screenshots
-  personId?: string
-  /**
-   * `me=<Person-Id>` — **wessen** App das hier ist (`state.personId`).
-   *
-   * Nicht dasselbe wie `p=`: Das wählt eine Person im Personen-Screen aus
-   * (`selectedPersonId`), das hier meldet einen an. Im Demo-Modus gehört die
-   * App sonst niemandem, und alles, was von der eigenen Person abhängt, ist
-   * nicht anzusehen: der DU-Chip, „Deine Einträge" — und die
-   * Treffpunkte der **eigenen** Predigtdienstgruppe.
-   */
-  me?: string
-  tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
-  planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
-  shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
-  staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
-}
-function parseDebugHash(): DebugHash | null {
-  const raw = location.hash.replace(/^#/, '')
-  if (!raw) return null
-  const p = new URLSearchParams(raw)
-  const out: DebugHash = {}
-  const s = p.get('s')
-  if (s) out.screen = s as Screen
-  const l = p.get('l')
-  if (l) out.lang = l as Lang
-  const c = p.get('c')
-  // Der Hash darf den deutschen Namen tragen („c=Englisch") — getippt wird er
-  // von Hand, und der Code ist nicht jedem geläufig. Geführt wird der Code.
-  if (c) out.congLang = CONG_TO_JW[c] ?? c
-  const th = asTheme(p.get('t'))
-  if (th) out.theme = th
-  const fs = asFontScale(p.get('fs'))
-  if (fs) out.fontScale = fs
-  const person = p.get('p')
-  if (person) out.personId = person
-  const me = p.get('me')
-  if (me) out.me = me
-  const tab = p.get('tab')
-  if (tab === 'mid' || tab === 'we' || tab === 'fs') out.tab = tab
-  const pl = p.get('pl')
-  if (pl === '0' || pl === '1') out.planner = pl === '1'
-  if (p.get('shot') === '1') out.shot = true
-  // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
-  const stale = Number(p.get('stale'))
-  if (Number.isFinite(stale) && stale > 0) out.staleAt = Date.now() - stale * 3600_000
-  return Object.keys(out).length ? out : null
-}
+
 export function initialState(): AppState {
-  // Konfiguriert (Supabase): leerer Start, Daten kommen per Hydration nach dem
-  // Login. Demo-Modus: In-Memory-Demo-Daten wie bisher. Ein Debug-Hash erzwingt
-  // im Dev-Build zusätzlich den Demo-Modus (Daten sofort da, ohne Login/Netz).
-  const debug = import.meta.env.DEV ? parseDebugHash() : null
-  // **Nur im Dev-Build.** Bis zum 13. August 2026 stand hier bloß
-  // `!isSupabaseConfigured || debug != null` — ein Laufzeitwert, an dem der
-  // Bündler nichts entscheiden kann. Die Testdaten landeten deshalb im
-  // ausgelieferten Bündel, obwohl sie dort nie zum Einsatz kamen (die
-  // veröffentlichte Seite hat Supabase konfiguriert). Mit `import.meta.env.DEV`
-  // fällt der ganze Zweig beim Bauen weg — geprüft in `bundle.test.ts`.
-  const demo = import.meta.env.DEV && (!isSupabaseConfigured || debug != null)
-  // Screenshot-Modus (nur DEV): Spaltenschatten per Attribut abschalten, damit
-  // die Doku-Screenshots randlos zugeschnitten werden können (siehe shell.css).
-  if (debug?.shot) document.documentElement.dataset.shot = '1'
-  // Einmal gebaut: Die Demo-Zusagen hängen an genau diesen Wochen.
-  const weeks = demo ? buildDemoWeeks() : []
-  const fsWeeks = demo ? buildDemoFsWeeks() : []
   return {
-    screen: debug?.screen ?? 'login',
+    screen: 'login',
     week: 0,
-    tab: debug?.tab ?? 'mid',
-    theme: debug?.theme ?? getInitialTheme(),
-    fontScale: debug?.fontScale ?? getInitialFontScale(),
-    planner: debug?.planner ?? (demo ? DEMO_PLANNER : false),
-    congregation: demo ? { ...CONGREGATION } : { name: '', hall: '', times: STANDARD_ZEITEN },
+    tab: 'mid',
+    theme: getInitialTheme(),
+    fontScale: getInitialFontScale(),
+    planner: false,
+    congregation: { name: '', hall: '', times: STANDARD_ZEITEN },
     congregationId: null,
     userId: null,
-    // Im Demo-Modus gehört die App niemandem — außer der Debug-Hash meldet
-    // jemanden an (`me=`, nur DEV; siehe DebugHash).
-    personId: (demo && debug?.me) || null,
-    dataStatus: demo ? 'demo' : 'ready',
+    personId: null,
+    dataStatus: 'ready',
     dataEmpty: false,
-    staleAt: debug?.staleAt ?? null,
+    staleAt: null,
     members: [],
     invites: [],
     recovery: false,
-    weeks,
-    persons: demo ? DEMO_PERSONS : [],
-    services: demo ? DEMO_SERVICES : [],
-    groups: demo ? DEMO_GROUPS : [],
-    fsRules: demo ? DEMO_FS_RULES : [],
-    fsWeeks,
-    absences: demo ? DEMO_ABSENCES : [],
-    notifs: demo ? DEMO_NOTIFICATIONS : [],
+    weeks: [],
+    persons: [],
+    services: [],
+    groups: [],
+    fsRules: [],
+    fsWeeks: [],
+    absences: [],
+    notifs: [],
     notifOpen: false,
     slotSel: null,
-    selectedPersonId: debug?.personId ?? null,
+    selectedPersonId: null,
     importing: false,
-    imported: false,
-    myTasks: demo ? DEMO_MY_TASKS : [],
-    confirmations: demo ? buildDemoConfirmations(weeks, DEMO_SERVICES, fsWeeks, DEMO_UNBESTAETIGT) : {},
+    myTasks: [],
+    confirmations: {},
     sentLog: {},
     confirmOpen: false,
     myTaskId: null,
     substituteReqs: [],
     s89: null,
     reminders: STANDARD_ERINNERUNGEN,
-    lang: debug?.lang ?? getInitialLang(),
+    lang: getInitialLang(),
     langSheetOpen: false,
     langSheetFor: 'cong',
     svcSheet: null,
-    // Ein Debug-Hash mit `tab=` ist eine Wahl — sonst spränge der Reiter beim
-    // ersten Navigieren weg und die Doku-Screenshots zeigten das Falsche.
-    terminGewaehlt: debug?.tab != null,
+    terminGewaehlt: false,
     sprungZiel: null,
     auxClass: false,
-    congLang: debug?.congLang ?? 'de',
+    congLang: 'de',
     progLangs: [],
     langSearch: '',
     toast: null,

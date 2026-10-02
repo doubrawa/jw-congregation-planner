@@ -24,8 +24,9 @@ Mitteilungen und Einstellungen.
 > 34 Sprachen, separate Versammlungssprache für die Programm-Inhalte). Mit
 > konfiguriertem **Supabase** (echtes Login + Postgres mit RLS) werden alle
 > Versammlungsdaten geladen und zurückgeschrieben — inkl. abgeleiteter
-> „Meine Aufgaben" und persistenter Bestätigungen; ohne Konfiguration läuft
-> die App im Demo-Modus mit In-Memory-Daten (siehe „Supabase einrichten").
+> „Meine Aufgaben" und persistenter Bestätigungen. Erfundene Daten enthält die
+> App nicht; die zeigt allein die Entwicklerseite im Dev-Server (siehe
+> „Entwicklerseite").
 > Offen: echter Arbeitsheft-Import (siehe unten).
 
 ## Stack
@@ -113,8 +114,8 @@ falscher Konfliktalarm würde die Arbeit des Nutzers verwerfen, und dieser eine
 zusätzliche Umlauf kostet nur in genau dem Fall etwas. Schreibvorgänge derselben
 Woche laufen hintereinander, sonst kämpfte man gegen sich selbst.
 
-Zum Nachstellen ohne Netzabbruch: Debug-Hash `#stale=<Stunden>` (nur DEV, siehe
-[docs/user-guide/README.md](docs/user-guide/README.md)).
+Zum Nachstellen ohne Netzabbruch: `/demo.html#stale=<Stunden>` auf der
+Entwicklerseite (siehe [docs/user-guide/README.md](docs/user-guide/README.md)).
 
 ## Logo & App-Icons
 
@@ -145,7 +146,6 @@ src/
   data/
     types.ts        Datenmodell aus dem Handoff (Week, Person, Service, …)
     constants.ts    Labels (Rollen, Aufgabenbereiche) + Bereichsfarben-Zuordnung
-    testdaten.ts    Demo-Daten, 1:1 aus dem Prototyp portiert (Platzhalter)
     helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
     planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
   i18n/
@@ -154,7 +154,7 @@ src/
     langs.ts        jw.org-Sprachliste (Versammlungssprache) + App-Sprachen
     useT.ts         Hook: t (UI), tu (App-Sprache), tp (Versammlungssprache)
   lib/
-    supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset, Demo-Fallback)
+    supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset)
     data.ts         Daten-Zugriff: Versammlungsdaten laden, Änderungen zurückschreiben
   aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung
   einstellungen/    Einstellungen (Hilfsdienste, Programm-Import)
@@ -169,6 +169,9 @@ src/
   main.tsx          React-Einstieg
 scripts/
   make-icons.mjs    Erzeugt die App-Icons aus public/logo.svg (npm run icons)
+  testdaten-grenze.mjs  Entwicklerseite /demo.html + Bündelwache gegen Testdaten
+tests/
+  testdaten/        Erfundene Daten für Tests und Entwicklerseite — nie für die App
 docs/
   design-handoff/   Maßgebliche Design-Referenz (README, HTML-Prototypen, Screenshots)
   user-guide/       Benutzerhandbücher (Planer/Verkündiger) + Auto-Screenshots
@@ -178,6 +181,24 @@ supabase/
 .github/workflows/
   deploy.yml        Auto-Deployment auf GitHub Pages (reicht Supabase-Secrets durch)
 ```
+
+## Entwicklerseite
+
+`npm run dev`, dann **`http://localhost:5173/demo.html`**: die App mit den
+erfundenen Daten aus `tests/testdaten/` (Versammlung „Musterstadt", rund hundert
+Personen, vier Wochen) — ohne Login und ohne Datenbank, auch wenn `.env.local`
+eine nennt. Der Hash springt einen Zustand direkt an
+(`#s=planen&tab=fs&pl=0&me=p1`, alle Schalter in
+`tests/testdaten/demo-start.ts`); daraus entstehen die Handbuch-Bilder.
+
+Die Seite gibt es nur im Dev-Server (`scripts/testdaten-grenze.mjs`), gebaut
+wird allein `index.html`. **Die App selbst kennt keine Testdaten:** Eine neue
+Versammlung ist leer und wird von Hand oder per NWS-Import gefüllt. Damit das so
+bleibt, bricht jeder Build ab, in dem ein Modul aus `tests/testdaten/` steckt
+oder eines ihrer Kennzeichen im Ergebnis steht — Adressen unter
+`musterstadt.example`, Nummern `+49 30 23125 …`, Platzhalter wie „Demoaufgabe".
+Bis zum 2.10.2026 lag die erfundene Personenliste trotz `import.meta.env.DEV`
+im ausgelieferten Bündel.
 
 
 ## Design-Referenz
@@ -252,8 +273,9 @@ authentifiziert und versammlungsintern begrenzen.
 
 ## Supabase einrichten (echtes Login)
 
-Ohne Konfiguration läuft die App im **Demo-Modus** (Login simuliert, Daten
-in-memory). Für echtes Login mit geschützten Daten:
+Ohne Konfiguration hat die App keine Datenbank: Die Anmeldung wird nur
+nachgestellt, und es gibt nichts zu sehen — erfundene Daten zeigt allein die
+Entwicklerseite. Für echtes Login mit geschützten Daten:
 
 1. Kostenloses Projekt auf [supabase.com](https://supabase.com) anlegen
    (Region z. B. Frankfurt — personenbezogene Daten in der EU).
@@ -506,7 +528,7 @@ Versammlung aus `members`), Änderungen sofort zurückgeschrieben; eine leere
 Versammlung zeigt Verkündigern den Hinweis auf den Koordinator, Planer füllen
 sie über Personen und „Nächste Woche importieren" (angelegt wird sie mit
 `scripts/versammlung-anlegen.mjs`, Demo-Daten gibt es dort seit dem 13.8.2026
-nicht mehr). „Meine Aufgaben" entstehen aus den Zuteilungen der über
+nicht mehr, in der App seit dem 2.10.2026 gar keine). „Meine Aufgaben" entstehen aus den Zuteilungen der über
 `members.person_id` verknüpften Person; Bestätigungen landen in
 `confirmations`, Erinnerungen und Versammlungssprache in eigenen Spalten von
 `congregations`. **Konten & Einladungen laufen

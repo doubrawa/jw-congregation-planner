@@ -18,7 +18,7 @@ vi.mock('./supabase', () => ({
 }))
 
 import { loadCongregationData, WEEK_LIMIT } from './data'
-import { buildDemoWeeks } from '../data/testdaten'
+import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
 function chainFor(table: string) {
   const resp = (store.responses[table] ?? []).shift() ?? { data: null, error: null }

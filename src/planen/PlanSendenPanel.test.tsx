@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { sentKey } from '../data/planning'
 import { dict } from '../i18n/ui'
@@ -76,7 +76,7 @@ function woche(namen: string[] = ['A. Berg']): Week {
 const key = (i: number) => `${MONTAG}|mid|part|i${i}|0`
 
 const stand = (over: Partial<AppState> = {}): AppState => ({
-  ...initialState(),
+  ...demoZustand(),
   dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
   persons: [person('p-a', 'Anna', 'Berg')], services: DIENSTE, groups: [], absences: [],
   weeks: [woche()], fsWeeks: [[]], week: 0,

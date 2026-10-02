@@ -454,7 +454,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'fsClear':
       fsWocheSpeichern(congId, next.weeks, next.fsWeeks, prev.week, fsVerwaist)
       break
-    case 'finishImport':
     case 'addImportedWeek':
       // Die neue Woche bringt ihre Treffpunkte aus dem Grundplan mit; die Woche
       // selbst schreibt der Block unter dem Switch.

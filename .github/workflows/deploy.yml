@@ -37,7 +37,11 @@ jobs:
       # neue hinzukommt. Die Zahl kann damit nur fallen.
       - run: npm run typecheck:index
       - run: npm test
-      # Supabase-Konfiguration (optional): ohne Secrets baut der Demo-Modus
+      # Supabase-Konfiguration (optional): ohne Secrets entsteht eine App ohne
+      # Datenbank — Testdaten enthält sie so wenig wie mit. Dafür steht die
+      # Bündelwache im Build (scripts/testdaten-grenze.mjs): Ein Modul oder
+      # Kennzeichen aus tests/testdaten/ im Ergebnis bricht ihn ab, und ein
+      # solcher Stand geht nicht hinaus.
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

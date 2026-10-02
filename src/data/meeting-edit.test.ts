@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDemoWeeks } from './testdaten'
+import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import {
   editTalkTheme,
   endeAusStartzeit,

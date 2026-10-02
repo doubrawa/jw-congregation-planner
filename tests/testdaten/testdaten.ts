@@ -1,13 +1,29 @@
 /**
- * Demo-Daten, 1:1 aus dem Prototyp portiert (docs/design-handoff/design/
- * Prototyp 2a v3.dc.html). Namen und Wochen sind Platzhalter — das Modell
- * und die Regeln darunter sind verbindlich. Ersetzt später Persistenz/Backend.
+ * **Erfundene Daten — für die Tests und die Entwicklerseite, nie für die App.**
+ *
+ * Ursprünglich aus dem Prototyp portiert (docs/design-handoff/design/
+ * Prototyp 2a v3.dc.html). Namen und Wochen sind Platzhalter, das Modell und
+ * die Regeln darunter sind verbindlich.
+ *
+ * Bis zum 2.10.2026 lag die Datei unter `src/data/` und startete im Dev-Build
+ * den Demo-Modus der App. Hinter `import.meta.env.DEV` sollte sie aus dem
+ * ausgelieferten Bündel fallen — tat sie aber nicht: Was beim Laden des Moduls
+ * rechnet (`CORE_PERSONS.map(…)`, `buildExtraPersons()`), darf der Bündler
+ * nicht wegwerfen. Die erfundene Personenliste stand mit Adressen und Nummern
+ * auf versammlung.app. Jetzt liegt sie außerhalb von `src/`, und zwei
+ * Prüfungen halten sie draußen: `tests/testdaten-grenze.test.ts` am
+ * Quelltext, die Bündelwache in `vite.config.ts` am gebauten Bündel.
+ *
+ * Wer etwas hinzufügt: Personen bekommen Adresse und Nummer über `adresse()`
+ * und `telefon()`, Wochen einen Platzhalter aus `TESTDATEN_KENNZEICHEN` —
+ * daran erkennt die Wache sie (siehe `kennzeichen.ts`).
  */
 
-import { buildFsWeeks } from './fs'
-import { normalizeChairKeys, ROLE_GUEST_SPEAKER, serviceQualKey } from './helpers'
-import { STANDARD_ZEITEN } from './vorgaben'
-import { ersteZahl } from './ziffern'
+import { buildFsWeeks } from '../../src/data/fs'
+import { normalizeChairKeys, ROLE_GUEST_SPEAKER, serviceQualKey } from '../../src/data/helpers'
+import { STANDARD_ZEITEN } from '../../src/data/vorgaben'
+import { ersteZahl } from '../../src/data/ziffern'
+import { TESTDATEN_DOMAIN, TESTDATEN_RUFNUMMERN } from './kennzeichen'
 import type {
   Absence,
   FsInstance,
@@ -28,16 +44,16 @@ import type {
   SlotAssignment,
   SongItem,
   Week,
-} from './types'
+} from '../../src/data/types'
 
 /** Bereich der Eingangsordner — sie reichen beim Gedächtnismahl die Symbole herum. */
 const EINGANG = serviceQualKey('eingang')
 
 /*
- * Hier stand `CURRENT_PERSON_ID = 'p9'` als „angemeldete Demo-Person". Der
- * Demo-Modus startet aber ohne Person (`state.personId` bleibt null); wer eine
- * bestimmte sehen will, nennt sie im Debug-Hash (`#me=<Person-Id>`, siehe
- * app/init.ts). Die Konstante hatte keinen Aufrufer und behauptete eine
+ * Hier stand `CURRENT_PERSON_ID = 'p9'` als „angemeldete Demo-Person". Die
+ * Entwicklerseite startet aber ohne Person (`state.personId` bleibt null); wer
+ * eine bestimmte sehen will, nennt sie im Hash (`#me=<Person-Id>`, siehe
+ * `demo-start.ts`). Die Konstante hatte keinen Aufrufer und behauptete eine
  * Vorbelegung, die es nicht gibt.
  */
 
@@ -85,6 +101,23 @@ const q = (
   }
 }
 
+/**
+ * Adresse einer erfundenen Person — immer unter der Testdaten-Domain.
+ *
+ * Bis zum 2.10.2026 stand hier `@mail.de`: ein echter Anbieter, die Adressen
+ * hätten also echte Postfächer sein können. Und jetzt erkennt die Bündelwache
+ * an der Domain, wenn eine erfundene Person ins Bündel gerät.
+ */
+const adresse = (lokal: string): string => `${lokal}@${TESTDATEN_DOMAIN}`
+
+/**
+ * Nummer einer erfundenen Person — aus dem Block, den die Bundesnetzagentur
+ * für Film und Fernsehen freihält. Die Nummern davor (`+49 171 …`,
+ * `+49 160 …`) hatten das Format echter Mobilnummern und konnten jemandem
+ * gehören.
+ */
+const telefon = (n: number): string => `${TESTDATEN_RUFNUMMERN} ${String(n).padStart(3, '0')}`
+
 /* ---- Größere Demo-Versammlung (~100 Personen) ---------------------------
  * Zusätzliche Personen mit eindeutigen Anzeigenamen — die Nachnamen kollidieren
  * weder mit den 16 Stammpersonen noch mit externen Namen in den Wochen. So lässt
@@ -130,7 +163,7 @@ function buildExtraPersons(): Person[] {
       ln,
       role,
       tel: '',
-      mail: `${fn}.${ln}@mail.de`.toLowerCase(),
+      mail: adresse(`${fn}.${ln}`.toLowerCase()),
       priv,
     }
     if (female) person.female = true
@@ -149,22 +182,22 @@ const CORE_GRP: Record<string, string> = {
 }
 
 const CORE_PERSONS: Person[] = [
-  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: '+49 171 200 11 22', mail: 'm.albrecht@mail.de', priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtLeiter: true } },
-  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: '+49 160 334 55 21', mail: 't.lindner@mail.de', priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtVertreter: true } },
-  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: '+49 152 887 90 04', mail: 'f.neumann@mail.de', priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']) },
-  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: '+49 170 445 12 60', mail: 'h.vogel@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet', 'studium']) },
-  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: '+49 173 511 78 30', mail: 'k.sommer@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet']) },
-  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', tel: '+49 157 665 43 30', mail: 'j.berger@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon']) },
-  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', tel: '+49 176 220 89 41', mail: 'p.schroeder@mail.de', priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner']) },
-  { id: 'p8', fn: 'Claus', ln: 'Maier', role: 'dienstamtgehilfe', tel: '+49 171 908 33 17', mail: 'c.maier@mail.de', priv: q(['treffpunkt', 'mikrofon', 'ton', 'ordner']) },
-  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: '+49 159 774 21 08', mail: 's.krueger@mail.de', priv: q(['treffpunkt', 'lesen', 'schulung', 'mikrofon', 'ton']) },
-  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', tel: '+49 162 118 44 92', mail: 'n.feld@mail.de', priv: q(['lesen', 'schulung', 'mikrofon']) },
-  { id: 'p11', fn: 'Jörg', ln: 'Roth', role: 'verkuendiger', tel: '+49 155 902 41 77', mail: 'j.roth@mail.de', priv: q(['lesen', 'mikrofon']) },
-  { id: 'p12', fn: 'Bernd', ln: 'Klein', role: 'verkuendiger', tel: '+49 176 348 12 09', mail: 'b.klein@mail.de', priv: q(['gebet', 'mikrofon']) },
-  { id: 'p13', fn: 'Georg', ln: 'Peters', role: 'verkuendiger', tel: '+49 151 668 90 12', mail: 'g.peters@mail.de', priv: q(['treffpunkt', 'gebet', 'ordner']) },
-  { id: 'p14', fn: 'Ulrich', ln: 'Lang', role: 'verkuendiger', tel: '+49 175 490 55 03', mail: 'u.lang@mail.de', priv: q(['gebet', 'ordner']) },
-  { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, tel: '+49 151 340 76 55', mail: 'l.hoffmann@mail.de', priv: q(['schulung']) },
-  { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, tel: '+49 173 662 09 18', mail: 'e.brandt@mail.de', priv: q(['schulung']) },
+  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: telefon(1), mail: adresse('m.albrecht'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtLeiter: true } },
+  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: telefon(2), mail: adresse('t.lindner'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtVertreter: true } },
+  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: telefon(3), mail: adresse('f.neumann'), priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']) },
+  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: telefon(4), mail: adresse('h.vogel'), priv: q(['treffpunkt', 'vortrag', 'gebet', 'studium']) },
+  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: telefon(5), mail: adresse('k.sommer'), priv: q(['treffpunkt', 'vortrag', 'gebet']) },
+  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', tel: telefon(6), mail: adresse('j.berger'), priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon']) },
+  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', tel: telefon(7), mail: adresse('p.schroeder'), priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner']) },
+  { id: 'p8', fn: 'Claus', ln: 'Maier', role: 'dienstamtgehilfe', tel: telefon(8), mail: adresse('c.maier'), priv: q(['treffpunkt', 'mikrofon', 'ton', 'ordner']) },
+  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: telefon(9), mail: adresse('s.krueger'), priv: q(['treffpunkt', 'lesen', 'schulung', 'mikrofon', 'ton']) },
+  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', tel: telefon(10), mail: adresse('n.feld'), priv: q(['lesen', 'schulung', 'mikrofon']) },
+  { id: 'p11', fn: 'Jörg', ln: 'Roth', role: 'verkuendiger', tel: telefon(11), mail: adresse('j.roth'), priv: q(['lesen', 'mikrofon']) },
+  { id: 'p12', fn: 'Bernd', ln: 'Klein', role: 'verkuendiger', tel: telefon(12), mail: adresse('b.klein'), priv: q(['gebet', 'mikrofon']) },
+  { id: 'p13', fn: 'Georg', ln: 'Peters', role: 'verkuendiger', tel: telefon(13), mail: adresse('g.peters'), priv: q(['treffpunkt', 'gebet', 'ordner']) },
+  { id: 'p14', fn: 'Ulrich', ln: 'Lang', role: 'verkuendiger', tel: telefon(14), mail: adresse('u.lang'), priv: q(['gebet', 'ordner']) },
+  { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, tel: telefon(15), mail: adresse('l.hoffmann'), priv: q(['schulung']) },
+  { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, tel: telefon(16), mail: adresse('e.brandt'), priv: q(['schulung']) },
   ...buildExtraPersons(),
 ]
 
@@ -390,8 +423,9 @@ const song = (title: string): SongItem => ({ song: title })
 
 /**
  * Hilfsdienst-Namen → Slots. Die Testdaten tragen keine `pid`: Sie beschreiben
- * eine Versammlung, die nie gespeichert wird, und `gehoertZu` findet über den
- * Namen dieselbe Person. Im Betrieb setzt jede Zuteilung ihre Id.
+ * eine Versammlung, die nie gespeichert wird. Gebunden werden die Namen erst
+ * beim Start (`demoZustand` in `demo-start.ts`), so wie der echte Ladevorgang
+ * es tut; im Betrieb setzt außerdem jede Zuteilung ihre Id.
  */
 const H = (m: Record<string, string[]>): Record<string, HelperSlot[]> =>
   Object.fromEntries(Object.entries(m).map(([k, arr]) => [k, arr.map((name) => ({ name }))]))
@@ -485,7 +519,9 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '21.–27. September', start: '2026-09-21', book: 'Jeremia 37–39', co: true,
+      // `anlass` mit seiner Wirkung `co` — beides setzt, wer den Anlass setzt
+      // (`setAnlass`, der Import). Ohne ihn fehlte der Chip „Kreisaufseher".
+      range: '21.–27. September', start: '2026-09-21', book: 'Jeremia 37–39', co: true, anlass: { art: 'co' },
       mid: {
         date: 'Dienstag, 22. September · 19:00 · Königreichssaal', end: 'Ende ca. 20:45',
         sections: [
@@ -526,6 +562,7 @@ export function buildDemoWeeks(): Week[] {
     },
     {
       range: '28. Sep – 4. Okt', start: '2026-09-28', book: 'Jeremia 40–42', mem: true, memCancel: 'we',
+      anlass: { art: 'mem', von: '2026-10-03' },
       // Das Gedächtnismahl ist am Samstag nach Sonnenuntergang statt am Sonntag
       // — und das steht hier als **Wert**. Bis zum 18. September 2026 stand es
       // nur im Anzeigetext des `date`-Feldes daneben („Samstag, 3. Oktober ·

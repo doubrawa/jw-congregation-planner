@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Inlästa veckor: {n}",
   "importBtn": "IMPORTERA NÄSTA VECKA",
   "importiere": "IMPORTERAR …",
-  "alleImportiert": "ALLA VECKOR IMPORTERADE",
   "aktuellLbl": "Aktuell:",
   "entfernen": "Ta bort",
   "abwesendChip": "Frånvarande",

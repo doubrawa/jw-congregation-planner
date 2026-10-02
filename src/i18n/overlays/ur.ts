@@ -145,7 +145,6 @@ export default {
   "wochenGeladen": "لوڈ شدہ ہفتے: {n}",
   "importBtn": "اگلا ہفتہ درآمد کریں",
   "importiere": "درآمد ہو رہا ہے …",
-  "alleImportiert": "تمام ہفتے درآمد ہو گئے",
   "aktuellLbl": "موجودہ:",
   "entfernen": "ہٹائیں",
   "abwesendChip": "غیر حاضر",

@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Завантажено тижнів: {n}",
   "importBtn": "ІМПОРТУВАТИ НАСТУПНИЙ ТИЖДЕНЬ",
   "importiere": "ІМПОРТ …",
-  "alleImportiert": "УСІ ТИЖНІ ІМПОРТОВАНО",
   "aktuellLbl": "Поточне:",
   "entfernen": "Видалити",
   "abwesendChip": "Відсутність",

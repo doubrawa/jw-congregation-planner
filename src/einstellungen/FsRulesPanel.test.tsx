@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { FsRule, Group } from '../data/types'
 import { FsRulesPanel } from './FsRulesPanel'
@@ -48,7 +48,7 @@ function zeige(
 ) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'einstellungen', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', planner: true,
     groups: GRUPPEN, persons: [], services: [], weeks: [], fsWeeks: [],

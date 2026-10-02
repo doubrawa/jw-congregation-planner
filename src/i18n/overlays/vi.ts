@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Đã tải {n} tuần",
   "importBtn": "NHẬP TUẦN TIẾP THEO",
   "importiere": "ĐANG NHẬP …",
-  "alleImportiert": "ĐÃ NHẬP TẤT CẢ CÁC TUẦN",
   "aktuellLbl": "Hiện tại:",
   "entfernen": "Xóa",
   "abwesendChip": "Vắng",

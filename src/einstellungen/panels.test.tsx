@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Group, Person } from '../data/types'
@@ -57,7 +57,7 @@ function zeige(
 ) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'einstellungen', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: 'p-ae', planner: true,
     persons: PERSONEN, groups: GRUPPEN, services: [],

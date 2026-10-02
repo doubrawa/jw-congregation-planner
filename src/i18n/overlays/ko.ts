@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "{n}주 불러옴",
   "importBtn": "다음 주 가져오기",
   "importiere": "가져오는 중 …",
-  "alleImportiert": "모든 주 가져옴",
   "aktuellLbl": "현재:",
   "entfernen": "제거",
   "abwesendChip": "결석",

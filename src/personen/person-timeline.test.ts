@@ -5,7 +5,7 @@ import {
   CONGREGATION,
   DEMO_PERSONS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import { displayName } from '../data/helpers'
 import { fromIso, tageZwischen } from '../data/meeting-dates'
 import type { Absence } from '../data/types'

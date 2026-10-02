@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Absence, Person } from '../data/types'
@@ -49,7 +49,7 @@ const abw = (over: Partial<Absence> = {}): Absence => ({
 function zeigePanel(props: Partial<Parameters<typeof AbsencePanel>[0]> = {}, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
     persons: [ICH], absences: [], weeks: [], fsWeeks: [],
     ...over,

@@ -98,7 +98,6 @@ export default {
   "wochenGeladen": "Wiki zilizopakiwa: {n}",
   "importBtn": "INGIZA WIKI IJAYO",
   "importiere": "INAINGIZWA …",
-  "alleImportiert": "WIKI ZOTE ZIMEINGIZWA",
   "aktuellLbl": "Sasa:",
   "entfernen": "Ondoa",
   "abwesendChip": "Hayupo",

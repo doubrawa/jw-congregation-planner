@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildImportWeek } from './testdaten'
+import { buildImportWeek } from '../../tests/testdaten/testdaten'
 import { emptyQualifications, istAusgefallen, serviceQualKey, weichtAb } from './helpers'
 import { helperWorkload, partWorkload } from './auslastung'
 import { setAbweichung } from './meeting-edit'

@@ -42,8 +42,10 @@ vi.mock('../lib/supabase', async (orig) => ({
 
 const { AppProvider } = await import('./store')
 const { useApp } = await import('./context')
+const { demoZustand } = await import('../../tests/testdaten/demo-start')
 
-const huelle = ({ children }: { children: ReactNode }) => <AppProvider>{children}</AppProvider>
+// Mit Testdaten: Die Aktionen brauchen Personen, Wochen und eigene Aufgaben.
+const huelle = ({ children }: { children: ReactNode }) => <AppProvider start={demoZustand}>{children}</AppProvider>
 
 afterEach(cleanup)
 

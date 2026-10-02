@@ -19,7 +19,7 @@ import {
   unlinkFamily,
 } from './helpers'
 import { loadWindow, partWorkload, tieHash, workloadOf } from './auslastung'
-import { buildDemoWeeks } from './testdaten'
+import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import type { PartItem, Person, Qualifications } from './types'
 
 import { emptyQualifications } from './helpers'

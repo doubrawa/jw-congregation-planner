@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { Week } from '../data/types'
 import { ImportPanel } from './ImportPanel'
 
@@ -39,7 +39,7 @@ function Buehne({ state }: { state: AppState }) {
 }
 
 function zeige(weeks: Week[], patch: Partial<AppState> = {}) {
-  return render(<Buehne state={{ ...initialState(), weeks, ...patch }} />)
+  return render(<Buehne state={{ ...demoZustand(), weeks, ...patch }} />)
 }
 
 afterEach(cleanup)

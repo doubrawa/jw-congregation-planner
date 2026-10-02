@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications } from '../data/helpers'
 import { LOAD_RADIUS } from '../data/auslastung'
@@ -116,7 +116,7 @@ const SEL_GRUPPE: SlotSelection = {
 function zeige(sel: SlotSelection, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', planner: true,
     persons: PERSONEN,

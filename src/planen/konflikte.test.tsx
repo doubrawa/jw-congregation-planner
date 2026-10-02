@@ -9,7 +9,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import type { Meeting, Person, Service, Week } from '../data/types'
 import { ConflictsBanner } from './PlanBanners'
@@ -92,7 +92,7 @@ function mitSerien(anzahl: number): { weeks: Week[]; persons: Person[] } {
 }
 
 const basis = (over: Partial<AppState>): AppState => ({
-  ...initialState(),
+  ...demoZustand(),
   week: 1, // mittlere Woche der Serie
   planner: true,
   services: DIENSTE,

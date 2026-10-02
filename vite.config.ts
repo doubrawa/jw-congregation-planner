@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { configDefaults, defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { alsCacheName, SW_PLATZHALTER, swMitKennung } from './scripts/sw-kennung.mjs'
+import { entwicklerseite, testdatenWache } from './scripts/testdaten-grenze.mjs'
+import { TESTDATEN_KENNZEICHEN } from './tests/testdaten/kennzeichen.ts'
 
 /**
  * Kennung des Stands, den ein Gerät gerade ausführt — im Profil sichtbar.
@@ -81,7 +83,10 @@ function serviceWorkerKennung(): Plugin {
 // `vite build --base=/jw-congregation-planner/`.
 export default defineConfig(({ command }) => ({
   base: '/',
-  plugins: [react(), serviceWorkerKennung()],
+  // Die Testdaten bleiben draußen: `/demo.html` zeigt sie nur im Dev-Server,
+  // und jeder Build bricht ab, in dem eines ihrer Module oder Kennzeichen
+  // steckt (scripts/testdaten-grenze.mjs).
+  plugins: [react(), serviceWorkerKennung(), entwicklerseite(), testdatenWache(TESTDATEN_KENNZEICHEN)],
   // Nur beim Build ermitteln: sonst liefe bei jedem Dev-Start und jedem
   // Testlauf ein git-Prozess mit, obwohl die Kennung dort nichts aussagt.
   define: { __BUILD_ID__: JSON.stringify(command === 'build' ? buildId() : 'dev') },
@@ -97,10 +102,10 @@ export default defineConfig(({ command }) => ({
     // Das Muster gilt relativ zur Wurzel, trifft im Worktree selbst also
     // nichts — und sonst liegt unter `.claude/` kein Test.
     exclude: [...configDefaults.exclude, '.claude/**'],
-    // Die CI hat keine Supabase-Variablen und testet deshalb im Demo-Modus.
-    // Lokal läse Vite `.env.local` mit und testete ohne Demo-Daten — ein Test,
-    // der auf `initialState()` baut, war dann lokal grün und in der CI rot
-    // (15.9.2026, der Deploy blieb stehen). Leer gilt hier dasselbe wie dort.
+    // Die CI hat beim Testen keine Supabase-Variablen. Lokal läse Vite
+    // `.env.local` mit — ein Test, der davon abhing, war dann lokal grün und
+    // in der CI rot (15.9.2026, der Deploy blieb stehen). Leer gilt hier
+    // dasselbe wie dort: kein Client, also kein Weg, der hinausgeht.
     env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
     alias: [
       // Die Edge-Functions holen web-push über den Deno-npm-Specifier, den Node

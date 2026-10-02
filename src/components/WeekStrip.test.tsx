@@ -11,8 +11,8 @@ import {
   useAppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
-import { buildDemoWeeks } from '../data/testdaten'
+import { demoZustand } from '../../tests/testdaten/demo-start'
+import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import { WeekStrip } from './WeekStrip'
 
 /**
@@ -53,7 +53,7 @@ afterEach(cleanup)
 describe('Wochen-Vorschau', () => {
   const weeks = buildDemoWeeks()
   // Woche 1 von dreien: links und rechts steht je eine Nachbarwoche.
-  const state: AppState = { ...initialState(), weeks, week: 1 }
+  const state: AppState = { ...demoZustand(), weeks, week: 1 }
 
   it('beide Lesewege sehen in jeder Vorschau dieselbe Woche', () => {
     const { getAllByTestId } = render(
@@ -132,25 +132,25 @@ describe('Der Streifen verdrahtet die Wischgeste', () => {
   afterEach(() => vi.useRealTimers())
 
   it('nach links wischen blättert vorwärts', () => {
-    const { container, dispatch } = streifen({ ...initialState(), weeks, week: 1 })
+    const { container, dispatch } = streifen({ ...demoZustand(), weeks, week: 1 })
     wischen(container.querySelector('.week-viewport')!, 300, 100)
     expect(dispatch).toHaveBeenCalledWith({ type: 'nextWeek' })
   })
 
   it('nach rechts zurück', () => {
-    const { container, dispatch } = streifen({ ...initialState(), weeks, week: 1 })
+    const { container, dispatch } = streifen({ ...demoZustand(), weeks, week: 1 })
     wischen(container.querySelector('.week-viewport')!, 100, 300)
     expect(dispatch).toHaveBeenCalledWith({ type: 'prevWeek' })
   })
 
   it('an der letzten Woche passiert nichts — der Streifen kennt seine Grenzen', () => {
-    const { container, dispatch } = streifen({ ...initialState(), weeks, week: weeks.length - 1 })
+    const { container, dispatch } = streifen({ ...demoZustand(), weeks, week: weeks.length - 1 })
     wischen(container.querySelector('.week-viewport')!, 300, 100)
     expect(dispatch).not.toHaveBeenCalled()
   })
 
   it('die Vorschau löst nichts aus — sie zeichnet eine fremde Woche', () => {
-    const { container, dispatch } = streifen({ ...initialState(), weeks, week: 1 })
+    const { container, dispatch } = streifen({ ...demoZustand(), weeks, week: 1 })
     fireEvent.click(container.querySelector('.week-page--vor')!)
     expect(dispatch).not.toHaveBeenCalled()
   })

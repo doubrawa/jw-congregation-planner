@@ -8,7 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { programmPlaetze } from '../data/helpers'
 import {
@@ -17,7 +17,7 @@ import {
   DEMO_GROUPS,
   DEMO_PERSONS,
   DEMO_SERVICES,
-} from '../data/testdaten'
+} from '../../tests/testdaten/testdaten'
 import type { Week } from '../data/types'
 
 /**
@@ -95,7 +95,7 @@ function alleBesetzt(): { weeks: Week[]; namen: string[] } {
 
 function zeige(weeks: Week[]) {
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',

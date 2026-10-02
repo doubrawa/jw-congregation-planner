@@ -9,7 +9,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
-import { initialState } from '../app/init'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { MyTask, Person, S89Payload, SubstituteReq } from '../data/types'
@@ -55,7 +55,7 @@ const gesuch = (over: Partial<SubstituteReq> = {}): SubstituteReq => ({
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
-    ...initialState(),
+    ...demoZustand(),
     screen: 'aufgaben', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
     persons: [ICH], services: [], groups: [], absences: [],
@@ -239,7 +239,7 @@ describe('Der Sprung aus „Ersatz gesucht"', () => {
   }
 
   const basis = (over: Partial<AppState>): AppState => ({
-    ...initialState(),
+    ...demoZustand(),
     screen: 'aufgaben', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
     persons: [ICH], services: [], groups: [], absences: [],

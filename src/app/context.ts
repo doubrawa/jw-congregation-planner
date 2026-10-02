@@ -60,9 +60,10 @@ export interface Toast {
 export type { Congregation }
 
 /**
- * Datenquelle: `demo` = In-Memory (kein Supabase); `loading` = lädt aus der
- * DB; `ready` = geladen; `no-membership` = Konto keiner Versammlung zugeordnet;
- * `error` = Ladefehler.
+ * Datenquelle: `demo` = erfundene Daten im Speicher, nur auf der
+ * Entwicklerseite (`tests/testdaten/demo-start.ts`) — die App selbst setzt es
+ * nie; `loading` = lädt aus der DB; `ready` = geladen; `no-membership` = Konto
+ * keiner Versammlung zugeordnet; `error` = Ladefehler.
  */
 export type DataStatus = 'demo' | 'loading' | 'ready' | 'no-membership' | 'error'
 
@@ -203,8 +204,7 @@ export interface AppState {
   notifOpen: boolean
   slotSel: SlotSelection | null // offenes Zuteilungs-Sheet (Planen)
   selectedPersonId: string | null // offenes Personen-Detail
-  importing: boolean // Programm-Import läuft (~0.9 s)
-  imported: boolean // alle verfügbaren Wochen importiert
+  importing: boolean // Programm-Import läuft
   confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
   myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)
   s89: S89Payload | null // offenes S-89-Formular
@@ -310,8 +310,7 @@ export type AppAction =
   // Passwort-Reset (PASSWORD_RECOVERY)
   | { type: 'setRecovery'; on: boolean }
   | { type: 'startImport' }
-  | { type: 'finishImport' } // Demo: simulierter Import (buildImportWeek)
-  | { type: 'addImportedWeek'; week: Week } // Produktion: echte jw.org-Woche
+  | { type: 'addImportedWeek'; week: Week } // die von jw.org geholte Woche
   | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, WeekVariant> } // nachgeladene Sprachvarianten
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string; pid?: string; rolle?: string; herkunft?: string; extern?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher)
