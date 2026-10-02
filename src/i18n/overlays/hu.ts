@@ -17,7 +17,6 @@ export default {
   "abmelden": "Kijelentkezés",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Hírnök",
-  "demoSuffix": " (demó)",
   "email": "E-MAIL",
   "emailPh": "nev@pelda.hu",
   "passwort": "JELSZÓ",

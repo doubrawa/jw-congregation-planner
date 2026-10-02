@@ -18,7 +18,6 @@ export default {
   "abmelden": "התנתקות",
   "rolleKoordinator": "מנהל",
   "rolleVerkuendiger": "מבשר",
-  "demoSuffix": " (הדגמה)",
   "email": "אימייל",
   "emailPh": "name@example.com",
   "passwort": "סיסמה",

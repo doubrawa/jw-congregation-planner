@@ -60,12 +60,15 @@ export interface Toast {
 export type { Congregation }
 
 /**
- * Datenquelle: `demo` = erfundene Daten im Speicher, nur auf der
- * Entwicklerseite (`tests/testdaten/demo-start.ts`) — die App selbst setzt es
- * nie; `loading` = lädt aus der DB; `ready` = geladen; `no-membership` = Konto
- * keiner Versammlung zugeordnet; `error` = Ladefehler.
+ * Datenquelle: `loading` = lädt aus der DB; `ready` = geladen; `no-membership`
+ * = Konto keiner Versammlung zugeordnet; `error` = Ladefehler.
+ *
+ * Bis zum 2.10.2026 gab es dazu `demo` — erfundene Daten im Speicher, und an
+ * acht Stellen verhielt sich die App dann anders als im Betrieb. Die
+ * Entwicklerseite (`tests/testdaten/demo-start.ts`) startet jetzt `ready` und
+ * läuft denselben Weg; was ein Konto braucht, fragt `istAngemeldet`.
  */
-export type DataStatus = 'demo' | 'loading' | 'ready' | 'no-membership' | 'error'
+export type DataStatus = 'loading' | 'ready' | 'no-membership' | 'error'
 
 /** Nutzdaten der Hydration (aus Supabase geladen). */
 export interface HydratePayload {
@@ -125,10 +128,11 @@ export interface AppState {
 
   /* ---- Sitzung und Rechte ----------------------------------------------- */
   planner: boolean // Rechte: Planen/Personen/Einstellungen sichtbar
-  // Persistenz (Supabase); im Demo-Modus null bzw. 'demo'
+  // Persistenz (Supabase); null bis zur Hydration — und ohne Datenbank
+  // (Entwicklerseite) für immer. Konto-Funktionen fragen nach `userId`.
   congregationId: string | null
   userId: string | null
-  personId: string | null // eigene Person (aus members.person_id); Demo: null
+  personId: string | null // eigene Person (aus members.person_id); ohne Verknüpfung null
   dataStatus: DataStatus
   dataEmpty: boolean // geladen, aber Versammlung noch leer → Verkündiger sehen den Hinweis, Planer ihre Bildschirme
   // Daten kommen aus der Offline-Momentaufnahme (lib/snapshot.ts): Zeitpunkt der

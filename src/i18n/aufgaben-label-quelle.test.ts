@@ -13,8 +13,8 @@ import { describe, expect, it } from 'vitest'
  * die fünfte — der Bestätigungs-Dialog beim App-Start — blieb bei
  * `tp(task.title)` und zeigte für jede Rollen-Aufgabe eine **leere Zeile**.
  * Aufgefallen ist es erst beim zeilenweisen Durchgehen, nicht durch einen Test:
- * die Aufgaben-Tests prüfen die Ableitung, nicht das Rendern, und der
- * Demo-Modus liefert feste Aufgaben ohne Rollen-Hälfte.
+ * die Aufgaben-Tests prüfen die Ableitung, nicht das Rendern, und die
+ * Testdaten liefern feste Aufgaben ohne Rollen-Hälfte (`DEMO_MY_TASKS`).
  *
  * Deshalb hier eine Prüfung am Quelltext, nach dem Vorbild von
  * `testdaten-grenze.test.ts`: Die beiden Felder dürfen nur an den Stellen

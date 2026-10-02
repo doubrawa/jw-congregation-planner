@@ -17,7 +17,6 @@ export default {
   "abmelden": "Deconectare",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Vestitor",
-  "demoSuffix": " (demo)",
   "email": "E-MAIL",
   "emailPh": "nume@exemplu.ro",
   "passwort": "PAROLĂ",

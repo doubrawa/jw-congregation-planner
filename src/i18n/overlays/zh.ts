@@ -17,7 +17,6 @@ export default {
   "abmelden": "退出",
   "rolleKoordinator": "管理员",
   "rolleVerkuendiger": "传道员",
-  "demoSuffix": "（演示）",
   "email": "电子邮箱",
   "emailPh": "name@example.com",
   "passwort": "密码",

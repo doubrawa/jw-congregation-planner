@@ -24,7 +24,7 @@ const aufgabenVon = (name: string) => [
   ...deriveMyFsTasks(fsWeeks, weeks.map((w) => w.start), name, {}, undefined, 'Leiter'),
 ]
 
-describe('Zusagen im Demo-Modus', () => {
+describe('Zusagen der Entwicklerseite', () => {
   it('wer als unbestätigt geführt ist, hat nirgends zugesagt — aber abgesagt haben kann er', () => {
     for (const name of DEMO_UNBESTAETIGT) {
       const stufen = aufgabenVon(name).map((a) => zusagen[a.id])

@@ -17,7 +17,6 @@ export default {
   "abmelden": "Esci",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Proclamatore",
-  "demoSuffix": " (demo)",
   "email": "EMAIL",
   "emailPh": "nome@esempio.it",
   "passwort": "PASSWORD",

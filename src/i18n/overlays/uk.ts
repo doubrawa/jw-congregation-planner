@@ -17,7 +17,6 @@ export default {
   "abmelden": "Вийти",
   "rolleKoordinator": "Адмін",
   "rolleVerkuendiger": "Вісник",
-  "demoSuffix": " (демо)",
   "email": "ЕЛ. ПОШТА",
   "emailPh": "name@example.ua",
   "passwort": "ПАРОЛЬ",

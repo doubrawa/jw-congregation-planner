@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { useApp } from '../app/context'
+import { istAngemeldet } from '../app/eigene-person'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { displayName, doppelteFesteRollen, emptyQualifications, initials, listName, ohneGruppe, personCompare, serviceQualKey } from '../data/helpers'
 import { copyText } from '../lib/clipboard'
@@ -75,7 +76,6 @@ function PersonList() {
     [state.persons, state.lang, state.members, state.groups],
   )
   const filtered = sorted.filter((p) => passtZumFilter(p, filter))
-  const production = state.dataStatus !== 'demo'
 
   // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen. Mit
   // konfigurierter Domain gehen die Mails direkt raus (send-invite); die
@@ -215,7 +215,7 @@ function PersonList() {
         {t.neuePerson}
       </button>
 
-      {production && (
+      {istAngemeldet(state) && (
         <button type="button" className="btn-outline pers-add" onClick={() => void inviteAll()}>
           {t.alleEinladen}
         </button>

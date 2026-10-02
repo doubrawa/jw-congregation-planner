@@ -19,7 +19,6 @@ export default {
   "abmelden": "Log out",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Publisher",
-  "demoSuffix": " (demo)",
   "offlineBanner": "Offline · as of {m}",
   "offlineBannerHint": "Read-only — changes are not possible",
   "offlineReadOnly": "Offline — changes are possible again once you are online",

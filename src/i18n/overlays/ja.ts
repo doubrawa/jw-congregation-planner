@@ -17,7 +17,6 @@ export default {
   "abmelden": "ログアウト",
   "rolleKoordinator": "管理者",
   "rolleVerkuendiger": "伝道者",
-  "demoSuffix": "（デモ）",
   "email": "メール",
   "emailPh": "name@example.com",
   "passwort": "パスワード",

@@ -310,7 +310,7 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
     expect(unsubscribe).toHaveBeenCalled()
   })
 
-  it('ohne Supabase wird gar nicht erst gefragt (Demo-Modus)', async () => {
+  it('ohne Supabase wird gar nicht erst gefragt (keine Datenbank, Entwicklerseite)', async () => {
     konfiguriert.wert = false
     starte()
     await act(async () => {

@@ -17,7 +17,6 @@ export default {
   "abmelden": "Sair",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Publicador",
-  "demoSuffix": " (demo)",
   "email": "E-MAIL",
   "emailPh": "nome@exemplo.com.br",
   "passwort": "SENHA",

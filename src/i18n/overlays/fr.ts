@@ -17,7 +17,6 @@ export default {
   "abmelden": "Se déconnecter",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Proclamateur",
-  "demoSuffix": " (démo)",
   "email": "E-MAIL",
   "emailPh": "nom@exemple.fr",
   "passwort": "MOT DE PASSE",

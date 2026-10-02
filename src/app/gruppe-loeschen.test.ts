@@ -35,10 +35,10 @@ import type { FsInstance, Group, Person } from '../data/types'
  * am ersten Samstag im Monat dem Versammlungstreffpunkt weicht (Woche 3).
  */
 
-/** Demo-Zustand mit dem, was `removeGroup` liest und schreibt. */
+/** Zustand aus den Testdaten mit dem, was `removeGroup` liest und schreibt. */
 function stand(over: Partial<AppState> = {}): AppState {
   return {
-    dataStatus: 'demo',
+    dataStatus: 'ready',
     lang: 'de',
     toast: null,
     week: 0,

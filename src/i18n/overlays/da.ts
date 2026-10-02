@@ -17,7 +17,6 @@ export default {
   "abmelden": "Log ud",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Forkynder",
-  "demoSuffix": " (demo)",
   "email": "E-MAIL",
   "emailPh": "navn@eksempel.dk",
   "passwort": "ADGANGSKODE",

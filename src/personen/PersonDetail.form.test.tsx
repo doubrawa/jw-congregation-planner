@@ -363,10 +363,10 @@ describe('Zurück und Konto-Karte', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: null })
   })
 
-  it('die Konto-Karte gibt es nur in der Produktion — im Demo gibt es keine Konten', () => {
+  it('die Konto-Karte gibt es nur angemeldet — ohne Konto (Entwicklerseite) gibt es keine Konten', () => {
     expect(zeige(person()).container.textContent).toContain(t.kontoCard)
     cleanup()
-    expect(zeige(person(), { dataStatus: 'demo' }).container.textContent).not.toContain(t.kontoCard)
+    expect(zeige(person(), { userId: null }).container.textContent).not.toContain(t.kontoCard)
   })
 
   it('der Kopf nennt Namen, Rolle und Versammlung', () => {

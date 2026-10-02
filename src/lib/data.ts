@@ -1,8 +1,8 @@
 /**
  * Daten-Zugriff auf Supabase (Persistenz). Lädt die Daten einer Versammlung
  * für den eingeloggten Nutzer und schreibt Änderungen zurück. Alle Funktionen
- * setzen einen konfigurierten Client voraus (siehe supabase.ts) — im Demo-Modus
- * werden sie nicht aufgerufen.
+ * setzen einen konfigurierten Client voraus (siehe supabase.ts) — ohne Client
+ * steigen sie vorher aus (`if (!supabase)`).
  *
  * Persistiert: Versammlung (Stammdaten + Einstellungen), Mitgliedschaft
  * (Rolle), Personen, Dienste, Wochen (als JSONB), eigene Abwesenheiten,

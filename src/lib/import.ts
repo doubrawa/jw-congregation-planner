@@ -1,7 +1,7 @@
 /**
  * Arbeitsheft-Import: ruft die Supabase Edge Function `import-week` auf, die
  * das Programm serverseitig von jw.org holt und als Week zurückgibt (umgeht
- * CORS). Im Demo-Modus nicht verfügbar.
+ * CORS). Ohne Datenbank (keine Konfiguration, Entwicklerseite) nicht verfügbar.
  */
 
 import { weekEndMs } from '../data/meeting-dates'
@@ -9,13 +9,14 @@ import type { Week } from '../data/types'
 import { supabase } from './supabase'
 
 /**
- * Fehlerfall des Imports. `'demo'`, `'unbekannt'` und `'ende'` (das Heft hat
- * keine weitere Woche) sind Schlüssel, die der Aufrufer in der Sprache des
- * Nutzers ausgibt — hier stand früher ein fester deutscher Satz, den auch ein
- * englischer Planer zu sehen bekam. Alles andere ist die Meldung des Servers
- * und wird unverändert durchgereicht.
+ * Fehlerfall des Imports. `'ohne-datenbank'`, `'unbekannt'` und `'ende'` (das
+ * Heft hat keine weitere Woche) sind Schlüssel, die der Aufrufer in der Sprache
+ * des Nutzers ausgibt — hier stand früher ein fester deutscher Satz, den auch
+ * ein englischer Planer zu sehen bekam. Alles andere ist die Meldung des
+ * Servers und wird unverändert durchgereicht. (`'ohne-datenbank'` hieß bis zum
+ * 2.10.2026 `'demo'`; einen Demo-Modus gibt es nicht mehr.)
  */
-export type ImportFehler = 'demo' | 'unbekannt' | 'ende' | (string & {})
+export type ImportFehler = 'ohne-datenbank' | 'unbekannt' | 'ende' | (string & {})
 
 /**
  * Was der Server zu einer Antwort mit Status ≠ 2xx sagt. `functions.invoke`
@@ -60,7 +61,7 @@ export async function importNextWeek(
   langCode = 'de',
   altLangs: string[] = [],
 ): Promise<ImportResult> {
-  if (!supabase) return { ok: false, error: 'demo' }
+  if (!supabase) return { ok: false, error: 'ohne-datenbank' }
   const { data, error } = await supabase.functions.invoke('import-week', {
     body: { after: afterISO, lang: langCode, altLangs },
   })
@@ -81,7 +82,7 @@ export async function importWeekVariants(
   langCode: string,
   altLangs: string[],
 ): Promise<ImportResult> {
-  if (!supabase) return { ok: false, error: 'demo' }
+  if (!supabase) return { ok: false, error: 'ohne-datenbank' }
   const { data, error } = await supabase.functions.invoke('import-week', {
     body: { start: startISO, lang: langCode, altLangs },
   })

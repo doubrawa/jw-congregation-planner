@@ -17,7 +17,6 @@ export default {
   "abmelden": "Đăng xuất",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Người công bố",
-  "demoSuffix": " (demo)",
   "email": "EMAIL",
   "emailPh": "ten@vidu.vn",
   "passwort": "MẬT KHẨU",

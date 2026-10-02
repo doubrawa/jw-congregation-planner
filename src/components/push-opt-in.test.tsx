@@ -256,8 +256,8 @@ describe('Der Opt-in-Hinweis erscheint im richtigen Moment', () => {
     expect(container.querySelector('.push-prompt-text')?.textContent).toBe(t.pushPromptText)
   })
 
-  it('im Demo-Modus nicht — dort gibt es keine Erinnerungen', () => {
-    const { container } = zeigePrompt({ myTasks: [task('T1')], dataStatus: 'demo' })
+  it('ohne angemeldetes Konto nicht — ein Abo gehört einem Nutzer (Entwicklerseite)', () => {
+    const { container } = zeigePrompt({ myTasks: [task('T1')], userId: null, congregationId: null })
     expect(container.querySelector('.push-prompt')).toBeNull()
   })
 

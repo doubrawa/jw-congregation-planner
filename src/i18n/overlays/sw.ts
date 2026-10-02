@@ -17,7 +17,6 @@ export default {
   "abmelden": "Toka",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Mhubiri",
-  "demoSuffix": " (demo)",
   "email": "BARUA PEPE",
   "emailPh": "jina@mfano.co.ke",
   "passwort": "NENOSIRI",

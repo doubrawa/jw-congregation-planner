@@ -40,9 +40,9 @@ export function ProfilScreen() {
   // Mitglieder-Zeile ist auch für Nicht-Planer sichtbar).
   const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''
 
-  // Web-Push (nur Produktion): Schalter, wenn der Browser es kann; auf iOS im
+  // Web-Push (nur angemeldet): Schalter, wenn der Browser es kann; auf iOS im
   // Browser stattdessen Installations-Hinweis (dort erst als App möglich).
-  const { production, supported, needsInstall, subscribed, enable, disable } = usePush()
+  const { angemeldet, supported, needsInstall, subscribed, enable, disable } = usePush()
   const installAvail = useInstallAvailable()
   const togglePush = () => void (subscribed ? disable() : enable())
 
@@ -68,19 +68,19 @@ export function ProfilScreen() {
           <span className="kv-key">{t.versammlungLbl}</span>
           <span className="kv-val">{state.congregation.name}</span>
         </div>
-        {production && supported && (
+        {angemeldet && supported && (
           <div className="kv-row">
             <span className="kv-key">{t.pushLbl}</span>
             <Switch on={subscribed} label={t.pushLbl} onToggle={togglePush} />
           </div>
         )}
-        {production && needsInstall && (
+        {angemeldet && needsInstall && (
           <div className="kv-row kv-row--plain prof-push-ios">
             <span className="kv-key">{t.pushLbl}</span>
             <span className="prof-push-hint">{t.pushIosHint}</span>
           </div>
         )}
-        {production && installAvail && (
+        {angemeldet && installAvail && (
           <button type="button" className="btn-outline prof-install" onClick={() => void promptInstall()}>
             {t.appInstallieren}
           </button>

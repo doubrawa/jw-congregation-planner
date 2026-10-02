@@ -66,9 +66,12 @@ SHOTS=(
   "programm-woche|s=programm&tab=mid"
   "programm-wochenende|s=programm&tab=we"
   "programm-treffpunkte|s=programm&tab=fs"
-  "verkuendiger-start|s=start&pl=0&p=p9"
-  "verkuendiger-aufgaben|s=aufgaben&pl=0&p=p9"
-  "verkuendiger-profil|s=profil&pl=0&p=p9"
+  # Angemeldet als p9 (`me=`), nicht nur ausgewählt (`p=`): Seit dem 2.10.2026
+  # leitet auch die Entwicklerseite „Meine Aufgaben" ab, statt feste zu zeigen —
+  # ohne angemeldete Person gibt es keine.
+  "verkuendiger-start|s=start&pl=0&me=p9"
+  "verkuendiger-aufgaben|s=aufgaben&pl=0&me=p9"
+  "verkuendiger-profil|s=profil&pl=0&me=p9"
   # Angemeldet als p9 (Gruppe 1): zeigt die Treffpunkte der EIGENEN Gruppe —
   # fremde Gruppen stehen hier bewusst nicht (siehe fsVisible in src/data/fs.ts).
   "verkuendiger-treffpunkte|s=programm&tab=fs&pl=0&me=p9"
@@ -76,7 +79,7 @@ SHOTS=(
   # die Planungs-Karte (T95) über der Zeitleiste steht und im Demo-Bestand
   # vier Wochen nennt — nichts davon ist gesendet.
   "planer-start|s=start&me=p9|${W}x1300"
-  "planer-aufgaben|s=aufgaben"
+  "planer-aufgaben|s=aufgaben&me=p9"
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"
   # „Plan senden" (T99) steht am Ende der Woche. Aufgenommen im

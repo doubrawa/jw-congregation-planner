@@ -17,7 +17,6 @@ export default {
   "abmelden": "Logga ut",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Förkunnare",
-  "demoSuffix": " (demo)",
   "email": "E-POST",
   "emailPh": "namn@exempel.se",
   "passwort": "LÖSENORD",

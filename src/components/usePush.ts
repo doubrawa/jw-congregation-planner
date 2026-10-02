@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
+import { istAngemeldet } from '../app/eigene-person'
 import { deletePushSubscription, savePushLanguage, savePushSubscription } from '../lib/data'
 import { appInstalled, installAvailable, onInstallChange } from '../lib/install'
 import {
@@ -12,7 +13,7 @@ import {
 import { useT } from '../i18n/useT'
 
 interface PushState {
-  production: boolean // echtes Konto (kein Demo)
+  angemeldet: boolean // angemeldetes Konto — ohne gibt es kein Abo, an das Push gehen könnte
   supported: boolean // Push direkt möglich (Schalter/„Aktivieren")
   needsInstall: boolean // erst als Home-Bildschirm-App möglich (iOS)
   subscribed: boolean // dieses Gerät hat ein Abo
@@ -29,24 +30,25 @@ interface PushState {
 export function usePush(): PushState {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const production = state.dataStatus !== 'demo'
+  // Ein Abo gehört einem Nutzer (`push_subscriptions.user_id`).
+  const angemeldet = istAngemeldet(state)
   const supported = pushSupported()
   const needsInstall = pushNeedsInstall()
   const [subscribed, setSubscribed] = useState(false)
 
   useEffect(() => {
-    if (!production || !supported) return
+    if (!angemeldet || !supported) return
     void currentSubscription().then((sub) => setSubscribed(Boolean(sub)))
-  }, [production, supported])
+  }, [angemeldet, supported])
 
   // Sprachwechsel ans bestehende Abo weiterreichen: Push-Text entsteht beim
   // Versand, wer die Sprache später umstellt, bekäme sonst dauerhaft die alte.
   useEffect(() => {
-    if (!production || !supported || !subscribed) return
+    if (!angemeldet || !supported || !subscribed) return
     void currentSubscription().then((sub) => {
       if (sub) savePushLanguage(sub.endpoint, state.lang)
     })
-  }, [production, supported, subscribed, state.lang])
+  }, [angemeldet, supported, subscribed, state.lang])
 
   const enable = async (): Promise<boolean> => {
     const sub = await subscribePush().catch(() => null)
@@ -71,7 +73,7 @@ export function usePush(): PushState {
     dispatch({ type: 'showToast', text: t.toastPushAus })
   }
 
-  return { production, supported, needsInstall, subscribed, enable, disable }
+  return { angemeldet, supported, needsInstall, subscribed, enable, disable }
 }
 
 /**

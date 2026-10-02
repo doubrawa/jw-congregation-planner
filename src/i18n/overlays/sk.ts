@@ -17,7 +17,6 @@ export default {
   "abmelden": "Odhlásiť sa",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Zvestovateľ",
-  "demoSuffix": " (demo)",
   "email": "E-MAIL",
   "emailPh": "meno@priklad.sk",
   "passwort": "HESLO",

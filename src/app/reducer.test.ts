@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { isNameless, reducer } from './reducer'
+import { aufgabenAbgeleitet, isNameless, reducer } from './reducer'
 import { hatAuxKlasse } from '../data/aux-class'
 import type { AppAction, AppState } from './context'
 import type { HydratePayload } from './context'
@@ -43,7 +43,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     congregationId: null,
     userId: null,
     personId: null,
-    dataStatus: 'demo',
+    dataStatus: 'ready',
     dataEmpty: false,
     staleAt: null,
     members: [],
@@ -749,9 +749,10 @@ describe('Aufgaben aus einer Sprachvariante', () => {
       const sel = firstPartSlot(weeks[0]!, 'mid')
       const name = (weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name
       const ich = DEMO_PERSONS.find((p) => displayName(p) === name)!
-      const s = reducer(makeState({ weeks, personId: ich.id, lang: 'en', congLang: 'de', myTasks: [] }), {
-        type: 'setDataStatus', status: 'ready',
-      })
+      // Abgeleitet direkt: Bis zum 2.10.2026 stieß hier der Wechsel von `demo`
+      // auf `ready` die Ableitung an. Den Datenstand `demo` gibt es nicht mehr,
+      // und ein Sprachwechsel (`neuAbgeleitet`) nähme dem Fall seine Sprache.
+      const s = aufgabenAbgeleitet(makeState({ weeks, personId: ich.id, lang: 'en', congLang: 'de', myTasks: [] }))
       const erste = s.myTasks.filter((task) => task.id.startsWith(`${weeks[0]!.start}|`))
       expect(erste.length).toBeGreaterThan(0)
       expect(erste.every((task) => task.lesersprache)).toBe(true)
@@ -907,17 +908,10 @@ describe('Treffpunkte-Grundplan (Regeln)', () => {
 })
 
 describe('Bestätigungs-Flow', () => {
-  it('Demo: confirmTask/declineTask ändern den Task-Status direkt', () => {
-    const s = makeState()
-    const taskId = s.myTasks[0].id
-    const conf = reducer(s, { type: 'confirmTask', id: taskId })
-    expect(conf.myTasks.find((t) => t.id === taskId)!.status).toBe('bestätigt')
-    const dec = reducer(s, { type: 'declineTask', id: taskId })
-    expect(dec.myTasks.find((t) => t.id === taskId)!.status).toBe('verhindert')
-    expect(dec.notifs[0].type).toBe('verhindert')
-  })
-
-  it('Produktion: schreibt in die ConfirmationMap statt in myTasks', () => {
+  // Bis zum 2.10.2026 stand hier dazu „Demo: confirmTask/declineTask ändern den
+  // Task-Status direkt". Einen Demo-Zweig gibt es nicht mehr — bestätigt wird
+  // überall über die Zusagen, die Liste folgt aus der Ableitung.
+  it('schreibt in die ConfirmationMap statt in myTasks', () => {
     const s = makeState({ dataStatus: 'ready', personId: null })
     const conf = reducer(s, { type: 'confirmTask', id: 'slot|key|1' })
     expect(conf.confirmations['slot|key|1']).toBe('bestätigt')
@@ -1604,12 +1598,6 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const neuerTermin = nachher.myTasks.find((t) => t.id === midTask!.id)
     expect(neuerTermin, 'Aufgabe verschwunden').toBeDefined()
     expect(neuerTermin!.at, 'Termin hängt an der alten Einstellung').toBe(Date.UTC(2026, 8, 10))
-  })
-
-  it('im Demo-Modus bleiben die Demo-Aufgaben unangetastet', () => {
-    const s = makeState({ dataStatus: 'demo' })
-    const next = reducer(s, { type: 'setLang', lang: 'en' })
-    expect(next.myTasks).toEqual(s.myTasks)
   })
 
   it('Treffpunkt-Leitungen stehen mit unter „Meine Aufgaben"', () => {

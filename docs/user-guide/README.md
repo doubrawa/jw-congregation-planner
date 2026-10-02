@@ -16,7 +16,9 @@ erzeugt – nie von Hand.
 
 Aufgenommen wird die **Entwicklerseite** `/demo.html`: die App mit den
 erfundenen Daten aus `tests/testdaten/`, ohne Login und ohne Datenbank. Ihr Hash
-versetzt sie direkt in den jeweiligen Zustand. Ablauf:
+versetzt sie direkt in den jeweiligen Zustand. Ihre Uhr steht auf **Montag,
+7. September 2026, 9 Uhr** (`tests/testdaten/uhr.ts`) — die Bilder sehen also
+gleich aus, egal an welchem Tag sie entstehen. Ablauf:
 
 ```bash
 npm run dev                               # Dev-Server auf Port 5173 starten
@@ -38,7 +40,7 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 | `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Treffpunkte) |
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Planer |
 | `p`   | **Ausgewählte** Person‑Id — auf der Personen‑Seite öffnet es deren Detail |
-| `me`  | **Angemeldete** Person‑Id: wessen App das hier ist. Davon hängt ab, was persönlich ist — der „DU"‑Chip, „Deine Einträge", und welche **Gruppentreffpunkte** überhaupt erscheinen (nur die der eigenen Gruppe) |
+| `me`  | **Angemeldete** Person‑Id: wessen App das hier ist. Davon hängt ab, was persönlich ist — „Meine Aufgaben" und Einspringen (abgeleitet wie im Betrieb), der „DU"‑Chip, „Deine Einträge", und welche **Gruppentreffpunkte** überhaupt erscheinen (nur die der eigenen Gruppe) |
 | `t`   | Theme (z. B. `weiss` für die druckfreundliche Doku) |
 | `fs`  | Schriftgröße‑Faktor (`0.9`, `1`, `1.15`, `1.3`, `1.45`) — für Layout‑Tests bei großer Schrift |
 | `l` / `c` | App‑Sprache / Versammlungssprache |
@@ -57,13 +59,13 @@ Ende automatisch auf; du musst nichts extra tun.
 | `programm-woche.png` | `s=programm&tab=mid` | (Reserve) |
 | `programm-wochenende.png` | `s=programm&tab=we` | (Reserve) |
 | `programm-treffpunkte.png` | `s=programm&tab=fs` | planer |
-| `verkuendiger-start.png` | `s=start&pl=0&p=p9` | verkuendiger |
-| `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&p=p9` | verkuendiger |
-| `verkuendiger-profil.png` | `s=profil&pl=0&p=p9` | verkuendiger |
+| `verkuendiger-start.png` | `s=start&pl=0&me=p9` | verkuendiger |
+| `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&me=p9` | verkuendiger |
+| `verkuendiger-profil.png` | `s=profil&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-treffpunkte.png` | `s=programm&tab=fs&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-gruppenaufseher.png` | `s=planen&pl=0&me=p1` | verkuendiger |
 | `planer-start.png` | `s=start&me=p9` (Höhe 1300) | planer |
-| `planer-aufgaben.png` | `s=aufgaben` | (Reserve) |
+| `planer-aufgaben.png` | `s=aufgaben&me=p9` | (Reserve) |
 | `planer-planen-woche.png` | `s=planen&tab=mid` | planer |
 | `planer-planen-treffpunkte.png` | `s=planen&tab=fs` | (Reserve) |
 | `planer-plan-senden.png` | `s=planen&tab=fs` (Höhe 2100) | planer |

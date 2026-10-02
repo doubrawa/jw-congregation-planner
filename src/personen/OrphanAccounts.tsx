@@ -3,14 +3,14 @@ import { personCompare, personLabel } from '../data/helpers'
 import { useT } from '../i18n/useT'
 
 /**
- * Konten ohne verknüpfte Person (nur Produktion): einer Person zuordnen oder
- * entfernen. Rendert nichts, wenn es keine solchen Konten gibt bzw. im Demo-Modus.
+ * Konten ohne verknüpfte Person: einer Person zuordnen oder entfernen. Rendert
+ * nichts, wenn es keine solchen Konten gibt — ohne Datenbank gibt es gar keine.
  */
 export function OrphanAccounts() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const orphanAccounts = state.members.filter((m) => !m.personId)
-  if (state.dataStatus === 'demo' || orphanAccounts.length === 0) return null
+  if (orphanAccounts.length === 0) return null
   /*
    * **Nur Personen ohne eigenes Konto.**
    *

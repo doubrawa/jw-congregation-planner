@@ -380,8 +380,8 @@ describe('Alle ohne Konto einladen', () => {
     { id: 'i1', code: 'ABC123', personId: 'p-c', planner: false },
   ]
 
-  it('im Demo-Modus gibt es den Knopf gar nicht — dort gibt es keine Konten', () => {
-    const { container } = zeige({ dataStatus: 'demo' })
+  it('ohne angemeldetes Konto gibt es den Knopf gar nicht — niemand, der einlädt (Entwicklerseite)', () => {
+    const { container } = zeige({ userId: null, congregationId: null })
     expect([...container.querySelectorAll('button')].some((b) => b.textContent === t.alleEinladen)).toBe(
       false,
     )
@@ -512,13 +512,11 @@ describe('Konten ohne verknüpfte Person', () => {
     expect(container.querySelector('.mem-du')?.textContent).toBe(t.duMarker)
   })
 
-  it('gibt es keine, steht die Karte nicht da', () => {
+  it('gibt es keine, steht die Karte nicht da — ohne Datenbank gibt es nie welche', () => {
+    // Hier stand bis zum 2.10.2026 dazu ein eigener Fall „im Demo-Modus ebenso
+    // wenig". Die Karte fragte den Modus ab, obwohl ohne Datenbank gar keine
+    // Mitglieder geladen werden — die Abfrage war doppelt.
     expect(zeige().container.querySelector('.pers-orphans')).toBeNull()
-  })
-
-  it('im Demo-Modus ebenso wenig — dort gibt es keine Konten', () => {
-    const { container } = zeige({ members: WAISE, dataStatus: 'demo' })
-    expect(container.querySelector('.pers-orphans')).toBeNull()
   })
 })
 

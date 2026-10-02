@@ -86,7 +86,7 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
   })
 
   it('keine Werte mit führendem/doppeltem Leerraum (Ausnahme: bewusste Suffixe)', () => {
-    const suffixKeys = new Set(['duMarker', 'demoSuffix']) // beginnen bewusst mit Leerzeichen
+    const suffixKeys = new Set(['duMarker']) // beginnt bewusst mit Leerzeichen
     for (const { code } of APP_LANGS) {
       const d = dict(code) as unknown as Record<string, string>
       for (const key of deKeys) {

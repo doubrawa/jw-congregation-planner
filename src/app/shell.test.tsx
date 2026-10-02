@@ -487,11 +487,11 @@ describe('Abmelden und Rollenanzeige', () => {
     expect(container.querySelector('.sidebar-profile-role')?.textContent).toBe(t.rolleKoordinator)
   })
 
-  it('im Demo-Modus steht der Zusatz dahinter', () => {
-    const { container } = zeige({ dataStatus: 'demo' })
-    expect(container.querySelector('.sidebar-profile-role')?.textContent).toBe(
-      t.rolleKoordinator + t.demoSuffix,
-    )
+  it('auch ohne Konto (Entwicklerseite) steht die Rolle ohne Zusatz da', () => {
+    // Bis zum 2.10.2026 hing im Demo-Modus „ (Demo)" daran — und stand damit
+    // auf jedem Handbuchbild. Die Entwicklerseite zeigt die App wie im Betrieb.
+    const { container } = zeige({ userId: null, congregationId: null })
+    expect(container.querySelector('.sidebar-profile-role')?.textContent).toBe(t.rolleKoordinator)
   })
 
   it('ohne eigene Person bleibt der Name leer, statt „undefined" zu zeigen', () => {

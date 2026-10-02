@@ -157,9 +157,7 @@ export function AppShell() {
   }
   const navItems: NavItem[] = navScreens.map((screen) => [screen, navLabels[screen]])
   const congSub = fill(t.congLabel, { name: state.congregation.name })
-  const roleLabel =
-    (state.planner ? t.rolleKoordinator : t.rolleVerkuendiger) +
-    (state.dataStatus === 'demo' ? t.demoSuffix : '')
+  const roleLabel = state.planner ? t.rolleKoordinator : t.rolleVerkuendiger
   const logout = () => performLogout(dispatch)
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }

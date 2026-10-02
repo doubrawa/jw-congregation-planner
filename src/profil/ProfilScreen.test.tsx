@@ -33,7 +33,7 @@ import type { Member, Person } from '../data/types'
 const promptInstall = vi.fn(() => Promise.resolve())
 const performLogout = vi.fn()
 const push = {
-  production: true, supported: true, needsInstall: false, subscribed: false,
+  angemeldet: true, supported: true, needsInstall: false, subscribed: false,
   enable: vi.fn(() => Promise.resolve(true)),
   disable: vi.fn(() => Promise.resolve()),
 }
@@ -91,7 +91,7 @@ const auswahl = (c: HTMLElement, label: string) =>
   c.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)!
 
 beforeEach(() => {
-  Object.assign(push, { production: true, supported: true, needsInstall: false, subscribed: false })
+  Object.assign(push, { angemeldet: true, supported: true, needsInstall: false, subscribed: false })
   push.enable.mockClear()
   push.disable.mockClear()
   installAvail.wert = false
@@ -164,9 +164,9 @@ describe('Push-Mitteilungen', () => {
     expect(container.querySelector('.prof-push-hint')?.textContent).toBe(t.pushIosHint)
   })
 
-  it('im Demo-Modus gibt es weder Schalter noch Hinweis — es gibt kein Konto dafür', () => {
-    Object.assign(push, { production: false, needsInstall: true })
-    const { container } = zeige({ dataStatus: 'demo' })
+  it('ohne angemeldetes Konto gibt es weder Schalter noch Hinweis — es gibt kein Abo dafür', () => {
+    Object.assign(push, { angemeldet: false, needsInstall: true })
+    const { container } = zeige({ userId: null })
     expect(container.querySelector('[role="switch"]')).toBeNull()
     expect(container.querySelector('.prof-push-hint')).toBeNull()
   })

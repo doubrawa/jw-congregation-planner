@@ -18,7 +18,7 @@ const DISMISS_KEY = 'cp:pushPromptOff'
 export function PushPrompt() {
   const { state } = useApp()
   const { t } = useT()
-  const { production, supported, needsInstall, subscribed, enable } = usePush()
+  const { angemeldet, supported, needsInstall, subscribed, enable } = usePush()
   const installAvail = useInstallAvailable()
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === '1')
 
@@ -27,10 +27,10 @@ export function PushPrompt() {
     setDismissed(true)
   }
 
-  // Nur im Produktionsmodus, mit anstehenden Aufgaben, noch nicht abonniert und
-  // nicht weggeklickt. Und nur, wenn Push überhaupt erreichbar ist (direkt,
-  // per iOS-Installation oder per Chromium-Installation).
-  if (!production || subscribed || dismissed || state.myTasks.length === 0) return null
+  // Nur mit Konto, mit anstehenden Aufgaben, noch nicht abonniert und nicht
+  // weggeklickt. Und nur, wenn Push überhaupt erreichbar ist (direkt, per
+  // iOS-Installation oder per Chromium-Installation).
+  if (!angemeldet || subscribed || dismissed || state.myTasks.length === 0) return null
   if (!supported && !needsInstall && !installAvail) return null
 
   return (

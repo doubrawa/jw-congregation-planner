@@ -1,25 +1,31 @@
 /** @vitest-environment jsdom */
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppState } from '../../src/app/context'
 import { reducer } from '../../src/app/reducer'
 import { deriveMyTasks } from '../../src/data/planning'
 import type { Person } from '../../src/data/types'
 import { demoZustand, entwicklerStart, parseDebugHash } from './demo-start'
 import { DEMO_PERSONS, DEMO_PLANNER } from './testdaten'
+import { ENTWICKLER_HEUTE, uhrStellen } from './uhr'
 
 beforeEach(() => {
   localStorage.clear()
   document.documentElement.removeAttribute('data-shot')
 })
+afterEach(() => vi.useRealTimers())
 
 describe('demoZustand – der Bestand der Tests und der Entwicklerseite', () => {
-  it('liefert die erfundenen Daten, ohne Datenbank', () => {
+  it('liefert die erfundenen Daten, ohne Datenbank — und ohne eigenen Datenstand', () => {
+    // Bis zum 2.10.2026 hieß der Stand hier `demo`, und die App verhielt sich
+    // an acht Stellen anders. Jetzt `ready` wie nach dem Laden; was ein Konto
+    // braucht, bleibt mangels `userId` weg.
     const s = demoZustand()
-    expect(s.dataStatus).toBe('demo')
+    expect(s.dataStatus).toBe('ready')
+    expect(s.userId).toBeNull()
+    expect(s.congregationId).toBeNull()
     expect(s.persons).toBe(DEMO_PERSONS)
     expect(s.weeks.length).toBeGreaterThan(0)
     expect(s.planner).toBe(DEMO_PLANNER)
-    expect(s.congregationId).toBeNull()
   })
 
   it('bindet die Namen an Personen wie der echte Ladevorgang — ein Namensvetter auf Zeit nimmt niemandem etwas', () => {
@@ -56,12 +62,34 @@ describe('demoZustand – der Bestand der Tests und der Entwicklerseite', () => 
 })
 
 describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => {
-  it('ohne Hash: Start-Bildschirm, angemeldet ist niemand', () => {
+  it('ohne Hash: Start-Bildschirm, angemeldet ist niemand — also keine eigenen Aufgaben', () => {
     const s = entwicklerStart('')
-    expect(s.dataStatus).toBe('demo')
+    expect(s.dataStatus).toBe('ready')
     expect(s.screen).toBe('start')
     expect(s.personId).toBeNull()
+    expect(s.myTasks).toEqual([])
     expect(s.terminGewaehlt).toBe(false)
+  })
+
+  it('mit me=: „Meine Aufgaben" abgeleitet wie nach dem Laden — nicht fest vorgegeben', () => {
+    /*
+     * Bis zum 2.10.2026 standen hier im Demo-Modus feste Aufgaben, die mit den
+     * Wochen nichts zu tun hatten. Jetzt rechnet die Seite wie der Betrieb —
+     * und damit auch gegen heute. Gerechnet wird deshalb mit der Uhr der Seite.
+     */
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(ENTWICKLER_HEUTE)
+    const s = entwicklerStart('#s=aufgaben&me=p9')
+    const simon = DEMO_PERSONS.find((p) => p.id === 'p9')!
+    const erwartet = deriveMyTasks(s.weeks, s.services, `${simon.fn} ${simon.ln}`, s.confirmations, s.congregation.times, simon.id)
+    expect(erwartet.length, 'Simon hat im Bestand keine Aufgabe — der Fall prüft nichts').toBeGreaterThan(0)
+    for (const aufgabe of erwartet) {
+      expect(s.myTasks.map((t) => t.id), aufgabe.id).toContain(aufgabe.id)
+    }
+    // Er hat noch nirgends zugesagt (DEMO_UNBESTAETIGT) — das Blatt läge also
+    // bereit, beim Start bleibt es aber zu.
+    expect(s.myTasks.every((t) => t.status === 'offen')).toBe(true)
+    expect(s.confirmOpen).toBe(false)
   })
 
   it('liest s/l/c/t/p aus dem Hash', () => {
@@ -117,5 +145,37 @@ describe('parseDebugHash', () => {
     expect(parseDebugHash('#s=programm')?.staleAt).toBeUndefined()
     expect(parseDebugHash('')).toBeNull()
     expect(parseDebugHash('#')).toBeNull()
+  })
+})
+
+describe('uhrStellen – die Uhr der Entwicklerseite', () => {
+  it('stellt Date.now, new Date() und Date() — alles andere am Datum bleibt', () => {
+    const echt = Date
+    const zurueck = uhrStellen(ENTWICKLER_HEUTE)
+    try {
+      expect(Math.abs(Date.now() - ENTWICKLER_HEUTE.getTime())).toBeLessThan(5_000)
+      expect(Math.abs(new Date().getTime() - ENTWICKLER_HEUTE.getTime())).toBeLessThan(5_000)
+      expect(Date()).toContain('Sep 07 2026')
+      // Feste Zeitpunkte, Rechnen und Prüfen gehen wie immer.
+      expect(new Date(0).getTime()).toBe(0)
+      expect(new Date(2026, 9, 2).getMonth()).toBe(9)
+      expect(Date.UTC(2026, 0, 1)).toBe(echt.UTC(2026, 0, 1))
+      expect(new Date()).toBeInstanceOf(echt)
+      expect(new echt(1) instanceof Date).toBe(true)
+    } finally {
+      zurueck()
+    }
+    expect(Date).toBe(echt)
+  })
+
+  it('die Zeit läuft von dort weiter — sonst stünden Toasts und Zähler still', async () => {
+    const zurueck = uhrStellen(ENTWICKLER_HEUTE)
+    try {
+      const vorher = Date.now()
+      await new Promise((fertig) => setTimeout(fertig, 25))
+      expect(Date.now()).toBeGreaterThan(vorher)
+    } finally {
+      zurueck()
+    }
   })
 })

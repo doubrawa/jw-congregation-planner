@@ -26,10 +26,6 @@ describe('welcomeDecision', () => {
     }
   })
 
-  it('im Demo-Modus wird ganz normal begrüßt', () => {
-    expect(welcomeDecision(true, 'demo', 'Simon')).toEqual({ name: 'Simon' })
-  })
-
   it('ein leerer Vorname zählt nicht als Name', () => {
     expect(welcomeDecision(true, 'ready', '')).toBe('verwerfen')
   })

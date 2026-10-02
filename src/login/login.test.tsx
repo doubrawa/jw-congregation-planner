@@ -266,7 +266,7 @@ describe('Passwort vergessen', () => {
   })
 })
 
-describe('Ohne Supabase: Demo-Modus', () => {
+describe('Ohne Datenbank: Anmeldung nachgestellt', () => {
   beforeEach(() => {
     konfiguriert.wert = false
   })

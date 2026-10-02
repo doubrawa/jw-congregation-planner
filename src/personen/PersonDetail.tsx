@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { istAngemeldet } from '../app/eigene-person'
 import { AbsencePanel } from '../components/AbsencePanel'
 import { useZweiTipp } from '../components/useZweiTipp'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
@@ -274,7 +275,7 @@ export function PersonDetail({ person }: { person: Person }) {
         <PlannerToggle person={person} update={update} />
       </div>
 
-      {state.dataStatus !== 'demo' && <KontoCard person={person} />}
+      {istAngemeldet(state) && <KontoCard person={person} />}
 
       {/* Zwei-Tipp-Bestätigung wie beim Leeren der Zuteilungen (`useZweiTipp`):
           der erste Tipp bewaffnet den Knopf und nennt die Folge, erst der

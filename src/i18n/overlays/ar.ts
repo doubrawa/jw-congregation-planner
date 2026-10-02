@@ -338,7 +338,6 @@ export default {
   "toastUebernommen": "شكرًا! توليت خدمة المساندة",
   "toastUebernommenKonflikt": "تم التولي · انتبه: لديك تعيين في ذلك اليوم",
   "congLabel": "جماعة {name}",
-  "demoSuffix": " (تجريبي)",
   "nurMitglieder": "الدخول لأعضاء الجماعة فقط",
   "appZweck": "تخطيط الاجتماعات، توزيع التعيينات، إدارة الجماعة.",
   "versammlungAnfragen": "طلب إضافة جماعة جديدة:",

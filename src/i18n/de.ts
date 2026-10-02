@@ -9,7 +9,7 @@ export const DE = {
     navStart: 'Start', navProgramm: 'Programm', navAufgaben: 'Aufgaben', navAufgabenLong: 'Meine Aufgaben',
     navPlanen: 'Planen', navPersonen: 'Personen', navEinstellungen: 'Einstellungen',
     navProfil: 'Profil', menueLbl: 'Menü',
-    abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger', demoSuffix: ' (Demo)',
+    abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger',
     // Offline-Stand (lib/snapshot.ts): {m} = Zeitpunkt der Momentaufnahme
     offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich',
     offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',

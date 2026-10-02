@@ -17,7 +17,6 @@ export default {
   "abmelden": "Cerrar sesión",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Publicador",
-  "demoSuffix": " (demo)",
   "email": "CORREO",
   "emailPh": "nombre@ejemplo.es",
   "passwort": "CONTRASEÑA",

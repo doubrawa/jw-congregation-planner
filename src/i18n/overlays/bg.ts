@@ -17,7 +17,6 @@ export default {
   "abmelden": "Изход",
   "rolleKoordinator": "Админ",
   "rolleVerkuendiger": "Вестител",
-  "demoSuffix": " (демо)",
   "email": "ИМЕЙЛ",
   "emailPh": "ime@primer.bg",
   "passwort": "ПАРОЛА",

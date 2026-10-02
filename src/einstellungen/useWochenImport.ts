@@ -138,11 +138,11 @@ export function useWochenImport(): {
     const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
     if (!res.ok) {
       dispatch({ type: 'stopImport' })
-      // 'demo' heißt: keine Datenbank angebunden (auch: Entwicklerseite), der
-      // Abruf ist gar nicht möglich. Hier stand früher t.demoHinweis — der
-      // redet vom Anmelden („Zugangsdaten beliebig") und passte nicht.
+      // Keine Datenbank angebunden (auch: Entwicklerseite), der Abruf ist gar
+      // nicht möglich. Hier stand früher t.demoHinweis — der redet vom
+      // Anmelden („Zugangsdaten beliebig") und passte nicht.
       const text =
-        res.error === 'demo'
+        res.error === 'ohne-datenbank'
           ? t.importOhneDb
           : res.error === 'unbekannt'
             ? t.importFehler

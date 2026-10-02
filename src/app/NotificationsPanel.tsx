@@ -64,7 +64,7 @@ export function NotificationsPanel() {
   const congId = state.congregationId
   const bekannt = useRef(new Set(state.notifs.map((n) => n.id)))
   useEffect(() => {
-    // Ohne Konto und Versammlung (Demo-Modus) gibt es nichts nachzuladen.
+    // Ohne Konto und Versammlung (Entwicklerseite) gibt es nichts nachzuladen.
     if (!userId || !congId) return
     void (async () => {
       const frisch = await loadNotifications(congId, state.weeks, state.congregation.times)

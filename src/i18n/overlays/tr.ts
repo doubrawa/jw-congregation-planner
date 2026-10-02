@@ -17,7 +17,6 @@ export default {
   "abmelden": "Çıkış",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Müjdeci",
-  "demoSuffix": " (demo)",
   "email": "E-POSTA",
   "emailPh": "ad@ornek.tr",
   "passwort": "ŞİFRE",

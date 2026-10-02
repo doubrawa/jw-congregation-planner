@@ -325,9 +325,9 @@ describe('„Deine Einträge": die betroffene Person entscheidet, nicht der Erst
     expect(container.querySelectorAll('.abs-row')).toHaveLength(1)
   })
 
-  it('ohne Konto (Demo) bleibt alles stehen — es gibt nichts einzugrenzen', () => {
+  it('ohne Konto (Entwicklerseite) bleibt alles stehen — es gibt nichts einzugrenzen', () => {
     const { container } = zeige({
-      userId: null, dataStatus: 'demo',
+      userId: null,
       absences: [abw('a1', 'p-b', null), abw('a2', 'p-c', null)],
     })
     expect(container.querySelectorAll('.abs-row')).toHaveLength(2)

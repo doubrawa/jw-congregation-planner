@@ -27,7 +27,7 @@ export async function sendInviteMails(
   invites: Array<{ personId: string; code: string }>,
   lang?: string,
 ): Promise<InviteMailResult> {
-  if (!supabase) return { ok: false, notConfigured: true, error: 'demo' }
+  if (!supabase) return { ok: false, notConfigured: true, error: 'ohne-datenbank' }
   const { data, error } = await supabase.functions.invoke('send-invite', {
     body: { invites, ...(lang ? { lang } : {}) },
   })

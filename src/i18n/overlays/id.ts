@@ -17,7 +17,6 @@ export default {
   "abmelden": "Keluar",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Penyiar",
-  "demoSuffix": " (demo)",
   "email": "EMAIL",
   "emailPh": "nama@contoh.id",
   "passwort": "KATA SANDI",

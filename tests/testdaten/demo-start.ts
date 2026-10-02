@@ -8,11 +8,18 @@
  * Bündel (siehe `testdaten.ts`). Jetzt kennt die App keinen Demo-Start mehr;
  * sie bekommt ihren Startzustand von hier (`<App start={entwicklerStart} />`).
  *
- * Dieselben Daten benutzen die Tests: `demoZustand()` ist genau der Bestand,
- * den bis dahin `initialState()` im Demo-Modus lieferte.
+ * Dieselben Daten benutzen die Tests: `demoZustand()` ist der Bestand, den bis
+ * dahin `initialState()` im Demo-Modus lieferte.
+ *
+ * **Ohne Sonderweg in der App.** Bis zum 2.10.2026 lief die Seite im
+ * Datenstand `demo`, und an acht Stellen verhielt sich die App dann anders:
+ * feste statt abgeleiteter Aufgaben, Bestätigen ohne Zusagen, ein „(Demo)" am
+ * Rollennamen. Jetzt startet sie `ready` wie nach dem Laden und läuft dieselben
+ * Wege wie der Betrieb — nur ohne Datenbank und mit gestellter Uhr (`uhr.ts`).
  */
 import type { AppState } from '../../src/app/context'
 import { initialState } from '../../src/app/init'
+import { aufgabenAbgeleitet } from '../../src/app/reducer'
 import { asFontScale, asTheme, type FontScale } from '../../src/data/constants'
 import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
@@ -38,6 +45,10 @@ import {
  * Der Demo-Bestand als Zustand: die Versammlung „Musterstadt" mit rund hundert
  * Personen, vier Wochen Programm, Treffpunkten, Zusagen und Glocke.
  *
+ * „Meine Aufgaben" stehen hier **fest** (`DEMO_MY_TASKS`), nicht abgeleitet:
+ * Tests, die eine Aufgabenliste anzeigen, sollen nicht davon abhängen, welcher
+ * Tag heute ist. Die Entwicklerseite leitet sie ab (`entwicklerStart`).
+ *
  * **Namen an Personen binden wie der echte Ladevorgang** (`lib/data.ts`:
  * `pidsNachtragen`, `fsLeiterBinden`). Die Wochen tragen nur Namen; ohne Id
  * liefen Umbenennungen über den Namensweg, und eine kurzzeitige Namensdublette
@@ -51,7 +62,6 @@ export function demoZustand(): AppState {
   const fsWeeks = fsLeiterBinden(buildDemoFsWeeks(), DEMO_PERSONS)
   return {
     ...initialState(),
-    dataStatus: 'demo',
     planner: DEMO_PLANNER,
     congregation: { ...CONGREGATION },
     weeks,
@@ -131,6 +141,10 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
  * Startzustand der Entwicklerseite: der Demo-Bestand, dazu was der Hash
  * verlangt. Ohne `s=` beginnt sie auf dem Start-Bildschirm, angemeldet ist
  * niemand — wer die Anmeldemaske sehen will, nennt sie (`#s=login`).
+ *
+ * „Meine Aufgaben" und Ersatzgesuche werden **abgeleitet** wie nach dem Laden
+ * im Betrieb — aus den Wochen, den Zusagen und der Person aus `me=`. Ohne
+ * `me=` gehört die Seite niemandem, und es gibt keine eigenen Aufgaben.
  */
 export function entwicklerStart(hash: string = location.hash): AppState {
   const debug = parseDebugHash(hash)
@@ -138,7 +152,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
   // Doku-Screenshots randlos zugeschnitten werden können (siehe shell.css).
   if (debug?.shot) document.documentElement.dataset.shot = '1'
   const basis = demoZustand()
-  return {
+  return aufgabenAbgeleitet({
     ...basis,
     screen: debug?.screen ?? 'start',
     tab: debug?.tab ?? basis.tab,
@@ -153,5 +167,5 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     // Ein Hash mit `tab=` ist eine Wahl — sonst spränge der Reiter beim
     // ersten Navigieren weg und die Doku-Screenshots zeigten das Falsche.
     terminGewaehlt: debug?.tab != null,
-  }
+  })
 }

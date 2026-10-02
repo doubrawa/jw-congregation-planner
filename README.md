@@ -191,6 +191,13 @@ eine nennt. Der Hash springt einen Zustand direkt an
 (`#s=planen&tab=fs&pl=0&me=p1`, alle Schalter in
 `tests/testdaten/demo-start.ts`); daraus entstehen die Handbuch-Bilder.
 
+Die Seite läuft dieselben Wege wie der Betrieb — einen Demo-Modus mit
+eigenem Verhalten gibt es seit dem 2.10.2026 nicht mehr: „Meine Aufgaben"
+werden aus den Wochen abgeleitet (für die Person aus `me=`), Konto-Funktionen
+fehlen mangels Anmeldung. Damit das nicht vom Kalender abhängt, steht ihre Uhr
+auf Montag, 7. September 2026, 9 Uhr (`tests/testdaten/uhr.ts`) — der ersten
+Testwoche.
+
 Die Seite gibt es nur im Dev-Server (`scripts/testdaten-grenze.mjs`), gebaut
 wird allein `index.html`. **Die App selbst kennt keine Testdaten:** Eine neue
 Versammlung ist leer und wird von Hand oder per NWS-Import gefüllt. Damit das so

@@ -18,7 +18,6 @@ export default {
   "abmelden": "لاگ آؤٹ",
   "rolleKoordinator": "ایڈمن",
   "rolleVerkuendiger": "مبشر",
-  "demoSuffix": " (ڈیمو)",
   "email": "ای میل",
   "emailPh": "name@example.com",
   "passwort": "پاس ورڈ",

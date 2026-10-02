@@ -17,7 +17,6 @@ export default {
   "abmelden": "Αποσύνδεση",
   "rolleKoordinator": "Διαχειριστής",
   "rolleVerkuendiger": "Ευαγγελιζόμενος",
-  "demoSuffix": " (demo)",
   "email": "EMAIL",
   "emailPh": "onoma@paradeigma.gr",
   "passwort": "ΚΩΔΙΚΟΣ",

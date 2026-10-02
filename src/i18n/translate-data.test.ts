@@ -41,7 +41,7 @@ type Grund =
    * übersetzen hieße, in 33 Sprachen Titel im Stil einer Veröffentlichung zu
    * erfinden, die es nicht gibt.
    *
-   * Sichtbar sind sie nur im Demo-Modus, und dort nur, wenn die
+   * Sichtbar sind sie nur auf der Entwicklerseite, und dort nur, wenn die
    * Versammlungssprache **nicht** Deutsch ist — sonst übersetzt `tp` den
    * Programmtext gar nicht.
    */

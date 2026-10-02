@@ -17,7 +17,6 @@ export default {
   "abmelden": "Odjava",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Objavitelj",
-  "demoSuffix": " (demo)",
   "email": "IMEJL",
   "emailPh": "ime@primer.rs",
   "passwort": "LOZINKA",

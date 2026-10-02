@@ -178,12 +178,15 @@ function currentUserName(state: AppState): string {
 }
 
 /**
- * Produktionsmodus: myTasks/Ersatzgesuche aus Wochen + Bestätigungen ableiten
- * (im Demo-Modus bleiben die Demo-Daten unangetastet). `openConfirm` öffnet
- * nach der Hydration das Bestätigungs-Modal, falls offene Aufgaben existieren.
+ * myTasks/Ersatzgesuche aus Wochen + Bestätigungen ableiten. `openConfirm`
+ * öffnet nach der Hydration das Bestätigungs-Modal, falls offene Aufgaben
+ * existieren.
+ *
+ * Bis zum 2.10.2026 stieg die Ableitung im Demo-Modus aus, und dort standen
+ * feste Aufgaben, die mit den Wochen nichts zu tun hatten. Die Entwicklerseite
+ * rechnet jetzt wie der Betrieb (`aufgabenAbgeleitet`).
  */
 function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
-  if (state.dataStatus === 'demo') return state
   const me = eigenePerson(state)
   // Aufgaben-Titel in der Programmsprache des Nutzers ableiten (Sprachvariante
   // der Wochen, falls vorhanden) — Slot-Pfade/Namen sind variantenunabhängig.
@@ -256,6 +259,18 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
 }
 
 /**
+ * Aufgaben und Ersatzgesuche aus dem Bestand ableiten, ohne das Blatt
+ * vorzulegen.
+ *
+ * Der Reducer tut das bei jeder Änderung der Rechengrundlage selbst. Von außen
+ * gebraucht wird es für einen Startzustand, der nicht über `hydrate`
+ * hereinkommt — die Entwicklerseite baut ihren aus den Testdaten.
+ */
+export function aufgabenAbgeleitet(state: AppState): AppState {
+  return withDerivedTasks(state, false)
+}
+
+/**
  * Woche und Reiter auf die nächste Zusammenkunft setzen (T82) — es sei denn,
  * der Nutzer hat in dieser Sitzung schon selbst gewählt.
  *
@@ -301,7 +316,6 @@ export function vorzulegen(myTasks: MyTask[], substituteReqs: SubstituteReq[]): 
  */
 function ableitungsQuellen(s: AppState): readonly unknown[] {
   return [
-    s.dataStatus,
     s.personId,
     /*
      * Nicht die ganze Personenliste, sondern **die eigene Person**:
@@ -887,31 +901,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, myTaskId: action.id }
     case 'closeMyTask':
       return { ...state, myTaskId: null }
-    case 'confirmTask': {
-      // Produktionsmodus: Status in die ConfirmationMap — myTasks und
-      // confirmOpen folgen aus der Ableitung (withDerivedTasks).
-      if (state.dataStatus !== 'demo') {
-        return {
-          ...state,
-          confirmations: { ...state.confirmations, [action.id]: 'bestätigt' },
-          myTaskId: null,
-          toast: toastKey(state, 'toastBestaetigt'),
-        }
-      }
-      const myTasks = state.myTasks.map((t) =>
-        t.id === action.id ? { ...t, status: 'bestätigt' as const } : t,
-      )
+    case 'confirmTask':
+      // Status in die ConfirmationMap — myTasks und confirmOpen folgen aus der
+      // Ableitung (withDerivedTasks). Ein offenes Ersatzgesuch hält das Blatt
+      // dort ebenfalls (T69).
       return {
         ...state,
-        myTasks,
+        confirmations: { ...state.confirmations, [action.id]: 'bestätigt' },
         myTaskId: null,
-        // Nicht „nichts mehr offen": ein offenes Ersatzgesuch hält das Blatt ebenfalls
-        // (T69) — sonst verschwände es unter der Hand, sobald die letzte
-        // Bestätigung gegeben ist.
-        confirmOpen: state.confirmOpen && vorzulegen(myTasks, state.substituteReqs),
         toast: toastKey(state, 'toastBestaetigt'),
       }
-    }
     case 'declineTask': {
       const task = state.myTasks.find((t) => t.id === action.id)
       // Kanonisch deutsch in die Mitteilung — beide Hälften, denn dort steht
@@ -929,25 +928,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Bei Hilfsdiensten wird automatisch ein Ersatz gesucht (Ersatzgesuch) →
       // eigener Toast; sonst nur die Verhinderungs-Meldung an den Planer.
       const declineToast = helperKeyParts(action.id) ? 'toastErsatzGesucht' : 'toastVerhindert'
-      if (state.dataStatus !== 'demo') {
-        return {
-          ...state,
-          confirmations: { ...state.confirmations, [action.id]: 'verhindert' },
-          notifs: [notif, ...state.notifs],
-          myTaskId: null,
-          toast: toastKey(state, declineToast),
-        }
-      }
-      const myTasks = state.myTasks.map((t) =>
-        t.id === action.id ? { ...t, status: 'verhindert' as const } : t,
-      )
       return {
         ...state,
-        myTasks,
-        // Nicht nur „noch etwas offen?": ein Ersatzgesuch hält das Blatt ebenfalls
-        // (T69) — sonst verschwände es unter der Hand, sobald die letzte
-        // Bestätigung gegeben ist.
-        confirmOpen: state.confirmOpen && vorzulegen(myTasks, state.substituteReqs),
+        confirmations: { ...state.confirmations, [action.id]: 'verhindert' },
         notifs: [notif, ...state.notifs],
         myTaskId: null,
         toast: toastKey(state, declineToast),

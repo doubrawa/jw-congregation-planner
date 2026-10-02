@@ -17,7 +17,6 @@ export default {
   "abmelden": "로그아웃",
   "rolleKoordinator": "관리자",
   "rolleVerkuendiger": "전도인",
-  "demoSuffix": " (데모)",
   "email": "이메일",
   "emailPh": "name@example.com",
   "passwort": "비밀번호",

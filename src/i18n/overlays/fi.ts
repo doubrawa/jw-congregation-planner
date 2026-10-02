@@ -17,7 +17,6 @@ export default {
   "abmelden": "Kirjaudu ulos",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Julistaja",
-  "demoSuffix": " (demo)",
   "email": "SÄHKÖPOSTI",
   "emailPh": "nimi@esimerkki.fi",
   "passwort": "SALASANA",

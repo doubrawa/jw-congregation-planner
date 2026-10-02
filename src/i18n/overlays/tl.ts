@@ -17,7 +17,6 @@ export default {
   "abmelden": "Mag-log out",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Mamamahayag",
-  "demoSuffix": " (demo)",
   "email": "EMAIL",
   "emailPh": "pangalan@halimbawa.ph",
   "passwort": "PASSWORD",

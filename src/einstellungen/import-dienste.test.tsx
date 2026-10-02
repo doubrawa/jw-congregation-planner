@@ -169,7 +169,7 @@ describe('Import in der Produktion', () => {
   it('ohne angebundene Datenbank steht der passende Satz — nicht der vom Anmelden', async () => {
     // So endet der Knopf auch auf der Entwicklerseite: Sie hat keinen Client.
     // Bis zum 2.10.2026 hängte er dort eine erfundene Woche an (`finishImport`).
-    importNextWeek.mockResolvedValue({ ok: false, error: 'demo' })
+    importNextWeek.mockResolvedValue({ ok: false, error: 'ohne-datenbank' })
     const { container, dispatch } = zeige('import')
     fireEvent.click(container.querySelector('.imp-btn')!)
     await waitFor(() =>

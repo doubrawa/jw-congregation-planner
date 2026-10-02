@@ -18,7 +18,6 @@ export default {
   "abmelden": "خروج",
   "rolleKoordinator": "مدیر",
   "rolleVerkuendiger": "مبشّر",
-  "demoSuffix": " (نمایشی)",
   "email": "ایمیل",
   "emailPh": "name@example.com",
   "passwort": "رمز عبور",

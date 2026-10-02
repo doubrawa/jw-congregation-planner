@@ -17,7 +17,6 @@ export default {
   "abmelden": "Afmelden",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Verkondiger",
-  "demoSuffix": " (demo)",
   "email": "E-MAIL",
   "emailPh": "naam@voorbeeld.nl",
   "passwort": "WACHTWOORD",
