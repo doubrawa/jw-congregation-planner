@@ -34,9 +34,20 @@ export function LoginScreen() {
       return
     }
     if (busy) return
+    /*
+     * **Ohne Adresse geht nichts hinaus.** Bis zum 1.10.2026 schickte ein leeres
+     * Formular trotzdem eine Anmeldung an Supabase, und die Antwort stand roh und
+     * englisch im Toast („missing email or phone") — in jeder der 34 Sprachen.
+     * Derselbe Satz wie beim Zurücksetzen des Passworts: Er sagt, was fehlt.
+     */
+    const adresse = email.trim()
+    if (!adresse) {
+      dispatch({ type: 'showToast', text: t.resetMailFehlt })
+      return
+    }
     setBusy(true)
     if (register) {
-      const result = await signUp(email.trim(), password)
+      const result = await signUp(adresse, password)
       setBusy(false)
       if (!result.ok) {
         dispatch({ type: 'showToast', text: authFehlerText(result.error, t) })
@@ -49,7 +60,7 @@ export function LoginScreen() {
       }
       return // ohne Bestätigung übernimmt das SIGNED_IN-Event
     }
-    const error = await signIn(email, password)
+    const error = await signIn(adresse, password)
     setBusy(false)
     if (error) {
       dispatch({ type: 'showToast', text: authFehlerText(error, t) })

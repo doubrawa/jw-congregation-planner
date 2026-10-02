@@ -118,6 +118,16 @@ describe('Anmelden', () => {
     expect(dispatch.mock.calls.some((c) => c[0].type === 'login')).toBe(false)
   })
 
+  it('ohne Adresse fragt es zuerst danach — statt Supabase einen leeren Aufruf zu schicken', async () => {
+    // Leer ging die Anfrage bis zum 1.10.2026 trotzdem hinaus, und Supabase
+    // antwortete englisch: „missing email or phone". Auch Leerzeichen zählen als leer.
+    const { container, dispatch } = zeige('login')
+    eingeben(container, '   ')
+    absenden(container)
+    expect(signIn).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.resetMailFehlt })
+  })
+
   it('ein unbekannter Fehler wird durchgereicht statt verschluckt', async () => {
     signIn.mockResolvedValue({ text: 'Etwas ganz Neues' })
     const { container, dispatch } = zeige('login')
@@ -172,6 +182,17 @@ describe('Registrieren', () => {
     eingeben(container, '  neu@example.org  ')
     absenden(container)
     await waitFor(() => expect(signUp).toHaveBeenCalledWith('neu@example.org', 'geheim123'))
+  })
+
+  it('ohne Adresse wird auch kein Konto angefragt', () => {
+    const { container, dispatch } = zeige('login')
+    fireEvent.click(knopf(container, t.kontoErstellen)!)
+    eingeben(container, '')
+    absenden(container)
+    expect(signUp).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.resetMailFehlt })
+    // Und es bleibt beim Registrieren — die Eingabe soll ergänzt werden.
+    expect(container.querySelector('.login-submit')?.textContent).toBe(t.registrieren)
   })
 
   it('mit Mail-Bestätigung führt es zurück zur Anmeldung und sagt, was zu tun ist', async () => {
