@@ -209,13 +209,15 @@ export const DE = {
     // auxRatgeberHint ist der Satz zum Ratgeber — wo er allein nicht lesbar
     // ist („Cada una …"), mit der Klasse ausgeschrieben. Die Stärke des Verbs
     // folgt der S-38 der jeweiligen Sprache („soll", nicht „muss"). Beides
-    // gegen WOL 1201038 in allen 34 Sprachen gehalten am 27.9.2026.
+    // gegen WOL 1201038 in allen 34 Sprachen gehalten am 27.9.2026. Der
+    // deutsche Satz ist für sich lesbar und steht deshalb wörtlich da („zur
+    // Verfügung stehen"; bis zum 1.10.2026 umschrieben als „da sein").
     auxKlassen: 'Zusätzliche Klassen',
     auxKlasse: 'Zusätzliche Klasse',
     auxHauptsaal: 'Hauptsaal',
     auxRatgeber: 'Ratgeber',
     auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
-    auxRatgeberHint: 'Für jede zusätzliche Klasse soll ein befähigter Ratgeber da sein, vorzugsweise ein Ältester.',
+    auxRatgeberHint: 'Für jede zusätzliche Klasse soll ein befähigter Ratgeber zur Verfügung stehen, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete',
     privSchulung: 'Schulungsaufgaben', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',

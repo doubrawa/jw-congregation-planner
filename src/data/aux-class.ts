@@ -9,7 +9,7 @@
  * zurück. Betroffen sind damit genau die Schülerteile: die Bibellesung und
  * alles unter „Uns im Dienst verbessern".
  *
- * Für jede Zusätzliche Klasse soll ein befähigter Ratgeber da sein
+ * Für jede Zusätzliche Klasse soll ein befähigter Ratgeber zur Verfügung stehen
  * (Aufgabenbereich `ratgeber`) — einer je Zusammenkunft, nicht je Punkt.
  */
 

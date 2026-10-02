@@ -614,7 +614,7 @@ Ist er eingeschaltet, ändert sich Folgendes:
   **Uns im Dienst verbessern** – genau die Teile, die nach dem Programmpunkt
   „Nach geistigen Schätzen graben" im zweiten Raum stattfinden.
 - Es kommt eine Karte für den **Ratgeber** dazu. Für jede zusätzliche Klasse
-  soll ein befähigter Ratgeber da sein, vorzugsweise ein Ältester. Damit du
+  soll ein befähigter Ratgeber zur Verfügung stehen, vorzugsweise ein Ältester. Damit du
   jemanden auswählen kannst, setze bei der Person unter **Aufgabenbereiche**
   den Schalter **Ratgeber**.
 - **Automatisch zuteilen** besetzt beide Räume und achtet darauf, dass niemand
