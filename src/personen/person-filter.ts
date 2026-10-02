@@ -20,14 +20,29 @@ const NUR_TELEFON = /^[\d\s+()./-]+$/
 
 const ziffern = (s: string) => s.replace(/\D+/g, '')
 
+/** Ohne Akzente und Umlautpunkte, ß als ss — so tippt, wer sie nicht zur Hand hat: „kruger". */
+const ohneZeichen = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/ß/g, 'ss')
+
+/** Deutsche Umschrift — so tippt, wer sie kennt: „krueger", „boehm". */
+const umschrift = (s: string) =>
+  ohneZeichen(s.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue'))
+
 /**
  * Volltext über Name, Telefon und E-Mail. Sieht die Eingabe nach
  * einer Telefonnummer aus, wird zusätzlich ziffernweise verglichen — sonst
  * fände „01701234" die gespeicherte „0170 1234" nicht (und umgekehrt).
+ *
+ * **Der Name auch so, wie die Liste ihn zeigt.** Dort steht „Krüger, Simon";
+ * gesucht wurde bis zum 1.10.2026 aber nur in „Simon Krüger". Wer abtippte, was
+ * er sah, oder „krüger s" eingab, um unter Namensvettern zu wählen, fand
+ * niemanden. Und ohne Faltung fand „kruger" keinen „Krüger" — „kru" traf nur,
+ * wenn zufällig die E-Mail-Adresse `…krueger@…` lautete.
  */
 function passtZuText(person: Person, q: string): boolean {
-  const heu = [displayName(person), person.tel, person.mail].join('\n').toLowerCase()
-  if (heu.includes(q)) return true
+  const namen = [displayName(person), `${person.ln} ${person.fn}`, `${person.ln}, ${person.fn}`]
+  const heu = [...namen, person.tel, person.mail].join('\n').toLowerCase()
+  const gesucht = ohneZeichen(q)
+  if (heu.includes(q) || ohneZeichen(heu).includes(gesucht) || umschrift(heu).includes(gesucht)) return true
   if (!NUR_TELEFON.test(q)) return false
   const nur = ziffern(q)
   return nur.length > 0 && ziffern(person.tel).includes(nur)

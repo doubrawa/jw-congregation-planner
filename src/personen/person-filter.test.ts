@@ -45,6 +45,35 @@ describe('Volltextsuche', () => {
     expect(passtZumFilter(person({ tel: '0555 999' }), filter({ q: '7' }))).toBe(false)
   })
 
+  it('findet auch so, wie die Liste den Namen zeigt — Nachname zuerst', () => {
+    // Die Liste schreibt „Krüger, Simon". Bis zum 1.10.2026 fand genau das
+    // nichts, ebenso wenig „krüger s" zum Eingrenzen unter Namensvettern.
+    for (const q of ['Krüger, Simon', 'krüger simon', 'krüger s', 'simon krüger']) {
+      expect(passtZumFilter(p, filter({ q })), q).toBe(true)
+    }
+    expect(passtZumFilter(p, filter({ q: 'krüger t' }))).toBe(false)
+  })
+
+  it('Umlaute und ß: mit Umlaut, ohne und in Umschrift', () => {
+    // Ohne E-Mail-Adresse — sonst träfe „krueger" zufällig dort.
+    const ohneMail = person({ mail: '' })
+    for (const q of ['krüger', 'kruger', 'krueger', 'KRUGER']) {
+      expect(passtZumFilter(ohneMail, filter({ q })), q).toBe(true)
+    }
+    const weiss = person({ fn: 'Sven', ln: 'Weiß', mail: '' })
+    expect(passtZumFilter(weiss, filter({ q: 'weiss' }))).toBe(true)
+    expect(passtZumFilter(weiss, filter({ q: 'weiß' }))).toBe(true)
+    const boehm = person({ fn: 'Frank', ln: 'Böhm', mail: '' })
+    for (const q of ['böhm', 'bohm', 'boehm']) {
+      expect(passtZumFilter(boehm, filter({ q })), q).toBe(true)
+    }
+    expect(passtZumFilter(boehm, filter({ q: 'bahm' }))).toBe(false)
+  })
+
+  it('auch Akzente anderer Sprachen fallen weg — „jose" findet „José"', () => {
+    expect(passtZumFilter(person({ fn: 'José', ln: 'Núñez', mail: '' }), filter({ q: 'jose nunez' }))).toBe(true)
+  })
+
   /*
    * Hier stand „findet auch über den abweichenden Anzeigenamen". Den gibt es
    * seit T110 nicht mehr — gesucht wird über Vor- und Nachname, und die sind
