@@ -46,6 +46,41 @@ export function json(body: unknown, status = 200): Response {
  */
 export const wert = (v: string | number): string => encodeURIComponent(String(v))
 
+/**
+ * **Die Schlüssel mit Dienstrechten**, wie die Plattform sie jeder gehosteten
+ * Function mitgibt: die neuen als JSON-Wörterbuch nach Namen
+ * (`SUPABASE_SECRET_KEYS`, etwa `{"default":"sb_secret_…"}`) und der alte
+ * Service-Role-Schlüssel. Die Umgebung liest der Aufrufer, dieses Modul bleibt
+ * rein (siehe Kopf).
+ */
+export function dienstSchluessel(secretKeysJson: string | undefined, serviceRoleKey: string | undefined): string[] {
+  const out: string[] = []
+  if (secretKeysJson) {
+    try {
+      const woerterbuch: unknown = JSON.parse(secretKeysJson)
+      if (woerterbuch && typeof woerterbuch === 'object') {
+        for (const schluessel of Object.values(woerterbuch)) {
+          if (typeof schluessel === 'string' && schluessel) out.push(schluessel)
+        }
+      }
+    } catch {
+      // Kein JSON — dann zählt nur der alte Schlüssel.
+    }
+  }
+  if (serviceRoleKey) out.push(serviceRoleKey)
+  return out
+}
+
+/**
+ * Trägt der Aufruf einen dieser Schlüssel im `apikey`-Kopf? So melden sich die
+ * Wartungsskripte (`funktionsKopf` in `scripts/gemeinsam.mjs`) — ohne Sitzung.
+ * Verglichen wird der `apikey`, nicht `Authorization`: Dort stehen Sitzungen.
+ */
+export function mitDienstSchluessel(req: Request, schluessel: readonly string[]): boolean {
+  const key = (req.headers.get('apikey') ?? '').trim()
+  return key !== '' && schluessel.includes(key)
+}
+
 export interface Rest {
   /** Lesen. Wirft bei einem Fehler — der Aufrufer entscheidet, ob er ihn fängt. */
   get<T>(path: string): Promise<T>

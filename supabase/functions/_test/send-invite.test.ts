@@ -203,6 +203,14 @@ describe('send-invite: ohne Absender wird nicht gesendet', () => {
     expect(mails).toEqual([])
   })
 
+  it('ohne Anmeldung erfährt niemand, ob der Versand eingerichtet ist — 401, nicht not-configured', async () => {
+    // Bis zum 1.10.2026 stand die Konfiguration vor der Anmeldung: Mit dem
+    // öffentlichen Schlüssel aus dem Bündel kam ohne Login `200 not-configured`.
+    const r = await call(einladung, { als: null, env: { INVITE_FROM: '' } })
+    expect(r.status).toBe(401)
+    expect(r.body.error).toBe('unauthorized')
+  })
+
   it('… und zwar vor jeder Datenbank-Abfrage', async () => {
     // Sonst stünde in den Logs eine Leseabfrage für einen Versand, den es
     // gar nicht gibt.

@@ -20,7 +20,7 @@
 // Deploy:  supabase functions deploy import-week
 // =============================================================================
 
-import { CORS, json } from '../_shared/rest.ts'
+import { CORS, dienstSchluessel, json, mitDienstSchluessel, restKlient, wert } from '../_shared/rest.ts'
 import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
 import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
 import {
@@ -31,7 +31,16 @@ import {
   montagDerWoche,
 } from './gedaechtnismahl.ts'
 
-declare const Deno: { serve: (handler: (req: Request) => Promise<Response> | Response) => void }
+declare const Deno: {
+  serve: (handler: (req: Request) => Promise<Response> | Response) => void
+  env: { get: (name: string) => string | undefined }
+}
+
+// Beide setzt die Plattform in jeder gehosteten Function selbst.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const DIENST_SCHLUESSEL = dienstSchluessel(Deno.env.get('SUPABASE_SECRET_KEYS'), SERVICE_KEY)
+const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 
 const BASE = 'https://www.jw.org'
 const UA = 'jw-congregation-planner/1.0 (+https://github.com/doubrawa/jw-congregation-planner)'
@@ -284,9 +293,35 @@ function stripVariant(week: ImportedWeek): ImportedWeek {
   return week
 }
 
+/**
+ * **Wer Wochen holen darf** — ein Mitglied einer Versammlung (die App ruft mit
+ * der Sitzung des Nutzers) oder ein Wartungsskript mit Secret-Schlüssel
+ * (`wochen-importieren.mjs`, `testversammlung-anlegen.mjs`). Sonst niemand.
+ *
+ * Bis zum 1.10.2026 prüfte diese Function nichts selbst. `verify_jwt` lässt
+ * aber auch den öffentlichen Publishable-Key durch, der in jedem ausgelieferten
+ * Bündel steht — gemessen: `200` und eine ganze Woche, ohne Anmeldung. Daten
+ * waren nicht betroffen, wohl aber das Kontingent dieses Projekts: Über die
+ * Function konnte jeder Seiten von jw.org holen lassen. Die Sperre auf jw.org
+ * (`fetchText`) bleibt als zweite Schicht stehen.
+ *
+ * Liefert die Absage oder `null`, wenn der Aufruf durchgehen darf.
+ */
+async function zugangVerweigert(req: Request): Promise<Response | null> {
+  if (mitDienstSchluessel(req, DIENST_SCHLUESSEL)) return null
+  const userId = await rest.userId(req)
+  if (!userId) return json({ error: 'unauthorized' }, 401)
+  const mitgliedschaft = await rest.get<{ congregation_id: string }[]>(
+    `members?select=congregation_id&user_id=eq.${wert(userId)}`,
+  )
+  return mitgliedschaft.length > 0 ? null : json({ error: 'forbidden' }, 403)
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
+    const verweigert = await zugangVerweigert(req)
+    if (verweigert) return verweigert
     // Kein `url`-Feld mehr. Es hat nie ein Aufrufer geschickt (src/lib/import.ts
     // kennt nur `after`/`start`/`lang`/`altLangs`), aber der Server nahm es an
     // und holte, was darin stand — offene Fläche ohne Nutzen. Welche Seite

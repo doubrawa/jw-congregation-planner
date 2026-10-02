@@ -15,7 +15,10 @@
  * **Die Function nimmt den Secret-Schlüssel als Anmeldung an** (gemessen am
  * 18.9.2026: Status 200). Sie verlangt laut `config.toml` ein JWT, und der
  * Schlüssel gilt dem Gateway als eines — deshalb braucht dieses Skript keine
- * Anmeldung eines Benutzers.
+ * Anmeldung eines Benutzers. Seit dem 1.10.2026 prüft `import-week` zusätzlich
+ * selbst: Durch kommt ein Mitglied mit Sitzung oder ein `apikey`, der unter den
+ * Secret-Schlüsseln des Projekts steht (`SUPABASE_SECRET_KEYS`) — den schickt
+ * `funktionsKopf` mit. Der öffentliche Publishable-Key genügt nicht mehr.
  *
  * Sprache: `congregations.cong_lang` ist bereits der **jw.org-Sprachcode**
  * (seit dem Schema-Neuaufbau, siehe `supabase/schema.sql`), `prog_langs` sind

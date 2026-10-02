@@ -69,11 +69,19 @@ function mailText(fn: string, code: string, lang: string | null): { subject: str
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    if (!INVITE_FROM) return json({ error: 'not-configured' })
-    if (!RESEND_API_KEY) return json({ error: 'not-configured' })
-
+    /*
+     * **Erst wer fragt, dann ob versandt werden kann.** Bis zum 1.10.2026 stand
+     * die Konfiguration vorn, und wer den öffentlichen Schlüssel aus dem Bündel
+     * nahm, bekam ohne Anmeldung `200 {"error":"not-configured"}` — eine Auskunft
+     * über die Einrichtung an jeden. Die Anmeldung ist ein Auth-Aufruf, keine
+     * Datenbankabfrage; ohne Versand bleibt es deshalb dabei, dass nichts gelesen
+     * wird (siehe Test „vor jeder Datenbank-Abfrage").
+     */
     const userId = await rest.userId(req)
     if (!userId) return json({ error: 'unauthorized' }, 401)
+
+    if (!INVITE_FROM) return json({ error: 'not-configured' })
+    if (!RESEND_API_KEY) return json({ error: 'not-configured' })
 
     // Nur Admins; alles Weitere ist auf ihre Versammlung beschränkt.
     const membership = await rest.get<{ congregation_id: string; planner: boolean }[]>(

@@ -484,7 +484,10 @@ supabase functions deploy import-week
 > `Invoke-WebRequest` und versteht die Optionen nicht.
 
 Danach funktioniert der Import-Button direkt (die App ruft die Function per
-`functions.invoke` mit der Nutzer-Session auf — nur eingeloggte Mitglieder).
+`functions.invoke` mit der Nutzer-Session auf). Die Function prüft selbst, wer
+fragt: ein Mitglied einer Versammlung oder ein Wartungsskript mit
+Secret-Schlüssel im `apikey`-Kopf. `verify_jwt` allein genügt dafür nicht — es
+lässt auch den öffentlichen Publishable-Key durch (gemessen am 1.10.2026).
 Der Parser ([`parse.ts`](supabase/functions/import-week/parse.ts)) ist
 **sprachunabhängig**: Er keyt ausschließlich auf **Struktur** — Farbklassen
 (teal/gold/maroon), Noten-Icon, 1./2./3.-Nummerierung, die „(Zahl …)"-Zeitklammer

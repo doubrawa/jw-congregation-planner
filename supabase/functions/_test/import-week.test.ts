@@ -177,11 +177,47 @@ interface Seiten {
 let seiten: Seiten
 let geholt: string[]
 
-function fakeFetch(input: RequestInfo | URL): Promise<Response> {
+/* ---- Zugang (Sitzung, Mitgliedschaft, Dienstschlüssel) -------------------- */
+
+const SUPABASE_URL = 'https://test.supabase.co'
+const SECRET = 'sb_secret_test'
+const SERVICE_ROLE = 'service-role-test'
+const UMGEBUNG: Record<string, string> = {
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: SERVICE_ROLE,
+  SUPABASE_SECRET_KEYS: JSON.stringify({ default: SECRET }),
+}
+
+/**
+ * So melden sich die Wartungsskripte (`funktionsKopf`) — der Weg ohne Sitzung
+ * und ohne weiteren Netzaufruf. Alle Fälle, die nicht den Zugang selbst prüfen,
+ * nehmen ihn, damit `geholt` nur die Seiten von jw.org zeigt.
+ */
+const ZUGANG: Record<string, string> = { apikey: SECRET, Authorization: `Bearer ${SECRET}` }
+
+/** Sitzungen, die `/auth/v1/user` kennt (Authorization → Nutzer), und deren Mitgliedschaften. */
+const SITZUNGEN: Record<string, string> = { 'Bearer mitglied-jwt': 'u-mitglied', 'Bearer fremd-jwt': 'u-fremd' }
+const MITGLIEDSCHAFTEN: Record<string, Array<{ congregation_id: string }>> = {
+  'u-mitglied': [{ congregation_id: 'c1' }],
+  'u-fremd': [],
+}
+
+function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input)
   geholt.push(url)
   const text = (t: string) => Promise.resolve(new Response(t, { status: 200 }))
   const weg = () => Promise.resolve(new Response('nein', { status: 404 }))
+
+  if (url === `${SUPABASE_URL}/auth/v1/user`) {
+    const nutzer = SITZUNGEN[new Headers(init?.headers).get('Authorization') ?? '']
+    return Promise.resolve(
+      nutzer ? new Response(JSON.stringify({ id: nutzer }), { status: 200 }) : new Response('nein', { status: 401 }),
+    )
+  }
+  if (url.startsWith(`${SUPABASE_URL}/rest/v1/members`)) {
+    const nutzer = decodeURIComponent(/user_id=eq\.([^&]+)/.exec(url)?.[1] ?? '')
+    return Promise.resolve(new Response(JSON.stringify(MITGLIEDSCHAFTEN[nutzer] ?? []), { status: 200 }))
+  }
 
   if (url === `${BASE}/de/bibliothek/jw-arbeitsheft/`) return text(INDEX_SEITE)
   if (url === `${BASE}${PFAD}/`) return text(ausgabenSeite(seiten.leseprogramm))
@@ -226,7 +262,10 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
 async function loadFn(): Promise<(req: Request) => Promise<Response>> {
   let captured: ((req: Request) => Promise<Response>) | undefined
   const g = globalThis as Record<string, unknown>
-  g.Deno = { serve: (h: (req: Request) => Promise<Response>) => { captured = h } }
+  g.Deno = {
+    serve: (h: (req: Request) => Promise<Response>) => { captured = h },
+    env: { get: (k: string) => UMGEBUNG[k] },
+  }
   g.fetch = fakeFetch
   vi.resetModules() // leert zugleich den Seiten-Cache der Function
   await import('../import-week/index.ts')
@@ -254,6 +293,7 @@ async function hole(body: Record<string, unknown> = {}): Promise<Antwort> {
   const handler = await loadFn()
   const res = await handler(new Request('https://fn.test/import-week', {
     method: 'POST',
+    headers: ZUGANG,
     body: JSON.stringify(body),
   }))
   // Der Status gehört zur Antwort: „ist ein Fehler" heißt 404, nicht
@@ -648,7 +688,7 @@ describe('import-week: Netz und Aufruf', () => {
     const handler = await loadFn()
     const einmal = async () =>
       await handler(new Request('https://fn.test/import-week', {
-        method: 'POST', body: JSON.stringify({ after: '2026-03-02' }),
+        method: 'POST', headers: ZUGANG, body: JSON.stringify({ after: '2026-03-02' }),
       }))
     await einmal()
     const nachErstem = geholt.length
@@ -668,16 +708,18 @@ describe('import-week: Netz und Aufruf', () => {
 
   it('ein Aufruf ohne JSON-Rumpf stürzt nicht ab, sondern sucht die nächste Woche', async () => {
     const handler = await loadFn()
-    const res = await handler(new Request('https://fn.test/import-week', { method: 'POST' }))
+    const res = await handler(new Request('https://fn.test/import-week', { method: 'POST', headers: ZUGANG }))
     expect([200, 404]).toContain(res.status)
   })
 })
 
 describe('import-week: geholt wird nur bei jw.org', () => {
   /*
-   * Diese Function holt Seiten aus dem Netz, und sie steht offen: `verify_jwt`
-   * lässt den anon-Key durch, der per Design im Bundle liegt. Wer die Adresse
-   * bestimmen konnte, hatte damit einen Boten in der Supabase-Umgebung —
+   * Diese Function holt Seiten aus dem Netz, und sie stand offen: `verify_jwt`
+   * lässt den öffentlichen Schlüssel durch, der per Design im Bundle liegt (seit
+   * dem 1.10.2026 prüft sie selbst, wer fragt — siehe „wer Wochen holen darf").
+   * Wer die Adresse bestimmen konnte, hatte damit einen Boten in der
+   * Supabase-Umgebung —
    * `http://10.0.0.5:8080/` ist von dort erreichbar, von außen nicht, und der
    * zurückgereichte Fehlertext verriet, ob und wie dort etwas antwortet.
    *
@@ -739,10 +781,73 @@ describe('import-week: geholt wird nur bei jw.org', () => {
     seiten.leseprogramm = false
     const res = await handler(new Request('https://fn.test/import-week', {
       method: 'POST',
+      headers: ZUGANG,
       body: JSON.stringify({ start: 'kein-datum' }),
     }))
     const { error } = (await res.json()) as Antwort
     expect(error ?? '').not.toContain('http')
     expect(error ?? '').not.toMatch(/HTTP \d{3}/)
+  })
+})
+
+describe('import-week: wer Wochen holen darf', () => {
+  /*
+   * Gemessen am 1.10.2026 gegen die deployte Function: Mit dem öffentlichen
+   * Publishable-Key — er steht in jedem ausgelieferten Bündel — kam ohne
+   * Anmeldung `200` und eine ganze Woche. `verify_jwt` lässt ihn durch, und
+   * die Function prüfte nichts selbst. Das README versprach „nur eingeloggte
+   * Mitglieder". Jetzt dürfen es Mitglieder (die App) und Wartungsskripte mit
+   * Secret-Schlüssel — und eine Absage kommt, bevor jw.org gefragt wird.
+   */
+  const ruf = async (kopf: Record<string, string>): Promise<Response> => {
+    const handler = await loadFn()
+    return handler(new Request('https://fn.test/import-week', {
+      method: 'POST',
+      headers: kopf,
+      body: JSON.stringify({ after: '2026-03-02' }),
+    }))
+  }
+  const jwAbrufe = (): string[] => geholt.filter((u) => u.startsWith(`${BASE}/`))
+  const PUBLISHABLE = 'sb_publishable_test'
+
+  it('ohne Anmeldung nicht — 401, und jw.org wird gar nicht erst gefragt', async () => {
+    const res = await ruf({})
+    expect(res.status).toBe(401)
+    expect(jwAbrufe()).toEqual([])
+  })
+
+  it('mit dem öffentlichen Publishable-Key allein ebenso wenig', async () => {
+    const res = await ruf({ apikey: PUBLISHABLE, Authorization: `Bearer ${PUBLISHABLE}` })
+    expect(res.status).toBe(401)
+    expect(jwAbrufe()).toEqual([])
+  })
+
+  it('angemeldet, aber ohne Mitgliedschaft nicht — 403', async () => {
+    const res = await ruf({ apikey: PUBLISHABLE, Authorization: 'Bearer fremd-jwt' })
+    expect(res.status).toBe(403)
+    expect(jwAbrufe()).toEqual([])
+  })
+
+  it('ein Mitglied darf — so ruft die App', async () => {
+    const res = await ruf({ apikey: PUBLISHABLE, Authorization: 'Bearer mitglied-jwt' })
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as Antwort).week?.start).toBe('2026-03-09')
+  })
+
+  it('ein Wartungsskript mit Secret-Schlüssel darf — ohne Sitzung und ohne Rückfrage', async () => {
+    const res = await ruf({ apikey: SECRET, Authorization: `Bearer ${SECRET}` })
+    expect(res.status).toBe(200)
+    expect(geholt.some((u) => u.startsWith(SUPABASE_URL))).toBe(false)
+  })
+
+  it('auch mit dem alten Service-Role-Schlüssel', async () => {
+    const res = await ruf({ apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` })
+    expect(res.status).toBe(200)
+  })
+
+  it('ein fremder Secret-Schlüssel zählt nicht — und der Dienstschlüssel nur im apikey-Kopf', async () => {
+    expect((await ruf({ apikey: 'sb_secret_falsch' })).status).toBe(401)
+    // In `Authorization` stehen Sitzungen; dort öffnet der Schlüssel nichts.
+    expect((await ruf({ apikey: PUBLISHABLE, Authorization: `Bearer ${SECRET}` })).status).toBe(401)
   })
 })
