@@ -30,6 +30,7 @@ export default {
   "versammlungAnfragen": "בקשה להוספת קהילה חדשה:",
   "anfrageBetreff": "קהילה חדשה: Versammlung.app",
   "mitteilungen": "התראות",
+  "keineMitteilungen": "אין התראות",
   "neuN": "חדש: {n}",
   "alleGelesen": "סמן הכול כנקרא",
   "alleLoeschen": "מחק הכול",

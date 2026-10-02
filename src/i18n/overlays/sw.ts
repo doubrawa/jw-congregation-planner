@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Omba kutaniko jipya:",
   "anfrageBetreff": "Kutaniko jipya: Versammlung.app",
   "mitteilungen": "Arifa",
+  "keineMitteilungen": "Hakuna arifa",
   "neuN": "Mpya: {n}",
   "alleGelesen": "Weka zote zimesomwa",
   "alleLoeschen": "Futa zote",

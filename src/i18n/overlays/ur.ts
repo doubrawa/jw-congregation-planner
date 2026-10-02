@@ -30,6 +30,7 @@ export default {
   "versammlungAnfragen": "نئی کلیسیا کے لیے درخواست:",
   "anfrageBetreff": "نئی کلیسیا: Versammlung.app",
   "mitteilungen": "اطلاعات",
+  "keineMitteilungen": "کوئی اطلاع نہیں",
   "neuN": "نیا: {n}",
   "alleGelesen": "سب پڑھا ہوا نشان زد کریں",
   "alleLoeschen": "سب حذف کریں",

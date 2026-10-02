@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Yeni cemaat talebi:",
   "anfrageBetreff": "Yeni cemaat: Versammlung.app",
   "mitteilungen": "Bildirimler",
+  "keineMitteilungen": "Bildirim yok",
   "neuN": "Yeni: {n}",
   "alleGelesen": "Tümünü okundu işaretle",
   "alleLoeschen": "Tümünü sil",

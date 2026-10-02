@@ -22,6 +22,7 @@ export const DE = {
     appZweck: 'Zusammenkünfte planen, Aufgaben verteilen, die Versammlung verwalten.',
     versammlungAnfragen: 'Neue Versammlung anfragen:', anfrageBetreff: 'Neue Versammlung: Versammlung.app',
     mitteilungen: 'Mitteilungen', neuN: 'Neu: {n}', alleGelesen: 'Alle gelesen', alleLoeschen: 'Alle löschen',
+    keineMitteilungen: 'Keine Mitteilungen',
     aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
     // Kurzlabel der Programm-/Planen-Reiter: „Versammlung <Wochentag>"
     versammlungTag: 'Versammlung {tag}',

@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Ajukan sidang baru:",
   "anfrageBetreff": "Sidang baru: Versammlung.app",
   "mitteilungen": "Notifikasi",
+  "keineMitteilungen": "Tidak ada notifikasi",
   "neuN": "Baru: {n}",
   "alleGelesen": "Tandai semua dibaca",
   "alleLoeschen": "Hapus semua",

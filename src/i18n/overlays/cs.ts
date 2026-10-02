@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Žádost o nový sbor:",
   "anfrageBetreff": "Nový sbor: Versammlung.app",
   "mitteilungen": "Oznámení",
+  "keineMitteilungen": "Žádná oznámení",
   "neuN": "Nová: {n}",
   "alleGelesen": "Označit vše jako přečtené",
   "alleLoeschen": "Smazat vše",

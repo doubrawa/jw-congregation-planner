@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Nieuwe gemeente aanvragen:",
   "anfrageBetreff": "Nieuwe gemeente: Versammlung.app",
   "mitteilungen": "Meldingen",
+  "keineMitteilungen": "Geen meldingen",
   "neuN": "Nieuw: {n}",
   "alleGelesen": "Alles als gelezen markeren",
   "alleLoeschen": "Alles verwijderen",

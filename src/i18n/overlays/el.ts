@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Αίτημα για νέα εκκλησία:",
   "anfrageBetreff": "Νέα εκκλησία: Versammlung.app",
   "mitteilungen": "Ειδοποιήσεις",
+  "keineMitteilungen": "Δεν υπάρχουν ειδοποιήσεις",
   "neuN": "Νέες: {n}",
   "alleGelesen": "Σήμανση όλων ως αναγνωσμένων",
   "alleLoeschen": "Διαγραφή όλων",

@@ -30,6 +30,7 @@ import { useApp } from './context'
 import { eigenePerson } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
+import { sichtbareMitteilungen } from './mitteilungen'
 import { NotificationsPanel } from './NotificationsPanel'
 import { SidebarBrand, SidebarFooter, SidebarNav, type NavItem } from './Sidebar'
 import { welcomeDecision } from './welcome'
@@ -296,7 +297,7 @@ export function AppShell() {
 function NotifChip() {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const unread = state.notifs.filter((n) => !n.read).length
+  const unread = sichtbareMitteilungen(state.notifs, state.planner).filter((n) => !n.read).length
   return (
     <button
       type="button"

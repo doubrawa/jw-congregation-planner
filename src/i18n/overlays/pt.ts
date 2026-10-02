@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Pedir uma nova congregação:",
   "anfrageBetreff": "Nova congregação: Versammlung.app",
   "mitteilungen": "Notificações",
+  "keineMitteilungen": "Nenhuma notificação",
   "neuN": "Novas: {n}",
   "alleGelesen": "Marcar tudo como lido",
   "alleLoeschen": "Excluir tudo",

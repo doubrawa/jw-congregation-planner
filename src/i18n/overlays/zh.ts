@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "申请添加新会众：",
   "anfrageBetreff": "新会众：Versammlung.app",
   "mitteilungen": "通知",
+  "keineMitteilungen": "暂无通知",
   "neuN": "{n} 条新通知",
   "alleGelesen": "全部标为已读",
   "alleLoeschen": "全部删除",

@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "新しい会衆の登録申請：",
   "anfrageBetreff": "新しい会衆：Versammlung.app",
   "mitteilungen": "通知",
+  "keineMitteilungen": "通知はありません",
   "neuN": "新着 {n} 件",
   "alleGelesen": "すべて既読にする",
   "alleLoeschen": "すべて削除",

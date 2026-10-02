@@ -136,9 +136,44 @@ describe('Die Mitteilungen', () => {
   it('„Alle löschen" steht nur da, solange es etwas zu löschen gibt', () => {
     expect(knopf(zeige('notif').container, '.notif-clear')).toBeNull()
     cleanup()
+    const { container } = zeige('notif', { notifs: [notif()] })
+    expect(knopf(container, '.notif-clear')?.textContent).toBe(t.alleLoeschen)
+  })
+
+  it('„Alle löschen" fragt einmal nach — erst der zweite Tipp löscht', () => {
+    // Gelöscht wird endgültig; bis zum 1.10.2026 genügte ein einziger Fehltipp.
     const { container, dispatch } = zeige('notif', { notifs: [notif()] })
-    fireEvent.click(knopf(container, '.notif-clear')!)
+    const clear = () => knopf(container, '.notif-clear')!
+    fireEvent.click(clear())
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'clearNotifs')).toBe(false)
+    expect(clear().textContent).toBe(t.loeschenSicher)
+    expect(clear().className).toContain('is-armed')
+    fireEvent.click(clear())
     expect(dispatch).toHaveBeenCalledWith({ type: 'clearNotifs' })
+  })
+
+  it('„Alle gelesen" entschärft ein bewaffnetes „Alle löschen"', () => {
+    const { container } = zeige('notif', { notifs: [notif()] })
+    fireEvent.click(knopf(container, '.notif-clear')!)
+    fireEvent.click(knopf(container, '.notif-mark-read')!)
+    expect(knopf(container, '.notif-clear')?.textContent).toBe(t.alleLoeschen)
+  })
+
+  it('ohne Mitteilungen sagt die Glocke es — statt eines nackten Kopfes', () => {
+    const { container } = zeige('notif')
+    expect(container.querySelector('.notif-empty')?.textContent).toBe(t.keineMitteilungen)
+    // Und es steht kein Knopf da, der nichts zu tun hätte.
+    expect(knopf(container, '.notif-mark-read')).toBeNull()
+  })
+
+  it('die eigene, lokal entstandene Absage-Meldung sieht ein Verkündiger nicht — sie gilt den Admins', () => {
+    const lokal = notif({ id: 'lokal', type: 'verhindert', title: 'Verhinderung gemeldet', local: true })
+    const { container } = zeige('notif', { notifs: [lokal], planner: false })
+    expect(container.querySelectorAll('.notif-row')).toHaveLength(0)
+    expect(container.querySelector('.notif-empty')).toBeTruthy()
+    cleanup()
+    const admin = zeige('notif', { notifs: [lokal], planner: true })
+    expect(admin.container.querySelectorAll('.notif-row')).toHaveLength(1)
   })
 })
 

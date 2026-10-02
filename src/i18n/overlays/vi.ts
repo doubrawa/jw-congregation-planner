@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Yêu cầu thêm hội thánh mới:",
   "anfrageBetreff": "Hội thánh mới: Versammlung.app",
   "mitteilungen": "Thông báo",
+  "keineMitteilungen": "Không có thông báo",
   "neuN": "Mới: {n}",
   "alleGelesen": "Đánh dấu đã đọc tất cả",
   "alleLoeschen": "Xóa tất cả",

@@ -30,6 +30,7 @@ export default {
   "versammlungAnfragen": "درخواست افزودن جماعت جدید:",
   "anfrageBetreff": "جماعت جدید: Versammlung.app",
   "mitteilungen": "اعلان‌ها",
+  "keineMitteilungen": "اعلانی وجود ندارد",
   "neuN": "جدید: {n}",
   "alleGelesen": "علامت‌گذاری همه به‌عنوان خوانده‌شده",
   "alleLoeschen": "حذف همه",

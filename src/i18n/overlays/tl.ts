@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Humiling ng bagong kongregasyon:",
   "anfrageBetreff": "Bagong kongregasyon: Versammlung.app",
   "mitteilungen": "Mga Abiso",
+  "keineMitteilungen": "Walang abiso",
   "neuN": "Bago: {n}",
   "alleGelesen": "Markahan lahat bilang nabasa",
   "alleLoeschen": "Burahin lahat",

@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Förfrågan om ny församling:",
   "anfrageBetreff": "Ny församling: Versammlung.app",
   "mitteilungen": "Aviseringar",
+  "keineMitteilungen": "Inga aviseringar",
   "neuN": "Nya: {n}",
   "alleGelesen": "Markera alla lästa",
   "alleLoeschen": "Radera alla",

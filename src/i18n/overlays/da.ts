@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Anmodning om en ny menighed:",
   "anfrageBetreff": "Ny menighed: Versammlung.app",
   "mitteilungen": "Notifikationer",
+  "keineMitteilungen": "Ingen notifikationer",
   "neuN": "Nye: {n}",
   "alleGelesen": "Markér alle læst",
   "alleLoeschen": "Slet alle",

@@ -30,6 +30,7 @@ export default {
   "authZuVieleVersuche": "محاولات كثيرة جدًا — انتظر قليلًا",
   "demoHinweis": "نموذج تجريبي · أي بيانات دخول تصلح",
   "mitteilungen": "الإشعارات",
+  "keineMitteilungen": "لا توجد إشعارات",
   "neuN": "جديد: {n}",
   "alleGelesen": "تحديد الكل كمقروء",
   "alleLoeschen": "حذف الكل",

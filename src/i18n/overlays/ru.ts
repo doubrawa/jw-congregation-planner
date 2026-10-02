@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Заявка на новое собрание:",
   "anfrageBetreff": "Новое собрание: Versammlung.app",
   "mitteilungen": "Уведомления",
+  "keineMitteilungen": "Уведомлений нет",
   "neuN": "Новых: {n}",
   "alleGelesen": "Прочитать все",
   "alleLoeschen": "Удалить все",

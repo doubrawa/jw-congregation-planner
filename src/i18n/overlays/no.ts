@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Forespørsel om ny menighet:",
   "anfrageBetreff": "Ny menighet: Versammlung.app",
   "mitteilungen": "Varsler",
+  "keineMitteilungen": "Ingen varsler",
   "neuN": "Nye: {n}",
   "alleGelesen": "Merk alle som lest",
   "alleLoeschen": "Slett alle",

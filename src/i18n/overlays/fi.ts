@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Pyyntö uudesta seurakunnasta:",
   "anfrageBetreff": "Uusi seurakunta: Versammlung.app",
   "mitteilungen": "Ilmoitukset",
+  "keineMitteilungen": "Ei ilmoituksia",
   "neuN": "Uusia: {n}",
   "alleGelesen": "Merkitse kaikki luetuiksi",
   "alleLoeschen": "Poista kaikki",

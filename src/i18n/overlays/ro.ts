@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Cerere pentru o congregație nouă:",
   "anfrageBetreff": "Congregație nouă: Versammlung.app",
   "mitteilungen": "Notificări",
+  "keineMitteilungen": "Nicio notificare",
   "neuN": "Noi: {n}",
   "alleGelesen": "Marchează tot citit",
   "alleLoeschen": "Șterge tot",

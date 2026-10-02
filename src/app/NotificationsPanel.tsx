@@ -2,11 +2,13 @@ import { useEffect, useRef } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useEscape } from '../components/useEscape'
 import { useDialogFocus } from '../components/useDialogFocus'
+import { useZweiTipp } from '../components/useZweiTipp'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { useApp } from './context'
 import { loadNotifications } from '../lib/data'
 import { loadAndHydrate } from './hydrate'
+import { sichtbareMitteilungen } from './mitteilungen'
 import { relativeZeit } from '../i18n/zeit'
 
 /** Mitteilungen-Overlay (Kopf-Chip öffnet); Backdrop-Klick oder Escape schließt. */
@@ -18,6 +20,15 @@ export function NotificationsPanel() {
   useBackDismiss(true, () => dispatch({ type: 'closeNotifs' }))
 
   useEscape(() => dispatch({ type: 'closeNotifs' }))
+
+  const sichtbar = sichtbareMitteilungen(state.notifs, state.planner)
+  /*
+   * **„Alle löschen" fragt einmal nach** — wie Person löschen und Leeren
+   * (`useZweiTipp`). Es löscht die eigenen Zeilen in der Datenbank, und
+   * zurück holt sie nichts; bis zum 1.10.2026 genügte dafür ein einziger
+   * Fehltipp neben „Alle gelesen".
+   */
+  const loeschen = useZweiTipp(() => dispatch({ type: 'clearNotifs' }))
 
   /*
    * **Beim Öffnen still nachladen — aber nur, was die Glocke braucht.**
@@ -74,26 +85,32 @@ export function NotificationsPanel() {
       <div className="notif-panel" role="dialog" aria-modal="true" aria-label={t.mitteilungen} ref={dlg}>
         <div className="notif-head">
           <h2 className="notif-title">{t.mitteilungen}</h2>
-          <div className="notif-actions">
-            <button
-              type="button"
-              className="notif-mark-read"
-              onClick={() => dispatch({ type: 'markAllRead' })}
-            >
-              {t.alleGelesen}
-            </button>
-            {state.notifs.length > 0 && (
+          {sichtbar.length > 0 && (
+            <div className="notif-actions">
               <button
                 type="button"
-                className="notif-clear"
-                onClick={() => dispatch({ type: 'clearNotifs' })}
+                className="notif-mark-read"
+                onClick={() => {
+                  loeschen.entschaerfen()
+                  dispatch({ type: 'markAllRead' })
+                }}
               >
-                {t.alleLoeschen}
+                {t.alleGelesen}
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                className={loeschen.armed ? 'notif-clear is-armed' : 'notif-clear'}
+                onClick={loeschen.onClick}
+                onBlur={loeschen.onBlur}
+              >
+                {loeschen.armed ? t.loeschenSicher : t.alleLoeschen}
+              </button>
+            </div>
+          )}
         </div>
-        {state.notifs.map((notif) => {
+        {/* Leer stand hier bis zum 1.10.2026 nur der Kopf mit „Alle gelesen" — ohne ein Wort dazu. */}
+        {sichtbar.length === 0 && <p className="notif-empty">{t.keineMitteilungen}</p>}
+        {sichtbar.map((notif) => {
           const canConfirm =
             !!notif.taskId &&
             state.myTasks.some((task) => task.id === notif.taskId && task.status === 'offen')

@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Zahtev za novu skupštinu:",
   "anfrageBetreff": "Nova skupština: Versammlung.app",
   "mitteilungen": "Obaveštenja",
+  "keineMitteilungen": "Nema obaveštenja",
   "neuN": "Novih: {n}",
   "alleGelesen": "Označi sve kao pročitano",
   "alleLoeschen": "Obriši sve",

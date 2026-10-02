@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Zgłoś nowy zbór:",
   "anfrageBetreff": "Nowy zbór: Versammlung.app",
   "mitteilungen": "Powiadomienia",
+  "keineMitteilungen": "Brak powiadomień",
   "neuN": "Nowe: {n}",
   "alleGelesen": "Oznacz wszystkie jako przeczytane",
   "alleLoeschen": "Usuń wszystkie",

@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "새 회중 신청:",
   "anfrageBetreff": "새 회중: Versammlung.app",
   "mitteilungen": "알림",
+  "keineMitteilungen": "알림이 없습니다",
   "neuN": "새 항목 {n}개",
   "alleGelesen": "모두 읽음 표시",
   "alleLoeschen": "모두 삭제",

@@ -505,11 +505,25 @@
   color: var(--acc);
 }
 
-/* "Alle löschen" — leert den Feed der ganzen Versammlung, daher Warnfarbe. */
+/* "Alle löschen" — löscht die eigenen Mitteilungen endgültig, daher Warnfarbe.
+   Der erste Tipp bewaffnet (`useZweiTipp`), erst der zweite löscht. */
 .notif-clear {
   font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--wein);
+}
+
+.notif-clear.is-armed {
+  padding-inline: 8px;
+  border-radius: var(--r-pill);
+  background: var(--tWein);
+}
+
+/* Leere Glocke: ein Satz statt eines nackten Kopfes. */
+.notif-empty {
+  padding-block: 14px 4px;
+  font-size: calc(13px * var(--fs));
+  color: var(--mut);
 }
 
 .notif-row {

@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Új gyülekezet igénylése:",
   "anfrageBetreff": "Új gyülekezet: Versammlung.app",
   "mitteilungen": "Értesítések",
+  "keineMitteilungen": "Nincs értesítés",
   "neuN": "Új: {n}",
   "alleGelesen": "Összes olvasottnak jelölése",
   "alleLoeschen": "Összes törlése",

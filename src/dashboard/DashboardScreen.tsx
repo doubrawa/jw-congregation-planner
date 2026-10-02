@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
+import { sichtbareMitteilungen } from '../app/mitteilungen'
 import { AufgabenAktionen } from '../components/AufgabenAktionen'
 import { useKalendertag } from '../app/useKalendertag'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
@@ -62,7 +63,7 @@ export function DashboardScreen() {
     .toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
     .toUpperCase()
 
-  const unread = state.notifs.filter((n) => !n.read).length
+  const unread = sichtbareMitteilungen(state.notifs, state.planner).filter((n) => !n.read).length
   const toConfirm = state.myTasks.filter((task) => task.status === 'offen').length
 
   /*

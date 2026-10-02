@@ -35,6 +35,7 @@ export default {
   "versammlungAnfragen": "Request a new congregation:",
   "anfrageBetreff": "New congregation: Versammlung.app",
   "mitteilungen": "Notifications",
+  "keineMitteilungen": "No notifications",
   "neuN": "New: {n}",
   "alleGelesen": "Mark all read",
   "alleLoeschen": "Delete all",

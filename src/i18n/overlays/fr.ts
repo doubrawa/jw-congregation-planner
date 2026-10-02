@@ -29,6 +29,7 @@ export default {
   "versammlungAnfragen": "Demander une nouvelle assemblée\u00a0:",
   "anfrageBetreff": "Nouvelle assemblée\u00a0: Versammlung.app",
   "mitteilungen": "Notifications",
+  "keineMitteilungen": "Aucune notification",
   "neuN": "Nouvelles\u00a0: {n}",
   "alleGelesen": "Tout marquer lu",
   "alleLoeschen": "Tout supprimer",
