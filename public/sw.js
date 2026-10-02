@@ -28,17 +28,44 @@ const DEV = new URL(self.location.href).searchParams.has('dev')
 // (unter versammlung.app und im Dev gleichermaßen /).
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.svg', 'icon-192.png']
 
+/**
+ * Die gehashten Bündel, auf die `index.html` verweist — Skript, vorab geladene
+ * Module und Stylesheet (`src`/`href` unter `/assets/`).
+ *
+ * **Ohne sie startet die App offline nicht.** Der `fetch`-Hörer legt Assets
+ * zwar beim Abruf ab, aber beim ersten Besuch hat die Seite sie geladen, bevor
+ * dieser Worker die Kontrolle übernahm — sie gingen an ihm vorbei. Wer die App
+ * einmal öffnete und danach ohne Netz in den Saal kam, sah eine leere Seite:
+ * die Hülle aus dem Cache, das Bündel nicht (gemessen am 1.10.2026 mit
+ * `vite preview` und gestopptem Server).
+ *
+ * Gelesen wird die gerade abgelegte `index.html` selbst, keine Liste aus dem
+ * Bauschritt: Sie ist die eine Stelle, die weiß, welche Bündel dieser Stand
+ * braucht. Schriften und nachgeladene Sprachpakete stehen nicht darin; sie
+ * kommen beim ersten Gebrauch über den `fetch`-Hörer dazu. Fehlen sie offline,
+ * greifen Systemschrift und Englisch — die App startet trotzdem.
+ */
+function buendelAus(html) {
+  return [...html.matchAll(/(?:src|href)="([^"]*\/assets\/[^"]+)"/g)].map((m) => m[1])
+}
+
 self.addEventListener('install', (event) => {
   // Neue SW-Fassung sofort aktiv werden lassen (statt bis zum Schließen aller
   // Fenster zu warten) — sonst laufen SW-Änderungen wie der Deep-Link-Klick
   // erst nach einem kompletten Neustart der App.
   self.skipWaiting()
   if (DEV) return
-  // Fehlt eine Datei, soll die Installation nicht komplett scheitern.
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((c) => Promise.allSettled(SHELL.map((u) => c.add(new Request(u, { cache: 'reload' }))))),
+    (async () => {
+      const cache = await caches.open(CACHE)
+      // Fehlt eine Datei, soll die Installation nicht komplett scheitern.
+      await Promise.allSettled(SHELL.map((u) => cache.add(new Request(u, { cache: 'reload' }))))
+      const index = await cache.match(new Request('index.html'))
+      if (!index) return
+      // Ohne `cache: 'reload'`: Die Namen tragen den Inhalts-Hash, und die
+      // Seite hat sie eben erst geladen — der HTTP-Cache darf sie liefern.
+      await Promise.allSettled(buendelAus(await index.text()).map((u) => cache.add(new Request(u))))
+    })(),
   )
 })
 
@@ -64,9 +91,18 @@ async function fromNetwork(request) {
   return res
 }
 
-/** Cache zuerst — für unveränderliche Dateien (gehashte Assets, Schriften). */
+/**
+ * Cache zuerst — für unveränderliche Dateien (gehashte Assets, Schriften).
+ *
+ * **`ignoreVary`**, weil der Inhalts-Hash im Namen schon alles sagt. Schickt der
+ * Server `Vary: Origin` (`vite preview` tut es), trifft ein Eintrag sonst nur
+ * eine Anfrage mit demselben `Origin`: Das beim Installieren abgelegte Bündel
+ * (ohne `Origin`) fand das Modul-Skript der Seite (`crossorigin`, mit `Origin`)
+ * nicht — offline blieb die Seite leer, obwohl alles im Cache lag (gemessen am
+ * 1.10.2026).
+ */
 async function cacheFirst(request) {
-  const hit = await caches.match(request)
+  const hit = await caches.match(request, { ignoreVary: true })
   if (hit) return hit
   return fromNetwork(request)
 }

@@ -25,33 +25,71 @@ export interface FakeResponse {
   ok: boolean
   type?: string
   url?: string
+  /** Kopfzeile `Vary` — nur `Origin` wird ausgewertet (siehe `FakeCache.match`). */
+  vary?: string
+  text: () => Promise<string>
   clone: () => FakeResponse
 }
+
+/** Eine Anfrage, wie sie beim Worker ankommt — `origin` setzt der Browser bei CORS-Abrufen. */
+type FakeAnfrage = { url: string; headers?: { origin?: string } } | string
 
 /** Der ausgelieferte Worker im Original — so, wie er in `public/` liegt. */
 export function swQuelle(): string {
   return readFileSync(fileURLToPath(new URL('../public/sw.js', import.meta.url)), 'utf8')
 }
 
-export function antwort(url: string, ok = true, type = 'basic'): FakeResponse {
-  const res: FakeResponse = { ok, type, url, clone: () => res }
+export function antwort(url: string, ok = true, type = 'basic', inhalt = '', vary?: string): FakeResponse {
+  const res: FakeResponse = { ok, type, url, vary, text: () => Promise.resolve(inhalt), clone: () => res }
   return res
 }
+
+const adresse = (r: FakeAnfrage) => (typeof r === 'string' ? r : r.url)
+const herkunftVon = (r: FakeAnfrage) => (typeof r === 'string' ? undefined : r.headers?.origin)
 
 /** Ein Cache-Speicher, der sich merkt, was hineingelegt wurde. */
 class FakeCache {
   readonly eintraege = new Map<string, FakeResponse>()
-  add(request: { url: string }): Promise<void> {
-    this.eintraege.set(request.url, antwort(request.url))
-    return Promise.resolve()
+  /** `Origin` der Anfrage, mit der ein Eintrag abgelegt wurde — für `Vary: Origin`. */
+  private readonly herkunft = new Map<string, string | undefined>()
+  private readonly holen: (url: string) => Promise<FakeResponse>
+
+  /**
+   * `add` holt wie das Original über das Netz und legt nur Erfolgreiches ab.
+   * Bis zum 1.10.2026 legte es ungefragt eine leere Antwort ab — dann wusste
+   * der Prüfstand nicht, was in einer abgelegten Datei steht, und ein Worker,
+   * der `index.html` liest, ließ sich gar nicht prüfen.
+   */
+  constructor(holen: (url: string) => Promise<FakeResponse>) {
+    this.holen = holen
   }
-  put(request: { url: string }, res: FakeResponse): Promise<void> {
+
+  async add(request: { url: string }): Promise<void> {
+    const res = await this.holen(request.url)
+    if (!res.ok) throw new TypeError(`Cache.add: ${request.url} antwortete nicht ok`)
     this.eintraege.set(request.url, res)
+    // Ein `new Request(…)` im Worker trägt keinen `Origin` — anders als das
+    // Modul-Skript der Seite.
+    this.herkunft.set(request.url, undefined)
+  }
+  put(request: FakeAnfrage, res: FakeResponse): Promise<void> {
+    this.eintraege.set(adresse(request), res)
+    this.herkunft.set(adresse(request), herkunftVon(request))
     return Promise.resolve()
   }
-  match(request: { url: string } | string): Promise<FakeResponse | undefined> {
-    const url = typeof request === 'string' ? request : request.url
-    return Promise.resolve(this.eintraege.get(url))
+  /**
+   * Wie das Original mit **`Vary: Origin`**: Ein Eintrag trifft nur eine Anfrage
+   * mit demselben `Origin` — außer bei `ignoreVary`. Gemessen am 1.10.2026 mit
+   * `vite preview`: Ohne das fand der Worker offline das vorab abgelegte Bündel
+   * nicht, obwohl es im Cache lag, und die Seite blieb leer.
+   */
+  match(request: FakeAnfrage, opts: { ignoreVary?: boolean } = {}): Promise<FakeResponse | undefined> {
+    const hit = this.eintraege.get(adresse(request))
+    const variiert = hit?.vary?.toLowerCase().includes('origin') && !opts.ignoreVary
+    if (hit && variiert && this.herkunft.get(adresse(request)) !== herkunftVon(request)) {
+      return Promise.resolve(undefined)
+    }
+    return Promise.resolve(hit)
   }
 }
 
@@ -98,18 +136,24 @@ export function ladeServiceWorker(opts: SwOptionen = {}): SwUmgebung {
   const hoerer = new Map<string, (e: Record<string, unknown>) => void>()
   let skipWaitingGerufen = false
 
+  const fetchFake = (request: { url: string } | string) => {
+    const url = typeof request === 'string' ? request : request.url
+    geholt.push(url)
+    const res = opts.netz ? opts.netz(url) : antwort(url)
+    return res ? Promise.resolve(res) : Promise.reject(new Error(`offline: ${url}`))
+  }
+
   const caches = {
     open: (name: string) => {
-      const vorhanden = speicher.get(name) ?? new FakeCache()
+      const vorhanden = speicher.get(name) ?? new FakeCache((url) => fetchFake(url))
       speicher.set(name, vorhanden)
       return Promise.resolve(vorhanden)
     },
     keys: () => Promise.resolve([...speicher.keys()]),
     delete: (name: string) => Promise.resolve(speicher.delete(name)),
-    match: async (request: { url: string } | string) => {
-      const url = typeof request === 'string' ? request : request.url
+    match: async (request: FakeAnfrage, opts: { ignoreVary?: boolean } = {}) => {
       for (const c of speicher.values()) {
-        const hit = c.eintraege.get(url)
+        const hit = await c.match(request, opts)
         if (hit) return hit
       }
       return undefined
@@ -158,13 +202,6 @@ export function ladeServiceWorker(opts: SwOptionen = {}): SwUmgebung {
         return Promise.resolve()
       },
     },
-  }
-
-  const fetchFake = (request: { url: string } | string) => {
-    const url = typeof request === 'string' ? request : request.url
-    geholt.push(url)
-    const res = opts.netz ? opts.netz(url) : antwort(url)
-    return res ? Promise.resolve(res) : Promise.reject(new Error(`offline: ${url}`))
   }
 
   class FakeRequest {

@@ -69,6 +69,87 @@ describe('Service Worker: die Shell für den Offline-Start', () => {
   })
 })
 
+describe('Service Worker: ein Besuch genügt für den Offline-Start', () => {
+  /*
+   * Gemessen am 1.10.2026 mit `vite preview`: einmal online öffnen, Server
+   * stoppen, neu laden — **leere Seite**. Die Hülle kam aus dem Cache, das
+   * Bündel nicht: Die Seite hatte es geladen, bevor der Worker die Kontrolle
+   * übernahm, also lief der Abruf an ihm vorbei. Erst ein zweiter Besuch legte
+   * es ab. Wer die App einmal daheim öffnet und danach ohne Netz im Saal steht,
+   * hätte nichts gesehen.
+   */
+  const INDEX = `<!doctype html><html><head>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <script type="module" crossorigin src="/assets/index-abc123.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-def456.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-789xyz.css">
+  </head><body><div id="root"></div></body></html>`
+  const BUENDEL = [
+    'https://app.test/assets/index-abc123.js',
+    'https://app.test/assets/react-def456.js',
+    'https://app.test/assets/index-789xyz.css',
+  ]
+  const mitIndex = (u: string) => (u.endsWith('/index.html') ? antwort(u, true, 'basic', INDEX) : antwort(u))
+  const abgelegt = (sw: ReturnType<typeof ladeServiceWorker>) =>
+    [...sw.speicher.values()].flatMap((c) => [...c.eintraege.keys()])
+
+  it('beim Installieren landen auch die Bündel aus index.html im Cache', async () => {
+    const sw = ladeServiceWorker({ netz: mitIndex })
+    await sw.feuere('install', {})
+    expect(abgelegt(sw)).toEqual(expect.arrayContaining(BUENDEL))
+  })
+
+  it('offline nach nur einem Besuch kommen Seite und Bündel aus dem Cache', async () => {
+    const online = ladeServiceWorker({ netz: mitIndex })
+    await online.feuere('install', {})
+    const offline = ladeServiceWorker({ netz: () => undefined })
+    for (const [name, c] of online.speicher) offline.speicher.set(name, c)
+
+    const seite = await offline.feuere('fetch', { request: req('./', { mode: 'navigate' }) })
+    expect(seite, 'keine Hülle').toBeDefined()
+    for (const url of BUENDEL) {
+      const res = await offline.feuere('fetch', { request: { url, method: 'GET', mode: 'cors' } })
+      expect(res, `${url} fehlt — die Seite bliebe leer`).toBeDefined()
+    }
+  })
+
+  it('das Modul-Skript der Seite trifft das vorab abgelegte Bündel — auch bei „Vary: Origin"', async () => {
+    /*
+     * Gemessen am 1.10.2026 mit `vite preview`, nach dem Vorab-Ablegen: Die
+     * Bündel lagen im Cache, die Seite blieb offline trotzdem leer. Der Server
+     * schickt `Vary: Origin`; abgelegt hat der Worker ohne `Origin`, die Seite
+     * fragt das Modul-Skript (`crossorigin`) mit einem an — kein Treffer.
+     * Gehashte Bündel sind unveränderlich; der Abgleich über `Vary` ist dort
+     * ohne Sinn.
+     */
+    const mitVary = (u: string) =>
+      u.endsWith('/index.html') ? antwort(u, true, 'basic', INDEX) : antwort(u, true, 'basic', '', 'Origin')
+    const online = ladeServiceWorker({ netz: mitVary })
+    await online.feuere('install', {})
+    const offline = ladeServiceWorker({ netz: () => undefined })
+    for (const [name, c] of online.speicher) offline.speicher.set(name, c)
+
+    const modul = { url: BUENDEL[0], method: 'GET', mode: 'cors', headers: { origin: 'https://app.test' } }
+    expect(await offline.feuere('fetch', { request: modul }), 'Bündel liegt da, wird aber nicht gefunden').toBeDefined()
+  })
+
+  it('fehlt ein Bündel im Netz, legt die Installation die übrigen trotzdem ab', async () => {
+    const sw = ladeServiceWorker({ netz: (u) => (u.includes('react-') ? undefined : mitIndex(u)) })
+    await sw.feuere('install', {})
+    const da = abgelegt(sw)
+    expect(da).toContain(BUENDEL[0])
+    expect(da).toContain(BUENDEL[2])
+    expect(da).not.toContain(BUENDEL[1])
+  })
+
+  it('ohne index.html im Cache bleibt es bei der Hülle — kein Absturz', async () => {
+    const sw = ladeServiceWorker({ netz: (u) => (u.endsWith('/index.html') ? undefined : antwort(u)) })
+    await sw.feuere('install', {})
+    expect(abgelegt(sw).some((u) => u.includes('/assets/'))).toBe(false)
+  })
+})
+
 describe('Service Worker: der Cache räumt sich auf (V9)', () => {
   it('beim Aktivieren fliegt jeder fremde Cache heraus', async () => {
     const sw = ladeServiceWorker()
