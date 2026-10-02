@@ -136,7 +136,9 @@
   box-shadow: 0 3px 12px -6px var(--acc);
 }
 
-/* Kopfzeile beider Banner: Rund-Badge (!/?) · Titel · Zähler-Pille rechts. */
+/* Kopfzeile beider Banner: Rund-Badge (!/?) · Titel · Zähler-Pille rechts.
+   Badge und Pille wachsen mit der Schriftstufe: Ihre Zeilenhöhe tut es, und
+   in einem festen Kasten rutschte die Ziffer ab Stufe > 1 unten heraus. */
 .plan-banner-head {
   display: flex;
   align-items: center;
@@ -145,8 +147,8 @@
 
 .plan-banner-badge {
   flex: none;
-  width: 21px;
-  height: 21px;
+  width: calc(21px * var(--fs));
+  height: calc(21px * var(--fs));
   border-radius: 50%;
   color: var(--onAcc);
   font-size: calc(13px * var(--fs));
@@ -164,8 +166,8 @@
 
 .plan-banner-count {
   flex: none;
-  min-width: 22px;
-  height: 22px;
+  min-width: calc(22px * var(--fs));
+  height: calc(22px * var(--fs));
   padding: 0 7px;
   box-sizing: border-box;
   border-radius: var(--r-pill);

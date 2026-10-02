@@ -1,7 +1,7 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { cssDateien } from './css-quellen'
 
 /**
  * **Das Layout spiegelt sich — geprüft an den Eigenschaften, die es tun müssen.**
@@ -23,21 +23,6 @@ import { describe, expect, it } from 'vitest'
  * Diese Prüfung liest deshalb das CSS selbst. Sie erlaubt physische Angaben nur
  * dort, wo sie **keine Richtung** meinen — und verlangt für jede einen Grund.
  */
-
-const CSS_WURZEL = fileURLToPath(new URL('../src', import.meta.url))
-
-/** Alle `.css` unter `src/`, mit Pfad relativ zur Wurzel. */
-function cssDateien(dir = CSS_WURZEL): Array<[string, string]> {
-  const out: Array<[string, string]> = []
-  for (const eintrag of readdirSync(dir, { withFileTypes: true })) {
-    const pfad = join(dir, eintrag.name)
-    if (eintrag.isDirectory()) out.push(...cssDateien(pfad))
-    else if (eintrag.name.endsWith('.css')) {
-      out.push([relative(CSS_WURZEL, pfad).replaceAll('\\', '/'), readFileSync(pfad, 'utf8')])
-    }
-  }
-  return out
-}
 
 const DATEIEN = cssDateien()
 

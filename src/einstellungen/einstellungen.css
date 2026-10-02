@@ -155,10 +155,11 @@
   text-align: start;
 }
 
+/* Badge und Zähler wachsen mit der Schriftstufe — wie im Planen-Banner. */
 .grp-ohne-badge {
   flex: none;
-  width: 21px;
-  height: 21px;
+  width: calc(21px * var(--fs));
+  height: calc(21px * var(--fs));
   border-radius: 50%;
   background: var(--wein);
   color: var(--onAcc);
@@ -178,8 +179,8 @@
 
 .grp-ohne-count {
   flex: none;
-  min-width: 22px;
-  height: 22px;
+  min-width: calc(22px * var(--fs));
+  height: calc(22px * var(--fs));
   padding-inline: 7px;
   box-sizing: border-box;
   border-radius: var(--r-pill);
