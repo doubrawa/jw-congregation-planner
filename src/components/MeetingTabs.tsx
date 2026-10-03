@@ -28,6 +28,14 @@ interface MeetingTabsProps {
    */
   showEdit?: boolean
   /**
+   * Der Reiter „Redner auswärts" (T120, Phase 4) — ob er dasteht, sagt
+   * `useVaReiter`. Er steht hinter den Zusammenkünften und vor dem Bearbeiten:
+   * Er gehört zum Thema, aber zu keiner Woche.
+   */
+  showVa?: boolean
+  /** Mögliche Konflikte der Vorträge auswärts — als Zahl am Reiter, nur beim Planen. */
+  vaKonflikte?: number
+  /**
    * Die gezeigte Woche. Weicht sie ab (T30), steht auf dem Reiter ihr
    * **tatsächlicher** Tag — nicht der Rhythmus aus den Einstellungen. Sonst
    * stünde „Sonntag" über einer Zusammenkunft, die auf Samstag verlegt wurde.
@@ -56,7 +64,15 @@ function weekdayName(offset: number, locale: string): string {
  * anderen Sprachen, großer Schriftgrad), bricht die Leiste um — alle Reiter
  * müssen sichtbar sein, seitliches Scrollen findet man nicht.
  */
-export function MeetingTabs({ tab, onChange, className, showEdit = false, week }: MeetingTabsProps) {
+export function MeetingTabs({
+  tab,
+  onChange,
+  className,
+  showEdit = false,
+  showVa = false,
+  vaKonflikte = 0,
+  week,
+}: MeetingTabsProps) {
   const { state } = useApp()
   const { t } = useT()
   const zeiten = state.congregation.times
@@ -71,6 +87,12 @@ export function MeetingTabs({ tab, onChange, className, showEdit = false, week }
       const day = weekdayName(versatz, locale)
       return [key, day, fill(t.versammlungTag, { tag: day })]
     }),
+    // Die Zahl der Konflikte wird mit vorgelesen — sichtbar steht sie als Marke.
+    ...(showVa
+      ? ([['va', t.vaTab, vaKonflikte > 0 ? `${t.vaTab} · ${t.konflikteTitle}: ${vaKonflikte}` : t.vaTab]] as ReadonlyArray<
+          [MeetingTab, string, string]
+        >)
+      : []),
     ...(showEdit
       ? ([['edit', '✎', t.einstellungen]] as ReadonlyArray<[MeetingTab, string, string]>)
       : []),
@@ -87,6 +109,11 @@ export function MeetingTabs({ tab, onChange, className, showEdit = false, week }
           onClick={() => onChange(key)}
         >
           {label}
+          {key === 'va' && vaKonflikte > 0 && (
+            <span className="meeting-tab-zahl" aria-hidden="true">
+              {vaKonflikte}
+            </span>
+          )}
         </button>
       ))}
     </div>

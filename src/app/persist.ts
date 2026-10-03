@@ -8,6 +8,7 @@
 import { fsTaskKeyWoche } from '../data/fs'
 import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
 import { ozEntzogeneZusagen } from '../data/zeugnis'
+import { vaEntzogeneZusagen } from '../data/auswaerts'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { eigenePerson } from './eigene-person'
 import {
@@ -39,6 +40,7 @@ import {
   savePersonGroup,
   saveService,
   saveSettings,
+  saveVortraegeAuswaerts,
   saveWeek,
   substituteSeek,
   substituteTake,
@@ -481,6 +483,20 @@ function zeugnisSpeichern(congId: string, prev: AppState, next: AppState): void 
   saveOzEintraege(congId, neu, entfernt)
 }
 
+/**
+ * Vorträge auswärts (T120, Phase 4): je Vortrag nur, was sich geändert hat
+ * (neue Referenz), gelöscht nur, was hier gestrichen wurde — wie die
+ * Gruppenbesuche. Hier wird geklickt, nicht getippt: Es geht sofort hinaus.
+ */
+function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): void {
+  if (next.auswaerts === prev.auswaerts) return
+  const vorher = new Map(prev.auswaerts.map((v) => [v.id, v]))
+  const geaendert = next.auswaerts.filter((v) => vorher.get(v.id) !== v)
+  const bleibt = new Set(next.auswaerts.map((v) => v.id))
+  const entfernt = prev.auswaerts.filter((v) => !bleibt.has(v.id)).map((v) => v.id)
+  if (geaendert.length || entfernt.length) saveVortraegeAuswaerts(congId, geaendert, entfernt)
+}
+
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -559,6 +575,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'ozAutoAssign':
     case 'ozLeeren':
       zeugnisSpeichern(congId, prev, next)
+      break
+    case 'vaAdd':
+    case 'vaRedner':
+    case 'vaRemove':
+      vortraegeSpeichern(congId, prev, next)
       break
     case 'addPerson':
       savePerson(congId, action.person)
@@ -900,6 +921,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         eigenePerson(prev)?.id,
       ),
     )
+    // Und an die vierte: Vorträge auswärts (Phase 4), gestrichen oder umbesetzt.
+    entzogen.push(...vaEntzogeneZusagen(prev.auswaerts, next.auswaerts, next.persons, prev.confirmations))
     // Der Regelfall: nichts verloren, nichts zu schicken.
     if (entzogen.length > 0) sendPlanEntzug(entzogen)
   }

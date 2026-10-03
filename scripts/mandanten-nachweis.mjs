@@ -74,6 +74,7 @@ export const RLS_TABELLEN = [
   { name: 'gruppenbesuche', spalte: 'congregation_id' },
   { name: 'oz_termine', spalte: 'congregation_id' },
   { name: 'oz_eintraege', spalte: 'congregation_id' },
+  { name: 'vortraege_auswaerts', spalte: 'congregation_id' },
   { name: 'absences', spalte: 'congregation_id' },
   { name: 'notifications', spalte: 'congregation_id' },
   { name: 'confirmations', spalte: 'congregation_id' },

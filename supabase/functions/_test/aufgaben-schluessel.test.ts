@@ -23,6 +23,7 @@ import {
   punktStamm,
   ratgeberKey,
   schluesselTeile,
+  vaKey,
   wochenPraefixe,
 } from '../_shared/aufgaben-schluessel.ts'
 
@@ -83,6 +84,14 @@ describe('gebaut und wieder zerlegt', () => {
     })
   })
 
+  it('Vortrag auswärts (T120, Phase 4)', () => {
+    expect(schluesselTeile(vaKey(WOCHE, 'v1a2'))).toEqual({
+      art: 'va',
+      woche: WOCHE,
+      vortragId: 'v1a2',
+    })
+  })
+
   /*
    * Die Kennung eines Dienstes darf alles sein, was der Planer eintippt — sie
    * ist ein Schlüssel aus `services.key`. Ein `|` darin bräche das Format; die
@@ -106,6 +115,9 @@ describe('was kein Schlüssel ist, wird nicht geraten', () => {
     ['Zeugnis-Eintrag ohne Kennung', `oz|${WOCHE}|`],
     ['Zeugnis-Eintrag ohne Woche', 'oz||e5f2'],
     ['Zeugnis-Eintrag mit einem Feld zu viel', `oz|${WOCHE}|e5f2|x`],
+    ['Vortrag auswärts ohne Kennung', `va|${WOCHE}|`],
+    ['Vortrag auswärts ohne Woche', 'va||v1a2'],
+    ['Vortrag auswärts mit einem Feld zu viel', `va|${WOCHE}|v1a2|x`],
     ['Tagebuch-Schlüssel (Platz + Name)', `${ratgeberKey(WOCHE, 'mid')} Max Muster`],
     // Platz 0 in Verkleidung: `Number()` las beides als 0, die Datenbank ließ es durch.
     ['Platznummer als Kommazahl', `${WOCHE}|mid|helper|mik|0.0`],
@@ -147,6 +159,11 @@ describe('Bausteine', () => {
     // Präfixe der Woche, zählte „Zuletzt gesendet" der Woche dessen Versand
     // mit — und der Knopf der Woche meldete etwas, das er nicht verschickt hat.
     expect(wochenPraefixe(WOCHE).some((p) => ozKey(WOCHE, 'e5f2').startsWith(p))).toBe(false)
+  })
+
+  it('die Vorträge auswärts ebenso wenig', () => {
+    // Derselbe Grund: eine eigene Aktion von `send-plan` über alle kommenden Vorträge.
+    expect(wochenPraefixe(WOCHE).some((p) => vaKey(WOCHE, 'v1a2').startsWith(p))).toBe(false)
   })
 
   it('die Wochenkennung ist eine Form, keine Datumsprüfung', () => {

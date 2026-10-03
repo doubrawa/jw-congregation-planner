@@ -67,6 +67,7 @@ function ladung(): HydratePayload {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
+    auswaerts: [],
     absences: DEMO_ABSENCES.map((a) => ({ ...a })),
     notifications: DEMO_NOTIFICATIONS.map((n) => ({ ...n })),
     confirmations: {},

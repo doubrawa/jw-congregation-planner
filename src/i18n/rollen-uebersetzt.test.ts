@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RATGEBER_ROLLE } from '../data/aux-class'
 import { ROLE_CIRCUIT, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
-import { FS_LEITER, OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { FS_LEITER, OZ_DIENST, VA_ROLLE } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { APP_LANGS } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
 import { dict, loadOverlay } from './ui'
@@ -98,5 +98,11 @@ describe('Rollen der App im Fragment-Übersetzer', () => {
     for (const { code } of APP_LANGS) {
       expect(makeTr(code)(OZ_DIENST), code).toBe(dict(code).privZeugnis)
     }
+  })
+
+  it('der Redner eines Vortrags auswärts ist dasselbe Wort wie am Vortragsplatz (T120)', () => {
+    // Zwei Konstanten, weil die Edge-Laufzeit nicht an `src/` herankommt — ein
+    // Wort, damit Glocke, Push und „Meine Aufgaben" dieselbe Rolle nennen.
+    expect(VA_ROLLE).toBe(ROLE_OWN_SPEAKER)
   })
 })

@@ -59,6 +59,7 @@ export function initialState(): AppState {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
+    auswaerts: [],
     absences: [],
     notifs: [],
     notifOpen: false,

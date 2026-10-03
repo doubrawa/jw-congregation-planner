@@ -29,6 +29,7 @@ const emptyData: CongregationData = {
   gruppenbesuche: [],
   ozTermine: [],
   ozEintraege: [],
+  auswaerts: [],
   absences: [],
   notifications: [],
   confirmations: {},

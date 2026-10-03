@@ -30,6 +30,7 @@ import type {
   MeetingTimes,
   OzEintrag,
   OzTermin,
+  VortragAuswaerts,
   Member,
   Notification,
   NotificationType,
@@ -144,6 +145,40 @@ function ozEintragToRow(e: OzEintrag, congregationId: string) {
     datum: e.datum,
     person_id: e.pid,
     selbst: e.selbst,
+  }
+}
+
+/** Redner auswärts (T120, Phase 4): ein Vortrag, eine Zeile. */
+interface VortragAuswaertsRow {
+  id: string
+  datum: string
+  zeit: string
+  versammlung: string
+  nummer: number | null
+  person_id: string | null
+}
+
+function vortragAuswaertsFromRow(r: VortragAuswaertsRow): VortragAuswaerts {
+  return {
+    id: r.id,
+    datum: r.datum,
+    // `time` kommt als „10:00:00" — die App führt „10:00".
+    zeit: kurzeZeit(r.zeit, '10:00'),
+    versammlung: r.versammlung,
+    nummer: r.nummer,
+    pid: r.person_id,
+  }
+}
+
+function vortragAuswaertsToRow(v: VortragAuswaerts, congregationId: string) {
+  return {
+    id: v.id,
+    congregation_id: congregationId,
+    datum: v.datum,
+    zeit: v.zeit,
+    versammlung: v.versammlung,
+    nummer: v.nummer,
+    person_id: v.pid,
   }
 }
 
@@ -534,6 +569,7 @@ export interface CongregationData {
   /** Öffentliches Zeugnisgeben (T120): Termine und die Einträge ab `OZ_RUECKBLICK_TAGE` zurück. */
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
+  auswaerts: VortragAuswaerts[]
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -592,7 +628,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows, auswaertsRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -648,6 +684,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('datum', ozLadeAb())
       .order('datum'),
+    // Redner auswärts (T120, Phase 4): ab einem Vierteljahr zurück — der Plan
+    // zeigt die letzten als „vorbei". Ein Verkündiger bekommt nur seine (RLS).
+    supabase
+      .from('vortraege_auswaerts')
+      .select('id, datum, zeit, versammlung, nummer, person_id')
+      .eq('congregation_id', congregationId)
+      .gte('datum', ozLadeAb())
+      .order('datum'),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -671,6 +715,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Ebenso das öffentliche Zeugnisgeben (T120, Phase 3).
   if (ozTerminRows.error) console.error('[oz_termine]', ozTerminRows.error.message)
   if (ozEintragRows.error) console.error('[oz_eintraege]', ozEintragRows.error.message)
+  // Und die Vorträge auswärts (Phase 4).
+  if (auswaertsRows.error) console.error('[vortraege_auswaerts]', auswaertsRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
@@ -764,6 +810,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     gruppenbesuche: ((besuchRows.data ?? []) as GruppenbesuchRow[]).map(gruppenbesuchFromRow),
     ozTermine: ((ozTerminRows.data ?? []) as OzTerminRow[]).map(ozTerminFromRow),
     ozEintraege: ((ozEintragRows.data ?? []) as OzEintragRow[]).map(ozEintragFromRow),
+    auswaerts: ((auswaertsRows.data ?? []) as VortragAuswaertsRow[]).map(vortragAuswaertsFromRow),
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
@@ -1127,6 +1174,35 @@ export function saveOzEintraege(congregationId: string, neu: OzEintrag[], entfer
   )
 }
 
+/**
+ * Vorträge auswärts (T120, Phase 4) — wie die Gruppenbesuche: geschrieben wird,
+ * was dieser Planer angelegt oder geändert hat, gelöscht, was er gestrichen hat.
+ */
+export function saveVortraegeAuswaerts(
+  congregationId: string,
+  vortraege: VortragAuswaerts[],
+  entfernt: string[] = [],
+): void {
+  if (!supabase) return
+  const client = supabase
+  void run(
+    (async () => {
+      if (entfernt.length) {
+        const { error } = await client
+          .from('vortraege_auswaerts')
+          .delete()
+          .eq('congregation_id', congregationId)
+          .in('id', entfernt)
+        if (error) return { error }
+      }
+      if (!vortraege.length) return { error: null }
+      return await client
+        .from('vortraege_auswaerts')
+        .upsert(vortraege.map((v) => vortragAuswaertsToRow(v, congregationId)))
+    })(),
+  )
+}
+
 /** Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]). */
 export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): void {
   if (!supabase || !woche) return
@@ -1411,6 +1487,27 @@ export async function sendZeugnisPlan(heute: string): Promise<PlanVersand | null
   })
   if (error) {
     console.error('[send-plan/zeugnis]', error.message)
+    return null
+  }
+  const res = data as Partial<PlanVersand> | null
+  return {
+    personen: res?.personen ?? 0,
+    ohneKonto: res?.ohneKonto ?? [],
+  }
+}
+
+/**
+ * „Plan senden" bei den Vorträgen auswärts (T120, Phase 4): jeder Redner, der
+ * einen kommenden Vortrag noch nicht bestätigt hat und davon noch nichts weiß.
+ * Wie beim Zeugnisgeben über alle kommenden Vorträge, nicht je Woche.
+ */
+export async function sendAuswaertsPlan(heute: string): Promise<PlanVersand | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('send-plan', {
+    body: { action: 'auswaerts', heute },
+  })
+  if (error) {
+    console.error('[send-plan/auswaerts]', error.message)
     return null
   }
   const res = data as Partial<PlanVersand> | null

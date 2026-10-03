@@ -61,6 +61,7 @@ import {
   type FsInstance,
   kanonisch,
   nachSprache,
+  offeneVortraegeAuswaerts,
   offeneZeugnisEintraege,
   type OzEintragRow,
   type OzTerminRow,
@@ -71,6 +72,7 @@ import {
   type SubscriptionRow,
   uebersetzerFuer,
   uebersetzt,
+  type VortragAuswaertsRow,
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
@@ -333,6 +335,16 @@ Deno.serve(async (req: Request) => {
         console.error(`oz_termine/oz_eintraege nicht lesbar: ${(err as Error).message}`)
         return [[], []]
       })
+      // Vorträge auswärts (T120, Phase 4): dasselbe Fenster, nur mit Redner.
+      const vortraege = await klient
+        .get<VortragAuswaertsRow[]>(
+          `vortraege_auswaerts?select=id,datum,zeit,versammlung,person_id&congregation_id=eq.${wert(cong.id)}` +
+            `&person_id=not.is.null&datum=gte.${wert(todayISO)}&datum=lte.${wert(ozBis)}`,
+        )
+        .catch((err): VortragAuswaertsRow[] => {
+          console.error(`vortraege_auswaerts nicht lesbar: ${(err as Error).message}`)
+          return []
+        })
 
       const conf = new Map(confs.map((c) => [c.task_key, c.status]))
       // Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (siehe
@@ -355,8 +367,8 @@ Deno.serve(async (req: Request) => {
 
       /**
        * Einen fälligen Platz vormerken — für seine Person und, wo sie nicht
-       * erreichbar ist, für die Planer. Alle drei Quellen (Zusammenkünfte,
-       * Treffpunkte, öffentliches Zeugnisgeben) enden hier.
+       * erreichbar ist, für die Planer. Alle vier Quellen (Zusammenkünfte,
+       * Treffpunkte, öffentliches Zeugnisgeben, Vorträge auswärts) enden hier.
        *
        * „Wirklich erreichbar" = App-Konto UND mindestens ein aktives Push-Abo.
        * Wer ein Konto hat, bekommt trotzdem die persönliche Erinnerung (Push an
@@ -429,6 +441,16 @@ Deno.serve(async (req: Request) => {
       // (`offeneZeugnisEintraege`). Gelesen wird nur das Erinnerungsfenster.
       const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
       for (const pend of offeneZeugnisEintraege(ozEintraege, ozTermine, namen, conf, todayUTC)) {
+        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)
+        if (days === null) continue
+        const kind = dueKind(rem, days)
+        if (!kind) continue
+        vormerken(pend, kind, days, { ...pend.eintrag, key: pend.key })
+      }
+
+      // Vorträge auswärts (T120, Phase 4): wer einen kommenden Vortrag noch
+      // nicht bestätigt hat — wie jeder andere Platz.
+      for (const pend of offeneVortraegeAuswaerts(vortraege, namen, conf, todayUTC)) {
         const days = tageBisTermin(pend.woche, pend.offset, todayUTC)
         if (days === null) continue
         const kind = dueKind(rem, days)

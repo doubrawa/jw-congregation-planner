@@ -54,6 +54,7 @@ vi.mock('../lib/data', async (importActual) => ({
   savePersonGroup: vi.fn(),
   saveService: vi.fn(),
   saveSettings: vi.fn(),
+  saveVortraegeAuswaerts: vi.fn(),
   saveWeek: vi.fn(),
   substituteSeek: vi.fn(),
   substituteTake: vi.fn(),
@@ -500,6 +501,67 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
       type: 'ozLeeren',
     })
     expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+})
+
+describe('Redner auswärts (T120, Phase 4)', () => {
+  const vortrag = (id: string, pid: string | null) => ({
+    id,
+    datum: '2026-09-13',
+    zeit: '10:00',
+    versammlung: 'Beispielheim',
+    nummer: 12,
+    pid,
+  })
+  const KEY = (id: string) => `va|2026-09-07|${id}`
+
+  beforeEach(() => vi.setSystemTime(new Date(2026, 8, 7, 9, 0)))
+
+  it('ein neuer Vortrag geht sofort hinaus — Unveränderte nicht noch einmal', () => {
+    const v1 = vortrag('v1', 'p1')
+    const v2 = vortrag('v2', null)
+    persist(st({ auswaerts: [v1] }), st({ auswaerts: [v1, v2] }), {
+      type: 'vaAdd',
+      vortrag: { datum: v2.datum, zeit: v2.zeit, versammlung: v2.versammlung, nummer: v2.nummer, pid: null },
+    })
+    expect(data.saveVortraegeAuswaerts).toHaveBeenCalledWith('c1', [v2], [])
+  })
+
+  it('ein gestrichener Vortrag wird gelöscht — und der Redner, der zugesagt hatte, erfährt es', () => {
+    persist(
+      st({ auswaerts: [vortrag('v1', 'p1')], confirmations: { [KEY('v1')]: 'bestätigt' } }),
+      st({ auswaerts: [], confirmations: {} }),
+      { type: 'vaRemove', id: 'v1' },
+    )
+    expect(data.saveVortraegeAuswaerts).toHaveBeenCalledWith('c1', [], ['v1'])
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY('v1')])
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
+      {
+        key: KEY('v1'),
+        name: 'Manfred Albrecht',
+        pid: 'p1',
+        label: 'Redner',
+        datum: 'Sonntag, 13. September · 10:00 · Vers. Beispielheim',
+      },
+    ])
+  })
+
+  it('ein anderer Redner: die Zeile geht hinaus, die alte Zusage weg, der alte Redner erfährt es', () => {
+    const neu = vortrag('v1', 'p2')
+    persist(
+      st({ auswaerts: [vortrag('v1', 'p1')], confirmations: { [KEY('v1')]: 'bestätigt' } }),
+      st({ auswaerts: [neu], confirmations: {} }),
+      { type: 'vaRedner', id: 'v1', pid: 'p2' },
+    )
+    expect(data.saveVortraegeAuswaerts).toHaveBeenCalledWith('c1', [neu], [])
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY('v1')])
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key: KEY('v1'), pid: 'p1' })])
+  })
+
+  it('ein unbestätigter Vortrag ist Entwurf — kein Entzug', () => {
+    persist(st({ auswaerts: [vortrag('v1', 'p1')] }), st({ auswaerts: [] }), { type: 'vaRemove', id: 'v1' })
+    expect(data.saveVortraegeAuswaerts).toHaveBeenCalledWith('c1', [], ['v1'])
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
 })

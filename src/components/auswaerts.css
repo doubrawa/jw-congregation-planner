@@ -1,0 +1,139 @@
+/* ---- Redner auswärts (T120, Phase 4) -------------------------------------
+   Planen (`AuswaertsPlan`) und Ansehen (`AuswaertsAnsicht`) zeigen denselben
+   Vortrag: Tag und Uhrzeit, darunter Versammlung und Nummer, dann der Redner. */
+
+.va-zeile {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linePet);
+}
+
+.va-zeile:last-child {
+  border-bottom: 0;
+}
+
+.va-zeile.is-vorbei {
+  opacity: 0.6;
+}
+
+.va-kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.va-wann {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 500;
+}
+
+.va-marke {
+  flex: none;
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
+.va-wo {
+  margin-top: 2px;
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.va-redner-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 8px;
+}
+
+/* Ein Redner mit Konflikt: derselbe Rahmen wie ein Platz im Konflikt. */
+.va-redner-zeile .fs-select.is-konflikt {
+  border: 2px solid var(--wein);
+}
+
+.va-name {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+.va-zusage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.va-problem {
+  margin-top: 4px;
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 600;
+  color: var(--wein);
+}
+
+/* Ein neuer Vortrag: die Felder umbrechend nebeneinander, jedes so breit, dass
+   es ganz lesbar bleibt — Versammlung und Redner wachsen mit. */
+.va-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.va-datum {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.va-versammlung {
+  flex: 1 1 180px;
+}
+
+.va-nummer {
+  flex: 0 1 120px;
+}
+
+.va-redner-wahl {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+/* Beim Ansehen: links wann und wo, rechts der Redner. */
+.va-liste-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.va-wer {
+  text-align: end;
+}
+
+.va-rolle {
+  margin-top: 1px;
+  font-size: calc(11px * var(--fs));
+  color: var(--mut);
+}
+
+/* Der eigene Vortrag: Stand der Zusage und was man tun kann. */
+.va-eigen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  margin-top: 8px;
+}
+
+.va-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

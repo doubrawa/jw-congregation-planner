@@ -162,6 +162,29 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(rumpf).toContain('e.congregation_id = cong')
   })
 
+  it('einen Vortrag auswärts bestätigt nur sein Redner (T120, Phase 4)', () => {
+    // Derselbe Grund wie beim Zeugnisgeben: ohne eigenen Zweig der Durchlass.
+    // Die Woche im Schlüssel muss zum Tag des Vortrags passen — sonst bestätigte
+    // ein Schlüssel mit erfundener Woche denselben Vortrag ein zweites Mal.
+    const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
+    const zweig = fn.indexOf("if n = 3 and teile[1] = 'va' then")
+    const durchlass = fn.indexOf("if n < 3 or teile[2] not in ('mid', 'we') then return true;")
+    expect(zweig).toBeGreaterThan(-1)
+    expect(durchlass).toBeGreaterThan(zweig)
+    const rumpf = fn.slice(zweig, durchlass)
+    expect(rumpf).toContain('v.person_id = meine')
+    expect(rumpf).toContain('v.congregation_id = cong')
+    expect(rumpf).toContain('= teile[2]')
+  })
+
+  it('Vorträge auswärts sieht nur der Redner selbst — und die Planer (T120, Phase 4)', () => {
+    const lesen = richtlinien(schema).get('vortraege_auswaerts_select') ?? ''
+    expect(lesen).toContain('public.is_planner()')
+    expect(lesen).toContain('person_id = public.my_person_id()')
+    // Schreiben nur Planer.
+    expect(richtlinien(schema).get('vortraege_auswaerts_write') ?? '').toContain('public.is_planner()')
+  })
+
   it('selbst eintragen nur mit Aufgabenbereich, nur für sich, nur als „selbst" (T120)', () => {
     const rein = richtlinien(schema).get('oz_eintraege_selbst_rein') ?? ''
     expect(rein).toContain('person_id = public.my_person_id()')

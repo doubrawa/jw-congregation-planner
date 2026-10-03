@@ -61,12 +61,16 @@ export type MeetingKey = 'mid' | 'we'
  * oder die Bearbeiten-Ansicht der Woche ('edit', nur im Planen und nur für
  * Planer — T64).
  *
- * Zwei der vier Werte sind also **keine** Zusammenkunft. Wer aus einem Tab eine
+ * Seit T120 (Phase 4) dazu die **Redner auswärts** ('va'): die Vorträge eigener
+ * Redner in anderen Versammlungen, ohne Woche — neben Dienstag und Sonntag, im
+ * Ansehen wie im Planen.
+ *
+ * Drei der fünf Werte sind also **keine** Zusammenkunft. Wer aus einem Tab eine
  * Zusammenkunft braucht, geht durch `mtab()` (app/persist.ts) bzw. verengt
  * selbst — der Compiler erzwingt das, weil `MeetingTab` nicht auf `MeetingKey`
  * zuweisbar ist.
  */
-export type MeetingTab = MeetingKey | 'fs' | 'edit'
+export type MeetingTab = MeetingKey | 'fs' | 'edit' | 'va'
 
 /**
  * Ein **Thema** des Hauptmenüs (T120): Zusammenkünfte oder Predigtdienst.
@@ -150,6 +154,29 @@ export interface OzEintrag {
   pid: string
   /** Selbst eingetragen — damit hat die Person zugesagt. Sonst vom Planer zugeteilt. */
   selbst: boolean
+}
+
+/**
+ * Ein **Vortrag auswärts** (T120, Phase 4): ein eigener Redner hält den
+ * öffentlichen Vortrag in einer anderen Versammlung — das Gegenstück zu den
+ * Rednern, die aus umliegenden Versammlungen kommen (od Kap. 7 Abs. 14).
+ *
+ * Er bestätigt ihn wie jede andere Aufgabe (`va|<montag>|<id>`). Sehen dürfen
+ * ihn nur er und die Planer (RLS).
+ */
+export interface VortragAuswaerts {
+  /** Vom Client vergeben (`v<uuid>`) — steckt im Aufgaben-Schlüssel. */
+  id: string
+  /** Der Tag (ISO). */
+  datum: string
+  /** Beginn der Zusammenkunft dort, „HH:MM". */
+  zeit: string
+  /** Die Versammlung — Freitext, wie die Herkunft eines Gastredners. */
+  versammlung: string
+  /** Die Nummer des Vortrags; `null`, solange sie nicht feststeht. */
+  nummer: number | null
+  /** Der Redner; `null` heißt „später zuteilen". */
+  pid: string | null
 }
 
 /**

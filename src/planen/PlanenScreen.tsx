@@ -14,6 +14,8 @@ import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
 import { aktiverFsBereich } from './fs-bereiche'
+import { useVaKonflikte, useVaReiter } from '../components/useVaReiter'
+import { AuswaertsPlan } from './AuswaertsPlan'
 import { GruppenbesuchePlan } from './GruppenbesuchePlan'
 import { ZeugnisPlan } from './ZeugnisPlan'
 import { FsPlan } from './FsPlan'
@@ -36,9 +38,31 @@ import './planen.css'
  * Predigtdienstes. Welches gerade gezeigt wird, sagt der Reiter (`themaVon`).
  */
 export function PlanenScreen() {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
   const fsOverseer = !state.planner && myFsGroup !== null
+  const va = useVaReiter()
+  const vaKonflikte = useVaKonflikte()
+
+  // Die Redner auswärts (T120, Phase 4) haben keine Woche — ohne Streifen,
+  // aber mit den Reitern der Zusammenkünfte, unter denen sie stehen.
+  if (va.aktiv && !fsOverseer) {
+    return (
+      <section className="screen">
+        <ThemaKopf thema="zusammenkuenfte" />
+        <MeetingTabs
+          className="plan-tabs"
+          tab={state.tab}
+          week={state.weeks[state.week]}
+          showEdit={state.weeks.length > 0}
+          showVa
+          vaKonflikte={vaKonflikte.length}
+          onChange={(tab) => dispatch({ type: 'setTab', tab })}
+        />
+        <AuswaertsPlan />
+      </section>
+    )
+  }
 
   // Grundplan, Gruppenbesuche und öffentliches Zeugnisgeben haben keine Woche:
   // Sie stehen ohne den Wochenstreifen da — und auch, solange noch gar keine
@@ -84,6 +108,9 @@ function PlanenBody() {
   const fsOverseer = !state.planner && myFsGroup !== null
   const isFs = state.tab === 'fs' || fsOverseer
   const thema = isFs ? 'predigtdienst' : 'zusammenkuenfte'
+  // Der Reiter „Redner auswärts" steht beim Planen für jeden Planer da (T120).
+  const va = useVaReiter()
+  const vaKonflikte = useVaKonflikte()
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis. Im
   // Predigtdienst bleibt der Grundplan erreichbar.
@@ -92,6 +119,17 @@ function PlanenBody() {
       <section className="screen">
         <ThemaKopf thema={thema} />
         {isFs && <FsBereichTabs />}
+        {/* Die Redner auswärts brauchen keine Woche — ihr Reiter bleibt
+            erreichbar, auch bevor die erste importiert ist. */}
+        {!isFs && va.sichtbar && (
+          <MeetingTabs
+            className="plan-tabs"
+            tab={state.tab}
+            showVa
+            vaKonflikte={vaKonflikte.length}
+            onChange={(tab) => dispatch({ type: 'setTab', tab })}
+          />
+        )}
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
@@ -139,6 +177,8 @@ function PlanenBody() {
           tab={state.tab}
           week={rawWeek}
           showEdit
+          showVa={va.sichtbar}
+          vaKonflikte={vaKonflikte.length}
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
       )}

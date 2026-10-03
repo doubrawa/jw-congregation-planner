@@ -17,6 +17,8 @@ import type { Lang, Meeting, MeetingTab, PartItem, Person, Week } from '../data/
 import { druckKennzeichen } from './druck'
 import { DruckWahl } from './DruckWahl'
 import { FsProgram } from './FsProgram'
+import { useVaReiter } from '../components/useVaReiter'
+import { AuswaertsAnsicht } from './AuswaertsAnsicht'
 import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
 import { ZeugnisAnsicht } from './ZeugnisAnsicht'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
@@ -37,9 +39,10 @@ function heute(lang: Lang): string {
  * mitgeholt (useProgWeek) — sonst die Versammlungssprache.
  */
 export function ProgrammScreen() {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   // Der Monat, der gerade gedruckt wird (T105) — sonst null.
   const [druckMonat, setDruckMonat] = useState<string | null>(null)
+  const va = useVaReiter()
 
   /*
    * Erst zeichnen, dann drucken — im selben Klick. `flushSync` legt den Monat
@@ -58,6 +61,24 @@ export function ProgrammScreen() {
     window.addEventListener('afterprint', fertig)
     window.print()
   }, [])
+
+  // Die Redner auswärts (T120, Phase 4) haben keine Woche — ohne Streifen,
+  // unter den Reitern der Zusammenkünfte.
+  if (va.aktiv) {
+    return (
+      <section className="screen">
+        <ThemaKopf />
+        <MeetingTabs
+          className="prog-tabs"
+          tab={state.tab}
+          week={state.weeks[state.week]}
+          showVa
+          onChange={(tab) => dispatch({ type: 'setTab', tab })}
+        />
+        <AuswaertsAnsicht />
+      </section>
+    )
+  }
 
   // Gruppenbesuche und öffentliches Zeugnisgeben (T120) haben keine Woche —
   // ohne Streifen, wie beim Planen.
@@ -94,6 +115,10 @@ function ProgrammBody() {
   const { t } = useT()
   const rawWeek = state.weeks[state.week]
   const { week, tpw } = useProgWeek(rawWeek)
+  const va = useVaReiter()
+  // Gewählt, aber nicht (mehr) da — etwa weil der letzte Vortrag vorbei ist:
+  // dann die Zusammenkunft unter der Woche, wie `mtab` es hält.
+  const reiter: MeetingTab = state.tab === 'va' ? 'mid' : state.tab
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
   if (!week || !rawWeek) {
@@ -101,6 +126,15 @@ function ProgrammBody() {
       <section className="screen">
         <ThemaKopf />
         {state.tab === 'fs' && <FsBereichTabs />}
+        {/* Die eigenen Vorträge auswärts brauchen keine Woche. */}
+        {state.tab !== 'fs' && va.sichtbar && (
+          <MeetingTabs
+            className="prog-tabs"
+            tab={reiter}
+            showVa
+            onChange={(tab) => dispatch({ type: 'setTab', tab })}
+          />
+        )}
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
@@ -154,8 +188,9 @@ function ProgrammBody() {
       {!isFs && (
         <MeetingTabs
           className="prog-tabs"
-          tab={state.tab}
+          tab={reiter}
           week={rawWeek}
+          showVa={va.sichtbar}
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
       )}
@@ -168,7 +203,7 @@ function ProgrammBody() {
           rawMeeting={rawMeeting}
           week={week}
           rawWeek={rawWeek}
-          tab={state.tab}
+          tab={reiter}
           me={me}
           tpw={tpw}
         />

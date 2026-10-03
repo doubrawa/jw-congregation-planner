@@ -56,6 +56,7 @@ function ladung(weeks: Week[]): HydratePayload {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
+    auswaerts: [],
     absences: [],
     notifications: [],
     confirmations: {},

@@ -8,7 +8,7 @@
  * `supabase/schema.sql` entscheidet damit, ob eine Bestätigung zur eigenen
  * Aufgabe gehört).
  *
- * Fünf Formen:
+ * Sechs Formen:
  *
  * | Form       | Aufbau                                     |
  * | ---------- | ------------------------------------------ |
@@ -17,6 +17,7 @@
  * | Hilfsdienst| `<montag>\|<mid\|we>\|helper\|<dienst>\|<pos>` |
  * | Treffpunkt | `fs\|<montag>\|<instanzId>`                  |
  * | Öffentliches Zeugnisgeben | `oz\|<montag>\|<eintragId>` (T120)  |
+ * | Vortrag auswärts | `va\|<montag>\|<vortragId>` (T120)     |
  *
  * Gebaut wurde das bis September 2026 an **fünf** Stellen und zerlegt an
  * **sechs**, verteilt über drei Laufzeiten: die App (`planning.ts`, `fs.ts`,
@@ -44,6 +45,7 @@ export type SchluesselTeile =
   | { art: 'helper'; woche: string; tab: Tab; svc: string; pos: number }
   | { art: 'fs'; woche: string; instId: string }
   | { art: 'oz'; woche: string; eintragId: string }
+  | { art: 'va'; woche: string; vortragId: string }
 
 /**
  * Ist das eine Wochen-Kennung (T66)?
@@ -111,6 +113,17 @@ export function ozKey(woche: string, eintragId: string): string {
 }
 
 /**
+ * Schlüssel eines Vortrags auswärts (T120, Phase 4) — der Montag der Woche und
+ * die Kennung des Vortrags (`vortraege_auswaerts.id`). Anders als beim
+ * Zeugnisgeben steht die Person **nicht** im Schlüssel: Wechselt der Redner,
+ * bleibt der Schlüssel, und die Zusage des alten verfällt (der Reducer räumt sie
+ * ab, wie beim Treffpunkt-Leiter).
+ */
+export function vaKey(woche: string, vortragId: string): string {
+  return `va|${woche}|${vortragId}`
+}
+
+/**
  * Die beiden Präfixe, mit denen **jeder** Schlüssel einer Woche beginnt:
  * `<montag>|` für die Zusammenkünfte, `fs|<montag>|` für die Treffpunkte.
  *
@@ -154,6 +167,12 @@ export function schluesselTeile(key: string): SchluesselTeile | null {
     const woche = p[1] ?? ''
     return p.length === 3 && istWochenKennung(woche) && p[2]
       ? { art: 'oz', woche, eintragId: p[2] }
+      : null
+  }
+  if (p[0] === 'va') {
+    const woche = p[1] ?? ''
+    return p.length === 3 && istWochenKennung(woche) && p[2]
+      ? { art: 'va', woche, vortragId: p[2] }
       : null
   }
   const woche = p[0] ?? ''

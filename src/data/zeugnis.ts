@@ -18,7 +18,7 @@
 import { istAbwesendAm } from './absence'
 import { displayName, isQualified } from './helpers'
 import { tieHash } from './auslastung'
-import { fromIso, isoDay, istVorbei, kalendertagMs, montagNach, versatzAbMontag } from './meeting-dates'
+import { fromIso, isoDay, istVorbei, kalendertagMs, montagNach, montagVon, versatzAbMontag } from './meeting-dates'
 import { sentKey, zusageStatus } from './planning'
 import type { EntzogeneZusage, OffeneMeldung } from './plan-versand'
 import { ozKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
@@ -65,9 +65,7 @@ export function ozDatum(montag: string, wd: number): string {
 
 /** Der Montag der Woche, in der ein Tag liegt (ISO). */
 export function ozMontag(datum: string): string {
-  const tag = fromIso(datum)
-  tag.setDate(tag.getDate() - versatzAbMontag(tag.getDay()))
-  return isoDay(tag)
+  return montagVon(datum)
 }
 
 /** Sortierung der Schichten: Tag, dann Beginn, dann Ort. */

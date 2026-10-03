@@ -163,6 +163,8 @@ export const LEEREN = [
   'gruppenbesuche',
   // Die Einträge des öffentlichen Zeugnisgebens (T120) ebenso: Planung.
   'oz_eintraege',
+  // Und die Vorträge auswärts (T120, Phase 4).
+  'vortraege_auswaerts',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

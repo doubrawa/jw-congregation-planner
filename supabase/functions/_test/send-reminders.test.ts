@@ -179,6 +179,8 @@ let reminders: { first: number; last: number; repeat: boolean }
 /** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
 let ozTermine: unknown[]
 let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
+/** Vorträge auswärts (T120, Phase 4). */
+let vortraege: { id: string; datum: string; zeit: string; versammlung: string; person_id: string | null }[]
 
 const { writesTo } = schreibZugriff(() => writes)
 
@@ -207,6 +209,13 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
     const bis = decodeURIComponent(/[?&]datum=lte\.([^&]*)/.exec(path)?.[1] ?? '9999')
     return jsonRes(ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab && e.datum <= bis))
+  }
+  if (path.startsWith('vortraege_auswaerts')) {
+    // Ebenso: nur mit Redner, nur im Fenster.
+    const nurMitRedner = /[?&]person_id=not\.is\.null/.test(path)
+    const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
+    const bis = decodeURIComponent(/[?&]datum=lte\.([^&]*)/.exec(path)?.[1] ?? '9999')
+    return jsonRes(vortraege.filter((v) => (!nurMitRedner || v.person_id) && v.datum >= ab && v.datum <= bis))
   }
   if (path.startsWith('confirmations')) return jsonRes(confirmations)
   if (path.startsWith('members')) return jsonRes(MEMBERS)
@@ -282,6 +291,7 @@ beforeEach(() => {
   reminders = { first: 7, last: 1, repeat: true }
   ozTermine = []
   ozEintraege = []
+  vortraege = []
   resetPush()
 })
 
@@ -740,6 +750,45 @@ describe('send-reminders: öffentliches Zeugnisgeben (T120)', () => {
       .filter((w) => w.method === 'POST')
       .flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
     expect(glocke).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-14|e1' })])
+  })
+})
+
+describe('send-reminders: Vorträge auswärts (T120, Phase 4)', () => {
+  // Sonntag, 13. September — sechs Tage nach „heute" (Montag): an Wiederholungstagen fällig.
+  const vortrag = (patch: Partial<(typeof vortraege)[number]> = {}) => ({
+    id: 'v1',
+    datum: '2026-09-13',
+    zeit: '10:00:00',
+    versammlung: 'Beispielheim',
+    person_id: 'p-max',
+    ...patch,
+  })
+
+  beforeEach(() => {
+    weeks = [] // nur der Vortrag soll in der Erinnerung stehen
+  })
+
+  it('erinnert den Redner, solange er nicht bestätigt hat — mit Tag, Uhrzeit und Versammlung', async () => {
+    vortraege = [vortrag()]
+    expect(previewFor(await run(), U_MAX)?.body).toBe('Sonntag, 13. September · 10:00 · Vers. Beispielheim: Redner')
+  })
+
+  it('wer bestätigt hat, nicht — und ein Vortrag ohne Redner erinnert niemanden', async () => {
+    vortraege = [vortrag()]
+    confirmations = [{ task_key: `va|${WEEK_START}|v1`, status: 'bestätigt' }]
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    confirmations = []
+    vortraege = [vortrag({ person_id: null })]
+    expect((await run()).preview ?? []).toEqual([])
+  })
+
+  it('am Tag der ersten Erinnerung geht auch die Glocke — mit dem Schlüssel des Vortrags', async () => {
+    vortraege = [vortrag({ datum: '2026-09-14' })] // genau 7 Tage = `first`
+    await live()
+    const glocke = writesTo('notifications')
+      .filter((w) => w.method === 'POST')
+      .flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
+    expect(glocke).toEqual([expect.objectContaining({ task_key: 'va|2026-09-14|v1' })])
   })
 })
 

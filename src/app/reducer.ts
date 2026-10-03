@@ -5,7 +5,8 @@
  */
 
 import { syncAuxSlots } from '../data/aux-class'
-import { buildAbsences } from '../data/absence'
+import { type AbsenceSet, buildAbsences, buildAuswaerts, nichtVerfuegbar } from '../data/absence'
+import { deriveMyVaTasks, vaNachDatum, vaTerminText, vaVerwaisteZusagen } from '../data/auswaerts'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, isoDay, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
@@ -33,7 +34,7 @@ import {
   ozTerminText,
   ozVorbei,
 } from '../data/zeugnis'
-import { FS_LEITER, OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { FS_LEITER, OZ_DIENST, VA_ROLLE } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
 import { alsFreitext } from '../i18n/translate'
@@ -76,6 +77,7 @@ import type {
   FsRule,
   MeetingKey,
   MeetingTab,
+  MeetingTimes,
   MyTask,
   Notification,
   NotificationType,
@@ -206,7 +208,27 @@ function besuchsLage(state: AppState): BesuchsLage {
   }
 }
 
+/**
+ * Wer an einer Zusammenkunft nicht zur Verfügung steht: abwesend oder an dem
+ * Tag als Redner in einer anderen Versammlung (T120, Phase 4). Für
+ * Auto-Zuteilung und Ersatzsuche zählt nur das Ob — den Grund nennt das
+ * Konflikt-Banner (`useKonflikte`).
+ *
+ * Die Felder einzeln, nicht der ganze Zustand: `withDerivedTasks` soll
+ * sichtbar lesen, wovon es abhängt — daran prüft ein Test, dass
+ * `ableitungsQuellen` vollständig ist und nichts umsonst enthält.
+ */
+function nichtDa(
+  absences: AppState['absences'],
+  auswaerts: AppState['auswaerts'],
+  weeks: Week[],
+  zeiten: MeetingTimes,
+): AbsenceSet {
+  return nichtVerfuegbar(buildAbsences(absences, weeks, zeiten), buildAuswaerts(auswaerts, weeks, zeiten))
+}
+
 /** Anzeigename des eingeloggten Nutzers. */
+
 function currentUserName(state: AppState): string {
   const me = eigenePerson(state)
   return me ? displayName(me) : ''
@@ -233,9 +255,9 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   const inLesersprache = new Set(weeks.filter((w, i) => w !== state.weeks[i]).map((w) => w.start))
   const markieren = <T extends object>(eintrag: T, key: string): T => {
     const teile = schluesselTeile(key)
-    // Treffpunkt und öffentliches Zeugnisgeben haben keinen Programmtext: ihr
-    // Termin ist gerechnet, nicht aus der Woche gelesen.
-    return teile && teile.art !== 'fs' && teile.art !== 'oz' && inLesersprache.has(teile.woche)
+    // Nur Plätze einer Zusammenkunft haben Programmtext. Treffpunkt,
+    // Zeugnisgeben und Vorträge auswärts rechnen ihren Termin selbst.
+    return teile && 'tab' in teile && inLesersprache.has(teile.woche)
       ? { ...eintrag, lesersprache: true as const }
       : eintrag
   }
@@ -264,6 +286,8 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         // Öffentliches Zeugnisgeben (T120): aus demselben Grund kanonisch
         // (`OZ_WORD`).
         ...deriveMyOzTasks(state.ozTermine, state.ozEintraege, me.id, state.confirmations, OZ_DIENST),
+        // Vorträge auswärts (T120, Phase 4): Rolle „Redner".
+        ...deriveMyVaTasks(state.auswaerts, me.id, state.confirmations),
       ]
         /*
          * Vergangenes fällt heraus (T77). Eine Aufgabe von letzter Woche legte
@@ -287,7 +311,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         state.confirmations,
         me,
         state.congregation.times,
-        buildAbsences(state.absences, weeks, state.congregation.times),
+        nichtDa(state.absences, state.auswaerts, weeks, state.congregation.times),
       )
         .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
         .map((req) => markieren(req, req.key))
@@ -329,9 +353,14 @@ export function aufgabenAbgeleitet(state: AppState): AppState {
  * damals ohnehin nur über den Reiter, also mit eigener Wahl. Seit das Menü ohne
  * sie hinführt, warf das Nachladen (etwa nach „Plan senden") mitten in der
  * Arbeit in die Zusammenkünfte.
+ *
+ * Dasselbe gilt für die Redner auswärts (T120, Phase 4): Sie haben keine Woche,
+ * zu der eine Zusammenkunft „die nächste" wäre. Heute kommt man nur über den
+ * Reiter dorthin (also mit Wahl); die Regel hängt trotzdem am Reiter selbst,
+ * damit ein künftiger Weg ohne Wahl nicht wieder hinauswirft.
  */
 function zurNaechstenZusammenkunft(state: AppState): AppState {
-  if (state.terminGewaehlt || state.tab === 'fs') return state
+  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va') return state
   const naechste = naechsteZusammenkunft(state.weeks, state.congregation.times)
   return naechste ? { ...state, week: naechste.wi, tab: naechste.tab } : state
 }
@@ -399,6 +428,7 @@ function ableitungsQuellen(s: AppState): readonly unknown[] {
     s.fsWeeks,
     s.ozTermine,
     s.ozEintraege,
+    s.auswaerts,
     s.services,
     s.confirmations,
     s.congregation.times,
@@ -420,7 +450,20 @@ export function reducer(state: AppState, action: AppAction): AppState {
   if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), true)
   const next = ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action))
   const bereinigt = ohneVerwaisteZeugnisZusagen(state, next)
-  return quellenGeaendert(state, bereinigt) ? withDerivedTasks(bereinigt, false) : bereinigt
+  const fertig = ohneVerwaisteVortragsZusagen(state, bereinigt)
+  return quellenGeaendert(state, fertig) ? withDerivedTasks(fertig, false) : fertig
+}
+
+/**
+ * Zusagen abräumen, deren Vortrag auswärts gestrichen wurde oder einen anderen
+ * Redner hat (T120, Phase 4) — an einer Stelle für alle Wege, wie bei den
+ * Treffpunkten. Der Schlüssel trägt die Person nicht; ohne das Abräumen erbte
+ * der neue Redner die Zusage des alten.
+ */
+function ohneVerwaisteVortragsZusagen(vorher: AppState, nachher: AppState): AppState {
+  const keys = vaVerwaisteZusagen(vorher.auswaerts, nachher.auswaerts)
+  const confirmations = dropConfirmations(nachher.confirmations, keys)
+  return confirmations === nachher.confirmations ? nachher : { ...nachher, confirmations }
 }
 
 /**
@@ -555,17 +598,19 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         if (action.thema === undefined) wunsch = 'fs'
         else screen = 'programm'
       }
-      // Zwei Tabs sind keine Zusammenkunft und nicht überall erlaubt: „Treffpunkte"
-      // gibt es in Programm und Planen, „Bearbeiten" (T64) **nur** im Planen —
-      // das Programm ist für alle nur lesend. Beim Wechsel woandershin auf die
-      // Zusammenkunft unter der Woche zurücksetzen, sonst stünde die Ansicht auf
-      // einem Reiter, den es dort nicht gibt.
-      const erlaubt: Record<'fs' | 'edit', boolean> = {
+      // Drei Tabs sind keine Zusammenkunft und nicht überall erlaubt:
+      // „Treffpunkte" und „Redner auswärts" (T120) gibt es in Programm und
+      // Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm ist für alle
+      // nur lesend. Beim Wechsel woandershin auf die Zusammenkunft unter der
+      // Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter, den es
+      // dort nicht gibt.
+      const erlaubt: Record<'fs' | 'edit' | 'va', boolean> = {
         fs: screen === 'programm' || screen === 'planen',
         edit: screen === 'planen',
+        va: screen === 'programm' || screen === 'planen',
       }
       const tab: MeetingTab =
-        (wunsch === 'fs' || wunsch === 'edit') && !erlaubt[wunsch] ? 'mid' : wunsch
+        (wunsch === 'fs' || wunsch === 'edit' || wunsch === 'va') && !erlaubt[wunsch] ? 'mid' : wunsch
       const nachher = {
         ...dropNamelessSelected(state),
         screen,
@@ -703,6 +748,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ozEintraege: state.ozEintraege.some((e) => e.pid === action.id)
           ? state.ozEintraege.filter((e) => e.pid !== action.id)
           : state.ozEintraege,
+        // Ein Vortrag auswärts verliert seinen Redner, nicht sich selbst — wie
+        // die Datenbank (`on delete set null`). Der Planer setzt einen neuen ein.
+        auswaerts: state.auswaerts.some((v) => v.pid === action.id)
+          ? state.auswaerts.map((v) => (v.pid === action.id ? { ...v, pid: null } : v))
+          : state.auswaerts,
         members: state.members.map((m) =>
           m.personId === action.id ? { ...m, personId: null } : m,
         ),
@@ -970,7 +1020,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.services,
         state.groups,
         action.scope,
-        buildAbsences(state.absences, state.weeks, state.congregation.times),
+        nichtDa(state.absences, state.auswaerts, state.weeks, state.congregation.times),
       )
       if (count === 0) {
         // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie
@@ -1244,6 +1294,37 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastGeleertN', { n: weg.size }),
       }
     }
+    /*
+     * Redner auswärts (T120, Phase 4). Zusagen, die mit einem Rednerwechsel oder
+     * dem Streichen verfallen, räumt `ohneVerwaisteVortragsZusagen` ab; wer eine
+     * bestätigte verliert, erfährt es über `persist.ts`.
+     */
+    case 'vaAdd': {
+      // Eindeutig und lesbar, wie bei den Besuchen (`b…`) und Einträgen (`e…`).
+      const vortrag = { id: `v${crypto.randomUUID()}`, ...action.vortrag }
+      return {
+        ...state,
+        auswaerts: vaNachDatum([...state.auswaerts, vortrag]),
+        toast: toastKey(state, 'toastVaAdd'),
+      }
+    }
+    case 'vaRedner': {
+      const alt = state.auswaerts.find((v) => v.id === action.id)
+      if (!alt || alt.pid === action.pid) return state
+      return {
+        ...state,
+        auswaerts: state.auswaerts.map((v) => (v === alt ? { ...v, pid: action.pid } : v)),
+        toast: toastKey(state, action.pid ? 'toastZugeteilt' : 'toastEntfernt'),
+      }
+    }
+    case 'vaRemove': {
+      if (!state.auswaerts.some((v) => v.id === action.id)) return state
+      return {
+        ...state,
+        auswaerts: state.auswaerts.filter((v) => v.id !== action.id),
+        toast: toastKey(state, 'toastVaDel'),
+      }
+    }
     case 'openMyTask':
       return { ...state, myTaskId: action.id }
     case 'closeMyTask':
@@ -1266,9 +1347,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         return eintrag ? ozAbsage(state, eintrag) : state
       }
       const task = state.myTasks.find((t) => t.id === action.id)
+      // Ein Vortrag auswärts nennt seinen Termin mit: Ein Redner hält viele, und
+      // „Redner — Name" allein sagte den Planern nicht, welchen (T120).
+      const vortrag = teile?.art === 'va' ? state.auswaerts.find((v) => v.id === teile.vortragId) : undefined
       // Kanonisch deutsch in die Mitteilung — beide Hälften, denn dort steht
       // kein Übersetzer dazwischen (die Glocke übersetzt beim Anzeigen).
-      const bezeichnung = task ? aufgabenBezeichnung(task) : ''
+      const bezeichnung = vortrag ? `${VA_ROLLE} · ${vaTerminText(vortrag)}` : task ? aufgabenBezeichnung(task) : ''
       const notif = makeNotif(
         'verhindert',
         'Verhinderung gemeldet',
@@ -1551,6 +1635,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         gruppenbesuche: p.gruppenbesuche ?? [],
         ozTermine: p.ozTermine ?? [],
         ozEintraege: p.ozEintraege ?? [],
+        auswaerts: p.auswaerts ?? [],
         absences: p.absences,
         notifs: p.notifications,
         confirmations: p.confirmations,

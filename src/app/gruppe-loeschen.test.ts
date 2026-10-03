@@ -52,6 +52,7 @@ function stand(over: Partial<AppState> = {}): AppState {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
+    auswaerts: [],
     // Die Zusagen gehören dazu: Verschwindet ein Treffpunkt, verfällt seine.
     confirmations: {},
     ...over,

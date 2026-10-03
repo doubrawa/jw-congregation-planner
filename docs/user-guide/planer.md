@@ -66,6 +66,11 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
   Konflikte** (jemand ist an seinem Tag abwesend, im ganzen Vierteljahr),
   **Freie Plätze** (in den vier Wochen, die dort offen dastehen) und **Plan
   senden**. Ein Tipp führt zum öffentlichen Zeugnisgeben (Abschnitt 5).
+- **Redner auswärts** ebenso: **Mögliche Konflikte** (der Redner ist an dem Tag
+  abwesend oder in der eigenen Zusammenkunft eingeteilt), **Offene
+  Zuteilungen** (kommende Vorträge ohne Redner) und **Plan senden** – über alle
+  kommenden Vorträge, auch Monate voraus. Ein Tipp führt zu den Rednern
+  auswärts (Abschnitt 3).
 - Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
   darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
   angesehen.
@@ -88,9 +93,11 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
 
 Unter **Zusammenkünfte** schaltest du oben rechts auf **Planen** und teilst die
 Aufgaben und Hilfsdienste einer Woche zu. Die Reiter wechseln zwischen der
-**Zusammenkunft unter der Woche** und **am Wochenende**; die Zusammenkünfte für
-den Predigtdienst sind ein eigenes Thema im Menü (Abschnitt 5). Mit ‹ › wählst
-du die Woche – auf Handy und Tablet geht auch seitwärts wischen.
+**Zusammenkunft unter der Woche** und **am Wochenende**; daneben stehen die
+**Redner auswärts** (Abschnitt 3) und der Stift für die Woche. Die
+Zusammenkünfte für den Predigtdienst sind ein eigenes Thema im Menü
+(Abschnitt 5). Mit ‹ › wählst du die Woche – auf Handy und Tablet geht auch
+seitwärts wischen.
 
 Beim Öffnen stehen Planen und Ansehen auf der **nächsten** Zusammenkunft: am
 Samstag also auf dem Wochenende, am Sonntagabend schon auf der Wochenmitte der
@@ -285,6 +292,43 @@ Automatik ihn nie von sich aus.
 
 Ein auswärtiger Redner muss dafür **nicht** als Person angelegt werden.
 
+### Redner auswärts
+
+Das Gegenstück zum Gastredner: Brüder eurer Versammlung halten den
+öffentlichen Vortrag in **anderen** Versammlungen. Unter **Zusammenkünfte ›
+Planen** steht dafür der Reiter **Redner auswärts** neben „Dienstag" und
+„Sonntag". Er hat keine Woche – die Vorträge stehen Monat für Monat
+untereinander, so weit voraus, wie ihr sie vereinbart.
+
+![Redner auswärts planen](screenshots/planer-redner-auswaerts.png)
+
+- **Ein neuer Vortrag** unten im Formular: Tag, Uhrzeit, Versammlung, die
+  Nummer der Gliederung (freiwillig) und der Redner. Der Redner darf fehlen –
+  oft steht der Termin fest, bevor jemand zugesagt hat. Zur Wahl stehen alle mit
+  dem Aufgabenbereich **Vorträge**, die an dem Tag nicht abwesend sind.
+- **Der Redner bestätigt den Vortrag wie jede andere Aufgabe** – er steht in
+  seinen Aufgaben, wird erinnert und erfährt über **Plan senden** davon. Der
+  Punkt hinter seinem Namen zeigt den Stand (grün, gelb, rot). Ist er
+  verhindert, bleibt der Vortrag stehen, und du bekommst eine Mitteilung mit Tag
+  und Versammlung.
+- **Ein anderer Redner** oder **✕**: Hatte der bisherige zugesagt, erfährt er es
+  sofort („Zuteilung zurückgezogen"). Seine Zusage geht nicht auf den neuen
+  über.
+- **Doppelbelegung wird in beide Richtungen geprüft.** Hier oben stehen als
+  **Mögliche Konflikte** die Redner, die an dem Tag abwesend oder in der
+  eigenen Zusammenkunft eingeteilt sind – mit dem, was sie dort haben. Und in
+  der Zusammenkunft selbst meldet das Banner „… hält an diesem Tag einen Vortrag
+  auswärts, ist aber eingeteilt". Die automatische Zuteilung lässt ihn an dem Tag
+  aus, und im Zuteilungs-Fenster steht er wie ein Abwesender. Geprüft wird der
+  Tag, nicht die Uhrzeit: Ob er nach einem Vortrag am Vormittag am Abend noch
+  zur eigenen Zusammenkunft kommt, entscheidest du.
+- Am Reiter steht die **Zahl der möglichen Konflikte**, damit du sie auch von
+  der Woche aus siehst.
+
+Sehen dürfen die Vorträge **nur die Planer und der jeweilige Redner** – er
+findet seine unter **Zusammenkünfte › Ansehen › Redner auswärts**, sobald einer
+ansteht.
+
 Die Auslastung zählt dieselben **fünf Wochen**, die du im Zuteilungs-Fenster
 unter jedem Namen siehst („2 Aufgaben in 5 Wochen") und die die fünf kleinen
 Quadrate daneben zeigen – die Zahl erklärt also genau die Reihenfolge, in der die
@@ -309,7 +353,8 @@ Leser übernehmen können.
 
 Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin:
 
-- **Mögliche Konflikte** – „Person ist abwesend, aber eingeteilt",
+- **Mögliche Konflikte** – „Person ist abwesend, aber eingeteilt", „hält an
+  diesem Tag einen Vortrag auswärts" (siehe Redner auswärts, Abschnitt 3),
   Doppelbelegungen und „Hilfsdienst und Aufgabe am selben Tag". Es steht nur
   da, was so nicht bleiben kann; dass jemand mehrere Wochen hintereinander
   drankommt, meldet die App nicht mehr – in einer kleinen Versammlung ist das

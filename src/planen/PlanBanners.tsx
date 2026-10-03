@@ -50,12 +50,14 @@ export function ConflictsBanner({ tab }: { tab: MeetingKey }) {
    */
   const shownConflicts = [
     ...conflicts.filter((c) => c.kind === 'absent'),
+    ...conflicts.filter((c) => c.kind === 'auswaerts'),
     ...conflicts.filter((c) => c.kind === 'double'),
     ...conflicts.filter((c) => c.kind === 'helperTask'),
   ]
 
   const conflictText = (c: Conflict): string => {
     if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName(t, c.tab) })
+    if (c.kind === 'auswaerts') return fill(t.konfliktAuswaerts, { name: c.name, tab: tabName(t, c.tab) })
     if (c.kind === 'double')
       return fill(t.konfliktDouble, { name: c.name, n: c.count ?? 2, tab: tabName(t, c.tab) })
     return fill(t.konfliktHelperTask, { name: c.name, tab: tabName(t, c.tab) })

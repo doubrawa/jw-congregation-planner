@@ -61,6 +61,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
+    auswaerts: [],
     absences: [...DEMO_ABSENCES],
     notifs: [...DEMO_NOTIFICATIONS],
     notifOpen: false,
@@ -1426,6 +1427,7 @@ describe('hydrate / setDataStatus', () => {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
+    auswaerts: [],
     absences: [],
     notifications: [],
     confirmations: {},
@@ -1562,6 +1564,20 @@ describe('hydrate / setDataStatus', () => {
       expect(s).toMatchObject({ screen: 'planen', tab: 'fs', terminGewaehlt: false })
       const nachgeladen = reducer(s, { type: 'hydrate', payload: { ...payload, weeks: wochen } })
       expect(nachgeladen).toMatchObject({ screen: 'planen', tab: 'fs' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('lässt die Redner auswärts stehen — sie haben keine Woche, zu der man springen könnte (T120)', () => {
+    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w }))
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 16, 10))
+    try {
+      // Ohne eigene Wahl — so käme ein künftiger Weg dorthin, der nicht über den Reiter führt.
+      const s = makeState({ screen: 'planen', tab: 'va', terminGewaehlt: false, weeks: wochen, week: 0 })
+      const nachgeladen = reducer(s, { type: 'hydrate', payload: { ...payload, weeks: wochen } })
+      expect(nachgeladen).toMatchObject({ screen: 'planen', tab: 'va' })
     } finally {
       vi.useRealTimers()
     }

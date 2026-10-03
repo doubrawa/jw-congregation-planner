@@ -859,8 +859,16 @@ export const KATALOG = [
     // Seit T120 führt das Menü ohne Reiterwahl in den Predigtdienst; vorher
     // schützte die Wahl (`terminGewaehlt`) davor.
     regel: 'Ein stilles Nachladen wirft nicht aus dem Predigtdienst in die Zusammenkünfte.',
-    suchen: "  if (state.terminGewaehlt || state.tab === 'fs') return state",
-    ersetzen: '  if (state.terminGewaehlt) return state',
+    suchen: "  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va') return state",
+    ersetzen: "  if (state.terminGewaehlt || state.tab === 'va') return state",
+  },
+  {
+    id: 'nachladen-laesst-redner-auswaerts-stehen',
+    datei: 'src/app/reducer.ts',
+    // Die Planungs-Karte führt ohne Reiterwahl zu den Rednern auswärts (T120, Phase 4).
+    regel: 'Ein stilles Nachladen wirft nicht aus den Rednern auswärts in eine Zusammenkunft.',
+    suchen: "  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va') return state",
+    ersetzen: "  if (state.terminGewaehlt || state.tab === 'fs') return state",
   },
   // ── Gruppenbesuche des Dienstaufsehers (T120, Phase 2) ─────────────────────
   {
@@ -1952,8 +1960,8 @@ export const KATALOG = [
     id: 'oz-karte-zaehlt-mit',
     datei: 'src/dashboard/PlanungsKarte.tsx',
     regel: 'Hat das öffentliche Zeugnisgeben noch etwas offen, sagt die Planungs-Karte nicht „Alles zugeteilt".',
-    suchen: ' && besuchsKonflikte === 0 && !zeugnisZuTun) {',
-    ersetzen: ' && besuchsKonflikte === 0) {',
+    suchen: ' && besuchsKonflikte === 0 && !zeugnisZuTun && !vortraegeZuTun) {',
+    ersetzen: ' && besuchsKonflikte === 0 && !vortraegeZuTun) {',
   },
   {
     id: 'oz-freie-plaetze-im-fenster',
@@ -2009,6 +2017,77 @@ export const KATALOG = [
     datei: 'supabase/schema.sql',
     regel: 'Einen Eintrag im öffentlichen Zeugnisgeben bestätigt nur, wem er gehört.',
     suchen: '         and e.person_id = meine\n',
+    ersetzen: '',
+  },
+  /* ---- Redner auswärts (T120, Phase 4) ---- */
+  {
+    id: 'va-zusage-verfaellt-mit-rednerwechsel',
+    datei: 'src/app/reducer.ts',
+    regel: 'Bekommt ein Vortrag einen anderen Redner, verfällt die Zusage des alten — der neue erbt sie nicht.',
+    suchen: '  const fertig = ohneVerwaisteVortragsZusagen(state, bereinigt)',
+    ersetzen: '  const fertig = bereinigt',
+  },
+  {
+    id: 'va-redner-fehlt-in-eigener-zusammenkunft',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wer an dem Tag auswärts spricht, wird in der eigenen Zusammenkunft nicht automatisch eingeteilt.',
+    suchen: '  return nichtVerfuegbar(buildAbsences(absences, weeks, zeiten), buildAuswaerts(auswaerts, weeks, zeiten))',
+    ersetzen: '  return buildAbsences(absences, weeks, zeiten)',
+  },
+  {
+    id: 'va-nicht-verfuegbar-an-der-oberflaeche',
+    datei: 'src/app/useAbwesend.ts',
+    regel: 'Zuteilungs-Blatt und Engpass-Banner zählen den Redner auswärts als nicht verfügbar.',
+    suchen: '    () => nichtVerfuegbar(buildAbsences(absences, weeks, congregation.times), auswaerts),',
+    ersetzen: '    () => buildAbsences(absences, weeks, congregation.times),',
+  },
+  {
+    id: 'va-konflikt-nennt-den-grund',
+    datei: 'src/data/planning.ts',
+    regel: 'Das Banner der Zusammenkunft nennt den Redner auswärts mit seinem Grund, nicht als abwesend.',
+    suchen: '      if (istAbwesend(auswaerts, b.kennung, wi, tb)) {',
+    ersetzen: '      if (false) {',
+  },
+  {
+    id: 'va-konflikt-eigene-zusammenkunft',
+    datei: 'src/data/auswaerts.ts',
+    regel: 'Der Plan nennt den Redner, der am selben Tag in der eigenen Zusammenkunft eingeteilt ist.',
+    suchen: "    if (aufgaben.length > 0) out.push({ vortrag: v, name, art: 'zusammenkunft', aufgaben })",
+    ersetzen: '',
+  },
+  {
+    id: 'va-reiter-nur-mit-kommendem-vortrag',
+    datei: 'src/data/auswaerts.ts',
+    regel: 'Beim Ansehen steht der Reiter nur, wenn ein Vortrag noch kommt — ein leerer Reiter nützt niemandem.',
+    suchen: '  return planen ? planner : vortraege.some((v) => !vaVorbei(v, heute))',
+    ersetzen: '  return planen ? planner : vortraege.length > 0',
+  },
+  {
+    id: 'va-entzug-meldet-dem-redner',
+    datei: 'src/app/persist.ts',
+    regel: 'Wird ein bestätigter Vortrag gestrichen oder umbesetzt, erfährt es der Redner sofort.',
+    suchen: '    entzogen.push(...vaEntzogeneZusagen(prev.auswaerts, next.auswaerts, next.persons, prev.confirmations))',
+    ersetzen: '',
+  },
+  {
+    id: 'va-karte-zaehlt-mit',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: 'Haben die Redner auswärts noch etwas offen, sagt die Planungs-Karte nicht „Alles zugeteilt".',
+    suchen: ' && !zeugnisZuTun && !vortraegeZuTun) {',
+    ersetzen: ' && !zeugnisZuTun) {',
+  },
+  {
+    id: 'va-erinnerung',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Der Redner wird an seinen Vortrag auswärts erinnert, bis er bestätigt.',
+    suchen: '      for (const pend of offeneVortraegeAuswaerts(vortraege, namen, conf, todayUTC)) {',
+    ersetzen: '      for (const pend of [] as ReturnType<typeof offeneVortraegeAuswaerts>) {',
+  },
+  {
+    id: 'va-schema-eigener-vortrag',
+    datei: 'supabase/schema.sql',
+    regel: 'Einen Vortrag auswärts bestätigt nur sein Redner.',
+    suchen: '         and v.person_id = meine\n',
     ersetzen: '',
   },
 ]

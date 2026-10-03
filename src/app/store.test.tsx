@@ -33,6 +33,7 @@ const payload: HydratePayload = {
   gruppenbesuche: [],
   ozTermine: [],
   ozEintraege: [],
+  auswaerts: [],
   absences: [],
   notifications: [],
   confirmations: {},

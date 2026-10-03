@@ -56,6 +56,42 @@ export function buildAbsences(
   return out
 }
 
+/**
+ * **Vorträge auswärts am Tag einer eigenen Zusammenkunft** (T120, Phase 4) —
+ * dieselbe Schlüsselform wie die Abwesenheiten.
+ *
+ * Wer an diesem Tag in einer anderen Versammlung den Vortrag hält, steht der
+ * eigenen Zusammenkunft nicht zur Verfügung: Die Auto-Zuteilung lässt ihn aus,
+ * und hat ihn jemand von Hand eingeteilt, nennt das Konflikt-Banner den Grund
+ * (`weekConflicts`). Gezählt wird der Tag, nicht die Uhrzeit — ob der Weg am
+ * Nachmittag noch reicht, entscheidet der Planer; das Banner sagt „möglich".
+ */
+export function buildAuswaerts(
+  vortraege: readonly { datum: string; pid: string | null }[],
+  weeks: readonly Week[],
+  zeiten: MeetingTimes,
+): AbsenceSet {
+  const out = new Set<string>()
+  const mitRedner = vortraege.filter((v) => v.pid)
+  if (mitRedner.length === 0) return out
+  weeks.forEach((week, wi) => {
+    for (const tab of MEETING_TABS) {
+      const tag = isoDay(meetingDate(week, tab, zeiten))
+      for (const v of mitRedner) if (v.datum === tag) out.add(`${v.pid}|${wi}|${tab}`)
+    }
+  })
+  return out
+}
+
+/**
+ * Wer an einer Zusammenkunft **nicht zur Verfügung** steht: abwesend oder
+ * auswärts als Redner. Die Form, mit der Auto-Zuteilung, Zuteilungs-Blatt und
+ * Ersatzsuche fragen — für sie zählt nur das Ob, nicht der Grund.
+ */
+export function nichtVerfuegbar(abwesend: AbsenceSet, auswaerts: AbsenceSet): AbsenceSet {
+  return auswaerts.size === 0 ? abwesend : new Set([...abwesend, ...auswaerts])
+}
+
 /** Fehlt diese Person in dieser Zusammenkunft? */
 export function istAbwesend(
   set: AbsenceSet,

@@ -47,6 +47,7 @@ import type {
   Service,
   SlotAssignment,
   SongItem,
+  VortragAuswaerts,
   Week,
 } from '../../src/data/types'
 
@@ -301,6 +302,28 @@ export const DEMO_OZ_ZUSAGEN: ConfirmationMap = { 'oz|2026-09-07|oz3': 'bestäti
  * Auswahlen in Tests, die mit dem Zeugnisgeben nichts zu tun haben.
  */
 export const DEMO_OZ_PERSONEN: readonly string[] = ['p6', 'p7', 'p9', 'p10', 'p13', 'p15', 'p16']
+
+/**
+ * Redner auswärts (T120, Phase 4) — nur für die Entwicklerseite, wie die
+ * übrigen Pläne. Die Versammlungen sind Platzhalter. Je eine Lage zum Ansehen:
+ * vorbei, bestätigt, ein Konflikt (Helmut Vogel hat am 20. September den
+ * Vorsitz der eigenen Zusammenkunft), wartet auf Bestätigung (Jonas Berger,
+ * p6 — mit `me=p6` bestätigt er oder ist verhindert) und einer ohne Redner.
+ */
+export const DEMO_AUSWAERTS: VortragAuswaerts[] = [
+  { id: 'va1', datum: '2026-08-30', zeit: '10:00', versammlung: 'Musterstadt-West', nummer: 21, pid: 'p2' },
+  { id: 'va2', datum: '2026-09-13', zeit: '10:00', versammlung: 'Musterstadt-Nord', nummer: 12, pid: 'p3' },
+  { id: 'va3', datum: '2026-09-20', zeit: '10:00', versammlung: 'Musterstadt-Süd', nummer: 34, pid: 'p4' },
+  { id: 'va4', datum: '2026-10-11', zeit: '14:00', versammlung: 'Beispielheim', nummer: 56, pid: 'p6' },
+  { id: 'va5', datum: '2026-11-08', zeit: '10:00', versammlung: 'Musterstadt-Ost', nummer: null, pid: null },
+]
+
+/** Die Zusagen zu `va1` bis `va3`. */
+export const DEMO_VA_ZUSAGEN: ConfirmationMap = {
+  'va|2026-08-24|va1': 'bestätigt',
+  'va|2026-09-07|va2': 'bestätigt',
+  'va|2026-09-14|va3': 'bestätigt',
+}
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
 // Jeder Dienst hat seinen eigenen Aufgabenbereich (`svc:<key>`) — die drei

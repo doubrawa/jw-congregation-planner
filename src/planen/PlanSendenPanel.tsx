@@ -4,10 +4,11 @@ import { loadAndHydrate } from '../app/hydrate'
 import { useKalendertag } from '../app/useKalendertag'
 import { fromIso } from '../data/meeting-dates'
 import { type OffeneMeldung, offeneMeldungen, zuletztGesendet } from '../data/plan-versand'
+import { vaOffeneMeldungen, vaZuletztGesendet } from '../data/auswaerts'
 import { ozOffeneMeldungen, ozZuletztGesendet } from '../data/zeugnis'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
-import { sendPlan, sendZeugnisPlan } from '../lib/data'
+import { sendAuswaertsPlan, sendPlan, sendZeugnisPlan } from '../lib/data'
 
 /**
  * Bis zu so vielen Namen lohnt die Aufzählung; darüber steht nur die Zahl.
@@ -172,13 +173,7 @@ function useVersandGemeldet(): (res: { personen: number } | null) => void {
  */
 export function ZeugnisSendenPanel() {
   const { state } = useApp()
-  const { t } = useT()
-  const [laeuft, setLaeuft] = useState(false)
-  // Namen ohne Konto aus dem letzten Versand — bis zum nächsten bleiben sie stehen.
-  const [ohneKonto, setOhneKonto] = useState<string[]>([])
-  const versandGemeldet = useVersandGemeldet()
   const tag = useKalendertag()
-
   const offen = useMemo(
     () =>
       ozOffeneMeldungen(
@@ -192,13 +187,50 @@ export function ZeugnisSendenPanel() {
     [state.ozTermine, state.ozEintraege, state.persons, state.confirmations, state.sentLog, tag],
   )
   const zuletzt = useMemo(() => ozZuletztGesendet(state.sentLog), [state.sentLog])
+  return <PlanSendenOhneWoche offen={offen} zuletzt={zuletzt} senden={sendZeugnisPlan} />
+}
+
+/**
+ * „Plan senden" bei den Vorträgen auswärts (T120, Phase 4) — wie beim
+ * Zeugnisgeben über alle kommenden Vorträge: Sie werden Monate im Voraus
+ * vereinbart, und der Redner soll es erfahren, sobald es feststeht.
+ */
+export function AuswaertsSendenPanel() {
+  const { state } = useApp()
+  const tag = useKalendertag()
+  const offen = useMemo(
+    () => vaOffeneMeldungen(state.auswaerts, state.persons, state.confirmations, state.sentLog, fromIso(tag)),
+    [state.auswaerts, state.persons, state.confirmations, state.sentLog, tag],
+  )
+  const zuletzt = useMemo(() => vaZuletztGesendet(state.sentLog), [state.sentLog])
+  return <PlanSendenOhneWoche offen={offen} zuletzt={zuletzt} senden={sendAuswaertsPlan} />
+}
+
+/** Der Versand eines Plans ohne Woche: die Box der Woche, gesendet mit der Aktion des Plans. */
+function PlanSendenOhneWoche({
+  offen,
+  zuletzt,
+  senden,
+}: {
+  offen: readonly OffeneMeldung[]
+  zuletzt: string | null
+  /** `sendZeugnisPlan` oder `sendAuswaertsPlan` — beide nehmen den Kalendertag. */
+  senden: typeof sendZeugnisPlan
+}) {
+  const { state } = useApp()
+  const { t } = useT()
+  const [laeuft, setLaeuft] = useState(false)
+  // Namen ohne Konto aus dem letzten Versand — bis zum nächsten bleiben sie stehen.
+  const [ohneKonto, setOhneKonto] = useState<string[]>([])
+  const versandGemeldet = useVersandGemeldet()
+  const tag = useKalendertag()
 
   // Wie bei der Woche: nur Planer, nur auf frischem Stand.
   if (!state.planner || state.staleAt) return null
 
-  const senden = async (): Promise<void> => {
+  const los = async (): Promise<void> => {
     setLaeuft(true)
-    const res = await sendZeugnisPlan(tag)
+    const res = await senden(tag)
     setLaeuft(false)
     if (res) setOhneKonto(res.ohneKonto)
     versandGemeldet(res)
@@ -212,12 +244,12 @@ export function ZeugnisSendenPanel() {
       laeuft={laeuft}
       offenText={t.ozSendenOffen}
       alleText={t.ozSendenAlle}
-      onSenden={() => void senden()}
+      onSenden={() => void los()}
     />
   )
 }
 
-/** Die Box selbst — für die Woche wie für das öffentliche Zeugnisgeben dieselbe. */
+/** Die Box selbst — für die Woche wie für die Pläne ohne Woche dieselbe. */
 function PlanSendenAnzeige({
   offen,
   zuletzt,

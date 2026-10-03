@@ -102,6 +102,18 @@ export const DE = {
     toastOzEingetragen: 'Eingetragen · damit hast du zugesagt',
     toastOzAusgetragen: 'Ausgetragen',
     toastOzAbgesagt: 'Abgesagt · der Platz ist wieder frei, die Admins sind informiert',
+    // Redner auswärts (T120, Phase 4): Vorträge eigener Redner in anderen
+    // Versammlungen. Einen Namen für den Plan nennen die Schriften nicht
+    // (od Kap. 7 Abs. 14 kennt nur die Redner aus umliegenden Versammlungen);
+    // „Redner" ist dasselbe Wort wie die Rolle am Vortragsplatz.
+    vaTab: 'Redner auswärts',
+    vaTitel: 'Vorträge in anderen Versammlungen',
+    vaHinweis: 'An diesem Tag steht der Redner der eigenen Zusammenkunft nicht zur Verfügung. Er bestätigt den Vortrag wie jede andere Aufgabe.',
+    vaLeer: 'Noch keine Vorträge eingetragen.',
+    vaHinzufuegen: 'Vortrag hinzufügen',
+    vaNummer: 'Vortrag Nr. {n}', vaNummerLbl: 'Vortrag Nr.',
+    vaKonfliktZusammenkunft: '{name} ist an diesem Tag in der eigenen Zusammenkunft eingeteilt',
+    toastVaAdd: 'Vortrag eingetragen', toastVaDel: 'Vortrag entfernt',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: {datum}', drucken: 'Drucken',
     // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',
@@ -370,6 +382,8 @@ export const DE = {
     // Konfliktprüfungen (Planen)
     konflikteTitle: 'MÖGLICHE KONFLIKTE',
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
+    // Der Redner spricht an dem Tag in einer anderen Versammlung (T120, Phase 4).
+    konfliktAuswaerts: '{name} hält an diesem Tag einen Vortrag auswärts, ist aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
     konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',
     // Zählzeile der Warnung „mehrfach vergebene feste Rollen" (Personen).

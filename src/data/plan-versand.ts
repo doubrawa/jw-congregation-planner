@@ -292,9 +292,10 @@ function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): b
   // die Nachricht lieber zurück als sie fälschlich zu unterdrücken.
   if (!teile) return true
   if (teile.art === 'fs') return !fsLeer
-  // Öffentliches Zeugnisgeben: hat eigene Entzüge (`ozEntzogeneZusagen`) und
-  // kommt hier nicht vor — aber auch nicht wegfiltern, wenn doch.
-  if (teile.art === 'oz') return true
+  // Pläne ohne Zusammenkunft (öffentliches Zeugnisgeben, Vorträge auswärts)
+  // haben eigene Entzüge und kommen hier nicht vor — aber auch nicht
+  // wegfiltern, wenn doch.
+  if (!('tab' in teile)) return true
   if (!nachher) return false
   if (istAusgefallen(nachher, teile.tab)) return false
   // Zusätzliche Klasse: die Plätze der zweiten Reihe und ihr Ratgeber hängen

@@ -1,7 +1,7 @@
 // =============================================================================
 // Supabase Edge Function: send-plan — „Plan senden"
 // =============================================================================
-// Zwei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
+// Vier Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
 //   { action: 'plan', weekStart, heute? }
 //     Der Planer hat eine Woche fertig und gibt sie frei. Jede eingeteilte
@@ -19,6 +19,12 @@
 //     kommenden Schichten, nicht je Woche. Wer sich selbst eingetragen hat,
 //     weiß Bescheid und hat damit zugesagt. Versand, Tagebuch und „je Person
 //     eine Nachricht" wie bei der Woche (`versenden`).
+//
+//   { action: 'auswaerts', heute? }
+//     „Plan senden" bei den Vorträgen auswärts (T120, Phase 4): Jeder Redner,
+//     der einen kommenden Vortrag noch nicht bestätigt hat und davon noch
+//     nichts weiß, bekommt eine Nachricht — über alle kommenden Vorträge, wie
+//     beim Zeugnisgeben.
 //
 //   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
 //     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
@@ -73,6 +79,7 @@ import {
   kanonisch,
   nachSprache,
   offeneDerWoche,
+  offeneVortraegeAuswaerts,
   offeneZeugnisEintraege,
   type OzEintragRow,
   type OzTerminRow,
@@ -83,6 +90,7 @@ import {
   tagebuchSchluessel,
   uebersetzerFuer,
   uebersetzt,
+  type VortragAuswaertsRow,
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
@@ -346,6 +354,41 @@ async function nurEigeneTreffpunkte<T extends { taskKey: string }>(
     .map((x) => x.e)
 }
 
+/**
+ * Zusagen und Versand-Tagebuch eines Plans ohne Woche — öffentliches
+ * Zeugnisgeben (`oz|<Montag>|…`) und Vorträge auswärts (`va|<Montag>|…`).
+ *
+ * **Nur für die Wochen dieser Einträge** — dieselbe Sparsamkeit wie bei der
+ * Woche (`jeWoche`): Beide Tabellen wachsen, gebraucht werden ein paar Wochen.
+ * Je Woche eine `like`-Abfrage, parallel. Der Montag kommt aus dem Datum der
+ * Datenbank (`YYYY-MM-DD`), enthält also weder `%` noch `_`.
+ */
+async function zusagenUndTagebuch(
+  cong: string,
+  art: 'oz' | 'va',
+  daten: readonly string[],
+): Promise<{ conf: Map<string, string>; schonGemeldet: Set<string> }> {
+  const wochen = [...new Set(daten.map(ozWoche).filter(Boolean))]
+  const jePraefix = async <T>(tabelle: string, spalten: string): Promise<T[]> => {
+    const teile = await Promise.all(
+      wochen.map((w) =>
+        rest.get<T[]>(
+          `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` + `&task_key=like.${wert(`${art}|${w}|*`)}`,
+        ),
+      ),
+    )
+    return teile.flat()
+  }
+  const [confs, log] = await Promise.all([
+    jePraefix<{ task_key: string; status: string }>('confirmations', 'task_key,status'),
+    jePraefix<{ task_key: string; name: string }>('assignment_log', 'task_key,name'),
+  ])
+  return {
+    conf: new Map(confs.map((c) => [c.task_key, c.status])),
+    schonGemeldet: new Set(log.map((r) => tagebuchSchluessel(r.task_key, r.name))),
+  }
+}
+
 /* ---- Handler ------------------------------------------------------------- */
 
 Deno.serve(async (req: Request) => {
@@ -357,7 +400,8 @@ Deno.serve(async (req: Request) => {
     const payload = (await req.json().catch(() => null)) as
       | ({ action?: string; weekStart?: string; heute?: string; entzuege?: EntzugRumpf[] } & EntzugRumpf)
       | null
-    if (payload?.action !== 'plan' && payload?.action !== 'entzug' && payload?.action !== 'zeugnis') {
+    const aktionen = ['plan', 'entzug', 'zeugnis', 'auswaerts']
+    if (!payload?.action || !aktionen.includes(payload.action)) {
       return json({ error: 'bad-request' }, 400)
     }
 
@@ -472,32 +516,30 @@ Deno.serve(async (req: Request) => {
             `&selbst=is.false&datum=gte.${wert(ab)}`,
         ),
       ])
-      /*
-       * Zusagen und Tagebuch **nur für die Wochen dieser Einträge** — dieselbe
-       * Sparsamkeit wie bei der Woche (`jeWoche`): Beide Tabellen wachsen, und
-       * gebraucht wird ein Vierteljahr. Je Woche eine `like`-Abfrage auf
-       * `oz|<Montag>|`, parallel.
-       */
-      const wochen = [...new Set(eintraege.map((e) => ozWoche(e.datum)).filter(Boolean))]
-      const jePraefix = async <T>(tabelle: string, spalten: string): Promise<T[]> => {
-        const teile = await Promise.all(
-          wochen.map((w) =>
-            rest.get<T[]>(
-              `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` +
-                `&task_key=like.${wert(`oz|${w}|*`)}`,
-            ),
-          ),
-        )
-        return teile.flat()
-      }
-      const [confs, log] = await Promise.all([
-        jePraefix<{ task_key: string; status: string }>('confirmations', 'task_key,status'),
-        jePraefix<{ task_key: string; name: string }>('assignment_log', 'task_key,name'),
-      ])
-      const conf = new Map(confs.map((c) => [c.task_key, c.status]))
-      const schonGemeldet = new Set(log.map((r) => tagebuchSchluessel(r.task_key, r.name)))
+      const { conf, schonGemeldet } = await zusagenUndTagebuch(cong, 'oz', eintraege.map((e) => e.datum))
       const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
       const offen = offeneZeugnisEintraege(eintraege, termine, namen, conf, heute)
+      return await versenden(
+        cong,
+        offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name))),
+        kontoFuer,
+        empfaengerFuer,
+        personByName,
+      )
+    }
+
+    /* ---- Aktion: Vorträge auswärts senden (T120, Phase 4) ---- */
+    if (payload.action === 'auswaerts') {
+      const heute = heuteUtc(payload.heute)
+      const ab = new Date(heute).toISOString().slice(0, 10)
+      // Nur Vorträge mit Redner und nur Kommendes.
+      const vortraege = await rest.get<VortragAuswaertsRow[]>(
+        `vortraege_auswaerts?select=id,datum,zeit,versammlung,person_id&congregation_id=eq.${wert(cong)}` +
+          `&person_id=not.is.null&datum=gte.${wert(ab)}`,
+      )
+      const { conf, schonGemeldet } = await zusagenUndTagebuch(cong, 'va', vortraege.map((v) => v.datum))
+      const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
+      const offen = offeneVortraegeAuswaerts(vortraege, namen, conf, heute)
       return await versenden(
         cong,
         offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name))),

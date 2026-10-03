@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
+import { vaStand } from '../data/auswaerts'
 import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
@@ -164,7 +165,46 @@ export function PlanungsKarte() {
     dispatch({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   }
 
-  if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0 && !zeugnisZuTun) {
+  /*
+   * **Redner auswärts** (T120, Phase 4): Konflikte, Vorträge ohne Redner und
+   * „Plan senden" — über alle kommenden Vorträge, denn sie werden Monate im
+   * Voraus vereinbart (`vaStand`, dieselbe Rechnung wie beim Planen).
+   */
+  const vortraege = useMemo(
+    () =>
+      vaStand({
+        vortraege: state.auswaerts,
+        weeks: state.weeks,
+        persons: state.persons,
+        absences: state.absences,
+        services: state.services,
+        zeiten: state.congregation.times,
+        confirmations: state.confirmations,
+        sentLog: state.sentLog,
+        sendenMoeglich,
+        heute: fromIso(tag),
+      }),
+    [
+      tag,
+      sendenMoeglich,
+      state.auswaerts,
+      state.weeks,
+      state.persons,
+      state.absences,
+      state.services,
+      state.congregation.times,
+      state.confirmations,
+      state.sentLog,
+    ],
+  )
+  const vortraegeZuTun = vortraege.konflikte + vortraege.offen + vortraege.nichtGesendet > 0
+
+  const zuDenVortraegen = (): void => {
+    dispatch({ type: 'setTab', tab: 'va' })
+    dispatch({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
+  }
+
+  if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0 && !zeugnisZuTun && !vortraegeZuTun) {
     return (
       <button
         type="button"
@@ -240,6 +280,24 @@ export function PlanungsKarte() {
             {zeugnis.frei > 0 && <Chip art="offen" titel={t.ozFreiePlaetze} n={zeugnis.frei} />}
             {zeugnis.nichtGesendet > 0 && (
               <Chip art="senden" titel={t.planSendenTitle} n={zeugnis.nichtGesendet} />
+            )}
+          </span>
+        </button>
+      )}
+      {vortraegeZuTun && (
+        <button type="button" className="dash-plan-woche" onClick={zuDenVortraegen}>
+          <span className="dash-plan-kopf">
+            <span className="dash-plan-range">{t.vaTab}</span>
+            <span className="dash-plan-arrow" aria-hidden="true">
+              ›
+            </span>
+          </span>
+          {/* In der Reihenfolge der Banner dort: Konflikte, offene Vorträge, Versand. */}
+          <span className="dash-plan-chips">
+            {vortraege.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={vortraege.konflikte} />}
+            {vortraege.offen > 0 && <Chip art="offen" titel={t.offeneTitle} n={vortraege.offen} />}
+            {vortraege.nichtGesendet > 0 && (
+              <Chip art="senden" titel={t.planSendenTitle} n={vortraege.nichtGesendet} />
             )}
           </span>
         </button>

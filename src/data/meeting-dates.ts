@@ -96,6 +96,13 @@ export function meetingDate(week: Week, tab: MeetingKey, zeiten: MeetingTimes): 
   return tag
 }
 
+/** Der Montag der Woche, in der ein Tag liegt (beide ISO). */
+export function montagVon(datum: string): string {
+  const tag = fromIso(datum)
+  tag.setDate(tag.getDate() - versatzAbMontag(tag.getDay()))
+  return isoDay(tag)
+}
+
 /**
  * Der Montag `wochen` Wochen nach `start` — als ISO-Datum, über UTC gerechnet:
  * Ein Montag plus sieben Tage ist wieder ein Montag, gleich in welcher

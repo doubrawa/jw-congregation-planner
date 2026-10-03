@@ -5893,6 +5893,52 @@ die neuen Richtlinien noch nicht — nach dem Einspielen lohnt ein Lauf mit
 Fällen für `oz_eintraege` (fremd eintragen, ohne Aufgabenbereich, fremden
 Eintrag bestätigen).
 
+**Stand Phase 4 (3. Oktober 2026) — Redner auswärts, umgesetzt (Branch
+`claude/t120-redner-auswaerts`):**
+
+- **Gemessen:** Einen Namen für den Plan nennen die Schriften nicht; od Kap. 7
+  Abs. 14 kennt nur das Gegenstück, die Redner aus umliegenden Versammlungen.
+  „Redner" ist dasselbe Wort wie am Vortragsplatz (`ROLE_OWN_SPEAKER`, in
+  `translate-data.ts` seit je übersetzt; ein Test hält `VA_ROLLE` gleich).
+- **Datenmodell:** `vortraege_auswaerts`, eine Zeile je Vortrag (Tag, Uhrzeit,
+  Versammlung, Nummer 1–999, Redner als Fremdschlüssel). RLS: lesen nur Planer
+  und der Redner selbst, schreiben nur Planer. Ein Konto ohne Planerrecht
+  bekommt also nur die eigenen Vorträge. **Muss in Supabase eingespielt
+  werden** (`schema.sql` erneut ausführen).
+- **Eine Aufgabe mit eigenem Schlüssel** `va|<Montag>|<Vortrag>`;
+  `task_gehoert_mir` prüft Redner **und** Woche an der Zeile. Ein anderer
+  Redner nimmt die Zusage nicht mit (`ohneVerwaisteVortragsZusagen`); war sie
+  bestätigt, erfährt der alte Redner es sofort. „Ich bin verhindert" lässt den
+  Vortrag stehen und meldet den Planern Tag und Versammlung.
+- **Doppelbelegung in beide Richtungen:** Der Plan nennt Redner, die an dem Tag
+  abwesend oder in der eigenen Zusammenkunft eingeteilt sind (mit ihren
+  Rollen). Die Zusammenkunft nennt den Redner auswärts mit eigenem Grund
+  („hält an diesem Tag einen Vortrag auswärts"); Auto-Zuteilung, Ersatzsuche,
+  Zuteilungs-Blatt und Engpass-Banner zählen ihn als nicht verfügbar
+  (`nichtVerfuegbar` in `absence.ts`). Geprüft wird der Tag, nicht die Uhrzeit.
+- **Edge Functions:** `send-plan` mit der Aktion `auswaerts` (alle kommenden
+  Vorträge mit Redner, Versand geteilt mit der Woche); `send-reminders`
+  erinnert den Redner. **Deploy nötig:** `send-plan` und `send-reminders`.
+- **Oberfläche:** Zusammenkünfte › Planen › **Redner auswärts** (für Planer
+  immer, mit der Zahl der Konflikte am Reiter; Monat für Monat, Redner wählen,
+  ✕, Formular, „Plan senden"); beim Ansehen, sobald ein Vortrag ansteht (DU,
+  Bestätigen, Ich bin verhindert). Die Planungs-Karte auf Start hat eine Zeile
+  dafür. „Meine Aufgaben", Glocke und Push nennen „Redner · Sonntag, … · Vers.
+  …".
+- 11 neue Schlüssel in 34 Sprachen; Mutationsprobe um zehn Regeln ergänzt;
+  Handbücher und zwei neue Handbuchbilder.
+- **Befund beim Messen:** Die Mutationsprobe meldete zuerst „10/10 bewacht" —
+  acht davon „durch `reducer.test.ts`". Der Ausgangsstand war rot (eine
+  textuelle Probe in `reducer.test.ts` fand `absences` nicht mehr, weil
+  `withDerivedTasks` den Zustand an einen Helfer weiterreichte). Die Probe
+  prüft keinen grünen Ausgangsstand; jede Mutation zählte deshalb als bewacht.
+  Behoben, indem der Helfer die Felder einzeln bekommt; danach erneut gemessen.
+
+Bewusst offen (Phase 4): kein Ausdruck des Rednerplans; ein Vortrag lässt sich
+nicht verschieben (streichen und neu anlegen); die Zeitleiste im
+Personen-Detail nennt die Vorträge nicht; die Entwicklerseite zeigt einem
+Verkündiger alle Vorträge (sie hat keine Zeilenrechte).
+
 ---
 
 ## Was bewusst offen bleibt
