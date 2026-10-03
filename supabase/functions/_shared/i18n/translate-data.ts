@@ -958,6 +958,27 @@ const FS_LEADER_WORD: Record<string, string> = {
   tr: "Tarla buluşmasını idare eden", uk: "Ведучий зустрічі для служіння", ur: "مُنادی کے اِجلاس میں پیشوائی کرنے والا", vi: "Người điều khiển buổi nhóm rao giảng",
   zh: "传道前聚会主持人",
 }
+/**
+ * „Öffentliches Zeugnisgeben" (T120, Phase 3) — dieselbe zweite Ablage wie
+ * `FS_LEADER_WORD`, für die Bezeichnung eines Eintrags (`OZ_DIENST` in
+ * `_shared/zuteilungen.ts`): in Erinnerung, „Plan senden", Entzug und Absage.
+ *
+ * Gemessen am Organisiert-Buch, Kap. 9 Abs. 47, in jeder Sprache; fa und ur
+ * über die WOL-Suche (dort fehlt das Buch). Das App-Wörterbuch führt dieselben
+ * Wörter als `privZeugnis`, und `rollen-uebersetzt.test.ts` hält beide
+ * Ablagen Zeichen für Zeichen zusammen.
+ */
+const OZ_WORD: Record<string, string> = {
+  ar: "الخدمة العلنية", bg: "Свидетелстване на обществени места", cs: "Služba na veřejnosti", da: "Offentlig forkyndelse",
+  el: "Δημόσια μαρτυρία", en: "Public witnessing", es: "Predicación pública", fa: "موعظه در اماکن عمومی",
+  fi: "Julkinen todistaminen", fr: "Témoignage public", he: "בישור במקומות ציבוריים", hr: "Propovijedanje na javnim mjestima",
+  hu: "Közterületi tanúskodás", id: "Kesaksian di tempat umum", it: "Testimonianza pubblica", ja: "公共エリア伝道",
+  ko: "공개 증거", nl: "Openbaar getuigenis", no: "Offentlig forkynnelse", pl: "Głoszenie publiczne",
+  pt: "Testemunho público", ro: "Mărturie publică", ru: "Проповедь в общественных местах", sk: "Služba na verejných miestach",
+  sr: "Svedočenje na javnim mestima", sv: "Offentligt vittnande", sw: "Kuhubiri hadharani", tl: "Pampublikong pagpapatotoo",
+  tr: "Halka açık yerlerde şahitlik", uk: "Проповідування в громадських місцях", ur: "عوامی جگہوں پر گواہی", vi: "Làm chứng nơi công cộng",
+  zh: "公众场所见证",
+}
 for (const code of Object.keys(FRAG)) {
   const f = FRAG[code]
   if (!f) continue // über `Object.keys` unmöglich; der Index-Zugriff weiß das nicht
@@ -965,10 +986,12 @@ for (const code of Object.keys(FRAG)) {
   const vortrag = TALK_PLACEHOLDER[code]
   const studium = STUDY_PLACEHOLDER[code]
   const fsLeiter = FS_LEADER_WORD[code]
+  const zeugnis = OZ_WORD[code]
   if (lied) f['Lied'] = lied
   if (vortrag) f['(Vortragsthema eintragen)'] = vortrag
   if (studium) f['(Studienartikel eintragen)'] = studium
   if (fsLeiter) f['Treffpunkt-Leiter'] = fsLeiter
+  if (zeugnis) f['Öffentliches Zeugnisgeben'] = zeugnis
 }
 
 /* ---- Verweise auf Studienstoff, Gruppen, Versammlungen ------------------

@@ -26,6 +26,7 @@ import { ersteZahl } from '../../src/data/ziffern'
 import { TESTDATEN_DOMAIN, TESTDATEN_RUFNUMMERN } from './kennzeichen'
 import type {
   Absence,
+  ConfirmationMap,
   FsInstance,
   FsRule,
   Congregation,
@@ -34,6 +35,8 @@ import type {
   HelperSlot,
   MyTask,
   Notification,
+  OzEintrag,
+  OzTermin,
   PartItem,
   Person,
   QualificationKey,
@@ -266,6 +269,38 @@ export const DEMO_GRUPPENBESUCHE: Gruppenbesuch[] = [
   { id: 'b4', woche: '2026-12-07', grp: 'g4', pid: 'p5' },
   { id: 'b5', woche: '2027-01-04', grp: 'g1', pid: 'p5' },
 ]
+
+/**
+ * Öffentliches Zeugnisgeben (T120, Phase 3) — nur für die Entwicklerseite,
+ * aus demselben Grund wie die Gruppenbesuche: Die Tests laufen mit der echten
+ * Uhr. Zwei Termine; in den ersten Wochen je eine Lage zum Ansehen:
+ * selbst eingetragen (grün), zugeteilt und bestätigt, zugeteilt und offen
+ * (Simon, p9 — mit `me=p9` bestätigt oder sagt er ab), Niklas (p10) an einem
+ * Tag, an dem er abwesend ist (Konflikt), und freie Plätze.
+ */
+export const DEMO_OZ_TERMINE: OzTermin[] = [
+  { id: 'oz-mi', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 },
+  { id: 'oz-sa', wd: 6, von: '09:00', bis: '11:00', ort: 'Bahnhofsvorplatz', plaetze: 2 },
+]
+
+export const DEMO_OZ_EINTRAEGE: OzEintrag[] = [
+  { id: 'oz1', terminId: 'oz-mi', datum: '2026-09-09', pid: 'p15', selbst: true },
+  { id: 'oz2', terminId: 'oz-mi', datum: '2026-09-09', pid: 'p16', selbst: true },
+  { id: 'oz3', terminId: 'oz-sa', datum: '2026-09-12', pid: 'p6', selbst: false },
+  { id: 'oz4', terminId: 'oz-mi', datum: '2026-09-16', pid: 'p10', selbst: true },
+  { id: 'oz5', terminId: 'oz-sa', datum: '2026-09-19', pid: 'p9', selbst: false },
+  { id: 'oz6', terminId: 'oz-sa', datum: '2026-09-26', pid: 'p13', selbst: false },
+]
+
+/** Die Zusage zu `oz3` — zugeteilt und bestätigt. */
+export const DEMO_OZ_ZUSAGEN: ConfirmationMap = { 'oz|2026-09-07|oz3': 'bestätigt' }
+
+/**
+ * Wer auf der Entwicklerseite den Aufgabenbereich „Öffentliches Zeugnisgeben"
+ * hat. Nicht in `DEMO_PERSONS`: Ein neuer Bereich dort verschöbe Zählungen und
+ * Auswahlen in Tests, die mit dem Zeugnisgeben nichts zu tun haben.
+ */
+export const DEMO_OZ_PERSONEN: readonly string[] = ['p6', 'p7', 'p9', 'p10', 'p13', 'p15', 'p16']
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
 // Jeder Dienst hat seinen eigenen Aufgabenbereich (`svc:<key>`) — die drei

@@ -161,6 +161,8 @@ export const LEEREN = [
   // Die Gruppenbesuche (T120) gingen mit den Gruppen ohnehin per Kaskade —
   // ausdrücklich hier, weil sie Planung sind wie die Wochen, nicht Stammdaten.
   'gruppenbesuche',
+  // Die Einträge des öffentlichen Zeugnisgebens (T120) ebenso: Planung.
+  'oz_eintraege',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */
@@ -172,6 +174,7 @@ export const BEHALTEN = {
   invites: 'offene Einladungscodes bleiben gültig',
   services: 'die Hilfsdienste der Versammlung (werden nur angelegt, wenn keine da sind)',
   fs_rules: 'der Treffpunkt-Grundplan — er beschreibt die Versammlung, nicht eine Woche',
+  oz_termine: 'die Termine des öffentlichen Zeugnisgebens — wie der Grundplan Sache der Versammlung',
 }
 
 /**

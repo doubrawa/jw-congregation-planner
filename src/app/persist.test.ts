@@ -48,6 +48,8 @@ vi.mock('../lib/data', async (importActual) => ({
   saveInvite: vi.fn(),
   saveInvitePlanner: vi.fn(),
   saveMemberRow: vi.fn(),
+  saveOzEintraege: vi.fn(),
+  saveOzTermine: vi.fn(),
   savePerson: vi.fn(),
   savePersonGroup: vi.fn(),
   saveService: vi.fn(),
@@ -408,6 +410,97 @@ describe('Gruppenbesuche (T120)', () => {
     })
     expect(data.saveGruppenbesuche).not.toHaveBeenCalled()
     expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+})
+
+describe('Öffentliches Zeugnisgeben (T120)', () => {
+  const T1 = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
+  const T2 = { ...T1, id: 't2', wd: 6 }
+  const eintrag = (id: string, pid: string, selbst = false) => ({ id, terminId: 't1', datum: '2026-09-09', pid, selbst })
+  const KEY = (id: string) => `oz|2026-09-07|${id}`
+
+  beforeEach(() => vi.setSystemTime(new Date(2026, 8, 7, 9, 0)))
+
+  it('ein neuer Eintrag wird eingefügt — Unveränderte gehen nicht noch einmal hinaus', () => {
+    const e1 = eintrag('e1', 'p1')
+    const e2 = eintrag('e2', 'p9', true)
+    // Dieselbe Liste der Termine — der Reducer lässt Unberührtem seine Referenz.
+    const termine = [T1]
+    persist(st({ ozTermine: termine, ozEintraege: [e1] }), st({ ozTermine: termine, ozEintraege: [e1, e2] }), {
+      type: 'ozEintragen',
+      terminId: 't1',
+      datum: '2026-09-09',
+    })
+    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [e2], [])
+    expect(data.saveOzTermine).not.toHaveBeenCalled()
+  })
+
+  it('ein Termin wartet im Bündel — aber nie hinter einem Eintrag, der auf ihn zeigt', () => {
+    const vorher = st({ ozTermine: [], ozEintraege: [] })
+    const mitTermin = st({ ozTermine: [T1], ozEintraege: [] })
+    persist(vorher, mitTermin, { type: 'ozTerminAdd' })
+    expect(data.saveOzTermine).not.toHaveBeenCalled()
+    persist(mitTermin, st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1')] }), {
+      type: 'ozZuteilen',
+      terminId: 't1',
+      datum: '2026-09-09',
+      pid: 'p1',
+    })
+    const termin = vi.mocked(data.saveOzTermine).mock.invocationCallOrder[0]
+    const einfuegen = vi.mocked(data.saveOzEintraege).mock.invocationCallOrder[0]
+    expect(termin).toBeDefined()
+    expect(einfuegen).toBeGreaterThan(termin!)
+  })
+
+  it('zwei gelöschte Termine im selben Bündel gehen beide hinaus', () => {
+    const a = st({ ozTermine: [T1, T2] })
+    const b = st({ ozTermine: [T2] })
+    persist(a, b, { type: 'ozTerminRemove', id: 't1' })
+    persist(b, st({ ozTermine: [] }), { type: 'ozTerminRemove', id: 't2' })
+    vi.runOnlyPendingTimers()
+    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
+    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [], ['t1', 't2'])
+  })
+
+  it('Absagen aus „Meine Aufgaben": der Eintrag geht, keine Verhinderung, die Planer erfahren es', () => {
+    const e = eintrag('e1', 'p9')
+    const notif = { id: 'n', type: 'verhindert', title: 'Verhinderung gemeldet', text: 'x', at: '', read: false, local: true }
+    persist(
+      st({ ozTermine: [T1], ozEintraege: [e], confirmations: { [KEY('e1')]: 'bestätigt' } }),
+      st({ ozTermine: [T1], ozEintraege: [], confirmations: {}, notifs: [notif] as AppState['notifs'] }),
+      { type: 'declineTask', id: KEY('e1') },
+    )
+    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
+    expect(data.saveConfirmation).not.toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY('e1')])
+    expect(data.notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'x')
+    // Die eigene Absage ist keine Wegnahme.
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  it('nimmt der Planer einen zugesagten Eintrag, erfährt es die Person sofort', () => {
+    const e = eintrag('e1', 'p1', true)
+    persist(st({ ozTermine: [T1], ozEintraege: [e] }), st({ ozTermine: [T1], ozEintraege: [] }), {
+      type: 'ozAustragen',
+      id: 'e1',
+    })
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
+      {
+        key: KEY('e1'),
+        name: 'Manfred Albrecht',
+        pid: 'p1',
+        label: 'Öffentliches Zeugnisgeben',
+        datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz',
+      },
+    ])
+  })
+
+  it('ein unbestätigter, zugeteilter Eintrag ist Entwurf — kein Entzug', () => {
+    persist(st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1')] }), st({ ozTermine: [T1], ozEintraege: [] }), {
+      type: 'ozLeeren',
+    })
+    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
 })
 
@@ -1416,31 +1509,61 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
     String(Object.values(glob)[0] ?? '').split('\r\n').join('\n')
   const REDUCER = import.meta.glob('./reducer.ts', { query: '?raw', import: 'default', eager: true })
   const PERSIST = import.meta.glob('./persist.ts', { query: '?raw', import: 'default', eager: true })
+  const CONTEXT = import.meta.glob('./context.ts', { query: '?raw', import: 'default', eager: true })
 
   /**
-   * Zustandsteile, die in der Datenbank stehen und einen **eigenen** `case`
-   * brauchen.
+   * Was geladen wird, aber **keinen eigenen** `case` braucht — je mit Grund.
    *
-   * `weeks` steht bewusst nicht dabei: Sie haben seit dem Umbau einen
-   * allgemeinen Schreibweg — der Block unter dem Switch schreibt jede Woche,
-   * deren Referenz sich geändert hat, gleich welche Aktion sie angefasst hat.
-   * Dafür wacht die Probe darunter über die Ausnahmen.
+   * `weeks`: Sie haben seit dem Umbau einen allgemeinen Schreibweg — der Block
+   * unter dem Switch schreibt jede Woche, deren Referenz sich geändert hat,
+   * gleich welche Aktion sie angefasst hat. Dafür wacht die Probe darunter über
+   * die Ausnahmen.
    *
-   * `notifs` fehlt aus demselben Grund: Eine hier entstandene Mitteilung geht
-   * am `local`-Kennzeichen hinaus, nicht an der auslösenden Aktion (siehe Ende
-   * von `persist.ts`).
+   * `notifications` (im Zustand `notifs`) aus demselben Grund: Eine hier
+   * entstandene Mitteilung geht am `local`-Kennzeichen hinaus, nicht an der
+   * auslösenden Aktion (siehe Ende von `persist.ts`).
    *
-   * `confirmations` fehlen seit dem 25. September 2026 ebenso: Was der Reducer
-   * an Zusagen abräumt, liest `verfalleneZusagen` am Unterschied der Zustände
-   * ab — für jede Aktion. Was er **setzt** (`confirmTask`, `declineTask`,
+   * `confirmations` seit dem 25. September 2026 ebenso: Was der Reducer an
+   * Zusagen abräumt, liest `verfalleneZusagen` am Unterschied der Zustände ab —
+   * für jede Aktion. Was er **setzt** (`confirmTask`, `declineTask`,
    * `takeSubstitute`), hat weiterhin seinen eigenen Fall; die Probe darunter
    * hält das fest.
    */
-  const DAUERHAFT = [
-    'fsWeeks', 'fsRules', 'persons', 'services', 'groups',
-    'absences', 'members', 'invites', 'congregation',
-    'reminders', 'congLang', 'progLangs', 'auxClass',
-  ]
+  const NICHT_JE_FALL: Record<string, string> = {
+    congregationId: 'Kennung des Ladevorgangs, kein Inhalt',
+    userId: 'Kennung des Ladevorgangs, kein Inhalt',
+    empty: 'abgeleitet beim Laden',
+    planner: 'Recht des eigenen Kontos — gelesen, nie hier gesetzt',
+    personId: 'Zuordnung des eigenen Kontos — gelesen, nie hier gesetzt',
+    weeks: 'allgemeiner Schreibweg unter dem Switch',
+    notifications: 'geht am local-Kennzeichen hinaus',
+    confirmations: 'Abräumen allgemein, Setzen eigene Probe darunter',
+    sentLog: 'schreibt nur die Edge Function send-plan',
+  }
+
+  /**
+   * Zustandsteile, die in der Datenbank stehen und einen **eigenen** `case`
+   * brauchen — **abgelesen am Ladeumfang** (`HydratePayload`), nicht
+   * abgeschrieben.
+   *
+   * Hier stand bis zum 3. Oktober 2026 eine Liste von Hand, und ihr fehlten die
+   * Gruppenbesuche (T120, Phase 2): Eine Aktion, die sie ändert, ohne dass
+   * `persist.ts` einen Fall dafür hat, wäre nicht aufgefallen. Was neu geladen
+   * wird, gilt jetzt von selbst als dauerhaft; eine Ausnahme braucht oben einen
+   * Grund.
+   */
+  const DAUERHAFT = (/export interface HydratePayload \{([\s\S]*?)\n\}/.exec(roh(CONTEXT))?.[1] ?? '')
+    .split('\n')
+    .map((zeile) => /^\s+(\w+)\??:/.exec(zeile)?.[1])
+    .filter((feld): feld is string => feld !== undefined && !(feld in NICHT_JE_FALL))
+
+  it('der Ladeumfang ist gelesen, und jede Ausnahme gibt es dort', () => {
+    expect(DAUERHAFT).toEqual(expect.arrayContaining(['persons', 'fsRules', 'gruppenbesuche', 'ozTermine', 'ozEintraege']))
+    expect(DAUERHAFT).not.toContain('weeks')
+    const geladen = (/export interface HydratePayload \{([\s\S]*?)\n\}/.exec(roh(CONTEXT))?.[1] ?? '')
+    const tot = Object.keys(NICHT_JE_FALL).filter((feld) => !new RegExp(`^\\s+${feld}\\??:`, 'm').test(geladen))
+    expect(tot, 'Ausnahme ohne Feld im Ladeumfang').toEqual([])
+  })
 
   /**
    * Aktionen, die einen dauerhaften Teil setzen und trotzdem keinen Schreibweg

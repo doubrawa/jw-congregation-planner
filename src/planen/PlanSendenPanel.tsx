@@ -3,10 +3,11 @@ import { useApp } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
 import { useKalendertag } from '../app/useKalendertag'
 import { fromIso } from '../data/meeting-dates'
-import { offeneMeldungen, zuletztGesendet } from '../data/plan-versand'
+import { type OffeneMeldung, offeneMeldungen, zuletztGesendet } from '../data/plan-versand'
+import { ozOffeneMeldungen, ozZuletztGesendet } from '../data/zeugnis'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
-import { sendPlan } from '../lib/data'
+import { sendPlan, sendZeugnisPlan } from '../lib/data'
 
 /**
  * Bis zu so vielen Namen lohnt die Aufzählung; darüber steht nur die Zahl.
@@ -37,9 +38,10 @@ const NAMEN_GRENZE = 8
  * gerade steht.
  */
 export function PlanSendenPanel() {
-  const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { state } = useApp()
+  const { t } = useT()
   const [laeuft, setLaeuft] = useState(false)
+  const versandGemeldet = useVersandGemeldet()
   /*
    * Namen ohne App-Konto aus dem letzten Versand — **mit der Woche, zu der sie
    * gehören**.
@@ -118,6 +120,125 @@ export function PlanSendenPanel() {
   // Nur die Namen dieser Woche: Beim Blättern bleibt der Baustein stehen, und
   // ohne den Vergleich stünden die Nachzügler von Woche 37 unter Woche 38.
   const ohneKonto = ohneKontoStand?.woche === week.start ? ohneKontoStand.namen : []
+
+  const senden = async (): Promise<void> => {
+    setLaeuft(true)
+    const res = await sendPlan(week.start, tag)
+    setLaeuft(false)
+    if (res) setOhneKonto({ woche: week.start, namen: res.ohneKonto })
+    versandGemeldet(res)
+  }
+
+  return (
+    <PlanSendenAnzeige
+      offen={offen}
+      zuletzt={zuletzt}
+      ohneKonto={ohneKonto}
+      laeuft={laeuft}
+      offenText={t.planSendenOffen}
+      alleText={t.planSendenAlle}
+      onSenden={() => void senden()}
+    />
+  )
+}
+
+/**
+ * Nach dem Druck: das Ergebnis melden und nachladen.
+ *
+ * Das Tagebuch steht jetzt anders da als vor dem Druck — ohne Nachladen zeigte
+ * der Knopf weiter „12 noch nicht gesendet", obwohl sie draußen sind.
+ */
+function useVersandGemeldet(): (res: { personen: number } | null) => void {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  return (res) => {
+    if (!res) {
+      dispatch({ type: 'showToast', text: t.toastSpeicherFehler })
+      return
+    }
+    dispatch({
+      type: 'showToast',
+      text: res.personen === 0 ? t.toastPlanNichts : fill(t.toastPlanGesendet, { n: res.personen }),
+    })
+    if (state.userId) void loadAndHydrate(dispatch, state.userId, { silent: true })
+  }
+}
+
+/**
+ * „Plan senden" im öffentlichen Zeugnisgeben (T120) — über **alle** kommenden
+ * Schichten, nicht je Woche: Die Schichten reichen ein Vierteljahr voraus, die
+ * meisten Einträge entstehen durch Selbsteintragen, und wer zugeteilt wurde,
+ * soll es erfahren, ohne dass der Planer Woche für Woche blättert.
+ */
+export function ZeugnisSendenPanel() {
+  const { state } = useApp()
+  const { t } = useT()
+  const [laeuft, setLaeuft] = useState(false)
+  // Namen ohne Konto aus dem letzten Versand — bis zum nächsten bleiben sie stehen.
+  const [ohneKonto, setOhneKonto] = useState<string[]>([])
+  const versandGemeldet = useVersandGemeldet()
+  const tag = useKalendertag()
+
+  const offen = useMemo(
+    () =>
+      ozOffeneMeldungen(
+        state.ozTermine,
+        state.ozEintraege,
+        state.persons,
+        state.confirmations,
+        state.sentLog,
+        fromIso(tag),
+      ),
+    [state.ozTermine, state.ozEintraege, state.persons, state.confirmations, state.sentLog, tag],
+  )
+  const zuletzt = useMemo(() => ozZuletztGesendet(state.sentLog), [state.sentLog])
+
+  // Wie bei der Woche: nur Planer, nur auf frischem Stand.
+  if (!state.planner || state.staleAt) return null
+
+  const senden = async (): Promise<void> => {
+    setLaeuft(true)
+    const res = await sendZeugnisPlan(tag)
+    setLaeuft(false)
+    if (res) setOhneKonto(res.ohneKonto)
+    versandGemeldet(res)
+  }
+
+  return (
+    <PlanSendenAnzeige
+      offen={offen}
+      zuletzt={zuletzt}
+      ohneKonto={ohneKonto}
+      laeuft={laeuft}
+      offenText={t.ozSendenOffen}
+      alleText={t.ozSendenAlle}
+      onSenden={() => void senden()}
+    />
+  )
+}
+
+/** Die Box selbst — für die Woche wie für das öffentliche Zeugnisgeben dieselbe. */
+function PlanSendenAnzeige({
+  offen,
+  zuletzt,
+  ohneKonto,
+  laeuft,
+  offenText,
+  alleText,
+  onSenden,
+}: {
+  offen: readonly OffeneMeldung[]
+  zuletzt: string | null
+  ohneKonto: readonly string[]
+  laeuft: boolean
+  /** Hinweis bei offenen Meldungen, mit `{n}`. */
+  offenText: string
+  /** Hinweis, wenn alle Bescheid wissen. */
+  alleText: string
+  onSenden: () => void
+}) {
+  const { state } = useApp()
+  const { t, tu } = useT()
   // Je Person einmal: Wer drei Plätze hat, steht nicht dreimal da.
   const namen = [...new Set(offen.map((o) => o.name))]
   /*
@@ -133,27 +254,6 @@ export function PlanSendenPanel() {
   // erschiene sonst an einer leeren Woche, in der es nichts freizugeben gibt.
   if (offen.length === 0 && !zuletzt) return null
 
-  const senden = async (): Promise<void> => {
-    setLaeuft(true)
-    const res = await sendPlan(week.start, tag)
-    setLaeuft(false)
-    if (!res) {
-      dispatch({ type: 'showToast', text: t.toastSpeicherFehler })
-      return
-    }
-    setOhneKonto({ woche: week.start, namen: res.ohneKonto })
-    dispatch({
-      type: 'showToast',
-      text:
-        res.personen === 0
-          ? t.toastPlanNichts
-          : fill(t.toastPlanGesendet, { n: res.personen }),
-    })
-    // Das Tagebuch steht jetzt anders da als vor dem Druck — ohne Nachladen
-    // zeigte der Knopf weiter „12 noch nicht gesendet", obwohl sie draußen sind.
-    if (state.userId) void loadAndHydrate(dispatch, state.userId, { silent: true })
-  }
-
   return (
     <div className="plan-banner-box plan-senden">
       <div className="plan-banner-head">
@@ -161,7 +261,7 @@ export function PlanSendenPanel() {
         {offen.length > 0 && <span className="plan-banner-count">{offen.length}</span>}
       </div>
       <p className="plan-senden-hint">
-        {offen.length > 0 ? fill(t.planSendenOffen, { n: offen.length }) : t.planSendenAlle}
+        {offen.length > 0 ? fill(offenText, { n: offen.length }) : alleText}
       </p>
       {/* Wer noch nichts weiß, mit Namen — aber nur, solange die Liste etwas
           nützt. Eine frisch geplante Woche hat gut 35 Plätze und damit gegen
@@ -190,7 +290,7 @@ export function PlanSendenPanel() {
         type="button"
         className="plan-auto-btn plan-auto-btn--primary"
         disabled={laeuft || offen.length === 0}
-        onClick={() => void senden()}
+        onClick={onSenden}
       >
         {laeuft ? tu('…') : t.planSenden}
       </button>

@@ -403,8 +403,8 @@ Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 
 Die **Zusammenkünfte für den Predigtdienst** („Treffpunkte") sind ein eigenes
 Thema im Menü: **Predigtdienst**. Schalte oben rechts auf **Planen**; dort gibt
-es drei Reiter: **Treffpunkte**, **Gruppenbesuche** (siehe unten) und
-**Grundplan**.
+es vier Reiter: **Treffpunkte**, **Gruppenbesuche** und **Öffentliches
+Zeugnisgeben** (beide siehe unten) und **Grundplan**.
 
 ![Treffpunkte im Programm](screenshots/programm-treffpunkte.png)
 
@@ -487,6 +487,46 @@ Monate voraus, und gerade dann lässt sich noch etwas ändern.
 **Gruppenbesuche**, sobald einer ansteht — oben die Besuche bei der eigenen
 Gruppe mit Treffpunkt, darunter alle in Kurzform. Gruppenaufseher planen die
 Besuche nicht.
+
+### Öffentliches Zeugnisgeben
+
+Die Ältestenschaft organisiert das Zeugnisgeben mit Ständen oder Trolleys —
+am besten **immer am selben Ort, am selben Wochentag und zur selben Uhrzeit**
+(*Unser Königreichsdienst*, November 2013). Unter **Predigtdienst › Planen ›
+Öffentliches Zeugnisgeben** legst du dafür die **Termine** an: Wochentag,
+Uhrzeit von–bis, Ort und wie viele dabei sein sollen (am Infostand immer
+zwei). Aus jedem Termin entsteht jede Woche eine **Schicht** — wie die
+Treffpunkte aus dem Grundplan. Gezeigt werden die nächsten vier Wochen,
+**Weitere Wochen** zeigt das ganze Vierteljahr.
+
+![Öffentliches Zeugnisgeben planen](screenshots/planer-zeugnis.png)
+
+- **Wer mitmachen darf**, legt der Aufgabenbereich **Öffentliches
+  Zeugnisgeben** fest (Personen › Aufgabenbereiche). Nur diese Personen schlägt
+  die App vor, und nur sie können sich selbst eintragen.
+- **Selbst eintragen ist eine Zusage.** Wer sich in einen freien Platz
+  einträgt, steht sofort grün da — er muss nichts mehr bestätigen und bekommt
+  keine Erinnerung.
+- **Zuteilen** kannst du in jeden freien Platz („— zuteilen"). Eine Zuteilung
+  wartet auf Bestätigung wie jeder andere Platz; **Plan senden** unten teilt sie
+  allen mit, die noch nichts wissen — über alle kommenden Schichten auf einmal,
+  nicht Woche für Woche. Bis zur Bestätigung wird erinnert.
+- **Automatisch zuteilen** füllt die freien Plätze des Vierteljahrs. Wer im
+  Zeitraum am wenigsten hat, kommt zuerst; niemand steht am selben Tag
+  zweimal, und wer abwesend ist, bleibt draußen. **Leeren** nimmt nur
+  Zugeteiltes, das noch kommt — Selbsteingetragenes bleibt.
+- **✕** an einem Namen trägt ihn aus. Hatte er zugesagt (oder sich selbst
+  eingetragen), bekommt er sofort die Nachricht, dass die Zuteilung
+  zurückgezogen ist. Ändert sich der **Wochentag** eines Termins, gehen seine
+  kommenden Einträge mit.
+- **Mögliche Konflikte** nennen, wer an seinem Tag abwesend ist; **Freie
+  Plätze** zählt, was noch offen ist.
+
+**Alle sehen die Schichten**: Beim **Ansehen** gibt es den Reiter, sobald es
+Termine gibt. Wer den Aufgabenbereich hat, trägt sich dort mit **+ Eintragen**
+ein; wer zugeteilt wurde, bestätigt dort oder unter „Meine Aufgaben". **Absagen**
+gibt den Platz frei, und die Admins bekommen eine Verhinderungs-Meldung mit Tag
+und Ort.
 
 ---
 

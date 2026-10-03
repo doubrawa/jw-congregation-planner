@@ -27,6 +27,8 @@ const emptyData: CongregationData = {
   fsRules: [],
   fsWeeks: [],
   gruppenbesuche: [],
+  ozTermine: [],
+  ozEintraege: [],
   absences: [],
   notifications: [],
   confirmations: {},

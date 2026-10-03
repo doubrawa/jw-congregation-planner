@@ -17,6 +17,7 @@ import { describe, expect, it } from 'vitest'
 import {
   fsKey,
   helferKey,
+  ozKey,
   istWochenKennung,
   punktKey,
   punktStamm,
@@ -74,6 +75,14 @@ describe('gebaut und wieder zerlegt', () => {
     })
   })
 
+  it('öffentliches Zeugnisgeben (T120)', () => {
+    expect(schluesselTeile(ozKey(WOCHE, 'e5f2'))).toEqual({
+      art: 'oz',
+      woche: WOCHE,
+      eintragId: 'e5f2',
+    })
+  })
+
   /*
    * Die Kennung eines Dienstes darf alles sein, was der Planer eintippt — sie
    * ist ein Schlüssel aus `services.key`. Ein `|` darin bräche das Format; die
@@ -94,6 +103,9 @@ describe('was kein Schlüssel ist, wird nicht geraten', () => {
     ['Ratgeber mit zu vielen Feldern', `${WOCHE}|mid|ratgeber|x`],
     ['Treffpunkt ohne Instanz', `fs|${WOCHE}`],
     ['Treffpunkt ohne Woche', 'fs||i7'],
+    ['Zeugnis-Eintrag ohne Kennung', `oz|${WOCHE}|`],
+    ['Zeugnis-Eintrag ohne Woche', 'oz||e5f2'],
+    ['Zeugnis-Eintrag mit einem Feld zu viel', `oz|${WOCHE}|e5f2|x`],
     ['Tagebuch-Schlüssel (Platz + Name)', `${ratgeberKey(WOCHE, 'mid')} Max Muster`],
     // Platz 0 in Verkleidung: `Number()` las beides als 0, die Datenbank ließ es durch.
     ['Platznummer als Kommazahl', `${WOCHE}|mid|helper|mik|0.0`],
@@ -127,6 +139,14 @@ describe('Bausteine', () => {
     }
     // Eine andere Woche fängt sich nicht mit ein.
     expect(praefixe.some((p) => punktKey('2026-09-14', 'mid', 'k3f9x', 0).startsWith(p))).toBe(false)
+  })
+
+  it('das öffentliche Zeugnisgeben gehört **nicht** zum Plan einer Woche', () => {
+    // Seine Einträge gehen über eine eigene Aktion von `send-plan` hinaus
+    // (über alle kommenden Schichten, nicht je Woche). Fiele `oz|` unter die
+    // Präfixe der Woche, zählte „Zuletzt gesendet" der Woche dessen Versand
+    // mit — und der Knopf der Woche meldete etwas, das er nicht verschickt hat.
+    expect(wochenPraefixe(WOCHE).some((p) => ozKey(WOCHE, 'e5f2').startsWith(p))).toBe(false)
   })
 
   it('die Wochenkennung ist eine Form, keine Datumsprüfung', () => {

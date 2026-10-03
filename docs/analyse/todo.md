@@ -5835,6 +5835,59 @@ Bewusst offen (Phase 2): kein wählbarer Rhythmus („jede Gruppe zweimal im
 Jahr" geht über Entfernen einzelner Besuche); kein Ausdruck des Besuchsplans;
 „Woche ändern" heißt entfernen und neu anlegen.
 
+**Stand Phase 3 (3. Oktober 2026) — Öffentliches Zeugnisgeben, umgesetzt
+(Branch `claude/t120-oeffentliches-zeugnis`):**
+
+- **Gemessen:** Der Begriff heißt „Öffentliches Zeugnisgeben", nicht
+  „Öffentliches Zeugnis" (Canvas) — od Kap. 9 (WOL 1102014939) Abs. 47 in jeder
+  Sprache, fa/ur über die WOL-Suche. *Unser Königreichsdienst* November 2013
+  Abs. 7–8: Die Ältestenschaft organisiert Stände und Trolleys, „immer am
+  selben Ort, am selben Wochentag und zur selben Uhrzeit"; November 2014 Abs. 2:
+  am Trolley wenigstens einer, am Infostand immer zwei.
+- **Datenmodell:** `oz_termine` (die Regel: Wochentag, von–bis, Ort, Plätze
+  1–6) und `oz_eintraege` (eine Zeile je Person und Schicht, `selbst`).
+  Schichten werden nur gerechnet, ein Vierteljahr ab dieser Woche. Der Trigger
+  `oz_platz_pruefen` prüft beim Einfügen Wochentag und freie Plätze unter einer
+  Sperre auf dem Termin. RLS: lesen alle; Planer schreiben alles; ein Mitglied
+  trägt nur sich selbst ein (mit Aufgabenbereich `zeugnis`, als `selbst`) und
+  nur sich selbst aus. **Muss in Supabase eingespielt werden** (`schema.sql`
+  erneut ausführen).
+- **Eine Aufgabe mit eigenem Schlüssel** `oz|<Montag>|<Eintrag>`;
+  `task_gehoert_mir` prüft ihn an der Zeile (ohne den Zweig liefe die Form als
+  „unbekannt" durch). Selbst eingetragen heißt zugesagt, zugeteilt wartet auf
+  Bestätigung. **Absagen gibt den Platz frei** und meldet den Planern eine
+  Verhinderung mit Tag und Ort. Nimmt der Planer einen zugesagten Eintrag, geht
+  der Entzug über den bestehenden Weg.
+- **Edge Functions:** `send-plan` mit der Aktion `zeugnis` (alle kommenden
+  Schichten, nur Zugeteilte; der Versand ist mit der Woche geteilt,
+  `versenden`), `send-reminders` erinnert Zugeteilte. **Deploy nötig:**
+  `send-plan` und `send-reminders`.
+- **Oberfläche:** Predigtdienst › Planen › Öffentliches Zeugnisgeben (Termine,
+  automatisch zuteilen und leeren, Konflikte, freie Plätze, Schichten, Plan
+  senden); beim Ansehen für alle, sobald es Termine gibt (Eintragen,
+  Bestätigen, Absagen). Vier Wochen offen, „Weitere Wochen" für das Vierteljahr.
+- **Automatisch zuteilen** füllt die freien Plätze des Vierteljahrs; wer am
+  wenigsten hat — im Zeitraum und im geladenen Vierteljahr davor —, kommt
+  zuerst. „Leeren" nimmt nur Zugeteiltes, das noch kommt.
+- 23 neue Schlüssel in 34 Sprachen; `OZ_WORD` in `translate-data.ts` hält
+  Glocke und Push in der Sprache des Lesers. Mutationsprobe um zehn Regeln
+  ergänzt, 10/10 bewacht; Handbücher und zwei neue Handbuchbilder.
+- **Befunde nebenbei:** `DAUERHAFT` in `persist.test.ts` war eine Liste von
+  Hand und ihr fehlten seit Phase 2 die Gruppenbesuche — jetzt am Ladeumfang
+  (`HydratePayload`) abgelesen. Und die Verhinderungs-Meldung eines
+  Treffpunkt-Leiters trug die Rolle in der Sprache des Absagenden (ein
+  deutscher Planer las „Field service meeting conductor"); jetzt kanonisch
+  `FS_LEITER`, Test `absage-kanonisch.test.ts`.
+
+Bewusst offen (Phase 3): Die Planungs-Karte auf Start nennt das
+Zeugnisgeben noch nicht (freie Plätze, Konflikte), die Zeitleiste im
+Personen-Detail seine Einträge auch nicht; kein Ausdruck des Schichtplans; eine
+Änderung von Uhrzeit oder Ort eines Termins benachrichtigt die Eingetragenen
+nicht. Die Mitgliedsrechte-Probe (`scripts/mitgliedsrechte-probe.mjs`) kennt
+die neuen Richtlinien noch nicht — nach dem Einspielen lohnt ein Lauf mit
+Fällen für `oz_eintraege` (fremd eintragen, ohne Aufgabenbereich, fremden
+Eintrag bestätigen).
+
 ---
 
 ## Was bewusst offen bleibt

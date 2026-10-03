@@ -90,6 +90,10 @@ SHOTS=(
   # Besuche mit, der erste mit Konflikt. Höher, damit Konflikt und erste
   # Monate ins Bild passen; angemeldet, damit die Sidebar einen Namen trägt.
   "planer-gruppenbesuche|s=planen&tab=fs&fb=gruppenbesuche&me=p6|${W}x1500"
+  # Öffentliches Zeugnisgeben (T120, Phase 3): Termine, Konflikt (Niklas ist
+  # abwesend), freie Plätze und die ersten Wochen. Hoch genug für alles bis zu
+  # den Schichten der zweiten Woche.
+  "planer-zeugnis|s=planen&tab=fs&fb=zeugnis&me=p6|${W}x2100"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
   # Zuteilungen, die Abwesenheiten und die beiden Bereichs-Karten (Aufgaben,
@@ -105,6 +109,9 @@ SHOTS=(
   "verkuendiger-gruppenaufseher|s=planen&tab=fs&pl=0&me=p1"
   # Simon (p9) ist in Gruppe 1: oben der Besuch bei seiner Gruppe, darunter alle.
   "verkuendiger-gruppenbesuche|s=programm&tab=fs&fb=gruppenbesuche&pl=0&me=p9"
+  # Simon hat den Aufgabenbereich: freie Plätze mit „+ Eintragen", und am
+  # 19. September ist er zugeteilt — Bestätigen oder Absagen.
+  "verkuendiger-zeugnis|s=programm&tab=fs&fb=zeugnis&pl=0&me=p9|${W}x1500"
   "offline-stand|s=programm&tab=mid&stale=5"
 )
 

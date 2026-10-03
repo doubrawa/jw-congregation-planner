@@ -33,6 +33,9 @@ export const DE = {
     tabFs: 'Predigtdienst', fsShort: 'Treffpunkte',
     fsVers: 'Versammlungstreffpunkt', fsKeine: 'Keine Treffpunkte in dieser Woche.',
     privTreffpunkt: 'Treffpunkte leiten',
+    // Der Aufgabenbereich und der Reiter im Predigtdienst (T120, Phase 3).
+    // Gemessen: od Kap. 9 Abs. 47 in jeder Sprache, fa/ur über die WOL-Suche.
+    privZeugnis: 'Öffentliches Zeugnisgeben',
     fsNurWoche: 'Änderungen hier gelten nur für diese Woche.',
     fsLeiterLbl: 'Treffpunkt-Leiter',
     // Dasselbe Wort als Rolle **einer** Aufgabe („Meine Aufgaben", Glocke, Push).
@@ -75,6 +78,30 @@ export const DE = {
     toastBesucheN: 'Besuche geplant: {n}', toastKeineBesuche: 'Keine passende Woche gefunden',
     toastBesuchAdd: 'Besuch eingetragen', toastBesuchDel: 'Besuch entfernt',
     toastBesucheGeleert: 'Entfernte Besuche: {n}',
+    // Öffentliches Zeugnisgeben (T120, Phase 3). Termine sind die Regel, aus
+    // der jede Woche ihre Schichten bekommt; Zahlen stehen hinter einer
+    // Bezeichnung („Frei: 1"), damit keine Sprache eine Mehrzahl braucht.
+    ozTermine: 'Termine',
+    ozTermineHint: 'Aus diesen Terminen entstehen die Schichten jeder Woche – wie die Treffpunkte aus dem Grundplan.',
+    ozKeineTermine: 'Noch keine Termine. Lege einen an: Wochentag, Uhrzeit, Ort und wie viele dabei sein sollen.',
+    ozTerminAdd: '+ TERMIN HINZUFÜGEN',
+    ozPlaetze: 'Plätze: {n}',
+    ozAutoHint: 'Vorgeschlagen wird, wer diesen Aufgabenbereich hat. Wer sich selbst einträgt, hat damit zugesagt – „Leeren“ lässt solche Einträge stehen.',
+    ozFreiePlaetze: 'FREIE PLÄTZE',
+    ozFrei: 'Frei: {n}',
+    ozAbwesend: '{name} ist an diesem Tag abwesend',
+    ozMehrWochen: 'Weitere Wochen',
+    ozAnsichtHint: 'Freie Plätze kannst du selbst übernehmen. Wer sich einträgt, hat damit zugesagt.',
+    ozNichtFreigegeben: 'Eintragen kann sich, wer für das öffentliche Zeugnisgeben vorgesehen ist. Sprich dafür die Ältesten an.',
+    ozEintragen: '+ EINTRAGEN',
+    ozAbsagen: 'Absagen',
+    ozDuEingetragen: 'Eingetragen – damit hast du zugesagt.',
+    ozSendenOffen: 'Noch niemandem mitgeteilte Zuteilungen: {n}',
+    ozSendenAlle: 'Alle Zugeteilten wissen Bescheid.',
+    toastOzTerminAdd: 'Termin hinzugefügt', toastOzTerminDel: 'Termin entfernt',
+    toastOzEingetragen: 'Eingetragen · damit hast du zugesagt',
+    toastOzAusgetragen: 'Ausgetragen',
+    toastOzAbgesagt: 'Abgesagt · der Platz ist wieder frei, die Admins sind informiert',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: {datum}', drucken: 'Drucken',
     // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',

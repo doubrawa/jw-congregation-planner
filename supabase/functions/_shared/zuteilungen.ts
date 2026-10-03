@@ -25,7 +25,7 @@ import {
   type Abweichungen,
 } from './planung.ts'
 import { makeTr } from './i18n/translate.ts'
-import { fsKey, helferKey, punktKey, ratgeberKey } from './aufgaben-schluessel.ts'
+import { fsKey, helferKey, ozKey, punktKey, ratgeberKey } from './aufgaben-schluessel.ts'
 
 /* ---- Datenmodell (Teilmengen der Client-Typen aus src/data/types.ts) ---- */
 
@@ -470,6 +470,112 @@ export function fsTerminText(
 ): string {
   const termin = terminText(woche, offset, undefined, zeit)
   return ort ? `${termin} · ${ort}` : termin
+}
+
+/* ---- Öffentliches Zeugnisgeben (T120, Phase 3) ---------------------------- */
+
+/**
+ * „Öffentliches Zeugnisgeben" — die Bezeichnung eines Eintrags, kanonisch
+ * deutsch, wie `FS_LEITER` für den Treffpunkt. Gemessen am Organisiert-Buch
+ * (Kap. 9, Abs. 47); übersetzt über `OZ_WORD` in `i18n/translate-data.ts`.
+ * Der Client nimmt dieselbe Konstante für die Rolle in „Meine Aufgaben" und
+ * für Absage und Entzug — eine Zeichenkette, keine zweite Abschrift.
+ */
+export const OZ_DIENST = 'Öffentliches Zeugnisgeben'
+
+/**
+ * Termin einer Schicht: „Mittwoch, 9. September · 10:00–12:00 · Marktplatz".
+ *
+ * **Eine** Fassung für Client und Functions — der Client ruft genau diese
+ * (`src/data/zeugnis.ts`). Beim Treffpunkt gibt es zwei, und ein Paritätstest
+ * muss sie zusammenhalten.
+ */
+export function ozTerminText(montag: string, offset: number, von: string, bis: string, ort: string): string {
+  // Die Datenbank liefert `time` mit Sekunden („10:00:00"), der Client ohne.
+  return fsTerminText(montag, offset, `${von.slice(0, 5)}–${bis.slice(0, 5)}`, ort)
+}
+
+/** Ein Termin, wie die Functions ihn aus `oz_termine` lesen. */
+export interface OzTerminRow {
+  id: string
+  wd: number
+  von: string
+  bis: string
+  ort: string
+}
+
+/** Ein Eintrag, wie die Functions ihn aus `oz_eintraege` lesen. */
+export interface OzEintragRow {
+  id: string
+  termin_id: string
+  /** Der Tag der Schicht (`YYYY-MM-DD`). */
+  datum: string
+  person_id: string
+  /** Selbst eingetragen — damit zugesagt. */
+  selbst: boolean
+}
+
+/** Montag und Versatz eines Tages (`YYYY-MM-DD`), in UTC gerechnet. */
+function montagUndVersatz(datum: string): { montag: string; offset: number } | null {
+  const ms = Date.parse(datum)
+  if (Number.isNaN(ms)) return null
+  const offset = (new Date(ms).getUTCDay() + 6) % 7
+  return { montag: new Date(ms - offset * 864e5).toISOString().slice(0, 10), offset }
+}
+
+/**
+ * Der Montag der Woche, in der ein Eintrag liegt — die Woche in seinem
+ * Aufgaben-Schlüssel (`oz|<Montag>|…`). Leer bei unlesbarem Datum.
+ */
+export function ozWoche(datum: string): string {
+  return montagUndVersatz(datum)?.montag ?? ''
+}
+
+/**
+ * **Unbestätigte Einträge des öffentlichen Zeugnisgebens** — nur die, die ein
+ * Planer zugeteilt hat, und nur, was noch ansteht.
+ *
+ * Wer sich selbst einträgt, hat damit zugesagt (`selbst`): Ihn muss niemand
+ * erinnern und niemand benachrichtigen. Wer zugeteilt wurde, erfährt es über
+ * „Plan senden" und wird erinnert, bis er bestätigt — wie bei jedem anderen
+ * Platz.
+ *
+ * `namen` ordnet der Person-Id ihren Anzeigenamen zu: Er steht im
+ * Versand-Tagebuch (`tagebuchSchluessel`) und in der Liste derer ohne Konto.
+ * Zugestellt wird über die Id.
+ *
+ * Der Client rechnet seine Vorschau („noch nicht gesendet") mit **dieser**
+ * Funktion, nicht mit einer eigenen — Knopf und Versand meinen so dieselbe
+ * Menge, ohne dass ein Paritätstest sie zusammenhalten muss.
+ */
+export function offeneZeugnisEintraege(
+  eintraege: readonly OzEintragRow[],
+  termine: readonly OzTerminRow[],
+  namen: ReadonlyMap<string, string>,
+  conf: ReadonlyMap<string, string>,
+  heuteUTC: number,
+): Array<Pending & { woche: string; offset: number; eintrag: Eintrag }> {
+  const out: Array<Pending & { woche: string; offset: number; eintrag: Eintrag }> = []
+  for (const e of eintraege) {
+    if (e.selbst) continue
+    const termin = termine.find((t) => t.id === e.termin_id)
+    const tag = montagUndVersatz(e.datum)
+    if (!termin || !tag) continue
+    const key = ozKey(tag.montag, e.id)
+    if (conf.has(key)) continue
+    if (terminVorbei(tag.montag, tag.offset, heuteUTC)) continue
+    const datum = ozTerminText(tag.montag, tag.offset, termin.von, termin.bis, termin.ort)
+    out.push({
+      name: namen.get(e.person_id) ?? '',
+      pid: e.person_id,
+      label: OZ_DIENST,
+      key,
+      woche: tag.montag,
+      offset: tag.offset,
+      eintrag: { datum, label: OZ_DIENST },
+    })
+  }
+  return out
 }
 
 /**

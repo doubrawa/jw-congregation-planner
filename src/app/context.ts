@@ -27,6 +27,8 @@ import type {
   FsRule,
   Group,
   Gruppenbesuch,
+  OzEintrag,
+  OzTermin,
   Invite,
   Lang,
   MeetingKey,
@@ -88,6 +90,8 @@ export interface HydratePayload {
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
   gruppenbesuche: Gruppenbesuch[]
+  ozTermine: OzTermin[]
+  ozEintraege: OzEintrag[]
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -179,6 +183,13 @@ export interface AppState {
    * dann vorgemerkt und wird mit dem Import eingetragen.
    */
   gruppenbesuche: Gruppenbesuch[]
+  /**
+   * Öffentliches Zeugnisgeben (T120, Phase 3): die wöchentlichen Termine und
+   * die Einträge der Personen in ihren Schichten (`data/zeugnis.ts`). Wie die
+   * Gruppenbesuche nicht an das Ladefenster der Wochen gebunden.
+   */
+  ozTermine: OzTermin[]
+  ozEintraege: OzEintrag[]
   absences: Absence[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
@@ -318,6 +329,24 @@ export type AppAction =
   | { type: 'besuchUebernehmen'; id: string }
   // Alle künftigen Besuche entfernen; Vergangenes bleibt als Rückblick.
   | { type: 'besucheLeeren' }
+  /*
+   * Öffentliches Zeugnisgeben (T120, Phase 3). Termine pflegt der Planer; in
+   * die Schichten trägt er Personen ein — oder sie sich selbst
+   * (`ozEintragen`, nur mit dem Aufgabenbereich).
+   */
+  | { type: 'ozTerminAdd' }
+  | { type: 'ozTerminUpdate'; id: string; patch: Partial<Omit<OzTermin, 'id'>> }
+  | { type: 'ozTerminRemove'; id: string }
+  // Sich selbst in eine Schicht eintragen — damit ist zugesagt.
+  | { type: 'ozEintragen'; terminId: string; datum: string }
+  // Der Planer teilt eine Person zu.
+  | { type: 'ozZuteilen'; terminId: string; datum: string; pid: string }
+  // Einen Eintrag entfernen — der Planer jeden, ein Verkündiger den eigenen
+  // (Absagen: der Platz wird frei, die Admins erfahren es).
+  | { type: 'ozAustragen'; id: string }
+  | { type: 'ozAutoAssign' }
+  // Alle künftigen, zugeteilten Einträge entfernen; Selbst-Eingetragene bleiben.
+  | { type: 'ozLeeren' }
   // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).
   | { type: 'sprungZielErreicht' }
   | { type: 'prevWeek' }

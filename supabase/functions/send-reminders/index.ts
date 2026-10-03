@@ -48,6 +48,7 @@ import { json, restKlient, wert } from '../_shared/rest.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
+  personDisplayName,
   tageBisTermin,
   terminText,
   versatzMitAbweichung,
@@ -60,6 +61,9 @@ import {
   type FsInstance,
   kanonisch,
   nachSprache,
+  offeneZeugnisEintraege,
+  type OzEintragRow,
+  type OzTerminRow,
   pendingOfFsWeek,
   pendingOfMeeting,
   type Pending,
@@ -315,6 +319,21 @@ Deno.serve(async (req: Request) => {
         ),
       ])
 
+      // Öffentliches Zeugnisgeben (T120): die Termine und die Einträge im
+      // Erinnerungsfenster, nur die zugeteilten. Fehlen die Tabellen (Schema
+      // nicht eingespielt), erinnert der Lauf trotzdem an alles andere.
+      const ozBis = new Date(todayUTC + Math.max(rem.first, rem.last) * 864e5).toISOString().slice(0, 10)
+      const [ozTermine, ozEintraege] = await Promise.all([
+        klient.get<OzTerminRow[]>(`oz_termine?select=id,wd,von,bis,ort&congregation_id=eq.${wert(cong.id)}`),
+        klient.get<OzEintragRow[]>(
+          `oz_eintraege?select=id,termin_id,datum,person_id,selbst&congregation_id=eq.${wert(cong.id)}` +
+            `&selbst=is.false&datum=gte.${wert(todayISO)}&datum=lte.${wert(ozBis)}`,
+        ),
+      ]).catch((err): [OzTerminRow[], OzEintragRow[]] => {
+        console.error(`oz_termine/oz_eintraege nicht lesbar: ${(err as Error).message}`)
+        return [[], []]
+      })
+
       const conf = new Map(confs.map((c) => [c.task_key, c.status]))
       // Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (siehe
       // `_shared/konten.ts`).
@@ -333,6 +352,31 @@ Deno.serve(async (req: Request) => {
       const entriesByUser = new Map<string, MitKey[]>()
       const mainByUser = new Map<string, MitKey[]>() // Glocke nur an first/last-Tagen
       const unreachable: Array<{ name: string; eintrag: Eintrag }> = []
+
+      /**
+       * Einen fälligen Platz vormerken — für seine Person und, wo sie nicht
+       * erreichbar ist, für die Planer. Alle drei Quellen (Zusammenkünfte,
+       * Treffpunkte, öffentliches Zeugnisgeben) enden hier.
+       *
+       * „Wirklich erreichbar" = App-Konto UND mindestens ein aktives Push-Abo.
+       * Wer ein Konto hat, bekommt trotzdem die persönliche Erinnerung (Push an
+       * evtl. Abos + Glocke); ohne Abo bleibt das aber faktisch ungesehen —
+       * daher zusätzlich am letzten Erinnerungstag die Planer-Meldung, damit sie
+       * persönlich erinnern.
+       */
+      const vormerken = (pend: Pending, kind: 'main' | 'repeat', days: number, entry: MitKey): void => {
+        const userId = userOf(pend)
+        const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
+        if (userId) {
+          entriesByUser.set(userId, [...(entriesByUser.get(userId) ?? []), entry])
+          if (kind === 'main') {
+            mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
+          }
+        }
+        if (!reachable && days === rem.last) {
+          unreachable.push({ name: pend.name, eintrag: entry })
+        }
+      }
 
       weeks.forEach((row) => {
         const week = row.data
@@ -356,28 +400,11 @@ Deno.serve(async (req: Request) => {
           const kind = dueKind(rem, days)
           if (!kind) continue
           for (const pend of pendingOfMeeting(start, tab, meeting, services, conf)) {
-            const entry: MitKey = {
+            vormerken(pend, kind, days, {
               datum: terminText(start, offset, meeting.date, zeit),
               label: pend.label,
               key: pend.key,
-            }
-            const userId = userOf(pend)
-            // „Wirklich erreichbar" = App-Konto UND mindestens ein aktives
-            // Push-Abo. Wer ein Konto hat, bekommt trotzdem die persönliche
-            // Erinnerung (Push an evtl. Abos + Glocke); ohne Abo bleibt das aber
-            // faktisch ungesehen — daher zusätzlich die Planer-Meldung unten.
-            const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
-            if (userId) {
-              entriesByUser.set(userId, [...(entriesByUser.get(userId) ?? []), entry])
-              if (kind === 'main') {
-                mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
-              }
-            }
-            // Nicht per Push erreichbar (kein Konto ODER kein Abo) → am letzten
-            // Erinnerungstag den Planern melden, damit sie persönlich erinnern.
-            if (!reachable && days === rem.last) {
-              unreachable.push({ name: pend.name, eintrag: entry })
-            }
+            })
           }
         }
       })
@@ -393,23 +420,20 @@ Deno.serve(async (req: Request) => {
           if (days === null) continue
           const kind = dueKind(rem, days)
           if (!kind) continue
-          const entry: MitKey = {
-            datum: pend.datum,
-            label: pend.label,
-            key: pend.key,
-          }
-          const userId = userOf(pend)
-          const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
-          if (userId) {
-            entriesByUser.set(userId, [...(entriesByUser.get(userId) ?? []), entry])
-            if (kind === 'main') {
-              mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
-            }
-          }
-          if (!reachable && days === rem.last) {
-            unreachable.push({ name: pend.name, eintrag: entry })
-          }
+          vormerken(pend, kind, days, { datum: pend.datum, label: pend.label, key: pend.key })
         }
+      }
+
+      // Öffentliches Zeugnisgeben (T120): nur zugeteilte, unbestätigte Einträge
+      // — wer sich selbst einträgt, hat damit zugesagt
+      // (`offeneZeugnisEintraege`). Gelesen wird nur das Erinnerungsfenster.
+      const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
+      for (const pend of offeneZeugnisEintraege(ozEintraege, ozTermine, namen, conf, todayUTC)) {
+        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)
+        if (days === null) continue
+        const kind = dueKind(rem, days)
+        if (!kind) continue
+        vormerken(pend, kind, days, { ...pend.eintrag, key: pend.key })
       }
 
       for (const [userId, entries] of entriesByUser) {

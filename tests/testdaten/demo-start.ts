@@ -36,6 +36,10 @@ import {
   DEMO_GRUPPENBESUCHE,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
+  DEMO_OZ_EINTRAEGE,
+  DEMO_OZ_PERSONEN,
+  DEMO_OZ_TERMINE,
+  DEMO_OZ_ZUSAGEN,
   DEMO_PERSONS,
   DEMO_PLANNER,
   DEMO_SERVICES,
@@ -101,7 +105,7 @@ export interface DebugHash {
    */
   me?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
-  fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|grundplan> — Reiter im Predigtdienst (T120)
+  fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan> — Reiter im Predigtdienst (T120)
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
   staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
@@ -131,7 +135,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   const tab = p.get('tab')
   if (tab === 'mid' || tab === 'we' || tab === 'fs') out.tab = tab
   const fb = p.get('fb')
-  if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'grundplan') out.fsBereich = fb
+  if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'zeugnis' || fb === 'grundplan') out.fsBereich = fb
   const pl = p.get('pl')
   if (pl === '0' || pl === '1') out.planner = pl === '1'
   if (p.get('shot') === '1') out.shot = true
@@ -162,6 +166,14 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     // mit der echten Uhr, und ein Besuch im Bestand machte jede Ansicht des
     // Predigtdienstes vom Kalender abhängig. Die Seite hat ihre gestellte.
     gruppenbesuche: DEMO_GRUPPENBESUCHE,
+    // Öffentliches Zeugnisgeben (T120) ebenso nur hier — samt dem
+    // Aufgabenbereich der Beteiligten und einer bestätigten Zuteilung.
+    ozTermine: DEMO_OZ_TERMINE,
+    ozEintraege: DEMO_OZ_EINTRAEGE,
+    persons: basis.persons.map((p) =>
+      DEMO_OZ_PERSONEN.includes(p.id) ? { ...p, priv: { ...p.priv, zeugnis: true } } : p,
+    ),
+    confirmations: { ...basis.confirmations, ...DEMO_OZ_ZUSAGEN },
     screen: debug?.screen ?? 'start',
     tab: debug?.tab ?? basis.tab,
     fsBereich: debug?.fsBereich ?? basis.fsBereich,

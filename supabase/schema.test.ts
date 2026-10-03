@@ -148,6 +148,29 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(fn).not.toContain("'^\\d+$'")
   })
 
+  it('einen Eintrag im öffentlichen Zeugnisgeben bestätigt nur, wem er gehört (T120)', () => {
+    // Ohne eigenen Zweig liefe `oz|…` als „keine der bekannten Formen" durch,
+    // und jedes Mitglied hätte fremde Einträge bestätigen oder absagen können.
+    // Der Zweig muss **vor** diesem Durchlass stehen.
+    const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
+    const zweig = fn.indexOf("if n = 3 and teile[1] = 'oz' then")
+    const durchlass = fn.indexOf("if n < 3 or teile[2] not in ('mid', 'we') then return true;")
+    expect(zweig).toBeGreaterThan(-1)
+    expect(durchlass).toBeGreaterThan(zweig)
+    const rumpf = fn.slice(zweig, durchlass)
+    expect(rumpf).toContain('e.person_id = meine')
+    expect(rumpf).toContain('e.congregation_id = cong')
+  })
+
+  it('selbst eintragen nur mit Aufgabenbereich, nur für sich, nur als „selbst" (T120)', () => {
+    const rein = richtlinien(schema).get('oz_eintraege_selbst_rein') ?? ''
+    expect(rein).toContain('person_id = public.my_person_id()')
+    expect(rein).toContain('public.darf_zeugnis()')
+    expect(rein).toContain('selbst')
+    // Austragen darf jeder nur sich selbst.
+    expect(richtlinien(schema).get('oz_eintraege_selbst_raus') ?? '').toContain('person_id = public.my_person_id()')
+  })
+
   it('eine Verhinderungs-Meldung geht nur an Planer (T89)', () => {
     // Seit dem 24.9.2026 legt `notify_planners` die Zeilen an: Ein Verkündiger
     // sieht in `members` nur sich selbst und kann die Planer nicht adressieren.

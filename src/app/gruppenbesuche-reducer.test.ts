@@ -164,6 +164,8 @@ describe('Wege ohne eigene Aktion', () => {
       fsRules: s.fsRules,
       fsWeeks: s.fsWeeks,
       gruppenbesuche: [],
+      ozTermine: [],
+      ozEintraege: [],
       absences: [],
       notifications: [],
       confirmations: {},

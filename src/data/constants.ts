@@ -33,6 +33,7 @@ export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'schulungPartner',
   'studium',
   'treffpunkt',
+  'zeugnis',
   'ratgeber',
 ]
 

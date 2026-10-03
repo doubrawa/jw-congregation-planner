@@ -154,6 +154,9 @@ let log: { task_key: string; name: string }[]
 let fsWoche: unknown[]
 /** Die Lesepfade auf `confirmations`/`assignment_log` eines Laufs. */
 let gelesen: string[]
+/** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
+let ozTermine: unknown[]
+let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
 
 const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
@@ -222,6 +225,13 @@ const fakeFetch = async (
     const start = filterWert(path, 'start')
     return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: fsWoche }] : [])
   }
+  if (path.startsWith('oz_termine')) return jsonRes(fremd ? [] : ozTermine)
+  if (path.startsWith('oz_eintraege')) {
+    // Auch hier werden die Filter ausgewertet: nur Zugeteiltes, nur ab heute.
+    const nurZugeteilt = /[?&]selbst=is\.false/.test(path)
+    const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
+    return jsonRes(fremd ? [] : ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab))
+  }
   if (path.startsWith('weeks')) {
     const start = filterWert(path, 'start')
     return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: woche }] : [])
@@ -266,6 +276,8 @@ beforeEach(() => {
   log = []
   fsWoche = []
   gelesen = []
+  ozTermine = []
+  ozEintraege = []
   resetPush()
 })
 
@@ -335,6 +347,80 @@ describe('Plan senden: jede eingeteilte Person erfährt von ihrer Aufgabe', () =
   it('und ein Push geht an die Geräte des Empfängers', async () => {
     await plan()
     expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/anna'])
+  })
+})
+
+/* ---- Öffentliches Zeugnisgeben (T120, Phase 3) ---------------------------- */
+
+describe('Plan senden im öffentlichen Zeugnisgeben', () => {
+  // `time` kommt aus der Datenbank mit Sekunden — der Termin nennt sie ohne.
+  const MITTWOCH = { id: 't-mi', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Marktplatz' }
+  const eintrag = (id: string, person_id: string, selbst = false, datum = '2026-09-09') => ({
+    id,
+    termin_id: MITTWOCH.id,
+    datum,
+    person_id,
+    selbst,
+  })
+  const zeugnis = () => ruf({ action: 'zeugnis' })
+
+  beforeEach(() => {
+    ozTermine = [MITTWOCH]
+  })
+
+  it('wer zugeteilt wurde, erfährt es — mit Termin und Bezeichnung, und das Tagebuch merkt es sich', async () => {
+    ozEintraege = [eintrag('e1', 'p-anna')]
+    const res = await zeugnis()
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ personen: 1, aufgaben: 1, ohneKonto: [] })
+    expect(zeilenIn('notifications')).toEqual([
+      expect.objectContaining({
+        user_id: U_ANNA,
+        title: TITEL_ZUTEILUNG,
+        body: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz: Öffentliches Zeugnisgeben',
+        task_key: 'oz|2026-09-07|e1',
+      }),
+    ])
+    expect(zeilenIn('assignment_log')).toEqual([
+      expect.objectContaining({ task_key: 'oz|2026-09-07|e1', name: 'Anna Berg', person_id: 'p-anna', user_id: U_ANNA }),
+    ])
+    expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/anna'])
+  })
+
+  it('wer sich selbst eingetragen hat, weiß Bescheid — er bekommt nichts', async () => {
+    ozEintraege = [eintrag('e1', 'p-anna', true)]
+    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
+    expect(writesTo('notifications')).toEqual([])
+  })
+
+  it('auch nicht, wer bestätigt hat oder schon gemeldet ist — gelesen nur für die Wochen der Einträge', async () => {
+    ozEintraege = [eintrag('e1', 'p-anna'), eintrag('e2', 'p-bernd')]
+    confirmations = [{ task_key: 'oz|2026-09-07|e1', status: 'bestätigt' }]
+    log = [{ task_key: 'oz|2026-09-07|e2', name: 'Bernd Cohn' }]
+    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
+    expect(gelesen.length).toBeGreaterThan(0)
+    for (const pfad of gelesen) expect(likeMuster(pfad, 'task_key')).toEqual(['oz|2026-09-07|*'])
+  })
+
+  it('was vorbei ist, geht nicht mehr hinaus', async () => {
+    vi.setSystemTime(new Date('2026-09-10T08:00:00Z')) // Donnerstag
+    ozEintraege = [eintrag('e1', 'p-anna')]
+    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
+  })
+
+  it('ohne Konto: nicht zuzustellen, aber genannt und im Tagebuch', async () => {
+    ozEintraege = [eintrag('e1', 'p-ohne')]
+    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 1, ohneKonto: ['Karl Onto'] })
+    expect(zeilenIn('assignment_log')).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-07|e1', name: 'Karl Onto' })])
+  })
+
+  it('nur ein Planer darf — auch kein Gruppenaufseher', async () => {
+    ozEintraege = [eintrag('e1', 'p-anna')]
+    authUser = U_MITGLIED
+    expect((await zeugnis()).status).toBe(403)
+    authUser = U_AUFSEHER
+    expect((await zeugnis()).status).toBe(403)
+    expect(writesTo('notifications')).toEqual([])
   })
 })
 

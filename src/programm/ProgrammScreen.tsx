@@ -18,6 +18,7 @@ import { druckKennzeichen } from './druck'
 import { DruckWahl } from './DruckWahl'
 import { FsProgram } from './FsProgram'
 import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
+import { ZeugnisAnsicht } from './ZeugnisAnsicht'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
 import { aktiverFsBereich } from '../planen/fs-bereiche'
 import { MonatDruckenContext, MonatsDruck } from './MonatsDruck'
@@ -58,13 +59,15 @@ export function ProgrammScreen() {
     window.print()
   }, [])
 
-  // Die Gruppenbesuche (T120) haben keine Woche — ohne Streifen, wie beim Planen.
-  if (state.tab === 'fs' && aktiverFsBereich(state) === 'gruppenbesuche') {
+  // Gruppenbesuche und öffentliches Zeugnisgeben (T120) haben keine Woche —
+  // ohne Streifen, wie beim Planen.
+  const bereich = state.tab === 'fs' ? aktiverFsBereich(state) : null
+  if (bereich === 'gruppenbesuche' || bereich === 'zeugnis') {
     return (
       <section className="screen">
         <ThemaKopf />
         <FsBereichTabs />
-        <GruppenbesucheAnsicht />
+        {bereich === 'zeugnis' ? <ZeugnisAnsicht /> : <GruppenbesucheAnsicht />}
       </section>
     )
   }

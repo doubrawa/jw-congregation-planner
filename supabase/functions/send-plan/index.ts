@@ -13,6 +13,13 @@
 //     Planers („YYYY-MM-DD"), damit Knopf und Versand denselben Tag meinen
 //     (`heuteUtc`, _shared/planung.ts).
 //
+//   { action: 'zeugnis', heute? }
+//     „Plan senden" im öffentlichen Zeugnisgeben (T120): Wer **zugeteilt**
+//     wurde und davon noch nichts weiß, bekommt eine Nachricht — über alle
+//     kommenden Schichten, nicht je Woche. Wer sich selbst eingetragen hat,
+//     weiß Bescheid und hat damit zugesagt. Versand, Tagebuch und „je Person
+//     eine Nachricht" wie bei der Woche (`versenden`).
+//
 //   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
 //     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
 //     oder verlegt. Die Betroffenen erfahren es sofort. Ohne diesen Weg
@@ -66,6 +73,10 @@ import {
   kanonisch,
   nachSprache,
   offeneDerWoche,
+  offeneZeugnisEintraege,
+  type OzEintragRow,
+  type OzTerminRow,
+  ozWoche,
   type Pending,
   type ServiceRow,
   type SubscriptionRow,
@@ -196,6 +207,88 @@ async function verschicken(
   return { personen: notifRows.length, push: gesendet }
 }
 
+/**
+ * **Versenden, was neu ist** — je Person eine Nachricht, danach das Tagebuch.
+ *
+ * Die Woche und das öffentliche Zeugnisgeben (T120) tun dieselbe Arbeit, nur
+ * mit anderen Plätzen. Zwei Abschriften davon liefen früher oder später
+ * auseinander — und genau hier stecken die Regeln, an die man sich nicht
+ * zweimal erinnern will: eine Nachricht je Person, die ohne Konto ins
+ * Tagebuch, das Tagebuch erst nach dem Versand.
+ */
+async function versenden(
+  cong: string,
+  neu: Array<Pending & { eintrag: Eintrag }>,
+  kontoFuer: (pid: string | undefined, name: string) => string | undefined,
+  empfaengerFuer: (uid: string) => Empfaenger,
+  personByName: ReadonlyMap<string, string>,
+): Promise<Response> {
+  if (neu.length === 0) return json({ ok: true, personen: 0, aufgaben: 0, ohneKonto: [] })
+
+  await bibelbuecherLaden()
+
+  // Je Person **eine** Nachricht mit allen ihren Aufgaben — nicht je Aufgabe
+  // eine. Wer an einem Wochenende drei Plätze hat, soll einmal hinsehen.
+  //
+  // Zwei getrennte Behälter statt eines mit Kennzeichen: Wer kein Konto hat,
+  // gehört gar nicht in die Zustell-Liste. Hier stand einmal ein Schlüssel
+  // der Form „ ohne:<Name>", der unten wieder zerlegt wurde — und ein Name,
+  // der zufällig so begann, wäre still aus dem Versand gefallen, während das
+  // Tagebuch ihn als gemeldet führte.
+  const jePerson = new Map<string, Array<Pending & { eintrag: Eintrag }>>()
+  const ohneKonto = new Set<string>()
+  for (const p of neu) {
+    const uid = kontoFuer(p.pid, p.name)
+    // Ohne Konto ist niemand zu erreichen — gemerkt wird der Name, damit der
+    // Planer unten erfährt, wen er persönlich ansprechen muss.
+    if (!uid) {
+      ohneKonto.add(p.name)
+      continue
+    }
+    jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])
+  }
+
+  const nachrichten: Nachricht[] = []
+  for (const [uid, eintraege] of jePerson) {
+    nachrichten.push({
+      empfaenger: empfaengerFuer(uid),
+      art: 'zuteilung',
+      eintraege: eintraege.map((e) => e.eintrag),
+      // Nur bei genau einer Aufgabe: dann trägt die Glocke den
+      // Bestätigen-Knopf. Bei mehreren zeigte er auf eine willkürliche davon.
+      ...(eintraege.length === 1 ? { taskKey: eintraege[0].key } : {}),
+    })
+  }
+
+  const { push } = await verschicken(cong, nachrichten)
+
+  // Tagebuch **nach** dem Versand — scheitert das Schreiben, wurde immerhin
+  // gesendet (schlimmstenfalls eine Wiederholung, nie ein Ausfall). Auch die
+  // ohne Konto werden eingetragen: sonst zeigte der Knopf für sie auf ewig
+  // „noch nicht benachrichtigt", obwohl niemand sie erreichen kann.
+  await rest.insert(
+    'assignment_log',
+    neu.map((p) => ({
+      congregation_id: cong,
+      task_key: p.key,
+      name: p.name,
+      person_id: p.pid ?? personByName.get(p.name) ?? null,
+      user_id: kontoFuer(p.pid, p.name) ?? null,
+    })),
+    // Was schon dasteht, bleibt stehen; der Rest kommt hinzu. Ohne das
+    // verwirft eine einzige Dublette den ganzen Stapel — siehe `restInsert`.
+    { ignoreDuplicates: true },
+  )
+
+  return json({
+    ok: true,
+    personen: nachrichten.length,
+    aufgaben: neu.length,
+    push,
+    ohneKonto: [...ohneKonto],
+  })
+}
+
 /* ---- Wer einen Entzug melden darf --------------------------------------- */
 
 /**
@@ -264,7 +357,7 @@ Deno.serve(async (req: Request) => {
     const payload = (await req.json().catch(() => null)) as
       | ({ action?: string; weekStart?: string; heute?: string; entzuege?: EntzugRumpf[] } & EntzugRumpf)
       | null
-    if (payload?.action !== 'plan' && payload?.action !== 'entzug') {
+    if (payload?.action !== 'plan' && payload?.action !== 'entzug' && payload?.action !== 'zeugnis') {
       return json({ error: 'bad-request' }, 400)
     }
 
@@ -367,6 +460,53 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, personen, push, ohneKonto: [...ohneKonto] })
     }
 
+    /* ---- Aktion: Plan des öffentlichen Zeugnisgebens senden (T120) ---- */
+    if (payload.action === 'zeugnis') {
+      const heute = heuteUtc(payload.heute)
+      const ab = new Date(heute).toISOString().slice(0, 10)
+      // Nur Zugeteiltes und nur Kommendes — Selbsteingetragenes weiß Bescheid.
+      const [termine, eintraege] = await Promise.all([
+        rest.get<OzTerminRow[]>(`oz_termine?select=id,wd,von,bis,ort&congregation_id=eq.${wert(cong)}`),
+        rest.get<OzEintragRow[]>(
+          `oz_eintraege?select=id,termin_id,datum,person_id,selbst&congregation_id=eq.${wert(cong)}` +
+            `&selbst=is.false&datum=gte.${wert(ab)}`,
+        ),
+      ])
+      /*
+       * Zusagen und Tagebuch **nur für die Wochen dieser Einträge** — dieselbe
+       * Sparsamkeit wie bei der Woche (`jeWoche`): Beide Tabellen wachsen, und
+       * gebraucht wird ein Vierteljahr. Je Woche eine `like`-Abfrage auf
+       * `oz|<Montag>|`, parallel.
+       */
+      const wochen = [...new Set(eintraege.map((e) => ozWoche(e.datum)).filter(Boolean))]
+      const jePraefix = async <T>(tabelle: string, spalten: string): Promise<T[]> => {
+        const teile = await Promise.all(
+          wochen.map((w) =>
+            rest.get<T[]>(
+              `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` +
+                `&task_key=like.${wert(`oz|${w}|*`)}`,
+            ),
+          ),
+        )
+        return teile.flat()
+      }
+      const [confs, log] = await Promise.all([
+        jePraefix<{ task_key: string; status: string }>('confirmations', 'task_key,status'),
+        jePraefix<{ task_key: string; name: string }>('assignment_log', 'task_key,name'),
+      ])
+      const conf = new Map(confs.map((c) => [c.task_key, c.status]))
+      const schonGemeldet = new Set(log.map((r) => tagebuchSchluessel(r.task_key, r.name)))
+      const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
+      const offen = offeneZeugnisEintraege(eintraege, termine, namen, conf, heute)
+      return await versenden(
+        cong,
+        offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name))),
+        kontoFuer,
+        empfaengerFuer,
+        personByName,
+      )
+    }
+
     /* ---- Aktion: Plan einer Woche senden ---- */
     const weekStart = payload.weekStart ?? ''
     if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return json({ error: 'bad-request' }, 400)
@@ -447,70 +587,7 @@ Deno.serve(async (req: Request) => {
     // Was schon gemeldet wurde, bleibt liegen. Sonst schickte ein zweiter Druck
     // nach einer kleinen Nachbesserung allen dieselbe Nachricht erneut.
     const neu = offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))
-    if (neu.length === 0) return json({ ok: true, personen: 0, aufgaben: 0, ohneKonto: [] })
-
-    await bibelbuecherLaden()
-
-    // Je Person **eine** Nachricht mit allen ihren Aufgaben — nicht je Aufgabe
-    // eine. Wer an einem Wochenende drei Plätze hat, soll einmal hinsehen.
-    //
-    // Zwei getrennte Behälter statt eines mit Kennzeichen: Wer kein Konto hat,
-    // gehört gar nicht in die Zustell-Liste. Hier stand einmal ein Schlüssel
-    // der Form „ ohne:<Name>", der unten wieder zerlegt wurde — und ein Name,
-    // der zufällig so begann, wäre still aus dem Versand gefallen, während das
-    // Tagebuch ihn als gemeldet führte.
-    const jePerson = new Map<string, Array<Pending & { eintrag: Eintrag }>>()
-    const ohneKonto = new Set<string>()
-    for (const p of neu) {
-      const uid = kontoFuer(p.pid, p.name)
-      // Ohne Konto ist niemand zu erreichen — gemerkt wird der Name, damit der
-      // Planer unten erfährt, wen er persönlich ansprechen muss.
-      if (!uid) {
-        ohneKonto.add(p.name)
-        continue
-      }
-      jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])
-    }
-
-    const nachrichten: Nachricht[] = []
-    for (const [uid, eintraege] of jePerson) {
-      nachrichten.push({
-        empfaenger: empfaengerFuer(uid),
-        art: 'zuteilung',
-        eintraege: eintraege.map((e) => e.eintrag),
-        // Nur bei genau einer Aufgabe: dann trägt die Glocke den
-        // Bestätigen-Knopf. Bei mehreren zeigte er auf eine willkürliche davon.
-        ...(eintraege.length === 1 ? { taskKey: eintraege[0].key } : {}),
-      })
-    }
-
-    const { push } = await verschicken(cong, nachrichten)
-
-    // Tagebuch **nach** dem Versand — scheitert das Schreiben, wurde immerhin
-    // gesendet (schlimmstenfalls eine Wiederholung, nie ein Ausfall). Auch die
-    // ohne Konto werden eingetragen: sonst zeigte der Knopf für sie auf ewig
-    // „noch nicht benachrichtigt", obwohl niemand sie erreichen kann.
-    await rest.insert(
-      'assignment_log',
-      neu.map((p) => ({
-        congregation_id: cong,
-        task_key: p.key,
-        name: p.name,
-        person_id: p.pid ?? personByName.get(p.name) ?? null,
-        user_id: kontoFuer(p.pid, p.name) ?? null,
-      })),
-      // Was schon dasteht, bleibt stehen; der Rest kommt hinzu. Ohne das
-      // verwirft eine einzige Dublette den ganzen Stapel — siehe `restInsert`.
-      { ignoreDuplicates: true },
-    )
-
-    return json({
-      ok: true,
-      personen: nachrichten.length,
-      aufgaben: neu.length,
-      push,
-      ohneKonto: [...ohneKonto],
-    })
+    return await versenden(cong, neu, kontoFuer, empfaengerFuer, personByName)
   } catch (err) {
     // Nur in die Logs, nicht in die Antwort: die REST-Fehler tragen Pfad und
     // rohen PostgREST-Rumpf — beim Suchen nützlich und beim Angreifen genauso.

@@ -8,12 +8,14 @@ import { aktiverFsBereich, fsBereiche } from './fs-bereiche'
 const BESCHRIFTUNG: Record<FsBereich, keyof Dict> = {
   treffpunkte: 'fsTreffpunkteTab',
   gruppenbesuche: 'fsGruppenbesucheTab',
+  zeugnis: 'privZeugnis',
   grundplan: 'fsGrundplan',
 }
 
 /**
  * Reiter des Predigtdienstes (T120): die Treffpunkte der Woche, die
- * Gruppenbesuche des Dienstaufsehers und — beim Planen — ihr Grundplan. Welche
+ * Gruppenbesuche des Dienstaufsehers, das öffentliche Zeugnisgeben und — beim
+ * Planen — der Grundplan der Treffpunkte. Welche
  * es hier gibt, sagt `fsBereiche`. Gestaltet wie die Reiter der
  * Zusammenkünfte, damit beide Themen dieselbe Bedienung haben. Gibt es nur
  * einen Bereich, steht gar keine Leiste da.

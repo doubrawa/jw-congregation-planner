@@ -27,14 +27,19 @@ function kuenftigeBesuche(state: AppState): boolean {
  *   sie nicht (so auch die Datenbank). Beim Ansehen für alle, sobald einer
  *   ansteht: Die Gruppe soll wissen, wann der Dienstaufseher kommt; ohne Besuch
  *   bliebe dort nur ein leerer Reiter.
+ * - **Öffentliches Zeugnisgeben** beim Planen nur für Planer (die
+ *   Ältestenschaft organisiert es), beim Ansehen für alle, sobald es Termine
+ *   gibt — dort trägt man sich ein.
  * - **Grundplan** nur beim Planen.
  */
 export function fsBereiche(state: AppState): FsBereich[] {
   const planen = state.screen === 'planen'
   const besuche = planen ? state.planner : kuenftigeBesuche(state)
+  const zeugnis = planen ? state.planner : state.ozTermine.length > 0
   return [
     'treffpunkte',
     ...(besuche ? (['gruppenbesuche'] as const) : []),
+    ...(zeugnis ? (['zeugnis'] as const) : []),
     ...(planen ? (['grundplan'] as const) : []),
   ]
 }

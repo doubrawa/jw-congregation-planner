@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RATGEBER_ROLLE } from '../data/aux-class'
 import { ROLE_CIRCUIT, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
-import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { FS_LEITER, OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { APP_LANGS } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
 import { dict, loadOverlay } from './ui'
@@ -54,6 +54,7 @@ describe('Rollen der App im Fragment-Übersetzer', () => {
       RATGEBER_ROLLE,
       'Partner',
       FS_LEITER,
+      OZ_DIENST,
       ...importRollen(),
     ]),
   ]
@@ -87,6 +88,15 @@ describe('Rollen der App im Fragment-Übersetzer', () => {
     // der Zuteilen-Zeile: Eine Mitteilung nennt genau eine Aufgabe.
     for (const { code } of APP_LANGS) {
       expect(makeTr(code)(FS_LEITER), code).toBe(dict(code).fsLeiterRolle)
+    }
+  })
+
+  it('und „Öffentliches Zeugnisgeben" genau so wie der Aufgabenbereich', () => {
+    // Dieselbe zweite Ablage (`OZ_WORD`): „Meine Aufgaben" zeigt die Rolle
+    // über den Fragment-Übersetzer, die Personenliste den Aufgabenbereich aus
+    // dem Wörterbuch — beide sind dasselbe gemessene Wort (od Kap. 9 Abs. 47).
+    for (const { code } of APP_LANGS) {
+      expect(makeTr(code)(OZ_DIENST), code).toBe(dict(code).privZeugnis)
     }
   })
 })

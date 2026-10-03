@@ -68,7 +68,7 @@ function erzeuger(): Record<string, string> {
 }
 
 describe('Formen der task_key — bekannt im Schema', () => {
-  it('es sind genau diese vier Vorlagen', () => {
+  it('es sind genau diese fünf Vorlagen', () => {
     /*
      * Die Tabelle steht wörtlich so über `task_gehoert_mir` in
      * `supabase/schema.sql`. Ändert sich hier etwas, muss es dort mit — sonst
@@ -81,12 +81,18 @@ describe('Formen der task_key — bekannt im Schema', () => {
      * **Eine fünfte stand hier bis zum 17. September 2026**: `partTaskKey`,
      * der positionsbasierte Schlüssel. Er fiel mit der Altlasten-Räumung weg —
      * jeder Programmpunkt trägt seine Kennung seit dem Import.
+     *
+     * **Die fünfte heute** ist das öffentliche Zeugnisgeben (T120, Phase 3):
+     * `oz|<Montag>|<Eintrag>`. Ohne seinen Zweig in `task_gehoert_mir` liefe
+     * die Form dort als „unbekannt" durch, und jedes Mitglied hätte fremde
+     * Einträge bestätigen oder absagen können.
      */
     expect(erzeuger()).toEqual({
       punktKey: '<>|<>|<>|<>|<>', // stabile Kennung des Punkts (T37)
       ratgeberKey: '<>|<>|ratgeber',
       helferKey: '<>|<>|helper|<>|<>',
       fsKey: 'fs|<>|<>',
+      ozKey: 'oz|<>|<>',
     })
   })
 

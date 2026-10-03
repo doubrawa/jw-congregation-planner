@@ -105,6 +105,22 @@ Kurzform. In der Woche des Besuchs steht am Treffpunkt deiner Gruppe
 
 ![Besuche des Dienstaufsehers](screenshots/verkuendiger-gruppenbesuche.png)
 
+### Öffentliches Zeugnisgeben
+
+Organisiert eure Versammlung Stände oder Trolleys, hat der Predigtdienst den
+Reiter **Öffentliches Zeugnisgeben**: die kommenden Schichten mit Ort, Tag und
+Uhrzeit und wer dabei ist.
+
+![Öffentliches Zeugnisgeben](screenshots/verkuendiger-zeugnis.png)
+
+- **Selbst eintragen**: Bist du dafür vorgesehen (die Ältesten legen das fest),
+  steht an jeder Schicht mit freiem Platz **+ Eintragen**. Wer sich einträgt,
+  hat damit zugesagt — eine Bestätigung brauchst du nicht.
+- **Zugeteilt**: Haben dich die Admins eingeteilt, bestätigst du hier oder unter
+  „Meine Aufgaben" — wie jede andere Aufgabe.
+- **Absagen** gibt deinen Platz wieder frei, damit ihn jemand anders übernehmen
+  kann; die Admins erfahren es.
+
 ### Zusätzliche Klasse
 
 Führt eure Versammlung eine **zusätzliche Klasse** durch, stehen bei den

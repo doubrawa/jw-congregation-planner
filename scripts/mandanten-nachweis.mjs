@@ -72,6 +72,8 @@ export const RLS_TABELLEN = [
   { name: 'fs_rules', spalte: 'congregation_id' },
   { name: 'fs_weeks', spalte: 'congregation_id' },
   { name: 'gruppenbesuche', spalte: 'congregation_id' },
+  { name: 'oz_termine', spalte: 'congregation_id' },
+  { name: 'oz_eintraege', spalte: 'congregation_id' },
   { name: 'absences', spalte: 'congregation_id' },
   { name: 'notifications', spalte: 'congregation_id' },
   { name: 'confirmations', spalte: 'congregation_id' },

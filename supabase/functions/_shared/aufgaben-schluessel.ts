@@ -8,7 +8,7 @@
  * `supabase/schema.sql` entscheidet damit, ob eine Bestätigung zur eigenen
  * Aufgabe gehört).
  *
- * Vier Formen, fünf Erzeuger:
+ * Fünf Formen:
  *
  * | Form       | Aufbau                                     |
  * | ---------- | ------------------------------------------ |
@@ -16,6 +16,7 @@
  * | Ratgeber   | `<montag>\|<mid\|we>\|ratgeber`              |
  * | Hilfsdienst| `<montag>\|<mid\|we>\|helper\|<dienst>\|<pos>` |
  * | Treffpunkt | `fs\|<montag>\|<instanzId>`                  |
+ * | Öffentliches Zeugnisgeben | `oz\|<montag>\|<eintragId>` (T120)  |
  *
  * Gebaut wurde das bis September 2026 an **fünf** Stellen und zerlegt an
  * **sechs**, verteilt über drei Laufzeiten: die App (`planning.ts`, `fs.ts`,
@@ -42,6 +43,7 @@ export type SchluesselTeile =
   | { art: 'ratgeber'; woche: string; tab: Tab }
   | { art: 'helper'; woche: string; tab: Tab; svc: string; pos: number }
   | { art: 'fs'; woche: string; instId: string }
+  | { art: 'oz'; woche: string; eintragId: string }
 
 /**
  * Ist das eine Wochen-Kennung (T66)?
@@ -99,6 +101,16 @@ export function fsKey(woche: string, instId: string): string {
 }
 
 /**
+ * Schlüssel eines Eintrags im öffentlichen Zeugnisgeben (T120, Phase 3) — der
+ * Montag der Woche und die Kennung des Eintrags (`oz_eintraege.id`). Der
+ * Eintrag gehört genau einer Person; wird er ersetzt, entsteht ein neuer
+ * Schlüssel, und die Zusage des alten geht mit ihm.
+ */
+export function ozKey(woche: string, eintragId: string): string {
+  return `oz|${woche}|${eintragId}`
+}
+
+/**
  * Die beiden Präfixe, mit denen **jeder** Schlüssel einer Woche beginnt:
  * `<montag>|` für die Zusammenkünfte, `fs|<montag>|` für die Treffpunkte.
  *
@@ -136,6 +148,12 @@ export function schluesselTeile(key: string): SchluesselTeile | null {
     const woche = p[1] ?? ''
     return p.length === 3 && istWochenKennung(woche) && p[2]
       ? { art: 'fs', woche, instId: p[2] }
+      : null
+  }
+  if (p[0] === 'oz') {
+    const woche = p[1] ?? ''
+    return p.length === 3 && istWochenKennung(woche) && p[2]
+      ? { art: 'oz', woche, eintragId: p[2] }
       : null
   }
   const woche = p[0] ?? ''

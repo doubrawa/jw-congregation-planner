@@ -1315,8 +1315,8 @@ export const KATALOG = [
       hat, bekommt EINE Nachricht mit beiden" fällt auf.
     */
     regel: 'Je eingeteilter Person geht EINE Nachricht hinaus, nicht je Aufgabe.',
-    suchen: '      jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])',
-    ersetzen: '      jePerson.set(uid, [p])',
+    suchen: '    jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])',
+    ersetzen: '    jePerson.set(uid, [p])',
   },
 
   // ── Treffpunkt-Wochenkennung (T100) ───────────────────────────────────────
@@ -1924,6 +1924,78 @@ export const KATALOG = [
     regel: 'Der Kontakt für eine neue Versammlung öffnet auch in der Demo eine Mail — wer sie ansieht, ist genau der, der fragen würde (T113).',
     suchen: 'href={kontaktVerweis(t.anfrageBetreff)}',
     ersetzen: 'href={isSupabaseConfigured ? kontaktVerweis(t.anfrageBetreff) : undefined}',
+  },
+
+  // ── Öffentliches Zeugnisgeben (T120, Phase 3) ─────────────────────────────
+  {
+    id: 'oz-selbst-ist-zusage',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Wer sich selbst einträgt, hat damit zugesagt — ohne eigene Bestätigung.',
+    suchen: "  return eintrag.selbst ? 'bestätigt' : 'offen'",
+    ersetzen: "  return 'offen'",
+  },
+  {
+    id: 'oz-eintragen-nur-mit-bereich',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Selbst eintragen kann nur, wer den Aufgabenbereich hat — die Ältestenschaft organisiert das Zeugnisgeben.',
+    suchen: '  if (!person || !isQualified(person, OZ_BEREICH)) return false',
+    ersetzen: '  if (!person) return false',
+  },
+  {
+    id: 'oz-eigene-absage-kein-entzug',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Wer sich selbst austrägt, sagt ab — das meldet niemandem eine Wegnahme.',
+    suchen: '    if (bleibt.has(e.id) || e.pid === ausser) continue',
+    ersetzen: '    if (bleibt.has(e.id)) continue',
+  },
+  {
+    id: 'oz-reihum-ueber-den-rueckblick',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Die Auto-Zuteilung zählt das Vierteljahr davor mit — sonst stünden jedes Mal dieselben vorn.',
+    suchen: '  for (const e of bisher) last.set(e.pid, (last.get(e.pid) ?? 0) + 1)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'oz-zusage-verfaellt-mit-eintrag',
+    datei: 'src/app/reducer.ts',
+    regel: 'Verschwindet ein Eintrag, verschwindet seine Zusage mit — auf jedem Weg.',
+    suchen: '  const bereinigt = ohneVerwaisteZeugnisZusagen(state, next)',
+    ersetzen: '  const bereinigt = next',
+  },
+  {
+    id: 'oz-absage-gibt-platz-frei',
+    datei: 'src/app/reducer.ts',
+    regel: 'Absagen gibt den Platz frei und meldet es den Planern, statt ihn als verhindert zu blockieren.',
+    suchen: "      if (teile?.art === 'oz') {",
+    ersetzen: '      if (false) {',
+  },
+  {
+    id: 'oz-leeren-laesst-selbst',
+    datei: 'src/app/reducer.ts',
+    regel: '„Leeren" nimmt nur Zugeteiltes — wer sich selbst eingetragen hat, hat zugesagt.',
+    suchen: '      const weg = new Set(state.ozEintraege.filter((e) => !e.selbst && !ozVorbei(e)))',
+    ersetzen: '      const weg = new Set(state.ozEintraege.filter((e) => !ozVorbei(e)))',
+  },
+  {
+    id: 'oz-termin-vor-eintrag',
+    datei: 'src/app/persist.ts',
+    regel: 'Ein Termin, der noch im Bündel wartet, geht vor dem Eintrag hinaus, der auf ihn zeigt.',
+    suchen: '  ozTerminSaves.flush()\n',
+    ersetzen: '',
+  },
+  {
+    id: 'oz-plan-nur-zugeteilte',
+    datei: 'supabase/functions/_shared/zuteilungen.ts',
+    regel: '„Plan senden" und Erinnerung gehen nur an Zugeteilte — wer sich selbst eingetragen hat, weiß Bescheid.',
+    suchen: '    if (e.selbst) continue',
+    ersetzen: '    if (false) continue',
+  },
+  {
+    id: 'oz-schema-eigener-eintrag',
+    datei: 'supabase/schema.sql',
+    regel: 'Einen Eintrag im öffentlichen Zeugnisgeben bestätigt nur, wem er gehört.',
+    suchen: '         and e.person_id = meine\n',
+    ersetzen: '',
   },
 ]
 

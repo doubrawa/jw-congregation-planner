@@ -176,6 +176,9 @@ let subs: typeof SUBS
 let persons: typeof PERSONS
 /** Erinnerungs-Einstellungen der Versammlung — je Test überschreibbar. */
 let reminders: { first: number; last: number; repeat: boolean }
+/** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
+let ozTermine: unknown[]
+let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
 
 const { writesTo } = schreibZugriff(() => writes)
 
@@ -197,6 +200,14 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('reminder_log')) return jsonRes(reminderLog)
   if (path.startsWith('weeks')) return jsonRes(weeks)
   if (path.startsWith('fs_weeks')) return jsonRes(fsWeeks)
+  if (path.startsWith('oz_termine')) return jsonRes(ozTermine)
+  if (path.startsWith('oz_eintraege')) {
+    // Die Filter werden ausgewertet: nur Zugeteiltes, nur im Fenster.
+    const nurZugeteilt = /[?&]selbst=is\.false/.test(path)
+    const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
+    const bis = decodeURIComponent(/[?&]datum=lte\.([^&]*)/.exec(path)?.[1] ?? '9999')
+    return jsonRes(ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab && e.datum <= bis))
+  }
   if (path.startsWith('confirmations')) return jsonRes(confirmations)
   if (path.startsWith('members')) return jsonRes(MEMBERS)
   if (path.startsWith('persons')) return jsonRes(persons)
@@ -269,6 +280,8 @@ beforeEach(() => {
   subs = [...SUBS]
   persons = [...PERSONS]
   reminders = { first: 7, last: 1, repeat: true }
+  ozTermine = []
+  ozEintraege = []
   resetPush()
 })
 
@@ -680,6 +693,53 @@ describe('send-reminders: Scharfbetrieb als Gegenprobe', () => {
     const r = await live()
     expect(r.pushes).toBeGreaterThan(0)
     expect(r.notifications).toBe(0)
+  })
+})
+
+describe('send-reminders: öffentliches Zeugnisgeben (T120)', () => {
+  // Mittwoch, 9. September — zwei Tage nach „heute" (Montag): an Wiederholungstagen fällig.
+  const MITTWOCH = { id: 't-mi', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Marktplatz' }
+  const eintrag = (patch: Partial<(typeof ozEintraege)[number]> = {}) => ({
+    id: 'e1',
+    termin_id: MITTWOCH.id,
+    datum: '2026-09-09',
+    person_id: 'p-max',
+    selbst: false,
+    ...patch,
+  })
+
+  beforeEach(() => {
+    weeks = [] // nur das Zeugnisgeben soll in der Erinnerung stehen
+    ozTermine = [MITTWOCH]
+  })
+
+  it('erinnert, wer zugeteilt wurde und noch nicht bestätigt hat — Termin mit Ort und Zeitspanne', async () => {
+    ozEintraege = [eintrag()]
+    expect(previewFor(await run(), U_MAX)?.body).toBe(
+      'Mittwoch, 9. September · 10:00–12:00 · Marktplatz: Öffentliches Zeugnisgeben',
+    )
+  })
+
+  it('wer sich selbst eingetragen hat, hat zugesagt — keine Erinnerung', async () => {
+    ozEintraege = [eintrag({ selbst: true })]
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+  })
+
+  it('wer bestätigt hat, auch nicht', async () => {
+    ozEintraege = [eintrag()]
+    confirmations = [{ task_key: `oz|${WEEK_START}|e1`, status: 'bestätigt' }]
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+  })
+
+  it('am Tag der ersten Erinnerung geht auch die Glocke — mit dem Schlüssel des Eintrags', async () => {
+    ozEintraege = [eintrag({ datum: '2026-09-14' })] // genau 7 Tage = `first`
+    ozTermine = [{ ...MITTWOCH, wd: 1 }]
+    await live()
+    // Nur die neuen Zeilen — der Lauf räumt außerdem alte Glocken-Zeilen ab (DELETE).
+    const glocke = writesTo('notifications')
+      .filter((w) => w.method === 'POST')
+      .flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
+    expect(glocke).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-14|e1' })])
   })
 })
 

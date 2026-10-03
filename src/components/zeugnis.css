@@ -1,0 +1,92 @@
+/* ---- Öffentliches Zeugnisgeben (T120, Phase 3) ---------------------------
+   Planen (`ZeugnisPlan`) und Ansehen (`ZeugnisAnsicht`) zeigen dieselbe
+   Schicht: Uhrzeit groß, Ort, Tag und Zeitspanne darunter, dann die Plätze.
+   Die Kopfzeile leihen sie sich vom Treffpunkt (`fs-row-main` & Co.). */
+
+.oz-schicht {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineGld);
+}
+
+.oz-schicht:last-child {
+  border-bottom: 0;
+}
+
+.oz-schicht.is-vorbei {
+  opacity: 0.6;
+}
+
+/* Die Plätze einer Schicht: Namen, freie Plätze, beim Planen die Auswahl. */
+.oz-plaetze {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 8px;
+}
+
+.oz-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--lineGld);
+  border-radius: var(--r-pill);
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+/* Austragen beim Planen — klein, aber mit ausreichender Trefferfläche. */
+.oz-raus {
+  min-width: 28px;
+  min-height: 28px;
+  margin-inline-end: -6px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--mut);
+  font-size: calc(12px * var(--fs));
+  cursor: pointer;
+}
+
+.oz-zuteilen {
+  font-size: calc(12.5px * var(--fs));
+}
+
+.oz-frei {
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.oz-eintragen {
+  margin-top: 8px;
+}
+
+/* Der eigene Eintrag beim Ansehen: Stand der Zusage und was man tun kann. */
+.oz-eigen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  margin-top: 8px;
+}
+
+.oz-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.oz-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.oz-mehr {
+  display: block;
+  margin: 4px auto 16px;
+}

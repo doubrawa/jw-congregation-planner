@@ -462,6 +462,58 @@ create table if not exists public.gruppenbesuche (
     references public.persons (id, congregation_id) on delete set null (person_id)
 );
 
+-- Öffentliches Zeugnisgeben mit Stand oder Trolley (T120, Phase 3). Gemessen am
+-- Königreichsdienst: Die Ältestenschaft organisiert es, am besten immer am
+-- selben Ort, am selben Wochentag und zur selben Uhrzeit (Nov. 2013); ein
+-- Infostand wird immer von zwei Verkündigern betreut (Nov. 2014).
+--
+-- Ein **Termin** ist die wöchentliche Regel; die Schicht einer Woche wird nicht
+-- gespeichert, nur ihre **Einträge** — je Person einer. So darf ein Verkündiger
+-- sich selbst eintragen (RLS unten), ohne die Zeilen anderer anzufassen, und
+-- zwei, die gleichzeitig den letzten Platz wollen, überschreiben sich nicht:
+-- Der Trigger `oz_platz_pruefen` lässt nur so viele Einträge zu, wie der Termin
+-- Plätze hat.
+create table if not exists public.oz_termine (
+  -- `text` wie bei `fs_rules`: Die Kennung vergibt der Client (`t<uuid>`).
+  id              text primary key check (id <> ''),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  wd              smallint not null check (wd between 0 and 6),  -- 0 = Sonntag
+  von             time not null,
+  bis             time not null,
+  ort             text not null default '',
+  plaetze         smallint not null default 2 check (plaetze between 1 and 6),
+  created_at      timestamptz not null default now(),
+
+  unique (id, congregation_id)                      -- Ziel der Verweise der Einträge
+);
+
+create index if not exists oz_termine_congregation_idx
+  on public.oz_termine (congregation_id);
+
+create table if not exists public.oz_eintraege (
+  -- Die Kennung vergibt der Client (`z<uuid>`); sie steckt im Aufgaben-Schlüssel
+  -- (`oz|<montag>|<id>`), an dem Zusage und Erinnerung hängen.
+  id              text primary key check (id <> ''),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  termin_id       text not null,
+  datum           date not null,                    -- der Tag der Schicht
+  person_id       uuid not null,
+  -- Selbst eingetragen: Damit hat die Person zugesagt. Sonst vom Planer zugeteilt.
+  selbst          boolean not null default false,
+  created_at      timestamptz not null default now(),
+
+  -- Dieselbe Person nur einmal je Schicht — zugleich der Index fürs Zählen.
+  unique (termin_id, datum, person_id),
+  constraint oz_eintraege_termin_fk foreign key (termin_id, congregation_id)
+    references public.oz_termine (id, congregation_id) on delete cascade,
+  -- Geht die Person, geht ihr Eintrag: Der Platz ist dann wieder frei.
+  constraint oz_eintraege_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade
+);
+
+create index if not exists oz_eintraege_congregation_idx
+  on public.oz_eintraege (congregation_id, datum);
+
 -- Versand-Tagebuch der Erinnerungen: send-reminders trägt ein, wem es an
 -- welchem Tag welche Art geschickt hat, und überspringt beim zweiten Lauf am
 -- selben Tag die schon Erledigten — sonst käme dieselbe Push doppelt an.
@@ -577,6 +629,54 @@ as $$
   )
 $$;
 
+-- Hat die eigene Person den Aufgabenbereich „Öffentliches Zeugnisgeben"
+-- (`persons.priv.zeugnis`, T120)? Nur dann darf sie sich selbst eintragen.
+create or replace function public.darf_zeugnis()
+returns boolean
+language sql stable security definer
+set search_path = public
+as $$
+  select coalesce((
+    select (p.priv ->> 'zeugnis')::boolean
+    from public.persons p
+    where p.id = public.my_person_id()
+  ), false)
+$$;
+
+-- Nie mehr Einträge als Plätze, und nur am Wochentag des Termins.
+--
+-- `security definer`, weil die Sperre (`for update`) auf dem Termin sonst eine
+-- Schreib-Richtlinie bräuchte, die ein Verkündiger nicht hat. Die Sperre ist der
+-- Kern: Zwei, die gleichzeitig den letzten Platz nehmen, zählen sonst beide noch
+-- einen freien. Mit ihr wartet der zweite, zählt danach und wird abgewiesen.
+create or replace function public.oz_platz_pruefen()
+returns trigger
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  termin public.oz_termine%rowtype;
+begin
+  select * into termin from public.oz_termine where id = new.termin_id for update;
+  if not found then
+    raise exception 'oz_termin_fehlt' using errcode = 'foreign_key_violation';
+  end if;
+  if extract(dow from new.datum)::int <> termin.wd then
+    raise exception 'oz_falscher_tag' using errcode = 'check_violation';
+  end if;
+  if (select count(*) from public.oz_eintraege
+      where termin_id = new.termin_id and datum = new.datum) >= termin.plaetze then
+    raise exception 'oz_voll' using errcode = 'check_violation';
+  end if;
+  return new;
+end
+$$;
+
+drop trigger if exists oz_eintraege_platz on public.oz_eintraege;
+create trigger oz_eintraege_platz
+  before insert on public.oz_eintraege
+  for each row execute function public.oz_platz_pruefen();
+
 -- Name der eigenen Person — wie `displayName()` in der App: Vor- und Nachname.
 -- Gebraucht für Plätze, die nur einen Namen tragen und keine Person-Id: Ein
 -- Import ordnet einen mehrdeutigen Namen bewusst keiner Person zu, und von
@@ -607,6 +707,7 @@ $$;
 --   <woche>|<mid|we>|ratgeber                 Ratgeber der Zusätzlichen Klasse
 --   <woche>|<mid|we>|helper|<dienst>|<pos>    Hilfsdienst
 --   fs|<montag>|<instanzId>                   Treffpunkt-Leitung
+--   oz|<montag>|<eintragId>                   Öffentliches Zeugnisgeben (T120)
 --
 -- **Unbekannte Formen bleiben erlaubt.** Eine zu strenge Richtlinie bricht das
 -- Bestätigen fast lautlos (der Client schreibt fire-and-forget); eine erfundene
@@ -652,6 +753,26 @@ begin
     if coalesce(slot->>'lext', 'false') = 'true' then return false; end if;
     return slot->>'lpid' = meine::text
         or (slot->>'lpid' is null and slot->>'leader' = public.mein_anzeigename());
+  end if;
+
+  -- Öffentliches Zeugnisgeben (T120): Der Schlüssel trägt die Kennung des
+  -- Eintrags, und ein Eintrag gehört genau einer Person — nachgeschlagen wird
+  -- die Zeile, kein JSONB. Der Montag muss zu ihrem Tag passen: dieselbe Art in
+  -- fremder Schreibweise bleibt draußen, wie bei den übrigen Formen.
+  --
+  -- **Ohne diesen Zweig liefe die Form unten durch** („keine der bekannten
+  -- Formen") — jedes Mitglied hätte fremde Einträge bestätigen oder absagen
+  -- können.
+  if n = 3 and teile[1] = 'oz' then
+    if meine is null then return false; end if;
+    return exists (
+      select 1
+        from public.oz_eintraege e
+       where e.congregation_id = cong
+         and e.id = teile[3]
+         and e.person_id = meine
+         and to_char(e.datum - (extract(isodow from e.datum)::int - 1), 'YYYY-MM-DD') = teile[2]
+    );
   end if;
 
   -- Alles Übrige hängt an einer Zusammenkunft. Was nicht so aussieht, ist keine
@@ -951,6 +1072,49 @@ create policy gruppenbesuche_write on public.gruppenbesuche
   for all
   using (congregation_id = public.my_congregation_id() and public.is_planner())
   with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+-- Öffentliches Zeugnisgeben: Termine pflegen nur Planer; die Einträge sieht die
+-- ganze Versammlung (freie Plätze will jeder sehen). Ein Verkündiger mit dem
+-- Aufgabenbereich trägt **sich selbst** ein (`selbst`) und wieder aus — mehr
+-- nicht: Er kann niemand anderen eintragen und keinen fremden Eintrag löschen.
+-- Ändern (`update`) gibt es für ihn nicht.
+alter table public.oz_termine enable row level security;
+alter table public.oz_eintraege enable row level security;
+
+drop policy if exists oz_termine_select on public.oz_termine;
+create policy oz_termine_select on public.oz_termine
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists oz_termine_write on public.oz_termine;
+create policy oz_termine_write on public.oz_termine
+  for all
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+drop policy if exists oz_eintraege_select on public.oz_eintraege;
+create policy oz_eintraege_select on public.oz_eintraege
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists oz_eintraege_planer on public.oz_eintraege;
+create policy oz_eintraege_planer on public.oz_eintraege
+  for all
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+drop policy if exists oz_eintraege_selbst_rein on public.oz_eintraege;
+create policy oz_eintraege_selbst_rein on public.oz_eintraege
+  for insert
+  with check (
+    congregation_id = public.my_congregation_id()
+    and person_id = public.my_person_id()
+    and selbst
+    and public.darf_zeugnis()
+  );
+
+drop policy if exists oz_eintraege_selbst_raus on public.oz_eintraege;
+create policy oz_eintraege_selbst_raus on public.oz_eintraege
+  for delete
+  using (congregation_id = public.my_congregation_id() and person_id = public.my_person_id());
 
 -- Versand-Tagebuch: bewusst ohne Policy. RLS ohne Policy sperrt alles; die
 -- Edge Function arbeitet mit der Service-Role und umgeht RLS.

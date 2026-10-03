@@ -28,6 +28,8 @@ import type {
   Gruppenbesuch,
   Invite,
   MeetingTimes,
+  OzEintrag,
+  OzTermin,
   Member,
   Notification,
   NotificationType,
@@ -100,6 +102,64 @@ function gruppenbesuchFromRow(r: GruppenbesuchRow): Gruppenbesuch {
 
 function gruppenbesuchToRow(b: Gruppenbesuch, congregationId: string) {
   return { id: b.id, congregation_id: congregationId, woche: b.woche, grp: b.grp, person_id: b.pid }
+}
+
+/** Öffentliches Zeugnisgeben (T120): ein Termin, eine Zeile. */
+interface OzTerminRow {
+  id: string
+  wd: number
+  von: string
+  bis: string
+  ort: string
+  plaetze: number
+}
+
+function ozTerminFromRow(r: OzTerminRow): OzTermin {
+  // `time` kommt als „10:00:00" — die App führt „10:00", wie bei den Regeln.
+  return { id: r.id, wd: r.wd, von: kurzeZeit(r.von, '00:00'), bis: kurzeZeit(r.bis, '00:00'), ort: r.ort, plaetze: r.plaetze }
+}
+
+function ozTerminToRow(t: OzTermin, congregationId: string) {
+  return { id: t.id, congregation_id: congregationId, wd: t.wd, von: t.von, bis: t.bis, ort: t.ort, plaetze: t.plaetze }
+}
+
+/** Ein Eintrag: eine Person in einer Schicht. */
+interface OzEintragRow {
+  id: string
+  termin_id: string
+  datum: string
+  person_id: string
+  selbst: boolean
+}
+
+function ozEintragFromRow(r: OzEintragRow): OzEintrag {
+  return { id: r.id, terminId: r.termin_id, datum: r.datum, pid: r.person_id, selbst: r.selbst }
+}
+
+function ozEintragToRow(e: OzEintrag, congregationId: string) {
+  return {
+    id: e.id,
+    congregation_id: congregationId,
+    termin_id: e.terminId,
+    datum: e.datum,
+    person_id: e.pid,
+    selbst: e.selbst,
+  }
+}
+
+/**
+ * Wie weit die Einträge des öffentlichen Zeugnisgebens zurück geladen werden:
+ * ein Vierteljahr. Die Auto-Zuteilung zählt sie mit (`bisher` in
+ * `ozAutoAssign`), damit es über die Vierteljahre hinweg reihum geht — mehr
+ * braucht es nicht, eine Schicht ist danach Geschichte.
+ */
+export const OZ_RUECKBLICK_TAGE = 91
+
+/** Der erste Tag, ab dem Einträge geladen werden (ISO). */
+function ozLadeAb(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - OZ_RUECKBLICK_TAGE)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 /**
@@ -471,6 +531,9 @@ export interface CongregationData {
   fsWeeks: FsInstance[][]
   /** Besuche des Dienstaufsehers (T120), aufsteigend nach Woche — nicht an das Ladefenster gebunden. */
   gruppenbesuche: Gruppenbesuch[]
+  /** Öffentliches Zeugnisgeben (T120): Termine und die Einträge ab `OZ_RUECKBLICK_TAGE` zurück. */
+  ozTermine: OzTermin[]
+  ozEintraege: OzEintrag[]
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -529,7 +592,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -572,6 +635,19 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .select('id, woche, grp, person_id')
       .eq('congregation_id', congregationId)
       .order('woche'),
+    // Öffentliches Zeugnisgeben (T120): alle Termine, die Einträge ab einem
+    // Vierteljahr zurück.
+    supabase
+      .from('oz_termine')
+      .select('id, wd, von, bis, ort, plaetze')
+      .eq('congregation_id', congregationId)
+      .order('created_at'),
+    supabase
+      .from('oz_eintraege')
+      .select('id, termin_id, datum, person_id, selbst')
+      .eq('congregation_id', congregationId)
+      .gte('datum', ozLadeAb())
+      .order('datum'),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -592,6 +668,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
   if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
+  // Ebenso das öffentliche Zeugnisgeben (T120, Phase 3).
+  if (ozTerminRows.error) console.error('[oz_termine]', ozTerminRows.error.message)
+  if (ozEintragRows.error) console.error('[oz_eintraege]', ozEintragRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
@@ -683,6 +762,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsRules,
     fsWeeks,
     gruppenbesuche: ((besuchRows.data ?? []) as GruppenbesuchRow[]).map(gruppenbesuchFromRow),
+    ozTermine: ((ozTerminRows.data ?? []) as OzTerminRow[]).map(ozTerminFromRow),
+    ozEintraege: ((ozEintragRows.data ?? []) as OzEintragRow[]).map(ozEintragFromRow),
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
@@ -970,6 +1051,82 @@ export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuc
   )
 }
 
+/**
+ * Schreibvorgänge des öffentlichen Zeugnisgebens **hintereinander**.
+ *
+ * Ein Eintrag zeigt auf seinen Termin (Fremdschlüssel, Trigger
+ * `oz_platz_pruefen`). Liefe sein Einfügen neben dem Anlegen des Termins her,
+ * könnte es zuerst ankommen und abgewiesen werden — „Termin hinzufügen" und
+ * gleich darauf „Automatisch zuteilen" genügten dafür. Hintereinander kommt
+ * jede Zeile in der Reihenfolge an, in der der Planer gehandelt hat.
+ */
+let ozWarteschlange: Promise<void> = Promise.resolve()
+
+function ozNacheinander(schreiben: () => Promise<{ error: { message: string } | null }>): void {
+  ozWarteschlange = ozWarteschlange
+    .then(() => run(schreiben()))
+    // Ein Netzfehler darf die Schlange nicht anhalten — sonst ginge nach ihm
+    // gar nichts mehr hinaus.
+    .catch((err: unknown) => schreibfehler({ message: err instanceof Error ? err.message : String(err) }))
+}
+
+/**
+ * Termine des öffentlichen Zeugnisgebens (T120) — wie der Grundplan: Geschrieben
+ * wird, was dieser Planer angelegt oder geändert hat, gelöscht, was er
+ * entfernt hat; die Einträge eines gelöschten Termins gehen per Kaskade mit.
+ */
+export function saveOzTermine(congregationId: string, termine: OzTermin[], entfernt: string[] = []): void {
+  if (!supabase) return
+  const client = supabase
+  ozNacheinander(
+    async () => {
+      if (entfernt.length) {
+        const { error } = await client
+          .from('oz_termine')
+          .delete()
+          .eq('congregation_id', congregationId)
+          .in('id', entfernt)
+        if (error) return { error }
+      }
+      if (!termine.length) return { error: null }
+      return await client.from('oz_termine').upsert(termine.map((t) => ozTerminToRow(t, congregationId)))
+    },
+  )
+}
+
+/**
+ * Einträge des öffentlichen Zeugnisgebens (T120): neue einfügen, entfernte
+ * löschen — geändert wird ein Eintrag nie, nur ersetzt.
+ *
+ * **Einfügen, nicht upserten.** Ein Verkündiger darf nur einfügen (RLS), und
+ * der Trigger `oz_platz_pruefen` prüft die Plätze nur beim Einfügen. Ist der
+ * letzte Platz inzwischen vergeben, weist die Datenbank ab; der Konfliktmelder
+ * lädt dann nach, damit die Ansicht zeigt, wer den Platz bekommen hat.
+ */
+export function saveOzEintraege(congregationId: string, neu: OzEintrag[], entfernt: string[] = []): void {
+  if (!supabase) return
+  const client = supabase
+  ozNacheinander(
+    async () => {
+      if (entfernt.length) {
+        const { error } = await client
+          .from('oz_eintraege')
+          .delete()
+          .eq('congregation_id', congregationId)
+          .in('id', entfernt)
+        if (error) return { error }
+      }
+      if (!neu.length) return { error: null }
+      const { error } = await client.from('oz_eintraege').insert(neu.map((e) => ozEintragToRow(e, congregationId)))
+      if (error && (error.code === '23505' || /oz_voll/.test(error.message))) {
+        konfliktMelder?.()
+        return { error: null }
+      }
+      return { error }
+    },
+  )
+}
+
 /** Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]). */
 export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): void {
   if (!supabase || !woche) return
@@ -1232,6 +1389,28 @@ export async function sendPlan(weekStart: string, heute: string): Promise<PlanVe
   })
   if (error) {
     console.error('[send-plan]', error.message)
+    return null
+  }
+  const res = data as Partial<PlanVersand> | null
+  return {
+    personen: res?.personen ?? 0,
+    ohneKonto: res?.ohneKonto ?? [],
+  }
+}
+
+/**
+ * „Plan senden" im öffentlichen Zeugnisgeben (T120): Wer **zugeteilt** wurde
+ * und davon noch nichts weiß, bekommt eine Nachricht — über alle kommenden
+ * Schichten, nicht je Woche. Die meisten Einträge entstehen dort durch
+ * Selbsteintragen; wer sich selbst einträgt, weiß Bescheid.
+ */
+export async function sendZeugnisPlan(heute: string): Promise<PlanVersand | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('send-plan', {
+    body: { action: 'zeugnis', heute },
+  })
+  if (error) {
+    console.error('[send-plan/zeugnis]', error.message)
     return null
   }
   const res = data as Partial<PlanVersand> | null

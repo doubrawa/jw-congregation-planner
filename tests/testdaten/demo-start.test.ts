@@ -127,6 +127,7 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
   it('fb=<Bereich> wählt den Reiter im Predigtdienst (T120) — nur bekannte Bereiche', () => {
     expect(entwicklerStart('#s=planen&tab=fs&fb=gruppenbesuche').fsBereich).toBe('gruppenbesuche')
     expect(entwicklerStart('#s=planen&tab=fs&fb=grundplan').fsBereich).toBe('grundplan')
+    expect(entwicklerStart('#s=planen&tab=fs&fb=zeugnis').fsBereich).toBe('zeugnis')
     expect(entwicklerStart('#s=planen&tab=fs&fb=quatsch').fsBereich).toBe('treffpunkte')
   })
 
@@ -135,6 +136,17 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     // machten jede Ansicht des Predigtdienstes vom Kalender abhängig.
     expect(entwicklerStart('').gruppenbesuche.length).toBeGreaterThan(0)
     expect(demoZustand().gruppenbesuche).toEqual([])
+  })
+
+  it('ebenso das öffentliche Zeugnisgeben, samt Aufgabenbereich — der Testbestand nicht', () => {
+    const seite = entwicklerStart('')
+    expect(seite.ozTermine.length).toBeGreaterThan(0)
+    expect(seite.ozEintraege.length).toBeGreaterThan(0)
+    expect(seite.persons.find((p) => p.id === 'p9')?.priv.zeugnis).toBe(true)
+    const tests = demoZustand()
+    expect(tests.ozTermine).toEqual([])
+    expect(tests.ozEintraege).toEqual([])
+    expect(tests.persons.some((p) => p.priv.zeugnis)).toBe(false)
   })
 
   it('fs=<Faktor> setzt die Schriftgröße — nur Stufen der Skala', () => {

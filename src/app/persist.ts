@@ -7,6 +7,9 @@
 
 import { fsTaskKeyWoche } from '../data/fs'
 import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
+import { ozEntzogeneZusagen } from '../data/zeugnis'
+import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { eigenePerson } from './eigene-person'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
@@ -30,6 +33,8 @@ import {
   saveInvite,
   saveInvitePlanner,
   saveMemberRow,
+  saveOzEintraege,
+  saveOzTermine,
   savePerson,
   savePersonGroup,
   saveService,
@@ -152,6 +157,16 @@ const fsRuleSaves = createDebouncedWriter<
 >(
   SAVE_DELAY,
   (_key, { congId, rules, entfernt }) => saveFsRules(congId, rules, entfernt),
+  (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
+)
+// Die Termine des öffentlichen Zeugnisgebens: derselbe Weg wie der Grundplan —
+// der Ort ist ein Freitextfeld, und entfernte Termine sammeln sich.
+const ozTerminSaves = createDebouncedWriter<
+  'termine',
+  { congId: string; termine: AppState['ozTermine']; entfernt: string[] }
+>(
+  SAVE_DELAY,
+  (_key, { congId, termine, entfernt }) => saveOzTermine(congId, termine, entfernt),
   (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
 )
 
@@ -309,8 +324,10 @@ function wochePlanen(congId: string, weeks: Week[], wi: number): void {
  * removeService), nur `lacRemove` las ab. Eine künftige Ausnahme im Reducer
  * kommt so von selbst in der Datenbank an.
  *
- * Die Zusammenkunfts-Schlüssel gehen sofort hinaus (Block unter dem Switch);
- * die Treffpunkt-Schlüssel **erst mit dem Schreiben ihrer Woche**
+ * Die Zusammenkunfts-Schlüssel gehen sofort hinaus (Block unter dem Switch),
+ * ebenso die des öffentlichen Zeugnisgebens (`oz|…`): Deren Eintrag ist mit
+ * dieser Aktion gelöscht, auf kein Wochenblatt muss gewartet werden. Die
+ * Treffpunkt-Schlüssel gehen **erst mit dem Schreiben ihrer Woche**
  * (`fsWocheSpeichern`, `fsWochePlanen`): Fehlt die Woche, behält die
  * Datenbank den alten Leiter, also gehört ihm auch weiter seine Zusage.
  *
@@ -435,6 +452,35 @@ function besucheSpeichern(
   }
 }
 
+/**
+ * Öffentliches Zeugnisgeben (T120): Termine gebündelt, Einträge sofort.
+ *
+ * Geschrieben wird je Zeile nur, was sich geändert hat, und gelöscht nur, was
+ * hier entfernt wurde — wie bei den Gruppenbesuchen. Ein Eintrag wird nie
+ * geändert, nur angelegt oder entfernt; die Datenbank prüft beim Anlegen, ob
+ * der Platz noch frei ist (`oz_platz_pruefen`).
+ *
+ * **Erst die Termine.** Ein neuer Eintrag zeigt womöglich auf einen Termin,
+ * der noch im Bündel wartet — „Termin hinzufügen" und gleich darauf
+ * „Automatisch zuteilen". Der Termin geht deshalb vorher hinaus, und die
+ * Schreibschicht hält die Reihenfolge (`ozNacheinander` in `lib/data.ts`).
+ */
+function zeugnisSpeichern(congId: string, prev: AppState, next: AppState): void {
+  if (next.ozTermine !== prev.ozTermine) {
+    const bleibt = new Set(next.ozTermine.map((t) => t.id))
+    const entfernt = prev.ozTermine.filter((t) => !bleibt.has(t.id)).map((t) => t.id)
+    ozTerminSaves.schedule('termine', { congId, termine: next.ozTermine, entfernt })
+  }
+  if (next.ozEintraege === prev.ozEintraege) return
+  const vorher = new Set(prev.ozEintraege.map((e) => e.id))
+  const neu = next.ozEintraege.filter((e) => !vorher.has(e.id))
+  const bleibt = new Set(next.ozEintraege.map((e) => e.id))
+  const entfernt = prev.ozEintraege.filter((e) => !bleibt.has(e.id)).map((e) => e.id)
+  if (!neu.length && !entfernt.length) return
+  ozTerminSaves.flush()
+  saveOzEintraege(congId, neu, entfernt)
+}
+
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -503,6 +549,16 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'besucheLeeren':
       // Die Besuche und die Treffpunkte, in die sie eingetragen wurden.
       besucheSpeichern(congId, prev, next, fsVerwaist)
+      break
+    case 'ozTerminAdd':
+    case 'ozTerminUpdate':
+    case 'ozTerminRemove':
+    case 'ozEintragen':
+    case 'ozZuteilen':
+    case 'ozAustragen':
+    case 'ozAutoAssign':
+    case 'ozLeeren':
+      zeugnisSpeichern(congId, prev, next)
       break
     case 'addPerson':
       savePerson(congId, action.person)
@@ -704,6 +760,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     case 'declineTask':
+      // Öffentliches Zeugnisgeben: Die Absage gibt den Platz frei, statt eine
+      // Verhinderung zu hinterlegen (`ozAbsage` im Reducer). Die Planer
+      // erfahren es über die Mitteilung unter dem Switch.
+      if (schluesselTeile(action.id)?.art === 'oz') {
+        zeugnisSpeichern(congId, prev, next)
+        break
+      }
       saveConfirmation(congId, userId, action.id, 'verhindert')
       // Hilfsdienst: automatisch Ersatz suchen (qualifizierte Personen anpingen).
       if (helperKeyParts(action.id)) substituteSeek(action.id)
@@ -797,7 +860,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * ersetzt, und ein Neuladen nach einem Schreibkonflikt brächte sonst Wochen
    * voller vermeintlicher Entzüge hervor.
    */
-  if (action.type !== 'hydrate' && (prev.weeks !== next.weeks || prev.fsWeeks !== next.fsWeeks)) {
+  if (action.type !== 'hydrate') {
     /*
      * **Erst sammeln, dann einmal schicken.** Je Entzug ein eigener Aufruf
      * hieß: Die Function las für jeden davon aufs Neue alle Mitglieder, alle
@@ -808,21 +871,35 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
      * eine Nachricht statt zweier.
      */
     const entzogen: EntzogeneZusage[] = []
-    for (let wi = 0; wi < prev.weeks.length; wi++) {
-      // Unberührte Wochen behalten ihre Referenz — der Vergleich kostet nichts.
-      if (prev.weeks[wi] === next.weeks[wi] && prev.fsWeeks[wi] === next.fsWeeks[wi]) continue
-      entzogen.push(
-        ...entzogeneZusagen(
-          prev.weeks[wi],
-          next.weeks[wi],
-          prev.fsWeeks[wi],
-          next.fsWeeks[wi],
-          prev.services,
-          prev.congregation.times,
-          prev.confirmations,
-        ),
-      )
+    if (prev.weeks !== next.weeks || prev.fsWeeks !== next.fsWeeks) {
+      for (let wi = 0; wi < prev.weeks.length; wi++) {
+        // Unberührte Wochen behalten ihre Referenz — der Vergleich kostet nichts.
+        if (prev.weeks[wi] === next.weeks[wi] && prev.fsWeeks[wi] === next.fsWeeks[wi]) continue
+        entzogen.push(
+          ...entzogeneZusagen(
+            prev.weeks[wi],
+            next.weeks[wi],
+            prev.fsWeeks[wi],
+            next.fsWeeks[wi],
+            prev.services,
+            prev.congregation.times,
+            prev.confirmations,
+          ),
+        )
+      }
     }
+    // Öffentliches Zeugnisgeben (T120): dieselbe Frage an die dritte Quelle.
+    // Wer sich selbst austrägt, sagt ab — das ist keine Wegnahme (`ausser`).
+    entzogen.push(
+      ...ozEntzogeneZusagen(
+        prev.ozTermine,
+        prev.ozEintraege,
+        next.ozEintraege,
+        next.persons,
+        prev.confirmations,
+        eigenePerson(prev)?.id,
+      ),
+    )
     // Der Regelfall: nichts verloren, nichts zu schicken.
     if (entzogen.length > 0) sendPlanEntzug(entzogen)
   }

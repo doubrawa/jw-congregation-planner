@@ -633,7 +633,11 @@ Und drei Takte:
    ansprechen muss. Gelesen werden Bestätigungen und Tagebuch nur für **diese**
    Woche — die steht im Aufgaben-Schlüssel selbst, in zwei Formen
    (`<Montag>|…` und `fs|<Montag>|…`); beide Tabellen wachsen sonst ungebremst
-   in jeden Knopfdruck hinein.
+   in jeden Knopfdruck hinein. Das **öffentliche Zeugnisgeben** (T120) hat einen
+   eigenen Knopf (Aktion `zeugnis`): über alle kommenden Schichten statt je
+   Woche, nur an Zugeteilte — wer sich selbst einträgt, hat damit zugesagt. Sein
+   Schlüssel `oz|<Montag>|<Eintrag>` gehört deshalb nicht zu den Präfixen der
+   Woche.
 2. **Sofort.** Was eine Zusage bricht oder Eile hat: eine bestätigte Zuteilung
    wird zurückgezogen (`send-plan`, Aktion `entzug`), ein Hilfsdienst wird
    abgesagt und ein Ersatz gesucht, jemand springt ein — oder der Absagende
