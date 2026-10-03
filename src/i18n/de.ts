@@ -6,9 +6,12 @@
 
 export const DE = {
     congLabel: 'Versammlung {name}',
-    navStart: 'Start', navProgramm: 'Programm', navAufgaben: 'Aufgaben', navAufgabenLong: 'Meine Aufgaben',
-    navPlanen: 'Planen', navPersonen: 'Personen', navEinstellungen: 'Einstellungen',
+    navStart: 'Start', navAufgaben: 'Aufgaben', navAufgabenLong: 'Meine Aufgaben',
+    navPersonen: 'Personen', navEinstellungen: 'Einstellungen',
     navProfil: 'Profil', menueLbl: 'Menü',
+    // Hauptmenü nach Themen (T120): das Thema „Zusammenkünfte", die Überschrift
+    // des Admin-Abschnitts und die erste Stellung des Schalters Ansehen/Planen.
+    navZusammenkuenfte: 'Zusammenkünfte', navVerwaltung: 'Verwaltung', ansehen: 'Ansehen',
     abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger',
     // Offline-Stand (lib/snapshot.ts): {m} = Zeitpunkt der Momentaufnahme
     offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich',
@@ -39,7 +42,11 @@ export const DE = {
     fsAddWeekLbl: 'TREFFPUNKT FÜR DIESE WOCHE HINZUFÜGEN', fsAdd: '+ TREFFPUNKT HINZUFÜGEN',
     fsOrtPh: 'Ort (z. B. Königreichssaal)',
     toastFsAdd: 'Treffpunkt hinzugefügt', toastFsDel: 'Treffpunkt entfernt',
-    fsGrundDesc: 'Regelmäßige Zeiten und Orte. Änderungen setzen die Wochenpläne neu auf; einzelne Wochen passt du im Planen-Tab an.',
+    // Die Reiter des Predigtdienstes beim Planen (T120). Nicht `fsShort`: Das
+    // steht in vielen Sprachen gleich wie `tabFs` („Field Service") und hieße
+    // dort unter dem Thema noch einmal genauso.
+    fsTreffpunkteTab: 'Treffpunkte', fsGrundplan: 'Grundplan',
+    fsGrundDesc: 'Regelmäßige Zeiten und Orte. Änderungen setzen die Wochenpläne neu auf; einzelne Wochen passt du unter „Treffpunkte“ an.',
     fsFreqW: 'Jede Woche', fsFreqM1: 'Jeden 1. im Monat', fsFreqM2: 'Jeden 2. im Monat',
     fsFreqM3: 'Jeden 3. im Monat', fsFreqM4: 'Jeden 4. im Monat',
     fsSkipCong: 'Außer bei Versammlungstreffpunkt',

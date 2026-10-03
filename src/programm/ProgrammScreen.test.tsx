@@ -130,10 +130,44 @@ describe('Kopf und Navigation', () => {
     expect(pfeile.every((b) => b.disabled)).toBe(true)
   })
 
-  it('drei Reiter: unter der Woche, Wochenende, Treffpunkte', () => {
+  it('zwei Reiter: unter der Woche und Wochenende', () => {
+    // Die Treffpunkte waren bis T120 ein dritter Reiter; sie sind jetzt das
+    // Thema Predigtdienst und stehen im Menü.
     const { container } = zeige()
     const reiter = [...seite(container).querySelectorAll('.prog-tabs button')].map((b) => b.textContent)
-    expect(reiter).toHaveLength(3)
+    expect(reiter).toEqual(['Dienstag', 'Sonntag'])
+  })
+
+  it('der Predigtdienst hat keine Reiter der Zusammenkünfte', () => {
+    const { container } = zeige({ tab: 'fs' })
+    expect(seite(container).querySelector('.prog-tabs')).toBeNull()
+  })
+
+  it('der Kopf nennt das Thema — den Schalter zum Planen sieht nur, wer es planen darf (T120)', () => {
+    const titel = (c: HTMLElement) => seite(c).querySelector('.thema-kopf .screen-title')?.textContent
+    const schalter = (c: HTMLElement) => seite(c).querySelector('.modus-schalter')
+    // Verkündiger: nur Ansehen, also gar kein Schalter.
+    const verk = zeige()
+    expect(titel(verk.container)).toBe(t.navZusammenkuenfte)
+    expect(schalter(verk.container)).toBeNull()
+    cleanup()
+    // Planer: der Schalter, „Ansehen" gedrückt; „Planen" bleibt beim Thema.
+    const planer = zeige({ planner: true, tab: 'fs' })
+    expect(titel(planer.container)).toBe(t.tabFs)
+    const knoepfe = [...schalter(planer.container)!.querySelectorAll('button')]
+    expect(knoepfe.map((b) => [b.textContent, b.getAttribute('aria-pressed')])).toEqual([
+      [t.ansehen, 'true'],
+      [t.planen, 'false'],
+    ])
+    fireEvent.click(knoepfe[1]!)
+    expect(planer.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+  })
+
+  it('der Gruppenaufseher sieht den Schalter nur im Predigtdienst', () => {
+    const gruppen = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-a', assistantId: null }]
+    expect(seite(zeige({ groups: gruppen, tab: 'fs' }).container).querySelector('.modus-schalter')).toBeTruthy()
+    cleanup()
+    expect(seite(zeige({ groups: gruppen, tab: 'mid' }).container).querySelector('.modus-schalter')).toBeNull()
   })
 
   it('der Reiter-Wechsel schlägt durch', () => {

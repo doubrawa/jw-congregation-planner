@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
+import { ThemaKopf } from '../components/ThemaKopf'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { AusfallBanner, MemorialBanner, WeekChips } from '../components/WeekBadges'
@@ -11,7 +12,9 @@ import { ConflictsBanner, EngpassBanner, FsConflictsBanner, OpenSlotsBanner } fr
 import { PlanSendenPanel } from './PlanSendenPanel'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
+import { FsBereichTabs } from './FsBereichTabs'
 import { FsPlan } from './FsPlan'
+import { FsRulesPanel } from './FsRulesPanel'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { WochePanel } from './WochePanel'
 import { HelpersPanel } from './HelpersPanel'
@@ -25,8 +28,28 @@ import './planen.css'
  * ihrer Zusage (grün bestätigt, gelb wartet, rot abgesagt). „Unser Leben als
  * Christ" ist editierbar. Der Screen orchestriert nur; Banner, Abschnitte und
  * Hilfsdienste sind eigene Bausteine.
+ *
+ * Seit T120 die Planen-Seite **beider Themen**: der Zusammenkünfte und des
+ * Predigtdienstes. Welches gerade gezeigt wird, sagt der Reiter (`themaVon`).
  */
 export function PlanenScreen() {
+  const { state } = useApp()
+  const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
+  const fsOverseer = !state.planner && myFsGroup !== null
+
+  // Der Grundplan hat keine Woche: Er steht ohne den Wochenstreifen da — und
+  // auch, solange noch gar keine Woche geladen ist, denn eine neue Versammlung
+  // richtet ihn ein, bevor sie importiert.
+  if ((state.tab === 'fs' || fsOverseer) && state.fsBereich === 'grundplan') {
+    return (
+      <section className="screen">
+        <ThemaKopf thema="predigtdienst" />
+        <FsBereichTabs />
+        <FsRulesPanel onlyGroup={fsOverseer ? myFsGroup : null} />
+      </section>
+    )
+  }
+
   // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
   // nächste Woche — und übernimmt das Wischen.
   return (
@@ -45,13 +68,19 @@ function PlanenBody() {
   const rawWeek = state.weeks[state.week]
   const { week, tpw } = useProgWeek(rawWeek)
 
-  // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
+  // Gruppenaufseher (ohne volle Planer-Rechte): nur Treffpunkte der eigenen Gruppe.
+  const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
+  const fsOverseer = !state.planner && myFsGroup !== null
+  const isFs = state.tab === 'fs' || fsOverseer
+  const thema = isFs ? 'predigtdienst' : 'zusammenkuenfte'
+
+  // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis. Im
+  // Predigtdienst bleibt der Grundplan erreichbar.
   if (!rawWeek || !week) {
     return (
       <section className="screen">
-        <div className="screen-head">
-          <h1 className="screen-title">{t.planen}</h1>
-        </div>
+        <ThemaKopf thema={thema} />
+        {isFs && <FsBereichTabs />}
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
@@ -60,10 +89,6 @@ function PlanenBody() {
     )
   }
 
-  // Gruppenaufseher (ohne volle Planer-Rechte): nur Treffpunkte der eigenen Gruppe.
-  const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
-  const fsOverseer = !state.planner && myFsGroup !== null
-  const isFs = state.tab === 'fs' || fsOverseer
   // Die Bearbeiten-Ansicht (T64) gibt es nur für Planer — der Gruppenaufseher
   // sieht ohnehin nur seine Treffpunkte.
   const isEdit = state.tab === 'edit' && !fsOverseer
@@ -76,10 +101,14 @@ function PlanenBody() {
 
   return (
     <section className="screen">
-      <div className="screen-head">
-        <h1 className="screen-title">{t.planen}</h1>
-        {!isFs && <span className="screen-head-note">{fill(t.offeneZut, { n: openCount })}</span>}
-      </div>
+      <ThemaKopf
+        thema={thema}
+        zusatz={!isFs && <span className="screen-head-note">{fill(t.offeneZut, { n: openCount })}</span>}
+      />
+
+      {/* Die Reiter des Predigtdienstes stehen über der Woche: Der Grundplan
+          hat keine. */}
+      {isFs && <FsBereichTabs />}
 
       <WeekNav
         className="plan-week-nav"
@@ -93,12 +122,11 @@ function PlanenBody() {
 
       <WeekChips week={week} showCurrent={false} />
 
-      {!fsOverseer && (
+      {!isFs && (
         <MeetingTabs
           className="plan-tabs"
           tab={state.tab}
           week={rawWeek}
-          showFs
           showEdit
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />

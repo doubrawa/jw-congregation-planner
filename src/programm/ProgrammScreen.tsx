@@ -4,6 +4,7 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { istBlockSektion, mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
+import { ThemaKopf } from '../components/ThemaKopf'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, TerminListe, WeekChips } from '../components/WeekBadges'
@@ -80,7 +81,7 @@ function ProgrammBody() {
   if (!week || !rawWeek) {
     return (
       <section className="screen">
-        <h1 className="sr-only">{t.navProgramm}</h1>
+        <ThemaKopf />
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
@@ -99,7 +100,10 @@ function ProgrammBody() {
 
   return (
     <section className="screen">
-      <h1 className="sr-only">{t.navProgramm}</h1>
+      {/* Titel des Themas (T120) und, für wen es zu planen ist, der Schalter
+          Ansehen/Planen. Im Ausdruck fehlt beides; dort ordnet die Zeile
+          darunter das Blatt zu. */}
+      <ThemaKopf />
       {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
       <div className="prog-print-head">
         <span>{state.congregation.name}</span>
@@ -119,17 +123,20 @@ function ProgrammBody() {
       <WeekChips week={week} showCurrent istAktuell={currentWeekIndex(state.weeks) === state.week} />
 
       {/* Weitere Termine der Woche (T63): über den Reitern, weil sie zu keiner
-          der drei Zusammenkünfte gehören, sondern zur Woche — und damit auf
-          jedem Reiter sichtbar bleiben. */}
+          Zusammenkunft gehören, sondern zur Woche — und damit auf jedem Reiter
+          und bei beiden Themen sichtbar bleiben. */}
       <TerminListe week={rawWeek} />
 
-      <MeetingTabs
-        className="prog-tabs"
-        tab={state.tab}
-        week={rawWeek}
-        showFs
-        onChange={(tab) => dispatch({ type: 'setTab', tab })}
-      />
+      {/* Die Reiter gehören den Zusammenkünften; der Predigtdienst ist seit
+          T120 ein eigenes Thema im Menü. */}
+      {!isFs && (
+        <MeetingTabs
+          className="prog-tabs"
+          tab={state.tab}
+          week={rawWeek}
+          onChange={(tab) => dispatch({ type: 'setTab', tab })}
+        />
+      )}
 
       {isFs ? (
         <FsProgram />

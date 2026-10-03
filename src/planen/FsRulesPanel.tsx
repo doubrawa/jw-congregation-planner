@@ -2,13 +2,18 @@ import { useApp } from '../app/context'
 import { FS_TIME_OPTIONS } from '../data/fs'
 import { useT } from '../i18n/useT'
 import type { FsRule } from '../data/types'
-import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from '../planen/wochentage'
+import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
 import { Switch } from '../components/Switch'
+import './planen.css'
 
 /**
- * Grundplan der Treffpunkte (Einstellungen): regelmäßige Zeiten/Orte je
- * Versammlung und Gruppe. Regeln anlegen/ändern/löschen; jede Änderung setzt
- * die Wochenpläne neu auf (einzelne Wochen bleiben im Planen-Tab anpassbar).
+ * Grundplan der Treffpunkte (Predigtdienst › Planen › Grundplan): regelmäßige
+ * Zeiten/Orte je Versammlung und Gruppe. Regeln anlegen/ändern/löschen; jede
+ * Änderung setzt die Wochenpläne neu auf (einzelne Wochen bleiben unter
+ * „Treffpunkte" anpassbar).
+ *
+ * Stand bis T120 in den Einstellungen. Er gehört aber zum Predigtdienst — und
+ * der Gruppenaufseher brauchte die Einstellungen nur seinetwegen.
  *
  * **Eine Karte je Abschnitt, alle in derselben Farbe** (T108, Vorschlag des
  * Betreibers). Bis zum 21.9.2026 stand alles in einer Karte, getrennt nur von
@@ -57,7 +62,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                 <div className="fsr-line">
                   {/* Wochentag und Häufigkeit nebeneinander, solange beide ganz
                       lesbar sind — sonst bricht die Häufigkeit in eine zweite
-                      Reihe um, und das ✕ bleibt rechts daneben (einstellungen.css). */}
+                      Reihe um, und das ✕ bleibt rechts daneben (planen.css). */}
                   <div className="fsr-wahl">
                     <select
                       className="fs-select"

@@ -47,10 +47,10 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
   - **Offene Zuteilungen** – noch unbesetzte Plätze, auch Treffpunkte ohne Leiter,
   - **Plan senden** – Zuteilungen, von denen die Eingeteilten noch nichts wissen.
 
-  Die Zahlen gelten für die **ganze Woche**; in Planen verteilen sie sich auf die
-  Reiter. Ein Tipp auf die Zeile öffnet **Planen** genau auf dieser Woche – und
-  auf dem Reiter, in dem etwas zu tun ist (ist nur noch ein Treffpunkt-Leiter
-  zu benachrichtigen, bei den Treffpunkten).
+  Die Zahlen gelten für die **ganze Woche**; beim Planen verteilen sie sich auf
+  die Reiter. Ein Tipp auf die Zeile öffnet die **Planung** genau auf dieser
+  Woche – und auf dem Reiter, in dem etwas zu tun ist (ist nur noch ein
+  Treffpunkt-Leiter zu benachrichtigen, im Predigtdienst).
 - **Was vorbei ist, zählt nicht mehr.** Am Donnerstag nennt die Karte nur noch,
   was am Wochenende offen ist; den Dienstag kann niemand mehr besetzen. Die
   Karte merkt den Tageswechsel auch, wenn die App über Nacht offen war.
@@ -61,21 +61,30 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
 - Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
   darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
   angesehen.
-- Die Navigation links enthält zusätzlich **Planen**, **Personen** und
-  **Einstellungen** – diese Bereiche sehen nur Planer (und Gruppenaufseher einen
-  Teil davon). Gruppenaufseher sehen die Startseite wie Verkündiger, ohne
-  Planungs‑Karte.
+- Das Menü links ist nach Themen geordnet: oben **Start** und **Meine
+  Aufgaben**, darunter unter **Versammlung** die **Zusammenkünfte** und der
+  **Predigtdienst**, zuletzt unter **Verwaltung** die **Personen** und
+  **Einstellungen** – die Verwaltung sehen nur Planer. Dein **Profil** erreichst
+  du über deinen Namen ganz unten.
+- **Ansehen oder Planen.** Jedes Thema hat oben rechts einen Schalter: **Ansehen**
+  zeigt das Programm so, wie es alle sehen, **Planen** die Zuteilungen. Ein
+  Thema öffnet sich dort, wo du zuletzt warst – wer gerade plant, kommt beim
+  Wechsel von den Zusammenkünften zum Predigtdienst gleich in dessen Planung.
+- **Gruppenaufseher** planen nur den Predigtdienst ihrer Gruppe: Sie sehen den
+  Schalter nur dort, die Verwaltung gar nicht, und die Startseite wie
+  Verkündiger, ohne Planungs‑Karte.
 
 ---
 
 ## 2. Planen: Zuteilungen vornehmen
 
-Unter **Planen** teilst du die Aufgaben und Hilfsdienste einer Woche zu. Oben
-wechselst du zwischen **Zusammenkunft unter der Woche**, **am Wochenende** und den
-**Zusammenkünften für den Predigtdienst**; mit ‹ › wählst du die Woche – auf
-Handy und Tablet geht auch seitwärts wischen.
+Unter **Zusammenkünfte** schaltest du oben rechts auf **Planen** und teilst die
+Aufgaben und Hilfsdienste einer Woche zu. Die Reiter wechseln zwischen der
+**Zusammenkunft unter der Woche** und **am Wochenende**; die Zusammenkünfte für
+den Predigtdienst sind ein eigenes Thema im Menü (Abschnitt 5). Mit ‹ › wählst
+du die Woche – auf Handy und Tablet geht auch seitwärts wischen.
 
-Beim Öffnen stehen Planen und Programm auf der **nächsten** Zusammenkunft: am
+Beim Öffnen stehen Planen und Ansehen auf der **nächsten** Zusammenkunft: am
 Samstag also auf dem Wochenende, am Sonntagabend schon auf der Wochenmitte der
 kommenden Woche. Entfällt eine (Kongress, Gedächtnismahl), wird sie
 übersprungen. Sobald du selbst eine Woche oder einen Reiter wählst, bleibt es
@@ -165,8 +174,8 @@ Manchmal weicht eine Woche ab — mehrere Versammlungen teilen sich einen Saal,
 eine hat Dienstwoche, und ihr müsst euren Tag verschieben. Oder es ist
 Kongress und die Zusammenkunft entfällt ganz.
 
-Dafür gibt es im **Planen**-Tab einen eigenen Reiter neben „Dienstag",
-„Sonntag" und „Predigtdienst": den **Stift** (✎). Er gehört der ganzen Woche,
+Dafür gibt es beim Planen der Zusammenkünfte einen eigenen Reiter neben
+„Dienstag" und „Sonntag": den **Stift** (✎). Er gehört der ganzen Woche,
 nicht einer einzelnen Zusammenkunft — deshalb stellst du dort **beide**
 Zusammenkünfte ein, ohne den Reiter zu wechseln. Je Zusammenkunft steht ein
 Feld:
@@ -210,8 +219,9 @@ du brauchst. Jeder hat vier Felder, alle bis auf den Namen freiwillig:
 | **Uhrzeit** | |
 | **Ort** | Freitext, z. B. „Königreichssaal" |
 
-Die Termine erscheinen im **Programm** über den Reitern — also auf jedem
-Reiter, denn sie gehören zu keiner einzelnen Zusammenkunft. **Alle sehen sie**,
+Die Termine erscheinen beim **Ansehen** über den Reitern — also auf jedem
+Reiter und auch im Predigtdienst, denn sie gehören zu keiner einzelnen
+Zusammenkunft. **Alle sehen sie**,
 und zwar nach Wochentag und Uhrzeit geordnet; Termine ohne Tag stehen hinten.
 
 > **Ein Termin ist eine Ankündigung, keine Zuteilung.** Es gibt dazu keinen
@@ -388,8 +398,9 @@ Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 
 ## 5. Treffpunkte planen
 
-Die **Zusammenkünfte für den Predigtdienst** („Treffpunkte") haben einen eigenen
-Reiter unter **Planen**.
+Die **Zusammenkünfte für den Predigtdienst** („Treffpunkte") sind ein eigenes
+Thema im Menü: **Predigtdienst**. Schalte oben rechts auf **Planen**; dort gibt
+es zwei Reiter, **Treffpunkte** und **Grundplan**.
 
 ![Treffpunkte im Programm](screenshots/programm-treffpunkte.png)
 
@@ -398,10 +409,18 @@ Es gibt zwei Arten:
 - **Versammlungstreffpunkte** – gelten für die ganze Versammlung.
 - **Gruppentreffpunkte** – je Predigtdienstgruppe, mit eigenem Ort und Leiter.
 
-Der regelmäßige Rhythmus kommt aus dem **Grundplan** (siehe
-[Einstellungen](#7-einstellungen)); pro Woche kannst du Uhrzeit, Ort und **Leiter**
+Der regelmäßige Rhythmus kommt aus dem **Grundplan**: die regelmäßigen
+Versammlungs‑ und Gruppentreffpunkte mit Wochentag, Uhrzeit, Ort und „N‑ter im
+Monat". Jede Gruppe hat dafür eine **eigene Karte** („Treffpunkte · Gruppe 1"),
+die Versammlung ebenso („Treffpunkte · Versammlung"); alle Karten tragen
+dieselbe Farbe. „+ Treffpunkt hinzufügen" legt den Treffpunkt für die Karte an,
+in der der Knopf steht. Jede Änderung setzt die Wochenpläne neu auf.
+
+Unter **Treffpunkte** kannst du dann pro Woche Uhrzeit, Ort und **Leiter**
 anpassen oder einen einmaligen Treffpunkt ergänzen. **Gruppenaufseher** können die
-Treffpunkte **ihrer** Gruppe selbst planen, ohne vollen Planer‑Zugang.
+Treffpunkte **ihrer** Gruppe selbst planen, ohne vollen Planer‑Zugang – den
+Schalter **Planen** sehen sie nur im Predigtdienst, und im Grundplan nur die
+Karte ihrer Gruppe.
 
 > **Wer sieht was.** Einen Gruppentreffpunkt zeigt das Programm nur den
 > Verkündigern **dieser** Gruppe (und ihrem Aufseher). Versammlungstreffpunkte
@@ -592,12 +611,9 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
   Wer Englisch eingestellt hat, liest „Reminder: confirm assignment", auch wenn
   eure Versammlung deutsch ist.
 - **Programm‑Import** – neue Wochen von jw.org laden (siehe unten).
-- **Treffpunkte‑Grundplan** – die regelmäßigen Versammlungs‑ und
-  Gruppentreffpunkte (Wochentag, Uhrzeit, Ort, „N‑ter im Monat"). Jede Gruppe
-  hat dafür eine **eigene Karte** („Treffpunkte · Gruppe 1"), die Versammlung
-  ebenso („Treffpunkte · Versammlung"); alle Karten tragen dieselbe Farbe.
-  „+ Treffpunkt hinzufügen" legt den Treffpunkt für die Karte an, in der der
-  Knopf steht. Ein Gruppenaufseher sieht hier nur die Karte seiner Gruppe.
+
+Der **Grundplan der Treffpunkte** stand früher ebenfalls hier. Er gehört zum
+Predigtdienst und steht jetzt dort (siehe [Treffpunkte planen](#5-treffpunkte-planen)).
 
 ---
 
@@ -658,16 +674,16 @@ Blättern kommst du deshalb nur bis zur ältesten geladenen Woche zurück.
 
 ## 9. Pläne drucken
 
-Auf der **Programm**‑Seite steht über jeder Zusammenkunft ein
-**Drucken**‑Knopf – und über den **Treffpunkten** genauso. Ein Tipp darauf
-klappt die Wahl auf:
+Beim **Ansehen** der Zusammenkünfte steht über jeder Zusammenkunft ein
+**Drucken**‑Knopf – und im **Predigtdienst** über den Treffpunkten genauso. Ein
+Tipp darauf klappt die Wahl auf:
 
 - **Diese Woche** – die Woche und der Reiter, die gerade zu sehen sind.
 - **Ganzer Monat · September 2026** – alle Wochen dieses Monats hintereinander,
   für den Aushang am schwarzen Brett.
 
-Gedruckt wird immer nur der Reiter, in dem du gerade stehst. Für alle drei –
-unter der Woche, Wochenende, Treffpunkte – druckst du dreimal.
+Gedruckt wird immer nur, was du gerade siehst. Für alle drei – unter der Woche,
+Wochenende, Treffpunkte – druckst du dreimal.
 
 ### Was auf dem Blatt steht
 

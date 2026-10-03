@@ -36,6 +36,8 @@ function makeState(over: Partial<AppState> = {}): AppState {
     screen: 'start',
     week: 0,
     tab: 'mid',
+    planModus: false,
+    fsBereich: 'treffpunkte',
     theme: 'weiss',
     fontScale: 1,
     planner: DEMO_PLANNER,
@@ -149,11 +151,13 @@ describe('navigate (Rechteprüfung)', () => {
     expect(reducer(s, { type: 'navigate', screen: 'aufgaben' }).screen).toBe('aufgaben') // erlaubt
   })
 
-  it('Gruppenaufseher darf Planen/Einstellungen, aber nicht Personen', () => {
-    // p1 ist Aufseher (ov) von Gruppe 1 → fsOverseer
+  it('Gruppenaufseher darf Planen, aber weder Personen noch Einstellungen (T120)', () => {
+    // p1 ist Aufseher (ov) von Gruppe 1 → fsOverseer. Die Einstellungen
+    // brauchte er nur für den Grundplan seiner Gruppe; der steht seit T120 im
+    // Predigtdienst.
     const s = makeState({ planner: false, personId: 'p1' })
     expect(reducer(s, { type: 'navigate', screen: 'planen' }).screen).toBe('planen')
-    expect(reducer(s, { type: 'navigate', screen: 'einstellungen' }).screen).toBe('einstellungen')
+    expect(reducer(s, { type: 'navigate', screen: 'einstellungen' }).screen).toBe('programm')
     expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
   })
 
@@ -206,6 +210,87 @@ describe('navigate (Rechteprüfung)', () => {
     const next = reducer(s, { type: 'navigate', screen: 'programm' })
     expect(next.persons.some((p) => p.id === 'pX')).toBe(false)
     expect(next.selectedPersonId).toBeNull()
+  })
+})
+
+/*
+ * **Das Menü nach Themen** (T120). Zusammenkünfte und Predigtdienst sind keine
+ * eigenen Bildschirme, sondern eine Sicht auf Programm/Planen: Das Thema bringt
+ * seinen Reiter mit, der Schalter Ansehen/Planen wechselt den Bildschirm.
+ */
+describe('navigate nach Thema (T120)', () => {
+  it('der Predigtdienst öffnet die Treffpunkte', () => {
+    const next = reducer(makeState({ planner: true, tab: 'we' }), {
+      type: 'navigate', screen: 'programm', thema: 'predigtdienst',
+    })
+    expect(next).toMatchObject({ screen: 'programm', tab: 'fs' })
+  })
+
+  it('vom Predigtdienst zu den Zusammenkünften: zurück auf eine Zusammenkunft', () => {
+    const next = reducer(makeState({ planner: true, tab: 'fs', terminGewaehlt: true }), {
+      type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte',
+    })
+    expect(next.screen).toBe('planen')
+    expect(['mid', 'we']).toContain(next.tab)
+  })
+
+  it('wer schon bei den Zusammenkünften ist, behält seinen Reiter', () => {
+    // Auch „Bearbeiten": Es gehört zu den Zusammenkünften und bleibt im Planen.
+    for (const tab of ['we', 'edit'] as const) {
+      const next = reducer(makeState({ planner: true, tab, terminGewaehlt: true, screen: 'planen' }), {
+        type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte',
+      })
+      expect(next.tab).toBe(tab)
+    }
+  })
+
+  it('der Gruppenaufseher plant nur den Predigtdienst', () => {
+    const s = makeState({ planner: false, personId: 'p1', tab: 'mid' })
+    // Ausdrücklich die Zusammenkünfte planen → er sieht sie an.
+    expect(reducer(s, { type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })).toMatchObject({
+      screen: 'programm',
+    })
+    // Planen ohne Thema (Push, Sprung) → seine Treffpunkte, wie vor T120.
+    expect(reducer(s, { type: 'navigate', screen: 'planen' })).toMatchObject({ screen: 'planen', tab: 'fs' })
+    // Auch mit einer Zielwoche, die eine Zusammenkunft nennt.
+    expect(
+      reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } }),
+    ).toMatchObject({ screen: 'planen', tab: 'fs', week: 1 })
+  })
+
+  it('merkt sich, ob zuletzt geplant wurde — andere Bildschirme ändern daran nichts', () => {
+    let s = makeState({ planner: true })
+    s = reducer(s, { type: 'navigate', screen: 'planen' })
+    expect(s.planModus).toBe(true)
+    s = reducer(s, { type: 'navigate', screen: 'personen' })
+    expect(s.planModus).toBe(true)
+    s = reducer(s, { type: 'navigate', screen: 'programm' })
+    expect(s.planModus).toBe(false)
+  })
+
+  it('der Gruppenaufseher verlässt das Planen nicht, wenn er die Zusammenkünfte ansieht', () => {
+    // Sie anzusehen ist für ihn keine Wahl — planen kann er sie nicht. Zurück im
+    // Predigtdienst soll er dort weiterplanen, wo er war.
+    let s = makeState({ planner: false, personId: 'p1', tab: 'fs' })
+    s = reducer(s, { type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+    expect(s.planModus).toBe(true)
+    s = reducer(s, { type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
+    expect(s).toMatchObject({ screen: 'programm', planModus: true })
+    // Den Predigtdienst ansehen ist dagegen eine Wahl.
+    s = reducer(s, { type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
+    expect(s.planModus).toBe(false)
+  })
+
+  it('setFsBereich wechselt den Bereich und ist ohne Änderung wirkungslos', () => {
+    const s = makeState()
+    const grund = reducer(s, { type: 'setFsBereich', bereich: 'grundplan' })
+    expect(grund.fsBereich).toBe('grundplan')
+    expect(reducer(grund, { type: 'setFsBereich', bereich: 'grundplan' })).toBe(grund)
+  })
+
+  it('eine neue Sitzung beginnt beim Ansehen und bei den Treffpunkten', () => {
+    const s = makeState({ planModus: true, fsBereich: 'grundplan', screen: 'planen' })
+    expect(reducer(s, { type: 'logout' })).toMatchObject({ planModus: false, fsBereich: 'treffpunkte' })
   })
 })
 
@@ -1451,6 +1536,36 @@ describe('hydrate / setDataStatus', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  /*
+   * **Ein stilles Nachladen wirft nicht aus dem Predigtdienst** (T120).
+   *
+   * Bis T120 kam man zu den Treffpunkten nur über ihren Reiter, und der zählte
+   * als eigene Wahl (`terminGewaehlt`). Seitdem führt das Menü hin — ohne
+   * Reiterwahl. Das Nachladen nach „Plan senden" setzte den Planer dann auf
+   * die nächste Zusammenkunft: Er stand mitten in der Arbeit im anderen Thema.
+   */
+  it('lässt den Predigtdienst stehen, auch ohne eigene Reiterwahl', () => {
+    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w }))
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 16, 10)) // Mittwoch der zweiten Woche
+    try {
+      let s = makeState({ screen: 'start', tab: 'mid', terminGewaehlt: false, weeks: wochen, week: 1 })
+      s = reducer(s, { type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+      expect(s).toMatchObject({ screen: 'planen', tab: 'fs', terminGewaehlt: false })
+      const nachgeladen = reducer(s, { type: 'hydrate', payload: { ...payload, weeks: wochen } })
+      expect(nachgeladen).toMatchObject({ screen: 'planen', tab: 'fs' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('eine neue Sitzung beginnt nicht im Reiter des Vorgängers', () => {
+    // Das Nachladen lässt den Predigtdienst stehen (oben) — also muss das
+    // Abmelden den Reiter zurücksetzen, sonst erbte der nächste Nutzer am
+    // selben Gerät ihn.
+    expect(reducer(makeState({ tab: 'fs' }), { type: 'logout' }).tab).toBe('mid')
   })
 
   it('bleibt beim Anfang, wenn heute in keine geladene Woche fällt', () => {

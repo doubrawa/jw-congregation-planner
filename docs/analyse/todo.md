@@ -5698,6 +5698,102 @@ schrieb ihnen die gerade gebrochene Regel gut — `kontakt-betreff-kodiert` galt
 als bewacht von `tests/kein-alter-app-name.test.ts`, mit der Frist ist es
 `src/login/kontakt.test.ts`.
 
+## Aufgenommen am 3. Oktober 2026 — Pläne der Versammlung (T120)
+
+### T120 · Pläne der Versammlung — Navigation nach Themen und feste Vorlagen 🏗 ☐ in Arbeit
+
+Der Betreiber braucht einen Bereich für Pläne, die über einzelne Wochen
+hinausgehen. Sein Beispiel: Der Dienstaufseher besucht reihum die
+Predigtdienstgruppen und leitet in der Besuchswoche einen Treffpunkt der
+Gruppe. Entworfen auf einer Design-Canvas (privat,
+https://claude.ai/artifact/NuR4hifSAQ1ioi3yMTZgzY), entschieden am 2. und
+3. Oktober 2026:
+
+- **Feste Vorlagen**, kein freier Baukasten: Gruppenbesuche, Öffentliches
+  Zeugnis, Rednerplan auswärts, Saal & Außenanlage, Familien reihum.
+- **Hauptmenü nach Themen** (Variante C von drei gezeichneten): Start · Meine
+  Aufgaben · *Versammlung*: Zusammenkünfte · Predigtdienst · Weitere Pläne ·
+  *Verwaltung*: Personen · Einstellungen (nur Admins). „Programm" und „Planen"
+  fallen als Menüpunkte weg; jedes Thema hat oben den Schalter
+  **Ansehen/Planen**. Das Profil öffnet der Namensblock unten. Anlass: „Pläne"
+  stand im Menü direkt unter „Planen".
+- **Jeder Plan steht bei seinem Thema** als Reiter: Gruppenbesuche und
+  Öffentliches Zeugnis unter Predigtdienst, Redner auswärts unter
+  Zusammenkünfte, der Rest unter Weitere Pläne.
+- **Konflikte aus Plänen** zeigt die Planungs-Karte auf Start in einem eigenen
+  Abschnitt — unabhängig vom Vier-Wochen-Fenster, weil ein Plan-Konflikt
+  Monate voraus liegen kann.
+
+**Phasen**, jede für sich lauffähig:
+
+1. **Navigation nach Themen.** Menü wie oben, der Schalter Ansehen/Planen auf
+   beiden Themen. Intern bleiben die Bildschirme `programm`/`planen` und die
+   Reiter: Das Thema ergibt sich aus dem Reiter (`fs` = Predigtdienst), der
+   Schalter aus dem Bildschirm. So bleiben Push-Links (`#go=planen`) und die
+   Sprünge der Planungs-Karte gültig. Der Grundplan der Treffpunkte zieht aus
+   den Einstellungen nach Predigtdienst › Planen; der Gruppenaufseher braucht
+   die Einstellungen danach nicht mehr. „Meine Aufgaben" heißt für alle gleich.
+2. **Gruppenbesuche des Dienstaufsehers.** Vorher am od messen, wie oft und wie
+   der Besuch abläuft. Datenmodell und Tabelle für Pläne, Reiter im
+   Predigtdienst, reihum verteilen (überspringt Wochen ohne Gruppentreffpunkt,
+   etwa den 1. Samstag). Der Besucher wird Leiter des Gruppentreffpunkts —
+   Zusage, Erinnerung und „Plan senden" laufen über den Treffpunkt. Wochen,
+   die noch nicht geladen sind, werden vorgemerkt und beim Import eingetragen.
+   Konflikte: Leiter mit Zusage, Abwesenheit. Abschnitt „Pläne" auf Start.
+3. **Öffentliches Zeugnis:** feste Termine, mehrere Plätze, selbst eintragen;
+   eine Aufgabe mit Zusage, Erinnerung (Edge Functions) und „Plan senden".
+4. **Redner auswärts** unter Zusammenkünfte, mit Prüfung auf Doppelbelegung
+   in der eigenen Zusammenkunft.
+5. **Weitere Pläne:** Saal & Außenanlage, Familien reihum — reine
+   Ankündigungen.
+
+**Prüfen (Phase 1):** Als Verkündiger: Start · Meine Aufgaben · Zusammenkünfte
+· Predigtdienst, kein Schalter. Als Admin dazu „Verwaltung" und der Schalter;
+Ansehen ↔ Planen behält Woche und Reiter. Als Gruppenaufseher: Planen nur im
+Predigtdienst, dort auch der Grundplan seiner Gruppe; keine Einstellungen.
+`#go=planen` aus einem alten Push landet weiter in Planen.
+
+**Stand Phase 1 (3. Oktober 2026) — umgesetzt, noch nicht committet:**
+
+- Menü in Abschnitten (`SidebarNav`, `NavAbschnitt`); der Namensblock unten ist
+  ein Knopf zum Profil. „Weitere Pläne" kommt erst mit Phase 5 ins Menü —
+  vorher stünde dort eine leere Seite.
+- `ThemaKopf`: Titel des Themas und der Schalter, nur wer das Thema planen darf
+  (`darfPlanen` in `data/rechte.ts`). Der Schalter nimmt das Thema mit.
+- Reducer: `navigate` trägt optional ein `thema` (Predigtdienst → Reiter `fs`,
+  zurück → die Zusammenkunft der Woche). Der Gruppenaufseher landet beim Planen
+  ohne Thema im Predigtdienst, mit dem Thema Zusammenkünfte beim Ansehen.
+  `planModus` merkt sich das zuletzt gewählte Planen — das Ansehen eines Themas,
+  das man nicht planen darf, setzt es nicht zurück.
+- Predigtdienst › Planen hat die Reiter **Treffpunkte** und **Grundplan**
+  (`fsBereich`, Aktion `setFsBereich`). Der Grundplan steht ohne Wochenstreifen
+  da, auch solange keine Woche geladen ist. `FsRulesPanel` samt CSS liegt unter
+  `planen/`; der Gruppenaufseher sieht keine Einstellungen mehr.
+- „Alles zugeteilt" auf der Planungs-Karte öffnet die Zusammenkünfte, nicht den
+  zuletzt angesehenen Predigtdienst.
+- Neue Schlüssel in allen 34 Sprachen (`navZusammenkuenfte`, `navVerwaltung`,
+  `ansehen`, `fsTreffpunkteTab`, `fsGrundplan`, `fsGrundDesc` neu),
+  `navProgramm`/`navPlanen` entfernt.
+- Mutationsprobe: drei neue Einträge (Gruppenaufseher ohne Personen, ohne
+  Einstellungen, plant nur den Predigtdienst) — 3/3 bewacht; dazu der zum
+  Nachladen unten.
+- **Befund beim Gegenlesen:** Ein stilles Nachladen (nach „Plan senden", aus
+  der Glocke) setzte den Planer aus dem Predigtdienst auf die nächste
+  Zusammenkunft. Der Schutz hing an der eigenen Reiterwahl (`terminGewaehlt`),
+  und die gab es bis T120 auf dem einzigen Weg dorthin — das Menü führt ohne
+  sie hin. Jetzt lässt `zurNaechstenZusammenkunft` den Predigtdienst selbst
+  stehen, und das Abmelden setzt den Reiter zurück. Mutationsprobe-Eintrag
+  `nachladen-laesst-predigtdienst-stehen`, bewacht.
+- Nebenbefund: `PlanenScreen.test.tsx` und `zusage-ampel.test.tsx` suchten „die
+  mittlere Woche" über `.week-page`, das nur die Nachbarn tragen — der Selektor
+  traf nie und fiel auf den ganzen Streifen zurück (in `ProgrammScreen.test.tsx`
+  am 21.9. behoben, hier nachgezogen).
+- Handbücher und alle 18 Handbuchbilder neu.
+
+Bewusst offen: Die Rollenzeile des Gruppenaufsehers sagt weiter „Verkündiger";
+`ohneGruppeHint` spricht von „im Programm" (verständlich, eine Änderung hieße 34
+Übersetzungen ohne Gewinn).
+
 ---
 
 ## Was bewusst offen bleibt

@@ -612,7 +612,8 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     expect(container.querySelector('.dash-planung')).toBeNull()
     expect(container.querySelector('.dash-plan-text')?.textContent).toBe(t.dashAllesZugeteilt)
     fireEvent.click(container.querySelector('.dash-plan')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen' })
+    // Mit Thema: Wer zuletzt im Predigtdienst war, käme sonst dort heraus.
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
   })
 })
 

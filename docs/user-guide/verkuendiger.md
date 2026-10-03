@@ -62,26 +62,29 @@ Wichtigste zusammen.
 - **Mitteilungen** und **Zu bestätigen** zeigen dir auf einen Blick, ob etwas
   Neues für dich da ist.
 
-Über die Navigation links (bzw. das Menü auf dem Handy) erreichst du **Start**,
-**Programm**, **Meine Aufgaben** und **Profil**.
+Über das Menü links (bzw. den Menüknopf auf dem Handy) erreichst du **Start**
+und **Meine Aufgaben**, darunter unter **Versammlung** die **Zusammenkünfte**
+und den **Predigtdienst**. Dein **Profil** öffnest du mit einem Tipp auf deinen
+Namen ganz unten.
 
 ---
 
 ## 3. Das Programm ansehen
 
-Unter **Programm** siehst du das vollständige Zusammenkunfts‑Programm der Woche.
+Unter **Zusammenkünfte** siehst du das vollständige Programm der Woche.
 Mit den Pfeilen ‹ › blätterst du zwischen den Wochen; die aktuelle Woche ist mit
 einem Chip markiert. Auf dem Handy oder Tablet kannst du stattdessen auch
 **seitwärts wischen** – nach links zur nächsten, nach rechts zur vorigen Woche.
 Federt die Ansicht zurück, gibt es in der Richtung keine Woche mehr.
 
-Oben wählst du zwischen drei Ansichten:
+Oben wählst du zwischen den beiden Zusammenkünften; die Treffpunkte für den
+Predigtdienst stehen im Menü unter **Predigtdienst**:
 
-| Reiter | Inhalt |
+| Wo | Inhalt |
 | --- | --- |
-| **Zusammenkunft unter der Woche** | Das Programm der Wochenmitte (Schätze aus Gottes Wort, Dienst, Unser Leben als Christ) mit allen Zuteilungen. |
-| **Zusammenkunft am Wochenende** | Öffentlicher Vortrag und Wachtturm‑Studium. |
-| **Zusammenkünfte für den Predigtdienst** | Die „Treffpunkte" – wann und wo sich die Versammlung bzw. deine Gruppe zum Predigtdienst trifft, mit dem jeweiligen Leiter. |
+| **Zusammenkünfte** › Reiter unter der Woche | Das Programm der Wochenmitte (Schätze aus Gottes Wort, Dienst, Unser Leben als Christ) mit allen Zuteilungen. |
+| **Zusammenkünfte** › Reiter Wochenende | Öffentlicher Vortrag und Wachtturm‑Studium. |
+| **Predigtdienst** | Die „Treffpunkte" – wann und wo sich die Versammlung bzw. deine Gruppe zum Predigtdienst trifft, mit dem jeweiligen Leiter. |
 
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
 
@@ -107,7 +110,7 @@ Bist **du** eingeteilt, siehst du am Block, in welchem Raum – und auf deinem
 
 Über jeder Zusammenkunft und über den Treffpunkten steht ein
 **Drucken**‑Knopf. Er fragt, ob du **diese Woche** oder den **ganzen Monat**
-willst – gedruckt wird jeweils der Reiter, in dem du gerade stehst, ohne die
+willst – gedruckt wird jeweils, was du gerade siehst, ohne die
 Bedienelemente der App. Nötig ist das nicht: Deine eigenen Aufgaben stehen
 unter **Meine Aufgaben**, und das Programm ist hier immer aktuell.
 
@@ -247,8 +250,8 @@ Eintrag beim Zuteilen als Hinweis „abwesend", und die automatische Zuteilung
 Neben dem Antippen gibt es ein paar Gesten. Sie sind immer nur eine Abkürzung –
 alles geht auch weiterhin über Knöpfe und Pfeile.
 
-- **Seitwärts wischen** – blättert im **Programm** und beim **Planen** eine
-  Woche vor oder zurück.
+- **Seitwärts wischen** – blättert bei den **Zusammenkünften**, im
+  **Predigtdienst** und beim **Planen** eine Woche vor oder zurück.
 - **Zurück** (Zurück‑Taste oder Zurück‑Geste) – schließt ein geöffnetes Fenster,
   das Menü oder die Mitteilungen, statt die App zu verlassen. Ist nichts
   geöffnet, verlässt Zurück die App wie gewohnt.
@@ -398,13 +401,16 @@ Zwei Dinge, die du wissen solltest:
 
 Bist du **Aufseher oder Gehilfe** einer Predigtdienstgruppe, kannst du die
 **Treffpunkte deiner Gruppe** selbst planen — ohne vollen Planer‑Zugang. Der
-Koordinator trägt das bei der Gruppe ein; danach stehen in der Navigation zwei
-Einträge mehr:
+Koordinator trägt das bei der Gruppe ein; danach steht im **Predigtdienst** oben
+rechts der Schalter **Ansehen / Planen**. Beim Planen gibt es zwei Reiter:
 
-| Eintrag | Was du dort siehst |
+| Reiter | Was du dort siehst |
 | --- | --- |
-| **Planen** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: Leiter eintragen, **Automatisch zuteilen** und **Leeren** (beides wirkt nur auf deine Gruppe) und bei Bedarf ein zusätzlicher Treffpunkt für diese eine Woche. |
-| **Einstellungen** | Nur den **Grundplan deiner Gruppe** — die Regel, nach der ihr euch regelmäßig trefft: Wochentag, Uhrzeit, Ort und ob sie jede Woche gilt oder z. B. jeden ersten im Monat. |
+| **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: Leiter eintragen, **Automatisch zuteilen** und **Leeren** (beides wirkt nur auf deine Gruppe) und bei Bedarf ein zusätzlicher Treffpunkt für diese eine Woche. |
+| **Grundplan** | Nur den **Grundplan deiner Gruppe** — die Regel, nach der ihr euch regelmäßig trefft: Wochentag, Uhrzeit, Ort und ob sie jede Woche gilt oder z. B. jeden ersten im Monat. |
+
+Wechselst du zwischendurch zu den Zusammenkünften, siehst du sie nur an; zurück
+im Predigtdienst bist du wieder beim Planen.
 
 ![Planen als Gruppenaufseher](screenshots/verkuendiger-gruppenaufseher.png)
 
@@ -415,7 +421,7 @@ gegeben hat.
 
 Die **Personen** bleiben dem Koordinator vorbehalten, und die Zuteilungen der
 Zusammenkünfte ebenso — daran änderst du nichts. Alles Übrige siehst du wie jeder
-andere Verkündiger: eigene Aufgaben, Programm, Abwesenheiten, Profil.
+andere Verkündiger: eigene Aufgaben, Zusammenkünfte, Abwesenheiten, Profil.
 
 > **Wer sieht eure Gruppentreffpunkte?** Nur die Verkündiger deiner Gruppe — und
 > du. Versammlungstreffpunkte sehen alle.

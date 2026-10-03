@@ -31,6 +31,52 @@
   color: var(--mut);
 }
 
+/* ---- Kopf eines Themas: Titel + Schalter Ansehen/Planen (T120) ----------- */
+
+.thema-kopf {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  /* Abstand zur Woche darunter; fällt mit dem der Planen-Woche
+     (`.plan-week-nav`) zusammen. */
+  margin-bottom: 14px;
+}
+
+.thema-kopf-titel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.modus-schalter {
+  display: inline-flex;
+  flex: none;
+  padding: 3px;
+  border: 1px solid var(--bord2);
+  border-radius: var(--r-pill);
+}
+
+.modus-knopf {
+  min-height: 30px;
+  padding: 5px 14px;
+  border-radius: var(--r-pill);
+  color: var(--mut);
+  font-size: calc(12px * var(--fs));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.modus-knopf:hover:not(.is-active) {
+  background: var(--hov);
+}
+
+.modus-knopf.is-active {
+  background: var(--acc);
+  color: var(--onAcc);
+}
+
 /* ---- Primär-Button (Akzentfläche, Pille) ---------------------------------- */
 
 .btn-primary {

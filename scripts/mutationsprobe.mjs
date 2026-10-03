@@ -839,10 +839,35 @@ export const KATALOG = [
     // Wer welchen Bildschirm betreten darf, entscheidet inzwischen
     // `erlaubteScreens` in `data/rechte.ts` — der Shell blieb nur das Zeichnen.
     datei: 'src/data/rechte.ts',
-    regel: 'Der Gruppenaufseher sieht Planen und Einstellungen, aber nicht Personen.',
+    regel: 'Der Gruppenaufseher sieht Planen, aber nicht Personen.',
     // Die Mutation nimmt den Abzug weg und gibt ihm die Personen mit dazu.
-    suchen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen')",
-    ersetzen: '  if (fsAufseher) return ALLE',
+    suchen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
+    ersetzen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'einstellungen')",
+  },
+  {
+    id: 'nav-gruppenaufseher-ohne-einstellungen',
+    datei: 'src/data/rechte.ts',
+    // Bis T120 bekam er sie für den Grundplan seiner Gruppe; der steht seitdem
+    // im Predigtdienst. Ein Rest-Eintrag führte in eine leere Seite.
+    regel: 'Der Gruppenaufseher sieht keine Einstellungen — sein Grundplan steht im Predigtdienst.',
+    suchen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
+    ersetzen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen')",
+  },
+  {
+    id: 'nachladen-laesst-predigtdienst-stehen',
+    datei: 'src/app/reducer.ts',
+    // Seit T120 führt das Menü ohne Reiterwahl in den Predigtdienst; vorher
+    // schützte die Wahl (`terminGewaehlt`) davor.
+    regel: 'Ein stilles Nachladen wirft nicht aus dem Predigtdienst in die Zusammenkünfte.',
+    suchen: "  if (state.terminGewaehlt || state.tab === 'fs') return state",
+    ersetzen: '  if (state.terminGewaehlt) return state',
+  },
+  {
+    id: 'planen-gruppenaufseher-nur-predigtdienst',
+    datei: 'src/data/rechte.ts',
+    regel: 'Der Gruppenaufseher plant nur den Predigtdienst — eine Zusammenkunft sieht er bloß an.',
+    suchen: "  return planner || (fsAufseher && thema === 'predigtdienst')",
+    ersetzen: '  return planner || fsAufseher',
   },
   {
     id: 'nav-deeplink-rechte',

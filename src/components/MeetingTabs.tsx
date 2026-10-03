@@ -10,11 +10,15 @@ interface MeetingTabsProps {
   tab: MeetingTab
   onChange: (tab: MeetingTab) => void
   className?: string
-  showFs?: boolean // dritter Reiter „Predigtdienst“
+  /*
+   * Einen dritten Reiter „Predigtdienst" gab es hier bis T120. Der Predigtdienst
+   * ist seitdem ein eigenes Thema im Menü — die Reiter hier gehören allein den
+   * Zusammenkünften.
+   */
   /**
-   * Vierter Reiter: die Bearbeiten-Ansicht der Woche (T64) — Anlass und
-   * Abweichungen. Nur im Planen und nur für Planer; das Programm ist für alle
-   * nur lesend, und der Gruppenaufseher sieht ohnehin nur „Predigtdienst“.
+   * Weiterer Reiter: die Bearbeiten-Ansicht der Woche (T64) — Anlass und
+   * Abweichungen. Nur im Planen und nur für Planer; das Ansehen ist für alle
+   * nur lesend, und der Gruppenaufseher plant ohnehin nur den Predigtdienst.
    *
    * Er trägt ein Symbol statt eines Wortes. Das ist keine Sparsamkeit an der
    * falschen Stelle, sondern die Konsequenz aus `ui.test.ts`: Jeder neue
@@ -42,7 +46,8 @@ function weekdayName(offset: number, locale: string): string {
 
 /**
  * Reiter für die beiden Zusammenkünfte (Wochentag aus den Zusammenkunftszeiten
- * der Versammlung) und optional „Predigtdienst“. Als gefüllte Pillen gestaltet.
+ * der Versammlung) und optional die Bearbeiten-Ansicht. Als gefüllte Pillen
+ * gestaltet.
  *
  * Sichtbar steht nur der Wochentag: „Versammlung“ stünde auf beiden Reitern und
  * unterscheidet sie nicht, macht die Zeile aber so breit, dass auf dem Handy der
@@ -51,7 +56,7 @@ function weekdayName(offset: number, locale: string): string {
  * anderen Sprachen, großer Schriftgrad), bricht die Leiste um — alle Reiter
  * müssen sichtbar sein, seitliches Scrollen findet man nicht.
  */
-export function MeetingTabs({ tab, onChange, className, showFs = false, showEdit = false, week }: MeetingTabsProps) {
+export function MeetingTabs({ tab, onChange, className, showEdit = false, week }: MeetingTabsProps) {
   const { state } = useApp()
   const { t } = useT()
   const zeiten = state.congregation.times
@@ -66,7 +71,6 @@ export function MeetingTabs({ tab, onChange, className, showFs = false, showEdit
       const day = weekdayName(versatz, locale)
       return [key, day, fill(t.versammlungTag, { tag: day })]
     }),
-    ...(showFs ? ([['fs', t.tabFs, t.tabFs]] as ReadonlyArray<[MeetingTab, string, string]>) : []),
     ...(showEdit
       ? ([['edit', '✎', t.einstellungen]] as ReadonlyArray<[MeetingTab, string, string]>)
       : []),

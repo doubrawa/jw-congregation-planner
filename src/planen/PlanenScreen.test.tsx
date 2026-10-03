@@ -23,9 +23,10 @@ import { PlanenScreen } from './PlanenScreen'
  * Auswahl: welcher Baustein bei welcher Rolle und welchem Reiter überhaupt
  * erscheint. Drei Entscheidungen tragen dabei Fachlogik:
  *
- * - Der **Gruppenaufseher** sieht keine Reiter und keine Zusammenkunft — nur
- *   die Treffpunkte seiner Gruppe. Bekäme er die Reiterleiste, käme er auf
- *   einen Plan, den er nicht ändern darf.
+ * - Der **Gruppenaufseher** sieht keine Reiter der Zusammenkünfte und keine
+ *   Zusammenkunft — nur die Treffpunkte seiner Gruppe und ihren Grundplan.
+ *   Bekäme er die Reiterleiste, käme er auf einen Plan, den er nicht ändern
+ *   darf.
  * - Die **Bearbeiten-Ansicht** (T64) gehört dem Planer. Sie stellt Anlass und
  *   Ausfall der ganzen Woche ein.
  * - Der **S-89-Bogen** steht nur unter der Woche — Schulungsaufgaben gibt es
@@ -92,9 +93,15 @@ function zeige(over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne />) }
 }
 
-/** Nur die mittlere (aktuelle) Seite des Streifens — die Nachbarn zeigen dasselbe. */
-const seite = (c: HTMLElement): HTMLElement =>
-  (c.querySelector('.week-page:not(.week-page--vor):not(.week-page--nach)') as HTMLElement) ?? c
+/**
+ * Nur die mittlere (aktuelle) Seite des Streifens — die Nachbarn zeigen dasselbe.
+ *
+ * Hier stand bis T120 `.week-page:not(.week-page--vor):not(.week-page--nach)`:
+ * Die mittlere Woche trägt `week-page` gar nicht (nur die Nachbarn, siehe
+ * `WeekStrip`), der Selektor traf nie und fiel still auf den ganzen Streifen
+ * zurück — derselbe Fehler, den `ProgrammScreen.test.tsx` am 21.9.2026 behob.
+ */
+const seite = (c: HTMLElement): HTMLElement => (c.querySelector('.week-strip > .screen') as HTMLElement) ?? c
 const reiter = (c: HTMLElement) =>
   [...seite(c).querySelectorAll('.plan-tabs .meeting-tab')].map((b) => b.textContent ?? '')
 
@@ -130,14 +137,21 @@ describe('Der Kopf', () => {
 })
 
 describe('Die Reiter', () => {
-  it('der Planer bekommt vier: beide Zusammenkünfte, Treffpunkte, Bearbeiten', () => {
+  it('die Zusammenkünfte haben drei: beide Zusammenkünfte und Bearbeiten', () => {
+    // Die Treffpunkte waren bis T120 ein vierter Reiter; sie sind jetzt das
+    // Thema Predigtdienst und stehen im Menü.
     const { container } = zeige()
-    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', t.tabFs, '✎'])
+    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', '✎'])
+  })
+
+  it('der Predigtdienst hat zwei: die Treffpunkte der Woche und ihren Grundplan', () => {
+    const { container } = zeige({ tab: 'fs' })
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan])
   })
 
   it('ein Reiterwechsel schlägt durch', () => {
     const { container, dispatch } = zeige()
-    fireEvent.click([...seite(container).querySelectorAll('.plan-tabs .meeting-tab')][3]!)
+    fireEvent.click([...seite(container).querySelectorAll('.plan-tabs .meeting-tab')][2]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'edit' })
   })
 
@@ -147,13 +161,81 @@ describe('Die Reiter', () => {
   })
 })
 
+describe('Der Kopf nennt das Thema (T120)', () => {
+  const titel = (c: HTMLElement) => seite(c).querySelector('.thema-kopf .screen-title')?.textContent
+
+  it('Zusammenkünfte oder Predigtdienst — je nach Reiter', () => {
+    expect(titel(zeige().container)).toBe(t.navZusammenkuenfte)
+    cleanup()
+    expect(titel(zeige({ tab: 'fs' }).container)).toBe(t.tabFs)
+  })
+
+  it('beim Gruppenaufseher immer den Predigtdienst — auch mit einem Reiter von früher', () => {
+    // Darunter stehen seine Treffpunkte; der Kopf nennt, was darunter steht.
+    for (const tab of ['mid', 'edit'] as const) {
+      const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab })
+      expect(titel(container), tab).toBe(t.tabFs)
+      cleanup()
+    }
+  })
+
+  it('der Schalter führt zum Ansehen desselben Themas', () => {
+    const { container, dispatch } = zeige({ tab: 'fs' })
+    const ansehen = [...seite(container).querySelectorAll('.modus-knopf')].find((b) => b.textContent === t.ansehen)!
+    fireEvent.click(ansehen)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
+  })
+})
+
+describe('Der Grundplan im Predigtdienst (T120)', () => {
+  it('ein Tipp auf den Reiter wechselt den Bereich', () => {
+    const { container, dispatch } = zeige({ tab: 'fs' })
+    const grundplan = [...seite(container).querySelectorAll('.plan-tabs .meeting-tab')].find(
+      (b) => b.textContent === t.fsGrundplan,
+    )!
+    fireEvent.click(grundplan)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'grundplan' })
+  })
+
+  it('steht ohne Woche da — er gilt für alle Wochen', () => {
+    const { container } = zeige({ tab: 'fs', fsBereich: 'grundplan' })
+    expect(container.querySelector('.week-strip')).toBeNull()
+    expect(container.querySelector('.plan-week-nav')).toBeNull()
+    const karten = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
+    expect(karten).toEqual([`${t.fsShort} · ${t.versammlungCard}`, `${t.fsShort} · Gruppe 1`])
+  })
+
+  it('auch, solange noch keine Woche geladen ist — eine neue Versammlung richtet ihn vorher ein', () => {
+    const leer = zeige({ tab: 'fs', weeks: [], fsWeeks: [] })
+    expect(leer.container.textContent).toContain(t.keineWochenTitel)
+    expect(reiter(leer.container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan])
+    cleanup()
+    const { container } = zeige({ tab: 'fs', weeks: [], fsWeeks: [], fsBereich: 'grundplan' })
+    expect(container.textContent).not.toContain(t.keineWochenTitel)
+    expect(container.querySelectorAll('.panel-label').length).toBeGreaterThan(0)
+  })
+
+  it('der Gruppenaufseher sieht nur den seiner Gruppe', () => {
+    // Bis T120 stand das unter Einstellungen; die Versammlungstreffpunkte
+    // gehören nicht zu ihm.
+    const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan' })
+    const karten = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
+    expect(karten).toEqual([`${t.fsShort} · Gruppe 1`])
+  })
+
+  it('bei den Zusammenkünften gilt der Bereich nicht — ihr Reiter zeigt die Woche', () => {
+    const { container } = zeige({ tab: 'mid', fsBereich: 'grundplan' })
+    expect(seite(container).querySelector('.plan-item')).toBeTruthy()
+  })
+})
+
 describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
   const alsAufseher = (over: Partial<AppState> = {}) =>
     zeige({ planner: false, personId: AUFSEHER.id, ...over })
 
-  it('ohne Reiterleiste — er käme sonst auf einen Plan, den er nicht ändern darf', () => {
+  it('ohne die Reiter der Zusammenkünfte — er käme sonst auf einen Plan, den er nicht ändern darf', () => {
     const { container } = alsAufseher()
-    expect(seite(container).querySelector('.plan-tabs')).toBeNull()
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan])
   })
 
   it('und ohne die Zusammenkunft selbst', () => {

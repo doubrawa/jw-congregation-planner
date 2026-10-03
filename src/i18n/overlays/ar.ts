@@ -7,12 +7,15 @@
 import type { Dict } from '../ui'
 
 export default {
-  "navProgramm": "البرنامج",
   "navAufgaben": "التعيينات",
   "navAufgabenLong": "تعييناتي",
-  "navPlanen": "التخطيط",
   "navPersonen": "الأشخاص",
   "navEinstellungen": "الإعدادات",
+  "navZusammenkuenfte": "الاجتماعات",
+  "navVerwaltung": "الإدارة",
+  "ansehen": "العرض",
+  "fsTreffpunkteTab": "الاجتماعات",
+  "fsGrundplan": "الجدول الأساسي",
   "navProfil": "الملف الشخصي",
   "menueLbl": "القائمة",
   "abmelden": "تسجيل الخروج",
@@ -276,7 +279,7 @@ export default {
   "fsOrtPh": "المكان (مثل قاعة الملكوت)",
   "toastFsAdd": "تمت إضافة الاجتماع",
   "toastFsDel": "تمت إزالة الاجتماع",
-  "fsGrundDesc": "أوقات وأماكن منتظمة. التغييرات تعيد ضبط خطط الأسابيع؛ عدّل كل أسبوع في علامة التبويب «التخطيط».",
+  "fsGrundDesc": "أوقات وأماكن منتظمة. التغييرات تعيد ضبط خطط الأسابيع؛ عدّل كل أسبوع في علامة التبويب «الاجتماعات».",
   "fsFreqW": "كل أسبوع",
   "fsFreqM1": "الأول من الشهر",
   "fsFreqM2": "الثاني من الشهر",

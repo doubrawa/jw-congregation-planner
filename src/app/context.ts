@@ -22,6 +22,7 @@ import type {
   Absence,
   Congregation,
   ConfirmationMap,
+  FsBereich,
   FsInstance,
   FsRule,
   Group,
@@ -41,6 +42,7 @@ import type {
   SlotSelection,
   SubstituteReq,
   Termin,
+  Thema,
   Theme,
   Week,
   WeekVariant,
@@ -120,6 +122,14 @@ export interface AppState {
   screen: Screen
   week: number // Index in weeks
   tab: MeetingTab
+  /**
+   * Zuletzt wurde geplant, nicht angesehen (T120). Die Themen im Menü öffnen
+   * dort, wo man zuletzt war: Wer plant, kurz in die Personen geht und über
+   * „Zusammenkünfte" zurückkommt, landet wieder beim Planen.
+   */
+  planModus: boolean
+  /** Im Predigtdienst beim Planen: die Treffpunkte der Woche oder ihr Grundplan (T120). */
+  fsBereich: FsBereich
 
   /* ---- Gerätevorlieben: je Gerät, in localStorage ----------------------- */
   theme: Theme
@@ -269,8 +279,19 @@ export type AppAction =
    * `woche`: eine bestimmte Woche und Ansicht öffnen statt der nächsten
    * Zusammenkunft — vom Start-Bildschirm aus die Woche, in der etwas zu tun ist.
    * Über dieselbe Aktion, damit die Rechteprüfung eine Stelle bleibt.
+   *
+   * `thema`: ein Thema des Menüs öffnen (T120) — der Reducer wählt dazu den
+   * Reiter. Ohne `thema` bleibt der Reiter, wie er ist.
    */
-  | { type: 'navigate'; screen: Screen; woche?: { wi: number; tab: MeetingTab }; abschnitt?: Abschnitt }
+  | {
+      type: 'navigate'
+      screen: Screen
+      woche?: { wi: number; tab: MeetingTab }
+      abschnitt?: Abschnitt
+      thema?: Thema
+    }
+  // Im Predigtdienst zwischen den Treffpunkten der Woche und ihrem Grundplan wechseln (T120).
+  | { type: 'setFsBereich'; bereich: FsBereich }
   // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).
   | { type: 'sprungZielErreicht' }
   | { type: 'prevWeek' }

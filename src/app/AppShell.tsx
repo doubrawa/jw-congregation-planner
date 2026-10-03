@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, aufseherGruppe } from '../data/helpers'
-import { erlaubteScreens } from '../data/rechte'
+import { darfPlanen, erlaubteScreens, themaVon } from '../data/rechte'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite } from '../lib/data'
 import { LOGO } from '../lib/logo'
 import { performLogout } from '../lib/supabase'
-import type { Screen } from '../data/types'
+import type { Screen, Thema } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { ErrorBoundary } from '../components/ErrorBoundary'
@@ -32,7 +32,7 @@ import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
 import { NotificationsPanel } from './NotificationsPanel'
-import { SidebarBrand, SidebarFooter, SidebarNav, type NavItem } from './Sidebar'
+import { SidebarBrand, SidebarFooter, SidebarNav, type NavAbschnitt, type NavEintrag } from './Sidebar'
 import { welcomeDecision } from './welcome'
 import '../components/components.css'
 import './shell.css'
@@ -145,17 +145,59 @@ export function AppShell() {
     dispatch({ type: 'welcomeShown' })
     if (d !== 'verwerfen') dispatch({ type: 'showToast', text: fill(t.toastWillkommen, d) })
   }, [state.welcomePending, state.dataStatus, me, t, dispatch])
-  const navLabels: Record<Screen, string> = {
-    login: '',
-    start: t.navStart,
-    programm: t.navProgramm,
-    aufgaben: state.planner ? t.navAufgaben : t.navAufgabenLong,
-    planen: t.navPlanen,
-    personen: t.navPersonen,
-    einstellungen: t.navEinstellungen,
-    profil: t.navProfil,
+  /*
+   * **Das Menü nach Themen** (T120): Eigenes oben, dann die Versammlung mit
+   * ihren Themen, zuletzt die Verwaltung — nur, wer sie sehen darf. „Programm"
+   * und „Planen" sind keine Menüpunkte mehr, sondern die beiden Seiten eines
+   * Themas (der Schalter im Kopf, `ThemaKopf`). Ein Thema öffnet dort, wo man
+   * zuletzt war: beim Planen, wer zuletzt geplant hat und es darf.
+   */
+  const aktuellesThema =
+    state.screen === 'programm' || state.screen === 'planen' ? themaVon(state.tab) : null
+  const zuThema = (thema: Thema) => {
+    setMenuOpen(false)
+    const planen = state.planModus && darfPlanen(state.planner, fsOverseer, thema)
+    dispatch({ type: 'navigate', screen: planen ? 'planen' : 'programm', thema })
   }
-  const navItems: NavItem[] = navScreens.map((screen) => [screen, navLabels[screen]])
+  const eintrag = (screen: Screen, label: string): NavEintrag => ({
+    key: screen,
+    label,
+    aktiv: state.screen === screen,
+    onClick: () => navigate(screen),
+  })
+  const themaEintrag = (thema: Thema, label: string): NavEintrag => ({
+    key: thema,
+    label,
+    aktiv: aktuellesThema === thema,
+    onClick: () => zuThema(thema),
+  })
+  const verwaltung = (['personen', 'einstellungen'] as const).filter((s) => navScreens.includes(s))
+  const abschnitte: NavAbschnitt[] = [
+    {
+      key: 'eigenes',
+      titel: null,
+      eintraege: [eintrag('start', t.navStart), eintrag('aufgaben', t.navAufgabenLong)],
+    },
+    {
+      key: 'versammlung',
+      titel: t.versammlungLbl,
+      eintraege: [
+        themaEintrag('zusammenkuenfte', t.navZusammenkuenfte),
+        themaEintrag('predigtdienst', t.tabFs),
+      ],
+    },
+    ...(verwaltung.length > 0
+      ? [
+          {
+            key: 'verwaltung',
+            titel: t.navVerwaltung,
+            eintraege: verwaltung.map((s) =>
+              eintrag(s, s === 'personen' ? t.navPersonen : t.navEinstellungen),
+            ),
+          },
+        ]
+      : []),
+  ]
   const congSub = fill(t.congLabel, { name: state.congregation.name })
   const roleLabel = state.planner ? t.rolleKoordinator : t.rolleVerkuendiger
   const logout = () => performLogout(dispatch)
@@ -176,8 +218,16 @@ export function AppShell() {
       {!isLogin && (
         <aside className="sidebar">
           <SidebarBrand congSub={congSub} />
-          <SidebarNav items={navItems} active={state.screen} onNavigate={navigate} />
-          <SidebarFooter me={me} roleLabel={roleLabel} logoutLabel={t.abmelden} onLogout={logout} />
+          <SidebarNav abschnitte={abschnitte} />
+          <SidebarFooter
+            me={me}
+            roleLabel={roleLabel}
+            profilLabel={t.navProfil}
+            aktiv={state.screen === 'profil'}
+            onProfil={() => navigate('profil')}
+            logoutLabel={t.abmelden}
+            onLogout={logout}
+          />
         </aside>
       )}
 
@@ -261,8 +311,16 @@ export function AppShell() {
                       ✕
                     </button>
                   </div>
-                  <SidebarNav items={navItems} active={state.screen} onNavigate={navigate} />
-                  <SidebarFooter me={me} roleLabel={roleLabel} logoutLabel={t.abmelden} onLogout={logout} />
+                  <SidebarNav abschnitte={abschnitte} />
+                  <SidebarFooter
+                    me={me}
+                    roleLabel={roleLabel}
+                    profilLabel={t.navProfil}
+                    aktiv={state.screen === 'profil'}
+                    onProfil={() => navigate('profil')}
+                    logoutLabel={t.abmelden}
+                    onLogout={logout}
+                  />
                 </aside>
               </>
             )}

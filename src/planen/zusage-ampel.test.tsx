@@ -124,9 +124,12 @@ function zeige(state: AppState) {
   return render(<Buehne />).container
 }
 
-/** Nur die mittlere (angezeigte) Seite des Wochenstreifens. */
-const seite = (c: HTMLElement): HTMLElement =>
-  (c.querySelector('.week-page:not(.week-page--vor):not(.week-page--nach)') as HTMLElement) ?? c
+/**
+ * Nur die mittlere (angezeigte) Seite des Wochenstreifens. Bis T120 stand hier
+ * ein Selektor auf `.week-page`, den nur die Nachbarn tragen: Er traf nie, und
+ * die Chips kamen aus allen drei Wochen.
+ */
+const seite = (c: HTMLElement): HTMLElement => (c.querySelector('.week-strip > .screen') as HTMLElement) ?? c
 
 /** Stufe je Chip einer Person: `is-bestaetigt` / `is-offen` / `is-verhindert`. */
 function stufenVon(c: HTMLElement, name: string): string[] {

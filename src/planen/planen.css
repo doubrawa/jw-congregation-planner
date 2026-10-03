@@ -1222,3 +1222,79 @@
   opacity: 0.45;
   cursor: default;
 }
+
+/* ---- Grundplan Treffpunkte ------------------------------------------------
+   Seit T120 im Predigtdienst (vorher in den Einstellungen). Eine Karte je
+   Abschnitt (Versammlung, jede Gruppe), alle in derselben Farbe (T108). Die
+   Überschrift setzt sich aus zwei übersetzten Bausteinen zusammen
+   („Treffpunkte" · Gruppenname) — beide stehen im Wörterbuch bzw. in den Daten
+   nicht großgeschrieben; die Großschreibung der übrigen Kartenüberschriften
+   holt hier das CSS nach, nach den Regeln der Seitensprache (`lang` am
+   `<html>`, z. B. das türkische İ). */
+
+.fsr-label {
+  text-transform: uppercase;
+}
+
+.fsr-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineNeu);
+}
+
+/* Die Bedienzeile einer Treffpunkt-Regel. */
+.fsr-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fsr-line + .fsr-line {
+  margin-top: 8px;
+}
+
+/* Wochentag und Häufigkeit: nebeneinander, solange beide ganz lesbar sind.
+   Die Grundbreite jedes Felds ist sein längster Eintrag (`flex-basis: auto`),
+   also bricht die Häufigkeit in eine zweite Reihe um, sobald die Zeile dafür
+   nicht reicht — große Schrift, schmales Handy. Kürzen soll hier nichts:
+   „Jeden 1. im Monat" und „Jede Woche" sähen abgeschnitten gleich aus. Das ✕
+   steht außerhalb und bleibt deshalb rechts neben beiden Reihen. */
+.fsr-wahl {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fsr-wahl > .fs-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fsr-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--bord2);
+  background: var(--card);
+  font-size: calc(12.5px * var(--fs));
+  color: var(--ink);
+}
+
+.fsr-skip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.fsr-skip-label {
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.fsr-add {
+  margin-top: 10px;
+}

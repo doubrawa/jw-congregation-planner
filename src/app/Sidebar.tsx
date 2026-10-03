@@ -1,15 +1,32 @@
 /**
  * Navigations-Chrome (Marke, Menü, Profil-Fuß) — geteilt zwischen der festen
  * Desktop-Sidebar und dem mobilen Drawer, damit beide nicht auseinanderlaufen.
- * Reine Präsentation: State und Handler kommen aus AppShell.
+ * Reine Präsentation: Einträge, State und Handler kommen aus AppShell.
  */
 
 import { displayName, initials } from '../data/helpers'
 import { useT } from '../i18n/useT'
 import { LOGO } from '../lib/logo'
-import type { Person, Screen } from '../data/types'
+import type { Person } from '../data/types'
 
-export type NavItem = readonly [screen: Screen, label: string]
+/** Ein Eintrag des Menüs: ein Bildschirm oder ein Thema (T120). */
+export interface NavEintrag {
+  key: string
+  label: string
+  aktiv: boolean
+  onClick: () => void
+}
+
+/**
+ * Ein Abschnitt des Menüs (T120). Der erste — Start und Meine Aufgaben — trägt
+ * keine Überschrift; danach „Versammlung" mit den Themen und, nur für Admins,
+ * „Verwaltung".
+ */
+export interface NavAbschnitt {
+  key: string
+  titel: string | null
+  eintraege: readonly NavEintrag[]
+}
 
 /** Logo + Wortmarke + Versammlungsname. */
 export function SidebarBrand({ congSub }: { congSub: string }) {
@@ -28,56 +45,82 @@ export function SidebarBrand({ congSub }: { congSub: string }) {
   )
 }
 
-/** Navigationsliste (aktiver Punkt markiert). */
-export function SidebarNav({
-  items,
-  active,
-  onNavigate,
-}: {
-  items: readonly NavItem[]
-  active: Screen
-  onNavigate: (screen: Screen) => void
-}) {
+/** Navigationsliste in Abschnitten (aktiver Punkt markiert). */
+export function SidebarNav({ abschnitte }: { abschnitte: readonly NavAbschnitt[] }) {
   const { t } = useT()
   return (
     <nav className="sidebar-nav" aria-label={t.a11yMainNav}>
-      {items.map(([screen, label]) => (
-        <button
-          key={screen}
-          type="button"
-          className={active === screen ? 'sidebar-nav-item is-active' : 'sidebar-nav-item'}
-          aria-current={active === screen ? 'page' : undefined}
-          onClick={() => onNavigate(screen)}
+      {abschnitte.map((abschnitt) => (
+        <div
+          key={abschnitt.key}
+          role={abschnitt.titel ? 'group' : undefined}
+          aria-label={abschnitt.titel ?? undefined}
         >
-          {label}
-        </button>
+          {/* Die Überschrift liest die Gruppe schon vor (`aria-label`). */}
+          {abschnitt.titel && (
+            <div className="sidebar-nav-titel" aria-hidden="true">
+              {abschnitt.titel}
+            </div>
+          )}
+          {abschnitt.eintraege.map((eintrag) => (
+            <button
+              key={eintrag.key}
+              type="button"
+              className={eintrag.aktiv ? 'sidebar-nav-item is-active' : 'sidebar-nav-item'}
+              aria-current={eintrag.aktiv ? 'page' : undefined}
+              onClick={eintrag.onClick}
+            >
+              {eintrag.label}
+            </button>
+          ))}
+        </div>
       ))}
     </nav>
   )
 }
 
-/** Profil-Fuß: Abstand, Avatar/Name/Rolle und Abmelden-Knopf. */
+/**
+ * Profil-Fuß: Abstand, der Namensblock und Abmelden.
+ *
+ * Der Namensblock **ist** der Weg zum Profil (T120). Bis dahin stand das Profil
+ * zweimal da — als Menüpunkt und darunter als Name, den man nicht antippen
+ * konnte.
+ */
 export function SidebarFooter({
   me,
   roleLabel,
+  profilLabel,
+  aktiv,
+  onProfil,
   logoutLabel,
   onLogout,
 }: {
   me: Person | undefined
   roleLabel: string
+  profilLabel: string
+  aktiv: boolean
+  onProfil: () => void
   logoutLabel: string
   onLogout: () => void
 }) {
   return (
     <>
       <div className="sidebar-spacer" />
-      <div className="sidebar-profile">
-        <div className="avatar avatar--ink avatar--32">{me ? initials(me) : '–'}</div>
-        <div>
-          <div className="sidebar-profile-name" dir="auto">{me ? displayName(me) : ''}</div>
-          <div className="sidebar-profile-role">{roleLabel}</div>
-        </div>
-      </div>
+      <button
+        type="button"
+        className={aktiv ? 'sidebar-profile is-active' : 'sidebar-profile'}
+        aria-current={aktiv ? 'page' : undefined}
+        onClick={onProfil}
+      >
+        <span className="avatar avatar--ink avatar--32" aria-hidden="true">
+          {me ? initials(me) : '–'}
+        </span>
+        <span className="sidebar-profile-text">
+          <span className="sidebar-profile-name" dir="auto">{me ? displayName(me) : ''}</span>
+          <span className="sidebar-profile-role">{roleLabel}</span>
+        </span>
+        <span className="sidebar-profile-link">{profilLabel} ›</span>
+      </button>
       <button type="button" className="sidebar-logout" onClick={onLogout}>
         {logoutLabel}
       </button>

@@ -115,7 +115,9 @@ export function PlanungsKarte() {
       <button
         type="button"
         className="dash-plan"
-        onClick={() => dispatch({ type: 'navigate', screen: 'planen' })}
+        // Die Karte zählt die Zusammenkünfte — sie öffnet auch dort, nicht im
+        // Predigtdienst, falls man zuletzt den angesehen hat (T120).
+        onClick={() => dispatch({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })}
       >
         <span className="dash-plan-body">
           <span className="dash-plan-label">{t.dashPlanung}</span>

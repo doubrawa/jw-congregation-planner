@@ -431,30 +431,18 @@ describe('Sprache', () => {
 })
 
 describe('Wer welche Einstellungen sieht', () => {
-  it('der Planer bekommt alle Panels — die Treffpunkte als eine Karte je Abschnitt', () => {
+  it('der Planer bekommt alle Panels — den Grundplan der Treffpunkte nicht mehr', () => {
     const { container } = zeige('screen')
     const ueberschriften = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
     expect(ueberschriften).toContain(t.versammlungCard)
     expect(ueberschriften).toContain(t.gruppenCard)
     expect(ueberschriften).toContain(t.spracheCard)
     expect(ueberschriften).toContain(t.erinnerungenCard)
-    // Versammlung und die eine Gruppe der Vorgabe — direkt hintereinander.
-    const treffpunkte = ueberschriften.filter((u) => u?.startsWith(`${t.fsShort} · `))
-    expect(treffpunkte).toEqual([`${t.fsShort} · ${t.versammlungCard}`, `${t.fsShort} · Gruppe 1`])
-  })
-
-  it('der Gruppenaufseher nur den Grundplan — Versammlungsdaten gehen ihn nichts an', () => {
-    const { container } = zeige('screen', {
-      planner: false,
-      personId: 'p-ae', // Aufseher der Gruppe g1
-    })
-    const ueberschriften = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
-    expect(ueberschriften).not.toContain(t.versammlungCard)
-    expect(ueberschriften).not.toContain(t.gruppenCard)
-    expect(ueberschriften).not.toContain(t.erinnerungenCard)
-    // Genau eine Karte: die Treffpunkte seiner Gruppe. Auch die Karte der
-    // Versammlungstreffpunkte gehört nicht zu ihm.
-    expect(ueberschriften).toEqual([`${t.fsShort} · Gruppe 1`])
+    // Der Grundplan steht seit T120 im Predigtdienst (Planen › Grundplan,
+    // `planen/FsRulesPanel.test.tsx`). Damit kam auch der Gruppenaufseher nur
+    // noch seinetwegen hierher — er sieht die Einstellungen nicht mehr
+    // (`data/rechte.test.ts`).
+    expect(ueberschriften.filter((u) => u?.startsWith(`${t.fsShort} · `))).toEqual([])
   })
 
   it('der Kopf nennt die Versammlung — man sieht, worauf man gerade schreibt', () => {

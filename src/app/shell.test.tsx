@@ -106,74 +106,114 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
+/** Überschriften der Menü-Abschnitte (T120). */
+const abschnittTitel = (c: HTMLElement) =>
+  [...c.querySelectorAll('.sidebar .sidebar-nav-titel')].map((e) => e.textContent ?? '')
+
+/** Den Menüpunkt mit dieser Beschriftung antippen (Desktop-Sidebar). */
+function tippe(c: HTMLElement, label: string) {
+  const punkt = [...c.querySelectorAll('.sidebar .sidebar-nav button')].find((b) => b.textContent === label)
+  if (!punkt) throw new Error(`kein Menüpunkt „${label}"`)
+  fireEvent.click(punkt)
+}
+
 describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () => {
-  it('der Planer sieht alle sieben Bereiche', () => {
+  /*
+   * **Das Menü nach Themen** (T120): Eigenes oben, dann die Versammlung mit
+   * ihren Themen, zuletzt die Verwaltung. „Programm" und „Planen" sind keine
+   * Menüpunkte mehr, sondern die beiden Seiten eines Themas; das Profil
+   * erreicht man über den Namensblock.
+   */
+  it('der Admin sieht Eigenes, die Themen der Versammlung und die Verwaltung', () => {
     const { container } = zeige({ planner: true })
     expect(navPunkte(container)).toEqual([
-      t.navStart, t.navProgramm, t.navAufgaben, t.navPlanen, t.navPersonen, t.navEinstellungen, t.navProfil,
+      t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs, t.navPersonen, t.navEinstellungen,
     ])
+    expect(abschnittTitel(container)).toEqual([t.versammlungLbl, t.navVerwaltung])
   })
 
-  it('der Verkündiger sieht weder Planen noch Personen noch Einstellungen', () => {
+  it('der Verkündiger sieht dieselben Themen — ohne Verwaltung', () => {
     const { container } = zeige({ planner: false, personId: VERKUENDIGER.id })
-    expect(navPunkte(container)).toEqual([t.navStart, t.navProgramm, t.navAufgabenLong, t.navProfil])
+    expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs])
+    expect(abschnittTitel(container)).toEqual([t.versammlungLbl])
   })
 
-  it('der Gruppenaufseher bekommt Planen und Einstellungen dazu — Personen nicht', () => {
-    // Er plant die Treffpunkte seiner Gruppe; die Personenverwaltung bleibt zu.
+  it('der Gruppenaufseher ebenso — er plant über den Schalter im Predigtdienst', () => {
+    // Die Einstellungen brauchte er nur für den Grundplan seiner Gruppe; der
+    // steht seit T120 im Predigtdienst. Personen bleiben ohnehin zu.
     const { container } = zeige({ planner: false, personId: AUFSEHER.id })
-    expect(navPunkte(container)).toEqual([
-      t.navStart, t.navProgramm, t.navAufgabenLong, t.navPlanen, t.navEinstellungen, t.navProfil,
-    ])
+    expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs])
   })
 
-  it('auch der Gruppen-Gehilfe zählt als Aufseher', () => {
-    const { container } = zeige({
-      planner: false,
-      personId: VERKUENDIGER.id,
-      groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: VERKUENDIGER.id }],
-    })
-    expect(navPunkte(container)).toContain(t.navPlanen)
+  it('das Profil ist kein Menüpunkt mehr — der Namensblock führt hin', () => {
+    const { container, dispatch } = zeige({ planner: true })
+    expect(navPunkte(container)).not.toContain(t.navProfil)
+    fireEvent.click(container.querySelector('.sidebar .sidebar-profile')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'profil' })
   })
 
   it('Vollständigkeitsprobe: kein Eintrag ohne Recht — die Liste deckt sich mit dem Wächter', async () => {
     // Gegenprobe zur Rechteprüfung im Reducer: Was hier steht, muss dort
     // durchgehen. Sonst zeigt die App einen Punkt, der ins Programm zurückwirft.
+    // Geprüft wird die Aktion, die der Punkt wirklich auslöst — bei den Themen
+    // samt ihrem Reiter.
     const { reducer } = await import('./reducer')
     for (const [rolle, over] of [
       ['Planer', { planner: true, personId: PLANER.id }],
       ['Gruppenaufseher', { planner: false, personId: AUFSEHER.id }],
       ['Verkündiger', { planner: false, personId: VERKUENDIGER.id }],
     ] as const) {
-      const { container } = zeige(over)
-      const beschriftungen = navPunkte(container)
-      const start = zustand(over)
-      for (const [screen, label] of Object.entries({
-        start: t.navStart, programm: t.navProgramm, planen: t.navPlanen,
-        personen: t.navPersonen, einstellungen: t.navEinstellungen, profil: t.navProfil,
-      } as const)) {
-        if (!beschriftungen.includes(label)) continue
-        const next = reducer(start, { type: 'navigate', screen: screen as never })
-        expect(next.screen, `${rolle} · ${label}`).toBe(screen)
+      for (const planModus of [false, true]) {
+        const { container, dispatch } = zeige({ ...over, planModus })
+        for (const label of navPunkte(container)) {
+          dispatch.mockClear()
+          tippe(container, label)
+          const aktion = dispatch.mock.calls[0]?.[0]
+          const next = reducer(zustand({ ...over, planModus }), aktion)
+          expect(next.screen, `${rolle} · ${label} · planModus ${planModus}`).toBe(aktion.screen)
+        }
+        cleanup()
       }
-      cleanup()
     }
   })
 
-  it('ein Klick auf einen Punkt navigiert dorthin', () => {
-    const { container, dispatch } = zeige()
-    const planen = [...container.querySelectorAll('.sidebar .sidebar-nav button')].find(
-      (b) => b.textContent === t.navPlanen,
-    )!
-    fireEvent.click(planen)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen' })
+  it('ein Thema öffnet beim Ansehen — oder beim Planen, wer zuletzt geplant hat', () => {
+    const { container, dispatch } = zeige({ planner: true, planModus: false })
+    tippe(container, t.navZusammenkuenfte)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
+    cleanup()
+    const zuletztGeplant = zeige({ planner: true, planModus: true })
+    tippe(zuletztGeplant.container, t.tabFs)
+    expect(zuletztGeplant.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   })
 
-  it('der aktive Punkt ist als solcher ausgezeichnet — für Auge und Screenreader', () => {
-    const { container } = zeige({ screen: 'programm' })
-    const aktiv = container.querySelectorAll('.sidebar .sidebar-nav [aria-current="page"]')
-    expect(aktiv).toHaveLength(1)
-    expect(aktiv[0]?.textContent).toBe(t.navProgramm)
+  it('der Gruppenaufseher kommt so nur in den Predigtdienst planend hinein', () => {
+    const { container, dispatch } = zeige({ planner: false, personId: AUFSEHER.id, planModus: true })
+    tippe(container, t.navZusammenkuenfte)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
+    tippe(container, t.tabFs)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+  })
+
+  it('ein Klick auf einen Bildschirm-Punkt navigiert dorthin', () => {
+    const { container, dispatch } = zeige()
+    tippe(container, t.navPersonen)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'personen' })
+  })
+
+  it('der aktive Punkt ist als solcher ausgezeichnet — beim Thema entscheidet der Reiter', () => {
+    for (const [over, erwartet] of [
+      [{ screen: 'programm', tab: 'mid' }, t.navZusammenkuenfte],
+      [{ screen: 'planen', tab: 'edit' }, t.navZusammenkuenfte],
+      [{ screen: 'planen', tab: 'fs' }, t.tabFs],
+      [{ screen: 'aufgaben' }, t.navAufgabenLong],
+    ] as const) {
+      const { container } = zeige(over)
+      const aktiv = container.querySelectorAll('.sidebar .sidebar-nav [aria-current="page"]')
+      expect(aktiv).toHaveLength(1)
+      expect(aktiv[0]?.textContent).toBe(erwartet)
+      cleanup()
+    }
   })
 })
 
@@ -403,10 +443,10 @@ describe('Das mobile Seitenmenü', () => {
     const { container, dispatch } = zeige()
     fireEvent.click(container.querySelector('.menu-btn')!)
     const punkt = [...container.querySelectorAll('.drawer .sidebar-nav button')].find(
-      (b) => b.textContent === t.navProgramm,
+      (b) => b.textContent === t.navZusammenkuenfte,
     )!
     fireEvent.click(punkt)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
     expect(container.querySelector('.drawer')).toBeNull()
   })
 

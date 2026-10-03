@@ -25,6 +25,9 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   'prevWeek',
   'nextWeek',
   'setTab',
+  // Im Predigtdienst zwischen Treffpunkten und Grundplan wechseln (T120) —
+  // erst die Felder des Grundplans schreiben.
+  'setFsBereich',
   // Ansichten öffnen/schließen (das Zuteilungs-Sheet zeigt auch Verfügbarkeiten;
   // erst das eigentliche `assign` ist ein Schreibzugriff)
   'openSlot',

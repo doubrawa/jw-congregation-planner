@@ -227,22 +227,52 @@
   color: var(--accD);
 }
 
+/* Überschrift eines Menü-Abschnitts (T120): „Versammlung", „Verwaltung".
+   Großbuchstaben per CSS — Schriften ohne sie bleiben unberührt. */
+.sidebar-nav-titel {
+  margin: 12px 12px 2px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: calc(9.5px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
 .sidebar-spacer {
   flex: 1;
 }
 
+/* Der Namensblock ist der Weg zum Profil (T120) — ein Knopf, kein Schild. */
 .sidebar-profile {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  text-align: start;
+  color: var(--ink);
   border-top: 1px solid var(--line);
   margin-top: 12px;
-  padding: 14px 10px 0;
+  padding: 14px 10px 8px;
+}
+
+.sidebar-profile-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar-profile-name {
   font-size: calc(12.5px * var(--fs));
   font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-profile:hover .sidebar-profile-name {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .sidebar-profile-role {
@@ -250,12 +280,23 @@
   color: var(--mut);
 }
 
+.sidebar-profile-link {
+  flex: none;
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+  color: var(--acc);
+}
+
+.sidebar-profile.is-active .sidebar-profile-link {
+  color: var(--accD);
+}
+
 .sidebar-logout {
   text-align: start;
   font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   color: var(--wein);
-  padding: 10px 10px 0;
+  padding: 6px 10px 0;
 }
 
 /* ---- Kopfzeile (mobil) & Mitteilungs-Chip ------------------------------- */

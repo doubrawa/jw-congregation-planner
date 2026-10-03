@@ -48,14 +48,14 @@ describe('Der Bearbeiten-Reiter', () => {
   it('erscheint nur, wenn er angefordert wird', () => {
     const { queryByLabelText, rerender } = render(
       <Buehne state={basis()}>
-        <MeetingTabs tab="mid" onChange={() => {}} showFs />
+        <MeetingTabs tab="mid" onChange={() => {}} />
       </Buehne>,
     )
     expect(queryByLabelText(t.einstellungen)).toBeNull()
 
     rerender(
       <Buehne state={basis()}>
-        <MeetingTabs tab="mid" onChange={() => {}} showFs showEdit />
+        <MeetingTabs tab="mid" onChange={() => {}} showEdit />
       </Buehne>,
     )
     // Ein Symbol braucht einen vorgelesenen Namen — er kommt aus `einstellungen`,
@@ -67,7 +67,7 @@ describe('Der Bearbeiten-Reiter', () => {
     let gewaehlt: string | null = null
     const { getByLabelText } = render(
       <Buehne state={basis()}>
-        <MeetingTabs tab="mid" onChange={(tab) => (gewaehlt = tab)} showFs showEdit />
+        <MeetingTabs tab="mid" onChange={(tab) => (gewaehlt = tab)} showEdit />
       </Buehne>,
     )
     fireEvent.click(getByLabelText(t.einstellungen))

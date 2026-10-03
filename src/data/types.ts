@@ -69,6 +69,25 @@ export type MeetingKey = 'mid' | 'we'
 export type MeetingTab = MeetingKey | 'fs' | 'edit'
 
 /**
+ * Ein **Thema** des Hauptmenüs (T120): Zusammenkünfte oder Predigtdienst.
+ *
+ * Kein eigener Bildschirm, sondern eine Sicht auf `programm`/`planen`: Das
+ * Thema ergibt sich aus dem Reiter (`themaVon`, rechte.ts), der Schalter
+ * Ansehen/Planen aus dem Bildschirm. So bleiben die Push-Links
+ * (`#go=planen`), die Sprünge der Planungs-Karte und die Rechteprüfung, wie sie
+ * sind — nur die Navigation fragt nach dem Thema.
+ */
+export type Thema = 'zusammenkuenfte' | 'predigtdienst'
+
+/**
+ * Was im Predigtdienst gerade zu sehen ist, solange geplant wird (T120): die
+ * Treffpunkte der Woche oder ihr Grundplan. Der Grundplan stand bis dahin in
+ * den Einstellungen; er gehört aber zum Thema, und der Gruppenaufseher kam nur
+ * seinetwegen überhaupt in die Einstellungen.
+ */
+export type FsBereich = 'treffpunkte' | 'grundplan'
+
+/**
  * Regeltermin **einer** Zusammenkunft: Wochentag als Zahl (0 = Sonntag …
  * 6 = Samstag, wie `Date#getDay()` und `FsRule.wd`) und Uhrzeit als „19:00".
  */

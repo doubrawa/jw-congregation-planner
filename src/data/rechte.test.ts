@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { erlaubteScreens } from './rechte'
+import { darfPlanen, erlaubteScreens, themaVon } from './rechte'
 import type { Screen } from './types'
 
 /**
@@ -64,12 +64,15 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'profil'])
   })
 
-  it('der Gruppenaufseher bekommt Planen und Einstellungen dazu', () => {
+  it('der Gruppenaufseher bekommt Planen dazu — die Einstellungen nicht mehr', () => {
     // Dort nur die Treffpunkte seiner eigenen Gruppe — das entscheidet der
-    // jeweilige Bildschirm über `onlyGroup`, nicht diese Regel.
+    // jeweilige Bildschirm über `onlyGroup`, nicht diese Regel. Die
+    // Einstellungen brauchte er bis T120 allein für den Grundplan seiner
+    // Gruppe; der steht seitdem im Predigtdienst.
     const erlaubt = erlaubteScreens(false, true)
     expect(erlaubt).toContain('planen')
-    expect(erlaubt).toContain('einstellungen')
+    expect(erlaubt).not.toContain('einstellungen')
+    expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'planen', 'profil'])
   })
 
   it('die Personenliste bleibt dem Gruppenaufseher verschlossen', () => {
@@ -95,6 +98,35 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     ]) {
       expect(reihenfolge(menge)).toEqual([...reihenfolge(menge)].sort((a, b) => a - b))
     }
+  })
+})
+
+describe('Wer welches Thema planen darf (T120)', () => {
+  /*
+    Das Menü führt nach Themen — Zusammenkünfte, Predigtdienst —, und jedes
+    Thema hat zwei Seiten: Ansehen und Planen. Den Schalter dazwischen sieht nur,
+    wer das Thema planen darf; der Reducer lenkt alle anderen beim Planen ab.
+  */
+  it('die Treffpunkte gehören zum Predigtdienst, alle anderen Reiter zu den Zusammenkünften', () => {
+    expect(themaVon('fs')).toBe('predigtdienst')
+    for (const tab of ['mid', 'we', 'edit'] as const) expect(themaVon(tab)).toBe('zusammenkuenfte')
+  })
+
+  it('der Planer plant beide Themen', () => {
+    expect(darfPlanen(true, false, 'zusammenkuenfte')).toBe(true)
+    expect(darfPlanen(true, false, 'predigtdienst')).toBe(true)
+  })
+
+  it('der Gruppenaufseher plant nur den Predigtdienst', () => {
+    // Eine Zusammenkunft teilt er nicht ein — er sähe sonst den Schalter und
+    // landete beim Antippen auf einem Plan, den er nicht ändern darf.
+    expect(darfPlanen(false, true, 'predigtdienst')).toBe(true)
+    expect(darfPlanen(false, true, 'zusammenkuenfte')).toBe(false)
+  })
+
+  it('der Verkündiger plant nichts', () => {
+    expect(darfPlanen(false, false, 'zusammenkuenfte')).toBe(false)
+    expect(darfPlanen(false, false, 'predigtdienst')).toBe(false)
   })
 })
 

@@ -11,7 +11,7 @@ import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meet
 import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, genFsWeek, regenFsWeeks } from '../data/fs'
 import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
-import { erlaubteScreens } from '../data/rechte'
+import { darfPlanen, erlaubteScreens, themaVon } from '../data/rechte'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
 import { alsFreitext } from '../i18n/translate'
@@ -58,6 +58,7 @@ import type {
   Notification,
   NotificationType,
   Person,
+  Screen,
   SubstituteReq,
   Week,
 } from '../data/types'
@@ -277,11 +278,28 @@ export function aufgabenAbgeleitet(state: AppState): AppState {
  * Gibt es keine nächste (keine Wochen geladen, alle Termine vorbei), bleibt
  * alles stehen: eine Ansicht auf gut Glück zu verschieben wäre schlechter als
  * die, auf der man ist.
+ *
+ * Die Treffpunkte bleiben unangetastet: Wer im Predigtdienst ist, meint ihn und
+ * keine Zusammenkunft. Bis T120 stand das nur beim Navigieren — dorthin kam man
+ * damals ohnehin nur über den Reiter, also mit eigener Wahl. Seit das Menü ohne
+ * sie hinführt, warf das Nachladen (etwa nach „Plan senden") mitten in der
+ * Arbeit in die Zusammenkünfte.
  */
 function zurNaechstenZusammenkunft(state: AppState): AppState {
-  if (state.terminGewaehlt) return state
+  if (state.terminGewaehlt || state.tab === 'fs') return state
   const naechste = naechsteZusammenkunft(state.weeks, state.congregation.times)
   return naechste ? { ...state, week: naechste.wi, tab: naechste.tab } : state
+}
+
+/**
+ * Der Reiter, wenn man vom Predigtdienst zu den Zusammenkünften wechselt
+ * (T120): die nächste Zusammenkunft, sofern sie in der gezeigten Woche liegt —
+ * sonst die unter der Woche. Die Woche selbst bleibt; wer eine gewählt hat, will
+ * in ihr bleiben.
+ */
+function zusammenkunftDerWoche(state: AppState): MeetingKey {
+  const naechste = naechsteZusammenkunft(state.weeks, state.congregation.times)
+  return naechste && naechste.wi === state.week ? naechste.tab : 'mid'
 }
 
 /**
@@ -398,7 +416,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         svcSheet: null,
         // Neue Sitzung: Programm und Planen öffnen wieder mit der nächsten
         // Zusammenkunft, nicht mit dem Reiter des Vorgängers am selben Gerät.
+        // Auch der Reiter selbst: Den Predigtdienst lässt das Nachladen stehen
+        // (`zurNaechstenZusammenkunft`), der Nächste erbte ihn sonst.
+        tab: 'mid',
         terminGewaehlt: false,
+        planModus: false,
+        fsBereich: 'treffpunkte',
         sprungZiel: null, // ein Sprung aus einem Push gehört zur Sitzung, die ihn bekam
         s89: null,
         confirmOpen: false,
@@ -413,7 +436,24 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const fsOverseer =
         aufseherGruppe(state.planner, state.groups, state.personId) !== null
       const erlaubteZiele = erlaubteScreens(state.planner, fsOverseer)
-      const screen = erlaubteZiele.includes(action.screen) ? action.screen : 'programm'
+      let screen: Screen = erlaubteZiele.includes(action.screen) ? action.screen : 'programm'
+      // Ein Thema des Menüs bringt seinen Reiter mit (T120); ohne Thema bleibt
+      // der bisherige.
+      let wunsch: MeetingTab =
+        action.thema === 'predigtdienst'
+          ? 'fs'
+          : action.thema === 'zusammenkuenfte' && state.tab === 'fs'
+            ? zusammenkunftDerWoche(state)
+            : state.tab
+      // Planen nur, wo man planen darf (T120). Der Gruppenaufseher plant allein
+      // Treffpunkte: Ein Sprung nach Planen ohne Thema (Push, Start-Bildschirm)
+      // zeigt ihm deshalb den Predigtdienst — so war es schon vorher, als
+      // `PlanenScreen` ihm nur die Treffpunkte zeigte. Wählt er ausdrücklich die
+      // Zusammenkünfte, sieht er sie an.
+      if (screen === 'planen' && !darfPlanen(state.planner, fsOverseer, themaVon(wunsch))) {
+        if (action.thema === undefined) wunsch = 'fs'
+        else screen = 'programm'
+      }
       // Zwei Tabs sind keine Zusammenkunft und nicht überall erlaubt: „Treffpunkte"
       // gibt es in Programm und Planen, „Bearbeiten" (T64) **nur** im Planen —
       // das Programm ist für alle nur lesend. Beim Wechsel woandershin auf die
@@ -424,11 +464,22 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         edit: screen === 'planen',
       }
       const tab: MeetingTab =
-        (state.tab === 'fs' || state.tab === 'edit') && !erlaubt[state.tab] ? 'mid' : state.tab
+        (wunsch === 'fs' || wunsch === 'edit') && !erlaubt[wunsch] ? 'mid' : wunsch
       const nachher = {
         ...dropNamelessSelected(state),
         screen,
         tab,
+        // Merkt sich, ob zuletzt geplant wurde — die Themen im Menü öffnen
+        // dann wieder dort (T120). Andere Bildschirme ändern daran nichts, und
+        // ebenso wenig das Ansehen eines Themas, das man gar nicht planen darf:
+        // Der Gruppenaufseher, der zwischendurch die Zusammenkünfte ansieht,
+        // hat das Planen damit nicht verlassen.
+        planModus:
+          screen === 'planen'
+            ? true
+            : screen === 'programm' && darfPlanen(state.planner, fsOverseer, themaVon(tab))
+              ? false
+              : state.planModus,
         notifOpen: false,
         slotSel: null,
         selectedPersonId: null,
@@ -449,19 +500,25 @@ function baseReducer(state: AppState, action: AppAction): AppState {
        * tippt, will sie sehen und nicht auf die nächste Zusammenkunft springen.
        */
       if (action.woche && screen === action.screen) {
-        const wunsch = action.woche.tab
+        const gewaehlt = action.woche.tab
+        const wocheTab: MeetingTab =
+          (gewaehlt === 'fs' || gewaehlt === 'edit') && !erlaubt[gewaehlt] ? 'mid' : gewaehlt
         return {
           ...nachher,
           week: Math.min(Math.max(0, action.woche.wi), Math.max(0, state.weeks.length - 1)),
-          tab: (wunsch === 'fs' || wunsch === 'edit') && !erlaubt[wunsch] ? 'mid' : wunsch,
+          // Auch hier nur planen, wo man planen darf — der Gruppenaufseher die Treffpunkte.
+          tab:
+            screen === 'planen' && !darfPlanen(state.planner, fsOverseer, themaVon(wocheTab))
+              ? 'fs'
+              : wocheTab,
           terminGewaehlt: true,
         }
       }
       // Programm und Planen öffnen mit der nächsten Zusammenkunft (T82) —
-      // solange der Nutzer nicht selbst gewählt hat. Die Treffpunkte bleiben
-      // unangetastet: Wer sie ansieht, meint sie und keine Zusammenkunft.
+      // solange der Nutzer nicht selbst gewählt hat und nicht im Predigtdienst
+      // ist (siehe `zurNaechstenZusammenkunft`).
       const zeigtZusammenkunft = screen === 'programm' || screen === 'planen'
-      return zeigtZusammenkunft && tab !== 'fs' ? zurNaechstenZusammenkunft(nachher) : nachher
+      return zeigtZusammenkunft ? zurNaechstenZusammenkunft(nachher) : nachher
     }
     case 'sprungZielErreicht':
       return state.sprungZiel === null ? state : { ...state, sprungZiel: null }
@@ -476,6 +533,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setTab':
       // Eine eigene Wahl — ab jetzt springt die Ansicht nicht mehr (T82).
       return { ...state, tab: action.tab, terminGewaehlt: true }
+    case 'setFsBereich':
+      return state.fsBereich === action.bereich ? state : { ...state, fsBereich: action.bereich }
     case 'setTheme':
       return { ...state, theme: action.theme }
     case 'setFontScale':

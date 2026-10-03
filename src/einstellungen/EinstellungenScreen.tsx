@@ -1,8 +1,6 @@
 import { useApp } from '../app/context'
-import { aufseherGruppe } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import { CongregationPanel } from './CongregationPanel'
-import { FsRulesPanel } from './FsRulesPanel'
 import { GroupsPanel } from './GroupsPanel'
 import { ImportPanel } from './ImportPanel'
 import { LanguagePanel } from './LanguagePanel'
@@ -16,33 +14,26 @@ import './einstellungen.css'
  * Programm-Import — je ein eigenständiges Panel. Konten & Einladungen laufen
  * personenzentriert im Personen-Screen (Konto-Karte im Detail + Sammel-
  * Einladung in der Liste).
+ *
+ * Der Grundplan der Treffpunkte stand bis T120 auch hier, für den
+ * Gruppenaufseher als einziges Panel. Er steht jetzt im Predigtdienst
+ * (`FsRulesPanel` unter planen/), und die Einstellungen sind wieder allein
+ * Sache der Admins.
  */
 export function EinstellungenScreen() {
   const { state } = useApp()
   const { t } = useT()
 
-  // Gruppenaufseher (ohne volle Planer-Rechte) sehen hier nur den Grundplan
-  // ihrer eigenen Gruppe.
-  const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
-  const fsOverseer = !state.planner && myFsGroup !== null
-
   return (
     <section className="screen">
       <h1 className="screen-title">{t.einstellungen}</h1>
       <p className="screen-subtitle">{fill(t.congLabel, { name: state.congregation.name })}</p>
-      {fsOverseer ? (
-        <FsRulesPanel onlyGroup={myFsGroup} />
-      ) : (
-        <>
-          <CongregationPanel />
-          <GroupsPanel />
-          <FsRulesPanel />
-          <ServicesPanel />
-          <LanguagePanel />
-          <RemindersPanel />
-          <ImportPanel />
-        </>
-      )}
+      <CongregationPanel />
+      <GroupsPanel />
+      <ServicesPanel />
+      <LanguagePanel />
+      <RemindersPanel />
+      <ImportPanel />
     </section>
   )
 }

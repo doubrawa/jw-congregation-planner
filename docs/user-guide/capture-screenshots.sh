@@ -95,8 +95,10 @@ SHOTS=(
   "planer-einstellungen|s=einstellungen"
   # Gruppenaufseher: kein Planer (pl=0), aber Aufseher von Gruppe 1 (p1). Die
   # Planen-Seite zeigt ihm ausschließlich die Treffpunkte SEINER Gruppe —
-  # deshalb hier und nicht im Planer-Kapitel.
-  "verkuendiger-gruppenaufseher|s=planen&pl=0&me=p1"
+  # deshalb hier und nicht im Planer-Kapitel. `tab=fs` wie in der App: Der
+  # Hash setzt den Bildschirm am Reducer vorbei, und ohne den Reiter stünde
+  # im Menü „Zusammenkünfte" markiert (T120).
+  "verkuendiger-gruppenaufseher|s=planen&tab=fs&pl=0&me=p1"
   "offline-stand|s=programm&tab=mid&stale=5"
 )
 
