@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— немає людини —",
   "planerLbl": "Адмін",
   "duMarker": " (ви)",
+  "chipDu": "ВИ",
   "toastMitgliedEntfernt": "Члена видалено",
   "toastEinladungErstellt": "Код запрошення створено",
   "toastEinladungGeloescht": "Запрошення видалено",

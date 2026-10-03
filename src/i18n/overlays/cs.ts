@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— žádná osoba —",
   "planerLbl": "Admin",
   "duMarker": " (ty)",
+  "chipDu": "TY",
   "toastMitgliedEntfernt": "Člen odebrán",
   "toastEinladungErstellt": "Zvací kód vytvořen",
   "toastEinladungGeloescht": "Pozvánka smazána",

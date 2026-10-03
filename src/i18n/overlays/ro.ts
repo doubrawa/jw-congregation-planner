@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— nicio persoană —",
   "planerLbl": "Admin",
   "duMarker": " (tu)",
+  "chipDu": "TU",
   "toastMitgliedEntfernt": "Membru eliminat",
   "toastEinladungErstellt": "Cod de invitație creat",
   "toastEinladungGeloescht": "Invitație ștearsă",

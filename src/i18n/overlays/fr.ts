@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— aucune personne —",
   "planerLbl": "Admin",
   "duMarker": " (toi)",
+  "chipDu": "TOI",
   "toastMitgliedEntfernt": "Membre supprimé",
   "toastEinladungErstellt": "Code d’invitation créé",
   "toastEinladungGeloescht": "Invitation supprimée",

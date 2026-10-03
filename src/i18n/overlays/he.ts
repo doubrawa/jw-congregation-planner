@@ -278,6 +278,7 @@ export default {
   "keinePersonOpt": "— ללא אדם —",
   "planerLbl": "מנהל",
   "duMarker": " (אתה)",
+  "chipDu": "אתה",
   "toastMitgliedEntfernt": "החבר הוסר",
   "toastEinladungErstellt": "קוד הזמנה נוצר",
   "toastEinladungGeloescht": "ההזמנה נמחקה",

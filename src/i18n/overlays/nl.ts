@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— geen persoon —",
   "planerLbl": "Admin",
   "duMarker": " (jij)",
+  "chipDu": "JIJ",
   "toastMitgliedEntfernt": "Lid verwijderd",
   "toastEinladungErstellt": "Uitnodigingscode aangemaakt",
   "toastEinladungGeloescht": "Uitnodiging verwijderd",

@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— няма човек —",
   "planerLbl": "Админ",
   "duMarker": " (ти)",
+  "chipDu": "ТИ",
   "toastMitgliedEntfernt": "Членът е премахнат",
   "toastEinladungErstellt": "Кодът за покана е създаден",
   "toastEinladungGeloescht": "Поканата е изтрита",

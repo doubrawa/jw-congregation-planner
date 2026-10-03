@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— 人なし —",
   "planerLbl": "管理者",
   "duMarker": "（あなた）",
+  "chipDu": "あなた",
   "toastMitgliedEntfernt": "メンバーを削除しました",
   "toastEinladungErstellt": "招待コードを作成しました",
   "toastEinladungGeloescht": "招待を削除しました",

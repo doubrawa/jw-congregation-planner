@@ -245,6 +245,7 @@ export default {
   "konfliktDouble": "{name}: تعيين {n}× في اجتماع واحد · {tab}",
   "konfliktHelperTask": "{name} لديه خدمة مساندة وتعيين في اليوم نفسه · {tab}",
   "duMarker": " (أنت)",
+  "chipDu": "أنت",
   "leeren": "مسح",
   "leerenSicher": "مسح فعلاً؟",
   "toastGeleertN": "التعيينات التي تم مسحها: {n}",

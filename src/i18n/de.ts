@@ -404,6 +404,9 @@ export const DE = {
     stErneut: 'ERNEUT VERSUCHEN', stLeer: 'Versammlung ist noch leer',
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Admin.',
     keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',
+    // Kennzeichen am eigenen Platz in den Programm-Ansichten: dasselbe Wort wie
+    // `duMarker`, als Chip — in Großbuchstaben, wo die Schrift welche kennt.
+    chipDu: 'DU',
     toastMitgliedEntfernt: 'Mitglied entfernt', toastEinladungErstellt: 'Einladungscode erstellt',
     toastEinladungGeloescht: 'Einladung gelöscht',
     // Konfliktprüfungen (Planen)

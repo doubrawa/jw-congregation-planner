@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— nincs személy —",
   "planerLbl": "Admin",
   "duMarker": " (te)",
+  "chipDu": "TE",
   "toastMitgliedEntfernt": "Tag eltávolítva",
   "toastEinladungErstellt": "Meghívókód létrehozva",
   "toastEinladungGeloescht": "Meghívó törölve",

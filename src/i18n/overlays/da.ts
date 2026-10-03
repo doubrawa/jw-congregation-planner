@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— ingen person —",
   "planerLbl": "Admin",
   "duMarker": " (dig)",
+  "chipDu": "DIG",
   "toastMitgliedEntfernt": "Medlem fjernet",
   "toastEinladungErstellt": "Invitationskode oprettet",
   "toastEinladungGeloescht": "Invitation slettet",

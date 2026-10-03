@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— 无人员 —",
   "planerLbl": "管理员",
   "duMarker": "（你）",
+  "chipDu": "你",
   "toastMitgliedEntfernt": "已移除成员",
   "toastEinladungErstellt": "已创建邀请码",
   "toastEinladungGeloescht": "已删除邀请",

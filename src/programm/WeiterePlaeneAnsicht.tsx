@@ -98,7 +98,7 @@ function PlanAnsicht({ plan, me }: { plan: WeitererPlan; me: Person | undefined 
                     {e.mahlzeit && <span className="wp-liste-mahlzeit">{` · ${mahlzeitName(e.mahlzeit, t)}`}</span>}
                   </span>
                   <span className="wp-liste-wer">
-                    {eigen && <span className="chip-du">DU</span>}
+                    {eigen && <span className="chip-du">{t.chipDu}</span>}
                     <span dir="auto">{gastgeberName(e.pid, state.persons)}</span>
                   </span>
                 </div>

@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— brak osoby —",
   "planerLbl": "Admin",
   "duMarker": " (Ty)",
+  "chipDu": "TY",
   "toastMitgliedEntfernt": "Usunięto członka",
   "toastEinladungErstellt": "Utworzono kod zaproszenia",
   "toastEinladungGeloescht": "Usunięto zaproszenie",

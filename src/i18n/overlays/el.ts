@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— κανένα άτομο —",
   "planerLbl": "Διαχειριστής",
   "duMarker": " (εσείς)",
+  "chipDu": "ΕΣΕΙΣ",
   "toastMitgliedEntfernt": "Το μέλος αφαιρέθηκε",
   "toastEinladungErstellt": "Ο κωδικός πρόσκλησης δημιουργήθηκε",
   "toastEinladungGeloescht": "Η πρόσκληση διαγράφηκε",

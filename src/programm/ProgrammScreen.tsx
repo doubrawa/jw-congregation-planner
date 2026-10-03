@@ -420,7 +420,7 @@ function ProgramRow({
                       gehört. Der bloße Namensvergleich gab den DU-Chip an
                       beide Namensgleichen — und an einen Verkündiger, der
                       zufällig heißt wie der Gastredner. */}
-                  {me && gehoertZu(slot, me) && <span className="chip-du">DU</span>}
+                  {me && gehoertZu(slot, me) && <span className="chip-du">{t.chipDu}</span>}
                   <span>{slot.name || t.offenDash}</span>
                 </div>
                 {slot.rolle && <div className="prog-role">{tu(slot.rolle)}</div>}

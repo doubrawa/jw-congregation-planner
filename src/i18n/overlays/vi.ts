@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— không có người —",
   "planerLbl": "Admin",
   "duMarker": " (bạn)",
+  "chipDu": "BẠN",
   "toastMitgliedEntfernt": "Đã xóa thành viên",
   "toastEinladungErstellt": "Đã tạo mã mời",
   "toastEinladungGeloescht": "Đã xóa lời mời",

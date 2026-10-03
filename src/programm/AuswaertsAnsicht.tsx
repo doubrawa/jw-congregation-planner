@@ -71,7 +71,7 @@ function AnsichtZeile({ vortrag }: { vortrag: VortragAuswaerts }) {
         </div>
         <div className="va-wer">
           <div className="va-name">
-            {eigener && <span className="chip-du">DU</span>}
+            {eigener && <span className="chip-du">{t.chipDu}</span>}
             <span dir="auto">{redner ? displayName(redner) : t.offenDash}</span>
           </div>
           {redner && <div className="va-rolle">{tu(VA_ROLLE)}</div>}

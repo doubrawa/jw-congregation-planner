@@ -95,7 +95,7 @@ function AnsichtZeile({ schicht, darf }: { schicht: OzSchicht; darf: boolean }) 
           const person = state.persons.find((p) => p.id === eintrag.pid)
           return (
             <span key={eintrag.id} className="oz-person">
-              {eintrag === eigener && <span className="chip-du">DU</span>}
+              {eintrag === eigener && <span className="chip-du">{t.chipDu}</span>}
               <span dir="auto">{person ? displayName(person) : t.offenWort}</span>
             </span>
           )

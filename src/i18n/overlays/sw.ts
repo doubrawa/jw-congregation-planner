@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— hakuna mtu —",
   "planerLbl": "Admin",
   "duMarker": " (wewe)",
+  "chipDu": "WEWE",
   "toastMitgliedEntfernt": "Mwanachama ameondolewa",
   "toastEinladungErstellt": "Msimbo wa mwaliko umetengenezwa",
   "toastEinladungGeloescht": "Mwaliko umefutwa",

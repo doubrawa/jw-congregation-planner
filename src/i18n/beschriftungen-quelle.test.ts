@@ -80,8 +80,15 @@ type Grund =
  * Textknoten zwischen zwei Tags: `>…<`. Klammern, Doppelpunkte und
  * Gleichheitszeichen schließen Typ-Ausdrücke aus (`Array<{…}>`,
  * `ReturnType<typeof useT>['t']`), die in `.tsx` genauso aussehen.
+ *
+ * Ein Wort zählt ab **zwei** Buchstaben, nicht erst ab drei: Das Kennzeichen
+ * „DU" am eigenen Platz stand vom ersten Entwurf an fest im JSX — in jeder
+ * Ansicht, die den eigenen Platz zeigt, und in jeder Sprache deutsch —, weil
+ * die Regel es nicht sah. Ein einzelner Buchstabe bleibt draußen: Gemessen am
+ * 3.10.2026 ist er hier nie ein Wort, sondern eine Form — das „A" an beiden
+ * Enden des Schriftgrößen-Reglers, die Formularnummer „S-89".
  */
-const JSX_TEXT = />[^<>{}()[\]:;=]*[A-Za-zÄÖÜäöüß]{3,}[^<>{}()[\]:;=]*</gu
+const JSX_TEXT = />[^<>{}()[\]:;=]*[A-Za-zÄÖÜäöüß]{2,}[^<>{}()[\]:;=]*</gu
 
 /**
  * Schlüsselwörter, die zwischen zwei JSX-Elementen stehen dürfen: `return
@@ -126,6 +133,15 @@ describe('Kein fest eingebauter Text im JSX', () => {
       .filter(([pfad]) => pfad.endsWith('.tsx'))
       .flatMap(([, text]) => festeTexte(text))
     expect(alle.length).toBeGreaterThan(4)
+  })
+
+  it('die Prüfung findet auch ein Wort aus zwei Buchstaben', () => {
+    // Die Schwelle ist die Stelle, an der sie sich still lockern lässt: Mit
+    // drei Buchstaben ging „DU" durch.
+    expect(festeTexte('<span className="chip-du">DU</span>')).toEqual(['DU'])
+    expect(festeTexte('<b>Du</b>')).toEqual(['Du'])
+    // Ein Ausdruck dagegen nicht — sonst schlüge sie überall an.
+    expect(festeTexte('<span className="chip-du">{t.chipDu}</span>')).toEqual([])
   })
 
   it('jede Ausnahme steht auch wirklich noch im Quelltext', () => {

@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— ei henkilöä —",
   "planerLbl": "Admin",
   "duMarker": " (sinä)",
+  "chipDu": "SINÄ",
   "toastMitgliedEntfernt": "Jäsen poistettu",
   "toastEinladungErstellt": "Kutsukoodi luotu",
   "toastEinladungGeloescht": "Kutsu poistettu",

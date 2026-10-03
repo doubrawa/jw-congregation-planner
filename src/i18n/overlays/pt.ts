@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— nenhuma pessoa —",
   "planerLbl": "Admin",
   "duMarker": " (você)",
+  "chipDu": "VOCÊ",
   "toastMitgliedEntfernt": "Membro removido",
   "toastEinladungErstellt": "Código de convite criado",
   "toastEinladungGeloescht": "Convite eliminado",

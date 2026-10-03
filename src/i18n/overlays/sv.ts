@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— ingen person —",
   "planerLbl": "Admin",
   "duMarker": " (du)",
+  "chipDu": "DU",
   "toastMitgliedEntfernt": "Medlem borttagen",
   "toastEinladungErstellt": "Inbjudningskod skapad",
   "toastEinladungGeloescht": "Inbjudan borttagen",

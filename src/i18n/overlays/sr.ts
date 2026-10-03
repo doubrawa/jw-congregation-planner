@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— nema osobe —",
   "planerLbl": "Admin",
   "duMarker": " (ti)",
+  "chipDu": "TI",
   "toastMitgliedEntfernt": "Član uklonjen",
   "toastEinladungErstellt": "Pozivni kod kreiran",
   "toastEinladungGeloescht": "Pozivnica izbrisana",

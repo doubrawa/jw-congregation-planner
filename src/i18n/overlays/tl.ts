@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— walang tao —",
   "planerLbl": "Admin",
   "duMarker": " (ikaw)",
+  "chipDu": "IKAW",
   "toastMitgliedEntfernt": "Inalis ang miyembro",
   "toastEinladungErstellt": "Nagawa ang invitation code",
   "toastEinladungGeloescht": "Inalis ang imbitasyon",

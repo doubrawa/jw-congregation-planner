@@ -336,6 +336,7 @@ export default {
   "keinePersonOpt": "— no person —",
   "planerLbl": "Admin",
   "duMarker": " (you)",
+  "chipDu": "YOU",
   "toastMitgliedEntfernt": "Member removed",
   "toastEinladungErstellt": "Invitation code created",
   "toastEinladungGeloescht": "Invitation deleted",

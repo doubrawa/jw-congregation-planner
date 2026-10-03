@@ -278,6 +278,7 @@ export default {
   "keinePersonOpt": "— کوئی فرد نہیں —",
   "planerLbl": "ایڈمن",
   "duMarker": " (آپ)",
+  "chipDu": "آپ",
   "toastMitgliedEntfernt": "رکن ہٹا دیا گیا",
   "toastEinladungErstellt": "دعوتی کوڈ بن گیا",
   "toastEinladungGeloescht": "دعوت حذف ہو گئی",

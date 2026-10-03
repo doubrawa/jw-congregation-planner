@@ -278,6 +278,7 @@ export default {
   "keinePersonOpt": "— بدون فرد —",
   "planerLbl": "مدیر",
   "duMarker": " (شما)",
+  "chipDu": "شما",
   "toastMitgliedEntfernt": "عضو حذف شد",
   "toastEinladungErstellt": "کد دعوت ساخته شد",
   "toastEinladungGeloescht": "دعوت حذف شد",

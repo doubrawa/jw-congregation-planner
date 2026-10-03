@@ -276,12 +276,15 @@ afterEach(cleanup)
 /**
  * Deutsche Wörterbuchwerte, die in dieser Sprache anders lauten.
  *
- * **Ab drei Zeichen**, nicht erst ab sechs: Die kurzen sind die
- * verräterischsten — „Leser", „offen", „frei", „Keine", „Datum", „VON"/„BIS".
- * Genau solche Wörter tippt man beim Bauen schnell direkt ins JSX, weil sie zu
- * klein wirken, um ein Wörterbuch zu bemühen. Dass sie sich hier nicht zufällig
- * treffen, sichert die Wortgrenze in `stehtDrin` samt der knotenweisen Ablesung
- * darüber; nachgemessen kommen so 17 weitere Werte hinzu (343 statt 326).
+ * **Ab zwei Zeichen**, nicht erst ab sechs: Die kurzen sind die
+ * verräterischsten — „Leser", „offen", „frei", „Keine", „Datum", „VON"/„BIS",
+ * „DU". Genau solche Wörter tippt man beim Bauen schnell direkt ins JSX, weil
+ * sie zu klein wirken, um ein Wörterbuch zu bemühen. Dass sie sich hier nicht
+ * zufällig treffen, sichert die Wortgrenze in `stehtDrin` samt der knotenweisen
+ * Ablesung darüber. Nachgemessen brachte die Drei 17 weitere Werte (343 statt
+ * 326); die Zwei kam am 3.10.2026 für einen einzigen dazu, `chipDu` — das
+ * Kennzeichen am eigenen Platz, das bis dahin fest im JSX stand und in jeder
+ * Sprache deutsch blieb.
  *
  * Platzhalter-Texte („{n} offen") fallen heraus: Sie stehen nie wörtlich im
  * DOM, sondern immer mit eingesetztem Wert.
@@ -290,7 +293,7 @@ function deutscheWerte(ziel: Lang): Array<[string, string]> {
   const de = DE as unknown as Record<string, string>
   const z = dict(ziel) as unknown as Record<string, string>
   return Object.keys(de)
-    .filter((k) => de[k] !== z[k] && de[k]!.length >= 3 && !de[k]!.includes('{'))
+    .filter((k) => de[k] !== z[k] && de[k]!.length >= 2 && !de[k]!.includes('{'))
     .map((k) => [k, de[k]!] as [string, string])
 }
 

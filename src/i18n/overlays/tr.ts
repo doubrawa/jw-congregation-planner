@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— kişi yok —",
   "planerLbl": "Admin",
   "duMarker": " (sen)",
+  "chipDu": "SEN",
   "toastMitgliedEntfernt": "Üye kaldırıldı",
   "toastEinladungErstellt": "Davet kodu oluşturuldu",
   "toastEinladungGeloescht": "Davet silindi",

@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— 사람 없음 —",
   "planerLbl": "관리자",
   "duMarker": " (나)",
+  "chipDu": "나",
   "toastMitgliedEntfernt": "구성원 제거됨",
   "toastEinladungErstellt": "초대 코드 생성됨",
   "toastEinladungGeloescht": "초대 삭제됨",

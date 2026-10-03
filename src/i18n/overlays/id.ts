@@ -212,6 +212,7 @@ export default {
   "keinePersonOpt": "— tidak ada orang —",
   "planerLbl": "Admin",
   "duMarker": " (Anda)",
+  "chipDu": "ANDA",
   "toastMitgliedEntfernt": "Anggota dihapus",
   "toastEinladungErstellt": "Kode undangan dibuat",
   "toastEinladungGeloescht": "Undangan dihapus",

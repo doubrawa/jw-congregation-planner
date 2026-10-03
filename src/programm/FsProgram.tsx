@@ -88,7 +88,7 @@ export function FsProgram() {
                       kommt die Zuteilung aus `fsLeiterZuteilung`, das den
                       Freitext-Leiter gar nicht erst als Person ausgibt. */}
                   {me && gehoertZu(fsLeiterZuteilung(inst), me) && (
-                    <span className="chip-du">DU</span>
+                    <span className="chip-du">{t.chipDu}</span>
                   )}
                   <span className={inst.leader ? 'fs-leader-person' : 'fs-leader-person fs-leader-open'}>
                     {inst.leader || t.offenDash}
