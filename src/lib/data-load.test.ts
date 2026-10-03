@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Supabase-Stub mit einer FIFO-Antwort-Warteschlange je Tabelle: `from(table)`
@@ -290,6 +290,114 @@ describe('loadCongregationData', () => {
     seedResponses({ persons: [{ data: [], error: null }], weeks: [{ data: [], error: null }] })
     const res = await loadCongregationData('u1')
     expect(res.ok && res.empty).toBe(true)
+  })
+})
+
+/**
+ * **Die sechs Tabellen aus T120** — Gruppenbesuche, Zeugnis-Termine und
+ * -Einträge, Vorträge auswärts, Weitere Pläne und ihre Einträge.
+ *
+ * Bis zum 3.10.2026 lief keine ihrer Zuordnungen je in einem Test: Der Stub
+ * gab für sie nichts zurück, also blieb `…FromRow` stumm. Ein falscher
+ * Spaltenname wäre erst im Betrieb aufgefallen — als leerer Plan.
+ */
+describe('loadCongregationData: die Pläne aus T120', () => {
+  const T120 = ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'vortraege_auswaerts', 'plaene', 'plan_eintraege']
+
+  /** Normale Antworten plus je eine Zeile der neuen Tabellen — einzelne per Argument überschreiben. */
+  function mitPlaenen(over: Partial<Record<string, Array<{ data: unknown; error: unknown }>>> = {}) {
+    seedResponses({
+      gruppenbesuche: [{ data: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', person_id: 'p1' }], error: null }],
+      oz_termine: [{ data: [{ id: 't1', wd: 3, von: '10:00:00', bis: '12:30:00', ort: 'Marktplatz', plaetze: 2 }], error: null }],
+      oz_eintraege: [{ data: [{ id: 'e1', termin_id: 't1', datum: '2026-09-09', person_id: 'p1', selbst: true }], error: null }],
+      vortraege_auswaerts: [
+        { data: [{ id: 'v1', datum: '2026-09-13', zeit: '14:30:00', versammlung: 'Beispielheim', nummer: 12, person_id: null }], error: null },
+      ],
+      plaene: [{ data: [{ id: 'pl1', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false }], error: null }],
+      plan_eintraege: [
+        {
+          data: [
+            { id: 'pe1', plan_id: 'pl1', datum: '2026-09-07', grp: 'g1', person_id: null, mahlzeit: null },
+            // Zu einem Plan, der vor dem Rückblick endete und deshalb nicht geladen ist.
+            { id: 'pe-alt', plan_id: 'pl-alt', datum: '2026-03-02', grp: 'g1', person_id: null, mahlzeit: null },
+          ],
+          error: null,
+        },
+      ],
+      ...over,
+    })
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag, 7. September 2026
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('bringt jede Zeile in die Form des Zustands — Uhrzeiten ohne Sekunden, Spalten umbenannt', async () => {
+    mitPlaenen()
+    const res = await loadCongregationData('u1')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    const d = res.data
+    expect(d.gruppenbesuche).toEqual([{ id: 'b1', woche: '2026-10-05', grp: 'g1', pid: 'p1' }])
+    expect(d.ozTermine).toEqual([{ id: 't1', wd: 3, von: '10:00', bis: '12:30', ort: 'Marktplatz', plaetze: 2 }])
+    expect(d.ozEintraege).toEqual([{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p1', selbst: true }])
+    expect(d.auswaerts).toEqual([
+      { id: 'v1', datum: '2026-09-13', zeit: '14:30', versammlung: 'Beispielheim', nummer: 12, pid: null },
+    ])
+    expect(d.plaene).toEqual([
+      { id: 'pl1', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false },
+    ])
+    // Der Eintrag eines nicht geladenen Plans fällt heraus — er gehörte zu nichts, was die App zeigt.
+    expect(d.planEintraege).toEqual([{ id: 'pe1', planId: 'pl1', datum: '2026-09-07', grp: 'g1', pid: null, mahlzeit: null }])
+  })
+
+  it('jede der sechs Abfragen nennt die eigene Versammlung', async () => {
+    mitPlaenen()
+    await loadCongregationData('u1')
+    for (const tabelle of T120) {
+      expect(store.filter, tabelle).toContainEqual([tabelle, 'eq', 'congregation_id', 'c1'])
+    }
+  })
+
+  it('Einträge, Vorträge und Pläne ab einem Vierteljahr zurück — Besuche, Termine und Plan-Einträge ohne Grenze', async () => {
+    mitPlaenen()
+    await loadCongregationData('u1')
+    // 91 Tage vor Montag, dem 7. September 2026.
+    const gte = (tabelle: string) => store.filter.find(([t, m]) => t === tabelle && m === 'gte')
+    expect(gte('oz_eintraege')).toEqual(['oz_eintraege', 'gte', 'datum', '2026-06-08'])
+    expect(gte('vortraege_auswaerts')).toEqual(['vortraege_auswaerts', 'gte', 'datum', '2026-06-08'])
+    // Bei den Plänen zählt das Ende: Ein laufender Plan kann lange vorher begonnen haben.
+    expect(gte('plaene')).toEqual(['plaene', 'gte', 'bis', '2026-06-08'])
+    expect(gte('gruppenbesuche')).toBeUndefined()
+    expect(gte('oz_termine')).toBeUndefined()
+    expect(gte('plan_eintraege')).toBeUndefined()
+  })
+
+  it.each(T120)('fehlt %s noch (Schema nicht eingespielt), lädt der Rest trotzdem', async (tabelle) => {
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mitPlaenen({ [tabelle]: [{ data: null, error: { message: 'relation does not exist', code: '42P01' } }] })
+    const res = await loadCongregationData('u1')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    // Die App bleibt benutzbar — die übrigen Pläne sind da, nur dieser Teil fehlt.
+    expect(res.data.persons).toHaveLength(1)
+    const teile = {
+      gruppenbesuche: res.data.gruppenbesuche,
+      oz_termine: res.data.ozTermine,
+      oz_eintraege: res.data.ozEintraege,
+      vortraege_auswaerts: res.data.auswaerts,
+      plaene: res.data.plaene,
+      plan_eintraege: res.data.planEintraege,
+    }
+    for (const [name, liste] of Object.entries(teile)) {
+      // Ohne Pläne gehört auch kein Plan-Eintrag mehr zu etwas.
+      const leer = name === tabelle || (tabelle === 'plaene' && name === 'plan_eintraege')
+      expect(liste, name).toHaveLength(leer ? 0 : 1)
+    }
+    expect(fehler).toHaveBeenCalledWith(`[${tabelle}]`, 'relation does not exist')
+    fehler.mockRestore()
   })
 })
 

@@ -2298,6 +2298,35 @@ export const KATALOG = [
     suchen: '  return eintraege.filter((e) => e.terminId === terminId && e.datum > tag)',
     ersetzen: '  return eintraege.filter((e) => e.terminId === terminId && e.datum >= tag)',
   },
+  /* ---- Testlücken T120 geschlossen (3.10.2026) ---- */
+  {
+    id: 'laden-t120-zuordnung',
+    datei: 'src/lib/data.ts',
+    regel: 'Geladene Zeugnis-Einträge behalten, ob sich jemand selbst eingetragen hat — das ist seine Zusage.',
+    suchen: '  return { id: r.id, terminId: r.termin_id, datum: r.datum, pid: r.person_id, selbst: r.selbst }',
+    ersetzen: '  return { id: r.id, terminId: r.termin_id, datum: r.datum, pid: r.person_id, selbst: false }',
+  },
+  {
+    id: 'laden-waisen-raus',
+    datei: 'src/lib/data.ts',
+    regel: 'Einträge eines Plans, der nicht geladen ist, kommen nicht mit — sie gehören zu nichts, was die App zeigt.',
+    suchen: '      .filter((e) => geladenePlaene.has(e.planId)),',
+    ersetzen: '      .filter(() => true),',
+  },
+  {
+    id: 'wp-neu-gleich-offen',
+    datei: 'src/planen/WeiterePlaenePlan.tsx',
+    regel: 'Ein neuer Plan steht nach der Wahl der Vorlage gleich offen da, nicht wieder die Liste.',
+    suchen: '      setOffen(id)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'senden-richtige-function',
+    datei: 'src/planen/PlanSendenPanel.tsx',
+    regel: '„Plan senden" im Zeugnisgeben schickt das Zeugnisgeben — nicht die Vorträge auswärts.',
+    suchen: 'senden={sendZeugnisPlan} tag={tag} />',
+    ersetzen: 'senden={sendAuswaertsPlan} tag={tag} />',
+  },
 ]
 
 /**

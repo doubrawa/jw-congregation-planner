@@ -35,6 +35,8 @@ import type { AppAction, AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { DEMO_GROUPS } from '../../tests/testdaten/testdaten'
 import { tagNach } from '../data/meeting-dates'
+import { fsSetLeader, fsTaskKey } from '../data/fs'
+import { displayName } from '../data/helpers'
 import { neuerPlan } from '../data/weitere-plaene'
 import { OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
 import type { OzTermin, WeitererPlan } from '../data/types'
@@ -173,6 +175,102 @@ describe('Öffentliches Zeugnisgeben als Ablauf', () => {
     expect(data.sendPlanEntzug).toHaveBeenCalledWith([
       expect.objectContaining({ key, pid: 'p1', datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
     ])
+  })
+})
+
+/*
+ * **Gruppenbesuche: Wer seine Zusage verliert, erfährt es** — wie bei jedem
+ * anderen Leiterwechsel. Der Besuch selbst ist keine Aufgabe; zugesagt wird am
+ * Treffpunkt (`fs|<Montag>|<Instanz>`), und der Schlüssel trägt keine Person:
+ * Ohne das Abräumen erbte der nächste Leiter die Zusage des Besuchers.
+ */
+describe('Gruppenbesuche als Ablauf', () => {
+  const BESUCHER = 'p1' // Manfred Albrecht — darf Treffpunkte leiten
+  const ANDERER = 'p2' // Thomas Lindner — ebenso
+
+  /** Woche 1 der Testdaten und eine Gruppe, die sich dort trifft. */
+  function besuchsLage(a: ReturnType<typeof ablauf>) {
+    const woche = a.state.weeks[1]!.start
+    const grp = a.state.fsWeeks[1]!.find((i) => i.grp)!.grp!
+    return { woche, grp }
+  }
+  /** Die Treffpunkte, die `pid` in Woche 1 bei dieser Gruppe leitet — als Aufgaben-Schlüssel. */
+  const seineSchluessel = (a: ReturnType<typeof ablauf>, woche: string, grp: string, pid: string) =>
+    a.state.fsWeeks[1]!.filter((i) => i.grp === grp && i.lpid === pid).map((i) => fsTaskKey(woche, i.id))
+
+  /** Ein Besuch, bei dem der Besucher die Treffpunkte der Gruppe leitet und zugesagt hat. */
+  function zugesagterBesuch(a: ReturnType<typeof ablauf>) {
+    const { woche, grp } = besuchsLage(a)
+    a.tue({ type: 'besuchHinzufuegen', woche, grp, pid: BESUCHER })
+    const besuch = a.state.gruppenbesuche.find((b) => b.woche === woche && b.grp === grp)!
+    // Steht dort schon jemand, übernimmt der Besucher ausdrücklich.
+    a.tue({ type: 'besuchUebernehmen', id: besuch.id })
+    const keys = seineSchluessel(a, woche, grp, BESUCHER)
+    expect(keys.length).toBeGreaterThan(0)
+    // Er hat auf seinem Gerät bestätigt — hier kommt das mit dem Nachladen an.
+    a.setze({ confirmations: Object.fromEntries(keys.map((k) => [k, 'bestätigt' as const])) })
+    vi.clearAllMocks()
+    return { woche, grp, besuch, keys }
+  }
+
+  it('Besuch gelöscht: der Platz wird frei, die Zusage gelöscht, der Besucher erfährt es', () => {
+    const a = ablauf(start())
+    const { woche, grp, besuch, keys } = zugesagterBesuch(a)
+    a.tue({ type: 'besuchEntfernen', id: besuch.id })
+    expect(seineSchluessel(a, woche, grp, BESUCHER)).toEqual([])
+    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [], [besuch.id])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', woche, a.state.fsWeeks[1])
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', expect.arrayContaining(keys))
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
+    )
+  })
+
+  it('anderer Besucher: der neue leitet, die Zusage des alten verfällt — er erfährt es, der neue erbt nichts', () => {
+    const a = ablauf(start())
+    const { woche, grp, besuch, keys } = zugesagterBesuch(a)
+    a.tue({ type: 'besuchBesucher', id: besuch.id, pid: ANDERER })
+    expect(seineSchluessel(a, woche, grp, ANDERER)).toEqual(keys)
+    for (const k of keys) expect(a.state.confirmations[k]).toBeUndefined()
+    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: besuch.id, pid: ANDERER })], [])
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', expect.arrayContaining(keys))
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
+    )
+  })
+
+  it('alle Besuche geleert: dasselbe für jeden kommenden', () => {
+    const a = ablauf(start())
+    const { woche, grp, besuch, keys } = zugesagterBesuch(a)
+    a.tue({ type: 'besucheLeeren' })
+    expect(a.state.gruppenbesuche).toEqual([])
+    expect(seineSchluessel(a, woche, grp, BESUCHER)).toEqual([])
+    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [], [besuch.id])
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
+    )
+  })
+
+  it('leitete der Besucher den Treffpunkt schon vor dem Besuch, geht er mit dem Besuch trotzdem (entschieden am 3.10.2026)', () => {
+    const a = ablauf(start())
+    const { woche, grp } = besuchsLage(a)
+    // Schon vorher sein Platz — etwa aus der Auto-Zuteilung, geladen.
+    const inst = a.state.fsWeeks[1]!.find((i) => i.grp === grp)!
+    const manfred = a.state.persons.find((p) => p.id === BESUCHER)!
+    a.setze({ fsWeeks: fsSetLeader(a.state.fsWeeks, 1, inst.id, displayName(manfred), BESUCHER) })
+    const key = fsTaskKey(woche, inst.id)
+    a.setze({ confirmations: { [key]: 'bestätigt' } })
+
+    a.tue({ type: 'besuchHinzufuegen', woche, grp, pid: BESUCHER })
+    // Eintragen ändert nichts — der Platz ist schon seiner.
+    expect(a.state.confirmations[key]).toBe('bestätigt')
+    const besuch = a.state.gruppenbesuche.find((b) => b.woche === woche && b.grp === grp)!
+    vi.clearAllMocks()
+
+    a.tue({ type: 'besuchEntfernen', id: besuch.id })
+    expect(a.state.fsWeeks[1]!.find((i) => i.id === inst.id)?.leader).toBe('')
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [key])
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key, pid: BESUCHER })])
   })
 })
 
