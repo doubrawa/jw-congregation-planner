@@ -9,7 +9,7 @@ import {
   vorlageName,
   zeitraumText,
 } from '../components/weitere-plaene-anzeige'
-import { ozTagText } from '../components/zeugnis-anzeige'
+import { zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import { fromIso, montagVon } from '../data/meeting-dates'
 import { eigenerHaushalt, eintraegeVon, plaeneZumAnsehen, wochenDerGruppe } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
@@ -49,17 +49,16 @@ export function WeiterePlaeneAnsicht() {
   return (
     <>
       {plaene.map((plan) => (
-        <PlanAnsicht key={plan.id} plan={plan} me={me} />
+        <PlanAnsicht key={plan.id} plan={plan} me={me} tag={tag} />
       ))}
     </>
   )
 }
 
-/** Ein Plan beim Ansehen: Vorlage, Name, Zeitraum — und was ansteht. */
-function PlanAnsicht({ plan, me }: { plan: WeitererPlan; me: Person | undefined }) {
+/** Ein Plan beim Ansehen: Vorlage, Name, Zeitraum — und was ansteht (ab `tag`, dem Kalendertag). */
+function PlanAnsicht({ plan, me, tag }: { plan: WeitererPlan; me: Person | undefined; tag: string }) {
   const { state } = useApp()
   const { t, tu } = useT()
-  const tag = useKalendertag()
   const eintraege = eintraegeVon(state.planEintraege, plan.id)
   const dieseWoche = montagVon(tag)
 
@@ -73,7 +72,7 @@ function PlanAnsicht({ plan, me }: { plan: WeitererPlan; me: Person | undefined 
 
       {plan.vorlage === 'saal' ? (
         <>
-          {me?.grp && <DeineGruppe plan={plan} grp={me.grp} />}
+          {me?.grp && <DeineGruppe wochen={wochenDerGruppe(eintraege, plan.id, me.grp).filter((w) => w >= dieseWoche)} />}
           <div className="wp-liste">
             {eintraege
               .filter((e) => e.datum >= dieseWoche)
@@ -94,7 +93,7 @@ function PlanAnsicht({ plan, me }: { plan: WeitererPlan; me: Person | undefined 
               return (
                 <div key={e.id} className={eigen ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}>
                   <span>
-                    {ozTagText(e.datum, state.lang)}
+                    {zeitleisteDatum(fromIso(e.datum), state.lang)}
                     {e.mahlzeit && <span className="wp-liste-mahlzeit">{` · ${mahlzeitName(e.mahlzeit, t)}`}</span>}
                   </span>
                   <span className="wp-liste-wer">
@@ -112,11 +111,9 @@ function PlanAnsicht({ plan, me }: { plan: WeitererPlan; me: Person | undefined 
 }
 
 /** „Deine Gruppe ist dran:" — die kommenden Wochen der eigenen Gruppe als Marken. */
-function DeineGruppe({ plan, grp }: { plan: WeitererPlan; grp: string }) {
+function DeineGruppe({ wochen }: { wochen: string[] }) {
   const { state } = useApp()
   const { t } = useT()
-  const tag = useKalendertag()
-  const wochen = wochenDerGruppe(state.planEintraege, plan.id, grp).filter((w) => w >= montagVon(tag))
   if (wochen.length === 0) return null
   return (
     <>

@@ -103,20 +103,23 @@
  * `mandanten-nachweis.mjs` und aus demselben Grund: Der Service-Role-Key
  * umgeht RLS, ein Nachweis damit wäre wertlos.
  *
- *   $env:SUPABASE_URL          = "https://<ref>.supabase.co"
- *   $env:SUPABASE_ANON_KEY     = "<anon-key aus .env.local>"
- *   $env:PROBE_PLANER_MAIL     = "planer@probe.invalid"
- *   $env:PROBE_PLANER_PASS     = "…"
- *   $env:PROBE_MITGLIED_MAIL   = "mitglied@probe.invalid"
- *   $env:PROBE_MITGLIED_PASS   = "…"
+ *   node scripts/testversammlung-anlegen.mjs --wochen 2      (zuerst --trocken)
  *   node scripts/mitgliedsrechte-probe.mjs --versammlung <congregation-id>
+ *
+ * **Nichts vorher setzen.** URL und anon-Schlüssel stehen in `.env.local`
+ * (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), die Konten heißen wie in
+ * `testversammlung-anlegen.mjs` (`planer@probe.invalid`,
+ * `mitglied@probe.invalid`), und nach den beiden Kennwörtern fragt die Probe
+ * — verdeckt. Umgebungsvariablen gehen vor (`SUPABASE_URL`,
+ * `SUPABASE_ANON_KEY`, `PROBE_PLANER_MAIL`/`_PASS`,
+ * `PROBE_MITGLIED_MAIL`/`_PASS`), etwa für andere Konten oder ohne Terminal.
  *
  * `--versammlung` ist Pflicht und wird gegen beide Konten geprüft. Die Probe
  * **schreibt**, wenn auch nur kurz — sie soll das nicht in der echten
  * Versammlung tun, weil jemand versehentlich sein eigenes Konto einträgt.
  */
 
-import { alsSkript, anfrageKaputt, pruefKlient } from './gemeinsam.mjs'
+import { alsSkript, anfrageKaputt, pruefKlient, verdecktLesen, wertAusEnvDatei } from './gemeinsam.mjs'
 
 /* ===================== Schlüssel (Spiegel von planning.ts) ================ */
 
@@ -429,18 +432,60 @@ export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid
 
 /* ===================== Zugang ============================================= */
 
-function umgebung() {
-  const noetig = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'PROBE_PLANER_MAIL', 'PROBE_PLANER_PASS', 'PROBE_MITGLIED_MAIL', 'PROBE_MITGLIED_PASS']
-  const fehlt = noetig.filter((n) => !process.env[n])
-  if (fehlt.length) {
-    console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
+/** Die Konten, wie `testversammlung-anlegen.mjs` sie anlegt — deren Versammlung misst die Probe gewöhnlich. */
+export const PROBE_KONTEN = { planer: 'planer@probe.invalid', mitglied: 'mitglied@probe.invalid' }
+
+/**
+ * **Woher die Probe ihren Zugang nimmt** — rein, damit der Test es ohne Datei
+ * und Terminal prüfen kann. Die Umgebung schlägt die Datei, wie in
+ * `gemeinsam.mjs`: URL und anon-Schlüssel stehen im Projekt (`.env.local`,
+ * die Namen der App), die Konten heißen wie in `testversammlung-anlegen.mjs`.
+ * Kennwörter stehen nirgends — die fragt `zugang()` verdeckt ab.
+ *
+ * Bis zum 3.10.2026 verlangte die Probe sechs Umgebungsvariablen im selben
+ * Fenster: das Muster, an dem am 17.9. fünf Läufe starben und das
+ * `zugangsdaten()` seither für alle anderen Skripte abgelöst hat. Am 3.10.
+ * scheiterte so auch ihr eigener erster Lauf — an einem Platzhalter im Aufruf.
+ *
+ * `dienstSchluessel`: Ein Schlüssel, der RLS umgeht, machte jede Messung
+ * wertlos — der alte Service-Role-Schlüssel wie der neue `sb_secret_…`.
+ */
+export function zugangAus(env, ausDatei) {
+  const anon = env.SUPABASE_ANON_KEY || ausDatei('VITE_SUPABASE_ANON_KEY')
+  return {
+    url: env.SUPABASE_URL || ausDatei('VITE_SUPABASE_URL'),
+    anon,
+    planerMail: env.PROBE_PLANER_MAIL || PROBE_KONTEN.planer,
+    mitgliedMail: env.PROBE_MITGLIED_MAIL || PROBE_KONTEN.mitglied,
+    planerPass: env.PROBE_PLANER_PASS || '',
+    mitgliedPass: env.PROBE_MITGLIED_PASS || '',
+    dienstSchluessel:
+      Boolean(anon) &&
+      (anon.startsWith('sb_secret_') || anon === env.SUPABASE_SERVICE_ROLE_KEY || anon === env.SUPABASE_SECRET_KEY),
+  }
+}
+
+/** Den Zugang vervollständigen: abbrechen, wo etwas fehlt; Kennwörter verdeckt erfragen. */
+async function zugang() {
+  const z = zugangAus(process.env, (name) => wertAusEnvDatei(name))
+  if (!z.url || !z.anon) {
+    console.error('Keine Projekt-URL oder kein anon-Schlüssel — weder SUPABASE_URL/SUPABASE_ANON_KEY gesetzt noch VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY in .env.local.')
     process.exit(2)
   }
-  if (process.env.SUPABASE_ANON_KEY === process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('SUPABASE_ANON_KEY ist der Service-Role-Key. Der umgeht RLS — die Probe wäre wertlos.')
+  if (z.dienstSchluessel) {
+    console.error('Der anon-Schlüssel ist ein Dienst-Schlüssel. Der umgeht RLS — die Probe wäre wertlos.')
     process.exit(2)
   }
-  return { url: process.env.SUPABASE_URL, anon: process.env.SUPABASE_ANON_KEY }
+  for (const [feld, mail] of [['planerPass', z.planerMail], ['mitgliedPass', z.mitgliedMail]]) {
+    if (z[feld]) continue
+    if (!process.stdin.isTTY) {
+      console.error(`Kein Kennwort für ${mail} und kein Terminal zum Fragen — PROBE_PLANER_PASS / PROBE_MITGLIED_PASS setzen.`)
+      process.exit(2)
+    }
+    process.stderr.write(`Kennwort für ${mail} (bleibt verdeckt): `)
+    z[feld] = await verdecktLesen()
+  }
+  return z
 }
 
 async function anmelden(url, anon, mail, pass) {
@@ -550,8 +595,10 @@ async function leseVersuch(k, nr, was, anlage, lesen, erwartet, folge) {
  * steht, soll auch sehen, wer an den anderen Tagen dran ist.
  */
 async function planSicht(mitglied, plan, eintraege, ganz) {
-  const p = await mitglied.rest(`plaene?select=id&id=eq.${plan.id}`)
-  const e = await mitglied.rest(`plan_eintraege?select=id&plan_id=eq.${plan.id}`)
+  const [p, e] = await Promise.all([
+    mitglied.rest(`plaene?select=id&id=eq.${plan.id}`),
+    mitglied.rest(`plan_eintraege?select=id&plan_id=eq.${plan.id}`),
+  ])
   const nP = zeilenVon(p).length
   const nE = zeilenVon(e).length
   return {
@@ -835,14 +882,17 @@ async function t120Proben(k) {
     k.ungemessen('11–34', 'die Pläne der Versammlung', 'Planer und Mitglied brauchen je eine eigene Person')
     return
   }
-  const personen = await planer.rest(`persons?select=id,priv,fam&id=in.(${mitglied.pid},${planer.pid})`)
+  const [personen, gruppen] = await Promise.all([
+    planer.rest(`persons?select=id,priv,fam&id=in.(${mitglied.pid},${planer.pid})`),
+    planer.rest('groups?select=id&limit=1'),
+  ])
   const ich = zeilenVon(personen).find((p) => p.id === mitglied.pid)
   const planerPerson = zeilenVon(personen).find((p) => p.id === planer.pid)
   if (!ich || !planerPerson) {
     k.ungemessen('11–34', 'die Pläne der Versammlung', `die beiden Personen sind nicht lesbar (HTTP ${personen.status})`)
     return
   }
-  const gruppe = zeilenVon(await planer.rest('groups?select=id&limit=1'))[0]?.id ?? null
+  const gruppe = zeilenVon(gruppen)[0]?.id ?? null
   const gast = await gastgeberAusserHaus(k, ich, planerPerson)
   const a = t120Anlage({
     marke,
@@ -874,10 +924,10 @@ export async function main(arg = process.argv.slice(2)) {
     console.error('--versammlung <congregation-id> ist Pflicht. Aufruf siehe Kopf dieser Datei.')
     process.exit(2)
   }
-  const { url, anon } = umgebung()
+  const z = await zugang()
 
-  const planer = await anmelden(url, anon, process.env.PROBE_PLANER_MAIL, process.env.PROBE_PLANER_PASS)
-  const mitglied = await anmelden(url, anon, process.env.PROBE_MITGLIED_MAIL, process.env.PROBE_MITGLIED_PASS)
+  const planer = await anmelden(z.url, z.anon, z.planerMail, z.planerPass)
+  const mitglied = await anmelden(z.url, z.anon, z.mitgliedMail, z.mitgliedPass)
 
   for (const k of [planer, mitglied]) {
     if (k.cong !== versammlung) {

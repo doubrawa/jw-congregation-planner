@@ -18,9 +18,9 @@
 import { istAbwesendAm } from './absence'
 import { displayName, isQualified } from './helpers'
 import { tieHash } from './auslastung'
-import { fromIso, isoDay, istVorbei, kalendertagMs, montagNach, montagVon, versatzAbMontag } from './meeting-dates'
-import { sentKey, zusageStatus } from './planning'
-import type { EntzogeneZusage, OffeneMeldung } from './plan-versand'
+import { fromIso, isoDay, kalendertagMs, montagNach, montagVon, tagVorbei, versatzAbMontag } from './meeting-dates'
+import { zusageStatus } from './planning'
+import { neuesterVersand, nochNichtGemeldet, type EntzogeneZusage, type OffeneMeldung } from './plan-versand'
 import { ozKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import {
   OZ_DIENST,
@@ -63,11 +63,6 @@ export function ozDatum(montag: string, wd: number): string {
   return isoDay(tag)
 }
 
-/** Der Montag der Woche, in der ein Tag liegt (ISO). */
-export function ozMontag(datum: string): string {
-  return montagVon(datum)
-}
-
 /** Sortierung der Schichten: Tag, dann Beginn, dann Ort. */
 function schichtSort(a: OzSchicht, b: OzSchicht): number {
   return a.datum.localeCompare(b.datum) || a.termin.von.localeCompare(b.termin.von) || a.termin.ort.localeCompare(b.termin.ort)
@@ -99,7 +94,7 @@ export function ozSchichten(
 
 /** Der Montag der laufenden Woche (ISO) — dort beginnen Planen und Ansehen. */
 export function ozAb(heute = new Date()): string {
-  return ozMontag(isoDay(heute))
+  return montagVon(isoDay(heute))
 }
 
 /**
@@ -115,12 +110,24 @@ export function ozSchicht(
   const termin = termine.find((t) => t.id === terminId)
   if (!termin || fromIso(datum).getDay() !== termin.wd) return null
   const drin = eintraege.filter((e) => e.terminId === terminId && e.datum === datum)
-  return { termin, datum, montag: ozMontag(datum), eintraege: drin, frei: Math.max(0, termin.plaetze - drin.length) }
+  return { termin, datum, montag: montagVon(datum), eintraege: drin, frei: Math.max(0, termin.plaetze - drin.length) }
 }
 
 /** Ist die Schicht vorbei (der Tag ist um)? */
 export function ozVorbei(schicht: Pick<OzSchicht, 'datum'>, heute = new Date()): boolean {
-  return istVorbei(kalendertagMs(fromIso(schicht.datum)), heute)
+  return tagVorbei(schicht.datum, heute)
+}
+
+/**
+ * Die Einträge, die gehen, wenn ein Termin einen **anderen Wochentag** bekommt:
+ * die kommenden — sie stünden an einem Tag, an dem er nicht mehr stattfindet.
+ * Was heute ist oder war, bleibt; heute stehen die Eingetragenen womöglich
+ * gerade dort. Eine Rechnung für den Reducer und die Rückfrage davor, damit
+ * die genannte Zahl die ist, die dann wirklich geht.
+ */
+export function ozWegBeiTagwechsel(eintraege: readonly OzEintrag[], terminId: string, heute = new Date()): OzEintrag[] {
+  const tag = isoDay(heute)
+  return eintraege.filter((e) => e.terminId === terminId && e.datum > tag)
 }
 
 /**
@@ -237,7 +244,7 @@ export function ozNachDatum(eintraege: readonly OzEintrag[]): OzEintrag[] {
 
 /** Der Aufgaben-Schlüssel eines Eintrags (`oz|<montag>|<id>`). */
 export function ozTaskKey(eintrag: Pick<OzEintrag, 'id' | 'datum'>): string {
-  return ozKey(ozMontag(eintrag.datum), eintrag.id)
+  return ozKey(montagVon(eintrag.datum), eintrag.id)
 }
 
 /**
@@ -261,7 +268,7 @@ export function ozZusage(eintrag: OzEintrag, confirmations: ConfirmationMap): Ta
  * Fassungen zusammenhalten.
  */
 export function ozTerminText(datum: string, termin: Pick<OzTermin, 'von' | 'bis' | 'ort'>): string {
-  const montag = ozMontag(datum)
+  const montag = montagVon(datum)
   return ozTerminTextEdge(montag, versatzAbMontag(fromIso(datum).getDay()), termin.von, termin.bis, termin.ort)
 }
 
@@ -283,9 +290,10 @@ export function ozOffeneMeldungen(
 ): OffeneMeldung[] {
   const namen = new Map(persons.map((p) => [p.id, displayName(p)]))
   const zeilen = eintraege.map((e) => ({ id: e.id, termin_id: e.terminId, datum: e.datum, person_id: e.pid, selbst: e.selbst }))
-  return offeneZeugnisEintraege(zeilen, termine, namen, new Map(Object.entries(confirmations)), kalendertagMs(heute))
-    .filter((p) => !sentLog[sentKey(p.key, p.name)])
-    .map((p) => ({ key: p.key, name: p.name }))
+  return nochNichtGemeldet(
+    offeneZeugnisEintraege(zeilen, termine, namen, new Map(Object.entries(confirmations)), kalendertagMs(heute)),
+    sentLog,
+  )
 }
 
 /** Was die Planungs-Karte auf Start zum öffentlichen Zeugnisgeben nennt. */
@@ -330,12 +338,7 @@ export function ozStand(args: {
 
 /** Wann ging zuletzt etwas über das öffentliche Zeugnisgeben hinaus? */
 export function ozZuletztGesendet(sentLog: SentLog): string | null {
-  let neuster: string | null = null
-  for (const [schluessel, wann] of Object.entries(sentLog)) {
-    if (!schluessel.startsWith('oz|')) continue
-    if (neuster === null || wann > neuster) neuster = wann
-  }
-  return neuster
+  return neuesterVersand(sentLog, (schluessel) => schluessel.startsWith('oz|'))
 }
 
 /**
@@ -376,14 +379,15 @@ export function ozEntzogeneZusagen(
 /**
  * Die eigenen Einträge als **Aufgaben** — das Gegenstück zu `deriveMyFsTasks`
  * für das öffentliche Zeugnisgeben. Vergangenes fällt heraus wie dort
- * (`MyTask.at` ist der Kalendertag; die Liste filtert danach).
+ * (`MyTask.at` ist der Kalendertag; die Liste filtert danach). Die Rolle steht
+ * kanonisch deutsch (`OZ_DIENST`), übersetzt wird beim Anzeigen — wie bei den
+ * Vorträgen auswärts.
  */
 export function deriveMyOzTasks(
   termine: readonly OzTermin[],
   eintraege: readonly OzEintrag[],
   personId: string | undefined,
   confirmations: ConfirmationMap,
-  titel: string,
 ): MyTask[] {
   if (!personId) return []
   const tasks: MyTask[] = []
@@ -394,7 +398,7 @@ export function deriveMyOzTasks(
     tasks.push({
       id: ozTaskKey(eintrag),
       title: '',
-      rolle: titel,
+      rolle: OZ_DIENST,
       date: ozTerminText(eintrag.datum, termin),
       at: kalendertagMs(fromIso(eintrag.datum)),
       status: ozZusage(eintrag, confirmations),

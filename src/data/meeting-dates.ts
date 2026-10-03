@@ -109,7 +109,25 @@ export function montagVon(datum: string): string {
  * Zeitzone. Das Fenster der Auslastung und die Proben bauen daraus Kennungen.
  */
 export function montagNach(start: string, wochen: number): string {
-  return new Date(Date.parse(start) + wochen * 7 * 864e5).toISOString().slice(0, 10)
+  return tagNach(start, wochen * 7)
+}
+
+/**
+ * Der Tag `tage` Tage nach `datum` (ISO), über UTC gerechnet — ohne
+ * Sommerzeitsprung. Stand bis zum 3.10.2026 als Abschrift in den Weiteren
+ * Plänen und als `setDate`-Rechnung in den Gruppenbesuchen.
+ */
+export function tagNach(datum: string, tage: number): string {
+  return new Date(Date.parse(datum) + tage * 864e5).toISOString().slice(0, 10)
+}
+
+/**
+ * Ist dieser Tag (ISO) um? Für Termine ohne Woche — Schichten, Vorträge,
+ * Pläne; das Gegenstück zu `fsTagVorbei`. Stand bis zum 3.10.2026 dreimal
+ * gleich da (`ozVorbei`, `vaVorbei`, `planVorbei`).
+ */
+export function tagVorbei(datum: string, heute = new Date()): boolean {
+  return istVorbei(kalendertagMs(fromIso(datum)), heute)
 }
 
 /**

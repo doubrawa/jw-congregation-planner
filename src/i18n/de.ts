@@ -86,6 +86,11 @@ export const DE = {
     ozKeineTermine: 'Noch keine Termine. Lege einen an: Wochentag, Uhrzeit, Ort und wie viele dabei sein sollen.',
     ozTerminAdd: '+ TERMIN HINZUFÜGEN',
     ozPlaetze: 'Plätze: {n}',
+    // Rückfrage vor einem anderen Wochentag (`TerminZeile`), wenn dabei kommende
+    // Einträge gehen. Tag und Zahl stehen hinter einer Bezeichnung — keine
+    // Sprache muss beugen oder zählen.
+    ozTagWechselFrage: 'Neuer Wochentag: {tag} – kommende Einträge, die dabei entfallen: {n}',
+    ozTagWechseln: 'Verlegen', abbrechen: 'Abbrechen',
     ozAutoHint: 'Vorgeschlagen wird, wer diesen Aufgabenbereich hat. Wer sich selbst einträgt, hat damit zugesagt – „Leeren“ lässt solche Einträge stehen.',
     ozFreiePlaetze: 'FREIE PLÄTZE',
     ozFrei: 'Frei: {n}',

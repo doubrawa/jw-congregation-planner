@@ -5,18 +5,19 @@
  */
 
 import type { AppState } from '../app/context'
-import { besuchStand } from '../data/gruppenbesuche'
+import { besuchsLage, besuchStand } from '../data/gruppenbesuche'
+import { isoDay, montagVon } from '../data/meeting-dates'
 import type { FsBereich } from '../data/types'
 
-/** Gibt es einen Gruppenbesuch, der noch kommt? */
-function kuenftigeBesuche(state: AppState): boolean {
-  const lage = {
-    kennungen: state.weeks.map((w) => w.start),
-    fsWeeks: state.fsWeeks,
-    fsRules: state.fsRules,
-    absences: state.absences,
-  }
-  return state.gruppenbesuche.some((b) => besuchStand(b, lage).art !== 'vorbei')
+/**
+ * Gibt es einen Gruppenbesuch, der noch kommt? Was vor dieser Woche liegt, ist
+ * vorbei, ohne dass man nachrechnet — die Liste wächst mit den Jahren, und
+ * gefragt wird bei jedem Render des Predigtdienstes.
+ */
+function kuenftigeBesuche(state: AppState, heute = new Date()): boolean {
+  const dieseWoche = montagVon(isoDay(heute))
+  const lage = besuchsLage(state)
+  return state.gruppenbesuche.some((b) => b.woche >= dieseWoche && besuchStand(b, lage, heute).art !== 'vorbei')
 }
 
 /**

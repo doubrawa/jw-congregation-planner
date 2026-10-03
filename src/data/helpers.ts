@@ -963,3 +963,20 @@ export function dieselbePerson(a: { name: string; pid?: string }, b: { name: str
   return a.pid && b.pid ? a.pid === b.pid : a.name === b.name
 }
 
+/**
+ * Aufeinanderfolgende Elemente mit gleichem Schlüssel gruppieren — für
+ * Listen, die schon nach diesem Schlüssel sortiert sind (Monate, Wochen); die
+ * Reihenfolge bleibt. Stand bis zum 3.10.2026 dreimal als eigene Schleife
+ * (Gruppenbesuche, Zeugnisgeben, Redner auswärts).
+ */
+export function gruppiertNach<T>(items: readonly T[], schluessel: (item: T) => string): [string, T[]][] {
+  const gruppen: [string, T[]][] = []
+  for (const item of items) {
+    const k = schluessel(item)
+    const letzte = gruppen.at(-1)
+    if (letzte?.[0] === k) letzte[1].push(item)
+    else gruppen.push([k, [item]])
+  }
+  return gruppen
+}
+

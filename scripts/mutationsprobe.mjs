@@ -865,24 +865,25 @@ export const KATALOG = [
     // Seit T120 führt das Menü ohne Reiterwahl in den Predigtdienst; vorher
     // schützte die Wahl (`terminGewaehlt`) davor.
     regel: 'Ein stilles Nachladen wirft nicht aus dem Predigtdienst in die Zusammenkünfte.',
-    suchen: "  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va' || state.tab === 'wp') return state",
-    ersetzen: "  if (state.terminGewaehlt || state.tab === 'va' || state.tab === 'wp') return state",
+    // Seit dem 3.10.2026 positiv aufgezählt: Die Mutation lässt den Reiter springen.
+    suchen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit'])",
+    ersetzen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit', 'fs'])",
   },
   {
     id: 'nachladen-laesst-redner-auswaerts-stehen',
     datei: 'src/app/reducer.ts',
     // Die Redner auswärts haben keine Woche (T120, Phase 4).
     regel: 'Ein stilles Nachladen wirft nicht aus den Rednern auswärts in eine Zusammenkunft.',
-    suchen: "  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va' || state.tab === 'wp') return state",
-    ersetzen: "  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'wp') return state",
+    suchen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit'])",
+    ersetzen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit', 'va'])",
   },
   {
     id: 'nachladen-laesst-weitere-plaene-stehen',
     datei: 'src/app/reducer.ts',
     // Das Menü führt ohne Reiterwahl zu den Weiteren Plänen (T120, Phase 5).
     regel: 'Ein stilles Nachladen wirft nicht aus den Weiteren Plänen in eine Zusammenkunft.',
-    suchen: "  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va' || state.tab === 'wp') return state",
-    ersetzen: "  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va') return state",
+    suchen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit'])",
+    ersetzen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit', 'wp'])",
   },
   // ── Gruppenbesuche des Dienstaufsehers (T120, Phase 2) ─────────────────────
   {
@@ -2228,7 +2229,7 @@ export const KATALOG = [
     id: 'wp-zurueck-zur-zusammenkunft',
     datei: 'src/app/reducer.ts',
     regel: 'Wer aus den Weiteren Plänen zu den Zusammenkünften wechselt, landet bei der Zusammenkunft der Woche.',
-    suchen: "            : action.thema === 'zusammenkuenfte' && (state.tab === 'fs' || state.tab === 'wp')",
+    suchen: "            : action.thema === 'zusammenkuenfte' && themaVon(state.tab) !== 'zusammenkuenfte'",
     ersetzen: "            : action.thema === 'zusammenkuenfte' && state.tab === 'fs'",
   },
   {
@@ -2237,6 +2238,65 @@ export const KATALOG = [
     regel: 'Ein Eintrag geht nie vor dem Plan hinaus, auf den er zeigt — sonst weist ihn der Fremdschlüssel ab.',
     suchen: '  planSaves.flush()\n  savePlanEintraege(congId, geaendert, entfernt)',
     ersetzen: '  savePlanEintraege(congId, geaendert, entfernt)',
+  },
+  /* ---- Code-Review T120 (3.10.2026) ---- */
+  {
+    id: 'zeilen-nur-geaenderte',
+    datei: 'src/app/persist.ts',
+    regel:
+      'Ein getippter Ort oder Name schreibt nur, was dieser Planer geändert hat — die ganze Liste holte zurück, was ein anderer gelöscht hat.',
+    suchen: "  if (geaendert.length || entfernt.length) schreiber.schedule('zeilen', { congId, zeilen: geaendert, entfernt })",
+    ersetzen: "  if (geaendert.length || entfernt.length) schreiber.schedule('zeilen', { congId, zeilen: [...nachher], entfernt })",
+  },
+  {
+    id: 'zeilen-geloeschtes-nicht-zurueck',
+    datei: 'src/app/persist.ts',
+    regel: 'Erst getippt, dann gelöscht: Die Zeile geht nur als Löschung hinaus, nicht danach noch einmal als Upsert.',
+    suchen: '  const nachId = new Map(alt.zeilen.filter((z) => !weg.has(z.id)).map((z) => [z.id, z]))',
+    ersetzen: '  const nachId = new Map(alt.zeilen.map((z) => [z.id, z]))',
+  },
+  {
+    id: 'zeilen-veraltet-laedt-nach',
+    datei: 'src/lib/data.ts',
+    regel:
+      'Was nur ein veralteter Stand erklärt (Termin gelöscht, Platz besetzt, Recht entzogen), lädt nach — sonst bleibt lokal stehen, was es nicht gibt.',
+    suchen: "const STAND_VERALTET: ReadonlySet<string> = new Set(['23505', '23503', '23514', '42501'])",
+    ersetzen: "const STAND_VERALTET: ReadonlySet<string> = new Set(['23505'])",
+  },
+  {
+    id: 'oz-stapel-einzeln',
+    datei: 'src/lib/data.ts',
+    regel: 'Ein besetzter Platz verwirft nicht die ganze Auto-Zuteilung — die freien Plätze kommen an.',
+    suchen: '    if (!error || zeilen.length === 1 || !standVeraltet(error)) return { error }',
+    ersetzen: '    return { error }',
+  },
+  {
+    id: 'ersatz-ohne-redner-auswaerts',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Wer am Tag auswärts einen Vortrag hält, bekommt kein „Ersatz gesucht" — die App zeigt es ihm ja auch nicht.',
+    suchen: ' && !auswaerts.has(p.id)',
+    ersetzen: '',
+  },
+  {
+    id: 'person-weg-eintraege-weg',
+    datei: 'src/app/reducer.ts',
+    regel: 'Geht eine Person, gehen ihre Einträge im Zeugnisgeben mit — wie in der Datenbank (on delete cascade).',
+    suchen: '          ? state.ozEintraege.filter((e) => e.pid !== action.id)',
+    ersetzen: '          ? state.ozEintraege',
+  },
+  {
+    id: 'oz-tagwechsel-fragt-nach',
+    datei: 'src/planen/ZeugnisPlan.tsx',
+    regel: 'Ein anderer Wochentag fragt nach, wenn dabei kommende Einträge gehen — eine Pfeiltaste löscht nichts.',
+    suchen: '    if (wd !== termin.wd && n > 0) {',
+    ersetzen: '    if (false) {',
+  },
+  {
+    id: 'oz-tagwechsel-heute-bleibt',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Beim Verlegen bleibt der Eintrag von heute — heute stehen die Eingetragenen womöglich gerade dort.',
+    suchen: '  return eintraege.filter((e) => e.terminId === terminId && e.datum > tag)',
+    ersetzen: '  return eintraege.filter((e) => e.terminId === terminId && e.datum >= tag)',
   },
 ]
 

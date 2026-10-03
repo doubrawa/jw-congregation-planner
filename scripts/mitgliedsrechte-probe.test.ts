@@ -9,12 +9,14 @@ import {
   helferSchluessel,
   montagDerWoche,
   ozSchluessel,
+  PROBE_KONTEN,
   qualifiziertFuer,
   slotSchluessel,
   t120Anlage,
   tagPlus,
   vaSchluessel,
   wochentag,
+  zugangAus,
 } from './mitgliedsrechte-probe.mjs'
 import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
@@ -215,6 +217,51 @@ describe('Ist das Mitglied für den Platz überhaupt qualifiziert? (Fall 9)', ()
     for (const p of [undefined, null, {}, { priv: null }]) {
       expect(qualifiziertFuer(p, 'mik')).toBe(false)
     }
+  })
+})
+
+describe('Woher die Probe ihren Zugang nimmt', () => {
+  /*
+    Bis zum 3.10.2026 verlangte sie sechs Umgebungsvariablen im selben
+    Fenster — und ihr erster Lauf scheiterte an einem Platzhalter im Aufruf.
+    Jetzt wie die übrigen Skripte: URL und Schlüssel aus `.env.local`, die
+    Konten wie in testversammlung-anlegen.mjs, Kennwörter verdeckt erfragt.
+  */
+  const datei: Record<string, string> = { VITE_SUPABASE_URL: 'https://datei.invalid', VITE_SUPABASE_ANON_KEY: 'sb_publishable_aus_der_datei' }
+  const ausDatei = (name: string) => datei[name] ?? ''
+
+  it('ohne Umgebung: URL und Schlüssel aus der Datei, die Konten der Testversammlung, kein Kennwort', () => {
+    expect(zugangAus({}, ausDatei)).toEqual({
+      url: 'https://datei.invalid',
+      anon: 'sb_publishable_aus_der_datei',
+      planerMail: PROBE_KONTEN.planer,
+      mitgliedMail: PROBE_KONTEN.mitglied,
+      planerPass: '',
+      mitgliedPass: '',
+      dienstSchluessel: false,
+    })
+  })
+
+  it('die Umgebung schlägt die Datei — für andere Konten oder ohne Terminal', () => {
+    const z = zugangAus(
+      { SUPABASE_URL: 'https://env.invalid', SUPABASE_ANON_KEY: 'sb_publishable_env', PROBE_PLANER_MAIL: 'a@x.invalid', PROBE_MITGLIED_PASS: 'geheim' },
+      ausDatei,
+    )
+    expect(z).toMatchObject({ url: 'https://env.invalid', anon: 'sb_publishable_env', planerMail: 'a@x.invalid', mitgliedPass: 'geheim' })
+  })
+
+  it.each([
+    ['ein sb_secret-Schlüssel', { SUPABASE_ANON_KEY: 'sb_secret_xyz' }],
+    ['derselbe wie der Service-Role-Schlüssel', { SUPABASE_ANON_KEY: 'eyJdienst', SUPABASE_SERVICE_ROLE_KEY: 'eyJdienst' }],
+    ['derselbe wie der Secret-Schlüssel', { SUPABASE_ANON_KEY: 'sb_neu_1', SUPABASE_SECRET_KEY: 'sb_neu_1' }],
+  ])('%s als anon-Schlüssel umginge RLS — erkannt', (_name, env) => {
+    expect(zugangAus(env, ausDatei).dienstSchluessel).toBe(true)
+  })
+
+  it('kein Schlüssel ist kein Dienst-Schlüssel, nur ein fehlender', () => {
+    // Sonst meldete die Probe „Dienst-Schlüssel", wo schlicht nichts steht.
+    const z = zugangAus({}, () => '')
+    expect(z).toMatchObject({ anon: '', url: '', dienstSchluessel: false })
   })
 })
 

@@ -4,6 +4,7 @@ import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
 import { vaStand } from '../data/auswaerts'
 import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
+import { useBesuchsLage } from '../components/useBesuchsLage'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
 import { ozStand } from '../data/zeugnis'
@@ -122,15 +123,11 @@ export function PlanungsKarte() {
    * voraus, und gerade dann lässt sich noch etwas tun (anderer Besucher, andere
    * Woche).
    */
-  const besuchsKonflikte = useMemo(() => {
-    const lage = {
-      kennungen: state.weeks.map((w) => w.start),
-      fsWeeks: state.fsWeeks,
-      fsRules: state.fsRules,
-      absences: state.absences,
-    }
-    return state.gruppenbesuche.filter((b) => besuchHatKonflikt(b, besuchStand(b, lage, fromIso(tag)))).length
-  }, [state.weeks, state.fsWeeks, state.fsRules, state.absences, state.gruppenbesuche, tag])
+  const lage = useBesuchsLage()
+  const besuchsKonflikte = useMemo(
+    () => state.gruppenbesuche.filter((b) => besuchHatKonflikt(b, besuchStand(b, lage, fromIso(tag)))).length,
+    [lage, state.gruppenbesuche, tag],
+  )
 
   const zuDenBesuchen = (): void => {
     dispatch({ type: 'setFsBereich', bereich: 'gruppenbesuche' })

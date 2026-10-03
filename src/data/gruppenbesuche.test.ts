@@ -110,6 +110,16 @@ describe('Eintragen in den Treffpunkt der Gruppe', () => {
     expect(besuchAustragen(fremd, KENN, b)).toBe(fremd)
   })
 
+  it('leitete der Besucher den Treffpunkt schon vorher, geht er trotzdem mit (entschieden am 3.10.2026)', () => {
+    // Etwa aus der Auto-Zuteilung: Eingetragen wird dann nichts (der Platz ist
+    // schon seiner), ausgetragen aber doch — ein Platz merkt sich nicht, woher
+    // sein Leiter kam. Der Planer sieht den leeren Platz und besetzt ihn neu.
+    const schonSeiner = besuchEintragen(wochen(), KENN, besuch('2026-09-14', 'g1', KONRAD.id, 'b-alt'), PERSONEN)
+    const b = besuch('2026-09-14', 'g1')
+    expect(besuchEintragen(schonSeiner, KENN, b, PERSONEN)).toBe(schonSeiner)
+    expect(treffpunkt(besuchAustragen(schonSeiner, KENN, b), '2026-09-14', 'g1')).toMatchObject({ leader: '' })
+  })
+
   it('eine frisch importierte Woche bekommt ihre vorgemerkten Besuche', () => {
     const neueWoche = buildFsWeeks(['2026-11-09'], RULES)[0]!
     const mitBesuch = besucheInNeueWoche(neueWoche, '2026-11-09', [besuch('2026-11-09', 'g3')], PERSONEN)

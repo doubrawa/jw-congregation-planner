@@ -10,8 +10,8 @@
 import { displayName } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import type { Dict } from '../i18n/ui'
-import { LOCALES } from '../i18n/langs'
 import type { Group, Lang, Mahlzeit, Person, PlanVorlage, WeitererPlan } from '../data/types'
+import { datumsFormat } from './datum-anzeige'
 
 /** Name der Vorlage: „Königreichssaal" bzw. „Familien reihum". */
 export function vorlageName(vorlage: PlanVorlage, t: Pick<Dict, 'saal' | 'wpFamilien'>): string {
@@ -25,10 +25,7 @@ export function vorlageText(vorlage: PlanVorlage, t: Pick<Dict, 'wpSaalText' | '
 
 /** Der Zeitraum: „1. Dezember 2026 – 28. Februar 2027", zusammengezogen, wo Monat oder Jahr gleich sind. */
 export function zeitraumText(plan: Pick<WeitererPlan, 'von' | 'bis'>, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALES[lang], { day: 'numeric', month: 'long', year: 'numeric' }).formatRange(
-    fromIso(plan.von),
-    fromIso(plan.bis),
-  )
+  return datumsFormat(lang, 'tagMonatJahr').formatRange(fromIso(plan.von), fromIso(plan.bis))
 }
 
 /** Die Mahlzeit eines Platzes. */

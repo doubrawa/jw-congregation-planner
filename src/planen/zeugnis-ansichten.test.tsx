@@ -15,6 +15,7 @@ import { fill } from '../i18n/useT'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import type { OzEintrag, OzTermin, Person } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
+import { wochentagNameAusWd } from './wochentage'
 
 /**
  * **Öffentliches Zeugnisgeben an der Oberfläche** (T120, Phase 3): wer den
@@ -182,5 +183,61 @@ describe('Planen: Termine, Zuteilen, Senden', () => {
     const { container } = zeige(PlanenScreen, { screen: 'planen', planner: true, ozTermine: [] })
     expect(container.textContent).toContain(t.ozKeineTermine)
     expect(container.querySelector('.plan-auto')).toBeNull()
+  })
+})
+
+/*
+ * **Ein anderer Wochentag fragt nach, wenn dabei Einträge gehen** (3.10.2026).
+ * Die kommenden stünden an einem Tag, an dem der Termin nicht mehr stattfindet;
+ * wer zugesagt hatte, bekommt „Zuteilung zurückgezogen", und Zurückstellen holt
+ * nichts zurück. Unter Windows genügte dafür eine Pfeiltaste auf dem Feld.
+ */
+describe('Planen: Wochentag eines Termins ändern', () => {
+  const tagFeld = (c: HTMLElement) => c.querySelector(`select[aria-label="${t.a11yWeekday}"]`) as HTMLSelectElement
+  const planen = (ozEintraege: OzEintrag[]) => zeige(PlanenScreen, { screen: 'planen', planner: true, ozEintraege })
+
+  it('mit kommenden Einträgen: erst die Rückfrage mit Tag und Zahl, dann „Verlegen"', () => {
+    const { container, dispatch } = planen([eintrag(ANNA.id), eintrag(SIMON.id, true, '2026-09-16')])
+    fireEvent.change(tagFeld(container), { target: { value: '4' } })
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(container.querySelector('.oz-rueckfrage')?.textContent).toContain(
+      fill(t.ozTagWechselFrage, { tag: wochentagNameAusWd(4, 'de'), n: 2 }),
+    )
+    // Das Feld zeigt die Wahl schon — gilt aber erst mit dem Knopf.
+    expect(tagFeld(container).value).toBe('4')
+    fireEvent.click(knopf(container, t.ozTagWechseln)[0]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { wd: 4 } })
+    expect(container.querySelector('.oz-rueckfrage')).toBeNull()
+  })
+
+  it('„Abbrechen" lässt alles, wie es war', () => {
+    const { container, dispatch } = planen([eintrag(ANNA.id)])
+    fireEvent.change(tagFeld(container), { target: { value: '4' } })
+    fireEvent.click(knopf(container, t.abbrechen)[0]!)
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(container.querySelector('.oz-rueckfrage')).toBeNull()
+    expect(tagFeld(container).value).toBe('3')
+  })
+
+  it('zurück auf den alten Tag gewählt: keine Rückfrage, nichts geändert', () => {
+    const { container, dispatch } = planen([eintrag(ANNA.id)])
+    fireEvent.change(tagFeld(container), { target: { value: '4' } })
+    fireEvent.change(tagFeld(container), { target: { value: '3' } })
+    expect(container.querySelector('.oz-rueckfrage')).toBeNull()
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('ohne kommende Einträge ändert sich der Tag sofort', () => {
+    const { container, dispatch } = planen([])
+    fireEvent.change(tagFeld(container), { target: { value: '4' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { wd: 4 } })
+    expect(container.querySelector('.oz-rueckfrage')).toBeNull()
+  })
+
+  it('ein Eintrag von heute zählt nicht — er bleibt, also fragt nichts', () => {
+    vi.setSystemTime(new Date(2026, 8, 9, 7, 0)) // Mittwoch früh, die Schicht ist heute
+    const { container, dispatch } = planen([eintrag(ANNA.id)])
+    fireEvent.change(tagFeld(container), { target: { value: '4' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { wd: 4 } })
   })
 })

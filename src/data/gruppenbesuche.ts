@@ -21,7 +21,7 @@ import { istAbwesendAm } from './absence'
 import { fsSetLeader, fsTag, fsTagVorbei, genFsWeek } from './fs'
 import { displayName } from './helpers'
 import { fromIso, isoDay } from './meeting-dates'
-import type { Absence, FsInstance, FsRule, Group, Gruppenbesuch, Person } from './types'
+import type { Absence, FsInstance, FsRule, Group, Gruppenbesuch, Person, Week } from './types'
 
 /** Die Treffpunkte der besuchten Gruppe in einer Woche. */
 export function gruppenTreffpunkte(woche: readonly FsInstance[], grp: string): FsInstance[] {
@@ -63,8 +63,16 @@ export function besuchEintragen(
 
 /**
  * Einen Besuch austragen: Wo der Besucher die Treffpunkte der Gruppe leitet,
- * wird der Platz wieder frei. Wer sonst dort steht, bleibt — er kam nicht
- * durch den Besuch dorthin.
+ * wird der Platz wieder frei. Ein anderer Leiter bleibt — er kam nicht durch
+ * den Besuch dorthin.
+ *
+ * **Der Besucher selbst geht überall**, auch wo er den Treffpunkt schon vor
+ * dem Besuch leitete (etwa aus der Auto-Zuteilung) — `besuchEintragen` hat
+ * diesen Platz übersprungen, und ein Platz merkt sich nicht, woher sein Leiter
+ * kam. So entschieden am 3.10.2026: Der Fall ist selten, der Planer sieht den
+ * leeren Platz und besetzt ihn neu, und ein bestätigter Leiter erfährt es über
+ * den Entzug. Es genau zu unterscheiden, bräuchte am Besuch eine Liste der
+ * Plätze, die er gefüllt hat — eine Spalte mehr im Schema.
  */
 export function besuchAustragen(
   fsWeeks: FsInstance[][],
@@ -135,21 +143,42 @@ export interface BesuchsLage {
   absences: readonly Absence[]
 }
 
+/**
+ * Die Lage aus dem Zustand. Stand bis zum 3.10.2026 fünfmal von Hand
+ * zusammengesetzt (Reducer, Planen, Ansehen, Planungs-Karte, Reiterleiste).
+ */
+export function besuchsLage(state: {
+  weeks: readonly Pick<Week, 'start'>[]
+  fsWeeks: readonly FsInstance[][]
+  fsRules: FsRule[]
+  absences: readonly Absence[]
+}): BesuchsLage {
+  return {
+    kennungen: state.weeks.map((w) => w.start),
+    fsWeeks: state.fsWeeks,
+    fsRules: state.fsRules,
+    absences: state.absences,
+  }
+}
+
 export function besuchStand(besuch: Gruppenbesuch, lage: BesuchsLage, heute = new Date()): BesuchsStand {
   const wi = lage.kennungen.indexOf(besuch.woche)
   const geladen = wi >= 0 ? lage.fsWeeks[wi] : undefined
   const treffpunkte = gruppenTreffpunkte(geladen ?? genFsWeek(besuch.woche, lage.fsRules), besuch.grp)
+  // Ohne Treffpunkt zählt das Ende der Woche: der Sonntag (Wochentag 0).
+  const vorbei = treffpunkte.length
+    ? treffpunkte.every((inst) => fsTagVorbei(besuch.woche, inst.wd, heute))
+    : fsTagVorbei(besuch.woche, 0, heute)
+  // Vergangenes fragt die Abwesenheiten gar nicht erst: Die Liste der Besuche
+  // wächst mit den Jahren, und ein vorbeigegangener meldet nichts mehr.
   const abwesend =
+    !vorbei &&
     besuch.pid !== null &&
     treffpunkte.some((inst) => {
       const tag = fsTag(besuch.woche, inst.wd)
       return tag !== null && istAbwesendAm(lage.absences, besuch.pid ?? undefined, tag)
     })
   const basis = { treffpunkte, lautGrundplan: !geladen, andererLeiter: null, abwesend }
-  // Ohne Treffpunkt zählt das Ende der Woche: der Sonntag (Wochentag 0).
-  const vorbei = treffpunkte.length
-    ? treffpunkte.every((inst) => fsTagVorbei(besuch.woche, inst.wd, heute))
-    : fsTagVorbei(besuch.woche, 0, heute)
   if (vorbei) return { ...basis, art: 'vorbei' }
   if (!treffpunkte.length) return { ...basis, art: 'keinTreffpunkt' }
   if (!geladen) return { ...basis, art: 'vorgemerkt' }

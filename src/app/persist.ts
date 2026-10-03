@@ -71,6 +71,33 @@ interface DebouncedWriter<K, V> {
 }
 
 /**
+ * Alle gebündelten Schreiber — jeder trägt sich bei seiner Erzeugung selbst
+ * ein. Beim Verlassen der Ansicht und beim Abmelden gehen sie gemeinsam hinaus.
+ *
+ * Bis zum 3.10.2026 stand dort eine Liste von Hand, und ihr fehlten die beiden
+ * Schreiber aus T120 (Zeugnis-Termine, Weitere Pläne): Wer binnen 600 ms nach
+ * dem Tippen eines Orts oder Plannamens abmeldete, dessen Änderung ging erst
+ * nach dem Abmelden hinaus — und scheiterte an der Anmeldung.
+ */
+const ALLE_FLUSHES: (() => void)[] = []
+
+/**
+ * Was sich an einer Tabelle „eine Zeile je …" geändert hat: `geaendert` sind
+ * neue oder geänderte Zeilen (neue Referenz — der Reducer gibt Unberührtem
+ * seine Referenz zurück), `neu` nur die mit unbekannter Kennung, `entfernt`
+ * die Kennungen, die wegfielen. Stand bis zum 3.10.2026 sechsmal da.
+ */
+function zeilenAenderung<T extends { id: string }>(vorher: readonly T[], nachher: readonly T[]) {
+  const alt = new Map(vorher.map((z) => [z.id, z]))
+  const bleibt = new Set(nachher.map((z) => z.id))
+  return {
+    geaendert: nachher.filter((z) => alt.get(z.id) !== z),
+    neu: nachher.filter((z) => !alt.has(z.id)),
+    entfernt: vorher.filter((z) => !bleibt.has(z.id)).map((z) => z.id),
+  }
+}
+
+/**
  * @param merge Wie zwei Fassungen desselben Schlüssels zusammenfallen. Ohne
  *   sie gewinnt die neuere — richtig für alles, was den **Zustand** schreibt
  *   (eine Person, eine Woche). Wer im Wert auch eine **Absicht** mitführt (was
@@ -92,6 +119,7 @@ function createDebouncedWriter<K, V>(
     for (const [key, value] of pending) write(key, value)
     pending.clear()
   }
+  ALLE_FLUSHES.push(flush)
   return {
     schedule(key, value) {
       const alt = pending.get(key)
@@ -146,43 +174,68 @@ const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsIns
     if (keys?.size) deleteConfirmationRows(congId, [...keys])
   },
 )
-// Der Grundplan hängt an einem Freitextfeld (Ort) und änderte sich deshalb je
-// Tastenanschlag — mitsamt jeder daraus erzeugten Woche.
-//
-// Mitgeführt wird, **welche Regeln dieser Planer entfernt hat**: Der Schreiber
-// löscht genau die, statt alles wegzuräumen, was nicht in seiner Liste steht
-// (siehe `saveFsRules`). Und weil mehrere Änderungen zu einem Schreibvorgang
-// zusammenfallen, sammeln sich die Löschungen, während der Regelstand selbst
-// vom neuesten gewinnt — sonst verlöre „Regel A löschen, dann Regel B löschen"
-// das A.
-const fsRuleSaves = createDebouncedWriter<
-  'rules',
-  { congId: string; rules: AppState['fsRules']; entfernt: string[] }
->(
-  SAVE_DELAY,
-  (_key, { congId, rules, entfernt }) => saveFsRules(congId, rules, entfernt),
-  (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
-)
-// Die Termine des öffentlichen Zeugnisgebens: derselbe Weg wie der Grundplan —
-// der Ort ist ein Freitextfeld, und entfernte Termine sammeln sich.
-const ozTerminSaves = createDebouncedWriter<
-  'termine',
-  { congId: string; termine: AppState['ozTermine']; entfernt: string[] }
->(
-  SAVE_DELAY,
-  (_key, { congId, termine, entfernt }) => saveOzTermine(congId, termine, entfernt),
-  (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
-)
-// Die weiteren Pläne (T120, Phase 5) ebenso: Ihr Name wird getippt, gelöschte
-// Pläne sammeln sich.
-const planSaves = createDebouncedWriter<
-  'plaene',
-  { congId: string; plaene: AppState['plaene']; entfernt: string[] }
->(
-  SAVE_DELAY,
-  (_key, { congId, plaene, entfernt }) => savePlaene(congId, plaene, entfernt),
-  (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
-)
+/*
+ * **Tabellen „eine Zeile je …", gebündelt geschrieben** — der Grundplan der
+ * Treffpunkte, die Termine des Zeugnisgebens, die Weiteren Pläne. Alle drei
+ * hängen an einem Freitextfeld (Ort, Name) und ändern sich je Tastenanschlag.
+ *
+ * Mitgeführt wird nur, **was dieser Planer geändert oder entfernt hat** —
+ * geschrieben wird genau das, gelöscht genau das (siehe `saveFsRules`). Bis
+ * zum 3.10.2026 ging stattdessen die ganze Liste als Upsert hinaus: Hatte ein
+ * zweiter Planer inzwischen einen Termin gelöscht oder einen Plan
+ * veröffentlicht, stellte das nächste Tippen hier den Termin leer wieder her
+ * und den Plan zurück auf Entwurf — ohne Fehler, auf beiden Bildschirmen
+ * unbemerkt.
+ */
+interface ZeilenBuendel<T extends { id: string }> {
+  congId: string
+  /** Neue oder geänderte Zeilen. */
+  zeilen: T[]
+  /** Kennungen der entfernten Zeilen. */
+  entfernt: string[]
+}
+
+/**
+ * Zwei Bündel derselben Tabelle zu einem: Je Kennung gewinnt die neuere
+ * Fassung, Löschungen sammeln sich — sonst verlöre „Regel A löschen, dann
+ * Regel B löschen" das A. Was die neuere Änderung entfernt, geht nicht mehr
+ * als Zeile mit (das Schreiben nach dem Löschen holte es zurück); was sie
+ * wieder schreibt, nicht mehr als Löschung.
+ */
+function zeilenSammeln<T extends { id: string }>(alt: ZeilenBuendel<T>, neu: ZeilenBuendel<T>): ZeilenBuendel<T> {
+  const weg = new Set(neu.entfernt)
+  const nachId = new Map(alt.zeilen.filter((z) => !weg.has(z.id)).map((z) => [z.id, z]))
+  for (const z of neu.zeilen) nachId.set(z.id, z)
+  return {
+    ...neu,
+    zeilen: [...nachId.values()],
+    entfernt: [...new Set([...alt.entfernt.filter((id) => !nachId.has(id)), ...neu.entfernt])],
+  }
+}
+
+type ZeilenSchreiber<T extends { id: string }> = DebouncedWriter<'zeilen', ZeilenBuendel<T>>
+
+function zeilenSchreiber<T extends { id: string }>(
+  speichern: (congId: string, zeilen: T[], entfernt: string[]) => void,
+): ZeilenSchreiber<T> {
+  return createDebouncedWriter(SAVE_DELAY, (_key, { congId, zeilen, entfernt }) => speichern(congId, zeilen, entfernt), zeilenSammeln)
+}
+
+const fsRuleSaves = zeilenSchreiber(saveFsRules)
+const ozTerminSaves = zeilenSchreiber(saveOzTermine)
+const planSaves = zeilenSchreiber(savePlaene)
+
+/** Was sich zwischen zwei Ständen einer Tabelle geändert hat, ins Bündel — nichts, wenn nichts. */
+function zeilenPlanen<T extends { id: string }>(
+  schreiber: ZeilenSchreiber<T>,
+  congId: string,
+  vorher: readonly T[],
+  nachher: readonly T[],
+): void {
+  if (vorher === nachher) return
+  const { geaendert, entfernt } = zeilenAenderung(vorher, nachher)
+  if (geaendert.length || entfernt.length) schreiber.schedule('zeilen', { congId, zeilen: geaendert, entfernt })
+}
 
 /*
  * ---- Speichern mit Blick auf den Index (T42) -------------------------------
@@ -428,12 +481,8 @@ function treffpunkteSpeichern(
   next: AppState,
   verwaist: ReadonlyMap<string, string[]>,
 ): void {
-  if (next.fsRules !== prev.fsRules) {
-    // Was dieser Planer entfernt hat — nicht „alles, was ich nicht kenne".
-    const bleibt = new Set(next.fsRules.map((r) => r.id))
-    const entfernt = prev.fsRules.filter((r) => !bleibt.has(r.id)).map((r) => r.id)
-    fsRuleSaves.schedule('rules', { congId, rules: next.fsRules, entfernt })
-  }
+  // Was dieser Planer geändert oder entfernt hat — nicht „alles, was ich kenne".
+  zeilenPlanen(fsRuleSaves, congId, prev.fsRules, next.fsRules)
   for (let i = 0; i < next.fsWeeks.length; i++) {
     if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, verwaist)
   }
@@ -455,10 +504,7 @@ function besucheSpeichern(
   verwaist: ReadonlyMap<string, string[]>,
 ): void {
   if (next.gruppenbesuche !== prev.gruppenbesuche) {
-    const vorher = new Map(prev.gruppenbesuche.map((b) => [b.id, b]))
-    const geaendert = next.gruppenbesuche.filter((b) => vorher.get(b.id) !== b)
-    const bleibt = new Set(next.gruppenbesuche.map((b) => b.id))
-    const entfernt = prev.gruppenbesuche.filter((b) => !bleibt.has(b.id)).map((b) => b.id)
+    const { geaendert, entfernt } = zeilenAenderung(prev.gruppenbesuche, next.gruppenbesuche)
     if (geaendert.length || entfernt.length) saveGruppenbesuche(congId, geaendert, entfernt)
   }
   for (let i = 0; i < next.fsWeeks.length; i++) {
@@ -480,16 +526,11 @@ function besucheSpeichern(
  * Schreibschicht hält die Reihenfolge (`ozNacheinander` in `lib/data.ts`).
  */
 function zeugnisSpeichern(congId: string, prev: AppState, next: AppState): void {
-  if (next.ozTermine !== prev.ozTermine) {
-    const bleibt = new Set(next.ozTermine.map((t) => t.id))
-    const entfernt = prev.ozTermine.filter((t) => !bleibt.has(t.id)).map((t) => t.id)
-    ozTerminSaves.schedule('termine', { congId, termine: next.ozTermine, entfernt })
-  }
+  zeilenPlanen(ozTerminSaves, congId, prev.ozTermine, next.ozTermine)
   if (next.ozEintraege === prev.ozEintraege) return
-  const vorher = new Set(prev.ozEintraege.map((e) => e.id))
-  const neu = next.ozEintraege.filter((e) => !vorher.has(e.id))
-  const bleibt = new Set(next.ozEintraege.map((e) => e.id))
-  const entfernt = prev.ozEintraege.filter((e) => !bleibt.has(e.id)).map((e) => e.id)
+  // `neu` nach Kennung, nicht nach Referenz: Ein Eintrag wird eingefügt, nie
+  // ersetzt — ein zweites Einfügen derselben Zeile wiese die Datenbank ab.
+  const { neu, entfernt } = zeilenAenderung(prev.ozEintraege, next.ozEintraege)
   if (!neu.length && !entfernt.length) return
   ozTerminSaves.flush()
   saveOzEintraege(congId, neu, entfernt)
@@ -502,10 +543,7 @@ function zeugnisSpeichern(congId: string, prev: AppState, next: AppState): void 
  */
 function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): void {
   if (next.auswaerts === prev.auswaerts) return
-  const vorher = new Map(prev.auswaerts.map((v) => [v.id, v]))
-  const geaendert = next.auswaerts.filter((v) => vorher.get(v.id) !== v)
-  const bleibt = new Set(next.auswaerts.map((v) => v.id))
-  const entfernt = prev.auswaerts.filter((v) => !bleibt.has(v.id)).map((v) => v.id)
+  const { geaendert, entfernt } = zeilenAenderung(prev.auswaerts, next.auswaerts)
   if (geaendert.length || entfernt.length) saveVortraegeAuswaerts(congId, geaendert, entfernt)
 }
 
@@ -518,16 +556,9 @@ function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): voi
  * gelöscht nur, was hier entfernt wurde.
  */
 function plaeneSpeichern(congId: string, prev: AppState, next: AppState): void {
-  if (next.plaene !== prev.plaene) {
-    const bleibt = new Set(next.plaene.map((p) => p.id))
-    const entfernt = prev.plaene.filter((p) => !bleibt.has(p.id)).map((p) => p.id)
-    planSaves.schedule('plaene', { congId, plaene: next.plaene, entfernt })
-  }
+  zeilenPlanen(planSaves, congId, prev.plaene, next.plaene)
   if (next.planEintraege === prev.planEintraege) return
-  const vorher = new Map(prev.planEintraege.map((e) => [e.id, e]))
-  const geaendert = next.planEintraege.filter((e) => vorher.get(e.id) !== e)
-  const bleibt = new Set(next.planEintraege.map((e) => e.id))
-  const entfernt = prev.planEintraege.filter((e) => !bleibt.has(e.id)).map((e) => e.id)
+  const { geaendert, entfernt } = zeilenAenderung(prev.planEintraege, next.planEintraege)
   if (!geaendert.length && !entfernt.length) return
   planSaves.flush()
   savePlanEintraege(congId, geaendert, entfernt)
@@ -572,7 +603,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'fsInstRemove':
       // Ein gestrichener Grundplan-Treffpunkt ist in seiner Regel vermerkt
       // (`FsRule.aus`) — ohne sie käme er beim nächsten Laden wieder.
-      if (next.fsRules !== prev.fsRules) fsRuleSaves.schedule('rules', { congId, rules: next.fsRules, entfernt: [] })
+      zeilenPlanen(fsRuleSaves, congId, prev.fsRules, next.fsRules)
       fsWocheSpeichern(congId, next.weeks, next.fsWeeks, action.wi, fsVerwaist)
       break
     case 'fsInstAdd':
@@ -687,12 +718,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         personSaves.cancel(sel)
         deletePersonRow(sel)
       }
-      // Ansicht verlassen → ausstehende Debounce-Saves sofort schreiben
-      personSaves.flush()
-      weekSaves.flush()
-      congSaves.flush()
-      fsWeekSaves.flush()
-      fsRuleSaves.flush()
+      // Ansicht verlassen → alle ausstehenden Debounce-Saves sofort schreiben
+      for (const flush of ALLE_FLUSHES) flush()
       break
     }
     case 'removePerson': {

@@ -8,24 +8,15 @@
  */
 
 import { besuchsMonat } from '../data/gruppenbesuche'
-import { fromIso, isoDay, versatzAbMontag } from '../data/meeting-dates'
-import { LOCALES } from '../i18n/langs'
+import { fromIso, tagNach } from '../data/meeting-dates'
 import type { FsInstance, Group, Gruppenbesuch, Lang, Person } from '../data/types'
-import { displayName } from '../data/helpers'
+import { displayName, gruppiertNach } from '../data/helpers'
+import { datumsFormat } from './datum-anzeige'
 import { treffpunktTagLabel } from './treffpunkt-beschriftung'
 
 /** Die Woche eines Besuchs als Spanne von Montag bis Sonntag: „12.–18. Oktober". */
 export function besuchsWocheText(woche: string, lang: Lang): string {
-  const montag = fromIso(woche)
-  const sonntag = fromIso(woche)
-  sonntag.setDate(sonntag.getDate() + 6)
-  return new Intl.DateTimeFormat(LOCALES[lang], { day: 'numeric', month: 'long' }).formatRange(montag, sonntag)
-}
-
-/** Ein Monat („2026-10") als Überschrift: „Oktober 2026". */
-export function monatText(monat: string, lang: Lang): string {
-  const [y = 0, m = 1] = monat.split('-').map(Number)
-  return new Intl.DateTimeFormat(LOCALES[lang], { month: 'long', year: 'numeric' }).format(new Date(y, m - 1, 1, 12))
+  return datumsFormat(lang, 'tagMonat').formatRange(fromIso(woche), fromIso(tagNach(woche, 6)))
 }
 
 /** Ein Treffpunkt der Besuchswoche: „Samstag, 17. Oktober · 09:15 · Königreichssaal". */
@@ -52,19 +43,5 @@ export function besucherName(besuch: Pick<Gruppenbesuch, 'pid'>, persons: readon
 
 /** Besuche nach Monat ihres Wochenendes gruppiert, in der Reihenfolge, in der sie kommen. */
 export function nachMonat<T extends { besuch: Gruppenbesuch }>(eintraege: readonly T[]): { monat: string; eintraege: T[] }[] {
-  const monate: { monat: string; eintraege: T[] }[] = []
-  for (const eintrag of eintraege) {
-    const monat = besuchsMonat(eintrag.besuch.woche)
-    const letzter = monate.at(-1)
-    if (letzter?.monat === monat) letzter.eintraege.push(eintrag)
-    else monate.push({ monat, eintraege: [eintrag] })
-  }
-  return monate
-}
-
-/** Der Montag der Woche, in der `tag` liegt (ISO). */
-export function montagDerWoche(tag: Date): string {
-  const d = new Date(tag.getFullYear(), tag.getMonth(), tag.getDate(), 12)
-  d.setDate(d.getDate() - versatzAbMontag(d.getDay()))
-  return isoDay(d)
+  return gruppiertNach(eintraege, (e) => besuchsMonat(e.besuch.woche)).map(([monat, liste]) => ({ monat, eintraege: liste }))
 }

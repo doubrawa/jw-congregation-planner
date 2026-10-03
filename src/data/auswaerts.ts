@@ -19,9 +19,9 @@
 
 import { istAbwesendAm } from './absence'
 import { displayName, istAusgefallen, MEETING_TABS } from './helpers'
-import { fromIso, isoDay, istVorbei, kalendertagMs, meetingDate, montagVon, versatzAbMontag } from './meeting-dates'
-import { assignmentsInMeeting, sentKey, zusageStatus } from './planning'
-import type { EntzogeneZusage, OffeneMeldung } from './plan-versand'
+import { fromIso, isoDay, kalendertagMs, meetingDate, montagVon, tagVorbei, versatzAbMontag } from './meeting-dates'
+import { assignmentsInMeeting, zusageStatus } from './planning'
+import { neuesterVersand, nochNichtGemeldet, type EntzogeneZusage, type OffeneMeldung } from './plan-versand'
 import { vaKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import {
   offeneVortraegeAuswaerts,
@@ -61,7 +61,7 @@ export function vaTerminText(v: Pick<VortragAuswaerts, 'datum' | 'zeit' | 'versa
 
 /** Ist der Vortrag vorbei (der Tag ist um)? */
 export function vaVorbei(v: Pick<VortragAuswaerts, 'datum'>, heute = new Date()): boolean {
-  return istVorbei(kalendertagMs(fromIso(v.datum)), heute)
+  return tagVorbei(v.datum, heute)
 }
 
 /**
@@ -177,19 +177,15 @@ export function vaOffeneMeldungen(
 ): OffeneMeldung[] {
   const namen = new Map(persons.map((p) => [p.id, displayName(p)]))
   const zeilen = vortraege.map((v) => ({ id: v.id, datum: v.datum, zeit: v.zeit, versammlung: v.versammlung, person_id: v.pid }))
-  return offeneVortraegeAuswaerts(zeilen, namen, new Map(Object.entries(confirmations)), kalendertagMs(heute))
-    .filter((p) => !sentLog[sentKey(p.key, p.name)])
-    .map((p) => ({ key: p.key, name: p.name }))
+  return nochNichtGemeldet(
+    offeneVortraegeAuswaerts(zeilen, namen, new Map(Object.entries(confirmations)), kalendertagMs(heute)),
+    sentLog,
+  )
 }
 
 /** Wann ging zuletzt etwas über Vorträge auswärts hinaus? */
 export function vaZuletztGesendet(sentLog: SentLog): string | null {
-  let neuster: string | null = null
-  for (const [schluessel, wann] of Object.entries(sentLog)) {
-    if (!schluessel.startsWith('va|')) continue
-    if (neuster === null || wann > neuster) neuster = wann
-  }
-  return neuster
+  return neuesterVersand(sentLog, (schluessel) => schluessel.startsWith('va|'))
 }
 
 /**

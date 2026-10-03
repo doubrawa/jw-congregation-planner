@@ -494,13 +494,15 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(aufrufe.filter((a) => a.method === 'DELETE' && tabelleVon(a) === 'absences').length).toBeGreaterThan(1)
   })
 
-  /** Die Probe mit einer Zusage, die schon vor ihr in der App stand. */
-  const mitZusage = async (zusage: Record<string, unknown>, stoerung: NonNullable<Umgebung['stoerung']>) => {
+  /** Die Probe mit einem Bestand, der vom üblichen Lauf abweicht — Tabellen werden ersetzt, nicht ergänzt. */
+  const mitBestand = async (abweichend: NonNullable<Umgebung['bestand']>, stoerung?: Umgebung['stoerung']) => {
     const l = lauf('mitgliedsrechte-probe.mjs')
     const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
-    const bestand = { ...l.umgebung!.bestand, confirmations: [zusage] }
-    return fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand, stoerung })
+    return fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, ...abweichend }, stoerung })
   }
+  /** Die Probe mit einer Zusage, die schon vor ihr in der App stand. */
+  const mitZusage = (zusage: Record<string, unknown>, stoerung: NonNullable<Umgebung['stoerung']>) =>
+    mitBestand({ confirmations: [zusage] }, stoerung)
   const probewoche = () => {
     const w = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.weeks![0]!
     return { ...(w.data as Record<string, unknown>), start: w.start }
@@ -632,10 +634,8 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
   it('mitgliedsrechte-probe: fehlt die Freischaltung für den Dienst, gibt (9) sie vorübergehend — und nimmt sie wieder', async () => {
     // Sonst wiese `take` mit „not-qualified" ab, und über S13 wäre nichts
     // gesagt — so blieb (9) in der Testversammlung am 3.10.2026 ungemessen.
-    const l = lauf('mitgliedsrechte-probe.mjs')
-    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
-    const persons = l.umgebung!.bestand!.persons!.map((p) => (p.id === P2 ? { ...p, priv: {} } : p))
-    const { ausgabe, aufrufe, tabellen } = await fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, persons } })
+    const persons = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.persons!.map((p) => (p.id === P2 ? { ...p, priv: {} } : p))
+    const { ausgabe, aufrufe, tabellen } = await mitBestand({ persons })
     const priv = (a: Aufruf) => (a.method === 'PATCH' && tabelleVon(a) === 'persons' ? (a.body as { priv?: Record<string, unknown> }).priv : undefined)
     expect(aufrufe.some((a) => priv(a)?.['svc:mik'] === true)).toBe(true)
     expect(ausgabe.join('\n')).toMatch(/\(9\) fremden Platz übernehmen, ohne dass Ersatz gesucht ist \(Probe Planer; für „mik" vorübergehend freigeschaltet\)/)
@@ -646,19 +646,15 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     // So ist die Testversammlung angelegt (gemessen am 3.10.2026): Der Planer
     // als „fremder" Gastgeber stünde im Haushalt des Mitglieds, und (30) blieb
     // ungemessen.
-    const l = lauf('mitgliedsrechte-probe.mjs')
-    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
     const P3 = k(34)
-    const bestand = {
-      ...l.umgebung!.bestand,
+    const { ausgabe, aufrufe } = await mitBestand({
       households: [{ id: H1, congregation_id: C }],
       persons: [
         { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', priv: {}, fam: H1 },
         { id: P2, congregation_id: C, fn: 'Probe', ln: 'Mitglied', priv: { 'svc:mik': true }, fam: H1 },
         { id: P3, congregation_id: C, fn: 'Probe', ln: 'Dritte', priv: {} },
       ],
-    }
-    const { ausgabe, aufrufe } = await fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand })
+    })
     const text = ausgabe.join('\n')
     expect(text).toMatch(/\(30\) „Familien reihum" ohne eigenen Haushalt \(anderer Haushalt\)\n/)
     // (32) findet den Planer als Mitbewohner — kein Probe-Haushalt nötig.

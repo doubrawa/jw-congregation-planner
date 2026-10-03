@@ -9,6 +9,7 @@ import {
   besucherName,
 } from '../components/gruppenbesuch-anzeige'
 import { besuchStand } from '../data/gruppenbesuche'
+import { useBesuchsLage } from '../components/useBesuchsLage'
 import { overseerGroup } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { fill, useT } from '../i18n/useT'
@@ -32,17 +33,14 @@ export function GruppenbesucheAnsicht() {
   // Die eigene Gruppe: die, in der man geführt ist — sonst die, die man leitet.
   const meineGruppe = me?.grp ?? overseerGroup(state.groups, state.personId)
 
-  const kommend = useMemo(() => {
-    const lage = {
-      kennungen: state.weeks.map((w) => w.start),
-      fsWeeks: state.fsWeeks,
-      fsRules: state.fsRules,
-      absences: state.absences,
-    }
-    return state.gruppenbesuche
-      .map((besuch) => ({ besuch, stand: besuchStand(besuch, lage, fromIso(tag)) }))
-      .filter(({ stand }) => stand.art !== 'vorbei')
-  }, [state.weeks, state.fsWeeks, state.fsRules, state.absences, state.gruppenbesuche, tag])
+  const lage = useBesuchsLage()
+  const kommend = useMemo(
+    () =>
+      state.gruppenbesuche
+        .map((besuch) => ({ besuch, stand: besuchStand(besuch, lage, fromIso(tag)) }))
+        .filter(({ stand }) => stand.art !== 'vorbei'),
+    [lage, state.gruppenbesuche, tag],
+  )
 
   const beiMir = kommend.filter(({ besuch }) => besuch.grp === meineGruppe)
   const gruppe = meineGruppe ? state.groups.find((g) => g.id === meineGruppe) : undefined

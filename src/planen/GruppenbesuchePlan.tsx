@@ -6,14 +6,14 @@ import {
   besuchsTreffpunktText,
   besuchsWocheText,
   besucherName,
-  monatText,
-  montagDerWoche,
   nachMonat,
 } from '../components/gruppenbesuch-anzeige'
 import { fsTaskKey } from '../data/fs'
 import { besuchHatKonflikt, besuchStand, VERTEILEN_MONATE, type BesuchsStand } from '../data/gruppenbesuche'
-import { displayName, isQualified } from '../data/helpers'
-import { fromIso, montagNach } from '../data/meeting-dates'
+import { useBesuchsLage } from '../components/useBesuchsLage'
+import { displayName, isQualified, personCompare } from '../data/helpers'
+import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
+import { monatsName } from '../programm/druck'
 import { zusageStatus } from '../data/planning'
 import { fill, useT } from '../i18n/useT'
 import type { Gruppenbesuch, Person } from '../data/types'
@@ -44,9 +44,7 @@ export function GruppenbesuchePlan() {
   // Aufgabenbereich „Dienstaufseher" wäre eine zweite Pflege derselben Frage.
   const kandidaten = useMemo(
     () =>
-      state.persons
-        .filter((p) => isQualified(p, 'treffpunkt'))
-        .sort((a, b) => displayName(a).localeCompare(displayName(b), state.lang)),
+      state.persons.filter((p) => isQualified(p, 'treffpunkt')).sort((a, b) => personCompare(a, b, state.lang)),
     [state.persons, state.lang],
   )
 
@@ -56,19 +54,14 @@ export function GruppenbesuchePlan() {
   const vorgabe = kandidaten.some((p) => p.id === juengster?.pid) ? (juengster?.pid ?? '') : ''
   const [besucher, setBesucher] = useState(vorgabe)
 
+  const lage = useBesuchsLage()
   const eintraege = useMemo(() => {
-    const lage = {
-      kennungen: state.weeks.map((w) => w.start),
-      fsWeeks: state.fsWeeks,
-      fsRules: state.fsRules,
-      absences: state.absences,
-    }
     const heute = fromIso(tag)
-    const ab = montagNach(montagDerWoche(heute), -RUECKBLICK_WOCHEN)
+    const ab = montagNach(montagVon(tag), -RUECKBLICK_WOCHEN)
     return state.gruppenbesuche
       .map((besuch) => ({ besuch, stand: besuchStand(besuch, lage, heute) }))
       .filter(({ besuch, stand }) => stand.art !== 'vorbei' || besuch.woche >= ab)
-  }, [state.weeks, state.fsWeeks, state.fsRules, state.absences, state.gruppenbesuche, tag])
+  }, [lage, state.gruppenbesuche, tag])
 
   const konflikte = eintraege.filter(({ besuch, stand }) => besuchHatKonflikt(besuch, stand))
 
@@ -85,7 +78,7 @@ export function GruppenbesuchePlan() {
   }
 
   // „Besuch hinzufügen": die Wochen des nächsten halben Jahres, ab dieser.
-  const dieseWoche = montagDerWoche(fromIso(tag))
+  const dieseWoche = montagVon(tag)
   const wochen = Array.from({ length: VERTEILEN_MONATE * 5 }, (_unused, i) => montagNach(dieseWoche, i))
   const [neueWoche, setNeueWoche] = useState(dieseWoche)
   const [neueGruppe, setNeueGruppe] = useState(state.groups[0]?.id ?? '')
@@ -144,7 +137,7 @@ export function GruppenbesuchePlan() {
 
       {nachMonat(eintraege).map(({ monat, eintraege: imMonat }) => (
         <div key={monat} className="panel" data-farbe="gold">
-          <h2 className="panel-label">{monatText(monat, state.lang)}</h2>
+          <h2 className="panel-label">{monatsName(monat, state.lang)}</h2>
           {imMonat.map(({ besuch, stand }) => (
             <BesuchZeile
               key={besuch.id}

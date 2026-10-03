@@ -959,6 +959,83 @@ async function run(promise: PromiseLike<{ error: { message: string } | null }>):
   if (error) schreibfehler(error)
 }
 
+/** Ein Fehler aus PostgREST — `code` ist der SQLSTATE, bei Netzfehlern leer. */
+type Zeilenfehler = { message: string; code?: string }
+
+/**
+ * **Abweisungen, die nur ein veralteter Stand erklärt** — bei den Tabellen
+ * „eine Zeile je …": eine Dublette (23505), ein Verweis ins Leere (23503: der
+ * Termin, der Plan, die Gruppe ist inzwischen gelöscht), eine verletzte Regel
+ * (23514: der Platz ist besetzt, der Termin liegt auf einem anderen Wochentag)
+ * und eine verweigerte Zeile (42501: das Recht ist entzogen). Ein zweiter
+ * Versuch hilft da nicht, nur Nachladen.
+ */
+const STAND_VERALTET: ReadonlySet<string> = new Set(['23505', '23503', '23514', '42501'])
+
+function standVeraltet(error: Zeilenfehler): boolean {
+  return error.code !== undefined && STAND_VERALTET.has(error.code)
+}
+
+/**
+ * Wie `run`, für die Tabellen „eine Zeile je …": Hat die Datenbank abgewiesen,
+ * weil der Stand hier veraltet ist, wird **nachgeladen** (`konfliktMelder`) statt
+ * nur gemeldet — sonst stünde lokal weiter da, was es dort nicht gibt: „Du bist
+ * eingetragen" für einen Platz, den ein anderer schon hatte. Bis zum 3.10.2026
+ * lud allein das Zeugnisgeben nach, und nur bei zwei der Fälle.
+ */
+async function zeilenRun(promise: PromiseLike<{ error: Zeilenfehler | null }>): Promise<void> {
+  const { error } = await promise
+  if (!error) return
+  if (!standVeraltet(error)) {
+    schreibfehler(error)
+    return
+  }
+  console.error('[persistenz]', error.message)
+  konfliktMelder?.()
+}
+
+type Schreiben = () => Promise<{ error: Zeilenfehler | null }>
+
+/**
+ * **Eine Schreib-Schlange:** Was hineinkommt, geht in dieser Reihenfolge
+ * hinaus, eines nach dem anderen. Ein Netzfehler hält sie nicht an — sonst
+ * ginge nach ihm gar nichts mehr hinaus.
+ *
+ * Bis zum 3.10.2026 stand die Schlange zweimal da (Zeugnisgeben, Weitere
+ * Pläne), Zeile für Zeile gleich; jede Tabellen-Familie bekommt ihre eigene.
+ */
+function schreibSchlange(): (schreiben: Schreiben) => void {
+  let schlange: Promise<void> = Promise.resolve()
+  return (schreiben) => {
+    schlange = schlange
+      .then(() => zeilenRun(schreiben()))
+      .catch((err: unknown) => schreibfehler({ message: err instanceof Error ? err.message : String(err) }))
+  }
+}
+
+/**
+ * **Erst löschen, was dieser Planer entfernt hat, dann schreiben, was er
+ * angelegt oder geändert hat** — der gemeinsame Weg der Tabellen mit einer
+ * Zeile je Regel, Besuch, Termin, Vortrag, Plan oder Eintrag. Gelöscht wird
+ * nur über die Kennungen in `entfernt`, nie „alles, was fehlt" (warum, steht
+ * bei `saveFsRules`). Stand bis zum 3.10.2026 sechsmal da.
+ */
+async function loeschenDannSchreiben<T>(
+  client: NonNullable<typeof supabase>,
+  tabelle: string,
+  congregationId: string,
+  zeilen: T[],
+  entfernt: string[],
+  zuZeile: (zeile: T, congregationId: string) => object,
+): Promise<{ error: Zeilenfehler | null }> {
+  if (entfernt.length) {
+    const { error } = await client.from(tabelle).delete().eq('congregation_id', congregationId).in('id', entfernt)
+    if (error) return { error }
+  }
+  if (!zeilen.length) return { error: null }
+  return await client.from(tabelle).upsert(zeilen.map((z) => zuZeile(z, congregationId)))
+}
+
 /* ---- Schreibkonflikte zwischen Planern (T39) ----------------------------- */
 
 /**
@@ -1129,28 +1206,18 @@ export function savePerson(congregationId: string, person: Person): void {
  * geschützt (T39); der Grundplan hat keine solche Sperre, also darf er auch
  * nichts anfassen, wovon er nichts weiß.
  *
+ * **Geschrieben wird ebenso nur, was er angelegt oder geändert hat** — mehr
+ * übergibt `persist.ts` nicht. Bis zum 3.10.2026 ging der ganze Grundplan als
+ * Upsert hinaus und stellte zurück, was ein anderer Planer inzwischen geändert
+ * oder gelöscht hatte; derselbe Weg gilt für die Termine des Zeugnisgebens und
+ * die Weiteren Pläne.
+ *
  * Nacheinander, nicht nebeneinander — sonst könnte das Löschen eine gerade
  * erst geschriebene Zeile treffen.
  */
 export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: string[] = []): void {
   if (!supabase) return
-  const client = supabase
-  void run(
-    (async () => {
-      if (entfernt.length) {
-        const { error } = await client
-          .from('fs_rules')
-          .delete()
-          .eq('congregation_id', congregationId)
-          .in('id', entfernt)
-        if (error) return { error }
-      }
-      if (!rules.length) return { error: null }
-      return await client
-        .from('fs_rules')
-        .upsert(rules.map((r) => fsRuleToRow(r, congregationId)))
-    })(),
-  )
+  void zeilenRun(loeschenDannSchreiben(supabase, 'fs_rules', congregationId, rules, entfernt, fsRuleToRow))
 }
 
 /**
@@ -1160,26 +1227,12 @@ export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: s
  * (`entfernt`), und nur geschrieben, was er angelegt oder geändert hat. Ein
  * zweiter Planer, der zugleich verteilt, verliert so nichts; träfen beide
  * dieselbe Gruppe in derselben Woche, weist die Datenbank den zweiten ab
- * (`unique (congregation_id, woche, grp)`), und der Schreibfehler-Toast meldet
- * es.
+ * (`unique (congregation_id, woche, grp)`), und der zweite lädt nach
+ * (`zeilenRun`) — sonst stünden bei ihm Besuche, die es nicht gibt.
  */
 export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuch[], entfernt: string[] = []): void {
   if (!supabase) return
-  const client = supabase
-  void run(
-    (async () => {
-      if (entfernt.length) {
-        const { error } = await client
-          .from('gruppenbesuche')
-          .delete()
-          .eq('congregation_id', congregationId)
-          .in('id', entfernt)
-        if (error) return { error }
-      }
-      if (!besuche.length) return { error: null }
-      return await client.from('gruppenbesuche').upsert(besuche.map((b) => gruppenbesuchToRow(b, congregationId)))
-    })(),
-  )
+  void zeilenRun(loeschenDannSchreiben(supabase, 'gruppenbesuche', congregationId, besuche, entfernt, gruppenbesuchToRow))
 }
 
 /**
@@ -1191,15 +1244,7 @@ export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuc
  * gleich darauf „Automatisch zuteilen" genügten dafür. Hintereinander kommt
  * jede Zeile in der Reihenfolge an, in der der Planer gehandelt hat.
  */
-let ozWarteschlange: Promise<void> = Promise.resolve()
-
-function ozNacheinander(schreiben: () => Promise<{ error: { message: string } | null }>): void {
-  ozWarteschlange = ozWarteschlange
-    .then(() => run(schreiben()))
-    // Ein Netzfehler darf die Schlange nicht anhalten — sonst ginge nach ihm
-    // gar nichts mehr hinaus.
-    .catch((err: unknown) => schreibfehler({ message: err instanceof Error ? err.message : String(err) }))
-}
+const ozNacheinander = schreibSchlange()
 
 /**
  * Termine des öffentlichen Zeugnisgebens (T120) — wie der Grundplan: Geschrieben
@@ -1209,20 +1254,7 @@ function ozNacheinander(schreiben: () => Promise<{ error: { message: string } | 
 export function saveOzTermine(congregationId: string, termine: OzTermin[], entfernt: string[] = []): void {
   if (!supabase) return
   const client = supabase
-  ozNacheinander(
-    async () => {
-      if (entfernt.length) {
-        const { error } = await client
-          .from('oz_termine')
-          .delete()
-          .eq('congregation_id', congregationId)
-          .in('id', entfernt)
-        if (error) return { error }
-      }
-      if (!termine.length) return { error: null }
-      return await client.from('oz_termine').upsert(termine.map((t) => ozTerminToRow(t, congregationId)))
-    },
-  )
+  ozNacheinander(() => loeschenDannSchreiben(client, 'oz_termine', congregationId, termine, entfernt, ozTerminToRow))
 }
 
 /**
@@ -1231,31 +1263,38 @@ export function saveOzTermine(congregationId: string, termine: OzTermin[], entfe
  *
  * **Einfügen, nicht upserten.** Ein Verkündiger darf nur einfügen (RLS), und
  * der Trigger `oz_platz_pruefen` prüft die Plätze nur beim Einfügen. Ist der
- * letzte Platz inzwischen vergeben, weist die Datenbank ab; der Konfliktmelder
- * lädt dann nach, damit die Ansicht zeigt, wer den Platz bekommen hat.
+ * letzte Platz inzwischen vergeben — oder der Termin gelöscht, verlegt, der
+ * Aufgabenbereich entzogen —, weist die Datenbank ab, und die Schlange lädt
+ * nach (`zeilenRun`): Die Ansicht zeigt dann, wer den Platz bekommen hat.
+ *
+ * **Ein Stapel scheitert nur an sich selbst.** Die Auto-Zuteilung fügt viele
+ * Einträge mit einer Anfrage ein, und die Datenbank verwirft sie dann als
+ * Ganzes, wenn ein einziger Platz inzwischen besetzt ist. Dann geht jeder
+ * einzeln: Was frei ist, kommt an; nachgeladen wird einmal.
  */
 export function saveOzEintraege(congregationId: string, neu: OzEintrag[], entfernt: string[] = []): void {
   if (!supabase) return
   const client = supabase
-  ozNacheinander(
-    async () => {
-      if (entfernt.length) {
-        const { error } = await client
-          .from('oz_eintraege')
-          .delete()
-          .eq('congregation_id', congregationId)
-          .in('id', entfernt)
-        if (error) return { error }
-      }
-      if (!neu.length) return { error: null }
-      const { error } = await client.from('oz_eintraege').insert(neu.map((e) => ozEintragToRow(e, congregationId)))
-      if (error && (error.code === '23505' || /oz_voll/.test(error.message))) {
-        konfliktMelder?.()
-        return { error: null }
-      }
-      return { error }
-    },
-  )
+  ozNacheinander(async () => {
+    if (entfernt.length) {
+      const { error } = await client
+        .from('oz_eintraege')
+        .delete()
+        .eq('congregation_id', congregationId)
+        .in('id', entfernt)
+      if (error) return { error }
+    }
+    if (!neu.length) return { error: null }
+    const zeilen = neu.map((e) => ozEintragToRow(e, congregationId))
+    const { error } = await client.from('oz_eintraege').insert(zeilen)
+    if (!error || zeilen.length === 1 || !standVeraltet(error)) return { error }
+    let ersterFehler: Zeilenfehler | null = null
+    for (const zeile of zeilen) {
+      const { error: einzeln } = await client.from('oz_eintraege').insert(zeile)
+      ersterFehler ??= einzeln
+    }
+    return { error: ersterFehler }
+  })
 }
 
 /**
@@ -1268,23 +1307,7 @@ export function saveVortraegeAuswaerts(
   entfernt: string[] = [],
 ): void {
   if (!supabase) return
-  const client = supabase
-  void run(
-    (async () => {
-      if (entfernt.length) {
-        const { error } = await client
-          .from('vortraege_auswaerts')
-          .delete()
-          .eq('congregation_id', congregationId)
-          .in('id', entfernt)
-        if (error) return { error }
-      }
-      if (!vortraege.length) return { error: null }
-      return await client
-        .from('vortraege_auswaerts')
-        .upsert(vortraege.map((v) => vortragAuswaertsToRow(v, congregationId)))
-    })(),
-  )
+  void zeilenRun(loeschenDannSchreiben(supabase, 'vortraege_auswaerts', congregationId, vortraege, entfernt, vortragAuswaertsToRow))
 }
 
 /**
@@ -1293,26 +1316,13 @@ export function saveVortraegeAuswaerts(
  * („Neuer Plan" und gleich „Reihum verteilen"); der Plan geht deshalb vorher
  * hinaus, und die Schlange hält die Reihenfolge — wie beim Zeugnisgeben.
  */
-let planWarteschlange: Promise<void> = Promise.resolve()
-
-function planNacheinander(schreiben: () => Promise<{ error: { message: string } | null }>): void {
-  planWarteschlange = planWarteschlange
-    .then(() => run(schreiben()))
-    .catch((err: unknown) => schreibfehler({ message: err instanceof Error ? err.message : String(err) }))
-}
+const planNacheinander = schreibSchlange()
 
 /** Pläne: anlegen oder ändern, was übergeben wird; löschen, was hier entfernt wurde (die Einträge per Kaskade). */
 export function savePlaene(congregationId: string, plaene: WeitererPlan[], entfernt: string[] = []): void {
   if (!supabase) return
   const client = supabase
-  planNacheinander(async () => {
-    if (entfernt.length) {
-      const { error } = await client.from('plaene').delete().eq('congregation_id', congregationId).in('id', entfernt)
-      if (error) return { error }
-    }
-    if (!plaene.length) return { error: null }
-    return await client.from('plaene').upsert(plaene.map((p) => planToRow(p, congregationId)))
-  })
+  planNacheinander(() => loeschenDannSchreiben(client, 'plaene', congregationId, plaene, entfernt, planToRow))
 }
 
 /**
@@ -1324,18 +1334,7 @@ export function savePlaene(congregationId: string, plaene: WeitererPlan[], entfe
 export function savePlanEintraege(congregationId: string, eintraege: PlanEintrag[], entfernt: string[] = []): void {
   if (!supabase) return
   const client = supabase
-  planNacheinander(async () => {
-    if (entfernt.length) {
-      const { error } = await client
-        .from('plan_eintraege')
-        .delete()
-        .eq('congregation_id', congregationId)
-        .in('id', entfernt)
-      if (error) return { error }
-    }
-    if (!eintraege.length) return { error: null }
-    return await client.from('plan_eintraege').upsert(eintraege.map((e) => planEintragToRow(e, congregationId)))
-  })
+  planNacheinander(() => loeschenDannSchreiben(client, 'plan_eintraege', congregationId, eintraege, entfernt, planEintragToRow))
 }
 
 /** Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]). */
@@ -1591,22 +1590,10 @@ export interface PlanVersand {
  * bewusst gedrückt und muss erfahren, was daraus wurde — vor allem, wen er
  * mangels Konto selbst ansprechen muss.
  */
-export async function sendPlan(weekStart: string, heute: string): Promise<PlanVersand | null> {
-  if (!supabase) return null
-  const { data, error } = await supabase.functions.invoke('send-plan', {
-    // `heute`: der Kalendertag, mit dem die Vorschau am Knopf gerechnet hat —
-    // die Function lässt Vergangenes weg und soll denselben Tag meinen.
-    body: { action: 'plan', weekStart, heute },
-  })
-  if (error) {
-    console.error('[send-plan]', error.message)
-    return null
-  }
-  const res = data as Partial<PlanVersand> | null
-  return {
-    personen: res?.personen ?? 0,
-    ohneKonto: res?.ohneKonto ?? [],
-  }
+export function sendPlan(weekStart: string, heute: string): Promise<PlanVersand | null> {
+  // `heute`: der Kalendertag, mit dem die Vorschau am Knopf gerechnet hat —
+  // die Function lässt Vergangenes weg und soll denselben Tag meinen.
+  return planSenden({ action: 'plan', weekStart, heute })
 }
 
 /**
@@ -1615,20 +1602,8 @@ export async function sendPlan(weekStart: string, heute: string): Promise<PlanVe
  * Schichten, nicht je Woche. Die meisten Einträge entstehen dort durch
  * Selbsteintragen; wer sich selbst einträgt, weiß Bescheid.
  */
-export async function sendZeugnisPlan(heute: string): Promise<PlanVersand | null> {
-  if (!supabase) return null
-  const { data, error } = await supabase.functions.invoke('send-plan', {
-    body: { action: 'zeugnis', heute },
-  })
-  if (error) {
-    console.error('[send-plan/zeugnis]', error.message)
-    return null
-  }
-  const res = data as Partial<PlanVersand> | null
-  return {
-    personen: res?.personen ?? 0,
-    ohneKonto: res?.ohneKonto ?? [],
-  }
+export function sendZeugnisPlan(heute: string): Promise<PlanVersand | null> {
+  return planSenden({ action: 'zeugnis', heute })
 }
 
 /**
@@ -1636,13 +1611,16 @@ export async function sendZeugnisPlan(heute: string): Promise<PlanVersand | null
  * einen kommenden Vortrag noch nicht bestätigt hat und davon noch nichts weiß.
  * Wie beim Zeugnisgeben über alle kommenden Vorträge, nicht je Woche.
  */
-export async function sendAuswaertsPlan(heute: string): Promise<PlanVersand | null> {
+export function sendAuswaertsPlan(heute: string): Promise<PlanVersand | null> {
+  return planSenden({ action: 'auswaerts', heute })
+}
+
+/** Der eine Aufruf hinter den drei „Plan senden" — bis zum 3.10.2026 dreimal abgeschrieben. */
+async function planSenden(body: { action: 'plan' | 'zeugnis' | 'auswaerts'; heute: string; weekStart?: string }): Promise<PlanVersand | null> {
   if (!supabase) return null
-  const { data, error } = await supabase.functions.invoke('send-plan', {
-    body: { action: 'auswaerts', heute },
-  })
+  const { data, error } = await supabase.functions.invoke('send-plan', { body })
   if (error) {
-    console.error('[send-plan/auswaerts]', error.message)
+    console.error(`[send-plan/${body.action}]`, error.message)
     return null
   }
   const res = data as Partial<PlanVersand> | null

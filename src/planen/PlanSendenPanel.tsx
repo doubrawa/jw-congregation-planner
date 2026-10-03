@@ -187,7 +187,7 @@ export function ZeugnisSendenPanel() {
     [state.ozTermine, state.ozEintraege, state.persons, state.confirmations, state.sentLog, tag],
   )
   const zuletzt = useMemo(() => ozZuletztGesendet(state.sentLog), [state.sentLog])
-  return <PlanSendenOhneWoche offen={offen} zuletzt={zuletzt} senden={sendZeugnisPlan} />
+  return <PlanSendenOhneWoche offen={offen} zuletzt={zuletzt} senden={sendZeugnisPlan} tag={tag} />
 }
 
 /**
@@ -203,19 +203,24 @@ export function AuswaertsSendenPanel() {
     [state.auswaerts, state.persons, state.confirmations, state.sentLog, tag],
   )
   const zuletzt = useMemo(() => vaZuletztGesendet(state.sentLog), [state.sentLog])
-  return <PlanSendenOhneWoche offen={offen} zuletzt={zuletzt} senden={sendAuswaertsPlan} />
+  return <PlanSendenOhneWoche offen={offen} zuletzt={zuletzt} senden={sendAuswaertsPlan} tag={tag} />
 }
 
-/** Der Versand eines Plans ohne Woche: die Box der Woche, gesendet mit der Aktion des Plans. */
+/**
+ * Der Versand eines Plans ohne Woche: die Box der Woche, gesendet mit der Aktion
+ * des Plans — und mit demselben Kalendertag, mit dem `offen` gerechnet wurde.
+ */
 function PlanSendenOhneWoche({
   offen,
   zuletzt,
   senden,
+  tag,
 }: {
   offen: readonly OffeneMeldung[]
   zuletzt: string | null
   /** `sendZeugnisPlan` oder `sendAuswaertsPlan` — beide nehmen den Kalendertag. */
   senden: typeof sendZeugnisPlan
+  tag: string
 }) {
   const { state } = useApp()
   const { t } = useT()
@@ -223,7 +228,6 @@ function PlanSendenOhneWoche({
   // Namen ohne Konto aus dem letzten Versand — bis zum nächsten bleiben sie stehen.
   const [ohneKonto, setOhneKonto] = useState<string[]>([])
   const versandGemeldet = useVersandGemeldet()
-  const tag = useKalendertag()
 
   // Wie bei der Woche: nur Planer, nur auf frischem Stand.
   if (!state.planner || state.staleAt) return null

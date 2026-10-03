@@ -283,13 +283,14 @@ describe('Treffpunkte', () => {
 
   // Gebündelt: der Ort ist ein Freitextfeld, und ohne Bündelung ging je
   // Tastenanschlag der Grundplan samt jeder erzeugten Woche an die Datenbank.
-  it('fsRuleAdd speichert Grundplan + alle Wochen (gebündelt)', () => {
-    const next = st()
+  it('fsRuleAdd speichert die neue Regel + alle Wochen (gebündelt)', () => {
+    const neu = { ...DEMO_FS_RULES[0]!, id: 'r-neu' }
+    const next = st({ fsRules: [...DEMO_FS_RULES, neu] })
     persist(st(), next, { type: 'fsRuleAdd', grp: null })
     expect(data.saveFsRules).not.toHaveBeenCalled() // erst nach der Bündelung
     vi.advanceTimersByTime(600)
-    // Nichts zu streichen beim Anlegen — die dritte Stelle ist leer.
-    expect(data.saveFsRules).toHaveBeenCalledWith('c1', next.fsRules, [])
+    // Nur die neue Regel, nichts zu streichen beim Anlegen.
+    expect(data.saveFsRules).toHaveBeenCalledWith('c1', [neu], [])
     expect((data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.length).toBe(next.fsWeeks.length)
   })
 
@@ -315,8 +316,26 @@ describe('Treffpunkte', () => {
 
     expect(data.saveFsRules).toHaveBeenCalledTimes(1)
     const [, regeln, entfernt] = vi.mocked(data.saveFsRules).mock.calls[0]!
-    expect(regeln).toEqual(ohneAB.fsRules)
+    // Geschrieben wird nichts — die übrigen Regeln hat niemand angefasst.
+    expect(regeln).toEqual([])
     expect([...(entfernt ?? [])].sort()).toEqual([a.id, b.id].sort())
+  })
+
+  /*
+   * **Nur, was dieser Planer geändert hat** (3.10.2026). Bis dahin ging der
+   * ganze Grundplan als Upsert hinaus: Hatte ein zweiter Planer inzwischen eine
+   * Regel gelöscht oder geändert, holte das nächste Tippen hier sie zurück bzw.
+   * stellte sie zurück — ohne Fehler, auf beiden Bildschirmen unbemerkt.
+   */
+  it('ein getippter Ort schreibt nur seine Regel, nicht den ganzen Grundplan', () => {
+    const prev = st()
+    const r1 = prev.fsRules[0]!
+    const geaendert = { ...r1, place: 'Neuer Ort' }
+    const next = { ...prev, fsRules: prev.fsRules.map((r) => (r === r1 ? geaendert : r)) } as AppState
+    persist(prev, next, { type: 'fsRuleUpdate', id: r1.id, patch: { place: 'Neuer Ort' } })
+    vi.advanceTimersByTime(600)
+    expect(data.saveFsRules).toHaveBeenCalledTimes(1)
+    expect(data.saveFsRules).toHaveBeenCalledWith('c1', [geaendert], [])
   })
 
   /*
@@ -341,13 +360,18 @@ describe('Treffpunkte', () => {
     Ortsnamen mehrere Hundert Anfragen, während der Benutzer noch tippt.
   */
   it('mehrere Tastenanschläge werden zu einem Schreibvorgang gebündelt', () => {
-    const next = st()
+    let vorher = st()
+    const mitOrt = (ort: string) => st({ fsRules: vorher.fsRules.map((r) => (r.id === 'r1' ? { ...r, place: ort } : r)) })
     for (const ort of ['S', 'Sa', 'Saa', 'Saal']) {
-      persist(st(), next, { type: 'fsRuleUpdate', id: 'r1', patch: { place: ort } })
+      const nachher = mitOrt(ort)
+      persist(vorher, nachher, { type: 'fsRuleUpdate', id: 'r1', patch: { place: ort } })
+      vorher = nachher
     }
     expect(data.saveFsRules).not.toHaveBeenCalled()
     vi.advanceTimersByTime(600)
     expect(data.saveFsRules).toHaveBeenCalledTimes(1)
+    // Die neueste Fassung — und nur diese Regel.
+    expect(data.saveFsRules).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: 'r1', place: 'Saal' })], [])
   })
 
   it('unveränderte Treffpunkt-Wochen werden nicht geschrieben', () => {
@@ -507,6 +531,70 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
     expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
+
+  it('ein gestrichener Termin: wer sich eingetragen hatte, erfährt es', () => {
+    persist(st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1', true)] }), st({ ozTermine: [], ozEintraege: [] }), {
+      type: 'ozTerminRemove',
+      id: 't1',
+    })
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
+      expect.objectContaining({ key: KEY('e1'), pid: 'p1', datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
+    ])
+  })
+
+  it('ein verlegter Termin: die Nachricht nennt den alten Tag — den, für den zugesagt war', () => {
+    persist(
+      st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1', true)] }),
+      st({ ozTermine: [{ ...T1, wd: 4 }], ozEintraege: [] }),
+      { type: 'ozTerminUpdate', id: 't1', patch: { wd: 4 } },
+    )
+    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
+      expect.objectContaining({ key: KEY('e1'), datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
+    ])
+  })
+
+  /*
+   * **Nur, was dieser Planer geändert hat** (3.10.2026). Bis dahin ging die
+   * ganze Liste der Termine als Upsert hinaus: Hatte ein zweiter Planer
+   * inzwischen einen Termin gestrichen, holte das nächste Tippen hier ihn zurück
+   * — leer, denn seine Einträge waren per Kaskade fort.
+   */
+  it('der Ort eines Termins schreibt nur diesen Termin', () => {
+    const getippt = { ...T1, ort: 'Bahnhof' }
+    persist(st({ ozTermine: [T1, T2] }), st({ ozTermine: [getippt, T2] }), {
+      type: 'ozTerminUpdate',
+      id: 't1',
+      patch: { ort: 'Bahnhof' },
+    })
+    vi.runOnlyPendingTimers()
+    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
+    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [getippt], [])
+  })
+
+  it('zwei Termine im selben Bündel: jeder in seiner neuesten Fassung, einmal', () => {
+    const a = st({ ozTermine: [T1, T2] })
+    const b = st({ ozTermine: [{ ...T1, ort: 'B' }, T2] })
+    const c = st({ ozTermine: [b.ozTermine[0]!, { ...T2, ort: 'C' }] })
+    const d = st({ ozTermine: [{ ...T1, ort: 'Bahnhof' }, c.ozTermine[1]!] })
+    persist(a, b, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'B' } })
+    persist(b, c, { type: 'ozTerminUpdate', id: 't2', patch: { ort: 'C' } })
+    persist(c, d, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'Bahnhof' } })
+    vi.runOnlyPendingTimers()
+    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
+    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', d.ozTermine, [])
+  })
+
+  it('erst getippt, dann gestrichen: der Termin geht nur als Löschung hinaus', () => {
+    // Schriebe die Schicht ihn nach dem Löschen, stünde er wieder da.
+    const a = st({ ozTermine: [T1, T2] })
+    const b = st({ ozTermine: [{ ...T1, ort: 'B' }, T2] })
+    const c = st({ ozTermine: [T2] })
+    persist(a, b, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'B' } })
+    persist(b, c, { type: 'ozTerminRemove', id: 't1' })
+    vi.runOnlyPendingTimers()
+    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [], ['t1'])
+  })
 })
 
 describe('Redner auswärts (T120, Phase 4)', () => {
@@ -619,6 +707,54 @@ describe('Weitere Pläne (T120, Phase 5)', () => {
     persist(st({ plaene: [PLAN], planEintraege: [e] }), st({ plaene: [], planEintraege: [] }), { type: 'wpPlanLoeschen', id: 'pl' })
     expect(data.savePlaene).toHaveBeenCalledWith('c1', [], ['pl'])
     expect(data.savePlanEintraege).toHaveBeenCalledWith('c1', [], [e.id])
+  })
+
+  it('zwei Pläne, einer bekommt seinen Namen — nur er geht hinaus', () => {
+    // Den anderen hat womöglich ein zweiter Planer inzwischen veröffentlicht
+    // oder gelöscht. Bis zum 3.10.2026 ging er hier mit hinaus — und stand
+    // danach wieder als Entwurf da bzw. wieder da.
+    const anderer = { ...PLAN, id: 'p2', entwurf: false }
+    const benannt = { ...PLAN, name: 'Winterdienst' }
+    persist(st({ plaene: [PLAN, anderer] }), st({ plaene: [benannt, anderer] }), {
+      type: 'wpPlanAendern',
+      id: 'pl',
+      patch: { name: 'Winterdienst' },
+    })
+    vi.runOnlyPendingTimers()
+    expect(data.savePlaene).toHaveBeenCalledWith('c1', [benannt], [])
+  })
+})
+
+/*
+ * Wer die Ansicht verlässt oder sich abmeldet, solange ein getipptes Feld noch
+ * im Bündel wartet, dessen Änderung muss **jetzt** hinaus: Nach dem Abmelden
+ * scheitert sie an der Anmeldung. Bis zum 3.10.2026 standen die Schreiber
+ * dafür in einer Liste von Hand — die beiden aus T120 fehlten.
+ */
+describe('Ansicht verlassen mitten im Tippen', () => {
+  const TERMIN = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'M', plaetze: 2 }
+  const PLAN = { id: 'pl', vorlage: 'saal' as const, name: '', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
+
+  it.each<AppAction>([
+    { type: 'logout' },
+    { type: 'navigate', screen: 'start' },
+    { type: 'selectPerson', id: null },
+  ])('$type: Ort eines Termins und Name eines Plans gehen sofort hinaus', (verlassen) => {
+    const a = st({ ozTermine: [TERMIN], plaene: [PLAN] })
+    const b = st({ ozTermine: [{ ...TERMIN, ort: 'Ma' }], plaene: [PLAN] })
+    const c = st({ ozTermine: b.ozTermine, plaene: [{ ...PLAN, name: 'W' }] })
+    persist(a, b, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'Ma' } })
+    persist(b, c, { type: 'wpPlanAendern', id: 'pl', patch: { name: 'W' } })
+    expect(data.saveOzTermine).not.toHaveBeenCalled()
+    expect(data.savePlaene).not.toHaveBeenCalled()
+
+    persist(c, c, verlassen)
+    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', c.ozTermine, [])
+    expect(data.savePlaene).toHaveBeenCalledWith('c1', c.plaene, [])
+    // Und nichts geht danach ein zweites Mal hinaus.
+    vi.runOnlyPendingTimers()
+    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
+    expect(data.savePlaene).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -1118,7 +1254,7 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     const regelIds = (aufruf: unknown[] | undefined) =>
       ((aufruf?.[1] ?? []) as Array<{ id: string }>).map((r) => r.id)
 
-    it('schreibt den Grundplan ohne ihre Regeln — und nur die Wochen, in denen sie stand', () => {
+    it('löscht ihre Regeln — schreibt die übrigen nicht — und nur die Wochen, in denen sie stand', () => {
       const prev = st()
       const { fsRules, fsWeeks } = fsGruppeEntfernen(prev.fsRules, prev.fsWeeks, 'g1')
       const next = { ...prev, fsRules, fsWeeks } as AppState
@@ -1128,7 +1264,8 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
 
       const regeln = vi.mocked(data.saveFsRules).mock.calls
       expect(regeln).toHaveLength(1)
-      expect(regelIds(regeln[0])).toEqual(['r1', 'r2', 'r3', 'r5', 'r6', 'r7'])
+      expect(regelIds(regeln[0])).toEqual([])
+      expect(regeln[0]?.[2]).toEqual(['r4'])
       // Woche 3 hat den ersten Samstag im Oktober — dort weichen alle
       // Gruppentreffpunkte dem der Versammlung. Sie bleibt ungeschrieben.
       const wochen = vi.mocked(data.saveFsWeek).mock.calls.map((c) => c[1])
@@ -1162,9 +1299,11 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
       persist(getippt, { ...getippt, fsRules, fsWeeks } as AppState, { type: 'removeGroup', id: 'g1' })
       vi.advanceTimersByTime(600)
 
-      expect(vi.mocked(data.saveFsRules).mock.calls.map(regelIds)).toEqual([
-        ['r1', 'r2', 'r3', 'r5', 'r6', 'r7'],
-      ])
+      // Die getippte Regel liegt im Bündel — sie geht als Löschung hinaus, nicht
+      // als Zeile: Geschrieben nach dem Löschen, käme sie sonst zurück.
+      const aufrufe = vi.mocked(data.saveFsRules).mock.calls
+      expect(aufrufe.map(regelIds)).toEqual([[]])
+      expect(aufrufe[0]?.[2]).toEqual(['r4'])
     })
   })
 })

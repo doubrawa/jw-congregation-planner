@@ -1,7 +1,7 @@
 import { fsTag } from '../data/fs'
 import type { FsInstance, Group } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import type { I18n } from '../i18n/useT'
+import { datumsFormat } from './datum-anzeige'
 import { wochentagNameAusWd } from '../planen/wochentage'
 
 /**
@@ -20,9 +20,7 @@ import { wochentagNameAusWd } from '../planen/wochentage'
  */
 export function treffpunktTagLabel(kennung: string, wd: number, lang: string): string {
   const tag = fsTag(kennung, wd)
-  return tag
-    ? tag.toLocaleDateString(LOCALES[lang as keyof typeof LOCALES], { weekday: 'long', day: 'numeric', month: 'long' })
-    : wochentagNameAusWd(wd, lang)
+  return tag ? datumsFormat(lang, 'tag').format(tag) : wochentagNameAusWd(wd, lang)
 }
 
 /** Versammlungstreffpunkt oder der Name seiner Gruppe (übersetzt). */

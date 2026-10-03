@@ -179,12 +179,11 @@ export function schemaFehler({ pfad, method, body }: Aufruf, schema = SCHEMA_SQL
   for (const zeile of zeilen) {
     for (const [k, wert] of Object.entries(zeile)) {
       const s = spalten.get(k)
-      const passt = s && PASST[s.typ]
+      const falsch = s && wert !== null ? typFehler(s.typ, wert) : null
       if (!s) nenne(k, 'gibt es nicht')
       else if (wert === null) {
         if (!s.nullbar) nenne(k, 'null in einer not-null-Spalte')
-      } else if (!passt) nenne(k, `Typ ${s.typ} kennt die Probe nicht — PASST ergänzen`)
-      else if (!passt(wert)) nenne(k, `${String(JSON.stringify(wert)).slice(0, 60)} ist kein ${s.typ}`)
+      } else if (falsch) nenne(k, falsch)
     }
     if (method !== 'POST') continue
     for (const [name, s] of spalten) if (s.pflicht && !(name in zeile)) nenne(name, 'Pflichtspalte fehlt')
@@ -204,13 +203,18 @@ function funktionsFehler(tabelle: string, method: string, body: unknown, schema:
   const fehler: string[] = []
   for (const [k, wert] of Object.entries(rumpf)) {
     const typ = parameter.get(k)
-    const passt = typ ? PASST[typ] : undefined
-    if (!typ) fehler.push(`${method} ${tabelle}.${k}: keinen solchen Parameter`)
-    else if (!passt) fehler.push(`${method} ${tabelle}.${k}: Typ ${typ} kennt die Probe nicht — PASST ergänzen`)
-    else if (!passt(wert)) fehler.push(`${method} ${tabelle}.${k}: ${String(JSON.stringify(wert)).slice(0, 60)} ist kein ${typ}`)
+    const falsch = typ ? typFehler(typ, wert) : 'keinen solchen Parameter'
+    if (falsch) fehler.push(`${method} ${tabelle}.${k}: ${falsch}`)
   }
   for (const k of parameter.keys()) if (!(k in rumpf)) fehler.push(`${method} ${tabelle}.${k}: Parameter fehlt`)
   return fehler
+}
+
+/** Passt ein Wert zum Typ einer Spalte oder eines Parameters? Sonst der Grund — `null` heißt: passt. */
+function typFehler(typ: string, wert: unknown): string | null {
+  const passt = PASST[typ]
+  if (!passt) return `Typ ${typ} kennt die Probe nicht — PASST ergänzen`
+  return passt(wert) ? null : `${String(JSON.stringify(wert)).slice(0, 60)} ist kein ${typ}`
 }
 
 /** Jeder Befund einmal: Eine Spalte, die 30 Zeilen verfehlen, ist ein Fehler, nicht dreißig. */

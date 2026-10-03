@@ -43,6 +43,8 @@ export function PlanenScreen() {
   const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
   const fsOverseer = !state.planner && myFsGroup !== null
   const va = useVaReiter()
+  // Einmal gerechnet und hinuntergereicht: Der Streifen zeichnet den Körper
+  // dreimal, und jede Instanz rechnete sonst selbst.
   const vaKonflikte = useVaKonflikte()
 
   // Die Weiteren Pläne (T120, Phase 5) sind ein eigenes Thema ohne Woche.
@@ -72,7 +74,7 @@ export function PlanenScreen() {
           vaKonflikte={vaKonflikte.length}
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
-        <AuswaertsPlan />
+        <AuswaertsPlan konflikte={vaKonflikte} />
       </section>
     )
   }
@@ -102,13 +104,13 @@ export function PlanenScreen() {
   // nächste Woche — und übernimmt das Wischen.
   return (
     <WeekStrip>
-      <PlanenBody />
+      <PlanenBody vaKonflikte={vaKonflikte.length} />
     </WeekStrip>
   )
 }
 
 /** Planung EINER Woche; welche, sagt der Zustand (im Streifen überschrieben). */
-function PlanenBody() {
+function PlanenBody({ vaKonflikte }: { vaKonflikte: number }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
@@ -123,7 +125,6 @@ function PlanenBody() {
   const thema = isFs ? 'predigtdienst' : 'zusammenkuenfte'
   // Der Reiter „Redner auswärts" steht beim Planen für jeden Planer da (T120).
   const va = useVaReiter()
-  const vaKonflikte = useVaKonflikte()
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis. Im
   // Predigtdienst bleibt der Grundplan erreichbar.
@@ -139,7 +140,7 @@ function PlanenBody() {
             className="plan-tabs"
             tab={state.tab}
             showVa
-            vaKonflikte={vaKonflikte.length}
+            vaKonflikte={vaKonflikte}
             onChange={(tab) => dispatch({ type: 'setTab', tab })}
           />
         )}
@@ -191,7 +192,7 @@ function PlanenBody() {
           week={rawWeek}
           showEdit
           showVa={va.sichtbar}
-          vaKonflikte={vaKonflikte.length}
+          vaKonflikte={vaKonflikte}
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
       )}

@@ -12,8 +12,8 @@ import {
   vorlageText,
   zeitraumText,
 } from '../components/weitere-plaene-anzeige'
-import { ozTagText } from '../components/zeugnis-anzeige'
-import { displayName } from '../data/helpers'
+import { zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
+import { displayName, personCompare } from '../data/helpers'
 import { fromIso, montagVon } from '../data/meeting-dates'
 import {
   eintraegeVon,
@@ -295,7 +295,7 @@ function FamilienTage({ plan }: { plan: WeitererPlan }) {
   const tag = useKalendertag()
   const eintraege = eintraegeVon(state.planEintraege, plan.id)
   const gastgeber = useMemo(
-    () => [...state.persons].sort((a, b) => displayName(a).localeCompare(displayName(b), state.lang)),
+    () => [...state.persons].sort((a, b) => personCompare(a, b, state.lang)),
     [state.persons, state.lang],
   )
 
@@ -305,7 +305,7 @@ function FamilienTage({ plan }: { plan: WeitererPlan }) {
         const vorbei = datum < tag
         return (
           <div key={datum} className={vorbei ? 'panel is-vorbei' : 'panel'} data-farbe="gold">
-            <h2 className="panel-label">{ozTagText(datum, state.lang)}</h2>
+            <h2 className="panel-label">{zeitleisteDatum(fromIso(datum), state.lang)}</h2>
             {MAHLZEITEN.map((mahlzeit) => {
               const eintrag = eintraege.find((e) => e.datum === datum && e.mahlzeit === mahlzeit)
               return (

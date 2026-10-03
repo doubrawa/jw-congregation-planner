@@ -132,6 +132,10 @@ let writes: Write[]
 let absagen: { user_id: string; task_key: string }[]
 /** Wird einmal ausgeführt, nachdem die Woche gelesen wurde (Wettlauf). */
 let konkurrent: (() => void) | null
+/** Vorträge auswärts (T120, Phase 4) — Tabelle `vortraege_auswaerts`. */
+let vortraege: { person_id: string | null; datum: string }[]
+/** Die Tabelle gibt es noch nicht (Schema nicht eingespielt). */
+let ohneVortragsTabelle: boolean
 
 /** Alle schreibenden REST-Aufrufe (PATCH/POST/DELETE) dieses Testlaufs. */
 const { writesTo } = schreibZugriff(() => writes)
@@ -186,6 +190,13 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
   if (path.startsWith('congregations')) return jsonRes(CONGREGATIONS)
   if (path.startsWith('absences')) return jsonRes(fremd ? [] : ABSENCES)
+  if (path.startsWith('vortraege_auswaerts')) {
+    if (ohneVortragsTabelle) return new Response('{"code":"PGRST205"}', { status: 404 })
+    // Den Tag wertet die Attrappe aus: Ohne ihn sähe „jeder Vortrag" hier
+    // genauso aus wie „nur die an diesem Tag".
+    const tag = filterWert(path, 'datum')
+    return jsonRes(fremd ? [] : vortraege.filter((v) => v.datum === tag && v.person_id))
+  }
   if (path.startsWith('confirmations')) {
     const wer = filterWert(path, 'user_id')
     const aufgabe = filterWert(path, 'task_key')
@@ -246,6 +257,8 @@ beforeEach(() => {
   // jetzt (siehe „Einspringen setzt ein Gesuch voraus").
   absagen = [{ user_id: U_ORIG, task_key: KEY }]
   konkurrent = null
+  vortraege = []
+  ohneVortragsTabelle = false
   resetPush()
 })
 
@@ -543,6 +556,41 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
     expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ABSENT, U_ORIG_ZWILL]))
   })
 
+  /*
+   * Redner auswärts (T120, Phase 4): Wer am Tag der Zusammenkunft in einer
+   * anderen Versammlung spricht, steht nicht zur Verfügung — die App blendet
+   * ihm das Gesuch aus (`nichtDa`). Bis zum 3.10.2026 bekam er trotzdem Push
+   * und Glocke „Ersatz gesucht" und fand in der App nichts dazu.
+   */
+  it('wer am Tag auswärts spricht, wird nicht gefragt', async () => {
+    vortraege = [{ person_id: 'p-orig-zwill', datum: '2026-09-08' }]
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    await expect(res.json()).resolves.toEqual({ ok: true, notified: 1 })
+    const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
+    expect(rows.map((r) => r.user_id)).toEqual([U_ME])
+  })
+
+  it('ein Vortrag an einem anderen Tag der Woche hält niemanden ab', async () => {
+    vortraege = [{ person_id: 'p-orig-zwill', datum: '2026-09-13' }] // Sonntag, die Zusammenkunft ist Dienstag
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    await expect(res.json()).resolves.toEqual({ ok: true, notified: 2 })
+  })
+
+  it('verlegt: zählt der Tag, an dem die Zusammenkunft wirklich ist', async () => {
+    vortraege = [{ person_id: 'p-orig-zwill', datum: '2026-09-08' }] // am regulären Dienstag
+    const w = week as { dev?: Record<string, { wd: number }> }
+    w.dev = { mid: { wd: 5 } } // die Zusammenkunft ist am Freitag, 11.9.
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
+    expect(res.status).toBe(200)
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ABSENT, U_ORIG_ZWILL]))
+  })
+
+  it('fehlt die Tabelle noch, sucht die Function trotzdem — und fragt alle wie bisher', async () => {
+    ohneVortragsTabelle = true
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    await expect(res.json()).resolves.toEqual({ ok: true, notified: 2 })
+  })
 })
 
 describe('substitute: seek darf nur auslösen, wen es angeht', () => {

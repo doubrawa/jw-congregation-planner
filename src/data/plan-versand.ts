@@ -316,14 +316,33 @@ function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): b
  */
 export function zuletztGesendet(sentLog: SentLog, weekStart: string): string | null {
   if (!weekStart) return null
+  // Der Tagebuch-Schlüssel beginnt mit dem Aufgaben-Schlüssel; ein Präfix-
+  // Vergleich genügt und kommt ohne Zerlegen aus (Namen dürfen Leerzeichen
+  // enthalten, ein Aufgaben-Schlüssel theoretisch auch).
+  const praefixe = wochenPraefixe(weekStart)
+  return neuesterVersand(sentLog, (schluessel) => praefixe.some((p) => schluessel.startsWith(p)))
+}
+
+/**
+ * Der jüngste Zeitstempel im Versand-Tagebuch unter den Schlüsseln, die
+ * `gehoert` annimmt — für die Woche wie für die Pläne ohne Woche
+ * (Zeugnisgeben `oz|`, Vorträge auswärts `va|`). Stand bis zum 3.10.2026
+ * dreimal als eigene Schleife da.
+ */
+export function neuesterVersand(sentLog: SentLog, gehoert: (schluessel: string) => boolean): string | null {
   let neuster: string | null = null
   for (const [schluessel, wann] of Object.entries(sentLog)) {
-    // Der Tagebuch-Schlüssel beginnt mit dem Aufgaben-Schlüssel; ein Präfix-
-    // Vergleich genügt und kommt ohne Zerlegen aus (Namen dürfen Leerzeichen
-    // enthalten, ein Aufgaben-Schlüssel theoretisch auch).
-    const gehoert = wochenPraefixe(weekStart).some((p) => schluessel.startsWith(p))
-    if (!gehoert) continue
+    if (!gehoert(schluessel)) continue
     if (neuster === null || wann > neuster) neuster = wann
   }
   return neuster
+}
+
+/**
+ * Was von den offenen Aufgaben noch nicht im Versand-Tagebuch steht — die
+ * Meldungen für „Plan senden" ohne Woche. Gerechnet werden die offenen mit
+ * derselben Funktion wie in `send-plan`; hier fällt nur weg, was schon hinaus ist.
+ */
+export function nochNichtGemeldet(offen: readonly { key: string; name: string }[], sentLog: SentLog): OffeneMeldung[] {
+  return offen.filter((p) => !sentLog[sentKey(p.key, p.name)]).map((p) => ({ key: p.key, name: p.name }))
 }

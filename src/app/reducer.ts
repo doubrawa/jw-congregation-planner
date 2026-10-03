@@ -9,7 +9,7 @@ import { type AbsenceSet, buildAbsences, buildAuswaerts, nichtVerfuegbar } from 
 import { deriveMyVaTasks, vaNachDatum, vaTerminText, vaVerwaisteZusagen } from '../data/auswaerts'
 import { eintraegeImZeitraum, eintragSetzen, gruppenVerteilen, planNachDatum } from '../data/weitere-plaene'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
-import { currentWeekIndex, isoDay, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
+import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, genFsWeek, regenFsWeeks } from '../data/fs'
 import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
@@ -19,9 +19,9 @@ import {
   besuchEintragen,
   besucheInNeueWoche,
   besucheVerteilen,
+  besuchsLage,
   besuchStand,
   nachWoche,
-  type BesuchsLage,
 } from '../data/gruppenbesuche'
 import {
   deriveMyOzTasks,
@@ -34,6 +34,7 @@ import {
   ozTaskKey,
   ozTerminText,
   ozVorbei,
+  ozWegBeiTagwechsel,
 } from '../data/zeugnis'
 import { FS_LEITER, OZ_DIENST, VA_ROLLE } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
@@ -199,16 +200,6 @@ function wochenKennungen(state: Pick<AppState, 'weeks'>): string[] {
   return state.weeks.map((w) => w.start)
 }
 
-/** Was die Gruppenbesuche aus dem Zustand brauchen (`data/gruppenbesuche.ts`). */
-function besuchsLage(state: AppState): BesuchsLage {
-  return {
-    kennungen: wochenKennungen(state),
-    fsWeeks: state.fsWeeks,
-    fsRules: state.fsRules,
-    absences: state.absences,
-  }
-}
-
 /**
  * Wer an einer Zusammenkunft nicht zur Verfügung steht: abwesend oder an dem
  * Tag als Redner in einer anderen Versammlung (T120, Phase 4). Für
@@ -286,7 +277,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         ),
         // Öffentliches Zeugnisgeben (T120): aus demselben Grund kanonisch
         // (`OZ_WORD`).
-        ...deriveMyOzTasks(state.ozTermine, state.ozEintraege, me.id, state.confirmations, OZ_DIENST),
+        ...deriveMyOzTasks(state.ozTermine, state.ozEintraege, me.id, state.confirmations),
         // Vorträge auswärts (T120, Phase 4): Rolle „Redner".
         ...deriveMyVaTasks(state.auswaerts, me.id, state.confirmations),
       ]
@@ -342,6 +333,18 @@ export function aufgabenAbgeleitet(state: AppState): AppState {
 }
 
 /**
+ * Die Reiter, von denen ein stilles Nachladen auf die nächste Zusammenkunft
+ * springen darf: die beiden Zusammenkünfte und ihr Bearbeiten. Alle übrigen —
+ * Treffpunkte, Redner auswärts, Weitere Pläne — bleiben stehen.
+ *
+ * **Positiv aufgezählt.** Bis zum 3.10.2026 stand hier die Gegenliste, und jede
+ * Phase von T120 musste sich selbst darin eintragen (fs, va, wp). Ein neuer
+ * Reiter ist jetzt von selbst geschützt; wer ihn springen lassen will, muss es
+ * hier sagen.
+ */
+const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit'])
+
+/**
  * Woche und Reiter auf die nächste Zusammenkunft setzen (T82) — es sei denn,
  * der Nutzer hat in dieser Sitzung schon selbst gewählt.
  *
@@ -358,10 +361,11 @@ export function aufgabenAbgeleitet(state: AppState): AppState {
  * Dasselbe gilt für die Redner auswärts (T120, Phase 4): Sie haben keine Woche,
  * zu der eine Zusammenkunft „die nächste" wäre. Heute kommt man nur über den
  * Reiter dorthin (also mit Wahl); die Regel hängt trotzdem am Reiter selbst,
- * damit ein künftiger Weg ohne Wahl nicht wieder hinauswirft.
+ * damit ein künftiger Weg ohne Wahl nicht wieder hinauswirft. Ebenso die
+ * Weiteren Pläne (Phase 5), zu denen das Menü ohne Wahl führt.
  */
 function zurNaechstenZusammenkunft(state: AppState): AppState {
-  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va' || state.tab === 'wp') return state
+  if (state.terminGewaehlt || !NACHLADEN_DARF_SPRINGEN.has(state.tab)) return state
   const naechste = naechsteZusammenkunft(state.weeks, state.congregation.times)
   return naechste ? { ...state, week: naechste.wi, tab: naechste.tab } : state
 }
@@ -583,13 +587,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const erlaubteZiele = erlaubteScreens(state.planner, fsOverseer)
       let screen: Screen = erlaubteZiele.includes(action.screen) ? action.screen : 'programm'
       // Ein Thema des Menüs bringt seinen Reiter mit (T120); ohne Thema bleibt
-      // der bisherige.
+      // der bisherige. Zurück zu den Zusammenkünften geht es aus jedem Reiter
+      // eines anderen Themas — gefragt über `themaVon`, nicht über eine Liste,
+      // in die sich jedes neue Thema eintragen müsste.
       let wunsch: MeetingTab =
         action.thema === 'predigtdienst'
           ? 'fs'
           : action.thema === 'weitere'
             ? 'wp'
-            : action.thema === 'zusammenkuenfte' && (state.tab === 'fs' || state.tab === 'wp')
+            : action.thema === 'zusammenkuenfte' && themaVon(state.tab) !== 'zusammenkuenfte'
               ? zusammenkunftDerWoche(state)
               : state.tab
       // Planen nur, wo man planen darf (T120). Der Gruppenaufseher plant allein
@@ -606,17 +612,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Programm und Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm
       // ist für alle nur lesend. Beim Wechsel woandershin auf die Zusammenkunft
       // unter der Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter,
-      // den es dort nicht gibt.
-      const erlaubt: Record<'fs' | 'edit' | 'va' | 'wp', boolean> = {
+      // den es dort nicht gibt. Die beiden Zusammenkünfte stehen nicht in der
+      // Liste — sie gibt es überall.
+      const erlaubt: Partial<Record<MeetingTab, boolean>> = {
         fs: screen === 'programm' || screen === 'planen',
         edit: screen === 'planen',
         va: screen === 'programm' || screen === 'planen',
         wp: screen === 'programm' || screen === 'planen',
       }
-      const tab: MeetingTab =
-        (wunsch === 'fs' || wunsch === 'edit' || wunsch === 'va' || wunsch === 'wp') && !erlaubt[wunsch]
-          ? 'mid'
-          : wunsch
+      const tab: MeetingTab = erlaubt[wunsch] === false ? 'mid' : wunsch
       const nachher = {
         ...dropNamelessSelected(state),
         screen,
@@ -653,8 +657,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
        */
       if (action.woche && screen === action.screen) {
         const gewaehlt = action.woche.tab
-        const wocheTab: MeetingTab =
-          (gewaehlt === 'fs' || gewaehlt === 'edit') && !erlaubt[gewaehlt] ? 'mid' : gewaehlt
+        const wocheTab: MeetingTab = erlaubt[gewaehlt] === false ? 'mid' : gewaehlt
         return {
           ...nachher,
           week: Math.min(Math.max(0, action.woche.wi), Math.max(0, state.weeks.length - 1)),
@@ -1238,11 +1241,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const neu = { ...alt, ...action.patch }
       const ozTermine = state.ozTermine.map((t) => (t === alt ? neu : t))
       if (neu.wd === alt.wd) return { ...state, ozTermine }
-      // Ein anderer Wochentag: Die kommenden Einträge stehen an einem Tag, an
-      // dem der Termin nicht mehr stattfindet, und gehen. Was heute ist oder
-      // war, bleibt — heute stehen die Eingetragenen womöglich gerade dort.
-      const heute = isoDay(new Date())
-      const ozEintraege = state.ozEintraege.filter((e) => e.terminId !== alt.id || e.datum <= heute)
+      // Ein anderer Wochentag: Die kommenden Einträge gehen (`ozWegBeiTagwechsel`).
+      // Gefragt hat vorher die Oberfläche, mit derselben Rechnung (`TerminZeile`).
+      const weg = new Set(ozWegBeiTagwechsel(state.ozEintraege, alt.id))
+      const ozEintraege = weg.size ? state.ozEintraege.filter((e) => !weg.has(e)) : state.ozEintraege
       return { ...state, ozTermine, ozEintraege }
     }
     case 'ozTerminRemove': {
@@ -1382,13 +1384,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         groups: state.groups,
         abGruppe: action.abGruppe,
         heute: new Date(),
-        neueId: () => `e${crypto.randomUUID()}`,
+        neueId: neueEintragId,
       })
       return { ...state, planEintraege: eintraege, toast: toastKey(state, 'toastWpVerteilt', { n: verteilt }) }
     }
     case 'wpEintragSetzen': {
       if (!state.plaene.some((p) => p.id === action.planId)) return state
-      const eintraege = eintragSetzen({ ...action, eintraege: state.planEintraege, neueId: () => `e${crypto.randomUUID()}` })
+      const eintraege = eintragSetzen({ ...action, eintraege: state.planEintraege, neueId: neueEintragId })
       return eintraege === state.planEintraege ? state : { ...state, planEintraege: eintraege }
     }
     case 'openMyTask':

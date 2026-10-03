@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
 import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
-import { ozNachWoche, ozTagText, ozZeit } from '../components/zeugnis-anzeige'
+import { ozNachWoche, ozSchichtText } from '../components/zeugnis-anzeige'
 import { displayName, isQualified } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
@@ -87,7 +87,7 @@ function AnsichtZeile({ schicht, darf }: { schicht: OzSchicht; darf: boolean }) 
           <div className="fs-title" dir="auto">
             {tu(schicht.termin.ort) || t.privZeugnis}
           </div>
-          <div className="fs-place">{`${ozTagText(schicht.datum, state.lang)} · ${ozZeit(schicht)}`}</div>
+          <div className="fs-place">{ozSchichtText(schicht, state.lang)}</div>
         </div>
       </div>
       <div className="oz-plaetze">

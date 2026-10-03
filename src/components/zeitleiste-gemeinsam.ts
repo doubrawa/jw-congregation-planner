@@ -1,5 +1,5 @@
 import type { Lang } from '../data/types'
-import { LOCALES } from '../i18n/langs'
+import { datumsFormat } from './datum-anzeige'
 
 /**
  * **Was beide Zeitleisten gemeinsam rechnen.**
@@ -74,11 +74,7 @@ export function markiereAbwesenheiten<T extends BandZeile>(
  * 19:00"). Eine Abwesenheit hat keine.
  */
 export function zeitleisteDatum(datum: Date, lang: Lang, zeit = ''): string {
-  const tag = datum.toLocaleDateString(LOCALES[lang], {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  const tag = datumsFormat(lang, 'tag').format(datum)
   return zeit ? `${tag} · ${zeit}` : tag
 }
 

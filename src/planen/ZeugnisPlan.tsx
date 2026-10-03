@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
-import { ozKurzTag, ozNachWoche, ozTagText, ozZeit } from '../components/zeugnis-anzeige'
+import { ozKurzTag, ozNachWoche, ozSchichtText } from '../components/zeugnis-anzeige'
 import { istAbwesendAm } from '../data/absence'
 import { FS_TIME_OPTIONS } from '../data/fs'
-import { displayName, isQualified } from '../data/helpers'
+import { displayName, isQualified, personCompare } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
   OZ_BEREICH,
@@ -16,6 +16,7 @@ import {
   ozKonflikte,
   ozSchichten,
   ozVorbei,
+  ozWegBeiTagwechsel,
   ozZusage,
   type OzSchicht,
 } from '../data/zeugnis'
@@ -58,7 +59,7 @@ export function ZeugnisPlan() {
     () =>
       state.persons
         .filter((p) => isQualified(p, OZ_BEREICH))
-        .sort((a, b) => displayName(a).localeCompare(displayName(b), state.lang)),
+        .sort((a, b) => personCompare(a, b, state.lang)),
     [state.persons, state.lang],
   )
 
@@ -122,7 +123,7 @@ export function ZeugnisPlan() {
             <div key={montag} className="panel" data-farbe="gold">
               <h2 className="panel-label">{besuchsWocheText(montag, state.lang)}</h2>
               {inWoche.map((s) => (
-                <SchichtZeile key={`${s.termin.id}|${s.datum}`} schicht={s} kandidaten={kandidaten} />
+                <SchichtZeile key={`${s.termin.id}|${s.datum}`} schicht={s} kandidaten={kandidaten} heute={heute} />
               ))}
             </div>
           ))}
@@ -143,88 +144,13 @@ export function ZeugnisPlan() {
 function TerminePanel() {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const upd = (id: string, patch: Partial<Omit<OzTermin, 'id'>>) => dispatch({ type: 'ozTerminUpdate', id, patch })
 
   return (
     <div className="panel panel--pb16" data-farbe="neutral">
       <h2 className="panel-label">{t.ozTermine}</h2>
       <p className="panel-hint">{state.ozTermine.length > 0 ? t.ozTermineHint : t.ozKeineTermine}</p>
       {state.ozTermine.map((termin) => (
-        <div key={termin.id} className="fsr-row">
-          <div className="fsr-line">
-            <div className="fsr-wahl">
-              <select
-                className="fs-select"
-                value={termin.wd}
-                aria-label={t.a11yWeekday}
-                onChange={(e) => upd(termin.id, { wd: Number(e.target.value) })}
-              >
-                {WOCHENTAGE_AB_MONTAG.map((d) => (
-                  <option key={d} value={d}>
-                    {wochentagNameAusWd(d, state.lang)}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="fs-select"
-                value={termin.plaetze}
-                aria-label={fill(t.ozPlaetze, { n: termin.plaetze })}
-                onChange={(e) => upd(termin.id, { plaetze: Number(e.target.value) })}
-              >
-                {PLAETZE.map((n) => (
-                  <option key={n} value={n}>
-                    {fill(t.ozPlaetze, { n })}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              className="fs-remove"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'ozTerminRemove', id: termin.id })}
-            >
-              ✕
-            </button>
-          </div>
-          <div className="fsr-line">
-            <select
-              className="fs-select fs-select--time"
-              value={termin.von}
-              aria-label={t.von}
-              onChange={(e) => upd(termin.id, { von: e.target.value })}
-            >
-              {FS_TIME_OPTIONS.map((tm) => (
-                <option key={tm} value={tm}>
-                  {tm}
-                </option>
-              ))}
-            </select>
-            <select
-              className="fs-select fs-select--time"
-              value={termin.bis}
-              aria-label={t.bis}
-              onChange={(e) => upd(termin.id, { bis: e.target.value })}
-            >
-              {FS_TIME_OPTIONS.map((tm) => (
-                <option key={tm} value={tm}>
-                  {tm}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="fsr-line">
-            <input
-              className="fsr-input"
-              type="text"
-              dir="auto"
-              value={termin.ort}
-              placeholder={t.fsOrtPh}
-              aria-label={t.fsOrtPh}
-              onChange={(e) => upd(termin.id, { ort: e.target.value })}
-            />
-          </div>
-        </div>
+        <TerminZeile key={termin.id} termin={termin} />
       ))}
       <button type="button" className="btn-outline fsr-add" onClick={() => dispatch({ type: 'ozTerminAdd' })}>
         {t.ozTerminAdd}
@@ -233,12 +159,142 @@ function TerminePanel() {
   )
 }
 
-/** Eine Schicht beim Planen: wann und wo, wer eingetragen ist, wer noch hineinkann. */
-function SchichtZeile({ schicht, kandidaten }: { schicht: OzSchicht; kandidaten: readonly Person[] }) {
+/**
+ * Ein Termin: Wochentag, Plätze, Zeit und Ort.
+ *
+ * **Ein anderer Wochentag fragt nach, wenn dabei Einträge gehen.** Die
+ * kommenden stünden an einem Tag, an dem der Termin nicht mehr stattfindet,
+ * und wer zugesagt hatte, bekommt „Zuteilung zurückgezogen" — und
+ * Zurückstellen holt nichts zurück. Unter Windows genügte dafür bis zum
+ * 3.10.2026 eine Pfeiltaste auf dem Auswahlfeld. Gezählt wird mit derselben
+ * Rechnung wie im Reducer (`ozWegBeiTagwechsel`).
+ */
+function TerminZeile({ termin }: { termin: OzTermin }) {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const [wechsel, setWechsel] = useState<{ wd: number; n: number } | null>(null)
+  const upd = (patch: Partial<Omit<OzTermin, 'id'>>) => dispatch({ type: 'ozTerminUpdate', id: termin.id, patch })
+
+  const tagWaehlen = (wd: number): void => {
+    const n = wd === termin.wd ? 0 : ozWegBeiTagwechsel(state.ozEintraege, termin.id).length
+    if (wd !== termin.wd && n > 0) {
+      setWechsel({ wd, n })
+      return
+    }
+    setWechsel(null)
+    if (wd !== termin.wd) upd({ wd })
+  }
+
+  return (
+    <div className="fsr-row">
+      <div className="fsr-line">
+        <div className="fsr-wahl">
+          <select
+            className="fs-select"
+            value={wechsel?.wd ?? termin.wd}
+            aria-label={t.a11yWeekday}
+            onChange={(e) => tagWaehlen(Number(e.target.value))}
+          >
+            {WOCHENTAGE_AB_MONTAG.map((d) => (
+              <option key={d} value={d}>
+                {wochentagNameAusWd(d, state.lang)}
+              </option>
+            ))}
+          </select>
+          <select
+            className="fs-select"
+            value={termin.plaetze}
+            aria-label={fill(t.ozPlaetze, { n: termin.plaetze })}
+            onChange={(e) => upd({ plaetze: Number(e.target.value) })}
+          >
+            {PLAETZE.map((n) => (
+              <option key={n} value={n}>
+                {fill(t.ozPlaetze, { n })}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          className="fs-remove"
+          aria-label={t.a11yRemove}
+          onClick={() => dispatch({ type: 'ozTerminRemove', id: termin.id })}
+        >
+          ✕
+        </button>
+      </div>
+      {wechsel && (
+        <div className="oz-rueckfrage" role="alert">
+          <p className="oz-rueckfrage-text">
+            {fill(t.ozTagWechselFrage, { tag: wochentagNameAusWd(wechsel.wd, state.lang), n: wechsel.n })}
+          </p>
+          <div className="oz-aktionen">
+            <button
+              type="button"
+              className="btn-outline"
+              onClick={() => {
+                setWechsel(null)
+                upd({ wd: wechsel.wd })
+              }}
+            >
+              {t.ozTagWechseln}
+            </button>
+            <button type="button" className="btn-outline" onClick={() => setWechsel(null)}>
+              {t.abbrechen}
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="fsr-line">
+        <select
+          className="fs-select fs-select--time"
+          value={termin.von}
+          aria-label={t.von}
+          onChange={(e) => upd({ von: e.target.value })}
+        >
+          {FS_TIME_OPTIONS.map((tm) => (
+            <option key={tm} value={tm}>
+              {tm}
+            </option>
+          ))}
+        </select>
+        <select
+          className="fs-select fs-select--time"
+          value={termin.bis}
+          aria-label={t.bis}
+          onChange={(e) => upd({ bis: e.target.value })}
+        >
+          {FS_TIME_OPTIONS.map((tm) => (
+            <option key={tm} value={tm}>
+              {tm}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="fsr-line">
+        <input
+          className="fsr-input"
+          type="text"
+          dir="auto"
+          value={termin.ort}
+          placeholder={t.fsOrtPh}
+          aria-label={t.fsOrtPh}
+          onChange={(e) => upd({ ort: e.target.value })}
+        />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Eine Schicht beim Planen: wann und wo, wer eingetragen ist, wer noch hineinkann.
+ * Den Tag reicht die Liste herein — ein Mitternachts-Zeitgeber je Zeile wäre
+ * derselbe Zeitgeber dutzendfach.
+ */
+function SchichtZeile({ schicht, kandidaten, heute }: { schicht: OzSchicht; kandidaten: readonly Person[]; heute: Date }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  const tag = useKalendertag()
-  const vorbei = ozVorbei(schicht, fromIso(tag))
+  const vorbei = ozVorbei(schicht, heute)
   const amTag = fromIso(schicht.datum)
   const drin = new Set(schicht.eintraege.map((e) => e.pid))
   // Zur Wahl steht, wer den Aufgabenbereich hat, noch nicht in dieser Schicht
@@ -253,7 +309,7 @@ function SchichtZeile({ schicht, kandidaten }: { schicht: OzSchicht; kandidaten:
           <div className="fs-title" dir="auto">
             {tu(schicht.termin.ort) || t.privZeugnis}
           </div>
-          <div className="fs-place">{`${ozTagText(schicht.datum, state.lang)} · ${ozZeit(schicht)}`}</div>
+          <div className="fs-place">{ozSchichtText(schicht, state.lang)}</div>
         </div>
       </div>
       <div className="oz-plaetze">

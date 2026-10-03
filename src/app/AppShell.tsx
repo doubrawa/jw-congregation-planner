@@ -218,6 +218,18 @@ export function AppShell() {
   const congSub = fill(t.congLabel, { name: state.congregation.name })
   const roleLabel = state.planner ? t.rolleKoordinator : t.rolleVerkuendiger
   const logout = () => performLogout(dispatch)
+  // Der Fuß steht zweimal da — in der Seitenleiste und im Menü des Handys.
+  const fuss = (
+    <SidebarFooter
+      me={me}
+      roleLabel={roleLabel}
+      profilLabel={t.navProfil}
+      aktiv={state.screen === 'profil'}
+      onProfil={() => navigate('profil')}
+      logoutLabel={t.abmelden}
+      onLogout={logout}
+    />
+  )
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
   const offenesOverlay =
@@ -236,15 +248,7 @@ export function AppShell() {
         <aside className="sidebar">
           <SidebarBrand congSub={congSub} />
           <SidebarNav abschnitte={abschnitte} />
-          <SidebarFooter
-            me={me}
-            roleLabel={roleLabel}
-            profilLabel={t.navProfil}
-            aktiv={state.screen === 'profil'}
-            onProfil={() => navigate('profil')}
-            logoutLabel={t.abmelden}
-            onLogout={logout}
-          />
+          {fuss}
         </aside>
       )}
 
@@ -329,15 +333,7 @@ export function AppShell() {
                     </button>
                   </div>
                   <SidebarNav abschnitte={abschnitte} />
-                  <SidebarFooter
-                    me={me}
-                    roleLabel={roleLabel}
-                    profilLabel={t.navProfil}
-                    aktiv={state.screen === 'profil'}
-                    onProfil={() => navigate('profil')}
-                    logoutLabel={t.abmelden}
-                    onLogout={logout}
-                  />
+                  {fuss}
                 </aside>
               </>
             )}

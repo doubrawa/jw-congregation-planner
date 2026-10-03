@@ -3,13 +3,12 @@ import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { vaNachMonat, vaVersammlungText, vaWannText, vaWoText } from '../components/auswaerts-anzeige'
 import { DatePicker } from '../components/DatePicker'
-import { monatText } from '../components/gruppenbesuch-anzeige'
-import { useVaKonflikte } from '../components/useVaReiter'
+import { monatsName } from '../programm/druck'
 import { ozKurzTag } from '../components/zeugnis-anzeige'
 import { istAbwesendAm } from '../data/absence'
 import { VA_BEREICH, vaTaskKey, vaVorbei, type VaKonflikt } from '../data/auswaerts'
 import { FS_TIME_OPTIONS } from '../data/fs'
-import { displayName, isQualified } from '../data/helpers'
+import { displayName, isQualified, personCompare } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { zusageStatus } from '../data/planning'
 import { ersteZahl, nurZiffern } from '../data/ziffern'
@@ -47,18 +46,18 @@ function konfliktSatz(k: VaKonflikt, i18n: I18n): string {
  * der Zusammenkunft, wer an dem Tag auswärts spricht, und die Auto-Zuteilung
  * lässt ihn aus (`nichtVerfuegbar`).
  */
-export function AuswaertsPlan() {
+export function AuswaertsPlan({ konflikte }: { konflikte: readonly VaKonflikt[] }) {
   const { state } = useApp()
   const i18n = useT()
   const { t, tu } = i18n
-  const konflikte = useVaKonflikte()
+  const heute = fromIso(useKalendertag())
 
   // Zur Wahl steht, wer Vorträge hält — dieselbe Menge wie am Vortragsplatz.
   const kandidaten = useMemo(
     () =>
       state.persons
         .filter((p) => isQualified(p, VA_BEREICH))
-        .sort((a, b) => displayName(a).localeCompare(displayName(b), state.lang)),
+        .sort((a, b) => personCompare(a, b, state.lang)),
     [state.persons, state.lang],
   )
   const konfliktVon = new Map(konflikte.map((k) => [k.vortrag.id, k]))
@@ -95,9 +94,9 @@ export function AuswaertsPlan() {
 
       {vaNachMonat(state.auswaerts).map(({ monat, vortraege }) => (
         <div key={monat} className="panel" data-farbe="petrol">
-          <h2 className="panel-label">{monatText(monat, state.lang)}</h2>
+          <h2 className="panel-label">{monatsName(monat, state.lang)}</h2>
           {vortraege.map((v) => (
-            <VortragZeile key={v.id} vortrag={v} kandidaten={kandidaten} konflikt={konfliktVon.get(v.id)} />
+            <VortragZeile key={v.id} vortrag={v} kandidaten={kandidaten} konflikt={konfliktVon.get(v.id)} heute={heute} />
           ))}
         </div>
       ))}
@@ -108,21 +107,25 @@ export function AuswaertsPlan() {
   )
 }
 
-/** Ein Vortrag: wann und wo, der Redner mit seiner Zusage, und was nicht aufgeht. */
+/**
+ * Ein Vortrag: wann und wo, der Redner mit seiner Zusage, und was nicht aufgeht.
+ * Den Tag reicht die Liste herein, wie bei den Schichten des Zeugnisgebens.
+ */
 function VortragZeile({
   vortrag,
   kandidaten,
   konflikt,
+  heute,
 }: {
   vortrag: VortragAuswaerts
   kandidaten: readonly Person[]
   konflikt: VaKonflikt | undefined
+  heute: Date
 }) {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const { t, tu } = i18n
-  const tag = useKalendertag()
-  const vorbei = vaVorbei(vortrag, fromIso(tag))
+  const vorbei = vaVorbei(vortrag, heute)
   const redner = vortrag.pid ? state.persons.find((p) => p.id === vortrag.pid) : undefined
   // Zur Wahl: wer an dem Tag nicht abwesend ist. Der eingesetzte Redner bleibt
   // stehen, auch wenn er inzwischen fehlt oder keine Vorträge mehr hält — sonst

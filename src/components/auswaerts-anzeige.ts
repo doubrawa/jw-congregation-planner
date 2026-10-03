@@ -8,18 +8,16 @@
  * Namen selbst lässt es stehen — er ist das Wort des Planers.
  */
 
+import { gruppiertNach } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { LOCALES } from '../i18n/langs'
 import { fill } from '../i18n/useT'
+import { datumsFormat } from './datum-anzeige'
 import type { Dict } from '../i18n/ui'
 import type { Lang, VortragAuswaerts } from '../data/types'
 
 /** Tag und Uhrzeit: „So., 8. November · 10:00". */
 export function vaWannText(v: Pick<VortragAuswaerts, 'datum' | 'zeit'>, lang: Lang): string {
-  const tag = new Intl.DateTimeFormat(LOCALES[lang], { weekday: 'short', day: 'numeric', month: 'long' }).format(
-    fromIso(v.datum),
-  )
-  return `${tag} · ${v.zeit}`
+  return `${datumsFormat(lang, 'kurzerWochentag').format(fromIso(v.datum))} · ${v.zeit}`
 }
 
 /** Die Versammlung, mit übersetztem Vorsatz: „Vers. Südstadt" — leer, wenn keine genannt ist. */
@@ -41,12 +39,5 @@ export function vaWoText(
 export function vaNachMonat<T extends Pick<VortragAuswaerts, 'datum'>>(
   vortraege: readonly T[],
 ): { monat: string; vortraege: T[] }[] {
-  const monate: { monat: string; vortraege: T[] }[] = []
-  for (const v of vortraege) {
-    const monat = v.datum.slice(0, 7)
-    const letzter = monate.at(-1)
-    if (letzter?.monat === monat) letzter.vortraege.push(v)
-    else monate.push({ monat, vortraege: [v] })
-  }
-  return monate
+  return gruppiertNach(vortraege, (v) => v.datum.slice(0, 7)).map(([monat, liste]) => ({ monat, vortraege: liste }))
 }

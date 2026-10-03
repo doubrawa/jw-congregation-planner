@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
 import { vaNachMonat, vaWannText, vaWoText } from '../components/auswaerts-anzeige'
-import { monatText } from '../components/gruppenbesuch-anzeige'
+import { monatsName } from './druck'
 import { vaTaskKey, vaVorbei } from '../data/auswaerts'
 import { displayName } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
@@ -40,7 +40,7 @@ export function AuswaertsAnsicht() {
       </div>
       {vaNachMonat(kommend).map(({ monat, vortraege }) => (
         <div key={monat} className="panel" data-farbe="petrol">
-          <h2 className="panel-label">{monatText(monat, state.lang)}</h2>
+          <h2 className="panel-label">{monatsName(monat, state.lang)}</h2>
           {vortraege.map((v) => (
             <AnsichtZeile key={v.id} vortrag={v} />
           ))}

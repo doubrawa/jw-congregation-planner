@@ -20,7 +20,7 @@
  * Alle Funktionen sind pur.
  */
 
-import { fromIso, isoDay, istVorbei, kalendertagMs, montagNach, montagVon } from './meeting-dates'
+import { isoDay, montagNach, montagVon, tagNach, tagVorbei } from './meeting-dates'
 import type { Group, Mahlzeit, Person, PlanEintrag, PlanVorlage, WeitererPlan } from './types'
 
 /** Die Vorlagen in der Reihenfolge, in der sie zur Wahl stehen. */
@@ -33,11 +33,6 @@ export const MAHLZEITEN: readonly Mahlzeit[] = ['fruehstueck', 'mittag', 'abend'
 export const SAAL_WOCHEN = 13
 /** Familien reihum zunächst eine Woche — so lange dauert ein Besuch des Kreisaufsehers. */
 export const FAMILIEN_TAGE = 7
-
-/** Ein Tag `tage` Tage nach `datum` (ISO, in UTC gerechnet — ohne Sommerzeitsprung). */
-export function tagNach(datum: string, tage: number): string {
-  return new Date(Date.parse(datum) + tage * 864e5).toISOString().slice(0, 10)
-}
 
 /**
  * Ein neuer Plan, als Entwurf: Der Königreichssaal ab dem Montag dieser Woche
@@ -55,7 +50,7 @@ export function neuerPlan(id: string, vorlage: PlanVorlage, heute: Date): Weiter
 
 /** Ist der Plan vorbei (sein letzter Tag ist um)? */
 export function planVorbei(plan: Pick<WeitererPlan, 'bis'>, heute = new Date()): boolean {
-  return istVorbei(kalendertagMs(fromIso(plan.bis)), heute)
+  return tagVorbei(plan.bis, heute)
 }
 
 /** Wo ein Plan beim Planen steht: aktuell (läuft oder kommt), Entwurf oder abgeschlossen. */

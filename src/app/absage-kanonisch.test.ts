@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { aufgabenAbgeleitet, reducer } from './reducer'
 import type { AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { FS_LEITER, OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { FS_LEITER, OZ_DIENST, VA_ROLLE } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { loadOverlay } from '../i18n/ui'
 
 /**
@@ -50,5 +50,14 @@ describe('Verhinderung aus einer englischen App', () => {
     const text = reducer(s, { type: 'declineTask', id: 'oz|2026-09-07|e1' }).notifs[0]!.text
     expect(text).toContain(`${OZ_DIENST} · Mittwoch, 9. September`)
     expect(text).not.toContain('Public witnessing')
+  })
+
+  it('Vortrag auswärts — mit seinem Termin, denn ein Redner hält viele', () => {
+    const s = englisch('p6', {
+      auswaerts: [{ id: 'v1', datum: '2026-09-13', zeit: '10:00', versammlung: 'Beispielheim', nummer: 12, pid: 'p6' }],
+    })
+    const text = reducer(s, { type: 'declineTask', id: 'va|2026-09-07|v1' }).notifs[0]!.text
+    expect(text).toContain(`${VA_ROLLE} · Sonntag, 13. September · 10:00 · Vers. Beispielheim`)
+    expect(text).not.toMatch(/Speaker|Sunday|September 13/)
   })
 })

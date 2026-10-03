@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications } from './helpers'
+import { montagVon } from './meeting-dates'
 import {
   deriveMyOzTasks,
   ozAb,
@@ -9,7 +10,6 @@ import {
   ozFreieSchichten,
   ozKannEintragen,
   ozKonflikte,
-  ozMontag,
   ozNachDatum,
   ozOffeneMeldungen,
   ozSchicht,
@@ -17,10 +17,12 @@ import {
   ozStand,
   ozTaskKey,
   ozVorbei,
+  ozWegBeiTagwechsel,
   ozZuletztGesendet,
   ozZusage,
 } from './zeugnis'
 import type { Absence, OzEintrag, OzTermin, Person } from './types'
+import { OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
 
 /**
  * **Öffentliches Zeugnisgeben** (T120, Phase 3) — gemessen am Königreichsdienst:
@@ -65,8 +67,8 @@ describe('Aus Terminen werden Schichten', () => {
 
   it('Tag und Montag einer Woche rechnen sich gegenseitig aus — auch am Sonntag', () => {
     expect(ozDatum('2026-09-07', 0)).toBe('2026-09-13') // Sonntag am Ende der Woche
-    expect(ozMontag('2026-09-13')).toBe('2026-09-07')
-    expect(ozMontag('2026-09-07')).toBe('2026-09-07')
+    expect(montagVon('2026-09-13')).toBe('2026-09-07')
+    expect(montagVon('2026-09-07')).toBe('2026-09-07')
   })
 
   it('mehr Einträge als Plätze ergeben keine negativen freien Plätze', () => {
@@ -166,16 +168,38 @@ describe('Eine einzelne Schicht', () => {
   })
 })
 
+describe('Ein anderer Wochentag: welche Einträge gehen', () => {
+  // Mittwoch, 9.9.2026, abends — die Schicht von heute ist schon gewesen.
+  const mittwochAbend = new Date(2026, 8, 9, 20, 0)
+
+  it('die kommenden gehen; was heute ist oder war, bleibt — andere Termine ohnehin', () => {
+    const liste = [
+      eintrag('t1', '2026-09-02', 'p-gestern'),
+      eintrag('t1', '2026-09-09', 'p-heute'),
+      eintrag('t1', '2026-09-16', 'p-kommend'),
+      eintrag('t2', '2026-09-16', 'p-anderer'),
+    ]
+    expect(ozWegBeiTagwechsel(liste, 't1', mittwochAbend).map((e) => e.pid)).toEqual(['p-kommend'])
+  })
+
+  it('der Tag zählt, nicht die Uhrzeit: morgens um sieben geht der Eintrag von heute nicht', () => {
+    const heuteFrueh = new Date(2026, 8, 9, 7, 0)
+    expect(ozWegBeiTagwechsel([eintrag('t1', '2026-09-09', 'p-heute')], 't1', heuteFrueh)).toEqual([])
+    // Am Vorabend gehört er noch zu den kommenden.
+    expect(ozWegBeiTagwechsel([eintrag('t1', '2026-09-09', 'p-heute')], 't1', new Date(2026, 8, 8, 23, 0))).toHaveLength(1)
+  })
+})
+
 describe('Die eigenen Einträge als Aufgaben', () => {
   it('selbst eingetragen heißt zugesagt — zugeteilt wartet auf Bestätigung', () => {
     const selbst = eintrag('t1', '2026-09-09', 'p-a', true)
     const zugeteilt = eintrag('t2', '2026-09-12', 'p-a')
     const fremd = eintrag('t1', '2026-09-09', 'p-b')
-    const tasks = deriveMyOzTasks([MITTWOCH, SAMSTAG], [selbst, zugeteilt, fremd], 'p-a', {}, 'Rolle')
+    const tasks = deriveMyOzTasks([MITTWOCH, SAMSTAG], [selbst, zugeteilt, fremd], 'p-a', {})
     expect(tasks).toEqual([
       expect.objectContaining({
         id: `oz|2026-09-07|${selbst.id}`,
-        rolle: 'Rolle',
+        rolle: OZ_DIENST,
         date: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz',
         status: 'bestätigt',
       }),
@@ -190,8 +214,8 @@ describe('Die eigenen Einträge als Aufgaben', () => {
 
   it('ohne eigene Person oder ohne Termin keine Aufgabe', () => {
     const e = eintrag('t1', '2026-09-09', 'p-a')
-    expect(deriveMyOzTasks([MITTWOCH], [e], undefined, {}, 'Rolle')).toEqual([])
-    expect(deriveMyOzTasks([], [e], 'p-a', {}, 'Rolle')).toEqual([])
+    expect(deriveMyOzTasks([MITTWOCH], [e], undefined, {})).toEqual([])
+    expect(deriveMyOzTasks([], [e], 'p-a', {})).toEqual([])
   })
 })
 

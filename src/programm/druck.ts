@@ -1,5 +1,5 @@
+import { datumsFormat } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
-import { LOCALES } from '../i18n/langs'
 import type { Lang, Week } from '../data/types'
 
 /**
@@ -39,11 +39,14 @@ export function wochenDesMonats(weeks: readonly Pick<Week, 'start'>[], monat: st
   return out
 }
 
-/** „September 2026" in der Sprache des Lesers. */
+/**
+ * „September 2026" in der Sprache des Lesers — auch die Überschriften der
+ * Pläne (Gruppenbesuche, Redner auswärts) nehmen diese eine Fassung.
+ */
 export function monatsName(monat: string, lang: Lang): string {
   const tag = fromIso(`${monat}-01`)
   try {
-    return new Intl.DateTimeFormat(LOCALES[lang] ?? lang, { month: 'long', year: 'numeric' }).format(tag)
+    return datumsFormat(lang, 'monatJahr').format(tag)
   } catch {
     return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(tag)
   }
