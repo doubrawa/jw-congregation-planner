@@ -5879,11 +5879,16 @@ Jahr" geht über Entfernen einzelner Besuche); kein Ausdruck des Besuchsplans;
   deutscher Planer las „Field service meeting conductor"); jetzt kanonisch
   `FS_LEITER`, Test `absage-kanonisch.test.ts`.
 
-Bewusst offen (Phase 3): Die Planungs-Karte auf Start nennt das
-Zeugnisgeben noch nicht (freie Plätze, Konflikte), die Zeitleiste im
-Personen-Detail seine Einträge auch nicht; kein Ausdruck des Schichtplans; eine
-Änderung von Uhrzeit oder Ort eines Termins benachrichtigt die Eingetragenen
-nicht. Die Mitgliedsrechte-Probe (`scripts/mitgliedsrechte-probe.mjs`) kennt
+- **Planungs-Karte auf Start** (Nachtrag, auf Wunsch des Betreibers): eine
+  Zeile „Öffentliches Zeugnisgeben", sobald dort etwas zu tun ist — Konflikte
+  im Vierteljahr, freie Plätze der vier offenen Wochen, „Plan senden"
+  (`ozStand`; dieselbe Rechnung `ozFreieSchichten` wie das Banner beim Planen).
+  Mutationsprobe um zwei Regeln ergänzt; zwei Anker der Karte nachgezogen
+  (`sendenMoeglich` steht jetzt einmal für beide Zählungen).
+
+Bewusst offen (Phase 3): Die Zeitleiste im Personen-Detail nennt die Einträge
+nicht; kein Ausdruck des Schichtplans; eine Änderung von Uhrzeit oder Ort eines
+Termins benachrichtigt die Eingetragenen nicht. Die Mitgliedsrechte-Probe (`scripts/mitgliedsrechte-probe.mjs`) kennt
 die neuen Richtlinien noch nicht — nach dem Einspielen lohnt ein Lauf mit
 Fällen für `oz_eintraege` (fremd eintragen, ohne Aufgabenbereich, fremden
 Eintrag bestätigen).

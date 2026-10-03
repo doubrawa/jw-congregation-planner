@@ -2,12 +2,23 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
-import { OZ_ERSTE_WOCHEN, ozKurzTag, ozNachWoche, ozTagText, ozZeit } from '../components/zeugnis-anzeige'
+import { ozKurzTag, ozNachWoche, ozTagText, ozZeit } from '../components/zeugnis-anzeige'
 import { istAbwesendAm } from '../data/absence'
 import { FS_TIME_OPTIONS } from '../data/fs'
 import { displayName, isQualified } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { OZ_BEREICH, ozAb, ozKonflikte, ozSchichten, ozVorbei, ozZusage, type OzSchicht } from '../data/zeugnis'
+import {
+  OZ_BEREICH,
+  OZ_ERSTE_WOCHEN,
+  OZ_WOCHEN,
+  ozAb,
+  ozFreieSchichten,
+  ozKonflikte,
+  ozSchichten,
+  ozVorbei,
+  ozZusage,
+  type OzSchicht,
+} from '../data/zeugnis'
 import { fill, useT } from '../i18n/useT'
 import type { OzEintrag, OzTermin, Person } from '../data/types'
 import { AutoAssignRow } from './AutoAssignPanel'
@@ -36,9 +47,10 @@ export function ZeugnisPlan() {
   const tag = useKalendertag()
   const [alle, setAlle] = useState(false)
 
+  const ab = ozAb(fromIso(tag))
   const schichten = useMemo(
-    () => ozSchichten(state.ozTermine, state.ozEintraege, ozAb(fromIso(tag))),
-    [state.ozTermine, state.ozEintraege, tag],
+    () => ozSchichten(state.ozTermine, state.ozEintraege, ab),
+    [state.ozTermine, state.ozEintraege, ab],
   )
   // Vorgeschlagen wird, wer den Aufgabenbereich hat — dieselbe Menge wie beim
   // automatischen Besetzen und beim Selbsteintragen.
@@ -58,8 +70,9 @@ export function ZeugnisPlan() {
   const sichtbar = alle ? wochen : wochen.slice(0, OZ_ERSTE_WOCHEN)
   // Freie Plätze nur aus den Wochen, die dastehen: Über das ganze Vierteljahr
   // wären es zwei Dutzend Zeilen, die die Schichten darunter verdrängen — und
-  // eine Zahl, die nicht zu dem passt, was man sieht.
-  const frei = sichtbar.flatMap((w) => w.schichten).filter((s) => s.frei > 0 && !ozVorbei(s, heute))
+  // eine Zahl, die nicht zu dem passt, was man sieht. Dieselbe Rechnung zählt
+  // die Planungs-Karte auf Start (`ozStand`).
+  const frei = ozFreieSchichten(schichten, ab, alle ? OZ_WOCHEN : OZ_ERSTE_WOCHEN, heute)
   const ort = (s: OzSchicht): string => tu(s.termin.ort) || t.privZeugnis
 
   return (

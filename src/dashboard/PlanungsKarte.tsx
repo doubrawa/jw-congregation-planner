@@ -5,6 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
+import { ozStand } from '../data/zeugnis'
 import { useWochenImport } from '../einstellungen/useWochenImport'
 import { LOCALES } from '../i18n/langs'
 import { fill, useProgWeeks, useT } from '../i18n/useT'
@@ -40,6 +41,9 @@ export function PlanungsKarte() {
   // Der Tag gehört zu den Abhängigkeiten: „vorbei" rechnet mit ihm, und ohne ihn
   // zählte die gemerkte Karte am Mittwoch noch den Dienstag.
   const tag = useKalendertag()
+  // Offline (Momentaufnahme) geht nichts hinaus — dann nennt die Karte auch
+  // kein „Plan senden", weder je Woche noch beim Zeugnisgeben.
+  const sendenMoeglich = state.staleAt === null
 
   /*
    * Gemerkt, weil teuer und der Anlass häufig: Der Start hängt am ganzen
@@ -61,7 +65,7 @@ export function PlanungsKarte() {
           sentLog: state.sentLog,
           zeiten: state.congregation.times,
           geladenBisMs,
-          sendenMoeglich: state.staleAt === null,
+          sendenMoeglich,
         },
         fromIso(tag),
       ),
@@ -76,7 +80,7 @@ export function PlanungsKarte() {
       state.sentLog,
       state.congregation.times,
       geladenBisMs,
-      state.staleAt,
+      sendenMoeglich,
       tag,
     ],
   )
@@ -132,7 +136,35 @@ export function PlanungsKarte() {
     dispatch({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   }
 
-  if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0) {
+  /*
+   * **Öffentliches Zeugnisgeben** (T120): dieselben drei Zahlen wie die Banner
+   * dort — Konflikte über das ganze Vierteljahr, freie Plätze in den Wochen,
+   * die beim Planen offen dastehen, und was „Plan senden" noch zu tun hat
+   * (`ozStand`). Auch das liegt außerhalb des Vier-Wochen-Fensters der
+   * Wochenzeilen: Die Schichten sind nicht an importierte Wochen gebunden.
+   */
+  const zeugnis = useMemo(
+    () =>
+      ozStand({
+        termine: state.ozTermine,
+        eintraege: state.ozEintraege,
+        persons: state.persons,
+        absences: state.absences,
+        confirmations: state.confirmations,
+        sentLog: state.sentLog,
+        sendenMoeglich,
+        heute: fromIso(tag),
+      }),
+    [tag, sendenMoeglich, state.ozTermine, state.ozEintraege, state.persons, state.absences, state.confirmations, state.sentLog],
+  )
+  const zeugnisZuTun = zeugnis.konflikte + zeugnis.frei + zeugnis.nichtGesendet > 0
+
+  const zumZeugnis = (): void => {
+    dispatch({ type: 'setFsBereich', bereich: 'zeugnis' })
+    dispatch({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+  }
+
+  if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0 && !zeugnisZuTun) {
     return (
       <button
         type="button"
@@ -191,6 +223,24 @@ export function PlanungsKarte() {
           </span>
           <span className="dash-plan-chips">
             <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
+          </span>
+        </button>
+      )}
+      {zeugnisZuTun && (
+        <button type="button" className="dash-plan-woche" onClick={zumZeugnis}>
+          <span className="dash-plan-kopf">
+            <span className="dash-plan-range">{t.privZeugnis}</span>
+            <span className="dash-plan-arrow" aria-hidden="true">
+              ›
+            </span>
+          </span>
+          {/* In der Reihenfolge der Banner dort: Konflikte, freie Plätze, Versand. */}
+          <span className="dash-plan-chips">
+            {zeugnis.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={zeugnis.konflikte} />}
+            {zeugnis.frei > 0 && <Chip art="offen" titel={t.ozFreiePlaetze} n={zeugnis.frei} />}
+            {zeugnis.nichtGesendet > 0 && (
+              <Chip art="senden" titel={t.planSendenTitle} n={zeugnis.nichtGesendet} />
+            )}
           </span>
         </button>
       )}

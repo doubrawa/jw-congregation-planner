@@ -61,6 +61,11 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
 - **Gruppenbesuche des Dienstaufsehers** mit möglichen Konflikten stehen als
   eigene Zeile darunter, auch wenn der Besuch Monate voraus liegt; ein Tipp
   führt zu den Gruppenbesuchen (Abschnitt 5).
+- **Öffentliches Zeugnisgeben** steht ebenso als eigene Zeile da, sobald dort
+  etwas zu tun ist – mit denselben Hinweisen wie beim Planen: **Mögliche
+  Konflikte** (jemand ist an seinem Tag abwesend, im ganzen Vierteljahr),
+  **Freie Plätze** (in den vier Wochen, die dort offen dastehen) und **Plan
+  senden**. Ein Tipp führt zum öffentlichen Zeugnisgeben (Abschnitt 5).
 - Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
   darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
   angesehen.
@@ -520,7 +525,8 @@ Treffpunkte aus dem Grundplan. Gezeigt werden die nächsten vier Wochen,
   zurückgezogen ist. Ändert sich der **Wochentag** eines Termins, gehen seine
   kommenden Einträge mit.
 - **Mögliche Konflikte** nennen, wer an seinem Tag abwesend ist; **Freie
-  Plätze** zählt, was noch offen ist.
+  Plätze** zählt, was in den gezeigten Wochen noch offen ist. Beides und „Plan
+  senden" stehen auch auf der **Planungs‑Karte der Startseite**.
 
 **Alle sehen die Schichten**: Beim **Ansehen** gibt es den Reiter, sobald es
 Termine gibt. Wer den Aufgabenbereich hat, trägt sich dort mit **+ Eintragen**

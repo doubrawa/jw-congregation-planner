@@ -624,6 +624,50 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   })
 
+  describe('das öffentliche Zeugnisgeben steht dabei (T120)', () => {
+    const MITTWOCH = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
+
+    it('mit Konflikten, freien Plätzen und dem Versand — wie die Banner dort', () => {
+      // Bruno ist am ersten Mittwoch zugeteilt, weiß noch nichts und ist an dem
+      // Tag abwesend. Die Zusammenkünfte sind fertig — die Karte schrumpft
+      // trotzdem nicht auf „Alles zugeteilt".
+      const weeks = WOCHEN.map(besetzt)
+      const { container, dispatch } = planer({
+        weeks,
+        confirmations: allesBestaetigt(weeks),
+        ozTermine: [MITTWOCH],
+        ozEintraege: [{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p-b', selbst: false }],
+        absences: [{ id: 'u', personId: 'p-b', userId: null, from: '2026-09-09', to: '2026-09-09', reason: '' }],
+      })
+      expect(container.querySelector('.dash-plan-text')).toBeNull()
+      const zeile = [...container.querySelectorAll('.dash-plan-woche')].find((z) => z.textContent?.includes(t.privZeugnis))!
+      expect(chip(zeile, 'konflikte')?.n).toBe('1')
+      // Vier Wochen offen, je zwei Plätze, einer besetzt.
+      expect(chip(zeile, 'offen')).toEqual({ titel: t.ozFreiePlaetze, n: '7' })
+      expect(chip(zeile, 'senden')?.n).toBe('1')
+      fireEvent.click(zeile)
+      expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'zeugnis' })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+    })
+
+    it('ist alles besetzt und selbst eingetragen, bleibt es bei „Alles zugeteilt"', () => {
+      const weeks = WOCHEN.map(besetzt)
+      const { container } = planer({
+        weeks,
+        confirmations: allesBestaetigt(weeks),
+        ozTermine: [{ ...MITTWOCH, plaetze: 1 }],
+        ozEintraege: ['2026-09-09', '2026-09-16', '2026-09-23', '2026-09-30'].map((datum, i) => ({
+          id: `e${i}`,
+          terminId: 't1',
+          datum,
+          pid: 'p-c',
+          selbst: true,
+        })),
+      })
+      expect(container.querySelector('.dash-plan-text')?.textContent).toBe(t.dashAllesZugeteilt)
+    })
+  })
+
   it('ist nichts zu tun, schrumpft sie auf eine Zeile „Alles zugeteilt"', () => {
     const weeks = WOCHEN.map(besetzt)
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })

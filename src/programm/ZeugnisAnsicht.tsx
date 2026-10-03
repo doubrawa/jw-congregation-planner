@@ -3,11 +3,12 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
 import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
-import { OZ_ERSTE_WOCHEN, ozNachWoche, ozTagText, ozZeit } from '../components/zeugnis-anzeige'
+import { ozNachWoche, ozTagText, ozZeit } from '../components/zeugnis-anzeige'
 import { displayName, isQualified } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
   OZ_BEREICH,
+  OZ_ERSTE_WOCHEN,
   ozAb,
   ozKannEintragen,
   ozSchichten,

@@ -12,13 +12,6 @@ import type { OzSchicht } from '../data/zeugnis'
 import { LOCALES } from '../i18n/langs'
 import type { Lang } from '../data/types'
 
-/**
- * So viele Wochen stehen offen da; die übrigen bis zum Ende des Vierteljahrs
- * (`OZ_WOCHEN`) auf Wunsch. Dreizehn Wochen mit je zwei Schichten wären eine
- * Wand, durch die niemand scrollt, um die nächste freie Stelle zu finden.
- */
-export const OZ_ERSTE_WOCHEN = 4
-
 /** Der Tag einer Schicht: „Mittwoch, 7. Oktober". */
 export function ozTagText(datum: string, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALES[lang], { weekday: 'long', day: 'numeric', month: 'long' }).format(fromIso(datum))

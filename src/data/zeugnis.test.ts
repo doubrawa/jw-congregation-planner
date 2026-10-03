@@ -6,6 +6,7 @@ import {
   ozAutoAssign,
   ozDatum,
   ozEntzogeneZusagen,
+  ozFreieSchichten,
   ozKannEintragen,
   ozKonflikte,
   ozMontag,
@@ -13,6 +14,7 @@ import {
   ozOffeneMeldungen,
   ozSchicht,
   ozSchichten,
+  ozStand,
   ozTaskKey,
   ozVorbei,
   ozZuletztGesendet,
@@ -220,6 +222,36 @@ describe('„Plan senden": was noch hinausmuss', () => {
       }),
     ).toBe('2026-09-06T10:00:00Z')
     expect(ozZuletztGesendet({})).toBeNull()
+  })
+})
+
+describe('Der Stand für die Planungs-Karte', () => {
+  it('freie Plätze nur in den ersten Wochen und ohne Vergangenes', () => {
+    const schichten = ozSchichten([MITTWOCH], [eintrag('t1', '2026-09-09', 'p-a')], AB, 13)
+    expect(ozFreieSchichten(schichten, AB, 2, HEUTE).map((s) => `${s.datum}:${s.frei}`)).toEqual([
+      '2026-09-09:1',
+      '2026-09-16:2',
+    ])
+    // Am Donnerstag ist der erste Mittwoch vorbei.
+    expect(ozFreieSchichten(schichten, AB, 2, new Date(2026, 8, 10, 9)).map((s) => s.datum)).toEqual(['2026-09-16'])
+  })
+
+  it('Konflikte im ganzen Vierteljahr, freie Plätze in vier Wochen, Versand nur, wenn er geht', () => {
+    const urlaub: Absence = { id: 'u', personId: 'p-a', userId: null, from: '2026-11-25', to: '2026-11-25', reason: '' }
+    const args = {
+      termine: [MITTWOCH],
+      eintraege: [eintrag('t1', '2026-09-09', 'p-b'), eintrag('t1', '2026-11-25', 'p-a', true)],
+      persons: [ANNA, BERT],
+      absences: [urlaub],
+      confirmations: {},
+      sentLog: {},
+      sendenMoeglich: true,
+      heute: HEUTE,
+    }
+    // Der 25. November liegt in Woche 12 — weit hinter den vier Wochen, aber im Vierteljahr.
+    expect(ozStand(args)).toEqual({ konflikte: 1, frei: 7, nichtGesendet: 1 })
+    expect(ozStand({ ...args, sendenMoeglich: false }).nichtGesendet).toBe(0)
+    expect(ozStand({ ...args, termine: [] })).toEqual({ konflikte: 0, frei: 0, nichtGesendet: 0 })
   })
 })
 

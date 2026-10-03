@@ -1597,8 +1597,8 @@ export const KATALOG = [
       hineingeben muss. Genau diese Hälfte ist die, die vergessen wird.
     */
     regel: 'Offline zeigt die Karte kein „Plan senden" — Planen blendet den Knopf dann auch aus.',
-    suchen: 'sendenMoeglich: state.staleAt === null,',
-    ersetzen: 'sendenMoeglich: true,',
+    suchen: '  const sendenMoeglich = state.staleAt === null\n',
+    ersetzen: '  const sendenMoeglich = true\n',
   },
   {
     id: 'planung-vorrat-ohne-wochen',
@@ -1618,8 +1618,8 @@ export const KATALOG = [
     id: 'planung-karte-folgt-dem-tag',
     datei: 'src/dashboard/PlanungsKarte.tsx',
     regel: 'Die gemerkte Karte rechnet neu, sobald der Kalendertag wechselt — nicht erst, wenn sich die Wochen ändern.',
-    suchen: '      state.staleAt,\n      tag,\n    ],',
-    ersetzen: '      state.staleAt,\n    ],',
+    suchen: '      sendenMoeglich,\n      tag,\n    ],',
+    ersetzen: '      sendenMoeglich,\n    ],',
   },
   {
     id: 'kalendertag-beim-zurueckkehren',
@@ -1947,6 +1947,20 @@ export const KATALOG = [
     regel: 'Wer sich selbst austrägt, sagt ab — das meldet niemandem eine Wegnahme.',
     suchen: '    if (bleibt.has(e.id) || e.pid === ausser) continue',
     ersetzen: '    if (bleibt.has(e.id)) continue',
+  },
+  {
+    id: 'oz-karte-zaehlt-mit',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    regel: 'Hat das öffentliche Zeugnisgeben noch etwas offen, sagt die Planungs-Karte nicht „Alles zugeteilt".',
+    suchen: ' && besuchsKonflikte === 0 && !zeugnisZuTun) {',
+    ersetzen: ' && besuchsKonflikte === 0) {',
+  },
+  {
+    id: 'oz-freie-plaetze-im-fenster',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Freie Plätze zählen Planen und Karte für die Wochen, die offen dastehen — nicht für das ganze Vierteljahr.',
+    suchen: '  return schichten.filter((s) => s.montag < bis && s.frei > 0 && !ozVorbei(s, heute))',
+    ersetzen: '  return schichten.filter((s) => s.frei > 0 && !ozVorbei(s, heute))',
   },
   {
     id: 'oz-reihum-ueber-den-rueckblick',

@@ -35,6 +35,15 @@ export const OZ_BEREICH = 'zeugnis'
 /** Wie viele Wochen Planen und Ansehen voraus zeigen: ein Vierteljahr. */
 export const OZ_WOCHEN = 13
 
+/**
+ * So viele Wochen stehen offen da; die übrigen bis zum Ende des Vierteljahrs
+ * (`OZ_WOCHEN`) auf Wunsch. Dreizehn Wochen mit je zwei Schichten wären eine
+ * Wand, durch die niemand scrollt, um die nächste freie Stelle zu finden. Die
+ * freien Plätze zählen Planen und die Planungs-Karte auf Start für dieselben
+ * Wochen.
+ */
+export const OZ_ERSTE_WOCHEN = 4
+
 /** Eine Schicht: ein Termin an einem Tag, mit ihren Einträgen. */
 export interface OzSchicht {
   termin: OzTermin
@@ -127,6 +136,21 @@ export function ozKannEintragen(person: Person | undefined, schicht: OzSchicht, 
   if (!person || !isQualified(person, OZ_BEREICH)) return false
   if (schicht.frei <= 0 || ozVorbei(schicht, heute)) return false
   return !schicht.eintraege.some((e) => e.pid === person.id)
+}
+
+/**
+ * Schichten mit freien Plätzen in den ersten `wochen` Wochen ab dem Montag
+ * `ab` — ohne Vergangenes. Eine Rechnung für das Banner beim Planen und die
+ * Planungs-Karte, damit beide dieselbe Zahl nennen.
+ */
+export function ozFreieSchichten(
+  schichten: readonly OzSchicht[],
+  ab: string,
+  wochen: number,
+  heute = new Date(),
+): OzSchicht[] {
+  const bis = montagNach(ab, wochen)
+  return schichten.filter((s) => s.montag < bis && s.frei > 0 && !ozVorbei(s, heute))
 }
 
 /** Ein Konflikt einer Schicht: eine eingetragene Person ist an dem Tag abwesend. */
@@ -264,6 +288,46 @@ export function ozOffeneMeldungen(
   return offeneZeugnisEintraege(zeilen, termine, namen, new Map(Object.entries(confirmations)), kalendertagMs(heute))
     .filter((p) => !sentLog[sentKey(p.key, p.name)])
     .map((p) => ({ key: p.key, name: p.name }))
+}
+
+/** Was die Planungs-Karte auf Start zum öffentlichen Zeugnisgeben nennt. */
+export interface OzStand {
+  /** Eingetragene, die an ihrem Tag abwesend sind — im ganzen Vierteljahr. */
+  konflikte: number
+  /** Freie Plätze in den Wochen, die beim Planen offen dastehen. */
+  frei: number
+  /** Zugeteilte, die noch nichts wissen („Plan senden"). */
+  nichtGesendet: number
+}
+
+/**
+ * **Der Stand für die Planungs-Karte** (T120) — dieselben drei Zahlen wie die
+ * Banner beim Planen: Konflikte über das ganze Vierteljahr (eine Abwesenheit in
+ * acht Wochen lässt sich jetzt noch leicht lösen), freie Plätze in den Wochen,
+ * die dort offen dastehen, und was „Plan senden" noch zu tun hat — Letzteres
+ * nur, wenn gesendet werden kann (nicht offline).
+ */
+export function ozStand(args: {
+  termine: readonly OzTermin[]
+  eintraege: readonly OzEintrag[]
+  persons: readonly Person[]
+  absences: readonly Absence[]
+  confirmations: ConfirmationMap
+  sentLog: SentLog
+  sendenMoeglich: boolean
+  heute?: Date
+}): OzStand {
+  const { termine, eintraege, persons, absences, confirmations, sentLog, sendenMoeglich, heute = new Date() } = args
+  if (termine.length === 0) return { konflikte: 0, frei: 0, nichtGesendet: 0 }
+  const ab = ozAb(heute)
+  const schichten = ozSchichten(termine, eintraege, ab)
+  return {
+    konflikte: ozKonflikte(schichten, persons, absences, heute).length,
+    frei: ozFreieSchichten(schichten, ab, OZ_ERSTE_WOCHEN, heute).reduce((n, s) => n + s.frei, 0),
+    nichtGesendet: sendenMoeglich
+      ? ozOffeneMeldungen(termine, eintraege, persons, confirmations, sentLog, heute).length
+      : 0,
+  }
 }
 
 /** Wann ging zuletzt etwas über das öffentliche Zeugnisgeben hinaus? */
