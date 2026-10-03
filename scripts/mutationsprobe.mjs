@@ -37,6 +37,12 @@
  * (`testlaufBefund`). Bis zum 26.9.2026 zählte jeder Rückgabewert ≠ 0 als
  * „bewacht" — in einem Worktree bekam so jede Regel eines.
  *
+ * **Und nur ein Rot, das ohne die Mutation nicht da ist.** Gemeldet wird die
+ * Datei, die zuerst rot wird; ist eine schon ohne Mutation rot, ist sie es bei
+ * jeder. Deshalb läuft jeder gemeldete Wächter einmal je Durchgang ohne
+ * Mutation (`waechterBefund`); ist er dann rot, bricht die Probe mit 2 ab.
+ * Bis zum 3.10.2026 hieß ein roter Ausgangsstand „alle Regeln bewacht".
+ *
  *     node scripts/mutationsprobe.mjs            # alle
  *     node scripts/mutationsprobe.mjs zuteilung  # nur passende Kennungen
  *     node scripts/mutationsprobe.mjs --liste     # nur auflisten, nichts laufen lassen
@@ -2128,8 +2134,13 @@ function vitestPfad() {
 }
 
 /**
- * Einen vollen Testlauf machen. Rückgabe: was `spawnSync` liefert — gewertet
- * wird es in `testlaufBefund`.
+ * Einen vollen Testlauf machen — oder mit `datei` nur diese eine Testdatei:
+ * den Ausgangsstand eines Wächters (siehe `waechterBefund`). Rückgabe: was
+ * `spawnSync` liefert — gewertet wird es in `testlaufBefund`.
+ *
+ * vitest wählt `datei` per Teilzeichenkette aus. Kein Testpfad ist heute Teil
+ * eines anderen (gemessen am 3.10.2026, 212 Dateien); träfe der Filter einmal
+ * mehr als eine, würde die Prüfung nur strenger, nicht nachgiebiger.
  *
  * **Kein `process.exit()` hier drin:** Während des Laufs steht die Mutation im
  * Quelltext. Abbrechen darf erst `main()`, wenn sie zurückgenommen ist — bis
@@ -2144,8 +2155,9 @@ function vitestPfad() {
  * 50s)", mit einer Minute Frist `src/login/kontakt.test.ts`. Kosten hat die
  * Frist nur, wo ein Test wirklich hängt.
  */
-function testlauf(vitest) {
-  return spawnSync(process.execPath, [vitest, 'run', '--reporter=dot', '--bail=1', '--testTimeout=60000'], {
+function testlauf(vitest, datei = null) {
+  const auswahl = datei ? [datei] : []
+  return spawnSync(process.execPath, [vitest, 'run', ...auswahl, '--reporter=dot', '--bail=1', '--testTimeout=60000'], {
     cwd: wurzel,
     encoding: 'utf8',
     /*
@@ -2207,7 +2219,9 @@ const TESTERGEBNIS = /^\s*(?:Test Files|Tests)\s+.*\(\d+\)\s*$/m
  * `lauf` ist, was `spawnSync` zurückgibt. Rein, damit `mutationsprobe.test.ts`
  * jeden dieser Fälle nachstellen kann, ohne vitest zu starten. Ergebnis:
  * `{ rot, waechter }` — oder `{ fehler }` mit dem Grund, warum der Lauf nichts
- * aussagt.
+ * aussagt. `waechter` ist die erste rote Testdatei; `null` bei Grün und dort,
+ * wo vitest keine nennt (ein unbehandelter Fehler macht den Lauf rot, ohne dass
+ * ein Test scheitert).
  */
 export function testlaufBefund(lauf) {
   if (lauf.error) return { fehler: `Der Testlauf scheiterte: ${lauf.error.message}` }
@@ -2228,6 +2242,40 @@ export function testlaufBefund(lauf) {
 }
 
 /**
+ * **Belegt das Rot die Regel?** Nur, wenn sein Wächter ohne Mutation grün ist.
+ *
+ * Gemeldet wird die Datei, deren Test zuerst rot wird — nicht die, die es
+ * wegen der Mutation wird. Ist eine Datei schon ohne Mutation rot, wird sie es
+ * bei jeder, und vitest startet sie ab dem zweiten Lauf sogar zuerst: Zuletzt
+ * Rotes kommt nach vorn (`BaseSequencer.sort`), `--bail=1` bricht dort ab.
+ * Gemessen am 3.10.2026: drei Tests ohne Mutation rot, und die Probe meldete
+ * „10/10 Regeln bewacht" — acht durch `src/app/reducer.test.ts`, für Regeln in
+ * `PlanungsKarte.tsx`, `persist.ts` und `useAbwesend.ts`. Nach dem Grünmachen
+ * nannte jede Regel ihren eigenen Wächter.
+ *
+ * `mutiert` ist der Befund des Laufs mit Mutation, `ausgang` der desselben
+ * Wächters allein **ohne** Mutation, beide aus `testlaufBefund`. `ausgang`
+ * zählt nur, wenn `mutiert` rot ist; nennt `mutiert` keinen Wächter, ist es
+ * der Lauf über alle Testdateien. Ergebnis: `mutiert`, wenn sein Befund gilt —
+ * sonst `{ fehler }`.
+ */
+export function waechterBefund(mutiert, ausgang) {
+  if (!mutiert.rot) return mutiert
+  const wer = mutiert.waechter ?? 'der Lauf über alle Testdateien'
+  if (ausgang.fehler) {
+    return { fehler: `Ob ${wer} auch ohne Mutation rot ist, ließ sich nicht prüfen:\n${ausgang.fehler}` }
+  }
+  if (ausgang.rot) {
+    return {
+      fehler:
+        `Ausgangsstand rot — erst grün machen: ${wer} ist auch ohne Mutation rot,\n` +
+        'sein Rot belegt die Regel nicht. Alle roten Dateien zeigt `npx vitest run --testTimeout=60000`.',
+    }
+  }
+  return mutiert
+}
+
+/**
  * **Ein Lauf, der nichts gemessen hat, beendet die Probe** — mit 2 wie jeder
  * andere Fall, in dem sie nicht messen kann. Weiterzumachen hieße, die
  * nächsten Regeln genauso zu „messen".
@@ -2242,7 +2290,7 @@ function nichtGemessen(zweifel, sekunden) {
 /** Aus der Ausgabe (ohne Farbcodes) die erste rote Testdatei ziehen — als Beleg, WER bewacht. */
 function ersterWaechter(ausgabe) {
   const treffer = /(?:FAIL|❯|×)\s+([\w./-]+\.test\.tsx?)/.exec(ausgabe)
-  return treffer?.[1] ?? 'unbekannt'
+  return treffer?.[1] ?? null
 }
 
 let laufendeDatei = null
@@ -2327,6 +2375,21 @@ function main() {
 
   console.log(`Mutationsprobe: ${auswahl.length} Regeln, je ein voller Testlauf.\n`)
 
+  /*
+   * Der Ausgangsstand je Wächter (siehe `waechterBefund`), einmal je Durchgang.
+   *
+   * Je Wächter statt einmal die ganze Suite vorab: Ein Wächter allein kostet
+   * 1–3 s, die Suite 41 s (gemessen am 3.10.2026, 212 Dateien, ohne
+   * Fremdlast) — vorab fiele das bei jedem Aufruf an, auch für eine einzige
+   * Regel. Und geprüft wird genau, was die Probe behauptet: dass DIESE Datei
+   * der Mutation wegen rot wird.
+   */
+  const ausgaenge = new Map()
+  const ausgangVon = (waechter) => {
+    if (!ausgaenge.has(waechter)) ausgaenge.set(waechter, testlaufBefund(testlauf(vitest, waechter)))
+    return ausgaenge.get(waechter)
+  }
+
   const ergebnisse = []
   for (const [i, m] of auswahl.entries()) {
     const pfad = join(wurzel, m.datei)
@@ -2340,16 +2403,19 @@ function main() {
     const lauf = testlauf(vitest)
     zuruecksetzen()
 
-    const sekunden = Math.round((Date.now() - start) / 1000)
+    // Den Wächter erst jetzt fragen: ohne Mutation — darum geht es.
     const befund = testlaufBefund(lauf)
-    if (befund.fehler) nichtGemessen(befund.fehler, sekunden)
-    const { rot, waechter } = befund
+    const urteil = waechterBefund(befund, befund.rot ? ausgangVon(befund.waechter) : undefined)
+    const sekunden = Math.round((Date.now() - start) / 1000)
+    if (urteil.fehler) nichtGemessen(urteil.fehler, sekunden)
+    const { rot, waechter } = urteil
     ergebnisse.push({ ...m, rot, waechter })
-    console.log(rot ? `bewacht (${waechter}, ${sekunden}s)` : `UNBEWACHT (${sekunden}s)`)
+    console.log(rot ? `bewacht (${waechter ?? 'unbekannt'}, ${sekunden}s)` : `UNBEWACHT (${sekunden}s)`)
   }
 
   const offen = ergebnisse.filter((e) => !e.rot)
   console.log(`\n${ergebnisse.length - offen.length}/${ergebnisse.length} Regeln bewacht.`)
+  if (ausgaenge.size > 0) console.log(`Ausgangsstand: ${ausgaenge.size} Wächter ohne Mutation geprüft, alle grün.`)
 
   if (offen.length > 0) {
     console.log('\nUnbewacht — diese Regeln kann man entfernen, ohne dass ein Test es merkt:\n')

@@ -5933,6 +5933,17 @@ Eintrag bestätigen).
   `withDerivedTasks` den Zustand an einen Helfer weiterreichte). Die Probe
   prüft keinen grünen Ausgangsstand; jede Mutation zählte deshalb als bewacht.
   Behoben, indem der Helfer die Felder einzeln bekommt; danach erneut gemessen.
+  **Seither prüft die Probe das selbst** (`waechterBefund`): Jeder gemeldete
+  Wächter läuft einmal je Durchgang allein **ohne** Mutation (1–3 s je Datei,
+  statt 41 s für die ganze Suite vorab bei jedem Aufruf); nennt der Lauf keinen
+  Wächter (ein unbehandelter Fehler macht ihn rot, ohne dass ein Test scheitert),
+  die ganze Suite. Ist er auch ohne Mutation rot, endet die Probe mit „NICHT
+  GEMESSEN — Ausgangsstand rot", Rückgabewert 2. Warum es gerade eine Datei für
+  acht Regeln war: vitest startet zuletzt rote Dateien zuerst, `--bail=1` bricht
+  dort ab. Gegenprobe mit einem absichtlich roten Test in `reducer.test.ts`:
+  vorher „3/3 bewacht", jede „durch `reducer.test.ts`", Rückgabewert 0;
+  nachher Abbruch an der ersten Regel. Auf grünem Stand nennen dieselben drei
+  Regeln ihre eigenen Wächter.
 
 Bewusst offen (Phase 4): kein Ausdruck des Rednerplans; ein Vortrag lässt sich
 nicht verschieben (streichen und neu anlegen); die Zeitleiste im

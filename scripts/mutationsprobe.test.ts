@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ankerFehler, KATALOG, testlaufBefund } from './mutationsprobe.mjs'
+import { ankerFehler, KATALOG, testlaufBefund, waechterBefund } from './mutationsprobe.mjs'
 
 /**
  * **Zeigt der Katalog der Mutationsprobe noch dorthin, wo er hinzeigen soll?**
@@ -157,6 +157,31 @@ const ROT_FEHLENDES_MODUL = lauf(
     ' ❯ src/x.test.ts:7:33\n',
 )
 
+/**
+ * Rot ohne roten Test: Ein Fehler blieb in einem Rückruf unbehandelt. vitest
+ * zählt den Test als bestanden, endet aber mit 1 — und nennt die Datei nur im
+ * Fließtext, nicht hinter `FAIL` oder `❯`. Gemessen am 3.10.2026 mit einer
+ * Wegwerf-Datei; deren Quelltextauszug gekürzt.
+ */
+const ROT_OHNE_WAECHTER = lauf(
+  1,
+  '\n RUN  v4.1.10 C:/repo\n\n·\n\n' +
+    ' Test Files  1 passed (1)\n' +
+    '      Tests  1 passed (1)\n' +
+    '     Errors  1 error\n' +
+    '   Start at  16:03:13\n' +
+    '   Duration  253ms (transform 24ms, setup 0ms, import 38ms, tests 35ms, environment 0ms)\n\n',
+  '⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯\n\n' +
+    'Vitest caught 1 unhandled error during the test run.\n' +
+    'This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n' +
+    '⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯\n' +
+    'Error: unbehandelt\n' +
+    ' ❯ Timeout.spaeter [as _onTimeout] src/x.test.ts:6:11\n' +
+    ' ❯ listOnTimeout node:internal/timers:605:17\n' +
+    ' ❯ processTimers node:internal/timers:541:7\n\n' +
+    'This error originated in "src/x.test.ts" test file. It doesn\'t mean the error was thrown inside the file itself, but while it was running.\n',
+)
+
 /** Die ganze Suite ohne Mutation — auch ein grüner Lauf schreibt nach stderr. */
 const GRUEN = lauf(
   0,
@@ -217,5 +242,107 @@ describe('testlaufBefund: ein Rot zählt nur, wenn vitest getestet hat', () => {
     // Die eigentliche Auskunft der Probe. Eine Wache, die jeden Lauf mit
     // Ausgabe auf stderr verwürfe, ließe keine Lücke mehr sehen.
     expect(testlaufBefund(GRUEN)).toEqual({ rot: false, waechter: null })
+  })
+
+  it('rot, ohne dass ein Test scheitert: rot, aber kein Wächter', () => {
+    // Die Datei steht nur im Fließtext. Bis zum 3.10.2026 hieß der Wächter
+    // dann „unbekannt" — und ohne Namen ließ sich nichts nachprüfen.
+    expect(testlaufBefund(ROT_OHNE_WAECHTER)).toEqual({ rot: true, waechter: null })
+  })
+})
+
+/**
+ * **Ein Rot zählt nur, wenn sein Wächter ohne Mutation grün ist.**
+ *
+ * Am 3. Oktober 2026 meldete die Probe „10/10 Regeln bewacht", acht davon
+ * durch `src/app/reducer.test.ts` — für Regeln in `PlanungsKarte.tsx`,
+ * `persist.ts` und `useAbwesend.ts`. Ein Test darin war schon ohne Mutation
+ * rot. vitest startet zuletzt Rotes zuerst, `--bail=1` bricht dort ab, und die
+ * Probe schrieb jeder Regel diese Datei gut.
+ *
+ * Nachgestellt mit einem absichtlich roten Test in `reducer.test.ts` und den
+ * Schaltern der Probe (vitest 4.1, Node 24), Pfade neutralisiert; Punktzeilen,
+ * Konsolenausgaben und Quelltextauszüge gekürzt. Der Lauf mit Mutation sieht
+ * von außen aus wie jeder bewachte — unterscheiden lässt er sich nur am Lauf
+ * ohne.
+ */
+
+/** Gebrochen ist `va-karte-zaehlt-mit` (`PlanungsKarte.tsx`); gemeldet wird `reducer.test.ts`. */
+const ROT_AM_ROTEN_AUSGANGSSTAND = lauf(
+  1,
+  '\n RUN  v4.1.10 C:/repo\n\n··········x··········\n\n' +
+    ' Test Files  1 failed | 11 passed | 7 skipped (212)\n' +
+    '      Tests  1 failed | 1037 passed (1264)\n' +
+    '   Start at  16:02:49\n' +
+    '   Duration  4.65s (transform 20.46s, setup 0ms, import 21.60s, tests 12.81s, environment 10.97s)\n\n',
+  '\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n' +
+    ' FAIL  src/app/reducer.test.ts > GEGENPROBE (wird zurückgesetzt) > ist absichtlich rot\n' +
+    "AssertionError: expected 'Ausgangsstand' to be 'grün' // Object.is equality\n\n" +
+    ' ❯ src/app/reducer.test.ts:2074:29\n',
+)
+
+/** Derselbe Wächter allein, ohne Mutation: weiter rot. */
+const REDUCER_ALLEIN_ROT = lauf(
+  1,
+  '\n RUN  v4.1.10 C:/repo\n\n··········x\n\n' +
+    ' Test Files  1 failed (1)\n' +
+    '      Tests  1 failed | 157 passed (158)\n' +
+    '   Start at  16:02:55\n' +
+    '   Duration  1.16s (transform 669ms, setup 0ms, import 823ms, tests 146ms, environment 0ms)\n\n',
+  '\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n' +
+    ' FAIL  src/app/reducer.test.ts > GEGENPROBE (wird zurückgesetzt) > ist absichtlich rot\n' +
+    "AssertionError: expected 'Ausgangsstand' to be 'grün' // Object.is equality\n\n" +
+    ' ❯ src/app/reducer.test.ts:2074:29\n',
+)
+
+/** Der Wächter aus `ROT` allein, ohne Mutation (`vitest run src/login/login.test.tsx`): grün. */
+const LOGIN_ALLEIN_GRUEN = lauf(
+  0,
+  '\n RUN  v4.1.10 C:/repo\n\n··········\n\n' +
+    ' Test Files  1 passed (1)\n' +
+    '      Tests  37 passed (37)\n' +
+    '   Start at  16:02:31\n' +
+    '   Duration  2.40s (transform 688ms, setup 0ms, import 911ms, tests 554ms, environment 762ms)\n\n',
+)
+
+describe('waechterBefund: ein Rot zählt nur, wenn sein Wächter ohne Mutation grün ist', () => {
+  it('wie am 3.10.2026: der Wächter ist auch ohne Mutation rot — kein Häkchen', () => {
+    const mutiert = testlaufBefund(ROT_AM_ROTEN_AUSGANGSSTAND)
+    expect(mutiert).toEqual({ rot: true, waechter: 'src/app/reducer.test.ts' })
+
+    const befund = waechterBefund(mutiert, testlaufBefund(REDUCER_ALLEIN_ROT))
+    expect(befund.rot).toBeUndefined()
+    expect(befund.fehler).toContain('Ausgangsstand rot — erst grün machen: src/app/reducer.test.ts')
+  })
+
+  it('ist der Wächter ohne Mutation grün, gilt das Rot — mit seinem Wächter', () => {
+    expect(waechterBefund(testlaufBefund(ROT), testlaufBefund(LOGIN_ALLEIN_GRUEN))).toEqual({
+      rot: true,
+      waechter: 'src/login/login.test.tsx',
+    })
+  })
+
+  it('ein Ausgangsstand, der nichts getestet hat, ist kein Grün', () => {
+    // `{ fehler }` trägt kein `rot`. Wer nur fragte, ob der Wächter rot war,
+    // läse einen Filter ohne Treffer als „ohne Mutation grün".
+    const befund = waechterBefund(testlaufBefund(ROT), testlaufBefund(KEINE_TESTDATEIEN))
+    expect(befund.rot).toBeUndefined()
+    expect(befund.fehler).toContain('src/login/login.test.tsx')
+    expect(befund.fehler).toContain('No test files found')
+  })
+
+  it('nennt der Lauf keinen Wächter, muss die ganze Suite ohne Mutation grün sein', () => {
+    const mutiert = testlaufBefund(ROT_OHNE_WAECHTER)
+    expect(waechterBefund(mutiert, testlaufBefund(GRUEN))).toEqual({ rot: true, waechter: null })
+    expect(waechterBefund(mutiert, testlaufBefund(ROT)).fehler).toContain(
+      'der Lauf über alle Testdateien ist auch ohne Mutation rot',
+    )
+  })
+
+  it('unbewacht braucht keinen Ausgangsstand, ein Abbruch behält seinen Grund', () => {
+    // Ohne Rot gibt es keinen Wächter, den man fragen könnte — gefragt wird
+    // gar nicht erst; die Probe startet dafür keinen Lauf.
+    expect(waechterBefund(testlaufBefund(GRUEN), undefined)).toEqual({ rot: false, waechter: null })
+    expect(waechterBefund(testlaufBefund(OHNE_VITEST), undefined).fehler).toContain('Cannot find module')
   })
 })
