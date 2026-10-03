@@ -5,9 +5,12 @@ import { describe, expect, it } from 'vitest'
 import {
   ATTRAPPE_SCHLUESSEL,
   ATTRAPPE_URL,
+  type Aufruf,
   befunde,
   fahre,
   REDET_MIT_DB,
+  schemaFehler,
+  schemaFunktion,
   schemaSpalten,
   tabelleVon,
   type Umgebung,
@@ -358,6 +361,8 @@ const LAEUFE: Record<string, Lauf[]> = {
             { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', priv: {} },
             { id: P2, congregation_id: C, fn: 'Probe', ln: 'Mitglied', priv: { 'svc:mik': true } },
           ],
+          // Ohne Gruppe blieben die Gruppenbesuche (11, 12) ungemessen.
+          groups: [{ id: G1, congregation_id: C, name: 'Probe' }],
           weeks: [
             {
               congregation_id: C,
@@ -378,6 +383,14 @@ const LAEUFE: Record<string, Lauf[]> = {
       erwartet: [
         'POST confirmations', 'DELETE confirmations', 'POST notifications', 'DELETE notifications',
         'POST absences', 'DELETE absences', 'GET persons',
+        // T120: die Anlage des Planers, die Versuche des Mitglieds, das Aufräumen.
+        'POST gruppenbesuche', 'GET gruppenbesuche', 'DELETE gruppenbesuche',
+        'POST oz_termine', 'POST oz_eintraege', 'DELETE oz_eintraege', 'DELETE oz_termine', 'PATCH persons',
+        'POST vortraege_auswaerts', 'GET vortraege_auswaerts', 'PATCH vortraege_auswaerts', 'DELETE vortraege_auswaerts',
+        'POST plaene', 'GET plaene', 'DELETE plaene', 'POST plan_eintraege', 'GET plan_eintraege', 'DELETE plan_eintraege',
+        'POST households', 'DELETE households', 'POST persons', 'DELETE persons',
+        // (6) und (6b): der Meldeweg eines Mitglieds seit dem 24.9.2026.
+        'POST rpc/notify_planners',
       ],
     },
   ],
@@ -397,6 +410,19 @@ describe('Jeder REST-Aufruf der Wartungsskripte passt zu schema.sql', () => {
     expect(schemaSpalten('fs_rules').get('id')).toMatchObject({ typ: 'text', nullbar: false, pflicht: true })
     expect(schemaSpalten('fs_rules').get('grp')).toMatchObject({ typ: 'uuid', nullbar: true, pflicht: false })
     expect(schemaSpalten('persons').get('grp')).toMatchObject({ typ: 'uuid', nullbar: true })
+  })
+
+  it('ein Funktionsaufruf passt nur mit der Funktion und genau ihren Parametern', () => {
+    // Sonst gälte ein vertippter Parameter — bei PostgREST ein 404 — wie bei
+    // den Spalten als Abweisung.
+    expect(schemaFunktion('notify_planners')).toEqual(new Map([['kind', 'text'], ['subject', 'text'], ['message', 'text']]))
+    const aufruf = (body: unknown, pfad = 'rpc/notify_planners'): Aufruf => ({ pfad, method: 'POST', body })
+    expect(schemaFehler(aufruf({ kind: 'verhindert', subject: 'x', message: '' }))).toEqual([])
+    expect(schemaFehler(aufruf({ kind: 'verhindert', subject: 'x' }))).toEqual(['POST rpc/notify_planners.message: Parameter fehlt'])
+    expect(schemaFehler(aufruf({ kind: 'verhindert', subject: 'x', message: '', title: 'y' }))).toEqual([
+      'POST rpc/notify_planners.title: keinen solchen Parameter',
+    ])
+    expect(schemaFehler(aufruf({}, 'rpc/gibt_es_nicht'))).toEqual(['POST rpc/gibt_es_nicht: keine Funktion in schema.sql'])
   })
 
   it('jedes Skript mit Datenbankzugriff hat einen Lauf oder eine begründete Ausnahme', () => {
@@ -539,6 +565,121 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(ausgabe.join('\n')).toMatch(/\? \(2\) eine eigene Aufgabe im Namen des Planers — auf jeder steht schon eine Zeile des Planers, nicht gemessen/)
     expect(tabellen.confirmations).toContainEqual(zusage)
     expect(aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'confirmations' && (a.body as { user_id?: string }).user_id === U1)).toEqual([])
+  })
+
+  /*
+    T120 (seit 3.10.2026): Die Probe legt als Planer an, was sie misst, und
+    ändert für (15)/(16) und (32) vorübergehend die Person des Mitglieds. Die
+    Attrappe kennt keine Richtlinien — jeder Versuch kommt dort durch. Gerade
+    deshalb läuft hier jeder Aufräum-Zweig, und am Ende muss alles weg sein.
+  */
+  const istProbe = (z: Record<string, unknown>) => String(z.id ?? '').startsWith('PROBE-')
+
+  it('mitgliedsrechte-probe (T120): räumt alles weg, was es angelegt hat — die Person des Mitglieds ist wie vorher', async () => {
+    const { tabellen, ausgabe, aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    for (const t of ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'vortraege_auswaerts', 'plaene', 'plan_eintraege']) {
+      expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
+    }
+    expect((tabellen.confirmations ?? []).filter((z) => String(z.task_key).includes('PROBE-'))).toEqual([])
+    expect(tabellen.persons!.filter((p) => p.fn === 'PROBE'), 'Probe-Person blieb liegen').toEqual([])
+    expect(tabellen.households ?? [], 'Probe-Haushalt blieb liegen').toEqual([])
+    const mitglied = tabellen.persons!.find((p) => p.id === P2)!
+    expect(mitglied.priv).toEqual({ 'svc:mik': true })
+    expect(mitglied.fam ?? null).toBeNull()
+    // Bezogen war der Probe-Haushalt aber — sonst hätte (32) nichts gemessen.
+    expect(aufrufe.some((a) => a.method === 'PATCH' && tabelleVon(a) === 'persons' && typeof (a.body as { fam?: unknown }).fam === 'string')).toBe(true)
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(15\) sich selbst eintragen, mit Aufgabenbereich\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen/)
+    expect(text).toMatch(/\(32\) „Familien reihum", Gastgeber aus dem eigenen Haushalt \(Probe-Haushalt\)\n.*SICHTBAR \(HTTP 200; Plan 1\/1, Einträge 1\/1\)/)
+    expect(text).toMatch(/alles mit Kennzeichen PROBE-\d+ wieder entfernt/)
+  })
+
+  it('mitgliedsrechte-probe (T120): (13)–(15) mit Aufgabenbereich, (16) ohne — jeder Versuch prüft genau eine Regel', async () => {
+    const { aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    const setzt = (wert: boolean) =>
+      aufrufe.findIndex((a: Aufruf) => a.method === 'PATCH' && tabelleVon(a) === 'persons' && (a.body as { priv?: { zeugnis?: boolean } }).priv?.zeugnis === wert)
+    const versuch = (endung: string) =>
+      aufrufe.findIndex((a: Aufruf) => a.method === 'POST' && tabelleVon(a) === 'oz_eintraege' && String((a.body as { id?: string }).id).endsWith(endung))
+    expect(setzt(true)).toBeGreaterThan(-1)
+    for (const e of ['-oz-fuer-andere', '-oz-als-zugeteilt', '-oz-selbst']) {
+      expect(versuch(e), e).toBeGreaterThan(setzt(true))
+      expect(versuch(e), e).toBeLessThan(setzt(false))
+    }
+    expect(versuch('-oz-ohne-bereich')).toBeGreaterThan(setzt(false))
+  })
+
+  it('mitgliedsrechte-probe: die Absage geht über notify_planners an die Planer, und sie wird wieder gelöscht', async () => {
+    // Bis zum 3.10.2026 schrieb (6) die Mitteilung selbst — die Richtlinie
+    // lässt das seit dem 24.9.2026 nur Planern, und die Probe meldete
+    // „ZU STRENG", obwohl die App längst den anderen Weg geht.
+    const { ausgabe, aufrufe, tabellen } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(6\) Absage an die Planer über notify_planners \(der legitime Weg\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
+    expect(aufrufe.some((a) => a.method === 'POST' && tabelleVon(a) === 'notifications' && (a.body as { title?: string }).title?.includes('Absage'))).toBe(false)
+    expect((tabellen.notifications ?? []).filter((z) => String(z.title).startsWith('PROBE-'))).toEqual([])
+  })
+
+  it('mitgliedsrechte-probe: (6b) zählt nur die Ausnahme von notify_planners als Abweisung', async () => {
+    const nurVerhinderung = { status: 400, json: { code: 'P0001', message: 'nur eine Verhinderung darf jedes Mitglied melden' } }
+    const zuteilung = (a: Aufruf) => tabelleVon(a) === 'rpc/notify_planners' && (a.body as { kind?: string }).kind === 'zuteilung'
+    const abgewiesen = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (zuteilung(a) ? nurVerhinderung : undefined))
+    expect(abgewiesen.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Planer\)\n.*nicht angekommen \(HTTP 400\) — abgewiesen — notify_planners reicht nur Verhinderungen weiter/)
+    // Gibt es die Funktion nicht (404), ist nichts gemessen.
+    const fehlt = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (zuteilung(a) ? { status: 404, json: { code: 'PGRST202' } } : undefined))
+    expect(fehlt.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Planer\)\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 404\)/)
+  })
+
+  it('mitgliedsrechte-probe: fehlt die Freischaltung für den Dienst, gibt (9) sie vorübergehend — und nimmt sie wieder', async () => {
+    // Sonst wiese `take` mit „not-qualified" ab, und über S13 wäre nichts
+    // gesagt — so blieb (9) in der Testversammlung am 3.10.2026 ungemessen.
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const persons = l.umgebung!.bestand!.persons!.map((p) => (p.id === P2 ? { ...p, priv: {} } : p))
+    const { ausgabe, aufrufe, tabellen } = await fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, persons } })
+    const priv = (a: Aufruf) => (a.method === 'PATCH' && tabelleVon(a) === 'persons' ? (a.body as { priv?: Record<string, unknown> }).priv : undefined)
+    expect(aufrufe.some((a) => priv(a)?.['svc:mik'] === true)).toBe(true)
+    expect(ausgabe.join('\n')).toMatch(/\(9\) fremden Platz übernehmen, ohne dass Ersatz gesucht ist \(Probe Planer; für „mik" vorübergehend freigeschaltet\)/)
+    expect(tabellen.persons!.find((p) => p.id === P2)!.priv).toEqual({})
+  })
+
+  it('mitgliedsrechte-probe (T120): sind Planer und Mitglied ein Ehepaar, nimmt (30) jemand anderen als Gastgeber', async () => {
+    // So ist die Testversammlung angelegt (gemessen am 3.10.2026): Der Planer
+    // als „fremder" Gastgeber stünde im Haushalt des Mitglieds, und (30) blieb
+    // ungemessen.
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const P3 = k(34)
+    const bestand = {
+      ...l.umgebung!.bestand,
+      households: [{ id: H1, congregation_id: C }],
+      persons: [
+        { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', priv: {}, fam: H1 },
+        { id: P2, congregation_id: C, fn: 'Probe', ln: 'Mitglied', priv: { 'svc:mik': true }, fam: H1 },
+        { id: P3, congregation_id: C, fn: 'Probe', ln: 'Dritte', priv: {} },
+      ],
+    }
+    const { ausgabe, aufrufe } = await fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(30\) „Familien reihum" ohne eigenen Haushalt \(anderer Haushalt\)\n/)
+    // (32) findet den Planer als Mitbewohner — kein Probe-Haushalt nötig.
+    expect(text).toMatch(/\(32\) „Familien reihum", Gastgeber aus dem eigenen Haushalt \(vorhandener Haushalt\)/)
+    expect(aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'households')).toEqual([])
+    const eintraege = aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'plan_eintraege').flatMap((a) => a.body as Record<string, unknown>[])
+    expect(eintraege.find((e) => String(e.id).endsWith('-e-fremd'))?.person_id).toBe(P3)
+  })
+
+  it('mitgliedsrechte-probe (T120): scheitert die Anlage, heißt das „PROBE KAPUTT", nicht „unsichtbar"', async () => {
+    // Ohne Plan gibt es nichts zu sehen — eine leere Antwort wäre sonst die
+    // Grenze, die greift.
+    const { ausgabe, tabellen } = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) =>
+      a.method === 'POST' && tabelleVon(a) === 'plaene' ? kaputt : undefined,
+    )
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(28\) einen Plan im Entwurf sehen\n.*PROBE KAPUTT — Anlage als Planer scheiterte \(plaene, HTTP 400\)/)
+    expect(text).not.toMatch(/unsichtbar — einen Entwurf sehen nur Planer/)
+    expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(28\), \(29\), \(30\), \(31\)/)
+    // Aufgeräumt wird trotzdem — der Termin des Zeugnisgebens stand ja schon.
+    expect((tabellen.oz_termine ?? []).filter(istProbe)).toEqual([])
   })
 
   it('mandanten-nachweis: ein 400 auf den Einfügeversuch heißt „PROBE KAPUTT", nicht „abgewiesen"', async () => {

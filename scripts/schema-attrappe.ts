@@ -91,6 +91,24 @@ export function schemaSpalten(tabelle: string, schema = SCHEMA_SQL): Map<string,
   return spalten
 }
 
+/**
+ * Die Parameter einer Funktion aus `schema.sql`, wie PostgREST sie unter
+ * `rpc/<name>` annimmt: Name → Typ — oder `null`, wenn es die Funktion nicht
+ * gibt. Seit dem 3.10.2026 ruft ein Skript eine auf (`notify_planners` in der
+ * Mitgliedsrechte-Probe); ein vertippter Parameter wäre dort ein 404 und hieße
+ * ohne diese Prüfung bloß „abgewiesen".
+ */
+export function schemaFunktion(name: string, schema = SCHEMA_SQL): Map<string, string> | null {
+  const kopf = new RegExp(`create or replace function public\\.${name}\\(([^)]*)\\)`, 'i').exec(schema)
+  if (!kopf) return null
+  const parameter = new Map<string, string>()
+  for (const teil of kopf[1]!.split(',').map((s) => s.trim()).filter(Boolean)) {
+    const [pname = '', typ = ''] = teil.split(/\s+/)
+    parameter.set(pname, typ.toLowerCase())
+  }
+  return parameter
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DATUM = /^\d{4}-\d{2}-\d{2}$/
 
@@ -142,6 +160,7 @@ export const tabelleVon = (a: Aufruf): string => a.pfad.split('?')[0] ?? ''
  */
 export function schemaFehler({ pfad, method, body }: Aufruf, schema = SCHEMA_SQL): string[] {
   const [tabelle = '', abfrage = ''] = pfad.split('?')
+  if (tabelle.startsWith('rpc/')) return funktionsFehler(tabelle, method, body, schema)
   const spalten = schemaSpalten(tabelle, schema)
   if (!spalten.size) return [`${method} ${tabelle}: keine Tabelle in schema.sql`]
   const fehler: string[] = []
@@ -170,6 +189,27 @@ export function schemaFehler({ pfad, method, body }: Aufruf, schema = SCHEMA_SQL
     if (method !== 'POST') continue
     for (const [name, s] of spalten) if (s.pflicht && !(name in zeile)) nenne(name, 'Pflichtspalte fehlt')
   }
+  return fehler
+}
+
+/**
+ * Ein Funktionsaufruf (`rpc/<name>`): Gibt es die Funktion, und bringt der
+ * Rumpf genau ihre Parameter mit, im passenden Typ? Vorgaben (`default`) hat
+ * keine der Funktionen in `schema.sql` — fehlt einer, fände PostgREST sie nicht.
+ */
+function funktionsFehler(tabelle: string, method: string, body: unknown, schema: string): string[] {
+  const parameter = schemaFunktion(tabelle.slice('rpc/'.length), schema)
+  if (!parameter) return [`${method} ${tabelle}: keine Funktion in schema.sql`]
+  const rumpf = (body ?? {}) as Record<string, unknown>
+  const fehler: string[] = []
+  for (const [k, wert] of Object.entries(rumpf)) {
+    const typ = parameter.get(k)
+    const passt = typ ? PASST[typ] : undefined
+    if (!typ) fehler.push(`${method} ${tabelle}.${k}: keinen solchen Parameter`)
+    else if (!passt) fehler.push(`${method} ${tabelle}.${k}: Typ ${typ} kennt die Probe nicht — PASST ergänzen`)
+    else if (!passt(wert)) fehler.push(`${method} ${tabelle}.${k}: ${String(JSON.stringify(wert)).slice(0, 60)} ist kein ${typ}`)
+  }
+  for (const k of parameter.keys()) if (!(k in rumpf)) fehler.push(`${method} ${tabelle}.${k}: Parameter fehlt`)
   return fehler
 }
 
@@ -259,6 +299,21 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
     const trifft = (z: Zeile): boolean =>
       filter.every(([k, v]) => passtFilter(z[k], v)) && (tabelle !== 'members' || !wer || z.user_id === wer.id)
     const zeigen = (kopf.get('Prefer') ?? '').includes('return=representation')
+
+    if (tabelle.startsWith('rpc/')) {
+      // Die eine Funktion, die ein Skript aufruft, so weit nachgestellt, dass
+      // die Probe ihr Ergebnis sieht: je Planer der Versammlung eine Mitteilung.
+      // Ihre Prüfung (nur Verhinderungen) bleibt außen vor — wie alle Richtlinien.
+      if (tabelle === 'rpc/notify_planners' && wer) {
+        const { kind, subject, message } = rumpf as { kind: string; subject: string; message: string }
+        const mitglieder = tabellen.members ?? []
+        const cong = mitglieder.find((m) => m.user_id === wer.id)?.congregation_id
+        for (const m of mitglieder.filter((x) => x.planner && x.congregation_id === cong)) {
+          ;(tabellen.notifications ??= []).push({ id: randomUUID(), congregation_id: cong, user_id: m.user_id, type: kind, title: subject, body: message })
+        }
+      }
+      return antwort(204)
+    }
 
     if (method === 'GET') {
       let treffer = zeilen.filter(trifft)

@@ -23,7 +23,13 @@
  *   3. `verhindert` an einen Nicht-Planer      → muss **abgewiesen** werden (S3)
  *   4. Mitteilung `zuteilung` (nur Planer)     → muss **abgewiesen** werden
  *   5. **eigene** Aufgabe bestätigen           → muss **durchkommen**
- *   6. Absage an den Planer (legitimer Weg)    → muss **durchkommen**
+ *   6. Absage an die Planer (legitimer Weg)    → muss **durchkommen**
+ *  6b. derselbe Weg mit Art `zuteilung`        → muss **abgewiesen** werden
+ *
+ * Den legitimen Weg (6) geht ein Mitglied seit dem 24.9.2026 nicht mehr über
+ * eine eigene Zeile, sondern über `notify_planners`: Es sieht die Planer
+ * nicht und könnte sie nicht adressieren. (6b) misst, dass dieser Weg nur
+ * eine Verhinderung durchlässt.
  *
  * Kommt (1) oder (3) durch, steht der jeweilige Befund wieder offen. Scheitert
  * (5) oder (6), ist die Richtlinie zu streng — das wiegt schwerer, weil der
@@ -44,6 +50,47 @@
  * REST-Pfade, schnitt er dort alles Folgende ab — und die Prüfung, wer eine
  * Ersatzsuche auslösen darf, lief ins Leere. Kommt (10) durch, ist nicht eine
  * Richtlinie offen, sondern die ganze Kodierung.
+ *
+ * **Seit dem 3. Oktober 2026 misst sie auch die Rechte aus T120** — die Pläne
+ * der Versammlung. Dort geht es öfter ums **Sehen** als ums Schreiben: Wer
+ * wann wohin zum Vortrag fährt, und wer bei „Familien reihum" Gastgeber ist,
+ * geht nicht die ganze Versammlung an.
+ *
+ *  11. einen Gruppenbesuch anlegen                      → abgewiesen
+ *  12. einen Gruppenbesuch sehen                        → sichtbar
+ *  13. eine **andere** Person ins Zeugnisgeben eintragen → abgewiesen
+ *  14. sich selbst als „zugeteilt" eintragen            → abgewiesen
+ *  15. sich selbst eintragen, mit Aufgabenbereich       → durch
+ *  16. dasselbe **ohne** Aufgabenbereich                → abgewiesen
+ *  17. einen fremden Zeugnis-Eintrag bestätigen         → abgewiesen
+ *  18. den eigenen, zugeteilten bestätigen              → durch
+ *  19. denselben mit falschem Montag im Schlüssel       → abgewiesen
+ *  20. einen fremden Eintrag löschen                    → abgewiesen
+ *  21. den eigenen löschen (Absagen gibt den Platz frei) → durch
+ *  22. einen fremden Vortrag auswärts sehen             → unsichtbar
+ *  23. den eigenen sehen                                → sichtbar
+ *  24. einen Vortrag anlegen                            → abgewiesen
+ *  25. den eigenen verlegen                             → abgewiesen
+ *  26. einen fremden Vortrag bestätigen                 → abgewiesen
+ *  27. den eigenen bestätigen                           → durch
+ *  28. einen Plan im Entwurf sehen                      → unsichtbar
+ *  29. den veröffentlichten Königreichssaal sehen       → sichtbar
+ *  30. „Familien reihum" ohne eigenen Haushalt          → unsichtbar
+ *  31. „Familien reihum" als Gastgeber — ganzer Plan    → sichtbar
+ *  32. „Familien reihum", Gastgeber aus dem Haushalt    → sichtbar
+ *  33. einen Plan anlegen                               → abgewiesen
+ *  34. sich als Gastgeber in einen fremden Plan setzen  → abgewiesen
+ *
+ * Anders als (1)–(10) findet die Probe dafür **keinen Bestand** vor: Termine,
+ * Vorträge und Pläne gibt es in der Probeversammlung nicht von selbst. Der
+ * Planer legt sie an — im Jahr 2099, jede Kennung mit dem Kennzeichen des
+ * Laufs —, und am Ende räumt die Probe genau diese Zeilen wieder weg, auch
+ * nach einem Fehler mittendrin. **Drei Dinge ändert sie dafür vorübergehend
+ * an der Person des Mitglieds** und stellt sie danach wieder her: den
+ * Aufgabenbereich „Öffentliches Zeugnisgeben" (für 15 und 16 in beiden
+ * Stellungen), die Freischaltung für den Hilfsdienst aus (9), wenn sie fehlt,
+ * und — nur, wenn niemand ihren Haushalt teilt — den Haushalt (für 32 zieht
+ * sie mit einer Probe-Person in einen Probe-Haushalt).
  *
  * **Jede durchgekommene Zeile wird sofort wieder gelöscht.** Wer aufräumen darf,
  * hängt am Empfänger: `notifications_delete` verlangt `user_id = auth.uid()`,
@@ -203,13 +250,23 @@ export function eigeneSlots(week, eigenePid) {
  *
  * `vielleichtDurch`: Das Schreiben kam durch, nur das Nachsehen scheiterte —
  * die Zeile kann also dastehen. Allein dann räumt die Probe vorsorglich auf.
+ *
+ * `erwartet` geht mit hinaus: Die Schlussrechnung zählt daran, welche Fälle
+ * verboten waren und welche Gegenproben. `woerter` benennen das Ergebnis, wo
+ * „angekommen" nicht passt — beim Löschen und Ändern (T120).
  */
-export function bewerteVersuch(status, angekommen, erwartetDurch, { leseStatus = 200, urteil = !anfrageKaputt(status) } = {}) {
+export function bewerteVersuch(
+  status,
+  angekommen,
+  erwartetDurch,
+  { leseStatus = 200, urteil = !anfrageKaputt(status), woerter = ['ANGEKOMMEN', 'nicht angekommen'] } = {},
+) {
   if (!urteil || leseStatus >= 400) {
     return {
       durch: false,
       wieErwartet: false,
       kaputt: true,
+      erwartet: erwartetDurch,
       vielleichtDurch: urteil && status < 400,
       text: `PROBE KAPUTT — ${urteil ? `Nachsehen scheiterte (HTTP ${leseStatus})` : `Schreiben scheiterte (HTTP ${status})`}, kein Urteil über die Regel`,
     }
@@ -217,12 +274,158 @@ export function bewerteVersuch(status, angekommen, erwartetDurch, { leseStatus =
   return {
     durch: angekommen,
     wieErwartet: angekommen === erwartetDurch,
-    text: `${angekommen ? 'ANGEKOMMEN' : 'nicht angekommen'} (HTTP ${status})`,
+    erwartet: erwartetDurch,
+    text: `${angekommen ? woerter[0] : woerter[1]} (HTTP ${status})`,
   }
+}
+
+/**
+ * Einen **Leseversuch** bewerten (T120): Sieht das Mitglied die Zeile?
+ *
+ * Bei einer Abfrage antwortet RLS nicht mit 403, sondern mit **weniger
+ * Zeilen** — eine leere Antwort ist das Urteil. Darum ist hier jeder
+ * Fehlerstatus „kaputt", auch 401 und 403: Ein Lesen, das scheiterte, zeigte
+ * ebenfalls nichts und sähe sonst aus wie die Grenze, die greift. Dass es die
+ * Zeile überhaupt gibt, sichert der Aufrufer vorher (Anlage beim Planer
+ * nachgesehen); `detail` sagt, was zu sehen war.
+ */
+export function bewerteSicht(leseStatus, sichtbar, erwartet, detail = '') {
+  const wo = detail ? `; ${detail}` : ''
+  if (leseStatus >= 400) {
+    return { durch: false, wieErwartet: false, kaputt: true, erwartet, text: `PROBE KAPUTT — Lesen scheiterte (HTTP ${leseStatus}${wo}), kein Urteil über die Regel` }
+  }
+  return { durch: sichtbar, wieErwartet: sichtbar === erwartet, erwartet, text: `${sichtbar ? 'SICHTBAR' : 'nicht sichtbar'} (HTTP ${leseStatus}${wo})` }
 }
 
 /** Die Zeilen einer Antwort — bei einem Fehler keine, statt eines Fehlerobjekts, das `for … of` sprengt. */
 const zeilenVon = (antwort) => (Array.isArray(antwort?.daten) ? antwort.daten : [])
+
+/* ===================== T120: Tage, Schlüssel, Anlage ====================== */
+
+/** Ein Tag `n` Tage nach `iso` — über UTC gerechnet, ohne Sommerzeitsprung. */
+export function tagPlus(iso, n) {
+  const d = new Date(`${iso}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+/** Der Wochentag wie `oz_termine.wd` und `extract(dow …)` in Postgres: 0 = Sonntag. */
+export function wochentag(iso) {
+  return new Date(`${iso}T12:00:00Z`).getUTCDay()
+}
+
+/**
+ * Der Montag der Woche, in der `iso` liegt — der Sonntag gehört zur Woche
+ * davor. Spiegel von `montagVon` (meeting-dates.ts) und von
+ * `datum - (isodow - 1)` in `task_gehoert_mir`; der Test hält die App-Fassung
+ * daneben.
+ */
+export function montagDerWoche(iso) {
+  return tagPlus(iso, -((wochentag(iso) + 6) % 7))
+}
+
+/** Der erste Montag ab `iso` — er selbst, wenn er einer ist. */
+export function ersterMontagAb(iso) {
+  return tagPlus(iso, (8 - wochentag(iso)) % 7)
+}
+
+/** Aufgaben-Schlüssel eines Eintrags im Zeugnisgeben — Spiegel von `ozTaskKey`. */
+export function ozSchluessel(datum, id) {
+  return `oz|${montagDerWoche(datum)}|${id}`
+}
+
+/** Aufgaben-Schlüssel eines Vortrags auswärts — Spiegel von `vaTaskKey`. */
+export function vaSchluessel(datum, id) {
+  return `va|${montagDerWoche(datum)}|${id}`
+}
+
+/**
+ * **Was die Probe für T120 anlegt** — und was das Mitglied zu schreiben
+ * versucht. Rein, damit der Test prüfen kann, dass jede Zeile die Regeln der
+ * Datenbank erfüllt, die mit den Rechten nichts zu tun haben: Ein Eintrag am
+ * falschen Wochentag scheiterte am Trigger (`oz_falscher_tag`), ein zweiter
+ * derselben Person in derselben Schicht an der Eindeutigkeit — beides sähe
+ * aus wie eine Abweisung und wäre doch keine über die Rechte.
+ *
+ * Alles liegt in der Woche von `tag0` (ein Montag, 2099) und den drei danach;
+ * jede Kennung trägt `marke`, daran findet das Aufräumen genau diese Zeilen.
+ * Die Versuche des Mitglieds zielen je auf **eine** Regel: (13) trägt sich
+ * mit „selbst" und Aufgabenbereich ein — abweisen kann nur noch die fremde
+ * Person; (14) ist die eigene Person, nur ohne „selbst"; (16) beides richtig,
+ * nur ohne Aufgabenbereich.
+ *
+ * `fremderGastgeber` lebt nicht im Haushalt des Mitglieds — gewöhnlich der
+ * Planer, in der Testversammlung aber nicht: Dort sind Planer und Mitglied ein
+ * Ehepaar.
+ *
+ * @param {{
+ *   marke: string, versammlung: string, tag0: string,
+ *   planerPid: string, mitgliedPid: string, gruppe?: string | null, fremderGastgeber?: string
+ * }} auftrag
+ */
+export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid, gruppe = null, fremderGastgeber = planerPid }) {
+  const id = (name) => `${marke}-${name}`
+  const montag = (wochen) => tagPlus(tag0, 7 * wochen)
+  const sonntag = (wochen) => tagPlus(tag0, 7 * wochen + 6)
+  const termin = { id: id('termin'), congregation_id: c, wd: wochentag(tag0), von: '10:00', bis: '12:00', ort: marke, plaetze: 6 }
+  const oz = (name, wochen, person, selbst) => ({
+    id: id(name), congregation_id: c, termin_id: termin.id, datum: montag(wochen), person_id: person, selbst,
+  })
+  const vortrag = (name, wochen, person) => ({
+    id: id(name), congregation_id: c, datum: sonntag(wochen), zeit: '10:00', versammlung: marke, nummer: null, person_id: person,
+  })
+  const plan = (name, vorlage, entwurf) => ({
+    id: id(name), congregation_id: c, vorlage, name: marke, von: tag0, bis: sonntag(0), entwurf,
+  })
+  const eintrag = (name, planId, { grp = null, person = null, mahlzeit = null } = {}) => ({
+    id: id(name), congregation_id: c, plan_id: planId, datum: tag0, grp, person_id: person, mahlzeit,
+  })
+
+  const ozZugeteilt = oz('oz-zugeteilt', 2, mitgliedPid, false)
+  const plaene = {
+    entwurf: plan('plan-entwurf', 'saal', true),
+    saal: plan('plan-saal', 'saal', false),
+    fremd: plan('plan-fremd', 'familien', false),
+    eigen: plan('plan-eigen', 'familien', false),
+  }
+  const haushalt = plan('plan-haushalt', 'familien', false)
+  return {
+    besuch: gruppe ? { id: id('besuch'), congregation_id: c, woche: montag(1), grp: gruppe, person_id: planerPid } : null,
+    besuchVersuch: gruppe ? { id: id('besuch-mitglied'), congregation_id: c, woche: montag(0), grp: gruppe, person_id: mitgliedPid } : null,
+    termin,
+    ozFremd: oz('oz-fremd', 0, planerPid, false),
+    ozZugeteilt,
+    ozFuerAndere: oz('oz-fuer-andere', 1, planerPid, true),
+    ozAlsZugeteilt: oz('oz-als-zugeteilt', 1, mitgliedPid, false),
+    ozSelbst: oz('oz-selbst', 0, mitgliedPid, true),
+    ozOhneBereich: oz('oz-ohne-bereich', 3, mitgliedPid, true),
+    // Der eigene Eintrag unter dem Montag einer anderen Woche: dieselbe Art in
+    // fremder Schreibweise (`task_gehoert_mir` vergleicht den Montag).
+    ozFalscherMontag: ozSchluessel(montag(0), ozZugeteilt.id),
+    vaFremd: vortrag('va-fremd', 0, planerPid),
+    vaEigen: vortrag('va-eigen', 1, mitgliedPid),
+    vaVersuch: vortrag('va-versuch', 2, mitgliedPid),
+    vaVerlegtAuf: sonntag(3),
+    plaene,
+    eintraege: {
+      entwurf: [eintrag('e-entwurf', plaene.entwurf.id, { grp: gruppe })],
+      saal: [eintrag('e-saal', plaene.saal.id, { grp: gruppe })],
+      fremd: [eintrag('e-fremd', plaene.fremd.id, { person: fremderGastgeber, mahlzeit: 'mittag' })],
+      eigen: [
+        eintrag('e-eigen', plaene.eigen.id, { person: mitgliedPid, mahlzeit: 'abend' }),
+        // Ein fremder Gastgeber im selben Plan: Wer darin steht, sieht den
+        // ganzen Plan — sonst wüsste er nicht, wer an den anderen Tagen dran ist.
+        eintrag('e-eigen-andere', plaene.eigen.id, { person: planerPid, mahlzeit: 'mittag' }),
+      ],
+    },
+    haushalt,
+    haushaltEintrag: (mitbewohner) => eintrag('e-haushalt', haushalt.id, { person: mitbewohner, mahlzeit: 'abend' }),
+    planVersuch: plan('plan-versuch', 'saal', false),
+    // Sich selbst zum Gastgeber machen — der Weg, einen fremden Familienplan
+    // sichtbar zu machen, wenn das Schreiben offen stünde.
+    eintragVersuch: eintrag('e-versuch', plaene.fremd.id, { person: mitgliedPid, mahlzeit: 'abend' }),
+  }
+}
 
 /* ===================== Zugang ============================================= */
 
@@ -278,6 +481,388 @@ async function anmelden(url, anon, mail, pass) {
   if (status >= 400) throw new Error(`${mail}: members nicht lesbar (${status}): ${JSON.stringify(mitglied)}`)
   if (!mitglied?.[0]) throw new Error(`${mail} ist in keiner Versammlung.`)
   return { mail, rest, funktion, uid: user.id, cong: mitglied[0].congregation_id, pid: mitglied[0].person_id, planer: Boolean(mitglied[0].planner) }
+}
+
+/* ===================== T120: die Fälle 11–34 ============================== */
+
+/**
+ * Als Planer anlegen und nachsehen, ob es dasteht. Ohne das misst ein
+ * Lesefall nichts: Eine leere Antwort hieße sonst „unsichtbar", obwohl es die
+ * Zeile gar nicht gab.
+ */
+async function anlegen(planer, tabelle, zeilen) {
+  const s = await planer.rest(tabelle, 'POST', zeilen, 'return=minimal')
+  if (s.status >= 400) return { ok: false, grund: `Anlage als Planer scheiterte (${tabelle}, HTTP ${s.status})` }
+  const l = await planer.rest(`${tabelle}?select=id&id=in.(${zeilen.map((z) => z.id).join(',')})`)
+  if (l.status >= 400) return { ok: false, grund: `Anlage nicht nachprüfbar (${tabelle}, HTTP ${l.status})` }
+  const da = zeilenVon(l).length
+  return da === zeilen.length ? { ok: true } : { ok: false, grund: `Anlage unvollständig (${tabelle}: ${da} von ${zeilen.length})` }
+}
+
+/** Ein Schreibversuch des Mitglieds: ohne RETURNING schreiben, beim Planer nachsehen, Angekommenes wegräumen. */
+async function schreibVersuch(k, nr, was, tabelle, zeile, erwartet, folge) {
+  const s = await k.mitglied.rest(tabelle, 'POST', zeile, 'return=minimal')
+  const l = await k.planer.rest(`${tabelle}?select=id&id=eq.${zeile.id}`)
+  const e = bewerteVersuch(s.status, zeilenVon(l).length > 0, erwartet, { leseStatus: l.status })
+  k.ergebnis(nr, was, e, e.durch ? folge[0] : folge[1])
+  await k.aufraeumen(e, () => k.planer.rest(`${tabelle}?id=eq.${zeile.id}`, 'DELETE', undefined, 'return=minimal'))
+}
+
+/**
+ * Ein Löschversuch des Mitglieds — „durch" heißt hier: die Zeile ist weg.
+ * PostgREST antwortet auch dann mit 204, wenn RLS die Zeile gar nicht erst
+ * zum Löschen freigab; gezählt wird deshalb, was danach noch dasteht.
+ */
+async function loeschVersuch(k, nr, was, tabelle, id, erwartet, folge) {
+  const s = await k.mitglied.rest(`${tabelle}?id=eq.${id}`, 'DELETE', undefined, 'return=minimal')
+  const l = await k.planer.rest(`${tabelle}?select=id&id=eq.${id}`)
+  const e = bewerteVersuch(s.status, zeilenVon(l).length === 0, erwartet, { leseStatus: l.status, woerter: ['GELÖSCHT', 'nicht gelöscht'] })
+  k.ergebnis(nr, was, e, e.durch ? folge[0] : folge[1])
+}
+
+/** Eine Bestätigung des Mitglieds — wie (1) und (5), nur auf die Schlüssel aus T120. */
+async function bestaetigung(k, nr, was, key, erwartet, folge) {
+  const { mitglied, planer, versammlung } = k
+  const s = await mitglied.rest(
+    'confirmations',
+    'POST',
+    { congregation_id: versammlung, user_id: mitglied.uid, task_key: key, status: 'bestätigt' },
+    'return=minimal',
+  )
+  const filter = `task_key=eq.${encodeURIComponent(key)}&user_id=eq.${mitglied.uid}`
+  const l = await planer.rest(`confirmations?select=status&${filter}`)
+  const e = bewerteVersuch(s.status, zeilenVon(l).length > 0, erwartet, { leseStatus: l.status })
+  k.ergebnis(nr, was, e, e.durch ? folge[0] : folge[1])
+  await k.aufraeumen(e, () => mitglied.rest(`confirmations?${filter}`, 'DELETE', undefined, 'return=minimal'))
+}
+
+/** Ein Leseversuch des Mitglieds — gemessen nur, wenn die Anlage dasteht. */
+async function leseVersuch(k, nr, was, anlage, lesen, erwartet, folge) {
+  if (!anlage.ok) return k.kaputt(nr, was, anlage.grund, erwartet)
+  const r = await lesen()
+  const e = bewerteSicht(r.status, r.sichtbar, erwartet, r.detail)
+  k.ergebnis(nr, was, e, e.durch ? folge[0] : folge[1])
+}
+
+/**
+ * Was das Mitglied von einem Plan sieht: den Plan und seine Einträge. Verboten
+ * ist schon ein Teil davon; erlaubt heißt: alles — wer in „Familien reihum"
+ * steht, soll auch sehen, wer an den anderen Tagen dran ist.
+ */
+async function planSicht(mitglied, plan, eintraege, ganz) {
+  const p = await mitglied.rest(`plaene?select=id&id=eq.${plan.id}`)
+  const e = await mitglied.rest(`plan_eintraege?select=id&plan_id=eq.${plan.id}`)
+  const nP = zeilenVon(p).length
+  const nE = zeilenVon(e).length
+  return {
+    status: Math.max(p.status, e.status),
+    sichtbar: ganz ? nP === 1 && nE === eintraege.length : nP + nE > 0,
+    detail: `Plan ${nP}/1, Einträge ${nE}/${eintraege.length}`,
+  }
+}
+
+/** (11)–(12) Gruppenbesuche (Phase 2): lesen alle, schreiben nur Planer. */
+async function gruppenbesucheProben(k, a) {
+  if (!a.besuch) {
+    k.ungemessen(11, 'einen Gruppenbesuch anlegen', 'keine Gruppe in der Versammlung')
+    k.ungemessen(12, 'einen Gruppenbesuch sehen', 'keine Gruppe in der Versammlung')
+    return
+  }
+  await schreibVersuch(k, 11, 'einen Gruppenbesuch anlegen', 'gruppenbesuche', a.besuchVersuch, false, [
+    'AUCH DAS!',
+    'abgewiesen — gruppenbesuche_write greift',
+  ])
+  const anlage = await anlegen(k.planer, 'gruppenbesuche', [a.besuch])
+  const lesen = async () => {
+    const r = await k.mitglied.rest(`gruppenbesuche?select=id&id=eq.${a.besuch.id}`)
+    return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
+  }
+  await leseVersuch(k, 12, 'einen Gruppenbesuch sehen, den der Planer angelegt hat', anlage, lesen, true, [
+    'die Gruppe erfährt, wann der Dienstaufseher kommt',
+    'ZU STRENG — die Gruppe erfährt nicht, wann der Dienstaufseher kommt',
+  ])
+}
+
+/**
+ * (13)–(21) Öffentliches Zeugnisgeben (Phase 3). Eintragen darf sich ein
+ * Mitglied nur selbst, nur als „selbst" und nur mit dem Aufgabenbereich;
+ * austragen nur sich selbst; bestätigen nur den eigenen Eintrag.
+ *
+ * Den Aufgabenbereich setzt die Probe für (13)–(15) und nimmt ihn für (16)
+ * weg — sonst hinge das Ergebnis daran, wie die Probeversammlung zufällig
+ * eingerichtet ist, und eine der beiden Richtungen bliebe ungemessen. Den
+ * vorigen Stand stellt `spaeter` wieder her.
+ */
+async function zeugnisProben(k, a, ich, spaeter) {
+  const { planer, mitglied } = k
+  const termin = await anlegen(planer, 'oz_termine', [a.termin])
+  const eintraege = termin.ok ? await anlegen(planer, 'oz_eintraege', [a.ozFremd, a.ozZugeteilt]) : termin
+  const privVorher = ich.priv ?? {}
+  const person = `persons?id=eq.${mitglied.pid}`
+  spaeter.push(['der Aufgabenbereich des Mitglieds', () => planer.rest(person, 'PATCH', { priv: privVorher }, 'return=minimal')])
+  const bereich = async (wert) => {
+    const s = await planer.rest(person, 'PATCH', { priv: { ...privVorher, zeugnis: wert } }, 'return=minimal')
+    const l = await planer.rest(`persons?select=priv&id=eq.${mitglied.pid}`)
+    return s.status < 400 && Boolean(zeilenVon(l)[0]?.priv?.zeugnis) === wert
+      ? { ok: true }
+      : { ok: false, grund: `Aufgabenbereich nicht ${wert ? 'gesetzt' : 'entfernt'} (HTTP ${s.status}/${l.status})` }
+  }
+
+  const mit = termin.ok ? await bereich(true) : termin
+  const eintragen = [
+    [13, 'eine andere Person ins Zeugnisgeben eintragen', a.ozFuerAndere, false, ['AUCH DAS!', 'abgewiesen — nur die eigene Person']],
+    [14, 'sich selbst als „zugeteilt" eintragen', a.ozAlsZugeteilt, false, ['AUCH DAS!', 'abgewiesen — nur als „selbst"']],
+    [15, 'sich selbst eintragen, mit Aufgabenbereich', a.ozSelbst, true, ['der Weg steht offen', 'ZU STRENG — niemand kann sich mehr eintragen']],
+  ]
+  for (const [nr, was, zeile, erwartet, folge] of eintragen) {
+    if (mit.ok) await schreibVersuch(k, nr, was, 'oz_eintraege', zeile, erwartet, folge)
+    else k.kaputt(nr, was, mit.grund, erwartet)
+  }
+  const ohne = termin.ok ? await bereich(false) : termin
+  const was16 = 'sich selbst eintragen, ohne Aufgabenbereich'
+  if (ohne.ok) await schreibVersuch(k, 16, was16, 'oz_eintraege', a.ozOhneBereich, false, ['AUCH DAS!', 'abgewiesen — darf_zeugnis greift'])
+  else k.kaputt(16, was16, ohne.grund, false)
+
+  const bestaetigen = [
+    [17, 'einen fremden Zeugnis-Eintrag bestätigen', ozSchluessel(a.ozFremd.datum, a.ozFremd.id), false, ['AUCH DAS!', 'abgewiesen — der oz-Zweig in task_gehoert_mir greift']],
+    [18, 'den eigenen, zugeteilten Eintrag bestätigen', ozSchluessel(a.ozZugeteilt.datum, a.ozZugeteilt.id), true, ['der Weg steht offen', 'ZU STRENG — Zugeteilte können nicht mehr zusagen']],
+    [19, 'denselben, mit falschem Montag im Schlüssel', a.ozFalscherMontag, false, ['AUCH DAS!', 'abgewiesen — der Montag muss zum Tag passen']],
+  ]
+  for (const [nr, was, key, erwartet, folge] of bestaetigen) {
+    if (eintraege.ok) await bestaetigung(k, nr, was, key, erwartet, folge)
+    else k.kaputt(nr, was, eintraege.grund, erwartet)
+  }
+
+  const loeschen = [
+    [20, 'einen fremden Zeugnis-Eintrag löschen', a.ozFremd.id, false, ['AUCH DAS!', 'abgewiesen — austragen nur sich selbst']],
+    [21, 'den eigenen löschen (Absagen gibt den Platz frei)', a.ozZugeteilt.id, true, ['der Weg steht offen', 'ZU STRENG — Absagen gibt den Platz nicht mehr frei']],
+  ]
+  for (const [nr, was, id, erwartet, folge] of loeschen) {
+    if (eintraege.ok) await loeschVersuch(k, nr, was, 'oz_eintraege', id, erwartet, folge)
+    else k.kaputt(nr, was, eintraege.grund, erwartet)
+  }
+}
+
+/**
+ * (22)–(27) Redner auswärts (Phase 4): sehen nur der Redner und die Planer,
+ * schreiben nur die Planer — auch der Redner verlegt seinen Vortrag nicht
+ * selbst; bestätigen nur der Redner.
+ */
+async function rednerProben(k, a) {
+  const { planer, mitglied } = k
+  const anlage = await anlegen(planer, 'vortraege_auswaerts', [a.vaFremd, a.vaEigen])
+  let gelesen = null
+  const sieht = (id) => async () => {
+    gelesen ??= await mitglied.rest(`vortraege_auswaerts?select=id&id=in.(${a.vaFremd.id},${a.vaEigen.id})`)
+    return { status: gelesen.status, sichtbar: zeilenVon(gelesen).some((z) => z.id === id) }
+  }
+  await leseVersuch(k, 22, 'einen fremden Vortrag auswärts sehen', anlage, sieht(a.vaFremd.id), false, [
+    'AUCH DAS!',
+    'unsichtbar — vortraege_auswaerts_select greift',
+  ])
+  await leseVersuch(k, 23, 'den eigenen Vortrag auswärts sehen', anlage, sieht(a.vaEigen.id), true, [
+    'der Redner sieht ihn',
+    'ZU STRENG — der Redner sieht seinen Vortrag nicht',
+  ])
+  await schreibVersuch(k, 24, 'einen Vortrag auswärts anlegen', 'vortraege_auswaerts', a.vaVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
+
+  const was25 = 'den eigenen Vortrag verlegen'
+  if (anlage.ok) {
+    const s = await mitglied.rest(`vortraege_auswaerts?id=eq.${a.vaEigen.id}`, 'PATCH', { datum: a.vaVerlegtAuf }, 'return=minimal')
+    const l = await planer.rest(`vortraege_auswaerts?select=datum&id=eq.${a.vaEigen.id}`)
+    const e = bewerteVersuch(s.status, zeilenVon(l)[0]?.datum === a.vaVerlegtAuf, false, {
+      leseStatus: l.status,
+      woerter: ['GEÄNDERT', 'nicht geändert'],
+    })
+    k.ergebnis(25, was25, e, e.durch ? 'AUCH DAS!' : 'abgewiesen — nur Planer')
+    // Verlegt muss er zurück: (27) bestätigt ihn unter seinem Montag.
+    if (e.durch || e.vielleichtDurch) {
+      const zurueck = await planer.rest(`vortraege_auswaerts?id=eq.${a.vaEigen.id}`, 'PATCH', { datum: a.vaEigen.datum }, 'return=minimal')
+      console.log(zurueck.status < 400 ? '      (zurückverlegt)' : `      !! Vortrag blieb verlegt (${zurueck.status}) !!`)
+    }
+  } else {
+    k.kaputt(25, was25, anlage.grund, false)
+  }
+
+  const bestaetigen = [
+    [26, 'einen fremden Vortrag auswärts bestätigen', vaSchluessel(a.vaFremd.datum, a.vaFremd.id), false, ['AUCH DAS!', 'abgewiesen — der va-Zweig in task_gehoert_mir greift']],
+    [27, 'den eigenen Vortrag auswärts bestätigen', vaSchluessel(a.vaEigen.datum, a.vaEigen.id), true, ['der Weg steht offen', 'ZU STRENG — der Redner kann nicht zusagen']],
+  ]
+  for (const [nr, was, key, erwartet, folge] of bestaetigen) {
+    if (anlage.ok) await bestaetigung(k, nr, was, key, erwartet, folge)
+    else k.kaputt(nr, was, anlage.grund, erwartet)
+  }
+}
+
+/**
+ * Jemand aus dem Haushalt des Mitglieds — für (32). Teilt niemand ihn, zieht
+ * das Mitglied für die Dauer der Probe mit einer Probe-Person in einen
+ * Probe-Haushalt; `spaeter` stellt den Haushalt wieder her und räumt beide weg.
+ */
+async function mitbewohnerFinden(k, ich, spaeter) {
+  const { planer, mitglied, versammlung, marke } = k
+  if (ich.fam) {
+    const r = await planer.rest(`persons?select=id&fam=eq.${ich.fam}&id=neq.${mitglied.pid}&limit=1`)
+    const da = zeilenVon(r)[0]?.id
+    if (da) return { pid: da, wie: 'vorhandener Haushalt' }
+  }
+  const haushalt = crypto.randomUUID()
+  const person = crypto.randomUUID()
+  const h = await planer.rest('households', 'POST', { id: haushalt, congregation_id: versammlung }, 'return=minimal')
+  if (h.status >= 400) return { pid: null, grund: `Probe-Haushalt nicht angelegt (HTTP ${h.status})` }
+  spaeter.push(['der Probe-Haushalt', () => planer.rest(`households?id=eq.${haushalt}`, 'DELETE', undefined, 'return=minimal')])
+  const p = await planer.rest('persons', 'POST', { id: person, congregation_id: versammlung, fn: 'PROBE', ln: marke, fam: haushalt }, 'return=minimal')
+  if (p.status >= 400) return { pid: null, grund: `Probe-Person nicht angelegt (HTTP ${p.status})` }
+  spaeter.push(['die Probe-Person', () => planer.rest(`persons?id=eq.${person}`, 'DELETE', undefined, 'return=minimal')])
+  // Vor dem Umzug vorgemerkt: Scheitert er halb, stellt das Zurücksetzen trotzdem den alten Stand her.
+  spaeter.push(['der Haushalt des Mitglieds', () => planer.rest(`persons?id=eq.${mitglied.pid}`, 'PATCH', { fam: ich.fam ?? null }, 'return=minimal')])
+  const u = await planer.rest(`persons?id=eq.${mitglied.pid}`, 'PATCH', { fam: haushalt }, 'return=minimal')
+  if (u.status >= 400) return { pid: null, grund: `Mitglied nicht in den Probe-Haushalt gezogen (HTTP ${u.status})` }
+  return { pid: person, wie: 'Probe-Haushalt' }
+}
+
+/**
+ * Ein Gastgeber, der **nicht** im Haushalt des Mitglieds lebt — für (30).
+ * Zuerst der Planer; in der Testversammlung sind Planer und Mitglied aber ein
+ * Ehepaar (so gemessen am 3.10.2026, (30) blieb ungemessen), dann jemand
+ * anderes aus der Versammlung. `wie` sagt, welcher Fall gemessen wird: Haben
+ * beide keinen Haushalt, ist es genau der, an dem `null = null` scheitern muss.
+ */
+async function gastgeberAusserHaus(k, ich, planerPerson) {
+  const ausserHaus = (p) => p.id !== k.mitglied.pid && !(ich.fam && p.fam === ich.fam)
+  const wie = (p) => (!ich.fam && !p.fam ? 'beide ohne Haushalt' : 'anderer Haushalt')
+  if (ausserHaus(planerPerson)) return { pid: planerPerson.id, wie: wie(planerPerson) }
+  const r = await k.planer.rest(`persons?select=id,fam&id=neq.${k.mitglied.pid}&order=id&limit=100`)
+  const p = zeilenVon(r).find(ausserHaus)
+  if (p) return { pid: p.id, wie: wie(p) }
+  return { pid: null, grund: r.status >= 400 ? `Personen nicht lesbar (HTTP ${r.status})` : 'alle teilen den Haushalt des Mitglieds' }
+}
+
+/**
+ * (28)–(34) Weitere Pläne (Phase 5): sehen über `plan_sichtbar` — einen
+ * Entwurf nie, den Königreichssaal alle, „Familien reihum" nur die Gastgeber
+ * und ihr Haushalt; schreiben nur Planer.
+ */
+async function plaeneProben(k, a, ich, gast, spaeter) {
+  const { planer, mitglied } = k
+  const p = a.plaene
+  const plaene = await anlegen(planer, 'plaene', [p.entwurf, p.saal, p.fremd, p.eigen])
+  const anlage = plaene.ok ? await anlegen(planer, 'plan_eintraege', Object.values(a.eintraege).flat()) : plaene
+
+  await leseVersuch(k, 28, 'einen Plan im Entwurf sehen', anlage, () => planSicht(mitglied, p.entwurf, a.eintraege.entwurf, false), false, [
+    'AUCH DAS!',
+    'unsichtbar — einen Entwurf sehen nur Planer',
+  ])
+  await leseVersuch(k, 29, 'den veröffentlichten Königreichssaal sehen', anlage, () => planSicht(mitglied, p.saal, a.eintraege.saal, true), true, [
+    'die ganze Versammlung sieht ihn',
+    'ZU STRENG — die Versammlung sieht den Saalplan nicht',
+  ])
+  if (!gast.pid) {
+    k.ungemessen(30, '„Familien reihum" ohne eigenen Haushalt', gast.grund)
+  } else {
+    await leseVersuch(k, 30, `„Familien reihum" ohne eigenen Haushalt (${gast.wie})`, anlage, () => planSicht(mitglied, p.fremd, a.eintraege.fremd, false), false, [
+      'AUCH DAS!',
+      'unsichtbar — nur Gastgeber und ihr Haushalt',
+    ])
+  }
+  await leseVersuch(k, 31, '„Familien reihum" als Gastgeber — der ganze Plan', anlage, () => planSicht(mitglied, p.eigen, a.eintraege.eigen, true), true, [
+    'der Gastgeber sieht, wer an den anderen Tagen dran ist',
+    'ZU STRENG — der Gastgeber sieht seinen Plan nicht ganz',
+  ])
+
+  const mitbewohner = await mitbewohnerFinden(k, ich, spaeter)
+  if (!mitbewohner.pid) {
+    k.ungemessen(32, '„Familien reihum", Gastgeber aus dem eigenen Haushalt', mitbewohner.grund)
+  } else {
+    const eintrag = a.haushaltEintrag(mitbewohner.pid)
+    const plan = await anlegen(planer, 'plaene', [a.haushalt])
+    const anlage32 = plan.ok ? await anlegen(planer, 'plan_eintraege', [eintrag]) : plan
+    await leseVersuch(k, 32, `„Familien reihum", Gastgeber aus dem eigenen Haushalt (${mitbewohner.wie})`, anlage32, () => planSicht(mitglied, a.haushalt, [eintrag], true), true, [
+      'der Haushalt sieht mit',
+      'ZU STRENG — der Haushalt des Gastgebers sieht den Plan nicht',
+    ])
+  }
+
+  await schreibVersuch(k, 33, 'einen Plan anlegen', 'plaene', a.planVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
+  const was34 = 'sich als Gastgeber in einen fremden Plan setzen'
+  if (anlage.ok) await schreibVersuch(k, 34, was34, 'plan_eintraege', a.eintragVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
+  else k.kaputt(34, was34, anlage.grund, false)
+}
+
+/**
+ * Alles wieder weg, was die Probe für T120 angelegt hat — über das
+ * Kennzeichen, damit es auch die Zeilen trifft, die gar nicht hätten ankommen
+ * sollen. Die Einträge gehen ausdrücklich vor ihrem Termin bzw. Plan, statt
+ * sich auf `on delete cascade` zu verlassen: So prüft die Attrappe, die keine
+ * Kaskade kennt, das Aufräumen mit. Danach, was `spaeter` gesammelt hat,
+ * rückwärts: erst den Haushalt des Mitglieds zurück, dann Probe-Person und
+ * -Haushalt, zuletzt der Aufgabenbereich.
+ */
+async function t120Aufraeumen(k, spaeter) {
+  const { planer, mitglied, marke } = k
+  const weg = (tabelle) => () => planer.rest(`${tabelle}?id=like.${marke}*`, 'DELETE', undefined, 'return=minimal')
+  const schritte = [
+    ['die Bestätigungen', () => mitglied.rest(`confirmations?user_id=eq.${mitglied.uid}&task_key=like.*${marke}*`, 'DELETE', undefined, 'return=minimal')],
+    ['die Plan-Einträge', weg('plan_eintraege')],
+    ['die Pläne', weg('plaene')],
+    ['die Vorträge', weg('vortraege_auswaerts')],
+    ['die Zeugnis-Einträge', weg('oz_eintraege')],
+    ['der Termin', weg('oz_termine')],
+    ['die Gruppenbesuche', weg('gruppenbesuche')],
+    ...[...spaeter].reverse(),
+  ]
+  const offen = []
+  for (const [was, tun] of schritte) {
+    const r = await tun()
+    if (r.status >= 400) offen.push(`${was} (HTTP ${r.status})`)
+  }
+  console.log(
+    offen.length
+      ? `  !! Nicht aufgeräumt: ${offen.join(', ')} — Kennzeichen ${marke} !!`
+      : `  (alles mit Kennzeichen ${marke} wieder entfernt, die Person des Mitglieds wie vorher)`,
+  )
+}
+
+/**
+ * Die Fälle (11)–(34) — siehe Kopf. `k` bringt die beiden Anmeldungen und die
+ * Ausgabe-Helfer aus `main` mit. Aufgeräumt wird in jedem Fall, auch wenn ein
+ * Fall mittendrin wirft.
+ */
+async function t120Proben(k) {
+  const { planer, mitglied, versammlung, marke } = k
+  console.log('\nDie Rechte aus T120 (angelegt als Planer, im Jahr 2099):')
+  if (!mitglied.pid || !planer.pid || mitglied.pid === planer.pid) {
+    k.ungemessen('11–34', 'die Pläne der Versammlung', 'Planer und Mitglied brauchen je eine eigene Person')
+    return
+  }
+  const personen = await planer.rest(`persons?select=id,priv,fam&id=in.(${mitglied.pid},${planer.pid})`)
+  const ich = zeilenVon(personen).find((p) => p.id === mitglied.pid)
+  const planerPerson = zeilenVon(personen).find((p) => p.id === planer.pid)
+  if (!ich || !planerPerson) {
+    k.ungemessen('11–34', 'die Pläne der Versammlung', `die beiden Personen sind nicht lesbar (HTTP ${personen.status})`)
+    return
+  }
+  const gruppe = zeilenVon(await planer.rest('groups?select=id&limit=1'))[0]?.id ?? null
+  const gast = await gastgeberAusserHaus(k, ich, planerPerson)
+  const a = t120Anlage({
+    marke,
+    versammlung,
+    tag0: ersterMontagAb('2099-01-01'),
+    planerPid: planer.pid,
+    mitgliedPid: mitglied.pid,
+    gruppe,
+    // Ohne passenden Gastgeber bleibt (30) ungemessen; der Plan entsteht trotzdem.
+    fremderGastgeber: gast.pid ?? planer.pid,
+  })
+  const spaeter = []
+  try {
+    await gruppenbesucheProben(k, a)
+    await zeugnisProben(k, a, ich, spaeter)
+    await rednerProben(k, a)
+    await plaeneProben(k, a, ich, gast, spaeter)
+  } finally {
+    await t120Aufraeumen(k, spaeter)
+  }
 }
 
 /* ===================== Ausführung ========================================= */
@@ -342,13 +927,23 @@ export async function main(arg = process.argv.slice(2)) {
   }
 
   const befunde = []
+  const nichtGemessen = []
   const ergebnis = (nr, was, e, folge) => {
-    befunde.push({ nr, durch: e.durch, wieErwartet: e.wieErwartet, kaputt: Boolean(e.kaputt) })
+    befunde.push({ nr, durch: e.durch, wieErwartet: e.wieErwartet, kaputt: Boolean(e.kaputt), erwartet: Boolean(e.erwartet) })
     console.log(`  ${e.wieErwartet ? '·' : '!'} (${nr}) ${was}`)
     // Bei einer kaputten Probe kein Nachsatz: „abgewiesen — … greift" wäre
     // genau die Behauptung, die sie nicht belegt hat.
     console.log(`      ${e.text}${folge && !e.kaputt ? ` — ${folge}` : ''}`)
   }
+  /** Ein Fall, dem die Voraussetzung fehlte — gesagt statt stillschweigend übersprungen. */
+  const ungemessen = (nr, was, grund, nachsatz) => {
+    nichtGemessen.push(nr)
+    console.log(`  ? (${nr}) ${was} — ${grund}, nicht gemessen`)
+    if (nachsatz) console.log(`      ${nachsatz}`)
+  }
+  /** Eine Probe, die ihre eigene Voraussetzung nicht herstellen konnte: kein Urteil über die Regel. */
+  const kaputt = (nr, was, grund, erwartet) =>
+    ergebnis(nr, was, { durch: false, wieErwartet: false, kaputt: true, erwartet, text: `PROBE KAPUTT — ${grund}, kein Urteil über die Regel` })
 
   // Ein Kennzeichen je Lauf: Damit findet der Empfänger genau die Zeilen dieser
   // Probe wieder — auch die, die gar nicht ankommen sollten.
@@ -410,9 +1005,9 @@ export async function main(arg = process.argv.slice(2)) {
   const belegt = new Set(zeilenVon(vorher2).map((z) => z.task_key))
   const ziel2 = eigene.find((s) => !belegt.has(s.key))
   if (vorher2.status >= 400) {
-    ergebnis(2, was2, { durch: false, wieErwartet: false, kaputt: true, text: `PROBE KAPUTT — Nachsehen vorab scheiterte (HTTP ${vorher2.status}), kein Urteil über die Regel` })
+    kaputt(2, was2, `Nachsehen vorab scheiterte (HTTP ${vorher2.status})`, false)
   } else if (!ziel2) {
-    console.log(`  ? (2) ${was2} — ${eigene.length ? 'auf jeder steht schon eine Zeile des Planers' : 'KEINE gefunden'}, nicht gemessen`)
+    ungemessen(2, was2, eigene.length ? 'auf jeder steht schon eine Zeile des Planers' : 'KEINE gefunden')
   } else {
     const schluessel2 = encodeURIComponent(ziel2.key)
     const s2b = await mitglied.rest(
@@ -477,8 +1072,7 @@ export async function main(arg = process.argv.slice(2)) {
   // Mitglied in den geladenen Wochen jede eigene Aufgabe, wird das gesagt statt
   // stillschweigend übersprungen.
   if (!eigen) {
-    console.log('  ? (5) eigene Aufgabe bestätigen — KEINE gefunden, nicht gemessen')
-    console.log('      Ohne eigene Zuteilung bleibt offen, ob die Richtlinie zu streng ist.')
+    ungemessen(5, 'eigene Aufgabe bestätigen', 'KEINE gefunden', 'Ohne eigene Zuteilung bleibt offen, ob die Richtlinie zu streng ist.')
   } else {
     const eigenKey = encodeURIComponent(eigen.key)
     const s5 = await mitglied.rest(
@@ -496,19 +1090,49 @@ export async function main(arg = process.argv.slice(2)) {
   }
 
   // ---- 6) und dass der legitime Meldeweg offen bleibt ----------------------
+  // Seit dem 24.9.2026 schreibt ein Mitglied keine Mitteilung mehr selbst: Es
+  // sieht die Planer nicht (members_select) und könnte sie nicht adressieren.
+  // Seine Absage geht über `notify_planners` (security definer) an jeden
+  // Planer — so wie die App es tut (`notifyPlanners` in data.ts). Bis zum
+  // 3.10.2026 maß (6) noch die direkte Zeile, die seither jede Richtlinie
+  // abweist, und meldete „ZU STRENG".
   const s6 = await mitglied.rest(
-    'notifications',
+    'rpc/notify_planners',
     'POST',
-    { congregation_id: versammlung, user_id: planer.uid, type: 'verhindert', title: `${marke} — Absage an den Planer`, body: '' },
+    { kind: 'verhindert', subject: `${marke} — Absage an die Planer`, message: '' },
     'return=minimal',
   )
   const angekommen6 = await planer.rest(`notifications?select=id&title=like.${marke}*`)
   const e6 = bewerteVersuch(s6.status, zeilenVon(angekommen6).length > 0, true, { leseStatus: angekommen6.status })
-  ergebnis(6, 'Absage-Mitteilung an den Planer (der legitime Weg)', e6, e6.durch ? 'kommt an' : 'ZU STRENG — Absagen erreichen den Planer nicht mehr')
+  ergebnis(6, 'Absage an die Planer über notify_planners (der legitime Weg)', e6, e6.durch ? 'kommt an' : 'ZU STRENG — Absagen erreichen die Planer nicht mehr')
   for (const z of zeilenVon(angekommen6)) {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
   }
   unaufgeraeumt(angekommen6)
+
+  // ---- 6b) über denselben Weg nur eine Verhinderung -------------------------
+  // `notify_planners` schreibt mit den Rechten der Datenbank; was es
+  // weiterreicht, entscheidet allein seine eigene Prüfung. Import- und
+  // Planmeldungen bleiben Planern vorbehalten (S3/T89).
+  const s6b = await mitglied.rest(
+    'rpc/notify_planners',
+    'POST',
+    { kind: 'zuteilung', subject: `${marke} — als Zuteilung über notify_planners`, message: '' },
+    'return=minimal',
+  )
+  const angekommen6b = await planer.rest(`notifications?select=id&title=like.${marke}*`)
+  const e6b = bewerteVersuch(s6b.status, zeilenVon(angekommen6b).length > 0, false, {
+    leseStatus: angekommen6b.status,
+    // Das Urteil ist die Ausnahme der Funktion selbst (P0001). Ein 404, weil
+    // es sie nicht gibt, sagt über die Regel nichts.
+    urteil: s6b.status < 400 || s6b.daten?.code === 'P0001',
+  })
+  ergebnis('6b', 'dieselbe Meldung als Art „zuteilung" (nur Planer)', e6b, e6b.durch ? 'AUCH DAS!' : 'abgewiesen — notify_planners reicht nur Verhinderungen weiter')
+  if (e6b.kaputt) console.log(`      Die Datenbank antwortete: ${JSON.stringify(s6b.daten)}`)
+  for (const z of zeilenVon(angekommen6b)) {
+    await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
+  }
+  unaufgeraeumt(angekommen6b)
 
   // ---- 7) S11: Abwesenheit auf eine FREMDE Person -------------------------
   // Der Zweig „die Zeile gehört mir" (`user_id = auth.uid()`) sagte nichts über
@@ -516,7 +1140,7 @@ export async function main(arg = process.argv.slice(2)) {
   // der Betroffene aus jeder Zuteilung, unter seinem Namen, ohne sein Zutun.
   const fremdePid = planer.pid
   if (!fremdePid || fremdePid === mitglied.pid) {
-    console.log('  ? (7) Abwesenheit auf eine fremde Person — keine zweite Person verknüpft, nicht gemessen')
+    ungemessen(7, 'Abwesenheit auf eine fremde Person', 'keine zweite Person verknüpft')
   } else {
     const absId = crypto.randomUUID()
     const s7 = await mitglied.rest(
@@ -556,28 +1180,49 @@ export async function main(arg = process.argv.slice(2)) {
     ? await mitglied.rest(`persons?select=priv&id=eq.${mitglied.pid}`)
     : { daten: null }
   if (!dienst) {
-    console.log('  ? (9) fremden Platz übernehmen — kein fremder Hilfsdienst-Platz in der Woche, nicht gemessen')
-  } else if (!qualifiziertFuer(meinePerson?.[0], svc)) {
-    console.log(`  ? (9) fremden Platz übernehmen — Mitglied ist für „${svc}" nicht qualifiziert, nicht gemessen`)
-    console.log('      Die Function wiese schon vorher mit „not-qualified" ab; über S13 sagt das nichts.')
+    ungemessen(9, 'fremden Platz übernehmen', 'kein fremder Hilfsdienst-Platz in der Woche')
+  } else if (!mitglied.pid) {
+    ungemessen(9, 'fremden Platz übernehmen', 'keine Person mit dem Konto verknüpft')
   } else {
-    const vorher = dienst.wer
-    const a9 = await mitglied.funktion('substitute', { action: 'take', taskKey: dienst.key })
-    // Nachgesehen wird an der Woche selbst: Der Statuscode allein genügt nicht,
-    // denn geschrieben wird mit Service-Role — ein Fehlschlag danach sähe wie
-    // eine Ablehnung aus, während der Platz längst umgeschrieben wäre.
-    const { status: l9, daten: w9 } = await planer.rest(`weeks?select=data&start=eq.${wochen[0].start}`)
-    const jetzt = fremdeSlots({ ...w9?.[0]?.data, start: wochen[0].start }, mitglied.pid).find((s) => s.key === dienst.key)
-    // Ein Urteil über S13 ist allein „not-sought" — abgewiesen, weil niemand
-    // abgesagt hat. `forbidden`, `not-qualified`, `slot-taken` oder
-    // `bad-request` sagen darüber nichts, auch wenn sie ebenfalls abweisen.
-    const e9 = bewerteVersuch(a9.status, jetzt?.wer !== vorher, false, {
-      leseStatus: l9,
-      urteil: a9.status < 400 || a9.daten?.error === 'not-sought',
-    })
-    ergebnis(9, `fremden Platz übernehmen, ohne dass Ersatz gesucht ist (${dienst.wer})`, e9, e9.durch ? 'S13 STEHT NOCH OFFEN' : `abgewiesen (${a9.daten?.error ?? '—'})`)
-    if (e9.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a9.daten)}`)
-    if (e9.durch) console.log(`      Auf dem Platz steht jetzt: ${jetzt?.wer ?? '(leer)'} statt ${vorher}`)
+    // Ist das Mitglied für den Dienst nicht freigeschaltet, wiese `take` schon
+    // mit „not-qualified" ab, und über S13 wäre nichts gesagt. Dann schaltet die
+    // Probe es für die Dauer von (9) frei — wie den Aufgabenbereich in (15)/(16)
+    // — und stellt danach den vorigen Stand her. In der Testversammlung ist das
+    // Mitglied eine Schwester ohne Hilfsdienst; dort blieb (9) am 3.10.2026
+    // ungemessen.
+    const privVorher = meinePerson?.[0]?.priv ?? {}
+    const freischalten = !qualifiziertFuer(meinePerson?.[0], svc)
+    const person = `persons?id=eq.${mitglied.pid}`
+    const frei = freischalten ? await planer.rest(person, 'PATCH', { priv: { ...privVorher, [`svc:${svc}`]: true } }, 'return=minimal') : { status: 204 }
+    try {
+      if (frei.status >= 400) {
+        ungemessen(9, 'fremden Platz übernehmen', `Freischalten für „${svc}" scheiterte (HTTP ${frei.status})`)
+      } else {
+        const vorher = dienst.wer
+        const a9 = await mitglied.funktion('substitute', { action: 'take', taskKey: dienst.key })
+        // Nachgesehen wird an der Woche selbst: Der Statuscode allein genügt nicht,
+        // denn geschrieben wird mit Service-Role — ein Fehlschlag danach sähe wie
+        // eine Ablehnung aus, während der Platz längst umgeschrieben wäre.
+        const { status: l9, daten: w9 } = await planer.rest(`weeks?select=data&start=eq.${wochen[0].start}`)
+        const jetzt = fremdeSlots({ ...w9?.[0]?.data, start: wochen[0].start }, mitglied.pid).find((s) => s.key === dienst.key)
+        // Ein Urteil über S13 ist allein „not-sought" — abgewiesen, weil niemand
+        // abgesagt hat. `forbidden`, `not-qualified`, `slot-taken` oder
+        // `bad-request` sagen darüber nichts, auch wenn sie ebenfalls abweisen.
+        const e9 = bewerteVersuch(a9.status, jetzt?.wer !== vorher, false, {
+          leseStatus: l9,
+          urteil: a9.status < 400 || a9.daten?.error === 'not-sought',
+        })
+        const zusatz = freischalten ? `; für „${svc}" vorübergehend freigeschaltet` : ''
+        ergebnis(9, `fremden Platz übernehmen, ohne dass Ersatz gesucht ist (${dienst.wer}${zusatz})`, e9, e9.durch ? 'S13 STEHT NOCH OFFEN' : `abgewiesen (${a9.daten?.error ?? '—'})`)
+        if (e9.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a9.daten)}`)
+        if (e9.durch) console.log(`      Auf dem Platz steht jetzt: ${jetzt?.wer ?? '(leer)'} statt ${vorher}`)
+      }
+    } finally {
+      if (freischalten) {
+        const zurueck = await planer.rest(person, 'PATCH', { priv: privVorher }, 'return=minimal')
+        if (zurueck.status >= 400) console.log(`      !! Freischaltung für „${svc}" blieb stehen (${zurueck.status}) !!`)
+      }
+    }
   }
 
   // ---- 10) S10: Ersatzsuche mit gefälschter Versammlungskennung ------------
@@ -607,19 +1252,28 @@ export async function main(arg = process.argv.slice(2)) {
     }
   }
 
-  const verboten = befunde.filter((b) => b.nr !== 5 && b.nr !== 6 && b.nr !== 8)
+  // ---- 11) bis 34) Die Rechte aus T120 -----------------------------------
+  await t120Proben({ planer, mitglied, versammlung, marke, ergebnis, aufraeumen, ungemessen, kaputt })
+
+  // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
+  // Bis zum 3.10.2026 standen deren Nummern hier fest (5, 6, 8).
+  const verboten = befunde.filter((b) => !b.erwartet)
+  const gegenproben = befunde.filter((b) => b.erwartet)
   const durch = verboten.filter((b) => b.durch).length
-  const kaputt = befunde.filter((b) => b.kaputt)
+  const kaputte = befunde.filter((b) => b.kaputt)
   const ueberraschungen = befunde.filter((b) => !b.wieErwartet && !b.kaputt)
-  console.log(`\n${durch} von ${verboten.length} verbotenen Schreibversuchen kamen durch.`)
-  if (ueberraschungen.length === 0 && kaputt.length === 0) {
-    console.log('Genau die erwarteten: S2, S3, S10, S11 und S13 sind damit nicht mehr gelesen,')
-    console.log('sondern gemessen — und die drei Gegenproben zeigen, dass die Regeln nicht zu')
-    console.log('streng geraten sind: Bestätigen, Abmelden und Absagen gehen weiter.')
+  console.log(`\n${durch} von ${verboten.length} verbotenen Versuchen kamen durch.`)
+  if (ueberraschungen.length === 0 && kaputte.length === 0) {
+    console.log('Genau die erwarteten: S2, S3, S10, S11, S13 und die Rechte aus T120 sind damit nicht')
+    console.log(`mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben zeigen, dass die Regeln`)
+    console.log('nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Eintragen und Sehen gehen weiter.')
+    if (nichtGemessen.length) {
+      console.log(`Ohne Messung blieben ${nichtGemessen.map((n) => `(${n})`).join(', ')} — die Voraussetzung fehlte.`)
+    }
     return
   }
-  if (kaputt.length) {
-    console.log(`Nicht gemessen — die Probe selbst scheiterte: ${kaputt.map((b) => `(${b.nr})`).join(', ')}. Erst reparieren, dann urteilen.`)
+  if (kaputte.length) {
+    console.log(`Nicht gemessen — die Probe selbst scheiterte: ${kaputte.map((b) => `(${b.nr})`).join(', ')}. Erst reparieren, dann urteilen.`)
   }
   if (ueberraschungen.length) {
     console.log(`Abweichend von der Erwartung: ${ueberraschungen.map((b) => `(${b.nr})`).join(', ')} — das ist der Blick wert.`)

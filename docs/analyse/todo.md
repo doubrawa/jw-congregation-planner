@@ -5888,10 +5888,10 @@ Jahr" geht über Entfernen einzelner Besuche); kein Ausdruck des Besuchsplans;
 
 Bewusst offen (Phase 3): Die Zeitleiste im Personen-Detail nennt die Einträge
 nicht; kein Ausdruck des Schichtplans; eine Änderung von Uhrzeit oder Ort eines
-Termins benachrichtigt die Eingetragenen nicht. Die Mitgliedsrechte-Probe (`scripts/mitgliedsrechte-probe.mjs`) kennt
-die neuen Richtlinien noch nicht — nach dem Einspielen lohnt ein Lauf mit
-Fällen für `oz_eintraege` (fremd eintragen, ohne Aufgabenbereich, fremden
-Eintrag bestätigen).
+Termins benachrichtigt die Eingetragenen nicht. Die Mitgliedsrechte-Probe
+(`scripts/mitgliedsrechte-probe.mjs`) misst die neuen Richtlinien seit dem
+3.10.2026 (Fälle 13–21, siehe Nachtrag nach Phase 5) — gelaufen am selben
+Tag, alle wie erwartet.
 
 **Stand Phase 4 (3. Oktober 2026) — Redner auswärts, umgesetzt (Branch
 `claude/t120-redner-auswaerts`):**
@@ -5988,13 +5988,71 @@ Verkündiger alle Vorträge (sie hat keine Zeilenrechte).
   sähe jeder mit irgendeinem Haushalt jeden Familienplan — der Test bliebe
   grün. Jetzt steht der Vergleich im Test (Probe `wp-schema-eigener-haushalt`).
 - **Nebenbefund:** Das „DU" am eigenen Platz steht seit dem ersten Entwurf
-  fest auf Deutsch im JSX, an fünf Stellen; die Prüfung auf festen Text greift
-  erst ab drei Buchstaben. Als eigene Aufgabe ausgelagert.
+  fest auf Deutsch im JSX, an fünf Stellen; die Prüfung auf festen Text griff
+  erst ab drei Buchstaben. Als eigene Aufgabe ausgelagert und am selben Tag
+  behoben (`c700dd7`: Schlüssel `chipDu` in 34 Sprachen, beide Prüfungen ab
+  zwei Buchstaben).
 
 Bewusst offen (Phase 5): kein Ausdruck der Pläne; keine Benachrichtigung beim
 Veröffentlichen (Ankündigungen, keine Zuteilungen); Familien reihum bietet alle
-Personen als Gastgeber an; die Mitgliedsrechte-Probe kennt `plan_sichtbar` noch
-nicht (Fälle: Entwurf, Familienplan ohne eigenen Haushalt).
+Personen als Gastgeber an.
+
+**Nachtrag (3. Oktober 2026) — die Mitgliedsrechte-Probe kennt T120:**
+`scripts/mitgliedsrechte-probe.mjs` misst jetzt 35 Fälle statt zehn — dazu
+(6b), siehe unten. Die 24 zu T120 (11–34): Gruppenbesuche anlegen und sehen; im Zeugnisgeben eine fremde
+Person eintragen, sich als „zugeteilt" eintragen, sich mit und ohne
+Aufgabenbereich eintragen, einen fremden und den eigenen Eintrag bestätigen
+(auch mit falschem Montag im Schlüssel) und löschen; Vorträge auswärts sehen,
+anlegen, verlegen und bestätigen; einen Plan im Entwurf, den Königreichssaal
+und „Familien reihum" sehen (ohne eigenen Haushalt, als Gastgeber, über den
+Haushalt), Pläne und Einträge anlegen. Neun davon sind Gegenproben.
+
+- **Anlage statt Bestand:** Die Probeversammlung hat keine Termine, Vorträge
+  oder Pläne. Der Planer legt sie an — 2099, jede Kennung mit dem Kennzeichen
+  des Laufs —, und die Probe räumt sie am Ende über das Kennzeichen wieder weg,
+  auch nach einem Fehler mittendrin.
+- **Vorübergehend an der Person des Mitglieds:** der Aufgabenbereich
+  „Öffentliches Zeugnisgeben" (an für 13–15, aus für 16) und — teilt niemand
+  den Haushalt — der Haushalt (für 32 mit einer Probe-Person in einen
+  Probe-Haushalt). Beides stellt sie danach wieder her.
+- **Sehen ist ein eigenes Urteil** (`bewerteSicht`): RLS antwortet beim Lesen
+  mit weniger Zeilen, nicht mit 403. Gezählt wird erst, wenn die Anlage beim
+  Planer nachgesehen ist; ein gescheitertes Lesen heißt „PROBE KAPUTT", nicht
+  „unsichtbar".
+- Welche Fälle Gegenproben sind, stand bisher als Nummernliste (5, 6, 8) in
+  der Schlussrechnung; jetzt trägt jedes Ergebnis seine Erwartung mit.
+- Tests: Tage und Schlüssel gegen die App (`montagVon`, `ozTaskKey`,
+  `vaTaskKey`), die Anlage gegen die Regeln der Datenbank (Wochentag des
+  Termins, Eindeutigkeit, Plätze), und drei Läufe gegen die Attrappe
+  (Aufräumen samt Person des Mitglieds, Reihenfolge der Aufgabenbereich-
+  Stellungen, gescheiterte Anlage).
+
+**Erster Lauf (3.10.2026, 17:45)** gegen eine neu angelegte Testversammlung
+(`testversammlung-anlegen.mjs` — die Probeversammlung Talheim aus T78 gab es
+nicht mehr): **0 von 20 verbotenen Versuchen kamen durch**, alle Fälle aus T120
+wie erwartet. Drei Befunde betrafen die Probe selbst, alle behoben:
+
+- **(6) war ein Fehlalarm.** Sie maß noch die direkte Mitteilung an den Planer;
+  seit dem 24.9.2026 schreibt ein Mitglied gar keine Mitteilung mehr selbst,
+  seine Absage geht über `notify_planners`. Die Richtlinie wies die Zeile also
+  zu Recht ab, und die Probe meldete „ZU STRENG". Jetzt geht (6) denselben Weg
+  wie die App; neu ist **(6b)**: derselbe Weg mit Art `zuteilung` muss an der
+  Prüfung der Funktion scheitern (S3/T89). Die Attrappe kennt dafür
+  Funktionsaufrufe (`rpc/…`) und hält Name und Parameter an `schema.sql`.
+- **(30) blieb ungemessen**, weil Planer und Mitglied der Testversammlung ein
+  Ehepaar sind — der Planer als „fremder" Gastgeber steht im Haushalt des
+  Mitglieds. Jetzt sucht die Probe einen Gastgeber außerhalb des Haushalts.
+- **(9) blieb ungemessen**, weil das Mitglied eine Schwester ohne Hilfsdienst
+  ist (`take` wiese mit „not-qualified" ab). Jetzt schaltet die Probe den
+  Dienst für die Dauer von (9) frei und nimmt die Freischaltung wieder.
+
+**Zweiter Lauf (3.10.2026, 17:53):** **0 von 23 verbotenen Versuchen kamen
+durch, alle 12 Gegenproben gingen durch, nichts blieb ungemessen.** Damit
+sind die Rechte aus T120 gemessen — und nebenbei S10, S11 und S13, die seit
+dem 24. August auf ihren Lauf warteten (siehe „Was bewusst offen bleibt").
+Die Testversammlung („Probeversammlung Talheim", `4d994685-…`) ist danach
+samt Konten wieder entfernt; für den nächsten Lauf legt
+`testversammlung-anlegen.mjs` eine neue an.
 
 ---
 
@@ -6003,7 +6061,7 @@ nicht (Fälle: Entwurf, Familienplan ohne eigenen Haushalt).
 | Punkt | Warum |
 | --- | --- |
 | ~~**S2/S3 praktisch nachweisen**~~ | ✅ **gemessen am 19., geschlossen am 23. August 2026** (migration-022). Siehe T89. |
-| **S10/S11/S13 praktisch nachweisen** | Code und Regeln sind ausgerollt (24.8.), die Messung steht aus. `scripts/mitgliedsrechte-probe.mjs` kann alle drei — ein Lauf gegen die Probeversammlung genügt, siehe T97. |
+| ~~**S10/S11/S13 praktisch nachweisen**~~ | ✅ **gemessen am 3. Oktober 2026** — `scripts/mitgliedsrechte-probe.mjs` gegen eine neu angelegte Testversammlung: 0 von 23 verbotenen Versuchen kamen durch, alle 12 Gegenproben gingen durch. Derselbe Lauf misst seither auch die Rechte aus T120 (Fälle 11–34), siehe T120. |
 | **D7 Mehrbenutzer-Konflikt** | die Voraussetzung ist seit T78 da (zwei Konten derselben Versammlung); statisch belegt (siehe T39), praktisch noch nicht |
 | **D4 echte Geräte** | das dokumentierte `pointercancel`-Verhalten ist nicht emulierbar |
 | **D5 fachliche Abnahme** | nur ein Koordinator kann beurteilen, ob die Abläufe stimmen |

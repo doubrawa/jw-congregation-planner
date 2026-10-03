@@ -1,15 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bewerteSicht,
   bewerteVersuch,
   dienstAusSchluessel,
   eigeneSlots,
+  ersterMontagAb,
   fremdeSlots,
   helferSchluessel,
+  montagDerWoche,
+  ozSchluessel,
   qualifiziertFuer,
   slotSchluessel,
+  t120Anlage,
+  tagPlus,
+  vaSchluessel,
+  wochentag,
 } from './mitgliedsrechte-probe.mjs'
 import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
+import { montagVon } from '../src/data/meeting-dates'
+import { vaTaskKey } from '../src/data/auswaerts'
+import { ozTaskKey } from '../src/data/zeugnis'
 import type { PartItem, Person } from '../src/data/types'
 
 /**
@@ -204,5 +215,148 @@ describe('Ist das Mitglied für den Platz überhaupt qualifiziert? (Fall 9)', ()
     for (const p of [undefined, null, {}, { priv: null }]) {
       expect(qualifiziertFuer(p, 'mik')).toBe(false)
     }
+  })
+})
+
+describe('T120: Tage und Schlüssel wie in der App', () => {
+  /*
+    Dieselbe Gefahr wie beim Programmschlüssel oben: Ein Schlüssel, der um
+    einen Tag verrutscht, beträfe keinen Eintrag. Die Bestätigung des eigenen
+    Eintrags (18, 27) schiene dann „ZU STRENG" abgewiesen, die fremde (17, 26)
+    „abgewiesen — greift", und beides wäre nicht gemessen.
+  */
+  const tage = (von: string, anzahl: number) => Array.from({ length: anzahl }, (_, i) => tagPlus(von, i))
+
+  it('der Montag der Woche ist derselbe wie in der App — ein Jahr lang, samt Zeitumstellung, und 2099', () => {
+    for (const tag of [...tage('2026-01-01', 366), ...tage('2098-12-25', 21)]) {
+      expect(montagDerWoche(tag), tag).toBe(montagVon(tag))
+    }
+  })
+
+  it('der Wochentag zählt wie oz_termine.wd: 0 ist Sonntag', () => {
+    expect(wochentag('2026-10-04')).toBe(0) // Sonntag
+    expect(wochentag('2026-10-05')).toBe(1) // Montag
+  })
+
+  it('der erste Montag ab einem Tag ist ein Montag, frühestens der Tag selbst, spätestens sechs Tage danach', () => {
+    for (const tag of tage('2098-12-28', 14)) {
+      const montag = ersterMontagAb(tag)
+      expect(wochentag(montag)).toBe(1)
+      expect(montag >= tag && montag <= tagPlus(tag, 6), `${tag} → ${montag}`).toBe(true)
+    }
+  })
+
+  it('Zeugnis- und Vortragsschlüssel wie ozTaskKey und vaTaskKey', () => {
+    for (const datum of ['2099-01-05', '2099-01-11', '2026-10-04', '2026-10-25']) {
+      expect(ozSchluessel(datum, 'z1')).toBe(ozTaskKey({ id: 'z1', datum }))
+      expect(vaSchluessel(datum, 'v1')).toBe(vaTaskKey({ id: 'v1', datum }))
+    }
+  })
+})
+
+describe('T120: einen Leseversuch bewerten', () => {
+  it('unsichtbar, wo es unsichtbar gehört — sichtbar, wo es sichtbar gehört', () => {
+    expect(bewerteSicht(200, false, false)).toMatchObject({ durch: false, wieErwartet: true, erwartet: false })
+    expect(bewerteSicht(200, true, true)).toMatchObject({ durch: true, wieErwartet: true, erwartet: true })
+  })
+
+  it('und jede Überraschung fällt auf — in beide Richtungen', () => {
+    expect(bewerteSicht(200, true, false).wieErwartet).toBe(false)
+    expect(bewerteSicht(200, false, true).wieErwartet).toBe(false)
+    expect(bewerteSicht(200, true, false, 'Plan 1/1, Einträge 0/1').text).toBe('SICHTBAR (HTTP 200; Plan 1/1, Einträge 0/1)')
+  })
+
+  it.each([401, 403, 400, 500])('ein Lesen mit %i ist kein „unsichtbar" — es zeigte bloß nichts', (status) => {
+    // RLS antwortet beim Lesen mit weniger Zeilen, nicht mit 403. Ein
+    // gescheitertes Lesen sähe sonst aus wie die Grenze, die greift.
+    expect(bewerteSicht(status, false, false)).toMatchObject({ wieErwartet: false, kaputt: true })
+  })
+
+  it('beim Löschen und Ändern heißt das Ergebnis, was geschah', () => {
+    expect(bewerteVersuch(204, true, true, { woerter: ['GELÖSCHT', 'nicht gelöscht'] }).text).toBe('GELÖSCHT (HTTP 204)')
+    expect(bewerteVersuch(204, false, false, { woerter: ['GEÄNDERT', 'nicht geändert'] })).toMatchObject({
+      wieErwartet: true,
+      erwartet: false,
+      text: 'nicht geändert (HTTP 204)',
+    })
+  })
+})
+
+describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechten nichts zu tun haben', () => {
+  /*
+    Scheiterte eine Zeile an einer anderen Regel — falscher Wochentag, doppelt
+    in derselben Schicht, zwei Einträge auf einem Platz —, sähe das aus wie
+    eine Abweisung über die Rechte, und die Probe meldete „greift", ohne dort
+    gewesen zu sein.
+  */
+  const marke = 'PROBE-1'
+  const a = t120Anlage({ marke, versammlung: 'c', tag0: ersterMontagAb('2099-01-01'), planerPid: 'p-planer', mitgliedPid: 'p-mitglied', gruppe: 'g1' })
+  const oz = [a.ozFremd, a.ozZugeteilt, a.ozFuerAndere, a.ozAlsZugeteilt, a.ozSelbst, a.ozOhneBereich]
+  const eintraege = [...Object.values(a.eintraege).flat(), a.haushaltEintrag('p-mitbewohner'), a.eintragVersuch]
+
+  it('jeder Zeugnis-Eintrag liegt am Wochentag seines Termins (sonst: oz_falscher_tag)', () => {
+    for (const e of oz) expect(wochentag(e.datum), e.id).toBe(a.termin.wd)
+  })
+
+  it('keine Person zweimal in derselben Schicht, keine Schicht über ihre Plätze', () => {
+    expect(new Set(oz.map((e) => `${e.datum}|${e.person_id}`)).size).toBe(oz.length)
+    for (const tag of new Set(oz.map((e) => e.datum))) {
+      expect(oz.filter((e) => e.datum === tag).length, tag).toBeLessThanOrEqual(a.termin.plaetze)
+    }
+  })
+
+  it('Gruppenbesuche an einem Montag, dieselbe Gruppe nicht zweimal in einer Woche', () => {
+    for (const b of [a.besuch!, a.besuchVersuch!]) expect(wochentag(b.woche)).toBe(1)
+    expect(a.besuch!.woche).not.toBe(a.besuchVersuch!.woche)
+  })
+
+  it('ein Platz je Plan, Tag und Mahlzeit (plan_eintraege_platz), und kein Plan endet vor seinem Anfang', () => {
+    expect(new Set(eintraege.map((e) => `${e.plan_id}|${e.datum}|${e.mahlzeit ?? ''}`)).size).toBe(eintraege.length)
+    for (const p of [...Object.values(a.plaene), a.haushalt, a.planVersuch]) expect(p.bis >= p.von, p.id).toBe(true)
+  })
+
+  it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
+    const ids = [a.termin, ...oz, a.vaFremd, a.vaEigen, a.vaVersuch, ...Object.values(a.plaene), a.haushalt, a.planVersuch, ...eintraege, a.besuch!, a.besuchVersuch!].map((z) => z.id)
+    expect(ids.every((id) => id.startsWith(`${marke}-`))).toBe(true)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('jeder Versuch des Mitglieds zielt auf genau eine Regel', () => {
+    // (13) fremde Person — „selbst" und Aufgabenbereich stimmen.
+    expect(a.ozFuerAndere).toMatchObject({ person_id: 'p-planer', selbst: true })
+    // (14) die eigene Person, nur ohne „selbst".
+    expect(a.ozAlsZugeteilt).toMatchObject({ person_id: 'p-mitglied', selbst: false })
+    // (16) beides richtig — es fehlt allein der Aufgabenbereich.
+    expect(a.ozOhneBereich).toMatchObject({ person_id: 'p-mitglied', selbst: true })
+    // (34) sich selbst zum Gastgeber im fremden Familienplan machen.
+    expect(a.eintragVersuch).toMatchObject({ plan_id: a.plaene.fremd.id, person_id: 'p-mitglied' })
+    expect(a.plaene.fremd.vorlage).toBe('familien')
+  })
+
+  it('(19) ist der eigene Eintrag unter einem anderen Montag — nicht irgendein Schlüssel', () => {
+    const richtig = ozSchluessel(a.ozZugeteilt.datum, a.ozZugeteilt.id)
+    expect(a.ozFalscherMontag).not.toBe(richtig)
+    expect(a.ozFalscherMontag.split('|')[0]).toBe('oz')
+    expect(a.ozFalscherMontag.split('|')[2]).toBe(a.ozZugeteilt.id)
+    expect(wochentag(a.ozFalscherMontag.split('|')[1]!)).toBe(1)
+  })
+
+  it('Vorträge an einem Sonntag; verlegt wird auf einen anderen Tag', () => {
+    for (const v of [a.vaFremd, a.vaEigen, a.vaVersuch]) expect(wochentag(v.datum)).toBe(0)
+    expect(a.vaVerlegtAuf).not.toBe(a.vaEigen.datum)
+  })
+
+  it('der fremde Gastgeber in (30) ist, wen die Probe gefunden hat — ohne Angabe der Planer', () => {
+    // In der Testversammlung sind Planer und Mitglied ein Ehepaar: Mit dem
+    // Planer als „fremdem" Gastgeber sähe das Mitglied den Plan zu Recht.
+    expect(a.eintraege.fremd[0]!.person_id).toBe('p-planer')
+    const anders = t120Anlage({ marke, versammlung: 'c', tag0: '2099-01-05', planerPid: 'p-planer', mitgliedPid: 'p-mitglied', fremderGastgeber: 'p-dritte' })
+    expect(anders.eintraege.fremd[0]!.person_id).toBe('p-dritte')
+  })
+
+  it('ohne Gruppe gibt es keinen Gruppenbesuch — (11) und (12) bleiben dann ungemessen', () => {
+    const ohne = t120Anlage({ marke, versammlung: 'c', tag0: '2099-01-05', planerPid: 'p1', mitgliedPid: 'p2' })
+    expect(ohne.besuch).toBeNull()
+    expect(ohne.besuchVersuch).toBeNull()
   })
 })
