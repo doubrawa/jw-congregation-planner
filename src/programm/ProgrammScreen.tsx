@@ -19,6 +19,7 @@ import { DruckWahl } from './DruckWahl'
 import { FsProgram } from './FsProgram'
 import { useVaReiter } from '../components/useVaReiter'
 import { AuswaertsAnsicht } from './AuswaertsAnsicht'
+import { WeiterePlaeneAnsicht } from './WeiterePlaeneAnsicht'
 import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
 import { ZeugnisAnsicht } from './ZeugnisAnsicht'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
@@ -61,6 +62,16 @@ export function ProgrammScreen() {
     window.addEventListener('afterprint', fertig)
     window.print()
   }, [])
+
+  // Die Weiteren Pläne (T120, Phase 5): ein eigenes Thema ohne Woche.
+  if (state.tab === 'wp') {
+    return (
+      <section className="screen">
+        <ThemaKopf />
+        <WeiterePlaeneAnsicht />
+      </section>
+    )
+  }
 
   // Die Redner auswärts (T120, Phase 4) haben keine Woche — ohne Streifen,
   // unter den Reitern der Zusammenkünfte.

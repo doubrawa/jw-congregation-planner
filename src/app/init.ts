@@ -60,6 +60,8 @@ export function initialState(): AppState {
     ozTermine: [],
     ozEintraege: [],
     auswaerts: [],
+    plaene: [],
+    planEintraege: [],
     absences: [],
     notifs: [],
     notifOpen: false,

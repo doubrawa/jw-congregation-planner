@@ -149,6 +149,14 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     expect(tests.persons.some((p) => p.priv.zeugnis)).toBe(false)
   })
 
+  it('ebenso die Weiteren Pläne — und tab=wp öffnet ihr Thema (T120, Phase 5)', () => {
+    const seite = entwicklerStart('#s=programm&tab=wp')
+    expect(seite.tab).toBe('wp')
+    expect(seite.plaene.length).toBeGreaterThan(0)
+    expect(seite.planEintraege.length).toBeGreaterThan(0)
+    expect(demoZustand().plaene).toEqual([])
+  })
+
   it('ebenso die Redner auswärts, samt Zusagen — und tab=va öffnet ihren Reiter (T120, Phase 4)', () => {
     const seite = entwicklerStart('#s=planen&tab=va')
     expect(seite.tab).toBe('va')

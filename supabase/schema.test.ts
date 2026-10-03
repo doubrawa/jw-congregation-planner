@@ -185,6 +185,27 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(richtlinien(schema).get('vortraege_auswaerts_write') ?? '').toContain('public.is_planner()')
   })
 
+  it('Weitere Pläne: Entwürfe sieht nur ein Planer, Familien reihum nur, wer darin steht (T120, Phase 5)', () => {
+    const fn = funktionsRuempfe(schema).get('plan_sichtbar') ?? ''
+    // Die Funktion liest dieselbe Tabelle, deren Richtlinie sie ist — ohne
+    // `security definer` liefe sie in die Rekursion.
+    expect(fn).toContain('security definer')
+    expect(fn).toContain('public.is_planner()')
+    expect(fn).toContain('not p.entwurf')
+    expect(fn).toContain("p.vorlage = 'saal'")
+    expect(fn).toContain('gast.id = public.my_person_id()')
+    // Der Haushalt des Gastgebers muss der eigene sein — `gast.fam is not null`
+    // allein ließe jeden mit irgendeinem Haushalt jeden Familienplan sehen.
+    expect(fn).toContain('gast.fam is not null')
+    expect(fn).toContain('gast.fam = (select ich.fam from public.persons ich where ich.id = public.my_person_id())')
+    const r = richtlinien(schema)
+    expect(r.get('plaene_select') ?? '').toContain('public.plan_sichtbar(id)')
+    expect(r.get('plan_eintraege_select') ?? '').toContain('public.plan_sichtbar(plan_id)')
+    // Schreiben nur Planer.
+    expect(r.get('plaene_write') ?? '').toContain('public.is_planner()')
+    expect(r.get('plan_eintraege_write') ?? '').toContain('public.is_planner()')
+  })
+
   it('selbst eintragen nur mit Aufgabenbereich, nur für sich, nur als „selbst" (T120)', () => {
     const rein = richtlinien(schema).get('oz_eintraege_selbst_rein') ?? ''
     expect(rein).toContain('person_id = public.my_person_id()')

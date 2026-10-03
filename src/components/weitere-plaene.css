@@ -1,0 +1,268 @@
+/* ---- Weitere Pläne (T120, Phase 5) ----------------------------------------
+   Planen (`WeiterePlaenePlan`) und Ansehen (`WeiterePlaeneAnsicht`). Die Liste
+   folgt der Canvas: aktuell, Entwürfe, abgeschlossen; ein Entwurf ist
+   gestrichelt umrandet, weil ihn nur Admins sehen. */
+
+.wp-neu {
+  margin-top: 14px;
+}
+
+.wp-leer {
+  margin-top: 14px;
+  font-size: calc(12px * var(--fs));
+  color: var(--mut);
+}
+
+.wp-abschnitt {
+  margin-top: 22px;
+}
+
+.wp-abschnitt-titel {
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--mut);
+}
+
+.wp-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 16px 14px;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-panel);
+  background: var(--tNeu2);
+  color: var(--ink);
+  text-align: start;
+  cursor: pointer;
+}
+
+.wp-karte[data-stand='entwurf'] {
+  border: 1.5px dashed var(--bord2);
+  background: var(--card);
+}
+
+.wp-karte[data-stand='abgeschlossen'] {
+  opacity: 0.6;
+}
+
+.wp-karte-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wp-vorlage {
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
+.wp-marke {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: var(--line);
+  color: var(--mut);
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.wp-karte-name,
+.wp-name {
+  font-family: var(--font-serif);
+  font-size: calc(18px * var(--fs));
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.wp-name {
+  margin-top: 2px;
+}
+
+.wp-karte-zeitraum,
+.wp-zeitraum {
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.wp-zurueck {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--acc);
+  font-size: calc(12px * var(--fs));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wp-titel {
+  margin-top: 12px;
+  font-family: var(--font-serif);
+  font-size: calc(22px * var(--fs));
+  font-weight: 500;
+}
+
+.wp-vorlagen {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.wp-vorlage-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--tNeu2);
+  color: var(--ink);
+  text-align: start;
+  cursor: pointer;
+}
+
+.wp-vorlage-karte[data-vorlage='familien'] {
+  background: var(--tGld);
+}
+
+.wp-vorlage-name {
+  font-family: var(--font-serif);
+  font-size: calc(18px * var(--fs));
+  font-weight: 500;
+}
+
+.wp-vorlage-text {
+  font-size: calc(12px * var(--fs));
+  line-height: 1.45;
+  color: var(--mut);
+}
+
+.wp-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.wp-zeitraum-felder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+
+.wp-zeitraum-felder > .wp-feld {
+  flex: 1 1 160px;
+}
+
+.wp-verteilen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+
+.wp-loeschen {
+  display: block;
+  margin: 18px auto 0;
+  color: var(--wein);
+}
+
+/* Eine Woche bzw. eine Mahlzeit: links wann, rechts die Gruppe oder der Gastgeber. */
+.wp-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--panel-hair);
+}
+
+.wp-zeile:last-child {
+  border-bottom: 0;
+}
+
+.wp-zeile.is-vorbei,
+.panel.is-vorbei {
+  opacity: 0.6;
+}
+
+.wp-zeile-wann {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+.wp-zeile-wer {
+  font-size: calc(12.5px * var(--fs));
+  color: var(--mut);
+}
+
+/* Beim Ansehen: „Deine Gruppe ist dran" und die Liste. */
+.wp-dran {
+  margin-top: 10px;
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.wp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.wp-chip {
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--card);
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 600;
+}
+
+.wp-liste {
+  margin-top: 10px;
+}
+
+.wp-liste-zeile {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--panel-hair);
+  font-size: calc(12.5px * var(--fs));
+}
+
+.wp-liste-zeile:last-child {
+  border-bottom: 0;
+}
+
+.wp-liste-zeile.is-eigen {
+  font-weight: 600;
+}
+
+.wp-liste-wer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-align: end;
+}
+
+.wp-liste-mahlzeit {
+  color: var(--mut);
+}
+
+.wp-info {
+  margin-top: 10px;
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}

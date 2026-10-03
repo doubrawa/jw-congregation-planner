@@ -31,6 +31,8 @@ import type {
   OzEintrag,
   OzTermin,
   VortragAuswaerts,
+  WeitererPlan,
+  PlanEintrag,
   Member,
   Notification,
   NotificationType,
@@ -179,6 +181,58 @@ function vortragAuswaertsToRow(v: VortragAuswaerts, congregationId: string) {
     versammlung: v.versammlung,
     nummer: v.nummer,
     person_id: v.pid,
+  }
+}
+
+/** Weitere Pläne (T120, Phase 5): ein Plan, eine Zeile. */
+interface PlanRow {
+  id: string
+  vorlage: WeitererPlan['vorlage']
+  name: string
+  von: string
+  bis: string
+  entwurf: boolean
+}
+
+function planFromRow(r: PlanRow): WeitererPlan {
+  return { id: r.id, vorlage: r.vorlage, name: r.name, von: r.von, bis: r.bis, entwurf: r.entwurf }
+}
+
+function planToRow(p: WeitererPlan, congregationId: string) {
+  return {
+    id: p.id,
+    congregation_id: congregationId,
+    vorlage: p.vorlage,
+    name: p.name,
+    von: p.von,
+    bis: p.bis,
+    entwurf: p.entwurf,
+  }
+}
+
+/** Ein Eintrag eines weiteren Plans: Woche und Gruppe bzw. Tag, Mahlzeit und Gastgeber. */
+interface PlanEintragRow {
+  id: string
+  plan_id: string
+  datum: string
+  grp: string | null
+  person_id: string | null
+  mahlzeit: PlanEintrag['mahlzeit']
+}
+
+function planEintragFromRow(r: PlanEintragRow): PlanEintrag {
+  return { id: r.id, planId: r.plan_id, datum: r.datum, grp: r.grp, pid: r.person_id, mahlzeit: r.mahlzeit }
+}
+
+function planEintragToRow(e: PlanEintrag, congregationId: string) {
+  return {
+    id: e.id,
+    congregation_id: congregationId,
+    plan_id: e.planId,
+    datum: e.datum,
+    grp: e.grp,
+    person_id: e.pid,
+    mahlzeit: e.mahlzeit,
   }
 }
 
@@ -570,6 +624,9 @@ export interface CongregationData {
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
   auswaerts: VortragAuswaerts[]
+  /** Weitere Pläne (T120, Phase 5), deren Zeitraum frühestens ein Vierteljahr zurück endet. */
+  plaene: WeitererPlan[]
+  planEintraege: PlanEintrag[]
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -628,7 +685,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows, auswaertsRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows, auswaertsRows, planRows, planEintragRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -692,6 +749,24 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('datum', ozLadeAb())
       .order('datum'),
+    // Weitere Pläne (T120, Phase 5): was frühestens ein Vierteljahr zurück
+    // endet — die abgeschlossenen stehen beim Planen noch eine Weile als
+    // Rückblick da. Ein Mitglied bekommt nur, was es sehen darf (RLS).
+    supabase
+      .from('plaene')
+      .select('id, vorlage, name, von, bis, entwurf')
+      .eq('congregation_id', congregationId)
+      .gte('bis', ozLadeAb())
+      .order('von'),
+    // Die Einträge **ohne** Datumsgrenze: Ein laufender Plan kann vor mehr als
+    // einem Vierteljahr begonnen haben, und ein fehlender alter Eintrag sähe
+    // für die Verteilung wie ein freier Platz aus. Es sind wenige; was zu
+    // keinem geladenen Plan gehört, fällt unten heraus.
+    supabase
+      .from('plan_eintraege')
+      .select('id, plan_id, datum, grp, person_id, mahlzeit')
+      .eq('congregation_id', congregationId)
+      .order('datum'),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -717,6 +792,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (ozEintragRows.error) console.error('[oz_eintraege]', ozEintragRows.error.message)
   // Und die Vorträge auswärts (Phase 4).
   if (auswaertsRows.error) console.error('[vortraege_auswaerts]', auswaertsRows.error.message)
+  // Und die weiteren Pläne (Phase 5).
+  if (planRows.error) console.error('[plaene]', planRows.error.message)
+  if (planEintragRows.error) console.error('[plan_eintraege]', planEintragRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
@@ -796,6 +874,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // eine gelöschte und neu angelegte Person in ihren Treffpunkten für immer ein
   // bloßer Name.
   const fsWeeks = fsLeiterBinden(ausgerichtet, personList)
+  const planListe = ((planRows.data ?? []) as PlanRow[]).map(planFromRow)
+  const geladenePlaene = new Set(planListe.map((p) => p.id))
 
   const data: CongregationData = {
     congregation: { name: c?.name ?? '', hall: c?.hall ?? '', times: zeiten },
@@ -811,6 +891,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     ozTermine: ((ozTerminRows.data ?? []) as OzTerminRow[]).map(ozTerminFromRow),
     ozEintraege: ((ozEintragRows.data ?? []) as OzEintragRow[]).map(ozEintragFromRow),
     auswaerts: ((auswaertsRows.data ?? []) as VortragAuswaertsRow[]).map(vortragAuswaertsFromRow),
+    plaene: planListe,
+    planEintraege: ((planEintragRows.data ?? []) as PlanEintragRow[])
+      .map(planEintragFromRow)
+      .filter((e) => geladenePlaene.has(e.planId)),
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
@@ -1201,6 +1285,57 @@ export function saveVortraegeAuswaerts(
         .upsert(vortraege.map((v) => vortragAuswaertsToRow(v, congregationId)))
     })(),
   )
+}
+
+/**
+ * Weitere Pläne (T120, Phase 5): Pläne und Einträge in **einer** Schlange.
+ * Ein neuer Eintrag zeigt auf einen Plan, der womöglich noch im Bündel wartet
+ * („Neuer Plan" und gleich „Reihum verteilen"); der Plan geht deshalb vorher
+ * hinaus, und die Schlange hält die Reihenfolge — wie beim Zeugnisgeben.
+ */
+let planWarteschlange: Promise<void> = Promise.resolve()
+
+function planNacheinander(schreiben: () => Promise<{ error: { message: string } | null }>): void {
+  planWarteschlange = planWarteschlange
+    .then(() => run(schreiben()))
+    .catch((err: unknown) => schreibfehler({ message: err instanceof Error ? err.message : String(err) }))
+}
+
+/** Pläne: anlegen oder ändern, was übergeben wird; löschen, was hier entfernt wurde (die Einträge per Kaskade). */
+export function savePlaene(congregationId: string, plaene: WeitererPlan[], entfernt: string[] = []): void {
+  if (!supabase) return
+  const client = supabase
+  planNacheinander(async () => {
+    if (entfernt.length) {
+      const { error } = await client.from('plaene').delete().eq('congregation_id', congregationId).in('id', entfernt)
+      if (error) return { error }
+    }
+    if (!plaene.length) return { error: null }
+    return await client.from('plaene').upsert(plaene.map((p) => planToRow(p, congregationId)))
+  })
+}
+
+/**
+ * Einträge: erst löschen, dann schreiben. Ein Platz (Woche bzw. Tag und
+ * Mahlzeit) ist eindeutig (`plan_eintraege_platz`); der Reducer behält deshalb
+ * die Kennung eines Platzes, wenn er nur eine andere Gruppe oder einen anderen
+ * Gastgeber bekommt.
+ */
+export function savePlanEintraege(congregationId: string, eintraege: PlanEintrag[], entfernt: string[] = []): void {
+  if (!supabase) return
+  const client = supabase
+  planNacheinander(async () => {
+    if (entfernt.length) {
+      const { error } = await client
+        .from('plan_eintraege')
+        .delete()
+        .eq('congregation_id', congregationId)
+        .in('id', entfernt)
+      if (error) return { error }
+    }
+    if (!eintraege.length) return { error: null }
+    return await client.from('plan_eintraege').upsert(eintraege.map((e) => planEintragToRow(e, congregationId)))
+  })
 }
 
 /** Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]). */

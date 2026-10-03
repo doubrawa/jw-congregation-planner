@@ -167,6 +167,8 @@ describe('Wege ohne eigene Aktion', () => {
       ozTermine: [],
       ozEintraege: [],
       auswaerts: [],
+      plaene: [],
+      planEintraege: [],
       absences: [],
       notifications: [],
       confirmations: {},

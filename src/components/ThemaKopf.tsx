@@ -25,7 +25,8 @@ export function ThemaKopf({ zusatz, thema: vorgegeben }: { zusatz?: ReactNode; t
   const { t } = useT()
   const thema = vorgegeben ?? themaVon(state.tab)
   const fsOverseer = aufseherGruppe(state.planner, state.groups, state.personId) !== null
-  const titel = thema === 'predigtdienst' ? t.tabFs : t.navZusammenkuenfte
+  const titel =
+    thema === 'predigtdienst' ? t.tabFs : thema === 'weitere' ? t.navWeiterePlaene : t.navZusammenkuenfte
   const planen = state.screen === 'planen'
   return (
     <div className="screen-head thema-kopf">

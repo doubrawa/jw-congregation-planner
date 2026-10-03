@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials, aufseherGruppe } from '../data/helpers'
+import { fromIso } from '../data/meeting-dates'
 import { darfPlanen, erlaubteScreens, themaVon } from '../data/rechte'
+import { weiterePlaeneImMenue } from '../data/weitere-plaene'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
@@ -31,6 +33,7 @@ import { eigenePerson } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
+import { useKalendertag } from './useKalendertag'
 import { NotificationsPanel } from './NotificationsPanel'
 import { SidebarBrand, SidebarFooter, SidebarNav, type NavAbschnitt, type NavEintrag } from './Sidebar'
 import { welcomeDecision } from './welcome'
@@ -58,6 +61,9 @@ export function AppShell() {
   // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
   const isLogin = state.screen === 'login' || state.recovery
   const me = eigenePerson(state)
+  // Der Kalendertag: Ob „Weitere Pläne" im Menü steht, hängt daran, ob ein Plan
+  // noch läuft.
+  const tag = useKalendertag()
   // Mobiles Seitenmenü (Drawer) — Desktop hat die feste Sidebar
   const [menuOpen, setMenuOpen] = useState(false)
   // Deep-Link aus einem Push-Klick (#go=<screen>): beim Start aus dem Hash, bei
@@ -172,6 +178,14 @@ export function AppShell() {
     onClick: () => zuThema(thema),
   })
   const verwaltung = (['personen', 'einstellungen'] as const).filter((s) => navScreens.includes(s))
+  const weiterePlaeneSichtbar = weiterePlaeneImMenue({
+    plaene: state.plaene,
+    eintraege: state.planEintraege,
+    planner: state.planner,
+    me,
+    persons: state.persons,
+    heute: fromIso(tag),
+  })
   const abschnitte: NavAbschnitt[] = [
     {
       key: 'eigenes',
@@ -184,6 +198,9 @@ export function AppShell() {
       eintraege: [
         themaEintrag('zusammenkuenfte', t.navZusammenkuenfte),
         themaEintrag('predigtdienst', t.tabFs),
+        // Weitere Pläne (T120, Phase 5): für Planer immer, sonst erst, wenn es
+        // etwas anzusehen gibt — ein leeres Thema wäre nur eine Sackgasse.
+        ...(weiterePlaeneSichtbar ? [themaEintrag('weitere', t.navWeiterePlaene)] : []),
       ],
     },
     ...(verwaltung.length > 0

@@ -107,14 +107,16 @@ describe('Wer welches Thema planen darf (T120)', () => {
     Thema hat zwei Seiten: Ansehen und Planen. Den Schalter dazwischen sieht nur,
     wer das Thema planen darf; der Reducer lenkt alle anderen beim Planen ab.
   */
-  it('die Treffpunkte gehören zum Predigtdienst, alle anderen Reiter zu den Zusammenkünften', () => {
+  it('die Treffpunkte gehören zum Predigtdienst, die Weiteren Pläne zu sich, alle anderen Reiter zu den Zusammenkünften', () => {
     expect(themaVon('fs')).toBe('predigtdienst')
-    for (const tab of ['mid', 'we', 'edit'] as const) expect(themaVon(tab)).toBe('zusammenkuenfte')
+    expect(themaVon('wp')).toBe('weitere')
+    for (const tab of ['mid', 'we', 'edit', 'va'] as const) expect(themaVon(tab)).toBe('zusammenkuenfte')
   })
 
-  it('der Planer plant beide Themen', () => {
+  it('der Planer plant alle drei Themen', () => {
     expect(darfPlanen(true, false, 'zusammenkuenfte')).toBe(true)
     expect(darfPlanen(true, false, 'predigtdienst')).toBe(true)
+    expect(darfPlanen(true, false, 'weitere')).toBe(true)
   })
 
   it('der Gruppenaufseher plant nur den Predigtdienst', () => {
@@ -122,11 +124,13 @@ describe('Wer welches Thema planen darf (T120)', () => {
     // landete beim Antippen auf einem Plan, den er nicht ändern darf.
     expect(darfPlanen(false, true, 'predigtdienst')).toBe(true)
     expect(darfPlanen(false, true, 'zusammenkuenfte')).toBe(false)
+    expect(darfPlanen(false, true, 'weitere')).toBe(false)
   })
 
   it('der Verkündiger plant nichts', () => {
     expect(darfPlanen(false, false, 'zusammenkuenfte')).toBe(false)
     expect(darfPlanen(false, false, 'predigtdienst')).toBe(false)
+    expect(darfPlanen(false, false, 'weitere')).toBe(false)
   })
 })
 

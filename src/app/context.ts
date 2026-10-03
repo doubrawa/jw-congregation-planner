@@ -29,7 +29,9 @@ import type {
   Gruppenbesuch,
   OzEintrag,
   OzTermin,
+  PlanEintrag,
   VortragAuswaerts,
+  WeitererPlan,
   Invite,
   Lang,
   MeetingKey,
@@ -94,6 +96,8 @@ export interface HydratePayload {
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
   auswaerts: VortragAuswaerts[]
+  plaene: WeitererPlan[]
+  planEintraege: PlanEintrag[]
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -198,6 +202,13 @@ export interface AppState {
    * Planer alle.
    */
   auswaerts: VortragAuswaerts[]
+  /**
+   * Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Ein Mitglied
+   * bekommt nur, was es sehen darf (RLS: veröffentlicht, und bei „Familien
+   * reihum" nur als Gastgeber oder dessen Haushalt); Planer alles.
+   */
+  plaene: WeitererPlan[]
+  planEintraege: PlanEintrag[]
   absences: Absence[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
@@ -363,6 +374,25 @@ export type AppAction =
   | { type: 'vaAdd'; vortrag: Omit<VortragAuswaerts, 'id'> }
   | { type: 'vaRedner'; id: string; pid: string | null }
   | { type: 'vaRemove'; id: string }
+  /*
+   * Weitere Pläne (T120, Phase 5) — nur Planer. Die Kennung eines neuen Plans
+   * vergibt der Bildschirm, damit er ihn gleich öffnen kann.
+   */
+  | { type: 'wpPlanAnlegen'; plan: WeitererPlan }
+  // Name, Zeitraum, Entwurf/veröffentlicht. Einträge außerhalb des Zeitraums gehen mit.
+  | { type: 'wpPlanAendern'; id: string; patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf'>> }
+  | { type: 'wpPlanLoeschen'; id: string }
+  // Königreichssaal: die Wochen des Zeitraums reihum an die Gruppen, ab dieser.
+  | { type: 'wpGruppenVerteilen'; planId: string; abGruppe: string }
+  // Einen Platz setzen (Gruppe bzw. Gastgeber) — beides null räumt ihn.
+  | {
+      type: 'wpEintragSetzen'
+      planId: string
+      datum: string
+      mahlzeit: PlanEintrag['mahlzeit']
+      grp: string | null
+      pid: string | null
+    }
   // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).
   | { type: 'sprungZielErreicht' }
   | { type: 'prevWeek' }

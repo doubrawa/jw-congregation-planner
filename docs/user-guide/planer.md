@@ -18,6 +18,7 @@ Versammlungseinstellungen pflegen.
 3. [Automatisch zuteilen & leeren](#3-automatisch-zuteilen--leeren)
 4. [Konflikte und offene Zuteilungen](#4-konflikte-und-offene-zuteilungen)
 5. [Treffpunkte planen](#5-treffpunkte-planen)
+   – [Weitere Pläne](#5a-weitere-pläne)
 6. [Personen verwalten](#6-personen-verwalten)
 7. [Einstellungen](#7-einstellungen)
    – [Zusätzliche Klasse](#7a-zusätzliche-klasse)
@@ -578,6 +579,45 @@ Termine gibt. Wer den Aufgabenbereich hat, trägt sich dort mit **+ Eintragen**
 ein; wer zugeteilt wurde, bestätigt dort oder unter „Meine Aufgaben". **Absagen**
 gibt den Platz frei, und die Admins bekommen eine Verhinderungs-Meldung mit Tag
 und Ort.
+
+---
+
+## 5a. Weitere Pläne
+
+Im Menü unter **Weitere Pläne** stehen Pläne, die nur **ankündigen**: Niemand
+muss etwas bestätigen, niemand wird erinnert, und einen „Plan senden" gibt es
+dafür nicht. Zwei Vorlagen stehen zur Wahl:
+
+- **Königreichssaal** – Reinigung und Instandhaltung. „Im Allgemeinen wechseln
+  sich die Predigtdienstgruppen mit der Saalreinigung ab" (*Organisiert,
+  Jehovas Willen zu tun*, Kap. 11 Abs. 10): je Woche eine Gruppe. Was zu tun
+  ist, sagt der Name des Plans, etwa „Winterdienst" oder „Grundreinigung".
+- **Familien reihum** – je Tag und Mahlzeit eine Familie als Gastgeber, etwa
+  beim Besuch des Kreisaufsehers.
+
+![Weitere Pläne planen](screenshots/planer-weitere-plaene.png)
+
+- **+ Neuer Plan** fragt nach der Vorlage und legt den Plan als **Entwurf** an:
+  den Königreichssaal ab dieser Woche für ein Vierteljahr, Familien reihum ab
+  heute für eine Woche. Name und Zeitraum änderst du im geöffneten Plan. Wird
+  der Zeitraum kürzer, gehen die Einträge außerhalb mit.
+- **Reihum verteilen** (Königreichssaal) gibt die Wochen ab dieser bis zum Ende
+  den Gruppen der Reihe nach, beginnend mit der gewählten. Vergangene Wochen
+  bleiben, wie sie sind. Danach kannst du jede Woche einzeln umstellen.
+- **Familien reihum** hat je Tag drei Plätze: Frühstück, Mittagessen,
+  Abendessen. Ein Platz darf frei bleiben.
+- **Veröffentlichen** macht den Plan sichtbar, **Zurück zum Entwurf** nimmt
+  ihn wieder zurück. Einen Entwurf sehen nur die Admins.
+- **Plan löschen** fragt einmal nach.
+
+Die Liste ordnet die Pläne nach **Aktuell**, **Entwürfe** und
+**Abgeschlossen** (der letzte Tag ist vorbei).
+
+**Wer was sieht**: Den Königreichssaal sieht nach dem Veröffentlichen die ganze
+Versammlung, und jeder findet oben unter „Deine Gruppe ist dran" die Wochen
+seiner Gruppe. Familien reihum sehen **nur die Gastgeber und ihre Familien**
+(„Familie" im Personen‑Detail). Für Verkündiger steht „Weitere Pläne" erst im
+Menü, wenn es für sie etwas zu sehen gibt.
 
 ---
 

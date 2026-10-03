@@ -16,6 +16,7 @@ import { FsBereichTabs } from './FsBereichTabs'
 import { aktiverFsBereich } from './fs-bereiche'
 import { useVaKonflikte, useVaReiter } from '../components/useVaReiter'
 import { AuswaertsPlan } from './AuswaertsPlan'
+import { WeiterePlaenePlan } from './WeiterePlaenePlan'
 import { GruppenbesuchePlan } from './GruppenbesuchePlan'
 import { ZeugnisPlan } from './ZeugnisPlan'
 import { FsPlan } from './FsPlan'
@@ -43,6 +44,18 @@ export function PlanenScreen() {
   const fsOverseer = !state.planner && myFsGroup !== null
   const va = useVaReiter()
   const vaKonflikte = useVaKonflikte()
+
+  // Die Weiteren Pläne (T120, Phase 5) sind ein eigenes Thema ohne Woche.
+  // Planen darf sie nur ein Planer; der Gruppenaufseher landet hier gar nicht
+  // (`navigate` schickt ihn ins Ansehen).
+  if (state.tab === 'wp' && state.planner) {
+    return (
+      <section className="screen">
+        <ThemaKopf thema="weitere" />
+        <WeiterePlaenePlan />
+      </section>
+    )
+  }
 
   // Die Redner auswärts (T120, Phase 4) haben keine Woche — ohne Streifen,
   // aber mit den Reitern der Zusammenkünfte, unter denen sie stehen.

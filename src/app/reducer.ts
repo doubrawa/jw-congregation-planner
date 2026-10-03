@@ -7,6 +7,7 @@
 import { syncAuxSlots } from '../data/aux-class'
 import { type AbsenceSet, buildAbsences, buildAuswaerts, nichtVerfuegbar } from '../data/absence'
 import { deriveMyVaTasks, vaNachDatum, vaTerminText, vaVerwaisteZusagen } from '../data/auswaerts'
+import { eintraegeImZeitraum, eintragSetzen, gruppenVerteilen, planNachDatum } from '../data/weitere-plaene'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, isoDay, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
@@ -360,7 +361,7 @@ export function aufgabenAbgeleitet(state: AppState): AppState {
  * damit ein künftiger Weg ohne Wahl nicht wieder hinauswirft.
  */
 function zurNaechstenZusammenkunft(state: AppState): AppState {
-  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va') return state
+  if (state.terminGewaehlt || state.tab === 'fs' || state.tab === 'va' || state.tab === 'wp') return state
   const naechste = naechsteZusammenkunft(state.weeks, state.congregation.times)
   return naechste ? { ...state, week: naechste.wi, tab: naechste.tab } : state
 }
@@ -586,9 +587,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       let wunsch: MeetingTab =
         action.thema === 'predigtdienst'
           ? 'fs'
-          : action.thema === 'zusammenkuenfte' && state.tab === 'fs'
-            ? zusammenkunftDerWoche(state)
-            : state.tab
+          : action.thema === 'weitere'
+            ? 'wp'
+            : action.thema === 'zusammenkuenfte' && (state.tab === 'fs' || state.tab === 'wp')
+              ? zusammenkunftDerWoche(state)
+              : state.tab
       // Planen nur, wo man planen darf (T120). Der Gruppenaufseher plant allein
       // Treffpunkte: Ein Sprung nach Planen ohne Thema (Push, Start-Bildschirm)
       // zeigt ihm deshalb den Predigtdienst — so war es schon vorher, als
@@ -598,19 +601,22 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         if (action.thema === undefined) wunsch = 'fs'
         else screen = 'programm'
       }
-      // Drei Tabs sind keine Zusammenkunft und nicht überall erlaubt:
-      // „Treffpunkte" und „Redner auswärts" (T120) gibt es in Programm und
-      // Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm ist für alle
-      // nur lesend. Beim Wechsel woandershin auf die Zusammenkunft unter der
-      // Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter, den es
-      // dort nicht gibt.
-      const erlaubt: Record<'fs' | 'edit' | 'va', boolean> = {
+      // Vier Tabs sind keine Zusammenkunft und nicht überall erlaubt:
+      // „Treffpunkte", „Redner auswärts" und „Weitere Pläne" (T120) gibt es in
+      // Programm und Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm
+      // ist für alle nur lesend. Beim Wechsel woandershin auf die Zusammenkunft
+      // unter der Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter,
+      // den es dort nicht gibt.
+      const erlaubt: Record<'fs' | 'edit' | 'va' | 'wp', boolean> = {
         fs: screen === 'programm' || screen === 'planen',
         edit: screen === 'planen',
         va: screen === 'programm' || screen === 'planen',
+        wp: screen === 'programm' || screen === 'planen',
       }
       const tab: MeetingTab =
-        (wunsch === 'fs' || wunsch === 'edit' || wunsch === 'va') && !erlaubt[wunsch] ? 'mid' : wunsch
+        (wunsch === 'fs' || wunsch === 'edit' || wunsch === 'va' || wunsch === 'wp') && !erlaubt[wunsch]
+          ? 'mid'
+          : wunsch
       const nachher = {
         ...dropNamelessSelected(state),
         screen,
@@ -753,6 +759,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         auswaerts: state.auswaerts.some((v) => v.pid === action.id)
           ? state.auswaerts.map((v) => (v.pid === action.id ? { ...v, pid: null } : v))
           : state.auswaerts,
+        // Ebenso ein Platz in einem weiteren Plan (T120, Phase 5): Er bleibt,
+        // nur ohne Gastgeber.
+        planEintraege: state.planEintraege.some((e) => e.pid === action.id)
+          ? state.planEintraege.map((e) => (e.pid === action.id ? { ...e, pid: null } : e))
+          : state.planEintraege,
         members: state.members.map((m) =>
           m.personId === action.id ? { ...m, personId: null } : m,
         ),
@@ -859,6 +870,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         gruppenbesuche: state.gruppenbesuche.some((b) => b.grp === action.id)
           ? state.gruppenbesuche.filter((b) => b.grp !== action.id)
           : state.gruppenbesuche,
+        // Eine Woche eines weiteren Plans bleibt, nur ohne Gruppe — wie in der
+        // Datenbank (`on delete set null`).
+        planEintraege: state.planEintraege.some((e) => e.grp === action.id)
+          ? state.planEintraege.map((e) => (e.grp === action.id ? { ...e, grp: null } : e))
+          : state.planEintraege,
         toast: toastKey(state, 'toastGruppeDel'),
       }
     }
@@ -1325,6 +1341,56 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastVaDel'),
       }
     }
+    /*
+     * Weitere Pläne (T120, Phase 5) — Ankündigungen: Hier verfällt keine
+     * Zusage und geht keine Nachricht hinaus.
+     */
+    case 'wpPlanAnlegen':
+      if (state.plaene.some((p) => p.id === action.plan.id)) return state
+      return { ...state, plaene: planNachDatum([...state.plaene, action.plan]) }
+    case 'wpPlanAendern': {
+      const alt = state.plaene.find((p) => p.id === action.id)
+      if (!alt) return state
+      const plan = { ...alt, ...action.patch }
+      // Ein Zeitraum, der vor seinem Anfang endet, ist keiner.
+      if (plan.bis < plan.von) return state
+      const veroeffentlicht = alt.entwurf && !plan.entwurf
+      const zurueck = !alt.entwurf && plan.entwurf
+      return {
+        ...state,
+        plaene: planNachDatum(state.plaene.map((p) => (p === alt ? plan : p))),
+        planEintraege: eintraegeImZeitraum(state.planEintraege, plan),
+        ...(veroeffentlicht || zurueck
+          ? { toast: toastKey(state, veroeffentlicht ? 'toastWpVeroeffentlicht' : 'toastWpEntwurf') }
+          : {}),
+      }
+    }
+    case 'wpPlanLoeschen':
+      if (!state.plaene.some((p) => p.id === action.id)) return state
+      return {
+        ...state,
+        plaene: state.plaene.filter((p) => p.id !== action.id),
+        planEintraege: state.planEintraege.filter((e) => e.planId !== action.id),
+        toast: toastKey(state, 'toastWpGeloescht'),
+      }
+    case 'wpGruppenVerteilen': {
+      const plan = state.plaene.find((p) => p.id === action.planId)
+      if (!plan || plan.vorlage !== 'saal') return state
+      const { eintraege, verteilt } = gruppenVerteilen({
+        plan,
+        eintraege: state.planEintraege,
+        groups: state.groups,
+        abGruppe: action.abGruppe,
+        heute: new Date(),
+        neueId: () => `e${crypto.randomUUID()}`,
+      })
+      return { ...state, planEintraege: eintraege, toast: toastKey(state, 'toastWpVerteilt', { n: verteilt }) }
+    }
+    case 'wpEintragSetzen': {
+      if (!state.plaene.some((p) => p.id === action.planId)) return state
+      const eintraege = eintragSetzen({ ...action, eintraege: state.planEintraege, neueId: () => `e${crypto.randomUUID()}` })
+      return eintraege === state.planEintraege ? state : { ...state, planEintraege: eintraege }
+    }
     case 'openMyTask':
       return { ...state, myTaskId: action.id }
     case 'closeMyTask':
@@ -1636,6 +1702,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ozTermine: p.ozTermine ?? [],
         ozEintraege: p.ozEintraege ?? [],
         auswaerts: p.auswaerts ?? [],
+        plaene: p.plaene ?? [],
+        planEintraege: p.planEintraege ?? [],
         absences: p.absences,
         notifs: p.notifications,
         confirmations: p.confirmations,

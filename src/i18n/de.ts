@@ -114,6 +114,33 @@ export const DE = {
     vaNummer: 'Vortrag Nr. {n}', vaNummerLbl: 'Vortrag Nr.',
     vaKonfliktZusammenkunft: '{name} ist an diesem Tag in der eigenen Zusammenkunft eingeteilt',
     toastVaAdd: 'Vortrag eingetragen', toastVaDel: 'Vortrag entfernt',
+    // Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Die Vorlage
+    // „Königreichssaal" heißt wie `saal`; gemessen am od Kap. 11 Abs. 10 („Im
+    // Allgemeinen wechseln sich die Predigtdienstgruppen mit der Saalreinigung
+    // ab"). „Familien reihum" ist keine Wendung der Schriften, sondern sagt, was
+    // der Plan tut; das Beispiel stammt aus od Kap. 5 Abs. 55–63.
+    navWeiterePlaene: 'Weitere Pläne',
+    wpHinweis: 'Ankündigungen ohne Zuteilung: Niemand muss etwas bestätigen, und es gibt keine Erinnerung. Gruppenbesuche und öffentliches Zeugnisgeben stehen unter Predigtdienst, die Redner auswärts unter Zusammenkünfte.',
+    wpNeu: '+ NEUER PLAN', wpNeuTitel: 'Neuer Plan',
+    wpAktuell: 'AKTUELL', wpEntwuerfe: 'ENTWÜRFE', wpAbgeschlossen: 'ABGESCHLOSSEN',
+    wpKeine: 'Zurzeit gibt es keine weiteren Pläne.',
+    wpOhneName: 'Ohne Namen',
+    wpSaalText: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Woche eine.',
+    wpFamilien: 'Familien reihum',
+    wpFamilienText: 'Je Tag und Mahlzeit eine Familie als Gastgeber – etwa beim Besuch des Kreisaufsehers.',
+    wpNamePhSaal: 'z. B. Winterdienst', wpNamePhFamilien: 'z. B. Besuch des Kreisaufsehers',
+    wpEntwurf: 'Entwurf', wpEntwurfHint: 'Einen Entwurf sehen nur Admins.',
+    wpVeroeffentlichen: 'VERÖFFENTLICHEN', wpZurueckziehen: 'Zurück zum Entwurf',
+    wpSichtSaal: 'Veröffentlicht sieht ihn die ganze Versammlung.',
+    wpSichtFamilien: 'Veröffentlicht sehen ihn nur die Gastgeber und ihre Familien.',
+    wpAbGruppe: 'Beginnen mit',
+    wpVerteilenHint: 'Die Wochen ab dieser bis zum Ende, die Gruppen der Reihe nach. Vergangene Wochen bleiben, wie sie sind.',
+    wpLoeschen: 'Plan löschen',
+    wpFruehstueck: 'Frühstück', wpMittag: 'Mittagessen', wpAbend: 'Abendessen',
+    wpDeineGruppe: 'Deine Gruppe ist dran:',
+    wpNurInfo: 'Nur zur Info – nichts zu bestätigen.',
+    toastWpVeroeffentlicht: 'Plan veröffentlicht', toastWpEntwurf: 'Plan zurück im Entwurf',
+    toastWpGeloescht: 'Plan gelöscht', toastWpVerteilt: 'Verteilte Wochen: {n}',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: {datum}', drucken: 'Drucken',
     // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',

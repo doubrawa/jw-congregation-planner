@@ -165,6 +165,9 @@ export const LEEREN = [
   'oz_eintraege',
   // Und die Vorträge auswärts (T120, Phase 4).
   'vortraege_auswaerts',
+  // Und die Weiteren Pläne (Phase 5) — die Einträge zuerst, sie zeigen auf die Pläne.
+  'plan_eintraege',
+  'plaene',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

@@ -52,6 +52,8 @@ vi.mock('../lib/data', async (importActual) => ({
   saveOzTermine: vi.fn(),
   savePerson: vi.fn(),
   savePersonGroup: vi.fn(),
+  savePlaene: vi.fn(),
+  savePlanEintraege: vi.fn(),
   saveService: vi.fn(),
   saveSettings: vi.fn(),
   saveVortraegeAuswaerts: vi.fn(),
@@ -94,6 +96,8 @@ function st(over: Partial<AppState> = {}): AppState {
     reminders: { first: 7, last: 1, repeat: false },
     congLang: 'de',
     progLangs: [],
+    plaene: [],
+    planEintraege: [],
     ...over,
   } as unknown as AppState
 }
@@ -563,6 +567,58 @@ describe('Redner auswärts (T120, Phase 4)', () => {
     persist(st({ auswaerts: [vortrag('v1', 'p1')] }), st({ auswaerts: [] }), { type: 'vaRemove', id: 'v1' })
     expect(data.saveVortraegeAuswaerts).toHaveBeenCalledWith('c1', [], ['v1'])
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+})
+
+describe('Weitere Pläne (T120, Phase 5)', () => {
+  const PLAN = { id: 'pl', vorlage: 'saal' as const, name: '', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
+  const woche = (datum: string, grp: string) => ({ id: `e-${datum}`, planId: 'pl', datum, grp, pid: null, mahlzeit: null })
+
+  it('der Name wird getippt — der Plan geht gebündelt hinaus, nicht je Taste', () => {
+    const a = st({ plaene: [PLAN] })
+    const b = st({ plaene: [{ ...PLAN, name: 'W' }] })
+    const c = st({ plaene: [{ ...PLAN, name: 'Wi' }] })
+    persist(a, b, { type: 'wpPlanAendern', id: 'pl', patch: { name: 'W' } })
+    persist(b, c, { type: 'wpPlanAendern', id: 'pl', patch: { name: 'Wi' } })
+    expect(data.savePlaene).not.toHaveBeenCalled()
+    vi.runOnlyPendingTimers()
+    expect(data.savePlaene).toHaveBeenCalledTimes(1)
+    expect(data.savePlaene).toHaveBeenCalledWith('c1', c.plaene, [])
+  })
+
+  it('ein Eintrag geht sofort hinaus — aber nie vor dem Plan, auf den er zeigt', () => {
+    const leer = st({ plaene: [] })
+    const mitPlan = st({ plaene: [PLAN] })
+    persist(leer, mitPlan, { type: 'wpPlanAnlegen', plan: PLAN })
+    const eintraege = [woche('2026-09-07', 'g1'), woche('2026-09-14', 'g2')]
+    persist(mitPlan, st({ plaene: [PLAN], planEintraege: eintraege }), { type: 'wpGruppenVerteilen', planId: 'pl', abGruppe: 'g1' })
+    expect(data.savePlanEintraege).toHaveBeenCalledWith('c1', eintraege, [])
+    const plan = vi.mocked(data.savePlaene).mock.invocationCallOrder[0]
+    const eintrag = vi.mocked(data.savePlanEintraege).mock.invocationCallOrder[0]
+    expect(plan).toBeDefined()
+    expect(eintrag).toBeGreaterThan(plan!)
+  })
+
+  it('nur Geänderte und Entfernte — Unberührte gehen nicht noch einmal hinaus', () => {
+    const bleibt = woche('2026-09-07', 'g1')
+    const alt = woche('2026-09-14', 'g2')
+    const neu = { ...alt, grp: 'g3' }
+    persist(st({ plaene: [PLAN], planEintraege: [bleibt, alt, woche('2026-09-21', 'g4')] }), st({ plaene: [PLAN], planEintraege: [bleibt, neu] }), {
+      type: 'wpEintragSetzen',
+      planId: 'pl',
+      datum: '2026-09-14',
+      mahlzeit: null,
+      grp: 'g3',
+      pid: null,
+    })
+    expect(data.savePlanEintraege).toHaveBeenCalledWith('c1', [neu], ['e-2026-09-21'])
+  })
+
+  it('ein gelöschter Plan wird gelöscht, seine Einträge gehen mit', () => {
+    const e = woche('2026-09-07', 'g1')
+    persist(st({ plaene: [PLAN], planEintraege: [e] }), st({ plaene: [], planEintraege: [] }), { type: 'wpPlanLoeschen', id: 'pl' })
+    expect(data.savePlaene).toHaveBeenCalledWith('c1', [], ['pl'])
+    expect(data.savePlanEintraege).toHaveBeenCalledWith('c1', [], [e.id])
   })
 })
 

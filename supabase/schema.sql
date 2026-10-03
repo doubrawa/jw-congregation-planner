@@ -539,6 +539,61 @@ create table if not exists public.vortraege_auswaerts (
 create index if not exists vortraege_auswaerts_congregation_idx
   on public.vortraege_auswaerts (congregation_id, datum);
 
+-- Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung — niemand
+-- bestätigt etwas, niemand wird erinnert. Zwei feste Vorlagen:
+--   saal      Königreichssaal, je Woche eine Predigtdienstgruppe. Gemessen am
+--             Buch „Organisiert, Jehovas Willen zu tun", Kap. 11 Abs. 10: „Im
+--             Allgemeinen wechseln sich die Predigtdienstgruppen mit der
+--             Saalreinigung ab"; ein Ältester oder Dienstamtgehilfe stellt
+--             dafür einen Plan auf.
+--   familien  Familien reihum, je Tag und Mahlzeit ein Gastgeber — etwa beim
+--             Besuch des Kreisaufsehers (Kap. 5 Abs. 55, 58, 63: Unterkunft,
+--             Mahlzeiten, Gastfreundschaft). Sehen darf ihn nur, wer darin
+--             steht (`plan_sichtbar`).
+-- Ein Plan beginnt als Entwurf; erst veröffentlicht sieht ihn die Versammlung.
+create table if not exists public.plaene (
+  -- `text` wie bei `fs_rules`: Die Kennung vergibt der Client (`p<uuid>`).
+  id              text primary key check (id <> ''),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  vorlage         text not null check (vorlage in ('saal', 'familien')),
+  name            text not null default '',        -- die Worte des Planers, unübersetzt
+  von             date not null,
+  bis             date not null,
+  entwurf         boolean not null default true,
+  created_at      timestamptz not null default now(),
+
+  check (bis >= von),
+  unique (id, congregation_id)                     -- Ziel des Verweises aus plan_eintraege
+);
+
+create index if not exists plaene_congregation_idx
+  on public.plaene (congregation_id, bis);
+
+-- Ein Eintrag je Woche (saal: die Gruppe, `datum` ist der Montag) bzw. je Tag
+-- und Mahlzeit (familien: der Gastgeber).
+create table if not exists public.plan_eintraege (
+  id              text primary key check (id <> ''),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  plan_id         text not null,
+  datum           date not null,
+  grp             uuid,
+  -- Der Gastgeber; sein Haushalt (`persons.fam`) sieht den Plan mit.
+  person_id       uuid,
+  mahlzeit        text check (mahlzeit is null or mahlzeit in ('fruehstueck', 'mittag', 'abend')),
+  created_at      timestamptz not null default now(),
+
+  constraint plan_eintraege_plan_fk foreign key (plan_id, congregation_id)
+    references public.plaene (id, congregation_id) on delete cascade,
+  constraint plan_eintraege_grp_fk foreign key (grp, congregation_id)
+    references public.groups (id, congregation_id) on delete set null (grp),
+  constraint plan_eintraege_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete set null (person_id)
+);
+
+-- Ein Platz je Woche bzw. je Tag und Mahlzeit — zugleich der Index fürs Laden.
+create unique index if not exists plan_eintraege_platz
+  on public.plan_eintraege (plan_id, datum, coalesce(mahlzeit, ''));
+
 -- Versand-Tagebuch der Erinnerungen: send-reminders trägt ein, wem es an
 -- welchem Tag welche Art geschickt hat, und überspringt beim zweiten Lauf am
 -- selben Tag die schon Erledigten — sonst käme dieselbe Push doppelt an.
@@ -666,6 +721,44 @@ as $$
     from public.persons p
     where p.id = public.my_person_id()
   ), false)
+$$;
+
+-- Sieht die eigene Person diesen Plan (Weitere Pläne, T120 Phase 5)? Planer
+-- alles. Sonst nur Veröffentlichtes: den Königreichssaal die ganze
+-- Versammlung, „Familien reihum" nur, wer selbst oder mit seinem Haushalt als
+-- Gastgeber darin steht — dann aber den ganzen Plan, damit man weiß, wer an den
+-- anderen Tagen dran ist.
+--
+-- `security definer`, weil die Prüfung `plan_eintraege` liest — dieselbe
+-- Tabelle, deren Richtlinie sie ist. Eine Richtlinie, die ihre eigene Tabelle
+-- abfragt, liefe in die Rekursion.
+create or replace function public.plan_sichtbar(plan text)
+returns boolean
+language sql stable security definer
+set search_path = public
+as $$
+  select public.is_planner() or exists (
+    select 1
+      from public.plaene p
+     where p.id = plan
+       and p.congregation_id = public.my_congregation_id()
+       and not p.entwurf
+       and (
+         p.vorlage = 'saal'
+         or exists (
+           select 1
+             from public.plan_eintraege e
+             join public.persons gast
+               on gast.id = e.person_id and gast.congregation_id = e.congregation_id
+            where e.plan_id = p.id
+              and (
+                gast.id = public.my_person_id()
+                or (gast.fam is not null
+                    and gast.fam = (select ich.fam from public.persons ich where ich.id = public.my_person_id()))
+              )
+         )
+       )
+  )
 $$;
 
 -- Nie mehr Einträge als Plätze, und nur am Wochentag des Termins.
@@ -1171,6 +1264,31 @@ create policy vortraege_auswaerts_select on public.vortraege_auswaerts
 
 drop policy if exists vortraege_auswaerts_write on public.vortraege_auswaerts;
 create policy vortraege_auswaerts_write on public.vortraege_auswaerts
+  for all
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+-- Weitere Pläne: Planer pflegen alles. Sehen darf ein Mitglied, was
+-- `plan_sichtbar` freigibt — einen Entwurf nie.
+alter table public.plaene enable row level security;
+alter table public.plan_eintraege enable row level security;
+
+drop policy if exists plaene_select on public.plaene;
+create policy plaene_select on public.plaene
+  for select using (congregation_id = public.my_congregation_id() and public.plan_sichtbar(id));
+
+drop policy if exists plaene_write on public.plaene;
+create policy plaene_write on public.plaene
+  for all
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+
+drop policy if exists plan_eintraege_select on public.plan_eintraege;
+create policy plan_eintraege_select on public.plan_eintraege
+  for select using (congregation_id = public.my_congregation_id() and public.plan_sichtbar(plan_id));
+
+drop policy if exists plan_eintraege_write on public.plan_eintraege;
+create policy plan_eintraege_write on public.plan_eintraege
   for all
   using (congregation_id = public.my_congregation_id() and public.is_planner())
   with check (congregation_id = public.my_congregation_id() and public.is_planner());

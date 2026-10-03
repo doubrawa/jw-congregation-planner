@@ -63,17 +63,19 @@ export type MeetingKey = 'mid' | 'we'
  *
  * Seit T120 (Phase 4) dazu die **Redner auswärts** ('va'): die Vorträge eigener
  * Redner in anderen Versammlungen, ohne Woche — neben Dienstag und Sonntag, im
- * Ansehen wie im Planen.
+ * Ansehen wie im Planen. Und (Phase 5) die **Weiteren Pläne** ('wp'), ein
+ * eigenes Thema ohne Woche wie der Predigtdienst.
  *
- * Drei der fünf Werte sind also **keine** Zusammenkunft. Wer aus einem Tab eine
+ * Vier der sechs Werte sind also **keine** Zusammenkunft. Wer aus einem Tab eine
  * Zusammenkunft braucht, geht durch `mtab()` (app/persist.ts) bzw. verengt
  * selbst — der Compiler erzwingt das, weil `MeetingTab` nicht auf `MeetingKey`
  * zuweisbar ist.
  */
-export type MeetingTab = MeetingKey | 'fs' | 'edit' | 'va'
+export type MeetingTab = MeetingKey | 'fs' | 'edit' | 'va' | 'wp'
 
 /**
- * Ein **Thema** des Hauptmenüs (T120): Zusammenkünfte oder Predigtdienst.
+ * Ein **Thema** des Hauptmenüs (T120): Zusammenkünfte, Predigtdienst oder —
+ * seit Phase 5 — Weitere Pläne.
  *
  * Kein eigener Bildschirm, sondern eine Sicht auf `programm`/`planen`: Das
  * Thema ergibt sich aus dem Reiter (`themaVon`, rechte.ts), der Schalter
@@ -81,7 +83,53 @@ export type MeetingTab = MeetingKey | 'fs' | 'edit' | 'va'
  * (`#go=planen`), die Sprünge der Planungs-Karte und die Rechteprüfung, wie sie
  * sind — nur die Navigation fragt nach dem Thema.
  */
-export type Thema = 'zusammenkuenfte' | 'predigtdienst'
+export type Thema = 'zusammenkuenfte' | 'predigtdienst' | 'weitere'
+
+/**
+ * Vorlage eines **weiteren Plans** (T120, Phase 5) — feste Vorlagen, kein
+ * Baukasten (Entscheidung des Betreibers, 2.10.2026):
+ * - `saal`: Königreichssaal, je Woche eine Predigtdienstgruppe (od Kap. 11
+ *   Abs. 10: „Im Allgemeinen wechseln sich die Predigtdienstgruppen mit der
+ *   Saalreinigung ab").
+ * - `familien`: Familien reihum, je Tag und Mahlzeit ein Gastgeber — etwa beim
+ *   Besuch des Kreisaufsehers (od Kap. 5 Abs. 55, 58, 63).
+ */
+export type PlanVorlage = 'saal' | 'familien'
+
+/** Mahlzeiten eines Plans „Familien reihum". */
+export type Mahlzeit = 'fruehstueck' | 'mittag' | 'abend'
+
+/**
+ * Ein **weiterer Plan** (T120, Phase 5): eine Ankündigung ohne Zuteilung —
+ * niemand bestätigt, niemand wird erinnert. Er beginnt als Entwurf; erst
+ * veröffentlicht sieht ihn die Versammlung (beim Königreichssaal alle, bei
+ * „Familien reihum" nur die Gastgeber und ihre Haushalte, siehe
+ * `plan_sichtbar` in schema.sql).
+ */
+export interface WeitererPlan {
+  /** Vom Client vergeben (`p<uuid>`). */
+  id: string
+  vorlage: PlanVorlage
+  /** Die Worte des Planers — unübersetzt, wie der Grund einer Verlegung. */
+  name: string
+  /** Erster und letzter Tag (ISO). */
+  von: string
+  bis: string
+  entwurf: boolean
+}
+
+/**
+ * Ein Eintrag eines weiteren Plans: je Woche eine Gruppe (`saal`, `datum` ist
+ * der Montag) bzw. je Tag und Mahlzeit ein Gastgeber (`familien`).
+ */
+export interface PlanEintrag {
+  id: string
+  planId: string
+  datum: string
+  grp: string | null
+  pid: string | null
+  mahlzeit: Mahlzeit | null
+}
 
 /**
  * Was im Predigtdienst gerade zu sehen ist (T120): die Treffpunkte der Woche,

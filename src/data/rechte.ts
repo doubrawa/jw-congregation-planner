@@ -42,9 +42,14 @@ export function erlaubteScreens(planner: boolean, fsAufseher: boolean): readonly
   return ALLE.filter((s) => !NUR_PLANER.includes(s))
 }
 
-/** Das Thema, zu dem ein Reiter gehört: die Treffpunkte zum Predigtdienst, alles andere zu den Zusammenkünften. */
+/**
+ * Das Thema, zu dem ein Reiter gehört: die Treffpunkte zum Predigtdienst, die
+ * Weiteren Pläne zu sich selbst (T120, Phase 5), alles andere zu den
+ * Zusammenkünften.
+ */
 export function themaVon(tab: MeetingTab): Thema {
-  return tab === 'fs' ? 'predigtdienst' : 'zusammenkuenfte'
+  if (tab === 'fs') return 'predigtdienst'
+  return tab === 'wp' ? 'weitere' : 'zusammenkuenfte'
 }
 
 /**

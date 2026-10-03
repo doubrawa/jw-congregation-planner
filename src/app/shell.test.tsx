@@ -125,17 +125,28 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
    * erreicht man über den Namensblock.
    */
   it('der Admin sieht Eigenes, die Themen der Versammlung und die Verwaltung', () => {
+    // „Weitere Pläne" (T120, Phase 5) immer — dort legt er den ersten an.
     const { container } = zeige({ planner: true })
     expect(navPunkte(container)).toEqual([
-      t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs, t.navPersonen, t.navEinstellungen,
+      t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene, t.navPersonen, t.navEinstellungen,
     ])
     expect(abschnittTitel(container)).toEqual([t.versammlungLbl, t.navVerwaltung])
   })
 
-  it('der Verkündiger sieht dieselben Themen — ohne Verwaltung', () => {
+  it('der Verkündiger sieht dieselben Themen — ohne Verwaltung, ohne leere Weitere Pläne', () => {
     const { container } = zeige({ planner: false, personId: VERKUENDIGER.id })
     expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs])
     expect(abschnittTitel(container)).toEqual([t.versammlungLbl])
+  })
+
+  it('„Weitere Pläne" erscheint dem Verkündiger, sobald ein veröffentlichter Plan läuft', () => {
+    const plan = { id: 'pl', vorlage: 'saal' as const, name: 'Winterdienst', von: '2026-01-05', bis: '2099-12-31', entwurf: false }
+    const sichtbar = zeige({ planner: false, personId: VERKUENDIGER.id, plaene: [plan] })
+    expect(navPunkte(sichtbar.container)).toContain(t.navWeiterePlaene)
+    cleanup()
+    // Ein Entwurf nicht.
+    const entwurf = zeige({ planner: false, personId: VERKUENDIGER.id, plaene: [{ ...plan, entwurf: true }] })
+    expect(navPunkte(entwurf.container)).not.toContain(t.navWeiterePlaene)
   })
 
   it('der Gruppenaufseher ebenso — er plant über den Schalter im Predigtdienst', () => {

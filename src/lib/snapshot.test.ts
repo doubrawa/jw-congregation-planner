@@ -21,6 +21,8 @@ const payload = (over: Partial<HydratePayload> = {}): HydratePayload => ({
   ozTermine: [],
   ozEintraege: [],
   auswaerts: [],
+  plaene: [],
+  planEintraege: [],
   absences: [],
   notifications: [],
   confirmations: {},

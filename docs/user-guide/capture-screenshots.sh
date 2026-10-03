@@ -97,6 +97,9 @@ SHOTS=(
   # Redner auswärts (T120, Phase 4): zwei Konflikte (Vorsitz bzw. Leiter in
   # der eigenen Zusammenkunft), die Monate bis November und das Formular.
   "planer-redner-auswaerts|s=planen&tab=va&me=p6|${W}x1800"
+  # Weitere Pläne (T120, Phase 5): die Liste — Familien reihum und Winterdienst
+  # aktuell, die Grundreinigung als Entwurf. Einen Plan öffnet kein Hash.
+  "planer-weitere-plaene|s=planen&tab=wp&me=p6"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
   # Zuteilungen, die Abwesenheiten und die beiden Bereichs-Karten (Aufgaben,
@@ -119,6 +122,10 @@ SHOTS=(
   # bestätigt. Die Entwicklerseite hat keine Datenbank und damit keine Zeilen-
   # rechte — sie zeigt auch die Vorträge der anderen, die er im Betrieb nicht sieht.
   "verkuendiger-redner-auswaerts|s=programm&tab=va&pl=0&me=p6"
+  # Simon (p9) ist am 24. September Gastgeber (DU) und in Gruppe 1: Er sieht
+  # Familien reihum und den Winterdienst mit „Deine Gruppe ist dran", den
+  # Entwurf nicht. Hoch genug für beide Pläne.
+  "verkuendiger-weitere-plaene|s=programm&tab=wp&pl=0&me=p9|${W}x1400"
   "offline-stand|s=programm&tab=mid&stale=5"
 )
 

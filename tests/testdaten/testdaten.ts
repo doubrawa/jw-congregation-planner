@@ -21,6 +21,7 @@
 
 import { buildFsWeeks } from '../../src/data/fs'
 import { normalizeChairKeys, ROLE_GUEST_SPEAKER, serviceQualKey } from '../../src/data/helpers'
+import { montagNach } from '../../src/data/meeting-dates'
 import { STANDARD_ZEITEN } from '../../src/data/vorgaben'
 import { ersteZahl } from '../../src/data/ziffern'
 import { TESTDATEN_DOMAIN, TESTDATEN_RUFNUMMERN } from './kennzeichen'
@@ -47,7 +48,9 @@ import type {
   Service,
   SlotAssignment,
   SongItem,
+  PlanEintrag,
   VortragAuswaerts,
+  WeitererPlan,
   Week,
 } from '../../src/data/types'
 
@@ -323,6 +326,50 @@ export const DEMO_VA_ZUSAGEN: ConfirmationMap = {
   'va|2026-08-24|va1': 'bestätigt',
   'va|2026-09-07|va2': 'bestätigt',
   'va|2026-09-14|va3': 'bestätigt',
+}
+
+/**
+ * Weitere Pläne (T120, Phase 5) — nur für die Entwicklerseite, wie die übrigen
+ * Pläne. Je eine Lage: Familien reihum in der Woche des Kreisaufsehers
+ * (veröffentlicht; Simon, p9, bewirtet am Donnerstag), ein Winterdienst ab
+ * Gruppe 3 (veröffentlicht; Simon ist in Gruppe 1) und ein Entwurf.
+ */
+export const DEMO_PLAENE: WeitererPlan[] = [
+  { id: 'pl-familien', vorlage: 'familien', name: 'Besuch des Kreisaufsehers', von: '2026-09-22', bis: '2026-09-27', entwurf: false },
+  { id: 'pl-grund', vorlage: 'saal', name: 'Grundreinigung', von: '2026-10-05', bis: '2026-10-25', entwurf: true },
+  { id: 'pl-winter', vorlage: 'saal', name: 'Winterdienst', von: '2026-11-30', bis: '2027-02-28', entwurf: false },
+]
+
+/** Die Einträge dazu: Gastgeber je Mahlzeit, die Gruppen reihum ab Gruppe 3. */
+export function demoPlanEintraege(): PlanEintrag[] {
+  const gast = (datum: string, mahlzeit: 'mittag' | 'abend', pid: string): PlanEintrag => ({
+    id: `pe-${datum}-${mahlzeit}`,
+    planId: 'pl-familien',
+    datum,
+    grp: null,
+    pid,
+    mahlzeit,
+  })
+  const reihum = ['g3', 'g4', 'g1', 'g2']
+  const winter = Array.from({ length: 13 }, (_, i): PlanEintrag => ({
+    id: `pe-winter-${i}`,
+    planId: 'pl-winter',
+    datum: montagNach('2026-11-30', i),
+    grp: reihum[i % reihum.length]!,
+    pid: null,
+    mahlzeit: null,
+  }))
+  return [
+    gast('2026-09-22', 'mittag', 'p1'),
+    gast('2026-09-22', 'abend', 'p4'),
+    gast('2026-09-23', 'mittag', 'p2'),
+    gast('2026-09-23', 'abend', 'p6'),
+    gast('2026-09-24', 'abend', 'p9'),
+    gast('2026-09-25', 'mittag', 'p3'),
+    gast('2026-09-26', 'abend', 'p7'),
+    gast('2026-09-27', 'mittag', 'p13'),
+    ...winter,
+  ]
 }
 
 /* ---- Hilfsdienste ------------------------------------------------------- */

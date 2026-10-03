@@ -5700,7 +5700,7 @@ als bewacht von `tests/kein-alter-app-name.test.ts`, mit der Frist ist es
 
 ## Aufgenommen am 3. Oktober 2026 — Pläne der Versammlung (T120)
 
-### T120 · Pläne der Versammlung — Navigation nach Themen und feste Vorlagen 🏗 ☐ in Arbeit
+### T120 · Pläne der Versammlung — Navigation nach Themen und feste Vorlagen 🏗 ✅ erledigt (3. Oktober 2026)
 
 Der Betreiber braucht einen Bereich für Pläne, die über einzelne Wochen
 hinausgehen. Sein Beispiel: Der Dienstaufseher besucht reihum die
@@ -5949,6 +5949,52 @@ Bewusst offen (Phase 4): kein Ausdruck des Rednerplans; ein Vortrag lässt sich
 nicht verschieben (streichen und neu anlegen); die Zeitleiste im
 Personen-Detail nennt die Vorträge nicht; die Entwicklerseite zeigt einem
 Verkündiger alle Vorträge (sie hat keine Zeilenrechte).
+
+**Stand Phase 5 (3. Oktober 2026) — Weitere Pläne, umgesetzt (Branch
+`claude/t120-weitere-plaene`):**
+
+- **Gemessen:** od Kap. 11 Abs. 10 — einen Plan stellt ein Ältester oder
+  Dienstamtgehilfe auf, „im Allgemeinen wechseln sich die Predigtdienstgruppen
+  mit der Saalreinigung ab": je Woche eine Gruppe. „Außenanlage" kommt dort
+  nicht vor; die Vorlage heißt **Königreichssaal** (das Wort `saal`, längst in
+  allen Sprachen), was zu tun ist, sagt der Name des Plans. Familien reihum:
+  od Kap. 5 Abs. 55/58/63 (Unterkunft, Mahlzeiten, Gastfreundschaft beim Besuch
+  des Kreisaufsehers).
+- **Datenmodell:** `plaene` (Vorlage, Name, von–bis, `entwurf`) und
+  `plan_eintraege` (je Woche eine Gruppe bzw. je Tag und Mahlzeit ein
+  Gastgeber, `plan_eintraege_platz` eindeutig). Lesen über `plan_sichtbar`
+  (security definer): Planer alles; sonst nur Veröffentlichtes — den
+  Königreichssaal alle, Familien reihum nur die Gastgeber und ihr Haushalt
+  (`persons.fam`). Schreiben nur Planer. **Muss in Supabase eingespielt
+  werden** (`schema.sql` erneut ausführen). **Kein Deploy:** keine Aufgabe,
+  keine Zusage, keine Erinnerung, kein „Plan senden".
+- **Oberfläche:** das dritte Thema **Weitere Pläne** (Reiter `wp`, planen nur
+  Planer). Im Menü für Planer immer, für Mitglieder erst, wenn es etwas zu
+  sehen gibt (`weiterePlaeneImMenue`, dieselbe Regel wie in der Datenbank).
+  Planen: Liste nach Aktuell/Entwürfe/Abgeschlossen, Vorlage wählen, Name und
+  Zeitraum (kürzer nimmt die Einträge außerhalb mit), Veröffentlichen und
+  zurück, reihum verteilen (ab dieser Woche; Vergangenes bleibt, je Woche
+  bleibt die Kennung), jede Woche bzw. Mahlzeit einzeln, löschen mit zwei
+  Tipps. Ansehen: „Deine Gruppe ist dran" mit den eigenen Wochen, bei Familien
+  reihum DU am eigenen Haushalt.
+- **Speichern:** Pläne gebündelt (der Name wird getippt), Einträge sofort, aber
+  nie vor ihrem Plan (`planSaves.flush()`). Eine gelöschte Person bzw. Gruppe
+  räumt ihren Platz, wie `on delete set null`.
+- 32 neue Schlüssel in 34 Sprachen; Mutationsprobe um 19 Regeln ergänzt,
+  19/19 bewacht; Handbücher (Planer 5a, Verkündiger 3) und zwei neue
+  Handbuchbilder.
+- **Befund beim Messen:** `schema.test.ts` prüfte vom Haushalt nur
+  `gast.fam is not null`. Fiele der Vergleich mit dem eigenen Haushalt weg,
+  sähe jeder mit irgendeinem Haushalt jeden Familienplan — der Test bliebe
+  grün. Jetzt steht der Vergleich im Test (Probe `wp-schema-eigener-haushalt`).
+- **Nebenbefund:** Das „DU" am eigenen Platz steht seit dem ersten Entwurf
+  fest auf Deutsch im JSX, an fünf Stellen; die Prüfung auf festen Text greift
+  erst ab drei Buchstaben. Als eigene Aufgabe ausgelagert.
+
+Bewusst offen (Phase 5): kein Ausdruck der Pläne; keine Benachrichtigung beim
+Veröffentlichen (Ankündigungen, keine Zuteilungen); Familien reihum bietet alle
+Personen als Gastgeber an; die Mitgliedsrechte-Probe kennt `plan_sichtbar` noch
+nicht (Fälle: Entwurf, Familienplan ohne eigenen Haushalt).
 
 ---
 

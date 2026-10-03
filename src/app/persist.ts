@@ -39,6 +39,8 @@ import {
   savePerson,
   savePersonGroup,
   saveService,
+  savePlaene,
+  savePlanEintraege,
   saveSettings,
   saveVortraegeAuswaerts,
   saveWeek,
@@ -169,6 +171,16 @@ const ozTerminSaves = createDebouncedWriter<
 >(
   SAVE_DELAY,
   (_key, { congId, termine, entfernt }) => saveOzTermine(congId, termine, entfernt),
+  (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
+)
+// Die weiteren Pläne (T120, Phase 5) ebenso: Ihr Name wird getippt, gelöschte
+// Pläne sammeln sich.
+const planSaves = createDebouncedWriter<
+  'plaene',
+  { congId: string; plaene: AppState['plaene']; entfernt: string[] }
+>(
+  SAVE_DELAY,
+  (_key, { congId, plaene, entfernt }) => savePlaene(congId, plaene, entfernt),
   (alt, neu) => ({ ...neu, entfernt: [...new Set([...alt.entfernt, ...neu.entfernt])] }),
 )
 
@@ -497,6 +509,30 @@ function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): voi
   if (geaendert.length || entfernt.length) saveVortraegeAuswaerts(congId, geaendert, entfernt)
 }
 
+/**
+ * Weitere Pläne (T120, Phase 5): Pläne gebündelt, Einträge sofort — und vor
+ * einem Eintrag immer erst der Plan, auf den er zeigt (wie beim Zeugnisgeben;
+ * die Schreibschicht hält die Reihenfolge in `planNacheinander`).
+ *
+ * Geschrieben wird je Eintrag nur, was neu oder geändert ist (neue Referenz),
+ * gelöscht nur, was hier entfernt wurde.
+ */
+function plaeneSpeichern(congId: string, prev: AppState, next: AppState): void {
+  if (next.plaene !== prev.plaene) {
+    const bleibt = new Set(next.plaene.map((p) => p.id))
+    const entfernt = prev.plaene.filter((p) => !bleibt.has(p.id)).map((p) => p.id)
+    planSaves.schedule('plaene', { congId, plaene: next.plaene, entfernt })
+  }
+  if (next.planEintraege === prev.planEintraege) return
+  const vorher = new Map(prev.planEintraege.map((e) => [e.id, e]))
+  const geaendert = next.planEintraege.filter((e) => vorher.get(e.id) !== e)
+  const bleibt = new Set(next.planEintraege.map((e) => e.id))
+  const entfernt = prev.planEintraege.filter((e) => !bleibt.has(e.id)).map((e) => e.id)
+  if (!geaendert.length && !entfernt.length) return
+  planSaves.flush()
+  savePlanEintraege(congId, geaendert, entfernt)
+}
+
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -580,6 +616,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'vaRedner':
     case 'vaRemove':
       vortraegeSpeichern(congId, prev, next)
+      break
+    case 'wpPlanAnlegen':
+    case 'wpPlanAendern':
+    case 'wpPlanLoeschen':
+    case 'wpGruppenVerteilen':
+    case 'wpEintragSetzen':
+      plaeneSpeichern(congId, prev, next)
       break
     case 'addPerson':
       savePerson(congId, action.person)
