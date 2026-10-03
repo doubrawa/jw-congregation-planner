@@ -9,6 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { ozKurzTag } from '../components/zeugnis-anzeige'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
@@ -239,5 +240,92 @@ describe('Planen: Wochentag eines Termins ändern', () => {
     const { container, dispatch } = planen([eintrag(ANNA.id)])
     fireEvent.change(tagFeld(container), { target: { value: '4' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { wd: 4 } })
+  })
+})
+
+/*
+ * **Die übrige Bedienung beim Planen** (3.10.2026): automatisch besetzen und
+ * leeren, weitere Wochen, Plätze und Zeiten, einen Termin streichen, einen
+ * Eintrag austragen — und was bei Vergangenem und Abwesenden dasteht. Bis
+ * hierher lief davon nichts in einem Test.
+ */
+describe('Planen: die übrige Bedienung', () => {
+  const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', planner: true, ...over })
+  const schichten = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.oz-schicht')]
+  const wahlIn = (schicht: HTMLElement) =>
+    [...(schicht.querySelector<HTMLSelectElement>('select.oz-zuteilen')?.options ?? [])].map((o) => o.textContent).slice(1)
+
+  it('„Automatisch" besetzt — „Leeren" erst beim zweiten Tipp', () => {
+    const { container, dispatch } = planen()
+    fireEvent.click(knopf(container, t.autoZuteilen)[0]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozAutoAssign' })
+    dispatch.mockClear()
+    fireEvent.click(knopf(container, t.leeren)[0]!)
+    expect(dispatch).not.toHaveBeenCalled()
+    fireEvent.click(knopf(container, t.leerenSicher)[0]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozLeeren' })
+  })
+
+  it('zuerst vier Wochen — „Weitere Wochen" zeigt das Vierteljahr, die freien Plätze zählen mit', () => {
+    const { container } = planen()
+    expect(schichten(container)).toHaveLength(4)
+    expect(container.querySelectorAll('.plan-open-row')).toHaveLength(4)
+    fireEvent.click(knopf(container, t.ozMehrWochen)[0]!)
+    expect(schichten(container)).toHaveLength(13)
+    expect(container.querySelectorAll('.plan-open-row')).toHaveLength(13)
+    expect(knopf(container, t.ozMehrWochen)).toEqual([])
+  })
+
+  it('Plätze und Zeiten eines Termins', () => {
+    const { container, dispatch } = planen()
+    fireEvent.change(container.querySelector(`select[aria-label="${fill(t.ozPlaetze, { n: 2 })}"]`)!, { target: { value: '3' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { plaetze: 3 } })
+    fireEvent.change(container.querySelector(`select[aria-label="${t.von}"]`)!, { target: { value: '14:00' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { von: '14:00' } })
+    fireEvent.change(container.querySelector(`select[aria-label="${t.bis}"]`)!, { target: { value: '16:00' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { bis: '16:00' } })
+  })
+
+  it('ein Termin lässt sich streichen', () => {
+    const { container, dispatch } = planen()
+    fireEvent.click(container.querySelector('.fsr-row .fs-remove')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminRemove', id: 't1' })
+  })
+
+  it('ein Eintrag lässt sich austragen', () => {
+    const e = eintrag(ANNA.id)
+    const { container, dispatch } = planen({ ozEintraege: [e] })
+    fireEvent.click(container.querySelector('.oz-person .oz-raus')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozAustragen', id: e.id })
+  })
+
+  it('eine vergangene Schicht: kein Austragen, kein freier Platz — die nächste geht weiter', () => {
+    vi.setSystemTime(new Date(2026, 8, 10, 9, 0)) // Donnerstag: der Mittwoch dieser Woche ist um
+    const { container } = planen({ ozEintraege: [eintrag(ANNA.id)] })
+    const [vorbei, naechste] = schichten(container)
+    expect(vorbei!.classList.contains('is-vorbei')).toBe(true)
+    expect(vorbei!.querySelector('.oz-person')?.textContent).toContain('Anna Test')
+    expect(vorbei!.querySelector('.oz-raus')).toBeNull()
+    expect(vorbei!.querySelector('select.oz-zuteilen')).toBeNull()
+    expect(naechste!.classList.contains('is-vorbei')).toBe(false)
+    expect(naechste!.querySelectorAll('select.oz-zuteilen')).toHaveLength(2)
+  })
+
+  it('wer an dem Tag abwesend ist: im Konflikt-Banner und mit dem Punkt am Namen', () => {
+    const urlaub = { id: 'a1', personId: ANNA.id, userId: null, from: '2026-09-09', to: '2026-09-09', reason: '' }
+    const { container } = planen({ ozEintraege: [eintrag(ANNA.id)], absences: [urlaub] })
+    expect(container.querySelector('.plan-conflicts .plan-conflict-text')?.textContent).toBe(
+      [ozKurzTag('2026-09-09', 'de'), 'Marktplatz', fill(t.ozAbwesend, { name: 'Anna Test' })].join(' · '),
+    )
+    expect(schichten(container)[0]!.querySelector('.oz-person .slot-konflikt-dot')).not.toBeNull()
+  })
+
+  it('zur Wahl steht nicht, wer schon in der Schicht steht oder an dem Tag abwesend ist', () => {
+    const urlaub = { id: 'a1', personId: ANNA.id, userId: null, from: '2026-09-16', to: '2026-09-16', reason: '' }
+    const { container } = planen({ ozEintraege: [eintrag(SIMON.id)], absences: [urlaub] })
+    const [mittwoch9, mittwoch16, mittwoch23] = schichten(container)
+    expect(wahlIn(mittwoch9!)).toEqual(['Anna Test']) // Simon steht schon drin
+    expect(wahlIn(mittwoch16!)).toEqual(['Simon Test']) // Anna ist abwesend
+    expect(wahlIn(mittwoch23!)).toEqual(['Anna Test', 'Simon Test'])
   })
 })

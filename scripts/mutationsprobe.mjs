@@ -2327,6 +2327,160 @@ export const KATALOG = [
     suchen: 'senden={sendZeugnisPlan} tag={tag} />',
     ersetzen: 'senden={sendAuswaertsPlan} tag={tag} />',
   },
+  /* ---- Testlücken 6–11 T120 geschlossen (3.10.2026) ---- */
+  {
+    id: 'erinnerung-oz-nur-faellig',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Das Zeugnisgeben erinnert nur an den eingestellten Tagen — nicht jeden Tag bis zur Schicht.',
+    suchen:
+      '      for (const pend of offeneZeugnisEintraege(ozEintraege, ozTermine, namen, conf, todayUTC)) {\n        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)\n        if (days === null) continue\n        const kind = dueKind(rem, days)\n',
+    ersetzen:
+      "      for (const pend of offeneZeugnisEintraege(ozEintraege, ozTermine, namen, conf, todayUTC)) {\n        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)\n        if (days === null) continue\n        const kind = dueKind(rem, days) ?? 'repeat'\n",
+  },
+  {
+    id: 'erinnerung-va-nur-faellig',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Ein Vortrag auswärts erinnert nur an den eingestellten Tagen — nicht jeden Tag bis zum Vortrag.',
+    suchen:
+      '      for (const pend of offeneVortraegeAuswaerts(vortraege, namen, conf, todayUTC)) {\n        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)\n        if (days === null) continue\n        const kind = dueKind(rem, days)\n',
+    ersetzen:
+      "      for (const pend of offeneVortraegeAuswaerts(vortraege, namen, conf, todayUTC)) {\n        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)\n        if (days === null) continue\n        const kind = dueKind(rem, days) ?? 'repeat'\n",
+  },
+  {
+    id: 'erinnerung-oz-tabelle-fehlt',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Fehlen die Tabellen des Zeugnisgebens, erinnert der Lauf trotzdem an alles andere.',
+    suchen:
+      "      ]).catch((err): [OzTerminRow[], OzEintragRow[]] => {\n        console.error(`oz_termine/oz_eintraege nicht lesbar: ${(err as Error).message}`)\n        return [[], []]\n      })",
+    ersetzen: '      ])',
+  },
+  {
+    id: 'erinnerung-va-tabelle-fehlt',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Fehlt die Tabelle der Vorträge auswärts, erinnert der Lauf trotzdem an alles andere.',
+    suchen:
+      "        .catch((err): VortragAuswaertsRow[] => {\n          console.error(`vortraege_auswaerts nicht lesbar: ${(err as Error).message}`)\n          return []\n        })\n",
+    ersetzen: '',
+  },
+  {
+    id: 'erinnerung-fs-tabelle-fehlt',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel:
+      'Fehlt die Tabelle der Treffpunkte, erinnert der Lauf trotzdem an die Zusammenkünfte. Der Test dazu maß bis zum 3.10.2026 nichts: Sein eigenes `fetch` überschrieb `loadFn` wieder.',
+    suchen:
+      "        ).catch((err) => {\n          // Fehlt die Tabelle (Migration nicht eingespielt), lieber die\n          // Zusammenkünfte erinnern als den ganzen Lauf verlieren.\n          console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)\n          return [] as { start: string; data: FsInstance[] }[]\n        }),",
+    ersetzen: '        ),',
+  },
+  {
+    id: 'oz-zuteilen-nicht-in-volle',
+    datei: 'src/app/reducer.ts',
+    regel: 'Eine volle Schicht nimmt niemanden mehr auf — auch nicht über einen veralteten Knopf.',
+    suchen: '      if (!person || !schicht || schicht.frei <= 0 || ozVorbei(schicht)) return state',
+    ersetzen: '      if (!person || !schicht || ozVorbei(schicht)) return state',
+  },
+  {
+    id: 'oz-zuteilen-nicht-in-vergangene',
+    datei: 'src/app/reducer.ts',
+    regel: 'In eine vergangene Schicht wird niemand mehr zugeteilt.',
+    suchen: '      if (!person || !schicht || schicht.frei <= 0 || ozVorbei(schicht)) return state',
+    ersetzen: '      if (!person || !schicht || schicht.frei <= 0) return state',
+  },
+  {
+    id: 'wp-gleicher-platz-gleicher-zustand',
+    datei: 'src/app/reducer.ts',
+    regel: 'Denselben Gastgeber noch einmal setzen ändert nichts — derselbe Zustand, nichts geschrieben.',
+    suchen: '      return eintraege === state.planEintraege ? state : { ...state, planEintraege: eintraege }',
+    ersetzen: '      return { ...state, planEintraege: eintraege }',
+  },
+  {
+    id: 'besuch-uebernehmen-ohne-aenderung',
+    datei: 'src/app/reducer.ts',
+    regel: '„Übernehmen", wo der Besucher schon leitet, ändert nichts und meldet nichts.',
+    suchen: "      return fsWeeks === state.fsWeeks ? state : { ...state, fsWeeks, toast: toastKey(state, 'toastZugeteilt') }",
+    ersetzen: "      return { ...state, fsWeeks, toast: toastKey(state, 'toastZugeteilt') }",
+  },
+  {
+    id: 'besuch-gleicher-besucher',
+    datei: 'src/app/reducer.ts',
+    regel: 'Denselben Besucher noch einmal wählen trägt ihn nicht aus und wieder ein.',
+    suchen: '      const alt = state.gruppenbesuche.find((b) => b.id === action.id)\n      if (!alt || alt.pid === action.pid) return state',
+    ersetzen: '      const alt = state.gruppenbesuche.find((b) => b.id === action.id)\n      if (!alt) return state',
+  },
+  {
+    id: 'thema-reiter-der-woche',
+    datei: 'src/app/reducer.ts',
+    regel:
+      'Zurück zu den Zusammenkünften öffnet die nächste nur, wenn sie in der gezeigten Woche liegt — sonst die unter der Woche.',
+    suchen: "  return naechste && naechste.wi === state.week ? naechste.tab : 'mid'",
+    ersetzen: "  return naechste ? naechste.tab : 'mid'",
+  },
+  {
+    id: 'thema-va-bleibt',
+    datei: 'src/app/reducer.ts',
+    regel:
+      'Wer auf „Redner auswärts" steht, bleibt beim Menüpunkt „Zusammenkünfte" dort — gefragt über das Thema, nicht über eine Liste der Reiter.',
+    suchen: "            : action.thema === 'zusammenkuenfte' && themaVon(state.tab) !== 'zusammenkuenfte'",
+    ersetzen: "            : action.thema === 'zusammenkuenfte' && !['mid', 'we', 'edit'].includes(state.tab)",
+  },
+  {
+    id: 'montag-utc-in-jeder-zone',
+    datei: 'supabase/functions/_shared/zuteilungen.ts',
+    regel:
+      'Den Montag eines Tages rechnen die Functions in UTC — dieselbe Rechnung läuft im Browser des Planers, in jeder Zeitzone.',
+    suchen: '  const offset = (new Date(ms).getUTCDay() + 6) % 7',
+    ersetzen: '  const offset = (new Date(ms).getDay() + 6) % 7',
+  },
+  {
+    id: 'montag-sql-isodow',
+    datei: 'supabase/schema.sql',
+    regel:
+      'Die Datenbank zählt den Sonntag zu seiner Woche (isodow) — mit dow gehörte er zur nächsten, und niemand könnte eine Sonntagsschicht bestätigen.',
+    suchen: "and to_char(e.datum - (extract(isodow from e.datum)::int - 1), 'YYYY-MM-DD') = teile[2]",
+    ersetzen: "and to_char(e.datum - (extract(dow from e.datum)::int - 1), 'YYYY-MM-DD') = teile[2]",
+  },
+  {
+    id: 'oz-tag-sql-dow',
+    datei: 'supabase/schema.sql',
+    regel:
+      'Der Wochentag eines Eintrags zählt in der Datenbank wie im Client (0 = Sonntag) — sonst wiese sie jeden Eintrag an einem Sonntagstermin ab.',
+    suchen: '  if extract(dow from new.datum)::int <> termin.wd then',
+    ersetzen: '  if extract(isodow from new.datum)::int <> termin.wd then',
+  },
+  {
+    id: 'va-rolle-uebersetzt',
+    datei: 'src/programm/AuswaertsAnsicht.tsx',
+    regel: 'Die Rolle „Redner" steht in der Sprache des Lesers da, nicht kanonisch deutsch.',
+    suchen: '{redner && <div className="va-rolle">{tu(VA_ROLLE)}</div>}',
+    ersetzen: '{redner && <div className="va-rolle">{VA_ROLLE}</div>}',
+  },
+  {
+    id: 'va-versammlung-uebersetzt',
+    datei: 'src/components/auswaerts-anzeige.ts',
+    regel: 'Die Versammlung eines Vortrags steht in der Sprache des Lesers da („Cong. …"), nicht als „Vers. …".',
+    suchen: "  return v.versammlung ? tu(`Vers. ${v.versammlung}`) : ''",
+    ersetzen: "  return v.versammlung ? `Vers. ${v.versammlung}` : ''",
+  },
+  {
+    id: 'oz-planen-mehr-wochen',
+    datei: 'src/planen/ZeugnisPlan.tsx',
+    regel: '„Weitere Wochen" zeigt das ganze Vierteljahr, nicht weiter nur die ersten vier.',
+    suchen: '  const sichtbar = alle ? wochen : wochen.slice(0, OZ_ERSTE_WOCHEN)',
+    ersetzen: '  const sichtbar = wochen.slice(0, OZ_ERSTE_WOCHEN)',
+  },
+  {
+    id: 'oz-planen-wahl-ohne-abwesende',
+    datei: 'src/planen/ZeugnisPlan.tsx',
+    regel: 'Wer an dem Tag abwesend ist, steht beim Zuteilen nicht zur Wahl.',
+    suchen: '  const wahl = kandidaten.filter((p) => !drin.has(p.id) && !istAbwesendAm(state.absences, p.id, amTag))',
+    ersetzen: '  const wahl = kandidaten.filter((p) => !drin.has(p.id))',
+  },
+  {
+    id: 'oz-planen-vorbei-ohne-austragen',
+    datei: 'src/planen/ZeugnisPlan.tsx',
+    regel: 'Aus einer vergangenen Schicht wird niemand mehr ausgetragen — sie bleibt als Rückblick stehen.',
+    suchen: '      {!vorbei && (\n        <button\n          type="button"\n          className="oz-raus"',
+    ersetzen: '      {(\n        <button\n          type="button"\n          className="oz-raus"',
+  },
 ]
 
 /**

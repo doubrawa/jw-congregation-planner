@@ -232,12 +232,62 @@ describe('navigate nach Thema (T120)', () => {
     expect(next).toMatchObject({ screen: 'programm', tab: 'fs' })
   })
 
-  it('vom Predigtdienst zu den Zusammenkünften: zurück auf eine Zusammenkunft', () => {
-    const next = reducer(makeState({ planner: true, tab: 'fs', terminGewaehlt: true }), {
-      type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte',
+  /*
+   * **Welche Zusammenkunft, steht fest** (3.10.2026). Hier stand nur „eine der
+   * beiden" (`['mid', 'we']`), ohne feste Uhr — der Test hätte jede Wahl
+   * hingenommen. Die Regel (`zusammenkunftDerWoche`): die nächste Zusammenkunft,
+   * wenn sie in der gezeigten Woche liegt, sonst die unter der Woche; die Woche
+   * selbst bleibt. Die Demo-Woche 0 ist der 7.–13.9.2026, Di 19:00 und So 10:00.
+   */
+  describe('vom Predigtdienst zu den Zusammenkünften: zurück auf eine Zusammenkunft', () => {
+    const zuDenZusammenkuenften = (over: Partial<AppState>, tag: number) => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(2026, 8, tag, 10))
+      try {
+        return reducer(makeState({ planner: true, tab: 'fs', terminGewaehlt: true, ...over }), {
+          type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte',
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+
+    it('am Montag die unter der Woche — sie ist die nächste', () => {
+      expect(zuDenZusammenkuenften({ week: 0 }, 7)).toMatchObject({ screen: 'planen', week: 0, tab: 'mid' })
     })
-    expect(next.screen).toBe('planen')
-    expect(['mid', 'we']).toContain(next.tab)
+
+    it('am Mittwoch der Sonntag — der Dienstag ist vorbei', () => {
+      expect(zuDenZusammenkuenften({ week: 0 }, 9)).toMatchObject({ screen: 'planen', week: 0, tab: 'we' })
+    })
+
+    it('in einer anderen Woche die unter der Woche — und die Woche bleibt', () => {
+      // Wer zwei Wochen weiter blättert, will dort bleiben; der Sonntag der
+      // laufenden Woche gehört nicht hierher.
+      expect(zuDenZusammenkuenften({ week: 2 }, 9)).toMatchObject({ week: 2, tab: 'mid' })
+    })
+
+    it('aus den Weiteren Plänen gilt dasselbe', () => {
+      expect(zuDenZusammenkuenften({ week: 0, tab: 'wp' }, 9)).toMatchObject({ week: 0, tab: 'we' })
+    })
+  })
+
+  it('„Redner auswärts" gehört zu den Zusammenkünften — der Menüpunkt lässt den Reiter stehen', () => {
+    // Ein Reiter des eigenen Themas ist kein Grund zum Zurücksetzen — gefragt
+    // über `themaVon`, nicht über eine Liste der Zusammenkunfts-Reiter.
+    for (const screen of ['programm', 'planen'] as const) {
+      const next = reducer(makeState({ planner: true, tab: 'va', screen }), {
+        type: 'navigate', screen, thema: 'zusammenkuenfte',
+      })
+      expect(next.tab, screen).toBe('va')
+    }
+    // Auch der Verkündiger, der seine Vorträge ansieht.
+    const verkuendiger = makeState({ planner: false, personId: 'p9', groups: [], tab: 'va', screen: 'programm' })
+    expect(reducer(verkuendiger, { type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' }).tab).toBe('va')
+  })
+
+  it('„Redner auswärts" gibt es nur in Programm und Planen — woanders zurück auf die Zusammenkunft', () => {
+    const next = reducer(makeState({ planner: true, tab: 'va', screen: 'programm' }), { type: 'navigate', screen: 'personen' })
+    expect(next).toMatchObject({ screen: 'personen', tab: 'mid' })
   })
 
   it('wer schon bei den Zusammenkünften ist, behält seinen Reiter', () => {

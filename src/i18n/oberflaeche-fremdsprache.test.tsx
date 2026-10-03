@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -9,21 +9,29 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { deriveMyVaTasks } from '../data/auswaerts'
 import { emptyQualifications } from '../data/helpers'
+import { deriveMyOzTasks } from '../data/zeugnis'
 import { APP_LANGS, isRTL } from './langs'
 import { DE, dict, loadOverlay } from './ui'
 import type {
   FsInstance,
   FsRule,
   Group,
+  Gruppenbesuch,
   Lang,
   MyTask,
   Notification,
+  OzEintrag,
+  OzTermin,
   Person,
+  PlanEintrag,
   S89Payload,
   Screen,
   Service,
+  VortragAuswaerts,
   Week,
+  WeitererPlan,
 } from '../data/types'
 
 /**
@@ -49,6 +57,8 @@ import type {
  *  3. Jeder Bildschirm rendert in **jeder** der 34 Sprachen ohne Absturz und
  *     ohne leer zu bleiben.
  *  4. Rechts-nach-links-Sprachen kommen als solche an.
+ *  5. Die Pläne (T120) bestehen 1. und 2. ebenso — sie brauchen einen eigenen
+ *     Bestand, sonst öffnet sich keine ihrer Ansichten.
  */
 
 vi.mock('../app/hydrate', () => ({ loadAndHydrate: () => Promise.resolve() }))
@@ -769,5 +779,135 @@ describe('Rechts-nach-links', () => {
     const el = container.querySelector(marke)
     expect(el, `${name}: ${marke} nicht gefunden`).not.toBeNull()
     expect(el?.getAttribute('dir'), name).toBe('auto')
+  })
+})
+
+/* ---- 5. Die Pläne (T120) ------------------------------------------------- */
+
+/**
+ * **Die Pläne in einer fremden Sprache** (3.10.2026).
+ *
+ * Die Durchgänge oben kannten die Pläne nicht: Der Bestand hatte keinen Termin
+ * fürs Zeugnisgeben, keinen Vortrag auswärts, keinen Besuch und keinen weiteren
+ * Plan — keine ihrer Ansichten ging auf. Dabei tragen gerade sie kanonisch
+ * deutsche Daten in die Anzeige: den Dienst „Öffentliches Zeugnisgeben", die
+ * Rolle „Redner", die Versammlung als „Vers. …" und in „Meine Aufgaben" Termine
+ * mit deutschem Wochentag und Monat.
+ *
+ * Die Uhr steht auf Montag, 7. September 2026. Die Ansichten zeigen nur, was
+ * noch kommt; mit der echten Uhr wäre der Bestand irgendwann vorbei und die
+ * Prüfung leer.
+ */
+describe('Die Pläne (T120) in einer fremden Sprache', () => {
+  const OZ_TERMIN: OzTermin = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Zubo 7', plaetze: 2 }
+  const OZ_EINTRAEGE: OzEintrag[] = [
+    { id: 'e1', terminId: 't1', datum: '2026-09-09', pid: ICH.id, selbst: false },
+    { id: 'e2', terminId: 't1', datum: '2026-09-16', pid: ANDER.id, selbst: true },
+  ]
+  const VORTRAG: VortragAuswaerts = { id: 'v1', datum: '2026-09-13', zeit: '10:00', versammlung: 'Kalvo', nummer: 12, pid: ICH.id }
+  const BESUCH: Gruppenbesuch = { id: 'b1', woche: '2026-09-07', grp: 'g1', pid: ICH.id }
+  const SAAL: WeitererPlan = { id: 'pl-s', vorlage: 'saal', name: 'Vexo', von: '2026-09-07', bis: '2026-10-04', entwurf: false }
+  const FAMILIEN: WeitererPlan = { id: 'pl-f', vorlage: 'familien', name: 'Quabo', von: '2026-09-07', bis: '2026-09-13', entwurf: false }
+  const PLAN_EINTRAEGE: PlanEintrag[] = [
+    { id: 'pe1', planId: SAAL.id, datum: '2026-09-07', grp: 'g1', pid: null, mahlzeit: null },
+    { id: 'pe2', planId: FAMILIEN.id, datum: '2026-09-08', grp: null, pid: ICH.id, mahlzeit: 'mittag' },
+  ]
+
+  /** Alle vier Pläne — die eigenen Aufgaben daraus so abgeleitet wie in der App. */
+  const PLAENE: Partial<AppState> = {
+    ozTermine: [OZ_TERMIN],
+    ozEintraege: OZ_EINTRAEGE,
+    auswaerts: [VORTRAG],
+    gruppenbesuche: [BESUCH],
+    plaene: [SAAL, FAMILIEN],
+    planEintraege: PLAN_EINTRAEGE,
+    myTasks: [AUFGABE, ...deriveMyOzTasks([OZ_TERMIN], OZ_EINTRAEGE, ICH.id, {}), ...deriveMyVaTasks([VORTRAG], ICH.id, {})],
+  }
+
+  /** Einen Plan auf der Planen-Seite öffnen — das merkt sich der Baustein selbst, nicht der Zustand. */
+  const oeffne = (name: string) => (c: HTMLElement) => {
+    const karte = [...c.querySelectorAll<HTMLElement>('.wp-karte')].find((k) => k.textContent?.includes(name))
+    expect(karte, `Karte „${name}" fehlt`).toBeDefined()
+    fireEvent.click(karte!.querySelector('button') ?? karte!)
+  }
+
+  /** Name, Zustand, eine Marke, die nur die Ansicht hat — und wie man sie öffnet, wenn nicht über den Zustand. */
+  const ANSICHTEN: Array<[string, Partial<AppState>, string, ((c: HTMLElement) => void)?]> = [
+    ['Zeugnisgeben ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'zeugnis' }, '.oz-schicht'],
+    ['Zeugnisgeben planen', { screen: 'planen', tab: 'fs', fsBereich: 'zeugnis' }, '.oz-person'],
+    ['Gruppenbesuche ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-zeile'],
+    ['Gruppenbesuche planen', { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-besucher'],
+    ['Redner auswärts ansehen', { screen: 'programm', tab: 'va' }, '.va-zeile'],
+    ['Redner auswärts planen', { screen: 'planen', tab: 'va' }, '.va-redner-zeile'],
+    ['Weitere Pläne ansehen', { screen: 'programm', tab: 'wp' }, '.wp-liste'],
+    ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-karte'],
+    ['Königreichssaal geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Vexo')],
+    ['Familien reihum geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Quabo')],
+    ['Meine Aufgaben mit Zeugnis und Vortrag', { screen: 'aufgaben' }, '.auf-title'],
+    // Mit etwas zu tun ist die Karte ein Block (`.dash-planung`), sonst ein Knopf.
+    ['Start mit der Planungs-Karte', { screen: 'start' }, '.dash-planung'],
+  ]
+
+  /** Die Ansicht in einer Sprache, geöffnet und als sichtbarer Text. */
+  const ansicht = (over: Partial<AppState>, oeffnen: ((c: HTMLElement) => void) | undefined, code: Lang) => {
+    const { container } = zeige({ ...PLAENE, ...over, lang: code, congLang: code })
+    oeffnen?.(container)
+    return { container, text: sichtbarerText(container) }
+  }
+
+  /**
+   * Kanonisch deutsch aus den Daten der Pläne — kein Wörterbuchwert, deshalb
+   * eigens gesucht. Ohne Monatsnamen: „September" heißt auf Englisch genauso.
+   */
+  const KANONISCH = ['Öffentliches Zeugnisgeben', 'Redner', 'Vers.', 'Montag', 'Dienstag', 'Mittwoch', 'Sonntag']
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it.each(ANSICHTEN)('%s geht auf — und zeigt mehr als ohne die Pläne', (name, over, marke, oeffnen) => {
+    const { container, text } = ansicht(over, oeffnen, 'en')
+    expect(container.querySelector(marke), `${name}: ${marke} fehlt`).not.toBeNull()
+    cleanup()
+    const { container: ohne } = zeige({ ...over, lang: 'en', congLang: 'en' })
+    expect(text, `${name}: die Pläne ändern nichts am Bildschirm`).not.toBe(sichtbarerText(ohne))
+  })
+
+  /*
+   * Auf Koreanisch, nicht auf Englisch: In lateinischer Schrift trifft die
+   * Suche auch englische Wörter, die deutsch genauso lauten. Der geöffnete
+   * Königreichssaal sagt „Start with" (`wpAbGruppe`) — und „Start" ist
+   * deutsch `navStart`. Ein fest ins JSX geschriebenes deutsches Wort fände
+   * Koreanisch genauso, ohne diesen Zufall.
+   */
+  it.each(ANSICHTEN)('%s: kein deutsches Wörterbuchwort', (name, over, _marke, oeffnen) => {
+    const { text } = ansicht(over, oeffnen, 'ko')
+    const gefunden = deutscheWerte('ko')
+      .filter(([, wert]) => stehtDrin(text, wert))
+      .map(([key, wert]) => `${key} = „${wert}"`)
+    expect(gefunden, name).toEqual([])
+  })
+
+  it.each(['en', 'es', 'ja'] as const)('%s: Dienst, Rolle, Versammlung und Termine stehen nicht deutsch da', (code) => {
+    const gefunden: string[] = []
+    for (const [name, over, , oeffnen] of ANSICHTEN) {
+      const { text } = ansicht(over, oeffnen, code)
+      for (const wort of KANONISCH) if (stehtDrin(text, wort)) gefunden.push(`${name}: ${wort}`)
+      cleanup()
+    }
+    expect(gefunden).toEqual([])
+  })
+
+  it('auf Deutsch stehen dieselben Wörter sehr wohl da', () => {
+    // Der Beleg, dass die Suche oben etwas hätte finden können.
+    const gesehen = new Set<string>()
+    for (const [, over, , oeffnen] of ANSICHTEN) {
+      const { text } = ansicht(over, oeffnen, 'de')
+      for (const wort of KANONISCH) if (stehtDrin(text, wort)) gesehen.add(wort)
+      cleanup()
+    }
+    expect([...gesehen].sort()).toEqual([...KANONISCH].sort())
   })
 })

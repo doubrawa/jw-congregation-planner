@@ -14,6 +14,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { pushTexte } from '../send-reminders/texte.ts'
+import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
 import { jsonRes, schreibZugriff } from './attrappe.ts'
@@ -181,6 +182,15 @@ let ozTermine: unknown[]
 let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
 /** Vorträge auswärts (T120, Phase 4). */
 let vortraege: { id: string; datum: string; zeit: string; versammlung: string; person_id: string | null }[]
+/**
+ * Tabellen, die es (noch) nicht gibt — das Schema ist nicht eingespielt.
+ *
+ * Ein Schalter **in** der Attrappe, kein eigenes `fetch` im Test: `loadFn`
+ * setzt `fetch` bei jedem Lauf neu. Der Test „fehlt die Tabelle ganz" ersetzte
+ * es bis zum 3.10.2026 vor dem Lauf, `loadFn` überschrieb es wieder, und die
+ * Tabelle fehlte nie — ohne das `.catch` an `fs_weeks` blieben alle Tests grün.
+ */
+let fehlendeTabellen: Set<string>
 
 const { writesTo } = schreibZugriff(() => writes)
 
@@ -194,6 +204,8 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     return new Response(null, { status: 204 })
   }
   leseWege.push(path)
+  // So antwortet PostgREST auf eine Tabelle, die es nicht gibt.
+  if (fehlendeTabellen.has(path.split('?')[0]!)) return new Response('{"code":"PGRST205"}', { status: 404 })
   if (path.startsWith('congregations')) {
     return jsonRes([
       { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat },
@@ -292,6 +304,7 @@ beforeEach(() => {
   ozTermine = []
   ozEintraege = []
   vortraege = []
+  fehlendeTabellen = new Set()
   resetPush()
 })
 
@@ -568,7 +581,7 @@ describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
   // Versand rechnete stattdessen mit dem Rhythmus aus den Einstellungen und
   // erinnerte deshalb an einem anderen Tag als Anzeige und Zeitleiste.
   // Verlegt wird über die Abweichung der Woche (T30) — bis zum 18.9.2026 stand
-  // der Termin als Text im Fri Sep 18 00:35:49     2026-Feld und wurde von dort zurückgelesen.
+  // der Termin als Text im `date`-Feld und wurde von dort zurückgelesen.
   const aufSamstag = () => {
     const w = weeks[0].data as { dev?: Record<string, { wd: number; time: string }> }
     w.dev = { mid: { wd: 6, time: '19:30' } }
@@ -751,6 +764,69 @@ describe('send-reminders: öffentliches Zeugnisgeben (T120)', () => {
       .flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
     expect(glocke).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-14|e1' })])
   })
+
+  /*
+   * Bis hierher lag jeder Eintrag an einem fälligen Tag. Eine Regression, die das
+   * Zeugnisgeben täglich erinnert, bliebe grün — für die Zusammenkünfte ist
+   * genau das oben festgehalten, hier fehlte es (3.10.2026).
+   */
+  it('ohne Wiederholung nur an den beiden Haupttagen — dazwischen schweigt sie', async () => {
+    ozEintraege = [eintrag()] // Mittwoch: zwei Tage weg, weder `first` noch `last`
+    reminders = { first: 7, last: 1, repeat: false }
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    // Gegenprobe: Mit Wiederholung kommt sie — am Eintrag selbst liegt es nicht.
+    reminders = { first: 7, last: 1, repeat: true }
+    expect(previewFor(await run(), U_MAX)).toBeDefined()
+  })
+
+  it('am Tag der Schicht selbst schweigt sie (last = 1)', async () => {
+    ozTermine = [{ ...MITTWOCH, wd: 1 }]
+    ozEintraege = [eintrag({ datum: '2026-09-07' })] // heute, Montag
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    // Gegenprobe: Mit „am Tag" (last = 0) kommt sie.
+    reminders = { first: 7, last: 0, repeat: true }
+    expect(previewFor(await run(), U_MAX)).toBeDefined()
+  })
+
+  it('wer nicht erreichbar ist, wird am letzten Erinnerungstag den Planern gemeldet', async () => {
+    // Dienstag, 8. September: einen Tag weg = `last`.
+    ozTermine = [{ ...MITTWOCH, wd: 2 }]
+    persons = [...PERSONS, { id: 'p-otto', fn: 'Otto', ln: 'Ohnekonto' }]
+    const amDienstag = (id: string, person_id: string) => eintrag({ id, person_id, datum: '2026-09-08' })
+    ozEintraege = [
+      amDienstag('e-nina', 'p-nina'), // Konto, aber kein Push-Abo
+      amDienstag('e-otto', 'p-otto'), // gar kein Konto
+      amDienstag('e-max', 'p-max'), // erreichbar — gehört nicht in die Meldung
+    ]
+    const termin = 'Dienstag, 8. September · 10:00–12:00 · Marktplatz: Öffentliches Zeugnisgeben'
+    const planer = previewFor(await run(), U_PLANER)
+    expect(planer?.title).toBe(pushTexte('de').unerreichbar)
+    expect(planer?.body).toBe(`${alsFreitext('Nina Nolink')} — ${termin} · ${alsFreitext('Otto Ohnekonto')} — ${termin}`)
+  })
+
+  it('an einem Wiederholungstag erfahren es die Planer nicht', async () => {
+    ozEintraege = [eintrag({ person_id: 'p-nina' })] // Mittwoch: zwei Tage weg
+    expect(previewFor(await run(), U_PLANER)).toBeUndefined()
+  })
+
+  it.each(['oz_termine', 'oz_eintraege'])('fehlt %s, laufen Zusammenkünfte und Vorträge weiter', async (tabelle) => {
+    weeks = [{ start: WEEK_START, data: { mid: midMeeting() } }]
+    vortraege = [{ id: 'v1', datum: '2026-09-13', zeit: '10:00:00', versammlung: 'Beispielheim', person_id: 'p-max' }]
+    ozEintraege = [eintrag()]
+    fehlendeTabellen.add(tabelle)
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const r = await run()
+      expect(r.ok).toBe(true)
+      const body = previewFor(r, U_MAX)?.body ?? ''
+      expect(body).toContain('Schatzgraben')
+      expect(body).toContain('Vers. Beispielheim')
+      expect(body).not.toContain('Öffentliches Zeugnisgeben')
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('oz_termine/oz_eintraege nicht lesbar'))
+    } finally {
+      log.mockRestore()
+    }
+  })
 })
 
 describe('send-reminders: Vorträge auswärts (T120, Phase 4)', () => {
@@ -789,6 +865,53 @@ describe('send-reminders: Vorträge auswärts (T120, Phase 4)', () => {
       .filter((w) => w.method === 'POST')
       .flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
     expect(glocke).toEqual([expect.objectContaining({ task_key: 'va|2026-09-14|v1' })])
+  })
+
+  // Dieselben Ränder wie beim Zeugnisgeben (3.10.2026).
+  it('ohne Wiederholung nur an den beiden Haupttagen — dazwischen schweigt sie', async () => {
+    vortraege = [vortrag()] // Sonntag: sechs Tage weg, weder `first` noch `last`
+    reminders = { first: 7, last: 1, repeat: false }
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    // Gegenprobe: Mit Wiederholung kommt sie.
+    reminders = { first: 7, last: 1, repeat: true }
+    expect(previewFor(await run(), U_MAX)).toBeDefined()
+  })
+
+  it('am Tag des Vortrags selbst schweigt sie (last = 1)', async () => {
+    vortraege = [vortrag({ datum: '2026-09-07' })] // heute
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    // Gegenprobe: Mit „am Tag" (last = 0) kommt sie.
+    reminders = { first: 7, last: 0, repeat: true }
+    expect(previewFor(await run(), U_MAX)).toBeDefined()
+  })
+
+  it('ein Redner ohne Push-Abo wird am letzten Erinnerungstag den Planern gemeldet — nur dann', async () => {
+    vortraege = [vortrag({ person_id: 'p-nina', datum: '2026-09-08' })] // Dienstag: einen Tag weg = `last`
+    expect(previewFor(await run(), U_PLANER)?.body).toBe(
+      `${alsFreitext('Nina Nolink')} — Dienstag, 8. September · 10:00 · Vers. Beispielheim: Redner`,
+    )
+    vortraege = [vortrag({ person_id: 'p-nina' })] // Sonntag: ein Wiederholungstag
+    expect(previewFor(await run(), U_PLANER)).toBeUndefined()
+  })
+
+  it('fehlt die Tabelle, laufen Zusammenkünfte und Zeugnisgeben weiter', async () => {
+    weeks = [{ start: WEEK_START, data: { mid: midMeeting() } }]
+    ozTermine = [{ id: 't-mi', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Marktplatz' }]
+    ozEintraege = [{ id: 'e1', termin_id: 't-mi', datum: '2026-09-09', person_id: 'p-max', selbst: false }]
+    vortraege = [vortrag()]
+    fehlendeTabellen.add('vortraege_auswaerts')
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const r = await run()
+      expect(r.ok).toBe(true)
+      const body = previewFor(r, U_MAX)?.body ?? ''
+      expect(body).toContain('Schatzgraben')
+      expect(body).toContain('Öffentliches Zeugnisgeben')
+      expect(body).not.toContain('Beispielheim')
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('vortraege_auswaerts nicht lesbar'))
+    } finally {
+      log.mockRestore()
+    }
   })
 })
 
@@ -894,16 +1017,16 @@ describe('send-reminders: Treffpunkte', () => {
   it('fehlt die Tabelle ganz, laufen die Zusammenkünfte weiter', async () => {
     // Migration nicht eingespielt → REST antwortet mit Fehler. Der Lauf darf
     // deshalb nicht abbrechen, sonst bekäme die ganze Versammlung nichts.
-    const echtesFetch = globalThis.fetch
-    globalThis.fetch = (async (input: unknown, init?: { method?: string; body?: unknown }) => {
-      if (String(input).includes('fs_weeks')) return new Response('missing table', { status: 404 })
-      return (echtesFetch as unknown as typeof fakeFetch)(input, init)
-    }) as unknown as typeof globalThis.fetch
+    fehlendeTabellen.add('fs_weeks')
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
-      const body = previewFor(await run(), U_MAX)?.body ?? ''
-      expect(body).toContain('Schatzgraben') // Zusammenkunft erinnert weiter
+      const r = await run()
+      expect(r.ok).toBe(true)
+      expect(previewFor(r, U_MAX)?.body).toContain('Schatzgraben') // Zusammenkunft erinnert weiter
+      // Und die Tabelle hat wirklich gefehlt — das Protokoll sagt es.
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('fs_weeks nicht lesbar'))
     } finally {
-      globalThis.fetch = echtesFetch
+      log.mockRestore()
     }
   })
 
