@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
+import { BesuchsMarke } from '../components/BesuchsMarke'
 import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { fsLeiterZuteilung, fsVisible, nachWochentag } from '../data/fs'
 import { gehoertZu } from '../data/helpers'
@@ -69,6 +70,7 @@ export function FsProgram() {
                 <span className="fs-time">{inst.time}</span>
                 <div className="fs-row-text">
                   <div className="fs-title">{treffpunktTitel(inst, state.groups, i18n)}</div>
+                  <BesuchsMarke woche={kennung} grp={inst.grp} />
                   {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")
                       steht im Wörterbuch — ohne tu bliebe er als einziges Feld
                       dieser Karte deutsch. */}

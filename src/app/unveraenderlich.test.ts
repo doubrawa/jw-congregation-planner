@@ -64,6 +64,7 @@ function ladung(): HydratePayload {
     weeks: buildDemoWeeks(),
     fsRules: DEMO_FS_RULES.map((r) => ({ ...r })),
     fsWeeks: buildDemoFsWeeks(),
+    gruppenbesuche: [],
     absences: DEMO_ABSENCES.map((a) => ({ ...a })),
     notifications: DEMO_NOTIFICATIONS.map((n) => ({ ...n })),
     confirmations: {},

@@ -624,3 +624,100 @@ describe('Drucken im Reiter Predigtdienst', () => {
     expect(orte).toEqual(['Saal', 'Marktplatz'])
   })
 })
+
+describe('Gruppenbesuche beim Ansehen (T120, Phase 2)', () => {
+  /*
+   * Die Gruppe soll wissen, wann der Dienstaufseher kommt — der
+   * Gruppenaufseher kündigt den Besuch an (od Kap. 5 Abs. 41). Ohne
+   * kommenden Besuch bleibt der Predigtdienst, wie er war: ohne Reiter.
+   */
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const GRUPPEN = [
+    { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+    { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+  ]
+  const KONRAD: Person = { ...ICH, id: 'p-k', fn: 'Konrad', ln: 'Sommer' }
+  const REGELN = [
+    { id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Bei Familie A', monthly: 0, skipCong: false },
+    { id: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Saal', monthly: 0, skipCong: false },
+  ]
+  const BESUCHE = [
+    { id: 'b1', woche: '2026-10-12', grp: 'g1', pid: 'p-k' },
+    { id: 'b2', woche: '2026-11-09', grp: 'g2', pid: 'p-k' },
+  ]
+  const mitBesuchen = (over: Partial<AppState> = {}) =>
+    zeige({
+      tab: 'fs',
+      groups: GRUPPEN,
+      fsRules: REGELN,
+      persons: [{ ...ICH, grp: 'g1' }, KONRAD],
+      gruppenbesuche: BESUCHE,
+      ...over,
+    })
+  const reiter = (c: HTMLElement) => [...c.querySelectorAll('.plan-tabs .meeting-tab')].map((b) => b.textContent)
+
+  it('ohne kommenden Besuch keine Reiter — der Predigtdienst sieht aus wie vorher', () => {
+    const { container } = mitBesuchen({ gruppenbesuche: [] })
+    expect(container.querySelector('.plan-tabs')).toBeNull()
+  })
+
+  it('mit Besuchen: Treffpunkte und Gruppenbesuche — den Grundplan gibt es nur beim Planen', () => {
+    const { container, dispatch } = mitBesuchen()
+    expect(reiter(seite(container))).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab])
+    fireEvent.click([...seite(container).querySelectorAll('.plan-tabs .meeting-tab')][1]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'gruppenbesuche' })
+  })
+
+  it('oben die eigene Gruppe mit Treffpunkt und Besucher, darunter alle Besuche', () => {
+    const { container } = mitBesuchen({ fsBereich: 'gruppenbesuche' })
+    expect(container.querySelector('.week-strip')).toBeNull()
+    const karten = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
+    expect(karten).toEqual([`${t.gbDeineGruppe} · Gruppe 1`, t.gbAlle])
+    const eigene = container.querySelector('.panel')!
+    expect(eigene.textContent).toContain('Bei Familie A')
+    expect(eigene.textContent).toContain(t.gbLeitetDann.replace('{name}', 'Konrad Sommer'))
+    // Den Treffpunkt einer fremden Gruppe nennt die Ansicht nicht — nur Woche und Gruppe.
+    expect(container.textContent).not.toContain('Saal')
+    expect(container.querySelectorAll('.gb-liste-zeile')).toHaveLength(2)
+  })
+
+  it('der Treffpunkt der besuchten Gruppe trägt in der Besuchswoche die Marke', () => {
+    const treffpunkt: FsInstance = { id: 'r1', ruleId: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Bei Familie A', leader: '' }
+    const { container } = mitBesuchen({
+      gruppenbesuche: [{ id: 'b0', woche: '2026-09-07', grp: 'g1', pid: 'p-k' }],
+      fsWeeks: [[treffpunkt]],
+    })
+    expect(seite(container).querySelector('.gb-marker')?.textContent).toBe(t.gbMarker)
+  })
+})
+
+describe('Was die Gruppe über ihren Besuch liest, stimmt (T120)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('leitet dort noch ein anderer, verspricht die Ansicht den Besucher nicht', () => {
+    const gruppen = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
+    const konrad: Person = { ...ICH, id: 'p-k', fn: 'Konrad', ln: 'Sommer' }
+    const treffpunkt: FsInstance = {
+      id: 'r1', ruleId: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Bei A', leader: 'Anton Alt', lpid: 'p-a',
+    }
+    const { container } = zeige({
+      tab: 'fs',
+      fsBereich: 'gruppenbesuche',
+      groups: gruppen,
+      persons: [{ ...ICH, grp: 'g1' }, konrad],
+      fsWeeks: [[treffpunkt]],
+      gruppenbesuche: [{ id: 'b0', woche: '2026-09-07', grp: 'g1', pid: 'p-k' }],
+    })
+    expect(container.textContent).toContain('Bei A')
+    expect(container.textContent).not.toContain('Konrad Sommer')
+  })
+})

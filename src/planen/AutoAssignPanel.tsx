@@ -15,10 +15,16 @@ export function AutoAssignRow({
   label,
   automatisch,
   leeren,
+  aktion,
+  bereit = true,
 }: {
   label: string
   automatisch: () => void
   leeren: () => void
+  /** Beschriftung des Hauptknopfs; ohne: „Automatisch zuteilen". Die Gruppenbesuche verteilen reihum (T120). */
+  aktion?: string
+  /** Fehlt noch etwas (bei den Gruppenbesuchen: der Besucher), ist der Hauptknopf gesperrt. */
+  bereit?: boolean
 }) {
   const { t } = useT()
   const bestaetigung = useZweiTipp(leeren)
@@ -30,12 +36,13 @@ export function AutoAssignRow({
         <button
           type="button"
           className="plan-auto-btn plan-auto-btn--primary"
+          disabled={!bereit}
           onClick={() => {
             bestaetigung.entschaerfen()
             automatisch()
           }}
         >
-          {t.autoZuteilen}
+          {aktion ?? t.autoZuteilen}
         </button>
         <button
           type="button"

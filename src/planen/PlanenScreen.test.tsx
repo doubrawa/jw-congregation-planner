@@ -144,9 +144,9 @@ describe('Die Reiter', () => {
     expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', '✎'])
   })
 
-  it('der Predigtdienst hat zwei: die Treffpunkte der Woche und ihren Grundplan', () => {
+  it('der Predigtdienst hat drei: Treffpunkte der Woche, Gruppenbesuche und Grundplan', () => {
     const { container } = zeige({ tab: 'fs' })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan])
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
   })
 
   it('ein Reiterwechsel schlägt durch', () => {
@@ -208,7 +208,7 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
   it('auch, solange noch keine Woche geladen ist — eine neue Versammlung richtet ihn vorher ein', () => {
     const leer = zeige({ tab: 'fs', weeks: [], fsWeeks: [] })
     expect(leer.container.textContent).toContain(t.keineWochenTitel)
-    expect(reiter(leer.container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan])
+    expect(reiter(leer.container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
     cleanup()
     const { container } = zeige({ tab: 'fs', weeks: [], fsWeeks: [], fsBereich: 'grundplan' })
     expect(container.textContent).not.toContain(t.keineWochenTitel)
@@ -226,6 +226,40 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
   it('bei den Zusammenkünften gilt der Bereich nicht — ihr Reiter zeigt die Woche', () => {
     const { container } = zeige({ tab: 'mid', fsBereich: 'grundplan' })
     expect(seite(container).querySelector('.plan-item')).toBeTruthy()
+  })
+})
+
+describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
+  it('stehen ohne Woche da und zeigen ihren Plan', () => {
+    const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche' })
+    expect(container.querySelector('.week-strip')).toBeNull()
+    expect(container.textContent).toContain(t.gbTitel)
+    expect(container.textContent).toContain(t.gbLeer)
+  })
+
+  it('auch ohne geladene Woche — Besuche dürfen weiter voraus liegen als jedes Programm', () => {
+    const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche', weeks: [], fsWeeks: [] })
+    expect(container.textContent).toContain(t.gbTitel)
+  })
+
+  it('der Gruppenaufseher plant sie nicht — bei ihm gilt der Bereich als „Treffpunkte"', () => {
+    const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'gruppenbesuche' })
+    expect(container.textContent).not.toContain(t.gbTitel)
+    expect(seite(container).querySelector('.plan-auto')).toBeTruthy() // die der Treffpunkte
+  })
+
+  it('„Reihum verteilen" braucht erst einen Besucher', () => {
+    // Besuchen darf, wer Treffpunkte leiten darf.
+    const besucher = { ...AUFSEHER, priv: { ...emptyQualifications(), treffpunkt: true } }
+    const { container, dispatch } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche', persons: [PLANER, besucher] })
+    const knopf = [...container.querySelectorAll<HTMLButtonElement>('.plan-auto-btn--primary')].find(
+      (b) => b.textContent === t.gbVerteilen,
+    )!
+    expect(knopf.disabled).toBe(true)
+    fireEvent.change(container.querySelector('.gb-besucher select')!, { target: { value: AUFSEHER.id } })
+    expect(knopf.disabled).toBe(false)
+    fireEvent.click(knopf)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'besucheVerteilen', pid: AUFSEHER.id })
   })
 })
 
@@ -342,5 +376,20 @@ describe('Ohne geladene Woche', () => {
   it('steht der Hinweis auf den Import — auch hier', () => {
     const { container } = zeige({ weeks: [] })
     expect(container.textContent).toContain(t.keineWochenTitel)
+  })
+})
+
+describe('Der Besucher bleibt sichtbar (T120)', () => {
+  it('auch wenn er inzwischen keine Treffpunkte mehr leiten darf', () => {
+    // Ohne ihn in der Auswahl zeigte das Feld „Besucher wählen" — als gäbe es keinen.
+    const { container } = zeige({
+      tab: 'fs',
+      fsBereich: 'gruppenbesuche',
+      gruppenbesuche: [{ id: 'b1', woche: '2099-01-05', grp: 'g1', pid: AUFSEHER.id }],
+    })
+    const feld = container.querySelector<HTMLSelectElement>('.gb-besucher-zeile select')!
+    expect(feld.value).toBe(AUFSEHER.id)
+    // Als Vorgabe für neue Besuche gilt er dagegen nicht.
+    expect(container.querySelector<HTMLSelectElement>('.gb-besucher select')!.value).toBe('')
   })
 })

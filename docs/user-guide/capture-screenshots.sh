@@ -86,6 +86,10 @@ SHOTS=(
   # Treffpunkt-Reiter, weil der kurz genug ist, dass die Karte mit ins Bild
   # passt — sie gilt ohnehin für die ganze Woche, nicht für den Reiter.
   "planer-plan-senden|s=planen&tab=fs|${W}x2100"
+  # Gruppenbesuche des Dienstaufsehers (T120): die Entwicklerseite bringt vier
+  # Besuche mit, der erste mit Konflikt. Höher, damit Konflikt und erste
+  # Monate ins Bild passen; angemeldet, damit die Sidebar einen Namen trägt.
+  "planer-gruppenbesuche|s=planen&tab=fs&fb=gruppenbesuche&me=p6|${W}x1500"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
   # Zuteilungen, die Abwesenheiten und die beiden Bereichs-Karten (Aufgaben,
@@ -99,6 +103,8 @@ SHOTS=(
   # Hash setzt den Bildschirm am Reducer vorbei, und ohne den Reiter stünde
   # im Menü „Zusammenkünfte" markiert (T120).
   "verkuendiger-gruppenaufseher|s=planen&tab=fs&pl=0&me=p1"
+  # Simon (p9) ist in Gruppe 1: oben der Besuch bei seiner Gruppe, darunter alle.
+  "verkuendiger-gruppenbesuche|s=programm&tab=fs&fb=gruppenbesuche&pl=0&me=p9"
   "offline-stand|s=programm&tab=mid&stale=5"
 )
 

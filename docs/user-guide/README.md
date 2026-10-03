@@ -32,12 +32,13 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 
 ### Hash der Entwicklerseite (siehe `tests/testdaten/demo-start.ts` → `parseDebugHash`)
 
-`#s=<screen>&tab=<mid|we|fs>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
+`#s=<screen>&tab=<mid|we|fs>&fb=<treffpunkte|gruppenbesuche|grundplan>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
 
 | Parameter | Bedeutung |
 | --- | --- |
 | `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `planen`, `personen`, `einstellungen`, `profil` |
-| `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Treffpunkte) |
+| `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Predigtdienst) |
+| `fb`  | Reiter im Predigtdienst: `treffpunkte`, `gruppenbesuche` (Besuche des Dienstaufsehers; nur die Entwicklerseite bringt welche mit), `grundplan` (nur beim Planen) |
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Planer |
 | `p`   | **Ausgewählte** Person‑Id — auf der Personen‑Seite öffnet es deren Detail |
 | `me`  | **Angemeldete** Person‑Id: wessen App das hier ist. Davon hängt ab, was persönlich ist — „Meine Aufgaben" und Einspringen (abgeleitet wie im Betrieb), der „DU"‑Chip, „Deine Einträge", und welche **Gruppentreffpunkte** überhaupt erscheinen (nur die der eigenen Gruppe) |
@@ -63,12 +64,14 @@ Ende automatisch auf; du musst nichts extra tun.
 | `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-profil.png` | `s=profil&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-treffpunkte.png` | `s=programm&tab=fs&pl=0&me=p9` | verkuendiger |
-| `verkuendiger-gruppenaufseher.png` | `s=planen&pl=0&me=p1` | verkuendiger |
+| `verkuendiger-gruppenaufseher.png` | `s=planen&tab=fs&pl=0&me=p1` | verkuendiger |
+| `verkuendiger-gruppenbesuche.png` | `s=programm&tab=fs&fb=gruppenbesuche&pl=0&me=p9` | verkuendiger |
 | `planer-start.png` | `s=start&me=p9` (Höhe 1300) | planer |
 | `planer-aufgaben.png` | `s=aufgaben&me=p9` | (Reserve) |
 | `planer-planen-woche.png` | `s=planen&tab=mid` | planer |
 | `planer-planen-treffpunkte.png` | `s=planen&tab=fs` | (Reserve) |
 | `planer-plan-senden.png` | `s=planen&tab=fs` (Höhe 2100) | planer |
+| `planer-gruppenbesuche.png` | `s=planen&tab=fs&fb=gruppenbesuche&me=p6` (Höhe 1500) | planer |
 | `planer-personen.png` | `s=personen` | planer |
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |

@@ -26,6 +26,7 @@ import type {
   FsInstance,
   FsRule,
   Group,
+  Gruppenbesuch,
   Invite,
   Lang,
   MeetingKey,
@@ -86,6 +87,7 @@ export interface HydratePayload {
   weeks: Week[]
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
+  gruppenbesuche: Gruppenbesuch[]
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -128,7 +130,7 @@ export interface AppState {
    * „Zusammenkünfte" zurückkommt, landet wieder beim Planen.
    */
   planModus: boolean
-  /** Im Predigtdienst beim Planen: die Treffpunkte der Woche oder ihr Grundplan (T120). */
+  /** Im Predigtdienst: Treffpunkte der Woche, Gruppenbesuche oder (beim Planen) Grundplan (T120). */
   fsBereich: FsBereich
 
   /* ---- Gerätevorlieben: je Gerät, in localStorage ----------------------- */
@@ -170,6 +172,13 @@ export interface AppState {
   // pro Woche daraus materialisierten Instanzen (parallel zu weeks indiziert).
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
+  /**
+   * Besuche des Dienstaufsehers bei den Gruppen (T120, Phase 2), aufsteigend
+   * nach Woche. Anders als `fsWeeks` nicht an das Ladefenster gebunden: Ein
+   * Besuch darf in einer Woche liegen, die noch nicht importiert ist — er ist
+   * dann vorgemerkt und wird mit dem Import eingetragen.
+   */
+  gruppenbesuche: Gruppenbesuch[]
   absences: Absence[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
@@ -290,8 +299,25 @@ export type AppAction =
       abschnitt?: Abschnitt
       thema?: Thema
     }
-  // Im Predigtdienst zwischen den Treffpunkten der Woche und ihrem Grundplan wechseln (T120).
+  // Im Predigtdienst zwischen Treffpunkten, Gruppenbesuchen und Grundplan wechseln (T120).
   | { type: 'setFsBereich'; bereich: FsBereich }
+  /*
+   * Gruppenbesuche des Dienstaufsehers (T120, Phase 2). Jede dieser Aktionen
+   * trägt den Besucher in die Treffpunkte der Gruppe ein oder aus, soweit die
+   * Woche geladen ist (`data/gruppenbesuche.ts`) — Zusage, Erinnerung und
+   * Entzug laufen dann über den Treffpunkt.
+   */
+  // Ein Besuch je Monat, die Gruppen der Reihe nach (`besucheVerteilen`).
+  | { type: 'besucheVerteilen'; pid: string }
+  | { type: 'besuchHinzufuegen'; woche: string; grp: string; pid: string }
+  | { type: 'besuchEntfernen'; id: string }
+  // Ein anderer Besucher für diesen einen Besuch.
+  | { type: 'besuchBesucher'; id: string; pid: string }
+  // Der Besucher übernimmt die Treffpunkte der Gruppe, auch wenn dort schon
+  // jemand eingeteilt ist — der erfährt es dann wie bei jeder Umteilung.
+  | { type: 'besuchUebernehmen'; id: string }
+  // Alle künftigen Besuche entfernen; Vergangenes bleibt als Rückblick.
+  | { type: 'besucheLeeren' }
   // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).
   | { type: 'sprungZielErreicht' }
   | { type: 'prevWeek' }

@@ -23,7 +23,7 @@ import { aufgabenAbgeleitet } from '../../src/app/reducer'
 import { asFontScale, asTheme, type FontScale } from '../../src/data/constants'
 import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
-import type { Lang, MeetingTab, Screen, Theme } from '../../src/data/types'
+import type { FsBereich, Lang, MeetingTab, Screen, Theme } from '../../src/data/types'
 import { CONG_TO_JW } from '../../src/i18n/langs'
 import { buildDemoConfirmations } from './demo-zusagen'
 import {
@@ -33,6 +33,7 @@ import {
   DEMO_ABSENCES,
   DEMO_FS_RULES,
   DEMO_GROUPS,
+  DEMO_GRUPPENBESUCHE,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
   DEMO_PERSONS,
@@ -100,6 +101,7 @@ export interface DebugHash {
    */
   me?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs) — für Doku-Screenshots
+  fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|grundplan> — Reiter im Predigtdienst (T120)
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
   staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
@@ -128,6 +130,8 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   if (me) out.me = me
   const tab = p.get('tab')
   if (tab === 'mid' || tab === 'we' || tab === 'fs') out.tab = tab
+  const fb = p.get('fb')
+  if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'grundplan') out.fsBereich = fb
   const pl = p.get('pl')
   if (pl === '0' || pl === '1') out.planner = pl === '1'
   if (p.get('shot') === '1') out.shot = true
@@ -154,8 +158,13 @@ export function entwicklerStart(hash: string = location.hash): AppState {
   const basis = demoZustand()
   return aufgabenAbgeleitet({
     ...basis,
+    // Gruppenbesuche (T120) nur hier, nicht in `demoZustand`: Die Tests laufen
+    // mit der echten Uhr, und ein Besuch im Bestand machte jede Ansicht des
+    // Predigtdienstes vom Kalender abhängig. Die Seite hat ihre gestellte.
+    gruppenbesuche: DEMO_GRUPPENBESUCHE,
     screen: debug?.screen ?? 'start',
     tab: debug?.tab ?? basis.tab,
+    fsBereich: debug?.fsBereich ?? basis.fsBereich,
     theme: debug?.theme ?? basis.theme,
     fontScale: debug?.fontScale ?? basis.fontScale,
     planner: debug?.planner ?? basis.planner,

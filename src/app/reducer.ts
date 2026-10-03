@@ -12,6 +12,15 @@ import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, genFsWeek, regenFsWeeks } from '../data/fs'
 import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, themaVon } from '../data/rechte'
+import {
+  besuchAustragen,
+  besuchEintragen,
+  besucheInNeueWoche,
+  besucheVerteilen,
+  besuchStand,
+  nachWoche,
+  type BesuchsLage,
+} from '../data/gruppenbesuche'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
 import { alsFreitext } from '../i18n/translate'
@@ -170,6 +179,16 @@ function dropConfirmations(map: ConfirmationMap, keys: string[]): ConfirmationMa
  */
 function wochenKennungen(state: Pick<AppState, 'weeks'>): string[] {
   return state.weeks.map((w) => w.start)
+}
+
+/** Was die Gruppenbesuche aus dem Zustand brauchen (`data/gruppenbesuche.ts`). */
+function besuchsLage(state: AppState): BesuchsLage {
+  return {
+    kennungen: wochenKennungen(state),
+    fsWeeks: state.fsWeeks,
+    fsRules: state.fsRules,
+    absences: state.absences,
+  }
 }
 
 /** Anzeigename des eingeloggten Nutzers. */
@@ -591,6 +610,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           overseerId: g.overseerId === action.id ? null : g.overseerId,
           assistantId: g.assistantId === action.id ? null : g.assistantId,
         })),
+        // Ein Gruppenbesuch verliert seinen Besucher, nicht sich selbst — wie
+        // die Datenbank (`on delete set null`). Der Plan zeigt ihn dann ohne
+        // Besucher, und der Planer setzt einen neuen ein.
+        gruppenbesuche: state.gruppenbesuche.some((b) => b.pid === action.id)
+          ? state.gruppenbesuche.map((b) => (b.pid === action.id ? { ...b, pid: null } : b))
+          : state.gruppenbesuche,
         members: state.members.map((m) =>
           m.personId === action.id ? { ...m, personId: null } : m,
         ),
@@ -693,6 +718,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         persons: state.persons.map((p) => (p.grp === action.id ? { ...p, grp: null } : p)),
         fsRules,
         fsWeeks,
+        // Ihre Besuche ebenso (T120) — in der Datenbank per Kaskade.
+        gruppenbesuche: state.gruppenbesuche.some((b) => b.grp === action.id)
+          ? state.gruppenbesuche.filter((b) => b.grp !== action.id)
+          : state.gruppenbesuche,
         toast: toastKey(state, 'toastGruppeDel'),
       }
     }
@@ -776,7 +805,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Die Treffpunkte laufen parallel (`fsWeeks[wi]` gehört zu `weeks[wi]`).
         // Ohne diese Zeile hatte die neue Woche bis zum Neuladen keine, und was
         // man dort hinzufügte, fand seine Woche nicht und ging verloren.
-        fsWeeks: [...state.fsWeeks, genFsWeek(week.start, state.fsRules)],
+        // Ein vorgemerkter Gruppenbesuch (T120) wird dabei eingetragen.
+        fsWeeks: [
+          ...state.fsWeeks,
+          besucheInNeueWoche(genFsWeek(week.start, state.fsRules), week.start, state.gruppenbesuche, state.persons),
+        ],
         importing: false,
         notifs: pushNotif(
           state.notifs,
@@ -954,6 +987,84 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         fsRules,
         fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules),
         toast: toastKey(state, 'toastFsRuleDel'),
+      }
+    }
+    /*
+     * Gruppenbesuche des Dienstaufsehers (T120, Phase 2). Jede Änderung trägt
+     * den Besucher in die geladenen Treffpunkte ein oder aus; Zusagen, die
+     * dabei verfallen, räumt `ohneVerwaisteTreffpunktZusagen` ab, und wer eine
+     * bestätigte verliert, erfährt es über `persist.ts` — wie bei jedem
+     * anderen Leiterwechsel.
+     */
+    case 'besucheVerteilen': {
+      const lage = besuchsLage(state)
+      const neu = besucheVerteilen({
+        besuche: state.gruppenbesuche,
+        groups: state.groups,
+        lage,
+        pid: action.pid,
+        // Wie die Regeln des Grundplans: eindeutig und lesbar (`fsRuleAdd`).
+        neueId: () => `b${crypto.randomUUID()}`,
+      })
+      if (!neu.length) return { ...state, toast: toastKey(state, 'toastKeineBesuche') }
+      let fsWeeks = state.fsWeeks
+      for (const besuch of neu) fsWeeks = besuchEintragen(fsWeeks, lage.kennungen, besuch, state.persons)
+      return {
+        ...state,
+        gruppenbesuche: nachWoche([...state.gruppenbesuche, ...neu]),
+        fsWeeks,
+        toast: toastKey(state, 'toastBesucheN', { n: neu.length }),
+      }
+    }
+    case 'besuchHinzufuegen': {
+      // Dieselbe Gruppe in derselben Woche gibt es nur einmal (so auch die Datenbank).
+      if (state.gruppenbesuche.some((b) => b.woche === action.woche && b.grp === action.grp)) return state
+      const besuch = { id: `b${crypto.randomUUID()}`, woche: action.woche, grp: action.grp, pid: action.pid }
+      return {
+        ...state,
+        gruppenbesuche: nachWoche([...state.gruppenbesuche, besuch]),
+        fsWeeks: besuchEintragen(state.fsWeeks, wochenKennungen(state), besuch, state.persons),
+        toast: toastKey(state, 'toastBesuchAdd'),
+      }
+    }
+    case 'besuchEntfernen': {
+      const besuch = state.gruppenbesuche.find((b) => b.id === action.id)
+      if (!besuch) return state
+      return {
+        ...state,
+        gruppenbesuche: state.gruppenbesuche.filter((b) => b !== besuch),
+        fsWeeks: besuchAustragen(state.fsWeeks, wochenKennungen(state), besuch),
+        toast: toastKey(state, 'toastBesuchDel'),
+      }
+    }
+    case 'besuchBesucher': {
+      const alt = state.gruppenbesuche.find((b) => b.id === action.id)
+      if (!alt || alt.pid === action.pid) return state
+      const neu = { ...alt, pid: action.pid }
+      const kennungen = wochenKennungen(state)
+      // Wo der bisherige Besucher eingetragen war, wird frei — und dort tritt
+      // der neue an. Einen fremden Leiter ersetzt auch er nicht ungefragt.
+      const fsWeeks = besuchEintragen(besuchAustragen(state.fsWeeks, kennungen, alt), kennungen, neu, state.persons)
+      return { ...state, gruppenbesuche: state.gruppenbesuche.map((b) => (b === alt ? neu : b)), fsWeeks }
+    }
+    case 'besuchUebernehmen': {
+      const besuch = state.gruppenbesuche.find((b) => b.id === action.id)
+      if (!besuch) return state
+      const fsWeeks = besuchEintragen(state.fsWeeks, wochenKennungen(state), besuch, state.persons, true)
+      return fsWeeks === state.fsWeeks ? state : { ...state, fsWeeks, toast: toastKey(state, 'toastZugeteilt') }
+    }
+    case 'besucheLeeren': {
+      const lage = besuchsLage(state)
+      const weg = new Set(state.gruppenbesuche.filter((b) => besuchStand(b, lage).art !== 'vorbei'))
+      if (!weg.size) return { ...state, toast: toastKey(state, 'toastBesucheGeleert', { n: 0 }) }
+      let fsWeeks = state.fsWeeks
+      for (const besuch of weg) fsWeeks = besuchAustragen(fsWeeks, lage.kennungen, besuch)
+      return {
+        ...state,
+        gruppenbesuche: state.gruppenbesuche.filter((b) => !weg.has(b)),
+        fsWeeks,
+        // Nicht „Geleerte Zuteilungen": gezählt sind Besuche, keine Plätze.
+        toast: toastKey(state, 'toastBesucheGeleert', { n: weg.size }),
       }
     }
     case 'openMyTask':
@@ -1252,6 +1363,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks,
         fsRules: p.fsRules,
         fsWeeks: p.fsWeeks,
+        // Aus einer Momentaufnahme von vor T120 fehlt das Feld — wie beim
+        // Versand-Tagebuch darunter.
+        gruppenbesuche: p.gruppenbesuche ?? [],
         absences: p.absences,
         notifs: p.notifications,
         confirmations: p.confirmations,

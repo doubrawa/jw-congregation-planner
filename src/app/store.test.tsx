@@ -30,6 +30,7 @@ const payload: HydratePayload = {
   weeks: [],
   fsRules: [],
   fsWeeks: [],
+  gruppenbesuche: [],
   absences: [],
   notifications: [],
   confirmations: {},

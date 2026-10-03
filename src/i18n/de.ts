@@ -51,6 +51,30 @@ export const DE = {
     fsFreqM3: 'Jeden 3. im Monat', fsFreqM4: 'Jeden 4. im Monat',
     fsSkipCong: 'Außer bei Versammlungstreffpunkt',
     toastFsRuleAdd: 'Zum Grundplan hinzugefügt', toastFsRuleDel: 'Aus dem Grundplan entfernt',
+    // Gruppenbesuche des Dienstaufsehers (T120, Phase 2). „Dienstaufseher" ist
+    // gemessen: od Kap. 5 Abs. 33/36 in jeder Sprache, fa/ur über die WOL-Suche
+    // (dort fehlt das od). Abwesenheit sagt `toastAbsentP`.
+    fsGruppenbesucheTab: 'Gruppenbesuche',
+    gbTitel: 'Gruppenbesuche des Dienstaufsehers',
+    gbWirkung: 'In der Besuchswoche leitet der Besucher die Treffpunkte der Gruppe. Zusage, Erinnerung und „Plan senden“ laufen über den Treffpunkt – wie bei jedem anderen Leiter.',
+    gbBesucher: 'Besucher', gbBesucherWaehlen: 'Besucher wählen',
+    gbBesucherHint: 'Gilt für neue Besuche – je Besuch änderbar.',
+    // Großgeschrieben wie `autoZuteilen` — der Knopf daneben in derselben Zeile.
+    gbVerteilen: 'REIHUM VERTEILEN',
+    gbVerteilenHint: 'Ein Besuch je Monat, die Gruppen der Reihe nach – für die nächsten sechs Monate. Wochen, in denen sich die Gruppe nicht trifft oder der Besucher abwesend ist, lässt die Verteilung aus.',
+    gbLeer: 'Noch keine Besuche geplant.',
+    gbVorgemerkt: 'vorgemerkt', gbVorbei: 'vorbei',
+    gbVorgemerktHint: 'Die Woche ist noch nicht geladen. Eingetragen wird, sobald ihr Programm importiert ist.',
+    gbAndererLeiter: 'Den Treffpunkt leitet schon {name}.', gbUebernehmen: 'Übernehmen',
+    gbOffen: 'Der Treffpunkt hat noch keinen Leiter.', gbEintragen: 'Eintragen',
+    gbKeinTreffpunkt: 'Die Gruppe trifft sich in dieser Woche nicht.',
+    gbHinzufuegen: 'Besuch hinzufügen', gbWoche: 'Woche', gbGruppe: 'Gruppe',
+    gbDeineGruppe: 'Deine Gruppe', gbAlle: 'Alle Besuche',
+    gbLeitetDann: '{name} leitet dann euren Treffpunkt.',
+    gbMarker: 'Besuch des Dienstaufsehers',
+    toastBesucheN: 'Besuche geplant: {n}', toastKeineBesuche: 'Keine passende Woche gefunden',
+    toastBesuchAdd: 'Besuch eingetragen', toastBesuchDel: 'Besuch entfernt',
+    toastBesucheGeleert: 'Entfernte Besuche: {n}',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: {datum}', drucken: 'Drucken',
     // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',

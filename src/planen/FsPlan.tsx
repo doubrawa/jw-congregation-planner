@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
+import { BesuchsMarke } from '../components/BesuchsMarke'
 import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { FS_TIME_OPTIONS, fsLeiterZuteilung, fsWeekConflicts, nachWochentag } from '../data/fs'
 import { useT } from '../i18n/useT'
@@ -16,7 +17,7 @@ import { ZusageLegende } from './ZusageStatus'
  * Treffpunkte planen (Planen-Tab): je Tag eine Karte mit editierbaren Zeilen
  * (Zeit, Ort, Leiter zuteilen, entfernen) und einer Karte zum Hinzufügen eines
  * Treffpunkts nur für diese Woche (z. B. Pioniertage). Grundplan-Änderungen
- * laufen über die Einstellungen.
+ * laufen über den Reiter „Grundplan" (bis T120 über die Einstellungen).
  */
 export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
   const { state, dispatch } = useApp()
@@ -137,6 +138,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                   ✕
                 </button>
               </div>
+              <BesuchsMarke woche={kennung} grp={inst.grp} />
               <input
                 className="fs-input"
                 type="text"

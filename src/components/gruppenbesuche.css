@@ -1,0 +1,129 @@
+/* ---- Gruppenbesuche des Dienstaufsehers (T120, Phase 2) -------------------
+   Planen (`GruppenbesuchePlan`), Ansehen (`GruppenbesucheAnsicht`) und die
+   Marke am Treffpunkt (`BesuchsMarke`) teilen sich diese Regeln. */
+
+.gb-besucher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 10px;
+}
+
+.gb-feld {
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+
+/* Ein Besuch: Woche und Gruppe, darunter Treffpunkte, Besucher und Probleme. */
+.gb-zeile {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineGld);
+}
+
+.gb-zeile:last-child {
+  border-bottom: 0;
+}
+
+.gb-zeile.is-vorbei {
+  opacity: 0.6;
+}
+
+.gb-kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gb-woche {
+  font-size: calc(13px * var(--fs));
+  font-weight: 600;
+}
+
+.gb-gruppe {
+  flex: 1;
+  text-align: end;
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+.gb-treffpunkt,
+.gb-hinweis {
+  margin-top: 2px;
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.gb-besucher-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 8px;
+}
+
+/* Der Besucher eines vergangenen Besuchs — dort ist nichts mehr zu wählen. */
+.gb-name {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+.gb-zusage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+}
+
+.gb-marke {
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: var(--acc);
+  color: var(--onAcc);
+  font-size: calc(10px * var(--fs));
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gb-marke[data-art='vorbei'] {
+  background: var(--line);
+  color: var(--mut);
+}
+
+.gb-problem {
+  margin-top: 4px;
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 600;
+  color: var(--wein);
+}
+
+.gb-aktion {
+  margin-top: 8px;
+}
+
+/* „Alle Besuche" beim Ansehen: Woche links, Gruppe rechts. */
+.gb-liste-zeile {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--lineNeu);
+  font-size: calc(12.5px * var(--fs));
+}
+
+.gb-liste-zeile:last-child {
+  border-bottom: 0;
+}
+
+/* Am Treffpunkt der Besuchswoche, unter seinem Titel. */
+.gb-marker {
+  margin-top: 2px;
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+  color: var(--acc);
+}

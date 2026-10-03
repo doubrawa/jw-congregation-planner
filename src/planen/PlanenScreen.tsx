@@ -13,6 +13,8 @@ import { PlanSendenPanel } from './PlanSendenPanel'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
+import { aktiverFsBereich } from './fs-bereiche'
+import { GruppenbesuchePlan } from './GruppenbesuchePlan'
 import { FsPlan } from './FsPlan'
 import { FsRulesPanel } from './FsRulesPanel'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
@@ -37,15 +39,20 @@ export function PlanenScreen() {
   const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
   const fsOverseer = !state.planner && myFsGroup !== null
 
-  // Der Grundplan hat keine Woche: Er steht ohne den Wochenstreifen da — und
-  // auch, solange noch gar keine Woche geladen ist, denn eine neue Versammlung
-  // richtet ihn ein, bevor sie importiert.
-  if ((state.tab === 'fs' || fsOverseer) && state.fsBereich === 'grundplan') {
+  // Grundplan und Gruppenbesuche haben keine Woche: Sie stehen ohne den
+  // Wochenstreifen da — und auch, solange noch gar keine Woche geladen ist,
+  // denn eine neue Versammlung richtet den Grundplan ein, bevor sie importiert.
+  const bereich = aktiverFsBereich(state)
+  if ((state.tab === 'fs' || fsOverseer) && bereich !== 'treffpunkte') {
     return (
       <section className="screen">
         <ThemaKopf thema="predigtdienst" />
         <FsBereichTabs />
-        <FsRulesPanel onlyGroup={fsOverseer ? myFsGroup : null} />
+        {bereich === 'grundplan' ? (
+          <FsRulesPanel onlyGroup={fsOverseer ? myFsGroup : null} />
+        ) : (
+          <GruppenbesuchePlan />
+        )}
       </section>
     )
   }

@@ -17,6 +17,9 @@ import type { Lang, Meeting, MeetingTab, PartItem, Person, Week } from '../data/
 import { druckKennzeichen } from './druck'
 import { DruckWahl } from './DruckWahl'
 import { FsProgram } from './FsProgram'
+import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
+import { FsBereichTabs } from '../planen/FsBereichTabs'
+import { aktiverFsBereich } from '../planen/fs-bereiche'
 import { MonatDruckenContext, MonatsDruck } from './MonatsDruck'
 import './programm.css'
 import './print.css'
@@ -33,6 +36,7 @@ function heute(lang: Lang): string {
  * mitgeholt (useProgWeek) — sonst die Versammlungssprache.
  */
 export function ProgrammScreen() {
+  const { state } = useApp()
   // Der Monat, der gerade gedruckt wird (T105) — sonst null.
   const [druckMonat, setDruckMonat] = useState<string | null>(null)
 
@@ -53,6 +57,17 @@ export function ProgrammScreen() {
     window.addEventListener('afterprint', fertig)
     window.print()
   }, [])
+
+  // Die Gruppenbesuche (T120) haben keine Woche — ohne Streifen, wie beim Planen.
+  if (state.tab === 'fs' && aktiverFsBereich(state) === 'gruppenbesuche') {
+    return (
+      <section className="screen">
+        <ThemaKopf />
+        <FsBereichTabs />
+        <GruppenbesucheAnsicht />
+      </section>
+    )
+  }
 
   // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
   // naechste Woche — und uebernimmt das Wischen.
@@ -82,6 +97,7 @@ function ProgrammBody() {
     return (
       <section className="screen">
         <ThemaKopf />
+        {state.tab === 'fs' && <FsBereichTabs />}
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
@@ -104,6 +120,9 @@ function ProgrammBody() {
           Ansehen/Planen. Im Ausdruck fehlt beides; dort ordnet die Zeile
           darunter das Blatt zu. */}
       <ThemaKopf />
+      {/* Die Reiter des Predigtdienstes (Treffpunkte · Gruppenbesuche) stehen
+          über der Woche, wie beim Planen. Ohne Besuche gibt es keine Leiste. */}
+      {isFs && <FsBereichTabs />}
       {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
       <div className="prog-print-head">
         <span>{state.congregation.name}</span>

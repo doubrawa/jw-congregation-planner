@@ -26,6 +26,7 @@ import {
   saveFsRules,
   saveFsWeek,
   saveGroupRow,
+  saveGruppenbesuche,
   saveInvite,
   saveInvitePlanner,
   saveMemberRow,
@@ -407,6 +408,33 @@ function treffpunkteSpeichern(
   }
 }
 
+/**
+ * Gruppenbesuche (T120) und die Treffpunkt-Wochen, in die sie eingetragen oder
+ * aus denen sie ausgetragen wurden.
+ *
+ * Geschrieben wird je Besuch nur, was sich geändert hat (neue Referenz), und
+ * gelöscht nur, was dieser Planer entfernt hat — wie beim Grundplan. Die Wochen
+ * gehen einzeln und sofort hinaus, nicht gebündelt: Hier wird geklickt, nicht
+ * getippt, und mit der Woche gehen die Zusagen, die dabei verfallen.
+ */
+function besucheSpeichern(
+  congId: string,
+  prev: AppState,
+  next: AppState,
+  verwaist: ReadonlyMap<string, string[]>,
+): void {
+  if (next.gruppenbesuche !== prev.gruppenbesuche) {
+    const vorher = new Map(prev.gruppenbesuche.map((b) => [b.id, b]))
+    const geaendert = next.gruppenbesuche.filter((b) => vorher.get(b.id) !== b)
+    const bleibt = new Set(next.gruppenbesuche.map((b) => b.id))
+    const entfernt = prev.gruppenbesuche.filter((b) => !bleibt.has(b.id)).map((b) => b.id)
+    if (geaendert.length || entfernt.length) saveGruppenbesuche(congId, geaendert, entfernt)
+  }
+  for (let i = 0; i < next.fsWeeks.length; i++) {
+    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, verwaist)
+  }
+}
+
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   const congId = next.congregationId
   const userId = next.userId
@@ -466,6 +494,15 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'fsRuleRemove':
       // Grundplan-Blob + die neu materialisierten Wochen (gebündelt).
       treffpunkteSpeichern(congId, prev, next, fsVerwaist)
+      break
+    case 'besucheVerteilen':
+    case 'besuchHinzufuegen':
+    case 'besuchEntfernen':
+    case 'besuchBesucher':
+    case 'besuchUebernehmen':
+    case 'besucheLeeren':
+      // Die Besuche und die Treffpunkte, in die sie eingetragen wurden.
+      besucheSpeichern(congId, prev, next, fsVerwaist)
       break
     case 'addPerson':
       savePerson(congId, action.person)

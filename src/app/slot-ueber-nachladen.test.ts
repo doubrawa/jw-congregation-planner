@@ -53,6 +53,7 @@ function ladung(weeks: Week[]): HydratePayload {
     weeks,
     fsRules: [],
     fsWeeks: buildDemoFsWeeks(),
+    gruppenbesuche: [],
     absences: [],
     notifications: [],
     confirmations: {},

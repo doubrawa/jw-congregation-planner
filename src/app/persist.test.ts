@@ -42,6 +42,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveCongregationInfo: vi.fn(),
   saveFamily: vi.fn(),
   saveFsRules: vi.fn(),
+  saveGruppenbesuche: vi.fn(),
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
   saveInvite: vi.fn(),
@@ -358,6 +359,54 @@ describe('Treffpunkte', () => {
     const next = st({ weeks: [] })
     persist(st({ weeks: [] }), next, { type: 'fsRuleAdd', grp: null })
     vi.advanceTimersByTime(600)
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+})
+
+describe('Gruppenbesuche (T120)', () => {
+  /*
+   * Je Besuch eine Zeile: geschrieben wird, was neu oder geändert ist,
+   * gelöscht nur, was dieser Planer entfernt hat — und mit dem Besuch die
+   * Treffpunkt-Woche, in die er eingetragen oder aus der er ausgetragen wurde.
+   * Geteilte Wochen, damit nur die eine Woche als geändert gilt.
+   */
+  const B1 = { id: 'b1', woche: '2026-09-14', grp: 'g1', pid: 'p5' }
+  const B2 = { id: 'b2', woche: '2026-10-12', grp: 'g2', pid: 'p5' }
+
+  it('ein neuer Besuch geht hinaus — und die Woche, in die er eingetragen wurde', () => {
+    const weeks = buildDemoWeeks()
+    const fsWeeks = buildDemoFsWeeks()
+    const geaendert = [...fsWeeks[1]!]
+    const prev = st({ weeks, fsWeeks, gruppenbesuche: [B2] })
+    const next = st({ weeks, fsWeeks: fsWeeks.map((w, i) => (i === 1 ? geaendert : w)), gruppenbesuche: [B1, B2] })
+    persist(prev, next, { type: 'besuchHinzufuegen', woche: B1.woche, grp: B1.grp, pid: B1.pid })
+    // B2 ist unverändert (dieselbe Referenz) und geht nicht noch einmal hinaus.
+    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [B1], [])
+    expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[1]?.start, geaendert)
+    expect(data.saveWeek).not.toHaveBeenCalled()
+  })
+
+  it('ein entfernter Besuch wird gelöscht, nicht überschrieben', () => {
+    const weeks = buildDemoWeeks()
+    const fsWeeks = buildDemoFsWeeks()
+    persist(st({ weeks, fsWeeks, gruppenbesuche: [B1, B2] }), st({ weeks, fsWeeks, gruppenbesuche: [B2] }), {
+      type: 'besuchEntfernen',
+      id: 'b1',
+    })
+    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [], ['b1'])
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+
+  it('ändert eine Aktion nichts, geht nichts hinaus', () => {
+    const weeks = buildDemoWeeks()
+    const fsWeeks = buildDemoFsWeeks()
+    const besuche = [B1]
+    persist(st({ weeks, fsWeeks, gruppenbesuche: besuche }), st({ weeks, fsWeeks, gruppenbesuche: besuche }), {
+      type: 'besuchUebernehmen',
+      id: 'b1',
+    })
+    expect(data.saveGruppenbesuche).not.toHaveBeenCalled()
     expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
 })

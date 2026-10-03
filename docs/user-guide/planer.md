@@ -58,6 +58,9 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
   der Karte **„Geladen bis …"** mit dem Knopf **Nächste Woche importieren** –
   derselbe wie in den Einstellungen (Abschnitt 8). Der Hinweis verschwindet,
   sobald der Vorrat wieder reicht.
+- **Gruppenbesuche des Dienstaufsehers** mit möglichen Konflikten stehen als
+  eigene Zeile darunter, auch wenn der Besuch Monate voraus liegt; ein Tipp
+  führt zu den Gruppenbesuchen (Abschnitt 5).
 - Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
   darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
   angesehen.
@@ -400,7 +403,8 @@ Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 
 Die **Zusammenkünfte für den Predigtdienst** („Treffpunkte") sind ein eigenes
 Thema im Menü: **Predigtdienst**. Schalte oben rechts auf **Planen**; dort gibt
-es zwei Reiter, **Treffpunkte** und **Grundplan**.
+es drei Reiter: **Treffpunkte**, **Gruppenbesuche** (siehe unten) und
+**Grundplan**.
 
 ![Treffpunkte im Programm](screenshots/programm-treffpunkte.png)
 
@@ -437,6 +441,52 @@ sein soll. Beide Wege führen zurück, du kannst also jederzeit wechseln.
 > Ein Freitext-Leiter hat die App nicht: Er bekommt keine Aufgabe, keine
 > Erinnerung und keinen farbigen Punkt, und er zählt bei niemandem auf die
 > Auslastung. Auch dann nicht, wenn er zufällig so heißt wie jemand bei euch.
+
+### Gruppenbesuche des Dienstaufsehers
+
+Der Dienstaufseher besucht **jeden Monat an einem Wochenende eine andere
+Gruppe** und leitet dann ihre Zusammenkünfte für den Predigtdienst (so steht es
+im Buch *Organisiert, Jehovas Willen zu tun*, Kapitel 5). Unter
+**Predigtdienst › Planen › Gruppenbesuche** planst du diese Besuche.
+
+![Gruppenbesuche planen](screenshots/planer-gruppenbesuche.png)
+
+- **Ein Besuch ist eine Woche und eine Gruppe.** Der Besucher wird in dieser
+  Woche **Leiter der Treffpunkte der Gruppe**. Alles Weitere läuft über den
+  Treffpunkt wie bei jedem anderen Leiter: Er bestätigt die Aufgabe, bekommt
+  Erinnerungen, und „Plan senden" teilt sie ihm mit. Am Treffpunkt steht in
+  dieser Woche **„Besuch des Dienstaufsehers"**.
+- **Besucher** oben gilt für neue Besuche; in jeder Zeile lässt er sich für
+  diesen einen Besuch ändern. Zur Wahl steht, wer Treffpunkte leiten darf.
+- **Reihum verteilen** plant die nächsten sechs Monate, je Monat einen Besuch.
+  Die Gruppe, deren letzter Besuch am längsten her ist, kommt zuerst. Wochen,
+  in denen sich die Gruppe nicht trifft (etwa am ersten Samstag, wenn dort ein
+  Versammlungstreffpunkt ist) oder der Besucher abwesend ist, lässt die
+  Verteilung aus. Monate, die schon einen Besuch haben, bleiben, wie sie sind.
+- **Besuch hinzufügen** unten legt einen einzelnen Besuch an, **✕** entfernt
+  ihn — der Treffpunkt ist dann wieder frei. **Leeren** entfernt alle
+  kommenden Besuche (zwei Tipps).
+- **Vorgemerkt** heißt: Die Woche ist noch nicht importiert. Der Besuch nennt
+  vorab den Treffpunkt laut Grundplan und wird eingetragen, sobald die Woche
+  importiert ist.
+
+**Mögliche Konflikte** stehen oben und an der Zeile:
+
+| Konflikt | Was du tun kannst |
+| --- | --- |
+| Den Treffpunkt leitet schon jemand anders | **Übernehmen** — der Besucher leitet. Hatte der andere zugesagt, bekommt er sofort die Nachricht, dass die Zuteilung zurückgezogen ist. |
+| Der Treffpunkt hat noch keinen Leiter | **Eintragen** — etwa, wenn der Treffpunkt erst nach dem Besuch im Grundplan entstand. |
+| Die Gruppe trifft sich in dieser Woche nicht | Besuch entfernen und eine andere Woche wählen. |
+| Der Besucher ist abwesend | Anderen Besucher wählen oder die Woche ändern. |
+
+Konflikte der Gruppenbesuche nennt auch die **Planungs‑Karte auf der
+Startseite** — unabhängig von ihren vier Wochen, denn ein Besuch liegt oft
+Monate voraus, und gerade dann lässt sich noch etwas ändern.
+
+**Alle sehen die Besuche**: Im Predigtdienst gibt es beim **Ansehen** den Reiter
+**Gruppenbesuche**, sobald einer ansteht — oben die Besuche bei der eigenen
+Gruppe mit Treffpunkt, darunter alle in Kurzform. Gruppenaufseher planen die
+Besuche nicht.
 
 ---
 

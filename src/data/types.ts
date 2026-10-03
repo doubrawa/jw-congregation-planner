@@ -80,12 +80,41 @@ export type MeetingTab = MeetingKey | 'fs' | 'edit'
 export type Thema = 'zusammenkuenfte' | 'predigtdienst'
 
 /**
- * Was im Predigtdienst gerade zu sehen ist, solange geplant wird (T120): die
- * Treffpunkte der Woche oder ihr Grundplan. Der Grundplan stand bis dahin in
- * den Einstellungen; er gehört aber zum Thema, und der Gruppenaufseher kam nur
- * seinetwegen überhaupt in die Einstellungen.
+ * Was im Predigtdienst gerade zu sehen ist (T120): die Treffpunkte der Woche,
+ * die Gruppenbesuche des Dienstaufsehers (Phase 2) oder der Grundplan. Der
+ * Grundplan stand bis dahin in den Einstellungen; er gehört aber zum Thema, und
+ * der Gruppenaufseher kam nur seinetwegen überhaupt in die Einstellungen.
+ *
+ * Grundplan gibt es nur beim Planen; beim Ansehen gilt er als „Treffpunkte".
  */
-export type FsBereich = 'treffpunkte' | 'grundplan'
+export type FsBereich = 'treffpunkte' | 'gruppenbesuche' | 'grundplan'
+
+/**
+ * Ein **Besuch des Dienstaufsehers** bei einer Predigtdienstgruppe (T120,
+ * Phase 2).
+ *
+ * Gemessen am Buch „Organisiert, Jehovas Willen zu tun", Kap. 5 Abs. 36: Der
+ * Dienstaufseher besucht jeden Monat an einem Wochenende eine andere Gruppe und
+ * leitet dann die Zusammenkünfte für den Predigtdienst. Ein Besuch ist deshalb
+ * eine **Woche** (ihr Montag, wie `Week.start`) und eine Gruppe — der Besucher
+ * wird Leiter ihrer Treffpunkte in dieser Woche. Zusage, Erinnerung und „Plan
+ * senden" laufen dann über den Treffpunkt wie bei jedem anderen Leiter; der
+ * Besuch selbst ist keine Aufgabe.
+ *
+ * Eine Zeile je Besuch (`gruppenbesuche`), kein Blob — dieselbe Lehre wie beim
+ * Grundplan (`saveFsRules`): Zwei Planer überschrieben sich sonst gegenseitig,
+ * und Gruppe und Person wären keine Fremdschlüssel.
+ */
+export interface Gruppenbesuch {
+  /** Vom Client vergeben (`b<uuid>`), wie die Regel-Ids des Grundplans. */
+  id: string
+  /** Montag der Besuchswoche (`Week.start`) — auch für Wochen, die noch nicht geladen sind. */
+  woche: string
+  /** Die besuchte Gruppe (`Group.id`). */
+  grp: string
+  /** Der Besucher (`Person.id`); `null`, wenn die Person gelöscht wurde. */
+  pid: string | null
+}
 
 /**
  * Regeltermin **einer** Zusammenkunft: Wochentag als Zahl (0 = Sonntag …

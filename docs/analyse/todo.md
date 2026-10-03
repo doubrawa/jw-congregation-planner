@@ -5753,7 +5753,8 @@ Ansehen ↔ Planen behält Woche und Reiter. Als Gruppenaufseher: Planen nur im
 Predigtdienst, dort auch der Grundplan seiner Gruppe; keine Einstellungen.
 `#go=planen` aus einem alten Push landet weiter in Planen.
 
-**Stand Phase 1 (3. Oktober 2026) — umgesetzt, noch nicht committet:**
+**Stand Phase 1 (3. Oktober 2026) — umgesetzt, Commit `ad08902` (Branch
+`claude/t120-themen-navigation`):**
 
 - Menü in Abschnitten (`SidebarNav`, `NavAbschnitt`); der Namensblock unten ist
   ein Knopf zum Profil. „Weitere Pläne" kommt erst mit Phase 5 ins Menü —
@@ -5793,6 +5794,46 @@ Predigtdienst, dort auch der Grundplan seiner Gruppe; keine Einstellungen.
 Bewusst offen: Die Rollenzeile des Gruppenaufsehers sagt weiter „Verkündiger";
 `ohneGruppeHint` spricht von „im Programm" (verständlich, eine Änderung hieße 34
 Übersetzungen ohne Gewinn).
+
+**Stand Phase 2 (3. Oktober 2026) — Gruppenbesuche, umgesetzt:**
+
+- **Gemessen** am od Kap. 5 (WOL 1102014935) Abs. 36: Der Dienstaufseher besucht
+  **jeden Monat an einem Wochenende eine andere Gruppe** (kleine Versammlungen:
+  jede Gruppe zweimal im Jahr) und leitet dann ihre Zusammenkünfte für den
+  Predigtdienst; Abs. 41: Der Gruppenaufseher kündigt den Besuch an. Die
+  Canvas sagte „alle 4 Wochen" — gebaut ist **monatlich**. „Dienstaufseher" in
+  allen Sprachen aus Abs. 33/36; fa/ur haben kein od auf WOL, dort über die
+  WOL-Suche belegt (fa „سرپرست خدمت", ur „خدمتی نگہبان", je >120 Treffer).
+- **Datenmodell:** Tabelle `gruppenbesuche`, eine Zeile je Besuch (Woche als
+  Montag, Gruppe und Besucher als Fremdschlüssel, `unique (congregation_id,
+  woche, grp)`), RLS: lesen alle, schreiben nur Planer. **Muss in Supabase
+  eingespielt werden** (`schema.sql` erneut ausführen — idempotent, kein
+  Neuaufbau). Bis dahin lädt die App ohne Besuche; Speichern meldet den
+  Schreibfehler.
+- **Kein eigener Aufgabentyp:** Der Besucher wird Leiter der Treffpunkte der
+  Gruppe in der Besuchswoche (`data/gruppenbesuche.ts`). Zusage, Erinnerung,
+  „Plan senden" und „Zuteilung zurückgezogen" laufen über den Treffpunkt —
+  Edge Functions unverändert. Ein anderer Leiter wird nur mit „Übernehmen"
+  verdrängt; Entfernen gibt den Platz frei, wo der Besucher ihn hält.
+- **Vorgemerkt:** Wochen, die noch nicht importiert sind, nennen den Treffpunkt
+  laut Grundplan; `addImportedWeek` trägt den Besuch ein. Wochen, die per
+  Skript statt in der App importiert werden, zeigen den Besuch als „Der
+  Treffpunkt hat noch keinen Leiter" mit „Eintragen".
+- **Reihum verteilen:** sechs Monate, je Monat ein Besuch, Warteschlange nach
+  „am längsten nicht besucht", erste passende Woche (überspringt den ersten
+  Samstag mit Versammlungstreffpunkt, Abwesenheiten, Wochen mit Besuch).
+- **Oberfläche:** Predigtdienst › Planen › Gruppenbesuche (nur Planer), Ansehen
+  › Gruppenbesuche für alle, sobald einer ansteht (eigene Gruppe mit
+  Treffpunkt, darunter alle). Marke „Besuch des Dienstaufsehers" am
+  Treffpunkt; Konflikte auf der Planungs-Karte der Startseite, ohne
+  Vier-Wochen-Fenster. Die Ansicht der Gruppe nennt den Besucher nur, wenn er
+  eingetragen oder vorgemerkt ist.
+- 29 neue Schlüssel in 34 Sprachen; Mutationsprobe um sechs Regeln ergänzt,
+  6/6 bewacht; Handbücher und zwei neue Handbuchbilder.
+
+Bewusst offen (Phase 2): kein wählbarer Rhythmus („jede Gruppe zweimal im
+Jahr" geht über Entfernen einzelner Besuche); kein Ausdruck des Besuchsplans;
+„Woche ändern" heißt entfernen und neu anlegen.
 
 ---
 

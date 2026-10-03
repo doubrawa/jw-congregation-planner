@@ -158,6 +158,9 @@ export function parseKuratiert(sql) {
 export const LEEREN = [
   'confirmations', 'notifications', 'absences', 'weeks',
   'push_subscriptions', 'fs_weeks', 'reminder_log', 'assignment_log',
+  // Die Gruppenbesuche (T120) gingen mit den Gruppen ohnehin per Kaskade —
+  // ausdrücklich hier, weil sie Planung sind wie die Wochen, nicht Stammdaten.
+  'gruppenbesuche',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

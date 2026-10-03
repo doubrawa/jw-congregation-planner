@@ -431,6 +431,37 @@ create table if not exists public.fs_weeks (
   unique (congregation_id, start)
 );
 
+-- Besuche des Dienstaufsehers bei den Predigtdienstgruppen (T120, Phase 2).
+-- Gemessen am Buch „Organisiert, Jehovas Willen zu tun", Kap. 5 Abs. 36: je
+-- Monat an einem Wochenende eine andere Gruppe; dabei leitet er die
+-- Zusammenkünfte für den Predigtdienst. In der App wird der Besucher deshalb
+-- Leiter der Treffpunkte der Gruppe (`fs_weeks`) — Zusage und Erinnerung laufen
+-- darüber, nicht über diese Tabelle.
+--
+-- Eine Zeile je Besuch, kein Blob: So wie beim Grundplan (`fs_rules`) sind
+-- Gruppe und Besucher Fremdschlüssel, und zwei Planer überschreiben sich nicht
+-- gegenseitig. Die Woche ist ein Montag wie `weeks.start`, darf aber in der
+-- Zukunft liegen, die noch nicht importiert ist — dann ist der Besuch
+-- vorgemerkt und wird mit dem Import eingetragen.
+create table if not exists public.gruppenbesuche (
+  -- `text` wie bei `fs_rules`: Die Kennung vergibt der Client (`b<uuid>`).
+  id              text primary key check (id <> ''),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  woche           date not null check (extract(isodow from woche) = 1),
+  grp             uuid not null,
+  -- Der Besucher; null, wenn seine Person gelöscht wurde. Der Besuch bleibt
+  -- dann stehen, und der Planer setzt einen anderen ein.
+  person_id       uuid,
+  created_at      timestamptz not null default now(),
+
+  -- Dieselbe Gruppe nur einmal je Woche — zugleich der Index fürs Laden.
+  unique (congregation_id, woche, grp),
+  constraint gruppenbesuche_grp_fk foreign key (grp, congregation_id)
+    references public.groups (id, congregation_id) on delete cascade,
+  constraint gruppenbesuche_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete set null (person_id)
+);
+
 -- Versand-Tagebuch der Erinnerungen: send-reminders trägt ein, wem es an
 -- welchem Tag welche Art geschickt hat, und überspringt beim zweiten Lauf am
 -- selben Tag die schon Erledigten — sonst käme dieselbe Push doppelt an.
@@ -904,6 +935,22 @@ create policy fs_weeks_write on public.fs_weeks
   for all
   using (congregation_id = public.my_congregation_id() and (public.is_planner() or public.is_group_overseer()))
   with check (congregation_id = public.my_congregation_id() and (public.is_planner() or public.is_group_overseer()));
+
+-- Gruppenbesuche: Die ganze Versammlung liest (die Gruppe soll wissen, wann
+-- der Dienstaufseher kommt — der Gruppenaufseher kündigt es an, od Kap. 5
+-- Abs. 41). Schreiben nur Planer: Anders als die Treffpunkte plant der
+-- Gruppenaufseher die Besuche nicht.
+alter table public.gruppenbesuche enable row level security;
+
+drop policy if exists gruppenbesuche_select on public.gruppenbesuche;
+create policy gruppenbesuche_select on public.gruppenbesuche
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists gruppenbesuche_write on public.gruppenbesuche;
+create policy gruppenbesuche_write on public.gruppenbesuche
+  for all
+  using (congregation_id = public.my_congregation_id() and public.is_planner())
+  with check (congregation_id = public.my_congregation_id() and public.is_planner());
 
 -- Versand-Tagebuch: bewusst ohne Policy. RLS ohne Policy sperrt alles; die
 -- Edge Function arbeitet mit der Service-Role und umgeht RLS.

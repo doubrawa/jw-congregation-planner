@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
+import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
 import { useWochenImport } from '../einstellungen/useWochenImport'
@@ -110,7 +111,28 @@ export function PlanungsKarte() {
     }).formatRange(stand.zeitraum.vonMs, stand.zeitraum.bisMs)
   }, [stand.zeitraum, state.lang])
 
-  if (stand.wochen.length === 0 && !stand.vorratKnapp) {
+  /*
+   * **Pläne** (T120): Konflikte der Gruppenbesuche — unabhängig vom
+   * Vier-Wochen-Fenster der Zeilen darüber, denn ein Besuch liegt oft Monate
+   * voraus, und gerade dann lässt sich noch etwas tun (anderer Besucher, andere
+   * Woche).
+   */
+  const besuchsKonflikte = useMemo(() => {
+    const lage = {
+      kennungen: state.weeks.map((w) => w.start),
+      fsWeeks: state.fsWeeks,
+      fsRules: state.fsRules,
+      absences: state.absences,
+    }
+    return state.gruppenbesuche.filter((b) => besuchHatKonflikt(b, besuchStand(b, lage, fromIso(tag)))).length
+  }, [state.weeks, state.fsWeeks, state.fsRules, state.absences, state.gruppenbesuche, tag])
+
+  const zuDenBesuchen = (): void => {
+    dispatch({ type: 'setFsBereich', bereich: 'gruppenbesuche' })
+    dispatch({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+  }
+
+  if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0) {
     return (
       <button
         type="button"
@@ -159,6 +181,19 @@ export function PlanungsKarte() {
           </span>
         </button>
       ))}
+      {besuchsKonflikte > 0 && (
+        <button type="button" className="dash-plan-woche" onClick={zuDenBesuchen}>
+          <span className="dash-plan-kopf">
+            <span className="dash-plan-range">{t.gbTitel}</span>
+            <span className="dash-plan-arrow" aria-hidden="true">
+              ›
+            </span>
+          </span>
+          <span className="dash-plan-chips">
+            <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
+          </span>
+        </button>
+      )}
       {stand.vorratKnapp && (
         <div className="dash-plan-vorrat">
           <span className="dash-plan-vorrat-text">

@@ -606,6 +606,24 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     })
   })
 
+  it('Konflikte der Gruppenbesuche stehen dabei — auch Monate voraus (T120)', () => {
+    // Alles zugeteilt, aber ein Besuch am 7. November: dem ersten Samstag, an
+    // dem sich die Gruppen nicht treffen. Er liegt weit hinter den vier
+    // Wochen der Karte — gerade dann ist noch Zeit, ihn zu verlegen.
+    const weeks = WOCHEN.map(besetzt)
+    const { container, dispatch } = planer({
+      weeks,
+      confirmations: allesBestaetigt(weeks),
+      gruppenbesuche: [{ id: 'b1', woche: '2026-11-02', grp: 'g1', pid: 'p-a' }],
+    })
+    expect(container.querySelector('.dash-plan-text')).toBeNull() // kein „Alles zugeteilt"
+    const zeile = [...container.querySelectorAll('.dash-plan-woche')].find((z) => z.textContent?.includes(t.gbTitel))!
+    expect(chip(zeile, 'konflikte')?.n).toBe('1')
+    fireEvent.click(zeile)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'gruppenbesuche' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+  })
+
   it('ist nichts zu tun, schrumpft sie auf eine Zeile „Alles zugeteilt"', () => {
     const weeks = WOCHEN.map(besetzt)
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })

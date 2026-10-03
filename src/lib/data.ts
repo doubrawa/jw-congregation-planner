@@ -25,6 +25,7 @@ import type {
   FsInstance,
   FsRule,
   Group,
+  Gruppenbesuch,
   Invite,
   MeetingTimes,
   Member,
@@ -83,6 +84,22 @@ interface FsRuleRow {
   monthly: number
   skip_cong: boolean
   aus: string[] | null
+}
+
+/** Ein Gruppenbesuch des Dienstaufsehers (T120) — eine Zeile je Besuch. */
+interface GruppenbesuchRow {
+  id: string
+  woche: string
+  grp: string
+  person_id: string | null
+}
+
+function gruppenbesuchFromRow(r: GruppenbesuchRow): Gruppenbesuch {
+  return { id: r.id, woche: r.woche, grp: r.grp, pid: r.person_id }
+}
+
+function gruppenbesuchToRow(b: Gruppenbesuch, congregationId: string) {
+  return { id: b.id, congregation_id: congregationId, woche: b.woche, grp: b.grp, person_id: b.pid }
 }
 
 /**
@@ -452,6 +469,8 @@ export interface CongregationData {
   weeks: Week[]
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
+  /** Besuche des Dienstaufsehers (T120), aufsteigend nach Woche — nicht an das Ladefenster gebunden. */
+  gruppenbesuche: Gruppenbesuch[]
   absences: Absence[]
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -510,7 +529,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -545,6 +564,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .order('sent_at', { ascending: false })
       .limit(SENT_LOG_LIMIT),
+    // Gruppenbesuche des Dienstaufsehers (T120) — alle, nicht nur das
+    // Ladefenster: Ein Besuch darf in einer Woche liegen, die noch nicht
+    // importiert ist. Es sind wenige (einer je Monat).
+    supabase
+      .from('gruppenbesuche')
+      .select('id, woche, grp, person_id')
+      .eq('congregation_id', congregationId)
+      .order('woche'),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -555,10 +582,16 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Fehlt die Tabelle, bleibt die Anzeige „benachrichtigt am" leer — das ist
   // eine fehlende Auskunft, kein fehlender Datenbestand, und die App bleibt
   // benutzbar.
+  //
+  // Die Gruppenbesuche ebenso wenig: Die Tabelle kam mit T120 hinzu, und eine
+  // Datenbank, in der `schema.sql` seitdem nicht neu lief, hat sie noch nicht.
+  // Die App bleibt dann benutzbar, nur ohne Besuche — gespeichert werden
+  // können sie erst nach dem Schema (dann meldet der Schreibfehler-Toast).
   const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
+  if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
@@ -649,6 +682,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     weeks: weekList,
     fsRules,
     fsWeeks,
+    gruppenbesuche: ((besuchRows.data ?? []) as GruppenbesuchRow[]).map(gruppenbesuchFromRow),
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
@@ -903,6 +937,35 @@ export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: s
       return await client
         .from('fs_rules')
         .upsert(rules.map((r) => fsRuleToRow(r, congregationId)))
+    })(),
+  )
+}
+
+/**
+ * Gruppenbesuche des Dienstaufsehers (T120) — eine Zeile je Besuch.
+ *
+ * Wie beim Grundplan wird nur gelöscht, was **dieser** Planer entfernt hat
+ * (`entfernt`), und nur geschrieben, was er angelegt oder geändert hat. Ein
+ * zweiter Planer, der zugleich verteilt, verliert so nichts; träfen beide
+ * dieselbe Gruppe in derselben Woche, weist die Datenbank den zweiten ab
+ * (`unique (congregation_id, woche, grp)`), und der Schreibfehler-Toast meldet
+ * es.
+ */
+export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuch[], entfernt: string[] = []): void {
+  if (!supabase) return
+  const client = supabase
+  void run(
+    (async () => {
+      if (entfernt.length) {
+        const { error } = await client
+          .from('gruppenbesuche')
+          .delete()
+          .eq('congregation_id', congregationId)
+          .in('id', entfernt)
+        if (error) return { error }
+      }
+      if (!besuche.length) return { error: null }
+      return await client.from('gruppenbesuche').upsert(besuche.map((b) => gruppenbesuchToRow(b, congregationId)))
     })(),
   )
 }

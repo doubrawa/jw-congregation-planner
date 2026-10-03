@@ -862,6 +862,50 @@ export const KATALOG = [
     suchen: "  if (state.terminGewaehlt || state.tab === 'fs') return state",
     ersetzen: '  if (state.terminGewaehlt) return state',
   },
+  // ── Gruppenbesuche des Dienstaufsehers (T120, Phase 2) ─────────────────────
+  {
+    id: 'besuch-ersetzt-nicht-ungefragt',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Ein Besuch verdrängt keinen anderen Leiter ohne „Übernehmen" — dessen Zusage hinge sonst still daran.',
+    suchen: '    if (inst.leader && !ersetzen) continue\n',
+    ersetzen: '',
+  },
+  {
+    id: 'import-traegt-besuch-ein',
+    datei: 'src/app/reducer.ts',
+    regel: 'Ein vorgemerkter Besuch wird mit dem Import seiner Woche eingetragen.',
+    suchen:
+      '          besucheInNeueWoche(genFsWeek(week.start, state.fsRules), week.start, state.gruppenbesuche, state.persons),',
+    ersetzen: '          genFsWeek(week.start, state.fsRules),',
+  },
+  {
+    id: 'verteilen-reihum',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Reihum verteilen besucht je Monat eine andere Gruppe — die besuchte geht ans Ende der Reihe.',
+    suchen: '      reihe.splice(reihe.indexOf(grp), 1)\n      reihe.push(grp)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'verteilen-ohne-erste-samstage',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Reihum verteilen legt keinen Besuch in eine Woche, in der sich die Gruppe nicht trifft.',
+    suchen: "      if (stand.art === 'vorbei' || stand.art === 'keinTreffpunkt' || stand.abwesend) continue",
+    ersetzen: "      if (stand.art === 'vorbei' || stand.abwesend) continue",
+  },
+  {
+    id: 'verteilen-abwesenheit',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Reihum verteilen lässt Wochen aus, in denen der Besucher abwesend ist.',
+    suchen: "      if (stand.art === 'vorbei' || stand.art === 'keinTreffpunkt' || stand.abwesend) continue",
+    ersetzen: "      if (stand.art === 'vorbei' || stand.art === 'keinTreffpunkt') continue",
+  },
+  {
+    id: 'ansicht-verspricht-nur-feststehendes',
+    datei: 'src/programm/GruppenbesucheAnsicht.tsx',
+    regel: 'Die Gruppe liest „… leitet dann euren Treffpunkt" nur, wenn es so eingetragen oder vorgemerkt ist.',
+    suchen: "            const zugesagt = stand.art === 'eingetragen' || stand.art === 'vorgemerkt'",
+    ersetzen: '            const zugesagt = true',
+  },
   {
     id: 'planen-gruppenaufseher-nur-predigtdienst',
     datei: 'src/data/rechte.ts',

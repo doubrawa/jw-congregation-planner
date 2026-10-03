@@ -48,6 +48,8 @@ function stand(over: Partial<AppState> = {}): AppState {
     groups: [...DEMO_GROUPS],
     fsRules: [...DEMO_FS_RULES],
     fsWeeks: buildDemoFsWeeks(),
+    // Mit der Gruppe gehen auch ihre Besuche des Dienstaufsehers (T120).
+    gruppenbesuche: [],
     // Die Zusagen gehören dazu: Verschwindet ein Treffpunkt, verfällt seine.
     confirmations: {},
     ...over,

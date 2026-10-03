@@ -94,6 +94,17 @@ Leiter. Die Treffpunkte **anderer** Gruppen stehen nicht dabei; sie gehen dich
 nicht an, und die Liste bliebe sonst voller Termine, zu denen niemand geht.
 Bist du keiner Gruppe zugeordnet, siehst du die Versammlungstreffpunkte.
 
+### Besuche des Dienstaufsehers
+
+Der Dienstaufseher besucht reihum die Predigtdienstgruppen, an einem Wochenende
+im Monat, und leitet dann ihre Treffpunkte. Sind Besuche geplant, hat der
+Predigtdienst den Reiter **Gruppenbesuche**: oben die Besuche bei **deiner**
+Gruppe mit Treffpunkt und Besucher, darunter alle kommenden Besuche in
+Kurzform. In der Woche des Besuchs steht am Treffpunkt deiner Gruppe
+**„Besuch des Dienstaufsehers"**.
+
+![Besuche des Dienstaufsehers](screenshots/verkuendiger-gruppenbesuche.png)
+
 ### Zusätzliche Klasse
 
 Führt eure Versammlung eine **zusätzliche Klasse** durch, stehen bei den
@@ -411,6 +422,11 @@ rechts der Schalter **Ansehen / Planen**. Beim Planen gibt es zwei Reiter:
 
 Wechselst du zwischendurch zu den Zusammenkünften, siehst du sie nur an; zurück
 im Predigtdienst bist du wieder beim Planen.
+
+Die **Besuche des Dienstaufsehers** planen die Admins; du siehst sie beim
+Ansehen unter **Gruppenbesuche** und kannst deine Gruppe darauf einstellen. In
+der Besuchswoche leitet der Besucher euren Treffpunkt — er steht dann dort als
+Leiter, und du musst ihn nicht selbst eintragen.
 
 ![Planen als Gruppenaufseher](screenshots/verkuendiger-gruppenaufseher.png)
 

@@ -30,6 +30,7 @@ import type {
   FsRule,
   Congregation,
   Group,
+  Gruppenbesuch,
   HelperSlot,
   MyTask,
   Notification,
@@ -248,6 +249,23 @@ const DEMO_FS_SEED: Record<string, string> = {
 export function buildDemoFsWeeks(): FsInstance[][] {
   return buildFsWeeks(buildDemoWeeks().map((w) => w.start), DEMO_FS_RULES, DEMO_FS_SEED)
 }
+
+/**
+ * Gruppenbesuche des Dienstaufsehers (T120) — nur für die Entwicklerseite
+ * (`entwicklerStart`). Konrad Sommer besucht reihum, je Monat eine Gruppe. Der
+ * erste fällt in eine geladene Woche, deren Gruppentreffpunkt schon Jonas
+ * Berger leitet (Seed `1|r4`) — ein Konflikt zum Ansehen; die übrigen liegen
+ * hinter den geladenen Wochen und sind vorgemerkt. Gruppe 1 kommt im Januar
+ * wieder dran: So zeigt die Ansicht der Gruppe (Simon, p9) beides — den Besuch
+ * mit offenem Konflikt und einen, dessen Leiter schon feststeht.
+ */
+export const DEMO_GRUPPENBESUCHE: Gruppenbesuch[] = [
+  { id: 'b1', woche: '2026-09-14', grp: 'g1', pid: 'p5' },
+  { id: 'b2', woche: '2026-10-12', grp: 'g2', pid: 'p5' },
+  { id: 'b3', woche: '2026-11-09', grp: 'g3', pid: 'p5' },
+  { id: 'b4', woche: '2026-12-07', grp: 'g4', pid: 'p5' },
+  { id: 'b5', woche: '2027-01-04', grp: 'g1', pid: 'p5' },
+]
 
 /* ---- Hilfsdienste ------------------------------------------------------- */
 // Jeder Dienst hat seinen eigenen Aufgabenbereich (`svc:<key>`) — die drei

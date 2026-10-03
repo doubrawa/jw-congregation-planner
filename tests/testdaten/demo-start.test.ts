@@ -124,6 +124,19 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     expect(entwicklerStart('#s=planen&pl=1').planner).toBe(true)
   })
 
+  it('fb=<Bereich> wählt den Reiter im Predigtdienst (T120) — nur bekannte Bereiche', () => {
+    expect(entwicklerStart('#s=planen&tab=fs&fb=gruppenbesuche').fsBereich).toBe('gruppenbesuche')
+    expect(entwicklerStart('#s=planen&tab=fs&fb=grundplan').fsBereich).toBe('grundplan')
+    expect(entwicklerStart('#s=planen&tab=fs&fb=quatsch').fsBereich).toBe('treffpunkte')
+  })
+
+  it('die Seite bringt Gruppenbesuche mit — der Testbestand der Tests nicht', () => {
+    // Die Tests laufen mit der echten Uhr; Besuche im gemeinsamen Bestand
+    // machten jede Ansicht des Predigtdienstes vom Kalender abhängig.
+    expect(entwicklerStart('').gruppenbesuche.length).toBeGreaterThan(0)
+    expect(demoZustand().gruppenbesuche).toEqual([])
+  })
+
   it('fs=<Faktor> setzt die Schriftgröße — nur Stufen der Skala', () => {
     expect(entwicklerStart('#s=profil&fs=1.45').fontScale).toBe(1.45)
     expect(entwicklerStart('#s=profil&fs=1.1').fontScale).toBe(1) // nicht auf der Skala

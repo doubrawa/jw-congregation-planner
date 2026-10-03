@@ -56,6 +56,7 @@ export function initialState(): AppState {
     groups: [],
     fsRules: [],
     fsWeeks: [],
+    gruppenbesuche: [],
     absences: [],
     notifs: [],
     notifOpen: false,
