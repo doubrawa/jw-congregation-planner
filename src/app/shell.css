@@ -280,14 +280,9 @@
   color: var(--mut);
 }
 
-.sidebar-profile-link {
-  flex: none;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  color: var(--acc);
-}
-
-.sidebar-profile.is-active .sidebar-profile-link {
+/* Steht man auf dem Profil, trägt der Name die Farbe des aktiven Menüpunkts —
+   bis zum 4.10.2026 tat das das Schild „Profil ›" daneben. */
+.sidebar-profile.is-active .sidebar-profile-name {
   color: var(--accD);
 }
 

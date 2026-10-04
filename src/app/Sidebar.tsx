@@ -84,7 +84,9 @@ export function SidebarNav({ abschnitte }: { abschnitte: readonly NavAbschnitt[]
  *
  * Der Namensblock **ist** der Weg zum Profil (T120). Bis dahin stand das Profil
  * zweimal da — als Menüpunkt und darunter als Name, den man nicht antippen
- * konnte.
+ * konnte. Seit dem 4.10.2026 auch ohne das Schild „Profil ›" daneben: Den
+ * Namen anzutippen genügt. Das Wort bleibt nur für Screenreader stehen — sonst
+ * läse der Knopf Name und Rolle vor und sagte nicht, wohin er führt.
  */
 export function SidebarFooter({
   me,
@@ -119,7 +121,7 @@ export function SidebarFooter({
           <span className="sidebar-profile-name" dir="auto">{me ? displayName(me) : ''}</span>
           <span className="sidebar-profile-role">{roleLabel}</span>
         </span>
-        <span className="sidebar-profile-link">{profilLabel} ›</span>
+        <span className="sr-only">{profilLabel}</span>
       </button>
       <button type="button" className="sidebar-logout" onClick={onLogout}>
         {logoutLabel}

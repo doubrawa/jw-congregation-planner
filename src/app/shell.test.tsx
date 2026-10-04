@@ -163,6 +163,27 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'profil' })
   })
 
+  it('neben dem Namen steht kein „Profil" — nur für Screenreader nennt der Knopf sein Ziel', () => {
+    // Seit dem 4.10.2026: Den Namen anzutippen genügt. Ohne das unsichtbare Wort
+    // läse der Knopf nur Name und Rolle vor.
+    const { container } = zeige({ planner: true })
+    for (const block of container.querySelectorAll('.sidebar-profile')) {
+      const sichtbar = [...block.querySelectorAll('span')]
+        .filter((s) => !s.classList.contains('sr-only') && !s.closest('.sr-only'))
+        .map((s) => s.textContent)
+        .join(' ')
+      expect(sichtbar).not.toContain(t.navProfil)
+      expect(block.querySelector('.sr-only')?.textContent).toBe(t.navProfil)
+    }
+  })
+
+  it('auf dem Profil ist der Namensblock als aktuelle Seite markiert', () => {
+    const { container } = zeige({ planner: true, screen: 'profil' })
+    const block = container.querySelector('.sidebar .sidebar-profile')!
+    expect(block.classList.contains('is-active')).toBe(true)
+    expect(block.getAttribute('aria-current')).toBe('page')
+  })
+
   it('Vollständigkeitsprobe: kein Eintrag ohne Recht — die Liste deckt sich mit dem Wächter', async () => {
     // Gegenprobe zur Rechteprüfung im Reducer: Was hier steht, muss dort
     // durchgehen. Sonst zeigt die App einen Punkt, der ins Programm zurückwirft.
