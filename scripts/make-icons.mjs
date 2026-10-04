@@ -11,11 +11,13 @@
  *
  *  - `any`-Icons (Launcher-Fallback, Notification): fast randfüllend.
  *  - `maskable`: Android legt seine eigene Maske darüber (Kreis, Squircle, …)
- *    und garantiert nur einen Kreis von 80 % Durchmesser. Der Hintergrund ist
- *    die Kachelfarbe, die Kachel geht also randlos in die Fläche über; in der
- *    Safe-Zone liegen muss nur das Motiv, nicht die Kachel.
+ *    und garantiert nur einen Kreis von 80 % Durchmesser — und zeigt dasselbe
+ *    Icon groß auf dem Startbildschirm der installierten App. Deshalb Weiß wie
+ *    `background_color` im Manifest und die ganze Kachel in der Safe-Zone
+ *    (siehe TARGETS).
  *  - apple-touch-icon: iOS ignoriert SVG und füllt Transparenz mit Schwarz,
- *    braucht also eine eigene deckende PNG-Datei; die Ecken rundet iOS selbst.
+ *    braucht also eine eigene deckende PNG-Datei; die Ecken rundet iOS selbst,
+ *    darum dort die Kachelfarbe als Fläche.
  */
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -28,11 +30,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PUBLIC = join(ROOT, 'public')
 
 /**
- * Die Kachelfarbe des Logos — die Füllung seines ersten `<rect>`. Sie ist der
- * Hintergrund der deckenden Ziele: Androids Maske und die abgerundeten Ecken
- * unter iOS schneiden dann aus einer vollen Fläche, statt einen weißen Rand um
- * eine kleinere Kachel zu legen. Bis zum 4.10.2026 stand hier Weiß — das alte
- * Logo war eine helle Kachel.
+ * Die Kachelfarbe des Logos — die Füllung seines ersten `<rect>`. Sie ist die
+ * Fläche des apple-touch-icon: iOS rundet die Ecken selbst, auf Weiß stünde dort
+ * eine kleinere Kachel in einer größeren.
  */
 function kachelfarbe(svg) {
   const fill = /<rect\b[^>]*\bfill="(#[0-9a-fA-F]{6})"/.exec(svg)?.[1]
@@ -40,23 +40,34 @@ function kachelfarbe(svg) {
   return fill
 }
 
+/** Wie `background_color` in `public/manifest.webmanifest` — die Fläche des Startbildschirms. */
+const WEISS = '#ffffff'
+
 /**
- * name, Kantenlänge, Anteil den das Motiv füllt, Hintergrund.
+ * name, Kantenlänge, Anteil den das Motiv füllt, Hintergrund
+ * (`transparent`, `weiss` oder `kachel`).
  *
  *  - `any`-Icons (Launcher/Desktop/Taskleiste, Notification): transparent, damit
  *    unter Windows nur die abgerundete Kachel erscheint statt eines weißen
  *    Quadrats. Das Motiv selbst ist deckend, nur der Rand außen ist frei.
- *  - `maskable` + apple-touch-icon: deckend in der Kachelfarbe — dürfen NICHT
- *    transparent sein, sonst zeigt Androids Maske Löcher bzw. iOS füllt mit
- *    Schwarz. Beim maskable-Icon reicht das Motiv bis 0,41 der Kachelbreite vom
- *    Mittelpunkt (äußerste Plätze); mit 0,8 bleibt es bei 0,33 — innerhalb des
- *    Kreises von 0,4, den Android garantiert.
+ *  - `maskable`: Weiß, die ganze Kachel in der Safe-Zone. Android zeigt dieses
+ *    Icon auch groß auf dem Startbildschirm der installierten App. Vollflächig
+ *    in der Kachelfarbe (so stand es kurz am 4.10.2026) erschien dort ein
+ *    Quadrat mit spitzen Ecken, überall sonst ist die Kachel rund (Betreiber).
+ *    Auf Weiß geht die Fläche im Hintergrund des Startbildschirms auf. Wie
+ *    groß: Die Kachel reicht bis 0,613 ihrer Breite vom Mittelpunkt (die runden
+ *    Ecken, rx = 116/512); mit 0,64 bleibt sie bei 0,39 — innerhalb des Kreises
+ *    von 0,4, den Android garantiert.
+ *  - apple-touch-icon: die Kachelfarbe (siehe `kachelfarbe`).
+ *
+ * Deckende Ziele dürfen NICHT transparent sein, sonst zeigt Androids Maske
+ * Löcher bzw. iOS füllt mit Schwarz.
  */
 const TARGETS = [
-  { file: 'icon-192.png', size: 192, share: 0.9, transparent: true },
-  { file: 'icon-512.png', size: 512, share: 0.9, transparent: true },
-  { file: 'icon-512-maskable.png', size: 512, share: 0.8, transparent: false },
-  { file: 'apple-touch-icon.png', size: 180, share: 0.86, transparent: false },
+  { file: 'icon-192.png', size: 192, share: 0.9, hintergrund: 'transparent' },
+  { file: 'icon-512.png', size: 512, share: 0.9, hintergrund: 'transparent' },
+  { file: 'icon-512-maskable.png', size: 512, share: 0.64, hintergrund: 'weiss' },
+  { file: 'apple-touch-icon.png', size: 180, share: 0.86, hintergrund: 'kachel' },
 ]
 
 function findChrome() {
@@ -102,9 +113,11 @@ const KACHEL = kachelfarbe(svg)
 const work = mkdtempSync(join(tmpdir(), 'jw-icons-'))
 
 try {
-  for (const { file, size, share, transparent } of TARGETS) {
+  for (const { file, size, share, hintergrund } of TARGETS) {
     const box = Math.round(size * share)
-    const bg = transparent ? 'transparent' : KACHEL
+    const transparent = hintergrund === 'transparent'
+    const bg = { transparent: 'transparent', weiss: WEISS, kachel: KACHEL }[hintergrund]
+    if (!bg) throw new Error(`${file}: unbekannter Hintergrund ${hintergrund}`)
     const html = `<!doctype html><meta charset="utf-8"><style>
 html,body{margin:0;padding:0}
 body{width:${size}px;height:${size}px;background:${bg};overflow:hidden;
@@ -131,7 +144,7 @@ svg{display:block;width:${box}px;height:${box}px}
       page,
     ], { stdio: 'ignore' })
     verify(out, size, transparent)
-    console.log(`  ✓ ${file}  (${size}×${size}, Motiv ${Math.round(share * 100)} %, ${transparent ? 'transparent' : 'deckend'})`)
+    console.log(`  ✓ ${file}  (${size}×${size}, Motiv ${Math.round(share * 100)} %, ${transparent ? 'transparent' : `deckend ${bg}`})`)
   }
 } finally {
   rmSync(work, { recursive: true, force: true })

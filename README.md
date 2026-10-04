@@ -137,9 +137,11 @@ npm run icons    # scripts/make-icons.mjs, rendert mit Chrome (headless)
 Das Zeichen (seit dem 4.10.2026): drei Sitzreihen mit 4, 6 und 8 Plätzen um ein
 goldenes Rednerpult, von oben gesehen, auf einer dunklen Petrol-Kachel — flach,
 damit es auch als 16-px-Favicon trägt. Die Polsterung je Ziel steht als `share`
-in `scripts/make-icons.mjs`; die deckenden Icons (maskable, iOS) bekommen die
-Kachelfarbe als Hintergrund, die das Skript aus `logo.svg` liest. Gerendert wird
-mit Chrome, demselben Renderer wie in der App.
+in `scripts/make-icons.mjs`. Das maskable-Icon liegt auf Weiß wie der
+Startbildschirm der installierten App (`background_color`), denn Android zeigt
+es dort groß — vollflächig hätte es spitze Ecken; das iOS-Icon bekommt die
+Kachelfarbe als Fläche, die das Skript aus `logo.svg` liest (iOS rundet selbst).
+Gerendert wird mit Chrome, demselben Renderer wie in der App.
 
 ## Projektstruktur
 

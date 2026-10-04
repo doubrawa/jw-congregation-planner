@@ -6162,10 +6162,14 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   drei Sitzreihen mit 4, 6 und 8 Plätzen um ein goldenes Rednerpult, von oben,
   auf dunkler Petrol-Kachel (`#17302D`) — mit Mittelgang, weil jede Reihe eine
   gerade Zahl hat. Flach statt Verläufe und Schatten, trägt als 16-px-Favicon.
-  `public/logo.svg` neu, die PNGs per `npm run icons`; die deckenden Icons
-  (maskable, iOS) haben jetzt die Kachelfarbe als Hintergrund statt Weiß, das
-  maskable-Motiv füllt 80 % (vorher 64 %, damals musste die helle Kachel in
-  die Safe-Zone). Handbuch-Bilder neu aufgenommen.
+  `public/logo.svg` neu, die PNGs per `npm run icons`; das iOS-Icon hat die
+  Kachelfarbe als Fläche (iOS rundet die Ecken selbst). Handbuch-Bilder neu
+  aufgenommen. **Nachtrag:** Das maskable-Icon stand zuerst ebenfalls
+  vollflächig in Kachelfarbe — Android zeigt es aber groß auf dem
+  Startbildschirm der installierten App, und dort erschien ein Quadrat mit
+  spitzen Ecken („die Ecken sollten dort auch abgerundet sein"). Jetzt wieder
+  die runde Kachel auf Weiß (= `background_color`), ganz in der Safe-Zone
+  (64 %).
 
 **Ausrollen in dieser Reihenfolge:** Functions `send-plan`, `send-reminders`,
 `substitute` deployen → `schema.sql` einspielen → Push. Das neue Frontend
