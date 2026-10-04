@@ -391,6 +391,8 @@ export default {
   "partnerEntfernen": "– المعاون",
   "dublettenRow": "«{name}» · الأشخاص: {n}",
   "nameDoppelt": "هذا الاسم يحمله بالفعل {name}. أضِف شيئًا إلى الاسم الأول لتمييزهما.",
+  "toastNameNichtGeaendert": "لم يُغيَّر الاسم: {name} مستخدم بالفعل",
+  "toastNichtAngelegt": "لم يُنشأ شخص جديد: {name} مستخدم بالفعل",
   "offlineBanner": "غير متصل · بيانات {m}",
   "offlineBannerHint": "للقراءة فقط — لا يمكن إجراء تغييرات",
   "offlineReadOnly": "غير متصل — يمكن إجراء التغييرات عند الاتصال بالإنترنت",

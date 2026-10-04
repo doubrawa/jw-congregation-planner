@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Sagovornik",
   "dublettenRow": "„{name}“ · Osobe: {n}",
   "nameDoppelt": "Ovo ime već nosi {name}. Dopuni ime kako bi se mogli razlikovati.",
+  "toastNameNichtGeaendert": "Ime nije promenjeno: {name} već postoji",
+  "toastNichtAngelegt": "Osoba nije kreirana: {name} već postoji",
   "offlineBanner": "Van mreže · stanje od {m}",
   "offlineBannerHint": "Samo za čitanje — izmene nisu moguće",
   "offlineReadOnly": "Van mreže — izmene će biti moguće kad se ponovo povežeš",

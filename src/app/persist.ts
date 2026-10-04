@@ -469,6 +469,52 @@ function fsWochePlanen(
 }
 
 /**
+ * Den wartenden Zwischenstand einer Umbenennung verwerfen (T110): die
+ * Personenzeile und die Wochen und Treffpunkte, durch die der Reducer den Namen
+ * gerade gezogen hat. Es sind dieselben, die der Tastendruck davor eingeplant
+ * hat — `renameInWeeks` und `fsRenameLeader` fassen bei jedem Buchstaben die
+ * Plätze derselben Person an.
+ */
+function zwischenstandVerwerfen(prev: AppState, next: AppState, id: string): void {
+  personSaves.cancel(id)
+  for (let i = 0; i < next.weeks.length; i++) {
+    const woche = next.weeks[i]
+    if (!woche) continue
+    if (woche !== prev.weeks[i]) weekSaves.cancel(woche.start)
+    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWeekSaves.cancel(woche.start)
+  }
+}
+
+/**
+ * Eine Person ist aus dem Zustand verschwunden (`ohnePerson` im Reducer) — die
+ * Datenbank zieht nach. Zwei Wege führen hierher: das Löschen (`removePerson`)
+ * und das Verwerfen beim Verlassen des Details (namenlos, oder neu mit
+ * doppeltem Namen). Die Treffpunkte, aus denen ihre Id genommen wurde,
+ * schreibt der Aufrufer.
+ */
+function personEntfernt(prev: AppState, next: AppState, id: string): void {
+  // Kein ausstehender Save darf sie danach wiederbeleben.
+  personSaves.cancel(id)
+  // Die Verweise auf die Person räumt die Datenbank selbst
+  // (`on delete set null`): Gruppen, Einladungen, das Versand-Tagebuch —
+  // und seit T105 auch `members.person_id`. Genau die stand hier bis dahin
+  // von Hand, weil sie als einzige ohne Fremdschlüssel auskommen musste;
+  // wer eine Person per Skript löschte, hinterließ eine Mitgliedschaft,
+  // deren `my_person_id()` ins Leere zeigt.
+  deletePersonRow(id)
+  // Ihre Abwesenheiten gehen mit. Auch dort nullt die Datenbank nur die
+  // Person (`absences_person_fk`): Die Zeilen blieben liegen, gehörten
+  // niemandem mehr und kamen bei jedem Laden wieder mit — der Zustand hielt
+  // sie bis zum 25.9.2026 sogar mit toter `personId` (T118).
+  for (const a of prev.absences) if (a.personId === id) deleteAbsenceRow(a.id)
+  // War sie die Letzte ihres Haushalts, geht der mit: Die Datenbank nullt
+  // zwar `persons.fam`, die leere Zeile bliebe aber stehen und käme beim
+  // nächsten Neuaufbau wieder mit.
+  const haus = prev.persons.find((p) => p.id === id)?.fam
+  if (haus && !next.persons.some((p) => p.fam === haus)) deleteHouseholdRow(haus)
+}
+
+/**
  * Grundplan-Blob und die Treffpunkt-Wochen, die sich dadurch geändert haben.
  *
  * Beides gebündelt: Der Ort einer Regel ist ein Freitextfeld, und ohne
@@ -674,8 +720,16 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
        * ebenso). Nicht angehalten wird das **Planer-Recht**: Es liegt in
        * `members`, hat mit dem Namen nichts zu tun, und ein halb getippter
        * Name soll einen Rechte-Schalter nicht verschlucken.
+       *
+       * **Angehalten heißt auch: Was schon wartet, verfällt.** Der Schreiber
+       * hält den vorigen Tastendruck noch 600 ms vor — bei „Thomas Lindner"
+       * also „Thomas Lindne". Bis zum 4.10.2026 blieb hier nur das Einplanen
+       * aus, der wartende Zwischenstand ging trotzdem hinaus, und nach dem
+       * Neuladen hieß die Person so. Was die Datenbank stattdessen bekommt,
+       * entscheidet das Verlassen des Details (`dubletteVerwerfen` im Reducer).
        */
       nameUneindeutig = Boolean(p && namensDublette(next.persons, p))
+      if (p && nameUneindeutig) zwischenstandVerwerfen(prev, next, p.id)
       if (p && !nameUneindeutig) personSaves.schedule(p.id, { congId, person: p })
       // Die Namensänderung in den Wochen (renameInWeeks) schreibt der Block
       // unter dem Switch — hier bleiben die Treffpunkte (fsRenameLeader):
@@ -705,36 +759,29 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'selectPerson':
     case 'navigate':
     case 'logout': {
-      // Namenlose (abgebrochene) Person wurde im Reducer entfernt → auch in
-      // der DB löschen, ohne dass ein ausstehender Save sie wiederbelebt.
+      /*
+       * Was der Reducer beim Verlassen des Details mit der offenen Person
+       * getan hat, zieht hier nach. Eine namenlose — auch eine neue, deren
+       * Name doppelt war — hat er verworfen; einer bestehenden mit doppeltem
+       * Namen den Namen vom Öffnen zurückgegeben (T110). Die Wochen dazu
+       * schreibt der Block unter dem Switch. Zeile und Treffpunkte gehen
+       * gebündelt mit dem Flush darunter: So ersetzt der neue Stand einen, der
+       * noch wartet, statt nach ihm anzukommen.
+       */
       const sel = prev.selectedPersonId
-      if (sel && prev.persons.some((p) => p.id === sel) && !next.persons.some((p) => p.id === sel)) {
-        personSaves.cancel(sel)
-        deletePersonRow(sel)
+      const vorher = prev.persons.find((p) => p.id === sel)
+      const nachher = next.persons.find((p) => p.id === sel)
+      if (vorher && !nachher) personEntfernt(prev, next, vorher.id)
+      else if (nachher && nachher !== vorher) personSaves.schedule(nachher.id, { congId, person: nachher })
+      for (let i = 0; i < next.fsWeeks.length; i++) {
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
       // Ansicht verlassen → alle ausstehenden Debounce-Saves sofort schreiben
       for (const flush of ALLE_FLUSHES) flush()
       break
     }
     case 'removePerson': {
-      personSaves.cancel(action.id)
-      // Die Verweise auf die Person räumt die Datenbank selbst
-      // (`on delete set null`): Gruppen, Einladungen, das Versand-Tagebuch —
-      // und seit T105 auch `members.person_id`. Genau die stand hier bis dahin
-      // von Hand, weil sie als einzige ohne Fremdschlüssel auskommen musste;
-      // wer eine Person per Skript löschte, hinterließ eine Mitgliedschaft,
-      // deren `my_person_id()` ins Leere zeigt.
-      deletePersonRow(action.id)
-      // Ihre Abwesenheiten gehen mit. Auch dort nullt die Datenbank nur die
-      // Person (`absences_person_fk`): Die Zeilen blieben liegen, gehörten
-      // niemandem mehr und kamen bei jedem Laden wieder mit — der Zustand hielt
-      // sie bis zum 25.9.2026 sogar mit toter `personId` (T118).
-      for (const a of prev.absences) if (a.personId === action.id) deleteAbsenceRow(a.id)
-      // War sie die Letzte ihres Haushalts, geht der mit: Die Datenbank nullt
-      // zwar `persons.fam`, die leere Zeile bliebe aber stehen und käme beim
-      // nächsten Neuaufbau wieder mit.
-      const haus = prev.persons.find((p) => p.id === action.id)?.fam
-      if (haus && !next.persons.some((p) => p.fam === haus)) deleteHouseholdRow(haus)
+      personEntfernt(prev, next, action.id)
       // Die gelösten Verweise (T38) müssen auch in der Datenbank landen —
       // sonst zeigt der Fremdschlüssel dort weiter ins Leere. Die
       // Zusammenkunfts-Wochen übernimmt der Block unter dem Switch.

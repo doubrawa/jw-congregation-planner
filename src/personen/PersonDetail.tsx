@@ -75,6 +75,8 @@ export function PersonDetail({ person }: { person: Person }) {
    * „Paul Beispiel sen." kommt man zwangsläufig durch „Paul Beispiel". Angehalten
    * wird deshalb nicht die Eingabe, sondern das **Speichern** (`persist.ts`) —
    * sonst ginge der Zwischenstand hinaus und käme als Schreibfehler zurück.
+   * Wer das Detail mit der Meldung verlässt, bekommt den Namen vom Öffnen
+   * zurück (`dubletteVerwerfen` im Reducer).
    */
   const dublette = namensDublette(state.persons, person)
 

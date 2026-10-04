@@ -766,10 +766,17 @@ einer Person einen Namen, den schon jemand trägt, erscheint direkt unter dem
 Nachnamen ein Hinweis, der die andere Person nennt: „Diesen Namen trägt
 bereits Paul Beispiel. Ergänze den Vornamen, damit beide unterscheidbar sind."
 
-Solange der Hinweis steht, speichert die App den Namen nicht – auch nicht, wenn
-du das Detail verlässt. Ergänze deshalb gleich den Vornamen, etwa zu „Paul
-sen." oder um einen zweiten Vornamen. Sobald der Name eindeutig ist,
-verschwindet der Hinweis, und die App speichert wieder.
+Solange der Hinweis steht, speichert die App den Namen nicht. Ergänze deshalb
+gleich den Vornamen, etwa zu „Paul sen." oder um einen zweiten Vornamen. Sobald
+der Name eindeutig ist, verschwindet der Hinweis, und die App speichert wieder.
+
+Verlässt du das Detail, während der Hinweis noch steht, behält die Person den
+Namen, den sie beim Öffnen hatte – in der Liste und in den bereits geplanten
+Wochen. Unten am Bildschirm erscheint dazu kurz „Name nicht geändert: Paul
+Beispiel gibt es schon". Was du sonst geändert hast, etwa Telefon oder
+Aufgabenbereiche, bleibt gespeichert. Eine gerade neu angelegte Person legt die
+App in diesem Fall gar nicht an („Nicht angelegt: Paul Beispiel gibt es
+schon"), und was du bei ihr schon eingetragen hattest, verwirft sie mit.
 
 Verglichen wird der ganze Name, wie er angezeigt wird. Groß- und
 Kleinschreibung und doppelte Leerzeichen zählen dabei nicht – „paul beispiel"

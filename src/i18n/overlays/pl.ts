@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Pomocnik",
   "dublettenRow": "„{name}” · Osoby: {n}",
   "nameDoppelt": "To imię i nazwisko nosi już {name}. Uzupełnij imię, aby dało się je rozróżnić.",
+  "toastNameNichtGeaendert": "Nie zmieniono imienia i nazwiska: {name} już istnieje",
+  "toastNichtAngelegt": "Nie utworzono osoby: {name} już istnieje",
   "offlineBanner": "Offline · stan z {m}",
   "offlineBannerHint": "Tylko do odczytu — zmiany nie są możliwe",
   "offlineReadOnly": "Offline — zmiany będą możliwe dopiero po połączeniu z internetem",

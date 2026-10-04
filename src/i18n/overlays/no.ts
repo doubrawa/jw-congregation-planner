@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Medhjelper",
   "dublettenRow": "«{name}» · {n} personer",
   "nameDoppelt": "Dette navnet har {name} allerede. Legg til noe i fornavnet så de kan skilles.",
+  "toastNameNichtGeaendert": "Navnet ble ikke endret: {name} finnes allerede",
+  "toastNichtAngelegt": "Personen ble ikke opprettet: {name} finnes allerede",
   "offlineBanner": "Frakoblet · data fra {m}",
   "offlineBannerHint": "Skrivebeskyttet — endringer er ikke mulig",
   "offlineReadOnly": "Frakoblet — endringer er mulig igjen når du er tilkoblet",

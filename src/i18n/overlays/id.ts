@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Asisten",
   "dublettenRow": "”{name}” · {n} orang",
   "nameDoppelt": "Nama ini sudah dipakai {name}. Tambahkan sesuatu pada nama depan agar keduanya bisa dibedakan.",
+  "toastNameNichtGeaendert": "Nama tidak diubah: {name} sudah ada",
+  "toastNichtAngelegt": "Orang tidak dibuat: {name} sudah ada",
   "offlineBanner": "Offline · data per {m}",
   "offlineBannerHint": "Hanya baca — tidak bisa diubah",
   "offlineReadOnly": "Offline — perubahan bisa dilakukan lagi setelah online",

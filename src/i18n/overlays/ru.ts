@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Помощник",
   "dublettenRow": "«{name}» · Людей: {n}",
   "nameDoppelt": "Это имя уже носит {name}. Дополните имя, чтобы их можно было различить.",
+  "toastNameNichtGeaendert": "Имя не изменено: {name} уже есть",
+  "toastNichtAngelegt": "Человек не создан: {name} уже есть",
   "offlineBanner": "Не в сети · данные от {m}",
   "offlineBannerHint": "Только чтение — изменения невозможны",
   "offlineReadOnly": "Не в сети — изменения будут доступны, когда появится подключение",

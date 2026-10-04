@@ -67,6 +67,7 @@ export function initialState(): AppState {
     notifOpen: false,
     slotSel: null,
     selectedPersonId: null,
+    nameBeimOeffnen: null,
     importing: false,
     myTasks: [],
     confirmations: {},

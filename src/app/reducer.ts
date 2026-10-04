@@ -12,7 +12,7 @@ import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, oh
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, genFsWeek, regenFsWeeks } from '../data/fs'
-import { displayName, isSong, linkFamily, mtab, unlinkFamily } from '../data/helpers'
+import { displayName, isSong, linkFamily, mtab, namensDublette, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import {
   besuchAustragen,
@@ -175,12 +175,115 @@ export function isNameless(p: Person): boolean {
   return !`${p.fn}${p.ln}`.trim()
 }
 
+/**
+ * Die Person `id` aus dem Zustand nehmen — samt allem, was auf sie zeigt:
+ * Referenzen lösen (Gruppenleitung, Konto, offene Codes); Namen in bereits
+ * geplanten Wochen bleiben als Text stehen.
+ *
+ * **Die `pid` muss dabei weg** (T38): sie ist ein Fremdschlüssel, und ohne
+ * Ziel zeigt sie ins Leere. `gehoertZu` entscheidet über die Id, fände
+ * niemanden mehr, und der Slot zählte nirgends — weder in der Auslastung noch
+ * in den Konflikten noch in den Aufgaben. Ohne Id greift wieder der Namensweg;
+ * legt der Planer dieselbe Person neu an, findet `pidsNachtragen` sie beim
+ * nächsten Laden wieder.
+ *
+ * Zwei Wege führen hierher: das Löschen (`removePerson`) und das Verwerfen
+ * einer Person, die beim Verlassen des Details keinen Namen hat
+ * (`dropNamelessSelected`). Bis zum 4.10.2026 nahm das Verwerfen nur die
+ * Person aus der Liste — eine im Detail schon eingetragene Abwesenheit blieb
+ * mit toter Id stehen.
+ */
+function ohnePerson(state: AppState, id: string): AppState {
+  return {
+    ...state,
+    weeks: dropPersonPid(state.weeks, id),
+    fsWeeks: fsDropPersonPid(state.fsWeeks, id),
+    persons: state.persons.filter((p) => p.id !== id),
+    // Ihre Abwesenheiten gehen mit: Eine Abwesenheit ohne Person gehört
+    // niemandem (`absence.ts`), und mit toter Id stünde sie hier bis zum
+    // nächsten Laden herum (T118). Die Datenbank räumt `persist.ts`.
+    absences: state.absences.filter((a) => a.personId !== id),
+    groups: state.groups.map((g) => ({
+      ...g,
+      overseerId: g.overseerId === id ? null : g.overseerId,
+      assistantId: g.assistantId === id ? null : g.assistantId,
+    })),
+    // Ein Gruppenbesuch verliert seinen Besucher, nicht sich selbst — wie
+    // die Datenbank (`on delete set null`). Der Plan zeigt ihn dann ohne
+    // Besucher, und der Planer setzt einen neuen ein.
+    gruppenbesuche: state.gruppenbesuche.some((b) => b.pid === id)
+      ? state.gruppenbesuche.map((b) => (b.pid === id ? { ...b, pid: null } : b))
+      : state.gruppenbesuche,
+    // Ihre Einträge im öffentlichen Zeugnisgeben gehen mit — wie in der
+    // Datenbank (`on delete cascade`): Ein Platz ohne Person ist frei.
+    ozEintraege: state.ozEintraege.some((e) => e.pid === id)
+      ? state.ozEintraege.filter((e) => e.pid !== id)
+      : state.ozEintraege,
+    members: state.members.map((m) => (m.personId === id ? { ...m, personId: null } : m)),
+    invites: state.invites.map((i) => (i.personId === id ? { ...i, personId: null } : i)),
+  }
+}
+
 function dropNamelessSelected(state: AppState): AppState {
   const sel = state.selectedPersonId
   if (!sel) return state
   const person = state.persons.find((p) => p.id === sel)
   if (!person || !isNameless(person)) return state
-  return { ...state, persons: state.persons.filter((p) => p.id !== sel) }
+  return ohnePerson(state, sel)
+}
+
+/**
+ * **Ein doppelter Name bleibt beim Verlassen des Details nicht stehen** (T110).
+ *
+ * Solange zwei Personen gleich heißen, schreibt `persist.ts` nichts, was am
+ * Namen hängt. Bliebe der Name beim Verlassen im Zustand, stünden beide
+ * Gleichnamigen in der Liste — ohne Warnung, die gibt es seit T110 nicht
+ * mehr —, und nach dem Neuladen hieße die Person anders, als die Liste zeigte.
+ * Bis zum 4.10.2026 war das so, und dort stand dann ein Zwischenstand vom
+ * Tippen („Thomas Lindne").
+ *
+ * Deshalb springt der Name auf den Stand beim Öffnen zurück
+ * (`nameBeimOeffnen`), in den Wochen und Treffpunkten mit — dort nur an den
+ * Plätzen mit Id, wie jede Umbenennung, an der ein doppelter Name hängt
+ * (`updatePerson`) —, und ein Toast sagt, warum. Was sonst im Detail geändert
+ * wurde (Telefon, Bereiche …), bleibt und wird geschrieben.
+ *
+ * Eine gerade angelegte Person hatte beim Öffnen keinen Namen: Sie wird damit
+ * namenlos und von `dropNamelessSelected` verworfen — angelegt wird sie nicht.
+ * Ihre Wochen fasst der Rücksprung nicht an: Zuteilen ließ sie sich noch
+ * nicht, und einen leeren Namen bekommt kein Platz.
+ */
+function dubletteVerwerfen(state: AppState): AppState {
+  const sel = state.selectedPersonId
+  const vorher = state.nameBeimOeffnen
+  if (!sel || vorher?.id !== sel) return state
+  const person = state.persons.find((p) => p.id === sel)
+  const andere = person && namensDublette(state.persons, person)
+  if (!person || !andere) return state
+  const zurueck: Person = { ...person, fn: vorher.fn, ln: vorher.ln }
+  const nachher = { ...state, persons: state.persons.map((p) => (p.id === sel ? zurueck : p)) }
+  const name = { name: displayName(andere) }
+  if (isNameless(zurueck)) return { ...nachher, toast: toastKey(state, 'toastNichtAngelegt', name) }
+  return {
+    ...nachher,
+    weeks: renameInWeeks(state.weeks, sel, null, displayName(zurueck)),
+    fsWeeks: fsRenameLeader(state.fsWeeks, sel, null, displayName(zurueck)),
+    toast: toastKey(state, 'toastNameNichtGeaendert', name),
+  }
+}
+
+/** Was beim Verlassen des Personen-Details mit der offenen Person geschieht. */
+function detailVerlassen(state: AppState): AppState {
+  return dropNamelessSelected(dubletteVerwerfen(state))
+}
+
+/**
+ * Der Name einer Person, wie `nameBeimOeffnen` ihn beim Öffnen ihres Details
+ * festhält — `null`, wenn es sie nicht gibt. Auch die Entwicklerseite öffnet
+ * ein Detail (`p=`) und hält ihn damit fest.
+ */
+export function namensStand(p: Pick<Person, 'id' | 'fn' | 'ln'> | undefined): AppState['nameBeimOeffnen'] {
+  return p ? { id: p.id, fn: p.fn, ln: p.ln } : null
 }
 
 /** Bestätigungs-Status der angegebenen Slots aus der Map entfernen. */
@@ -603,7 +706,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
       const tab: MeetingTab = erlaubt[wunsch] === false ? 'mid' : wunsch
       const nachher = {
-        ...dropNamelessSelected(state),
+        ...detailVerlassen(state),
         screen,
         tab,
         // Merkt sich, ob zuletzt geplant wurde — die Themen im Menü öffnen
@@ -705,58 +808,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         absences: state.absences.filter((a) => a.id !== action.id),
         toast: toastKey(state, 'toastAbwDel'),
       }
-    case 'selectPerson':
-      return { ...dropNamelessSelected(state), selectedPersonId: action.id }
-    case 'removePerson': {
-      // Person löschen: Referenzen lösen (Gruppenleitung, Konto, offene
-      // Codes); Namen in bereits geplanten Wochen bleiben als Text stehen.
-      //
-      // **Die `pid` muss dabei weg** (T38): sie ist ein Fremdschlüssel, und
-      // ohne Ziel zeigt sie ins Leere. `gehoertZu` entscheidet über die Id,
-      // fände niemanden mehr, und der Slot zählte nirgends — weder in der
-      // Auslastung noch in den Konflikten noch in den Aufgaben. Ohne Id greift
-      // wieder der Namensweg; legt der Planer dieselbe Person neu an, findet
-      // `pidsNachtragen` sie beim nächsten Laden wieder.
-      return {
-        ...state,
-        weeks: dropPersonPid(state.weeks, action.id),
-        fsWeeks: fsDropPersonPid(state.fsWeeks, action.id),
-        persons: state.persons.filter((p) => p.id !== action.id),
-        // Ihre Abwesenheiten gehen mit: Eine Abwesenheit ohne Person gehört
-        // niemandem (`absence.ts`), und mit toter Id stünde sie hier bis zum
-        // nächsten Laden herum (T118). Die Datenbank räumt `persist.ts`.
-        absences: state.absences.filter((a) => a.personId !== action.id),
-        groups: state.groups.map((g) => ({
-          ...g,
-          overseerId: g.overseerId === action.id ? null : g.overseerId,
-          assistantId: g.assistantId === action.id ? null : g.assistantId,
-        })),
-        // Ein Gruppenbesuch verliert seinen Besucher, nicht sich selbst — wie
-        // die Datenbank (`on delete set null`). Der Plan zeigt ihn dann ohne
-        // Besucher, und der Planer setzt einen neuen ein.
-        gruppenbesuche: state.gruppenbesuche.some((b) => b.pid === action.id)
-          ? state.gruppenbesuche.map((b) => (b.pid === action.id ? { ...b, pid: null } : b))
-          : state.gruppenbesuche,
-        // Ihre Einträge im öffentlichen Zeugnisgeben gehen mit — wie in der
-        // Datenbank (`on delete cascade`): Ein Platz ohne Person ist frei.
-        ozEintraege: state.ozEintraege.some((e) => e.pid === action.id)
-          ? state.ozEintraege.filter((e) => e.pid !== action.id)
-          : state.ozEintraege,
-        members: state.members.map((m) =>
-          m.personId === action.id ? { ...m, personId: null } : m,
-        ),
-        invites: state.invites.map((i) =>
-          i.personId === action.id ? { ...i, personId: null } : i,
-        ),
-        selectedPersonId: null,
-        toast: toastKey(state, 'toastPersonDel'),
-      }
+    case 'selectPerson': {
+      const verlassen = detailVerlassen(state)
+      const offen = action.id ? verlassen.persons.find((p) => p.id === action.id) : undefined
+      return { ...verlassen, selectedPersonId: action.id, nameBeimOeffnen: namensStand(offen) }
     }
+    case 'removePerson':
+      return { ...ohnePerson(state, action.id), selectedPersonId: null, toast: toastKey(state, 'toastPersonDel') }
     case 'addPerson':
       return {
         ...state,
         persons: [...state.persons, action.person],
         selectedPersonId: action.person.id,
+        // Beim Öffnen hat sie den Namen, mit dem sie angelegt wird — keinen.
+        nameBeimOeffnen: namensStand(action.person),
         toast: toastKey(state, 'toastPersonNeu'),
       }
     case 'updatePerson': {
@@ -770,13 +835,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // bleiben stehen: Sie hängen am Platz, und die Person darauf ist dieselbe.
       if (oldPerson && ('fn' in action.patch || 'ln' in action.patch)) {
         const oldName = displayName(oldPerson)
-        const newName = displayName({ ...oldPerson, ...action.patch })
+        const newPerson = { ...oldPerson, ...action.patch }
+        const newName = displayName(newPerson)
         if (oldName !== newName) {
-          next.weeks = renameInWeeks(state.weeks, action.id, oldName, newName)
+          // Ein doppelter Name sagt nicht, wessen Platz es ist (T110): Steht der
+          // alte oder der neue gerade doppelt da, folgen nur die Plätze mit Id.
+          // Über den Namen zog die Umbenennung sonst die Plätze der anderen
+          // Person mit — beim Weitertippen und beim Zurücksetzen.
+          const doppelt = namensDublette(state.persons, oldPerson) || namensDublette(next.persons, newPerson)
+          const vonName = doppelt ? null : oldName
+          next.weeks = renameInWeeks(state.weeks, action.id, vonName, newName)
           // Treffpunkte sind die zweite Datenquelle und tragen den Leiter
           // ebenfalls als Text — ohne dies stand dort weiter der alte Name,
           // während die Zusammenkünfte längst den neuen zeigten.
-          next.fsWeeks = fsRenameLeader(state.fsWeeks, action.id, oldName, newName)
+          next.fsWeeks = fsRenameLeader(state.fsWeeks, action.id, vonName, newName)
         }
       }
       // Planer-Recht in verknüpfte Konten und offene Einladungscodes spiegeln

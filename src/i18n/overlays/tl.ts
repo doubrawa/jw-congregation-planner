@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Assistant",
   "dublettenRow": "“{name}” · {n} tao",
   "nameDoppelt": "Ginagamit na ni {name} ang pangalang ito. Dagdagan ang unang pangalan para magkaiba sila.",
+  "toastNameNichtGeaendert": "Hindi binago ang pangalan: mayroon nang {name}",
+  "toastNichtAngelegt": "Hindi nagawa ang tao: mayroon nang {name}",
   "offlineBanner": "Offline · datos noong {m}",
   "offlineBannerHint": "Basahin lang — hindi puwedeng magbago",
   "offlineReadOnly": "Offline — puwede ka nang magbago kapag online ka na ulit",

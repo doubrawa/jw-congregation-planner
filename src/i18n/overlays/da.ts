@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Medvirkende",
   "dublettenRow": "“{name}” · {n} personer",
   "nameDoppelt": "Dette navn har {name} allerede. Tilføj noget til fornavnet, så de kan skelnes.",
+  "toastNameNichtGeaendert": "Navnet blev ikke ændret: {name} findes allerede",
+  "toastNichtAngelegt": "Personen blev ikke oprettet: {name} findes allerede",
   "offlineBanner": "Offline · data fra {m}",
   "offlineBannerHint": "Skrivebeskyttet — der kan ikke laves ændringer",
   "offlineReadOnly": "Offline — ændringer er mulige igen, når du er online",

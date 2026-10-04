@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Βοηθός",
   "dublettenRow": "«{name}» · {n} άτομα",
   "nameDoppelt": "Αυτό το όνομα το έχει ήδη ο/η {name}. Συμπληρώστε το μικρό όνομα για να ξεχωρίζουν.",
+  "toastNameNichtGeaendert": "Το όνομα δεν άλλαξε: ο/η {name} υπάρχει ήδη",
+  "toastNichtAngelegt": "Το άτομο δεν δημιουργήθηκε: ο/η {name} υπάρχει ήδη",
   "offlineBanner": "Εκτός σύνδεσης · δεδομένα της {m}",
   "offlineBannerHint": "Μόνο ανάγνωση — δεν γίνονται αλλαγές",
   "offlineReadOnly": "Εκτός σύνδεσης — οι αλλαγές θα είναι δυνατές πάλι όταν συνδεθείτε",

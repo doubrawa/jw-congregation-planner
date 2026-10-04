@@ -432,6 +432,8 @@ export default {
   "partnerEntfernen": "– مددگار",
   "dublettenRow": "”{name}“ · {n} افراد",
   "nameDoppelt": "یہ نام پہلے ہی {name} کا ہے۔ فرق کرنے کے لیے پہلے نام میں کچھ اضافہ کریں۔",
+  "toastNameNichtGeaendert": "نام تبدیل نہیں ہوا: {name} پہلے سے موجود ہے",
+  "toastNichtAngelegt": "نیا فرد نہیں بنا: {name} پہلے سے موجود ہے",
   "offlineBanner": "آف لائن · {m} کی حالت",
   "offlineBannerHint": "صرف پڑھنے کے لیے — تبدیلی ممکن نہیں",
   "offlineReadOnly": "آف لائن — آن لائن ہونے پر ہی تبدیلی ممکن ہوگی",

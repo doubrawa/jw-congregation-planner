@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Segítő",
   "dublettenRow": "„{name}” · {n} személy",
   "nameDoppelt": "Ezt a nevet már {name} viseli. Egészítsd ki a keresztnevet, hogy megkülönböztethetők legyenek.",
+  "toastNameNichtGeaendert": "A név nem változott: {name} már létezik",
+  "toastNichtAngelegt": "A személy nem jött létre: {name} már létezik",
   "offlineBanner": "Offline · {m} állapota",
   "offlineBannerHint": "Csak olvasható — nem lehet módosítani",
   "offlineReadOnly": "Offline — módosítani csak újra online állapotban lehet",

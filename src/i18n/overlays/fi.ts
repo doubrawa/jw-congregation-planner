@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Avustaja",
   "dublettenRow": "”{name}” · {n} henkilöä",
   "nameDoppelt": "Tämä nimi on jo henkilöllä {name}. Täydennä etunimeä, jotta heidät voi erottaa.",
+  "toastNameNichtGeaendert": "Nimeä ei muutettu: {name} on jo olemassa",
+  "toastNichtAngelegt": "Henkilöä ei luotu: {name} on jo olemassa",
   "offlineBanner": "Offline · tilanne {m}",
   "offlineBannerHint": "Vain luku — muutoksia ei voi tehdä",
   "offlineReadOnly": "Offline — muutokset onnistuvat taas, kun olet verkossa",

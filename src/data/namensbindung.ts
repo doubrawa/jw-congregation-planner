@@ -34,11 +34,17 @@ export function normalizePriv(raw: Qualifications | null | undefined): Qualifica
  * Referenz (der Aufrufer erkennt daran, welche Wochen neu gespeichert werden
  * müssen). Sprachvarianten (Week.alt) tragen keine Namen — nur die kanonische
  * Woche wird angefasst.
+ *
+ * `oldName: null` heißt **nur über die Id** (T110). So ruft es der Reducer,
+ * solange der alte oder der neue Name doppelt dasteht: Ein doppelter Name sagt
+ * nicht, wessen Platz es ist — ein Platz ohne Id, der ihn trägt, gehört ebenso
+ * gut der anderen Person. Nach dem Laden trägt ohnehin jeder Platz einer
+ * Person ihre Id (`pidsNachtragen`).
  */
-export function renameInWeeks(weeks: Week[], id: string, oldName: string, newName: string): Week[] {
+export function renameInWeeks(weeks: Week[], id: string, oldName: string | null, newName: string): Week[] {
   // Leerer alter Name: nichts tun (sonst würden offene Slots mit leerem Namen
   // versehentlich mit-umbenannt). Ein zugeteilter Slot trägt immer einen Namen.
-  if (!oldName || oldName === newName) return weeks
+  if (oldName === '' || oldName === newName) return weeks
   return mapPersonSlots(weeks, id, oldName, (slot) =>
     slot.name === newName ? slot : { ...slot, name: newName },
   )

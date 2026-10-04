@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Người phụ giúp",
   "dublettenRow": "“{name}” · {n} người",
   "nameDoppelt": "Tên này đã thuộc về {name}. Hãy thêm vào tên để phân biệt hai người.",
+  "toastNameNichtGeaendert": "Không đổi tên: đã có {name}",
+  "toastNichtAngelegt": "Không tạo người: đã có {name}",
   "offlineBanner": "Ngoại tuyến · dữ liệu ngày {m}",
   "offlineBannerHint": "Chỉ đọc — không thể thay đổi",
   "offlineReadOnly": "Ngoại tuyến — chỉ có thể thay đổi khi trực tuyến trở lại",

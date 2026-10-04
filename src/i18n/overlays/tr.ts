@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Yardımcı",
   "dublettenRow": "“{name}” · {n} kişi",
   "nameDoppelt": "Bu ad zaten {name} kişisine ait. Ayırt edilebilmeleri için adı tamamla.",
+  "toastNameNichtGeaendert": "Ad değiştirilmedi: {name} zaten var",
+  "toastNichtAngelegt": "Kişi oluşturulmadı: {name} zaten var",
   "offlineBanner": "Çevrimdışı · {m} tarihli veriler",
   "offlineBannerHint": "Salt okunur — değişiklik yapılamaz",
   "offlineReadOnly": "Çevrimdışı — değişiklikler ancak çevrimiçi olunca yapılabilir",

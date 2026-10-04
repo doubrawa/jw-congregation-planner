@@ -452,6 +452,10 @@ export const DE = {
     dublettenRow: '„{name}“ · {n} Personen',
     // Meldung am Namensfeld, wenn den Namen schon jemand trägt (T110).
     nameDoppelt: 'Diesen Namen trägt bereits {name}. Ergänze den Vornamen, damit beide unterscheidbar sind.',
+    // Toasts, wenn man das Detail mit dieser Meldung verlässt: Der Name springt
+    // auf den Stand beim Öffnen zurück, eine neue Person wird nicht angelegt.
+    toastNameNichtGeaendert: 'Name nicht geändert: {name} gibt es schon',
+    toastNichtAngelegt: 'Nicht angelegt: {name} gibt es schon',
     // Predigtdienstgruppe löschen (Zwei-Tipp-Bestätigung) und Warnung „ohne Gruppe"
     loeschenSicher: 'Wirklich löschen?',
     // Dasselbe für das, was nur herausgenommen wird (`EntfernenKnopf`): eine

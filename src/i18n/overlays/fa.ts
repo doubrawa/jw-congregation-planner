@@ -432,6 +432,8 @@ export default {
   "partnerEntfernen": "– دستیار",
   "dublettenRow": "«{name}» · {n} نفر",
   "nameDoppelt": "این نام را از قبل {name} دارد. به نام کوچک چیزی اضافه کنید تا قابل تشخیص باشند.",
+  "toastNameNichtGeaendert": "نام تغییر نکرد: {name} از قبل وجود دارد",
+  "toastNichtAngelegt": "فرد جدید ساخته نشد: {name} از قبل وجود دارد",
   "offlineBanner": "آفلاین · وضعیت {m}",
   "offlineBannerHint": "فقط خواندنی — امکان تغییر نیست",
   "offlineReadOnly": "آفلاین — پس از اتصال دوباره می‌توانید تغییر دهید",

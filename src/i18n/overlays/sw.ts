@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Msaidizi",
   "dublettenRow": "“{name}” · Watu {n}",
   "nameDoppelt": "Jina hili tayari ni la {name}. Ongeza kitu kwenye jina la kwanza ili watofautishwe.",
+  "toastNameNichtGeaendert": "Jina halijabadilishwa: {name} tayari yupo",
+  "toastNichtAngelegt": "Mtu hajaundwa: {name} tayari yupo",
   "offlineBanner": "Nje ya mtandao · data ya {m}",
   "offlineBannerHint": "Kusoma tu — mabadiliko hayawezekani",
   "offlineReadOnly": "Nje ya mtandao — utaweza kubadili tena ukirudi mtandaoni",

@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Partner",
   "dublettenRow": "„{name}“ · Osoby: {n}",
   "nameDoppelt": "Toto jméno už má {name}. Doplň křestní jméno, aby se dali rozlišit.",
+  "toastNameNichtGeaendert": "Jméno nezměněno: {name} už existuje",
+  "toastNichtAngelegt": "Osoba nevytvořena: {name} už existuje",
   "offlineBanner": "Offline · stav z {m}",
   "offlineBannerHint": "Jen ke čtení — změny nejsou možné",
   "offlineReadOnly": "Offline — změny půjdou udělat, až budeš online",

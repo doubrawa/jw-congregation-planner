@@ -353,6 +353,8 @@ export default {
   "konfliktHelperTask": "{name} has a support duty and an assignment on the same day · {tab}",
   "dublettenRow": "“{name}” · {n} people",
   "nameDoppelt": "This name already belongs to {name}. Add to the first name so the two can be told apart.",
+  "toastNameNichtGeaendert": "Name not changed: {name} already exists",
+  "toastNichtAngelegt": "Person not created: {name} already exists",
   "leeren": "Clear",
   "leerenSicher": "Really clear?",
   "toastGeleertN": "Assignments cleared: {n}",

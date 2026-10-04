@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Ayudante",
   "dublettenRow": "“{name}” · {n} personas",
   "nameDoppelt": "{name} ya tiene este nombre. Añade algo al nombre de pila para distinguirlos.",
+  "toastNameNichtGeaendert": "Nombre no cambiado: {name} ya existe",
+  "toastNichtAngelegt": "Persona no creada: {name} ya existe",
   "offlineBanner": "Sin conexión · datos de {m}",
   "offlineBannerHint": "Solo lectura — no se pueden hacer cambios",
   "offlineReadOnly": "Sin conexión — podrás hacer cambios cuando vuelvas a estar en línea",

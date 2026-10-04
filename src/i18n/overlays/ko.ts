@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– 보조자",
   "dublettenRow": "“{name}” · {n}명",
   "nameDoppelt": "이 이름은 이미 {name}이(가) 사용합니다. 구별할 수 있도록 이름에 무언가를 덧붙이세요.",
+  "toastNameNichtGeaendert": "{name}이(가) 이미 있어 이름을 변경하지 않았습니다",
+  "toastNichtAngelegt": "{name}이(가) 이미 있어 사람을 생성하지 않았습니다",
   "offlineBanner": "오프라인 · {m} 기준",
   "offlineBannerHint": "읽기 전용 — 변경할 수 없습니다",
   "offlineReadOnly": "오프라인 — 온라인이 되면 다시 변경할 수 있습니다",

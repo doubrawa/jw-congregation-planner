@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persist } from './persist'
 import type { AppAction, AppState } from './context'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey } from '../data/fs'
-import type { Week } from '../data/types'
+import type { Person, Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
@@ -69,6 +69,11 @@ import * as data from '../lib/data'
 import { reducerFaelle, setztFeld } from './quelltext-proben'
 import { renameInWeeks } from '../data/namensbindung'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
+import { reducer } from './reducer'
+import { demoZustand } from '../../tests/testdaten/demo-start'
+import { displayName, emptyQualifications } from '../data/helpers'
+import { DE } from '../i18n/de'
+import { fill } from '../i18n/useT'
 
 function st(over: Partial<AppState> = {}): AppState {
   return {
@@ -1035,6 +1040,169 @@ describe('Personen (inkl. Debounce)', () => {
     // Personen-Beziehung ohne Fremdschlüssel, und wer per Skript löschte,
     // hinterließ eine Zeile, deren `my_person_id()` ins Leere zeigt.
     expect(data.saveMemberRow).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * **Ein doppelter Name beim Tippen — und beim Verlassen** (T110).
+ *
+ * Die Fälle oben fahren `persist` einzeln und starten ohne wartenden Stand. Der
+ * Fehler lag im Zusammenspiel: Bis zum 4.10.2026 ließ die Sperre nur das
+ * **Einplanen** aus. Der Tastendruck davor wartete noch im Schreiber und ging
+ * 600 ms später hinaus — bei „Thomas Lindner" also „Thomas Lindne". Nach
+ * „Alle Personen" standen zwei „Thomas Lindner" in der Liste, nach dem Neuladen
+ * hieß die neue Person „Thomas Lindne".
+ *
+ * Deshalb hier Reducer **und** `persist` je Aktion, wie der Provider sie fährt,
+ * mit Uhr im Tipptakt — auf dem geladenen Stand, in dem jeder Platz einer
+ * Person ihre Id trägt (`demoZustand`, wie nach `pidsNachtragen`).
+ */
+describe('Doppelter Name: Zwischenstand und Verlassen (T110)', () => {
+  // Der Startzustand liest die Gerätevorlieben aus `localStorage`; diese Datei
+  // läuft ohne DOM.
+  beforeAll(() => vi.stubGlobal('localStorage', { getItem: () => null }))
+  afterAll(() => vi.unstubAllGlobals())
+
+  const start = (): AppState => ({ ...demoZustand(), congregationId: 'c1', userId: 'u1', screen: 'personen' })
+  const NEU: Person = { id: 'pNeu', fn: '', ln: '', role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(), grp: null }
+
+  /** Die Schritte nacheinander durch Reducer und `persist`; eine Zahl lässt so viele Millisekunden verstreichen. */
+  function fahren(s: AppState, ...schritte: Array<AppAction | number>): AppState {
+    for (const schritt of schritte) {
+      if (typeof schritt === 'number') {
+        vi.advanceTimersByTime(schritt)
+        continue
+      }
+      const n = reducer(s, schritt)
+      persist(s, n, schritt)
+      s = n
+    }
+    return s
+  }
+
+  /** Ein Feld Taste für Taste füllen, `takt` Millisekunden je Taste — hinter `vorn` (Weitertippen) oder statt des Inhalts. */
+  const tippen = (id: string, feld: 'fn' | 'ln', text: string, takt: number, vorn = ''): Array<AppAction | number> =>
+    [...text].flatMap((_, i): Array<AppAction | number> => [
+      takt,
+      { type: 'updatePerson', id, patch: { [feld]: vorn + text.slice(0, i + 1) } },
+    ])
+
+  /** Was als Personenzeile hinausging, als „Vorname|Nachname". */
+  const gespeichert = (): string[] => vi.mocked(data.savePerson).mock.calls.map(([, p]) => `${p.fn}|${p.ln}`)
+
+  /** Die Namen an den Plätzen einer Person in allen geschriebenen Wochen — über die Id gefunden. */
+  const geschriebenFuer = (pid: string): string[] =>
+    vi.mocked(data.saveWeek).mock.calls.flatMap(([, woche]) => namenMitId(woche, pid))
+  const namenMitId = (wert: unknown, pid: string): string[] => {
+    if (Array.isArray(wert)) return wert.flatMap((w) => namenMitId(w, pid))
+    if (!wert || typeof wert !== 'object') return []
+    const o = wert as { name?: unknown; pid?: unknown }
+    const hier = o.pid === pid && typeof o.name === 'string' ? [o.name] : []
+    return [...hier, ...Object.values(wert).flatMap((w) => namenMitId(w, pid))]
+  }
+  /** Dasselbe für die Treffpunkte: Leiter mit dieser Id in allen geschriebenen Treffpunkt-Wochen. */
+  const treffpunkteFuer = (pid: string): string[] =>
+    vi.mocked(data.saveFsWeek).mock.calls.flatMap(([, , insts]) => insts.filter((i) => i.lpid === pid).map((i) => i.leader))
+
+  it.each([100, 250])('neue Person: der wartende Zwischenstand geht nicht hinaus (%i ms je Taste)', (takt) => {
+    let s = fahren(start(), { type: 'addPerson', person: NEU })
+    s = fahren(s, ...tippen('pNeu', 'fn', 'Thomas', takt), ...tippen('pNeu', 'ln', 'Lindner', takt), 1000)
+    // Vorher: ["|", "Thomas|Lindne"] — der letzte eindeutige Stand wartete noch.
+    expect(gespeichert()).toEqual(['|'])
+
+    s = fahren(s, { type: 'selectPerson', id: null })
+    // Angelegt wird sie nicht: Die Zeile vom Anlegen geht, nichts kommt dazu.
+    expect(data.deletePersonRow).toHaveBeenCalledWith('pNeu')
+    expect(gespeichert()).toEqual(['|'])
+    expect(s.persons.filter((p) => displayName(p) === 'Thomas Lindner').map((p) => p.id)).toEqual(['p2'])
+    expect(s.toast?.text).toBe(fill(DE.toastNichtAngelegt, { name: 'Thomas Lindner' }))
+  })
+
+  it('bestehende Person: auch die wartenden Wochen und Treffpunkte bleiben liegen', () => {
+    // Manfred Albrecht wird Taste für Taste zu Thomas Lindner — den gibt es.
+    const s = fahren(
+      start(),
+      { type: 'selectPerson', id: 'p1' },
+      ...tippen('p1', 'fn', 'Thomas', 100),
+      ...tippen('p1', 'ln', 'Lindner', 100),
+      1000,
+    )
+    expect(s.persons.find((p) => p.id === 'p1')).toMatchObject({ fn: 'Thomas', ln: 'Lindner' })
+    expect(data.savePerson).not.toHaveBeenCalled()
+    // Die Wochen und Treffpunkte von „Thomas Lindne" warteten mit der Zeile.
+    expect(data.saveWeek).not.toHaveBeenCalled()
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+
+  it('beim Verlassen springt der Name auf den Stand beim Öffnen zurück — Zeile, Wochen und Treffpunkte', () => {
+    let s = fahren(
+      start(),
+      { type: 'selectPerson', id: 'p1' },
+      ...tippen('p1', 'fn', 'Thomas', 100),
+      ...tippen('p1', 'ln', 'Lindner', 100),
+      1000,
+    )
+    s = fahren(s, { type: 'selectPerson', id: null })
+
+    expect(gespeichert()).toEqual(['Manfred|Albrecht'])
+    expect(geschriebenFuer('p1').length).toBeGreaterThan(0)
+    expect(new Set(geschriebenFuer('p1'))).toEqual(new Set(['Manfred Albrecht']))
+    expect(treffpunkteFuer('p1').length).toBeGreaterThan(0)
+    expect(new Set(treffpunkteFuer('p1'))).toEqual(new Set(['Manfred Albrecht']))
+    // Der echte Thomas Lindner behält seine Plätze — und wer zugesagt hat,
+    // behält seine Zusage: Auf dem Platz steht dieselbe Person.
+    expect(geschriebenFuer('p2').every((n) => n === 'Thomas Lindner')).toBe(true)
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+    expect(s.persons.find((p) => p.id === 'p1')).toMatchObject({ fn: 'Manfred', ln: 'Albrecht' })
+    expect(s.toast?.text).toBe(fill(DE.toastNameNichtGeaendert, { name: 'Thomas Lindner' }))
+  })
+
+  it('mit Pause dazwischen: Der Zwischenstand war gespeichert, das Verlassen schreibt den Namen vom Öffnen zurück', () => {
+    let s = fahren(start(), { type: 'selectPerson', id: 'p1' }, ...tippen('p1', 'fn', 'Thomas', 100), 1000)
+    expect(gespeichert()).toEqual(['Thomas|Albrecht'])
+
+    s = fahren(s, ...tippen('p1', 'ln', 'Lindner', 100), 1000)
+    expect(gespeichert()).toEqual(['Thomas|Albrecht'])
+
+    vi.mocked(data.saveWeek).mockClear()
+    s = fahren(s, { type: 'navigate', screen: 'programm' })
+    expect(gespeichert()).toEqual(['Thomas|Albrecht', 'Manfred|Albrecht'])
+    expect(new Set(geschriebenFuer('p1'))).toEqual(new Set(['Manfred Albrecht']))
+    expect(s.persons.find((p) => p.id === 'p1')).toMatchObject({ fn: 'Manfred', ln: 'Albrecht' })
+  })
+
+  it('wird der Name wieder eindeutig, geht er hinaus — und das Verlassen ändert nichts mehr', () => {
+    let s = fahren(
+      start(),
+      { type: 'selectPerson', id: 'p1' },
+      ...tippen('p1', 'fn', 'Thomas', 100),
+      ...tippen('p1', 'ln', 'Lindner', 100),
+      // „Paul Beispiel sen.": hinter dem Vornamen weitertippen.
+      ...tippen('p1', 'fn', ' jun.', 100, 'Thomas'),
+      1000,
+    )
+    expect(gespeichert()).toEqual(['Thomas jun.|Lindner'])
+    expect(new Set(geschriebenFuer('p1'))).toEqual(new Set(['Thomas jun. Lindner']))
+
+    const toast = s.toast
+    s = fahren(s, { type: 'selectPerson', id: null })
+    expect(gespeichert()).toEqual(['Thomas jun.|Lindner'])
+    expect(s.persons.find((p) => p.id === 'p1')).toMatchObject({ fn: 'Thomas jun.', ln: 'Lindner' })
+    expect(s.toast).toBe(toast)
+  })
+
+  it('eine verworfene neue Person nimmt ihre Abwesenheit mit — wie beim Löschen', () => {
+    const abwesenheit = { id: 'aNeu', personId: 'pNeu', userId: 'u1', from: '2026-10-05', to: '2026-10-09', reason: '' }
+    let s = fahren(
+      start(),
+      { type: 'addPerson', person: NEU },
+      ...tippen('pNeu', 'fn', 'Thomas', 100),
+      ...tippen('pNeu', 'ln', 'Lindner', 100),
+      { type: 'addAbsence', absence: abwesenheit },
+    )
+    s = fahren(s, { type: 'selectPerson', id: null })
+    expect(s.absences.some((a) => a.id === 'aNeu')).toBe(false)
+    expect(data.deleteAbsenceRow).toHaveBeenCalledWith('aNeu')
   })
 })
 

@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Partener",
   "dublettenRow": "„{name}” · {n} persoane",
   "nameDoppelt": "Acest nume îl are deja {name}. Completează prenumele ca să poată fi deosebiți.",
+  "toastNameNichtGeaendert": "Numele nu a fost schimbat: {name} există deja",
+  "toastNichtAngelegt": "Persoana nu a fost creată: {name} există deja",
   "offlineBanner": "Offline · date de la {m}",
   "offlineBannerHint": "Doar citire — nu se pot face modificări",
   "offlineReadOnly": "Offline — vei putea face modificări când ești din nou online",

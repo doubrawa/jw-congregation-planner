@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– 助手",
   "dublettenRow": "“{name}” · {n} 人",
   "nameDoppelt": "这个名字已经是 {name} 的了。请在名字后加上区别标记。",
+  "toastNameNichtGeaendert": "{name} 已存在，姓名未更改",
+  "toastNichtAngelegt": "{name} 已存在，未创建人员",
   "offlineBanner": "离线 · {m} 的数据",
   "offlineBannerHint": "只读 — 无法修改",
   "offlineReadOnly": "离线 — 重新联网后才能修改",

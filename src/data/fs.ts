@@ -1008,16 +1008,19 @@ export function fsLeiterBinden(
  * Getroffen wird über die `lpid`; ohne sie (Altdaten) über den alten Namen —
  * dieselbe Rangfolge wie in `gehoertZu`. Unveränderte Wochen behalten ihre
  * Referenz, daran erkennt der Aufrufer, welche er speichern muss.
+ *
+ * `oldName: null` heißt **nur über die `lpid`** — wie bei `renameInWeeks`,
+ * solange der alte oder der neue Name doppelt dasteht (T110).
  */
 export function fsRenameLeader(
   fsWeeks: FsInstance[][],
   id: string,
-  oldName: string,
+  oldName: string | null,
   newName: string,
 ): FsInstance[][] {
   // Ohne alten Namen nichts tun: sonst bekämen offene Plätze (leerer Leiter)
   // den neuen Namen. Ein zugeteilter Treffpunkt trägt immer einen.
-  if (!oldName || oldName === newName) return fsWeeks
+  if (oldName === '' || oldName === newName) return fsWeeks
   return mapInsts(fsWeeks, (inst) => {
     // Freitext bleibt unberührt: Wer außerhalb der Versammlung steht, wird
     // nicht mitumbenannt, nur weil ein Bruder zufällig so hieß.

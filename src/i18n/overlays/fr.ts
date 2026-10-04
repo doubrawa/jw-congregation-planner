@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Interlocuteur",
   "dublettenRow": "«\u00a0{name}\u00a0» · {n} personnes",
   "nameDoppelt": "Ce nom est déjà celui de {name}. Complète le prénom pour les distinguer.",
+  "toastNameNichtGeaendert": "Nom non modifié\u00a0: {name} existe déjà",
+  "toastNichtAngelegt": "Personne non créée\u00a0: {name} existe déjà",
   "offlineBanner": "Hors ligne · état du {m}",
   "offlineBannerHint": "Lecture seule — aucune modification possible",
   "offlineReadOnly": "Hors ligne — les modifications seront de nouveau possibles une fois en ligne",

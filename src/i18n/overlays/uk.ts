@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Напарник",
   "dublettenRow": "«{name}» · Людей: {n}",
   "nameDoppelt": "Це ім’я вже має {name}. Доповніть ім’я, щоб їх можна було розрізнити.",
+  "toastNameNichtGeaendert": "Ім’я не змінено: {name} вже є",
+  "toastNichtAngelegt": "Людину не створено: {name} вже є",
   "offlineBanner": "Не в мережі · дані від {m}",
   "offlineBannerHint": "Лише читання — зміни неможливі",
   "offlineReadOnly": "Не в мережі — зміни будуть можливі, коли з’явиться з’єднання",

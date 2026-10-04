@@ -432,6 +432,8 @@ export default {
   "partnerEntfernen": "– שותף",
   "dublettenRow": "”{name}” · {n} אנשים",
   "nameDoppelt": "השם הזה כבר שייך ל־{name}. הוסף משהו לשם הפרטי כדי להבחין ביניהם.",
+  "toastNameNichtGeaendert": "השם לא שונה: {name} כבר ברשימה",
+  "toastNichtAngelegt": "לא נוצר אדם חדש: {name} כבר ברשימה",
   "offlineBanner": "לא מקוון · נתונים מ־{m}",
   "offlineBannerHint": "קריאה בלבד — לא ניתן לבצע שינויים",
   "offlineReadOnly": "לא מקוון — שינויים יתאפשרו שוב כשתהיה מחובר",

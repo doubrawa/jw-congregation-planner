@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– 相手役",
   "dublettenRow": "「{name}」 · {n} 人",
   "nameDoppelt": "この名前はすでに {name} が使っています。区別できるように名前に何か付け加えてください。",
+  "toastNameNichtGeaendert": "{name} はすでにいるため、名前を変更しませんでした",
+  "toastNichtAngelegt": "{name} はすでにいるため、人を作成しませんでした",
   "offlineBanner": "オフライン · {m} 時点",
   "offlineBannerHint": "閲覧のみ — 変更はできません",
   "offlineReadOnly": "オフライン — 変更はオンラインに戻ってからできます",

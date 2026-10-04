@@ -19,7 +19,7 @@
  */
 import type { AppState } from '../../src/app/context'
 import { initialState } from '../../src/app/init'
-import { aufgabenAbgeleitet } from '../../src/app/reducer'
+import { aufgabenAbgeleitet, namensStand } from '../../src/app/reducer'
 import { asFontScale, asTheme, type FontScale } from '../../src/data/constants'
 import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
@@ -209,6 +209,9 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     zuteiler: debug?.zuteiler ?? basis.zuteiler,
     personId: debug?.me ?? null,
     selectedPersonId: debug?.personId ?? null,
+    // Wie beim Öffnen über die Liste (`selectPerson`): Sonst spränge ein
+    // doppelter Name beim Verlassen nicht zurück (T110).
+    nameBeimOeffnen: namensStand(basis.persons.find((p) => p.id === debug?.personId)),
     staleAt: debug?.staleAt ?? null,
     lang: debug?.lang ?? basis.lang,
     congLang: debug?.congLang ?? basis.congLang,

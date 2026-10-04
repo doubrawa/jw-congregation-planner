@@ -260,6 +260,17 @@ export interface AppState {
   notifOpen: boolean
   slotSel: SlotSelection | null // offenes Zuteilungs-Sheet (Planen)
   selectedPersonId: string | null // offenes Personen-Detail
+  /**
+   * Der Name der offenen Person **beim Öffnen** des Details (T110) — leer bei
+   * einer gerade angelegten. Steht ihr Name beim Verlassen doppelt da, springt
+   * er hierhin zurück (`dubletteVerwerfen` im Reducer): Gespeichert ist der
+   * doppelte Name ohnehin nicht, und ohne den Rücksprung zeigte die Liste zwei
+   * Gleichnamige, bis jemand neu lädt.
+   *
+   * Gilt nur, solange `selectedPersonId` dieselbe Person nennt; ein älterer
+   * Stand bleibt wirkungslos und wird beim nächsten Öffnen ersetzt.
+   */
+  nameBeimOeffnen: { id: string; fn: string; ln: string } | null
   importing: boolean // Programm-Import läuft
   confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
   myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)

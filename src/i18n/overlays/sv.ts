@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Medhjälpare",
   "dublettenRow": "”{name}” · {n} personer",
   "nameDoppelt": "Det här namnet har {name} redan. Fyll på förnamnet så att de går att skilja åt.",
+  "toastNameNichtGeaendert": "Namnet ändrades inte: {name} finns redan",
+  "toastNichtAngelegt": "Personen skapades inte: {name} finns redan",
   "offlineBanner": "Offline · uppgifter från {m}",
   "offlineBannerHint": "Skrivskyddat — inga ändringar går att göra",
   "offlineReadOnly": "Offline — ändringar går att göra igen när du är online",

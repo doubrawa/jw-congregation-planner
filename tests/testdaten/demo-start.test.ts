@@ -102,6 +102,13 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     expect(s.selectedPersonId).toBe('p9')
   })
 
+  it('p= öffnet das Detail wie die Liste — mit dem Namen beim Öffnen (T110)', () => {
+    // Ohne ihn spränge ein doppelter Name beim Verlassen nicht zurück, und wer
+    // das hier prüft, hielte die Seite für die App.
+    expect(entwicklerStart('#s=personen&p=p1').nameBeimOeffnen).toEqual({ id: 'p1', fn: 'Manfred', ln: 'Albrecht' })
+    expect(entwicklerStart('#s=personen').nameBeimOeffnen).toBeNull()
+  })
+
   it('me=<Person> meldet jemanden an — p= wählt nur aus', () => {
     /*
      * Zwei verschiedene Dinge, die sich leicht verwechseln: `p` ist die im

@@ -433,6 +433,8 @@ export default {
   "partnerEntfernen": "– Assistent",
   "dublettenRow": "‘{name}’ · {n} personen",
   "nameDoppelt": "Deze naam heeft {name} al. Vul de voornaam aan zodat ze te onderscheiden zijn.",
+  "toastNameNichtGeaendert": "Naam niet gewijzigd: {name} bestaat al",
+  "toastNichtAngelegt": "Persoon niet aangemaakt: {name} bestaat al",
   "offlineBanner": "Offline · stand van {m}",
   "offlineBannerHint": "Alleen lezen — wijzigen is niet mogelijk",
   "offlineReadOnly": "Offline — wijzigen kan pas weer als je online bent",

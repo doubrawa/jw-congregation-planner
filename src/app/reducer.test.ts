@@ -19,7 +19,9 @@ import {
 } from '../../tests/testdaten/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
-import { fsTaskKey, genFsWeek } from '../data/fs'
+import { fsLeiterBinden, fsTaskKey, genFsWeek } from '../data/fs'
+import { pidsNachtragen } from '../data/namensbindung'
+import { fill } from '../i18n/useT'
 import { deriveMyTasks, punktKey } from '../data/planning'
 import { itemMinutes } from '../data/meeting-edit'
 import { DE as t } from '../i18n/de'
@@ -69,6 +71,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     notifOpen: false,
     slotSel: null,
     selectedPersonId: null,
+    nameBeimOeffnen: null,
     importing: false,
     myTasks: [...DEMO_MY_TASKS],
     confirmations: {},
@@ -120,6 +123,20 @@ function weeksContainName(weeks: Week[], name: string): boolean {
     }
   }
   return false
+}
+
+/** Wie oft `name` in den Zuteilungen steht (Programmpunkte + Hilfsdienste). */
+function namenZaehlen(weeks: Week[], name: string): number {
+  let n = 0
+  for (const w of weeks) {
+    for (const tab of ['mid', 'we'] as const) {
+      for (const s of w[tab].sections) {
+        for (const it of s.items) if (!isSong(it)) n += (it as PartItem).names.filter((x) => x.name === name).length
+      }
+      for (const arr of Object.values(w[tab].helpers)) n += arr.filter((x) => x.name === name).length
+    }
+  }
+  return n
 }
 
 const person = (name: string): Person => DEMO_PERSONS.find((p) => displayName(p) === name)!
@@ -484,6 +501,92 @@ describe('Personen', () => {
     const next = reducer(s, { type: 'selectPerson', id: 'p1' })
     expect(next.persons.some((p) => p.id === 'pLeer')).toBe(false)
     expect(next.selectedPersonId).toBe('p1')
+  })
+
+  it('eine verworfene namenlose Person nimmt mit, was auf sie zeigt — wie beim Löschen', () => {
+    const empty: Person = { ...fresh, id: 'pLeer', fn: '', ln: '' }
+    const abwesenheit = { id: 'aLeer', personId: 'pLeer', userId: null, from: '2026-10-05', to: '2026-10-09', reason: '' }
+    const s = makeState({ persons: [...DEMO_PERSONS, empty], absences: [abwesenheit], selectedPersonId: 'pLeer' })
+    const next = reducer(s, { type: 'navigate', screen: 'programm' })
+    expect(next.absences.some((a) => a.id === 'aLeer')).toBe(false)
+  })
+
+  /*
+   * **Ein doppelter Name bleibt beim Verlassen nicht stehen** (T110). Gespeichert
+   * wird er nie (`persist.ts`); stünde er weiter im Zustand, zeigte die Liste
+   * zwei Gleichnamige, bis jemand neu lädt.
+   */
+  describe('Verlassen mit doppeltem Namen', () => {
+    // Wie nach dem Laden: Jeder Platz einer Person trägt ihre Id.
+    const geladen = (): AppState =>
+      makeState({
+        weeks: pidsNachtragen(buildDemoWeeks(), DEMO_PERSONS),
+        fsWeeks: fsLeiterBinden(buildDemoFsWeeks(), DEMO_PERSONS),
+      })
+    const umbenennen = (s: AppState, id: string, ...patches: Array<Partial<Person>>): AppState =>
+      patches.reduce((z, patch) => reducer(z, { type: 'updatePerson', id, patch }), s)
+    const treffpunktLeiter = (s: AppState, pid: string): Set<string> =>
+      new Set(s.fsWeeks.flat().filter((i) => i.lpid === pid).map((i) => i.leader))
+
+    it('der Name springt auf den Stand beim Öffnen zurück — in Wochen und Treffpunkten mit', () => {
+      let s = reducer(geladen(), { type: 'selectPerson', id: 'p1' })
+      s = umbenennen(s, 'p1', { fn: 'Thomas' }, { ln: 'Lindner' })
+      expect(treffpunktLeiter(s, 'p1')).toEqual(new Set(['Thomas Lindner']))
+
+      s = reducer(s, { type: 'selectPerson', id: null })
+      expect(s.persons.find((p) => p.id === 'p1')).toMatchObject({ fn: 'Manfred', ln: 'Albrecht' })
+      expect(weeksContainName(s.weeks, 'Manfred Albrecht')).toBe(true)
+      expect(weeksContainName(s.weeks, 'Thomas Albrecht')).toBe(false)
+      expect(treffpunktLeiter(s, 'p1')).toEqual(new Set(['Manfred Albrecht']))
+      expect(s.toast?.text).toBe(fill(t.toastNameNichtGeaendert, { name: 'Thomas Lindner' }))
+    })
+
+    it('ebenso, wenn man über das Menü geht', () => {
+      let s = reducer(geladen(), { type: 'selectPerson', id: 'p1' })
+      s = umbenennen(s, 'p1', { fn: 'Thomas' }, { ln: 'Lindner' })
+      s = reducer(s, { type: 'navigate', screen: 'programm' })
+      expect(s.persons.find((p) => p.id === 'p1')).toMatchObject({ fn: 'Manfred', ln: 'Albrecht' })
+      expect(s.toast?.text).toBe(fill(t.toastNameNichtGeaendert, { name: 'Thomas Lindner' }))
+    })
+
+    it('eine neue Person mit doppeltem Namen wird nicht angelegt', () => {
+      let s = reducer(geladen(), { type: 'addPerson', person: { ...fresh, fn: '', ln: '' } })
+      s = umbenennen(s, 'pNeu', { fn: 'Thomas' }, { ln: 'Lindner' })
+      s = reducer(s, { type: 'navigate', screen: 'start' })
+      expect(s.persons.some((p) => p.id === 'pNeu')).toBe(false)
+      expect(s.persons.filter((p) => displayName(p) === 'Thomas Lindner')).toHaveLength(1)
+      expect(s.toast?.text).toBe(fill(t.toastNichtAngelegt, { name: 'Thomas Lindner' }))
+    })
+
+    it('ein eindeutiger Name bleibt, und es kommt kein Toast', () => {
+      let s = reducer(geladen(), { type: 'selectPerson', id: 'p1' })
+      s = umbenennen(s, 'p1', { fn: 'Manfredo' })
+      const toast = s.toast
+      s = reducer(s, { type: 'selectPerson', id: null })
+      expect(s.persons.find((p) => p.id === 'p1')?.fn).toBe('Manfredo')
+      expect(s.toast).toBe(toast)
+    })
+
+    it('Plätze ohne Id: Ein doppelter Name zieht die der anderen Person nicht mit', () => {
+      // Die Testwochen tragen nur Namen, wie Altdaten vor `pidsNachtragen`. Über
+      // den Namen gehörten die Plätze von Thomas Lindner auch dem, der gerade
+      // so heißt — und gingen beim Weitertippen und Zurücksetzen mit ihm.
+      const zaehlen = (s: AppState): [number, number] => [
+        namenZaehlen(s.weeks, 'Thomas Lindner'),
+        s.fsWeeks.flat().filter((i) => i.leader === 'Thomas Lindner').length,
+      ]
+      const vorher = zaehlen(makeState())
+      expect(Math.min(...vorher)).toBeGreaterThan(0)
+
+      let s = reducer(makeState(), { type: 'selectPerson', id: 'p1' })
+      s = umbenennen(s, 'p1', { fn: 'Thomas' }, { ln: 'Lindne' }, { ln: 'Lindner' })
+      expect(zaehlen(s), 'in den doppelten Namen hinein').toEqual(vorher)
+      s = umbenennen(s, 'p1', { fn: 'Thomas ' })
+      expect(zaehlen(s), 'aus dem doppelten Namen heraus').toEqual(vorher)
+      s = umbenennen(s, 'p1', { fn: 'Thomas' })
+      s = reducer(s, { type: 'selectPerson', id: null })
+      expect(zaehlen(s), 'beim Zurücksetzen').toEqual(vorher)
+    })
   })
 
   it('updatePerson zieht eine Namensänderung durch die Wochen — die Zusagen bleiben', () => {
