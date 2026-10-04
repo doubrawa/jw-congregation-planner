@@ -210,7 +210,9 @@ Oben auf der Planen‑Seite findest du je Bereich zwei Schaltflächen:
 | **Hilfsdienste** | Dasselbe für die Hilfsdienste (die Reinigung rotiert dabei über die Predigtdienstgruppen). |
 
 Die Automatik wählt bevorzugt Personen mit der **geringsten Auslastung**, lässt
-Abwesende aus und vergibt niemanden doppelt am selben Tag. Externe Redner
+Abwesende aus und vergibt niemanden doppelt am selben Tag. Eine Ausnahme ist der
+Leiter des Wachtturm-Studiums: Sind dafür **feste Rollen** vergeben, bestimmen
+sie ihn (siehe [Personen verwalten](#6-personen-verwalten)). Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
@@ -728,9 +730,25 @@ Im Detail legst du fest:
   Hand – die Automatik lässt ihn aus.
 - **Hilfsdienste** – dasselbe für die Dienste (Ton, Mikrofone, Ordner …), als
   eigener Bereich darunter. Beide Listen stehen alphabetisch.
-- **Feste Rollen** – der feste Wachtturm‑Studium‑Leiter und sein Vertreter,
-  dazu die Rechte **Planer** und **Admin** (siehe „Wer darf was" in Abschnitt 1).
-  Ohne Konto werden sie vorgemerkt und gelten ab der ersten Anmeldung.
+- **Feste Rollen** – eine eigene Karte mit vier Schaltern:
+  - **Wachtturm-Studium-Leiter** – der feste Leiter des Wachtturm-Studiums.
+  - **Vertreter (Wachtturm-Studium)** – sein Vertreter.
+  - **Planer** – teilt zu und sendet die Pläne, ändert sie aber nicht.
+  - **Admin** – darf alles, was dieses Handbuch beschreibt. Das Planer-Recht
+    hat er ohnehin; bei ihm steht der Schalter **Planer** an und lässt sich
+    nicht umlegen.
+
+  Was Planer und Admin im Einzelnen dürfen, steht unter „Wer darf was" in
+  Abschnitt 1. Hat die Person noch kein Konto, merkt die App die Rechte vor;
+  sie gelten, sobald sie sich mit ihrem Einladungscode anmeldet. Deine eigenen
+  Schalter kannst du nicht umlegen – so sperrt sich niemand selbst aus.
+
+  Leiter und Vertreter wirken beim automatischen Zuteilen: Den Leiter-Platz des
+  Wachtturm-Studiums bekommt zuerst der feste Leiter, ist er an dem Tag
+  abwesend oder schon eingeteilt, sein Vertreter. Fehlen beide, verteilt die
+  Automatik den Platz wie jeden anderen unter allen mit dem Bereich **Studium
+  leiten**. Jede der beiden Rollen gehört genau einer Person; ist eine
+  mehrfach vergeben, warnt die Personenliste.
 - **Konto & Einladung** – hier lädst du eine Person zur App‑Nutzung ein (Code bzw.
   Einladungs‑E‑Mail).
 
@@ -756,6 +774,20 @@ ist derselbe Name wie „Paul Beispiel". Akzente zählen dagegen: „Müller" un
 
 Der Grund für die Regel: Auf den Plänen und Ausdrucken steht nur der Name. Zwei
 Gleichnamige wären dort nicht auseinanderzuhalten.
+
+### Warnung: feste Rolle mehrfach vergeben
+
+Leiter und Vertreter des Wachtturm-Studiums sind je **eine** Person. Ist einer
+der beiden Schalter bei mehreren eingeschaltet, erscheint über der Liste das
+Warnbanner **FESTE ROLLEN** mit einer Zeile je Rolle, etwa
+„Wachtturm-Studium-Leiter" · 2 Personen. Beim automatischen Zuteilen nimmt die
+App dann irgendeinen von ihnen – nicht unbedingt den, den du meinst.
+
+Abhilfe: Lass den Schalter nur bei einer Person an. Das Banner nennt keine
+Namen, und der Filter **Aufgabenbereiche** kennt die festen Rollen nicht. Öffne
+deshalb das Detail der Brüder, die als Leiter oder Vertreter in Frage kommen,
+und sieh dort in der Karte **Feste Rollen** nach. Das Banner verschwindet,
+sobald jede Rolle höchstens einmal vergeben ist.
 
 ### Warnung: ohne Predigtdienstgruppe
 
