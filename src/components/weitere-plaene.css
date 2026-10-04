@@ -164,6 +164,16 @@
   flex: 1 1 160px;
 }
 
+/* Veröffentlichen bzw. Zurückziehen — über die ganze Breite, wie „Plan senden".
+   `plan-auto-btn` hat keinen seitlichen Innenabstand: In der Automatik-Zeile
+   streckt ihn die Flex-Zeile, frei stehend schrumpfte er auf seinen Text, und
+   der klebte am Rand. Beide Zustände gleich breit, damit nichts springt. */
+.wp-veroeffentlichen {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+
 .wp-verteilen {
   display: flex;
   flex-wrap: wrap;

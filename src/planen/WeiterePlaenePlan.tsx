@@ -195,7 +195,7 @@ function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: ()
         <p className="panel-hint">{plan.entwurf ? `${t.wpEntwurfHint} ${sicht}` : sicht}</p>
         <button
           type="button"
-          className={plan.entwurf ? 'plan-auto-btn plan-auto-btn--primary' : 'btn-outline'}
+          className={`${plan.entwurf ? 'plan-auto-btn plan-auto-btn--primary' : 'btn-outline'} wp-veroeffentlichen`}
           onClick={() => aendern({ entwurf: !plan.entwurf })}
         >
           {plan.entwurf ? t.wpVeroeffentlichen : t.wpZurueckziehen}
