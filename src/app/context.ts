@@ -369,7 +369,7 @@ export type AppAction =
    */
   | { type: 'wpPlanAnlegen'; plan: WeitererPlan }
   // Name, Zeitraum, Entwurf/veröffentlicht. Einträge außerhalb des Zeitraums gehen mit.
-  | { type: 'wpPlanAendern'; id: string; patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf'>> }
+  | { type: 'wpPlanAendern'; id: string; patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf' | 'takt'>> }
   | { type: 'wpPlanLoeschen'; id: string }
   // Die Wochen des Zeitraums reihum an die Gruppen, ab dieser.
   | { type: 'wpGruppenVerteilen'; planId: string; abGruppe: string }

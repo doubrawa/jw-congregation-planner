@@ -69,6 +69,39 @@ describe('Plätze', () => {
     expect(reducer(ohne, { type: 'wpGruppenVerteilen', planId: 'pl-weg', abGruppe: 'g2' })).toBe(ohne)
   })
 
+  it('im Monatstakt: je Monat eine Gruppe, und die Ansage zählt Monate', () => {
+    const monate: WeitererPlan = { ...SAAL, von: '2026-09-01', bis: '2026-11-30', takt: 'monat' }
+    const s = reducer(zustand({ plaene: [monate] }), { type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g2' })
+    expect(s.planEintraege.map((e) => `${e.datum} ${e.grp}`)).toEqual(['2026-09-01 g2', '2026-10-01 g3', '2026-11-01 g4'])
+    expect(s.toast?.text).toBe('Verteilte Monate: 3')
+  })
+
+  it('ein anderer Takt verteilt ab jetzt neu — dieselbe Reihenfolge, mit Ansage', () => {
+    // Ohne den Wechsel ginge die Einteilung ganz: Kein Montag ist ein
+    // Monatserster des Plans (der 7. September ist keiner).
+    const s0 = zustand({ plaene: [SAAL], planEintraege: [woche('2026-09-07', 'g1'), woche('2026-09-14', 'g2')] })
+    const s = reducer(s0, { type: 'wpPlanAendern', id: 'pl-s', patch: { takt: 'monat' } })
+    expect(s.plaene[0]!.takt).toBe('monat')
+    // Der Plan reicht bis zum 4. Oktober: September und Oktober, ab der Gruppe dieser Woche.
+    expect(s.planEintraege.map((e) => `${e.datum} ${e.grp}`)).toEqual(['2026-09-01 g1', '2026-10-01 g2'])
+    expect(s.toast?.text).toBe('Verteilte Monate: 2')
+    // Und zurück: ab dieser Woche reihum, beginnend mit der Gruppe dieses Monats.
+    const zurueck = reducer(s, { type: 'wpPlanAendern', id: 'pl-s', patch: { takt: 'woche' } })
+    expect(zurueck.planEintraege.map((e) => `${e.datum} ${e.grp}`)).toEqual([
+      '2026-09-07 g1',
+      '2026-09-14 g2',
+      '2026-09-21 g3',
+      '2026-09-28 g4',
+    ])
+    expect(zurueck.toast?.text).toBe('Verteilte Wochen: 4')
+  })
+
+  it('ein Takt ohne Einteilung bleibt still — es gab nichts zu verteilen', () => {
+    const s = reducer(zustand({ plaene: [SAAL] }), { type: 'wpPlanAendern', id: 'pl-s', patch: { takt: 'monat' } })
+    expect(s.planEintraege).toEqual([])
+    expect(s.toast).toBeFalsy()
+  })
+
   it('die Gruppe einer Woche setzen, ändern, räumen', () => {
     const setzen = (grp: string | null) => ({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp }) as const
     let s = reducer(zustand({ plaene: [SAAL] }), setzen('g1'))

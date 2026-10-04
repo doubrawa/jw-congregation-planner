@@ -6144,6 +6144,19 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   Redner-Platz, auch dem des Kreisaufsehers), und als Engpass zählt auch der
   eigene Redner nicht mehr (`bedarf.ts`). Leser bleibt ein Bereich. Der
   Generator in `nws-export` liest die getrennten NWS-Felder (bo, bp|bw, bv).
+- **Weitere Pläne: Takt wählbar** — „Beim Machen von weiteren Plänen soll man
+  zwischen wöchentlich und monatlich wechseln können … den Takt soll wählbar
+  sein." Je Plan „Die Gruppen wechseln: Jede Woche | Jeden Monat"
+  (`plaene.takt`, Vorgabe `woche` — jeder bestehende Plan bleibt
+  wöchentlich). Im Monatstakt steht je Kalendermonat ein Eintrag, `datum` ist
+  der Monatserste; „Reihum verteilen" wechselt dann monatlich ab dem
+  laufenden Monat, Ansehen und „Deine Gruppe ist dran" zeigen „Oktober 2026".
+  Ein Wechsel des Takts heißt **dieselbe Reihenfolge, ein anderer Takt**
+  (`taktWechseln`): Ab der laufenden Spanne wird neu verteilt, beginnend mit
+  der Gruppe, die gerade dran ist; Vergangenes geht ins neue Raster über, ohne
+  dass eine Gruppe dazuerfunden wird. Die erste Fassung rechnete Eintrag für
+  Eintrag um (ein Monat bekam die Gruppe seiner ersten Woche) — im Browser
+  wurde aus einer wöchentlichen Reihe g3, g4, g1, g2 … „Gruppe 3, 4, 4, 4".
 
 **Ausrollen in dieser Reihenfolge:** Functions `send-plan`, `send-reminders`,
 `substitute` deployen → `schema.sql` einspielen → Push. Das neue Frontend
@@ -6158,6 +6171,11 @@ Brüdern, nur wo der Schlüssel fehlt; sonst stünden die neuen Plätze ohne
 Kandidaten da. (2) `import-week` deployen und pushen. (3) Den Bestand
 nachziehen: `node scripts/bereiche-trennen.mjs --trocken`, dann ohne. Eilig ist
 (3) nicht — alte Wochen tragen die alten Bereiche und verhalten sich wie bisher.
+
+**Takt der weiteren Pläne:** erst `schema.sql` (Spalte `plaene.takt`), dann
+pushen. Das neue Frontend fragt die Spalte ab; ohne sie käme beim Laden kein
+Plan an (die App bliebe benutzbar, nur ohne weitere Pläne). Keine Function
+betroffen.
 
 ---
 

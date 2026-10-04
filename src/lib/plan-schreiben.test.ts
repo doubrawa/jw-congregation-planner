@@ -16,7 +16,12 @@ const db = vi.hoisted(() => {
   // Je Tabelle: Die Schlange ruft `upsert` erst später auf, nicht beim
   // Speichern — eine Bremse, die zur Aufrufzeit gesetzt sein müsste, verpasste
   // ihn (so stand es zuerst hier, und der Test maß nichts).
-  const zustand: { bremse: Partial<Record<string, Promise<void>>>; scheitern: string | null } = { bremse: {}, scheitern: null }
+  const zustand: {
+    bremse: Partial<Record<string, Promise<void>>>
+    scheitern: string | null
+    /** Die zuletzt geschriebenen Zeilen je Tabelle — für die Form einer Zeile. */
+    zeilen: Partial<Record<string, Record<string, unknown>[]>>
+  } = { bremse: {}, scheitern: null, zeilen: {} }
   const client = {
     from(tabelle: string) {
       return {
@@ -34,6 +39,7 @@ const db = vi.hoisted(() => {
             if (warten) await warten
             if (zustand.scheitern === tabelle) throw new Error(`Netz weg (${tabelle})`)
             protokoll.push(`upsert ${tabelle} ${zeilen.map((z) => String(z.id)).join(',')}`)
+            zustand.zeilen[tabelle] = zeilen
             return { error: null, zeilen }
           })()
         },
@@ -59,6 +65,7 @@ beforeEach(async () => {
   db.protokoll.length = 0
   db.zustand.bremse = {}
   db.zustand.scheitern = null
+  db.zustand.zeilen = {}
 })
 
 describe('Pläne und Einträge in einer Schlange', () => {
@@ -73,6 +80,12 @@ describe('Pläne und Einträge in einer Schlange', () => {
     loslassen()
     await ruhe()
     expect(db.protokoll).toEqual(['upsert plaene p1', 'upsert plan_eintraege e1'])
+  })
+
+  it('der Takt geht mit in die Zeile — ein Plan ohne Takt als wöchentlicher (4.10.2026)', async () => {
+    savePlaene('c1', [plan, { ...plan, id: 'p2', takt: 'monat' }])
+    await ruhe()
+    expect(db.zustand.zeilen.plaene?.map((z) => `${String(z.id)} ${String(z.takt)}`)).toEqual(['p1 woche', 'p2 monat'])
   })
 
   it('erst gelöscht, dann geschrieben — gelöscht nur, was entfernt wurde', async () => {

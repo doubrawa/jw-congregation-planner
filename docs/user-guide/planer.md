@@ -574,7 +574,7 @@ muss etwas bestätigen, niemand wird erinnert, und einen „Plan senden" gibt es
 dafür nicht. Jeder Plan gilt dem **Königreichssaal** – Reinigung und
 Instandhaltung. „Im Allgemeinen wechseln sich die Predigtdienstgruppen mit der
 Saalreinigung ab" (*Organisiert, Jehovas Willen zu tun*, Kap. 11 Abs. 10): je
-Woche eine Gruppe. Was zu tun ist, sagt der Name des Plans, etwa
+Woche oder je Monat eine Gruppe. Was zu tun ist, sagt der Name des Plans, etwa
 „Winterdienst" oder „Grundreinigung".
 
 ![Weitere Pläne planen](screenshots/planer-weitere-plaene.png)
@@ -582,9 +582,15 @@ Woche eine Gruppe. Was zu tun ist, sagt der Name des Plans, etwa
 - **+ Neuer Plan** legt den Plan als **Entwurf** an – ab dieser Woche für ein
   Vierteljahr – und öffnet ihn gleich. Name und Zeitraum änderst du dort. Wird
   der Zeitraum kürzer, gehen die Einträge außerhalb mit.
-- **Reihum verteilen** gibt die Wochen ab dieser bis zum Ende den Gruppen der
-  Reihe nach, beginnend mit der gewählten. Vergangene Wochen bleiben, wie sie
-  sind. Danach kannst du jede Woche einzeln umstellen.
+- **Die Gruppen wechseln** stellt den Takt ein: **Jede Woche** (so ist jeder
+  Plan zuerst) oder **Jeden Monat**. Im Monatstakt steht je Kalendermonat eine
+  Zeile („Oktober 2026"). Stellst du um, geht es in derselben Reihenfolge
+  weiter, nur im neuen Takt: Ab der laufenden Woche bzw. dem laufenden Monat
+  wird neu verteilt, beginnend mit der Gruppe, die gerade dran ist. Was vorbei
+  ist, bleibt erhalten.
+- **Reihum verteilen** gibt die Wochen (bzw. Monate) ab der laufenden bis zum
+  Ende den Gruppen der Reihe nach, beginnend mit der gewählten. Vergangene
+  bleiben, wie sie sind. Danach kannst du jede Zeile einzeln umstellen.
 - **Veröffentlichen** macht den Plan sichtbar, **Zurück zum Entwurf** nimmt
   ihn wieder zurück. Einen Entwurf sehen nur die Admins.
 - **Plan löschen** fragt einmal nach.
@@ -594,7 +600,7 @@ Die Liste ordnet die Pläne nach **Aktuell**, **Entwürfe** und
 
 **Wer was sieht**: Einen Plan sieht nach dem Veröffentlichen die ganze
 Versammlung, und jeder findet oben unter „Deine Gruppe ist dran" die Wochen
-seiner Gruppe. Für Verkündiger steht „Weitere Pläne" erst im Menü, wenn es für
+(bzw. Monate) seiner Gruppe. Für Verkündiger steht „Weitere Pläne" erst im Menü, wenn es für
 sie etwas zu sehen gibt.
 
 ---

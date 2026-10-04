@@ -120,6 +120,24 @@ describe('Ansehen', () => {
     const { container } = zeige(ProgrammScreen, { screen: 'programm', plaene: [ENTWURF] })
     expect(container.textContent).toContain(t.wpKeine)
   })
+
+  it('im Monatstakt stehen Monate da — der laufende zuerst, auch bei „Deine Gruppe ist dran"', () => {
+    const monate: WeitererPlan = { ...SAAL, von: '2026-08-01', bis: '2026-10-31', takt: 'monat' }
+    const { container } = zeige(ProgrammScreen, {
+      screen: 'programm',
+      plaene: [monate],
+      planEintraege: [
+        { id: 'm8', planId: 'pl-s', datum: '2026-08-01', grp: 'g2' }, // vorbei
+        { id: 'm9', planId: 'pl-s', datum: '2026-09-01', grp: 'g1' },
+        { id: 'm10', planId: 'pl-s', datum: '2026-10-01', grp: 'g2' },
+      ],
+    })
+    expect([...container.querySelectorAll('.wp-liste-zeile')].map((z) => z.textContent)).toEqual([
+      'September 2026Gruppe 1',
+      'Oktober 2026Gruppe 2',
+    ])
+    expect([...container.querySelectorAll('.wp-chip')].map((c) => c.textContent)).toEqual(['September 2026'])
+  })
 })
 
 describe('Planen', () => {
@@ -156,6 +174,38 @@ describe('Planen', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp: null })
     fireEvent.click(knopf(container, t.wpZurueckziehen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { entwurf: true } })
+  })
+
+  it('der Takt ist wählbar — wöchentlich ist vorgegeben', () => {
+    const { container, dispatch } = planen()
+    fireEvent.click([...container.querySelectorAll('.wp-karte')].find((k) => k.textContent?.includes('Winterdienst'))!)
+    const takt = [...container.querySelectorAll('select')].find((s) => s.querySelector('option[value="monat"]')) as HTMLSelectElement
+    expect(takt.value).toBe('woche')
+    expect([...takt.options].map((o) => o.textContent)).toEqual([t.fsFreqW, t.wpJedenMonat])
+    fireEvent.change(takt, { target: { value: 'monat' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { takt: 'monat' } })
+  })
+
+  it('im Monatstakt: Monate als Zeilen, die Hinweise sprechen von Monaten', () => {
+    const monate: WeitererPlan = { ...SAAL, von: '2026-09-07', bis: '2026-11-30', takt: 'monat' }
+    const { container, dispatch } = planen({
+      plaene: [monate],
+      planEintraege: [{ id: 'm10', planId: 'pl-s', datum: '2026-10-01', grp: 'g2' }],
+    })
+    fireEvent.click(container.querySelector('.wp-karte')!)
+    expect([...container.querySelectorAll('.wp-zeile-wann')].map((z) => z.textContent)).toEqual([
+      'September 2026',
+      'Oktober 2026',
+      'November 2026',
+    ])
+    expect(container.textContent).toContain(t.wpSaalTextMonat)
+    expect(container.textContent).toContain(t.wpVerteilenHintMonat)
+    expect(container.textContent).not.toContain(t.wpSaalText)
+    const zeilen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
+    expect(zeilen.map((z) => z.value)).toEqual(['', 'g2', ''])
+    // Eine Zeile meint ihren Monat: gesetzt wird der Monatserste.
+    fireEvent.change(zeilen[2]!, { target: { value: 'g1' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-11-01', grp: 'g1' })
   })
 
   it('löschen braucht zwei Tipps', () => {

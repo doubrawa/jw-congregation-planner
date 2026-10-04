@@ -105,9 +105,21 @@ export interface WeitererPlan {
   von: string
   bis: string
   entwurf: boolean
+  /**
+   * Wie oft die Gruppe wechselt (4.10.2026, Betreiber: „den Takt soll wählbar
+   * sein"). Fehlt er, gilt `woche` — so legt die Datenbank jeden älteren Plan
+   * an (`plaene.takt`), und so steht er in einer Momentaufnahme von davor.
+   */
+  takt?: PlanTakt
 }
 
-/** Ein Eintrag eines weiteren Plans: die Gruppe einer Woche (`datum` ist der Montag). */
+/** Takt eines weiteren Plans: je Woche oder je Kalendermonat eine Gruppe. */
+export type PlanTakt = 'woche' | 'monat'
+
+/**
+ * Ein Eintrag eines weiteren Plans: die Gruppe einer Woche oder eines Monats,
+ * je nach Takt des Plans — `datum` ist der Montag bzw. der Monatserste.
+ */
 export interface PlanEintrag {
   id: string
   planId: string

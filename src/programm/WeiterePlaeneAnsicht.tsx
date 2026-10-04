@@ -1,10 +1,9 @@
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
-import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
-import { gruppenName, zeitraumText } from '../components/weitere-plaene-anzeige'
-import { fromIso, montagVon } from '../data/meeting-dates'
-import { eintraegeVon, plaeneZumAnsehen, wochenDerGruppe } from '../data/weitere-plaene'
+import { gruppenName, spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
+import { fromIso } from '../data/meeting-dates'
+import { eintraegeVon, plaeneZumAnsehen, spanneVon, spannenDerGruppe, taktVon } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
 import type { Person, WeitererPlan } from '../data/types'
 import '../components/weitere-plaene.css'
@@ -39,12 +38,15 @@ export function WeiterePlaeneAnsicht() {
   )
 }
 
-/** Ein Plan beim Ansehen: Art, Name, Zeitraum — und die Wochen ab `tag`, dem Kalendertag. */
+/**
+ * Ein Plan beim Ansehen: Art, Name, Zeitraum — und die Wochen oder Monate ab
+ * der laufenden (`tag` ist der Kalendertag).
+ */
 function PlanAnsicht({ plan, me, tag }: { plan: WeitererPlan; me: Person | undefined; tag: string }) {
   const { state } = useApp()
   const { t, tu } = useT()
   const eintraege = eintraegeVon(state.planEintraege, plan.id)
-  const dieseWoche = montagVon(tag)
+  const jetzt = spanneVon(taktVon(plan), tag)
 
   return (
     <div className="panel panel--pb16" data-farbe="neutral2">
@@ -53,13 +55,15 @@ function PlanAnsicht({ plan, me, tag }: { plan: WeitererPlan; me: Person | undef
         {plan.name || t.wpOhneName}
       </div>
       <div className="wp-zeitraum">{zeitraumText(plan, state.lang)}</div>
-      {me?.grp && <DeineGruppe wochen={wochenDerGruppe(eintraege, plan.id, me.grp).filter((w) => w >= dieseWoche)} />}
+      {me?.grp && (
+        <DeineGruppe plan={plan} spannen={spannenDerGruppe(eintraege, plan.id, me.grp).filter((s) => s >= jetzt)} />
+      )}
       <div className="wp-liste">
         {eintraege
-          .filter((e) => e.datum >= dieseWoche)
+          .filter((e) => e.datum >= jetzt)
           .map((e) => (
             <div key={e.id} className={me?.grp && e.grp === me.grp ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}>
-              <span>{besuchsWocheText(e.datum, state.lang)}</span>
+              <span>{spannenText(plan, e.datum, state.lang)}</span>
               <span className="wp-liste-wer">{gruppenName(e.grp, state.groups, tu) || t.offenDash}</span>
             </div>
           ))}
@@ -69,18 +73,18 @@ function PlanAnsicht({ plan, me, tag }: { plan: WeitererPlan; me: Person | undef
   )
 }
 
-/** „Deine Gruppe ist dran:" — die kommenden Wochen der eigenen Gruppe als Marken. */
-function DeineGruppe({ wochen }: { wochen: string[] }) {
+/** „Deine Gruppe ist dran:" — die kommenden Wochen oder Monate der eigenen Gruppe als Marken. */
+function DeineGruppe({ plan, spannen }: { plan: WeitererPlan; spannen: string[] }) {
   const { state } = useApp()
   const { t } = useT()
-  if (wochen.length === 0) return null
+  if (spannen.length === 0) return null
   return (
     <>
       <p className="wp-dran">{t.wpDeineGruppe}</p>
       <div className="wp-chips">
-        {wochen.map((w) => (
-          <span key={w} className="wp-chip">
-            {besuchsWocheText(w, state.lang)}
+        {spannen.map((s) => (
+          <span key={s} className="wp-chip">
+            {spannenText(plan, s, state.lang)}
           </span>
         ))}
       </div>

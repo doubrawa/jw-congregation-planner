@@ -523,7 +523,7 @@ create index if not exists oz_eintraege_congregation_idx
 
 -- Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung — niemand
 -- bestätigt etwas, niemand wird erinnert. Ein Plan ist ein Königreichssaal-
--- Plan: je Woche eine Predigtdienstgruppe. Gemessen am Buch „Organisiert,
+-- Plan: je Woche (oder je Monat, `takt`) eine Predigtdienstgruppe. Gemessen am Buch „Organisiert,
 -- Jehovas Willen zu tun", Kap. 11 Abs. 10: „Im Allgemeinen wechseln sich die
 -- Predigtdienstgruppen mit der Saalreinigung ab"; ein Ältester oder
 -- Dienstamtgehilfe stellt dafür einen Plan auf.
@@ -536,16 +536,24 @@ create table if not exists public.plaene (
   von             date not null,
   bis             date not null,
   entwurf         boolean not null default true,
+  -- Wie oft die Gruppe wechselt: je Woche oder je Kalendermonat (4.10.2026).
+  takt            text not null default 'woche' check (takt in ('woche', 'monat')),
   created_at      timestamptz not null default now(),
 
   check (bis >= von),
   unique (id, congregation_id)                     -- Ziel des Verweises aus plan_eintraege
 );
 
+-- Nachträglich (4.10.2026) — eine schon angelegte Tabelle bekommt ihn hier;
+-- jeder bestehende Plan wechselt damit weiter wöchentlich.
+alter table public.plaene
+  add column if not exists takt text not null default 'woche' check (takt in ('woche', 'monat'));
+
 create index if not exists plaene_congregation_idx
   on public.plaene (congregation_id, bis);
 
--- Ein Eintrag je Woche: die Gruppe, `datum` ist der Montag.
+-- Ein Eintrag je Woche oder je Monat, nach dem Takt des Plans: die Gruppe,
+-- `datum` ist der Montag bzw. der Monatserste.
 create table if not exists public.plan_eintraege (
   id              text primary key check (id <> ''),
   congregation_id uuid not null references public.congregations (id) on delete cascade,

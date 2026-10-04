@@ -3,14 +3,13 @@ import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { DatePicker } from '../components/DatePicker'
 import { useBackDismiss } from '../components/useBackDismiss'
-import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
 import { useZweiTipp } from '../components/useZweiTipp'
-import { gruppenName, zeitraumText } from '../components/weitere-plaene-anzeige'
-import { fromIso, montagVon } from '../data/meeting-dates'
-import { eintraegeVon, neuerPlan, planStand, planWochen, type PlanStand } from '../data/weitere-plaene'
+import { gruppenName, spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
+import { fromIso } from '../data/meeting-dates'
+import { eintraegeVon, neuerPlan, planSpannen, planStand, spanneVon, taktVon, type PlanStand } from '../data/weitere-plaene'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import type { WeitererPlan } from '../data/types'
+import type { PlanTakt, WeitererPlan } from '../data/types'
 import '../components/weitere-plaene.css'
 
 /** Die Abschnitte der Liste, in ihrer Reihenfolge (wie auf der Canvas). */
@@ -93,12 +92,13 @@ function PlanKarte({ plan, stand, onOeffnen }: { plan: WeitererPlan; stand: Plan
   )
 }
 
-/** Ein geöffneter Plan: Name, Zeitraum, veröffentlichen — darunter seine Wochen. */
+/** Ein geöffneter Plan: Name, Zeitraum, Takt, veröffentlichen — darunter seine Wochen oder Monate. */
 function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: () => void }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const aendern = (patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf'>>): void =>
+  const aendern = (patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf' | 'takt'>>): void =>
     dispatch({ type: 'wpPlanAendern', id: plan.id, patch })
+  const monatlich = taktVon(plan) === 'monat'
   const loeschen = useZweiTipp(() => {
     dispatch({ type: 'wpPlanLoeschen', id: plan.id })
     onZurueck()
@@ -115,7 +115,7 @@ function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: ()
           <h2 className="panel-label">{t.saal}</h2>
           {plan.entwurf && <span className="wp-marke">{t.wpEntwurf}</span>}
         </div>
-        <p className="panel-hint">{t.wpSaalText}</p>
+        <p className="panel-hint">{monatlich ? t.wpSaalTextMonat : t.wpSaalText}</p>
         <label className="wp-feld">
           <span className="field-label">{t.nameLbl}</span>
           <input
@@ -154,6 +154,21 @@ function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: ()
             />
           </div>
         </div>
+        {/*
+          Der Takt (4.10.2026): je Woche oder je Monat eine Gruppe. Ein Wechsel
+          nimmt die Einteilung ins neue Raster mit (`taktWechseln`).
+        */}
+        <label className="wp-feld">
+          <span className="field-label">{t.wpTakt}</span>
+          <select
+            className="fs-select"
+            value={taktVon(plan)}
+            onChange={(e) => aendern({ takt: e.target.value as PlanTakt })}
+          >
+            <option value="woche">{t.fsFreqW}</option>
+            <option value="monat">{t.wpJedenMonat}</option>
+          </select>
+        </label>
         <p className="panel-hint">{plan.entwurf ? `${t.wpEntwurfHint} ${t.wpSichtSaal}` : t.wpSichtSaal}</p>
         <button
           type="button"
@@ -164,7 +179,7 @@ function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: ()
         </button>
       </div>
 
-      <SaalWochen plan={plan} />
+      <SaalSpannen plan={plan} />
 
       <button type="button" className="btn-outline wp-loeschen" onClick={loeschen.onClick} onBlur={loeschen.onBlur}>
         {loeschen.armed ? t.loeschenSicher : t.wpLoeschen}
@@ -173,14 +188,15 @@ function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: ()
   )
 }
 
-/** Reihum verteilen, darunter die Wochen mit ihrer Gruppe. */
-function SaalWochen({ plan }: { plan: WeitererPlan }) {
+/** Reihum verteilen, darunter die Wochen oder Monate mit ihrer Gruppe. */
+function SaalSpannen({ plan }: { plan: WeitererPlan }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const tag = useKalendertag()
   const [ab, setAb] = useState(state.groups[0]?.id ?? '')
   const eintraege = eintraegeVon(state.planEintraege, plan.id)
-  const dieseWoche = montagVon(tag)
+  const monatlich = taktVon(plan) === 'monat'
+  const jetzt = spanneVon(taktVon(plan), tag)
 
   return (
     <>
@@ -206,16 +222,16 @@ function SaalWochen({ plan }: { plan: WeitererPlan }) {
               {t.gbVerteilen}
             </button>
           </div>
-          <p className="panel-hint">{t.wpVerteilenHint}</p>
+          <p className="panel-hint">{monatlich ? t.wpVerteilenHintMonat : t.wpVerteilenHint}</p>
         </div>
       )}
       <div className="panel" data-farbe="petrol">
-        {planWochen(plan).map((woche) => {
-          const eintrag = eintraege.find((e) => e.datum === woche)
-          const vorbei = woche < dieseWoche
+        {planSpannen(plan).map((spanne) => {
+          const eintrag = eintraege.find((e) => e.datum === spanne)
+          const vorbei = spanne < jetzt
           return (
-            <div key={woche} className={vorbei ? 'wp-zeile is-vorbei' : 'wp-zeile'}>
-              <span className="wp-zeile-wann">{besuchsWocheText(woche, state.lang)}</span>
+            <div key={spanne} className={vorbei ? 'wp-zeile is-vorbei' : 'wp-zeile'}>
+              <span className="wp-zeile-wann">{spannenText(plan, spanne, state.lang)}</span>
               {vorbei ? (
                 <span className="wp-zeile-wer">{gruppenName(eintrag?.grp ?? null, state.groups, tu) || t.offenDash}</span>
               ) : (
@@ -224,7 +240,7 @@ function SaalWochen({ plan }: { plan: WeitererPlan }) {
                   value={eintrag?.grp ?? ''}
                   aria-label={t.gbGruppe}
                   onChange={(e) =>
-                    dispatch({ type: 'wpEintragSetzen', planId: plan.id, datum: woche, grp: e.target.value || null })
+                    dispatch({ type: 'wpEintragSetzen', planId: plan.id, datum: spanne, grp: e.target.value || null })
                   }
                 >
                   <option value="">{t.offenDash}</option>

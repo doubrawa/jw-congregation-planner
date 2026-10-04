@@ -22,7 +22,7 @@ const FORMATE = {
   tagMonat: { day: 'numeric', month: 'long' },
   /** „1. Dezember 2026" — als Zeitraum „1. Dezember 2026 – 28. Februar 2027" */
   tagMonatJahr: { day: 'numeric', month: 'long', year: 'numeric' },
-  /** „Oktober 2026" */
+  /** „Oktober 2026" — auch die Monate eines weiteren Plans im Monatstakt */
   monatJahr: { month: 'long', year: 'numeric' },
   /** „Okt." — für die Monate zum Auslassen bei den Gruppenbesuchen */
   monatKurz: { month: 'short' },

@@ -130,17 +130,23 @@ export const DE = {
     wpKeine: 'Zurzeit gibt es keine weiteren Pläne.',
     wpOhneName: 'Ohne Namen',
     wpSaalText: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Woche eine.',
+    // Der Takt (4.10.2026): je Woche oder je Monat eine Gruppe. „Jede Woche"
+    // steht schon bei den Treffpunkten (`fsFreqW`) und wird hier mitbenutzt.
+    wpSaalTextMonat: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Monat eine.',
+    wpTakt: 'Die Gruppen wechseln', wpJedenMonat: 'Jeden Monat',
     wpNamePhSaal: 'z. B. Winterdienst',
     wpEntwurf: 'Entwurf', wpEntwurfHint: 'Einen Entwurf sehen nur Admins.',
     wpVeroeffentlichen: 'VERÖFFENTLICHEN', wpZurueckziehen: 'Zurück zum Entwurf',
     wpSichtSaal: 'Veröffentlicht sieht ihn die ganze Versammlung.',
     wpAbGruppe: 'Beginnen mit',
     wpVerteilenHint: 'Die Wochen ab dieser bis zum Ende, die Gruppen der Reihe nach. Vergangene Wochen bleiben, wie sie sind.',
+    wpVerteilenHintMonat: 'Die Monate ab diesem bis zum Ende, die Gruppen der Reihe nach. Vergangene Monate bleiben, wie sie sind.',
     wpLoeschen: 'Plan löschen',
     wpDeineGruppe: 'Deine Gruppe ist dran:',
     wpNurInfo: 'Nur zur Info – nichts zu bestätigen.',
     toastWpVeroeffentlicht: 'Plan veröffentlicht', toastWpEntwurf: 'Plan zurück im Entwurf',
     toastWpGeloescht: 'Plan gelöscht', toastWpVerteilt: 'Verteilte Wochen: {n}',
+    toastWpVerteiltMonate: 'Verteilte Monate: {n}',
     hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: {datum}', drucken: 'Drucken',
     // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',

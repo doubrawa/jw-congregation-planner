@@ -316,7 +316,9 @@ describe('loadCongregationData: die Pläne aus T120', () => {
       gruppenbesuche: [{ data: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', person_id: 'p1' }], error: null }],
       oz_termine: [{ data: [{ id: 't1', wd: 3, von: '10:00:00', bis: '12:30:00', ort: 'Marktplatz', plaetze: 2 }], error: null }],
       oz_eintraege: [{ data: [{ id: 'e1', termin_id: 't1', datum: '2026-09-09', person_id: 'p1', selbst: true }], error: null }],
-      plaene: [{ data: [{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false }], error: null }],
+      plaene: [
+        { data: [{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false, takt: 'monat' }], error: null },
+      ],
       plan_eintraege: [
         {
           data: [
@@ -346,7 +348,8 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(d.gruppenbesuche).toEqual([{ id: 'b1', woche: '2026-10-05', grp: 'g1', pid: 'p1' }])
     expect(d.ozTermine).toEqual([{ id: 't1', wd: 3, von: '10:00', bis: '12:30', ort: 'Marktplatz', plaetze: 2 }])
     expect(d.ozEintraege).toEqual([{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p1', selbst: true }])
-    expect(d.plaene).toEqual([{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false }])
+    // Der Takt kommt mit (4.10.2026) — sonst wechselte ein Monatsplan nach dem Laden wieder wöchentlich.
+    expect(d.plaene).toEqual([{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false, takt: 'monat' }])
     // Der Eintrag eines nicht geladenen Plans fällt heraus — er gehörte zu nichts, was die App zeigt.
     expect(d.planEintraege).toEqual([{ id: 'pe1', planId: 'pl1', datum: '2026-09-07', grp: 'g1' }])
   })

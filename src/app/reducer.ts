@@ -6,7 +6,7 @@
 
 import { syncAuxSlots } from '../data/aux-class'
 import { buildAbsences } from '../data/absence'
-import { eintraegeImZeitraum, eintragSetzen, gruppenVerteilen, planNachDatum } from '../data/weitere-plaene'
+import { eintraegeImZeitraum, eintragSetzen, gruppenVerteilen, planNachDatum, taktVon, taktWechseln } from '../data/weitere-plaene'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
@@ -1315,13 +1315,25 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (plan.bis < plan.von) return state
       const veroeffentlicht = alt.entwurf && !plan.entwurf
       const zurueck = !alt.entwurf && plan.entwurf
+      // Ein anderer Takt verteilt ab jetzt neu, in derselben Reihenfolge
+      // (`taktWechseln`); ohne das gingen die Einträge unten alle, weil kein
+      // Montag ein Monat ist.
+      const wechsel =
+        taktVon(plan) === taktVon(alt)
+          ? null
+          : taktWechseln({ plan, eintraege: state.planEintraege, groups: state.groups, heute: new Date(), neueId: neueEintragId })
+      const meldung = veroeffentlicht
+        ? toastKey(state, 'toastWpVeroeffentlicht')
+        : zurueck
+          ? toastKey(state, 'toastWpEntwurf')
+          : wechsel?.verteilt
+            ? toastKey(state, taktVon(plan) === 'monat' ? 'toastWpVerteiltMonate' : 'toastWpVerteilt', { n: wechsel.verteilt })
+            : null
       return {
         ...state,
         plaene: planNachDatum(state.plaene.map((p) => (p === alt ? plan : p))),
-        planEintraege: eintraegeImZeitraum(state.planEintraege, plan),
-        ...(veroeffentlicht || zurueck
-          ? { toast: toastKey(state, veroeffentlicht ? 'toastWpVeroeffentlicht' : 'toastWpEntwurf') }
-          : {}),
+        planEintraege: eintraegeImZeitraum(wechsel?.eintraege ?? state.planEintraege, plan),
+        ...(meldung ? { toast: meldung } : {}),
       }
     }
     case 'wpPlanLoeschen':
@@ -1343,7 +1355,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         heute: new Date(),
         neueId: neueEintragId,
       })
-      return { ...state, planEintraege: eintraege, toast: toastKey(state, 'toastWpVerteilt', { n: verteilt }) }
+      const meldung = taktVon(plan) === 'monat' ? 'toastWpVerteiltMonate' : 'toastWpVerteilt'
+      return { ...state, planEintraege: eintraege, toast: toastKey(state, meldung, { n: verteilt }) }
     }
     case 'wpEintragSetzen': {
       if (!state.plaene.some((p) => p.id === action.planId)) return state

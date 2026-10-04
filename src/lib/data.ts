@@ -18,6 +18,7 @@ import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZusage } from '../data/plan-versand'
 import { normalizePriv, pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
+import { taktVon } from '../data/weitere-plaene'
 import type {
   Absence,
   Congregation,
@@ -32,6 +33,7 @@ import type {
   OzTermin,
   WeitererPlan,
   PlanEintrag,
+  PlanTakt,
   Member,
   Notification,
   NotificationType,
@@ -174,10 +176,12 @@ interface PlanRow {
   von: string
   bis: string
   entwurf: boolean
+  /** `woche` oder `monat` — die Datenbank lässt nichts anderes zu (`plaene.takt`). */
+  takt: string
 }
 
 function planFromRow(r: PlanRow): WeitererPlan {
-  return { id: r.id, name: r.name, von: r.von, bis: r.bis, entwurf: r.entwurf }
+  return { id: r.id, name: r.name, von: r.von, bis: r.bis, entwurf: r.entwurf, takt: taktVon({ takt: r.takt as PlanTakt }) }
 }
 
 function planToRow(p: WeitererPlan, congregationId: string) {
@@ -188,6 +192,7 @@ function planToRow(p: WeitererPlan, congregationId: string) {
     von: p.von,
     bis: p.bis,
     entwurf: p.entwurf,
+    takt: taktVon(p),
   }
 }
 
@@ -722,7 +727,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Rückblick da. Ein Mitglied bekommt nur, was es sehen darf (RLS).
     supabase
       .from('plaene')
-      .select('id, name, von, bis, entwurf')
+      .select('id, name, von, bis, entwurf, takt')
       .eq('congregation_id', congregationId)
       .gte('bis', ozLadeAb())
       .order('von'),
