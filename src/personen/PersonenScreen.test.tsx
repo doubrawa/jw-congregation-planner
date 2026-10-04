@@ -20,10 +20,10 @@ import { privSetzen } from '../data/helpers'
  * `person-filter.ts` prüft die Filterregeln für sich; hier geht es um das, was
  * der Screen selbst zusagt und was nirgends sonst geprüft ist:
  *
- * - Drei **Warnungen**, die stille Fehler sichtbar machen: doppelte
- *   Anzeigenamen (die App ordnet Aufgaben dann dem Falschen zu), doppelt
- *   vergebene feste Rollen (die Auto-Zuteilung greift sich irgendeine, F7) und
- *   Personen ohne Predigtdienstgruppe (sie sehen keine Gruppentreffpunkte).
+ * - Zwei **Warnungen**, die stille Fehler sichtbar machen: doppelt vergebene
+ *   feste Rollen (die Auto-Zuteilung greift sich irgendeine, F7) und Personen
+ *   ohne Predigtdienstgruppe (sie sehen keine Gruppentreffpunkte). Die dritte,
+ *   vor doppelten Anzeigenamen, ist mit T110 entfallen (siehe unten).
  * - Die **Sammel-Einladung**: sie erzeugt Codes für alle, die noch keinen
  *   haben — und zwar **nur** für die. Zweimal getippt dürfte sie nicht jedem
  *   einen zweiten Code geben.

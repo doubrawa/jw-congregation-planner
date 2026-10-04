@@ -884,8 +884,8 @@ export interface Zuteilung {
  * **Externe Redner sind vom Namens-Rückfall ausgenommen** (bei T29 aufgefallen).
  * Ein Gastredner steht als Freitext im Slot und hat naturgemäß keine `pid` —
  * heißt er zufällig wie ein Bruder der eigenen Versammlung, zählte dessen
- * Auslastung mit und er galt als „heute schon zugeteilt". Die Warnung vor
- * doppelten Anzeigenamen greift hier nicht: der Gast steht in keiner
+ * Auslastung mit und er galt als „heute schon zugeteilt". Dass Namen je
+ * Versammlung eindeutig sind (T110), hilft hier nicht: der Gast steht in keiner
  * Personenliste. Für ihn ist der Name kein schwächerer Anhalt, sondern gar
  * keiner — er meint jemanden, den diese Versammlung nicht kennt.
  */

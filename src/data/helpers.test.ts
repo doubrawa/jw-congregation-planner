@@ -367,8 +367,8 @@ describe('gehoertZu — wem eine Zuteilung gehört', () => {
   })
 
   it('ohne Id (Altdaten) zählt der Anzeigename — für beide Gleichnamigen', () => {
-    // Diese Zweideutigkeit kann keine Auflösung beheben; deshalb warnt die App
-    // vor doppelten Anzeigenamen (duplicateDisplayNames).
+    // Diese Zweideutigkeit kann keine Auflösung beheben; deshalb sind Vor- und
+    // Nachname seit T110 je Versammlung eindeutig (`persons_name_eindeutig`).
     const alt = { name: 'Anton Muster' }
     expect(gehoertZu(alt, anton)).toBe(true)
     expect(gehoertZu(alt, zwilling)).toBe(true)

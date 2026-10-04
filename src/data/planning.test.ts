@@ -538,9 +538,11 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
 
   it('der gleichnamige Bruder ist nicht ich — sein Gesuch erreicht mich', () => {
     /*
-      Zwei Anzeigenamen dürfen gleich sein (die App warnt, verbietet es nicht).
-      Über den Namen verglichen galt die Absage des anderen als die eigene, und
-      das Gesuch verschwand — bei dem, der ihn am ehesten vertreten könnte.
+      Bis T110 durften zwei Namen gleich sein; seither verbietet es der Index
+      `persons_name_eindeutig`. Über den Namen verglichen galt die Absage des
+      anderen als die eigene, und das Gesuch verschwand — bei dem, der ihn am
+      ehesten vertreten könnte. Die Id entscheidet; der Name am Platz ist nur
+      eine Abschrift.
     */
     const weeks = buildDemoWeeks()
     const ich = qualified('ton')

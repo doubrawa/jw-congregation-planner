@@ -359,10 +359,10 @@
   padding: 11px 14px;
 }
 
-/* ---- Warnung: doppelte Anzeigenamen --------------------------------------
- * Teilen sich zwei Personen denselben Anzeigenamen, ordnet die App Aufgaben
- * dort, wo kein Slot eine Person-Id trägt (Hilfsdienste/externe/Altdaten),
- * falsch zu. Der Planer soll einen eindeutigen Anzeigenamen vergeben. Wein-
+/* ---- Warnungen über der Personenliste ------------------------------------
+ * Mehrfach vergebene feste Rollen und „Ohne Predigtdienstgruppe"
+ * (`PersonenScreen.tsx`). Die Klassen heißen nach der ersten Warnung an dieser
+ * Stelle, der vor doppelten Anzeigenamen; sie ist mit T110 entfallen. Wein-
  * Warnoptik wie die Konflikt-Banner im Planen (Badge/Zähler AA-geprüft). */
 .pers-dupes {
   margin-top: 14px;

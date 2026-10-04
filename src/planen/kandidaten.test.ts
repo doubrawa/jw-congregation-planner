@@ -106,10 +106,10 @@ describe('Gesprächspartner richtet sich nach dem Führer DESSELBEN Raums', () =
 
   it('der Führer wird über seine Id erkannt, nicht über seinen Namen', () => {
     /*
-      Zwei Gleichnamige verschiedenen Geschlechts — die App warnt davor, sie
-      verbietet es aber nicht, und `dn` macht es ausdrücklich möglich. Am Namen
-      allein entschied die **Reihenfolge der Personenliste**, wer als Führer
-      gilt: Steht die Schwester vorn, bekam der Bruder Schwestern als
+      Zwei Gleichnamige verschiedenen Geschlechts — bis T110 möglich, seither
+      verbietet es der Index `persons_name_eindeutig`. Am Namen allein
+      entschied die **Reihenfolge der Personenliste**, wer als Führer gilt:
+      Steht die Schwester vorn, bekam der Bruder Schwestern als
       Gesprächspartnerinnen vorgeschlagen.
 
       Der Platz trägt eine `pid`, sobald ihn jemand zugeteilt hat. `gehoertZu`

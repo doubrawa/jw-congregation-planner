@@ -139,9 +139,9 @@ describe('Ein Gastredner heißt zufällig wie ein Bruder von uns', () => {
     dessen Auslastung und galt für ihn als „heute schon zugeteilt". Die
     Auto-Zuteilung überging ihn daraufhin.
 
-    Die Warnung vor doppelten Anzeigenamen greift hier nicht: der Gast steht in
-    keiner Personenliste. Für ihn ist der Name kein schwächerer Anhalt, sondern
-    gar keiner.
+    Dass Namen je Versammlung eindeutig sind (T110), hilft hier nicht: der Gast
+    steht in keiner Personenliste. Für ihn ist der Name kein schwächerer
+    Anhalt, sondern gar keiner.
   */
   const gast = () => assignSlot([makeWeek()], REDNER, 'M. Hartmann', 'Gastredner · Vers. Nordheim')
 

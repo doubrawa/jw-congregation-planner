@@ -455,9 +455,9 @@ describe('Kleine Kreise und Ausnahmezustände', () => {
  * `ministryOpts` suchte die Person des Führer-Platzes mit
  * `persons.find((p) => displayName(p) === leadName)`. Bei zwei Gleichnamigen
  * entschied damit die Reihenfolge der Personenliste, wer als Führer gilt — und
- * die Partnerwahl richtete sich nach dem Geschlecht des Falschen. Zwei
- * Anzeigenamen dürfen gleich sein: Die App warnt den Planer davor, verbietet es
- * aber nicht, und `dn` ist genau dafür da.
+ * die Partnerwahl richtete sich nach dem Geschlecht des Falschen. Gleich heißen
+ * dürfen zwei Personen seit T110 nicht mehr (`persons_name_eindeutig`); die Id
+ * bleibt trotzdem der Maßstab, denn der Name am Platz ist nur eine Abschrift.
  *
  * `gehoertZu` ist die Stelle, an der „gehört dieser Platz dieser Person?"
  * entschieden wird; hier stand eine weitere Fassung derselben Frage.

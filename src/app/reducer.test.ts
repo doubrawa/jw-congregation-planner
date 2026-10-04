@@ -799,9 +799,9 @@ describe('assign (Zuteilen)', () => {
   })
 
   it('an einen Namensvetter umgeteilt: die Zusage verfällt trotzdem', () => {
-    // Zwei Brüder desselben Anzeigenamens, die Dubletten-Warnung übergangen.
-    // Am Namen gemessen sah das Umteilen nach nichts aus — der zweite stand
-    // mit der Zusage des ersten grün im Plan.
+    // Zwei Brüder desselben Namens — bis T110 möglich, seither verbietet es
+    // `persons_name_eindeutig`. Am Namen gemessen sah das Umteilen nach nichts
+    // aus — der zweite stand mit der Zusage des ersten grün im Plan.
     const weeks = buildDemoWeeks()
     const sel = firstPartSlot(weeks[0]!, 'mid')
     const platz = (weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!
