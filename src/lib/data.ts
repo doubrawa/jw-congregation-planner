@@ -114,15 +114,33 @@ interface OzTerminRow {
   bis: string
   ort: string
   plaetze: number
+  aus: string[] | null
 }
 
 function ozTerminFromRow(r: OzTerminRow): OzTermin {
   // `time` kommt als „10:00:00" — die App führt „10:00", wie bei den Regeln.
-  return { id: r.id, wd: r.wd, von: kurzeZeit(r.von, '00:00'), bis: kurzeZeit(r.bis, '00:00'), ort: r.ort, plaetze: r.plaetze }
+  return {
+    id: r.id,
+    wd: r.wd,
+    von: kurzeZeit(r.von, '00:00'),
+    bis: kurzeZeit(r.bis, '00:00'),
+    ort: r.ort,
+    plaetze: r.plaetze,
+    ...(r.aus?.length ? { aus: r.aus } : {}),
+  }
 }
 
 function ozTerminToRow(t: OzTermin, congregationId: string) {
-  return { id: t.id, congregation_id: congregationId, wd: t.wd, von: t.von, bis: t.bis, ort: t.ort, plaetze: t.plaetze }
+  return {
+    id: t.id,
+    congregation_id: congregationId,
+    wd: t.wd,
+    von: t.von,
+    bis: t.bis,
+    ort: t.ort,
+    plaetze: t.plaetze,
+    aus: t.aus ?? [],
+  }
 }
 
 /** Ein Eintrag: eine Person in einer Schicht. */
@@ -690,7 +708,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Vierteljahr zurück.
     supabase
       .from('oz_termine')
-      .select('id, wd, von, bis, ort, plaetze')
+      .select('id, wd, von, bis, ort, plaetze, aus')
       .eq('congregation_id', congregationId)
       .order('created_at'),
     supabase

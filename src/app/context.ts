@@ -347,6 +347,8 @@ export type AppAction =
   | { type: 'ozTerminAdd' }
   | { type: 'ozTerminUpdate'; id: string; patch: Partial<Omit<OzTermin, 'id'>> }
   | { type: 'ozTerminRemove'; id: string }
+  // Eine Schicht fällt aus (`aus: true`) oder doch nicht — ihre Einträge gehen mit.
+  | { type: 'ozSchichtAus'; terminId: string; datum: string; aus: boolean }
   // Sich selbst in eine Schicht eintragen — damit ist zugesagt.
   | { type: 'ozEintragen'; terminId: string; datum: string }
   // Der Planer teilt eine Person zu.

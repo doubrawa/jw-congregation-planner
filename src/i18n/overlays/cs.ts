@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Volná: {n}",
   "ozAbwesend": "{name} ten den chybí",
   "ozMehrWochen": "Další týdny",
+  "ozFaelltAus": "Odpadá",
+  "wiederherstellen": "Obnovit",
   "ozAnsichtHint": "Volná místa můžeš obsadit samostatně. Kdo se zapíše, tím už potvrdil.",
   "ozNichtFreigegeben": "Zapsat se mohou ti, kdo jsou určeni pro službu na veřejnosti. Promluv si o tom se staršími.",
   "ozEintragen": "+ ZAPSAT SE",

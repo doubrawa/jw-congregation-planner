@@ -333,6 +333,8 @@ export default {
   "ozFrei": "شاغر: {n}",
   "ozAbwesend": "{name}: غياب في ذلك اليوم",
   "ozMehrWochen": "أسابيع أخرى",
+  "ozFaelltAus": "ملغاة",
+  "wiederherstellen": "استعادة",
   "ozAnsichtHint": "يمكنك أن تشغل الأماكن الشاغرة بنفسك. من يسجِّل نفسه يكون قد أكَّد.",
   "ozNichtFreigegeben": "يمكن أن يسجِّل من عُيِّنوا للخدمة العلنية. تحدَّث مع الشيوخ في ذلك.",
   "ozEintragen": "+ سجِّلني",

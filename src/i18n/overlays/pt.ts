@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Livres: {n}",
   "ozAbwesend": "{name} está ausente nesse dia",
   "ozMehrWochen": "Mais semanas",
+  "ozFaelltAus": "Cancelado",
+  "wiederherstellen": "Restaurar",
   "ozAnsichtHint": "Você mesmo pode ocupar as vagas livres. Quem se inscreve já confirmou.",
   "ozNichtFreigegeben": "Podem se inscrever os designados para o testemunho público. Fale com os anciãos sobre isso.",
   "ozEintragen": "+ INSCREVER-ME",

@@ -27,7 +27,7 @@ export function FsBereichTabs() {
   if (bereiche.length < 2) return null
   const aktiv = aktiverFsBereich(state)
   return (
-    <div className="meeting-tabs plan-tabs">
+    <div className="meeting-tabs plan-tabs fs-bereich-tabs">
       {bereiche.map((bereich) => (
         <button
           key={bereich}

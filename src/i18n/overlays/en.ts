@@ -436,6 +436,8 @@ export default {
   "ozFrei": "Free: {n}",
   "ozAbwesend": "{name} is absent that day",
   "ozMehrWochen": "More weeks",
+  "ozFaelltAus": "Cancelled",
+  "wiederherstellen": "Restore",
   "ozAnsichtHint": "You can take free places yourself. Signing up means you have confirmed.",
   "ozNichtFreigegeben": "Those designated for public witnessing can sign up. Please speak to the elders about it.",
   "ozEintragen": "+ SIGN UP",

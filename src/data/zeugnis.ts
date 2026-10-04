@@ -54,6 +54,14 @@ export interface OzSchicht {
   eintraege: OzEintrag[]
   /** Freie Plätze: Plätze des Termins minus Einträge, nie unter null. */
   frei: number
+  /**
+   * Die Schicht **fällt aus** (`OzTermin.aus`). Sie bleibt in der Liste —
+   * Planen und Ansehen zeigen „Fällt aus", sonst fehlte die Woche einfach —,
+   * aber ohne Einträge und ohne freien Platz. So zählt sie in keiner Rechnung
+   * mit, die nach freien Plätzen oder Eingetragenen fragt: Banner, Karte auf
+   * Start, Konflikte, automatisches Besetzen, Eintragen und Zuteilen.
+   */
+  gestrichen: boolean
 }
 
 /** Der Tag eines Termins in der Woche dieses Montags (ISO). */
@@ -66,6 +74,14 @@ export function ozDatum(montag: string, wd: number): string {
 /** Sortierung der Schichten: Tag, dann Beginn, dann Ort. */
 function schichtSort(a: OzSchicht, b: OzSchicht): number {
   return a.datum.localeCompare(b.datum) || a.termin.von.localeCompare(b.termin.von) || a.termin.ort.localeCompare(b.termin.ort)
+}
+
+/** Die Schicht eines Termins an diesem Tag — gestrichen ohne Einträge und ohne Platz. */
+function schichtAm(termin: OzTermin, datum: string, eintraege: readonly OzEintrag[]): OzSchicht {
+  const montag = montagVon(datum)
+  if (termin.aus?.includes(datum)) return { termin, datum, montag, eintraege: [], frei: 0, gestrichen: true }
+  const drin = eintraege.filter((e) => e.terminId === termin.id && e.datum === datum)
+  return { termin, datum, montag, eintraege: drin, frei: Math.max(0, termin.plaetze - drin.length), gestrichen: false }
 }
 
 /**
@@ -83,11 +99,7 @@ export function ozSchichten(
   const out: OzSchicht[] = []
   for (let w = 0; w < wochen; w++) {
     const montag = montagNach(ab, w)
-    for (const termin of termine) {
-      const datum = ozDatum(montag, termin.wd)
-      const drin = eintraege.filter((e) => e.terminId === termin.id && e.datum === datum)
-      out.push({ termin, datum, montag, eintraege: drin, frei: Math.max(0, termin.plaetze - drin.length) })
-    }
+    for (const termin of termine) out.push(schichtAm(termin, ozDatum(montag, termin.wd), eintraege))
   }
   return out.sort(schichtSort)
 }
@@ -109,8 +121,7 @@ export function ozSchicht(
 ): OzSchicht | null {
   const termin = termine.find((t) => t.id === terminId)
   if (!termin || fromIso(datum).getDay() !== termin.wd) return null
-  const drin = eintraege.filter((e) => e.terminId === terminId && e.datum === datum)
-  return { termin, datum, montag: montagVon(datum), eintraege: drin, frei: Math.max(0, termin.plaetze - drin.length) }
+  return schichtAm(termin, datum, eintraege)
 }
 
 /** Ist die Schicht vorbei (der Tag ist um)? */
@@ -393,7 +404,10 @@ export function deriveMyOzTasks(
   for (const eintrag of eintraege) {
     if (eintrag.pid !== personId) continue
     const termin = termine.find((t) => t.id === eintrag.terminId)
-    if (!termin) continue
+    // Eine gestrichene Schicht ist keine Aufgabe mehr. Ihre Einträge räumt die
+    // Datenbank ab (`oz_ausfall_raeumen`); bis zum nächsten Laden steht hier
+    // womöglich noch einer, den der Planer nicht kannte.
+    if (!termin || termin.aus?.includes(eintrag.datum)) continue
     tasks.push({
       id: ozTaskKey(eintrag),
       title: '',

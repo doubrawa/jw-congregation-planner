@@ -308,3 +308,59 @@ describe('Entzug: wer einen zugesagten Eintrag verliert', () => {
     expect(ozEntzogeneZusagen([MITTWOCH], [selbst], [], [], conf, undefined, HEUTE)).toEqual([])
   })
 })
+
+/**
+ * **Eine Schicht fällt aus** (4.10.2026): „Es kann ja sein, dass mal eine
+ * Woche nichts stattfindet." Der gestrichene Tag steht am Termin
+ * (`OzTermin.aus`); die Schicht bleibt in der Liste, damit Planen und Ansehen
+ * „Fällt aus" zeigen können — aber ohne Einträge und ohne freien Platz.
+ */
+describe('Eine gestrichene Schicht', () => {
+  const GESTRICHEN: OzTermin = { ...MITTWOCH, aus: ['2026-09-16'] }
+  // Ein Eintrag am gestrichenen Tag — die Datenbank räumt ihn ab, bis zum
+  // nächsten Laden kann er hier aber noch stehen.
+  const uebrig = eintrag('t1', '2026-09-16', 'p-a', true)
+
+  it('bleibt in der Liste, gestrichen, ohne Einträge und ohne Platz — die Wochen davor und danach nicht', () => {
+    const schichten = ozSchichten([GESTRICHEN], [uebrig, eintrag('t1', '2026-09-09', 'p-b')], AB, 3)
+    expect(schichten.map((s) => `${s.datum} ${s.gestrichen ? 'aus' : `frei ${s.frei}`} ${s.eintraege.length}`)).toEqual([
+      '2026-09-09 frei 1 1',
+      '2026-09-16 aus 0',
+      '2026-09-23 frei 2 0',
+    ])
+    expect(ozSchicht([GESTRICHEN], [uebrig], 't1', '2026-09-16')).toMatchObject({ gestrichen: true, frei: 0, eintraege: [] })
+  })
+
+  it('niemand trägt sich ein, keine Zahl zählt sie: freie Plätze, Konflikte, Karte auf Start', () => {
+    const urlaub: Absence = { id: 'u', personId: 'p-a', userId: null, from: '2026-09-16', to: '2026-09-16', reason: '' }
+    const schichten = ozSchichten([GESTRICHEN], [uebrig], AB, 2)
+    expect(ozKannEintragen(BERT, schichten[1]!, HEUTE)).toBe(false)
+    expect(ozFreieSchichten(schichten, AB, 2, HEUTE).map((s) => s.datum)).toEqual(['2026-09-09'])
+    // Anna wäre am 16. abwesend — aber an dem Tag findet nichts statt.
+    expect(ozKonflikte(schichten, [ANNA], [urlaub], HEUTE)).toEqual([])
+    const stand = ozStand({
+      termine: [GESTRICHEN],
+      eintraege: [uebrig],
+      persons: [ANNA],
+      absences: [urlaub],
+      confirmations: {},
+      sentLog: {},
+      sendenMoeglich: true,
+      heute: HEUTE,
+    })
+    // Vier Wochen zu zwei Plätzen, eine davon fällt aus.
+    expect(stand).toMatchObject({ konflikte: 0, frei: 6 })
+  })
+
+  it('automatisch besetzt wird sie nicht', () => {
+    let n = 0
+    const schichten = ozSchichten([GESTRICHEN], [], AB, 2)
+    const neu = ozAutoAssign({ schichten, persons: [ANNA, BERT, CARL], absences: [], neueId: () => `n${++n}`, heute: HEUTE })
+    expect(neu.map((e) => e.datum)).toEqual(['2026-09-09', '2026-09-09'])
+  })
+
+  it('ein übrig gebliebener Eintrag ist keine Aufgabe mehr', () => {
+    const anderer = eintrag('t1', '2026-09-09', 'p-a', true)
+    expect(deriveMyOzTasks([GESTRICHEN], [uebrig, anderer], 'p-a', {}).map((t) => t.id)).toEqual([ozTaskKey(anderer)])
+  })
+})

@@ -98,6 +98,9 @@ export const DE = {
     ozFrei: 'Frei: {n}',
     ozAbwesend: '{name} ist an diesem Tag abwesend',
     ozMehrWochen: 'Weitere Wochen',
+    // Eine gestrichene Schicht (`SchichtKopf`) und beim Planen der Knopf, der
+    // sie zurückholt.
+    ozFaelltAus: 'Fällt aus', wiederherstellen: 'Wiederherstellen',
     ozAnsichtHint: 'Freie Plätze kannst du selbst übernehmen. Wer sich einträgt, hat damit zugesagt.',
     ozNichtFreigegeben: 'Eintragen kann sich, wer für das öffentliche Zeugnisgeben vorgesehen ist. Sprich dafür die Ältesten an.',
     ozEintragen: '+ EINTRAGEN',

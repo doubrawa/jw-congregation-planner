@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Wolne: {n}",
   "ozAbwesend": "{name}: nieobecność tego dnia",
   "ozMehrWochen": "Kolejne tygodnie",
+  "ozFaelltAus": "Odwołane",
+  "wiederherstellen": "Przywróć",
   "ozAnsichtHint": "Wolne miejsca możesz zająć samodzielnie. Kto się zapisze, ten już potwierdził.",
   "ozNichtFreigegeben": "Zapisać się mogą ci, którzy są wyznaczeni do głoszenia publicznego. Porozmawiaj o tym ze starszymi.",
   "ozEintragen": "+ ZAPISZ MNIE",

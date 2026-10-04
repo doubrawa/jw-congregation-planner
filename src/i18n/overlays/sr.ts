@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Slobodno: {n}",
   "ozAbwesend": "{name}: odsustvo tog dana",
   "ozMehrWochen": "Naredne sedmice",
+  "ozFaelltAus": "Otkazano",
+  "wiederherstellen": "Vrati",
   "ozAnsichtHint": "Slobodna mesta možeš direktno preuzeti. Ko se upiše, time je već potvrdio.",
   "ozNichtFreigegeben": "Upisati se mogu oni koji su određeni za svedočenje na javnim mestima. Razgovaraj o tome sa starešinama.",
   "ozEintragen": "+ UPIŠI ME",

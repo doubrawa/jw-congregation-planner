@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Wazi: {n}",
   "ozAbwesend": "{name} hayupo siku hiyo",
   "ozMehrWochen": "Majuma zaidi",
+  "ozFaelltAus": "Imeghairishwa",
+  "wiederherstellen": "Rejesha",
   "ozAnsichtHint": "Unaweza kuchukua nafasi zilizo wazi mwenyewe. Anayejiandikisha tayari amethibitisha.",
   "ozNichtFreigegeben": "Wanaoweza kujiandikisha ni wale waliowekwa kwa ajili ya kuhubiri hadharani. Zungumza na wazee kuhusu hilo.",
   "ozEintragen": "+ NIANDIKISHE",

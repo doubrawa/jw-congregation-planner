@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Kosong: {n}",
   "ozAbwesend": "{name} absen hari itu",
   "ozMehrWochen": "Minggu lainnya",
+  "ozFaelltAus": "Dibatalkan",
+  "wiederherstellen": "Pulihkan",
   "ozAnsichtHint": "Tempat kosong bisa kamu ambil sendiri. Yang mendaftar sudah mengonfirmasi.",
   "ozNichtFreigegeben": "Yang bisa mendaftar adalah mereka yang ditunjuk untuk kesaksian di tempat umum. Bicarakan dengan para penatua.",
   "ozEintragen": "+ DAFTAR",

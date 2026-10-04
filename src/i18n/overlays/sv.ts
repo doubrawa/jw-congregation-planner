@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Lediga: {n}",
   "ozAbwesend": "{name} är frånvarande den dagen",
   "ozMehrWochen": "Fler veckor",
+  "ozFaelltAus": "Inställt",
+  "wiederherstellen": "Återställ",
   "ozAnsichtHint": "Lediga platser kan du ta själv. Den som skriver upp sig har därmed bekräftat.",
   "ozNichtFreigegeben": "Skriva upp sig kan de som är utsedda till offentligt vittnande. Tala med de äldste om det.",
   "ozEintragen": "+ SKRIV UPP MIG",

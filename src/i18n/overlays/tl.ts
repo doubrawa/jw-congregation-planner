@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Bakante: {n}",
   "ozAbwesend": "Si {name} ay wala sa araw na iyon",
   "ozMehrWochen": "Iba pang linggo",
+  "ozFaelltAus": "Kanselado",
+  "wiederherstellen": "Ibalik",
   "ozAnsichtHint": "Puwede mong kunin ang bakanteng puwesto. Ang nagpalista ay nakapagkumpirma na.",
   "ozNichtFreigegeben": "Puwedeng magpalista ang mga inatasan sa pampublikong pagpapatotoo. Kausapin ang mga elder tungkol dito.",
   "ozEintragen": "+ IPALISTA AKO",

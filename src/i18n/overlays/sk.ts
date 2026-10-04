@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Voľné: {n}",
   "ozAbwesend": "{name} v ten deň chýba",
   "ozMehrWochen": "Ďalšie týždne",
+  "ozFaelltAus": "Odpadá",
+  "wiederherstellen": "Obnoviť",
   "ozAnsichtHint": "Voľné miesta môžeš obsadiť samostatne. Kto sa zapíše, tým už potvrdil.",
   "ozNichtFreigegeben": "Zapísať sa môžu tí, ktorí sú určení na službu na verejných miestach. Porozprávaj sa o tom so staršími.",
   "ozEintragen": "+ ZAPÍSAŤ SA",

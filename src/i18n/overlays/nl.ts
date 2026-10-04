@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Vrij: {n}",
   "ozAbwesend": "{name} is die dag afwezig",
   "ozMehrWochen": "Meer weken",
+  "ozFaelltAus": "Vervalt",
+  "wiederherstellen": "Herstellen",
   "ozAnsichtHint": "Vrije plaatsen kun je zelf nemen. Wie zich inschrijft, heeft daarmee bevestigd.",
   "ozNichtFreigegeben": "Inschrijven kan wie voor openbaar getuigenis is aangewezen. Spreek daarvoor de ouderlingen aan.",
   "ozEintragen": "+ INSCHRIJVEN",

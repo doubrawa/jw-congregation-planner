@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Libere: {n}",
   "ozAbwesend": "{name} lipsește în acea zi",
   "ozMehrWochen": "Alte săptămâni",
+  "ozFaelltAus": "Anulat",
+  "wiederherstellen": "Restabilește",
   "ozAnsichtHint": "Poți ocupa singur locurile libere. Cine se înscrie a confirmat deja.",
   "ozNichtFreigegeben": "Se pot înscrie cei desemnați pentru mărturia publică. Vorbește cu bătrânii despre aceasta.",
   "ozEintragen": "+ ÎNSCRIE-MĂ",

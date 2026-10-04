@@ -45,6 +45,7 @@ import {
   saveInvite,
   saveInvitePlanner,
   saveMemberRow,
+  saveOzTermine,
   savePerson,
   savePersonGroup,
   savePushSubscription,
@@ -119,6 +120,21 @@ describe('Upsert-Schreiber (onConflict)', () => {
         skip_cong: false,
         aus: [],
       },
+    ])
+  })
+
+  it('saveOzTermine → eine Zeile je Termin, die gestrichenen Tage immer dabei', async () => {
+    // Auch leer: Holt der Planer den letzten gestrichenen Tag zurück, muss die
+    // leere Liste hinaus — sonst bliebe er in der Datenbank gestrichen.
+    saveOzTermine('c1', [
+      { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Markt', plaetze: 2, aus: ['2026-09-16'] },
+      { id: 't2', wd: 6, von: '09:00', bis: '11:00', ort: '', plaetze: 2 },
+    ])
+    await geschrieben()
+    expect(chain.from).toHaveBeenCalledWith('oz_termine')
+    expect(chain.upsert).toHaveBeenCalledWith([
+      { id: 't1', congregation_id: 'c1', wd: 3, von: '10:00', bis: '12:00', ort: 'Markt', plaetze: 2, aus: ['2026-09-16'] },
+      { id: 't2', congregation_id: 'c1', wd: 6, von: '09:00', bis: '11:00', ort: '', plaetze: 2, aus: [] },
     ])
   })
 

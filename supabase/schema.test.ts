@@ -187,6 +187,24 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(richtlinien(schema).get('oz_eintraege_selbst_raus') ?? '').toContain('person_id = public.my_person_id()')
   })
 
+  it('eine gestrichene Schicht: kein Eintrag mehr hinein, und was drin war, räumt die Datenbank (4.10.2026)', () => {
+    expect(tabelle('oz_termine')).toMatch(/^\s*aus\s+date\[\] not null default '\{\}'/m)
+    // Eine bestehende Datenbank bekommt die Spalte beim nächsten Einspielen.
+    expect(normiert(schema)).toContain("alter table public.oz_termine add column if not exists aus date[] not null default '{}';")
+    // Wer sich nach dem Streichen eintragen will, prallt ab — unter derselben
+    // Sperre auf dem Termin wie beim letzten freien Platz.
+    const pruefen = funktionsRuempfe(schema).get('oz_platz_pruefen') ?? ''
+    expect(pruefen).toContain('for update')
+    expect(pruefen).toContain("if new.datum = any (termin.aus) then raise exception 'oz_faellt_aus'")
+    // Wer sich vorher eingetragen hatte, ohne dass die App des Planers es
+    // wusste, geht mit dem Streichen.
+    const raeumen = funktionsRuempfe(schema).get('oz_ausfall_raeumen') ?? ''
+    expect(raeumen).toContain('delete from public.oz_eintraege where termin_id = new.id and datum = any (new.aus);')
+    expect(normiert(schema)).toContain(
+      'create trigger oz_termine_ausfall after update of aus on public.oz_termine for each row when (new.aus is distinct from old.aus) execute function public.oz_ausfall_raeumen();',
+    )
+  })
+
   it('eine Verhinderungs-Meldung geht nur an Planer (T89)', () => {
     // Seit dem 24.9.2026 legt `notify_planners` die Zeilen an: Ein Verkündiger
     // sieht in `members` nur sich selbst und kann die Planer nicht adressieren.
@@ -309,8 +327,11 @@ describe('kein Altbestand mehr im Schema', () => {
       expect(angelegt, m[1]).toBeGreaterThan(-1)
       expect(angelegt, m[1]).toBeLessThan(m.index)
     }
-    // Gegenprobe: Es gibt solche Zeilen überhaupt — die drei der Redner und die der Familienpläne.
-    expect(loeschen.map((m) => m[1]).sort()).toEqual(['assignment_log', 'confirmations', 'notifications', 'plaene'])
+    // Gegenprobe: Es gibt solche Zeilen überhaupt — die drei der Redner, die der
+    // Familienpläne und der Trigger, der die Einträge einer gestrichenen
+    // Schicht räumt (`oz_ausfall_raeumen`). Der läuft zwar erst beim Ändern
+    // eines Termins, steht aber ebenso hinter seiner Tabelle.
+    expect(loeschen.map((m) => m[1]).sort()).toEqual(['assignment_log', 'confirmations', 'notifications', 'oz_eintraege', 'plaene'])
   })
 })
 

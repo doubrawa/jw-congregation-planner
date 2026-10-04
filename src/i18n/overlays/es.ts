@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Libres: {n}",
   "ozAbwesend": "{name} está ausente ese día",
   "ozMehrWochen": "Más semanas",
+  "ozFaelltAus": "Cancelado",
+  "wiederherstellen": "Restaurar",
   "ozAnsichtHint": "Puedes ocupar tú mismo las plazas libres. Quien se apunta ya ha confirmado.",
   "ozNichtFreigegeben": "Pueden apuntarse quienes estén designados para la predicación pública. Habla con los ancianos al respecto.",
   "ozEintragen": "+ APUNTARME",

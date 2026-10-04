@@ -154,6 +154,30 @@ describe('Öffentliches Zeugnisgeben', () => {
     expect(container.querySelectorAll('.oz-person')).toHaveLength(0)
   })
 
+  it('Planer: Schicht streichen (zweimal getippt) → „Fällt aus", der Eintrag ist fort; „Wiederherstellen" → wieder zwei freie Plätze', () => {
+    const { container } = zeige(PlanenScreen, {
+      screen: 'planen',
+      tab: 'fs',
+      fsBereich: 'zeugnis',
+      planner: true,
+      ozTermine: [MARKT],
+      ozEintraege: [{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p9', selbst: true }],
+    })
+    const x = () => zeile(container).querySelector('.oz-streichen') as HTMLButtonElement
+    fireEvent.click(x())
+    // Erst die Rückfrage — noch steht alles.
+    expect(zeile(container).querySelector('.oz-person')).not.toBeNull()
+    fireEvent.click(x())
+    expect(zeile(container).textContent).toContain(t.ozFaelltAus)
+    expect(zeile(container).querySelector('.oz-person')).toBeNull()
+    // Die übrigen Wochen stehen unverändert da.
+    expect(container.querySelectorAll('.oz-schicht.is-gestrichen')).toHaveLength(1)
+
+    klick(zeile(container), t.wiederherstellen)
+    expect(zeile(container).textContent).not.toContain(t.ozFaelltAus)
+    expect(zeile(container).querySelectorAll('select.oz-zuteilen')).toHaveLength(2)
+  })
+
   it('Planer: automatisch besetzen füllt die freien Plätze, „Leeren" (zweimal getippt) räumt nur Zugeteiltes', () => {
     const { container } = zeige(PlanenScreen, {
       screen: 'planen',

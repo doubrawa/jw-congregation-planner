@@ -584,6 +584,39 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
     expect(data.saveOzTermine).toHaveBeenCalledWith('c1', d.ozTermine, [])
   })
 
+  it('eine Schicht fällt aus: erst der Termin mit dem Tag, dann die Einträge — wer zugesagt hatte, erfährt es', () => {
+    // Die Reihenfolge trägt: Kommt der Termin zuerst an, räumt die Datenbank
+    // auch Einträge ab, die diese App nicht kennt (`oz_ausfall_raeumen`).
+    const gestrichen = { ...T1, aus: ['2026-09-09'] }
+    persist(
+      st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1', true)] }),
+      st({ ozTermine: [gestrichen], ozEintraege: [] }),
+      { type: 'ozSchichtAus', terminId: 't1', datum: '2026-09-09', aus: true },
+    )
+    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [gestrichen], [])
+    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
+    const termin = vi.mocked(data.saveOzTermine).mock.invocationCallOrder[0]
+    expect(termin).toBeDefined()
+    expect(vi.mocked(data.saveOzEintraege).mock.invocationCallOrder[0]).toBeGreaterThan(termin!)
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
+      expect.objectContaining({ key: KEY('e1'), pid: 'p1', datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
+    ])
+  })
+
+  it('wiederherstellen schreibt nur den Termin', () => {
+    const gestrichen = { ...T1, aus: ['2026-09-09'] }
+    const zurueck = { ...T1, aus: [] }
+    persist(st({ ozTermine: [gestrichen] }), st({ ozTermine: [zurueck] }), {
+      type: 'ozSchichtAus',
+      terminId: 't1',
+      datum: '2026-09-09',
+      aus: false,
+    })
+    vi.runOnlyPendingTimers()
+    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [zurueck], [])
+    expect(data.saveOzEintraege).not.toHaveBeenCalled()
+  })
+
   it('erst getippt, dann gestrichen: der Termin geht nur als Löschung hinaus', () => {
     // Schriebe die Schicht ihn nach dem Löschen, stünde er wieder da.
     const a = st({ ozTermine: [T1, T2] })

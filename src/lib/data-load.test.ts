@@ -23,8 +23,14 @@ import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 function chainFor(table: string) {
   const resp = (store.responses[table] ?? []).shift() ?? { data: null, error: null }
   const chain: Record<string, unknown> = {}
-  for (const m of ['select', 'insert', 'upsert', 'update', 'delete', 'in', 'is', 'order', 'maybeSingle']) {
+  for (const m of ['insert', 'upsert', 'update', 'delete', 'in', 'is', 'order', 'maybeSingle']) {
     chain[m] = () => chain
+  }
+  // Die Spalten werden mitgeschrieben: Fehlt eine, liefert die Datenbank sie
+  // nicht — der Stub hier schon, und der Fehler bliebe unsichtbar.
+  chain.select = (spalten: unknown) => {
+    store.filter.push([table, 'select', String(spalten), ''])
+    return chain
   }
   // Die Obergrenze wird mitgeschrieben: das Ladefenster steckt jetzt in ihr
   // (und in der Sortierung), nicht mehr in einem `gte` aus einer Vorabfrage.
@@ -343,6 +349,26 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(d.plaene).toEqual([{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false }])
     // Der Eintrag eines nicht geladenen Plans fällt heraus — er gehörte zu nichts, was die App zeigt.
     expect(d.planEintraege).toEqual([{ id: 'pe1', planId: 'pl1', datum: '2026-09-07', grp: 'g1' }])
+  })
+
+  it('gestrichene Tage eines Termins kommen mit — eine leere Liste nicht', async () => {
+    mitPlaenen({
+      oz_termine: [
+        {
+          data: [
+            { id: 't1', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Markt', plaetze: 2, aus: ['2026-09-16'] },
+            { id: 't2', wd: 6, von: '09:00:00', bis: '11:00:00', ort: '', plaetze: 2, aus: [] },
+          ],
+          error: null,
+        },
+      ],
+    })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    expect(res.data.ozTermine.map((t) => t.aus)).toEqual([['2026-09-16'], undefined])
+    // Und gefragt wird nach ihnen — sonst kämen sie aus der Datenbank nie.
+    const spalten = store.filter.find(([t, m]) => t === 'oz_termine' && m === 'select')?.[2] ?? ''
+    expect(spalten.split(',').map((s) => s.trim())).toContain('aus')
   })
 
   it('jede der fünf Abfragen nennt die eigene Versammlung', async () => {

@@ -374,6 +374,8 @@ export default {
   "ozFrei": "空き：{n}",
   "ozAbwesend": "{name} はその日は欠席です",
   "ozMehrWochen": "さらに表示",
+  "ozFaelltAus": "中止",
+  "wiederherstellen": "元に戻す",
   "ozAnsichtHint": "空き枠には自分で登録できます。登録すると確認済みになります。",
   "ozNichtFreigegeben": "公共エリア伝道に割り当てられている人が登録できます。長老に相談してください。",
   "ozEintragen": "＋ 登録する",

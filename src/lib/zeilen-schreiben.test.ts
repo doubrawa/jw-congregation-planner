@@ -116,6 +116,7 @@ describe('Öffentliches Zeugnisgeben: was die Datenbank abweist', () => {
   it.each([
     ['der Termin ist inzwischen gelöscht', '23503', 'oz_termin_fehlt'],
     ['der Termin liegt inzwischen auf einem anderen Wochentag', '23514', 'oz_falscher_tag'],
+    ['die Schicht ist inzwischen gestrichen', '23514', 'oz_faellt_aus'],
     ['das Recht ist inzwischen entzogen', '42501', 'new row violates row-level security policy'],
     ['dieselbe Person steht schon in der Schicht', '23505', 'duplicate key value'],
   ])('%s: nachladen statt nur melden', async (_fall, code, message) => {

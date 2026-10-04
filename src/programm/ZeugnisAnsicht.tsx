@@ -3,7 +3,8 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
 import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
-import { ozNachWoche, ozSchichtText } from '../components/zeugnis-anzeige'
+import { SchichtKopf } from '../components/SchichtKopf'
+import { ozNachWoche } from '../components/zeugnis-anzeige'
 import { displayName, isQualified } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
@@ -70,26 +71,29 @@ export function ZeugnisAnsicht() {
   )
 }
 
-/** Eine Schicht beim Ansehen: wer dabei ist, wie viel frei ist — und was man selbst tun kann. */
+/**
+ * Eine Schicht beim Ansehen: wer dabei ist, wie viel frei ist — und was man
+ * selbst tun kann. Eine gestrichene sagt nur „Fällt aus".
+ */
 function AnsichtZeile({ schicht, darf }: { schicht: OzSchicht; darf: boolean }) {
   const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { t } = useT()
   const me = eigenePerson(state)
   const eigener = me ? schicht.eintraege.find((e) => e.pid === me.id) : undefined
   const stufe = eigener ? ozZusage(eigener, state.confirmations) : null
   const key = eigener ? ozTaskKey(eigener) : ''
 
+  if (schicht.gestrichen) {
+    return (
+      <div className="oz-schicht is-gestrichen">
+        <SchichtKopf schicht={schicht} />
+      </div>
+    )
+  }
+
   return (
     <div className="oz-schicht">
-      <div className="fs-row-main">
-        <span className="fs-time">{schicht.termin.von}</span>
-        <div className="fs-row-text">
-          <div className="fs-title" dir="auto">
-            {tu(schicht.termin.ort) || t.privZeugnis}
-          </div>
-          <div className="fs-place">{ozSchichtText(schicht, state.lang)}</div>
-        </div>
-      </div>
+      <SchichtKopf schicht={schicht} />
       <div className="oz-plaetze">
         {schicht.eintraege.map((eintrag) => {
           const person = state.persons.find((p) => p.id === eintrag.pid)

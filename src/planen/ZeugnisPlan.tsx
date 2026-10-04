@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
-import { ozKurzTag, ozNachWoche, ozSchichtText } from '../components/zeugnis-anzeige'
+import { SchichtKopf } from '../components/SchichtKopf'
+import { ozKurzTag, ozNachWoche } from '../components/zeugnis-anzeige'
 import { istAbwesendAm } from '../data/absence'
 import { FS_TIME_OPTIONS } from '../data/fs'
 import { displayName, isQualified, personCompare } from '../data/helpers'
@@ -290,28 +292,46 @@ function TerminZeile({ termin }: { termin: OzTermin }) {
  * Eine Schicht beim Planen: wann und wo, wer eingetragen ist, wer noch hineinkann.
  * Den Tag reicht die Liste herein — ein Mitternachts-Zeitgeber je Zeile wäre
  * derselbe Zeitgeber dutzendfach.
+ *
+ * **Streichen** (4.10.2026): „Es kann ja sein, dass mal eine Woche nichts
+ * stattfindet." Das ✕ fragt nach, dann fällt die Schicht aus, und ihre
+ * Einträge gehen. Sie bleibt mit „Fällt aus" stehen und lässt sich so
+ * wiederherstellen — anlegen ließe sich eine einzelne Schicht sonst nirgends.
  */
 function SchichtZeile({ schicht, kandidaten, heute }: { schicht: OzSchicht; kandidaten: readonly Person[]; heute: Date }) {
   const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { t } = useT()
   const vorbei = ozVorbei(schicht, heute)
   const amTag = fromIso(schicht.datum)
   const drin = new Set(schicht.eintraege.map((e) => e.pid))
   // Zur Wahl steht, wer den Aufgabenbereich hat, noch nicht in dieser Schicht
   // steht und an dem Tag nicht abwesend ist.
   const wahl = kandidaten.filter((p) => !drin.has(p.id) && !istAbwesendAm(state.absences, p.id, amTag))
+  const ausfall = (aus: boolean) => dispatch({ type: 'ozSchichtAus', terminId: schicht.termin.id, datum: schicht.datum, aus })
+
+  if (schicht.gestrichen) {
+    return (
+      <div className={vorbei ? 'oz-schicht is-gestrichen is-vorbei' : 'oz-schicht is-gestrichen'}>
+        <SchichtKopf
+          schicht={schicht}
+          ausfallAktion={
+            !vorbei && (
+              <button type="button" className="btn-outline oz-zurueckholen" onClick={() => ausfall(false)}>
+                {t.wiederherstellen}
+              </button>
+            )
+          }
+        />
+      </div>
+    )
+  }
 
   return (
     <div className={vorbei ? 'oz-schicht is-vorbei' : 'oz-schicht'}>
-      <div className="fs-row-main">
-        <span className="fs-time">{schicht.termin.von}</span>
-        <div className="fs-row-text">
-          <div className="fs-title" dir="auto">
-            {tu(schicht.termin.ort) || t.privZeugnis}
-          </div>
-          <div className="fs-place">{ozSchichtText(schicht, state.lang)}</div>
-        </div>
-      </div>
+      <SchichtKopf
+        schicht={schicht}
+        aktion={!vorbei && <EntfernenKnopf className="fs-remove oz-streichen" onEntfernen={() => ausfall(true)} />}
+      />
       <div className="oz-plaetze">
         {schicht.eintraege.map((eintrag) => (
           <EintragChip key={eintrag.id} eintrag={eintrag} vorbei={vorbei} abwesend={istAbwesendAm(state.absences, eintrag.pid, amTag)} />

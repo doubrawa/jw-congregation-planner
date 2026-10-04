@@ -2380,6 +2380,100 @@ export const KATALOG = [
     suchen: '<span className="sr-only">{profilLabel}</span>',
     ersetzen: '<span className="sidebar-profile-link">{profilLabel} ›</span>',
   },
+  /* ---- Eine Zeugnis-Schicht fällt aus (4.10.2026) ---- */
+  {
+    id: 'oz-gestrichen-ohne-platz',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Eine gestrichene Schicht hat keinen freien Platz — niemand trägt sich ein, kein Banner und keine Karte zählt sie.',
+    suchen: '  if (termin.aus?.includes(datum)) return { termin, datum, montag, eintraege: [], frei: 0, gestrichen: true }',
+    ersetzen:
+      '  if (termin.aus?.includes(datum)) return { termin, datum, montag, eintraege: [], frei: termin.plaetze, gestrichen: true }',
+  },
+  {
+    id: 'oz-gestrichen-ohne-eintraege',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Eine gestrichene Schicht zeigt keine Einträge und meldet keinen Konflikt — an dem Tag findet nichts statt.',
+    suchen: '  if (termin.aus?.includes(datum)) return { termin, datum, montag, eintraege: [], frei: 0, gestrichen: true }',
+    ersetzen:
+      '  if (termin.aus?.includes(datum)) return { termin, datum, montag, eintraege: eintraege.filter((e) => e.terminId === termin.id && e.datum === datum), frei: 0, gestrichen: true }',
+  },
+  {
+    id: 'oz-gestrichen-keine-aufgabe',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Ein Eintrag an einem gestrichenen Tag ist keine Aufgabe mehr — auch bevor die Datenbank ihn abgeräumt hat.',
+    suchen: '    if (!termin || termin.aus?.includes(eintrag.datum)) continue',
+    ersetzen: '    if (!termin) continue',
+  },
+  {
+    id: 'oz-streichen-nimmt-eintraege',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wer eine Schicht streicht, nimmt ihre Einträge mit — wer zugesagt hatte, erfährt es.',
+    suchen: '        ozEintraege: state.ozEintraege.filter((e) => e.terminId !== termin.id || e.datum !== action.datum),',
+    ersetzen: '        ozEintraege: state.ozEintraege,',
+  },
+  {
+    id: 'oz-streichen-nicht-vergangenes',
+    datei: 'src/app/reducer.ts',
+    regel: 'Eine vergangene Schicht lässt sich nicht streichen — ihre Einträge bleiben als Rückblick.',
+    suchen: '      if (!schicht || ozVorbei(schicht) || schicht.gestrichen === action.aus) return state',
+    ersetzen: '      if (!schicht || schicht.gestrichen === action.aus) return state',
+  },
+  {
+    id: 'oz-streichen-gespeichert',
+    datei: 'src/app/persist.ts',
+    regel: 'Eine gestrichene Schicht geht in die Datenbank — sonst stünde sie nach dem Neuladen wieder da.',
+    suchen: "    case 'ozSchichtAus':\n",
+    ersetzen: '',
+  },
+  {
+    id: 'oz-aus-geladen',
+    datei: 'src/lib/data.ts',
+    regel: 'Die gestrichenen Tage werden mitgeladen — sonst stünde jede gestrichene Schicht nach dem Neuladen wieder da.',
+    suchen: "      .select('id, wd, von, bis, ort, plaetze, aus')",
+    ersetzen: "      .select('id, wd, von, bis, ort, plaetze')",
+  },
+  {
+    id: 'oz-aus-geschrieben',
+    datei: 'src/lib/data.ts',
+    regel: 'Die gestrichenen Tage gehen immer mit hinaus, auch leer — sonst bliebe der zuletzt zurückgeholte gestrichen.',
+    suchen: '    aus: t.aus ?? [],',
+    ersetzen: "    ...(t.aus?.length ? { aus: t.aus } : {}),",
+  },
+  {
+    id: 'oz-streichen-fragt-nach',
+    datei: 'src/components/EntfernenKnopf.tsx',
+    regel: 'Ein ✕ fragt erst nach („Wirklich löschen?") — ein einzelner Tipp entfernt nichts.',
+    suchen: '      onClick={entfernen.onClick}',
+    ersetzen: '      onClick={onEntfernen}',
+  },
+  {
+    id: 'oz-faellt-aus-sichtbar',
+    datei: 'src/components/SchichtKopf.tsx',
+    regel: 'Eine gestrichene Schicht sagt „Fällt aus" — beim Planen und beim Ansehen.',
+    suchen: '      {schicht.gestrichen && (',
+    ersetzen: '      {false && (',
+  },
+  {
+    id: 'oz-wiederherstellen-nur-kommendes',
+    datei: 'src/planen/ZeugnisPlan.tsx',
+    regel: 'Zurückholen lässt sich nur eine kommende Schicht — eine vergangene bleibt, wie sie war.',
+    suchen: '            !vorbei && (\n              <button type="button" className="btn-outline oz-zurueckholen"',
+    ersetzen: '            (\n              <button type="button" className="btn-outline oz-zurueckholen"',
+  },
+  {
+    id: 'oz-schema-faellt-aus',
+    datei: 'supabase/schema.sql',
+    regel: 'Die Datenbank weist einen Eintrag an einem gestrichenen Tag ab — auch von einer App mit altem Stand.',
+    suchen: '  if new.datum = any (termin.aus) then',
+    ersetzen: '  if false then',
+  },
+  {
+    id: 'oz-schema-ausfall-raeumt',
+    datei: 'supabase/schema.sql',
+    regel: 'Streicht ein Planer eine Schicht, räumt die Datenbank auch Einträge ab, die seine App nicht kannte.',
+    suchen: '     and datum = any (new.aus);',
+    ersetzen: '     and false;',
+  },
 ]
 
 /**

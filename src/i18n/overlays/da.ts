@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Ledige: {n}",
   "ozAbwesend": "{name} er fraværende den dag",
   "ozMehrWochen": "Flere uger",
+  "ozFaelltAus": "Aflyst",
+  "wiederherstellen": "Gendan",
   "ozAnsichtHint": "Ledige pladser kan du selv tage. Den der skriver sig på, har dermed bekræftet.",
   "ozNichtFreigegeben": "Skrive sig på kan de der er udvalgt til offentlig forkyndelse. Tal med de ældste om det.",
   "ozEintragen": "+ SKRIV MIG PÅ",

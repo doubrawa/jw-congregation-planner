@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Boş: {n}",
   "ozAbwesend": "{name} o gün yok",
   "ozMehrWochen": "Diğer haftalar",
+  "ozFaelltAus": "İptal",
+  "wiederherstellen": "Geri yükle",
   "ozAnsichtHint": "Boş yerleri kendin alabilirsin. Kendini yazdıran zaten onaylamış olur.",
   "ozNichtFreigegeben": "Halka açık yerlerde şahitlik için belirlenenler yazılabilir. Bunun için ihtiyarlarla konuş.",
   "ozEintragen": "+ BENİ YAZ",

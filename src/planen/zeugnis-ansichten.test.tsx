@@ -329,3 +329,68 @@ describe('Planen: die übrige Bedienung', () => {
     expect(wahlIn(mittwoch23!)).toEqual(['Anna Test', 'Simon Test'])
   })
 })
+
+/**
+ * **Eine Schicht streichen** (4.10.2026): „Es kann ja sein, dass mal eine
+ * Woche nichts stattfindet." Das ✕ fragt nach; die gestrichene Schicht bleibt
+ * mit „Fällt aus" stehen — beim Planen mit „Wiederherstellen", beim Ansehen
+ * ohne alles, damit niemand eine fehlende Woche für ein Versehen hält.
+ */
+describe('Eine Schicht streichen', () => {
+  const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', planner: true, ...over })
+  const schichten = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.oz-schicht')]
+  const GESTRICHEN: OzTermin = { ...MITTWOCH, aus: ['2026-09-09'] }
+
+  it('das ✕ fragt erst nach — ein Tipp daneben bricht ab, erst der zweite streicht', () => {
+    const { container, dispatch } = planen()
+    const x = () => schichten(container)[0]!.querySelector<HTMLButtonElement>('.oz-streichen')!
+    expect(x().getAttribute('aria-label')).toBe(t.a11yRemove)
+    fireEvent.click(x())
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(x().textContent).toBe(t.loeschenSicher)
+    fireEvent.blur(x())
+    expect(x().textContent).toBe('✕')
+    fireEvent.click(x())
+    fireEvent.click(x())
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozSchichtAus', terminId: 't1', datum: '2026-09-09', aus: true })
+  })
+
+  it('gestrichen: „Fällt aus" statt der Plätze, nicht im Banner — „Wiederherstellen" holt sie zurück', () => {
+    const { container, dispatch } = planen({ ozTermine: [GESTRICHEN], ozEintraege: [eintrag(ANNA.id, false, '2026-09-09')] })
+    const [aus, naechste] = schichten(container)
+    expect(aus!.classList.contains('is-gestrichen')).toBe(true)
+    expect(aus!.textContent).toContain(t.ozFaelltAus)
+    // Ein übrig gebliebener Eintrag zeigt sich nicht — die Datenbank räumt ihn ab.
+    expect(aus!.querySelector('.oz-person')).toBeNull()
+    expect(aus!.querySelector('select.oz-zuteilen')).toBeNull()
+    expect(aus!.querySelector('.oz-streichen')).toBeNull()
+    // Freie Plätze nennt das Banner nur für die drei übrigen Wochen.
+    expect(container.querySelectorAll('.plan-open-row')).toHaveLength(3)
+    fireEvent.click(knopf(aus!, t.wiederherstellen)[0]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ozSchichtAus', terminId: 't1', datum: '2026-09-09', aus: false })
+    expect(naechste!.querySelector('.oz-streichen')).not.toBeNull()
+  })
+
+  it('Vergangenes lässt sich weder streichen noch zurückholen', () => {
+    vi.setSystemTime(new Date(2026, 8, 10, 9, 0)) // Donnerstag: der Mittwoch dieser Woche ist um
+    const offen = planen()
+    const [vorbei, naechste] = schichten(offen.container)
+    expect(vorbei!.querySelector('.oz-streichen')).toBeNull()
+    expect(naechste!.querySelector('.oz-streichen')).not.toBeNull()
+    cleanup()
+    const aus = schichten(planen({ ozTermine: [GESTRICHEN] }).container)[0]!
+    expect(aus.textContent).toContain(t.ozFaelltAus)
+    expect(knopf(aus, t.wiederherstellen)).toEqual([])
+  })
+
+  it('beim Ansehen steht „Fällt aus" — ohne Eintragen und ohne freie Plätze', () => {
+    const { container } = zeige(ProgrammScreen, { screen: 'programm', ozTermine: [GESTRICHEN] })
+    const [aus] = [...container.querySelectorAll<HTMLElement>('.oz-schicht')]
+    expect(aus!.textContent).toContain(t.ozFaelltAus)
+    expect(knopf(aus!, t.ozEintragen)).toEqual([])
+    expect(aus!.querySelector('.oz-frei')).toBeNull()
+    expect(knopf(aus!, t.wiederherstellen)).toEqual([])
+    // Die übrigen drei Wochen bieten ihren Platz an.
+    expect(knopf(container, t.ozEintragen)).toHaveLength(3)
+  })
+})

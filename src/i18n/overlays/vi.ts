@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Còn trống: {n}",
   "ozAbwesend": "{name} vắng mặt ngày đó",
   "ozMehrWochen": "Thêm tuần",
+  "ozFaelltAus": "Đã hủy",
+  "wiederherstellen": "Khôi phục",
   "ozAnsichtHint": "Bạn có thể tự nhận chỗ trống. Ai đăng ký là đã xác nhận.",
   "ozNichtFreigegeben": "Những ai được chỉ định làm chứng nơi công cộng có thể đăng ký. Hãy nói chuyện với các trưởng lão về việc này.",
   "ozEintragen": "+ ĐĂNG KÝ",

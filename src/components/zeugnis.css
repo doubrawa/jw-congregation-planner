@@ -16,6 +16,44 @@
   opacity: 0.6;
 }
 
+/* Streichen beim Planen (4.10.2026): rechts in der Kopfzeile, mittig zu Ort
+   und Tag; die runde Form bringt `fs-remove` mit. */
+.oz-streichen {
+  margin-inline-start: auto;
+  align-self: center;
+}
+
+/* Eine gestrichene Schicht: Kopf blass und durchgestrichen, darunter „Fällt
+   aus" — beim Planen mit „Wiederherstellen" daneben. */
+.oz-schicht.is-gestrichen .fs-row-main {
+  opacity: 0.6;
+}
+
+.oz-schicht.is-gestrichen .fs-time,
+.oz-schicht.is-gestrichen .fs-title {
+  text-decoration: line-through;
+}
+
+.oz-ausfall {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  margin-top: 8px;
+}
+
+.oz-faellt-aus {
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+  color: var(--wein);
+}
+
+.oz-ausfall .oz-zurueckholen {
+  width: auto;
+  padding: 6px 14px;
+}
+
 /* Die Plätze einer Schicht: Namen, freie Plätze, beim Planen die Auswahl. */
 .oz-plaetze {
   display: flex;

@@ -169,6 +169,73 @@ describe('Termine', () => {
   })
 })
 
+describe('Eine Schicht fällt aus (4.10.2026)', () => {
+  const streichen = (datum: string, aus = true) =>
+    ({ type: 'ozSchichtAus', terminId: MITTWOCH.id, datum, aus }) as const
+
+  it('der Tag steht am Termin; die Einträge des Tages gehen samt Zusage — andere Tage bleiben', () => {
+    const weg = eintrag(NAECHSTER_MITTWOCH, 'p9')
+    const bleibt = eintrag('2026-09-16', 'p9')
+    const s = reducer(
+      zustand({ ozEintraege: [weg, bleibt], confirmations: { [ozKey('2026-09-07', weg.id)]: 'bestätigt' } }),
+      streichen(NAECHSTER_MITTWOCH),
+    )
+    expect(s.ozTermine[0]!.aus).toEqual([NAECHSTER_MITTWOCH])
+    expect(s.ozEintraege).toEqual([bleibt])
+    expect(s.confirmations).toEqual({})
+    expect(s.myTasks.filter((t) => t.id.startsWith('oz|')).map((t) => t.date)).toEqual([
+      'Mittwoch, 16. September · 10:00–12:00 · Marktplatz',
+    ])
+  })
+
+  it('niemand trägt sich ein, niemand wird zugeteilt, automatisch besetzt wird sie nicht', () => {
+    const s = reducer(zustand(), streichen(NAECHSTER_MITTWOCH))
+    expect(reducer(s, { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH, pid: 'p1' })).toBe(s)
+    const selbst = { ...s, planner: false }
+    expect(reducer(selbst, { type: 'ozEintragen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH })).toBe(selbst)
+    const auto = reducer(s, { type: 'ozAutoAssign' })
+    // Zwölf Wochen zu zwei Plätzen — die gestrichene fehlt.
+    expect(auto.ozEintraege).toHaveLength(24)
+    expect(auto.ozEintraege.some((e) => e.datum === NAECHSTER_MITTWOCH)).toBe(false)
+  })
+
+  it('wiederherstellen holt die Schicht zurück, leer — die Einträge kommen nicht wieder', () => {
+    const e = eintrag(NAECHSTER_MITTWOCH, 'p1')
+    const aus = reducer(zustand({ ozEintraege: [e] }), streichen(NAECHSTER_MITTWOCH))
+    const zurueck = reducer(aus, streichen(NAECHSTER_MITTWOCH, false))
+    expect(zurueck.ozTermine[0]!.aus).toEqual([])
+    expect(zurueck.ozEintraege).toEqual([])
+    // Danach ist sie wieder eine Schicht wie jede andere.
+    const zugeteilt = reducer(zurueck, { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH, pid: 'p1' })
+    expect(zugeteilt.ozEintraege).toHaveLength(1)
+  })
+
+  it('nichts zu tun: schon gestrichen, nicht gestrichen, vergangen, falscher Tag, kein Termin', () => {
+    const s = reducer(zustand(), streichen(NAECHSTER_MITTWOCH))
+    expect(reducer(s, streichen(NAECHSTER_MITTWOCH))).toBe(s)
+    const z = zustand()
+    expect(reducer(z, streichen(NAECHSTER_MITTWOCH, false))).toBe(z)
+    // Vergangenes bleibt, wie es war — auch seine Einträge.
+    const vorbei = zustand({ ozEintraege: [eintrag(LETZTER_MITTWOCH, 'p1')] })
+    expect(reducer(vorbei, streichen(LETZTER_MITTWOCH))).toBe(vorbei)
+    expect(reducer(z, streichen('2026-09-10'))).toBe(z)
+    expect(reducer(z, { type: 'ozSchichtAus', terminId: 't-weg', datum: NAECHSTER_MITTWOCH, aus: true })).toBe(z)
+  })
+
+  it('was vor dieser Woche liegt, fällt beim nächsten Streichen aus der Liste — der Rest bleibt sortiert', () => {
+    const alt = zustand({ ozTermine: [{ ...MITTWOCH, aus: ['2026-08-26', '2026-09-23'] }] })
+    const s = reducer(alt, streichen(NAECHSTER_MITTWOCH))
+    expect(s.ozTermine[0]!.aus).toEqual([NAECHSTER_MITTWOCH, '2026-09-23'])
+  })
+
+  it('heute lässt sich noch streichen — es regnet ja vielleicht', () => {
+    vi.setSystemTime(new Date(2026, 8, 9, 7, 0)) // Mittwoch früh
+    const s = reducer(zustand({ ozEintraege: [eintrag(NAECHSTER_MITTWOCH, 'p1')] }), streichen(NAECHSTER_MITTWOCH))
+    expect(s.ozTermine[0]!.aus).toEqual([NAECHSTER_MITTWOCH])
+    expect(s.ozEintraege).toEqual([])
+  })
+})
+
 describe('Automatisch zuteilen und leeren', () => {
   it('füllt die Plätze des Vierteljahrs, niemand doppelt in einer Schicht', () => {
     const s = reducer(zustand(), { type: 'ozAutoAssign' })

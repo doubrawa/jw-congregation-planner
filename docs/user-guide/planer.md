@@ -526,6 +526,12 @@ Treffpunkte aus dem Grundplan. Gezeigt werden die nächsten vier Wochen,
   eingetragen), bekommt er sofort die Nachricht, dass die Zuteilung
   zurückgezogen ist. Ändert sich der **Wochentag** eines Termins, gehen seine
   kommenden Einträge mit.
+- **Eine Schicht fällt aus**: Findet in einer Woche nichts statt, tippe auf das
+  **✕** rechts neben der Schicht und dann auf **Wirklich löschen?**. Die Schicht
+  bleibt mit **Fällt aus** stehen — so sehen alle, dass in dieser Woche nichts
+  stattfindet, statt eine fehlende Woche für ein Versehen zu halten. Ihre
+  Einträge gehen; wer zugesagt hatte, bekommt die Nachricht, dass die Zuteilung
+  zurückgezogen ist. **Wiederherstellen** holt die Schicht zurück — leer.
 - **Mögliche Konflikte** nennen, wer an seinem Tag abwesend ist; **Freie
   Plätze** zählt, was in den gezeigten Wochen noch offen ist. Beides und „Plan
   senden" stehen auch auf der **Planungs‑Karte der Startseite**.

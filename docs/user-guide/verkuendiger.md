@@ -120,6 +120,9 @@ Uhrzeit und wer dabei ist.
   „Meine Aufgaben" — wie jede andere Aufgabe.
 - **Absagen** gibt deinen Platz wieder frei, damit ihn jemand anders übernehmen
   kann; die Admins erfahren es.
+- **Fällt aus**: Steht das an einer Schicht, findet in dieser Woche nichts
+  statt. Hattest du zugesagt (oder dich selbst eingetragen), bekommst du eine
+  Nachricht.
 
 ### Weitere Pläne
 

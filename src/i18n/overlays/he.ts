@@ -373,6 +373,8 @@ export default {
   "ozFrei": "פנוי: {n}",
   "ozAbwesend": "{name}: היעדרות באותו יום",
   "ozMehrWochen": "שבועות נוספים",
+  "ozFaelltAus": "מבוטל",
+  "wiederherstellen": "שחזור",
   "ozAnsichtHint": "מקומות פנויים אפשר לתפוס בעצמך. מי שנרשם כבר אישר.",
   "ozNichtFreigegeben": "יכולים להירשם מי שמונו לבישור במקומות ציבוריים. דבר על כך עם הזקנים.",
   "ozEintragen": "+ רשום אותי",

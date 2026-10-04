@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Vapaana: {n}",
   "ozAbwesend": "{name} on poissa sinä päivänä",
   "ozMehrWochen": "Lisää viikkoja",
+  "ozFaelltAus": "Peruttu",
+  "wiederherstellen": "Palauta",
   "ozAnsichtHint": "Vapaat paikat voit ottaa itse. Joka ilmoittautuu, on samalla vahvistanut.",
   "ozNichtFreigegeben": "Ilmoittautua voivat ne, jotka on valittu julkiseen todistamiseen. Puhu asiasta vanhinten kanssa.",
   "ozEintragen": "+ ILMOITTAUDU",

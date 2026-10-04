@@ -374,6 +374,8 @@ export default {
   "ozFrei": "空缺：{n}",
   "ozAbwesend": "{name} 当天缺席",
   "ozMehrWochen": "更多周",
+  "ozFaelltAus": "已取消",
+  "wiederherstellen": "恢复",
   "ozAnsichtHint": "空缺名额你可以自己报名。报名就等于已确认。",
   "ozNichtFreigegeben": "被指派参与公众场所见证的人可以报名。请为此与长老商量。",
   "ozEintragen": "+ 报名",

@@ -170,6 +170,13 @@ export interface OzTermin {
   ort: string
   /** Wie viele Verkündiger dort stehen — am Infostand immer zwei (Königreichsdienst Nov. 2014). */
   plaetze: number
+  /**
+   * Tage (ISO), an denen die Schicht **ausfällt** — der Planer hat sie
+   * gestrichen (4.10.2026). Gemerkt am Termin wie beim Grundplan der
+   * Treffpunkte (`FsRule.aus`): Die Schicht selbst wird nicht gespeichert,
+   * ohne die Marke käme sie mit jeder Rechnung wieder.
+   */
+  aus?: string[]
 }
 
 /**

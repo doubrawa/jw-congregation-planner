@@ -374,6 +374,8 @@ export default {
   "ozFrei": "빈자리: {n}",
   "ozAbwesend": "{name} 님은 그날 결석입니다",
   "ozMehrWochen": "더 보기",
+  "ozFaelltAus": "취소됨",
+  "wiederherstellen": "복원",
   "ozAnsichtHint": "빈자리는 직접 신청할 수 있습니다. 신청하면 확인한 것입니다.",
   "ozNichtFreigegeben": "공개 증거에 임명된 사람이 신청할 수 있습니다. 이에 대해 장로들과 이야기하세요.",
   "ozEintragen": "+ 신청",

@@ -482,10 +482,17 @@ create table if not exists public.oz_termine (
   bis             time not null,
   ort             text not null default '',
   plaetze         smallint not null default 2 check (plaetze between 1 and 6),
+  -- Tage, an denen die Schicht ausfällt — der Planer hat sie gestrichen. Wie
+  -- `fs_rules.aus`: Die Schicht selbst steht nirgends, also die Ausnahme hier.
+  aus             date[] not null default '{}',
   created_at      timestamptz not null default now(),
 
   unique (id, congregation_id)                      -- Ziel der Verweise der Einträge
 );
+
+-- Nachträglich (4.10.2026) — eine schon angelegte Tabelle bekommt sie hier.
+alter table public.oz_termine
+  add column if not exists aus date[] not null default '{}';
 
 create index if not exists oz_termine_congregation_idx
   on public.oz_termine (congregation_id);
@@ -762,6 +769,9 @@ begin
   if extract(dow from new.datum)::int <> termin.wd then
     raise exception 'oz_falscher_tag' using errcode = 'check_violation';
   end if;
+  if new.datum = any (termin.aus) then
+    raise exception 'oz_faellt_aus' using errcode = 'check_violation';
+  end if;
   if (select count(*) from public.oz_eintraege
       where termin_id = new.termin_id and datum = new.datum) >= termin.plaetze then
     raise exception 'oz_voll' using errcode = 'check_violation';
@@ -774,6 +784,35 @@ drop trigger if exists oz_eintraege_platz on public.oz_eintraege;
 create trigger oz_eintraege_platz
   before insert on public.oz_eintraege
   for each row execute function public.oz_platz_pruefen();
+
+-- Eine gestrichene Schicht nimmt ihre Einträge mit (4.10.2026). Die App des
+-- Planers löscht nur, was sie kennt; wer sich nach ihrem letzten Laden
+-- eingetragen hat, bliebe stehen — unsichtbar, weil die Schicht ausfällt, und
+-- `send-reminders` erinnerte ihn trotzdem. Danach weist `oz_platz_pruefen`
+-- jeden weiteren Eintrag an dem Tag ab; die Sperre dort auf dem Termin wartet
+-- auf diese Änderung.
+--
+-- Ohne `security definer`: Ändern darf den Termin nur ein Planer, und der darf
+-- auch die Einträge löschen.
+create or replace function public.oz_ausfall_raeumen()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  delete from public.oz_eintraege
+   where termin_id = new.id
+     and datum = any (new.aus);
+  return null;
+end
+$$;
+
+drop trigger if exists oz_termine_ausfall on public.oz_termine;
+create trigger oz_termine_ausfall
+  after update of aus on public.oz_termine
+  for each row
+  when (new.aus is distinct from old.aus)
+  execute function public.oz_ausfall_raeumen();
 
 -- Name der eigenen Person — wie `displayName()` in der App: Vor- und Nachname.
 -- Gebraucht für Plätze, die nur einen Namen tragen und keine Person-Id: Ein

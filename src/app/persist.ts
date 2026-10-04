@@ -623,6 +623,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'ozTerminAdd':
     case 'ozTerminUpdate':
     case 'ozTerminRemove':
+    case 'ozSchichtAus':
     case 'ozEintragen':
     case 'ozZuteilen':
     case 'ozAustragen':

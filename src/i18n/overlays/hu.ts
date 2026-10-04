@@ -374,6 +374,8 @@ export default {
   "ozFrei": "Szabad: {n}",
   "ozAbwesend": "{name} azon a napon távol van",
   "ozMehrWochen": "További hetek",
+  "ozFaelltAus": "Elmarad",
+  "wiederherstellen": "Visszaállítás",
   "ozAnsichtHint": "A szabad helyeket magad is elfoglalhatod. Aki feliratkozik, azzal már megerősítette.",
   "ozNichtFreigegeben": "Az iratkozhat fel, aki ki van jelölve közterületi tanúskodásra. Beszélj erről a vénekkel.",
   "ozEintragen": "+ FELIRATKOZOM",

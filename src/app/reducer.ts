@@ -1203,6 +1203,30 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastOzTerminDel'),
       }
     }
+    case 'ozSchichtAus': {
+      // Eine Schicht streichen oder zurückholen (4.10.2026): „Es kann ja sein,
+      // dass mal eine Woche nichts stattfindet." Nur Kommendes, und nur an
+      // einem Tag, an dem der Termin stattfindet (`ozSchicht`).
+      const schicht = ozSchicht(state.ozTermine, state.ozEintraege, action.terminId, action.datum)
+      if (!schicht || ozVorbei(schicht) || schicht.gestrichen === action.aus) return state
+      const termin = schicht.termin
+      const bisher = termin.aus ?? []
+      // Was vor dieser Woche liegt, zeigt keine Liste mehr — es fällt dabei heraus.
+      const ab = ozAb()
+      const aus = (action.aus ? [...bisher, action.datum] : bisher.filter((d) => d !== action.datum))
+        .filter((d) => d >= ab)
+        .sort()
+      const ozTermine = state.ozTermine.map((t) => (t === termin ? { ...t, aus } : t))
+      if (!action.aus) return { ...state, ozTermine }
+      // Die Einträge des Tages gehen mit. Wer zugesagt hatte, erfährt es
+      // (`persist.ts`), wie beim Austragen; in der Datenbank räumt ein Trigger
+      // auch die ab, die diese App nicht kennt (`oz_ausfall_raeumen`).
+      return {
+        ...state,
+        ozTermine,
+        ozEintraege: state.ozEintraege.filter((e) => e.terminId !== termin.id || e.datum !== action.datum),
+      }
+    }
     case 'ozEintragen': {
       // Selbst eintragen: nur mit dem Aufgabenbereich und nur in einen freien
       // Platz — dieselben Regeln prüft die Datenbank (`oz_eintraege_selbst_rein`,

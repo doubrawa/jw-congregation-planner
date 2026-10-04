@@ -128,6 +128,25 @@
   color: var(--wein);
 }
 
+/* Ein ✕ nach dem ersten Tipp (`EntfernenKnopf`, 4.10.2026): Aus dem runden
+   Knopf wird eine Pille mit „Wirklich löschen?", in der Farbe der übrigen
+   Zwei-Tipp-Knöpfe. Gilt für jede Form davor — und auch unter dem Zeiger,
+   wo manche Liste ihrem ✕ eine eigene Fläche gibt. */
+.entfernen.is-armed,
+.entfernen.is-armed:hover {
+  width: auto;
+  height: auto;
+  border: 1px solid var(--wein);
+  border-radius: var(--r-pill);
+  background: var(--tWein);
+  color: var(--wein);
+  font-size: calc(12px * var(--fs));
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
 /* Chevron-Icon der runden Blätter-Buttons (siehe Chevron.tsx). `display:block`
    ist wichtig: als Inline-Element säße das SVG auf der Grundlinie und bekäme
    Unterlängen-Platz — genau die Schieflage, die es vermeiden soll. */

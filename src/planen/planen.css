@@ -14,6 +14,14 @@
   margin-top: 8px;
 }
 
+/* Die Reiter des Predigtdienstes stehen über der Woche — beim Ansehen klebte
+   das Wochendatum ohne jeden Abstand darunter (4.10.2026). Dieselben 14 px
+   wie zwischen Kopf und Reitern; beim Planen fällt der Rand mit dem der
+   Wochen-Navigation zusammen. */
+.fs-bereich-tabs {
+  margin-bottom: 14px;
+}
+
 .plan-hint {
   margin-top: 12px;
   font-size: calc(11.5px * var(--fs));

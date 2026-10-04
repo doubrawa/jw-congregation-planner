@@ -373,6 +373,8 @@ export default {
   "ozFrei": "خالی: {n}",
   "ozAbwesend": "{name} اُس دن غیر حاضر ہے",
   "ozMehrWochen": "مزید ہفتے",
+  "ozFaelltAus": "منسوخ",
+  "wiederherstellen": "بحال کریں",
   "ozAnsichtHint": "خالی جگہیں آپ خود لے سکتے ہیں۔ جو نام لکھواتا ہے، وہ تصدیق کر چکا ہے۔",
   "ozNichtFreigegeben": "وہ نام لکھوا سکتے ہیں جنہیں عوامی جگہوں پر گواہی کے لیے مقرر کیا گیا ہے۔ اِس سلسلے میں بزرگوں سے بات کریں۔",
   "ozEintragen": "+ میرا نام لکھیں",
