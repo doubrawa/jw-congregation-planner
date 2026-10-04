@@ -15,7 +15,7 @@ import {
   tabelleVon,
   type Umgebung,
 } from './schema-attrappe'
-import { eigeneSlots, fremdeSlots } from './mitgliedsrechte-probe.mjs'
+import { eigeneSlots, ersterMontagAb, fremdeSlots, stufenAnlage } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 
 /**
@@ -46,12 +46,17 @@ const k = (n: number): string => `00000000-0000-4000-8000-${String(n).padStart(1
 const C = k(1) // Versammlung
 const CB = k(2) // zweite Versammlung (Mandanten-Nachweis)
 const G1 = k(11) // Gruppe
+const G2 = k(12) // zweite Gruppe — die „fremde" der Rechte-Stufen
 const H1 = k(21) // Haushalt
 const P1 = k(31)
 const P2 = k(32)
 const P_ALT = k(33) // Person vor dem Zurücksetzen
+const P3 = k(34) // Planer (Rechte-Stufe)
+const P4 = k(35) // Gruppenaufseher
 const U1 = k(41) // Konten
 const U2 = k(42)
+const U3 = k(43)
+const U4 = k(44)
 const G_ALT = k(51) // Gruppe vor dem Zurücksetzen
 
 /** Die App-Person zu einer NWS-Person — so vergibt sie `build-personen-sql.mjs`. */
@@ -364,34 +369,47 @@ const LAEUFE: Record<string, Lauf[]> = {
 
   'mitgliedsrechte-probe.mjs': [
     {
-      titel: 'Planer und Mitglied',
+      titel: 'Admin, Planer, Gruppenaufseher und Mitglied',
       fahren: (m) => m.main!(['--versammlung', C]),
       umgebung: {
         konten: [
           { id: U1, email: 'planer@probe.invalid' },
           { id: U2, email: 'mitglied@probe.invalid' },
+          { id: U3, email: 'zuteiler@probe.invalid' },
+          { id: U4, email: 'aufseher@probe.invalid' },
         ],
         env: {
           ...ANON,
           PROBE_PLANER_MAIL: 'planer@probe.invalid', PROBE_PLANER_PASS: 'probe',
           PROBE_MITGLIED_MAIL: 'mitglied@probe.invalid', PROBE_MITGLIED_PASS: 'probe',
+          PROBE_ZUTEILER_MAIL: 'zuteiler@probe.invalid', PROBE_ZUTEILER_PASS: 'probe',
+          PROBE_AUFSEHER_MAIL: 'aufseher@probe.invalid', PROBE_AUFSEHER_PASS: 'probe',
         },
         bestand: {
           congregations: [{ id: C, name: 'Probe' }],
           members: [
-            { user_id: U1, congregation_id: C, person_id: P1, planner: true },
-            { user_id: U2, congregation_id: C, person_id: P2, planner: false },
+            { user_id: U1, congregation_id: C, person_id: P1, planner: true, zuteiler: false },
+            { user_id: U2, congregation_id: C, person_id: P2, planner: false, zuteiler: false },
+            { user_id: U3, congregation_id: C, person_id: P3, planner: false, zuteiler: true },
+            { user_id: U4, congregation_id: C, person_id: P4, planner: false, zuteiler: false },
           ],
           persons: [
             { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', priv: {} },
             { id: P2, congregation_id: C, fn: 'Probe', ln: 'Mitglied', priv: { 'svc:mik': true } },
+            { id: P3, congregation_id: C, fn: 'Probe', ln: 'Zuteiler', priv: {} },
+            { id: P4, congregation_id: C, fn: 'Probe', ln: 'Aufseher', priv: {} },
           ],
-          // Ohne Gruppe blieben die Gruppenbesuche (11, 12) ungemessen.
-          groups: [{ id: G1, congregation_id: C, name: 'Probe' }],
+          // Ohne Gruppe blieben die Gruppenbesuche (11, 12) ungemessen, ohne
+          // die zweite — die keines der Probekonten leitet — die Fälle 42–61.
+          groups: [
+            { id: G1, congregation_id: C, name: 'Probe', position: 0, overseer_id: P4 },
+            { id: G2, congregation_id: C, name: 'Probe Zwei', position: 1 },
+          ],
           weeks: [
             {
               congregation_id: C,
               start: '2026-08-24',
+              updated_at: '2026-08-20T10:00:00+00:00',
               data: probeWoche(
                 '2026-08-24',
                 [
@@ -403,17 +421,35 @@ const LAEUFE: Record<string, Lauf[]> = {
             },
           ],
         },
-        funktionen: { substitute: () => ({ status: 403, json: { error: 'nicht erlaubt' } }) },
+        funktionen: {
+          substitute: () => ({ status: 403, json: { error: 'nicht erlaubt' } }),
+          // Die Tür wie in `zuteilen/woche.ts`, dahinter ohne die Grenze
+          // `nurZuteilungen` — die Attrappe kennt keine Richtlinien, und so
+          // laufen auch (38)–(40) in ihre Zurückstell-Zweige.
+          zuteilen: (rumpf, { tabellen, wer }) => {
+            const ich = (tabellen.members ?? []).find((m) => m.user_id === wer?.id)
+            if (!ich?.planner && !ich?.zuteiler) return { status: 403, json: { error: 'forbidden' } }
+            const woche = (tabellen.weeks ?? []).find((w) => w.start === rumpf.woche)
+            if (!woche) return { status: 404, json: { error: 'week-not-found' } }
+            woche.data = rumpf.data
+            return { json: { ok: true, stand: '2026-08-21T10:00:00+00:00' } }
+          },
+          'send-plan': () => ({ status: 403, json: { error: 'forbidden' } }),
+        },
       },
       erwartet: [
         'POST confirmations', 'DELETE confirmations', 'POST notifications', 'DELETE notifications',
         'POST absences', 'DELETE absences', 'GET persons',
-        // T120: die Anlage des Planers, die Versuche des Mitglieds, das Aufräumen.
+        // T120: die Anlage des Admins, die Versuche des Mitglieds, das Aufräumen.
         'POST gruppenbesuche', 'GET gruppenbesuche', 'DELETE gruppenbesuche',
         'POST oz_termine', 'POST oz_eintraege', 'DELETE oz_eintraege', 'DELETE oz_termine', 'PATCH persons',
         'POST plaene', 'GET plaene', 'DELETE plaene', 'POST plan_eintraege', 'GET plan_eintraege', 'DELETE plan_eintraege',
         // (6) und (6b): der Meldeweg eines Mitglieds seit dem 24.9.2026.
         'POST rpc/notify_planners',
+        // Die Rechte-Stufen (4.10.2026): Woche, Konto, Treffpunkte, Grundplan,
+        // Besuche — samt Zurückstellen und Aufräumen.
+        'PATCH weeks', 'PATCH members', 'GET groups', 'POST fs_weeks', 'GET fs_weeks', 'PATCH fs_weeks', 'DELETE fs_weeks',
+        'POST fs_rules', 'GET fs_rules', 'DELETE fs_rules', 'PATCH gruppenbesuche',
       ],
     },
   ],
@@ -577,7 +613,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     )
     // Nur die Zeile nach (2): „AUCH DAS!" meldet in der Attrappe auch (4), sie
     // kennt keine Richtlinien.
-    expect(ausgabe.join('\n')).toMatch(/\(2\) eine eigene Aufgabe im Namen des Planers.*\n.*nicht angekommen \(HTTP 403\) — die Grenze greift hier/)
+    expect(ausgabe.join('\n')).toMatch(/\(2\) eine eigene Aufgabe im Namen des Admins.*\n.*nicht angekommen \(HTTP 403\) — die Grenze greift hier/)
     expect(tabellen.confirmations).toContainEqual(zusage)
     // Geschrieben wird auf die eigene Aufgabe des Mitglieds: Die besteht
     // `task_gehoert_mir`, abweisen kann nur noch `user_id = auth.uid()`.
@@ -592,7 +628,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     const eigen = eigeneSlots(probewoche(), P2)[0]!
     const zusage = { id: k(84), congregation_id: C, user_id: U1, task_key: eigen.key, status: 'bestätigt' }
     const { ausgabe, tabellen, aufrufe } = await mitZusage(zusage, () => undefined)
-    expect(ausgabe.join('\n')).toMatch(/\? \(2\) eine eigene Aufgabe im Namen des Planers — auf jeder steht schon eine Zeile des Planers, nicht gemessen/)
+    expect(ausgabe.join('\n')).toMatch(/\? \(2\) eine eigene Aufgabe im Namen des Admins — auf jeder steht schon eine Zeile des Admins, nicht gemessen/)
     expect(tabellen.confirmations).toContainEqual(zusage)
     expect(aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'confirmations' && (a.body as { user_id?: string }).user_id === U1)).toEqual([])
   })
@@ -649,10 +685,10 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     const nurVerhinderung = { status: 400, json: { code: 'P0001', message: 'nur eine Verhinderung darf jedes Mitglied melden' } }
     const zuteilung = (a: Aufruf) => tabelleVon(a) === 'rpc/notify_planners' && (a.body as { kind?: string }).kind === 'zuteilung'
     const abgewiesen = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (zuteilung(a) ? nurVerhinderung : undefined))
-    expect(abgewiesen.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Planer\)\n.*nicht angekommen \(HTTP 400\) — abgewiesen — notify_planners reicht nur Verhinderungen weiter/)
+    expect(abgewiesen.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Admin und Planer\)\n.*nicht angekommen \(HTTP 400\) — abgewiesen — notify_planners reicht nur Verhinderungen weiter/)
     // Gibt es die Funktion nicht (404), ist nichts gemessen.
     const fehlt = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (zuteilung(a) ? { status: 404, json: { code: 'PGRST202' } } : undefined))
-    expect(fehlt.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Planer\)\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 404\)/)
+    expect(fehlt.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Admin und Planer\)\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 404\)/)
   })
 
   it('mitgliedsrechte-probe: fehlt die Freischaltung für den Dienst, gibt (9) sie vorübergehend — und nimmt sie wieder', async () => {
@@ -673,11 +709,79 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
       a.method === 'POST' && tabelleVon(a) === 'plaene' ? kaputt : undefined,
     )
     const text = ausgabe.join('\n')
-    expect(text).toMatch(/\(28\) einen Plan im Entwurf sehen\n.*PROBE KAPUTT — Anlage als Planer scheiterte \(plaene, HTTP 400\)/)
-    expect(text).not.toMatch(/unsichtbar — einen Entwurf sehen nur Planer/)
+    expect(text).toMatch(/\(28\) einen Plan im Entwurf sehen\n.*PROBE KAPUTT — Anlage als Admin scheiterte \(plaene, HTTP 400\)/)
+    expect(text).not.toMatch(/unsichtbar — einen Entwurf sehen nur Admin und Planer/)
     expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(28\), \(29\), \(33\), \(34\)/)
     // Aufgeräumt wird trotzdem — der Termin des Zeugnisgebens stand ja schon.
     expect((tabellen.oz_termine ?? []).filter(istProbe)).toEqual([])
+  })
+
+  /*
+    Die Rechte-Stufen (seit 4.10.2026): vier Konten statt zwei. Auch hier
+    kennt die Attrappe keine Richtlinien — fast jeder Versuch kommt durch, und
+    gerade deshalb läuft jeder Zurückstell- und Aufräum-Zweig.
+  */
+  it('mitgliedsrechte-probe: liest die eigene Mitgliedszeile, auch wenn der Admin alle sieht', async () => {
+    // Einem Admin zeigt `members_select` jede Zeile seiner Versammlung. Bis zum
+    // 4.10.2026 las die Probe ungefiltert und nahm die erste — stand eine
+    // andere vorne, hielt sie den Admin für keinen und brach ab.
+    const members = [...lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.members!].reverse()
+    const { ausgabe } = await mitBestand({ members })
+    expect(ausgabe.join('\n')).toMatch(/Admin: +planer@probe\.invalid/)
+  })
+
+  it('mitgliedsrechte-probe (Rechte-Stufen): stellt jede geänderte Zeile zurück und räumt alles weg', async () => {
+    const vorher = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!
+    const { tabellen, ausgabe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    // Was der Planer an Bestehendem ändern konnte, steht wieder wie vorher —
+    // die Woche (38–40) und sein eigenes Konto (41).
+    expect(tabellen.weeks![0]!.data).toEqual(vorher.weeks![0]!.data)
+    expect(tabellen.members!.find((m) => m.user_id === U3)!.planner).toBe(false)
+    // Was die Probe anlegte, ist weg: die Treffpunkt-Woche und jede Zeile mit Kennzeichen.
+    expect(tabellen.fs_weeks ?? []).toEqual([])
+    for (const t of ['fs_rules', 'gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege']) {
+      expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
+    }
+    // Auch die Absage aus (6), die seit dem 4.10.2026 beim Planer ebenfalls ankommt.
+    expect((tabellen.notifications ?? []).filter((z) => String(z.title).startsWith('PROBE-'))).toEqual([])
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(35\) Mitglied: eine Woche über „zuteilen" schreiben\n.*abgewiesen \(HTTP 403\) — nur Admin und Planer \(forbidden\)/)
+    expect(text).toMatch(/\(40\) Planer: über „zuteilen" einen Platz freigeben\n.*GEÄNDERT \(HTTP 200\) — der Weg steht offen\n.*\(wieder zurückgestellt\)/)
+    expect(text).toMatch(/\(47\) Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern\n.*GEÄNDERT \(HTTP 201\) — der Weg steht offen/)
+    expect(text).toMatch(/\(61\) Planer: die Absage eines Mitglieds bekommen \(notify_planners\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
+    // Jeder Fall von 35 bis 61 kam zu einem Ergebnis — keiner blieb ungemessen.
+    for (let nr = 35; nr <= 61; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+  })
+
+  it('mitgliedsrechte-probe (Rechte-Stufen): sagt die Function erst hinter der Tür „keine Woche", hat sie durchgelassen', async () => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const mitSendPlan = (antwort: { status: number; json: unknown }) =>
+      fahre(() => l.fahren(modul, ''), { ...l.umgebung, funktionen: { ...l.umgebung!.funktionen, 'send-plan': () => antwort } })
+    const offen = await mitSendPlan({ status: 404, json: { error: 'no-week' } })
+    expect(offen.ausgabe.join('\n')).toMatch(/\(36\) Mitglied: „Plan senden"\n.*DURCHGELASSEN \(HTTP 404\) — AUCH DAS!/)
+    // Ein Fehler vor der Tür ist dagegen kein Urteil über sie.
+    const vorDerTuer = await mitSendPlan({ status: 400, json: { error: 'bad-request' } })
+    expect(vorDerTuer.ausgabe.join('\n')).toMatch(/\(36\) Mitglied: „Plan senden"\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 400\)/)
+  })
+
+  const fsStart = stufenAnlage({
+    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), adminPid: P1, zuteilerPid: P3, mitgliedPid: P2, eigeneGruppe: G1, fremdeGruppe: G2,
+  }).fsStart
+
+  it('mitgliedsrechte-probe (Rechte-Stufen): eine Treffpunkt-Woche, die nicht von der Probe ist, bleibt unberührt', async () => {
+    const echt = { congregation_id: C, start: fsStart, data: [{ id: 'r-echt', ruleId: 'r-echt', grp: null, wd: 6, time: '09:30', place: 'Probe-Ort', leader: '' }] }
+    const { ausgabe, tabellen, aufrufe } = await mitBestand({ fs_weeks: [echt] })
+    expect(tabellen.fs_weeks).toEqual([echt])
+    expect(aufrufe.filter((a) => a.method !== 'GET' && tabelleVon(a) === 'fs_weeks')).toEqual([])
+    expect(ausgabe.join('\n')).toMatch(/\(42\) Planer: den Ort eines Treffpunkts ändern\n.*PROBE KAPUTT — in der Woche \d{4}-\d{2}-\d{2} stehen Treffpunkte, die nicht von der Probe sind/)
+  })
+
+  it('mitgliedsrechte-probe (Rechte-Stufen): eine Treffpunkt-Woche, die ein abgebrochener Lauf hinterließ, wird übernommen und entfernt', async () => {
+    const liegengeblieben = { congregation_id: C, start: fsStart, data: [{ id: 'PROBE-1-fs-eigen', grp: G1, wd: 3, time: '09:30', place: 'PROBE-1', leader: '' }] }
+    const { tabellen, ausgabe } = await mitBestand({ fs_weeks: [liegengeblieben] })
+    expect(tabellen.fs_weeks ?? []).toEqual([])
+    expect(ausgabe.join('\n')).toMatch(/\(47\) Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern\n.*GEÄNDERT/)
   })
 
   it('mandanten-nachweis: ein 400 auf den Einfügeversuch heißt „PROBE KAPUTT", nicht „abgewiesen"', async () => {
@@ -723,5 +827,37 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     // Hier ging vorher `tel: ''` hinaus — bei einem Loch in der Richtlinie
     // wäre die echte Nummer einer Person der anderen Versammlung weg gewesen.
     expect(aufrufe.filter((a) => a.method === 'PATCH')).toEqual([])
+  })
+})
+
+describe('testversammlung-anlegen: jedes Konto bekommt seine Rechte-Stufe', () => {
+  /*
+    Die Mitgliedsrechte-Probe bricht ab, wenn ein Konto in der falschen Stufe
+    steht — aber erst an der echten Datenbank, nach dem Anlegen. Hier steht
+    fest, was das Skript wirklich schreibt, nicht nur, was in seiner Liste
+    steht (seit 4.10.2026: vier Konten statt zwei).
+  */
+  it('Admin `planner`, Planer `zuteiler`, die Personen wie in TEST_KONTEN, die Vormerkung an der Person', async () => {
+    const l = LAEUFE['testversammlung-anlegen.mjs']![0]!
+    const modul = (await MODULE['./testversammlung-anlegen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const { tabellen } = await fahre(() => l.fahren(modul, ''), l.umgebung)
+    const name = (id: unknown): string => {
+      const p = tabellen.persons!.find((x) => x.id === id)
+      return `${String(p?.fn)} ${String(p?.ln)}`
+    }
+    expect(tabellen.members!.map((m) => `${String(m.email)} ${String(m.planner)}/${String(m.zuteiler)} ${name(m.person_id)}`)).toEqual([
+      'planer@probe.invalid true/false Martin Aichinger',
+      'mitglied@probe.invalid false/false Elena Aichinger',
+      'zuteiler@probe.invalid false/true Andreas Rothacker',
+      'aufseher@probe.invalid false/false Thomas Ebersbach',
+    ])
+    const vorgemerkt = tabellen.persons!.filter((p) => p.planner_vorgemerkt || p.zuteiler_vorgemerkt)
+    expect(vorgemerkt.map((p) => `${name(p.id)} ${Boolean(p.planner_vorgemerkt)}/${Boolean(p.zuteiler_vorgemerkt)}`)).toEqual([
+      'Martin Aichinger true/false',
+      'Andreas Rothacker false/true',
+    ])
+    // Und der Gruppenaufseher leitet in der Datenbank wirklich eine Gruppe.
+    const aufseher = tabellen.members!.find((m) => m.email === 'aufseher@probe.invalid')!
+    expect(tabellen.groups!.some((g) => g.overseer_id === aufseher.person_id || g.assistant_id === aufseher.person_id)).toBe(true)
   })
 })

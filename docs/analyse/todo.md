@@ -6248,6 +6248,20 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   tun ist (`wtRollenDoppeltHint`, alle Sprachen), und beide Rollen im Filter.
   `doppelteFesteRollen` liefert dafür die Personen statt ihrer Zahl. Kein
   Schema, keine Function — geht mit dem Push live.
+- **Die Rechte-Stufen an der echten Datenbank messen** — offen bis zum
+  nächsten Lauf. `scripts/mitgliedsrechte-probe.mjs` kennt die Stufen
+  (4.10.2026): Fälle 35–61, je Grenze ein verbotener Versuch und eine
+  Gegenprobe — Türen von `zuteilen` und `send-plan`, die Programmwoche am
+  Server vorbei und über `zuteilen`, das eigene Konto, Treffpunkte (fremde,
+  eigene und Versammlungstreffpunkte, samt der von `fsLeiterBinden`
+  nachgetragenen Person), Grundplan, Gruppenbesuche, Zeugnisgeben, Pläne und
+  die Absage an den Planer. `testversammlung-anlegen.mjs` legt dafür vier
+  Konten an statt zwei (`zuteiler@` als Planer, `aufseher@` als
+  Gruppenaufseher). Nebenbei behoben: Die Probe las die eigene Mitgliedszeile
+  ungefiltert, und einem Admin liefert `members_select` jede Zeile der
+  Versammlung — dass er sich selbst fand, hing an der Speicherreihenfolge.
+  Fahren: Testversammlung anlegen (Betreiber), dann die Probe, danach
+  `--entfernen`.
 
 **Rechte-Stufe ausrollen:** `schema.sql` einspielen → Functions `zuteilen`
 (neu), `send-plan`, `substitute`, `send-reminders` deployen → Push. Das neue

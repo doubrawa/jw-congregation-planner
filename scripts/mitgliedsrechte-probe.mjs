@@ -89,6 +89,52 @@
  * also räumt bei (6) der Planer seine eigene Zeile weg. Deshalb braucht die
  * Probe beide Anmeldungen.
  *
+ * **Seit dem 4. Oktober 2026 misst sie die Rechte-Stufen** — mit vier Konten
+ * statt zwei, je Stufe eines (`testversammlung-anlegen.mjs` legt sie an). Das
+ * Konto `planer@` ist dabei der **Admin** (`members.planner`, die App nannte
+ * ihn bis dahin „Planer"); die Stufe „Planer" (`members.zuteiler`) hat
+ * `zuteiler@`. Im Code heißt das Admin-Konto deshalb weiter `planer`, in der
+ * Ausgabe „Admin". Der Planer teilt zu, ändert den Plan aber nicht — Wochen
+ * schreibt er über die Edge Function `zuteilen`. Der Gruppenaufseher ändert die
+ * Treffpunkte seiner Gruppe, keine fremden.
+ *
+ *  35. Mitglied: eine Woche über `zuteilen` schreiben          → abgewiesen
+ *  36. Mitglied: „Plan senden"                                  → abgewiesen
+ *  37. Gruppenaufseher: „Plan senden" fürs Zeugnisgeben        → abgewiesen
+ *  38. Planer: die Woche am Server vorbei schreiben             → abgewiesen
+ *  39. Planer: über `zuteilen` einen Programmpunkt umbenennen   → abgewiesen
+ *  40. Planer: über `zuteilen` einen Platz freigeben            → durch
+ *  41. Planer: sich selbst zum Admin machen                     → abgewiesen
+ *  42. Planer: den Ort eines Treffpunkts ändern                 → abgewiesen
+ *  43. Planer: den Leiter eines Treffpunkts setzen              → durch
+ *  44. Gruppenaufseher: Ort, Treffpunkt einer fremden Gruppe    → abgewiesen
+ *  45. Gruppenaufseher: Leiter, Treffpunkt einer fremden Gruppe → abgewiesen
+ *  46. Gruppenaufseher: Ort eines Versammlungstreffpunkts       → abgewiesen
+ *  47. Gruppenaufseher: Ort, Treffpunkt der eigenen Gruppe      → durch
+ *  48. dasselbe, dazu die nachgetragene Person eines fremden
+ *      Leiters (`fsLeiterBinden` beim Laden)                    → durch
+ *  49. Mitglied: einen Treffpunkt ändern                        → abgewiesen
+ *  50. Planer: eine Regel im Grundplan anlegen                  → abgewiesen
+ *  51. Gruppenaufseher: eine Regel für eine fremde Gruppe       → abgewiesen
+ *  52. Gruppenaufseher: eine Regel für die eigene Gruppe        → durch
+ *  53. Planer: einen Gruppenbesuch verschieben                  → abgewiesen
+ *  54. Planer: den Besucher eines Gruppenbesuchs wechseln       → durch
+ *  55. Planer: einen Gruppenbesuch anlegen                      → abgewiesen
+ *  56. Planer: eine andere Person ins Zeugnisgeben eintragen    → durch
+ *  57. Planer: einen Termin des Zeugnisgebens anlegen           → abgewiesen
+ *  58. Planer: einen Plan im Entwurf sehen                      → sichtbar
+ *  59. Planer: eine Woche eines Plans besetzen                  → durch
+ *  60. Planer: einen Plan anlegen                               → abgewiesen
+ *  61. Planer: die Absage eines Mitglieds bekommen              → angekommen
+ *
+ * (35)–(37) zielen ins Leere — eine Woche im Jahr 2100, die es nicht gibt —,
+ * damit eine offene Tür nichts verschickt und nichts schreibt; dass die
+ * Function dann „keine Woche" meldet, heißt bereits: durchgelassen. Wo ein
+ * Versuch an einer **bestehenden** Zeile durchkommt (die Programmwoche, ein
+ * Treffpunkt, das eigene Konto des Planers, ein Gruppenbesuch), stellt der
+ * Admin sofort den vorigen Stand her. Alles Übrige legt der Admin wieder im
+ * Jahr 2099 an, und am Ende geht es weg.
+ *
  * ---------------------------------------------------------------- Aufruf ----
  *
  * Gemessen wird mit dem **anon**-Key plus Anmeldung — wie in
@@ -100,13 +146,14 @@
  *
  * **Nichts vorher setzen.** URL und anon-Schlüssel stehen in `.env.local`
  * (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), die Konten heißen wie in
- * `testversammlung-anlegen.mjs` (`planer@probe.invalid`,
- * `mitglied@probe.invalid`), und nach den beiden Kennwörtern fragt die Probe
- * — verdeckt. Umgebungsvariablen gehen vor (`SUPABASE_URL`,
- * `SUPABASE_ANON_KEY`, `PROBE_PLANER_MAIL`/`_PASS`,
- * `PROBE_MITGLIED_MAIL`/`_PASS`), etwa für andere Konten oder ohne Terminal.
+ * `testversammlung-anlegen.mjs` (`planer@probe.invalid` als Admin,
+ * `mitglied@`, `zuteiler@` als Planer, `aufseher@` als Gruppenaufseher), und
+ * nach den vier Kennwörtern fragt die Probe — verdeckt. Umgebungsvariablen
+ * gehen vor (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `PROBE_PLANER_MAIL`/`_PASS`,
+ * `PROBE_MITGLIED_MAIL`/`_PASS`, `PROBE_ZUTEILER_MAIL`/`_PASS`,
+ * `PROBE_AUFSEHER_MAIL`/`_PASS`), etwa für andere Konten oder ohne Terminal.
  *
- * `--versammlung` ist Pflicht und wird gegen beide Konten geprüft. Die Probe
+ * `--versammlung` ist Pflicht und wird gegen alle Konten geprüft. Die Probe
  * **schreibt**, wenn auch nur kurz — sie soll das nicht in der echten
  * Versammlung tun, weil jemand versehentlich sein eigenes Konto einträgt.
  */
@@ -398,8 +445,17 @@ export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid
 
 /* ===================== Zugang ============================================= */
 
-/** Die Konten, wie `testversammlung-anlegen.mjs` sie anlegt — deren Versammlung misst die Probe gewöhnlich. */
-export const PROBE_KONTEN = { planer: 'planer@probe.invalid', mitglied: 'mitglied@probe.invalid' }
+/**
+ * Die Konten, wie `testversammlung-anlegen.mjs` sie anlegt (`TEST_KONTEN`) —
+ * deren Versammlung misst die Probe gewöhnlich. `planer` ist der Admin,
+ * `zuteiler` die Stufe „Planer" (siehe Kopf).
+ */
+export const PROBE_KONTEN = {
+  planer: 'planer@probe.invalid',
+  mitglied: 'mitglied@probe.invalid',
+  zuteiler: 'zuteiler@probe.invalid',
+  aufseher: 'aufseher@probe.invalid',
+}
 
 /**
  * **Woher die Probe ihren Zugang nimmt** — rein, damit der Test es ohne Datei
@@ -423,8 +479,12 @@ export function zugangAus(env, ausDatei) {
     anon,
     planerMail: env.PROBE_PLANER_MAIL || PROBE_KONTEN.planer,
     mitgliedMail: env.PROBE_MITGLIED_MAIL || PROBE_KONTEN.mitglied,
+    zuteilerMail: env.PROBE_ZUTEILER_MAIL || PROBE_KONTEN.zuteiler,
+    aufseherMail: env.PROBE_AUFSEHER_MAIL || PROBE_KONTEN.aufseher,
     planerPass: env.PROBE_PLANER_PASS || '',
     mitgliedPass: env.PROBE_MITGLIED_PASS || '',
+    zuteilerPass: env.PROBE_ZUTEILER_PASS || '',
+    aufseherPass: env.PROBE_AUFSEHER_PASS || '',
     dienstSchluessel:
       Boolean(anon) &&
       (anon.startsWith('sb_secret_') || anon === env.SUPABASE_SERVICE_ROLE_KEY || anon === env.SUPABASE_SECRET_KEY),
@@ -442,10 +502,18 @@ async function zugang() {
     console.error('Der anon-Schlüssel ist ein Dienst-Schlüssel. Der umgeht RLS — die Probe wäre wertlos.')
     process.exit(2)
   }
-  for (const [feld, mail] of [['planerPass', z.planerMail], ['mitgliedPass', z.mitgliedMail]]) {
+  const konten = [
+    ['planerPass', z.planerMail],
+    ['mitgliedPass', z.mitgliedMail],
+    ['zuteilerPass', z.zuteilerMail],
+    ['aufseherPass', z.aufseherMail],
+  ]
+  for (const [feld, mail] of konten) {
     if (z[feld]) continue
     if (!process.stdin.isTTY) {
-      console.error(`Kein Kennwort für ${mail} und kein Terminal zum Fragen — PROBE_PLANER_PASS / PROBE_MITGLIED_PASS setzen.`)
+      console.error(
+        `Kein Kennwort für ${mail} und kein Terminal zum Fragen — PROBE_PLANER_PASS / PROBE_MITGLIED_PASS / PROBE_ZUTEILER_PASS / PROBE_AUFSEHER_PASS setzen.`,
+      )
       process.exit(2)
     }
     process.stderr.write(`Kennwort für ${mail} (bleibt verdeckt): `)
@@ -487,32 +555,59 @@ async function anmelden(url, anon, mail, pass) {
     return { status: antwort.status, daten }
   }
 
-  const { status, daten: mitglied } = await rest('members?select=congregation_id,person_id,planner')
+  // Die **eigene** Zeile, nach dem Konto gefiltert: Einem Admin zeigt
+  // `members_select` alle Zeilen seiner Versammlung, und welche davon vorne
+  // liegt, entscheidet die Speicherreihenfolge. Bis zum 4.10.2026 fehlte der
+  // Filter — dass der Admin sich selbst fand, war Glück: Seine Zeile war die
+  // zuerst angelegte.
+  const { status, daten: mitglied } = await rest(`members?select=congregation_id,person_id,planner,zuteiler&user_id=eq.${user.id}`)
   // Ein Fehler hier hieße sonst „in keiner Versammlung" — die falsche Spur.
   if (status >= 400) throw new Error(`${mail}: members nicht lesbar (${status}): ${JSON.stringify(mitglied)}`)
   if (!mitglied?.[0]) throw new Error(`${mail} ist in keiner Versammlung.`)
-  return { mail, rest, funktion, uid: user.id, cong: mitglied[0].congregation_id, pid: mitglied[0].person_id, planer: Boolean(mitglied[0].planner) }
+  const ich = mitglied[0]
+  return {
+    mail,
+    rest,
+    funktion,
+    uid: user.id,
+    cong: ich.congregation_id,
+    pid: ich.person_id,
+    planer: Boolean(ich.planner),
+    zuteiler: Boolean(ich.zuteiler),
+  }
 }
 
 /* ===================== T120: die Fälle 11–34 ============================== */
 
 /**
- * Als Planer anlegen und nachsehen, ob es dasteht. Ohne das misst ein
+ * Als Admin anlegen und nachsehen, ob es dasteht. Ohne das misst ein
  * Lesefall nichts: Eine leere Antwort hieße sonst „unsichtbar", obwohl es die
  * Zeile gar nicht gab.
  */
 async function anlegen(planer, tabelle, zeilen) {
   const s = await planer.rest(tabelle, 'POST', zeilen, 'return=minimal')
-  if (s.status >= 400) return { ok: false, grund: `Anlage als Planer scheiterte (${tabelle}, HTTP ${s.status})` }
+  if (s.status >= 400) return { ok: false, grund: `Anlage als Admin scheiterte (${tabelle}, HTTP ${s.status})` }
   const l = await planer.rest(`${tabelle}?select=id&id=in.(${zeilen.map((z) => z.id).join(',')})`)
   if (l.status >= 400) return { ok: false, grund: `Anlage nicht nachprüfbar (${tabelle}, HTTP ${l.status})` }
   const da = zeilenVon(l).length
   return da === zeilen.length ? { ok: true } : { ok: false, grund: `Anlage unvollständig (${tabelle}: ${da} von ${zeilen.length})` }
 }
 
-/** Ein Schreibversuch des Mitglieds: ohne RETURNING schreiben, beim Planer nachsehen, Angekommenes wegräumen. */
-async function schreibVersuch(k, nr, was, tabelle, zeile, erwartet, folge) {
-  const s = await k.mitglied.rest(tabelle, 'POST', zeile, 'return=minimal')
+/**
+ * Ein Upsert, wie die App ihn schickt (`upsert` in `data.ts`). Eine Zeile, die
+ * es schon gibt, ändert er — und kommt dabei als INSERT an, deshalb vergleichen
+ * die Trigger der Rechte-Stufen mit der bestehenden Zeile. Die Probe geht den
+ * Weg der App, nicht einen eigenen: Ein PATCH träfe andere Richtlinien.
+ */
+const UPSERT = 'resolution=merge-duplicates,return=minimal'
+
+/**
+ * Ein Schreibversuch: ohne RETURNING schreiben, beim Admin nachsehen,
+ * Angekommenes wegräumen. Es schreibt das Mitglied, wenn `wer` nichts anderes
+ * sagt; `prefer` ist für den Upsert (`UPSERT`).
+ */
+async function schreibVersuch(k, nr, was, tabelle, zeile, erwartet, folge, { wer = k.mitglied, prefer = 'return=minimal' } = {}) {
+  const s = await wer.rest(tabelle, 'POST', zeile, prefer)
   const l = await k.planer.rest(`${tabelle}?select=id&id=eq.${zeile.id}`)
   const e = bewerteVersuch(s.status, zeilenVon(l).length > 0, erwartet, { leseStatus: l.status })
   k.ergebnis(nr, was, e, e.durch ? folge[0] : folge[1])
@@ -668,16 +763,16 @@ async function plaeneProben(k, a) {
 
   await leseVersuch(k, 28, 'einen Plan im Entwurf sehen', anlage, () => planSicht(mitglied, p.entwurf, a.eintraege.entwurf, false), false, [
     'AUCH DAS!',
-    'unsichtbar — einen Entwurf sehen nur Planer',
+    'unsichtbar — einen Entwurf sehen nur Admin und Planer',
   ])
   await leseVersuch(k, 29, 'den veröffentlichten Königreichssaal sehen', anlage, () => planSicht(mitglied, p.saal, a.eintraege.saal, true), true, [
     'die ganze Versammlung sieht ihn',
     'ZU STRENG — die Versammlung sieht den Saalplan nicht',
   ])
 
-  await schreibVersuch(k, 33, 'einen Plan anlegen', 'plaene', a.planVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
+  await schreibVersuch(k, 33, 'einen Plan anlegen', 'plaene', a.planVersuch, false, ['AUCH DAS!', 'abgewiesen — nur der Admin'])
   const was34 = 'eine Woche eines Plans selbst besetzen'
-  if (anlage.ok) await schreibVersuch(k, 34, was34, 'plan_eintraege', a.eintragVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
+  if (anlage.ok) await schreibVersuch(k, 34, was34, 'plan_eintraege', a.eintragVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Admin und Planer'])
   else k.kaputt(34, was34, anlage.grund, false)
 }
 
@@ -720,9 +815,9 @@ async function t120Aufraeumen(k, spaeter) {
  */
 async function t120Proben(k) {
   const { planer, mitglied, versammlung, marke } = k
-  console.log('\nDie Rechte aus T120 (angelegt als Planer, im Jahr 2099):')
+  console.log('\nDie Rechte aus T120 (angelegt als Admin, im Jahr 2099):')
   if (!mitglied.pid || !planer.pid || mitglied.pid === planer.pid) {
-    k.ungemessen('11–34', 'die Pläne der Versammlung', 'Planer und Mitglied brauchen je eine eigene Person')
+    k.ungemessen('11–34', 'die Pläne der Versammlung', 'Admin und Mitglied brauchen je eine eigene Person')
     return
   }
   const [personen, gruppen] = await Promise.all([
@@ -754,6 +849,550 @@ async function t120Proben(k) {
   }
 }
 
+/* ===================== Rechte-Stufen: die Fälle 35–61 ===================== */
+
+/**
+ * Rollen am Vortragsplatz — Spiegel von `REDNER_ROLLEN` samt `rolleBasis` in
+ * `supabase/functions/_shared/zuteilen-grenze.ts` („Gastredner · Vers. X"
+ * zählt mit). Node lädt die TypeScript-Datei nicht; der Test hält
+ * `planAenderung` an `nurZuteilungen` selbst.
+ */
+const REDNER_ROLLE = /^(Redner|Gastredner|Kreisaufseher)( · |$)/
+
+/** Die Programmpunkte unter der Woche mit ihrer Stelle. */
+function punkteUnterDerWoche(daten) {
+  const out = []
+  ;(daten?.mid?.sections ?? []).forEach((sec, si) => {
+    ;(sec?.items ?? []).forEach((item, ii) => out.push({ item, si, ii }))
+  })
+  return out
+}
+
+/** Die Plätze eines Programmpunkts — leer bei einer Lied-Zeile. */
+const plaetzeVon = (item) => (Array.isArray(item?.names) ? item.names : [])
+
+/**
+ * **Eine Änderung am Plan** für (38) und (39): Der erste Programmpunkt unter
+ * der Woche, dessen Titel nur der Admin setzt, bekommt das Kennzeichen
+ * angehängt. Punkte mit einem Redner-Platz fallen aus — deren Thema darf der
+ * Planer setzen (`freieTitel`), und die Probe hielte eine offene Tür für eine
+ * Lücke. `null`, wenn die Woche keinen solchen Punkt hat.
+ */
+export function planAenderung(daten, marke) {
+  const treffer = punkteUnterDerWoche(daten).find(
+    ({ item }) => typeof item?.title === 'string' && !plaetzeVon(item).some((s) => REDNER_ROLLE.test(s?.rolle ?? '')),
+  )
+  if (!treffer) return null
+  const data = structuredClone(daten)
+  data.mid.sections[treffer.si].items[treffer.ii].title = `${treffer.item.title} ${marke}`
+  return { data, si: treffer.si, ii: treffer.ii }
+}
+
+/**
+ * **Eine Zuteilung** für (40): Der erste besetzte Platz unter der Woche wird
+ * frei — Name, Person und Herkunft weg, wie „Entfernen" in der App. Das
+ * Kleinste, was ein Planer tut; der Admin stellt die Woche danach zurück.
+ */
+export function zuteilungAenderung(daten) {
+  for (const { item, si, ii } of punkteUnterDerWoche(daten)) {
+    const ni = plaetzeVon(item).findIndex((s) => s?.pid)
+    if (ni < 0) continue
+    const data = structuredClone(daten)
+    const platz = data.mid.sections[si].items[ii].names[ni]
+    platz.name = ''
+    delete platz.pid
+    delete platz.herkunft
+    return { data, si, ii, ni }
+  }
+  return null
+}
+
+/**
+ * Welche Gruppe der Gruppenaufseher leitet (`eigene`) — und eine, die keines
+ * der Probekonten leitet (`fremde`): Nur an der misst ein Versuch die Grenze
+ * „fremde Gruppe" und nicht zufällig das Recht eines Gruppenaufsehers.
+ * `mitgliedLeitet`: Dann mäße (49) den Gruppenaufseher statt des Mitglieds.
+ */
+export function gruppenWahl(gruppen, { aufseherPid, zuteilerPid, mitgliedPid }) {
+  const leitet = (g, pid) => Boolean(pid) && (g.overseer_id === pid || g.assistant_id === pid)
+  const eigene = gruppen.find((g) => leitet(g, aufseherPid))?.id ?? null
+  const fremde = gruppen.find((g) => g.id !== eigene && ![aufseherPid, zuteilerPid, mitgliedPid].some((pid) => leitet(g, pid)))?.id ?? null
+  return { eigene, fremde, mitgliedLeitet: gruppen.some((g) => leitet(g, mitgliedPid)) }
+}
+
+/**
+ * **Was die Probe für die Rechte-Stufen anlegt** — und was Planer,
+ * Gruppenaufseher und Mitglied daran zu ändern versuchen. Rein, damit der Test
+ * prüfen kann, dass jeder Versuch genau **eine** Regel trifft: Jeder ändert
+ * genau einen Treffpunkt in genau einem Feld — bis auf (48), das zur eigenen
+ * Gruppe die nachgetragene Person eines fremden Leiters mitschickt, wie die App
+ * es nach `fsLeiterBinden` tut. Ohne Ausnahme für `lpid` im Trigger scheiterte
+ * daran jede Änderung eines Gruppenaufsehers.
+ *
+ * Alles liegt hinter den Wochen von T120 (Woche 6–8 nach `tag0`); jede
+ * Kennung trägt `marke`, daran findet das Aufräumen genau diese Zeilen.
+ *
+ * @param {{
+ *   marke: string, versammlung: string, tag0: string, adminPid: string,
+ *   zuteilerPid: string, mitgliedPid: string, eigeneGruppe: string, fremdeGruppe: string
+ * }} auftrag
+ */
+export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, zuteilerPid, mitgliedPid, eigeneGruppe, fremdeGruppe }) {
+  const id = (name) => `${marke}-${name}`
+  const montag = (wochen) => tagPlus(tag0, 7 * wochen)
+
+  // Drei Treffpunkte einer Woche: der eigenen Gruppe des Gruppenaufsehers,
+  // einer fremden und der ganzen Versammlung — in der Form, die die App
+  // schreibt (`FsInstance`).
+  const treffpunkt = (name, grp, wd, leader = '') => ({ id: id(`fs-${name}`), ruleId: null, grp, wd, time: '09:30', place: marke, leader, manual: true })
+  const fs = {
+    eigen: treffpunkt('eigen', eigeneGruppe, 3),
+    fremd: treffpunkt('fremd', fremdeGruppe, 3, 'Probe Leiter'),
+    versammlung: treffpunkt('versammlung', null, 6),
+  }
+  const treffpunkte = Object.values(fs)
+  /** Die Treffpunkte der Woche, an den genannten geändert. */
+  const mit = (aenderung) => treffpunkte.map((t) => ({ ...t, ...(aenderung[Object.keys(fs).find((n) => fs[n] === t)] ?? {}) }))
+  const ort = `${marke} verlegt`
+  const leiter = 'Probe Leiter Zwei'
+  const fsVersuche = [
+    {
+      nr: 42, wer: 'zuteiler', was: 'Planer: den Ort eines Treffpunkts ändern',
+      ziel: fs.versammlung.id, feld: 'place', wert: ort, data: mit({ versammlung: { place: ort } }),
+      erwartet: false, folge: ['AUCH DAS!', 'der Planer setzt nur den Leiter'],
+    },
+    {
+      nr: 43, wer: 'zuteiler', was: 'Planer: den Leiter eines Treffpunkts setzen',
+      ziel: fs.versammlung.id, feld: 'leader', wert: leiter, data: mit({ versammlung: { leader: leiter, lpid: adminPid } }),
+      erwartet: true, folge: ['der Weg steht offen', 'ZU STRENG — der Planer kann keine Leiter einteilen'],
+    },
+    {
+      nr: 44, wer: 'aufseher', was: 'Gruppenaufseher: den Ort eines Treffpunkts einer fremden Gruppe ändern',
+      ziel: fs.fremd.id, feld: 'place', wert: ort, data: mit({ fremd: { place: ort } }),
+      erwartet: false, folge: ['AUCH DAS!', 'fremde Gruppen bleiben, wie sie sind'],
+    },
+    {
+      nr: 45, wer: 'aufseher', was: 'Gruppenaufseher: den Leiter eines Treffpunkts einer fremden Gruppe setzen',
+      ziel: fs.fremd.id, feld: 'leader', wert: leiter, data: mit({ fremd: { leader: leiter } }),
+      erwartet: false, folge: ['AUCH DAS!', 'die Leiter fremder Gruppen setzt er nicht'],
+    },
+    {
+      nr: 46, wer: 'aufseher', was: 'Gruppenaufseher: den Ort eines Versammlungstreffpunkts ändern',
+      ziel: fs.versammlung.id, feld: 'place', wert: ort, data: mit({ versammlung: { place: ort } }),
+      erwartet: false, folge: ['AUCH DAS!', 'ein Treffpunkt ohne Gruppe gehört keinem Gruppenaufseher'],
+    },
+    {
+      nr: 47, wer: 'aufseher', was: 'Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern',
+      ziel: fs.eigen.id, feld: 'place', wert: ort, data: mit({ eigen: { place: ort } }),
+      erwartet: true, folge: ['der Weg steht offen', 'ZU STRENG — der Gruppenaufseher kann seine Treffpunkte nicht ändern'],
+    },
+    {
+      nr: 48, wer: 'aufseher', was: 'Gruppenaufseher: dasselbe, während die App einen fremden Leiter an seine Person gebunden hat',
+      ziel: fs.eigen.id, feld: 'place', wert: ort, data: mit({ eigen: { place: ort }, fremd: { lpid: adminPid } }),
+      erwartet: true, folge: ['der Weg steht offen — die Person des Leiters zählt nicht', 'ZU STRENG — jede Änderung scheitert, sobald die App irgendwo einen Leiter bindet'],
+    },
+    {
+      nr: 49, wer: 'mitglied', was: 'Mitglied: einen Treffpunkt ändern',
+      ziel: fs.versammlung.id, feld: 'place', wert: ort, data: mit({ versammlung: { place: ort } }),
+      erwartet: false, folge: ['AUCH DAS!', 'Treffpunkte schreiben Admin, Planer und Gruppenaufseher'],
+    },
+  ]
+
+  const regel = (name, grp) => ({ id: id(`regel-${name}`), congregation_id: c, grp, wd: 3, time: '09:30', place: marke, monthly: 0, skip_cong: false, aus: [] })
+  const besuch = { id: id('besuch-stufe'), congregation_id: c, woche: montag(6), grp: fremdeGruppe, person_id: adminPid }
+  const termin = { id: id('termin-stufe'), congregation_id: c, wd: wochentag(tag0), von: '10:00', bis: '12:00', ort: marke, plaetze: 6 }
+  const plan = { id: id('plan-stufe'), congregation_id: c, name: marke, von: montag(6), bis: tagPlus(montag(7), 6), entwurf: true }
+  return {
+    fsStart: montag(6),
+    treffpunkte,
+    fsVersuche,
+    regeln: {
+      planer: regel('planer', fremdeGruppe),
+      aufseherFremd: regel('aufseher-fremd', fremdeGruppe),
+      aufseherEigen: regel('aufseher-eigen', eigeneGruppe),
+    },
+    besuch,
+    besuchVersuche: {
+      verschoben: { ...besuch, woche: montag(7) },
+      besucher: { ...besuch, person_id: zuteilerPid },
+      neu: { id: id('besuch-planer'), congregation_id: c, woche: montag(8), grp: fremdeGruppe, person_id: zuteilerPid },
+    },
+    termin,
+    // Eine **andere** Person eintragen, zugeteilt statt selbst — das darf nur,
+    // wer zuteilt; am Wochentag des Termins, sonst wiese `oz_falscher_tag` ab.
+    ozPlaner: { id: id('oz-planer'), congregation_id: c, termin_id: termin.id, datum: montag(6), person_id: mitgliedPid, selbst: false },
+    terminVersuch: { ...termin, id: id('termin-planer') },
+    plan,
+    planEintrag: { id: id('e-stufe'), congregation_id: c, plan_id: plan.id, datum: montag(6), grp: fremdeGruppe },
+    eintragVersuch: { id: id('e-planer'), congregation_id: c, plan_id: plan.id, datum: montag(7), grp: fremdeGruppe },
+    planVersuch: { ...plan, id: id('plan-planer'), entwurf: false },
+    absage: `${marke} — Absage auch an den Planer`,
+  }
+}
+
+/** Was nach einem durchgekommenen Änderungsversuch geschieht — zurückstellen, nicht löschen. */
+const ZURUECK = ['wieder zurückgestellt', 'vorsorglich zurückgestellt']
+
+/**
+ * Ein Versuch, eine **bestehende** Zeile zu ändern: schreiben, beim Admin
+ * nachsehen, ob die Änderung dasteht, und sie dann zurücknehmen.
+ *
+ * „Angekommen" heißt hier: geändert. Auf ein PATCH, das RLS gar nicht erst
+ * trifft, antwortet PostgREST mit 204 — wie beim Löschen zählt deshalb, was
+ * danach dasteht, nicht der Status. `nachsehen` liefert `{ status,
+ * angekommen }` und `fehlt`, wenn die Zeile selbst nicht zu finden ist: Dann
+ * ist nichts gemessen. Zurückgestellt wird auch, wenn nur das Nachsehen
+ * scheiterte — die Änderung kann trotzdem dastehen. `urteil` sagt bei einer
+ * Edge Function, welche Antwort ein Urteil ist.
+ */
+async function aenderVersuch(k, { nr, was, schreiben, nachsehen, zurueck, erwartet, folge, urteil }) {
+  const s = await schreiben()
+  let l
+  try {
+    l = await nachsehen()
+  } catch (err) {
+    if (s.status < 400) await zurueck()
+    throw err
+  }
+  if (l.fehlt) {
+    k.kaputt(nr, was, `nichts nachzusehen: ${l.fehlt}`, erwartet)
+    await k.aufraeumen({ durch: false, vielleichtDurch: s.status < 400 }, zurueck, ZURUECK)
+    return
+  }
+  const e = bewerteVersuch(s.status, l.angekommen, erwartet, { leseStatus: l.status, urteil: urteil?.(s), woerter: ['GEÄNDERT', 'nicht geändert'] })
+  k.ergebnis(nr, was, e, e.durch ? folge[0] : folge[1])
+  if (e.kaputt) console.log(`      Die Antwort: ${JSON.stringify(s.daten)}`)
+  await k.aufraeumen(e, zurueck, ZURUECK)
+}
+
+/**
+ * Ein Versuch an der Tür einer Edge Function — (35)–(37). Gezielt wird ins
+ * Leere, damit eine offene Tür nichts verschickt und nichts schreibt. Deshalb
+ * heißt nicht nur ein 2xx „durchgelassen", sondern auch eine Antwort, die erst
+ * **hinter** der Rechteprüfung kommt (`nachDerTuer`, etwa „keine Woche"). Ein
+ * Urteil über die Tür ist sonst allein `forbidden`.
+ */
+async function tuerVersuch(k, nr, was, wer, name, rumpf, nachDerTuer, folge) {
+  const a = await wer.funktion(name, rumpf)
+  const fehler = a.daten?.error
+  const durch = a.status < 400 || nachDerTuer.includes(fehler)
+  const e = bewerteVersuch(a.status, durch, false, { urteil: durch || fehler === 'forbidden', woerter: ['DURCHGELASSEN', 'abgewiesen'] })
+  k.ergebnis(nr, was, e, e.durch ? 'AUCH DAS!' : `${folge} (${fehler ?? '—'})`)
+  if (e.durch || e.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a.daten)}`)
+}
+
+/**
+ * (38)–(41) Die Programmwoche: Der Planer schreibt sie nur über `zuteilen` und
+ * ändert dort nur Zuteilungen; sich selbst zum Admin machen kann er nicht.
+ * Nach jedem Versuch, der durchkam, stellt der Admin den vorigen Stand her.
+ */
+async function wochenProben(k, woche) {
+  const { planer, zuteiler, versammlung, marke } = k
+  const zeile = `weeks?congregation_id=eq.${versammlung}&start=eq.${woche}`
+  // Den Stand liest der Planer selbst — so, wie die App ihn beim Laden bekommt.
+  const lesen = () => zuteiler.rest(`weeks?select=data,updated_at&start=eq.${woche}`)
+  const vorher = await lesen()
+  const original = zeilenVon(vorher)[0]?.data
+  if (!original) {
+    for (const nr of [38, 39, 40]) k.kaputt(nr, `Planer: die Woche ${woche} ändern`, `für den Planer nicht lesbar (HTTP ${vorher.status})`, nr === 40)
+  } else {
+    const zurueck = () => planer.rest(zeile, 'PATCH', { data: original }, 'return=minimal')
+    const beimAdmin = (pruefe) => async () => {
+      const r = await planer.rest(`weeks?select=data&start=eq.${woche}`)
+      const d = zeilenVon(r)[0]?.data
+      return { status: r.status, angekommen: Boolean(d) && pruefe(d), fehlt: r.status < 400 && !d ? 'die Woche ist weg' : null }
+    }
+    // Der Stand **vor jedem** Aufruf: Kam ein Versuch durch und wurde
+    // zurückgestellt, hat die Woche einen neuen — mit dem alten gäbe es 409.
+    const stand = async () => zeilenVon(await lesen())[0]?.updated_at
+    const nurZuteilen = (s) => s.status < 400 || s.daten?.error === 'nur-zuteilen'
+
+    const plan = planAenderung(original, marke)
+    if (!plan) {
+      for (const [nr, was] of [[38, 'Planer: die Woche am Server vorbei schreiben'], [39, 'Planer: über „zuteilen" einen Programmpunkt umbenennen']]) {
+        k.ungemessen(nr, was, 'kein Programmpunkt mit festem Titel in der Woche')
+      }
+    } else {
+      const umbenannt = (d) => String(d?.mid?.sections?.[plan.si]?.items?.[plan.ii]?.title ?? '').includes(marke)
+      await aenderVersuch(k, {
+        nr: 38,
+        was: 'Planer: die Woche am Server vorbei schreiben (einen Programmpunkt umbenennen)',
+        schreiben: () => zuteiler.rest(zeile, 'PATCH', { data: plan.data }, 'return=minimal'),
+        nachsehen: beimAdmin(umbenannt),
+        zurueck,
+        erwartet: false,
+        folge: ['AUCH DAS!', 'Wochen schreibt nur der Admin'],
+      })
+      const s39 = await stand()
+      await aenderVersuch(k, {
+        nr: 39,
+        was: 'Planer: über „zuteilen" einen Programmpunkt umbenennen',
+        schreiben: () => zuteiler.funktion('zuteilen', { action: 'woche', woche, stand: s39, data: plan.data }),
+        nachsehen: beimAdmin(umbenannt),
+        zurueck,
+        erwartet: false,
+        urteil: nurZuteilen,
+        folge: ['AUCH DAS!', 'zuteilen lässt nur Zuteilungen durch'],
+      })
+    }
+
+    const zuteilung = zuteilungAenderung(original)
+    if (!zuteilung) {
+      k.ungemessen(40, 'Planer: über „zuteilen" einen Platz freigeben', 'kein besetzter Platz unter der Woche')
+    } else {
+      const frei = (d) => !d?.mid?.sections?.[zuteilung.si]?.items?.[zuteilung.ii]?.names?.[zuteilung.ni]?.pid
+      const s40 = await stand()
+      await aenderVersuch(k, {
+        nr: 40,
+        was: 'Planer: über „zuteilen" einen Platz freigeben',
+        schreiben: () => zuteiler.funktion('zuteilen', { action: 'woche', woche, stand: s40, data: zuteilung.data }),
+        nachsehen: beimAdmin(frei),
+        zurueck,
+        erwartet: true,
+        urteil: nurZuteilen,
+        folge: ['der Weg steht offen', 'ZU STRENG — der Planer kann nicht mehr zuteilen'],
+      })
+    }
+  }
+
+  const konto = `members?user_id=eq.${zuteiler.uid}`
+  await aenderVersuch(k, {
+    nr: 41,
+    was: 'Planer: sich selbst zum Admin machen',
+    schreiben: () => zuteiler.rest(konto, 'PATCH', { planner: true }, 'return=minimal'),
+    nachsehen: async () => {
+      const r = await planer.rest(`members?select=planner&user_id=eq.${zuteiler.uid}`)
+      const m = zeilenVon(r)[0]
+      return { status: r.status, angekommen: Boolean(m?.planner), fehlt: r.status < 400 && !m ? 'der Admin sieht das Konto des Planers nicht' : null }
+    },
+    zurueck: () => planer.rest(konto, 'PATCH', { planner: false }, 'return=minimal'),
+    erwartet: false,
+    folge: ['AUCH DAS!', 'Rechte vergibt nur der Admin'],
+  })
+}
+
+/**
+ * (42)–(49) Die Treffpunkte einer Woche — angelegt vom Admin im Jahr 2099,
+ * geschrieben wie in der App per Upsert der ganzen Woche (`saveFsWeek`). Ob
+ * ein Versuch ankam, steht danach am Treffpunkt selbst.
+ *
+ * Vorher wird nachgesehen: Eine Woche mit Treffpunkten, die nicht von einer
+ * Probe stammen, wird nicht überschrieben — eine, die ein abgebrochener Lauf
+ * hinterließ (nur Kennungen mit „PROBE-"), schon. `merker.treffpunktWoche`
+ * sagt dem Aufräumen, ob die Woche der Probe gehört.
+ */
+async function treffpunktProben(k, a, konten, mitgliedLeitet, merker) {
+  const { planer, versammlung } = k
+  const zeile = `fs_weeks?congregation_id=eq.${versammlung}&start=eq.${a.fsStart}`
+  const upsert = (wer, data) => wer.rest('fs_weeks?on_conflict=congregation_id,start', 'POST', { congregation_id: versammlung, start: a.fsStart, data }, UPSERT)
+  const lesen = () => planer.rest(`fs_weeks?select=data&start=eq.${a.fsStart}`)
+
+  const vorher = await lesen()
+  const bestand = zeilenVon(vorher)[0]?.data
+  let anlage
+  if (vorher.status >= 400) {
+    anlage = { ok: false, grund: `die Treffpunkt-Woche ${a.fsStart} ist nicht lesbar (HTTP ${vorher.status})` }
+  } else if (Array.isArray(bestand) && bestand.some((i) => !String(i?.id ?? '').startsWith('PROBE-'))) {
+    anlage = { ok: false, grund: `in der Woche ${a.fsStart} stehen Treffpunkte, die nicht von der Probe sind — nicht überschrieben` }
+  } else {
+    merker.treffpunktWoche = true
+    const s = await upsert(planer, a.treffpunkte)
+    const l = await lesen()
+    const da = zeilenVon(l)[0]?.data ?? []
+    anlage =
+      s.status < 400 && da.length === a.treffpunkte.length
+        ? { ok: true }
+        : { ok: false, grund: `Anlage als Admin scheiterte (fs_weeks, HTTP ${s.status}/${l.status})` }
+  }
+
+  for (const v of a.fsVersuche) {
+    if (!anlage.ok) {
+      k.kaputt(v.nr, v.was, anlage.grund, v.erwartet)
+      continue
+    }
+    if (v.wer === 'mitglied' && mitgliedLeitet) {
+      k.ungemessen(v.nr, v.was, 'das Mitglied leitet selbst eine Gruppe')
+      continue
+    }
+    await aenderVersuch(k, {
+      nr: v.nr,
+      was: v.was,
+      schreiben: () => upsert(konten[v.wer], v.data),
+      nachsehen: async () => {
+        const r = await lesen()
+        const t = (zeilenVon(r)[0]?.data ?? []).find((i) => i?.id === v.ziel)
+        return { status: r.status, angekommen: t?.[v.feld] === v.wert, fehlt: r.status < 400 && !t ? 'der Treffpunkt ist weg' : null }
+      },
+      zurueck: () => planer.rest(zeile, 'PATCH', { data: a.treffpunkte }, 'return=minimal'),
+      erwartet: v.erwartet,
+      folge: v.folge,
+    })
+  }
+}
+
+/** (50)–(52) Der Grundplan: Regeln legt der Admin an — der Gruppenaufseher nur für seine Gruppe. */
+async function grundplanProben(k, a) {
+  const { zuteiler, aufseher } = k
+  const r = a.regeln
+  await schreibVersuch(k, 50, 'Planer: eine Regel im Grundplan anlegen', 'fs_rules', r.planer, false, ['AUCH DAS!', 'abgewiesen — den Grundplan pflegt der Admin'], { wer: zuteiler, prefer: UPSERT })
+  await schreibVersuch(k, 51, 'Gruppenaufseher: eine Regel für eine fremde Gruppe anlegen', 'fs_rules', r.aufseherFremd, false, ['AUCH DAS!', 'abgewiesen — nur für die eigene Gruppe'], { wer: aufseher, prefer: UPSERT })
+  await schreibVersuch(k, 52, 'Gruppenaufseher: eine Regel für die eigene Gruppe anlegen', 'fs_rules', r.aufseherEigen, true, ['der Weg steht offen', 'ZU STRENG — der Gruppenaufseher kann seinen Grundplan nicht pflegen'], { wer: aufseher, prefer: UPSERT })
+}
+
+/**
+ * (53)–(55) Gruppenbesuche: Den Besucher wechselt der Planer; Woche und Gruppe
+ * legt der Admin fest, und anlegen kann der Planer keinen — obwohl er für den
+ * Upsert der App einfügen darf (`gruppenbesuche_pruefen`).
+ */
+async function besuchProben(k, a) {
+  const { planer, zuteiler } = k
+  const anlage = await anlegen(planer, 'gruppenbesuche', [a.besuch])
+  const v = a.besuchVersuche
+  const versuche = [
+    [53, 'Planer: einen Gruppenbesuch in eine andere Woche verschieben', v.verschoben, 'woche', false, ['AUCH DAS!', 'Woche und Gruppe legt der Admin fest']],
+    [54, 'Planer: den Besucher eines Gruppenbesuchs wechseln', v.besucher, 'person_id', true, ['der Weg steht offen', 'ZU STRENG — der Planer kann den Besucher nicht wechseln']],
+  ]
+  for (const [nr, was, zeile, feld, erwartet, folge] of versuche) {
+    if (!anlage.ok) {
+      k.kaputt(nr, was, anlage.grund, erwartet)
+      continue
+    }
+    await aenderVersuch(k, {
+      nr,
+      was,
+      schreiben: () => zuteiler.rest('gruppenbesuche', 'POST', zeile, UPSERT),
+      nachsehen: async () => {
+        const r = await planer.rest(`gruppenbesuche?select=woche,person_id&id=eq.${a.besuch.id}`)
+        const b = zeilenVon(r)[0]
+        return { status: r.status, angekommen: b?.[feld] === zeile[feld], fehlt: r.status < 400 && !b ? 'der Besuch ist weg' : null }
+      },
+      zurueck: () => planer.rest(`gruppenbesuche?id=eq.${a.besuch.id}`, 'PATCH', { woche: a.besuch.woche, person_id: a.besuch.person_id }, 'return=minimal'),
+      erwartet,
+      folge,
+    })
+  }
+  await schreibVersuch(k, 55, 'Planer: einen Gruppenbesuch anlegen', 'gruppenbesuche', v.neu, false, ['AUCH DAS!', 'abgewiesen — anlegen darf nur der Admin'], { wer: zuteiler, prefer: UPSERT })
+}
+
+/** (56)–(60) Zeugnisgeben und Weitere Pläne: besetzen darf der Planer, anlegen nur der Admin. */
+async function besetzenProben(k, a) {
+  const { planer, zuteiler } = k
+  const termin = await anlegen(planer, 'oz_termine', [a.termin])
+  const was56 = 'Planer: eine andere Person ins Zeugnisgeben eintragen'
+  if (termin.ok) {
+    await schreibVersuch(k, 56, was56, 'oz_eintraege', a.ozPlaner, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann im Zeugnisgeben nicht zuteilen'], { wer: zuteiler })
+  } else k.kaputt(56, was56, termin.grund, true)
+  await schreibVersuch(k, 57, 'Planer: einen Termin des Zeugnisgebens anlegen', 'oz_termine', a.terminVersuch, false, ['AUCH DAS!', 'abgewiesen — Termine legt der Admin an'], { wer: zuteiler })
+
+  const plan = await anlegen(planer, 'plaene', [a.plan])
+  const anlage = plan.ok ? await anlegen(planer, 'plan_eintraege', [a.planEintrag]) : plan
+  await leseVersuch(k, 58, 'Planer: einen Plan im Entwurf sehen', anlage, () => planSicht(zuteiler, a.plan, [a.planEintrag], true), true, [
+    'er verteilt die Gruppen, bevor der Admin veröffentlicht',
+    'ZU STRENG — der Planer sieht den Entwurf nicht',
+  ])
+  const was59 = 'Planer: eine Woche eines Plans besetzen'
+  if (anlage.ok) {
+    await schreibVersuch(k, 59, was59, 'plan_eintraege', a.eintragVersuch, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann keine Gruppen verteilen'], { wer: zuteiler, prefer: UPSERT })
+  } else k.kaputt(59, was59, anlage.grund, true)
+  await schreibVersuch(k, 60, 'Planer: einen Plan anlegen', 'plaene', a.planVersuch, false, ['AUCH DAS!', 'abgewiesen — Pläne legt der Admin an'], { wer: zuteiler, prefer: UPSERT })
+}
+
+/** (61) Die Absage eines Mitglieds geht an alle, die zuteilen — seit dem 4.10.2026 auch an den Planer. */
+async function absageProbe(k, a) {
+  const { mitglied, zuteiler } = k
+  const s = await mitglied.rest('rpc/notify_planners', 'POST', { kind: 'verhindert', subject: a.absage, message: '' }, 'return=minimal')
+  const l = await zuteiler.rest(`notifications?select=id&title=eq.${encodeURIComponent(a.absage)}`)
+  const e = bewerteVersuch(s.status, zeilenVon(l).length > 0, true, { leseStatus: l.status })
+  k.ergebnis(61, 'Planer: die Absage eines Mitglieds bekommen (notify_planners)', e, e.durch ? 'kommt an' : 'ZU STRENG — Absagen erreichen den Planer nicht')
+}
+
+/**
+ * Alles wieder weg, was die Probe für die Rechte-Stufen angelegt hat — über das
+ * Kennzeichen, wie bei T120; die Treffpunkt-Woche nur, wenn sie der Probe
+ * gehört. Dazu die Mitteilungen mit dem Kennzeichen beim Planer und beim
+ * Admin: auch die aus (6), denn die Absage an die Planer erreicht seit dem
+ * 4.10.2026 beide.
+ */
+async function stufenAufraeumen(k, fsStart, merker) {
+  const { planer, zuteiler, marke, versammlung } = k
+  const weg = (tabelle) => () => planer.rest(`${tabelle}?id=like.${marke}*`, 'DELETE', undefined, 'return=minimal')
+  const mitteilungen = (wer) => () => wer.rest(`notifications?title=like.${marke}*`, 'DELETE', undefined, 'return=minimal')
+  const schritte = [
+    ['die Plan-Einträge', weg('plan_eintraege')],
+    ['die Pläne', weg('plaene')],
+    ['die Zeugnis-Einträge', weg('oz_eintraege')],
+    ['die Termine', weg('oz_termine')],
+    ['die Gruppenbesuche', weg('gruppenbesuche')],
+    ['die Regeln des Grundplans', weg('fs_rules')],
+    ...(merker.treffpunktWoche
+      ? [['die Treffpunkt-Woche', () => planer.rest(`fs_weeks?congregation_id=eq.${versammlung}&start=eq.${fsStart}`, 'DELETE', undefined, 'return=minimal')]]
+      : []),
+    ['die Mitteilungen an den Planer', mitteilungen(zuteiler)],
+    ['die Mitteilungen an den Admin', mitteilungen(planer)],
+  ]
+  const offen = []
+  for (const [was, tun] of schritte) {
+    const r = await tun()
+    if (r.status >= 400) offen.push(`${was} (HTTP ${r.status})`)
+  }
+  console.log(offen.length ? `  !! Nicht aufgeräumt: ${offen.join(', ')} — Kennzeichen ${marke} !!` : `  (alles mit Kennzeichen ${marke} wieder entfernt)`)
+}
+
+/**
+ * Die Fälle (35)–(61) — siehe Kopf. Aufgeräumt wird in jedem Fall, auch wenn
+ * ein Fall mittendrin wirft.
+ */
+async function stufenProben(k, woche) {
+  const { planer, mitglied, zuteiler, aufseher, versammlung, marke } = k
+  console.log('\nDie Rechte-Stufen (seit 4.10.2026; angelegt als Admin, im Jahr 2099):')
+  const merker = { treffpunktWoche: false }
+  let fsStart = null
+  try {
+    // Ins Leere: Eine Woche im Jahr 2100 gibt es nicht — eine offene Tür
+    // antwortete mit „keine Woche", statt etwas zu schreiben oder zu senden.
+    const leer = ersterMontagAb('2100-01-01')
+    await tuerVersuch(k, 35, 'Mitglied: eine Woche über „zuteilen" schreiben', mitglied, 'zuteilen', { action: 'woche', woche: leer, stand: marke, data: {} }, ['week-not-found'], 'nur Admin und Planer')
+    await tuerVersuch(k, 36, 'Mitglied: „Plan senden"', mitglied, 'send-plan', { action: 'plan', weekStart: leer }, ['no-week'], 'senden nur Admin, Planer und Gruppenaufseher')
+    await tuerVersuch(k, 37, 'Gruppenaufseher: „Plan senden" fürs Zeugnisgeben', aufseher, 'send-plan', { action: 'zeugnis' }, [], 'das Zeugnisgeben senden nur Admin und Planer')
+
+    await wochenProben(k, woche)
+
+    const g = await planer.rest('groups?select=id,overseer_id,assistant_id&order=position')
+    const wahl = gruppenWahl(zeilenVon(g), { aufseherPid: aufseher.pid, zuteilerPid: zuteiler.pid, mitgliedPid: mitglied.pid })
+    const fehlt = !planer.pid || !zuteiler.pid || !mitglied.pid
+      ? 'Admin, Planer und Mitglied brauchen je eine Person'
+      : g.status >= 400
+        ? `die Gruppen sind nicht lesbar (HTTP ${g.status})`
+        : !wahl.eigene
+          ? 'der Gruppenaufseher leitet keine Gruppe'
+          : !wahl.fremde
+            ? 'keine Gruppe, die keines der Probekonten leitet'
+            : null
+    if (fehlt) {
+      k.ungemessen('42–61', 'Treffpunkte, Grundplan, Gruppenbesuche, Zeugnisgeben und Pläne der Stufen', fehlt)
+      return
+    }
+    const a = stufenAnlage({
+      marke,
+      versammlung,
+      tag0: ersterMontagAb('2099-01-01'),
+      adminPid: planer.pid,
+      zuteilerPid: zuteiler.pid,
+      mitgliedPid: mitglied.pid,
+      eigeneGruppe: wahl.eigene,
+      fremdeGruppe: wahl.fremde,
+    })
+    fsStart = a.fsStart
+    await treffpunktProben(k, a, { zuteiler, aufseher, mitglied }, wahl.mitgliedLeitet, merker)
+    await grundplanProben(k, a)
+    await besuchProben(k, a)
+    await besetzenProben(k, a)
+    await absageProbe(k, a)
+  } finally {
+    await stufenAufraeumen(k, fsStart, merker)
+  }
+}
+
 /* ===================== Ausführung ========================================= */
 
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
@@ -765,28 +1404,38 @@ export async function main(arg = process.argv.slice(2)) {
   }
   const z = await zugang()
 
+  // `planer` ist das Admin-Konto (der Name stammt aus der Zeit vor den
+  // Rechte-Stufen), `zuteiler` das der Stufe „Planer" — siehe Kopf.
   const planer = await anmelden(z.url, z.anon, z.planerMail, z.planerPass)
   const mitglied = await anmelden(z.url, z.anon, z.mitgliedMail, z.mitgliedPass)
+  const zuteiler = await anmelden(z.url, z.anon, z.zuteilerMail, z.zuteilerPass)
+  const aufseher = await anmelden(z.url, z.anon, z.aufseherMail, z.aufseherPass)
+  const alle = [planer, mitglied, zuteiler, aufseher]
 
-  for (const k of [planer, mitglied]) {
+  for (const k of alle) {
     if (k.cong !== versammlung) {
       console.error(`${k.mail} gehört zu ${k.cong}, nicht zu ${versammlung}. Abbruch, es wird nichts geschrieben.`)
       process.exit(2)
     }
   }
-  if (!planer.planer) {
-    console.error(`${planer.mail} ist kein Planer — dann misst (4) nicht die Grenze, sondern nichts.`)
+  // Jede Bedingung vor dem ersten Schreiben: Ein Konto in der falschen Stufe
+  // mäße eine andere Grenze als die genannte — und meldete sie als gemessen.
+  const abbruch = (text) => {
+    console.error(`${text} Abbruch, es wird nichts geschrieben.`)
     process.exit(2)
   }
-  if (mitglied.planer) {
-    console.error(`${mitglied.mail} ist Planer. Gefragt ist, was ein **einfaches** Mitglied darf.`)
-    process.exit(2)
-  }
+  if (new Set(alle.map((k) => k.uid)).size < alle.length) abbruch('Zwei der vier Anmeldungen sind dasselbe Konto.')
+  if (!planer.planer) abbruch(`${planer.mail} ist kein Admin — dann misst (4) nicht die Grenze, sondern nichts.`)
+  if (mitglied.planer || mitglied.zuteiler) abbruch(`${mitglied.mail} ist Admin oder Planer. Gefragt ist, was ein **einfaches** Mitglied darf.`)
+  if (!zuteiler.zuteiler || zuteiler.planer) abbruch(`${zuteiler.mail} ist nicht Planer, oder zugleich Admin — dann misst die Probe die Stufe „Planer" nicht.`)
+  if (aufseher.planer || aufseher.zuteiler) abbruch(`${aufseher.mail} ist Admin oder Planer. Gefragt ist, was ein Gruppenaufseher **ohne** diese Rechte darf.`)
 
   const { daten: cong } = await planer.rest(`congregations?select=name&id=eq.${versammlung}`)
-  console.log(`Versammlung: „${cong?.[0]?.name ?? '?'}" ${versammlung}`)
-  console.log(`Planer:      ${planer.mail}`)
-  console.log(`Mitglied:    ${mitglied.mail} (Person ${mitglied.pid ?? '—'})\n`)
+  console.log(`Versammlung:     „${cong?.[0]?.name ?? '?'}" ${versammlung}`)
+  console.log(`Admin:           ${planer.mail}`)
+  console.log(`Planer:          ${zuteiler.mail}`)
+  console.log(`Gruppenaufseher: ${aufseher.mail}`)
+  console.log(`Mitglied:        ${mitglied.mail} (Person ${mitglied.pid ?? '—'})\n`)
 
   // Eine fremde Aufgabe suchen — aus der Sicht des Planers, der alle Wochen sieht.
   const { status: wochenStatus, daten: wochen } = await planer.rest('weeks?select=start,data&order=start&limit=12')
@@ -843,12 +1492,13 @@ export async function main(arg = process.argv.slice(2)) {
   // Zeile trotzdem angekommen sein. Scheiterte schon das Schreiben, bleibt alles
   // stehen — Bestätigungen löscht die Probe über `task_key` und `user_id`, und
   // das träfe eine Zusage, die jemand in der App gegeben hat (bei (5) ein 409).
-  const aufraeumen = async (e, loeschen) => {
+  // `woerter`: Eine geänderte Zeile wird zurückgestellt, nicht gelöscht.
+  const aufraeumen = async (e, loeschen, woerter = ['Zeile wieder gelöscht', 'vorsorglich aufgeräumt']) => {
     if (!e.durch && !e.vielleichtDurch) return
     const weg = await loeschen()
     console.log(
       weg.status < 400
-        ? `      (${e.durch ? 'Zeile wieder gelöscht' : 'vorsorglich aufgeräumt'})`
+        ? `      (${e.durch ? woerter[0] : woerter[1]})`
         : `      !! Zeile blieb stehen (${weg.status}) !!`,
     )
   }
@@ -889,14 +1539,14 @@ export async function main(arg = process.argv.slice(2)) {
   // sie und meldete „AUCH DAS!", das Aufräumen löschte sie. Bis zum 27.9.2026
   // schrieb (2) auf den fremden Programmplatz — hatte der Planer ihn selbst
   // zugesagt, geschah genau das.
-  const was2 = 'eine eigene Aufgabe im Namen des Planers'
+  const was2 = 'eine eigene Aufgabe im Namen des Admins'
   const vorher2 = await planer.rest(`confirmations?select=task_key&user_id=eq.${planer.uid}`)
   const belegt = new Set(zeilenVon(vorher2).map((z) => z.task_key))
   const ziel2 = eigene.find((s) => !belegt.has(s.key))
   if (vorher2.status >= 400) {
     kaputt(2, was2, `Nachsehen vorab scheiterte (HTTP ${vorher2.status})`, false)
   } else if (!ziel2) {
-    ungemessen(2, was2, eigene.length ? 'auf jeder steht schon eine Zeile des Planers' : 'KEINE gefunden')
+    ungemessen(2, was2, eigene.length ? 'auf jeder steht schon eine Zeile des Admins' : 'KEINE gefunden')
   } else {
     const schluessel2 = encodeURIComponent(ziel2.key)
     const s2b = await mitglied.rest(
@@ -949,7 +1599,7 @@ export async function main(arg = process.argv.slice(2)) {
   )
   const angekommen4 = await planer.rest(`notifications?select=id&title=like.${marke}*`)
   const e4 = bewerteVersuch(s3b.status, zeilenVon(angekommen4).length > 0, false, { leseStatus: angekommen4.status })
-  ergebnis(4, 'dieselbe Mitteilung als Typ „zuteilung" (nur Planer)', e4, e4.durch ? 'AUCH DAS!' : 'die Grenze greift hier')
+  ergebnis(4, 'dieselbe Mitteilung als Typ „zuteilung" (nur der Admin)', e4, e4.durch ? 'AUCH DAS!' : 'die Grenze greift hier')
   for (const z of zeilenVon(angekommen4)) {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
   }
@@ -1016,7 +1666,7 @@ export async function main(arg = process.argv.slice(2)) {
     // es sie nicht gibt, sagt über die Regel nichts.
     urteil: s6b.status < 400 || s6b.daten?.code === 'P0001',
   })
-  ergebnis('6b', 'dieselbe Meldung als Art „zuteilung" (nur Planer)', e6b, e6b.durch ? 'AUCH DAS!' : 'abgewiesen — notify_planners reicht nur Verhinderungen weiter')
+  ergebnis('6b', 'dieselbe Meldung als Art „zuteilung" (nur Admin und Planer)', e6b, e6b.durch ? 'AUCH DAS!' : 'abgewiesen — notify_planners reicht nur Verhinderungen weiter')
   if (e6b.kaputt) console.log(`      Die Datenbank antwortete: ${JSON.stringify(s6b.daten)}`)
   for (const z of zeilenVon(angekommen6b)) {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
@@ -1142,7 +1792,11 @@ export async function main(arg = process.argv.slice(2)) {
   }
 
   // ---- 11) bis 34) Die Rechte aus T120 -----------------------------------
-  await t120Proben({ planer, mitglied, versammlung, marke, ergebnis, aufraeumen, ungemessen, kaputt })
+  const k = { planer, mitglied, zuteiler, aufseher, versammlung, marke, ergebnis, aufraeumen, ungemessen, kaputt }
+  await t120Proben(k)
+
+  // ---- 35) bis 61) Die Rechte-Stufen (4.10.2026) --------------------------
+  await stufenProben(k, wochen[0].start)
 
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
   // Bis zum 3.10.2026 standen deren Nummern hier fest (5, 6, 8).
@@ -1153,9 +1807,9 @@ export async function main(arg = process.argv.slice(2)) {
   const ueberraschungen = befunde.filter((b) => !b.wieErwartet && !b.kaputt)
   console.log(`\n${durch} von ${verboten.length} verbotenen Versuchen kamen durch.`)
   if (ueberraschungen.length === 0 && kaputte.length === 0) {
-    console.log('Genau die erwarteten: S2, S3, S10, S11, S13 und die Rechte aus T120 sind damit nicht')
-    console.log(`mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben zeigen, dass die Regeln`)
-    console.log('nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Eintragen und Sehen gehen weiter.')
+    console.log('Genau die erwarteten: S2, S3, S10, S11, S13, die Rechte aus T120 und die Rechte-Stufen sind damit')
+    console.log(`nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben zeigen, dass die Regeln`)
+    console.log('nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Eintragen, Zuteilen und Sehen gehen weiter.')
     if (nichtGemessen.length) {
       console.log(`Ohne Messung blieben ${nichtGemessen.map((n) => `(${n})`).join(', ')} — die Voraussetzung fehlte.`)
     }

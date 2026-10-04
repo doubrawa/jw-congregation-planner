@@ -6,22 +6,30 @@ import {
   eigeneSlots,
   ersterMontagAb,
   fremdeSlots,
+  gruppenWahl,
   helferSchluessel,
   montagDerWoche,
   ozSchluessel,
+  planAenderung,
   PROBE_KONTEN,
   qualifiziertFuer,
   slotSchluessel,
+  stufenAnlage,
   t120Anlage,
   tagPlus,
   wochentag,
   zugangAus,
+  zuteilungAenderung,
 } from './mitgliedsrechte-probe.mjs'
+import { TEST_KONTEN } from './testversammlung-anlegen.mjs'
 import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import { montagVon } from '../src/data/meeting-dates'
 import { ozTaskKey } from '../src/data/zeugnis'
 import type { PartItem, Person } from '../src/data/types'
+import { pidsNachtragen } from '../src/data/namensbindung'
+import { nurZuteilungen } from '../supabase/functions/_shared/zuteilen-grenze.ts'
+import { buildDemoWeeks, DEMO_PERSONS } from '../tests/testdaten/testdaten'
 
 /**
  * Die Probe selbst läuft nur gegen eine echte Datenbank. Geprüft wird hier das,
@@ -234,18 +242,39 @@ describe('Woher die Probe ihren Zugang nimmt', () => {
       anon: 'sb_publishable_aus_der_datei',
       planerMail: PROBE_KONTEN.planer,
       mitgliedMail: PROBE_KONTEN.mitglied,
+      zuteilerMail: PROBE_KONTEN.zuteiler,
+      aufseherMail: PROBE_KONTEN.aufseher,
       planerPass: '',
       mitgliedPass: '',
+      zuteilerPass: '',
+      aufseherPass: '',
       dienstSchluessel: false,
     })
   })
 
   it('die Umgebung schlägt die Datei — für andere Konten oder ohne Terminal', () => {
     const z = zugangAus(
-      { SUPABASE_URL: 'https://env.invalid', SUPABASE_ANON_KEY: 'sb_publishable_env', PROBE_PLANER_MAIL: 'a@x.invalid', PROBE_MITGLIED_PASS: 'geheim' },
+      {
+        SUPABASE_URL: 'https://env.invalid', SUPABASE_ANON_KEY: 'sb_publishable_env', PROBE_PLANER_MAIL: 'a@x.invalid', PROBE_MITGLIED_PASS: 'geheim',
+        PROBE_ZUTEILER_MAIL: 'z@x.invalid', PROBE_AUFSEHER_PASS: 'auch-geheim',
+      },
       ausDatei,
     )
-    expect(z).toMatchObject({ url: 'https://env.invalid', anon: 'sb_publishable_env', planerMail: 'a@x.invalid', mitgliedPass: 'geheim' })
+    expect(z).toMatchObject({
+      url: 'https://env.invalid', anon: 'sb_publishable_env', planerMail: 'a@x.invalid', mitgliedPass: 'geheim',
+      zuteilerMail: 'z@x.invalid', aufseherPass: 'auch-geheim',
+    })
+  })
+
+  it('die Konten heißen wie in testversammlung-anlegen.mjs — dort entstehen sie', () => {
+    // Zwei Skripte, eine Liste: Wiche eine Adresse ab, fragte die Probe nach
+    // einem Konto, das es nicht gibt, und die Anmeldung scheiterte.
+    expect(PROBE_KONTEN).toEqual({
+      planer: TEST_KONTEN.find((k) => k.planner)!.mail,
+      mitglied: TEST_KONTEN.find((k) => k.stufe === 'Mitglied')!.mail,
+      zuteiler: TEST_KONTEN.find((k) => k.zuteiler)!.mail,
+      aufseher: TEST_KONTEN.find((k) => k.stufe === 'Gruppenaufseher')!.mail,
+    })
   })
 
   it.each([
@@ -397,5 +426,191 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
     const ohne = t120Anlage({ marke, versammlung: 'c', tag0: '2099-01-05', planerPid: 'p1', mitgliedPid: 'p2' })
     expect(ohne.besuch).toBeNull()
     expect(ohne.besuchVersuch).toBeNull()
+  })
+})
+
+/** Ein Feld eines Objekts, wie die Probe es liest — ohne Typ, denn sie liest rohes JSON. */
+const feld = (o: unknown, name: string): unknown => (o as Record<string, unknown> | undefined)?.[name]
+
+describe('Rechte-Stufen: die Änderungen an der Woche treffen die Grenze von „zuteilen"', () => {
+  /*
+    (38) und (39) brauchen eine Änderung, die nur der Admin machen darf, (40)
+    eine, die der Planer machen darf. Griffe die Probe daneben — etwa zum
+    Thema eines Vortrags, das der Planer setzen darf —, meldete sie „AUCH DAS!"
+    an einer Stelle, die gar nicht offen ist, oder „ZU STRENG", wo nichts zu
+    streng ist. Deshalb an der echten Grenze gehalten, nicht an einer Abschrift.
+  */
+  // Die Wochen der Entwicklerseite, mit Personen-Ids wie nach dem Laden —
+  // ohne `pid` gäbe es keinen besetzten Platz zum Freigeben.
+  const wochen = pidsNachtragen(buildDemoWeeks(), DEMO_PERSONS).map((w) => [w.start, w] as const)
+  type Platz = { pid?: string }
+  const platz = (d: unknown, s: { si: number; ii: number; ni: number }): Platz | undefined =>
+    (d as { mid: { sections: { items: { names: Platz[] }[] }[] } }).mid.sections[s.si]?.items[s.ii]?.names[s.ni]
+
+  it.each(wochen)('%s: die Änderung am Plan lässt „zuteilen" nicht durch', (_start, w) => {
+    const plan = planAenderung(w, 'PROBE-1')
+    expect(plan).not.toBeNull()
+    expect(nurZuteilungen(w, plan!.data)).toBe(false)
+  })
+
+  it.each(wochen)('%s: die Zuteilung lässt „zuteilen" durch — und gibt wirklich einen besetzten Platz frei', (_start, w) => {
+    const z = zuteilungAenderung(w)
+    expect(z).not.toBeNull()
+    expect(nurZuteilungen(w, z!.data)).toBe(true)
+    expect(platz(w, z!)?.pid).toBeTruthy()
+    expect(platz(z!.data, z!)?.pid).toBeUndefined()
+  })
+
+  it('ein Punkt mit Redner-Platz ist kein Ändern am Plan — sein Thema setzt der Planer', () => {
+    const w = {
+      mid: {
+        sections: [
+          {
+            items: [
+              { iid: 'a', title: 'Probe-Dienstvortrag', names: [{ name: 'Probe Redner', rolle: 'Kreisaufseher' }] },
+              { iid: 'b', title: 'Probe-Vortrag', names: [{ name: 'Probe Gast', rolle: 'Gastredner · Vers. Probe' }] },
+              { iid: 'c', title: 'Probe-Punkt', names: [{ name: 'Probe Eins', pid: 'p1', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }] },
+            ],
+          },
+        ],
+      },
+      we: { sections: [] },
+    }
+    const plan = planAenderung(w, 'PROBE-1')!
+    expect(plan.ii).toBe(2)
+    expect(nurZuteilungen(w, plan.data)).toBe(false)
+    // Am ersten Punkt hätte die Grenze die Änderung durchgelassen — zu Recht.
+    const daneben = structuredClone(w)
+    daneben.mid.sections[0]!.items[0]!.title += ' PROBE-1'
+    expect(nurZuteilungen(w, daneben)).toBe(true)
+  })
+
+  it('ohne passenden Punkt keine Änderung — dann bleibt der Fall ungemessen, statt etwas anderes zu messen', () => {
+    expect(planAenderung({ mid: { sections: [] } }, 'PROBE-1')).toBeNull()
+    expect(planAenderung({}, 'PROBE-1')).toBeNull()
+    const ohneBesetzung = { mid: { sections: [{ items: [{ song: 'Lied 1' }, { iid: 'a', title: 'Probe', names: [{ name: '' }] }] }] } }
+    expect(zuteilungAenderung(ohneBesetzung)).toBeNull()
+  })
+})
+
+describe('Rechte-Stufen: welche Gruppe die eigene ist und welche die fremde', () => {
+  const konten = { aufseherPid: 'p-aufseher', zuteilerPid: 'p-zuteiler', mitgliedPid: 'p-mitglied' }
+  const g = (id: string, overseer_id: string | null = null, assistant_id: string | null = null) => ({ id, overseer_id, assistant_id })
+
+  it('die eigene leitet der Gruppenaufseher — als Aufseher oder als Gehilfe', () => {
+    expect(gruppenWahl([g('g1', 'p-admin'), g('g2', 'p-aufseher')], konten).eigene).toBe('g2')
+    expect(gruppenWahl([g('g1', 'p-admin', 'p-aufseher')], konten).eigene).toBe('g1')
+  })
+
+  it('die fremde leitet keines der Probekonten — sonst mäße ein Versuch ein anderes Recht', () => {
+    const wahl = gruppenWahl([g('g1', 'p-aufseher'), g('g2', 'p-zuteiler'), g('g3', null, 'p-mitglied'), g('g4', 'p-admin')], konten)
+    expect(wahl).toEqual({ eigene: 'g1', fremde: 'g4', mitgliedLeitet: true })
+  })
+
+  it('fehlt eine, ist sie null — dann bleiben die Fälle ungemessen', () => {
+    expect(gruppenWahl([g('g1', 'p-aufseher')], konten)).toEqual({ eigene: 'g1', fremde: null, mitgliedLeitet: false })
+    expect(gruppenWahl([], konten)).toEqual({ eigene: null, fremde: null, mitgliedLeitet: false })
+  })
+
+  it('ein Konto ohne Person leitet nichts — auch keine Gruppe ohne Aufseher', () => {
+    // `null === null`: Ohne die Prüfung „hat eine Person" leitete ein Konto
+    // ohne Person jede Gruppe, deren Aufseher fehlt.
+    const ohnePerson = { aufseherPid: null, zuteilerPid: null, mitgliedPid: null }
+    expect(gruppenWahl([g('g1'), g('g2')], ohnePerson)).toEqual({ eigene: null, fremde: 'g1', mitgliedLeitet: false })
+  })
+})
+
+describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', () => {
+  const tag0 = ersterMontagAb('2099-01-01')
+  const a = stufenAnlage({
+    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', zuteilerPid: 'p-zuteiler', mitgliedPid: 'p-mitglied',
+    eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
+  })
+
+  /** Was ein Versuch an den Treffpunkten der Anlage ändert: `<Kennung>.<Feld>`. */
+  const unterschiede = (data: unknown[]): string[] =>
+    a.treffpunkte.flatMap((t, i) => {
+      const neu = data[i]
+      const felder = new Set([...Object.keys(t), ...Object.keys(neu as object)])
+      return [...felder].filter((f) => feld(t, f) !== feld(neu, f)).map((f) => `${t.id}.${f}`)
+    })
+
+  it('wer was versucht, und was herauskommen soll', () => {
+    expect(a.fsVersuche.map((v) => `${v.nr} ${v.wer} ${v.erwartet ? 'durch' : 'abgewiesen'}`)).toEqual([
+      '42 zuteiler abgewiesen', '43 zuteiler durch', '44 aufseher abgewiesen', '45 aufseher abgewiesen',
+      '46 aufseher abgewiesen', '47 aufseher durch', '48 aufseher durch', '49 mitglied abgewiesen',
+    ])
+  })
+
+  it('jeder Versuch ändert einen Treffpunkt in einem Feld — der Leiter kommt mit seiner Person, (48) mit der eines fremden', () => {
+    expect(Object.fromEntries(a.fsVersuche.map((v) => [v.nr, unterschiede(v.data)]))).toEqual({
+      42: ['PROBE-1-fs-versammlung.place'],
+      43: ['PROBE-1-fs-versammlung.leader', 'PROBE-1-fs-versammlung.lpid'],
+      44: ['PROBE-1-fs-fremd.place'],
+      45: ['PROBE-1-fs-fremd.leader'],
+      46: ['PROBE-1-fs-versammlung.place'],
+      47: ['PROBE-1-fs-eigen.place'],
+      48: ['PROBE-1-fs-eigen.place', 'PROBE-1-fs-fremd.lpid'],
+      49: ['PROBE-1-fs-versammlung.place'],
+    })
+  })
+
+  it('nachgesehen wird genau das geänderte Feld — vorher steht dort etwas anderes', () => {
+    for (const v of a.fsVersuche) {
+      expect(feld(v.data.find((t) => feld(t, 'id') === v.ziel), v.feld), `(${v.nr})`).toBe(v.wert)
+      expect(feld(a.treffpunkte.find((t) => t.id === v.ziel), v.feld), `(${v.nr})`).not.toBe(v.wert)
+    }
+  })
+
+  it('die drei Treffpunkte gehören der eigenen Gruppe, einer fremden und keiner', () => {
+    expect(a.treffpunkte.map((t) => t.grp)).toEqual(['g-eigen', 'g-fremd', null])
+  })
+
+  it('Grundplan: der Planer und der Gruppenaufseher an der fremden Gruppe, der Gruppenaufseher an der eigenen', () => {
+    expect([a.regeln.planer.grp, a.regeln.aufseherFremd.grp, a.regeln.aufseherEigen.grp]).toEqual(['g-fremd', 'g-fremd', 'g-eigen'])
+  })
+
+  it('Gruppenbesuch: Verschieben und Besucher ändern je ein Feld, Anlegen nimmt eine neue Kennung', () => {
+    const { verschoben, besucher, neu } = a.besuchVersuche
+    const diff = (x: object) => Object.keys(a.besuch).filter((f) => feld(a.besuch, f) !== feld(x, f))
+    expect(diff(verschoben)).toEqual(['woche'])
+    expect(diff(besucher)).toEqual(['person_id'])
+    expect(besucher.person_id).toBe('p-zuteiler')
+    expect(neu.id).not.toBe(a.besuch.id)
+    // Jeder an einem Montag, keine Gruppe zweimal in einer Woche
+    // (`unique (congregation_id, woche, grp)`) — sonst schiene das eine Abweisung.
+    for (const b of [a.besuch, verschoben, neu]) expect(wochentag(b.woche)).toBe(1)
+    expect(new Set([a.besuch, verschoben, neu].map((b) => `${b.woche}|${b.grp}`)).size).toBe(3)
+  })
+
+  it('Zeugnis und Pläne erfüllen die Regeln der Datenbank, die mit den Rechten nichts zu tun haben', () => {
+    expect(wochentag(a.ozPlaner.datum)).toBe(a.termin.wd)
+    expect(a.ozPlaner).toMatchObject({ person_id: 'p-mitglied', selbst: false, termin_id: a.termin.id })
+    for (const e of [a.planEintrag, a.eintragVersuch]) {
+      expect(wochentag(e.datum)).toBe(1)
+      expect(e.datum >= a.plan.von && e.datum <= a.plan.bis, e.id).toBe(true)
+    }
+    expect(a.planEintrag.datum).not.toBe(a.eintragVersuch.datum)
+    expect(a.plan.entwurf).toBe(true)
+    expect(a.planVersuch.id).not.toBe(a.plan.id)
+  })
+
+  it('alles liegt hinter den Wochen von T120 — die Treffpunkt-Woche ist ein Montag', () => {
+    const t120 = t120Anlage({ marke: 'PROBE-1', versammlung: 'c', tag0, planerPid: 'p-admin', mitgliedPid: 'p-mitglied', gruppe: 'g-fremd' })
+    const spaetestens = [t120.ozOhneBereich.datum, t120.plaene.saal.bis, t120.besuch!.woche].sort().at(-1)!
+    expect(wochentag(a.fsStart)).toBe(1)
+    expect(a.fsStart > spaetestens).toBe(true)
+    expect(a.besuch.woche >= a.fsStart).toBe(true)
+  })
+
+  it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
+    const zeilen = [
+      ...a.treffpunkte, ...Object.values(a.regeln), a.besuch, a.besuchVersuche.neu, a.termin, a.ozPlaner, a.terminVersuch,
+      a.plan, a.planEintrag, a.eintragVersuch, a.planVersuch,
+    ]
+    const ids = zeilen.map((z) => z.id)
+    expect(ids.every((id) => id.startsWith('PROBE-1-'))).toBe(true)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(a.absage.startsWith('PROBE-1 ')).toBe(true)
   })
 })

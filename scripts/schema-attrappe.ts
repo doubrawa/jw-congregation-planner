@@ -246,13 +246,23 @@ export interface FunktionsAntwort {
   json?: unknown
 }
 
+/**
+ * Was eine nachgestellte Edge Function außer dem Rumpf sieht: die Tabellen —
+ * eine Function schreibt mit Service-Role, also an jeder Richtlinie vorbei —
+ * und das Konto, mit dessen Anmeldung sie gerufen wurde.
+ */
+export interface FunktionsKontext {
+  tabellen: Bestand
+  wer?: Konto
+}
+
 export interface Umgebung {
   /** Die Tabellen, wie sie vor dem Lauf in der Datenbank stünden. */
   bestand?: Bestand
   /** Konten für die Auth-API und die Anmeldung per Kennwort. */
   konten?: Konto[]
   /** Edge Functions nach Name. */
-  funktionen?: Record<string, (rumpf: Record<string, unknown>) => FunktionsAntwort>
+  funktionen?: Record<string, (rumpf: Record<string, unknown>, kontext: FunktionsKontext) => FunktionsAntwort>
   /** Weitere Umgebungsvariablen (die RLS-Proben lesen ihre Konten daraus). */
   env?: Record<string, string>
   /**
@@ -285,9 +295,16 @@ function passtFilter(wert: unknown, ausdruck: string): boolean {
  * gerade so viel, dass jedes Skript bis zu seinen Schreibaufrufen kommt.
  *
  * **Keine Richtlinien**, bis auf eine: `members` zeigt einem angemeldeten
- * Konto nur die eigene Zeile, denn daran erkennen die RLS-Proben, wer sie
- * sind. Alles andere sieht jeder — die Proben laufen damit auch in ihre
+ * Konto die eigene Zeile und dem Admin die seiner ganzen Versammlung — wie
+ * `members_select`. Daran erkennen die RLS-Proben, wer sie sind. Bis zum
+ * 4.10.2026 sah hier auch der Admin nur sich selbst; dass die Probe ihre
+ * eigene Zeile ungefiltert las und beim Admin damit irgendeine erwischen
+ * konnte, fiel deshalb nur in der echten Datenbank auf — oder eben nicht.
+ * Alles andere sieht jeder — die Proben laufen damit auch in ihre
  * Aufräum-Zweige, und deren Aufrufe stehen dann ebenfalls unter Prüfung.
+ *
+ * Ein Upsert (`Prefer: resolution=merge-duplicates`) führt wie PostgREST mit
+ * der bestehenden Zeile zusammen — über `on_conflict` oder den Schlüssel `id`.
  */
 export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung }: Umgebung = {}) {
   const tabellen: Bestand = structuredClone(bestand)
@@ -308,19 +325,24 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
     const zeilen = (tabellen[tabelle] ??= [])
     const filter = [...abfrage].filter(([k]) => !KEINE_SPALTE.has(k))
     const wer = angemeldet.get((kopf.get('Authorization') ?? '').replace(/^Bearer /, ''))
+    const meineZeile = wer ? (tabellen.members ?? []).find((m) => m.user_id === wer.id) : undefined
+    const siehtMitglied = (z: Zeile): boolean =>
+      !wer || z.user_id === wer.id || (Boolean(meineZeile?.planner) && z.congregation_id === meineZeile?.congregation_id)
     const trifft = (z: Zeile): boolean =>
-      filter.every(([k, v]) => passtFilter(z[k], v)) && (tabelle !== 'members' || !wer || z.user_id === wer.id)
-    const zeigen = (kopf.get('Prefer') ?? '').includes('return=representation')
+      filter.every(([k, v]) => passtFilter(z[k], v)) && (tabelle !== 'members' || siehtMitglied(z))
+    const vorgabe = kopf.get('Prefer') ?? ''
+    const zeigen = vorgabe.includes('return=representation')
 
     if (tabelle.startsWith('rpc/')) {
       // Die eine Funktion, die ein Skript aufruft, so weit nachgestellt, dass
-      // die Probe ihr Ergebnis sieht: je Planer der Versammlung eine Mitteilung.
+      // die Probe ihr Ergebnis sieht: je Admin und Planer der Versammlung eine
+      // Mitteilung (seit 4.10.2026 auch an `zuteiler`, wie in `schema.sql`).
       // Ihre Prüfung (nur Verhinderungen) bleibt außen vor — wie alle Richtlinien.
       if (tabelle === 'rpc/notify_planners' && wer) {
         const { kind, subject, message, task } = rumpf as { kind: string; subject: string; message: string; task?: string }
         const mitglieder = tabellen.members ?? []
         const cong = mitglieder.find((m) => m.user_id === wer.id)?.congregation_id
-        for (const m of mitglieder.filter((x) => x.planner && x.congregation_id === cong)) {
+        for (const m of mitglieder.filter((x) => (x.planner || x.zuteiler) && x.congregation_id === cong)) {
           ;(tabellen.notifications ??= []).push({
             id: randomUUID(), congregation_id: cong, user_id: m.user_id, type: kind, title: subject, body: message,
             task_key: task || null,
@@ -344,11 +366,21 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
     }
     if (method === 'POST') {
       const mitId = schemaSpalten(tabelle).has('id')
-      const neu = (Array.isArray(rumpf) ? rumpf : [rumpf]).map((z) => ({
-        ...(mitId ? { id: randomUUID() } : {}),
-        ...(z as Zeile),
-      }))
-      zeilen.push(...neu)
+      const zusammenfuehren = vorgabe.includes('resolution=merge-duplicates')
+      const konflikt = (abfrage.get('on_conflict') ?? 'id').split(',')
+      // Zusammengeführt wird nur über Werte, die die Zeile mitbringt — eine
+      // ohne Kennung träfe sonst die erste andere ohne. Eine neue Kennung
+      // bekommt nur eine neue Zeile, wie unter dem `default` der Datenbank.
+      const bestehend = (z: Zeile): Zeile | undefined =>
+        zusammenfuehren ? zeilen.find((x) => konflikt.every((s) => z[s] !== undefined && x[s] === z[s])) : undefined
+      const neu: Zeile[] = (Array.isArray(rumpf) ? rumpf : [rumpf]).map((roh) => {
+        const z = roh as Zeile
+        const da = bestehend(z)
+        if (da) return Object.assign(da, z)
+        const zeile = { ...(mitId ? { id: randomUUID() } : {}), ...z }
+        zeilen.push(zeile)
+        return zeile
+      })
       return zeigen ? antwort(201, neu) : antwort(201)
     }
     if (method === 'PATCH') {
@@ -398,7 +430,8 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       const name = url.pathname.slice('/functions/v1/'.length)
       const funktion = funktionen[name]
       if (!funktion) throw new Error(`Attrappe: keine Function ${name}`)
-      const { status = 200, json = {} } = funktion((rumpf ?? {}) as Record<string, unknown>)
+      const wer = angemeldet.get((kopf.get('Authorization') ?? '').replace(/^Bearer /, ''))
+      const { status = 200, json = {} } = funktion((rumpf ?? {}) as Record<string, unknown>, { tabellen, wer })
       return antwort(status, json)
     }
     throw new Error(`Attrappe: unbekannte Adresse ${method} ${url.pathname}`)

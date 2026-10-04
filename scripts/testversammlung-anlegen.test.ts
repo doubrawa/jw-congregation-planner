@@ -7,11 +7,13 @@ import {
   fsRegelZeilen,
   fuelleZuteilungen,
   istUuid,
+  kontenAus,
   kontoAnlegenOderUebernehmen,
   passwort,
   TEST_FS_REGELN,
   TEST_GASTREDNER,
   TEST_GRUPPEN,
+  TEST_KONTEN,
   TEST_PERSONEN,
   waehle,
 } from './testversammlung-anlegen.mjs'
@@ -467,6 +469,60 @@ describe('Ein abgebrochener Lauf blockiert den nächsten nicht', () => {
       throw new Error('POST auth/users 500: kaputt')
     }
     await expect(kontoAnlegenOderUebernehmen(auth, konto.email, 'geheim')).rejects.toThrow('500')
+  })
+})
+
+describe('Die Konten: je Rechte-Stufe eines (seit 4.10.2026)', () => {
+  /*
+    Die Mitgliedsrechte-Probe misst mit diesen vier Konten, was jede Stufe
+    darf. Stimmt eine Stufe oder Person nicht, misst sie eine andere Grenze als
+    die genannte — und meldet sie trotzdem als gemessen.
+  */
+  const person = (k: (typeof TEST_KONTEN)[number]) => TEST_PERSONEN.find((p) => p.fn === k.person[0] && p.ln === k.person[1])
+  const stufe = (name: string) => TEST_KONTEN.find((k) => k.stufe === name)!
+
+  it('vier Stufen, je ein Konto mit eigener Adresse, die nie zugestellt wird', () => {
+    expect(TEST_KONTEN.map((k) => k.stufe).sort()).toEqual(['Admin', 'Gruppenaufseher', 'Mitglied', 'Planer'])
+    expect(new Set(TEST_KONTEN.map((k) => k.mail)).size).toBe(4)
+    for (const k of TEST_KONTEN) expect(k.mail, k.stufe).toMatch(/@probe\.invalid$/)
+  })
+
+  it('die Rechte passen zur Stufe: Admin `planner`, Planer nur `zuteiler`, die beiden anderen keins', () => {
+    expect(TEST_KONTEN.map((k) => `${k.stufe}: ${k.planner}/${k.zuteiler}`)).toEqual([
+      'Admin: true/false', 'Mitglied: false/false', 'Planer: false/true', 'Gruppenaufseher: false/false',
+    ])
+  })
+
+  it('jede Person gibt es, und jede gehört nur einem Konto', () => {
+    for (const k of TEST_KONTEN) expect(person(k), k.stufe).toBeDefined()
+    expect(new Set(TEST_KONTEN.map((k) => k.person.join(' '))).size).toBe(4)
+  })
+
+  it('der Gruppenaufseher leitet eine Gruppe — Planer und Mitglied keine', () => {
+    // Leitete der Planer eine Gruppe, mäße die Probe bei ihm die Rechte eines
+    // Gruppenaufsehers mit; leitete das Mitglied eine, wäre es kein einfaches.
+    const leitet = (k: (typeof TEST_KONTEN)[number]) => Boolean(person(k)?.av || person(k)?.ag)
+    expect(leitet(stufe('Gruppenaufseher'))).toBe(true)
+    expect(leitet(stufe('Planer'))).toBe(false)
+    expect(leitet(stufe('Mitglied'))).toBe(false)
+  })
+
+  it('es bleibt eine Gruppe, die keines der drei Konten leitet — die „fremde" der Probe', () => {
+    // Die Gruppe eines Aufsehers oder Gehilfen ist die seines `g` (siehe das
+    // Anlegen: `groups.overseer_id`/`assistant_id`). Ohne eine freie Gruppe
+    // blieben die Fälle 42–61 der Probe ungemessen.
+    const geleitet = new Set(
+      [stufe('Gruppenaufseher'), stufe('Planer'), stufe('Mitglied')]
+        .map(person)
+        .filter((p) => p?.av || p?.ag)
+        .map((p) => p!.g),
+    )
+    expect(TEST_GRUPPEN.filter((_, i) => !geleitet.has(i)).length).toBeGreaterThan(0)
+  })
+
+  it('die Adressen lassen sich auf der Aufrufzeile ändern — ein Schalter ohne Wert ändert nichts', () => {
+    const konten = kontenAus(argumente(['--mail-zuteiler', 'anders@probe.invalid', '--mail-aufseher']))
+    expect(konten.map((k) => k.mail)).toEqual(['planer@probe.invalid', 'mitglied@probe.invalid', 'anders@probe.invalid', 'aufseher@probe.invalid'])
   })
 })
 

@@ -21,8 +21,9 @@
  *   * die Versammlung, drei Gruppen, 30 erfundene Personen (Aufseher und
  *     Gehilfen gesetzt, Ehepaare als Haushalt verknüpft),
  *   * die Standard-Hilfsdienste (aus `versammlung-anlegen.mjs`, eine Quelle),
- *   * zwei Konten über die Auth-Admin-API — ein Planer und ein einfaches
- *     Mitglied —, beide mit `members`-Zeile und Person verknüpft,
+ *   * vier Konten über die Auth-Admin-API — je Rechte-Stufe eines: Admin,
+ *     Planer, Gruppenaufseher und einfaches Mitglied (`TEST_KONTEN`) —, jedes
+ *     mit `members`-Zeile und Person verknüpft,
  *   * ein Treffpunkt-Grundplan (zwei Regeln); die Wochen materialisiert die
  *     App daraus selbst,
  *   * `--wochen N` **echte** Wochen von jw.org über die Edge Function
@@ -44,6 +45,7 @@
  *   node scripts/testversammlung-anlegen.mjs \
  *     [--name "Probeversammlung Talheim"] [--wochen 2] \
  *     [--mail-planer planer@probe.invalid] [--mail-mitglied schwester@probe.invalid] \
+ *     [--mail-zuteiler zuteiler@probe.invalid] [--mail-aufseher aufseher@probe.invalid] \
  *     [--trocken]
  *
  * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
@@ -201,6 +203,36 @@ export const TEST_GASTREDNER = [
   { name: 'F. Sailer', herkunft: 'Vers. Oberau' },
   { name: 'K. Deppisch', herkunft: 'Vers. Ringheim' },
 ]
+
+/**
+ * **Die Konten — je Rechte-Stufe eines** (seit dem 4.10.2026; bis dahin zwei).
+ * Die Mitgliedsrechte-Probe meldet sich mit allen vieren an und misst, was
+ * jede Stufe darf und was nicht.
+ *
+ * `planer@` ist der **Admin** (`members.planner`). Die Adresse stammt aus der
+ * Zeit, als es nur diese Stufe gab und die App sie „Planer" nannte; Probe,
+ * Notizen und Aufrufe kennen sie so, deshalb bleibt sie. Die Stufe „Planer"
+ * (`members.zuteiler`: teilt zu, ändert den Plan nicht) hat `zuteiler@`.
+ *
+ * Die Personen sind mit Absicht gewählt: Der Gruppenaufseher leitet eine
+ * Gruppe (`av`), Planer und Mitglied leiten keine — sonst mäße die Probe bei
+ * ihnen die Rechte eines Gruppenaufsehers mit.
+ */
+export const TEST_KONTEN = [
+  { schalter: 'mail-planer', mail: 'planer@probe.invalid', stufe: 'Admin', planner: true, zuteiler: false, person: ['Martin', 'Aichinger'] },
+  { schalter: 'mail-mitglied', mail: 'mitglied@probe.invalid', stufe: 'Mitglied', planner: false, zuteiler: false, person: ['Elena', 'Aichinger'] },
+  { schalter: 'mail-zuteiler', mail: 'zuteiler@probe.invalid', stufe: 'Planer', planner: false, zuteiler: true, person: ['Andreas', 'Rothacker'] },
+  { schalter: 'mail-aufseher', mail: 'aufseher@probe.invalid', stufe: 'Gruppenaufseher', planner: false, zuteiler: false, person: ['Thomas', 'Ebersbach'] },
+]
+
+/**
+ * Die Konten mit den Adressen aus der Aufrufzeile (`--mail-planer …`), sonst
+ * den vorgegebenen. Ein Schalter ohne Wert (`argumente` macht daraus `true`)
+ * ist keine Adresse.
+ */
+export function kontenAus(arg) {
+  return TEST_KONTEN.map((k) => ({ ...k, mail: typeof arg[k.schalter] === 'string' && arg[k.schalter] ? arg[k.schalter] : k.mail }))
+}
 
 /* ===================== Reine Regeln (prüfbar) ============================= */
 
@@ -490,8 +522,8 @@ async function entfernen(arg) {
   const personen = await rest(`persons?congregation_id=eq.${id}&select=id`)
   const wochen = await rest(`weeks?congregation_id=eq.${id}&select=start`)
 
-  // Verwaiste Konten: die beiden Adressen dieses Skripts ohne `members`-Zeile.
-  const adressen = [arg['mail-planer'] || 'planer@probe.invalid', arg['mail-mitglied'] || 'mitglied@probe.invalid']
+  // Verwaiste Konten: die Adressen dieses Skripts ohne `members`-Zeile.
+  const adressen = kontenAus(arg).map((k) => k.mail.toLowerCase())
   const verknuepft = new Set(members.map((m) => m.user_id))
   const verwaist = (await alleKonten(auth)).filter(
     (u) => adressen.includes((u.email ?? '').toLowerCase()) && !verknuepft.has(u.id),
@@ -522,8 +554,7 @@ export async function main(argv = process.argv.slice(2)) {
 
   const name = arg.name || 'Probeversammlung Talheim'
   const wochenAnzahl = Number(arg.wochen ?? 2)
-  const mailPlaner = arg['mail-planer'] || 'planer@probe.invalid'
-  const mailMitglied = arg['mail-mitglied'] || 'mitglied@probe.invalid'
+  const kontenPlan = kontenAus(arg)
 
   // Zugang zuerst, auch für den Trockenlauf: Ein fehlender Schlüssel soll
   // auffallen, bevor man die Übersicht liest und „passt" denkt.
@@ -534,7 +565,7 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`Dienste:      ${STANDARD_DIENSTE.map((d) => d.name).join(', ')}`)
   console.log(`Treffpunkte:  ${TEST_FS_REGELN.length} Regeln (Wochen baut die App daraus)`)
   console.log(`Wochen:       ${wochenAnzahl} — echt von jw.org über import-week`)
-  console.log(`Konten:       ${mailPlaner} (Planer), ${mailMitglied} (Mitglied)`)
+  console.log(`Konten:       ${kontenPlan.map((k) => `${k.mail} (${k.stufe})`).join(', ')}`)
 
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
@@ -665,32 +696,34 @@ export async function main(argv = process.argv.slice(2)) {
   //    scheiterte an derselben Stelle. Genau das ist beim ersten scharfen Lauf
   //    passiert.
   const konten = []
-  for (const [mail, planer, person] of [
-    [mailPlaner, true, finde('Martin', 'Aichinger')],
-    [mailMitglied, false, finde('Elena', 'Aichinger')],
-  ]) {
+  for (const k of kontenPlan) {
+    const person = finde(...k.person)
     const pw = passwort()
-    const user = await kontoAnlegenOderUebernehmen(auth, mail, pw)
+    const user = await kontoAnlegenOderUebernehmen(auth, k.mail, pw)
     await rest(
       'members',
       'POST',
-      { user_id: user.id, congregation_id: cong.id, person_id: person.id, planner: planer, email: mail },
+      { user_id: user.id, congregation_id: cong.id, person_id: person.id, planner: k.planner, zuteiler: k.zuteiler, email: k.mail },
       'return=minimal',
     )
-    // `planner_vorgemerkt` ist die **Vormerkung** für die Einladung; wirksam
-    // ist `members.planner` eine Zeile darüber. Die Spalte hieß bis T105
-    // ebenfalls `planner` — ein Name für zwei verschiedene Tatsachen.
-    if (planer) {
-      await rest(`persons?id=eq.${person.id}`, 'PATCH', { planner_vorgemerkt: true }, 'return=minimal')
+    // `planner_vorgemerkt` und `zuteiler_vorgemerkt` sind die **Vormerkung**
+    // für die Einladung; wirksam ist die `members`-Zeile darüber. Die Spalte
+    // hieß bis T105 ebenfalls `planner` — ein Name für zwei verschiedene
+    // Tatsachen. Gesetzt wird beides, wie die App es beim Umlegen des
+    // Schalters tut (`updatePerson` spiegelt die Vormerkung in `members`).
+    const vormerkung = { ...(k.planner && { planner_vorgemerkt: true }), ...(k.zuteiler && { zuteiler_vorgemerkt: true }) }
+    if (Object.keys(vormerkung).length) {
+      await rest(`persons?id=eq.${person.id}`, 'PATCH', vormerkung, 'return=minimal')
     }
-    konten.push({ mail, pw, person: personDisplayName(person.fn, person.ln), planer })
-    console.log(`  Konto ${mail}${user.uebernommen ? ' (vorhandenes übernommen, Kennwort neu gesetzt)' : ''}`)
+    konten.push({ mail: k.mail, pw, person: personDisplayName(person.fn, person.ln), stufe: k.stufe })
+    console.log(`  Konto ${k.mail}${user.uebernommen ? ' (vorhandenes übernommen, Kennwort neu gesetzt)' : ''}`)
   }
 
   console.log(`\nAngelegt. Versammlung ${cong.id}`)
   for (const w of wochen) console.log(`  Woche ${w.start} (${w.range}) — ${w.gesetzt} Plätze besetzt`)
   console.log('\nKonten — die Kennwörter stehen nur hier, sie sind nirgends abrufbar:')
-  for (const k of konten) console.log(`  ${k.mail}  ${k.pw}   ${k.planer ? 'Planer' : 'Mitglied'} · ${k.person}`)
+  for (const k of konten) console.log(`  ${k.mail}  ${k.pw}   ${k.stufe} · ${k.person}`)
+  console.log(`\nMessen mit:\n  node scripts/mitgliedsrechte-probe.mjs --versammlung ${cong.id}`)
   console.log(`\nWieder weg mit:\n  node scripts/testversammlung-anlegen.mjs --entfernen ${cong.id} --wirklich`)
 }
 
